@@ -9054,7 +9054,7 @@ window.MKK = {GL, of, list, rec, names, decodeGenre, decodeAll, writeRec, placeP
 </script>
 <script type="text/plain" id="sq-bm-src">
 /* ===== BM6 (Nachtrag 7 §5.2): block sq-bm-src, evaluated on first need (bmLoad): the host of the node 'synq-bm', the
-   placeholder processor (BM-STUB), the native image, the probe, bmRender, the placeholder page. BM5 adds its editor here. ===== */
+   processor (BM-KLANG, BM1-BM4), the native image, the probe, bmRender; then the panel BMUI (BM5). ===== */
 // the module (Blob, else data URL; ASCII source) once per context
 function bmModule(c, src) {
   const to = p => Promise.race([p, new Promise((_, rj) => setTimeout(() => rj(new Error('Zeitüberschreitung')), 2500))]);
@@ -9088,7 +9088,7 @@ function bmTrack(c, dest, snd) {
   node.connect(fd); fd.connect(dest);   // fd: the 30 ms equal-power fade of an engine change (§5.2), else 1
   const E = {bm: true, node, fd, load: 0, nv: 0, dead: false, proxies: new Map(), onEnd: null, onScope: null, sent: {poly: 10}, ons: [], offs: [], fq: false,
     notes: new Map(), at0: new Map(), lim: -1, run: null, st0: null, bpm: 0, sentJ: '', scopeMsg: null, ends: 0, late: 0};
-  const post = m => { if (!E.dead) node.port.postMessage(m); };
+  const post = m => { if (!E.dead) node.port.postMessage(m); }; E.post = post;
   node.port.onmessage = ev => {
     const m = ev.data; if (!m || typeof m !== 'object') return;
     if (m.t === 'load') { E.load = +m.v || 0; E.nv = m.nv | 0; }
@@ -9123,12 +9123,10 @@ function bmTrack(c, dest, snd) {
   // the whole sound: layer first, then program A (and B); only when it changed
   E.prog = (s, force) => {
     const b = s && s.p && s.p.bm; if (!b) return; const j = JSON.stringify(b); if (!force && j === E.sentJ) return;
-    E.flush(); E.sentJ = j; post({t: 'ly', p: b.ly}); post({t: 'prog', ab: 'a', p: b.a}); if (b.b) post({t: 'prog', ab: 'b', p: b.b});
+    E.flush(); E.sentJ = j; post({t: 'ly', p: b.ly}); post({t: 'gl', p: b.gl}); post({t: 'prog', ab: 'a', p: b.a}); post({t: 'prog', ab: 'b', p: b.b || null});
   };
   E.bmSet = (ab, k, v) => { E.flush(); post({t: 'set', ab, k, v}); };
   E.ctl = o => post(Object.assign({t: 'ctl'}, o));
-  // the wheels of MK1 (§3.6): bend −1 … +1, mw 0 … 1; never stored
-  E.mkWheel = o => { const x = {}; if (o.bend != null) x.bend = o.bend; if (o.mod != null) x.mw = o.mod; else if (o.reset) x.mw = 0; if (Object.keys(x).length) E.ctl(x); };
   E.tempo = (bpm, start, at) => {
     const run = start != null;
     if (run !== E.run || (run && start !== E.st0)) { E.run = run; E.st0 = start; post({t: 'tr', run, at: run ? start : at != null ? at : node.context.currentTime, bpm}); }
@@ -9154,7 +9152,7 @@ function bmNew(i) {
   const E = bmTrack(AU.ctx, A.trackIn, tr.sound);
   E.onEnd = id => { const v = E.proxies.get(id); if (v) wkVoiceDead(v); };
   E.tempo(S.bpm, R.playing ? R.startTime : null);
-  const w = mkWheelOf(i); if (w) E.ctl({bend: w.bend, mw: w.mod == null ? 0 : w.mod});
+  const w = bmWheelOf(i); E.ctl({list: [{k: 'bd', v: w.bend, at: 0}, {k: 'mw', v: w.mod, at: 0}, {k: 'at', v: w.at, at: 0}]});   // BM5 wheels
   return E;
 }
 // a whole sound on a Bit Mask path (applySound): Bit Mask -> Bit Mask continues in the node; an engine change between two
@@ -9268,12 +9266,6 @@ function bmInfoX() {
     late: BMX.late, knoten: nodes, stimmen: voices, ms: Math.round(BMX.ms), err: BMX.err, platzhalter: /BM-STUB/.test(BM_WK)};
 }
 function bmVoicesX(t) { const E = AU.synth[t]; return E && E.bm ? {nv: E.nv, proxies: E.proxies.size, ends: E.ends, late: E.late} : null; }
-// BM6: the page of a Bit Mask track until the editor (BM5, open questions F1/F2) – name, the program in short, the routes (K1)
-function bmPage(pg, i) {
-  const B = SQBM.normBm(sndOf(i).p.bm), A = B.a, m3 = x => String(x).padStart(3, '0'), rs = SQBM.routes(B);
-  pg.innerHTML = `<div class="nvp bmp"><b>${esc(BM_NAME)}</b><p>OSC1 · MASK ${m3(A.o1.m)} · L ${A.o1.e.l}<br>OSC2 · MASK ${m3(A.o2.m)} · L ${A.o2.e.l}<br>FILTER · CUTF ${A.f.cu} · ${A.f.md.toUpperCase()}</p>` +
-    `<p class="small">Der Editor folgt. Routen: ${rs.length ? rs.map(r => esc(r.src + ' → ' + r.dst)).join(' · ') : 'keine'}</p></div>`;
-}
 // bmMask (§5.3): the mask rule's numbers on the main thread (BM1 replaces it with the worker's)
 function bmMaskX(m) { const P = SQBM.partials(m, 256); let best = 1, num = 0, den = 0; const a = k => Math.hypot(P.re[k], P.im[k]);
     for (let k = 1; k <= 256; k++) { const x = a(k) * a(k); num += k * x; den += x; if (a(k) > a(best)) best = k; }
@@ -10402,6 +10394,660 @@ async function bmkProbe(o) {
   return {fall: 'bm', fx: o.p ? '' : 'CH4 + RV3', app: typeof VERSION !== 'undefined' ? VERSION : '', ua: navigator.userAgent, sr: c.sampleRate, voices: nv, reports: rep.length,
     load_med: +(v.length ? v[v.length >> 1] : 0).toFixed(4), load_max: +(v.length ? v[v.length - 1] : 0).toFixed(4), quantum_max_ms: +(q.length ? q[q.length - 1] : 0).toFixed(3)};
 }
+/* ===== BM5 (Nachtrag 7 §3, Paket BM5): block sq-bm-src, evaluated on first need (bmLoad). The panel of the engine BM_NAME as an
+   own drawing of the device (no logo, no name on the plate): 23 square keys with a lit face, two round knobs (Vol, Value), a red
+   4-digit 7-segment display, the Seq and Env lines, the mask overview drawn from the mask rule, the BEND and MOD wheels left of the
+   keys and the pressure gesture. Landscape: the whole panel in two rows; portrait: each row folded in the middle (§3.2). Every target
+   >= 44 x 44 px, nothing to zoom. Operation as on the device (§3.3): mode key + « Param » + Value. View state only (mode, parameter,
+   Seq/Env, multi edit, Compare) is never stored (§5.1). ===== */
+(function () {
+'use strict';
+const NM = () => BM_NAME;
+/* ---------- the values: device names, paths, ranges (§1.3-§1.14, §3.3, §5.1). Paths are relative to the program (a/b), r = p.bm root ---------- */
+const DEST_L = {freq: 'FREQ', vol: 'VOL', flt: 'FILT', mask: 'MASK', pan: 'PAN', o1f: '1FRQ', o1v: '1VOL', o1m: '1MSK', o2f: '2FRQ', o2v: '2VOL', o2m: '2MSK',
+  nf: 'NFRQ', nv: 'NVOL', fx1t: '1TYP', fx2t: '2TYP', fx1b: '1BAL', fx2b: '2BAL', l1a: 'L1A', l1s: 'L1S', l2a: 'L2A', l2s: 'L2S', feg: 'FEG', peg: 'PEG', atk: 'ATK'};
+const DEST_T = {freq: 'Tonhöhe beider Oszillatoren', vol: 'Stimm-Pegel', flt: 'Cutoff', mask: 'Maske beider Oszillatoren', pan: 'Panorama', o1f: 'Tonhöhe OSC1', o1v: 'Pegel OSC1',
+  o1m: 'Maske OSC1', o2f: 'Tonhöhe OSC2', o2v: 'Pegel OSC2', o2m: 'Maske OSC2', nf: 'Rausch-FREQ', nv: 'Rausch-Pegel', fx1t: 'FX1-Typ', fx2t: 'FX2-Typ', fx1b: 'FX1-Anteil',
+  fx2b: 'FX2-Anteil', l1a: 'LFO1-Menge', l1s: 'LFO1-Tempo', l2a: 'LFO2-Menge', l2s: 'LFO2-Tempo', feg: 'Filter-Hüllkurven-Menge', peg: 'Tonhöhen-Hk-Start', atk: 'Attack-Tempo'};
+const T_LFO = ['freq', 'vol', 'flt', 'mask', 'pan', 'o1f', 'o1v', 'o1m', 'o2f', 'o2v', 'o2m', 'nf', 'nv', 'fx1t', 'fx2t', 'fx2b'];
+const T_MW = ['flt', 'l1a', 'l1s', 'l2a', 'l2s', 'vol', 'mask', 'freq', 'o1v', 'o1m', 'o2v', 'o2m', 'nf', 'nv', 'fx1b', 'fx2b'];
+const T_V = ['flt', 'feg', 'vol', 'mask', 'peg', 'atk'];
+const WAVES = ['sin', 'sqr', 'up', 'down', 'saws', 'step', 'hsin', 'rand'], WAVE_T = ['Sinus', 'Rechteck', 'Rampe auf', 'Rampe ab', 'Sägen (Form der Maske 23)', 'Stufen (8)', 'Halber Sinus (Bogen der Maske 15)', 'Zufall je Periode'];
+const MODES = ['poly', 'pretrig', 'mono', 'mport', 'mretrig', 'slur', 'para', 'pslur', 'moly'], MODE_L = ['POLY', 'POLY RETRIG', 'MONO', 'MONO PORTA', 'MONO RETRIG', 'SLUR', 'PARA', 'PARA SLUR', 'MOLY'];
+// a value longer than 4 characters runs through once, then this 4-character form stands (distinct for every value)
+const SHORT = {'POLY RETRIG': 'PRTG', 'MONO PORTA': 'MPRT', 'MONO RETRIG': 'MRTG', 'PARA SLUR': 'PSLR', NOTCH: 'NTCH'};
+const short4 = t => SHORT[t] || t.slice(0, 4);
+const FMODES = ['lp', 'hp', 'bp', 'notch'], FMODE_T = ['Tiefpass', 'Hochpass', 'Bandpass', 'Kerbfilter'];
+const fam = (f, n) => Array.from({length: n}, (_, k) => f + (k + 1));
+const FX1 = [].concat(fam('CH', 16), fam('DT', 16), fam('BC', 16), fam('RM', 16)), FX2 = [].concat(fam('DL', 16), fam('RV', 16), fam('DT', 16));
+const FXF_T = {CH: 'Chorus', DT: 'Verzerrung', BC: 'Bitcrusher', RM: 'Ringmodulator', DL: 'Echo', RV: 'Hall'};
+const ARPS = ['off', '1oct', 'dbl', '2oct', 'alt', '3oct', 'pong', 'pon2', 'pon3', 'rnd', 'rnd2', 'rnd3', 'min', 'maj', 'sus2', 'sus4', '7th', 'min2', 'maj2', 'su22', 'su42', '7th2', '1o', '2o', '3o', '5th', '5th2'];
+const TEMPS = ['et', 'arab', 'jmaj', 'jmin', 'mean', 'pyta'], TEMP_T = ['gleichstufig', 'arabisch', 'rein Dur', 'rein Moll', 'mitteltönig', 'pythagoreisch'];
+const VC = [1, 2, 3, 4, 5, 6], AC = [1, 2, 3, 4, 5, 6, 0];
+const INITS = ['1osc', '2osc', 'vel', 'rand'];
+// one parameter: n device name, k path, t kind ('i' int, 'l' list, 'b' on/off), lo/hi, L list values, D display names, x Klartext
+const I_ = (n, k, lo, hi, x, o) => Object.assign({n, k, t: 'i', lo, hi, x}, o || {});
+const L_ = (n, k, L, D, x, o) => Object.assign({n, k, t: 'l', L, D, x}, o || {});
+const B_ = (n, k, x, o) => Object.assign({n, k, t: 'b', lo: 0, hi: 1, x}, o || {});
+const sg = v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v);
+const dc = (v, d) => v.toFixed(d).replace('.', ',').replace('-', '−');
+const Tms = x => (x <= 0 ? 'sofort' : (s => (s < .01 ? dc(s * 1000, 1) + ' ms' : s < 1 ? Math.round(s * 1000) + ' ms' : dc(s, s < 10 ? 2 : 1) + ' s'))(.002 * Math.pow(7500, x / 15)));
+const dB = g => (g <= 0 ? '−∞ dB' : dc(20 * Math.log10(g), 1) + ' dB');
+const Hz = f => (f >= 1000 ? dc(f / 1000, 2) + ' kHz' : f >= 100 ? Math.round(f) + ' Hz' : dc(f, 1) + ' Hz');
+const sr = () => (AU.ctx ? AU.ctx.sampleRate : 48000);
+const X = {
+  mask: v => 'Maske ' + v, semi: v => sg(v) + ' HT', ct: v => sg(v) + ' ct', mstart: v => sg(v) + ' Masken-Stufen', dspd: v => (t => (t < 1 ? dc(t * 1000, t < .01 ? 1 : 0) + ' ms' : dc(t, 2) + ' s'))(5 * Math.pow(2500, -(v - 1) / 39)) + ' bis 1 %',
+  lvl: v => 'Pegel ' + dB(Math.pow(v / 99, 2)), time: v => Tms(v), sus: v => 'Sustain ' + dB(Math.pow(v / 15, 2)), loop: v => (v ? 'Schleife an (A + D wiederholt)' : 'Schleife aus'),
+  nfreq: v => (v >= 99 ? 'weiß (jedes Sample)' : 'Halte-Rate ' + Hz(30 * Math.pow(16 * sr() / 30, v / 99))), cut: v => Hz(Math.max(10, Math.min(.45 * sr(), 20 * Math.pow(1000, v / 99)))),
+  reso: v => (v >= 99 ? 'Selbstoszillation' : 'Q ' + dc(1 / (1.414 * (1 - v / 99)), 2)), fmode: v => FMODE_T[FMODES.indexOf(v)] || v, pct: v => v + ' %',
+  amt: v => sg(Math.round(Math.sign(v) * Math.pow(Math.abs(v) / 99, 1.5) * 1000) / 10).replace('.', ',') + ' %', lspd: v => Hz(.05 * Math.pow(8000, v / 99)),
+  dest: v => DEST_T[v] || v, wave: v => WAVE_T[WAVES.indexOf(v)] || v, dlay: v => (v ? 'Einsatz nach ' + Tms(v) : 'ohne Verzögerung'), dcay: v => (v ? 'Abklingen in ' + Tms(v) : 'aus'),
+  bal: v => v + ' % Effekt', fxt: v => (FXF_T[v.replace(/\d+$/, '')] || '') + ' ' + v.replace(/^\D+/, '') + (/^DL/.test(v) ? ' · ' + dc(800 * Math.pow(1 / 800, (+v.slice(2) - 1) / 15), 1).replace(/,0$/, '') + ' ms' : ''),
+  sync: v => (v ? 'Echo im Song-Tempo (DL1–DL8)' : 'Echo-Zeiten fest'), arp: v => (v === 'off' ? 'Arpeggiator aus' : 'Muster ' + v.toUpperCase()), bpm: v => v + ' BPM (Sechzehntel)', onoff: v => (v ? 'an' : 'aus'),
+  pst: v => sg(Math.round(Math.sign(v) * 48 * Math.pow(Math.abs(v) / 63, 2) * 100) / 100).replace('.', ',') + ' HT', mode: v => MODE_L[MODES.indexOf(v)] || v, vol: v => dB(Math.pow(v / 99, 2)),
+  port: v => (v ? Math.round(8 * Math.pow(1.6, v - 1)) + ' ms' : 'aus'), pans: v => 'Auslenkung ' + Math.round(v / 15 * 100) + ' %', rate: v => (v ? 'Zeiten je Oktave × ' + dc(Math.pow(2, -v / 15), 2) : 'aus'),
+  temp: v => TEMP_T[TEMPS.indexOf(v)] || v, hz: v => 'A4 = ' + v + ' Hz', vc: v => (v >= 6 ? 'immer voll' : 'Kurve ' + v), ac: v => (v === 0 ? 'kein Druck' : v === 6 ? 'leicht, schnell voll' : 'Kurve ' + v),
+  pb: v => '±' + v + ' HT', tfx: v => (v ? 'Echo und Hall an' : 'Echo und Hall umgangen'), lbal: v => 'B ' + v + ' %', lpan: v => (v ? 'A ' + (v < 0 ? 'rechts' : 'links') + ', B ' + (v < 0 ? 'links' : 'rechts') + ' ' + Math.abs(v) + ' %' : 'Mitte'),
+  init: v => ({'1osc': 'ein Oszillator, Säge', '2osc': 'zwei Oszillatoren, verstimmt', vel: 'Anschlag auf die Filter-Hüllkurve', rand: 'Zufall (hörbar)'})[v] || v};
+const oscP = o => [I_('MASK', o + '.m', 0, 511, X.mask, {m3: 1}), I_('SEMI', o + '.st', -60, 60, X.semi), I_('TUNE', o + '.tu', -50, 50, X.ct), I_('START', o + '.ds', -256, 256, X.mstart), I_('SPD', o + '.dv', 1, 40, X.dspd)];
+const envP = o => [I_('L', o + '.e.l', 0, 99, X.lvl), I_('A', o + '.e.a', 0, 15, X.time), I_('D', o + '.e.d', 0, 15, X.time), I_('S', o + '.e.s', 0, 15, X.sus), I_('R', o + '.e.r', 0, 15, X.time), B_('LOOP', o + '.e.lp', X.loop)];
+const slotsP = (base, nm, list, lo, pre, ext, pg) => {   // Ziel-Plätze [Z F8]: slot n + 1 appears once slot n has an amount != 0 (§1.9)
+  const out = [];
+  for (let s = 0; s < 4; s++) {
+    if (s && !(+(getP(pg, base + '.' + (s - 1) + '.1')) || 0)) break;
+    const d = L_(pre + 'DEST' + (s ? s + 1 : ''), base + '.' + s + '.0', list, list.map(x => DEST_L[x]), X.dest), a = I_(pre + 'AMT' + (s ? s + 1 : ''), base + '.' + s + '.1', lo, 99, X.amt);
+    if (ext) out.push(a, d); else out.push(d, a);
+  }
+  return out;
+};
+function params(mode, env, pg) {
+  switch (mode) {
+    case 'osc1': return env ? envP('o1') : oscP('o1');
+    case 'osc2': return env ? envP('o2') : oscP('o2');
+    case 'noise': return env ? envP('n') : [I_('FREQ', 'n.fr', 0, 99, X.nfreq)];
+    case 'filter': return env ? envP('f') : [I_('CUTF', 'f.cu', 0, 99, X.cut), I_('RESO', 'f.re', 0, 99, X.reso), L_('MODE', 'f.md', FMODES, ['LP', 'HP', 'BP', 'NOTCH'], X.fmode), I_('TRK', 'f.tk', 0, 100, X.pct)];
+    case 'lfo1': case 'lfo2': { const l = mode === 'lfo1' ? 'l1' : 'l2', s1 = slotsP(l + '.t', '', T_LFO, 0, '', true, pg);
+      return [s1[0], I_('SPD', l + '.sp', 0, 99, X.lspd), s1[1], L_('WAVE', l + '.w', WAVES, ['SIN', 'SQR', 'UP', 'DOWN', 'SAWS', 'STEP', 'HSIN', 'RAND'], X.wave), I_('DLAY', l + '.dl', 0, 15, X.dlay), I_('DCAY', l + '.dc', 0, 15, X.dcay)]
+        .concat(s1.slice(2).map((x, k) => (k % 2 ? x : x)).reduce((a, x, k, A) => (k % 2 ? a : a.concat([A[k + 1], x])), [])); }
+    case 'fx': return [I_('1BAL', 'fx.b1', 0, 100, X.bal), L_('1TYP', 'fx.t1', FX1, FX1, X.fxt), I_('2BAL', 'fx.b2', 0, 100, X.bal), L_('2TYP', 'fx.t2', FX2, FX2, X.fxt), B_('SYNC', 'fx.sy', X.sync)];
+    case 'arp': return [L_('TYPE', 'ar.t', ARPS, ARPS.map(x => x.toUpperCase()), X.arp), I_('SPD', 'ar.sp', 20, 400, X.bpm), B_('HOLD', 'ar.ho', X.onoff), B_('TRIG', 'ar.tr', X.onoff)];
+    case 'pitch': return [I_('START', 'pe.ds', -63, 63, X.pst), I_('SPD', 'pe.dv', 1, 40, X.dspd), I_('END', 'pe.de', -63, 63, X.pst)];
+    case 'mod': return [].concat(slotsP('mo.v', '', T_V, -99, 'V-', false, pg), slotsP('mo.mw', '', T_MW, -99, 'M-', false, pg), slotsP('mo.at', '', T_MW, -99, 'AT-', false, pg));
+    case 'general': return [L_('MODE', 'g.mo', MODES, MODE_L, X.mode), I_('VOL', 'g.vo', 0, 99, X.vol), I_('SEMI', 'g.st', -48, 48, X.semi), I_('PORT', 'g.po', 0, 13, X.port), I_('PANS', 'g.ps', 0, 15, X.pans), I_('RATE', 'g.ra', 0, 15, X.rate)];
+    case 'global': return [L_('TEMP', 'gl.tm', TEMPS, TEMPS.map(x => x.toUpperCase()), X.temp, {r: 1}), I_('SEMI', 'gl.st', -24, 24, X.semi, {r: 1}), I_('TUNE', 'gl.tn', 400, 470, X.hz, {r: 1}),
+      L_('VEL CURVE', 'gl.vc', VC, ['1', '2', '3', '4', '5', 'MAX'], X.vc, {r: 1}), L_('AT CURVE', 'gl.ac', AC, ['1', '2', '3', '4', '5', '6', 'NONE'], X.ac, {r: 1}),
+      I_('PITCH BEND', 'gl.pb', 0, 12, X.pb, {r: 1}), B_('TIME FX', 'gl.tf', X.tfx, {r: 1})];
+    case 'layer': case 'split': return [{n: 'PROG', t: 'place', k: null}, I_('SEMI', 'ly.semi', -24, 24, X.semi, {r: 1}), I_('BAL', 'ly.bal', 0, 100, X.lbal, {r: 1}), I_('PAN', 'ly.pan', -99, 99, X.lpan, {r: 1}), I_('TUNE', 'ly.tune', -50, 50, X.ct, {r: 1})];
+    case 'voice': return [{n: 'PROG', t: 'place', k: null}];
+    case 'init': return [L_('INIT', '$init', INITS, ['1OSC', '2OSC', 'VEL', 'RAND'], X.init, {v: 1})];
+    case 'write': return [{n: 'WRITE', t: 'slot', k: null}];
+  }
+  return [];
+}
+const SEC = {voice: 'VOICE', layer: 'LAYER', split: 'SPLIT', init: 'INIT', write: 'WRITE', global: 'GLOBAL', osc1: 'OSC1', osc2: 'OSC2', noise: 'NOISE', filter: 'FILTER', lfo1: 'LFO1', lfo2: 'LFO2',
+  fx: 'FX', arp: 'ARP', pitch: 'PITCH', mod: 'MOD', general: 'GENERAL'};
+const ENVK = ['osc1', 'osc2', 'noise', 'filter'], ENVO = {osc1: 'o1', osc2: 'o2', noise: 'n', filter: 'f'};
+/* ---------- state (view only, never stored) ---------- */
+const P = {i: -1, mode: 'voice', pi: 0, env: false, ab: 'a', multi: null, held: new Map(), cmpOn: false, initSel: 0, wSlot: 0, bPlace: {}, splitHeld: false,
+  el: null, disp: {txt: '', job: null, q: null}, dirty: true, blinkT: 0, at: new Map(), atBar: new Map(), seen: false, valT0: 0};
+const bmOf = () => { const s_ = sndOf(P.i); return s_ && s_.engine === 'bm' && s_.p.bm ? s_.p.bm : null; };
+const progOf = (bm, ab) => (ab === 'b' && bm.b ? bm.b : bm.a);
+function pathGet(o, k) { if (!o) return undefined; const ks = k.split('.'); let x = o; for (const s of ks) { if (x == null) return undefined; x = x[s]; } return x; }
+function pathSet(o, k, v) { const ks = k.split('.'); let x = o; for (let j = 0; j < ks.length - 1; j++) { if (x[ks[j]] == null) x[ks[j]] = /^\d+$/.test(ks[j + 1]) ? [] : {}; x = x[ks[j]]; } x[ks[ks.length - 1]] = v; }
+function getP(pg, k) { return pathGet(pg, k); }
+const curAB = () => { const bm = bmOf(); return bm && P.ab === 'b' && bm.b ? 'b' : 'a'; };
+function pList() { const bm = bmOf(); if (!bm) return []; return params(P.mode, P.env && ENVK.includes(P.mode), progOf(bm, curAB())); }
+function curPar() { const L = pList(); if (!L.length) return null; if (P.pi >= L.length) P.pi = L.length - 1; return L[P.pi]; }
+function valOf(d, ab) { const bm = bmOf(); if (!bm || !d) return null; if (d.k === '$init') return INITS[P.initSel]; if (d.t === 'place') return placeCode(d); if (d.t === 'slot') return P.wSlot; return d.r ? pathGet(bm, d.k) : pathGet(progOf(bm, ab || curAB()), d.k); }
+function initVal(d) { if (!d || !d.k || d.k === '$init') return null; return d.r ? pathGet(SQBM.init(), d.k) : pathGet(SQBM.prog(), d.k); }
+/* ---------- display text (7 segments, 4 digits) ---------- */
+function fmtV(d, v) {
+  if (!d) return '';
+  if (d.t === 'place') return placeCode(d);
+  if (d.t === 'slot') return 'U' + String(P.wSlot).padStart(2, '0');
+  if (v == null) return '----';
+  if (d.t === 'b') return v ? ' ON' : 'OFF';
+  if (d.t === 'l') { const j = d.L.indexOf(v); return j >= 0 ? d.D[j] : String(v).toUpperCase(); }
+  if (d.m3) return String(v).padStart(3, '0');
+  return String(v);
+}
+const lcdT = (d, v) => (d && d.x ? d.x(v) : '');
+// segments a b c d e f g per character (own table for the 7-segment display)
+const SEG = {' ': '', '-': 'g', '_': 'd', '0': 'abcdef', '1': 'bc', '2': 'abged', '3': 'abgcd', '4': 'fgbc', '5': 'afgcd', '6': 'afgedc', '7': 'abc', '8': 'abcdefg', '9': 'abcdfg',
+  A: 'abcefg', B: 'fgedc', C: 'afed', D: 'bcdeg', E: 'afged', F: 'afge', G: 'afedc', H: 'fbgec', I: 'ef', J: 'bcde', K: 'fgecb', L: 'fed', M: 'aecf', N: 'ceg', O: 'abcdef',
+  P: 'abfge', Q: 'abcfg', R: 'eg', S: 'afgcd', T: 'fged', U: 'fedcb', V: 'fedcb', W: 'bdf', X: 'fbgec', Y: 'fbgcd', Z: 'abged', '/': 'beg', '=': 'gd', '+': 'gfe', "'": 'f'};
+function dispSet(t) {
+  t = String(t).toUpperCase();
+  const num = /^[\s\-+0-9]*$/.test(t), s = (num ? t.padStart(4, ' ') : t.padEnd(4, ' ')).slice(0, 4);
+  P.disp.txt = s; const D = P.el && P.el.disp; if (!D) return;
+  for (let j = 0; j < 4; j++) { const on = SEG[s[j]] != null ? SEG[s[j]] : ''; const g = D[j]; if (g._on === on) continue; g._on = on; for (const k of 'abcdefg') g[k].classList.toggle('on', on.includes(k)); }
+}
+function dispStop() { const J = P.disp.job; if (J) { clearTimeout(J); P.disp.job = null; } }
+// a name longer than 4 characters runs through once with 6 characters per second, then the value stands (§3.1)
+function dispRun(name, then) {
+  dispStop(); name = String(name);
+  if (name.length <= 4) { dispSet(name); P.disp.job = setTimeout(() => { P.disp.job = null; then(); }, 600); return; }
+  let k = 0; const step = () => { dispSet(name.slice(k, k + 4)); k++; if (k + 4 <= name.length + 0) P.disp.job = setTimeout(step, 1000 / 6); else P.disp.job = setTimeout(() => { P.disp.job = null; then(); }, 1000 / 6 * 2); }; step();
+}
+function dispPar(withName) {
+  const d = curPar(); if (!d) { dispSet('----'); return; }
+  const show = () => { const v = valOf(d), t = fmtV(d, v); if (t.length > 4) dispRun(t, () => dispSet(short4(t))); else dispSet(t); };
+  if (withName && d.t !== 'place' && d.t !== 'slot') dispRun(d.n, show); else { dispStop(); show(); }
+}
+function lcdPar() {
+  const d = curPar(); if (!d || !ED.lcd) return;
+  const sec = (P.env && ENVK.includes(P.mode) ? 'ENV ' : '') + SEC[P.mode] + (P.multi ? ' + ' + P.multi.slice(1).map(m => SEC[m]).join(' + ') : '') + (curAB() === 'b' && !['global', 'layer', 'split'].includes(P.mode) ? ' (B)' : '');
+  if (d.t === 'place') { const r = placeCur(d); lcdShow(sec, (d.n === 'PROG' && P.mode !== 'voice' ? 'PROG · ' : '') + placeCode(d) + ' · ' + (r ? r.name : 'kein Klang')); return; }
+  if (d.t === 'slot') { const U = ownList(), r = U[P.wSlot]; lcdShow(sec, fmtV(d) + ' · ' + (r ? 'überschreibt „' + r.name + '“' : 'neuer Platz')); return; }
+  const v = valOf(d); lcdShow(sec, d.n + ' · ' + fmtV(d, v).trim() + ' · ' + lcdT(d, v));
+}
+/* ---------- places: P00 … = own start sounds (BM7), U00 … = own saved BM_NAME sounds of the library in save order (§3.3 Voice) ---------- */
+// BM6/BM7-PLATZHALTER: until BM7 brings P00-P39, P00 is INIT (1OSC); BM7 provides window.BMFAC.list() -> [{id, name, p: {bm}}]
+function facList() { try { if (window.BMFAC && BMFAC.list) return BMFAC.list(); } catch (e) { logErr(e); } return [{id: 'bm-p00', name: 'INIT', bm: SQBM.init()}]; }
+function ownList() { return (LIB.ok ? LIB.lib.all() : []).filter(s => s.engine === 'bm').sort((a, b) => (a.ct || 0) - (b.ct || 0)); }
+function posOf(snd) { if (!snd) return null; const o = snd.origin; if (!o) return null; const U = ownList(), u = U.findIndex(r => r.id === o); if (u >= 0) return -(u + 1); const F = facList(), f = F.findIndex(r => r.id === o); return f >= 0 ? f : null; }
+const codeOf = x => (x == null ? '----' : x >= 0 ? 'P' + String(x).padStart(2, '0') : 'U' + String(-x - 1).padStart(2, '0'));
+function recAt(x) { if (x == null) return null; if (x >= 0) return facList()[x] || null; return ownList()[-x - 1] || null; }
+function placeCode(d) { if (P.mode === 'voice') return codeOf(posOf(sndOf(P.i))); const bm = bmOf(); if (!bm || !bm.b) return '----'; const x = P.bPlace[P.i]; return x != null ? codeOf(x) : 'PROG'; }
+function placeCur(d) { if (P.mode === 'voice') return sndOf(P.i); const bm = bmOf(); if (!bm || !bm.b) return null; return recAt(P.bPlace[P.i]) || {name: 'Programm B'}; }
+function soundOfRec(r) {
+  const cur = sndOf(P.i); if (!r) return null;
+  if (r.engine === 'bm') return soundCopy(r);
+  const s_ = deep(cur); s_.p.bm = SQBM.normBm(r.bm || SQBM.init()); s_.name = r.name; s_.origin = r.id && !String(r.id).startsWith('bm-p') ? r.id : (r.id || null); return s_;
+}
+function retrigHeld(i) {   // gehaltene Tasten klingen neu an (§3.3 Voice)
+  const now = nowT();
+  for (const id in R.inputs) { const inp = R.inputs[id]; if (!inp || inp.route !== 'play' || inp.track !== i) continue; const vel = inp.voice && inp.voice.vel || .8; if (inp.voice) inp.voice.release(now, .004); inp.voice = spawnVoice(i, inp.note, vel, now + .01, {src: 'live'}); }
+}
+function loadPlace(x) {
+  const r = recAt(x); if (!r) return false; const s_ = soundOfRec(r); if (!s_) return false;
+  UI.ab = null; applySound(P.i, s_); bmSync(true); retrigHeld(P.i); return true;
+}
+function placeStep(dir) {   // Voice: Value right = P00, P01 …, left = U00, U01 … (one axis … U01 U00 | P00 P01 …)
+  const s_ = sndOf(P.i); let x = P.mode === 'voice' ? posOf(s_) : P.bPlace[P.i];
+  const nF = facList().length, nU = ownList().length;
+  if (x == null) x = dir > 0 ? 0 : -1; else x += dir;
+  if (x >= nF) x = nF - 1; if (x < -nU) x = -nU; if (x < 0 && !nU) x = 0;
+  if (P.mode === 'voice') { if (x === posOf(s_)) return false; return loadPlace(x); }
+  const r = recAt(x); if (!r) return false; const bm = bmOf(); if (!bm) return false;
+  const src = r.engine === 'bm' ? SQBM.normBm(r.p && r.p.bm) : SQBM.normBm(r.bm);
+  bm.b = deep(src.a); P.bPlace[P.i] = x; bmChanged(null); bmSync(true); return true;
+}
+/* ---------- changes: the sound, the engine, „geändert“ and A/B at once (rule 7), one undo per gesture (rule 8) ---------- */
+function bmChanged(d, ab) {
+  UI.sndVer++; UI.dirty.strip = UI.dirty.edHead = true; markDirty();
+  const bm = bmOf(); if (!bm || !d) return;
+  if (d.r) bmPost(P.i, {t: d.k.startsWith('ly.') ? 'ly' : 'gl', p: deep(d.k.startsWith('ly.') ? bm.ly : bm.gl)});
+  else bmPost(P.i, {t: 'set', ab: ab || curAB(), k: d.k, v: pathGet(progOf(bm, ab || curAB()), d.k)});
+}
+function bmSync(full) { if (full) bmResend(P.i); }   // the host sends ly, gl, prog a, prog b
+// the parameter of every edited key (multi edit: the same device name in each lit key, §3.3)
+function targets(d) {
+  if (!P.multi) return [[d, curAB()]];
+  const out = []; for (const m of P.multi) { const L = params(m, P.env && ENVK.includes(m), progOf(bmOf(), curAB())); const e = L.find(x => x.n === d.n); if (e) out.push([e, curAB()]); }
+  return out;
+}
+function setVal(d, v) {
+  const bm = bmOf(); if (!bm || !d || !d.k || P.cmpOn) return false;   // Compare plays the stored state: nothing is edited there
+  if (d.k === '$init') { const j = INITS.indexOf(v); if (j < 0 || j === P.initSel) return false; P.initSel = j; return true; }
+  let ch = false;
+  for (const [e, ab] of targets(d)) {
+    let x = v; if (e.t === 'i' || e.t === 'b') x = clamp(Math.round(+x), e.lo, e.hi); else if (!e.L.includes(x)) continue;
+    const o = e.r ? bm : progOf(bm, ab); if (pathGet(o, e.k) === x) continue;
+    pathSet(o, e.k, x); bmChanged(e, ab); ch = true;
+  }
+  return ch;
+}
+function stepVal(d, n) {   // n steps on the current parameter (lists: index steps, clamped at the ends)
+  if (!d || P.cmpOn) return false;
+  if (d.t === 'place') return placeStep(n > 0 ? 1 : -1);
+  if (d.t === 'slot') { const nU = ownList().length, w = clamp(P.wSlot + n, 0, nU); if (w === P.wSlot) return false; P.wSlot = w; return true; }
+  const v = valOf(d);
+  if (d.t === 'l') { const j = d.L.indexOf(v), k = clamp((j < 0 ? 0 : j) + n, 0, d.L.length - 1); return setVal(d, d.L[k]); }
+  return setVal(d, clamp((+v || 0) + n, d.lo, d.hi));
+}
+function shown(withName) { dispPar(withName); lcdPar(); P.dirty = true; paintSoon(); }
+/* ---------- the keys (§3.3) ---------- */
+const MODEK = ['voice', 'layer', 'split', 'init', 'write', 'global', 'osc1', 'osc2', 'noise', 'filter', 'lfo1', 'lfo2', 'fx', 'arp', 'pitch', 'mod', 'general'];
+const multiOk = (a, b) => (P.env ? ENVK.includes(a) && ENVK.includes(b) : ['osc1', 'osc2'].includes(a) && ['osc1', 'osc2'].includes(b)) && a !== b;
+const single = () => pList().length === 1;
+function enterMode(m) { P.mode = m; P.pi = 0; P.multi = null; }
+function keyDown(id, ev) {
+  const i = P.i, s_ = sndOf(i); if (!s_ || !s_.p.bm) return;
+  haptic('tick');
+  if (P.wName && id !== 'write') nameClose();
+  // Mehrfach-Bearbeitung: a mode key held, another tapped → both lit, every change for both (§3.3)
+  if (MODEK.includes(id)) {
+    const held = [...P.held.keys()].filter(k => k !== id && MODEK.includes(k));
+    if (held.length && multiOk(held[0], id)) {
+      const base = P.multi || [held[0]]; if (P.mode !== base[0] || P.multi == null) { P.mode = base[0]; P.pi = 0; }
+      if (!base.includes(id)) P.multi = base.concat([id]); else P.multi = base.length > 1 ? base : null;
+      shown(true); return;
+    }
+  }
+  switch (id) {
+    case 'voice': {
+      if (P.cmpOn) { cmpEnd(); return; }
+      const bm = s_.p.bm;
+      if (bm.ly.md !== 'ein' && curAB() === 'b') { P.ab = 'a'; enterMode('voice'); shown(false); return; }   // einmal = Grundklang ansehen
+      if (bm.ly.md !== 'ein' && P.mode === 'voice') { soundEdit(i, NM() + ' Layer/Split aus', () => { bm.ly.md = 'ein'; bmChanged({r: 1, k: 'ly.md'}); }); P.ab = 'a'; shown(false); dispSet(' OFF'); return; }   // zweimal = aus
+      enterMode('voice'); P.ab = 'a'; shown(false); return;
+    }
+    case 'layer': case 'split': {
+      const md = id === 'layer' ? 'lay' : 'spl', bm = s_.p.bm;
+      if (P.mode === id && !P.multi) { P.pend = id; return; }   // next parameter on release (Split held = split point)
+      enterMode(id); P.ab = 'b';
+      if (bm.ly.md !== md) soundEdit(i, NM() + (id === 'layer' ? ' Layer' : ' Split'), () => { bm.ly.md = md; bmChanged({r: 1, k: 'ly.md'}); });
+      shown(false); return;
+    }
+    case 'init': {
+      if (P.mode === 'init') { doInit(INITS[P.initSel]); return; }   // Init bestätigt; zweimal = einfache Säge (1OSC)
+      enterMode('init'); P.initSel = 0; shown(false); return;
+    }
+    case 'write': {
+      if (P.mode === 'write') { if (P.wName) nameDone(); else writeName(); return; }
+      enterMode('write'); const U = ownList(), x = posOf(s_); P.wSlot = x != null && x < 0 ? -x - 1 : U.length; shown(false); return;
+    }
+    case 'compare': { if (P.cmpOn) cmpEnd(); else cmpStart(); return; }
+    case 'seq': { P.env = !P.env; if (ENVK.includes(P.mode)) P.pi = 0; if (P.multi && !P.multi.every(m => (P.env ? ENVK : ['osc1', 'osc2']).includes(m))) P.multi = null; lcdShow('SEQ/ENV', P.env ? 'ON' : 'OFF'); shown(true); return; }
+    case 'octL': case 'octR': {
+      const dir = id === 'octL' ? -1 : 1;
+      if (P.env) { ensureAudio(); if (dir < 0) recPress(AU.ctx ? AU.ctx.currentTime : null); else togglePlay(); P.dirty = true; paintSoon(); return; }
+      const o = kbOctave() + dir; if (o < 2 || o > 6) { haptic('snap'); return; }   // ±2 Oktaven [H] around the middle 4 (as the MS 2000)
+      changeOctave(dir); lcdShow('OCTAVE', (o - 4 > 0 ? '+' : '') + (o - 4) + ' Oktave' + (Math.abs(o - 4) === 1 ? '' : 'n')); P.dirty = true; paintSoon(); return;
+    }
+    case 'parL': case 'parR': {
+      const dir = id === 'parL' ? -1 : 1, d = curPar(); if (!d) return;
+      if (single() || P.mode === 'voice') { const b = soundSnapshot(i); const ch = stepVal(d, dir); if (P.mode !== 'voice') commitSound(i, b, NM() + ' · ' + d.n); else commitSound(i, b, NM() + ' Klang'); shown(false); if (!ch) haptic('snap'); return; }
+      const n = pList().length; P.pi = (P.pi + dir + n) % n; shown(true); return;
+    }
+    default:
+      if (!MODEK.includes(id)) return;
+      if (P.mode === id && !P.multi) { if (id === 'arp') { P.pend = id; return; } const n = pList().length; if (n > 1) P.pi = (P.pi + 1) % n; shown(true); return; }   // dieselbe Taste erneut = nächster Parameter (Arp: on release, a 1 s hold stops)
+      enterMode(id); if (['global'].includes(id)) {} shown(true);
+  }
+}
+function keyUp(id) {
+  if (id === 'split') splitArm(false);
+  if (P.pend === id) { P.pend = null; const n = pList().length; if (n > 1) P.pi = (P.pi + 1) % n; shown(true); }
+}
+function keyHold(id) {   // 1 s held: Arp stops a held arp [H] (the arp lives in BM4: window.BMARP.stop)
+  if (P.pend === id) P.pend = null;
+  if (id === 'arp') { try { if (window.BMARP && BMARP.stop) BMARP.stop(P.i); } catch (e) { logErr(e); } }
+}
+// Split held + a key on the app keyboard = split point (one undo; the note sounds as well) [H]
+function splitArm(on) {
+  P.splitHeld = !!on;
+  if (on) { UI.mkSplitArm = n => { const i = P.i, s_ = sndOf(i); if (!s_ || !s_.p.bm) return; if (P.pend === 'split') P.pend = null; if (s_.p.bm.ly.sp !== n) soundEdit(i, NM() + ' Splitpunkt', () => { s_.p.bm.ly.sp = n; bmChanged({r: 1, k: 'ly.sp'}); }); lcdShow('SPLIT', 'Splitpunkt ' + noteLabel(n)); }; }
+  else if (UI.mkSplitArm && !mkSplitOwned()) UI.mkSplitArm = null;
+}
+const mkSplitOwned = () => typeof MKUI !== 'undefined' && MKUI.P && MKUI.P.splitArm;
+/* ---------- Init (1OSC / 2OSC / VEL / RAND), Write, Compare ---------- */
+// BM7-PLATZHALTER: the four INIT variants after §4 (BM7 delivers them in the start sounds)
+function initBm(kind) {
+  const bm = SQBM.init(), a = bm.a;
+  if (kind === '2osc' || kind === 'vel') { a.o2.m = 7; a.o2.e.l = 99; a.o1.tu = -3; a.o2.tu = 3; }
+  if (kind === 'vel') { a.f.cu = 40; a.f.re = 0; a.f.md = 'lp'; Object.assign(a.f.e, {l: 35, a: 0, d: 8, s: 5, r: 4}); a.mo.v[0] = ['feg', 60]; }
+  if (kind === 'rand') {
+    const R_ = Math.random, I = (lo, hi) => lo + Math.floor(R_() * (hi - lo + 1));
+    for (const o of [a.o1, a.o2]) { o.m = I(0, 511); o.st = [0, 0, -12, 12][I(0, 3)]; o.tu = I(-8, 8); o.ds = R_() < .5 ? 0 : I(-48, 48); o.dv = I(5, 35); Object.assign(o.e, {l: I(0, 99), a: I(0, 8), d: I(0, 12), s: I(0, 15), r: I(0, 10), lp: 0}); }
+    if (a.o1.e.l < 60 && a.o2.e.l < 60) a.o1.e.l = I(60, 99);
+    a.f.cu = I(30, 99); a.f.re = I(0, 85); a.f.md = FMODES[I(0, 3)]; a.f.tk = I(0, 100); Object.assign(a.f.e, {l: I(0, 60), a: I(0, 8), d: I(0, 12), s: I(0, 15), r: I(0, 10), lp: 0});
+    if (a.f.cu < 40 && a.f.re > 85) a.f.re = 85;
+  }
+  return bm;
+}
+function doInit(kind) {
+  const i = P.i, cur = sndOf(i); if (!cur) return;
+  soundEdit(i, NM() + ' Init', () => { const s_ = deep(cur); s_.p.bm = SQBM.normBm(initBm(kind)); s_.name = 'INIT'; s_.origin = null; UI.ab = null; applySound(i, s_); bmSync(true); });
+  enterMode('voice'); P.ab = 'a'; dispSet(['1OSC', '2OSC', 'VEL', 'RAND'][INITS.indexOf(kind)]); lcdShow('INIT', kind.toUpperCase() + ' · ' + X.init(kind)); P.dirty = true; paintSoon();
+}
+// Write → Name im Namensfeld der App → Write → „DONE“ [H]: the name field lies in the panel over the lower keys, so that the Write key
+// stays free: Write again (or Enter) writes, any other key closes the field without writing ("dreimal Write = gleicher Platz")
+function writeName() {
+  const i = P.i, tr = S.tracks[i], slot = P.wSlot, U = ownList(), over = U[slot] || null, E_ = P.el; if (!E_) return;
+  nameClose();
+  const z = E_.Ly.z, top = E_.land ? z.seq.y - 2 : z.seq.y - 2, bot = (E_.land ? z.compare.y : z.compare.y) + Z + 2;
+  const box = el('div', 'bmname'); box.style.cssText = `left:${z.seq.x}px;top:${top}px;width:${z.compare.x + Z - z.seq.x}px;height:${bot - top}px`;
+  box.innerHTML = '<b>U' + String(slot).padStart(2, '0') + '</b>';
+  const inp = el('input', 'tin'); inp.value = over ? over.name : tr.sound.name; inp.maxLength = 32; inp.setAttribute('aria-label', 'Name des Klangs'); inp.setAttribute('enterkeyhint', 'done');
+  box.appendChild(inp); E_.plate.appendChild(box);
+  on(inp, 'keydown', e => { if (e.key === 'Enter') { e.preventDefault(); nameDone(); } else if (e.key === 'Escape') { e.preventDefault(); nameClose(); } e.stopPropagation(); });
+  P.wName = {box, inp, i, slot, over}; dispStop(); dispSet('NAME'); lcdShow('WRITE', 'U' + String(slot).padStart(2, '0') + ' · Name eingeben · Write = sichern');
+  setTimeout(() => { try { inp.focus(); inp.select(); } catch (e) {} }, 30);
+}
+function nameClose() { const W = P.wName; if (!W) return; P.wName = null; try { W.inp.blur(); } catch (e) {} W.box.remove(); }
+function nameDone() { const W = P.wName; if (!W) return; const nm = W.inp.value; nameClose(); writeDo(W.i, W.slot, W.over, nm); }
+// BM6-PLATZHALTER: the write itself (BM6-09 owns the U places in the library); the panel uses the app's saveSound
+async function writeDo(i, slot, over, name) {
+  const tr = S.tracks[i]; if (!tr) return;
+  try {
+    if (over) { const o0 = tr.sound.origin; tr.sound.origin = over.id; try { await saveSound(i, name, 'overwrite'); } catch (e) { tr.sound.origin = o0; throw e; } }
+    else await saveSound(i, name, 'new');
+    if (P.i === i) { enterMode('voice'); dispStop(); dispSet('DONE'); lcdShow('WRITE', 'U' + String(slot).padStart(2, '0') + ' · „' + tr.sound.name + '“ gesichert'); P.dirty = true; paintSoon(); }
+  } catch (e) { logErr(e); toast('Sichern fehlgeschlagen'); }
+}
+function cmpStart() {
+  const i = P.i, s_ = sndOf(i); const oR = s_ && originRec(s_); if (!s_ || !soundEdited(s_) || !oR || oR.engine !== 'bm') { dispStop(); dispSet('COMP'); lcdShow('COMPARE', 'kein gespeicherter Stand zum Vergleichen'); setTimeout(() => { if (!P.cmpOn) dispPar(false); }, 700); return; }
+  toggleAB(i); P.cmpOn = !!(UI.ab && UI.ab.t === i && UI.ab.side === 'B'); bmSync(true); dispStop(); dispSet('COMP'); lcdShow('COMPARE', 'COMP · der gespeicherte Stand spielt'); P.dirty = true; paintSoon();
+}
+function cmpEnd() { const i = P.i; if (UI.ab && UI.ab.t === i && UI.ab.side === 'B') toggleAB(i); P.cmpOn = false; bmSync(true); shown(false); }
+/* ---------- the layout (§3.1, §3.2): zones in px, the drawn key 40 x 40 inside its 44 x 44 hit zone ---------- */
+const KEYS_A = ['voice', 'layer', 'split', 'init', 'write', 'global'], KEYS_B = ['osc1', 'osc2', 'noise', 'filter', 'lfo1', 'lfo2', 'fx', 'arp', 'pitch', 'mod', 'general'];
+const LAB = {octL: '', octR: '', voice: 'Voice', layer: 'Layer', split: 'Split', init: 'Init', write: 'Write', global: 'Global', parL: '', parR: '', seq: 'Seq/Env', osc1: 'Osc1', osc2: 'Osc2',
+  noise: 'Noise', filter: 'Filter', lfo1: 'LFO1', lfo2: 'LFO2', fx: 'FX', arp: 'Arp', pitch: 'Pitch', mod: 'Mod', general: 'General', compare: 'Compare', vol: 'Vol', value: 'Value'};
+const MASKS = [7, 8, 15, 28, 31, 47, 56, 63, 72, 79, 95, 120];
+const Z = 44;
+let TOP = 11, LBL = 12;
+function layout(W, H, land) {
+  // tight (P3, L2): the print strips 10 / 11 px so that nothing is cut; 2 px edge at least
+  TOP = 11; LBL = 12; let vt = false; const nd = () => (land ? 2 * (TOP + Z + LBL) : 2 * TOP + 4 * (Z + LBL));
+  if (H < nd() + 4) { TOP = 10; LBL = 11; } if (H < nd() + 3) { TOP = 9; LBL = 10; vt = true; }   // very tight (L1 with the safe area): 8.5 px print
+  const z = {}, put = (id, x, y, w, h, kind) => { z[id] = {id, x: Math.round(x), y: Math.round(y), w, h, kind}; };
+  const extra = {lines: [], texts: [], ov: null};
+  if (land) {
+    const cols = 14, wc = c => (c === 12 ? 56 : Z), ovW = W >= 720 && W - 13 * Z - 56 - 13 * 2 >= 4 * 19 ? Math.min(132, W - 13 * Z - 56 - 13 * 2) : 0;
+    const rest = W - 13 * Z - 56 - (ovW ? ovW + 8 : 0), g = Math.max(0, Math.min(8, Math.floor(rest / 14)));
+    const tot = 13 * Z + 56 + 13 * g + (ovW ? ovW + Math.max(8, g) : 0), x0 = Math.max(0, Math.floor((W - tot) / 2));
+    const cx = []; let x = x0; for (let c = 0; c < cols; c++) { cx.push(x); x += wc(c) + g; }
+    const need = TOP + Z + LBL + TOP + Z + LBL, gy = Math.max(0, Math.min(10, Math.floor((H - need - 4) / 3))), y0 = Math.max(1, Math.floor((H - need - 2 * gy) / 2));
+    const yA = y0 + TOP, yB = yA + Z + LBL + gy + TOP;
+    put('vol', cx[0], yA, Z, Z, 'knob'); put('octL', cx[1], yA, Z, Z, 'key'); put('octR', cx[2], yA, Z, Z, 'key');
+    KEYS_A.forEach((k, j) => put(k, cx[3 + j], yA, Z, Z, 'key'));
+    put('disp', cx[9], yA, cx[11] + Z - cx[9], Z, 'disp'); put('parL', cx[12] + 6, yA, Z, Z, 'key'); put('parR', cx[13], yA, Z, Z, 'key');
+    put('seq', cx[0], yB, Z, Z, 'key'); KEYS_B.forEach((k, j) => put(k, cx[1 + j], yB, Z, Z, 'key')); put('value', cx[12], yB, 56, Z, 'knob'); put('compare', cx[13], yB, Z, Z, 'key');
+    if (ovW) extra.ov = {x: cx[13] + Z + Math.max(8, g), y: yA - TOP, w: ovW, h: yB + Z + LBL - (yA - TOP), rows: ovW >= 6 * 20 ? 2 : 3, per: ovW >= 6 * 20 ? 6 : 4};
+    extra.H = need + 2 * gy; extra.yA = yA; extra.yB = yB;
+  } else {
+    const g = Math.max(0, Math.min(8, Math.floor((W - 7 * Z) / 6))), x0 = Math.max(0, Math.floor((W - 7 * Z - 6 * g) / 2)), cx = c => x0 + c * (Z + g);
+    const ovH = W >= 312 + 2 && H >= 4 * (Z + LBL) + 2 * TOP + 40 ? 38 : 0;
+    const need = 2 * TOP + 4 * (Z + LBL) + ovH, gy = Math.max(0, Math.min(6, Math.floor((H - need - 4) / 5))), y0 = Math.max(2, Math.min(6, Math.floor((H - need - 4 * gy) / 2)));   // portrait: from the top, the plate as tall as the panel
+    const y1 = y0 + TOP, y2 = y1 + Z + LBL + gy, y3 = y2 + Z + LBL + gy + TOP, y4 = y3 + Z + LBL + gy;
+    put('vol', cx(0), y1, Z, Z, 'knob'); put('octL', cx(1), y1, Z, Z, 'key'); put('octR', cx(2), y1, Z, Z, 'key'); put('voice', cx(3), y1, Z, Z, 'key'); put('layer', cx(4), y1, Z, Z, 'key'); put('split', cx(5), y1, Z, Z, 'key');
+    put('init', cx(0), y2, Z, Z, 'key'); put('write', cx(1), y2, Z, Z, 'key'); put('global', cx(2), y2, Z, Z, 'key'); put('disp', cx(3), y2, 2 * Z + g, Z, 'disp'); put('parL', cx(5), y2, Z, Z, 'key'); put('parR', cx(6), y2, Z, Z, 'key');
+    ['seq', 'osc1', 'osc2', 'noise', 'filter', 'lfo1', 'lfo2'].forEach((k, j) => put(k, cx(j), y3, Z, Z, 'key'));
+    ['fx', 'arp', 'pitch', 'mod', 'general'].forEach((k, j) => put(k, cx(j), y4, Z, Z, 'key')); put('value', cx(5), y4, Z, Z, 'knob'); put('compare', cx(6), y4, Z, Z, 'key');
+    if (ovH) extra.ov = {x: Math.round((W - 312) / 2), y: y4 + Z + LBL + gy, w: 312, h: ovH, rows: 1, per: 12};
+    extra.H = Math.min(H, 2 * y0 + need + 4 * gy + (ovH ? gy : 0)); extra.yA = y1; extra.yB = y3;
+  }
+  return {z, extra, W, H, land, vt};
+}
+/* ---------- drawing ---------- */
+const SVGNS = 'http://www.w3.org/2000/svg';
+const svgEl = (t, a) => { const e = document.createElementNS(SVGNS, t); for (const k in a || {}) e.setAttribute(k, a[k]); return e; };
+// one mask period after the mask rule §1.2 (64 points), for the overview symbols
+function maskPts(M, n) {
+  const b = M ? 32 - Math.clz32(M) : 0, S_ = 1 << b, out = [];
+  for (let j = 0; j <= n; j++) { const s = (j / n) * S_ * .99999, p = Math.floor(s), f = s - p, m = p & M; out.push(m < 32 ? Math.sin(2 * Math.PI * (m + f) / 32) : 0); }
+  return out;
+}
+function segDigit(svg, x0, w, h) {   // a 7-segment digit with slanted look (own drawing)
+  const t = Math.max(2, w * .16), g = {}, P_ = (pts, k) => { const e = svgEl('polygon', {points: pts.map(p => (x0 + p[0] - p[1] * .08).toFixed(1) + ',' + p[1].toFixed(1)).join(' '), class: 'sg'}); svg.appendChild(e); g[k] = e; };
+  const L = t * .5, y1 = h * .08, ym = h / 2, y2 = h * .92, x1 = w * .12, x2 = w * .88;
+  const H_ = (y, k) => P_([[x1 + L, y], [x1 + L + t * .6, y - t / 2], [x2 - L - t * .6, y - t / 2], [x2 - L, y], [x2 - L - t * .6, y + t / 2], [x1 + L + t * .6, y + t / 2]], k);
+  const V_ = (x, ya, yb, k) => P_([[x, ya + L], [x + t / 2, ya + L + t * .6], [x + t / 2, yb - L - t * .6], [x, yb - L], [x - t / 2, yb - L - t * .6], [x - t / 2, ya + L + t * .6]], k);
+  H_(y1, 'a'); V_(x2, y1, ym, 'b'); V_(x2, ym, y2, 'c'); H_(y2, 'd'); V_(x1, ym, y2, 'e'); V_(x1, y1, ym, 'f'); H_(ym, 'g');
+  return g;
+}
+function drawRec(c) { const s = svgEl('svg', {viewBox: '0 0 10 10', class: 'ic'}); s.appendChild(svgEl('circle', {cx: 5, cy: 5, r: 3.6})); c.appendChild(s); }
+function drawPlay(c) { const s = svgEl('svg', {viewBox: '0 0 22 10', class: 'ic w'}); s.appendChild(svgEl('polygon', {points: '1,1 8.5,5 1,9'})); s.appendChild(svgEl('line', {x1: 12.5, y1: 9.5, x2: 14.5, y2: .5})); s.appendChild(svgEl('rect', {x: 15.5, y: 1.5, width: 6.5, height: 7})); c.appendChild(s); }
+function build(pg, i) {
+  if (P.i !== i) { P.i = i; P.mode = 'voice'; P.pi = 0; P.multi = null; P.ab = 'a'; P.cmpOn = false; P.env = false; }
+  if (P.cmpOn && !(UI.ab && UI.ab.t === i && UI.ab.side === 'B')) P.cmpOn = false;
+  const s_ = sndOf(i); if (!s_ || !s_.p.bm) return;
+  css(); P.wName = null; P.pend = null;
+  pg.classList.add('bmpg'); pg.innerHTML = '';
+  const fr = el('div', 'bmfr'); pg.appendChild(fr);
+  const r = fr.getBoundingClientRect(), W = Math.floor(r.width), H = Math.floor(r.height);
+  if (!W || !H) { requestAnimationFrame(() => { if (live(pg, i)) build(pg, i); }); return; }
+  const land = window.innerWidth > window.innerHeight, Ly = layout(W, H, land);
+  const plate = el('div', 'bmplate' + (land ? ' q' : ' h') + (Ly.vt ? ' vt' : '')); fr.appendChild(plate);
+  const U = P.el = {fr, plate, pg, W, H, land, Ly, keys: {}, disp: null, knobs: {}, leds: {}};
+  // printed lines and small labels (one SVG)
+  const ln = svgEl('svg', {class: 'bmln', width: W, height: H, viewBox: '0 0 ' + W + ' ' + H}); plate.appendChild(ln);
+  const z = Ly.z, cx = q => q.x + q.w / 2, txt = (x, y, s, a, cls) => { const t = svgEl('text', {x, y, 'text-anchor': a || 'middle', class: cls || 'lt'}); t.textContent = s; ln.appendChild(t); return t; };
+  const line = (x1, y1, x2, y2) => ln.appendChild(svgEl('line', {x1, y1, x2, y2}));
+  for (const id in z) { const q = z[id]; if (LAB[id]) txt(cx(q), q.y + q.h + LBL - 2.5, LAB[id]); }
+  txt((cx(z.octL) + cx(z.octR)) / 2, z.octL.y + Z + LBL - 2.5, 'Octave'); txt((cx(z.parL) + cx(z.parR)) / 2, z.parL.y + Z + LBL - 2.5, 'Param');
+  // Seq ── ●Rec ── ▶/■ above the Octave keys, the line down to the Seq/Env key; Env ── over Osc1 … Filter (§3.1)
+  const ys = Math.max(8.5, z.octL.y - 2.5), ye = z.osc1.y - 2.5, xs = z.vol.x + 2;
+  txt(xs, ys, 'Seq', 'start', 'lt ls'); line(xs + 17, ys - 3, z.octL.x + 6, ys - 3);
+  const rc = el('div', 'bmic'); rc.style.cssText = `left:${cx(z.octL) - 14}px;top:${ys - 8}px`; drawRec(rc); const rt = el('span', '', 'Rec'); rc.appendChild(rt); plate.appendChild(rc);
+  const pc = el('div', 'bmic'); pc.style.cssText = `left:${cx(z.octR) - 11}px;top:${ys - 8}px`; drawPlay(pc); plate.appendChild(pc);
+  txt(z.osc1.x + 1, ye, 'Env', 'end', 'lt ls'); line(z.osc1.x + 3, ye - 3, z.filter.x + z.filter.w - 4, ye - 3);   // Env right before Osc1: the label of the key above (Vol / Init) keeps its room
+  for (const k of ENVK) line(cx(z[k]), ye - 3, cx(z[k]), ye + 1.5);
+  if (land) { line(xs - 1.5, ys + 1, xs - 1.5, z.seq.y + 4); line(xs - 1.5, z.seq.y + 4, z.seq.x + 3, z.seq.y + 4); }
+  // the zones
+  for (const id in z) {
+    const q = z[id], b = el('div', 'bmz bm-' + q.kind); b.style.cssText = `left:${q.x}px;top:${q.y}px;width:${q.w}px;height:${q.h}px`; b.dataset.k = id; plate.appendChild(b);
+    if (q.kind === 'key') { b.innerHTML = '<i class="bk"><i class="bf"></i></i>'; b.setAttribute('role', 'button'); b.setAttribute('aria-label', LAB[id] || ({octL: 'Octave ab · Rec', octR: 'Octave auf · Start/Stopp', parL: 'Param zurück', parR: 'Param vor'})[id]); U.keys[id] = b; keyWire(b, id); }
+    else if (q.kind === 'knob') { const d = Math.min(q.w, q.h) - 4; b.innerHTML = `<i class="kn" style="width:${d}px;height:${d}px"><i class="kp"></i></i>`; b.setAttribute('role', 'slider'); b.setAttribute('aria-label', LAB[id]); U.knobs[id] = b; knobWire(b, id); }
+    else if (q.kind === 'disp') {
+      const sv = svgEl('svg', {class: 'bmseg', width: q.w - 6, height: q.h - 6, viewBox: '0 0 ' + (q.w - 6) + ' ' + (q.h - 6)}), dw = (q.w - 14) / 4; U.disp = [];
+      for (let j = 0; j < 4; j++) U.disp.push(segDigit(sv, 4 + j * dw, dw, q.h - 6));
+      b.appendChild(sv); b.setAttribute('role', 'status'); b.setAttribute('aria-label', 'Anzeige');
+    }
+  }
+  // the mask overview (own line drawing from the rule §1.2)
+  const ov = Ly.extra.ov;
+  if (ov) {
+    const o = svgEl('svg', {class: 'bmov', width: ov.w, height: ov.h, viewBox: '0 0 ' + ov.w + ' ' + ov.h}), per = ov.per, cw = ov.w / per, rh = ov.h / ov.rows;
+    o.style.cssText = `left:${ov.x}px;top:${ov.y}px`;
+    MASKS.forEach((m, k) => {
+      const r_ = Math.floor(k / per), c = k % per, x0 = c * cw + 2, y0 = r_ * rh, wv = cw - 4, hv = rh - 13, pts = maskPts(m, 48);
+      o.appendChild(svgEl('polyline', {points: pts.map((y, j) => (x0 + j / 48 * wv).toFixed(1) + ',' + (y0 + 2 + (1 - y) / 2 * hv).toFixed(1)).join(' ')}));
+      const t = svgEl('text', {x: x0 + wv / 2, y: y0 + rh - 2.5, 'text-anchor': 'middle'}); t.textContent = String(m).padStart(3, '0'); o.appendChild(t);
+    });
+    plate.appendChild(o);
+  }
+  plate.style.bottom = 'auto'; plate.style.height = (land ? H : Ly.extra.H) + 'px';
+  dispSet(P.disp.txt || '----'); P.disp.q = null; P.dirty = true; paint();
+  shown(!P.seen ? false : false);
+  if (typeof ResizeObserver !== 'undefined') { const ro = new ResizeObserver(() => { if (!fr.isConnected) { ro.disconnect(); return; } const r2 = fr.getBoundingClientRect(); if (Math.floor(r2.width) === U.W && Math.floor(r2.height) === U.H) return;
+    clearTimeout(U.roT); U.roT = setTimeout(() => { if (live(pg, i) && P.el === U) build(pg, i); }, 60); }); ro.observe(fr); U.ro = ro; }
+}
+const live = (pg, i) => pg.isConnected && R.editor === 'synth' && R.selT === i && S.tracks[i] && S.tracks[i].sound.engine === 'bm';
+/* ---------- LEDs (§3.1): the mode key lit; Layer/Split blink when active but not shown; Arp blinks with a running arp; Seq/Env and
+   Compare as switches; multi edit lights every edited key ---------- */
+let rafP = 0;
+function paintSoon() { if (!rafP) rafP = requestAnimationFrame(() => { rafP = 0; paint(); }); }
+function ledState() {
+  const bm = bmOf(), o = {}; if (!bm) return o;
+  for (const k of MODEK) o[k] = 0;
+  if (P.multi) for (const k of P.multi) o[k] = 1; else if (P.mode) o[P.mode] = 1;
+  if (bm.ly.md === 'lay' && !(P.mode === 'layer')) o.layer = curAB() === 'b' ? 1 : 2;
+  if (bm.ly.md === 'spl' && !(P.mode === 'split')) o.split = curAB() === 'b' ? 1 : 2;
+  const pa = progOf(bm, 'a'), held = Object.values(R.inputs).some(x => x && x.track === P.i && x.route === 'play');
+  if (pa.ar.t !== 'off' && (held || pa.ar.ho)) o.arp = o.arp === 1 ? 1 : 2;
+  o.seq = P.env ? 1 : 0; o.compare = P.cmpOn ? 1 : 0;
+  const tr = S.tracks[P.i], oc = tr ? tr.kbOct || 4 : 4;
+  o.octL = o.octR = 0; void oc;   // §3.1 names no LEDs for the Octave keys
+  o.parL = o.parR = 0;
+  return o;
+}
+function paint() {
+  const U = P.el; if (!U || !U.fr.isConnected) return;
+  const L = ledState(), bl = Date.now() % 500 < 250; let blink = false;
+  for (const k in U.keys) { const v = L[k] || 0; if (v === 2) blink = true; const on = v === 1 || (v === 2 && bl); const b = U.keys[k]; if (b._on !== on) { b._on = on; b.classList.toggle('on', on); } }
+  const s_ = sndOf(P.i), vol = s_ && s_.fx ? (s_.fx.vol == null ? .8 : s_.fx.vol) : .8, kv = U.knobs.vol;
+  if (kv) { const a = (-135 + 270 * vol).toFixed(1); if (kv._a !== a) { kv._a = a; kv.firstChild.style.transform = 'rotate(' + a + 'deg)'; } }
+  const kw = U.knobs.value; if (kw) { const a = ((P.valRot || 0) % 360).toFixed(1); if (kw._a !== a) { kw._a = a; kw.firstChild.style.transform = 'rotate(' + a + 'deg)'; } }
+  clearTimeout(P.blinkT); P.blinkT = 0;
+  if (blink) P.blinkT = setTimeout(paintSoon, 250 - (Date.now() % 250) + 2);   // blinking LEDs and the transport/rec LEDs under Seq
+}
+/* ---------- key gestures: pointerdown acts at once; held keys are known for multi edit; Arp 1 s; Split held = split point ---------- */
+function keyWire(b, id) {
+  guardTouch(b);
+  on(b, 'pointerdown', e => {
+    if (e.button > 0) return; e.preventDefault(); e.stopPropagation();
+    try { b.setPointerCapture(e.pointerId); } catch (_) {}
+    if (P.held.has(id)) return;
+    const h = {pid: e.pointerId, t: setTimeout(() => { h.t = 0; keyHold(id); }, 1000)}; P.held.set(id, h);
+    b.classList.add('dn');
+    try { keyDown(id, e); } catch (err) { logErr(err); }
+    if (id === 'split') splitArm(true);
+  });
+  const up = e => { const h = P.held.get(id); if (!h || h.pid !== e.pointerId) return; clearTimeout(h.t); P.held.delete(id); b.classList.remove('dn'); keyUp(id); };
+  on(b, 'pointerup', up); on(b, 'pointercancel', up); on(b, 'lostpointercapture', up);
+  on(b, 'contextmenu', e => e.preventDefault());
+}
+/* ---------- knobs: Value turns the current parameter (circle or vertical drag; slow 1 step per 8 px, fast up to × 8; sideways away =
+   fine; double tap = INIT value); Vol = the track's level. One undo per gesture ---------- */
+function knobWire(b, id) {
+  guardTouch(b); let g = null, lastTap = 0;
+  on(b, 'pointerdown', e => {
+    if (e.button > 0 || g) return; e.preventDefault(); e.stopPropagation(); try { b.setPointerCapture(e.pointerId); } catch (_) {}
+    const r = b.getBoundingClientRect(), d = id === 'value' ? curPar() : null;
+    g = {pid: e.pointerId, x0: e.clientX, y0: e.clientY, lx: e.clientX, ly: e.clientY, lt: e.timeStamp, cx: r.left + r.width / 2, cy: r.top + r.height / 2, acc: 0, moved: false, circ: false, ang: null, arc: 0, d,
+      before: soundSnapshot(P.i), vol0: null, fine: false};
+    g.ang = Math.atan2(e.clientY - g.cy, e.clientX - g.cx); g.dist = Math.hypot(e.clientY - g.cy, e.clientX - g.cx);
+    b.classList.add('dn'); gestBegin(e.pointerId, () => knobEnd(null));
+    if (id === 'vol') { const s_ = sndOf(P.i); g.vol0 = s_.fx.vol == null ? .8 : s_.fx.vol; volShow(g.vol0); }
+    else if (d && !(d.t === 'place' || d.t === 'slot')) { dispStop(); dispSet(fmtV(d, valOf(d))); lcdPar(); }
+  });
+  on(b, 'pointermove', e => {
+    if (!g || e.pointerId !== g.pid) return;
+    const dx = e.clientX - g.x0, dy = e.clientY - g.y0;
+    if (!g.moved && Math.hypot(dx, dy) < 4) return; g.moved = true;
+    // circling: once the finger has gone round more than 60° away from the centre, the arc length counts (clockwise = up)
+    const ang = Math.atan2(e.clientY - g.cy, e.clientX - g.cx), dist = Math.hypot(e.clientX - g.cx, e.clientY - g.cy);
+    let da = ang - g.ang; if (da > Math.PI) da -= 2 * Math.PI; if (da < -Math.PI) da += 2 * Math.PI; g.ang = ang;
+    const far = dist > 16 && g.dist > 16; g.dist = dist; if (!far) da = 0;
+    g.arc += da; if (!g.circ && Math.abs(g.arc) > Math.PI / 3) g.circ = true;
+    let px = g.circ ? da * dist : g.ly - e.clientY;
+    const dt = Math.max(1, e.timeStamp - g.lt), sp = Math.abs(px) / dt;   // px per ms
+    g.fine = !g.circ && Math.abs(dx) > 40;
+    const acc = g.fine ? .25 : Math.min(8, Math.max(1, 1 + (sp - .25) * 7));
+    g.lx = e.clientX; g.ly = e.clientY; g.lt = e.timeStamp;
+    P.valRot = (P.valRot || 0) + px * 1.5;
+    if (id === 'vol') { const s_ = sndOf(P.i); let v = clamp((s_.fx.vol == null ? .8 : s_.fx.vol) + px / 8 * acc / 100, 0, 1); v = Math.round(v * 100) / 100; if (v !== s_.fx.vol) { s_.fx.vol = v; applyTrackParams(P.i, false); UI.sndVer++; UI.dirty.strip = UI.dirty.edHead = true; markDirty(); } volShow(v); paintSoon(); return; }
+    g.acc += px / 8 * acc;
+    const n = g.acc > 0 ? Math.floor(g.acc) : Math.ceil(g.acc);
+    if (n) { g.acc -= n; const d = curPar(); if (d && stepVal(d, n)) { const v = valOf(d), t = fmtV(d, v); dispStop(); dispSet(t.length > 4 ? short4(t) : t); lcdPar(); haptic('tick'); } }
+    paintSoon();
+  });
+  const knobEnd = e => {
+    if (!g || (e && e.pointerId !== g.pid)) return; const G = g; g = null; b.classList.remove('dn'); if (e && GEST.has(e.pointerId)) gestEnd(e.pointerId);
+    const i = P.i;
+    if (!G.moved && e && e.type === 'pointerup') {   // a tap; two taps within 300 ms = INIT value
+      const now = performance.now();
+      if (now - lastTap < 300 && id === 'value') { lastTap = 0; const d = curPar(), v0 = initVal(d); if (v0 != null) { setVal(d, v0); commitSound(i, G.before, NM() + ' · ' + d.n + ' Init'); shown(false); } return; }
+      lastTap = now; return;
+    }
+    lastTap = 0;
+    if (id === 'vol') { commitSound(i, G.before, 'Lautstärke'); setTimeout(() => { if (!g) dispPar(false); }, 800); return; }
+    const d = G.d; commitSound(i, G.before, NM() + ' · ' + (d ? (d.t === 'place' ? 'Klang' : d.n) : 'Value'));
+    if (d && d.t !== 'place' && d.t !== 'slot') { const t = fmtV(d, valOf(d)); if (t.length > 4) dispRun(t, () => dispSet(short4(t))); }
+    else shown(false);
+  };
+  on(b, 'pointerup', knobEnd); on(b, 'pointercancel', knobEnd); on(b, 'lostpointercapture', knobEnd);
+}
+function volShow(v) { dispStop(); dispSet(String(Math.round(v * 100))); lcdShow('VOL', Math.round(v * 100) + ' · Spur-Lautstärke ' + Math.round(v * 100) + ' %'); }
+/* ---------- the wheels left of the keys (§3.4, own copy of the MK1 part: BEND springs back, MOD stays) ---------- */
+function wheels(show) {
+  const A = EL.kbArea; let wh = document.getElementById('bmWh'); css();
+  if (!show) { if (wh) wh.hidden = true; A.classList.remove('bmw'); return; }
+  if (!wh) {
+    wh = el('div', '', '<div class="bmwheel" data-w="bend" role="slider" aria-label="BEND-Rad"><span class="lg">BEND</span><div class="mwell"><div class="mwhl"><i class="mrid"></i></div><i class="mmid"></i></div></div>' +
+      '<div class="bmwheel" data-w="mod" role="slider" aria-label="MOD-Rad"><span class="lg">MOD</span><div class="mwell"><div class="mwhl"><i class="mrid"></i></div></div></div>');
+    wh.id = 'bmWh'; A.insertBefore(wh, A.firstChild); wh.querySelectorAll('.bmwheel').forEach(wheelGesture);
+  }
+  wh.hidden = false; A.classList.add('bmw'); wheelPaint();
+}
+function wheelPaint() {
+  const wh = document.getElementById('bmWh'); if (!wh || wh.hidden) return; const W = bmWheelOf(R.selT);
+  for (const e of wh.querySelectorAll('.bmwheel')) { const w = e.dataset.w, v = w === 'bend' ? W.bend : W.mod, n = w === 'bend' ? (v + 1) / 2 : v;
+    e.style.setProperty('--n', n.toFixed(4)); e.setAttribute('aria-valuenow', String(Math.round(w === 'bend' ? v * 100 : v * 100))); }
+}
+function wheelGesture(e) {
+  guardTouch(e); let g = null; const w = e.dataset.w;
+  on(e, 'pointerdown', ev => { if (ev.button > 0 || g) return; ev.preventDefault(); ev.stopPropagation(); try { e.setPointerCapture(ev.pointerId); } catch (_) {}
+    const r = e.querySelector('.mwell').getBoundingClientRect(), W = bmWheelOf(R.selT); g = {id: ev.pointerId, y0: ev.clientY, v0: w === 'bend' ? W.bend : W.mod, span: Math.max(20, r.height - 8)};
+    e.classList.add('press'); cancelAnimationFrame(e._ra); });
+  on(e, 'pointermove', ev => { if (!g || ev.pointerId !== g.id) return;
+    const dy = (g.y0 - ev.clientY) / g.span; let v = w === 'bend' ? clamp(g.v0 + dy * 2, -1, 1) : clamp(g.v0 + dy, 0, 1);
+    if (w === 'bend' && Math.abs(v) < .02) v = 0;
+    v = w === 'bend' ? Math.round(v * 4096) / 4096 : Math.round(v * 1024) / 1024;
+    bmCtl(R.selT, w === 'bend' ? 'bd' : 'mw', v); wheelPaint();
+    if (ED.lcd && R.editor === 'synth') lcdShow(w === 'bend' ? 'BEND-RAD' : 'MOD-RAD', w === 'bend' ? dc(v, 2) : Math.round(v * 100) + ' %'); });
+  const end = ev => { if (!g || ev.pointerId !== g.id) return; g = null; e.classList.remove('press');
+    if (w === 'bend') { const i = R.selT, v0 = bmWheelOf(i).bend, t0 = performance.now();
+      const st = () => { const x = Math.min(1, (performance.now() - t0) / 80), v = Math.round(v0 * (1 - x) * 4096) / 4096; bmCtl(i, 'bd', x >= 1 ? 0 : v); wheelPaint(); if (x < 1) e._ra = requestAnimationFrame(st); }; st(); } };
+  on(e, 'pointerup', end); on(e, 'pointercancel', end);
+}
+/* ---------- pressure (§3.4 [Z F3]): a finger on a held key pushes up: 6 px dead zone, 0 → 1 over 60 px, back down lowers; AT CURVE shapes
+   it; channel pressure = the highest of all held keys; sideways > 20 px = the keyboard's old behaviour; release = 0 for this key ---------- */
+function atShape(x) { const bm = bmOf2(); const ac = bm ? bm.gl.ac : 4; if (ac === 0) return 0; if (ac === 6) return Math.min(1, 3 * x); const gm = [2, 1.6, 1.3, 1, .8][clamp(ac, 1, 5) - 1]; return Math.pow(x, gm); }
+const bmOf2 = () => { const s_ = sndOf(R.selT); return s_ && s_.engine === 'bm' && s_.p.bm ? s_.p.bm : null; };
+function atSend() { let m = 0; for (const a of P.at.values()) if (a.on) m = Math.max(m, a.v); m = Math.round(m * 1024) / 1024; if (m !== P.atLast) { P.atLast = m; bmCtl(R.selT, 'at', m); } }
+function atBar(a) {
+  let b = a.bar; if (!b) { b = a.bar = el('i', 'bmat'); document.body.appendChild(b); }
+  const r = KB.rect || EL.kb.getBoundingClientRect(), h = Math.round(a.v * (r.height - 8));
+  b.style.cssText = `left:${Math.round(a.x0 - 3)}px;top:${Math.round(r.bottom - 4 - h)}px;height:${h}px`; b.hidden = !(a.on && h > 0);
+}
+function atDown(e, note) { P.at.set(e.pointerId, {x0: e.clientX, y0: e.clientY, raw: 0, v: 0, on: true, note, bar: null}); }
+function atMove(e) {
+  const a = P.at.get(e.pointerId); if (!a || !a.on) return false;
+  if (Math.abs(e.clientX - a.x0) > 20) { a.on = false; a.v = 0; atBar(a); atSend(); return false; }
+  const up = a.y0 - e.clientY; a.raw = clamp((up - 6) / 60, 0, 1); a.v = atShape(a.raw); atBar(a); atSend(); return true;
+}
+function atUp(e) { const a = P.at.get(e.pointerId); if (!a) return; P.at.delete(e.pointerId); if (a.bar) a.bar.remove(); atSend(); }
+/* ---------- CSS (own drawing: white lacquered metal, black print and lines, keys light with a warm white lit face, black display with red
+   segments, dark round knobs) ---------- */
+function css() {
+  if (document.getElementById('bmcss')) return;
+  const s = document.createElement('style'); s.id = 'bmcss';
+  s.textContent = `
+:root{--bm-plate:#ecebe6;--bm-plate2:#dddcd6;--bm-ink:#141414;--bm-key:#f6f5f1;--bm-key2:#d8d6cf;--bm-lit:#fff6d8;--bm-glow:#ffd98a;--bm-disp:#0b0b0b;--bm-seg:#ff2a1a;--bm-seg0:#2a0d0b;--bm-knob:#1b1b1d}
+#synthSheet.bmp .pg.bmpg{position:relative;padding:0;overflow:hidden;display:block;min-height:0}
+#synthSheet.bmp .sh-body{overflow:hidden}
+.bmfr{position:absolute;inset:0;overflow:hidden;contain:strict;touch-action:none}
+.bmplate{position:absolute;inset:0;background:linear-gradient(180deg,var(--bm-plate),var(--bm-plate2));border-radius:8px;box-shadow:inset 0 1px 0 #fff,inset 0 -1px 0 #b9b7b0;contain:layout paint}
+.bmln{position:absolute;left:0;top:0;pointer-events:none;overflow:visible}
+.bmln line{stroke:var(--bm-ink);stroke-width:1}
+.bmln text,.bmov text{font:700 9.5px var(--font,'Barlow Semi Condensed',system-ui,sans-serif);fill:var(--bm-ink);letter-spacing:.1px}
+.bmln text.ls{font-size:9px}
+.bmplate.vt .bmln text{font-size:8.5px}.bmplate.vt .bmic{font-size:8.5px}
+.bmic{position:absolute;display:flex;align-items:center;gap:2px;height:10px;pointer-events:none;font:700 9px var(--font,'Barlow Semi Condensed',system-ui,sans-serif);color:var(--bm-ink)}
+.bmic .ic{width:8px;height:8px;fill:var(--bm-ink);stroke:var(--bm-ink);stroke-width:1.2}.bmic .ic.w{width:20px}
+.bmz{position:absolute;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.bmz .bk{position:absolute;left:2px;top:2px;width:40px;height:40px;box-sizing:border-box;border-radius:5px;background:linear-gradient(180deg,var(--bm-key),var(--bm-key2));border:1px solid #9d9b94;box-shadow:0 1px 1px rgba(0,0,0,.35),inset 0 1px 0 #fff}
+.bmz .bf{position:absolute;left:7px;top:7px;right:7px;bottom:7px;border-radius:3px;background:#e9e7e0;box-shadow:inset 0 1px 2px rgba(0,0,0,.18)}
+.bmz.on .bf{background:radial-gradient(circle at 50% 45%,#fffdf4,var(--bm-lit) 55%,var(--bm-glow));box-shadow:0 0 6px 1px rgba(255,214,120,.85),inset 0 0 3px rgba(255,255,255,.9)}
+.bmz.dn .bk{transform:translateY(1px);box-shadow:0 0 0 rgba(0,0,0,.3),inset 0 1px 2px rgba(0,0,0,.2)}
+.bmz.bm-knob{display:flex;align-items:center;justify-content:center}
+.bmz .kn{position:relative;border-radius:50%;background:radial-gradient(circle at 40% 35%,#4a4a4e,var(--bm-knob) 60%,#050506);box-shadow:0 2px 3px rgba(0,0,0,.45),0 0 0 2px #c9c7c0}
+.bmz .kp{position:absolute;left:50%;top:3px;width:2px;height:32%;margin-left:-1px;background:#f4f2ea;border-radius:1px}
+.bmz .kn{transform-origin:50% 50%}
+.bmz.bm-disp{background:var(--bm-disp);border-radius:4px;box-shadow:inset 0 0 0 2px #2b2b2b,inset 0 2px 6px #000}
+.bmseg{position:absolute;left:3px;top:3px}
+.bmseg .sg{fill:var(--bm-seg0)}.bmseg .sg.on{fill:var(--bm-seg);filter:drop-shadow(0 0 2px rgba(255,40,20,.7))}
+.bmov{position:absolute;pointer-events:none}.bmov polyline{fill:none;stroke:var(--bm-ink);stroke-width:1.1}.bmov text{font-size:8.5px}
+#kbArea.bmw{flex-direction:row;gap:4px}
+#bmWh{flex:none;display:flex;gap:4px;width:92px;min-height:0}#bmWh[hidden]{display:none}
+.bmwheel{position:relative;flex:1 1 0;min-width:44px;display:flex;flex-direction:column;align-items:center;touch-action:none;user-select:none;-webkit-user-select:none}
+.bmwheel .lg{font-size:9px;line-height:12px;font-weight:700;color:#d6d3cc}
+.bmwheel .mwell{position:relative;flex:1 1 auto;width:44px;border-radius:6px;background:linear-gradient(90deg,#b9b7b0,#efeee9 30%,#efeee9 70%,#b9b7b0);padding:4px 6px;box-sizing:border-box}
+.bmwheel .mwhl{position:relative;width:32px;height:100%;border-radius:4px;overflow:hidden;background:linear-gradient(90deg,#0d0d0e,#2a2b2e 45%,#2a2b2e 55%,#0d0d0e);box-shadow:inset 0 2px 4px #000}
+.bmwheel .mrid{position:absolute;inset:-40px 0;background:repeating-linear-gradient(0deg,rgba(255,255,255,.12) 0 2px,transparent 2px 7px);transform:translateY(calc((0.5 - var(--n, .5)) * 40px))}
+.bmwheel .mmid{position:absolute;left:2px;right:2px;top:50%;height:2px;margin-top:-1px;background:#ffb36b;opacity:.7}
+.bmwheel.press .mwhl{box-shadow:inset 0 2px 4px #000,0 0 0 1px #d9a441}
+.bmname{position:absolute;z-index:3;display:flex;align-items:center;gap:8px;padding:0 8px;box-sizing:border-box;background:var(--bm-plate);border:1px solid #9d9b94;border-radius:6px}
+.bmname b{font:700 13px var(--font,'Barlow Semi Condensed',system-ui,sans-serif);color:var(--bm-ink)}.bmname .tin{flex:1;min-width:0;height:40px;font-size:16px}
+.bmat{position:fixed;width:6px;border-radius:3px;background:#ff5a1f;box-shadow:0 0 4px rgba(255,90,31,.8);pointer-events:none;z-index:50}
+@media (max-width:330px) and (orientation:portrait){#synthSheet.bmp .pg.bmpg{margin-left:-3px;margin-right:-3px}}
+`;
+  document.head.appendChild(s);
+}
+/* ---------- test API (§5.3 bmPanel): mode, parameter, display text, LEDs, zones ---------- */
+function info() {
+  const d = curPar(), U = P.el, L = ledState(), z = {};
+  if (U) for (const id in U.Ly.z) { const q = U.Ly.z[id]; const b = id === 'disp' ? null : (U.keys[id] || U.knobs[id]); const r = b ? b.getBoundingClientRect() : null; z[id] = {x: q.x, y: q.y, w: q.w, h: q.h, kind: q.kind, rect: r ? [r.left, r.top, r.width, r.height] : null}; }
+  return {i: P.i, mode: P.mode, pi: P.pi, view: P.ab, param: d ? d.n : null, path: d ? d.k : null, value: d ? valOf(d) : null, params: pList().map(x => x.n), disp: P.disp.txt, env: P.env, multi: P.multi ? P.multi.slice() : null,
+    ab: curAB(), compare: P.cmpOn, leds: L, land: U ? U.land : null, W: U ? U.W : 0, H: U ? U.H : 0, zones: z, ov: U && U.Ly.extra.ov ? Object.assign({}, U.Ly.extra.ov) : null, at: P.atLast || 0, initSel: INITS[P.initSel], wSlot: P.wSlot};
+}
+window.BMUI = {build, wheels, wheelPaint, atDown, atMove, atUp, info, P, params, layout, maskPts, keyDown: (id) => keyDown(id), paint};
+})();
 </script>
 <script type="text/plain" id="sq-worklet-src">
 /* SYNQUENZER synth worklet module (spec v2 1.1 block 1, 1.4, 5.4): processors 'dirigent-analog' and 'dirigent-hall'.
@@ -18489,10 +19135,11 @@ const MK_LABEL = 'MS 2000';
 })(typeof window !== 'undefined' ? window : globalThis);
 </script>
 <script>
-/* ===== BM6 (Nachtrag 7 §0.3, §5.1): the always-loaded data part of the engine Bit Mask (internal id 'bm'):
+/* ===== BM6 (Nachtrag 7 §0.3, §5.1, Rev. 2): the always-loaded data part of the engine Bit Mask (internal id 'bm'):
    BM_NAME (the one writing of the display name), normBm (every value clamped and rounded to §1, ids checked against the lists,
-   missing = INIT, fixed key order, unknown keys kept), INIT variants, paths ('a.o1.m'), routes (K1 overview), the mask rule
-   (§1.2) for the native fallback. Loaded before SQStore. Processor, worker and editor are loaded on first need. ===== */
+   missing = INIT, fixed key order, 4 target slots per source, unknown keys kept), INIT variants, paths ('a.o1.m', 'a.l1.t.0.1'),
+   routes (K1 overview), the mask rule (§1.2, 9 bit) for the native fallback. Loaded before SQStore. Processor and panel are
+   loaded on first need (block sq-bm-src). ===== */
 const BM_NAME = 'Bit Mask';
 (function (G) {
   'use strict';
@@ -18507,28 +19154,32 @@ const BM_NAME = 'Bit Mask';
     wave: ['sin', 'sqr', 'up', 'down', 'saws', 'step', 'hsin', 'rand'],
     fx1: [].concat(seq('CH', 16), seq('DT', 16), seq('BC', 16), seq('RM', 16)),
     fx2: [].concat(seq('DL', 16), seq('RV', 16), seq('DT', 16)),
-    arp: ['off', '1oct', 'dbl', '2oct', 'alt', '3oct', 'pong', 'pon2', 'pon3', 'rnd', 'rnd2', 'rnd3', 'min', 'maj', 'sus2', 'sus4', '7th', 'min2', 'maj2', 'su22', 'su42', '7th2', '1o', '2o', '3o', '5th', '5th2'],
-    div: ['1/4', '1/8', '1/8T', '1/16', '1/16T', '1/32'],
+    arp: ['off', '1oct', 'dbl', '2oct', 'alt', '3oct', 'pong', 'pon2', 'pon3', 'rnd', 'rnd2', 'rnd3', 'min', 'maj', 'sus2', 'sus4', '7th', 'min2', 'maj2', 'su22', 'su42', '7th2',
+      '1o', '2o', '3o', '5th', '5th2'],
     mode: ['poly', 'mono', 'slur', 'mport', 'para', 'moly', 'pslur', 'mretrig', 'pretrig'],
     tm: ['et', 'arab', 'jmaj', 'jmin', 'mean', 'pyta'],
-    ly: ['ein', 'sch', 'spl']};
-  // ranges [lo, hi] (integers) or a list of ids; the key order is the order of INIT (§5.1)
+    ly: ['ein', 'lay', 'spl'],
+    vc: [1, 2, 3, 4, 5, 6], ac: [0, 1, 2, 3, 4, 5, 6]};
+  // a range: [lo, hi] (integers), {L: list} (ids), {S: [list, lo, hi]} (4 target slots [id, amount])
   const ER = {l: [0, 99], a: [0, 15], d: [0, 15], s: [0, 15], r: [0, 15], lp: [0, 1]};
-  const OR = {m: [0, 255], st: [-60, 60], tu: [-50, 50], ds: [-128, 128], dv: [1, 40], e: ER};
-  const LR = {am: [0, 99], sp: [0, 99], ds: L.lfo, w: L.wave, dl: [0, 15], dc: [0, 15]};
-  const PR = {o1: OR, o2: OR, n: {fr: [0, 99], e: ER}, f: {cu: [0, 99], re: [0, 99], md: L.fm, tk: [0, 100], e: ER}, pe: {ds: [-63, 63], dv: [1, 40], de: [-63, 63]},
-    l1: LR, l2: LR, mo: {vd: L.vel, va: [-99, 99], md: L.mw, ma: [-99, 99], ad: L.mw, aa: [-99, 99]},
-    fx: {t1: L.fx1, b1: [0, 100], t2: L.fx2, b2: [0, 100]}, ar: {t: L.arp, dv: L.div, ho: [0, 1], tr: [0, 1]},
-    g: {mo: L.mode, vo: [0, 99], st: [-48, 48], po: [0, 13], ps: [0, 15], ra: [0, 15], pb: [0, 12], tm: L.tm, rt: [0, 11]}};
-  const LYR = {md: L.ly, semi: [-48, 48], bal: [0, 100], pan: [0, 100], tune: [-50, 50], sp: [0, 127]};
+  const OR = {m: [0, 511], st: [-60, 60], tu: [-50, 50], ds: [-256, 256], dv: [1, 40], e: ER};
+  const LR = sl => ({sp: [0, 99], w: {L: L.wave}, dl: [0, 15], dc: [0, 15], t: {S: [sl, 0, 99]}});
+  const PR = {o1: OR, o2: OR, n: {fr: [0, 99], e: ER}, f: {cu: [0, 99], re: [0, 99], md: {L: L.fm}, tk: [0, 100], e: ER}, pe: {ds: [-63, 63], dv: [1, 40], de: [-63, 63]},
+    l1: LR(L.lfo), l2: LR(L.lfo), mo: {v: {S: [L.vel, -99, 99]}, mw: {S: [L.mw, -99, 99]}, at: {S: [L.mw, -99, 99]}},
+    fx: {t1: {L: L.fx1}, b1: [0, 100], t2: {L: L.fx2}, b2: [0, 100], sy: [0, 1]}, ar: {t: {L: L.arp}, sp: [20, 400], ho: [0, 1], tr: [0, 1]},
+    g: {mo: {L: L.mode}, vo: [0, 99], st: [-48, 48], po: [0, 13], ps: [0, 15], ra: [0, 15]}};
+  const LYR = {md: {L: L.ly}, semi: [-24, 24], bal: [0, 100], pan: [-99, 99], tune: [-50, 50], sp: [0, 127]};
+  const GLR = {tm: {L: L.tm}, st: [-24, 24], tn: [400, 470], vc: {L: L.vc}, ac: {L: L.ac}, pb: [0, 12], tf: [0, 1]};
   const env = l => ({l, a: 0, d: 0, s: 15, r: 2, lp: 0});
   const PROG0 = () => ({
     o1: {m: 7, st: 0, tu: 0, ds: 0, dv: 20, e: env(99)}, o2: {m: 7, st: 0, tu: 0, ds: 0, dv: 20, e: env(0)},
     n: {fr: 99, e: env(0)}, f: {cu: 99, re: 0, md: 'lp', tk: 0, e: env(0)}, pe: {ds: 0, dv: 20, de: 0},
-    l1: {am: 0, sp: 50, ds: 'freq', w: 'sin', dl: 0, dc: 0}, l2: {am: 0, sp: 50, ds: 'flt', w: 'sin', dl: 0, dc: 0},
-    mo: {vd: 'flt', va: 0, md: 'l1a', ma: 0, ad: 'flt', aa: 0}, fx: {t1: 'CH1', b1: 0, t2: 'RV1', b2: 0},
-    ar: {t: 'off', dv: '1/16', ho: 0, tr: 1}, g: {mo: 'poly', vo: 80, st: 0, po: 0, ps: 0, ra: 0, pb: 2, tm: 'et', rt: 0}});
+    l1: {sp: 50, w: 'sin', dl: 0, dc: 0, t: [['freq', 0], ['flt', 0], ['mask', 0], ['vol', 0]]},
+    l2: {sp: 50, w: 'sin', dl: 0, dc: 0, t: [['flt', 0], ['freq', 0], ['mask', 0], ['vol', 0]]},
+    mo: {v: [['flt', 0], ['feg', 0], ['vol', 0], ['mask', 0]], mw: [['l1a', 0], ['flt', 0], ['mask', 0], ['vol', 0]], at: [['flt', 0], ['l1a', 0], ['mask', 0], ['vol', 0]]},
+    fx: {t1: 'CH1', b1: 0, t2: 'RV1', b2: 0, sy: 0}, ar: {t: 'off', sp: 120, ho: 0, tr: 1}, g: {mo: 'poly', vo: 80, st: 0, po: 0, ps: 0, ra: 0}});
   const LY0 = () => ({md: 'ein', semi: 0, bal: 50, pan: 0, tune: 0, sp: 60});
+  const GL0 = () => ({tm: 'et', st: 0, tn: 440, vc: 4, ac: 4, pb: 2, tf: 1});
   // unknown keys stay (forward compatible): JSON values only, after the known keys
   function keep(src, dst) {
     for (const k of Object.keys(src)) {
@@ -18537,61 +19188,70 @@ const BM_NAME = 'Bit Mask';
     }
     return dst;
   }
+  const clampI = (r, x, d) => Math.round(Math.min(r[1], Math.max(r[0], num(x, d))));
+  function normVal(r, x, d) {
+    if (Array.isArray(r)) return clampI(r, x, d);
+    if (r.L) { if (r.L.includes(x)) return x; const n = num(x, NaN); return typeof r.L[0] === 'number' && r.L.includes(n) ? n : d; }
+    if (r.S) {   // 4 slots [id, amount]; a missing or wrong id keeps the INIT id of that place
+      const [ids, lo, hi] = r.S, a = Array.isArray(x) ? x : [];
+      return d.map((s0, k) => { const s = Array.isArray(a[k]) ? a[k] : []; return [ids.includes(s[0]) ? s[0] : s0[0], clampI([lo, hi], s[1], 0)]; });
+    }
+    return d;
+  }
   function normBlk(x, R, D) {
     x = isObj(x) ? x : {}; const o = {};
     for (const k of Object.keys(D)) {
       const r = R[k], d = D[k];
-      if (isObj(d)) o[k] = normBlk(x[k], r, d);
-      else if (typeof r[0] === 'string') o[k] = r.includes(x[k]) ? x[k] : d;
-      else o[k] = Math.round(Math.min(r[1], Math.max(r[0], num(x[k], d))));
+      o[k] = isObj(d) && !r.L && !r.S ? normBlk(x[k], r, d) : normVal(r, x[k], d);
     }
     return keep(x, o);
   }
   const normProg = x => normBlk(x, PR, PROG0());
   function normBm(x) {
     x = isObj(x) ? x : {};
-    const o = {v: Math.max(1, Math.round(num(x.v, 1))), ly: normBlk(x.ly, LYR, LY0()), a: normProg(x.a), b: isObj(x.b) ? normProg(x.b) : null};
+    const o = {v: Math.max(1, Math.round(num(x.v, 1))), ly: normBlk(x.ly, LYR, LY0()), gl: normBlk(x.gl, GLR, GL0()), a: normProg(x.a), b: isObj(x.b) ? normProg(x.b) : null};
     return keep(x, o);
   }
-  // INIT variants (§4): 1 OSZ (= INIT), 2 OSZ, ANSCHLAG; ZUFALL is the editor's (BM5)
+  // INIT variants (§4): 1OSC (= INIT), 2OSC, VEL; RAND is the panel's (BM5)
   function init(kind) {
     const a = PROG0();
-    if (kind === '2osz' || kind === 'vel') { a.o1.tu = -3; a.o2.tu = 3; a.o2.e.l = 99; }
-    if (kind === 'vel') { a.f.cu = 40; a.f.e = {l: 35, a: 0, d: 8, s: 5, r: 4, lp: 0}; a.mo.vd = 'feg'; a.mo.va = 60; }
-    return {v: 1, ly: LY0(), a, b: null};
+    if (kind === '2osz' || kind === '2osc' || kind === 'vel') { a.o1.tu = -3; a.o2.tu = 3; a.o2.e.l = 99; }
+    if (kind === 'vel') { a.f.cu = 40; a.f.e = {l: 35, a: 0, d: 8, s: 5, r: 4, lp: 0}; a.mo.v[1] = ['feg', 60]; }
+    return {v: 1, ly: LY0(), gl: GL0(), a, b: null};
   }
+  const prog = () => PROG0();
   const canon = o => JSON.stringify(o);
   const isInit = bm => canon(normBm(bm)) === canon(init());
-  // paths relative to p.bm: 'a.o1.m', 'b.f.e.r', 'ly.md' (P-lock keys of §1.15 are 'bm.' + path)
+  // paths relative to p.bm: 'a.o1.m', 'b.f.e.r', 'a.l1.t.2.1' (slot 3, amount), 'ly.md', 'gl.tn' (P-lock keys of §1.15 are 'bm.' + path)
   function range(path) {
-    const ks = String(path).split('.'); let R = ks[0] === 'ly' ? LYR : ks[0] === 'a' || ks[0] === 'b' ? PR : null;
-    for (let i = 1; R && i < ks.length; i++) R = Object.prototype.hasOwnProperty.call(R, ks[i]) ? R[ks[i]] : null;
-    return Array.isArray(R) ? R : null;
+    const ks = String(path).split('.'); let R = ks[0] === 'ly' ? LYR : ks[0] === 'gl' ? GLR : ks[0] === 'a' || ks[0] === 'b' ? PR : null;
+    for (let i = 1; R && i < ks.length; i++) {
+      if (R.S) { const j = +ks[i], f = ks[i + 1]; if (!(j >= 0 && j < 4) || i + 2 !== ks.length || (f !== '0' && f !== '1')) return null; return f === '0' ? {L: R.S[0]} : [R.S[1], R.S[2]]; }
+      R = Object.prototype.hasOwnProperty.call(R, ks[i]) ? R[ks[i]] : null;
+    }
+    return Array.isArray(R) || (R && R.L) ? R : null;
   }
   function get(bm, path) { let o = bm; for (const k of String(path).split('.')) { if (!o || typeof o !== 'object') return undefined; o = o[k]; } return o; }
   function set(bm, path, v) {
     const R = range(path); if (!R) return false;
     const ks = String(path).split('.'); if (ks[0] === 'b' && !bm.b) bm.b = normProg(bm.a);
-    let o = bm; for (let i = 0; i < ks.length - 1; i++) o = o[ks[i]];
+    if (ks[0] === 'gl' && !isObj(bm.gl)) bm.gl = GL0();
+    let o = bm; for (let i = 0; i < ks.length - 1; i++) { if (o[ks[i]] == null) return false; o = o[ks[i]]; }
     const k = ks[ks.length - 1];
-    o[k] = typeof R[0] === 'string' ? (R.includes(v) ? v : o[k]) : Math.round(Math.min(R[1], Math.max(R[0], num(v, o[k]))));
+    o[k] = Array.isArray(R) ? clampI(R, v, o[k]) : normVal(R, v, o[k]);
     return true;
   }
-  // the routes of a sound (§1.9 Mod-Übersicht K1): every source with an amount != 0, once; clear = the paths set to 0
-  const LAB = {
-    lfo: ['FREQ', 'VOL', 'FILT', 'MASK', 'PAN', 'O1 FREQ', 'O1 VOL', 'O1 MASK', 'O2 FREQ', 'O2 VOL', 'O2 MASK', 'N FREQ', 'N VOL', 'FX1 TYP', 'FX2 TYP', 'FX2 BAL'],
-    mw: ['FLT', 'LFO1 AMT', 'LFO1 SPD', 'LFO2 AMT', 'LFO2 SPD', 'VOL', 'MASK', 'FREQ', 'O1 VOL', 'O1 MASK', 'O2 VOL', 'O2 MASK', 'N FREQ', 'N VOL', 'FX1 BAL', 'FX2 BAL'],
-    vel: ['FLT', 'F EG', 'VOL', 'MASK', 'P EG', 'ATK']};
-  const lab = (list, id) => LAB[list][L[list].indexOf(id)] || id;
+  // the routes of a sound (§1.9 Mod-Übersicht K1): every occupied slot of every source (amount != 0), once; clear = paths set to 0
+  const LAB = {freq: 'FREQ', vol: 'VOL', flt: 'FILT', mask: 'MASK', pan: 'PAN', o1f: 'O1 FREQ', o1v: 'O1 VOL', o1m: 'O1 MASK', o2f: 'O2 FREQ', o2v: 'O2 VOL',
+    o2m: 'O2 MASK', nf: 'N FREQ', nv: 'N VOL', fx1t: 'FX1 TYP', fx2t: 'FX2 TYP', fx1b: 'FX1 BAL', fx2b: 'FX2 BAL', l1a: 'LFO1 AMT', l1s: 'LFO1 SPD',
+    l2a: 'LFO2 AMT', l2s: 'LFO2 SPD', feg: 'F EG', peg: 'P EG', atk: 'ATK'};
+  const lab = id => LAB[id] || String(id).toUpperCase();
   function routes(bm) {
     bm = normBm(bm); const out = [];
     for (const ab of bm.b && bm.ly.md !== 'ein' ? ['a', 'b'] : ['a']) {
       const P = bm[ab], r = (src, dst, amt, clear, path) => out.push({ab, src, dst, amt, clear: clear.map(c => ab + '.' + c), path: ab + '.' + path});
-      if (P.mo.va) r('V', lab('vel', P.mo.vd), P.mo.va, ['mo.va'], 'mo.va');
-      if (P.mo.ma) r('MW', lab('mw', P.mo.md), P.mo.ma, ['mo.ma'], 'mo.ma');
-      if (P.mo.aa) r('AT', lab('mw', P.mo.ad), P.mo.aa, ['mo.aa'], 'mo.aa');
-      if (P.l1.am) r('LFO1', lab('lfo', P.l1.ds), P.l1.am, ['l1.am'], 'l1.am');
-      if (P.l2.am) r('LFO2', lab('lfo', P.l2.ds), P.l2.am, ['l2.am'], 'l2.am');
+      const slots = (src, list, base) => list.forEach((s, k) => { if (s[1]) r(src, lab(s[0]), s[1], [base + '.' + k + '.1'], base + '.' + k + '.1'); });
+      slots('V', P.mo.v, 'mo.v'); slots('MW', P.mo.mw, 'mo.mw'); slots('AT', P.mo.at, 'mo.at'); slots('LFO1', P.l1.t, 'l1.t'); slots('LFO2', P.l2.t, 'l2.t');
       if (P.o1.ds) r('Δ MASKE', 'O1 MASK', P.o1.ds, ['o1.ds'], 'o1.ds');
       if (P.o2.ds) r('Δ MASKE', 'O2 MASK', P.o2.ds, ['o2.ds'], 'o2.ds');
       if (P.pe.ds || P.pe.de) r('Δ TONHÖHE', 'FREQ', P.pe.ds || P.pe.de, ['pe.ds', 'pe.de'], P.pe.ds ? 'pe.ds' : 'pe.de');
@@ -18609,12 +19269,12 @@ const BM_NAME = 'Bit Mask';
     const ra = Math.max(num(B.a && B.a.g && B.a.g.ra, 0), num(B.b && B.b.g && B.b.g.ra, 0));
     return r * 2 * Math.pow(2, ra / 15 * 5) + .2;
   }
-  // the mask rule (§1.2): span, one sample at phase ph (0 <= ph < 1), and the first K partials (native fallback, area sampling)
-  const span = M => { M &= 255; if (!M) return 1; let h = 7; while (!((M >> h) & 1)) h--; return 2 << h; };
-  function maskY(M, ph) { const s = ph * span(M), p = Math.floor(s), m = p & M; return m < 32 ? Math.sin(2 * Math.PI * (m + s - p) / 32) : 0; }
+  // the mask rule (§1.2, 9 bit): span, one sample at phase ph (0 <= ph < 1), and the first K partials (native fallback, area sampling)
+  const span = M => { M &= 511; if (!M) return 1; let h = 8; while (!((M >> h) & 1)) h--; return 2 << h; };
+  function maskY(M, ph) { M &= 511; const s = ph * span(M), p = Math.floor(s), m = p & M; return m < 32 ? Math.sin(2 * Math.PI * (m + s - p) / 32) : 0; }
   const PCACHE = new Map();
   function partials(M, K) {
-    M = Math.round(Math.min(255, Math.max(0, num(M, 31)))); K = K || 64;
+    M = Math.round(Math.min(511, Math.max(0, num(M, 31)))); K = K || 64;
     const key = M * 1000 + K; if (PCACHE.has(key)) return PCACHE.get(key);
     const N = 8192, y = new Float64Array(N), re = new Float32Array(K + 1), im = new Float32Array(K + 1);
     for (let n = 0; n < N; n++) y[n] = maskY(M, (n + .5) / N);
@@ -18626,20 +19286,7 @@ const BM_NAME = 'Bit Mask';
     }
     const o = {re, im}; PCACHE.set(key, o); return o;
   }
-  // the masks a sound needs first (§2.2 order): MASK, MASK + START, the mask shares of V/MW/AT/LFO as a range; both programs
-  function needMasks(bm) {
-    bm = normBm(bm); const s = new Set(), add = (a, b) => { for (let m = Math.max(0, Math.min(a, b)); m <= Math.min(255, Math.max(a, b)); m++) s.add(m); };
-    for (const P of [bm.a, bm.b]) {
-      if (!P) continue;
-      const sh = {o1: 0, o2: 0};
-      const mod = (id, a) => { const d = Math.round(128 * Math.pow(Math.abs(a) / 99, 1.5)); if (id === 'mask' || id === 'o1m') sh.o1 = Math.max(sh.o1, d); if (id === 'mask' || id === 'o2m') sh.o2 = Math.max(sh.o2, d); };
-      if (P.mo.va) mod(P.mo.vd, P.mo.va); if (P.mo.ma) mod(P.mo.md, P.mo.ma); if (P.mo.aa) mod(P.mo.ad, P.mo.aa);
-      if (P.l1.am) mod(P.l1.ds, P.l1.am); if (P.l2.am) mod(P.l2.ds, P.l2.am);
-      for (const k of ['o1', 'o2']) { const O = P[k]; add(O.m - sh[k], O.m + sh[k]); add(O.m + O.ds, O.m + O.ds); }
-    }
-    return [...s].sort((x, y) => x - y);
-  }
-  G.SQBM = {NAME: BM_NAME, L, LAB, normBm, normProg, init, isInit, range, get, set, routes, T, cutHz, relSec, span, maskY, partials, needMasks};
+  G.SQBM = {NAME: BM_NAME, L, LAB, normBm, normProg, init, prog, isInit, range, get, set, routes, T, cutHz, relSec, span, maskY, partials};
 })(typeof window !== 'undefined' ? window : globalThis);
 </script>
 <script>
@@ -23723,18 +24370,18 @@ function mkEco(snd, i) {
 // the wheels (H-5, B.1 "Raeder"): live per track, MOD starts on p.mw; BEND springs back
 const MKWH = {};
 function mkWheelOf(i) { const tr = S.tracks[i]; if (!tr) return null; const k = tr.uid || ('t' + i); return MKWH[k] || (MKWH[k] = {bend: 0, mod: null}); }
-function mkWheelVal(i, w, snd) { const o = i == null ? null : mkWheelOf(i); if (w === 'bend') return o ? o.bend : 0; const s_ = snd || sndOf(i); return o && o.mod != null ? o.mod : s_ && s_.engine !== 'bm' ? (+s_.p.mw || 0) : 0; }   // BM6: the Bit Mask wheel starts at 0 (never stored)
+function mkWheelVal(i, w, snd) { const o = i == null ? null : mkWheelOf(i); if (w === 'bend') return o ? o.bend : 0; const s_ = snd || sndOf(i); return o && o.mod != null ? o.mod : s_ ? (+s_.p.mw || 0) : 0; }
 // a sound load / track switch: MOD back on the sound's p.mw, BEND in the centre
 function mkWheelSync(i, reset) {
   const o = mkWheelOf(i), E = AU.synth[i], s_ = sndOf(i); if (!o || !s_) return;
   if (reset) { o.mod = null; o.bend = 0; }
-  if (E && (s_.engine === 'mk' || E.bm)) E.mkWheel({mw0: +s_.p.mw || 0, reset: o.mod == null, mod: o.mod == null ? undefined : o.mod, bend: o.bend});
+  if (E && s_.engine === 'mk') E.mkWheel({mw0: +s_.p.mw || 0, reset: o.mod == null, mod: o.mod == null ? undefined : o.mod, bend: o.bend});
   if (typeof MKUI !== 'undefined' && MKUI.wheelPaint) MKUI.wheelPaint(i);
 }
 function mkWheelSet(i, w, v, ret) {
   const o = mkWheelOf(i); if (!o) return 0;
   if (w === 'bend') o.bend = clamp(+v || 0, -1, 1); else o.mod = clamp(+v || 0, 0, 1);
-  const E = AU.synth[i]; if (E && sndOf(i) && (sndOf(i).engine === 'mk' || E.bm)) E.mkWheel(w === 'bend' ? {bend: o.bend, ret: ret || 0} : {mod: o.mod});
+  const E = AU.synth[i]; if (E && sndOf(i) && sndOf(i).engine === 'mk') E.mkWheel(w === 'bend' ? {bend: o.bend, ret: ret || 0} : {mod: o.mod});
   if (w === 'mod') MKECO.delete(sndOf(i) || {});
   return w === 'bend' ? o.bend : o.mod;
 }
@@ -24058,12 +24705,34 @@ function engChip(i) {
 }
 // the wheels on AM tracks (B.3 Räder): shown only while the selected track is an AM track (the keyboard is unchanged otherwise)
 function mkWheelFrame() {
-  const tr = S.tracks[R.selT], want = !!(tr && tr.kind === 'synth' && (tr.sound.engine === 'mk' || tr.sound.engine === 'bm') && !EL.app.classList.contains('drumpads'));   // BM6 (§3.6): + Bit Mask
+  const tr = S.tracks[R.selT], want = !!(tr && tr.kind === 'synth' && tr.sound.engine === 'mk' && !EL.app.classList.contains('drumpads'));
   if (want === !!UI.mkWh) return;
   UI.mkWh = want;
   if (want) { const M = mkLoad(); if (M) M.wheels(true); } else if (mkLoaded()) MKUI.wheels(false);
   UI.kbRelayout = true;
 }
+/* ===== BM5 (Nachtrag 7 §3, §3.4, §5.2): the panel of BM_NAME on the main thread: the wheels and the pressure (live values per track,
+   never stored; BEND springs back) and the hooks of the keyboard. Panel, wheels' DOM and pressure bar live in block sq-bm-src (bmLoad);
+   the node is BM6's host (AU.synth[i] with E.bm). ===== */
+function bmLoaded() { return BML.ok && typeof BMUI !== 'undefined'; }
+// a message of the panel to the node of track i; the host's copy of the sent state follows (no second full send)
+function bmPost(i, m) { const E = AU.synth[i]; if (!E || !E.bm || E.dead) return; E.flush(); E.post(m); const s_ = sndOf(i); if (s_ && s_.p.bm && m.t !== 'prog') E.sentJ = JSON.stringify(s_.p.bm); }
+function bmResend(i) { const E = AU.synth[i], s_ = sndOf(i); if (E && E.bm && !E.dead && s_ && s_.engine === 'bm') E.prog(s_, true); }
+const BMWH = {};
+function bmWheelOf(i) { const tr = S.tracks[i]; const k = tr && tr.uid || ('t' + i); return BMWH[k] || (BMWH[k] = {bend: 0, mod: 0, at: 0}); }
+function bmCtl(i, k, v) { const W = bmWheelOf(i); if (k === 'bd') W.bend = v; else if (k === 'mw') W.mod = v; else W.at = v; const E = AU.synth[i]; if (E && E.bm && !E.dead) E.ctl({list: [{k, v, at: 0}]}); }
+function bmWheelFrame() {
+  const tr = S.tracks[R.selT], want = !!(tr && tr.kind === 'synth' && tr.sound.engine === 'bm' && !EL.app.classList.contains('drumpads'));
+  if (want === !!UI.bmWh) return;
+  UI.bmWh = want;
+  if (want) { if (bmLoad() && bmLoaded()) BMUI.wheels(true); bmBoot(); } else if (bmLoaded()) BMUI.wheels(false);
+  UI.kbRelayout = true;
+}
+// the pressure gesture (§3.4): a finger on a held key pushes up; the keyboard's handlers ask these first (BM_NAME tracks only)
+const bmKbOn = () => { const tr = S.tracks[R.selT]; return !!(tr && tr.kind === 'synth' && tr.sound.engine === 'bm' && bmLoaded()); };
+function bmKbDown(e, note) { if (note != null && bmKbOn()) BMUI.atDown(e, note); }
+function bmKbMove(e) { return bmLoaded() && BMUI.atMove(e); }
+function bmKbUp(e) { if (bmLoaded()) BMUI.atUp(e); }
 
 function retireEngine(i) { const E = AU.synth[i]; AU.synth[i] = null; WKSET[i] = null; retireE(E); }
 // an engine that is no longer needed (engine switch to WT / FM2, forceNative, preview end): its notes fade, then it goes
@@ -33564,6 +34233,7 @@ function uiFrame() {
   renderRing(now);
   if (UI.dirty.kb) { UI.dirty.kb = false; kbPaint(); padPaint(); }
   mkWheelFrame();                                            // MK1: BEND / MOD wheels left of the keys on AM tracks
+  bmWheelFrame();                                            // BM5: BEND / MOD wheels on BM_NAME tracks
   if (R.editor === 'synth' && typeof MKUI !== 'undefined' && MKUI.arpFrame) MKUI.arpFrame(now, bAud);   // MK5: ARP / tempo LED, running step
   paintGhosts(tAud);
   padFlashes(tAud);
@@ -35058,9 +35728,10 @@ function buildSynthEd() {
   sh.style.setProperty('--tc', `var(--t${i + 1})`);
   const eng = tr.sound.engine;
   const mkE = eng === 'mk';                                        // MK-P (B.3 Rahmen): [GERÄT] [SPIEL] [FX]
+  const bmE = eng === 'bm'; sh.classList.toggle('bmp', bmE);        // BM5: [GERÄT] [FX]
   sh.classList.remove('mkp', 'mkq'); if (!mkE) { EL.app.classList.remove('mkq', 'mkqkb'); if (typeof MKUI !== 'undefined' && MKUI.coverOff) MKUI.coverOff(); }   // MK-P-09: the covered main screen is painted again
   if (mkE) { mkLoad(); if (!['geraet', 'spiel', 'fx'].includes(ED.tab)) ED.tab = 'geraet'; }
-  else if (eng === 'bm') { if (ED.tab !== 'fx') ED.tab = 'bm'; }   // BM6: placeholder page until the editor (BM5)
+  else if (bmE) { bmLoad(); if (!['geraet', 'fx'].includes(ED.tab)) ED.tab = 'geraet'; }
   else if (!['osc', 'filter', 'env', 'lfo', 'mod', 'fx'].includes(ED.tab)) ED.tab = 'osc';
   let subs = subTabsFor(ED.tab, eng);
   // N4b-01: the FM page coming back from another engine's sub-page (OSZ 1 …) opens the track's own view, not the first sub-tab
@@ -35074,7 +35745,7 @@ function buildSynthEd() {
   if (subs && bigHere) subs = SK === 'osc' ? subs.map(x => (x[0] === 'feld' ? ['feld', '✕ FELD'] : x)) : SK === 'envfm' ? [['fxback', '✕ FELD']].concat(subs) : subs;
   if (eng === 'fm6' && ED.fmT !== i) fmInitSel(i, false);
   if (UI.fmSolo && (UI.fmSolo.t !== i || eng !== 'fm6' || ED.tab !== 'osc' || ED.sub.osc !== 'op')) fmSoloOff();   // §6.5: Solo is monitor-only
-  const F = sheetFrame(sh, tr.name, mkE ? [['geraet', 'GERÄT'], ['spiel', 'SPIEL'], ['fx', 'FX']] : eng === 'bm' ? [['bm', BM_NAME], ['fx', 'FX']] : [['osc', eng === 'analog' ? 'OSZ' : eng === 'wt' ? 'WT' : 'FM'], ['filter', 'FILTER'], ['env', 'HÜLLK.'], ['lfo', 'LFO'], ['mod', 'MOD'], ['fx', 'FX']], ED.tab,
+  const F = sheetFrame(sh, tr.name, mkE ? [['geraet', 'GERÄT'], ['spiel', 'SPIEL'], ['fx', 'FX']] : bmE ? [['geraet', 'GERÄT'], ['fx', 'FX']] : [['osc', eng === 'analog' ? 'OSZ' : eng === 'wt' ? 'WT' : 'FM'], ['filter', 'FILTER'], ['env', 'HÜLLK.'], ['lfo', 'LFO'], ['mod', 'MOD'], ['fx', 'FX']], ED.tab,
     id => { if (mkE && mkLoaded() && MKUI.tabFast(id)) return; ED.tab = id; FXF.big = null; safeRebuild(buildSynthEd); },   // MK-P-09: GERÄT ↔ SPIEL only swaps the frame's content
     subs ? {list: subs, cur: ED.sub[SK], on: id => { if (bigHere && (id === 'fxback' || (SK === 'osc' && id === 'feld'))) { fxBigBack(); return; } ED.sub[SK] = id; FMEV.fine = false; FXF.big = null; if (eng === 'fm6' && SK === 'osc' && (id === 'feld' || id === 'algo')) fmViewSet(i, id); safeRebuild(buildSynthEd); }} : null);
   // row 1: ● SYNTH n · [VA | FM | WT] · ⇅ chip · ECO-Klang badge (native fallback, §1.3) · ↶ ↷ · ✕
@@ -35232,7 +35903,7 @@ function fillSynthTab(body, i) {
   const pg = el('div', 'pg rest'); body.appendChild(pg);
   if (S.tracks[i].sound._nv && !(ED.tab === 'fx' && GLOBAL_SUBS.has(ED.sub.fx))) { nvPage(pg, i); return; }
   if (S.tracks[i].sound.engine === 'mk' && ED.tab !== 'fx') { if (mkLoad()) MKUI.build(pg, i); return; }   // MK-P: the plate in its fixed frame (GERÄT, SPIEL)
-  if (S.tracks[i].sound.engine === 'bm' && ED.tab !== 'fx') { if (bmLoad()) bmPage(pg, i); return; }   // BM6: placeholder (BM5 replaces bmPage)
+  if (S.tracks[i].sound.engine === 'bm' && ED.tab !== 'fx') { if (bmLoad()) BMUI.build(pg, i); return; }   // BM5: the panel of the device
   const fmE = ED.tab === 'env' && S.tracks[i].sound.engine === 'fm6';
   const tab = ED.tab, sub = ED.sub[fmE ? 'envfm' : tab];
   pg.classList.add('pg-' + tab + (sub ? '-' + sub : ''));
@@ -44502,16 +45173,18 @@ function bindUI() {
     const note = kbHit(e.clientX - r.left, e.clientY - r.top);
     KB.ptr.set(e.pointerId, note);
     if (note != null) inputDown(note, 'p' + e.pointerId, kbVelAt(note, e.clientY - r.top));
+    bmKbDown(e, note);                                           // BM5: pressure gesture (BM_NAME)
   });
   on(EL.kb, 'pointermove', e => {
     if (!KB.ptr.has(e.pointerId) || !KB.rect) return;
+    if (bmKbMove(e)) return;                                     // BM5: pushing up on a held key = pressure, not another key
     const note = kbHit(e.clientX - KB.rect.left, e.clientY - KB.rect.top), old = KB.ptr.get(e.pointerId);
     if (note === old) return;
     if (old != null) inputUp('p' + e.pointerId);
     KB.ptr.set(e.pointerId, note);
     if (note != null) inputDown(note, 'p' + e.pointerId, kbVelAt(note, e.clientY - KB.rect.top));
   });
-  const kbUp = e => { if (!KB.ptr.has(e.pointerId)) return; KB.ptr.delete(e.pointerId); inputUp('p' + e.pointerId); };
+  const kbUp = e => { bmKbUp(e); if (!KB.ptr.has(e.pointerId)) return; KB.ptr.delete(e.pointerId); inputUp('p' + e.pointerId); };
   ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(ev => on(EL.kb, ev, kbUp));
   on(EL.kb, 'contextmenu', e => e.preventDefault());
   // pads
@@ -58793,7 +59466,7 @@ const SYNQUENZER = {
   mkSet: (t, path, v) => { const s_ = sndOf(t); if (!s_ || s_.engine !== 'mk') throw new Error('Keine ' + MK_LABEL + '-Spur: ' + t); return soundEdit(t, MK_LABEL + ' ' + path, () => mkSetP(t, path, v, false)); },
   mdTest: m => Promise.all([...MDX.nodes].map(E => E.test(m))),   /* ND1 test API (mdInfo/mdRender: ND4-Einträge oben, beide Formen) */
   mkRender: (sound, ev, o) => mkRender(sound, ev, o), mkScope: t => mkScopeOf(t), mkInfo: () => mkInfo(),
-  mkWheel: (t, w, v) => mkWheelApi(t, w, v), mkPanel: () => (mkLoaded() ? MKUI.panelInfo() : null), perfProbe: cases => (Array.isArray(cases) && cases.includes('bm') && bmLoad() ? perfProbeAll(cases) : mkLoad().probe(cases)),   // BM6: case 'bm' = the Bit Mask probe
+  mkWheel: (t, w, v) => mkWheelApi(t, w, v), mkPanel: () => (mkLoaded() ? MKUI.panelInfo() : null), bmPanel: () => (bmLoaded() ? BMUI.info() : null), perfProbe: cases => (Array.isArray(cases) && cases.includes('bm') && bmLoad() ? perfProbeAll(cases) : mkLoad().probe(cases)),   // BM6: case 'bm' = the Bit Mask probe
   // VV4-F (Tests): Stand des Mäusekinos (an, sichtbar, Anzeige je Eingang [Spitze, RMS, Halten, LED] in dBFS, Rahmenzeit), MASTER öffnen
   mtrInfo: () => { const M = AU.meter, D = MTR.disp, ch = []; for (let k = 0; k < MTR_IN; k++) ch.push({pk: mtrDb(D[k * 4]), rms: mtrDb(D[k * 4 + 1]), hold: mtrDb(D[k * 4 + 2]), led: D[k * 4 + 3]});
     return {built: !!M, on: MTR.on, vis: MTR.vis, lim: LIM.level, n: M ? M.Q.cnt : 0, lost: M ? M.Q.lost : 0, ctxT: M ? M.ctx.currentTime : 0, ch, frames: MTR.frames, ms: MTR.ms || 0, msMax: MTR.msMax || 0, msSum: MTR.msSum || 0, els: document.querySelectorAll('.mtr').length}; },
