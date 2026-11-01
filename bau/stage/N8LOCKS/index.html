@@ -6160,7 +6160,7 @@ const ARPC = (function () {
     const L = logOf(i);
     for (const n of notes) {
       const mask = m.mode === 1 ? tg : m.mode === 2 ? keyTim(m, n.p - 12 * (n.o || 0)) : 0;
-      const v = spawnVoice(i, n.p, n.vel, t, {src: 'arp', mask, clipNote: n.x.n, clipKey: n.x.key || null});
+      const v = spawnVoice(i, n.p, n.vel, t, n.x.lk ? {src: 'arp', mask, clipNote: n.x.n, clipKey: n.x.key || null, lk: n.x.lk} : {src: 'arp', mask, clipNote: n.x.n, clipKey: n.x.key || null});   // I2b
       if (!v) continue;
       v.release(t + dur); v.arp = {x: n.x, o: n.o || 0};
       v.log = logNote({track: i, src: 'arp', clipNote: n.x.n, out: v.out, time: t, dur, vel: n.vel, step: sp + 1}); if (r.late) v.log.late = 1;
@@ -6236,9 +6236,9 @@ const ARPC = (function () {
     return r.hold;
   }
   function liveUp(i, id, t) { const s = ST.get(i); if (!s) return; for (const x of s.iv) if (x.src === 'live' && x.id === id && x.off === Infinity) { x.off = Math.max(t, x.on + .001); if (x.off < s.planT) { rewind(i, x.off); plan(i, nowT(), LOOKAHEAD); } } }
-  function clip(i, out, n, key, vel, t, dur, src) {   // a clip note (or the song melody: raw); returns the mask of a normal note or null
+  function clip(i, out, n, key, vel, t, dur, src, lk) {   // a clip note (or the song melody: raw); returns the mask of a normal note or null
     const r = route(i, out);
-    if (r.arp) add(i, {src: src || 'clip', n, raw: src === 'melody', key: key || null, vel, on: t, off: t + dur});
+    if (r.arp) add(i, lk ? {src: src || 'clip', n, raw: src === 'melody', key: key || null, vel, on: t, off: t + dur, lk} : {src: src || 'clip', n, raw: src === 'melody', key: key || null, vel, on: t, off: t + dur});   // I2b: lk = Paare der Clip-Note
     return r.hold;
   }
   // a scene / part switch at t: clip notes end there (cutTrackAt), notes from t on are dropped (cancelTrackFrom)
@@ -11469,7 +11469,7 @@ class AnalogCore extends AudioWorkletProcessor {
       ord: new Int8Array(6), fk: new Int8Array(6), ms: new Int8Array(36), mn: new Uint8Array(6), ca: new Uint8Array(6), tw: new Uint8Array(6)};
     this.hasPerf = typeof performance !== 'undefined' && typeof performance.now === 'function';
     // I2b/I2c: lkOn = Locks oder Reihen im Kern (sonst der bisherige Weg), lb = Reihen-Feld (null bis zur ersten Reihe), lkEv = Paare der Note
-    this.lkOn = false; this.lkBad = 0; this.lkEv = null; this.lb = null; this.lbT = null; this.lbS = null; this.lbR = null; this.lbN = 0; this.lbRm = 0; this.lbP = false; this.PR = null; this.lkMd = null; this.mamB = null; this.lkTap = false; this.lkRep = null;
+    this.lkOn = false; this.lkBad = 0; this.lkEv = null; this.lb = null; this.lbT = null; this.lbS = null; this.lbR = null; this.lbN = 0; this.lbRm = 0; this.lbP = false; this.PR = null; this.lkMd = null; this.mamB = null; this.lkTap = false; this.lkRep = null; this.lkRepI = 0; this.lkRepT = 0;
     const po = opt && opt.processorOptions;
     this.mk = new MkCore(this, po && po.mk);                           // MK1: eng 3
     if (po && po.patch) this.setParams(po.patch); else this.derive();
@@ -11508,7 +11508,7 @@ class AnalogCore extends AudioWorkletProcessor {
     if (m.scopeDst != null) { this.scopeDst = !!m.scopeDst; this.scD.fill(0); }
     if (m.dispose) this.alive = false;
     if (m.lkMd) { this.lkMd = this.lkMd || {}; for (const k in m.lkMd) this.lkMd[k] = m.lkMd[k]; }   // I2c: Platz einer Mod-Tiefe -> [Quelle, Ziel]
-    if (m.lkProbe != null) { this.lkTap = !!m.lkProbe; this.lkRep = null; }                              // I2b Test (M-LOCK): Werte je Stimme melden
+    if (m.lkProbe != null) { this.lkTap = !!m.lkProbe; this.lkRep = null; this.lkRepI = typeof m.lkProbe === 'number' && m.lkProbe >= 16 ? m.lkProbe | 0 : 0; this.lkRepT = 0; }                              // I2b Test (M-LOCK): Werte je Stimme melden
     if (m.lkInfo) this.port.postMessage({lkInfo: this.lkInfoOf()});
     if (m.k1Dump) this.port.postMessage({k1Dump: {P: Object.assign({}, this.P), mods: Array.from(this.msrc, (s, i) => [s, this.mdst[i], this.mamt[i]]).filter(x => x[0]), mk: this.mk.tm.map(t => JSON.parse(JSON.stringify(t.T))), mkTop: {mode: this.mk.mode, tv: this.mk.tv, split: this.mk.split, scl: this.mk.scl, skey: this.mk.skey, cap: this.mk.tm.map(t => [t.cv, t.cu])}, voc: Object.assign({}, this.mk.vc.P), fmx: this.gx ? {on: Array.from(this.gx.on), fmS: Array.from(this.gx.fmS), am: Array.from(this.gx.am), amG: Array.from(this.gx.amG), pit: this.gx.pit.map(x => !!x), pt: this.gx.pe.slice(6).map(x => !!x && Array.from(x.v).some(y => Math.abs(y) > 1e-9))} : null, peg: !this.gx && !!(this.fm && this.fm.peg && !this.fm.peg.l.every(x => x === 50))}});   // K1 test (K1-05): what the engine plays now; K1-fix: + vocoder, FM graph LFO / pitch envelopes, fm6 PEG
   }
@@ -11873,8 +11873,9 @@ class AnalogCore extends AudioWorkletProcessor {
     p = p | 0; if (!(p >= 0 && p < PV_AL) || typeof x !== 'number') { this.lkBad++; return; }
     if (!this.lb) this.lbPrep(0);
     this.lkOn = true;
-    if (p < PV_A) for (const v of this.V) if (v.pvR && v.pvR[p]) { v.pvR[p] = 0; v.pv[p] = NaN; v.lkN--; }   // the step replaces a note's lane start value
     const was = this.lb[p], ramp = r > 0 && PVb[p];
+    // the step replaces a note's lane start value; with a ramp the note keeps it until the ramp ends (it already is the step's value: no jump, I2-64)
+    if (p < PV_A) for (const v of this.V) if (v.pvR && v.pvR[p]) { if (ramp && x === x) v.pvR[p] = 2; else { v.pvR[p] = 0; v.pv[p] = NaN; v.lkN--; } }
     if (x === x) {
       if (ramp) { const a = was === was ? was : this.lbBase(p); this.lb[p] = a; this.lbT[p] = x; this.lbR[p] = r; this.lbS[p] = (x - a) / r; if (was !== was) this.lbN++; this.lbRm++; }
       else { if (was !== was) this.lbN++; if (this.lbR[p] > 0) { this.lbR[p] = 0; this.lbRm--; } this.lb[p] = x; }
@@ -11898,7 +11899,8 @@ class AnalogCore extends AudioWorkletProcessor {
     const lb = this.lb; let ch = false;
     for (let p = 0; p < PV_AL; p++) {
       const r = this.lbR[p]; if (!(r > 0)) continue;
-      if (r <= CR) { this.lbR[p] = 0; this.lbRm--; const t = this.lbT[p]; if (t === t) lb[p] = t; else { lb[p] = NaN; this.lbN--; } }
+      if (r <= CR) { this.lbR[p] = 0; this.lbRm--; const t = this.lbT[p]; if (t === t) lb[p] = t; else { lb[p] = NaN; this.lbN--; }
+        if (p < PV_A) for (const v of this.V) if (v.pvR && v.pvR[p] === 2) { v.pvR[p] = 0; v.pv[p] = NaN; v.lkN--; } }
       else { this.lbR[p] = r - CR; lb[p] += this.lbS[p] * CR; }
       ch = true;
     }
@@ -11934,14 +11936,14 @@ class AnalogCore extends AudioWorkletProcessor {
   }
   // I2b test (M-LOCK): per sounding voice the values it uses now (cutoff Hz, level, OP levels, decay ...), ~ every 1/30 s
   lkProbeRep() {
-    if (currentFrame < (this.lkRepT || 0)) return; this.lkRepT = currentFrame + Math.round(SR / 30);
+    if (currentFrame < (this.lkRepT || 0)) return; this.lkRepT = currentFrame + (this.lkRepI || Math.round(SR / 30));
     const out = [];
     for (const v of this.V) if (v.on) { const D = v.D || this, VP = v.D ? v.VP : this.P, F = v.fmP || this.fm;
       out.push({id: v.id, note: v.note, own: !!v.D, cut: 440 * Math.pow(2, (D.cutN0 - 69) / 12), res: VP.res, level: VP.level, aD: VP.aD, o1w: D.oW[0], ftype: VP.ftype, uni: D.uniN[0],
         ol: F.ops ? F.ops.map(o => o.ol) : null, fol: Array.from(v.foutLvl), fmBright: VP.fmBright, n: v.lkN}); }
     this.port.postMessage({lkRep: out, mk: this.P.eng === 3 ? this.mk.lkRep() : null, f: currentFrame});
   }
-  lkInfoOf() { let n = 0, vs = 0; for (const v of this.V) { if (v.pv) n++; if (v.on && v.lkN) vs++; } return {bad: this.lkBad + this.mk.lkBadN(), tables: n, voices: vs, lanes: this.lbN, on: this.lkOn, bytes: n * (PV_A * 5)}; }
+  lkInfoOf() { let n = 0, vs = 0; for (const v of this.V) { if (v.pv) n++; if (v.on && v.lkN) vs++; } return {bad: this.lkBad + this.mk.lkBadN(), tables: n, voices: vs, lanes: this.lbN, on: this.lkOn, bytes: n * (PV_A * 5), mods: Array.from(this.mamt), lb: this.lb ? Array.from(this.lb, x => (x === x ? x : null)) : null}; }
 
   /* ---------------- voice allocation ---------------- */
   findId(id) { for (const v of this.V) if (v.on && v.id === id) return v; return null; }
@@ -16363,9 +16365,13 @@ const RecHelpers = (() => {
     return out;
   }
   // per-step parameter locks onto a voice's params (a new object, the kit is never touched)
-  function lockParams(P, lk) {
+  function lockParams(P, lk, sid) {
     if (!lk) return P;
     const Q = Object.assign({}, P);
+    if (lk.v && sid && typeof LKT !== 'undefined') for (const p in lk.v) {   // I2b (§5.7): zuerst die absoluten Werte (Kennlinie aus DPD), dann tune / dec relativ
+      const q = p.split('.'); if (q.length !== 3 || q[0] !== 'drum' || q[1] !== sid) continue;
+      const e = LKT[p]; if (e && e.cls !== 's') { const x = lkFromN(e, lk.v[p]); if (typeof x === 'number' && isFinite(x)) Q[q[2]] = x; }
+    }
     if (lk.tune) { const f = Math.pow(2, lk.tune / 12); Q.frq *= f; Q.mTun *= f; Q.nFrq *= Math.sqrt(f); Q.tfFrq *= f; }
     if (lk.dec) { Q.tDec *= lk.dec; Q.nDec *= lk.dec; Q.mDec *= lk.dec; }
     return Q;
@@ -19283,6 +19289,8 @@ const MK_LABEL = 'MS 2000';
       if (m.fmxLv) { E.lv = m.fmxLv; E.lvN++; E.lvT = m.t; }        // V4a (N7F-09): live operator levels
       if (m.mkScope) { E.mks = m.mkScope; E.mksN = (E.mksN || 0) + 1; }  // MK1 (B.7 mkScope)
       if (m.k1Dump) E.k1Dump = m.k1Dump;   // K1 test (K1-05): the engine's playing state
+      if (m.lkRep) { E.lkRep = m; E.lkRepN = (E.lkRepN || 0) + 1; if (E.lkReps) { E.lkReps.push(m); if (E.lkReps.length > 4000) E.lkReps.shift(); } }   // I2b Test (M-LOCK)
+      if (m.lkInfo) { E.lkInfo = m.lkInfo; if (m.lkInfo.bad > (E.lkBad0 || 0)) { LKS.bad += m.lkInfo.bad - (E.lkBad0 || 0); E.lkBad0 = m.lkInfo.bad; } }
       if (m.mkwNeed != null && typeof mkwPull === 'function') mkwPull(E, m.mkwNeed);   // MK2: a processor asks for a stored wave
       if (m.mkFxMem != null) E.mkFxB = m.mkFxMem;   // MK4: the delay buffer of this engine (bytes)
       if (m.mkRecDone) { E.mkRecN = (E.mkRecN || 0) + 1; E.mkRecLast = m.mkRecDone; if (typeof MKUI !== 'undefined' && MKUI.recDone) MKUI.recDone(E, m.mkRecDone); }   // MK6
@@ -19292,7 +19300,10 @@ const MK_LABEL = 'MS 2000';
     const post = m => { if (!E.dead) node.port.postMessage(m); };
     const push = ev => { if (E.dead) return; E.q.push(ev); if (!E.flushQueued) { E.flushQueued = true; queueMicrotask(E.flush); } };
     E.flush = () => { E.flushQueued = false; if (E.q.length) { post({ev: E.q}); E.q = []; } };
-    E.on = (id, note, vel, t, from, d) => push(d ? [t, 1, id, note, vel, from == null ? -1 : from, d] : [t, 1, id, note, vel, from == null ? -1 : from]);   // MK5: d = timbre mask (AM)
+    E.on = (id, note, vel, t, from, d, lk) => push(lk && lk.length ? [t, 1, id, note, vel, from == null ? -1 : from, d || 0, 0, lk.length >> 1].concat(lk)   // I2b: + Kern 0, Zahl der Paare, Paare
+      : d ? [t, 1, id, note, vel, from == null ? -1 : from, d] : [t, 1, id, note, vel, from == null ? -1 : from]);   // MK5: d = timbre mask (AM)
+    E.lane = (t, c, i, x, r) => push([t, 11, 0, c, i, x, r | 0]);   // I2c: Reihen-Wert (Element 2 ist nie eine Stimmen-ID)
+    E.laneClr = (t, c) => push([t, 12, 0, c]);                     // I2c: wartende Reihen-Werte ab t leeren (sofort im Worklet)
     E.keys = (ty, t) => push([t, ty, 0]);                     // MK5 (EN3-11): KEYS 9 first key / 10 all keys up
     E.off = (id, t) => push([t, 2, id]);
     E.fastOff = (id, t, tau) => push([t, 7, id, tau || .004]);
@@ -22435,9 +22446,127 @@ function lkSay(m) { try { if (typeof lcdHint2 === 'function' && ED.lcd) lcdHint2
 function lkInfo() {
   let kerne = 0; try { for (const x of AU.synth || []) if (x && !x.dead && x.port) kerne++; } catch (e) {}
   return {paths: Object.keys(LKT).length, exc: Object.keys(LKT_EXC).length, src: LKX.src, pvA: LKX.nA, pvAV: LKX.nAV, pvM: LKX.nM, miss: LKX.miss.slice(),
-    lkBad: LKS.bad, klLate: LKS.late, kerne, faecher: 0, bytes: 0};
+    lkBad: LKS.bad, klLate: LKS.late, kerne, faecher: 0, bytes: 0, wkList: lkWkCheck(), laneEv: LKS.ev || 0};
 }
 lktBuild();
+
+/* ===== I2b / I2c (Nachtrag 8 §5.1–5.8): die Noten-Locks gehen als Paare mit dem Note-an an das Worklet (Platz aus pv-layout.json,
+   Wert in Engine-Einheiten), auf dem nativen Weg als Sicht o.lkP; freie Reihen werden im selben Fenster wie die Noten geplant
+   (Typ 11, Ende Typ 12), Spur-Werte fx.* nativ an der Spur-Kette. Ohne Lock und Reihe läuft keine Zeile hiervon (Regel 28). ===== */
+const LNS = [];                                                  // je Spur: {clip, last: Map(Reihe -> x), on: Set(Platz), fx: Set(Pfad), md: Set}
+function lkFamOk(e, snd) {
+  const eng = snd.engine, X = !!(snd.p && snd.p.fmx);
+  if (eng === 'mk') return e.fam === 'mk';
+  if (eng === 'fm6') return e.fam === 'va' || (X ? e.fam === 'fmx' || (e.fam === 'fm6' && !e.p.startsWith('fm6.')) : e.fam === 'fm6');
+  if (eng === 'analog') return e.fam === 'va';
+  if (eng === 'wt') return e.fam === 'wt' || e.fam === 'va';
+  return false;
+}
+// a place of the voice table for a note pair: class b / n, the track's index space, a voice place (A: < nAV)
+const lkVoiceOk = (e, snd) => !!e && (e.cls === 'b' || e.cls === 'n') && e.wi >= 0 && (snd.engine === 'mk' ? e.sp === 'M' : e.sp === 'A' && e.wi < LKX.nAV) && lkFamOk(e, snd);
+// the locks and the lane start values of clip note nt (rb = its beat from the clip start) for the track's sound:
+// {lk: [place, value, ...] (worklet), lkP: {key: value} (native), lkv: {path: x} (video)}; null = none
+function lkNoteX(i, clip, nt, rb) {
+  const tr = S.tracks[i], snd = tr && tr.sound; if (!snd || !snd.p) return null;
+  const v = nt && nt.lk && nt.lk.v, wk = isWkEngine(snd.engine) || snd.engine === 'mk', out = [], nat = {}, lkv = {};
+  let nN = 0, nV = 0;
+  if (v) for (const p in v) {
+    const e = LKT[p]; if (!e || e.cls === 's' || e.cls === 'r' || !lkFamOk(e, snd)) continue;
+    const x = lkFromN(e, v[p]); if (typeof x !== 'number' || !isFinite(x)) continue;
+    lkv[p] = v[p]; nV++;
+    if (wk && lkVoiceOk(e, snd)) { if (out.length < 32) out.push(e.wi, x); }
+    else if (e.nat !== 'nein' && !p.startsWith('fm')) { if (p.startsWith('wt.')) { nat.wt = Object.assign({}, nat.wt || snd.p.wt); nat.wt[p.slice(3)] = x; } else nat[p] = x; nN++; }
+  }
+  // L6 / I2-64: a note that begins before its lane step hears that step from its first sample (lane start value, i < 0)
+  if (clip && clip.ln && rb != null && wk) clip.ln.forEach((ln, n) => {
+    const e = LKT[ln.p]; if (!lkVoiceOk(e, snd) || (v && v[ln.p] != null) || out.length >= 32) return;
+    const sb = lnGb(ln.g), k = Math.round(rb / sb + 1e-9); if (!(rb < k * sb - 1e-6)) return;
+    const xs = lnValueAt(ln, k, 0, n), kc = Math.max(0, Math.floor(rb / sb + 1e-9)), sc = ln.st.find(q => q.i === d1Pos({Ls: ln.len, dir: 'fwd'}, kc)), rc = sc && sc.r ? sc.r : 1;
+    const xc = rb < 0 ? null : lnValueAt(ln, kc, Math.floor((rb - kc * sb) / (sb / rc) + 1e-9), n);
+    if (xs === xc) return;
+    const y = xs == null ? lkBase(snd, ln.p) : lkFromN(e, xs); if (typeof y !== 'number' || !isFinite(y)) return;
+    out.push(e.cls === 'n' ? e.wi : -1 - e.wi, y); if (xs != null) lkv[ln.p] = xs;
+  });
+  if (!out.length && !nN && !nV) return null;
+  return {lk: out.length ? out : null, lkP: nN ? nat : null, lkv: nV ? lkv : null};
+}
+function lkNatView(P, o) { const Q = Object.assign({}, P); for (const k in o) Q[k] = o[k]; return Q; }
+// I2c: the lanes of the playing clip of track i in the window [from, to): change events only (a value like the step before
+// sends nothing); time = the step (+ ratchet part) with the swing of the notes; chance by DrumSeq.rand01 (each pass the same)
+function scheduleLanes(i, clip, from, to, late) {
+  const tr = S.tracks[i], snd = tr && tr.sound; if (!snd || !AU.ctx) return;
+  let st = LNS[i]; if (!st || st.clip !== clip) { if (st) lnEnd(i, b2t(Math.max(from, 0))); st = LNS[i] = {clip, last: new Map(), on: new Map(), fx: new Set(), md: false}; }
+  const cs = R.cstart[i], now = AU.ctx.currentTime, E = AU.synth[i], sr = AU.ctx.sampleRate, ramp = Math.round(.003 * sr);
+  clip.ln.forEach((ln, n) => {
+    const e = LKT[ln.p]; if (!e) return;                          // unbekannter Pfad (neuere Version): gespeichert, wirkt nicht
+    const fx = e.fam === 'fx', drum = e.fam === 'drum';
+    if (drum) return;                                             // Pad-Werte: je Schlag am Schritt abgetastet (lnDrumEx)
+    const wkOk = !fx && E && !E.dead && (snd.engine === 'mk' ? e.sp === 'M' : e.sp === 'A') && lkFamOk(e, snd) && e.cls !== 's';
+    if (!fx && !wkOk) return;                                     // nativ: nur Spur-Werte (LKT.nat), sonst „nur mit Worklet“
+    if (wkOk && e.p.startsWith('mods.') && !st.md) lnModsMap(i, E, clip);
+    const sb = lnGb(ln.g); let k = Math.max(0, Math.ceil((from - cs) / sb - 1e-9));
+    for (; cs + k * sb < to - 1e-9; k++) {
+      const s0 = ln.st.find(q => q.i === d1Pos({Ls: ln.len, dir: 'fwd'}, k)), r = s0 && s0.r ? s0.r : 1;
+      for (let m = 0; m < r; m++) {
+        const B = cs + k * sb + m * sb / r; if (B < from - 1e-9 || B >= to - 1e-9) continue;
+        const x = lnValueAt(ln, k, m, n), was = st.last.has(n) ? st.last.get(n) : null; if (x === was) continue;
+        st.last.set(n, x);
+        let t = b2t(B + swingOffset(B - cs)); if (t < now) { if (!late && t < now - .02) continue; t = now; }
+        const y = x == null ? NaN : lkFromN(e, x);
+        if (fx) { lnFx(i, ln.p, y, t); st.fx.add(ln.p); continue; }
+        const c = e.sp === 'M' ? -2 : -1;
+        E.lane(t, c, e.wi, y, e.c === 'vals' || e.cls === 'n' ? 0 : ramp); st.on.set(c + ':' + e.wi, [c, e.wi]);
+        LKS.ev = (LKS.ev || 0) + 1;
+      }
+    }
+  });
+}
+// a lane on a mod depth: the worklet learns once which route (source, target) the place is
+function lnModsMap(i, E, clip) {
+  const st = LNS[i], o = {}; st.md = true;
+  for (const ln of clip.ln) { const m = /^mods\.([a-z0-9]+)-([a-z0-9]+)\.amt$/.exec(ln.p), e = LKT[ln.p]; if (!m || !e || e.sp !== 'A') continue;
+    const em = SQF.toEngineMods([{src: m[1], dst: m[2], amt: 1}]); if (em && em[0]) o[e.wi] = [em[0].src, em[0].dst]; }
+  try { E.node.port.postMessage({lkMd: o}); } catch (e) { logErr(e); }
+}
+// the end of the lanes of track i at t: queued values from t on go (type 12, sent first), then every place back to its base
+function lnEnd(i, t) {
+  const st = LNS[i]; if (!st) return; LNS[i] = null;
+  const E = AU.synth[i];
+  if (E && !E.dead && st.on.size) { const cs = new Set([...st.on.values()].map(q => q[0])); for (const c of cs) E.laneClr(t, c); for (const [c, wi] of st.on.values()) E.lane(t, c, wi, NaN, 0); }
+  for (const p of st.fx) lnFx(i, p, NaN, t);
+}
+// a track value (fx.*) at t on the track's chain (native on worklet and native tracks, tau 1 ms); NaN = the base
+function lnFx(i, path, y, t) {
+  const A = AU.tracks[i], tr = S.tracks[i]; if (!A || !tr || !AU.ctx) return;
+  const fx = trackFx(tr), k = path.slice(3), v = y === y ? y : k.startsWith('chorus.') ? fx.chorus[k.slice(7)] : fx[k];
+  const at = Math.max(t, AU.ctx.currentTime), set = (p, x) => { try { p.cancelScheduledValues(at); p.setTargetAtTime(x, at, .001); } catch (e) {} };
+  if (k === 'vol') set(A.vol.gain, v * v / (1 + fx.drive * 1.5));
+  else if (k === 'pan') { if (A.pan) set(A.pan.pan, v); }
+  else if (k === 'rev') set(A.revSend.gain, v);
+  else if (k === 'dly') set(A.dlySend.gain, v);
+  else if (k.startsWith('chorus.') && A.chorus) { const ch = Object.assign({}, fx.chorus); ch[k.slice(7)] = v; try { A.chorus.set({mode: ch.mode, rate: ch.rate == null ? 1 : ch.rate, depth: ch.depth == null ? 1 : ch.depth, mix: ch.mix == null ? 1 : ch.mix}, at); } catch (e) {} }
+  // fx.pump: read at each kick (lnFxAt)
+}
+function lnFxAt(i, path, t, base) { const x = laneAt(i, path, t); return x == null ? base : lkFromN(LKT[path], x); }
+// I2c (§5.7): lanes on pad values of a drum hit, sampled at the hit's step (L6, with m); a note lock wins
+function lnDrumEx(clip, DL, gm, rb, ex) {
+  const sl = DRUM_BY_GM[gm] || DRUM_BY_GM[mapV1Drum(gm)]; if (!sl) return ex;
+  let v = null;
+  for (const ln of DL) {
+    const q = ln.p.split('.'); if (q[1] !== sl.id || !LKT[ln.p]) continue;
+    const n = clip.ln.indexOf(ln), sb = lnGb(ln.g), k = Math.max(0, Math.round(rb / sb + 1e-9)), x = lnValueAt(ln, k, 0, n); if (x == null) continue;
+    if (ex && ex.lk && ex.lk.v && ex.lk.v[ln.p] != null) continue;
+    (v || (v = {}))[ln.p] = x;
+  }
+  if (!v) return ex;
+  const lk = Object.assign({}, ex && ex.lk); lk.v = Object.assign({}, lk.v, v);
+  return Object.assign({}, ex, {lk});
+}
+// I2-61: the worklet's place lists are the frozen pv-layout.json (one check at start, no audio)
+function lkWkCheck() {
+  try { const s = document.getElementById('sq-worklet-src').textContent, a = /const PVA = '([^']*)'/.exec(s), m = /const PVM = '([^']*)'/.exec(s);
+    return !!a && !!m && a[1] === LKX.A.join(' ') && m[1] === LKX.M.join(' '); } catch (e) { return false; }
+}
 
 /* ---------------- 40-audio.js ---------------- */
 /* =====================================================================
@@ -22639,7 +22768,8 @@ function onKickScheduled(t) {
   if (!AU.ctx) return;
   for (let i = 0; i < NT(); i++) {                  // WP6: the drum track's SPUR page has Pumpen too (§7.3 FX)
     const tr = S.tracks[i], A = AU.tracks[i], fx = tr && tr.sound ? tr.sound.fx : null;
-    if (A && fx && fx.pump > 0) FX.pump(A.duck, t, fx.pump, FX.divSec(fx.pumpRel || '1/8', S.bpm) * .9);
+    const pu = fx && LNS[i] && LNS[i].fx ? lnFxAt(i, 'fx.pump', t, fx.pump) : fx ? fx.pump : 0;   // I2c: Reihe auf Pumpen
+    if (A && fx && pu > 0) FX.pump(A.duck, t, pu, FX.divSec(fx.pumpRel || '1/8', S.bpm) * .9);
   }
   const hp = S.fxBus.hall.pump; if (hp > 0 && AU.hallDuck) FX.pump(AU.hallDuck, t, hp, spb() * .6);
 }
@@ -23588,7 +23718,7 @@ function spawnWkVoice(i, out, vel, t0, o, E, snd) {
   }
   if (E === AU.synth[i]) { wkFlush(i); if (WKFM[i]) wkFm6(i, true); }   // pending knob / operator values reach the engine before the note
   if (o.mask) v.mask = o.mask;                                // MK5: the timbre mask of an AM note (arp target)
-  E.on(v.id, out, vel, t0, from, o.mask || 0);
+  E.on(v.id, out, vel, t0, from, o.mask || 0, o.lk || null);   // I2b: o.lk = Paare der Note (Locks, Reihen-Startwerte)
   VOICES.push(v); E.proxies.set(v.id, v);
   if (o.src !== 'preview') { v.perf = perfAdd(i, out, t0, null, vel); if (v.perf) v.perfAll.push(v.perf); }
   return v;
@@ -23635,6 +23765,7 @@ function spawnVoice(i, out, vel, t0, o) {
   if (snd0.engine === 'mk' && o.mask === 2) return null;    // MK5 (B.5): the ECO image is timbre 1 only; a T2-only note does not sound there
   if (snd0.engine === 'mk' && snd0.p.mk && snd0.p.mk.mode === 3) return null;
   const snd = snd0.engine === 'mk' ? mkEco(snd0, i) : snd0, P = snd.p, eng = snd.engine === 'fm6' && !P.fm6 ? 'analog' : snd.engine;
+  const PL = o.lkP ? lkNatView(P, o.lkP) : P;                 // I2b (§5.6): the note's locks at the note start; LFO / legato stay on the track's sound
   out = clamp(Math.round(out), 0, 127);
   if (o.src !== 'audition' && o.src !== 'preview' && !o.sound) FMEV.note[i] = out;   // V0d (A.4b 4a): the FM editor's reference note
   // §5.4: VA (and FM6 from WP7) play through the track's worklet engine; a browser preview of another sound through its own
@@ -23653,18 +23784,18 @@ function spawnVoice(i, out, vel, t0, o) {
   const v = Object.create(eng === 'fm6' ? FmNatProto : VoiceProto);
   Object.assign(v, {id: ++VSEQ, track: i, src: o.src, clipNote: o.clipNote == null ? null : o.clipNote, clipKey: o.clipKey || null,
     out, baseOut: out, vel, start: t0, end: Infinity, dead: false, stolen: false, relT: Infinity, relV: 0, relTau: .1,
-    fRelT: Infinity, fRelV: 0, fRelTau: .1, stopAt: Infinity, peak: 0, aenv: {a: P.aA, d: P.aD, s: P.aS, r: P.aR}, fenv: {a: P.fA, d: P.fD, s: P.fS, r: P.fR},
+    fRelT: Infinity, fRelV: 0, fRelTau: .1, stopAt: Infinity, peak: 0, aenv: {a: PL.aA, d: PL.aD, s: PL.aS, r: PL.aR}, fenv: {a: PL.fA, d: PL.fD, s: PL.fS, r: PL.fR},
     relO: 0, fRelO: 0,
-    fType: P.ftype | 0, nodes, srcs, A, perf: null, perfAll: [], log: null, eng, lvl0: P.level, glide: P.glide});
+    fType: PL.ftype | 0, nodes, srcs, A, perf: null, perfAll: [], log: null, eng, lvl0: PL.level, glide: PL.glide});
   const cv = constSrc(0); srcs.push(cv.node); nodes.push(cv.node); if (cv.extra) nodes.push(cv.extra); starts.push([cv.node, 0]);
   // glide per voice: notes starting together (a chord, within 35 ms) form one group and never glide from each other;
   // each note of a new group glides from the nearest note of the previous group (mono line: from the last note).
   // LEGATO (§5.1 Modus): only from a note that is still held
   if (!o.noGlide) {
     if (gs.grpT == null || Math.abs(t0 - gs.grpT) > .035) { if (gs.grpOuts && gs.grpOuts.length) gs.prevOuts = gs.grpOuts; gs.grpOuts = []; gs.grpT = t0; }
-    if (P.glide > 0 && gs.prevOuts && gs.prevOuts.length && (P.mode !== 2 || legatoHeld)) {
+    if (PL.glide > 0 && gs.prevOuts && gs.prevOuts.length && (P.mode !== 2 || legatoHeld)) {
       let from = gs.prevOuts[0]; for (const x of gs.prevOuts) if (Math.abs(x - out) < Math.abs(from - out)) from = x;
-      if (from !== out) { cv.offset.setValueAtTime((from - out) * 100, t0); cv.offset.setTargetAtTime(0, t0, P.glide / 3); }
+      if (from !== out) { cv.offset.setValueAtTime((from - out) * 100, t0); cv.offset.setTargetAtTime(0, t0, PL.glide / 3); }
     }
     gs.grpOuts.push(out); gs.lastOut = out;
   }
@@ -23673,14 +23804,14 @@ function spawnVoice(i, out, vel, t0, o) {
   const N = o.chain || (!o.sound || o.sound === tr.sound ? A : null);
   if (N) { try { N.lfoPitch.connect(cv.offset); v.tapP = N.lfoPitch; } catch (e) {} }
   const solo = eng === 'fm6' && UI.fmSolo && UI.fmSolo.t === i && snd === tr.sound;          // §6.5 [Solo] (monitor only)
-  const src = NativeVoice.source(c, solo ? Object.assign({}, P, {fm6: fmSoloPatch(P.fm6, UI.fmSolo.k)}) : P, eng, out, vel, cv.out, {t0, noise: AU.noise, waves: AU.waves});
+  const src = NativeVoice.source(c, solo ? Object.assign({}, PL, {fm6: fmSoloPatch(P.fm6, UI.fmSolo.k)}) : PL, eng, out, vel, cv.out, {t0, noise: AU.noise, waves: AU.waves});
   nodes.push(...src.nodes); srcs.push(...src.srcs); starts.push(...src.starts);
   // §6.4: an FM voice's DX release (dx, rt); fmAmp 0 = the DX envelopes shape the volume, the VCA is a gate (fast attack)
   if (eng === 'fm6') { v.dx = src.dx || null; v.dxRT = src.rt || .05; v.dxEnd = Infinity; if (!(P.fmAmp >= 1)) v.aenv = {a: .0012, d: .05, s: 1, r: Math.max(.05, v.dxRT)}; }
-  if (eng === 'analog') { v.aenv.c = P.aCurve == null ? .5 : +P.aCurve; v.fenv.c = P.fCurve == null ? .5 : +P.fCurve; }   // V0a-19: the worklet's envelope shapes
+  if (eng === 'analog') { v.aenv.c = PL.aCurve == null ? .5 : +PL.aCurve; v.fenv.c = PL.fCurve == null ? .5 : +PL.fCurve; }   // V0a-19: the worklet's envelope shapes
   // V0a K-17: every native voice leaves with the worklet's pan law (√2 into a StereoPanner = unity in the centre); a voice with
   // Streuung was 3 dB quieter than on the worklet (mono into its StereoPanner)
-  const tl = NativeVoice.tail(c, P, out, vel, src.out, o.chain ? o.chain.trackIn : A.trackIn, cv.out, {mkConst: constSrc, pan: voicePan(A, P), bypass: NativeVoice.fmBypass(P, eng), unity: true, eng, t0, natTrim: nativeTrim(snd, eng)});
+  const tl = NativeVoice.tail(c, PL, out, vel, src.out, o.chain ? o.chain.trackIn : A.trackIn, cv.out, {mkConst: constSrc, pan: voicePan(A, PL), bypass: NativeVoice.fmBypass(PL, eng), unity: true, eng, t0, natTrim: nativeTrim(snd, eng)});
   nodes.push(...tl.nodes);
   for (const s of tl.srcs) { srcs.push(s); starts.push([s, 0]); }
   if (N) { try { N.lfoCut.connect(tl.fA.detune); if (tl.fB) N.lfoCut.connect(tl.fB.detune); v.tapC = N.lfoCut; } catch (e) {} }
@@ -23701,14 +23832,17 @@ function spawnVoice(i, out, vel, t0, o) {
   if (o.src !== 'preview') { v.perf = perfAdd(i, out, t0, null, vel); if (v.perf) v.perfAll.push(v.perf); }
   return v;
 }
-function spawnClipVoice(i, out, vel, t, dur, clipNote, clipKey, noGlide, mask) {
+function spawnClipVoice(i, out, vel, t, dur, clipNote, clipKey, noGlide, mask, lx) {   // I2b: lx = {lk, lkP, lkv} der Note
   // LEGATO (§5.1 Modus) + an overlapping clip note (LAUF BINDUNG, §3.10): the engine glides without retriggering; the log says so
   const tr = S.tracks[i], P = tr && tr.kind === 'synth' ? tr.sound.p : null;
   const legato = !!(P && P.mode === 2 && VOICES.some(x => x.track === i && !x.dead && x.src === 'clip' && x.start < t - 1e-4 && x.relT > t + 1e-4));
-  const v = spawnVoice(i, out, vel, t, mask ? {src: 'clip', clipNote, clipKey, noGlide, mask} : {src: 'clip', clipNote, clipKey, noGlide});   // MK5: mask = the timbre of an AM note
+  const o = mask ? {src: 'clip', clipNote, clipKey, noGlide, mask} : {src: 'clip', clipNote, clipKey, noGlide};   // MK5: mask = the timbre of an AM note
+  if (lx) { if (lx.lk) o.lk = lx.lk; if (lx.lkP) o.lkP = lx.lkP; }
+  const v = spawnVoice(i, out, vel, t, o);
   if (!v) return null;
   v.release(t + dur);
   v.log = logNote({track: i, src: 'clip', clipNote, out: v.out, time: t, dur, vel, legato});
+  if (lx && lx.lkv) v.log.lk = lx.lkv;                          // I2b: Video (VV3) zeichnet die Werte der klingenden Note
   return v;
 }
 /* live parameter update for sounding voices of track i (the knob is heard at once): filter, oscillator pitch / levels,
@@ -23865,7 +23999,7 @@ function drumHit(gm, vel, t, src, ex, o) {
   const sl = DRUM_BY_GM[gm] || DRUM_BY_GM[mapV1Drum(gm)];
   if (sl && !(o && o.P) && mdPlays(sl.id)) return mdHit(sl, vel, t, src, ex);   // ND4: Pad mit Quelle MD_NAME
   if (!sl || !AU.tracks[DRUM_T] || !drumBufs() || !AU.kit) return null;
-  const P0 = o && o.P ? o.P : slotParams(sl.id), P = ex && ex.lk ? DrumSeq.lockParams(P0, ex.lk) : P0;
+  const P0 = o && o.P ? o.P : slotParams(sl.id), P = ex && ex.lk ? DrumSeq.lockParams(P0, ex.lk, sl.id) : P0;   // I2b: + lk.v (absolut) vor tune / dec
   const chokes = chokeVoice(sl.id, t);
   if (P0.choke) for (const s of DRUM_VOICES) if (s.id !== sl.id && (o && o.Pof ? o.Pof(s.id) : slotParams(s.id)).choke === P0.choke) chokes.push(...chokeVoice(s.id, t));
   const dest = (o && o.strip) || AU.strips[sl.id];
@@ -24555,6 +24689,7 @@ function scheduleTrack(i, from, to, late) {
   if (tr.stimme) { if (clip && !tr.mute) tkSched(i, clip, from, to, late, oc ? R.own[i] : null); return; }   // VS3: STIMME = Audio
   if (!clip || tr.mute || !clip.notes.length) return;
   const mu = takeMute(i);                                        // V2d′ (K2-21, 7.2): the target track's old notes are silent during the take
+  if (clip.ln) { try { scheduleLanes(i, clip, from, to, late); } catch (e) { logErr(e); } }   // I2c: Reihen vor den Noten (gleiches Fenster)
   if (tr.kind === 'drum') { scheduleDrums(i, clip, from, to, late, oc ? 'own' : null, mu); return; }
   const L = clip.len * 4, cs = R.cstart[i], sp = spb(), now = AU.ctx.currentTime, ev = new Map();
   for (const nt of clip.notes) {
@@ -24572,8 +24707,8 @@ function scheduleTrack(i, from, to, late) {
         if (o) o.v = Math.max(o.v, nt.v); else ev.set(key, {t, n: nt.n, v: nt.v});
       } else {
         const out = outPitch(i, clip.key, nt.n, t), key = t.toFixed(4) + ':' + out, o = ev.get(key);
-        if (o) { o.v = Math.max(o.v, nt.v); o.dur = Math.max(o.dur, dur); }
-        else ev.set(key, {t, out, v: nt.v, dur, n: nt.n});
+        if (o) { if (nt.v > o.v) { o.nt = nt; o.rb = B - cs; } o.v = Math.max(o.v, nt.v); o.dur = Math.max(o.dur, dur); }   // I2b: das lautere gewinnt, mit seinem Lock
+        else ev.set(key, {t, out, v: nt.v, dur, n: nt.n, nt, rb: B - cs});
       }
     }
   }
@@ -24581,8 +24716,9 @@ function scheduleTrack(i, from, to, late) {
     if (tr.kind === 'drum') drumHit(e.n, e.v, e.t, 'clip');
     else {
       let mask;
-      if (arpOn(i)) { mask = ARPC.clip(i, e.out, e.n, clip.key, e.v, e.t, e.dur); if (mask == null) continue; }   // MK5: into the held set (the other timbre holds it)
-      const v = spawnClipVoice(i, e.out, e.v, e.t, e.dur, e.n, clip.key, false, mask); if (v && oc && v.log) v.log.src = 'own';   // V2d′: noteLog src 'own'
+      const lx = (e.nt && e.nt.lk) || clip.ln ? lkNoteX(i, clip, e.nt, e.rb) : null;   // I2b: Locks / Reihen-Startwert der Note
+      if (arpOn(i)) { mask = ARPC.clip(i, e.out, e.n, clip.key, e.v, e.t, e.dur, undefined, lx && lx.lk); if (mask == null) continue; }   // MK5: into the held set (the other timbre holds it)
+      const v = spawnClipVoice(i, e.out, e.v, e.t, e.dur, e.n, clip.key, false, mask, lx); if (v && oc && v.log) v.log.src = 'own';   // V2d′: noteLog src 'own'
     }
   }
 }
@@ -24616,15 +24752,17 @@ function scheduleDrums(i, clip, from, to, late, lsrc, mu) {
         if (t < now) t = now;
         const key = t.toFixed(4) + ':' + nt.n, o = ev.get(key);
         if (o) { o.v = Math.max(o.v, h.v); if (h.acc) o.ex = Object.assign({}, o.ex, {acc: 1}); }
-        else ev.set(key, {t, n: nt.n, v: h.v, ex: h.acc || h.lk ? h : null});
+        else ev.set(key, {t, n: nt.n, v: h.v, ex: h.acc || h.lk ? h : null, rb: B - cs + (nt.m || 0) * .25});   // I2c: rb = Schritt-Lage (L6, mit m)
       }
     }
   }
   if (D1) d1Sched(D1, cs, from, to, late, now, mu, seed, ev);   /* D1 */
+  const DL = clip.ln ? clip.ln.filter(l => l.p.startsWith('drum.')) : null;   // I2c: Reihen auf Pad-Werte
   // in time order: a pad is monophonic, so a later hit must see (and choke) every earlier one of the window
   const dt = S.settings.harmony.drums;                           // V2c′: Drums mittransponieren (TUNE wie ein Lock)
   for (const e of [...ev.values()].sort((x, y) => x.t - y.t)) {
     let ex = e.ex; const tu = dt ? drumTune(e.t) : 0;
+    if (DL && DL.length && e.rb != null) ex = lnDrumEx(clip, DL, e.n, e.rb, ex);
     if (tu) ex = Object.assign({}, ex, {lk: Object.assign({}, ex && ex.lk, {tune: ((ex && ex.lk && ex.lk.tune) || 0) + tu})});
     const h = drumHit(e.n, e.v, e.t, 'clip', ex);
     if (lsrc && h && h.log) h.log.src = lsrc;
@@ -24648,17 +24786,19 @@ function d1Sched(D, cs, from, to, late, now, mu, seed, ev) {
         if (t < now) t = now;
         const key = t.toFixed(4) + ':' + nt.n, o = ev.get(key);
         if (o) { o.v = Math.max(o.v, h.v); if (h.acc) o.ex = Object.assign({}, o.ex, {acc: 1}); }
-        else ev.set(key, {t, n: nt.n, v: h.v, ex: h.acc || h.lk ? h : null});
+        else ev.set(key, {t, n: nt.n, v: h.v, ex: h.acc || h.lk ? h : null, rb: B - cs + (nt.m || 0) * .25});
       }
     }
   }
 }
 function cutTrackAt(i, t) {
+  if (LNS[i]) lnEnd(i, t);                                       // I2c: Reihen enden (Typ 12, dann Grundwerte)
   if (TK.src.length) tkCutAt(i, t);                              // VS3
   for (const v of VOICES.slice()) if (!v.dead && v.track === i && v.src === 'clip' && v.start < t && v.end > t) v.release(t);
   { const A = arpK(); if (A && A.busy()) A.cut(i, t); }          // MK5: the clip notes in the arp's held set end here too
 }
 function cancelTrackFrom(i, t) {
+  if (LNS[i]) lnEnd(i, t);                                       // I2c
   { const A = arpK(); if (A && A.busy()) A.cancelFrom(i, t); }   // MK5
   if (TK.src.length) tkCancelFrom(i, t);                         // VS3
   for (const v of VOICES.slice()) if (!v.dead && v.track === i && v.src === 'clip' && v.start >= t - 1e-6) v.cancel();
@@ -25908,6 +26048,7 @@ function stop() {
   if (PV.on) previewStop();                                 // ■ also ends a browser preview phrase
   // release everything while the transport still counts beats, so the Mitschnitt (PERF) gets the real end beats
   silenceAll(now, .02);
+  for (let i = 0; i < LNS.length; i++) if (LNS[i]) lnEnd(i, now);   // I2c: ■ beendet die Reihen
   releaseInputs(r => r === 'play' || r === 'pad');
   arpEndAll();                                              // MK5 (Umfang 8): stop ends every arp note, also a latched chord
   R.playing = false; R.countIn = false; R.ciRun = false;
@@ -56909,7 +57050,7 @@ function vv3Notes(src, i, t, back) {
   const lim = t - (back || 12) - (L.mx || 0);              // a held note older than the window still sounds: back by the longest note
   for (let j = hi - 1; j >= 0 && out.length < 256; j--) {
     const o = L[j], e = o.e; if (e.removed) continue; if (o.a < lim) break;
-    out.push({n: e.out, v: e.vel == null ? .8 : e.vel, a: o.a, b: e.dur != null ? o.a + e.dur : (i === DRUM_T ? o.a + .05 : Infinity)});
+    out.push(e.lk ? {n: e.out, v: e.vel == null ? .8 : e.vel, a: o.a, b: e.dur != null ? o.a + e.dur : (i === DRUM_T ? o.a + .05 : Infinity), lk: e.lk} : {n: e.out, v: e.vel == null ? .8 : e.vel, a: o.a, b: e.dur != null ? o.a + e.dur : (i === DRUM_T ? o.a + .05 : Infinity)});
   }
   return out.reverse();
 }
@@ -57012,7 +57153,14 @@ function vv3MkSeq(T, t, sb, notes, bpm) {
 // everything the MK picture shows at t (also the probe of VV3-01)
 function vv3MkState(i, t, st, src) {
   const snd = sndOf(i), pm = snd && snd.p.mk; if (!pm) return null;
-  const T = pm.t[0], W = MKW_(), bpm = (src && src.bpm) || S.bpm, notes = vv3Notes(src, i, t, 20);
+  const r0 = vv3MkState0(i, t, st, src, pm.t[0]); if (!r0 || !r0.nv || !r0.nv.lk) return r0;   // I2b: with the sounding note's locks (timbre 1)
+  const T1 = JSON.parse(JSON.stringify(pm.t[0])); let any = false;
+  for (const k in r0.nv.lk) { if (!k.startsWith('mk.t.0.')) continue; const e = LKT[k]; if (!e) continue; any = true; SQMK.mkPathSet({t: [T1, JSON.parse(JSON.stringify(pm.t[1]))]}, k.slice(3), lkFromN(e, r0.nv.lk[k])); }
+  return any ? vv3MkState0(i, t, st, src, T1) || r0 : r0;
+}
+function vv3MkState0(i, t, st, src, T0) {
+  const snd = sndOf(i), pm = snd && snd.p.mk; if (!pm) return null;
+  const T = T0 || pm.t[0], W = MKW_(), bpm = (src && src.bpm) || S.bpm, notes = vv3Notes(src, i, t, 20);
   const voices = notes.filter(x => x.a <= t && (x.b >= t || vv3MkEnv(T.e2, x.a, x.b, t) > .002));
   const nv = voices.length ? voices[voices.length - 1] : null;
   const e1 = nv ? vv3MkEnv(T.e1, nv.a, nv.b, t) : 0, e2 = nv ? vv3MkEnv(T.e2, nv.a, nv.b, t) : 0;
@@ -57051,8 +57199,13 @@ function vv3Adsr(e, a, b, t) {               // envValueAt (the app's ADSR) and 
   if (K) { const o = -K.rd + (L + K.rd) * Math.exp(-(t - b) * K.ld / R_); return Math.max(0, o); }
   return L * Math.exp(-(t - b) / (R_ / 3));
 }
-function vv3VaState(i, t, src) {
-  const snd = sndOf(i); if (!snd) return null; const p = snd.p, notes = vv3Notes(src, i, t, 30).filter(x => x.a <= t);
+function vv3VaState(i, t, src) {          // I2b: with the sounding note's locks (the values it hears)
+  const r = vv3VaState0(i, t, src, null); if (!r || !r.nv || !r.nv.lk) return r;
+  return vv3VaState0(i, t, src, vv3LkP(r.p, r.nv.lk)) || r;
+}
+function vv3LkP(p, lk) { const o = Object.assign({}, p); for (const k in lk) { const e = LKT[k]; if (e && !k.includes('.') && k in p) o[k] = lkFromN(e, lk[k]); } return o; }
+function vv3VaState0(i, t, src, pO) {
+  const snd = sndOf(i); if (!snd) return null; const p = pO || snd.p, notes = vv3Notes(src, i, t, 30).filter(x => x.a <= t);
   const ae = {a: p.aA, d: p.aD, s: p.aS, r: p.aR, c: p.aCurve}, fe = {a: p.fA, d: p.fD, s: p.fS, r: p.fR, c: p.fCurve}, me = {a: p.mA, d: p.mD, s: p.mS, r: p.mR, c: p.mCurve};
   const voices = notes.filter(x => x.b >= t || vv3Adsr(ae, x.a, x.b, t) > .002), nv = voices.length ? voices[voices.length - 1] : null;
   const amp = nv ? vv3Adsr(ae, nv.a, nv.b, t) : 0, fo = nv ? vv3Adsr(fe, nv.a, nv.b, t) : 0, mo = nv ? vv3Adsr(me, nv.a, nv.b, t) : 0;
@@ -57100,12 +57253,15 @@ function vv3FmLevel(X, fm, p, k, nt, t) {
 }
 function vv3FmState(i, t, src) {
   const snd = sndOf(i), X = vv3Fmx(); if (!snd || !snd.p.fm6 || !X) return null;
-  const p = snd.p, fm = p.fm6, notes = vv3Notes(src, i, t, 30).filter(x => x.a <= t), lv = [0, 0, 0, 0, 0, 0];
+  const p = snd.p, fm0 = p.fm6, notes = vv3Notes(src, i, t, 30).filter(x => x.a <= t), lv = [0, 0, 0, 0, 0, 0];
   let nv = null;
+  const fmOf = nt => { if (!nt.lk) return fm0; let f = null; for (const k in nt.lk) { const q = k.split('.'); if (q[0] !== 'fm6' || q[1] !== 'ops') continue; const e = LKT[k]; if (!e) continue;   // I2b: OP-Locks der Note
+      f = f || JSON.parse(JSON.stringify(fm0)); const op = f.ops[+q[2]]; if (!op) continue; if (q.length > 4) op[q[3]][+q[4]] = lkFromN(e, nt.lk[k]); else op[q[3]] = lkFromN(e, nt.lk[k]); } return f || fm0; };
+  let fm = fm0;
   for (const nt of notes) {
-    let any = false;
-    for (let k = 0; k < 6; k++) { const l = vv3FmLevel(X, fm, p, k, nt, t); if (l == null) continue; if (l > lv[k]) lv[k] = l; if (l > 300) any = true; }
-    if (any || nt.b >= t) nv = nt;
+    let any = false; const fN = fmOf(nt);
+    for (let k = 0; k < 6; k++) { const l = vv3FmLevel(X, fN, p, k, nt, t); if (l == null) continue; if (l > lv[k]) lv[k] = l; if (l > 300) any = true; }
+    if (any || nt.b >= t) { nv = nt; fm = fN; }
   }
   return {p, fm, alg: X.ALGS[(fm.alg | 0) - 1] || X.ALGS[0], lv, nv, notes};
 }
@@ -57939,6 +58095,12 @@ const SYNQUENZER = {
   heardAt: (i, path, t) => heardAt(i, path, t),
   lkToN: (path, v) => lkToN(LKT[path], v), lkFromN: (path, x) => lkFromN(LKT[path], x),
   needOf: () => needOf(S),
+  // I2b / I2c Test (M-LOCK): Werte je Stimme aus dem Worklet; Paare einer Note; Reihen-Zustand
+  lkProbe: (i, on) => { const E = AU.synth[i]; if (!E || E.dead) return false; E.lkRep = null; E.node.port.postMessage({lkProbe: on !== false}); return true; },
+  lkRep: i => { const E = AU.synth[i]; return E && E.lkRep ? JSON.parse(JSON.stringify(E.lkRep)) : null; },
+  lkWkInfo: async i => { const E = AU.synth[i]; if (!E || E.dead) return null; E.lkInfo = null; E.node.port.postMessage({lkInfo: 1}); for (let k = 0; k < 40 && !E.lkInfo; k++) await new Promise(r => setTimeout(r, 25)); return E.lkInfo; },
+  lkNoteX: (i, s, n, rb) => { const c = S.tracks[i].clips[s]; return lkNoteX(i, c, c.notes[n], rb == null ? c.notes[n].t : rb); },
+  lnState: i => (LNS[i] ? {on: [...LNS[i].on.keys()], fx: [...LNS[i].fx], last: [...LNS[i].last.entries()]} : null),
   needKnown: list => { if (Array.isArray(list)) KNOWN_NEED = list.slice(); return KNOWN_NEED.slice(); },   // nur Tests (A.4 Fall a)
   setClip: (t, s, clip) => {
     const tr = S.tracks[t]; if (!tr || s < 0 || s > NS() - 1) throw new Error('Ungültiger Slot');
