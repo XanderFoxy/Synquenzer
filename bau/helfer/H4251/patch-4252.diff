@@ -1,0 +1,133 @@
+--- index.html	2026-11-01 00:47:48.691021623 +0000
++++ index-4252.html	2026-11-01 00:53:56.623043494 +0000
+@@ -16585,7 +16585,7 @@
+ /* =====================================================================
+    CORE: utilities, descriptors, presets, kits, project model
+    ===================================================================== */
+-const VERSION = '4.25.1';
++const VERSION = '4.25.2';
+ const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+ const isNum = v => typeof v === 'number' && Number.isFinite(v);
+ const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
+@@ -34271,7 +34271,8 @@
+   const sh = EL.clipSheet; sh.innerHTML = ''; sh.style.setProperty('--tc', `var(--t${t + 1})`);
+   const head = el('div', 'sh-head');
+   const r1 = el('div', 'sh-row'); r1.style.width = '100%';
+-  const sub = clip ? `${clip.len} ${clip.len === 1 ? 'Takt' : 'Takte'} · ${clip.notes.length} ${clip.notes.length === 1 ? 'Note' : 'Noten'}` : 'leer';
++  const nTk = clip && clip.audio ? 1 + (Array.isArray(clip.audio.alt) ? clip.audio.alt.length : 0) : 0;   // K3: STIMME-Clip
++  const sub = clip ? (tr.stimme && clip.audio ? `${clip.len} ${clip.len === 1 ? 'Takt' : 'Takte'} · Gesang · ${nTk} ${nTk === 1 ? 'Take' : 'Takes'}` : `${clip.len} ${clip.len === 1 ? 'Takt' : 'Takte'} · ${clip.notes.length} ${clip.notes.length === 1 ? 'Note' : 'Noten'}`) : 'leer';
+   const title = el('div', 'sh-title', `<span class="dot"></span><b>${esc(tr.name)} · Szene ${s + 1}<span class="csub"><span class="dash"> — </span>${esc(sub)}</span></b>`);
+   const x = el('button', 'sh-x rb', '✕'); x.setAttribute('aria-label', 'Schließen'); on(x, 'click', closeClipSheet);
+   r1.append(title); head.append(r1);
+@@ -34309,7 +34310,7 @@
+     const playing = R.playing && AU.ctx && visualSlots(t, audBeat()).playing === s;
+     const g = el('div', 'cgrid');
+     g.append(B('✎ Bearbeiten', () => { closeClipSheet(); openRoll(t, s); }, 'big'));
+-    g.append(B('Quantisieren…', () => openQuantSheet(t, s)));
++    g.append(B('Quantisieren…', () => (tr.stimme && clip.audio ? (closeClipSheet(), wpOpen({t, s})) : openQuantSheet(t, s))));   // K3: STIMME → Marken-Editor
+     g.append(B('Kopieren', () => { copyClip(t, s); toast('Clip kopiert'); reopen(); }));
+     const pb = B('Einfügen', () => { if (pasteClip(t, s)) reopen(); }); pb.disabled = !CLIPBOARD.clip; g.append(pb);
+     g.append(B('Duplizieren → frei', () => { const k = duplicateClip(t, s); if (k >= 0) toast('Dupliziert in Szene ' + (k + 1)); }, null, 'Duplizieren → freier Platz'));
+@@ -34328,7 +34329,8 @@
+     lr.append(el('span', 'lbl', 'Länge'));
+     const L1 = B('½', () => { clipLength(t, s, .5); }, null, 'Halbe Länge'), L2 = B('−1', () => clipLength(t, s, -1), null, 'Ein Takt weniger'),
+       L3 = B('+1', () => clipLength(t, s, 1), null, 'Ein Takt mehr'), L4 = B('×2', () => clipLength(t, s, 2), null, 'Doppelte Länge (Inhalt verdoppelt)');
+-    L1.disabled = L2.disabled = clip.len <= 1; L3.disabled = L4.disabled = clip.len >= 16;
++    L1.disabled = L2.disabled = clip.len <= 1; L3.disabled = L4.disabled = clip.len >= 64;   // K3 (4.25.2): wie clipLength (G8)
++    if (tr.stimme) { L4.title = 'Doppelte Länge (Gesang einmal, danach Stille)'; L4.setAttribute('aria-label', L4.title); }
+     const und = B('↶', () => { undo(); reopen(); }, 'ur', 'Rückgängig'), red = B('↷', () => { redo(); reopen(); }, 'ur', 'Wiederholen');
+     und.disabled = !UNDO.length; red.disabled = !REDO.length;
+     lr.append(L1, L2, L3, L4, und, red);
+@@ -40628,6 +40630,8 @@
+ function tkVoxTrim(o, x0, x1, sp) {
+   const sh = (x0 - o.bar) * 4, r = Object.assign({}, o, {bar: x0, len: x1 - x0}, tkSegTrim(o, sh, sp));
+   if (Array.isArray(o.alt)) r.alt = o.alt.map(g => Object.assign({}, g, tkSegTrim(g, sh, sp)));
++  const cut = g => { const m = tkR6(g.in + ((x1 - x0) * 4 - g.at) * sp); if (g.out > m + 1e-6) g.out = Math.max(g.in, m); };   // K1 (4.25.2): out endet mit dem Stück
++  cut(r); if (Array.isArray(r.alt)) r.alt.forEach(cut);
+   return r;
+ }
+ // nach pushSongUndo: Take und neue Spur gehören in denselben Schritt
+@@ -40726,11 +40730,14 @@
+ function tkSheetPaint(p) {
+   const r = TK.sheet, x = r && tkRef(r); if (!x) { closePop(); return; }
+   const segs = tkSegs(x.a), ok = tkAudioOk();
++  // K4 (4.25.2): feste Nummern – Take 1 = älteste Aufnahme in diesem Clip (S.takes[id].created, bei Gleichstand nach in)
++  const cr = sg => (S.takes && S.takes[sg.take] ? +S.takes[sg.take].created || 0 : 0), ord = segs.map((sg, k) => k).sort((i, j) => (cr(segs[i]) - cr(segs[j])) || (segs[i].in - segs[j].in) || (j - i)), no = [];
++  ord.forEach((k, n) => { no[k] = n + 1; });
+   const rows = segs.map((sg, k) => {
+     const m = S.takes && S.takes[sg.take], d = new Date(m ? m.created : 0), miss = TK.missing.has(sg.take);
+     const info = (m ? tkFmtDur(sg.out - sg.in) + ' · ' + z2(d.getHours()) + ':' + z2(d.getMinutes()) + ' · ' + (ST_RSHORT[m.route] || '') : '?') + (miss ? ' · fehlt hier' : '');
+-    return `<div class="tkrow${k === 0 ? ' on' : ''}"><button class="mbtn rb tk-pick" data-k="${k}"${k === 0 ? ' aria-pressed="true"' : ''}><b>${k === 0 ? '● ' : '○ '}Take ${segs.length - k}</b><small>${esc(info)}</small></button>` +
+-      `<button class="mbtn rb tk-del" data-k="${k}" data-del="1" aria-label="Take ${segs.length - k} löschen">✕</button></div>`;
++    return `<div class="tkrow${k === 0 ? ' on' : ''}"><button class="mbtn rb tk-pick" data-k="${k}"${k === 0 ? ' aria-pressed="true"' : ''}><b>${k === 0 ? '● ' : '○ '}Take ${no[k]}</b><small>${esc(info)}</small></button>` +
++      `<button class="mbtn rb tk-del" data-k="${k}" data-del="1" aria-label="Take ${no[k]} löschen">✕</button></div>`;
+   }).join('');
+   const est = TK.est ? 'Speicher: ' + tkMB(TK.est.usage) + ' belegt · ' + tkMB(Math.max(0, TK.est.quota - TK.est.usage)) + ' frei' : 'Speicher: …';
+   const per = TK.persist === 'persisted' ? ' · dauerhaft ✓' : TK.persist === 'best-effort' ? ' · nicht dauerhaft – ab und zu exportieren' : '';
+@@ -42909,23 +42916,37 @@
+ const wpSrcT = (E, t) => (E.map ? VSM.warpInverse(E.map, t) : t);
+ function wpHit(E, cx) {
+   const mk = wpMarks(E.id) || [], P = E.mpos && E.mpos.length === mk.length ? E.mpos : mk.map(k => k.t); let best = -1, bd = 16;
+-  P.forEach((t, i) => { const d = Math.abs(E.X(t) - cx); if (d < bd) { bd = d; best = i; } });
++  const xs = P.map(t => E.X(t));
++  xs.forEach((x, i) => { const d = Math.abs(x - cx); if (d < bd) { bd = d; best = i; } });
++  if (best < 0) return -1;
++  // K2 (4.25.2): Fangradius ≤ 16 px und ≤ halber Abstand zum Nachbarn; zwei Kandidaten näher als 6 px → keiner (es wird geschwenkt)
++  let nb = Infinity; xs.forEach((x, i) => { if (i !== best) nb = Math.min(nb, Math.abs(x - xs[best])); });
++  if (nb < 6 || bd > Math.min(16, nb / 2)) return -1;
+   return best;
+ }
+ // G1: kurze Meldung nach dem Quantisieren: wie viele Einsätze gerückt sind
+ function wpMovedN(id) { const m = S.takes && S.takes[id], w = m && m.warp; if (!w) return 0; const s = w.map.src, d = w.map.dst; let n = 0; for (let k = 1; k < s.length - 1; k++) if (Math.abs(s[k] - d[k]) > 1e-6) n++; return n; }
+ function wpMovedToast(id) { const n = wpMovedN(id); toast(n + (n === 1 ? ' Einsatz' : ' Einsätze') + ' gerückt'); return n; }
++const WP_GRIP = 44;                                                  // K2: Griff-Streifen oben (Regel 4)
+ function wpGest(cv) {
+   const xOf = e => e.clientX - cv.getBoundingClientRect().left;
+   cv.addEventListener('pointerdown', e => {
+     const E = WP.ed; if (!E || E.p || e.button > 0) return;
+     try { cv.setPointerCapture(e.pointerId); } catch (er) {}
+-    E.p = {id: e.pointerId, x0: e.clientX, y0: e.clientY, t0: performance.now(), k: wpHit(E, xOf(e)), mode: null, va: E.va};
+-  });
++    // K2 (4.25.2): eine Marke greift man nur im oberen Streifen (44 px, Griff-Dreieck); auf der Welle schwenkt ein Finger immer
++    const top = e.clientY - cv.getBoundingClientRect().top < WP_GRIP;
++    E.p = {id: e.pointerId, x0: e.clientX, y0: e.clientY, t0: performance.now(), k: wpHit(E, xOf(e)), mode: null, va: E.va, grip: top, lx: e.clientX};
++  });
++  // K2: ein zweiter Finger (irgendwo, auch neben der Welle) verwirft den laufenden Zug (kein Verschieben, kein Undo), danach schwenkt der erste
++  if (!WP.k2) { WP.k2 = true; document.addEventListener('pointerdown', e => {
++    const E = WP.ed, p = E && E.p; if (!p || p.id === e.pointerId) return;
++    E.ghost = null; p.mode = 'pan'; p.k = -1; p.x0 = p.lx; p.va = E.va; wpPaint();
++  }, true); }
+   cv.addEventListener('pointermove', e => {
+     const E = WP.ed, p = E && E.p; if (!p || p.id !== e.pointerId) return;
++    p.lx = e.clientX;
+     const dx = e.clientX - p.x0;
+-    if (!p.mode && Math.hypot(dx, e.clientY - p.y0) > 8) p.mode = p.k >= 0 ? 'move' : 'pan';
++    if (!p.mode && Math.hypot(dx, e.clientY - p.y0) > 8) p.mode = p.k >= 0 && p.grip ? 'move' : 'pan';
+     if (p.mode === 'move') { E.ghost = {k: p.k, t: E.vw.a + xOf(e) / E.cv.clientWidth * E.vw.W}; wpPaint(); }
+     else if (p.mode === 'pan') { E.va = p.va - dx / E.cv.clientWidth * E.vw.W; wpPaint(); }
+   });
+@@ -43214,6 +43235,7 @@
+   const post = g3PostOf(a), sp = spb(); if (!(post > .003)) return;
+   const L = clip.len * 4, segA = Math.min(a.at, L), segB = Math.min(L, segA + (a.out - a.in) / sp);
+   if (Math.abs(segB - L) > 1e-3) return;                            // der Take endet vor dem Clip-Ende: kein Anschluss
++  if (Math.abs(segA + (a.out - a.in) / sp - L) > 1e-3) return;      // K1 (4.25.2): Take ragt über das (gekürzte) Clip-Ende – sein Ausklang gehört nicht hierher
+   const ph = ((bar * 4 - pv.cs) % L + L) % L; if (ph > 1e-6 && L - ph > 1e-6) return;   // mitten im Clip abgebrochen: kein Ausklang
+   const key = 'g3p' + R.runId + ':' + t + ':' + B.toFixed(4); if (TK.reg.has(key)) return;
+   const buf = tkPlayBuf(a.take, a); if (!buf) { tkLoad(a.take); return; }
+@@ -43223,7 +43245,7 @@
+ }
+ // tkVoxTick: ein Stück der Song-Stimme mit Anlauf (wenn es am Take-Anfang beginnt) und Ausklang (wenn der Take bis an sein Ende reicht)
+ function g3VoxSeg(v, sp, off) {
+-  const pre = v.at < 1e-6 ? g3PreOf(v) : 0, full = v.at + (v.out - v.in) / sp >= v.len * 4 - 1e-3, post = full ? g3PostOf(v) : 0;
++  const pre = v.at < 1e-6 ? g3PreOf(v) : 0, full = Math.abs(v.at + (v.out - v.in) / sp - v.len * 4) <= 1e-3, post = full ? g3PostOf(v) : 0;   // K1: genau bis zum Ende, nicht darüber
+   if (!(pre > .003) && !(post > .003)) return v;
+   const preB = pre > .003 && (!G3.run || v.bar * 4 + off - pre / sp >= G3.run.b0 - 1e-6) ? pre / sp : 0, postB = post > .003 ? post / sp : 0;
+   if (!preB && !postB) return v;
+@@ -43276,6 +43298,7 @@
+   const post = g3PostOf(a); if (!(post > .003)) return;
+   const L = c.len * 4, segB = Math.min(L, Math.min(a.at, L) + (a.out - a.in) / sp), ph = ((bar * 4 - pv.cs) % L + L) % L;
+   if (Math.abs(segB - L) > 1e-3 || (ph > 1e-6 && L - ph > 1e-6)) return;
++  if (Math.abs(Math.min(a.at, L) + (a.out - a.in) / sp - L) > 1e-3) return;   // K1 (wie g3Exit)
+   put(t, XB(bar * 4), XB(bar * 4 + post / sp), 1, 'post');
+ }
+ 

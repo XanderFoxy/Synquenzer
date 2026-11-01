@@ -1,0 +1,435 @@
+--- basis.html	2026-11-01 00:17:56.595366043 +0000
++++ index.html	2026-11-01 00:47:48.691021623 +0000
+@@ -1461,6 +1461,9 @@
+ .rs-m.on{color:#1b1004;background:linear-gradient(#ffc45a,#e89c1c);border-color:#ffd27a}.rs-m.on small{color:#3a2408}
+ .rs-n{flex-direction:column;gap:2px}.rs-n b{font:inherit}.rs-n small{font:600 9px/1 var(--font-ui);opacity:.8;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ .rs-nt{flex:0 0 44px;width:44px;min-width:44px;height:44px;padding:0}
++.rs-pre.gd{flex-wrap:wrap;row-gap:4px}.rs-gd{flex:1 0 100%;display:flex;align-items:center;gap:6px;min-width:0}.rs-gd .seg button{height:44px;min-width:62px}
++@media (max-width:400px),(orientation:landscape) and (max-width:700px){.rs-tg.v4 .lbl{display:none}.rs-tg.v4 .rs-t{letter-spacing:0;padding:0 2px}}   /* H2: 4 Chips bei 320 px und L2 */
++@media (orientation:landscape){.rstart .rs-tg .rs-t,.rstart .rs-tg .rs-nt{height:44px}}   /* H2 (M-PLATZ): Ziele-Zeile ≥ 44 auch quer */
+ .rs-pk{flex-wrap:wrap;row-gap:4px}.rs-pk .rs-t{flex:1 0 44px;min-width:44px}
+ @media (orientation:portrait) and (max-height:700px){.rstart.one .rs-mode{display:none}}
+ @media (orientation:portrait) and (max-height:600px){.rstart .rs-mode{display:none}}
+@@ -1512,6 +1515,7 @@
+ }
+ .plist.lpl small{font:600 10px/1 var(--font-num);color:var(--text-dim)}
+ .cq .seg button{height:44px}   /* V2e N7S-40: P ≥ 44 × 44 */
++.vclk .seg button,#roVc button{height:44px}   /* H3 (4.25.1): Klick beim Singen ≥ 44 × 44 */
+ .cq-pv{margin:10px 0 6px;font:600 12px/1.3 var(--font-ui);color:#ffcf7a}
+ .cq-go{width:100%;height:44px;font:700 13px/1 var(--font-ui)}
+ .bpmbig{font:700 54px/1 var(--font-num);text-align:center;margin:4px 0 10px}
+@@ -1808,7 +1812,8 @@
+ @keyframes recPulseA{0%{transform:scale(1)}50%{transform:scale(1.06)}100%{transform:scale(1)}}
+ @keyframes recPulseB{0%{transform:scale(1)}50%{transform:scale(1.06)}100%{transform:scale(1)}}
+ .takt .lbl.recl{color:var(--rec);font-weight:700}
+-#countin .ciT{margin-top:2px;color:var(--text-dim);letter-spacing:.08em}
++#countin .ciT{margin-top:2px;color:var(--text-dim);letter-spacing:.08em;max-width:92%;text-align:center;line-height:1.35}
++#countin .ciH{margin-top:8px;font-size:12px;font-weight:500;letter-spacing:0;text-transform:none;line-height:1.3;max-width:min(calc(100% - 12px),420px);text-align:center;color:var(--text)}
+ /* slots: ■ on playing clips, queued stop "stopp in N" dim at 4 Hz, big count digit, red fill while recording */
+ .slot .sq{position:absolute;right:3px;bottom:2px;font-size:10px;line-height:1;color:var(--tc);display:none;pointer-events:none;z-index:3}
+ .slot.playing .sq{display:block}
+@@ -3893,7 +3898,7 @@
+     <div id="songView" aria-label="Song" hidden></div>
+     <div id="hint" hidden><span>▶ drücken, dann TRANSPONIEREN wählen und Töne oder Akkorde spielen.</span><button id="hintX" aria-label="Hinweis schließen">✕</button></div>
+     <div id="partBar" role="toolbar" aria-label="Teile"></div>
+-    <div id="countin" aria-hidden="true"><div class="n" id="ciNum">4</div><div class="lbl">EINZÄHLEN</div><div class="lbl ciT" id="ciTgt"></div></div>
++    <div id="countin" aria-hidden="true"><div class="n" id="ciNum">4</div><div class="lbl">EINZÄHLEN</div><div class="lbl ciT" id="ciTgt"></div><div class="lbl ciH" id="ciHint"></div></div>
+     <div id="coach" hidden></div>
+   </section>
+ 
+@@ -16580,7 +16585,7 @@
+ /* =====================================================================
+    CORE: utilities, descriptors, presets, kits, project model
+    ===================================================================== */
+-const VERSION = '4.25.0';
++const VERSION = '4.25.1';
+ const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+ const isNum = v => typeof v === 'number' && Number.isFinite(v);
+ const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
+@@ -18218,7 +18223,7 @@
+   if (MICTAP.p) return MICTAP.p;
+   const late = lazy && !AU.ctx;   // G-MK8b-merge: the audio engine starts with the granted stream (vocMicSoon)
+   if (!late) ensureAudio(); MICTAP.gum++; MICTAP.err = null;
+-  try { if (navigator.audioSession) navigator.audioSession.type = 'play-and-record'; } catch (e) {}
++  try { const ty = stSessType(); if (navigator.audioSession && ty) navigator.audioSession.type = ty; } catch (e) {}   // H6
+   let p; try { p = navigator.mediaDevices.getUserMedia({audio: Object.assign({}, MIC_ASK)}); } catch (e) { p = Promise.reject(e); }
+   MICTAP.p = p.then(st => {
+     MICTAP.p = null;
+@@ -19431,7 +19436,7 @@
+         if (b <= R.lastClick) continue;                            // never click the same beat twice (float edges)
+         R.lastClick = b;
+         if (b < 0) { if (R.countIn) click(b2t(b), ((b % 4) + 4) % 4 === 0); }    // count-in: the first beat of each bar accented
+-        else if (S.settings.metro || (recClickOn(b) && S.settings.metroInRec)) click(b2t(b), b % 4 === 0);
++        else if (S.settings.metro || (recClickOn(b) && (rec.vox ? UI.vocClick === 'always' : S.settings.metroInRec)) || recCdClick(b)) click(b2t(b), b % 4 === 0);   // H3: beim Singen „Nur Einzähler“; H4: Vorzähler
+       }
+       // Pumpen on every 1/4 or 1/8 (§8.1, fxBus.pumpSrc); with 'kick' drumHit calls onKickScheduled
+       if (S.fxBus.pumpSrc !== 'kick' && anyPump()) {
+@@ -19751,6 +19756,7 @@
+   if (!R.playing) { R.songRec = {startBeat: 0, before, pending: true}; play(); }
+   else R.songRec = {startBeat: nextBarFromAudible(), before, pending: true};
+   melShareHint({now: true});                                      // S-04: only when no free track was left
++  if (recMicOn()) toast('🎤 Gesang wird beim ersten Song-Durchgang nicht aufgenommen – erst den Song anlegen, dann ● SONG zum Einsingen');   // H8
+   songChanged(); UI.dirty.all = true;
+   wakeAcquire();
+   return true;
+@@ -20170,21 +20176,27 @@
+   const sr = R.songRec; if (!sr) return recTargets();
+   return sr.over ? Object.assign({}, sr.tg) : {clips: true, chords: true, mel: true};
+ }
++// H2 (4.25.1): mit 🎤 an gibt es das Ziel „Gesang“ (vox); ab Werk nur Gesang, bis die Ziele mit 🎤 selbst gewählt sind (UI.recTgVox)
++const recMicOn = () => !!(ST.on && ST.phase !== 'off');
+ function recTargets() {
+   if (!songHasContent()) return {clips: true, chords: true, mel: true};
+-  return UI.recTg ? Object.assign({}, UI.recTg) : {clips: false, chords: false, mel: true};
++  const mic = recMicOn();
++  if (mic && !UI.recTgVox) return {clips: false, chords: false, mel: false, vox: true};
++  const o = UI.recTg ? Object.assign({}, UI.recTg) : {clips: false, chords: false, mel: true};
++  if (!mic) delete o.vox; else if (o.vox == null) o.vox = true;
++  return o;
+ }
+ function setRecTargets(o) {
+   const cur = recTargets();
+-  if (o) { if (o.scenes != null) cur.clips = !!o.scenes; if (o.parts != null) cur.clips = !!o.parts; for (const k of REC_TG_KEYS) if (o[k] != null) cur[k] = !!o[k]; }
+-  if (songHasContent()) UI.recTg = cur;
++  if (o) { if (o.scenes != null) cur.clips = !!o.scenes; if (o.parts != null) cur.clips = !!o.parts; for (const k of REC_TG_KEYS) if (o[k] != null) cur[k] = !!o[k]; if (o.vox != null) cur.vox = !!o.vox; }
++  if (songHasContent()) { UI.recTg = cur; if (recMicOn()) UI.recTgVox = true; }
+   UI.dirty.song = true; svButtons();
+   return recTargets();
+ }
+ // V2d′: NOTEN names its track („MEL“ = the song's melody track, else „S2“ …); nt = the NOTEN track (default: the next take's)
+ const recNoteShort = nt => { const t = nt != null ? nt : recNoteTrack(); return S.song && t === S.song.melodyTrack ? 'MEL' : trShort(t); };
+-const recTgShort = (tg, narrow, nt) => (tg.clips && tg.chords && tg.mel && recNoteShort(nt) === 'MEL' ? 'ALLES' : [tg.clips && (narrow ? 'CL' : 'CLIPS'), tg.chords && 'AKK', tg.mel && recNoteShort(nt)].filter(Boolean).join(narrow ? '+\u200b' : '+') || '–');
+-const recTgLong = (tg, nt) => [tg.clips && 'Clips', tg.chords && 'Akkorde', tg.mel && (recNoteShort(nt) === 'MEL' ? 'Melodie' : 'Noten ' + S.tracks[nt != null ? nt : recNoteTrack()].name)].filter(Boolean);
++const recTgShort = (tg, narrow, nt) => (tg.clips && tg.chords && tg.mel && recNoteShort(nt) === 'MEL' ? 'ALLES' : [tg.clips && (narrow ? 'CL' : 'CLIPS'), tg.chords && 'AKK', tg.mel && recNoteShort(nt), tg.vox && '🎤'].filter(Boolean).join(narrow ? '+\u200b' : '+') || '–');
++const recTgLong = (tg, nt) => [tg.clips && 'Clips', tg.chords && 'Akkorde', tg.mel && (recNoteShort(nt) === 'MEL' ? 'Melodie' : 'Noten ' + S.tracks[nt != null ? nt : recNoteTrack()].name), tg.vox && 'Gesang'].filter(Boolean);
+ const recNtNow = () => (R.songRec && R.songRec.over ? R.songRec.nt : null);
+ // the bar a take or ▶ starts at: the Positionsmarke, else the bar where the song was stopped last (N0c), else bar 1
+ function songStartBar() {
+@@ -20215,8 +20227,8 @@
+ }
+ const trShort = t => { const nm = S.tracks[t] ? S.tracks[t].name : ''; const m = /^synth\s*(\d+)$/i.exec(nm); return m ? 'S' + m[1] : nm.slice(0, 3).toUpperCase(); };
+ function songRecStartOver(o) {
+-  const song = S.song, tg = Object.assign(recTargets(), o.targets ? (() => { const x = {}; for (const k of REC_TG_KEYS) if (o.targets[k] != null) x[k] = !!o.targets[k]; if (o.targets.scenes != null) x.clips = !!o.targets.scenes; if (o.targets.notes != null) x.mel = !!o.targets.notes; return x; })() : {});
+-  if (!tg.clips && !tg.chords && !tg.mel) { toast('Erst ein Ziel wählen: Clips, Akkorde oder Noten'); return false; }
++  const song = S.song, tg = Object.assign(recTargets(), o.targets ? (() => { const x = {}; for (const k of REC_TG_KEYS) if (o.targets[k] != null) x[k] = !!o.targets[k]; if (o.targets.scenes != null) x.clips = !!o.targets.scenes; if (o.targets.notes != null) x.mel = !!o.targets.notes; if (o.targets.vox != null) x.vox = !!o.targets.vox; return x; })() : {});
++  if (!tg.clips && !tg.chords && !tg.mel && !(tg.vox && recMicOn())) { toast('Erst ein Ziel wählen: Clips, Akkorde oder Noten'); return false; }
+   const sel = SV.sel;
+   let from = isNum(o.from) ? o.from | 0 : sel ? sel.a : songStartBar();
+   let to = o.to !== undefined ? (isNum(o.to) ? o.to | 0 : null) : sel ? sel.b + 1 : null;
+@@ -20250,7 +20262,8 @@
+   // take runs (first pass); Overdub and Einfügen keep them
+   sr.mute = tg.mel && noteT != null && (mode === 'over' || mode === 'replace') ? {t: noteT, a: from * 4 - .25, b: to != null ? to * 4 - .25 : Infinity} : null;
+   if (sr.mute) takeMuteNow(sr.mute);
+-  tkSongBegin(sr); if (sr.vox) { tkOriginHint(); tkVoxResync(true); }   // VS3: mit 🎤 nimmt die Song-Aufnahme die Stimme auf (STIMME-Spur)
++  sr.guide = !!(UI.recGuide && recMicOn());                        // H7: alte Stimme als Vorlage hörbar
++  tkSongBegin(sr); if (sr.vox) { tkOriginHint(); tkVoxResync(true); recCdCatchUp(); }   // H4: Vorlauf-Klicks   // VS3: mit 🎤 nimmt die Song-Aufnahme die Stimme auf (STIMME-Spur)
+   MEL.open.clear(); MEL.warned = false;
+   if (tg.mel && noteT != null && R.selT !== noteT && S.tracks[noteT].kind === 'synth') selectTrack(noteT);
+   if (tg.mel && noteT === song.melodyTrack) melShareHint();
+@@ -20378,7 +20391,7 @@
+   const barOf = b => Math.max(0, Math.floor((b + .25) / 4 + 1e-9));
+   const mine = ns.filter(n => { const x = barOf(n.b); return x >= A && x < B; });
+   const repl = sr.mode === 'over' || sr.mode === 'replace', clr = new Set();
+-  if (repl) { if (first) for (let x = A; x < B; x++) clr.add(x); else for (const n of mine) clr.add(barOf(n.b)); }
++  if (repl) { if (first && !(sr.vox && !mine.length)) for (let x = A; x < B; x++) clr.add(x); else for (const n of mine) clr.add(barOf(n.b)); }   // H2: Gesang ohne gespielte Note löscht nichts
+   const ownAt = x => t !== song.melodyTrack && laneClipOk(song, t, laneOriginAt(song.lanes[t], x));
+   for (const x of [...clr].sort((a, b) => a - b)) {
+     const a = x * 4 - .25, b = x * 4 + 4 - .25;
+@@ -20763,7 +20776,7 @@
+   if (!S.song) return false;
+   if (R.songRec) songRecEnd();
+   if (R.songPlay) songPlayEnd(true);
+-  const b = songSnapshot(); S.song = null; UI.recTg = null; SV.pos = SV.sel = SV.lastStop = null; pushSongUndo(b, 'Song gelöscht'); songChanged();
++  const b = songSnapshot(); S.song = null; UI.recTg = null; UI.recTgVox = false; SV.pos = SV.sel = SV.lastStop = null; pushSongUndo(b, 'Song gelöscht'); songChanged();
+   toast('Song gelöscht', {label: 'Rückgängig', fn: () => undo()});
+   return true;
+ }
+@@ -21135,10 +21148,75 @@
+ // (long press opens a menu), but its timing belongs to the press
+ function pressTime(atT) { const now = AU.ctx.currentTime; return atT != null && isFinite(atT) && atT <= now && now - atT < 2 ? atT : now; }
+ function recClearOpen() { for (const [id, o] of rec.open) if (o.kind !== 'tail') rec.open.delete(id); }
++// H1 (4.25.1): Gesangs-Aufnahme = Ziel STIMME-Spur oder 🎤 an; ● aus dem Stopp startet dann die Begleitung der Szene mit
++function vocalTake(ti) { return !!(S.tracks[ti] && S.tracks[ti].stimme) || !!(ST.on && ST.phase !== 'off'); }
++function recWithScene(ti, si) {
++  const w = [];
++  for (let j = 0; j < NT(); j++) { if (j === ti || !S.tracks[j] || !S.tracks[j].clips[si] || R.slot[j] !== -1 || R.pend[j]) continue; launch(j, si); w.push({t: j, s: si}); }
++  if (rowOf('S' + (si + 1)) && !R.row && !R.rowPend) { try { sceneRowStart(si, 0); } catch (e) { logErr(e); } }
++  rec.withScene = w;
++  if (!recBeglNames().length) toast('Ohne Begleitung – Szene ' + (si + 1) + ' ist leer');
++}
++function recBeglNames() { const o = []; for (let j = 0; j < NT(); j++) if (j !== rec.track && S.tracks[j] && (R.pend[j] ? R.pend[j].slot : R.slot[j]) >= 0) o.push(S.tracks[j].name); return o; }
++function recCiTgt() {
++  if (rec.state === 'off' && R.songRec && R.songRec.over && R.songRec.vox) return 'Song · ' + recTgLong(R.songRec.tg, R.songRec.nt).join(', ') + ' ab Takt ' + (R.songRec.from + 1);   // H4
++  if (rec.state === 'off' || rec.track < 0 || !S.tracks[rec.track]) return '';
++  const base = S.tracks[rec.track].name + ' · Szene ' + (rec.scene + 1);
++  if (!rec.vox) return base;
++  if (rec.mode === 'overdub' && S.tracks[rec.track].stimme) return base + ' · alter Take läuft als Vorlage';
++  const n = recBeglNames();
++  if (!n.length) return 'Ohne Begleitung – Szene ' + (rec.scene + 1) + ' ist leer';
++  return base + ' · Begleitung: ' + n.slice(0, 3).join(', ') + (n.length > 3 ? ' +' + (n.length - 3) : '');
++}
++// H6: Ausgang beim Singen – Hinweis bei jeder Gesangs-Aufnahme (Weg „Lautsprecher“ bzw. Bluetooth)
++function recCiHint() {
++  const vox = (rec.state !== 'off' && rec.vox) || (R.songRec && recMicOn());
++  if (!vox) return '';
++  return ST.route === 'speaker' ? '🔈 Ohne Kopfhörer kommt die Musik leise aus der Hörmuschel – Kabel-Kopfhörer einstecken' : ST.route === 'bt' ? 'Bluetooth: Telefonklang und Verzögerung – besser Kabel-Kopfhörer' : '';
++}
++// H4 (4.25.1): Schläge bis zum Aufnahme-Start (Szene: ● wartet auf den Taktstrich; Song: Vorlauf) – nur Gesangs-Aufnahmen, sonst null
++function recCdStart() {
++  if (rec.vox && (rec.state === 'armed' || recActive())) return rec.startBeat;   // recBegin kommt mit dem Vorlauf der Planung etwas früher
++  const sr = R.songRec;
++  if (sr && sr.over && !sr.pass && sr.vox && R.songPlay) { const sb = sr.startBeat; if (sb != null) return sb; }
++  return null;
++}
++function recCdLeft(bAud) { const sb = recCdStart(); return sb == null ? null : sb - bAud; }
++// H4: Klick im Vorzähler bei laufender Musik / im Song-Vorlauf (Einzähler-Takte vor dem Start, Einzähler „Aus“ = keiner)
++function recCdClick(b) { const sb = recCdStart(); if (sb == null) return false; const n = R.songRec ? Math.min(1, S.settings.countIn | 0) : S.settings.countIn | 0; return n > 0 && b >= sb - 4 * n - 1e-9 && b < sb - 1e-9; }
++// H4: schon eingeplante Schläge bis zum Planungs-Horizont bekommen ihren Vorzähler-Klick sofort (der Tick ist an ihnen vorbei)
++function recCdCatchUp() {
++  const c = AU.ctx; if (!c || !R.playing || S.settings.metro) return;
++  const b0 = Math.ceil(t2b(c.currentTime + .005) - 1e-9);
++  for (let b = Math.max(0, b0); b <= R.lastClick && b < R.schedBeat; b++) if (recCdClick(b)) click(b2t(b), b % 4 === 0);
++}
++// H5 (4.25.1): ● auf STIMME ohne 🎤 – das Mikro startet im selben Tipp; Einzähler/Transport erst, wenn es bereit ist
++// (phase 'live', ≥ 0,5 s Ringpuffer, keine Kurz-Einmessung läuft); höchstens 4 s, danach Abbruch statt leerer Aufnahme
++const MICW = {iv: 0, t0: 0, cal: false, calSeen: false, okAt: 0};
++function recMicWaitEnd() { if (MICW.iv) clearInterval(MICW.iv); MICW.iv = 0; UI.dirty.all = true; }
++function recMicStart() {
++  if (!micAvail()) { toast('Kein Mikrofon – Gesang braucht 🎤 (Pages-Seite in Safari)'); return; }
++  const P = stProf(), rt = P.route || 'speaker';
++  if (!P.prof[rt]) { stStart({}); toast('Erst einmessen, dann ●'); return; }
++  if (!stStart({})) { toast('Mikro noch nicht bereit – ● noch einmal'); return; }
++  toast('🎤 an – gleich geht\'s los');
++  Object.assign(MICW, {t0: performance.now(), cal: ST.route === 'speaker', calSeen: false, okAt: 0});
++  MICW.iv = setInterval(() => {
++    if (!ST.on || ST.phase === 'off' || !ST.run) { recMicWaitEnd(); return; }       // stFail: dessen Meldung genügt
++    if (ST.cal) MICW.calSeen = true;
++    const g = ST.ring, ok = ST.phase === 'live' && g && g.end >= 0 && g.end - g.start >= .5 * g.sr && !ST.cal && (!MICW.cal || MICW.calSeen);
++    if (ok) { if (!MICW.okAt) MICW.okAt = performance.now(); else if (performance.now() - MICW.okAt >= 150) { recMicWaitEnd(); recPress(); return; } }
++    else MICW.okAt = 0;
++    if (performance.now() - MICW.t0 > 4000) { recMicWaitEnd(); toast('Mikro noch nicht bereit – ● noch einmal'); }
++  }, 60);
++  UI.dirty.all = true;
++}
+ function recPress(atT) {
+   ensureAudio(); const c = AU.ctx; if (!c) return;
+   const tP = pressTime(atT);
++  if (MICW.iv) { recMicWaitEnd(); toast('Aufnahme abgebrochen'); return; }   // H5: zweiter Druck während „🎤 wird bereit“
+   if (rec.state !== 'off') { recFinishPress(tP); return; }
++  if (S.tracks[R.selT] && S.tracks[R.selT].stimme && !ST.on) { recMicStart(); return; }   // H5
+   if (rec.tail && rec.tail.emptyCheck) finishTail();
+   if (R.kbMode === 'transpose') { setKbMode('play'); toast('Tastatur: SPIELEN'); }
+   const ti = R.selT, si = R.selS, tr = S.tracks[ti], clip = tr.clips[si];
+@@ -21147,6 +21225,7 @@
+   const keepTail = new Map([...rec.open].filter(([, o]) => o.kind === 'tail'));
+   Object.assign(rec, {track: ti, scene: si, open: keepTail, temp: [], added: 0, endBeat: null, snapshot: null, clip: null, tail: null, key: null, odEnd: null, catchWin: .25});
+   rec.fixedLen = S.settings.recLength === 'auto' ? null : +S.settings.recLength;
++  rec.vox = vocalTake(ti); rec.withScene = null;                  // H1/H3 (4.25.1)
+   if (clip) {
+     rec.mode = 'overdub';
+     const vs = visualSlots(ti, t2b(tP));
+@@ -21161,6 +21240,7 @@
+       }
+     } else {
+       R.slot[ti] = si; R.pend[ti] = null;
++      if (rec.vox) recWithScene(ti, si);                          // H1
+       startTransport(S.settings.countIn || 0);
+       rec.startBeat = 0; rec.state = S.settings.countIn ? 'countin' : 'armed';
+     }
+@@ -21168,6 +21248,7 @@
+     rec.mode = 'new';
+     if (!R.playing) {
+       R.slot[ti] = -1; R.pend[ti] = null;
++      if (rec.vox) recWithScene(ti, si);                          // H1
+       startTransport(S.settings.countIn || 0);
+       rec.startBeat = 0; rec.state = S.settings.countIn ? 'countin' : 'armed';
+     } else {
+@@ -21176,6 +21257,7 @@
+       if (rec.startBeat < R.schedBeat) recBegin();
+     }
+   }
++  if (rec.vox && rec.state === 'armed' && R.playing) recCdCatchUp();   // H4
+   UI.dirty.all = true;
+ }
+ // the Bezug of a new take: under a Träger the key that makes it play back as played (src 'carrier', never re-detected),
+@@ -24589,11 +24671,13 @@
+       const rng = to != null ? (to - from === 1 ? 'Takt ' + (from + 1) : 'Takt ' + (from + 1) + '–' + to) : 'ab Takt ' + (from + 1);
+       const head = to != null ? (to - from > 1 ? 'AUFNAHME TAKTE ' + (from + 1) + '–' + to : 'AUFNAHME TAKT ' + (from + 1)) : 'AUFNAHME AB TAKT ' + (from + 1);
+       p.classList.toggle('one', modes.length === 4); p.classList.toggle('nomode', !modes.length);
+-      const any = tg.clips || tg.chords || tg.mel, own = tg.mel && nt !== song.melodyTrack, nTx = 'Noten ' + (nt === song.melodyTrack ? '(Melodie)' : trShort(nt));
++      const mic = recMicOn(), vox = !!(mic && tg.vox), voxOnly = vox && !tg.clips && !tg.chords && !tg.mel;   // H2/H7
++      const oldV = vox && (song.vox || []).some(v => v && v.bar < (to != null ? to : Infinity) && v.bar + v.len > from), muteV = oldV && mode !== 'overdub' && !UI.recGuide;
++      const any = tg.clips || tg.chords || tg.mel || vox, own = tg.mel && nt !== song.melodyTrack, nTx = 'Noten ' + (nt === song.melodyTrack ? '(Melodie)' : trShort(nt));
+       // what it does (one short summary; the mode line says how)
+-      const what = [tg.clips && 'Clips', tg.chords && 'Akkorde', tg.mel && nTx].filter(Boolean).join(', ');
++      const what = [tg.clips && 'Clips', tg.chords && 'Akkorde', tg.mel && nTx, vox && 'Gesang'].filter(Boolean).join(', ');
+       const ovTx = !any ? 'kein Ziel gewählt' : (mode === 'overdub' ? 'ergänzt ' : mode === 'insert' ? 'fügt ein: ' : 'ersetzt ') + what + ' ' + (mode === 'insert' ? rng.replace('ab ', 'ab ') : rng);
+-      const mTx = {
++      const mTx = voxOnly ? `Gesang ${mode === 'overdub' ? 'ergänzt' : 'ersetzt'} ${rng}; alles andere spielt weiter. ` + (muteV ? `stumm: alte Stimme ${rng}` : 'nichts stumm') : {
+         over: `Was du änderst, ersetzt ${rng}; der Rest spielt weiter.` + (tg.mel ? ` ${esc(nTx)}: jeder Takt neu bis zum Ende, die alten sind stumm.` : ''),
+         insert: `Neues kommt dazwischen, ab Takt ${from + 1} rückt alles nach hinten.`,
+         replace: `Alles in ${rng} wird ersetzt` + (tg.mel ? `, alte ${esc(nTx)} stumm.` : '.'),
+@@ -24603,16 +24687,19 @@
+         return `<button class="rb rs-m${m === mode ? ' on' : ''}" data-m="${m}" aria-pressed="${m === mode}"><b>${recModeName(m)}</b><small>${r}</small></button>`; };
+       const tgRow = pickT
+         ? `<div class="rs-tg rs-pk"><span class="lbl">Noten auf</span>` + synthTracks().map(t => `<button class="rb rs-t${t === nt ? ' on' : ''}" data-nt="${t}">${esc(trShort(t))}</button>`).join('') + `</div>`
+-        : `<div class="rs-tg"><span class="lbl">Ziele</span>` + [['clips', 'CLIPS'], ['chords', 'AKKORDE']].map(([k, l]) => `<button class="rb rs-t${tg[k] ? ' on' : ''}" data-t="${k}" aria-pressed="${tg[k]}">${tg[k] ? '✓' : ''}${l}</button>`).join('') +
++        : `<div class="rs-tg${mic ? ' v4' : ''}"><span class="lbl">Ziele</span>` + [['clips', 'CLIPS'], ['chords', 'AKKORDE']].map(([k, l]) => `<button class="rb rs-t${tg[k] ? ' on' : ''}" data-t="${k}" aria-pressed="${tg[k]}">${tg[k] ? '✓' : ''}${l}</button>`).join('') +
+           `<button class="rb rs-t rs-n${tg.mel ? ' on' : ''}" data-t="mel" aria-pressed="${tg.mel}" aria-label="Noten auf ${esc(tn)}"><b>${tg.mel ? '✓' : ''}NOTEN</b><small>${esc(tn)}</small></button>` +
++          (mic ? `<button class="rb rs-t rs-n rs-v${vox ? ' on' : ''}" data-t="vox" aria-pressed="${vox}" aria-label="Gesang aufnehmen"><b>${vox ? '✓' : ''}🎤</b><small>GESANG</small></button>` : '') +
+           `<button class="rb rs-nt" data-a="nt" aria-label="Spur für Noten wählen">▾</button></div>`;
+       p.innerHTML = `<div class="rs-h"><b>${head}</b><button class="rb rs-x" data-a="x" aria-label="Schließen">✕</button></div>` + tgRow +
+         (modes.length ? `<div class="rs-md">${modes.map(mb).join('')}</div>` : '') +
+         `<div class="rs-mode">${mTx}</div>` +
+-        `<div class="rs-pre"><span class="lbl">Vorlauf</span>${segHTML('rsPre', [['1', '1 Takt'], ['0', 'aus']], pre ? '1' : '0')}<span class="rs-ov">${esc(ovTx)}</span></div>` +
++        `<div class="rs-pre${oldV ? ' gd' : ''}"><span class="lbl">Vorlauf</span>${segHTML('rsPre', [['1', '1 Takt'], ['0', 'aus']], pre ? '1' : '0')}<span class="rs-ov">${esc(ovTx)}</span>` +
++        (oldV ? `<div class="rs-gd"><span class="lbl">Alte Stimme</span>${segHTML('rsGd', [['0', 'stumm'], ['1', 'hören']], UI.recGuide ? '1' : '0')}</div>` : '') + `</div>` +
+         `<button class="rb rs-go" data-a="go"${any ? '' : ' disabled'}><span class="d">●</span> START</button>`;
+       p._st = {from, to, mode};
+       bindSegTap(p, 'rsPre', v => { UI.recPre = v === '1'; paint(); popDock(p); });
++      if (oldV) bindSegTap(p, 'rsGd', v => { UI.recGuide = v === '1'; haptic('tick'); paint(); popDock(p); });   // H7
+     };
+     paint();
+     onTap(p, b => {
+@@ -26580,13 +26667,17 @@
+       <div class="grp"><span class="lbl">Länge</span>${segHTML('roLen', [['auto', 'AUTO'], [1, '1'], [2, '2'], [4, '4'], [8, '8'], [16, '16'], [32, '32'], [64, '64']], st.recLength)}</div>
+       <div class="grp" style="margin-top:10px"><span class="lbl">Quantisieren</span>${segHTML('roQ', QOPTS, st.inQuant)}</div>
+       <div class="grp" style="margin-top:10px"><span class="lbl">Einzähler</span>${segHTML('roCi', [['0', 'Aus'], ['1', '1 Takt'], ['2', '2 Takte']], String(st.countIn))}</div>
++      <div class="grp" style="margin-top:10px"><span class="lbl">Klick beim Singen</span>${segHTML('roVc', [['ci', 'Nur Einzähler'], ['always', 'Immer']], UI.vocClick || 'ci')}</div>
+       <button class="opt rb" id="roFang" style="margin-top:12px;min-height:48px"><b>FANG – Gespieltes einfangen</b><span>Was du gerade ohne Aufnahme gespielt hast, wird ein Clip, der im Takt weiterläuft.</span></button>`;
+     bindSeg(p, 'roLen', v => setRecOptions({length: v === 'auto' ? 'auto' : +v}));
+     bindSeg(p, 'roQ', v => setRecOptions({quantize: v}));
+     bindSeg(p, 'roCi', v => setRecOptions({countIn: +v}));
++    bindSeg(p, 'roVc', v => setVocClick(v));                     // H3
+     on(p.querySelector('#roFang'), 'click', () => { closePop(); capture(); });
+   }, {name: 'rec'});
+ }
++// H3 (4.25.1): Klick beim Singen – Geräte-Einstellung (nicht im Projekt)
++function setVocClick(v) { UI.vocClick = v === 'always' ? 'always' : 'ci'; setUiPref('vocClick', UI.vocClick); UI.dirty.top = true; }
+ function setRecOptions(o) {
+   const st = S.settings;
+   if (o.length !== undefined) st.recLength = [1, 2, 4, 8, 16, 32, 64].includes(+o.length) ? +o.length : 'auto';   // VS-L: + 16; G8: + 32, 64
+@@ -26991,19 +27082,29 @@
+     EL.takt.classList.toggle('flash', fl);
+     if (fl) setTimeout(() => EL.takt.classList.remove('flash'), 110);
+   }
+-  const ci = R.playing && R.ciRun && bAud < 0;
+-  if (ci !== UI.last.ci) {
+-    UI.last.ci = ci; EL.countin.classList.toggle('show', ci);
++  const ci0 = R.playing && R.ciRun && bAud < 0, cd = R.playing ? recCdLeft(bAud) : null;   // H4: auch bei laufender Musik / im Song-Vorlauf
++  const cdOn = !ci0 && cd != null && cd > 0 && cd <= 4 * Math.max(1, S.settings.countIn | 0);
++  if (cdOn) UI.cdWas = true; else if (UI.cdWas && !ci0) { UI.cdWas = false; if (recActive() || (R.songRec && R.songRec.over)) UI.cdGo = performance.now() + 500; }
++  const go = !ci0 && !cdOn && UI.cdGo && performance.now() < UI.cdGo;
++  if (!go) UI.cdGo = 0;
++  const mw = !!MICW.iv;                                                // H5: „🎤 wird bereit …“
++  const ci = ci0 || cdOn || go || mw;
++  if (ci !== UI.last.ci || mw !== !!UI.last.ciMw) {
++    UI.last.ci = ci; UI.last.ciMw = mw; EL.countin.classList.toggle('show', ci);
+     // the overlay also names the target of the take: „Synth 4 · Szene 1“ (§3.1)
+-    if (ci && EL.ciTgt) EL.ciTgt.textContent = rec.state !== 'off' && rec.track >= 0 ? S.tracks[rec.track].name + ' · Szene ' + (rec.scene + 1) : '';
++    if (ci && EL.ciTgt) EL.ciTgt.textContent = recCiTgt();                 // H1: + Begleitung
++    if (ci && EL.ciHint) EL.ciHint.textContent = recCiHint();              // H6
+   }
+-  if (ci) {
+-    const d = String(clamp(-Math.floor(bAud), 1, ciMax()));
++  if (mw) { if (UI.last.ciNum !== '…') { UI.last.ciNum = '…'; EL.ciNum.textContent = '…'; } if (EL.ciTgt && EL.ciTgt.textContent !== '🎤 wird bereit …') { EL.ciTgt.textContent = '🎤 wird bereit …'; if (EL.ciHint) EL.ciHint.textContent = ''; } }
++  else if (go) { if (UI.last.ciNum !== '●') { UI.last.ciNum = '●'; EL.ciNum.textContent = '●'; EL.ciNum.classList.add('go'); } }
++  else if (ci) {
++    if (UI.last.ciNum === '●') EL.ciNum.classList.remove('go');
++    const d = cdOn ? String(Math.max(1, Math.ceil(cd - 1e-6))) : String(clamp(-Math.floor(bAud), 1, ciMax()));
+     if (d !== UI.last.ciNum) {
+       UI.last.ciNum = d; EL.ciNum.textContent = d;
+       if (EL.ciNum.animate) { try { EL.ciNum.animate([{opacity: 1, transform: 'scale(1)'}, {opacity: .2, transform: 'scale(.9)'}], {duration: spb() * 900, easing: 'ease-out', fill: 'forwards'}); } catch (e) {} }
+     }
+-  } else UI.last.ciNum = null;
++  } else { if (UI.last.ciNum === '●') EL.ciNum.classList.remove('go'); UI.last.ciNum = null; }
+ }
+ function frame() { requestAnimationFrame(frame); try { uiFrame(); } catch (e) { logErr(e); } }
+ 
+@@ -34496,6 +34597,7 @@
+   row(s4, 'Quantisieren', seg(QOPTS, () => st.inQuant, v => setRecOptions({quantize: v})));
+   row(s4, 'Einzähler', seg([[0, 'Aus'], [1, '1 Takt'], [2, '2 Takte']], () => st.countIn, v => setRecOptions({countIn: v})));
+   row(s4, 'Metronom bei Aufnahme', seg([[true, 'An'], [false, 'Aus']], () => st.metroInRec, v => setRecOptions({metroInRec: v})));
++  row(s4, 'Klick beim Singen', makeSeg([['ci', 'Nur Einzähler'], ['always', 'Immer']], () => UI.vocClick || 'ci', v => setVocClick(v))).classList.add('vclk');   // H3
+   const sw = slider(0, 1, .01, () => st.swing, v => { st.swing = v; }, v => Math.round(v * 100) + ' %'); sw.prepend(el('span', 'lbl', 'Swing')); s4.appendChild(sw);
+   const mv = slider(0, 1, .01, () => st.metroVol, v => { st.metroVol = v; }, v => Math.round(v * 100) + ' %'); mv.prepend(el('span', 'lbl', 'Metronom-Lautst.')); s4.appendChild(mv);
+   // 5 Klang
+@@ -34808,7 +34910,7 @@
+   syncTransposer();
+   UNDO.length = 0; REDO.length = 0;
+   UI.drumVer++; R.songRec = null; R.songPlay = null; R.songEndBeat = null; R.melRec = null; R.carrierLive = false; if (R.songOverride) R.songOverride.fill(false);
+-  SV.pos = SV.sel = SV.lastStop = null; UI.recTg = null; SONGCAR.saved = null;
++  SV.pos = SV.sel = SV.lastStop = null; UI.recTg = null; UI.recTgVox = false; SONGCAR.saved = null;
+   SV.mark = SV.copy = SV.pv = null; svHintFree(); UI.dirty.song = true; rangeBarSync();   // V2e-fix: no Bereich-Leiste / mark of the old project
+   R.row = R.rowPend = R.part = R.partPend = null; R.lastScene = R.lastSceneBeat = null; PRT.saved = undefined; PRT.resume = null; xpReset(); UI.pick = null;   // V2c
+   partsEnsure(); UI.partPage = S.ui && S.ui.partPage === 1 ? 1 : 0; UI.dirty.parts = true; PB.sig = '';      // V0c: view state of the song and the TA9 state
+@@ -38383,6 +38485,8 @@
+ 
+ /* ---------- Ablauf ---------- */
+ function stToggle() { if (ST.run && ST.run.stopping) return false; return ST.on ? stStop('aus') : stStart(); }
++// H6 (4.25.1): Sitzungsart für 🎤 – 'par' (Standard, play-and-record) | 'auto' | 'none' (nichts setzen); nur per ?stsess= gespeichert
++function stSessType() { const v = UI.stsess || 'par'; return v === 'auto' ? 'auto' : v === 'none' ? null : 'play-and-record'; }
+ function stStart(opts) {
+   if (ST.on || ST.run || !micAvail()) return false;
+   if (MIC.run) { toast('Erst den Mikro-Check beenden'); return false; }
+@@ -38390,7 +38494,7 @@
+   const c = ensureAudio();                                    // im selben Tipp: resume (I11)
+   const run = ST.run = {opts, t0: performance.now(), nodes: [], srcs: [], timers: [], stream: null, stopped: false, frames: 0, gaps: 0, dz: null, dl: null, flAt: null, flV: false, cal: null};
+   ST.on = true; ST.phase = 'start'; ST.err = null; ST.warn = []; ST.starts++; ST.floorDb = null; ST.lastDrift = null;
+-  try { if (navigator.audioSession) navigator.audioSession.type = 'play-and-record'; } catch (e) {}
++  try { const ty = stSessType(); if (navigator.audioSession && ty) navigator.audioSession.type = ty; } catch (e) {}   // H6: ?stsess=par|auto|none
+   stRender();
+   if (!c) { stFail(run, {name: 'NoAudioContext'}); return true; }
+   wakeAcquire();                                              // beim Singen bleibt der Bildschirm an
+@@ -40302,7 +40406,7 @@
+ // der Song-Bereich (Schläge), in dem die alte Stimme während einer Aufnahme mit 🎤 schweigt (erster Durchgang; Overdub hört sie)
+ function tkSongMute() {
+   const sr = R.songRec; if (!sr || !sr.over || !sr.vox || sr.pass > 0) return null;
+-  if (sr.mode === 'overdub') return null;
++  if (sr.mode === 'overdub' || sr.guide) return null;               // H7: „Alte Stimme hören“
+   return [sr.from * 4, sr.mode === 'insert' || sr.to == null ? Infinity : sr.to * 4];
+ }
+ // scheduleTrack der STIMME-Spur (statt Noten)
+@@ -40476,7 +40580,7 @@
+ 
+ /* ---------- Punch im Song (S5-Rückfrage: Überschreiben / Einfügen / Ersetzen / Overdub, Bereich) ---------- */
+ function tkSongBegin(sr) {
+-  if (!sr || !sr.over || !ST.on || ST.phase === 'off' || !tkAudioOk() || !R.songPlay) return;
++  if (!sr || !sr.over || !ST.on || ST.phase === 'off' || !tkAudioOk() || !R.songPlay || (sr.tg && sr.tg.vox === false)) return;   // H2: Ziel „Gesang“ abgewählt
+   sr.vox = {passes: [{a: sr.from, T: sr.from * 4 + R.songPlay.off}]};
+   tkQ('song', true);
+   g8Begin(sr);                                                      /* G8: die Stimme läuft in Stücken mit */
+@@ -44911,6 +45015,15 @@
+     ring: ST.ring ? {sr: ST.ring.sr, sec: ST_SEC, start: ST.ring.start, end: ST.ring.end, miss: ST.ring.miss || 0, frames: ST.run ? ST.run.frames : 0, gaps: ST.run ? ST.run.gaps : 0} : null,
+     profiles: JSON.parse(JSON.stringify(stProf().prof)), row: !!(ST.ui.row && !ST.ui.row.hidden), rowSv: !!(ST.ui.sv && !ST.ui.sv.hidden), sheet: !!(UI.pop && UI.pop.name === 'stimme')}),
+   stimmeStart: o => stStart(o || {}), stimmeStop: why => stStop(why || 'aus'), stimmeToggle: () => stToggle(),
++  // H6/H1 (4.25.1, nur Tests): Sitzungsart setzen; Ausgangspegel am Master (AnalyserNode an AU.M.ceil) – ohne Argumente starten, dann RMS in [a, b) Schlägen
++  stimmeSess: v => { UI.stsess = v === 'auto' || v === 'none' ? v : 'par'; setUiPref('stsess', UI.stsess); return UI.stsess; },
++  g10OutRms: (a, b) => {
++    const c = AU.ctx; if (!c || !AU.M || !AU.M.ceil) return null;
++    if (!UI.g10Out) { const an = c.createAnalyser(); an.fftSize = 2048; AU.M.ceil.connect(an); const buf = new Float32Array(an.fftSize), L = []; UI.g10Out = {an, L, iv: setInterval(() => { an.getFloatTimeDomainData(buf); let q = 0; for (const v of buf) q += v * v; L.push({b: t2b(c.currentTime - AU.outLat), q: q / buf.length}); if (L.length > 20000) L.shift(); }, 40)}; }
++    if (a == null) return true;
++    const x = UI.g10Out.L.filter(e => e.b >= a && e.b < b); if (!x.length) return null;
++    return 10 * Math.log10(x.reduce((s, e) => s + e.q, 0) / x.length + 1e-20);
++  },
+   stimmeCal: kind => new Promise(res => { if (!stCal(kind || 'voll', res)) res(null); }),
+   stimmeRoute: r => stSetRoute(r, 'gewählt'), stimmeNudge: d => stNudge(+d || 0), stimmeSheet: v => (v === false ? (closePop(), false) : stSheet()),
+   stimmeRead: (a, b, o) => { const x = stRead(a, b, o); return x ? {a: x.a, b: x.b, sr: x.sr, mic: Array.from(x.mic), ref: Array.from(x.ref), d16: x.d16 ? Array.from(x.d16) : undefined, d0: x.d0} : null; },
+@@ -45766,7 +45879,7 @@
+     'carLabel', 'carVal', 'carShift', 'carLock', 'bLatch', 'bOrig', 'hist', 'strip', 'stDot', 'stName', 'stSub', 'bKlang', 'bFolgt', 'stLock',
+     'bMute', 'bUndo', 'modebar', 'octDn', 'octUp', 'segPlay', 'segTr', 'kbArea', 'kb', 'pads', 'kbLabel', 'synthSheet', 'drumSheet', 'clipSheet',
+     'menu', 'popLayer', 'toast', 'banner', 'fileIn', 'sndIn', 'syxIn', 'sndSheet', 'topLogo', 'bub',
+-    'bFangT', 'bFang', 'reclane', 'recLaneCv', 'recLaneTxt', 'bRecDone', 'bEdit', 'kbRef', 'rollSheet', 'qSheet', 'wpSheet', 'coach', 'ciTgt', 'modeSeg', 'bCpu', 'songView', 'carTgt', 'segMic', 'bMicT'].forEach(id => { EL[id] = document.getElementById(id); });
++    'bFangT', 'bFang', 'reclane', 'recLaneCv', 'recLaneTxt', 'bRecDone', 'bEdit', 'kbRef', 'rollSheet', 'qSheet', 'wpSheet', 'coach', 'ciTgt', 'ciHint', 'modeSeg', 'bCpu', 'songView', 'carTgt', 'segMic', 'bMicT'].forEach(id => { EL[id] = document.getElementById(id); });
+   EL.grid = EL.clipGrid; EL.taktLbl = EL.takt.querySelector('.lbl');
+   if (micAvail()) EL.app.classList.add('micok');             // VS1: 🎤 nur im obersten Fenster mit getUserMedia (N7V-05)
+   // AN10 (§5.7): ?engine=native keeps the synth worklet off (tests of the native fallback)
+@@ -45778,6 +45891,8 @@
+   UI.leds = $$('#leds i');
+   EL.topLogo.innerHTML = LOGO_SVG;
+   UI.haptics = uiPrefs().haptics !== false;
++  try { const q = new URLSearchParams(location.search).get('stsess'); if (q === 'par' || q === 'auto' || q === 'none') setUiPref('stsess', q); } catch (e) {}   // H6: Gerätetest
++  UI.stsess = uiPrefs().stsess || 'par'; UI.vocClick = uiPrefs().vocClick === 'always' ? 'always' : 'ci';   // H3
+   hapticInit();
+   buildGrid(); buildPads(); buildSongView(); bindUI();
+   v2cInit();                                                   // V2c: Teil-Leiste, [↩ TEIL]
