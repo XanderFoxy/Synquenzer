@@ -14,7 +14,7 @@
 | `vv4a-layer.mjs` – Tempo-Puffer ändert das Bild nicht (≤ 41 Kanten-Pixel > 2/255) | 7/7 |
 | `vv4a-perf.mjs` – VV4-06: 3-min-Song (183 s) 9:16 [Ganze App] | **2,43× Echtzeit** (Ziel ≥ 1,5×) |
 | Rauchtests `bau/tests` (smoke, v3-mk8-smoke, v3-mk8b-smoke, v3-qa-mk5reg-smoke) | 4/4 ohne Fehler |
-| Alte Video-Abnahmen `bau/tests` (n5-v-abn-01/02/04/06/09, n5-v-vv2-01/02/03/05), Basis gegen neu | siehe unten |
+| Alte Video-Abnahmen `bau/tests`, je Basis R-4261 und neu gelaufen | **gleiches Ergebnis wie die Basis** (abn-01, 02, 04, 06, 09, vv2-01, vv2-03). Schon in der Basis rot und neu genauso: abn-04 `matrixRange` Takt 4–5, vv2-03 `monoton` (Blende). Nicht lauffähig, in beiden gleich: vv2-02 (braucht eine Vor-VV2-Datei aus einer anderen Sitzung), vv2-05 (Testskript-Fehler Z. 25) |
 
 **Zeit je Sekunde Video** (183-s-Song, WebCodecs, Chromium-Rechner): [Ganze App] 412 ms (Bild im Mittel 12,6 ms, längstes 98 ms);
 [Kamera] zum Vergleich 302 ms (7,1 ms). Kurzer 4-Takt-Bereich: 779 ms/s (Fixkosten Ton-Render). Recorder-Weg: Echtzeit.
