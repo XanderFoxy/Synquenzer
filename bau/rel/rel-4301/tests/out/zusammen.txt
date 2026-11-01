@@ -27,3 +27,14 @@
 == north-smoke rc=0 3s | title SYNQUENZER errors []
 == north-vv4-e2e-wc rc=1 157s | north-vv4-e2e wc: 34/36
 == north-vv4-e2e-mr rc=1 102s | north-vv4-e2e mr: 34/36
+== ggb-h rc=0 39s | ALLES GRÜN
+== g9b-smoke rc=1 4s | 4/5 bestanden
+== pipe-smoke rc=0 3s | title SYNQUENZER errors []
+== pipe-orch rc=0 3s | {"version":"4.30.1","initAm":{"rms":0.0705,"peak":0.177},"placePart":"function","mkKeys":12} errors []
+== pipe-mk2 rc=0 3s | alles PASS
+== acorn rc=1 0s | Node.js v22.22.0
+vv4a-render-wc rc=0 15s | {"make":{"how":"webcodecs","W":1080,"H":1920,"dur":11.088253968253968,"cam":"app","ms":7454,"msAudio":5345,"msVideo":2109},"msPerVideoSec":672,"speed":1.49,"pro
+vv4a-render-mr rc=0 22s | {"make":{"how":"recorder","W":1080,"H":1920,"dur":11.088253968253968,"cam":"app","ms":14671,"msAudio":3362,"msVideo":11309},"msPerVideoSec":1323,"speed":0.76,"p
+vv4a-kb-live rc=0 21s | 1.28:ORIGINAL[] 2.75:ORIGINAL[] 5.77:F+5[65] 7.23:F+5[65] 8.66:G−5[] 9.94:G−5[] 11.37:G−5[] 12.83:G−5[] 14.23:G−5[] 15.66:G−5[] 17.21:G−5[] 18.62:
+vv4a-layout rc=0 8s | Sonde ohne Gegenstück: []
+vv4a-alt rc=0 16s | vv4a-alt OK (2 Prüfungen)
