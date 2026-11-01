@@ -12613,6 +12613,18 @@ class AnalogCore extends AudioWorkletProcessor {
     let z = m.k.indexOf(key); if (z >= 0 && !m.x[z]) { m.x[z] = 1; delete m.o[key]; }
     z = m.mk ? m.mk.indexOf(key) : -1; if (z >= 0 && !m.mx[z]) { m.mx[z] = 1; delete m.mo[key]; }
   }
+  // what derive() makes of the hot keys (the same formulas), every 16 samples during a glide; the rest once per 128 frames
+  v6aHot() {
+    const P = this.P;
+    for (let o = 0; o < NOSC; o++) {
+      const on = 'o' + (o + 1);
+      this.oSemi[o] = P[on + 'oct'] * 12 + P[on + 'semi'] + P[on + 'fine'] / 100; this.oRat[o] = Math.pow(2, this.oSemi[o] / 12);
+      this.oLvl[o] = P[on + 'lvl']; this.oPw[o] = P[on + 'pw'];
+    }
+    this.cutN0 = 69 + 12 * Math.log2(clamp(P.cutoff, 10, 22000) / 440);
+    this.drv0 = .6 * Math.pow(2, clamp(P.drive, 0, 1) * 4); this.outG0 = 1 / (1 + clamp(P.drive, 0, 1) * 1.3);
+    this.fmBypassCalc();
+  }
   v6aMkGet(path) {
     const q = String(path).split('.'); if (q[0] !== 't') return NaN;
     const tm = this.mk.tm[+q[1]]; let o = tm && tm.T; for (let i = 2; o != null && i < q.length; i++) o = o[q[i]];
@@ -12655,7 +12667,7 @@ class AnalogCore extends AudioWorkletProcessor {
         if (end && m.dd) { q.splice(j, 1); j--; }
       }
     }
-    if (hot) this.derive();
+    if (hot) this.v6aHot();
     if (this.v6pr && (full || !q.length)) {
       const k = this.v6pr, v = new Array(k.length);
       for (let i = 0; i < k.length; i++) { const x = k[i]; v[i] = x.charCodeAt(0) === 116 && x.charCodeAt(1) === 46 ? this.v6aMkGet(x) : +P[x]; }
