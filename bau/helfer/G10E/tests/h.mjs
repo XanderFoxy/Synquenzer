@@ -33,6 +33,9 @@ const INIT = () => {
   const O = window.AudioContext;
   window.AudioContext = class extends O { constructor(o) { super(o); window.__ctx = this; } };
   window.webkitAudioContext = window.AudioContext;
+  window.__starts = [];
+  const os = AudioBufferSourceNode.prototype.start;
+  AudioBufferSourceNode.prototype.start = function (w, o, d) { try { window.__starts.push({when: w, off: o, dur: d, len: this.buffer ? this.buffer.duration : null, now: this.context.currentTime}); if (window.__starts.length > 400) window.__starts.shift(); } catch (e) {} return os.apply(this, arguments); };
 };
 export async function launch() {
   return chromium.launch({args: ['--autoplay-policy=no-user-gesture-required', '--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream']});
@@ -56,7 +59,7 @@ export async function take(p, times, len = 4.6, bars = 3, sc = 0, o = {}) {
   return {id: r.id, ref: {t: r.track, s: sc}, x};
 }
 // Touch-Gesten (CDP)
-export async function touch(cdp, type, pts) { await cdp.send('Input.dispatchTouchEvent', {type, touchPoints: pts.map((q, i) => ({x: q[0], y: q[1], id: i}))}); }
+export async function touch(cdp, type, pts) { await cdp.send('Input.dispatchTouchEvent', {type, touchPoints: pts.map((q, i) => ({x: q[0], y: q[1], id: q[2] == null ? i : q[2], radiusX: 1, radiusY: 1}))}); }
 export async function drag(cdp, x0, y0, x1, y1, steps = 8, dt = 0) {
   await touch(cdp, 'touchStart', [[x0, y0]]);
   for (let k = 1; k <= steps; k++) { await touch(cdp, 'touchMove', [[x0 + (x1 - x0) * k / steps, y0 + (y1 - y0) * k / steps]]); if (dt) await sleep(dt); }
@@ -69,3 +72,10 @@ export async function pinch(cdp, cx, cy, d0, d1, steps = 10, dt = 0, dy = 0) {
   for (let k = 1; k <= steps; k++) { await touch(cdp, 'touchMove', P(d0 + (d1 - d0) * k / steps)); if (dt) await sleep(dt); }
   await touch(cdp, 'touchEnd', []);
 }
+
+export const geom = p => p.evaluate(() => SYNQUENZER.wpGeom());
+export const info = p => p.evaluate(() => SYNQUENZER.g10Info());
+export const marksOf = (p, id) => p.evaluate(id => SYNQUENZER.wpInfo(id).marks || SYNQUENZER.wpInfo(id).det, id);
+export const undoN = p => p.evaluate(() => SYNQUENZER.undoInfo().n);
+export async function openEd(p, ref, id) { await p.evaluate(r => SYNQUENZER.wpOpen(r), ref); await p.evaluate(id => SYNQUENZER.wpDetect(id), id); await sleep(250); await p.evaluate(() => SYNQUENZER.g10View(null, null)); }
+export const popClose = p => p.evaluate(() => SYNQUENZER.g10Pop());

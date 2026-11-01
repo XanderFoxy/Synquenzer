@@ -2418,6 +2418,9 @@ a.mbtn[aria-disabled=true]{opacity:.55}
 #wpSheet .g10map canvas{position:absolute;inset:0;width:100%;height:100%}
 #wpSheet.g9 .g10map,#wpSheet.g9 .g10tool{display:none}
 #wpSheet.g10 .wpsl{flex-direction:row;gap:10px}
+/* Raster-Chips: Treffer 44 px ohne in die Welle zu ragen (vorher 9 px nach oben über den Spalt → ein Tipp unten auf der Welle quantisierte) */
+#wpSheet.g10 .qchips button{height:38px}
+#wpSheet.g10 .qchips button::after{left:-1px;right:0;top:-3px;bottom:-3px}
 #wpSheet.g10 .wpsl .qrow{flex:1 1 0;min-width:0;gap:4px}
 #wpSheet.g10 .wpsl .qrow .lbl{flex:0 0 auto}
 #wpSheet.g10 .wpsl .qrow .mval{flex:0 0 40px;min-width:0}
@@ -2426,7 +2429,7 @@ a.mbtn[aria-disabled=true]{opacity:.55}
 #wpSheet .g10hl{display:none;position:absolute;inset:0;z-index:2;margin:0;-webkit-tap-highlight-color:transparent;cursor:pointer}
 #wpSheet .g10hl input{position:absolute;left:0;top:0;width:1px;height:1px;margin:0;visibility:hidden}
 #wpSheet.g10.hap:not(.g9) .g10hl{display:block}
-#wpSheet.g10 .wpab,#wpSheet.g10 .seg button,#wpSheet.g10 .qchips button{position:relative}
+#wpSheet.g10 .wpab,#wpSheet.g10 .wpz,#wpSheet.g10 .seg button,#wpSheet.g10 .qchips button{position:relative}
 #wpSheet.g10 .qh{touch-action:none}
 #g10lupe{position:fixed;z-index:60;width:144px;height:64px;display:none;pointer-events:none;border-radius:8px;border:1px solid #ffd35a;background:#0e1014;box-shadow:0 4px 14px rgba(0,0,0,.55)}
 #g10lupe.on{display:block}
@@ -2441,8 +2444,8 @@ a.mbtn[aria-disabled=true]{opacity:.55}
 .pop.g10opt .g10run{width:100%;height:44px;margin-top:4px}
 .pop.wpsel .savrow .mbtn[data-a="play"]{min-width:64px}
 @media (orientation:portrait) and (max-height:600px){#wpSheet .g10map{height:32px}#wpSheet.g10 .qchips{grid-template-columns:repeat(8,minmax(0,1fr));gap:2px;margin-bottom:0}#wpSheet.g10 .qchips button{font-size:11px}
-  #wpSheet.g10 .qchips button::after{left:0;right:0;top:-4px;bottom:-6px}}
-@media (orientation:landscape){#wpSheet .g10tool{height:38px}}
+  #wpSheet.g10 .qchips button::after,#wpSheet.g10 .qchips button:nth-child(n)::after{left:0;right:0;top:-3px;bottom:-3px}}
+@media (orientation:landscape){#wpSheet .g10tool{height:38px}#wpSheet.g10 .qchips button{height:38px}}
 /* Studio-Ansicht (Vorschlag §2.5 Nr. 7, nur nach Einschalten im ⋯-Blatt): hochkant Regler eingeklappt, quer volle Breite */
 #wpSheet.g10big .wpchips,#wpSheet.g10big .wpsl{display:none}
 @media (orientation:landscape){#wpSheet.g10big{grid-column:1/-1;width:auto;justify-self:stretch;border-radius:12px 12px 0 0}}
@@ -47878,7 +47881,7 @@ function wpSameMap(a, b) {
   const ka = kk(a); return !!ka && ka === kk(b);
 }
 function wpRun(M, m) {
-  if (m.op === 'det') return M.detectMarks(m.x, m.sr).map(k => ({t: k.t, conf: k.conf, word: !!k.word}));
+  if (m.op === 'det') return M.detectMarks(m.x, m.sr).map(k => ({t: k.t, conf: k.conf, word: !!k.word, src: k.src}));   // G10e: Herkunft mitgeben
   if (m.op === 'stretch') { const r = M.X.stretch(m.x, m.sr, {src: m.src, dst: m.dst}, {lock: m.lock}); return {y: r.y, warn: r.warnings, segs: r.segs.length, wsola: r.segs.filter(g => g.mode === 'wsola').length}; }
   return M.renderSlices(m.x, m.sr, m.on, m.to);
 }
@@ -48658,6 +48661,9 @@ function g10eGest(cv) {
   const rc = () => cv.getBoundingClientRect();
   const tOf = (E, cx) => E.vw.a + cx / E.cv.clientWidth * E.vw.W;
   const P = new Map();                                                 // aktive Zeiger auf der Welle
+  // kein Klick aus einem Tipp auf der Welle (die Touch-Anpassung des Browsers lenkte ihn sonst auf einen nahen Raster-Chip → ungewollt quantisiert)
+  cv.addEventListener('touchstart', e => { if (e.cancelable) e.preventDefault(); }, {passive: false});
+  cv.addEventListener('click', e => e.preventDefault());              // die Welle gilt als Tipp-Ziel: die Touch-Anpassung wählt nicht den Chip daneben
   cv.addEventListener('pointerdown', e => {
     const E = WP.ed; if (!E || E.g9 || e.button > 0) return;
     try { cv.setPointerCapture(e.pointerId); } catch (er) {}
@@ -48759,6 +48765,8 @@ function g10eMapGest(map) {
   let id = null;
   const go = e => { const E = WP.ed, x = E && tkRef(E.r); if (!x || !E.vw) return; const r = map.getBoundingClientRect(), R0 = g10eMapRange(x.a);
     const t = R0.a + clamp((e.clientX - r.left) / r.width, 0, 1) * R0.W; E.va = t - E.vw.W / 2; E.g10hand = performance.now(); g10eReq(E); };
+  map.addEventListener('touchstart', e => { if (e.cancelable) e.preventDefault(); }, {passive: false});
+  map.addEventListener('click', e => e.preventDefault());
   map.addEventListener('pointerdown', e => { const E = WP.ed; if (!E || E.g9) return; id = e.pointerId; try { map.setPointerCapture(id); } catch (er) {} E.g10fast = true; go(e); });
   map.addEventListener('pointermove', e => { if (e.pointerId === id) go(e); });
   const up = e => { if (e.pointerId !== id) return; id = null; const E = WP.ed; if (E) { E.g10fast = false; wpPaint(); } };
@@ -48768,10 +48776,15 @@ const g10eMapRange = a => { const L = Math.max(a.out - a.in, .05); return {a: a.
 // Kopf nach unten wischen = Blatt schließen (≥ 60 px, eher senkrecht; nicht auf einer Taste begonnen)
 function g10eHeadSwipe(head) {
   if (!head) return; let s = null;
-  head.addEventListener('pointerdown', e => { if (e.target.closest && e.target.closest('button')) return; s = {id: e.pointerId, x: e.clientX, y: e.clientY}; });
+  head.addEventListener('pointerdown', e => { if (e.target.closest && e.target.closest('button')) return; s = {id: e.pointerId, x: e.clientX, y: e.clientY}; try { head.setPointerCapture(e.pointerId); } catch (er) {} });
   head.addEventListener('pointermove', e => { if (!s || s.id !== e.pointerId) return; const dy = e.clientY - s.y; if (dy > 60 && dy > Math.abs(e.clientX - s.x) * 1.5) { s = null; wpClose(); } });
   const up = e => { if (s && s.id === e.pointerId) s = null; };
   head.addEventListener('pointerup', up); head.addEventListener('pointercancel', up);
+  // dasselbe über Touch-Ereignisse (laufen weiter, wenn der Browser den Zeiger abbricht)
+  let ts = null;
+  head.addEventListener('touchstart', e => { const t = e.touches[0]; ts = e.touches.length === 1 && !(e.target.closest && e.target.closest('button')) ? {x: t.clientX, y: t.clientY} : null; }, {passive: true});
+  head.addEventListener('touchmove', e => { if (!ts) return; const t = e.touches[0], dy = t.clientY - ts.y; if (dy > 60 && dy > Math.abs(t.clientX - ts.x) * 1.5) { ts = null; s = null; wpClose(); } }, {passive: true});
+  head.addEventListener('touchend', () => { ts = null; }, {passive: true});
 }
 // Tipp außerhalb des Blatts schließt es (wie ein Blatt im System); die Kopfleiste (▶ ■ …), offene Blättchen und die Meldung bleiben bedienbar.
 // Der Tipp selbst wirkt nicht auf das, was darunter liegt (Schutz wie beim Menü).
@@ -49009,8 +49022,9 @@ function g10eFollow(E, h) {
 function g10eRun(E) {
   if (E.g10run) { g10eRunStop(E); wpPaint(); return; }
   const mk = wpMarks(E.id) || []; if (!mk.length) return;
-  let k = E.sel >= 0 ? E.sel : 0; const Pp = E.mpos || mk.map(m => m.t);
-  if (E.sel < 0 && E.vw) { const i = Pp.findIndex(t => t >= E.vw.a); if (i >= 0) k = i; }
+  const pick = UI.pop && UI.pop.name === 'wpsel' && E.sel >= 0;     // ab dem gewählten Strich, sonst ab dem ersten sichtbaren
+  let k = pick ? E.sel : 0; const Pp = E.mpos || mk.map(m => m.t);
+  if (!pick && E.vw) { const i = Pp.findIndex(t => t >= E.vw.a); if (i >= 0) k = i; }
   E.g10run = {k, n: 0};
   const step = () => { const R0 = E.g10run; if (!R0 || WP.ed !== E) return; const mm = wpMarks(E.id) || []; if (R0.k >= mm.length) { g10eRunStop(E); wpPaint(); return; }
     const P2 = E.mpos || mm.map(m => m.t);
@@ -49140,9 +49154,10 @@ Object.assign(WP_API, {
   g10Play: k => { const E = WP.ed; return E ? g10ePlayMark(E, k) : null; },
   g10Run: () => { const E = WP.ed; if (E) g10eRun(E); return !!(E && E.g10run); },
   g10Fine: patch => { const E = WP.ed; return E ? g10eSetFine(E, patch) : false; },
-  g10View: (va, W) => { const E = WP.ed; if (!E) return null; if (W) E.g10W = W; if (va != null) E.va = va; wpPaint(); return {a: E.vw.a, W: E.vw.W}; },
+  g10View: (va, W) => { const E = WP.ed; if (!E) return null; if (W === 0) { E.g10W = null; E.zoom = 0; } else if (W === 'w') { E.g10W = null; E.zoom = -1; } else if (W) E.g10W = W; if (va != null) E.va = va; wpPaint(); return {a: E.vw.a, W: E.vw.W}; },
   g10Zoom: () => { const E = WP.ed; if (E) g10eZoomBtn(E); return E ? g10eZoomLbl(E) : null; },
   g10Click: () => g10eClick(true),
+  g10Pop: () => { const n = UI.pop ? UI.pop.name : null; closePop(); return n; },
   g10Perf: on => { G10E.perf = !!on; const f = G10E.frames.slice(); if (on) G10E.frames.length = 0; return f; },
 });
 

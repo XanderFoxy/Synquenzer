@@ -1,0 +1,17 @@
+import {launch, open, take, sleep, geom, openEd, touch, info} from './h.mjs';
+const br = await launch(); const H = await open(br), p = H.p, c = H.cdp;
+const T = Array.from({length: 12}, (_, k) => 0.5 + k * 0.3);
+const {id, ref} = await take(p, T); await openEd(p, ref, id);
+await p.evaluate(() => { window.__ev = []; for (const t of ['pointerdown','pointerup','pointercancel']) window.addEventListener(t, e => window.__ev.push(t + ' ' + e.pointerId + ' ' + (e.target.tagName + '.' + e.target.className) + ' ' + Math.round(e.clientX) + ',' + Math.round(e.clientY)), true); });
+await p.evaluate(W => SYNQUENZER.g10View(0.3, W), 3);
+const g = await geom(p); const x0 = g.marks[3], y0 = g.y + 10, x1 = g.x + 100, y1 = g.y + 80;
+await touch(c, 'touchStart', [[x0, y0]]);
+for (let s = 1; s <= 3; s++) await touch(c, 'touchMove', [[x0 + s * 5, y0]]);
+await touch(c, 'touchStart', [[x0 + 15, y0], [x1, y1]]);
+for (let s = 1; s <= 4; s++) await touch(c, 'touchMove', [[x0 + 15 - s * 9, y0 + s], [x1 + s * 12, y1 - s]]);
+await touch(c, 'touchMove', [[x1 + 48, y1 - 4, 1]]);
+await touch(c, 'touchMove', [[x1 + 90, y1 - 4, 1]]);
+await touch(c, 'touchEnd', []);
+await sleep(200);
+console.log(await p.evaluate(() => window.__ev.join('\n')), !!(await geom(p)));
+await br.close();

@@ -40,6 +40,9 @@ rep("wpQuant(id, {grid: o.grid, strength: o.strength, swing: o.swing, mode: m.wa
 rep("  const g = wpQuant(id, Object.assign({mode: w ? w.mode : 'slice', strength: w ? w.strength : 1, swing: w ? w.swing : .5, t0: wpT0(id, a)}, o));",
     "  const g = wpQuant(id, Object.assign({mode: w ? w.mode : 'slice', strength: w ? w.strength : 1, swing: w ? w.swing : .5, t0: wpT0(id, a), wo: w ? w.wo : g10eDef(id, 'wo'), qr: w ? w.qr : g10eDef(id, 'qr')}, o));")
 
+rep("  if (m.op === 'det') return M.detectMarks(m.x, m.sr).map(k => ({t: k.t, conf: k.conf, word: !!k.word}));",
+    "  if (m.op === 'det') return M.detectMarks(m.x, m.sr).map(k => ({t: k.t, conf: k.conf, word: !!k.word, src: k.src}));   // G10e: Herkunft mitgeben")
+
 # Editor: Aufbau, Zoom-Taste, Schließen, Ansicht, Zeichnen, Gesten, Strich-Blatt
 rep("  zb.addEventListener('click', () => { const E = WP.ed; if (!E) return; E.zoom = WP_ZOOM[(WP_ZOOM.indexOf(E.zoom) + 1) % WP_ZOOM.length]; wpPaint(); });",
     "  zb.addEventListener('click', () => { const E = WP.ed; if (!E) return; g10eZoomBtn(E); });   // G10e: + Stufe „Wort“, aus dem freien Zoom zur nächsten Stufe")

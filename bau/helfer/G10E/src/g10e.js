@@ -80,6 +80,9 @@ function g10eGest(cv) {
   const rc = () => cv.getBoundingClientRect();
   const tOf = (E, cx) => E.vw.a + cx / E.cv.clientWidth * E.vw.W;
   const P = new Map();                                                 // aktive Zeiger auf der Welle
+  // kein Klick aus einem Tipp auf der Welle (die Touch-Anpassung des Browsers lenkte ihn sonst auf einen nahen Raster-Chip → ungewollt quantisiert)
+  cv.addEventListener('touchstart', e => { if (e.cancelable) e.preventDefault(); }, {passive: false});
+  cv.addEventListener('click', e => e.preventDefault());              // die Welle gilt als Tipp-Ziel: die Touch-Anpassung wählt nicht den Chip daneben
   cv.addEventListener('pointerdown', e => {
     const E = WP.ed; if (!E || E.g9 || e.button > 0) return;
     try { cv.setPointerCapture(e.pointerId); } catch (er) {}
@@ -181,6 +184,8 @@ function g10eMapGest(map) {
   let id = null;
   const go = e => { const E = WP.ed, x = E && tkRef(E.r); if (!x || !E.vw) return; const r = map.getBoundingClientRect(), R0 = g10eMapRange(x.a);
     const t = R0.a + clamp((e.clientX - r.left) / r.width, 0, 1) * R0.W; E.va = t - E.vw.W / 2; E.g10hand = performance.now(); g10eReq(E); };
+  map.addEventListener('touchstart', e => { if (e.cancelable) e.preventDefault(); }, {passive: false});
+  map.addEventListener('click', e => e.preventDefault());
   map.addEventListener('pointerdown', e => { const E = WP.ed; if (!E || E.g9) return; id = e.pointerId; try { map.setPointerCapture(id); } catch (er) {} E.g10fast = true; go(e); });
   map.addEventListener('pointermove', e => { if (e.pointerId === id) go(e); });
   const up = e => { if (e.pointerId !== id) return; id = null; const E = WP.ed; if (E) { E.g10fast = false; wpPaint(); } };
@@ -190,10 +195,15 @@ const g10eMapRange = a => { const L = Math.max(a.out - a.in, .05); return {a: a.
 // Kopf nach unten wischen = Blatt schließen (≥ 60 px, eher senkrecht; nicht auf einer Taste begonnen)
 function g10eHeadSwipe(head) {
   if (!head) return; let s = null;
-  head.addEventListener('pointerdown', e => { if (e.target.closest && e.target.closest('button')) return; s = {id: e.pointerId, x: e.clientX, y: e.clientY}; });
+  head.addEventListener('pointerdown', e => { if (e.target.closest && e.target.closest('button')) return; s = {id: e.pointerId, x: e.clientX, y: e.clientY}; try { head.setPointerCapture(e.pointerId); } catch (er) {} });
   head.addEventListener('pointermove', e => { if (!s || s.id !== e.pointerId) return; const dy = e.clientY - s.y; if (dy > 60 && dy > Math.abs(e.clientX - s.x) * 1.5) { s = null; wpClose(); } });
   const up = e => { if (s && s.id === e.pointerId) s = null; };
   head.addEventListener('pointerup', up); head.addEventListener('pointercancel', up);
+  // dasselbe über Touch-Ereignisse (laufen weiter, wenn der Browser den Zeiger abbricht)
+  let ts = null;
+  head.addEventListener('touchstart', e => { const t = e.touches[0]; ts = e.touches.length === 1 && !(e.target.closest && e.target.closest('button')) ? {x: t.clientX, y: t.clientY} : null; }, {passive: true});
+  head.addEventListener('touchmove', e => { if (!ts) return; const t = e.touches[0], dy = t.clientY - ts.y; if (dy > 60 && dy > Math.abs(t.clientX - ts.x) * 1.5) { ts = null; s = null; wpClose(); } }, {passive: true});
+  head.addEventListener('touchend', () => { ts = null; }, {passive: true});
 }
 // Tipp außerhalb des Blatts schließt es (wie ein Blatt im System); die Kopfleiste (▶ ■ …), offene Blättchen und die Meldung bleiben bedienbar.
 // Der Tipp selbst wirkt nicht auf das, was darunter liegt (Schutz wie beim Menü).
@@ -431,8 +441,9 @@ function g10eFollow(E, h) {
 function g10eRun(E) {
   if (E.g10run) { g10eRunStop(E); wpPaint(); return; }
   const mk = wpMarks(E.id) || []; if (!mk.length) return;
-  let k = E.sel >= 0 ? E.sel : 0; const Pp = E.mpos || mk.map(m => m.t);
-  if (E.sel < 0 && E.vw) { const i = Pp.findIndex(t => t >= E.vw.a); if (i >= 0) k = i; }
+  const pick = UI.pop && UI.pop.name === 'wpsel' && E.sel >= 0;     // ab dem gewählten Strich, sonst ab dem ersten sichtbaren
+  let k = pick ? E.sel : 0; const Pp = E.mpos || mk.map(m => m.t);
+  if (!pick && E.vw) { const i = Pp.findIndex(t => t >= E.vw.a); if (i >= 0) k = i; }
   E.g10run = {k, n: 0};
   const step = () => { const R0 = E.g10run; if (!R0 || WP.ed !== E) return; const mm = wpMarks(E.id) || []; if (R0.k >= mm.length) { g10eRunStop(E); wpPaint(); return; }
     const P2 = E.mpos || mm.map(m => m.t);
@@ -562,8 +573,9 @@ Object.assign(WP_API, {
   g10Play: k => { const E = WP.ed; return E ? g10ePlayMark(E, k) : null; },
   g10Run: () => { const E = WP.ed; if (E) g10eRun(E); return !!(E && E.g10run); },
   g10Fine: patch => { const E = WP.ed; return E ? g10eSetFine(E, patch) : false; },
-  g10View: (va, W) => { const E = WP.ed; if (!E) return null; if (W) E.g10W = W; if (va != null) E.va = va; wpPaint(); return {a: E.vw.a, W: E.vw.W}; },
+  g10View: (va, W) => { const E = WP.ed; if (!E) return null; if (W === 0) { E.g10W = null; E.zoom = 0; } else if (W === 'w') { E.g10W = null; E.zoom = -1; } else if (W) E.g10W = W; if (va != null) E.va = va; wpPaint(); return {a: E.vw.a, W: E.vw.W}; },
   g10Zoom: () => { const E = WP.ed; if (E) g10eZoomBtn(E); return E ? g10eZoomLbl(E) : null; },
   g10Click: () => g10eClick(true),
+  g10Pop: () => { const n = UI.pop ? UI.pop.name : null; closePop(); return n; },
   g10Perf: on => { G10E.perf = !!on; const f = G10E.frames.slice(); if (on) G10E.frames.length = 0; return f; },
 });
