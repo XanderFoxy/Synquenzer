@@ -486,8 +486,8 @@ svg{display:block}
 .ue-bar.one .ue-tiles{order:1;flex:1 1 auto;min-width:0}
 .ue-bar.one .ue-x{order:2;height:auto;min-height:44px}
 .pop.uetabs .plist button{min-height:44px;width:100%}
-.ue-tiles{display:flex;gap:6px;overflow-x:auto;min-height:62px;scrollbar-width:none;touch-action:pan-x}.ue-tiles::-webkit-scrollbar{display:none}
-.ue-tile{flex:0 0 auto;width:auto;min-width:96px;max-width:160px;min-height:62px;height:62px;display:flex;flex-direction:column;align-items:stretch;justify-content:space-between;gap:2px;padding:4px 6px;text-align:left;touch-action:pan-x}
+.ue-tiles{display:flex;gap:6px;overflow-x:auto;min-height:62px;scrollbar-width:none;touch-action:none}.ue-tiles::-webkit-scrollbar{display:none}
+.ue-tile{flex:0 0 auto;width:auto;min-width:96px;max-width:160px;min-height:62px;height:62px;display:flex;flex-direction:column;align-items:stretch;justify-content:space-between;gap:2px;padding:4px 6px;text-align:left;touch-action:none}
 .ue-tile.lift{opacity:.4}
 .ue-tn{font:700 10px/1.1 var(--font-ui);color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ue-tl{font:700 10px/1 var(--font-num);color:#ffcf7a;align-self:flex-end}
@@ -516,6 +516,7 @@ svg{display:block}
 .msheet.uesheet .ue-lr{align-items:center}
 .msheet.uesheet .ue-ll{flex:0 0 auto;font:700 10px/1 var(--font-ui);color:var(--text-dim);padding:0 4px}
 .msheet.uesheet .ms-b.on{border-color:#ffb22e;color:#ffcf7a}
+.msheet.uesheet .ms-x{min-height:44px;min-width:44px}
 /* ---------- song view (§3.9, WP6): replaces the clip grid in the grid area ---------- */
 .corner.sw{flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:0 4px;font:700 11px/1 var(--font-ui);letter-spacing:.06em;color:var(--text);min-height:0;height:100%}
 .corner.sw .swl{white-space:nowrap}
@@ -57247,7 +57248,7 @@ function ueMiniSvg(e) {
 function ueBuildBar() {
   if (UE.bar || !EL.songView) return UE.bar;
   const bar = el('div', 'ue-bar'); bar.hidden = true;
-  bar.innerHTML = '<div class="ue-tabs pan-x" role="tablist"></div><div class="ue-tiles pan-x"></div>';
+  bar.innerHTML = '<div class="ue-tabs pan-x" role="tablist"></div><div class="ue-tiles"></div>';
   guardTouch(bar);
   for (const n of [bar]) { n.addEventListener('pointerdown', e => e.stopPropagation()); }
   onTap(bar.firstChild, b => { UE.tab = b.dataset.tab; uePaintBar(); haptic('tick'); }, 'button[data-tab]');
@@ -57334,9 +57335,10 @@ function ueDragMove(d, x, y) {
   if (d.st === 'down') {
     const dx = x - d.x0, dy = y - d.y0;
     if (Math.hypot(dx, dy) <= 8) return;
-    if (d.kind === 'tile' && Math.abs(dx) > Math.abs(dy) * 1.2) { d.st = 'gone'; return; }   // seitlich = die Leiste rollt
+    if (d.kind === 'tile' && Math.abs(dx) > Math.abs(dy) * 1.5) { const l = d.srcEl.parentNode; if (l && l.scrollWidth > l.clientWidth + 1) { d.st = 'scroll'; d.list = l; d.sl0 = l.scrollLeft + dx; } }   // seitlich in einer vollen Leiste = rollen (von Hand: touch-action none)
     ueDragBegin(d);
   }
+  if (d.st === 'scroll') { d.list.scrollLeft = d.sl0 - (x - d.x0); return; }
   if (d.st !== 'drag') return;
   const s = ueSnapAt(x, y), was = d.m;
   d.over = s.over; d.m = s.m;
@@ -57358,6 +57360,7 @@ function ueDragBegin(d) {
   UE.drag = d; UI.dirty.song = true;
 }
 function ueDragUp(d, x, y) {
+  if (d.st === 'scroll') { d.st = 'gone'; return; }
   if (d.st === 'down') {                                         // ein Tipp
     d.st = 'gone';
     if (performance.now() - d.t0 > 600) return;
