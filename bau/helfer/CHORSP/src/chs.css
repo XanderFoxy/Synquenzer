@@ -60,4 +60,6 @@
 #wpSheet .wpcv.chsr .wpinfo{bottom:46px;left:48px;max-width:calc(100% - 100px)}
 #wpSheet .g6pgc .chscur{opacity:.35}
 #wpSheet .g6pgc.chslead .g6pgsw{background:#969eac}
+@media (orientation:landscape) and (max-height:520px){#clipGrid .chsth.chsgrp .chssb{display:none}#clipGrid .chsth{gap:0}}
+@media (orientation:portrait) and (max-height:700px){#clipGrid .chsth.chsgrp .chssb{display:none}}
 /* CHS-CSS-END */

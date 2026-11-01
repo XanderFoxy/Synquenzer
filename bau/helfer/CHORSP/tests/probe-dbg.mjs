@@ -1,0 +1,12 @@
+import { open, sing, style, sleep } from './lib.mjs';
+const {b, p, errs} = await open();
+await sing(p); await p.evaluate(() => { R.selS = 0; });
+await p.evaluate(() => g2Open({t: stimmeT(), s: 0})); await sleep(1200);
+const E = await p.evaluate(() => SYNQUENZER.chsEd());
+const x = E.cv.x + 150, y = E.rul.y + 22;
+console.log(await p.evaluate(([x, y]) => { const e = document.elementFromPoint(x, y); return e.className + ' / ' + e.parentNode.className; }, [x, y]));
+await p.evaluate(() => { const z = document.querySelector('.chsrz'); ['pointerdown', 'pointerup', 'click', 'touchstart'].forEach(t => z.addEventListener(t, () => console.log('EV ' + t))); });
+p.on('console', m => console.log('>', m.text()));
+await p.touchscreen.tap(x, y); await sleep(500);
+console.log(await p.evaluate(() => ({playing: R.playing, log: SYNQUENZER.chsInfo().log})));
+console.log(errs); await b.close();

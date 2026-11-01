@@ -2240,6 +2240,8 @@ a.mbtn[aria-disabled=true]{opacity:.55}
 #wpSheet .wpcv.chsr .wpinfo{bottom:46px;left:48px;max-width:calc(100% - 100px)}
 #wpSheet .g6pgc .chscur{opacity:.35}
 #wpSheet .g6pgc.chslead .g6pgsw{background:#969eac}
+@media (orientation:landscape) and (max-height:520px){#clipGrid .chsth.chsgrp .chssb{display:none}#clipGrid .chsth{gap:0}}
+@media (orientation:portrait) and (max-height:700px){#clipGrid .chsth.chsgrp .chssb{display:none}}
 /* CHS-CSS-END */
 #wpSheet .g6pglq{flex:none;height:44px;padding:0 10px;font:700 12px/1 var(--font-ui)}
 #wpSheet .g6pglq.on{color:var(--ink);background:var(--sel);border-color:var(--sel)}
@@ -53213,8 +53215,13 @@ function chsMxExtra() { const st = stimmeT(), n = st >= 0 ? chsLanes().length : 
 // Seiten der Synth-Zeilen mit Gewicht (die STIMME-Zeile zählt mit ihren Zusatz-Zeilen)
 function chsPages(synth, per) {
   const st = stimmeT(), E = chsMxExtra(), pg = []; let cur = [], used = 0;
+  if (!E || !synth.includes(st)) { for (let k = 0; k < synth.length; k += per) pg.push(synth.slice(k, k + per)); return pg; }
   for (const i of synth) { const w = i === st ? 1 + E : 1; if (cur.length && used + w > per) { pg.push(cur); cur = []; used = 0; } cur.push(i); used += w; }
-  if (cur.length) pg.push(cur); return pg;
+  if (cur.length) pg.push(cur);
+  if (pg.length <= 2) return pg;
+  // die Spur-Bank kennt zwei Seiten: Seite 2 = STIMME mit ihrer Gruppe (+ was daneben passt), Seite 1 = der Rest (Zeilen werden notfalls flacher)
+  const oth = synth.filter(i => i !== st), room = Math.max(0, per - 1 - E), B = [st].concat(oth.slice(oth.length - room)), A = oth.slice(0, oth.length - room);
+  return A.length ? [A, synth.filter(i => B.includes(i))] : [synth.filter(i => B.includes(i))];
 }
 function chsPageRows(pages, per) { const st = stimmeT(), E = chsMxExtra(); let m = per; for (const p of pages) m = Math.max(m, p.length + (p.includes(st) ? E : 0)); return m; }
 function chsMxVis(vt) { const st = stimmeT(); return st >= 0 && vt.has(st) && UI.heads[st] && !UI.heads[st].el.classList.contains('mxoff'); }
@@ -53423,8 +53430,10 @@ function chsEdAttach(E) {
   rul.innerHTML = `<button class="rb chspl" data-a="play" aria-label="Ab Lineal abspielen">${CHS_SVG.play}</button><span class="chsrz" aria-label="Lineal: tippen = ab hier spielen, ziehen = Loop, Doppeltipp = Zoom"></span><button class="rb chslp" data-a="loop" aria-pressed="false" aria-label="Loop an/aus">${CHS_SVG.loop}</button>`;
   cvw.append(ov, rul); cvw.classList.add('chsr');
   Object.assign(E, {chsOv: ov, chsRul: rul, chsLoop: E.chsLoop || null});
-  rul.querySelector('[data-a=play]').addEventListener('click', () => { if (chsRunning(E)) chsStop(); else chsPlayFrom(E, E.chsLoop && E.chsLoop.on ? E.chsLoop.a : E.chsCur != null ? E.chsCur : E.vw.a); });
-  rul.querySelector('[data-a=loop]').addEventListener('click', () => { const Lp = E.chsLoop; if (!Lp) { toast('Loop: auf dem Lineal einen Bereich ziehen'); return; } Lp.on = !Lp.on; haptic('tick'); if (chsRunning(E)) chsPlayFrom(E, Lp.on ? Lp.a : chsPlayT(E) || Lp.a); chsEdOverlay(E); });
+  onTap(rul, b => {
+    if (b.dataset.a === 'play') { if (chsRunning(E)) chsStop(); else chsPlayFrom(E, E.chsLoop && E.chsLoop.on ? E.chsLoop.a : E.chsCur != null ? E.chsCur : E.vw.a); return; }
+    const Lp = E.chsLoop; if (!Lp) { toast('Loop: auf dem Lineal einen Bereich ziehen'); return; } Lp.on = !Lp.on; haptic('tick'); if (chsRunning(E)) chsPlayFrom(E, Lp.on ? Lp.a : chsPlayT(E) || Lp.a); chsEdOverlay(E);
+  }, 'button[data-a]');
   const zone = rul.querySelector('.chsrz'), tOf = e => { const rc = E.cv.getBoundingClientRect(); return E.vw.a + (e.clientX - rc.left) / rc.width * E.vw.W; };
   zone.addEventListener('pointerdown', e => { if (e.button > 0) return; try { zone.setPointerCapture(e.pointerId); } catch (er) {} E.chsP = {id: e.pointerId, x0: e.clientX, t0: tOf(e), tm: performance.now(), mode: null}; e.preventDefault(); });
   zone.addEventListener('pointermove', e => { const P = E.chsP; if (!P || P.id !== e.pointerId) return; if (!P.mode && Math.abs(e.clientX - P.x0) > 8) P.mode = 'loop'; if (P.mode === 'loop') { const a = chsSnap(E, Math.min(P.t0, tOf(e))), b = chsSnap(E, Math.max(P.t0, tOf(e))); E.chsDraft = {a, b}; chsEdOverlay(E); } });
@@ -53439,7 +53448,7 @@ function chsEdAttach(E) {
   zone.addEventListener('pointerup', e => end(e, false)); zone.addEventListener('pointercancel', e => end(e, true));
   // zwei Finger = Zoom (vor den Gesten der Editoren: Erfassung am Rahmen), Doppeltipp leer (Noten-Editor) = Zoom
   cvw.addEventListener('pointerdown', e => {
-    if (e.target !== E.cv) return; CHS.pts.set(e.pointerId, {x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, tm: performance.now()});
+    if (!e.target.closest || e.target.closest('.chsrul,.g6pgleg,button,input')) return; CHS.pts.set(e.pointerId, {x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, tm: performance.now()});
     if (CHS.pts.size === 2) { e.stopPropagation(); chsPinchStart(E); }
     else if (CHS.pts.size > 2) e.stopPropagation();
   }, true);

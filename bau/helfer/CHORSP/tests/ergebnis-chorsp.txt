@@ -1,0 +1,62 @@
+✓ Ohne Chor keine Zusatz-Zeilen · Zeilen 0
+✓ Matrix nach Stil-Tipp: Gruppe + Spuren sichtbar · grp:42px lanec1:42px lanec2:42px lanec3:42px
+✓ Matrix: Zellen der Szene 1 gefüllt · [[0],[0],[0],[0]]
+✓ Name/Farbe/Ziffer wie im Chor-Blatt · Chor Sopran|3|var(--chor3), Chor Alt|3|var(--chor3), Chor Tenor|6|var(--chor6) · Blatt: 3|, 3|, 6|
+✓ Gruppe auf-/zuklappbar · zu 1 · auf 4
+✓ Zelle → Noten der Stimme · {"voice":1,"id":"95sorq9nb9"}
+✓ M stummt die Spur (ein Undo) · {"lane":true,"vg":1}
+✓ Spur teilen → Gegenstimme sichtbar in der Matrix · c4 [0]
+✓ Song: Gruppe + 4 Spuren unter STIMME · {"sv":[-100,-101,-102,-103,-104],"labs":["BG 4","3Sopran","3Alt","6Tenor","–Gegenstimme 1"]}
+✓ keine Fehler (1)
+✓ G6P-K1 Lead −6 dB gekoppelt → Background −6 dB · Rechnung -6.00 dB · Knoten -6.00 dB
+✓ Entkoppelt: Lead −6 dB → Background 0 dB · 0.00 dB
+✓ Wieder koppeln ohne Sprung · Sprung 0.005 dB
+✓ Danach wieder gemeinsam · -3.00 dB
+✓ Background-Regler wirkt nur auf den Chor · Lead-Kette 0.00 dB
+✓ Gesang gesamt −5 dB: Lead und Background · Chor -5.00 dB · Lead -5.00 dB
+✓ Gesang gesamt auch entkoppelt · -3.00 dB
+✓ Spur-Pegel/Pan wirken auf die Kopien · Pegel -6.00/-6.00 dB · Pan -0.40/-0.50
+✓ Undo/Redo je Geste · Gesang gesamt · Background gekoppelt · Background-Spur · Pegel · Background-Spur · Pan
+✓ Speichern/Laden behält Background-Werte · {"lanes":[{"id":"c1","role":"uni","name":"Chor Unisono"},{"id":"c2","role":"st+2","name":"Chor Terz oben","db":-6,"pan":-0.5},{"id":"c3","role":"oct-1","name":"
+✓ keine Fehler (2)
+✓ Lineal + ▶ + Loop ≥ 44 px · Lineal 300×44
+✓ Lineal-Tipp spielt ab Takt 2 (Begleitung + Gesang + Chor) · {"b0":4,"off":[2.0214648526077097],"nl":["55@0"],"chor":[6]}
+✓ Laufstrich im Editor · Take-Zeit 2.64
+✓ ■ stoppt
+✓ Bereich ziehen = Loop an · {"a":2,"b":4,"on":true}
+✓ Loop läuft (Laufstrich springt zurück, bleibt im Bereich) · Sprünge 1 · min 2.03 max 3.89
+✓ Loop aus per Knopf
+✓ Probehören einer Chorstimme · nach 36 ms
+✓ Wischen über nicht gewählte Note verschiebt nichts
+✓ Gewählte Note ziehen verschiebt · sh 7
+✓ Probehören nach Tonhöhen-Ziehen (neue Fassung) · nach 299 ms · ab 0.472 s · 0.568 s
+✓ Zwei Finger zoomen hinein, ohne Note zu verschieben · 4.00 s → 0.95 s
+✓ Schwenken · 1.51 → 1.81 s
+✓ Doppeltipp = Zoom (zurück auf ganz) · 0.95 → 8.00 s
+✓ Doppeltipp auf leere Fläche = hinein · 8.00 → 2.00 s
+✓ Wellen-Editor: Lineal-Tipp spielt (keine Marke gesetzt) · {"run":{"mode":"clip","s":0,"b0":6,"lp":null},"marks":0}
+✓ Wellen-Editor: zwei Finger zoomen · 4.00 → 0.95 s
+✓ Song-Stimme: Lineal-Tipp spielt den Song ab Takt 4 · {"song":true,"bar0":3,"run":{"mode":"song","lp":null}}
+✓ keine Fehler (3)
+✓ Auge Unisono (grau): sichtbar → aus · Rahmen-Pixel 315 → 0 · Treffer 0
+✓ Auge gemerkt je Clip (nach Schließen/Neuzeichnen) · {"hide":["c1"],"hit":0,"chip":true}
+✓ Graue Lead-Balken: Auge blendet aus/ein · {"lead":8,"chip":true,"cur":false} → 0 → 8
+✓ Gegenstimme: Lead grau + Auge · {"take":"f6niiinno3","lead":8,"chip":true} → 0
+✓ keine Fehler (4)
+✓ Video: Chor im Render folgt Background-Regler und Gesang gesamt · RMS alles 0.07675 · nur Chor 0.02972 · Background −6: -5.9 dB · Gesang gesamt −6: -5.8 dB
+✓ GarageBand-Instrumental ohne Gesang (unabhängig von den Reglern) · 3456044 / 3456044 Bytes
+✓ keine Fehler (5)
+✓ Layout 428×926 Matrix · {"over":false,"vis":4,"outside":0,"minH":42,"minW":40}
+✓ Layout 428×926 Mischpult · {"top":8,"bottom":639,"right":404,"minT":44}
+✓ Layout 428×926 Editor mit Lineal · Leinwand 172 px · Lineal 44 px
+✓ keine Fehler (6 P)
+✓ Layout 926×428 Matrix · {"over":false,"vis":4,"outside":0,"minH":29,"minW":40}
+✓ Layout 926×428 Mischpult · {"top":8,"bottom":420,"right":503,"minT":44}
+✓ Layout 926×428 Editor mit Lineal · Leinwand 209 px · Lineal 44 px
+✓ keine Fehler (6 L)
+✓ Layout 428×650 Matrix · {"over":false,"vis":4,"outside":0,"minH":32,"minW":40}
+✓ Layout 428×650 Mischpult · {"top":8,"bottom":598,"right":404,"minT":44}
+✓ Layout 428×650 Editor mit Lineal · Leinwand 172 px · Lineal 44 px
+✓ keine Fehler (6 K)
+
+alles grün
