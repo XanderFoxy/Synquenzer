@@ -1,0 +1,8 @@
+INFO Basis gegen Basis: Plan gleich true,true
+PASS H-90 Demo: normalisiertes Projekt Zeichen für Zeichen gleich — 14677 / 14677
+PASS H-90 Demo Szene 1 + 2, je 8 Takte: Noten-Plan (Spur, Schlag, Note, Dauer, Stärke) gleich — 83,35 Einträge
+PASS H-90 Konsole
+PASS H-92 180 s Wiedergabe: 3 Gesangs-Takes, 19 Szenenwechsel — {"takes":3,"nTakes":3}
+PASS H-92 keine Konsolen-Fehler, keine Tick-Fehler, keine hängenden Stimmen nach ■ —  tick 0 Stimmen []
+FAIL H-92 lange Tasks > 50 ms nicht mehr als 4.25.0 im selben Ablauf — neu [72,104,63] | 4.25.0 [67,118]
+ERGEBNIS 5 / 6 PASS

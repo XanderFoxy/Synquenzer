@@ -1,0 +1,14 @@
+✓ record a clip with ● REC: 60@0.00 64@1.00 67@2.00
+✓ scene 8 plays the take: 441 Hz -19.8 dB
+✓ scene 8 placed into the song with its STIMME lane: bars 3 lane [{"bar":1,"slot":7,"re":1}]
+✓ song bar 2 plays the take: 441 Hz -19.6
+✓ transpose changes synth out pitch: 60 → 62
+✓ MS 2000 engine sounds on track 2 (undefined): -24.5 dB 441 Hz
+✓ save → reload deep-equal
+✓ P1 no page overflow {"sw":390,"cw":390,"sh":844,"ch":844}
+✓ P3 no page overflow {"sw":320,"cw":320,"sh":568,"ch":568}
+✓ L1 no page overflow {"sw":844,"cw":844,"sh":390,"ch":390}
+✓ XL no page overflow {"sw":926,"cw":926,"sh":428,"ch":428}
+✓ no console errors []
+✓ no tick errors 0
+all ok

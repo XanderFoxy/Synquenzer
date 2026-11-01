@@ -1,0 +1,15 @@
+PASS H-30 Start am Taktstrich 8 (rec.startBeat) — [{"st":"armed","sb":8},"recording",8]
+PASS H-30 M-OVL: Overlay 5,5–8 mit 3, 2, 1, dann „●“, danach weg — ["3","2","1","●","·"]
+PASS H-30 Zahlen auf den Schlägen (2 ab 6, 1 ab 7, ● ab 8, ±0,15 = 1 Abtastung) — {"1":7.072,"2":6.032,"go":8.029}
+PASS H-30 M-KLICK: Klicks auf 6 und 7, keiner ab 8 — [{"b":6,"a":0},{"b":7,"a":0}]
+PASS H-30 Overlay nennt Ziel — Stimme · Szene 1 · Begleitung: Synth 1, Synth 2, Synth 3 +2
+PASS H-30 Konsole
+PASS H-31 sr.startBeat = Takt 5 (Transport-Schlag 4 nach 1 Takt Vorlauf) — {"sb":4,"vox":true}
+PASS H-31 Overlay zählt im Vorlauf 4…1, dann „●“ — ["4","3","2","1","●","·"]
+PASS H-31 4 Klicks im Vorlauf (betont auf der 1), danach keiner — [{"b":0,"a":1},{"b":1,"a":0},{"b":2,"a":0},{"b":3,"a":0}]
+PASS H-31 Overlay nennt Song-Ziel — Song · Gesang ab Takt 5
+PASS H-32 Song ohne Vorlauf, Einzähler aus: kein Klick, kein Overlay — {"k":[],"ov":0}
+PASS H-32 Szene, Einzähler aus: keine Klicks, nur das Overlay (Spec H4 Nr. 3) — {"k2":[],"n":["3","2","1","●","·"]}
+PASS H-32 MIDI-Take bei laufendem Transport: wie 4.25.0 (kein Overlay, gleiche Klicks) — {"k":[{"b":8,"a":1},{"b":9,"a":0}],"show":0} | 4.25.0 {"k":[{"b":8,"a":1},{"b":9,"a":0}],"show":0}
+FAIL H-33 renderTakt ≤ +0,2 ms je Bild, nicht mehr lange Tasks (> 50 ms) als 4.25.0 (Aufnahme-Ende, gleiche Last) — neu {"p95":18.3,"renderTaktMs":0.0009,"lang":3} | 4.25.0 {"p95":18.7,"renderTaktMs":0.0006,"lang":0}
+ERGEBNIS 13 / 14 PASS

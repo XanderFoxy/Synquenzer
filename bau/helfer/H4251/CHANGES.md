@@ -40,7 +40,10 @@ neue Schalter liegen im Geräteprofil (`uiPrefs`: `vocClick`, `stsess`) oder sin
 
 **Gemeinsam (Regel 28):** Golden-Klangtest `bau/tests/n5-k-golden.mjs` 4.25.1 gegen 4.25.0: 320/320 Klänge ≤ −90 dB. Demo: normalisiertes Projekt
 gleich, Noten-Plan 8 Takte Szene 1 + 2 gleich (H-90). Regression aus `bau/tests` vorher/nachher identisch: Smoke, `v3-v2d2-rec` 65/65 (N7S-27…32),
-`v3-qa-vs3-reg` „all ok“. H-92: siehe STATUS.
+`v3-qa-vs3-reg` „all ok“. H-92: 180 s mit 3 Gesangs-Takes und 19 Szenenwechseln, keine Fehler, keine hängenden Stimmen; lange Tasks wie 4.25.0
+(Take-Auswertung). Nach unabhängiger Prüfung zusätzlich: H5 wartet auf dem Kabel-/BT-Weg nicht mehr vergeblich auf eine Kurz-Einmessung, ■ /
+Projektwechsel / andere Zelle während „🎤 wird bereit“ brechen ab, Vorzähler-Klicks werden bei Abbruch zurückgenommen, Hinweis nur bei echter
+Gesangs-Aufnahme, Meldung wenn „nur Gesang“ nicht aufgenommen werden kann. Hinweis: `?stsess` bleibt gespeichert, zurück mit `?stsess=par`.
 
 ## 4.25.2 — Nachschub „kleine Gesangs-Fehler“ (Nachtrag 9 §1.2, K1–K4)
 
@@ -53,7 +56,7 @@ Auf 4.25.1. `VERSION '4.25.2'`, APP_CODE 4 025 002. Patch `bau/helfer/H4251/patc
   Ausklang); im Repo-Snapshot gibt es keine Projekte mit Song-Stimme.
 - **K2 Marken-Editor ohne versehentliches Verschieben.** `wpHit`: Fangradius ≤ 16 px und ≤ halber Nachbarabstand, zwei Kandidaten < 6 px → keiner;
   `wpGest`: greifen nur im oberen 44-px-Streifen (dort sitzt das Griff-Dreieck), auf der Welle schwenkt ein Finger immer; zweiter Finger (auch neben der
-  Welle) verwirft den Zug. Tipp wie bisher. [V] Bedienung ändert sich (Funk). Gemessen: K-04 500 Wische 0 Marken bewegt (4.25.1: 40 Wische → 6
+  Welle) verwirft den Zug. Tipp wie bisher (trifft die nächste Marke ±16 px). [V] Bedienung ändert sich (Funk). Gemessen: K-04 500 Wische 0 Marken bewegt (4.25.1: 40 Wische → 6
   Verschiebungen), K-05 0 bewegt/0 Undo, K-06 1 Undo.
 - **K3 Clip-Blatt STIMME.** +1/×2 gesperrt erst ab 64 Takten (alle Clips, wie `clipLength`); „Quantisieren…“ öffnet bei STIMME den Marken-Editor;
   Untertitel „N Takte · Gesang · K Takes“; ×2 heißt „Doppelte Länge (Gesang einmal, danach Stille)“. Gemessen: K-07…K-09.

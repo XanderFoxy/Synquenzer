@@ -1,0 +1,22 @@
+PASS K-01 vor dem Kürzen: Ausklang am Clip-Ende (G3-Log „post“) — [8]
+PASS K-01 Länge −1: kein Ausklang am Ende (G3-Log leer) — []
+PASS K-02 Punch: linkes Reststück endet mit dem Stück (out ≤ in + (len·4 − at)·spb), auch in alt — {"before":[8],"after":[],"trOut":7,"lim":7,"altOut":6.5,"altLim":6.5,"post":0,"errs":[]}
+INFO 4.25.1 (vorher): Ausklang nach Länge −1 [8,4], Reststück out 17.000 > 7.000
+PASS K-01/02 Konsole
+PASS K-02 Reststück Takt 1–2 einer Stimme mit Ausklang überlappt nicht in Takt 3 — {"out":4,"lim":4}
+PASS K-03 Undo/Redo der Längenänderung und Speichern → Laden deep-equal
+PASS K-04 500 Wisch-Gesten auf der Welle: 0 Marken bewegt, Ansicht verschoben — {"bewegt":false,"undo":0,"geschwenkt":500}
+PASS K-05 zweiter Finger während eines Zugs: 0 Marken bewegt, 0 Undo — {"bewegt":false,"undo":0}
+PASS K-06 im Streifen ziehen: Marke bewegt, genau 1 Undo — {"undo":1}
+PASS K-06 Tipp zwischen zwei nahen Marken: Blatt der nächsten Marke, keine neue Marke (wie bisher) — {"n":18,"sel":3}
+PASS K-04…06 Konsole
+INFO 4.25.1 (vorher), 40 Wische auf der Welle: Marken bewegt true, Undo-Schritte 6
+PASS K-07 32-Takt-Clip +1 → 33 — {"dis":false,"len":33}
+PASS K-08 STIMME: Quantisieren… öffnet den Marken-Editor — {"sub":" — 2 Takte · Gesang · 2 Takes","x2":"Doppelte Länge (Gesang einmal, danach Stille)","wp":true,"sheet":true,"t":[]}
+PASS K-03/K3 Untertitel „2 Takte · Gesang · 2 Takes“, ×2 = „Doppelte Länge (Gesang einmal, danach Stille)“ — {"sub":" — 2 Takte · Gesang · 2 Takes","x2":"Doppelte Länge (Gesang einmal, danach Stille)","wp":true,"sheet":true,"t":[]}
+PASS K-09 M-PLATZ: Clip-Blatt STIMME, neuer Untertitel in 6 Formaten im Bild, nicht abgeschnitten
+PASS K3 Konsole
+PASS K-10 Take 3 nach oben geholt: heißt weiter „Take 3“, alle behalten ihre Nummer — {"vorher":["Take 7","Take 6","Take 5","Take 4","Take 3","Take 2","Take 1"],"nachher":["Take 3","Take 7","Take 6","Take 5","Take 4","Take 2","Take 1"]}
+PASS K-10 Take 3 gelöscht: Take 1, 2 bleiben, 4…7 heißen 3…6 — ["Take 6","Take 5","Take 4","Take 3","Take 2","Take 1"]
+PASS K4 Konsole
+ERGEBNIS 19 / 19 PASS

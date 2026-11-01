@@ -1,0 +1,10 @@
+PASS H-50 Weg Lautsprecher: Hinweis in 3 Takes nacheinander — ["🔈 Ohne Kopfhörer kommt die Musik leise aus der Hörmuschel – Kabel-Kopfhörer einstecken","🔈 Ohne Kopfhörer kommt die Musik leise aus der Hörmuschel – Kabel-Kopfhörer einstecken","🔈 Ohne Kopfhörer kommt die Musik leise aus der Hörmuschel – Kabel-Kopfhörer einstecken"]
+PASS H-50 Kabel: kein Hinweis — ""
+PASS H-50 Bluetooth: BT-Text — "Bluetooth: Telefonklang und Verzögerung – besser Kabel-Kopfhörer"
+PASS H-50 Konsole
+PASS H-51 ?stsess=auto: beim Start „auto“ — {"a":["playback","auto","auto"],"b":{"log":["playback","auto","auto","playback"],"type":"playback","pref":"auto"}}
+PASS H-51 ohne Parameter: „play-and-record“ (wie 4.25.0) — {"a":["playback","play-and-record","play-and-record"],"b":{"log":["playback","play-and-record","play-and-record","playback"],"type":"playback","pref":null}}
+PASS H-51 ?stsess=none: nichts gesetzt außer „playback“ — {"a":["playback"],"b":{"log":["playback","playback"],"type":"playback","pref":"none"}}
+PASS H-51 beim Ausschalten „playback“ — playback,playback,playback
+PASS H-52 M-PLATZ: Overlay mit Ziel + Hinweis bei 320 × 568 und 926 × 428, nichts abgeschnitten
+ERGEBNIS 9 / 9 PASS

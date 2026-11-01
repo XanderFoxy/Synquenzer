@@ -1,0 +1,13 @@
+PASS H-40 🎤 wird eingeschaltet, Toast „🎤 an – gleich geht's los“ — ["🎤 an – gleich geht's los","Mit Kopfhörer klingt die Musik normal und dein Gesang bleibt sauber","Kein Gesang erkannt"]
+PASS H-40 Transport startet erst nach „live“ und nach dem Ende der Kurz-Einmessung — {"live":51,"calEnde":2911,"start":3117}
+PASS H-40 Overlay „🎤 wird bereit …“ während des Wartens
+PASS H-40 Take aufgenommen (Länge ≥ 1 Takt) — {"len":2}
+PASS H-40 Konsole
+PASS H-40 Kabel-Weg: Aufnahme startet (< 4 s, kein „Mikro noch nicht bereit“) — {"st":true,"route":"wired","start":728,"t":["🎤 an – gleich geht's los"]}
+PASS H-44 stop während „🎤 wird bereit“: keine Aufnahme, kein Transport — {"playing":false,"rec":"off","wait":false,"t":["🎤 an – gleich geht's los","Aufnahme abgebrochen","Mit Kopfhörer klingt die Musik normal und dein Gesang bleibt sauber"]}
+PASS H-44 projekt während „🎤 wird bereit“: keine Aufnahme, kein Transport — {"playing":false,"rec":"off","wait":false,"t":["🎤 an – gleich geht's los","Aufnahme abgebrochen","Mit Kopfhörer klingt die Musik normal und dein Gesang bleibt sauber"]}
+PASS H-44 zelle während „🎤 wird bereit“: keine Aufnahme, kein Transport — {"playing":false,"rec":"off","wait":false,"t":["🎤 an – gleich geht's los","Aufnahme abgebrochen","Mit Kopfhörer klingt die Musik normal und dein Gesang bleibt sauber"]}
+PASS H-41 ohne getUserMedia: kein Transport, rec off, Toast — {"playing":false,"rec":"off","t":["Kein Mikrofon – Gesang braucht 🎤 (Pages-Seite in Safari)"]}
+PASS H-42 ohne Einmessung: Einmessen offen, kein Transport, keine Aufnahme — {"playing":false,"rec":"off","sheet":true,"cal":{"kind":"voll","step":"chirp"},"t":["Erst einmessen, dann ●"],"takes":0}
+PASS H-43 verweigert: nach ≤ 1 s rec off, Transport steht, kein „Nichts aufgenommen“ — {"playing":false,"rec":"off","t":["🎤 an – gleich geht's los","Mikrofon nicht erlaubt · in Safari unter „aA“ → Website-Einstellungen → Mikrofon „Erlauben“ wählen"],"wait":false,"t2":["🎤 an – gleich geht's los","Mikrofon nicht erlaubt · in Safari unter „aA“ → Website-Einstellungen → Mikrofon „Erlauben“ wählen"]}
+ERGEBNIS 12 / 12 PASS

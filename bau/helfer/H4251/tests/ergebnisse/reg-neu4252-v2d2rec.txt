@@ -1,0 +1,67 @@
+PASS N7S-27 Ende N7-R1 → Taktstrich 5 (endBar 4) {"endBar":4,"mode":"over","from":2,"bar":4,"rule":"struktur","f":0.2078,"period":null}
+PASS N7S-27 nur die Pad-Lane T3–4 ersetzt, ab T5 alter Inhalt phasengleich [{"bar":2,"slot":3},{"bar":4,"slot":1,"ph":4}]
+PASS N7S-27 Drums und alle anderen Lanes deep-equal
+PASS N7S-27 Szenen-Clips deep-equal
+PASS N7S-27 hörbar: T3–4 Sz4 (67), T5 der alte Pad in Phase (62 bei 16), T6 64 [[8,67],[10,67],[12,67],[14,67],[16,62],[20,64]]
+PASS N7S-27 ein Undo → deep-equal {"kind":"song","label":"Song-Aufnahme","items":[]}
+PASS N7S-28 Modus insert während der Aufnahme insert
+PASS N7S-28 Ende → 4 Takte eingefügt (bars 7 → 11) [11,{"endBar":6,"mode":"insert","from":2,"bar":6,"rule":"zeit","f":0.3063,"period":1}]
+PASS N7S-28 Lanes ab T3 um +4 Takte [[{"bar":7,"slot":2}],[{"bar":7,"slot":1}],[{"bar":7,"slot":2}],[{"bar":0,"slot":3},{"bar":6,"slot":-1}],[{"bar":6,"slot":1},{"bar":7,"slot":1,"re":1}],[]]
+PASS N7S-28 Träger ab T3 um +16 Schläge (alter T3 = T7) [[[24,"G"],[28,"F"],[32,"G"],[36,"Am"]],[[24,"G"],[28,"F"],[32,"G"],[36,"Am"]]]
+PASS N7S-28 Melodie ab 7,75 um +16 [2,23.8,26,40]
+PASS N7S-28 Marken ab T3 um +4 [{"id":"M1","a":0,"len":2,"part":"S4","name":"Intro"},{"id":"M2","a":7,"len":4,"part":"P2"}]
+PASS N7S-28 Dm im neuen Abschnitt bei T4 (Schlag 12) [[0,"Am"],[12,"Dm"],[24,"G"],[28,"F"],[32,"G"],[36,"Am"]]
+PASS N7S-28 hörbar: neue T7–11 = alte T3–7 (Spur, Schlag ±0,01, Note, Tonhöhe) {"A":[[0,12,41,38],[0,16,43,41],[0,18,43,41],[0,20,41,41],[0,24,43,43],[0,26,43,43],[1,12,60,57],[1,16,62,60],[1,20,64,64],[1,24,65,65],[2,12,72,69],[2,13,74,71]],"B":[[0,12,41,38],[0,16,43,41],[0,18,43,41],[0,20,41,41],[0,24,43,43],[0,26,43,43],[1,12,60,57],[1,16,62,60],[1,20,64,64],[1,24,65,65],[2,12,72,69],[2,13,74,71]],"nA":30,"nB":30}
+PASS N7S-28 ein Undo → deep-equal Song: 4 Takte eingefügt
+PASS N7S-29 Aufnahme stanzt am Bereichsende aus false
+PASS N7S-29 Stummschaltung Synth 2 Schlag 7,75–23,75 (K2-21) {"t":1,"a":7.75,"b":23.75}
+PASS N7S-29 während der Aufnahme keine alte Synth-2-Note in T3–6, T7 wieder da (65 bei 24) [[24,65]]
+PASS N7S-29 eigener Clip angelegt (Durchlauf T4–7) + Lane-Eintrag [["o1"],[{"bar":3,"slot":1,"own":"o1"}]]
+PASS N7S-29 eigener Clip: nur die neuen Noten in T4–6, T7 alt (65) [{"t":0.5006,"d":0.5224,"n":75,"v":0.8},{"t":8.5463,"d":0.5224,"n":74,"v":0.8},{"t":12,"d":1,"n":65,"v":0.8}]
+PASS N7S-29 S.tracks[1].clips deep-equal (S8)
+PASS N7S-29 Wiedergabe: T4 72 und T6 74 (src own), keine alte Note in T4–6, T7 65 (own) [[12.5,"own",72],[20.55,"own",74],[24,"own",65]]
+PASS N7S-29 ein Undo → deep-equal Song-Aufnahme
+PASS N7S-30 Overdub: keine Stummschaltung, alte Noten klingen während der Aufnahme (60/62/64) {"mu":null,"old":[[12,60],[16,62],[20,64],[24,65]]}
+PASS N7S-30 Szenen-Clip deep-equal
+PASS N7S-30 Wiedergabe: alte (12/16/20) und neue Noten (72, 74) erklingen [[12,"own",57],[12.51,"own",72],[16,"own",60],[20,"own",64],[20.51,"own",74],[24,"own",65]]
+PASS N7S-31 Ende Taktstrich 5 {"endBar":4,"mode":"over","from":2,"bar":4,"rule":"struktur","f":0.1062,"period":null}
+PASS N7S-31 songMelNotes(5): T3 leer ersetzt (7,8 und 10 weg), neue Note in T4, 2 und 24 bleiben [[2,76],[13.023,84],[24,81]]
+PASS N7S-31 Undo → deep-equal
+PASS N7S-32 makeOwn(0, T5) → eigener Clip nur T5 (Durchlauf 1 Takt) ["o1",{"len":1,"key":{"root":9,"scale":"aeolian","src":"user"},"notes":[{"t":0,"d":0.5,"n":45,"v":0.8},{"t":2,"d":0.5,"n":45,"v":0.8}],"from":{"t":0,"s":0,"bar":4,"e":null,"prev":{"slot":0,"own":null,"cs":8},"cs":8,"e1":5},"id":"o1"},null]
+PASS N7S-32 ein Undo song {"kind":"song","label":"Eigener Clip","items":[]}
+PASS N7S-32 Szenen-Clip geändert → eigener Clip unverändert (45) [{"t":0,"d":0.5,"n":45,"v":0.8},{"t":2,"d":0.5,"n":45,"v":0.8}]
+PASS N7S-32 T5: src own 45; T3, T4, T6: src clip 47 [[8,"clip",47],[10,"clip",47],[12,"clip",47],[14,"clip",47],[16,"own",45],[18,"own",45],[20,"clip",47],[22,"clip",47]]
+PASS N7S-32 Song-MIDI: eigener Clip (45) an seiner Stelle, sonst der geänderte Szenen-Clip (47) {"len":874,"n45":2,"n47":6}
+PASS N7S-32 Rundweg Speichern/Laden: song.own + Lanes verlustfrei {"bars":11,"loop":{"on":false,"a":0,"b":11},"melodyTrack":5,"lanes":[[{"bar":2,"slot":0,"re":1},{"bar":4,"slot":0,"own":"o1"},{"bar":5,"slot":0},{"bar":6,"slot":-1},{"bar":7,"slot":2}],[{"bar":2,"slot
+PASS N7S-32 dropOwn → Lanes und own wie vorher [[{"bar":2,"slot":0,"re":1},{"bar":6,"slot":-1},{"bar":7,"slot":2}],{}]
+PASS N7S-32 [Ganzer Block] T8–11 → ein eigener Clip, 4 Takte ["o1",[{"bar":2,"slot":0,"re":1},{"bar":6,"slot":-1},{"bar":7,"slot":2,"own":"o1"}],6]
+PASS N2-2d′-01 Ende am Taktstrich 6 (endBar 5) {"endBar":5,"mode":"over","from":3,"bar":5,"rule":"struktur","f":0.0946,"period":null}
+PASS N2-2d′-01 S.tracks[].clips deep-equal
+PASS N2-2d′-01 ein Undo {"kind":"song","label":"Song-Aufnahme","items":[]}
+PASS N2-2d′-01 in T5 keine alte Note von Synth 2 [[8,"own",60,60],[12.51,"own",76,79],[20,"own",64,65]]
+PASS N2-2d′-01 T4 nur die neue Note (76) [[8,"own",60,60],[12.51,"own",76,79],[20,"own",64,65]]
+PASS N2-2d′-01 ab T6 der alte Inhalt (65 bei 20) [[8,"own",60,60],[12.51,"own",76,79],[20,"own",64,65]]
+PASS N2-2d′-01 Undo → deep-equal
+PASS K2-27 Modi: 1 Takt alle vier, Bereich Ersetzen/Overdub, ohne Auswahl ab Takt n, am Ende keine [["over","insert","replace","overdub"],["replace","overdub"],["over","insert"],[]]
+PASS K2-27 [Nur Takt 4: Ersetzen] stanzt nach T4 aus
+PASS K2-27 nur T4 neu (77), T5 alt (Clip-Note 64 bei 16) [[8,60,60],[12.51,77,80],[16,67,64],[20,64,65]]
+PASS N7-R1 erste Aufnahme (3 Akkorde), Ende bei Takt 4 + 20 % → 4 Takte (struktur) [4,{"endBar":4,"mode":"new","from":0,"bar":4,"rule":"struktur","f":0.2062}]
+PASS N7-R1 erste Aufnahme (4 Akkorde), Ende bei Takt 5 + 30 % → 4 Takte (struktur) [4,{"endBar":4,"mode":"new","from":0,"bar":4,"rule":"struktur","f":0.3063}]
+PASS N7-R1 erste Aufnahme (gleiche Takte), Ende bei Takt 3 + 30 % → 2 Takte (zeit) [2,{"endBar":2,"mode":"new","from":0,"bar":2,"rule":"zeit","f":0.3065}]
+PASS N7-R1 erste Aufnahme (gleiche Takte), Ende bei Takt 3 + 70 % → 3 Takte (zeit) [3,{"endBar":3,"mode":"new","from":0,"bar":3,"rule":"zeit","f":0.7041}]
+PASS 7.2 Teil-Taste in der Aufnahme → Marke STROPHE T3–6 (P1) [{"id":"M1","a":0,"len":2,"part":"S4","name":"Intro"},{"id":"M3","a":2,"len":4,"part":"P1"},{"id":"M2","a":6,"len":1,"part":"P2"}]
+PASS 7.2 Lanes der Strophe geschrieben (Bass Sz1 ab T3) [{"bar":2,"slot":0},{"bar":6,"slot":2,"ph":4}]
+PASS 7.2 ein Undo → deep-equal Song-Aufnahme
+PASS 7.3 Schleife: Stummschaltung nur im 1. Durchgang null
+PASS 7.3 im 2. Durchgang klingt die Note des 1. (70, Melodie-Weg, T3 ohne Clip) [[4.72,"live",70],[12.51,"melody",70],[16.76,"live",71],[20.51,"melody",70]]
+PASS 7.3 Ergebnis: T3 = Note 70 (Durchgang 1), T4 = Note 71 im eigenen Clip (Durchgang 2), alte T4-Note weg [[70],[{"t":0.5463,"d":0.3947,"n":74,"v":0.8},{"t":4,"d":1,"n":62,"v":0.8},{"t":8,"d":1,"n":64,"v":0.8},{"t":12,"d":1,"n":65,"v":0.8}]]
+PASS 7.3 ein Undo über alle Durchgänge → deep-equal Song-Aufnahme
+PASS Einfügen: 2 Takte (bars 11 → 13) 13
+PASS Einfügen: während der Aufnahme kein alter T5-Inhalt (Bass Sz1 läuft weiter, kein Spurwechsel) [[0,14,"clip",45],[0,16,"clip",45],[0,18,"clip",45],[0,20,"clip",45],[0,22,"clip",45],[0,24,"clip",45]]
+PASS Einfügen: Synth 4 ab T6 in der Lane, alter T5 jetzt T7 (Lanes +2) [[{"bar":0,"slot":3},{"bar":2,"slot":-1},{"bar":5,"slot":3},{"bar":6,"slot":-1}],[{"bar":9,"slot":2}]]
+PASS Einfügen: Note 79 im eigenen Clip des Synth-2-Durchlaufs, Szenen-Clips deep-equal [{"t":0,"d":1,"n":60,"v":0.8},{"t":4,"d":1,"n":62,"v":0.8},{"t":8,"d":1,"n":64,"v":0.8},{"t":8.5067,"d":0.3947,"n":83,"v":0.8},{"t":12,"d":1,"n":65,"v":0.8}]
+PASS Einfügen: Wiedergabe T5 Note 79 (own), alter T5 (Clip-Note 64) jetzt in T7 [[8,"own",60,60],[12,"own",59,62],[16,"own",60,64],[16.51,"own",79,83],[20,"own",62,65],[24,"clip",67,64],[28,"clip",64,65]]
+PASS Einfügen: Undo → deep-equal
+PASS 0 Konsolenfehler []
+
+65/65 passed

@@ -1,0 +1,17 @@
+PASS H-01 alle R.slot −1 vor ● — [-1,-1,-1,-1,-1,-1,-1,-1]
+PASS H-01 M-BEGL Synth 1, Synth 2, Synth 3, Drums, Melodie je Takt ≥ 1 Note (Takt 1–4 = ganzer Take)
+PASS H-01 im Einzähler keine Clip-Noten (wie 4.25.0) — 0 Noten < 0
+PASS H-01 g10OutRms ≥ −30 dBFS und ±1 dB zur Szene ohne Aufnahme — -15.9 / ohne Aufnahme -15.9
+PASS H-01 Take aufgenommen (neuer Eintrag in S.takes, Clip ≥ 4 Takte) — Takes 0→1 Länge 4
+PASS H-01 Overlay nennt Begleitung — Stimme · Szene 1 · Begleitung: Synth 1, Synth 2, Synth 3 +2
+PASS H-01 Konsole
+PASS H-02 belegte Spuren bleiben auf Szene 2, nur leere bekommen Szene 1 — vor [1,1,1,-1,1,-1,-1,-1] nach [1,1,1,-1,1,0,-1,-1]
+PASS H-02 M-OVL Namen — Stimme · Szene 1 · Begleitung: Synth 1, Synth 2, Synth 3 +2
+PASS H-03 MIDI-Take ohne 🎤: R.slot der anderen Spuren vorher = nachher — [-1,-1,-1,-1,-1,-1,-1,-1] → [-1,-1,-1,-1,-1,-1,-1,-1]
+PASS H-04 laufend: R.slot aller Spuren außer der Aufnahmespur gleich — [1,1,1,-1,1,-1,-1,-1] → [1,1,1,-1,1,-1,-1,-1]
+PASS H-05 Aufnahme = genau 1 Undo-Schritt (recWithScene legt keinen an) — 3 → 4
+PASS H-05 nach ■: R.slot wie nach ▶ 1 — {"slot":[0,0,0,-1,0,0,0,-1],"exp":[0,0,0,-1,0,0,0]}
+PASS H-06 Overlay „Ohne Begleitung – Szene 5 ist leer“ — Ohne Begleitung – Szene 5 ist leer
+PASS H-06 Toast — ["STIMME-Spur angelegt (Stimme)","Ohne Begleitung – Szene 5 ist leer","Kein Gesang erkannt"]
+PASS H-06 Aufnahme läuft trotzdem (Take angelegt) — 0→1
+ERGEBNIS 16 / 16 PASS

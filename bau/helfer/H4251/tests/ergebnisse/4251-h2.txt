@@ -1,0 +1,21 @@
+PASS H-10 Ziel ab Werk = nur Gesang — {"clips":false,"chords":false,"mel":false,"vox":true}
+PASS H-10 song.mel und eigene Clips von Bass (Synth 2) und Melodie deep-equal
+PASS H-10 song.vox hat ein Stück in Takt 1–4 — [{"id":"V1","bar":0,"len":4,"take":"939qe2d80v","in":2.779184,"out":10.779184,"at":0,"gain":1,"fadeIn":0.005,"fadeOut":0.005}]
+PASS H-10 M-BEGL: Bass und Melodie klingen in Takt 1–4 (≥ 1 Note je Takt), nichts stumm —  mute null
+PASS H-14 ein Undo „Song-Aufnahme“ stellt Stimme, Noten, Takte wieder her — {"vox":null,"u0":5,"u1":5}
+PASS H-14 Speichern → Laden deep-equal — true true
+PASS H-10 Konsole
+PASS H-11 🎤 aus + NOTEN: Stummschaltung und Löschen wie 4.25.0 — {"mute":{"t":1,"a":-0.25,"b":null},"n0":8,"n1":4,"tg":{"clips":false,"chords":false,"mel":true}} | 4.25.0 {"mute":{"t":1,"a":-0.25,"b":null},"n1":4}
+PASS H-12 NOTEN + GESANG, 0 Noten gespielt: nichts gelöscht (deep-equal) — {"clips":false,"chords":false,"mel":true,"vox":true}
+PASS H-12 3 Noten in Takt 2 gespielt: Ergebnis wie 4.25.0 (Takt 1–4 ersetzt, 3 neue Noten) — Takt 1–4 in song.mel: 0, Rest 4, eigener Clip [0.5,1.5,2.5,4,4,4,4] | 4.25.0: 0, Rest 4, eigener Clip [0.5,1.5,2.5,4,4,4,4]
+PASS H-13 Start-Blatt mit [🎤 GESANG] in 6 Formaten (M-PLATZ)
+PASS H-13 🎤 an/aus: kein Layout-Sprung
+PASS H-13 Konsole
+PASS H-60 „hören“: alte Stimm-Stücke in Takt 3–4 während des Takes eingeplant — [{"start":0.92,"end":28,"take":"d3lbibt7cn","now":10.6}]
+PASS H-60 danach song.vox in Takt 3–4 = neuer Take — [{"id":"V1","bar":0,"len":2,"take":"d3lbibt7cn","in":2.770476,"out":18.770476,"at":0,"gain":1,"fadeIn":0.005,"fadeOut":0.005},{"id":"V2","bar":2,"len":2,"take":"33jksmo8a9","in":4.25,"out":8.25,"at":0,"gain":1,"fadeIn":0.005,"fadeOut":0.005},{"id":"V3","bar":4,"len":4,"take":"d3lbibt7cn","in":10.770
+PASS H-60 ↶ stellt den alten Zustand her
+PASS H-61 Standard „stumm“: alte Stimme in Takt 3–4 nicht eingeplant — []
+PASS H-60/61 Konsole
+PASS H-60 Zeile „Alte Stimme [stumm] [hören]“ in 6 Formaten ≥ 44 px
+PASS H-70 mit 🎤 Toast, ohne 🎤 nicht — [{"t":["🎤 Gesang wird beim ersten Song-Durchgang nicht aufgenommen – erst den Song anlegen, dann ● SONG zum Einsingen"],"song":true},{"t":[],"song":true}]
+ERGEBNIS 20 / 20 PASS

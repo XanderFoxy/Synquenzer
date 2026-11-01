@@ -1,0 +1,11 @@
+PASS H-20 Standard: genau 4 Klicks auf −4…−1, Betonung auf −4 — [{"b":-4,"a":1},{"b":-3,"a":0},{"b":-2,"a":0},{"b":-1,"a":0}]
+PASS H-20 Standard: 0 Klicks im Take [0, Ende) — []
+PASS H-20 Konsole
+PASS H-21 „Immer“: Klick auf jedem Schlag des Takes — 0,1,2,3,4,5,6,7
+PASS H-21 ♩ an: jeder Schlag in beiden Fällen — 8 / 8
+PASS H-22 MIDI-Take ohne 🎤, metroInRec an: Klicks wie 4.25.0 — -4,-3,-2,-1,0,1,2,3,4,5,6,7 | 4.25.0: -4,-3,-2,-1,0,1,2,3,4,5,6,7
+PASS H-23 Menüzeile „Klick beim Singen“ schaltet, Projekt unverändert (M-DATA) — {"hit":2,"vc":"always","pref":"always","same":true}
+PASS H-23 Wahl übersteht Neuladen
+PASS H-23 M-PLATZ der beiden neuen Zeilen (6 Formate)
+PASS H-23 Konsole
+ERGEBNIS 10 / 10 PASS
