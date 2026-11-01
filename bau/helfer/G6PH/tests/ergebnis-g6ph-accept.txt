@@ -1,0 +1,29 @@
+✓ Song mit Song-Stimme (Takt 9–12) und Begleitung G–Em–C–D
+✓ G6P-70 g6pSongPcs: 48/48 Stellen = Akkord der Begleitung
+✓ hinter dem Song: keine Begleitung (null)
+✓ G6P-70 drei: 32/32 Chornoten sind Akkordtöne der Begleitung am Takt
+✓ G6P-70 barber: 48/48 Chornoten sind Akkordtöne der Begleitung am Takt
+✓ G6P-70 Terz (leitereigen) auf der Song-Stimme gerechnet: 16 Noten
+✓ ohne Begleitung: null → g6Chord wie bisher
+✓ G6P-73 Stil auf der Song-Stimme = 1 Undo-Schritt (6 → 7, song/)
+✓ G6P-73 Song-Stimme + Chor-Spuren = 1 Gruppen-Undo (song+chorlanes)
+✓ ↶/↷ stellen Song und Spuren her (0/-3)
+✓ S.fxBus nach ↶↶↷↷ deep-equal
+✓ G6P-73 Speichern → Laden: Song (inkl. Chor) und Spuren deep-equal
+✓ Song vorher gelesen
+✓ keine Fehler: []
+✓ G6P-71 Stelle V1 (Takt 9) fertig, bevor sie erklingt
+✓ G6P-71 Stelle V2 (Takt 21) fertig, bevor sie erklingt
+✓ G6P-71 Stelle V3 (Takt 33) fertig, bevor sie erklingt
+✓ G6P-71 keine langen Tasks > 50 ms während der Wiedergabe: [Dauer, ms ab ▶] [[72,0]]
+✓ Vorausrechnen lief (44 Durchgänge, letzter 0.3 ms)
+✓ keine Fehler: []
+✓ G6P-72 g6pWaitAll vor dem Render: {"n":1,"chor":1,"miss":0,"ms":1583}
+✓ G6P-72 zwei Renders gleich (max |Δ| = 1 LSB; Grundlinie 4.26.0 ohne Chor ebenfalls 1 LSB)
+✓ G6P-72 ein vor dem Render aktives Solo ändert den Render nicht (max |Δ| = 1 LSB)
+✓ Gegenprobe ohne Hold: Solo ändert den Render (max |Δ| = 12603 LSB)
+✓ Solo nach dem Render wieder wie vorher (0)
+✓ Gegenprobe ohne g6pWaitAll: Render weicht ab (max |Δ| = 5562 LSB) – die Lücke aus §2.7 ist echt
+✓ G6P-72 Ton enthält die Chor-Stelle (Δ in der Stelle 0.0407, davor 0.0e+0)
+✓ keine Fehler: []
+alles grün

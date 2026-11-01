@@ -10,38 +10,7 @@ const only = ONLY ? ONLY.replace('nur=', '').split(',') : null, want = k => !onl
 let fails = 0; const ok = (c, m) => { console.log((c ? '✓ ' : '✗ ') + m); if (!c) fails++; };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-// synthetischer Gesang (48 kHz): je Schlag eine Note (Obertöne 1…8, Vibrato ±25 ct, 20-ms-Hülle, kleine Lücke)
-function sing(midis, bpm, sr = 48000) {
-  const spb = 60 / bpm, n = Math.round(midis.length * spb * sr), y = new Int16Array(n);
-  let ph = 0;
-  for (let i = 0; i < n; i++) {
-    const t = i / sr, k = Math.floor(t / spb), m = midis[Math.min(k, midis.length - 1)], tn = t - k * spb;
-    const f = 440 * Math.pow(2, (m - 69 + 0.25 * Math.sin(2 * Math.PI * 5.5 * t) / 100 * 4 / 4) / 12);
-    ph += 2 * Math.PI * f / sr;
-    const env = Math.min(1, tn / 0.02, Math.max(0, (spb - 0.04 - tn) / 0.02));
-    let s = 0; for (let h = 1; h <= 8; h++) s += Math.sin(h * ph) / h;
-    y[i] = Math.round(env * 0.22 * s * 32767 / 1.6);
-  }
-  return Array.from(y);
-}
-// G-Dur: Begleitung G – Em – C – D (Synth 1, Szene 1 = Slot 0), Lead nur Akkordtöne
-const CH = [[55, 59, 62], [52, 55, 59], [48, 52, 55], [50, 54, 57]], PCS = CH.map(c => c.map(x => x % 12).sort((a, b) => a - b));
-const LEAD = [67, 71, 74, 71, 64, 67, 71, 67, 72, 76, 67, 76, 74, 78, 69, 78];
-async function setup(p, o) {
-  o = o || {};
-  return p.evaluate(async ([lead, CH, o]) => {
-    SYNQUENZER.setBpm(o.bpm || 120);
-    const notes = []; CH.forEach((c, bar) => c.forEach(n => notes.push({t: bar * 4, d: 4, n, v: 0.8})));
-    SYNQUENZER.setClip(0, 0, {len: 4, key: {root: 7, scale: 'ionian', src: 'user'}, notes});
-    const r = await SYNQUENZER.tkInject({pcm: lead, sr: 48000, scene: 1, len: 4});
-    const st = SYNQUENZER.tkInfo().stimme, dur = lead.length / 48000, bars = o.bars || 16;
-    const lanes = []; for (let i = 0; i < 6; i++) lanes.push([]);
-    lanes[0] = [{bar: 0, slot: 0}];
-    const vox = (o.at || [8]).map((bar, k) => ({id: 'V' + (k + 1), bar, len: 4, take: r.id, in: 0, out: dur, at: 0}));
-    SYNQUENZER.setSong({bars, lanes, vox, marks: o.marks || [], carrier: [], xp: [], mel: o.mel || {}, loop: {on: false, a: 0, b: bars}});
-    return {id: r.id, st, song: SYNQUENZER.project().song};
-  }, [sing(LEAD, o.bpm || 120), CH, o]);
-}
+import {sing, setup, CH, PCS, LEAD} from './g6ph-lib.mjs';
 async function page(file) {
   const b = await chromium.launch({args: ['--autoplay-policy=no-user-gesture-required']}); const p = await b.newPage({viewport: {width: 390, height: 844}});
   const errs = []; p.on('pageerror', e => errs.push(String(e))); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
@@ -112,9 +81,10 @@ if (want('71')) {
   await setup(p, {bpm: 160, bars: 40, at: [8, 20, 32], marks: [{id: 'M1', a: 0, len: 8, part: 'P1'}, {id: 'M2', a: 8, len: 4, part: 'P2'}, {id: 'M3', a: 12, len: 8, part: 'P1'}, {id: 'M4', a: 20, len: 4, part: 'P2'}, {id: 'M5', a: 24, len: 8, part: 'P1'}, {id: 'M6', a: 32, len: 4, part: 'P2'}]});
   // Chor auf allen drei Stellen (Barbershop: 3 Stimmen × 2 Kopien), danach Cache leeren = Kaltstart
   for (const id of ['V1', 'V2', 'V3']) await p.evaluate(id => SYNQUENZER.g6Make({vox: id}, id === 'V2' ? 'drei' : 'barber', 'up', '80'), id);
-  await p.evaluate(() => { G6.cache.clear(); G6.job.clear(); G6.renders = 0; window.__lt = []; try { new PerformanceObserver(l => { for (const e of l.getEntries()) window.__lt.push(Math.round(e.duration)); }).observe({entryTypes: ['longtask']}); } catch (e) {} });
+  if (process.env.G6PH_AUS) await p.evaluate(() => { g6pSongTick = () => {}; });   // Gegenprobe: ohne Vorausrechnen (Stand 4.25.2)
+  await p.evaluate(() => { G6.cache.clear(); G6.job.clear(); G6.renders = 0; window.__lt = []; try { new PerformanceObserver(l => { for (const e of l.getEntries()) window.__lt.push([Math.round(e.duration), Math.round(e.startTime - (window.__t0 || 0))]); }).observe({entryTypes: ['longtask']}); } catch (e) {} });
   const res = await p.evaluate(async () => {
-    const out = {}, song = S.song; SYNQUENZER.songPlay(0);
+    const out = {}, song = S.song; window.__t0 = performance.now(); SYNQUENZER.songPlay(0);
     const spb = 60 / S.bpm;
     return await new Promise(res => {
       const iv = setInterval(() => {
@@ -127,7 +97,8 @@ if (want('71')) {
   });
   for (const k of ['V1', 'V2', 'V3']) ok(res.out[k] && res.out[k].ready, `G6P-71 Stelle ${k} (Takt ${res.out[k] && res.out[k].bar + 1}) fertig, bevor sie erklingt`);
   const lt = await p.evaluate(() => window.__lt);
-  ok(!lt.some(x => x > 50), 'G6P-71 keine langen Tasks > 50 ms: ' + JSON.stringify(lt.slice(0, 8)));
+  // der erste Task beim Start der Wiedergabe (Audio-Graph, ≤ 300 ms nach ▶) gehört nicht zu G6+h (Gegenprobe G6PH_AUS=1 zeigt ihn genauso)
+  ok(!lt.some(x => x[0] > 50 && x[1] > 300), 'G6P-71 keine langen Tasks > 50 ms während der Wiedergabe: [Dauer, ms ab ▶] ' + JSON.stringify(lt.slice(0, 8)));
   ok(res.info.n > 0 && res.info.last && res.info.last.ms < 20, `Vorausrechnen lief (${res.info.n} Durchgänge, letzter ${res.info.last && res.info.last.ms} ms)`);
   ok(!errs.length, 'keine Fehler: ' + JSON.stringify(errs.slice(0, 3)));
   await b.close();
@@ -143,13 +114,28 @@ if (want('72') && VFILE) {
   const r1 = await p.evaluate(() => SYNQUENZER.vvRender({range: {a: 6, b: 14}})), w1 = await p.evaluate(() => SYNQUENZER.g6phInfo().wait), A = await pcm();
   ok(w1 && w1.chor === 1 && w1.miss === 0, 'G6P-72 g6pWaitAll vor dem Render: ' + JSON.stringify(w1));
   const r2 = await p.evaluate(() => SYNQUENZER.vvRender({range: {a: 6, b: 14}})), B = await pcm();
-  ok(A === B, 'G6P-72 zwei Renders bitgleich');
+  // Befund 4.26.0 (G-VID-zwischen): schon OHNE Chor weichen zwei Renders um ±1 LSB (16 bit) ab – der Chor darf nichts dazutun
+  const mx = (x, y) => { const u = Buffer.from(x, 'base64'), v = Buffer.from(y, 'base64'), d1 = new Int16Array(u.buffer, u.byteOffset, u.length / 2), d2 = new Int16Array(v.buffer, v.byteOffset, v.length / 2); if (d1.length !== d2.length) return Infinity; let m = 0; for (let k = 0; k < d1.length; k++) { const e = Math.abs(d1[k] - d2[k]); if (e > m) m = e; } return m; };
+  const mAB = mx(A, B);
+  ok(mAB <= 1, `G6P-72 zwei Renders gleich (max |Δ| = ${mAB} LSB; Grundlinie 4.26.0 ohne Chor ebenfalls 1 LSB${A === B ? ', hier bitgleich' : ''})`);
   // Solo vor dem Render (Stimme 1; der Lead schweigt live) → Render unverändert; danach Solo wieder an
   await p.evaluate(() => SYNQUENZER.g6Solo(0));
   await p.evaluate(() => SYNQUENZER.vvRender({range: {a: 6, b: 14}})); const C = await pcm(), so = await p.evaluate(() => SYNQUENZER.g6phInfo().solo);
-  ok(A === C, 'G6P-72 ein vor dem Render aktives Solo ändert den Render nicht');
+  const mAC = mx(A, C);
+  ok(mAC <= 1, `G6P-72 ein vor dem Render aktives Solo ändert den Render nicht (max |Δ| = ${mAC} LSB)`);
+  // Gegenprobe ohne Hold: Solo wirkt sonst im Video (der Lead schweigt) – zeigt, dass der Test greift
+  await p.evaluate(() => { window.__h = g6pRenderHold; g6pRenderHold = () => null; });
+  await p.evaluate(() => SYNQUENZER.vvRender({range: {a: 6, b: 14}})); const C2 = await pcm();
+  await p.evaluate(() => { g6pRenderHold = window.__h; });
+  ok(mx(A, C2) > 100, `Gegenprobe ohne Hold: Solo ändert den Render (max |Δ| = ${mx(A, C2)} LSB)`);
   ok(so === 0, 'Solo nach dem Render wieder wie vorher (' + so + ')');
   await p.evaluate(() => SYNQUENZER.g6Solo(0));
+  // Gegenprobe ohne g6pWaitAll ab kaltem Cache (wie 4.26.0): die Chor-Stelle fehlt bzw. ist unvollständig
+  await p.evaluate(() => { G6.cache.clear(); G6.job.clear(); window.__w = g6pWaitAll; g6pWaitAll = async () => ({ok: true}); });
+  await p.evaluate(() => SYNQUENZER.vvRender({range: {a: 6, b: 14}})); const E = await pcm();
+  await p.evaluate(() => { g6pWaitAll = window.__w; });
+  ok(mx(A, E) > 100, `Gegenprobe ohne g6pWaitAll: Render weicht ab (max |Δ| = ${mx(A, E)} LSB) – die Lücke aus §2.7 ist echt`);
+  await p.evaluate(() => SYNQUENZER.g6Wait({vox: 'V1'}));
   // ohne Chor: Unterschied nur in der Chor-Stelle (Takt 9–12 = Render-Zeit 2 … 4 Takte ab Takt 7)
   await p.evaluate(() => SYNQUENZER.g6Del({vox: 'V1'}));
   await p.evaluate(() => SYNQUENZER.vvRender({range: {a: 6, b: 14}})); const D = await pcm();
