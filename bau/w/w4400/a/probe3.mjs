@@ -21,6 +21,7 @@ const kon = await p.evaluate(() => JSON.stringify(window.SYNQUENZER.konsolidiere
 console.log('kon', kon, await p.evaluate(() => JSON.stringify(window.SYNQUENZER.parts().filter(Boolean).map(x => ({name: x.name, lanes: x.lanes[2], gl: x.gl})))));
 if (mode === 'part') {
   await p.evaluate(() => { const Q = window.SYNQUENZER; const k = Q.parts().findIndex(x => x && x.name === 'Test'); Q.launchPart(k); });
+  await p.waitForTimeout(400);
   await p.evaluate(() => window.SYNQUENZER.v6aProbe(2, ['cutoff']));
   await sample('part', 10000);
 } else {
