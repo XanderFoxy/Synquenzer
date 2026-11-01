@@ -1,0 +1,5 @@
+{"quelle": "Nachtrag 7 §3.1 (Reihen, Reihenfolge, Gruppen) und §3.2 (Zonen 44 px, Value 56 px quer, Faltung hoch). Einheiten: Spalte (col) und Reihe (row); Breite in Zonen. Nicht aus dem Handbuch-Bild (privat).",
+ "quer": {"cols": [1,1,1,1,1,1,1,1,1,1,1,1,1.2727,1],
+  "A": [["vol",0],["octL",1],["octR",2],["voice",3],["layer",4],["split",5],["init",6],["write",7],["global",8],["disp",9,3],["parL",12,1,0.1364],["parR",13]],
+  "B": [["seq",0],["osc1",1],["osc2",2],["noise",3],["filter",4],["lfo1",5],["lfo2",6],["fx",7],["arp",8],["pitch",9],["mod",10],["general",11],["value",12,1.2727],["compare",13]]},
+ "hoch": {"rows": [["vol","octL","octR","voice","layer","split"],["init","write","global",["disp",2],"parL","parR"],["seq","osc1","osc2","noise","filter","lfo1","lfo2"],["fx","arp","pitch","mod","general","value","compare"]]}}
