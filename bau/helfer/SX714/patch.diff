@@ -1,0 +1,491 @@
+--- bau/snapshots/R-4310.html	2026-11-01 10:42:14.009208353 +0000
++++ bau/helfer/SX714/index.html	2026-11-01 10:59:56.161271490 +0000
+@@ -4329,6 +4329,45 @@
+ .pg-md>.vchips .vchip{min-height:44px}
+ #drumSheet .sh-subs:has(.stab[data-sub="tone"]) .stab,#drumSheet .sh-subs:has(.stab[data-sub="md"]) .stab{min-height:44px;height:44px}
+ /* Ende ND2 */
++/* SX714-CSS-BEGIN: SX7 Lautsprecher-Schalter + feste Scrub-Linie mit Blitz am Taktstrich; SX14 Verlauf-Liste + Schnappschüsse */
++.sv-top > .sv-scr{flex:0 0 44px;padding:0!important;display:flex;align-items:center;justify-content:center;color:var(--text-dim)}
++.sv-scr svg{width:22px;height:22px;display:block}
++.sv-scr .sx7w{opacity:.35}
++.sv-scr.on{color:var(--amber);border-color:var(--amber);background:rgba(255,178,46,.12)}
++.sv-scr.on .sx7w{opacity:1}
++.sv-scr .sx7x{opacity:1}.sv-scr.on .sx7x{opacity:0}
++@media (orientation:portrait) and (max-width:440px){#songView:not(.side) .sv-top > .sv-play{flex-basis:52px}}
++#songView.side .sv-top > .sv-loop{grid-column:span 1;order:3;padding:0 1px!important}
++#songView.side .sv-top > .sv-loop .t{font-size:7.5px;letter-spacing:0}
++#songView.side .sv-top > .sv-loop .v{white-space:normal;text-align:center;line-height:1.1}
++#songView.side .sv-top > .sv-scr{grid-column:span 1;order:3}
++.sx7-ln{position:absolute;top:0;bottom:0;left:50%;width:2px;margin-left:-1px;background:#6fd3ff;box-shadow:0 0 0 1px rgba(11,12,15,.55);pointer-events:none;z-index:3;border-radius:1px}
++.sx7-ln::before{content:'';position:absolute;left:-5px;top:0;border:6px solid transparent;border-top-color:#6fd3ff;border-bottom:0}
++.sx7-ln[hidden]{display:none}
++.pop.sx14{width:min(340px,calc(100vw - 16px));max-height:min(560px,calc(100vh - 32px));display:flex;flex-direction:column;padding:8px}
++.sx14 .sx14-h{display:flex;align-items:center;gap:6px;margin:0 0 6px}
++.sx14 .sx14-h b{flex:1 1 auto;font:800 12px/1 var(--font-ui);letter-spacing:.06em;color:var(--text-dim)}
++.sx14 .sx14-h .rb{min-width:44px;height:44px}
++.sx14 .sx14-b{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;display:flex;flex-direction:column;gap:3px}
++.sx14 .sx14-l,.sx14 .sx14-k{display:flex;flex-direction:column;gap:3px}
++@media (orientation:landscape){
++  .pop.sx14{width:min(640px,calc(100vw - 16px))}
++  .sx14 .sx14-b{flex-direction:row;gap:8px;overflow:hidden}
++  .sx14 .sx14-l,.sx14 .sx14-k{flex:1 1 0;min-width:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
++  .sx14 .sx14-k .sx14-s{margin-top:0}
++}
++.sx14 .sx14-r{display:flex;align-items:center;gap:8px;min-height:44px;width:100%;padding:0 10px;text-align:left;font:600 13px/1.15 var(--font-ui);box-sizing:border-box}
++.sx14 .sx14-r .n{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
++.sx14 .sx14-r .z{flex:none;font:600 11px/1 var(--font-num);color:var(--text-dim)}
++.sx14 .sx14-r.cur{border-color:var(--amber);color:#ffcf7a;background:rgba(255,178,46,.12)}
++.sx14 .sx14-r.red{opacity:.62}
++.sx14 .sx14-r.red .n::before{content:'↷ ';color:var(--text-dim)}
++.sx14 .sx14-s{font:800 10px/1 var(--font-ui);letter-spacing:.08em;color:var(--text-dim);margin:8px 2px 2px}
++.sx14 .sx14-sr{display:flex;gap:4px}
++.sx14 .sx14-sr .sx14-r{flex:1 1 auto;min-width:0}
++.sx14 .sx14-sr .sx14-d{flex:0 0 44px;height:44px;padding:0}
++.sx14 .sx14-e{font:500 12px/1.3 var(--font-ui);color:var(--text-dim);padding:6px 4px}
++/* SX714-CSS-END */
+ </style>
+ </head>
+ <body>
+@@ -14711,7 +14750,7 @@
+ 
+     // ---------- toolbar ----------
+     const bindTap = (b, fn) => { if (opts.tap) opts.tap(b, () => fn()); else b.addEventListener('click', () => fn()); };
+-    const btn = (parent, label, fn, title, cls) => { const b = mk('button', cls || '', label); b.type = 'button'; if (title) { b.title = title; b.setAttribute('aria-label', title); } bindTap(b, fn); parent.appendChild(b); return b; };
++    const btn = (parent, label, fn, title, cls) => { const b = mk('button', cls || '', label); b.type = 'button'; if (title) { b.title = title; b.setAttribute('aria-label', title); } if (label === '↶' && opts.undoHold) opts.undoHold(b, fn); else bindTap(b, fn);   /* SX714: ↶ halten */ parent.appendChild(b); return b; };
+     const sep = parent => parent.appendChild(mk('span', 'sep'));
+     const tb = {
+       draw: btn(bar, '✎', () => setTool('draw'), 'Zeichnen'), select: btn(bar, '⬚', () => setTool('select'), 'Auswahl'), erase: btn(bar, '⌫', () => setTool('erase'), 'Radieren', 'er'),
+@@ -21449,6 +21488,7 @@
+     if (Array.isArray(obj.scenes)) obj.scenes.slice(0, N_SCN).forEach((sc, i) => { const r = sc && normChordRow(sc.chords); if (r) p.scenes[i].chords = r; });
+     // V0b FOLGEN: the editor kinds switched to AUS (only false entries are kept; missing = FOLGT)
+     if (ui.follow && typeof ui.follow === 'object') { const f = {}; for (const k of ['roll', 'lauf', 'steps', 'song']) if (ui.follow[k] === false) f[k] = false; if (Object.keys(f).length) p.ui.follow = f; }
++    if (obj.sx14) { const x = sx14Norm(obj.sx14); if (x) p.sx14 = x; }   // SX714: Schnappschüsse (additiv, nur wenn vorhanden)
+     try { g6pFixLanes(p); } catch (e) { logErr(e); }               // G6+a: Stimmen ohne passende Chor-Spur bekommen eine aus ihrer Regel
+     const nvE = p.tracks.filter(t => t.sound && t.sound._nv).map(t => t.sound._nv.engine);
+     if (nvF > SQStore.PROJECT_FORMAT_READ || nvE.length) Object.defineProperty(p, '_newer', {value: Object.defineProperty({f: nvF, e: nvE, w: nv0.w || 0}, 'fo', {value: nv0.fo || null}), configurable: true});   // MK0-fix: + fo (as delivered)
+@@ -25324,6 +25364,7 @@
+   if (e.kind === 'tphase') return tkPhaseOf(e.track, e.scene);                                  // VS-L-fix
+   if (e.kind === 'gfx') return g4Snap(e.track);                                                // G4
+   if (e.kind === 'chorlanes') return g6pLanesSnap(e.track);                                     // G6+a: Chor-Spuren
++  if (e.kind === 'sx14') return sx14State();                                                    // SX714: ganzer Stand (Schnappschuss)
+   return fxSnapshot();
+ }
+ // a restored clip that is playing is heard at once (like an editor gesture, §3.3 afterClipEdit)
+@@ -25351,6 +25392,7 @@
+   else if (e.kind === 'gfx') g4Restore(e.track, val);            // G4
+   else if (e.kind === 'chorlanes') g6pLanesRestore(e.track, val);   // G6+a
+   else if (e.kind === 'part') partRestore(JSON.parse(val));
++  else if (e.kind === 'sx14') sx14Put(val);                      // SX714: Schnappschuss zurückgeholt (ganzer Stand)
+   else restoreFx(JSON.parse(val));
+   UI.dirty.all = true; markDirty();
+   if (typeof edUndoBtns === 'function') edUndoBtns();
+@@ -25391,10 +25433,169 @@
+   return true;
+ }
+ 
++/* ---------- SX714 · SX14 Verlauf-Liste und Schnappschüsse (Konzept Schnitt §3 SX14). ↶ halten → die letzten Schritte mit Namen und
++   Uhrzeit (neueste oben; ↷-Schritte darüber, blass); Tipp = zu diesem Stand springen (Schritt für Schritt über ↶/↷, alles dazwischen
++   bleibt mit ↷ erreichbar). [＋ Schnappschuss] merkt den ganzen Stand mit Namen im Projekt (S.sx14, additiv; höchstens 5, Teile
++   als Verweise in einem gemeinsamen Vorrat – Gleiches liegt nur einmal da, Obergrenze SX14_MAX Zeichen). Zurückholen = ein
++   Undo-Schritt (Art 'sx14', ganzer Stand). Schnappschüsse selbst sind kein Undo-Schritt und nie Teil eines Stands. */
++const SX14_N = 5, SX14_MAX = 600000, SX14_PROJ = 1800000;
++function sx14Any() { return !!(REDO.length || (S && S.sx14 && S.sx14.snaps && S.sx14.snaps.length)); }
++function sx14UndoHold(b, fn) { bindHoldTap(b, fn, () => sx14Open(b)); }
++// S.sx14 = {v: 1, snaps: [{id, name, at, f, m: [[Teil, Verweis], …]}], pool: {Verweis: Inhalt}}
++function sx14Norm(x) {
++  if (!x || typeof x !== 'object' || !Array.isArray(x.snaps) || !x.pool || typeof x.pool !== 'object') return null;
++  const pool = {}, snaps = [];
++  for (const sn of x.snaps.slice(0, SX14_N)) {
++    if (!sn || typeof sn.id !== 'string' || !Array.isArray(sn.m) || !sn.m.length) continue;
++    const m = sn.m.filter(e => Array.isArray(e) && e.length === 2 && typeof e[0] === 'string' && typeof e[1] === 'string' && Object.prototype.hasOwnProperty.call(x.pool, e[1]));
++    if (m.length !== sn.m.length) continue;                                        // a broken snapshot is dropped whole
++    for (const [, h] of m) pool[h] = x.pool[h];
++    snaps.push({id: sn.id.slice(0, 24), name: String(sn.name || 'Schnappschuss').slice(0, 32), at: isNum(sn.at) ? sn.at : 0, f: isNum(sn.f) ? sn.f : 5, m: m.map(e => e.slice())});
++  }
++  return snaps.length ? {v: 1, snaps, pool} : null;
++}
++// the project file of the current state without the snapshots and the view (the state a snapshot keeps, an undo 'sx14' swaps)
++function sx14Fo() {
++  syncUi();
++  const fo = SQStore.buildProjectFile(S, null, VERSION); delete fo.saved; delete fo.sum;
++  delete fo.project.sx14; delete fo.project.ui;
++  return fo;
++}
++function sx14State() { return JSON.stringify(sx14Fo()); }
++// a project file object → [[Teil, Inhalt]]: every top-level field; a track without its clips; every clip on its own
++function sx14Parts(P) {
++  const out = [];
++  for (const k of Object.keys(P)) {
++    if (k === 'tracks' && Array.isArray(P.tracks)) {
++      P.tracks.forEach((t, i) => {
++        if (!t || typeof t !== 'object' || !Array.isArray(t.clips)) { out.push(['t.' + i, t]); return; }
++        out.push(['t.' + i, Object.assign({}, t, {clips: t.clips.length})]);
++        t.clips.forEach((c, j) => { if (c) out.push(['t.' + i + '.c.' + j, c]); });
++      });
++    } else out.push([k, P[k]]);
++  }
++  return out;
++}
++function sx14Build(sn, pool) {
++  const P = {}, tr = [];
++  for (const [k, h] of sn.m) {
++    const v = deep(pool[h]), mt = /^t\.(\d+)(?:\.c\.(\d+))?$/.exec(k);
++    if (!mt) { P[k] = v; continue; }
++    const i = +mt[1];
++    if (mt[2] == null) { if (!('tracks' in P)) P.tracks = tr; if (v && typeof v === 'object' && isNum(v.clips)) { const n = v.clips; v.clips = new Array(n).fill(null); for (let j = 0; j < n; j++) if (tr[i] && tr[i].clips && tr[i].clips[j]) v.clips[j] = tr[i].clips[j]; } tr[i] = v; }
++    else if (tr[i] && Array.isArray(tr[i].clips)) tr[i].clips[+mt[2]] = v;
++  }
++  return P;
++}
++function sx14Size(x) { try { return JSON.stringify(x).length; } catch (e) { return Infinity; } }
++// ＋ Schnappschuss: the current state under a name; parts already in the store are only referenced
++function sx14Add(name) {
++  if (nvRefuse()) return false;
++  const cur = S.sx14 ? S.sx14 : {v: 1, snaps: [], pool: {}};
++  if (cur.snaps.length >= SX14_N) { toast('Höchstens ' + SX14_N + ' Schnappschüsse – erst einen löschen (✕)'); return false; }
++  const fo = sx14Fo(), pool = Object.assign({}, cur.pool), m = [];
++  for (const [k, v] of sx14Parts(fo.project)) {
++    const js = JSON.stringify(v === undefined ? null : v); let h = SQStore.fnv(js), n = 0;
++    while (Object.prototype.hasOwnProperty.call(pool, h) && JSON.stringify(pool[h]) !== js) h = SQStore.fnv(js) + '.' + (++n);   // never two contents under one name
++    if (!Object.prototype.hasOwnProperty.call(pool, h)) pool[h] = JSON.parse(js);
++    m.push([k, h]);
++  }
++  const nm = String(name || '').trim().slice(0, 32) || 'Stand ' + dayTime(Date.now()).replace(/^heute /, '');
++  const sn = {id: 'sx' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), name: nm, at: Date.now(), f: fo.format || 5, m};
++  const next = {v: 1, snaps: cur.snaps.concat([sn]), pool};
++  const room = SX14_PROJ - (sx14Size(projectFileObj(S, true, false)) - (S.sx14 ? sx14Size(S.sx14) : 0));   // the whole project stays below the 2-MB server limit
++  if (sx14Size(next) > Math.min(SX14_MAX, room)) { toast('Schnappschuss zu groß für das Projekt – erst einen alten löschen (✕)'); return false; }
++  S.sx14 = next; markDirty(); UI.dirty.strip = true; edUndoBtns();
++  toast('Schnappschuss „' + nm + '“ gemerkt'); return sn.id;
++}
++function sx14Del(id) {
++  const x = S.sx14; if (!x) return false;
++  const snaps = x.snaps.filter(z => z.id !== id); if (snaps.length === x.snaps.length) return false;
++  if (!snaps.length) delete S.sx14;
++  else { const pool = {}; for (const z of snaps) for (const [, h] of z.m) pool[h] = x.pool[h]; S.sx14 = {v: 1, snaps, pool}; }
++  markDirty(); UI.dirty.strip = true; edUndoBtns(); return true;
++}
++// a whole state (project file JSON) goes in, the undo / redo lists and the snapshots stay (applyProject clears the lists)
++function sx14Put(val) {
++  let fo = null; try { fo = JSON.parse(val); } catch (e) { fo = null; }
++  const p = fo && projFromFile(fo); if (!p) { toast('Stand nicht lesbar'); return false; }
++  const U = UNDO.slice(), Rd = REDO.slice(), keep = S.sx14 || null, sv = !!UI.songView;
++  p.id = S.id; devCarry(p, (syncUi(), S));
++  const q = normalizeProject(p); if (keep) q.sx14 = keep; else delete q.sx14;
++  applyProject(q, {ui: true, keepMode: true});
++  UNDO.length = 0; UNDO.push(...U); REDO.length = 0; REDO.push(...Rd);
++  if (sv && !UI.songView && typeof setSongView === 'function') setSongView(true);
++  UI.dirty.strip = true; edUndoBtns();
++  return true;
++}
++// Schnappschuss zurückholen = one undo step 'sx14'
++function sx14Restore(id) {
++  const x = S.sx14, sn = x && x.snaps.find(z => z.id === id); if (!sn) return false;
++  if (nvRefuse()) return false;
++  if (rec.state === 'recording' || rec.state === 'overdub' || R.songRec) { toast('Erst Aufnahme beenden'); return false; }
++  const before = sx14State();
++  const fo = {app: SQStore.APP, kind: 'project', format: sn.f || 5, appVersion: VERSION, project: sx14Build(sn, x.pool)};
++  const val = JSON.stringify(fo); if (val === before) { toast('Das ist schon der Stand „' + sn.name + '“'); return false; }
++  if (!sx14Put(val)) return false;
++  undoPush({kind: 'sx14', before, label: 'Schnappschuss „' + sn.name + '“'});
++  toast('Schnappschuss „' + sn.name + '“ zurückgeholt', {label: '↶ Rückgängig', fn: () => undo()});
++  return true;
++}
++// jump: k > 0 = k steps back (↶), k < 0 = |k| steps forward (↷); stops when a step is refused
++function sx14Jump(k) {
++  let n = 0; const f = k > 0 ? undo : redo;
++  for (let i = 0; i < Math.abs(k); i++) { if (!f()) break; n++; }
++  return n;
++}
++const sx14Clock = e => { const ms = (performance.timeOrigin || HIST_S0) + (e && isNum(e.time) ? e.time : performance.now()); const d = new Date(ms); return z2(d.getHours()) + ':' + z2(d.getMinutes()); };
++function sx14Open(anchor) {
++  if (!sx14Any() && !UNDO.length) { toast('Noch kein Verlauf'); }
++  openPop(anchor, p => {
++    p.classList.add('sx14'); guardTouch(p);
++    const paint = () => {
++      const n = UNDO.length, rows = [];
++      for (let j = 0; j < REDO.length; j++) rows.push(`<button class="rb sx14-r red" data-a="j" data-k="${-(REDO.length - j)}"><span class="n">${esc(REDO[j].label || 'Schritt')}</span><span class="z">${sx14Clock(REDO[j])}</span></button>`);
++      for (let i = n - 1; i >= 0; i--) rows.push(`<button class="rb sx14-r${i === n - 1 ? ' cur' : ''}" data-a="j" data-k="${n - 1 - i}"><span class="n">${esc(UNDO[i].label || 'Schritt')}</span><span class="z">${i === n - 1 ? 'jetzt' : sx14Clock(UNDO[i])}</span></button>`);
++      rows.push(`<button class="rb sx14-r${n ? '' : ' cur'}" data-a="j" data-k="${n}"><span class="n">Ältester Stand im Verlauf</span><span class="z">${n ? '' : 'jetzt'}</span></button>`);
++      const sn = S.sx14 ? S.sx14.snaps : [];
++      p.innerHTML = `<div class="sx14-h"><b>VERLAUF</b><button class="rb" data-a="add" aria-label="Schnappschuss merken"${sn.length >= SX14_N ? ' disabled' : ''}>＋ Schnappschuss</button><button class="rb" data-a="x" aria-label="Schließen">✕</button></div>` +
++        `<div class="sx14-b pan-y"><div class="sx14-l pan-y">${rows.join('')}</div><div class="sx14-k pan-y">` +
++        `<div class="sx14-s">SCHNAPPSCHÜSSE${sn.length ? ' · ' + sn.length + '/' + SX14_N : ''}</div>` +
++        (sn.length ? sn.slice().reverse().map(z => `<div class="sx14-sr"><button class="rb sx14-r" data-a="r" data-id="${esc(z.id)}" aria-label="Schnappschuss ${esc(z.name)} zurückholen"><span class="n">${esc(z.name)}</span><span class="z">${dayTime(z.at)}</span></button><button class="rb sx14-d" data-a="d" data-id="${esc(z.id)}" aria-label="Schnappschuss ${esc(z.name)} löschen">✕</button></div>`).join('')
++          : '<div class="sx14-e">Noch keiner. [＋ Schnappschuss] merkt den jetzigen Stand mit Namen – z. B. „vor dem Umbau“.</div>') + `</div></div>`;
++    };
++    paint(); p._paint = paint;
++    onTap(p, b => {
++      const a = b.dataset.a;
++      if (a === 'x') { closePop(); return; }
++      if (a === 'add') { sx14NameAsk(anchor); return; }
++      if (a === 'j') { const k = +b.dataset.k; closePop(); if (!k) return; const lb = (k > 0 ? UNDO[UNDO.length - 1 - k] : REDO[REDO.length + k]) || null, n = sx14Jump(k);
++        if (n) toast((k > 0 ? n + (n === 1 ? ' Schritt' : ' Schritte') + ' zurück' : n + (n === 1 ? ' Schritt' : ' Schritte') + ' vor') + (lb ? ' · Stand: ' + (lb.label || 'Schritt') : ' · ältester Stand') + (REDO.length ? ' · ↷ holt sie wieder' : ''), REDO.length ? {label: '↷ Wiederholen', fn: () => redo()} : null);
++        return; }
++      if (a === 'r') { closePop(); sx14Restore(b.dataset.id); return; }
++      if (a === 'd') { const z = S.sx14 && S.sx14.snaps.find(q => q.id === b.dataset.id); if (z && sx14Del(z.id)) { toast('Schnappschuss „' + z.name + '“ gelöscht'); paint(); popFit(p); } return; }
++    }, 'button[data-a]');
++  }, {name: 'sx14', above: true});
++  if (UI.pop && UI.pop.el) popFit(UI.pop.el);
++}
++function sx14NameAsk(anchor) {
++  openPop(anchor, p => {
++    guardTouch(p); p.classList.add('mname');
++    p.innerHTML = `<h4>Name des Schnappschusses</h4><div class="mn-r"><input class="mn-in" type="text" maxlength="32" enterkeyhint="done" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="z. B. vor dem Umbau" aria-label="Name"><button class="rb mn-ok" data-a="ok" aria-label="Merken">✓</button></div>`;
++    const inp = p.querySelector('.mn-in');
++    const go = v => { closePop(); if (sx14Add(v)) setTimeout(() => sx14Open(anchor), 0); };
++    on(inp, 'keydown', e => { if (e.key === 'Enter') { e.preventDefault(); go(inp.value); } });
++    inp.addEventListener('pointerdown', e => e.stopPropagation()); inp.addEventListener('touchstart', e => e.stopPropagation(), {passive: true});
++    on(inp, 'focus', () => popDock(p, true)); on(inp, 'blur', () => setTimeout(() => popDock(p), 50));
++    onTap(p, () => go(inp.value), 'button[data-a="ok"]');
++    setTimeout(() => { try { inp.focus(); } catch (e) {} }, 30);
++  }, {name: 'sx14name', above: true});
++}
++
+ /* ---------- VC2a Verlauf-Rekorder (Nachtrag 1): Ereignis {t, u, z, d, c?, l} je Geste, u 'ctx' = Kontext; Keyframes; IndexedDB
+    synq-hist (hist2:<id>:<n>, 30 min, gzip). VL-R1: HIST.kind(name, getSubtree) je Undo-Art; HIST.volatile = Ansichtsfelder ---------- */
+ var HIST = {
+-  volatile: ['ui', 'settings.coach'], kinds: new Map(), unknown: new Set(),
++  volatile: ['ui', 'settings.coach', 'sx14'], /* SX714: Schnappschüsse nicht in den Rekorder */ kinds: new Map(), unknown: new Set(),
+   on: true, avail: null, why: '', init: false, pid: null, sh: null, cache: new Map(),
+   q: [], qT: false, ev: new WeakMap(), lastEv: null, cur: null, meta: null, metaP: null, dbP: null,
+   ft: 0, lastFlush: -1e9, dirty: false, sinceKf: 0, kfDue: false, ptr: new Set(), ptrT: 0, cv: null, pend: null,
+@@ -25423,6 +25624,7 @@
+ HIST.kind('tphase', () => []);                                    // G-VID-merge: VS-L-fix – nur Laufzeit (Phase der laufenden Schleife), kein Projektfeld
+ HIST.kind('group', e => (e.items || []).flatMap(histPaths));
+ HIST.kind('proj', () => [[]]);
++HIST.kind('sx14', () => [[]]);                                    // SX714: Schnappschuss zurückgeholt = ganzer Stand
+ function histPaths(e) {
+   const f = HIST.kinds.get(e && e.kind);
+   if (!f) { HIST.unknown.add(String(e && e.kind)); return [[]]; }
+@@ -27346,10 +27548,12 @@
+   const bBank = el('button', 'rb sv-b sv-bank', '<span class="d">▲▼</span><span class="t">1/2</span>'); bBank.setAttribute('aria-label', 'Andere Spuren zeigen'); bBank.hidden = true;
+   // V2e′ (N7-R12, 6.5): [▦│◧] Kästchen │ Glas, 44 × 40 at the right of the row (L / P3: in the transport column)
+   const bGl = el('button', 'rb sv-b sv-gl', '<span class="on">▦</span><i></i><span>◧</span>'); bGl.setAttribute('aria-label', 'Ansicht: Kästchen (antippen: Glas)'); bGl.setAttribute('aria-pressed', 'false');
++  const bScr = el('button', 'rb sv-b sv-scr', SX7_SVG); bScr.setAttribute('aria-label', 'Mithören beim Wischen: aus'); bScr.setAttribute('aria-pressed', 'false');   // SX714: SX7 Scrubbing
+   // V0c: [● MEL.] leaves the row – ● with the target MELODIE does the same (overdub, punch-in while the song plays; the API
+   // songMel stays); two „● MEL“ side by side would say two different things
+   // V2e (song-delta 6.5, K2-26): [CLIPS ⇄][● ▾][▶ SONG][⟲ Song ▾][⏮ │ ↩ SONG][▲▼]; [S4 ▾] lives in the MELODIE label (V2b chip)
+-  top.append(sw, bRec, bPlay, bLoop, bBack, bHome, bGl, bBank);
++  top.append(sw, bRec, bPlay, bLoop, bScr, bBack, bHome, bGl, bBank);   // SX714: [Lautsprecher] nach SCHLEIFE
++  onTap(bScr, () => sx7Toggle());   // SX714
+   onTap(sw, () => setSongView(false));
+   onTap(bGl, () => { songViewMode(UI.svGlass ? 'squares' : 'glass'); haptic('tick'); lcdOrToast(UI.svGlass ? '◧ Glas: Clips mit Noten' : '▦ Kästchen'); });
+   // ● (V0c, Nachtrag 2 B.1 Nr. 8): a song there → the Start-Blatt; while recording → stop; empty song → records at once.
+@@ -27390,12 +27594,13 @@
+   fol.addEventListener('pointerdown', e => e.stopPropagation());       // not a song-grid gesture
+   onTap(fol, () => { if (folState('song').follow === 'off') folSet('song', true); FOL.hand.song = false; FOL.jump.song = true; svAutoScroll(false); svDraw(true); });
+   const ban = el('div', 'sv-ban'); ban.hidden = true; SV.ban = ban;           // V0c N7S-02: the take's banner lies over the ruler
+-  wrap.append(cv, empty, hint, fol, ban);
++  const sx7ln = el('div', 'sx7-ln'); sx7ln.hidden = true; SX7.ln = sx7ln;   // SX714: die feste Linie (Mitte)
++  wrap.append(cv, empty, hint, fol, ban, sx7ln);
+   body.append(labs, wrap);
+   v.append(top, body);
+   guardTouch(top); guardTouch(wrap); guardTouch(labs);
+   SV.cv = cv; SV.g = cv.getContext('2d'); SV.wrap = wrap; SV.empty = empty; SV.labs = labs;
+-  SV.btn = {bRec, bPlay, bMel, bMt, bBack, bHome, bLoop, bGl, sw}; SV.lm = lm; songViewMode();
++  SV.btn = {bRec, bPlay, bMel, bMt, bBack, bHome, bLoop, bGl, sw, bScr}; SV.lm = lm; songViewMode();   // SX714: bScr
+   svBindGestures(wrap);
+   buildRangeBar();
+   // the grid area changes height with sheets, toasts and rotation: keep the canvas in step (rAF: no observer loop)
+@@ -27504,6 +27709,7 @@
+   }
+   recBanTop();
+   rangeBarSync();
++  sx7Paint();   // SX714
+ }
+ // V2e: the loop button's value — the mark it covers (its name), else „Song“ / „T3–6“ (narrow) / „Takt 3–6“
+ function loopShortLabel(song, narrow) {
+@@ -29902,6 +30108,9 @@
+     // K2-24: a lifted cell that moves > 8 px scrolls, never an own clip
+     if (g.mode === 'clift') { if (Math.abs(dx) > 8 || Math.abs(dy) > 8) { g.mode = null; SV.cell = null; UI.dirty.song = true; } else return; }
+     if (!g.mode && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) { g.mode = Math.abs(dx) >= Math.abs(dy) ? 'scroll' : 'v'; clearTimeout(g.lp); if (g.mode === 'scroll') folHand('song'); }
++    if (g.mode === 'scroll' && (g.sx7 || (g.sx7 == null && (g.sx7 = sx7Live())))) {   // SX714: SX7 – unter der festen Linie wischen = mithören
++      if (!sx7Live()) { g.sx7 = false; sx7Quiet(.03); } else { SV.x = clamp(g.sx - dx, sx7MinX(), sx7MaxX()); SV.lastUser = performance.now(); svDraw(true); sx7Move(); return; }
++    }
+     if (g.mode === 'scroll') {
+       const t = performance.now(), ddx = e.clientX - g.lastX, dt = Math.max(1, t - g.lastT);
+       SV.vx = .7 * SV.vx + .3 * (-ddx / dt); g.lastX = e.clientX; g.lastT = t;
+@@ -29915,6 +30124,7 @@
+     if (G.mode === 'lift' && (e.type !== 'pointerup' || G.moved)) { if (!(UI.pop && UI.pop.name === 'mark')) SV.mark = null; UI.dirty.song = true; return; }
+     if (G.mode === 'clift' && e.type !== 'pointerup') { SV.cell = null; UI.dirty.song = true; return; }
+     if (G.mode === 'blift' && (e.type !== 'pointerup' || G.moved)) { if (!(UI.pop && UI.pop.name === 'block')) SV.blk = null; UI.dirty.song = true; return; }   // KON
++    if (G.mode === 'scroll' && G.sx7) { sx7End(); return; }           // SX714: losgelassen → die Marke ▼ bleibt unter der Linie
+     if (e.type !== 'pointerup') return;
+     if (G.mode === 'blift') { konBlkSheet(G.bk); return; }             // KON
+     if (G.mode === 'lift') { openMarkSheet(G.mk); return; }
+@@ -29958,6 +30168,7 @@
+ }
+ function svTap(x, y) {
+   const song = S.song, row = svRowAt(y), bar = Math.floor((x + SV.x) / SV.cellW);
++  if (x + SV.x < 0) return;                                          // SX714: links vor Takt 1 (nur beim Mithören erreichbar)
+   // V2e: ⧉ Kopie waits for a bar line (the nearest one, anywhere over the canvas)
+   if (SV.copy) {
+     const id = SV.copy; SV.copy = null; SV.mark = null; svHintFree();
+@@ -30096,6 +30307,96 @@
+   const ok = songPlayStart(bar); svButtons(); return ok;
+ }
+ 
++/* ---------- SX714 · SX7 Scrubbing (Konzept Schnitt §3 SX7): [Lautsprecher] in der Song-Leiste. An: die Zeitleiste unter einer festen
++   Linie (Mitte) wischen → der Schlag unter der Linie klingt kurz an (alle Spuren wie im Song an dieser Stelle: Szenen-Clip oder eigener
++   Clip in seiner Phase, Drums, Song-Melodie; STIMME-Audio nicht), kurz ausgeblendet; am Taktstrich ein Blitz der Linie (keine Haptik);
++   losgelassen → die Marke ▼ steht dort (▶ startet ab da). Nur bei stehendem Song. Kein Projektfeld (nur Ansicht). Vorbild audition. */
++const SX7_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 9.2h3.8L12.6 5v14l-5.3-4.2H3.5z" fill="currentColor"/>' +
++  '<path class="sx7w" d="M15.6 9a4.3 4.3 0 0 1 0 6M18.2 6.6a7.8 7.8 0 0 1 0 10.8" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>' +
++  '<path class="sx7x" d="M16 9.5l5 5M21 9.5l-5 5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>';
++const SX7 = {on: false, b: null, heard: null, vs: [], hs: [], lastT: 0, qT: 0, ln: null, fl: 0, n: 0};
++const sx7Lx = () => SV.w / 2;
++function sx7Live() { return SX7.on && UI.songView && !R.playing && !R.songRec && !!(S.song && S.song.bars) && !!SV.w; }
++const sx7MinX = () => -sx7Lx();
++const sx7MaxX = () => Math.max(svMaxX(), S.song.bars * SV.cellW - sx7Lx() - .5);
++const sx7Beat = () => Math.floor((SV.x + sx7Lx()) / SV.cellW * 4 + 1e-6);
++function sx7Paint() {
++  const b = SV.btn && SV.btn.bScr; if (!b) return;
++  if (b.classList.contains('on') !== SX7.on) { b.classList.toggle('on', SX7.on); b.setAttribute('aria-pressed', String(SX7.on)); b.setAttribute('aria-label', 'Mithören beim Wischen: ' + (SX7.on ? 'an' : 'aus')); }
++  if (SX7.ln && SX7.ln.hidden === SX7.on) SX7.ln.hidden = !SX7.on;
++}
++function sx7Toggle(on) {
++  SX7.on = on == null ? !SX7.on : !!on;
++  if (!SX7.on) { sx7Quiet(.03); SX7.b = null; if (SV.x < 0 || SV.x > svMaxX()) { SV.x = clamp(SV.x, 0, svMaxX()); UI.dirty.song = true; } }
++  sx7Paint(); haptic('tick');
++  lcdOrToast(SX7.on ? 'Mithören an: unter der Linie wischen – der Schlag klingt an' : 'Mithören aus');
++  return SX7.on;
++}
++// the voices / hits of the last beat fade out (tau s); a scheduled short end stays as it is
++function sx7Quiet(tau) {
++  const c = AU.ctx; if (SX7.qT) { clearTimeout(SX7.qT); SX7.qT = 0; }
++  if (c) {
++    const now = c.currentTime;
++    for (const v of SX7.vs) if (!v.dead) { if (v.start > now + .002) { try { v.cancel(); } catch (e) {} } else v.release(now, tau); }
++    for (const h of SX7.hs) {
++      if (h.dead) continue;
++      if (h.start > now + .002) { hitCancel(h); continue; }
++      try { h.out.gain.setTargetAtTime(0, now, tau); } catch (e) {}
++      hitStopAll(h, now + tau * 6 + .02);
++    }
++  }
++  SX7.vs.length = 0; SX7.hs.length = 0;
++}
++function sx7Flash() {
++  SX7.fl++; const l = SX7.ln; if (!l || !l.animate) return;
++  try { l.animate([{background: '#ffffff', boxShadow: '0 0 0 2px rgba(111,211,255,.95),0 0 16px 6px rgba(111,211,255,.75)'}, {background: '#6fd3ff', boxShadow: '0 0 0 1px rgba(11,12,15,.55)'}], {duration: 200, easing: 'ease-out'}); } catch (e) {}
++}
++// the finger moved: a new beat under the line → it sounds (at most every 45 ms; the latest beat wins); a bar line crossed → the flash
++function sx7Move() {
++  const b = sx7Beat(); if (b === SX7.b) return;
++  const ob = SX7.b; SX7.b = b;
++  if (ob != null && Math.floor(ob / 4) !== Math.floor(b / 4)) sx7Flash();
++  const now = performance.now(), wait = 45 - (now - SX7.lastT);
++  if (wait <= 0) { SX7.lastT = now; sx7Hear(b); }
++  else if (!SX7.qT) SX7.qT = setTimeout(() => { SX7.qT = 0; if (sx7Live() && SX7.b != null && SX7.b !== SX7.heard) { SX7.lastT = performance.now(); sx7Hear(SX7.b); } }, wait);
++}
++// song beat b (0 = bar 1, beat 1): every track as the song has it there, for one beat, then a short fade (≤ 0.3 s)
++function sx7Hear(b) {
++  SX7.heard = b; sx7Quiet(.02);
++  const song = S.song, c = AU.ctx; if (!song || !c || b < 0 || b >= song.bars * 4) return 0;
++  const sp = spb(), t0 = c.currentTime + LIVE_LEAD, end = t0 + Math.min(sp, .3), bar = Math.floor(b / 4);
++  let n = 0;
++  const voice = (t, out, v, at, d) => { const vo = spawnVoice(t, out, v, at, {src: 'audition'}); if (vo) { SX7.vs.push(vo); vo.release(Math.min(end, at + Math.max(d, 1 / 16) * sp), .04); n++; } };
++  for (let t = 0; t < NT(); t++) {
++    const tr = S.tracks[t]; if (!tr || tr.mute || tr.stimme) continue;
++    const o = laneOriginAt(song.lanes[t], bar); if (!laneClipOk(song, t, o)) continue;
++    const oc = o.own && song.own ? song.own[o.own] : null, clip = oc && oc.from && oc.from.s === o.slot ? oc : tr.clips[o.slot];
++    if (!clip || !clip.notes || !clip.notes.length) continue;
++    const L = clip.len * 4, ph = ((b - o.cs) % L + L) % L;
++    for (const nt of clip.notes) {
++      if (nt.t >= L - 1e-9) continue;
++      const d = nt.t - ph; if (d < -1e-6 || d >= 1 - 1e-6) continue;
++      const at = t0 + Math.max(0, d) * sp;
++      if (tr.kind === 'drum') { const h = drumHit(nt.n, nt.v, at, 'audition'); if (h) { SX7.hs.push(h); n++; } }
++      else voice(t, outPitch(t, clip.key, nt.n, at), nt.v, at, nt.d);
++    }
++  }
++  for (const k of Object.keys(song.mel || {})) {
++    const mt = +k, tr = S.tracks[mt], m = song.mel[k]; if (!tr || tr.mute || tr.kind !== 'synth' || !m || !Array.isArray(m.notes)) continue;
++    for (const nt of m.notes) { const d = nt.t - b; if (d < -1e-6 || d >= 1 - 1e-6) continue; voice(mt, nt.n, nt.v, t0 + Math.max(0, d) * sp, nt.d); }
++  }
++  SX7.n += n; return n;
++}
++// finger lifted: the beat under the line keeps ringing its short end; the Positionsmarke ▼ moves to that bar
++function sx7End() {
++  if (SX7.qT) { clearTimeout(SX7.qT); SX7.qT = 0; }
++  const song = S.song; if (!song || !song.bars || !SV.w) return;
++  const bar = clamp(Math.floor((SV.x + sx7Lx()) / SV.cellW), 0, song.bars - 1);
++  SV.pos = bar; if (SV.sel && (bar < SV.sel.a || bar > SV.sel.b)) SV.sel = null;
++  SX7.b = null; folEdit('song'); UI.dirty.song = true; svButtons();
++  lcdOrToast('▼ Takt ' + (bar + 1) + ' · ▶ startet hier');
++}
++
+ /* ---------- Marken-Blatt (6.3, K2-25, Mockups P-7/L-3): P1/P2 32 + 4 × 44 = 208 px, P3 252 px (Zeile 3 bricht um), L 28 + 2 × 44.
+    The song stays usable above it (the layer lets taps through): a second tap into the mark selects a bar there ---------- */
+ function openMarkSheet(id) {
+@@ -30714,7 +31015,7 @@
+   sh.append(head, body); sh.classList.add('open');
+   const col = getComputedStyle(document.documentElement).getPropertyValue('--t' + (t + 1)).trim();
+   const extra = land ? [{id: 'kb', label: '⌨', title: 'Tastatur zeigen / verbergen', fn: b => { ROLLP.kb = !ROLLP.kb; rollKbApply(); b.classList.toggle('on', ROLLP.kb); }}] : [];
+-  ED.roll = PianoRoll.create(body, ownModel(t, id), {color: col || '#4cc9f0', grid: ROLLP.grid, fold: ROLLP.fold, rowH: 22, toolbarHost: land ? head : null,
++  ED.roll = PianoRoll.create(body, ownModel(t, id), {color: col || '#4cc9f0', grid: ROLLP.grid, fold: ROLLP.fold, rowH: 22, undoHold: sx14UndoHold, toolbarHost: land ? head : null,
+     extraTools: extra, center: isDrum(t) ? 42 : 12 * ((tr.kbOct || 4) + 1) + 7,
+     mp: mpRollOpts(t, 'o:' + id, b => songKeyAtBar(mpOwnBar(id) + Math.floor(b / 4))),   /* MP */
+     tap: (b, fn) => b.addEventListener('click', () => { try { fn(); } catch (e) { logErr(e); } }),
+@@ -31178,7 +31479,7 @@
+   EL.bFolgt.querySelector('.ck').textContent = tr.follow ? '✓' : ' fest';
+   EL.bFolgt.setAttribute('aria-label', tr.follow ? 'Folgt dem Träger (an)' : 'Folgt nicht (fest)');
+   EL.bMute.classList.toggle('on', !!tr.mute);
+-  EL.bUndo.disabled = !UNDO.length;
++  EL.bUndo.disabled = !UNDO.length && !sx14Any();   // SX714: mit Verlauf/Schnappschüssen bleibt ↶ zum Halten da
+   edUndoBtns();
+ }
+ const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
+@@ -33127,13 +33428,13 @@
+ function sheetButtons(r1, r2, inRow1) {
+   const u = el('button', 'hb big rb ur', '↶'), rd = el('button', 'hb big rb ur', '↷');
+   u.setAttribute('aria-label', 'Rückgängig'); rd.setAttribute('aria-label', 'Wiederholen');
+-  onTap(u, () => undo()); onTap(rd, () => redo());
++  bindHoldTap(u, () => undo(), () => sx14Open(u)); onTap(rd, () => redo());   // SX714: ↶ halten = Verlauf-Liste
+   if (inRow1) r1.append(u, rd);                         // synth editor (§5.2): ↶ ↷ in row 1, row 2 belongs to the sound
+   else r2.append(el('span', 'sh-sp'), u, rd);
+   ED.undoBtns = [u, rd]; edUndoBtns();
+   const x = el('button', 'sh-x rb', '✕'); x.setAttribute('aria-label', 'Schließen'); onTap(x, closeEditor); r1.appendChild(x);
+ }
+-function edUndoBtns() { const [u, rd] = ED.undoBtns || []; if (u) u.disabled = !UNDO.length; if (rd) rd.disabled = !REDO.length; }
++function edUndoBtns() { const [u, rd] = ED.undoBtns || []; if (u) u.disabled = !UNDO.length && !sx14Any(); if (rd) rd.disabled = !REDO.length; }   // SX714
+ // amber chip "⇅ Am7" in the sheet header while a Träger is active (the carrier bar is covered, §2.3)
+ function renderEdChip() {
+   const c = ED.trChip; if (!c) return;
+@@ -39198,7 +39499,7 @@
+   if (tr.kind === 'synth') extra.push({id: 'lauf', label: 'LAUF', title: 'LAUF: Schrittansicht für Basslauf und Sequenz', fn: () => safeRebuild(() => setRollView('lauf'))});
+   if (land) extra.push({id: 'kb', label: '⌨', title: 'Tastatur zeigen / verbergen', fn: b => { ROLLP.kb = !ROLLP.kb; rollKbApply(); b.classList.toggle('on', ROLLP.kb); }});
+   const kAt = () => shownClipKey(s, S.tracks[t].clips[s]);              // EDIT 4.29: Tonart der Stelle (Pinsel + Magic Scale)
+-  ED.roll = PianoRoll.create(body, rollModel(t, s), {color: col || '#4cc9f0', grid: ROLLP.grid, fold: ROLLP.fold, rowH: 22, toolbarHost: host,
++  ED.roll = PianoRoll.create(body, rollModel(t, s), {color: col || '#4cc9f0', grid: ROLLP.grid, fold: ROLLP.fold, rowH: 22, undoHold: sx14UndoHold, toolbarHost: host,
+     extraTools: extra, center: 12 * ((tr.kbOct || 4) + 1) + 7,
+     mp: mpRollOpts(t, 'c:' + t + ':' + s, kAt),   /* MP */
+     tap: (b, fn) => b.addEventListener('click', () => { try { fn(); } catch (e) { logErr(e); } }),
+@@ -39266,7 +39567,7 @@
+   const extra = land ? [{id: 'asclip', label: 'Als Clip', title: AC_T, fn: () => melodyToClip()}] : [];
+   if (land) extra.push({id: 'kb', label: '⌨', title: 'Tastatur zeigen / verbergen', fn: b => { ROLLP.kb = !ROLLP.kb; rollKbApply(); b.classList.toggle('on', ROLLP.kb); }});
+   const kAt = b => songKeyAtBar(Math.floor(b / 4));                     // EDIT 4.29: Tonart der Stelle (Pinsel + Magic Scale)
+-  ED.roll = PianoRoll.create(body, melodyModel(t), {color: col || '#4cc9f0', grid: ROLLP.grid, fold: false, rowH: 22, toolbarHost: land ? head : null,
++  ED.roll = PianoRoll.create(body, melodyModel(t), {color: col || '#4cc9f0', grid: ROLLP.grid, fold: false, rowH: 22, undoHold: sx14UndoHold, toolbarHost: land ? head : null,
+     extraTools: extra, center: 12 * ((tr.kbOct || 4) + 1) + 7,
+     mp: mpRollOpts(t, 'm:' + t, kAt),   /* MP */
+     tap: (b, fn) => b.addEventListener('click', () => { try { fn(); } catch (e) { logErr(e); } }),
+@@ -39601,7 +39902,7 @@
+   const gb = el('button', 'lgrid rb', `${LAUF.grid} ▾`); gb.setAttribute('aria-label', 'Schrittlänge'); onTap(gb, () => laufGridPop(gb));
+   const ub = el('button', 'rb', '↶'), rb2 = el('button', 'rb', '↷');
+   ub.setAttribute('aria-label', 'Rückgängig'); rb2.setAttribute('aria-label', 'Wiederholen');
+-  onTap(ub, () => { undo(); laufPaint(); }); onTap(rb2, () => { redo(); laufPaint(); });
++  bindHoldTap(ub, () => { undo(); laufPaint(); }, () => sx14Open(ub)); onTap(rb2, () => { redo(); laufPaint(); });   // SX714: ↶ halten
+   const pager = laufPager(pages, per);
+   bar.append(view, gb, pager, el('span', 'sep'), ub, rb2);
+   if (land) {
+@@ -43120,7 +43421,7 @@
+   on(window, 'resize', () => { if (R.editor === 'drum' && ED.dTab === 'steps' && window.matchMedia('(orientation: landscape)').matches !== ED.dLand) safeRebuild(buildDrumEd); if (R.editor === 'roll' && ED.rollAt) { const land = window.matchMedia('(orientation: landscape)').matches; if (land !== ED.rollLand) { ED.rollLand = land; safeRebuild(buildRoll); } rollKbApply(); } });
+   on(EL.bFolgt, 'click', () => { const tr = S.tracks[R.selT]; if (tr.kind === 'synth') setTrackFollow(R.selT, !tr.follow); });
+   on(EL.bMute, 'click', () => setMute(R.selT, !S.tracks[R.selT].mute));
+-  on(EL.bUndo, 'click', () => undo());
++  bindHoldTap(EL.bUndo, () => undo(), () => sx14Open(EL.bUndo));   // SX714: ↶ halten = Verlauf-Liste
+   // carrier
+   on(EL.bHMode, 'click', popHMode);
+   on(EL.bLatch, 'click', () => setLatch(!S.settings.harmony.latch));

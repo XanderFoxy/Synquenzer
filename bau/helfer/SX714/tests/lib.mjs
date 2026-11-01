@@ -6,7 +6,7 @@ export const OUT = process.env.SX_OUT || '/tmp/sx714-out/';
 export async function open(w, h) {
   const b = await chromium.launch({args: ['--autoplay-policy=no-user-gesture-required']});
   const p = await b.newPage({viewport: {width: w, height: h}, deviceScaleFactor: 2, hasTouch: true, isMobile: true});
-  const errs = []; p.on('pageerror', e => errs.push('PAGEERR ' + String(e))); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
+  const errs = []; p.on('pageerror', e => errs.push('PAGEERR ' + String(e) + ' ' + (e.stack || '').split('\n').slice(0, 3).join(' / '))); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
   await p.goto('file://' + APP); await p.waitForTimeout(1200);
   await p.touchscreen.tap(5, 300);
   await p.waitForFunction(() => window.AU && AU.ctx, null, {timeout: 15000}).catch(() => {});
