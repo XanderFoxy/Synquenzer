@@ -11877,10 +11877,10 @@ class AnalogCore extends AudioWorkletProcessor {
     // the step replaces a note's lane start value; with a ramp the note keeps it until the ramp ends (it already is the step's value: no jump, I2-64)
     if (p < PV_A) for (const v of this.V) if (v.pvR && v.pvR[p]) { if (ramp && x === x) v.pvR[p] = 2; else { v.pvR[p] = 0; v.pv[p] = NaN; v.lkN--; } }
     if (x === x) {
-      if (ramp) { const a = was === was ? was : this.lbBase(p); this.lb[p] = a; this.lbT[p] = x; this.lbR[p] = r; this.lbS[p] = (x - a) / r; if (was !== was) this.lbN++; this.lbRm++; }
+      if (ramp) { const a = was === was ? was : this.lbBase(p); if (was !== was) this.lbN++; if (!(this.lbR[p] > 0)) this.lbRm++; this.lbS[p] = (x - a) / r; this.lb[p] = a - this.lbS[p] * CR; this.lbT[p] = x; this.lbR[p] = r + CR; }   // the event's block keeps a: the target is reached r samples later
       else { if (was !== was) this.lbN++; if (this.lbR[p] > 0) { this.lbR[p] = 0; this.lbRm--; } this.lb[p] = x; }
     } else if (was === was) {
-      if (ramp) { const b = this.lbBase(p); this.lbT[p] = NaN; if (!(this.lbR[p] > 0)) this.lbRm++; this.lbR[p] = r; this.lbS[p] = (b - was) / r; }
+      if (ramp) { const b = this.lbBase(p); this.lbT[p] = NaN; if (!(this.lbR[p] > 0)) this.lbRm++; this.lbS[p] = (b - was) / r; this.lb[p] = was - this.lbS[p] * CR; this.lbR[p] = r + CR; }
       else { this.lb[p] = NaN; this.lbN--; if (this.lbR[p] > 0) { this.lbR[p] = 0; this.lbRm--; } }
     } else return;
     this.lbChanged(p);
@@ -11936,12 +11936,12 @@ class AnalogCore extends AudioWorkletProcessor {
   }
   // I2b test (M-LOCK): per sounding voice the values it uses now (cutoff Hz, level, OP levels, decay ...), ~ every 1/30 s
   lkProbeRep() {
-    if (currentFrame < (this.lkRepT || 0)) return; this.lkRepT = currentFrame + (this.lkRepI || Math.round(SR / 30));
+    const fr = this.curF; if (fr < (this.lkRepT || 0)) return; this.lkRepT = fr + (this.lkRepI || Math.round(SR / 30));   // the frame of this control block
     const out = [];
     for (const v of this.V) if (v.on) { const D = v.D || this, VP = v.D ? v.VP : this.P, F = v.fmP || this.fm;
       out.push({id: v.id, note: v.note, own: !!v.D, cut: 440 * Math.pow(2, (D.cutN0 - 69) / 12), res: VP.res, level: VP.level, aD: VP.aD, o1w: D.oW[0], ftype: VP.ftype, uni: D.uniN[0],
         ol: F.ops ? F.ops.map(o => o.ol) : null, fol: Array.from(v.foutLvl), fmBright: VP.fmBright, n: v.lkN}); }
-    this.port.postMessage({lkRep: out, mk: this.P.eng === 3 ? this.mk.lkRep() : null, f: currentFrame});
+    this.port.postMessage({lkRep: out, mk: this.P.eng === 3 ? this.mk.lkRep() : null, f: fr});
   }
   lkInfoOf() { let n = 0, vs = 0; for (const v of this.V) { if (v.pv) n++; if (v.on && v.lkN) vs++; } return {bad: this.lkBad + this.mk.lkBadN(), tables: n, voices: vs, lanes: this.lbN, on: this.lkOn, bytes: n * (PV_A * 5), mods: Array.from(this.mamt), lb: this.lb ? Array.from(this.lb, x => (x === x ? x : null)) : null}; }
 

@@ -12,7 +12,7 @@ await p.evaluate(() => {
     await oc.audioWorklet.addModule('data:application/javascript;base64,' + btoa(src));
     const E = SynthHost.track(oc, oc.destination, wkFlat(snd), wkMods(snd), snd.engine === 'fm6' && snd.p.fm6 ? wkFmOf(snd.p) : null, snd.engine === 'mk' ? snd.p.mk : null);
     E.node.port.postMessage({mkSeed: 1}); if (snd.engine === 'mk') E.mkWheel({mw0: 0, reset: true});
-    E.lkReps = []; if (o.probe) E.node.port.postMessage({lkProbe: o.probe});
+    if (o.pre) E.node.port.postMessage(o.pre); E.lkReps = []; if (o.probe) E.node.port.postMessage({lkProbe: o.probe});
     E.tempo(120, null);
     for (const e of evs) {
       if (e.k === 'on') E.on(e.id, e.n, e.v == null ? .8 : e.v, e.t, null, e.d || 0, e.lk || null);
