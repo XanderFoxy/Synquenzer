@@ -7047,3 +7047,106 @@ Umgebogen: Pfade `ggb/` → `ggb427/` (Kopie der Tests in `ggb427/`, die alten A
   der Overdub im Song (`tkSongCommit`), also kein neuer Fehler durch G-GB. Vorschlag: den Chor beim Overdub/Import am alten Take
   merken und bei A/B mitnehmen – oder nach dem Import „Chor-Stil wie vorher (Pop modern) anwenden?“ anbieten.
 - iPhone-CPU beim Instrumental mit vielen Chor-Stellen nicht gemessen (am Rechner jetzt ohne Warten).
+## 4.27.2 — Songtext automatisch erkennen (G9b) auf 4.27.1
+
+4.27.1 (GarageBand-Umweg) + G9b per 3-Wege (ours R-4271, base R-4270, theirs rel-4271 = 4.27.0+G9b inkl. 4 Prüf-Korrekturen), 0 Konflikte. acorn: 3490 Namen, 0 doppelt. Pipeline grün (smoke, orch-mk-check rms 0,0705/0,177, v3-mk2-wellen PASS), G-GB-Zusammenspiel 16/16, G9b-smoke 5/5. sw.js: nur Kommentar (synq-g9-asr-v1 bleibt beim Aktivieren).
+
+
+App: `rel-4271/index.html`. 4.27.0 hatte 4 240 866 B, 4.27.1 hat 4 263 176 B (**+22 KB**), nach der Prüfung unten. md5 `aff22ab6…`
+(die ungeprüfte Merge-Fassung `09b5abe0…` liegt als `index-vor-pruef.html` daneben).
+`VERSION = '4.27.1'` (APP_CODE ergibt sich daraus: 4027001). Die Zeile `  live: true,` steht unverändert 1× da, „MS 2000“ genau 1×, keine Markennamen.
+`rel-4271/sw.js` = Repo-`sw.js` mit der Änderung aus G9B `sw.diff`. Das ist nur ein Kommentar: `synq-g9-*` war schon vor dem Löschen geschützt, der Modell-Cache bleibt also erhalten.
+
+Zusammengeführt per 3-Wege-Merge (ours 4.27.0, base 4.26.0, theirs G9B). Der Unterschied zu 4.27.0 ist genau der G9B-Patch, dazu die Version und zwei Kommentare.
+Chor-Gruppe (G6+), Mitlese-Zeile (G9e) und die Markentext-Neutralisierung aus 4.27.0 bleiben Zeichen für Zeichen erhalten.
+
+### Was Xander sieht
+
+- **Text-Modus → [Erkennen] ist jetzt sichtbar.** Beim ersten Tipp öffnet sich ein Blatt mit: „lädt einmal ein Sprachmodell (≈ 90 MB)“, freier Platz, „WLAN empfohlen“,
+  Sprache (Auto/Deutsch/Englisch) und dem Haken „Neue Aufnahmen automatisch erkennen“. Mit **[Laden und erkennen]** wird die Taste zu **[Stopp]**.
+  Die Info-Zeile zeigt dabei „Sprachmodell lädt … 14/90 MB · 16 %“.
+- Danach stehen die erkannten Wörter als Silben auf den Marken. Ein **↶** nimmt alles zurück.
+- **Mitlese-Zeile:** Der erkannte Text erscheint dort von selbst, so als wäre er getippt (geprüft: „The sun is shining over the“ / „city, and my heart is singing.“).
+- Liegt das Modell auf dem Gerät, wird **jede neue Aufnahme automatisch erkannt** (nur ohne laufendes Mikro und bei stehendem ▶). Das braucht keinen eigenen Undo-Schritt.
+- Das Blatt zeigt später „Sprachmodell auf diesem Gerät: 90 MB [Entfernen]“.
+- Mit `?g9diag=1` kommt eine Diagnose-Zeile dazu: Weg (wasm/webgpu), Startzeit, Zeit je Fenster.
+
+### Größe und Ladezeit
+
+| | |
+|---|---|
+| App-Start | unverändert. Das Modell lädt **nie von selbst** (geprüft: 0 Abrufe, kein Cache ohne Tipp). Die App ist +21 KB größer (+0,5 %) |
+| Download einmalig (normaler Weg, WASM) | 94,5 MB (in der App „≈ 90 MB“). Bei 50 Mbit/s etwa 15 s, bei 10 Mbit/s etwa 75 s. Hier im Container: ≈ 6 s |
+| Download WebGPU-Weg (nur mit passender GPU) | 125,3 MB (≈ 119 MB) |
+| Modell-Start aus dem Cache | 2,3–2,7 s (Chromium, 1 Kern) |
+| Erkennen 3,7-s-Satz, Sprache „Auto“ | ≈ 9 s, davon 4 s Spracherkennung. Mit fester Sprache schneller |
+| Haupt-Faden während Laden + Erkennen | längste Aufgabe 0 ms, das Modell rechnet im Worker. Chat, Spielen und Bedienung bleiben flüssig |
+| Speicher | Modell ≈ 150 MB im Arbeitsspeicher. Nach 3 min Ruhe beendet sich der Worker |
+
+### Am iPhone prüfen
+
+1. Text-Modus öffnen → [Erkennen] → Steht im Blatt „≈ 90 MB“? Dann [Laden und erkennen]: Läuft der Fortschritt in MB? Wird die Taste zu [Stopp]?
+2. Mitten im Laden [Stopp] tippen → „Laden gestoppt“? Danach nochmal [Erkennen] → lädt es weiter?
+3. Einen deutschen Take singen → Stimmen die Wörter? Liegen die Silben auf den richtigen Marken? Nimmt ein ↶ alles zurück? Zeigt die Mitlese-Zeile den Text?
+4. App schließen, Flugmodus an, App wieder öffnen → geht [Erkennen] ohne Netz?
+5. Neue Aufnahme (Stimme-FANG/REC) → erscheint der Text von selbst?
+6. Mit `?g9diag=1`: Welcher Weg (wasm/webgpu)? Wie lange dauert ein Fenster? (Ziel: WASM ≤ 45 s, WebGPU ≤ 15 s je 30-s-Fenster.)
+
+### Gemessen (Chromium, Playwright)
+
+- **G9B-Tests auf 4.27.1, 43/43:** smoke 5/5, t1 12/12 (echter Modell-Download von huggingface.co, Stopp beim Laden, offline aus dem Cache),
+  t2 11/11, t3 Regel 28 gegen 4.27.0 12/12 (Klang-Prüfsummen und Projekt-JSON gleich), t4 WebGPU → Rückfall WASM 3/3.
+- **Zusammenspiel G9b → G9e** (neu, `pruef/tests/x-ly-asr.mjs`): 5/5.
+- **G9e Mitlese-Zeile:** t-ly 37/37, smoke 12/12. Take abspielen 4/4 mit −23,8 dB, gleich wie 4.27.0.
+- **Pipeline:** Smoke ohne Fehler; orch-mk-check initAm rms 0,0705 / Spitze 0,177, gleich wie 4.27.0; v3-mk2-wellen alles PASS.
+- **acorn** (alle Skripte + sq-g9-src + sq-mk-src): 3456 Namen, 0 doppelt, 0 Syntaxfehler.
+
+### Prüfung 4.27.1 (zweiter Blick): 4 Fehler gefunden und behoben
+
+Vorher-Stand: `index-vor-pruef.html`. Änderung: `pruef/diff-pruef.diff` (9 Zeilen geändert, 8 neu, nur im Block `sq-g9-src`, kein Klang, kein Aussehen).
+Prüf-Tests: `scratchpad/pruef-4271k/` (`t-start`, `t-erk`, `t-auto`, `t-auto2`, `t-proj`, `t-lay`).
+
+1. **Neue Aufnahmen wurden nie automatisch erkannt.** Eine frische Aufnahme hat noch keine Marken, die sucht erst der Wellen-Editor.
+   Die Erkennung lief durch (≈ 9 s Rechenzeit), das Ergebnis wurde dann ohne Meldung verworfen. Die G9B-Tests hatten die Marken vorher von Hand gesucht.
+   Jetzt sucht der Auftrag fehlende Marken selbst (im Worker), bevor er die Fenster rechnet.
+2. **Die erste Aufnahme nach dem App-Start wurde nicht einmal angenommen.** Der Cache-Scan läuft erst an, wenn der G9-Block geladen wird,
+   und die Automatik fragte vorher ab: „Modell da?“ → nein. Jetzt gilt der Merker `synq-g9-asr` beim Andocken vorläufig als „Modell da“.
+   Die Automatik wartet auf den Scan und lässt den Auftrag fallen, wenn der Cache doch fehlt.
+3. **[Stopp] während „Sprachmodell startet …“ vergaß, dass das Modell auf dem Gerät liegt.** Danach zeigte das Blatt wieder „lädt einmal ≈ 90 MB“,
+   und die Automatik war bis zum Neustart aus. Jetzt bleibt der Zustand „im Cache“. Nach einem Stopp beim Laden zeigt das Blatt den Rest
+   (geprüft: Stopp bei 34 MB → „≈ 73 MB“ statt „≈ 90 MB“).
+4. **Projektwechsel während das Modell lädt:** Danach lief die Erkennung für einen Take des alten Projekts. Das gab den Konsolenfehler „kein Take“
+   und „Erkennen fehlgeschlagen“. Jetzt wird geprüft, ob Projekt und Take noch da sind.
+- **Dazu als Schutz:** Die Automatik lädt nie etwas herunter. Auch ein veralteter Merker oder ein vom System geräumter Cache löst keinen
+  90-MB-Download aus (geprüft: 0 Abrufe, Merker gelöscht). Laden gibt es nur nach Tipp auf [Laden und erkennen].
+
+| Prüfung (Chromium) | Ergebnis |
+|---|---|
+| Start ohne Modell, je 20 + 12 Läufe abwechselnd | Bis `SYNQUENZER` bereit, Median 4.27.0 / 4.27.1: 601 / 625 ms und nach der Prüfung 623 / 558 ms (Streuung 520–860 ms). DOMContentLoaded 387 / 386 ms, Summe langer Aufgaben 184 / 173 ms: **gleich schnell**. 0 Abrufe an CDN oder Modell-Ablage, kein Modell-Cache, G9-Block bleibt ungeladen |
+| Start mit Modell im Cache | 0 Abrufe, G9-Block bleibt ungeladen, kein Worker |
+| Start-Bild 428×926 / 926×428 | pixelgleich zu 4.27.0 (einmal 2 Pixel Unterschied durch Animation, Gegenlauf 0) |
+| [Erkennen] → Blatt → Laden → [Stopp] → weiterladen → erkannt → ↶ → ↷ → Stopp beim Modell-Start → Stopp beim Erkennen → [Entfernen] (`t-erk`, alles per Tipp) | 22/22 (vor der Prüfung 3 Fehler bei Stopp beim Modell-Start) |
+| Echte Mikro-Aufnahme nach App-Start, Modell im Cache (`t-auto`) | 5/5: Text erscheint von selbst, auch in der Mitlese-Zeile beim ▶. Vorher: nie |
+| Veralteter Merker, Cache leer (`t-auto2`) | 1/1: kein Download, keine Konsolen-Meldung |
+| Projektwechsel beim Laden (`t-proj`) | 2/2 (vorher Konsolenfehler) |
+| G9B-Tests auf der geprüften Datei | 43/43 (smoke 5, t1 12, t2 11, t3 Regel 28 gegen 4.27.0 12, t4 3), G9b → G9e 5/5 |
+| Chor-Gruppe G6+ (`g6pg`, `g6ph`), 4.27.0 gegen 4.27.1 | 26/26 und 20/20 in beiden, gleiche Zeilen |
+| Mitlese-Zeile G9E (`t-ly`, `take-play`) | 38/38 in beiden. Take abspielen: −23,8 / −23,9 dB (echte Aufnahme, streut je Lauf um ±0,05 dB). G9E-smoke 10/13 in **beiden**: die 3 Fehlschläge prüfen fest auf Version „4.25.5“, der Test ist veraltet |
+| G9D-Prüfer mit Ersatz-Modell (t2-ops 34, t3-ui 41, t7-dock 4, pruefer t-auto/t-auto2/t-hold/t-fill/t-lyr/t-feat/t-save/t-noworker) | in beiden gleich, Unterschiede nur bei Zeiten und Take-Kennungen |
+| Pipeline | smoke ohne Fehler. orch-mk-check: initAm rms 0,0705 / Spitze 0,177, gleich wie 4.27.0. v3-mk2-wellen: alles PASS. acorn: 3456 Namen, 0 doppelt, 0 Syntaxfehler |
+| Regeln | `  live: true,` 1×, „MS 2000“ 1×, Markenwörter 0 (die 6 Treffer für „nord“ sind der Variablenname `nOrd`, wie in 4.27.0), VERSION 4.27.1 → APP_CODE 4027001. `sw.js` = origin/main plus 2 Kommentarzeilen |
+| Layout hoch/quer, Kopf mit [Erkennen], Blatt mit/ohne `?g9diag=1` | passt, keine Überbreite, keine Überlappung, keine Konsolenfehler. Quer ist [Erkennen] 38 px hoch, so hoch wie [Text], [A/B] und [×] daneben (gleiche Klasse wie in 4.27.0) |
+
+### Offen
+
+- **iPhone-Zeiten fehlen.** Der WebGPU-Weg selbst ist ungetestet, getestet ist nur der Rückfall auf WASM.
+- **Güte für Deutsch ist hier nicht messbar.** Es gibt nur eine englische Roboterstimme. Der deutsche Testsatz läuft in eine Wiederholungs-Schleife,
+  die Schutz-Regel begrenzt das auf 2×. Echte Prüfung nur mit Xanders Gesang.
+- Die Bibliothek ist transformers.js 4.3.1 statt 4.3.2 aus der Spec, wegen der Regel „mindestens 2 Wochen alt“.
+  jsDelivr ist im Container gesperrt. Die Tests lieferten dieselben Bytes aus dem npm-Paket (die SHA-256-Prüfung ist bestanden).
+- Ist das Modell im Cache und „automatisch“ an, wird auch eine Aufnahme über **Chor → „Selbst singen“** erkannt (gleicher Aufnahme-Weg).
+  Seit der Prüfung landet der Text dort wirklich als Silben auf dem Chor-Take, vorher wurde er verworfen. Xander fragen, ob Chor-Stimmen ausgenommen werden sollen.
+- **Am iPhone zusätzlich prüfen:** Läuft die automatische Erkennung noch, wenn ▶ gedrückt wird? Sie startet nur bei stehendem ▶, rechnet dann aber weiter.
+  Knackt es dabei? Das Modell rechnet im Worker, der Haupt-Faden bleibt frei.
+- Im seltenen Fall „Merker sagt Modell da, Cache ist vom System geräumt“ während der Sitzung meldet die Automatik einmal einen Konsolenfehler
+  („Sprachmodell nicht auf dem Gerät“). Es wird nichts geladen.
