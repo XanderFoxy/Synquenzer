@@ -1,0 +1,225 @@
+--- bau/snapshots/R-4252.html	2026-11-01 02:07:29.212881313 +0000
++++ bau/helfer/G6PH/index.html	2026-11-01 02:12:33.112899378 +0000
+@@ -20002,6 +20002,7 @@
+       }
+       try { tkVoxTick(song, b0, b1, off, E, insB, guard && sp.wrapAt != null ? sp.wrapAt : -Infinity); } catch (e) { tickErr(e); }   // VS3: Song-Stimme
+       try { g3SongTick(song, b0, b1, off, E, insB, guard && sp.wrapAt != null ? sp.wrapAt : -Infinity); } catch (e) { tickErr(e); }   /* G3: Anlauf/Ausklang der Teile */
++      if (!guard) try { g6pSongTick(song, b0, off); } catch (e) { tickErr(e); }   /* G6+h: Chor des nächsten Teils vorausrechnen */
+       if (!wrap) break;
+       const A = lp.a * 4;
+       sp.prevOff = sp.off; sp.wrapAt = eb; sp.off = eb - A;       // ⟲: the next pass starts at the loop start (song: bar 1)
+@@ -20960,6 +20961,7 @@
+   if (e.kind === 'tflag') return S.tracks[e.track] && S.tracks[e.track].stimme ? '1' : '0';     // VS3
+   if (e.kind === 'tphase') return tkPhaseOf(e.track, e.scene);                                  // VS-L-fix
+   if (e.kind === 'gfx') return g4Snap(e.track);                                                // G4
++  if (e.kind === 'chorlanes') return g6pLanesSnap(e.track);                                    // G6+h (Platzhalter bis G6+a): Chor-Spuren der STIMME-Spur
+   return fxSnapshot();
+ }
+ // a restored clip that is playing is heard at once (like an editor gesture, §3.3 afterClipEdit)
+@@ -20984,6 +20986,7 @@
+   else if (e.kind === 'tflag') tkFlag(e.track, val === '1');
+   else if (e.kind === 'tphase') tkPhaseSet(e.track, e.scene, val);                            // VS-L-fix
+   else if (e.kind === 'gfx') g4Restore(e.track, val);            // G4
++  else if (e.kind === 'chorlanes') g6pLanesRestore(e.track, val); // G6+h (Platzhalter bis G6+a)
+   else if (e.kind === 'part') partRestore(JSON.parse(val));
+   else restoreFx(JSON.parse(val));
+   UI.dirty.all = true; markDirty();
+@@ -44671,6 +44674,7 @@
+ const g6Below = (p, tri) => { let q = p - 1; while (!tri.includes(((q % 12) + 12) % 12)) q--; return q; };
+ // Töne der anderen Synth-Spuren der Szene, die an Schlag b (im Clip) klingen
+ function g6HeardPcs(r, beat) {
++  if (r && r.vox) return g6pVoxPcs(r, beat);                      // G6+h: Song-Stimme → Akkorde der Begleitung am Takt (Song-Bahnen, eigene Clips, song.mel)
+   if (!r || r.t == null) return null;
+   const out = new Set();
+   S.tracks.forEach((tr, i) => {
+@@ -44806,7 +44810,7 @@
+ /* ---------- Ändern (je ein Undo: Clip bzw. Song) ---------- */
+ function g6Edit(r, label, fn) {
+   const x = tkRef(r); if (!x) return false;
+-  if (r.vox) { const before = songSnapshot(); if (fn(x.a) === false) return false; const v = S.song.vox.find(z => z.id === r.vox), n = tkNormAudio(v); if (n && n.chor) v.chor = n.chor; else delete v.chor; pushSongUndo(before, label); songChanged(); }
++  if (r.vox) { if (!g6pSongEdit(r, label, fn)) return false; }   // G6+h: ein Song-Undo inkl. Chor-Spuren
+   else { const before = cleanClip(x.clip); if (fn(x.clip.audio) === false) return false; const n = tkNormAudio(x.clip.audio); if (n && n.chor) x.clip.audio.chor = n.chor; else delete x.clip.audio.chor; pushUndo(r.t, r.s, before, label); clipChanged(r.t, r.s); }
+   markDirty(); UI.dirty.all = true; haptic('tick');
+   g6Refresh();
+@@ -44912,6 +44916,173 @@
+   g6Nodes: () => [...G6.nodes.entries()].map(([k, N]) => ({k, g: N.g.gain.value, rev: N.rev.gain.value, dly: N.dly.gain.value, pan: N.pan ? N.pan.pan.value : 0}))
+ };
+ /* G6-END */
++/* G6PH-BEGIN */
++/* =====================================================================================================================
++   G6+h (Nachtrag 10 §2.7/§2.8): Chor im Song und im Video.
++   1. g6pSongPcs(bar, beat): Tonklassen, die die Begleitung im Song an einer Stelle spielt (Song-Bahnen → Szenen-Clips bzw.
++      eigene Clips, dazu song.mel). Eine Song-Stimme bekommt damit die Akkordtöne der Begleitung am Takt (bisher nur die
++      leitereigenen Dreiklänge). Wie bei Szenen-Clips (g6HeardPcs) zählen die STIMME-Spur und die MELODIE-Spur nicht.
++   2. Vorausrechnen im Song: bei jedem neuen Takt werden die Chor-Stellen von „läuft gerade“ bis zum Ende des nächsten Teils
++      (Marken) angestoßen – Lead-Fassung (G2/G4/VS-P) zuerst, dann die Stimmen (v1: g6Buf; v2: g6pEnsure aus G6+b).
++   3. Song-Undo inkl. Spuren: eine Chor-Geste auf einer Song-Stimme ändert song.vox und ggf. S.tracks[st].chor (Chor-Spuren,
++      G6+a) – ein Undo-Schritt {kind:'group', items:[song, chorlanes]}.
++   4. Video: g6pWaitAll(bereich) rechnet vor dem Offline-Render alle Lead-Fassungen, Chor-Puffer und gA im Bereich fertig;
++      g6pRenderHold/Release setzen Solo und „Selbst singen“-Scharf für die Dauer des Renders aus (v1 und v2).
++   Nichts läuft beim App-Start; nichts ändert gespeicherte Daten (Regel 28): alte Projekte laden zeichengleich.
++   ===================================================================================================================== */
++const G6PH = {run: null, bar: null, t: 0, rt: 0, n: 0, last: null, lb: new WeakMap(), hold: null, wait: null};
++/* ---------- 1. Akkorde der Begleitung am Takt ---------- */
++// Clip, den Spur i im Song an Takt bar spielt (Szenen-Clip oder eigener Clip), samt Song-Schlag seines Anfangs
++function g6pLaneClip(song, i, bar) {
++  if (!song.lanes || !song.lanes[i]) return null;
++  const o = laneOriginAt(song.lanes[i], bar); if (!laneClipOk(song, i, o)) return null;
++  const c = o.own && song.own && song.own[o.own] ? song.own[o.own] : S.tracks[i].clips[o.slot];
++  return c ? {c, cs: o.cs} : null;
++}
++// Tonklassen der Begleitung an Song-Schlag sb (absolut, ab Takt 1 = 0); null bei weniger als 2 Tönen (wie g6HeardPcs)
++function g6pSongPcsAt(sb) {
++  const song = S.song; if (!song || !isNum(sb) || sb < 0) return null;
++  const bar = Math.floor(sb / 4 + 1e-9), out = new Set(), hit = (nb, nd, b) => isNum(nb) && isNum(nd) && b >= nb - 1e-6 && b < nb + nd;
++  for (let i = 0; i < S.tracks.length; i++) {
++    const tr = S.tracks[i]; if (!tr || tr.kind !== 'synth' || tr.stimme || tr.mute || i === MEL_T) continue;
++    const x = g6pLaneClip(song, i, bar);
++    if (x && x.c.notes && x.c.notes.length) {
++      const L = Math.max(1, x.c.len || 1) * 4, b = (((sb - x.cs) % L) + L) % L;
++      for (const n of x.c.notes) if (hit(isNum(n.b) ? n.b : n.t, isNum(n.d) ? n.d : n.len, b)) out.add(((Math.round(n.n) % 12) + 12) % 12);
++    }
++    const m = song.mel && song.mel[i];                                 // V2b: Song-Melodie dieser Spur (absolute Song-Schläge)
++    if (m && m.notes) for (const n of m.notes) { if (n.t > sb + 1e-6) break; if (hit(n.t, n.d, sb)) out.add(((Math.round(n.n) % 12) + 12) % 12); }
++  }
++  return out.size >= 2 ? out : null;
++}
++// Spec-Schnittstelle: Takt (0-basiert) + Schlag im Takt
++function g6pSongPcs(bar, beat) { return g6pSongPcsAt(bar * 4 + (beat || 0)); }
++// für g6HeardPcs: beat = Schlag ab Takt der Song-Stimme (g6Build: (t0 − in)/spb + at)
++function g6pVoxPcs(r, beat) { const v = S.song && (S.song.vox || []).find(z => z.id === r.vox); return v ? g6pSongPcsAt(v.bar * 4 + beat) : null; }
++/* ---------- 2. Vorausrechnen ---------- */
++// Lead-Fassung fertig (Roh-Take geladen, G2/Zeitkarte gerechnet, VS-P gemessen und zweimal hintereinander dieselbe Fassung)
++function g6pLeadReady(id, a) {
++  if (!tkBuffer(id)) { tkLoad(id); return false; }
++  let b = null; try { b = tkPlayBuf(id, a); } catch (e) { logErr(e); return false; }
++  if (!b) return false;
++  if (typeof g2Ready === 'function' && !g2Ready(id, a)) return false;
++  if (typeof wpReady === 'function' && !wpReady(id)) return false;
++  if (!VP.m.has(b)) { vpKick(b); vpHot(b); return false; }
++  const k = a || S.takes[id], prev = G6PH.lb.get(k); G6PH.lb.set(k, b);
++  return prev === b;
++}
++// eine Chor-Stelle anstoßen; true = alles fertig (Lead, Stimmen, Auto-Pegel)
++function g6pWant(a) {
++  const c = a && a.chor; if (!c) return a && a.take ? g6pLeadReady(a.take, a) : true;
++  if (c.v === 2) return typeof g6pEnsure === 'function' ? !!g6pEnsure(a, 1) : true;   // G6+b: Rechenweg v2 (Platzhalter bis zum Merge)
++  if (!g6pLeadReady(a.take, a)) return false;
++  let ok = true;
++  c.voices.forEach(v => {
++    if (v.take) { if (!g6pLeadReady(v.take.take, v.take)) ok = false; return; }
++    for (let k = 0; k < G6_COPY.length; k++) if (!g6Buf(a, v, k)) ok = false;
++  });
++  return ok && g6Ready(a) && g6Auto(a) != null;
++}
++// Chor-Stellen (Song-Stimmen und STIMME-Clips der Bahn) in den Takt-Fenstern W = [[a, b) …], nach Vorrang
++function g6pPieces(song, W, all) {
++  const out = [], seen = new Set(), add = (a, d) => { if (a && (all || a.chor) && !seen.has(a)) { seen.add(a); out.push({a, d}); } };
++  const st = stimmeT();
++  W.forEach(([A, B], wi) => {
++    for (const v of song.vox || []) if (v.bar < B && v.bar + v.len > A) add(v, wi * 1e4 + Math.max(0, v.bar - A));
++    if (st >= 0 && !S.tracks[st].mute) for (let bar = A; bar < B; bar++) { const x = g6pLaneClip(song, st, bar); if (x && x.c.audio) add(x.c.audio, wi * 1e4 + bar - A); }
++  });
++  return out.sort((x, y) => x.d - y.d).map(x => x.a);
++}
++// Fenster: der laufende Takt bis zum Ende des nächsten Teils (Marken), mindestens 8 Takte; im Loop geht es am Loop-Anfang weiter
++function g6pHorizon(song, bar) {
++  const ms = (song.marks || []).slice().sort((x, y) => x.a - y.a), cur = ms.find(m => m.a <= bar && bar < m.a + m.len);
++  const curEnd = cur ? cur.a + cur.len : bar + 1, nx = ms.find(m => m.a >= curEnd);
++  let end = Math.max(bar + 8, nx ? nx.a + nx.len : curEnd + 8);
++  const lp = song.loop;
++  if (lp && lp.on && lp.b > lp.a && bar < lp.b && end > lp.b) return [[bar, lp.b], [lp.a, Math.min(lp.b, lp.a + end - lp.b)]];
++  return [[bar, Math.min(end, song.bars)]];
++}
++function g6pPrefetch(bar) {
++  const song = S.song; if (!song || !R.playing || !R.songPlay || G6PH.bar !== bar) return;
++  const P0 = performance.now(), list = g6pPieces(song, g6pHorizon(song, bar));
++  let wait = 0; for (const a of list) if (!g6pWant(a)) wait++;
++  G6PH.n++; G6PH.last = {bar, n: list.length, wait, ms: +(performance.now() - P0).toFixed(2)};
++  clearTimeout(G6PH.rt);
++  if (wait) G6PH.rt = setTimeout(() => { if (G6PH.run === R.runId) g6pPrefetch(bar); }, 250);
++}
++// Haken im Song-Takt (songTickInner): nur bei einem neuen Takt, gerechnet wird außerhalb des Takts (setTimeout)
++function g6pSongTick(song, b0, off) {
++  if (!song || VV_OFF()) return;
++  if (!(song.vox || []).some(v => v.chor) && !g6pClipChor()) return;
++  const bar = Math.max(0, Math.floor((b0 - off) / 4 + 1e-9));
++  if (G6PH.run === R.runId && G6PH.bar === bar) return;
++  G6PH.run = R.runId; G6PH.bar = bar;
++  clearTimeout(G6PH.t); G6PH.t = setTimeout(() => g6pPrefetch(bar), 0);
++}
++// STIMME-Clips mit Chor (8 Plätze, billig)
++function g6pClipChor() { const st = stimmeT(); return st >= 0 && S.tracks[st].clips.some(c => c && c.audio && c.audio.chor); }
++// im Offline-Render (Video) nicht vorausrechnen: g6pWaitAll hat vorher alles fertig gerechnet
++const VV_OFF = () => typeof VV !== 'undefined' && !!(VV && VV.off);
++/* ---------- 3. Song-Undo inkl. Chor-Spuren ---------- */
++// Platzhalter bis G6+a: S.tracks[st].chor (Chor-Spuren) als Zustand; G6+a bringt normTrack/tkNormProject dafür mit
++function g6pLanesSnap(t) { const tr = S.tracks[t]; return tr && tr.chor ? JSON.stringify(tr.chor) : null; }
++function g6pLanesRestore(t, val) { const tr = S.tracks[t]; if (!tr) return; if (val) tr.chor = JSON.parse(val); else delete tr.chor; UI.dirty.grid = UI.dirty.song = true; if (typeof g6Refresh === 'function') g6Refresh(); }
++// eine Chor-Geste auf einer Song-Stimme: ein Undo (Song + Spuren, falls die Spuren sich geändert haben)
++function g6pSongEdit(r, label, fn) {
++  const st = stimmeT(), before = songSnapshot(), lb = st >= 0 ? g6pLanesSnap(st) : null;
++  const v = S.song && (S.song.vox || []).find(z => z.id === r.vox); if (!v) return false;
++  if (fn(v) === false) return false;
++  const n = tkNormAudio(v); if (n && n.chor) v.chor = n.chor; else delete v.chor;
++  const la = st >= 0 ? g6pLanesSnap(st) : null;
++  if (la === lb || songTakeOpen()) pushSongUndo(before, label);
++  else undoPush({kind: 'group', label, items: [{kind: 'song', before}, {kind: 'chorlanes', track: st, before: lb}]});
++  songChanged();
++  return true;
++}
++/* ---------- 4. Video-Render ---------- */
++// vor dem Offline-Render: alles im Bereich (Takte a…b) fertig rechnen; {ok, n, miss, ms}
++async function g6pWaitAll(rg, o) {
++  o = o || {}; const song = S.song; if (!song || !tkAudioOk()) return {ok: true, n: 0, miss: 0, ms: 0};
++  const a = rg && isNum(rg.a) ? rg.a | 0 : 0, b = rg && isNum(rg.b) ? rg.b | 0 : song.bars, T0 = performance.now(), lim = o.timeout || 180000;
++  const list = g6pPieces(song, [[a, Math.max(a + 1, b)]], true), chor = list.filter(x => x.chor).length;
++  G6PH.wait = {n: list.length, chor, miss: list.length, ms: 0};
++  if (!chor) return Object.assign({ok: true}, G6PH.wait);           // ohne Chor wartet der Render wie bisher nur auf die Takes (vvTakesReady)
++  let stable = 0;
++  for (;;) {
++    let miss = 0; for (const x of list) if (!g6pWant(x)) miss++;
++    G6PH.wait.miss = miss; G6PH.wait.ms = Math.round(performance.now() - T0);
++    if (!miss && !G6.job.size) { if (++stable >= 2) return Object.assign({ok: true}, G6PH.wait); } else stable = 0;
++    if (o.cancel && o.cancel()) throw new Error('abgebrochen');
++    if (performance.now() - T0 > lim) { logErr(new Error('G6+h: Chor im Video nicht fertig (' + miss + ')')); return Object.assign({ok: false}, G6PH.wait); }
++    await sleep(40);
++  }
++}
++// Solo und „Selbst singen“-Scharf gelten nicht im Video (v1: G6.solo/G6.arm; v2: G6P.solo/G6P.arm aus G6+c, falls vorhanden)
++function g6pRenderHold() {
++  const h = {solo: G6.solo, arm: G6.arm}; G6.solo = null; G6.arm = null;
++  if (typeof G6P !== 'undefined' && G6P) { h.p = {solo: G6P.solo, arm: G6P.arm}; G6P.solo = null; G6P.arm = null; }
++  G6PH.hold = h; return h;
++}
++function g6pRenderRelease(h) {
++  h = h || G6PH.hold; if (!h) return; G6PH.hold = null;
++  G6.solo = h.solo; G6.arm = h.arm;
++  if (h.p && typeof G6P !== 'undefined' && G6P) { G6P.solo = h.p.solo; G6P.arm = h.p.arm; }
++  try { g6pApplyAll(); g6LeadMute(); if (G6.sheet) g6SheetPaint(); } catch (e) { logErr(e); }
++}
++function g6pApplyAll() { const st = stimmeT(); for (const t of S.tracks) for (const c of t.clips) if (c && c.audio && c.audio.chor) g6Apply(c.audio, st); if (S.song) for (const v of S.song.vox || []) if (v.chor) g6Apply(v, st); }
++/* ---------- Test-API ---------- */
++const G6PH_API = {
++  g6pSongPcs: (bar, beat) => { const s = g6pSongPcs(bar, beat); return s ? [...s].sort((x, y) => x - y) : null; },
++  g6pHorizon: bar => S.song ? g6pHorizon(S.song, bar) : null,
++  g6pAhead: bar => S.song ? g6pPieces(S.song, g6pHorizon(S.song, bar)).map(a => a.id || a.take) : null,
++  g6pReady: r => { const x = tkRef(r); return x ? g6pWant(x.a) : null; },
++  g6pWaitAll: (a, b, o) => g6pWaitAll(a == null ? null : {a, b}, o),
++  g6pHold: () => { const h = g6pRenderHold(); return {solo: h.solo, arm: h.arm ? Object.assign({}, h.arm) : null}; },
++  g6pRelease: () => g6pRenderRelease(),
++  g6phInfo: () => ({n: G6PH.n, last: G6PH.last, bar: G6PH.bar, wait: G6PH.wait, hold: !!G6PH.hold, solo: G6.solo, arm: G6.arm ? Object.assign({}, G6.arm) : null, jobs: G6.job.size, cache: G6.cache.size, renders: G6.renders}),
++  g6pPcsOf: r => { const x = tkRef(r); if (!x || !x.a.chor) return null; return x.a.chor.voices.map(v => v.n.map(n => ((Math.round(n.m) + n.iv) % 12 + 12) % 12)); }
++};
++/* G6PH-END */
+ /* G7-BEGIN */
+ /* =====================================================================================================================
+    G7 (Nachtrag 5): Gesang folgt dem Transponieren. STIMME-Clips und Song-Stimme werden vom Transponieren (Träger, „Eine Skala“,
+@@ -45886,6 +46057,7 @@
+ Object.assign(SYNQUENZER, VP_API);                // VS-P: Stimme im Mix (Auto-Pegel, Spitzen-Schutz)
+ Object.assign(SYNQUENZER, G2_API);                // G2: Tonhöhe quantisieren, Gesang als Noten
+ Object.assign(SYNQUENZER, G6_API);                // G6: Chor-Generator
++Object.assign(SYNQUENZER, G6PH_API);              // G6+h: Chor im Song und im Video
+ Object.assign(SYNQUENZER, G7_API);                // G7: Gesang folgt dem Transponieren
+ const NO_SYNC = new Set(['oneScaleOf', 'kbScaleNow', 'micCheck', 'micCheckJson', 'micCheckEstimate', 'cloud', 'cloudProjects', 'cloudVersions', 'cloudHandoff', 'state', 'project', 'runtime', 'getClip', 'getParam', 'noteLog', 'voices', 'timeline', 'serialize', 'buildMidi', 'buildZip', 'crc32', 'meter', 'outPitch', 'migrate', 'tapTempo',
+   'getSound', 'mods', 'library', 'factory', 'previewState', 'soundEdited', 'fmxView', 'fmxPreview', 'fmxBadge',
