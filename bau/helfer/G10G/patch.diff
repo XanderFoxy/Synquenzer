@@ -1,0 +1,577 @@
+--- a/bau/snapshots/R-4300.html
++++ b/bau/helfer/G10G/index.html
+@@ -2329,6 +2329,27 @@
+   .g6sheet .g6pe-kl .g6pe-seg,.g6sheet .g6pe-kl .g6pe-echo{grid-column:1/-1}
+ }
+ /* G6PE-CSS-END */
++/* G10G-CSS-BEGIN */
++#wpSheet.g2 .qb{position:relative}
++#wpSheet .qh .g10g-kc{position:relative;z-index:7;flex:0 0 auto;min-width:76px;max-width:112px;height:44px;padding:0 6px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:1px;text-align:left;font:700 11px/1.15 var(--font-ui);overflow:hidden}
++#wpSheet .qh .g10g-kc span,#wpSheet .qh .g10g-kc small{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
++#wpSheet .qh .g10g-kc span{font:700 12px/1.15 var(--font-ui)}
++#wpSheet .qh .g10g-kc small{font:500 10px/1.1 var(--font-ui);color:var(--text-dim)}
++#wpSheet .qh .g10g-kc.on{border-color:var(--sel)}
++#wpSheet .g10g-kp{position:absolute;inset:0;z-index:6;display:flex;flex-direction:column;gap:4px;padding:6px 10px;overflow-y:auto;overscroll-behavior:contain;background:#0b0c0ff5}
++#wpSheet .g10g-kp[hidden],#wpSheet .g10g-kp .g10g-alt[hidden]{display:none}
++#wpSheet .g10g-kp .g10g-r{flex:none;display:grid;gap:4px}
++#wpSheet .g10g-kp .g10g-r2{grid-template-columns:repeat(2,minmax(0,1fr))}
++#wpSheet .g10g-kp .g10g-r4{grid-template-columns:repeat(3,minmax(0,1fr)) minmax(56px,.8fr)}
++#wpSheet .g10g-kp .g10g-r5{grid-template-columns:repeat(5,minmax(0,1fr))}
++#wpSheet .g10g-kp .g10g-r6{grid-template-columns:repeat(6,minmax(0,1fr))}
++#wpSheet .g10g-kp button{height:44px;min-height:44px;min-width:44px;padding:0 2px;font:700 11px/1.1 var(--font-ui);white-space:normal;overflow:hidden}
++#wpSheet .g10g-kp button.on{color:var(--ink);background:var(--sel);border-color:var(--sel)}
++#wpSheet .g10g-kp .g10g-ok{color:var(--ink);background:var(--amber);border-color:var(--amber)}
++#wpSheet .g10g-kp .g10g-l{flex:none;font:600 10px/14px var(--font-ui);letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim)}
++#wpSheet .qrow.g10g-rt .lbl{flex:0 0 auto}
++@media (orientation:landscape){#wpSheet.g2 .qh{height:44px}#wpSheet .qh .g10g-kc{height:44px}}
++/* G10G-CSS-END */
+ #wpSheet.g2 .qchips{grid-template-columns:repeat(4,minmax(0,1fr))}   /* G2: 8 Tasten in 2 Reihen (Verbinden passt) */
+ @media (orientation:portrait){#wpSheet{grid-row:2/5;grid-column:1/-1;align-self:end;justify-self:stretch;margin:0 8px;height:350px;max-height:100%}}
+ /* F1 P3: Raster in 2 Reihen (36 px breit), Stärke und Swing nebeneinander – alles ≥ 44 hoch bzw. 36×34, die Wellenform bleibt ≥ 64 px */
+@@ -50413,7 +50434,7 @@
+ // sonst würde der MELODIE-Clip doppelt transponiert. Dauer bleibt (PSOLA), Lage der Proben also gleich.
+ async function g5Pitched(id, b) {
+   const m = S.takes && S.takes[id], P = m && m.pitch; if (!P || typeof g2Call !== 'function' || G2.ab) return b;
+-  const plan = {mode: P.mode, notes: P.notes.map(n => ({t0: n.t0, t1: n.t1, m: n.m, to: P.q ? g2Snap(n.m, P.key) : n.m, s: P.q ? P.str : 0, e: 100 * (n.sh || 0)}))};
++  const plan = g10gPlan(id, P, null);   // G10g: derselbe Plan wie G2 (alte Takes unverändert)
+   if (!G2P.active(plan)) return b;
+   try { const r = await g2Call({op: 'render', key: id + '@' + wpBid(b), x: b.getChannelData(0), sr: b.sampleRate, plan}); return wpToBuf(r.y, b.sampleRate) || b; } catch (e) { logErr(e); return b; }
+ }
+@@ -50554,7 +50575,7 @@
+ // Verschiebung (Cent) je Frame + aktive stimmhafte Strecken
+ function curve(an, plan) {
+   const n = an.n, H = an.hop, f0 = an.f0, c = new Float64Array(n), has = new Uint8Array(n), hard = plan.mode === 'hard';
+-  const fm = new Float64Array(n);
++  const fm = new Float64Array(n), v2 = plan.v === 2;   // G10g: Oktav-Klammer und Einrast-Zeit nur mit v = 2 (sonst bitgleich)
+   for (let i = 0; i < n; i++) {   // 3-Frame-Median der Stimme (Hart)
+     const v = []; for (let k = i - 1; k <= i + 1; k++) if (k >= 0 && k < n && f0[k] > 0) v.push(midi(f0[k]));
+     fm[i] = v.length ? med(v) : NaN;
+@@ -50563,7 +50584,7 @@
+     const a = Math.max(0, Math.floor(nt.t0 / H)), b = Math.min(n, Math.ceil(nt.t1 / H)), e = +nt.e || 0, s = +nt.s || 0, to = +nt.to, m = +nt.m;
+     for (let i = a; i < b; i++) {
+       let v = e;
+-      if (s && to === to) v += s * 100 * (to - (hard && fm[i] === fm[i] ? fm[i] : m));
++      if (s && to === to) { let f = hard && fm[i] === fm[i] ? fm[i] : m; if (v2 && Math.abs(f - m) > 1.5) f = m; v += s * 100 * (to - f); }   // G10g: Oktav-Klammer (Ausreißer > 1,5 Halbtöne → Notenhöhe)
+       c[i] = v; has[i] = 1;
+     }
+   }
+@@ -50582,7 +50603,7 @@
+     i = j;
+   }
+   // Glätten (gleiten zwischen Noten): Weich 40 ms, Hart 15 ms (gleitender Mittelwert in der Strecke)
+-  const R = Math.max(1, Math.round((hard ? 0.015 : 0.04) / H / 2)), cs = new Float64Array(n);
++  const R = v2 ? Math.max(0, Math.round((isFinite(plan.rt) ? Math.min(100, Math.max(0, plan.rt)) : hard ? 15 : 40) / 1000 / H / 2)) : Math.max(1, Math.round((hard ? 0.015 : 0.04) / H / 2)), cs = new Float64Array(n);   // G10g: Einrast-Zeit (ms, v = 2)
+   for (const [i, j] of runs) for (let k = i; k < j; k++) { let s = 0, q = 0; for (let r = Math.max(i, k - R); r <= Math.min(j - 1, k + R); r++) { s += c[r]; q++; } cs[k] = s / q; }
+   return {c: cs, runs};
+ }
+@@ -50690,7 +50711,7 @@
+ }
+ // Schlüssel für den Render-Cache (FNV-1a über den Plan)
+ function planKey(plan) {
+-  let h = 0x811c9dc5; const s = (plan.mode === 'hard' ? 'h' : 'w') + JSON.stringify((plan.notes || []).map(k => [k.t0, k.t1, k.m, k.to, k.s, k.e]));
++  let h = 0x811c9dc5; const s = (plan.mode === 'hard' ? 'h' : 'w') + JSON.stringify((plan.notes || []).map(k => [k.t0, k.t1, k.m, k.to, k.s, k.e])) + (plan.v === 2 ? '|v2|' + plan.rt : '');   // G10g
+   for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
+   return h.toString(16);
+ }
+@@ -50712,6 +50733,11 @@
+   ab: false, ed: null, renders: 0, last: null, lastAn: null, how: null};
+ const G2P = g2PitchMake();
+ const G2_MODES = ['soft', 'hard'];
++// G10g: zusätzliche Leitern NUR für die Tonhöhe des Gesangs (Spec-Name G2_SCALES). Harmony.SCALES bleibt unangetastet, damit
++// G10g: Tonart-Erkennung und die Leiter anderer Spuren nicht anders werden. Gelesen wird zuerst diese Liste, dann Harmony.SCALES.
++const G10G_SCALES = {pentMaj: [0, 2, 4, 7, 9], pentMin: [0, 3, 5, 7, 10], harmMin: [0, 2, 3, 5, 7, 8, 11], chrom: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]};   // G10g
++const G2_SCALES = G10G_SCALES;   // G10g: Name aus der Spec (dieselbe Liste)
++function g10gScale(s) { const o = Object.prototype.hasOwnProperty; return typeof s !== 'string' ? null : o.call(G10G_SCALES, s) ? G10G_SCALES[s] : o.call(Harmony.SCALES, s) ? Harmony.SCALES[s] : null; }   // G10g
+ function g2NormPitch(p, len) {
+   if (!p || typeof p !== 'object' || !Array.isArray(p.notes)) return null;
+   const notes = [];
+@@ -50719,27 +50745,29 @@
+     if (!n || !isNum(n.t0) || !isNum(n.t1) || !isNum(n.m) || n.t0 < 0 || n.t1 <= n.t0 || n.t1 > len + 1e-6) continue;
+     const o = {t0: tkR6(n.t0), t1: tkR6(n.t1), m: +clamp(n.m, 0, 127).toFixed(3)};
+     if (isNum(n.sh) && Math.round(n.sh)) o.sh = clamp(Math.round(n.sh), -36, 36);
++    if (n.nq === true) o.nq = true;   // G10g: nicht rastern (Blue Note, Schleifer)
+     notes.push(o);
+   }
+   notes.sort((a, b) => a.t0 - b.t0);
+   const out = {mode: G2_MODES.includes(p.mode) ? p.mode : 'soft', str: isNum(p.str) ? +clamp(p.str, 0, 1).toFixed(2) : 1, q: !!p.q, notes: notes.filter((n, i) => !i || n.t0 >= notes[i - 1].t1 - 1e-6)};
+-  if (p.key && isNum(p.key.root) && Harmony.SCALES[p.key.scale]) out.key = {root: clamp(Math.round(p.key.root), 0, 11), scale: p.key.scale};
++  if (p.key && isNum(p.key.root) && g10gScale(p.key.scale)) { out.key = {root: clamp(Math.round(p.key.root), 0, 11), scale: p.key.scale}; g10gNormKey(p.key, out.key); }   // G10g: auch eigene Leitern; src/via/alt additiv
++  g10gNormPitch(p, out);   // G10g: v, rt (additiv)
+   return out.notes.length ? out : null;
+ }
+ tkExt().take.push((m, o) => { const p = g2NormPitch(m.pitch, o.len / o.sr); if (p) o.pitch = p; });
+ 
+ /* ---------- Plan: je Note Ziel (nächster Ton der Tonart), Stärke, eigene Verschiebung (+ G7 Transponieren) ---------- */
+ function g2Snap(m, key) {
+-  const SC = Harmony.SCALES[key && key.scale] || Harmony.SCALES.ionian, r = key ? key.root : 0, ins = q => SC.includes(((q - r) % 12 + 12) % 12);
++  const SC = g10gScale(key && key.scale) || Harmony.SCALES.ionian, r = key ? key.root : 0, ins = q => SC.includes(((q - r) % 12 + 12) % 12);   // G10g: eigene Leitern zuerst
+   let best = null; for (let q = Math.floor(m) - 3; q <= Math.ceil(m) + 3; q++) if (ins(q) && (best == null || Math.abs(q - m) < Math.abs(best - m) - 1e-9)) best = q;
+   return best == null ? Math.round(m) : best;
+ }
+ // gehörte Zielhöhe einer Note ohne Transponieren (MIDI, ganz bei Quantisieren 100 %)
+-function g2Target(P, n) { const base = P.q ? n.m + P.str * (g2Snap(n.m, P.key) - n.m) : n.m; return base + (n.sh || 0); }
++function g2Target(P, n, k) { const base = P.q && !n.nq ? n.m + P.str * (g2Snap(n.m, k || P.key) - n.m) : n.m; return base + (n.sh || 0); }   // G10g: k = Tonart der Note, nq = nicht rastern
+ function g2Plan(id, a) {
+   const m = S.takes && S.takes[id], P = m && (m.pitch || (typeof g7Pitch === 'function' ? g7Pitch(id) : null)); if (!P) return null;   // G7: auch ohne Feld (erkannte Noten)
+   const xs = typeof g7Shift === 'function' ? g7Shift(id, a || g7SegOf(id), P) : null;                 // G7: Transponieren der Stelle (Halbtöne je Note) oder null
+-  const plan = {mode: P.mode, notes: P.notes.map((n, k) => ({t0: n.t0, t1: n.t1, m: n.m, to: P.q ? g2Snap(n.m, P.key) : n.m, s: P.q ? P.str : 0, e: 100 * ((n.sh || 0) + (xs ? xs[k] || 0 : 0))}))};
++  const plan = g10gPlan(id, P, xs);   // G10g: Tonart je Note, nicht rastern, v/rt (alte Takes: derselbe Plan wie 4.30.0)
+   return G2P.active(plan) ? plan : null;
+ }
+ /* ---------- Quelle, Worker, Cache ---------- */
+@@ -50858,10 +50886,10 @@
+   return (m.pitch ? Promise.resolve(null) : g2Analyse(id)).then(A => {
+     const mm = S.takes && S.takes[id]; if (!mm) return false;
+     const before = JSON.stringify(S.takes);
+-    if (!mm.pitch) { if (!A || !A.notes.length) { toast('Keine Töne erkannt'); return false; } mm.pitch = {mode: 'soft', str: 1, q: false, key: g2KeyAt(r), notes: A.notes.map(n => ({t0: n.t0, t1: n.t1, m: n.m}))}; }
++    if (!mm.pitch) { if (!A || !A.notes.length) { toast('Keine Töne erkannt'); return false; } mm.pitch = {mode: 'soft', str: 1, q: false, key: g10gNewKey(id, r), notes: A.notes.map(n => ({t0: n.t0, t1: n.t1, m: n.m})), v: 2}; }   // G10g: neue Tonhöhe = v 2, Tonart Auto
+     if (fn(mm.pitch) === false) { S.takes = JSON.parse(before); return false; }
+     const P = g2NormPitch(mm.pitch, mm.len / mm.sr);
+-    if (!P || (!P.q && !P.notes.some(n => n.sh))) delete mm.pitch; else mm.pitch = P;
++    if (!P || (!P.q && !P.notes.some(n => n.sh) && !(P.key && P.key.src === 'user'))) delete mm.pitch; else mm.pitch = P;   // G10g: gewählte Tonart bleibt auch ohne Quantisieren
+     if (JSON.stringify(S.takes) === before) return false;
+     undoPush({kind: 'takes', before, label}); markDirty(); UI.dirty.all = true; haptic('tick');
+     g2After(id);
+@@ -50877,6 +50905,7 @@
+     if (isNum(o.str)) P.str = clamp(o.str, 0, 1);
+     if (o.key) P.key = {root: o.key.root, scale: o.key.scale};
+     if (!P.key) P.key = g2KeyAt(r);
++    if (!o.key && P.key.src === 'auto') g10gReread(id, P, r);   // G10g: Auto liest die Tonart bei jedem Weich/Hart neu
+   }, r);
+ }
+ const g2NoteShift = (id, k, d) => g2Edit(id, 'Note verschoben', P => { const n = P.notes[k]; if (!n || !d) return false; n.sh = (n.sh || 0) + Math.round(d); });
+@@ -50925,6 +50954,7 @@
+   ab.addEventListener('click', () => { const E = G2.ed; if (E && E.voice != null) { g6Solo(E.voice); g2Paint(); return; } G2.ab = !G2.ab; wpResync(); g2Paint(); });   // G6: in einer Chor-Stimme = Solo
+   const cl = el('button', 'sh-x rb', '✕'); cl.setAttribute('aria-label', 'Schließen'); cl.addEventListener('click', () => g2Close());
+   head.append(wv, ab, cl); if (vk != null) wv.disabled = true;
++  const kc = vk == null ? g10gHead(head, wv) : null;   // G10g: Tonart-Chip im Kopf
+   const b = el('div', 'qb wpb'), cvw = el('div', 'wpcv'), cv = el('canvas');
+   cvw.append(cv);
+   const chips = el('div', 'qchips wpchips g2chips');
+@@ -50936,10 +50966,10 @@
+     const v = bt.dataset.v, P = S.takes[E.id] && S.takes[E.id].pitch;
+     if (E.voice != null) { const V = g2Voice(E); if (v === 'zoom') { E.zoom = WP_ZOOM[(WP_ZOOM.indexOf(E.zoom) + 1) % WP_ZOOM.length]; g2Paint(); return; } if (v !== 'up' && v !== 'dn') return; if (!V || E.sel < 0 || !V.n[E.sel]) { toast('Erst eine Note antippen'); return; } g6NoteShift(E.r, E.voice, E.sel, v === 'up' ? 1 : -1); return; }   // G6
+     if (v === 'off') { g2SetQ(E.id, {q: false}, E.r); return; }
+-    if (v === 'soft' || v === 'hard') { g2Info('Töne werden gesucht …'); g2SetQ(E.id, {q: true, mode: v, str: P && P.q ? P.str : 1}, E.r).then(ok => { const Q = S.takes[E.id] && S.takes[E.id].pitch; if (ok && Q) toast(g2MovedN(Q) + ' Töne auf die Tonart ' + keyLabel(Q.key) + ' gezogen'); }); return; }
++    if (v === 'soft' || v === 'hard') { g2Info('Töne werden gesucht …'); g2SetQ(E.id, {q: true, mode: v, str: P && P.q ? P.str : 1}, E.r).then(ok => { const Q = S.takes[E.id] && S.takes[E.id].pitch; if (ok && Q) toast(g10gMovedN(E.id, Q) + ' Töne auf die Tonart ' + g10gKeyLabel(g10gKeyNow(E.id, Q, E.r) || Q.key) + ' gezogen'); }); return; }   // G10g: Tonart der Quelle
+     if (v === 'zoom') { E.zoom = WP_ZOOM[(WP_ZOOM.indexOf(E.zoom) + 1) % WP_ZOOM.length]; g2Paint(); return; }
+     if (E.sel < 0 || !P || !P.notes[E.sel]) { if (!P && (v === 'up' || v === 'dn' || v === 'split' || v === 'join')) { g2Info('Töne werden gesucht …'); g2Analyse(E.id).then(() => g2Paint()); } toast('Erst eine Note antippen'); return; }
+-    if (v === 'up' || v === 'dn') g2NoteShift(E.id, E.sel, v === 'up' ? 1 : -1);
++    if (v === 'up' || v === 'dn') g10gStep(E.id, E.sel, v === 'up' ? 1 : -1);   // G10g: mit Quantisieren stufenweise in der Tonart
+     else if (v === 'split') g2Split(E.id, E.sel, E.tapT);
+     else if (v === 'join') { if (!P.notes[E.sel + 1]) { toast('Keine Note dahinter'); return; } g2Join(E.id, E.sel); }
+   });
+@@ -50959,9 +50989,10 @@
+   const info = el('span', 'qnote wpinfo', '');
+   cvw.append(info);
+   const sl = el('div', 'wpsl'); sl.append(row);
++  const rtr = g10gRtRow(sl);   // G10g: Regler Einrast-Zeit
+   b.append(cvw, chips, sl);
+   sh.append(head, b);
+-  Object.assign(G2.ed, {cv, chips, rs: row, info, ab, cvw});
++  Object.assign(G2.ed, {cv, chips, rs: row, info, ab, cvw, g10g: {kc, rtr, kp: kc ? g10gPanel(b) : null}});   // G10g
+   g6pgLegend(G2.ed, cvw, null);   // G6+g: Legende der Chor-Spuren (Leiste oben in der Leinwand, kein Layout-Sprung)
+   sh.classList.add('open');
+   g2Gest(cv);
+@@ -50972,7 +51003,7 @@
+ function g2Info(t) { if (G2.ed && G2.ed.info) G2.ed.info.textContent = t; }
+ function g2Close() {
+   const E = G2.ed; if (!E) return;
+-  G2.ed = null; clearTimeout(E.rt); g6pgClosed();
++  G2.ed = null; clearTimeout(E.rt); g6pgClosed(); g10gHearStop();   // G10g: Vorhören aus
+   EL.wpSheet.classList.remove('open', 'g2'); EL.wpSheet.innerHTML = '';
+   if (G2.ab) { G2.ab = false; wpResync(); }
+ }
+@@ -50989,7 +51020,8 @@
+   const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0);
+   const V = wpView(E, a), X = t => (t - V.a) / V.W * Wp; E.vw = V; E.X = X;
+   const Vc = g2Voice(E), ns = Vc ? Vc.n : g2Notes(id) || [], A = Vc ? null : G2.an.get(id), Pk = P || {q: false, str: 1, notes: ns};
+-  const tg = Vc ? ns.map(n => n.m + n.iv) : ns.map(n => g2Target(Pk, n));   // G6: Chor-Stimme = Lead-Note + Intervall
++  const KS = Vc ? null : g10gKeys(id, Pk);   // G10g: Tonart je Note (Auto: Szene am Takt)
++  const tg = Vc ? ns.map(n => n.m + n.iv) : ns.map((n, k) => g2Target(Pk, n, KS && KS[k]));   // G6: Chor-Stimme = Lead-Note + Intervall · G10g: Tonart je Note
+   // Tonhöhen-Bereich: alle Noten ± 2 Halbtöne, mindestens eine Oktave
+   let lo = Infinity, hi = -Infinity; ns.forEach((n, k) => { lo = Math.min(lo, n.m, tg[k]); hi = Math.max(hi, n.m, tg[k]); });
+   const SG = g6pgGeo(E.r, a), LN = Vc ? g6pgLeadNs(E) : null; if (SG && isFinite(SG.lo)) { lo = Math.min(lo, SG.lo); hi = Math.max(hi, SG.hi); } if (LN) for (const n of LN.ns) { lo = Math.min(lo, n.p); hi = Math.max(hi, n.p); }   // G6+g: Schatten im Bereich
+@@ -50997,7 +51029,7 @@
+   lo = Math.floor(lo) - 2; hi = Math.ceil(hi) + 2; if (hi - lo < 12) { const c = (lo + hi) / 2; lo = Math.floor(c - 6); hi = lo + 12; }
+   const rowH = (Hp - (E.leg ? 46 : 0)) / (hi - lo + 1), Y = p => Hp - (p - lo + 0.5) * rowH; E.Y = Y; E.rowH = rowH; E.lo = lo;   // G6+g: oben Platz für die Legende
+   g.fillStyle = '#0e1014'; g.fillRect(0, 0, Wp, Hp);
+-  const key = P && P.key || g2KeyAt(E.r), SC = Harmony.SCALES[key.scale] || Harmony.SCALES.ionian;
++  const key = (!Vc && g10gKeyNow(id, P, E.r)) || P && P.key || g2KeyAt(E.r), SC = g10gScale(key.scale) || Harmony.SCALES.ionian;   // G10g: angezeigte Tonart = Quelle
+   g.font = WP.font || (WP.font = '600 10px ' + getComputedStyle(document.body).fontFamily);
+   for (let p = lo; p <= hi; p++) {
+     const ins = SC.includes(((p - key.root) % 12 + 12) % 12), y = Y(p);
+@@ -51011,6 +51043,7 @@
+   const hb = tkHeard(id, a);
+   if (hb) { const d = hb.getChannelData(0), sr = hb.sampleRate; g.fillStyle = 'rgba(120,140,170,.28)';
+     for (let px = 0; px < Wp; px++) { const s0 = Math.max(0, Math.floor((V.a + px / Wp * V.W) * sr)), s1 = Math.min(d.length, Math.floor((V.a + (px + 1) / Wp * V.W) * sr)); let pk = 0; for (let i = s0; i < s1; i += 8) { const v = Math.abs(d[i]); if (v > pk) pk = v; } const h = Math.min(1, Math.sqrt(pk)) * Hp * .45; g.fillRect(px, Hp / 2 - h, 1, 2 * h); } }
++  if (A) g10gHatch(g, E, id, A, X, Wp, Hp);   // G10g: stimmlose Teile als graue Schraffur unter den Noten
+   // Tonhöhen-Spur (gemessen) dünn
+   if (A) { g.strokeStyle = 'rgba(200,210,230,.55)'; g.lineWidth = 1; g.beginPath(); let on = false;
+     const i0 = Math.max(0, Math.floor(V.a / A.hop)), i1 = Math.min(A.n, Math.ceil((V.a + V.W) / A.hop) + 1);
+@@ -51026,6 +51059,7 @@
+     if (Math.abs(t - n.m) > 0.02) { g.strokeStyle = 'rgba(255,255,255,.35)'; g.lineWidth = 1; g.strokeRect(x0 + .5, Y(n.m) - h / 2 + .5, w - 1, h - 1); }
+     g.fillStyle = k === E.sel ? '#ffd27a' : P ? '#f0a531' : '#8a7448'; g.fillRect(x0, y - h / 2, w, h);
+     if (k === E.sel) { g.strokeStyle = '#ffffff'; g.lineWidth = 2; g.strokeRect(x0 + 1, y - h / 2 + 1, w - 2, h - 2); }
++    if (!Vc && (n.nq || (E.p && E.p.held && E.p.k === k))) g10gNqMark(g, x0, y, w, h, !!n.nq);   // G10g: nicht rastern / Halten
+     if (w > 22 && h >= 9) { g.fillStyle = '#16120a'; g.fillText(noteNames()[((Math.round(t) % 12) + 12) % 12] + (Math.floor(Math.round(t) / 12) - 1), x0 + 3, y + 3.5, w - 4); }
+   });
+   const SY = Vc ? null : lyG2Syl(id, a, ns);                                // G9E: Silbe klein unter dem Block (gleiche Anfangszeit)
+@@ -51038,9 +51072,10 @@
+   E.chips.querySelector('[data-v=zoom]').textContent = E.zoom ? E.zoom + (E.zoom === 1 ? ' Takt' : ' Takte') : 'Ganz';
+   E.rs._g();
+   if (Vc) { E.ab.classList.toggle('on', G6.solo === E.voice); E.ab.textContent = 'Solo'; } else { E.ab.classList.toggle('on', G2.ab); E.ab.textContent = G2.ab ? 'Original' : 'A/B'; }
+-  const rd = Vc ? ns.length + ' Noten · ' + Vc.name + (g6Ready(x.a) ? '' : ' · rechnet …') : !A && !P ? 'Töne werden gesucht …' : ns.length + (ns.length === 1 ? ' Note' : ' Noten') + ' · Tonart ' + keyLabel(key) + ' · ' + (P && P.q ? (P.mode === 'hard' ? 'Hart ' : 'Weich ') + Math.round(P.str * 100) + ' %' : 'nicht quantisiert') + (g2Ready(id, a) ? '' : ' · rechnet …');
++  const rd = Vc ? ns.length + ' Noten · ' + Vc.name + (g6Ready(x.a) ? '' : ' · rechnet …') : !A && !P ? 'Töne werden gesucht …' : ns.length + (ns.length === 1 ? ' Note' : ' Noten') + ' · Tonart ' + g10gKeyLabel(key) + ' · ' + (P && P.q ? (P.mode === 'hard' ? 'Hart ' : 'Weich ') + Math.round(P.str * 100) + ' %' : 'nicht quantisiert') + (g2Ready(id, a) ? '' : ' · rechnet …');   // G10g: Name auch für eigene Leitern
+   g2Info(rd);
+   g6pgLegSync(E);
++  g10gSync(E, key);   // G10g: Chip, Leiste, Einrast-Zeit
+ }
+ function g2Hit(E, cx, cy) {
+   let best = -1, bd = 1e9;
+@@ -51053,21 +51088,23 @@
+     const E = G2.ed; if (!E || E.p || e.button > 0) return;
+     try { cv.setPointerCapture(e.pointerId); } catch (er) {}
+     const [cx, cy] = pos(e); E.p = {id: e.pointerId, x0: e.clientX, y0: e.clientY, t0: performance.now(), k: g2Hit(E, cx, cy), mode: null, va: E.va};
++    g10gHoldArm(E);   // G10g: Halten erkennen
+   });
+   cv.addEventListener('pointermove', e => {
+     const E = G2.ed, p = E && E.p; if (!p || p.id !== e.pointerId) return;
+     const dx = e.clientX - p.x0, dy = e.clientY - p.y0;
+     if (!p.mode && Math.hypot(dx, dy) > 8) p.mode = p.k >= 0 && Math.abs(dy) >= Math.abs(dx) ? 'move' : 'pan';
+-    if (p.mode === 'move') { E.ghost = {k: p.k, d: Math.round(-dy / Math.max(6, E.rowH))}; E.sel = p.k; g2Paint(); }
++    if (p.mode === 'move') { E.ghost = {k: p.k, d: g10gDragD(E, p, Math.round(-dy / Math.max(6, E.rowH)))}; E.sel = p.k; g2Paint(); }   // G10g: stufenweise bzw. frei (Halten) + Vorhören
+     else if (p.mode === 'pan') { E.va = p.va - dx / E.cv.clientWidth * E.vw.W; g2Paint(); }
+   });
+   const end = (e, cancel) => {
+     const E = G2.ed, p = E && E.p; if (!p || p.id !== e.pointerId) return;
+-    E.p = null; const gh = E.ghost; E.ghost = null;
++    E.p = null; const gh = E.ghost; E.ghost = null; clearTimeout(p.ht);   // G10g
+     if (cancel) { g2Paint(); return; }
+     if (p.mode === 'move' && gh) { if (gh.d) { if (E.voice != null) g6NoteShift(E.r, E.voice, gh.k, gh.d); else g2NoteShift(E.id, gh.k, gh.d); } else g2Paint(); return; }
+     if (p.mode) return;
+     const [cx, cy] = pos(e); UI.ghost = {t: performance.now(), x: e.clientX, y: e.clientY};
++    if (p.held && p.k >= 0 && E.voice == null) { E.sel = p.k; g10gNq(E.id, p.k); return; }   // G10g: Halten auf einer Note = nicht rastern (an/aus)
+     if (p.k < 0 && g6pgTap(E, cx, cy)) return;   // G6+g: Tipp auf einen Schatten öffnet die Stimme
+     E.sel = p.k; E.tapT = p.k >= 0 ? E.vw.a + cx / E.cv.clientWidth * E.vw.W : null; g2Paint();
+   };
+@@ -53043,7 +53080,8 @@
+   const key = g7Key(a); if (!key) return null;
+   const t = G7.t != null ? G7.t : nowT() + .35;
+   let any = false;
+-  const out = P.notes.map(n => { const p = Math.round(g2Target(P, n)); let o = p; try { o = e ? mapOut(st, key, p, t, e) : outPitch(st, key, p, t); } catch (er) { logErr(er); } if (o !== p) any = true; return o - p; });
++  const ks = g10gKeys(id, P), nw = g10gNew(P);   // G10g: neue Takes rechnen mit der Tonart der G2-Quelle (je Note), alte weiter mit g7Key
++  const out = P.notes.map((n, j) => { const kk = ks ? ks[j] : nw && P.key ? P.key : key, p = Math.round(g2Target(P, n, ks && ks[j])); let o = p; try { o = e ? mapOut(st, kk, p, t, e) : outPitch(st, kk, p, t); } catch (er) { logErr(er); } if (o !== p) any = true; return o - p; });   // G10g
+   return any ? out : null;
+ }
+ // ohne eigenes Tonhöhen-Feld: die erkannten Noten der Quelle (G2-Analyse); fehlt sie, wird sie jetzt gesucht
+@@ -53075,7 +53113,7 @@
+ function g7Pre(id, a, P, e) {
+   let xs = null; try { xs = g7Shift(id, a, P, e); } catch (er) { xs = null; }
+   const b = g2Base(id, a); if (!b) return;
+-  const plan = {mode: P.mode, notes: P.notes.map((n, k) => ({t0: n.t0, t1: n.t1, m: n.m, to: P.q ? g2Snap(n.m, P.key) : n.m, s: P.q ? P.str : 0, e: 100 * ((n.sh || 0) + (xs ? xs[k] : 0))}))};
++  const plan = g10gPlan(id, P, xs);   // G10g: derselbe Plan wie G2
+   if (!G2P.active(plan)) return;
+   const k = G2P.planKey(plan) + '@' + wpBid(b), C = G2.cache.get(id); if (C && C.has(k)) return;
+   g7Queue(id, k, b, plan);
+@@ -53098,6 +53136,291 @@
+   g7Follow: r => g7Toggle(r || {t: stimmeT(), s: R.selS})   // G-GES: Schalter „folgt Transponieren“ des hörbaren Takes
+ };
+ /* G7-END */
++/* G10G-BEGIN */
++/* =====================================================================================================================
++   G10g (Nachtrag 9, Punkt 7): Tonhöhe nach Tonart – wählbar, sauber, Konsonanten sichtbar geschützt.
++   Tonhöhe-Blatt (Takes-Blatt → [♪ Tonhöhe · Noten]):
++     Kopf: Chip „Tonart: E-Moll · Auto ▾“ → Leiste [Auto (Szene)] [Aus dem Gesang] [Projekt], 12 Grundtöne, Leitern
++           (Dur, Moll, Dorisch, Mixolydisch, Phrygisch, Pent. Dur, Pent. Moll, Harm. Moll, Chromatisch). Unsichere Erkennung (< 0,25)
++           → der Chip zeigt beide Vorschläge, die Leiste bietet beide an.
++     Quantisieren an: ▲/▼ und senkrechtes Ziehen gehen stufenweise in der Tonart; Halten + Ziehen frei in Halbtönen.
++     Halten (ohne Ziehen) auf einer Note = „nicht rastern“ an/aus. Regler „Einrast-Zeit“ 0–100 ms. Stimmlose Teile = graue Schraffur.
++     Vorhören: beim Verschieben (Ziehen, ▲/▼) spielt sofort die Note in der neuen Lage (nur bei angehaltenem Transport).
++   Daten (additiv am Take, Regel 28): pitch.key.src 'auto'|'user' (+ via 'gesang'|'projekt', alt = zweiter Vorschlag),
++     pitch.notes[k].nq, pitch.rt (ms), pitch.v = 2 (Oktav-Klammer + Einrast-Zeit im Kern). Ohne v und src (alle Takes bis 4.30.0)
++     bleibt P.key eingefroren, G7 rechnet mit g7Key, der Render ist bitgleich.
++   ===================================================================================================================== */
++const G10G = {HOLD: 450, hear: null, heard: [], uv: new Map()};
++const G10G_LBL = {ionian: 'Dur', aeolian: 'Moll', dorian: 'Dorisch', mixolydian: 'Mixolydisch', phrygian: 'Phrygisch', lydian: 'Lydisch', locrian: 'Lokrisch',
++  lydianAug: 'Lydisch übermäßig', dimWH: 'Ganzton-Halbton', pentMaj: 'Pent. Dur', pentMin: 'Pent. Moll', harmMin: 'Harm. Moll', chrom: 'Chromatisch'};
++const G10G_LEITERN = ['ionian', 'aeolian', 'dorian', 'mixolydian', 'phrygian', 'pentMaj', 'pentMin', 'harmMin', 'chrom'];
++// Schläge je Takt (Taktarten T1 kommen später: nur hier ändern)
++function g10gBpb() { return grid().beatsPerBar; }
++function g10gNormKey(k, o) {
++  if (k.src === 'auto' || k.src === 'user') o.src = k.src;
++  if (k.via === 'gesang' || k.via === 'projekt') o.via = k.via;
++  if (k.alt && isNum(k.alt.root) && g10gScale(k.alt.scale)) o.alt = {root: clamp(Math.round(k.alt.root), 0, 11), scale: k.alt.scale};
++}
++function g10gNormPitch(p, o) {
++  if (p.v === 2) o.v = 2;
++  if (isNum(p.rt)) o.rt = clamp(Math.round(p.rt), 0, 100);
++}
++// neue Regeln (Neu-Lesen, Tonart je Note, gemeinsame Quelle G2/G7, eigene Leitern) nur mit v = 2 bzw. gesetztem key.src
++function g10gNew(P) { return !!P && (P.v === 2 || !!(P.key && P.key.src)); }
++// Stelle des Takes als Bezug für g2KeyAt: Szene-Clip {t, s} bzw. Song-Stimme {vox}
++function g10gRef(id) {
++  const a = typeof g7SegOf === 'function' ? g7SegOf(id) : null; if (!a) return null;
++  const st = stimmeT();
++  if (st >= 0) { const cs = S.tracks[st].clips; for (let s = 0; s < cs.length; s++) if (cs[s] && cs[s].audio === a) return {t: st, s}; }
++  if (S.song && S.song.vox && S.song.vox.includes(a)) return {vox: a.id};
++  return null;
++}
++function g10gAutoKey(id, r) { const k = g2KeyAt(r && (r.t != null || r.vox) ? r : g10gRef(id)); return {root: k.root, scale: k.scale}; }
++function g10gNewKey(id, r) { return Object.assign(g10gAutoKey(id, r), {src: 'auto'}); }
++// Tonart je Note bei 'auto' (Szene-Clip: Tonart der Szene; Song-Stimme: Szene an dem Takt der Note) – sonst null (dann gilt P.key)
++function g10gKeys(id, P) {
++  if (!P || !P.key || P.key.src !== 'auto' || !Array.isArray(P.notes)) return null;
++  const a = typeof g7SegOf === 'function' ? g7SegOf(id) : null; if (!a) return null;
++  try {
++    if (S.song && S.song.vox && S.song.vox.includes(a)) {
++      const sp = spb(), B = g10gBpb(), memo = new Map();
++      return P.notes.map(n => {
++        const beat = a.bar * B + (a.at || 0) + (n.t0 - a.in) / sp, bar = Math.max(0, Math.floor(beat / B + 1e-6));
++        if (!memo.has(bar)) { const si = g2SongScene(bar), k = si >= 0 ? sceneKeyOf(si) : null; memo.set(bar, k ? {root: k.root, scale: k.scale} : {root: S.key.root, scale: S.key.scale}); }
++        return memo.get(bar);
++      });
++    }
++    const r = g10gRef(id); if (!r) return null;
++    const K = g10gAutoKey(id, r); return P.notes.map(() => K);
++  } catch (e) { logErr(e); return null; }
++}
++// angezeigte Tonart (neue Takes: die Quelle; alte: null → P.key)
++function g10gKeyNow(id, P, r, k) {
++  if (!P || !g10gNew(P)) return null;
++  if (P.key && P.key.src === 'auto') { const ks = g10gKeys(id, P); return ks && ks.length ? ks[clamp(k == null ? 0 : k, 0, ks.length - 1)] : g10gAutoKey(id, r); }
++  return P.key || null;
++}
++function g10gReread(id, P, r) { const ks = g10gKeys(id, P), k = ks && ks.length ? ks[0] : g10gAutoKey(id, r); P.key = {root: k.root, scale: k.scale, src: 'auto'}; }
++// Plan für den Kern: alte Takes ergeben genau den Plan von 4.30.0 (gleiche Felder, gleiche Reihenfolge)
++function g10gPlan(id, P, xs) {
++  const ks = g10gKeys(id, P);
++  const plan = {mode: P.mode, notes: P.notes.map((n, k) => { const q = P.q && !n.nq; return {t0: n.t0, t1: n.t1, m: n.m, to: q ? g2Snap(n.m, ks ? ks[k] : P.key) : n.m, s: q ? P.str : 0, e: 100 * ((n.sh || 0) + (xs ? xs[k] || 0 : 0))}; })};
++  if (P.v === 2) { plan.v = 2; plan.rt = isNum(P.rt) ? P.rt : P.mode === 'hard' ? 15 : 40; }
++  return plan;
++}
++function g10gMovedN(id, P) { const ks = g10gKeys(id, P); let n = 0; P.notes.forEach((x, k) => { if (Math.abs(g2Target(P, x, ks && ks[k]) - x.m) > 0.005) n++; }); return n; }
++function g10gKeyLabel(k) {
++  if (!k) return '–';
++  if (k.scale === 'chrom') return 'Chromatisch';
++  const r = noteNames()[clamp(k.root | 0, 0, 11)];
++  return k.scale === 'ionian' ? r + '-Dur' : k.scale === 'aeolian' ? r + '-Moll' : r + ' ' + (G10G_LBL[k.scale] || k.scale);
++}
++// „Aus dem Gesang“: Tonart-Erkennung (KeyDetect, wie die Szenen) über die Noten des Takes, gewichtet nach Dauer (in Schlägen)
++function g10gDetect(notes) {
++  const sp = spb(), ns = (notes || []).filter(n => n && n.t1 > n.t0 && isNum(n.m)).map(n => ({n: Math.round(n.m + (n.sh || 0)), t: n.t0 / sp, d: (n.t1 - n.t0) / sp, v: .8}));
++  if (!ns.length) return null;
++  const k = KeyDetect.detectKey(ns, {fallback: S.key, barBeats: g10gBpb()});
++  const sure = !!k.sure && k.conf >= .25;
++  // unsicher ohne zweiten Kandidaten (dünnes Material): der Paralleltonart-Vorschlag (Dur ↔ Moll)
++  const rel = k.scale === 'aeolian' ? {root: (k.root + 3) % 12, scale: 'ionian'} : {root: (k.root + 9) % 12, scale: 'aeolian'};
++  const alt = sure ? null : k.alt && !(k.alt.root === k.root && k.alt.scale === k.scale) ? {root: k.alt.root, scale: k.alt.scale} : rel;
++  return {root: k.root, scale: k.scale, conf: k.conf, sure, alt, name: g10gKeyLabel(k)};
++}
++/* ---------- Ändern (je ein Undo über g2Edit) ---------- */
++function g10gSetKey(id, o, r) {
++  return g2Edit(id, 'Tonart · Tonhöhe', P => {
++    const cur = g10gKeyNow(id, P, r) || P.key || g10gAutoKey(id, r);
++    if (o.src === 'auto') { P.key = {root: cur.root, scale: cur.scale, src: 'auto'}; g10gReread(id, P, r); }
++    else if (o.via === 'gesang') { const d = g10gDetect(P.notes); if (!d) return false; P.key = {root: d.root, scale: d.scale, src: 'user', via: 'gesang'}; if (d.alt) P.key.alt = d.alt; }
++    else if (o.via === 'projekt') P.key = {root: S.key.root, scale: S.key.scale, src: 'user', via: 'projekt'};
++    else if (o.alt) { const k = P.key; if (!k || !k.alt) return false; P.key = {root: k.alt.root, scale: k.alt.scale, src: 'user', alt: {root: k.root, scale: k.scale}}; if (k.via) P.key.via = k.via; }
++    else { const root = isNum(o.root) ? clamp(Math.round(o.root), 0, 11) : cur.root, scale = o.scale && g10gScale(o.scale) ? o.scale : cur.scale; P.key = {root, scale, src: 'user'}; }
++  }, r).then(ok => { const P = S.takes && S.takes[id] && S.takes[id].pitch; if (ok) toast('Tonart ' + g10gKeyLabel(g10gKeyNow(id, P, r) || (P && P.key)) + (P && P.q ? ' · ' + g10gMovedN(id, P) + ' Töne gezogen' : '')); return ok; });
++}
++// ▲/▼: mit Quantisieren eine Stufe der Tonart (Ton außerhalb: der nächste Leiterton), sonst ein Halbton (wie bisher)
++function g10gStepD(id, P, k, dir) {
++  if (!P || !P.q || !P.notes[k]) return dir;
++  const ks = g10gKeys(id, P), key = ks ? ks[k] : P.key, SC = g10gScale(key && key.scale) || Harmony.SCALES.ionian, r = key ? key.root : 0, ins = q => SC.includes(((q - r) % 12 + 12) % 12);
++  const cur = Math.round(g2Target(P, P.notes[k], ks && ks[k])); let q = cur + dir, i = 0; while (!ins(q) && i++ < 12) q += dir;
++  return q - cur;
++}
++function g10gStep(id, k, dir) {
++  const m = S.takes && S.takes[id], P = m && m.pitch, d = g10gStepD(id, P, k, dir);
++  g10gHear(id, k, d);
++  return g2NoteShift(id, k, d);
++}
++function g10gNq(id, k) {
++  const m = S.takes && S.takes[id], P = m && m.pitch;
++  if (!P || !P.q) { toast('Erst Weich oder Hart'); return Promise.resolve(false); }
++  let on = false;
++  return g2Edit(id, 'Nicht rastern', Q => { const n = Q.notes[k]; if (!n) return false; if (n.nq) delete n.nq; else n.nq = true; on = !!n.nq; })
++    .then(ok => { if (ok) toast(on ? 'Note wird nicht gerastert' : 'Note rastert wieder'); return ok; });
++}
++function g10gRtSet(id, ms) {
++  const m = S.takes && S.takes[id], P = m && m.pitch;
++  if (!P || !P.q) { toast('Erst Weich oder Hart'); return Promise.resolve(false); }
++  return g2Edit(id, 'Einrast-Zeit · Tonhöhe', Q => { Q.rt = clamp(Math.round(ms), 0, 100); Q.v = 2; });
++}
++/* ---------- Gesten ---------- */
++function g10gHoldArm(E) {
++  const p = E.p; if (!p || p.k < 0 || E.voice != null) return;
++  p.ht = setTimeout(() => { if (G2.ed === E && E.p === p && !p.mode) { p.held = true; haptic('tick'); g2Paint(); } }, G10G.HOLD);
++}
++// senkrechtes Ziehen: raw Halbtöne → mit Quantisieren der nächste Leiterton in Zugrichtung; gehalten = frei in Halbtönen
++function g10gDragD(E, p, raw) {
++  const P = S.takes[E.id] && S.takes[E.id].pitch;
++  let d = raw;
++  if (E.voice == null && raw && !p.held && P && P.q && P.notes[p.k]) {
++    const ks = g10gKeys(E.id, P), key = ks ? ks[p.k] : P.key, SC = g10gScale(key && key.scale) || Harmony.SCALES.ionian, r = key ? key.root : 0, ins = q => SC.includes(((q - r) % 12 + 12) % 12);
++    const cur = Math.round(g2Target(P, P.notes[p.k], ks && ks[p.k])), want = cur + raw, sg = Math.sign(raw);
++    let q = want; for (let j = 0; j <= 12; j++) { if (ins(want + j * sg)) { q = want + j * sg; break; } if (j && ins(want - j * sg) && want - j * sg !== cur) { q = want - j * sg; break; } }
++    d = q - cur;
++  }
++  if (E.voice == null && d !== (p.ld || 0)) { p.ld = d; if (d) g10gHear(E.id, p.k, d); }
++  return d;
++}
++/* ---------- Vorhören: die Note der gehörten Fassung, d Halbtöne versetzt (ein Klang, Anstieg 8 ms, Ausklang ≤ 40 ms) ---------- */
++function g10gHearStop() {
++  const h = G10G.hear; G10G.hear = null; if (!h || !AU.ctx) return;
++  const t = AU.ctx.currentTime;
++  try { h.g.gain.cancelScheduledValues(t); h.g.gain.setValueAtTime(h.g.gain.value, t); h.g.gain.linearRampToValueAtTime(0, t + .012); h.s.stop(t + .016); } catch (e) {}
++}
++function g10gHear(id, k, d) {
++  try {
++    if (R.playing || !d) return null;
++    const E = G2.ed, x = E && tkRef(E.r), a = x && x.a; if (!a) return null;
++    const ns = g2Notes(id), n = ns && ns[k]; if (!n) return null;
++    ensureAudio(); const c = AU.ctx; if (!c) return null;
++    const buf = tkHeard(id, a); if (!buf) return null;
++    const map = tkHeardMap(id, a), A = map ? VSM.warpTime(map, n.t0) : n.t0, B0 = map ? VSM.warpTime(map, n.t1) : n.t1;
++    const st = stimmeT(), dest = st >= 0 && AU.tracks[st] && AU.tracks[st].trackIn; if (!dest) return null;
++    g10gHearStop();
++    const rate = Math.pow(2, d / 12), dur = clamp(B0 - A, .08, .6), len = dur / rate, rel = Math.min(.04, len / 3);
++    const s = c.createBufferSource(), g = c.createGain(), G = isNum(a.gain) ? a.gain : 1, when = c.currentTime + .005;
++    s.buffer = buf; s.playbackRate.value = rate;
++    g.gain.setValueAtTime(0, when); g.gain.linearRampToValueAtTime(G, when + .008); g.gain.setValueAtTime(G, when + len - rel); g.gain.linearRampToValueAtTime(0, when + len);
++    s.connect(g); g.connect(dest);
++    s.start(when, Math.max(0, A)); s.stop(when + len + .01);
++    const h = {s, g}; G10G.hear = h; s.onended = () => { try { s.disconnect(); g.disconnect(); } catch (e) {} if (G10G.hear === h) G10G.hear = null; };
++    const ent = {id, k, d, rate: +rate.toFixed(5), a: +A.toFixed(4), len: +len.toFixed(4), at: +c.currentTime.toFixed(4)};
++    G10G.heard.push(ent); if (G10G.heard.length > 50) G10G.heard.shift();
++    return ent;
++  } catch (e) { logErr(e); return null; }
++}
++/* ---------- Zeichnen: stimmlose Teile (Zisch-, Plosivlaute, Atem: keine Tonhöhe, aber Pegel) als Schraffur ---------- */
++function g10gUnvoiced(id, A) {
++  const raw = tkBuffer(id); if (!raw || !A) return [];
++  const key = A.key + '#' + raw.length, c = G10G.uv.get(id); if (c && c.key === key) return c.runs;
++  const d = raw.getChannelData(0), sr = raw.sampleRate, hs = A.hop * sr, TH = 0.004, runs = [];
++  let on = -1, gap = 0;
++  for (let i = 0; i <= A.n; i++) {
++    let hit = false;
++    if (i < A.n && !(A.f0[i] > 0)) { const s0 = Math.floor(i * hs), s1 = Math.min(d.length, Math.floor((i + 1) * hs)); let e = 0, q = 0; for (let j = s0; j < s1; j += 4) { e += d[j] * d[j]; q++; } hit = q > 0 && Math.sqrt(e / q) > TH; }
++    if (hit) { if (on < 0) on = i; gap = 0; } else if (on >= 0) { if (++gap > 1 || i === A.n) { const e = i - gap + 1; if (e - on >= 2) runs.push([+(on * A.hop).toFixed(4), +(e * A.hop).toFixed(4)]); on = -1; gap = 0; } }
++  }
++  G10G.uv.set(id, {key, runs}); while (G10G.uv.size > 4) G10G.uv.delete(G10G.uv.keys().next().value);
++  return runs;
++}
++function g10gHatch(g, E, id, A, X, Wp, Hp) {
++  const runs = g10gUnvoiced(id, A); if (!runs.length) return;
++  g.save(); g.strokeStyle = 'rgba(170,176,190,.34)'; g.lineWidth = 1;
++  for (const [t0, t1] of runs) {
++    const x0 = Math.max(0, X(t0)), x1 = Math.min(Wp, X(t1)); if (x1 <= x0) continue;
++    g.fillStyle = 'rgba(170,176,190,.08)'; g.fillRect(x0, 0, x1 - x0, Hp);
++    g.save(); g.beginPath(); g.rect(x0, 0, x1 - x0, Hp); g.clip(); g.beginPath();
++    for (let s = Math.floor(x0 / 7) * 7 - Hp; s < x1; s += 7) { g.moveTo(s, Hp); g.lineTo(s + Hp, 0); }
++    g.stroke(); g.restore();
++  }
++  g.restore();
++}
++function g10gNqMark(g, x0, y, w, h, on) {
++  g.save(); g.setLineDash([3, 2]); g.lineWidth = 2; g.strokeStyle = on ? '#8fd8ff' : 'rgba(255,255,255,.9)';
++  g.strokeRect(x0 + 1, y - h / 2 + 1, Math.max(1, w - 2), Math.max(1, h - 2)); g.restore();
++}
++/* ---------- Bedienung: Chip im Kopf, Leiste über dem Blatt, Regler Einrast-Zeit ---------- */
++function g10gHead(head, wv) {
++  const b = el('button', 'rb g10g-kc', '<span class="g10g-k1"></span><small class="g10g-k2"></small>');
++  b.setAttribute('aria-label', 'Tonart wählen'); b.title = 'Tonart'; b.setAttribute('aria-expanded', 'false');
++  b.addEventListener('click', () => { const E = G2.ed, kp = E && E.g10g && E.g10g.kp; if (!kp) return; kp.hidden = !kp.hidden; b.setAttribute('aria-expanded', String(!kp.hidden)); g2Paint(); });
++  head.insertBefore(b, wv);
++  return b;
++}
++function g10gPanel(b) {
++  const kp = el('div', 'g10g-kp'); kp.hidden = true;
++  const N = noteNames();
++  kp.innerHTML = '<div class="g10g-r g10g-r4"><button class="rb" data-a="auto">Auto (Szene)</button><button class="rb" data-a="gesang">Aus dem Gesang</button><button class="rb" data-a="projekt">Projekt</button><button class="rb g10g-ok" data-a="close">Fertig</button></div>'
++    + '<div class="g10g-r g10g-r2 g10g-alt" hidden><button class="rb" data-a="alt0"></button><button class="rb" data-a="alt1"></button></div>'
++    + '<div class="g10g-l">Grundton</div><div class="g10g-r g10g-r6">' + N.map((x, i) => `<button class="rb" data-root="${i}">${x}</button>`).join('') + '</div>'
++    + '<div class="g10g-l">Leiter</div><div class="g10g-r g10g-r5">' + G10G_LEITERN.map(s => `<button class="rb" data-scale="${s}">${G10G_LBL[s]}</button>`).join('') + '</div>';
++  kp.addEventListener('click', e => {
++    const bt = e.target.closest('button'), E = G2.ed; if (!bt || !E) return;
++    const a = bt.dataset.a;
++    if (a === 'close') { kp.hidden = true; if (E.g10g.kc) E.g10g.kc.setAttribute('aria-expanded', 'false'); g2Paint(); return; }
++    if (a === 'alt0') return;
++    const o = a === 'auto' ? {src: 'auto'} : a === 'gesang' ? {via: 'gesang'} : a === 'projekt' ? {via: 'projekt'} : a === 'alt1' ? {alt: true}
++      : bt.dataset.root != null ? {root: +bt.dataset.root} : bt.dataset.scale ? {scale: bt.dataset.scale} : null;
++    if (o) { if (!(S.takes[E.id] && S.takes[E.id].pitch)) g2Info('Töne werden gesucht …'); g10gSetKey(E.id, o, E.r).then(() => g2Paint()); }
++  });
++  b.appendChild(kp);
++  return kp;
++}
++function g10gRtRow(sl) {
++  const row = el('div', 'qrow g10g-rt'), inp = el('input'), val = el('span', 'mval');
++  row.appendChild(el('span', 'lbl', 'Einrast-Zeit'));
++  inp.type = 'range'; inp.min = 0; inp.max = 100; inp.step = 1; inp.setAttribute('aria-label', 'Einrast-Zeit');
++  const cur = P => P && isNum(P.rt) ? P.rt : P && P.mode === 'hard' ? 15 : 40;
++  const set = (v, fin) => {
++    const E = G2.ed; if (!E) return; const m = S.takes[E.id], P = m && m.pitch; val.textContent = v + ' ms';
++    if (!P || !P.q) { if (fin) { toast('Erst Weich oder Hart'); row._g(); } return; }
++    if (!E.g10g.sb) E.g10g.sb = JSON.stringify(S.takes);
++    P.rt = v; P.v = 2;
++    clearTimeout(E.rt); if (fin) g2After(E.id); else { g2Paint(); const id = E.id; E.rt = setTimeout(() => { if (G2.ed && G2.ed.id === id) g2After(id); }, 150); }
++    if (fin) { const before = E.g10g.sb; E.g10g.sb = null; if (JSON.stringify(S.takes) !== before) { undoPush({kind: 'takes', before, label: 'Einrast-Zeit · Tonhöhe'}); markDirty(); } }
++  };
++  inp.addEventListener('input', () => set(+inp.value, false)); inp.addEventListener('change', () => set(+inp.value, true));
++  row.append(inp, val);
++  row._g = () => { const E = G2.ed, P = E && S.takes[E.id] && S.takes[E.id].pitch, v = cur(P); if (E && E.g10g && E.g10g.sb) return; inp.value = v; val.textContent = v + ' ms'; };
++  sl.append(row);
++  return row;
++}
++function g10gSync(E, key) {
++  const G = E.g10g; if (!G) return;
++  if (G.rtr) G.rtr._g();
++  const m = S.takes && S.takes[E.id], P = m && m.pitch, k = P && P.key;
++  const src = !P ? 'auto' : !k || !k.src ? 'fest' : k.src === 'auto' ? 'auto' : k.via || 'eigene';
++  const two = k && k.src === 'user' && k.alt ? g10gKeyLabel(k) + ' / ' + g10gKeyLabel(k.alt) : null;
++  const ks = P && k && k.src === 'auto' ? g10gKeys(E.id, P) : null, many = ks && ks.some(x => x.root !== ks[0].root || x.scale !== ks[0].scale);
++  if (G.kc) {
++    G.kc.querySelector('.g10g-k1').textContent = two || g10gKeyLabel(key);   // Zeile 1: Tonart (unsicher: beide Vorschläge)
++    G.kc.querySelector('.g10g-k2').textContent = 'Tonart · ' + {auto: 'Auto', fest: 'fest', gesang: 'Gesang', projekt: 'Projekt', eigene: 'Hand'}[src] + (many ? ' je Takt' : '') + ' ▾';
++    G.kc.classList.toggle('on', !!(G.kp && !G.kp.hidden));
++  }
++  const kp = G.kp; if (!kp || kp.hidden) return;
++  kp.querySelectorAll('button[data-a]').forEach(b => { const a = b.dataset.a; if (a === 'auto' || a === 'gesang' || a === 'projekt') { const on = a === src; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); } });
++  const N = noteNames();
++  kp.querySelectorAll('button[data-root]').forEach(b => { const i = +b.dataset.root, on = key && key.scale !== 'chrom' && key.root === i; b.textContent = N[i]; b.classList.toggle('on', !!on); b.setAttribute('aria-pressed', String(!!on)); });
++  kp.querySelectorAll('button[data-scale]').forEach(b => { const on = !!key && key.scale === b.dataset.scale; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); });
++  const al = kp.querySelector('.g10g-alt'); al.hidden = !two;
++  if (two) { al.children[0].textContent = g10gKeyLabel(k); al.children[0].classList.add('on'); al.children[1].textContent = g10gKeyLabel(k.alt); }
++}
++/* ---------- Test-API ---------- */
++const G10G_API = {
++  g10gInfo: r => { const id = wpId(r), m = id && S.takes && S.takes[id], P = m && m.pitch, ks = P ? g10gKeys(id, P) : null, E = G2.ed;
++    return {id, key: P && P.key ? deep(P.key) : null, now: P ? g10gKeyNow(id, P, null) : null, keys: ks, v: P ? P.v || null : null, rt: P && isNum(P.rt) ? P.rt : null,
++      nq: P ? P.notes.map(n => !!n.nq) : null, targets: P ? P.notes.map((n, k) => g2Target(P, n, ks && ks[k])) : null, plan: id ? g2Plan(id) : null,
++      chip: E && E.g10g && E.g10g.kc ? E.g10g.kc.textContent : null, panel: !!(E && E.g10g && E.g10g.kp && !E.g10g.kp.hidden), heard: G10G.heard.slice(-20)}; },
++  g10gKey: (r, o) => g10gSetKey(wpId(r), o || {src: 'auto'}, typeof r === 'string' ? null : r || {t: stimmeT(), s: R.selS}),
++  g10gStep: (r, k, dir) => g10gStep(wpId(r), k, dir),
++  g10gNq: (r, k) => g10gNq(wpId(r), k),
++  g10gRt: (r, ms) => g10gRtSet(wpId(r), ms),
++  g10gDetect: notes => g10gDetect(notes),
++  g10gSnap: (m, key) => g2Snap(m, key),
++  g10gScales: () => deep(G10G_SCALES),
++  g10gUnvoiced: r => { const id = wpId(r), A = id && G2.an.get(id); return A ? g10gUnvoiced(id, A) : null; },
++  g10gPanel: open => { const E = G2.ed, kp = E && E.g10g && E.g10g.kp; if (!kp) return false; kp.hidden = open === false || (open == null && !kp.hidden); g2Paint(); return !kp.hidden; }
++};
++/* G10G-END */
++
+ /* G6PB-BEGIN */
+ /* =====================================================================================================================
+    G6+b (Nachtrag 10 §2.3): Rechenweg v2 des Chors – nur für chor.v === 2 (v1 bleibt eingefroren, Regel 28).
+@@ -58174,7 +58497,7 @@
+ Object.assign(SYNQUENZER, G6PF_API);              // G6+f: Entkoppeln, Als Chor-Stimme duplizieren
+ Object.assign(SYNQUENZER, G6PG_API);              // G6+g: farbige Schatten, Legende, Selbst singen v2
+ Object.assign(SYNQUENZER, G6PH_API);              // G6+h: Chor im Song und im Video
+-Object.assign(SYNQUENZER, G7_API);                // G7: Gesang folgt dem Transponieren
++Object.assign(SYNQUENZER, G7_API, G10G_API);   // G10g: Test-API Tonart/Leiter                // G7: Gesang folgt dem Transponieren
+ Object.assign(SYNQUENZER, vvApi());                        // VV1
+ Object.assign(SYNQUENZER, vv2Api());                       // VV2
+ Object.assign(SYNQUENZER, vv3Api());                       // VV3

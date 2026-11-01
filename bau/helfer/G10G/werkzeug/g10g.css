@@ -1,0 +1,19 @@
+#wpSheet.g2 .qb{position:relative}
+#wpSheet .qh .g10g-kc{position:relative;z-index:7;flex:0 0 auto;min-width:76px;max-width:112px;height:44px;padding:0 6px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:1px;text-align:left;font:700 11px/1.15 var(--font-ui);overflow:hidden}
+#wpSheet .qh .g10g-kc span,#wpSheet .qh .g10g-kc small{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#wpSheet .qh .g10g-kc span{font:700 12px/1.15 var(--font-ui)}
+#wpSheet .qh .g10g-kc small{font:500 10px/1.1 var(--font-ui);color:var(--text-dim)}
+#wpSheet .qh .g10g-kc.on{border-color:var(--sel)}
+#wpSheet .g10g-kp{position:absolute;inset:0;z-index:6;display:flex;flex-direction:column;gap:4px;padding:6px 10px;overflow-y:auto;overscroll-behavior:contain;background:#0b0c0ff5}
+#wpSheet .g10g-kp[hidden],#wpSheet .g10g-kp .g10g-alt[hidden]{display:none}
+#wpSheet .g10g-kp .g10g-r{flex:none;display:grid;gap:4px}
+#wpSheet .g10g-kp .g10g-r2{grid-template-columns:repeat(2,minmax(0,1fr))}
+#wpSheet .g10g-kp .g10g-r4{grid-template-columns:repeat(3,minmax(0,1fr)) minmax(56px,.8fr)}
+#wpSheet .g10g-kp .g10g-r5{grid-template-columns:repeat(5,minmax(0,1fr))}
+#wpSheet .g10g-kp .g10g-r6{grid-template-columns:repeat(6,minmax(0,1fr))}
+#wpSheet .g10g-kp button{height:44px;min-height:44px;min-width:44px;padding:0 2px;font:700 11px/1.1 var(--font-ui);white-space:normal;overflow:hidden}
+#wpSheet .g10g-kp button.on{color:var(--ink);background:var(--sel);border-color:var(--sel)}
+#wpSheet .g10g-kp .g10g-ok{color:var(--ink);background:var(--amber);border-color:var(--amber)}
+#wpSheet .g10g-kp .g10g-l{flex:none;font:600 10px/14px var(--font-ui);letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim)}
+#wpSheet .qrow.g10g-rt .lbl{flex:0 0 auto}
+@media (orientation:landscape){#wpSheet.g2 .qh{height:44px}#wpSheet .qh .g10g-kc{height:44px}}
