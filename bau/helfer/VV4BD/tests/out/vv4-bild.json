@@ -1,0 +1,161 @@
+{
+ "app": {
+  "9:16": {
+   "farben": 82,
+   "len": 194640
+  },
+  "16:9": {
+   "farben": 87,
+   "len": 189724
+  },
+  "ok": true
+ },
+ "tast": {
+  "9:16": {
+   "farben": 78,
+   "len": 138048
+  },
+  "16:9": {
+   "farben": 53,
+   "len": 171508
+  },
+  "ok": true
+ },
+ "roll": {
+  "9:16": {
+   "farben": 39,
+   "len": 84508
+  },
+  "16:9": {
+   "farben": 37,
+   "len": 79300
+  },
+  "ok": true
+ },
+ "drum": {
+  "9:16": {
+   "farben": 13,
+   "len": 75592
+  },
+  "16:9": {
+   "farben": 13,
+   "len": 70288
+  },
+  "ok": true
+ },
+ "mod": {
+  "9:16": {
+   "farben": 53,
+   "len": 188604
+  },
+  "16:9": {
+   "farben": 59,
+   "len": 189068
+  },
+  "ok": true
+ },
+ "f-zelle": {
+  "9:16": {
+   "farben": 58,
+   "len": 137136
+  },
+  "16:9": {
+   "farben": 58,
+   "len": 146880
+  },
+  "ok": true
+ },
+ "f-tast": {
+  "9:16": {
+   "farben": 35,
+   "len": 80492
+  },
+  "16:9": {
+   "farben": 42,
+   "len": 114352
+  },
+  "ok": true
+ },
+ "f-teil": {
+  "9:16": {
+   "farben": 51,
+   "len": 106172
+  },
+  "16:9": {
+   "farben": 53,
+   "len": 79096
+  },
+  "ok": true
+ },
+ "f-ue": {
+  "9:16": {
+   "farben": 85,
+   "len": 155396
+  },
+  "16:9": {
+   "farben": 51,
+   "len": 133976
+  },
+  "ok": true
+ },
+ "fokusZoom": {
+  "z": [
+   "tast:1.3",
+   "tast:1.3",
+   "zelle:3",
+   "zelle:3",
+   "tast:2",
+   "tast:2",
+   "teil:2",
+   "teil:2.723",
+   "ue:2.319",
+   "ue:2"
+  ],
+  "ok": true
+ },
+ "auto": {
+  "shots": [
+   [
+    0,
+    3,
+    "roll",
+    0,
+    "neu-clip",
+    "zelle"
+   ],
+   [
+    3,
+    5,
+    "drum",
+    4,
+    "ue",
+    null
+   ],
+   [
+    5,
+    8,
+    "roll",
+    1,
+    "neu-clip",
+    "zelle"
+   ]
+  ],
+  "bilder": 585,
+  "ok": true
+ },
+ "manuell": {
+  "shot": {
+   "a": 4,
+   "v": "tast",
+   "t": null,
+   "why": "eintrag",
+   "b": 6
+  },
+  "ok": true
+ },
+ "leer": {
+  "len": 193972
+ },
+ "errs": [],
+ "ok": true
+}

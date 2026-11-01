@@ -1,0 +1,707 @@
+{
+ "zeile": {
+  "ist": [
+   "Auto",
+   "App",
+   "Song",
+   "Matrix",
+   "Spur …",
+   "Tastatur",
+   "Fokus …"
+  ],
+  "ok": true
+ },
+ "app": {
+  "dir": [
+   {
+    "a": 8,
+    "b": 16,
+    "v": "app"
+   }
+  ],
+  "undoGleich": true,
+  "redoGleich": true,
+  "soll": [
+   {
+    "a": 8,
+    "b": 16,
+    "v": "app"
+   }
+  ],
+  "ok": true
+ },
+ "appAn": {
+  "ok": true
+ },
+ "tastatur": {
+  "dir": [
+   {
+    "a": 8,
+    "b": 16,
+    "v": "tast"
+   }
+  ],
+  "undoGleich": true,
+  "redoGleich": true,
+  "soll": [
+   {
+    "a": 8,
+    "b": 16,
+    "v": "tast"
+   }
+  ],
+  "ok": true
+ },
+ "spurArten": {
+  "ist": [
+   [
+    "roll",
+    "Piano-Roll",
+    false
+   ],
+   [
+    "drum",
+    "Drum-Sequenzer",
+    false
+   ],
+   [
+    "mod",
+    "Modulation",
+    false
+   ]
+  ],
+  "ok": true
+ },
+ "rollSpuren": {
+  "ist": [
+   0,
+   1
+  ],
+  "ok": true
+ },
+ "pianoRoll": {
+  "dir": [
+   {
+    "a": 8,
+    "b": 16,
+    "v": "roll",
+    "t": 1
+   }
+  ],
+  "undoGleich": true,
+  "redoGleich": true,
+  "soll": [
+   {
+    "a": 8,
+    "b": 16,
+    "v": "roll",
+    "t": 1
+   }
+  ],
+  "ok": true
+ },
+ "spurAn": {
+  "ok": true
+ },
+ "fokusArten": {
+  "ist": [
+   [
+    "f-zelle",
+    "Clip-Zelle",
+    false
+   ],
+   [
+    "f-tast",
+    "Tastatur",
+    false
+   ],
+   [
+    "f-teil",
+    "Teil-Kopf",
+    false
+   ],
+   [
+    "f-ue",
+    "Übergang",
+    true
+   ]
+  ],
+  "ok": true
+ },
+ "fokusZelle": {
+  "dir": [
+   {
+    "a": 8,
+    "b": 16,
+    "v": "f-zelle",
+    "t": 0
+   }
+  ],
+  "undoGleich": true,
+  "redoGleich": true,
+  "soll": [
+   {
+    "a": 8,
+    "b": 16,
+    "v": "f-zelle",
+    "t": 0
+   }
+  ],
+  "ok": true
+ },
+ "fokusTeil": {
+  "dir": [
+   {
+    "a": 8,
+    "b": 16,
+    "v": "f-teil"
+   }
+  ],
+  "undoGleich": true,
+  "redoGleich": true,
+  "soll": [
+   {
+    "a": 8,
+    "b": 16,
+    "v": "f-teil"
+   }
+  ],
+  "ok": true
+ },
+ "ueAn": {
+  "ok": true
+ },
+ "fokusUe": {
+  "dir": [
+   {
+    "a": 8,
+    "b": 16,
+    "v": "f-teil"
+   },
+   {
+    "a": 16,
+    "b": 24,
+    "v": "f-ue"
+   }
+  ],
+  "undoGleich": true,
+  "redoGleich": true,
+  "soll": [
+   {
+    "a": 8,
+    "b": 16,
+    "v": "f-teil"
+   },
+   {
+    "a": 16,
+    "b": 24,
+    "v": "f-ue"
+   }
+  ],
+  "ok": true
+ },
+ "auto": {
+  "dir": [
+   {
+    "a": 8,
+    "b": 16,
+    "v": "f-teil"
+   }
+  ],
+  "undoGleich": true,
+  "redoGleich": true,
+  "soll": [
+   {
+    "a": 8,
+    "b": 16,
+    "v": "f-teil"
+   }
+  ],
+  "ok": true
+ },
+ "drumSpuren": {
+  "ist": [
+   4
+  ],
+  "ok": true
+ },
+ "bereichDrum": {
+  "dir": [
+   {
+    "a": 4,
+    "b": 8,
+    "v": "drum",
+    "t": 4
+   },
+   {
+    "a": 8,
+    "b": 16,
+    "v": "f-teil"
+   }
+  ],
+  "undoGleich": true,
+  "redoGleich": true,
+  "soll": [
+   {
+    "a": 4,
+    "b": 8,
+    "v": "drum",
+    "t": 4
+   },
+   {
+    "a": 8,
+    "b": 16,
+    "v": "f-teil"
+   }
+  ],
+  "ok": true
+ },
+ "streifen": {
+  "eintraege": [
+   {
+    "v": "mod",
+    "t": 0,
+    "fill": [
+     76,
+     201,
+     240
+    ],
+    "edge": [
+     76,
+     201,
+     240
+    ],
+    "line": [
+     185,
+     242,
+     39
+    ],
+    "want": [
+     76,
+     201,
+     240
+    ],
+    "ok": true
+   },
+   {
+    "v": "matrix",
+    "fill": [
+     53,
+     208,
+     127
+    ],
+    "edge": [
+     53,
+     208,
+     127
+    ],
+    "line": [
+     53,
+     208,
+     127
+    ],
+    "want": [
+     53,
+     208,
+     127
+    ],
+    "ok": true
+   },
+   {
+    "v": "drum",
+    "t": 4,
+    "fill": [
+     232,
+     121,
+     249
+    ],
+    "edge": [
+     232,
+     121,
+     249
+    ],
+    "line": [
+     255,
+     178,
+     46
+    ],
+    "want": [
+     232,
+     121,
+     249
+    ],
+    "ok": true
+   },
+   {
+    "v": "f-teil",
+    "fill": [
+     0,
+     0,
+     0
+    ],
+    "edge": [
+     255,
+     178,
+     46
+    ],
+    "line": [
+     128,
+     89,
+     23
+    ],
+    "want": [
+     255,
+     178,
+     46
+    ],
+    "ok": true
+   },
+   {
+    "v": "f-tast",
+    "fill": [
+     0,
+     0,
+     0
+    ],
+    "edge": [
+     58,
+     134,
+     255
+    ],
+    "line": [
+     29,
+     67,
+     128
+    ],
+    "want": [
+     58,
+     134,
+     255
+    ],
+    "ok": true
+   },
+   {
+    "v": "spur",
+    "t": 1,
+    "fill": [
+     139,
+     156,
+     255
+    ],
+    "edge": [
+     139,
+     156,
+     255
+    ],
+    "line": [
+     139,
+     156,
+     255
+    ],
+    "want": [
+     139,
+     156,
+     255
+    ],
+    "ok": true
+   },
+   {
+    "v": "song",
+    "fill": [
+     201,
+     206,
+     216
+    ],
+    "edge": [
+     201,
+     206,
+     216
+    ],
+    "line": [
+     201,
+     206,
+     216
+    ],
+    "want": [
+     201,
+     206,
+     216
+    ],
+    "ok": true
+   },
+   {
+    "v": "f-zelle",
+    "t": 1,
+    "fill": [
+     0,
+     0,
+     0
+    ],
+    "edge": [
+     139,
+     156,
+     255
+    ],
+    "line": [
+     70,
+     78,
+     128
+    ],
+    "want": [
+     139,
+     156,
+     255
+    ],
+    "ok": true
+   }
+  ],
+  "ok": true,
+  "songStreifen": true
+ },
+ "speichernLaden": {
+  "d0": [
+   {
+    "a": 0,
+    "b": 2,
+    "v": "mod",
+    "t": 0
+   },
+   {
+    "a": 2,
+    "b": 4,
+    "v": "matrix"
+   },
+   {
+    "a": 4,
+    "b": 8,
+    "v": "drum",
+    "t": 4
+   },
+   {
+    "a": 8,
+    "b": 16,
+    "v": "f-teil"
+   },
+   {
+    "a": 24,
+    "b": 26,
+    "v": "f-tast"
+   },
+   {
+    "a": 26,
+    "b": 28,
+    "v": "spur",
+    "t": 1
+   },
+   {
+    "a": 28,
+    "b": 30,
+    "v": "song"
+   },
+   {
+    "a": 30,
+    "b": 32,
+    "v": "f-zelle",
+    "t": 1
+   }
+  ],
+  "d1": [
+   {
+    "a": 0,
+    "b": 2,
+    "v": "mod",
+    "t": 0
+   },
+   {
+    "a": 2,
+    "b": 4,
+    "v": "matrix"
+   },
+   {
+    "a": 4,
+    "b": 8,
+    "v": "drum",
+    "t": 4
+   },
+   {
+    "a": 8,
+    "b": 16,
+    "v": "f-teil"
+   },
+   {
+    "a": 24,
+    "b": 26,
+    "v": "f-tast"
+   },
+   {
+    "a": 26,
+    "b": 28,
+    "v": "spur",
+    "t": 1
+   },
+   {
+    "a": 28,
+    "b": 30,
+    "v": "song"
+   },
+   {
+    "a": 30,
+    "b": 32,
+    "v": "f-zelle",
+    "t": 1
+   }
+  ],
+  "ok": true
+ },
+ "neuLaden": {
+  "P0": [
+   {
+    "a": 0,
+    "b": 2,
+    "v": "mod",
+    "t": 0
+   },
+   {
+    "a": 2,
+    "b": 4,
+    "v": "matrix"
+   },
+   {
+    "a": 4,
+    "b": 8,
+    "v": "drum",
+    "t": 4
+   },
+   {
+    "a": 8,
+    "b": 16,
+    "v": "f-teil"
+   },
+   {
+    "a": 24,
+    "b": 26,
+    "v": "f-tast"
+   },
+   {
+    "a": 26,
+    "b": 28,
+    "v": "spur",
+    "t": 1
+   },
+   {
+    "a": 28,
+    "b": 30,
+    "v": "song"
+   },
+   {
+    "a": 30,
+    "b": 32,
+    "v": "f-zelle",
+    "t": 1
+   }
+  ],
+  "P1": [
+   {
+    "a": 0,
+    "b": 2,
+    "v": "mod",
+    "t": 0
+   },
+   {
+    "a": 2,
+    "b": 4,
+    "v": "matrix"
+   },
+   {
+    "a": 4,
+    "b": 8,
+    "v": "drum",
+    "t": 4
+   },
+   {
+    "a": 8,
+    "b": 16,
+    "v": "f-teil"
+   },
+   {
+    "a": 24,
+    "b": 26,
+    "v": "f-tast"
+   },
+   {
+    "a": 26,
+    "b": 28,
+    "v": "spur",
+    "t": 1
+   },
+   {
+    "a": 28,
+    "b": 30,
+    "v": "song"
+   },
+   {
+    "a": 30,
+    "b": 32,
+    "v": "f-zelle",
+    "t": 1
+   }
+  ],
+  "ok": true
+ },
+ "alterSong": {
+  "ist": [
+   {
+    "a": 0,
+    "b": 4,
+    "v": "spur",
+    "t": 2
+   },
+   {
+    "a": 4,
+    "b": 8,
+    "v": "matrix"
+   },
+   {
+    "a": 8,
+    "b": 12,
+    "v": "song"
+   }
+  ],
+  "ok": true
+ },
+ "einfuegen": {
+  "ist": [
+   {
+    "a": 0,
+    "b": 1,
+    "v": "spur",
+    "t": 2
+   },
+   {
+    "a": 3,
+    "b": 6,
+    "v": "spur",
+    "t": 2
+   },
+   {
+    "a": 6,
+    "b": 10,
+    "v": "matrix"
+   },
+   {
+    "a": 10,
+    "b": 14,
+    "v": "song"
+   },
+   {
+    "a": 14,
+    "b": 16,
+    "v": "roll",
+    "t": 1
+   }
+  ],
+  "ok": true
+ },
+ "errs": [],
+ "ok": true
+}

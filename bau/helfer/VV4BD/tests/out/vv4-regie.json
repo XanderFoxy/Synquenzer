@@ -1,0 +1,444 @@
+{
+ "testsong": {
+  "shots": [
+   {
+    "a": 0,
+    "v": "roll",
+    "t": 0,
+    "why": "neu-clip",
+    "f": "zelle",
+    "b": 4
+   },
+   {
+    "a": 4,
+    "v": "drum",
+    "t": 4,
+    "why": "neu-drum",
+    "b": 8
+   },
+   {
+    "a": 8,
+    "v": "roll",
+    "t": 1,
+    "why": "neu-clip",
+    "f": "zelle",
+    "b": 12
+   },
+   {
+    "a": 12,
+    "v": "tast",
+    "t": null,
+    "why": "transposition",
+    "b": 15
+   },
+   {
+    "a": 15,
+    "v": "drum",
+    "t": 4,
+    "why": "ue",
+    "b": 17
+   },
+   {
+    "a": 17,
+    "v": "song",
+    "t": null,
+    "why": "eintrag-ende",
+    "b": 20
+   },
+   {
+    "a": 20,
+    "v": "drum",
+    "t": 4,
+    "why": "neu-drum",
+    "b": 24
+   },
+   {
+    "a": 24,
+    "v": "app",
+    "t": null,
+    "why": "teil",
+    "b": 32
+   }
+  ],
+  "hash": "a1a4988a",
+  "hash2": "a1a4988a",
+  "xp": [
+   {
+    "beat": 48,
+    "semi": 2
+   }
+  ],
+  "ist": [
+   [
+    0,
+    4,
+    "roll",
+    0,
+    "neu-clip",
+    "zelle"
+   ],
+   [
+    4,
+    8,
+    "drum",
+    4,
+    "neu-drum",
+    null
+   ],
+   [
+    8,
+    12,
+    "roll",
+    1,
+    "neu-clip",
+    "zelle"
+   ],
+   [
+    12,
+    15,
+    "tast",
+    null,
+    "transposition",
+    null
+   ],
+   [
+    15,
+    17,
+    "drum",
+    4,
+    "ue",
+    null
+   ],
+   [
+    17,
+    20,
+    "song",
+    null,
+    "eintrag-ende",
+    null
+   ],
+   [
+    20,
+    24,
+    "drum",
+    4,
+    "neu-drum",
+    null
+   ],
+   [
+    24,
+    32,
+    "app",
+    null,
+    "teil",
+    null
+   ]
+  ],
+  "ok": true
+ },
+ "regeln": {
+  "zweiterOhneFokus": true,
+  "min2": true,
+  "max8": true,
+  "ok": true
+ },
+ "manuell": {
+  "shots": [
+   {
+    "a": 0,
+    "v": "roll",
+    "t": 0,
+    "why": "neu-clip",
+    "f": "zelle",
+    "b": 4
+   },
+   {
+    "a": 4,
+    "v": "tast",
+    "t": null,
+    "why": "eintrag",
+    "b": 8
+   },
+   {
+    "a": 8,
+    "v": "matrix",
+    "t": null,
+    "why": "eintrag",
+    "b": 12
+   },
+   {
+    "a": 12,
+    "v": "drum",
+    "t": 4,
+    "why": "neu-drum",
+    "b": 17
+   },
+   {
+    "a": 17,
+    "v": "song",
+    "t": null,
+    "why": "eintrag-ende",
+    "b": 20
+   },
+   {
+    "a": 20,
+    "v": "drum",
+    "t": 4,
+    "why": "neu-drum",
+    "b": 24
+   },
+   {
+    "a": 24,
+    "v": "app",
+    "t": null,
+    "why": "teil",
+    "b": 32
+   }
+  ],
+  "dir": [
+   {
+    "a": 4,
+    "b": 8,
+    "v": "tast"
+   },
+   {
+    "a": 8,
+    "b": 12,
+    "v": "matrix"
+   }
+  ],
+  "ist": [
+   [
+    0,
+    4,
+    "roll",
+    0,
+    "neu-clip",
+    "zelle"
+   ],
+   [
+    4,
+    8,
+    "tast",
+    null,
+    "eintrag",
+    null
+   ],
+   [
+    8,
+    12,
+    "matrix",
+    null,
+    "eintrag",
+    null
+   ],
+   [
+    12,
+    17,
+    "drum",
+    4,
+    "neu-drum",
+    null
+   ],
+   [
+    17,
+    20,
+    "song",
+    null,
+    "eintrag-ende",
+    null
+   ],
+   [
+    20,
+    24,
+    "drum",
+    4,
+    "neu-drum",
+    null
+   ],
+   [
+    24,
+    32,
+    "app",
+    null,
+    "teil",
+    null
+   ]
+  ],
+  "ok": true
+ },
+ "manuellUe": {
+  "shots": [
+   [
+    0,
+    4,
+    "roll",
+    0,
+    "neu-clip"
+   ],
+   [
+    4,
+    8,
+    "tast",
+    null,
+    "eintrag"
+   ],
+   [
+    8,
+    12,
+    "matrix",
+    null,
+    "eintrag"
+   ],
+   [
+    12,
+    14,
+    "drum",
+    4,
+    "neu-drum"
+   ],
+   [
+    14,
+    18,
+    "roll",
+    1,
+    "eintrag"
+   ],
+   [
+    18,
+    20,
+    "song",
+    null,
+    "eintrag-ende"
+   ],
+   [
+    20,
+    24,
+    "drum",
+    4,
+    "neu-drum"
+   ],
+   [
+    24,
+    32,
+    "app",
+    null,
+    "teil"
+   ]
+  ],
+  "ok": true
+ },
+ "hashAlt": {
+  "alt": "e086277d",
+  "neu": "e086277d",
+  "ok": true
+ },
+ "ohneUe": {
+  "shots": [
+   [
+    0,
+    4,
+    "roll",
+    0,
+    "neu-clip"
+   ],
+   [
+    4,
+    8,
+    "drum",
+    4,
+    "neu-drum"
+   ],
+   [
+    8,
+    12,
+    "roll",
+    1,
+    "neu-clip"
+   ],
+   [
+    12,
+    14,
+    "tast",
+    null,
+    "transposition"
+   ],
+   [
+    14,
+    16,
+    "song",
+    null,
+    "tast-ende"
+   ],
+   [
+    16,
+    20,
+    "app",
+    null,
+    "teil"
+   ],
+   [
+    20,
+    24,
+    "drum",
+    4,
+    "neu-drum"
+   ],
+   [
+    24,
+    32,
+    "app",
+    null,
+    "teil"
+   ]
+  ],
+  "ok": true
+ },
+ "tast2": {
+  "ist": [
+   [
+    0,
+    2,
+    "roll",
+    0,
+    "neu-clip",
+    "zelle"
+   ],
+   [
+    2,
+    4,
+    "roll",
+    1,
+    "neu-clip",
+    "zelle"
+   ],
+   [
+    4,
+    6,
+    "tast",
+    null,
+    "transposition",
+    null
+   ],
+   [
+    6,
+    14,
+    "song",
+    null,
+    "tast-ende",
+    null
+   ],
+   [
+    14,
+    16,
+    "matrix",
+    null,
+    "8",
+    null
+   ]
+  ],
+  "ok": true
+ },
+ "errs": [],
+ "ok": true
+}

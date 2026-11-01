@@ -48920,6 +48920,7 @@ function vvCuts(song, A, B) {
     // at the latest every 8 bars (an entry right behind with the same picture counts on)
     const tail = nx && vvDirSame(nx, cur) ? nx.b - nx.a : 0;
     const must = Ls >= 8 || (rem === 2 && Ls + rem + tail > 8);
+    if (want && want.v === 'spur' && cur.t === want.t && VV4_TRK.includes(cur.v)) want = null;   // VV4-D: the track is in the picture already
     if (want && !vvDirSame(want, cur)) { push(x, want.v, want.t, null, want.why, null, want.f); done(); }
     else if (want && want.o && !must) done();                        // the new thing is in the picture already (same track)
     else if (must || (cur.v === 'tast' && cur.why === 'transposition')) push(x, flip(cur.v), null, null, must ? '8' : 'tast-ende');   // VV4-D: Tastatur 2 Takte
