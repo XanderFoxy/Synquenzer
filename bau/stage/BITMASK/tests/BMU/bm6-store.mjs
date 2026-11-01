@@ -19,13 +19,14 @@ const n = await A.evaluate(() => {
   let s = 12345; const R = () => (s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 4294967296;
   const junk = () => { const r = R(); return r < .2 ? (R() - .5) * 1e4 : r < .35 ? String(Math.round((R() - .5) * 600)) : r < .45 ? null : r < .55 ? 'quatsch' : r < .6 ? {x: 1} : r < .65 ? NaN : Math.round((R() - .2) * 300); };
   const L = SQBM.L, bad = [], I = SQBM.init();
-  const rnd = o => { const x = {}; for (const k in o) { if (o[k] && typeof o[k] === 'object') x[k] = R() < .05 ? 'kaputt' : rnd(o[k]); else x[k] = typeof o[k] === 'string' ? (R() < .5 ? junk() : Object.values(L).flat()[Math.floor(R() * 200)]) : junk(); } if (R() < .3) x['neu' + Math.floor(R() * 9)] = {z: R()}; return x; };
+  const rnd = o => { if (Array.isArray(o)) return o.map(e => (Array.isArray(e) ? [R() < .5 ? Object.values(L).flat()[Math.floor(R() * 200)] : e[0], junk()] : junk()));   // STAGE Rev. 2: 4 Ziel-Plätze [Ziel, Menge]
+    const x = {}; for (const k in o) { if (o[k] && typeof o[k] === 'object') x[k] = R() < .05 ? 'kaputt' : rnd(o[k]); else x[k] = typeof o[k] === 'string' ? (R() < .5 ? junk() : Object.values(L).flat()[Math.floor(R() * 200)]) : junk(); } if (R() < .3) x['neu' + Math.floor(R() * 9)] = {z: R()}; return x; };
   let unk = 0, unkKept = 0, idem = 0;
   const walk = (o, path, chk) => { for (const k in o) { const p = path ? path + '.' + k : k; if (o[k] && typeof o[k] === 'object' && !Array.isArray(o[k])) walk(o[k], p, chk); else chk(p, o[k]); } };
   for (let k = 0; k < 1000; k++) {
-    const raw = {v: junk(), ly: rnd(I.ly), a: rnd(I.a), b: R() < .5 ? rnd(I.a) : null}; if (R() < .3) raw.zukunft = {f: [1, 2]};
+    const raw = {v: junk(), ly: rnd(I.ly), gl: rnd(I.gl), a: rnd(I.a), b: R() < .5 ? rnd(I.a) : null}; if (R() < .3) raw.zukunft = {f: [1, 2]};
     const o = SQBM.normBm(raw);
-    walk(o, '', (p, v) => { const r = SQBM.range(p); if (!r) return; if (typeof r[0] === 'string' ? !r.includes(v) : !(Number.isInteger(v) && v >= r[0] && v <= r[1])) bad.push(p + '=' + v); });
+    walk(o, '', (p, v) => { const r = SQBM.range(p); if (!r) return; const lst = Array.isArray(r) ? (typeof r[0] === 'string' ? r : null) : r.L; if (lst ? !lst.includes(v) : !(Number.isInteger(v) && v >= r[0] && v <= r[1])) bad.push(p + '=' + v); });
     // fehlende Schlüssel = INIT, Reihenfolge fest
     if (JSON.stringify(Object.keys(o.a).slice(0, Object.keys(I.a).length)) !== JSON.stringify(Object.keys(I.a))) bad.push('order a');
     // unbekannte Schlüssel bleiben
@@ -103,7 +104,7 @@ const lib = await A.evaluate(async id => {
 }, st.ownId);
 const A2 = await open(NEW);   // gleiche Ablage (Kontext) = Neuladen
 const kept = await A2.evaluate(async ([id, ref]) => { await libReady(); const r = LIB.lib.get(id); return !!r && JSON.stringify(r.p.bm) === ref; }, [st.ownId, st.ref]);
-ok('BM6-09_library', lib.engChip && lib.rows.some(x => /INIT Bit Mask/.test(x)) && lib.roles.join() === 'Alle Bit Mask,Init,Eigene' &&
+ok('BM6-09_library', lib.engChip && lib.rows.some(x => /INIT Bit Mask/.test(x)) && lib.roles.join() === 'Alle Bit Mask,Bass,Lead,Pad,Keys,Blech/Streicher,Pluck/Glocke,Orgel/Chor,FX/Arp,Init,Eigene' &&   // STAGE: BM7 Startklänge da
   lib.rolesWith.join() === 'Alle Bit Mask,Bass,Lead,Pad,Keys,Blech/Streicher,Pluck/Glocke,Orgel/Chor,FX/Arp,Init,Eigene' && lib.allEngines && lib.delFactory !== true && lib.factoryStill && lib.ownThere && kept, {...lib, keptAfterReload: kept});
 
 // BM6-08 ältere Version (4.23.0) öffnet das Bit-Mask-Projekt: gesperrt, Klang unverändert, zurück deep-equal

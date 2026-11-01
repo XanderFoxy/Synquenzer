@@ -1,0 +1,10 @@
+OK   BM8-01 ● automatische Länge: Kurven + Noten im Clip, ein Undo · {"len":2,"keys":["bd","at"],"notes":1,"dev":{"bd":0.00207,"at":0.00388},"u":"Aufnahme"}
+OK   BM8-01 ● automatische Länge: Abweichung ≤ 0,005 · {"bd":0.00207,"at":0.00388}
+OK   BM8-01 FANG nimmt Bend/Rad/Druck mit (Startpunkt 0, ein Undo) · {"okF":true,"len":4,"keys":["bd","mw","at"],"starts":[0,0,0],"notes":8,"undo":1,"label":"Fang"}
+OK   [● MEL.]: Bend in die Song-Melodie, ein Undo mit den Noten · {"st":true,"playing":true,"keys":["bd"],"n":1,"label":"Melodie (1 Note)","start":[0,0]}
+OK   Song-Aufnahme NOTEN: Kurven in eigenen Clip (Takte 1–2) und Song-Melodie (Takte 3–4), Szenen-Clip unberührt, ein Undo · {"st":true,"nOwn":1,"ownCv":[[61,0,2]],"melCv":[55,53,[0,0]],"undo":1,"label":"Song-Aufnahme","sceneClipCv":false}
+OK   BM8-11 16 Takte ständige Bewegung ≤ 20 KB je Clip · {"len":16,"pts":{"bd":1248,"mw":352,"at":644},"bytes":18641,"cvBytes":46964}
+OK   Konsole ohne Fehler, kein Supabase-Aufruf · []
+
+7/7 OK
+rc=0

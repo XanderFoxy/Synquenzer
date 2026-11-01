@@ -1,0 +1,42 @@
+OK   Ausgang: Clip trägt cv · {"bd":[[0,0],[1,0.5],[2.5,-0.25],[6,0]],"mw":[[0,0.2001953125],[3,0.7998046875],[7.5,0.400390625]],"at":[[0,0],[4,1],[5,0]]}
+OK   BM8-03 Clip kopieren/einfügen
+OK   BM8-03 Einfügen in andere Spur
+OK   BM8-03 Duplizieren → frei
+OK   BM8-03 getClip (API)
+OK   BM8-03 Undo-Schnappschuss
+OK   BM8-03 Song-Melodie trägt cv
+OK   BM8-03 makeOwn (eigener Clip)
+OK   BM8-03 Ganzer Block (4 Durchläufe abgerollt) · 1 Clip, 28 Bend-Punkte
+OK   BM8-03 Song-Bereich kopieren (Kurven verschoben) · [[0,0],[8,0.5],[12,-0.5],[15.9999,-0.25],[16,0],[23.9999,0.5],[24,-0.25],[28,0]]
+OK   BM8-03 Song-Bereich Undo
+OK   BM8-03 Song-Bereich löschen (Kurven rücken nach) · [[0,0.5],[4,-0.5],[12,0]]
+OK   BM8-03 Melodie → Clip · {"bd":[[0,0.5],[4,-0.5],[7.9999,-0.25]]}
+OK   BM8-03 Markierung kopieren (Kurven mit)
+OK   BM8-03 Datei-Rundweg (cv deep-equal)
+OK   BM8-08 Speichern → Laden deep-equal (ganzes Projekt) · []
+OK   BM8-03 Server (Fake: Körper → cloudApply)
+OK   BM8-03 Projekt-Kopie · p-mvxnqniy-2sff
+OK   BM8-04 Länge ×2 (Kurven verdoppelt) · [[0,0.2001953125],[3,0.7998046875],[7.5,0.400390625],[7.9999,0.400390625],[8,0.2001953125],[11,0.7998046875],[15.5,0.400390625],[15.9999,0.400390625]]
+OK   BM8-04 Länge ½ (Punkte hinter dem Ende fallen weg) · {"bd":[[0,0],[1,0.5],[2.5,-0.25],[3.9999,-0.142822265625]],"mw":[[0,0.2001953125],[3,0.7998046875],[3.9999,0.7109375]],"at":[[0,0],[3.9999,1]]}
+OK   BM8-04 Länge −1
+OK   BM8-04 Länge +1 (Kurve unverändert)
+OK   BM8-04 Undo stellt Länge und Kurven her
+OK   BM8-04 Editor Dupl. (×2)
+OK   BM8-04 Editor Takte −
+OK   BM8-04 Editor Zuschneiden (Bereich ab 0) · {"bd":[[0,-0.142822265625],[2,0]],"mw":[[0,0.7109375],[3.5,0.400390625]],"at":[[0,1],[1,0]]}
+OK   BM8-04 Tonhöhe ±12: cv unverändert · +12 / Oktave hoch
+OK   BM8-04 Tonart ändern: cv unverändert
+OK   BM8-06 Menüpunkt nur bei Clips mit Kurven · {"withCv":true,"without":true,"size":[203,44],"label":"Kurven löschen (Bend · Rad · Druck)","gone":true,"after":true,"undo":true,"redo":true}
+OK   BM8-06 löscht alle drei, ein Undo
+OK   BM8-06 Undo / Redo
+OK   Taste „Kurven löschen“ ≥ 44 px hoch · [203,44]
+OK   BM8-06 eigener Clip: „Kurven löschen“ im Zellen-Menü, ein Undo, danach nicht mehr angeboten · {"gone":true,"lab":"Kurven löschen","back":true,"again":false,"h":52}
+OK   BM8-08 repariert: sortiert, Startpunkt, Grenzen, NaN/fremde Werte weg, Rundung · {"bd":[[0,0.25],[1,0.25],[2,0.12353515625],[3,0.5]],"at":[[0,1],[5,1]],"mwN":4096,"keys":["bd","mw","at"]}
+OK   BM8-08 höchstens 4096 Punkte · 4096
+OK   BM8-08 Rundweg nach Reparatur deep-equal
+OK   Regel 28: die Demo-Clips (ohne Kurven) bekommen kein cv-Feld
+OK   BM8-10 VA-Spur mit Kurven-Clip: gleiche Noten, keine Kurven-Ereignisse, cv bleibt · {"engine":"analog","same":true,"n":3,"ctl":0,"kept":true}
+OK   Konsole ohne Fehler, kein Supabase-Aufruf · []
+
+39/39 OK
+rc=0

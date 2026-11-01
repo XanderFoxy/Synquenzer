@@ -1,0 +1,20 @@
+OK   BM8-01 cv.bd/mw/at im Behälter · ["bd","mw","at"]
+OK   BM8-01 Startpunkt bei t = 0 · {"bd":0,"mw":0,"at":0}
+OK   BM8-01 ≤ 100 Punkte/s · {"bd":29,"mw":19,"at":29}
+OK   BM8-01 Abweichung zur Eingabe ≤ 0,005 (an den Abtastpunkten) · {"dev":{"bd":0.00201,"mw":0.00421,"at":0.00431},"anRohEreignissenOhneErstenGriff":{"bd":0.0071,"mw":0.00488,"at":0.00549}}
+OK   BM8-01 aufsteigend
+OK   BM8-07 eine Aufnahme = ein Undo (mit Noten) · {"kind":"clip","label":"Aufnahme","items":[]}
+OK   BM8-02 Korrelation Wiedergabe ↔ Eingabe ≥ 0,99 · {"bd":0.9998,"mw":0.9998,"at":0.9994}
+OK   BM8-02 Zeitlage ± 1 ms · {"bd":0,"mw":0,"at":0}
+OK   BM8-02 Schleifen-Beginn nimmt den Startwert · {"bd":true,"mw":true,"at":true}
+OK   BM8-09 Live gewinnt (keine Bend-Kurve während der Berührung) · {"during":0,"after":108,"other":89}
+OK   BM8-09 danach folgt wieder die Kurve · {"during":0,"after":108,"other":89}
+OK   BM8-02 ■: Bend 0, Druck 0, Rad = Radstellung · {"bd":0,"at":0,"mw":0,"wheel":0,"cut":true}
+OK   BM8-05 Takt 1, 3, 4 unverändert; Takt 2 neu; Bend/Druck unverändert · {"bdSame":true,"atSame":true,"bar1":true,"bar34":true,"bar2changed":true,"undo":"Overdub","a":4.320979591836732,"e":7.513723356009066}
+OK   BM8-07 Overdub = ein Undo · Overdub
+OK   BM8-07 Undo stellt die alten Kurven her · {"a":true,"hc":true}
+OK   BM8-07 historyCheck() = true · {"a":true,"hc":true}
+OK   Konsole ohne Fehler, kein Supabase-Aufruf · []
+
+17/17 OK
+rc=0

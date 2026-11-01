@@ -1,0 +1,12 @@
+[
+ {
+  "id": "BM2-13 ganze Stimme ≤ 1,8 × VA-Stimme; 12 Stimmen ≤ 22 %",
+  "ok": true,
+  "info": "0.99 × (Bit-Mask-Stimme 0.97 %, VA-Stimme 0.98 %); 12 Stimmen 8.81 % (0.75 × VA je Stimme); Läufe bm1 0.83–1.6 %"
+ },
+ {
+  "id": "BM2-13 Begrenzer: Stufe 1 → 8, Stufe 2 → 6 Stimmen; neue Note nimmt die leiseste; die übrigen unverändert (M-NULL ≤ −90 dB)",
+  "ok": true,
+  "info": "aktive Stimmen nach 12 Noten: 12 / 8 / 6; Stufe 2 an klingenden Stimmen: Differenz 0; nach dem Klau gegen „ohne die leiseste“: -142.4 dB. Offline: der Host schickt keinen Begrenzer (BM6)"
+ }
+]

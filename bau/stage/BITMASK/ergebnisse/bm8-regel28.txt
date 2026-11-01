@@ -1,0 +1,11 @@
+OK   Regel 28: altes Projekt → Datei byte-gleich (Laden, Speichern) · 21732 / 21732
+SERDIFF 21732 21732 "" ""
+FAIL Regel 28: serialize() gleich
+OK   Regel 28: Demo-Projekt gleich (bis auf zufällige id/uid/Name) · [".id: \"p-mvxnrrum-1v8c\" ≠ \"p-mvxnrwdx-m6sw\"",".scenes.0.uid: \"ccsklddiu1\" ≠ \"esptrk35vf\"",".scenes.1.uid: \"bp4se8ps5i\" ≠ \"7or75a5o28\"",".scenes.2.uid: \"29qthepe9m\" ≠ \"9eb09scfkk\"",".scenes.3.uid: \"7u4bc6g9fd\" ≠ \"9bbj78k3ni\"",".scenes.4.uid: \"dmrvb1oc9q\" ≠ \"4rqav8o4ru\""]
+OK   Regel 28: kein cv-Feld entsteht
+OK   Regel 28: Demo spielt dieselben Noten zu denselben Schlägen · {"n":[108,108],"nurAlt":[],"nurNeu":[]}
+OK   Regel 28: keine Kurven-Ereignisse, kein Kurven-Zustand ohne Bit Mask · {"act":0,"h":0,"fake":0}
+OK   Konsole ohne Fehler (alt, neu), kein Supabase-Aufruf · [[],[]]
+
+6/7 OK
+rc=1

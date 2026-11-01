@@ -1,0 +1,131 @@
+{
+ "test": "bm6-golden",
+ "id": "BM6-01",
+ "pass": false,
+ "checks": {
+  "a_worklet_src_byte_equal": {
+   "ok": true,
+   "len": 311122
+  },
+  "b_factory_deepEqual": {
+   "ok": true,
+   "n": 71,
+   "diff": []
+  },
+  "b_demo_file_equal": true,
+  "b_roundtrip_new": true,
+  "b_roundtrip_old": true,
+  "b_new_factory_only_bm_init": {
+   "ok": false,
+   "bm": [
+    "f-bm-p00",
+    "f-bm-p01",
+    "f-bm-p02",
+    "f-bm-p03",
+    "f-bm-p04",
+    "f-bm-p05",
+    "f-bm-p06",
+    "f-bm-p07",
+    "f-bm-p08",
+    "f-bm-p09",
+    "f-bm-p10",
+    "f-bm-p11",
+    "f-bm-p12",
+    "f-bm-p13",
+    "f-bm-p14",
+    "f-bm-p15",
+    "f-bm-p16",
+    "f-bm-p17",
+    "f-bm-p18",
+    "f-bm-p19",
+    "f-bm-p20",
+    "f-bm-p21",
+    "f-bm-p22",
+    "f-bm-p23",
+    "f-bm-p24",
+    "f-bm-p25",
+    "f-bm-p26",
+    "f-bm-p27",
+    "f-bm-p28",
+    "f-bm-p29",
+    "f-bm-p30",
+    "f-bm-p31",
+    "f-bm-p32",
+    "f-bm-p33",
+    "f-bm-p34",
+    "f-bm-p35",
+    "f-bm-p36",
+    "f-bm-p37",
+    "f-bm-p38",
+    "f-bm-p39",
+    "f-init-bm",
+    "f-init-bm-2osz",
+    "f-init-bm-anschlag"
+   ]
+  },
+  "c_offline_factory": {
+   "ok": true,
+   "n": 59,
+   "bitgleich": 58,
+   "gleichWieAltAlt": 1,
+   "stumm": 0,
+   "bad": []
+  },
+  "d_no_bm_module_no_worker": {
+   "ok": true,
+   "adds": 2,
+   "bmModule": 0,
+   "workers": 0,
+   "playing": true,
+   "bmx": {
+    "adds": 0,
+    "st": "off",
+    "block": false
+   }
+  },
+  "d_same_modules_as_old": {
+   "ok": true,
+   "neu": 2,
+   "alt": 2
+  },
+  "no_page_errors": {
+   "ok": true,
+   "neu": [],
+   "alt": []
+  },
+  "e_start_time": {
+   "ok": true,
+   "neu_ms": 504,
+   "alt_ms": 500,
+   "neu": [
+    545,
+    546,
+    504,
+    518,
+    537,
+    483,
+    499,
+    448,
+    432
+   ],
+   "alt": [
+    500,
+    551,
+    579,
+    448,
+    503,
+    421,
+    477,
+    479,
+    554
+   ]
+  },
+  "e_size_start_le_25KB": {
+   "ok": false,
+   "start": 80533,
+   "beiBedarf": 169447,
+   "gesamt": 249980
+  }
+ }
+}
+rc=1

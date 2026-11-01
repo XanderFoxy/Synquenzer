@@ -1,0 +1,10 @@
+OK   #4 feste Länge: Bewegung bis zum Ende im Clip (Abweichung ≤ 0,005 bei Schlag 3,9) · {"v39":0.9740965936257782,"soll":0.975,"last":[[0,0.0009765625],[3.9999,0.9990234375]],"hc":true}
+OK   #2 eigener Clip mit neuen Kurven: cv vor from, historyCheck() = true · {"keys":["len","key","notes","cv","from"],"hc":true}
+OK   #3 Ersetzen ohne Bewegung: die alte Kurve im Bereich ist ersetzt (Ruhewert) · {"cv":"{\"bd\":[[0,0],[7.4788,0]]}","notes":0,"own":0}
+OK   #6 kein Streu-Clip: nur Takt 3 (bewegt) wird ein eigener Clip, mit Kurve; historyCheck · {"own":[{"id":"o1","bar":2,"cv":true}],"lanes":"[{\"bar\":0,\"slot\":1},{\"bar\":2,\"slot\":1,\"own\":\"o1\"},{\"bar\":3,\"slot\":1}]","hc":true}
+OK   #7 Rad: Startwert = Stellung vor der ersten Bewegung · {"v0":0.2,"before":0.2}
+OK   #5 Clip-Kurve hat Vorrang in Takt 2; danach wieder die Melodie-Kurve · {"ev":[[0,0],[0,0],[0.04,-0.003],[0.08,-0.007],[0.12,-0.01],[0.16,-0.013],[3.52,-0.296],[3.56,-0.299],[3.6,-0.303],[3.64,-0.306],[3.68,-0.309],[3.72,-0.313],[3.76,-0.316],[3.8,-0.319],[3.84,-0.323],[3.88,-0.326],[3.92,-0.329],[3.96,-0.333],[4,1],[8,-0.672],[8.08,-0.679],[8.12,-0.682],[8.16,-0.686],[8.2,-0.689],[8.24,-0.692],[8.28,-0.696],[8.32,-0.699],[8.36,-0.703],[8.4,-0.706],[8.44,-0.709],[8.48,-0.713],[8.52,-0.716],[8.56,-0.719],[8.6,-0.723],[8.64,-0.726],[8.68,-0.729],[8.72,-0.733],[8.76,-0.736],[8.8,-0.739],[8.84,-0.743],[8.88,-0.746],[8.92,-0.75],[8.96,-0.753]],"off":[{"at":null,"off":0}],"bar2":1,"bar2Ok":true,"after":73,"afterMel":true}
+OK   Konsole ohne Fehler, kein Supabase-Aufruf · []
+
+7/7 OK
+rc=0

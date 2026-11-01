@@ -50,7 +50,8 @@ ok('b_factory_deepEqual', !diff.length && ka.length > 50, {n: ka.length, diff: d
 ok('b_demo_file_equal', da.__file === db.__file);
 ok('b_roundtrip_new', da.__rt === true); ok('b_roundtrip_old', db.__rt === true);
 const bmExtra = await A.p.evaluate(() => SYNTH_LIB.filter(f => f.engine === 'bm').map(f => f.id));
-ok('b_new_factory_only_bm_init', bmExtra.length === 3 && Object.keys(da).length === Object.keys(db).length, {bm: bmExtra});
+ok('b_new_factory_only_bm_init', bmExtra.length === 43 && bmExtra.filter(x => /^f-bm-p\d\d$/.test(x)).length === 40 &&   // STAGE: 3 INIT + 40 Startklänge (BM7)
+   Object.keys(da).length === Object.keys(db).length, {bm: bmExtra});
 // (c)
 const ids = await B.p.evaluate(() => SYNTH_LIB.filter(f => ['analog', 'fm6', 'mk'].includes(f.engine)).map(f => f.id));
 const render = (P, id) => P.p.evaluate(async id => {

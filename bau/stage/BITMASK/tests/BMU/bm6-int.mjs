@@ -28,9 +28,9 @@ await P.evaluate(async () => { ensureAudio(); await new Promise(r => setTimeout(
 // BM6-04 offline: 16tel bei 120 BPM, Einsatz ± 1 Sample (Platzhalter: Phase 0, erste Probe = 0 -> erstes Nicht-Null-Sample = Soll + 1)
 const t1 = await P.evaluate(async () => {
   const sr = 48000, ev = []; for (let k = 0; k < 16; k++) { const at = .05 + k * .125; ev.push([at, 'on', 60 + (k % 5), .8, 'k' + k], [at + .06, 'off', 60 + (k % 5), 0, 'k' + k]); }
-  const r = await SYNQUENZER.bmRender({o1: {m: 31, e: {l: 99, a: 0, d: 0, s: 15, r: 0}}}, ev, {sec: 2.2, sr});
+  const r = await SYNQUENZER.bmRender({a: {o1: {m: 31, e: {l: 99, a: 0, d: 0, s: 15, r: 0}}}}, ev, {sec: 2.2, sr});
   const dev = []; for (let k = 0; k < 16; k++) { const s = Math.round((.05 + k * .125) * sr); let f = -1; for (let i = s - 4; i < s + 20; i++) if (Math.abs(r.l[i]) > 1e-9 && Math.abs(r.l[i - 1]) <= 1e-9) { f = i; break; } dev.push(f - (s + 1)); }
-  const r2 = await SYNQUENZER.bmRender({o1: {m: 31, e: {l: 99, a: 0, d: 0, s: 15, r: 0}}}, ev, {sec: 2.2, sr});
+  const r2 = await SYNQUENZER.bmRender({a: {o1: {m: 31, e: {l: 99, a: 0, d: 0, s: 15, r: 0}}}}, ev, {sec: 2.2, sr});
   let same = r.l.length === r2.l.length; for (let i = 0; same && i < r.l.length; i++) if (r.l[i] !== r2.l[i] || r.r[i] !== r2.r[i]) same = false;
   return {dev, bit: same};
 });
@@ -102,7 +102,8 @@ const swp = await P.evaluate(async t => {
   const x = window.__tap(false), sr = window.__rec.sr, i0 = Math.round((tSw - window.__rec.t0) * sr) + (window.__lag || 0);
   // HF-Energie (2. Differenz) in 5-ms-Fenstern: größtes Fenster um den Wechsel gegen das größte davor
   const win = Math.round(.005 * sr), hf = []; for (let a = 0; a + win < x.length; a += win) { let s = 0; for (let i = a + 2; i < a + win; i++) { const d = x[i] - 2 * x[i - 1] + x[i - 2]; s += d * d; } hf.push(s); }
-  const k0 = Math.floor(i0 / win), pre = Math.max(...hf.slice(Math.max(0, k0 - 60), k0 - 4)), at = Math.max(...hf.slice(k0 - 3, k0 + 30));
+  // STAGE (echter Prozessor): Bezug = das größere eingeschwungene Fenster vorher (VA) oder nachher (Bit Mask, harte Kante der Säge 007 = viel HF)
+  const k0 = Math.floor(i0 / win), pre = Math.max(Math.max(...hf.slice(Math.max(0, k0 - 60), k0 - 4)), Math.max(...hf.slice(k0 + 40, k0 + 100))), at = Math.max(...hf.slice(k0 - 3, k0 + 30));
   return {held, klickDb: 10 * Math.log10(at / pre), afterDb: window.__db(x, i0 + .3 * sr, i0 + .5 * sr)};
 }, live.t);
 ok('BM6-02_switch_sounding', swp.held === 1 && swp.afterDb > -60 && swp.klickDb <= 6, swp);
