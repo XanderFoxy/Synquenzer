@@ -103,28 +103,35 @@ function renderMulti(x, sr, an, getRun, cvs, w0, w1) {
     };
     const b0s = Math.floor(qa / BLK) * BLK;
     setM(b0s, Cm); for (let jj = 0; jj < J; jj++) setS(b0s, Cs[jj], RR[jj]);
+    // je Block: Differenzen (dieselben Werte wie (b − a) in G2 render) und letzter belegter Teilton (danach nur Nullen – G2 bricht dort ab)
+    const dM = new Float64Array(2 * HMAX), dS = RR.map(() => new Float64Array(2 * HMAX)), nS = new Int32Array(J), Y = E.js.map(j => ys[j]);
+    const last = (A1, A2) => { for (let h = HMAX; h >= 1; h--) if (A1[2 * h - 2] || A1[2 * h - 1] || A2[2 * h - 2] || A2[2 * h - 1]) return h; return 0; };
     for (let b0 = b0s; b0 < qb; b0 += BLK) {
       const b1 = Math.min(L, b0 + BLK), qq = Math.min(L - 1, b1);
       setM(qq, Cm2); for (let jj = 0; jj < J; jj++) setS(qq, Cs2[jj], RR[jj]);
-      for (let q = Math.max(b0, qa); q < Math.min(b1, qb); q++) {
+      for (let h = 0; h < 2 * HMAX; h++) dM[h] = Cm2[h] - Cm[h];
+      const nO = last(Cm, Cm2);
+      for (let jj = 0; jj < J; jj++) { const A1 = Cs[jj], A2 = Cs2[jj], d = dS[jj]; for (let h = 0; h < 2 * HMAX; h++) d[h] = A2[h] - A1[h]; nS[jj] = last(A1, A2); }
+      const qe = Math.min(b1, qb);
+      for (let q = Math.max(b0, qa); q < qe; q++) {
         const u = (q - b0) / BLK, P = R.ph[q], zr = Math.cos(P), zi = Math.sin(P);
         let pr = 1, pi = 0, mo = 0;
-        for (let h = 1; h <= HMAX; h++) {
+        for (let h = 0, k2 = 0; h < nO; h++, k2 += 2) {
           const t1 = pr * zr - pi * zi; pi = pr * zi + pi * zr; pr = t1;
-          const k2 = 2 * h - 2, ar = Cm[k2] + (Cm2[k2] - Cm[k2]) * u, ai = Cm[k2 + 1] + (Cm2[k2 + 1] - Cm[k2 + 1]) * u;
-          if (ar || ai) mo += ar * pr - ai * pi; else if (h > 2) break;
+          const ar = Cm[k2] + dM[k2] * u, ai = Cm[k2 + 1] + dM[k2 + 1] * u;
+          mo += ar * pr - ai * pi;
         }
         let w = 1; if (q < RMP) w = 0.5 - 0.5 * Math.cos(Math.PI * (q + 0.5) / RMP); else if (L - q <= RMP) w = 0.5 - 0.5 * Math.cos(Math.PI * (L - q - 0.5) / RMP);
         const xi = x[R.A + q], oi = R.A + q - w0;
         for (let jj = 0; jj < J; jj++) {
-          const Q = PS[jj][q], wr = Math.cos(Q), wi = Math.sin(Q), A1 = Cs[jj], A2 = Cs2[jj];
+          const Q = PS[jj][q], wr = Math.cos(Q), wi = Math.sin(Q), A1 = Cs[jj], d = dS[jj], nh = nS[jj];
           let sr_ = 1, si_ = 0, ms = 0;
-          for (let h = 1; h <= HMAX; h++) {
+          for (let h = 0, k2 = 0; h < nh; h++, k2 += 2) {
             const t2 = sr_ * wr - si_ * wi; si_ = sr_ * wi + si_ * wr; sr_ = t2;
-            const k2 = 2 * h - 2, br = A1[k2] + (A2[k2] - A1[k2]) * u, bi = A1[k2 + 1] + (A2[k2 + 1] - A1[k2 + 1]) * u;
-            if (br || bi) ms += br * sr_ - bi * si_; else if (h > 2) break;
+            const br = A1[k2] + d[k2] * u, bi = A1[k2 + 1] + d[k2 + 1] * u;
+            ms += br * sr_ - bi * si_;
           }
-          ys[E.js[jj]][oi] = xi + w * (ms - mo);
+          Y[jj][oi] = xi + w * (ms - mo);
         }
       }
       const tm = Cm; Cm = Cm2; Cm2 = tm; const ts = Cs; Cs = Cs2; Cs2 = ts;
@@ -335,34 +342,56 @@ function g6pBuf(a, v, k, prio) {
 function g6pVoiceReady(a, v) { const sp = g6pSpec(a, v); return !!sp && sp.keys.every(k => G6P.cache.has(k)); }
 function g6pBufsReady(a) { const c = a && a.chor; if (!c || c.v !== 2) return true; return c.voices.every(v => g6pVoiceReady(a, v)); }
 function g6pReady(a) { const c = a && a.chor; if (!c || c.v !== 2) return true; return g6pBufsReady(a) && g6pGA(a) != null; }
-/* ---------- Warteschlange nach Vorrang (ein Chor-Auftrag zur Zeit im G2-Worker) ---------- */
+/* ---------- Warteschlange nach Vorrang: zwei Chor-Aufträge gleichzeitig (G2-Worker + ein zweiter Chor-Worker, erst bei Bedarf) ---------- */
+// Der zweite Worker entsteht erst, wenn ein zweiter Auftrag wartet (nichts beim App-Start). Er hat seine eigene Analyse-Ablage (≤ 3 Takes).
+const G6P_W = [{busy: null}, {busy: null}];
+G6P.isBusy = () => !!(G6P_W[0].busy || G6P_W[1].busy);
 function g6pEnqueue(sp, prio) {
   if (sp.keys.every(k => G6P.cache.has(k))) return;
-  if (G6P.busy && G6P.busy.jk === sp.jk) return;
+  if (G6P_W.some(W => W.busy && W.busy.jk === sp.jk)) return;
   const q = G6P.q.find(j => j.jk === sp.jk);
   if (q) { if (prio < q.prio) q.prio = prio; q.sp = sp; } else G6P.q.push({jk: sp.jk, prio, sp, n: ++G6P.seq});
   g6pPump();
 }
 G6P.seq = 0;
 function g6pPump() {
-  if (G6P.busy || !G6P.q.length) return;
-  G6P.q.sort((x, y) => x.prio - y.prio || x.n - y.n);
-  const J = G6P.q.shift(); G6P.busy = J;
-  g6pRunJob(J.sp).then(() => { G6P.busy = null; g6pPump(); }, e => { G6P.busy = null; logErr(e); g6pPump(); });
+  for (let wi = 0; wi < 2; wi++) {
+    if (G6P_W[wi].busy || !G6P.q.length) continue;
+    if (wi === 1 && (G6P.w2 === false || !G6P_W[0].busy)) continue;          // der zweite nur, wenn der erste arbeitet
+    G6P.q.sort((x, y) => x.prio - y.prio || x.n - y.n);
+    // Vorrang zuerst; bei gleichem Vorrang lieber ein Auftrag, dessen Quelle dieser Worker schon hat
+    const p0 = G6P.q[0].prio, k = G6P.q.findIndex(j => j.prio === p0 && G6P.sent.has(wi + ':' + g6pSrcKey(j.sp))), J = G6P.q.splice(k > 0 ? k : 0, 1)[0];
+    G6P_W[wi].busy = J;
+    g6pRunJob(J.sp, wi).then(() => { G6P_W[wi].busy = null; g6pPump(); }, e => { G6P_W[wi].busy = null; logErr(e); g6pPump(); });
+  }
 }
-// Worker-Aufruf (G2-Worker, eigene Op; Rückfall Hauptfaden)
-const G6P_LOCAL = new Map();
-function g6pCall(m) {
-  const w = g2Worker(), local = () => { G6P.how = 'hauptfaden'; G6P.sent.clear(); const r = g6pRun(VSD, G2P, G2_LOCAL, G6P_D, Object.assign({}, m)); return r; };
+const g6pSrcKey = sp => sp.W.tid + '@' + wpBid(sp.src) + '#' + (sp.snd !== sp.src ? sp.W.tid + '@' + wpBid(sp.snd) : '');
+function g6pWorker2() {
+  if (G6P.w2 != null) return G6P.w2;
+  try {
+    const src = vsDspMake.toString() + '\n' + g2PitchMake.toString() + '\n' + g2Run.toString() + '\n' + g6pDspMake.toString() + '\n' + g6pRun.toString() + '\nconst V = vsDspMake(), P = g2PitchMake(), C = new Map(), D = g6pDspMake();onmessage = e => { const m = e.data; try { const r = g6pRun(V, P, C, D, m); postMessage({id: m.id, r}, r && r.ys ? r.ys.map(y => y.buffer) : []); } catch (err) { postMessage({id: m.id, err: String(err && err.message || err)}); } };';
+    const u = URL.createObjectURL(new Blob([src], {type: 'application/javascript'}));
+    const w = new Worker(u); setTimeout(() => { try { URL.revokeObjectURL(u); } catch (e) {} }, 30000);
+    G6P.wq2 = new Map();
+    w.onmessage = e => { const m = e.data, q = G6P.wq2.get(m.id); if (!q) return; G6P.wq2.delete(m.id); clearTimeout(q.to); if (m.err) q.no(new Error(m.err)); else q.ok(m.r); };
+    w.onerror = e => { for (const q of G6P.wq2.values()) { clearTimeout(q.to); q.no(new Error('worker')); } G6P.wq2.clear(); G6P.w2 = false; try { e.preventDefault(); } catch (er) {} };
+    G6P.w2 = w;
+  } catch (e) { G6P.w2 = false; }
+  return G6P.w2;
+}
+// Worker-Aufruf (wi 0 = G2-Worker mit eigener Op, 1 = zweiter Chor-Worker; Rückfall Hauptfaden)
+function g6pCall(m, wi) {
+  const w = wi === 1 ? g6pWorker2() : g2Worker(), WQ = wi === 1 ? G6P.wq2 : G2.wq;
+  const local = () => { G6P.how = 'hauptfaden'; for (const k of [...G6P.sent]) if (k.startsWith((wi | 0) + ':')) G6P.sent.delete(k); return g6pRun(VSD, G2P, G2_LOCAL, G6P_D, Object.assign({}, m)); };
   if (!w) return Promise.resolve().then(local);
   return new Promise((ok, no) => {
     const id = ++G2.wid, tr = [], o = Object.assign({}, m, {id});
     if (m.x) { o.x = new Float32Array(m.x); tr.push(o.x.buffer); }
     if (m.rx) { o.rx = new Float32Array(m.rx); tr.push(o.rx.buffer); }
     if (m.chs) for (const c of m.chs) tr.push(c.buffer);
-    const to = setTimeout(() => { G2.wq.delete(id); try { ok(local()); } catch (e) { no(e); } }, 60000);
-    G2.wq.set(id, {ok: r => { G6P.how = 'worker'; ok(r); }, no: e => { try { ok(local()); } catch (er) { no(e); } }, to});
-    try { w.postMessage(o, tr); } catch (e) { clearTimeout(to); G2.wq.delete(id); try { ok(local()); } catch (er) { no(er); } }
+    const to = setTimeout(() => { WQ.delete(id); try { ok(local()); } catch (e) { no(e); } }, 60000);
+    WQ.set(id, {ok: r => { G6P.how = 'worker'; ok(r); }, no: e => { try { ok(local()); } catch (er) { no(e); } }, to});
+    try { w.postMessage(o, tr); } catch (e) { clearTimeout(to); WQ.delete(id); try { ok(local()); } catch (er) { no(er); } }
   });
 }
 // Zeitkarte auf das Fenster: Quelle ganz (außerhalb des Fensters die G4-Fassung), dieselbe Nachricht wie wpRender, danach auf das Fenster gekürzt
@@ -379,17 +408,17 @@ function g6pWarpMsg(w, x, sr) {
   }
   return {op: 'slice', x, sr, on: s.slice(1, -1).map(v => v - L), to: d.slice(1, -1).map(v => v - L)};
 }
-async function g6pRunJob(sp) {
-  const t0 = performance.now(), W = sp.W, id = W.tid;
+async function g6pRunJob(sp, wi) {
+  const t0 = performance.now(), W = sp.W, id = W.tid; wi = wi | 0;
   const msg = {op: 'chor', key: id + '@' + wpBid(sp.src), sr: sp.sr, w0: sp.w0, w1: sp.w1, plans: sp.plans, sib: sp.sib};
   if (sp.snd !== sp.src) msg.rkey = id + '@' + wpBid(sp.snd);
-  const sk = msg.key + '#' + (msg.rkey || '');
+  const sk = wi + ':' + g6pSrcKey(sp);
   if (!G6P.sent.has(sk)) { msg.x = sp.src.getChannelData(0); if (msg.rkey) msg.rx = sp.snd.getChannelData(0); }
-  let r = await g6pCall(msg);
-  if (r && r.need) { msg.x = sp.src.getChannelData(0); if (msg.rkey) msg.rx = sp.snd.getChannelData(0); r = await g6pCall(msg); }
+  let r = await g6pCall(msg, wi);
+  if (r && r.need) { msg.x = sp.src.getChannelData(0); if (msg.rkey) msg.rx = sp.snd.getChannelData(0); r = await g6pCall(msg, wi); }
   if (!r || !r.ys) return;
-  G6P.sent.add(sk); if (G6P.sent.size > 6) G6P.sent.delete(G6P.sent.values().next().value);
-  G6P.an = r.an;
+  G6P.sent.add(sk); if (G6P.sent.size > 12) G6P.sent.delete(G6P.sent.values().next().value);
+  if (!wi) G6P.an = r.an; else G6P.an2 = r.an;
   for (let j = 0; j < r.ys.length; j++) {
     let y = r.ys[j];
     if (sp.warp) {
@@ -403,7 +432,7 @@ async function g6pRunJob(sp) {
     G6P.bytes += y.length * 4;
   }
   G6P.renders++; const ms = Math.round(performance.now() - t0);
-  G6P.last = {ms, how: G6P.how, copies: sp.idx.length, bufs: r.ys.length, segs: r.segs, n: sp.hw1 - sp.hw0, warp: !!sp.warp};
+  G6P.last = {ms, wi, how: G6P.how, copies: sp.idx.length, bufs: r.ys.length, segs: r.segs, n: sp.hw1 - sp.hw0, warp: !!sp.warp};
   G6P.lastMs.push(ms); if (G6P.lastMs.length > 32) G6P.lastMs.shift();
   g6pTrim();
   g6pNotify(id);
@@ -503,7 +532,7 @@ const G6PB_API = {
   g6pbTones: (r, k) => { r = r || {t: stimmeT(), s: R.selS}; const x = tkRef(r), v = x && x.a.chor && x.a.chor.voices[k]; return v ? g6pTones(x.a, v) : null; },
   g6pbPlan: (r, k, c) => { r = r || {t: stimmeT(), s: R.selS}; const x = tkRef(r), v = x && x.a.chor && x.a.chor.voices[k]; if (!v) return null; const C = g6pCopies(v)[c || 0]; const p = g6pPlan(x.a, v, C.ct); return p === undefined ? 'wait' : p; },
   g6pbWin: (r, k) => { r = r || {t: stimmeT(), s: R.selS}; const x = tkRef(r), v = x && x.a.chor && x.a.chor.voices[k || 0]; if (!v) return null; const sp = g6pSpec(x.a, v); return sp ? {h0: sp.W.h0, h1: sp.W.h1, hw0: sp.hw0, hw1: sp.hw1, w0: sp.w0, w1: sp.w1, keys: sp.keys.length, copies: sp.idx.length, sr: sp.sr} : null; },
-  g6pbWait: async (r, ms) => { r = r || {t: stimmeT(), s: R.selS}; const T = performance.now() + (ms || 60000); while (performance.now() < T) { const x = tkRef(r); if (x && x.a.chor) { g6pPrefetch(x.a, 0); if (g6pBufsReady(x.a) && g6pGA(x.a) != null && !G6P.busy && !G6P.meas.size) return true; } await sleep(25); } return false; },
+  g6pbWait: async (r, ms) => { r = r || {t: stimmeT(), s: R.selS}; const T = performance.now() + (ms || 60000); while (performance.now() < T) { const x = tkRef(r); if (x && x.a.chor) { g6pPrefetch(x.a, 0); if (g6pBufsReady(x.a) && g6pGA(x.a) != null && !G6P.isBusy() && !G6P.meas.size) return true; } await sleep(25); } return false; },
   g6pbBufs: async (r, ms) => { r = r || {t: stimmeT(), s: R.selS}; const T = performance.now() + (ms || 60000); while (performance.now() < T) { const x = tkRef(r); if (x && x.a.chor) { g6pPrefetch(x.a, 0); if (g6pBufsReady(x.a)) return true; } await sleep(20); } return false; },
   g6pbBuf: (r, k, c, a0, b0) => { r = r || {t: stimmeT(), s: R.selS}; const x = tkRef(r), v = x && x.a.chor && x.a.chor.voices[k]; const e = v && g6pBuf(x.a, v, c || 0); if (!e) return null; const d = e.buf.getChannelData(0); return {sr: e.buf.sampleRate, n: e.buf.length, t0: e.t0, data: a0 === false ? null : Array.from(d.subarray(a0 || 0, b0 == null ? d.length : b0))}; },
   g6pbGA: r => { r = r || {t: stimmeT(), s: R.selS}; const x = tkRef(r); if (!x) return null; const g = g6pGA(x.a), k = g6pMixKey(x.a), m = k && G6P.gA.get(k); return {g, m: m || null}; },
@@ -512,7 +541,7 @@ const G6PB_API = {
     const o = await g6pChorLu(x.a, sr, hw0 / sr, (hw1 - hw0) / sr, true); return {sr, L: Array.from(o.getChannelData(0)), R: Array.from(o.getChannelData(1)), lead: Array.from(lb.getChannelData(0).subarray(hw0, hw1))}; },
   g6pbLu: async (chs, sr) => (await g6pCall({op: 'lu', chs: chs.map(c => Float32Array.from(c)), sr})).lu,
   g6pbK: sr => G6P_D.kCoef(sr),
-  g6pbInfo: () => ({bytes: G6P.bytes, v1bytes: [...G6.cache.values()].reduce((s, x) => s + (x.n || 0) * 4, 0), n: G6P.cache.size, renders: G6P.renders, an: G6P.an, last: G6P.last, lastMs: G6P.lastMs.slice(), q: G6P.q.map(j => j.prio), busy: !!G6P.busy, evict: G6P.evict | 0, how: G6P.how, lu: G6P.lastLu || null}),
+  g6pbInfo: () => ({bytes: G6P.bytes, v1bytes: [...G6.cache.values()].reduce((s, x) => s + (x.n || 0) * 4, 0), n: G6P.cache.size, renders: G6P.renders, an: G6P.an, last: G6P.last, lastMs: G6P.lastMs.slice(), q: G6P.q.map(j => j.prio), busy: G6P.isBusy(), w2: G6P.w2 ? 'an' : G6P.w2 === false ? 'aus' : 'nie', an2: G6P.an2 || 0, evict: G6P.evict | 0, how: G6P.how, lu: G6P.lastLu || null}),
   g6pbClear: () => { G6P.cache.clear(); G6P.bytes = 0; G6P.gA.clear(); G6P.lu.clear(); return true; },
   // G6P-13 (Nachweis): Fenster-Rechnung = Ganz-Rechnung im Fenster. v1: Plan wie g6Plan auf der gehörten Fassung (Schlüssel wie g6Buf)
   g6pbWinTest: async (r, k, c, s0, s1, v1) => {
