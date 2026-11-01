@@ -1,3 +1,14 @@
+## 4.36.0 — Weicher Szenenwechsel, Einsingen fertig, Bit Mask, Übergänge an Teilkanten
+
+Grundlage 4.35.0 + Paket B2 (V6a, G10a, Bit Mask BM1–BM6 + BM8, Übergänge UE-A/B) in einem Durchgang.
+- **Weicher Szenenwechsel:** Orange **◆** im Synth-Kopf (oder **◆ Klang** im Clip-Blatt) → der Clip merkt sich seinen Klangzustand. Beim Szenenwechsel gleiten die Regler dahin statt zu springen; wie lange, stellst du unter **Gleiten** im Clip-, Teil- oder Marken-Blatt ein. Das ist jetzt ein gemeinsamer Szenen-Morph mit dem aus 4.32.0 (gilt auch bei 3/4, 7/8 …).
+- **Einsingen fertig:** Beim Aufnehmen der Stimme zeigt die Aufnahme-Leiste deinen **Pegel** (rot = zu laut); im 🎤-Blatt steht ein Hinweis, wenn der Ton über die Hörmuschel läuft. Startet der Song in Takt 1, gibt es einen stillen Vorlauf; nach dem letzten Wort fragt die App „Clip +1 Takt?“.
+- **Bit Mask:** neue Klangerzeugung – im Synth-Kopf **VA · FM · WT · MS 2000 · Bit Mask** (schmal: Klangerzeugung ▾). Eigene Seite GERÄT mit Bend- und Mod-Rad und Arp. Bend/Rad/Druck nimmt er als **Kurven** auf; im Song löschst du sie über eigenen Clip antippen → „Kurven löschen“. Das Modul (170 KB) lädt erst, wenn eine Spur Bit Mask spielt – Start gleich schnell wie 4.35.0 (gemessen 0,4–0,55 s), Datei +0,36 MB (gepackt +0,12 MB).
+- **Übergänge an Teilkanten:** Song → Knopf **◆ ÜBERGÄNGE** → unten die Bibliothek; einen Übergang auf die Kante zwischen zwei Teilen **ziehen**. Chip an der Kante antippen = Länge, Vorhören, Entfernen.
+- Zusammengeführt: Bit Mask und North stehen beide in der Klangerzeugungs-Liste; Chor-Zeilen, Clip-Versionen, Spurkopf und Mix-Assistent bleiben wie in 4.35.0. Alte Projekte laden gleich (im Paket geprüft; nach dem Zusammenführen nur Rauchtest).
+- Offen: deine Abnahme aller vier Teile. Quer auf kleineren iPhones (unter 428 px Höhe) sind die Knöpfe links in der Song-Leiste durch ◆ ÜBERGÄNGE nur 37–39 px hoch (auf deinem 428 × 926 alle ≥ 44) – das war im Paket schon so; wenn du willst, lege ich sie enger. Die Übergänge sind erst drei einfache Platzhalter (Werks-Übergänge kommen mit UE-C/D).
+Tests: Regeln (live 1×, MS 2000 1×, Marken 0), acorn 0 doppelt / 0 Syntaxfehler, Rauchtest grün.
+
 ## 4.35.0 — Spurkopf, Zoom im Song, Versionen eines Clips
 
 - **Spurkopf (Matrix links, im Song die Namensspalte):** Tipp = stumm, **Halten = Solo** (gelbes S, andere gedimmt), **waagrecht schieben = Lautstärke** mit dB-Anzeige; Doppeltipp auf den Schieber = 0 dB. Solo gilt nur live (nicht im Export, nicht gespeichert). Das Spur-Blatt (＋ Spur, entfernen …) liegt jetzt auf **■ der Zeile halten**. Im Song: Tipp auf den Namen wählt die Spur nicht mehr, sondern schaltet stumm (und wählt sie mit).
