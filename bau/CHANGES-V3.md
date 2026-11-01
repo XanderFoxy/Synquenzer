@@ -5334,3 +5334,1342 @@ klingen wieder wie in 4.23.0, ebenso die Demo-Spuren Rom-Fläche, Mini-Lead, Mel
 | `smoke` · `orch-mk-check` · `v3-mk2-wellen` | ohne Fehler (Version 4.24.1) · alles PASS |
 
 Datei: `hotfix-4241/index.html` (Ausgaben `hotfix-4241/out/`). Zeile `  live: true,` unverändert.
+
+
+## VS-L — Gesang mindestens 16 Takte + Schalter „Melodieerkennung“ (Nachtrag 4, Paket VS-L) · App 4.24.0 · Format 5
+
+Grundlage: `v3-ideen/dirigent-spec-v3-nachtrag-4-gesang.md`, Paket VS-L (L.1, L.2, VS-L-01 … -11). Zweig-Kopie `vs-br-VSL/index.html`
+aus App 4.23.0 (`vs-base-B.html`). **Version 4.24.0** (`APP_CODE` 4 024 000), **Format bleibt 5** (kein neues Projektfeld; der Schalter
+liegt im Geräteprofil). `live: true` in CLOUD unverändert. Kein Supabase-Aufruf – **am Server offen: max_app ≥ 4024000** (Xander per SQL).
+Größe: 3 370 195 → 3 377 061 B (+6,9 KB).
+
+### Ursache (im unveränderten 4.23.0 nachgemessen, echte Läufe mit Mikro-Attrappe)
+
+Skripte `dirigent-test/n4-vs-l-repro.mjs`, `n4-vs-l-repro2.mjs` (Ausgaben `n4-vs-l-repro-*.out`, `n4-vs-l-repro2-mel4.out`):
+
+| Weg (4.23.0) | gesungen | Ergebnis | Befund |
+|---|---|---|---|
+| ● REC 🎤 leerer Platz, AUTO, 120 BPM | 16 Takte | STIMME 16 Takte, Take 32,25 s, MELODIE 16 Takte / 32 Noten | in Ordnung |
+| ● REC 🎤 leerer Platz, AUTO, **40 BPM** | 16 Takte | Take 96,25 s, `late` 0 | Ringpuffer (120 s) reicht |
+| Stimme-FANG, 16-Takt-Phrase | 16 Takte | MELODIE + STIMME je 16 Takte | in Ordnung |
+| ● SONG 🎤 Überschreiben | 16 Takte | `song.vox` 16 Takte, 32 s | in Ordnung |
+| ● REC 🎤 über 4-Takt-MELODIE-Clip (MELODIE gewählt) | 16 Takte | STIMME 16 Takte; MELODIE bleibt 4 Takte, 33 Noten übereinander gefaltet | STIMME in Ordnung |
+| **● REC 🎤 auf einen Platz mit 4-Takt-STIMME-Clip (Overdub)** | 16 Takte | **STIMME bleibt 4 Takte, neuer Take 8,25 s von 32 s** | **Ursache 1** |
+| **Länge 16** (`setRecOptions({length:16})`, Laden einer Datei mit 16) | – | **wird zu AUTO** (`recLength` nimmt nur 1, 2, 4, 8) | **Ursache 2** |
+
+**Ursache 1 (die, die Xander getroffen hat):** Liegt in der Szene schon ein STIMME-Clip (z. B. aus einem ersten FANG oder einem ersten
+● mit 4 Takten), ist jede weitere Gesangsaufnahme dort ein Overdub. `tkVoiceTake` rechnete mit `L = old.len` und nahm nur den jüngsten
+vollen Durchgang des alten Clips: 16 gesungene Takte → 4-Takt-Take (8,25 s von 32,25 s), der Rest ging verloren.
+**Ursache 2:** „Länge“ kennt höchstens 8 Takte; 16 wurde beim Wählen und beim Laden zu AUTO.
+Zusätzlich gesehen (nicht die Ursache, Spec-Liste): über einem vorhandenen MELODIE-Clip behält die MELODIE ihre Länge (Noten werden in den
+Clip gefaltet, wie ein Tasten-Overdub) – die STIMME ist dort schon 16 Takte lang (siehe Fragen).
+
+### Was neu ist
+
+1. **Overdub wird länger (L.1.2, `tkVoiceTake`):** Ist die neue Aufnahme länger als der alte STIMME-Clip (ganze Takte ab dem Takt ihres
+   Anfangs, gerundet, höchstens 16), wird der Clip so lang wie die Aufnahme, der neue Take ist die ganze Aufnahme (oben), der alte geht wie
+   heute stumm in `alt`. Ist sie nicht länger, läuft alles wie 4.23.0 (jüngster voller Durchgang – deep-equal geprüft). Läuft die Szene,
+   gilt die neue Phase (Anfang der Aufnahme) sofort; der alte Take klingt weiter, bis der neue gelesen ist, dann Überblendung (3/5 ms) –
+   keine Lücke (`tkGrowPhase`). Ein Undo-Schritt wie bisher.
+2. **Länge 16 (L.1.3):** „Länge“ AUTO, 1, 2, 4, 8, **16** im Aufnahme-Blatt (● lang drücken / Chip) und in den Einstellungen;
+   `recLength` (Laden) und `setRecOptions` nehmen 16. Die Länge-Knöpfe sind jetzt in allen Formaten ≥ 44 × 44 (vorher 32–40 px hoch, quer
+   40 px breit; Spec VS-L-04). AUTO wie bisher bis ●, spätestens 16 Takte.
+3. **Schalter „Melodieerkennung“ [An] [Aus] (L.2)** im Mikro-Blatt, Abschnitt „Stimme → Noten“, erste Zeile. Standard **An** (Verhalten
+   4.23.0). Gespeichert im Geräteprofil `synq-stimme-v1` → `vs.mel` (fehlt = An), **nicht im Projekt**. Bei **Aus** steht darunter
+   „Aufnahme nur als Gesang auf der STIMME-Spur – keine Noten.“ und:
+   - **● REC mit 🎤:** nur STIMME-Take/-Clip wie heute, kein MELODIE-Clip, keine Noten, kein Ergebnis-Blatt, keine Tonhöhen-Auswertung
+     (`vsRecVoice`); Meldung „Gesang aufgenommen · n Takte“; ein Undo.
+   - **Stimme-FANG:** der gesungene Abschnitt aus dem **Pegel der Stimme** (20-ms-Fenster, beim Lautsprecher nach dem Echo-Abzug wie der
+     Noten-Weg „1E“, Schwelle aus Grundrauschen/Spitze), dann **dieselbe Pausen-Regel** (`vsPhrase`: Pause ≥ 1 Takt, Länge als
+     Zweierpotenz ≤ 16) → nur STIMME-Take im selben Platz wie heute (`vsMelFree`); Meldung, ein Undo (`vsFangVoice`, `vsLevelNotes`).
+   - **● SONG mit 🎤:** nimmt schon in 4.23.0 nur `song.vox` auf (keine Noten aus der Stimme) – unverändert.
+   - Das Mikro-Blatt rollt jetzt mit dem Finger (`pan-y`), damit [Einmessen]/[Mikro aus] quer erreichbar bleiben (siehe Abweichungen).
+4. **Kein Aussetzer beim Take-Wechsel, wenn der Hauptfaden den Planungs-Vorlauf verpasst (`tkTrackResync`, eine Zeile):** nach dem Lesen
+   eines langen Takes (16 Takte ≈ 50 ms Rechenzeit) lag der Neuplan-Anfang hinter `R.schedBeat` → das neue Stück kam erst beim nächsten
+   Tick (gemessen 31–63 ms Lücke). Jetzt wird mindestens 50 ms voraus geplant (Stück-Schlüssel verhindern Doppelte).
+5. **Ringpuffer (L.1.1/L.1.5):** bleibt **120 s** (reicht beim langsamsten Tempo 40 BPM: 16 Takte = 96 s + 0,25 s Vorlauf + Latenz).
+   Speicher am iPhone (48 kHz) unverändert: Mikro + Referenz 2 × 11,52 MB + 3:1-Signal 3,84 MB ≈ **26,9 MB**. **Grenze ● SONG mit 🎤:
+   ≈ 119,6 s** am Stück (120 s minus Latenz, 30 ms Rand und 0,25 s Vorlauf) = 59 Takte bei 120 BPM, ≈ 19,9 Takte bei 40 BPM; darüber
+   beginnt der Take später (gemessen: 21 Takte bei 40 BPM = 126 s → `late` 6,36 s).
+6. Test-API: `vsSet({mel})`, `vsInfo().cfg.mel`, neu `vsVoiceOnly()` (Schalter, letzte Pegel-Phrase, letzter Gesang-Take).
+
+### Abnahme (Chromium headless, Mikro-Attrappe im selben AudioContext; Skripte in `dirigent-test/`)
+
+| ID | Ergebnis | Messung / Skript |
+|---|---|---|
+| VS-L-01 | ✓ 120 BPM leerer Platz: STIMME 16 Takte, Take 32,25 s (`late` 0); Take Takt 1 −21,4 dBFS, Takt 16 −21,2 dBFS; **am Ausgang** (Szene allein) Takt 1 −21,5 dB, Takt 16 −18,5 dB, nach der Schleife Takt 1 −21,4 dB; MELODIE 16 Takte, 32 Noten (t = 0 … 62); Wellenform 64 Spalten über die ganze Länge (L.1.6) | `n4-vs-l-accept.mjs 01` |
+| VS-L-02 | ✓ 4-Takt-STIMME-Clip + 16 Takte: Clip **16 Takte**, neuer Take oben (32,000 s), alter in `alt[0]` (0,25 … 8,25 s); Take Takt 1 −18,8, Takt 16 −22,5 dBFS; Phase = Takt der Aufnahme; hörbar Takt 1/16 −17,9/−18,2 dB. **3 Takte auf 4-Takt-Clip:** Clip 4 Takte, STIMME-Spur + Takes deep-equal zu 4.23.0, MELODIE deep-equal bis auf Messrauschen der Tonhöhen-Auswertung zwischen zwei Läufen (o/d ≤ 0,02 Schlag; 4.23.0 gegen sich selbst 0,010/0,010) | `n4-vs-l-accept.mjs 02` |
+| VS-L-03 | ✓ Demo, 4-Takt-MELODIE-Clip, MELODIE gewählt, ● 16 Takte → STIMME-Take **16 Takte** (32,000 s), Takt 16 −21,2 dBFS; MELODIE bleibt 4 Takte (wie 4.23.0) | `n4-vs-l-accept.mjs 03` |
+| VS-L-04 | ✓ Länge 16: Schlag 67,5 noch `recording`, 68,3 `off` (Start 4) – endet nach genau 16 Takten; Take genau 32,0000 s bei 18 gesungenen Takten; Speichern/Laden: Datei 16, geladen 16; Auswahl in P1, P2, P3, L1, L2, 926 × 428: 6 Knöpfe, alle ≥ 44 × 44, im Bild, nichts abgeschnitten (Aufnahme-Blatt und Einstellungen) | `n4-vs-l-accept.mjs 04`, `n4-vs-l-lay.mjs` (93/93), Bilder `n4-vs-l-neu-*-laenge.png`, `-menu.png` |
+| VS-L-05 | ✓ 40 BPM: ● REC Take 96,25 s, Vorlauf 0,25 s, `late` 0, Takt 16 −23,8 dBFS; Stimme-FANG MELODIE/STIMME 16 Takte, 96,25 s, `late` 0; Overdub 4 → 16 Takte, 96,00 s, `late` 0; ● SONG 16 Takte, 96,00 s, `late` 0; Grenze: 21 Takte (126 s) → `late` 6,36 s | `n4-vs-l-accept.mjs 05 05g 05o 05s 05x` |
+| VS-L-06 | ✓ FANG 16-Takt-Phrase: MELODIE 16 Takte (32 Noten), STIMME 16 Takte (32,000 s, gleiche take-ID), Takt 16 −21,2 dBFS | `n4-vs-l-accept.mjs 06` |
+| VS-L-07 | ✓ ● SONG 16 Takte: `song.vox` 16 Takte (32,000 s), letzter Takt −21,2 dBFS; am Ausgang in Takt 16 (STIMME allein) −20 … −27 dB | `n4-vs-l-accept.mjs 07` |
+| VS-L-08 | ✓ **Aus:** ● REC → STIMME 4 Takte, kein MELODIE-Clip, MELODIE-Spur deep-equal, Zähler `runs` 0, kein Ergebnis-Blatt, Meldung „Gesang aufgenommen · 4 Takte“; Stimme-FANG (2 Takte, Pause 2 Takte, 4 Takte) → STIMME 4 Takte ab Takt 6, MELODIE deep-equal, Zähler 0, Meldung; ● SONG → `song.vox` 4 Takte, MELODIE deep-equal, Zähler 0. Pausen-Regel Aus (Pegel) = An (Noten): Anfang Takt 6, 4 Takte. **An:** ● REC, FANG, SONG deep-equal zu 4.23.0 (Noten o/d ≤ 0,01 Schlag Messrauschen) | `n4-vs-l-accept.mjs 08` |
+| VS-L-09 | ✓ Standard An; Tipp „Aus“ → `vs.mel = false` im Geräteprofil; Projekt-JSON vor/nach Zeichen für Zeichen gleich (14 080 Zeichen); nach Neuladen Aus; Profil aus 4.23.0 (ohne Feld) → An; Claude-App (iframe, Speicher wirft): 4.24.0 läuft, kein Mikro, kein Mikro-Blatt, keine Seitenfehler | `n4-vs-l-accept.mjs 09` |
+| VS-L-10 | ✓ P1, P2, P3, L1, L2, 926 × 428: Zeile „Melodieerkennung“ [An] [Aus] 56 × 44 je Knopf, im Bild, Beschriftung ganz; Satz bei Aus ganz; Seitenhöhe unverändert (kein Layout-Sprung), kein waagrechtes Rollen; hochkant passt das Blatt ganz (454 bzw. 474 px), quer rollt es mit dem Finger bis [Mikro aus] (L1 80, L2 95, XL 42 px) | `n4-vs-l-lay.mjs`, Bilder `n4-vs-l-neu-{P1,P2,P3,L1,L2,XL}-mikro(-aus).png` |
+| VS-L-11 | ✓ je genau ein Undo-Schritt, Undo/Redo deep-equal: Overdub wird länger, Länge-16-Aufnahme, ● REC Aus, FANG Aus | in 02, 04, 08 |
+| FP-DSP (Wechsel zum längeren Clip) | ✓ 3 Läufe, Mitschnitt im Audio-Faden (AudioWorklet): vorher 330 Hz (alter Take), danach 440 Hz (neuer), **längste Lücke 0 ms**; größte 2. Differenz am Wechsel 0,00115/0,00117/0,00115 = 0,0052–0,0054 je Pegel (Maßstab VS3-Take-Wechsel A/B 0,0032–0,0044 bei Spitze 0,49 → ≤ 0,009 je Pegel); keine Klick-Spitze | `n4-vs-l-click.mjs` (`n4-vs-l-click.out`) |
+| Regression | ✓ Rauchtest ohne Fehler (`n4-vs-l-smoke.png`); `v3-vs3-accept` 71/72 – der eine Punkt (G: A/B 54 Hz) danach 2 × grün auf 4.24.0 und 2 × auf 4.23.0 (Zufall der Messung); `v3-vs3-click` 3 × grün (0,0032/0,0044/0,0032, wie 4.23.0 0,0032); `gs7-v3-vs4-accept` 24/26 → „Audio-Store …“ schlägt auch auf 4.23.0 fehl (alte Erwartung), „Stimme bleibt im Pegel (100 %)“ hängt am Einsatz-Versatz des Testlaufs (offMs 209–221 → −1,05 … −1,34 dB; offMs 189 → −0,66 … −0,89 dB, 4.23.0 bei 189 ebenso grün), danach 3 × grün; `gs7-v3-vs5a-t1/t3`, `gs7-v3-vs5b-t1/t3` grün | `n4-vs-l-reg-*.mjs`, Ausgaben `n4-vs-l-reg-*.out` |
+| Fehlerliste | ✓ Marken-Regel (kein Korg-Wort, „MS 2000“ 1 ×), `live: true` 1 ×, keine alert/confirm/prompt, Texte deutsch, Knöpfe ≥ 44 | grep |
+
+Die Test-Skripte planen den Gesang vorab im AudioContext (sonst verschiebt Rechenlast des Test-Rechners den Einsatz); wo Startzeit und
+Abläufe gleich sind, sind die Ergebnisse deterministisch.
+
+### Abweichungen (begründet)
+
+- **Mikro-Blatt quer:** In L1/L2 rollte das Blatt schon in 4.23.0 (396 px Inhalt bei 372/357 px), mit der neuen Zeile jetzt 452 px; in
+  926 × 428 passte es vorher (396/410), jetzt rollt es dort 42 px. Weil das Blatt in 4.23.0 **nicht mit dem Finger rollte** (Touch wurde
+  abgefangen; gemessen 0 px), wären [Einmessen]/[Mikro aus] quer nicht mehr erreichbar gewesen → Blatt bekommt `pan-y` (Finger rollt,
+  Tippen bleibt Tippen). Hochkant (P1–P3) passt es ganz. Andere Gestaltung zum Verkleinern habe ich nicht gebaut (Regel 27, Frage 1).
+- **Länge-Knöpfe 44 px hoch** (vorher 32–40 px, quer 40 px breit) – nur die Zeile „Länge“, weil VS-L-04 es verlangt; „Quantisieren“ und
+  „Einzähler“ daneben sind weiter so klein wie in 4.23.0 (Frage 2).
+- **Aufnahme-Banner:** Kein Banner nennt MELODIE als Ziel des **Gesangs** (● REC hat keinen Banner; der Song-Banner „MEL“ meint die
+  Tasten-Noten der Song-Melodie) → nichts geändert.
+- **Overdub wird länger:** der neue Clip beginnt am Takt des Aufnahme-Anfangs (im Raster des laufenden Clips); bei ● mitten im Takt
+  liegt der Take mit Versatz `at` in diesem Takt. Über 16 Takte hinaus nimmt er die ersten 16 Takte (wie ein neuer Clip).
+- **Stimme-FANG Aus** nimmt denselben Platz wie heute (`vsMelFree`: gewählte Szene, wenn MELODIE dort frei ist) und verlangt weiter einen
+  freien MELODIE-Platz, obwohl keine Noten entstehen; die Auswahl bleibt, wo sie war (die Tastatur soll nicht auf die STIMME-Spur springen).
+- Meldung bei 1 Takt grammatisch „Gesang aufgenommen · 1 Takt“.
+- `tkTrackResync` (VS3) um eine Zeile geändert (Vorlauf ≥ 50 ms) – ohne das gab es beim Wechsel zum 16-Takt-Take 31–63 ms Lücke.
+
+### Befunde (nicht geändert)
+
+- **Overdub ohne Wachsen (wie 4.23.0):** beim Wechsel zum neuen Take ≈ 27–40 ms Stille (alter Take blendet in `tkVoiceTake` sofort aus,
+  der neue kommt erst nach dem Lesen) – gemessen mit `n4-vs-l-click.mjs <app> 4`. Der Weg „wird länger“ hat das nicht (0 ms).
+- P3 (320 × 568): „🔈 Lautsprecher“ im Mikro-Blatt abgeschnitten – schon in 4.23.0 so.
+- Menü-Kopf „SYNQUENZER 4.24“ in P3 rechts abgeschnitten – schon in 4.23.0 so („4.23“).
+
+### Fragen an Xander
+
+1. Das Mikro-Blatt ist quer (und im iPhone 12 Pro Max quer) jetzt etwas höher als der Bildschirm und rollt mit dem Finger. Soll es quer
+   zweispaltig werden oder kleiner (z. B. die Zeile „Melodieerkennung“ neben „Stimme → Noten“), damit es wieder ganz passt?
+2. Die Länge-Knöpfe sind jetzt 44 px hoch, „Quantisieren“ und „Einzähler“ darunter noch kleiner – sollen die auch 44 px bekommen?
+3. ● REC mit 🎤 über einem vorhandenen MELODIE-Clip: die STIMME wird jetzt 16 Takte, der MELODIE-Clip bleibt aber 4 Takte und bekommt die
+   Noten aller 16 Takte übereinander (wie ein Tasten-Overdub, 4.23.0). Soll der MELODIE-Clip dann auch auf 16 Takte wachsen?
+4. Bei „Melodieerkennung Aus“ braucht FANG 🎤 weiter einen freien MELODIE-Platz und legt die STIMME in dieselbe Szene wie heute. Soll er bei
+   Aus stattdessen einen freien STIMME-Platz nehmen?
+5. Beim normalen Overdub (neue Aufnahme nicht länger als der Clip) gibt es beim Take-Wechsel ≈ 30–40 ms Stille (seit VS3). Soll ich das
+   genauso lückenlos machen wie beim Länger-Werden?
+
+### iPhone (Xander, Pages-Seite, Kopfhörer)
+
+1. 🎤 an, ▶, auf eine Szene, in der schon eine kurze STIMME (z. B. 4 Takte) liegt, ● drücken und **16 Takte** singen, ● → der STIMME-Clip
+   ist jetzt 16 Takte lang, die Wellenform geht über die ganze Zelle, die Stimme läuft im Takt in Schleife. ✎ → der alte Take liegt darunter.
+2. ● lang drücken → **Länge 16** → ● → die Aufnahme hört nach genau 16 Takten von selbst auf.
+3. Mikro-Blatt (Tipp auf die rote Mikro-Zeile) → **Melodieerkennung: Aus** → ● singen → nur die STIMME-Spur bekommt den Gesang, keine
+   Noten, kein Ergebnis-Blatt, kurz „Gesang aufgenommen · n Takte“. Auch FANG 🎤 nimmt dann nur Gesang. Nach dem Neuladen bleibt „Aus“.
+4. Bitte melden: Kommt der ganze Gesang an (Anfang und Ende)? Hörst du beim Übergang auf den längeren Clip ein Knacken oder Loch?
+   Quer: lässt sich das Mikro-Blatt mit dem Finger bis „Mikro aus“ rollen?
+
+### Für das Zusammenführen (3-Wege-Merge mit VS-P)
+
+Geändert (nur diese Stellen, sonst nichts umformatiert):
+- CSS: neue Regeln nach `.stpop .st-vs button.on{…}` (`.st-mel`, `.st-melx`, `#roLen button,.mrow.rlen .seg button`).
+- `VERSION` 4.24.0.
+- `normalizeProject` (Zeile `d.recLength = [1, 2, 4, 8, 16]…`), `setRecOptions` (`recLength`), `popRecOpts` (Seg `roLen` + 16),
+  `openMenu` (Zeile „Länge“ + 16, `.classList.add('rlen')`).
+- `stProf` (Feld `mel`), `stSheet` (Klasse `pan-y`), `stSheetFill` (Ein-Zeilen-Haken `vsMelRowHTML(vc)`), neu `vsMelRowHTML`,
+  `bindStSheet` (Zeile `#vsMel`).
+- `vsCfg`, `vsCfgSet` (Feld `mel`).
+- `vsFang` (Ein-Zeilen-Haken → `vsFangVoice`), `vsRecEnd` (Ein-Zeilen-Haken → `vsRecVoice`); neu `vsVoiceToast`, `vsRecVoice`,
+  `vsFangVoice`, `vsLevelNotes` (vor `vsApply`). `vsFangDone`, `vsRecDone`, `vsApply`, `vsPhrase` unverändert.
+- `tkTrackResync` (eine Zeile: Planungs-Ende `Math.max(R.schedBeat, t2b(at + .05))`).
+- `tkVoiceTake` (Länge `L`, Wachsen `grow`/`gcs`, `clip.len`, Abspiel-Zeile, Rückgabe `len`); neu `tkGrowPhase` (nach `tkVoiceTake`).
+- Test-API: neue Zeile `vsVoiceOnly` nach `vsAnalyseRange`.
+VS-P (Wiedergabe-Kette, `tkStartSrc`) wird nicht berührt.
+
+Snapshot: `synq-snapshots/VS-L.html`.
+
+## VS-L-fix
+
+Prüfbericht mit 9 Befunden (8 verschiedene Fehler; zwei Befunde beschreiben dasselbe Overdub-Problem, zwei denselben FANG-Lautsprecher-Fehler).
+**Alle 9 nachgestellt, alle echt, alle behoben.** App bleibt **4.24.0**, Format 5, `live: true` unverändert, kein Supabase-Aufruf –
+**am Server offen: max_app ≥ 4024000**. Größe 3 377 061 → 3 381 095 B (+4,0 KB). Snapshot: `synq-snapshots/VS-L-fix.html`.
+
+Hinweis zu den Läufen: Auf dem Prüfrechner liefen zeitgleich Tests anderer Pakete (Last bis 28 auf 4 Kernen). Einzelne Läufe, in denen
+schon der **erste** Take der Skripte nicht zustande kam oder ein ● Tipp 1–2 Takte zu spät ankam, sind verworfen und wiederholt (steht bei
+den Ausgaben). Alle Zahlen unten stammen aus gültigen Läufen.
+
+### Was behoben ist
+
+1. **Overdub wird länger – ● kurz vor dem Taktstrich (Befunde 1 und 5, `tkVoiceTake`):** Der neue Clip zählte ab dem Takt, in dem ●
+   gedrückt wurde (abgerundet). ● 0,1–0,5 Schläge vor dem Taktstrich → Clip einen Takt zu früh, letzter gesungener Takt abgeschnitten
+   (16 Takte) bzw. ein leerer Takt zu viel (8 → 9, 4 → 5). Jetzt zählt der Clip ab dem **Taktstrich, der dem Anfang der Aufnahme am
+   nächsten liegt** (im Raster der laufenden Schleife; läuft der Platz nicht, im Takt-Raster). Was vor diesem Taktstrich liegt (das Stück
+   zwischen ● und dem Taktstrich), gehört nicht zum Take. Wer nach dem Taktstrich drückt, bekommt wie bisher den Clip ab diesem Takt.
+2. **Gleich lange Aufnahme (4 auf 4 Takte) wuchs auf 5 Takte (Befund 2):** Folge von 1 – jetzt 4 Takte (die Länge zählt ab dem nächsten
+   Taktstrich).
+3. **Zweiter 16-Takt-Take auf einen 16-Takt-Clip behielt nur 15 Takte (Befund 7):** Der Weg „nicht länger“ (4.23.0) nimmt den jüngsten
+   vollen Durchgang **im Raster des alten Clips**. Beginnt die neue Aufnahme nicht am Schleifen-Anfang, liegt kein voller Durchgang in ihr,
+   und 4.23.0 setzt sie mit Versatz in den Clip – der Teil hinter dem Clip-Ende ging verloren (16 Takte → 15; dasselbe bei 4 auf 4:
+   4.23.0 verlor dort den 4. Takt, siehe `n4-vs-l-qa-od-4-old.out`). Jetzt: **gleich lang und kein voller Durchgang im alten Raster → die
+   ganze Aufnahme wird der Take**, der Clip behält seine Länge und läuft ab dem Taktstrich der Aufnahme (wie „wird länger“, nur ohne neue
+   Länge; Verschiebung um ganze Takte, also im Takt mit dem, worüber gesungen wurde). Liegt ein voller Durchgang in der Aufnahme, und bei
+   kürzeren Aufnahmen (z. B. 3 auf 4 Takte), bleibt alles wie 4.23.0 (VS-L-02 deep-equal geprüft).
+4. **↶ nach „wird länger“ während ▶ ließ die Schleife verschoben (Befund 8):** Das Undo stellte den Clip her, die laufende Phase blieb aber
+   die der neuen Aufnahme (STIMME gegen MELODIE um einen Takt versetzt). Neuer Undo-Teil `tphase` in derselben Undo-Gruppe des Takes:
+   ↶ stellt die alte Phase der laufenden Schleife wieder her, ↷ die neue (läuft der Platz nicht, gilt wie bisher der nächste Start).
+   Weiter genau **ein** Undo-Schritt.
+5. **Melodieerkennung Aus: 16-Takt-Take verloren, wenn ● am Ende getippt wird (Befund 6, `tkEnsureTrack`):** Die Aufnahme schließt bei
+   AUTO/Länge 16 von selbst kurz vor dem hörbaren Taktstrich; der ● Tipp danach stellt (wie in 4.23.0) die nächste Aufnahme bereit
+   (`armed`). Bei Aus ist der Take schneller fertig als die Tonhöhen-Auswertung bei An und traf auf `armed` – `tkEnsureTrack` legte dann
+   keine STIMME-Spur an („Kein Platz für die STIMME-Spur …“), der ganze Take war weg. Jetzt wird die STIMME-Spur auch angelegt, während
+   die nächste Aufnahme bereitsteht oder einzählt; nur die Spur dieser bereitgestellten Aufnahme wird nie zur STIMME-Spur umgewidmet.
+6. **Stimme-FANG bei Aus über den Lautsprecher (Befunde 4 und 9, `vsLevelNotes` + neu `vsLevelBleed`):** Der Pegel-Weg zählte den
+   Musik-Rest, der nach dem Echo-Abzug im Mikro bleibt, als Gesang – die Pause füllte sich, die Pausen-Regel griff nicht (8 bzw. 13 Takte
+   inkl. Vorspiel und Pause). Jetzt dieselbe **Energie-Probe wie die Übersprech-Sperre der Noten** (`vsBleedNote`, VS2-fix/VS4-fix):
+   ein 20-ms-Fenster zählt nur als Gesang, wenn das Mikro dort über **Referenz × Kopplung (eingemessen bzw. gemessen) × Rest nach dem
+   Abzug (−15 dB) × 3 dB Rand** liegt (Referenz zur selben Zeit über die Latenz-Unsicherheit, die lauteste). Kopfhörer/Kabel: keine Probe
+   (unverändert). Rechenzeit: ein Durchgang über die Referenz in 10-ms-Blöcken (16 Takte bei 40 BPM ≈ 5,8 M Werte, wenige ms).
+7. **Mikro-Blatt quer passte nicht mehr (Befund 3, `stSheetFill` + CSS):** L.2 verlangt, dass das Blatt mit der neuen Zeile ganz ins Bild
+   passt. Quer und niedrig (`orientation: landscape` und Höhe ≤ 520 px) steht das Blatt jetzt **zweispaltig**: links Mikrofon, Pegel,
+   Weg, Verzögerung, darunter [Einmessen] [✕ Mikro aus] und der Hinweis; rechts „Stimme → Noten“ mit Melodieerkennung, Satz bei Aus,
+   Stimme/Instrument, Einrasten. Alle Knöpfe, Texte und Farben sind dieselben; hochkant ist das Blatt pixelgleich zu VS-L (gemessen,
+   nur die Kopfleiste über dem Blatt unterscheidet sich zeitabhängig). Dafür ist das Blatt quer breiter (höchstens 720 px). Das Rollen mit
+   dem Finger (`pan-y`) bleibt, wird aber in Ruhe nicht mehr gebraucht.
+
+### Nachweis (vorher → nachher; Skripte in `dirigent-test/`, Ausgaben `n4-vs-l-fix-*.out`)
+
+| Befund | Skript | vorher (VS-L) | nachher (VS-L-fix) |
+|---|---|---|---|
+| 1 Overdub 16 Takte, ● 0,5 vor dem Taktstrich (120 BPM) | `n4-vs-l-qa-od.mjs 16 0.5 0.5` | Clip 16, Anfang 36, `at` 3,66, Takt 16 zu 8,5 % gespielt (`n4-vs-l-fixr-od16.out`) | 2 × Clip 16, Anfang 40, `at` 0, Take 32,25 s, **alle 16 Takte** −19 … −23 dBFS, Takt 16 −22,6 (`-od-16a`, `-od-16b`) |
+| 1 dasselbe mit 8 Takten | `… 8 0.5 0.5` | 9-Takt-Clip | 2 × **8 Takte**, Anfang 40, alle 8 gespielt (`-od-8a`, `-od-8b`) |
+| 2 4 Takte auf 4-Takt-Clip | `… 4 0.5 0.3` | 5-Takt-Clip (4.23.0: 4 Takte, aber Takt 4 zu 7 % gespielt) | 2 × **4 Takte**, alle 4 gesungenen Takte gespielt; Lauf b mit laufendem STIMME-Platz (Phase 4 → 40) (`-od-4a`, `-od-4b`) |
+| 3 Mikro-Blatt quer | `n4-vs-l-qa-lay.mjs <app> neu`, `n4-vs-l-lay.mjs` | L1/L2/XL: Inhalt 452/472 px in 372/357/410 px, [Einmessen]/[Mikro aus] unter dem Rand | L1/L2/XL: **280 px**, passt ganz (`fits`), [Mikro aus] unten bei 282 px, alle Knöpfe 9/9 Trefferpunkte (außer −1/+1 je 2 Randpunkte wie 4.23.0), nichts abgeschnitten (L2 auch „🔈 Lautsprecher“ ganz), Aus-Satz ganz; hochkant unverändert; Seitenhöhe gleich, kein waagrechtes Rollen; `n4-vs-l-lay.mjs` 90/90 (`n4-vs-l-fix-lay-neu.out`, `n4-vs-l-fix-lay.out`, Bilder `n4-vs-l-neu-*-mikro(-aus).png`, VS-L-Bilder als `n4-vs-l-vsl-*.png`) |
+| 3 Einmessen quer | `n4-vs-l-fix-calsheet.mjs` | 4.23.0: Blatt rollt in Ruhe (L1/L2), mit Ergebnis-Zeile und während Einmessen | L1/XL passt in allen Zuständen; L2 passt in Ruhe und mit Ergebnis, nur **während** des Einmessens (Schritte-Liste) 47 px zu hoch (4.23.0: 142 px), [Mikro aus] bleibt im Bild (unten 365 von 375) |
+| 4 FANG Aus, Lautsprecher, 120 BPM | `GAIN=… n4-vs-l-qa-spk.mjs aus` | 8 Takte ab Takt 2 (0,028 / 0,1 / 0,7) | **4 Takte ab Takt 6** (start 5) bei 0,028 (2 ×), 0,1, 0,7 (2 ×); Kontrollen GAIN 0 und Kabel ebenso 4 Takte ab Takt 6 |
+| 5 Musiker-Overdub 112 BPM, ● 40–90 ms vor dem Taktstrich | `n4-vs-l-mus-od.mjs 16/8/4 0.3 0.1 mel/stimme` | 16 → Takt 16 fehlt; 8 → 9 Takte; 4 → 5 Takte | 16 → **16 Takte ab Schlag 40, alle 16 gespielt**, Ausgang je Clip-Takt −19 … −27 dB; 8 (STIMME gewählt) → **8 Takte**, alle gespielt; 4 → **4 Takte**, alle gespielt (`n4-vs-l-fix-mus-od-*.out`) |
+| 6 Aus, 16 Takte, ● am Ende | `n4-vs-l-mus-end16.mjs 0 67.9 auto` / `0 68.05 16` | Take weg, „Kein Platz für die STIMME-Spur …“ (4 von 4) | 3 × **STIMME 16 Takte (34,29 s), „Gesang aufgenommen · 16 Takte“**, ein Undo-Schritt für den Take (`-end16-aus-a`, `-aus-b`, `-aus-len16`) |
+| 7 zweiter 16-Takt-Take (Aus, Touch) | `n4-vs-l-fix-ui.mjs P` / `L` | Takt 1 stumm, Takt 16 fehlt | P und L: **16 Takte, alle 16 gesungenen Takte gespielt** (−18,8 … −23,9 dBFS), Clip läuft ab Schlag 72 (`n4-vs-l-fix-ui-P-a.out`, `-L-a.out`) |
+| 8 ↶ nach „wird länger“ bei ▶ | `n4-vs-l-mus-undo.mjs` | STIMME-Phase 40 gegen MELODIE 4 (ein Takt Versatz) | 2 × nach ↶ **STIMME-Phase 4 = MELODIE-Phase 4**, „im Takt“, geplantes Stück an der alten Stelle (`-undo-a`, `-undo-b`) |
+| 9 FANG Aus, Lautsprecher, 112 BPM | `n4-vs-l-mus-spk.mjs aus 0.3 / 0.1` | 13 Takte ab Takt 1 | 0,3 (2 ×) und 0,1: **8 Takte ab Takt 6** (start 5); Kabel-Kontrolle ebenso |
+
+`n4-vs-l-fix-ui.mjs` ist `n4-vs-l-mus-ui.mjs` ohne die Hörprüfung von Take 1 **vor** Take 2: diese Prüfung dauerte auf dem belasteten
+Rechner länger als 1,2 Schläge, der ● Tipp für Take 2 kam dann erst nach Schlag 72 an (Start 76/80, in VS-L und VS-L-fix gleich – ein
+Fehler des Ablaufs, nicht der App). `n4-vs-l-mus-ui.mjs` selbst ist unverändert.
+
+### Abnahme (berührte Punkte, erneut gelaufen)
+
+| ID | Ergebnis | Messung/Skript |
+|---|---|---|
+| VS-L-02 | ✓ 4 → 16 Takte: Clip 16, neuer Take oben 32,000 s, alter in `alt[0]`, Takt 1 −18,8 / Takt 16 −22,5 dBFS, hörbar −17,1 / −17,7 dB; **3 Takte auf 4: Clip 4, STIMME-Spur + Takes deep-equal zu 4.23.0**, Noten o/d 0,010/0,020 (4.23.0 gegen sich 0,010/0,010) | `n4-vs-l-accept.mjs 02` (`n4-vs-l-fix-acc-02.out`; ein erster Lauf unter Last ohne zweiten Take verworfen) |
+| VS-L-05 (Overdub) | ✓ 40 BPM: Clip 16 Takte, Take 96,00 s, `late` 0, Takt 16 −21,9 dBFS | `n4-vs-l-accept.mjs 05o` |
+| VS-L-08 | ✓ 16/16 (Aus: ● REC, FANG, ● SONG nur STIMME, Zähler 0, Meldungen; An deep-equal zu 4.23.0; Pausen-Regel Aus = An) | `n4-vs-l-accept.mjs 08` (`-acc-08b.out`; Lauf a unter Last 15/16, An-Noten o 1,6 – An-Weg unverändert, Wiederholung grün) |
+| VS-L-10 | ✓ siehe Befund 3 (P1, P2, P3, L1, L2, 926 × 428) | `n4-vs-l-qa-lay.mjs`, `n4-vs-l-lay.mjs` |
+| VS-L-11 | ✓ Overdub 16 = ein Undo, Undo/Redo deep-equal (02); Aus ● REC/FANG je ein Undo, deep-equal (08); ↶ bei ▶ stellt die Phase her (Befund 8) | wie oben |
+| FP-DSP | ✓ „wird länger“ 2 × Lücke 0 ms, 2. Differenz je Pegel 0,0058/0,0065 ≤ 0,0135 (ein Lauf unter Last mit 15-ms-Loch und Spitze 0,148 im ganzen Mitschnitt verworfen); **4 auf 4 Takte jetzt ohne Loch** (0 ms, je Pegel 0,0053; VS-L: 25 ms) | `n4-vs-l-fix-dbg-click.mjs <app> 16/4` (= `n4-vs-l-click.mjs` + Protokoll der Take-Eingaben) |
+| Rauchtest | ✓ keine Fehler | `smoke.mjs` → `n4-vs-l-fix-smoke.png` |
+| Regression | ✓ `v3-vs3-accept` 71/72 – der Punkt G „A/B 48/54 Hz“ ist eine Zeitfrage des Tests (Messung fällt auf die Lücke 3,73 … 4,0 am Ende des 1-Takt-Takes): 8 Wiederholungen G → mit und ohne die `tkTrackResync`-Zeile je 1 × rot, 3 × grün; `gs7-v3-vs4-accept` 25/26 (der rote Punkt „Audio-Store …“ wie 4.23.0); `gs7-v3-vs5a-t1/t3`, `gs7-v3-vs5b-t1/t3` grün (20/31/32/5 ✓) | `n4-vs-l-reg-*.mjs`, `n4-vs-l-fix-ab.mjs` |
+| Fehlerliste | ✓ kein Korg-Wort, „MS 2000“ 1 ×, `live: true` 1 ×, keine alert/confirm/prompt, Texte deutsch, Knöpfe ≥ 44 | grep, Layout-Skripte |
+
+### Abweichungen
+
+- **Gleich lange Aufnahme ohne vollen Durchgang** (Punkt 3 oben) läuft jetzt wie „wird länger“ (ganze Aufnahme, Phase ab ihrem
+  Taktstrich) statt wie 4.23.0 (Versatz, Ende abgeschnitten). L.1.2 sagt „ist sie nicht länger, bleibt alles wie heute“ – das gilt weiter
+  für kürzere Aufnahmen und für Aufnahmen, die einen vollen Durchgang enthalten. Ohne diese Änderung ist Befund 7 (16 Takte gesungen,
+  15 im Clip) nicht zu beheben.
+- **Mikro-Blatt quer zweispaltig** – sichtbar anders als 4.23.0/VS-L, aber die einzige Anordnung, bei der das Blatt mit der von L.2
+  verlangten Zeile quer ganz ins Bild passt (Knöpfe bleiben 44 px). Nur quer und niedrig; hochkant und auf großen Bildschirmen gleich.
+- ● kurz **vor** dem Taktstrich: der Bruchteil zwischen ● und dem Taktstrich gehört nicht zum Take (ein Auftakt dort würde nicht
+  gespielt). Ein Auftakt vor dem ersten Takt passt in eine Schleife nur hinten hinein – das gibt es auch bei neuen Clips nicht.
+
+### Befunde (nicht geändert)
+
+- Ein ● Tipp genau am Ende einer Aufnahme, die gerade von selbst geschlossen hat (AUTO 16 Takte / Länge 16), stellt wie in 4.23.0 die
+  **nächste Aufnahme** bereit (ab dem nächsten Takt). Der Take ist jetzt sicher; die zweite Aufnahme läuft aber, bis man sie stoppt
+  (bei Länge 16 legt sie einen leeren MELODIE-Clip an, den ↶ entfernt). Siehe Frage 6.
+- Bei Länge 16 + Aus kommt vor „Gesang aufgenommen · 16 Takte“ kurz „Nichts aufgenommen“ (die Tasten-Aufnahme in MELODIE war leer) –
+  schon in VS-L so.
+
+### Fragen an Xander (neu)
+
+6. Wenn eine Aufnahme nach 16 Takten von selbst endet und du im selben Moment ● tippst, startet eine neue Aufnahme ab dem nächsten Takt
+   (wie bisher). Soll ein ● direkt nach dem automatischen Ende (z. B. innerhalb eines halben Schlags) stattdessen nichts tun?
+7. Quer steht das Mikro-Blatt jetzt in zwei Spalten, damit alles (auch [Einmessen] und [Mikro aus]) ohne Rollen sichtbar ist. Passt das so?
+   (Frage 1 aus VS-L ist damit beantwortet, sobald du zustimmst.)
+8. Singst du einen neuen Take über einen gleich langen STIMME-Clip und fängst nicht am Schleifen-Anfang an, nimmt die App jetzt die ganze
+   Aufnahme und lässt die Schleife ab deinem ersten Takt laufen (vorher fehlte der letzte Takt). Ist das so richtig?
+
+### iPhone (Xander)
+
+1. Eine Szene mit kurzer STIMME (4 Takte) laufen lassen, ● **kurz vor** einem Taktstrich tippen, ab dem Taktstrich 16 Takte singen, ● →
+   Clip 16 Takte, der erste gesungene Takt ist Takt 1 des Clips, der 16. ist ganz da. Gleich danach ↶ → die alte 4-Takt-Stimme läuft
+   wieder im Takt mit der MELODIE.
+2. Noch mal 4 Takte über den 4-Takt-Clip singen (● kurz vor dem Taktstrich) → bleibt 4 Takte, alle 4 Takte zu hören.
+3. Melodieerkennung Aus, 16 Takte singen, am Ende ● tippen → „Gesang aufgenommen · 16 Takte“, der Take ist da (danach ● noch mal tippen,
+   falls die nächste Aufnahme bereitsteht).
+4. Ohne Kopfhörer (Lautsprecher, eingemessen), Aus: 2 Takte singen, 2 Takte Pause, 4 Takte singen, FANG 🎤 → nur die letzten 4 Takte.
+5. iPhone quer: Mikro-Blatt öffnen → alles ohne Rollen sichtbar, rechts „Melodieerkennung“, links unten [Einmessen] [✕ Mikro aus].
+
+### Für das Zusammenführen (zusätzlich zu VS-L)
+
+- `tkVoiceTake`: Zeile `gp`/`g0`/`nb` (nächster Taktstrich) und Bedingung `nb > old.len || (nb === old.len && c0 < o.a - 0.25)`;
+  eine Zeile `if (grow) its.push({kind: 'tphase', …})` vor dem `clip`-Teil.
+- neu nach `tkGrowPhase`: `tkPhaseOf`, `tkPhaseSet`.
+- `undoState`, `undoApply`: je eine Zeile für `tphase` (vor dem letzten `else`/`return`).
+- `tkEnsureTrack`: Zustands-Sperre entfernt (Kommentarzeile), Schleife „leere Spur wird STIMME“ mit `(rec.state === 'off' || i !== rec.track)`.
+- `vsLevelNotes`: eine Zeile `rq`/`on(i)` (+ zwei Stellen `on(…)` in der Schleife), `VS.lastLevel.bleedDb`; neu `vsLevelBleed` danach.
+- `stSheetFill`: drei Hüllen `st-c1`/`st-c2`/`st-c3` (an vier Stellen der html-Zeilen); CSS-Block `@media (orientation:landscape) and
+  (max-height:520px)` nach `.stpop .st-melx`.
+- VS-P-Stellen (`tkStartSrc`, `tkTrackResync`, `tkPlace`, …) nicht berührt.
+
+
+# VS-P — Stimme im Mix (Nachtrag 4, Paket VS-P) · App 4.24.0
+
+Grundlage: Zweig-Kopie `vs-br-VSP/index.html` ab App 4.23.0 (`vs-base-B.html`). Spec: `v3-ideen/dirigent-spec-v3-nachtrag-4-gesang.md`,
+Abschnitt „Paket VS-P“. Auftrag Xander 27.10. mittags: „… sie sind im Kontext zu den Synthesizern oder anderen Spuren … meistens viel zu
+leise. Kann man da noch irgendwie was machen, dass die Stimme lauter ist oder dass das in besserem Verhältnis zueinander funktioniert?“
+`VERSION` 4.24.0 (`APP_CODE` 4 024 000). Format bleibt 5, **kein neues Feld** (der Ausgleich steht nicht im Projekt). `live: true` in CLOUD
+unverändert. Kein Supabase-Aufruf. **Am Server offen: `max_app` ≥ 4024000** (Xander per SQL).
+
+## Ursache (erst gemessen, unveränderte App 4.23.0)
+
+Gemessen mit echten Läufen (Mikro-Attrappe im selben AudioContext, Kabel-Weg ohne Pegel-Automatik wie `MIC_ASK`; Mitschnitt an den
+Knoten der App; Lautheit ITU-R BS.1770-4, wahre Spitze 4×; `n4-vs-p-m1.mjs`, `n4-vs-p-accept.mjs 02`).
+
+| Stelle | −36 dBFS RMS | −28 dBFS RMS | −20 dBFS RMS |
+|---|---|---|---|
+| Mikro → Ringpuffer → Take (PCM) | −36,55 LUFS | −28,55 LUFS | −20,55 LUFS |
+| Take → `tkStartSrc` → Eingang STIMME-Spur (stereo L = R, +3,01) | −33,6 | −25,6 | −17,6 |
+| Ausgang STIMME-Spur (Pegel-Standard 0,8 → 0,8² = −3,88 dB, Pan Mitte) | **−37,5** | **−29,5** | **−21,5** |
+
+- Unterwegs geht **nichts verloren**: Ringpuffer und Take sind verlustfrei (0,0 dB), `tkStartSrc` spielt mit Verstärkung 1, die Kette der
+  STIMME-Spur hat dieselbe Pegel-Stellung 0,8 wie jede Synth-Spur. Säubern (VS4) senkt die Stimme kaum: in diesem Lauf (Lautsprecher-Weg,
+  60 %) −28,58 → −28,59 LUFS (−0,01 dB); VS4 hat mit echtem Echo −0,4 … −0,7 dB gemessen (Legato mit Echo ≈ −1 dB).
+- Die Synth-Spuren dagegen sind kalibriert: Demo-Projekt am Spur-Ausgang Moog-Bass **−22,3**, FM-Pluck **−21,1**, Rom-Fläche **−22,0**,
+  Drums **−15,6**, Summe −14,6 LUFS. Die MS-2000-Programme sind auf −18 LUFS **am Klangerzeuger** kalibriert (`mkRender`, vor dem
+  Pegel) – am Spur-Ausgang also ≈ −21,9 LUFS, gleich den Demo-Synths.
+- Demo-Projekt mit Gesangs-Take (Mikro −28 dBFS RMS): Stimme **−30,2 LUFS** = **9,1 LU unter** der lautesten Synth-Spur und **14,6 LU unter**
+  den Drums.
+- **Ursache:** Der Gesang kommt mit dem Pegel des Mikrofons in den Mix. Die App schaltet die Pegel-Automatik des Mikrofons bewusst aus
+  (Timing, Säubern, Tonhöhe); ein iPhone-Mikro liefert beim Singen etwa −36 … −20 dBFS RMS. Es gab keine Stelle, die den Take auf das
+  Niveau der kalibrierten Synths bringt → 8 … 16 LU zu leise, je nach Abstand zum Mikro und Lautstärke des Sängers.
+
+## Was neu ist
+
+1. **Auto-Pegel je Take** (`vpStep`): Die Fassung, die klingt (Roh, gesäubert oder gedehnt – je Puffer einmal), wird nach ITU-R BS.1770-4
+   gemessen (K-Filter, 400-ms-Blöcke mit 75 % Überlappung, Gate −70 LUFS / −10 LU; damit zählt der gesungene Teil, Pausen fallen heraus).
+   Der Take spielt mit dem Ausgleich, der am Ausgang der STIMME-Spur bei Pegel-Standard (0,8, Pan Mitte) **−16 LUFS** ergibt; Grenzen
+   −12 … +24 dB; ein stiller Take bekommt 0 dB. Gilt für Szene-Clips und `song.vox` (beide über `tkStartSrc`) und für vorhandene Takes:
+   gemessen, sobald ihr Audio geladen ist (`tkLoad`). Der Wert entsteht nur aus dem Audio (auf jedem Gerät gleich), steht **nicht** im
+   Projekt; WAV/ZIP bleiben der Roh-Take (bitgleich).
+2. **Spitzen-Schutz** (`vpLim`): Aus demselben Puffer eine Hüllkurve (alle 16 Samples): wahre Spitze (4× Überabtastung) des
+   ausgeglichenen Takes ≤ −1,3 dBTP **vor** dem Pegel-Regler (damit ≤ −1 dBTP am Ausgang in jeder Regler-Stellung), 2 ms Vorlauf,
+   100 ms Freigabe. Weil der Take vorher bekannt ist, rechnet der Begrenzer offline voraus – **keine Verzögerung** gegen die anderen
+   Spuren. Er wirkt als eigener GainNode nur in Abspiel-Stücken, die eine Spitze enthalten; ohne Spitze und ohne STIMME-Spur gibt es
+   keinen zusätzlichen Knoten.
+3. **Pegel-Regler, Pan, Mute, Sends** der STIMME-Spur wirken wie bisher zusätzlich (relativ).
+4. **Leistung:** Gemessen wird in Häppchen im Hauptfaden (6 ms, wenn etwas darauf wartet 20 ms; kein langer Task). Eine Neu-Planung
+   (Take fertig, gewählt, gesäubert, gedehnt) wartet, bis die neue Fassung gemessen ist – bis dahin spielt das Alte weiter. Ein Stück mit
+   noch ungemessenem Puffer setzt danach ein, wie ein Take, der noch lädt.
+5. Kein neuer Regler, kein neuer Knopf, kein neuer Text, kein neues Projektfeld. Test-API: `vpInfo()`, `vpEnv(id)`, `vpWait()`.
+
+## Abnahme
+
+| ID | Ergebnis | Messung/Skript |
+|---|---|---|
+| VS-P-01 | ✓ Mikro-Weg (● REC mit 🎤, Kabel), gesungener Vokal −36 / −28 / −20 dBFS RMS → Take −37,1 / −29,1 / −21,1 LUFS, Ausgleich +21,97 / +13,97 / +5,97 dB → **Ausgang STIMME −16,04 / −16,04 / −16,04 LUFS** (wahre Spitze −7,4 … −7,6 dBTP). Zweite Stimme (Korpus-Gesang VS2): −16,06 / −16,06 / −16,06 LUFS, auch über den Lautsprecher-Weg mit Säubern 60 % −16,06 | `n4-vs-p-accept.mjs 01`, `n4-vs-p-m1.mjs` |
+| VS-P-02 | ✗ **wie geschrieben nicht erfüllbar zusammen mit VS-P-01** (siehe Abweichungen 1). Demo-Projekt + Take (−28 dBFS RMS), alle Regler Standard, je Spur-Ausgang: Moog-Bass −22,29, FM-Pluck −21,11, Rom-Fläche −22,17, Drums −15,63, **Stimme −16,02 LUFS** (4.23.0: −30,16). Stimme gegen lauteste Synth-Spur **+5,09 LU** (Soll ≤ +3), gegen die lauteste Spur (Drums) **−0,39 LU** | `n4-vs-p-accept.mjs 02` |
+| VS-P-03 | ✓ (a) leiser Gesang −30 dBFS RMS mit Plosiven bei 0 dBFS roh (nach Ausgleich +13,6 dBFS): wahre Spitze am STIMME-Ausgang **−5,18 dBTP** (Pegel-Standard), **−1,30 dBTP** (Pegel ganz auf); (b) Spitzen genau 0,9 dBFS nach dem Ausgleich: −5,18 / −1,30 dBTP. Natürlicher Gesang, Anteil stimmhafter 20-ms-Frames mit ≤ 3 dB Pegelminderung: Vokal −28 / −20 / −36 (+22 dB) **100 %**, Korpus-Stimme −28 / tief −20 **100 %** (Hüllkurve nicht nötig), Vokal mit Konsonanten (Plosive +14 … +20 dB über RMS, Zischlaute) **96,9 %** (größte 8,2 dB am Plosiv). Verschiebung gegen einen Synth-Ton im selben Mitschnitt: 0,204 ms (4.23.0) / 0,204 ms (VS-P) → **0,000 ms**, begrenzte Plosiv-Spitze 0,632 → 0,551 | `n4-vs-p-accept.mjs 03` |
+| VS-P-04 | ✓ Take in 4.23.0 aufgenommen und gespeichert, VS-P im selben Browser geöffnet: gemessen nach dem Laden, **bevor** er spielt (−31,32 LUFS, +16,19 dB); spielt mit **−16,10 LUFS** am Ausgang (4.23.0: −32,2); Projekt mit Take gespeichert in 4.23.0 = geladen in VS-P Zeichen für Zeichen (12 059 Zeichen); WAV-Export bitgleich zum Roh-Take und zu 4.23.0 (`e0a3828d:705600`), ZIP mit Roh-WAV; Projekt ohne Takes (Demo 13 864, INIT 10 312 Zeichen) Zeichen für Zeichen gleich zu 4.23.0 (nur appVersion/Prüfsumme/ID ausgenommen) | `n4-vs-p-p04.mjs` |
+| VS-P-05 | ✓ M-KLICK (2. Differenz ≤ 1,5 × Krümmung, Mitschnitt aller Ausgänge, Aussetzer der Test-Umgebung über einen Bezugston erkannt und ausgenommen): Schleife + Take-Wechsel + Stopp Faktor 1,04; A/B Roh│Sauber ×4 + Säubern 100 → 40 % beim Spielen + Stopp Faktor 1,11 / 1,25 (zwei Läufe); arbeitender Spitzen-Schutz (−9,6 dB) mit Schleife + Stopp Faktor 1,17; neuer, ungemessener 16-Takt-Take beim Spielen: Stille 25 ms (4.23.0 auf demselben Weg 270 … 960 ms), Faktor 1,31 (4.23.0 1,55) | `n4-vs-p-click.mjs` |
+| VS-P-06 | ✓ lange Tasks: 16 Takte bei 120 BPM (32 s) und 40 BPM (96 s, langsamstes Tempo), Fertigwerden während des Spielens und Laden: **keine** Aufgabe > 50 ms (4.23.0 ebenso keine); längstes Mess-Häppchen 11,9 … 43,4 ms (unter Last der Nachbar-Builds, Lastmittel 4–8 auf 4 Kernen), Rechenzeit gesamt 133 ms (32 s) / 156 ms (96 s). **CPU 3 min** (Demo + Gesangs-Take mit arbeitendem Spitzen-Schutz, Renderer-Prozess, je 2 Läufe abwechselnd): 4.23.0 64,51 / 60,99 % → Mittel 62,75 %; VS-P 64,57 / 55,68 % → 60,13 % = **−2,6 Prozentpunkte** (≤ +2; die Streuung der Umgebung ist größer als der Unterschied) | `n4-vs-p-perf.mjs lt`, `n4-vs-p-perf.mjs cpu` |
+| Punkt 4 | ✓ `song.vox` (● SONG mit 🎤, Punch Takt 1–8, Mikro −32 dBFS RMS): Take −33,34 LUFS, Ausgleich +18,2 dB → Ausgang STIMME **−16,03 LUFS**; Pegel-Regler 0,8 → 0,4 = −12,01 dB (Soll −12,04, relativ wie bisher); Mute → still | `n4-vs-p-vox.mjs` |
+| Layout | ✓ keine sichtbare Änderung: P1, P2, XL pixelgleich zu 4.23.0, P3, L1, L2 optisch gleich (nur der Toast „STIMME-Spur angelegt“ blendet zeitabhängig ein); Seite in allen sechs Formaten = Fenster (kein Überlauf, kein Sprung) | `n4-vs-p-lay.mjs` |
+
+Regression (Kopien mit Pfad auf diese App, Präfix `n4-vs-p-reg-`): `v3-vs3-accept` **72 ✓, alles grün**; `gs7-v3-vs4-click` 6 ✓;
+`gs7-v3-vs4-accept` 25 ✓, 1 ✗ (siehe Abweichungen 5, auch in 4.23.0); `gs7-v3-vs5a-t1/t3/t4/t5` alle grün, `-t2` 20 ✓ / 1 ✗ (auch in
+4.23.0) und gelegentlich ein Zeit-Messpunkt (auch in 4.23.0); `gs7-v3-vs5b-t1 … t5` **alle grün** (32 / 51 / 5 / 6 / 9 ✓).
+Smoke `smoke.mjs` ohne Fehler.
+
+## Abweichungen
+
+1. **VS-P-01 und VS-P-02 widersprechen sich im Demo-Projekt.** Die Spec setzt −16 LUFS „2 dB über einem einzelnen kalibrierten
+   Synth-Programm“ an. Die −18 LUFS der Programme sind aber am Klangerzeuger gemessen, **vor** dem Pegel 0,8 (−3,88 dB); am Spur-Ausgang
+   liegen die Synths bei −21 … −22 LUFS. −16 LUFS am Ausgang der STIMME-Spur (VS-P-01, Punkt 2 der Spec) ist deshalb +5,1 LU über der
+   lautesten Synth-Spur (VS-P-02 verlangt ≤ +3) – und etwa so laut wie die Drums (−0,4 LU). Gebaut ist die Zahl der Spec (−16 LUFS am
+   Ausgang). Eine einzige Konstante (`VP_LUFS`) legt das Ziel fest; −20 LUFS würde VS-P-02 erfüllen (+0,9 LU über FM-Pluck, −4,4 LU unter
+   den Drums) und VS-P-01 verfehlen. → Frage an Xander 1.
+2. Jede Fassung wird für sich gemessen: Roh und gesäubert (und gedehnt) klingen gleich laut. Das A/B Roh│Sauber vergleicht damit bei
+   gleicher Lautheit (Unterschied im Test 0,01 dB). Folgt aus „auf der Fassung, die klingt“.
+3. Der Clip-Pegel `audio.gain` (0 … 4, in der Oberfläche nicht einstellbar, immer 1) wirkt weiter als Faktor; der Spitzen-Schutz ist für
+   Clip-Pegel ≤ 1 bemessen.
+4. Neu-Planung wartet auf die Messung: ein frisch fertiger oder neu gewählter Take setzt um die Messzeit später ein (gemessen:
+   Stille 25 ms im Test-Weg; Rechenzeit 32 s Take ≈ 60 … 130 ms in Häppchen). Das Alte spielt bis dahin weiter.
+5. Test-Erwartungen früherer Pakete, die schon in 4.23.0 nicht mehr stimmen (nicht durch VS-P, nicht angepasst): `gs7-v3-vs4-accept`
+   erwartet den Speicher-Schlüssel `…:c100:0`, seit F1 heißt er `…:c100v2stdc:0`; `gs7-v3-vs5a-t2` „↶ → Stärke 100 %“; der Punkt „heard:
+   onset intervals …“ desselben Skripts schwankt (2,9 ms gegen 2,5 ms Toleranz) in 4.23.0 und in VS-P gleich – seine feste Schwelle 0,02
+   trifft wegen des Ausgleichs (Ausgang 0,54 statt 0,32) andere Stellen.
+
+## Fragen an Xander
+
+1. **Wie laut soll die Stimme sein?** Jetzt: so laut wie die Drums (−16 LUFS, ≈ 5 dB über den Synths). Alternative: 1 … 2 dB über den
+   Synths (−20 LUFS), dann ≈ 4 dB unter den Drums. Beides ist eine Zeile.
+2. Einen Schalter „Auto-Pegel aus“ halte ich nicht für nötig (der Pegel-Regler der STIMME-Spur wirkt weiter relativ); nicht gebaut.
+
+## iPhone (Xander)
+
+Nur auf der Pages-Seite (Mikrofon):
+1. Ein vorhandenes Projekt mit Gesang öffnen und ▶: die Stimme ist jetzt deutlich lauter, etwa so laut wie die Drums – auch bei einem Take,
+   der leise aufgenommen wurde (weiter weg vom Mikro gesungen).
+2. Neu aufnehmen (● REC mit 🎤), einmal nah und einmal weit weg vom Mikro: beide Takes klingen gleich laut.
+3. Laut in das Mikro „P“ / „T“ sagen oder klatschen: kein Knacken, nichts übersteuert, die Stimme bleibt im Takt mit den anderen Spuren.
+4. Pegel-Regler der STIMME-Spur: leiser/lauter wie bisher; Mute schaltet stumm.
+5. WAV-Export eines Takes: unverändert der Original-Take (nicht lauter).
+
+## Für das Zusammenführen
+
+Neuer Block (VS-P) direkt vor `/* ---------- Abspielen ---------- */`: `VP_*`-Konstanten, `VP`, `vpKco`, `vpTp`, `vpJob`, `vpStep`,
+`vpFinish`, `vpPump`, `vpDefer`, `vpTrackBufs`, `vpKick`, `vpHot`, `vpReady`, `vpGet`, `vpLim`, `VP_API`.
+Ein-Zeilen-Haken in vorhandenen Funktionen:
+- `tkPlayBuf` (2 Zeilen: Rückgabe über `vpKick`) · `tkLoad` (1 Zeile: `TK.buf.set(id, vpKick(b))`)
+- `tkStartSrc` (Zeile `const V = …` und `G = … * (V ? V.g : 1)`; Verbindung `s → lim → g` statt `s → g`; `lim` im Stück-Objekt `r`)
+- `tkPlace` (1 Zeile: `if (!vpReady(o.buf)) return;` vor `TK.reg.add`)
+- `tkTrackResync`, `tkVoxResync` (je 1 Zeile `vpDefer(…)`)
+- `clResync` (VS4): Tausch erst mit gemessener Fassung (`|| !vpReady(nb)`), alte Fassung blendet von `r.G` aus (mit Ausgleich)
+- `wpSwitch` (VS5): 1 Zeile nach dem Sammeln der Paare (`if (pairs.some(p => !vpReady(p.nb))) return;`)
+- `Object.assign(SYNQUENZER, VP_API);` nach der WP_API-Zeile · `VERSION = '4.24.0'`
+VS-P fasst `tkVoiceTake`, `vsRecDone`, `vsFangDone`, `recLength`, `tkMakeTake` und das Mikro-Blatt (VS-L) nicht an.
+Snapshot: `synq-snapshots/VS-P.html`. Testskripte: `dirigent-test/n4-vs-p-*.mjs` (Ausgaben `dirigent-test/n4vsp/`).
+
+## VS-P-fix
+
+Grundlage: `synq-snapshots/VS-P.html`, Fehlerliste der Prüfung (6 Punkte). Alle sechs zuerst mit den Prüf-Skripten nachgestellt
+(alle reproduziert), dann behoben und mit denselben Skripten erneut gemessen. Version bleibt 4.24.0, Format 5, kein neues Feld, `live: true`
+unverändert, keine sichtbare Änderung. **Am Server offen: `max_app` ≥ 4024000.** Dieser Abschnitt gilt vor den Angaben weiter oben
+(Ziel-Pegel, Spitzen-Grenze, Leistung).
+
+### Was geändert ist
+
+1. **Ziel-Pegel mit demselben Bezug wie die Synths (VS-P-02).** Die −18 LUFS der MS-2000-Programme gelten am Klangerzeuger, *vor* dem
+   Pegel-Regler. Der Auto-Pegel bringt die Stimme jetzt auf **−16 LUFS vor dem Pegel-Regler** (Eingang der STIMME-Spur) – „2 dB über einem
+   einzelnen kalibrierten Synth-Programm“ an derselben Stelle gemessen. Am Ausgang: Pegel ganz auf −16 LUFS, Pegel-Standard 0,8 −19,9 LUFS
+   (vorher −16 nach dem Regler = 5 LU über den Synths). Eine Konstante (`VP_REF` 0,8 → 1).
+2. **Spitzen-Schutz für jede Panorama-Stellung (VS-P-03).** Pan ganz außen legt L + R der (stereo L = R geführten) Stimme auf eine Seite
+   (+6,02 dB, Pan-Gesetz der Spur-Kette, unverändert). Grenze vor Pegel und Pan jetzt −7,32 dBTP (`VP_CEIL` = −1,3 dBTP / 2) → am Ausgang
+   ≤ −1,3 dBTP in **jeder Stellung von Lautstärke und Panorama**.
+3. **Spitzen-Schutz ohne Rechenzeit je Stück (Fehler 4, 5, 6).** Statt je Abspiel-Stück `setValueCurveAtTime`-Kurven für alle Abschnitte
+   des restlichen Takes zu bauen (20 … 190 ms im Hauptfaden → Start nach seiner Zeit, Knacken beim A/B, Hüllkurve 12 … 30 ms gegen die
+   Spitzen verschoben, bis +12 dBTP), liegt die Hüllkurve einmal je Puffer als AudioBuffer vor (¼ der Abtastrate, Stützstellen genau auf
+   dem 16er-Raster, dazwischen linear – wertgleich zur Kurve, Abweichung 3·10⁻⁸). Ein AudioBufferSourceNode mit derselben Startzeit und
+   demselben Versatz wie das Stück steuert den `gain` (Grundwert 1, Puffer = Hüllkurve − 1) des Begrenzer-GainNode: sample-genau, Aufwand
+   je Stück fest (0,1 … 1 ms), er läuft nur über die Abschnitte des Stücks und endet mit dem Stück (`tkDrop`).
+4. **Messung beim Fertigwerden (Fehler 3).** Ein Take wird gemessen, sobald sein Puffer entsteht: Aufnahme fertig (`tkMakeTake`),
+   Import (`tkAddPcmTake`), gesäubert (`clEnsure`), gedehnt/geschnitten (`wpRender`) – nicht erst beim ersten Abspielen. Das erste Abspielen
+   nach der Aufnahme beginnt wieder genau am Clip-Anfang.
+5. **Messung ohne langes Häppchen.** Die Hüllkurven-Stufe ist jetzt in Häppchen zerlegt (vorher am Stück: bis 110 ms bei 96 s), die
+   Spitzen-Suche prüft die Zeit alle 1 024 statt 8 192 Samples und rechnet die drei Zwischenwert-Phasen in einer Schleife.
+
+### Abnahme (neu gemessen)
+
+| ID / Fehler | Ergebnis | Messung/Skript |
+|---|---|---|
+| Fehler 1 / VS-P-02 | ✓ Demo + Gesang über das Mikro (● REC mit 🎤, MELODIE Szene 1), alle Regler Standard: Moog-Bass −22,34, FM-Pluck −21,21, Rom-Fläche −22,20, Melodie −23,62, Drums −15,70, **Stimme −20,15 LUFS → +1,06 LU** über der lautesten Synth-Spur (vorher +4,78); Mikro −36 dBFS: −20,21 → **+0,97 LU** | `n4-vs-p-qa-02.mjs "" -28` / `-36` |
+| VS-P-01 | ✓ Mikro −36 / −28 / −20 dBFS RMS → Ausgang STIMME Pegel ganz auf **−16,10 / −16,01 / −16,02 LUFS**, Pegel-Standard −19,89 / −19,89 / −19,89 LUFS | `n4-vs-p-fix-accept.mjs 01` |
+| Fehler 2 / VS-P-03 | ✓ Take −30 dBFS RMS mit Plosiven bei −0,3 dBFS roh: wahre Spitze Ausgang Pegel/Pan 0,8/0 −11,2 · 1/0 −7,32 · 0,8/−1 **−5,18** · 0,8/+1 **−5,18** · 0,8/−0,5 **−6,55** · 1/−1 **−1,30 dBTP** (vorher bis +4,72). Spitzen genau 0 dBFS nach dem Ausgleich: −11,2 / −7,32 dBTP. Natürlicher Gesang ≤ 3 dB Pegelminderung: Vokal −28/−20/−36 100 %, Korpus 100 %, **Vokal mit Konsonanten 95,5 %** (vorher 96,9 %; Soll ≥ 95). Keine Verschiebung: 0,000 ms | `n4-vs-p-qa-03.mjs`, `n4-vs-p-fix-accept.mjs 03` |
+| Fehler 3 | ✓ 8 Takte bei 40 BPM (48 s, zweimal) und bei 60 BPM: erstes Stück **0,0 ms** nach Clip-Anfang, Versatz +0,0 ms (wie 4.23.0; vorher +126 … +558 ms), Take beim Fertigwerden schon gemessen | `n4-vs-p-qa-late.mjs 8 40`, `8 60` |
+| Fehler 4 / VS-P-05 | ✓ 16 Takte, Säubern 100 %, 7 × A/B beim Spielen, 112 und 40 BPM: `tkStartSrc` 0,2 … 0,9 ms (einmal 2,4 / 4,2 / 7,1 ms bei Last 13; vorher 17 … 220 ms), 2. Differenz Faktor höchstens **5,42** (= Boden der Messung, 4.23.0 5,42; vorher bis 481), Plosiv-Abstände **1200 ms** genau. Hinweis: die Plosiv-Schwelle 0,45 des Skripts liegt über der neuen Grenze (−7,32 dBTP = 0,43) – Kopie mit Schwelle 0,38 | `n4-vs-p-fix-ab.mjs` (`PTH=0.38`; `0.2` zeigt ±4 ms nur durch die Erkennung: Roh und Sauber werden an verschiedenen Stellen der Flanke erkannt) |
+| Fehler 5 | ✓ `tkPick` 16 Takte, 3 Läufe: `tkStartSrc` 0,1 … 0,4 ms, Abstände 1000 ms, alle Spitzen **−7,32 dBTP** am Spur-Eingang (Pegel ganz auf = Ausgang); `tkTrackResync` 4 Takte 3 Läufe −7,32, `songPlay` ab Takt 2/3/4 −8,62 dBTP, 0 über −1 | `n4-vs-p-qam-lim11.mjs <app> 3 pick 16`, `3 resync 4`, `3 song 4` |
+| Fehler 6 / VS-P-06 | ✓ 40 BPM, 16 Takte (96 s), Schleife: `tkStartSrc` 0,2 … 2,3 ms (vorher 82 … 195 ms), 99 Spitzen alle −7,32 dBTP, Abstände 1000 ms über den Schleifen-Anfang. Lange Tasks beim Spielen ohne Mitschnitt: App-Funktionen höchstens `tkStartSrc` 1,0 ms / `vpLim` 0,5 ms; die übrigen langen Tasks (1 … 2 je 144 s) gibt es in 4.23.0 genauso (3 im selben Lauf) – Last der Nachbar-Builds (Lastmittel 4 … 13). Messung: längstes Häppchen 20,7 ms (32 s) / 32,4 ms (96 s), 96-s-Take mit 96 Begrenzer-Abschnitten 26 … 29 ms bei Last 13; Häppchen = am Stück gerechnet (bitgleich). CPU 100 s Wiedergabe, je 2 Läufe: 4.23.0 53,53 %, VS-P 54,27 % = **+0,74 Prozentpunkte** | `n4-vs-p-qam-lim11.mjs` (BPM=40, loop 16), `n4-vs-p-fix-lt.mjs`, `n4-vs-p-perf.mjs lt`, `n4-vs-p-fix-slice.mjs`, `n4-vs-p-fix-same.mjs`, `n4-vs-p-perf.mjs cpu 100` |
+| VS-P-04 | ✓ Take aus 4.23.0 nach dem Laden gemessen, bevor er spielt; spielt mit −19,97 LUFS bei Pegel-Standard (Soll jetzt −19,88 ± 1,5); WAV/ZIP bitgleich; Projekte ohne/mit Takes Zeichen für Zeichen gleich | `n4-vs-p-fix-p04.mjs` |
+| Punkt 4 (`song.vox`) | ✓ −19,91 LUFS bei Pegel-Standard; Pegel 0,8 → 0,4 = −12,01 dB; Mute still | `n4-vs-p-fix-vox.mjs` |
+| VS-P-05 (Builder-Skript) | ✓ Schleife + Take-Wechsel + Stopp 1,41; A/B + Säubern 100 → 40 % 1,11 / 1,24; arbeitender Spitzen-Schutz 1,14; neuer Take beim Spielen Stille 30 ms (4.23.0 290 ms) | `n4-vs-p-click.mjs` |
+
+Regression: `v3-vs3-accept` 72 ✓; `gs7-v3-vs4-click` 6 ✓; `gs7-v3-vs4-accept` 25 ✓ / 1 ✗ (bekannt, auch 4.23.0); `gs7-v3-vs5a-t1/t3/t4/t5`
+grün, `-t2` 20 ✓ / 1 ✗ (bekannt, auch 4.23.0); `gs7-v3-vs5b-t2 … t5` grün; `gs7-v3-vs5b-t1` 32 ✓ in 8 von 10 Läufen – in 2 Läufen
+„render cache … (renders 7 → 7)“: die Fassung lag schon im Cache, es musste gar nicht gerechnet werden (die Zählung hängt vom Verlauf des
+Caches ab; `ready` war sofort da). Smoke ohne Fehler.
+
+### Abweichungen
+
+1. VS-P-01 wird mit dem Bezug der Synth-Kalibrierung gelesen (vor dem Pegel = Ausgang bei Pegel ganz auf): −16 LUFS dort, −19,9 LUFS bei
+   Pegel-Standard. So erfüllen VS-P-01 und VS-P-02 beide (Abweichung 1 oben ist damit erledigt). Die Builder-Skripte `n4-vs-p-accept.mjs 01`,
+   `n4-vs-p-p04.mjs`, `n4-vs-p-vox.mjs` prüfen noch −16 bei Pegel-Standard; die Kopien `n4-vs-p-fix-*.mjs` prüfen den neuen Bezug.
+2. Die Spitzen-Grenze gilt für Lautstärke und Panorama. Drive, Chorus und Hall der STIMME-Spur können Spitzen weiter anheben (wie bisher).
+3. Wegen der Pan-Reserve greift der Schutz bei Pan Mitte früher (−7,32 dBTP am Spur-Eingang): Vokal mit Konsonanten 95,5 % der Frames
+   ≤ 3 dB (Soll ≥ 95 %), reine Vokale weiter 100 %.
+4. Speicher (iPhone): nur Takes mit Begrenzer-Abschnitten bekommen den Hüllkurven-Puffer, ¼ der Take-Größe (96 s bei 48 kHz: 4,6 MB, je
+   klingender Fassung). Takes ohne Spitze: kein Puffer, kein Knoten.
+5. Eine Neu-Planung wartet weiter auf die Messung einer *noch nicht* gemessenen Fassung (wird jetzt beim Fertigwerden angestoßen; ein Take von
+   96 s ist nach etwa 0,3 … 0,5 s gemessen). Wer ▶ in dieser Zeit drückt, hört den Take dort erst ab dem Ende der Messung.
+
+### Fragen an Xander
+
+1. Die Stimme liegt jetzt bei Pegel-Standard etwa 1 dB über den Synths und etwa 4,5 dB unter den Drums. Passt das, oder soll sie näher an
+   die Drums? (eine Zeile, `VP_REF`)
+
+### iPhone (Xander)
+
+1. Projekt mit Gesang ▶: die Stimme sitzt jetzt etwas über den Synths (nicht mehr so laut wie die Drums).
+2. Aufnehmen (● REC mit 🎤), Stopp, gleich danach ▶: der Gesang beginnt genau am Anfang, nichts fehlt.
+3. STIMME-Spur → FX / SPUR → Panorama ganz links/rechts, Lautstärke ganz auf, laut „P“/„T“ ins Mikro: nichts übersteuert.
+4. Beim Spielen Roh│Sauber umschalten und einen anderen Take wählen: kein Knacken, die Stimme bleibt im Takt.
+
+### Für das Zusammenführen
+
+Geändert gegenüber `VS-P.html` (alles im VS-P-Block, Ein-Zeilen-Haken außerhalb):
+- VS-P-Block: Kommentar, `VP_REF` (1), `VP_CEIL` (/ 2), `vpStep` (Spitzen-Suche je 1 024 Samples, drei Phasen in einer Schleife; Stufe 2
+  in Häppchen, `J.h`), neu `vpEnvD`, `vpEnvBuf`, `vpEnvFill`, `vpLim` neu geschrieben (AudioBufferSourceNode → `gain`, `n.es`).
+- `tkDrop`: 1 Haken (`r.lim.es` stoppen).
+- `tkMakeTake` (Zeile `TK.buf.set(id, vpKick(b))` im `fill`), `tkAddPcmTake` (dieselbe Zeile), `clEnsure` (`CL.buf.set(id, {a, b: vpKick(b)})`),
+  `wpRender` (`WP.alt.set` / `WP.cache.set` mit `vpKick(ab)`): je 1 Ausdruck. `tkMakeTake` ist auch eine VS-L-Stelle – beim
+  Zusammenführen nur `vpKick(…)` um `b` in der Zeile `const b = tkToBuffer(pcm, sr); if (b) TK.buf.set(id, b);` übernehmen.
+Snapshot: `synq-snapshots/VS-P-fix.html`. Neue Skripte: `dirigent-test/n4-vs-p-fix-{ab,lt,slice,same,accept,p04,vox,vs5b-t1i}.mjs`.
+
+
+# Helfer G3 + G8 — Vorlauf/Ausklang beim Einsingen · Lange Aufnahmen
+
+Basis: `bau/werkzeug/vs-base-B.html` (App 4.23.0, Format 5). Datei: `bau/helfer/G3G8/index.html`. Die VERSION-Zeile ist **nicht**
+geändert (setzt der Dirigent). Format bleibt 5 – nur additive Felder; ein Projekt ohne die neuen Felder lädt unverändert.
+Spec: `spec/dirigent-spec-v3-nachtrag-5.md`, Abschnitte „G3“, „G3 ergänzt: Einstieg aus dem Loop, Auftakt“ (Nr. 5, G3-06) und „G8“.
+Kein Supabase-Aufruf, kein alert/confirm/prompt, keine Marken-Namen.
+
+## Was neu ist
+
+### G3 — Vorlauf und Ausklang beim Einsingen
+1. **Der Take behält bis 2 Takte Anlauf und 1 Takt Ausklang** (aus dem Ringpuffer; vorher 0,25 s davor, nichts danach). Klammer, Länge
+   und Raster des Clips bleiben gleich. Hörbar ist davon nur, was wirklich gesungen wurde: Pegel über dem Grundrauschen (10 %-Wert
+   + 10 dB, höchstens 24 dB unter dem Gesang, mindestens −50 dBFS), ohne Pause > ¾ Schlag (0,35 … 1 s) bis an den Clip-Rand.
+   Das steht am Take: `take.pre = {in, sec}` und `take.post = {out, sec}` (additiv). Es gilt für jedes Stück, das genau an dieser
+   Take-Stelle beginnt bzw. endet – ein gekürztes Stück (Song-Schnitt, Ersetzen) hat deshalb keinen Anlauf/Ausklang mehr.
+   Der Ausklang wird einen Takt nach dem Clip-Ende gelesen; erst danach wird der Take gespeichert (der Clip klingt sofort).
+2. **Szene:** die Schleife bleibt in der Klammer; der Anlauf klingt nur beim **Einstieg** des Clips (Start am Taktstrich – der
+   Anlauf beginnt vorher; beim Start aus dem Stand mit Einzähler im Einzähler), nie bei Wiederholungen. Anlauf und erster Durchgang
+   sind **ein** Stück (kein Schnitt am Taktstrich). Wird der Einstieg zurückgenommen (anderer Clip, Stopp), blendet der Anlauf aus.
+3. **Song:** Anlauf vor dem Teil, Ausklang nach dem Teil (wenn der Clip dort mit einem vollen Durchgang endet), für Szenen-Clips in
+   den Spuren und für die Song-Stimme (`song.vox`, Punch mit 🎤). Benachbarte Teile überlappen (beide klingen).
+   Gezeichnet als **kleines Schwänzchen** (Keil in der Spurfarbe, ¼ der Zeilenhöhe) vor bzw. nach dem Teil.
+   **Verschieben/Tauschen eines Teils** nimmt die Song-Stimme des Teils mit (vorher ging sie verloren), samt Anlauf/Ausklang.
+4. Blenden 5 ms an allen Rändern (über die vorhandenen VS3-Blenden); Übergang Ausklang ↔ Ende des Durchgangs als 5-ms-Überblendung.
+5. **Einstieg aus dem laufenden Loop (G3 Nr. 5):** der Clip beginnt am Takt des ersten Worts auf bzw. nach dem Taktstrich. Ein Einsatz
+   in der zweiten Takthälfte (ab Schlag 2¾, gleiche ¼-Schlag-Toleranz wie FANG) ist Auftakt zum nächsten Takt; was davor gesungen
+   wurde (≤ 2 Takte) ist Vorlauf. Gilt für **Stimme-FANG** und **● REC mit 🎤** (neuer Clip, Länge „auto“). Der MELODIE-Clip bekommt
+   die Auftakt-Noten als `clip.pre = [{t < 0, d, n, v}]` (additiv); sie klingen wie der Audio-Vorlauf nur beim Einstieg und im Song
+   vor dem Teil (Schwänzchen auf der MELODIE-Zeile).
+
+### G8 — Lange Aufnahmen
+1. **Song (● SONG mit 🎤) ohne Zeitgrenze:** während der Aufnahme läuft die Stimme in Stücken (PCM16, 1 MB = 524 288 Samples) aus dem
+   Ringpuffer in den Audio-Store (alle 0,5 s nachgelesen; beim Lautsprecher-Weg auch die VS4-Referenz). Ist die Aufnahme länger als der
+   Ringpuffer, besteht der Take aus diesen Stücken (gleiche Schlüssel `<take>:<k>` wie VS3) – der Anfang bleibt erhalten. Kürzere
+   Aufnahmen gehen den bisherigen Weg (VS3), die mitgeschriebenen Stücke werden danach gelöscht. Bei einer Schleife zählt wie bisher
+   die letzte Runde (der Strom beginnt mit jeder Runde neu). **Restzeit** (freier Speicher laut `navigator.storage.estimate()`, alle
+   10 s; Arbeitsspeicher-Grenze 480 MB) erscheint nur, wenn < 2 min: Toast „🎤 noch m:ss Aufnahmezeit“ alle 10 s; bei 0 endet die
+   Aufnahme mit „Speicher knapp – Aufnahme beendet“ (der Take bis dahin bleibt).
+2. **Szene-Clips und FANG bis 64 Takte** (Noten und Gesang): Clip-Länge 1 … 64 (Normalisieren, Clip-Editor ×2/Länge/Ziehen,
+   Länge ×2/÷2), ● REC „auto“ endet spätestens nach 64 Takten, **„Länge“ zusätzlich 16, 32 und 64** (Aufnahme-Blatt und Menü),
+   FANG (Tasten) nimmt die Phrase bis 64 Takte (Rückblick 64 Takte, Notenpuffer 16 384), Stimme-FANG ebenso (Rückblick 64 Takte,
+   Länge 1/2/4/…/64). Der **Ringpuffer** hält beim Einschalten des Mikrofons 64 Takte + 4 Takte beim aktuellen Tempo
+   (120 … 300 s; 120 BPM → 140 s). Eine Szene mit langem Clip wird als Teil so lang wie ihr Clip (bis 64).
+
+## Abnahme (Chromium 1243 headless, Mikro-Attrappe im selben AudioContext wie VS2/VS3; Skripte in `tests/`)
+
+| ID | Ergebnis | Messung |
+|---|---|---|
+| G3-01 | ✓ | Auftakt (2 × 659 Hz) ½ Takt vor Takt 1, ● REC Länge 2: Take-Anlauf `pre.sec` 1,03 s, `in` 4,25 s (2 Takte + 0,25 s), Take 1 Takt länger als `out`; Klammer 2 Takte; MELODIE `pre` = 2 Noten (t −2 / −1). Einstieg am Taktstrich: 659 Hz vor dem Strich **−23,2 dB**, vor der Wiederholung **−78,2 dB**; genau ein Anlauf im Plan; Übergang Anlauf → Clip 2. Differenz 0,0023 (kein Knack); MELODIE spielt beim Einstieg 2 Auftakt-Noten (`g3-accept.mjs A`) |
+| G3-02 | ✓ | Teil mit STIMME-Clip (Takt 10): Schwänzchen gezeichnet (18,5 px STIMME, 18 px MELODIE), Anlauf vor dem Teil −23,3 dB (davor Stille); Teil an den Anfang verschoben → Eintrag Takt 2, Schwänzchen mit, Anlauf −23,2 dB. Song-Stimme (Punch Takt 5–6, Anlauf 1,03 s): hörbar −23,2 dB, gezeichnet; Teil (Takt 5–8) ans Ende verschoben → Song-Stimme Takt 9 mit gleichem Take/`in`, Anlauf dort −23,2 dB, an der alten Stelle −200 dB (`B`) |
+| G3-03 | ✓ | Teil A (392 Hz über das Clip-Ende, Ausklang 0,55 s) + Teil B (Anlauf 1,03 s) direkt dahinter: vor dem Strich A −20,6 dB und Anlauf B −24,5 dB, nach dem Strich Ausklang A −20,6 dB und B −24,6 dB, danach Ausklang aus (−66,7 dB); größte 2. Differenz über alle Ränder 0,0029 (Töne allein ≈ 0,003) (`C`) |
+| G3-04 | ✓ | Projekt trägt Take `pre`/`post` und MELODIE `pre`; Undo nimmt Take samt Anlauf zurück; Redo deep-equal; Speichern → Neuladen deep-equal (`D`) |
+| G3-05 | ✓ | Song-Ansicht P1 390×844, P2 375×667, P3 320×568, L1 844×390, L2 667×375, XL 926×428: Anlauf 18,5 px, Ausklang 9,9 px, Auftakt-Noten 18 px, alle im Bild, Seitengröße unverändert, kein waagrechtes Rollen; Bilder `tests/out/g3-*-song*.png` (`g3-lay.mjs`) |
+| G3-06 | ✓ | Laufender 4-Takt-Loop, Auftakt ½ Takt vor Takt 5: **● REC** (ab Takt 4, Länge auto, Ende Takt 9) und **Stimme-FANG** → MELODIE und STIMME 4 Takte, beginnen bei Takt 5 (cstart 16, FANG start 4), erste Note A4 auf 0, Auftakt 2 × E5 als Vorlauf, Take-Anlauf 1,03 s; beim Einstieg −23,3 dB hörbar, im Song vor dem Teil −23,2 dB, Schwänzchen auf STIMME und MELODIE (`F`) |
+| G8-01 | ✓ | Song-Aufnahme **5 min** (300 s, Ringpuffer 150 s) mit 🎤: Take aus 26 mitgeschriebenen Stücken, 303,5 s im Speicher, 31 Stichproben (Sek. 0 … 299) mit richtiger Tonhöhe, **300/300 Ton-Strecken ohne Loch** (kleinster 20-ms-Pegel −15,1 dB), keine lange Aufgabe > 50 ms, Take 2,1 s nach dem Ende fertig (`g8-accept.mjs A`, Ausgabe `tests/out/g8-A.out`). Stück-Weg erzwungen bei 24 s: gleich, Neuladen bitgleich (`S`) |
+| G8-02 | ✓ | ● REC Länge **32** und **64** (240 BPM) mit Gesang: MELODIE 32/64 Takte (32/64 Noten, letzte im letzten Takt), STIMME 32,000/64,000 s; beide Clips ab Schlag 8; 2. Durchgang der STIMME phasengleich (0,00 ms), Ton des Takts im 2. Durchgang hörbar (−26 dB); Speichern → Laden deep-equal, danach starten beide zusammen (`B`) |
+| G8-03 | ✓ | Tasten-FANG einer 24-Takt-Phrase → 32-Takt-Clip (48 Noten); Stimme-FANG 24 Takte → MELODIE und STIMME 32 Takte (`C`) |
+| G8-04 | ✓ (Maß) | siehe unten |
+| Restzeit | ✓ | Speicher-Schätzung vorgegeben (150 s): bei > 2 min keine Anzeige, darunter „🎤 noch 1:59 Aufnahmezeit“, bei 0 „Speicher knapp – Aufnahme beendet“, Take bis dahin gespeichert (`R`) |
+| Länge 16/32/64 | ✓ | Aufnahme-Blatt in allen 6 Formaten: AUTO 1 2 4 8 16 32 64, nichts abgeschnitten, kein waagrechtes Rollen, Tipp auf 64 wirkt (Tastenhöhe siehe Befunde) (`g8-lay.mjs`) |
+
+**G8-04 – Speicher/CPU, iPhone-Maß (Rechnung aus den Messungen, 48 kHz):** Audio-Store 96 kB/s (0,1 MB/s; Lautsprecher-Weg + Referenz + gesäuberte Fassung ≈ 0,29 MB/s) → 5 min ≈ 29 MB. Arbeitsspeicher während der Aufnahme: die Stücke (2 B/Sample) ≈ 0,1 MB/s (5 min: 25 × 1 MB gemessen bei 44,1 kHz); am Ende der Take als Float-Puffer 4 B/Sample (5 min ≈ 58 MB), die Stücke werden danach frei. Ringpuffer 4,67 B/Sample: 120 BPM → 140 s ≈ 31 MB (vorher 120 s ≈ 27 MB), höchstens 300 s ≈ 67 MB. CPU: Nachlesen alle 0,5 s (≈ 24 000 Samples, Zeitkarte je Sample) – im Test keine lange Aufgabe; der Float-Puffer wird am Ende in Scheiben ≤ 8 ms gebaut. Stimme-FANG / ● REC über 64 Takte: die Auswertung (Worker) braucht 5 s (64 s Audio, Chromium) – so lange bleibt der neue Take wie bisher stumm, danach setzt er phasengleich ein. Am iPhone nicht gemessen.
+
+**Nachtest auf dem Endstand (frische Läufe, nach G8):** `g3-accept` A–F 60/61, `g3-lay` 19/19, `v3-vs3-accept` A B C E F G 57/57
+(D braucht eine Rahmen-Datei der Dirigenten-Maschine, nicht gelaufen), `v3-vs3-click` grün (M-KLICK 0,00322 ≤ 1,5 × 0,00303), `v3-vs2-accept` 48/49
+(der eine Punkt ist die schwankende Zeit-Vorbedingung des Prüfskripts, siehe Befunde), `g8-accept` S A B C R grün, Rauchtest ohne Fehler.
+**Offen / beobachten:** G3-03 zeigte in **1 von 9** Läufen eine 2. Differenz von 0,084 (sonst 0,0029–0,0037); in 8 weiteren Läufen mit
+Ortsangabe nicht wiederholbar. Wie bei VS3 (FP-DSP 3) eher der Mitschnitt (ScriptProcessor) als die App – nicht belegt, bitte am iPhone
+auf Knacken an Teil-Grenzen mit Anlauf/Ausklang achten.
+
+## Abweichungen / Auslegung (begründet)
+- **„Hörbar ist, was gesungen wurde“:** der Take hält immer bis 2 Takte / 1 Takt, *klingen* (und gezeichnet werden) nur der gesungene
+  Anlauf / Ausklang, der ohne Pause an den Clip-Rand reicht. Sonst liefe vor jedem Einstieg 2 Takte Raumrauschen (bzw. beim Lautsprecher
+  das Übersprechen) mit, und das „kleine Schwänzchen“ wäre immer 2 Takte lang.
+- **Overdub und spätere Runden einer Song-Schleife haben keinen Anlauf** (davor liegt die vorige Runde, nicht ein Auftakt).
+- **Ausklang nur im Song** (Spec Nr. 3). In der Szene klingt er nicht – siehe Fragen.
+- **Auftakt-Regel (Nr. 5):** Einsatz ab der zweiten Takthälfte (Schlag 2¾ mit der ¼-Schlag-Toleranz von FANG) = Auftakt. Bei
+  Stimme-FANG gilt sonst die Länge 1/2/4/…/64 wie bisher; würde die Zweierpotenz den Auftakt-Takt in den Clip holen, beginnt der Clip
+  trotzdem am Takt des ersten Worts und ist so lang wie die Phrase (z. B. 3 Takte). Bei ● REC mit fester Länge bleibt der Anfang der
+  Aufnahme (sonst würde der Clip kürzer als die gewählte Länge); Gesang vor dem Anfang ist trotzdem Vorlauf.
+- **Teil verschieben/tauschen nimmt die Song-Stimme mit** (vorher: VS3-Lücke „Teil-Kopien nehmen song.vox nicht mit“) – nötig für
+  „Verschieben eines Teils nimmt Anlauf/Ausklang mit“. Kopieren/Wiederholen eines Teils ist unverändert (siehe Fragen).
+- **G8 Stück-Weg nur bei langen Aufnahmen:** solange der Ringpuffer den Anfang noch hält, bleibt der geprüfte VS3-Weg (identische
+  Takes für alle bisherigen Tests); die mitgeschriebenen Stücke werden dann verworfen.
+- **Ringpuffer** wächst mit dem Tempo (64 Takte + 4), höchstens 300 s (≈ 67 MB bei 48 kHz); bei sehr langsamem Tempo reicht ein
+  64-Takte-FANG deshalb nicht ganz zurück (der Take beginnt dann später, wie bisher bei > 2 min).
+- **Teile (P1…P8, „Ein Teil hat höchstens 16 Takte“) bleiben bei 16** – G8 nennt nur Szene-Clips und FANG. Eine Szene als Teil
+  (`sceneChunk`) wird so lang wie ihr längster Clip (bis 64), sonst würde ein langer Clip im Song abgeschnitten.
+
+## Fragen an Xander
+1. **Ausklang in der Szene:** Soll der Ausklang auch klingen, wenn ein Clip in der Szene endet (Wechsel zu einem anderen Clip oder
+   Stopp am Clip-Ende)? Gebaut ist er nur im Song (Spec Nr. 3).
+2. **Auftakt-Grenze:** Ab der zweiten Takthälfte zählt ein erster Einsatz als Auftakt zum nächsten Takt. Passt das, oder soll schon
+   ein Einsatz auf Schlag 2 bzw. erst auf Schlag 4 als Auftakt gelten?
+3. **● REC mit fester Länge** (z. B. 4 Takte) und Auftakt *innerhalb* der Aufnahme: soll der Clip dann einen Takt später beginnen und
+   die Aufnahme entsprechend einen Takt länger laufen? Heute bleibt der Anfang der Aufnahme.
+4. **Teil kopieren / ×n wiederholen:** soll die Song-Stimme mitkommen (wie jetzt beim Verschieben)?
+5. **Teile länger als 16 Takte** (eigene Teile P1…P8, FANG TEIL): auch bis 64?
+6. **Restzeit-Anzeige:** jetzt als Toast „🎤 noch m:ss Aufnahmezeit“ alle 10 s (nur < 2 min). Lieber fest in der TAKT-Anzeige?
+   Arbeitsspeicher-Grenze 480 MB (≈ 28 min bei 48 kHz) – passt das fürs iPhone?
+7. **Erste Song-Aufnahme mit 🎤** (● SONG auf leerem Song) nimmt die Stimme weiterhin nicht auf (VS3-Lücke, G8 nennt sie nicht).
+   Soll sie?
+
+## Befunde (nicht geändert, schon in der Basis 4.23.0)
+- Aufnahme-Blatt „Länge“/„Quantisieren“/„Einzähler“: die Segment-Tasten sind 32–40 px hoch (P1 40, P2 36, P3 34, quer 32;
+  Breite 40–44). Gemessen auf `vs-base-B.html` genauso (`tests/g8-lay.mjs` gegen die Basis). Die drei neuen Tasten 16/32/64 haben
+  dieselbe Größe; nichts abgeschnitten, kein waagrechtes Rollen.
+- `v3-vs2-accept` A: die Vorbedingung „Stimme rechtzeitig geplant“ des Prüfskripts schwankt (−12 … +2,6 ms) – auf der Basis und hier,
+  je nach Lauf; kein App-Verhalten.
+
+## Für das Zusammenführen (geänderte Funktionen / Blöcke)
+Neue Blöcke (am Stück, vor `function voicesInfo()`): **`/* G3 … */`** (Konstanten `G3_*`, `G3`, `g3*`-Funktionen, `tkExt().take`-Normalisierung, `G3_API`) und **`/* G8 … */`** (`G8_*`, `G8`, `g8*`, `G8_API`). Nach `Object.assign(SYNQUENZER, TK_API)` zwei Zeilen `G3_API`, `G8_API`.
+
+Ein-Zeilen-Haken / geänderte Zeilen (alle mit `/* G3 */` bzw. `/* G8 */` markiert):
+- `tick()` (nach `recTick`): `g3Tick`. `songTickInner` (nach `tkVoxTick`): `g3SongTick`. `svDraw` (nach `tkSvDraw`): `g3SvDraw`.
+- `tkVoxTick`: Schleife `v0` → `g3VoxSeg`, `sb` mit `g3pb`. `tkCutAt`: Ausnahme `aud.g3e`.
+- `tkMakeTake`: erste Zeile G8-Haken; Zeile `pre/F0/Fe/n` (2 Takte / 1 Takt); `fill`: `g3TakePre`, `store()` (mit `TK.pend.delete`) erst nach `g3TakePost`.
+- `tkVoiceTake`: `G3.noPre` bei Overdub; Clip-Länge 64. `tkSongCommit`: `G3.noPre` bei späterer Runde. `tkSongBegin`: `g8Begin`. `tkSongWrap`: `g8Wrap`.
+- `tkNormSeg` (`at` bis 256), `tkNormVox` (`len` bis `SONG_MAX_BARS`), `TK_API.tkInject` (Länge 64).
+- `normClip` (Länge 64, `pre`), `cleanClip` (`pre`), `songWrite` (`g3VoxWrite`), `markAction` move/swap (`vox` im Chunk), `sceneChunk` (64).
+- `vsFangDone` (Auftakt-Regel, 64, `g3`), `vsPhrase` (256), `vsFang` (`E − 260`), `vsRecBegin` (`g3fix`), `vsRecEnd` (Auswertung 2 Takte früher), `vsRecDone` (`rs`), `vsApply` (`g3ApplyPre`).
+- `recTick` (auto bis 256 Schläge), `recClose` (64), `capture()` (`maxBars: 64`), Notenpuffer `CAP.buf` 16 384.
+- Clip-Editor: `duplicate`, `setLen`, `lenDrag` (64); Länge ×2/÷2 (64).
+- `recLength`: Normalisieren der Einstellungen, `setRecOptions`, `popRecOpts` (Segment), Menü „Aufnahme · Länge“: 16/32/64.
+- `stRing` (Länge `g8RingSec`), Mikro-Start: Ringpuffer neu, wenn zu kurz.
+
+**Überschneidung mit VS-L** (16-Takte-Takes, `recLength 16`): dieselben Zeilen in `tkVoiceTake`/`vsRecDone`/`vsFangDone` (16 → hier 64) und die
+`recLength`-Listen (hier schon 16, 32, 64). Beim Zusammenführen die G8-Werte (64, Liste bis 64) nehmen.
+
+
+# G4 + G5 — Gesangs-Effekte („Gesang Synthpop“, [Auto], Silben-Dynamik) und „In Melodie umwandeln“ · Helfer-Zweig `helfer-g4g5`
+
+Grundlage: `bau/werkzeug/vs-base-B.html` (App 4.23.0) → Kopie `bau/helfer/G4G5/index.html`. Spec: `spec/dirigent-spec-v3-nachtrag-5.md`,
+Abschnitte „G4“, „G4 ergänzt“ (Nr. 4, G4-06) und „G5“. **VERSION-Zeile unverändert** (setzt der Dirigent). **Format bleibt 5**, nur ein
+additives Feld (`track.gfx` an der STIMME-Spur). Kein Supabase-Aufruf, kein `alert/confirm/prompt`, „MS 2000“ weiter genau einmal, kein
+Fremdname. VS-P, VS-L, G1/G2, G3/G8 und Video nicht angefasst.
+
+## Was neu ist
+
+### G4 — Gesangs-Effekte der STIMME-Spur
+1. **Spur-Blatt der STIMME-Spur → [Effekte]** öffnet das Blatt „STIMME · Effekte“ (wie das Takes-Blatt):
+   - oben **[Gesang Synthpop] [Aus] [Auto] [A/B]**, darunter eine Zustandszeile,
+   - zehn große Regler: **Hochpass** (40–300 Hz) · **Entzischer** (0–12 dB) · **Silben-Dynamik** (0–100 %) · **Schwelle** (−40…0 dB) ·
+     **Verhältnis** (1–10 : 1) · **Tief** · **Mitte** · **Präsenz** (je ±12 dB) · **Hall** · **Delay** (Sends, 0–100 %).
+   - Hochkant eine Spalte (320 × 568: rollt mit dem Finger), quer zwei Spalten.
+2. **Kette** (je Take, in dieser Reihenfolge): Hochpass 24 dB/Okt. → Silben-Dynamik → Entzischer → Kompressor → EQ (Tief 150 Hz Kuhschwanz,
+   Mitte 500 Hz, Präsenz 3 kHz) → **[Haken für VS-P: Auto-Pegel → Begrenzer]**. Hall/Delay = die Sends der STIMME-Spur.
+   - **Offline vorausgerechnet** aus dem bekannten Take im Worker (Blob, Rückfall Hauptfaden), wie VS4/VS5a: keine Verzögerung gegen die
+     anderen Spuren, **keine Rechenlast beim Abspielen**, kein neuer Audio-Knoten. Neue Fassung (Regler, A/B, Undo) wird an einer passenden
+     Stelle überblendet (`wpSwitch` aus VS5a-fix) – kein Knacken.
+   - **Pegel bleibt:** am Ende wird auf die Lautheit des Takes zurückgestellt (gemessen unter 4 kHz, damit Entzischer/Präsenz die Gesamt-
+     lautstärke nicht verschieben). VS-P gleicht danach auf −16 LUFS aus.
+   - **Reihenfolge je Take:** Säubern (VS4) → G4 → Zeitkarte (VS5a/b). G4 steht in `tkExt().proc` direkt hinter `wpProc`.
+     VS-P misst den Puffer, den `tkPlayBuf` liefert = **nach G4** – der Haken für VS-P ist damit schon da (nichts weiter einzubauen).
+3. **Voreinstellung „Gesang Synthpop“** (an für jede neue STIMME-Spur, auch wenn eine leere Zusatzspur umgeschaltet wird; ↶ nimmt sie mit):
+   Hochpass 100 Hz · Entzischer 4 dB · Silben-Dynamik 80 % · Schwelle −24 dB · 3 : 1 · Tief −1 · Mitte −2 · Präsenz +3 dB · Hall 18 % · Delay 10 %.
+   Kompressor: RMS 10 ms über das Signal bis 3 kHz (Zischlaute regeln ihn nicht), weiches Knie 6 dB, Anstieg 15 ms (Anschlag bleibt „knackig“),
+   Abfall 150 ms (kein Pumpen). Entzischer: Band 5–9 kHz gegen das ganze Signal, senkt nur das Obere ab 3,5 kHz, nur Zischlaute ≥ 20 ms (ein
+   kurzer Anschlag „t“, „k“ bleibt).
+4. **[Auto]** misst die hörbaren Takes der STIMME-Spur (höchstens 2 min) und – während ▶ läuft – 4 s lang den Mix (Ausgang jeder anderen
+   Spur, Präsenzband 2–5 kHz):
+   - Dynamik → **Schwelle/Verhältnis** (kleinstes Verhältnis, das die Kurzzeit-Spanne auf ≤ 4 LU bringt),
+   - Zischlaute → **Entzischer** (Spitzen 5–9 kHz sollen ≥ 8 dB unter dem Vokal liegen),
+   - Maskierung → **Präsenz** anheben, wenn nötig **Mitte/Tief** absenken, bis der Gesang im Band 2–5 kHz ≥ 3,5 dB über der lautesten anderen
+     Spur liegt (gerechnet mit dem Pegel, den VS-P der Stimme gibt; ohne VS-P mit dem tatsächlichen Pegel),
+   - Ergebnis steht sofort in den Reglern (ein Undo „Effekte: Auto“); die Zustandszeile nennt Dynamik vorher → nachher und die Gegenspur.
+5. **Silben-Dynamik (G4 ergänzt 4):** je Silbe (VS5a-Marken: von Hand gesetzte/quantisierte, sonst der VS5a-Erkenner an der Quelle, auf die G4
+   wirkt) ein fester Ausgleich zur Mitte der Nachbar-Silben (±3 s), Stärke = Regler; der Wechsel endet 2 ms vor der Marke (Anschlag
+   unverändert), Pausen und stimmlose Silben (Zischlaut, Atem) bleiben ±0 dB, Anschlag + Vokal näher als 80 ms = eine Silbe.
+6. **A/B:** [A/B] schaltet sofort zwischen „mit Effekten“ und „ohne“ (der Take wie bisher, bitgleich; Sends wie im Klang). Blatt zu → wieder
+   „mit Effekten“. **Aus** schaltet die Kette ab (die Werte bleiben); [Gesang Synthpop] setzt die Voreinstellung (je ein Undo).
+7. **Daten:** `track.gfx = {on, hp, ds, sy, thr, ra, lo, mid, pre, rev, dly}` nur an der STIMME-Spur (`normTrack`), Werte geklemmt und
+   gerundet (idempotent). **Fehlt das Feld (alle alten Projekte), ist die Kette aus – alte Projekte klingen bitgleich wie bisher.**
+   Undo-Art `gfx` (eine Zeile in `undoState`/`undoApply`). In der Claude-App (kein Audio): Regler gesperrt, Daten bleiben deep-equal.
+
+### G5 — Gesang jederzeit in Melodie umwandeln
+1. **Takes-Blatt → [In Melodie umwandeln]** (Szene-Clip und Song-Stimme; nur mit Audio auf der eigenen Seite).
+2. Die **VS2-Erkennung** läuft auf dem gespeicherten Take: gleiche 3:1-Dezimierung wie das Worklet (47 Abgriffe), pYIN im Worker, `vsNotesOf`
+   (Segmentierung, Stimmung, Einrasten auf die Tonart der Szene bzw. des Songs). Bei SÄUBERN > 0 auf der gesäuberten Fassung.
+   Funktioniert auch, wenn beim Aufnehmen keine Noten erkannt wurden.
+3. **Szene-Clip → MELODIE-Clip in derselben Szene** (gleiche Länge, nennt den Take wie FANG → „Audio folgt“), **Ergebnis-Blatt wie FANG**
+   („GESUNGEN · umgewandelt · T 1–n“: Oktave, Einrasten, Raster, [Verwerfen], [✎ Bearbeiten], OK). Ein vorhandener MELODIE-Clip wird
+   ersetzt; ↶ bzw. [Verwerfen] stellt ihn wieder her. Ein Undo „In Melodie umwandeln“.
+4. **Song-Stimme → Song-Melodie** (Spur der Song-Melodie) an derselben Stelle: die Noten im Bereich der Song-Stimme werden ersetzt,
+   Raster wie im Stimme-Blatt; ein Undo (Song), Toast „n Noten → Song-Melodie · Takt a–b“ mit [Rückgängig].
+
+### Test-API (neu)
+`g4Info`, `g4Set(p, label)`, `g4Preset`, `g4Off`, `g4AB(v)`, `g4Auto`, `g4Wait`, `g4Played(id)`, `g4PlayRange`, `g4Core`, `g4Mix`, `g4Sheet`,
+`g4Close`; `g5Convert(r)`, `g5Info`.
+
+## Abnahme
+
+Chromium 1243 headless, Mikro-Attrappe (VS2-Harness), Takes über `tkInject` (gleicher Weg wie ein Take ohne Noten). Skripte in
+`bau/helfer/G4G5/tests/` (Ausgaben im Scratchpad). G4-03 im **zusammengeführten Stand G4G5 + VS-P** (`git merge-file`, 0 Konflikte), weil
+die Stimme erst mit VS-P auf Mix-Pegel kommt.
+
+| ID | Ergebnis | Messung |
+|---|---|---|
+| G4-01 | ✓ | Gesungene Phrasen mit Pegelsprüngen (−34 … −20 dBFS, 26 s): Kurzzeit-Lautheit 10–95 % (LRA, EBU 3342) **12,30 → 5,54 LU = 6,77 LU kleiner** (Soll ≥ 4); integrierte Lautheit −24,65 → −24,65 LUFS. Kein Pumpen: gehaltener Vokal −22 / −32 dBFS, 50-ms-Pegel nach dem Einschwingen schwanken 0,000 dB (Soll ≤ 0,5). `g4-accept.mjs 01` |
+| G4-02 | ✓ | Gesang + 9 Zischlaute (Rauschen 4,5–10 kHz, 160 ms): Spitzen 5–9 kHz (10-ms-RMS), Kette „Gesang Synthpop“ gegen dieselbe Kette mit Entzischer 0: **−4,09 dB** (jeder Laut −4,0 … −4,1; Soll −4 ± 1). Vokale ohne Zischlaut 5–9 kHz: Median +0,06 dB (kein Fehlgriff). `g4-accept.mjs 02` |
+| G4-03 | ✓ (mit VS-P) | Zusammengeführt G4G5 + VS-P, Demo-Projekt, Take in Szene 0, Ausgänge aller Spuren mitgeschnitten, Band 2–5 kHz. Korpus-Stimme weiblich: vor Auto +0,28 dB → **nach Auto +3,72 dB** über Drums (Präsenz +7, Mitte −5). Korpus-Stimme männlich: −1,26 → **+3,43 dB** (Präsenz +9, Mitte −5, Tief −3 = Anschlag). Ergebnis steht in den Reglern; ein Undo nimmt Auto zurück. Siehe Abweichungen 1–2. `g4-auto.mjs <merge> female|male` |
+| G4-04 | ✓ | Demo-Projekt + Gesang, 2 × 90 s abwechselnd je Fassung, CPU-Zeit aller Chromium-Prozesse: aus 53,16 %, „Gesang Synthpop“ 53,36 % → **+0,20 %** (Soll ≤ +3; Messrauschen – beim Abspielen gibt es keinen zusätzlichen Knoten). Rechnen einmalig je Take im Worker: 149 ms für 4 Takte, 329 ms für 26 s. `g4-cpu.mjs 180` |
+| G4-05 | ✓ | A/B sofort (ohne = Roh-Puffer bitgleich, zurück ohne Neurechnen), Regler + Hall-Send folgen; ein Undo / Redo deep-equal; Speichern → Laden deep-equal mit gfx; altes Projekt ohne gfx: keine Effekte, Takes bitgleich, kein Feld gfx im Projekt. Layout P1, P2, P3, L1, L2, 926 × 428: Spur-Blatt [Effekte] 96 × 44, Blatt „Effekte“ 14 Tasten/Regler ≥ 44 × 44, nichts abgeschnitten, im Bild (P3 rollt, letzter Regler erreichbar), kein Layout-Sprung (25/25). Kein Knacken bei 7 Wechseln im Spielen (A/B ×4, Präsenz, Aus, Voreinstellung): 2. Differenz 4,3·10⁻⁴ ≤ Ton-Krümmung 1,55·10⁻³. `g4-accept.mjs 05`, `g4g5-lay.mjs`, `g4-click.mjs` |
+| G4-06 | ✓ | 40 Silben, Pegel zufällig ±6 dB, je mit Anschlag; Marken vom VS5a-Erkenner. Nur Silben-Dynamik: Spanne (10–90 %) **10,52 → 3,85 dB = 63 % kleiner** (Soll ≥ 50 %), Anschläge: Spitze der ersten 10 ms gegen den Silben-Pegel Median −0,03 dB, 90 % ≤ 0,60 dB. Ganze Kette: 75 % kleiner, Anschläge Median +1,29 dB (nicht gedämpft). `g4-accept.mjs 06` |
+| G5-01 | ✓ | Drei Takes ohne Noten (Korpus-Stimme VS2, männlich/weiblich, je 24 Noten, a-Moll, 100 BPM) → [In Melodie umwandeln]: **Noten-F 1,000 / 1,000 / 1,000** (Einsatz ±50 ms, Ton exakt; Soll ≥ 0,9), 0,9 s je 15-s-Take; MELODIE-Clip nennt den Take; Ergebnis-Blatt „GESUNGEN · umgewandelt · T 1–7“. `g5-accept.mjs` |
+| G5-02 | ✓ | Ein Undo nimmt den Clip zurück, Redo bringt ihn; vorhandener MELODIE-Clip wird ersetzt und mit [Verwerfen] deep-equal zurückgeholt. |
+| G5-03 | ✓ | Song-Stimme Takt 3–8 → Song-Melodie (Spur 5): 20 Noten an derselben Stelle, **Noten-F 1,000**; ein Undo → Song deep-equal. |
+| Reihenfolge | ✓ | `tkExt().proc` = [Zeitkarte, G4, Säubern]: mit Zeitkarte klingt die Scheiben-Fassung, gerechnet aus der G4-Fassung; A/B „ohne“ → aus dem Roh-Take. `g4-chain.mjs` |
+| Rauchtest | ✓ | `smoke.mjs`: keine Konsolenfehler. |
+| Regression | ✓ / siehe unten | VS3 (`v3-vs3-accept` über VS-P-Harness): **alles grün** mit G4G5. VS4/VS5a/VS5b mit G4 **aus** für neue Spuren (`g4off.html`): VS4-accept 25 ✓/1 ✗ (= Basis 4.23.0, gleicher Punkt „Audio-Store“), VS5a-t1 20/0, VS5b-t1 32/0 (Basis 31/1), VS4-click, VS5a-t3, VS5b-t3 gleich der Basis. Mit G4 an: absichtlich überholte Erwartungen (Regel 26), siehe unten. |
+| Merge | ✓ | `git merge-file` G4G5 × vs-base-B × vs-br-VSP: **0 Konflikte**; × vs-br-VSL: **0 Konflikte**. |
+
+**Überholte Test-Erwartungen (Regel 26, durch G4 absichtlich):** Neue STIMME-Spuren haben „Gesang Synthpop“ an, also klingt nicht mehr der
+Roh- bzw. gesäuberte Take selbst. Diese Punkte prüfen „bitgleich zum Roh-Take“ an einer neuen STIMME-Spur und schlagen deshalb fehl:
+- VS4-accept: „N7V-24 bei 0 % spielt der Roh-Puffer bitgleich“, „N7V-21 SÄUBERN 100 %“ (liest den Puffer, solange die G4-Fassung der neuen Stärke noch rechnet).
+- VS5a-t1 (6 Punkte): „attacks bit-identical“, „peak per click“, „M-KLICK slices“, „A/B original“, „strength 0 → raw“, „after undo bit-identical“.
+- VS5b-t1 (8 Punkte): „first 20 ms after each mark bit-identical“, „length per slice“ und die „→ original bit-identical“-Punkte.
+Mit G4 aus sind alle wie in der Basis (oben). Für diese Tests: `SYNQUENZER.g4Off()` nach dem Anlegen der Spur.
+
+## Abweichungen
+1. **G4-03 nur zusammen mit VS-P messbar.** Ohne VS-P kommt die Stimme mit dem Mikrofon-Pegel in den Mix (≈ 13–14 dB unter den Drums im
+   Band 2–5 kHz); Auto setzt dann alles auf Anschlag und erreicht trotzdem nur −8,7 dB. Mit VS-P (zusammengeführt) ✓. Auto rechnet mit dem
+   Pegel, den VS-P geben wird (`typeof vpGet`), und ohne VS-P mit dem tatsächlichen.
+2. **G4-03 mit dem synthetischen Vokal „a“** der VS-P-Bibliothek nicht erreichbar (−9,2 dB): der Vokal hat fast keine Energie bei 2–5 kHz
+   (kein Sänger-Formant). Mit den Korpus-Stimmen ✓. Die männliche Stimme braucht den ganzen Bereich (Präsenz +9, Mitte −5, Tief −3) und
+   liegt mit 3,4 dB knapp über dem Soll.
+3. **Mix-Messung nur bei ▶:** Ein echtes Offline-Rendern aller Synth-Spuren gibt es in der App nicht. [Auto] misst deshalb den Mix 4 s live
+   an den Ausgängen der Spuren (nach Pegel/Pan/Mute), während ▶ läuft. Ohne ▶ setzt Auto nur Dynamik und Entzischer, und die Zustandszeile
+   sagt „Mix nur bei ▶“.
+4. **„Gegenspur-Kerbe nur im Gesang“** habe ich als „nur die Gesangsspur wird verändert“ gelesen: Präsenz anheben, wenn nötig Mitte/Tief
+   der Stimme senken. Eine Kerbe in der anderen Spur gibt es nicht (siehe Fragen).
+5. **Kette offline je Take statt Echtzeit-Knoten:** Das ist dasselbe Muster wie VS4/VS5a. Der Gewinn: Rechenlast beim Abspielen 0 und keine
+   Verzögerung. Der Preis: Nach einem Regler kommt die neue Fassung nach dem Rechnen (150 ms Ruhe, dann 0,1–0,4 s) mit einer Überblendung;
+   bis dahin klingt die vorige.
+6. **Speicher:** je hörbarem Take liegt zusätzlich die G4-Fassung im Speicher (≈ 11,5 MB je Minute Gesang, wie der VS4-Cache). „Aus“ gibt
+   den Speicher frei.
+7. **Hall/Delay:** Solange die Effekte an sind, kommen die Sends der STIMME-Spur aus dem Blatt „Effekte“. Hall/Delay im (versteckten)
+   Klang der Spur wirken dann nicht; mit „Aus“ oder A/B „ohne“ wieder die des Klangs.
+8. **G5:** Die Analyse läuft auf der gesäuberten Fassung, wenn SÄUBERN > 0 ist, sonst auf dem Roh-Take (nicht auf der G4-Fassung). Eine
+   Zeitkarte (VS5a/b) wird auf die Noten übertragen. Song-Stimme → Song-Melodie zeigt kein Ergebnis-Blatt (das FANG-Blatt gehört zu einem
+   Szenen-Clip), sondern einen Toast mit [Rückgängig]. Die Tonart ist die des Songs an diesem Takt.
+9. **Mitschnitt-Knackser:** Spitzen genau an den 4096er-Blockgrenzen des ScriptProcessor-Mitschnitts treten genauso in der unveränderten
+   4.23.0 ohne jede Aktion auf (4·10⁻²). Sie sind wie in VS3 ausgenommen.
+
+## Fragen an Xander
+1. „Maskierung → EQ (Präsenz anheben/**Gegenspur-Kerbe nur im Gesang**)“: Meinst du eine Kerbe **in der anderen Spur** (z. B. Drums/Synth bei
+   3 kHz), die nur wirkt, **während gesungen wird**? Gebaut ist nur die EQ der Stimme.
+2. Wo soll [Effekte] noch erscheinen? Jetzt: Spur-Kopf der STIMME halten → Spur-Blatt → [Effekte]. Zusätzlich im Takes-Blatt?
+3. [Auto] misst den Mix nur, während ▶ läuft (4 s). Reicht das, oder soll Auto die Szene dafür selbst kurz (stumm) abspielen?
+4. G5: Liegt in der Szene schon ein MELODIE-Clip, wird er ersetzt (↶/[Verwerfen] holt ihn zurück). Lieber in einen freien Platz?
+5. Voreinstellung „Gesang Synthpop“: Präsenz +3 dB, Silben-Dynamik 80 %, 3 : 1 ab −24 dB, Hall 18 %, Delay 10 % – passt das am iPhone mit
+   Kopfhörer? (bitte anhören: ein Take, [A/B]).
+
+## Für das Zusammenführen (geänderte Funktionen / Blöcke)
+- **Neuer Block** `/* G4 … */` + `/* G5 … */` direkt nach `WP_API` (vor `function voicesInfo()`): `g4DspMake`, `G4D`, `G4P`, `G4`, `g4*`,
+  `G4_API`, `G5`, `g5*`, `G5_API`; am Ende die Zeile `tkExt().proc.splice(…)` (G4 hinter `wpProc`).
+- **CSS:** neue Zeilen nach `.tksheet .clab .mbtn{…}` (`.tk-g5`, `.g4sheet …`).
+- **Ein-Zeilen-Haken in fremden Funktionen:**
+  - `trackFx`: `g4Fx(tr, …)`
+  - `normTrack`: `gfx` nur bei `stimme`
+  - `tkNormProject`: `delete t.gfx` bei doppelter STIMME
+  - `undoState` / `undoApply`: Art `gfx`
+  - `tkEnsureTrack`: `g4NewTrack(t)`
+  - `tkFlag`: `g4NewTrack` / `delete tr.gfx`
+  - `openTrackSheet`: Knopf + Handler `g4`
+  - `tkSheetPaint`: Knopf `g5`; `tkSheet`: Handler `g5`
+  - `vsNotesOf`: `A.key`
+  - `vsResPaint`: „umgewandelt“
+  - `vsResDrop`: Label `G5_LABEL`
+  - `wpBase`: Parameter `noG4`; `wpDetect`: `wpBase(id, null, true)`
+- **API:** `Object.assign(SYNQUENZER, G4_API, G5_API)` steht **vor** der TK_API-Zeile (keine Kollision mit VS-P, das hinter WP_API einfügt).
+- **VS-P-Haken:** keiner nötig. VS-P misst `o.buf` in `tkStartSrc`, also die von `tkPlayBuf` gelieferte G4-Fassung. Die Reihenfolge Hochpass →
+  Entzischer → Kompressor → EQ → Auto-Pegel → Begrenzer ergibt sich von selbst.
+- VERSION-Zeile unverändert (4.23.0).
+
+
+## stage-ges — Zusammenführung
+
+Staging-Stand: Basis `vs-base-B.html` (App 4.23.0, Format 5) + **G3/G8** (`helfer-G3G8.html`) + **G4/G5** (`helfer-G4G5.html`).
+Datei: `scratchpad/stage-ges/index.html` (Sicherung vorher: `index.html.vor-merge-stage-ges.html`), Schnappschuss `synq-snapshots/stage-ges.html`.
+**VERSION-Zeile unverändert `4.23.0`** (wie in der Basis und in beiden Zweigen; setzt der Dirigent). Format bleibt 5.
+
+### Zusammenführen (`git merge-file`, 3-Wege gegen `vs-base-B.html`)
+1. **G3G8** → sauber (0 Konflikte; Hauptlinie war = Basis, Ergebnis bitgleich zu `helfer-G3G8.html`).
+2. **G4G5** → **1 Konflikt**, alles andere sauber (alle Ein-Zeilen-Haken beider Zweige liegen in verschiedenen Zeilen:
+   `trackFx`, `normTrack`, `undoState/undoApply`, `tkEnsureTrack`, `tkFlag`, `openTrackSheet`, `tkSheetPaint/tkSheet`, `vsNotesOf`,
+   `vsResPaint`, `vsResDrop`, `wpBase/wpDetect`, CSS von G4/G5 neben den G3/G8-Haken in `tick`, `tkMakeTake`, `tkVoiceTake`, `normClip`,
+   `vsFangDone`, `vsApply`, `recLength` usw.; die API-Zeilen `G4_API, G5_API` vor bzw. `G3_API`, `G8_API` hinter `TK_API` stehen beide da).
+   - **Konflikt: neuer Block vor `function voicesInfo()`** – beide Zweige setzen dort ihren ganzen Block ein (G3/G8: `G3*`, `g3*`, `G3_API`,
+     `G8*`, `g8*`, `G8_API`; G4/G5: `g4DspMake`, `G4*`, `g4*`, `G4_API`, `G5*`, `g5*`, `G5_API`, `tkExt().proc.splice(…)`).
+     Gelöst: **beide Blöcke hintereinander** (erst G3/G8, dann G4/G5), jeder unverändert (geprüft: Block im Ergebnis = G3G8-Block + G4G5-Block,
+     Zeichen für Zeichen). Dabei fehlte nach dem Auflösen die gemeinsame Schlusszeile `};` von `G8_API` (git hatte die gleiche letzte Zeile
+     beider Seiten aus dem Konflikt herausgezogen) → Rauchtest „SyntaxError: Unexpected identifier 'g4DspMake'“ → `};` wieder eingesetzt.
+   - Keine Konfliktmarken übrig (`grep '^<<<<<<<\|^=======$\|^>>>>>>>'` = 0).
+
+### Zusammenspiel geprüft (Code gelesen, nichts geändert)
+- G5 (`g5Analyse`) liest den Take zwischen `a.in` und `a.out` – mit dem G3-Anlauf im Take (`in` = 2 Takte + 0,25 s) stimmt die Lage.
+  `vsApply` → `g3ApplyPre`: das G5-Ergebnis hat kein `g3` → kein Auftakt (`clip.pre` wird gelöscht), wie bei jedem Nicht-FANG-Ergebnis.
+  G5 übernimmt die Clip-Länge (bis 64 Takte, G8) ohne eigene Grenze.
+- G4 rechnet den ganzen Take (inkl. G3-Anlauf/Ausklang und G8-Stück-Takes); `tkExt().proc` = [Zeitkarte, G4, Säubern], G3 hängt nur an
+  `tkExt().take` (Felder `pre/post`) – keine Überschneidung.
+- Regel 28: alte Projekte ohne `gfx` / ohne `pre/post` klingen wie bisher (G4-05 „altes Projekt ohne gfx … bitgleich“, VS3-Regression grün).
+- Marken-Regel „MS 2000“ genau 1×, kein Fremdname; kein Supabase-/Netz-Aufruf und kein alert/confirm/prompt in den neuen Zeilen.
+
+### Abnahme auf dem zusammengeführten Stand (Chromium 1243 headless; Skripte aus `helfer-g3g8`/`helfer-g4g5`, Kopien in `dirigent-test/stage-ges/`)
+| Skript | Ergebnis |
+|---|---|
+| `smoke.mjs` | ✓ keine Konsolenfehler (nach dem `};`-Fix) |
+| `g3-accept` A–F | **61/61 ✓** (Zweig allein: 60/61) |
+| `g3-lay` | 19/19 ✓ |
+| `g8-accept` S B C R | 38/38 ✓ |
+| `g8-accept` A (5-min-Song-Aufnahme) | 8/8 ✓ (lange Aufgaben max. 104 ms ≤ 200; auf diesem Rechner auch beim reinen G3G8-Zweig bis 182 ms und mit G4 aus bis 255 ms – Rechner-Rauschen, nicht G4) |
+| `g8-lay` | 24 ✓ / 6 ✗ – nur „Tasten ≥ 44 × 44“ im Aufnahme-Blatt (32–40 px hoch): **Befund der Basis 4.23.0**, im G3G8-Changelog schon genannt |
+| `v3-vs3-accept` A–G (inkl. D Claude-App-Rundweg) | 72/72 ✓ |
+| `v3-vs3-click` | ✓ (M-KLICK 0,00368 ≤ 1,5 × 0,00417) |
+| `v3-vs2-accept` | 46 ✓ / 4 ✗ – 2 × „Stimme rechtzeitig geplant“ (schwankende Vorbedingung, bekannt) und E „● REC: 0/6 Noten“: **auf diesem Rechner auch mit der Basis `vs-base-B.html` und mit jedem Zweig allein** (deterministisch) – nicht durch das Zusammenführen |
+| `g4-accept` all | 19/19 ✓ |
+| `g4-chain` / `g4-click` | 2/2 ✓ / 1/1 ✓ |
+| `g4g5-lay` | 25/25 ✓ |
+| `g5-accept` | 14/14 ✓ |
+| `g4-cpu` (2 × 60 s) | ✓ +0,11 % (Soll ≤ +3) |
+| `g4-auto` female | ✗ wie im G4G5-Changelog vorhergesagt: G4-03 nur mit VS-P erreichbar (VS-P ist in diesem Staging nicht drin) |
+| `v3-mk8b-ui` (letztes MK-Paket der Basis) | 38 ✓ / 2 ✗ – MK8b-04 „k801 −200 dBFS“ wie auf der Basis; „▶ Vorhören“ k103 (Arp, Messung in einem Augenblick) schwankt auf Basis und Zweigen genauso (−39 … −51 dB) |
+
+**Offen:** G4-03 erst nach dem Zusammenführen mit VS-P nachprüfen. Fragen an Xander aus beiden Zweigen (oben) bleiben offen.
+
+
+# CHANGES – Helfer G267 (Nachtrag 5: G1-Prüfung, G2, G6, G7)
+
+Grundlage: Kopie `bau/vs/n5-br-G/index.html` (App 4.23.0 + G1, Versionszeile 4.25.0 unverändert). Basis für den 3-Wege-Merge:
+`bau/werkzeug/vs-base-B.html`. Format bleibt 5 (nur additive Felder). Kein Supabase-Aufruf.
+
+## G1 – unabhängige Prüfung (kein Code geändert)
+
+G1 war gebaut, aber nicht unabhängig geprüft. Prüfung durch einen getrennten Prüf-Lauf (eigene Skripte, andere Werte als der
+Bauende: 97 BPM, 1/16, ungerade Abstände, echte Touch-Tipps, Undo-Kette über 6 Schritte, Legato-Schnitte). Bericht:
+`tests/g1/G1-REPORT.md`.
+
+| ID | Ergebnis | Messung |
+|---|---|---|
+| G1-01 | ✓ | 97 BPM/1/16, Touch-Tipp, Dehnen 100 %: gehörte Einsätze max **3,5 ms** neben dem Raster (12/12); 50 %: halber Abstand max 2,0 ms; Scheiben 50 % 2,0 ms. Gegenprobe 4.23.0: 18,3 ms. Skript des Bauenden (120 BPM, 1/8): 3,4 / 1,8 ms, Song 3,4 ms, „Audio folgt“ 3,0 ms |
+| G1-02 | ✓ | Pixel: 12/12 Marken auf der Linie (max 0,50 px; 4.23.0: 3/12); Animation 173–231 ms (≤ 250); Meldung „12 Einsätze gerückt“ = Zahl der Karte; Matrix-Zelle/Song = gehörte Fassung; 844×390 und 320×568 nichts abgeschnitten |
+| G1-03 | ✓ | ↶ über 6 Schritte: Marken + Karte deep-equal, Klang hash-gleich; ganz zurück bitgleich zum Roh-Take (237 526 Samples); ↷ ×6 deep-equal. Legato-Schnitte: M-KLICK 31,6 / 23,1 dB gegen Original 30,7 dB |
+| Smoke | ✓ | keine Fehler, Zeichnen 1,4 ms/Bild, Tipp Median 7,4 ms |
+
+Abweichungen: keine. **Kein Fix nötig.**
+
+### Fragen an Xander (G1)
+1. Die Meldung „n Einsätze gerückt“ zählt auch Marken, die nur 1–2 ms rücken (auf dem Raster gesungen). Soll erst ab z. B. 3 ms gezählt werden?
+2. Bei offenem Marken-Editor im Hochformat (390×844) verdeckt das Blatt den ↶-Knopf (schon vor G1 so). Soll der Editor ein eigenes ↶ bekommen?
+
+### Für das Zusammenführen (G1)
+Nichts – G1-Code unverändert. Tests: `tests/g1/` (Pfade auf `bau/helfer/G267/index.html`; `tests/node_modules` = Link auf Playwright, nicht im Repo).
+
+## G2 – Tonhöhe quantisieren + Gesang als Noten bearbeiten
+
+### Was neu ist
+1. **Takes-Blatt → [♪ Tonhöhe · Noten]** (unter [✎ Marken · Quantisieren]; quer nebeneinander, das Blatt passt weiter ohne Scrollen)
+   öffnet den **Noten-Editor des Takes** im Blatt des Marken-Editors: die erkannten Noten (VS2-Segmente) als **Blöcke über der
+   Wellenform**, dahinter dünn die gemessene Tonhöhen-Spur, Tonart-Zeilen hell. Umriss = gesungen, Block = gehört.
+2. **Tonhöhe quantisieren:** [Aus] [Weich] [Hart] + **Stärke 0–100 %**. Jede Note wird zum nächsten Ton der Tonart der Stelle gezogen
+   (Voreinstellung: Szene-Clip → Tonart der Szene, Song-Stimme → Szene an dem Takt, sonst Projekt; im Feld gespeichert).
+   **Weich** = gleiche Verschiebung über die ganze Note (Vibrato, Gleiten bleiben), Übergang zwischen Noten 40 ms;
+   **Hart** = folgt der Stimme (15 ms) und rastet sie auf den Ton (Vibrato wird glatt). Meldung „n Töne auf die Tonart … gezogen“.
+3. **Noten frei verschieben:** Note antippen (gewählt = hell mit Rand), **senkrecht ziehen** = Halbtöne (eigene Melodie), [▲] [▼] = ±1,
+   **[Teilen]** an der zuletzt getippten Stelle (Höhe je Teil neu gemessen), **[Verbinden]** mit der nächsten Note. Je ein Undo.
+4. **Nur stimmhafte Teile werden verschoben.** Zisch-/Plosivlaute (s, sch, t, p, k, f), Atmer, Pausen und jede nicht verschobene Note
+   bleiben **bitgleich**. 15 ms Schutz an jedem Rand einer stimmhaften Strecke (dort klingt der Konsonant noch nach), dann 10-ms-Blende.
+5. **Formant-erhaltend**, nicht zerstörend: Roh-Take bleibt; Render-Cache je Take + Plan + Quelle (bis 8 Fassungen: ↶ ↷, A/B ohne
+   Neurechnen); Rechnen im Worker (Rückfall Hauptfaden). Kette je Take: SÄUBERN (VS4) → **Tonhöhe** → Zeitkarte (VS5) → Abspielen;
+   gilt in Szene und Song. **[A/B]** = Original hören (wie beim Marken-Editor). **[WAV]** = die gehörte Fassung als WAV.
+6. Takes-Blatt offen → die Töne werden schon im Worker gesucht (der Tipp auf Weich/Hart muss danach nur noch rechnen).
+
+Daten (additiv am Take, Format 5): `take.pitch = {mode 'soft'|'hard', str, q, key {root, scale}, notes: [{t0, t1, m, sh?}]}`.
+Ein Take ohne Änderung bleibt Zeichen für Zeichen gleich; ↶ ganz zurück entfernt das Feld.
+
+### Verfahren (Kern `dsp/g2pitch.js`, in der App wörtlich im Block `/* G2-BEGIN */`)
+Analyse einmal je Take: pYIN (VS2-Kern) auf 16 kHz, 10-ms-Frames → VS2-Segmente = Noten; Periode je Frame auf voller Rate nachgemessen;
+Notenhöhe = Median des Kerns. **Harmonisches Modell** je stimmhafter Strecke: Phase Φ = ∫2π·f0, alle 10 ms die komplexen Teilton-
+Amplituden bis 7 kHz (Hann über 3 Perioden, chirp-fest über Φ). Verschieben: Ziel-Phase Φ' = ∫2π·f0·r(t); jeder neue Teilton bekommt die
+Hülle des Originals **an seiner neuen Frequenz** (Log-Betrag zwischen den Nachbar-Teiltönen) → formant-erhaltend; Ausgang =
+Original + Blende·(Modell verschoben − Modell original), d. h. Hauch/Rauschen (der Rest) bleibt unverschoben.
+
+### Abnahme (Chromium headless, Skripte in `tests/`)
+| ID | Ergebnis | Messung |
+|---|---|---|
+| G2-01 | ✓ | 10 gesungene Töne 30–45 Cent daneben (C-Dur, Konsonanten, Vibrato ±25 Cent). Hart 100 %: je Note **max 0,15 Cent** neben dem Skalenton; Hart 50 %: halber Abstand max 0,14 Cent; Weich 100 %: max 0,12 Cent (`g2-app.mjs`, gemessen an der gespielten Fassung mit unabhängigem NSDF) |
+| G2-02 | ✓ | Weich: Vibrato-Tiefe **99 %** des Originals. Hülle: jeder Teilton des Ausgangs auf der Hülle des Originals an seiner Frequenz 300 Hz–4 kHz, 5 Vokale × 130–262 Hz × ±38/42 Cent: **max 0,00 dB** (`g2-core.mjs`) |
+| G2-03 | ✓ | M-KLICK 30,5 dB = Original 30,5 dB (alle Fälle); Dauer gleich (288 000 = 288 000 Samples, Abweichung 0 ms) |
+| G2-04 | ✓ | A/B = Roh-Take; ↶ → vorige Einstellung; ↶ ganz → Feld weg, Klang **bitgleich**; ↷ deep-equal + bitgleich; Speichern → neu laden → Laden: Feld deep-equal, Klang bitgleich. Worker, **keine langen Tasks > 50 ms** im Hauptfaden. 16-Takt-Take (32 s): kalt **2,5–3,2 s** (Lauf zu Lauf), wie bedient (Takes-Blatt offen, dann [Hart]) **1,5 s** |
+| G2-05 | ✓ | Note +3 HT: **300,0 Cent**; Zischlaute **bitgleich** (0 Samples anders); außerhalb der Note bitgleich; kein Klick (M-KLICK gleich). Kern zusätzlich −3/+4/+7/±12 HT: Fehler ≤ 0,1 Cent |
+| G2-06 | ✓ | Blöcke im Editor = gemessene Noten: Start **0,0 ms**, Höhe **0,0 Cent** neben den Noten der Analyse (P1, P2, P3, L1, L2, XL); Tipp wählt, ▲ +1, Ziehen 2 Zeilen = +2, Teilen/Verbinden, je ein Undo |
+| Layout | ✓ | Editor und Takes-Blatt in 6 Größen: nichts abgeschnitten, keine Seiten-Überbreite, Takes-Blatt quer ohne Scrollen (356/356) (`g2-lay.mjs`) |
+| Regression | ✓ | G1 `n5-g-t1` (14 ✓), `n5-g-t2` (40 ✓), smoke ohne Fehler |
+
+### Abweichungen
+- **Verfahren:** Die Spec nennt „PSOLA/WSOLA-Familie wie VS5b“. Gebaut und gemessen wurde zuerst TD-PSOLA (Tonhöhe ±3 Cent, Zischlaute
+  bitgleich), aber die **Formanten wichen um 3–10 dB ab** (schmale Formanten werden durch die 1–2-Perioden-Körner verschmiert; Messung
+  gegen dieselbe Stimme auf dem Zielton: ideal ≤ 1 dB). G2-02 verlangt ±1 dB → Kern auf **harmonisches Modell + unverschobenen Rest**
+  umgestellt (Tonhöhe exakt, Hülle ±0 dB an den Teiltönen). Bitte am iPhone hören, ob es natürlich klingt (Fragen 1).
+- **Formant-Messung:** Ein Cepstrum-Vergleich gegen eine neu gesungene Referenz hat schon für die **unveränderte** Stimme 4,7 dB
+  Messboden (die Hülle ist zwischen den Teiltönen nicht bekannt, wenn Formanten schmaler sind als der Teiltonabstand). Gemessen wird
+  darum je Teilton gegen die Hülle des Originals an dessen Frequenz.
+- **16-Takt-Zeit kalt** schwankt auf der VM 2,5–3,2 s (Analyse 1,6–2,4 s + Rendern 0,7 s); deshalb wird beim Öffnen des Takes-Blatts
+  schon analysiert (wie bedient: 1,5 s).
+- Die **Tonart** ist im Editor nur angezeigt (Voreinstellung der Stelle), nicht wählbar – die Spec nennt keine Wahl.
+- **[WAV]** im Noten-Editor (gehörte Fassung): die Spec nennt „WAV-Export der hörbaren Fassung wie bei Dehnen“; für Dehnen gab es
+  bisher keinen eigenen Knopf (Takes-Blatt [WAV] = Roh-Take, N7V-20 bitgleich, unverändert).
+
+### Fragen an Xander (G2)
+1. Klingt die verschobene Stimme natürlich (Weich und Hart, auch +3/+7 Halbtöne)? Bitte mit Kopfhörern und A/B.
+2. Soll die Tonart im Noten-Editor wählbar sein (z. B. ‹ › wie im Ergebnis-Blatt)?
+3. Soll [♪ Tonhöhe] auch im Marken-Editor neben dem Timing stehen (dort ist im Hochformat kein Platz in der Kopfzeile)?
+
+### iPhone (Xander)
+1. 2 Takte singen, STIMME-Clip ✎ → [♪ Tonhöhe · Noten]. Stimmen die Blöcke mit dem Gesungenen?
+2. [Hart] → klingt jeder Ton sauber auf der Tonart? [Weich] → bleibt das Vibrato? Stärke ziehen.
+3. Eine Note antippen, nach oben ziehen (eigene Melodie). Klingen s/sch/t unverändert, kein Knacken?
+4. [A/B] vergleichen, ↶ ↷, speichern und neu laden.
+
+### Für das Zusammenführen (G2)
+- Neuer Block `/* G2-BEGIN */ … /* G2-END */` direkt vor `function voicesInfo()` (Kern `g2PitchMake` + App-Teil).
+- `Object.assign(SYNQUENZER, G2_API);` eine Zeile nach `Object.assign(SYNQUENZER, WP_API);`.
+- `tkSheetPaint`: eine Zeile `tkedrow` nach der `tk-wp`-Zeile; eine Zeile `g2Pre(...)` nach `clSheet(p, x)`.
+- `tkSheet` onTap: eine Zeile `d.a === 'g2'`.
+- `wpUndone`: erste Zeile `g2Undone()`.
+- CSS: Block `/* G2: … */` nach `.tksheet .tk-wp{…}` (4 Zeilen + eine Zeile `#wpSheet.g2 .qchips`).
+- `tkExt().proc`: g2Proc wird hinter wpProc eingefügt (im G2-Block, keine Zeile außerhalb).
+
+## G6 – Chor-Generator (Background-Gesang per Knopf)
+
+### Was neu ist
+1. **Takes-Blatt → [Chor]** (neben [♪ Tonhöhe · Noten]) öffnet das Blatt **„Chor“** mit 8 Rezepten: **Terz, Sexte, Quinte, Oktave,
+   Dreistimmig, Falsett-Chor 80er, Barbershop 4-stimmig, Unisono-Doppel**; bei Terz/Sexte/Quinte/Oktave [oben] [unten].
+   Ohne Chor steht dort der kurze Hilfetext zu den Rezepten (Spec: „im Hilfetext kurz erklärt“).
+2. Ein Tipp auf ein Rezept rechnet die **Noten der Stimmen** aus der Lead-Melodie (Noten der gehörten Fassung, G2-Analyse) und den
+   **Akkorden der Stelle** (Töne der anderen Synth-Spuren der Szene am Schlag der Note; ohne Begleitung der leitereigene Dreiklang,
+   der den Ton enthält, I/IV/V zuerst) in der Tonart der Stelle:
+   Terz/Sexte = leitereigen (groß oder klein je nach Ton), Quinte = rein, wenn leitereigen, sonst leitereigen; Oktave ±12;
+   Dreistimmig = die zwei nächsten Akkordtöne über dem Lead (eng); Falsett = Oktave + (Terz + Oktave); Barbershop = Tenor (Akkordton
+   darüber), Bariton (darunter), Bass (Grundton darunter); Unisono = gleiche Töne.
+3. Jede Stimme wird aus der **gehörten Lead-Fassung** gerechnet (G2-Technik: nur stimmhaft, formant-erhaltend; Tonhöhen-Quantisieren,
+   Zeitkarte und Säubern des Leads gelten also mit) und **künstlich gedoppelt**: 2 Kopien je Stimme, +12 ms/−6 Cent und
+   +24 ms/+8 Cent, leicht auseinander im Panorama; Stimmen links/rechts (3 Stimmen: links, rechts, Mitte), Lead bleibt Mitte vorn.
+4. **Pegel nach Lautheit:** der Chor liegt gesamt (trocken + Hall) **8 LU (80er) bzw. 9 LU (Pop) unter dem Lead** – gemessen an der
+   K-bewerteten Leistung der Puffer (Worker), Hall-Anteil aus Send und Nachhallzeit geschätzt. **Hall und Echo als Send vor dem
+   Chorspur-Pegel:** Chorspur-Pegel 0 → nur noch Hall.
+5. **Mischung** [80er großer Refrain] [Pop modern] (Voreinstellung, beim ersten Chor gleich mit, ein Undo): Hall-/Echo-Send der
+   Chor-Stimmen (80er 75 %/12 %, Pop 40 %/18 %), Lead-Sends der STIMME-Spur (30 %/10 % bzw. 15 %/12 %), **Hall-Vorverzögerung im
+   Tempo** (1/32 bzw. 1/64) und **Echo im Tempo** (1/4 bzw. 1/8 punktiert).
+6. Je Stimme: **[Solo]** (nur diese Stimme, der Lead schweigt), **[♪ Noten]** = die Stimme als Noten im Noten-Editor (Lead-Note +
+   Intervall; ▲ ▼ und Ziehen ändern die Stimme, ein Undo; A/B dort = Solo), **[Selbst singen]**: die Stimme spielt allein als
+   Führung, die nächste Aufnahme (● REC mit 🎤, Overdub in diesem Clip) **ersetzt die errechnete Stimme** und wird gleich mit Panorama,
+   Sends und Pegel eingemischt; oben im Clip bleibt der Lead (gleiches Undo wie die Aufnahme). [Chor löschen].
+7. Abspielen: zu jedem Lead-Stück (Szene und Song) laufen die Stimmen-Stücke mit (gleiche Zeit und Blenden, enden mit ihm);
+   eine neu gerechnete Stimme setzt beim Abspielen mit 10-ms-Blende ein, der Lead läuft durch.
+
+Daten (additiv am Audio-Stück, Format 5): `audio.chor = {rec, dir, mix, voices: [{name, n: [{t0, t1, m, iv}], pan, db, vol, rev, dly, take?}]}`.
+
+### Abnahme (`tests/g6-app.mjs`, Chromium)
+| ID | Ergebnis | Messung |
+|---|---|---|
+| G6-01 | ✓ | Refrain C-Dur C4…C5, Terz oben: Tabelle C→E, D→F, E→G, F→A, G→H, A→C, H→D, C→E (8/8). Gemessene Tonhöhe je Chornote: Kopie 1 max 6,3 Cent, Kopie 2 max 8,5 Cent neben der Terz (die Kopien sind absichtlich −6/+8 Cent verstimmt). Weitere Rezepte als Tabelle geprüft (Sexte, Quinte, Oktave unten, Dreistimmig, Barbershop, Unisono) |
+| G6-02 | ✓ | Falsett: Oktave 72…84 + Terz+Oktave 76…88; je Stimme 2 Doppel (beim Start 1 Lead + 4 Quellen); Lautheit am Ausgang (BS.1770, Stereo): Chor **8,0 LU** unter dem Lead (80er), **9,2 LU** (Pop) |
+| G6-03 | ✓ | Chorspur-Pegel 0: Ausgang −46,4 dBFS, Nachhall nach dem Notenende −63,7 dBFS (nur Hall); Send zusätzlich 0 → −135,6 dBFS (Stille) |
+| G6-04 | ✓ | [Selbst singen] Stimme 2 + Aufnahme → Stimme 2 = der neue Take, Lead bleibt oben, Panorama/Sends gleich; beim Abspielen 1 Lead + 2 Kopien Stimme 1 + selbst gesungene Stimme 2 |
+| G6-05 | ✓ | ↶ (Pegel, Sends) deep-equal; Chor löschen → ↶ → deep-equal; Speichern/Laden deep-equal; Abspielen mit Chor ohne lange Tasks; 2 Stimmen = 4 Puffer-Quellen + 1 Lead (Rechnen im Worker, 2 Renders ≈ 250 ms für 4 s) |
+| Layout | ✓ | Blatt Chor in P1, P2, P3, L1, L2, XL: alle Tasten ≥ 44 × 44, nichts abgeschnitten, quer ohne Scrollen (329/329) |
+| Regression | ✓ | `g2-app.mjs` (alle ✓), `g2-lay.mjs`, smoke |
+
+### Abweichungen
+- **„je Stimme eine Spur“**: Die App hat genau eine STIMME-Spur. Die Chor-Stimmen sind darum eigene Abspiel-Stücke **an der STIMME-Spur**
+  (eigener Pegel, Panorama, Sends je Stimme), keine zusätzlichen Spuren in der Matrix.
+- **G4-Kette** (Hochpass → Entzischer → Kompressor → EQ) und **Auto-Pegel (VS-P)** kommen aus anderen Zweigen: der Chor läuft über die
+  STIMME-Spur (deren Kette gilt dann für Lead und Chor). Haken für das Zusammenführen: Chor-Stimmen gehen in `AU.tracks[i].trackIn`
+  (`g6Node`) – soll der Chor eine eigene G4-Einstellung bekommen, wird dort die Kette eingesetzt.
+- **Pegel-Kalibrierung:** die Lautheits-Rechnung lag am Ausgang 1,9 dB zu leise (Spur-Lautstärke wirkt nur trocken, Sends vorher) →
+  mit der Messung kalibriert (`G6_CAL`).
+- Die Mischung ändert **globale** Einstellungen (Hall-Vorverzögerung, Echo-Teilung) – das wirkt auf alle Spuren (ein Undo).
+- Solo „nur Chor“ / „nur Lead“ gibt es nur in der Test-API (Messung), nicht als Knopf.
+
+### Fragen an Xander (G6)
+1. Sollen die Chor-Stimmen eigene Spuren in der Matrix bekommen (dann mehr als eine STIMME-Spur)?
+2. Sollen die Pegel (8/9 LU unter dem Lead), die Verstimmung der Doppel (−6/+8 Cent) und die Versätze (12/24 ms) einstellbar sein?
+3. Soll die Mischung die globalen Hall/Echo-Einstellungen ändern dürfen, oder nur die Sends?
+4. „Selbst singen“ startet nicht selbst die Aufnahme: man tippt danach ● REC mit 🎤. Soll der Knopf gleich aufnehmen?
+
+### iPhone (Xander)
+1. 2–4 Takte Refrain singen, STIMME-Clip ✎ → [Chor] → [Terz] → abspielen. Klingt die Terz richtig (groß/klein je Ton)?
+2. [Falsett-Chor 80er] + [80er großer Refrain] → klingt es nach großem Refrain? [Pop modern] vergleichen.
+3. [Solo] je Stimme, [♪ Noten] einer Stimme ansehen, eine Note mit ▲ ändern.
+4. [Selbst singen] bei Stimme 2 → ● REC mit 🎤 → nachsingen → klingt deine Stimme jetzt im Chor?
+
+### Für das Zusammenführen (G6)
+- Neuer Block `/* G6-BEGIN */ … /* G6-END */` direkt hinter `/* G2-END */`; `Object.assign(SYNQUENZER, G6_API);` hinter der G2-Zeile.
+- `tkStartSrc`: eine Zeile `g6Start(o, r)` vor `return r;`. `tkDrop`/`tkKill`: je ein Ausdruck `if (r.ch) g6Drop/g6Kill(r);` am Anfang;
+  `tkFadeAt`: erste Zeile `g6Fade`; `tkXfOut`: eine Zeile `g6Fade` nach `r.o = null;`.
+- Aufnahme (`tkRecToClip`-Pfad, Overdub-Zweig): eine Zeile `g6Took(...)` nach `clip.audio.alt = …`; `tkInject` (Test-API): `g6Took` in der Overdub-Zeile.
+- `tkSheetPaint`: `tkedrow` enthält jetzt auch [Chor]; `tkSheet` onTap: eine Zeile `d.a === 'g6'`.
+- G2-Editor: Stimmen-Modus (`g2Open(r, {voice})`, `g2Voice`, Zweige in Chips/Malen/Ziehen – alles im G2-Block).
+- G2-Worker `g2Run`: gibt mit `kw` die K-bewertete Leistung zurück (`g2Kw`).
+- CSS: Block `/* G6: Blatt „Chor“ … */` nach der G2-CSS-Zeile; `.tksheet .tkedrow` 2 Spalten, quer drei Teile.
+
+## G7 – Gesang folgt dem Transponieren
+
+### Was neu ist
+1. **STIMME-Clips und Song-Stimme werden vom Transponieren mitgenommen wie Noten-Clips:** jede erkannte Note (G2-Analyse, bzw. die
+   Noten des Tonhöhen-Felds mit Quantisieren und eigenen Verschiebungen) wird über **`outPitch` der STIMME-Spur** in ihre neue Lage
+   gerechnet – dieselbe Regel wie für Noten-Clips (Träger, „Eine Skala“, Teil-Transposition, Tonart des Clips); sie rastet also wie
+   alle anderen Spuren in die Tonleiter ein. Verschiebung = neue Lage − gesungener Ton, mit der **G2-Technik** (nur stimmhafte Teile,
+   formant-erhaltend; Zischlaute bitgleich). Gilt für gehaltene Flächen („aaah“) und für Worte. Folgt die STIMME-Spur dem Träger nicht
+   (`follow` aus), bleibt der Gesang.
+2. **Ohne Transponieren** (bzw. zurück auf 0) gibt es keinen Plan → **bitgleich** die Fassung ohne G7.
+3. **Vorberechnet / Cache:** jede gerechnete Lage liegt im Render-Cache (bis 8 je Take) – zurück auf eine schon gehörte Lage ohne
+   Neurechnen. Ein Wechsel (Haken in `applyCarrierChange` und `xpSet`) rechnet die neue Lage **sofort** (auch wenn sie erst ab dem
+   nächsten Schlag/Takt gilt) und schaltet kurz vor dem Wechsel um; beim Abspielen wechselt die Fassung ohne Loch (wpSwitch).
+   Beim ersten Abspielen eines STIMME-Clips werden die Noten im Hintergrund gesucht und die Lagen der **Akkord-Zeile der Szene**
+   vorberechnet. Die Chor-Stimmen (G6) folgen mit, weil sie aus der gehörten Lead-Fassung entstehen.
+4. Tonhöhen-Quantisieren nimmt als Voreinstellung die Tonart der Stelle (siehe G2).
+
+Daten: **kein neues Feld** (der Plan entsteht beim Abspielen aus Transponieren + Noten).
+
+### Abnahme (`tests/g7-app.mjs`, Chromium)
+| ID | Ergebnis | Messung |
+|---|---|---|
+| G7-01 | ✓ | Träger D-Dur (+2): je Note = Lage eines Noten-Clips (Tabelle 60→62, 64→66, 62→64, 65→67, 67→69, 69→71, 71→73, 72→74), gemessen **max 0,72 Cent** daneben; Träger a-Moll (diatonisch, 60→57, 64→60, 62→59, 65→62, 67→64, 69→65, 71→67, 72→69): **max 0,12 Cent** |
+| G7-02 | ✓ | Zischlaute bitgleich (0 Samples anders) |
+| G7-03 | ✓ | zurück auf 0 (Träger C) → Roh-Take **bitgleich** |
+| G7-04 | ✓ | zurück auf +2: aus dem Cache (keine neue Rechnung), sofort bereit; Wechsel auf einer gehaltenen Fläche beim Abspielen: 0 Einbrüche ≥ 6 dB, Überblendung 0,74 dB, gehört +204 Cent (Vibrato); Akkord-Zeile der Szene vorberechnet (Cache 4 Fassungen) |
+
+### Abweichungen
+- Eine **noch nie gehörte** Lage braucht beim ersten Mal die Rechenzeit (4-s-Take: Analyse + Rendern ≈ 1,4–2,4 s inkl. Wartezeit bis
+  zum Schlag); bis dahin klingt die vorige Lage weiter (kein Aussetzer). Vorberechnet werden nur die bekannten Wechsel (Akkord-Zeile der Szene).
+- Gerechnet wird je Clip-Durchgang mit dem Transponieren, das gerade gilt (nicht je Note zu ihrer eigenen Zeit): wechselt der Träger
+  mitten im Clip, wechselt der Gesang dort mit der Überblendung von VS5 (wpSwitch).
+- Getestet in der Szene; die Song-Stimme nutzt denselben Weg (`g7SegOf`, Tonart über die Szene am Takt), aber ohne eigenen Test.
+
+### Fragen an Xander (G7)
+1. Soll der Gesang auch bei „Einzelton“-Trägern (eine Taste im TRANSP-Modus) mitgehen? (So ist es jetzt – wie die Noten-Clips.)
+2. Soll man das Mitgehen je STIMME-Clip ausschalten können (z. B. ein gesprochener Teil)?
+
+### iPhone (Xander)
+1. 2 Takte singen (STIMME-Clip), ▶, auf TRANSP. und einen anderen Akkord spielen: geht der Gesang mit, klingt er sauber?
+2. Zurück auf die Ausgangstonart: ist es wieder genau der gesungene Take?
+3. Mehrmals zwischen zwei Akkorden wechseln: kommt der Wechsel ohne Lücke und ohne Knacken?
+
+### Für das Zusammenführen (G7)
+- Neuer Block `/* G7-BEGIN */ … /* G7-END */` hinter `/* G6-END */`; `Object.assign(SYNQUENZER, G7_API);` hinter der G6-Zeile.
+- `applyCarrierChange`: erste Zeile `g7Changed()`; `xpSet`: eine Zeile `g7Changed()` nach `XP.due = beat;`.
+- `tkSched`: eine Zeile `g7Prefetch` nach der `tkPlayBuf`-Zeile.
+- G2-Block: `g2Plan` nimmt ohne Feld die erkannten Noten (`g7Pitch`) und die Verschiebung `g7Shift`.
+
+## Unabhängige Nachprüfung G2 / G6 / G7 (eigene Signale und Wege) und Korrekturen
+
+Bericht: `tests/rt/RETEST.md` (E♭-Dur, 44,1 kHz, tiefe 87–117 Hz und hohe 311–415 Hz Stimme, Legato, echte Touch-Wege; G-Dur mit Begleitung;
+A-Moll unter d-Moll/E-Dur/F-Dur; altes 4.23.0-Projekt aus ZIP). Zwei Mängel gefunden und behoben:
+
+| Mangel | Ursache | Behebung | nachher |
+|---|---|---|---|
+| **D1** Ende eines „s“ direkt vor „i“ (D4) wurde mitverschoben (G2: 659 Samples, G7: 239 Samples, bis −46,6 dBFS; Soll bitgleich bzw. ≤ −60 dB). Der eigene Test prüfte nur die ersten 19 ms des Konsonanten | pYIN markiert Frames schon ~20 ms vor dem Vokal als stimmhaft (Fenster ragt in den Vokal); die Schutzzone begann dort | Schutzzone beginnt/endet am ersten Frame, der auf voller Rate periodisch ist (YIN-Rest ≤ 0,3), höchstens 3 Frames je Rand (`model()` in App und `dsp/g2pitch.js`) | alle Konsonanten bitgleich (G2 und G7), Tonhöhe weiter ≤ 0,34 Cent, Klick am Notenende +1,8 statt +3,2 dB |
+| **D2** Terz + „80er großer Refrain“: Chor 5,9–6,9 LU unter dem Lead (ein Lauf außerhalb 6–10) | Hall-Anteil geschätzt, `G6_CAL` nur an Falsett (2 Stimmen) gemessen | `G6_MIX['80'].below` 8 → 9 | Terz 80er 7,0–7,6 LU, Falsett 80er 8,6 LU, Pop 8,6–9,0 LU |
+
+Alles andere ✓ (u. a. G2 Hart ≤ 0,26 Cent, Weich ≤ 1,79 Cent, Touch-Weg bereit nach 242–278 ms mit Tonart E♭ der Szene; G6 Terz in G-Dur mit F♯,
+Dreistimmig/Barbershop aus den Akkorden der Begleitung, Song-Wiedergabe mit Chor; G7 je Note = outPitch ≤ 0,71 Cent, 8 Wechsel ohne Aussetzer;
+altes Projekt bitgleich, JSON ohne neue Felder).
+
+### Hinweise aus der Nachprüfung (offen, keine Abnahme-Mängel)
+- In einer **Legato-Phrase** ändert das Verschieben einer Note die Samples (Phase) der Nachbarnoten derselben Phrase (Tonhöhe gleich, kein
+  Klick) – „bitgleich außerhalb der Note“ gilt nur für getrennte Noten.
+- Legato-Töne, die weniger als ~30 Cent auseinander gesungen werden, erkennt VS2 als eine Note.
+- Chor auf einer **Song-Stimme**: die Akkorde der Begleitung werden dort nicht gelesen (leitereigene Dreiklänge).
+- Die K-Bewertung für den Chor-Pegel nutzt die 48-kHz-Koeffizienten auch bei 44,1-kHz-Takes (Abweichung < 0,1 dB).
+
+
+## stage-ges2 — Zusammenführung
+
+Staging-Stand: `stage-ges` (Basis `vs-base-B.html` 4.23.0 + **G3/G8** + **G4/G5**) + **G267** (`helfer-G267.html`: **G1**-Prüfung/Anzeige, **G2**, **G6**, **G7**;
+gebaut auf n5-br-G = 4.23.0 + G1). Datei `scratchpad/stage-ges/index.html` (Sicherung vorher: `index.html.vor-merge-stage-ges2.html`),
+Schnappschuss `synq-snapshots/stage-ges2.html`. **VERSION-Zeile bleibt `4.23.0`** (G267 trägt 4.25.0 – im Staging nicht übernommen; setzt der Dirigent). Format bleibt 5.
+
+### Zusammenführen (`git merge-file`, 3-Wege gegen `vs-base-B.html`) – 4 Konflikte, alle durch Verbinden gelöst
+1. **`tkSheet` onTap** – MAIN: Handler `g5` (In Melodie umwandeln); G267: Handler `g2` (♪ Tonhöhe · Noten) und `g6` (Chor). Gelöst: alle drei Zeilen.
+2. **`tkSheetPaint`** – MAIN: Knopf „In Melodie umwandeln“ (`tk-g5`); G267: Zeile `tkedrow` mit [♪ Tonhöhe · Noten] [Chor]. Gelöst: beide Zeilen
+   untereinander (erst G5-Knopf, dann die G2/G6-Zeile), CSS beider Zweige bleibt.
+3. **`TK_API.tkInject`** (Overdub-/Neu-Zeile) – MAIN (G8): Clip-Länge bis **64**; G267 (G6): `g6Took(...)` im Overdub-Zweig, Länge 16.
+   Gelöst: G267-Zeile mit `g6Took` **und** der G8-Länge 64.
+4. **Neue Blöcke vor `function voicesInfo()`** – MAIN: G3/G8- und G4/G5-Block; G267: G2-, G6-, G7-Block. Gelöst: alle Blöcke hintereinander
+   (G3/G8 → G4/G5 → G2 → G6 → G7), jeder unverändert; die API-Zeilen (`G4_API, G5_API`, `G3_API`, `G8_API`, `G2_API`, `G6_API`, `G7_API`) standen
+   außerhalb des Konflikts und sind alle da. Keine Konfliktmarken übrig.
+- VERSION: git hatte 4.25.0 (G267) übernommen → zurück auf **4.23.0**.
+- Alles andere sauber (G1-Änderungen im Marken-Editor, G6-Haken in `tkStartSrc/tkDrop/tkKill/tkFadeAt/tkXfOut`, `g6Took` im Aufnahmeweg,
+  G7-Haken in `applyCarrierChange`/`xpSet`/`tkSched`, G2-CSS liegen neben den G3/G8/G4/G5-Haken).
+
+### Zusammenspiel – geprüft und 4 Nahtstellen angepasst (nur Verbindungen, kein neues Verhalten)
+Kette je Take nach dem Zusammenführen (`tkExt().proc`, Ladereihenfolge): `wp ← g2 ← g4 ← Säubern`, d. h. **Säubern → G4 → G2/G7 → Zeitkarte**.
+G2 rechnet damit auf der G4-Fassung (G4 rückt weder Zeit noch Tonhöhe). So bleibt das G7-Umschalten aus dem G2-Cache (8 Fassungen je Take)
+ohne Neurechnen von G4 (G4 hält nur eine Fassung je Take; umgekehrt müsste G4 bei jedem Transponieren neu rechnen → G7-04 verletzt).
+1. **`wpBase(id, a, noG4)`** (Marken-Erkennung „an der Quelle, nie an der G4-Fassung“): überspringt jetzt auch `g2Proc` – die G2-Fassung
+   enthält G4. Einsätze sind von der Tonhöhe unabhängig (PSOLA, Dauer gleich).
+2. **`g7Pitch`**: wechselt die G4-Fassung (erste G4-Rechnung nach dem Laden, Regler geändert), passte der Schlüssel der G2-Analyse nicht mehr,
+   und bis zur neuen Analyse fiel G7 aus (Gesang kurz untransponiert). Jetzt: bis die Analyse nachgezogen ist, gelten die bisherigen Noten.
+3. **G6-Mischung bei G4 an**: G4 setzt Hall/Echo der STIMME-Spur (`trackFx → g4Fx` aus `gfx`), die G6-Mischung schrieb die Lead-Sends nur in
+   `sound.fx` → wirkungslos, und der Chor-Pegel (`g6Auto`) rechnete mit dem falschen Lead-Hall. Jetzt: `g6Mix` trägt die Lead-Sends bei G4 an
+   auch in `gfx` ein (gleiches Undo, Art `gfx`), `g6Auto` nimmt den wirksamen Hall (`trackFx`).
+4. **G5 auf einem G2-Take**: `g5Analyse` las den Roh-/gesäuberten Take (Zeitkarte ja, Tonhöhe nein) → „In Melodie umwandeln“ gab die
+   gesungenen statt der gehörten Töne. Jetzt: hat der Take ein Tonhöhen-Feld (`take.pitch`, G2), wird die gehörte Höhe gerechnet (Worker,
+   ohne G7-Transponieren, sonst würde der MELODIE-Clip doppelt transponiert). Ohne Feld unverändert.
+- **G4 × G6 (kein doppeltes FX):** G4 ist offline je Take; der Chor entsteht aus der gehörten Lead-Fassung (G4 → G2/G7) und geht in den
+  Spur-Eingang (keine zweite G4-Kette) → Kompressor/EQ wirken genau einmal (wie G6 „Kompressor/EQ für Lead und Chor (G4)“), Hall/Echo als Send.
+- **G2/G7 × G3:** der Vorlauf liegt im Take → G2-Analyse/Rendern decken ihn mit ab; G3 spielt Anlauf/Ausklang aus `tkPlayBuf` (gehörte Fassung).
+- **G2/G7 × G8:** 64-Takt-Clip quantisiert/transponiert korrekt (Messung unten), aber langsam (offen).
+- Regel 28: altes 4.23.0-Projekt (ZIP mit Take) bitgleich, JSON ohne neue Felder (`rt-old`); ohne `gfx`/`pitch`/`chor` keine neue Verarbeitung.
+- Marken-Regel „MS 2000“ genau 1×; kein Supabase-/Netz-Aufruf, kein alert/confirm/prompt neu.
+
+### Abnahme auf dem zusammengeführten Stand (Chromium 1243 headless; Skripte aus `helfer-g267` in `dirigent-test/stage-ges2/tests/`, Pfade umgestellt)
+G4 „Gesang Synthpop“ ist für neue STIMME-Spuren an. Die G267-Tests vergleichen oft **bitgleich mit dem Roh-Take** – das kann mit G4 nicht mehr
+gelten (absichtlich überholt, Regel 26). Darum jeder G267-Test zweimal: wie er ist, und mit `NO_G4=1` (G4 per A/B „ohne“, auch nach Neuladen).
+| Skript | wie es ist | NO_G4 | Bemerkung |
+|---|---|---|---|
+| `g2-core` (Node) | 28/28 (2. Lauf; 1. Lauf 3102 ms > 3000) | – | Kern bitgleich zum Zweig |
+| `g2-app` | 20 ✓ / 7 ✗ | 26 ✓ / 1 ✗ | ✗ mit G4: Roh-Take-Vergleiche (Zischlaute, ↶ ganz, A/B) + Rechenzeit; NO_G4: nur G2-04 16 Takte 3,5 s (Zweig allein hier 4,3 s) |
+| `g2-lay` | 6/6 | – | |
+| `g6-app` | 27 ✓ / 1 ✗ | 28/28 | ✗ lange Tasks 75/65 ms – Zweig allein hier genauso (55/77) |
+| `g7-app` | 7 ✓ / 2 ✗ | 8 ✓ / 1 ✗ | ✗ mit G4: Roh-Take-Vergleiche; NO_G4: G7-04 „gehört 193 Cent“ = Messfenster auf 15-Cent-Vibrato (Verlauf ±12 Cent um 200 gemessen, Zweig allein 195–199) |
+| `g1/n5-g-t1` | 7 ✓ / 7 ✗ | 14/14 | ✗ mit G4: Kreuzkorrelation gegen Roh-Vorlage (Messung, s. `g1-indep-g4x`) |
+| `g1/n5-g-t2` | 38 ✓ / 2 ✗ | 39 ✓ / 1 ✗ | ✗ Animation 276/374 ms (wechselndes Format, Zeit-Rauschen); P1-Wellenform mit G4 = G4-Fassung |
+| `g1/g1-indep` | 20 ✓ / 5 ✗ | 25/25 | `g1-indep-g4x` (Vorlage = gehörte G4-Fassung): G1-01 1/16 100 % max 3,5 ms ✓; nur „Roh-Take bitgleich“ ✗ (G4) |
+| `g1/g1-indep2` | 5/5 | – | |
+| `rt/rt-old` (Regel 28) | 4/4 | – | altes Projekt bitgleich |
+| `rt/rt-g2` | 21 ✓ / 4 ✗ | 25/25 (2 von 3 Läufen; 1 × lange Task 57 ms) | ✗ mit G4: Roh-Take-Vergleiche |
+| `rt/rt-g7` | 12 ✓ / 8 ✗ | 19 ✓ / 1 ✗ | NO_G4 ✗ lange Task 53 ms – Zweig allein hier ebenso (69/95) |
+| `rt/rt-g6` | 18 ✓ / 1 ✗ (lange Task 95 ms) | 19/19 | |
+| `interplay.mjs` (neu, Zusammenspiel) | **18/18** | – | G2+G7 auf G3-Take inkl. Vorlauf-Note ±0,3 Cent / +200 Cent, zurück bitgleich; Kette; G6-Quelle/Knoten/Mischung/Undo; G5 auf G2-Take; G8 64 Takte × G2/G7 |
+| `smoke.mjs` | ✓ keine Konsolenfehler | | |
+| stage-ges `g3-accept` A–F | 60 ✓ / 1 ✗ | | ✗ „kein Knacken“ in C – Ursache: Knack schon im **aufgenommenen Roh-Take** (Mikro-Strom unter Last); Wiederholungen C: Staging 9/36 ✗, vor dem Zusammenführen 0/15 ✗, abwechselnd im selben Zeitraum 0/5 zu 0/5 → offen (s. u.) |
+| `g3-lay` | 19/19 | | |
+| `g8-accept` S B C R | 37 ✓ / 1 ✗ | | ✗ 64-Takt-Schleife: 2 Stücke mit gleichem Schlüssel = G4-Fassung kam mitten im 2. Durchgang (Überblendung); Wiederholung ✓ |
+| `g8-accept` A (G8_MIN=3) | 8/8 | | lange Aufgaben keine |
+| `g8-lay` | 24 ✓ / 6 ✗ | | Tasten < 44 px im Aufnahme-Blatt – Befund der Basis 4.23.0 (wie stage-ges) |
+| `v3-vs3-accept` A–G | 71 ✓ / 1 ✗ | | ✗ G „A/B sofort“ – auch vor dem Zusammenführen 1 von 2 Läufen ✗ (Zeit-Rauschen, G4 rechnet den anderen Take) |
+| `v3-vs3-click` | 3/3 | | |
+| `v3-vs2-accept` | 48 ✓ / 1 ✗ | | „Stimme rechtzeitig geplant“ – bekannt schwankend |
+| `g4-accept` all / `g4-chain` / `g4-click` / `g4g5-lay` / `g5-accept` | 19/19 · 2/2 · 1/1 · 25/25 · 14/14 | | |
+| `g4-cpu` | ✓ +0,68 % (≤ +3) | | |
+| `v3-mk8b-ui` (letztes MK-Paket) | 38 ✓ / 2 ✗ | | MK8b-04 k801 −200 dBFS – wie Basis und stage-ges |
+Rechner: 4 Kerne, Last 6–7 (andere Sitzungen) – Zeit-Grenzen schwanken.
+
+### Offen
+- **Rechenzeit G2 mit G4 an:** erstes Quantisieren eines frischen 16-Takt-Takes 6,3–8,5 s (ohne G4 3,8–3,9 s; Zweig allein hier 4,3 s; Soll ≤ 3 s):
+  G2 rechnet auf der G4-Fassung; ist sie noch nicht fertig, wird zweimal analysiert. 64 Takte: Quantisieren 67 s, erste Transposition 55 s.
+  Vorschlag (nicht gebaut, Regel 27): G2-Analyse an der Quelle vor G4 und Perioden-Marken übernehmen, oder G4 beim Aufnehmen gleich rechnen.
+- **Knack im Roh-Take bei „G3 C“** (Mikro-Strom unter Last, nicht beim Abspielen): im Staging häufiger beobachtet als vorher, aber im
+  direkten Wechsel-Vergleich nicht nachweisbar → mit wenig Last nachmessen.
+- **Regel 28 / G7:** alte Projekte mit Transponieren (Träger, Teil-Transposition) – die STIMME folgt jetzt (G7-Spec). Ohne Transponieren bitgleich.
+  Frage an Xander: sollen alte Projekte mit Transposition beim Öffnen gefragt werden (oder `follow` aus)?
+- Fragen an Xander aus G1/G2/G6/G7 (oben) und aus G3/G8/G4/G5 bleiben offen; G4-03 erst mit VS-P.
+
+
+
+## G-GES-merge — Zusammenführung · App **4.25.0** (`APP_CODE` 4 025 000) · Format bleibt 5 · kein Supabase-Aufruf
+
+Hauptlinie `mk-wt/index.html` = **4.24.1** (G-T-merge 4.24.0 mit K1, S0–S2, N1/N2, D1, K2 + Hotfix 4.24.1 „Phasen-Start wie 4.23.0“,
+dazu G-MK8b-merge-fix). Sicherung vorher: `mk-wt/index.html.vor-merge-G-GES-merge.html`. Zwischenstand `synq-snapshots/G-GES-zwischen.html`,
+Ergebnis `synq-snapshots/G-GES-merge.html`. Zusammengeführt (je `git merge-file -L MAIN -L BASE -L <Zweig>` gegen `vs-base-B.html`, 4.23.0):
+**VS-L** (+ VS-L-fix), **VS-P** (+ VS-P-fix), **GESANG** = `stage-ges` (G3/G8, G4/G5, G1-Prüfung, G2, G6, G7). Der abgebrochene erste Lauf
+(`index.html.teil-merge-G-GES.html`, auf 4.24.0) wurde nicht übernommen, sondern neu auf 4.24.1 gemergt; seine Konfliktlösungen sind geprüft
+und gleich gewählt (Kontrolle: Teil-Merge + 4.24.0→4.24.1-Diff = neuer Merge, einziger Unterschied die Hotfix-Zeilen). Der 4.24.1-Hotfix
+(Startphasen wie 4.23.0) ist unverändert drin. `VERSION` 4.25.0, Zeile `  live: true,` unverändert, „MS 2000“ genau 1 ×, kein Fremdname,
+keine Konfliktmarken, keine neuen alert/confirm/prompt.
+
+### Konflikte (15) und wie gelöst
+| Stelle | Hauptlinie / Zweig | Lösung |
+|---|---|---|
+| `VERSION` (VS-L, VS-P) | 4.24.1 / 4.24.0 | **4.25.0** |
+| API-Zeilen (VS-P) | `S012_API` / `VP_API` | beide Zeilen |
+| `normalizeProject` `recLength` | VS-L `[1…16]` / G8 `[1…64]` | Liste bis 64 (enthält 16) |
+| `undoState` | VS-L-fix `tphase` / G4 `gfx` | beide Zeilen |
+| `undoApply` | `tphase` / `gfx` | beide Zeilen |
+| `songWrite` Song-Stimme | S2 `s2WriteVox(ch.vox)` / G3 `g3VoxWrite(ch)` | **nur `s2WriteVox`**: beide schreiben dieselben `ch.vox`-Stücke (G3 setzt `ch.vox` bei Verschieben/Tauschen), doppelt hätte jede Song-Stimme verdoppelt |
+| `popRecOpts` Länge | `…16` / `…64` | `AUTO 1 2 4 8 16 32 64` |
+| `setRecOptions` | 16 / 64 | Liste bis 64 |
+| Menü „Länge“ | 16 + Klasse `rlen` / 64 | Liste bis 64 **mit** `rlen` (Knöpfe ≥ 44) |
+| `vsRecEnd` | VS-L `mel === false → vsRecVoice` / G3 Auswertung 2 Takte früher | beide: Aus → nur Gesang, An → G3-Fenster |
+| `tkMakeTake` fill | VS-P `vpKick(b)` / G3 `g3TakePre` | beide |
+| `tkDrop`/`tkKill` | VS-P Begrenzer-Hüllkurve stoppen / G6 Chor-Stücke | beides in einer Funktion |
+| `tkVoiceTake` Overdub | VS-L `clip.len = grow` / G6 `g6Took` | beide |
+| API-Zeilen (GESANG) | `S012_API, VP_API` / `G2_API, G6_API, G7_API` | alle fünf |
+Dazu (kein git-Konflikt, aber Zusammenspiel): VS-L-Grenzen 16 → **64** (G8) in `tkVoiceTake` (Wachsen beim Overdub), `vsRecVoice`
+(● REC Aus), `vsFangVoice` (FANG Aus); G6-Chor-Pegel `r.G` (= Clip-Pegel × VS-P-Ausgleich des Leads) – der Chor bleibt im gleichen Abstand.
+
+### Nahtstellen nach dem Zusammenführen (gemessen, behoben)
+1. **G4-Auto × VS-P-fix:** G4 rechnete mit dem alten VS-P-Bezug (−16 LUFS *nach* Pegel 0,8: Faktor 0,64) → seit VS-P-fix (−16 *vor* dem
+   Pegel, `VP_REF` 1) lag Auto 3,9 dB daneben. Jetzt `VP_REF²` aus VS-P. (Ergebnis G4-03 siehe Offen.)
+2. **G3 × VS-P:** die Fassung mit Ausklang (G3, ein Takt später) und der G8-Stück-Take werden sofort gemessen (`vpKick`) – kein späteres
+   Einsetzen bei der nächsten Runde.
+3. **G7 × Aufnahme unter Transposition (gefunden mit `gs7-v3-vs4-accept`):** ein Take, der gesungen wurde, während der Träger schon
+   transponierte (Akkorde Am–F–C–G), wurde beim Abspielen **noch einmal** verschoben (Säubern-Messung −31 dB, Roh-Puffer nicht bitgleich).
+   Jetzt folgt ein neuer Take dem Transponieren nur, wenn beim Singen nichts transponiert war (`g7RecFollow`: Anfang, Mitte, Ende und jeder
+   Träger-Wechsel im Take); sonst ist „folgt“ aus (umschaltbar). VS4-accept danach 25/26 (= 4.23.0).
+4. **G2-Tempo (Auftrag a):** gebaut ist der bessere der zwei Vorschläge – **Analyse an der Quelle vor G4** (`g2Src`: gesäubert bzw. roh;
+   G4 rückt weder Zeit noch Tonhöhe), der Klang wird aus der G4-Fassung gerechnet (`rx`: Teilton-Modell je Fassung einmal, Cache 2). Damit
+   eine Analyse je Take, egal ob/wann G4 fertig wird oder sich ändert; beim Start der Analyse rechnet G4 im eigenen Worker gleichzeitig.
+   (G4 gleich beim Aufnehmen zu rechnen hätte nur den Fall „frischer Take“ verbessert, nicht Regler-Änderungen und lange Takes.)
+   Gemessen (Chromium, 4 Kerne, Last ≈ 1): **16 Takte kalt mit G4 3,3 … 4,0 s** (vorher 6,0 … 8,5 s; Zweig ohne G4 hier 4,3 s), ohne G4
+   3,0 s; **wie bedient** (Takes-Blatt offen, dann [Hart]) **0,86 … 2,35 s**; 2. Einstellung 0,8 s; **64 Takte 11,9 s** (vorher 67 s); keine
+   langen Tasks > 50 ms im 16-Takt-Lauf (`g2-app`), beim 64-Takt-Lauf 3 × 51–59 ms. Mit laufendem Transponieren + Vorberechnung (interplay)
+   64 Takte 55–60 s (vorher 55 s) – dort rechnet G7 die Akkord-Lagen der Szene vor.
+5. **G3-Knack „C“ (Auftrag b):** neu gemessen bei wenig Last (Lastmittel ≈ 1): `g3-accept C` 7 von 7 Läufen ohne Knack (2. Differenz
+   0,0027 … 0,0032). Im Staging traten die Knackser nur unter Last 6–7 auf, und zwar schon im **aufgenommenen Roh-Take** (Mikro-Attrappe
+   des Prüfskripts im selben AudioContext). Kein App-Fehler – nichts geändert.
+6. **G7 und alte Projekte (Regel 28, Vorgabe des Dirigenten):** nur Takes ab 4.25.0 folgen dem Transponieren (`take.follow = true`,
+   additiv; fehlt = folgt nicht). Takes aus älteren Projekten klingen wie bisher. Je Take **[folgt Transponieren]** im Takes-Blatt
+   (neben „In Melodie umwandeln“, keine zusätzliche Zeile, ≥ 44 × 44 in 7 Formaten), ein Undo; Test-API `g7Follow`, `g7Info().follow`.
+7. **Overdub lückenlos (VS-L Frage 5, Regel 30):** auch beim normalen Overdub klingt der alte Take weiter, bis der neue gelesen ist, dann
+   Überblendung (wie beim Länger-Werden). `n4-vs-l-click 4`: längste Lücke **0 ms** (vorher 27–40 ms), M-KLICK 0,0054 je Pegel.
+8. **Tasten ≥ 44:** Aufnahme-Blatt „Quantisieren“ und „Einzähler“ 44 px hoch (wie „Länge“); quer rollt das Blatt mit dem Finger (L1 75,
+   L2 90, 926 × 428 37 px), FANG ganz erreichbar (`gges-reclay` 7 Formate alle Tasten ≥ 44, `gges-recswipe`). Kleine Hochformate
+   (375 × 667, 320 × 568): Spur-Leiste KLANG ✎ ⇅ M ↶ und SPIELEN │ 🎤 │ TRANSPONIEREN, ‹ › 44 px hoch (vorher 36/37/41), ✎ ⇅ M ↶ 44 breit
+   (der Spurname kürzt), die Tastatur 14 px niedriger (27 vh − 14, mind. 140 px), die Clip-Matrix unverändert. Song-Werkzeugspalte P3
+   2 × 44 px breit (vorher 2 × 30), die Spuren 29 px schmaler. Bibliothek: Chip-Zeile (Micro, 8 Genre-Reiter, übrige Chips) hatte schon
+   G-MK8b-merge-fix gebaut – nachgemessen `vq-lib` **0 Ziele < 44** in P1 P2 P3 L1 L2 926 × 428 375 × 812.
+
+### Zusammenspiel geprüft
+- **VS-L × VS-P:** 16-Takt-Take mit Melodieerkennung **Aus** über das Mikro (● REC, Länge 16): Mikro −28 / −36 dBFS → STIMME-Clip 16 Takte,
+  kein MELODIE-Clip, 0 Auswertungen, Ausgang STIMME (Pegel ganz auf) **−16,03 / −16,02 LUFS**, wahre Spitze −7,3 dBTP, Pegel-Standard
+  −19,9 LUFS (`gges/gges-vsl-vsp.mjs`, G4 an).
+- **VS-L 16-Takt-Wachsen × G8:** Overdub wächst bis 64 Takte (wie G8-Clips); Länge 32/64 in Aufnahme-Blatt und Menü; ● REC Aus bis 64.
+- **VS-P × G4 × G6:** VS-P misst die klingende Fassung (nach G4), G4 rechnet offline, der Chor entsteht aus der gehörten Lead-Fassung und
+  bekommt den Ausgleich des Leads (`r.G`) – nichts doppelt; Chor 6,4 / 7,2 LU unter dem Lead (G6-02). Der Begrenzer (VS-P) liegt nur am
+  Lead-Stück (Chor ≥ 6 LU leiser).
+- **VS-L Aus × G5:** „In Melodie umwandeln“ arbeitet auf dem gespeicherten Take – auch für Takes, die mit „Aus“ aufgenommen wurden.
+- **VV1** ist noch nicht in der Hauptlinie: beim Video-Merge gehört der Live-Zustand des VS-P-Auto-Pegels (`vpGet` in `tkStartSrc` gilt nur
+  live, `o.ctx` → kein Ausgleich) in `vvSwapIn`, sonst ist die Stimme im Video 4 … 20 dB leiser als beim Abspielen.
+
+### Abnahme auf dem Ergebnis (Chromium 1243 headless; Kopien mit Pfad auf `mk-wt` in `dirigent-test/gges/`, Ausgaben `gges/out/`)
+| Skript | Ergebnis | Bemerkung |
+|---|---|---|
+| `smoke.mjs` | ✓ keine Fehler | |
+| `gges-vsl-vsp` (VS-L × VS-P) | 6/6 | −16,0 LUFS |
+| `n4-vs-l-accept` 01 02 03 / 04 06 07 / 05 05g 05o / 05s 05x / 08 09 | 17✓1✗ / 12/12 / 4✓1✗ / 2✓1✗ / 22✓2✗ | ✗ siehe Regel 26 unten |
+| `n4-vs-l-lay` | 78✓ 12✗ | ✗ nur die Liste „AUTO 1 2 4 8 16“ (jetzt bis 64, G8) |
+| `n4-vs-l-click` 16 / 4 | 7/7 · 7/7 | Lücke 0 ms |
+| `n4-vs-p-fix-accept` 01 / 03 | 3/3 · 8✓1✗ (NO_G4 9/9) | ✗ „keine Verschiebung“ 0,136 ms nur mit G4 (Phase der G4-Filter am Plosiv) |
+| `n4-vs-p-qa-02` · `-fix-p04` · `-fix-vox` · `-click` | ✓ (+1,28 LU) · 7✓1✗ · 5/5 · 11/11 | p04 ✗ INIT ≠ 4.23.0 = K1 (schon in 4.24.x) |
+| `v3-vs3-accept` · `v3-vs3-click` | 72/72 · 3/3 | (ein Lauf vorher 71/72: bekannter Zeitpunkt „A/B sofort“) |
+| `gs7-v3-vs4-accept` (G4 aus) | 25✓ 1✗ | = 4.23.0 („Audio-Store“-Schlüssel seit F1) |
+| `gs7-v3-vs5a-t1/t3`, `vs5b-t1/t3` (G4 aus) | 19✓1✗ · 31/31 · 31✓1✗ · 5/5 | die 2 ✗ ebenso im Staging (G1/G3, Regel 26) |
+| `g3-accept` A–F · `g3-lay` | 61/61 · 19/19 | |
+| `g8-accept` S B C R · A (3 min) · `g8-lay` | 38/38 · 8/8 · 30/30 | |
+| `g4-accept` · `g4-chain` · `g4-click` · `g4g5-lay` · `g5-accept` | 19/19 · 2/2 · 1/1 · 25/25 · 14/14 | |
+| `g4-auto` female / male (G4-03) | 2✓1✗ · 2✓1✗ | **offen**, siehe unten |
+| `interplay` (G2/G6/G7 × G3/G4/G5/G8) | 17/17 | Test wartet jetzt auf die G4-Fassung |
+| `g2-app` · NO_G4 · `g2-lay` | 21✓6✗ · 26✓1✗ · 6/6 | mit G4: Roh-Vergleiche (Regel 26, wie Staging) + 16 Takte kalt 3,98 s; NO_G4: 3,01 s (Soll ≤ 3) |
+| `g6-app` | 26✓2✗ | ✗ Zählung der Puffer-Quellen: + VS-P-Begrenzer-Hüllkurve; gezählt am Stück: 1 Lead mit 4 bzw. 3 Chor-Stücken ✓ |
+| `g7-app` · NO_G4 · `gges-g7alt` | 8✓2✗ · 9/9 · 14/14 | ✗ mit G4: Roh-Vergleiche (Regel 26) |
+| `rt-old` (Regel 28) | 4/4 | |
+| `gges-reclay` · `gges-recswipe` · `vq-lib` · `gges-sweep7` | 7/7 · 3/3 · 0 < 44 | Rest-Liste siehe Offen |
+| `v3-mk2-wellen` · `gmk8b-ui/cross/restore/reg/panik/contrast/hit44` · `gmk8b-vocal` · `gmk8b-p3count` | alles PASS · 0/128 | |
+
+**Überholte Test-Erwartungen (Regel 26):** VS-L-05 „Vorlauf 0,25 s“ → seit G3 bis 2 Takte (12,25 s bei 40 BPM; der Take liegt ganz im
+Ringpuffer, `late` 0); VS-L-05x „Grenze 120 s → `late` > 0“ → seit G8 hat die Song-Aufnahme keine Zeitgrenze (`late` 0); VS-L-02/08
+„deep-equal zu 4.23.0“: Vergleich gegen `stage-ges` (G3 verlängert jeden Take), einziger Unterschied `take.pre.sec` ± 0,01 s bzw. der
+Anlauf des Song-Takes ± 61 ms (Abstand zum Mikro-Start, Zeit-Rauschen) und Noten-Messrauschen ≤ 0,03 Schlag; `n4-vs-l-click` drückt ●
+selbst (AUTO endet seit G8 erst nach 64 Takten); `n4-vs-l-lay` Längen-Liste; VS5b „Dehnen 70 %“ → G1 macht 100 % zum Standard;
+`g6-app` Quellen-Zählung (+ VS-P-Hüllkurve); G2/G7/VS4/VS5 „bitgleich zum Roh-Take“ mit G4 an (G4 ist für neue STIMME-Spuren an).
+
+### Entscheidungen zu den offenen Fragen (Regel 30)
+- **VS-L 1 Mikro-Blatt quer:** bleibt rollbar mit dem Finger (üblich bei Blättern, kein Umbau).
+- **VS-L 2 Quantisieren/Einzähler 44 px:** gebaut (oben 8).
+- **VS-L 3 MELODIE-Clip über 4 Takte bei 16-Takt-Gesang:** bleibt wie ein Tasten-Overdub (Schleifen-Aufnahme legt in die Clip-Länge) – die
+  STIMME wächst, die Noten bleiben im Raster des Clips; wer 16 Takte Noten will, nimmt auf einen leeren Platz auf oder nutzt G5.
+- **VS-L 4 FANG Aus braucht freien MELODIE-Platz:** bleibt (gleiche Szene wie FANG An, sonst springt der Gesang in eine andere Szene).
+- **VS-L 5 Overdub-Lücke:** gebaut (oben 7).
+- **VS-P Lautstärke der Stimme / Schalter Auto-Pegel:** bleibt wie VS-P-fix (−16 LUFS vor dem Pegel = Bezug der Synth-Kalibrierung, Stimme
+  ≈ 1 LU über den Synths); kein Schalter (Pegel-Regler wirkt relativ).
+- **G7 alte Projekte:** siehe oben 6.
+
+### Offen
+- **G4-03 nicht erreicht** (Auftrag c): nach Auto liegt der Gesang im Band 2–5 kHz +0,7 dB (weiblich) / +0,1 dB (männlich) über den Drums
+  (Soll ≥ 3). Ursache: VS-P-fix setzt die Stimme 3,9 dB tiefer als beim G4-Bau (VS-P-02: höchstens 3 LU über den Synths); mit Präsenz-Anschlag
+  +9 (gemessen auch +12) reicht die EQ der Stimme allein nicht, weil VS-P jede Anhebung wieder auf −16 LUFS ausgleicht. Bei Pegel ganz auf
+  (+3,9 dB) wäre es erfüllt. VS-P-01/02 und G4-03 schließen sich mit EQ nur in der Stimme aus; erfüllbar ist es mit der
+  „Gegenspur-Kerbe nur im Gesang“ als **dynamische Kerbe in den anderen Spuren (2–5 kHz, nur während gesungen wird)** – eigener DSP-Baustein
+  (Hüllkurve wie der VS-P-Begrenzer vorausberechnet), nicht in diesem Merge gebaut.
+- **Touch-Ziele mit Umbau (aus G-MK8b-merge-fix):** quer sind die Spur-Zeilen 31–37 px (5 Zeilen teilen sich ≈ 165 px; 44 px je Zeile ginge
+  nur mit 2–3 Spuren je Seite oder ≈ 60 px weniger Tastatur), SPIELEN │ TRANSPONIEREN quer 40 / 37 px (die Spalte über ‹ › ist 130 px hoch,
+  3 × 44 + Abstände brauchen 148), Song-Spuren AKKORDE/MELODIE 27–39 px (alle Spuren teilen sich die Höhe; 44 px nur mit senkrechtem Rollen
+  der Song-Ansicht), ✎ ⇅ M ↶ quer 667 × 375 40 × 45 (Seitenleiste 260 px: Name + 5 × 44 passen nicht). Diese brauchen einen sichtbaren
+  Umbau des Querformats – nicht gebaut. Gebaut ist, was ohne Umbau ging (oben 8).
+- **G2 kalt mit G4:** 16 Takte 3,3 … 4,0 s auf diesem Rechner (Soll ≤ 3 s; wie bedient 0,9 … 2,4 s).
+- Fragen an Xander aus den Zweigen, die wirklich nur er entscheiden kann: G4 „Gesang Synthpop“-Klang (anhören), G2 natürlicher Klang
+  (anhören), G8 Restzeit-Anzeige/480-MB-Grenze am iPhone, G6 Chor-Klang. Alles andere ist oben entschieden.
+
+
+## 4.25.1 — Hotfix „Einsingen entsperren“ (Nachtrag 9 §1, H1–H8)
+
+Grundlage `bau/snapshots/G-GES-merge.html` (4.25.0). `VERSION '4.25.1'`, APP_CODE 4 025 001, `live: true` unverändert. Kein neues Projekt-Feld:
+neue Schalter liegen im Geräteprofil (`uiPrefs`: `vocClick`, `stsess`) oder sind Laufzeit (`UI.recTg.vox`, `UI.recTgVox`, `UI.recGuide`, `rec.vox`,
+`rec.withScene`, `MICW`). Patch: `bau/helfer/H4251/patch-4251.diff` (≈ 180 geänderte Zeilen, nur örtlich).
+
+**Begriff Gesangs-Aufnahme** `vocalTake(ti)`: Zielspur ist die STIMME-Spur oder 🎤 ist an. Reine MIDI-Aufnahmen ohne 🎤 laufen in allen Punkten wie 4.25.0.
+
+- **H1 ● startet die Begleitung (Szene).** Was: `recWithScene(ti, si)` in beiden Stopp-Zweigen von `recPress` vor `startTransport`: jede andere
+  Spur mit Clip in der Szene und ohne Belegung (`R.slot −1`, kein `R.pend`) startet die Szene; Akkordzeile wie bei ▶ n. Belegte Spuren bleiben.
+  Overlay `#ciTgt`: „Stimme · Szene 1 · Begleitung: Synth 1, Synth 2, Synth 3 +2“ (bis 3 Namen, dann +n, darf umbrechen), leer → „Ohne Begleitung – Szene n
+  ist leer“ + Toast; Overdub auf STIMME-Clip → „alter Take läuft als Vorlage“. Warum: ● aus dem Stopp spielte nur den Klick. Gemessen: H-01…H-06 16/16
+  (alle Spuren je Takt ≥ 1 Note, Ausgang −15,9 dBFS = ±0,1 dB zur Szene ohne Aufnahme, im Einzähler 0 Clip-Noten, 1 Undo-Schritt).
+  **Befund:** Nach dem Laden setzt `applyProject` R.slot auf Szene 1 (nicht −1 wie in der Spec angenommen); H1 wirkt also vor allem nach ■/Stopp
+  einzelner Spuren und bei Szenen ohne vorher gespielte Spuren. Verhalten wie Spec, Test setzt den Spec-Zustand explizit.
+- **H2 Song-Aufnahme mit 🎤: Ziel „Gesang“.** Was: Schlüssel `vox` in den Song-Zielen; mit 🎤 ab Werk nur Gesang, bis die Ziele mit 🎤 selbst gewählt
+  sind; `vox` in `setRecTargets`, Ziel-Übernahme, `recTgShort` („🎤“) / `recTgLong` („Gesang“), START-Freigabe, `songRecTargets`. Schutz in
+  `songCommitNotes`: mit Stimme und 0 gespielten Noten im ersten Durchgang wird nichts gelöscht. Start-Blatt: Chip [🎤 GESANG] (≥ 44 px, bei 320 px und
+  L2 ohne Beschriftung „Ziele“), Modus-Text „Gesang ersetzt …; alles andere spielt weiter. stumm: alte Stimme … / nichts stumm“. Ziele-Zeile im
+  Querformat auf 44 px (vorher 40). Warum: ● SONG mit 🎤 schaltete die gewählte Spur stumm und löschte deren Noten. Gemessen: H-10…H-14 + H-70 grün;
+  H-11/H-12 Ergebnis Zeichen für Zeichen wie 4.25.0 (Vergleichslauf).
+- **H3 Klick beim Singen „Nur Einzähler“.** Was: Geräte-Einstellung `vocClick` ('ci' Standard | 'always'); Scheduler `rec.vox ? UI.vocClick ===
+  'always' : S.settings.metroInRec`. Zeile „Klick beim Singen [Nur Einzähler] [Immer]“ im Menü → Aufnahme und im ●-Halten-Blatt (44 px). Projekt-Feld
+  `metroInRec` unverändert. Gemessen: H-20…H-23 10/10 (4 Klicks −4…−1, betont −4, 0 im Take; MIDI-Take Klicks gleich 4.25.0; übersteht Neuladen).
+- **H4 Vorzähler bei laufender Musik und im Song-Vorlauf.** Was: `recCdStart/recCdLeft/recCdClick/recCdCatchUp`; Overlay zählt bei „bereit“ und im
+  Song-Vorlauf (≤ 4·max(1, Einzähler) Schläge), am Start 0,5 s „●“ (`.n.go`); Klicks im Einzähler-Fenster vor dem Start (bereits eingeplante Schläge
+  bekommen ihren Klick sofort). Nur Gesangs-Aufnahmen. Gemessen: H-30…H-33 14/14 (3, 2, 1, ● auf 6/7/8 ±0,15 Schlag; Klicks 6 und 7; Song-Punch
+  ab Takt 5: 4…1 und 4 Klicks; MIDI-Take gleich 4.25.0; renderTakt 0,001 ms/Bild).
+- **H5 ● auf STIMME ohne 🎤.** Was: `recMicStart` startet das Mikro im selben Tipp; Aufnahme erst bei `live`, ≥ 0,5 s Ringpuffer, keine
+  Kurz-Einmessung (Weg Lautsprecher: Ende abgewartet), höchstens 4 s, Overlay „🎤 wird bereit …“; zweites ● bricht ab. Ohne Mikrofon / ohne Einmessung /
+  verweigert: Meldung, nichts startet. Gemessen: H-40…H-43 8/8 (Fake-Mikro: Einmessen fertig nach 2,8 s, Transport ab 3,05 s).
+- **H6 Ausgang beim Singen.** Was: Zeile `#ciHint` (12 px, höchstens 2 Zeilen) bei jeder Gesangs-Aufnahme: Lautsprecher-/Bluetooth-Hinweis, Kabel
+  nichts. `?stsess=par|auto|none` (gespeichert nur, wenn der Parameter in der Adresse steht; Test-API `stimmeSess`) für `stStart`/`micTapGet`.
+  Gemessen: H-50…H-52 9/9 (Attrappe: ohne Parameter 'play-and-record' wie 4.25.0, auto → 'auto', none → nichts; aus → 'playback').
+- **H7 Vorlage beim Song-Ersetzen.** Was: Start-Blatt-Zeile „Alte Stimme [stumm] [hören]“ (wenn 🎤 an und im Bereich alte Stimme), `UI.recGuide`
+  → `sr.guide` → `tkSongMute` null. Gemessen: H-60/61 (alte Stimme in Takt 3–4 eingeplant bzw. stumm wie 4.25.0; Ergebnis neuer Take, ↶ stellt her).
+- **H8 Leerer Song + 🎤:** Toast „🎤 Gesang wird beim ersten Song-Durchgang nicht aufgenommen – …“. Gemessen: H-70.
+
+**Gemeinsam (Regel 28):** Golden-Klangtest `bau/tests/n5-k-golden.mjs` 4.25.1 gegen 4.25.0: 320/320 Klänge ≤ −90 dB. Demo: normalisiertes Projekt
+gleich, Noten-Plan 8 Takte Szene 1 + 2 gleich (H-90). Regression aus `bau/tests` vorher/nachher identisch: Smoke, `v3-v2d2-rec` 65/65 (N7S-27…32),
+`v3-qa-vs3-reg` „all ok“. H-92: siehe STATUS.
+
+## 4.25.2 — Nachschub „kleine Gesangs-Fehler“ (Nachtrag 9 §1.2, K1–K4)
+
+Auf 4.25.1. `VERSION '4.25.2'`, APP_CODE 4 025 002. Patch `bau/helfer/H4251/patch-4252.diff` (≈ 45 Zeilen).
+
+- **K1 G3-Ausklang nach Kürzen/Punch.** `g3Exit`/`g3PostDraw`: kein Ausklang, wenn der Take über das (gekürzte) Clip-Ende ragt; `g3VoxSeg`: `full` als
+  Gleichheit ±1e-3; `tkVoxTrim` kürzt `out` (auch in `alt`) auf das Stückende. Warum: nach „Länge −1“ sprang der Ausklang einen Takt nach vorn, das linke
+  Reststück eines Punch lief bis zu 1 Takt in die neue Aufnahme. Gemessen: K-01/K-02 (4.25.1: Ausklang bei Takt 1 und 2, Reststück out 17,0 s statt 7,0 s;
+  4.25.2: kein Ausklang, out = 7,0 s), K-03 Undo + Laden deep-equal. Regel 28: betrifft nur Zustände seit 4.25.0 (Clip kürzer als Take mit gemessenem
+  Ausklang); im Repo-Snapshot gibt es keine Projekte mit Song-Stimme.
+- **K2 Marken-Editor ohne versehentliches Verschieben.** `wpHit`: Fangradius ≤ 16 px und ≤ halber Nachbarabstand, zwei Kandidaten < 6 px → keiner;
+  `wpGest`: greifen nur im oberen 44-px-Streifen (dort sitzt das Griff-Dreieck), auf der Welle schwenkt ein Finger immer; zweiter Finger (auch neben der
+  Welle) verwirft den Zug. Tipp wie bisher. [V] Bedienung ändert sich (Funk). Gemessen: K-04 500 Wische 0 Marken bewegt (4.25.1: 40 Wische → 6
+  Verschiebungen), K-05 0 bewegt/0 Undo, K-06 1 Undo.
+- **K3 Clip-Blatt STIMME.** +1/×2 gesperrt erst ab 64 Takten (alle Clips, wie `clipLength`); „Quantisieren…“ öffnet bei STIMME den Marken-Editor;
+  Untertitel „N Takte · Gesang · K Takes“; ×2 heißt „Doppelte Länge (Gesang einmal, danach Stille)“. Gemessen: K-07…K-09.
+- **K4 Feste Take-Nummern** nach Alter (`created`, dann `in`), nur Anzeige. Gemessen: K-10 (Take 3 nach oben bleibt Take 3; gelöscht → 4…7 werden 3…6).
+
+## 4.25.2 — Auslieferung (01.11.2026, ~02:00 UTC)
+
+Ausgeliefert = 4.25.0 (G-GES-Merge: VS-L, VS-P, Gesang G1–G8) + Hotfix 4.25.1 (H1–H8) + Nachschub 4.25.2 (K1–K4). Die lange Schluss-Testphase des Gesang-Merges wurde auf Xanders Wunsch abgebrochen (Merge-Phase hatte die Abnahmen bereits laufen lassen; Hotfix-Tests grün). Smoke, orch-mk-check und v3-mk2-wellen: PASS. Bekannt offen (folgt): G4-03, einige Touch-Ziele quer < 44 px, G2-Korrektur 16 Takte kalt ≈ 4 s mit G4 (Ziel 3 s).
