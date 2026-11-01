@@ -1,3 +1,15 @@
+## 4.37.0 — Transponieren sauber, Teile-Blatt geführt, feiner Pinsel, Scrubbing + Verlauf, Vorlage beim Nachsingen
+
+Grundlage 4.36.0 + fünf Pakete in einem Durchgang (HARM, KONUX, PINSEL2, SX714, G10J).
+- **Transponieren immer sauber:** Akkordwechsel greifen jetzt am **Taktstrich**, „Eine Skala“ ist für alle Projekte an – Durchgangstöne landen in der Skala, die gerade gilt. Alte Projekte werden einmal umgestellt (kurzer Hinweis), danach bleibt deine Wahl unter Menü › Harmonie. Behoben: ein Lauf mit F♯-Durchgang rutschte unter E manchmal eine Stufe (D♯ statt E). Drums und Perkussionsspur werden weiter nie mittransponiert.
+- **Songteile zusammenfassen – ein Blatt:** Takte wählen → ⋯ → **Zu Teil / Block …** (auch im Marken-Blatt und beim Antippen eines Blocks): Mini-Zeitleiste, Bild-Karten „Zu einem Teil machen“ / „Als Block gruppieren“ / „Zurückholen“, Name im selben Blatt, im Song darüber eine Vorschau. „Zusammenfassen“ ist jetzt „Zu einem Teil machen“.
+- **Melodie-Pinsel fein:** Pinsel steht auf „schmal“; schnelles Wischen ändert nichts, erst wenn der Finger kurz (90 ms, Knopf „90 ms“) auf einer Tonhöhe verweilt, wird genau diese Spalte gesetzt – mit Tick. Zwischen zwei Haltepunkten entsteht ein Lauf in der Tonart.
+- **Scrubbing im Song:** Lautsprecher-Knopf an → unter der festen Linie wischen, jeder Schlag klingt kurz an, Blitz am Taktstrich, loslassen setzt ▼. Quer sitzt der Lautsprecher in der Song-Leiste, **hochkant rund unten links im Song-Fenster** (die Leiste ist mit ◆ ÜBERGÄNGE voll und bleibt wie in 4.36). **↶ halten** → Verlauf-Liste mit Namen und Uhrzeit, Sprung zu jedem Stand, **＋ Schnappschuss** merkt einen ganzen Stand im Projekt.
+- **Vorlage beim Nachsingen:** ● halten → Zeile „Vorlage“ (Spur oder alte Stimme lauter, Rest leiser) – nur während des Takes, danach klingt alles normal. Beim Chor „Selbst singen“ zeigt eine Leiste Zielstimme und Treffer-Punkt (grün/gelb/rot).
+- Zusammengeführt: Marken-Blatt hat Leicht/Voll, ✂ Bei Takt … und „Zu Teil / Block …“ nebeneinander; Scrubbing rechnet mit Taktarten (3/4, 7/8 …); Mithören im Noten-Editor schaltet Spuren wieder richtig stumm (seit Solo/Spurkopf ging das nicht mehr sauber).
+- Offen: deine Abnahme aller fünf Teile, besonders der Platz des Lautsprechers hochkant (sag, wenn er woanders hin soll) und ob ein Lauf unter dem Dur-Akkord der 5. Stufe in Moll lieber „harmonisch Moll“ spielen soll.
+Tests: Regeln (live 1×, MS 2000 1×, Marken 0), acorn 0 doppelt / 0 Syntaxfehler, Rauchtest grün; Song-Leiste in 428/390/375 hochkant und 926 quer vermessen (alles ≥ 44 px).
+
 ## 4.36.0 — Weicher Szenenwechsel, Einsingen fertig, Bit Mask, Übergänge an Teilkanten
 
 Grundlage 4.35.0 + Paket B2 (V6a, G10a, Bit Mask BM1–BM6 + BM8, Übergänge UE-A/B) in einem Durchgang.
