@@ -1219,6 +1219,7 @@ svg{display:block}
 .knob .kmg{fill:none;stroke:var(--msrc);stroke-width:1.2;stroke-dasharray:2 3;opacity:0}
 .knob .kdg{opacity:0}
 .knob.has-mod:not(.mna) .kdg{opacity:1}
+.knob.mlv .kdg{opacity:1}/* MA1: the live dot of every heard route (also in mod mode of another source) */
 .knob .kd{fill:#fff;stroke:#000;stroke-width:.8}
 .knob .kdh{fill:var(--mc,var(--msrc));opacity:.35}
 .knob .kb,.fader .kb{position:absolute;left:0;right:0;bottom:0;height:5px;display:flex;justify-content:center;gap:3px;pointer-events:none}
@@ -1230,6 +1231,7 @@ svg{display:block}
 .fader.mna .fmr{opacity:.45}
 .fader .fdot{position:absolute;left:50%;bottom:3.5px;width:9px;height:9px;margin-left:-4.5px;border-radius:50%;background:#fff;border:1px solid #000;box-shadow:0 0 0 3px rgba(185,242,39,.3);box-shadow:0 0 0 3px color-mix(in srgb,var(--mc,var(--msrc)) 40%,transparent);display:none;pointer-events:none;will-change:transform;z-index:1}
 .fader.has-mod:not(.mna) .fdot{display:block}
+.fader.mlv .fdot{display:block}
 /* mod mode: modulatable controls get a dashed ring in the source colour; everything else on the page rests (.3, inert) */
 body[data-mod] #synthSheet .knob.modable .kmg{opacity:.9}
 body[data-mod] #synthSheet .knob.modable .kv{opacity:.45}
@@ -10227,6 +10229,58 @@ function frame(now, bAud) {
   const want = !voc() && (ct().seq.on || !!P.rec); try { const E = AU.synth[P.i]; if (E && want && !E.mksOn) E.mkScope(true); } catch (e) {}
   const k = want ? runStep(tA) : 0; P.runTA = tA;   // the audio time this frame shows (test API: light against the worklet's clock)
   if (k !== P.run) { P.run = k; P.runN = (P.runN || 0) + 1; const lit = k ? 0 : litOf(); if (PL.ui) for (let j = 1; j <= 16; j++) setLed('s' + j, k ? (k === j ? 'on run' : '') : stepBase(j, lit)); spielPaint(); }
+  ma1Frame();   // MA1: VIRTUAL PATCH on the plate knobs
+}
+/* ---------- MA1: modulation on the plate knobs. The VIRTUAL PATCH routes of the shown timbre (source x INT / 63 x the span of the
+   destination, W-18, exactly as the worklet sums them) get the Mod-Bogen of the app knobs around the destination knob: a ring in
+   the colour of the strongest source = the range, a dot = the value now. The values come from the worklet scope (mkScope, 30 Hz):
+   EG 1/2, LFO 1/2, velocity and keytrack of the youngest voice of the timbre, i.e. the envelope rises with every note and falls
+   back. ≤ 30 fps, only knobs with a route; nothing is built while no route has an intensity ---------- */
+const MA1_KN = {1: 'o2.tune', 2: 'o1.c1', 3: 'mix.n', 4: 'f.cut', 5: 'a.lvl', 6: 'a.pan', 7: 'k10'};   // destination 0 (Tonhöhe) has no knob
+const MA1_SPAN = [24, 63, 127, 127, 127, 127, 63, 127];                  // = MK_PSPAN of the worklet
+const MA1_SC = ['fenv', 'menv', 'lfo1', 'lfo2', 'vel', 'key', 'rnd', 'mw'], MA1_BIP = [0, 0, 1, 1, 0, 1, 1, 0];   // the colour (MSRC) and polarity of a source
+const MA1 = {last: 0, ids: new Set()};
+function ma1N(d, v) { const [lo, hi] = range(d); return clamp(hi > lo ? (d.log ? Math.log(Math.max(lo, v) / lo) / Math.log(hi / lo) : (v - lo) / (hi - lo)) : 0, 0, 1); }
+function ma1Arc(n0, n1) {
+  const R_ = 17.6, a0 = (-135 + 270 * Math.min(n0, n1)) * Math.PI / 180, a1 = (-135 + 270 * Math.max(n0, n1)) * Math.PI / 180, f = x => x.toFixed(2);
+  if (a1 - a0 < .02) return '';
+  return 'M' + f(16.5 + R_ * Math.sin(a0)) + ' ' + f(16.5 - R_ * Math.cos(a0)) + 'A' + R_ + ' ' + R_ + ' 0 ' + (a1 - a0 > Math.PI ? 1 : 0) + ' 1 ' + f(16.5 + R_ * Math.sin(a1)) + ' ' + f(16.5 - R_ * Math.cos(a1));
+}
+function ma1Off(id) { const K_ = PL.ui && PL.ui.knob[id]; if (K_ && K_.ma1) { K_.ma1.svg.remove(); K_.ma1 = null; } MA1.ids.delete(id); }
+function ma1Frame() {
+  const now = performance.now(); if (now - MA1.last < 33) return; MA1.last = now;
+  const want = new Map();
+  if (PL.ui && P.tab !== 'spiel' && !P.view && !voc()) {
+    const T = ct();
+    T.p.forEach(c => { const d = Math.round(c.d), id = MA1_KN[d]; if (!c.i || !id || (d === 7 && (T.l2.sync || P.seqSel))) return; if (!want.has(id)) want.set(id, []); want.get(id).push(c); });
+  }
+  for (const id of [...MA1.ids]) if (!want.has(id) || !PL.ui.knob[id] || !PL.ui.knob[id].ma1) ma1Off(id);
+  if (!want.size) return;
+  const E = AU.synth[P.i]; if (E && E.mkScope && !E.mksOn) E.mkScope(true);
+  // the youngest sounding voice of the shown timbre (a gated one first)
+  const fresh = E && E.mks && AU.ctx && AU.ctx.currentTime - E.mks.t < .5, t2 = ti() === 1;
+  let v = null; if (fresh) for (const x of E.mks.voices || []) { if ((x.tb === 2) !== t2) continue; if (!v || (x.gate && !v.gate) || (!!x.gate === !!v.gate && x.t < v.t)) v = x; }
+  const mw = clamp((+mk().mw || 0) / 127, 0, 1), bd = 0;   // MA1: the live wheels (MOD-RAD 0..1, BEND -1..1, as the worklet)
+  for (const [id, rs] of want) {
+    const K_ = PL.ui.knob[id], d = defOf(id); if (!K_ || !d) continue;
+    let o = K_.ma1;
+    if (!o) {
+      K_.n.insertAdjacentHTML('beforeend', '<svg class="ma1mk" viewBox="0 0 33 33" aria-hidden="true"><path class="r"/><g class="dg"><circle class="h" cx="16.5" cy="-1.1" r="3.4"/><circle class="d" cx="16.5" cy="-1.1" r="2"/></g></svg>');
+      const svg = K_.n.lastChild; o = K_.ma1 = {svg, r: svg.querySelector('.r'), g: svg.querySelector('.dg'), rk: '', a: null, c: ''}; MA1.ids.add(id);
+    }
+    const base = get(d); let lo = 0, hi = 0, x = 0, main = rs[0];
+    for (const c of rs) {
+      const s = Math.round(c.s), a = c.i / 63 * MA1_SPAN[Math.round(c.d)];
+      if (MA1_BIP[s]) { lo -= Math.abs(a); hi += Math.abs(a); } else { lo += Math.min(0, a); hi += Math.max(0, a); }
+      if (Math.abs(c.i) > Math.abs(main.i)) main = c;
+      if (v) x += a * (s === 0 ? v.eg1 : s === 1 ? v.eg2 : s === 2 ? v.lfo1 : s === 3 ? v.lfo2 : s === 4 ? (v.vel != null ? v.vel : .8) : s === 5 ? ((v.pitch || 60) - 60) / 60 : s === 6 ? bd : mw) || 0;
+    }
+    const col = MSRC[MA1_SC[Math.round(main.s)]].c, rk = ma1Arc(ma1N(d, base + lo), ma1N(d, base + hi));
+    if (o.c !== col) { o.c = col; o.svg.style.setProperty('--mc', col); }
+    if (o.rk !== rk) { o.rk = rk; o.r.setAttribute('d', rk); }
+    const a = v ? Math.round((-135 + 270 * ma1N(d, base + x)) * 10) / 10 : null;
+    if (o.a !== a) { o.a = a; if (a == null) o.g.setAttribute('visibility', 'hidden'); else { o.g.setAttribute('visibility', 'visible'); o.g.setAttribute('transform', 'rotate(' + a + ' 16.5 16.5)'); } }
+  }
 }
 /* ---------- test API (B.7): mkPanel(), mkView(o) ---------- */
 const ZCACHE = {k: null, Z: null};
@@ -10749,6 +10803,7 @@ const css = `
 .mkpk .cap i{position:absolute;left:50%;top:15%;width:calc(var(--u) * 1.6);margin-left:calc(var(--u) * -.8);height:35%;background:#f4f4f0;border-radius:calc(var(--u) * .8);box-shadow:0 0 calc(var(--u) * .6) rgba(255,255,255,.35)}
 .mkpk.grau .cap,.mkpb.grau{opacity:.5}
 .mkpk .wd,.mkpb .wd{display:none}
+.mkpk .ma1mk{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible;pointer-events:none}.mkpk .ma1mk .r{fill:none;stroke:var(--mc);stroke-width:1.7;stroke-linecap:round;opacity:.95}.mkpk .ma1mk .h{fill:var(--mc);opacity:.45}.mkpk .ma1mk .d{fill:#fff;stroke:#000;stroke-width:.5}
 .mkpk.dif .wd,.mkpb.dif .wd{display:block;position:absolute;right:calc(var(--u) * -1);top:calc(var(--u) * -1);width:calc(var(--u) * 6);height:calc(var(--u) * 6);border-radius:50%;background:#fff;box-shadow:0 0 0 1px #000}
 .mkpb{position:absolute;box-sizing:border-box;border-radius:calc(var(--u) * 1.8);background:linear-gradient(180deg,hsl(210 10% 89%),hsl(210 8% 79%));border:calc(var(--u) * 1) solid #4b5158;box-shadow:0 calc(var(--u) * 1.4) calc(var(--u) * 2) rgba(0,0,0,.45),inset 0 calc(var(--u) * .8) 0 rgba(255,255,255,.6)}
 .mkpb::before{content:'';position:absolute;left:calc(var(--u) * 3);right:calc(var(--u) * 3);top:calc(var(--u) * 3);bottom:calc(var(--u) * 3);border:calc(var(--u) * .7) solid rgba(38,42,47,.5);border-radius:calc(var(--u) * 1.2)}
@@ -15568,7 +15623,7 @@ class MkTim {
   vEnd(v) { if (!v.on) return; const id = v.id, ne = v.noEnd; v.on = false; v.id = -1; v.ghost = false; v.isLine = false; v.noEnd = false; v.xfo = false; if (!ne) this.endCheck(id); }
   scope() {
     const out = [], th = this.sq.h.splice(0);   // MK6
-    for (const v of this.V) if (v.on && !v.ghost) out.push({note: v.note, t: v.age, eg1: v.e1, eg2: v.st && v.st.gate ? v.gt : v.e2, lfo1: v.lv1 || 0, lfo2: v.lv2 || 0, cutHz: v.cutHz, cutMax: v.cutMax, pitch: v.pitch, gate: v.gate, udet: v.udet,
+    for (const v of this.V) if (v.on && !v.ghost) out.push({note: v.note, t: v.age, eg1: v.e1, eg2: v.st && v.st.gate ? v.gt : v.e2, lfo1: v.lv1 || 0, lfo2: v.lv2 || 0, cutHz: v.cutHz, cutMax: v.cutMax, pitch: v.pitch, gate: v.gate, udet: v.udet, vel: v.vel,   // MA1: + vel (PATCH source)
       seqStep: this.sqV && v.sq ? v.sq.h.splice(0) : th.slice()});
     for (const v of this.V) v.cutMax = 0;
     return out;
@@ -41518,6 +41573,7 @@ function modFrame() {
   const now = performance.now(); if (now - MLIVE.last < 32) return; MLIVE.last = now;
   const i = R.selT, tr = S.tracks[i]; if (!tr || tr.kind !== 'synth') return;
   const sv = modLive(i);
+  const ma1w = trackOnWorklet(i); if (ma1w !== MLIVE.ma1w) { MLIVE.ma1w = ma1w; for (const k of ED.ctls) if (k.dst && k.update) k.update(); }   // MA1: the worklet engine came (or went) after the knobs were built: which routes are heard
   for (const k of ED.ctls) if (k.hasMod && k.anim) k.anim(k.dst.startsWith('fx.') ? MLIVE.svN : sv);
   const k1u = ED.msrc && sndOf(i) ? sndOf(i).mods : null, k1f = !!k1u && k1FmxLfo(i), k1h = s => k1u.some(m => m.src === s) || (k1f && s === 'lfo1');   // K1 (K1-03): a source chip moves only while a route of the sound uses it
   if (ED.msrc) for (const c of ED.msrc) { const v = k1u && !k1h(c.dataset.src) ? 0 : clamp(sv[c.dataset.src] || 0, -1, 1); if (Math.abs(v - (c._v || 0)) > .004) { c._v = v; c._b.style.transform = 'scaleX(' + v.toFixed(3) + ')'; } }
@@ -41560,6 +41616,7 @@ function makeCtl(d, get, set, o) {
   const CAP_H = fader ? 16 : 0;
   let g = null, lastTap = {t: 0, x: 0, y: 0}, lastN = -2, lastTxt = null, lastTick = -1;
   let mSig = '', routes = [], act = [], all = [], lastDot = -9, trackPx = 0, trackLay = -1, lastBadges = '', ariaLast = '';
+  let ma1H = [];   // MA1: every heard route of this destination (all sources, also in mod mode): the live dot is their sum
   const nBase = () => toNorm(d, get());
   // V0d: a curved knob (Helligkeit, 'bipow') is modulated linearly in its unit (1,0 = half the range): ring / dot / range text
   // are placed through the value, so they show the real dB
@@ -41570,11 +41627,12 @@ function makeCtl(d, get, set, o) {
     const mm = UI.modSrc && R.editor === 'synth' ? UI.modSrc : null, only = mm && srcOk(mm) ? mm : null;
     routes = mm ? (only ? all.filter(m => m.src === only) : []) : all;
     act = routes.filter(m => routeActive(mi, m) && !routeIdle(mi, m));     // V0a K-15: an idle route greys the ring too
-    const sig = n.toFixed(5) + '|' + (mm || '') + '|' + all.map(m => m.src + m.amt).join(',') + '|' + act.length;
+    ma1H = mm ? all.filter(m => routeActive(mi, m) && !routeIdle(mi, m)) : act;   // MA1
+    const sig = n.toFixed(5) + '|' + (mm || '') + '|' + all.map(m => m.src + m.amt).join(',') + '|' + act.length + '|' + ma1H.length;   // MA1: + heard
     if (sig === mSig) return; mSig = sig;
     const has = routes.length > 0;
     k.classList.toggle('has-mod', has); k.classList.toggle('mna', has && !act.length);
-    k.hasMod = act.length > 0; lastDot = -9;
+    k.hasMod = ma1H.length > 0; lastDot = -9; k.classList.toggle('mlv', ma1H.length > 0);   // MA1: the dot moves for every heard route
     if (has) {
       const [lo, hi] = spanOf(routes), main = routes.reduce((b, m) => (Math.abs(m.amt) > Math.abs(b.amt) ? m : b));
       k.style.setProperty('--mc', MSRC[main.src].c);
@@ -41586,6 +41644,7 @@ function makeCtl(d, get, set, o) {
       k.style.removeProperty('--mc');
       if (!fader) { kmr.setAttribute('visibility', 'hidden'); setRingX(kmx, 0, 0); }
     }
+    if (!has && ma1H.length) k.style.setProperty('--mc', MSRC[ma1H[0].src].c);   // MA1: mod mode of another source – the dot keeps its colour
     const bs = all.map(m => m.src).join();
     if (bs !== lastBadges) { lastBadges = bs; kb.innerHTML = all.map(m => `<i style="--c:${MSRC[m.src].c}"></i>`).join(''); }
   }
@@ -41626,9 +41685,9 @@ function makeCtl(d, get, set, o) {
   }
   // live dot (≈ 30 fps from modFrame): the modulated value of the heard routes; transform only, no path rebuild (§9.3)
   function anim(sv) {
-    if (!act.length) return;
+    if (!ma1H.length) return;
     let off = 0; const K = ringK(dst);
-    for (const m of act) off += (m.amt / K) * (sv[m.src] || 0);
+    for (const m of ma1H) off += (m.amt / K) * (sv[m.src] || 0);   // MA1: the sum of all heard sources (one swing)
     const nm = clamp(sN(nBase(), off), 0, 1);
     if (Math.abs(nm - lastDot) < 2e-4) return;
     lastDot = nm; k._dot = nm;

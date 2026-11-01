@@ -90,7 +90,15 @@ await p.evaluate(() => { MKUI.P.tim = 1; SYNQUENZER.mkSet(0, 'mode', 3); });
 await W(250);
 const g = await p.evaluate(() => document.querySelectorAll('.mkpk .ma1mk').length);
 ok(g === 0, 'G: Vocoder: keine Bögen', g);
-await p.evaluate(() => { SYNQUENZER.mkSet(0, 'mode', 0); SYNQUENZER.stop(); });
+// J. MOD-RAD as PATCH source: the dot follows the wheel
+await p.evaluate(() => { const A = SYNQUENZER; A.mkSet(0, 'mode', 0); for (const [k, v] of [['t.0.p.0.s', 7], ['t.0.p.0.d', 4], ['t.0.p.0.i', 50], ['t.0.f.cut', 30]]) A.mkSet(0, k, v); mkWheelSet(0, 'mod', 0); });
+await W(500);
+const j0 = await p.evaluate(async () => { const o = []; for (let k = 0; k < 15; k++) { const K = MKUI.PL.ui.knob['f.cut']; if (K.ma1 && K.ma1.a != null) o.push(K.ma1.a); await new Promise(r => setTimeout(r, 40)); } return o; });
+await p.evaluate(() => mkWheelSet(0, 'mod', 1));
+await W(300);
+const j1 = await p.evaluate(async () => { const o = []; for (let k = 0; k < 15; k++) { const K = MKUI.PL.ui.knob['f.cut']; if (K.ma1 && K.ma1.a != null) o.push(K.ma1.a); await new Promise(r => setTimeout(r, 40)); } return o; });
+ok(j0.length && j1.length && Math.max(...j1) - Math.max(...j0) > 50, 'J: MOD-RAD hoch -> Cutoff-Punkt geht mit', {j0: j0.slice(0, 3), j1: j1.slice(0, 3)});
+await p.evaluate(() => { mkWheelSet(0, 'mod', 0); SYNQUENZER.stop(); });
 await W(1500);
 const h = await pk('f.cut');
 ok(h && h.a == null, 'H: Stop: Punkt aus (Bogen bleibt)', h);

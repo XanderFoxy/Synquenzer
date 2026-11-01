@@ -10260,7 +10260,7 @@ function ma1Frame() {
   // the youngest sounding voice of the shown timbre (a gated one first)
   const fresh = E && E.mks && AU.ctx && AU.ctx.currentTime - E.mks.t < .5, t2 = ti() === 1;
   let v = null; if (fresh) for (const x of E.mks.voices || []) { if ((x.tb === 2) !== t2) continue; if (!v || (x.gate && !v.gate) || (!!x.gate === !!v.gate && x.t < v.t)) v = x; }
-  const mw = clamp((+mk().mw || 0) / 127, 0, 1);
+  const mw = clamp(mkWheelVal(P.i, 'mod'), 0, 1), bd = clamp(mkWheelVal(P.i, 'bend'), -1, 1);   // MA1: the live wheels (MOD-RAD 0..1, BEND -1..1, as the worklet)
   for (const [id, rs] of want) {
     const K_ = PL.ui.knob[id], d = defOf(id); if (!K_ || !d) continue;
     let o = K_.ma1;
@@ -10273,7 +10273,7 @@ function ma1Frame() {
       const s = Math.round(c.s), a = c.i / 63 * MA1_SPAN[Math.round(c.d)];
       if (MA1_BIP[s]) { lo -= Math.abs(a); hi += Math.abs(a); } else { lo += Math.min(0, a); hi += Math.max(0, a); }
       if (Math.abs(c.i) > Math.abs(main.i)) main = c;
-      if (v) x += a * (s === 0 ? v.eg1 : s === 1 ? v.eg2 : s === 2 ? v.lfo1 : s === 3 ? v.lfo2 : s === 4 ? (v.vel != null ? v.vel : .8) : s === 5 ? ((v.pitch || 60) - 60) / 60 : s === 6 ? 0 : mw) || 0;
+      if (v) x += a * (s === 0 ? v.eg1 : s === 1 ? v.eg2 : s === 2 ? v.lfo1 : s === 3 ? v.lfo2 : s === 4 ? (v.vel != null ? v.vel : .8) : s === 5 ? ((v.pitch || 60) - 60) / 60 : s === 6 ? bd : mw) || 0;
     }
     const col = MSRC[MA1_SC[Math.round(main.s)]].c, rk = ma1Arc(ma1N(d, base + lo), ma1N(d, base + hi));
     if (o.c !== col) { o.c = col; o.svg.style.setProperty('--mc', col); }

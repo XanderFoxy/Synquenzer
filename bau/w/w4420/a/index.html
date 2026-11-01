@@ -30108,6 +30108,7 @@ function ak1Key(key) {
 function ak1Ref(i) {
   if (V6A.gk || UI.vvOff || R.editor !== 'synth' || R.selT !== i) return null;
   const tr = S.tracks[i]; if (!tr || tr.kind !== 'synth' || !tr.sound || tr.sound._nv || tr.sound.engine === 'bm' || tr.sound.engine === PERC_ENG) return null;
+  if (tr.sound.engine === 'mk' && typeof MKUI !== 'undefined' && MKUI.P && MKUI.P.rec) return null;   // AM: ● Bewegung aufnehmen bleibt beim Grundklang
   let ref = null;
   if (R.playing) { const p = R.pend[i]; ref = p && p.slot >= 0 && v6aClip(i, p.slot, p.own) ? {s: p.slot, own: p.own || null} : R.slot[i] >= 0 && v6aClip(i, R.slot[i], R.own[i]) ? {s: R.slot[i], own: R.own[i] || null} : null; }
   else ref = v6aEdRef(i);
@@ -30120,6 +30121,7 @@ function ak1Go(i, key) {
   const e = V6A.ed;
   if (e) { if (!e.ak1) return; if (e.i === i && ak1Key(key)) { e.t = performance.now(); return; } ak1End(); }
   if (!ak1Key(key)) return;
+  if (V6A.gk) { ak1GkNote(i, key); return; }
   const r = ak1Ref(i); if (!r) return;
   const tr = S.tracks[i], base = tr.sound, clip = r.clip, st = clip.st || null, cur = R.v6aCur && R.v6aCur[i];
   const own = r.ref.own ? v6aOwnId(clip) || r.ref.own : null;
@@ -30128,6 +30130,13 @@ function ak1Go(i, key) {
   UI.sndVer++;
   if ((cur ? cur.st : null) !== st && AU.ctx) { syncEngine(i, true); applyTrackParams(i, false); }   // the engine played another state: this one now
   ak1Wait(V6A.ed);
+}
+// Grundklang an, der laufende Clip hat für diesen Regler einen eigenen Wert ◆: das sagen (höchstens alle 4 s), sonst wundert man sich
+function ak1GkNote(i, key) {
+  const st = R.editor === 'synth' && R.selT === i ? v6aCurSt(i) : null; if (!st) return;
+  const own = key.startsWith('fx.') ? !!(st.fx && typeof st.fx[key.slice(3)] === 'number') : Object.prototype.hasOwnProperty.call(st.p || {}, key);
+  const now = performance.now(); if (!own || now - (V6A.gkN || 0) < 4000) return;
+  V6A.gkN = now; toast('Dieser Clip hat hier einen eigenen Wert ◆ – der Grundklang gilt für die anderen Clips');
 }
 function ak1Wait(e) {
   const run = () => { if (V6A.ed !== e) return; const age = performance.now() - e.t; if (age >= AK1_MS - 5) ak1End(); else setTimeout(run, AK1_MS - age); };

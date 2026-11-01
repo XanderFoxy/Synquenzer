@@ -50,7 +50,7 @@ Alle Tests liefen in Headless-Chromium (Playwright). Die Datei wurde per `file:/
   - Auto-Regie: Klavier nur beim Refrain (Takt 5); App bei Takt 3 und 9; ohne Melodie kein Klavier.
   - Standbilder 16:9 und 9:16 aus dem Durchlauf, mit Noten, leuchtenden Tasten und Drum-Leiste.
   - Tastatur in ganzen Oktaven (C2–B5).
-  - Transposition wie gehört: Melodie E5 → F♯5 und so weiter.
+  - Transposition wie gehört: ab Takt 11 fallen die Akkorde als D–F♯–A statt C–E–G, siehe `vk3-klavier-16x9-transponiert.png`. Die Song-Melodie folgt der Transposition nicht, wie in der App.
   - Anschlagfarben.
   - Zwei Durchläufe ergeben gleiche Bilder (PNG bitgleich).
   - Vorschau und Standbild im Video-Blatt mit Song-Noten.
