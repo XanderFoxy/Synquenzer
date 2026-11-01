@@ -1,0 +1,362 @@
+--- ../../snapshots/R-4252.html	2026-11-01 02:03:27.517571390 +0000
++++ index.html	2026-11-01 02:11:42.421580084 +0000
+@@ -17994,6 +17994,7 @@
+ function applyTrackParams(i, immediate) {
+   const A = AU.tracks[i], c = AU.ctx; if (!A || !c) return;
+   applyChainFx(A, trackFx(S.tracks[i]), immediate);
++  if (S.tracks[i] && S.tracks[i].stimme && typeof g6pcMirror === 'function') g6pcMirror(i);   // G6+c: Chor folgt dem STIMME-Regler (gekoppelt)
+ }
+ /* native LFO 1/2 (§5.5, §9.5): per synth track one FX.TempoLFO per LFO that a route uses (shape, FREI rate or TAKT
+    division; Start = FREI only, Einblenden needs the worklet). Routes lfo1/lfo2 -> pitch (cents ×2400 per 1.0 -> each
+@@ -44632,6 +44633,7 @@
+ };
+ function g6NormChor(c) {
+   if (!c || typeof c !== 'object' || !Array.isArray(c.voices)) return null;
++  if (c.v === 2) return typeof g6pNorm2 === 'function' ? g6pNorm2(c) : g6pcNorm2(c);   // G6+: Chor-Gruppe v2 (v1 unten unverändert)
+   const rec = G6_REC.some(r => r[0] === c.rec) ? c.rec : 'terz', voices = [];
+   for (const v of c.voices.slice(0, 4)) {
+     if (!v || !Array.isArray(v.n)) continue;
+@@ -44724,7 +44726,7 @@
+   }
+   return null;
+ }
+-function g6Ready(a) { const c = a && a.chor; if (!c) return true; for (const v of c.voices) for (let k = 0; k < G6_COPY.length; k++) { if (v.take) { if (!tkHeard(v.take.take, v.take)) return false; continue; } const b = g6Lead(a); if (!b || !G6.cache.has(g6Key(v, k, b))) return false; if (v.take) break; } return true; }
++function g6Ready(a) { const c = a && a.chor; if (!c) return true; if (c.v === 2) return g6pReady(a); for (const v of c.voices) for (let k = 0; k < G6_COPY.length; k++) { if (v.take) { if (!tkHeard(v.take.take, v.take)) return false; continue; } const b = g6Lead(a); if (!b || !G6.cache.has(g6Key(v, k, b))) return false; if (v.take) break; } return true; }
+ /* ---------- Abspielen: Knoten je Stimme (Pegel × Solo → Panorama → Spur; Sends vor dem Pegel an HALL und ECHO) ---------- */
+ function g6Node(v, k, i) {
+   const c = AU.ctx, key = k + ':' + i; let N = G6.nodes.get(key);
+@@ -44756,6 +44758,7 @@
+ function g6Gain(v, vi) { return g6On(vi) ? 1 : 0; }
+ function g6Apply(a, i) {
+   const c = a && a.chor; if (!c || !AU.ctx) return;
++  if (c.v === 2) return g6pApply(a);   // G6+c
+   const t = AU.ctx.currentTime;
+   const A = g6Auto(a), A0 = A == null ? Math.pow(10, -14 / 20) : A;
+   c.voices.forEach((v, vi) => G6_COPY.forEach((C, k) => {
+@@ -44768,6 +44771,7 @@
+ // zu einem Lead-Stück r (tkStartSrc) die Stimmen-Stücke: gleiche Zeit + Versatz der Kopie, gleiche Blenden
+ function g6Start(o, r) {
+   const a = o.aud, c = a && a.chor; if (!c || o.ctx || !AU.ctx) return;
++  if (c.v === 2) return g6pStart(o, r);   // G6+c: Chor-Gruppe
+   const ctx = AU.ctx, sp = spb(); r.ch = [];
+   g6Apply(a, o.i);
+   if (G6.solo != null && G6.solo !== -2) { try { r.g.gain.cancelScheduledValues(0); r.g.gain.value = 0; } catch (e) {} }   // Solo einer Stimme: der Lead schweigt
+@@ -44787,7 +44791,10 @@
+   }));
+ }
+ // mit dem Lead-Stück: enden (tkDrop), sofort stoppen (tkKill), ausblenden (tkFadeAt, tkXfOut)
+-function g6Drop(r) { if (!r.ch) return; for (const x of r.ch) { try { x.s.disconnect(); x.g.disconnect(); } catch (e) {} } r.ch = null; }
++function g6Drop(r) {
++  if (r.ch) for (const x of r.ch) { try { x.s.disconnect(); x.g.disconnect(); } catch (e) {} if (x.v2) { try { x.vg.disconnect(); if (x.pan) x.pan.disconnect(); } catch (e) {} G6PC.nodes -= x.pan ? 3 : 2; } }
++  r.ch = null; if (r.chG) { g6pcGroupDrop(r.chG); r.chG = null; }   // G6+c: Gruppe je Stück
++}
+ function g6Kill(r) { if (r.ch) for (const x of r.ch) { try { x.s.stop(); } catch (e) {} } }
+ function g6Fade(r, t, tau) { if (r.ch) for (const x of r.ch) { try { const p = x.g.gain; if (p.cancelAndHoldAtTime) p.cancelAndHoldAtTime(t); else p.cancelScheduledValues(t); p.setTargetAtTime(0, t, tau || .004); x.s.stop(t + 10 * (tau || .004) + .01); } catch (e) {} } }
+ // neue Stimmen-Fassung (fertig gerechnet, Rezept, Solo): die laufenden Stimmen-Stücke ab jetzt + 30 ms neu (10-ms-Blende), der Lead läuft durch
+@@ -44797,6 +44804,7 @@
+   const at = AU.ctx.currentTime + .03;
+   for (const r of TK.src) {
+     if (r.dead || !r.o || !r.aud || r.end <= at + .02) continue;
++    if (g6pcSame(r)) { g6pcApplyPiece(r); continue; }   // G6+c: nur Mischung geändert → Rampen, kein Neu-Einsatz
+     if (r.ch) { g6Fade(r, at, .003); }
+     if (!r.aud.chor) { r.ch = null; continue; }
+     const o = Object.assign({}, r.o, {when: Math.max(at, r.start), off: r.o.off + Math.max(0, at - r.start), fi: .01, end: r.end});
+@@ -44883,7 +44891,7 @@
+       if (d.a === 'del') { g6Del(rr); g6SheetPaint(); return; }
+       if (d.a === 'x') closePop();
+     }, 'button');
+-  }, {name: 'chor', onClose: () => { G6.sheet = null; }});
++  }, {name: 'chor', onClose: () => { G6.sheet = null; if (G6.solo != null && !G6.arm) g6Solo(G6.solo); }});   // G6P-24: Blatt zu ⇒ Solo aus
+   return true;
+ }
+ function g6SheetPaint(p) {
+@@ -44912,6 +44920,281 @@
+   g6Nodes: () => [...G6.nodes.entries()].map(([k, N]) => ({k, g: N.g.gain.value, rev: N.rev.gain.value, dly: N.dly.gain.value, pan: N.pan ? N.pan.pan.value : 0}))
+ };
+ /* G6-END */
++/* G6PC-BEGIN */
++/* =====================================================================================================================
++   G6+c (Nachtrag 10 §2.4 + Nachtrag „Kopplung Lead ↔ Chor“): Chor-Gruppe v2 im Klangweg. Nur für chor.v === 2 – v1 (4.25) bleibt unverändert.
++   je Kopie:  Puffer ─▶ f (Blenden × VS-P des Leads) ─▶ vg (10^(db/20) × Spur-Stumm × Solo × Vorlage-Faktor der Spur) ─▶ Pan (pan + p·w) ─┐
++   je Stück:  Σ ─▶ Tiefschnitt (HP 12 dB/Okt.) ─▶ Mitte (Glocke) ─▶ Luft (Kuhschwanz 10 kHz) ─▶ lvl (gA × Chor an × Lead-Pegel*) ─▶ guide
++              guide ─┬─▶ Master-Summe
++                     ├─▶ Vorverzögerung (im Tempo) ─▶ Hall-Send ─▶ AU.hallIn
++                     └─▶ Echo-Send ─▶ AU.echoIn                          (Sends nach Pegel und guide: Chor aus / Vorlage nimmt Hall/Echo mit)
++   * Lead-Pegel = STIMME-Spur-Regler (vol², gespiegelt aus applyTrackParams) × Pegel des Stücks (a.gain, auch je Songteil). [Gekoppelt] (grp.cpl
++     fehlt = AN): der Chor folgt dem Lead im gleichen dB-Schritt. AUS (grp.cpl = false): der Chor bleibt auf dem Lead-Pegel beim Entkoppeln (grp.ref, dB);
++     wieder AN: below += Lead jetzt − ref, also bleibt der gerade hörbare Abstand.
++   Kein Weg durch die STIMME-Kette (Drive, Chorus, Pan, Spur-Sends). Keine Kompressoren. Knoten je gespieltem Stück, frei mit dem Stück.
++   Schnittstellen (G6+a/G6+b): g6pNorm2(c) (sonst g6pcNorm2 hier), g6pBuf(a, v, k) → AudioBuffer|null (optional .g6pT0 = Take-Zeit von Sample 0)
++   und g6pLoud(a) → gA|null; fehlen sie, rechnet G6+c mit dem v1-Weg (Plan aus n[].iv + ct) und misst gA selbst (BS.1770 im OfflineAudioContext,
++   mit denselben Knoten wie live).
++   ===================================================================================================================== */
++const G6PC = {meas: new Map(), last: new WeakMap(), pend: new Map(), guide: new Map(), gGuide: 1, nodes: 0, measures: 0, tap: null};
++const G6PC_GRP0 = {below: 9, hp: 180, mid: -2, midF: 400, air: 2, sib: -12, rev: .5, pre: '1/32', dly: .1};
++const G6PC_PRE = ['aus', '1/64', '1/32', '1/16'];
++const g6pcIs2 = a => !!(a && a.chor && a.chor.v === 2);
++// Normalisieren (Rückfall, solange G6+a fehlt): v2 bleibt erhalten, Grenzen wie §2.2
++function g6pcNorm2(c) {
++  const N = (x, lo, hi, d, f) => isNum(x) ? +clamp(x, lo, hi).toFixed(f == null ? 2 : f) : d, g = c.grp && typeof c.grp === 'object' ? c.grp : {}, G0 = G6PC_GRP0;
++  const grp = {below: N(g.below, 0, 40, G0.below), hp: N(g.hp, 20, 1000, G0.hp, 0), mid: N(g.mid, -12, 12, G0.mid, 1), midF: N(g.midF, 100, 8000, G0.midF, 0), air: N(g.air, -12, 12, G0.air, 1),
++    sib: N(g.sib, -60, 0, G0.sib, 0), rev: N(g.rev, 0, 1, G0.rev), pre: G6PC_PRE.includes(g.pre) ? g.pre : G0.pre, dly: N(g.dly, 0, 1, G0.dly)};
++  if (g.cpl === false) { grp.cpl = false; grp.ref = N(g.ref, -120, 24, 0); }
++  const voices = [];
++  for (const v of (Array.isArray(c.voices) ? c.voices : []).slice(0, 6)) {
++    if (!v || !Array.isArray(v.n)) continue;
++    const n = v.n.slice(0, 4000).filter(x => x && isNum(x.t0) && isNum(x.t1) && x.t1 > x.t0 && isNum(x.m)).map(x => { const o = {t0: tkR6(x.t0), t1: tkR6(x.t1), m: +clamp(x.m, 0, 127).toFixed(3), d: isNum(x.d) ? clamp(Math.round(x.d), -21, 21) : 0};
++      if (isNum(x.o) && x.o) o.o = clamp(Math.round(x.o), -2, 2); if (isNum(x.x) && x.x) o.x = clamp(Math.round(x.x), -2, 2); o.iv = isNum(x.iv) ? clamp(Math.round(x.iv), -36, 36) : 0; return o; });
++    const dbl = (Array.isArray(v.dbl) ? v.dbl : []).slice(0, 4).filter(x => x && typeof x === 'object').map(x => ({ms: N(x.ms, 0, 80, 0, 1), ct: N(x.ct, -50, 50, 0, 1), p: N(x.p, -1, 1, 0)}));
++    const o = {lane: typeof v.lane === 'string' && /^c[1-8]$/.test(v.lane) ? v.lane : 'c' + (voices.length + 1), rule: typeof v.rule === 'string' ? v.rule.slice(0, 16) : 'uni', n,
++      db: N(v.db, -24, 6, 0, 1), pan: N(v.pan, -1, 1, 0), w: N(v.w, 0, 1, 0), dbl: dbl.length ? dbl : [{ms: 0, ct: 0, p: 0}],
++      name: typeof v.name === 'string' ? v.name.slice(0, 40) : 'Stimme', vol: 1, rev: grp.rev, dly: grp.dly};
++    const t = v.take ? tkNormSeg(v.take) : null; if (t) o.take = t; if (v.dblOff === true) o.dblOff = true;
++    voices.push(o);
++  }
++  if (!voices.length) return null;
++  const out = {v: 2, style: typeof c.style === 'string' ? c.style.slice(0, 12) : null, grp, voices};
++  out.rec = G6_REC.some(r => r[0] === c.rec) ? c.rec : 'terz'; out.dir = c.dir === 'down' ? 'down' : 'up'; out.mix = '80';   // Rückfall-Felder für 4.25 (§2.2)
++  return out;
++}
++/* ---------- Spur-Merkmale (S.tracks[st].chor, G6+a) und Laufzeit-Faktoren ---------- */
++const g6pcTrk = () => { const st = stimmeT(), t = st >= 0 ? S.tracks[st] : null; return t && t.chor && typeof t.chor === 'object' ? t.chor : null; };
++const g6pcChorOn = () => { const L = g6pcTrk(); return !(L && L.mute); };
++function g6pcLaneOn(id) { const L = g6pcTrk(), ln = L && Array.isArray(L.lanes) ? L.lanes.find(x => x && x.id === id) : null; return !(ln && ln.mute); }
++const g6pcSoloOn = lane => G6.solo == null || G6.solo === -1 || G6.solo === lane;   // −2 = nur der Lead (Test-API)
++const g6pcGuideOf = lane => { const f = G6PC.guide.get(lane); return isNum(f) ? f : 1; };
++const g6pcCopies = v => v.dblOff || !Array.isArray(v.dbl) || !v.dbl.length ? [{ms: 0, ct: 0, p: 0}] : v.dbl;
++const g6pcPanOf = (v, C) => clamp((v.pan || 0) + (C.p || 0) * (v.w || 0), -1, 1);
++const g6pcVg = v => Math.pow(10, (v.db || 0) / 20) * (g6pcLaneOn(v.lane) && g6pcSoloOn(v.lane) ? 1 : 0) * g6pcGuideOf(v.lane);
++// Lead-Pegel in dB: STIMME-Regler (vol², wie N.vol ohne Drive-Ausgleich) × Pegel des Stücks
++function g6pcLeadDb(a) {
++  const st = stimmeT(), tr = st >= 0 ? S.tracks[st] : null; let vol = .8;
++  try { if (tr && tr.sound) vol = trackFx(tr).vol; } catch (e) {}
++  const ag = a && isNum(a.gain) ? a.gain : 1;
++  return 20 * Math.log10(Math.max(1e-6, vol * vol * ag));
++}
++const g6pcCoupled = a => !(a.chor.grp && a.chor.grp.cpl === false);
++const g6pcLeadK = a => Math.pow(10, (g6pcCoupled(a) ? g6pcLeadDb(a) : a.chor.grp.ref) / 20);
++/* ---------- Puffer (G6+b, sonst v1-Weg) ---------- */
++// Fenster einer Take-Stimme: entkoppelt/dupliziert ('chor'/'dup') = Fenster des Lead-Stücks, selbst gesungen = eigenes Fenster (§2.2)
++function g6pcWin(a, v) { const m = S.takes && S.takes[v.take.take]; return m && (m.src === 'dup' || m.src === 'chor') ? {take: v.take.take, in: a.in, out: a.out, at: a.at, linked: true} : v.take; }
++function g6pcBuf(a, v, k) {
++  if (typeof g6pBuf === 'function') return g6pBuf(a, v, k);
++  if (v.take) { const w = g6pcWin(a, v), b = tkHeard(w.take, w); if (!b) tkLoad(w.take); return b; }   // Rückfall: Kopien der Take-Stimme ohne eigene Verstimmung
++  const b = g6Lead(a); if (!b) return null;
++  const C = g6pcCopies(v)[k] || {ct: 0}, plan = {mode: 'soft', notes: v.n.map(n => ({t0: n.t0, t1: n.t1, m: n.m, to: n.m, s: 0, e: n.iv * 100 + (C.ct || 0)}))};
++  const key = G2P.planKey(plan) + '@' + wpBid(b), hit = G6.cache.get(key); if (hit) { hit.t = performance.now(); return hit.buf; }
++  if (!G6.job.has(key)) {
++    G6.job.set(key, 1); const t0 = performance.now(), sr = b.sampleRate;
++    g2Call({op: 'render', key: 'h:' + a.take + '@' + wpBid(b), x: b.getChannelData(0), sr, plan, kw: true}).then(r => {
++      G6.job.delete(key); const ab = wpToBuf(r.y, sr); if (!ab) return;
++      G6.cache.set(key, {buf: ab, t: performance.now(), n: ab.length});
++      while (G6.cache.size > 24) { let ok = null, ot = Infinity; for (const [kk, x] of G6.cache) if (x.t < ot) { ot = x.t; ok = kk; } G6.cache.delete(ok); }
++      G6.renders++; G6.last = {ms: Math.round(performance.now() - t0), how: G2.how};
++      g6Refresh();
++    }, e => { G6.job.delete(key); logErr(e); });
++  }
++  return null;
++}
++// Abspiel-Versatz einer Kopie im Puffer zum Lead-Versatz off (Take-Zeit des Leads)
++function g6pcOff(a, v, b, off) {
++  if (v.take) { const w = g6pcWin(a, v); return w.linked ? off : w.in + (off - a.in) + (a.at - w.at) * spb(); }
++  return off - (b.g6pT0 || 0);
++}
++// alle Puffer der Stelle (oder null, solange einer fehlt)
++function g6pcBufs(a) {
++  const out = [];
++  for (const v of a.chor.voices) { const cp = g6pcCopies(v); for (let k = 0; k < cp.length; k++) { const b = g6pcBuf(a, v, k); if (!b) return null; out.push(b); } }
++  return out;
++}
++/* ---------- Auto-Pegel gA (G6+b im Worker; sonst hier: BS.1770 integriert, Gating, K-Beiwerte je Abtastrate) ---------- */
++function g6pcK(sr) {
++  let f0 = 1681.974450955533, G = 3.999843853973347, Q = 0.7071752369554196, K = Math.tan(Math.PI * f0 / sr);
++  const Vh = Math.pow(10, G / 20), Vb = Math.pow(Vh, 0.4996667741545416); let a0 = 1 + K / Q + K * K;
++  const s1 = {b0: (Vh + Vb * K / Q + K * K) / a0, b1: 2 * (K * K - Vh) / a0, b2: (Vh - Vb * K / Q + K * K) / a0, a1: 2 * (K * K - 1) / a0, a2: (1 - K / Q + K * K) / a0};
++  f0 = 38.13547087602444; Q = 0.5003270373238773; K = Math.tan(Math.PI * f0 / sr); a0 = 1 + K / Q + K * K;
++  const s2 = {b0: 1, b1: -2, b2: 1, a1: 2 * (K * K - 1) / a0, a2: (1 - K / Q + K * K) / a0};
++  return [s1, s2];
++}
++// Leistung je 100-ms-Abschnitt (K-bewertet, Summe der Kanäle)
++function g6pcSeg(chs, sr) {
++  const F = g6pcK(sr), n = chs[0].length, H = Math.round(sr * .1), ns = Math.floor(n / H), seg = new Float64Array(ns);
++  for (const x of chs) {
++    let x1 = 0, x2 = 0, y1 = 0, y2 = 0, u1 = 0, u2 = 0, z1 = 0, z2 = 0; const A = F[0], B = F[1];
++    for (let i = 0; i < ns * H; i++) {
++      const xi = x[i], y = A.b0 * xi + A.b1 * x1 + A.b2 * x2 - A.a1 * y1 - A.a2 * y2; x2 = x1; x1 = xi; y2 = y1; y1 = y;
++      const z = B.b0 * y + B.b1 * u1 + B.b2 * u2 - B.a1 * z1 - B.a2 * z2; u2 = u1; u1 = y; z2 = z1; z1 = z;
++      seg[(i / H) | 0] += z * z;
++    }
++  }
++  for (let j = 0; j < ns; j++) seg[j] /= H;
++  return seg;
++}
++function g6pcLufs(chs, sr) {
++  const seg = g6pcSeg(chs, sr), bl = [];
++  for (let j = 0; j + 4 <= seg.length; j++) bl.push((seg[j] + seg[j + 1] + seg[j + 2] + seg[j + 3]) / 4);
++  const L = z => -0.691 + 10 * Math.log10(z), g1 = bl.filter(z => z > 0 && L(z) > -70); if (!g1.length) return -Infinity;
++  const m1 = g1.reduce((s, z) => s + z, 0) / g1.length, g2 = g1.filter(z => L(z) > L(m1) - 10);
++  return L(g2.reduce((s, z) => s + z, 0) / g2.length);
++}
++// Schlüssel der Messung: Puffer, Fenster, Pegel/Pan/Doppel der Stimmen, Klang der Gruppe (nicht: Abstand, Sends, Stumm, Solo)
++function g6pcMixKey(a, bufs) {
++  const c = a.chor, g = c.grp || G6PC_GRP0, lb = g6Lead(a); if (!lb) return null;
++  return [wpBid(lb), a.in, a.out, g.hp, g.mid, g.midF, g.air].join('|') + '#' + c.voices.map(v => [v.db, v.pan, v.w, JSON.stringify(g6pcCopies(v)), v.take ? 1 : 0].join(',')).join(';') + '#' + bufs.map(b => wpBid(b) + ':' + (b.g6pT0 || 0)).join(',');
++}
++// eine Stelle im OfflineAudioContext: die Kopien durch dieselben Knoten wie live (Pegel 1); Ergebnis {Ll, Lc}
++async function g6pcMeasure(a, bufs) {
++  const lb = g6Lead(a), sr = lb.sampleRate, i0 = Math.max(0, a.in), i1 = Math.min(a.out, lb.duration), dur = i1 - i0; if (!(dur > .45)) return null;
++  const maxMs = Math.max(0, ...a.chor.voices.map(v => Math.max(...g6pcCopies(v).map(C => C.ms || 0)))) / 1000;
++  const oc = new OfflineAudioContext(2, Math.ceil((dur + maxMs + .02) * sr), sr), G = g6pcGroup(oc, a, oc.destination, null, null, true);
++  let j = 0;
++  for (const v of a.chor.voices) g6pcCopies(v).forEach(C => { const b = bufs[j++], off = g6pcOff(a, v, b, i0); if (off < 0 || off >= b.duration) return; const N = g6pcCopyNodes(oc, v, C, G, true), s = oc.createBufferSource(); s.buffer = b; s.connect(N.f); s.start(C.ms / 1000, off, Math.min(dur, b.duration - off)); });
++  const y = await oc.startRendering(), x = lb.getChannelData(0).subarray(Math.round(i0 * sr), Math.round(i1 * sr));
++  return {Ll: g6pcLufs([x, x], sr), Lc: g6pcLufs([y.getChannelData(0), y.getChannelData(1)], sr)};
++}
++// gA jetzt (oder null = noch nicht gemessen); eine neue Messung läuft entprellt (150 ms), bis dahin gilt der letzte Wert der Stelle
++function g6pcGA(a, bufs) {
++  const below = (a.chor.grp || G6PC_GRP0).below;
++  if (typeof g6pLoud === 'function') { const x = g6pLoud(a); if (x != null) return x; }
++  const k = g6pcMixKey(a, bufs); if (k == null) return null;
++  const M = G6PC.meas.get(k), fromM = m => (isFinite(m.Ll) && isFinite(m.Lc) ? Math.pow(10, (m.Ll - below - m.Lc) / 20) : 0);
++  if (M) { G6PC.last.set(a, M); return fromM(M); }
++  if (!G6PC.pend.has(k)) {
++    G6PC.pend.set(k, setTimeout(() => {
++      g6pcMeasure(a, bufs).then(m => {
++        G6PC.pend.delete(k); if (!m) return; G6PC.measures++;
++        G6PC.meas.set(k, m); while (G6PC.meas.size > 64) G6PC.meas.delete(G6PC.meas.keys().next().value);
++        const had = G6PC.last.has(a); G6PC.last.set(a, m);
++        if (had) g6pApply(a); else g6Refresh();                 // erster Wert: die Stelle setzt jetzt ein (10-ms-Blende)
++      }, e => { G6PC.pend.delete(k); logErr(e); });
++    }, G6PC.last.has(a) ? 150 : 0));
++  }
++  const L = G6PC.last.get(a); return L ? fromM(L) : null;
++}
++function g6pReady(a) { if (!g6pcIs2(a)) return true; const b = g6pcBufs(a); return !!b && g6pcGA(a, b) != null; }
++/* ---------- Knoten ---------- */
++function g6pcGroup(c, a, dest, hall, echo, meas) {
++  const G = {c, hp: c.createBiquadFilter(), mid: c.createBiquadFilter(), air: c.createBiquadFilter(), lvl: c.createGain(), guide: c.createGain(), pre: c.createDelay(1), rev: c.createGain(), dly: c.createGain(), dest};
++  G.hp.type = 'highpass'; G.mid.type = 'peaking'; G.air.type = 'highshelf'; G.hp.Q.value = Math.SQRT1_2; G.mid.Q.value = 1; G.air.frequency.value = 10000;
++  G.hp.connect(G.mid); G.mid.connect(G.air); G.air.connect(G.lvl); G.lvl.connect(G.guide); G.guide.connect(dest);
++  if (!meas) { G.guide.connect(G.pre); G.pre.connect(G.rev); if (hall) G.rev.connect(hall); G.guide.connect(G.dly); if (echo) G.dly.connect(echo); G6PC.nodes += 8; }
++  G.lvl.gain.value = meas ? 1 : 0;
++  g6pcGroupSet(G, a, true, meas);
++  return G;
++}
++const g6pcPreSec = p => (p && p !== 'aus' ? preDivSec(p) : 0);
++function g6pcSetP(p, v, now, imm) { if (imm) { p.value = v; return; } try { if (p.cancelAndHoldAtTime) p.cancelAndHoldAtTime(now); else p.cancelScheduledValues(now); } catch (e) {} p.setTargetAtTime(v, now, .006); }   // ≈ 20-ms-Rampe
++function g6pcGroupSet(G, a, imm, meas, gA) {
++  const g = a.chor.grp || G6PC_GRP0, now = G.c.currentTime, set = (p, v) => g6pcSetP(p, v, now, imm);
++  set(G.hp.frequency, g.hp); set(G.mid.frequency, g.midF); set(G.mid.gain, g.mid); set(G.air.gain, g.air);
++  if (meas) return;
++  set(G.pre.delayTime, g6pcPreSec(g.pre)); set(G.rev.gain, g.rev); set(G.dly.gain, g.dly); set(G.guide.gain, G6PC.gGuide);
++  if (gA != null) set(G.lvl.gain, gA * (g6pcChorOn() ? 1 : 0) * g6pcLeadK(a));
++}
++function g6pcCopyNodes(c, v, C, G, meas) {
++  const N = {f: c.createGain(), vg: c.createGain(), pan: c.createStereoPanner ? c.createStereoPanner() : null};
++  N.f.connect(N.vg); if (N.pan) { N.vg.connect(N.pan); N.pan.connect(G.hp); N.pan.pan.value = g6pcPanOf(v, C); } else N.vg.connect(G.hp);
++  N.vg.gain.value = meas ? Math.pow(10, (v.db || 0) / 20) : g6pcVg(v);
++  if (!meas) G6PC.nodes += N.pan ? 3 : 2;
++  return N;
++}
++function g6pcGroupDrop(G) { for (const k of ['hp', 'mid', 'air', 'lvl', 'guide', 'pre', 'rev', 'dly']) { try { G[k].disconnect(); } catch (e) {} } G6PC.nodes -= 8; }
++/* ---------- Abspielen ---------- */
++// Kennung der laufenden Kopien (Puffer + Versatz): gleich → nur Werte rampen, sonst neu einsetzen
++const g6pcSig = (a, bufs) => a.chor.voices.map(v => g6pcCopies(v).map(C => C.ms).join(',') + (v.take ? 't' : '')).join(';') + '#' + bufs.map(b => wpBid(b)).join(',');
++// zu einem Lead-Stück r (tkStartSrc) die Kopien – erst, wenn alle Puffer und gA da sind (sonst still, kein Platzhalter-Pegel)
++function g6pStart(o, r) {
++  const a = o.aud, ctx = AU.ctx; if (!g6pcIs2(a) || o.ctx || !ctx || !AU.masterSum) return;
++  const bufs = g6pcBufs(a), gA = bufs && g6pcGA(a, bufs); r.ch = r.ch || [];
++  if (!bufs || gA == null) return;
++  if (!r.chG || r.chG.c !== ctx) { r.chG = g6pcGroup(ctx, a, AU.masterSum, AU.hallIn, AU.echoIn); if (G6PC.tap) try { r.chG.guide.connect(G6PC.tap.chor); r.chG.rev.connect(G6PC.tap.rv); } catch (e) {} }
++  const G = r.chG, V = vpGet(o.buf), Vg = V ? V.g : 1;   // VS-P des Leads (r.G ohne Clip-Pegel: der steckt im Lead-Pegel der Gruppe)
++  g6pcGroupSet(G, a, false, false, gA);
++  r.chSig = g6pcSig(a, bufs); r.chA = a;
++  let j = 0;
++  a.chor.voices.forEach((v, vi) => g6pcCopies(v).forEach((C, k) => {
++    const b = bufs[j++], ms = (C.ms || 0) / 1000, off = g6pcOff(a, v, b, o.off), when = o.when + ms;
++    if (off < 0 || off >= b.duration - .002) return;
++    const end = Math.min(o.end + ms, when + (b.duration - off)), dur = end - when; if (!(dur > .01)) return;
++    const N = g6pcCopyNodes(ctx, v, C, G), s = ctx.createBufferSource(), g = N.f, fi = Math.min(o.fi || 0, dur / 2), fo = Math.min(o.fo || 0, dur / 2);
++    s.buffer = b; g.gain.value = fi > 0 ? 0 : Vg; g.gain.setValueAtTime(fi > 0 ? 0 : Vg, when); if (fi > 0) g.gain.linearRampToValueAtTime(Vg, when + fi);
++    if (fo > 0) { g.gain.setValueAtTime(Vg, end - fo); g.gain.linearRampToValueAtTime(0, end); }
++    s.connect(g);
++    try { s.start(when, off); s.stop(end + .005); } catch (e) { try { s.disconnect(); g.disconnect(); N.vg.disconnect(); if (N.pan) N.pan.disconnect(); } catch (e2) {} G6PC.nodes -= N.pan ? 3 : 2; return; }
++    r.ch.push({s, g, vg: N.vg, pan: N.pan, when, end, G: Vg, vi, k, v2: 1});
++  }));
++}
++// Werte einer laufenden Stelle (Regler, Solo, Stumm, Lead-Pegel, Vorlage) – nur AudioParam-Rampen, nichts neu gerechnet
++function g6pcApplyPiece(r) {
++  const a = r.aud, G = r.chG; if (!G || !g6pcIs2(a) || !AU.ctx || G.c !== AU.ctx) return;
++  const bufs = g6pcBufs(a), gA = bufs && g6pcGA(a, bufs); g6pcGroupSet(G, a, false, false, gA);
++  const now = AU.ctx.currentTime, vs = a.chor.voices;
++  for (const x of r.ch || []) { if (!x.v2 || x.end <= now) continue; const v = vs[x.vi]; if (!v) continue; const C = g6pcCopies(v)[x.k]; g6pcSetP(x.vg.gain, g6pcVg(v), now); if (x.pan && C) g6pcSetP(x.pan.pan, g6pcPanOf(v, C), now); }
++}
++function g6pApply(a) { for (const r of TK.src) if (!r.dead && r.chG && r.aud === a) g6pcApplyPiece(r); }
++const g6pcApplyAll = () => { for (const r of TK.src) if (!r.dead && r.chG) g6pcApplyPiece(r); };
++// STIMME-Regler (applyTrackParams): Chor folgt, wenn gekoppelt
++function g6pcMirror(i) { if (AU.ctx && S.tracks[i] && S.tracks[i].stimme) g6pcApplyAll(); }
++// g6Refresh-Weiche: gleiche Kopien → nur rampen (kein Neu-Einsetzen bei Mischungs-Gesten)
++function g6pcSame(r) { const a = r.aud; if (!r.chG || !g6pcIs2(a) || r.chA !== a) return false; const b = g6pcBufs(a); return !!b && r.chSig === g6pcSig(a, b); }
++/* ---------- Gesten (je ein Undo-Schritt über g6Edit) ---------- */
++// [Gekoppelt] an/aus: aus → ref = Lead-Pegel jetzt; wieder an → below um die Lead-Änderung seither verschoben (hörbarer Abstand bleibt)
++function g6pCouple(r, on) {
++  const x = tkRef(r), c = x && x.a.chor; if (!c || c.v !== 2) return false;
++  if (g6pcCoupled(x.a) === !!on) return true;
++  const L = g6pcLeadDb(x.a);
++  return g6Edit(r, on ? 'Chor gekoppelt' : 'Chor vom Lead getrennt', au => { const g = au.chor.grp; if (on) { g.below = +clamp(g.below + (L - g.ref), 0, 40).toFixed(2); delete g.cpl; delete g.ref; } else { g.cpl = false; g.ref = +L.toFixed(2); } });
++}
++const g6pGrpSet = (r, p) => g6Edit(r, 'Chor-Gruppe', au => { if (!g6pcIs2(au)) return false; Object.assign(au.chor.grp, p); });
++const g6pVoiceSet = (r, k, p) => g6Edit(r, 'Chor-Stimme', au => { const v = g6pcIs2(au) && au.chor.voices[k]; if (!v) return false; Object.assign(v, p); });
++// Spur stumm / Chor an-aus (Spur-Merkmal S.tracks[st].chor; G6+a liefert Normalisieren und Undo-Art 'chorlanes')
++function g6pLaneMute(id, m) {
++  const st = stimmeT(); if (st < 0) return false; const T = S.tracks[st], before = T.chor ? deep(T.chor) : null;
++  const L = T.chor || (T.chor = {lanes: []}); if (!Array.isArray(L.lanes)) L.lanes = [];
++  if (id == null) { if (m) L.mute = true; else delete L.mute; }
++  else { let ln = L.lanes.find(x => x.id === id); if (!ln) { ln = {id, role: 'uni', name: 'Chor ' + id}; L.lanes.push(ln); } if (m) ln.mute = true; else delete ln.mute; }
++  undoPush({kind: 'chorlanes', track: st, before, label: id == null ? (m ? 'Chor aus' : 'Chor an') : (m ? 'Chor-Spur stumm' : 'Chor-Spur an')}); markDirty();
++  g6pcApplyAll(); return true;
++}
++function g6pGuide(lane, f) { if (lane == null) G6PC.gGuide = isNum(f) ? f : 1; else if (isNum(f) && f !== 1) G6PC.guide.set(lane, f); else G6PC.guide.delete(lane); g6pcApplyAll(); return true; }
++/* ---------- Test-API ---------- */
++const G6PC_API = {
++  g6pInfoC: () => ({nodes: G6PC.nodes, measures: G6PC.measures, pend: G6PC.pend.size, live: TK.src.filter(r => !r.dead && r.chG).length, copies: TK.src.reduce((s, r) => s + (r.dead || !r.ch ? 0 : r.ch.filter(x => x.v2).length), 0), guide: G6PC.gGuide}),
++  g6pPut: (r, chor) => g6Edit(r || {t: stimmeT(), s: R.selS}, 'Chor-Gruppe', au => { au.chor = deep(chor); }),
++  g6pGrp: (r, p) => g6pGrpSet(r || {t: stimmeT(), s: R.selS}, p),
++  g6pVoice: (r, k, p) => g6pVoiceSet(r || {t: stimmeT(), s: R.selS}, k, p),
++  g6pCouple: (r, on) => g6pCouple(r || {t: stimmeT(), s: R.selS}, on),
++  g6pLaneMute: (id, m) => g6pLaneMute(id, m), g6pGuide: (lane, f) => g6pGuide(lane, f),
++  g6pWait: async r => { r = r || {t: stimmeT(), s: R.selS}; for (let n = 0; n < 1600; n++) { const x = tkRef(r); if (x && g6pcIs2(x.a) && g6pReady(x.a) && !G6PC.pend.size && !G6.job.size) return true; await sleep(25); } return false; },
++  g6pMeas: async r => { r = r || {t: stimmeT(), s: R.selS}; const x = tkRef(r), b = x && g6pcBufs(x.a); return b ? g6pcMeasure(x.a, b) : null; },
++  g6pGA: r => { r = r || {t: stimmeT(), s: R.selS}; const x = tkRef(r), b = x && g6pcBufs(x.a); return b ? g6pcGA(x.a, b) : null; },
++  g6pLeadDb: r => { const x = tkRef(r || {t: stimmeT(), s: R.selS}); return x ? g6pcLeadDb(x.a) : null; },
++  g6pLufs: (l, rr, sr) => g6pcLufs([Float32Array.from(l), Float32Array.from(rr || l)], sr || 48000),
++  // Abgriff am Ausgang: Lead = STIMME-Spur nach dem Regler (vor den Sends), Chor = Summe aller Gruppen nach guide, Hall/Echo-Eingang des Chors
++  g6pTap: on => {
++    const c = AU.ctx, st = stimmeT();
++    if (on) {
++      const T = G6PC.tap = {lead: c.createScriptProcessor(4096, 2, 2), chor: c.createGain(), cp: c.createScriptProcessor(4096, 2, 2), rv: c.createGain(), rp: c.createScriptProcessor(4096, 1, 1), L: [[], []], C: [[], []], H: []};
++      T.lead.onaudioprocess = e => { for (let k = 0; k < 2; k++) T.L[k].push(new Float32Array(e.inputBuffer.getChannelData(k))); };
++      T.cp.onaudioprocess = e => { for (let k = 0; k < 2; k++) T.C[k].push(new Float32Array(e.inputBuffer.getChannelData(k))); };
++      T.rp.onaudioprocess = e => { T.H.push(new Float32Array(e.inputBuffer.getChannelData(0))); };
++      AU.tracks[st].cut.connect(T.lead); T.lead.connect(c.destination); T.chor.connect(T.cp); T.cp.connect(c.destination); T.rv.connect(T.rp); T.rp.connect(c.destination);
++      for (const r of TK.src) if (!r.dead && r.chG) { r.chG.guide.connect(T.chor); r.chG.rev.connect(T.rv); }
++      return true;
++    }
++    const T = G6PC.tap; if (!T) return null; G6PC.tap = null;
++    try { AU.tracks[st].cut.disconnect(T.lead); } catch (e) {} for (const n of [T.lead, T.chor, T.cp, T.rv, T.rp]) try { n.disconnect(); } catch (e) {}
++    const cat = A => { const n = A.reduce((s, x) => s + x.length, 0), o = new Float32Array(n); let k = 0; for (const x of A) { o.set(x, k); k += x.length; } return o; };
++    return {sr: c.sampleRate, L: [cat(T.L[0]), cat(T.L[1])], C: [cat(T.C[0]), cat(T.C[1])], H: cat(T.H)};
++  }
++};
++/* G6PC-END */
+ /* G7-BEGIN */
+ /* =====================================================================================================================
+    G7 (Nachtrag 5): Gesang folgt dem Transponieren. STIMME-Clips und Song-Stimme werden vom Transponieren (Träger, „Eine Skala“,
+@@ -45886,6 +46169,7 @@
+ Object.assign(SYNQUENZER, VP_API);                // VS-P: Stimme im Mix (Auto-Pegel, Spitzen-Schutz)
+ Object.assign(SYNQUENZER, G2_API);                // G2: Tonhöhe quantisieren, Gesang als Noten
+ Object.assign(SYNQUENZER, G6_API);                // G6: Chor-Generator
++Object.assign(SYNQUENZER, G6PC_API);              // G6+c: Chor-Gruppe im Klangweg (Test-API)
+ Object.assign(SYNQUENZER, G7_API);                // G7: Gesang folgt dem Transponieren
+ const NO_SYNC = new Set(['oneScaleOf', 'kbScaleNow', 'micCheck', 'micCheckJson', 'micCheckEstimate', 'cloud', 'cloudProjects', 'cloudVersions', 'cloudHandoff', 'state', 'project', 'runtime', 'getClip', 'getParam', 'noteLog', 'voices', 'timeline', 'serialize', 'buildMidi', 'buildZip', 'crc32', 'meter', 'outPitch', 'migrate', 'tapTempo',
+   'getSound', 'mods', 'library', 'factory', 'previewState', 'soundEdited', 'fmxView', 'fmxPreview', 'fmxBadge',
