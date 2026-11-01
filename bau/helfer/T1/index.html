@@ -1269,6 +1269,11 @@ body[data-mod] #synthSheet .sh-body .pg:not(.pg-mod) .qcell .seg{opacity:1}
 .ovw i{width:6px;height:6px;border-radius:50%;background:#20232a;display:block}
 .ovw i.on{background:var(--pc)}
 .ovw i.ph{box-shadow:0 0 0 1px var(--sel)}
+.ovw i.t1x{opacity:.15}
+.t1ts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:6px}
+.t1ts button{min-height:44px;font:700 14px/1 var(--font-num,monospace)}
+.t1ts button.on{background:var(--amber,#ffb22e);color:#111;border-color:transparent}
+.t1note{margin:8px 0 0;font-size:12px;color:var(--text-dim,#8b919c)}
 .ovw .row{display:contents}
 .small{font-size:11px;color:var(--text-dim);line-height:1.3}
 
@@ -14433,16 +14438,16 @@ const RecHelpers = (() => {
      Phrase = notes back from the newest one until a gap of >= gapBars of silence. Length = 1/2/4/8/16 bars, aligned to the
      bar the phrase starts in; a note played up to 1/4 beat before that bar line counts as on it (like the record early-catch). */
   function capturePhrase(buf, track, nowBeat, o = {}) {
-    const gap = (o.gapBars || 1) * 4, maxBars = o.maxBars || 16;
-    const ns = buf.filter(x => x.track === track && x.b <= nowBeat + 1e-6 && x.b > nowBeat - maxBars * 4 - 4).sort((a, b) => a.b - b.b);
+    const BB = o.bb || 4, gap = (o.gapBars || 1) * BB, maxBars = o.maxBars || 16;   // T1: o.bb = Schläge je Takt (Vorgabe 4)
+    const ns = buf.filter(x => x.track === track && x.b <= nowBeat + 1e-6 && x.b > nowBeat - maxBars * BB - BB).sort((a, b) => a.b - b.b);
     if (!ns.length) return null;
     let i = ns.length - 1, phraseEnd = ns[i].b + ns[i].d;
     while (i > 0 && ns[i].b - Math.max(...ns.slice(0, i).map(x => x.b + x.d)) < gap) i--;
     const ph = ns.slice(i);
-    const startBar = Math.floor((ph[0].b + .25) / 4);              // early-catch window
+    const startBar = Math.floor((ph[0].b + .25) / BB);             // early-catch window
     phraseEnd = Math.max(...ph.map(x => x.b + Math.min(x.d, 1)));  // long held notes do not stretch the loop
-    const span = Math.max(1, Math.ceil((phraseEnd - .25) / 4 - 1e-9) - startBar);
-    const len = Math.min(maxBars, nextPow2(span)), startBeat = startBar * 4, L = len * 4;
+    const span = Math.max(1, Math.ceil((phraseEnd - .25) / BB - 1e-9) - startBar);
+    const len = Math.min(maxBars, nextPow2(span)), startBeat = startBar * BB, L = len * BB;
     // app (V0a K-07): the Träger a note was played under (en, tm at note-on) travels with it, like a REC note
     const notes = ph.filter(x => x.b >= startBeat - .25 && x.b < startBeat + L)
       .map(x => Object.assign({t: +Math.max(0, x.b - startBeat).toFixed(6), d: +Math.min(Math.max(1 / 32, x.d), L).toFixed(6), n: x.n, v: x.v}, x.en ? {en: x.en, tm: x.tm} : null));
@@ -14726,7 +14731,11 @@ const RecHelpers = (() => {
 
     // ---------- model helpers ----------
     const clip = () => model.getClip();
-    const L = () => clipB(clip());
+    const L = () => (opts.tk ? opts.tk.beat(clip().len) : clipB(clip()));
+    // T1: Takt k → Schlag und Schlag → Takt (Clip: Taktart des Clips; Song-Melodie: opts.tk = Taktkarte des Songs)
+    const tkB = k => (opts.tk ? opts.tk.beat(k) : k * clipBarB(clip()));
+    const tkAt = b => (opts.tk ? opts.tk.at(b) : Math.floor(b / clipBarB(clip()) + 1e-9));
+    const isBarL = b => Math.abs(tkB(tkAt(b + 1e-6)) - b) < 1e-6;
     const gridStep = () => GRID[E.grid] || 1 / 96;
     const noteLen = () => E.noteLen || GRID[E.grid] || .25;
     // step input: the step is the grid (§3.3); with Raster „frei“ the ♪ length, else 1/16 (never the 1/96 drawing fallback)
@@ -14805,10 +14814,10 @@ const RecHelpers = (() => {
         x.fillStyle = ins ? C.inRow : C.outRow; x.fillRect(0, y, V.W, V.rowH - 1);
         if (PC(n - s.root) === 0) { x.fillStyle = col; x.globalAlpha = .18; x.fillRect(0, y, V.W, V.rowH - 1); x.globalAlpha = 1; }
       }
-      if (E.loop) { x.fillStyle = C.amber; x.globalAlpha = .07; x.fillRect(xOf(E.loop.a * 4), 0, (E.loop.b - E.loop.a + 1) * 4 * V.ppb, V.H); x.globalAlpha = 1; }
+      if (E.loop) { x.fillStyle = C.amber; x.globalAlpha = .07; x.fillRect(xOf(tkB(E.loop.a)), 0, (tkB(E.loop.b + 1) - tkB(E.loop.a)) * V.ppb, V.H); x.globalAlpha = 1; }
       const b0 = Math.max(0, Math.floor(V.x0 / g) * g), b1 = beatAt(V.W);
       for (let b = b0; b <= b1 + 1e-9; b += g) {
-        const bx = Math.round(xOf(b)) + .5, isBar = Math.abs(b / 4 - Math.round(b / 4)) < 1e-6, isBeat = Math.abs(b - Math.round(b)) < 1e-6;
+        const bx = Math.round(xOf(b)) + .5, isBar = isBarL(b), isBeat = Math.abs(b - Math.round(b)) < 1e-6;
         x.strokeStyle = isBar ? C.dim : C.line; x.globalAlpha = isBar ? .55 : isBeat ? .9 : .45; x.beginPath(); x.moveTo(bx, 0); x.lineTo(bx, V.H); x.stroke();
       }
       x.globalAlpha = 1;
@@ -14847,15 +14856,17 @@ const RecHelpers = (() => {
       }
       // ruler: bar-number chips (tap = loop range), amber loop band, length handle, step cursor
       x = fit(cR, V.W, V.RH); x.fillStyle = C.outRow; x.fillRect(0, 0, V.W, V.RH);
-      if (E.loop) { x.fillStyle = C.amber; x.globalAlpha = .35; x.fillRect(xOf(E.loop.a * 4), 0, (E.loop.b - E.loop.a + 1) * 4 * V.ppb, V.RH); x.globalAlpha = 1; }
-      for (let b = Math.max(0, Math.floor(V.x0)); b <= b1; b++) {
-        const bx = Math.round(xOf(b)) + .5, isBar = b % 4 === 0;
+      if (E.loop) { x.fillStyle = C.amber; x.globalAlpha = .35; x.fillRect(xOf(tkB(E.loop.a)), 0, (tkB(E.loop.b + 1) - tkB(E.loop.a)) * V.ppb, V.RH); x.globalAlpha = 1; }
+      for (let b = Math.max(0, Math.floor(V.x0)); b <= b1; b++) {      // Schlag-Striche
+        const bx = Math.round(xOf(b)) + .5, isBar = isBarL(b);
         x.strokeStyle = isBar ? C.dim : C.line; x.beginPath(); x.moveTo(bx, isBar ? 4 : V.RH - 8); x.lineTo(bx, V.RH); x.stroke();
-        if (isBar && b < Lb) {
-          const inLoop = E.loop && b / 4 >= E.loop.a && b / 4 <= E.loop.b;
-          x.fillStyle = inLoop ? C.amber : C.inRow; rr(x, bx + 1, 3, NUMW - 4, V.RH - 6, 4); x.fill();
-          x.fillStyle = inLoop ? '#111' : C.text; x.font = '700 11px ' + tok('--font-num', 'monospace'); x.fillText(String(b / 4 + 1), bx + 6, V.RH / 2 + 4);
-        }
+      }
+      for (let k = Math.max(0, tkAt(Math.max(0, V.x0))); tkB(k) <= b1 + 1e-9; k++) {   // T1: Takt-Chips an den Taktstrichen der Taktart
+        const b = tkB(k), bx = Math.round(xOf(b)) + .5; if (b >= Lb - 1e-9) break;
+        x.strokeStyle = C.dim; x.beginPath(); x.moveTo(bx, 4); x.lineTo(bx, V.RH); x.stroke();
+        const inLoop = E.loop && k >= E.loop.a && k <= E.loop.b;
+        x.fillStyle = inLoop ? C.amber : C.inRow; rr(x, bx + 1, 3, NUMW - 4, V.RH - 6, 4); x.fill();
+        x.fillStyle = inLoop ? '#111' : C.text; x.font = '700 11px ' + tok('--font-num', 'monospace'); x.fillText(String(k + 1), bx + 6, V.RH / 2 + 4);
       }
       const lx = xOf(Lb); x.fillStyle = C.sel; x.fillRect(lx - 3, 0, 6, V.RH); x.fillStyle = C.bg; x.fillRect(lx - 1, 5, 2, V.RH - 10);    // length handle
       if (E.step != null) { x.fillStyle = C.amber; x.beginPath(); const sx = xOf(E.step); x.moveTo(sx, V.RH); x.lineTo(sx + 6, V.RH - 8); x.lineTo(sx - 6, V.RH - 8); x.fill(); }
@@ -14994,7 +15005,7 @@ const RecHelpers = (() => {
     function wrapO(o, nl) { const w = ((o % nl) + nl) % nl; return +(w >= nl - 1e-4 ? 0 : w).toFixed(4); }
     function setLen(bars) {
       bars = clamp(bars, 1, 64); const c = clip(); if (bars === c.len) return;   /* G8 */
-      model.begin(); const nl = bars * 4, shorter = bars < c.len;
+      model.begin(); const nl = bars * clipBarB(c), shorter = bars < c.len;
       c.len = bars; if (shorter) trimToLen();                    // V0a K-06: the same trim as the length handle
       E.sel = new Set([...E.sel].filter(n => c.notes.includes(n)));
       if (E.loop && E.loop.b >= bars) E.loop = E.loop.a < bars ? {a: E.loop.a, b: bars - 1} : null;
@@ -15004,7 +15015,7 @@ const RecHelpers = (() => {
     // Loop-Bereich (addendum 4): crop the clip to the selected bars; notes inside move to the start, the rest is removed
     function cropToLoop() {
       const lp = E.loop; if (!lp) return false;
-      const c = clip(), a = lp.a * 4, b = (lp.b + 1) * 4, nl = b - a;
+      const c = clip(), a = tkB(lp.a), b = tkB(lp.b + 1), nl = b - a;
       if (lp.a === 0 && lp.b === c.len - 1) { E.loop = null; render(); return false; }
       model.begin();
       c.notes = c.notes.filter(n => n.t >= a - 1e-9 && n.t < b - 1e-9);
@@ -15224,7 +15235,7 @@ const RecHelpers = (() => {
     // (whole bars, rounded); the edge zones scroll the frozen view along so the clip can grow / shrink beyond the screen
     function lenDrag(s) {
       const dB = (s.px - s.p0.x) / s.ppb0 + (V.x0 - s.x00), c = clip();
-      const bars = clamp(s.len0 + Math.round(dB / 4), 1, 64);   /* G8 */
+      const bars = clamp(s.len0 + Math.round(dB / clipBarB(clip())), 1, 64);   /* G8; T1: Takte der Clip-Taktart */
       if (bars !== c.len) { c.len = bars; if (E.loop && E.loop.b >= bars) E.loop = null; say(bars + (bars === 1 ? ' Takt' : ' Takte')); if (opts.onTick) opts.onTick(); }
       render();
     }
@@ -15264,8 +15275,8 @@ const RecHelpers = (() => {
     }, p => rulerTap(p.x));
     // a tap on a bar number = loop range (first bar, then extend; a tap on the band clears it); elsewhere = step cursor
     function rulerTap(px) {
-      const beat = beatAt(px), bar = Math.floor(beat / 4), n = clip().len, inClip = bar >= 0 && bar < n;
-      const onNum = inClip && px >= xOf(bar * 4) - 4 && px <= xOf(bar * 4) + NUMW + 2, lp = E.loop;
+      const beat = beatAt(px), bar = beat < 0 ? -1 : tkAt(beat), n = clip().len, inClip = bar >= 0 && bar < n;
+      const onNum = inClip && px >= xOf(tkB(bar)) - 4 && px <= xOf(tkB(bar)) + NUMW + 2, lp = E.loop;
       if (inClip && lp && bar >= lp.a && bar <= lp.b && (onNum || E.step == null)) { E.loop = null; render(); return; }   // a tap on the band clears it
       if (onNum) { E.loop = lp ? {a: Math.min(lp.a, bar), b: Math.max(lp.b, bar)} : {a: bar, b: bar}; if (opts.onTick) opts.onTick(); render(); return; }
       if (E.step != null) { E.step = clamp(snapDown(beat), 0, L() - stepLen()); render(); }
@@ -15345,7 +15356,7 @@ const RecHelpers = (() => {
       for (const nt of ns) o.set(nt, {n: nt.n, t: nt.t, d: nt.d, o: nt.o, hasO: 'o' in nt});
       MB = {R: MP_R[MPP.w] || 1, orig: o, inf: new Map(), last: null, keys: new Map(), changed: false, aud: null, audN: null, audT: 0, cur: null};
     }
-    const mpKeyAtC = b => { const bar = Math.floor(b / 4); let k = MB.keys.get(bar); if (!k) { k = mpKey(bar * 4); MB.keys.set(bar, k); } return k; };
+    const mpKeyAtC = b => { const bar = tkAt(b); let k = MB.keys.get(bar); if (!k) { k = mpKey(tkB(bar)); MB.keys.set(bar, k); } return k; };
     // one brush sample at (beat, pitch): every note in reach takes its strongest pull (equal: the latest)
     function mpSample(beat, pf) {
       const R = MB.R, g = GRID[E.grid], Lb = L(); let top = null, tw = 0, tmov = false;
@@ -15392,7 +15403,7 @@ const RecHelpers = (() => {
     // block range: the ruler bars, else the selection, else the whole clip
     function mpRange() {
       const c = clip();
-      if (E.loop) { const a = E.loop.a * 4, b = (E.loop.b + 1) * 4; return {a, b, ns: c.notes.filter(n => n.t >= a - 1e-9 && n.t < b - 1e-9)}; }
+      if (E.loop) { const a = tkB(E.loop.a), b = tkB(E.loop.b + 1); return {a, b, ns: c.notes.filter(n => n.t >= a - 1e-9 && n.t < b - 1e-9)}; }
       if (E.sel.size) { const ns = scope(); return {a: Math.min(...ns.map(n => n.t)), b: Math.max(...ns.map(n => n.t + n.d)), ns}; }
       return {a: 0, b: L(), ns: c.notes.slice()};
     }
@@ -15476,14 +15487,14 @@ const RecHelpers = (() => {
       E.tool = t; if (t !== 'select' && E.sel.size > 1) E.sel.clear(); if (t === 'erase') E.sel.clear(); render(); }
     function setGrid(g) { if (g in GRID) { E.grid = g; E.noteLen = null; render(); if (opts.onPrefs) opts.onPrefs({grid: E.grid, fold: E.fold}); } }
     const fmtLen = d => { const map = {4: '1/1', 2: '1/2', 1: '1/4', .5: '1/8', .25: '1/16', .125: '1/32'}; const k = Object.keys(map).find(x => Math.abs(+x - d) < 1e-6); return k ? map[k] : (d * 4).toFixed(2).replace(/\.?0+$/, '') + '/16'; };
-    const fmtPos = t => (Math.floor(t / 4) + 1) + '.' + (Math.floor(t % 4) + 1) + '.' + (Math.floor((t % 1) / .25 + 1e-6) + 1);
+    const fmtPos = t => { const k = tkAt(t), w = t - tkB(k); return (k + 1) + '.' + (Math.floor(w + 1e-9) + 1) + '.' + (Math.floor((t % 1) / .25 + 1e-6) + 1); };   // T1
     // app rAF loop; -1 hides it. V0b: no scrolling here (FOLGEN: app → showPage)
     // run dot (§5.1) on the running bar's chip: steady with the playhead in view, else blinking; chip outside: „◂ 3“ / „3 ▸“
     let rdSig = '';
     function playhead(beat) {
       if (beat == null || beat < 0 || dead) { if (ph.style.opacity !== '0') ph.style.opacity = '0'; if (rdSig !== '') { rdSig = ''; rd.className = 'pr-rd'; rd.textContent = ''; } return; }
       const x = xOf(beat); ph.style.opacity = x < 0 || x > V.W ? '0' : '1'; ph.style.transform = 'translateX(' + x.toFixed(1) + 'px)';
-      const bar = Math.floor(beat / 4 + 1e-9), cx = xOf(bar * 4) + NUMW - 8, inV = x >= 0 && x <= V.W;
+      const bar = tkAt(beat), cx = xOf(tkB(bar)) + NUMW - 8, inV = x >= 0 && x <= V.W;
       let sig, cls, txt = '', lx = 0;
       if (cx >= 0 && cx <= V.W - 6) { cls = inV ? 'pr-rd on' : 'pr-rd on bl'; lx = cx; sig = cls + Math.round(cx); }
       else { const left = cx < 0; cls = 'pr-rd edge ' + (inV ? '' : 'bl ') + (left ? 'l' : 'r'); txt = left ? '◂ ' + (bar + 1) : (bar + 1) + ' ▸'; sig = cls + txt; }
@@ -15522,7 +15533,7 @@ const RecHelpers = (() => {
       _xy(beat, note) { const r = cM.getBoundingClientRect(); return {x: r.left + xOf(beat), y: r.top + yOfRow(rowOfNote(note)) + V.rowH / 2}; },
       _vel(beat, v) { const r = cV.getBoundingClientRect(); return {x: r.left + xOf(beat) + 2, y: r.top + (1 - v) * V.VH}; },
       _ruler(beat) { const r = cR.getBoundingClientRect(); return {x: r.left + xOf(beat), y: r.top + V.RH / 2}; },
-      _barNum(bar) { const r = cR.getBoundingClientRect(); return {x: r.left + xOf(bar * 4) + NUMW / 2, y: r.top + V.RH / 2}; },
+      _barNum(bar) { const r = cR.getBoundingClientRect(); return {x: r.left + xOf(tkB(bar)) + NUMW / 2, y: r.top + V.RH / 2}; },
       _mm() { const r = cM.getBoundingClientRect(), R = mmRect(), sp = mmSpan(); return {on: mmOn(), x: r.left + R.x, y: r.top + R.y, w: R.w, h: R.h, Lb: sp.Lb, ax: gst && gst.ax, onMap: !!(gst && gst.onMap)}; },   /* N2 tests */
       _key(note) { const r = cK.getBoundingClientRect(); return {x: r.left + V.KW / 2, y: r.top + yOfRow(rowOfNote(note)) + V.rowH / 2}; }};
     /* MP: test hooks (state, a brush point, the key of a place) */
@@ -15983,13 +15994,14 @@ const RecHelpers = (() => {
     const tabs = document.createElement('div'); tabs.className = 'se-tabs';
     const bubble = document.createElement('div'); bubble.className = 'se-bubble';
     for (let i = 0; i < model.steps; i++) {
-      const c = document.createElement('div'); c.className = 'se-cell' + (i % 4 === 0 ? ' q' : ''); c.innerHTML = '<i class="f"></i><i class="r"></i><b class="sn">' + (i + 1) + '</b>';
+      const c = document.createElement('div'); c.className = 'se-cell' + ((opts.qAt ? opts.qAt(i) : i % 4 === 0) ? ' q' : ''); c.innerHTML = '<i class="f"></i><i class="r"></i><b class="sn">' + (i + 1) + '</b>';
       row.appendChild(c); E.cells.push(c);
       const b = document.createElement('div'); b.className = 'se-bar'; b.innerHTML = '<i></i>'; lane.appendChild(b); E.bars.push(b);
     }
     for (const k of lanes) { const L = LANES[k], b = document.createElement('button'); b.type = 'button'; b.textContent = L.l; b.dataset.lane = k; tabs.appendChild(b); }
     if (opts.tabsHost) opts.tabsHost.appendChild(tabs); else root.append(tabs);
     root.append(row, lane, bubble);
+    if (opts.cols) { row.style.gridTemplateColumns = 'repeat(' + opts.cols + ',minmax(0,1fr))'; lane.style.gridTemplateColumns = 'repeat(' + model.steps + ',minmax(0,1fr))'; }   // T1: Schritte je Takt der Taktart
     // nothing in here may select text, open a callout/context menu, scroll or zoom
     root.addEventListener('contextmenu', e => e.preventDefault());
     root.addEventListener('selectstart', e => e.preventDefault());
@@ -26269,9 +26281,10 @@ function recBegin() {
     const before = S.tracks[ti].clips[si];
     const clip = {len: rec.fixedLen, key: Object.assign({}, rec.key), notes: []};
     if (S.tracks[ti].kind === 'drum') clip.seed = newSeed();
+    { const ts = recTs(); if (ts) clip.ts = ts; }                   // T1: Taktart der Aufnahme-Stelle
     pushUndo(ti, si, before, 'Aufnahme');
     S.tracks[ti].clips[si] = clip; rec.clip = clip;
-    rec.endBeat = rec.startBeat + rec.fixedLen * 4;
+    rec.endBeat = rec.startBeat + rec.fixedLen * recBB();
     // notes that ended inside the early-catch window before the clip existed
     for (const n of rec.temp) clip.notes.push({t: n.t >= clipB(clip) - 1e-9 ? 0 : n.t, o: n.o, d: Math.min(n.d, clipB(clip)), n: n.n, v: n.v, born: n.born, bornRun: R.runId});
     rec.temp = []; clip.notes.sort((a, b) => a.t - b.t);
@@ -26327,9 +26340,9 @@ function recFinishPress(tP) {
     case 'recording':
       if (rec.fixedLen) { recEndFixed(Math.max(bP, rec.startBeat), false); }
       else {
-        const prev = Math.floor(bP / 4 + 1e-9) * 4;
-        let bd = (bP - prev <= .25) ? prev : prev + 4;
-        bd = Math.max(bd, rec.startBeat + 4);
+        const prev = tkPlain() ? Math.floor(bP / 4 + 1e-9) * 4 : tBarFloor(bP);   // T1
+        let bd = (bP - prev <= .25) ? prev : prev + recBB();
+        bd = Math.max(bd, rec.startBeat + recBB());
         rec.endBeat = bd;
         if (bd < R.schedBeat) recClose(bd);
       }
@@ -26422,6 +26435,10 @@ function recEndOverdub(atBeat) {
   rec.snapshot = null; clipChanged(rec.track, rec.scene);
   UI.dirty.all = true;
 }
+// T1: Taktart und Taktlänge (Schläge) einer Aufnahme = die an ihrem Start
+function recTs() { return tkPlain() || rec.startBeat == null ? null : tsNorm(tTsAt(rec.startBeat + 1e-6)); }
+function recBB() { return tkPlain() ? 4 : tsBeats(recTs()); }
+function tBarCeilT(b) { const f = tBarFloor(b); return b - f <= 1e-9 ? f : tBarNext(f); }
 function recClose(bd) {
   if (rec.fixedLen) { recEndFixed(bd, true); return; }
   vsRecEnd(bd);                                              // VS2
@@ -26431,7 +26448,7 @@ function recClose(bd) {
   recCommitOpen(bd);
   cancelRecClicks(bd);
   const ti = rec.track, si = rec.scene;
-  const len = clamp(Math.round((bd - rec.startBeat) / 4), 1, 64), L = len * 4, qIn = GRID_STEP[S.settings.inQuant] || 0;   /* G8 */
+  const RB = recBB(), len = clamp(Math.round((bd - rec.startBeat) / RB), 1, 64), L = len * RB, qIn = GRID_STEP[S.settings.inQuant] || 0;   /* G8; T1: Takte der Taktart */
   const notes = [];
   for (const n of rec.temp) {
     let t = n.t; while (t >= L) t -= L;
@@ -26446,6 +26463,7 @@ function recClose(bd) {
   notes.sort((a, b) => a.t - b.t);
   const clip = {len, key: Object.assign({}, rec.key || {root: S.key.root, scale: S.key.scale, src: 'auto'}), notes};
   if (S.tracks[ti].kind === 'drum') clip.seed = newSeed();
+  { const ts = recTs(); if (ts) clip.ts = ts; }                     // T1
   pushUndo(ti, si, S.tracks[ti].clips[si], 'Aufnahme');
   S.tracks[ti].clips[si] = clip;
   rec.tail = {track: ti, scene: si, clip, until: bd};
@@ -26462,7 +26480,7 @@ function recOnStop() {
   if (rec.state === 'overdub') { recEndOverdub(); return; }
   const b = t2b(AU.ctx.currentTime - AU.outLat);
   if (rec.fixedLen) { recEndFixed(b, false); return; }
-  const bd = Math.max(Math.ceil(b / 4 - 1e-9) * 4, rec.startBeat + 4);
+  const bd = tkPlain() ? Math.max(Math.ceil(b / 4 - 1e-9) * 4, rec.startBeat + 4) : Math.max(tBarCeilT(b), rec.startBeat + recBB());   // T1
   recCommitOpen(b);
   const wasPlaying = R.playing; R.playing = false;     // create the clip without scheduling
   recClose(bd);
@@ -26908,7 +26926,7 @@ function capture() {
   const ti = R.selT, tr = S.tracks[ti];
   // keys still held when FANG is tapped belong to the phrase too (their length so far)
   const ab = R.playing ? audBeat() : 0, held = [...CAP.open.values()].filter(o => o.track === ti).map(o => Object.assign({}, o, {d: Math.max(1 / 32, ab - o.b)}));
-  const ph = R.playing ? RecHelpers.capturePhrase(held.length ? CAP.buf.concat(held) : CAP.buf, ti, ab, {maxBars: 64}) : null;   /* G8: FANG bis 64 Takte */
+  const ph = R.playing ? RecHelpers.capturePhrase(held.length ? CAP.buf.concat(held) : CAP.buf, ti, ab, tkPlain() ? {maxBars: 64} : {maxBars: 64, bb: tsBeats(S.ts)}) : null;   /* G8: FANG bis 64 Takte; T1: Takte der Song-Taktart */
   if (!ph || !ph.notes.length) { toast('Nichts zum Einfangen – erst spielen, dann FANG'); return false; }
   const si = !tr.clips[R.selS] ? R.selS : tr.clips.findIndex(c => !c);
   if (si < 0) { toast('Kein freier Platz in dieser Spur'); return false; }
@@ -26922,6 +26940,7 @@ function capture() {
   pushUndo(ti, si, null, 'Fang');
   tr.clips[si] = {len: ph.len, key, notes};
   if (tr.kind === 'drum') tr.clips[si].seed = newSeed();
+  if (!tkPlain() && S.ts) tr.clips[si].ts = S.ts;                    // T1
   analyseClip(ti, si, true, true);
   switchTrackAt(ti, si, nextBarFromAudible(), ph.startBeat);    // tick(): R.cstart = cs (phrase start) -> in phase
   CAP.last[ti] = -1e9; UI.dirty.fang = true;
@@ -27283,7 +27302,7 @@ function renderGrid(bAud) {
       let sig = clip ? (clip.audio ? tkCellSig(clip) : clipSig(clip)) : '';
       if (rs === 'rec' && !clip && rec.temp.length) {
         const now = performance.now();
-        if (!C.recMiniT || now - C.recMiniT > 250) { C.recMiniT = now; const L = Math.max(4, Math.ceil((bAud - rec.startBeat + .01) / 4) * 4); sig = 'rec:' + rec.temp.length + ':' + L; if (sig !== C.sig) { C.sig = sig; C.mini.innerHTML = miniSvg({len: L / 4, notes: rec.temp.map(n => ({t: Math.min(n.t, L - .01), d: n.d, n: n.n}))}, tr.kind === 'drum'); } }
+        if (!C.recMiniT || now - C.recMiniT > 250) { C.recMiniT = now; const RB = recBB(), L = Math.max(RB, Math.ceil((bAud - rec.startBeat + .01) / RB) * RB); sig = 'rec:' + rec.temp.length + ':' + L; if (sig !== C.sig) { C.sig = sig; C.mini.innerHTML = miniSvg({len: L / 4, notes: rec.temp.map(n => ({t: Math.min(n.t, L - .01), d: n.d, n: n.n}))}, tr.kind === 'drum'); } }
         continue;
       }
       if (sig !== C.sig) { C.sig = sig; C.mini.innerHTML = clip ? (clip.audio ? tkMiniSvg(clip.audio) : miniSvg(clip, tr.kind === 'drum')) : ''; }
@@ -27336,20 +27355,20 @@ function renderProgress(bAud) {
       let ph = -1;
       if (R.playing && clip && bAud >= 0) {
         if (rec.track === i && rec.scene === s && rec.state === 'recording' && !rec.fixedLen) {
-          ph = clamp((bAud - rec.startBeat) / 4 % 1, 0, 1);
+          ph = clamp((bAud - rec.startBeat) / recBB() % 1, 0, 1);
         } else if (vs.playing === s) {
           const L = clipB(clip), cs = audCstart(i, bAud);
           ph = ((((bAud - cs) % L) + L) % L) / L;
         }
       } else if (R.playing && !clip && rec.track === i && rec.scene === s && rec.state === 'recording' && bAud >= rec.startBeat) {
-        ph = ((bAud - rec.startBeat) / 4) % 1;
+        ph = ((bAud - rec.startBeat) / recBB()) % 1;
       }
       const q = ph < 0 ? -1 : Math.round(ph * 400) / 400;
       if (q !== C.ph) { C.ph = q; C.pg.style.transform = 'scaleX(' + (q < 0 ? 0 : q) + ')'; }
       // recording: the whole cell fills red left -> right (fixed length: over the take; AUTO: per bar)
       let rp = -1;
       if (R.playing && rec.track === i && rec.scene === s && rec.state === 'recording' && bAud >= rec.startBeat) {
-        rp = rec.fixedLen ? clamp((bAud - rec.startBeat) / (rec.fixedLen * 4), 0, 1) : ((bAud - rec.startBeat) / 4) % 1;
+        rp = rec.fixedLen ? clamp((bAud - rec.startBeat) / (rec.fixedLen * recBB()), 0, 1) : ((bAud - rec.startBeat) / recBB()) % 1;
       }
       const rq = rp < 0 ? -1 : Math.round(rp * 200) / 200;
       if (rq !== C.rph) { C.rph = rq; C.rfill.style.transform = rq < 0 ? '' : 'scaleX(' + rq + ')'; }   // idle: the CSS default (scaleX(0))
@@ -27514,8 +27533,8 @@ const svPw = () => Math.max(1, Math.floor(SV.w / SV.cellW + 1e-6));
 function svAutoScroll(force) {
   if (!SV.w) return;
   const b = svSongBeat(R.playing ? t2b(nowT() - AU.outLat) : 0), pw = svPw();
-  if (force) { const bar = b == null || b < 0 ? 0 : Math.floor(b / 4); SV.x = Math.floor(bar / pw) * pw * SV.cellW; FOL.page.song = null; FOL.jump.song = false; UI.dirty.song = true; return; }
-  folStep('song', b == null ? -1 : b / 4, pw, SV.x / SV.cellW, x => { SV.x = Math.max(0, x * SV.cellW); UI.dirty.song = true; });
+  if (force) { const bar = b == null || b < 0 ? 0 : barAt(b, 0); SV.x = Math.floor(bar / pw) * pw * SV.cellW; FOL.page.song = null; FOL.jump.song = false; UI.dirty.song = true; return; }
+  folStep('song', b == null ? -1 : barFrac(b), pw, SV.x / SV.cellW, x => { SV.x = Math.max(0, x * SV.cellW); UI.dirty.song = true; });
   svFolPaint();
 }
 // the song view's FOLGEN chip (top right): only while it holds or is off; tap = folgt wieder
@@ -30186,7 +30205,8 @@ function openMarkSheet(id) {
         `</div></div><div class="ms-bb"><div class="ms-r ms-r3">` +
           B('name', '✎ Name') + B('color', `Farbe <i style="background:${pcol}"></i>`, {dis: !isP}) +
           B('tpl', 'Teil-Vorlage ›', {dis: !isP}) + (same >= 2 ? B('all', land || narrow ? 'Auf alle übertragen' : `Auf alle ${same} „${esc(nm)}“ übertragen`, {cls: 'ms-all'}) : B('all', 'Auf alle übertragen', {dis: true})) +
-        `</div><div class="ms-r">` + B('rec', '● Neu aufnehmen …', {cls: 'ms-rec'}) + `</div></div>` + vvDirRow(m.a, m.a + m.len, 'ms-b');   // VV2: Zeile „Video“
+        `</div><div class="ms-r">` + B('rec', '● Neu aufnehmen …', {cls: 'ms-rec'}) + B('ts', 'Taktart ' + (m.ts || S.ts || '4/4') + (p._ts ? ' ▴' : ' ▾'), {aria: 'Taktart dieses Teils', cls: m.ts ? 'on' : ''}) + `</div>` +
+        (p._ts ? t1TsGrid(m.ts || 'song', ['song', 'wie Song']) : '') + `</div>` + vvDirRow(m.a, m.a + m.len, 'ms-b');   // VV2: Zeile „Video“; T1: Taktart des Teils
       s012MarkSheetPaint(p, m);   /* S0/S2 */
       konMarkSheetPaint(p, m);    /* KON: [Als neuen Teil konsolidieren] [Zurückholen] */
       for (const b of p.querySelectorAll('.ms-b')) if (b.scrollWidth > b.clientWidth + 1) b.classList.add('tight');
@@ -30196,6 +30216,7 @@ function openMarkSheet(id) {
       const a = b.dataset.a, m = S.song && S.song.marks.find(x => x.id === id); if (!m) { closePop(); return; }
       const nm = markLabel(m), done = (ok, msg) => { if (ok) { toast(msg, songUndoAct()); svButtons(); } };
       if (a === 'x') { closePop(); return; }
+      if (a === 'ts') { p._ts = !p._ts; paint(); popDock(p); return; }   // T1
       if (vvDirTap(a, b, m.a, m.a + m.len, () => { if (UI.pop && UI.pop.el === p) { paint(); popDock(p); } })) return;   // VV2
       if (a === 'play') { closePop(); songPlayFrom(m.a); return; }
       if (a === 'rep2' || a === 'rep4') { const n = a === 'rep2' ? 2 : 4; done(markAction(id, 'rep', n), nm + ' ×' + n); paint(); popDock(p); return; }
@@ -30210,6 +30231,15 @@ function openMarkSheet(id) {
       if (a === 'all') { closePop(); markAction(id, 'applyAll'); svButtons(); return; }
       if (a === 'rec') { closePop(); SV.sel = {a: m.a, b: m.a + m.len - 1}; SV.pos = m.a; UI.dirty.song = true; openRecStart(SV.btn && SV.btn.bRec); }
     }, 'button[data-a]');
+    onTap(p, b => {                                                   // T1: Taktart des Teils (ein Undo); „Für alle“ wie bei Akkorden
+      const m = S.song && S.song.marks.find(x => x.id === id); if (!m) { closePop(); return; }
+      const v = b.dataset.ts === 'song' ? null : b.dataset.ts, nm = markLabel(m);
+      if (setMarkTs(id, v, false)) {
+        const same = m.part ? S.song.marks.filter(x => x.part === m.part && x.id !== id && (x.ts || null) !== (m.ts || null)).length : 0;
+        toast(nm + ': Taktart ' + (m.ts || S.ts || '4/4'), same ? [{label: 'Für alle „' + nm + '“', fn: () => { setMarkTs(id, m.ts || null, true); }}, songUndoAct()] : songUndoAct());
+      }
+      paint(); popDock(p);
+    }, '.t1ts button[data-ts]');
   }, {name: 'mark', onClose: () => { EL.popLayer.classList.remove('pass'); if (!SV.copy) SV.mark = null; UI.dirty.song = true; }});
   SV.mark = id; EL.popLayer.classList.add('pass');
   popDock(UI.pop && UI.pop.el);
@@ -30660,7 +30690,7 @@ function svTileNotes(song, t, run) {
 }
 function svDrawGlass(g, song, X, b0, b1, bars, ru, rh, sb, now) {
   SV.tileGeo = [];
-  const cw = SV.cellW, cur = sb != null && sb >= 0 && R.playing ? sb / 4 : -1;
+  const cw = SV.cellW, cur = sb != null && sb >= 0 && R.playing ? barFrac(sb) : -1, pl = tkPlain();
   for (let r = 0; r < SV.rows.length; r++) {
     const t = SV.rows[r]; if (t < 0 || !song.lanes[t]) continue;
     const y = ru + r * rh, col = SV.cols[t], th = Math.max(4, rh - 6), rad = Math.min(6, th / 2);
@@ -30678,7 +30708,8 @@ function svDrawGlass(g, song, X, b0, b1, bars, ru, rh, sb, now) {
         const tn = svTileNotes(song, t, run), P = tn.p, nh = Math.max(1.5, th * .12), top = y + 3 + 2, hh = th - 4 - nh;
         g.fillStyle = col; g.globalAlpha = .6 * k;
         g.save(); g.beginPath(); g.rect(x0, y + 3, w, th); g.clip();
-        for (let j = 0; j < P.length; j += 3) g.fillRect(X(d0) + P[j] / 4 * cw, top + P[j + 2] * hh, Math.max(1.5, P[j + 1] / 4 * cw - .5), nh);
+        const B0 = pl ? 0 : barBeat(d0), fx = q => pl ? q / 4 : barFrac(B0 + q) - d0;   // T1
+        for (let j = 0; j < P.length; j += 3) g.fillRect(X(d0) + fx(P[j]) * cw, top + P[j + 2] * hh, Math.max(1.5, (pl ? P[j + 1] / 4 : fx(P[j] + P[j + 1]) - fx(P[j])) * cw - .5), nh);
         g.restore(); g.globalAlpha = k;
         if (w >= 16 && th >= 14) {
           g.save(); g.textAlign = 'left'; g.textBaseline = 'top';
@@ -30959,11 +30990,11 @@ function svDraw(force, sbIn) {
   const bars = svBars(), b0 = Math.max(0, Math.floor(SV.x / cw)), b1 = Math.min(bars + 1, Math.ceil((SV.x + W) / cw) + 1);
   // V2e (Xander 24.10. c): after an insert the content from the insert point slides in from where it was (only the drawing)
   const shN = SV.shift ? SV.shift.n : Infinity, shX = svShiftNow();
-  const X = b => b * cw - SV.x + (b >= shN ? shX : 0), XB = beat => beat / 4 * cw - SV.x + (beat >= shN * 4 - 1e-6 ? shX : 0);
+  const X = b => b * cw - SV.x + (b >= shN ? shX : 0), shB = barBeat(shN), XB = beat => barFrac(beat) * cw - SV.x + (beat >= shB - 1e-6 ? shX : 0);   // T1: gleiche Breite je Takt
   g.font = '600 10px ' + (getComputedStyle(document.body).getPropertyValue('--font-num') || 'monospace');
   g.textBaseline = 'middle'; g.textAlign = 'center';
   // ruler + the current bar tinted
-  const cur = sb != null ? Math.floor(sb / 4) : -1;
+  const cur = sb != null ? barAt(sb, 0) : -1;
   // V0c N7-R7: the yellow bar selection — a band (35 % over the ruler, 7 % over the rows), each bar an amber chip
   const sel = song && SV.sel && SV.sel.a < bars ? SV.sel : null, cy = 4 + (SV.blS | 0), ch = Math.max(8, ru - 5 - (SV.vvS | 0) - (SV.blS | 0));   // VV2: the header without the stripe; KON: below the Block-Zeile
   if (sel) { const xa = X(sel.a), xb = X(Math.min(sel.b, bars - 1) + 1); g.fillStyle = 'rgba(255,178,46,.35)'; g.fillRect(xa, cy, xb - xa, ch); g.fillStyle = 'rgba(255,178,46,.07)'; g.fillRect(xa, ru, xb - xa, H - ru); }
@@ -30981,6 +31012,7 @@ function svDraw(force, sbIn) {
       else g.fillText(b < bars ? String(b + 1) : '+', x + cw / 2, cy + ch / 2);
     }
     g.fillStyle = 'rgba(255,255,255,.06)'; g.fillRect(x, ru, 1, H - ru);
+    if (!tkPlain()) { const ts = tsAtBar(b); if (b < bars + 1 && ((b === 0 && ts !== '4/4') || (b > 0 && ts !== tsAtBar(b - 1)))) { g.save(); g.font = '700 9px system-ui, -apple-system, sans-serif'; g.textAlign = 'left'; g.fillStyle = '#ffb22e'; g.fillText(ts, x + 2, ru - 5); g.restore(); } }   // T1: Taktart am Wechsel
   }
   // V2e (Xander 24.10. a): behind the end the bar numbers go on, dim — a tap there sets a part at that bar line (bars between stay empty)
   if (song || !bars) { g.fillStyle = '#30343c'; for (let b = Math.max(b0, bars + 1), e = Math.ceil((SV.x + W) / cw) + 1; b < e && b < bars + 64; b++) g.fillText(String(b + 1), X(b) + cw / 2, cy + ch / 2); }
@@ -31024,7 +31056,7 @@ function svDraw(force, sbIn) {
     g.textAlign = 'left';
     // a chip ends where the next entry begins (an ORIGINAL at beat 0 and a late first chord at 0.4 must not draw on top of
     // each other): the later chip keeps its full name, the earlier one shrinks to a sliver and its name is clipped away
-    const ord = song.carrier.map((c, k) => k).filter(k => song.carrier[k].beat < bars * 4).sort((a, b) => song.carrier[a].beat - song.carrier[b].beat || a - b);
+    const ord = song.carrier.map((c, k) => k).filter(k => song.carrier[k].beat < barBeat(bars)).sort((a, b) => song.carrier[a].beat - song.carrier[b].beat || a - b);
     ord.forEach((k, j) => {
       const c = song.carrier[k], x = XB(c.beat); if (x > W) return;
       const txt = c.target ? songChipName(c) : 'ORIG.', nk = ord[j + 1], xn = nk != null ? XB(song.carrier[nk].beat) : Infinity;
@@ -31044,7 +31076,7 @@ function svDraw(force, sbIn) {
       for (const t of others.concat(ns.length ? [song.melodyTrack] : [])) for (const n of song.mel[t].notes) { if (n.n < lo) lo = n.n; if (n.n > hi) hi = n.n; }
       const span = Math.max(6, hi - lo);
       const bars = (list, h) => { for (const n of list) {
-        const x = XB(n.t), w = Math.max(2, n.d / 4 * cw); if (x > W || x + w < 0) continue;
+        const x = XB(n.t), w = Math.max(2, (tkPlain() ? n.d / 4 : barFrac(n.t + n.d) - barFrac(n.t)) * cw); if (x > W || x + w < 0) continue;
         g.fillRect(x, ym + 3 + (1 - (n.n - lo) / span) * (rh - 9), w, h);
       } };
       g.globalAlpha = .5; for (const t of others) { g.fillStyle = SV.cols[t] || '#fff'; bars(song.mel[t].notes, 2); } g.globalAlpha = 1;
@@ -31060,8 +31092,8 @@ function svDraw(force, sbIn) {
   g.fillStyle = 'rgba(255,255,255,.05)'; for (let r = 0; r <= svNRows(); r++) g.fillRect(0, ru + r * rh, W, 1);
   // the take's range, red 12 % over everything (N7S-02)
   if (song && sr && sr.over && sb != null) {
-    const ra = sr.from * 4, rb = sr.to != null ? sr.to * 4 : Math.max(ra, sb);
-    if (rb > ra) { g.fillStyle = 'rgba(255,69,56,.12)'; g.fillRect(ra / 4 * cw - SV.x, ru, (rb - ra) / 4 * cw, H - ru); }
+    const ra = barBeat(sr.from), rb = sr.to != null ? barBeat(sr.to) : Math.max(ra, sb);
+    if (rb > ra) { g.fillStyle = 'rgba(255,69,56,.12)'; g.fillRect(barFrac(ra) * cw - SV.x, ru, (barFrac(rb) - barFrac(ra)) * cw, H - ru); }
   }
   // §4.8: the rows a take writes are lined red
   if (song && sr && sr.over) {
@@ -31086,10 +31118,10 @@ function svDraw(force, sbIn) {
   }
   // the playhead (green 2 px; red while recording)
   if (sb != null && sb >= 0) {
-    const x = sb / 4 * cw - SV.x;
+    const x = barFrac(sb) * cw - SV.x;
     if (x >= -2 && x <= W) { g.fillStyle = R.songRec ? '#ff4538' : '#35d07f'; g.fillRect(x - 1, 0, 2, H); }
     else if (performance.now() % 1000 < 600) {                         // V0b: the running bar at the edge (the view holds)
-      const left = x < 0, txt = left ? '◂ ' + (Math.floor(sb / 4) + 1) : (Math.floor(sb / 4) + 1) + ' ▸', tw = g.measureText(txt).width + 8;
+      const left = x < 0, txt = left ? '◂ ' + (barAt(sb, 0) + 1) : (barAt(sb, 0) + 1) + ' ▸', tw = g.measureText(txt).width + 8;
       g.fillStyle = '#35d07f'; g.fillRect(left ? 2 : W - tw - 2, 2, tw, ru - 4);
       g.fillStyle = '#0b0c0f'; g.fillText(txt, left ? 2 + tw / 2 : W - 2 - tw / 2, ru / 2);
     }
@@ -31208,10 +31240,10 @@ function recLaneFrame(bAud) {
   RL.blank = false;
   g.clearRect(0, 0, w, h);
   const od = rec.state === 'overdub', clip = rec.clip, sb = rec.startBeat, ti = rec.track;
-  const L = od || rec.fixedLen ? (clip ? clipB(clip) : 4) : Math.max(4, Math.ceil((bAud - sb + .01) / 4) * 4);
+  const L = od || rec.fixedLen ? (clip ? clipB(clip) : recBB()) : Math.max(recBB(), Math.ceil((bAud - sb + .01) / recBB()) * recBB());
   const cs = od ? audCstart(ti, bAud) : sb;
   const now = od ? (((bAud - cs) % L) + L) % L : clamp(bAud - sb, 0, L);
-  const view = Math.min(L, 16), t0 = L <= 16 ? 0 : clamp(Math.floor(now / 4) * 4 - 12, 0, L - 16), ppb = w / view, X = t => (t - t0) * ppb;
+  const view = Math.min(L, 16), t0 = L <= 16 ? 0 : clamp(Math.floor(now / recBB()) * recBB() - 12, 0, L - 16), ppb = w / view, X = t => (t - t0) * ppb;
   const notes = od || rec.fixedLen ? (clip ? clip.notes : []) : rec.temp;
   let lo = 127, hi = 0; for (const n of notes) { lo = Math.min(lo, n.n); hi = Math.max(hi, n.n); }
   for (const o of rec.open.values()) { if (o.track !== ti) continue; lo = Math.min(lo, o.n); hi = Math.max(hi, o.n); }
@@ -31230,7 +31262,7 @@ function recLaneFrame(bAud) {
   }
   g.fillRect(Math.round(X(now)), 0, 2, h);
   const n = recNotesCount();
-  setTxt2((od ? 'OVERDUB' : 'AUFNAHME') + ' · Takt ' + (Math.floor(now / 4) + 1) + (od && clip ? '/' + clip.len : rec.fixedLen ? '/' + rec.fixedLen : '/AUTO') + ' · '
+  setTxt2((od ? 'OVERDUB' : 'AUFNAHME') + ' · Takt ' + (Math.floor(now / recBB()) + 1) + (od && clip ? '/' + clip.len : rec.fixedLen ? '/' + rec.fixedLen : '/AUTO') + ' · '
     + (od ? '+' + n : n) + (n === 1 && !od ? ' Note' : ' Noten') + (rec.endBeat != null && !rec.fixedLen && !od ? ' · endet Takt ' + Math.round((rec.endBeat - sb) / 4) : ''));
 }
 function renderStrip() {
@@ -31672,12 +31704,107 @@ function bindSeg(root, id, fn) {
   const s = root.querySelector('#' + id); if (!s) return;
   on(s, 'click', e => { const b = e.target.closest('button'); if (!b) return; s.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); fn(b.dataset.v); });
 }
+/* ===================== T1: Taktart ändern (Song, Teil, Clip) – je ein Undo-Schritt ===================== */
+// Noten eines Clips Takt für Takt von Taktart A nach B (SPEC §5): gleiche Art (♩↔♩, ♪↔♪, 7/8) = Stelle bleibt, Überstand fällt weg, ein
+// längerer Takt wird mit der zweiten Hälfte aufgefüllt; ♩ → 6/8 / 12/8 = Schlag k → Gruppe k (Achtel ternär: ♬ 0 · ¼ · ½ · ¾ → 0 · ½ · 1 · 1¼),
+// 6/8 / 12/8 → ♩ umgekehrt; fehlende Schläge/Gruppen wiederholen den Takt von vorn.
+function t1Comp(d) { return d.d === 8 && d.grp.every(g => g === 3); }
+function t1MapBar(p, A, B) {                                          // Stellen (Schläge ab Taktbeginn) im Ziel-Takt; [] = fällt weg
+  const out = [], LA = A.b, LB = B.b, cA = t1Comp(A), cB = t1Comp(B);
+  if (cA === cB || (!cA && A.d === 8) || (!cB && B.d === 8)) {        // gleiche Art (oder 7/8): Stelle bleibt
+    if (p < LB - 1e-9) out.push(p);
+    const h = LA / 2; if (LB > LA && p >= h - 1e-9) for (let q = LA + (p - h); q < LB - 1e-9; q += LA - h) out.push(q);
+    return out;
+  }
+  const nA = cA ? A.n / 3 : A.n, nB = cB ? B.n / 3 : B.n, uA = cA ? 1.5 : 1, uB = cB ? 1.5 : 1;
+  const k = Math.floor(p / uA + 1e-9), f = p - k * uA;
+  const g = cB ? (f < .5 - 1e-9 ? f * 2 : 1 + (f - .5)) : (f < 1 - 1e-9 ? f / 2 : .5 + (f - 1));   // ♩ → ♪ ternär bzw. zurück
+  for (let j = k; j < nB; j += nA) if (g < uB - 1e-9) out.push(j * uB + g);
+  return out;
+}
+function t1ConvClip(c, toTs) {
+  const A = tsOf(c.ts), B = tsOf(toTs), LA = A.b, LB = B.b, notes = [];
+  for (const n of c.notes) {
+    const bar = Math.floor(n.t / LA + 1e-9); if (bar >= c.len) continue;
+    const p = n.t - bar * LA, sc = t1Comp(A) !== t1Comp(B) && A.d !== B.d ? (t1Comp(B) ? 1.5 : 1 / 1.5) : 1;
+    for (const q of t1MapBar(p, A, B)) {
+      const t = +(bar * LB + q).toFixed(6), x = Object.assign({}, n, {t, d: +Math.max(1 / 64, Math.min(n.d * sc, LB - q)).toFixed(6)});
+      if (n.o != null) x.o = +(t + (n.o - n.t)).toFixed(4);
+      delete x.born; delete x.bornRun; notes.push(x);
+    }
+  }
+  notes.sort((a, b) => a.t - b.t);
+  c.notes = notes; const ts = tsNorm(toTs); if (ts) c.ts = ts; else delete c.ts;
+  if (c.lanes && LB !== LA) delete c.lanes;                           // D1-Spurlängen gelten für die alte Schrittzahl
+  return c;
+}
+function t1Snap() { return JSON.stringify({ts: S.ts || null, song: S.song, clips: S.tracks.map(t => t.clips.map(c => cleanClip(c)))}); }
+function t1Restore(o) {
+  if (o.ts) S.ts = o.ts; else delete S.ts;
+  S.tracks.forEach((t, i) => { if (o.clips[i]) t.clips = o.clips[i].map(c => (c ? deep(c) : null)); });
+  tkBump(); restoreSong(o.song);
+  for (let i = 0; i < NT(); i++) for (let s = 0; s < NS(); s++) clipChanged(i, s);
+  markDirty(); UI.dirty.all = true;
+}
+function t1Busy() { if (rec.state !== 'off' || R.songRec) { toast('Erst Aufnahme beenden'); return true; } if (R.songPlay) songPlayEnd(true); return false; }
+// Song-Taktart (S.ts); o.clips: auch die Szenen-Clips der alten Taktart umrechnen
+function setSongTs(ts, o) {
+  o = o || {}; ts = tsNorm(ts); const old = S.ts || null;
+  if (old === ts && !o.clips) return false;
+  if (t1Busy()) return false;
+  const before = t1Snap(), song = S.song, pins = song ? t1Pins(song, 0) : null;
+  if (ts) S.ts = ts; else delete S.ts;
+  if (pins) t1Unpin(song, pins, 0); else tkBump();
+  let n = 0;
+  if (o.clips) for (let i = 0; i < S.tracks.length; i++) { const tr = S.tracks[i]; if (tr.stimme) continue; tr.clips.forEach((c, s) => { if (c && (c.ts || null) === (o.from !== undefined ? o.from : old) && (c.ts || null) !== ts) { t1ConvClip(c, ts || '4/4'); clipChanged(i, s); n++; } }); }
+  undoPush({kind: 'ts', before, label: o.clips ? 'Clips umrechnen' : 'Taktart ' + (ts || '4/4')});
+  if (song) songChanged(); else markDirty();
+  UI.dirty.all = true;
+  if (!o.quiet && !o.clips) {
+    const cand = S.tracks.some(tr => !tr.stimme && tr.clips.some(c => c && (c.ts || null) === old));
+    toast('Taktart ' + (ts || '4/4'), cand ? [{label: 'Clips umrechnen', fn: () => setSongTs(ts, {clips: true, from: old})}, {label: '↶', fn: () => undo()}] : {label: '↶ Rückgängig', fn: () => undo()});
+  }
+  return o.clips ? n : true;
+}
+// Taktart eines Songteils (Marke); all: alle Marken desselben Teils
+function setMarkTs(id, ts, all) {
+  const song = S.song, m = song && song.marks.find(x => x.id === id); if (!m) return false;
+  ts = tsNorm(ts); if (ts === (S.ts || null)) ts = null;              // wie der Song = kein eigenes Feld
+  const ms = all && m.part ? song.marks.filter(x => x.part === m.part) : [m];
+  if (ms.every(x => (x.ts || null) === ts)) return false;
+  if (t1Busy()) return false;
+  const before = songSnapshot(), pins = t1Pins(song, 0);
+  for (const x of ms) { if (ts) x.ts = ts; else delete x.ts; }
+  t1Unpin(song, pins, 0);
+  pushSongUndo(before, 'Taktart ' + (ts || S.ts || '4/4'));
+  songChanged(); UI.dirty.all = true;
+  return true;
+}
+// Taktart eines Clips (Umrechnung der Noten, SPEC §5)
+function setClipTs(t, s, ts) {
+  const tr = S.tracks[t], c = tr && tr.clips[s]; if (!c) return false;
+  ts = tsNorm(ts); if ((c.ts || null) === ts) return false;
+  if (rec.state !== 'off') { toast('Erst Aufnahme beenden'); return false; }
+  const before = cleanClip(c);
+  t1ConvClip(c, ts || '4/4');
+  pushUndo(t, s, before, 'Taktart ' + (ts || '4/4'));
+  afterClipEdit(t, s); UI.dirty.all = true;
+  return true;
+}
+// Knopf-Raster für die Wahl (4 Spalten, ≥ 44 px)
+function t1TsGrid(cur, extra) {
+  const L = (extra ? [[extra[0], extra[1]]] : []).concat(tsList().map(x => [x, x]));
+  return '<div class="t1ts">' + L.map(([v, l]) => `<button class="rb${v === cur ? ' on' : ''}" data-ts="${v}" aria-label="Taktart ${l}">${l}</button>`).join('') + '</div>';
+}
+/* ===================== Ende T1-Aktionen ===================== */
 function popBpm() {
   openPop(EL.bBpm, p => {
     p.innerHTML = `<h4>Tempo</h4><div class="bpmbig" id="pbBig">${S.bpm}</div>
       <div class="bpmrow"><button class="rb hb big" id="pbDn" aria-label="langsamer">‹</button><input type="range" class="rng" id="pbR" min="40" max="240" step="1" value="${S.bpm}" aria-label="BPM"><button class="rb hb big" id="pbUp" aria-label="schneller">›</button></div>
-      <button class="rb tapb" id="pbTap">TAP</button>`;
+      <button class="rb tapb" id="pbTap">TAP</button>
+      <div class="grp" style="margin-top:10px"><span class="lbl">Taktart des Songs</span>${t1TsGrid(S.ts || '4/4')}</div>`;
     const big = p.querySelector('#pbBig'), r = p.querySelector('#pbR');
+    onTap(p, b => { if (setSongTs(b.dataset.ts)) p.querySelectorAll('.t1ts button').forEach(x => x.classList.toggle('on', x === b)); }, '.t1ts button[data-ts]');   // T1
     const upd = () => { big.textContent = S.bpm; r.value = S.bpm; };
     on(r, 'input', () => { setBpm(+r.value); big.textContent = S.bpm; });
     on(p.querySelector('#pbDn'), 'click', () => { setBpm(S.bpm - 1); upd(); });
@@ -38383,9 +38510,10 @@ function pageDrumSteps(pg) {
   const se = el('div', 'se'), stabs = el('div', 'stabs');
   se.style.setProperty('--pc', `var(--p${ED.dVoice + 1})`); stabs.style.setProperty('--pc', `var(--p${ED.dVoice + 1})`);
   ED.step = StepEditor.create(se, stepModel(), {defVel: .8, lanes: ['vel', 'acc', 'prob', 'rat', 'nud', 'tune', 'dec'], lane: ED.sLane || 'vel', tabsHost: stabs,
+    cols: dStepCols(dStepsOf(clip)), qAt: dStepsOf(clip) === 16 ? null : dStepQ(clip),   // T1
     tap: (node, fn, sel) => onTap(node, fn, sel), onLane: k => { ED.sLane = k; lcdShow('Spur', StepEditor.LANES[k].l + (k === 'tune' ? ' – Tonhöhe pro Schritt (±12 HT)' : k === 'dec' ? ' – Ausklang pro Schritt (×¼…×4)' : '')); },
     reg: folReg('steps'),
-    onTap: (i, onS) => { ED.step.flash(i); haptic('tick'); lcdShow(DRUM_VOICES[ED.dVoice].l + ' · Schritt ' + (ED.page * 16 + i + 1), onS ? 'an' : 'aus'); },
+    onTap: (i, onS) => { ED.step.flash(i); haptic('tick'); lcdShow(DRUM_VOICES[ED.dVoice].l + ' · Schritt ' + (ED.page * dStepsOf(S.tracks[DRUM_T].clips[R.selS]) + i + 1), onS ? 'an' : 'aus'); },
     decorate: (c, n, i) => d1Decorate(c, i)});                     /* D1 */
   // the lane tabs carry a short form for narrow screens (P < 360, L < 760): all 7 lanes stay reachable
   const LSH = {vel: 'VEL', acc: 'AKZ.', prob: 'CHANCE', rat: 'WIRB.', nud: 'TIM.', tune: 'TUNE', dec: 'DEC.'};
@@ -38937,22 +39065,29 @@ function drumSetPage(p) {
   if (ED.step) paintSteps();
   if (ED.pgnav) ED.pgnav._upd();
 }
+// T1: Schritte (1/16) je Takt des Drum-Clips: 4/4 = 16, 3/4 = 12, 6/8 = 12, 7/8 = 14, 5/4 = 20, 12/8 = 24, 2/4 = 8
+function dStepsOf(c) { return c ? Math.round(clipBarB(c) * 4) : (tkPlain() ? 16 : Math.round(tsBeats(S.ts) * 4)); }
+function dBarB(c) { return c ? clipBarB(c) : (tkPlain() ? 4 : tsBeats(S.ts)); }
+// Spalten hochkant/quer (≥ 44 px je Zelle; eine Zeile = ein Schlag bzw. eine Gruppe, wo es geht)
+function dStepCols(n) { if (n === 16) return 0; const land = window.innerWidth > window.innerHeight; if (land) return n <= 16 ? n : n / 2; return n <= 8 ? n : n === 12 ? 6 : n === 14 ? 7 : n === 20 ? 5 : n === 24 ? 6 : 8; }
+function dStepQ(c) { const ts = c && c.ts ? c.ts : (tkPlain() ? '4/4' : S.ts || '4/4'), d = tsOf(ts), q = new Set([0]); let p = 0; for (const g of d.grp) { p += g * d.u * 4; q.add(Math.round(p)); } if (d.u === 1) for (let k = 0; k < d.n; k++) q.add(k * 4); return i => q.has(i); }
 // the step grid's model: 16 steps of one instrument on one bar page of the selected drum slot (notes edited in place)
 const STEP_LABEL = {tap: 'Schritt', paint: 'Schritte malen', value: 'Schritt-Wert', draw: 'Spur zeichnen'};
 function stepModel() {
   const s = R.selS, tr = S.tracks[DRUM_T], gm = () => DRUM_VOICES[ED.dVoice].gm, pg = () => ED.page | 0;   // V0b: the page is read live (FOLGEN)
-  const at = (c, i) => { const NS = Math.round(c.len * 16), si = pg() * 16 + i; return n => n.n === gm() && Math.round(n.t / .25) % NS === si; };
+  const N = dStepsOf(tr.clips[s]);                                                                       // T1: Schritte je Takt
+  const at = (c, i) => { const NS = Math.round(clipB(c) * 4), si = pg() * N + i; return n => n.n === gm() && Math.round(n.t / .25) % NS === si; };
   const find = i => { const c = tr.clips[s]; if (!c || pg() >= c.len) return null; return c.notes.find(at(c, i)) || null; };
   let snap = null;
   return {
-    steps: 16,
+    steps: N,
     get: find,
     set(i, n) {
       let c = tr.clips[s];
       if (!n) { if (c) c.notes = c.notes.filter(x => !at(c, i)(x)); return; }
       if (!c) c = drumClipCreate(s);                              // an empty selected slot gets a clip on the first tap (in phase)
       const page = pg(); if (page >= c.len || find(i)) return;
-      const o = Object.assign({}, n, {t: page * 4 + i * .25, d: .1, n: gm()}); if (o.v == null) o.v = .8;
+      const o = Object.assign({}, n, {t: page * dBarB(c) + i * .25, d: .1, n: gm()}); if (o.v == null) o.v = .8;
       c.notes.push(o); c.notes.sort((a, b) => a.t - b.t);
     },
     begin() { snap = cleanClip(tr.clips[s]); },
@@ -38974,9 +39109,10 @@ function stepModel() {
 // start of the current bar, no waiting (§old-4.8)
 function drumClipCreate(s) {
   const tr = S.tracks[DRUM_T], len = S.settings.recLength === 'auto' ? 1 : +S.settings.recLength;
-  const clip = {len, key: {root: S.key.root, scale: S.key.scale, src: 'auto'}, notes: [], seed: newSeed()}; tr.clips[s] = clip;
+  const cts = tkPlain() ? null : tsNorm(R.playing && AU.ctx ? tTsAt(audBeat()) : S.ts);                 // T1: die Taktart der Stelle
+  const clip = Object.assign({len, key: {root: S.key.root, scale: S.key.scale, src: 'auto'}, notes: [], seed: newSeed()}, cts ? {ts: cts} : null); tr.clips[s] = clip;
   if (R.playing && AU.ctx) {
-    const now = AU.ctx.currentTime, b = audBeat(), barStart = Math.max(0, Math.floor(b / 4 + 1e-9) * 4);
+    const now = AU.ctx.currentTime, b = audBeat(), barStart = tkPlain() ? Math.max(0, Math.floor(b / 4 + 1e-9) * 4) : Math.max(0, tBarFloor(b));
     cancelTrackFrom(DRUM_T, now);
     R.prev[DRUM_T] = null; R.pend[DRUM_T] = null; R.slot[DRUM_T] = s; R.cstart[DRUM_T] = barStart;
     songLogNow(DRUM_T, s, barStart);
@@ -38986,7 +39122,8 @@ function drumClipCreate(s) {
 }
 function paintOverview() {
   const clip = S.tracks[DRUM_T].clips[R.selS];
-  ED.ovEls.forEach((d, k) => { const v = Math.floor(k / 16), st = k % 16; d.classList.toggle('on', stepState(clip, DRUM_VOICES[v].gm, ED.page * 4 + st * .25) > 0); });
+  const N = dStepsOf(clip), B = dBarB(clip);                       // T1: Übersicht zeigt die ersten 16 Schritte des Takts
+  ED.ovEls.forEach((d, k) => { const v = Math.floor(k / 16), st = k % 16; d.classList.toggle('on', st < N && stepState(clip, DRUM_VOICES[v].gm, ED.page * B + st * .25) > 0); d.classList.toggle('t1x', st >= N); });
 }
 function stepState(clip, gm, pos) {
   if (!clip) return 0;
@@ -39002,10 +39139,11 @@ function drumEdFrame(bAud) {
   const vs = R.playing ? visualSlots(DRUM_T, bAud) : null, clip = S.tracks[DRUM_T].clips[R.selS];
   if (vs && clip && vs.playing === R.selS && bAud >= 0) { const L = clipB(clip); ph = (((bAud - audCstart(DRUM_T, bAud)) % L) + L) % L; }
   // V0b FOLGEN: one bar per page; the page changes at the bar line
-  if (clip && clip.len > 1) folStep('steps', ph, 4, (ED.page | 0) * 4, x => drumSetPage(Math.round(x / 4))); else FOL.st.steps = folState('steps');
-  const run = ph >= 0 ? Math.floor(ph / 4) : -1;
-  if (run === ED.page) st = Math.floor((ph % 4) / .25);
-  { const l = ph >= 0 && d1Lane(clip, DRUM_VOICES[ED.dVoice].gm); if (l) { const q = d1Pos(l, Math.floor((bAud - audCstart(DRUM_T, bAud)) / .25 + 1e-6), DRUM_VOICES[ED.dVoice].gm); st = Math.floor(q / 16) === ED.page ? q % 16 : -1; } }   /* D1: the lane's own step */
+  const B = dBarB(clip), N = dStepsOf(clip);                         // T1: Takt der Clip-Taktart
+  if (clip && clip.len > 1) folStep('steps', ph, B, (ED.page | 0) * B, x => drumSetPage(Math.round(x / B))); else FOL.st.steps = folState('steps');
+  const run = ph >= 0 ? Math.floor(ph / B) : -1;
+  if (run === ED.page) st = Math.floor((ph % B) / .25);
+  { const l = ph >= 0 && d1Lane(clip, DRUM_VOICES[ED.dVoice].gm); if (l) { const q = d1Pos(l, Math.floor((bAud - audCstart(DRUM_T, bAud)) / .25 + 1e-6), DRUM_VOICES[ED.dVoice].gm); st = Math.floor(q / N) === ED.page ? q % N : -1; } }   /* D1: the lane's own step */
   if (run !== ED.runBar) { ED.runBar = run; if (ED.pgnav) ED.pgnav._run(run); }
   folChipPaint('steps');
   if (st !== ED.lastStep) {
@@ -39019,12 +39157,13 @@ function drumEdFrame(bAud) {
 function toggleStep(voice, step, bar) {
   const vd = resolveDrum(voice);
   if (!vd) throw new Error('Unbekannte Drum-Stimme: ' + voice);
-  step = clamp(step | 0, 0, 15); bar = Math.max(0, bar | 0);
+  bar = Math.max(0, bar | 0);
   const tr = S.tracks[DRUM_T], s = R.selS, before = cleanClip(tr.clips[s]);
   let clip = tr.clips[s];
   if (!clip) clip = drumClipCreate(s);
+  step = clamp(step | 0, 0, dStepsOf(clip) - 1);                     // T1: Schritte je Takt der Taktart
   if (bar >= clip.len) return;
-  const pos = bar * 4 + step * .25, si = Math.round(pos / .25), NS = Math.round(clipB(clip) / .25);
+  const pos = bar * dBarB(clip) + step * .25, si = Math.round(pos / .25), NS = Math.round(clipB(clip) / .25);
   const idx = clip.notes.findIndex(n => n.n === vd.gm && Math.round(n.t / .25) % NS === si);
   if (idx < 0) clip.notes.push({t: pos, d: .1, n: vd.gm, v: .8});
   else clip.notes = clip.notes.filter(n => !(n.n === vd.gm && Math.round(n.t / .25) % NS === si));
@@ -39176,8 +39315,8 @@ function buildMelodyRoll() {
   const AC_T = 'Melodie → Clip: die im Lineal gewählten Takte werden ein Clip, der dem Träger folgt';
   const extra = land ? [{id: 'asclip', label: 'Als Clip', title: AC_T, fn: () => melodyToClip()}] : [];
   if (land) extra.push({id: 'kb', label: '⌨', title: 'Tastatur zeigen / verbergen', fn: b => { ROLLP.kb = !ROLLP.kb; rollKbApply(); b.classList.toggle('on', ROLLP.kb); }});
-  const kAt = b => songKeyAtBar(Math.floor(b / 4));                     // EDIT 4.29: Tonart der Stelle (Pinsel + Magic Scale)
-  ED.roll = PianoRoll.create(body, melodyModel(t), {color: col || '#4cc9f0', grid: ROLLP.grid, fold: false, rowH: 22, toolbarHost: land ? head : null,
+  const kAt = b => songKeyAtBar(barAt(b, 0));                          // EDIT 4.29: Tonart der Stelle (Pinsel + Magic Scale); T1: Taktkarte
+  ED.roll = PianoRoll.create(body, melodyModel(t), {color: col || '#4cc9f0', grid: ROLLP.grid, fold: false, rowH: 22, toolbarHost: land ? head : null, tk: tkPlain() ? null : {beat: barBeat, at: b => barAt(b)},
     extraTools: extra, center: 12 * ((tr.kbOct || 4) + 1) + 7,
     mp: mpRollOpts(t, 'm:' + t, kAt),   /* MP */
     tap: (b, fn) => b.addEventListener('click', () => { try { fn(); } catch (e) { logErr(e); } }),
@@ -39206,7 +39345,7 @@ function rollFrame(bAud) {
   }
   if (ED.rollAt.mel) {
     if (!S.song) { closeRoll(); return; }
-    const sb = svSongBeat(bAud), L = curMel(S.song).len * 4, b = sb != null && sb >= 0 ? sb % Math.max(4, L) : -1;
+    const sb = svSongBeat(bAud), L = barBeat(curMel(S.song).len), b = sb != null && sb >= 0 ? sb % Math.max(barLen(0), L) : -1;
     folRoll('mel', b); ED.roll.playhead(b); return;
   }
   const {t, s} = ED.rollAt, c = S.tracks[t].clips[s];
@@ -39847,7 +39986,7 @@ function openClipSheet(t, s, opts) {
   const head = el('div', 'sh-head');
   const r1 = el('div', 'sh-row'); r1.style.width = '100%';
   const nTk = clip && clip.audio ? 1 + (Array.isArray(clip.audio.alt) ? clip.audio.alt.length : 0) : 0;   // K3: STIMME-Clip
-  const sub = clip ? (tr.stimme && clip.audio ? `${clip.len} ${clip.len === 1 ? 'Takt' : 'Takte'} · Gesang · ${nTk} ${nTk === 1 ? 'Take' : 'Takes'}` : `${clip.len} ${clip.len === 1 ? 'Takt' : 'Takte'} · ${clip.notes.length} ${clip.notes.length === 1 ? 'Note' : 'Noten'}`) : 'leer';
+  const sub = clip ? (tr.stimme && clip.audio ? `${clip.len} ${clip.len === 1 ? 'Takt' : 'Takte'} · Gesang · ${nTk} ${nTk === 1 ? 'Take' : 'Takes'}` : `${clip.len} ${clip.len === 1 ? 'Takt' : 'Takte'}${clip.ts || !tkPlain() ? ' ' + (clip.ts || '4/4') : ''} · ${clip.notes.length} ${clip.notes.length === 1 ? 'Note' : 'Noten'}`) : 'leer';   // T1
   const title = el('div', 'sh-title', `<span class="dot"></span><b>${esc(tr.name)} · Szene ${s + 1}<span class="csub"><span class="dash"> — </span>${esc(sub)}</span></b>`);
   const x = el('button', 'sh-x rb', '✕'); x.setAttribute('aria-label', 'Schließen'); on(x, 'click', closeClipSheet);
   r1.append(title); head.append(r1);
@@ -39889,6 +40028,10 @@ function openClipSheet(t, s, opts) {
     g.append(B('Kopieren', () => { copyClip(t, s); toast('Clip kopiert'); reopen(); }));
     const pb = B('Einfügen', () => { if (pasteClip(t, s)) reopen(); }); pb.disabled = !CLIPBOARD.clip; g.append(pb);
     g.append(B('Duplizieren → frei', () => { const k = duplicateClip(t, s); if (k >= 0) toast('Dupliziert in Szene ' + (k + 1)); }, null, 'Duplizieren → freier Platz'));
+    if (!tr.stimme) { const tb = B('Taktart ' + (clip.ts || '4/4') + ' ▾', () => openPop(tb, p => {   // T1: Taktart des Clips (Umrechnung, ein Undo)
+      p.innerHTML = '<h4>Taktart des Clips</h4>' + t1TsGrid(clip.ts || '4/4') + '<p class="t1note">Die Noten werden Takt für Takt umgerechnet. ↶ bringt alles zurück.</p>';
+      onTap(p, b => { closePop(); if (setClipTs(t, s, b.dataset.ts)) { toast('Clip in ' + b.dataset.ts + ' umgerechnet', {label: 'Rückgängig', fn: () => undo()}); reopen(); } }, '.t1ts button[data-ts]');
+    }, {name: 't1ts'}), null, 'Taktart des Clips'); g.append(tb); }
     if (playing) g.append(B('■ Stopp', () => { stopTrack(t); closeClipSheet(); }, null, 'Diese Spur zum nächsten Takt stoppen'));
     const del = el('button', 'hb rb delb', '<span class="t">Löschen</span><span class="bar"></span>');
     let armT = 0, armAt = 0;
@@ -42475,10 +42618,15 @@ function mtrk(evs, name, endTk) {
   return out.a;
 }
 function trackMidiName(tr) { return tr.kind === 'drum' ? 'Drums (' + tr.sound.name + ')' : tr.name + ' (' + (ENGINE_LABEL[tr.sound.engine] || 'VA') + ' ' + tr.sound.name + ')'; }
-function assembleMidi(evs, marks, endTk, counts, beats, tempoMap, idxs) {
+// T1: Time-Signature-Meta FF 58 04 nn dd cc bb (dd = log2 Nenner; cc = MIDI-Clocks je Metronom-Schlag: ♩ 24, punktierte ♩ 36, ♪ 12)
+function t1TsMeta(ts, tk) { const d = tsOf(ts), cc = d.u === 1 ? 24 : t1Comp(d) ? 36 : 12; return {tk, b: [0xFF, 0x58, 4, d.n, d.d === 8 ? 3 : 2, cc, 8], o: -2}; }
+// die Wechsel einer Taktkarte als [{beat, ts}] (Takt 0 … bars)
+function t1TsChanges(bars) { const out = [{beat: 0, ts: tsAtBar(0)}]; for (let b = 1; b < bars; b++) { const ts = tsAtBar(b); if (ts !== out[out.length - 1].ts) out.push({beat: barBeat(b), ts}); } return out; }
+function assembleMidi(evs, marks, endTk, counts, beats, tempoMap, idxs, tsl) {
   const PPQ = 480, tm = tempoMap && tempoMap.length ? tempoMap : [{beat: 0, bpm: S.bpm}];
   const tempo = tm.map(x => { const mpq = Math.round(6e7 / x.bpm); return {tk: Math.round(Math.max(0, x.beat) * PPQ), b: [0xFF, 0x51, 3, (mpq >> 16) & 255, (mpq >> 8) & 255, mpq & 255], o: -2}; });
-  tempo.push({tk: 0, b: [0xFF, 0x58, 4, 4, 2, 24, 8], o: -2});
+  if (tsl && tsl.length) for (const x of tsl) tempo.push(t1TsMeta(x.ts, Math.round(x.beat * PPQ)));   // T1
+  else tempo.push({tk: 0, b: [0xFF, 0x58, 4, 4, 2, 24, 8], o: -2});
   const out = new ByteBuf(), ix = idxs || midiBaseIdx(), ntrk = 1 + ix.length;
   out.arr([0x4D, 0x54, 0x68, 0x64]).arr(u32(6)).push(0, 1, ntrk >> 8, ntrk & 255, PPQ >> 8, PPQ & 255);
   out.arr(mtrk(tempo.concat(marks), 'SYNQUENZER ' + tm[0].bpm + ' BPM', endTk));
@@ -42501,11 +42649,12 @@ function buildMidi(opts) {
   if (mode === 'log') return buildMidiLog();
   if (mode === 'song') return buildMidiSong(withC);
   const scenes = mode === 'all' ? Array.from({length: NS()}, (_, s) => s) : [clamp(opts.scene != null ? opts.scene | 0 : R.selS, 0, NS() - 1)];
-  const {evs, counts} = midiArrs(), marks = [];
+  const {evs, counts} = midiArrs(), marks = [], tsl = [];
   let off = 0;
   for (const s of scenes) {
-    let L = 0; for (const tr of S.tracks.slice(0, MIDI_T)) if (tr.clips[s]) L = Math.max(L, clipB(tr.clips[s]));
+    let L = 0, cts = null; for (const tr of S.tracks.slice(0, MIDI_T)) if (tr.clips[s]) { if (clipB(tr.clips[s]) > L) cts = tr.clips[s].ts || null; L = Math.max(L, clipB(tr.clips[s])); }
     if (!L) continue;
+    if (cts || tsl.length) tsl.push({beat: off, ts: cts || '4/4'});   // T1: Taktart des längsten Clips der Szene
     marks.push({tk: Math.round(off * PPQ), b: metaText(6, 'Szene ' + (s + 1)), o: -1});
     S.tracks.forEach((tr, i) => {
       const c = tr.clips[s]; if (!c || !c.notes.length || i >= MIDI_T) return;
@@ -42530,7 +42679,8 @@ function buildMidi(opts) {
     off += L;
   }
   if (!off) return null;
-  return assembleMidi(evs, marks, Math.round(off * PPQ), counts, off);
+  if (tsl.length && tsl[0].beat > 0) tsl.unshift({beat: 0, ts: '4/4'});
+  return assembleMidi(evs, marks, Math.round(off * PPQ), counts, off, null, null, tsl.length ? tsl : null);
 }
 function buildMidiLog() {
   const PPQ = 480, list = PERF.list.filter(e => !e.dead && isFinite(e.startBeat));
@@ -42548,8 +42698,8 @@ function buildMidiLog() {
     evs[e.track].push({tk: t0, b: [0x90 | ch, p, v], o: 1}, {tk: t1, b: [0x80 | ch, p, 0], o: 0});
     counts[e.track]++; endB = Math.max(endB, eb);
   }
-  const bars = Math.max(1, Math.ceil(endB / 4 - 1e-9));
-  return assembleMidi(evs, [{tk: 0, b: metaText(6, 'Mitschnitt'), o: -1}], bars * 4 * PPQ, counts, bars * 4, PERF.tempo);
+  const BB = tkPlain() ? 4 : tsBeats(S.ts), bars = Math.max(1, Math.ceil(endB / BB - 1e-9));   // T1: Takte der Song-Taktart
+  return assembleMidi(evs, [{tk: 0, b: metaText(6, 'Mitschnitt'), o: -1}], bars * BB * PPQ, counts, bars * BB, PERF.tempo, null, S.ts ? [{beat: 0, ts: S.ts}] : null);
 }
 
 /* MIDI export „Song“ (§3.9 P1, §2.5): the song as heard — every block of a lane plays its clip from the block's launch bar
@@ -42609,8 +42759,8 @@ function buildMidiSong(withC) {
   }
   if (!counts.some(Boolean)) return null;
   // N7S-26: a marker (FF 06) with the part's name at every Teil-Marke
-  const mk = [{tk: 0, b: metaText(6, 'Song'), o: -1}].concat((song.marks || []).filter(m => m.a < song.bars).map(m => ({tk: m.a * 4 * PPQ, b: metaText(6, markLabel(m)), o: -1})));
-  return assembleMidi(evs, mk, L * PPQ, counts, L, null, idxs);
+  const mk = [{tk: 0, b: metaText(6, 'Song'), o: -1}].concat((song.marks || []).filter(m => m.a < song.bars).map(m => ({tk: barBeat(m.a) * PPQ, b: metaText(6, markLabel(m)), o: -1})));
+  return assembleMidi(evs, mk, L * PPQ, counts, L, null, idxs, tkPlain() ? null : t1TsChanges(song.bars));   // T1: FF 58 bei jedem Wechsel
 }
 
 /* §3.9 P1 „Song als Audio“: plays the song once in real time and records the master (MediaStreamDestination + MediaRecorder,
@@ -56787,7 +56937,7 @@ function vv4RollIn(g, x, y, w, h, st, i, c, C, src) {
   vv4El('Zeilen', 'PianoRoll Zeilen (Skala / Grundton)');
   const gs = ppb >= 64 ? .25 : ppb >= 24 ? .5 : 1;
   for (let b = x0; b <= x0 + pw + 1e-9; b += gs) {
-    const bx = Math.round(xOf(b)) + .5, isBar = Math.abs(b / 4 - Math.round(b / 4)) < 1e-6, isBeat = Math.abs(b - Math.round(b)) < 1e-6;
+    const bx = Math.round(xOf(b)) + .5, isBar = Math.abs(b / clipBarB(c) - Math.round(b / clipBarB(c))) < 1e-6, isBeat = Math.abs(b - Math.round(b)) < 1e-6;
     g.strokeStyle = isBar ? C.dim : C.line; g.globalAlpha = isBar ? .55 : isBeat ? .9 : .45; g.lineWidth = 1; g.beginPath(); g.moveTo(bx, gy); g.lineTo(bx, gy + gh); g.stroke();
   }
   g.globalAlpha = 1; vv4El('Raster', 'PianoRoll Rasterlinien');
