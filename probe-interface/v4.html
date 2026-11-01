@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Probe AG06-Ausgang 4</title>
+<style>
+:root{--bg:#121418;--fg:#ece8df;--dim:#9aa0aa;--line:#3a3f4a;--amber:#ffb22e;--ok:#5fd38d;--no:#ff6b6b}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--fg);font:500 16px/1.4 -apple-system,system-ui,sans-serif}
+body{padding:max(12px,env(safe-area-inset-top)) 12px 40px}
+h1{font-size:19px;margin:4px 0 6px}p{color:var(--dim);margin:4px 0 12px;font-size:14px}
+.v{border:1px solid var(--line);border-radius:12px;padding:10px;margin:10px 0}
+.v b.t{display:block;margin-bottom:6px}.hint{color:var(--amber);font-size:14px;margin:6px 0}
+.big{width:100%;min-height:64px;border-radius:10px;border:2px solid var(--amber);background:#1d2026;color:var(--fg);font:700 17px inherit;margin-top:6px}
+.big.g{border-color:var(--ok)}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}.row button{flex:1 1 45%;min-height:48px;border-radius:8px;border:1px solid var(--line);background:#1d2026;color:var(--fg);font:700 15px inherit}
+.row button.on{background:var(--ok);color:#000}
+.top{display:flex;gap:8px}.top button{flex:1;min-height:56px;border-radius:10px;border:1px solid var(--amber);background:#1d2026;color:var(--fg);font:700 16px inherit}
+pre{white-space:pre-wrap;background:#0e1014;border:1px solid var(--line);border-radius:8px;padding:8px;font:500 12px/1.4 ui-monospace,monospace;max-height:40vh;overflow:auto}
+.meter{height:10px;background:#0e1014;border-radius:5px;overflow:hidden;margin-top:6px}.meter i{display:block;height:100%;width:0;background:var(--ok)}
+</style>
+</head>
+<body>
+<h1>Probe 4: Hörmuschel-Trick</h1>
+<p>Safari zwingt den Ton bei offenem Mikro auf den Lautsprecher – außer die Seite wählt die Hörmuschel („Empfänger“). Dann schaltet Safari den Zwang ab, und iOS nimmt vielleicht das AG06. Schritte der Reihe nach, nach jedem Schritt antworten: Wo hörst du den Ton?</p>
+<div class="top"><button id="stop">Alles stoppen</button><button id="cp">Ergebnis kopieren</button></div>
+<div id="vs"></div>
+<pre id="log"></pre>
+<script>
+'use strict';
+const L = []; const log = s => { const t = new Date().toTimeString().slice(0, 8); L.push('[' + t + '] ' + s); document.getElementById('log').textContent = L.slice(-60).join('\n'); };
+const A = {}; let ctx = null, st = null, el = null, osc = [], an = null, raf = 0, rx = null, outs = [];
+log('UA: ' + navigator.userAgent); log('setSinkId=' + ('setSinkId' in HTMLMediaElement.prototype) + ' · audioSession=' + !!navigator.audioSession);
+async function devs() { try { return await navigator.mediaDevices.enumerateDevices(); } catch (e) { return []; } }
+async function refresh(tag) { const d = await devs(); outs = d.filter(o => o.kind === 'audiooutput'); rx = outs.find(o => /empf|receiver/i.test(o.label)) || null; log((tag || '') + ' Ausgänge: ' + outs.map(o => o.label + (o.deviceId === 'default' ? '*' : '')).join(' | ') + ' · Empfänger=' + (rx ? 'da' : 'fehlt') + ' · sinkId=' + (el ? (el.sinkId || '–') : '–')); }
+async function stopAll() { cancelAnimationFrame(raf); an = null; osc.forEach(o => { try { o.stop(); } catch (e) {} }); osc = []; if (st) st.getTracks().forEach(t => t.stop()); st = null; if (el) { try { el.pause(); } catch (e) {} el.srcObject = null; el.remove(); el = null; } if (ctx) { try { await ctx.close(); } catch (e) {} } ctx = null; }
+async function mic() { const d = await devs(); let inp = d.find(o => o.kind === 'audioinput' && /ag0?6|ag0?3|yamaha|usb/i.test(o.label)); const base = {echoCancellation: false, noiseSuppression: false, autoGainControl: false}; st = await navigator.mediaDevices.getUserMedia({audio: Object.assign({}, base, inp ? {deviceId: {exact: inp.deviceId}} : {})}); let t = st.getAudioTracks()[0]; if (!inp && !/ag0?6|ag0?3/i.test(t.label)) { const d2 = await devs(); inp = d2.find(o => o.kind === 'audioinput' && /ag0?6|ag0?3|yamaha|usb/i.test(o.label)); if (inp) { st.getTracks().forEach(x => x.stop()); st = await navigator.mediaDevices.getUserMedia({audio: Object.assign({}, base, {deviceId: {exact: inp.deviceId}})}); t = st.getAudioTracks()[0]; } } log('Mikro: ' + (t && t.label) + ' · session=' + (navigator.audioSession ? navigator.audioSession.type : '–')); }
+function tone() { const g = ctx.createGain(); g.gain.value = 0.1; [220, 330].forEach(f => { const o = ctx.createOscillator(); o.frequency.value = f; o.connect(g); o.start(); osc.push(o); }); g.connect(ctx.destination); }
+async function carrier() { const d = ctx.createMediaStreamDestination(); el = document.createElement('audio'); el.playsInline = true; el.srcObject = d.stream; document.body.appendChild(el); try { await el.play(); log('Träger-Element spielt (still)'); } catch (e) { log('Träger play Fehler ' + e.name); } }
+function meter() { if (!st || !ctx) return; an = ctx.createAnalyser(); ctx.createMediaStreamSource(st).connect(an); const bars = document.querySelectorAll('.meter i'); const d = new Float32Array(1024); const f = () => { if (!an) return; an.getFloatTimeDomainData(d); let p = 0; for (const x of d) p = Math.max(p, Math.abs(x)); bars.forEach(i => i.style.width = Math.min(100, p * 300) + '%'); raf = requestAnimationFrame(f); }; f(); }
+function pickRx(tag, twice) { if (!el || !rx) { log(tag + ': ' + (!el ? 'erst Schritt 1' : 'Empfänger nicht in der Liste')); return; } const p = twice ? el.setSinkId('').then(() => el.setSinkId(rx.deviceId)) : el.setSinkId(rx.deviceId); p.then(() => log(tag + ': setSinkId(Empfänger) ok')).catch(e => log(tag + ' Fehler: ' + e.name + ' ' + e.message)).finally(() => { setTimeout(() => refresh(tag + ' +0,5 s'), 500); setTimeout(() => refresh(tag + ' +2 s'), 2000); }); }
+const WO = [['ag', 'AG06-Kopfhörer'], ['hm', 'Hörmuschel'], ['ls', 'Lautsprecher'], ['nix', 'Nirgends']];
+const S = [
+  {id: 'F3', t: 'MONITOR MUTE am AG06 AUS (nicht gedrückt), CH1 auf: Hörst du dich jetzt direkt im Kopfhörer?', ans: [['ja', 'Ja'], ['nein', 'Nein']]},
+  {id: 'S1', t: 'Schritt 1: Mikro + Ton starten', hint: 'Antippen. Ton kommt jetzt (wie bisher) vermutlich aus dem Lautsprecher.', btn: ['Mikro + Ton starten', async () => { await stopAll(); log('════ S1 ════'); try { await mic(); ctx = new AudioContext(); await ctx.resume(); tone(); await carrier(); meter(); } catch (e) { log('S1 Fehler: ' + e.name + ' ' + e.message); } setTimeout(() => refresh('S1'), 700); }]},
+  {id: 'S2', t: 'Schritt 2: Hörmuschel wählen', hint: 'Einmal antippen, 2 s warten. Kommt nichts Neues: noch ein zweites Mal tippen.', btn: ['Hörmuschel wählen', () => pickRx('S2')]},
+  {id: 'S3', t: 'Schritt 3: Neu wählen (zurück + Hörmuschel)', hint: 'Nur wenn S2 nichts geändert hat.', btn: ['Neu wählen', () => pickRx('S3', true)]},
+  {id: 'S4', t: 'Schritt 4: AG06 neu einstecken', hint: 'Mit gewählter Hörmuschel: USB-Kabel am Adapter ziehen, 2 s warten, wieder einstecken. Dann antworten.', btn: ['Ausgänge jetzt anzeigen', () => refresh('S4')]},
+  {id: 'S5', t: 'Schritt 5: Hörmuschel ZUERST, dann Mikro', hint: 'Alles neu: Ton + Hörmuschel, danach erst das Mikro.', btn: ['Starten', async () => { await stopAll(); log('════ S5 ════'); try { ctx = new AudioContext(); await ctx.resume(); tone(); await carrier(); await refresh('S5 vor Mikro'); if (rx) { try { await el.setSinkId(rx.deviceId); log('S5: Empfänger vor Mikro gewählt'); } catch (e) { log('S5 setSinkId Fehler ' + e.name); } } await mic(); meter(); } catch (e) { log('S5 Fehler: ' + e.name + ' ' + e.message); } setTimeout(() => refresh('S5 nach Mikro'), 800); }]},
+];
+const vs = document.getElementById('vs');
+for (const s of S) {
+  const box = document.createElement('div'); box.className = 'v';
+  const ans = s.ans || WO;
+  box.innerHTML = `<b class="t">${s.t}</b>${s.hint ? '<div class="hint">' + s.hint + '</div>' : ''}${s.btn ? '<button class="big' + (s.id === 'S2' || s.id === 'S3' ? ' g' : '') + '">' + s.btn[0] + '</button><div class="meter"><i></i></div>' : ''}<div class="row">${ans.map(a => '<button data-a="' + a[0] + '">' + a[1] + '</button>').join('')}</div>`;
+  if (s.btn) box.querySelector('.big').onclick = s.btn[1];
+  box.querySelectorAll('.row button').forEach(b => b.onclick = () => { A[s.id] = b.textContent; box.querySelectorAll('.row button').forEach(x => x.classList.remove('on')); b.classList.add('on'); log('ANTWORT ' + s.id + ' = ' + A[s.id]); });
+  vs.appendChild(box);
+}
+navigator.mediaDevices && navigator.mediaDevices.addEventListener && navigator.mediaDevices.addEventListener('devicechange', () => refresh('Gerätewechsel'));
+document.getElementById('stop').onclick = () => { stopAll(); log('gestoppt'); };
+document.getElementById('cp').onclick = async () => { const txt = 'PROBE-4 Hörmuschel-Trick\n' + Object.entries(A).map(([k, v]) => k + '=' + v).join(' · ') + '\n\n' + L.join('\n'); try { await navigator.clipboard.writeText(txt); document.getElementById('cp').textContent = 'Kopiert ✓'; } catch (e) { const t = document.createElement('textarea'); t.value = txt; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); document.getElementById('cp').textContent = 'Kopiert ✓'; } };
+</script>
+</body>
+</html>
