@@ -1,0 +1,10 @@
+import { open, SONG } from './lib.mjs';
+const {b, p, errs} = await open({w: +process.argv[2] || 428, h: +process.argv[3] || 761});
+await p.evaluate(s => SYNQUENZER.setSong(s), SONG);
+const r = await p.evaluate(() => { const q = s => { const e = document.querySelector(s); if (!e) return null; const r = e.getBoundingClientRect(); return [s, Math.round(r.x), Math.round(r.y), Math.round(r.width), Math.round(r.height), e.hidden || getComputedStyle(e).display === 'none']; };
+  return ['#top', '#gridArea', '#clipGrid', '#songView', '#partBar', '#side', '#carrier', '#strip', '#modebar', '#kbArea', '#kb', '#pads', '#kbLabel', '#reclane'].map(q); });
+console.log(JSON.stringify(r)); await p.screenshot({path: process.env.SHOT || '/tmp/claude-0/-home-user-Synquenzer/993410ec-5e46-5708-b50a-74fa5caa208d/scratchpad/out/app.png'});
+await p.evaluate(() => SYNQUENZER.songView(true)); await p.waitForTimeout(400);
+await p.screenshot({path: '/tmp/claude-0/-home-user-Synquenzer/993410ec-5e46-5708-b50a-74fa5caa208d/scratchpad/out/app-song.png'});
+console.log(JSON.stringify(await p.evaluate(() => ['#songView', '#partBar', '#gridArea'].map(s => { const r = document.querySelector(s).getBoundingClientRect(); return [s, r.x, r.y, r.width, r.height]; }))));
+console.log(errs); await b.close();
