@@ -407,7 +407,8 @@ svg{display:block}
 #lyA .n{color:#fff;background:rgba(255,178,46,.28);box-shadow:0 0 0 2px rgba(255,178,46,.28)}
 #lyBar.pre #lyA{color:#e6e8ec}
 #lyBar.idle #lyA{color:#8a8f99}
-@media (max-height:560px){#kbArea.ly{--lyH:44px}#kbArea.ly.lyoff{--lyH:26px}#lyA{font-size:17px;line-height:22px}#lyB{font-size:12.5px;line-height:16px}#lyBtn{flex-basis:46px}}
+@media (max-height:600px){#kbArea.ly{--lyH:44px}#kbArea.ly.lyoff{--lyH:26px}#lyA{font-size:17px;line-height:22px}#lyB{font-size:12.5px;line-height:16px}#lyBtn{flex-basis:46px}}
+@media (max-height:440px){#kbArea.ly{--lyH:32px;padding-top:calc(var(--lyH) + 8px)}#kbArea.ly.lyoff{--lyH:24px}#lyTx{flex-direction:row;align-items:center;justify-content:flex-start;gap:14px}#lyA{flex:0 1 auto;min-width:0}#lyB{flex:1 1 0;min-width:0}#lyBtn small{display:none!important}#lyBar.vorl #lyBtn{color:#ff8a7a}}
 #kb{position:absolute;inset:0;touch-action:none;--kb-target:37;overflow:hidden;border-radius:3px 3px 6px 6px;box-shadow:0 0 0 1px #000}
 @media (orientation:landscape){#kb{--kb-target:46}}
 @media (orientation:landscape) and (min-height:561px){#kb{--kb-target:52}}
@@ -45032,7 +45033,7 @@ function lyPrep(id, a) {
   for (const y of src) { const h = ht(y.t); if (h >= a.in - .05 && h <= a.out + .01) S0.push({x: y.x, h, w: y.w}); }
   if (S0.length) S0[0].w = Math.max(1, S0[0].w);
   const hasLines = S0.some((y, i) => i && y.w === 2);
-  const fs = LYB.w && innerHeight <= 560 ? 17 : 21, budget = Math.max(12, Math.floor(((LYB.w || 320) - 64) / (fs * .54)));
+  const fs = innerHeight <= 600 ? 17 : 21, budget = Math.max(12, Math.floor(((LYB.w || 320) - 64) * (innerHeight <= 440 ? .62 : 1) / (fs * .54)));   // quer: eine Reihe, die nächste Zeile steht rechts daneben
   const lines = [], lineOf = new Int32Array(S0.length), hs = new Float64Array(S0.length), sz = y => y.x.length + (y.w ? 1 : 0);
   // 1. Sinn-Zeilen (w: 2 bzw. Atempause ≥ 1,2 s), 2. zu lange gleichmäßig an Wortgrenzen teilen (kein einzelnes Wort als Rest)
   const put = (i0, i1) => {
