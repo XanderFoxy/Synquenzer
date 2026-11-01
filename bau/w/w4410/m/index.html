@@ -68700,7 +68700,7 @@ function vk2Bg(W, H, k, L, rows, C) {
     const Rw = vk2Row(L, r), col = C.t[i] || '#888', kd = kinds[r];
     vvRound(g, Rw.x, Rw.y, Rw.w, Rw.h, 4); g.fillStyle = '#0f1114'; g.fill(); g.strokeStyle = '#1d2027'; g.lineWidth = .8; g.stroke();
     g.fillStyle = col; g.fillRect(Rw.x + 3, Rw.y + 4, 2.5, Rw.h - 8);
-    g.textAlign = 'left'; g.textBaseline = 'middle'; g.fillStyle = C.text; vk2Fit(g, svShort(i), L.nameW - 12, L.port ? 9.5 : 10, '700', C.ui); g.fillText(svShort(i), Rw.x + 9, Rw.y + Rw.h * .33);
+    g.textAlign = 'left'; g.textBaseline = 'middle'; g.fillStyle = C.text; vk2Fit(g, svShort(i), L.nameW - 20, L.port ? 9.5 : 10, '700', C.ui); g.fillText(svShort(i), Rw.x + 9, Rw.y + Rw.h * .33);
     const md = (Rw.h - 8) / 8; g.fillStyle = '#1b1e24'; for (let d = 0; d < 8; d++) g.fillRect(Rw.mx, Rw.y + 4 + d * md + .5, 4, md - 1);
     const cy = Rw.y1 + Rw.h1 / 2, kw = Rw.lw / VK2_NK;
     if (kd === 'syn') {
@@ -68796,6 +68796,7 @@ function vk2Frame(g, L, rows, st, C) {
         if (h.ac) vk2Glow(g, '#fff3d6', px + pw / 2, cy, pw * .9, fl);
         vk2Glow(g, col, px + pw / 2, cy, pw * .75, fl * .7);
         g.globalAlpha = .25 + .6 * fl; g.fillStyle = h.ac ? '#ffe9c4' : col; vvRound(g, px, Rw.y1, pw, Rw.h1, 1.5); g.fill(); g.globalAlpha = 1;
+        if (fl > .4) { const d = DRUM_VOICES[j]; g.fillStyle = '#0b0c0f'; g.textAlign = 'center'; vk2Fit(g, d.sl, pw - 2, Math.min(6.5, Rw.h1 * .62), '700', C.ui); g.fillText(d.sl, px + pw / 2, cy + .3); }
       }
       if (kd === 'drum') {
         const fa = la ? clamp(1 - (t - la.a) / .25, 0, 1) : 0, ax = Rw.rx + Rw.rw / 2 + 2, ay = Rw.y + Rw.h * .4;
@@ -68824,7 +68825,7 @@ function vk2Frame(g, L, rows, st, C) {
     // a glide of this track: the diamond and the progress under the row
     const mr = vk2Morph(X, i);
     if (mr) {
-      const p = vk2Prog(mr, X.tau), dx = Rw.x + L.nameW - 4, dy = Rw.y + Rw.h * .33;
+      const p = vk2Prog(mr, X.tau), dx = Rw.x + L.nameW - 6, dy = Rw.y + Rw.h * .33;
       g.fillStyle = VK2_COL; g.beginPath(); g.moveTo(dx, dy - 3.2); g.lineTo(dx + 3.2, dy); g.lineTo(dx, dy + 3.2); g.lineTo(dx - 3.2, dy); g.closePath(); g.fill();
       vk2Glow(g, VK2_COL, dx, dy, 8, p < 1 ? .8 : .35);
       g.fillStyle = 'rgba(255,106,61,.22)'; g.fillRect(Rw.lx, Rw.y + Rw.h - 1.6, Rw.lw, 1.2); g.fillStyle = VK2_COL; g.fillRect(Rw.lx, Rw.y + Rw.h - 1.6, Rw.lw * p, 1.2);
