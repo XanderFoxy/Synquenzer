@@ -4717,9 +4717,9 @@ function g9On(E) {
   const G = E.g9;
   sh.classList.add('g9');
   if (tb) tb.innerHTML = wpTitlePieces('Text · STIMME · ' + x.label);
-  // [Erkennen]: nur, wenn die Erkennung angedockt ist (§9 Stopp-Punkt 1: sonst ausgeblendet)
+  // [Erkennen]: sichtbar, sobald die Erkennung angedockt ist (G9b: Sprachmodell im Browser, lädt erst nach Tipp)
   const rb = el('button', 'rb g9rec', 'Erkennen'); rb.setAttribute('aria-label', 'Worte erkennen'); rb.hidden = !g9Rec();
-  rb.addEventListener('click', () => g9RecSheet(rb)); head.insertBefore(rb, E.tx); G.rb = rb;
+  rb.addEventListener('click', () => (typeof g9AsrBusy === 'function' && g9AsrBusy() ? g9AsrStop() : g9RecSheet(rb))); head.insertBefore(rb, E.tx); G.rb = rb;   // G9b: [Stopp] während Laden/Erkennen
   E.tx.setAttribute('aria-pressed', 'true');
   // Silben-Leiste
   const bar = el('div', 'g9bar'), bcv = el('canvas'); bar.append(bcv); bar.dataset.g9h = 'leiste';
@@ -5155,7 +5155,7 @@ function g9PaintBar(E, mk) {
 function g9InfoLine(E, mk) {
   const G = E.g9, m = S.takes && S.takes[E.id]; if (!m) return '';
   if (!mk.length) return 'Marken werden gesucht …';
-  if (typeof g9RecBusy === 'function' && g9RecBusy() && G9.recMsg) return G9.recMsg;   // Erkennen … 3/5 · 60 % (§7.8)
+  if (typeof g9AsrBusy === 'function' ? g9AsrBusy() : typeof g9RecBusy === 'function' && g9RecBusy()) { if (G9.recMsg) return G9.recMsg; }   // Erkennen … 3/5 · 60 % (§7.8)
   const k = G.sel; if (k < 0 || !mk[k]) return 'Abschnitt antippen';
   const x = tkRef(E.r), a = x && x.a, w = m.warp, map = E.map, len = m.len / m.sr;
   const tA = map ? VSM.warpTime(map, mk[k].t) : mk[k].t, tB = map ? VSM.warpTime(map, k + 1 < mk.length ? mk[k + 1].t : len) : (k + 1 < mk.length ? mk[k + 1].t : len);
@@ -5233,10 +5233,12 @@ function g9RecSheet(anchor) {
     p.innerHTML = `<h4>${first ? 'Worte erkennen' : 'Erkennen'}</h4>` +
       (first ? `<div class="qnote">Worte erkennen: lädt einmal ein Sprachmodell (≈ ${Math.round(sz.mb || 80)} MB) auf dieses Gerät. Danach ohne Internet. Der Gesang bleibt auf dem Gerät.</div>`
         : `<div class="qnote">Sprachmodell auf diesem Gerät: ${Math.round(sz.mb || 0)} MB <button class="rb g9rm" data-a="rm">Entfernen</button></div>`) +
+      `<div class="qnote g9free"></div>` + (/[?&]g9diag=1/.test(location.search) && typeof G9A === 'object' ? `<div class="qnote g9diag">${esc((G9.sm.how || '?') + ' · ' + g9AsrMB(G9.sm.bytes || 0) + ' MB · Start ' + (G9.sm.initMs || '–') + ' ms · ' + G9A.net.length + ' Abrufe, 0 B hoch · ' + G9A.diag.slice(-3).join(' · '))}</div>` : '') +
       `<div class="seg g9lang"><button data-l="auto">Auto</button><button data-l="de">Deutsch</button><button data-l="en">Englisch</button></div>` +
       `<label class="g9auto"><input type="checkbox" ${auto ? 'checked' : ''}> Neue Aufnahmen automatisch erkennen</label>` +
       `<div class="savrow">` + (first ? `<button class="mbtn rb" data-a="go">Laden und erkennen</button><button class="mbtn rb" data-a="no">Abbrechen</button>`
         : has ? `<button class="mbtn rb" data-a="fill">Lücken füllen</button><button class="mbtn rb" data-a="all">Alles ersetzen</button>` : `<button class="mbtn rb" data-a="all">Erkennen</button>`) + `</div>`;
+    try { if (navigator.storage && navigator.storage.estimate) navigator.storage.estimate().then(es => { const fr = p.querySelector('.g9free'); if (fr && es && es.quota) fr.textContent = 'Freier Platz ≈ ' + Math.round((es.quota - (es.usage || 0)) / 1048576) + ' MB' + (first ? ' · WLAN empfohlen' : ''); }, () => {}); } catch (e) {}
     const seg = p.querySelector('.g9lang'), paintL = () => seg.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.l === lang));
     paintL(); seg.addEventListener('click', e => { const b = e.target.closest('button[data-l]'); if (b) { lang = b.dataset.l; paintL(); } });
     const cb = p.querySelector('.g9auto input'); cb.addEventListener('change', () => { auto = cb.checked; });
@@ -5282,11 +5284,11 @@ function g9GeomApi() {
 }
 /* ---------- Erkennung (§6.6, §7.8) – Ablauf ohne Sprachmodell (G9b-V) ----------
    Vorstufe, Stimm-Strecken, Fenster, Rückrechnung und Schutz-Regeln (g9ErkMake) laufen in einem eigenen Worker (G9.w). Das Sprachmodell
-   selbst (G9b-0/1/2) ist NICHT gebaut (Freigabe F0 fehlt, §9 Stopp-Punkt 1): G9.asr bleibt leer, [Erkennen] ist ausgeblendet, nichts lädt.
-   Andock-Stelle für G9b-2: G9.asr = async (fenster16k: Float32Array, {k, lang, a, b}) → {words: [{text, start, end, p?}], lang?}
+   selbst (G9b-0/1/2) dockt unten an (g9AsrDock, 4.27.1): lädt erst nach Tipp auf [Laden und erkennen].
+   Andock-Stelle: G9.asr = async (fenster16k: Float32Array, {k, lang, a, b}) → {words: [{text, start, end, p?}], lang?}
    (Zeiten in Sekunden ab Fenster-Beginn). Tests setzen dafür einen Ersatz (g9AsrSim). */
 const G9E = g9ErkMake();
-function g9AsrSimSet(fn, o) { G9.asr = typeof fn === 'function' ? fn : null; G9.asrO = o || {}; g9RecDock(); return !!G9.asr; }
+function g9AsrSimSet(fn, o) { G9.asr = typeof fn === 'function' ? fn : null; G9.asrO = o || {}; g9RecDock(); if (!G9.asr && typeof g9AsrDock === 'function') { g9AsrDock(); g9RbPaint(); } return !!G9.asr; }
 function g9RecDock() {
   G9.rec = G9.asr ? {cached: () => true, size: () => ({how: G9.sm.how || 'wasm', mb: 0}), recognize: (id, o) => g9RecJob(id, o || {}), remove: async () => {}, stop: () => g9RecStop()} : null;
   if (G9.asr) G9.sm = Object.assign({}, G9.sm, {state: 'ready', how: G9.sm.how || 'wasm'});
@@ -5314,9 +5316,9 @@ function g9Plan(x, sr) {
   return new Promise((ok, no) => { const id = ++G9.wid, c = new Float32Array(x); G9.wq.set(id, {ok, no}); try { w.postMessage({id, x: c, sr}, [c.buffer]); } catch (e) { G9.wq.delete(id); no(e); } });
 }
 // Projektwechsel: Aufträge beenden, automatische Ergebnisse und Warteschlange gehören zum alten Projekt
-function g9ProjReset() { g9ErkKill('Projekt'); for (const j of G9.job.values()) { j.stop = true; j.gen++; if (!j.done) { j.done = true; j.res({applied: true, words: [], stopped: true}); } } G9.job.clear(); G9.auto.clear(); if (G9.autoQ) G9.autoQ.length = 0; G9.view.clear(); G9.feat.clear(); G9.ctx = null; }
+function g9ProjReset() { g9ErkKill('Projekt'); if (typeof g9AsrKill === 'function' && G9.sm.state === 'ready') g9AsrKill('Projekt'); for (const j of G9.job.values()) { j.stop = true; j.gen++; if (!j.done) { j.done = true; j.res({applied: true, words: [], stopped: true}); } } G9.job.clear(); G9.auto.clear(); if (G9.autoQ) G9.autoQ.length = 0; G9.view.clear(); G9.feat.clear(); G9.ctx = null; }
 const g9RecBusy = () => [...G9.job.values()].some(j => !j.done);
-function g9RecMsg(t) { G9.recMsg = t; const E = WP.ed; if (E && E.g9) wpInfoTxt(g9InfoLine(E, wpMarks(E.id) || [])); }
+function g9RecMsg(t) { G9.recMsg = t; const E = WP.ed; if (E && E.g9) wpInfoTxt(g9InfoLine(E, wpMarks(E.id) || [])); if (typeof g9RbPaint === 'function') g9RbPaint(); }
 // ein Erkennungs-Auftrag je Take: Fenster einzeln; fertige Fenster bleiben bei [Stopp] und bei „Aufnahme hat Vorrang“ (§5.5, §6.6.9/10)
 function g9RecJob(id, o) {
   let j = G9.job.get(id);
@@ -5342,13 +5344,14 @@ async function g9RecGo(j) {
       j.pl = await g9Plan(b.getChannelData(0), b.sampleRate);
       if (gen !== j.gen) return;
     }
+    if (!wpMarks(j.id)) { await wpDetect(j.id); if (gen !== j.gen || j.stop) return; }   // 4.27.1: frische Aufnahme (Automatik) hat noch keine Marken – sonst wäre das Ergebnis verworfen
     const pl = j.pl, n = pl.win.length;
     j.lang = j.lang || (j.o.lang === 'de' || j.o.lang === 'en' ? j.o.lang : null);
     for (let k = j.next; k < n; k++) {
       if (gen !== j.gen || j.stop) return;
       j.phase = 'fenster'; g9RecMsg('Erkennen … ' + (k + 1) + '/' + n + ' · ' + Math.round(k / n * 100) + ' %');
       const w = pl.win[k], x = pl.st.subarray(Math.round(w.a * G9E.FS), Math.round(w.b * G9E.FS));
-      const r = await G9.asr(x, {k, lang: j.lang || 'auto', a: w.a, b: w.b, toTake: s => G9E.streamToTake(pl.map, s), toStream: t => G9E.takeToStream(pl.map, t)});
+      const r = await G9.asr(x, {k, lang: j.lang || 'auto', auto: !!j.o.auto, a: w.a, b: w.b, toTake: s => G9E.streamToTake(pl.map, s), toStream: t => G9E.takeToStream(pl.map, t)});
       if (gen !== j.gen || j.stop) return;                          // beendet, während das Fenster rechnete: Ergebnis verworfen (wie terminate)
       if (!j.lang) j.lang = r && (r.lang === 'en' || r.lang === 'de') ? r.lang : 'de';
       j.words[k] = (r && r.words) || []; j.next = k + 1;
@@ -5380,13 +5383,13 @@ function g9RecEnd(j, err) {
       }
     } else g9RecMsg(err ? 'Erkennen fehlgeschlagen' : j.stop ? 'gestoppt' : 'keine Wörter erkannt');
   } catch (e) { logErr(e); res.err = String(e && e.message || e); }
-  G9.job.delete(j.id);
+  G9.job.delete(j.id); if (typeof g9RbPaint === 'function') g9RbPaint();
   j.res(res);
   setTimeout(g9AutoPump, 0);
 }
 // [Stopp] (§6.6.9): Worker beenden – sofort; fertige Fenster bleiben und werden ausgerichtet
 function g9RecStop() {
-  const t0 = performance.now(); g9ErkKill('gestoppt');
+  const t0 = performance.now(); g9ErkKill('gestoppt'); if (typeof g9AsrKill === 'function') g9AsrKill('gestoppt');
   let n = 0; for (const j of G9.job.values()) if (!j.done) { j.stop = true; j.gen++; n++; g9RecEnd(j); }
   G9.stopMs = performance.now() - t0;
   return n > 0;
@@ -5394,7 +5397,7 @@ function g9RecStop() {
 // Aufnahme hat Vorrang (§6.6.10): Worker beenden, angefangenes Fenster verwerfen, job.next merkt das nächste
 function g9RecHold() {
   let any = false; for (const j of G9.job.values()) if (!j.done) { any = true; j.gen++; j.running = false; j.phase = 'wartet'; }
-  g9ErkKill('Aufnahme'); G9.holdKill = performance.now();
+  g9ErkKill('Aufnahme'); if (any && typeof g9AsrKill === 'function' && G9.sm.state === 'ready') g9AsrKill('Aufnahme'); G9.holdKill = performance.now();
   if (any) g9RecMsg('Erkennen wartet (Aufnahme)');
 }
 function g9RecResume() { for (const j of G9.job.values()) if (!j.done) g9RecGo(j); g9AutoPump(); }
@@ -5404,10 +5407,12 @@ function g9RecRun(id, o) { return g9RecRunUi(id, o || {}); }
 /* ---------- automatisch erkennen (F1, §7.8): nach jeder neuen Aufnahme mit Mikrofon, nur ohne laufendes Mikrofon und bei stehendem ▶,
    höchstens ein Take gleichzeitig, in Aufnahme-Reihenfolge, nur für Takes ohne Text ---------- */
 function g9AutoOn() { try { const P = typeof stProf === 'function' ? stProf() : null; return !(P && P.g9 && P.g9.auto === false); } catch (e) { return true; } }
-function g9AutoQueue(id) { if (!G9.rec || !g9AutoOn()) return false; (G9.autoQ || (G9.autoQ = [])).push(id); setTimeout(g9AutoPump, 0); return true; }
+function g9AutoQueue(id) { if (!G9.rec || !g9AutoOn() || (G9.rec.cached && !G9.rec.cached())) return false; (G9.autoQ || (G9.autoQ = [])).push(id); setTimeout(g9AutoPump, 0); return true; }
 function g9AutoPump() {
-  const q = G9.autoQ; if (!q || !q.length || !G9.rec || g9RecBusy()) return;
+  const q = G9.autoQ; if (!q || !q.length || !G9.rec || g9RecBusy() || (typeof g9AsrBusy === 'function' && g9AsrBusy())) return;
   if (G9.hold || g9MicBusy() || R.playing) { clearTimeout(G9.autoT); G9.autoT = setTimeout(g9AutoPump, 500); return; }
+  if (G9.asr === g9AsrRun && !G9A.scan) { clearTimeout(G9.autoT); G9.autoT = setTimeout(g9AutoPump, 300); return; }   // 4.27.1: erst der Cache-Scan (der Merker kann veraltet sein)
+  if (G9.rec.cached && !G9.rec.cached()) { q.length = 0; return; }
   while (q.length) {
     const id = q.shift(), m = S.takes && S.takes[id];
     if (!m || m.ly || m.lyrics || !g9AutoOn()) continue;
@@ -5416,6 +5421,305 @@ function g9AutoPump() {
     return;
   }
 }
+
+/* ---------- G9b-0/1/2: Sprachmodell im Browser (§4.3–4.5, §6.6, §7.8) ----------
+   Mehrsprachiges Spracherkennungs-Modell „base“ (ONNX, mit Kreuz-Aufmerksamkeit für Wort-Zeiten), Bibliothek + Laufzeit von der npm-CDN
+   (feste Versionen), Gewichte von der Modell-Ablage (feste Revision). Nie beim Start: erst nach [Laden und erkennen]. Jede Datei wird in Stücken
+   geladen (Fortschritt in MB, [Stopp] = Worker beenden), mit SHA-256 geprüft und im Cache-Speicher `synq-g9-asr-v1` abgelegt; danach offline.
+   Alles Schwere (Laden, Prüfen, Modell, Rechnen) läuft in einem eigenen Modul-Worker, der Haupt-Faden bleibt frei.
+   Weg: WebGPU (Encoder fp16 auf der GPU, Decoder 8-Bit im WASM-Teil) nur mit Adapter + shader-f16, sonst WASM (beide 8-Bit, ein Kern).
+   Schlägt WebGPU fehl, gilt für dieses Gerät WASM (merkt sich localStorage `synq-g9-asr-how`). */
+const G9A = {
+  CACHE: 'synq-g9-asr-v1',
+  MODEL: 'onnx-community/whisper-base_timestamped', REV: '608c49e61301901684bc36cac8f74b95ff6b5a8e',
+  HF: 'https://huggingface.co/',
+  LIB: 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.1/dist/transformers.min.js',
+  ORT: 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.31.0-dev.20260914-8d85527a0/dist/',
+  IDLE: 180000,                      // Worker nach 3 min ohne Arbeit beenden (Speicher, iPhone); Neustart aus dem Cache
+  w: null, q: new Map(), qid: 0, ready: null, loadP: null, net: [], diag: [], idleT: 0
+};
+// [Datei, Bytes, SHA-256, Wege] – w = WASM, g = WebGPU
+G9A.FILES = [
+  ['lib', 586230, '8d6716d9086f57c30a4bf367dba61b887593573c770c454465e8019b2703e743', 'wg'],
+  ['ort-wasm-simd-threaded.mjs', 24381, 'c57ca56328877353a575e51bbca6f18450027d6c9bf2307a2cb2c41363b4de9f', 'w'],
+  ['ort-wasm-simd-threaded.wasm', 14264838, '06ba057753da3847e4c24f02d91ab133455b0817c69a44993a9a53a2146df9e3', 'w'],
+  ['ort-wasm-simd-threaded.asyncify.mjs', 53057, '0966b6105cd936744498aa60df7a22cbd47af3374dbc64a9ab561c08a71e3611', 'g'],
+  ['ort-wasm-simd-threaded.asyncify.wasm', 26861777, '49871f5a4409519797e127440868a6d1923339d9185907f301a5b2a1d90af082', 'g'],
+  ['config.json', 2243, 'f4d0608f7d918166da7edb3e188de5ef1bfe70d9802e785d271fd88111e9cf4b', 'wg'],
+  ['generation_config.json', 3832, '61070cf8de25b1e9256e8e102ded49d8d24a8369ed36ef84fdf21549e68125a0', 'wg'],
+  ['preprocessor_config.json', 339, 'a6a76d28c93edb273669eb9e0b0636a2bddbb1272c3261e47b7ca6dfdbac1b8d', 'wg'],
+  ['tokenizer.json', 2480466, '27fc476bfe7f17299480be2273fc0608e4d5a99aba2ab5dec5374b4482d1a566', 'wg'],
+  ['tokenizer_config.json', 282682, '2e036e4dbacfdeb7242c7d4ec4149f4a16e86026048f94d1637e3a8ee9c6a573', 'wg'],
+  ['onnx/encoder_model_quantized.onnx', 23159167, '2714484ebe1bae7c1646e8eadb768bb9d415cf11763466d21f23039a29c62e6f', 'w'],
+  ['onnx/encoder_model_fp16.onnx', 41270731, '2d31aa4b0c8c74c2e49a5c8d8a5640e38e75aac493cf15290f8c1466ee8c1845', 'g'],
+  ['onnx/decoder_model_merged_quantized.onnx', 53712708, 'cf9a8d5bcddc0917a0078135b484cedcaf44f28909cd91910abd29dced9171db', 'wg']
+].map(([f, n, h, ways]) => ({f, n, h, ways, u: f === 'lib' ? G9A.LIB : f.startsWith('ort-') ? G9A.ORT + f : G9A.HF + G9A.MODEL + '/resolve/' + G9A.REV + '/' + f}));
+const g9AsrSet = how => G9A.FILES.filter(x => x.ways.includes(how === 'webgpu' ? 'g' : 'w'));
+const g9AsrMB = n => Math.round(n / 1048576);
+
+// Worker-Quelle (Modul-Worker aus Blob, wie VS5a): Laden/Prüfen/Cache, Modell, Erkennen
+function g9AsrWorkerMain() {
+  let CA = null, T = null, P = null, HOW = null, LANG = null;
+  const hex = b => Array.from(new Uint8Array(b), v => v.toString(16).padStart(2, '0')).join('');
+  const cache = async name => CA || (CA = await caches.open(name));
+  // Abrufe zählen (Datenschutz-Nachweis g9Net, §4.5): nur GET der Liste, nie Upload
+  const net = (u, m, n) => postMessage({op: 'net', u: String(u).slice(0, 160), m, n});
+  async function load(m) {
+    const ca = await cache(m.cache); let got = 0;
+    const total = m.files.reduce((s, x) => s + x.n, 0);
+    for (const x of m.files) {
+      if (await ca.match(x.u)) { got += x.n; postMessage({op: 'prog', id: m.id, got, total}); continue; }
+      const r = await fetch(x.u, {credentials: 'omit'}); net(x.u, 'GET', x.n);
+      if (!r.ok || !r.body) throw new Error('Laden fehlgeschlagen (' + r.status + '): ' + x.f);
+      const buf = new Uint8Array(x.n), rd = r.body.getReader(); let o = 0, last = 0;
+      for (;;) {
+        const {done, value} = await rd.read(); if (done) break;
+        if (o + value.length > x.n) throw new Error('Datei zu groß: ' + x.f);
+        buf.set(value, o); o += value.length;
+        const now = performance.now(); if (now - last > 200) { last = now; postMessage({op: 'prog', id: m.id, got: got + o, total}); }
+      }
+      if (o !== x.n) throw new Error('Datei unvollständig: ' + x.f);
+      const h = hex(await crypto.subtle.digest('SHA-256', buf));
+      if (h !== x.h) throw new Error('Prüfsumme falsch: ' + x.f);
+      await ca.put(x.u, new Response(buf, {headers: {'content-type': x.f.endsWith('.wasm') ? 'application/wasm' : x.f.endsWith('js') || x.f === 'lib' ? 'text/javascript' : 'application/octet-stream', 'content-length': String(x.n)}}));
+      got += x.n; postMessage({op: 'prog', id: m.id, got, total});
+    }
+    return {got, total};
+  }
+  async function blobOf(u, type) { const r = await CA.match(u); if (!r) throw new Error('fehlt im Cache: ' + u.split('/').pop()); return URL.createObjectURL(new Blob([await r.arrayBuffer()], {type})); }
+  async function init(m) {
+    if (P && HOW === m.how) return {how: HOW};
+    await cache(m.cache);
+    if (!T) T = await import(await blobOf(m.lib, 'text/javascript'));
+    const E = T.env;
+    E.allowLocalModels = false; E.allowRemoteModels = true;            // Pfade wie Modell-Ablage, Inhalt nur aus dem eigenen Cache:
+    E.fetch = async u => { throw new Error('nicht im Cache: ' + String(u).split('/').pop()); };   // die Bibliothek lädt nie selbst
+    E.remotePathTemplate = '{model}/resolve/' + m.rev + '/';         // feste Revision für alle Dateien (die Bibliothek reicht revision nicht überall durch)
+    E.useBrowserCache = false; E.useCustomCache = true; E.useWasmCache = false;
+    E.customCache = {match: k => CA.match(k), put: async () => {}};
+    const ow = E.backends.onnx.wasm, sfx = m.how === 'webgpu' ? '.asyncify' : '';
+    ow.wasmPaths = {mjs: await blobOf(m.ort + 'ort-wasm-simd-threaded' + sfx + '.mjs', 'text/javascript'), wasm: await blobOf(m.ort + 'ort-wasm-simd-threaded' + sfx + '.wasm', 'application/wasm')};
+    ow.numThreads = 1; ow.proxy = false;
+    const o = m.how === 'webgpu'
+      ? {revision: m.rev, device: {encoder_model: 'webgpu', decoder_model_merged: 'wasm'}, dtype: {encoder_model: 'fp16', decoder_model_merged: 'q8'}}
+      : {revision: m.rev, device: 'wasm', dtype: {encoder_model: 'q8', decoder_model_merged: 'q8'}};
+    if (P) { try { await P.dispose(); } catch (e) {} P = null; }
+    P = await T.pipeline('automatic-speech-recognition', m.model, o);
+    HOW = m.how;
+    const g = P.model.generation_config || {}; LANG = {sot: g.decoder_start_token_id || 50258, de: (g.lang_to_id || {})['<|de|>'] || 50261, en: (g.lang_to_id || {})['<|en|>'] || 50259};
+    return {how: HOW};
+  }
+  // eigene Sprach-Erkennung (§6.6.4): ein Decoder-Schritt nach <|startoftranscript|>, nur <|de|> gegen <|en|>
+  async function detect(x) {
+    const f = await P.processor(x);
+    const ids = new T.Tensor('int64', BigInt64Array.from([BigInt(LANG.sot)]), [1, 1]);
+    const out = await P.model({input_features: f.input_features, decoder_input_ids: ids});
+    const lg = out.logits, V = lg.dims[lg.dims.length - 1], d = lg.data, off = d.length - V;
+    return Number(d[off + LANG.de]) >= Number(d[off + LANG.en]) ? 'de' : 'en';
+  }
+  async function run(m) {
+    const t0 = performance.now(), x = m.x;
+    const lang = m.lang === 'de' || m.lang === 'en' ? m.lang : await detect(x);
+    const t1 = performance.now();
+    // Obergrenze nach Fensterlänge (Gesang ≤ ≈ 6 Token/s): eine Wiederholungs-Schleife kostet so höchstens Sekunden statt eines vollen Laufs
+    const r = await P(x, {return_timestamps: 'word', language: lang, task: 'transcribe', max_new_tokens: Math.min(440, Math.ceil(x.length / 16000 * 6) + 16)});
+    const words = [];
+    for (const c of (r && r.chunks) || []) {
+      const t = String(c.text || '').trim(); if (!t) continue;
+      const a = c.timestamp && isFinite(c.timestamp[0]) ? c.timestamp[0] : null; if (a == null) continue;
+      const b = c.timestamp[1] != null && isFinite(c.timestamp[1]) && c.timestamp[1] > a ? c.timestamp[1] : a + 0.3;
+      words.push({text: t, start: a, end: b});
+    }
+    return {words, lang, text: r && r.text || '', ms: Math.round(performance.now() - t0), msLang: Math.round(t1 - t0)};
+  }
+  onmessage = async e => {
+    const m = e.data;
+    try {
+      const r = m.op === 'load' ? await load(m) : m.op === 'init' ? await init(m) : m.op === 'run' ? await run(m) : null;
+      postMessage({op: 'ok', id: m.id, r});
+    } catch (err) { postMessage({op: 'err', id: m.id, err: String(err && err.message || err)}); }
+  };
+}
+function g9AsrWorker() {
+  if (G9A.w) return G9A.w;
+  const u = URL.createObjectURL(new Blob(['(' + g9AsrWorkerMain.toString() + ')();'], {type: 'text/javascript'}));
+  const w = G9A.w = new Worker(u, {type: 'module', name: 'g9-asr'}); setTimeout(() => { try { URL.revokeObjectURL(u); } catch (e) {} }, 30000);
+  G9A.ready = null;
+  w.onmessage = e => {
+    const m = e.data;
+    if (m.op === 'net') { G9A.net.push({url: m.u, method: m.m, bytes: m.n}); return; }
+    const q = G9A.q.get(m.id); if (!q) return;
+    if (m.op === 'prog') { if (q.prog) q.prog(m.got, m.total); return; }
+    G9A.q.delete(m.id); if (m.op === 'err') q.no(new Error(m.err)); else q.ok(m.r);
+  };
+  w.onerror = e => { try { e.preventDefault(); } catch (x) {} g9AsrKill('Worker-Fehler: ' + (e && e.message || '')); };
+  return w;
+}
+function g9AsrCall(op, o, prog, tr) {
+  const w = g9AsrWorker(); clearTimeout(G9A.idleT);
+  return new Promise((ok, no) => {
+    const id = ++G9A.qid; G9A.q.set(id, {ok, no, prog});
+    try { w.postMessage(Object.assign({op, id}, o), tr || []); } catch (e) { G9A.q.delete(id); no(e); }
+  }).finally(() => { if (!G9A.q.size) { clearTimeout(G9A.idleT); G9A.idleT = setTimeout(() => { if (!G9A.q.size && !g9RecBusy()) g9AsrKill('ruht'); }, G9A.IDLE); } });
+}
+// Worker beenden (Stopp, Aufnahme hat Vorrang, Projektwechsel, Ruhe): sofort; laufende Aufrufe enden mit Fehler
+function g9AsrKill(why) {
+  const w = G9A.w; if (!w) return false;
+  G9A.w = null; G9A.ready = null; clearTimeout(G9A.idleT);
+  try { w.terminate(); } catch (e) {}
+  for (const q of G9A.q.values()) q.no(new Error(why || 'gestoppt')); G9A.q.clear();
+  if (G9.sm.state === 'loading') G9.sm = Object.assign({}, G9.sm, {state: 'none'});
+  else if (G9.sm.state === 'ready' || G9.sm.state === 'starting') G9.sm = Object.assign({}, G9.sm, {state: 'cached'});   // 4.27.1: beim Start liegt schon alles im Cache
+  g9RbPaint();
+  return true;
+}
+// Weg wählen (ohne Netz): gemerkter Fehlschlag → WASM; sonst WebGPU nur mit Adapter + shader-f16
+async function g9AsrHow() {
+  if (G9.sm.how) return G9.sm.how;
+  let how = 'wasm';
+  try {
+    const want = new URLSearchParams(location.search).get('g9how');
+    if (want === 'wasm' || want === 'webgpu') how = want;
+    else if (localStorage.getItem('synq-g9-asr-how') !== 'wasm' && navigator.gpu) {
+      const ad = await navigator.gpu.requestAdapter();
+      if (ad && ad.features && ad.features.has('shader-f16')) how = 'webgpu';
+    }
+  } catch (e) {}
+  // liegt der andere Satz schon vollständig im Cache, wird er genommen (kein zweiter Download)
+  const st = await g9AsrScan();
+  if (!st.full[how] && st.full[how === 'webgpu' ? 'wasm' : 'webgpu']) how = how === 'webgpu' ? 'wasm' : 'webgpu';
+  G9.sm = Object.assign({}, G9.sm, {how});
+  return how;
+}
+// Cache prüfen (nur lesen, kein Netz): welche Dateien liegen da, wie viele Bytes, welcher Satz ist vollständig
+async function g9AsrScan() {
+  const r = {bytes: 0, have: new Set(), full: {wasm: false, webgpu: false}};
+  try {
+    if (!(await caches.has(G9A.CACHE))) return r;
+    const ca = await caches.open(G9A.CACHE), ks = await ca.keys();
+    const by = new Map(G9A.FILES.map(x => [x.u, x])), seen = new Set();
+    for (const k of ks) { const x = by.get(k.url); if (x) { seen.add(x.u); r.bytes += x.n; } else { const q = await ca.match(k); if (q) r.bytes += (await q.blob()).size; } }
+    r.have = seen; r.full.wasm = g9AsrSet('wasm').every(x => seen.has(x.u)); r.full.webgpu = g9AsrSet('webgpu').every(x => seen.has(x.u));
+  } catch (e) {}
+  return r;
+}
+async function g9AsrRefresh() {
+  const st = await g9AsrScan(), how = G9.sm.how || 'wasm';
+  G9A.scan = st;
+  const full = st.full[how];
+  if (G9.sm.state !== 'loading' && G9.sm.state !== 'starting' && G9.sm.state !== 'ready') G9.sm = Object.assign({}, G9.sm, {state: full ? 'cached' : 'none'});
+  G9.sm = Object.assign({}, G9.sm, {bytes: st.bytes, rev: G9A.REV});
+  try { if (full) localStorage.setItem('synq-g9-asr', '1'); else localStorage.removeItem('synq-g9-asr'); } catch (e) {}
+  return st;
+}
+// laden (falls nötig) und Modell starten; Fortschritt in der Info-Zeile, [Stopp] = Worker beenden; noLoad (automatisch, F1): nie laden, nur aus dem Cache
+async function g9AsrEnsure(noLoad) {
+  if (G9A.ready) return G9A.ready;
+  if (G9A.loadP) return G9A.loadP;
+  const p = G9A.loadP = (async () => {
+    const how = await g9AsrHow(), files = g9AsrSet(how);
+    const st = await g9AsrRefresh();
+    if (!st.full[how]) {
+      if (noLoad) throw new Error('Sprachmodell nicht auf dem Gerät');
+      G9.sm = Object.assign({}, G9.sm, {state: 'loading', got: 0, total: files.reduce((s, x) => s + x.n, 0)}); g9RbPaint();
+      try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
+      g9RecMsg('Sprachmodell lädt … 0/' + g9AsrMB(G9.sm.total) + ' MB');
+      await g9AsrCall('load', {cache: G9A.CACHE, files: files.map(x => ({u: x.u, n: x.n, h: x.h, f: x.f}))}, (got, total) => {
+        G9.sm = Object.assign({}, G9.sm, {got, total}); g9RecMsg('Sprachmodell lädt … ' + g9AsrMB(got) + '/' + g9AsrMB(total) + ' MB · ' + Math.round(got / total * 100) + ' %');
+      });
+      await g9AsrRefresh();
+    }
+    G9.sm = Object.assign({}, G9.sm, {state: 'starting'}); g9RecMsg('Sprachmodell startet …');
+    const t0 = performance.now();
+    try { await g9AsrCall('init', {cache: G9A.CACHE, how, lib: G9A.LIB, ort: G9A.ORT, model: G9A.MODEL, rev: G9A.REV}); }
+    catch (e) {
+      if (how !== 'webgpu' || !G9A.w) throw e;                       // gestoppt/beendet: nicht umschalten
+      G9A.loadP = null; await g9AsrToWasm(e);
+      return g9AsrEnsure(noLoad);
+    }
+    G9.sm = Object.assign({}, G9.sm, {state: 'ready', initMs: Math.round(performance.now() - t0)}); g9RbPaint();
+    return true;
+  })();
+  G9A.ready = null;
+  try { await p; G9A.ready = p; return true; }
+  catch (e) { if (G9.sm.state === 'loading' || G9.sm.state === 'starting') G9.sm = Object.assign({}, G9.sm, {state: G9.sm.state === 'starting' ? 'cached' : 'none'}); g9AsrRefresh().then(g9RbPaint, () => {}); throw e; }   // Blatt zeigt danach den Rest in MB
+  finally { if (G9A.loadP === p) G9A.loadP = null; g9RbPaint(); }
+}
+// WebGPU klappt auf diesem Gerät nicht → WASM-Satz (einmal nachladen), gemerkt; die nur für WebGPU geladenen Dateien (≈ 68 MB) wieder freigeben
+async function g9AsrToWasm(e) {
+  try { localStorage.setItem('synq-g9-asr-how', 'wasm'); } catch (x) {}
+  G9A.diag.push('webgpu: ' + String(e && e.message || e).slice(0, 120));
+  g9AsrKill('Weg'); G9.sm = Object.assign({}, G9.sm, {how: 'wasm', state: 'none'}); G9A.ready = null;
+  try { const ca = await caches.open(G9A.CACHE); await Promise.all(G9A.FILES.filter(x => x.ways === 'g').map(x => ca.delete(x.u))); } catch (x) {}
+}
+// Andock-Stelle G9.asr (§6.6.5): ein Fenster (16 kHz, schon entzerrt) → Wörter mit Zeiten ab Fenster-Beginn
+async function g9AsrRun(x, o) {
+  const noLoad = !!(o && o.auto);
+  await g9AsrEnsure(noLoad);
+  let c = new Float32Array(x), r;
+  try { r = await g9AsrCall('run', {x: c, lang: o.lang}, null, [c.buffer]); }
+  catch (e) {                                                         // WebGPU scheitert erst beim Rechnen → einmal auf WASM wechseln
+    if (G9.sm.how !== 'webgpu' || !G9A.w) throw e;
+    await g9AsrToWasm(e); await g9AsrEnsure(noLoad); c = new Float32Array(x);
+    r = await g9AsrCall('run', {x: c, lang: o.lang}, null, [c.buffer]);
+  }
+  G9A.diag.push(G9.sm.how + ' Fenster ' + (o.k + 1) + ': ' + r.ms + ' ms' + (r.msLang ? ' (Sprache ' + r.msLang + ' ms)' : ''));
+  if (G9A.diag.length > 20) G9A.diag.shift();
+  G9A.last = r;
+  return {words: r.words, lang: r.lang};
+}
+// [Erkennen] → laden (nur nach Tipp) → Erkennung; [Stopp] während Laden oder Erkennen
+async function g9AsrRecognize(id, o) {
+  const S0 = S;
+  try { await g9AsrEnsure(); }
+  catch (e) {
+    const stopped = /gestoppt|Aufnahme|Projekt/.test(String(e && e.message));
+    g9RecMsg(stopped ? 'Laden gestoppt' : 'Sprachmodell: ' + String(e && e.message || e));
+    if (!stopped) logErr(e);
+    if (WP.ed && WP.ed.g9) wpInfoTxt(G9.recMsg);
+    return {applied: true, words: [], stopped, err: stopped ? null : String(e && e.message || e)};
+  }
+  if (S !== S0 || !(S.takes && S.takes[id])) { g9RecMsg(null); return {applied: true, words: [], stopped: true}; }   // Projekt gewechselt, während das Modell lud
+  return g9RecJob(id, o || {});
+}
+function g9AsrStop() {
+  const t0 = performance.now(), loading = G9.sm.state === 'loading' || G9.sm.state === 'starting';
+  if (loading) { g9AsrKill('gestoppt'); g9RecMsg('Laden gestoppt'); if (WP.ed && WP.ed.g9) wpInfoTxt(G9.recMsg); }
+  else g9RecStop();
+  G9.stopMs = performance.now() - t0; g9RbPaint();
+  return true;
+}
+async function g9AsrRemove() {
+  g9AsrKill('entfernt');
+  try { await caches.delete(G9A.CACHE); } catch (e) {}
+  try { localStorage.removeItem('synq-g9-asr'); } catch (e) {}
+  G9.sm = Object.assign({}, G9.sm, {state: 'none', bytes: 0}); G9A.scan = null;
+  await g9AsrRefresh(); g9RbPaint();
+}
+const g9AsrBusy = () => G9.sm.state === 'loading' || G9.sm.state === 'starting' || g9RecBusy();
+// Kopf-Taste: [Erkennen] ↔ [Stopp] (während Laden oder Erkennen)
+function g9RbPaint() {
+  const E = WP.ed, rb = E && E.g9 && E.g9.rb; if (!rb) return;
+  const busy = g9AsrBusy(); rb.hidden = !G9.rec;
+  rb.textContent = busy ? 'Stopp' : 'Erkennen'; rb.classList.toggle('on', busy); rb.setAttribute('aria-label', busy ? 'Erkennen stoppen' : 'Worte erkennen');
+}
+function g9AsrOk() { try { return typeof Worker === 'function' && typeof WebAssembly === 'object' && typeof caches === 'object' && !!(self.crypto && crypto.subtle); } catch (e) { return false; } }
+function g9AsrDock() {
+  if (G9.asr && G9.asr !== g9AsrRun) return;                          // Test-Ersatz (g9AsrSim) hat Vorrang
+  if (!g9AsrOk()) return;
+  G9.asr = g9AsrRun;
+  if (G9.sm.state === 'none' && !G9A.scan && typeof g9AsrFlag === 'function' && g9AsrFlag()) G9.sm = Object.assign({}, G9.sm, {state: 'cached'});   // Merker: Modell im Cache → schon die erste Aufnahme nach dem Start (Scan prüft gleich nach)
+  G9.rec = {
+    cached: () => G9.sm.state === 'cached' || G9.sm.state === 'ready',
+    size: () => { const how = G9.sm.how || 'wasm', st = G9A.scan; const has = st && st.full[how]; return {how, mb: g9AsrMB(has ? st.bytes : g9AsrSet(how).reduce((s, x) => s + (st && st.have.has(x.u) ? 0 : x.n), 0))}; },
+    load: () => g9AsrEnsure(),
+    recognize: (id, o) => g9AsrRecognize(id, o),
+    remove: () => g9AsrRemove(),
+    stop: () => g9AsrStop()
+  };
+  g9AsrHow().then(g9AsrRefresh).then(() => g9RbPaint(), e => logErr(e));
+}
+g9AsrDock();
 
 </script>
 <script type="text/plain" id="sq-mk-src">
@@ -18064,7 +18368,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '4.27.1';
+const VERSION = '4.27.2';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -42257,7 +42561,7 @@ function tkMakeTake(aBeat, bBeat, src, done) {
     const b = tkToBuffer(pcm, sr); if (b) TK.buf.set(id, vpKick(b));   // VS-P-fix: messen, sobald der Take fertig ist
     try { g3TakePre(id, m, pcm, Fa - F0, sr); } catch (e) { logErr(e); }   /* G3: hörbarer Anlauf */
     TK.last = {id, n, sr, got, pre: pre / sr, late: late / sr, src};
-    if (G9.loaded && typeof g9AutoQueue === 'function') g9AutoQueue(id);   // G9 (F1)
+    if ((G9.loaded || g9AsrFlag()) && g9Load() && typeof g9AutoQueue === 'function') g9AutoQueue(id);   // G9 (F1); Modell im Cache → Block laden
     UI.dirty.grid = UI.dirty.song = true;
     const fin = ok => { if (done) { try { done(ok, id); } catch (e) { logErr(e); } } };
     const store = () => { TK.pend.delete(id); Promise.all([tkStore(id, pcm, chunks), clFill(id, ST.ring || g, F0 + late, F0, n, m)]).then(r => { fin(r[0]); if (m.cl && S.takes && S.takes[id] === m) clEnsure(id); }); };   // auch nach ↶ (↷ holt den Take zurück; [Aufräumen] löscht Reste); VS4: Referenz, dann säubern
@@ -46136,6 +46440,7 @@ function g9SetLyricsHook(m, v) {
   return true;
 }
 // Aufnahme hat Vorrang (§6.6.10): jeder Mikrofon-Start beendet die Erkennung; 2 s nach dem letzten Mikrofon geht es weiter
+const g9AsrFlag = () => { try { return localStorage.getItem('synq-g9-asr') === '1'; } catch (e) { return false; } };   // G9b: Modell liegt im Cache
 function g9MicBusy() { try { return !!((typeof MIC !== 'undefined' && MIC.run) || (typeof ST !== 'undefined' && (ST.run || ST.on)) || (typeof MICTAP !== 'undefined' && (MICTAP.stream || MICTAP.p || MICTAP.users.size))); } catch (e) { return false; } }
 function g9MicOn() {
   if (!G9.hold) G9.holdAt = performance.now();
@@ -46195,7 +46500,11 @@ const G9_API = {
   g9SylMode: lang => (G9.K ? G9.K.sylMode(lang) : 'einfach'),
   g9Recognize: (r, o) => (g9Load() && typeof g9RecRun === 'function' ? g9RecRun(wpId(r), o || {}) : Promise.resolve(null)),
   g9RecStop: () => (G9.loaded && typeof g9RecStop === 'function' ? g9RecStop() : false),
-  g9AsrSim: (fn, o) => (g9Load() ? g9AsrSimSet(fn, o) : false),      // nur Tests: Ersatz für das Sprachmodell (G9b-2 fehlt, §9 Stopp-Punkt 1)
+  g9AsrSim: (fn, o) => (g9Load() ? g9AsrSimSet(fn, o) : false),      // nur Tests: Ersatz für das Sprachmodell; g9AsrSim(null) dockt das echte Modell wieder an
+  g9Asr: () => (g9Load() && typeof G9A === 'object' ? {sm: Object.assign({}, G9.sm), worker: !!G9A.w, net: G9A.net.slice(), diag: G9A.diag.slice(), last: G9A.last || null, files: g9AsrSet(G9.sm.how || 'wasm').map(x => x.u)} : null),
+  g9AsrStop: () => (G9.loaded && typeof g9AsrStop === 'function' ? g9AsrStop() : false),
+  g9AsrRemove: () => (g9Load() && typeof g9AsrRemove === 'function' ? g9AsrRemove() : Promise.resolve()),
+  g9AsrLoad: () => (g9Load() && typeof g9AsrEnsure === 'function' ? g9AsrEnsure() : Promise.resolve(false)),
 };
 
 /* ======================= G3 — Vorlauf und Ausklang beim Einsingen (Nachtrag 5: G3, „G3 ergänzt“ Nr. 5, G3-06) =======================
@@ -46616,7 +46925,7 @@ function g8MakeTake(aBeat, bBeat, done) {
       } catch (e) { logErr(e); }
       if (b) TK.buf.set(id, vpKick(b));   // G-GES: VS-P misst den Stück-Take gleich
       TK.last = {id, n, sr, got: n, pre: (Fa - F0) / sr, late: 0, src: 'song', stream: true, lost: s.lost};
-      if (G9.loaded && typeof g9AutoQueue === 'function') g9AutoQueue(id);   // G9 (F1)
+      if ((G9.loaded || g9AsrFlag()) && g9Load() && typeof g9AutoQueue === 'function') g9AutoQueue(id);   // G9 (F1); Modell im Cache → Block laden
       G8.last = {id, sec: +(n / sr).toFixed(2), chunks: nc, lost: s.lost, werr: s.werr};
       UI.dirty.grid = UI.dirty.song = true; markDirty();
       if (R.playing) { tkVoxResync(true); const st = stimmeT(); if (st >= 0) tkTrackResync(st); }
