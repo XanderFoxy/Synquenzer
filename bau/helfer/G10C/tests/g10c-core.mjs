@@ -79,6 +79,11 @@ const freed = keysBefore - keysAfter;
 ok(Math.abs(freed - est.bytes) <= est.bytes * .05, 'Aufräumen: frei ' + freed + ' B, gemeldet ' + est.bytes + ' B (±5 %)');
 info = await p.evaluate(() => SYNQUENZER.g10cInfo());
 ok(info.segs.length === 2 && (await p.evaluate(() => SYNQUENZER.tkLoadAll())).length >= 1, 'die übrigen Takes klingen weiter (geladen)');
+// WAV-Dateiname mit dem Namen des gewählten Stücks (G10-22)
+await p.evaluate(() => { window.__dl = []; window.deliver = async (base, bytes, kind) => { window.__dl.push(base + '.' + kind); return true; }; });
+await p.tap('.tksheet button[data-a="wav"]'); await p.waitForTimeout(300);
+const dl = await p.evaluate(() => window.__dl);
+ok(dl.length === 1 && /-Strophe-gut\.wav$/.test(dl[0]), 'WAV-Dateiname enthält den Namen: ' + dl[0]);
 // Speichern/Laden deep-equal (über die Datei)
 const canon = `const C = v => Array.isArray(v) ? v.map(C) : v && typeof v === 'object' ? Object.keys(v).sort().reduce((o, k) => (o[k] = C(v[k]), o), {}) : v;`;
 const before = await p.evaluate(canon + `; JSON.stringify(C(SYNQUENZER.project().tracks[SYNQUENZER.tkInfo().stimme].clips[0].audio))`);

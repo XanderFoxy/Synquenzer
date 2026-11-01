@@ -46279,7 +46279,7 @@ function tkSheet(r, anchor) {
       if (d.k != null && performance.now() - G10C.hold < 700) return;   // G10c: Halten/Wischen ist kein Tipp
       if (d.k != null) { g10cNameCommit(); G10C.ed = -1; tkPick(rr, +d.k, false); return; }
       if (d.a === 'ab') { tkPick(rr, 1, false); return; }
-      if (d.a === 'wav') { const x = tkRef(rr); if (x) tkExportWav(x.a.take); return; }
+      if (d.a === 'wav') { const x = tkRef(rr); if (x) tkExportWav(x.a.take, x.a.name || (S.takes[x.a.take] && S.takes[x.a.take].name)); return; }   // G10c: Name im Dateinamen
       if (d.a === 'zip') { tkExportZip(); return; }
       if (d.a === 'wp') { closePop(); wpOpen(rr); return; }      // VS5a: Marken-Editor
       if (d.a === 'g5') { closePop(); g5Convert(rr); return; }   // G5: Gesang → Melodie
@@ -46370,6 +46370,7 @@ function g10cStamp(a) {
 }
 /* Durchgänge als Takes (Geräte-Einstellung, Standard An): ● REC über mehrere Loop-Runden eines Clips mit fester Länge → je Runde ein
    Segment {take: gleiche id, in, out, at, r}; kein neues Audio. Nicht bei FANG, nicht während „Selbst singen“ (G6) */
+const g10cFileName = nm => { const t = g10cNormName(nm).replace(/[^0-9A-Za-zÄÖÜäöüß_-]+/g, '-').replace(/^-+|-+$/g, ''); return t ? '-' + t : ''; };
 const g10cPassesPref = () => uiPrefs().g10cPasses !== false;
 function g10cPassesOn(o) { return !!o && o.kind === 'rec' && g10cPassesPref() && !(typeof G6 !== 'undefined' && G6.arm); }
 function g10cPassSegs(tk, n, L, sp) {
@@ -46739,6 +46740,7 @@ const G10C_API = {
   g10cGcEstimate: async () => { G10C.gcSig = ''; return g10cGcEstimate(); },
   g10cGcRun: () => g10cGcRun(),
   g10cNos: a => g10cNos(tkSegs(a)),
+  g10cWavName: nm => g10cFileName(nm),
 };
 
 /* ---------- WAV (48 kHz bzw. Abtastrate des Takes, 16 Bit, mono; bitgleich zum gespeicherten Roh-Take, N7V-20) ---------- */
@@ -46768,11 +46770,11 @@ function tkWavRead(u8) {
   } catch (e) {}
   return null;
 }
-async function tkExportWav(id) {
+async function tkExportWav(id, nm) {   // G10c: nm = Name des gewählten Stücks (im Dateinamen)
   const m = S.takes && S.takes[id]; if (!m) return false;
   const pcm = await tkPcm(id); if (!pcm) { toast('Take fehlt auf diesem Gerät'); return false; }
   const d = new Date(m.created || Date.now());
-  return deliver('synquenzer-take-' + d.getFullYear() + z2(d.getMonth() + 1) + z2(d.getDate()) + '-' + z2(d.getHours()) + z2(d.getMinutes()) + '-' + id.slice(0, 4), tkWav(pcm, m.sr), 'wav', 'Take als WAV');
+  return deliver('synquenzer-take-' + d.getFullYear() + z2(d.getMonth() + 1) + z2(d.getDate()) + '-' + z2(d.getHours()) + z2(d.getMinutes()) + '-' + id.slice(0, 4) + g10cFileName(nm), tkWav(pcm, m.sr), 'wav', 'Take als WAV');
 }
 // ZIP: Projekt-Datei (JSON wie [Speichern]) + takes/<id>.wav je Take, den das Projekt nennt
 async function tkZipBytes() {
