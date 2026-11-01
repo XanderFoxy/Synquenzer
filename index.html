@@ -274,6 +274,8 @@ svg{display:block}
 .sheet.v6a-ed{box-shadow:inset 0 3px 0 var(--amber)}
 .lcd.v6a .lk{color:var(--amber)}
 .lcd.v6a{box-shadow:inset 0 0 0 1px var(--amber),inset 0 1px 5px rgba(0,0,0,.9)}
+/* KV1: ein Regler, den gerade ein Klangzustand ◆ fährt – sein Wert-Bogen amber (nur während der Fahrt) */
+.knob.kv1 .kv{stroke:var(--amber)}.fader.kv1 .ffill{background:var(--amber)}
 .slot .tx{position:absolute;right:4px;bottom:3px;font:700 10px/1 var(--font-num);color:var(--text);pointer-events:none;white-space:nowrap}
 .slot.rec .tx{color:var(--rec)}
 .slot .pg{position:absolute;left:0;right:0;bottom:0;height:2px;background:var(--tc);transform-origin:0 50%;transform:scaleX(0);pointer-events:none;will-change:transform;z-index:3}
@@ -4776,6 +4778,10 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 @media (orientation:portrait) and (max-width:430px){.percgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (orientation:landscape){.percgrid{grid-template-columns:repeat(4,minmax(0,1fr))}}
 /* PERC-CSS-END */
+/* NPS-CSS-BEGIN: Seite NORTH der Perkussionsspur – unverändert bis auf die Taste „Platte“ (Xander 01.11.: Look der Platte nicht ändern); die Seite scrollt innen */
+.pg.percpg.pan-y{overflow-y:auto;overflow-x:hidden;touch-action:pan-y;-webkit-overflow-scrolling:touch}
+.percrow .percplt{height:44px;min-width:86px;margin-left:auto}
+/* NPS-CSS-END */
 /* SX9-CSS-BEGIN */
 .plsheet .sx9-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 6px}
 .plsheet .sx9-l{font:600 12px/1 var(--font-ui);color:var(--text-dim);margin-right:2px}
@@ -7823,8 +7829,147 @@ const NEIGEN = (() => {
    Kit-Effekte HALL · ECHO (§1.10). Keine eigene Datenhaltung: jede Bedienung schreibt über dieselben Wege wie der North-Editor
    (mdSet, mdScl, mdKitSet, mdTap, soundSnapshot/commitSound auf DRUM_T) → slot.md und p.md, ein Undo je Geste.
    DOM + CSS (Block NDP-CSS), Siebensegment als SVG, keine Bilddaten, keine neue Schrift. ===== */
-(function () {
+(function (G) {   // NPS: G = die globalen md-Wege der Drum-Spur (Aufruf am Blockende)
 'use strict';
+/* NPS (Xander 01.11.): Datenquelle umschaltbar – die Drum-Spur (wie bisher) oder eine Perkussionsspur Q.t (Synth-Spur mit North,
+   sound.p.nk = {kit, ch[12], md}, Kanal Q.c). Adapter statt Kopie: die Namen hier verdecken in dieser Platte die gleichnamigen
+   globalen md-Wege; ohne Perkussionsspur rufen sie genau diese (G) – die Drum-Spur verhält sich unverändert. Auf der Perkussionsspur
+   schreibt jede Geste in nk.ch[c] bzw. nk.md (in place wie setP), ein Undo je Geste (soundSnapshot/commitSound auf DRUM_T = Ziel-Spur),
+   der Klang geht sofort an den Knoten der Spur (percEngineSync → percSync, nur Geändertes). */
+const Q = {t: -1, c: 0, sub: null, edV: -1, ed: false};
+const QP = () => Q.t >= 0;
+const qNk = () => (QP() && percIs(S.tracks[Q.t]) ? percNkOf(S.tracks[Q.t].sound) : null);
+let DRUM_T = G.DRUM_T, MD_KIT_NAMES = G.MD_KIT_NAMES;             // NPS: Ziel-Spur und Kit-Liste der Platte (qBind)
+const ED = {get dVoice() { return QP() ? Q.c : G.ED.dVoice; }, set dVoice(v) { if (QP()) Q.c = clamp(v | 0, 0, 11); else G.ED.dVoice = v; }};
+const mdCurSl = () => (QP() ? DRUM_VOICES[clamp(Q.c, 0, 11)] : G.mdCurSl());
+const mdCur = () => { if (!QP()) return G.mdCur(); const nk = qNk(); return (nk && nk.ch[Q.c]) || MDN.init(); };
+const mdIsSrc = id => (QP() ? !!qNk() : G.mdIsSrc(id));            // Perkussionsspur: jeder Kanal spielt North
+const mdUsed = () => (QP() ? !!qNk() : G.mdUsed());
+const mdSlot = id => { if (!QP()) return G.mdSlot(id); const nk = qNk(), v = DRUM_BY_ID[id], s = nk && v ? nk.ch[v.idx] : null; return s ? Object.assign({}, s, {src: 'md'}) : null; };   // nur Lesesicht
+const mdKit = () => (QP() ? Object.assign(MDN.kitInit(), (qNk() || {}).md || {}) : G.mdKit());
+const mdSet = (key, v) => (QP() ? qSet(key, v) : G.mdSet(key, v));
+const mdScl = code => (QP() ? qScl(code) : G.mdScl(code));
+const mdKitSet = (k, v) => (QP() ? qKitSet(k, v) : G.mdKitSet(k, v));
+const mdLoadProgram = (id, prog, name) => (QP() ? qProg(DRUM_BY_ID[id].idx, prog, name) : G.mdLoadProgram(id, prog, name));
+const mdProgPop = anchor => (QP() ? percProgPop(anchor, Q.t, Q.c) : G.mdProgPop(anchor));
+const mdList = (key, anchor) => (QP() ? qList(key, anchor) : G.mdList(key, anchor));
+const mdTap = btn => (QP() ? qTap(btn) : G.mdTap(btn));
+const drumAudition = (idx, vel) => (QP() ? percHit(Q.t, idx, vel) : G.drumAudition(idx, vel));
+const mdAudition = force => { if (!QP()) return G.mdAudition(force); if (R.playing && !force) return; const t = performance.now(); if (!force && t - MDE.aud < 300) return; MDE.aud = t; percHit(Q.t, Q.c, .8); };
+const mdSoloApply = () => { if (!QP()) return G.mdSoloApply(); const E = percE(Q.t), s = MDE.sub; if (E) E.mute(MDE.solo ? Q.c : -1, MDE.solo ? (s === 'tone' || s === 'noise' || s === 'click' ? s : 'all') : null); };
+const mdHeadSolo = () => (QP() ? null : G.mdHeadSolo());
+const mdFocus = () => (QP() ? null : G.mdFocus());
+const mdEditEnd = closing => { if (!QP()) return G.mdEditEnd(closing); if (!MDE.all && !MDE.solo && !MDE.rel) return; MDE.all = MDE.solo = MDE.rel = false; MDE.scl = ''; const E = percE(Q.t); if (E) E.mute(-1, null); };
+const drumSnd = () => { if (!QP()) return G.drumSnd(); const k = (qNk() || {}).kit || ''; return {name: k || MD_NAME, origin: 'pk:' + k, pk: 1}; };   // Lesesicht: das Kit der Spur
+const soundEdited = s => (s && s.pk ? qEdited() : G.soundEdited(s));
+const kitId = n => (QP() ? 'pk:' + n : G.kitId(n));
+const loadKit = n => (QP() ? qLoadKit(n) : G.loadKit(n));
+// Quelle binden (open) und lösen (close): o.perc = Spur, o.c = Kanal; der Drum-Editor behält seine Unterseite (MDE.sub)
+function qBind(o) {
+  const t = o.perc != null && percIs(S.tracks[o.perc]) && percNkOf(S.tracks[o.perc].sound) ? o.perc | 0 : -1;
+  if (P.open && t !== Q.t) mdEditEnd(true);
+  if (t < 0) { qUnbind(true); return; }
+  if (!QP()) Q.sub = MDE.sub;
+  Q.t = t; if (o.c != null) Q.c = clamp(o.c | 0, 0, 11);
+  if (o.sec && SEC_BY[o.sec]) { P.sec = o.sec; P.enc = 'val'; secFocus(); MDE.sub = o.sec === 'kit' ? 'mix' : o.sec; }   // Sektion von Seite NORTH: Rad + Display auf ihren ersten Regler
+  DRUM_T = t; MD_KIT_NAMES = percKits().map(k => k.name); P.root.classList.add('ndpperc');
+}
+function qUnbind(quiet) {
+  if (!QP()) return; const t = Q.t;
+  PERCUI.ch = Q.c; if (Q.sub) MDE.sub = Q.sub; Q.sub = null;
+  Q.t = -1; DRUM_T = G.DRUM_T; MD_KIT_NAMES = G.MD_KIT_NAMES; if (P.root) P.root.classList.remove('ndpperc');
+  if (!quiet && R.editor === 'synth' && R.selT === t) safeRebuild(buildSynthEd);   // zurück auf Seite NORTH mit den neuen Werten
+}
+function qTouch() { UI.sndVer++; UI.dirty.strip = true; UI.dirty.edHead = true; markDirty(); percEngineSync(Q.t); }
+// ein Wert in Kanal Q.c (ALLE KAN.: alle 12; PITCH dann relativ mit Gruppen-Grenze – wie mdSet)
+function qSet(key, v) {
+  const nk = qNk(), st = nk && nk.ch[Q.c]; if (!st) return;
+  const nv = MDN.val(key, v); if (nv === st[key] && !MDE.all) return;
+  if (MDE.all || (key === 'mPit' && MDE.rel)) {
+    const L = nk.ch.filter(Boolean);
+    if (key === 'mPit') { let d = Math.round((nv - st.mPit) * 10) / 10; for (const s of L) d = d > 0 ? Math.min(d, 127.5 - s.mPit) : Math.max(d, -s.mPit); if (!d) return; for (const s of L) s.mPit = MDN.val('mPit', s.mPit + d); }
+    else for (const s of L) s[key] = nv;
+  } else st[key] = nv;
+  qTouch();
+}
+// SCL PRE: Start = PITCH von Kanal 1, Kanal i = Start + Stufe(i), schaltet ALLE KAN. an (wie mdScl)
+function qScl(code) {
+  MDE.scl = code || ''; const nk = qNk(); if (!code || !nk) return;
+  const S0 = nk.ch[0].mPit, st = MD_SCL[code][1], fixed = MD_SCL[code][2];
+  nk.ch.forEach((s, i) => { const off = fixed ? st[Math.min(i, st.length - 1)] + (i >= st.length ? 12 * Math.floor(i / st.length) : 0) : st[i % st.length] + 12 * Math.floor(i / st.length); s.mPit = MDN.val('mPit', S0 + off); });
+  MDE.all = true; qTouch();
+}
+function qKitSet(k, v) { const nk = qNk(); if (!nk) return; const K = nk.md || (nk.md = MDN.kitInit()), nv = MDN.kval(k, v); if (K[k] === nv) return; K[k] = nv; qTouch(); }
+function qProg(c, prog, name) {
+  const nk = qNk(); if (!nk || !prog) return false;
+  const p = percProg(prog); delete p.name; if (name != null) p.mName = String(name).slice(0, 16);
+  const keep = nk.ch[c] || {}; if (isNum(keep.mMono)) p.mMono = keep.mMono; if (keep.mCrv) p.mCrv = keep.mCrv;
+  nk.ch[c] = p; qTouch(); return true;
+}
+function qLoadKit(name) { const nk = qNk(), K = percKits().find(k => k.name === name); if (!nk || !K) return false; const n = percNormNk(percNkFromKit(K)); nk.kit = n.kit; nk.ch = n.ch; nk.md = n.md; qTouch(); return true; }
+// „•“ hinter dem Kit-Namen: Kanäle oder Kit-Effekte weichen vom geladenen Kit ab (einmal je Klang-Stand)
+function qEdited() {
+  if (Q.edV === UI.sndVer) return Q.ed; Q.edV = UI.sndVer;
+  const nk = qNk(), K = nk && percKits().find(k => k.name === nk.kit); if (!nk) return (Q.ed = false); if (!K) return (Q.ed = true);
+  const a = percNormNk(percNkFromKit(K)); return (Q.ed = SQStore.canonical(a.ch) !== SQStore.canonical(nk.ch) || SQStore.canonical(a.md) !== SQStore.canonical(nk.md));
+}
+// Liste eines Code-Reglers (WAVE, MODE, TYPE …, SCL PRE) – wie mdList, Ziel die Perkussionsspur
+function qList(key, anchor) {
+  const C = MD_CELL[key]; if (!anchor.isConnected) return;
+  openPop(anchor, p => {
+    let h;
+    if (key === 'mWav') { const cur = mdCur().mWav;
+      h = '<h4>WAVE – Modell</h4><div class="mdwl pan-y">' + MD_FAM.map(([f, fl]) => `<div class="mdwr"><span class="mdwf">${esc(fl)}</span><div class="mdwb">` +
+        MDN.WAVES.filter(w => w[0] === f).map(w => `<button class="rb mdw${w === cur ? ' on' : ''}" data-v="${w}" aria-label="${esc(w + ' ' + MD_WAVE[w][1])}"><b>${w}</b><small>${esc(MD_WAVE[w][0])}</small></button>`).join('') + '</div></div>').join('') + '</div>';
+    } else {
+      const vals = C.dyn ? C.vals.concat(['D']) : C.vals, s = mdCur(), cur = key === 'scl' ? MDE.scl : C.dyn ? s[C.m] : s[key];
+      const name = v => (key === 'scl' ? (v ? MD_SCL[v][0] : 'aus') : C.dyn ? (v === 'D' ? 'Dynamic Decay (Zahl)' : MD_MODE[v]) : C.sub(v));
+      h = `<h4>${esc(C.l)}</h4><div class="plist mdcl pan-y">` + vals.map(v => `<button class="rb${v === cur ? ' on' : ''}" data-v="${esc(v)}"><b>${esc(v === 'D' ? '0–50' : key === 'nmode' && v === 'E1' ? 'E' : v || '–')}</b> <small>${esc(name(v) || '')}</small></button>`).join('') + '</div>';
+    }
+    p.innerHTML = h; p.classList.add('mdpop'); guardTouch(p);
+    onTap(p, b => {
+      const v = b.dataset.v;
+      soundEdit(DRUM_T, C.l + ' ' + (v || '–'), () => { if (key === 'scl') mdScl(v); else mdSet(C.dyn ? C.m : key, v); });
+      for (const o of p.querySelectorAll('button[data-v]')) o.classList.toggle('on', o === b);
+      mdAudition(); P.ver = ''; paint();
+      if (key !== 'mWav') closePop();
+    }, 'button[data-v]');
+  }, {name: 'mdlist'});
+}
+// TAP: ≥ 4 Schläge, Mittel der letzten 3 Abstände → BPM-Strecke (wie mdTap), ein Undo
+function qTap(btn) {
+  const t = performance.now(), a0 = MDE.taps, last = a0[a0.length - 1];
+  MDE.taps = (last != null && t - last < 2500 ? a0 : []).concat([t]).slice(-4);
+  const n = MDE.taps.length; if (n < 4) { btn.textContent = 'TAP ' + n; return; }
+  const a = MDE.taps, avg = (a[3] - a[0]) / 3000;
+  let bi = 0; for (let i = 1; i < MD_BPM.length; i++) if (Math.abs(MD_BPM[i][2] - avg) < Math.abs(MD_BPM[bi][2] - avg) - 1e-9) bi = i;
+  soundEdit(DRUM_T, 'Echo-Tempo ' + mdBpmTxt(bi), () => { mdKitSet('dlM', 'b'); mdKitSet('dlB', bi); });
+  btn.textContent = mdBpmTxt(bi);
+}
+// ⋯ auf der Perkussionsspur: Programm, Kit, Kanal kopieren / einfügen / Init – je ein Undo
+function qMore(anchor) {
+  const sl = curSl();
+  openPop(anchor, p => {
+    p.innerHTML = '<h4>' + esc(MD_NAME) + ' · ' + esc(sl.l) + '</h4><div class="plist edmore">' +
+      '<button class="rb" data-a="prog"><b>Programm ▾</b><small>Liste nach Kategorie, Tipp = laden + hören</small></button>' +
+      '<button class="rb" data-a="kit"><b>Kit ▾</b><small>alle 12 Kanäle und HALL · ECHO, ein Schritt</small></button>' +
+      '<button class="rb" data-a="copy"><b>Kanal kopieren</b><small>' + esc(sl.l) + ' merken</small></button>' +
+      `<button class="rb" data-a="paste"${MDE.clip ? '' : ' disabled'}><b>${MDE.all ? 'Einfügen in alle' : 'Einfügen'}</b><small>gemerkten Kanal hierher</small></button>` +
+      '<button class="rb" data-a="init"><b>Kanal Init</b><small>' + esc(sl.l) + ' auf INIT</small></button>' +
+      '<button class="rb" data-a="ed"><b>Zur Seite ' + esc(MD_NAME) + '</b><small>Kit, Pads, folgt / folgt nicht</small></button></div>';
+    guardTouch(p);
+    onTap(p, b => {
+      const a = b.dataset.a; closePop();
+      if (a === 'prog') { mdProgPop(anchor); return; }
+      if (a === 'kit') { percKitPop(anchor, Q.t); return; }
+      if (a === 'ed') { close(); return; }
+      if (a === 'copy') { MDE.clip = mdProg(mdCur()); stripTxt('KOPIERT', sl.l); return; }
+      if (a === 'paste' && MDE.clip) soundEdit(DRUM_T, MDE.all ? 'Einfügen in alle' : 'Einfügen', () => { const nk = qNk(); if (!nk) return; for (let c = 0; c < 12; c++) if (MDE.all || c === Q.c) Object.assign(nk.ch[c], deep(MDE.clip)); qTouch(); });
+      if (a === 'init') soundEdit(DRUM_T, 'Init ' + sl.l, () => { const nk = qNk(); if (!nk) return; Object.assign(nk.ch[Q.c], mdProg(MDN.init())); qTouch(); });
+      mdAudition(true); P.ver = ''; paint();
+    }, 'button[data-a]');
+  }, {name: 'ndpmore'});
+}
 const NDP_CSS = `/* NDP-CSS-PLATTE-BEGIN – die Platte selbst; wird mit dem Block sq-ndp-src beim ersten Öffnen eingesetzt */
 #ndp{position:fixed;inset:0;z-index:52;display:flex;flex-direction:column;background:#120607;color:#fff;font-family:var(--font-ui);
   padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);box-sizing:border-box;overflow:hidden;
@@ -8230,6 +8375,7 @@ function paint() { if (!P.open || !P.ui) return; paintKeys(); paintField(); pain
 // jedes Bild: nur ein Vergleich der Zähler (Undo, Kanal, Daten, Transport); Neuzeichnen nur bei Änderung
 function loop() {
   P.raf = 0; if (!P.open) return;
+  if (QP() && !qNk()) { close(); return; }   // NPS: die Spur spielt kein North mehr (z. B. Undo des Wechsels) – Platte zu
   const v = UI.drumVer + '|' + UI.sndVer + '|' + UNDO.length + '|' + REDO.length + '|' + (ED.dVoice | 0) + '|' + MDE.all + MDE.solo + MDE.scl + '|' + !!R.playing + '|' + MDS.st + '|' + drumSnd().name;
   if (v !== P.ver) { P.ver = v; paint(); }
   P.raf = requestAnimationFrame(loop);
@@ -8391,7 +8537,7 @@ function velAt(st, ev) { const r = st.t.getBoundingClientRect(); return clamp(1 
 function flash(i) { P.hitT[i] = 1; paintKeys(); clearTimeout(P['hT' + i]); P['hT' + i] = setTimeout(() => { delete P.hitT[i]; if (P.open) paintKeys(); }, 140); }
 function chDown(st, ev) {
   const i = +st.a.slice(3); st.i = i; st.t.classList.add('dn');
-  if (shiftOn()) { anyShiftUse(); st.shift = 1; return; }
+  if (shiftOn() && !QP()) { anyShiftUse(); st.shift = 1; return; }   // NPS: SHIFT + Kanal = Quelle nur auf der Drum-Spur
   const prev = ED.dVoice | 0; ED.dVoice = i; if (MDE.solo) mdSoloApply();
   drumAudition(i, velAt(st, ev)); flash(i);
   if (prev !== i) { P.ver = ''; paint(); }
@@ -8406,6 +8552,7 @@ function chUp(st, cancel) {
 function padDown(st, ev) { const i = +st.a.slice(4); ED.dVoice = i; drumAudition(i, velAt(st, ev)); flash(i); P.ver = ''; paint(); }
 /* ---------- ⋯ ---------- */
 function morePop(anchor) {
+  if (QP()) { qMore(anchor); return; }   // NPS
   const sl = curSl(), md = isMd(), all = DRUM_VOICES.every(v => mdIsSrc(v.id));
   openPop(anchor, p => {
     p.innerHTML = '<h4>' + esc(MD_NAME) + ' · ' + esc(sl.l) + '</h4><div class="plist edmore">' +
@@ -8429,6 +8576,7 @@ function open(o) {
   o = o || {};
   ensureCss();
   if (!P.root) { const r = el('div', ''); r.id = 'ndp'; r.setAttribute('role', 'dialog'); r.setAttribute('aria-label', MD_NAME + '-Platte'); document.body.appendChild(r); P.root = r; }
+  qBind(o);   // NPS: Datenquelle – o.perc = Perkussionsspur (Kanal o.c), sonst die Drum-Spur
   if (o.view) P.view = o.view === 'spiel' ? 'spiel' : 'geraet';
   if (o.sec && SEC_BY[o.sec]) P.sec = o.sec; if (o.zoom != null) P.zoom = !!o.zoom;
   P.open = true; P.root.hidden = false; EL.app.classList.add('ndpon');
@@ -8448,6 +8596,7 @@ function close(quiet) {
   P.root.hidden = true; P.root.innerHTML = ''; P.ui = null; P.fr = null; EL.app.classList.remove('ndpon');
   try { mdEditEnd(true); } catch (e) { logErr(e); }             // ALLE KANÄLE / SOLO PART enden mit dem Schließen (Regel 6)
   if (!quiet && R.editor === 'drum' && EL.drumSheet.classList.contains('open')) safeRebuild(buildDrumEd);
+  qUnbind(quiet);   // NPS: Perkussionsspur – zurück zur Drum-Quelle, Seite NORTH neu
   return true;
 }
 function onResize() { clearTimeout(P.rsT); P.rsT = setTimeout(() => { if (P.open) build(); }, 80); }
@@ -8467,7 +8616,9 @@ function info() {
 function view(o) { o = o || {}; if (o.sec && SEC_BY[o.sec]) { P.sec = o.sec; secFocus(); } if (o.zoom != null) P.zoom = !!o.zoom; if (o.view) P.view = o.view; if (o.enc) P.enc = o.enc; if (o.focus) P.focus = o.focus; if (o.bank != null) P.bank = o.bank ? 1 : 0; if (o.shift != null) P.shiftLatch = !!o.shift; if (P.open) build(); return info(); }
 function ensureCss() { if (document.getElementById('ndp-css')) return; const st = document.createElement('style'); st.id = 'ndp-css'; st.textContent = NDP_CSS; document.head.appendChild(st); }
 window.NDP = {open, close, isOpen: () => P.open, info, view, desc, SECS, perfReset: () => { P.moves = 0; P.moveMs = 0; P.moveMax = 0; P.moveL = []; }};
-})();
+Object.assign(window.NDP, {src: () => (QP() ? {perc: Q.t, c: Q.c} : null), seg: {digit: segDigit, paint: segPaint}, css: ensureCss});   // NPS: Quelle (Tests), Siebensegment + CSS für Seite NORTH
+})({DRUM_T, MD_KIT_NAMES, ED, mdCurSl, mdCur, mdIsSrc, mdUsed, mdSlot, mdKit, mdSet, mdScl, mdKitSet, mdLoadProgram, mdProgPop, mdList, mdTap,
+  drumAudition, mdAudition, mdSoloApply, mdHeadSolo, mdFocus, mdEditEnd, drumSnd, soundEdited, kitId, loadKit});   // NPS: G
 </script>
 <script type="text/plain" id="sq-mk-src">
 /* ===== MK1 / MK-P (Nachtrag 3 B.3, B.4, MK-P): block sq-mk-src, evaluated on first need (mkLoad). The panel of the AM engine as
@@ -8863,6 +9014,7 @@ function get(d) {
   }
   if (d.src) return srcIdx(d.src);
   if (d.wv) return Math.floor(s_.p.mk.t[ti()].o1.c2 / 2) + 1;   // MK2: STEUER 2 values 2n - 2, 2n - 1 = wave n
+  { const o = kv1Ov(P.i, 'mk.' + tp(d.p)); if (o !== undefined) return o; }   // KV1: the shown value under a state ◆ / during its run
   const v = SQMK.mkPathGet(s_.p.mk, tp(d.p)); return typeof v === 'number' ? v : 0;
 }
 function range(d) {
@@ -26282,7 +26434,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '4.39.0';
+const VERSION = '4.40.0';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -29021,6 +29173,7 @@ function mkSetP(i, path, v, live) {
   if (path === 'arp.on' && x >= .5) arpLoadSoon();                // MK5: the arp core lives in block sq-mk-src
   const before = SQMK.mkPathGet(s_.p.mk, path);
   s_.p.mk = SQMK.mkPathSet(s_.p.mk, path, x);
+  kv1Hand(i, 'mk.' + path);                                      // KV1
   const after = SQMK.mkPathGet(s_.p.mk, path);
   const E = AU.synth[i]; if (E && s_.engine === 'mk') { const wm = /^t\.([01])\.(o1\.(w|c2)|seq\.)/.exec(path); if (wm) mkwFeed(E, s_, live && wm[3] === 'c2' ? x : null, +wm[1]); else if (path === 'mode') mkwFeed(E, s_, null, 1); const v6 = R.v6aCur && R.v6aCur[i] ? v6aCurSt(i) : null; E.mkSet({[path]: v6 && typeof v6.p['mk.' + path] === 'number' ? v6.p['mk.' + path] : live ? x : after}); }   // MK3: both timbres; V6A: under a state its value stays
   if (after !== before) { if (UI.ab && UI.ab.t === i && UI.ab.side === 'B') UI.ab = null; UI.sndVer++; UI.dirty.strip = UI.dirty.edHead = true; markDirty(); MKECO.delete(s_); if (!E) rebuildNativeLfos(i); }   // G-MK2a-fix: header dot + [A/B] at once (§11.3), like edParamChanged
@@ -29269,6 +29422,7 @@ function ndpLoad() {   // NDP
 }
 // die Platte gehört zum Drum-Editor: er wird geöffnet (Drum-Spur gewählt), die Platte liegt darüber; ✕ führt zurück
 function ndpOpen(o) {   // NDP
+  if (o && o.perc != null) return percPlateOpen(o.perc, o);   // NPS: die Platte für eine Perkussionsspur (Datenquelle sound.p.nk)
   const tr = S.tracks[DRUM_T]; if (!tr || tr.kind !== 'drum' || !drumSnd() || drumSnd().engine !== 'drum') { toast(MD_NAME + '-Platte: nur für ein Drum-Kit'); return false; }
   if (R.selT !== DRUM_T || R.editor !== 'drum' || !EL.drumSheet.classList.contains('open')) { selectTrack(DRUM_T); openEditor(); }
   const M = ndpLoad(); if (!M) { toast(MD_NAME + '-Platte konnte nicht geladen werden'); return false; }
@@ -29579,6 +29733,7 @@ function v6aGo(i, st1, t0, t1, at, c) {
     for (const kk of V6A_FX) if (Math.abs((fxB[kk] || 0) - (fxA[kk] || 0)) > 1e-9) { a[kk] = fxA[kk]; b[kk] = fxB[kk]; n++; }
     if (n) { R.v6aRun[i] = {t0, t1: Math.max(t1, t0 + .005), c: c ? 1 : 0, a, b}; v6aFxRun(i, fxA.drive || 0); }
   }
+  try { kv1Go(i, old, st1, t0, t1, at, c); } catch (e) { logErr(e); }   // KV1: the editor's knobs follow this run (display only)
   if (ED.v6aB && ED.v6aB.length) { try { for (const b of ED.v6aB) if (b.isConnected && +b.dataset.t === i) { v6aBtnPaint(b); if (ED.lcd && ED.lcd.isConnected && !ED.lcd._s) lcdHint(); } } catch (e) { logErr(e); } }   // the head key and the hint follow
   return true;
 }
@@ -29675,6 +29830,114 @@ function v6aK1Del(i, key) {
   v6aSetState(i, s_, Object.keys(n.p || {}).length || (n.fx && Object.keys(n.fx).length) ? n : null);
   toast('Gelöscht: ◆ ' + v6aKeyName(path), {label: 'Rückgängig', fn: () => undo()});
   return true;
+}
+/* ---------- KV1 (Xander 01.11.: „ich sehe nicht, wie sich visuell die Regler dahin ändern, von einem Clipzustand zum anderen“): die
+   Regler des offenen Editors zeigen den WIRKSAMEN Wert (Grundklang ⊕ Zustand ◆) und drehen sich während einer Fahrt mit derselben Kurve
+   und Dauer wie das Worklet (v6aStep: S-Kurve bzw. linear, l = im Log-Raum, eng 3 linear; stufige Werte springen am Taktstrich 'at';
+   eine Spur ohne Worklet – nativer Weg, ab der nächsten Note – springt ganz am Taktstrich). Nur Anzeige: track.sound bleibt der
+   Grundklang, kein Audio-Weg ändert sich. KV1.run[i] = die Fahrt der Spur wie v6aGo sie schickt (prev = die ältere: sie hält ihre Werte,
+   bis die neue startet); KV1.hand[i] = was eine Hand seit dem letzten Wechsel gedreht hat (zeigt seinen Griff-Wert). Gemalt wird in
+   uiFrame nur, solange eine Fahrt läuft (KV1.on) und der Synth-Editor offen ist: ≤ 30 Bilder/s, nur die Regler der fahrenden Werte.
+   Im ◆-Bearbeiten der Spur (V6A.ed) bleibt alles wie bisher. ---------- */
+const KV1 = {on: false, ms: 0, run: [], hand: [], seen: null, cm: null, amb: new Set()};
+function kv1T() { return AU.ctx ? AU.ctx.currentTime - (AU.outLat || 0) : 0; }             // the audio time heard now
+function kv1Has(o, k) { return Object.prototype.hasOwnProperty.call(o, k); }
+function kv1RunV(r, k, t) {                                                                  // the worklet's formula (v6aStep)
+  const a = r.a[k], b = r.b[k];
+  if (!r.m[k]) return t >= r.at - 1e-6 ? b : a;
+  if (t >= r.t1) return b; if (t <= r.t0) return a;
+  const x = (t - r.t0) / (r.t1 - r.t0), s = r.c ? x : x * x * (3 - 2 * x);
+  return r.m[k] === 2 && a > 0 && b > 0 ? a * Math.pow(b / a, s) : a + (b - a) * s;
+}
+// the run of the chain r that moves key k at audio time t (an older run holds its keys until the newer one starts), else null
+function kv1Q(r, k, t) {
+  for (let q = r, d = 0; q && d < 4; q = q.prev, d++) {
+    if (t >= q.end || !kv1Has(q.b, k)) continue;
+    if (t < q.t0 && q.prev && t < q.prev.end && kv1Has(q.prev.b, k)) continue;
+    return q;
+  }
+  return null;
+}
+// v6aGo: the run of track i as the display sees it (old = R.v6aCur[i] before this change)
+function kv1Go(i, old, st1, t0, t1, at, c) {
+  const tr = S.tracks[i], cur = R.v6aCur && R.v6aCur[i], o = KV1.run[i];
+  KV1.run[i] = null;
+  if (!tr || tr.kind !== 'synth' || !cur || UI.vvOff) return;                              // VV1: the offline song pass is not shown
+  const base = tr.sound, pv = o && o.cur === old && o.snd === base && t0 < o.end ? o : null;
+  if (pv && pv.prev && t0 >= pv.prev.end) pv.prev = null;
+  const E = AU.synth[i], wk = !!(E && !E.dead), eng3 = base.engine === 'mk', st0 = old ? old.st : null;
+  const r = {t0, t1: Math.max(t1, t0), at, c: c ? 1 : 0, a: {}, b: {}, m: {}, cur, snd: base, prev: pv, end: Math.max(t0, t1, at)};
+  for (const k of new Set(Object.keys((st0 && st0.p) || {}).concat(Object.keys((st1 && st1.p) || {})))) {
+    if (V6A_NO.has(k) || k === 'mk.mode') continue;
+    const g = v6aGet(base, k); if (typeof g !== 'number' || !isFinite(g)) continue;
+    const y = st1 && st1.p ? st1.p[k] : undefined, x = st0 && st0.p ? st0.p[k] : undefined;
+    const q = pv && kv1Q(pv, k, t0);
+    r.a[k] = q ? kv1RunV(q, k, t0) : typeof x === 'number' && isFinite(x) ? x : g;
+    r.b[k] = typeof y === 'number' && isFinite(y) ? y : g;
+    r.m[k] = !wk ? 0 : !k.includes('.') ? (!eng3 && v6aCont(k) ? (v6aLaw(k) ? 2 : 1) : 0) : eng3 && k.startsWith('mk.') && v6aMkCont(k.slice(3)) ? 1 : 0;
+  }
+  KV1.run[i] = r; KV1.on = true;
+}
+// the value a knob of track i shows for path k ('cutoff', 'wt.pos', 'mk.t.0.f.cut', 'fm6.ops.0.ol', 'fx.vol'); undefined = track.sound
+function kv1Ov(i, k) {
+  const cur = R.v6aCur && R.v6aCur[i]; if (!cur || (V6A.ed && V6A.ed.i === i)) return undefined;
+  const tr = S.tracks[i]; if (!tr || tr.kind !== 'synth') return undefined;
+  const h = KV1.hand[i]; if (h && h.cur === cur && h.k.has(k)) return undefined;              // the hand holds it (Griff-Wert)
+  const t = kv1T();
+  if (k.startsWith('fx.')) {                                                                   // Spur-Werte: v6aFxAt (the same S-curve)
+    const f = k.slice(3), st = cur.st, fr = R.v6aRun && R.v6aRun[i];
+    if (!V6A_FX.includes(f) || !((st && st.fx && typeof st.fx[f] === 'number') || (fr && t < fr.t1 && kv1Has(fr.b, f)))) return undefined;
+    return v6aFxAt(i, fxOfSound(tr.sound), t)[f];
+  }
+  const r = KV1.run[i];
+  if (r && r.cur === cur && r.snd === tr.sound) { const q = kv1Q(r, k, t); if (q) return kv1RunV(q, k, t); }
+  const x = cur.st && cur.st.p && v6aStOk(i, cur.st) ? cur.st.p[k] : undefined;
+  return typeof x === 'number' && typeof v6aGet(tr.sound, k) === 'number' ? x : undefined;
+}
+function kv1Get(i, k) { const v = kv1Ov(i, k); return v !== undefined ? v : sndGet(S.tracks[i].sound, k); }
+// a hand turned path k of track i (setP, mkSetP, fmSetOp): its knob shows that value until the next change of the state
+function kv1Hand(i, k) {
+  const cur = R.v6aCur && R.v6aCur[i]; if (!cur || (V6A.ed && V6A.ed.i === i)) return;
+  let h = KV1.hand[i]; if (!h || h.cur !== cur) h = KV1.hand[i] = {cur, k: new Set()};
+  h.k.add(k);
+}
+// the controls of the open editor per key (ED.ctls is new with every build)
+function kv1Ctls(k) {
+  const A = ED.ctls; if (!A) return [];
+  let c = KV1.cm; if (!c || c.a !== A || c.n !== A.length) { c = KV1.cm = {a: A, n: A.length, m: new Map()}; for (const x of A) if (x.ctlKey) { const L = c.m.get(x.ctlKey); if (L) L.push(x); else c.m.set(x.ctlKey, [x]); } }
+  return c.m.get(k) || [];
+}
+function kv1Amb(set) { for (const x of KV1.amb) if (!set.has(x)) x.classList.remove('kv1'); for (const x of set) if (!KV1.amb.has(x)) x.classList.add('kv1'); KV1.amb = set; }
+// uiFrame (only while KV1.on and the synth editor is open): repaint the knobs whose shown value changed
+function kv1Frame() {
+  const n = performance.now(); if (n - KV1.ms < 32) return; KV1.ms = n;                      // ≤ 30 Bilder/s
+  const t = kv1T(); let busy = false;
+  for (const r of KV1.run) if (r && t < r.end + .05) { busy = true; break; }
+  try { if (ED.ctls && EL.synthSheet && EL.synthSheet.classList.contains('open')) kv1Paint(R.selT, t); else kv1Amb(new Set()); }
+  catch (e) { logErr(e); KV1.on = false; return; }
+  if (!busy) KV1.on = false;                                                                   // the end values are painted above
+}
+function kv1Paint(i, t) {
+  if (!KV1.seen || KV1.seen.i !== i) KV1.seen = {i, v: new Map()};
+  const sv = KV1.seen.v, keys = new Set(sv.keys()), r = KV1.run[i], fr = R.v6aRun && R.v6aRun[i], amb = new Set();
+  for (let q = r, d = 0; q && d < 4; q = q.prev, d++) for (const k in q.b) keys.add(k);
+  if (fr) for (const k in fr.b) keys.add('fx.' + k);
+  let xy = false, mk = false, step = null;
+  for (const k of keys) {
+    const v = kv1Ov(i, k), L = kv1Ctls(k), fx = k.startsWith('fx.');
+    const q = !fx && r ? kv1Q(r, k, t) : null, mv = v !== undefined && (fx ? !!(fr && t >= fr.t0 && t < fr.t1 && kv1Has(fr.b, k.slice(3))) : !!(q && q.m[k] && t >= q.t0 && t < q.t1));
+    if (mv) for (const x of L) amb.add(x);
+    if (sv.has(k) && sv.get(k) === v) continue;
+    sv.set(k, v);
+    for (const x of L) x.update();
+    if (k === 'cutoff' || k === 'res') xy = true;
+    if (k.startsWith('mk.')) mk = true;
+    else if (!L.length && !fx && !(q && q.m[k])) (step || (step = [])).push(k);              // stepping values (segments, FM): once
+  }
+  if (xy && ED.xy) ED.xy();
+  if (mk && window.MKUI && MKUI.renderSoon) MKUI.renderSoon();
+  if (step) for (const f of ED.refreshers) { try { f(step.length === 1 ? step[0] : undefined); } catch (e) { logErr(e); } }
+  kv1Amb(amb);
 }
 /* V6A: normalize (load) – literal lists here: normClip runs during the first load, before the V6A constants */
 function v6aNorm(st) {
@@ -31028,6 +31291,7 @@ function percPage(pg, i) {
   fb.setAttribute('aria-label', fol ? 'Spur folgt Transponierung, Akkorden und Eine Skala – antippen: folgt nicht' : 'Spur folgt nicht (Transponierung, Akkorde, Eine Skala) – antippen: folgt');
   onTap(fb, () => { percSetFollow(i, !(S.tracks[i].follow !== false)); safeRebuild(buildSynthEd); lcdShow(MD_NAME, S.tracks[i].follow !== false ? 'folgt – Transponierung verschiebt die Tonhöhe der Kanäle' : 'folgt nicht – Transponierung, Akkorde und Eine Skala lassen die Spur aus'); });
   top.append(kb, fb); pg.appendChild(top);
+  percPlate(pg, i, nk, top);   // NPS: Taste „Platte“ (dieselbe Platte wie auf der Drum-Spur); die Liste bleibt wie bisher
   const grid = el('div', 'percgrid');
   for (let c = 0; c < 12; c++) {
     const p = nk.ch[c] || {}, cell = el('div', 'perccell');
@@ -31080,6 +31344,31 @@ function percProgPop(anchor, i, c) {
       if (!R.playing) { const v = percAudition(i, c); if (v) v.release(nowT() + .2); }
     }, 'button');
   }, {name: 'percprog'}));
+}
+/* NPS (Xander 01.11.: „klassisch sieht die North doch aus mit diesen schwarzen Schlagflächen und oben das digitale Display … ich kann da
+   gar nicht ins Sounddesign reingehen“): Seite NORTH als rotes Feld – oben das Siebensegment-Display (Kanal) mit Streifen (Name ·
+   Programm), darunter die 12 schwarzen Schlagflächen (Tipp = Kanal wählen + schlagen, oben laut, unten leise), die Sektionen
+   TONE · NOISE · CLICK · MIX · FX · HALL · ECHO öffnen die Platte mit allen Reglern des gewählten Kanals, Programm ▾ bleibt eine
+   Möglichkeit; die rote Taste „Platte“ im Kopf wie auf der Drum-Spur. Display und Pads sind die der Platte (Block sq-ndp-src). */
+// ein Schlag auf Kanal c mit Anschlag vel (Pads der Seite NORTH, Kanal-Tasten der Platte)
+function percHit(i, c, vel) { const n = PERC_REF * 12 + clamp(c | 0, 0, 11); R.lastNote[i] = n; const v = auditionStart(i, n, clamp(+vel || .85, .05, 1)); if (v) v.release(nowT() + .2); return v; }
+// die Platte für Perkussionsspur i öffnen (o.c Kanal, o.sec Sektion, o.view): liegt über dem Klang-Editor der Spur, ✕ führt zurück
+function percPlateOpen(i, o) {
+  o = o || {}; const tr = S.tracks[i];
+  if (!percIs(tr) || !percNkOf(tr.sound)) { toast(MD_NAME + '-Platte: keine Perkussionsspur'); return false; }
+  if (R.selT !== i || R.editor !== 'synth' || !EL.synthSheet.classList.contains('open')) { selectTrack(i); openEditor(); }
+  const M = ndpLoad(); if (!M) { toast(MD_NAME + '-Platte konnte nicht geladen werden'); return false; }
+  const q = Object.assign({}, o, {perc: i, c: o.c != null ? o.c : PERCUI.ch | 0});
+  const fresh = !AU.ctx; ensureAudio(); percEngineSync(i);       // im Tipp (iOS: Audio nur in einer Geste)
+  if (fresh) { requestAnimationFrame(() => { if (R.editor === 'synth' && R.selT === i) M.open(q); }); return true; }
+  return M.open(q);
+}
+function percPlate(pg, i, nk, top) {
+  const M = ndpLoad(); if (!M || !M.seg) return false;
+  M.css(); pg.classList.add('pan-y');
+  const np = el('button', 'rb ndpopen percplt', '<b>' + esc(MD_NAME) + '</b><small>Platte</small>'); np.setAttribute('aria-label', MD_NAME + '-Platte öffnen: alle Regler des Kanals');
+  onTap(np, () => percPlateOpen(i, {c: PERCUI.ch})); top.appendChild(np);
+  return false;   // NPS (Xander 01.11.): Seite NORTH bleibt wie sie war – nur die Taste „Platte“ kommt dazu
 }
 
 /* ---------- housekeeping ---------- */
@@ -40742,6 +41031,7 @@ function uiFrame() {
   if (R.editor === 'drum') drumEdFrame(bAud);
   modScopeSync();                                           // §9.4: {scope} only while the editor of a worklet track is open
   if (R.editor === 'synth') { if (UI.dirty.edHead) { UI.dirty.edHead = false; edHeadRefresh(); } if (ED.lfoPrev) lfoPrevFrame(); modFrame(); }
+  if (KV1.on && R.editor === 'synth') kv1Frame();           // KV1: the knobs follow a running state glide (≤ 30 fps, only then)
   if (ED.grm && (R.editor === 'synth' || R.editor === 'drum')) grmFrame();
   mtrFrame();                                                // VV4-F: the level bars (off when hidden / limiter ≥ 2)
   if (R.editor === 'browser' && UI.dirty.br) { UI.dirty.br = false; brRefresh(); }
@@ -40972,8 +41262,8 @@ function lcdHint() {
   const v6 = V6A.ed && V6A.ed.i === R.selT && R.editor === 'synth' ? v6aLcdText() : null;   // V6A: „Bearbeite ◆ …“ (amber)
   L.classList.toggle('v6a', !!v6);
   if (v6) { L.innerHTML = `<span class="lk">${esc(v6[0])}</span><span class="lv">${esc(v6[1])}</span>`; L._full = v6; lcdFit(L); return; }
-  const v6c = R.editor === 'synth' && !V6A.ed && R.v6aCur && R.v6aCur[R.selT] ? v6aCurSt(R.selT) : null;   // V6A: a state plays, the knobs show the Grundklang
-  if (v6c) { const h = ['◆ Zustand spielt', 'Regler zeigen den Grundklang · [◆] = Zustand bearbeiten']; L.innerHTML = `<span class="lk">${esc(h[0])}</span><span class="lv">${esc(h[1])}</span>`; L._full = h; lcdFit(L); return; }
+  const v6c = R.editor === 'synth' && !V6A.ed && R.v6aCur && R.v6aCur[R.selT] ? v6aCurSt(R.selT) : null;   // V6A: a state plays (KV1: the knobs show it)
+  if (v6c) { const h = ['◆ Zustand spielt', 'Regler zeigen den Klang des Clips · [◆] = Zustand bearbeiten']; L.innerHTML = `<span class="lk">${esc(h[0])}</span><span class="lv">${esc(h[1])}</span>`; L._full = h; lcdFit(L); return; }
   L.innerHTML = '<span class="lk">Regler</span><span class="lv">ziehen = ändern · seitlich = fein · 2× tippen = Standard · halten = modulieren</span>';
   L._full = ['Regler', 'ziehen = ändern · seitlich = fein · 2× tippen = Standard · halten = modulieren']; lcdFit(L);
 }
@@ -41798,6 +42088,7 @@ function setP(i, key, v) {
   if (nv === sndGet(snd, key)) return nv;
   if (UI.ab && UI.ab.t === i && UI.ab.side === 'B') UI.ab = null;            // an edit of the original is a new edit (A/B)
   sndSet(snd, key, nv);
+  kv1Hand(i, key);                                                           // KV1: this knob shows the hand's value now
   liveUpdate(i, key);
   UI.sndVer++; UI.dirty.strip = true; markDirty();
   if (R.editor === 'synth' && i === R.selT) edParamChanged(key);
@@ -42149,13 +42440,13 @@ const isLand = () => window.matchMedia('(orientation: landscape)').matches;
 function sKnob(key, o) {
   const i = R.selT, d = PD[key];
   // WP5: d.mod = the destination this knob rings on (§9.2), d.modSrcs = the sources it accepts (FX: LFO 1/2, §9.6)
-  return makeCtl(d, () => sndGet(S.tracks[i].sound, key), v => setP(i, key, v),
+  return makeCtl(d, () => kv1Get(i, key), v => setP(i, key, v),   // KV1: the shown value (Grundklang ⊕ Zustand, during a run its curve)
     Object.assign({undo: soundUndo(i), mod: d.mod || null, modT: i, modSrcs: d.modSrcs || null, key, fmt: v => fmtVal(d.fmt, v), detents: d.detents}, o));
 }
 const sFader = (key, o) => sKnob(key, Object.assign({kind: 'fader'}, o));
 function sSeg(key, opts, cls, label, o) {
   const i = R.selT;
-  const sg = makeSeg(opts, () => sndGet(S.tracks[i].sound, key), v => setP(i, key, v), cls, Object.assign({undo: soundUndo(i), label: label || PD[key].l}, o));
+  const sg = makeSeg(opts, () => kv1Get(i, key), v => setP(i, key, v), cls, Object.assign({undo: soundUndo(i), label: label || PD[key].l}, o));
   sg.dataset.key = key;                                     // „Was ist anders?“ (§5.2)
   return sg;
 }
@@ -42163,8 +42454,8 @@ function sSeg(key, opts, cls, label, o) {
 function sToggle(key, label) {
   const i = R.selT, b = el('button', 'tgl rb', `<i class="led"></i><span>${esc(label)}</span>`);
   b.setAttribute('role', 'switch'); b.dataset.key = key;
-  const upd = () => { const on = !!sndGet(S.tracks[i].sound, key); b.classList.toggle('on', on); b.setAttribute('aria-checked', String(on)); };
-  onTap(b, () => { const before = soundSnapshot(i); setP(i, key, sndGet(S.tracks[i].sound, key) ? 0 : 1); upd(); commitSound(i, before, label); lcdShow(label, sndGet(S.tracks[i].sound, key) ? 'an' : 'aus'); });
+  const upd = () => { const on = !!kv1Get(i, key); b.classList.toggle('on', on); b.setAttribute('aria-checked', String(on)); };
+  onTap(b, () => { const before = soundSnapshot(i); setP(i, key, kv1Get(i, key) ? 0 : 1); upd(); commitSound(i, before, label); lcdShow(label, sndGet(S.tracks[i].sound, key) ? 'an' : 'aus'); });
   b.update = upd; upd(); ED.refreshers.push(upd);
   return b;
 }
@@ -42674,13 +42965,15 @@ const FM_CURVE = [[0, '−LIN'], [1, '−EXP'], [2, '+EXP'], [3, '+LIN']];
 const fmAlg = fm => DXN.ALGS[(fm.alg | 0) - 1] || DXN.ALGS[0];
 const FMC = {env: null};                                  // the envelope clipboard ([Kopieren] / [Einfügen])
 function fmOf(i) { const snd = sndOf(i); if (!snd) return null; if (!snd.p.fm6) snd.p.fm6 = FM6_DEF(); return snd.p.fm6; }
-function fmGetOp(i, k, key) { const op = fmOf(i).ops[k]; return FM_KS.includes(key) ? (op.ks || FM_KS_DEF())[key] : op[key]; }
+function fmGetOp(i, k, key) { const ov = kv1Ov(i, 'fm6.ops.' + k + (FM_KS.includes(key) ? '.ks.' : '.') + key); if (ov !== undefined) return ov;   // KV1: shown value under a state ◆
+  const op = fmOf(i).ops[k]; return FM_KS.includes(key) ? (op.ks || FM_KS_DEF())[key] : op[key]; }
 // one operator value (Anhang A.2 ranges; ks.* = bp ld rd lc rc); nothing happens when the value does not change
 function fmSetOp(i, k, key, v) {
   const fm = fmOf(i); if (!fm) return undefined;
   const op = fm.ops[k], nv = fmClampV(key, v);
   if (FM_KS.includes(key)) { if (!op.ks) op.ks = FM_KS_DEF(); if (op.ks[key] === nv) return nv; op.ks[key] = nv; }
   else { if (op[key] === nv) return nv; op[key] = nv; }
+  kv1Hand(i, 'fm6.ops.' + k + (FM_KS.includes(key) ? '.ks.' : '.') + key);   // KV1
   fmChanged(i);
   return nv;
 }
@@ -45648,10 +45941,10 @@ function buildXY(i) {
   const dC = PD.cutoff, dR = PD.res;
   r100.style.top = ((1 - 1 / 1.15) * 100).toFixed(2) + '%';
   const draw = () => {
-    const P = S.tracks[i].sound.p, nx = toNorm(dC, P.cutoff), ny = 1 - toNorm(dR, P.res);
+    const cu = kv1Get(i, 'cutoff'), rs = kv1Get(i, 'res'), nx = toNorm(dC, cu), ny = 1 - toNorm(dR, rs);   // KV1: the shown values
     const X = (nx * 100).toFixed(2) + '%', Y = (ny * 100).toFixed(2) + '%';
     gx.style.left = X; gy.style.top = Y; pt.style.left = X; pt.style.top = Y;
-    xv.innerHTML = esc(fmtVal('hz', P.cutoff)) + '<br>' + esc(fmtVal('pct', P.res));
+    xv.innerHTML = esc(fmtVal('hz', cu)) + '<br>' + esc(fmtVal('pct', rs));
   };
   ED.xy = draw; ED.refreshers.push(k => { if (!k || k === 'cutoff' || k === 'res') draw(); });
   let g = null;
