@@ -1,0 +1,41 @@
+✓ G6P-01 ZIP enthält Chor-Take; Import auf leerem Profil: Take da, PCM gleich, geladen  {"hasV":true,"r1":{"hash":"c18dcd50:115200","loaded":true,"chor":true},"h0":"c18dcd50:115200"}
+✓ G6P-01 Gegenprobe: 4.25.2 verliert den Chor-Take im ZIP (Fehler bestätigt)
+✓ G6P-03 Chor-Take bleibt im Speicher, 0 erneute tkLoad  {"n":0,"buf":true}
+✓ G6P-03 zwei Clips, ein Take: Pegel in Clip B ändert Clip A nicht  {"before":[0.19952623546123505,0.19952623546123505,0.19952623546123505],"after":[0.19952623546123505,0.19952623546123505,0.19952623546123505]}
+✓ G6P-02 scharf: Führung solo, Lead stumm  {"solo":1,"lead":[0]}
+✓ G6P-02 Blatt zu: Solo aus, Lead wieder auf Pegel, scharf bleibt (für ●)  {"solo":null,"arm":true,"lead":[0.6404],"G":[0.6404]}
+✓ G6P-02 Aufnahme-Start: Führung wieder solo  1
+✓ G6P-02 Render-Halt: Solo und scharf ausgesetzt  {"solo":null,"arm":null}
+✓ G6P-02 Laden: Solo/scharf aus, Knoten geleert  {"solo":null,"arm":null,"nodes":0}
+✓ G6+0 Knoten je Stück: Stimme 2 (selbst gesungen) 1 Knoten, Terz 2; nach Stopp freigegeben  {"keys":["p3:0:0:6","p3:0:1:6","p3:1:0:6"],"after":0}
+✓ G6+0 keine Konsolenfehler  []
+✓ G6P-05 leer: JSON zeichengleich zu 4.25.2, Datei zeichengleich, Format 5  {"len":14563,"fmt":5,"sameS":true,"sameF":true}
+✓ G6P-05 Demo: JSON zeichengleich zu 4.25.2, Datei zeichengleich, Format 5  {"len":14080,"fmt":5,"sameS":true,"sameF":true}
+✓ G6P-05 v1-Chor: JSON zeichengleich zu 4.25.2, Datei zeichengleich, Format 5  {"len":14731,"fmt":5,"sameS":true,"sameF":true}
+✓ G6P-05 v1 + selbst gesungen: JSON zeichengleich zu 4.25.2, Datei zeichengleich, Format 5  {"len":14878,"fmt":5,"sameS":true,"sameF":true}
+✓ G6P-05 v1-Rechenweg und Hall-Kopplung unverändert (Code + Konstanten gleich), Konstanten eingefroren  {"same":true}
+✓ G6P-06 v2 gesetzt, Normalisieren ist verlustfrei (alle Felder)  {"ok":true,"chor":{"v":2,"style":"gospel","grp":{"below":6,"hp":120,"mid":-1,"midF":300,"air":2,"sib":-12,"rev":0.5,"pre":"1/32","dly":0},"voices":[{"lane":"c1","
+✓ G6P-06 Format 6 mit v2-Inhalt  6
+✓ G6P-06 Speichern/Laden deep-equal (Stelle + Spuren)
+✓ G6P-06 Clip kopieren/einfügen, duplizieren deep-equal  {"p":true,"d":[true,true]}
+✓ G6P-06 ZIP-Rundweg deep-equal
+✓ G6P-06 Verlauf (Version zurückholen) deep-equal  [true,"{\"lanes\":[{\"id\":\"c1\",\"role\":\"ch+1\",\"name\":\"Chor Sopran\"},{\"id\":\"c2\",\"role\":\"free\",\"name\":\"Gegenstimme 1\",\"mute\":true},{\"id\":\"c3\",\"role\"
+✓ G6P-06 Song-Stimme mit v2: Laden deep-equal  {"chor":"{\"v\":2,\"style\":\"gospel\",\"grp\":{\"below\":6,\"hp\":120,\"mid\":-1,\"midF\":300,\"air\":2,\"sib\":-12,\"rev\":0.5,\"pre\":\"1/32\",\"dly\":0},\"voices\":[{\"lane\":\"
+✓ G6P-06 Format genau dann 6, wenn v2-Inhalt (Chor v2 / Spuren / Take dup) da ist  [6,6,6,5,6,5]
+✓ G6P-07 4.25.2: Banner „neuere Version“, NV.lock gesetzt, gespeicherte Daten unverändert  {"lock":true,"ban":true,"raw":"{\"lanes\":[{\"id\":\"c1\",\"role\":\"ch+1\",\"name\":\"Chor Sopran\"},{\"id\":\"c2\",\"role\":\"free
+✓ G6P-07 neue Fassung liest Format 6 ohne Sperre  {"lock":false,"ban":false}
+✓ G6P-07 Autosave trägt format 6 (ältere Fassung sperrt)  6
+✓ G6P-07 Format 7 → neue Fassung sperrt (Lese-Grenze 6)
+✓ G6P-08 Lead gelöscht, Duplikat da → Stücke bleiben, Duplikat lesbar  {"n1":0,"keys1":["981adg3itg:0"],"pcm":57600,"n2":1,"keys2":[],"gc":{"deleted":1,"kept":1,"keptChunks":1}}
+✓ G6P-08 ohne Duplikat → Stücke des Leads gelöscht (TK.gc.deleted > 0)  {"n2":1,"keys2":[]}
+✓ G6P-09 Stimmen bekommen Spuren aus ihrer Regel, leere Spur bleibt  {"lanes":{"lanes":[{"id":"c1","role":"st-4","name":"Leer"},{"id":"c2","role":"ch+1","name":"Chor Akkordton oben"},{"id":"c3","role":"free","name":"Gegenstimme 
+✓ G6P-09 Farben: Akkord-Rolle = häufigstes Intervall (Terz rot), frei gelb, Quinte unten grün  [{"id":"c1","tok":"chor5","dig":"5","cls":5},{"id":"c2","tok":"chor3","dig":"3","cls":3},{"id":"c3","tok":"chorf","dig":"–","cls"
+✓ G6P-09 Farbtabelle §1.6 (16 Rollen inkl. Dezime „10“, Oktave unten „8“)  []
+✓ G6P-09 Namen nach Tabelle §2.2  ["Chor Terz oben","Chor Terz unten","Chor Quarte oben","Chor Quinte unten","Chor Sexte oben","Chor Oktave oben","Chor Oktave unten","Chor Terz + Oktave","Chor Akkordton oben","Chor Akkordton un
+✓ G6P-09 Spur-Grenze 8: graue Spur übernommen und umbenannt; keine graue → null, nichts geändert  {"a":["c8","oct-1","Chor Oktave unten"],"b":null,"same":true}
+✓ G6P-09/Undo: Umbenennen 1 Schritt (chorlanes) ↶↷ deep-equal; Chor löschen = Gruppe clip+chorlanes  {"steps":1,"k1":"chorlanes","back":true,"redo":"Neu","grp":"group:clip,chorlanes","back2":true}
+✓ G6P-K1 gekoppelt: Lead −6 dB → Chor −6 dB ±0,1  -6.000000000000001
+✓ G6P-K1 getrennt: Lead +6 dB → Chor unverändert  {"d2":-0.0017997398388720914,"st1":{"lanes":[{"id":"c1","role":"st-4","name":"Leer"},{"id":"c2","role":"ch+1","name":"Chor Akkordton oben"},{"id":"c3","role":"free","name":"Ge
+✓ G6P-K1 wieder an: Abstand bleibt (kein Sprung), danach wieder gemeinsam  {"d3":0.0017997398388722198,"d4":-3}
+✓ G6P-09 keine Konsolenfehler  []
+ALLES GRÜN
