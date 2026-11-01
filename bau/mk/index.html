@@ -16638,11 +16638,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-<<<<<<< MAIN
-const VERSION = '4.25.2';
-=======
-const VERSION = '4.25.0';
->>>>>>> VIDSTAGE
+const VERSION = '4.26.0';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -23942,11 +23938,8 @@ function songWrite(song, n, ch, keepIds) {
   }
   for (const m of ch.marks || []) { const x = Object.assign({}, m, {a: n + m.a}); if (!keepIds || !x.id || song.marks.some(y => y.id === x.id)) x.id = newMarkId(song); song.marks.push(x); }
   song.marks.sort((a, b) => a.a - b.a);
-<<<<<<< MAIN
   if (ch.vox) s2WriteVox(song, n, ch.vox);   /* S2; G3: auch die Song-Stimme eines verschobenen/getauschten Teils (g3VoxCut) – nur einmal schreiben */
-=======
   if (ch.video) vvDirWrite(song, n, ch);                           // VV2
->>>>>>> VIDSTAGE
 }
 // drop entries that change nothing (-1 after -1, the same clip in the same phase), keep the marks tidy, melody lengths
 function songTidy(song) {
@@ -25786,12 +25779,8 @@ function openMarkSheet(id) {
         `</div></div><div class="ms-bb"><div class="ms-r ms-r3">` +
           B('name', '✎ Name') + B('color', `Farbe <i style="background:${pcol}"></i>`, {dis: !isP}) +
           B('tpl', 'Teil-Vorlage ›', {dis: !isP}) + (same >= 2 ? B('all', land || narrow ? 'Auf alle übertragen' : `Auf alle ${same} „${esc(nm)}“ übertragen`, {cls: 'ms-all'}) : B('all', 'Auf alle übertragen', {dis: true})) +
-<<<<<<< MAIN
-        `</div><div class="ms-r">` + B('rec', '● Neu aufnehmen …', {cls: 'ms-rec'}) + `</div></div>`;
-      s012MarkSheetPaint(p, m);   /* S0/S2 */
-=======
         `</div><div class="ms-r">` + B('rec', '● Neu aufnehmen …', {cls: 'ms-rec'}) + `</div></div>` + vvDirRow(m.a, m.a + m.len, 'ms-b');   // VV2: Zeile „Video“
->>>>>>> VIDSTAGE
+      s012MarkSheetPaint(p, m);   /* S0/S2 */
       for (const b of p.querySelectorAll('.ms-b')) if (b.scrollWidth > b.clientWidth + 1) b.classList.add('tight');
     };
     paint(); p._paint = paint;
@@ -26447,11 +26436,7 @@ function openRangeMore(anchor) {
     p.innerHTML = `<h4>Takt ${A + 1}${Bb > A ? '–' + (Bb + 1) : ''}</h4><div class="plist">` +
       (narrow ? '<button class="rb" data-a="part">❖ Als Teil …</button>' : '') +
       '<button class="rb" data-a="clear">○ Leeren</button><button class="rb" data-a="ins">＋ Teil einsetzen ▾</button>' +
-<<<<<<< MAIN
-      '<button class="rb" data-a="quant">Akkorde quantisieren …</button><button class="rb" data-a="loop">⟲ Als Schleife</button>' + s2RangeItem() + '</div>';   /* S2 */
-=======
-      '<button class="rb" data-a="quant">Akkorde quantisieren …</button><button class="rb" data-a="loop">⟲ Als Schleife</button></div>' + vvDirRow(A, Bb + 1, 'vvdb');   // VV2: Zeile „Video“
->>>>>>> VIDSTAGE
+      '<button class="rb" data-a="quant">Akkorde quantisieren …</button><button class="rb" data-a="loop">⟲ Als Schleife</button>' + s2RangeItem() + '</div>' + vvDirRow(A, Bb + 1, 'vvdb');   /* S2 */   // VV2: Zeile „Video“
     onTap(p, b => {
       const a = b.dataset.a; if (a && a.startsWith('vv-')) { vvDirTap(a, b, A, Bb + 1, () => { if (UI.pop && UI.pop.el === p) closePop(); }); return; }   // VV2
       closePop();
@@ -45709,6 +45694,35 @@ async function vvTakesReady() {
   if (!tkAudioOk() || !S.takes) return;
   for (const id of tkActiveIds()) tkLoad(id);
   const w = [...TK.wait.values()]; if (w.length) { try { await Promise.all(w); } catch (e) { logErr(e); } }
+  await vvVocReady();
+}
+/* G-VID: the processed versions the song plays (G4 effects, G2/G7 pitch and transposition, VS4/VS5 clean/stretch, G6 choir voices)
+   computed before the offline pass – live they come in on the fly; the video plays what the finished song sounds like. ≤ 30 s */
+function vvAuds() {
+  const L = [], add = a => { if (a && a.take) L.push(a); };
+  for (const t of S.tracks) for (const c of t.clips) if (c) add(c.audio);
+  if (S.song) { for (const v of S.song.vox || []) add(v); for (const k in S.song.own || {}) add(S.song.own[k].audio); }
+  return L;
+}
+async function vvVocReady(ms) {
+  const auds = vvAuds(); if (!auds.length) return true;
+  const t0 = performance.now(), lim = ms || 30000, G = typeof g2Ready === 'function', W = typeof wpReady === 'function';
+  for (const a of auds) { try { if (typeof g7Prefetch === 'function') g7Prefetch(a.take, a); } catch (e) {} }
+  for (;;) {
+    let ok = true;
+    for (const a of auds) {
+      try {
+        tkPlayBuf(a.take, a);
+        if (G && !g2Ready(a.take, a)) ok = false;
+        if (W && !wpReady(a.take)) ok = false;
+        if (a.chor) { a.chor.voices.forEach(v => G6_COPY.forEach((C, k) => g6Buf(a, v, k))); if (!g6Ready(a)) ok = false; }
+      } catch (e) { logErr(e); }
+    }
+    if (ok && !(G4.job && G4.job.size) && !G4.deb && !(G6.job && G6.job.size)) return true;
+    if (VV.cancel) throw new Error('abgebrochen');
+    if (performance.now() - t0 > lim) return false;
+    await sleep(40);
+  }
 }
 /* the live state the transport touches, taken out before and put back after the offline pass (VV1-06: nothing changes).
    The graph is built in slices with a yield between them (VV1-05: no main-thread task > 50 ms); off.sv holds the live state
@@ -45719,7 +45733,11 @@ async function vvSwapIn(oc, wk, off) {
   const sv = {au: vvSnap(AU), wavesT: WAVES_T, R: vvSnap(R), T: vvSnap(T), XP: vvSnap(XP), MEM: vvSnap(MEM), LOG: vvSnap(LOG), PERF: vvSnap(PERF), TK: vvSnap(TK),
     CAP: vvSnap(CAP), LIM: vvSnap(LIM), MEL: vvSnap(MEL), TICKERR: vvSnap(TICKERR), SONGCAR: vvSnap(SONGCAR), WKSET: WKSET.slice(),
     voices: VOICES.splice(0), hits: HITS.splice(0), clicks: CLICKS.splice(0), recent: RECENT.splice(0), padq: PADQ.map(q => q.splice(0)),
-    svStop: SV.lastStop, loop: S.song.loop, tailT: R.tailWinT, timer: AU.timer, songVer: UI.songVer};
+    svStop: SV.lastStop, loop: S.song.loop, tailT: R.tailWinT, timer: AU.timer, songVer: UI.songVer,
+    // G-VID: the vocal state that changes while playing – VS-P (waiting re-plans of the auto level), G3 (lead-in/out), G6 (choir nodes
+    // per context), G7 (transposed versions prefetched) – out before, back after: the render plays the vocals as live, live stays as it was
+    G3: vvSnap(G3), G7: vvSnap(G7), vpCb: new Map(VP.cb), g6Nodes: new Map(G6.nodes)};
+  VP.cb.clear(); G6.nodes.clear();
   if (off) off.sv = sv;
   clearInterval(AU.timer);
   LOG.n = 0; LOG.buf = new Array(4096);                            // the offline pass logs on its own (noteLog of the render)
@@ -45762,6 +45780,10 @@ function vvSwapOut(sv) {
   VOICES.length = 0; VOICES.push(...sv.voices); HITS.length = 0; HITS.push(...sv.hits); CLICKS.length = 0; CLICKS.push(...sv.clicks);
   RECENT.length = 0; RECENT.push(...sv.recent); PADQ.forEach((q, k) => { q.length = 0; q.push(...sv.padq[k]); });
   SV.lastStop = sv.svStop; if (S.song) S.song.loop = sv.loop; UI.songVer = sv.songVer;
+  vvRest(G3, sv.G3); vvRest(G7, sv.G7);                              // G-VID: vocal state back (G6 nodes of the offline context dropped)
+  for (const N of G6.nodes.values()) { try { (N.pan || N.g).disconnect(); N.rev.disconnect(); N.dly.disconnect(); } catch (e) {} }
+  G6.nodes.clear(); for (const [k, v] of sv.g6Nodes) G6.nodes.set(k, v);
+  for (const [k, v] of sv.vpCb) if (!VP.cb.has(k)) VP.cb.set(k, v);
   AU.timer = setInterval(tick, TICK_MS);
   try { EL.app.classList.toggle('tailwin', tailWinOpen()); } catch (e) {}
   UI.dirty.all = UI.dirty.song = UI.dirty.grid = true;
@@ -46115,7 +46137,7 @@ const VVMP4 = (() => {
 
 /* ---------- Kodierwege: WebCodecs (H.264 + AAC → MP4, schneller als Echtzeit) oder MediaRecorder (Echtzeit) ---------- */
 const VV_VCODECS = ['avc1.640028', 'avc1.4d0028', 'avc1.42e028'];
-const vvMrType = () => (typeof MediaRecorder === 'function' ? ['video/mp4;codecs=avc1,mp4a', 'video/webm;codecs=vp8,opus', 'video/mp4'].find(t => { try { return MediaRecorder.isTypeSupported(t); } catch (e) { return false; } }) || '' : '');
+const vvMrType = (skip) => (typeof MediaRecorder === 'function' ? ['video/mp4;codecs=avc1,mp4a', 'video/mp4;codecs="avc1.42E01E, mp4a.40.2"', 'video/webm;codecs=vp8,opus', 'video/mp4'].filter(t => !(skip && skip.includes(t))).find(t => { try { return MediaRecorder.isTypeSupported(t); } catch (e) { return false; } }) || '' : '');
 // which way works here: {how: 'webcodecs'|'recorder'|null, why, vcodec, acodec, mime}. Cached per format (the checks are async)
 async function vvPath(fmt) {
   const [W, H] = VV_SIZE[fmt] || VV_SIZE['9:16'], T = VV.test || {}, key = fmt + '|' + JSON.stringify(T);
@@ -46198,6 +46220,8 @@ async function vvEncodeWC(job) {
   if (!opus && !aCfg) throw new Error('AAC ohne Konfiguration');
   const audio = {kind: 'audio', codec: opus ? 'opus' : 'aac', ts: asr, sr: asr, ch: 2, cfg: aCfg || new Uint8Array(0), durs: ad, sizes: aS.map(x => x.d.length), data: aS.map(x => x.d), elst: prime ? prime : null, preskip: 312};
   job.r = r;
+  // G-VID (V-A): the audio track is there and carries sound (encoded silence: a few bytes per frame)
+  { let by = 0, sec = 0; for (let k = 0; k < aS.length; k++) { by += aS[k].d.length; sec += ad[k] / asr; } job.aTrack = {frames: aS.length, sec: +sec.toFixed(3), bytesPerSec: sec > 0 ? Math.round(by / sec) : 0}; }
   const PM = performance.now(), out = await VVMP4.blob([video, audio]); vvProf('mux', performance.now() - PM);
   return out;
 }
@@ -46209,7 +46233,9 @@ async function vvEncodeMR(job) {
   let vs = cv.captureStream(0), vt = vs.getVideoTracks()[0];
   if (!vt || typeof vt.requestFrame !== 'function') { for (const x of vs.getTracks()) x.stop(); vs = cv.captureStream(VV_FPS); vt = null; }
   const dst = c.createMediaStreamDestination(), bs = c.createBufferSource(); bs.buffer = r.buf; bs.connect(dst);
+  const z = c.createGain(); z.gain.value = 0; bs.connect(z); z.connect(c.destination);   // G-VID (V-A): silent route to the speakers keeps the source running (iOS)
   const ms = new MediaStream([...vs.getVideoTracks(), ...dst.stream.getAudioTracks()]);
+  if (!ms.getAudioTracks().length) { for (const x of ms.getTracks()) x.stop(); throw new Error('Keine Tonspur für die Aufnahme'); }
   const mr = new MediaRecorder(ms, {mimeType: path.mime, videoBitsPerSecond: 5e6, audioBitsPerSecond: 192000}), parts = [];
   mr.ondataavailable = e => { if (e.data && e.data.size) parts.push(e.data); };
   const done = new Promise(res => { mr.onstop = res; });
@@ -46236,15 +46262,34 @@ async function vvEncodeMR(job) {
     };
     requestAnimationFrame(step);
   }).finally(() => { document.removeEventListener('visibilitychange', onVis); VV.mrCtx = null; try { mr.stop(); } catch (e) {} try { bs.stop(); } catch (e) {} for (const tr of ms.getTracks()) { try { tr.stop(); } catch (e) {} } });
-  await done; try { bs.disconnect(); dst.disconnect(); } catch (e) {}
+  await done; try { bs.disconnect(); dst.disconnect(); z.disconnect(); } catch (e) {}
   if (VV.cancel) throw new Error('abgebrochen');
   return new Blob(parts, {type: path.mime.split(';')[0]});
+}
+/* G-VID (V-A, Xander 01.11.: das erste Video auf dem iPhone hatte keinen Ton): nie ein Video ohne Ton. Gemessen wird der Offline-Ton
+   und – beim Aufnahme-Weg – die fertige Datei (dekodiert); Spitze unter −60 dBFS = still */
+const VV_SILENT = -60, VV_NOSOUND = 'Video ohne Ton – nicht gespeichert. Bitte noch einmal versuchen.';
+function vvLevelDb(r) {
+  if (!r || !r.ch) return null; let pk = 0;
+  for (const d of r.ch) for (let j = 0; j < d.length; j += 3) { const v = d[j] < 0 ? -d[j] : d[j]; if (v > pk) pk = v; }
+  return pk > 0 ? +(20 * Math.log10(pk)).toFixed(1) : -200;
+}
+// the song plays anything at all (notes or takes) – an empty song may give a silent video
+function vvSongSounds(r) { if (r && r.log && r.log.length) return true; try { return vvAuds().length > 0 || (r && r.nt || []).some(x => x && x.length); } catch (e) { return true; } }
+async function vvBlobDb(blob) {
+  if (VV.test && VV.test.noDecode) return null;
+  try {
+    const ab = await blob.arrayBuffer(), c = new OfflineAudioContext(1, 1, 48000);
+    const d = await new Promise((res, rej) => { const q = c.decodeAudioData(ab, res, rej); if (q && q.then) q.then(res, rej); });
+    let pk = 0; for (let ch = 0; ch < d.numberOfChannels; ch++) { const x = d.getChannelData(ch); for (let j = 0; j < x.length; j += 3) { const v = x[j] < 0 ? -x[j] : x[j]; if (v > pk) pk = v; } }
+    return pk > 0 ? +(20 * Math.log10(pk)).toFixed(1) : -200;
+  } catch (e) { return null; }                                       // not decodable here: the offline sound was measured
 }
 // the whole job: song audio offline, then the picture frames with the chosen way
 async function vvMake(o) {
   o = o || {};
   const pf = vvPrefs(), fmt = o.fmt || pf.fmt, view = vvViewOf(o.view || pf.view), [W, H] = VV_SIZE[fmt] || VV_SIZE['9:16'];
-  const path = await vvPath(fmt); if (!path.how) throw new Error(path.why);
+  let path = await vvPath(fmt); if (!path.how) throw new Error(path.why);
   if (VV.job) throw new Error('Läuft schon');
   VV.job = true; VV.busy = true; VV.res = null; VV.cancel = false; VV.prof = {};
   const T0 = performance.now(), prog = o.onProgress || (() => {});
@@ -46252,7 +46297,7 @@ async function vvMake(o) {
   wakeAcquire(); document.addEventListener('visibilitychange', onVis);
   try {
     const cv = o.canvas || document.createElement('canvas'); cv.width = W; cv.height = H;
-    let blob, r, T1, rP = null;
+    let blob, r, T1, rP = null, aChk = null;
     const rt = VV.lastRt = vvRun({view, cam: o.cam || pf.cam, range: o.range, log: true});   // VV2: cut list + camera of this job
     try {
     if (path.how === 'webcodecs') {
@@ -46260,14 +46305,35 @@ async function vvMake(o) {
       if (S.song) { const rg = o.range || vvRange(false); live.est = (rg.b - rg.a) * 4 * spb() + 2; }
       rP = vvRenderAudio({range: o.range, live}); rP.then(() => { T1 = performance.now(); }, () => {});
       const job = {W, H, path, view, canvas: cv, live, rP, rt, onProgress: p => prog(p, 'Video')};
-      blob = await vvEncodeWC(job); r = job.r;
+      let wcErr = null;
+      try { blob = await vvEncodeWC(job); } catch (e) { if (VV.cancel || /abgebrochen/.test(e && e.message)) throw e; wcErr = e; logErr(e); }
+      r = job.r || (rP ? await rP : null);
+      aChk = {how: 'webcodecs', src: r ? vvLevelDb(r) : null, track: job.aTrack || null, err: wcErr ? String(wcErr.message || wcErr) : null};
+      // G-VID (V-A): the encoder gave no sound (no audio frames, encoded silence, an error) → the recorder way with the same sound
+      if (!blob || !job.aTrack || job.aTrack.sec < r.dur - .5 || (aChk.src > VV_SILENT && job.aTrack.bytesPerSec < 1000)) {
+        const ty = vvMrType(); if (!ty || VV.test.noMR) throw new Error(VV_NOSOUND);
+        path = {how: 'recorder', mime: ty, ext: /mp4/.test(ty) ? 'mp4' : 'webm', why: 'Aufnahme in Echtzeit · ' + ty.split(';')[0] + ' (Ton-Kodierer fehlte)'}; aChk.fallback = true;
+      }
     } else {
       r = await vvRenderAudio({range: o.range, onProgress: p => prog(.25 * p, 'Ton')}); T1 = performance.now();
-      blob = await vvEncodeMR({W, H, r, path, view, rt, canvas: cv, onProgress: p => prog(.25 + .75 * p, 'Bild')});
+      aChk = {how: 'recorder', src: vvLevelDb(r)};
+    }
+    if (aChk.src != null && aChk.src < VV_SILENT && vvSongSounds(r)) throw new Error(VV_NOSOUND);   // the offline sound itself is silent
+    if (path.how === 'recorder') {
+      // the recorder way (also the fallback): the file is decoded and measured; silent → another type once, then an error
+      const tried = [];
+      for (let k = 0; k < 2; k++) {
+        blob = await vvEncodeMR({W, H, r, path, view, rt, canvas: cv, onProgress: p => prog(.25 + .75 * p, 'Bild')});
+        aChk.file = await vvBlobDb(blob); aChk.mime = path.mime;
+        if (aChk.file == null || aChk.file >= VV_SILENT || aChk.src < VV_SILENT) break;
+        tried.push(path.mime); const ty = vvMrType(tried); if (!ty) break;
+        path = Object.assign({}, path, {mime: ty, ext: /mp4/.test(ty) ? 'mp4' : 'webm', why: 'Aufnahme in Echtzeit · ' + ty.split(';')[0]});
+      }
+      if (aChk.file != null && aChk.file < VV_SILENT && aChk.src >= VV_SILENT) throw new Error(VV_NOSOUND);
     }
     } catch (e) { if (rP && VV.off) { VV.cancel = true; try { await rP; } catch (x) {} } throw e; }   // the offline pass never runs on alone
     const T2 = performance.now();
-    VV.res = {blob, mime: blob.type, ext: path.ext, how: path.how, why: path.why, fmt, view, cam: rt.cam, cuts: vvCutHash(rt.shots), W, H, dur: r.dur, songSec: r.songSec, tail: r.tail, a: r.a, b: r.b, size: blob.size,
+    VV.res = {blob, mime: blob.type, ext: path.ext, how: path.how, why: path.why, aChk, fmt, view, cam: rt.cam, cuts: vvCutHash(rt.shots), W, H, dur: r.dur, songSec: r.songSec, tail: r.tail, a: r.a, b: r.b, size: blob.size,
       msAudio: Math.round(T1 - T0), msVideo: Math.round(T2 - T1), ms: Math.round(T2 - T0)};
     return VV.res;
   } finally { VV.busy = false; VV.job = false; VV.cancel = false; document.removeEventListener('visibilitychange', onVis); wakeReleaseLater(); }
@@ -46982,7 +47048,8 @@ function vv3MkState(i, t, st, src) {
   const egv = clamp(T.f.eg + sqv(13), -63, 63), kbv = clamp(T.f.kbd + sqv(14), -63, 63), CU = 12 * Math.log2(1000) / 127;
   const cutHt = nv ? (W.kbdHt(kt, kbv) + e1 * W.egHt(egv) + W.velHt(T.f.vel, nv.v)) : 0;
   const cutBase = clamp(T.f.cut + sqv(11), 0, 127), cut = clamp(cutBase + (x[4] || 0) + cutHt / CU, 0, 127);
-  return {pm, T, notes, nv, voices, e1, e2, l1, l2, sq, x, cut, cutKnob: T.f.cut, bpm};
+  const cutMod = clamp(cutBase + (x[4] || 0), 0, 127);   // G-VID (V-B): what the knob shows – only real modulations (patch ≠ 0, MOD SEQUENCE), not the note's EG/KBD/velocity
+  return {pm, T, notes, nv, voices, e1, e2, l1, l2, sq, x, cut, cutMod, cutKnob: T.f.cut, bpm};
 }
 /* ---------- the analog engine (worklet control(): LFOs, envelopes, mod matrix) and WT (native LFOs) ---------- */
 function vv3VaLfo(p, n, t, src, nv, nat) {   // nat: WT = native LFOs (no retrig, no fade-in)
@@ -47013,7 +47080,8 @@ function vv3VaState(i, t, src) {
   // cutoff of the worklet (control): cutN0 + kt (pitch - 60) + clamp(fenv + mod) x 72 x env x velF + cutoff-mod x 120 (semitones)
   const cut0 = 69 + 12 * Math.log2((+p.cutoff || 20000) / 440), velF = nv ? 1 - (+p.fvel || 0) + (+p.fvel || 0) * nv.v : 1;
   const cutN = cut0 + (nv ? (+p.kt || 0) * (nv.n - 60) + clamp((+p.fenv || 0) + (dst.fenv || 0), -1, 1) * 72 * fo * velF : 0) + (dst.cutoff || 0) * 120;
-  return {p, snd, notes, nv, amp, fo, l1, l2, dst, cutHz: clamp(440 * Math.pow(2, (cutN - 69) / 12), 20, 20000), ae, fe};
+  const cutMod = clamp(440 * Math.pow(2, (cut0 + (dst.cutoff || 0) * 120 - 69) / 12), 20, 20000);   // G-VID (V-B): knob = only the mod matrix
+  return {p, snd, notes, nv, amp, fo, l1, l2, dst, cutHz: clamp(440 * Math.pow(2, (cutN - 69) / 12), 20, 20000), cutMod, ae, fe};
 }
 /* ---------- FM6: the DX operators (fmVoicePatch / fmAdvance / fmEnvStep of the worklet; its tables read from the worklet source) ---------- */
 function vv3Fmx() {
@@ -47183,7 +47251,7 @@ function vv3DrawPlate(g, x, y, w, ms, C) {
   const T = ms.T, pm = ms.pm, led = (e, on, col) => { g.fillStyle = on ? (col || '#ff4b1e') : '#5a1c13'; if (on) { g.shadowColor = col || '#ff5a24'; g.shadowBlur = 6; } g.beginPath(); g.arc(e.X, e.Y, 3.75, 0, Math.PI * 2); g.fill(); g.shadowBlur = 0; };
   const kled = (e, on, col) => { g.fillStyle = on ? (col || '#ff4b1e') : '#5a1c13'; if (on) { g.shadowColor = col || '#ff5a24'; g.shadowBlur = 6; } vvRound(g, e.X - 3.75, e.y0 + 4.5, 7.5, 4.2, 1.2); g.fill(); g.shadowBlur = 0; };
   // which knob moves now (modulation): CUTOFF (patch, EG 1, keytrack, velocity, seq), the patch / seq destinations on the plate
-  const modOf = {'f.cut': ms.cut};
+  const modOf = {'f.cut': ms.cutMod};   // G-VID (V-B): only real modulations move a knob
   const add = (id, base, d) => { if (d) modOf[id] = clamp(base + d, 0, 127); };
   add('o1.c1', T.o1.c1, (ms.x[2] || 0) + ((ms.sq && ms.sq.val[4]) || 0)); add('mix.n', T.mix.n, (ms.x[3] || 0) + ((ms.sq && ms.sq.val[10]) || 0)); add('a.pan', T.a.pan, (ms.x[6] || 0) + ((ms.sq && ms.sq.val[16]) || 0));
   if (ms.sq) { const SQT = MKW_().SQT; for (const tg in ms.sq.val) { const p_ = SQT[tg], v = ms.sq.val[tg]; if (!p_ || !v || modOf[p_] != null) continue; const el_ = {'o1.c2': 1, 'o2.semi': 1, 'o2.tune': 1, 'mix.o1': 1, 'mix.o2': 1, 'f.res': 1, 'f.eg': 1, 'f.kbd': 1, 'a.lvl': 1, porta: 1}; if (el_[p_]) { const R_ = SQMK.mkRange('t.0.' + p_); modOf[p_] = clamp(+SQMK.mkPathGet(T, p_) + v, R_[0], R_[1]); } } }
@@ -47217,7 +47285,7 @@ function vv3DrawPlate(g, x, y, w, ms, C) {
     else if (e.art === 'lcd') {
       g.fillStyle = 'hsl(85,45%,14%)'; g.font = '700 14px ' + C.num; g.textAlign = 'left'; g.textBaseline = 'middle';
       const sn = sndOf(ms.i); g.fillText(String((sn && sn.name) || '').slice(0, 16), e.x0 + 8, e.Y - 8);
-      g.fillText('CUTOFF ' + Math.round(ms.cut), e.x0 + 8, e.Y + 9);
+      g.fillText('CUTOFF ' + Math.round(ms.cutMod), e.x0 + 8, e.Y + 9);
     }
   }
   g.restore();
@@ -47234,8 +47302,7 @@ function vv3DrawMk(g, x, y, w, h, i, t, st, src, C) {
   const lfoT = (n, L) => 'LFO ' + n + ' · ' + (L.sync ? MKW_().LSYNC_T[clamp(Math.round(T['l' + n].note), 0, 14)] : (L.rate >= 10 ? L.rate.toFixed(1) : L.rate.toFixed(2)).replace('.', ',') + ' Hz') + (L.ks === 1 ? ' · KEY TIMBRE' : L.ks === 2 ? ' · KEY STIMME' : '');
   const egF = (e, nv) => { const hold = nv && isFinite(nv.b) ? nv.b - nv.a : 1.2; return tt => vv3MkEnv(e, 0, hold, tt); };
   const nv = ms.nv, egSpan = e => { const W = MKW_(), hold = nv && isFinite(nv.b) ? nv.b - nv.a : W.atk(e.a) + W.dec(e.d) + .3; return Math.max(.2, hold + Math.min(4, W.dec(e.r) * 1.6)); };
-  panes.push(['wave', lfoT(1, ms.l1), (gx, gy, gw, gh) => vv3Wave(g, gx, gy, gw, gh, lfoF(1), ms.l1.ph, C.t[i] || C.text, C, ms.l1.v)]);
-  panes.push(['wave', lfoT(2, ms.l2), (gx, gy, gw, gh) => vv3Wave(g, gx, gy, gw, gh, lfoF(2), ms.l2.ph, C.t[i] || C.text, C, ms.l2.v)]);
+  void lfoF; void lfoT;   // G-VID (V-B): no LFO running waves (an oscilloscope the app does not have)
   panes.push(['env', 'EG 1 (FILTER)', (gx, gy, gw, gh) => vv3EnvCurve(g, gx, gy, gw, gh, egF(T.e1, nv), egSpan(T.e1), nv ? t - nv.a : null, C.t[i] || C.text, C)]);
   panes.push(['env', 'EG 2 (AMP)', (gx, gy, gw, gh) => vv3EnvCurve(g, gx, gy, gw, gh, egF(T.e2, nv), egSpan(T.e2), nv ? t - nv.a : null, C.t[i] || C.text, C)]);
   panes.push(['seq', 'MOD SEQUENCE', (gx, gy, gw, gh) => {
@@ -47247,45 +47314,39 @@ function vv3DrawMk(g, x, y, w, h, i, t, st, src, C) {
   }]);
   panes.push(['cut', 'CUTOFF', (gx, gy, gw, gh) => {
     const nar = gw < 1.6 * gh, r = nar ? Math.min(gw * .22, gh * .22) : Math.min(gw * .2, gh * .32), kx = nar ? gx + gw / 2 : gx + gw * .3, ky = nar ? gy + gh * .34 : gy + gh * .45;
-    vv3Knob(g, kx, ky, r, T.f.cut / 127, null, C, ms.cut / 127);
+    vv3Knob(g, kx, ky, r, T.f.cut / 127, null, C, ms.cutMod / 127);
     const tx = nar ? gx + gw / 2 : gx + gw * .58, ty = nar ? gy + gh * .78 : gy + gh * .38; g.textAlign = nar ? 'center' : 'left'; g.textBaseline = 'middle';
-    g.fillStyle = C.text; g.font = '700 13px ' + C.num; g.fillText(String(Math.round(ms.cut)), tx, ty);
+    g.fillStyle = C.text; g.font = '700 13px ' + C.num; g.fillText(String(Math.round(ms.cutMod)), tx, ty);
     g.fillStyle = C.dim; g.font = '600 9px ' + C.ui; g.fillText('Regler ' + Math.round(T.f.cut), tx, ty + (nar ? 15 : gh * .24));
   }]);
   // layout of the panes
   const ry = y + ph + gap, rh = y + h - ry;
   let boxes;
-  if (port) { const cw = (w - gap) / 2, r1 = rh * .3, r2 = rh * .3, r3 = rh - r1 - r2 - gap * 2;
-    boxes = [[x, ry, cw, r1], [x + cw + gap, ry, cw, r1], [x, ry + r1 + gap, cw, r2], [x + cw + gap, ry + r1 + gap, cw, r2], [x, ry + r1 + r2 + gap * 2, cw * 1.35, r3], [x + cw * 1.35 + gap, ry + r1 + r2 + gap * 2, w - cw * 1.35 - gap, r3]]; }
-  else { const rx = x + pw + gap, rw = x + w - rx, bh = (ph - gap) / 2, cw = (pw - gap * 2) / 3;
-    boxes = [[rx, y, rw, bh], [rx, y + bh + gap, rw, bh], [x, ry, cw, rh], [x + cw + gap, ry, cw, rh], [x + (cw + gap) * 2, ry, cw, rh], [rx, ry, rw, rh]]; }
+  if (port) { const cw = (w - gap) / 2, r1 = (rh - gap) * .5, r3 = rh - r1 - gap;
+    boxes = [[x, ry, cw, r1], [x + cw + gap, ry, cw, r1], [x, ry + r1 + gap, cw * 1.35, r3], [x + cw * 1.35 + gap, ry + r1 + gap, w - cw * 1.35 - gap, r3]]; }
+  else { const rx = x + pw + gap, rw = x + w - rx, bh = (ph - gap) / 2;
+    boxes = [[rx, y, rw, bh], [rx, y + bh + gap, rw, bh], [x, ry, pw, rh], [rx, ry, rw, rh]]; }
   panes.forEach((p, k) => { const [bx, by, bw, bh] = boxes[k]; if (!(bw > 20 && bh > 20)) return; vv3Panel(g, bx, by, bw, bh, p[1], C); p[2](bx + 8, by + 20, bw - 16, bh - 26); });
-  VV3.probe = {kind: 'mk', i, t, ph1: ms.l1.ph, v1: ms.l1.v, ph2: ms.l2.ph, cut: ms.cut, cutKnob: T.f.cut, e1: ms.e1, e2: ms.e2, step: ms.sq ? ms.sq.step : null};
+  VV3.probe = {kind: 'mk', i, t, ph1: ms.l1.ph, v1: ms.l1.v, ph2: ms.l2.ph, cut: ms.cut, cutMod: ms.cutMod, cutKnob: T.f.cut, e1: ms.e1, e2: ms.e2, step: ms.sq ? ms.sq.step : null};
 }
 function vv3DrawVa(g, x, y, w, h, i, t, src, C) {
   const vs = vv3VaState(i, t, src); if (!vs) return; const p = vs.p, port = h > w, gap = 8, col = C.t[i] || C.text;
   const pd = k => { try { return pd_(k); } catch (e) { return null; } }, pd_ = k => (typeof PD !== 'undefined' ? PD[k] : null);
   const nOf = (k, v) => { const d = pd(k); try { return d ? toNorm(d, v) : 0; } catch (e) { return 0; } };
-  const knobs = [['CUTOFF', nOf('cutoff', p.cutoff), nOf('cutoff', vs.cutHz)], ['RESONANZ', nOf('res', p.res), null], ['FILTER-HK', nOf('fenv', p.fenv), null], ['DRIVE', nOf('drive', p.drive), null], ['PEGEL', nOf('level', p.level), vs.nv ? nOf('level', p.level) * Math.min(1, vs.amp) : null]];
+  // G-VID (V-B, Xander 01.11.): a knob moves only when a real modulation (mod matrix, amount ≠ 0) acts on exactly this parameter –
+  // the note's envelope, key tracking and velocity turn no knob
+  const knobs = [['CUTOFF', nOf('cutoff', p.cutoff), vs.dst.cutoff ? nOf('cutoff', vs.cutMod) : null], ['RESONANZ', nOf('res', p.res), null], ['FILTER-HK', nOf('fenv', p.fenv), null], ['DRIVE', nOf('drive', p.drive), null],
+    ['PEGEL', nOf('level', p.level), vs.dst.amp ? clamp(nOf('level', p.level) * (1 + vs.dst.amp), 0, 1) : null]];
   const kh = port ? 120 : 96;
   vv3Panel(g, x, y, w, kh, 'REGLER', C);
   const kw = w / knobs.length; knobs.forEach((k, j) => vv3Knob(g, x + kw * (j + .5), y + kh * .46, Math.min(kw * .26, kh * .22), k[1], k[0], C, k[2]));
   const y2 = y + kh + gap, h2 = y + h - y2;
-  const boxes = port ? [[x, y2, w, h2 * .34], [x, y2 + h2 * .34 + gap, (w - gap) / 2, h2 * .33 - gap], [x + (w - gap) / 2 + gap, y2 + h2 * .34 + gap, (w - gap) / 2, h2 * .33 - gap], [x, y2 + h2 * .67 + gap, w, h2 * .33 - gap]]
-    : [[x, y2, w * .38, h2], [x + w * .38 + gap, y2, w * .3 - gap, h2 / 2 - gap / 2], [x + w * .38 + gap, y2 + h2 / 2 + gap / 2, w * .3 - gap, h2 / 2 - gap / 2], [x + w * .68 + gap, y2, w * .32 - gap, h2]];
-  // filter: the low-pass response at the cutoff it has now (knob value as a faint line)
-  let [bx, by, bw, bh] = boxes[0]; vv3Panel(g, bx, by, bw, bh, 'FILTER · ' + Math.round(vs.cutHz) + ' Hz', C);
-  const resp = (fc, q) => f => { const xr = f / fc; return 1 / Math.sqrt(Math.pow(1 - xr * xr, 2) + Math.pow(xr / Math.max(.5, .7 + q * 6), 2)); };
-  const fx = f => bx + 8 + Math.log(f / 20) / Math.log(1000) * (bw - 16), fy = a => by + bh - 8 - clamp(20 * Math.log10(a) + 36, 0, 54) / 54 * (bh - 30);
-  for (const [fc, cl, lw] of [[+p.cutoff || 20000, 'rgba(255,255,255,.25)', 1], [vs.cutHz, col, 1.8]]) { const f = resp(fc, +p.res || 0); g.strokeStyle = cl; g.lineWidth = lw; g.beginPath(); for (let k = 0; k <= 80; k++) { const fr = 20 * Math.pow(1000, k / 80), px = fx(fr), py = fy(f(fr)); if (k) g.lineTo(px, py); else g.moveTo(px, py); } g.stroke(); }
-  g.fillStyle = C.amber; g.beginPath(); g.arc(fx(vs.cutHz), fy(resp(vs.cutHz, +p.res || 0)(vs.cutHz)), 3.4, 0, Math.PI * 2); g.fill();
-  const lfoF = sh => q => (sh === 0 ? Math.sin(2 * Math.PI * q) : sh === 1 ? (q < .5 ? 4 * q - 1 : 3 - 4 * q) : sh === 2 ? 2 * q - 1 : sh === 3 ? (q < .5 ? 1 : -1) : null);
-  const lt = (n, L) => 'LFO ' + n + ' · ' + (L.rate >= 10 ? L.rate.toFixed(1) : L.rate.toFixed(2)).replace('.', ',') + ' Hz';
-  [[1, vs.l1], [2, vs.l2]].forEach(([n, L], k) => { [bx, by, bw, bh] = boxes[1 + k]; vv3Panel(g, bx, by, bw, bh, lt(n, L), C); vv3Wave(g, bx + 8, by + 20, bw - 16, bh - 26, lfoF(L.sh), L.ph, col, C, L.v == null ? null : L.v * L.fade); });
-  [bx, by, bw, bh] = boxes[3]; vv3Panel(g, bx, by, bw, bh, 'HÜLLKURVE (AMP)', C);
+  // G-VID (V-B): no filter response and no LFO running waves (views the app does not have) – the amp envelope as labelled EG curve
+  let [bx, by, bw, bh] = [x, y2, w, h2]; vv3Panel(g, bx, by, bw, bh, 'EG · HÜLLKURVE (AMP)', C);
+
   const nv = vs.nv, hold = nv && isFinite(nv.b) ? nv.b - nv.a : (+p.aA || 0) + (+p.aD || 0) + .3, span = Math.max(.2, hold + Math.min(4, (+p.aR || .1) * 1.4));
   vv3EnvCurve(g, bx + 8, by + 20, bw - 16, bh - 26, tt => vv3Adsr(vs.ae, 0, hold, tt), span, nv ? t - nv.a : null, col, C);
-  VV3.probe = {kind: 'va', i, t, ph1: vs.l1.ph, v1: vs.l1.v, cutHz: vs.cutHz, amp: vs.amp};
+  VV3.probe = {kind: 'va', i, t, ph1: vs.l1.ph, v1: vs.l1.v, cutHz: vs.cutHz, cutMod: vs.cutMod, dstCut: vs.dst.cutoff || 0, dstAmp: vs.dst.amp || 0, amp: vs.amp};
 }
 function vv3DrawFm(g, x, y, w, h, i, t, src, C) {
   const fs = vv3FmState(i, t, src); if (!fs) { vv3DrawVa(g, x, y, w, h, i, t, src, C); return; }
@@ -48247,17 +48308,14 @@ Object.assign(SYNQUENZER, G3_API);                // G3: Vorlauf/Ausklang
 Object.assign(SYNQUENZER, G8_API);                // G8: lange Aufnahmen
 Object.assign(SYNQUENZER, CL_API);                // VS4: Säubern
 Object.assign(SYNQUENZER, WP_API);                // VS5a/b: Marken & Scheiben, Dehnen, Songtext
-<<<<<<< MAIN
 Object.assign(SYNQUENZER, S012_API);              // S0/S1/S2: Teil bearbeiten, überarbeiten, zusammenfassen
 Object.assign(SYNQUENZER, VP_API);                // VS-P: Stimme im Mix (Auto-Pegel, Spitzen-Schutz)
 Object.assign(SYNQUENZER, G2_API);                // G2: Tonhöhe quantisieren, Gesang als Noten
 Object.assign(SYNQUENZER, G6_API);                // G6: Chor-Generator
 Object.assign(SYNQUENZER, G7_API);                // G7: Gesang folgt dem Transponieren
-=======
 Object.assign(SYNQUENZER, vvApi());                        // VV1
 Object.assign(SYNQUENZER, vv2Api());                       // VV2
 Object.assign(SYNQUENZER, vv3Api());                       // VV3
->>>>>>> VIDSTAGE
 const NO_SYNC = new Set(['oneScaleOf', 'kbScaleNow', 'micCheck', 'micCheckJson', 'micCheckEstimate', 'cloud', 'cloudProjects', 'cloudVersions', 'cloudHandoff', 'state', 'project', 'runtime', 'getClip', 'getParam', 'noteLog', 'voices', 'timeline', 'serialize', 'buildMidi', 'buildZip', 'crc32', 'meter', 'outPitch', 'migrate', 'tapTempo',
   'getSound', 'mods', 'library', 'factory', 'previewState', 'soundEdited', 'fmxView', 'fmxPreview', 'fmxBadge',
   'history', 'projects', 'storage', 'engineInfo', 'getBusFx', 'wake', 'gestures', 'roll', 'rollApi', 'detectKey', 'sceneKey',
