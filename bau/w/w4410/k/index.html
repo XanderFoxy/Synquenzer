@@ -66870,6 +66870,7 @@ async function vvRenderAudio0(o) {
   vvProf('trim', performance.now() - PT);
   const r = {buf: out, ch: chs, off: s0 / sr, n, sr, dur: n / sr, songSec, tail: (eIdx - sEnd) / sr, capped, a, b, bpm: S.bpm, lead: g10aL || undefined, tl: off.tl,   // G10a-5: lead log: off.log, ms: performance.now() - T0, wk, nt: live.nt || [], t0: live.t0,
     mtr: off.mtr ? {Q: off.mtr.Q, gl: AU.graphLat, want: off.mtr.want, off: s0 / sr} : null};   // VV4-F: video time t = context time r.off + t (tracks: − gl)
+  if (!r.nt) Object.assign(r, {log: off.log, ms: performance.now() - T0, wk, nt: live.nt || [], t0: live.t0});   // VK3: diese Felder standen seit G10a-5 im Kommentar der Zeile oben (VV.last ohne Noten)
   VV.last = r;
   return r;
 }
