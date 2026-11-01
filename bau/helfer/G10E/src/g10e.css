@@ -1,0 +1,33 @@
+/* G10e (Nachtrag 9 §2.5): Warp-Editor – Mini-Karte, Werkzeuge im Fuß, Lupe, Haptik-Labels, Studio-Ansicht (nur auf Wunsch) */
+#wpSheet .g10map{position:relative;flex:none;height:48px;border-radius:6px;overflow:hidden;border:1px solid var(--line);touch-action:none;-webkit-user-select:none;user-select:none;cursor:pointer}
+#wpSheet .g10map canvas{position:absolute;inset:0;width:100%;height:100%}
+#wpSheet.g9 .g10map,#wpSheet.g9 .g10tool{display:none}
+#wpSheet.g10 .wpsl{flex-direction:row;gap:10px}
+#wpSheet.g10 .wpsl .qrow{flex:1 1 0;min-width:0;gap:4px}
+#wpSheet.g10 .wpsl .qrow .lbl{flex:0 0 auto}
+#wpSheet.g10 .wpsl .qrow .mval{flex:0 0 40px;min-width:0}
+#wpSheet .g10tool{position:relative;flex:0 0 44px;width:44px;min-width:44px;height:44px;padding:0;font:700 17px/1 var(--font-ui)}
+#wpSheet .g10tool.on{color:var(--ink);background:var(--amber);border-color:var(--amber)}
+#wpSheet .g10hl{display:none;position:absolute;inset:0;z-index:2;margin:0;-webkit-tap-highlight-color:transparent;cursor:pointer}
+#wpSheet .g10hl input{position:absolute;left:0;top:0;width:1px;height:1px;margin:0;visibility:hidden}
+#wpSheet.g10.hap:not(.g9) .g10hl{display:block}
+#wpSheet.g10 .wpab,#wpSheet.g10 .seg button,#wpSheet.g10 .qchips button{position:relative}
+#wpSheet.g10 .qh{touch-action:none}
+#g10lupe{position:fixed;z-index:60;width:144px;height:64px;display:none;pointer-events:none;border-radius:8px;border:1px solid #ffd35a;background:#0e1014;box-shadow:0 4px 14px rgba(0,0,0,.55)}
+#g10lupe.on{display:block}
+.pop.g10opt{width:min(300px,calc(100vw - 16px))}
+.pop.g10opt .g10r{display:flex;align-items:center;gap:8px;min-height:44px}
+.pop.g10opt .g10r>span{flex:1 1 auto;min-width:0;font:600 13px/16px var(--font-ui)}
+.pop.g10opt .g10r>button{flex:0 0 64px;height:44px;padding:0;font:700 12px/1 var(--font-ui)}
+.pop.g10opt .g10r>button.on{color:var(--ink);background:var(--sel);border-color:var(--sel)}
+.pop.g10opt .g10q{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px}
+.pop.g10opt .g10q button{height:44px;min-width:0;padding:0;font:700 12px/1 var(--font-ui)}
+.pop.g10opt .g10q button.on{color:var(--ink);background:var(--sel);border-color:var(--sel)}
+.pop.g10opt .g10run{width:100%;height:44px;margin-top:4px}
+.pop.wpsel .savrow .mbtn[data-a="play"]{min-width:64px}
+@media (orientation:portrait) and (max-height:600px){#wpSheet .g10map{height:32px}#wpSheet.g10 .qchips{grid-template-columns:repeat(8,minmax(0,1fr));gap:2px;margin-bottom:0}#wpSheet.g10 .qchips button{font-size:11px}
+  #wpSheet.g10 .qchips button::after{left:0;right:0;top:-4px;bottom:-6px}}
+@media (orientation:landscape){#wpSheet .g10tool{height:38px}}
+/* Studio-Ansicht (Vorschlag §2.5 Nr. 7, nur nach Einschalten im ⋯-Blatt): hochkant Regler eingeklappt, quer volle Breite */
+#wpSheet.g10big .wpchips,#wpSheet.g10big .wpsl{display:none}
+@media (orientation:landscape){#wpSheet.g10big{grid-column:1/-1;width:auto;justify-self:stretch;border-radius:12px 12px 0 0}}
