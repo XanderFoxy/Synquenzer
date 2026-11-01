@@ -38,9 +38,13 @@ const res = {};
   const p = await page(428, 926);
   await p.evaluate(() => window.SYNQUENZER.launchScene(0)); await p.waitForTimeout(1500);
   const a0 = await read(p);
-  await p.evaluate(() => window.SYNQUENZER.launchScene(1));
+  await p.evaluate(() => { window.__kv = {n: 0, ms: 0, max: 0, paint: 0}; const o = window.kv1Frame, q = window.kv1Paint;
+    window.kv1Frame = function () { const t = performance.now(); try { return o.apply(this, arguments); } finally { const d = performance.now() - t; __kv.n++; __kv.ms += d; if (d > __kv.max) __kv.max = d; } };
+    window.kv1Paint = function () { __kv.paint++; return q.apply(this, arguments); };
+    window.SYNQUENZER.launchScene(1); });
   const A = await follow(p, 'A Szene 1->2', 6500, [{at: 0, name: 'kv1-anfang.png'}, {at: .5, name: 'kv1-mitte.png'}, {at: 1, name: 'kv1-ende.png'}]);
   const ns = A.map(o => o.n), moving = A.filter(o => o.amb).length, mids = new Set(A.filter(o => o.ph > 0 && o.ph < 1).map(o => o.txt)).size;
+  res.Kosten = await p.evaluate(() => ({kv1FrameAufrufe: __kv.n, gemalt: __kv.paint, msSchnitt: +(__kv.ms / Math.max(1, __kv.n)).toFixed(3), msMax: +__kv.max.toFixed(2), proSekunde: +(__kv.paint / 6.5).toFixed(1)}));
   res.A = {start: a0.txt, end: A[A.length - 1].txt, grund: A[A.length - 1].grund, monoton: mono(ns, true), zwischenwerte: mids, amberBilder: moving, amberAmEnde: A[A.length - 1].amb, xyEnde: A[A.length - 1].xy, aus: !A[A.length - 1].on};
   // Rückfahrt Szene 2 -> 1 und eine Hand während der Fahrt (setParam = Griff an den Regler)
   await p.evaluate(() => window.SYNQUENZER.launchScene(0));
@@ -98,8 +102,8 @@ const res = {};
 {
   const p = await page(428, 926);
   await p.evaluate(() => window.SYNQUENZER.launchScene(0)); await p.waitForTimeout(2500);
-  res.Ruhe = await p.evaluate(async () => { let calls = 0; const o = window.kv1Paint; window.kv1Paint = function () { calls++; return o.apply(this, arguments); };
-    await new Promise(r => setTimeout(r, 1500)); window.kv1Paint = o; return {on: KV1.on, paintAufrufe: calls}; });
+  res.Ruhe = await p.evaluate(async () => { let calls = 0; const o = window.kv1Frame; window.kv1Frame = function () { calls++; return o.apply(this, arguments); };
+    await new Promise(r => setTimeout(r, 1500)); window.kv1Frame = o; return {on: KV1.on, kv1FrameAufrufe: calls}; });
   await p.close();
 }
 console.log(JSON.stringify(res, null, 1));
