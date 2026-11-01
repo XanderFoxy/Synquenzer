@@ -94,12 +94,12 @@ if (want('26')) {
 // ---------- G6P-27 Live = Offline, kein Platzhalter, Einsatz mit Blende ----------
 if (want('27')) {
   await putStyle(p, 'gospel');
-  const t = await playTap(p), m = await ev(() => SYNQUENZER.g6pMeas()), k = await ev(() => ({ga: SYNQUENZER.g6pGA(), lead: SYNQUENZER.g6pLeadDb()}));
-  const offLc = m.Lc + 20 * Math.log10(k.ga) + k.lead, offLl = m.Ll + k.lead;   // Offline-Lautheit × gA × Lead-Pegel
+  const t = await playTap(p), m = await ev(() => SYNQUENZER.g6pMeas()), k = await ev(() => { const a = tkRef({t: stimmeT(), s: 0}).a, V = vpGet(g6Lead(a)); return {ga: SYNQUENZER.g6pGA(), lead: SYNQUENZER.g6pLeadDb(), vp: 20 * Math.log10(V ? V.g : 1)}; });
+  const offLc = m.Lc + 20 * Math.log10(k.ga) + k.lead + k.vp, offLl = m.Ll + k.lead + k.vp;   // Offline-Lautheit × gA × Lead-Pegel × VS-P
   const early = await ev(async () => { const A = SYNQUENZER, r = {t: stimmeT(), s: 0}; G6.cache.clear(); G6PC.meas.clear(); A.g6pGrp(r, {hp: 121}); A.launchScene(0); A.play(); const seen = []; for (let n = 0; n < 200; n++) { const i = A.g6pInfoC(); seen.push(i.copies); if (i.copies) break; await new Promise(q => setTimeout(q, 25)); }
     const rr = TK.src.find(q => !q.dead && q.chG), q0 = rr && rr.ch.find(q => q.v2), ramp = q0 ? {g0: q0.g.gain.value, when: q0.when, now: AU.ctx.currentTime} : null; A.stop(); return {zeros: seen.filter(x => !x).length, first: seen[seen.length - 1], ramp}; });
-  const d = {liveLc: r2(t.Lc), offLc: r2(offLc), liveLl: r2(t.Ll), offLl: r2(offLl), early};
-  ok('G6P-27', Math.abs(t.Lc - offLc) <= .2 && early.zeros > 0 && early.first > 0, d);
+  const d = {liveLc: r2(t.Lc), offLc: r2(offLc), liveLl: r2(t.Ll), offLl: r2(offLl), vpDb: r2(k.vp), early};
+  ok('G6P-27', Math.abs(t.Lc - offLc) <= .2 && Math.abs(t.Ll - offLl) <= .2 && early.zeros > 0 && early.first > 0, d);
 }
 // ---------- G6P-28 Leistung: Wiedergabe mit Szenenwechseln, Knoten zurück auf 0, lange Tasks ----------
 if (want('28')) {

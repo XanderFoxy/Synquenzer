@@ -20962,6 +20962,7 @@ function undoState(e) {
   if (e.kind === 'tflag') return S.tracks[e.track] && S.tracks[e.track].stimme ? '1' : '0';     // VS3
   if (e.kind === 'tphase') return tkPhaseOf(e.track, e.scene);                                  // VS-L-fix
   if (e.kind === 'gfx') return g4Snap(e.track);                                                // G4
+  if (e.kind === 'chorlanes') return S.tracks[e.track] ? JSON.stringify(S.tracks[e.track].chor || null) : 'null';   // G6+: Chor-Spuren
   return fxSnapshot();
 }
 // a restored clip that is playing is heard at once (like an editor gesture, §3.3 afterClipEdit)
@@ -20986,6 +20987,7 @@ function undoApply(e, val) {
   else if (e.kind === 'tflag') tkFlag(e.track, val === '1');
   else if (e.kind === 'tphase') tkPhaseSet(e.track, e.scene, val);                            // VS-L-fix
   else if (e.kind === 'gfx') g4Restore(e.track, val);            // G4
+  else if (e.kind === 'chorlanes') { const tr = S.tracks[e.track], v = val ? JSON.parse(val) : null; if (tr) { if (v) tr.chor = v; else delete tr.chor; } if (typeof g6pcApplyAll === 'function') g6pcApplyAll(); }   // G6+
   else if (e.kind === 'part') partRestore(JSON.parse(val));
   else restoreFx(JSON.parse(val));
   UI.dirty.all = true; markDirty();
@@ -45082,7 +45084,7 @@ function g6pReady(a) { if (!g6pcIs2(a)) return true; const b = g6pcBufs(a); retu
 /* ---------- Knoten ---------- */
 function g6pcGroup(c, a, dest, hall, echo, meas) {
   const G = {c, hp: c.createBiquadFilter(), mid: c.createBiquadFilter(), air: c.createBiquadFilter(), lvl: c.createGain(), guide: c.createGain(), pre: c.createDelay(1), rev: c.createGain(), dly: c.createGain(), dest};
-  G.hp.type = 'highpass'; G.mid.type = 'peaking'; G.air.type = 'highshelf'; G.hp.Q.value = Math.SQRT1_2; G.mid.Q.value = 1; G.air.frequency.value = 10000;
+  G.hp.type = 'highpass'; G.mid.type = 'peaking'; G.air.type = 'highshelf'; G.hp.Q.value = -3.0103;   // Web Audio: Q des Hochpasses in dB → Butterworth (−3 dB bei hp, 12 dB/Okt.) G.mid.Q.value = 1; G.air.frequency.value = 10000;
   G.hp.connect(G.mid); G.mid.connect(G.air); G.air.connect(G.lvl); G.lvl.connect(G.guide); G.guide.connect(dest);
   if (!meas) { G.guide.connect(G.pre); G.pre.connect(G.rev); if (hall) G.rev.connect(hall); G.guide.connect(G.dly); if (echo) G.dly.connect(echo); G6PC.nodes += 8; }
   G.lvl.gain.value = meas ? 1 : 0;
@@ -45090,7 +45092,7 @@ function g6pcGroup(c, a, dest, hall, echo, meas) {
   return G;
 }
 const g6pcPreSec = p => (p && p !== 'aus' ? preDivSec(p) : 0);
-function g6pcSetP(p, v, now, imm) { if (imm) { p.value = v; return; } try { if (p.cancelAndHoldAtTime) p.cancelAndHoldAtTime(now); else p.cancelScheduledValues(now); } catch (e) {} p.setTargetAtTime(v, now, .006); }   // ≈ 20-ms-Rampe
+function g6pcSetP(p, v, now, imm) { if (imm) { p.value = v; return; } try { if (p.cancelAndHoldAtTime) p.cancelAndHoldAtTime(now); else p.cancelScheduledValues(now); } catch (e) {} p.setTargetAtTime(v, now, .006); if (v === 0) p.setValueAtTime(0, now + .08); }   // ≈ 20-ms-Rampe; 0 wird nach 80 ms exakt 0
 function g6pcGroupSet(G, a, imm, meas, gA) {
   const g = a.chor.grp || G6PC_GRP0, now = G.c.currentTime, set = (p, v) => g6pcSetP(p, v, now, imm);
   set(G.hp.frequency, g.hp); set(G.mid.frequency, g.midF); set(G.mid.gain, g.mid); set(G.air.gain, g.air);
@@ -45112,7 +45114,8 @@ const g6pcSig = (a, bufs) => a.chor.voices.map(v => g6pcCopies(v).map(C => C.ms)
 // zu einem Lead-Stück r (tkStartSrc) die Kopien – erst, wenn alle Puffer und gA da sind (sonst still, kein Platzhalter-Pegel)
 function g6pStart(o, r) {
   const a = o.aud, ctx = AU.ctx; if (!g6pcIs2(a) || o.ctx || !ctx || !AU.masterSum) return;
-  const bufs = g6pcBufs(a), gA = bufs && g6pcGA(a, bufs); r.ch = r.ch || [];
+  const bufs = g6pcBufs(a), gA = bufs && g6pcGA(a, bufs); r.ch = [];   // laufende Kopien hängt g6Refresh selbst wieder an
+  if (G6.solo != null && G6.solo !== -2) { try { r.g.gain.cancelScheduledValues(0); r.g.gain.value = 0; } catch (e) {} }   // Solo einer Chor-Spur: der Lead schweigt (wie v1)
   if (!bufs || gA == null) return;
   if (!r.chG || r.chG.c !== ctx) { r.chG = g6pcGroup(ctx, a, AU.masterSum, AU.hallIn, AU.echoIn); if (G6PC.tap) try { r.chG.guide.connect(G6PC.tap.chor); r.chG.rev.connect(G6PC.tap.rv); } catch (e) {} }
   const G = r.chG, V = vpGet(o.buf), Vg = V ? V.g : 1;   // VS-P des Leads (r.G ohne Clip-Pegel: der steckt im Lead-Pegel der Gruppe)
@@ -45156,7 +45159,7 @@ const g6pGrpSet = (r, p) => g6Edit(r, 'Chor-Gruppe', au => { if (!g6pcIs2(au)) r
 const g6pVoiceSet = (r, k, p) => g6Edit(r, 'Chor-Stimme', au => { const v = g6pcIs2(au) && au.chor.voices[k]; if (!v) return false; Object.assign(v, p); });
 // Spur stumm / Chor an-aus (Spur-Merkmal S.tracks[st].chor; G6+a liefert Normalisieren und Undo-Art 'chorlanes')
 function g6pLaneMute(id, m) {
-  const st = stimmeT(); if (st < 0) return false; const T = S.tracks[st], before = T.chor ? deep(T.chor) : null;
+  const st = stimmeT(); if (st < 0) return false; const T = S.tracks[st], before = JSON.stringify(T.chor || null);
   const L = T.chor || (T.chor = {lanes: []}); if (!Array.isArray(L.lanes)) L.lanes = [];
   if (id == null) { if (m) L.mute = true; else delete L.mute; }
   else { let ln = L.lanes.find(x => x.id === id); if (!ln) { ln = {id, role: 'uni', name: 'Chor ' + id}; L.lanes.push(ln); } if (m) ln.mute = true; else delete ln.mute; }
