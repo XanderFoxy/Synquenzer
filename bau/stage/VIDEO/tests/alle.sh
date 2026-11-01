@@ -11,3 +11,4 @@ for P in ${*:-VV4A VV4CE VV4BD VV4F VVLOGO}; do
     VVLOGO) cd $T/VVLOGO && bash alle.sh 2>&1 | tail -60 ;;
   esac
 done
+# Ende-zu-Ende (beide Wege) und Beispielbilder, aus der Repo-Wurzel (medien/abspann-logo.mp4 nötig): node bau/stage/VIDEO/tests/e2e-video.mjs wc|mr · node bau/stage/VIDEO/tests/bilder-fokus.mjs
