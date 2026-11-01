@@ -56998,7 +56998,7 @@ const UE_LIB = [
   {id: 'p-becken-stopp', tab: 'ue', name: 'Becken-Stopp', short: 'Stopp', k: 'crash', a: 0, len: 2, mode: 'ersetzt',
     notes: [{t: 0, d: .25, n: 49, v: 1}, {t: 0, d: .25, n: 36, v: 1}]},
 ];
-const UE = {ref: null, ver: -1, hits: [], mutes: null, pend: [], prev: [], bar: null, tab: 'ue', drag: null, layer: null, chips: new Map(), sig: ''};
+const UE = {ref: null, ver: -1, hits: [], mutes: null, pend: [], np: 0, beats: null, prev: [], bar: null, tab: 'ue', drag: null, layer: null, chips: new Map(), sig: ''};
 const ueLib = id => UE_LIB.find(x => x.id === id) || null;
 function ueLibAdd(list) { for (const x of [].concat(list || [])) if (x && x.id && !ueLib(x.id)) UE_LIB.push(x); if (UE.bar && !UE.bar.hidden) uePaintBar(); return UE_LIB.length; }
 const ueLenTxt = beats => ({1: '¼', 2: '½', 4: '1', 8: '2', 16: '4'}[beats] || String(+(beats / 4).toFixed(2))) + ' T';
@@ -57076,49 +57076,67 @@ function ueBuild() {
     }
   }
   UE.hits.sort((p, q) => p.sb - q.sb || p.n - q.n);
+  // je Song-Schlag: der erste Treffer ab diesem Schlag (schnelles Nein für Fenster ohne Treffer, kein Suchen)
+  const nb = UE.hits.length ? Math.floor(UE.hits[UE.hits.length - 1].sb) + 2 : 0, ix = new Int32Array(nb + 1);
+  for (let k = UE.hits.length - 1, j = nb; j >= 0; j--) { while (k >= 0 && UE.hits[k].sb >= j - 1e-9) k--; ix[j] = k + 1; }
+  UE.beats = ix;
+  for (const k in mutes) { const l = mutes[k].sort((p, q) => p[0] - q[0]); l.lo = l[0][0]; l.hi = Math.max(...l.map(w => w[1])); }   // sortiert + Hülle (schnelles Nein)
   UE.mutes = mutes;
 }
 function ueFresh() { if (UE.ref !== (S.song ? S.song.ue : null) || UE.ver !== (UI.songVer | 0)) ueBuild(); }
 // die „ersetzt“-Fenster der Spur i (nur während ▶ SONG mit Übergängen), sonst null
 function ueMutes(i) { if (!R.songPlay || !S.song || !S.song.ue) return null; ueFresh(); return UE.mutes && UE.mutes[i] || null; }
-function ueMutedAt(l, B) { const sb = songBeatOf(B); if (sb == null) return false; for (const w of l) if (sb >= w[0] - 1e-9 && sb < w[1] - 1e-9) return true; return false; }
+function ueMutedAt(l, B) {
+  const sb = songBeatOf(B); if (sb == null || sb < l.lo - 1e-9 || sb >= l.hi - 1e-9) return false;
+  for (let k = 0; k < l.length; k++) { const w = l[k]; if (sb < w[0] - 1e-9) return false; if (sb < w[1] - 1e-9) return true; }
+  return false;
+}
 // die Treffer des Fensters [b0, b1) (Schläge des Transports) vormerken; scheduleDrums nimmt die seiner Spur in seine Zeitordnung
 // (Choke/Monophonie wie Clip-Treffer), ueFlush spielt den Rest (Spur ohne laufenden Clip). only = nur Spur only, late = nachträglich
 function ueTick(b0, b1, only, late) {
   const sp = R.songPlay, song = S.song; if (!sp || !song || !song.ue || !(b1 > b0) || !AU.ctx) return;
-  ueFresh(); const H = UE.hits; if (!H.length) return;
-  const now = AU.ctx.currentTime;
-  const run = (off, lo, hi) => {
-    const s0 = Math.max(b0, lo) - off, s1 = Math.min(b1, hi) - off; if (!(s1 > s0)) return;
-    let L = 0, U = H.length; while (L < U) { const k = (L + U) >> 1; if (H[k].sb < s0 - 1e-9) L = k + 1; else U = k; }
-    for (let k = L; k < H.length && H[k].sb < s1 - 1e-9; k++) {
-      const h = H[k]; if (only != null && h.t !== only) continue;
-      const tr = S.tracks[h.t]; if (!tr || tr.mute || R.songOverride[h.t]) continue;
-      const hb = h.sb + off; let t = b2t(hb + swingOffset(h.sb));
-      if (t < now - (late ? RETRO_MAX + .02 : .02)) continue;
-      if (t < now) t = now;
-      UE.pend.push({i: h.t, hb, t, n: h.n, v: h.v, ex: h.ex});
-    }
-  };
-  if (sp.wrapAt != null) { run(sp.prevOff, -Infinity, sp.wrapAt); run(sp.off, sp.wrapAt, Infinity); } else run(sp.off, -Infinity, Infinity);
+  ueFresh(); if (!UE.hits.length) return;
+  if (sp.wrapAt != null) { ueRun(b0, b1, sp.prevOff, -Infinity, sp.wrapAt, only, late); ueRun(b0, b1, sp.off, sp.wrapAt, Infinity, only, late); }
+  else ueRun(b0, b1, sp.off, -Infinity, Infinity, only, late);
+}
+function ueRun(b0, b1, off, lo, hi, only, late) {
+  const H = UE.hits, nH = H.length, ix = UE.beats, s0 = (b0 > lo ? b0 : lo) - off, s1 = (b1 < hi ? b1 : hi) - off;
+  if (!(s1 > s0) || s1 <= H[0].sb - 1e-9 || s0 > H[nH - 1].sb + 1e-9) return;
+  const j = s0 < 0 ? 0 : Math.floor(s0 + 1e-9); let L = j < ix.length ? ix[j] : nH;
+  while (L < nH && H[L].sb < s0 - 1e-9) L++;
+  if (L >= nH || H[L].sb >= s1 - 1e-9) return;
+  const now = AU.ctx.currentTime, P = UE.pend;
+  for (let k = L; k < nH && H[k].sb < s1 - 1e-9; k++) {
+    const h = H[k]; if (only != null && h.t !== only) continue;
+    const tr = S.tracks[h.t]; if (!tr || tr.mute || R.songOverride[h.t]) continue;
+    const hb = h.sb + off; let t = b2t(hb + swingOffset(h.sb));
+    if (t < now - (late ? RETRO_MAX + .02 : .02)) continue;
+    if (t < now) t = now;
+    P.push(h, hb, t); UE.np++;                                   // flach (Treffer, Schlag, Zeit): keine Objekte je Fenster
+  }
 }
 // scheduleDrums: die vorgemerkten Treffer der Spur i im Fenster [from, to) in ev (gleicher Schlüssel = ein Treffer, lautere Velocity)
 function uePull(i, from, to, ev) {
-  for (let k = UE.pend.length - 1; k >= 0; k--) {
-    const p = UE.pend[k]; if (p.i !== i || p.hb < from - 1e-9 || p.hb >= to - 1e-9) continue;
-    UE.pend.splice(k, 1);
-    const key = p.t.toFixed(4) + ':' + p.n, o = ev.get(key);
-    if (o) { o.v = Math.max(o.v, p.v); if (p.ex && p.ex.acc) o.ex = Object.assign({}, o.ex, {acc: 1}); o.ue = 1; }
-    else ev.set(key, {t: p.t, n: p.n, v: p.v, ex: p.ex, ue: 1});
+  const P = UE.pend;
+  for (let k = 0; k < P.length; k += 3) {
+    const h = P[k]; if (!h || h.t !== i) continue;
+    const hb = P[k + 1]; if (hb < from - 1e-9 || hb >= to - 1e-9) continue;
+    const t = P[k + 2]; P[k] = null; UE.np--;
+    const key = t.toFixed(4) + ':' + h.n, o = ev.get(key);
+    if (o) { o.v = Math.max(o.v, h.v); if (h.ex && h.ex.acc) o.ex = Object.assign({}, o.ex, {acc: 1}); o.ue = 1; }
+    else ev.set(key, {t, n: h.n, v: h.v, ex: h.ex, ue: 1});
   }
+  if (!UE.np) P.length = 0;
 }
 function ueFlush() {
-  if (!UE.pend.length) return;
-  const l = UE.pend.splice(0).sort((p, q) => p.t - q.t), dt = S.settings.harmony.drums;
-  for (const p of l) {
-    let ex = p.ex; const tu = dt ? drumTune(p.t) : 0;
+  const P = UE.pend; if (!P.length) return;
+  const l = []; for (let k = 0; k < P.length; k += 3) if (P[k]) l.push({h: P[k], t: P[k + 2]});
+  P.length = 0; UE.np = 0;
+  l.sort((p, q) => p.t - q.t); const dt = S.settings.harmony.drums;
+  for (const {h: x, t} of l) {
+    let ex = x.ex; const tu = dt ? drumTune(t) : 0;
     if (tu) ex = Object.assign({}, ex, {lk: Object.assign({}, ex && ex.lk, {tune: ((ex && ex.lk && ex.lk.tune) || 0) + tu})});
-    const h = drumHit(p.n, p.v, p.t, 'clip', ex); if (h && h.log) h.log.src = 'ue';
+    const r = drumHit(x.n, x.v, t, 'clip', ex); if (r && r.log) r.log.src = 'ue';
   }
 }
 /* ---------- Anker bei Ersetzen / Konsolidieren: die Kante bleibt, nur die Marke ist neu ---------- */
