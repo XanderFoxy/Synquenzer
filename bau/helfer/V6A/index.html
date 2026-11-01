@@ -18948,7 +18948,7 @@ const MK_LABEL = 'MS 2000';
       if (m.fmxLv) { E.lv = m.fmxLv; E.lvN++; E.lvT = m.t; }        // V4a (N7F-09): live operator levels
       if (m.mkScope) { E.mks = m.mkScope; E.mksN = (E.mksN || 0) + 1; }  // MK1 (B.7 mkScope)
       if (m.k1Dump) E.k1Dump = m.k1Dump;   // K1 test (K1-05): the engine's playing state
-      if (m.v6aPr) (E.v6aPr || (E.v6aPr = [])).push(m.v6aPr);      // V6A test hook
+      if (m.v6aPr) { (E.v6aPr || (E.v6aPr = [])).push(m.v6aPr); if (E.v6aLog) E.v6aLog.push(m.v6aPr); }   // V6A test hook
       if (m.mkwNeed != null && typeof mkwPull === 'function') mkwPull(E, m.mkwNeed);   // MK2: a processor asks for a stored wave
       if (m.mkFxMem != null) E.mkFxB = m.mkFxMem;   // MK4: the delay buffer of this engine (bytes)
       if (m.mkRecDone) { E.mkRecN = (E.mkRecN || 0) + 1; E.mkRecLast = m.mkRecDone; if (typeof MKUI !== 'undefined' && MKUI.recDone) MKUI.recDone(E, m.mkRecDone); }   // MK6
@@ -22177,6 +22177,7 @@ const wkMods = snd => (snd.engine === 'mk' ? [] : toEngineMods(snd.mods));   // 
 function newEngine(dest, snd) {
   const E = SynthHost.track(AU.ctx, dest, wkFlat(snd), wkMods(snd), snd.engine === 'fm6' && snd.p.fm6 ? wkFmOf(snd.p) : null, snd.engine === 'mk' ? snd.p.mk : null);
   E.onEnd = id => { const v = E.proxies.get(id); if (v) wkVoiceDead(v); };
+  if (V6A.probe) { const i = AU.tracks.findIndex(A => A && A.trackIn === dest); if (i >= 0 && V6A.probe[i]) { E.v6aLog = V6A.probe[i].log; E.v6aProbe(V6A.probe[i].keys); } }   // V6A test hook (also the render's engines)
   if (snd.engine === 'mk') { E.mkWheel({mw0: +snd.p.mw || 0, reset: true}); mkwFeed(E, snd); }
   E.tempo(S.bpm, R.playing ? R.startTime : null);
   return E;
@@ -22765,11 +22766,12 @@ function v6aTick(b0, b1) {
   v6aRt();
   const c = AU.ctx; if (!c) return;
   const nb = Math.max(b0, t2b(c.currentTime)), fresh = R.v6aRunId !== R.runId;
-  if (fresh) R.v6aRunId = R.runId;
+  if (fresh) { R.v6aRunId = R.runId; V6A.start = {t: R.startTime, spb: spb(), sr: c.sampleRate, off: R.songPlay ? R.songPlay.off : 0}; }
   for (let i = 0; i < NT(); i++) {
     if (V6A.ed && V6A.ed.i === i) continue;
     const p = R.pend[i], want = p ? v6aSt(i, p.slot, p.own) : v6aSt(i, R.slot[i], R.own[i]), cur = R.v6aCur[i], sig = v6aSig(want);
     if (cur ? cur.sig === sig : !want) continue;
+    if (!p && cur && cur.at != null && cur.at > nb - 1e-6 && !fresh) continue;              // a song edge already gliding toward its bar line
     if (fresh || (!p && !cur)) { const t = c.currentTime; v6aGo(i, want, t, t, t, 1); continue; }      // ▶: the state at once (nothing sounds yet)
     const st0 = cur ? cur.st : null, m = v6aMode(i, p, want, st0), T_ = v6aTimes(m, p ? p.beat : nb, nb);
     v6aGo(i, want, T_.t0, T_.t1, T_.at, T_.c);
@@ -22790,7 +22792,7 @@ function v6aTick(b0, b1) {
       if (cur ? cur.sig === v6aSig(want) : !want) continue;
       const m = mk && V6A_X.includes(mk.gl.x) ? {x: mk.gl.x, n: mk.gl.n} : v6aMode(i, null, want, cur ? cur.st : null);
       if (m.x !== 'flow') continue;
-      const T_ = v6aTimes(m, B, nb); v6aGo(i, want, T_.t0, T_.t1, T_.at, 0);
+      const T_ = v6aTimes(m, B, nb); v6aGo(i, want, T_.t0, T_.t1, T_.at, 0); R.v6aCur[i].at = B;
     }
   }
 }
@@ -58758,6 +58760,10 @@ const V6A_API = {
   v6aInfo: () => ({cur: (R.v6aCur || []).map(c => (c ? {sig: c.sig, n: c.st ? v6aCount(c.st) : 0} : null)), run: (R.v6aRun || []).map(r => (r ? {t0: r.t0, t1: r.t1, c: r.c, a: Object.assign({}, r.a), b: Object.assign({}, r.b)} : null)), now: nowT(), sr: AU.ctx ? AU.ctx.sampleRate : 0}),
   v6aEff: t => { const s_ = v6aSnd(t); return s_ ? JSON.parse(JSON.stringify({p: s_.p, fx: s_.fx})) : null; },
   v6aProbe: (t, keys) => { const E = AU.synth[t]; if (!E) return false; E.v6aPr = []; E.v6aProbe(keys || null); return true; },
+  // every engine of track t made from now on (live and in the render) reports keys per block into one log; null = off
+  v6aProbeAll: (t, keys) => { if (!keys) { if (V6A.probe) delete V6A.probe[t]; return true; } V6A.probe = V6A.probe || {}; V6A.probe[t] = {keys, log: []}; const E = AU.synth[t]; if (E) { E.v6aLog = V6A.probe[t].log; E.v6aProbe(keys); } return true; },
+  v6aProbeLog: t => (V6A.probe && V6A.probe[t] ? V6A.probe[t].log.splice(0) : null),
+  v6aStart: () => (V6A.start ? Object.assign({}, V6A.start) : null),
   v6aProbeData: t => { const E = AU.synth[t]; if (!E) return null; const d = E.v6aPr || []; E.v6aPr = []; return d; },
   v6aLabels: () => Object.assign({}, V6A_XL),
 };
