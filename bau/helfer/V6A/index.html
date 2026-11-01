@@ -22625,7 +22625,7 @@ function wkFlush(i) {
 const V6A = {ed: null, pp: null, sig: new WeakMap(), cache: []};
 const V6A_X = ['jump', 'flow', 'bar1', 'bar2', 'free'];
 const V6A_XL = {jump: 'aus', flow: 'kurz', bar1: '1 T', bar2: '2 T', free: 'frei'};
-const V6A_XH = {jump: 'Sprung am Taktstrich (5 ms)', flow: 'gleitet bis zum Taktstrich (mind. 1 Schlag)', bar1: 'gleitet 1 Takt ab dem Taktstrich', bar2: 'gleitet 2 Takte ab dem Taktstrich', free: 'gleitet frei wählbar ab dem Taktstrich'};
+const V6A_XH = {jump: 'kein Gleiten: wechselt am Taktstrich (10 ms, ohne Knacks)', flow: 'gleitet bis zum Taktstrich (mind. 1 Schlag)', bar1: 'gleitet 1 Takt ab dem Taktstrich', bar2: 'gleitet 2 Takte ab dem Taktstrich', free: 'gleitet frei wählbar ab dem Taktstrich'};
 const V6A_FX = ['vol', 'pan', 'rev', 'dly'];
 const V6A_NO = new Set(['mode', 'poly', 'polyH', 'mkLim', 'mkLimS', 'xfLite']);      // KZ3: nur im Grundklang
 const V6A_HOT = new Set(['cutoff', 'res', 'drive', 'level', 'o1lvl', 'o2lvl', 'o3lvl', 'o1pw', 'o2pw', 'o3pw', 'o1fine', 'o2fine', 'o3fine', 'subLvl', 'noise', 'fenv', 'spread', 'fmBright']);
@@ -22754,7 +22754,7 @@ function v6aMode(i, p, st1, st0) {
 }
 // the times of a change at transport beat B (bar line); hand = started now by a tap (flow starts at once)
 function v6aTimes(m, B, nb) {
-  if (m.x === 'jump') { const t = b2t(Math.max(B, nb)); return {t0: t, t1: t + .005, at: t, c: 1}; }
+  if (m.x === 'jump') { const t = b2t(Math.max(B, nb)); return {t0: t, t1: t + .01, at: t, c: 0}; }   // „aus“: 10 ms at the bar line (Regel: Rampe ≥ 10 ms)
   if (m.x === 'flow') { const s = Math.max(nb, B - 1), e = B - s < 1 ? s + 1 : B; return {t0: b2t(s), t1: b2t(e), at: b2t(Math.max(B, nb)), c: 0}; }
   const s = Math.max(B, nb), len = m.x === 'bar1' ? 4 : m.x === 'bar2' ? 8 : m.n || 4;
   return {t0: b2t(s), t1: b2t(s + len), at: b2t(s), c: 0};
