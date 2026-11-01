@@ -1,3 +1,15 @@
+## 4.34.0 — Chor-Spuren, Warp-Editor, Mix-Assistent, Perkussionsspur
+
+Grundlage 4.33.0 + vier Pakete in einem Durchgang (CHORSP, G10E, MIXA, PERC).
+- **Chor-Spuren:** STIMME-Clip ✎ → [Chor] → Stil. In der Matrix und im Song stehen unter STIMME jetzt BACKGROUND und je Chorstimme eine eigene Zeile (antippen = Noten, [M] = stumm). Regler-Symbol in der BACKGROUND-Zeile → Mischpult mit Lead, Background, Gesang gesamt und [Gekoppelt].
+- **Gesangs-Editor:** unten ein Lineal mit [▶/■] und [Loop] – tippen spielt ab dort, ziehen setzt den Loop. Eine Note verschiebt sich nur, wenn sie gewählt war oder kurz gehalten wird.
+- **Warp-Editor (Marken):** zwei Finger zoomen stufenlos, Doppeltipp zwischen zwei Strichen zoomt auf die Silbe, Mini-Karte oben. Ein Finger schwenkt nur – Striche greifst du in der Leiste oben, neue Marke mit [+].
+- **Mix-Assistent + Auto-Master:** Seite MASTER → zwei neue Knöpfe. Der Mix-Assistent erkennt den Charakter jeder Spur und schlägt Kompressor, EQ und Pegel vor ([Übernehmen] / [Zurück]). Auto-Master: Ziel Streaming oder Laut, [Messen] [Übernehmen] [Vorher/Nachher].
+- **Perkussionsspur:** Synth-Spur ⋯ → „North – Perkussionsspur“ (oder Klangerzeugung → North). Die Spur folgt dann automatisch nicht der Transponierung (Schild „folgt nicht“ am Spurkopf, abschaltbar auf der Seite NORTH).
+- Zusammengeführt: Im Marken-Editor zoomen nur noch die neuen Warp-Gesten (kein doppelter Zoom); in den Synth-Listen gibt es nur einen North-Eintrag. Die Drum-Spur behält ihren Reiter North.
+- Alte Projekte laden und klingen gleich. Offen: deine Abnahme der vier Teile; im Mix-Assistenten rechnet die Takt-Zuordnung beim Song noch mit 4/4.
+Tests: Regeln (live 1×, MS 2000 1×, Marken 0), acorn 0 doppelt / 0 Syntaxfehler, Rauchtest grün.
+
 ## 4.33.0 — North als Instrument, Werkzeuge zusammengelegt, Song-Ende ausblenden, Gesang nach Tonart
 
 Grundlage 4.32.0 + vier Pakete in einem Durchgang (NORTHI, DOPPEL, SX126, G10G).
