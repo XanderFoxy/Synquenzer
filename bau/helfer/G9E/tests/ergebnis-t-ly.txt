@@ -1,0 +1,39 @@
+PASS Leiste sichtbar, sobald ein Take Text hat (Standard an) — {"shown":true,"on":true,"off":false,"vorl":false,"a":"Liebe ist ein Feuer","b":"brennt in mir die ganze Nacht","now":null,"nowIdx":-1,"done":0,"li":0,"st":"idle"}
+PASS Stand: erste Zeile als Vorschau — Liebe ist ein Feuer / brennt in mir die ganze Nacht
+PASS Silbe zur richtigen Zeit (±1 Bild) über 4 Takte — 498 Bilder, 0 falsch 
+PASS jede Silbe(ngruppe) einmal hervorgehoben — 0,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+PASS Zeilenwechsel: alle 3 Zeilen gezeigt — Liebe ist ein Feuer | brennt in mir die ganze Nacht | und ich sing davon
+PASS Knopf: aus → schmale Leiste, Text weg
+PASS Wahl gemerkt (uiPrefs)
+PASS Konsole (1)
+PASS Vorzähler zeigt die erste Zeile (Vorlage) — {"shown":true,"on":true,"off":false,"vorl":true,"a":"Liebe ist ein Feuer","b":"brennt in mir die ganze Nacht","now":null,"nowIdx":-1,"done":0,"li":0,"st":"countin"}
+PASS beim Einsingen läuft die Vorlage synchron — {"shown":true,"on":true,"off":false,"vorl":true,"a":"Liebe ist ein Feuer","b":"brennt in mir die ganze Nacht","now":"Lie","nowIdx":0,"done":0,"li":0,"st":"overdub"}
+PASS Konsole (2)
+PASS Song: Take im Song (Takt 3) – Silbe an der Song-Stelle — {"shown":true,"on":true,"off":false,"vorl":false,"a":"Liebe ist ein Feuer","b":"brennt in mir die ganze Nacht","now":"ist","nowIdx":2,"done":2,"li":0,"st":""}
+PASS Song-Melodie: Silben-Lage stimmt (Zuordnung über Zeit, keine Noten → leer) — []
+PASS Quantisieren: Silben-Zeiten = Zeitkarte, die klingt — {"map":true,"h":[2.750159,2.750159,3.750159,3.930159],"e":[2.750159,2.750159,3.750159,3.930159]}
+PASS Quantisieren verschiebt mit (Silben wandern mit ihren Marken) — 11/18 verschoben, 18 auf der gehörten Marke · Schläge 0.00 0.00 2.00 2.36 4.00 4.36 6.00 6.36 8.00 8.36 10.00 10.36 12.00 12.36 14.00 14.36 16.00 16.00
+PASS Rolle MELODIE: Silben an den Noten (Zuordnung über Zeit) — Liebe ist ein Feu er brennt in mir die gan ze Nacht und ich sing
+PASS gespeicherte Silbe (sy, aus G5) bleibt beim Laden und geht vor — [{"t":0,"x":"Hal","sy":"Hal"}]
+PASS G2: Silben an den Blöcken — [{"k":0,"x":"Liebe"},{"k":1,"x":"ist"},{"k":2,"x":"ein"}]
+PASS Konsole (3)
+PASS P: Leiste deckt nichts (keine Taste/kein Knopf darunter) und liegt oben — {"B":[6,672,416,58],"kbTop":735,"kbH":186,"hit":[],"fs":21,"over":false,"el":true}
+PASS P: lesbar groß (≥ 17 px), Tasten bleiben bedienbar (≥ 80 px) — Schrift 21 px, Tasten 186 px
+PASS Leistung (CPU 4×): lyFrame ≤ 1 ms je Bild (95 %) — {"n":181,"med":0,"p95":0.6999999999534339,"max":1.1999999999534339,"mut":7}
+PASS kein Neuzeichnen ohne Änderung (gestoppt, 2 s: 0 DOM-Änderungen) — {"mut":0,"n":352}
+MESS {"n":181,"med":0,"p95":0.6999999999534339,"max":1.1999999999534339,"mut":7}
+PASS P: Konsole
+PASS L: Leiste deckt nichts (keine Taste/kein Knopf darunter) und liegt oben — {"B":[102,288,818,32],"kbTop":323,"kbH":100,"hit":[],"fs":17,"over":false,"el":true}
+PASS L: lesbar groß (≥ 17 px), Tasten bleiben bedienbar (≥ 80 px) — Schrift 17 px, Tasten 100 px
+PASS L: Konsole
+PASS P390: Leiste deckt nichts (keine Taste/kein Knopf darunter) und liegt oben — {"B":[6,597,378,58],"kbTop":660,"kbH":179,"hit":[],"fs":21,"over":false,"el":true}
+PASS P390: lesbar groß (≥ 17 px), Tasten bleiben bedienbar (≥ 80 px) — Schrift 21 px, Tasten 179 px
+PASS P390: Konsole
+PASS P320: Leiste deckt nichts (keine Taste/kein Knopf darunter) und liegt oben — {"B":[6,434,308,44],"kbTop":483,"kbH":80,"hit":[],"fs":17,"over":false,"el":true}
+PASS P320: lesbar groß (≥ 17 px), Tasten bleiben bedienbar (≥ 80 px) — Schrift 17 px, Tasten 80 px
+PASS P320: Konsole
+PASS L844: Leiste deckt nichts (keine Taste/kein Knopf darunter) und liegt oben — {"B":[102,263,736,32],"kbTop":298,"kbH":87,"hit":[],"fs":17,"over":false,"el":true}
+PASS L844: lesbar groß (≥ 17 px), Tasten bleiben bedienbar (≥ 80 px) — Schrift 17 px, Tasten 87 px
+PASS L844: Konsole
+PASS ohne Songtext: keine Leiste, Tastatur unverändert
+ERGEBNIS 37 / 37 PASS

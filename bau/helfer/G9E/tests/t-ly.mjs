@@ -76,15 +76,17 @@ const FR = 1000 / 60;
   await p.evaluate(() => SYNQUENZER.stop());
   await p.evaluate(id => { const m = S.takes[id]; m.marks = m.marks.map((k, i) => Object.assign({}, k, {t: +(k.t + (i % 2 ? .11 : -.07)).toFixed(6)})); }, x.id);   // gesungen ungenau
   await p.evaluate(id => SYNQUENZER.g9SetAsync(id, {op: 'text', text: 'Lie-be ist ein Feu-er\nbrennt in mir die gan-ze Nacht\nund ich sing da-von', lang: 'de'}), x.id);
+  await p.evaluate(() => { SYNQUENZER.selectSlot(stimmeT(), 0); SYNQUENZER.play(); }); await waitBeat(p, .5);
+  const hj = await p.evaluate(() => SYNQUENZER.lyPrep().hs); await p.evaluate(() => SYNQUENZER.stop()); await sleep(300);
   await p.evaluate(() => SYNQUENZER.wpQuantize({t: stimmeT(), s: 0}, {grid: '1/4'}));
   await p.waitForFunction(id => { const i = SYNQUENZER.wpInfo(id); return i.warp && i.ready; }, x.id, {timeout: 30000}).catch(() => {});
   await sleep(700);
   await p.evaluate(() => { SYNQUENZER.selectSlot(stimmeT(), 0); SYNQUENZER.play(); }); await waitBeat(p, .5);
-  const q = await p.evaluate(id => { const P = SYNQUENZER.lyPrep(), m = S.takes[id], a = S.tracks[stimmeT()].clips[0].audio; let mp = null; try { mp = tkHeardMap(id, a); } catch (e) {} return {t0: m.warp ? m.warp.t0 : wpT0(id, a), hs: P.hs, map: P.map, exp: mp ? m.ly.s.map(y => VSM.warpTime(mp, y.t)) : null, sp: spb(), a: a.in, at: a.at}; }, x.id);
+  const q = await p.evaluate(id => { const P = SYNQUENZER.lyPrep(), m = S.takes[id], a = S.tracks[stimmeT()].clips[0].audio; let mp = null; try { mp = tkHeardMap(id, a); } catch (e) {} return {mk: mp ? m.marks.map(k => VSM.warpTime(mp, k.t)) : [], t0: m.warp ? m.warp.t0 : wpT0(id, a), hs: P.hs, map: P.map, exp: mp ? m.ly.s.map(y => VSM.warpTime(mp, y.t)) : null, sp: spb(), a: a.in, at: a.at}; }, x.id);
   await p.evaluate(() => SYNQUENZER.stop());
-  const onGrid = q.hs.filter(h => { const b = (h - q.t0) / q.sp; return Math.abs(b - Math.round(b)) < .02; }).length;   // 1/4-Raster ab Schlag 0 des Takes (warp.t0)
+  const mv = q.hs.filter((h, i) => Math.abs(h - hj[i]) > .02).length, mkOn = q.hs.filter(h => q.mk.some(k => Math.abs(k - h) < 1e-6)).length;
   ok('Quantisieren: Silben-Zeiten = Zeitkarte, die klingt', q.map && q.exp && q.hs.every((h, i) => Math.abs(h - q.exp.filter(e => e >= q.a - .05)[i]) < 1e-6), JSON.stringify({map: q.map, h: q.hs.slice(0, 4), e: q.exp && q.exp.slice(0, 4)}));
-  ok('Quantisieren verschiebt mit (Silben jetzt auf dem 1/4-Raster, vorher nicht)', onGrid >= q.hs.length - 2 && JSON.stringify(q.hs) !== JSON.stringify(h0), onGrid + '/' + q.hs.length + ' auf dem Raster');
+  ok('Quantisieren verschiebt mit (Silben wandern mit ihren Marken)', mv >= 8 && mkOn === q.hs.length, mv + '/' + q.hs.length + ' verschoben, ' + mkOn + ' auf der gehörten Marke · Schläge ' + q.hs.map(h => ((h - q.t0) / q.sp).toFixed(2)).join(' '));
   // Rolle: Noten an Silben-Zeiten; G5-Feld sy geht vor
   await p.evaluate(() => { const P = SYNQUENZER.lyPrep(), a = S.tracks[stimmeT()].clips[0].audio, sp = spb(); const bs = [...new Set(P.hs)].map(h => a.at + (h - a.in) / sp); SYNQUENZER.setClip(5, 0, {len: 4, notes: bs.map((b, k) => ({t: Math.round(b * 4) / 4, d: .5, n: 64 + (k % 5), v: .8}))}); });
   const rn = await p.evaluate(() => SYNQUENZER.lyNotes(0));

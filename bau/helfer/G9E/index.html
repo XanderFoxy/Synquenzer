@@ -13097,8 +13097,10 @@ const RecHelpers = (() => {
       }
       if (opts.syl) { const SY = opts.syl(c.notes); if (SY && SY.size) {         /* G9E: Silbe klein unter dem Noten-Anfang (links unten, nie am Griff rechts) */
         x.font = '600 10px ' + tok('--font-ui', 'sans-serif'); x.textBaseline = 'alphabetic';
-        for (const [nt, tx] of SY) { const r = noteRect(nt); if (r.x > V.W || r.x + 60 < 0 || r.y > V.H || r.y + r.h < -14) continue;
-          const w = Math.min(64, x.measureText(tx).width + 6), yy = r.y + r.h - 2; x.fillStyle = 'rgba(11,12,15,.85)'; rr(x, r.x + 1, yy, w, 13, 3); x.fill(); x.fillStyle = C.amber; x.fillText(tx, r.x + 4, yy + 10, w - 5); } } }
+        const Q = [...SY].map(([nt, tx]) => ({r: noteRect(nt), tx})).sort((p, q) => p.r.x - q.r.x);   // Breite bis zum nächsten Schild (keine Überdeckung)
+        Q.forEach((o, k) => { const r = o.r; if (r.x > V.W || r.x + 60 < 0 || r.y > V.H || r.y + r.h < -14) return;
+          const room = k + 1 < Q.length ? Q[k + 1].r.x - r.x - 2 : 64, w = Math.min(64, room, x.measureText(o.tx).width + 6); if (w < 12) return;
+          const yy = r.y + r.h - 2; x.fillStyle = 'rgba(11,12,15,.85)'; rr(x, r.x + 1, yy, w, 13, 3); x.fill(); x.fillStyle = C.amber; x.fillText(o.tx, r.x + 4, yy + 10, w - 5); }); } }
       mmDraw(C);                                                    /* N2 */
       if (gst && gst.kind === 'marquee') { const m = gst.rect; x.strokeStyle = C.sel; x.setLineDash([4, 3]); x.strokeRect(m.x + .5, m.y + .5, m.w, m.h); x.setLineDash([]); x.fillStyle = C.sel; x.globalAlpha = .08; x.fillRect(m.x, m.y, m.w, m.h); x.globalAlpha = 1; }
       // keys
@@ -46819,8 +46821,9 @@ function g2Paint() {
     if (w > 22 && h >= 9) { g.fillStyle = '#16120a'; g.fillText(noteNames()[((Math.round(t) % 12) + 12) % 12] + (Math.floor(Math.round(t) / 12) - 1), x0 + 3, y + 3.5, w - 4); }
   });
   const SY = Vc ? null : lyG2Syl(id, a, ns);                                // G9E: Silbe klein unter dem Block (gleiche Anfangszeit)
-  if (SY) for (const [k, tx] of SY) { const b = E.blk[k]; if (!b || b.x1 < 0 || b.x0 > Wp) continue; const h = Math.max(4, rowH - 2), tw = Math.min(64, g.measureText(tx).width + 6), yy = Math.min(Hp - 13, b.y + h / 2 + 1);
-    g.fillStyle = 'rgba(11,12,15,.85)'; g.fillRect(b.x0, yy, tw, 12); g.fillStyle = '#ffd27a'; g.fillText(tx, b.x0 + 3, yy + 9.5, tw - 4); }
+  if (SY) { const Q = [...SY].filter(([k]) => E.blk[k]).map(([k, tx]) => ({b: E.blk[k], tx})).sort((p, q) => p.b.x0 - q.b.x0), h = Math.max(4, rowH - 2);
+    Q.forEach((o, j) => { const b = o.b; if (b.x1 < 0 || b.x0 > Wp) return; const room = j + 1 < Q.length ? Q[j + 1].b.x0 - b.x0 - 2 : 64, tw = Math.min(64, room, g.measureText(o.tx).width + 6); if (tw < 12) return;
+      const yy = Math.min(Hp - 13, b.y + h / 2 + 1); g.fillStyle = 'rgba(11,12,15,.85)'; g.fillRect(b.x0, yy, tw, 12); g.fillStyle = '#ffd27a'; g.fillText(o.tx, b.x0 + 3, yy + 9.5, tw - 4); }); }
   // Bedienung
   const md = Vc ? '' : !P || !P.q ? 'off' : P.mode;
   E.chips.querySelectorAll('button[data-v]').forEach(bt => { const v = bt.dataset.v, on = v === md; if (v === 'off' || v === 'soft' || v === 'hard') { bt.classList.toggle('on', on); bt.setAttribute('aria-pressed', String(on)); } if (v !== 'up' && v !== 'dn' && v !== 'zoom') bt.disabled = !!Vc; });
