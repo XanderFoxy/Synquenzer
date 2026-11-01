@@ -2009,7 +2009,7 @@ a.mbtn[aria-disabled=true]{opacity:.55}
   #rollSheet .rht{flex:0 1 auto}
   #rollSheet .rhead .sh-title b{max-width:92px}
   #rollSheet .rinfo{flex:0 1 auto;max-width:150px;font-size:11px}
-  #rollSheet .rhead .pr-bar.prt{flex:1 1 auto;height:36px;border:0;padding:0 2px}
+  #rollSheet .rhead .pr-bar.prt{flex:1 1000 auto;height:36px;border:0;padding:0 2px}   /* EDIT 4.29: die (scrollende) Leiste gibt zuerst nach, der Titel bleibt */
   #rollSheet .rhead .pr-bar button{height:30px;min-width:40px;padding:0 7px}
   #rollSheet .rhead .sh-x{height:32px;width:40px}
   #rollSheet .rhead .folc{height:32px;min-width:54px}
@@ -13169,6 +13169,7 @@ const RecHelpers = (() => {
       /* EDIT 4.29: gemeinsame Hilfen mit dem Pinsel – Tonart der Stelle, Handwahl der Tonart (je Clip), Tonleitern, Vorhören */
       keyAuto: b => mpAutoKey(b), keyManual: {get: () => MPK.get(mpId()) || null, set: k => { if (k) MPK.set(mpId(), k); else MPK.delete(mpId()); }},
       SC, hear: (n, v) => prHear(n, v)}) : null;
+    if (MS && tb.mpBrush) { bar.insertBefore(MS.api.el.magic, tb.mpBrush.nextSibling); MS.api.el.magic.classList.add('mpb'); }   /* EDIT 4.29: eine Gruppe Pinsel · Magic · Mithören */
     sep(bar);
     tb.undo = btn(bar, '↶', () => { if (model.undo) model.undo(); afterExternal(); }, 'Rückgängig');
     tb.redo = btn(bar, '↷', () => { if (model.redo) model.redo(); afterExternal(); }, 'Wiederholen');
@@ -13983,7 +13984,8 @@ const RecHelpers = (() => {
     /* MP-END */
 
     // ---------- public ----------
-    function setTool(t) { E.tool = t; if (t !== 'select' && E.sel.size > 1) E.sel.clear(); if (t === 'erase') E.sel.clear(); render(); }
+    function setTool(t) { if (t === 'mpBrush' && MS && MS.api.state.on) MS.api.setOn(false);   /* EDIT 4.29: Pinsel und Magic schließen sich aus */
+      E.tool = t; if (t !== 'select' && E.sel.size > 1) E.sel.clear(); if (t === 'erase') E.sel.clear(); render(); }
     function setGrid(g) { if (g in GRID) { E.grid = g; E.noteLen = null; render(); if (opts.onPrefs) opts.onPrefs({grid: E.grid, fold: E.fold}); } }
     const fmtLen = d => { const map = {4: '1/1', 2: '1/2', 1: '1/4', .5: '1/8', .25: '1/16', .125: '1/32'}; const k = Object.keys(map).find(x => Math.abs(+x - d) < 1e-6); return k ? map[k] : (d * 4).toFixed(2).replace(/\.?0+$/, '') + '/16'; };
     const fmtPos = t => (Math.floor(t / 4) + 1) + '.' + (Math.floor(t % 4) + 1) + '.' + (Math.floor((t % 1) / .25 + 1e-6) + 1);
