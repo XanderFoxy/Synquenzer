@@ -26436,7 +26436,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '4.40.2';
+const VERSION = '4.40.3';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -37233,7 +37233,7 @@ function fangMode() {
 function fangTeilLit() {
   return R.playing && rec.state === 'off' && !R.countIn && !(UI.pop && UI.pop.name === 'fang') && MEM.lastChange > MEM.lastBound + 1e-6 && AU.ctx && MEM.lastChange > audBeat() - 64;
 }
-function fangTap() { const m = fangMode(); if (m !== 'stimme' && s1Active() && s1Fang({quiet: true})) return true;   /* S1 */
+function fangTap() { const m = fangMode(); if (m === 'teil' && s1Active() && s1Fang({quiet: true})) return true;   /* S1 */   // X3 (Xander 01.11.: „im Songteil fängt er die Melodie nicht ein“): hast du gerade gespielt (Modus fang), fängt FANG die Melodie als Clip; den ganzen Teil nur ohne neue Töne
   return m === 'teil' ? fangTeil() : m === 'stimme' ? vsFang() : capture(); }
 // the tap (o.beat: tests – the audible beat of the tap)
 function fangTeil(o) {

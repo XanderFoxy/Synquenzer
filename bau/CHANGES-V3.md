@@ -1,3 +1,8 @@
+## 4.40.3 — FANG im Songteil fängt die Melodie
+
+- **FANG im laufenden Songteil:** Hast du gerade Töne gespielt, fängt FANG jetzt deine Melodie als Clip (wie überall sonst). Den ganzen Songteil (Teil ersetzen / als neuen Teil) fängt FANG nur noch, wenn du in den letzten 8 Sekunden nichts gespielt hast, sondern nur Clips umgeschaltet hast.
+Tests: Regeln (live 1×, MS 2000 1×, Marken 0), acorn 0 doppelt / 0 Syntaxfehler, Rauchtest grün; Weiche geprüft (gespielt → Clip, ruhig → Teil).
+
 ## 4.40.2 — Songteil wieder direkt: Strophe, Refrain …
 
 - **Zusammenfassen ist zurück:** Takte wählen → ⋯ → **Zusammenfassen** (oder im Marken-Blatt neben Bearbeiten) → ein Tipp auf **Intro, Strophe, Pre, Refrain, Bridge, Break, Outro** oder einen eigenen Namen, und der Teil ist da. Das ist das Blatt von vorher.
