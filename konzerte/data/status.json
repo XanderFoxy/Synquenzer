@@ -1,12 +1,12 @@
 {
- "stand": "2026-11-04T14:37:35.835Z",
+ "stand": "2026-11-04T21:19:36.728Z",
  "quellen": {
   "ticketmaster": {
    "ok": true,
    "treffer": 0,
    "fehler": [],
    "uebersprungen": "kein TM_KEY gesetzt",
-   "ms": 1
+   "ms": 0
   },
   "seiten": {
    "ok": false,
@@ -15,7 +15,7 @@
     "Gothic meets Klassik: fetch failed"
    ],
    "uebersprungen": null,
-   "ms": 11704,
+   "ms": 10188,
    "geprueft": 3,
    "gesamt": 4
   },
@@ -24,14 +24,14 @@
    "treffer": 7,
    "fehler": [],
    "uebersprungen": null,
-   "ms": 18453
+   "ms": 15894
   },
   "deezer": {
    "ok": true,
    "treffer": 3,
    "fehler": [],
    "uebersprungen": null,
-   "ms": 3357
+   "ms": 2466
   }
  },
  "pushes": 0,
