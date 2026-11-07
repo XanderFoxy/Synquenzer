@@ -173,7 +173,9 @@ export default async function praemien({ holeText, cfg, jetzt }) {
   for (const it of items) {
     if (it.temperatur != null && it.temperatur < (m.minTemperatur ?? -1e9)) continue; // von der Community abgestraft
     const text = `${it.titel} ${it.beschreibung}`;
-    const b = bewertePraemie(text, m, { preisText: it.preisText });
+    // Feeds mit „minNetto“: eigene Untergrenze (Geld-zurück für Snacks bringt oft nur 1–3 €, ist aber gratis)
+    const mm = it.feedInfo?.minNetto != null ? { ...m, minNetto: it.feedInfo.minNetto } : m;
+    const b = bewertePraemie(text, mm, { preisText: it.preisText });
     if (!b) continue;
     // Feeds mit „nurArten“ (z. B. mydealz Lebensmittel): nur Geld-zurück-/Cashback-Aktionen, keine normalen Deals
     if (it.feedInfo?.nurArten && !it.feedInfo.nurArten.includes(b.art)) continue;

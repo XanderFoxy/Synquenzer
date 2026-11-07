@@ -135,7 +135,7 @@
       "_hinweis": "Prämien & Freunde werben. Netto = Prämie − Kosten (Gebühren × Laufzeit, Versand). Sortiert nach Netto pro Stunde Aufwand. Sofort-Push nur ab sofortAbNetto € netto oder Gratis-Produkt ohne Haken ab gratisSofortAbWert €, höchstens maxSofortProLauf pro Lauf.",
       "feeds": [
         { "name": "mydealz Freebies", "url": "https://www.mydealz.de/rss/gruppe/freebies", "maxAlterTage": 7 },
-        { "name": "mydealz Lebensmittel", "url": "https://www.mydealz.de/rss/gruppe/lebensmittel", "maxAlterTage": 14, "nurArten": ["gzg", "cashback"], "_nurArten": "nur Geld-zurück- und Cashback-Aktionen (Seite: Abschnitt Cashback)" }
+        { "name": "mydealz Lebensmittel", "url": "https://www.mydealz.de/rss/gruppe/lebensmittel", "maxAlterTage": 14, "nurArten": ["gzg", "cashback"], "minNetto": 1, "_nurArten": "nur Geld-zurück- und Cashback-Aktionen (Seite: Abschnitt Cashback); ab 1 € netto, weil Geld-zurück für Snacks oft nur 1–3 € bringt" }
       ],
       "suchen": ["Kontowechselprämie", "Neukundenprämie Girokonto", "Freunde werben Prämie", "Geld zurück Aktion", "Gratis testen", "Cashback Aktion", "Wechselbonus Strom", "Payback Extrapunkte", "Startguthaben App"],
       "maxAlterTage": 14,
