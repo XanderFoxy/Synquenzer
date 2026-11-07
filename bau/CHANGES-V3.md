@@ -1,3 +1,9 @@
+## 4.49.1 — Aufgeräumte Wege: Marken-Blatt in Reitern, ein Export-Blatt, Small │ Full, klarere Namen
+
+- **Aufgeräumte Wege** (deine Freigabe zum Inventar): Marken-Blatt in Reitern (Ablauf │ Teil │ Klang & Groove │ Video, viel flacher), ein „Zusammenfassen …“, **Small │ Full** statt Leicht/Voll (alte Songs klingen gleich), „Im Video ▸“ öffnet die Video-Spur an der Stelle, **ein Blatt Export**, „Öffnen …“ für .json und .zip, Mithören durch Ziehen der ▼-Marke (ohne Lautsprecher-Knopf), ◆ nur noch Klang, ⇥ FILLS, klarere Namen.
+- **Marken-Blatt:** „Refrain groß“ und „Refrain 2× singen“ stehen im Reiter **Klang & Groove**.
+Tests: Regeln, acorn 0 / doppelte Schlüssel 0, Rauchtest grün; Wege 77/77, Mix 34/34 (Refrain-Knöpfe im Reiter Klang & Groove).
+
 ## 4.49.0 — Mix in der Matrix, Chor sauber & „Refrain groß“, 27 neue Grooves, Tempo-Version, 3/4 überall, Dur ↔ Moll, Öltank-Hall, Parameter-Locks
 
 - **Ein Blatt Mix & Master für alles:** [AUTO-MASTER], [MIX-ASSISTENT], der Master-Balken und der Mix-Assistent im EQ · KOMP-Blatt öffnen dasselbe Blatt. **In der Matrix:** läuft eine Szene, hört das Blatt 4 Takte mit und klingt sofort – ohne Song. **Auto-Nachführen:** nach einer Änderung wartet es 4 s, misst neu und gleitet sanft nach (höchstens ±2 dB je Mal, nie während einer Aufnahme; Stumm/Solo verstellt nichts).
