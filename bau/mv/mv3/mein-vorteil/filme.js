@@ -134,7 +134,7 @@
     if (t.fehlt) klein.push('Wird weiter gesucht – sobald er im Store ist, steht er hier.');
     if (!t.fehlt && t.preis != null && t.vorher != null && t.vorher > t.preis + 0.004) klein.push(`statt <s>${esc(euro(t.vorher))}</s>`);
     if (!t.fehlt && t.tiefst) {
-      const hoeher = t.preis != null && t.preis > t.tiefst.p + 0.004;
+      const hoeher = t.preis == null || t.preis > t.tiefst.p + 0.004; // ohne Preis: zuletzt gesehener Tiefstpreis mit Tag
       const heute = t.seit === tagKey(Date.now());
       if (!hoeher && t.vorher == null && !zeigeTiefst(t)) { // Preis hat sich nie bewegt
         if (t.seit && !heute) klein.push(esc(`Preis unverändert seit ${tm(t.seit)}`));
@@ -235,7 +235,7 @@
   function zeigeChip(leiste, k) { // gewählten Chip ins Bild holen (nur waagrecht, die Seite springt nicht)
     const c = leiste.querySelector(`[data-fi-chip="${k}"]`);
     if (!c) return;
-    const l = c.offsetLeft - leiste.offsetLeft, r = l + c.offsetWidth;
+    const l = c.offsetLeft, r = l + c.offsetWidth; // .fi-chips ist position: relative
     if (l < leiste.scrollLeft + 16) leiste.scrollLeft = Math.max(0, l - 16);
     else if (r > leiste.scrollLeft + leiste.clientWidth - 16) leiste.scrollLeft = r - leiste.clientWidth + 16;
   }
@@ -336,7 +336,7 @@
 .fi-stand { margin: 10px 4px 0; font-size: 13px; color: var(--leise); }
 .fi-stand.fi-alt { color: var(--rot); }
 .fi-chips {
-  display: flex; gap: 8px; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scrollbar-width: none;
+  position: relative; display: flex; gap: 8px; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scrollbar-width: none;
   -webkit-overflow-scrolling: touch; margin: 8px -16px 0; padding: 2px 16px 4px;
 }
 .fi-chips::-webkit-scrollbar { display: none; }

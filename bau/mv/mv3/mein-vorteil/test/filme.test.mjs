@@ -345,7 +345,7 @@ test('Gewählter Chip bleibt gemerkt; ein neues Wunsch-Angebot holt die Wunschli
   zustand.patch = d => { const m = d.gruppen.wunsch.find(t => t.titel === 'Mallrats'); Object.assign(m, { preis: 3.99, preisHd: 3.99, vorher: 9.99, angebot: true, unterZiel: true, istTiefst: true, tiefst: { p: 3.99, tag: '2026-11-07' } }); };
   await page.reload();
   await filmeDa(page);
-  await page.waitForFunction(() => /Mallrats[\s\S]*3,99/.test(document.getElementById('fi-liste').textContent) || document.getElementById('fi-c-wunsch').getAttribute('aria-selected') === 'true');
+  await page.waitForFunction(() => { try { return JSON.parse(localStorage.getItem('mein-vorteil-daten-filme')).d.gruppen.wunsch.some(t => t.titel === 'Mallrats' && t.preis === 3.99); } catch { return false; } });
   // der gemerkte Stand (alt) zeichnet zuerst, die frischen Daten danach – der Chip darf dabei nicht springen
   await page.waitForTimeout(200);
   assert.equal(await chip(page, 'disney').getAttribute('aria-selected'), 'true', 'erst beim nächsten Öffnen entschieden');
@@ -368,11 +368,13 @@ test('Offline-Kopie: letzter Stand sofort; Quelle gestört bzw. offline steht in
   await page.waitForFunction(() => /gestört/.test(document.querySelector('.fi-stand')?.textContent || ''));
   assert.equal(nbsp(await page.locator('.fi-stand').innerText()), 'Stand: heute 14:05 · Quelle gerade gestört – du siehst den letzten Stand');
   assert.equal(await karten(page).count(), 4);
+  await page.waitForFunction(() => !document.getElementById('neu').hasAttribute('aria-busy'));
   await ctx.setOffline(true);
   await page.locator('#neu').click();
   await page.waitForFunction(() => /offline/.test(document.querySelector('.fi-stand').textContent));
   assert.equal(nbsp(await page.locator('.fi-stand').innerText()), 'Stand: heute 14:05 · offline');
   assert.match(await page.locator('.fi-stand').getAttribute('class'), /fi-alt/);
+  await page.waitForFunction(() => !document.getElementById('neu').hasAttribute('aria-busy'));
   await ctx.setOffline(false);
   zustand.offline = false;
   await page.locator('#neu').click();
@@ -431,7 +433,7 @@ async function pruefeLayout(page, wo) {
 
 for (const [breite, hoehe, lage] of [[428, 926, 'hoch'], [926, 428, 'quer']]) {
   test(`Layout ${breite}×${hoehe} (${lage}): je Chip ein Foto, kein seitliches Scrollen, Chips ≥ 44 px, Bilder ohne Sprung`, { skip: ohnePw }, async () => {
-    const { ctx, page, fehler } = await oeffne({ breite, hoehe, bildVerzug: 400 });
+    const { ctx, page, fehler } = await oeffne({ breite, hoehe, bildVerzug: 600 });
     // Platz fürs Bild ist reserviert, bevor es da ist
     const vorher = await page.locator('#fi-liste .fi-bild').evaluateAll(b => b.map(x => [x.tagName, x.complete === false || x.tagName !== 'IMG', Math.round(x.getBoundingClientRect().width), Math.round(x.getBoundingClientRect().height)]));
     assert.ok(vorher.length >= 3);
@@ -443,9 +445,9 @@ for (const [breite, hoehe, lage] of [[428, 926, 'hoch'], [926, 428, 'quer']]) {
       const chips = await page.locator('.fi-chip').evaluateAll(c => c.map(x => Math.round(x.getBoundingClientRect().height)));
       assert.ok(chips.every(h => h >= 44), `${k}: Chips ${chips}`);
       assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector('.fi-chips')).flexWrap), 'nowrap');
-      await page.waitForTimeout(450); // Bilder kommen spät
-      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight)); // faul geladene Bilder weiter unten
-      await page.waitForTimeout(450);
+      // faul geladene Bilder weiter unten holen, alle abwarten (sie kommen absichtlich spät)
+      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+      await page.waitForFunction(() => [...document.querySelectorAll('#fi-liste img')].every(i => i.complete), null, { timeout: 8000 });
       await page.evaluate(() => window.scrollTo(0, 0));
       await pruefeLayout(page, `${lage} ${k}`);
       await page.screenshot({ path: join(FOTOS, `${lage}-${k}.png`), fullPage: true });

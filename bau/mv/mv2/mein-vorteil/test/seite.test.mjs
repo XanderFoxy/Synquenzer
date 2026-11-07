@@ -1,4 +1,5 @@
 // Browser-Tests der Seite „Mein Vorteil“ (Playwright, Chromium) mit echten Daten vom 31.10.2026 und Vertrags-Fixtures.
+// MV2 (07.11.2026): eine Seite mit Abschnitten (#krypto … #mehr) statt Reitern; Kurs-Quellen sind gemockt (kein echtes Netz).
 // Aufruf: cd mein-vorteil && node --test   (Bildschirmfotos nach $MV_SHOTS, sonst ins Temp-Verzeichnis)
 // Ohne installiertes Playwright werden die Tests übersprungen.
 import { test, before, after } from 'node:test';
@@ -65,12 +66,27 @@ const SATZ = {
   vertragB: n => join(FIX, 'vertrag-b', n), // Sonderfälle der zweiten Prüfung (Versand im Preis, Ende nach 24 h, unplausibel)
 };
 
-async function oeffne({ satz = 'vertrag', jetzt = JETZT, breite = 428, hoehe = 926, pfad = '/mein-vorteil/', dunkel = false, kontext = null, sw = 'block', fehlt = [], uhr = 'fest', patch = {}, vorher = null } = {}) {
+// Kurs-Quellen gemockt (Stand 07.11.2026 ~17:36 UTC): kurs = 'ok' | 'kaputt' (alle Quellen gestört) | 'cryptocom' (nur Crypto.com geht)
+const KURS = { btc: 67971.07, eth: 2004.49, btc24: 0.25, eth24: -1.2 };
+async function kursMock(ctx, art, abrufe) {
+  const cors = { 'access-control-allow-origin': '*' };
+  const json = (route, body) => route.fulfill({ status: 200, contentType: 'application/json', headers: cors, body: JSON.stringify(body) });
+  await ctx.route(/^https:\/\/(api\.coingecko\.com|api\.crypto\.com|api\.exchange\.coinbase\.com)\//, route => {
+    const u = new URL(route.request().url());
+    abrufe?.push(u.href);
+    if (art === 'kaputt' || (art === 'cryptocom' && u.host !== 'api.crypto.com')) return route.fulfill({ status: 503, headers: cors, body: '' });
+    if (u.host === 'api.coingecko.com') return json(route, { bitcoin: { eur: KURS.btc, eur_24h_change: KURS.btc24 }, ethereum: { eur: KURS.eth, eur_24h_change: KURS.eth24 } });
+    if (u.host === 'api.crypto.com') { const i = u.searchParams.get('instrument_name'); return json(route, { code: 0, result: { data: [{ i, a: String(i === 'BTC_EUR' ? KURS.btc : KURS.eth), c: '0.0025' }] } }); }
+    return route.fulfill({ status: 404, headers: cors, body: '' });
+  });
+}
+
+async function oeffne({ satz = 'vertrag', jetzt = JETZT, breite = 428, hoehe = 926, pfad = '/mein-vorteil/', dunkel = false, kontext = null, sw = 'block', fehlt = [], uhr = 'fest', patch = {}, vorher = null, kurs = 'ok', krypto = null, produkte = null } = {}) {
   const ctx = kontext || await browser.newContext({
     viewport: { width: breite, height: hoehe }, deviceScaleFactor: 2, isMobile: true, hasTouch: true,
     locale: 'de-DE', timezoneId: 'Europe/Berlin', colorScheme: dunkel ? 'dark' : 'light', serviceWorkers: sw,
   });
-  const zustand = { satz, offline: false, fehlt: new Set(fehlt) }; // fehlt: Dateinamen (z. B. 'konzerte-releases.json') -> 404
+  const zustand = { satz, offline: false, fehlt: new Set(fehlt), kursAbrufe: [] }; // fehlt: Dateinamen (z. B. 'konzerte-releases.json') -> 404
   await ctx.route('https://raw.githubusercontent.com/**', async route => {
     if (zustand.offline) return route.abort('internetdisconnected');
     const u = new URL(route.request().url());
@@ -82,6 +98,9 @@ async function oeffne({ satz = 'vertrag', jetzt = JETZT, breite = 428, hoehe = 9
     return route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body });
   });
   await ctx.route(/^https:\/\/(?!raw\.githubusercontent\.com)/, route => route.fulfill({ status: 200, contentType: 'image/png', body: PNG }));
+  await kursMock(ctx, kurs, zustand.kursAbrufe);
+  // Einstieg/Menge bzw. Produktliste wie von Xander eingetragen (nur localStorage)
+  if (krypto || produkte) await ctx.addInitScript(([k, p]) => { try { if (k) localStorage.setItem('mein-vorteil-krypto', JSON.stringify(k)); if (p) localStorage.setItem('mein-vorteil-produkte', JSON.stringify(p)); } catch {} }, [krypto, produkte]);
   if (vorher) await ctx.addInitScript(vorher);
   const page = await ctx.newPage();
   const fehler = [];
@@ -97,10 +116,14 @@ const geladen = page => page.waitForFunction(() => !/lädt|Lade/.test(document.g
 const text = (page, sel) => page.locator(sel).innerText();
 const nbsp = s => s.replace(/ /g, ' ');
 
-async function reiter(page, name) {
-  await page.locator(`#t-${name}`).click();
-  await page.waitForFunction(n => !document.getElementById('p-' + n).hidden, name);
+// Abschnitt über die Sprung-Leiste anspringen (früher: Reiter)
+async function springe(page, name) {
+  await page.locator(`.sprung a[data-ziel="${name}"]`).click();
+  await page.waitForFunction(n => location.hash === '#' + n, name);
 }
+const zahlIn = (page, ab) => page.locator(`.sprung a[data-ziel="${ab}"] .n`);
+// alles in geschlossenen Kästen eines Bereichs aufklappen (innerText zeigt sonst nur die Überschrift)
+const aufklappen = (page, sel) => page.evaluate(s => document.querySelectorAll(`${s} details`).forEach(d => (d.open = true)), sel);
 
 // Kein seitliches Scrollen, alles Tippbare mindestens 44 × 44 px (auch in aufgeklappten Kästen)
 async function pruefeLayout(page, wo) {
@@ -154,13 +177,15 @@ test('echte Daten (neue Scanner, 31.10. 16:35): Knoppers-Karte ist eindeutig', {
   assert.match(reihe, /PENNY · \[Penny\] Ben Jerrys 3,49 · Packungsgröße unklar/);
   assert.match(reihe, /ab Mo 2\.11\. · nur mit PENNY-App \(ohne App 3,99 €\)/);
   assert.doesNotMatch(reihe, /Ende unbekannt/);
-  const h2 = await page.locator('#p-angebote h2').allInnerTexts();
-  assert.ok(h2.some(h => /^Bald günstig/i.test(h)), h2.join(' | '));
-  const jetztBlock = await page.evaluate(() => { const h = [...document.querySelectorAll('#p-angebote h2')]; const a = h.findIndex(x => /Jetzt günstig/i.test(x.textContent)); const b = h.findIndex(x => /Bald günstig/i.test(x.textContent)); return { a, b }; });
+  const h3 = await page.locator('#produkte h3.unter').allInnerTexts();
+  assert.ok(h3.some(h => /^Bald günstig/i.test(h)), h3.join(' | '));
+  const jetztBlock = await page.evaluate(() => { const h = [...document.querySelectorAll('#produkte h3.unter')]; const a = h.findIndex(x => /Jetzt günstig/i.test(x.textContent)); const b = h.findIndex(x => /Bald günstig/i.test(x.textContent)); return { a, b }; });
   assert.ok(jetztBlock.a >= 0 && jetztBlock.b > jetztBlock.a, 'Bald günstig steht unter Jetzt günstig');
   assert.match(nbsp(await text(page, '#stand')), /^Stand: Angebote gerade eben · Vorteile gerade eben · Konzerte vor 5 Min\./);
-  assert.equal(await page.locator('#t-angebote .n').innerText(), '1', 'nur Knoppers läuft jetzt; Ben & Jerry\'s erst ab Montag');
-  assert.equal(await page.locator('#t-konzerte .n').isHidden(), true, 'leerer Zähler bei 0 Konzerten');
+  assert.equal(await zahlIn(page, 'produkte').innerText(), '1', 'nur Knoppers läuft jetzt; Ben & Jerry\'s erst ab Montag');
+  assert.equal(await zahlIn(page, 'auftritte').isHidden(), true, 'leerer Zähler bei 0 Konzerten');
+  // Heute wichtig nennt den laufenden Deal
+  assert.match(nbsp(await text(page, '#wichtig')), /Deal: Knoppers Schnitte 2,79 € bei Kaufland/);
   assert.deepEqual(fehler, []);
   await ctx.close();
 });
@@ -193,8 +218,10 @@ test('Preis-Kontext (v3): Jetzt · Regulär · Üblich im Angebot · Tiefst 12 M
   assert.match(b, /statt regulär 6,99 €/);
   assert.match(b, /Tiefst 12 Mon\.\s*3,79 €\s*EDEKA · Aug\. 2026/);
   assert.match(b, /Deal\s*Unter dem üblichen Angebotspreis, nah am 12-Monats-Tief/);
-  // ohne Angebot: Orientierung in der Liste
-  const liste = nbsp(await page.locator('#p-angebote .liste').innerText());
+  // ohne Angebot: Orientierung in der (eingeklappten) Liste
+  await page.locator('#produkte details.ohne-angebot summary').click();
+  assert.match(await page.locator('#produkte details.ohne-angebot summary').innerText(), /^Gerade ohne Angebot \(8\)$/);
+  const liste = nbsp(await page.locator('#produkte .ohne-angebot .liste').innerText());
   assert.match(liste, /Nestlé Choco Crossies\s*Gerade kein Angebot · Üblich 1,99 € · Tiefst 1,69 € \(Kaufland, März 2026\) · je 150 g/);
   assert.match(liste, /Lorenz Crunchips X-Cut\s*Gerade kein Angebot · Üblich 1,49 € · Tiefst 1,49 € \(Action, Okt\. 2026\) · je 130 g/);
   assert.equal((liste.match(/Gerade kein Angebot · Üblich [\d,]+ € · Tiefst [\d,]+ € \([^)]+ 20\d\d\)/g) || []).length, 8, '8 Produkte ohne Angebot, alle mit Üblich + Tiefst');
@@ -206,7 +233,8 @@ test('Preis-Kontext (v3): Jetzt · Regulär · Üblich im Angebot · Tiefst 12 M
 test('Preis-Kontext (v3): nach Kaufland-Ende steht Knoppers mit Üblich/Tiefst in der Liste', { skip: ohnePw }, async () => {
   const { ctx, page, fehler } = await oeffne({ satz: 'v3', jetzt: '2026-10-31T18:00:30Z' });
   assert.equal(await page.locator('[data-produkt="knoppers-schnitte"]').count(), 0);
-  assert.match(nbsp(await text(page, '#p-angebote')), /Knoppers Schnitte\s*Gerade kein Angebot · Üblich 2,79 € · Tiefst 2,49 € \(Kaufland mit Card, Okt\. 2026\) · je 15 Stück/);
+  await aufklappen(page, '#produkte');
+  assert.match(nbsp(await text(page, '#produkte')), /Knoppers Schnitte\s*Gerade kein Angebot · Üblich 2,79 € · Tiefst 2,49 € \(Kaufland mit Card, Okt\. 2026\) · je 15 Stück/);
   assert.deepEqual(fehler, []);
   await ctx.close();
 });
@@ -219,62 +247,53 @@ test('echte Daten: nach Kaufland-Ende (18:00 UTC) verschwindet das Angebot von s
   await page.clock.setFixedTime(new Date('2026-10-31T18:00:30Z'));
   await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
   assert.equal(await page.locator('[data-produkt="knoppers-schnitte"]').count(), 0);
-  assert.match(nbsp(await text(page, '#p-angebote')), /Knoppers Schnitte\s*Gerade kein Angebot · zuletzt 0,19 € pro Stück bei Kaufland · Normalpreis geschätzt: ca\. 0,30 € pro Stück/);
-  assert.doesNotMatch(await text(page, '#p-angebote'), /Milch-Haselnuss-Schnitte/);
-  // auch im Vorteils-Reiter nichts mehr davon
-  assert.doesNotMatch(await page.locator('#p-vorteile').textContent(), /Knoppers/);
+  await aufklappen(page, '#produkte');
+  assert.match(nbsp(await text(page, '#produkte')), /Knoppers Schnitte\s*Gerade kein Angebot · zuletzt 0,19 € pro Stück bei Kaufland · Normalpreis geschätzt: ca\. 0,30 € pro Stück/);
+  assert.doesNotMatch(await text(page, '#produkte'), /Milch-Haselnuss-Schnitte/);
+  // auch in den anderen Abschnitten nichts mehr davon (und nicht mehr in „Heute wichtig“)
+  for (const ab of ['gewinnspiele', 'cashback', 'snacks', 'mehr', 'wichtig']) assert.doesNotMatch(await page.locator('#' + ab).textContent(), /Knoppers/, ab);
   assert.deepEqual(fehler, []);
   await ctx.close();
 });
 
 test('altes Produktionsformat (31.10.): keine falsche Packung, keine erfundenen Prozente, nichts Abgelaufenes', { skip: ohnePw }, async () => {
   const { ctx, page, fehler } = await oeffne({ satz: 'v1' });
-  const angebote = nbsp(await page.locator('#p-angebote').textContent());
+  const angebote = nbsp(await page.locator('#produkte').textContent() + await page.locator('#preisfehler').textContent());
   assert.doesNotMatch(angebote, /24er|5er-Pack|40 Stück|1 kg|0,07|0,05|−82 %/);
   const knoppers = page.locator('[data-produkt="knoppers-24"]');
   assert.equal(await knoppers.locator('h3').innerText(), 'Knoppers');
   assert.match(nbsp(await knoppers.innerText()), /Storck Knoppers Milch-Haselnuss-Schnitte · Packungsgröße unklar/);
   // RTX 5070 vom 12.10. (19 Tage alt, kein Ende in den Daten) und die drei abgelaufenen Radar-Preisfehler: weg
   assert.doesNotMatch(angebote, /RTX 5070|HARBR|Faltpavillon|Lumaland/);
-  assert.match(angebote, /Gerade kein laufender Preisfehler/);
-  await reiter(page, 'vorteile');
-  const vorteile = await page.locator('#p-vorteile').textContent();
+  assert.match(angebote, /Gerade kein krasser Preisfehler/);
+  const vorteile = (await page.locator('#gewinnspiele, #cashback, #snacks, #mehr').allTextContents()).join(' ');
   assert.doesNotMatch(vorteile, /Preisfehler|Knoppers|Choco Crossies|Ben & Jerry/);
-  assert.match(vorteile, /Tests & Gewinnspiele/);
+  assert.match(await page.locator('#gewinnspiele').textContent(), /Tickets gewinnen/);
   assert.deepEqual(fehler, []);
   await ctx.close();
 });
 
-test('Preisfehler: vorher → jetzt, du sparst, Quelle; ohne Vorher-Preis ehrlich „unbekannt“; Abgelaufenes fehlt', { skip: ohnePw }, async () => {
+test('Preisfehler: nur krasse – Lumaland (−75 %, 73 € gespart) ja; Samsung (−60 %) und RTX (165 €, Vorher-Preis unbekannt) nein; Abgelaufenes fehlt', { skip: ohnePw }, async () => {
   const { ctx, page, fehler } = await oeffne({ satz: 'vertrag' });
-  const karten = page.locator('#p-angebote [data-preisfehler]');
-  assert.equal(await karten.count(), 3, 'Lumaland (doppelt in beiden Quellen) einmal + RTX + Technik-Deal Samsung');
+  const karten = page.locator('#preisfehler [data-preisfehler]');
+  assert.equal(await karten.count(), 1, 'Lumaland (doppelt in beiden Quellen) einmal; Samsung und RTX sind keine No-Brainer');
   const luma = nbsp(await karten.filter({ hasText: 'Lumaland' }).innerText());
   assert.match(luma, /vorher 96,99 €\s*→\s*jetzt 23,99 €/);
   assert.match(luma, /du sparst 73,00 € \(−75 %\)/);
   assert.match(luma, /Vergleichspreis laut mydealz/);
   assert.match(luma, /gemeldet vor 45 Min\./);
   assert.match(luma, /^Preisfehler/);
+  assert.match(luma, /Läuft laut Deal-Seite \(geprüft vor 5 Min\.\)/);
   assert.doesNotMatch(luma, /\bbis\b/, 'geschätztes Ende (gemeldet + 24 h) wird nicht als „bis“ gezeigt');
-  const samsung = nbsp(await karten.filter({ hasText: 'Samsung' }).innerText());
-  assert.match(samsung, /^Technik-Deal/, 'kein gemeldeter Preisfehler (Feld preisfehler: false)');
-  assert.match(samsung, /bis heute, 21:00 Uhr/, 'echtes Ende von der Deal-Seite');
-  assert.match(samsung, /vorher 499,00 €\s*→\s*jetzt 199,00 €/);
-  assert.match(samsung, /du sparst 300,00 € \(−60 %\)/);
-  assert.match(samsung, /statt-Preis laut Deal-Text · zzgl\. 4,99 € Versand/);
-  const rtx = nbsp(await karten.filter({ hasText: 'RTX 5070' }).innerText());
-  assert.match(rtx, /jetzt 165,00 €/);
-  assert.match(rtx, /Originalpreis unbekannt/);
-  assert.doesNotMatch(rtx, /vorher|du sparst/);
-  // Preisfehler stehen oben, wenn es welche gibt; mit einem Technik-Deal dabei heißt die Überschrift auch so
-  assert.match(await page.locator('#p-angebote h2').first().innerText(), /^Preisfehler & Technik-Deals\s*3$/i);
-  assert.doesNotMatch(samsung, /storniert/, 'Storno-Warnung nur bei echten Preisfehlern');
   assert.match(luma, /storniert/);
-  for (const r of ['angebote', 'vorteile', 'konzerte']) {
-    await reiter(page, r);
-    assert.doesNotMatch(await page.locator('#p-' + r).textContent(), /ABGELAUFEN/, `${r}: Abgelaufenes sichtbar`);
+  const pf = await page.locator('#preisfehler').textContent();
+  assert.doesNotMatch(pf, /Samsung|RTX 5070|ABGELAUFEN/);
+  for (const ab of ['produkte', 'preisfehler', 'gewinnspiele', 'cashback', 'snacks', 'auftritte', 'mehr']) {
+    assert.doesNotMatch(await page.locator('#' + ab).textContent(), /ABGELAUFEN/, `${ab}: Abgelaufenes sichtbar`);
   }
-  assert.equal(await page.locator('#t-angebote .n').innerText(), '4', 'Zähler: 1 laufender Deal + 3 Preisfehler/Technik-Deals (Ben & Jerry\'s beginnt erst Montag)');
+  assert.equal(await zahlIn(page, 'produkte').innerText(), '1', 'Zähler: 1 laufender Deal (Ben & Jerry\'s beginnt erst Montag)');
+  assert.equal(await zahlIn(page, 'preisfehler').innerText(), '1');
+  assert.match(nbsp(await text(page, '#wichtig')), /Preisfehler: Lumaland Outdoor Pop-Up Pavillon/);
   // Crunchips: das beste Angebot ist abgelaufen -> die Karte zeigt das teurere REWE-Angebot, ohne Prozent und ohne den alten Satz
   const chips = nbsp(await page.locator('[data-produkt="crunchips"]').innerText());
   assert.match(chips, /Lorenz Crunchips · 150 g/);
@@ -287,41 +306,45 @@ test('Preisfehler: vorher → jetzt, du sparst, Quelle; ohne Vorher-Preis ehrlic
 });
 
 test('Preisfehler verschwinden von selbst: Technik-Deal am Deal-Ende, Preisfehler ohne Ende 24 h nach dem Melden', { skip: ohnePw }, async () => {
-  const { ctx, page, fehler } = await oeffne({ satz: 'vertrag', jetzt: '2026-10-31T19:59:00Z' });
-  const karten = page.locator('#p-angebote [data-preisfehler]');
-  assert.equal(await karten.count(), 3);
+  // Samsung krass gemacht (29 € statt 499 €), damit sein Deal-Ende (heute 21:00 Uhr) geprüft wird
+  const patch = { 'schnaeppchen-current.json': d => { const t = d.technik.find(x => /Samsung/.test(x.titel)); t.preis = 29; t.ersparnisEuro = 470; t.ersparnisProzent = 94; } };
+  const { ctx, page, fehler } = await oeffne({ satz: 'vertrag', jetzt: '2026-10-31T19:59:00Z', patch });
+  const karten = page.locator('#preisfehler [data-preisfehler]');
+  assert.deepEqual((await karten.allInnerTexts()).map(t => /Lumaland/.test(t) ? 'Lumaland' : /Samsung/.test(t) ? 'Samsung' : t.slice(0, 30)), ['Lumaland', 'Samsung']);
   await page.clock.setFixedTime(new Date('2026-10-31T20:00:30Z'));
   await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
-  assert.deepEqual((await karten.allInnerTexts()).map(t => /Lumaland/.test(t) ? 'Lumaland' : /RTX/.test(t) ? 'RTX' : t.slice(0, 30)), ['RTX', 'Lumaland']);
+  assert.deepEqual((await karten.allInnerTexts()).map(t => /Lumaland/.test(t) ? 'Lumaland' : t.slice(0, 30)), ['Lumaland']);
   // Lumaland: im Schnäppchen-Wecker bis = gemeldet + 24 h, im Radar sichtbarBis = gemeldet + 24 h -> beide weg
   await page.clock.setFixedTime(new Date('2026-11-01T15:51:00Z'));
   await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
-  assert.deepEqual((await karten.allInnerTexts()).map(t => /RTX/.test(t) ? 'RTX' : t.slice(0, 30)), ['RTX']);
-  await page.clock.setFixedTime(new Date('2026-11-01T16:06:00Z'));
-  await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
   assert.equal(await karten.count(), 0);
-  assert.match(await text(page, '#p-angebote'), /Gerade kein laufender Preisfehler/);
+  assert.match(await text(page, '#preisfehler'), /Gerade kein krasser Preisfehler/);
   assert.deepEqual(fehler, []);
   await ctx.close();
 });
 
-test('Vorteile: alle Bereiche aus den Daten, neuer Bereich „Prämien & Freunde werben“ erscheint von selbst', { skip: ohnePw }, async () => {
-  const { ctx, page, fehler } = await oeffne({ satz: 'vertrag', pfad: '/mein-vorteil/#vorteile' });
-  const p = page.locator('#p-vorteile');
-  const h2 = await p.locator('h2').allInnerTexts();
-  for (const n of ['DEALS', 'REISEN', 'TESTS & GEWINNSPIELE', 'PRÄMIEN & FREUNDE WERBEN']) assert.ok(h2.some(h => h.toUpperCase().startsWith(n)), `${n} fehlt: ${h2}`);
+test('Mehr: alle übrigen Bereiche aus den Daten eingeklappt, neuer Bereich „Prämien & Freunde werben“ erscheint von selbst', { skip: ohnePw }, async () => {
+  const { ctx, page, fehler } = await oeffne({ satz: 'vertrag', pfad: '/mein-vorteil/#mehr' });
+  const p = page.locator('#mehr');
+  const kaesten = await p.locator('details.kasten > summary').allInnerTexts();
+  for (const n of [/^Andere Deals \(\d\)$/, /^Reisen \(\d\)$/, /^Prämien & Freunde werben \(2\)$/]) assert.ok(kaesten.some(h => n.test(h)), `${n} fehlt: ${kaesten}`);
+  assert.equal(await p.locator('details.kasten[open]').count(), 0, 'alles eingeklappt');
+  await aufklappen(page, '#mehr');
   const pr = nbsp(await p.locator('article', { hasText: 'Startprämie' }).innerText());
   assert.match(pr, /Haken: Geldeingang 700 € pro Monat/);
   assert.match(nbsp(await p.locator('article[data-id="praemie-test-2"]').innerText()), /Haken: keine bekannten/);
-  // Schnäppchen-Angebote und Preisfehler stehen nur unter „Angebote“
+  // Schnäppchen-Angebote und Preisfehler stehen nicht hier
   const t = await p.textContent();
-  assert.doesNotMatch(t, /Knoppers|Ben & Jerry|Lumaland|Hotel Test|Jetzt lohnt es sich/);
+  assert.doesNotMatch(t, /Knoppers|Ben & Jerry|Lumaland|Jetzt lohnt es sich/);
+  // Reise-„Preisfehler“ (Hotel Test) ist abgelaufen -> weg
+  assert.doesNotMatch(t, /Hotel Test/);
   // Ende unbekannt / bis …
   assert.match(nbsp(await p.locator('article', { hasText: 'SAS Sale' }).innerText()), /bis Mo 2\.11\./);
   assert.match(nbsp(await p.locator('article', { hasText: 'Ryanair' }).innerText()), /Ende unbekannt/);
   // Ausblenden merkt sich die Seite
   const vorher = await p.locator('article').count();
   await p.locator('article', { hasText: 'Ryanair' }).getByRole('button', { name: 'Ausblenden' }).click();
+  await aufklappen(page, '#mehr');
   assert.equal(await p.locator('article').count(), vorher - 1);
   assert.deepEqual(fehler, []);
   await ctx.close();
