@@ -115,7 +115,7 @@ ok('Kante ziehen verschiebt den Schnitt (beide Seiten behalten ihr Bild, ein Und
 const shotCut = await p.evaluate(() => { const r = VV.last; return r ? 1 : 0; });
 void shotCut;
 // aus = alles wie vorher (ohne Einträge: dieselbe Höhe und dasselbe Bild wie der Grundstand)
-await p.evaluate(() => { for (let k = 0; k < 8 && S.song.video; k++) SYNQUENZER.undo(); SYNQUENZER.vd3.cut(false); if (typeof hideToast === 'function') hideToast(); if (typeof svHintFree === 'function') svHintFree(); UI.dirty.song = true; }); await p.waitForTimeout(400);
+await p.evaluate(() => { for (let k = 0; k < 8 && S.song.video; k++) SYNQUENZER.undo(); SYNQUENZER.vd3.cut(false); if (typeof hideToast === 'function') hideToast(); UI.dirty.song = true; }); await p.waitForTimeout(2300);   // die kurze Meldung „Schnitt bei Takt n“ ist nach 1,6 s weg
 const L5 = await p.evaluate(() => ({ru: SV.rulerH, rowH: SV.rowH, vvS: SV.vvS, cuts: SYNQUENZER.vvCuts({range: {a: 0, b: 12}}).hash, lbl: SYNQUENZER.vd3.info().lbl}));
 const shotOff1 = await p.locator('#songView .sv-cw').screenshot(); fs.writeFileSync(OUT + '/dbg-off0.png', shotOff0); fs.writeFileSync(OUT + '/dbg-off1.png', shotOff1);
 ok('Aus = unverändert: Takt-Leiste, Zeilen, Regie und Bild der Song-Fläche wie vor dem Einschalten', L5.ru === L0.ru && L5.rowH === L0.rowH && L5.vvS === 0 && !L5.lbl && L5.cuts === L0.cuts && shotOff0.equals(shotOff1), {L0, L5, gleichesBild: shotOff0.equals(shotOff1)});
@@ -207,7 +207,7 @@ const R2 = await mk({fmt: '9:16', range: {a: 0, b: 8}, vd3: {mo: true, ti: true}
 const md5 = (f, m) => { try { const [ff, ...rest] = f.split(' '); return sh(`ffmpeg -v error -i ${ff} -map 0:${m} ${rest.join(' ')} -f md5 -`).trim(); } catch (e) { return 'x'; } };
 const a1 = md5(R1.f, 'a'), a2 = md5(R2.f, 'a'), w1 = md5(R1.f, 'v'), w2 = md5(R2.f, 'v');
 const f0a = md5(R1.f + ' -frames:v 1', 'v'), f0b = md5(R2.f + ' -frames:v 1', 'v');
-ok('Zweiter gleicher Auftrag: gleiche Länge und Schnitte, erstes Bild (Schlüsselbild) gleich (H.264 kodiert hier nicht bit-stabil – geprüft werden die Bilder vor dem Kodieren, s. o.)', Math.abs(R1.dur - R2.dur) < 1e-6 && R1.vd3.pre === R2.vd3.pre && f0a === f0b && f0a !== 'x', {d1: R1.dur, d2: R2.dur, f0a, f0b, ton: [a1 === a2, 'Ton-md5 gleich?'], bilder: [w1 === w2, 'Bild-md5 gleich?']});
+ok('Zweiter gleicher Auftrag: gleicher Vorlauf, gleiche Song-Länge, erstes Bild gleich (H.264 kodiert hier nicht bit-stabil, der Ausklang hängt an der zufälligen analogen Drift – geprüft werden die Bilder vor dem Kodieren, s. o.)', R1.vd3.pre === R2.vd3.pre && R1.vd3.steps === R2.vd3.steps && R1.songSec === R2.songSec && f0a === f0b && f0a !== 'x', {d1: R1.dur, d2: R2.dur, f0a, f0b, ton: [a1 === a2, 'Ton-md5 gleich?'], bilder: [w1 === w2, 'Bild-md5 gleich?']});
 const R0 = await mk({fmt: '9:16', range: {a: 0, b: 8}, vd3: {mo: false, ti: false, rd: false}}, 'video-ohne-9x16');
 ok('Ohne Making-of: kein Vorlauf, Länge = Song + Ausklang (wie bisher)', R0.vd3 && R0.vd3.pre === 0 && Math.abs(R0.dur - (R0.songSec + R0.tail)) < .01, Object.assign({}, R0, {f: undefined}));
 ok('Renderzeit gemessen (Vorlauf / Ton / Bild)', R1.ms > 0, {mitMakingOf: {ms: R1.ms, wall: R1.wall, msPre: R1.vd3.msPre, msSnd: R1.vd3.msSnd, msPlan: R1.vd3.msPlan, vorlaufS: R1.vd3.pre, msAudio: R1.msAudio, msVideo: R1.msVideo}, ohne: {ms: R0.ms, msAudio: R0.msAudio, msVideo: R0.msVideo}});

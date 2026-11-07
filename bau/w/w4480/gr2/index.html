@@ -80422,7 +80422,7 @@ function gr2TsSync(song, a, b) {
 }
 // der Remix von [a, b) im Stil st, Stärke k (0–100), Art 'u' (deine Noten) │ 'm' (Stil-Muster für Drums und Bass) – in songEdit
 function gr2RemixDo(song, st, a, b, k, art) {
-  const res = {n: 0, dr: 0, bass: 0, other: 0, ts: 0, full: 0, audio: 0, songTs: null, tsSet: 0}, tTs = st.ts || null, free = new Map();
+  const res = {n: 0, dr: 0, bass: 0, other: 0, ts: 0, full: 0, audio: 0, songTs: null, tsSet: 0, noMark: 0}, tTs = st.ts || null, free = new Map();
   if (!tTs && S.ts) { res.songTs = S.ts; return res; }                 // ein 3/4-Song: Teile können nicht 4/4 werden (4/4 = kein Feld)
   const markOf = sp => song.marks.find(m => sp.a >= m.a && sp.b <= m.a + m.len) || null;
   for (let t = 0; t < NT(); t++) {
@@ -80431,7 +80431,7 @@ function gr2RemixDo(song, st, a, b, k, art) {
       const role = gr2Role(t, src.c); if (!role) { res.audio++; continue; }
       const sTs = src.c.ts || null, conv = sTs !== tTs;
       if (conv) {
-        const m = markOf(sp); if (!m || !gr2TsPair(sTs, tTs)) { res.ts++; continue; }
+        const m = markOf(sp); if (!m || !gr2TsPair(sTs, tTs)) { res.ts++; if (!m) res.noMark++; continue; }
         if (!free.has(m)) free.set(m, gr2MarkFree(song, m));
         if (!free.get(m)) { res.ts++; continue; }
       }
@@ -80551,7 +80551,7 @@ function gr2Toast(r, st) {
   if (r.full) m += ' · ' + r.full + ' ohne Platz (höchstens ' + sx9Max() + ' Versionen)';
   if (r.audio) m += st.ts && r.tsSet ? ' · Gesang/Audio läuft im alten Takt weiter' : ' · Gesang/Audio bleibt';
   if (!k && r.ok && !r.tsSet) m = 'Stärke 0 % = Original' + (r.n ? ' · ' + r.n + (r.n === 1 ? ' Stelle' : ' Stellen') : '');
-  if (!r.ok) m = r.n ? st.name + ' ' + k + ' % spielt schon so' : r.ts ? 'Hier geht es nicht: andere Taktart oder eigene Clips im Teil' : 'Hier gibt es keine Clips zum Umbauen';
+  if (!r.ok) m = r.n ? st.name + ' ' + k + ' % spielt schon so' : r.noMark ? 'Für ' + (st.ts || '4/4') + ' braucht der Song Teile (FANG TEIL oder Marke setzen)' : r.ts ? 'Hier geht es nicht: andere Taktart oder eigene Clips im Teil' : 'Hier gibt es keine Clips zum Umbauen';
   else if (R.playing && R.songPlay && !r.restart) m += ' – ab dem nächsten Takt';
   toast(m, r.ok ? songUndoAct() : null);
 }
