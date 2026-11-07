@@ -49495,6 +49495,7 @@ function openMenu(goto) {
     row(s1, null, bAud);
   }
   vvMenuRow(s1, row, btn);                                        // VV1 (Nachtrag 5): Menü → Video
+  va1MenuRow(s1, row, btn);                                       // VA1: Menü → Export (WAV, Einzelspuren, MIDI, Video, Container)
   on(bProj, 'click', () => { projBox.hidden = !projBox.hidden; histBox.hidden = true; if (!projBox.hidden) menuProjRefresh(); });
   on(bHist, 'click', () => { histBox.hidden = !histBox.hidden; projBox.hidden = true; if (!histBox.hidden) menuHistRefresh(); });
   // 1b Sounds (WP3, §2.5): the user library as a file
@@ -55705,6 +55706,7 @@ const VP_API = {
 /* ---------- Abspielen ---------- */
 function tkStartSrc(o) {
   if (GGB.dry) return null;                                       // G-GB: Instrumental als Datei – kein Gesang (Takes, Chor) im Offline-Durchlauf
+  if (va1SkipLead(o)) return null;                                // VA1: „Nur Chor“ – Gesang ohne Chor schweigt
   const c = o.ctx || AU.ctx; if (!c || !o.buf) return null;
   const dest = o.dest || (AU.tracks[o.i] && AU.tracks[o.i].trackIn); if (!dest) return null;
   // FP-DSP: liegt der Start schon in der Vergangenheit (Hauptfaden war langsam), beginnt das Stück jetzt – mit Blende und passendem Versatz
@@ -56642,9 +56644,11 @@ async function tkZipBytes() {
   const files = [{name: 'projekt.json', data: new TextEncoder().encode(JSON.stringify(g6pfZipProject() || projectFileObj(S, false, true)))}];   // G6+f: geteilte Takes mit eigenen Stück-Namen
   for (const id of tkUsedIds()) { const m = S.takes[id], pcm = await tkPcm(id); if (m && pcm) files.push({name: 'takes/' + id + '.wav', data: tkWav(pcm, m.sr)}); }
   await clZipAdd(files);                                       // VS4: Referenz je Take (Säubern nach dem Import gleich)
+  await va1Manifest(files);                                    // VA1: Inhaltsliste (manifest.json) – welche Takes, wo, was fehlt
   return buildZip(files);
 }
 async function tkExportZip() {
+  if (!VA1.direct) return va1Sheet('box');                     // VA1: erst das Blatt mit Anzahl und Liste, dort „Container sichern“
   const z = await tkZipBytes();
   return deliver(SQStore.fileName('project', S.name).replace(/\.json$/, '') + '-mit-audio', z, 'zip', 'Projekt + Audio (ZIP)');
 }
@@ -56682,6 +56686,7 @@ async function tkImportZip(u8, open) {
     if (await tkStore(id, w.pcm, keys)) { nOk++; TK.missing.delete(id); TK.buf.delete(id); }
   }
   if (tkAudioOk()) await clZipRead(fs);                // VS4: Referenz-WAVs
+  va1ImportNote(fs, nOk);                              // VA1: gegen die Inhaltsliste prüfen
   open(new TextDecoder().decode(pj.data));
   if (nOk) setTimeout(() => toast(nOk + (nOk === 1 ? ' Take' : ' Takes') + ' übernommen'), 1800);
   return true;
@@ -66927,7 +66932,9 @@ function vvSwapOut(sv) {
   if (R.tailWinT && R.tailWinT !== sv.tailT) clearTimeout(R.tailWinT);
   vvRest(AU, sv.au); WAVES_T = sv.wavesT;
   if (sv.bmx) Object.assign(BMX, sv.bmx);                          // BM6-06: the live Bit Mask module state
+  const va1Tk = va1TkHold();                                         // VA1: Take-Zwischenspeicher (Puffer, Laden, fehlt …) bleiben, wie sie jetzt sind
   for (const [o, s] of [[R, sv.R], [T, sv.T], [XP, sv.XP], [MEM, sv.MEM], [LOG, sv.LOG], [PERF, sv.PERF], [TK, sv.TK], [CAP, sv.CAP], [LIM, sv.LIM], [MEL, sv.MEL], [TICKERR, sv.TICKERR], [SONGCAR, sv.SONGCAR]]) vvRest(o, s);
+  va1TkBack(va1Tk);                                                  // VA1: sonst Clip ohne Welle und stumm, wenn ein Take während des Renderns lud
   for (let i = 0; i < WKSET.length; i++) WKSET[i] = sv.WKSET[i];
   VOICES.length = 0; VOICES.push(...sv.voices); HITS.length = 0; HITS.push(...sv.hits); CLICKS.length = 0; CLICKS.push(...sv.clicks);
   RECENT.length = 0; RECENT.push(...sv.recent); PADQ.forEach((q, k) => { q.length = 0; q.push(...sv.padq[k]); });
@@ -66981,6 +66988,7 @@ async function vvRenderAudio0(o) {
   VV.off = off; UI.vvOff = true;
   try {
     await vvSwapIn(oc, wk, off);
+    va1OnlyApply();                                                 // VA1: Export einer Spur / nur Gesang / nur Chor (sonst nichts)
     const PS = performance.now();
     if (!songPlayStart(a)) throw new Error('Song startet nicht');
     R.songPlay.sx1End = R.songPlay.off + b * sx1Bpb();            // SX126: das Ausblenden endet am Ende des Bereichs
@@ -67325,6 +67333,7 @@ const VVMP4 = (() => {
     st.push(full('stsc', 0, 0, u32(sc.length), words(sc, 3)));
     st.push(full('stsz', 0, 0, u32(0), u32(T.sizes.length), words(T.sizes, 1)));
     st.push(full('stco', 0, 0, u32(T.chunks.length), words(T.chunks.map(c => base + c.off), 1)));
+    if (T.codec === 'pcm') va1PcmTables(T, st, {full, u32, words, audioEntry, z});   // VA1: Ton als PCM ('sowt', ein Sample = ein Frame)
     const minf = box('minf', vid ? full('vmhd', 0, 1, z(8)) : full('smhd', 0, 0, z(4)), box('dinf', full('dref', 0, 0, u32(1), full('url ', 0, 1))), box('stbl', ...st));
     const mdia = box('mdia', full('mdhd', 0, 0, u32(0), u32(0), u32(T.ts), u32(tot), u16(0x55c4), u16(0)), hdlr, minf);
     return {box: box('trak', tkhd, ...(T.elst != null ? [elst(mdur, T.elst)] : []), mdia), mdur};
@@ -67339,7 +67348,7 @@ const VVMP4 = (() => {
     plan.sort((p, q) => p[1].t - q[1].t || (p[0].kind === 'video' ? -1 : 1));
     let off = 0; const parts = [];
     for (const [T, c] of plan) { c.off = off; for (let j = c.s; j < c.s + c.n; j++) { parts.push(T.data[j]); off += T.data[j].length; } }
-    const ftyp = box('ftyp', te.encode('isom'), u32(512), te.encode('isomiso2avc1mp41'));
+    const ftyp = tracks.some(T => T.codec === 'pcm') ? box('ftyp', te.encode('qt  '), u32(0x200), te.encode('qt  ')) : box('ftyp', te.encode('isom'), u32(512), te.encode('isomiso2avc1mp41'));   // VA1: PCM-Ton → QuickTime (MOV)
     const moovOf = base => { const tk = tracks.map((T, j) => trak(j + 1, T, movieTs, base)), dur = Math.max(...tk.map(x => x.mdur));
       return box('moov', full('mvhd', 0, 0, u32(0), u32(0), u32(movieTs), u32(dur), u32(0x10000), u16(0x0100), z(10), mat(), z(24), u32(tracks.length + 1)), ...tk.map(x => x.box)); };
     const m0 = moovOf(0), base = ftyp.length + m0.length + 8, moov = moovOf(base);
@@ -67351,7 +67360,7 @@ const VVMP4 = (() => {
     const {head, parts} = build(tracks), bl = [new Blob(head)]; let cur = [], sz = 0;
     for (const x of parts) { cur.push(x); sz += x.length; if (sz > 4e6) { bl.push(new Blob(cur)); cur = []; sz = 0; await vvYield(); } }
     if (cur.length) bl.push(new Blob(cur));
-    return new Blob(bl, {type: 'video/mp4'});
+    return new Blob(bl, {type: tracks.some(T => T.codec === 'pcm') ? 'video/quicktime' : 'video/mp4'});   // VA1: MOV mit PCM-Ton
   }
   return {build, blob};
 })();
@@ -67372,6 +67381,7 @@ async function vvPath(fmt) {
     for (const c of T.opus ? ['mp4a.40.2', 'opus'] : ['mp4a.40.2']) { try { const r = await AE.isConfigSupported({codec: c, sampleRate: c === 'opus' ? 48000 : sr, numberOfChannels: 2, bitrate: 192000}); if (r && r.supported && !(c === 'mp4a.40.2' && T.noAAC)) { ac = c; break; } } catch (e) {} }
     if (vc && ac) p = {how: 'webcodecs', vcodec: vc, acodec: ac, mime: 'video/mp4', ext: 'mp4', why: 'WebCodecs · H.264 + ' + (ac === 'opus' ? 'Opus' : 'AAC') + ' · MP4'};
   }
+  if (!p && !T.noPCM) p = await va1PcmPath(W, H, T);              // VA1: ohne AudioEncoder (iOS 18) – H.264 + PCM-Ton in MOV, vor der Aufnahme in Echtzeit
   if (!p) {
     const ok = !T.noMR && typeof MediaRecorder === 'function' && typeof HTMLCanvasElement !== 'undefined' && HTMLCanvasElement.prototype.captureStream && window.AudioContext && AudioContext.prototype.createMediaStreamDestination;
     const ty = ok ? vvMrType() : '';
@@ -67592,6 +67602,7 @@ async function vvEncodeWC(job) {
     let A0 = r.ch[0], A1 = r.ch[1];
     if (asr !== r.sr) { const oc = new OfflineAudioContext(2, Math.ceil(r.dur * asr), asr), bs = oc.createBufferSource(); bs.buffer = r.buf; bs.connect(oc.destination); bs.start(0, r.off, r.dur); const x = await oc.startRendering(); A0 = x.getChannelData(0); A1 = x.getChannelData(1); }   // Opus (test only) needs 48 kHz
     const src = {length: A0.length}, aLen = A0.length;               // VV-LOGO 4.30.1: der Ton bleibt, wie er ist (nichts angehängt)
+    const AudioEncoder = path.acodec === 'pcm' ? Va1PcmEnc : window.AudioEncoder, AudioData = path.acodec === 'pcm' ? Va1PcmData : window.AudioData;   // VA1: PCM-Weg – derselbe Ablauf ohne AudioEncoder
     ae = new AudioEncoder({output: (c, m) => { if (!aCfg) aCfg = descOf(m); aS.push({d: copy(c), ts: c.timestamp, dur: c.duration}); }, error: e => { err = e; }});
     ae.configure({codec: path.acodec, sampleRate: asr, numberOfChannels: 2, bitrate: 192000});
     const aStep = Math.round(asr / 10);
@@ -67616,6 +67627,7 @@ async function vvEncodeWC(job) {
   const prime = aS[0].ts < 0 ? Math.round(-aS[0].ts * asr / 1e6) : 0;
   if (!opus && !aCfg) throw new Error('AAC ohne Konfiguration');
   const audio = {kind: 'audio', codec: opus ? 'opus' : 'aac', ts: asr, sr: asr, ch: 2, cfg: aCfg || new Uint8Array(0), durs: ad, sizes: aS.map(x => x.d.length), data: aS.map(x => x.d), elst: prime ? prime : null, preskip: 312};
+  if (path.acodec === 'pcm') Object.assign(audio, {codec: 'pcm', durs: aS.map(x => x.d.length / 4), elst: null, fb: 4});   // VA1: Dauer = Frames je Paket (exakt)
   job.r = r;
   // G-VID (V-A): the audio track is there and carries sound (encoded silence: a few bytes per frame)
   { let by = 0, sec = 0; for (let k = 0; k < aS.length; k++) { by += aS[k].d.length; sec += ad[k] / asr; } job.aTrack = {frames: aS.length, sec: +sec.toFixed(3), bytesPerSec: sec > 0 ? Math.round(by / sec) : 0}; }
@@ -67712,6 +67724,7 @@ async function vvMake(o) {
       r = job.r || (rP ? await rP : null);
       aChk = {how: 'webcodecs', src: r ? vvLevelDb(r) : null, track: job.aTrack || null, err: wcErr ? String(wcErr.message || wcErr) : null};
       // G-VID (V-A): the encoder gave no sound (no audio frames, encoded silence, an error) → the recorder way with the same sound
+      if (path.acodec !== 'pcm' && !VV.test.noPCM && va1WcBad(blob, job, r, aChk)) { const x = await va1PcmRetry(job, r); if (x) { blob = x.blob; path = x.path; aChk.fallback = 'pcm'; aChk.track = job.aTrack; } }   // VA1: AAC ohne Ton → PCM (MOV) statt Aufnahme in Echtzeit
       if (!blob || !job.aTrack || job.aTrack.sec < r.dur - .5 || (aChk.src > VV_SILENT && job.aTrack.bytesPerSec < 1000)) {
         const ty = vvMrType(); if (!ty || VV.test.noMR) throw new Error(VV_NOSOUND);
         path = {how: 'recorder', mime: ty, ext: /mp4/.test(ty) ? 'mp4' : 'webm', why: 'Aufnahme in Echtzeit · ' + ty.split(';')[0] + ' (Ton-Kodierer fehlte)'}; aChk.fallback = true;
@@ -67727,10 +67740,12 @@ async function vvMake(o) {
       for (let k = 0; k < 2; k++) {
         blob = await vvEncodeMR({W, H, r, path, view, rt, canvas: cv, outro, onProgress: p => prog(.25 + .75 * p, 'Bild')});
         aChk.file = await vvBlobDb(blob); aChk.mime = path.mime;
+        if (aChk.file == null && aChk.src >= VV_SILENT && !(await va1HasSound(blob))) { aChk.file = -200; aChk.noTrack = true; }   // VA1: nicht dekodierbar UND keine Tonspur = ohne Ton (vorher durchgelassen)
         if (aChk.file == null || aChk.file >= VV_SILENT || aChk.src < VV_SILENT) break;
         tried.push(path.mime); const ty = vvMrType(tried); if (!ty) break;
         path = Object.assign({}, path, {mime: ty, ext: /mp4/.test(ty) ? 'mp4' : 'webm', why: 'Aufnahme in Echtzeit · ' + ty.split(';')[0]});
       }
+      if (aChk.noTrack && aChk.file != null && aChk.file < VV_SILENT && aChk.src >= VV_SILENT) throw new Error(VA1_NOTRACK);   // VA1: klare Meldung
       if (aChk.file != null && aChk.file < VV_SILENT && aChk.src >= VV_SILENT) throw new Error(VV_NOSOUND);
     }
     } catch (e) { if (rP && VV.off) { VV.cancel = true; try { await rP; } catch (x) {} } throw e; }   // the offline pass never runs on alone
@@ -68235,6 +68250,549 @@ const GGB_API = {
   ggbImport: (b64, o) => { const s = atob(b64), u8 = new Uint8Array(s.length); for (let k = 0; k < s.length; k++) u8[k] = s.charCodeAt(k); return ggbImportBuf(u8.buffer, o || {}); },
   ggbSheet: () => (stimmeT() >= 0 ? tkSheet({t: stimmeT(), s: R.selS}) : tkAudioOk() ? ggbSheet({t: null}) : false),
 };
+/* VA1-BEGIN ==========================================================================================================
+   VA1 (Xander 07.11.: „Audio muss unbedingt ins Video … verschiedene Formate exportieren … Einzelspuren … eine Spur als MIDI … nur der
+   Gesang oder nur die Chöre … Safe-Container … MIDI Files exportieren und importieren“)
+   1. Video mit Ton auch ohne AudioEncoder. iOS 18 (Safari 18) hat VideoEncoder, aber keinen AudioEncoder: bisher lief dort die Aufnahme
+      in Echtzeit (MediaRecorder: Leinwand + Ton über MediaStreamDestination). Deren Datei kam ohne Tonspur an – und die Prüfung ließ eine
+      Datei, deren Ton sich nicht dekodieren ließ, durch. Jetzt: H.264 (VideoEncoder) + derselbe Offline-Ton als 16-Bit-PCM ('sowt') in
+      einer MOV-Datei (QuickTime, spielt auf dem iPhone, in Fotos und in jedem Schnittprogramm) – Bild für Bild, schneller als Echtzeit,
+      deterministisch. AAC bleibt der erste Weg, wo der Browser ihn kann; liefert AAC keinen Ton, folgt PCM statt der Aufnahme. Die Aufnahme
+      in Echtzeit bleibt nur ohne VideoEncoder und prüft ihre Datei auf eine Tonspur (MP4: hdlr 'soun', WebM: Audio-Codec); ohne Tonspur
+      eine klare Meldung statt eines stummen Videos.
+   2. Export-Blatt (Menü → Export): ganzer Song WAV, Einzelspuren WAV (ZIP), nur Gesang (Lead), nur Chor, ganzer Song / eine Spur als MIDI,
+      Video 9:16 / 16:9, Projekt-Container sichern / öffnen, MIDI importieren (in neue Clips der gewählten Spur, ein ↶).
+      Berechnet wird wie beim Video und beim Instrumental offline (derselbe Klangweg); andere Spuren schweigen im Offline-Graphen
+      (ihr Spur-Ausgang wird dort abgetrennt), Lead/Chor über die Chor-Solo-Werte (−2 = nur Lead, −1 = nur Chor). Live bleibt unberührt.
+   3. Fehler „WAV-Export: der Clip verschwindet aus der Clip-Matrix“: der Offline-Durchlauf (Instrumental-WAV, Video) setzte nach dem
+      Rendern die Take-Zwischenspeicher (TK.buf/wait/missing/peaks/pend) auf den Stand VOR dem Rendern zurück. Lud ein Take gerade
+      (nach dem Öffnen, nach A/B, Chor-Stimmen), war sein Puffer danach weg und sein Ladevorgang hing für immer in TK.wait → Clip ohne
+      Welle (flache Linie) und stumm bis zum Neuladen. Jetzt bleiben diese Zwischenspeicher, wie sie gerade sind.
+   4. Projekt-Container: die ZIP „Projekt + Audio“ trägt eine Inhaltsliste (manifest.json: jeder Take mit Platz, Länge, Datei; was auf dem
+      Gerät fehlt; Zahl der eigenen Klänge). Das Blatt zeigt vor dem Sichern Anzahl und Liste, nach dem Sichern das Ergebnis; beim Öffnen
+      wird gegen die Liste geprüft. Ältere Fassungen öffnen dieselbe Datei wie bisher (projekt.json bleibt die erste JSON-Datei).
+   ===================================================================================================================== */
+const VA1 = {only: null, soloSet: null, job: null, res: null, ttl: 0, direct: false, boxBusy: false, lastBox: null, lastImport: null, lastMidi: null, lastMidiIn: null, inp: null, css: false, pk: -1};
+const VA1_NOTRACK = 'Video ohne Ton: Dieser Browser legt keine Tonspur ins Video – bitte iOS/Safari aktualisieren. Den Ton gibt es als WAV (Menü → Export).';
+/* ---------- 1. Video: H.264 + PCM in MOV ---------- */
+async function va1PcmPath(W, H, T) {
+  T = T || {};
+  const VE = T.noVE ? undefined : window.VideoEncoder;
+  if (typeof VE !== 'function' || typeof VideoFrame !== 'function') return null;
+  for (const c of VV_VCODECS) {
+    try { const r = await VE.isConfigSupported({codec: c, width: W, height: H, bitrate: 5e6, framerate: VV_FPS}); if (r && r.supported) return {how: 'webcodecs', vcodec: c, acodec: 'pcm', mime: 'video/quicktime', ext: 'mov', why: 'WebCodecs · H.264 + Ton (PCM) · MOV'}; } catch (e) {}
+  }
+  return null;
+}
+// stands in for AudioEncoder / AudioData in vvEncodeWC (same loop, same timing): f32-planar → 16 bit little endian, interleaved
+class Va1PcmEnc {
+  constructor(o) { this.out = o.output; this.err = o.error; this.encodeQueueSize = 0; this.ch = 2; this.sr = 48000; this.first = true; }
+  configure(c) { this.ch = c.numberOfChannels || 2; this.sr = c.sampleRate || 48000; }
+  encode(ad) {
+    try {
+      const n = ad.n, ch = this.ch, b = new Uint8Array(n * ch * 2), dv = new DataView(b.buffer);
+      for (let c = 0; c < ch; c++) for (let i = 0; i < n; i++) { let v = ad.d[c * n + i]; v = v > 1 ? 1 : v < -1 ? -1 : v || 0; dv.setInt16((i * ch + c) * 2, Math.round(v * 32767), true); }
+      const meta = this.first ? {decoderConfig: {description: new Uint8Array(0)}} : undefined; this.first = false;
+      this.out({byteLength: b.length, copyTo: x => x.set(b), timestamp: ad.ts, duration: n / this.sr * 1e6}, meta);
+    } catch (e) { this.err(e); }
+  }
+  flush() { return Promise.resolve(); }
+  close() {}
+}
+class Va1PcmData { constructor(o) { this.n = o.numberOfFrames; this.d = o.data; this.ts = o.timestamp; } close() {} }
+// the sample tables of a PCM track: one sample = one frame (QuickTime/ISO), stsd 'sowt' (version 0: 16 bit, channels, rate)
+function va1PcmTables(T, st, H) {
+  const {full, u32, words} = H, durs = T.durs, tot = durs.reduce((a, b) => a + b, 0);
+  const at = n => st.findIndex(b => b[4] === n.charCodeAt(0) && b[5] === n.charCodeAt(1) && b[6] === n.charCodeAt(2) && b[7] === n.charCodeAt(3));
+  st[0] = full('stsd', 0, 0, u32(1), H.audioEntry('sowt', T.ch, T.sr, H.z(0)));
+  st[at('stts')] = full('stts', 0, 0, u32(1), words([[tot, 1]], 2));
+  const sc = []; let q = -1;
+  T.chunks.forEach((c, j) => { let f = 0; for (let i = c.s; i < c.s + c.n; i++) f += durs[i]; if (f !== q) { sc.push([j + 1, f, 1]); q = f; } });
+  st[at('stsc')] = full('stsc', 0, 0, u32(sc.length), words(sc, 3));
+  st[at('stsz')] = full('stsz', 0, 0, u32(T.fb || 4), u32(tot));
+}
+// the encoder gave no usable sound (the same test as vvMake's fallback; test flag va1BadAE)
+const va1WcBad = (blob, job, r, aChk) => !!(VV.test && VV.test.va1BadAE) || !blob || !job.aTrack || !r || job.aTrack.sec < r.dur - .5 || (aChk.src > VV_SILENT && job.aTrack.bytesPerSec < 1000);
+// AAC (or Opus) without sound: the same picture again, the sound as PCM (MOV) – never the real-time recording first
+async function va1PcmRetry(job, r) {
+  if (!r) return null;
+  const pp = await va1PcmPath(job.W, job.H, VV.test); if (!pp) return null;
+  const j2 = Object.assign({}, job, {path: pp, rP: Promise.resolve(r), aTrack: null, r: null});
+  let b = null;
+  try { b = await vvEncodeWC(j2); } catch (e) { if (VV.cancel || /abgebrochen/.test(String(e && e.message))) throw e; logErr(e); return null; }
+  if (!b || !j2.aTrack) return null;
+  job.aTrack = j2.aTrack; return {blob: b, path: pp};
+}
+// does the file carry a sound track? MP4/MOV: moov › trak › mdia › hdlr 'soun'; WebM: an audio codec id in the track header
+async function va1HasSound(blob) {
+  if (VV.test && VV.test.va1NoTrack) return false;
+  const read = async n => new Uint8Array(await blob.slice(0, Math.min(blob.size, n)).arrayBuffer());
+  let u8; try { u8 = await read(4 << 20); } catch (e) { return true; }
+  const s4 = (a, o) => String.fromCharCode(a[o], a[o + 1], a[o + 2], a[o + 3]);
+  const mp4 = a => {
+    const dv = new DataView(a.buffer, a.byteOffset, a.byteLength); let moov = false, soun = false;
+    const kids = (s, e, f) => { for (let o = s; o + 8 <= e;) { let n = dv.getUint32(o); if (n === 1 && o + 16 <= e) n = Number(dv.getBigUint64(o + 8)); if (n < 8 || o + n > e) n = e - o; f(s4(a, o + 4), o, o + n); o += n; } };
+    kids(0, a.length, (t, o, e) => { if (t !== 'moov') return; moov = true; kids(o + 8, e, (t2, o2, e2) => { if (t2 === 'trak') kids(o2 + 8, e2, (t3, o3, e3) => { if (t3 === 'mdia') kids(o3 + 8, e3, (t4, o4) => { if (t4 === 'hdlr' && o4 + 20 <= a.length && s4(a, o4 + 16) === 'soun') soun = true; }); }); }); });
+    return {moov, soun};
+  };
+  if (u8.length > 8 && s4(u8, 4) === 'ftyp') {
+    let x = mp4(u8);
+    if (!x.moov && blob.size > u8.length) { try { x = mp4(await read(blob.size)); } catch (e) { return true; } }
+    return x.moov ? x.soun : true;
+  }
+  if (u8.length > 4 && u8[0] === 0x1A && u8[1] === 0x45 && u8[2] === 0xDF && u8[3] === 0xA3) {
+    let s = ''; for (let k = 0; k < Math.min(u8.length, 1 << 17); k += 8192) s += String.fromCharCode.apply(null, u8.subarray(k, Math.min(u8.length, k + 8192, 1 << 17)));
+    if (/A_(OPUS|VORBIS|AAC|PCM|MPEG)/.test(s)) return true;
+    return !/V_(VP8|VP9|AV1|MPEG4)/.test(s);
+  }
+  return true;                                                      // unknown container: not blocked here
+}
+/* ---------- 3. Offline-Durchlauf: Take-Zwischenspeicher bleiben ---------- */
+const VA1_TK = ['buf', 'wait', 'missing', 'peaks', 'pend'];
+function va1TkHold() { const o = {}; for (const k of VA1_TK) { const v = TK[k]; if (v instanceof Map) o[k] = new Map(v); else if (v instanceof Set) o[k] = new Set(v); } return o; }
+function va1TkBack(o) {
+  if (!o) return;
+  for (const k of VA1_TK) { const v = TK[k], c = o[k]; if (!c || !v || typeof v.clear !== 'function') continue; v.clear(); if (v instanceof Map) c.forEach((x, y) => v.set(y, x)); else c.forEach(x => v.add(x)); }
+  UI.dirty.grid = UI.dirty.song = true;
+}
+/* ---------- 2. Export: nur bestimmte Spuren / nur Lead / nur Chor im Offline-Durchlauf ---------- */
+// right after vvSwapIn: the outputs of the other tracks are cut off in the OFFLINE graph (it is dropped after the pass)
+function va1OnlyApply() {
+  const o = VA1.only; if (!o) return;
+  for (let i = 0; i < NT(); i++) { const A = AU.tracks[i]; if (A && A.cut && !o.tracks.has(i)) { try { A.cut.disconnect(); } catch (e) {} } }
+  const s = o.vox === 'lead' ? -2 : o.vox === 'chor' ? -1 : null;
+  if (s != null) { VA1.soloSet = s; G6.solo = s; }
+}
+// „Nur Chor“: a vocal piece without a choir stays silent (pieces with a choir: the lead is silent through G6.solo −1)
+function va1SkipLead(o) { return !!(VA1.only && VA1.only.vox === 'chor' && !(o && o.aud && o.aud.chor)); }
+function va1TrackUsed(i) {
+  const song = S.song, tr = S.tracks[i]; if (!song || !tr) return false;
+  const lane = song.lanes[i] || [];
+  for (const e of lane) {
+    const og = laneOriginAt(lane, e.bar); if (!(og.slot >= 0)) continue;
+    const c = og.own && song.own && song.own[og.own] ? song.own[og.own] : tr.clips[og.slot];
+    if (c && ((c.notes && c.notes.length) || c.cv || c.audio)) return true;
+  }
+  const m = song.mel && song.mel[i]; return !!(m && m.notes && m.notes.length);
+}
+function va1HasVox() { const st = stimmeT(), song = S.song; if (st < 0 || !song || !song.bars || S.tracks[st].mute) return false; return !!((song.vox && song.vox.length) || va1TrackUsed(st)); }
+function va1HasChor() {
+  if (!va1HasVox()) return false;
+  const L = typeof g6pcTrk === 'function' ? g6pcTrk() : null; if (L && L.mute) return false;
+  try { return vvAuds().some(a => a.chor && Array.isArray(a.chor.voices) && a.chor.voices.length); } catch (e) { return false; }
+}
+// the stems: every audible track of the song; the STIMME track as Gesang + Chor (with a choir)
+function va1Stems() {
+  const out = [], st = stimmeT();
+  for (let i = 0; i < NT(); i++) {
+    const tr = S.tracks[i]; if (!tr || tr.mute) continue;
+    if (i === st) { if (va1HasVox()) { if (va1HasChor()) out.push({i, vox: 'lead', name: tr.name + ' Gesang'}, {i, vox: 'chor', name: tr.name + ' Chor'}); else out.push({i, vox: 'all', name: tr.name + ' Gesang'}); } continue; }
+    if (va1TrackUsed(i)) out.push({i, vox: null, name: tr.name});
+  }
+  return out;
+}
+const va1Busy = () => !!(VA1.job || VV.busy || VV.off || GGB.busy || (typeof SREC !== 'undefined' && SREC.on));
+const va1Safe = s => String(s || '').normalize('NFC').replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/Ä/g, 'Ae').replace(/Ö/g, 'Oe').replace(/Ü/g, 'Ue').replace(/ß/g, 'ss').replace(/[^0-9A-Za-z_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 32) || 'spur';
+function va1Base(suffix) { const nm = String(S.name || 'song').toLowerCase().replace(/[^a-z0-9äöüß]+/gi, '-').replace(/^-|-$/g, '').slice(0, 30) || 'song'; return 'synquenzer-' + nm + (suffix ? '-' + suffix : ''); }
+// one offline pass of the whole song; only = {tracks: Set, vox: 'lead'|'chor'|'all'|'none'} or null (everything); dry = without vocals
+async function va1Pass(only, dry, onP) {
+  const keepSolo = G6.solo, keepDry = GGB.dry;
+  VA1.only = only; VA1.soloSet = null; if (dry) GGB.dry = true; VV.cancel = false;
+  try { return await vvRenderAudio({range: {a: 0, b: S.song.bars}, onProgress: onP}); }
+  finally { VA1.only = null; GGB.dry = keepDry; if (VA1.soloSet != null && G6.solo === VA1.soloSet) G6.solo = keepSolo; VA1.soloSet = null; }
+}
+// WAV 16 bit stereo at the rate of the render (the song with its Ausklang, as in the video)
+async function va1WavBytes(r) {
+  const n = r.n, sr = r.sr, out = new Uint8Array(44 + n * 4), dv = new DataView(out.buffer), w = (o, s) => { for (let i = 0; i < s.length; i++) out[o + i] = s.charCodeAt(i); };
+  w(0, 'RIFF'); dv.setUint32(4, 36 + n * 4, true); w(8, 'WAVE'); w(12, 'fmt '); dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, 2, true);
+  dv.setUint32(24, sr, true); dv.setUint32(28, sr * 4, true); dv.setUint16(32, 4, true); dv.setUint16(34, 16, true); w(36, 'data'); dv.setUint32(40, n * 4, true);
+  const pcm = new Int16Array(out.buffer, 44, n * 2), A = r.ch[0], B = r.ch[1];
+  for (let i = 0; i < n; i += 131072) {
+    const e = Math.min(n, i + 131072);
+    for (let k = i; k < e; k++) { const a = A[k], b = B[k]; pcm[2 * k] = Math.round((a > 1 ? 1 : a < -1 ? -1 : a) * 32767); pcm[2 * k + 1] = Math.round((b > 1 ? 1 : b < -1 ? -1 : b) * 32767); }
+    if (e < n) { await vvYield(); if (VV.cancel) throw new Error('abgebrochen'); }
+  }
+  return out;
+}
+async function va1Crc(u8) {
+  let c = 0xFFFFFFFF;
+  for (let i = 0; i < u8.length; i += 1 << 20) { const e = Math.min(u8.length, i + (1 << 20)); for (let k = i; k < e; k++) c = CRC_T[(c ^ u8[k]) & 255] ^ (c >>> 8); if (e < u8.length) await vvYield(); }
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+// ZIP (STORE) as a Blob of Blobs: the WAVs are never copied into one big array (iPhone memory)
+function va1ZipBlob(files) {
+  const enc = new TextEncoder(), d = new Date(), time = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1), date = ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
+  const parts = [], central = []; let off = 0;
+  for (const f of files) {
+    const name = enc.encode(f.name), lh = new DataView(new ArrayBuffer(30)), ch = new DataView(new ArrayBuffer(46));
+    lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(10, time, true); lh.setUint16(12, date, true); lh.setUint32(14, f.crc, true);
+    lh.setUint32(18, f.size, true); lh.setUint32(22, f.size, true); lh.setUint16(26, name.length, true);
+    parts.push(new Uint8Array(lh.buffer), name, f.blob);
+    ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(12, time, true); ch.setUint16(14, date, true); ch.setUint32(16, f.crc, true);
+    ch.setUint32(20, f.size, true); ch.setUint32(24, f.size, true); ch.setUint16(28, name.length, true); ch.setUint32(42, off, true);
+    central.push(new Uint8Array(ch.buffer), name);
+    off += 30 + name.length + f.size;
+  }
+  const cd = central.reduce((a, p) => a + p.length, 0), eo = new DataView(new ArrayBuffer(22));
+  eo.setUint32(0, 0x06054b50, true); eo.setUint16(8, files.length, true); eo.setUint16(10, files.length, true); eo.setUint32(12, cd, true); eo.setUint32(16, off, true);
+  return new Blob([...parts, ...central, new Uint8Array(eo.buffer)], {type: 'application/zip'});
+}
+const VA1_KIND = {song: 'Ganzer Song', stems: 'Einzelspuren', lead: 'Nur Gesang', chor: 'Nur Chor'};
+// kind: 'song' | 'stems' | 'lead' | 'chor' → VA1.res (then [Teilen]: the share sheet needs a fresh tap on the iPhone)
+async function va1Run(kind) {
+  if (!VA1_KIND[kind]) return null;
+  if (va1Busy()) { toast('Läuft schon – bitte warten'); return null; }
+  if (!S.song || !S.song.bars) { toast('Noch kein Song – erst ● SONG'); return null; }
+  if (rec.state !== 'off' || R.songRec) { toast('Erst Aufnahme beenden'); return null; }
+  const st = stimmeT(), list = kind === 'stems' ? va1Stems() : null;
+  if (kind === 'stems' && !list.length) { toast('Keine Spur klingt im Song'); return null; }
+  if ((kind === 'lead' && !va1HasVox()) || (kind === 'chor' && !va1HasChor())) { toast(kind === 'chor' ? 'Kein Chor im Song' : 'Kein Gesang im Song'); return null; }
+  VA1.job = {kind, k: 0, n: list ? list.length : 1, p: 0, name: ''}; VA1.res = null; VA1.pk = -1; clearTimeout(VA1.ttl); va1Paint();
+  const keepLast = VV.last, keepMtr = VV.noMtr, T0 = performance.now(); VV.noMtr = true;
+  try {
+    if (kind !== 'stems') {
+      const only = kind === 'song' ? null : {tracks: new Set([st]), vox: kind};
+      let r = await va1Pass(only, false, p => va1Prog(p));
+      if (vvLevelDb(r) < VV_SILENT) { toast(kind === 'chor' ? 'Im Song ist kein Chor zu hören' : kind === 'lead' ? 'Im Song ist kein Gesang zu hören' : 'Der Song ist still'); return null; }
+      const sec = r.dur, bytes = await va1WavBytes(r); r = null;
+      VA1.res = {base: va1Base(kind === 'song' ? 'song' : kind === 'lead' ? 'gesang' : 'chor'), data: bytes, kind: 'wav', label: VA1_KIND[kind] + ' (WAV)', files: 1, names: [], skipped: [], sec, size: bytes.length};
+    } else {
+      const files = [], skipped = [];
+      for (let k = 0; k < list.length; k++) {
+        const x = list[k]; Object.assign(VA1.job, {k, name: x.name}); va1Prog(k / list.length, true);
+        let r = await va1Pass({tracks: new Set([x.i]), vox: x.vox || 'none'}, !x.vox, p => va1Prog((k + p) / list.length));
+        if (vvLevelDb(r) < VV_SILENT) { skipped.push(x.name); r = null; continue; }
+        let u8 = await va1WavBytes(r); r = null;
+        const crc = await va1Crc(u8), size = u8.length;
+        files.push({name: z2(files.length + 1) + '-' + va1Safe(x.name) + '.wav', blob: new Blob([u8], {type: 'audio/wav'}), size, crc}); u8 = null;
+      }
+      if (!files.length) { toast('Keine Spur klingt im Song'); return null; }
+      const z = va1ZipBlob(files);
+      VA1.res = {base: va1Base('einzelspuren'), data: z, kind: 'zip', label: 'Einzelspuren (' + files.length + ' WAV)', files: files.length, names: files.map(f => f.name), skipped, size: z.size};
+    }
+    VA1.res.ms = Math.round(performance.now() - T0);
+    VA1.ttl = setTimeout(() => { VA1.res = null; va1Paint(); }, 10 * 60000);  // the file (≈ 11 MB per minute and track) stays 10 min for sharing
+    haptic('pop');
+    toast('Fertig: ' + VA1.res.label + (VA1.res.skipped.length ? ' · still, weggelassen: ' + VA1.res.skipped.join(', ') : ''), {label: 'Teilen', fn: () => va1Share()});
+    return VA1.res;
+  } catch (e) {
+    const m = String(e && e.message || e);
+    if (m === 'abgebrochen') toast('Export abgebrochen'); else { if (!/Song|Läuft|Aufnahme|Wiedergabe/.test(m)) logErr(e); toast('Export: ' + m); }
+    return null;
+  } finally { VA1.job = null; VV.last = keepLast; VV.noMtr = keepMtr; VV.cancel = false; va1Paint(); }
+}
+async function va1Share() {
+  const x = VA1.res; if (!x) return 'none';
+  return deliver(x.base, x.data, x.kind, x.label);
+}
+/* ---------- MIDI: ganzer Song (alle Spuren) / eine Spur – wie „Song“ im MIDI-Export, aber jede Spur (nicht nur Synth 1–4 + DRUMS) ---------- */
+const va1MidiOk = i => { const tr = S.tracks[i]; return !!tr && !tr.stimme && (tr.kind === 'synth' || tr.kind === 'drum'); };
+const va1MidiTracks = () => Array.from({length: NT()}, (_, i) => i).filter(va1MidiOk);
+function va1MidiSong(idxs, withC) {
+  const song = S.song; if (!song || !song.bars) return null;
+  const PPQ = 480, L = barBeat(song.bars), {evs, counts} = midiArrs(), pk = S.key, h = S.settings.harmony, ents = [];
+  let prev = 0;
+  for (const c of song.carrier) {
+    const sh = !c.target ? 0 : h.octaveMode === 'absolute' ? c.target.rootNote - Harmony.refNote(pk) : Harmony.nearestShift(c.target.root, pk.root, c.target.sd != null ? c.target.sd : prev);
+    prev = sh; ents.push({beat: c.beat, e: {target: c.target, shift: sh}});
+  }
+  const entAt = b => { let e = null; for (const x of ents) { if (x.beat > b + 1e-6) break; e = x.e; } return e; };
+  const used = [];
+  for (const i of idxs) {
+    if (!va1MidiOk(i)) continue;
+    const tr = S.tracks[i], ded = new Map(), ch = tr.kind === 'drum' || percIs(tr) ? 9 : midiCh(i), lane = song.lanes[i] || [];
+    const add = (st, en, p, vv) => { const v = clamp(Math.round(vv * 127), 1, 127), t0 = Math.round(st * PPQ), t1 = Math.max(t0 + 1, Math.round(en * PPQ)), k = t0 + ':' + p, x = ded.get(k); if (x) { x.v = Math.max(x.v, v); x.t1 = Math.max(x.t1, t1); } else ded.set(k, {t0, t1, p, v}); };
+    const blocks = []; let cur = null;
+    for (const e of lane) {
+      const og = laneOriginAt(lane, e.bar);
+      if (cur && og.slot === cur.slot && Math.abs(og.cs - cur.cs) < 1e-6 && (og.own || null) === cur.own) continue;
+      if (cur) cur.end = barBeat(e.bar);
+      cur = og.slot >= 0 ? {slot: og.slot, own: og.own || null, cs: og.cs, start: barBeat(e.bar), end: barBeat(song.bars)} : null; if (cur) blocks.push(cur);
+    }
+    for (const bk of blocks) {
+      const c = bk.own && song.own && song.own[bk.own] ? song.own[bk.own] : tr.clips[bk.slot]; if (!c || !c.notes || !c.notes.length) continue;
+      const b0 = bk.start, b1 = Math.min(L, bk.end), cL = clipB(c);
+      for (let o = bk.cs + Math.floor((b0 - bk.cs) / cL + 1e-9) * cL; o < b1 - 1e-9; o += cL) for (const nt of c.notes) {
+        if (nt.t >= cL - 1e-9) continue;
+        const st = o + nt.t; if (st >= b1 - 1e-9 || st < b0 - 1e-9) continue;
+        const en = Math.min(b1, st + Math.max(nt.d, 1 / 32));
+        let p = nt.n;
+        if (tr.kind === 'synth' && withC) { const e2 = entAt(st); if (e2 && e2.target) p = mapOut(i, c.key || S.key, nt.n, 0, e2); }
+        if (tr.kind === 'synth' && tr.follow && song.xp && song.xp.length) { let v = 0; for (const x of song.xp) { if (x.beat > st + 1e-6) break; v = x.semi; } p += v; }
+        add(st, en, percIs(tr) ? percGm(nt.n) : clamp(Math.round(p), 0, 127), nt.v);
+      }
+    }
+    const m = song.mel && song.mel[i];
+    if (m && m.notes) for (const n of m.notes) { if (n.t >= L - 1e-9) continue; add(n.t, Math.min(L, n.t + Math.max(n.d, 1 / 32)), percIs(tr) ? percGm(n.n) : clamp(n.n, 0, 127), n.v); }
+    if (!ded.size) continue;
+    for (const x of ded.values()) { evs[i].push({tk: x.t0, b: [0x90 | ch, x.p, x.v], o: 1}, {tk: x.t1, b: [0x80 | ch, x.p, 0], o: 0}); counts[i]++; }
+    used.push(i);
+  }
+  if (!used.length) return null;
+  const mk = [{tk: 0, b: metaText(6, 'Song'), o: -1}].concat((song.marks || []).filter(m => m.a < song.bars).map(m => ({tk: barBeat(m.a) * PPQ, b: metaText(6, markLabel(m)), o: -1})));
+  return Object.assign(assembleMidi(evs, mk, L * PPQ, counts, L, null, used, tkPlain() ? null : t1TsChanges(song.bars)), {tracks: used});
+}
+// without a song: the track's clip in the chosen scene
+function va1MidiClip(i, s, withC) {
+  const tr = S.tracks[i], c = tr && tr.clips[s]; if (!va1MidiOk(i) || !c || !c.notes || !c.notes.length) return null;
+  const PPQ = 480, {evs, counts} = midiArrs(), cL = clipB(c), ch = tr.kind === 'drum' || percIs(tr) ? 9 : midiCh(i), ded = new Map();
+  for (const nt of c.notes) {
+    if (nt.t >= cL - 1e-9) continue;
+    let p = nt.n; if (tr.kind === 'synth' && withC) p = mapOut(i, c.key || S.key, nt.n, Infinity); if (percIs(tr)) p = percGm(nt.n); p = clamp(Math.round(p), 0, 127);
+    const v = clamp(Math.round(nt.v * 127), 1, 127), t0 = Math.round(nt.t * PPQ), t1 = Math.max(t0 + 1, Math.round(Math.min(cL, nt.t + Math.max(nt.d, 1 / 32)) * PPQ)), k = t0 + ':' + p, x = ded.get(k);
+    if (x) { x.v = Math.max(x.v, v); x.t1 = Math.max(x.t1, t1); } else ded.set(k, {t0, t1, p, v});
+  }
+  for (const x of ded.values()) { evs[i].push({tk: x.t0, b: [0x90 | ch, x.p, x.v], o: 1}, {tk: x.t1, b: [0x80 | ch, x.p, 0], o: 0}); counts[i]++; }
+  return Object.assign(assembleMidi(evs, [{tk: 0, b: metaText(6, 'Szene ' + (s + 1)), o: -1}], Math.round(cL * PPQ), counts, cL, null, [i], c.ts ? [{beat: 0, ts: c.ts}] : null), {tracks: [i]});
+}
+// i = null: the whole song, every track; else one track (song, without a song its clip in the chosen scene)
+function va1MidiBuild(i) {
+  const wc = UI.expCarrier !== false, song = !!(S.song && S.song.bars);
+  if (i == null) return song ? va1MidiSong(va1MidiTracks(), wc) : null;
+  return (song ? va1MidiSong([i], wc) : null) || va1MidiClip(i, R.selS, wc);
+}
+function va1MidiGo(i) {
+  const m = va1MidiBuild(i);
+  if (!m) { toast(i == null ? (S.song && S.song.bars ? 'Keine Noten im Song' : 'Noch kein Song – erst ● SONG') : 'Keine Noten auf ' + S.tracks[i].name + (S.song && S.song.bars ? ' im Song' : ' in Szene ' + (R.selS + 1))); return null; }
+  VA1.lastMidi = {bytes: m.bytes.length, tracks: m.tracks.slice(), notes: m.tracks.reduce((a, t) => a + (m.counts[t] | 0), 0)};
+  return deliver(i == null ? va1Base('alle-spuren') : va1Base(va1Safe(S.tracks[i].name).toLowerCase()), m.bytes, 'mid');
+}
+/* ---------- MIDI importieren: .mid → neue Clips der gewählten Spur (Noten, Länge, Anschlag), ein ↶ ---------- */
+function va1MidiParse(u8) {
+  const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength), s4 = o => String.fromCharCode(u8[o], u8[o + 1], u8[o + 2], u8[o + 3]);
+  if (u8.length < 14 || s4(0) !== 'MThd') throw new Error('keine MIDI-Datei');
+  const hl = dv.getUint32(4), fmt = dv.getUint16(8), ntr = dv.getUint16(10), div = dv.getUint16(12);
+  if (div & 0x8000) throw new Error('SMPTE-Zeit wird nicht unterstützt');
+  if (!div) throw new Error('kein Raster');
+  const tracks = []; let o = 8 + hl;
+  while (o + 8 <= u8.length && tracks.length < Math.max(ntr, 1) + 64) {
+    const id = s4(o), L = dv.getUint32(o + 4), end = Math.min(u8.length, o + 8 + L);
+    if (id !== 'MTrk') { o = end; continue; }
+    let p = o + 8, tk = 0, run = 0, name = '';
+    const on = new Map(), notes = [];
+    const vlq = () => { let v = 0, b = 0, k = 0; do { b = u8[p++]; v = v * 128 + (b & 127); } while (b & 128 && p < end && ++k < 4); return v; };
+    while (p < end) {
+      tk += vlq(); if (p >= end) break;
+      let st = u8[p]; if (st & 0x80) p++; else if (run) st = run; else break;
+      if (st === 0xFF) { const ty = u8[p++], l = vlq(); if (ty === 3 && !name) name = String.fromCharCode.apply(null, u8.subarray(p, Math.min(end, p + l, p + 64))).replace(/[^\x20-\x7e\xa0-\xff]/g, '').trim(); p += l; continue; }
+      if (st === 0xF0 || st === 0xF7) { p += vlq(); continue; }
+      run = st; const hi = st & 0xF0, ch = st & 15;
+      if (hi === 0xC0 || hi === 0xD0) { p += 1; continue; }
+      const a = u8[p++] & 127, b = u8[p++] & 127;
+      if (hi === 0x90 && b > 0) { const k = ch * 128 + a; let q = on.get(k); if (!q) on.set(k, q = []); q.push({tk, v: b}); }
+      else if (hi === 0x80 || hi === 0x90) { const q = on.get(ch * 128 + a); if (q && q.length) { const s = q.shift(); notes.push({t: s.tk / div, d: Math.max(1 / 64, (tk - s.tk) / div), n: a, v: s.v / 127, ch}); } }
+    }
+    for (const [k, q] of on) for (const s of q) notes.push({t: s.tk / div, d: Math.max(1 / 64, (tk - s.tk) / div), n: k & 127, v: s.v / 127, ch: k >> 7});   // hängende Noten: bis zum Spur-Ende
+    notes.sort((x, y) => x.t - y.t || x.n - y.n);
+    tracks.push({name, notes}); o = end;
+  }
+  return {fmt, div, tracks};
+}
+function va1MidiTarget(t) {
+  const ok = i => { const tr = S.tracks[i]; return !!tr && !tr.stimme && !percIs(tr) && (tr.kind === 'synth' || tr.kind === 'drum'); };
+  if (t != null && ok(t)) return t; if (ok(R.selT)) return R.selT;
+  for (let i = 0; i < NT(); i++) if (ok(i)) return i;
+  return -1;
+}
+function va1MidiImport(u8, t0) {
+  let M; try { M = va1MidiParse(u8); } catch (e) { toast('MIDI-Datei nicht lesbar: ' + (e && e.message || e)); return null; }
+  const t = va1MidiTarget(t0); if (t < 0) { toast('Keine Spur für MIDI-Noten'); return null; }
+  let groups = M.tracks.filter(x => x.notes.length);
+  if (groups.length === 1) { const g = groups[0], chs = [...new Set(g.notes.map(n => n.ch))]; if (chs.length > 1) groups = chs.map(c => ({name: (g.name ? g.name + ' · ' : '') + 'Kanal ' + (c + 1), notes: g.notes.filter(n => n.ch === c)})); }   // Format 0: je Kanal ein Clip
+  if (!groups.length) { toast('Keine Noten in der MIDI-Datei'); return null; }
+  const tr = S.tracks[t], free = [];
+  for (let k = 0; k < NS(); k++) { const s = (R.selS + k) % NS(); if (!tr.clips[s]) free.push(s); }
+  if (!free.length) { toast('Keine freie Szene auf ' + tr.name); return null; }
+  const items = [], made = [], MAXB = 64 * 4; let cut = 0;
+  groups.slice(0, free.length).forEach((g, k) => {
+    const s = free[k], notes = [];
+    for (const n of g.notes) { if (n.t >= MAXB - 1e-9) { cut++; continue; } notes.push({t: Math.round(n.t * 960) / 960, d: Math.max(1 / 64, Math.min(n.d, MAXB - n.t)), n: n.n, v: clamp(n.v, .01, 1)}); }
+    if (!notes.length) return;
+    const end = Math.max(...notes.map(n => n.t + n.d)), len = clamp(Math.ceil(end / 4 - 1e-6), 1, 64), key = Object.assign({}, sceneKeyOf(s) || S.key, {src: 'auto'});
+    const c = normClip({len, key, notes}, tr.kind, S.key); if (!c || !c.notes.length) return;
+    items.push({kind: 'clip', track: t, scene: s, before: null}); tr.clips[s] = c; clipChanged(t, s);
+    made.push({scene: s, notes: c.notes.length, len: c.len, name: g.name || ''});
+  });
+  if (!made.length) { toast('Keine Noten übernommen'); return null; }
+  undoPush({kind: 'group', label: 'MIDI importiert', items}); markDirty(); UI.dirty.all = true; haptic('pop');
+  const skip = Math.max(0, groups.length - free.length);
+  toast('MIDI → ' + tr.name + ': ' + made.length + (made.length === 1 ? ' Clip' : ' Clips') + ' in Szene ' + made.map(x => x.scene + 1).join(', ') + (cut ? ' · ' + cut + ' Noten hinter Takt 64 weggelassen' : '') + (skip ? ' · ' + skip + ' Teile ohne freien Platz' : ''), {label: 'Rückgängig', fn: () => undo()});
+  VA1.lastMidiIn = {track: t, clips: made, cut, skip};
+  return VA1.lastMidiIn;
+}
+function va1MidiPick() {
+  let inp = VA1.inp;
+  if (!inp || !inp.isConnected) {
+    inp = VA1.inp = document.createElement('input'); inp.type = 'file'; inp.id = 'va1MidiIn'; inp.hidden = true;   // ohne accept: iOS graut .mid sonst aus
+    inp.addEventListener('change', () => { const f = inp.files && inp.files[0]; if (!f) return; (f.arrayBuffer ? f.arrayBuffer() : Promise.reject(new Error('read'))).then(ab => { inp.value = ''; va1MidiImport(new Uint8Array(ab)); va1Paint(); }, () => { inp.value = ''; toast('Datei nicht lesbar'); }); });
+    document.body.appendChild(inp);
+  }
+  inp.value = ''; inp.click();
+}
+/* ---------- 4. Projekt-Container: Inhaltsliste ---------- */
+function va1Inventory() {
+  const W = new Map(), put = (id, w) => { if (!id || !(S.takes && S.takes[id])) return; let a = W.get(id); if (!a) W.set(id, a = []); if (!a.includes(w)) a.push(w); };
+  const scan = (a, w) => { if (!a) return; for (const s of tkSegs(a)) put(s.take, w); const c = new Set(); try { tkChorIds(a, c); } catch (e) {} for (const id of c) put(id, w + ' · Chor'); };
+  S.tracks.forEach((tr, t) => tr.clips.forEach((c, s) => { if (!c) return; const w = 'Szene ' + (s + 1) + ' · ' + tr.name; scan(c.audio, w); if (c.take) put(c.take, w); }));
+  if (S.song) { for (const v of S.song.vox || []) scan(v, 'Song · Takt ' + (v.bar + 1)); for (const k in S.song.own || {}) { const c = S.song.own[k]; scan(c.audio, 'Song · eigener Clip'); if (c.take) put(c.take, 'Song · eigener Clip'); } }
+  const ids = tkUsedIds(), takes = [];
+  for (const id of ids) {
+    const m = S.takes[id]; if (!m) continue;
+    takes.push({id, name: m.name || 'Take ' + id.slice(0, 4), sec: +(m.len / (m.sr || 48000)).toFixed(2), sr: m.sr, where: W.get(id) || ['Projekt'], miss: TK.missing.has(id)});
+  }
+  return {takes, sounds: LIB.ok ? LIB.lib.all().length : 0};
+}
+// tkZipBytes: manifest.json at the end (projekt.json stays the first JSON file: older versions open the ZIP as before)
+async function va1Manifest(files) {
+  const inv = va1Inventory(), have = new Set(files.filter(f => /^takes\/[0-9a-v]{10}\.wav$/.test(f.name)).map(f => f.name.slice(6, 16)));
+  const takes = inv.takes.map(x => ({id: x.id, file: have.has(x.id) ? 'takes/' + x.id + '.wav' : null, name: x.name, sec: x.sec, sr: x.sr, where: x.where}));
+  const missing = takes.filter(x => !x.file).map(x => x.id);
+  const m = {kind: 'synquenzer-container', v: 1, app: VERSION, created: new Date().toISOString(), project: S.name || '', takes, missing, sounds: inv.sounds,
+    files: files.map(f => f.name).concat('manifest.json')};
+  files.push({name: 'manifest.json', data: new TextEncoder().encode(JSON.stringify(m, null, 1))});
+  VA1.lastBox = {n: takes.length, ok: takes.length - missing.length, missing, sounds: inv.sounds, files: m.files.length};
+  return m;
+}
+// tkImportZip: check against the list (shown after the „n Takes übernommen“ note)
+function va1ImportNote(fs, nOk) {
+  const f = fs.find(x => x.name === 'manifest.json' && x.data); VA1.lastImport = null; if (!f) return;
+  let m = null; try { m = JSON.parse(new TextDecoder().decode(f.data)); } catch (e) { m = null; }
+  if (!m || m.kind !== 'synquenzer-container') return;
+  const want = (m.takes || []).filter(x => x && x.file).length, miss = (m.missing || []).length;
+  VA1.lastImport = {want, got: nOk, missing: miss, sounds: m.sounds | 0, app: String(m.app || '')};
+  if (!tkAudioOk() || !want) return;
+  setTimeout(() => toast('Container geöffnet: ' + nOk + ' von ' + want + (want === 1 ? ' Audio' : ' Audios') + (nOk < want ? ' – ' + (want - nOk) + ' nicht lesbar' : ' ✓') + (miss ? ' · ' + miss + ' fehlte schon beim Sichern' : '')), 2000);
+}
+async function va1BoxSave() {
+  if (VA1.boxBusy) return null;
+  VA1.boxBusy = true; va1Paint();
+  let how = null;
+  try { VA1.direct = true; how = await tkExportZip(); }
+  catch (e) { logErr(e); toast('Container fehlgeschlagen'); }
+  finally { VA1.direct = false; VA1.boxBusy = false; }
+  const b = VA1.lastBox;
+  if (b && (how === 'share' || how === 'download' || how === 'claude')) toast('Container gesichert: ' + b.ok + (b.ok === 1 ? ' Audio' : ' Audios') + (b.missing.length ? ' – ' + b.missing.length + ' fehlt auf diesem Gerät' : ' – vollständig') + (b.sounds ? ' · ' + b.sounds + ' eigene Klänge' : ''));
+  va1Paint(); return how;
+}
+/* ---------- Blatt „Export“ (Menü → Export; „ZIP + Projekt“ im Takes-Blatt führt hierher) ---------- */
+function va1MenuRow(sec, row, btn) {
+  const b = btn('Export'); b.setAttribute('aria-label', 'Export: WAV, Einzelspuren, MIDI, Video, Projekt-Container');
+  on(b, 'click', () => { closeMenu(); va1Sheet(); });
+  row(sec, null, b);
+}
+function va1Css() {
+  if (VA1.css) return; VA1.css = true;
+  const s = document.createElement('style'); s.id = 'va1Css';
+  s.textContent = [
+    '.pop.va1{width:min(420px,calc(100vw - 16px));box-sizing:border-box}',
+    '.va1 h5{margin:12px 0 6px;font:700 11px/1 var(--font-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim)}',
+    '.va1 .va1g{display:grid;grid-template-columns:1fr 1fr;gap:6px}',
+    '.va1 .va1g .mbtn{width:100%;min-height:52px;height:auto;margin:0;padding:6px 10px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:3px;text-align:left;line-height:1.15}',
+    '.va1 .mbtn small{display:block;font:500 11px/1.2 var(--font-ui);letter-spacing:0;color:var(--text-dim);text-transform:none}',
+    '.va1 .va1tr{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:6px}',
+    '.va1 .va1tr .mbtn{min-width:44px;min-height:44px;height:auto;margin:0;padding:0 10px;flex:0 1 auto}',
+    '.va1 .va1job{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-height:58px;box-sizing:border-box;margin:0 0 4px;padding:6px 8px;border:1px solid var(--line);border-radius:8px}',
+    '.va1 .va1bar{flex:1 1 100%;height:5px;border-radius:3px;background:var(--line);overflow:hidden}',
+    '.va1 .va1bar i{display:block;height:100%;background:var(--amber,#f7c948);transform-origin:0 50%}',
+    '.va1 .va1jt{flex:1 1 auto;min-width:0;font:600 12px/1.3 var(--font-ui);color:var(--text)}',
+    '.va1 .va1job .mbtn{flex:none;min-height:44px;margin:0}',
+    '.va1 .va1list{max-height:22vh;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;margin:6px 0;display:flex;flex-direction:column;gap:3px}',
+    '.va1 .va1li{display:flex;justify-content:space-between;gap:8px;font:12px/1.3 var(--font-ui);padding:3px 6px;border-radius:5px;background:rgba(255,255,255,.04)}',
+    '.va1 .va1li span{color:var(--text-dim);text-align:right;min-width:0}',
+    '.va1 .va1li.miss,.va1 .va1sum.warn{color:#ff8a7a}',
+    '@media (orientation:landscape) and (max-height:520px){.pop.va1{width:min(760px,calc(100vw - 16px))}.va1 .va1g{grid-template-columns:repeat(4,1fr)}.va1 .va1list{max-height:28vh}}'
+  ].join('\n');
+  document.head.appendChild(s);
+}
+const va1Mmss = s => Math.floor(s / 60) + ':' + z2(Math.round(s % 60) % 60);
+function va1JobTxt() {
+  const J = VA1.job; if (!J) return '';
+  const q = Math.round(J.p * 100) + ' %';
+  return J.kind === 'stems' ? 'Einzelspuren · ' + (J.k + 1) + '/' + J.n + ' ' + J.name + ' · ' + q : VA1_KIND[J.kind] + ' wird berechnet · ' + q;
+}
+function va1Prog(p, force) {
+  const J = VA1.job; if (!J) return;
+  J.p = clamp(p, 0, 1); const q = Math.round(J.p * 100); if (q === VA1.pk && !force) return; VA1.pk = q;
+  const P = va1Pop(); if (!P) return;
+  const i = P.querySelector('.va1bar i'), t = P.querySelector('.va1jt');
+  if (i) i.style.transform = 'scaleX(' + J.p.toFixed(3) + ')'; if (t) t.textContent = va1JobTxt();
+}
+const va1Pop = () => (UI.pop && UI.pop.name === 'va1' ? UI.pop.el : null);
+function va1Html() {
+  const song = !!(S.song && S.song.bars), J = VA1.job, X = VA1.res, busy = va1Busy(), hasV = va1HasVox(), hasC = va1HasChor();
+  const B = (a, t, s, ok, cls, more) => `<button class="mbtn rb${cls ? ' ' + cls : ''}" data-va="${a}"${more || ''}${ok ? '' : ' disabled'}><b>${esc(t)}</b>${s ? '<small>' + esc(s) + '</small>' : ''}</button>`;
+  let h = '';
+  if (J) h += `<div class="va1job" role="status"><div class="va1bar"><i style="transform:scaleX(${J.p.toFixed(3)})"></i></div><span class="va1jt">${esc(va1JobTxt())}</span><button class="mbtn rb" data-va="cancel">Abbrechen</button></div>`;
+  else if (X) h += `<div class="va1job" role="status"><span class="va1jt">${esc('Fertig: ' + X.label + (X.size ? ' · ' + (X.size / 1048576).toFixed(1).replace('.', ',') + ' MB' : ''))}</span><button class="mbtn rb go" data-va="share">Teilen</button></div>`;
+  else h += `<div class="va1job" role="status"><span class="va1jt">${esc(busy ? 'Gerade läuft eine andere Berechnung …' : 'Wähle, was du exportieren willst. Audio wird wie das Video offline berechnet.')}</span></div>`;
+  h += '<h5>Audio · WAV</h5><div class="va1g">' + B('song', 'Ganzer Song', 'WAV · Stereo', song && !busy) + B('stems', 'Einzelspuren', 'je Spur ein WAV · ZIP', song && !busy) +
+    B('lead', 'Nur Gesang', 'Lead · WAV', song && hasV && !busy) + B('chor', 'Nur Chor', 'Chöre · WAV', song && hasC && !busy) + '</div>';
+  if (!song) h += '<div class="small">Audio und Video brauchen einen Song – erst ● SONG.</div>';
+  const tg = va1MidiTarget(), mt = va1MidiTracks();
+  h += '<h5>MIDI</h5><div class="va1g">' + B('midiall', 'Ganzer Song', 'alle Spuren · .mid', song && !busy) +
+    B('midiin', 'MIDI importieren', tg >= 0 ? 'in neue Clips · ' + S.tracks[tg].name : 'keine passende Spur', tg >= 0 && !busy) + '</div>' +
+    '<div class="va1tr" role="group" aria-label="Eine Spur als MIDI"><span class="small">Eine Spur:</span>' + mt.map(i => `<button class="mbtn rb" data-va="midi" data-t="${i}"${busy ? ' disabled' : ''}>${esc(S.tracks[i].name)}</button>`).join('') + '</div>';
+  h += '<h5>Video</h5><div class="va1g">' + B('v916', 'Video 9:16', 'hochkant · mit Ton', song && !busy) + B('v169', 'Video 16:9', 'quer · mit Ton', song && !busy) + '</div>';
+  const inv = va1Inventory(), nM = inv.takes.filter(x => x.miss).length, sec = inv.takes.reduce((a, x) => a + x.sec, 0), n = inv.takes.length;
+  h += '<h5 class="va1box">Projekt-Container</h5>' +
+    `<div class="small va1sum${nM ? ' warn' : ''}">${esc(n + (n === 1 ? ' Audio-Take' : ' Audio-Takes') + (n ? ' (' + va1Mmss(sec) + ')' : '') + ' aus allen Clip-Slots, Gesang und Chor · ' + inv.sounds + ' eigene Klänge' + (nM ? ' · ' + nM + ' fehlt auf diesem Gerät' : n ? ' · alle auf diesem Gerät' : ''))}</div>` +
+    (n ? '<div class="va1list pan-y">' + inv.takes.map(x => `<div class="va1li${x.miss ? ' miss' : ''}"><b>${esc(x.name)}</b><span>${esc(x.where.join(' · ') + ' · ' + va1Mmss(x.sec))}</span></div>`).join('') + '</div>' : '') +
+    '<div class="va1g">' + B('box', VA1.boxBusy ? 'Sichert …' : 'Container sichern', 'eine ZIP · Projekt + alle Audios', !busy && !VA1.boxBusy, 'go') + B('boxin', 'Container öffnen', 'ZIP · ersetzt das Projekt', !busy) + '</div>';
+  return h;
+}
+function va1Paint() {
+  const p = va1Pop(); if (!p) return;
+  const bd = p.querySelector(':scope > .va1-bd'); if (!bd) return;
+  const sc = p.scrollTop; bd.innerHTML = va1Html(); if (p.scrollTop !== sc) p.scrollTop = sc; popFit(p);
+}
+function va1Sheet(focus) {
+  va1Css();
+  const p = openPop(EL.top, q => {
+    q.classList.add('va1'); guardTouch(q);
+    const bd = el('div', 'va1-bd'); bd.innerHTML = va1Html(); q.appendChild(bd);
+    onTap(q, b => va1Tap(b), 'button[data-va]');
+  }, {name: 'va1', sheet: {title: () => 'Export'}});
+  if (focus === 'box') requestAnimationFrame(() => { const h = p.querySelector('.va1box'); if (h && p.isConnected) p.scrollTop = Math.max(0, h.offsetTop - 60); });
+  return p;
+}
+function va1Tap(b) {
+  const a = b.dataset.va;
+  if (a === 'cancel') { if (VA1.job) VV.cancel = true; return; }
+  if (a === 'share') { va1Share(); return; }
+  if (VA1_KIND[a]) { va1Run(a); return; }
+  if (a === 'midiall') { va1MidiGo(null); return; }
+  if (a === 'midi') { va1MidiGo(+b.dataset.t); return; }
+  if (a === 'midiin') { va1MidiPick(); return; }
+  if (a === 'v916' || a === 'v169') { vvPrefSet('fmt', a === 'v916' ? '9:16' : '16:9'); closePop(); vvOpen(); return; }
+  if (a === 'box') { va1BoxSave(); return; }
+  if (a === 'boxin') { closePop(); EL.fileIn.value = ''; EL.fileIn.click(); }
+}
+/* ---------- Test-API ---------- */
+async function va1B64(x) {
+  const u8 = x instanceof Uint8Array ? x : new Uint8Array(await x.arrayBuffer()); let s = '';
+  for (let k = 0; k < u8.length; k += 32768) s += String.fromCharCode.apply(null, u8.subarray(k, k + 32768));
+  return btoa(s);
+}
+const va1U8 = b64 => { const s = atob(b64), u8 = new Uint8Array(s.length); for (let k = 0; k < s.length; k++) u8[k] = s.charCodeAt(k); return u8; };
+function va1Api() {
+  return {
+    va1Sheet: f => !!va1Sheet(f), va1Close: () => { if (va1Pop()) closePop(); return true; },
+    va1Info: () => ({job: VA1.job ? Object.assign({}, VA1.job) : null, res: VA1.res ? {base: VA1.res.base, kind: VA1.res.kind, label: VA1.res.label, files: VA1.res.files, names: VA1.res.names.slice(), skipped: VA1.res.skipped.slice(), size: VA1.res.size, ms: VA1.res.ms} : null,
+      stems: va1Stems(), vox: va1HasVox(), chor: va1HasChor(), inv: va1Inventory(), lastBox: VA1.lastBox, lastImport: VA1.lastImport, lastMidi: VA1.lastMidi, lastMidiIn: VA1.lastMidiIn, midiTarget: va1MidiTarget(), only: !!VA1.only, solo: G6.solo}),
+    va1Export: async kind => { const r = await va1Run(kind); return r ? {base: r.base, kind: r.kind, label: r.label, files: r.files, names: r.names.slice(), skipped: r.skipped.slice(), size: r.size, ms: r.ms} : null; },
+    va1ResB64: async () => (VA1.res ? va1B64(VA1.res.data) : null),
+    va1Share: () => va1Share(),
+    va1Midi: async i => { const m = va1MidiBuild(i == null ? null : i); return m ? {b64: await va1B64(m.bytes), tracks: m.tracks.slice(), counts: m.counts.slice(0, NT())} : null; },
+    va1MidiParse: b64 => JSON.parse(JSON.stringify(va1MidiParse(va1U8(b64)))),
+    va1MidiImport: (b64, t) => va1MidiImport(va1U8(b64), t),
+    va1BoxB64: async () => va1B64(await tkZipBytes()),
+    va1BoxSave: () => va1BoxSave(),
+    va1BoxImport: async b64 => { let txt = null; const ok = await tkImportZip(va1U8(b64), t => { txt = t; importJSON(t); }); return {ok, json: !!txt, note: VA1.lastImport}; },
+    va1VideoB64: async () => (VV.res && VV.res.blob ? va1B64(VV.res.blob) : null),
+    va1HasSound: async () => (VV.res && VV.res.blob ? va1HasSound(VV.res.blob) : null),
+  };
+}
+/* VA1-END */
 /* ===================== VV2 (Nachtrag 5): Video-Regie im Song, Auto-Regisseur, Spur-Bild, 9:16-Kamera =====================
    song.video = [{a, b, v: 'auto'|'song'|'matrix'|'spur', t?}] (Takte a ≤ x < b, Spur t) – optional und additiv (Format 5 bleibt);
    ohne Einträge macht der Auto-Regisseur alles. Einfügen/Löschen/Verschieben von Takten verschiebt bzw. kürzt die Einträge mit
@@ -73530,6 +74088,7 @@ Object.assign(SYNQUENZER, vvkApi());                       // VK3 Klavier
 Object.assign(SYNQUENZER, vv4bdApi());                      // VV4-B/D
 Object.assign(SYNQUENZER, SX126_API);                       // SX126: Ausblenden, Klinge, Form-Vorlage
 Object.assign(SYNQUENZER, vk2Api());                        // VK2: Mäusekino
+Object.assign(SYNQUENZER, va1Api());                        // VA1: Export, Container, MIDI, Video-Ton
 /* V6A: Test-API (weicher Szenenwechsel). Jede Änderung ist ein Undo-Schritt wie in der Oberfläche */
 function v6aSetState(t, s, st) {
   const tr = S.tracks[t], c = tr && tr.clips[s]; if (!c) throw new Error('Kein Clip: ' + t + '/' + s);
