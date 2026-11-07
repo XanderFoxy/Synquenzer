@@ -175,6 +175,8 @@ export default async function praemien({ holeText, cfg, jetzt }) {
     const text = `${it.titel} ${it.beschreibung}`;
     const b = bewertePraemie(text, m, { preisText: it.preisText });
     if (!b) continue;
+    // Feeds mit „nurArten“ (z. B. mydealz Lebensmittel): nur Geld-zurück-/Cashback-Aktionen, keine normalen Deals
+    if (it.feedInfo?.nurArten && !it.feedInfo.nurArten.includes(b.art)) continue;
     kandidaten.push(eintrag({
       kategorie: 'praemien', titel: it.titel, quelle: it.shop ? `${it.shop} via ${it.feed}` : it.feed, link: it.link, datum: it.datum,
       zeile: zeileAus(b), soGehts: SO_GEHTS[b.art], wert: b.wert, sofort: b.sofort, grund: b.art,

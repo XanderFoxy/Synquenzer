@@ -215,7 +215,7 @@ test('Echt: Preisfehler mit Deal-Seite – vorher/jetzt aus mydealz, abgelaufen 
   assert.equal(vorbei.msgs.filter(x => x.click === LUMA).length, 0);
 });
 
-test('Echt (CAMELBAK 2852900): Versand steckt schon im Preis -> nicht noch einmal „zzgl. Versand“; Push-Titel nach Art', async () => {
+test('Echt (CAMELBAK 2852900): 6,98 € statt 11,99 € ist kein krasser Preisfehler; mit krassem Vergleichspreis: Versand steckt schon im Preis, Push-Titel nach Art', async () => {
   const wl = { ...watchlist, technik: { ...watchlist.technik, woerter: ['camelbak'] } };
   const CAMEL = 'https://www.mydealz.de/deals/preisfehler-camelbak-stash-belt-fur-099eur-vsk-bauchtasche-gurteltasche-laufgurt-gr-m-schwarz-2852900';
   const feed = (await readdir(join(ECHT, 'quellen'))).find(n => n.includes('camelbak'));
@@ -225,13 +225,20 @@ test('Echt (CAMELBAK 2852900): Versand steckt schon im Preis -> nicht noch einma
   const datum = seite.match(/"publishedAt":(\d+)/)[1] * 1000;
   const jetzt = new Date(datum + 2 * 36e5).toISOString();
   const item = `<item><pepper:merchant name="Amazon" price="6,98€"/><title><![CDATA[Preisfehler: CAMELBAK Stash Belt für 0,99€ + VSK]]></title><description><![CDATA[x]]></description><link>${CAMEL}</link><pubDate>${new Date(datum).toUTCString()}</pubDate></item>`;
-  const patch = { [PF]: t => t.replace('<item>', item + '<item>'), [CAMEL]: () => seite.replace('"isExpired":true', '"isExpired":false').replace(/"endDate":\{[^}]*\}/, '"endDate":null') };
+  const laeuft = () => seite.replace('"isExpired":true', '"isExpired":false').replace(/"endDate":\{[^}]*\}/, '"endDate":null');
+  // echt: −42 % (5,01 € gespart) -> nicht krass (Xander 07.11.: nur No-Brainer) -> nicht zeigen, kein Push
+  const echt = await lauf(jetzt, { watchlist: wl, patch: { [PF]: t => t.replace('<item>', item + '<item>'), [CAMEL]: laeuft } });
+  assert.equal(echt.current.technik.filter(x => x.link === CAMEL).length, 0);
+  assert.equal(echt.msgs.filter(x => x.click === CAMEL).length, 0);
+  // gleiche Seite mit Vergleichspreis 39,99 € (−83 %, 33 € gespart) -> krass -> zeigen
+  const patch = { [PF]: t => t.replace('<item>', item + '<item>'), [CAMEL]: () => laeuft().replace('"nextBestPrice":11.99', '"nextBestPrice":39.99') };
   const r = await lauf(jetzt, { watchlist: wl, patch });
   const t = r.current.technik.find(x => x.link === CAMEL);
   assert.ok(t, 'CAMELBAK fehlt');
   assert.equal(t.preis, 6.98);
   assert.equal(t.versand, 0);
   assert.equal(t.versandInklusive, true);
+  assert.equal(t.krass, '83 % unter dem Vorher-Preis');
   const m = r.msgs.find(x => x.click === CAMEL);
   assert.match(m.title, /^Preisfehler\? /);
   assert.match(m.message, /inkl\. Versand/);

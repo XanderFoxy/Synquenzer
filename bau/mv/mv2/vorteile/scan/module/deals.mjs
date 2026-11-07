@@ -116,7 +116,7 @@ export default async function deals({ holeText, cfg, jetzt, zustand }) {
     if (technikLinks.has(it.link)) continue;
     const text = `${it.titel} ${it.beschreibung}`;
     if (istPreisfehler(it)) {
-      const r = await preisfehlerEintrag(it, { kategorie: 'deals', pruefer, jetzt, wert: 90, mitPreis: true });
+      const r = await preisfehlerEintrag(it, { kategorie: 'deals', pruefer, jetzt, wert: 90, mitPreis: true, krass: m.preisfehlerKrass || {} });
       if (r.eintrag) eintraege.push(r.eintrag);
       else if (r.grund === 'Deal-Seite nicht lesbar') fehler.push(`Preisfehler ausgelassen (${r.grund}): ${it.titel.slice(0, 60)}`);
       continue;

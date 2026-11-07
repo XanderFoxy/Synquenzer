@@ -37,6 +37,16 @@
         { "name": "mydealz Drogerie", "url": "https://www.mydealz.de/rss/gruppe/drogerie", "maxAlterTage": 7 },
         { "name": "mydealz Preisfehler", "url": "https://www.mydealz.de/rss/gruppe/preisfehler", "maxAlterTage": 3, "preisfehler": true }
       ],
+      "preisfehlerKrass": {
+        "_hinweis": "Nur krasse Preisfehler (Xander 07.11.2026). Regeln: scan/lib/krass.mjs (gleich wie schnaeppchen/config.json preisfehler.krass).",
+        "minProzent": 75,
+        "minErsparnisEuro": 20,
+        "absurdMaxEuro": 5,
+        "absurdMinVorher": 15,
+        "spielMaxEuro": 2,
+        "spielMinProzent": 85,
+        "spielMinErsparnisEuro": 40
+      },
       "aktionWoerter": ["zum preis von", "gratis", "geschenkt", "1+1", "halben preis", "coupon", "cashback", "scondoo", "lidl plus", "kaufland card", "geld zurück|geld zurueck"]
     },
     "erleben": {
@@ -117,14 +127,15 @@
       "gewinnWoerter": ["gewinnspiel", "gewinnen", "verlosung", "verlost"],
       "themaWoerter": ["synth", "synthesizer", "kopfhörer|kopfhoerer", "lautsprecher", "mikrofon", "audio", "musik", "technik", "laptop", "tablet", "ipad", "iphone", "kamera", "software", "chips", "snack", "schokolade", "süßigkeiten|suessigkeiten", "kaffee", "reise", "konzert", "tickets", "therme", "gutschein"],
       "leichtWoerter": ["ohne anmeldung", "nur e-mail|nur email", "kurzes formular", "kommentar", "einfach teilnehmen", "regional", "leser"],
-      "fallenWoerter": ["gewinnspielservice|gewinnspiel-service|gewinnspieleintrag", "abo|abonnement", "kostenpflichtig", "0900|0137", "sms", "lotto|lotterie|losnummer", "glücksrad|gluecksrad", "gewinnbenachrichtigung", "sie haben gewonnen", "versandkosten", "probanden|klinisch|medikament|studie", "umfrage gegen", "paysafe", "krypto"]
+      "fallenWoerter": ["gewinnspielservice|gewinnspiel-service|gewinnspieleintrag", "abo|abonnement", "kostenpflichtig", "kaufbeleg|kassenbon|kassenzettel|beim kauf|mit dem kauf|nach dem kauf|kauf eines|kauf von|mindestbestellwert|mindesteinkauf|aktionsprodukt|teilnahmegebühr|teilnahmegebuehr|einsatz von", "0900|0137", "sms", "lotto|lotterie|losnummer", "glücksrad|gluecksrad", "gewinnbenachrichtigung", "sie haben gewonnen", "versandkosten", "probanden|klinisch|medikament|studie", "umfrage gegen", "paysafe", "krypto"]
     },
     "praemien": {
       "aktiv": true,
       "intervallStunden": 3,
       "_hinweis": "Prämien & Freunde werben. Netto = Prämie − Kosten (Gebühren × Laufzeit, Versand). Sortiert nach Netto pro Stunde Aufwand. Sofort-Push nur ab sofortAbNetto € netto oder Gratis-Produkt ohne Haken ab gratisSofortAbWert €, höchstens maxSofortProLauf pro Lauf.",
       "feeds": [
-        { "name": "mydealz Freebies", "url": "https://www.mydealz.de/rss/gruppe/freebies", "maxAlterTage": 7 }
+        { "name": "mydealz Freebies", "url": "https://www.mydealz.de/rss/gruppe/freebies", "maxAlterTage": 7 },
+        { "name": "mydealz Lebensmittel", "url": "https://www.mydealz.de/rss/gruppe/lebensmittel", "maxAlterTage": 14, "nurArten": ["gzg", "cashback"], "_nurArten": "nur Geld-zurück- und Cashback-Aktionen (Seite: Abschnitt Cashback)" }
       ],
       "suchen": ["Kontowechselprämie", "Neukundenprämie Girokonto", "Freunde werben Prämie", "Geld zurück Aktion", "Gratis testen", "Cashback Aktion", "Wechselbonus Strom", "Payback Extrapunkte", "Startguthaben App"],
       "maxAlterTage": 14,

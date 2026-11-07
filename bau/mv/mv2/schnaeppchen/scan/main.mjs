@@ -11,6 +11,7 @@ import { versandkosten, technikBewertung, tiefstInfo } from './deals.mjs';
 import { ladeReferenz, preisKontext, verlaufEintraege, pushZeile } from './referenz.mjs';
 import { median } from './history.mjs';
 import { pruefeDealSeiten, leereDealseiten, versandImPreis } from './preisfehler.mjs';
+import { krass } from './krass.mjs';
 import { nachricht, dedupeKey, senden } from './notify.mjs';
 import { macheAbruf, macheFixtureAbruf, macheWiedergabe } from './http.mjs';
 import { rohOrdner, macheMitschnitt } from './roh.mjs';
@@ -212,7 +213,7 @@ export async function scan({ cfg, watchlist, history, sent, dealseiten, holeText
   });
   karten.sort((a, b) => (b.deal - a.deal) || ((b.ersparnis ?? -9) - (a.ersparnis ?? -9)));
 
-  // 3. electronics price errors: nur frische (≤ maxAlterStunden) und laut Deal-Seite nicht abgelaufene
+  // 3. electronics price errors: nur frische (≤ maxAlterStunden), laut Deal-Seite nicht abgelaufene und nur krasse
   const technik = [];
   const pf = cfg.preisfehler || {};
   const maxAlterMs = (pf.maxAlterStunden ?? 24) * 36e5;
@@ -234,6 +235,9 @@ export async function scan({ cfg, watchlist, history, sent, dealseiten, holeText
       if (seite.bis && Date.parse(seite.bis) <= jetztMs) continue;
       const b = technikBewertung(o, watchlist.technik, cfg, seite);
       if (!b) continue;
+      // Nur krasse Preisfehler (4K-TV für 35 €), kein „Switch-2-Spiel 49 → 39 €“ (krass.mjs, Grenzen in config preisfehler.krass)
+      const k = krass({ titel: o.titel, preis: b.preis, preisVorher: b.preisVorher }, pf.krass);
+      if (!k.ok) { log(`nicht krass genug (${k.grund}): ${o.titel}`); continue; }
       const geplant = seite.bis || null;
       const bis = geplant || new Date(Date.parse(o.datum) + maxAlterMs).toISOString();
       if (Date.parse(bis) <= jetztMs) continue;
@@ -246,6 +250,7 @@ export async function scan({ cfg, watchlist, history, sent, dealseiten, holeText
         preisAlt: b.preisVorher, ersparnis: b.ersparnis, grund: b.grund, preisfehler: b.preisfehler,
         link: o.link, bild: o.bild || '', datum: o.datum, bis, bisGeschaetzt: !geplant, geprueft: seite.geprueft,
         temperatur: seite.temperatur ?? o.temperatur ?? null,
+        krass: k.grund, normalAb: k.normalAb ?? null,
       };
       technik.push(t);
       kandidaten.push(t);

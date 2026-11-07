@@ -29,10 +29,11 @@ export const GERAETE_AB = [
   [/\b(monitor|bildschirm)\b/i, 'Monitore', 120],
   [/\b(smartwatch|apple watch)\b/i, 'Smartwatches', 120],
   [/\b(soundbar)\b/i, 'Soundbars', 100],
-  [/\b(airpods|kopfhörer|kopfhoerer|headphones|earbuds|in-ears?)\b/i, 'Kopfhörer', 60],
+  [/\b(airpods)\b/i, 'AirPods', 100],
+  [/\b(kopfhörer|kopfhoerer|headphones|earbuds|in-ears?)\b/i, 'Kopfhörer', 60],
 ];
 // Zubehör kostet wenig – „iPhone-Hülle für 1 €“ ist kein Preisfehler
-const ZUBEHOER = /\b(hülle|huelle|case|cover|schutzfolie|displayschutz|panzerglas|folie|kabel|adapter|halterung|wandhalterung|ladegerät|ladegeraet|ladekabel|netzteil|tasche|ständer|staender|fernbedienung|ersatz\w*|armband|skin|sticker|reiniger)\b/i;
+const ZUBEHOER = /\b(hülle|huelle|case|cover|schutzfolie|displayschutz|panzerglas|folie|kabel|adapter|halterung|wandhalterung|ladegerät|ladegeraet|ladekabel|netzteil|tasche|ständer|staender|fernbedienung|ersatz\w*|armband|skin|sticker|reiniger|stick|dongle)\b/i;
 // Spiele: Spiel-Wort, Plattform in Klammern („(Switch 2)“, „[PS5]“) oder bekannte Reihe + Plattform – aber keine Konsole/kein Controller
 const KEIN_SPIEL = /\b(konsole|console|controller|joy-?cons?|headset|ladestation|dock|speicherkarte|micro\s?sd|amiibo)\b/i;
 const SPIEL_WORT = /\b(spiel|videospiel|game|games|dlc|season pass|switch 2 edition|deluxe edition|complete edition|goty)\b/i;
