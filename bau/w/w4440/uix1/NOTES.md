@@ -37,7 +37,7 @@
   - Menü, Synth-Editor (alle 6 Klangerzeugungen), Drum, North-Platte, Noten-Editor, LAUF, Quantisieren, Clip, Sounds, Master, Mod-Übersicht, Verlauf, Teil-Name, Teil-Blatt, Akkord-Zeile, FANG, FANG ✎, S1, Marken-Blatt, KONUX, Zusammenfassen, Akkord, Aufnahme-Start, Schleife, Übergänge, Video, Mikro-Check, Online, Takes (2×), Chor, Gesangs-Effekte, Marken/Text, Noten aus Gesang.
   - Je Fall wird vor und nach Scrollen ans Ende gemessen: ✕ im Bild, oberstes Element und Trefferfläche ≥ 43,5 px in beiden Richtungen.
   - Zusätzlich wird geprüft, ob die Tastatur (`#kbArea`/`#modebar`) Bedienelemente der offenen Ebene verdeckt.
-  - **Basis 4.42.0:** 26–28 NEIN je Größe, darunter 8 Fälle ohne ✕.
+  - **Basis 4.42.0:** 24–25 NEIN je Größe. 6 Fälle haben gar kein ✕: Mod-Übersicht, Teil-Name, Zusammenfassen, Schleife, Takes ohne Song, Gesangs-Effekte. Die übrigen haben ein ✕ mit Trefferfläche unter 44 px (44×40, 40×40, 36×36), dazu das teils abgeschnittene ✕ der Übergänge-Leiste.
   - **Neu:** 428×926, 390×844 und 375×667 je **39/39 OK**, **0 Funde** unter der Tastatur. Ergebnisse in `fin-428.json`, `fin-390.json` und `fin-375.json`.
 - Pflichtprüfungen:
   - `topdefs.cjs`: 0 Syntaxfehler, 0 doppelt (Namen 4951 → 4967, nur neue).
