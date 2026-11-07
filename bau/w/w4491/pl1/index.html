@@ -83390,6 +83390,7 @@ function pl1DrumHold(E) {
 // ROLLE: [🔒 Locks] am Ende der Aktionszeile (PianoRoll endActs)
 function pl1Acts(t, s) {
   if (!pl1Eng(t)) return [];
+  pl1Css();
   return [{id: 'pl1', label: '🔒 Locks', title: 'Parameter-Locks: Regler nur für die gewählten Noten', cls: 'pl1rb', fn: b => pl1RollPop(b, t, s)}];
 }
 function pl1RollPop(b, t, s) {

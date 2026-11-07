@@ -153,10 +153,11 @@ const DM = await p.evaluate(async () => {
   SYNQUENZER.pl1.modeEnd(true); await new Promise(r => setTimeout(r, 300)); o.back = R.editor + '/' + ED.dTab; o.shownAfter = dSlotGet('kick', 'tDec');
   return o; });
 ok('Drum: [Alle Regler ›] → Drum-Editor SOUND im Lock-Modus (KICK); Decay schreibt nur den Lock, Anzeige zeigt ihn; anderes Pad sagt es; [Fertig] → SCHRITTE', DM.ed === 'drum' && DM.tab === 'sound' && DM.voice === 'kick' && DM.after === DM.base && Math.abs(DM.shown - 1.5) < .02 && DM.lk && DM.lk.v && DM.lk.v['drum.kick.tDec'] != null && !DM.snareLk && /KICK/.test(DM.snareSay) && DM.back === 'drum/steps' && DM.shownAfter === DM.base, DM);
+await p.evaluate(() => SYNQUENZER.pl1.drumPop(4)); await W(250);
 const D3 = await p.evaluate(async () => { SYNQUENZER.pl1.set(DRUM_T, 0, [1], 'drum.kick.lvl', .4); const u = UNDO.length; const b = UI.pop.el.querySelector('.pl1clr');
   b.dispatchEvent(new PointerEvent('pointerdown', {bubbles: true, pointerId: 8, clientX: 1, clientY: 1})); b.dispatchEvent(new PointerEvent('pointerup', {bubbles: true, pointerId: 8, clientX: 1, clientY: 1})); b.click();
   await new Promise(r => setTimeout(r, 100)); return {lk: S.tracks[DRUM_T].clips[0].notes.filter(q => q.lk).length, undo: UNDO.length - u, dots: ED.step.cells.filter(c => c._pl1d && !c._pl1d.hidden).length}; });
-ok('„Locks löschen“: alle Locks des Schritts weg (Tune + Pegel), ein ↶, kein Punkt mehr', D3.lk === 0 && D3.undo === 1 && D3.dots === 0, D3);
+ok('„Locks löschen“: alle Locks des Schritts weg (Tune, Pegel, Decay), ein ↶, kein Punkt mehr', D3.lk === 0 && D3.undo === 1 && D3.dots === 0, D3);
 // leerer Schritt: langer Druck öffnet nichts, der Tipp setzt wie bisher einen Schlag
 await p.evaluate(() => closePop()); await W(150);
 const ec = await p.evaluate(() => { const c = ED.step.cells[2].getBoundingClientRect(); return {x: c.left + c.width / 2, y: c.top + c.height / 2}; });
@@ -168,11 +169,11 @@ await p.evaluate(() => { undo(); closeEditor(); });
 /* ---------- 5) ROLLE: Note wählen → [🔒 Locks] → [Alle Regler ›] = Klang-Editor im Lock-Modus ---------- */
 await p.evaluate(() => { ROLLP.view = 'roll'; openRoll(0, 0); }); await W(400);
 const rb = await p.evaluate(() => { ED.roll.selectIdx([4]); const b = [...ED.roll.el.acts.children].find(x => x.textContent === '🔒 Locks'); b.scrollIntoView({inline: 'nearest'}); const r = b.getBoundingClientRect(); return {x: r.left + r.width / 2, y: r.top + r.height / 2, h: r.height}; });
-const hit0 = await p.evaluate(({x, y}) => { const b = [...ED.roll.el.acts.children].find(q => q.textContent === '🔒 Locks'); return {up: document.elementFromPoint(x, y - 21) === b, down: document.elementFromPoint(x, y + 21) === b}; }, rb);
+const hit0 = await p.evaluate(({x, y}) => { const b = [...ED.roll.el.acts.children].find(q => q.textContent === '🔒 Locks'), h = [...ED.roll.el.acts.children].find(q => q.textContent === 'Harmonie'); const span = (el, cx) => { let n = 0; for (let dy = -30; dy <= 30; dy++) if (document.elementFromPoint(cx, y + dy) === el) n++; return n; }; const hr = h ? h.getBoundingClientRect() : null; return {px: span(b, x), harmoniePx: hr ? span(h, hr.left + hr.width / 2) : null}; }, rb);
 await p.mouse.click(rb.x, rb.y); await W(300);
 const RL = await p.evaluate(() => ({pop: !!(UI.pop && UI.pop.name === 'pl1'), title: UI.pop ? UI.pop.el.querySelector('h4').textContent : ''}));
 const hit = hit0;
-ok('ROLLE: Note wählen, [🔒 Locks] (am Ende der Aktionszeile, Trefferfläche ≥ 44 px wie [Harmonie]) → Fenster „1 Note“', RL.pop && RL.title === '1 Note' && hit.up && hit.down, {RL, h: rb.h, hit});
+ok('ROLLE: Note wählen, [🔒 Locks] (am Ende der Aktionszeile, Trefferfläche ≥ 44 px wie [Harmonie]) → Fenster „1 Note“', RL.pop && RL.title === '1 Note' && hit.px >= 44, {RL, h: rb.h, hit});
 const allB = await p.evaluate(() => { const r = UI.pop.el.querySelector('.pl1all').getBoundingClientRect(); return {x: r.left + r.width / 2, y: r.top + r.height / 2}; });
 await p.mouse.click(allB.x, allB.y); await W(500);
 const M1 = await p.evaluate(() => ({mode: SYNQUENZER.pl1.mode(), ed: R.editor, selT: R.selT, ban: (() => { const b = document.querySelector('.pl1ban'); if (!b || b.hidden) return null; const r = b.getBoundingClientRect(); return {x: r.left, y: r.top, w: r.width, h: r.height, t: b.textContent}; })(),
