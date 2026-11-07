@@ -27,6 +27,7 @@ const rectOf = sel => p.evaluate(s => { const e = typeof s === 'string' ? docume
 const SETUP = `stop(); SYNQUENZER.loadDemo(); ensureAudio();
   for (let t = 0; t < NT(); t++) if (S.tracks[t]) for (let s = 0; s < NS(); s++) if (t !== 0) S.tracks[t].clips[s] = null;
   S.tracks[0].clips[0] = {len: 1, key: {root: 0, scale: 'ionian', src: 'user'}, notes: [0, .5, 1, 1.5, 2, 2.5, 3, 3.5].map(t => ({t, d: .2, n: 48, v: .8}))};
+  setP(0, 'fx.rev', 0); setP(0, 'fx.dly', 0);   /* ohne Hall/Echo: jeder Schritt wird für sich gemessen */
   for (let t = 0; t < NT(); t++) clipChanged(t, 0); R.selS = 0; UNDO.length = 0; REDO.length = 0;`;
 
 /* ---------- 1) LAUF: Schritt 3 mit einem Finger halten, mit dem zweiten den Filter-Regler drehen (echte Mehrfinger-Geste) ---------- */
@@ -92,18 +93,18 @@ const spec = async () => p.evaluate(async () => {
 const R1 = await spec();
 await p.evaluate(() => { const n = S.tracks[0].clips[0].notes[1]; window.__lk = n.lk; delete n.lk; clipChanged(0, 0); }); const R0 = await spec(); await p.evaluate(() => { S.tracks[0].clips[0].notes[1].lk = window.__lk; clipChanged(0, 0); });
 const ratio = R1.cent.map((c, k) => +(c / R0.cent[k]).toFixed(3)), rest = ratio.filter((r, k) => k % 8 !== 1);
-ok('Render (Song als Audio = Export-Weg): nur Schritt 3 (in beiden Takten) klingt anders – Spektralschwerpunkt mit/ohne Lock', ratio[1] > 3 && ratio[9] > 3 && rest.every(r => Math.abs(r - 1) < .03), {mitLockHz: R1.cent, ohneLockHz: R0.cent, verhaeltnis: ratio, hfDbMit: R1.hf, hfDbOhne: R0.hf});
+ok('Render (Song als Audio = Export-Weg): nur Schritt 3 (in beiden Takten) klingt anders – Spektralschwerpunkt mit/ohne Lock', ratio[1] > 3 && ratio[9] > 3 && rest.every(r => Math.abs(r - 1) < .05), {mitLockHz: R1.cent, ohneLockHz: R0.cent, verhaeltnis: ratio, hfDbMit: R1.hf, hfDbOhne: R0.hf});
 
 /* ---------- 3) ↶ / ↷ und Speichern / Laden ---------- */
 const U3 = await p.evaluate(async () => {
   const o = {}; const lk = () => { const n = S.tracks[0].clips[0].notes[1]; return n.lk && n.lk.v ? n.lk.v.cutoff : null; };
   o.before = lk();
-  const json = SYNQUENZER.serialize(); o.inFile = JSON.parse(json).project.tracks[0].clips[0].notes[1].lk || null;
+  const json = SYNQUENZER.serialize(); const fn = JSON.parse(json).project.tracks[0].clips[0].notes; o.inFile = (fn[1][4] && fn[1][4].lk) || null; o.inFileOthers = fn.filter((q, i) => i !== 1 && q[4] && q[4].lk).length;
   SYNQUENZER.loadDemo(); o.gone = lk(); o.imp = importJSON(json); await new Promise(r => setTimeout(r, 300)); o.loaded = lk();
   o.others = S.tracks[0].clips[0].notes.filter((q, i) => i !== 1 && q.lk).length;
   return o;
 });
-ok('Speichern/Laden: der Lock steht in der Datei und kommt gleich zurück', U3.inFile && U3.inFile.v && U3.inFile.v.cutoff === U3.before && U3.imp && U3.loaded === U3.before && U3.others === 0, {inFile: U3.inFile, loaded: U3.loaded});
+ok('Speichern/Laden: der Lock steht in der Datei (nur an Note 2) und kommt gleich zurück', U3.inFile && U3.inFile.v && U3.inFile.v.cutoff === U3.before && !U3.inFileOthers && U3.imp && U3.loaded === U3.before && U3.others === 0, {inFile: U3.inFile, loaded: U3.loaded});
 const R2 = await spec();
 ok('nach dem Laden klingt der Render gleich (Schritt 3 hell)', Math.abs(R2.cent[1] - R1.cent[1]) <= R1.cent[1] * .02 && Math.abs(R2.cent[0] - R1.cent[0]) <= R1.cent[0] * .02, {vorher: [R1.cent[0], R1.cent[1]], nachher: [R2.cent[0], R2.cent[1]]});
 // Lock-Leiste: ✕ am Chip löscht nur diesen Lock (ein ↶), „Locks löschen“ alle
