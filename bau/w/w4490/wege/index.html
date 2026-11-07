@@ -82543,10 +82543,16 @@ function wegeMarkSheetPaint(p, m) {
   const head = p.querySelector('.ms-h');
   if (head && !p.querySelector('.wg-tabs')) head.insertAdjacentHTML('afterend', `<div class="wg-tabs" role="tablist" aria-label="Marken-Blatt">` +
     WEGE_TABS.map(([k, l, s]) => `<button class="rb${k === t0 ? ' on' : ''}" role="tab" data-wg="tab" data-t="${k}" aria-selected="${k === t0}">${esc(narrow ? s : l)}</button>`).join('') + `</div>`);
-  // gleiche Höhe in allen Reitern (nichts springt beim Umschalten)
-  p.style.minHeight = '';
+  p.dataset.wgt = t0;
+  if (p.isConnected && p.offsetHeight) wegeMsFit(p); else requestAnimationFrame(() => { if (p.isConnected && wegeMsFit(p)) popDock(p); });
+}
+// gleiche Höhe in allen Reitern (nichts springt beim Umschalten): die höchste Seite gibt die Höhe vor
+function wegeMsFit(p) {
+  if (!p.dataset.wgt || !p.offsetHeight) return false;
+  const t0 = p.dataset.wgt; p.style.minHeight = '';
   let mx = 0; for (const [k] of WEGE_TABS) { p.dataset.wgt = k; mx = Math.max(mx, p.scrollHeight); }
   p.dataset.wgt = t0; p.style.minHeight = Math.min(mx, Math.round(window.innerHeight * .62)) + 'px';
+  return true;
 }
 function wegeMsTab(p, t) {
   if (!p || !WEGE_TABS.some(x => x[0] === t)) return false;
