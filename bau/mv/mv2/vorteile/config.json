@@ -43,9 +43,16 @@
         "minErsparnisEuro": 20,
         "absurdMaxEuro": 5,
         "absurdMinVorher": 15,
-        "spielMaxEuro": 2,
-        "spielMinProzent": 85,
+        "spielMaxEuro": 1.5,
+        "spielMinProzent": 98,
         "spielMinErsparnisEuro": 40
+      },
+      "cashback": {
+        "_hinweis": "Geld-zurück- und Cashback-Aktionen für den Abschnitt Cashback (Xander 07.11.2026: Prämien & Freunde werben sind raus, Cashback bleibt). Bewertet mit den Regeln aus module.praemien (artWoerter, ausschluss, Haken), nur die Arten unten, ab minNetto € netto; Push nur in der Zusammenfassung.",
+        "arten": ["gzg", "cashback"],
+        "minNetto": 1,
+        "maxAlterTage": 14,
+        "suchen": ["Geld zurück Aktion", "Gratis testen", "Cashback Aktion"]
       },
       "aktionWoerter": ["zum preis von", "gratis", "geschenkt", "1+1", "halben preis", "coupon", "cashback", "scondoo", "lidl plus", "kaufland card", "geld zurück|geld zurueck"]
     },
@@ -89,7 +96,20 @@
       ],
       "aufrufWoerter": ["gesucht", "bewerben", "bewerbung", "open call", "ausschreibung", "bandcontest|band contest", "wettbewerb", "newcomer", "talente", "line-up|lineup", "auftrittsmöglichkeit|auftrittsmoeglichkeit"],
       "genreWoerter": ["synth", "elektro", "electro", "electronic", "elektronisch", "wave", "pop", "indie", "singer-songwriter|solokünstler|solokuenstler", "alle genres|jedes genre|genreoffen"],
-      "nichtWoerter": ["coverband|cover-band", "blaskapelle", "schlager", "fußball|fussball", "kirchenchor", "gestorben|trauer", "verhaftet|polizei"]
+      "nichtWoerter": ["coverband|cover-band", "blaskapelle", "schlager", "fußball|fussball", "kirchenchor", "gestorben|trauer", "verhaftet|polizei"],
+      "remix": {
+        "_hinweis": "Remix-Contests mit Stems (Xander 07.11.2026): nur Synth-Pop, 80er, Italo, Euro-Disco, Elektro, Dark Wave, New Wave – keine reinen Hip-Hop-/Metal-/Schlager-Contests. Nur laufende: Einsendeschluss in der Zukunft, ohne Einsendeschluss höchstens maxAlterTage alt. Push: Zusammenfassung, sofort nur bei Frist ≤ sofortBisTage. Seite: Abschnitt Remix-Contests. Sammelseiten-RSS (feeds) ist ungeprüft (Container ohne Netz): fällt er dauerhaft aus, steht das im Status – dann hier entfernen.",
+        "maxAlterTage": 30,
+        "sofortBisTage": 14,
+        "suchen": ["Remix-Wettbewerb", "Remix Contest Stems elektronisch", "remix contest synthpop"],
+        "suchenEnglisch": ["remix contest synthpop", "remix contest synthwave", "remix contest 80s", "remix contest italo disco", "remix contest darkwave", "remix competition stems"],
+        "feeds": [
+          { "name": "RemixComps", "url": "https://www.remixcomps.com/feed/", "maxAlterTage": 30 }
+        ],
+        "contestWoerter": ["remix contest|remix-contest|remixcontest|remix competition|remix-competition|remix comp|remix-wettbewerb|remixwettbewerb|remix wettbewerb|remix challenge|remix-challenge|remixchallenge"],
+        "genreWoerter": ["synthpop|synth-pop|synth pop|synthie-pop|synthiepop", "synth|synthesizer", "synthwave|retrowave|outrun", "80s|80er|eighties|80's", "italo", "euro disco|eurodisco|euro-disco|disco", "electro|elektro|electronic|elektronisch|electronica", "darkwave|dark wave|dark-wave|coldwave|cold wave|post-punk|postpunk", "new wave|newwave|new-wave", "depeche mode|erasure|pet shop boys|a-ha|alphaville|ultravox|kraftwerk|new order|human league|soft cell|camouflage|wolfsheim|de/vision|and one|mesh|covenant|omd|orchestral manoeuvres|yazoo|tears for fears|eurythmics|gary numan|modern talking|sandra|kim wilde|the cure|duran duran"],
+        "nichtWoerter": ["hip hop|hip-hop|hiphop", "rap|rapper|trap|drill|grime", "metal|metalcore|deathcore|death metal|black metal", "schlager", "country", "gospel", "k-pop|kpop"]
+      }
     },
     "nebenverdienst": {
       "aktiv": true,
@@ -130,7 +150,8 @@
       "fallenWoerter": ["gewinnspielservice|gewinnspiel-service|gewinnspieleintrag", "abo|abonnement", "kostenpflichtig", "kaufbeleg|kassenbon|kassenzettel|beim kauf|mit dem kauf|nach dem kauf|kauf eines|kauf von|mindestbestellwert|mindesteinkauf|aktionsprodukt|teilnahmegebühr|teilnahmegebuehr|einsatz von", "0900|0137", "sms", "lotto|lotterie|losnummer", "glücksrad|gluecksrad", "gewinnbenachrichtigung", "sie haben gewonnen", "versandkosten", "probanden|klinisch|medikament|studie", "umfrage gegen", "paysafe", "krypto"]
     },
     "praemien": {
-      "aktiv": true,
+      "aktiv": false,
+      "_aktiv": "Aus seit 07.11.2026 (Xander: „Prämien & Freunde werben“ – Strom, Bank, Konto, Freunde werben – komplett raus). Die Regeln unten nutzt weiter das Modul deals für Geld-zurück/Cashback (deals.cashback).",
       "intervallStunden": 3,
       "_hinweis": "Prämien & Freunde werben. Netto = Prämie − Kosten (Gebühren × Laufzeit, Versand). Sortiert nach Netto pro Stunde Aufwand. Sofort-Push nur ab sofortAbNetto € netto oder Gratis-Produkt ohne Haken ab gratisSofortAbWert €, höchstens maxSofortProLauf pro Lauf.",
       "feeds": [
