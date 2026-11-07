@@ -77826,9 +77826,10 @@ function vd4Pick(cx, cy) {
 
 /* ---------- Bild ---------- */
 // visible: no sheet, menu or video over it, the page in front; a hit test on its middle (toasts and small windows do not count)
+// cheap (every frame): the page in front, no video job, no sheet or menu over the app
+const vd4Free = () => !(document.hidden || VV.open || VV.busy || VV.off || UI.vvOff || R.editor || (EL.menu && EL.menu.classList.contains('open')));
 function vd4Vis() {
-  const w = VD4.el; if (!w || !w.isConnected || document.hidden || VV.open || VV.busy || VV.off || UI.vvOff || R.editor) return false;
-  if (EL.menu && EL.menu.classList.contains('open')) return false;
+  const w = VD4.el; if (!w || !w.isConnected || !vd4Free()) return false;
   const r = w.getBoundingClientRect(); if (r.width < 4 || r.height < 4) return false;
   const e = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
   return !!e && (w.contains(e) || !!(e.closest && e.closest('#popLayer,#toast,#bub,.drg-ghost,.ue-ghost')));
@@ -77887,12 +77888,13 @@ function vd4Frame() {
   const now = performance.now();
   if (now - VD4.tChk >= VD4_CHK) { VD4.tChk = now; vd4Check(); }
   if (!VD4.vis || VD4.drag && VD4.drag.mv && !R.playing) return;
+  if (!vd4Free()) { VD4.vis = false; return; }                   // ein Blatt ging gerade auf: sofort kein Bild (nicht erst beim nächsten Blick)
   if (vd4Live()) { if (now - VD4.t < 1000 / (rec.state !== 'off' || R.songRec ? VD4_REC : VD4_FPS) - 4) return; }
   else if (!VD4.pend) return;
   VD4.pend = false; VD4.t = now; vd4Draw(vd4Live());
 }
 function vd4Check() {
-  const lk = [window.innerWidth, window.innerHeight, UI.songView ? 1 : 0, NT(), SV.rulerH | 0, vvPrefs().fmt, EL.partBar && EL.partBar.parentNode === EL.gridArea ? 1 : 0].join('|');
+  const ga = EL.gridArea, lk = [window.innerWidth, window.innerHeight, ga.clientWidth, ga.clientHeight, UI.songView ? 1 : 0, NT(), SV.rulerH | 0, SV.w | 0, SV.h | 0, vvPrefs().fmt, EL.partBar && EL.partBar.parentNode === ga ? 1 : 0].join('|');   // nach dem Neu-Auslegen von Matrix/Song
   if (lk !== VD4.lay && !VD4.drag) { VD4.lay = lk; vd4Place(false); }
   const vis = vd4Vis(); if (vis !== VD4.vis) { VD4.vis = vis; if (vis) VD4.pend = true; }
   if (!vis) return;

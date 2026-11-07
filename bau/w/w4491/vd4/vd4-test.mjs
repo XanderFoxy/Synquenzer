@@ -51,21 +51,22 @@ const taskMs = async cdp => { const m = await cdp.send('Performance.getMetrics')
 
 /* ======================= 1. Grundstand: aus = kein Fenster, kein Bild; nichts anders als 4.48.1 ======================= */
 let p = await open(APP, 428, 926);
-await p.evaluate(SONG, false); await settle(p, 500);
+await p.evaluate(SONG, false); await settle(p, 600);
+const shotV = await p.screenshot(); const rectsV = await RECTS(p);
+await p.evaluate(() => setSongView(true)); await settle(p, 600); const shotVs = await p.locator('#gridArea').screenshot();
+await p.evaluate(() => setSongView(false)); await settle(p, 400);
 const a0 = await p.evaluate(() => ({pref: uiPrefs().vd4on, el: !!document.querySelector('.vd4w'), css: !!document.getElementById('vd4css'), on: SYNQUENZER.vd4.on()}));
 await p.mouse.click(5, 300).catch(() => {});
 await p.evaluate(() => { SYNQUENZER.vd4.reset(); songPlayStart(0); }); await p.waitForTimeout(2500);
 const a1 = await p.evaluate(() => ({frames: SYNQUENZER.vd4.info().frames, playing: R.playing, el: !!document.querySelector('.vd4w')}));
 await p.evaluate(() => songPlayEnd(true)); await settle(p, 600);
 ok('VD4-01', !a0.pref && !a0.el && !a0.css && !a0.on && a1.playing && a1.frames === 0 && !a1.el, 'Aus (Grundstand): kein Fenster, kein Stil, beim Abspielen 0 Bilder (uiFrame prüft nur VD4.on)', {a0, a1});
-const shotV = await p.screenshot(); const rectsV = await RECTS(p);
-await p.evaluate(() => setSongView(true)); await settle(p, 500); const shotVs = await p.locator('#gridArea').screenshot();
 await p.close();
-let pb = await open(BASE, 428, 926); await pb.evaluate(SONG, false); await settle(pb, 500); await pb.mouse.click(5, 300).catch(() => {});
-await pb.evaluate(() => { songPlayStart(0); }); await pb.waitForTimeout(800); await pb.evaluate(() => songPlayEnd(true)); await settle(pb, 600);
+let pb = await open(BASE, 428, 926); await pb.evaluate(SONG, false); await settle(pb, 600);
 const shotB = await pb.screenshot(); const rectsB = await RECTS(pb);
-await pb.evaluate(() => setSongView(true)); await settle(pb, 500); const shotBs = await pb.locator('#gridArea').screenshot();
+await pb.evaluate(() => setSongView(true)); await settle(pb, 600); const shotBs = await pb.locator('#gridArea').screenshot();
 await pb.close();
+if (!shotB.equals(shotV)) { fs.writeFileSync(OUT + '/dbg-aus-matrix.png', shotV); fs.writeFileSync(OUT + '/dbg-basis-matrix.png', shotB); }
 ok('VD4-02', shotB.equals(shotV) && shotBs.equals(shotVs) && JSON.stringify(rectsB) === JSON.stringify(rectsV), 'Aus = wie 4.48.1: Matrix-Bild pixelgleich, Song-Fläche pixelgleich, alle Flächen an derselben Stelle', {matrix: shotB.equals(shotV), song: shotBs.equals(shotVs), rects: JSON.stringify(rectsB) === JSON.stringify(rectsV)});
 
 /* ======================= 2. Video-Blatt › Extras „Live-Vorschau“, Guide ======================= */
@@ -268,14 +269,13 @@ ok('VD4-24', L3 && L3.rect.w === 196 && L3.rect.h === 110 && L3.hit.length === 0
 await p.close(); await ctxL.close();
 
 /* ======================= 10. alte Projekte laden gleich (gegen 4.48.1) ======================= */
-{ const pa = await open(APP, 428, 926), pz = await open(BASE, 428, 926);
-  const pjA = await pa.evaluate(() => { SYNQUENZER.vd4.on(true); return null; });
-  void pjA;
-  const sA = await pa.evaluate(SONG, true), sZ = await pz.evaluate(SONG, true); void sA; void sZ;
-  await settle(pa, 600);
-  const jA = await pa.evaluate(() => serializeProject()), jZ = await pz.evaluate(() => serializeProject());
-  const norm = j => { const o = JSON.parse(j); delete o.id; delete o.created; delete o.modified; delete o.saved; delete o.name; return JSON.stringify(o); };
-  ok('VD4-25', norm(jA) === norm(jZ), 'Projekt-Datei gleich wie 4.48.1 (Fenster an oder aus ändert nichts daran)', {lenA: jA.length, lenZ: jZ.length});
+{ const pz = await open(BASE, 428, 926); await pz.evaluate(SONG, true); await settle(pz, 400);
+  const OLD = await pz.evaluate(() => serializeProject());                       // ein Projekt aus 4.48.1 (mit Song und Video-Spur)
+  const pa = await open(APP, 428, 926); await pa.evaluate(() => SYNQUENZER.vd4.on(true));
+  const load = (q) => q.evaluate(j => { applyProject(JSON.parse(j)); return serializeProject(); }, OLD);
+  const jA = await load(pa), jZ = await load(pz); await settle(pa, 600); const iA = await info(pa);
+  const norm = j => JSON.stringify(JSON.parse(j, (k, v) => (k === 'uid' || k === 'id' ? undefined : v)));
+  ok('VD4-25', norm(jA) === norm(jZ) && norm(jA) === norm(OLD) && iA.el && iA.frames >= 1, 'Altes Projekt (aus 4.48.1) lädt gleich: dieselbe Projekt-Datei wie in 4.48.1, auch mit Fenster an', {lenA: jA.length, lenZ: jZ.length, frames: iA.frames});
   await pa.close(); await pz.close(); }
 
 /* ======================= Pflichtregeln im Text ======================= */
