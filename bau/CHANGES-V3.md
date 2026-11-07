@@ -1,3 +1,10 @@
+## 4.47.0 — Werkzeugkasten: Standardfiguren je Genre
+
+- **Werkzeugkasten** (Clip-Blatt [Werkzeugkasten ▾] oder ROLLE [Werkzeugkasten] neben [Spielweise]): 39 professionelle Standardfiguren – Bass 10, Akkord-Stabs 8, Sequenz/Arp 6, Pads 4, Lead-Füller 5, Drums-Füller 6 – für Disco-Pop/Euro-Disco, Eurodance, Synth-Pop, New Jack Swing, House, Detroit, Hi-NRG, Italo. Z. B. Offbeat-Staccato-16tel mit Echo, Disco-Galopp, Oktav-Disco-Bass, Eurodance-Rolling-Bass, Hi-NRG-16tel, Italo-Arp-Bass, Disco-Brass-Stabs, weicher Fanfaren-Stack, House-Piano-Stabs, Gated-Pad, Antwort-Läufe zwischen Gesangszeilen, Snare-Wirbel, Clap-Aufbau.
+- Folgt den Akkorden (Akkord-Zeile der Szene, sonst aus den Noten erkannt), Swing aus dem Stil, sinnvolle Lage. **Vorschau** im Zusammenhang (leise mit den anderen Clips), **[Einsetzen]** als neue Version / neuer Clip / ersetzen – ein ↶.
+- **[mit Klang]**: passender Werksklang + Echo (z. B. 1/8 punktiert für den Disco-Bass) – 6 neue Klänge in der Kategorie „Werkzeugkasten“. Ohne: nur das Muster mit deinem Klang. (Echo ist ein gemeinsamer Bus – wirkt auf alle Spuren mit Echo-Anteil, mit ↶.)
+Tests: Regeln, acorn 0 / doppelte Schlüssel 0, Rauchtest grün; Werkzeugkasten 53/53, Harmonie 47/47 (Knopf da), LAUF 48/49 (Popup-✕-Messpunkt wie 4.46.0).
+
 ## 4.46.0 — FANG-Teil mit Namen, ✕ überall, Video-Regie mit Ereignissen, Ziehen & Tauschen, North-Kick
 
 - **FANG im laufenden Teil:** das Blatt „Teil überarbeitet“ hat wieder die Namen: Intro, Strophe, Pre, Refrain, Bridge, Break, Outro und „✎ frei“ – ein Tipp legt den neuen Teil an; ist der Name schon vergeben, kommt die zweite Ebene „＋ Strophe 2 | ⟳ Strophe ersetzen“.
