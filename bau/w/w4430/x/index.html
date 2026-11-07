@@ -67229,7 +67229,7 @@ function vvDrawMatrix(g, LW, LH, st) {
     // the track head (.th): raised button, colour bar, NAME, sound (where two lines fit), ⇅ / FEST / lock / mic at the bottom right
     const hx = 4, hy = y + 2, hw = labW - 6, hh = chh - 4;
     if (vk4In(vis, hx, hy, hw, hh)) {
-      let sl = ''; try { sl = soundLabel(tr); } catch (e) { sl = ''; }
+      let sl = ''; try { sl = tr.stimme ? 'STIMME · Audio' : soundLabel(tr); } catch (e) { sl = ''; }   // as the app's head (its 🎤 is the drawn mic at the bottom right)
       const sym = tr.stimme ? 'mic' : tr.kind === 'drum' && !(S.settings && S.settings.harmony && S.settings.harmony.drums) ? 'lock' : tr.kind === 'synth' && !tr.follow ? 'fest' : 'f', nm0 = String(tr.name || '').toUpperCase();
       P.heads.push({i, nm: nm0});
       vk4Put(g, vis, 'th|' + nm0 + '|' + sl + '|' + sym + '|' + tc + '|' + !!tr.mute, hx, hy, hw, hh, o => {
@@ -67275,7 +67275,7 @@ function vvDrawMatrix(g, LW, LH, st) {
      Durchlaufs (src.nt, wie VV3/VK3 – so, wie es klingt); ohne Durchlauf (Vorschau) die Schläge des Clips. Kein Zufall, keine Uhr.
    - Nur was im Bild liegt, wird gezeichnet (9:16-Kamera: der Rest der Matrix liegt außerhalb des Fensters). */
 const VK4_D = .16, VK4_PX = 8e6;
-const VK4 = {spr: new Map(), rects: new Map(), px: 0, gen: -1, stat: {hit: 0, miss: 0, direct: 0}, probe: null};
+const VK4 = {spr: new Map(), rects: new Map(), px: 0, gen: -1, stat: {hit: 0, miss: 0, direct: 0}, probe: null, noc: false};   // noc: no context (canvas memory full) – draw directly
 // the visible part of the picture in drawing points (the canvas through the current transform), the pixels per point, the transform;
 // L = the scale when the view is not zoomed (the whole width: 16:9, Balken, preview; the whole height: 9:16 camera at zoom 1) – then the
 // resting parts are copied 1 : 1; 0 while the 9:16 camera zooms (its scale changes from picture to picture)
@@ -67283,11 +67283,11 @@ function vk4Vis(g, C) {
   if (VK4.gen !== C.gen) { vk4Clear(); VK4.gen = C.gen; }                       // fonts loaded later: draw the pictures again
   let m = null; try { m = g.getTransform(); } catch (e) { m = null; }
   if (!m || m.b || m.c || !(m.a > 0) || !(m.d > 0) || !g.canvas) return {x0: -1e9, y0: -1e9, x1: 1e9, y1: 1e9, sc: m && m.a > 0 ? m.a : 1, m: null, L: 0};
-  const L = Math.abs(m.a - m.d) < 1e-6 && (Math.abs(m.a - g.canvas.width / 640) < 1e-4 || Math.abs(m.a - g.canvas.height / VV_AR) < 1e-4) ? m.a : 0;
+  const L = !VK4.noc && Math.abs(m.a - m.d) < 1e-6 && (Math.abs(m.a - g.canvas.width / 640) < 1e-4 || Math.abs(m.a - g.canvas.height / VV_AR) < 1e-4) ? m.a : 0;
   return {x0: -m.e / m.a, y0: -m.f / m.d, x1: (g.canvas.width - m.e) / m.a, y1: (g.canvas.height - m.f) / m.d, sc: Math.max(m.a, m.d), m, L};
 }
 const vk4In = (v, x, y, w, h) => x < v.x1 && x + w > v.x0 && y < v.y1 && y + h > v.y0;
-function vk4Clear() { for (const e of VK4.spr.values()) { e.cv.width = e.cv.height = 0; } VK4.spr.clear(); VK4.px = 0; }   // width 0: iOS frees the memory at once
+function vk4Clear(re) { for (const e of VK4.spr.values()) { e.cv.width = e.cv.height = 0; } VK4.spr.clear(); VK4.px = 0; if (re) VK4.noc = false; }   // width 0: iOS frees the memory at once; re: the sheet closes (vvClose) – try pictures again next time
 // a resting part (w × h points at x, y), drawn by fn(o) in its own points: at a video scale from its picture (drawn once, copied on whole
 // pixels); else (9:16 camera zooming) drawn directly – a scaled copy of big pictures costs more than drawing them
 function vk4Put(g, vis, key, x, y, w, h, fn) {
@@ -67298,7 +67298,9 @@ function vk4Put(g, vis, key, x, y, w, h, fn) {
   else {
     VK4.stat.miss++;
     const W = Math.max(1, Math.ceil(w * L)), H = Math.max(1, Math.ceil(h * L)), cv = document.createElement('canvas'); cv.width = W; cv.height = H;
-    const o = cv.getContext('2d'); o.setTransform(L, 0, 0, L, 0, 0); fn(o);
+    const o = cv.getContext('2d');
+    if (!o) { cv.width = cv.height = 0; VK4.noc = true; vk4Clear(); VK4.stat.direct++; g.save(); g.translate(x, y); fn(g); g.restore(); return; }   // canvas memory full (iOS: null): free the pictures, draw directly
+    o.setTransform(L, 0, 0, L, 0, 0); fn(o);
     e = {cv, px: W * H}; M.set(key, e); VK4.px += e.px;
     while (VK4.px > VK4_PX && M.size > 1) { const k0 = M.keys().next().value, z = M.get(k0); M.delete(k0); VK4.px -= z.px; z.cv.width = z.cv.height = 0; }
   }
@@ -67954,6 +67956,7 @@ function vvOpen() {
 }
 function vvClose() {
   if (!VV.open) return;
+  vk4Clear(1);                                                      // VK4: the matrix pictures (≤ 8 Mpx canvas memory) go with the sheet
   if (VV.busy) VV.cancel = true;
   vvPrevStop();
   VV.open = false; if (VV.el) { VV.el.classList.remove('open'); VV.el.innerHTML = ''; }
