@@ -80009,7 +80009,7 @@ function konMarkSheetPaint(p, m) {   // KONUX: eine Zeile mit Bild-Knopf „Zu T
   if (!p._kon) { p._kon = true; onTap(p, b => konMarkTap(b), 'button[data-kon]'); }
   const bb = p.querySelector('.ms-bb'); if (!bb) return;
   const kn = konOf(m.id);
-  bb.insertAdjacentHTML('afterend', `<div class="ms-r kon-r"><button class="rb ms-b kx-entry" data-kon="ux" aria-label="Als Block gruppieren">${KXI.blk}▣ Block …</button>` +
+  bb.insertAdjacentHTML('afterend', `<div class="ms-r kon-r"><button class="rb ms-b kx-entry" data-kon="ux" aria-label="Als Block gruppieren">${KXI.blk}Block …</button>` +
     (kn ? `<button class="rb ms-b kx-entry" data-kon="back" aria-label="Den Zustand vor dem Teil-Machen zurückholen">${KXI.back}Zurückholen …</button>` : '') + `</div>`);
 }
 function konMarkTap(b) {   // KONUX
@@ -80737,7 +80737,7 @@ const KONUX_API = {
   konuxName: n => { if (!KX.el) return false; KX.name = n == null ? null : String(n); const i = KX.el.querySelector('.kx-in'); if (i) i.value = KX.name && !(KX.el.querySelector(`.cp-c[data-n="${CSS.escape(KX.name)}"]`)) ? KX.name : ''; konuxSync(KX.el); return true; },
   konuxGo: () => konuxGo(), konuxClose: () => { if (KX.el) closePop(); return true; },
 };
-const konuxRangeItem = () => '<button class="rb kx-entry" data-a="konux" aria-label="Als Block gruppieren">' + KXI.blk + '▣ Block …</button>';   // WEGE (D1)
+const konuxRangeItem = () => '<button class="rb kx-entry" data-a="konux" aria-label="Als Block gruppieren">' + KXI.blk + 'Block …</button>';   // WEGE (D1)
 /* /KONUX */
 /* S0/S1/S2 Nachprüfung (QA-Befunde D1–D7) */
 // D3 marksCut: a mark trimmed at its front / split keeps its content; mark.off (relative to the mark start) is moved along
@@ -82376,7 +82376,7 @@ Object.assign(SYNQUENZER, UIX1_API);                        // UIX1: FANG-Teil-N
 Object.assign(SYNQUENZER, UX2_API);                         // UX2: Ziehen in der Matrix, Einfügen mit Lupe
 /* ===== WEGE-BEGIN (Paket WEGE, Xander 07.11. – Inventar Abschnitte 2–5, „Ja, mach das mal bitte so“): Doppel aufräumen, Wege kürzer =====
    D1  Ein Knopf „Zusammenfassen …“ (Namens-Chips sofort, intern immer konDo → [Zurückholen] geht immer): Marken-Blatt (Reiter Teil),
-       Bereich-Leiste ❖. „▣ Block …“ öffnet das geführte Blatt nur noch für Block und Zurückholen. songRange('asPart') = konDo.
+       Bereich-Leiste ❖. „Block …“ öffnet das geführte Blatt nur noch für Block und Zurückholen. songRange('asPart') = konDo.
    D2  Eine Zeile „Small │ Full“ (Reiter Klang & Groove). Small = je Drum-Stelle die als Small markierte Version; gibt es keine,
        die Ausdünnung von „Leicht“ (sx11). Dazu wie bisher die Spuren, die in Small aus sind (mark.vr). Full = die als Full markierte
        Version, sonst zurück auf das Volle (sx11 „Voll“; eine Small-Version weicht der dichtesten anderen). Ein ↶. Alte Marken
@@ -82836,7 +82836,7 @@ function wegeGuide(L) {
   set('imvideo', {n: 'Im Video (je Clip)'});
   L.push(
     E('scrub', 'Mithören (Scrubbing)', 'Song-Ansicht › die ▼-Marke in der Taktleiste ziehen', 'Beim Ziehen klingt der Schlag unter dem Finger kurz an; losgelassen startet ▶ dort.', 'mithoeren scrubbing scrub wischen hoeren marke positionsmarke', G.song(false), () => SV.wrap),
-    E('block', 'Block (Takte gruppieren)', 'Marken-Blatt › Teil › ▣ Block … · Bereich-Leiste ⋯', 'Mehrere Teile zusammen verschieben und kopieren – der Inhalt bleibt, wie er ist.', 'block gruppieren gruppe zusammen schieben', songOr(() => wegeMarkOpen('t'), G.song(false)), () => (UI.pop && UI.pop.name === 'mark' ? UI.pop.el.querySelector('.kx-entry') : SV.wrap)),
+    E('block', 'Block (Takte gruppieren)', 'Marken-Blatt › Teil › Block … · Bereich-Leiste ⋯', 'Mehrere Teile zusammen verschieben und kopieren – der Inhalt bleibt, wie er ist.', 'block gruppieren gruppe zusammen schieben', songOr(() => wegeMarkOpen('t'), G.song(false)), () => (UI.pop && UI.pop.name === 'mark' ? UI.pop.el.querySelector('.kx-entry') : SV.wrap)),
     E('vteil', 'Im Video (je Teil / Bereich)', 'Marken-Blatt › Video › Im Video ▸', 'Öffnet die Video-Spur genau an dieser Stelle: Auto, App, Song, Matrix, Klavier, Mäusekino, Gerät, Noten, Tastatur, Text.', 'im video teil bereich regie ansicht', songOr(() => wegeMarkOpen('v'), G.song(false)), () => (UI.pop && UI.pop.name === 'mark' ? UI.pop.el.querySelector('.wg-vb') : SV.wrap)),
     E('open', 'Öffnen … (.json / .zip)', 'Menü › Projekt › Öffnen … · Export › Projekt', 'Öffnet eine Projektdatei oder ein Projekt mit allen Audios (ZIP).', 'oeffnen laden datei container zip json import', G.menu, 'Öffnen …'),
     E('boxsave', 'Sichern mit allen Audios', 'Menü › Export › Projekt', 'Eine ZIP mit Projekt, allen Audio-Takes und eigenen Klängen.', 'container zip sichern audios backup', () => { ui1Home(); va1Sheet('box'); return true; }, 'Sichern mit allen Audios'),
