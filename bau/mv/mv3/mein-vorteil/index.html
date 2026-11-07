@@ -265,6 +265,7 @@
     <button type="button" role="tab" id="t-angebote" data-reiter="angebote" aria-controls="p-angebote" aria-selected="true">Angebote<span class="n" hidden></span></button>
     <button type="button" role="tab" id="t-vorteile" data-reiter="vorteile" aria-controls="p-vorteile" aria-selected="false" tabindex="-1">Vorteile<span class="n" hidden></span></button>
     <button type="button" role="tab" id="t-konzerte" data-reiter="konzerte" aria-controls="p-konzerte" aria-selected="false" tabindex="-1">Konzerte<span class="n" hidden></span></button>
+    <button type="button" role="tab" id="t-filme" data-reiter="filme" aria-controls="p-filme" aria-selected="false" tabindex="-1">Filme</button>
   </div>
 </nav>
 
@@ -272,6 +273,7 @@
   <section id="p-angebote" role="tabpanel" aria-labelledby="t-angebote"><p class="leer">Lade Angebote …</p></section>
   <section id="p-vorteile" role="tabpanel" aria-labelledby="t-vorteile" hidden><p class="leer">Lade Vorteile …</p></section>
   <section id="p-konzerte" role="tabpanel" aria-labelledby="t-konzerte" hidden><p class="leer">Lade Konzerte …</p></section>
+  <section id="p-filme" role="tabpanel" aria-labelledby="t-filme" hidden><p class="leer">Lade Filme …</p></section>
 </main>
 
 <dialog id="push-hilfe" aria-labelledby="push-titel">
@@ -298,6 +300,7 @@ const URLS = {
   kstatus: RAW + 'konzerte-daten/konzerte/data/status.json',
 };
 const REITER = ['angebote', 'vorteile', 'konzerte'];
+const TABS = [...REITER, 'filme']; // „Filme“ lädt seine Daten selbst (filme.js, erst beim ersten Öffnen)
 const NAMEN = { angebote: 'Angebote', vorteile: 'Vorteile', konzerte: 'Konzerte' };
 // Daten-Stand gilt als alt (rot), wenn der letzte Lauf so lange her ist (Schnäppchen/Vorteile stündlich, Konzerte alle 3 h)
 const ALT_STUNDEN = { angebote: 3, vorteile: 3, konzerte: 7 };
@@ -407,6 +410,7 @@ function lade() {
   if (laeuft) return;
   laeuft = REITER.length;
   $('neu').setAttribute('aria-busy', 'true');
+  filmeNeu();
   for (const q of REITER) {
     LADER[q]().then(d => {
       // Konzerte: eine Hälfte gestört -> die gemerkte Hälfte behalten
@@ -1048,11 +1052,27 @@ function pruefeEnden(r) {
 }
 const zeichneAlles = () => zeichne('alle');
 
+// --- Filme: alles in filme.js (Logik + CSS), Skript und Daten erst beim ersten Öffnen des Reiters --------------------
+let filmeSkript = null;
+function starteFilme() {
+  if (filmeSkript) return;
+  filmeSkript = document.createElement('script');
+  filmeSkript.src = 'filme.js';
+  filmeSkript.onload = () => window.MeinVorteilFilme?.start($('p-filme'));
+  filmeSkript.onerror = () => {
+    filmeSkript.remove(); filmeSkript = null; // ↻ versucht es noch einmal
+    $('p-filme').innerHTML = '<p class="leer">Filme gerade nicht erreichbar. Später noch einmal auf ↻ tippen.</p>';
+  };
+  document.head.appendChild(filmeSkript);
+}
+function filmeNeu() { if (window.MeinVorteilFilme?.gestartet) MeinVorteilFilme.lade(); else if (aktiv === 'filme') starteFilme(); }
+
 let aktiv = 'angebote';
 function zeigeReiter(r, { merken = true, fokus = false } = {}) {
-  if (!REITER.includes(r)) r = 'angebote';
+  if (!TABS.includes(r)) r = 'angebote';
   aktiv = r;
-  for (const x of REITER) {
+  if (r === 'filme') starteFilme();
+  for (const x of TABS) {
     const t = $('t-' + x), p = $('p-' + x);
     const an = x === r;
     t.setAttribute('aria-selected', String(an));
@@ -1065,7 +1085,7 @@ function zeigeReiter(r, { merken = true, fokus = false } = {}) {
     if (location.hash !== '#' + r) history.replaceState(null, '', '#' + r);
   }
 }
-function reiterAusHash() { const h = location.hash.replace('#', '').toLowerCase(); return REITER.includes(h) ? h : null; }
+function reiterAusHash() { const h = location.hash.replace('#', '').toLowerCase(); return TABS.includes(h) ? h : null; }
 
 document.querySelector('.segment').addEventListener('click', ev => {
   const b = ev.target.closest('[data-reiter]');
@@ -1075,9 +1095,9 @@ document.querySelector('.segment').addEventListener('click', ev => {
   if (war !== aktiv) window.scrollTo(0, 0);
 });
 document.querySelector('.segment').addEventListener('keydown', ev => {
-  const i = REITER.indexOf(aktiv);
-  if (ev.key === 'ArrowRight') { zeigeReiter(REITER[(i + 1) % REITER.length], { fokus: true }); ev.preventDefault(); }
-  if (ev.key === 'ArrowLeft') { zeigeReiter(REITER[(i + REITER.length - 1) % REITER.length], { fokus: true }); ev.preventDefault(); }
+  const i = TABS.indexOf(aktiv);
+  if (ev.key === 'ArrowRight') { zeigeReiter(TABS[(i + 1) % TABS.length], { fokus: true }); ev.preventDefault(); }
+  if (ev.key === 'ArrowLeft') { zeigeReiter(TABS[(i + TABS.length - 1) % TABS.length], { fokus: true }); ev.preventDefault(); }
 });
 window.addEventListener('hashchange', () => { const r = reiterAusHash(); if (r && r !== aktiv) { zeigeReiter(r); window.scrollTo(0, 0); } });
 
