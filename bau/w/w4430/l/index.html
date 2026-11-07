@@ -72460,7 +72460,7 @@ function konDo(a, e, name) {
   if (m) { const kn = {mark: m.id, part: m.part, at: a, len: e - a, sig: konSig(song, a, e), mk, cut, ch}; if (ks.length) kn.ks = ks; if (kl.kl.length) kn.kl = kl.kl; (song.kons || (song.kons = [])).push(kn); }
   undoPush({kind: 'group', label: 'Konsolidiert: ' + nm, items: [{kind: 'part', before: bp}, {kind: 'song', before: bs}].concat(kl.items)});   // KL1: + die erweiterten Clips
   partsChanged(); songChanged();
-  return {part: k, name: nm, mark: m ? m.id : null};
+  return {part: k, name: nm, mark: m ? m.id : null, ext: kl.kl.length};   // KL1: ext = erweiterte Clips
 }
 // API zurückholen(markId): the Ursprung comes back — unchanged and in place: exactly the marks from before; else the stored range
 // replaces what is there now (all notes / clips, nothing rendered). The part goes when no mark uses it any more. One undo group
@@ -73316,7 +73316,7 @@ function konuxGo() {
   let res = false;
   if (pick === 'part') {
     res = konDo(s.a, s.e, nm);
-    if (res) { SV.sel = null; SV.mark = null; toast('Neuer Teil ' + res.name + ' · ' + rng, {label: 'Rückgängig', fn: () => undo()}); }
+    if (res) { SV.sel = null; SV.mark = null; toast('Neuer Teil ' + res.name + ' · ' + rng + (res.ext ? ' · ' + (res.ext === 1 ? 'Clip' : res.ext + ' Clips') + ' erweitert' : ''), {label: 'Rückgängig', fn: () => undo()}); }   // KL1
   } else if (pick === 'blk') {
     res = konBlkMake(s.a, s.e, nm);
     if (!res) toast('Dort liegt schon ein Block'); else { SV.sel = null; SV.blk = null; toast(res.name + ' · ' + rng, songUndoAct()); }

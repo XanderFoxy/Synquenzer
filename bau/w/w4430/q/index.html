@@ -4789,6 +4789,8 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 :is(#synthSheet,#drumSheet) .sh-body.qf1s.pan-y::-webkit-scrollbar{display:none}
 .pg.percpg.pan-y{overscroll-behavior:contain}
 .pop{overscroll-behavior:contain}
+/* quer: ↶ ↷ ✕ stehen in jedem Editor-Blatt am rechten Rand (wie in §2.3 gedacht); vorher wanderte das ✕ je nach Klangerzeugung mit der Kopfzeile (Drums, North, VA) */
+@media (orientation:landscape){.sheet.ed .sh-head .r1 > .ur:not(.ur ~ .ur){margin-left:auto}}
 /* QF1-CSS-END */
 /* SX9-CSS-BEGIN */
 .plsheet .sx9-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 6px}

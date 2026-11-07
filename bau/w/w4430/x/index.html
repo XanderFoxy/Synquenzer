@@ -67229,7 +67229,7 @@ function vvDrawMatrix(g, LW, LH, st) {
     // the track head (.th): raised button, colour bar, NAME, sound (where two lines fit), ⇅ / FEST / lock / mic at the bottom right
     const hx = 4, hy = y + 2, hw = labW - 6, hh = chh - 4;
     if (vk4In(vis, hx, hy, hw, hh)) {
-      let sl = ''; try { sl = tr.stimme ? 'STIMME · Audio' : soundLabel(tr); } catch (e) { sl = ''; }   // as the app's head (its 🎤 is the drawn mic at the bottom right)
+      let sl = ''; try { sl = tr.stimme ? 'Audio' : soundLabel(tr); } catch (e) { sl = ''; }   // STIMME: the app's „🎤 STIMME · Audio“ (name line = STIMME, 🎤 = the drawn mic)
       const sym = tr.stimme ? 'mic' : tr.kind === 'drum' && !(S.settings && S.settings.harmony && S.settings.harmony.drums) ? 'lock' : tr.kind === 'synth' && !tr.follow ? 'fest' : 'f', nm0 = String(tr.name || '').toUpperCase();
       P.heads.push({i, nm: nm0});
       vk4Put(g, vis, 'th|' + nm0 + '|' + sl + '|' + sym + '|' + tc + '|' + !!tr.mute, hx, hy, hw, hh, o => {
@@ -67283,7 +67283,7 @@ function vk4Vis(g, C) {
   if (VK4.gen !== C.gen) { vk4Clear(); VK4.gen = C.gen; }                       // fonts loaded later: draw the pictures again
   let m = null; try { m = g.getTransform(); } catch (e) { m = null; }
   if (!m || m.b || m.c || !(m.a > 0) || !(m.d > 0) || !g.canvas) return {x0: -1e9, y0: -1e9, x1: 1e9, y1: 1e9, sc: m && m.a > 0 ? m.a : 1, m: null, L: 0};
-  const L = !VK4.noc && Math.abs(m.a - m.d) < 1e-6 && (Math.abs(m.a - g.canvas.width / 640) < 1e-4 || Math.abs(m.a - g.canvas.height / VV_AR) < 1e-4) ? m.a : 0;
+  const L = Math.abs(m.a - m.d) < 1e-6 && (Math.abs(m.a - g.canvas.width / 640) < 1e-4 || Math.abs(m.a - g.canvas.height / VV_AR) < 1e-4) ? m.a : 0;
   return {x0: -m.e / m.a, y0: -m.f / m.d, x1: (g.canvas.width - m.e) / m.a, y1: (g.canvas.height - m.f) / m.d, sc: Math.max(m.a, m.d), m, L};
 }
 const vk4In = (v, x, y, w, h) => x < v.x1 && x + w > v.x0 && y < v.y1 && y + h > v.y0;
@@ -67291,7 +67291,7 @@ function vk4Clear(re) { for (const e of VK4.spr.values()) { e.cv.width = e.cv.he
 // a resting part (w × h points at x, y), drawn by fn(o) in its own points: at a video scale from its picture (drawn once, copied on whole
 // pixels); else (9:16 camera zooming) drawn directly – a scaled copy of big pictures costs more than drawing them
 function vk4Put(g, vis, key, x, y, w, h, fn) {
-  if (!vis.L) { VK4.stat.direct++; g.save(); g.translate(x, y); fn(g); g.restore(); return; }
+  if (!vis.L || VK4.noc) { VK4.stat.direct++; g.save(); g.translate(x, y); fn(g); g.restore(); return; }
   const L = vis.L, M = VK4.spr; key += '@' + L.toFixed(4) + ':' + w.toFixed(2) + 'x' + h.toFixed(2);
   let e = M.get(key);
   if (e) { VK4.stat.hit++; M.delete(key); M.set(key, e); }                  // the most recent at the end (the oldest go first)
