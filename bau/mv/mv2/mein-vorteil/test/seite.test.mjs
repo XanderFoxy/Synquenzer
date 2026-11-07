@@ -126,6 +126,25 @@ const zahlIn = (page, ab) => page.locator(`.sprung a[data-ziel="${ab}"] .n`);
 // alles in geschlossenen Kästen eines Bereichs aufklappen (innerText zeigt sonst nur die Überschrift)
 const aufklappen = (page, sel) => page.evaluate(s => document.querySelectorAll(`${s} details`).forEach(d => (d.open = true)), sel);
 
+// Erfundene Krypto-Käufe (nie echte Zahlen!): BTC 600 € zu 60.000 € + 400 € für 0,006 BTC = 0,016 BTC für 1.000 € (Ø 62.500 €);
+// ETH 1.000 € zu 2.100 €, durch Auto Earn jetzt 0,5 ETH (im Plus ab 2.000 €)
+const KRYPTO_TEST = { v: 2, coins: { btc: { kaeufe: [{ betrag: 600, kurs: 60000 }, { betrag: 400, menge: 0.006 }], aktuell: null }, eth: { kaeufe: [{ betrag: 1000, kurs: 2100 }], aktuell: 0.5 } } };
+// Remix-Contests im Datenformat des Radars (Modul musik): zwei laufende, einer vorbei
+const REMIX_TEST = () => [
+  { id: 'rx-italo', kategorie: 'musik', titel: 'Italo disco label opens remix competition with stems', zeile: 'Remix-Contest · mit Stems · Einsendeschluss 31.12.2026', soGehts: 'Contest öffnen, Regeln lesen (Rechte, Format, Länge), Stems laden und den Remix vor dem Einsendeschluss hochladen.', link: 'https://news.google.com/rss/articles/rx-italo', quelle: 'Electronic Beats', wert: 85, sofort: false, grund: 'Remix-Contest', datum: '2026-10-29T15:40:00.000Z', bis: '2026-12-31T22:59:59.000Z', bisQuelle: 'text', ab: null, sichtbarBis: '2026-12-31T22:59:59.000Z', frist: '2026-12-31', preisfehler: false, extra: { art: 'remix', stems: true } },
+  { id: 'rx-synthpop', kategorie: 'musik', titel: 'Synthpop duo launches remix contest – download the stems', zeile: 'Remix-Contest · mit Stems · Einsendeschluss 20.11.2026', soGehts: 'Contest öffnen, Regeln lesen (Rechte, Format, Länge), Stems laden und den Remix vor dem Einsendeschluss hochladen.', link: 'https://news.google.com/rss/articles/rx-synthpop', quelle: 'Side-Line Magazine', wert: 95, sofort: true, grund: 'Remix-Contest', datum: '2026-10-30T09:12:00.000Z', bis: '2026-11-20T22:59:59.000Z', bisQuelle: 'text', ab: null, sichtbarBis: '2026-11-20T22:59:59.000Z', frist: '2026-11-20', preisfehler: false, extra: { art: 'remix', stems: true } },
+  { id: 'rx-vorbei', kategorie: 'musik', titel: 'Synthwave remix contest (abgelaufen)', zeile: 'Remix-Contest · Einsendeschluss 30.10.2026', soGehts: 'x x x x x x x x x x', link: 'https://news.google.com/rss/articles/rx-vorbei', quelle: 'Test', wert: 60, sofort: false, grund: 'Remix-Contest', datum: '2026-10-20T09:00:00.000Z', bis: '2026-10-30T22:59:59.000Z', bisQuelle: 'text', ab: null, sichtbarBis: '2026-10-30T22:59:59.000Z', frist: '2026-10-30', preisfehler: false, extra: { art: 'remix', stems: false } },
+];
+// Cashback im Datenformat des Radars (Modul deals, grund 'cashback'): passend (Snack, Kopfhörer) und unpassend (Waschmittel)
+const CASHBACK_TEST = () => [
+  { id: 'cb-haribo', kategorie: 'deals', titel: 'Haribo Goldbären gratis testen – Geld zurück', zeile: 'Geld zurück: 1,99 €', soGehts: 'Aktionsprodukt kaufen, Kassenbon hochladen.', link: 'https://www.mydealz.de/deals/haribo-gzg-1', quelle: 'Kaufland via mydealz Lebensmittel', wert: 40, sofort: false, grund: 'cashback', datum: '2026-10-31T08:00:00.000Z', bis: '2026-11-30T22:59:59.000Z', sichtbarBis: '2026-11-30T22:59:59.000Z', extra: { art: 'gzg', praemie: 1.99, netto: 1.99, haken: ['erst zahlen, Kassenbon hochladen, Geld kommt nach Wochen'] } },
+  { id: 'cb-kopfhoerer', kategorie: 'deals', titel: 'Cashback 5 € auf Kopfhörer bei Shoop', zeile: 'Cashback: 5,00 €', soGehts: 'Vorher im Cashback-Portal aktivieren.', link: 'https://www.mydealz.de/deals/cashback-5', quelle: 'Shoop via mydealz', wert: 45, sofort: false, grund: 'cashback', datum: '2026-10-31T08:00:00.000Z', bis: '2026-11-20T22:59:59.000Z', sichtbarBis: '2026-11-20T22:59:59.000Z', extra: { art: 'cashback', praemie: 5, netto: 5, haken: ['lohnt nur, wenn du das sowieso kaufst'] } },
+  { id: 'cb-ariel', kategorie: 'deals', titel: 'Ariel Pods gratis testen – Geld zurück', zeile: 'Geld zurück: 12,99 €', soGehts: 'Kassenbon hochladen.', link: 'https://www.mydealz.de/deals/ariel-gzg', quelle: 'mydealz', wert: 50, sofort: false, grund: 'cashback', datum: '2026-10-31T08:00:00.000Z', bis: '2026-11-30T22:59:59.000Z', sichtbarBis: '2026-11-30T22:59:59.000Z', extra: { art: 'gzg', praemie: 12.99, netto: 12.99, haken: [] } },
+];
+const kursGeladen = page => page.waitForFunction(() => /CoinGecko|Crypto\.com|Coinbase|nicht abrufbar/.test(document.querySelector('#i-krypto .kurs-stand')?.textContent || '') && !/wird aktualisiert/.test(document.querySelector('#i-krypto .kurs-stand').textContent));
+async function waitFor(fn, ms = 5000) { const t0 = Date.now(); while (!fn()) { if (Date.now() - t0 > ms) throw new Error('Zeitlimit beim Warten'); await new Promise(r => setTimeout(r, 25)); } }
+const alarmOffen = page => page.evaluate(() => document.getElementById('krypto-alarm').open);
+
 // Kein seitliches Scrollen, alles Tippbare mindestens 44 × 44 px (auch in aufgeklappten Kästen)
 async function pruefeLayout(page, wo) {
   await page.evaluate(() => document.querySelectorAll('details').forEach(d => (d.open = true)));
@@ -853,6 +872,221 @@ test('Push-Hilfe quer (926 × 428): „In ntfy öffnen“ und „Schließen“ s
   await page.screenshot({ path: join(SHOTS, 'push-hilfe-quer.png') });
   assert.deepEqual(fehler, []);
   await ctx.close();
+});
+
+test('Krypto: Käufe -> Kurs, Wert, Gewinn/Verlust in € und %, Ø-Kaufkurs, Gewinnschwelle; aktuelle Menge zählt', { skip: ohnePw }, async () => {
+  const { ctx, page, fehler } = await oeffne({ satz: 'vertrag', krypto: KRYPTO_TEST });
+  await kursGeladen(page);
+  const btc = nbsp(await page.locator('#i-krypto [data-coin="btc"]').innerText());
+  assert.match(btc, /Bitcoin\s*BTC\s*67\.971 €/);
+  assert.match(btc, /Im Gewinn \+87,54 € \(\+8,8 %\)/);
+  assert.match(btc, /Wert jetzt\s*1\.087,54 €/);
+  assert.match(btc, /Einsatz\s*1\.000,00 €/);
+  assert.match(btc, /Ø-Kaufkurs\s*62\.500 €/);
+  assert.match(btc, /Im Plus ab\s*62\.500 €/);
+  assert.match(btc, /Menge 0,016 BTC/);
+  const eth = nbsp(await page.locator('#i-krypto [data-coin="eth"]').innerText());
+  assert.match(eth, /Ø-Kaufkurs\s*2\.100 €/);
+  assert.match(eth, /Im Plus ab\s*2\.000 €/, 'Auto Earn (aktuelle Menge 0,5) senkt die Gewinnschwelle');
+  assert.match(eth, /Menge 0,5 ETH \(aktuelle Menge\)/);
+  assert.match(eth, /Im Gewinn \+2,2\d € \(\+0,2 %\)/);
+  // erster Blick: kein Pop-up, Zonen still gemerkt (nur Wörter)
+  assert.equal(await alarmOffen(page), false);
+  assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem('mein-vorteil-krypto-zone'))), { btc: 'hoch', eth: 'plus' });
+  assert.match(nbsp(await text(page, '#wichtig')), /₿ Bitcoin \+8,8 % \(\+87,54 €\)/);
+  assert.equal(await zahlIn(page, 'krypto').innerText(), '2');
+  // Kauf hinzufügen (Betrag + Kurs), Fehler bei fehlenden Angaben, wieder entfernen
+  await page.locator('#krypto-form > summary').click();
+  const form = page.locator('form.kauf-neu[data-coin="btc"]');
+  await form.getByRole('button', { name: 'Kauf hinzufügen' }).click();
+  assert.equal(await form.locator('.formfehler').innerText(), 'Bitte den Betrag in € eintragen.');
+  await form.locator('input[name="betrag"]').fill('500');
+  await form.getByRole('button', { name: 'Kauf hinzufügen' }).click();
+  assert.equal(await form.locator('.formfehler').innerText(), 'Bitte den Kurs beim Kauf ODER die Menge eintragen.');
+  await form.locator('input[name="kurs"]').fill('50.000');
+  await form.getByRole('button', { name: 'Kauf hinzufügen' }).click();
+  await page.waitForFunction(() => document.querySelectorAll('fieldset[data-coin="btc"] .kaeufe li').length === 3);
+  assert.match(nbsp(await page.locator('fieldset[data-coin="btc"] .summe').innerText()), /Zusammen 1\.500,00 € für 0,026 BTC · Ø-Kaufkurs 57\.692 €/);
+  assert.match(nbsp(await page.locator('#i-krypto [data-coin="btc"]').innerText()), /Einsatz\s*1\.500,00 €/);
+  assert.equal(await alarmOffen(page), false, 'eigene Änderung löst kein Pop-up aus');
+  await page.locator('fieldset[data-coin="btc"] .kaeufe li').nth(2).getByRole('button', { name: /entfernen/ }).click();
+  await page.waitForFunction(() => document.querySelectorAll('fieldset[data-coin="btc"] .kaeufe li').length === 2);
+  // aktuelle Menge überschreibt die Summe der Käufe
+  await page.locator('input[data-aktuell="btc"]').fill('0,02');
+  await page.locator('input[data-aktuell="btc"]').press('Enter');
+  await page.locator('input[data-aktuell="btc"]').blur();
+  await page.waitForFunction(() => /Menge 0,02 BTC \(aktuelle Menge\)/.test(document.querySelector('#i-krypto [data-coin="btc"]').textContent));
+  const neu = nbsp(await page.locator('#i-krypto [data-coin="btc"]').innerText());
+  assert.match(neu, /Im Gewinn \+359,42 € \(\+35,9 %\)/);
+  assert.match(neu, /Im Plus ab\s*50\.000 €/);
+  const gespeichert = await page.evaluate(() => JSON.parse(localStorage.getItem('mein-vorteil-krypto')));
+  assert.equal(gespeichert.coins.btc.aktuell, 0.02);
+  assert.equal(gespeichert.coins.btc.kaeufe.length, 2);
+  await pruefeLayout(page, 'Krypto bearbeiten');
+  assert.deepEqual(fehler, []);
+  await ctx.close();
+});
+
+test('Krypto-Pop-up: Wechsel Gewinn ↔ Verlust und +5/+10/−10 % – je Coin, Hysterese, keine Doppelmeldung, ✕', { skip: ohnePw }, async () => {
+  const { ctx, page, fehler, zustand } = await oeffne({ satz: 'vertrag', krypto: KRYPTO_TEST, uhr: 'laeuft' });
+  await kursGeladen(page);
+  assert.equal(await alarmOffen(page), false);
+  const naechsterKurs = async () => { const n = zustand.kursAbrufe.length; await page.clock.fastForward('01:00'); await waitFor(() => zustand.kursAbrufe.length > n); await page.waitForTimeout(150); };
+  // ETH −0,5 %: noch in der Hysterese -> nichts
+  zustand.kurse.eth = 1990;
+  await naechsterKurs();
+  assert.equal(await alarmOffen(page), false, '−0,5 % ist noch kein Verlust-Wechsel');
+  // ETH −1 % -> „jetzt im Verlust“
+  zustand.kurse.eth = 1980;
+  await naechsterKurs();
+  await page.waitForFunction(() => document.getElementById('krypto-alarm').open);
+  const a1 = nbsp(await page.locator('#krypto-alarm').innerText());
+  assert.match(a1, /Ethereum: jetzt im Verlust/);
+  assert.match(a1, /−10,00 € \(−1,0 %\)/);
+  assert.match(a1, /Kurs 1\.980 € · Wert 990,00 € · im Plus ab 2\.000 €/);
+  assert.doesNotMatch(a1, /Bitcoin/, 'nur der Coin, dessen Zone wechselt');
+  await pruefeLayout(page, 'Krypto-Pop-up');
+  await page.locator('#alarm-zu').click();
+  assert.equal(await alarmOffen(page), false);
+  // gleiche Lage beim nächsten Kurs: keine Doppelmeldung
+  await naechsterKurs();
+  assert.equal(await alarmOffen(page), false);
+  // BTC +20 % -> „+10 % erreicht“ (Sprung über +10: eine Meldung)
+  zustand.kurse.btc = 75000;
+  await naechsterKurs();
+  await page.waitForFunction(() => document.getElementById('krypto-alarm').open);
+  const a2 = nbsp(await page.locator('#krypto-alarm').innerText());
+  assert.match(a2, /Bitcoin: \+10 % erreicht/);
+  assert.match(a2, /\+200,00 € \(\+20,0 %\)/);
+  await page.locator('#alarm-zu').click();
+  assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem('mein-vorteil-krypto-zone'))), { btc: 'top', eth: 'minus' });
+  // neu öffnen mit gleichem Kurs: gemerkte Zone -> kein Pop-up
+  await page.reload();
+  await kursGeladen(page);
+  await page.waitForTimeout(200);
+  assert.equal(await alarmOffen(page), false);
+  // ETH zurück auf +1 % -> „jetzt im Gewinn“
+  zustand.kurse.eth = 2020;
+  await naechsterKurs();
+  await page.waitForFunction(() => document.getElementById('krypto-alarm').open);
+  assert.match(nbsp(await page.locator('#krypto-alarm').innerText()), /Ethereum: jetzt im Gewinn/);
+  assert.deepEqual(fehler, []);
+  await ctx.close();
+});
+
+test('Krypto-Import per Link: gespeichert, Fragment sofort weg, „übernommen“, Zahlen gehen nirgends hin', { skip: ohnePw }, async () => {
+  const { ctx, page, fehler, zustand } = await oeffne({ satz: 'vertrag', pfad: '/mein-vorteil/#krypto=btc:0.02:1000,eth:0.5:1000' });
+  assert.equal(new URL(page.url()).hash, '', 'Fragment ist weg');
+  assert.equal(await page.evaluate(() => location.hash), '');
+  const d = await page.evaluate(() => JSON.parse(localStorage.getItem('mein-vorteil-krypto')));
+  assert.deepEqual(d.coins.btc, { kaeufe: [{ betrag: 1000, menge: 0.02, uebernommen: true }], aktuell: null });
+  assert.deepEqual(d.coins.eth, { kaeufe: [{ betrag: 1000, menge: 0.5, uebernommen: true }], aktuell: null });
+  assert.match(await page.locator('#hinweis').innerText(), /Krypto-Daten übernommen ✓ \(Bitcoin, Ethereum\) – nur auf diesem iPhone gespeichert\./);
+  await kursGeladen(page);
+  assert.match(nbsp(await page.locator('#i-krypto [data-coin="btc"]').innerText()), /Im Gewinn \+359,42 € \(\+35,9 %\)/);
+  // nie gesendet: keine Anfrage enthält die Zahlen oder das Fragment
+  assert.ok(zustand.alleAbrufe.length > 5);
+  assert.ok(!zustand.alleAbrufe.some(u => /krypto=|0\.02|btc:/.test(u)), zustand.alleAbrufe.filter(u => /krypto|btc/.test(u)).join('\n'));
+  // Wert für das GitHub-Secret: aus den Zahlen hier, nur zum Kopieren (steht nicht auf der Seite)
+  assert.equal(await page.evaluate(() => kryptoSecret()), 'btc:0.02:1000,eth:0.5:1000');
+  assert.doesNotMatch(await page.locator('body').textContent(), /btc:0\.02/);
+  await page.locator('#hinweis button').click();
+  assert.equal(await page.locator('#hinweis').isHidden(), true);
+  assert.deepEqual(fehler, []);
+  await ctx.close();
+  // ungültiger Link: nichts geändert, Fragment trotzdem weg
+  const o = await oeffne({ satz: 'vertrag', pfad: '/mein-vorteil/#krypto=btc:abc:1000' });
+  assert.equal(new URL(o.page.url()).hash, '');
+  assert.equal(await o.page.evaluate(() => localStorage.getItem('mein-vorteil-krypto')), null);
+  assert.match(await o.page.locator('#hinweis').innerText(), /Krypto-Link ungültig – nichts geändert\./);
+  await o.ctx.close();
+});
+
+test('Krypto: Kurs beim Öffnen und alle 60 s; Quellen gestört -> klare Meldung; Push-Anleitung mit eigenem Thema', { skip: ohnePw }, async () => {
+  let o = await oeffne({ satz: 'vertrag', krypto: KRYPTO_TEST, kurs: 'kaputt' });
+  await o.page.waitForFunction(() => /nicht abrufbar/.test(document.getElementById('i-krypto').textContent));
+  assert.match(nbsp(await o.page.locator('#i-krypto .kurs-stand').innerText()), /Kurs gerade nicht abrufbar \(Quellen gestört\)\. Neuer Versuch in einer Minute\./);
+  assert.deepEqual(o.fehler.filter(f => !/Failed to load resource/.test(f)), []);
+  await o.ctx.close();
+  o = await oeffne({ satz: 'vertrag', krypto: KRYPTO_TEST, kurs: 'cryptocom', uhr: 'laeuft' });
+  await kursGeladen(o.page);
+  assert.match(await o.page.locator('#i-krypto .kurs-stand').innerText(), /Crypto\.com/);
+  const n = o.zustand.kursAbrufe.length;
+  await o.page.clock.fastForward('01:00');
+  await waitFor(() => o.zustand.kursAbrufe.length > n);
+  // Push-Anleitung: privates Thema (zufällig, gemerkt), 3 Schritte
+  await o.page.locator('#krypto-push > summary').click();
+  const thema = await o.page.locator('#krypto-topic').innerText();
+  assert.match(thema, /^xander-krypto-[0-9a-f]{16}$/);
+  assert.notEqual(thema, 'xander-schnaeppchen-b5cbf4442aaa9734f3');
+  assert.equal(await o.page.locator('#krypto-ntfy').getAttribute('href'), `https://ntfy.sh/${thema}`);
+  assert.equal(await o.page.locator('#krypto-push ol > li').count(), 3);
+  assert.match(nbsp(await o.page.locator('#krypto-push').innerText()), /KRYPTO\s*= deine Zahlen\s*Wert kopieren[\s\S]*KRYPTO_NTFY_TOPIC/);
+  await o.page.reload();
+  await o.page.locator('#krypto-push > summary').click();
+  assert.equal(await o.page.locator('#krypto-topic').innerText(), thema, 'Thema bleibt gleich');
+  await pruefeLayout(o.page, 'Krypto-Push');
+  await o.ctx.close();
+});
+
+test('Cashback nur passend und laufend; Prämien & Freunde werben nie; Remix-Contests eigener Abschnitt (laufend, nach Frist)', { skip: ohnePw }, async () => {
+  const patch = { 'vorteile-aktuell.json': d => { d.kategorien.deals.push(...CASHBACK_TEST()); d.kategorien.musik.push(...REMIX_TEST()); } };
+  const { ctx, page, fehler } = await oeffne({ satz: 'vertrag', patch });
+  const cb = nbsp(await page.locator('#cashback').innerText());
+  assert.match(cb, /Haribo Goldbären gratis testen/);
+  assert.match(cb, /Cashback 5 € auf Kopfhörer/);
+  assert.doesNotMatch(cb, /Ariel|Girokonto|Freunde werben/);
+  assert.equal(await zahlIn(page, 'cashback').innerText(), '2');
+  // Remix-Contests: laufende, was zuerst endet oben, Abgelaufenes fehlt; nicht unter Auftritte
+  const karten = page.locator('#remix article');
+  assert.equal(await karten.count(), 2);
+  const t = (await karten.allInnerTexts()).map(nbsp);
+  assert.match(t[0], /^Remix-Contest[\s\S]*bis Fr 20\.11\.[\s\S]*Synthpop duo[\s\S]*Remix-Contest · mit Stems · Einsendeschluss 20\.11\.2026/);
+  assert.match(t[1], /Italo disco/);
+  assert.doesNotMatch(await page.locator('#remix').textContent(), /abgelaufen/);
+  assert.doesNotMatch(await page.locator('#auftritte').textContent(), /remix/i);
+  assert.equal(await zahlIn(page, 'remix').innerText(), '2');
+  // Prämien nirgends (auch nicht in alten Daten)
+  assert.doesNotMatch(await page.locator('main').textContent(), /Prämien & Freunde|Startprämie|Freunde werben/);
+  assert.deepEqual(fehler, []);
+  await ctx.close();
+  // 5 Tage vor dem Einsendeschluss: oben unter „Heute wichtig“
+  const o = await oeffne({ satz: 'vertrag', patch, jetzt: '2026-11-15T10:00:00Z' });
+  assert.match(nbsp(await text(o.page, '#wichtig')), /Remix-Contest bis Fr 20\.11\.: Synthpop duo launches remix contest/);
+  await o.ctx.close();
+});
+
+test('Fotos: Krypto mit Pop-up, Import-Hinweis, Remix-Contests, Cashback (428 × 926 hoch, 926 × 428 quer, dunkel)', { skip: ohnePw }, async () => {
+  const patch = { 'vorteile-aktuell.json': d => { d.kategorien.deals.push(...CASHBACK_TEST()); d.kategorien.musik.push(...REMIX_TEST()); } };
+  for (const [breite, hoehe, lage] of [[428, 926, 'hoch'], [926, 428, 'quer']]) {
+    const { ctx, page, fehler, zustand } = await oeffne({ satz: 'v3', breite, hoehe, dunkel: true, krypto: KRYPTO_TEST, uhr: 'laeuft', patch });
+    await kursGeladen(page);
+    await page.screenshot({ path: join(SHOTS, `mv2-start-${lage}.png`) });
+    await page.locator('#krypto').scrollIntoViewIfNeeded();
+    await page.screenshot({ path: join(SHOTS, `mv2-krypto-${lage}.png`) });
+    zustand.kurse.btc = 75000;
+    const n = zustand.kursAbrufe.length;
+    await page.clock.fastForward('01:00');
+    await waitFor(() => zustand.kursAbrufe.length > n);
+    await page.waitForFunction(() => document.getElementById('krypto-alarm').open);
+    await page.screenshot({ path: join(SHOTS, `mv2-krypto-popup-${lage}.png`) });
+    await page.locator('#alarm-zu').click();
+    await page.locator('#krypto-form > summary').click();
+    await page.locator('#krypto-form').scrollIntoViewIfNeeded();
+    await page.screenshot({ path: join(SHOTS, `mv2-krypto-kaeufe-${lage}.png`) });
+    await springe(page, 'remix');
+    await page.waitForTimeout(400);
+    await page.screenshot({ path: join(SHOTS, `mv2-remix-${lage}.png`) });
+    await springe(page, 'cashback');
+    await page.waitForTimeout(400);
+    await page.screenshot({ path: join(SHOTS, `mv2-cashback-${lage}.png`) });
+    assert.deepEqual(fehler, []);
+    await ctx.close();
+    const imp = await oeffne({ satz: 'v3', breite, hoehe, dunkel: true, pfad: '/mein-vorteil/#krypto=btc:0.02:1000,eth:0.5:1000' });
+    await kursGeladen(imp.page);
+    await imp.page.screenshot({ path: join(SHOTS, `mv2-import-${lage}.png`) });
+    await imp.ctx.close();
+  }
 });
 
 for (const [breite, hoehe, lage] of [[428, 926, 'hoch'], [926, 428, 'quer']]) {

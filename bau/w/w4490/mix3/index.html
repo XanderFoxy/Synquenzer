@@ -4366,6 +4366,7 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 .mx2s .mx3gr .small{line-height:1.3}
 .ch1row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;align-items:center;margin:6px 0 2px}
 .ch1row .mbtn{min-height:44px;padding:0 4px;font-size:12px}
+@media (orientation:landscape) and (max-height:500px){ .g6sheet .ch1low{display:flex;flex-wrap:nowrap;gap:6px} .g6sheet .ch1low>.mbtn{flex:1 1 0;min-width:44px;min-height:44px;padding:0 4px;font-size:11px;white-space:normal;line-height:1.1} }
 .msheet .ch1-ms{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
 .msheet .ch1-ms .ms-b{min-height:44px}
 /* MX3 END */
@@ -67124,12 +67125,15 @@ function ch1Start(G, a, o, r) {
 
 /* ---------- Bedienung: Chor-Blatt, Marken-Blatt, Mix & Master › Gesang ---------- */
 function ch1G6Row(p, X) {
-  if (!p || p.querySelector('.ch1row')) return;
+  if (!p || p.querySelector('.ch1row,.ch1low')) return;
   const busy = CH1.busy, own = X && X.c && X.c.v === 2 ? ch1OwnVoices(X.a).length : 0;
   const row = el('div', 'ch1row', `<button class="mbtn rb" data-ch1="clean"${busy || !(X && X.c && X.c.v === 2) ? ' disabled' : ''}>${busy === 'clean' ? 'rechnet …' : 'Chor sauber'}</button>` +
     `<button class="mbtn rb" data-ch1="big"${busy ? ' disabled' : ''}>${busy === 'big' ? 'rechnet …' : 'Refrain groß'}</button><button class="mbtn rb" data-ch1="twice"${busy ? ' disabled' : ''}>Refrain 2× singen${own ? ' (' + Math.min(2, own) + '/2)' : ''}</button>`);
   row.setAttribute('role', 'group'); row.setAttribute('aria-label', 'Gesang');
-  const g = p.querySelector('.g6pe-grid'); if (g) g.after(row); else p.appendChild(row);   // direkt unter den Stil-Kacheln (immer im Blick)
+  // hochkant direkt unter den Stil-Kacheln; quer in der unteren Knopfzeile (das Blatt wird nicht höher, [OK] bleibt sichtbar)
+  const low = isLand() && (p.querySelector('.g6pe-addrow') || p.querySelector('.savrow')), g = p.querySelector('.g6pe-grid');
+  if (low) { row.classList.add('ch1in'); const ok = low.querySelector('[data-pe="x"]'); while (row.firstChild) { const b = row.firstChild; if (ok) ok.before(b); else low.appendChild(b); } low.classList.add('ch1low'); low.dataset.ch1 = ''; }
+  else if (g) g.after(row); else p.appendChild(row);
 }
 function ch1Tap(b) {
   const a = b.dataset.ch1; if (!a) return false; haptic('pop');
