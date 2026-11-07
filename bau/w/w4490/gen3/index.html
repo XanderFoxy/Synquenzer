@@ -83635,7 +83635,9 @@ function gen3SwNotes(t, s, style) {
 }
 // Reiter Grundmuster / Spielweise zeichnen (Einhänge-Zeile am Anfang von bb1Paint); false = Reiter Figuren (BB1 zeichnet)
 function gen3BbPaint() {
-  const U = BB1.ui; if (!U || !U.p || !U.p.isConnected || GEN3.bbTab === 'fig') return false;
+  const U = BB1.ui; if (!U || !U.p || !U.p.isConnected) return false;
+  if (!U.g3) { U.g3 = 1; GEN3.bbTab = GEN3.bbReq || 'fig'; GEN3.bbReq = null; }   // jedes neue Blatt beginnt mit Figuren, außer ein Weg wählt den Reiter
+  if (GEN3.bbTab === 'fig') return false;
   const p = U.p, tr = S.tracks[U.t], c = tr && tr.clips[U.s]; if (!c) { closePop(); return true; }
   const drum = isDrum(U.t), Zs = bb1Targets(U.t, U.s), Z = bb1Ziel(U.t, U.s), gm = GEN3.bbTab === 'gm';
   const zl = z => z.k === 'ver' ? ['Neue Version', 'v' + z.v + ' · im Song'] : z.k === 'neu' ? ['Neuer Clip', 'Szene ' + (z.s + 1)] : ['Diesen Clip', '↶ holt ihn zurück'];
@@ -83704,7 +83706,7 @@ function gen3BbIns(U) {
 // der Werkzeugkasten auf einem Reiter öffnen (Drum-Editor › Muster ▾ › Stil-Grundmuster); false = kein Clip (alter Weg)
 function gen3BbOpen(t, s, tab) {
   const c = S.tracks[t] && S.tracks[t].clips[s]; if (!c || !bb1Ok(t, c) || c.ts) return false;
-  GEN3.bbTab = tab || GEN3.bbTab; if (UI.pop && UI.pop.name === 'bb1') closePop();   // ein offenes Blatt erst schließen (sein onClose räumt BB1.ui ab)
+  GEN3.bbReq = tab || null; if (UI.pop && UI.pop.name === 'bb1') closePop();   // ein offenes Blatt erst schließen (sein onClose räumt BB1.ui ab)
   return bb1Open(t, s);
 }
 const gen3GmOpen = (t, s) => gen3BbOpen(t, s, 'gm');
