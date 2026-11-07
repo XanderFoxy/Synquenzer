@@ -65526,13 +65526,15 @@ function mx2Play() {
 
 /* ---------- Seitenkette Kick → Bass (Pumpen der Bass-Spur, Quelle Kick; Undo 'mixa') ---------- */
 function mx2Roles() {
-  const r = MIXA.res, out = S.tracks.map(() => null);
+  const r = MIXA.res, now = performance.now(), M = MX2.rc; if (M && now - M.t < 250 && M.res === r && M.n === S.tracks.length && M.ro === S.tracks.map(t => t.mxRole || '').join()) return M.v.slice();   // kurz gemerkt (Neuzeichnen fragt mehrfach)
+  const out = S.tracks.map(() => null);
   S.tracks.forEach((tr, i) => {
     if (tr.mxRole) { out[i] = tr.mxRole; return; }
     const t = r && r.T ? r.T.find(x => x.i === i) : null; if (t) { out[i] = t.f && t.f.silent ? null : t.cls; return; }
     if (tr.kind === 'drum') { out[i] = 'drums'; return; } if (tr.stimme) { out[i] = 'voc'; return; }
     try { const D = MIXA_D0.v || (MIXA_D0.v = mixaDspMake()), ns = mixaNoteStats(i); out[i] = ns ? D.classify({kind: tr.kind}, ns, null).cls : null; } catch (e) { out[i] = null; }
   });
+  MX2.rc = {t: now, res: r, n: S.tracks.length, ro: S.tracks.map(t => t.mxRole || '').join(), v: out.slice()};
   return out;
 }
 function mx2DuckInfo() {

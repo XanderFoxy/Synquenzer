@@ -189,7 +189,7 @@ const BL = await page(basis, 926, 428);
   await tapAt(P, tile); await P.waitForTimeout(400);
   const s2 = await P.evaluate(u0 => ({o: S.tracks[0].sound.origin, e: S.tracks[0].sound.engine, labs: UNDO.slice(u0).map(u => u.kind + ':' + u.label), pv: !!(PV.on || PV.voices.length), on: (document.querySelector('.ui1bm .ui1p.on b') || {}).textContent, still: UI.pop && UI.pop.name}), u0);
   const s2u = await P.evaluate(() => { undo(); const o = S.tracks[0].sound.origin; redo(); return o; });
-  ok('Kategorie Bass (6 Klänge) → „Puls-Bass“ antippen: geladen, ein ↶-Schritt, klingt sofort (Vorhören läuft), Blatt bleibt offen', tile.n === 6 && s2.o === 'f-bm-p02' && s2.e === 'bm' && s2.labs.filter(x => /Puls-Bass/.test(x)).length === 1 && s2u === o0 && s2.pv && s2.on === 'Puls-Bass' && s2.still === 'ui1bm', Object.assign(s2, {undoTo: s2u, o0}));
+  ok('Kategorie Bass (6 Klänge) → „Puls-Bass“ antippen: geladen, ein ↶-Schritt, klingt sofort (Vorhören läuft), Blatt bleibt offen', tile.n === 6 && s2.o === 'f-bm-p02' && s2.e === 'bm' && s2.labs.filter(x => /Puls-Bass/.test(x)).length === 1 && s2u === o0 && s2.pv && s2.on === 'Puls-Bass' && s2.still === 'ui1bm', Object.assign(s2, {undoTo: s2u, o0, n: tile.n}));
   await P.screenshot({path: OUT + 'ui1-p-bitmask.png'});
   await P.evaluate(() => closePop()); await P.waitForTimeout(200);
   const hq = await center(P, '#synthSheet .sh-tabs .ui1bt:last-child');
