@@ -28167,6 +28167,7 @@ function normalizeProject(obj) {
     // V0b FOLGEN: the editor kinds switched to AUS (only false entries are kept; missing = FOLGT)
     if (ui.follow && typeof ui.follow === 'object') { const f = {}; for (const k of ['roll', 'lauf', 'steps', 'song']) if (ui.follow[k] === false) f[k] = false; if (Object.keys(f).length) p.ui.follow = f; }
     if (obj.sx14) { const x = sx14Norm(obj.sx14); if (x) p.sx14 = x; }   // SX714: Schnappschüsse (additiv, nur wenn vorhanden)
+    if (obj.vd3mo) { const x = vd3Norm(obj.vd3mo); if (x) p.vd3mo = x; }   // VD3: Making-of-Protokoll (nur wenn „im Projekt“)
     try { g6pFixLanes(p); } catch (e) { logErr(e); }               // G6+a: Stimmen ohne passende Chor-Spur bekommen eine aus ihrer Regel
     if (obj.sr) { const sr = srNorm(obj.sr, p.tracks); if (sr) p.sr = sr; }        // N8 I1c: Super-Regler
     const nvN = needNorm(obj, p);                                                    // N8 Baustein N (A.4): S.need, unknown features lock
@@ -34015,7 +34016,7 @@ const UNDO = [], REDO = [], UNDO_MAX = 60;
 function undoPush(e) {
   e.time = performance.now();
   UNDO.push(e); if (UNDO.length > UNDO_MAX) UNDO.shift();
-  REDO.length = 0;
+  REDO.length = 0; vd3Undo(e);   // VD3: Making-of (Clip, Noten, Teil)
   UI.dirty.strip = true; if (typeof edUndoBtns === 'function') edUndoBtns();
   histPush(e);  // VC2a
 }
@@ -36395,7 +36396,7 @@ function svLayout() {
   const r = w.getBoundingClientRect(), dpr = Math.min(3, window.devicePixelRatio || 1);
   if (!r.width || !r.height) return;
   SV.w = r.width; SV.h = r.height; SV.dpr = dpr;
-  SV.vvS = S.song && S.song.video ? 8 : 0; SV.rulerH = (r.height < 240 ? 16 : 20) + SV.vvS;   // VV2: + the stripe of the Video-Regie (only with entries)
+  SV.vvS = vd3VvS(S.song, r.height); SV.rulerH = (r.height < 240 ? 16 : 20) + SV.vvS;   // VV2: + the stripe of the Video-Regie (only with entries) · VD3: or the Video-Spur (Schnitt-Modus)
   SV.blS = konHasBlocks() ? (r.height < 240 ? 12 : 14) : 0; SV.rulerH += SV.blS;               // KON: + the Block-Zeile above the ruler (only with blocks)
   // V2a: all tracks while each row gets ≥ 26 px (song-delta 6.5), else pages of the synth tracks (≥ 4 a page) + DRUMS
   const ubH = ueBarCover(r), RH = r.height - ubH;                // UE-B: die offene Bibliothek-Leiste deckt unten nichts zu – die Zeilen rücken darüber
@@ -39337,6 +39338,7 @@ function openLoopPop(anchor) {
       `<button class="rb${cur === 'range' ? ' on' : ''}" data-l="range">Bereich<small>${cur === 'range' && !sel ? loopLabel(song) : (rb - ra === 1 ? 'Takt ' + (ra + 1) : 'Takt ' + (ra + 1) + '–' + rb)}</small></button></div>` +
       '<p class="small">Bereich = die gelb gewählten Takte (Taktleiste antippen). Die grünen Griffe ┃ ziehen ändert Anfang und Ende.</p>';
     ux1LoopRow(p);   /* UIX1: Mithören beim Wischen (Lautsprecher) */
+    vd3LoopRow(p);   /* VD3: Video-Schnitt im Song an/aus */
     onTap(p, b => {
       const l = b.dataset.l; closePop();
       if (l === 'off') songLoopRange({on: false});
@@ -39515,6 +39517,7 @@ function svBindGestures(w) {
   const zAbort = () => { if (SV.pinch) { sx8PinchEnd(); } P.clear(); SV.gOn = false; };   // SX8
   ['gesturestart', 'gesturechange', 'gestureend'].forEach(ev => w.addEventListener(ev, e => e.preventDefault()));   // SX8: iOS-Pinch zoomt nie die Seite
   w.addEventListener('pointerdown', e => {
+    if (vd3LaneDown(e, w)) return;                                     // VD3: die Video-Spur (Schnitt-Modus) hat ihre eigenen Gesten
     // SX8: der zweite Finger macht aus der Ein-Finger-Geste (noch ohne Bearbeitung) einen Pinch-Zoom
     if (e.pointerType !== 'mouse' && !DRG) {
       if (SV.pinch || P.size >= 2) { e.preventDefault(); return; }       // ein dritter Finger: nichts
@@ -40906,7 +40909,7 @@ function svEndClamp() {
 }
 function svDraw(force, sbIn) {
   const g = SV.g, song = S.song; if (!g || !SV.w) return;
-  if (!!(song && song.video) !== !!SV.vvS) svLayout();             // VV2: the stripe comes / goes with the first / last entry
+  if (vd3VvS(song) !== (SV.vvS | 0)) svLayout();                   // VV2: the stripe comes / goes with the first / last entry · VD3: the Video-Spur
   if (konHasBlocks() !== !!SV.blS) svLayout();                      // KON: the Block-Zeile comes / goes with the first / last block
   SV.lastDraw = performance.now();
   svEndClamp();
@@ -40950,7 +40953,8 @@ function svDraw(force, sbIn) {
   if (song || !bars) { g.fillStyle = '#30343c'; for (let b = Math.max(b0, bars + 1), e = Math.ceil((SV.x + W) / cw) + 1; b < e && b < bars + 64; b++) if (b % nst === 0 || nst === 1) g.fillText(String(b + 1), X(b) + cw / 2, cy + ch / 2); }   // SX8: nst
   if (song || SV.pv) { const bS = SV.blS | 0; if (bS) { g.save(); g.translate(0, bS); } svDrawMarks(g, song || {marks: []}, X, W, H, ru - (SV.vvS | 0) - bS, cur); if (bS) g.restore(); }   // KON: below the Block-Zeile
   if (song && SV.blS) konDrawBlocks(g, song, X, W, H, SV.blS);   // KON
-  if (song && song.video && SV.vvS) vvDrawStripe(g, song, X, W, ru - SV.vvS, SV.vvS);   // VV2
+  if (SV.vvS && vd3CutOn()) vd3DrawLane(g, song, X, W, ru - SV.vvS, SV.vvS);   // VD3: Schnitt-Modus
+  else if (song && song.video && SV.vvS) vvDrawStripe(g, song, X, W, ru - SV.vvS, SV.vvS);   // VV2
   // track lanes: the scene slot per bar (launch bars stronger), – = stopped there. V2e′: own clips with a white 1,5-px frame and
   // a dot (song-delta 9.1); the cells of a part just placed unfold left to right from amber (N7-R6); ◧ = the glass tiles
   const now = performance.now(), uf = SV.unfold; if (uf && now - uf.t0 > uf.dur) SV.unfold = null; else if (uf) UI.dirty.song = true;
@@ -43439,6 +43443,7 @@ function setP(i, key, v) {
   const nv = clampParam(key, v, sndGet(snd, key));
   if (nv === sndGet(snd, key)) return nv;
   if (UI.ab && UI.ab.t === i && UI.ab.side === 'B') UI.ab = null;            // an edit of the original is a new edit (A/B)
+  vd3Knob(i, key, sndGet(snd, key), nv);                                     // VD3: Making-of (Regler-Geste)
   sndSet(snd, key, nv);
   kv1Hand(i, key);                                                           // KV1: this knob shows the hand's value now
   liveUpdate(i, key);
@@ -43524,6 +43529,7 @@ function applySound(i, snd, opts) {
   snd = nvWrap(snd);
   const old = T.sound, other = !old || old.name !== snd.name || old.origin !== snd.origin || old.engine !== snd.engine;
   T.sound = snd; markDirty(); UI.dirty.strip = UI.dirty.grid = UI.dirty.edHead = true; UI.sndVer++;
+  if (other) vd3Klang(i, snd);                                   // VD3: Making-of (Klangwahl)
   percFollowRule(i, old, snd);                                   // PERC: auf North = folgt nicht, zurück = wie vorher
   if (snd.engine === 'mk' && snd.p.mk && snd.p.mk.arp && snd.p.mk.arp.on) arpLoadSoon();   // MK5: a sound with the arp on needs its core
   if (other && snd.engine === 'fm6') { try { fmInitSel(i, true); } catch (e) { logErr(e); } }   // V0d (A.4b 1): a newly loaded sound resets the choice
@@ -48476,7 +48482,7 @@ function kitSound(q) {
 }
 function loadKit(name) {
   const snd = kitSound(name); if (!snd) throw new Error('Unbekanntes Kit: ' + name);
-  applyDrumSound(snd);
+  applyDrumSound(snd); vd3Klang(DRUM_T, snd);   // VD3: Making-of (Kit gewählt)
   return S.tracks[DRUM_T].sound.name;
 }
 // the kit block (§7.4 p.kit): gate length / level, room level, accent, pad velocity. Undo kind 'kit' (§10.4)
@@ -69930,7 +69936,7 @@ const VV_FPS = 30, VV_TAIL = 10, VV_LV60 = 0.001;
 function vvProf(k, ms) { const P = VV.prof || (VV.prof = {}); const o = P[k] || (P[k] = {n: 0, max: 0, sum: 0}); o.n++; o.sum += ms; if (ms > o.max) o.max = ms; if (ms > 30) (P.big || (P.big = [])).push([k, Math.round(performance.now() - ms), Math.round(ms)]); }
 const vvStep = () => (VV.test && VV.test.step) || .25;   // s of audio between two scheduler runs (horizon = step + LOOKAHEAD)
 // the device profile (not the project): format and picture of the sheet
-function vvPrefs() { const p = uiPrefs().vv || {}; return {fmt: p.fmt === '16:9' ? '16:9' : '9:16', view: p.view === 'song' || p.view === 'matrix' ? p.view : 'auto', cam: p.cam === 'balken' ? 'balken' : p.cam === 'app' ? 'app' : 'kamera'}; }   // VV4-A: [Ganze App]
+function vvPrefs() { const p = uiPrefs().vv || {}; return {fmt: p.fmt === '16:9' ? '16:9' : '9:16', view: p.view === 'song' || p.view === 'matrix' ? p.view : 'auto', cam: p.cam === 'balken' ? 'balken' : p.cam === 'kamera' ? 'kamera' : 'app'}; }   // VV4-A: [Ganze App] · VD3: Voreinstellung [Ganze App] (wie die App)
 function vvPrefSet(k, v) { const p = Object.assign({}, uiPrefs().vv || {}); p[k] = v; setUiPref('vv', p); }
 // one level deep snapshot of a state object (arrays / Sets / Maps keep their identity and get their content back)
 function vvSnap(o) { const s = new Map(); for (const k of Object.keys(o)) { const v = o[k]; s.set(k, [v, Array.isArray(v) ? v.slice() : v instanceof Set ? new Set(v) : v instanceof Map ? new Map(v) : null]); } return s; }
@@ -70555,7 +70561,7 @@ function vvDrawMeters(g, t, rect) {
 // one picture of the stage at size W × H (canvas pixels) for state st; view 'song' | 'matrix' ('auto' = the Auto-Regisseur, VV2)
 // VV2: Auto = the Auto-Regisseur, 9:16 = [Kamera] / [Ganz mit Balken] over the landscape view (vvDrawRun, VV2 block); rt = the job's run
 // VV3 (Staging): view 'spur' (track st.spur) and the test hook VV.test.spur go to the Spur-Bild with Innenleben (vvDrawRun)
-function vvDraw(g, W, H, view, st, rt) { vvDrawRun(g, W, H, view, st, rt); }
+function vvDraw(g, W, H, view, st, rt) { if (vd3Draw(g, W, H, view, st, rt)) return; vvDrawRun(g, W, H, view, st, rt); }   // VD3: Titel, Untertitel-Rand
 // the picture state at video time t (s) of a render result (slot timeline = R.slot as the scheduler set it)
 function vvStateAt(r, t) {
   const sp = 60 / r.bpm, B = r.lead ? Math.max(0, (t - r.lead) / sp) : t / sp, st = {tB: B, sb: B + barBeat(r.a), slots: [], cs: [], own: []};   /* B2/T1 */   // G10a-5: im Vorlauf zeigt das Bild den Anfang
@@ -70847,6 +70853,7 @@ async function vvEncodeWC(job) {
   const rP = job.rP.then(x => { r = x; }, e => { err = err || e; });
   let tY = performance.now(), f = 0;
   try {
+    const Pf = job.pre ? job.pre.frames : 0; if (Pf) await vd3PreFrames(job, ve, g, cv, () => err);   // VD3: Making-of-Vorlauf (eigene Bilder vor dem Song)
     for (;;) {
       if (VV.cancel) throw new Error('abgebrochen');
       if (err) throw err;
@@ -70860,10 +70867,10 @@ async function vvEncodeWC(job) {
       const PF = performance.now();
       if (job.outro && r && f / fps >= job.outro.at) await vvlFrame(g, W, H, job, r, f / fps);
       else vvDraw(g, W, H, job.view, vvStateAt(r || live, f / fps), job.rt);
-      const fr = new VideoFrame(cv, {timestamp: Math.round(f * 1e6 / fps), duration: Math.round(1e6 / fps)});
-      ve.encode(fr, {keyFrame: f % (fps * 2) === 0}); fr.close(); f++;
+      const fr = new VideoFrame(cv, {timestamp: Math.round((f + Pf) * 1e6 / fps), duration: Math.round(1e6 / fps)});   // VD3: + Pf
+      ve.encode(fr, {keyFrame: (f + Pf) % (fps * 2) === 0}); fr.close(); f++;
       vvProf('frame', performance.now() - PF);
-      if (job.onProgress) job.onProgress(Math.min(.97, f / (fps * (r ? r.dur : live.est || 1))));
+      if (job.onProgress) job.onProgress(Math.min(.97, (f + Pf) / (Pf + fps * (r ? r.dur : live.est || 1))));
       // the encoder works off the main thread: wait while its queue is full, give the page a moment every ~12 ms
       while (ve.encodeQueueSize > 3 && !err && !VV.cancel) await new Promise(res => setTimeout(res, 2));
       if (performance.now() - tY > 12) { await vvYield(); tY = performance.now(); }
@@ -70876,11 +70883,11 @@ async function vvEncodeWC(job) {
     const AudioEncoder = path.acodec === 'pcm' ? Va1PcmEnc : window.AudioEncoder, AudioData = path.acodec === 'pcm' ? Va1PcmData : window.AudioData;   // VA1: PCM-Weg – derselbe Ablauf ohne AudioEncoder
     ae = new AudioEncoder({output: (c, m) => { if (!aCfg) aCfg = descOf(m); aS.push({d: copy(c), ts: c.timestamp, dur: c.duration}); }, error: e => { err = e; }});
     ae.configure({codec: path.acodec, sampleRate: asr, numberOfChannels: 2, bitrate: 192000});
-    const aStep = Math.round(asr / 10);
+    const aStep = Math.round(asr / 10), aOff = Pf ? await vd3PreAudio(job, ae, AudioData, asr, A0, A1, r) : 0;   // VD3: der Vorlauf-Ton zuerst
     for (let aPos = 0; aPos < aLen;) {
       if (VV.cancel) throw new Error('abgebrochen');
       const n = Math.min(aStep, aLen - aPos), m = Math.max(0, Math.min(n, src.length - aPos)), pl = new Float32Array(n * 2); if (m) { pl.set(A0.subarray(aPos, aPos + m), 0); pl.set(A1.subarray(aPos, aPos + m), n); }
-      const ad = new AudioData({format: 'f32-planar', sampleRate: asr, numberOfFrames: n, numberOfChannels: 2, timestamp: Math.round(aPos / asr * 1e6), data: pl});
+      const ad = new AudioData({format: 'f32-planar', sampleRate: asr, numberOfFrames: n, numberOfChannels: 2, timestamp: Math.round((aPos + aOff) / asr * 1e6), data: pl});   // VD3: + aOff
       ae.encode(ad); ad.close(); aPos += n;
       if (ae.encodeQueueSize > 8) await new Promise(res => setTimeout(res, 1));
       if (performance.now() - tY > 12) { await vvYield(); tY = performance.now(); }
@@ -70909,6 +70916,7 @@ async function vvEncodeWC(job) {
 async function vvEncodeMR(job) {
   const {W, H, r, path} = job, cv = job.canvas, g = cv.getContext('2d', {alpha: false}), c = AU.ctx;
   const ol = job.outro, Dt = r.dur; if (ol) { ol.end = r.dur; ol.at = vvlStartOf(ol, r.dur); } vvlRewind(ol, ol ? Math.max(0, ol.L - r.dur) : 0);   // VV-LOGO 4.30.1: the logo ends with the song (nothing appended)
+  const Pv = job.pre ? job.pre.sec : 0; if (Pv) { job.pre.lastSig = null; vd3PreDraw(g, W, H, job.pre, 0); } else   // VD3: Making-of-Vorlauf
   vvDraw(g, W, H, job.view, vvStateAt(r, 0), job.rt);
   // frames on request (one per drawn picture) where the browser offers it, else the canvas at 30 fps
   let vs = cv.captureStream(0), vt = vs.getVideoTracks()[0];
@@ -70921,7 +70929,7 @@ async function vvEncodeMR(job) {
   mr.ondataavailable = e => { if (e.data && e.data.size) parts.push(e.data); };
   const done = new Promise(res => { mr.onstop = res; });
   try { if (c.state !== 'running') await c.resume(); } catch (e) {}
-  const t0 = c.currentTime + .05; mr.start(1000); bs.start(t0, r.off, r.dur);
+  const t0 = c.currentTime + .05 + Pv; mr.start(1000); bs.start(t0, r.off, r.dur); const pS = Pv ? vd3PreSrc(job, c, r, dst, z, t0 - Pv) : null;   // VD3: der Song nach dem Vorlauf
   let fl = -1, tryT = 0;
   // page hidden (screen lock, app switch) or the context interrupted: the recorder and the sound pause together (no gap in the
   // file, no idle suspend from outside); with the page visible again the context is resumed and both go on
@@ -70937,13 +70945,14 @@ async function vvEncodeMR(job) {
         requestAnimationFrame(step); return;
       }
       try { if (mr.state === 'paused') mr.resume(); } catch (e) {}
-      const t = c.currentTime - t0, fi = Math.floor(Math.max(0, t) * VV_FPS);
-      if (fi !== fl) { fl = fi; if (ol && t >= ol.at) vvlFrameRT(g, W, H, job, r, t); else vvDraw(g, W, H, job.view, vvStateAt(r, Math.max(0, Math.min(r.dur, t))), job.rt); if (vt) vt.requestFrame(); }   // 30 pictures a second
-      if (job.onProgress) job.onProgress(Math.max(0, Math.min(1, t / Dt)));
+      const t = c.currentTime - t0, fi = Math.floor(Math.max(-Pv, t) * VV_FPS);   // VD3: im Vorlauf negativ
+      if (fi !== fl && t < 0) { fl = fi; vd3PreDraw(g, W, H, job.pre, Pv + t); if (vt) vt.requestFrame(); }   // VD3
+      else if (fi !== fl) { fl = fi; if (ol && t >= ol.at) vvlFrameRT(g, W, H, job, r, t); else vvDraw(g, W, H, job.view, vvStateAt(r, Math.max(0, Math.min(r.dur, t))), job.rt); if (vt) vt.requestFrame(); }   // 30 pictures a second
+      if (job.onProgress) job.onProgress(Math.max(0, Math.min(1, (t + Pv) / (Dt + Pv))));   // VD3: + Pv
       if (t >= Dt) res(); else requestAnimationFrame(step);
     };
     requestAnimationFrame(step);
-  }).finally(() => { document.removeEventListener('visibilitychange', onVis); VV.mrCtx = null; vvlRewind(ol); try { mr.stop(); } catch (e) {} try { bs.stop(); } catch (e) {} for (const tr of ms.getTracks()) { try { tr.stop(); } catch (e) {} } });
+  }).finally(() => { document.removeEventListener('visibilitychange', onVis); VV.mrCtx = null; vvlRewind(ol); try { mr.stop(); } catch (e) {} try { bs.stop(); } catch (e) {} try { if (pS) pS.stop(); } catch (e) {} for (const tr of ms.getTracks()) { try { tr.stop(); } catch (e) {} } });
   await done; try { bs.disconnect(); dst.disconnect(); z.disconnect(); } catch (e) {}
   if (VV.cancel) throw new Error('abgebrochen');
   return new Blob(parts, {type: path.mime.split(';')[0]});
@@ -70983,13 +70992,14 @@ async function vvMake(o) {
     const rt = VV.lastRt = vvRun({view, cam: o.cam || pf.cam, range: o.range, log: true});   // VV2: cut list + camera of this job
     if (rt.cam === 'app' && W < H) await vvAppPrep();                // VV4-A: the logo of the head is ready before the first picture
     const outro = await vvlOutro(o);                                // VV-LOGO: the Abspann (null: off or no logo – the video as before)
+    const pre = await vd3JobStart(o, W, H);                           // VD3: Titel/Rand/Making-of-Vorlauf dieses Auftrags (null: kein Vorlauf)
     if (VV.cancel) throw new Error('abgebrochen');
     try {
     if (path.how === 'webcodecs') {
       const live = {tl: [], t: -1, est: 0};
       if (S.song) { const rg = o.range || vvRange(false); live.songSec = (barBeat(rg.b) - barBeat(rg.a)) * spb(); live.est = live.songSec + 2; }   // 4.30.1: songSec – Bilder ab hier warten auf die gekürzte Länge
       rP = vvRenderAudio({range: o.range, live}); rP.then(() => { T1 = performance.now(); }, () => {});
-      const job = {W, H, path, view, canvas: cv, live, rP, rt, outro, onProgress: p => prog(p, 'Video')};
+      const job = {W, H, path, view, canvas: cv, live, rP, rt, outro, pre, onProgress: p => prog(p, 'Video')};   // VD3: pre
       let wcErr = null;
       try { blob = await vvEncodeWC(job); } catch (e) { if (VV.cancel || /abgebrochen/.test(e && e.message)) throw e; wcErr = e; }   // handled: the recorder way follows (aChk.err)
       r = job.r || (rP ? await rP : null);
@@ -71009,7 +71019,7 @@ async function vvMake(o) {
       // the recorder way (also the fallback): the file is decoded and measured; silent → another type once, then an error
       const tried = [];
       for (let k = 0; k < 2; k++) {
-        blob = await vvEncodeMR({W, H, r, path, view, rt, canvas: cv, outro, onProgress: p => prog(.25 + .75 * p, 'Bild')});
+        blob = await vvEncodeMR({W, H, r, path, view, rt, canvas: cv, outro, pre, onProgress: p => prog(.25 + .75 * p, 'Bild')});   // VD3: pre
         aChk.file = await vvBlobDb(blob); aChk.mime = path.mime;
         if (aChk.file == null && aChk.src >= VV_SILENT && !(await va1HasSound(blob))) { aChk.file = -200; aChk.noTrack = true; }   // VA1: nicht dekodierbar UND keine Tonspur = ohne Ton (vorher durchgelassen)
         if (aChk.file == null || aChk.file >= VV_SILENT || aChk.src < VV_SILENT) break;
@@ -71024,8 +71034,9 @@ async function vvMake(o) {
     VV.res = {blob, mime: blob.type, ext: path.ext, how: path.how, why: path.why, aChk, fmt, view, cam: rt.cam, cuts: vvCutHash(rt.shots), W, H, dur: r.dur, songSec: r.songSec, tail: r.tail, a: r.a, b: r.b, size: blob.size,
       logo: outro ? {name: outro.name, own: outro.own, at: outro.at, fade: VVL_FADE, len: outro.L, off: Math.max(0, outro.L - outro.end), end: outro.end} : null,   // VV-LOGO 4.30.1: at = Logo-Start (Videozeit), end = Videoende = Logo-Ende, off = Versatz in die Animation
       msAudio: Math.round(T1 - T0), msVideo: Math.round(T2 - T1), ms: Math.round(T2 - T0)};
+    vd3ResPatch(VV.res, pre);                                         // VD3: Vorlauf, Schritte, Zeiten
     return VV.res;
-  } finally { VV.busy = false; VV.job = false; VV.cancel = false; document.removeEventListener('visibilitychange', onVis); wakeReleaseLater(); }
+  } finally { vd3JobEnd(); VV.busy = false; VV.job = false; VV.cancel = false; document.removeEventListener('visibilitychange', onVis); wakeReleaseLater(); }
 }
 // Teilen (navigator.share mit Datei, im Tipp) bzw. Sichern; in der Claude-App über downloads (mp4 / webm erlaubt)
 function vvFileName(res) { const nm = String(S.name || 'song').toLowerCase().replace(/[^a-z0-9äöüß]+/gi, '-').replace(/^-|-$/g, '').slice(0, 30) || 'song'; return 'synquenzer-video-' + nm + '-' + res.fmt.replace(':', 'x') + '.' + res.ext; }
@@ -71085,6 +71096,7 @@ function vvOpen() {
   const acts = el('div', 'vvacts'), bPrev = el('button', 'rb vvbtn', '▶ Vorschau'), bMake = el('button', 'rb vvbtn go', 'Video erstellen');
   bPrev.setAttribute('aria-label', 'Vorschau mit Ton'); acts.append(bPrev, bMake); ctl.appendChild(acts);
   const sx1 = sx1VvRow(ctl, acts);                                 // SX126: Zeile „Ausblenden“
+  vd3VvRow(ctl, acts);                                              // VD3: Zeile „Extras“ (Titel, Untertitel-Rand, Making-of, Schnitt im Song)
   const bar = el('div', 'vvprog', '<i></i><span></span>'), bCan = el('button', 'rb vvbtn', 'Abbrechen'); bar.appendChild(bCan);
   const done = el('div', 'vvdone'), bShare = el('button', 'rb vvbtn go', 'Teilen'), bSave = el('button', 'rb vvbtn', 'Sichern');
   done.append(bShare, bSave); ctl.append(bar, done);
@@ -71142,6 +71154,7 @@ async function vvSync() {
   u.rng.style.display = hs ? 'none' : ''; u.segR.style.display = hs ? '' : 'none'; u.rowR.classList.toggle('txt', !hs); u.sh.classList.toggle('sel', hs);   // short landscape: the 44-px choice row fits without scrolling
   u.segR.update();
   sx1VvSync(u);                                                     // SX126
+  vd3VvSync(u);                                                     // VD3
   const busy = VV.busy;
   u.sh.classList.toggle('busy', busy); u.sh.classList.toggle('has', !!(VV.res && VV.res.blob) && !busy);
   for (const b of [...u.segF.children, ...u.segV.children, ...u.segR.children]) b.disabled = busy;
@@ -73063,6 +73076,7 @@ function vv4Pic(g, W, H, v, t, st, bpm) {
     else if (v === 'mod') vvDrawMod(g, vt, R0, t);
     else if (v === 'geraet') vr1DrawGer(g, vt, R0, t);              // VR1: Gerät im Original
     else if (v === 'klav') vvkDraw(g, W, H, st, vt);               // VK3: Klavier
+    else if (v === 'text') vd3TextPic(g, W, H, st, vt);            // VD3: Text (Songtext / Teil-Name)
     else vv4Focus(g, W, H, v === 'tast' ? 'tast' : v.slice(2), t, vt, v === 'tast');
   } catch (e) { logErr(e); }
   VV4B.st = o; g.setTransform(1, 0, 0, 1, 0, 0);
@@ -74818,7 +74832,7 @@ function vr1Ctx(song, A, B) {
 // the picture of view v for track t (want of vvCuts)
 function vr1Map(v, t, why, e, c) {
   const tr = t != null ? S.tracks[t] : null;
-  if (v === 'klav' || v === 'kino' || v === 'app' || v === 'matrix' || v === 'song' || v === 'tast') return {v, why};
+  if (v === 'klav' || v === 'kino' || v === 'app' || v === 'matrix' || v === 'song' || v === 'tast' || v === 'text') return {v, why};   // VD3: + Text
   if (t == null || !tr) return {v: ({morph: 'kino', ein: 'matrix', drop: 'matrix'})[e && e.k] || 'app', why};   // ein Bild einer Spur ohne Spur
   if (v === 'geraet') return {v: 'geraet', t, why};
   if (v === 'noten') return {v: tr.kind === 'drum' ? 'drum' : tr.stimme ? 'spur' : 'roll', t, why};
@@ -75343,6 +75357,737 @@ function vr1Api() {
   };
 }
 /* VR1-END */
+/* VD3-BEGIN ===================== Video wie die App, Schnitt-Modus im Song, Making-of (Paket VD3, Xander 07.11. (5)) =====================
+   „Bei der Video-Generation soll es wirklich nach der App aussehen und sofort für TikTok/Social Media taugen … Schnitt-Modus im Song,
+   über ein Dropdown je Takt-Bereich, ohne andere zu verwirren … Making-of: erst Sound einstellen, das im Video zeigen, die Entstehung
+   mit Vorlauf, dann der komplette Song – aber auch ohne, wenn man möchte.“
+   1. Voreinstellung 9:16 [Ganze App] (vvPrefs). Optional: Titel (die erste Sekunde: Songname, Tempo, Tonart) und Untertitel-Rand
+      (das Bild rückt in die sichere Zone, unten bleibt Platz für Beschriftungen). Eigene Texte stehen immer in der sicheren Zone.
+   2. Schnitt-Modus (SCHLEIFE ▾ → „Video-Schnitt“ oder Video-Blatt [Schnitt im Song]): unter den Takt-Nummern eine schmale Video-Spur
+      an Stelle des 8-px-Regie-Streifens (eigene Höhe, deckt nichts zu). Je Bereich ein Chip – voll = deine Wahl, gestrichelt = Auto.
+      Tipp = Auswahl (Auto, App, Klavier, Mäusekino, Gerät, Matrix, Noten, Text; „ab Takt n“ teilt), Kante ziehen = Schnitt verschieben.
+      Aus = alles wie vorher. Daten: song.video wie VV2 (neu nur der Wert 'text'), ein Undo-Schritt je Änderung.
+   3. Making-of: ein schlankes Protokoll (Klangwahl, Regler-Gesten mit Werten, Clip angelegt, Noten eingespielt, Teil gebaut – mit
+      Zeit, ohne Ton, höchstens 800 Einträge) nur auf diesem Gerät (localStorage je Projekt), auf Wunsch im Projekt (S.vd3mo). Mit dem
+      Schalter zeigt das Video vor dem Song einen gerafften Vorlauf (8–36 s): der echte Editor mit dem Regler, der sich dreht, die Matrix,
+      in der Clips und Noten erscheinen, der Song, in dem Teile erscheinen – darunter der Song gedämpft, der sich öffnet. Dann der Song.
+   4. Deterministisch: Bild und Ton hängen nur an Song, Protokoll und Bildzeit. Gemessen: VV.res.vd3 {msPlan, msPre, msSnd}. */
+const VD3_MAX = 800, VD3_KEY = 'sq-vd3mo-', VD3_IDX = 'sq-vd3mo-idx', VD3_KEEP = 12;
+const VD3_SAFE = {top: .055, k: .74};                                // Untertitel-Rand: das Bild 74 % groß, 5,5 % von oben (unten ≈ 20 % frei)
+const VD3_TXT = '#d9c3ff';                                           // Farbe der Ansicht „Text“ im Streifen / in der Spur
+const VD3_OPTS = [['auto', 'Auto'], ['app', 'App'], ['klav', 'Klavier'], ['kino', 'Mäusekino'], ['geraet', 'Gerät …'], ['matrix', 'Matrix'], ['noten', 'Noten …'], ['text', 'Text']];
+const VD3_SHORT = {auto: 'Auto', app: 'App', song: 'Song', matrix: 'Matrix', klav: 'Klavier', kino: 'Kino', geraet: 'Gerät', roll: 'Noten', drum: 'Drums', mod: 'Mod',
+  tast: 'Tastatur', spur: 'Spur', text: 'Text', 'f-zelle': 'Fokus', 'f-tast': 'Fokus', 'f-teil': 'Fokus', 'f-ue': 'Übergang'};
+const VD3_CAM = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false"><rect x="2.5" y="6.5" width="13" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 10.5l6-3.5v10l-6-3.5z" fill="currentColor"/></svg>';
+VV_DIRV.push('text'); VV4_OWN.add('text'); VV4_NAME.text = 'Text'; VR1_VIEW.text = 'Text';   // die neue Ansicht: Regie-Wert, ganzes Bild, Name, Regel-Ziel
+var VD3 = {log: null, pid: null, saveT: 0, touchT: -1e9, k0: 0, kT: 0, kP: 0, mute: 0, chipC: null, drag: null, job: null, safeCv: null, css: false, lbl: null, ui: null, marks: null, parts: null, lane: false, geo: null, probe: null};
+
+/* ---------- Einstellungen (Geräteprofil, im vv-Block der Einstellungen; eigene Schlüssel vd3*) ---------- */
+function vd3P() { const p = uiPrefs().vv || {}; return {ti: p.vd3ti === true, rd: p.vd3rd === true, mo: p.vd3mo === true}; }
+const vd3CutOn = () => !!(VD3 && uiPrefs().vd3cut === true);
+function vd3CutSet(on) {
+  setUiPref('vd3cut', !!on); if (!VD3) return; VD3.chipC = null; VD3.drag = null;
+  if (UI.songView) { try { svLayout(); } catch (e) { logErr(e); } UI.dirty.song = true; }
+  vd3LblSync();
+}
+// the Takt label of the song view names the lane (no button: the label column belongs to the tracks)
+function vd3LblSync() {
+  const lr = SV.labs && SV.labs.querySelector('.sv-lr'); if (!lr) return;
+  let b = VD3.lbl; if (!b || !b.isConnected) { b = VD3.lbl = el('span', 'vd3-lbl', 'VIDEO'); lr.appendChild(b); }
+  const on = vd3CutOn() && !!SV.vvS; b.hidden = !on; if (on) b.style.height = (SV.vvS | 0) + 'px';
+}
+
+/* ---------- 1. Titel und Untertitel-Rand (vvDraw-Haken) ---------- */
+function vd3TitleA(t) { return t < 1 ? 1 : t < 1.35 ? 1 - (t - 1) / .35 : 0; }
+function vd3Sub() { let k = ''; try { k = keyName(songKeyAtBar(0)); } catch (e) { k = ''; } return Math.round(S.bpm) + ' BPM' + (k ? ' · ' + k : ''); }
+// the title over the whole picture (a = opacity): song name, a short amber line, tempo · key – in the safe zone (not at the right edge,
+// not in the lower third)
+function vd3Title(g, W, H, a, head) {
+  if (!(a > 0)) return;
+  const C = vvCols(), port = H >= W, k = port ? W / 360 : H / 360;
+  g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = a;
+  g.fillStyle = 'rgba(8,9,11,.8)'; g.fillRect(0, 0, W, H);
+  const cx = port ? W * .465 : W / 2, cy = H * (port ? .36 : .42), mw = W * (port ? .78 : .62), nm = String(S.name || '').trim() || 'Mein Song';
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  if (head) { g.font = '700 ' + (12 * k).toFixed(1) + 'px ' + C.ui; g.fillStyle = C.amber; if ('letterSpacing' in g) g.letterSpacing = (3 * k).toFixed(1) + 'px'; g.fillText(head, cx, cy - 46 * k); if ('letterSpacing' in g) g.letterSpacing = '0px'; }
+  let fs = 40 * k; g.font = '800 ' + fs.toFixed(1) + 'px ' + C.ui; while (fs > 18 * k && g.measureText(nm).width > mw) { fs -= k; g.font = '800 ' + fs.toFixed(1) + 'px ' + C.ui; }
+  g.fillStyle = C.text; g.fillText(vv4Fit(g, nm, mw), cx, cy);
+  g.fillStyle = C.amber; g.fillRect(cx - 26 * k, cy + fs * .7, 52 * k, 3 * k);
+  g.font = '600 ' + (13 * k).toFixed(1) + 'px ' + C.num; g.fillStyle = C.dim; g.fillText(vd3Sub(), cx, cy + fs * .7 + 20 * k);
+  g.restore();
+}
+// the picture in the safe zone: drawn smaller into its own canvas, framed like a screen; below stays free for captions
+function vd3Safe(g, W, H, fn) {
+  const C = vvCols(), w = Math.round(W * VD3_SAFE.k), h = Math.round(H * VD3_SAFE.k), x = Math.round((W - w) / 2), y = Math.round(H * VD3_SAFE.top), s = W / 1080;
+  let o = VD3.safeCv; if (!o || o.width !== w || o.height !== h) { o = VD3.safeCv = document.createElement('canvas'); o.width = w; o.height = h; }
+  const q = o.getContext('2d', {alpha: false}); q.setTransform(1, 0, 0, 1, 0, 0); fn(q, w, h); q.setTransform(1, 0, 0, 1, 0, 0);
+  g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.fillStyle = C.bg; g.fillRect(0, 0, W, H);
+  const gr = g.createLinearGradient(0, y + h, 0, H); gr.addColorStop(0, 'rgba(255,178,46,.06)'); gr.addColorStop(1, 'rgba(255,178,46,0)'); g.fillStyle = gr; g.fillRect(0, y + h, W, H - y - h);
+  vvRound(g, x - 2 * s, y - 2 * s, w + 4 * s, h + 4 * s, 22 * s); g.fillStyle = '#000'; g.fill(); g.strokeStyle = C.line; g.lineWidth = Math.max(1, 2 * s); g.stroke();
+  vvRound(g, x, y, w, h, 20 * s); g.clip(); g.drawImage(o, x, y); g.restore();
+}
+// the options of the picture now: a running job's (frozen when it started), else the sheet's (still / ▶ Vorschau)
+function vd3Opts() { return VD3.job || (VV.ui && !VV.busy ? vd3P() : null); }
+// video time of a state (render: st.t; Vorschau / Standbild: from the song beat and the range start)
+function vd3T(st, rt) { if (st && isNum(st.t)) return st.t; if (st && st.sb != null && rt) return Math.max(0, (st.sb - barBeat(rt.A)) * 60 / (rt.bpm || S.bpm)); return 0; }
+// vvDraw: false = vvDrawRun draws as before (no title, no margin)
+function vd3Draw(g, W, H, view, st, rt) {
+  if (!VD3) return false;
+  const o = vd3Opts(); if (!o) return false;
+  const safe = !!o.rd && H > W, ti = o.ti && !o.pre ? vd3TitleA(vd3T(st, rt)) : 0;
+  if (!safe && !(ti > 0)) return false;
+  if (safe) vd3Safe(g, W, H, (q, w, h) => vvDrawRun(q, w, h, view, st, rt)); else vvDrawRun(g, W, H, view, st, rt);
+  if (ti > 0) vd3Title(g, W, H, ti);
+  return true;
+}
+
+/* ---------- 2. Ansicht „Text“: der Songtext, der gerade klingt (Mitlese-Zeile der App), sonst der Teil-Name groß ---------- */
+// the lyric at song beat sb: {P (lyPrep), li, si, act} – Song-Stimme (song.vox) first, else the STIMME clip that plays
+function vd3LyAt(sb, st) {
+  const song = S.song; if (!song || !S.takes || typeof lyPrep !== 'function') return null;
+  const sp = 60 / ((st && st.src && st.src.bpm) || S.bpm); let W = null;
+  for (const v of song.vox || []) {
+    if (!lyHas(S.takes[v.take])) continue;
+    const sa = barBeat(v.bar) + v.at, se = Math.min(barBeat(v.bar + v.len), sa + (v.out - v.in) / sp);
+    if (sb >= sa - 1e-9 && sb < se) { W = {id: v.take, a: v, h: v.in + (sb - sa) * sp}; break; }
+  }
+  if (!W && st) {
+    const t = stimmeT(), s = t >= 0 ? st.slots[t] : null, c = s != null && s >= 0 ? vvClip(t, s, st.own[t]) : null, a = c && c.audio;
+    if (a && lyHas(S.takes[a.take]) && st.tB != null) {
+      const L = clipB(c), segA = Math.min(a.at, L), segB = Math.min(L, segA + (a.out - a.in) / sp), cb = (((st.tB - (st.cs[t] || 0)) % L) + L) % L;
+      if (cb >= segA && cb < segB) W = {id: a.take, a, h: a.in + (cb - segA) * sp};
+    }
+  }
+  if (!W) return null;
+  let P = null; try { P = lyPrep(W.id, W.a); } catch (e) { P = null; }
+  if (!P || !P.S.length) return null;
+  let si = -1; for (let i = 0; i < P.hs.length; i++) { if (P.hs[i] <= W.h + 1e-6) si = i; else break; }
+  const li = si >= 0 ? P.lineOf[si] : 0;
+  return {P, li, si, act: si >= 0 && W.h - P.hs[si] < LY_HOLD};
+}
+function vd3MarkAt(bar) { const song = S.song; if (!song) return null; for (const m of song.marks || []) if (bar >= m.a && bar < m.a + m.len) return m; return null; }
+// one line of syllables, centred at (cx, y): sung = amber, the sounding one white on amber, the rest light grey (#lyA)
+function vd3LyLine(g, P, L, si, act, cx, y, fs, mw, C) {
+  const parts = []; for (let i = L.a; i <= L.b; i++) { const s = P.S[i]; parts.push({x: (i > L.a && s.w ? ' ' : '') + s.x, i}); }
+  let f = fs; const W_ = () => { g.font = '700 ' + f.toFixed(1) + 'px ' + C.ui; return parts.reduce((a, p) => a + g.measureText(p.x).width, 0); };
+  let tw = W_(); while (tw > mw && f > fs * .55) { f -= 1; tw = W_(); }
+  let x = cx - Math.min(tw, mw) / 2; const h0 = si >= 0 ? P.hs[si] : null;
+  g.textAlign = 'left'; g.textBaseline = 'middle';
+  for (const p of parts) {
+    const w = g.measureText(p.x).width, now = act && h0 != null && P.hs[p.i] === h0 && p.i <= si, done = !now && p.i <= si;
+    if (now) { const sp = p.x.startsWith(' ') ? g.measureText(' ').width : 0; g.fillStyle = 'rgba(255,178,46,.3)'; vvRound(g, x + sp - 3, y - f * .62, w - sp + 6, f * 1.24, 5); g.fill(); }
+    g.fillStyle = now ? '#fff' : done ? C.amber : '#c9ccd3'; g.fillText(p.x, x, y); x += w;
+  }
+  return f;
+}
+function vd3TextPic(g, W, H, st, vt) {
+  const C = vvCols(), port = H >= W, k = port ? W / 360 : H / 360, sb = st.sb == null ? 0 : Math.max(0, st.sb), song = S.song;
+  g.setTransform(1, 0, 0, 1, 0, 0); g.fillStyle = C.bg; g.fillRect(0, 0, W, H);
+  const cx = port ? W * .465 : W / 2, mw = W * (port ? .82 : .7), bar = barAt(sb), m = vd3MarkAt(bar);
+  // the LCD band of the Mitlese-Zeile (#lyBar look) behind the text
+  const by = H * (port ? .27 : .22), bh = H * (port ? .3 : .52);
+  const gr = g.createLinearGradient(0, by, 0, by + bh); gr.addColorStop(0, 'rgba(255,255,255,.035)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+  vvRound(g, W * .05, by, W * .9 - (port ? W * .04 : 0), bh, 14 * k); g.fillStyle = '#0a0b0d'; g.fill(); g.fillStyle = gr; g.fill(); g.strokeStyle = C.line; g.lineWidth = Math.max(1, k * .8); g.stroke();
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  // above: the part (amber, as the yellow heads) and the bar
+  g.font = '700 ' + (12 * k).toFixed(1) + 'px ' + C.ui; g.fillStyle = C.amber; if ('letterSpacing' in g) g.letterSpacing = (2.4 * k).toFixed(1) + 'px';
+  g.fillText(m ? markLabel(m).toUpperCase() : 'SONG', cx, by + 22 * k); if ('letterSpacing' in g) g.letterSpacing = '0px';
+  const L = vd3LyAt(sb, st), mid = by + bh * .52;
+  if (L) {
+    const Ln = L.P.lines[L.li], nx = L.P.lines[L.li + 1];
+    const f = vd3LyLine(g, L.P, Ln, L.si, L.act, cx, mid - 6 * k, 30 * k, mw, C);
+    if (nx) { g.textAlign = 'center'; g.font = '600 ' + Math.min(18 * k, f * .62).toFixed(1) + 'px ' + C.ui; g.fillStyle = '#7d828c'; g.fillText(vv4Fit(g, nx.txt, mw), cx, mid + f * .62 + 22 * k); }
+  } else {
+    const nm = m ? markLabel(m) : String(S.name || '').trim() || 'Song';
+    let fs = 46 * k; g.font = '800 ' + fs.toFixed(1) + 'px ' + C.ui; while (fs > 18 * k && g.measureText(nm).width > mw) { fs -= k; g.font = '800 ' + fs.toFixed(1) + 'px ' + C.ui; }
+    g.fillStyle = C.text; g.fillText(vv4Fit(g, nm, mw), cx, mid - 4 * k);
+    g.font = '600 ' + (13 * k).toFixed(1) + 'px ' + C.num; g.fillStyle = C.dim; g.fillText(m ? String(S.name || '').trim() || vd3Sub() : vd3Sub(), cx, mid + fs * .55 + 14 * k);
+  }
+  // the beat LEDs of TAKT (first beat red, the others green) and the bar number below the band
+  const bt = Math.floor(sb + 1e-9) % 4, ly = by + bh + 26 * k;
+  for (let j = 0; j < 4; j++) { const on = j === bt && st.sb != null, col = j ? C.play : '#ff4538'; vv4Dot(g, cx - 27 * k + j * 18 * k, ly, (j ? 4 : 5.5) * k, on ? col : '#2a2e36', on ? col : null); }
+  g.textAlign = 'center'; g.font = '700 ' + (11 * k).toFixed(1) + 'px ' + C.num; g.fillStyle = C.faint; g.fillText('TAKT ' + (bar + 1), cx, ly + 22 * k);
+  if (VD3.probe) VD3.probe.text = {ly: L ? {line: L.P.lines[L.li].txt, si: L.si, act: L.act} : null, part: m ? markLabel(m) : null, bar};
+}
+
+/* ---------- 3. Schnitt-Modus: die Video-Spur im Song ---------- */
+// the height of the band under the bar numbers: the lane (Schnitt-Modus) or the 8-px stripe of VV2 (only with entries)
+function vd3VvS(song, h) { const L = VD3 && uiPrefs().vd3cut === true ? ((h || SV.h || 300) < 240 ? 20 : 24) : 0; return L || (song && song.video ? 8 : 0); }
+function vd3RulesSig() { try { return JSON.stringify(vr1Rules()); } catch (e) { return ''; } }
+// the chips: the cut list of the whole song (what the video shows), split at the edges of your entries (full = yours, dashed = Auto)
+function vd3Chips(song) {
+  if (!song || !song.bars) return [];
+  const key = (UI.songVer | 0) + '|' + NT() + '|' + song.bars + '|' + vd3RulesSig(), now = performance.now(), C0 = VD3.chipC;
+  if (C0 && C0.key === key && (VD3.drag || now - C0.t < 1500)) return C0.list;
+  let shots = []; try { shots = vvCuts(song, 0, song.bars); } catch (e) { logErr(e); shots = []; }
+  const out = [];
+  for (const s of shots) {
+    let x = s.a;
+    while (x < s.b) {
+      const e = vvDirAt(song, x); let y = s.b;
+      if (e) y = Math.min(y, e.b); else for (const q of song.video || []) if (q.a > x && q.a < y) y = q.a;
+      const man = !!(e && e.v === s.v && (!VV4_TRK.includes(e.v) || e.t === s.t)), c = {a: x, b: y, v: s.v, t: VV4_TRK.includes(s.v) ? s.t : null, man};
+      const l = out[out.length - 1]; if (l && l.b === c.a && l.v === c.v && l.t === c.t && l.man === c.man) l.b = c.b; else out.push(c);
+      x = y;
+    }
+  }
+  VD3.chipC = {key, t: now, list: out};
+  return out;
+}
+const vd3ChipCol = (c, C) => (c.v === 'text' ? VD3_TXT : vv4StripeCol(c, C));
+function vd3ChipName(c, w) { const n = VD3_SHORT[c.v] || VV4_NAME[c.v] || c.v; return c.t != null && w > 70 ? n + ' · ' + svShort(c.t) : n; }
+// drawn in svDraw instead of the 8-px stripe (y, h: the band under the bar numbers)
+function vd3DrawLane(g, song, X, W, y, h) {
+  const C = vvCols(); g.save();
+  g.fillStyle = 'rgba(0,0,0,.35)'; g.fillRect(0, y, W, h);
+  const L = song ? vd3Chips(song) : [], D = VD3.drag, geo = [];
+  g.font = '700 ' + (h < 22 ? 9 : 10) + 'px ' + C.ui; g.textBaseline = 'middle'; g.textAlign = 'left';
+  if (!VD3.lbl || !VD3.lbl.isConnected || VD3.lbl.hidden) vd3LblSync();
+  L.forEach((c0, k) => {
+    const c = D && D.k === k ? Object.assign({}, c0, {b: D.m}) : D && D.k + 1 === k ? Object.assign({}, c0, {a: D.m}) : c0;
+    const x0 = X(c.a) + 1.5, x1 = X(c.b) - 1.5; geo.push({a: c.a, b: c.b, x0, x1}); if (x1 < 0 || x0 > W || x1 - x0 < 2) return;
+    const col = vd3ChipCol(c, C), r = Math.min(5, (x1 - x0) / 2);
+    if (c.man) { vvRound(g, x0, y + 2, x1 - x0, h - 4, r); g.fillStyle = col; g.fill(); }
+    else { vvRound(g, x0 + .5, y + 2.5, x1 - x0 - 1, h - 5, r); g.fillStyle = '#16181d'; g.fill(); g.strokeStyle = col; g.lineWidth = 1; g.setLineDash([3, 2]); g.stroke(); g.setLineDash([]); }
+    const tx = Math.max(x0, 0) + 6, room = Math.min(x1, W) - tx - 4; if (room < 14) return;
+    g.fillStyle = c.man ? '#0d0e11' : '#b8bdc7'; g.fillText(vv4Fit(g, vd3ChipName(c, room), room), tx, y + h / 2 + .5);
+  });
+  if (D) { const x = X(D.m); g.fillStyle = C.amber; g.fillRect(x - 1, y, 2, h); }
+  VD3.geo = {y, h, list: geo};
+  g.restore();
+}
+// a touch on the lane (svBindGestures pointerdown, before the song gestures): edge → move the cut, still → the menu, sideways → scroll
+function vd3LaneDown(e, w) {
+  if (!VD3 || !vd3CutOn() || !S.song || !SV.vvS || (e.pointerType === 'mouse' && e.button !== 0) || R.songRec || SV.pinch || SV.gOn || VD3.lane) return false;
+  const r = w.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top, y0 = SV.rulerH - SV.vvS;
+  if (y < y0 - 2 || y >= SV.rulerH) return false;
+  e.preventDefault(); try { w.setPointerCapture(e.pointerId); } catch (_) {}
+  const L = vd3Chips(S.song), cw = SV.cellW, X = b => b * cw - SV.x;
+  let edge = -1, best = 15; for (let k = 0; k + 1 < L.length; k++) { const d = Math.abs(X(L[k].b) - x); if (d < best) { best = d; edge = k; } }
+  VD3.lane = true;
+  const G = {id: e.pointerId, x0: e.clientX, y0: e.clientY, sx: SV.x, x, mode: edge >= 0 ? 'edge' : null, k: edge, t0: performance.now()};
+  if (edge >= 0) { VD3.drag = {k: edge, m: L[edge].b, m0: L[edge].b, lo: L[edge].a + 1, hi: L[edge + 1].b - 1}; UI.dirty.song = true; haptic('tick'); }
+  const mv = ev => {
+    if (ev.pointerId !== G.id) return;
+    const dx = ev.clientX - G.x0;
+    if (G.mode === 'edge') { const D = VD3.drag; if (!D) return; const m = clamp(Math.round((G.x + dx + SV.x) / cw), D.lo, D.hi); if (m !== D.m) { D.m = m; haptic('tick'); lcdOrToast('Schnitt bei Takt ' + (m + 1)); svDraw(true); } return; }
+    if (!G.mode && (Math.abs(dx) > 8 || Math.abs(ev.clientY - G.y0) > 8)) { G.mode = 'scroll'; folHand('song'); }
+    if (G.mode === 'scroll') { SV.x = clamp(G.sx - dx, 0, svMaxX()); SV.lastUser = performance.now(); svDraw(true); }
+  };
+  const up = ev => {
+    if (ev.pointerId !== G.id) return;
+    w.removeEventListener('pointermove', mv); w.removeEventListener('pointerup', up); w.removeEventListener('pointercancel', up); VD3.lane = false;
+    const D = VD3.drag; VD3.drag = null; UI.dirty.song = true;
+    if (ev.type !== 'pointerup') return;
+    if (G.mode === 'edge') { if (D && D.m !== D.m0) vd3MoveCut(L[D.k], L[D.k + 1], D.m); else if (performance.now() - G.t0 < 350) vd3ChipPop(L[D.k + 1] || L[D.k], (L[D.k + 1] || L[D.k]).a, ev.clientX, ev.clientY); return; }
+    if (G.mode === 'scroll') return;
+    const bar = Math.floor((x + SV.x) / cw), c = L.find(q => bar >= q.a && bar < q.b);
+    if (c) vd3ChipPop(c, bar, ev.clientX, ev.clientY); else if (S.song && bar >= S.song.bars) lcdOrToast('Hinter dem Song-Ende');
+  };
+  w.addEventListener('pointermove', mv); w.addEventListener('pointerup', up); w.addEventListener('pointercancel', up);
+  return true;
+}
+// one undo step: write [a, b) of song.video (null = Auto there); list = [{a, b, v, t}]
+function vd3Write(list, label) {
+  const song = S.song; if (!song) return false;
+  const before = songSnapshot();
+  for (const q of list) vvDirClear(song, q.a, q.b);
+  for (const q of list) if (q.v && q.v !== 'auto' && q.b > q.a && (!VV4_TRK.includes(q.v) || (isNum(q.t) && S.tracks[q.t]))) (song.video || (song.video = [])).push(VV4_TRK.includes(q.v) ? {a: q.a, b: q.b, v: q.v, t: q.t} : {a: q.a, b: q.b, v: q.v});
+  vvDirTidy(song);
+  if (songSnapshot() === before) return false;
+  pushSongUndo(before, label); songChanged(); VD3.chipC = null; UI.dirty.song = true;
+  return true;
+}
+// the cut between chip A and chip B moves to bar m: both keep the picture they showed (an Auto chip becomes your choice)
+function vd3MoveCut(A, B, m) {
+  if (!A || !B || !(m > A.a && m < B.b)) return false;
+  const ok = vd3Write([{a: A.a, b: m, v: A.v, t: A.t}, {a: m, b: B.b, v: B.v, t: B.t}], 'Video-Schnitt bei Takt ' + (m + 1));
+  if (ok) toast('Video-Schnitt bei Takt ' + (m + 1), songUndoAct());
+  return ok;
+}
+const vd3Rng = (a, b) => (b - a > 1 ? 'Takt ' + (a + 1) + '–' + b : 'Takt ' + (a + 1));
+// the menu of a chip: [ganzer Bereich | ab Takt n (teilen)], the pictures, Gerät …/Noten … with the track, „Video-Spur ausblenden“
+function vd3ChipPop(c, bar, cx, cy) {
+  if (!c) return; vd3Css();
+  const split = bar > c.a && bar < c.b; let from = c.a;
+  const anchor = {getBoundingClientRect: () => ({left: cx - 1, right: cx + 1, top: cy - 12, bottom: cy + 12, width: 2, height: 24})};
+  openPop(anchor, p => {
+    guardTouch(p); p.classList.add('vd3pop');
+    const cur = c.man ? c.v : 'auto', tracks = v => (v === 'geraet' ? vvDirTracks(from, c.b) : vvDirTracks(from, c.b).filter(t => !(S.tracks[t] && S.tracks[t].stimme)));
+    const paint = (pick) => {
+      const a = from, b = c.b, rng = vd3Rng(a, b);
+      let h = `<div class="vd3h"><b>Video · ${esc(rng)}</b><button class="rb vd3x" data-a="x" aria-label="Schließen">✕</button></div>`;
+      if (split) h += `<div class="vd3sp">` + [[c.a, 'Ganzer Bereich', vd3Rng(c.a, c.b)], [bar, 'Ab Takt ' + (bar + 1), 'teilen']].map(([x, l, s]) => `<button class="rb${from === x ? ' on' : ''}" data-from="${x}" aria-pressed="${from === x}"><b>${esc(l)}</b><small>${esc(s)}</small></button>`).join('') + `</div>`;
+      if (pick) {
+        const ts = tracks(pick);
+        h += `<div class="vd3sub">${pick === 'geraet' ? 'Gerät' : 'Noten'} · welche Spur?</div><div class="vd3g vd3t">` + (ts.length ? ts.map(t => `<button class="rb" data-t="${t}" data-v="${pick}"><i style="background:var(--t${t + 1})"></i><b>${esc(svShort(t))}</b></button>`).join('') : '<span class="vd3no">In diesem Bereich spielt keine Spur</span>') +
+          `</div><div class="vd3ft"><button class="rb" data-a="back">‹ Zurück</button></div>`;
+      } else {
+        h += `<div class="vd3g">` + VD3_OPTS.map(([v, l]) => { const on = v === cur || (v === 'noten' && (cur === 'roll' || cur === 'drum')); return `<button class="rb${on ? ' on' : ''}" data-v="${v}" aria-pressed="${on}"><b>${esc(l)}</b></button>`; }).join('') + `</div>` +
+          `<div class="vd3ft"><small>${c.man ? 'Deine Wahl' : 'Jetzt: Auto zeigt ' + esc(VV4_NAME[c.v] || c.v)}</small><button class="rb" data-a="off">Video-Spur ausblenden</button></div>`;
+      }
+      p.innerHTML = h;
+    };
+    paint(null);
+    onTap(p, x => {
+      const A = x.dataset.a;
+      if (A === 'x') { closePop(); return; }
+      if (A === 'off') { closePop(); vd3CutSet(false); lcdOrToast('Video-Spur aus'); return; }
+      if (A === 'back') { paint(null); popFit(p); return; }
+      if (x.dataset.from != null) { from = +x.dataset.from; haptic('tick'); paint(null); popFit(p); return; }
+      const v = x.dataset.v; if (!v) return;
+      if ((v === 'geraet' || v === 'noten') && x.dataset.t == null) { paint(v); popFit(p); return; }
+      let vv = v, t = x.dataset.t != null ? +x.dataset.t : null;
+      if (v === 'noten') vv = isDrum(t) ? 'drum' : 'roll';
+      closePop();
+      const a = from, b = c.b, nm = vv === 'auto' ? 'Auto' : vv4Nm(vv, t);
+      if (vd3Write([{a, b, v: vv, t}], 'Video ' + vd3Rng(a, b) + ': ' + nm)) toast('Video ' + vd3Rng(a, b) + ': ' + nm, songUndoAct());
+    }, 'button');
+  }, {name: 'vd3cut'});
+}
+// SCHLEIFE ▾: [Kamera · Video-Schnitt im Song · an/aus] (wie „Mithören beim Wischen“ von UIX1)
+function vd3LoopRow(p) {
+  if (!p || !VD3) return; vd3Css();
+  const r = el('div', 'vd3-lp'), b = el('button', 'rb vd3-lb');
+  const paint = () => { const on = vd3CutOn(); b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); b.setAttribute('aria-label', 'Video-Schnitt im Song: ' + (on ? 'an' : 'aus'));
+    b.innerHTML = VD3_CAM + '<span>Video-Schnitt im Song</span><b>' + (on ? 'an' : 'aus') + '</b>'; };
+  paint(); r.appendChild(b); p.appendChild(r);
+  onTap(b, () => { vd3CutSet(!vd3CutOn()); paint(); haptic('tick'); });
+}
+
+/* ---------- 4. Making-of: das Protokoll ---------- */
+// sanitize (load, project file); no constants of this block here (runs at load)
+function vd3Norm(x) {
+  if (!x || typeof x !== 'object' || !Array.isArray(x.ev)) return null;
+  const num = v => (typeof v === 'number' && isFinite(v) ? v : null), val = v => (typeof v === 'number' && isFinite(v) ? +v.toPrecision(6) : typeof v === 'string' ? v.slice(0, 24) : null), out = [];
+  for (const e of x.ev.slice(-800)) {
+    if (!e || typeof e !== 'object' || !['klang', 'regler', 'clip', 'noten', 'teil'].includes(e.k) || num(e.ms) == null) continue;
+    const o = {k: e.k, ms: Math.round(e.ms)};
+    if (num(e.t) != null) o.t = Math.round(e.t); if (num(e.s) != null) o.s = Math.round(e.s);
+    if (e.k === 'regler') { if (typeof e.p !== 'string') continue; o.p = e.p.slice(0, 32); o.a = val(e.a); o.b = val(e.b); o.v = Array.isArray(e.v) ? e.v.slice(0, 12).map(val) : []; o.d = Math.max(0, Math.round(num(e.d) || 0)); }
+    if (e.k === 'clip' || e.k === 'noten') { o.n = Math.max(0, Math.round(num(e.n) || 0)); if (num(e.n0) != null) o.n0 = Math.max(0, Math.round(e.n0)); if (e.au) o.au = 1; }
+    if (typeof e.x === 'string') o.x = e.x.slice(0, 40); if (typeof e.id === 'string') o.id = e.id.slice(0, 40); if (e.w === 'part') o.w = 'part';
+    out.push(o);
+  }
+  return {v: 1, ev: out};
+}
+function vd3Load() {
+  if (!VD3 || !S) return null;
+  const pid = S.id || 'ohne';
+  if (VD3.pid === pid && VD3.log) return VD3.log;
+  if (VD3.log) vd3Flush();
+  VD3.pid = pid; let ev = [];
+  try { const j = vd3Norm(JSON.parse(safeGet(VD3_KEY + pid) || 'null')); if (j) ev = j.ev; } catch (e) { ev = []; }
+  const pj = S.vd3mo && Array.isArray(S.vd3mo.ev) ? S.vd3mo.ev : null;
+  if (pj && pj.length > ev.length) ev = pj.slice();
+  VD3.log = ev; if (S.vd3mo) S.vd3mo.ev = ev;
+  VD3.marks = new Set(((S.song && S.song.marks) || []).map(m => m.id)); VD3.parts = (S.parts || []).map(p => !!p);
+  return ev;
+}
+function vd3Flush() {
+  clearTimeout(VD3.saveT); VD3.saveT = 0; if (!VD3.log || !VD3.pid) return;
+  if (!safeSet(VD3_KEY + VD3.pid, JSON.stringify({v: 1, ev: VD3.log}))) return;
+  try {   // only the last 12 projects keep a log on the device
+    let ix = []; try { ix = JSON.parse(safeGet(VD3_IDX) || '[]'); } catch (e) { ix = []; } if (!Array.isArray(ix)) ix = [];
+    ix = ix.filter(q => q !== VD3.pid); ix.push(VD3.pid);
+    while (ix.length > VD3_KEEP) { const o = ix.shift(); try { localStorage.removeItem(VD3_KEY + o); } catch (e) {} }
+    safeSet(VD3_IDX, JSON.stringify(ix));
+  } catch (e) {}
+}
+function vd3Push(e) {
+  const L = vd3Load(); if (!L) return null;
+  e.ms = Date.now(); L.push(e); if (L.length > VD3_MAX) L.splice(0, L.length - VD3_MAX);
+  clearTimeout(VD3.saveT); VD3.saveT = setTimeout(vd3Flush, 1500);
+  if (VD3.ui) vd3VvSync(VV.ui);
+  return e;
+}
+const vd3Busy = () => !VD3 || VD3.mute > 0 || !!VV.off || !!VV.busy;
+const vd3Hand = ms => performance.now() - VD3.touchT < ms;          // a finger was on the screen just now (no automation, no load)
+const vd3Val = v => (typeof v === 'number' && isFinite(v) ? +v.toPrecision(6) : typeof v === 'string' ? v.slice(0, 24) : null);
+// setP: a knob gesture (merged while the same knob moves; ≤ 12 values of the way)
+function vd3Knob(i, key, v0, v1) {
+  if (vd3Busy() || !vd3Hand(1500) || v0 === v1) return;
+  const L = vd3Load(); if (!L) return;
+  const now = performance.now(), e = L[L.length - 1], b = vd3Val(v1);
+  if (e && e.k === 'regler' && e.t === i && e.p === key && now - VD3.kT < 1500) {
+    e.b = b; if (now - VD3.kP > 90 && e.v.length < 12) { e.v.push(b); VD3.kP = now; } else if (e.v.length) e.v[e.v.length - 1] = b;
+    e.d = Math.round(now - VD3.k0); VD3.kT = now; clearTimeout(VD3.saveT); VD3.saveT = setTimeout(vd3Flush, 1500); return;
+  }
+  VD3.k0 = VD3.kT = VD3.kP = now;
+  vd3Push({k: 'regler', t: i, p: key, a: vd3Val(v0), b, v: [b], d: 0});
+}
+// applySound / loadKit: another sound on a track (fast browsing: the last one counts)
+function vd3Klang(i, snd) {
+  if (vd3Busy() || !vd3Hand(4000) || !snd) return;
+  const L = vd3Load(); if (!L) return;
+  const e = L[L.length - 1], x = String(snd.name || '').slice(0, 40);
+  if (e && e.k === 'klang' && e.t === i && Date.now() - e.ms < 1200) { e.x = x; e.ms = Date.now(); return; }
+  vd3Push({k: 'klang', t: i, x});
+}
+// undoPush: a clip made / notes played in, a part built (looked at after the step is done)
+function vd3Undo(e) {
+  if (vd3Busy() || !e) return;
+  const it = e.kind === 'group' && Array.isArray(e.items) ? e.items : [e];
+  if (!it.some(x => x && (x.kind === 'clip' || x.kind === 'song' || x.kind === 'part'))) return;
+  Promise.resolve().then(() => { try { for (const x of it) vd3UndoOne(x); } catch (er) { logErr(er); } });
+}
+function vd3UndoOne(e) {
+  if (!e || vd3Busy()) return;
+  if (e.kind === 'clip') {
+    const tr = S.tracks[e.track], c = tr && tr.clips[e.scene]; if (!c) return;
+    const nb = e.before && Array.isArray(e.before.notes) ? e.before.notes.length : -1, na = Array.isArray(c.notes) ? c.notes.length : 0;
+    if (!e.before) vd3Push({k: 'clip', t: e.track, s: e.scene, n: na, ...(c.audio ? {au: 1} : {})});
+    else if (na !== nb) {
+      const L = vd3Load(), l = L && L[L.length - 1];
+      if (l && l.k === 'noten' && l.t === e.track && l.s === e.scene && Date.now() - l.ms < 8000) { l.n = na; l.ms = Date.now(); }
+      else vd3Push({k: 'noten', t: e.track, s: e.scene, n: na, n0: nb});
+    }
+  } else if (e.kind === 'song') {
+    const song = S.song, ms = (song && song.marks) || [], prev = VD3.marks || new Set(ms.map(m => m.id)); VD3.marks = new Set(ms.map(m => m.id));
+    for (const m of ms) if (!prev.has(m.id)) vd3Push({k: 'teil', id: m.id, x: markLabel(m).slice(0, 30)});
+  } else if (e.kind === 'part') {
+    const P = S.parts || [], prev = VD3.parts || P.map(q => !!q); VD3.parts = P.map(q => !!q);
+    P.forEach((q, k) => { if (q && !prev[k]) vd3Push({k: 'teil', w: 'part', s: k, x: String(q.name || 'Teil ' + (k + 1)).slice(0, 30)}); });
+  }
+}
+// only „im Projekt“ puts the log into the project (then it travels with the file); otherwise it stays on this device
+function vd3InProject(on) {
+  const L = vd3Load(); if (!L) return false;
+  if (on) S.vd3mo = {v: 1, ev: L}; else delete S.vd3mo;
+  markDirty(); return !!S.vd3mo;
+}
+
+/* ---------- 5. Making-of: der Plan des Vorlaufs (Szenen, Frames) ---------- */
+const VD3_DUR = {klang: 1.6, regler: 1.9, clip: 2.1, teil: 1.7}, VD3_MAXS = 26;
+function vd3NumP(key) { const d = PD[key]; return !!d && !d.vals && isNum(d.min) && isNum(d.max); }
+function vd3Mv(x) { if (!vd3NumP(x.p) || !isNum(x.a) || !isNum(x.b)) return .5; const d = PD[x.p]; return Math.abs(toNorm(d, x.b) - toNorm(d, x.a)); }
+// the fullest 8 bars of the range (most tracks playing; the first on a tie): the music under the prelude
+function vd3Tease(song, A, B) {
+  if (!song || B <= A) return A; const n = Math.min(8, B - A), cnt = [];
+  for (let x = A; x < B; x++) { let k = 0; for (let t = 0; t < NT(); t++) { const o = song.lanes[t] && laneOriginAt(song.lanes[t], x); if (o && laneClipOk(song, t, o)) k++; } cnt.push(k); }
+  let best = A, bs = -1; for (let x = A; x + n <= B; x++) { let s = 0; for (let j = 0; j < n; j++) s += cnt[x - A + j]; if (s > bs) { bs = s; best = x; } }
+  return best;
+}
+function vd3Plan(ev, o) {
+  o = o || {}; const song = S.song, fps = VV_FPS, list = [];
+  for (const e of ev || []) {
+    if (!e || typeof e !== 'object') continue;
+    const tr = isNum(e.t) ? S.tracks[e.t] : null, l = list[list.length - 1];
+    if (e.k === 'klang' && tr) { if (l && l.k === 'klang' && l.t === e.t) l.x = e.x; else list.push({k: 'klang', t: e.t, x: String(e.x || '')}); }
+    else if (e.k === 'regler' && tr && tr.kind === 'synth' && PD[e.p]) {
+      if (l && l.k === 'regler' && l.t === e.t && l.p === e.p) { l.b = e.b; l.v = l.v.concat(e.v || []).slice(-12); }
+      else list.push({k: 'regler', t: e.t, p: e.p, a: e.a, b: e.b, v: (e.v || []).slice(0, 12)});
+    } else if ((e.k === 'clip' || e.k === 'noten') && tr && tr.clips[e.s]) {
+      const nn = (tr.clips[e.s].notes || []).length, n1 = Math.min(nn, e.n | 0);
+      if (l && l.k === 'clip' && l.t === e.t && l.s === e.s) { l.n1 = n1; continue; }
+      list.push({k: 'clip', t: e.t, s: e.s, neu: e.k === 'clip', n0: e.k === 'clip' ? 0 : Math.min(nn, e.n0 | 0), n1, au: !!e.au});
+    } else if (e.k === 'teil' && e.w === 'part') { if (S.parts && S.parts[e.s]) list.push({k: 'teil', w: 'part', s: e.s, x: String(e.x || '')}); }
+    else if (e.k === 'teil' && song) { const m = (song.marks || []).find(q => q.id === e.id); if (m) list.push({k: 'teil', id: m.id, x: markLabel(m)}); }
+  }
+  for (const x of list) if (x.k === 'regler') x.mv = vd3Mv(x);
+  // too many: the smallest knob moves go first, then evenly over what is left
+  const rg = list.filter(x => x.k === 'regler').sort((p, q) => p.mv - q.mv);
+  while (list.length > VD3_MAXS && rg.length) list.splice(list.indexOf(rg.shift()), 1);
+  if (list.length > VD3_MAXS) { const keep = []; for (let j = 0; j < VD3_MAXS; j++) keep.push(list[Math.round(j * (list.length - 1) / (VD3_MAXS - 1))]); list.length = 0; list.push(...keep); }
+  if (!list.length) return null;
+  const intro = 1.8, outro = 1.3, sum = list.reduce((a, x) => a + VD3_DUR[x.k], 0), room = 36 - intro - outro, sc = sum > room ? room / sum : 1;
+  const scenes = []; let f = Math.round(intro * fps); scenes.push({k: 'intro', f0: 0, f1: f});
+  for (const x of list) { const d = Math.max(Math.round(.8 * fps), Math.round(VD3_DUR[x.k] * sc * fps)); scenes.push(Object.assign({f0: f, f1: f + d}, x)); f += d; }
+  const fo = Math.round(outro * fps); scenes.push({k: 'outro', f0: f, f1: f + fo}); f += fo;
+  // what is there at each scene: clips (born in the protocol → hidden before), their notes, marks / parts, the sound names
+  const born = new Set(), bornM = new Set(), bornP = new Set();
+  for (const x of list) { if (x.k === 'clip' && x.neu) born.add(x.t + '|' + x.s); if (x.k === 'teil' && x.id) bornM.add(x.id); if (x.k === 'teil' && x.w === 'part') bornP.add(x.s); }
+  let cnt = new Map(), mk = new Set(), pt = new Set(), snd = {};
+  for (const sc0 of scenes) {
+    if (sc0.k === 'clip') { cnt = new Map(cnt); cnt.set(sc0.t + '|' + sc0.s, sc0.n1); }
+    if (sc0.k === 'teil' && sc0.id) { mk = new Set(mk); mk.add(sc0.id); }
+    if (sc0.k === 'teil' && sc0.w === 'part') { pt = new Set(pt); pt.add(sc0.s); }
+    if (sc0.k === 'klang') { snd = Object.assign({}, snd, {[sc0.t]: sc0.x}); }
+    sc0.cnt = cnt; sc0.mk = mk; sc0.pt = pt; sc0.snd = snd;
+  }
+  const rg0 = o.range || vvRange(false) || {a: 0, b: song ? song.bars : 0};
+  return {frames: f, sec: f / fps, scenes, born, bornM, bornP, steps: list.length, tease: vd3Tease(song, rg0.a, rg0.b), sorted: new Map(), lastSig: null, ti: false};
+}
+function vd3SceneAt(pre, f) { const L = pre.scenes; let lo = 0, hi = L.length - 1; while (lo < hi) { const m = (lo + hi + 1) >> 1; if (L[m].f0 <= f) lo = m; else hi = m - 1; } return lo; }
+const vd3Ease = u => { u = clamp(u, 0, 1); return u * u * (3 - 2 * u); };
+
+/* ---------- 6. Making-of: die Bilder des Vorlaufs ---------- */
+// the first n notes of a clip in time order (the order they are drawn in stays the clip's)
+function vd3First(pre, key, c, n) {
+  let o = pre.sorted.get(key); if (!o) { o = c.notes.map((q, j) => [q.t, j]).sort((p, q) => p[0] - q[0] || p[1] - q[1]).map(x => x[1]); pre.sorted.set(key, o); }
+  const keep = new Set(o.slice(0, n)); return c.notes.filter((q, j) => keep.has(j));
+}
+// the project as it was at scene j (progress u): tracks with only the clips there by then (notes appearing), the song with its parts
+function vd3Virt(pre, j, u) {
+  const sc = pre.scenes[j], uu = vd3Ease((u - .12) / .7);
+  const tracks = S.tracks.map((tr, i) => {
+    if (!tr) return tr;
+    const clips = tr.clips.map((c, s) => {
+      if (!c) return c; const key = i + '|' + s;
+      let n = sc.cnt.get(key);
+      if (n == null) return pre.born.has(key) ? null : c;
+      if (sc.k === 'clip' && sc.t === i && sc.s === s) n = Math.round(sc.n0 + (sc.n1 - sc.n0) * uu);
+      return n >= (c.notes || []).length ? c : Object.assign({}, c, {notes: vd3First(pre, key, c, n)});
+    });
+    const nm = sc.snd[i]; return Object.assign({}, tr, {clips}, nm && tr.sound ? {sound: Object.assign({}, tr.sound, {name: nm})} : null);
+  });
+  const song = S.song; let vs = song;
+  if (song && pre.bornM.size) {
+    const vis = (song.marks || []).filter(m => !pre.bornM.has(m.id) || sc.mk.has(m.id));
+    let end = vis.reduce((a, m) => Math.max(a, m.a + m.len), 0);
+    if (sc.k === 'teil' && sc.id) { const m = vis.find(q => q.id === sc.id), prevEnd = vis.filter(q => q.id !== sc.id).reduce((a, q) => Math.max(a, q.a + q.len), 0); if (m && m.a + m.len >= prevEnd) end = Math.max(prevEnd, Math.ceil(prevEnd + (m.a + m.len - prevEnd) * uu)); }
+    if (!vis.length) end = 0;
+    vs = Object.assign({}, song, {marks: vis, bars: Math.min(song.bars, Math.max(end, vis.length ? 1 : 0))});
+  }
+  let parts = S.parts; if (parts && pre.bornP.size) parts = parts.map((p, k) => (pre.bornP.has(k) && !sc.pt.has(k) ? null : p));
+  return {tracks, song: vs, parts};
+}
+// draw fn() with the project of that moment (synchronous; the real project comes back in any case)
+function vd3With(v, fn) {
+  const kT = S.tracks, kS = S.song, kP = S.parts;
+  try { S.tracks = v.tracks; S.song = v.song; S.parts = v.parts; return fn(); } finally { S.tracks = kT; S.song = kS; S.parts = kP; }
+}
+const vd3St = () => ({sb: null, tB: 0, t: 0, slots: [], cs: [], own: [], bpm: S.bpm, src: {nt: [], t0: 0, bpm: S.bpm}});
+// the knob value at u: along the recorded way (normalised), held a little at both ends
+function vd3KnobAt(x, u) {
+  const uu = vd3Ease((u - .15) / .7), pts = [x.a].concat(x.v && x.v.length ? x.v : [x.b]);
+  if (!vd3NumP(x.p) || !pts.every(isNum)) return uu < .5 ? x.a : x.b;
+  const d = PD[x.p], N = pts.map(v => toNorm(d, v)), q = uu * (N.length - 1), k = Math.min(N.length - 2, Math.floor(q)), n = N.length < 2 ? N[0] : N[k] + (N[k + 1] - N[k]) * (q - k);
+  return fromNorm(d, clamp(n, 0, 1));
+}
+// the Gerät of track i with knob key at value v (the real editor page that holds the key; the focus frame on it)
+function vd3Ger(g, W, H, x, u) {
+  const C = vvCols(), i = x.t, s = sndOf(i), st = vd3St(); if (!s) return null;
+  const key = x.k === 'regler' ? x.p : null, v = key ? vd3KnobAt(x, u) : null;
+  const pid = key && s.engine !== 'mk' && s.engine !== 'bm' ? vr1PgOfKey(key, s.engine) : null;
+  const keepV = key ? sndGet(s, key) : null, keepM = s.mods, hadM = 'mods' in s, keepPg = vr1Page;
+  let res = null;
+  try {
+    if (key && v != null) sndSet(s, key, v);
+    if (key) s.mods = [];                                            // nur dieser Regler im Fokus (keine Modulationsringe im Making-of)
+    if (pid) vr1Page = () => pid;
+    res = vv4Shot(g, W, H, st, i, 'geraet');
+  } finally { if (key) sndSet(s, key, keepV); if (key) { if (hadM) s.mods = keepM; else delete s.mods; } vr1Page = keepPg; }
+  // the frame on the knob that turns (the app's highlight) and a finger on it
+  const ed = res && res.ger && res.ger.ed, cell = ed && key ? ed.knobs.find(q => q.key === key) : null;
+  if (cell) {
+    g.save(); g.strokeStyle = vr1SelCol(); g.lineWidth = 2; vvRound(g, cell.x + 3, cell.y - 2, cell.w - 6, cell.h - 2, 8); g.stroke();
+    const sc = Math.min(1.35, cell.w / 82), cx = cell.x + cell.w / 2, cy = cell.y + 52 * sc, a = -Math.PI * .75 + Math.PI * 1.5 * cell.n;
+    g.globalAlpha = .55; g.fillStyle = '#fff'; g.beginPath(); g.arc(cx + Math.cos(a) * 30 * sc, cy + Math.sin(a) * 30 * sc, 11 * sc, 0, Math.PI * 2); g.fill(); g.restore();
+  }
+  return {key, v, page: pid, cell: !!cell};
+}
+// the caption (safe zone, upper part): small amber head, the line, the step
+function vd3Cap(g, W, H, head, line, step, a) {
+  if (!(a > 0)) return;
+  const C = vvCols(), port = H >= W, k = port ? W / 360 : H / 360, cx = port ? W * .465 : W / 2, y = H * (port ? .118 : .1), mw = W * (port ? .8 : .46);
+  g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = a; g.textBaseline = 'middle';
+  g.font = '700 ' + (15 * k).toFixed(1) + 'px ' + C.ui; const lw = Math.min(mw - 24 * k, g.measureText(line).width);
+  g.font = '700 ' + (9 * k).toFixed(1) + 'px ' + C.ui; const hw = g.measureText(head).width + (step ? g.measureText(step).width + 14 * k : 0);
+  const w = Math.min(mw, Math.max(lw, hw) + 28 * k), h = 46 * k, x = cx - w / 2;
+  vvRound(g, x, y, w, h, 10 * k); g.fillStyle = 'rgba(13,14,17,.9)'; g.fill(); g.strokeStyle = C.amber; g.lineWidth = Math.max(1, k); g.stroke();
+  g.textAlign = 'left'; g.fillStyle = C.amber; if ('letterSpacing' in g) g.letterSpacing = (1.6 * k).toFixed(1) + 'px'; g.fillText(head, x + 14 * k, y + 13 * k); if ('letterSpacing' in g) g.letterSpacing = '0px';
+  if (step) { g.textAlign = 'right'; g.font = '600 ' + (9 * k).toFixed(1) + 'px ' + C.num; g.fillStyle = C.dim; g.fillText(step, x + w - 12 * k, y + 13 * k); }
+  g.textAlign = 'left'; g.font = '700 ' + (15 * k).toFixed(1) + 'px ' + C.ui; g.fillStyle = C.text; g.fillText(vv4Fit(g, line, w - 28 * k), x + 14 * k, y + 30 * k);
+  g.restore();
+}
+// the texts of a scene: [head, line]
+function vd3Text(sc, u) {
+  const tn = isNum(sc.t) ? svShort(sc.t) : '';
+  if (sc.k === 'klang') return ['KLANG GEWÄHLT · ' + tn, sc.x || 'Klang'];
+  if (sc.k === 'regler') { const d = PD[sc.p], f = v => (d && isNum(v) ? fmtVal(d.fmt, v) : String(v)); return ['REGLER · ' + tn, (d ? d.l : sc.p) + '  ' + f(sc.a) + ' → ' + f(sc.b)]; }
+  if (sc.k === 'clip') return [(sc.neu ? 'NEUER CLIP · ' : 'NOTEN · ') + tn, sc.au ? 'Gesang aufgenommen' : sc.n1 > sc.n0 ? Math.round(sc.n0 + (sc.n1 - sc.n0) * vd3Ease((u - .12) / .7)) + ' Noten eingespielt' : 'Szene ' + (sc.s + 1)];
+  if (sc.k === 'teil') return ['TEIL GEBAUT', sc.x || 'Teil'];
+  return ['', ''];
+}
+// one picture of the prelude at its own time tv (s); false = the same as the last one (the canvas holds it already)
+function vd3PreDraw(g, W, H, pre, tv) {
+  const f = clamp(Math.round(tv * VV_FPS), 0, pre.frames - 1), j = vd3SceneAt(pre, f), sc = pre.scenes[j], u = (f - sc.f0) / Math.max(1, sc.f1 - sc.f0);
+  const fade = sc.k === 'intro' ? Math.min(1, (sc.f1 - f) / 8) : Math.min(1, (f - sc.f0) / 6, (sc.f1 - f) / 6);
+  // what changes from picture to picture: the scene, the knob, the notes, the part growing, the fades
+  const q = x => Math.round(x * 60) / 60, dyn = sc.k === 'klang' ? '' : sc.k === 'regler' ? (vd3NumP(sc.p) ? Math.round(toNorm(PD[sc.p], vd3KnobAt(sc, u)) * 400) : vd3KnobAt(sc, u)) : sc.k === 'clip' ? vd3Text(sc, u)[1] + '|' + q(Math.min(1, u * 3)) : sc.k === 'teil' ? q(vd3Ease((u - .12) / .7)) : q(u);
+  const sig = j + '|' + dyn + '|' + q(fade) + '|' + W + 'x' + H;
+  if (sig === pre.lastSig) return false; pre.lastSig = sig;
+  const C = vvCols(), port = H >= W, k = Math.min(W / VV4A_W, H / VV4A_H), ox = (W - VV4A_W * k) / 2, oy = (H - VV4A_H * k) / 2;
+  g.setTransform(1, 0, 0, 1, 0, 0); g.fillStyle = C.bg; g.fillRect(0, 0, W, H);
+  const st = vd3St(), vt = sc.k === 'outro' ? {tracks: S.tracks, song: S.song, parts: S.parts} : vd3Virt(pre, j, u), step = sc.k === 'intro' || sc.k === 'outro' ? '' : j + ' / ' + pre.steps;
+  try {
+    if (sc.k === 'klang' || sc.k === 'regler') {
+      // the device: as the Gerät view, laid out upright (360 pt wide), under the app's head
+      const kp = port ? W / 360 : H / 640, lw = 360, lh = port ? H / kp : 640, x0 = port ? 0 : (W - 360 * kp) / 2;
+      g.setTransform(k, 0, 0, k, ox, oy); vd3With(vt, () => vv4Top(g, C, st, false)); g.setTransform(1, 0, 0, 1, 0, 0);
+      const top = (VV4A_L.top.h + 4) * k + oy;
+      g.save(); g.beginPath(); g.rect(x0, top, lw * kp, H - top); g.clip(); g.setTransform(kp, 0, 0, kp, x0, top);
+      pre.probe = vd3With(vt, () => vd3Ger(g, lw, (H - top) / kp, sc, u)); g.restore();
+    } else {
+      const view = sc.k === 'teil' && !sc.w ? 'song' : 'matrix';
+      g.setTransform(k, 0, 0, k, ox, oy);
+      vd3With(vt, () => vvAppDraw(g, {v: view}, st, null));
+      if (sc.k === 'clip') {   // the cell of the clip: a glow in the track colour while it fills
+        const M = vd3With(vt, () => vvAppMatrixLayout(st)), r = M.rows.indexOf(sc.t), q2 = sc.s - M.c0;
+        if (r >= 0 && q2 >= 0 && q2 < 4) { const c = M.cell(r, q2), a = .5 + .5 * Math.sin(Math.min(1, u * 3) * Math.PI); g.save(); g.shadowColor = C.t[sc.t] || C.amber; g.shadowBlur = 14 * a; vvRound(g, c.x - 1, c.y - 1, c.w + 2, c.h + 2, 7); g.strokeStyle = C.t[sc.t] || C.amber; g.lineWidth = 2.5; g.stroke(); g.restore(); }
+      }
+      if (sc.k === 'intro' || sc.k === 'outro') { g.setTransform(1, 0, 0, 1, 0, 0); g.fillStyle = 'rgba(8,9,11,' + (sc.k === 'intro' ? .55 : .35) + ')'; g.fillRect(0, 0, W, H); }
+      g.setTransform(1, 0, 0, 1, 0, 0);
+    }
+  } catch (e) { if (!pre.err) { pre.err = String(e && e.message || e); logErr(e); } g.setTransform(1, 0, 0, 1, 0, 0); }
+  if (sc.k === 'intro') vd3Title(g, W, H, Math.min(1, (sc.f1 - f) / 8), 'MAKING-OF');
+  else if (sc.k === 'outro') vd3Cap(g, W, H, 'UND JETZT', 'der ganze Song', '', fade);
+  else { const [hd, ln] = vd3Text(sc, u); vd3Cap(g, W, H, hd, ln, step, fade); }
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  return true;
+}
+// the music under the prelude: the fullest bars of the song, muffled and quiet, opening up (low-pass 320 Hz → 12 kHz, −13 → −4 dB)
+function vd3PreSnd(pre, sr, A0, A1, r, n) {
+  const L = new Float32Array(n), Rr = new Float32Array(n), sp = 60 / r.bpm, lead = r.lead || 0;
+  const songN = Math.min(A0.length, Math.round((lead + r.songSec) * sr)), bx = clamp(pre.tease | 0, r.a, Math.max(r.a, r.b - 1));
+  let s0 = Math.round((lead + (barBeat(bx) - barBeat(r.a)) * sp) * sr); if (s0 > songN - sr) s0 = Math.round(lead * sr);
+  const len = Math.max(1, songN - s0), fin = Math.round(.5 * sr), fout = Math.round(.6 * sr), xf = Math.round(.012 * sr);
+  const z = [0, 0, 0, 0, 0, 0, 0, 0]; let b0 = 0, b1 = 0, b2 = 0, a1 = 0, a2 = 0;
+  for (let i = 0; i < n; i++) {
+    if ((i & 63) === 0) { const u = i / n, fc = Math.min(320 * Math.pow(12000 / 320, Math.pow(u, 1.4)), sr * .45), w0 = 2 * Math.PI * fc / sr, al = Math.sin(w0) / 1.6, c = Math.cos(w0), a0 = 1 + al; b0 = (1 - c) / 2 / a0; b1 = (1 - c) / a0; b2 = b0; a1 = -2 * c / a0; a2 = (1 - al) / a0; }
+    const u = i / n, ph = i % len, wg = n > len ? Math.min(1, ph / xf, (len - ph) / xf) : 1, gn = Math.pow(10, (-13 + 9 * u) / 20) * Math.min(1, i / fin, (n - i) / fout) * wg, k = s0 + ph;
+    for (let ch = 0; ch < 2; ch++) {
+      const xin = (ch ? A1 : A0)[k] || 0, o = ch * 4, y = b0 * xin + b1 * z[o] + b2 * z[o + 1] - a1 * z[o + 2] - a2 * z[o + 3];
+      z[o + 1] = z[o]; z[o] = xin; z[o + 3] = z[o + 2]; z[o + 2] = Math.abs(y) < 1e-20 ? 0 : y; (ch ? Rr : L)[i] = y * gn;
+    }
+  }
+  return [L, Rr];
+}
+
+/* ---------- 7. Making-of: im Video-Auftrag (vvMake / vvEncodeWC / vvEncodeMR) ---------- */
+// at the start of a job: the options of this job (frozen), the prelude plan; returns the prelude (null = no prelude)
+async function vd3JobStart(o, W, H) {
+  if (!VD3) return null;
+  const P = Object.assign(vd3P(), o && o.vd3 ? o.vd3 : null), job = {ti: !!P.ti, rd: !!P.rd, pre: null, msPlan: 0};
+  if (P.mo) { const T0 = performance.now(); try { job.pre = vd3Plan(vd3Ev(), {range: o && o.range}); } catch (e) { logErr(e); job.pre = null; } job.msPlan = performance.now() - T0; }
+  if (job.pre) { job.pre.ti = job.ti; await vvAppPrep(); }
+  VD3.job = job.ti || job.rd || job.pre ? job : null;
+  return job.pre;
+}
+function vd3JobEnd() { if (VD3) VD3.job = null; }
+function vd3ResPatch(res, pre) { if (!res || !VD3) return; const J = VD3.job || {}; res.vd3 = {ti: !!J.ti, rd: !!J.rd, pre: pre ? +pre.sec.toFixed(3) : 0, steps: pre ? pre.steps : 0, msPlan: Math.round(J.msPlan || 0), msPre: pre ? Math.round(pre.msDraw || 0) : 0, msSnd: pre ? Math.round(pre.msSnd || 0) : 0, err: pre && pre.err || null}; if (pre) res.dur = +(res.dur + pre.sec).toFixed(4); }
+// WebCodecs: the prelude pictures first (time stamps 0 …), the song pictures follow behind them
+async function vd3PreFrames(job, ve, g, cv, errF) {
+  const pre = job.pre, fps = VV_FPS, T0 = performance.now(), est = (job.live && job.live.est) || 1; let tY = performance.now();
+  pre.lastSig = null;
+  for (let f = 0; f < pre.frames; f++) {
+    if (VV.cancel) throw new Error('abgebrochen');
+    const er = errF(); if (er) throw er;
+    vd3PreDraw(g, job.W, job.H, pre, f / fps);
+    const fr = new VideoFrame(cv, {timestamp: Math.round(f * 1e6 / fps), duration: Math.round(1e6 / fps)});
+    ve.encode(fr, {keyFrame: f % (fps * 2) === 0}); fr.close();
+    if (job.onProgress) job.onProgress(Math.min(.97, f / (pre.frames + fps * est)));
+    while (ve.encodeQueueSize > 3 && !errF() && !VV.cancel) await new Promise(res => setTimeout(res, 2));
+    if (performance.now() - tY > 12) { await vvYield(); tY = performance.now(); }
+  }
+  pre.msDraw = performance.now() - T0;
+}
+// WebCodecs: the prelude sound first (its sample count is the offset of the song's sound)
+async function vd3PreAudio(job, ae, AD, asr, A0, A1, r) {
+  const pre = job.pre, n = Math.round(pre.frames / VV_FPS * asr), T0 = performance.now(), D = vd3PreSnd(pre, asr, A0, A1, r, n), step = Math.round(asr / 10);
+  pre.msSnd = performance.now() - T0;
+  for (let p = 0; p < n;) {
+    if (VV.cancel) throw new Error('abgebrochen');
+    const m = Math.min(step, n - p), pl = new Float32Array(m * 2); pl.set(D[0].subarray(p, p + m), 0); pl.set(D[1].subarray(p, p + m), m);
+    const ad = new AD({format: 'f32-planar', sampleRate: asr, numberOfFrames: m, numberOfChannels: 2, timestamp: Math.round(p / asr * 1e6), data: pl});
+    ae.encode(ad); ad.close(); p += m;
+    if (ae.encodeQueueSize > 8) await new Promise(res => setTimeout(res, 1));
+  }
+  return n;
+}
+// Aufnahme in Echtzeit: the prelude sound as a buffer source before the song (started at `at`)
+function vd3PreSrc(job, c, r, dst, z, at) {
+  const pre = job.pre, n = Math.round(pre.frames / VV_FPS * r.sr), D = vd3PreSnd(pre, r.sr, r.ch[0], r.ch[1], r, n), b = c.createBuffer(2, n, r.sr);
+  b.getChannelData(0).set(D[0]); b.getChannelData(1).set(D[1]);
+  const s = c.createBufferSource(); s.buffer = b; s.connect(dst); s.connect(z); s.start(at); return s;
+}
+function vd3Ev() { const L = vd3Load(); return L ? L.slice() : []; }
+
+/* ---------- 8. Video-Blatt: Zeile „Extras“ [Titel] [Untertitel-Rand] [Making-of] [Schnitt im Song] + Hinweis ---------- */
+function vd3Css() {
+  if (VD3.css) return; VD3.css = true;
+  const s = document.createElement('style'); s.id = 'vd3css';
+  s.textContent = '.vvrow.vd3-vr{align-items:flex-start;flex-wrap:wrap;row-gap:4px}.vvrow.vd3-vr .lbl{padding-top:16px}' +
+    '.vd3-box{display:flex;flex-wrap:wrap;gap:6px;flex:1 1 0;min-width:0}.vvsheet .vd3-box .rb{flex:1 1 auto;min-width:64px;height:44px;padding:0 8px;font:700 12px/1.1 var(--font-ui);white-space:nowrap}' +
+    '.vvsheet .vd3-box .rb.on{border-color:var(--sel);color:var(--sel);box-shadow:inset 0 0 0 1px var(--sel)}' +
+    '.vd3-h{flex:1 1 100%;min-height:14px;font:500 11px/1.25 var(--font-ui);color:var(--text-dim);overflow-wrap:anywhere}.vd3-h b{color:var(--amber);font-weight:700}' +
+    '.vd3-lbl{position:absolute;left:4px;right:2px;bottom:0;display:flex;align-items:center;font:700 8px/1 var(--font-ui);letter-spacing:.06em;color:#d9c3ff;pointer-events:none}.vd3-lbl[hidden]{display:none}' +
+    '.vd3-lp{margin-top:8px}.vd3-lb{display:flex;align-items:center;gap:8px;width:100%;min-height:44px;padding:0 10px;font:600 12px/1.1 var(--font-ui);text-align:left}.vd3-lb span{flex:1 1 auto}.vd3-lb b{font:700 12px/1 var(--font-ui)}.vd3-lb.on{border-color:var(--sel);color:var(--sel)}' +
+    '.vd3pop{width:min(380px,calc(100vw - 16px))}.vd3h{display:flex;align-items:center;gap:8px;margin-bottom:6px}.vd3h b{flex:1 1 auto;font:700 13px/1.2 var(--font-ui)}.vd3h .vd3x{flex:0 0 44px;width:44px;height:44px;padding:0}' +
+    '.vd3sp{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:6px}.vd3sp .rb{min-height:44px;flex-direction:column;gap:2px}.vd3sp small{font:500 10px/1 var(--font-ui);color:var(--text-dim)}' +
+    '.vd3g{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}.vd3g .rb{min-height:44px;padding:0 4px;font:700 12px/1.1 var(--font-ui)}.vd3g.vd3t{grid-template-columns:repeat(3,minmax(0,1fr))}' +
+    '.vd3g .rb i{display:inline-block;width:8px;height:8px;border-radius:4px;margin-right:6px}.vd3pop .rb.on{border-color:var(--sel);color:var(--sel);box-shadow:inset 0 0 0 1px var(--sel)}' +
+    '.vd3sub{font:600 11px/1.2 var(--font-ui);color:var(--text-dim);margin:2px 0 4px}.vd3no{grid-column:1 / -1;font:500 12px/1.3 var(--font-ui);color:var(--text-dim)}' +
+    '.vd3ft{display:flex;align-items:center;gap:8px;margin-top:8px}.vd3ft small{flex:1 1 auto;font:500 11px/1.3 var(--font-ui);color:var(--text-dim)}.vd3ft .rb{min-height:44px;padding:0 12px}' +
+    '@media (orientation:portrait) and (max-width:389px){.vd3g{grid-template-columns:repeat(3,minmax(0,1fr))}}';
+  document.head.appendChild(s);
+}
+function vd3VvRow(ctl, acts) {
+  if (!VD3) return null; vd3Css();
+  const r = el('div', 'vvrow vd3-vr'); r.appendChild(el('span', 'lbl', 'Extras'));
+  const box = el('div', 'vd3-box'), mk = (k, l, al) => { const b = el('button', 'rb', l); b.dataset.k = k; b.setAttribute('aria-label', al); box.appendChild(b); return b; };
+  const bT = mk('ti', 'Titel', 'Titel in der ersten Sekunde an oder aus'), bR = mk('rd', 'Untertitel-Rand', 'Rand für Untertitel (9:16) an oder aus'), bM = mk('mo', 'Making-of', 'Making-of-Vorlauf vor dem Song an oder aus'), bS = mk('cut', 'Schnitt im Song', 'Video-Schnitt im Song an oder aus');
+  const hint = el('div', 'vd3-h'); box.appendChild(hint); r.appendChild(box);
+  ctl.insertBefore(r, acts);
+  onTap(box, b => {
+    const k = b.dataset.k; if (!k || VV.busy) return;
+    if (k === 'cut') { vd3CutSet(!vd3CutOn()); if (vd3CutOn()) { vvClose(); if (!UI.songView) setSongView(true); lcdOrToast('Video-Spur: Chip antippen = Bild wählen'); return; } }
+    else vvPrefSet('vd3' + k, !vd3P()[k]);
+    haptic('tick'); vd3VvSync(VV.ui); vvStill();
+  }, 'button[data-k]');
+  VD3.ui = {r, bT, bR, bM, bS, hint};
+  return VD3.ui;
+}
+function vd3VvSync(u) {
+  const x = VD3 && VD3.ui; if (!x || !x.r.isConnected) return;
+  const P = vd3P(), fmt = vvPrefs().fmt, busy = VV.busy;
+  for (const [b, on] of [[x.bT, P.ti], [x.bR, P.rd], [x.bM, P.mo], [x.bS, vd3CutOn()]]) { b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); b.disabled = busy; }
+  x.bR.disabled = busy || fmt !== '9:16';
+  let h = '';
+  if (P.mo) {
+    let pl = null; try { pl = vd3Plan(vd3Ev(), {}); } catch (e) { pl = null; }
+    h = pl ? '<b>Making-of:</b> ' + pl.steps + ' Schritte · Vorlauf ' + Math.round(pl.sec) + ' s, dann der ganze Song' : '<b>Noch kein Protokoll</b> – ab jetzt merkt sich die App Klangwahl, Regler, Clips, Noten und Teile (nur auf diesem Gerät). Danach zeigt das Video die Entstehung.';
+  } else if (P.rd && fmt === '9:16') h = 'Das Bild rückt in die sichere Zone – unten bleibt Platz für Untertitel.';
+  if (x.hint.innerHTML !== h) x.hint.innerHTML = h;
+}
+
+/* ---------- Test-API (Objekt, wird nicht umhüllt) ---------- */
+const VD3_API = {
+  prefs: o => { if (o) for (const k of ['ti', 'rd', 'mo']) if (o[k] != null) vvPrefSet('vd3' + k, !!o[k]); if (VV.ui) { vd3VvSync(VV.ui); vvStill(); } return vd3P(); },
+  cut: on => { if (on != null) vd3CutSet(!!on); return vd3CutOn(); },
+  chips: () => (S.song ? vd3Chips(S.song).map(c => Object.assign({}, c)) : []),
+  lane: () => { const w = SV.wrap; if (!w || !SV.vvS) return null; const r = w.getBoundingClientRect(), y0 = SV.rulerH - SV.vvS; return {x: r.left, y: r.top + y0, h: SV.vvS, w: r.width, cellW: SV.cellW, sx: SV.x, rulerH: SV.rulerH, rowH: SV.rowH, vvS: SV.vvS, chips: S.song ? vd3Chips(S.song).map(c => ({a: c.a, b: c.b, v: c.v, t: c.t, man: c.man, x0: r.left + c.a * SV.cellW - SV.x, x1: r.left + c.b * SV.cellW - SV.x})) : []}; },
+  pop: (k, bar) => { const L = S.song ? vd3Chips(S.song) : [], c = L[k]; if (!c) return false; vd3ChipPop(c, bar == null ? c.a : bar, 200, 300); return !!(UI.pop && UI.pop.name === 'vd3cut'); },
+  moveCut: (k, m) => { const L = S.song ? vd3Chips(S.song) : []; return vd3MoveCut(L[k], L[k + 1], m); },
+  set: (a, b, v, t) => vd3Write([{a, b, v, t}], 'Video (Test)'),
+  log: () => JSON.parse(JSON.stringify(vd3Load() || [])),
+  clear: () => { const L = vd3Load(); if (L) L.length = 0; vd3Flush(); VD3.marks = new Set(((S.song && S.song.marks) || []).map(m => m.id)); VD3.parts = (S.parts || []).map(p => !!p); return true; },
+  push: e => { const x = vd3Norm({ev: [Object.assign({ms: Date.now()}, e)]}); if (!x || !x.ev.length) return false; const L = vd3Load(); L.push(x.ev[0]); return true; },
+  touch: () => { VD3.touchT = performance.now(); return true; },
+  stored: () => { try { return JSON.parse(safeGet(VD3_KEY + (S.id || 'ohne')) || 'null'); } catch (e) { return null; } },
+  flush: () => { vd3Flush(); return true; },
+  inProject: on => vd3InProject(on),
+  plan: o => { const p = vd3Plan(vd3Ev(), o || {}); return p ? {frames: p.frames, sec: p.sec, steps: p.steps, tease: p.tease, scenes: p.scenes.map(s => ({k: s.k, f0: s.f0, f1: s.f1, t: s.t, s: s.s, p: s.p, x: s.x, n0: s.n0, n1: s.n1, neu: s.neu}))} : null; },
+  // a picture of the prelude at its time tv (fmt), PNG + what it showed
+  prePic: (tv, fmt, raw) => { const p = vd3Plan(vd3Ev(), {}); if (!p) return null; const [W, H] = VV_SIZE[fmt || '9:16'], cv = document.createElement('canvas'); cv.width = W; cv.height = H; const g = cv.getContext('2d', {alpha: false});
+    const T0 = performance.now(); vd3PreDraw(g, W, H, p, tv || 0); const ms = performance.now() - T0, f = clamp(Math.round((tv || 0) * VV_FPS), 0, p.frames - 1), sc = p.scenes[vd3SceneAt(p, f)];
+    return {png: raw ? null : cv.toDataURL('image/png').split(',')[1], ms: +ms.toFixed(2), scene: sc.k, t: sc.t, probe: p.probe || null, err: p.err || null, hash: vd3Hash(g, W, H)}; },
+  textPic: (t, fmt) => { const r = VV.last, [W, H] = VV_SIZE[fmt || '9:16'], cv = document.createElement('canvas'); cv.width = W; cv.height = H; const st = r ? vvStateAt(r, t || 0) : vvLiveState(); if (r) { st.t = t || 0; st.src = r; }
+    VD3.probe = {}; vv4Pic(cv.getContext('2d', {alpha: false}), W, H, 'text', null, st, r ? r.bpm : S.bpm); const pr = VD3.probe; VD3.probe = null; return {png: cv.toDataURL('image/png').split(',')[1], probe: pr}; },
+  // a picture of the job's way (title / margin) at video time t of the last render
+  shot: (t, fmt, o) => { const r = VV.last; if (!r) return null; const [W, H] = VV_SIZE[fmt || '9:16'], cv = document.createElement('canvas'); cv.width = W; cv.height = H; const g = cv.getContext('2d', {alpha: false});
+    const keep = VD3.job; VD3.job = Object.assign({ti: false, rd: false, pre: null}, o || {}); try { const st = vvStateAt(r, t || 0), rt = vvRun({range: {a: r.a, b: r.b}, bpm: r.bpm}); vvDraw(g, W, H, rt.view, st, rt); } finally { VD3.job = keep; }
+    return {png: cv.toDataURL('image/png').split(',')[1], hash: vd3Hash(g, W, H)}; },
+  preSnd: (sec) => { const r = VV.last; if (!r) return null; const p = vd3Plan(vd3Ev(), {range: {a: r.a, b: r.b}}) || {tease: r.a}; const n = Math.round((sec || 4) * r.sr), D = vd3PreSnd(p, r.sr, r.ch[0], r.ch[1], r, n);
+    const rms = (a, b) => { let s = 0; for (let k = a; k < b; k++) s += D[0][k] * D[0][k]; return Math.sqrt(s / Math.max(1, b - a)); }; let h = 2166136261; for (let k = 0; k < n; k += 97) { h ^= Math.round(D[0][k] * 1e6) & 0xffff; h = Math.imul(h, 16777619) >>> 0; }
+    return {n, rmsA: rms(Math.round(n * .1), Math.round(n * .3)), rmsB: rms(Math.round(n * .7), Math.round(n * .9)), hash: h.toString(16)}; },
+  info: () => ({job: VD3.job ? {ti: VD3.job.ti, rd: VD3.job.rd, pre: !!VD3.job.pre} : null, pid: VD3.pid, n: (VD3.log || []).length, cut: vd3CutOn(), lbl: !!(VD3.lbl && !VD3.lbl.hidden), touchT: VD3.touchT}),
+};
+function vd3Hash(g, W, H) { const d = g.getImageData(0, 0, W, H).data; let h = 2166136261; for (let k = 0; k < d.length; k += 4 * 61) { h ^= d[k] | d[k + 1] << 8 | d[k + 2] << 16; h = Math.imul(h, 16777619) >>> 0; } return h.toString(16); }
+// a finger on the screen (for the knob / sound log: only gestures of the hand count)
+try { const th = e => { if (VD3 && (e.type === 'pointerdown' || e.buttons || e.pointerType === 'touch')) VD3.touchT = performance.now(); }; window.addEventListener('pointerdown', th, {capture: true, passive: true}); window.addEventListener('pointermove', th, {capture: true, passive: true}); window.addEventListener('pagehide', () => { try { if (VD3 && VD3.log) vd3Flush(); } catch (e) {} }); } catch (e) {}
+/* VD3-END */
 
 
 /* ===================== UE-A + UE-B (Konzept Schnitt/Übergänge §1): Übergänge auf der Schnittkante =====================
@@ -80063,6 +80808,7 @@ Object.assign(SYNQUENZER, LF1_API);                       // LF1: Lauf-Schritte,
 Object.assign(SYNQUENZER, {hm1: HM1_API});                  /* HM1: Test-API (Objekt, wird nicht umhüllt) */
 Object.assign(SYNQUENZER, UIX1_API);                        // UIX1: FANG-Teil-Namen, Mithören-Schalter, ✕, Tastatur
 Object.assign(SYNQUENZER, UX2_API);                         // UX2: Ziehen in der Matrix, Einfügen mit Lupe
+Object.assign(SYNQUENZER, {vd3: VD3_API});                  /* VD3: Test-API (Objekt, wird nicht umhüllt) */
 const NO_SYNC = new Set(['clipCurves', 'bmcLog', 'bmcState', 'oneScaleOf', 'harmInfo', 'kbScaleNow', 'micCheck', 'micCheckJson', 'micCheckEstimate', 'cloud', 'cloudProjects', 'cloudVersions', 'cloudHandoff', 'state', 'project', 'runtime', 'getClip', 'getParam', 'noteLog', 'voices', 'timeline', 'serialize', 'buildMidi', 'buildZip', 'crc32', 'meter', 'outPitch', 'migrate', 'tapTempo',
   'getSound', 'mods', 'library', 'factory', 'previewState', 'soundEdited', 'fmxView', 'fmxPreview', 'fmxBadge',
   'history', 'projects', 'storage', 'engineInfo', 'getBusFx', 'wake', 'gestures', 'roll', 'rollApi', 'detectKey', 'sceneKey',

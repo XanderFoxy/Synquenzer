@@ -4282,6 +4282,79 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 .mxsheet .mx1amt .mx1go{grid-column:1/-1}
 @media (orientation:landscape) and (max-height:500px){ .mxsheet .mx1amt{grid-template-columns:repeat(4,minmax(0,1fr)) minmax(0,1.3fr)} .mxsheet .mx1amt .mx1go{grid-column:auto} }
 /* MX1 END */
+/* MX2 BEGIN: Kopfleiste [MIX], Blatt „Mix & Master“ (hohes Blatt, Kopf mit ▶ A B), Kanalzug-Analyzer im EQ · KOMP-Blatt – Ziele ≥ 44 px */
+#bMx2{font:800 11px/1 var(--font-ui);letter-spacing:.06em;color:var(--amber)}
+@media (orientation:portrait){#bMx2{width:40px}#top:has(>#bMx2) .takt{flex:0 1 76px;min-width:66px}}
+@media (orientation:portrait) and (max-width:419px){#bMx2{display:none}}
+.pop.mx2s{width:min(560px,calc(100vw - 16px));max-width:min(560px,calc(100vw - 16px))}
+.mx2s .psh-h .mx2ab{font:800 15px/1 var(--font-ui)}
+.mx2s .psh-h .mx2ab[aria-pressed=true]{color:var(--amber);box-shadow:inset 0 0 0 2px var(--amber)}
+.mx2s .psh-h .mx2ab:disabled{opacity:.35}
+.mx2pl .is{display:none}.mx2pl.on .ip{display:none}.mx2pl.on .is{display:block}.mx2pl.on{color:var(--play)}
+.mx2s .mx2w{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:2px 0 6px}
+.mx2s .mbtn b{display:block;font:700 12px/1.15 var(--font-ui)}
+.mx2s .mbtn small{display:block;font:500 10px/1.15 var(--font-ui);color:var(--text-dim);margin-top:2px}
+.mx2s .mx2w .mbtn{min-height:52px}
+.mx2s .mbtn[aria-pressed=true] b{color:var(--amber)}
+.mx2s .mx2st{margin:2px 0 6px;min-height:16px}
+.mx2s .mx2m{width:auto;min-width:110px;display:inline-flex;align-items:center;justify-content:center;margin:4px 0 0 0}
+.mx2s .mx2sec{border-top:1px solid var(--line);padding:6px 0 4px}
+.mx2s h5{margin:4px 0;font:700 11px/1.2 var(--font-ui);letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim)}
+.mx2s .mx2r2,.mx2s .mx2r3,.mx2s .mx2r5{display:grid;gap:6px;margin:4px 0;align-items:center}
+.mx2s .mx2r2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.mx2s .mx2r3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.mx2s .mx2r3:has(>.mx2l){grid-template-columns:58px repeat(3,minmax(0,1fr))}
+.mx2s .mx2r5{grid-template-columns:repeat(5,minmax(0,1fr))}
+.mx2s .mx2r5 .mbtn{padding:0 2px;font-size:11px}
+.mx2s .mx2l{font:600 11px/1.2 var(--font-ui);color:var(--text-dim)}
+.mx2s .mx2pf{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:4px 0}
+.mx2s .mx2pf .mbtn{min-height:48px}
+.mx2s .mx2num{display:flex;flex-wrap:wrap;gap:2px 12px;font:400 12px/1.4 var(--font-ui);color:var(--text-dim)}
+.mx2s .mx2num b{font-family:var(--font-num);color:var(--text);font-weight:600}
+.mx2s .mx2cap{margin:6px 0 2px;font:600 10px/1.2 var(--font-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--text-faint)}
+.mx2s .mx2sp,.mx2s .mx2eq{display:block;width:100%;height:64px;background:var(--lcd);border:1px solid var(--panel-edge);border-radius:6px}
+.mx2s .mx2eq{height:44px}
+.mx2s svg path{fill:none;vector-effect:non-scaling-stroke}
+.mx2s .mx2g{stroke:rgba(255,255,255,.1);stroke-width:1}
+.mx2s .mx2v{stroke:var(--text-dim);stroke-width:1.5}
+.mx2s .mx2n{stroke:var(--amber);stroke-width:2}
+.mx2s .mx2c0{stroke:var(--sel);stroke-width:2}
+.mx2kv,.mx2kn,.mx2kg{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin:0 2px;background:var(--text-dim)}
+.mx2kn{background:var(--amber)}.mx2kg{background:transparent;border-top:2px dashed var(--sel);height:0;border-radius:0}
+.mx2s .mx2mt{display:grid;gap:3px;margin:2px 0 4px}
+.mx2s .mx2mr{display:grid;grid-template-columns:58px minmax(0,1fr) 64px;gap:8px;align-items:center;font:500 11px/1.2 var(--font-ui);color:var(--text-dim)}
+.mx2s .mx2mr i,.mx1eqs .mx2grm i{display:block;height:10px;background:var(--lcd);border:1px solid var(--panel-edge);border-radius:3px;overflow:hidden}
+.mx2s .mx2mr i b,.mx1eqs .mx2grm i b{display:block;height:100%;background:var(--amber);opacity:.5;transition:width .06s linear}
+.mx2s .mx2mr.live i b,.mx1eqs .mx2grm i b{opacity:1}
+.mx2s .mx2mr em,.mx1eqs .mx2grm em{font:600 11px/1 var(--font-num);font-style:normal;color:var(--text);text-align:right}
+.mx2s .mx2why{margin:2px 0;padding-left:16px;font:400 12px/1.4 var(--font-ui);color:var(--text)}
+.mx2s .mx2why li{margin:2px 0;overflow-wrap:anywhere}
+.mx2s .mx2fr{display:grid;grid-template-columns:minmax(0,1fr) repeat(3,minmax(0,88px));gap:6px;align-items:center;margin:4px 0}
+.mx2s .mx2fr .mbtn{padding:0 3px;font-size:11px}
+.mx2s .mx2fr .mx2eqb{grid-column:4}
+.mx2s .mx2fn{min-width:0}
+.mx2s .mx2fn b{display:block;font:600 12px/1.2 var(--font-ui);color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mx2s .mx2fn small{font:500 10px/1.2 var(--font-ui);color:var(--amber)}
+.mx2s .mx2warn{color:var(--amber)}.mx2s .mx2ok{color:var(--play)}.mx2s .mx2dim{color:var(--text-faint)}
+@media (orientation:landscape) and (max-height:500px){
+  .pop.mx2s{width:min(900px,calc(100vw - 16px));max-width:min(900px,calc(100vw - 16px))}
+  .mx2s .mx2c{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:14px;align-items:start}
+  .mx2s .mx2pf .mbtn{min-height:44px}.mx2s .mx2w .mbtn{min-height:48px}
+}
+.mx1eqs .mx1cv .mx2sb{fill:rgba(255,190,80,.16);stroke:none}
+.mx1eqs .mx1cv .mx2sa{stroke:rgba(255,255,255,.35);stroke-width:1}
+.mx1eqs .mx1cv .mx2gh{stroke:var(--sel);stroke-width:1.5;stroke-dasharray:4 3}
+.mx1eqs .mx2leg{margin:0 0 2px}
+.mx1eqs .mx2cpv{display:flex;align-items:center;gap:10px;margin:2px 0}
+.mx1eqs .mx2kl{flex:none;width:64px;height:64px;background:var(--lcd);border:1px solid var(--panel-edge);border-radius:6px}
+.mx1eqs .mx2kl path{fill:none;vector-effect:non-scaling-stroke}
+.mx1eqs .mx2kl .mx2g{stroke:rgba(255,255,255,.15);stroke-width:1}
+.mx1eqs .mx2kl .mx2kc{stroke:var(--amber);stroke-width:2}
+.mx1eqs .mx2kl .mx2kt{fill:var(--sel)}
+.mx1eqs .mx2grm{flex:1 1 auto;min-width:0;display:grid;grid-template-columns:auto minmax(0,1fr) 56px;gap:6px 8px;align-items:center;font:500 11px/1.2 var(--font-ui);color:var(--text-dim)}
+.mx1eqs .mx2grm small{grid-column:1/-1;color:var(--text-faint)}
+@media (orientation:landscape) and (max-height:500px){ .mx1eqs .mx2leg{display:none} .mx1eqs .mx2kl{width:44px;height:44px} .mx1eqs .mx2cpv{margin:0} }
+/* MX2 END */
 .tksheet .clab .mbtn[aria-pressed=true]{box-shadow:inset 0 0 0 2px var(--t8)}
 /* G-GB: Abschnitt „Mit GarageBand aufnehmen“ im STIMME-/Takes-Blatt (Ziele ≥ 44 px) */
 .tksheet .ggb{margin:8px 0 6px;padding-top:8px;border-top:1px solid var(--line)}
@@ -5091,6 +5164,7 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
     <button id="bMicT" class="tb sq rb lwonly micb" aria-pressed="false" aria-label="Mikrofon an/aus (Singen)"><span class="ico">🎤</span></button>
     <div class="spacer lwonly"></div>
     <button id="bCpu" class="chipT rb lwonly" aria-label="CPU-Last hoch – Info" hidden>CPU</button>
+    <button id="bMx2" class="tb sq rb" aria-label="Mix und Master" title="Mix &amp; Master">MIX</button><!-- MX2: globaler Zugang -->
     <button id="bMenu" class="tb sq rb" aria-label="Menü">≡</button>
   </header>
 
@@ -51498,6 +51572,7 @@ function openMenu(goto) {
   vvMenuRow(s1, row, btn);                                        // VV1 (Nachtrag 5): Menü → Video
   va1MenuRow(s1, row, btn);                                       // VA1: Menü → Export (WAV, Einzelspuren, MIDI, Video, Container)
   gr1MenuRow(s1, row, btn);                                       // GR1: Song › [Remix …] [Transponieren …]
+  mx2MenuRow(s1, row, btn);                                       // MX2: Mix › [Mix & Master …]
   on(bProj, 'click', () => { projBox.hidden = !projBox.hidden; histBox.hidden = true; if (!projBox.hidden) menuProjRefresh(); });
   on(bHist, 'click', () => { histBox.hidden = !histBox.hidden; projBox.hidden = true; if (!histBox.hidden) menuHistRefresh(); });
   // 1b Sounds (WP3, §2.5): the user library as a file
@@ -63934,12 +64009,13 @@ class SynqMixa extends AudioWorkletProcessor {
     this.d = this.m ? new (typeof MX1_D !== 'undefined' ? MX1_D.Master : MIXA_D.Master)(sampleRate, p.lat) : new MIXA_D.Track(sampleRate);   // MX1: Multiband/Sättigung (ohne = MIX-A)
     this.d.set(p.P || {}, true); if (!this.m) { this.d.wT = p.wet == null ? 1 : p.wet; this.d.w = p.fade ? 0 : this.d.wT; }
     this.z = new Float32Array(128); this.alive = true;
-    this.port.onmessage = e => { const m = e.data; if (!m) return; if (m.P) this.d.set(m.P, !!m.now); if (m.wet != null && !this.m) this.d.wT = m.wet; if (m.dispose) this.alive = false; };
+    this.port.onmessage = e => { const m = e.data; if (!m) return; if (m.P) this.d.set(m.P, !!m.now); if (m.wet != null && !this.m) this.d.wT = m.wet; if (m.dispose) this.alive = false; if (m.mt != null) this.mt = !!m.mt; };   // MX2: mt = Meter
   }
   process(inputs, outputs, params) {
     const i = inputs[0], o = outputs[0]; if (!o || !o.length) return this.alive;
     const n = o[0].length, z = this.z.length === n ? this.z : (this.z = new Float32Array(n)), L = i && i.length ? i[0] : z, R = i && i.length > 1 ? i[1] : L, oR = o.length > 1 ? o[1] : o[0];
     if (this.m) this.d.process(L, R, o[0], oR, n); else this.d.process(L, R, o[0], oR, n, params.sec[0]);
+    if (this.mt && typeof mx2Mt === 'function') mx2Mt(this);   // MX2: Gain-Reduction an das Blatt (nur auf Wunsch)
     return this.alive;
   }
 }
@@ -63977,7 +64053,7 @@ class SynqMixaAn extends AudioWorkletProcessor {
 registerProcessor('synq-mixa-an', SynqMixaAn);
 `;
 const MIXA = {mods: new WeakMap(), w: null, wid: 0, wq: new Map(), busy: false, prog: 0, res: null, am: null, amBusy: false, amProg: 0, ab: false, done: new Map(), err: 0, run: -1, how: null, ziel: -14, last: null, cap: null};
-const mixaModSrc = () => 'const MIXA_D = (' + mixaDspMake.toString() + ')();\n' + MIXA_PROC_SRC + mx1ModSrc();   // MX1
+const mixaModSrc = () => 'const MIXA_D = (' + mixaDspMake.toString() + ')();\n' + MIXA_PROC_SRC + mx1ModSrc() + mx2ModSrc();   // MX1; MX2
 function mixaAddModule(c) {
   let m = MIXA.mods.get(c); if (m === true) return Promise.resolve(true); if (m === false) return Promise.resolve(false); if (m) return m;
   if (!c || !c.audioWorklet || typeof AudioWorkletNode !== 'function') { MIXA.mods.set(c, false); return Promise.resolve(false); }
@@ -64013,7 +64089,7 @@ function mixaNormAm(a) {
   if (!a || typeof a !== 'object' || Array.isArray(a)) return null;
   const N = (k, lo, hi, d) => (typeof a[k] === 'number' && isFinite(a[k]) ? +(a[k] < lo ? lo : a[k] > hi ? hi : a[k]).toFixed(2) : d);
   return {on: a.on !== false, ziel: a.ziel === -9 ? -9 : -14, lo: N('lo', -6, 6, 0), hi: N('hi', -6, 6, 0), thr: N('thr', -60, 0, 0), ra: N('ra', 1, 10, 1),
-    at: N('at', 0.1, 200, 30), rl: N('rl', 10, 2000, 200), gain: N('gain', -24, 30, 0), ceil: N('ceil', -6, 0, -1), ...mx1NormAmX(a)};   // MX1: st, mb, sat
+    at: N('at', 0.1, 200, 30), rl: N('rl', 10, 2000, 200), gain: N('gain', -24, 30, 0), ceil: N('ceil', -6, 0, -1), ...mx1NormAmX(a), ...mx2NormAmX(a)};   // MX1: st, mb, sat; MX2: mx2
 }
 const mixaFxOf = tr => { const f = (tr && tr.sound && tr.sound.fx) || {}; return {vol: f.vol === undefined ? null : f.vol, pan: f.pan === undefined ? null : f.pan, pump: f.pump === undefined ? null : f.pump, pumpRel: f.pumpRel === undefined ? null : f.pumpRel, rev: f.rev === undefined ? null : f.rev, dly: f.dly === undefined ? null : f.dly}; };   // MX1: + rev/dly (Tiefe)
 function mixaSnap() { return JSON.stringify({t: S.tracks.map(tr => [tr.mix || null, mixaFxOf(tr), tr.mxRole || null]),   // MX1: + Rolle
@@ -64130,8 +64206,9 @@ function mixaMoveTaps(from, to) {
 }
 function mixaAbSet(A, now) {
   const c = AU.ctx, t = c.currentTime, on = !!A.on && !(MIXA.ab && !UI.vvOff);   // Video/GarageBand: immer der Auto-Master
-  if (now) { A.ga.gain.value = on ? 0 : 1; A.gb.gain.value = on ? 1 : 0; return; }
-  for (const [g, v] of [[A.ga, on ? 0 : 1], [A.gb, on ? 1 : 0]]) { g.gain.cancelScheduledValues(t); g.gain.setTargetAtTime(v, t, 0.008); }
+  const tg = typeof mx2Trim === 'function' ? mx2Trim() : 1;      // MX2: pegelgleich beim A/B im Blatt (sonst 1 = bitgleich; nie offline)
+  if (now) { A.ga.gain.value = on ? 0 : tg; A.gb.gain.value = on ? tg : 0; return; }
+  for (const [g, v] of [[A.ga, on ? 0 : tg], [A.gb, on ? tg : 0]]) { g.gain.cancelScheduledValues(t); g.gain.setTargetAtTime(v, t, 0.008); }
 }
 function mixaMasterSync(now) {
   const M = AU.M, c = AU.ctx; if (!M || !c) return;
@@ -64183,6 +64260,7 @@ function mixaTapBuild(off) {
   X.chunks = []; X.nw = 0; X.n = n;
   an.port.onmessage = e => { const m = e.data; if (m && m.w) { X.chunks.push(m.w); X.nw += m.n; } };
   mx1TapBuild(off);                                               // MX1: Oktavbänder + Mitte/Seite je Spur
+  mx2TapBuild(off);                                               // MX2: Lautheit des bisherigen Master-Wegs (nur MX2-Messung)
 }
 async function mixaRender(onProg) {
   const song = S.song; if (!song || !song.bars) throw new Error('Noch kein Song – erst ● SONG');
@@ -64201,6 +64279,7 @@ async function mixaCopy(src) { const out = new Float32Array(src.length); for (le
 
 /* ---------- Worker ---------- */
 function mixaJob(D, m) {
+  if (typeof mx2Job === 'function' && /^mx2/.test(m.op)) return mx2Job(D, m);   // MX2: Merkmale, Nachprüfung
   if (m.op === 'am') return m.o && m.o.st && typeof mx1Fit === 'function' ? mx1Fit(D, m.L, m.R, m.sr, m.o) : D.amFit(m.L, m.R, m.sr, m.o);   // MX1: Multiband-Master
   const S1 = 1 + m.nIn * D.NF, nw = Math.floor(m.win.length / S1), T = [];
   for (const t of m.tracks) {
@@ -64221,7 +64300,7 @@ function mixaJob(D, m) {
 function mixaWorker() {
   if (MIXA.w !== null) return MIXA.w;
   try {
-    const src = 'const D = (' + mixaDspMake.toString() + ')();\n' + mixaJob.toString() + mx1WorkerSrc() + '\nonmessage = e => { const m = e.data; try { postMessage({id: m.id, r: mixaJob(D, m)}); } catch (err) { postMessage({id: m.id, err: String(err && err.message || err)}); } };';
+    const src = 'const D = (' + mixaDspMake.toString() + ')();\n' + mixaJob.toString() + mx1WorkerSrc() + mx2WorkerSrc() + '\nonmessage = e => { const m = e.data; try { postMessage({id: m.id, r: mixaJob(D, m)}); } catch (err) { postMessage({id: m.id, err: String(err && err.message || err)}); } };';
     const u = URL.createObjectURL(new Blob([src], {type: 'application/javascript'}));
     const w = new Worker(u); setTimeout(() => { try { URL.revokeObjectURL(u); } catch (e) {} }, 30000);
     w.onmessage = e => { const m = e.data, q = MIXA.wq.get(m.id); if (!q) return; MIXA.wq.delete(m.id); if (m.err) q.no(new Error(m.err)); else q.ok(m.r); };
@@ -64885,6 +64964,7 @@ function mx1EqCurve() {
   const p = UI.pop && UI.pop.name === 'mx1eq' ? UI.pop.el : null; if (!p) return;
   const pa = p.querySelector('.mx1cv path.mx1pv'), m = S.tracks[MX1.eqI] && S.tracks[MX1.eqI].mix; if (pa) pa.setAttribute('d', mx1EqPath(m || null));
   const st = p.querySelector('.mx1est'); if (st) st.textContent = mx1EqState(MX1.eqI);
+  mx2EqUpd();                                                      // MX2: Kennlinie, Geisterkurve
 }
 function mx1EqState(i) { const m = S.tracks[i] && S.tracks[i].mix; if (!m) return 'aus – kein Rechenaufwand'; const eq = m.hp > 0 || m.ls || m.pg || m.hs, cp = m.ra > 1.001; return (eq && cp ? 'EQ + Kompressor' : eq ? 'EQ' : cp ? 'Kompressor' : m.mk ? 'Pegel' : 'Songteil-Pegel') + ' an'; }
 function mx1EqSheet(i) {
@@ -64902,13 +64982,14 @@ function mx1EqSheet(i) {
     for (const [k, l, d] of MX1_EQK) { const c = mk(k, l, d); ks.push(c); p.querySelector('.mx1keq').appendChild(c); }
     for (const [k, l, d] of MX1_CPK) { const c = mk(k, l, d); ks.push(c); p.querySelector('.mx1kcp').appendChild(c); }
     p._mx1ks = ks;
+    mx2EqAdd(p, i);                                               // MX2: Analyzer, Geisterkurve, Kennlinie, Gain-Reduction
     onTap(p, b => {
       const a = b.dataset.a;
       if (a === 'off') { const before = mixaSnap(), m = tr.mix && tr.mix.sec ? {sec: tr.mix.sec} : null; if (m) tr.mix = m; else delete tr.mix; if (before !== mixaSnap()) { undoPush({kind: 'mixa', before, label: 'EQ/Komp ' + tr.name + ' aus'}); mixaAfter([i], false); } ks.forEach(x => x.update()); mx1EqCurve(); haptic('tick'); }
       else if (a === 'mix') { mixaSheet(); haptic('tick'); }
       else if (a === 'x') closePop();
     }, 'button[data-a]');
-  }, {name: 'mx1eq', onClose: () => { MX1.eqI = -1; try { if (R.editor === 'synth' || R.editor === 'drum') for (const f of ED.refreshers || []) f(); } catch (e) {} }});
+  }, {name: 'mx1eq', onClose: () => { MX1.eqI = -1; mx2EqEnd(); try { if (R.editor === 'synth' || R.editor === 'drum') for (const f of ED.refreshers || []) f(); } catch (e) {} }});
   return true;
 }
 // FX › SPUR: Knopf „EQ · KOMP“ (eine Zelle im Raster; Stand darunter)
@@ -64994,6 +65075,773 @@ const MX1_API = {
   mx1Master: () => mx1Master(), mx1Core: () => mx1Core(), mx1Node: () => (AU.M && AU.M.am && AU.M.am.node ? {on: !!AU.M.am.on, sig: AU.M.am.sig} : null)
 };
 /* ===================== MX1 END ===================== */
+
+/* ===================== MX2 BEGIN: Mix & Master 2 (Paket MX2, baut auf MIX-A und MX1 auf) =====================
+   Xander 07.11. (5): „einmal messen, dann die Stile nur durchschalten“, „im Rahmen bleiben“, „aus dem Mastering heraus abhören“,
+   „sehen, was gemastert wird“, „Sidechain auf dem Bass“, „etwas Globales“, „ein Knopf mischen und mastern“, Feinschliff je Rolle,
+   Handschrift-Referenzen (als Stil-Beschreibung, keine Namen), Kanalzug zum Lernen.
+   - Kopfleiste [MIX] (und ≡ › Projekt › Mix) → Blatt „Mix & Master“ (hohes Blatt mit Kopf: ▶/■, A, B, Ablegen, ✕) mit drei Wegen:
+     [Mischen] [Mastern] [Mischen + Mastern]
+   - Einmal messen: EIN Offline-Durchlauf (mixaRender) liefert Merkmale je 5 ms (3 Bänder wie der Multiband: Leistung + K-Energie,
+     Gesamt-Leistung, K-Energie, Spitze), ein Terz-Spektrum und – über einen zweiten Abgriff am bisherigen Master-Weg – die Lautheit
+     dessen, was man VORHER hört. Stil, Ziel und Vorlieben rechnen daraus im Hauptfaden sofort (Rahmen-Simulation der Master-Kette,
+     wenige ms). Der Worker behält das Signal und prüft danach mit der echten Kette (MX1 pre + MIX-A amSim) nach: Pegel genau aufs
+     Ziel, True-Peak gemessen. Signatur = mixaStateSig(): geändert → Hinweis „neu messen“.
+   - Vorlieben Transparenz ↔ Druck, Wärme ↔ Glanz in festen Grenzen: True-Peak ≤ −1 dBTP (Limiter), Klang-Korrektur je Band ±3 dB,
+     Band-Kompression im Schnitt ≤ 3 dB, Ratio ≤ 4, Tief-Release ≥ 120 ms (kein Pumpen), Sättigung ≤ 0,6.
+   - Abhören im Blatt: A/B während es läuft, pegelgleich (der lautere Weg wird leiser; nur live, nie im Export/Video).
+   - Sehen: Kompression je Band live (Meter aus dem Master-Worklet), Master-EQ-Kurve, Spektrum vorher/nachher, LUFS, True-Peak,
+     „Warum“-Liste. Seitenkette Kick → Bass (Pumpen der Bass-Spur mit Quelle Kick), Feinschliff je Rolle, Tiefenstaffelung.
+   - Kanalzug (EQ · KOMP-Blatt aus MX1): Live-Analyzer vor/nach dem EQ hinter der Kurve, Kennlinie, Gain-Reduction-Meter, Vorschlag
+     des Mix-Assistenten als Geisterkurve.
+   Daten: fxBus.am.mx2 = {pf, d, w} (fehlt = nichts). Ohne MX2-Benutzung läuft alles wie vorher. */
+function mx2DspMake(D, M1) {
+  'use strict';
+  const lg = x => 10 * Math.log10(x > 1e-30 ? x : 1e-30), clampN = (x, a, b) => (x < a ? a : x > b ? b : x);
+  const r05 = x => Math.round(x * 2) / 2, r1 = x => Math.round(x * 10) / 10, trunc05 = x => (x < 0 ? -1 : 1) * Math.floor(Math.abs(x) * 2 + 1e-9) / 2;
+  const F1 = 150, F2 = 3000, TO = [31.5, 40, 50, 63, 80, 100, 125, 160, 200, 250, 315, 400, 500, 630, 800, 1000, 1250, 1600, 2000, 2500, 3150, 4000, 5000, 6300, 8000, 10000, 12500, 16000];
+  // Radix-2-FFT (in place)
+  function fft(re, im) {
+    const n = re.length;
+    for (let i = 1, j = 0; i < n; i++) { let b = n >> 1; for (; j & b; b >>= 1) j ^= b; j ^= b; if (i < j) { let t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; } }
+    for (let len = 2; len <= n; len <<= 1) {
+      const a = -2 * Math.PI / len, h = len >> 1;
+      for (let k = 0; k < h; k++) {
+        const cr = Math.cos(a * k), ci = Math.sin(a * k);
+        for (let i = k; i < n; i += len) { const q = i + h, tr = re[q] * cr - im[q] * ci, ti = re[q] * ci + im[q] * cr; re[q] = re[i] - tr; im[q] = im[i] - ti; re[i] += tr; im[i] += ti; }
+      }
+    }
+  }
+  // Terz-Spektrum (Mitte, Hann, 4096er-Fenster, höchstens 400 gleichmäßig verteilt) in dB
+  function spectrum(L, R, sr) {
+    const N = 4096, n = L.length, nw = Math.floor(n / N), step = Math.max(1, Math.ceil(nw / 400)), P = new Float64Array(N / 2), re = new Float64Array(N), im = new Float64Array(N), win = new Float64Array(N);
+    for (let i = 0; i < N; i++) win[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / N);
+    let cnt = 0;
+    for (let w = 0; w < nw; w += step) {
+      const o = w * N; for (let i = 0; i < N; i++) { re[i] = (L[o + i] + R[o + i]) * 0.5 * win[i]; im[i] = 0; }
+      fft(re, im); for (let k = 0; k < N / 2; k++) P[k] += re[k] * re[k] + im[k] * im[k]; cnt++;
+    }
+    const out = new Float32Array(TO.length), df = sr / N;
+    TO.forEach((fc, b) => { const a = fc / Math.pow(2, 1 / 6), z = fc * Math.pow(2, 1 / 6); let s = 0; for (let k = Math.max(1, Math.floor(a / df)); k <= Math.min(N / 2 - 1, Math.ceil(z / df)); k++) { const f = k * df; if (f >= a && f < z) s += P[k]; } out[b] = lg(s / Math.max(1, cnt) / N); });
+    return out;
+  }
+  /* ---------- Merkmale je 5 ms: 3 Bänder (LR4 bei 150 Hz / 3 kHz wie MB3): Leistung je Kanal, K-Energie (Kanal-Summe); Gesamt; Spitze ---------- */
+  function feat(L, R, sr) {
+    const T0 = Date.now(), H = Math.max(1, Math.round(sr / 200)), n = L.length, NF = Math.floor(n / H), Q = Math.SQRT1_2, run = D.run;
+    const cL1 = D.bq('lp', F1, sr, Q), cH1 = D.bq('hp', F1, sr, Q), cL2 = D.bq('lp', F2, sr, Q), cH2 = D.bq('hp', F2, sr, Q), cA2 = M1.ap(F2, sr), KW = D.kw(sr), k1 = KW[0], k2 = KW[1];
+    const z = new Float64Array(36), zk = new Float64Array(24);
+    const E = new Float32Array(NF * 3), K = new Float32Array(NF * 3), Ef = new Float32Array(NF), Kf = new Float32Array(NF), Pk = new Float32Array(NF);
+    let i = 0;
+    for (let f = 0; f < NF; f++) {
+      let e0 = 0, e1 = 0, e2 = 0, q0 = 0, q1 = 0, q2 = 0, ef = 0, qf = 0, pk = 0;
+      for (const e = i + H; i < e; i++) {
+        let xl = L[i], xr = R[i]; if (!(xl === xl)) xl = 0; if (!(xr === xr)) xr = 0;
+        const l0 = run(cA2, z, 4, run(cL1, z, 2, run(cL1, z, 0, xl))), hl = run(cH1, z, 8, run(cH1, z, 6, xl)), l1 = run(cL2, z, 12, run(cL2, z, 10, hl)), l2 = run(cH2, z, 16, run(cH2, z, 14, hl));
+        const r0 = run(cA2, z, 22, run(cL1, z, 20, run(cL1, z, 18, xr))), hr = run(cH1, z, 26, run(cH1, z, 24, xr)), r1_ = run(cL2, z, 30, run(cL2, z, 28, hr)), r2 = run(cH2, z, 34, run(cH2, z, 32, hr));
+        const a0 = run(k2, zk, 2, run(k1, zk, 0, l0)), a1 = run(k2, zk, 6, run(k1, zk, 4, l1)), a2 = run(k2, zk, 10, run(k1, zk, 8, l2));
+        const b0 = run(k2, zk, 14, run(k1, zk, 12, r0)), b1 = run(k2, zk, 18, run(k1, zk, 16, r1_)), b2 = run(k2, zk, 22, run(k1, zk, 20, r2));
+        e0 += l0 * l0 + r0 * r0; e1 += l1 * l1 + r1_ * r1_; e2 += l2 * l2 + r2 * r2; ef += xl * xl + xr * xr;
+        q0 += a0 * a0 + b0 * b0; q1 += a1 * a1 + b1 * b1; q2 += a2 * a2 + b2 * b2; const sa = a0 + a1 + a2, sb = b0 + b1 + b2; qf += sa * sa + sb * sb;
+        const al = xl < 0 ? -xl : xl, ar = xr < 0 ? -xr : xr; if (al > pk) pk = al; if (ar > pk) pk = ar;
+      }
+      const o = f * 3, iH = 1 / H;
+      E[o] = e0 * 0.5 * iH; E[o + 1] = e1 * 0.5 * iH; E[o + 2] = e2 * 0.5 * iH; Ef[f] = ef * 0.5 * iH;
+      K[o] = q0 * iH; K[o + 1] = q1 * iH; K[o + 2] = q2 * iH; Kf[f] = qf * iH; Pk[f] = pk;
+    }
+    // Lautheit (100-ms-Blöcke = 20 Rahmen), Bandanteile, Spektrum
+    const nb = Math.floor(NF / 20), bl = new Float64Array(nb); for (let b = 0; b < nb; b++) { let s = 0; for (let j = b * 20; j < b * 20 + 20; j++) s += Kf[j]; bl[b] = s / 20; }
+    let t0 = 0, t1 = 0, t2 = 0, tt = 0; for (let f = 0; f < NF; f++) { t0 += E[f * 3]; t1 += E[f * 3 + 1]; t2 += E[f * 3 + 2]; tt += Ef[f]; }
+    const share = [t0, t1, t2].map(v => +lg(v / (tt || 1e-30)).toFixed(2));
+    return {sr, H, NF, E, K, Ef, Kf, Pk, Lin: +D.integ(bl).toFixed(2), lraIn: +D.lra(bl).toFixed(1), share, spec: spectrum(L, R, sr), TO, ms: Date.now() - T0};
+  }
+  // Perzentile der aktiven 5-ms-Pegel je Band (wie MX1: lauter als 99 %-Pegel − 30 dB), einmal je Messung
+  function prep(C) {
+    if (C._p) return C._p;
+    const P = [];
+    for (let k = 0; k < 3; k++) {
+      const a = new Float32Array(C.NF); for (let f = 0; f < C.NF; f++) a[f] = lg(C.E[f * 3 + k]); a.sort();
+      const mx = a[Math.floor(0.99 * (C.NF - 1))] || -300; let s = 0; while (s < C.NF && a[s] <= mx - 30) s++;
+      const act = a.subarray(s); P.push(p => (act.length ? act[Math.min(act.length - 1, Math.max(0, Math.round(p * (act.length - 1))))] : -60));
+    }
+    return (C._p = P);
+  }
+  // Shelf-Wirkung (Leistung) je Band, gewichtet mit dem gemessenen Spektrum
+  function shelfPow(C, lo, hi) {
+    const sr = C.sr, cl = D.bq('ls', 150, sr, 0, lo), ch = D.bq('hs', 5000, sr, 0, hi), s = [0, 0, 0], t = [0, 0, 0];
+    C.TO.forEach((f, b) => { const k = f < F1 ? 0 : f < F2 ? 1 : 2, w = Math.pow(10, C.spec[b] / 10), W = 2 * Math.PI * f / sr; s[k] += w * M1.mag2(cl, W) * M1.mag2(ch, W); t[k] += w; });
+    return s.map((v, k) => (t[k] > 0 ? v / t[k] : 1));
+  }
+  /* ---------- Rahmen-Simulation der Master-Kette (MB3 → Sättigung → Shelves → Bus-Kompressor → Pegel → Limiter) ----------
+     X = {b: [[thr, ratio, attack, release, make-up] × 3] | null, k (Sättigung), sh [3] (Shelf-Leistung je Band), bus {thr, ra, at, rl} | null,
+     gain (dB), ceil (dBTP)}; want.pk: Spitzen nach dem Multiband, want.bus: Pegel vor dem Bus-Kompressor */
+  function sim(C, X, want) {
+    const NF = C.NF, fms = 1000 * C.H / C.sr, E = C.E, K = C.K, Ef = C.Ef, Kf = C.Kf, Pk = C.Pk, B = X.b;
+    const sl = [0, 0, 0], thr = [0, 0, 0], aA = [0, 0, 0], aR = [0, 0, 0], mk = [0, 0, 0];
+    if (B) for (let k = 0; k < 3; k++) { const ra = B[k][1]; sl[k] = ra > 1.001 ? 1 - 1 / ra : 0; thr[k] = B[k][0]; aA[k] = Math.exp(-fms / Math.max(0.1, B[k][2])); aR[k] = Math.exp(-fms / Math.max(5, B[k][3])); mk[k] = B[k][4]; }
+    const sh = X.sh || [1, 1, 1], kS = X.k || 0, G = Math.pow(10, (X.gain || 0) / 20), bus = X.bus;
+    const bsl = bus && bus.ra > 1.001 ? 1 - 1 / bus.ra : 0, bA = bus ? Math.exp(-fms / Math.max(0.1, bus.at)) : 0, bR = bus ? Math.exp(-fms / Math.max(1, bus.rl)) : 0, bthr = bus ? bus.thr : 0, cB = Math.exp(-fms / 10);
+    const cl = Math.pow(10, ((X.ceil == null ? -1 : X.ceil) - 0.5) / 20), rc = 1 - Math.exp(-fms / 80);
+    const gr = [0, 0, 0], grS = [0, 0, 0], grM = [0, 0, 0]; let eb = 0, gb = 0, gbS = 0, gbM = 0, env = 1, lmS = 0, lmM = 1, peak = 0;
+    const nb = Math.floor(NF / 20), bl = new Float64Array(nb); let acc = 0, c = 0, bi = 0;
+    const pks = want && want.pk ? new Float32Array(NF) : null, lvb = want && want.bus ? new Float32Array(NF) : null;
+    for (let f = 0; f < NF; f++) {
+      const o = f * 3; let eIn = 0, eMb = 0, eSh = 0, kSh = 0, kIn = 0;
+      for (let k = 0; k < 3; k++) {
+        const e = E[o + k]; let g = mk[k];
+        if (sl[k]) {
+          const lv = 10 * Math.log10(e > 1e-20 ? e : 1e-20) - thr[k], gc = lv <= -3 ? 0 : lv >= 3 ? -sl[k] * lv : -sl[k] * (lv + 3) * (lv + 3) / 12;
+          gr[k] = gc < gr[k] ? gc + (gr[k] - gc) * aA[k] : gc + (gr[k] - gc) * aR[k]; g += gr[k]; grS[k] += gr[k]; if (gr[k] < grM[k]) grM[k] = gr[k];
+        }
+        const p = Math.pow(10, g / 10); eIn += e; eMb += e * p; eSh += e * p * sh[k]; kSh += K[o + k] * p * sh[k]; kIn += K[o + k];
+      }
+      const cE = eIn > 1e-30 ? Ef[f] / eIn : 1, cK = kIn > 1e-30 ? Kf[f] / kIn : 1;
+      let pk = Pk[f] * (eIn > 1e-30 ? Math.sqrt(eMb / eIn) : 1); if (pks) pks[f] = pk;
+      let sE = 1; if (kS > 0 && pk > 0) { sE = Math.max(0.3, 1 - 2 * kS * kS * eMb * cE); pk = Math.tanh(kS * pk) / kS; }
+      pk *= eMb > 1e-30 ? Math.sqrt(eSh / eMb) : 1;
+      const ePost = eSh * cE * sE; if (lvb) lvb[f] = 10 * Math.log10(ePost > 1e-20 ? ePost : 1e-20);
+      let gbus = 0;
+      if (bsl) { eb = ePost + (eb - ePost) * cB; const lv = 10 * Math.log10(eb > 1e-20 ? eb : 1e-20) - bthr, gc = lv <= -3 ? 0 : lv >= 3 ? -bsl * lv : -bsl * (lv + 3) * (lv + 3) / 12; gb = gc < gb ? gc + (gb - gc) * bA : gc + (gb - gc) * bR; gbus = gb; gbS += gb; if (gb < gbM) gbM = gb; }
+      const gT = Math.pow(10, gbus / 20) * G; pk *= gT;
+      const m = pk > cl ? cl / pk : 1; env = m < env ? m : env + (m - env) * rc; lmS += env; if (env < lmM) lmM = env; if (pk * env > peak) peak = pk * env;
+      acc += kSh * cK * sE * gT * gT * env * env; if (++c === 20) { if (bi < nb) bl[bi++] = acc / 20; acc = 0; c = 0; }
+    }
+    const blk = bl.subarray(0, bi);
+    return {I: D.integ(blk), lra: D.lra(blk), gr: grS.map((s, k) => ({avg: +(-s / Math.max(1, NF)).toFixed(2), max: +(-grM[k]).toFixed(1)})), bus: {avg: -gbS / Math.max(1, NF), max: -gbM},
+      lim: {avg: -20 * Math.log10(Math.max(1e-9, lmS / Math.max(1, NF))), max: -20 * Math.log10(Math.max(1e-9, lmM))}, peak: 20 * Math.log10(Math.max(1e-9, peak)), pks, lvb};
+  }
+  const pctArr = (a, p) => { if (!a.length) return 0; const s = Float32Array.from(a).sort(); return s[Math.min(s.length - 1, Math.max(0, Math.round(p * (s.length - 1))))]; };
+  /* ---------- schnelle Anpassung aus den Merkmalen: Stil (Y) + Vorlieben (d Druck, w Glanz: −2 … 2) + Ziel ---------- */
+  function fit(C, o) {
+    const T0 = Date.now(), Y = o.Y, d = clampN(Math.round(o.d || 0), -2, 2), w = clampN(Math.round(o.w || 0), -2, 2), ziel = o.ziel, ceil = o.ceil == null ? -1 : o.ceil;
+    if (!C || !isFinite(C.Lin) || C.Lin < -60) return null;
+    const pct = prep(C);
+    const ra = Y.ra.map(v => r1(clampN(v + 0.35 * d, 1.2, 4))), grT = Y.gr.map(v => clampN(v * (1 + 0.3 * d), 0.3, 4));
+    const at = Y.at.map(v => Math.round(clampN(v * (1 - 0.15 * d), 3, 80))), rl = Y.rl.map((v, k) => Math.round(Math.max(v, k === 0 ? 120 : 80)));
+    const satA = clampN(Y.sat * (1 + 0.35 * d), 0, 0.6), gRa = r1(clampN(Y.glue[0] + 0.2 * d, 1.2, 3)), gGr = clampN(Y.glue[1] * (1 + 0.3 * d), 0.3, 3);
+    const lo = r05(clampN(Y.lo - 0.4 * w, -3, 3)), hi = r05(clampN(Y.hi + 0.75 * w, -3, 3)), sh = shelfPow(C, lo, hi), shDb = sh.map(v => +lg(v).toFixed(2));
+    const b = [], corr = [];
+    for (let k = 0; k < 3; k++) {
+      const thr = clampN(r05(pct[k](0.95) - grT[k] / (1 - 1 / ra[k])), -80, 0);
+      const c = trunc05(clampN(clampN((Y.ref[k] - C.share[k]) * 0.5, -3, 3), -3 - shDb[k], 3 - shDb[k])); corr.push(c);   // Grenze: Klang je Band ±3 dB (mit Shelf)
+      b.push([thr, ra[k], at[k], rl[k], clampN(r05(grT[k] * 0.5 + c), -6, 6)]);
+    }
+    const X = {b, k: 0, sh, bus: null, gain: 0, ceil};
+    let s1 = sim(C, X, {pk: true}), fix = 0;
+    for (let k = 0; k < 3; k++) if (s1.gr[k].avg > 3) { b[k][0] = clampN(r05(b[k][0] + (s1.gr[k].avg - 3) * 1.6 + 0.5), -80, 0); fix++; }   // Grenze: Ø ≤ 3 dB je Band
+    if (fix) s1 = sim(C, X, {pk: true});
+    const pa = []; for (let f = 0; f < C.NF; f += 4) if (s1.pks[f] > 1e-6) pa.push(s1.pks[f]);
+    const pk = pa.length ? pctArr(pa, 0.99) : 0, kS = pk > 1e-4 && satA > 0 ? +(satA * 1.2 / pk).toFixed(3) : 0; X.k = kS;
+    const s2 = sim(C, X, {bus: true}), lv = []; for (let f = 0; f < C.NF; f += 2) lv.push(s2.lvb[f]);
+    const mx = pctArr(lv, 0.99), act = lv.filter(v => v > mx - 30), bthr = r05(pctArr(act, 0.95) - gGr / (1 - 1 / gRa));
+    X.bus = {thr: bthr, ra: gRa, at: 30, rl: clampN(Math.round(60000 / (o.bpm || 120) / 2 / 10) * 10, 100, 300)};
+    let g0 = ziel - C.Lin + gGr * 0.5, q0 = sim(C, Object.assign({}, X, {gain: g0})), it = 1;
+    let g1 = g0 + (ziel - q0.I), q1 = sim(C, Object.assign({}, X, {gain: g1})), e1 = ziel - q1.I; it++;
+    while (Math.abs(e1) > 0.03 && it < 12) { const s = (q1.I - q0.I) / (g1 - g0 || 1e-9), st = clampN(e1 / (s > 0.2 ? s : 0.2), -12, 12); g0 = g1; q0 = q1; g1 += st; q1 = sim(C, Object.assign({}, X, {gain: g1})); e1 = ziel - q1.I; it++; }
+    const gain = Math.round(clampN(g1, -24, 30) * 100) / 100, fin = sim(C, Object.assign({}, X, {gain}));
+    const satDb = kS ? +(20 * Math.log10(Math.tanh(kS * pk) / (kS * pk))).toFixed(2) : 0;
+    return {P: {lo, hi, thr: bthr, ra: gRa, at: 30, rl: X.bus.rl, gain, ceil, st: Y.st, mb: {f1: F1, f2: F2, b}, sat: kS ? {k: kS} : null},
+      info: {lin: C.Lin, lout: +fin.I.toFixed(2), lraIn: C.lraIn, lraOut: +fin.lra.toFixed(1), tp: +Math.min(ceil - 0.5, fin.peak).toFixed(2), compMax: +fin.bus.max.toFixed(1), compAvg: +fin.bus.avg.toFixed(1),
+        limMax: +fin.lim.max.toFixed(1), limAvg: +fin.lim.avg.toFixed(2), share: C.share, corr, shDb, mbGr: fin.gr, satDb, fix, iters: it, ms: Date.now() - T0, est: true}};
+  }
+  /* ---------- genaue Nachprüfung (Worker, ganzes Signal, gleiche Kette wie der Master-Knoten): Pegel aufs Ziel, True-Peak ---------- */
+  function exact(L, R, sr, P, o) {
+    const T0 = Date.now(), lat = o.lat | 0 || Math.round(0.006 * sr), ziel = o.ziel, y = M1.pre(L, R, sr, P), sim1 = g => D.amSim(y.L, y.R, sr, Object.assign({}, P, {gain: g}), lat);
+    let g0 = P.gain, q0 = sim1(g0), e0 = ziel - q0.I, it = 1;
+    if (Math.abs(e0) > 0.05) {
+      let g1 = g0 + e0, q1 = sim1(g1), e1 = ziel - q1.I; it++;
+      while (Math.abs(e1) > 0.05 && it < 5) { const s = (q1.I - q0.I) / (g1 - g0 || 1e-9), st = clampN(e1 / (s > 0.2 ? s : 0.2), -6, 6); g0 = g1; q0 = q1; g1 += st; q1 = sim1(g1); e1 = ziel - q1.I; it++; }
+      g0 = g1;
+    }
+    const gain = Math.round(clampN(g0, -24, 30) * 100) / 100, fin = D.amSim(y.L, y.R, sr, Object.assign({}, P, {gain}), lat, true);
+    return {gain, info: {lout: +fin.I.toFixed(2), lraOut: +fin.lra.toFixed(1), tp: +fin.tp.toFixed(2), compMax: +(-fin.grMin).toFixed(1), compAvg: +(-fin.grAvg).toFixed(1), limMax: +(-fin.lmMin).toFixed(1), limAvg: +(-fin.lmAvg).toFixed(2), mbGr: y.gr, iters: it, ms: Date.now() - T0, est: false}};
+  }
+  // Frequenzgang (dB) der Master-Klangkorrektur: Bänder (LR4-Leistung) mit corr + Shelves
+  function eqDb(P, corr, f, sr) {
+    const W = 2 * Math.PI * Math.min(f, sr * 0.49) / sr, Q = Math.SQRT1_2, m = M1.mag2;
+    const lp1 = m(D.bq('lp', F1, sr, Q), W), hp1 = m(D.bq('hp', F1, sr, Q), W), lp2 = m(D.bq('lp', F2, sr, Q), W), hp2 = m(D.bq('hp', F2, sr, Q), W);
+    const B = [lp1 * lp1, hp1 * hp1 * lp2 * lp2, hp1 * hp1 * hp2 * hp2]; let s = 0, t = 0;
+    for (let k = 0; k < 3; k++) { s += B[k] * Math.pow(10, (corr[k] || 0) / 10); t += B[k]; }
+    return lg(s / (t || 1e-30)) + lg(m(D.bq('ls', 150, sr, 0, P.lo || 0), W) * m(D.bq('hs', 5000, sr, 0, P.hi || 0), W));
+  }
+  return {F1, F2, TO, fft, spectrum, feat, prep, shelfPow, sim, fit, exact, eqDb};
+}
+let MX2_W = null;                                                 // MX2-Kern im Worker (bzw. Hauptfaden-Notlösung) mit dem gemerkten Signal
+// Worker-Aufträge 'mx2feat' (Merkmale, Signal bleibt im Worker), 'mx2exact' (Nachprüfung), 'mx2drop'
+function mx2Job(D, m) {
+  if (!MX1_W) MX1_W = mx1DspMake(D);
+  if (!MX2_W) MX2_W = mx2DspMake(D, MX1_W);
+  if (m.op === 'mx2feat') { MX2_W.keep = {key: m.key, L: m.L, R: m.R, sr: m.sr}; return MX2_W.feat(m.L, m.R, m.sr); }
+  if (m.op === 'mx2exact') { const k = MX2_W.keep; if (!k || k.key !== m.key) return {miss: true}; return MX2_W.exact(k.L, k.R, k.sr, m.P, m.o || {}); }
+  if (m.op === 'mx2drop') { MX2_W.keep = null; return true; }
+  return null;
+}
+function mx2WorkerSrc() { return '\nlet MX2_W = null;\n' + mx2DspMake.toString() + '\n' + mx2Job.toString() + '\n'; }
+// Worklet-Modul: Lautheits-Abgriff am bisherigen Master-Weg (nur im Messdurchlauf) + Meter der Mix-Knoten (nur auf Wunsch, live)
+function mx2ModSrc() {
+  return `
+class SynqMx2Ka extends AudioWorkletProcessor {
+  constructor(o) { super(); const p = (o && o.processorOptions) || {}, K = MIXA_D.kw(sampleRate); this.k1 = K[0]; this.k2 = K[1]; this.z = new Float64Array(8); this.H = Math.round(sampleRate / 10); this.acc = 0; this.c = 0; this.bl = []; this.total = +p.total || 0; this.done = false; }
+  process(inputs) {
+    if (this.done) return true;
+    const ch = inputs[0], run = MIXA_D.run, z = this.z, H = this.H;
+    if (ch && ch.length) { const L = ch[0], R = ch.length > 1 ? ch[1] : ch[0]; for (let i = 0; i < L.length; i++) { let l = L[i], r = R[i]; if (!(l === l)) l = 0; if (!(r === r)) r = 0; const yl = run(this.k2, z, 2, run(this.k1, z, 0, l)), yr = run(this.k2, z, 6, run(this.k1, z, 4, r)); this.acc += yl * yl + yr * yr; if (++this.c === H) { this.bl.push(this.acc / H); this.acc = 0; this.c = 0; } } }
+    else { this.c += 128; while (this.c >= H) { this.bl.push(this.acc / H); this.acc = 0; this.c -= H; } }
+    if (this.total && currentFrame + 128 >= this.total) { this.port.postMessage({bl: Float64Array.from(this.bl)}); this.done = true; }
+    return true;
+  }
+}
+registerProcessor('synq-mx2-ka', SynqMx2Ka);
+function mx2Mt(pr) {
+  const d = pr.d; let v;
+  if (pr.m) { const mb = d.mb && d.mb.on ? d.mb.gr : null, M = d.m || d; v = [mb ? mb[0] : 0, mb ? mb[1] : 0, mb ? mb[2] : 0, M.gr || 0, 20 * Math.log10(Math.max(1e-6, M.env || 1))]; }
+  else v = [d.gr || 0];
+  const q = pr.mq || (pr.mq = v.slice()); for (let k = 0; k < v.length; k++) if (v[k] < q[k]) q[k] = v[k];
+  if (++pr.mc >= 6 || !(pr.mc > 0)) { pr.mc = 0; pr.port.postMessage({mt: q.slice()}); pr.mq = null; }
+}
+`;
+}
+
+/* ---------- Zustand ---------- */
+const MX2 = {sess: 0, cache: null, fit: null, gen: 0, busy: null, prog: 0, pref: null, ab: null, match: true, rng: 'song', mt: null, mtT: 0, mtNode: null, raf: 0, eq: null,
+  mixWhy: null, tapOn: false, xT: 0, last: null, core: null, ver: 0, stelle: null, way: null};
+// Handschrift-Profile (Stil-Beschreibungen) – Ziel-Balance für Master (Bänder tief/mitte/hoch, Dichte, Glanz) und Mix (Pegel je Rolle, Tiefe)
+const MX2_PF = [
+  {id: 'eurodisco', name: 'Euro-Disco 80er', sub: 'hell & kompakt', st: 'disco', ref: [-4, -3.2, -15.5], ra: [2.5, 2.2, 2], gr: [2.5, 2.2, 1.8], at: [25, 12, 6], rl: [180, 140, 110], sat: 0.3, glue: [1.8, 1.8], lo: -0.5, hi: 1,
+    mix: {lead: 1, arp: 1, pad: -1}, depth: {drums: 0.06, bass: 0.02, lead: 0.12, voc: 0.14, arp: 0.18, pad: 0.3}},
+  {id: 'hinrg', name: 'Hi-NRG', sub: 'laut & glänzend', st: 'house', ref: [-3.2, -3.8, -15], ra: [3, 2.5, 2.2], gr: [3.2, 2.6, 2.2], at: [20, 10, 5], rl: [150, 120, 90], sat: 0.45, glue: [2, 2.2], lo: 0, hi: 1.5,
+    mix: {bass: 1, drums: 0.5, arp: 0.5, pad: -1.5}, depth: {drums: 0.05, bass: 0, lead: 0.1, voc: 0.12, arp: 0.15, pad: 0.25}},
+  {id: 'synthweit', name: 'Synth-Pop weit', sub: 'weit & dunkel', st: 'synthpop', ref: [-3.5, -3.2, -18.5], ra: [2, 1.8, 1.8], gr: [2, 1.6, 1.4], at: [35, 20, 12], rl: [260, 200, 160], sat: 0.2, glue: [1.4, 1.2], lo: 0.5, hi: -1,
+    mix: {pad: 1.5, arp: -0.5, lead: -0.5}, depth: {drums: 0.1, bass: 0.03, lead: 0.18, voc: 0.2, arp: 0.28, pad: 0.45}},
+  {id: 'italo', name: 'Italo', sub: 'warm', st: 'disco', ref: [-3.2, -3, -17.5], ra: [2.5, 2, 1.8], gr: [2.5, 2, 1.5], at: [30, 15, 10], rl: [200, 160, 130], sat: 0.4, glue: [1.6, 1.5], lo: 1, hi: -0.5,
+    mix: {lead: 1, arp: 1, pad: -0.5}, depth: {drums: 0.08, bass: 0.02, lead: 0.15, voc: 0.16, arp: 0.2, pad: 0.35}},
+  {id: 'modern', name: 'Modern', sub: 'klar', st: 'sanft', ref: [-3.5, -3.6, -16], ra: [2.2, 1.8, 1.8], gr: [2, 1.5, 1.2], at: [30, 20, 10], rl: [200, 150, 120], sat: 0.12, glue: [1.4, 1], lo: 0, hi: 0.5,
+    mix: {}, depth: {drums: 0.05, bass: 0, lead: 0.1, voc: 0.12, arp: 0.15, pad: 0.25}},
+  {id: 'synthpop', name: 'Synth-Pop', sub: 'ausgewogen', st: 'synthpop', ref: [-3.5, -3.5, -17], ra: [2.5, 2, 2], gr: [2.5, 2, 2], at: [30, 15, 8], rl: [220, 160, 120], sat: 0.3, glue: [1.5, 1.5], lo: 0, hi: 0,
+    mix: {}, depth: {drums: 0.08, bass: 0.02, lead: 0.14, voc: 0.15, arp: 0.2, pad: 0.35}},
+  {id: 'disco', name: 'Disco', sub: 'Bass & Glanz', st: 'disco', ref: [-3.5, -3.7, -16.5], ra: [3, 2, 2], gr: [3, 2, 1.5], at: [25, 15, 8], rl: [180, 150, 110], sat: 0.3, glue: [1.6, 1.5], lo: 0, hi: 0,
+    mix: {bass: 0.5}, depth: {drums: 0.08, bass: 0.02, lead: 0.12, voc: 0.14, arp: 0.18, pad: 0.3}},
+  {id: 'house', name: 'House', sub: 'Druck unten', st: 'house', ref: [-3, -4, -17.5], ra: [3.5, 2.5, 2], gr: [3.5, 2.5, 2], at: [20, 12, 6], rl: [160, 130, 100], sat: 0.45, glue: [1.8, 2], lo: 0, hi: 0,
+    mix: {bass: 1, drums: 0.5}, depth: {drums: 0.05, bass: 0, lead: 0.1, voc: 0.12, arp: 0.15, pad: 0.28}},
+  {id: 'sanft', name: 'Sanft', sub: 'offen, wenig Kompression', st: 'sanft', ref: [-4, -3, -18], ra: [1.6, 1.4, 1.4], gr: [1.2, 1, 1], at: [40, 25, 15], rl: [300, 250, 200], sat: 0.1, glue: [1.3, 0.8], lo: 0, hi: 0,
+    mix: {}, depth: {drums: 0.1, bass: 0.03, lead: 0.15, voc: 0.18, arp: 0.22, pad: 0.4}}
+];
+const MX2_D = [['offen', -2], ['luftig', -1], ['neutral', 0], ['dicht', 1], ['Druck', 2]];
+const MX2_W8 = [['sehr warm', -2], ['warm', -1], ['neutral', 0], ['hell', 1], ['Glanz', 2]];
+const MX2_ROLE = {drums: 'Drums', bass: 'Bass', lead: 'Lead', pad: 'Fläche', arp: 'Sequenz', voc: 'Gesang'};
+// Normalisierer (in sich geschlossen: läuft schon beim Start über mixaNormAm)
+function mx2NormAmX(a) {
+  const x = a && a.mx2; if (!x || typeof x !== 'object' || Array.isArray(x)) return {};
+  const pf = typeof x.pf === 'string' && /^(eurodisco|hinrg|synthweit|italo|modern|synthpop|disco|house|sanft)$/.test(x.pf) ? x.pf : null; if (!pf) return {};
+  const st = v => (typeof v === 'number' && isFinite(v) ? Math.max(-2, Math.min(2, Math.round(v))) : 0);
+  return {mx2: {pf, d: st(x.d), w: st(x.w)}};
+}
+function mx2Core() { if (!MX2.core) MX2.core = mx2DspMake(MIXA_D0.v || (MIXA_D0.v = mixaDspMake()), mx1Core()); return MX2.core; }
+function mx2Pref() {
+  if (!MX2.pref) { const a = S.fxBus && S.fxBus.am, x = a && a.mx2; MX2.pref = x ? {pf: x.pf, d: x.d, w: x.w} : {pf: a && a.st && MX2_PF.some(p => p.id === a.st) ? a.st : 'eurodisco', d: 0, w: 0}; }
+  return MX2.pref;
+}
+const mx2Pf = id => MX2_PF.find(p => p.id === (id || mx2Pref().pf)) || MX2_PF[0];
+const mx2F = (v, d) => (v == null || !isFinite(v) ? '–' : (v < 0 ? MINUS : '') + fmtDec(Math.abs(v), d == null ? 1 : d));
+const mx2S = (v, d) => (v > 0 ? '+' : '') + mx2F(v, d);
+const mx2Fresh = () => !!(MX2.cache && MX2.cache.sig === mixaStateSig());
+
+/* ---------- Messen: EIN Durchlauf (Merkmale + Lautheit des bisherigen Master-Wegs; mit Mix: Spur-Analyse wie der Mix-Assistent) ---------- */
+// Messdurchlauf: zweiter Abgriff am bisherigen Master-Weg (Limiter/Soft-Ceiling) → Lautheit „vorher“
+function mx2TapBuild(off) {
+  const c = AU.ctx, X = off && off.mixa; if (!X || !MX2.tapOn) return;
+  try {
+    const n = new AudioWorkletNode(c, 'synq-mx2-ka', {numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [1], channelCount: 2, channelCountMode: 'explicit', channelInterpretation: 'speakers', processorOptions: {total: c.length}});
+    const Y = X.mx2 = {bl: null, end: false};
+    n.port.onmessage = e => { const m = e.data; if (m && m.bl) { Y.bl = m.bl; Y.end = true; } };
+    AU.M.ceil.connect(n); n.connect(c.destination);
+  } catch (e) { logErr(e); }
+}
+async function mx2TapWait(X) { const Y = X && X.mx2; if (!Y) return null; const W0 = performance.now(); while (!Y.end && performance.now() - W0 < 2500) await sleep(15); return Y.bl; }
+function mx2Prog() { const p = mx2El(); const s = p && p.querySelector('.mx2prog'); if (s) s.textContent = (MX2.busy === 'mix' ? 'Mix-Analyse' : MX2.busy === 'mix2' ? 'Nachmessen' : 'Messen') + ' … ' + Math.round(MIXA.prog * 100) + ' %'; }
+async function mx2Run(withMix, tag) {
+  if (MIXA.busy) { toast('Rechnet noch …'); return null; }
+  if (!S.song || !S.song.bars) { toast('Noch kein Song – erst ● SONG'); return null; }
+  MIXA.busy = 'mx2'; MIXA.prog = 0; MX2.busy = tag || (withMix ? 'mix' : 'am'); MX2.renders = (MX2.renders | 0) + 1; mx2Paint();
+  MX1.tap = !!withMix; MX2.tapOn = true;
+  const T0 = performance.now(), D = MIXA_D0.v || (MIXA_D0.v = mixaDspMake());
+  try {
+    const sig = mixaStateSig(), {r, X, win} = await mixaRender(p => { MIXA.prog = p * 0.65; mx2Prog(); });
+    const bl = await mx2TapWait(X), LA = bl && bl.length > 4 ? D.integ(bl) : null;
+    if (withMix) {
+      const tracks = S.tracks.map((tr, i) => ({i, name: tr.name, kind: tr.kind, stimme: !!tr.stimme, chor: !!(tr.chor && tr.chor.length), mute: !!tr.mute, ns: mixaNoteStats(i), fx: Object.assign({drive: 0}, fxOfSound(tr.sound)), mix: tr.mix || null})).filter(t => !t.mute);
+      const mxm = mx1Msg(X, r);
+      const res = await mixaCall({op: 'mix', win, nIn: X.n, wsec: 512 / r.sr, tracks, secs: mixaSections(), t0: X.t0, a0: 0, spb: 60 / r.bpm, bpm: r.bpm, pumpSrc: S.fxBus.pumpSrc, otherPump: S.tracks.some(t => t.sound && t.sound.fx && t.sound.fx.pump > 0), mx1: mxm}, mxm ? [win.buffer, mxm.win.buffer] : [win.buffer]);
+      MIXA.res = Object.assign(res, {sig, at: Date.now()}); MIXA.done.clear();
+    }
+    MIXA.prog = 0.75; mx2Prog();
+    const L = await mixaCopy(r.ch[0]), Rr = await mixaCopy(r.ch[1]), key = sig + ':' + Date.now();
+    const C = await mixaCall({op: 'mx2feat', L, R: Rr, sr: r.sr, key}, [L.buffer, Rr.buffer]);
+    MX2.cache = {sig, key, C, LA: LA != null && isFinite(LA) ? +LA.toFixed(2) : null, sr: r.sr, bpm: r.bpm, t0: X.t0 || 0, at: Date.now(), ms: Math.round(performance.now() - T0), featMs: C.ms};
+    MX2.stelle = null;
+    return MX2.cache;
+  } catch (e) {
+    const m = String(e && e.message || e); if (m !== 'abgebrochen') { if (!/Song|Läuft|Aufnahme|Wiedergabe/.test(m)) logErr(e); toast('Messen: ' + m); }
+    return null;
+  } finally { MIXA.busy = false; MIXA.prog = 0; MX2.busy = null; MX2.tapOn = false; mx2Paint(); }
+}
+
+/* ---------- Master aus dem Zwischenspeicher: sofort anpassen, anwenden (Stil-Wechsel im selben Blatt = ein Undo-Schritt), nachprüfen ---------- */
+function mx2UndoMerge(before, label) {
+  const top = UNDO[UNDO.length - 1];
+  if (top && top.kind === 'mixa' && top.mx2s === MX2.sess && performance.now() - top.time < 8000) { top.time = performance.now(); top.label = label; REDO.length = 0; markDirty(); return; }
+  undoPush({kind: 'mixa', before, label, mx2s: MX2.sess}); markDirty();
+}
+function mx2Master() {
+  const c = MX2.cache; if (!c) return false;
+  const pr = mx2Pref(), Y = mx2Pf(pr.pf), T0 = performance.now();
+  const res = mx2Core().fit(c.C, {Y, d: pr.d, w: pr.w, ziel: MIXA.ziel, ceil: -1, bpm: c.bpm});
+  if (!res) { toast('Song zu leise zum Messen'); return false; }
+  const ms = +(performance.now() - T0).toFixed(1);
+  if (!MX2.ab) mx2AbBase();
+  const before = mixaSnap(), P = res.P;
+  S.fxBus.am = mixaNormAm(Object.assign({on: true, ziel: MIXA.ziel, lo: P.lo, hi: P.hi, thr: P.thr, ra: P.ra, at: P.at, rl: P.rl, gain: P.gain, ceil: P.ceil, st: P.st, mb: P.mb, sat: P.sat}, {mx2: {pf: pr.pf, d: pr.d, w: pr.w}}));
+  MX2.fit = Object.assign(res, {gen: ++MX2.gen, sig: c.sig, pf: pr.pf, d: pr.d, w: pr.w, ziel: MIXA.ziel, ms, exact: null});
+  if (MX2.ab) { MX2.ab.LB = res.info.lout; MX2.ab.amOn = true; }
+  if (before !== mixaSnap()) { mx2UndoMerge(before, 'Master: ' + Y.name + ' · ' + MIXA.ziel + ' LUFS'); mixaAfter([], true); }
+  mx2TrimSync(); mx2ExactSoon(); mx2Paint();
+  return true;
+}
+// genaue Nachprüfung im Worker (verzögert: schnelles Durchschalten rechnet nur das letzte nach)
+function mx2ExactSoon() { clearTimeout(MX2.xT); MX2.xT = setTimeout(mx2Exact, 350); }
+async function mx2Exact() {
+  const F = MX2.fit, c = MX2.cache; if (!F || !c || F.exact) return null;
+  const gen = F.gen, lat = Math.round((AU.compLat || FX.COMP_LATENCY) * c.sr);
+  let r; try { r = await mixaCall({op: 'mx2exact', key: c.key, P: F.P, o: {ziel: F.ziel, lat}}); } catch (e) { logErr(e); return null; }
+  if (!r || r.miss || !MX2.fit || MX2.fit.gen !== gen) return null;
+  F.exact = r; F.P.gain = r.gain; Object.assign(F.info, r.info);
+  const a = S.fxBus.am;
+  if (a && a.on && a.mx2 && JSON.stringify(a.mb) === JSON.stringify(F.P.mb) && a.thr === F.P.thr && Math.abs(a.gain - r.gain) > 0.004) { a.gain = r.gain; markDirty(); mixaMasterSync(false); }
+  if (MX2.ab) MX2.ab.LB = r.info.lout;
+  mx2TrimSync(); mx2Paint(); return r;
+}
+async function mx2EnsureCache() { if (mx2Fresh()) return MX2.cache; return mx2Run(false); }
+
+/* ---------- Mischen: Vorschläge des Mix-Assistenten + Ziel-Balance des Profils (Pegel je Rolle, ±1,5 dB) – ein Undo-Schritt ---------- */
+function mx2MixApply() {
+  const r = MIXA.res; if (!r) return false;
+  const before = mixaSnap(), list = [], did = new Set(), why = [], Y = mx2Pf();
+  mx1AbMark(before);
+  r.T.forEach((t, k) => (r.sug[k] || []).forEach(s => { if (s.patch && s.art !== 'option' && !mixaIsApplied(t.i, s)) list.push({i: t.i, s}); }));
+  for (const {i, s} of list) { if (!S.tracks[i]) continue; MIXA.done.set(i + ':' + s.id, mixaPatchGet(i, s.patch)); mixaPatchSet(i, s.patch); did.add(i); why.push(S.tracks[i].name + ' · ' + s.titel + ': ' + s.text); }
+  r.T.forEach(t => {
+    const d = (Y.mix || {})[t.cls], tr = S.tracks[t.i]; if (!d || !tr || !tr.sound || (t.f && t.f.silent)) return;
+    const f = tr.sound.fx, v0 = f.vol == null ? 0.8 : f.vol, v = Math.min(1, Math.round(v0 * Math.pow(10, Math.max(-1.5, Math.min(1.5, d)) / 40) * 1000) / 1000);
+    if (Math.abs(v - v0) < 0.002) return; f.vol = v; did.add(t.i); why.push(tr.name + ' · Pegel ' + mx2S(40 * Math.log10(v / v0)) + ' dB – Ziel-Balance „' + Y.name + '“ (' + MX2_ROLE[t.cls] + ')');
+  });
+  MX2.mixWhy = why;
+  if (!did.size) return false;
+  undoPush({kind: 'mixa', before, label: 'Mischen (' + Y.name + ')'}); mixaAfter([...did], list.some(x => x.s.patch && x.s.patch.bus));
+  return true;
+}
+/* ---------- die drei Wege ---------- */
+async function mx2Way(way) {
+  if (MIXA.busy) { toast('Rechnet noch …'); return false; }
+  MX2.way = way;
+  if (way === 'am') {
+    if (!MX2.ab) { if (!(await mx2EnsureCache())) return false; mx2AbBase(); }
+    else if (!mx2Fresh() && !(await mx2Run(false))) return false;
+    return mx2Master();
+  }
+  mx2AbEnd();
+  const had = MX2.ab, base = had ? had.base : mx2Snap(), c1 = await mx2Run(true, 'mix'); if (!c1) return false;
+  MX2.ab = had ? Object.assign(had, {mode: 'snap', side: 'B'}) : {base, LA: mx2BaseLoud(base, c1.LA), LB: null, side: 'B', mode: 'snap', amOn: false};
+  const did = mx2MixApply();
+  let c2 = c1; if (did) { c2 = await mx2Run(false, 'mix2'); if (!c2) { mx2Paint(); return false; } }
+  const am = S.fxBus.am && S.fxBus.am.on ? S.fxBus.am : null;
+  if (way === 'both' || (am && am.mx2)) return mx2Master();     // ein MX2-Master folgt dem neuen Mix (gleicher Stil, neu gemessen)
+  MX2.ab.LB = am ? am.ziel : c2.LA;
+  mx2TrimSync(); mx2Paint(); return true;
+}
+
+/* ---------- Abhören: A (vorher) / B (nachher), pegelgleich; ▶/■ Song oder lauteste Stelle ---------- */
+// Schnappschuss für A/B: Mix-Werte (mixaSnap) + was der Feinschliff außerhalb davon ändert (Drive, Release)
+function mx2Snap() { return JSON.stringify({m: mixaSnap(), s: S.tracks.map(t => (t.sound && t.sound.fx ? [t.sound.fx.drive || 0, t.sound.p && typeof t.sound.p.aR === 'number' ? t.sound.p.aR : null] : null))}); }
+function mx2Restore(v) {
+  const o = JSON.parse(v); mixaRestore(o.m);
+  (o.s || []).forEach((x, i) => { const tr = S.tracks[i]; if (!x || !tr || !tr.sound) return; if ((tr.sound.fx.drive || 0) !== x[0]) { tr.sound.fx.drive = x[0]; try { applyTrackParams(i, false); } catch (e) {} } if (x[1] != null && tr.sound.p.aR !== x[1]) { tr.sound.p.aR = x[1]; try { liveUpdate(i, 'aR'); } catch (e) {} } });
+}
+// Lautheit dessen, was VORHER zu hören war: mit altem Auto-Master dessen Ziel, sonst der gemessene Master-Weg
+function mx2BaseLoud(base, LA) { try { const o = JSON.parse(JSON.parse(base).m), a = o.am; return a && a.on ? a.ziel : LA; } catch (e) { return LA; } }
+function mx2AbBase() {
+  const base = mx2Snap(), c = MX2.cache, am = S.fxBus.am && S.fxBus.am.on;
+  MX2.ab = {base, LA: mx2BaseLoud(base, c && c.sig === mixaStateSig() ? c.LA : null), LB: null, side: 'B', mode: am ? 'snap' : 'gain', amOn: !!am};
+}
+const mx2Side = () => (MX2.ab ? (MX2.ab.mode === 'gain' ? (MIXA.ab ? 'A' : 'B') : MX2.ab.side) : 'B');
+function mx2AB(side) {
+  const A = MX2.ab; if (!A || !A.base) { toast('Erst mischen oder mastern – dann A/B'); return false; }
+  side = side === 'A' ? 'A' : 'B'; if (mx2Side() === side) return true;
+  if (A.mode === 'gain' && A.amOn && S.fxBus.am && S.fxBus.am.on) { MIXA.ab = side === 'A'; mx2TrimSync(); }
+  else {
+    if (A.mode === 'gain') A.mode = 'snap';
+    if (side === 'A') { A.cur = mx2Snap(); A.side = 'A'; mx2Chain(); mx2Restore(A.base); }
+    else { A.side = 'B'; const c = A.cur; A.cur = null; if (c) mx2Restore(c); }
+    mx2TrimSync();
+  }
+  mx2Paint(); return true;
+}
+function mx2AbEnd() { const A = MX2.ab; if (!A) return; if (A.mode === 'gain') { if (MIXA.ab) mixaAB(false); } else if (A.side === 'A') mx2AB('B'); }
+// Pegelangleich: der lautere Weg wird leiser (nie lauter: kein Übersteuern); nur live, nur während das Blatt einen Vergleich hat
+function mx2Trim() {
+  const A = MX2.ab; if (UI.vvOff || !A || !MX2.match || !MX2.open || (typeof SREC !== 'undefined' && SREC.on)) return 1;
+  const LA = A.LA, LB = A.LB; if (!(isFinite(LA) && isFinite(LB))) return 1;
+  return mx2Side() === 'A' ? (LA > LB ? Math.pow(10, (LB - LA) / 20) : 1) : (LB > LA ? Math.pow(10, (LA - LB) / 20) : 1);
+}
+// die Weiche hinter dem Master (MIX-A: ga = bisheriger Weg, gb = Auto-Master) – bei Bedarf ohne Auto-Master gebaut (Gewinn 1 = bitgleich)
+function mx2Chain() {
+  const M = AU.M, c = AU.ctx; if (!M || !c || UI.vvOff) return null; if (M.am) return M.am;
+  const ga = c.createGain(), gb = c.createGain(), out = c.createGain(), ceil = M.ceil;
+  ga.gain.value = 1; gb.gain.value = 0;
+  ceil.connect(ga); ga.connect(out); gb.connect(out); out.connect(c.destination); out.connect(M.analyser);
+  try { ceil.disconnect(c.destination); } catch (e) {} try { ceil.disconnect(M.analyser); } catch (e) {}
+  mixaMoveTaps(ceil, out);
+  M.am = {ga, gb, out, ceil, node: null, on: false}; M.ceil = out; return M.am;
+}
+function mx2TrimSync() { const A = MX2.ab; if (A && MX2.match && MX2.open && isFinite(A.LA) && isFinite(A.LB) && Math.abs(A.LA - A.LB) > 0.05) mx2Chain(); const N = AU.M && AU.M.am; if (N && AU.ctx) mixaAbSet(N, false); }
+// lauteste Stelle (8 Takte, sonst die Hälfte des Songs) aus den gemessenen K-Energien
+function mx2Stelle() {
+  if (MX2.stelle) return MX2.stelle;
+  const c = MX2.cache, song = S.song; if (!c || !song || !song.bars) return null;
+  const C = c.C, spb = 60 / (c.bpm || S.bpm || 120), fr = C.H / C.sr, n = song.bars, E = [];
+  for (let b = 0; b < n; b++) { const ta = c.t0 + barBeat(b) * spb, tb = c.t0 + barBeat(b + 1) * spb; let s = 0, k = 0; for (let f = Math.max(0, Math.floor(ta / fr)); f < Math.min(C.NF, Math.floor(tb / fr)); f++) { s += C.Kf[f]; k++; } E.push(k ? s / k : 0); }
+  const w = Math.max(1, Math.min(8, n >= 16 ? 8 : Math.ceil(n / 2))); let best = 0, bs = -1;
+  for (let a = 0; a + w <= n; a++) { let s = 0; for (let b = a; b < a + w; b++) s += E[b]; if (s > bs) { bs = s; best = a; } }
+  return (MX2.stelle = {a: best, b: best + w});
+}
+function mx2Play() {
+  if (R.playing) { stop(); mx2Paint(); return true; }
+  if (rec.state !== 'off' || R.songRec) { toast('Erst Aufnahme beenden'); return false; }
+  const st = MX2.rng === 'stelle' ? mx2Stelle() : null;
+  const ok = st ? songPlayStart(st.a, {loopX: {on: true, a: st.a, b: st.b}}) : songPlayStart(songStartBar());
+  mx2Paint(); return ok;
+}
+
+/* ---------- Seitenkette Kick → Bass (Pumpen der Bass-Spur, Quelle Kick; Undo 'mixa') ---------- */
+function mx2Roles() {
+  const r = MIXA.res, out = S.tracks.map(() => null);
+  S.tracks.forEach((tr, i) => {
+    if (tr.mxRole) { out[i] = tr.mxRole; return; }
+    const t = r && r.T ? r.T.find(x => x.i === i) : null; if (t) { out[i] = t.f && t.f.silent ? null : t.cls; return; }
+    if (tr.kind === 'drum') { out[i] = 'drums'; return; } if (tr.stimme) { out[i] = 'voc'; return; }
+    try { const D = MIXA_D0.v || (MIXA_D0.v = mixaDspMake()), ns = mixaNoteStats(i); out[i] = ns ? D.classify({kind: tr.kind}, ns, null).cls : null; } catch (e) { out[i] = null; }
+  });
+  return out;
+}
+function mx2DuckInfo() {
+  const ro = mx2Roles(), bi = ro.indexOf('bass'), di = S.tracks.findIndex(t => t.kind === 'drum');
+  if (bi < 0 || di < 0) return null;
+  const f = S.tracks[bi].sound.fx || {}, on = f.pump > 0 && S.fxBus.pumpSrc === 'kick';
+  let ov = null; const r = MIXA.res;
+  if (r && r.mx1 && r.mx1.mask && r.mx1.mask[di] && r.mx1.mask[di][bi]) ov = Math.max(r.mx1.mask[di][bi][0] || 0, r.mx1.mask[di][bi][1] || 0);
+  const sg = r && r.T ? (() => { const k = r.T.findIndex(t => t.i === bi); return k >= 0 ? (r.sug[k] || []).some(s => s.id === 'kick' || s.id === 'duck') : false; })() : false;
+  return {bi, di, on, amt: f.pump || 0, rel: f.pumpRel || '1/16', ov, rec: sg || (ov != null && ov >= 0.3)};
+}
+function mx2Duck(on, amt, rel) {
+  const I = mx2DuckInfo(); if (!I) return false;
+  const tr = S.tracks[I.bi], f = tr.sound.fx, before = mixaSnap();
+  if (on) { f.pump = Math.max(0.05, Math.min(0.6, amt != null ? amt : I.amt > 0 ? I.amt : 0.25)); f.pumpRel = ['1/32', '1/16', '1/8'].includes(rel) ? rel : (['1/32', '1/16', '1/8'].includes(f.pumpRel) ? f.pumpRel : '1/16'); S.fxBus.pumpSrc = 'kick'; }
+  else f.pump = 0;
+  if (before === mixaSnap()) return false;
+  undoPush({kind: 'mixa', before, label: 'Seitenkette Kick → ' + tr.name + (on ? ' ' + Math.round(f.pump * 100) + ' %' : ' aus')}); mixaAfter([I.bi], true);
+  if (MX2.ab && MX2.ab.mode === 'gain') MX2.ab.mode = 'snap';
+  mx2Paint(); return true;
+}
+
+/* ---------- Feinschliff je Rolle (ein Tipp, in Grenzen, ein Undo-Schritt) und Tiefenstaffelung ---------- */
+const MX2_FINE = {pad: [['weich', 'weicher'], ['atmo', 'Atmosphäre']], bass: [['scharf', 'schärfen'], ['druck', 'Druck']], arp: [['raus', 'herausstellen'], ['rein', 'einbetten']], lead: [['raus', 'herausstellen'], ['rein', 'einbetten']]};
+function mx2Fine(i, act) {
+  const tr = S.tracks[i]; if (!tr || !tr.sound || !tr.sound.fx) return false;
+  const role = mx2Roles()[i], before = mixaSnap(), sb = tr.kind === 'synth' ? soundSnapshot(i) : null, f = tr.sound.fx, m = Object.assign({}, tr.mix || {}), p = tr.sound.p || {};
+  const vol = d => { const v0 = f.vol == null ? 0.8 : f.vol; f.vol = Math.max(0.05, Math.min(1, Math.round(v0 * Math.pow(10, d / 40) * 1000) / 1000)); };
+  const rev = d => { f.rev = Math.max(0, Math.min(0.7, Math.round(((f.rev || 0) + d) * 100) / 100)); };
+  const hs = d => { m.hs = Math.max(-6, Math.min(4, Math.round(((m.hs || 0) + d) * 10) / 10)); };
+  const bell = (pf, d, q) => { if (m.pg && Math.abs((m.pf || 1000) / pf - 1) > 0.35) return false; m.pf = pf; m.pq = q; m.pg = Math.max(-4, Math.min(4, Math.round(((m.pg || 0) + d) * 10) / 10)); return true; };
+  let rel = null, txt = '';
+  if (act === 'weich') { hs(-2); rel = 1.25; txt = 'Höhen −2 dB, Release länger'; }
+  else if (act === 'atmo') { rev(0.1); hs(-1); rel = 1.25; txt = 'Hall-Send +10 %, Release länger, Höhen −1 dB'; }
+  else if (act === 'scharf') { f.drive = Math.max(0, Math.min(0.45, Math.round(((f.drive || 0) + 0.12) * 100) / 100)); bell(800, 2, 1.2); txt = 'Obertöne (Drive) + Mitten 800 Hz +2 dB'; }
+  else if (act === 'druck') { m.ra = 4; m.at = 10; m.rl = 100; if (!(m.thr < -1)) m.thr = -20; m.mk = Math.min(4, Math.round(((m.mk || 0) + 2) * 10) / 10); m.ls = Math.max(-3, Math.min(3, (m.ls || 0) + 1.5)); txt = 'Kompressor 4:1, Make-up +2 dB, Bass-Shelf +1,5 dB'; }
+  else if (act === 'raus') { vol(2); bell(3000, 2, 1); rev(-0.06); txt = 'Pegel +2 dB, Präsenz 3 kHz +2 dB, weniger Hall'; }
+  else if (act === 'rein') { vol(-2); hs(-1.5); rev(0.08); if (role === 'arp' && Math.abs(f.pan || 0) < 0.1) f.pan = i % 2 ? 0.25 : -0.25; txt = 'Pegel −2 dB, Höhen −1,5 dB, mehr Hall' + (role === 'arp' ? ', zur Seite' : ''); }
+  else return false;
+  const n = mixaNormMix(m); if (n) tr.mix = n; else delete tr.mix;
+  let relCh = false;
+  if (rel && sb && typeof p.aR === 'number' && ['analog', 'wt', 'fm6'].includes(tr.sound.engine)) { const v = Math.min(8, Math.round(p.aR * rel * 1000) / 1000); if (v !== p.aR) { p.aR = clampParam('aR', v, p.aR); relCh = true; } }
+  const sCh = sb && soundSnapshot(i) !== sb;
+  if (before === mixaSnap() && !sCh) { toast('Schon an der Grenze'); return false; }
+  const label = tr.name + ': ' + (MX2_FINE[role] || []).concat([['druck', 'Druck'], ['scharf', 'schärfen'], ['weich', 'weicher'], ['atmo', 'Atmosphäre'], ['raus', 'herausstellen'], ['rein', 'einbetten']]).find(x => x[0] === act)[1];
+  if (sCh) undoPush({kind: 'group', label, items: [{kind: 'mixa', before}, {kind: 'sound', track: i, before: sb}]}); else undoPush({kind: 'mixa', before, label});
+  mixaAfter([i], false); if (relCh) { try { liveUpdate(i, 'aR'); } catch (e) {} UI.sndVer++; }
+  markDirty();
+  if (MX2.ab && MX2.ab.mode === 'gain') MX2.ab.mode = 'snap';
+  MX2.last = {i, act, txt}; mx2Paint(); return true;
+}
+// Tiefenstaffelung: Hall-Send nach Rolle (Profil), Bass/Drums/Lead/Gesang Mitte, Flächen/Sequenzen links/rechts verteilt – je Tipp ≤ 0,15 Send
+function mx2Depth() {
+  const ro = mx2Roles(), Y = mx2Pf(), before = mixaSnap(), did = [];
+  let side = 0;
+  ro.forEach((r, i) => {
+    const tr = S.tracks[i]; if (!r || !tr || !tr.sound || !tr.sound.fx || tr.mute) return; const f = tr.sound.fx, t = Y.depth[r]; if (t == null) return;
+    const cur = f.rev || 0, nv = Math.round((cur + Math.max(-0.15, Math.min(0.15, t - cur))) * 100) / 100; if (Math.abs(nv - cur) >= 0.01) { f.rev = nv; did.push(i); }
+    if ((r === 'bass' || r === 'drums' || r === 'lead' || r === 'voc') && Math.abs(f.pan || 0) > 0.35) { f.pan = 0; did.push(i); }
+    if ((r === 'pad' || r === 'arp') && Math.abs(f.pan || 0) < 0.1) { const w = r === 'pad' ? 0.4 : 0.3; f.pan = side++ % 2 ? w : -w; did.push(i); }
+  });
+  if (!did.length || before === mixaSnap()) { toast('Tiefe passt schon'); return false; }
+  undoPush({kind: 'mixa', before, label: 'Tiefenstaffelung (' + Y.name + ')'}); mixaAfter([...new Set(did)], false);
+  if (MX2.ab && MX2.ab.mode === 'gain') MX2.ab.mode = 'snap';
+  MX2.last = {depth: true}; mx2Paint(); return true;
+}
+
+/* ---------- Blatt „Mix & Master“ ---------- */
+const MX2_I = {play: '<svg class="ip" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 5v14l11.5-7z" fill="currentColor"/></svg><svg class="is" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="6.5" width="11" height="11" rx="1.5" fill="currentColor"/></svg>'};
+function mx2El() { const P = UI.pop && UI.pop.name === 'mx2' ? UI.pop : PSH.dock && PSH.dock.name === 'mx2' ? PSH.dock : null; return P ? P.el : null; }
+function mx2Sheet() {
+  if (pshReopen('mx2', true)) return true;
+  MX2.sess++; MX2.ab = null; MX2.open = true; MX2.stelle = null;
+  openPop(null, p => {
+    p.classList.add('tksheet', 'mxsheet', 'mx2s'); guardTouch(p);
+    const hd = p._psh, dk = hd && hd.querySelector('.psh-dk');
+    if (hd && dk) { const g = el('span', 'mx2hb', `<button class="rb psh-b mx2pl" data-x2="play" aria-label="Abspielen oder anhalten">${MX2_I.play}</button><button class="rb psh-b mx2ab" data-x2="A" aria-label="A – vorher hören">A</button><button class="rb psh-b mx2ab" data-x2="B" aria-label="B – nachher hören">B</button>`); while (g.firstChild) hd.insertBefore(g.firstChild, dk); }
+    p.appendChild(el('div', 'mx2c'));
+    onTap(p, b => mx2Tap(b), 'button[data-x2]');
+  }, {name: 'mx2', sheet: {title: () => 'Mix & Master', repaint: () => mx2Paint()}, onClose: mx2Closed});
+  mx2Paint(); mx2LoopGo();
+  return true;
+}
+function mx2Closed() {
+  mx2AbEnd(); MX2.open = false; MX2.ab = null; MIXA.ab = false;
+  mx2MeterOff(); cancelAnimationFrame(MX2.raf); MX2.raf = 0;
+  const N = AU.M && AU.M.am; if (N && AU.ctx) mixaAbSet(N, false);
+}
+function mx2Tap(b) {
+  const a = b.dataset.x2, v = b.dataset.v, i = +b.dataset.i;
+  if (a === 'play') { mx2Play(); haptic('tick'); return; }
+  if (a === 'A' || a === 'B') { mx2AB(a); haptic('tick'); return; }
+  if (a === 'w') { haptic('pop'); mx2Way(v); return; }
+  if (a === 'meas') { haptic('pop'); mx2Run(false).then(c => { if (c && S.fxBus.am && S.fxBus.am.on && S.fxBus.am.mx2) mx2Master(); }); return; }
+  if (a === 'rng') { MX2.rng = v; haptic('tick'); if (R.playing && R.songPlay) { stop(); mx2Play(); } else mx2Paint(); return; }
+  if (a === 'lm') { MX2.match = !MX2.match; mx2TrimSync(); mx2Paint(); haptic('tick'); return; }
+  if (a === 'pf' || a === 'z' || a === 'd' || a === 'g') {
+    const pr = mx2Pref();
+    if (a === 'pf') pr.pf = v; else if (a === 'z') MIXA.ziel = +v; else if (a === 'd') pr.d = +v; else pr.w = +v;
+    haptic('tick');
+    if (MX2.cache && (S.fxBus.am && S.fxBus.am.on || MX2.fit)) mx2Master(); else mx2Paint();
+    return;
+  }
+  if (a === 'off') { if (amOff()) { MX2.fit = null; haptic('tick'); } mx2Paint(); return; }
+  if (a === 'duck') { mx2Duck(v === 'on'); haptic('tick'); return; }
+  if (a === 'dm') { mx2Duck(true, +v, null); haptic('tick'); return; }
+  if (a === 'dr') { mx2Duck(true, null, v); haptic('tick'); return; }
+  if (a === 'fine') { mx2Fine(i, v); haptic('pop'); return; }
+  if (a === 'depth') { mx2Depth(); haptic('pop'); return; }
+  if (a === 'undo') { undo(); haptic('tick'); mx2Paint(); return; }
+  if (a === 'eq') { haptic('tick'); pshDock(); mx1EqSheet(i); return; }
+  if (a === 'asst') { haptic('tick'); pshDock(); mixaSheet(); return; }
+}
+const mx2Seg = (a, list, cur, busy) => list.map(([l, v]) => `<button class="mbtn rb" data-x2="${a}" data-v="${v}"${String(cur) === String(v) ? ' aria-pressed="true"' : ''}${busy ? ' disabled' : ''}>${esc(l)}</button>`).join('');
+function mx2SpecSvg(F) {
+  const c = MX2.cache; if (!c || !c.C || !c.C.spec) return '';
+  const C = c.C, W = 300, H = 64, x = f => (Math.log(f / 20) / Math.log(1000) * W).toFixed(1), sp = Array.from(C.spec), mx = Math.max(...sp);
+  const y = v => (4 + Math.min(H - 6, Math.max(0, (mx - v) / 48 * (H - 8)))).toFixed(1);
+  let after = null;
+  if (F && F.P && F.P.mb) {
+    const M = mx2Core(), I = F.info || {}, mk = F.P.mb.b.map((q, k) => q[4] - ((I.mbGr && I.mbGr[k] && I.mbGr[k].avg) || 0));
+    after = C.TO.map((f, b) => sp[b] + M.eqDb(F.P, mk, f, C.sr));
+    const wm = a => { let s = 0, t = 0; a.forEach((v, b) => { const w = Math.pow(10, sp[b] / 10); s += v * w; t += w; }); return s / (t || 1); };
+    const sh = wm(after) - wm(sp); after = after.map(v => v - sh);   // pegelgleich gezeigt: nur die Form zählt
+  }
+  const line = a => 'M' + a.map((v, b) => x(C.TO[b]) + ',' + y(v)).join('L');
+  return `<svg class="mx2sp" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">` + [100, 1000, 10000].map(f => `<path class="mx2g" d="M${x(f)},0L${x(f)},${H}"/>`).join('') +
+    `<path class="mx2v" d="${line(sp)}"/>` + (after ? `<path class="mx2n" d="${line(after)}"/>` : '') + '</svg>';
+}
+function mx2EqSvg(F) {
+  if (!F || !F.P || !F.P.mb) return '';
+  const M = mx2Core(), sr = (MX2.cache && MX2.cache.sr) || 48000, W = 300, H = 44, pts = [], corr = (F.info && F.info.corr) || [0, 0, 0];
+  for (let k = 0; k <= 72; k++) { const f = 20 * Math.pow(1000, k / 72), d = Math.max(-6, Math.min(6, M.eqDb(F.P, corr, f, sr))); pts.push((k / 72 * W).toFixed(1) + ',' + (H / 2 - d / 6 * (H / 2 - 3)).toFixed(1)); }
+  const x = f => (Math.log(f / 20) / Math.log(1000) * W).toFixed(1);
+  return `<svg class="mx2eq" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><path class="mx2g" d="M0,${H / 2}L${W},${H / 2}"/>` + [100, 1000, 10000].map(f => `<path class="mx2g" d="M${x(f)},0L${x(f)},${H}"/>`).join('') + `<path class="mx2c0" d="M${pts.join('L')}"/></svg>`;
+}
+function mx2Why(F) {
+  const out = [], I = F.info || {}, P = F.P, Y = mx2Pf(F.pf), nm = ['Tiefen (unter 150 Hz)', 'Mitten (150 Hz – 3 kHz)', 'Höhen (über 3 kHz)'], kn = ['Tief', 'Mitte', 'Hoch'];
+  const why = ['der Bass steht gleichmäßig; Release lang genug, damit nichts pumpt', 'Akkorde, Flächen und Stimme werden dichter', 'Hi-Hats und Glanz gezähmt, ohne zu zischeln'];
+  (I.corr || []).forEach((c, k) => out.push(Math.abs(c) >= 0.5 ? nm[k] + ' ' + mx2S(c) + ' dB – der Song hat dort ' + mx2F(I.share[k]) + ' dB Anteil, Ziel „' + Y.name + '“ ' + mx2F(Y.ref[k]) + ' dB' : nm[k] + ' bleiben – schon nah an „' + Y.name + '“ (' + mx2F(I.share[k]) + ' dB)'));
+  if (P.hi) out.push('Glanz-Shelf 5 kHz ' + mx2S(P.hi) + ' dB' + (F.w ? ' (Regler Wärme ↔ Glanz: ' + MX2_W8.find(x => x[1] === F.w)[0] + ')' : ' (Stil)'));
+  if (P.lo) out.push('Wärme-Shelf 150 Hz ' + mx2S(P.lo) + ' dB' + (F.w ? ' (Regler Wärme ↔ Glanz)' : ' (Stil)'));
+  P.mb.b.forEach((q, k) => { const g = I.mbGr && I.mbGr[k]; out.push(kn[k] + '-Kompressor ' + mx2F(q[1]) + ' : 1 · Schwelle ' + mx2F(q[0], 0) + ' dB · Attack ' + q[2] + ' ms · Release ' + q[3] + ' ms' + (g ? ' · Ø ' + mx2F(g.avg) + ' dB (max ' + mx2F(g.max) + ')' : '') + ' – ' + why[k]); });
+  out.push(P.sat ? 'Sättigung sanft (' + mx2F(I.satDb, 2) + ' dB an den Spitzen) – mehr Dichte und Wärme' : 'Keine Sättigung (Stil/Regler „offen“)');
+  out.push('Bus-Kompressor ' + mx2F(P.ra) + ' : 1, Ø ' + mx2F(I.compAvg) + ' dB – „Kleber“: alles klingt wie aus einem Guss');
+  if (F.d) out.push('Transparenz ↔ Druck: „' + MX2_D.find(x => x[1] === F.d)[0] + '“ – Kompression ' + (F.d > 0 ? 'stärker, schneller' : 'weniger, langsamer') + ', Sättigung ' + (F.d > 0 ? 'mehr' : 'weniger') + ' (in festen Grenzen)');
+  out.push('Pegel ' + mx2S(P.gain, 2) + ' dB → ' + mx2F(I.lout) + ' LUFS (Ziel ' + MIXA_ZIELE.find(z => z[0] === F.ziel)[1] + ')');
+  out.push('Limiter Ø ' + mx2F(I.limAvg, 2) + ' dB, max ' + mx2F(I.limMax) + ' dB – True-Peak ' + mx2F(I.tp, 2) + ' dBTP (Grenze −1)' + (I.limAvg > 1.5 ? ' · arbeitet viel – „Streaming −14“ klingt offener' : ''));
+  return out;
+}
+function mx2Paint() {
+  const p = mx2El(); if (!p) return; const c = p.querySelector('.mx2c'); if (!c) return;
+  const sc = p.scrollTop, busy = !!MIXA.busy, cache = MX2.cache, fresh = mx2Fresh(), F = MX2.fit && S.fxBus.am && S.fxBus.am.on ? MX2.fit : null, pr = mx2Pref(), A = MX2.ab, I = F && F.info;
+  const on = S.fxBus.am && S.fxBus.am.on, playing = R.playing;
+  // Kopf: ▶/■, A/B
+  const hp = p.querySelector('.mx2pl'); if (hp) hp.classList.toggle('on', playing);
+  p.querySelectorAll('.mx2ab').forEach(b => { b.setAttribute('aria-pressed', String(!!A && mx2Side() === b.dataset.x2)); b.disabled = !A; });
+  let st;
+  if (busy) st = `<span class="mx2prog">${MX2.busy ? (MX2.busy === 'mix' ? 'Mix-Analyse' : MX2.busy === 'mix2' ? 'Nachmessen' : 'Messen') + ' … ' + Math.round(MIXA.prog * 100) + ' %' : 'rechnet …'}</span>`;
+  else if (!S.song || !S.song.bars) st = 'Noch kein Song – erst ● SONG';
+  else if (!cache) st = 'Ein Tipp misst den Song einmal (offline) – danach schalten Stil, Ziel und Vorlieben sofort.';
+  else if (!fresh) st = '<b class="mx2warn">Song geändert seit der Messung – neu messen</b> <button class="mbtn rb mx2m" data-x2="meas">neu messen</button>';
+  else st = 'Gemessen (' + mx2F(cache.ms / 1000, 1) + ' s) · Stile und Vorlieben schalten sofort, ohne neu zu rendern' + (F ? (F.exact ? ' · <b class="mx2ok">genau nachgeprüft ✓</b>' : ' · <span class="mx2dim">wird genau nachgeprüft …</span>') : '');
+  const stelle = cache ? mx2Stelle() : null;
+  let L = `<div class="mx2w" role="group" aria-label="Wege">` +
+    `<button class="mbtn rb" data-x2="w" data-v="mix"${busy ? ' disabled' : ''}${MX2.way === 'mix' ? ' aria-pressed="true"' : ''}><b>Mischen</b><small>Spuren ausbalancieren</small></button>` +
+    `<button class="mbtn rb" data-x2="w" data-v="am"${busy ? ' disabled' : ''}${MX2.way === 'am' ? ' aria-pressed="true"' : ''}><b>Mastern</b><small>Lautheit · Klang · Grenzen</small></button>` +
+    `<button class="mbtn rb" data-x2="w" data-v="both"${busy ? ' disabled' : ''}${MX2.way === 'both' ? ' aria-pressed="true"' : ''}><b>Mischen + Mastern</b><small>beides nacheinander</small></button></div>` +
+    `<div class="small mx2st">${st}</div>`;
+  L += `<div class="mx2sec"><h5>Abhören</h5><div class="mx2r3">` + mx2Seg('rng', [['Song', 'song'], [stelle ? 'Lauteste Stelle T' + (stelle.a + 1) + '–' + stelle.b + ' ⟲' : 'Lauteste Stelle ⟲', 'stelle']], MX2.rng, false) +
+    `<button class="mbtn rb" data-x2="lm"${MX2.match ? ' aria-pressed="true"' : ''}>${MX2.match ? '≈ pegelgleich: an' : 'pegelgleich: aus'}</button></div>` +
+    `<div class="small">${A ? 'Oben im Kopf: <b>A</b> = vorher, <b>B</b> = nachher – auch während es läuft.' + (MX2.match && isFinite(A.LA) && isFinite(A.LB) ? ' Angleich ' + mx2F(Math.abs(A.LB - A.LA)) + ' dB (der lautere wird leiser, nur zum Vergleich).' : '') : 'A/B gibt es, sobald gemischt oder gemastert ist.'}</div></div>`;
+  L += `<div class="mx2sec"><h5>Stil · Handschrift</h5><div class="mx2pf" role="group" aria-label="Stil">` + MX2_PF.map(y => `<button class="mbtn rb" data-x2="pf" data-v="${y.id}"${pr.pf === y.id ? ' aria-pressed="true"' : ''}${busy ? ' disabled' : ''}><b>${esc(y.name)}</b><small>${esc(y.sub)}</small></button>`).join('') + '</div>' +
+    `<div class="mx2r2" role="group" aria-label="Ziel-Lautheit">${mx2Seg('z', MIXA_ZIELE.map(([v, l]) => [l, v]), MIXA.ziel, busy)}</div></div>`;
+  L += `<div class="mx2sec"><h5>Transparenz ↔ Druck</h5><div class="mx2r5" role="group" aria-label="Transparenz oder Druck">${mx2Seg('d', MX2_D, pr.d, busy)}</div>` +
+    `<h5>Wärme ↔ Glanz</h5><div class="mx2r5" role="group" aria-label="Wärme oder Glanz">${mx2Seg('g', MX2_W8, pr.w, busy)}</div>` +
+    `<div class="small">Feste Grenzen: True-Peak ≤ −1 dBTP · Klang je Band ±3 dB · Band-Kompression Ø ≤ 3 dB · Ratio ≤ 4 · kein Pumpen (Tief-Release ≥ 120 ms).</div></div>`;
+  // rechte Spalte: Sehen, Warum, Mix
+  let Rr = `<div class="mx2sec mx2see"><h5>Was passiert</h5>`;
+  if (F && I) {
+    Rr += `<div class="mx2num"><span>Lautheit <b>${mx2F(I.lin)} → ${mx2F(I.lout)} LUFS</b></span><span>True-Peak <b>${mx2F(I.tp, 2)} dBTP</b></span><span>Dynamik <b>${mx2F(I.lraIn)} → ${mx2F(I.lraOut)} LU</b></span>${I.est ? '<span class="mx2dim">geschätzt</span>' : '<span class="mx2ok">gemessen</span>'}</div>`;
+    Rr += `<div class="mx2cap">Spektrum <i class="mx2kv"></i> vorher <i class="mx2kn"></i> nachher (pegelgleich)</div>` + mx2SpecSvg(F) + `<div class="mx2cap">Master-EQ (±6 dB)</div>` + mx2EqSvg(F);
+    const G = I.mbGr || [];
+    Rr += `<div class="mx2cap">Kompression (Gain-Reduction) ${playing ? 'live' : 'im Schnitt'}</div><div class="mx2mt">` + [['Tief', G[0] && G[0].avg], ['Mitte', G[1] && G[1].avg], ['Hoch', G[2] && G[2].avg], ['Bus', I.compAvg], ['Limiter', I.limAvg]].map(([l, v], k) =>
+      `<div class="mx2mr" data-k="${k}"><span>${l}</span><i><b style="width:${Math.min(100, Math.max(0, (v || 0) / 6 * 100)).toFixed(1)}%"></b></i><em>${mx2F(v || 0)} dB</em></div>`).join('') + '</div>';
+    Rr += `<div class="mx2r2"><button class="mbtn rb" data-x2="off"${busy ? ' disabled' : ''}>Master aus</button><button class="mbtn rb" data-x2="undo">↶ Zurück</button></div>`;
+  } else Rr += `<div class="small">${on ? 'Ein Master ist an (anderer Stand). [Mastern] stellt ihn hier ein und zeigt, was passiert.' : 'Nach [Mastern] siehst du hier Lautheit, True-Peak, Spektrum vorher/nachher, Master-EQ und die Kompression je Band (live beim Abspielen).'}</div>` + (cache ? mx2SpecSvg(null) : '');
+  Rr += '</div>';
+  const why = (F ? mx2Why(F) : []).concat(MX2.mixWhy && MX2.way !== 'am' ? MX2.mixWhy : []);
+  if (why.length) Rr += `<div class="mx2sec"><h5>Warum</h5><ul class="mx2why">${why.map(t => '<li>' + esc(t) + '</li>').join('')}</ul></div>`;
+  // Seitenkette
+  const dk = mx2DuckInfo();
+  if (dk) {
+    const tr = S.tracks[dk.bi];
+    Rr += `<div class="mx2sec"><h5>Seitenkette Kick → ${esc(tr.name)} (Bass)</h5><div class="small">${dk.rec ? '<b class="mx2warn">Empfohlen:</b> Kick und Bass überdecken sich' + (dk.ov != null ? ' (' + Math.round(dk.ov * 100) + ' % unten)' : '') + ' – der Bass weicht jedem Kick kurz aus.' : dk.ov != null ? 'Kick und Bass stören sich kaum (' + Math.round(dk.ov * 100) + ' %) – Seitenkette nur, wenn du das Pumpen willst.' : 'Der Bass weicht jedem Kick kurz aus (Ducking). Mischen zeigt, ob sie sich überdecken.'}</div>` +
+      `<div class="mx2r2">${mx2Seg('duck', [['aus', 'off'], ['an', 'on']], dk.on ? 'on' : 'off', busy)}</div>` +
+      `<div class="mx2r3"><span class="mx2l">Menge</span>${mx2Seg('dm', [['15 %', 0.15], ['25 %', 0.25], ['40 %', 0.4]], dk.on ? dk.amt : '', busy)}</div>` +
+      `<div class="mx2r3"><span class="mx2l">Release</span>${mx2Seg('dr', [['1/32', '1/32'], ['1/16', '1/16'], ['1/8', '1/8']], dk.on ? dk.rel : '', busy)}</div></div>`;
+  }
+  // Feinschliff
+  const ro = mx2Roles(); let fl = '';
+  ro.forEach((r, i) => {
+    const tr = S.tracks[i]; if (!tr || !r || tr.mute) return; const acts = MX2_FINE[r] || [];
+    fl += `<div class="mx2fr"><span class="mx2fn"><b>${esc(tr.name)}</b><small>${esc(MX2_ROLE[r] || r)}</small></span>` + acts.map(([k, l]) => `<button class="mbtn rb" data-x2="fine" data-i="${i}" data-v="${k}"${busy ? ' disabled' : ''}>${esc(l)}</button>`).join('') +
+      `<button class="mbtn rb mx2eqb" data-x2="eq" data-i="${i}">EQ · KOMP</button></div>`;
+  });
+  Rr += `<div class="mx2sec"><h5>Feinschliff je Spur</h5><div class="small">Ein Tipp = ein Schritt in Grenzen, ↶ nimmt ihn zurück.${MX2.last && MX2.last.txt ? ' Zuletzt: ' + esc(S.tracks[MX2.last.i] ? S.tracks[MX2.last.i].name : '') + ' – ' + esc(MX2.last.txt) : ''}</div>${fl}` +
+    `<div class="mx2r3"><button class="mbtn rb" data-x2="depth"${busy ? ' disabled' : ''}>Tiefenstaffelung</button><button class="mbtn rb" data-x2="undo">↶ Zurück</button><button class="mbtn rb" data-x2="asst">Mix-Assistent …</button></div></div>`;
+  c.innerHTML = `<div class="mx2L">${L}</div><div class="mx2R">${Rr}</div>`;
+  p.scrollTop = sc;
+  if (p.isConnected && !p.classList.contains('abg')) popFit(p);
+  MX2.ver++;
+}
+
+/* ---------- live: Meter aus dem Master-Worklet, Kopf-Zustand (nur solange das Blatt da ist) ---------- */
+function mx2MeterOn() {
+  const N = AU.M && AU.M.am && AU.M.am.node; if (N === MX2.mtNode) return;
+  mx2MeterOff(); if (!N) return;
+  MX2.mtNode = N; try { N.port.onmessage = e => { const m = e.data; if (m && m.mt) { MX2.mt = m.mt; MX2.mtT = performance.now(); } }; N.port.postMessage({mt: 1}); } catch (e) {}
+}
+function mx2MeterOff() { const N = MX2.mtNode; MX2.mtNode = null; MX2.mt = null; if (N) { try { N.port.postMessage({mt: 0}); N.port.onmessage = null; } catch (e) {} } }
+function mx2LoopGo() { if (!MX2.raf) MX2.raf = requestAnimationFrame(mx2Loop); }
+function mx2Loop(t) {
+  MX2.raf = 0; const p = mx2El(); if (!p || !p.isConnected) { mx2MeterOff(); return; }
+  MX2.raf = requestAnimationFrame(mx2Loop);
+  if (t - (MX2.lt || 0) < 66) return; MX2.lt = t;
+  const pl = p.querySelector('.mx2pl'); if (pl && pl.classList.contains('on') !== !!R.playing) pl.classList.toggle('on', !!R.playing);
+  if (R.playing) mx2MeterOn(); else if (MX2.mtNode) mx2MeterOff();
+  const live = MX2.mt && performance.now() - MX2.mtT < 400 && mx2Side() === 'B';
+  if (!live) return;
+  const rows = p.querySelectorAll('.mx2mr');
+  rows.forEach(r => { const k = +r.dataset.k, v = Math.max(0, -(MX2.mt[k] || 0)), b = r.querySelector('b'), e = r.querySelector('em'); b.style.width = Math.min(100, v / 6 * 100).toFixed(1) + '%'; e.textContent = mx2F(v) + ' dB'; r.classList.add('live'); });
+}
+
+/* ---------- Kanalzug (EQ · KOMP-Blatt aus MX1): Analyzer vor/nach dem EQ, Geisterkurve, Kennlinie, Gain-Reduction ---------- */
+function mx2EqAdd(p, i) {
+  const sv = p.querySelector('svg.mx1cv'), pv = sv && sv.querySelector('path.mx1pv'); if (!sv || !pv) return;
+  const NS = 'http://www.w3.org/2000/svg', mk = cls => { const e = document.createElementNS(NS, 'path'); e.setAttribute('class', cls); return e; };
+  const sa = mk('mx2sa'), sb = mk('mx2sb'), gh = mk('mx2gh');
+  sv.insertBefore(sb, pv); sv.insertBefore(sa, pv); sv.insertBefore(gh, pv);
+  sv.after(el('div', 'small mx2leg', '<i class="mx2kv"></i> vor dem EQ · <i class="mx2kn"></i> nach EQ + Kompressor (live beim Abspielen) · <i class="mx2kg"></i> Vorschlag des Mix-Assistenten'));
+  const cp = p.querySelector('.mx1kcp');
+  const box = el('div', 'mx2cpv', '<svg class="mx2kl" viewBox="0 0 64 64" aria-hidden="true"><path class="mx2g" d="M0,64L64,0"/><path class="mx2kc"/><circle class="mx2kt" r="2.5"/></svg>' +
+    '<div class="mx2grm"><span>Gain-Reduction</span><i><b></b></i><em>–</em><small class="mx2kx"></small></div>');
+  if (cp) cp.before(box);
+  MX2.eq = {i, p, sa, sb, gh, an: null, raf: 0};
+  mx2EqUpd(); mx2EqLive();
+}
+function mx2EqGhost(i) {
+  const r = MIXA.res; if (!r || !r.T) return null; const k = r.T.findIndex(t => t.i === i); if (k < 0) return null;
+  const m = Object.assign({}, S.tracks[i].mix || {}); let any = false;
+  for (const s of r.sug[k] || []) { const x = s.patch && s.patch.mix; if (!x || s.art === 'option' || mixaIsApplied(i, s)) continue; for (const q of ['hp', 'ls', 'pf', 'pg', 'pq', 'hs']) if (x[q] != null) { m[q] = x[q]; any = true; } }
+  return any ? m : null;
+}
+function mx2EqUpd() {
+  const E = MX2.eq; if (!E || !E.p.isConnected) return;
+  const i = E.i, g = mx2EqGhost(i); E.gh.setAttribute('d', g ? mx1EqPath(g) : '');
+  const thr = mx1EqGet(i, 'thr'), ra = mx1EqGet(i, 'ra'), sl = ra > 1.001 ? 1 - 1 / ra : 0, pts = [];
+  for (let k = 0; k <= 32; k++) { const x = -60 + k * 60 / 32, o = x - thr, gc = !sl || o <= -3 ? 0 : o >= 3 ? -sl * o : -sl * (o + 3) * (o + 3) / 12, y = x + gc; pts.push(((x + 60) / 60 * 64).toFixed(1) + ',' + (64 - (y + 60) / 60 * 64).toFixed(1)); }
+  const kc = E.p.querySelector('.mx2kc'), kt = E.p.querySelector('.mx2kt'), kx = E.p.querySelector('.mx2kx');
+  if (kc) kc.setAttribute('d', 'M' + pts.join('L'));
+  if (kt) { kt.setAttribute('cx', ((thr + 60) / 60 * 64).toFixed(1)); kt.setAttribute('cy', (64 - (thr + 60) / 60 * 64).toFixed(1)); }
+  if (kx) kx.textContent = sl ? 'Kennlinie ' + fmtDec(ra, 1) + ' : 1 ab ' + mx2F(thr, 0) + ' dB' : 'Kompressor aus (Ratio 1 : 1)';
+}
+function mx2EqLive() {
+  const E = MX2.eq; if (!E) return;
+  const c = AU.ctx, A = AU.tracks[E.i];
+  if (c && A && A.trem && A.duck && !E.an) {
+    try { const a = c.createAnalyser(), b = c.createAnalyser(); a.fftSize = b.fftSize = 2048; a.smoothingTimeConstant = b.smoothingTimeConstant = 0.75; A.trem.connect(a); A.duck.connect(b); E.an = {a, b, A, da: new Float32Array(1024), db: new Float32Array(1024)}; } catch (e) { logErr(e); }
+  }
+  const N = A && A.mixa && A.mixa.node;
+  if (N && E.node !== N) { if (E.node) { try { E.node.port.postMessage({mt: 0}); E.node.port.onmessage = null; } catch (e) {} } E.node = N; try { N.port.onmessage = e => { const m = e.data; if (m && m.mt) { E.gr = m.mt[0]; E.grT = performance.now(); } }; N.port.postMessage({mt: 1}); } catch (e) {} }
+  const loop = t => {
+    E.raf = 0; if (!E.p.isConnected || MX2.eq !== E) { mx2EqEnd(); return; }
+    E.raf = requestAnimationFrame(loop); if (t - (E.lt || 0) < 66) return; E.lt = t;
+    if (!E.node && AU.tracks[E.i] && AU.tracks[E.i].mixa) { cancelAnimationFrame(E.raf); E.raf = 0; mx2EqLive(); return; }
+    const an = E.an;
+    if (an && R.playing) {
+      const sr = c.sampleRate, toPath = (an_, d, fill) => { an_.getFloatFrequencyData(d); const n = d.length, pts = []; for (let k = 0; k <= 96; k++) { const f = 20 * Math.pow(1000, k / 96), j = Math.min(n - 1, Math.max(1, Math.round(f / (sr / 2) * n))); let v = d[j]; if (!(v > -200)) v = -200; const y = Math.max(0, Math.min(72, 72 - (v + 100) / 80 * 72)); pts.push((k / 96 * 300).toFixed(1) + ',' + y.toFixed(1)); } return 'M' + (fill ? '0,72L' : '') + pts.join('L') + (fill ? 'L300,72Z' : ''); };
+      E.sa.setAttribute('d', toPath(an.a, an.da, false)); E.sb.setAttribute('d', toPath(an.b, an.db, true));
+    } else if (!R.playing && E.sb.getAttribute('d')) { E.sa.setAttribute('d', ''); E.sb.setAttribute('d', ''); }
+    const gm = E.p.querySelector('.mx2grm'); if (gm) { const v = E.gr != null && performance.now() - E.grT < 400 ? Math.max(0, -E.gr) : 0; gm.querySelector('b').style.width = Math.min(100, v / 12 * 100).toFixed(1) + '%'; gm.querySelector('em').textContent = mx2F(v) + ' dB'; }
+  };
+  if (!E.raf) E.raf = requestAnimationFrame(loop);
+}
+function mx2EqEnd() {
+  const E = MX2.eq; if (!E) return; MX2.eq = null; if (E.raf) cancelAnimationFrame(E.raf);
+  if (E.an) { try { E.an.A.trem.disconnect(E.an.a); } catch (e) {} try { E.an.A.duck.disconnect(E.an.b); } catch (e) {} }
+  if (E.node) { try { E.node.port.postMessage({mt: 0}); E.node.port.onmessage = null; } catch (e) {} }
+}
+
+/* ---------- Zugang: Kopfleiste [MIX], Menü ---------- */
+function mx2MenuRow(sec, row, btn) {
+  const b = btn('Mix & Master …'); b.setAttribute('aria-label', 'Mix und Master für den ganzen Song');
+  on(b, 'click', () => { closeMenu(); mx2Sheet(); });
+  row(sec, 'Mix', b);
+}
+(() => { const b = document.getElementById('bMx2'); if (b) b.addEventListener('click', () => { haptic('tick'); if (mx2El() && UI.pop && UI.pop.name === 'mx2') closePop(); else mx2Sheet(); }); })();
+
+/* ---------- Test-Schnittstelle ---------- */
+const MX2_API = {
+  mx2Info: () => ({busy: MX2.busy, fresh: mx2Fresh(), cache: MX2.cache ? {sig: MX2.cache.sig, LA: MX2.cache.LA, ms: MX2.cache.ms, featMs: MX2.cache.featMs, NF: MX2.cache.C.NF, Lin: MX2.cache.C.Lin, share: MX2.cache.C.share} : null,
+    fit: MX2.fit ? JSON.parse(JSON.stringify({P: MX2.fit.P, info: MX2.fit.info, ms: MX2.fit.ms, exact: !!MX2.fit.exact, pf: MX2.fit.pf, d: MX2.fit.d, w: MX2.fit.w, ziel: MX2.fit.ziel})) : null,
+    pref: Object.assign({}, mx2Pref()), am: S.fxBus.am ? JSON.parse(JSON.stringify(S.fxBus.am)) : null, ab: MX2.ab ? {side: mx2Side(), mode: MX2.ab.mode, LA: MX2.ab.LA, LB: MX2.ab.LB} : null, trim: mx2Trim(),
+    gains: AU.M && AU.M.am ? {ga: AU.M.am.ga.gain.value, gb: AU.M.am.gb.gain.value} : null, match: MX2.match, open: !!MX2.open, roles: mx2Roles(), duck: mx2DuckInfo(), stelle: MX2.cache ? mx2Stelle() : null, mt: MX2.mt, mixWhy: MX2.mixWhy, renders: MX2.renders | 0}),
+  mx2Sheet: () => mx2Sheet(), mx2Close: () => { if (UI.pop && UI.pop.name === 'mx2') closePop(); else pshDockClose(); return true; },
+  mx2Measure: () => mx2Run(false), mx2Way: w => mx2Way(w),
+  mx2Style: (pf, d, w, ziel) => { const pr = mx2Pref(); if (pf) pr.pf = pf; if (d != null) pr.d = d; if (w != null) pr.w = w; if (ziel != null) MIXA.ziel = ziel; return mx2Master(); },
+  mx2Exact: () => mx2Exact(), mx2AB: s => mx2AB(s), mx2Match: v => { MX2.match = !!v; mx2TrimSync(); return MX2.match; },
+  mx2Duck: (on, amt, rel) => mx2Duck(on, amt, rel), mx2Fine: (i, a) => mx2Fine(i, a), mx2Depth: () => mx2Depth(), mx2Play: () => mx2Play(), mx2Rng: v => { MX2.rng = v; mx2Paint(); return v; },
+  mx2Core: () => mx2Core(), mx2Snap: () => mx2Snap(), mx2Roles: () => mx2Roles()
+};
+/* ===================== MX2 END ===================== */
 
 /* =====================================================================================================================
    G5 (Nachtrag 5 „G5 — Gesang jederzeit in Melodie umwandeln“): Takes-Blatt → [In Melodie umwandeln]
@@ -78858,6 +79706,7 @@ Object.assign(SYNQUENZER, {                       // BM6 (Nachtrag 7 §5.3): Bit
 Object.assign(SYNQUENZER, MX1_API);                        // MX1: Mix & Master
 Object.assign(SYNQUENZER, FLL_API);                         // FX1: Fills/Breaks als Ebene
 Object.assign(SYNQUENZER, VX1_API);                         // VX1: Gesang (Chor entkoppelt, natürlich ↔ hart, Schneiden, Übersprechen)
+Object.assign(SYNQUENZER, MX2_API);                         // MX2: Mix & Master 2
 /* GR1-BEGIN ===================== Groove (Xander 07.11., Paket GR1): Stil-Grundmuster, Remix per Knopf, Zwingen-%, Small/Full, Song transponieren
    Xander: „Remix-Funktion auf Knopfdruck mit Stilvorlagen … ersetzt das Fundament aus Bass und Schlagzeug, nutzt aber meine eigenen
    Drum-Sounds“ · „einen Zwingen-Prozentwert, dass die anderen Spuren … sich anpassen“ · „Small/Full-Rhythmus-Schalter pro Songteil. Ich
