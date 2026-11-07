@@ -49724,7 +49724,7 @@ function ux2EdgeRow(x, y) {
 function ux2TopScene(x, y) {
   for (const s of MX.scenes) {
     const b = UI.scenes[s]; if (!ux2Vis(b)) continue;
-    const r = ux2R(b); if (x >= r.left && x <= r.right && y >= r.top - 8 && y <= r.top + UX2.TOPZ) return s;
+    const r = ux2R(b); if (x >= r.left && x <= r.right && y >= r.top - 8 && y <= r.top + Math.min(UX2.TOPZ, r.height * .28)) return s;   // flache Köpfe (32 px): ≤ 28 %
   }
   return -1;
 }

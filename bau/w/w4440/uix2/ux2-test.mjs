@@ -146,7 +146,6 @@ const clipSig = (p, t, s) => p.evaluate(([t, s]) => { const c = S.tracks[t].clip
   const s1 = await scnR(p, 1), s3 = await scnR(p, 3);
   await T.start(s1.x + s1.w / 2, s1.y + 4); await T.move(s1.x + s1.w / 2, s1.y + 34, 1, 5, [s1.x + s1.w / 2, s1.y + 4]);
   await T.move(s3.x + s3.w * .8, s1.y + 34, 1, 10, [s1.x + s1.w / 2, s1.y + 34]); await sleep(60);
-  await p.screenshot({path: dir + '/ux2-szene-ziehen-hochkant.png'});
   await T.end(); await sleep(150);
   const after = await p.evaluate(() => ({c: S.tracks.map(t => t.clips.map(x => !!x)), n: S.scenes.map(s => s.name || ''), lanes: S.song.lanes.map(l => l.map(e => e.bar + ':' + e.slot).join(',')), playing: R.playing}));
   const perm = [0, 2, 3, 1, 4, 5, 6, 7];
