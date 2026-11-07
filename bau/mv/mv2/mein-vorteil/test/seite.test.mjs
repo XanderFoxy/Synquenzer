@@ -443,24 +443,30 @@ test('Sprungmarken: alte #angebote/#vorteile/#konzerte zeigen auf Abschnitte, Le
   await ctx.close();
 });
 
-test('Platz für einen weiteren Reiter (Filme vom Kollegen): Link mit data-reiter zeigt eigene Seite, Abschnitts-Link führt zurück', { skip: ohnePw }, async () => {
+test('Einhängepunkt für weitere Reiter (wie „Filme“): Link mit data-reiter zeigt eigene Seite, Abschnitts-Link führt zurück', { skip: ohnePw }, async () => {
   const { ctx, page, fehler } = await oeffne({ satz: 'v2' });
   await page.evaluate(() => {
-    document.querySelector('.sprung-zeile').insertAdjacentHTML('beforeend', '<a href="#filme" data-reiter="filme">Filme<span class="n"></span></a>');
-    document.querySelector('main').insertAdjacentHTML('afterend', '<section id="p-filme" class="reiter-seite breite" hidden><p class="leer">Lade Filme …</p></section>');
-    window.gestartet = 0;
-    REITER_START.filme = el => { window.gestartet++; el.innerHTML = '<h2>Filme</h2><p>3,99 €</p>'; };
+    document.querySelector('.sprung-zeile').insertAdjacentHTML('beforeend', '<a href="#probe" data-reiter="probe">Probe<span class="n"></span></a>');
+    document.querySelector('main').insertAdjacentHTML('afterend', '<section id="p-probe" class="reiter-seite breite" hidden><p class="leer">Lade Probe …</p></section>');
+    window.gestartet = 0; window.neu = 0;
+    REITER_START.probe = el => { window.gestartet++; el.innerHTML = '<h2>Probe</h2><p>3,99 €</p>'; };
+    REITER_NEU.probe = () => { window.neu++; };
   });
-  await page.locator('.sprung a[data-reiter="filme"]').click();
-  await page.waitForFunction(() => location.hash === '#filme');
+  await page.locator('.sprung a[data-reiter="probe"]').click();
+  await page.waitForFunction(() => location.hash === '#probe');
   assert.equal(await page.locator('main').isHidden(), true);
-  assert.match(await page.locator('#p-filme').innerText(), /Filme\s*3,99 €/i);
-  assert.equal(await page.locator('.sprung a[data-reiter="filme"]').getAttribute('aria-current'), 'true');
-  await pruefeLayout(page, 'Reiter Filme');
+  assert.equal(await page.locator('#p-filme').isHidden(), true, 'Filme bleibt zu');
+  assert.match(await page.locator('#p-probe').innerText(), /Probe\s*3,99 €/i);
+  assert.equal(await page.locator('.sprung a[data-reiter="probe"]').getAttribute('aria-current'), 'true');
+  await pruefeLayout(page, 'Reiter Probe');
   await springe(page, 'cashback');
   assert.equal(await page.locator('main').isVisible(), true);
-  assert.equal(await page.locator('#p-filme').isHidden(), true);
-  await page.locator('.sprung a[data-reiter="filme"]').click();
+  assert.equal(await page.locator('#p-probe').isHidden(), true);
+  // ↻ holt auch geöffnete Reiter frisch, wenn sie gerade nicht zu sehen sind
+  await page.waitForFunction(() => !document.getElementById('neu').hasAttribute('aria-busy'));
+  await page.locator('#neu').click();
+  assert.equal(await page.evaluate(() => window.neu), 1);
+  await page.locator('.sprung a[data-reiter="probe"]').click();
   assert.equal(await page.evaluate(() => window.gestartet), 1, 'Start nur beim ersten Öffnen');
   assert.deepEqual(fehler, []);
   await ctx.close();
@@ -631,10 +637,12 @@ for (const [ordner, nach, cache, altSeite] of [
   });
 }
 
-// SYNQUENZER-Worker der Wurzel (echte sw.js, Cache synq-app-2 seit VW 01.11., Scope = Wurzel wie /Synquenzer/ auf GitHub Pages) speichert jede Seite in seinem
+// SYNQUENZER-Worker der Wurzel (echte sw.js, Cache-Name aus ihr gelesen – seit VW 01.11. synq-app-2, Scope = Wurzel wie /Synquenzer/ auf GitHub Pages) speichert jede Seite in seinem
 // Bereich als Offline-Kopie des Synthesizers. Ohne Zurücksetzen der Kopie: nach jedem Weg zu Mein Vorteil startet der SYNQUENZER
 // ohne Netz und bei schwachem Netz (> 3 s) wieder als SYNQUENZER.
 const SYNTH = '<!doctype html><meta charset="utf-8"><title>SYNQUENZER</title><p>Synth</p>';
+// Cache-Name des Wurzel-Workers aus seiner sw.js – nicht fest eintragen (sonst wird der Test bei der nächsten Umbenennung rot)
+const SYNQ_CACHE = readFileSync(join(WURZEL, 'sw.js'), 'utf8').match(/const CACHE = '([^']+)'/)[1];
 async function mitWurzelWorker() {
   const ctx = await browser.newContext({ serviceWorkers: 'allow' });
   await ctx.route('https://**', r => r.fulfill({ status: 404, body: '' }));
@@ -642,12 +650,12 @@ async function mitWurzelWorker() {
   ersatz.set('/', { typ: TYP['.html'], text: SYNTH });
   await page.goto(`${basis}/`);
   await page.evaluate(async () => { await navigator.serviceWorker.register('/sw.js', { scope: '/' }); await navigator.serviceWorker.ready; });
-  const kopie = () => page.evaluate(async () => { const r = await (await caches.open('synq-app-2')).match('/'); return r ? (await r.text()).match(/<title>([^<]*)/)?.[1] || '?' : null; });
-  await page.waitForFunction(async () => !!(await (await caches.open('synq-app-2')).match('/')));
+  const kopie = () => page.evaluate(async c => { const r = await (await caches.open(c)).match('/'); return r ? (await r.text()).match(/<title>([^<]*)/)?.[1] || '?' : null; }, SYNQ_CACHE);
+  await page.waitForFunction(async c => !!(await (await caches.open(c)).match('/')), SYNQ_CACHE);
   assert.equal(await kopie(), 'SYNQUENZER');
   const istSynth = async wo => { // die Seite prüft die Kopie 1,5 s nach dem Laden (vorher kann der Wurzel-Worker noch speichern)
     await page.waitForTimeout(2000);
-    await page.waitForFunction(async () => { const r = await (await caches.open('synq-app-2')).match('/'); return !!r && /<title>SYNQUENZER/.test(await r.text()); }, null, { timeout: 6000 })
+    await page.waitForFunction(async c => { const r = await (await caches.open(c)).match('/'); return !!r && /<title>SYNQUENZER/.test(await r.text()); }, SYNQ_CACHE, { timeout: 6000 })
       .catch(async () => assert.fail(`${wo}: Offline-Kopie des SYNQUENZER ist jetzt „${await kopie()}“`));
   };
   const synthStart = async (wie, wo) => { // SYNQUENZER-Symbol antippen: ohne Netz bzw. mit Antwort erst nach 5 s

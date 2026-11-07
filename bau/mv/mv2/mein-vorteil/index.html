@@ -544,9 +544,8 @@ const KRYPTO_IMPORT = (() => {
     <a href="#auftritte" data-ziel="auftritte">Auftritte<span class="n"></span></a>
     <a href="#remix" data-ziel="remix">Remix<span class="n"></span></a>
     <a href="#mehr" data-ziel="mehr">Mehr<span class="n"></span></a>
-    <!-- Platz für einen weiteren Reiter (Filme kommt vom Kollegen):
-         <a href="#filme" data-reiter="filme">Filme<span class="n"></span></a> + <section id="p-filme" class="reiter-seite" hidden> nach </main>
-         + REITER_START.filme = el => …  (siehe „Weitere Reiter“ im Skript) -->
+    <!-- Weitere Reiter: <a data-reiter="name"> + <section id="p-name" class="reiter-seite"> nach </main> + REITER_START.name (siehe „Weitere Reiter“ im Skript) -->
+    <a href="#filme" data-reiter="filme">Filme<span class="n"></span></a>
   </div>
 </nav>
 
@@ -620,6 +619,11 @@ const KRYPTO_IMPORT = (() => {
     <div id="i-mehr"><p class="leer">Lade …</p></div>
   </section>
 </main>
+<!-- Filme: Inhalt kommt aus filme.js (Skript, CSS und Daten erst beim ersten Öffnen) -->
+<section id="p-filme" class="reiter-seite breite" aria-labelledby="h-filme" hidden>
+  <h2 id="h-filme">Filme &amp; Serien</h2>
+  <div id="i-filme"><p class="leer">Lade Filme …</p></div>
+</section>
 
 <dialog id="krypto-alarm" aria-labelledby="alarm-titel">
   <div class="alarm-kopf"><h2 id="alarm-titel">Krypto</h2><button id="alarm-zu" class="x" type="button" aria-label="Schließen">✕</button></div>
@@ -2000,6 +2004,24 @@ function zielAusHash() {
 // dann ausgeblendet), jeder Abschnitts-Link führt zurück. REITER_START[name](element) läuft beim ersten Öffnen (z. B.
 // Skript und Daten erst dann laden), REITER_NEU[name]() bei ↻.
 const REITER_START = {}, REITER_NEU = {};
+// ↻ und Rückkehr zur Seite (nach > 5 min): jeder schon geöffnete Reiter holt frisch (nicht bei jedem Wechsel)
+function reiterNeu() { for (const [n, f] of Object.entries(REITER_NEU)) if ($('p-' + n)?.dataset.gestartet) try { f(); } catch (e) { console.warn(e); } }
+
+// --- Filme: alles in filme.js (Logik + CSS); Skript und Daten erst beim ersten Öffnen des Reiters ---------------------
+let filmeSkript = null;
+function starteFilme() {
+  if (filmeSkript) return;
+  filmeSkript = document.createElement('script');
+  filmeSkript.src = 'filme.js';
+  filmeSkript.onload = () => window.MeinVorteilFilme?.start($('i-filme'));
+  filmeSkript.onerror = () => {
+    filmeSkript.remove(); filmeSkript = null; // ↻ versucht es noch einmal
+    $('i-filme').innerHTML = '<p class="leer">Filme gerade nicht erreichbar. Später noch einmal auf ↻ tippen.</p>';
+  };
+  document.head.appendChild(filmeSkript);
+}
+REITER_START.filme = starteFilme;
+REITER_NEU.filme = () => { if (window.MeinVorteilFilme?.gestartet) MeinVorteilFilme.lade(); else if (reiterOffen === 'filme') starteFilme(); };
 let reiterOffen = null;
 const reiterAusHash = () => { const h = location.hash.replace('#', '').toLowerCase(); return /^[a-z0-9-]+$/.test(h) && document.querySelector(`.sprung a[data-reiter="${h}"]`) && $('p-' + h) ? h : null; };
 function zeigeReiter(name) {
@@ -2135,7 +2157,7 @@ $('kopieren').addEventListener('click', ev => kopiere(TOPIC, ev.currentTarget));
 })();
 
 // --- Start -------------------------------------------------------------------------------------------------------
-$('neu').addEventListener('click', () => { lade(); ladeKurs(); if (reiterOffen) try { REITER_NEU[reiterOffen]?.(); } catch {} });
+$('neu').addEventListener('click', () => { lade(); ladeKurs(); reiterNeu(); });
 zeichneKryptoEditor();
 zeichneKryptoPush();
 // noch keine Käufe -> Eingabe offen (so findet man sie)
@@ -2160,7 +2182,7 @@ setInterval(() => { if (!document.hidden) ladeKurs(); }, KURS_ALLE_MS);
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) return;
   zeichneAlles();
-  if (Date.now() - geladenUm > 5 * 60000) lade();
+  if (Date.now() - geladenUm > 5 * 60000) { lade(); reiterNeu(); }
   if (Date.now() - (kurs.zeit || 0) >= KURS_ALLE_MS) ladeKurs();
 });
 // Nur lesen, für die Tests (test/regeln.test.mjs): dieselben Regeln wie die Wecker
