@@ -1,0 +1,12 @@
+{
+  "name": "vorteils-radar",
+  "private": true,
+  "type": "module",
+  "description": "Persönlicher Vorteils-Radar (Döbeln + online) mit ntfy-Push",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "test": "node --test scan/test/*.test.mjs",
+    "scan": "node scan/main.mjs",
+    "probe": "node scan/main.mjs --fixtures --data /tmp/vorteile-probe"
+  }
+}

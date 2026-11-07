@@ -1,0 +1,14 @@
+{
+  "_hinweis": "Lieblingsbands. Neue Band: einfach einen Eintrag kopieren und den Namen ändern. 'aliase' = weitere Schreibweisen, 'land' hilft MusicBrainz beim richtigen Treffer (ISO-Code), 'mbid'/'deezerId' optional fest eintragen, 'aktiv': false schaltet eine Band stumm.",
+  "bands": [
+    { "name": "The Human League", "aliase": ["Human League"], "land": "GB" },
+    { "name": "Alphaville", "land": "DE" },
+    { "name": "Orchestral Manoeuvres in the Dark", "aliase": ["OMD", "O.M.D."], "land": "GB" },
+    { "name": "New Order", "land": "GB" },
+    { "name": "Depeche Mode", "land": "GB" },
+    { "name": "The Frozen Autumn", "aliase": ["Frozen Autumn"], "land": "IT" },
+    { "name": "Elegant Machinery", "land": "SE" },
+    { "name": "Roxette", "land": "SE" },
+    { "name": "Plastic Autumn" }
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "_hinweis": "Einstellungen für den Schnäppchen-Wecker. Produkte stehen in watchlist.json.",
+  "plz": "04720",
+  "ort": "Döbeln",
+  "ntfy": {
+    "server": "https://ntfy.sh",
+    "topic": "xander-schnaeppchen-b5cbf4442aaa9734f3",
+    "maxProLauf": 8
+  },
+  "seite": "https://xanderfoxy.github.io/Synquenzer/mein-vorteil/#angebote",
+  "maerkte": {
+    "_hinweis": "Nur Prospekt-Angebote dieser Ketten zählen (Namen wie bei marktguru, Kleinschreibung egal, Teilwort reicht). 'ausgeschlossen' schlägt 'erlaubt' (Großhandel wie „EDEKA Foodservice“ mit „NUR FÜR GROSSHÄNDLER“).",
+    "erlaubt": ["Kaufland", "Lidl", "Aldi Nord", "Netto Marken-Discount", "Penny", "Rewe", "Edeka", "Norma", "Globus", "Marktkauf"],
+    "ausgeschlossen": ["Foodservice", "Großhandel", "Metro", "Selgros"]
+  },
+  "deal": {
+    "_hinweis": "Ein Angebot ist ein Deal (Push), wenn der Preis jetzt ≤ dem üblichen Angebotspreis (Median der Angebote der letzten 12 Monate, gleiche Packung) UND höchstens 'nahTiefst' über dem Tiefstpreis der letzten 12 Monate liegt. Prozent nur gegen den recherchierten regulären Preis (referenzpreise.json). 'ueblichMinAngebote': so viele Angebote braucht der Median, sonst gilt der recherchierte Wert. Referenzwerte älter als 'referenzAltTage' bekommen ein „Stand …“.",
+    "nahTiefst": 0.10,
+    "ueblichMinAngebote": 3,
+    "referenzAltTage": 90,
+    "historieMinTage": 5,
+    "normalpreisFensterTage": 56,
+    "historieBehaltenTage": 400,
+    "technikRabattMin": 0.60
+  },
+  "versand": {
+    "_hinweis": "Versandkosten, wenn ein Deal nichts dazu sagt. Amazon: kostenlos ab 'kostenlosAb' (ohne Prime).",
+    "amazonPrime": false,
+    "amazonKostenlosAb": 39,
+    "amazonKosten": 3.99,
+    "standardKosten": 4.95
+  },
+  "preisfehler": {
+    "_hinweis": "Technik-Preisfehler nur bis 'maxAlterStunden' nach dem Melden (wie der Vorteils-Radar: 24 h; echte sind meist nach Minuten bis wenigen Stunden vorbei) und nur, wenn die mydealz-Deal-Seite sie nicht als abgelaufen oder „vielleicht abgelaufen“ zeigt. Höchstens 'dealSeitenProLauf' Seiten pro Lauf; laufende werden nach 'neuPruefenNachMinuten' erneut geprüft.",
+    "maxAlterStunden": 24,
+    "dealSeitenProLauf": 10,
+    "neuPruefenNachMinuten": 45
+  },
+  "quellen": {
+    "marktguru": {
+      "aktiv": true,
+      "startseite": "https://www.marktguru.de/",
+      "api": "https://api.marktguru.de/api/v1/offers/search",
+      "limit": 48
+    },
+    "mydealz": {
+      "aktiv": true,
+      "feeds": [
+        { "name": "mydealz neu", "url": "https://www.mydealz.de/rss/new" },
+        { "name": "mydealz heiß", "url": "https://www.mydealz.de/rss/hot" },
+        { "name": "mydealz Preisfehler", "url": "https://www.mydealz.de/rss/gruppe/preisfehler", "preisfehler": true },
+        { "name": "mydealz Lebensmittel", "url": "https://www.mydealz.de/rss/gruppe/lebensmittel" }
+      ],
+      "_suche": "Die mydealz-Suche als RSS (/rss/search?q=…) antwortet seit Okt. 2026 nur noch mit HTTP 404 – deshalb aus. Wieder an mit \"suchFeed\": \"<url mit {q}>\"."
+    },
+    "keepa": {
+      "aktiv": true,
+      "api": "https://api.keepa.com/product",
+      "domain": 3
+    }
+  },
+  "abruf": {
+    "userAgent": "Schnaeppchen-Wecker/1.0 (privater Preisalarm, 1x pro Stunde; +https://github.com/XanderFoxy/Synquenzer/tree/main/schnaeppchen)",
+    "timeoutMs": 20000,
+    "pauseMs": 1500
+  }
+}

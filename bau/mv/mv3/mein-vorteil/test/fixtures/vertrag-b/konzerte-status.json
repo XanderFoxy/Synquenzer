@@ -1,0 +1,39 @@
+{
+ "stand": "2026-10-31T16:30:07.341Z",
+ "quellen": {
+  "ticketmaster": {
+   "ok": true,
+   "treffer": 4,
+   "fehler": [],
+   "uebersprungen": null,
+   "ms": 900
+  },
+  "seiten": {
+   "ok": false,
+   "treffer": 0,
+   "fehler": [
+    "Gothic meets Klassik: fetch failed"
+   ],
+   "uebersprungen": null,
+   "ms": 12747
+  },
+  "musicbrainz": {
+   "ok": false,
+   "treffer": 9,
+   "fehler": [
+    "Plastic Autumn: HTTP 503 musicbrainz.org"
+   ],
+   "uebersprungen": null,
+   "ms": 37477
+  },
+  "deezer": {
+   "ok": true,
+   "treffer": 3,
+   "fehler": [],
+   "uebersprungen": null,
+   "ms": 2953
+  }
+ },
+ "pushes": 0,
+ "erstlauf": false
+}

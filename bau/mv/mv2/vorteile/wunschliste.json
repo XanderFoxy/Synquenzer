@@ -1,0 +1,12 @@
+{
+  "_hinweis": "Deine Wunsch-Geräte. 'suche' = Suchwort, 'zielpreis' = ab diesem Preis (inkl. Versand) kommt sofort ein Push. 'normalpreis' = grobe Schätzung (wird durch eigene Preis-Historie ersetzt). 'geizhals' = optional die Adresse der Geizhals-Produktseite. 'nicht' = Wörter, die Zubehör aussortieren. Preise sind Schätzungen – bitte anpassen.",
+  "geraete": [
+    { "name": "Korg minilogue xd", "suche": "minilogue xd", "zielpreis": 499, "normalpreis": 629, "geizhals": "", "nicht": ["module"] },
+    { "name": "Arturia MicroFreak", "suche": "microfreak", "zielpreis": 249, "normalpreis": 329, "geizhals": "" },
+    { "name": "Roland JU-06A", "suche": "ju-06a", "zielpreis": 299, "normalpreis": 389, "geizhals": "" },
+    { "name": "Behringer Pro-800", "suche": "pro-800 behringer", "zielpreis": 299, "normalpreis": 379, "geizhals": "" },
+    { "name": "Elektron Digitakt II", "suche": "digitakt ii", "zielpreis": 849, "normalpreis": 1049, "geizhals": "" },
+    { "name": "Arturia KeyStep 37", "suche": "keystep 37", "zielpreis": 159, "normalpreis": 219, "geizhals": "" }
+  ],
+  "zubehoerWoerter": ["tasche", "case", "bag", "decksaver", "netzteil", "kabel", "ständer|staender", "cover", "folie", "adapter", "sticker"]
+}
