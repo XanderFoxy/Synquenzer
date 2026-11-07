@@ -75884,7 +75884,7 @@ function vd3Cap(g, W, H, head, line, step, a, low) {
   g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = a; g.textBaseline = 'middle';
   g.font = '700 ' + (15 * k).toFixed(1) + 'px ' + C.ui; const lw = Math.min(mw - 24 * k, g.measureText(line).width);
   g.font = '700 ' + (9 * k).toFixed(1) + 'px ' + C.ui; const hw = g.measureText(head).width + head.length * 1.6 * k;
-  g.font = '600 ' + (9 * k).toFixed(1) + 'px ' + C.num; const sw = step ? g.measureText(step).width + 14 * k : 0;
+  g.font = '600 ' + (9 * k).toFixed(1) + 'px ' + C.num; const sw = step ? g.measureText(step).width + 22 * k : 0;
   const w = Math.min(mw, Math.max(lw, hw + sw) + 28 * k), h = 46 * k, x = cx - w / 2;
   vvRound(g, x, y, w, h, 10 * k); g.fillStyle = 'rgba(13,14,17,.9)'; g.fill(); g.strokeStyle = C.amber; g.lineWidth = Math.max(1, k); g.stroke();
   g.textAlign = 'left'; g.fillStyle = C.amber; if ('letterSpacing' in g) g.letterSpacing = (1.6 * k).toFixed(1) + 'px'; g.fillText(head, x + 14 * k, y + 13 * k); if ('letterSpacing' in g) g.letterSpacing = '0px';
@@ -75897,7 +75897,7 @@ function vd3Text(sc, u) {
   const tn = isNum(sc.t) ? svShort(sc.t) : '';
   if (sc.k === 'klang') return ['KLANG GEWÄHLT · ' + tn, sc.x || 'Klang'];
   if (sc.k === 'regler') { const d = PD[sc.p], f = v => (d && isNum(v) ? fmtVal(d.fmt, v) : String(v)); return ['REGLER · ' + tn, (d ? d.l : sc.p) + '  ' + f(sc.a) + ' → ' + f(sc.b)]; }
-  if (sc.k === 'clip') return [(sc.neu ? 'NEUER CLIP · ' : 'NOTEN · ') + tn, sc.au ? 'Gesang aufgenommen' : sc.n1 > sc.n0 ? Math.round(sc.n0 + (sc.n1 - sc.n0) * vd3Ease((u - .12) / .7)) + ' Noten eingespielt' : 'Szene ' + (sc.s + 1)];
+  if (sc.k === 'clip') { const n = Math.round(sc.n0 + (sc.n1 - sc.n0) * vd3Ease((u - .12) / .7)); return [(sc.neu ? 'NEUER CLIP · ' : 'NOTEN · ') + tn, sc.au ? 'Gesang aufgenommen' : n > 0 ? n + (n === 1 ? ' Note' : ' Noten') + ' eingespielt' : 'Szene ' + (sc.s + 1)]; }
   if (sc.k === 'teil') return ['TEIL GEBAUT', sc.x || 'Teil'];
   return ['', ''];
 }
