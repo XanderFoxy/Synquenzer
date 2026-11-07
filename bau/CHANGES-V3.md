@@ -1,3 +1,11 @@
+## 4.44.0 — Mix & Master auf Knopfdruck, Synthie-Pop-Klänge
+
+- **MASTERN:** FX › MASTER → AUTO-MASTER → Stil (Synth-Pop · Disco · House · Sanft) und Ziel (Streaming −14 / Laut −9 LUFS) → **MASTERN**. Die App hört den Song einmal durch und stellt 3-Band-Multiband-Kompressor, sanfte Sättigung, Bus-Kompressor und Limiter so ein, dass er genau auf der Ziel-Lautheit liegt, ohne Übersteuern (gemessen −1,5 dBTP). **Vorher/Nachher** zum Vergleichen.
+- **Mix-Assistent denkt im Zusammenhang:** je Spur Rolle, Frequenzbild (9 Bänder), Breite, Hall/Echo-Anteil und wer sie zudeckt. Vorschläge: Vorrang je Band, Bass bleibt voll, Fläche nach hinten, Lead nach vorne. Einzeln oder **Alle übernehmen** (ein ↶), Vorher/Nachher. Rolle selbst setzen (Drums, Bass, Lead, Fläche, Sequenz, Gesang, automatisch).
+- **EQ · KOMP je Spur:** FX › SPUR → **EQ · KOMP**: Low-Cut, Bass, Mitte, Höhen und Kompressor mit Kurve; wirkt auch im Video und Export.
+- **Synthie-Pop FX (neue Werks-Kategorie, 20 Klänge):** Computer-Dialing, Daten-Blubbern, Modem-Zirpen, Roboter-Blips, Laser-Zap, Resonanz-Sweep, nasser Filter-Wah, Resonanz-Pfeifen, Funk-Arp-Blubber … und Flächen: Schwebe-Fläche, Strings-Ensemble, Chor-Pad, Morph-Sweep, Glas-Fläche … Mod-Rad = Makro (Nässe, Schweben, Blubber-Tempo). Pegel wie die Werksklänge.
+Tests: Regeln, acorn 0 doppelt / 0 Syntaxfehler, Rauchtest grün; Mix/Master 30/30, Klänge 24/24.
+
 ## 4.43.1 — Klanganker sicherer
 
 - **Klanganker (Gegenprüfung):** Kein Datenverlust mehr im Grundklang: Undo nach Preset laden, Klangerzeugung wechseln, 🎲 oder Init holte während einer laufenden Geste die Clip-Werte in den Grundklang – behoben (auch A/B). Gemischte Gesten (ein Grundklang-Schalter + ein Regler) sind jetzt EIN Undo-Schritt. Super-Regler-Vormachen landet nicht mehr im Clip. ARP an der MS 2000-Platte bleibt beim Loslassen an. Undo-Schritte tragen den Reglernamen.
