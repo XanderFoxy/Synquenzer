@@ -83571,8 +83571,18 @@ function tktHallRoute(X, on) {
     if (!X.on) return;
     try { X.pre.disconnect(X.in); } catch (e) {}
     if (std) { try { AU.hallPre.connect(std); } catch (e) { logErr(e); } }
-    X.on = false; X.pre = null;                                           // der Raum klingt über hallRet aus (der Ausgang bleibt verbunden)
+    X.on = false; X.pre = null;                                           // der Raum klingt über hallRet aus (der Ausgang bleibt verbunden) …
+    if (X.fdn && X.len) { X.fdn.set(1.5, 2, 1); X.len = 0; }              // … der Öltank in 1,5 s statt in einer Minute
+    tktHallSleep(X);
   }
+}
+// ungenutzte Zweige schlafen: ohne Weg zum Ausgang rechnet der Browser sie nicht (FDN-Schleifen liefen sonst immer mit)
+function tktHallSleep(X) {
+  clearTimeout(X.slT);
+  X.slT = setTimeout(() => {
+    if (X.fdn && X.fdnOn && (X.room !== 'oel' || !X.on)) { try { X.fOut.disconnect(X.mix); } catch (e) {} X.fdnOn = false; }
+    if (!X.on && X.ret) { try { X.out.disconnect(X.ret); } catch (e) {} X.ret = null; }
+  }, ((X.cv ? X.cv.sec : 3) + 2) * 1000);
 }
 // Einhänger am Ende von applyHall: der gewählte Raum (oder der eingebaute Hall) im selben Bus
 function tktHallApply(h, commit, t) {
@@ -83586,10 +83596,11 @@ function tktHallApply(h, commit, t) {
   const len = id === 'oel' ? tktOelLen(h) : 0;
   if (X.room !== id) {
     tktHallIn(X, id); X.room = id;
-    if (id === 'oel' && !X.fdn) { X.fdn = tktFdn(c); X.fIn = c.createGain(); X.fOut = c.createGain(); X.cvTap = null; X.fIn.connect(X.fdn.in); X.fdn.out.connect(X.fOut); X.fOut.connect(X.mix); }
-    if (X.fdn) { if (X.cvTap) { try { X.cvTap.disconnect(X.fIn); } catch (e) {} X.cvTap = null; } if (id === 'oel') { X.cv.go.connect(X.fIn); X.cvTap = X.cv.go; } else X.fdn.mute(t); }
+    if (id === 'oel' && !X.fdn) { X.fdn = tktFdn(c); X.fIn = c.createGain(); X.fOut = c.createGain(); X.cvTap = null; X.fIn.connect(X.fdn.in); X.fdn.out.connect(X.fOut); X.fdnOn = false; }
+    if (X.fdn) { if (X.cvTap) { try { X.cvTap.disconnect(X.fIn); } catch (e) {} X.cvTap = null; } if (id === 'oel') { X.cv.go.connect(X.fIn); X.cvTap = X.cv.go; } else { X.fdn.mute(t); tktHallSleep(X); } }
     X.len = 0;
   }
+  if (id === 'oel' && !X.fdnOn) { X.fOut.connect(X.mix); X.fdnOn = true; }
   if (id === 'oel' && X.len !== len) { X.fdn.set(len, len * 1.5, Math.max(1.5, len * .3), t); X.len = len; }
   X.mix.gain.setTargetAtTime(id === 'oel' ? TKT_OEL_OUT : 1, t, .02);
   tktHallRoute(X, true);
@@ -83815,7 +83826,7 @@ const TKT_API = {
   oelRender: async (len, sec, sr) => {
     sr = sr || 24000; const oc = new OfflineAudioContext(2, Math.round(sec * sr), sr), ib = oc.createBuffer(1, 64, sr); ib.getChannelData(0)[0] = 1;
     const src = oc.createBufferSource(); src.buffer = ib; const X = tktHallBuild(oc); tktHallIn(X, 'oel'); X.room = 'oel';   // Impuls bei 0,1 s (die Faltung blendet in 10 ms ein)
-    X.fdn = tktFdn(oc); X.fIn = oc.createGain(); X.fdn.out.connect(X.mix); X.fIn.connect(X.fdn.in); X.cv.go.connect(X.fIn); X.fdn.set(len, len * 1.5, Math.max(1.5, len * .3), 0);
+    X.fdn = tktFdn(oc); X.fIn = oc.createGain(); X.fdn.out.connect(X.mix); X.fIn.connect(X.fdn.in); X.fdnOn = true; X.cv.go.connect(X.fIn); X.fdn.set(len, len * 1.5, Math.max(1.5, len * .3), 0);
     X.mix.gain.value = TKT_OEL_OUT; X.hp.frequency.value = 20; X.lp.frequency.value = 20000; src.connect(X.in); X.out.connect(oc.destination); src.start(.1);
     const T0 = performance.now(), b = await oc.startRendering(); return {ms: performance.now() - T0, L: b.getChannelData(0), R: b.getChannelData(1), sr};
   },

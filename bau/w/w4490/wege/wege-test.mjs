@@ -192,6 +192,7 @@ try {
   await run(p, () => { SV.x = 0; window.SYNQUENZER.songPos(0); window.SYNQUENZER.songSelect(null); SV.sel = null; svDraw(true); });
   await p.waitForTimeout(200);
   await p.waitForTimeout(400); const g = await p.evaluate(zone);
+  console.log('DBG', JSON.stringify(g), JSON.stringify(await p.evaluate(() => ({gOn: SV.gOn, DRG: typeof DRG !== 'undefined' && !!DRG, pl: R.playing, rec: R.songRec, pinch: SV.pinch, ru: SV.rulerH, xp: songStartBar() * SV.cellW - SV.x, blS: SV.blS, vvS: SV.vvS, cut: vd3CutOn(), sx: SV.x, top: SV.wrap.getBoundingClientRect().top}))));
   await drag(p, g.x, g.y, g.x + g.cw * 3.2, g.y + 2, 12);
   const SC = await p.evaluate(() => ({pos: SV.pos, last: window.SYNQUENZER.wege.lastScrub(), sx7: SX7.n}));
   ok(SC.pos === Math.round((14 + g.cw * 3.2) / g.cw) && SC.last && SC.last.n >= 3, 'D11: ▼-Marke ziehen (Finger): Marke auf Takt ' + (SC.pos + 1) + ', ' + (SC.last ? SC.last.n : 0) + ' Schläge angeklungen – ohne Schalter', 'Lautsprecher-Knopf weg');

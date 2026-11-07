@@ -11,7 +11,9 @@ const b = await chromium.launch({args: ['--autoplay-policy=no-user-gesture-requi
 const p = await b.newPage({viewport: {width: 428, height: 926}});
 const errs = []; p.on('pageerror', e => errs.push(String(e))); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
 await p.goto('file://' + path.resolve(file)); await p.waitForTimeout(1500);
-const shot = async (name, w, h) => { await p.setViewportSize({width: w, height: h}); await p.waitForTimeout(450); await p.screenshot({path: path.join(out, name)}); };
+const hideToast = () => p.evaluate(() => { if (EL.toast) EL.toast.style.visibility = 'hidden'; });   // Fotos ohne alte Meldungen
+const showToast = () => p.evaluate(() => { if (EL.toast) EL.toast.style.visibility = ''; });
+const shot = async (name, w, h) => { await p.setViewportSize({width: w, height: h}); await p.waitForTimeout(450); await hideToast(); await p.screenshot({path: path.join(out, name)}); await showToast(); };
 
 /* ---------- 1) 3/4 in der Matrix: Klickmuster (gemessen am Planer), Einzähler, TAKT-Anzeige, LEDs ---------- */
 const run = (setup, ci) => p.evaluate(async ({setup, ci}) => {
@@ -179,7 +181,7 @@ ok('Live-Anzeige beim Abspielen: Pegel an SPUR und HALL, GR am MASTER', R5.meter
 await shot('takt-rack-hochkant.png', 428, 926);
 await p.setViewportSize({width: 926, height: 428}); await p.waitForTimeout(400);
 await p.evaluate(async () => { SYNQUENZER.tkt.rackOpen(window.__rt); await new Promise(r => setTimeout(r, 900)); });   // Drehen schließt Blätter (wie bisher): neu öffnen
-await p.screenshot({path: path.join(out, 'takt-rack-quer.png')});
+await hideToast(); await p.screenshot({path: path.join(out, 'takt-rack-quer.png')}); await showToast();
 const R5c = await p.evaluate(() => { const x = UI.pop && UI.pop.el.querySelector('.ms-x'), r = x && x.getBoundingClientRect(); return r ? {t: r.top, b: r.bottom, r: r.right, vis: document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2) === x} : null; });
 ok('Rack quer: ✕ sichtbar und oben (klebt beim Scrollen)', R5c && R5c.t >= 0 && R5c.b <= 428 && R5c.r <= 926 && R5c.vis, R5c);
 await p.evaluate(() => { stop(); closePop(); });
@@ -251,7 +253,7 @@ const L7 = await lay(926, 428);
 ok('quer: dieselben Knöpfe ≥ 44 px, in der Seite, nichts Vorhandenes verschiebt sich', Object.values(L7).every(x => x && x.moved === 0 && x.mine.every(m => m.h >= 44 && m.vis && m.in)), L7);
 await p.evaluate(async () => { ED.tab = 'fx'; ED.sub.fx = 'hall'; openEditor(); await new Promise(r => setTimeout(r, 250)); SYNQUENZER.tkt.room('oel', 75); const b = document.querySelector('.tktrm'); if (b) b.click(); });
 await p.waitForTimeout(300);
-await p.screenshot({path: path.join(out, 'takt-hall-raum-quer.png')});
+await hideToast(); await p.screenshot({path: path.join(out, 'takt-hall-raum-quer.png')}); await showToast();
 const L7b = await p.evaluate(() => { const pop = UI.pop && UI.pop.el, bs = pop ? [...pop.querySelectorAll('button[data-tkr]')] : []; return {open: !!(UI.pop && UI.pop.name === 'tktroom'), n: bs.length, h: bs.every(b => b.getBoundingClientRect().height >= 43.5), names: bs.map(b => b.textContent).join('|')}; });
 ok('RAUM-Wahl (quer): Standard · Studio · Kammer · Saal · Kirche · Öltank + 8/30/75 s, alles ≥ 44 px', L7b.open && L7b.n === 9 && L7b.h, L7b);
 await p.evaluate(() => { closePop(); SYNQUENZER.tkt.room(''); try { closeEditor(); } catch (e) {} });
