@@ -16,6 +16,6 @@ Das ✕ steht quer in jedem Editor am selben Platz ganz rechts (vorher wanderte 
 - MS 2000-Platte und North-Platte unverändert (eigene Wisch-/Zoom-Gesten; ✕ dort quer links oben – Vorschlag für den Funk: auch nach rechts?).
 
 **Tests:**
-- Mess-Durchlauf (236 Ansichten × 6 Größen: alle Editor-Seiten jeder Klangerzeugung inkl. MS 2000-/North-Platte, Drum-Editor Drums+North, Clip/Roll/Quant/Sounds, Song-Blätter Teil/Marke/Zelle, Mix, Menü ≡ und seine Blätter, ~45 Popups): vorher 37 Ansichten mit abgeschnittenen, nicht erreichbaren Elementen (quer), nachher 0 – Bericht `report.md`.
+- Mess-Durchlauf (236 Ansichten × 6 Größen: alle Editor-Seiten jeder Klangerzeugung inkl. MS 2000-/North-Platte, Drum-Editor Drums+North, Clip/Roll/Quant/Sounds, Song-Blätter Teil/Marke/Zelle, Mix, Menü ≡ und seine Blätter, ~45 Popups): vorher quer 21 Seiten×Größen mit abgeschnittenen, nicht erreichbaren Elementen (144 Elemente) und hochkant 8 Fälle mit ✕ außerhalb des Bildes – nachher 0 / 0, keine JS-Fehler, App rollt nirgends – Bericht `report.md`.
 - Echter Finger-Wisch (CDP-Touch): Seite NORTH rollt, Drum TIEF rollt, Regler im rollenden Körper dreht weiter (Körper rollt dabei nicht), App/Matrix/Song rollen nicht.
 - topdefs: 0 Syntaxfehler, 0 doppelt (+3 neue Namen: qf1Fit, qf1Head, qf1PopScr). smoke: errors []. Markenwörter 0, „MS 2000“ 1×, „  live: true,“ 1×.

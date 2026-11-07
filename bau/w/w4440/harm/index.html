@@ -38482,7 +38482,7 @@ function hm1PvBtn() { const U = HM1.ui, b = U && U.p && U.p.querySelector('[data
 /* ---------- das Harmonie-Blatt im Noten-Editor (Aktionsleiste ganz rechts: [Harmonie]) ---------- */
 function hm1Acts(t, s) {
   const tr = S.tracks[t]; if (!tr || tr.kind !== 'synth' || percIs(tr) || tr.stimme) return [];
-  return [{id: 'hm1', label: 'Harmonie', title: 'Harmonie: Glätten, Lauf verlängern, Gegenstimme, Akkorde', fn: () => hm1Open(t, s)}];
+  return [{id: 'hm1', label: 'Harmonie', title: 'Harmonie: Glätten, Lauf verlängern, Gegenstimme, Akkorde', cls: 'mpb', fn: () => hm1Open(t, s)}];   // mpb: Trefferfläche bis an den Rand der Leiste
 }
 // der nächste freie Platz der Spur t nach Szene s (oder null)
 function hm1Free(t, s) { const tr = S.tracks[t]; for (let k = 1; k < NS(); k++) { const x = (s + k) % NS(); if (!tr.clips[x]) return x; } return null; }
@@ -38504,10 +38504,9 @@ function hm1Open(t, s, tab) {
   HM1.ui = {t, s, how: 'bar', row: hm1RowFree(x) && !others && tr.follow !== false, v: 0, tg: 0, p: null};
   openPop(null, p => {
     p.classList.add('hm1p'); guardTouch(p); HM1.ui.p = p;
-    hm1Paint();
     onTap(p, b => { try { hm1Act(b); } catch (e) { logErr(e); } }, 'button');
   }, {name: 'hm1', onClose: () => { hm1PvStop(); HM1.ui = null; }});
-  popDock(UI.pop && UI.pop.el);
+  hm1Paint();                                                       // im Bild: Maße für die Mini-Ansicht, dann unten andocken
   return true;
 }
 function hm1Data() {
@@ -38520,6 +38519,7 @@ function hm1Data() {
 function hm1Paint() {
   const D = hm1Data(), U = HM1.ui; if (!U || !U.p || !U.p.isConnected) return;
   if (!D) { closePop(); return; }
+  const sy = U.p.scrollTop;
   const {tr, c, sel, segs} = D, tab = HM1.tab, N = noteNames();
   let h = `<div class="hm1-h"><b>HARMONIE</b><span class="hm1-i">${esc(tr.name)} · Szene ${U.s + 1} · ${esc(keyName(c.key))}${sel.length ? ' · ' + sel.length + ' gewählt' : ''}</span><button class="rb hm1-x" data-a="x" aria-label="Schließen">✕</button></div>`;
   h += '<div class="seg hm1-tabs">' + [['glatt', 'Glätten'], ['lauf', 'Lauf'], ['gegen', 'Gegenstimme'], ['akk', 'Akkorde']].map(([v, l]) => `<button data-tab="${v}" class="${tab === v ? 'on' : ''}">${l}</button>`).join('') + '</div>';
@@ -38556,7 +38556,7 @@ function hm1Paint() {
       hm1Draw(cv, clipB(c), clipBarB(c), [{ns: sel.length ? sel : liveNotes(c), col, a: .45}, {ns: hm1Counter(c, hm1Segs(U.s, c, 'bar', hm1Ctx(U.t, U.s, c)), U.v, sel), col: col2, a: 1}]); }
   }
   hm1PvBtn();
-  popDock(U.p);
+  popDock(U.p); U.p.scrollTop = sy;
 }
 // das nächste leere Takt-Kästchen der Akkord-Zeile (null = alle belegt)
 function hm1NextBox(src) {
