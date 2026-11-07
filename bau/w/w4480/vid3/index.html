@@ -70945,8 +70945,8 @@ async function vvEncodeMR(job) {
         requestAnimationFrame(step); return;
       }
       try { if (mr.state === 'paused') mr.resume(); } catch (e) {}
-      const t = c.currentTime - t0, fi = Math.floor(Math.max(-Pv, t) * VV_FPS);   // VD3: im Vorlauf negativ
-      if (fi !== fl && t < 0) { fl = fi; vd3PreDraw(g, W, H, job.pre, Pv + t); if (vt) vt.requestFrame(); }   // VD3
+      const t = c.currentTime - t0, fi = Math.floor(Math.max(Pv ? -Pv : 0, t) * VV_FPS);   // VD3: im Vorlauf negativ
+      if (fi !== fl && Pv && t < 0) { fl = fi; vd3PreDraw(g, W, H, job.pre, Pv + t); if (vt) vt.requestFrame(); }   // VD3
       else if (fi !== fl) { fl = fi; if (ol && t >= ol.at) vvlFrameRT(g, W, H, job, r, t); else vvDraw(g, W, H, job.view, vvStateAt(r, Math.max(0, Math.min(r.dur, t))), job.rt); if (vt) vt.requestFrame(); }   // 30 pictures a second
       if (job.onProgress) job.onProgress(Math.max(0, Math.min(1, (t + Pv) / (Dt + Pv))));   // VD3: + Pv
       if (t >= Dt) res(); else requestAnimationFrame(step);

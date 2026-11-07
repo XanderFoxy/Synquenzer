@@ -224,6 +224,16 @@ ok('Ohne Making-of wie der Grundstand (4.47): gleiche Länge, gleicher Pegel', c
 await pb2.close();
 await p.close();
 
+/* ======================= 6. Ersatzweg „Aufnahme in Echtzeit“ (ohne WebCodecs): mit und ohne Vorlauf ======================= */
+p = await open(APP, 428, 926, false);
+await p.evaluate(async () => { const A = SYNQUENZER; A.setMetronome && A.setMetronome(false); A.setClip(0, 0, {len: 1, notes: [[0, 0], [1, 7], [2, 5], [3, 3]].map(([t, n]) => ({t, d: .5, n: 36 + n, v: .9}))});
+  const L = Array.from({length: NT()}, () => []); L[0] = [{bar: 0, slot: 0}]; A.setSong({bars: 2, lanes: L, carrier: [], marks: []}); await new Promise(r => setTimeout(r, 30));
+  A.vd3.clear(); A.vd3.push({k: 'regler', t: 0, p: 'cutoff', a: 400, b: 3000, v: [900, 2000, 3000]}); A.vvTest({noVE: true, noAE: true}); });
+const mr = [];
+for (const mo of [false, true]) { const r = await p.evaluate(mo => SYNQUENZER.vvMake({fmt: '9:16', range: {a: 0, b: 2}, vd3: {mo}}).then(x => ({how: x.how, dur: x.dur, songSec: x.songSec, tail: x.tail, pre: x.vd3.pre, file: x.aChk && x.aChk.file})).catch(e => ({err: String(e)})), mo); mr.push(r); }
+ok('Ersatzweg Aufnahme in Echtzeit: ohne Vorlauf wie bisher, mit Vorlauf (Bild + Ton davor) – beide mit Ton', mr.every(r => r.how === 'recorder' && r.file > -60) && mr[0].pre === 0 && mr[1].pre > 3 && Math.abs(mr[1].dur - (mr[1].pre + mr[1].songSec + mr[1].tail)) < .01, mr);
+await p.close();
+
 console.log('errors', JSON.stringify(errs));
 ok('Keine Fehler in der Konsole', errs.length === 0, errs.slice(0, 5));
 const pass = C.filter(c => c[1]).length;
