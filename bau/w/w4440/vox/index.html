@@ -2598,7 +2598,7 @@ a.mbtn[aria-disabled=true]{opacity:.55}
 .chsmix .vx1-lrow .chs-sl{flex:1 1 auto;min-width:0}
 .chsmix .vx1-lrow .vx1-lm{flex:none;width:44px;height:44px;min-width:44px;padding:0;font:800 13px/1 var(--font-ui)}
 .chsmix .vx1-lrow.muted .chs-sll{text-decoration:line-through;opacity:.6}
-#wpSheet .vx1bar{position:absolute;right:4px;bottom:16px;z-index:3;display:flex;align-items:center;gap:4px;padding:3px;border-radius:8px;background:rgba(14,16,20,.9);border:1px solid var(--line)}
+#wpSheet .vx1bar{position:absolute;right:0;bottom:0;z-index:4;display:flex;align-items:center;gap:3px;height:44px;padding:0 0 0 4px;border-radius:6px;background:rgba(14,16,20,.94);box-shadow:0 0 0 1px var(--line)}
 #wpSheet .vx1bar[hidden]{display:none}
 #wpSheet .vx1bar .rb{flex:none;min-width:44px;height:44px;padding:0 8px;font:700 12px/1 var(--font-ui)}
 #wpSheet .vx1bar .rb svg{display:block;margin:auto}
@@ -66447,9 +66447,10 @@ function vx1Snap(E, t) {
 }
 function vx1Down(E, p, cx, top) {
   if (E.vx1f) { E.vx1f = null; E.g10fast = false; }                // ein neuer Finger hält den Nachlauf an
-  if (top) return;
   const s = E.vx1s;
-  if (s && E.X) { const da = Math.abs(cx - E.X(s.a)), db = Math.abs(cx - E.X(s.b)); if (Math.min(da, db) <= VX1_EDGE) { p.vx1 = da <= db ? 'a' : 'b'; return; } }
+  // Kante greifen: überall auf der Welle (±22 px); in der Griff-Leiste nur, wenn dort kein Strich liegt (der Strich hat Vorrang)
+  if (s && E.X) { const da = Math.abs(cx - E.X(s.a)), db = Math.abs(cx - E.X(s.b)); if (Math.min(da, db) <= VX1_EDGE && !(top && p.k >= 0)) { p.vx1 = da <= db ? 'a' : 'b'; return; } }
+  if (top) return;                                                   // Griff-Leiste: Halten = neuer Strich (wie bisher)
   p.vx1h = setTimeout(() => {
     p.vx1h = 0; if (WP.ed !== E || E.p !== p || p.mode || E.g10pz) return;
     const t = vx1Snap(E, vx1T(E, cx)).t;
@@ -66461,7 +66462,7 @@ function vx1Move(E, p, e) {
   const v = p.vx1v || (p.vx1v = []); v.push({t: performance.now(), x: e.clientX}); if (v.length > 6) v.shift();
   const far = Math.hypot(e.clientX - p.x0, e.clientY - p.y0);
   if (p.vx1h && !p.mode && far > 8) { clearTimeout(p.vx1h); p.vx1h = 0; }
-  if (p.vx1 && !p.mode && far > 4) { p.mode = 'vx1edge'; g10eRunStop(E); }
+  if (p.vx1 && !p.mode && far > 4) { p.mode = 'vx1edge'; g10eHoldEnd(E, p); g10eRunStop(E); }
   if (p.mode !== 'vx1edge' && p.mode !== 'vx1sel') return false;
   const s = E.vx1s, x = tkRef(E.r); if (!s || !x) return true;
   const cx = e.clientX - E.cv.getBoundingClientRect().left, sn = vx1Snap(E, clamp(vx1T(E, cx), x.a.in, x.a.out));
@@ -66521,9 +66522,10 @@ function vx1Paint(E, g, X, Wp, Hp) {
   g.save();
   g.fillStyle = 'rgba(255,92,92,.2)'; g.fillRect(xa, 12, Math.max(1, xb - xa), Hp - 12);
   g.fillStyle = '#ff6b6b';
+  const yH = (WP_GRIP + Hp - (E.chsRul ? CHS_RH + 18 : 0)) / 2;   // Griffe mitten im freien Band (unten liegt das Lineal)
   for (const [xx, k] of [[xa, 'a'], [xb, 'b']]) {
     g.fillRect(Math.round(xx) - 1, 12, 2, Hp - 12);
-    g.beginPath(); g.arc(xx, Hp - 30, s.edge === k ? 12 : 10, 0, 2 * Math.PI); g.fill(); g.lineWidth = 2; g.strokeStyle = '#0e1014'; g.stroke();
+    g.beginPath(); g.arc(xx, yH, s.edge === k ? 11 : 9, 0, 2 * Math.PI); g.fill(); g.lineWidth = 2; g.strokeStyle = '#0e1014'; g.stroke();
   }
   const tx = fmtDec(s.b - s.a, 2) + ' s'; g.font = WP.font || '600 10px sans-serif';
   const tw = g.measureText(tx).width + 6, x0 = clamp((xa + xb) / 2 - tw / 2, 2, Wp - tw - 2);
@@ -66581,8 +66583,11 @@ function vx1PlaySel(E) {
 // nach ↶ ↷: der Editor folgt dem Take des Stücks (vorher / nachher), die Auswahl ist weg
 function vx1WpUndone() {
   const E = WP.ed; if (!E) return;
-  const x = tkRef(E.r); if (x && x.a.take !== E.id && S.takes && S.takes[x.a.take]) E.id = x.a.take;
   if (E.vx1s) { E.vx1s = null; vx1Bar(E, false); }
+  queueMicrotask(() => {                                             // erst wenn die ganze Gruppe (takes + clip/song) zurückgestellt ist
+    if (WP.ed !== E) return; const x = tkRef(E.r);
+    if (x && x.a.take !== E.id && S.takes && S.takes[x.a.take]) { E.id = x.a.take; wpPaint(); }
+  });
 }
 
 /* ---------- W: Schneiden (Kern ohne DOM) ---------- */
@@ -66660,7 +66665,8 @@ async function vx1Cut(E, gap) {
   const x = tkRef(E.r), s = E.vx1s; if (!x || !s) return false;
   if (WP.ab) { toast('Erst A/B aus – geschnitten wird, was du hörst'); return false; }
   if (!tkAudioOk()) { toast('Audio nur auf der eigenen Seite'); return false; }
-  const a = x.a, id = a.take, m = S.takes && S.takes[id]; if (!m || id !== E.id) return false;
+  const a = x.a, id = a.take, m = S.takes && S.takes[id]; if (!m) return false;
+  if (id !== E.id) E.id = id;                                        // der Editor zeigt immer den Take des Stücks
   const ha = Math.max(s.a, a.in), hb = Math.min(s.b, a.out);
   if (!(hb - ha >= .01)) { toast('Die Auswahl liegt außerhalb des Stücks'); return false; }
   if (!gap && hb - ha >= a.out - a.in - .05) { toast('Das ganze Stück – dann lieber den Take löschen'); return false; }

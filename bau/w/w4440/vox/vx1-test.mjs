@@ -128,21 +128,21 @@ if (want('W')) {
     await p.evaluate(r => SYNQUENZER.wpOpen(r), r);
     await p.evaluate(r => SYNQUENZER.wpDetect(r), r); await sleep(300);
     const g = await p.evaluate(() => SYNQUENZER.wpGeom());
-    const xOf = t => g.x + (t - g.view.a) / g.view.W * g.w, yW = g.y + g.h * .7;
+    const xOf = t => g.x + (t - g.view.a) / g.view.W * g.w, yW = g.y + 24, yM = g.y + (44 + g.h - 44) / 2;   // Griff-Leiste oben, freies Band in der Mitte (unten liegt das Lineal)
     // Tipp auf das zweite Wort → Auswahl von Strich zu Strich
     await p.mouse.click(xOf(1.1), yW); await sleep(520);
     const s1 = await p.evaluate(() => SYNQUENZER.vx1Info());
     const bar = await p.evaluate(() => [...document.querySelectorAll('#wpSheet .vx1bar .rb')].map(b => { const r = b.getBoundingClientRect(); return [b.dataset.a, Math.round(r.width), Math.round(r.height)]; }));
     const xs = await p.evaluate(() => { const b = document.querySelector('#wpSheet .sh-x').getBoundingClientRect(); return {top: b.top, right: b.right, w: b.width, h: b.height}; });
-    if (!quer) { ok(s1.sel && Math.abs(s1.sel.a - .95) < .03 && Math.abs(s1.sel.b - 1.65) < .03 && s1.bar, 'Tipp auf ein Wort wählt es von Strich zu Strich: ' + JSON.stringify(s1.sel)); }
+    ok(s1.sel && Math.abs(s1.sel.a - .95) < .03 && Math.abs(s1.sel.b - 1.335) < .03 && s1.bar, vp.n + ': Tipp zwischen zwei Striche wählt das Stück von Strich zu Strich: ' + JSON.stringify(s1.sel));
     ok(bar.length === 4 && bar.every(b => b[1] >= 44 && b[2] >= 44), vp.n + ': Leiste [▶] [Löschen] [Lücke] [✕] ≥ 44 px: ' + JSON.stringify(bar));
     ok(xs.top >= 0 && xs.right <= vp.width && xs.w >= 44, vp.n + ': ✕ des Editors im Bild ' + JSON.stringify(xs));
     // Griff ziehen: Lupe an, Kante rastet ein
     if (s1.sel) {
       const xb = xOf(s1.sel.b);
-      await p.mouse.move(xb, g.y + g.h - 30); await p.mouse.down(); await p.mouse.move(xb - 12, g.y + g.h - 30, {steps: 4});
+      await p.mouse.move(xb, yM); await p.mouse.down(); await p.mouse.move(xb - 12, yM, {steps: 4});
       const lu = await p.evaluate(() => { const l = document.getElementById('g10lupe'); return !!l && l.classList.contains('on'); });
-      await p.mouse.move(xb - 25, g.y + g.h - 30, {steps: 4}); await p.mouse.up(); await sleep(100);
+      await p.mouse.move(xb - 25, yM, {steps: 4}); await p.mouse.up(); await sleep(100);
       const s2 = await p.evaluate(() => SYNQUENZER.vx1Info());
       ok(lu && s2.sel && s2.sel.b < s1.sel.b - .01, vp.n + ': Griff ziehen mit Lupe, rechte Kante ' + s1.sel.b.toFixed(3) + ' → ' + (s2.sel && s2.sel.b.toFixed(3)));
     }
@@ -151,6 +151,7 @@ if (want('W')) {
     // genau [0,9 s; 1,6 s) schneiden: der Rest rückt nach, keine Dehnung
     await p.evaluate(() => SYNQUENZER.vx1Sel(.9, 1.6));
     const u0 = await p.evaluate(() => SYNQUENZER.undoInfo().n);
+    const play0 = await p.evaluate(() => SYNQUENZER.vsClock().playing);
     const cut = await p.evaluate(() => SYNQUENZER.vx1Cut(false));
     const st = await p.evaluate(([r, id0]) => { const c = SYNQUENZER.getClip(r.t, r.s), T = SYNQUENZER.takes(); return {take: c.audio.take, out: c.audio.out, old: T[id0], neu: T[c.audio.take], info: SYNQUENZER.vx1Info(), u: SYNQUENZER.undoInfo()}; }, [r, id0]);
     const pcm = await p.evaluate(id => SYNQUENZER.tkPcmRange(id), st.take);
@@ -164,7 +165,7 @@ if (want('W')) {
     ok(mx <= ty * 1.5 + 50, `kein Knack an der Naht (2. Differenz ${mx}, im Ton ${ty})`);
     ok(Math.abs(st.out - (2.4 - .7)) < .002 && st.u.n === u0 + 1 && st.info.edId === st.take, 'Stück zeigt auf den neuen Take, Ende rückt mit (' + st.out + ' s), ein Undo „' + st.u.top.label + '“, Editor folgt');
     const mk = (st.neu.marks || []).map(k => +k.t.toFixed(3));
-    ok(mk.length === 2 && Math.abs(mk[0] - .25) < .03 && Math.abs(mk[1] - .95) < .03, 'Striche rücken mit (Wort 2 weg): ' + mk.join(', '));
+    ok(mk.length === 4 && Math.abs(mk[0] - .25) < .03 && Math.abs(mk[1] - .635) < .03 && Math.abs(mk[2] - .95) < .03 && Math.abs(mk[3] - 1.335) < .03, 'Striche rücken mit (Anfang/Ende von Wort 2 weg, Wort 3 um 0,7 s früher): ' + mk.join(', '));
     await p.evaluate(() => SYNQUENZER.undo()); await sleep(200);
     const ud = await p.evaluate(([r]) => ({take: SYNQUENZER.getClip(r.t, r.s).audio.take, ed: SYNQUENZER.vx1Info().edId}), [r]);
     ok(ud.take === id0 && ud.ed === id0, '↶ holt den alten Take zurück, der Editor folgt');
@@ -172,7 +173,7 @@ if (want('W')) {
     const rd = await p.evaluate(([r]) => SYNQUENZER.getClip(r.t, r.s).audio.take, [r]);
     ok(rd === st.take, '↷ wieder geschnitten');
     // Lücke lassen: Länge bleibt, das erste Wort ist stumm
-    await p.evaluate(() => SYNQUENZER.vx1Sel(.2, .7)); await p.evaluate(() => SYNQUENZER.vx1Cut(true));
+    await p.evaluate(() => SYNQUENZER.vx1Sel(.2, .7)); const gcut = await p.evaluate(() => SYNQUENZER.vx1Cut(true)); if (!gcut) console.log('  Lücke: vx1Cut false', JSON.stringify(await p.evaluate(() => SYNQUENZER.vx1Info())));
     const gp = await p.evaluate(([r]) => { const c = SYNQUENZER.getClip(r.t, r.s); return {take: c.audio.take, len: SYNQUENZER.takes()[c.audio.take].len}; }, [r]);
     const pg = await p.evaluate(id => SYNQUENZER.tkPcmRange(id), gp.take);
     ok(gp.len === L1 && rms(pg, .27 * sr, .63 * sr) < 1 && rms(pg, 1.0 * sr, 1.3 * sr) > 1e6, 'Lücke: Länge bleibt (' + (gp.len / sr).toFixed(3) + ' s), Wort 1 stumm, Wort 3 unverändert');
@@ -183,9 +184,9 @@ if (want('W')) {
     const T1 = await p.evaluate(() => SYNQUENZER.takes()), h1 = await p.evaluate(id => SYNQUENZER.tkPcmHash(id), gp.take);
     ok(JSON.stringify(T1[gp.take]) === JSON.stringify(T0[gp.take]) && JSON.stringify(T1[st.take]) === JSON.stringify(T0[st.take]) && !!h1, 'Neuladen: geschnittene Takes deep-equal, Audio aus dem Speicher');
     // Wisch-Scroll mit Nachlauf (eingezoomt)
-    await p.evaluate(r => SYNQUENZER.wpOpen(r), r); await sleep(300);
+    await p.evaluate(() => SYNQUENZER.stop()); await p.evaluate(r => SYNQUENZER.wpOpen(r), r); await sleep(300);
     await p.click('#wpSheet .wpz'); await sleep(150);
-    const g2 = await p.evaluate(() => SYNQUENZER.wpGeom()), y2 = g2.y + g2.h * .6, x2 = g2.x + g2.w * .8;
+    const g2 = await p.evaluate(() => SYNQUENZER.wpGeom()), y2 = g2.y + 50, x2 = g2.x + g2.w * .8;   // freies Band (unten liegt das Lineal)
     await p.evaluate(() => { const E = WP.ed; E.va = E.vw.a + E.vw.W * 0; });
     await p.mouse.move(x2, y2); await p.mouse.down(); for (let k = 1; k <= 5; k++) { await p.mouse.move(x2 - k * 30, y2); await sleep(8); } await p.mouse.up();
     const f0 = await p.evaluate(() => ({fl: SYNQUENZER.vx1Info().fling, a: SYNQUENZER.wpGeom().view.a})); await sleep(450);

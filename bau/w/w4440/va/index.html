@@ -68718,7 +68718,7 @@ function va1Prog(p, force) {
   const i = P.querySelector('.va1bar i'), t = P.querySelector('.va1jt');
   if (i) i.style.transform = 'scaleX(' + J.p.toFixed(3) + ')'; if (t) t.textContent = va1JobTxt();
 }
-const va1Pop = () => (UI.pop && UI.pop.name === 'va1' ? UI.pop.el : null);
+const va1Pop = () => (UI.pop && UI.pop.name === 'va1' ? UI.pop.el : document.querySelector('.pop.va1'));   // auch abgelegt (Leiste unten)
 function va1Html() {
   const song = !!(S.song && S.song.bars), J = VA1.job, X = VA1.res, busy = va1Busy(), hasV = va1HasVox(), hasC = va1HasChor();
   const B = (a, t, s, ok, cls, more) => `<button class="mbtn rb${cls ? ' ' + cls : ''}" data-va="${a}"${more || ''}${ok ? '' : ' disabled'}><b>${esc(t)}</b>${s ? '<small>' + esc(s) + '</small>' : ''}</button>`;

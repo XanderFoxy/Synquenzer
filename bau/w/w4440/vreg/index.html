@@ -27468,9 +27468,9 @@ function normClip(c, kind, pk) {
   if (kind !== 'drum' && c.pre) { const p = g3NormPre(c.pre); if (p) out.pre = p; }                  /* G3: Auftakt-Noten */
   if (kind !== 'drum' && c.st) { const st = v6aNorm(c.st); if (st) out.st = st; }                    // V6A: Klangzustand ◆
   if (c.cv) { const cv = cvNorm(c.cv, L); if (cv) out.cv = cv; }                                    // BM8 (§5.4)
-  if (typeof c.vid === 'string' && /^(geraet|klav|kino|noten|aus)$/.test(c.vid)) out.vid = c.vid;   // VR1: Im Video (fehlt = Auto; läuft schon beim Start)
   if (cts) out.ts = cts;                                                                              /* T1: Taktart des Clips (4/4 = fehlt) */
   if (c.kl || c.klq != null || c.ln || out.notes.some(n => n.lk && n.lk.k)) lkClipNorm(c, out, kind);   // I2a: kl, klq, ln (fehlen = wie bisher)
+  if (typeof c.vid === 'string' && /^(geraet|klav|kino|noten|aus)$/.test(c.vid)) out.vid = c.vid;   // VR1: Im Video (fehlt = Auto; läuft schon beim Start)
   return out;
 }
 function normTrack(t, def, pk, warns) {
@@ -27876,9 +27876,9 @@ function cleanClip(c) {
   if (c.pre) o.pre = c.pre.map(n => ({t: n.t, d: n.d, n: n.n, v: n.v}));   /* G3 */
   if (c.st) o.st = JSON.parse(JSON.stringify(c.st));             // V6A
   if (c.cv) o.cv = cvClone(c.cv);                                // BM8: die Kurven gehen mit jeder Kopie mit
-  if (c.vid) o.vid = c.vid;                                       // VR1: Im Video
   if (c.ts) o.ts = c.ts;                                          // T1: Taktart des Clips
   if (c.kl || c.klq != null || c.ln) cleanLkClip(c, o);               // I2a
+  if (c.vid) o.vid = c.vid;                                       // VR1: Im Video
   return o;
 }
 /* ---------------- BM8 (Nachtrag 7 §5.4): Bend, Rad und Druck im Clip ----------------

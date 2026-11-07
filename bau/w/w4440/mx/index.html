@@ -62951,7 +62951,7 @@ function mx1CardHtml(t) {
     const w = A.wet[i] || {}, kv = [];
     if (A.width[i] != null) kv.push('Breite ' + Math.round(A.width[i] * 100) + ' %');
     kv.push('Hall ' + (w.hall == null ? 'aus' : mixaF(w.hall) + ' dB')); kv.push('Echo ' + (w.echo == null ? 'aus' : mixaF(w.echo) + ' dB'));
-    let best = null; (A.mask[i] || []).forEach((row, j) => { if (!row || j === i) return; row.forEach((m, b) => { if (b >= 1 && m > (best ? best.m : 0.3)) best = {m, j, b}; }); });
+    let best = null; (A.mask[i] || []).forEach((row, j) => { if (!row || j === i) return; row.forEach((m, b) => { if (b >= 1 && A.spec[i][b] >= -12 && m > (best ? best.m : 0.3)) best = {m, j, b}; }); });
     if (best && S.tracks[best.j]) kv.push('zugedeckt von ' + S.tracks[best.j].name + ' bei ' + (A.F[best.b] >= 1000 ? fmtDec(A.F[best.b] / 1000, 0) + ' kHz' : A.F[best.b] + ' Hz') + ' (' + Math.round(best.m * 100) + ' %)');
     h += `<div class="mx1sw">${mx1SpecSvg(A.spec[i])}<div class="small mx1kv">${esc(kv.join(' · '))}</div></div>`;
   }

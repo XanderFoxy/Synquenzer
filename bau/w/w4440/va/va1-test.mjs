@@ -207,17 +207,22 @@ async function sheetCheck(pg, tag) {
   ok('Blatt ' + tag + ': ✕ sichtbar, Tasten ≥ 44 px, nichts abgeschnitten, kein Überlauf', m.inView && !m.small.length && !m.clip.length && !m.over && !m.docOver, {x: m.x, small: m.small, clip: m.clip});
 }
 await sheetCheck(p, 'hochkant-428x926');
-await p.evaluate(() => { const q = document.querySelector('.pop.va1'); if (q) q.scrollTop = q.scrollHeight; });
-await p.waitForTimeout(200); await p.screenshot({path: OUT + '/va1-hochkant-unten-428x926.png'});
+// Video-Blatt: der Weg steht unten („Weg: WebCodecs · H.264 + Ton (PCM) · MOV“)
+await p.evaluate(() => { const D = window.SYNQUENZER; D.va1Close(); D.vvTest({}); D.vvOpen(); });
+await p.waitForTimeout(900);
+const way = await p.evaluate(() => { const w = document.querySelector('#vvSheet .vvway'); return w ? w.textContent : null; });
+await p.screenshot({path: OUT + '/va1-video-weg-428x926.png'});
+ok('Video-Blatt nennt den Weg mit Ton (PCM · MOV)', /PCM/.test(way || ''), way);
+await p.evaluate(() => window.SYNQUENZER.vvClose());
 await p.setViewportSize({width: 926, height: 428}); await p.waitForTimeout(500);
 await sheetCheck(p, 'quer-926x428');
 // Menü → Export
 await p.evaluate(() => { window.SYNQUENZER.va1Close(); openMenu(); });
 await p.waitForTimeout(300);
-const mb = await p.evaluate(() => { const b = [...document.querySelectorAll('#menu button')].find(x => x.textContent.trim() === 'Export'); if (!b) return null; b.scrollIntoView({block: 'center'}); const r = b.getBoundingClientRect(); return {x: r.x + r.width / 2, y: r.y + r.height / 2, h: r.height}; });
+const mb = await p.evaluate(() => { const b = [...document.querySelectorAll('#menu button')].find(x => x.textContent.trim() === 'Export'); if (!b) return null; b.scrollIntoView({block: 'center'}); const r = b.getBoundingClientRect(); return {x: r.x + r.width / 2, y: r.y + r.height / 2, h: r.height, row: [...b.parentElement.children].map(c => c.textContent.trim())}; });
 if (mb) { await p.touchscreen.tap(mb.x, mb.y); await p.waitForTimeout(400); }
 const viaMenu = await p.evaluate(() => !!document.querySelector('.pop.va1') && !document.getElementById('menu').classList.contains('open'));
-ok('Menü → Export öffnet das Blatt (Taste ≥ 44 px)', mb && mb.h >= 44 && viaMenu, mb);
+ok('Menü → Export (neben Video, darunter verschiebt sich nichts) öffnet das Blatt, Taste ≥ 44 px', mb && mb.h >= 44 && viaMenu && mb.row.join('|') === 'Video|Export', mb);
 
 const errs = p.errs.concat(p2.errs);
 ok('Keine Fehler in der Konsole', !errs.length, errs.slice(0, 5));
