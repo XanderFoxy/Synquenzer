@@ -78536,10 +78536,10 @@ function bb1Paint() {
   h += `<p class="bb1-info">${info}</p>`;
   h += `<div class="bb1-grid pan-y">` + list.map(f => { const g = bb1Gen(f.g), sw = bb1Sw(f);
     return `<button class="rb bb1-f${U.fig === f.id ? ' on' : ''}" data-fig="${f.id}" aria-pressed="${U.fig === f.id}" aria-label="${esc(f.name + ', ' + (g ? g[1] : '') + ' – antippen: Vorschau')}"><b>${esc(f.name)}</b><small>${esc((g ? g[1] : '') + ' · ≈ ' + bb1Bpm(f) + (sw > .5 ? ' · Swing ' + Math.round(sw * 100) + ' %' : ''))}</small></button>`; }).join('') + `</div>`;
-  h += `<p class="bb1-tip">${F ? '<b>' + esc(F.name) + ':</b> ' + esc(F.tip) : 'Figur antippen = Vorschau' + (R.playing && R.slot[U.t] === U.s ? ' im laufenden Clip' : ' mit den übrigen Clips der Szene') + '. [Einsetzen] schreibt sie' + (Z.k === 'hier' ? ' in diesen Clip' : ' als ' + (Z.k === 'ver' ? 'neue Version' : 'neuen Clip') + ' – das Original bleibt') + '.'}</p>`;
+  h += `<p class="bb1-tip">${F ? '<b>' + esc(F.name) + ':</b> ' + esc(F.tip) + (K && BB1.klang ? ' Klang: ' + esc(K.rec.name + (K.echo ? ', ' + bb1EchoTxt(K.echo) : '')) + '.' : '') : 'Figur antippen = Vorschau' + (R.playing && R.slot[U.t] === U.s ? ' im laufenden Clip' : ' mit den übrigen Clips der Szene') + '. [Einsetzen] schreibt sie' + (Z.k === 'hier' ? ' in diesen Clip' : ' als ' + (Z.k === 'ver' ? 'neue Version' : 'neuen Clip') + ' – das Original bleibt') + '.'}</p>`;
   h += `<div class="bb1-foot"><div class="bb1-row bb1-act"><span class="lbl">Ziel</span><div class="bb1-ziel" role="group" aria-label="Ziel">` + Zs.map(z => { const [a, b] = zl(z); return `<button class="rb${Z.k === z.k ? ' on' : ''}" data-ziel="${z.k}" aria-pressed="${Z.k === z.k}" aria-label="${esc(a + ': ' + b)}">${esc(a)}<small>${esc(b)}</small></button>`; }).join('') + `</div></div>`;
   h += `<div class="bb1-row bb1-go">` +
-    (drum ? '' : `<button class="rb bb1-k${BB1.klang && K ? ' on' : ''}" data-bb="klang" aria-pressed="${!!(BB1.klang && K)}"${K ? '' : ' disabled'} aria-label="${esc('mit Klang' + (K ? ': ' + K.rec.name + (K.echo ? ', ' + bb1EchoTxt(K.echo) : '') : ''))}">mit Klang<small>${esc(K ? K.rec.name + (K.echo ? ' · ' + bb1EchoTxt(K.echo) : '') : F ? 'eigener Klang' : '–')}</small></button>`) +
+    (drum ? '' : `<button class="rb bb1-k${BB1.klang && K ? ' on' : ''}" data-bb="klang" aria-pressed="${!!(BB1.klang && K)}"${K ? '' : ' disabled'} aria-label="${esc('mit Klang' + (K ? ': ' + K.rec.name + (K.echo ? ', ' + bb1EchoTxt(K.echo) : '') : ''))}">mit Klang<small>${esc(K ? K.rec.name + (K.echo ? ' + Echo' : '') : F ? 'eigener Klang' : '–')}</small></button>`) +
     `<button class="rb bb1-pv${BB1.pv ? ' on' : ''}" data-bb="pv"${F ? '' : ' disabled'} aria-pressed="${!!BB1.pv}">${BB1.pv ? '■ Stopp' : '▶ Vorschau'}</button>` +
     `<button class="rb bb1-ins" data-bb="ins"${F ? '' : ' disabled'}>Einsetzen</button></div></div>`;
   const sc = p.querySelector('.bb1-grid'), y = sc ? sc.scrollTop : 0;
@@ -78601,8 +78601,8 @@ function bb1RollHook(t, s) {
       '.bb1s .bb1-row{flex:0 0 auto;display:flex;gap:4px;margin-top:4px;min-width:0}',
       '.bb1s .bb1-roles,.bb1s .bb1-gens{overflow-x:auto;overflow-y:hidden;scrollbar-width:none;touch-action:pan-x}',
       '.bb1s .bb1-roles::-webkit-scrollbar,.bb1s .bb1-gens::-webkit-scrollbar{display:none}',
-      '.bb1s .bb1-roles .rb,.bb1s .bb1-gens .rb{flex:1 0 auto;min-width:64px;height:44px;padding:0 10px;font:700 12px/1.1 var(--font-ui);white-space:nowrap}',
-      '.bb1s .bb1-gens .rb{font-weight:600;min-width:56px}',
+      '.bb1s .bb1-roles .rb,.bb1s .bb1-gens .rb{flex:1 0 auto;min-width:44px;height:44px;padding:0 7px;font:700 12px/1.1 var(--font-ui);white-space:nowrap}',
+      '.bb1s .bb1-gens .rb{font-weight:600;padding:0 9px}',
       '.bb1s .rb.on{color:#ffcf7a;border-color:#6b4c16;box-shadow:inset 0 0 0 1px #6b4c16}',
       '.bb1s .bb1-info{flex:0 0 auto;margin:5px 2px 0;font:600 11px/1.3 var(--font-ui);color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
       '.bb1s .bb1-info b{color:var(--text)}',
