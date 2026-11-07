@@ -204,7 +204,7 @@ try {
   const SC = await p.evaluate(() => ({pos: SV.pos, last: window.SYNQUENZER.wege.lastScrub(), sx7: SX7.n}));
   ok(SC.pos === Math.round((14 + g.cw * 3.2) / g.cw) && SC.last && SC.last.n >= 3, 'D11: ▼-Marke ziehen (Finger): Marke auf Takt ' + (SC.pos + 1) + ', ' + (SC.last ? SC.last.n : 0) + ' Schläge angeklungen – ohne Schalter', 'Lautsprecher-Knopf weg');
   // ---- Prüfung 1: Teil-Marke an der ▼-Marke (Takt 1, 12 px rechts) halten / halten + ziehen wie in der Basis ----
-  for (const dims of [null]) {
+  {
     await run(p, () => { if (UI.pop) closePop(); SV.x = 0; window.SYNQUENZER.songPos(0); SV.sel = null; svDraw(true); });
     await p.waitForTimeout(300);
     const gm = await p.evaluate(() => { const r = SV.wrap.getBoundingClientRect(), y0 = (SV.blS | 0) + 3, y1 = SV.rulerH - (SV.vvS || 0) - 5; return {x: r.left + songStartBar() * SV.cellW - SV.x + 12, y: r.top + Math.round((y0 + y1) / 2), snap: songSnapshot()}; });
@@ -393,6 +393,56 @@ try {
   ok(vq.ah, 'quer: ↶ halten → VERLAUF mit „Automatische Sicherungen“', 'Blatt ' + vq.pop + ' · Taste ' + uq[2]);
   await shot(p, 'wege-verlauf-quer.png');
   await run(p, () => closePop());
+  await p.close();
+
+  /* ================= Prüfung 4, 7, 8: Making-of aus der Aufzeichnung, altes VD3-Protokoll, alte GR1-Small-Marke ================= */
+  const pb2 = await page(428, 926, basis);
+  await run(pb2, () => SETUP());
+  const OLD8 = await run(pb2, () => {
+    const D = window.SYNQUENZER, m = S.song.marks[0];
+    D.grVorschlag(m.id); D.grMarkSf(m.id, 's');
+    D.vd3.clear(); for (let i = 0; i < 40; i++) D.vd3.push({k: 'regler', t: 1, p: 'cut', a: .2, b: .2 + i / 100, v: [.3, .4]});
+    vd3InProject(true);
+    return {n: NC(m.a, m.a + m.len).reduce((a, b) => a + b, 0), file: serializeProject()};
+  });
+  await pb2.close();
+  p = await page(428, 926);
+  const O8 = await run(p, async f => {
+    importJSON(f); await new Promise(r => setTimeout(r, 1500));
+    const D = window.SYNQUENZER, m = S.song.marks[0], n = () => NC(m.a, m.a + m.len).reduce((a, b) => a + b, 0);
+    const r = {n0: n(), info: D.wege.sfInfo(m.id), ev0: vd3Ev().length};
+    r.again = D.wege.sfSet(m.id, 's'); r.n1 = n();
+    D.wege.sfSet(m.id, 'f'); r.nf = n(); D.wege.sfSet(m.id, 's'); r.ns = n();
+    D.setClip(1, 2, {len: 1, notes: [{t: 0, d: 1, n: 64, v: .8}]}); histDrainNow();
+    await D.wege.moBuild(); const ev = vd3Ev(); r.ev1 = ev.length; r.old = ev.slice(0, 40).every(e => e.k === 'regler' && e.p === 'cut' && e.ms > 0); r.last = ev[ev.length - 1].k;
+    return r;
+  }, OLD8.file);
+  ok(O8.n0 === OLD8.n && O8.info.small && !/aus/.test(O8.info.s) && /DR v/.test(O8.info.s), 'Prüfung 8: alte GR1-Small-Marke zeigt Small, wie es klingt (keine Spur „aus“)', 'Small: „' + O8.info.s + '“ · ' + O8.n0 + ' Noten wie Basis ' + OLD8.n);
+  ok(!(O8.again && O8.again.ok) && O8.n1 === OLD8.n && O8.nf > OLD8.n && O8.ns === OLD8.n, 'Prüfung 8: Small nochmal = bleibt; Full → Small = wieder dieselben Noten', O8.n1 + ' · Full ' + O8.nf + ' · Small ' + O8.ns);
+  ok(O8.ev0 === 40 && O8.ev1 === 41 && O8.old && O8.last === 'clip', 'Prüfung 7: altes Making-of-Protokoll (im Projekt) bleibt vor den aufgezeichneten Gesten', O8.ev0 + ' → ' + O8.ev1 + ' Ereignisse');
+  const P4 = await run(p, async () => {
+    const D = window.SYNQUENZER;
+    for (let i = 0; i < 1500; i++) {
+      const notes = []; for (let k = 0; k < 8 + (i % 24); k++) notes.push({t: (k * .5) % 8, d: .25, n: 60 + ((i + k) % 12), v: .7});
+      D.setClip(1 + (i % 3), i % 4, {len: 2, notes});
+      if (i % 4 === 0) { try { const s = JSON.parse(JSON.stringify(S.tracks[1].sound)); if (s.p && typeof s.p.cut === 'number') { s.p.cut = (i % 100) / 100; D.setSound(1, s); } } catch (e) {} }
+      histDrainNow(); if (i % 50 === 0) await new Promise(r => setTimeout(r, 0));
+    }
+    await histFlush();
+    // Referenz: die ganze Aufzeichnung von vorn (wie vor der Prüfung)
+    const ref = []; let st = null;
+    for (const {r, evs} of await histItems(HIST.pid)) { let ki = 0; for (let i = 0; i <= evs.length; i++) { while (ki < r.kf.length && r.kf[ki].at <= i) { try { st = JSON.parse(await histUnzip(r.kf[ki].b)).p || null; } catch (e) { st = null; } ki++; } if (i < evs.length && st) st = wegeMoStep(st, evs[i], ref); } }
+    const R0 = wegeMoMerge(ref).slice(-VD3_MAX);
+    const gapOf = async f => { let mg = 0, la = performance.now(), on = true; const tk = () => { const q = performance.now(); mg = Math.max(mg, q - la); la = q; if (on) requestAnimationFrame(tk); }; requestAnimationFrame(tk); await new Promise(r => setTimeout(r, 40)); mg = 0; la = performance.now(); const T0 = performance.now(); await f(); const ms = performance.now() - T0; await new Promise(r => setTimeout(r, 40)); on = false; return {ms: Math.round(ms), gap: Math.round(mg)}; };
+    WEGE.moC = null; WEGE.mo = null;
+    const a = await gapOf(() => wegeMoBuild(true)); a.n = WEGE.moN;
+    const same = JSON.stringify(WEGE.mo) === JSON.stringify(R0), len = WEGE.mo.length;
+    D.setClip(2, 1, {len: 1, notes: [{t: 0, d: 1, n: 64, v: .8}]}); histDrainNow();
+    const b2 = await gapOf(() => wegeMoBuild()); b2.n = WEGE.moN;
+    return {ev: histInfo().events, mb: Math.round(histInfo().bytes / 1024), a, b: b2, same, len, refLen: R0.length, lastK: WEGE.mo[WEGE.mo.length - 1].k};
+  });
+  ok(P4.same && P4.len === 800, 'Prüfung 4: Making-of von hinten gelesen = dieselben 800 Ereignisse wie die ganze Aufzeichnung von vorn', P4.ev + ' Gesten, ' + P4.mb + ' KB');
+  ok(P4.b.n === 1 && P4.b.ms < 80 && P4.lastK === 'clip', 'Prüfung 4: nach einer neuen Geste wird nur der letzte Abschnitt gelesen (aus dem Speicher)', 'erstes Lesen ' + P4.a.ms + ' ms (' + P4.a.n + ' Abschnitte, längste Pause ' + P4.a.gap + ' ms) · danach ' + P4.b.ms + ' ms (längste Pause ' + P4.b.gap + ' ms)');
   await p.close();
 
   /* ================= Guide: jeder Eintrag springt hin (mit Song, hochkant) ================= */
