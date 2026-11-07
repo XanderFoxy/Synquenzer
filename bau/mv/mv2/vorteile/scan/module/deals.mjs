@@ -1,10 +1,12 @@
 // Modul "deals": rechnet alle Deals neu durch (Mehrkauf, Aktionspackung, Coupons, Cashback, Limits, Versand).
 // Quellen: Daten des Schnäppchen-Weckers (schnaeppchen-daten) + mydealz-Feeds (Lebensmittel, Preisfehler ohne Technik).
+// Dazu Geld-zurück-/Cashback-Aktionen (grund 'cashback', extra.art gzg|cashback) für den Abschnitt Cashback der Seite.
 // Enden: Schnäppchen-Angebote bis gueltigBis (mit Uhrzeit), mydealz bis Textende / Deal-Seite, sonst Höchstalter (lib/ende.mjs).
 import { rechne, bestesAngebot, parseAktion, couponImPreis } from '../rechnen.mjs';
 import { parsePrice, grammAus, enthaelt, euro, round } from '../lib/text.mjs';
 import { dealPruefer, preisAngaben, altpreisAusText } from '../lib/mydealz.mjs';
-import { sammleFeeds, eintrag, preisfehlerEintrag, PREISFEHLER } from './gemeinsam.mjs';
+import { sammleFeeds, eintrag, preisfehlerEintrag, PREISFEHLER, mydealzSuche } from './gemeinsam.mjs';
+import { cashbackEintraege } from './praemien.mjs';
 
 const prozent = v => `−${Math.round(v * 100)} %`;
 // „Mo 2.11.“ (Berliner Zeit) – dasselbe Format wie auf der Seite Mein Vorteil
@@ -110,10 +112,21 @@ export default async function deals({ holeText, cfg, jetzt, zustand }) {
   fehler.push(...f2);
   const pruefer = dealPruefer({ holeText, zustand, jetzt });
   const istPreisfehler = it => !!(it.feedInfo.preisfehler || PREISFEHLER.test(it.titel));
+  // c) Geld zurück / Cashback: aus diesen Feeds und eigenen mydealz-Suchen (Abschnitt Cashback, nicht noch einmal als Deal)
+  const cashbackLinks = new Set();
+  if (m.cashback) {
+    const c = m.cashback;
+    const { items: such, fehler: f3 } = await sammleFeeds(holeText, (c.suchen || []).map(q => ({ name: `mydealz „${q}“`, url: mydealzSuche(q), maxAlterTage: c.maxAlterTage ?? 14 })), { jetzt });
+    fehler.push(...f3);
+    const gesehen = new Set(items.map(it => it.link));
+    const cb = cashbackEintraege([...items.filter(it => !istPreisfehler(it)), ...such.filter(it => !gesehen.has(it.link))], cfg, { jetzt });
+    for (const e of cb) cashbackLinks.add(e.link);
+    eintraege.push(...cb);
+  }
   // Preisfehler zuerst: sie brauchen die Deal-Seite (Abruf-Limit pro Lauf)
   const sortiert = [...items].sort((a, b) => istPreisfehler(b) - istPreisfehler(a));
   for (const it of sortiert) {
-    if (technikLinks.has(it.link)) continue;
+    if (technikLinks.has(it.link) || cashbackLinks.has(it.link)) continue;
     const text = `${it.titel} ${it.beschreibung}`;
     if (istPreisfehler(it)) {
       const r = await preisfehlerEintrag(it, { kategorie: 'deals', pruefer, jetzt, wert: 90, mitPreis: true, krass: m.preisfehlerKrass || {} });

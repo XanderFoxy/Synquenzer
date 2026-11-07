@@ -1,7 +1,8 @@
 // Modul "musik": (1) Wunsch-Geräte (wunschliste.json) – Preisstürze und Tiefstpreise über mydealz-Suche und optional Geizhals,
 // eigene Preis-Historie im Zustand. (2) "Bands gesucht"/Open Calls für elektronische Acts (Google-News-Suche).
-import { enthaelt, zaehle, parsePrice, euro, norm, tageBis, datumDe, round } from '../lib/text.mjs';
-import { berlinTag } from '../lib/ende.mjs';
+// (3) Remix-Contests mit Stems, passend zu Synth-Pop, 80er, Italo, Euro-Disco, Elektro, Dark Wave, New Wave (Xander 07.11.2026).
+import { enthaelt, zaehle, parsePrice, euro, norm, tageBis, datumDe, round, alterTage } from '../lib/text.mjs';
+import { berlinTag, berlinIso } from '../lib/ende.mjs';
 import { preisAngaben } from '../lib/mydealz.mjs';
 import { sammleFeeds, eintrag, mydealzSuche, googleNews, istRegional } from './gemeinsam.mjs';
 
@@ -79,6 +80,7 @@ export async function aufrufe({ holeText, cfg, jetzt }) {
   const { items, fehler } = await sammleFeeds(holeText, m.aufrufe.map(q => ({ name: `Nachrichten „${q}“`, url: googleNews(`${q} when:30d`) })), { jetzt, maxAlterTage: 30 });
   for (const it of items) {
     const text = `${it.titel} ${it.beschreibung}`;
+    if (m.remix && istRemixContest(text, m.remix)) continue; // steht unter Remix-Contests, nicht doppelt
     if (!enthaelt(text, m.aufrufWoerter) || !enthaelt(text, ['band', 'bands', 'musiker', 'künstler|kuenstler', 'act', 'acts', 'artists', 'musikerinnen'])) continue;
     if (enthaelt(text, m.nichtWoerter)) continue;
     const frist = it.bis ? berlinTag(it.bis) : null; // vorbei -> schon in sammleFeeds raus
@@ -97,8 +99,81 @@ export async function aufrufe({ holeText, cfg, jetzt }) {
   return { eintraege, fehler };
 }
 
+// --- (3) Remix-Contests ---------------------------------------------------------------------------------------------
+// Google News in der englischen Ausgabe (die meisten Contests sind englisch); die deutsche Suche läuft über googleNews.
+export const googleNewsEn = q => `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=en-US&gl=US&ceid=US:en`;
+export const istRemixContest = (text, r) => enthaelt(text, r.contestWoerter);
+
+const MONAT_EN = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
+// „Deadline: December 15, 2026“, „closes 15 Dec“, „submissions close on Nov 30th“, „entries due by 1st of December“
+const FRIST_EN = /\b(deadline|closes?|closing date|ends?|until|due|submit (?:it )?by|submissions? (?:close|end|due)|entries (?:close|due))\b\s*(?:on|is|by|date)?\s*[:\-–]?\s*(?:(\d{1,2})(?:st|nd|rd|th)?\s+(?:of\s+)?([a-z]{3,9})\.?|([a-z]{3,9})\.?\s+(\d{1,2})(?:st|nd|rd|th)?\b)(?:,?\s*(\d{4}))?/gi;
+
+/** Einsendeschluss aus englischem Text -> ISO (23:59:59 Berliner Zeit) | null. Ohne Jahr: dieses, liegt es > 2 Monate zurück, das nächste. */
+export function englischeFrist(text, jetzt = new Date()) {
+  const j = new Date(jetzt);
+  for (const m of String(text || '').matchAll(FRIST_EN)) {
+    const tag = Number(m[2] ?? m[5]);
+    const monat = MONAT_EN[String(m[3] ?? m[4]).toLowerCase().slice(0, 3)];
+    if (!monat || !(tag >= 1 && tag <= 31)) continue;
+    let jahr = m[6] ? Number(m[6]) : j.getUTCFullYear();
+    if (!m[6] && Date.UTC(jahr, monat - 1, tag) < j.getTime() - 60 * 864e5) jahr++;
+    return berlinIso(jahr, monat, tag);
+  }
+  return null;
+}
+
+/**
+ * Remix-Contests: Contest-Wort + mindestens ein Genre-Wort; ein Contest mit Hip-Hop/Metal/Schlager-Wort nur mit zwei
+ * Genre-Treffern (sonst ist er ein reiner Hip-Hop-/Metal-/Schlager-Contest). Nur laufende: Einsendeschluss in der
+ * Zukunft (deutsch über sammleFeeds, englisch über englischeFrist), ohne Einsendeschluss höchstens maxAlterTage alt.
+ * Push: Zusammenfassung; sofort nur, wenn der Einsendeschluss in ≤ sofortBisTage Tagen ist.
+ */
+export function bewerteRemix(it, r, jetzt = new Date()) {
+  const text = `${it.titel} ${it.beschreibung || ''}`;
+  if (!istRemixContest(text, r)) return { grund: 'kein Remix-Contest' };
+  const genre = zaehle(text, r.genreWoerter);
+  if (!genre) return { grund: 'Genre passt nicht' };
+  if (enthaelt(text, r.nichtWoerter) && genre < 2) return { grund: 'Hip-Hop/Metal/Schlager' };
+  const jetztMs = new Date(jetzt).getTime();
+  const bis = it.bis || englischeFrist(`${it.titel} ${it.langtext || it.beschreibung || ''}`, jetzt);
+  if (bis && Date.parse(bis) <= jetztMs) return { grund: 'Einsendeschluss vorbei' };
+  if (!bis && alterTage(it.datum, jetzt) > (r.maxAlterTage ?? 30)) return { grund: 'zu alt' };
+  const frist = bis ? berlinTag(bis) : null;
+  const rest = frist ? tageBis(frist, jetzt) : null;
+  const stems = enthaelt(text, ['stems|stem pack|stem-pack|stem files|multitracks|multitrack|einzelspuren']);
+  return { ok: true, genre, bis, frist, rest, stems, sofort: rest != null && rest >= 0 && rest <= (r.sofortBisTage ?? 14) };
+}
+
+export async function remixContests({ holeText, cfg, jetzt }) {
+  const r = cfg.module.musik.remix;
+  if (!r) return { eintraege: [], fehler: [] };
+  const alter = r.maxAlterTage ?? 30;
+  const feeds = [
+    ...(r.suchen || []).map(q => ({ name: `Nachrichten „${q}“`, url: googleNews(`${q} when:${alter}d`), maxAlterTage: alter })),
+    ...(r.suchenEnglisch || []).map(q => ({ name: `News „${q}“`, url: googleNewsEn(`${q} when:${alter}d`), maxAlterTage: alter })),
+    ...(r.feeds || []),
+  ];
+  const { items, fehler } = await sammleFeeds(holeText, feeds, { jetzt, maxAlterTage: alter });
+  const eintraege = [];
+  for (const it of items) {
+    const b = bewerteRemix(it, r, jetzt);
+    if (!b.ok) continue;
+    eintraege.push(eintrag({
+      kategorie: 'musik', titel: it.titel, quelle: it.herkunft || it.feed, link: it.link, datum: it.datum, jetzt,
+      bis: b.bis, bisQuelle: b.bis ? 'text' : null, art: 'aufruf',
+      zeile: ['Remix-Contest', b.stems ? 'mit Stems' : '', b.frist ? `Einsendeschluss ${datumDe(b.frist)}` : 'Einsendeschluss im Link'].filter(Boolean).join(' · '),
+      soGehts: 'Contest öffnen, Regeln lesen (Rechte, Format, Länge), Stems laden und den Remix vor dem Einsendeschluss hochladen.',
+      wert: 45 + Math.min(3, b.genre) * 10 + (b.stems ? 10 : 0) + (b.frist ? 10 : 0),
+      sofort: b.sofort, grund: 'Remix-Contest',
+      extra: { art: 'remix', stems: b.stems },
+    }));
+  }
+  return { eintraege, fehler };
+}
+
 export default async function musik(ctx) {
   const a = ctx.cfg.module.musik.geraeteSuche === false ? { eintraege: [], fehler: [] } : await geraete(ctx);
   const b = await aufrufe(ctx);
-  return { eintraege: [...a.eintraege, ...b.eintraege], fehler: [...a.fehler, ...b.fehler] };
+  const c = await remixContests(ctx);
+  return { eintraege: [...a.eintraege, ...b.eintraege, ...c.eintraege], fehler: [...a.fehler, ...b.fehler, ...c.fehler] };
 }
