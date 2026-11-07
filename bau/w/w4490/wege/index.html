@@ -39102,7 +39102,7 @@ function hm1PvBtn() { const U = HM1.ui, b = U && U.p && U.p.querySelector('[data
 /* ---------- das Harmonie-Blatt im Noten-Editor (Aktionsleiste ganz rechts: [Harmonie]) ---------- */
 function hm1Acts(t, s) {
   const tr = S.tracks[t]; if (!tr || tr.kind !== 'synth' || percIs(tr) || tr.stimme) return [];
-  return [{id: 'hm1', label: 'Harmonie', title: 'Harmonie: Glätten, Lauf verlängern, Gegenstimme, Akkorde', cls: 'hm1b', fn: () => hm1Open(t, s)}];   // hm1b: Trefferfläche bis an den Rand der Leiste (44 px)
+  return [{id: 'hm1', label: 'Harmonie', title: 'Harmonie: Auf eine Stufe, Lauf verlängern, Gegenstimme, Akkord-Ideen', cls: 'hm1b', fn: () => hm1Open(t, s)}];   // hm1b: Trefferfläche bis an den Rand der Leiste (44 px)
 }
 // der nächste freie Platz der Spur t nach Szene s (oder null)
 function hm1Free(t, s) { const tr = S.tracks[t]; for (let k = 1; k < NS(); k++) { const x = (s + k) % NS(); if (!tr.clips[x]) return x; } return null; }
@@ -40838,8 +40838,8 @@ function buildRangeBar() {
   const side = document.getElementById('side'); if (!side || document.getElementById('rangeBar')) return;
   const rb = el('div', '', ''); rb.id = 'rangeBar'; rb.setAttribute('role', 'toolbar'); rb.setAttribute('aria-label', 'Gewählte Takte');
   const B = (a, d, t, ts, aria) => `<button class="rb rg-b" data-a="${a}" aria-label="${esc(aria)}"><span class="d">${d}</span><span class="t" data-l="${esc(t)}" data-s="${esc(ts)}">${esc(t)}</span></button>`;
-  rb.innerHTML = B('play', '▶', 'Ab hier', 'Ab hier', 'Ab hier abspielen') + B('rec', '●', 'Aufnehmen …', 'Aufn.', 'Hier aufnehmen …') + B('part', '❖', 'Zusammenfassen …', 'Teil …', 'Zusammenfassen …') +
-    B('copy', '⧉', 'Kopie →', 'Kopie', 'Kopie dahinter') + B('del', '✕', 'Takte löschen', 'Löschen', 'Takte löschen, der Rest rückt') + B('more', '⋯', 'Mehr', 'Mehr', 'Mehr: Leeren, Teil einsetzen, Akkorde quantisieren, Schleife');
+  rb.innerHTML = B('play', '▶', 'Ab hier', 'Ab hier', 'Ab hier abspielen') + B('rec', '●', 'Aufnehmen …', 'Aufn.', 'Hier aufnehmen …') + B('part', '❖', 'Zusammenfassen …', 'Zusammen …', 'Zusammenfassen …') +
+    B('copy', '⧉', 'Takte kopieren →', 'Kopieren →', 'Takte kopieren – die Kopie kommt dahinter') + B('del', '✕', 'Takte löschen', 'Löschen', 'Takte löschen, der Rest rückt') + B('more', '⋯', 'Mehr', 'Mehr', 'Mehr: Leeren, Teil einsetzen, Akkorde quantisieren, Schleife');
   side.insertBefore(rb, document.getElementById('carrier'));
   guardTouch(rb);
   onTap(rb, b => rangeAct(b.dataset.a, b), 'button[data-a]');
@@ -41467,7 +41467,7 @@ function renderHistory() {
   const cur = T.targetAt(nowT()).target, sig = T.history.map(prettyTarget).join('|') + '#' + (cur ? prettyTarget(cur) : '');
   if (sig === UI.last.hist) return; UI.last.hist = sig;
   h.textContent = '';
-  if (!T.history.length) { h.appendChild(el('span', 'hc rb empty', 'Verlauf')); return; }
+  if (!T.history.length) { h.appendChild(el('span', 'hc rb empty', 'Letzte Akkorde')); return; }   // WEGE (D8 b): „Verlauf“ nur für ↶
   T.history.forEach((t, k) => {
     const b = el('button', 'hc rb' + (cur && t.root === cur.root && t.quality === cur.quality && t.bass === cur.bass ? ' cur' : ''), esc(prettyTarget(t)));
     b.dataset.k = k; h.appendChild(b);
@@ -51711,7 +51711,7 @@ function openMenu(goto) {
     'SONG-AUFNAHME (● bei vorhandenem Song): Das Start-Blatt fragt, was aufgenommen wird – CLIPS (Szenen- und Clip-Starts, Teil-Tasten setzen ihre Marke), AKKORDE, NOTEN auf der gewählten Spur (▾ wählt sie). Und wie: ab Takt n ÜBERSCHREIBEN (was du änderst, ersetzt; Noten: jeder Takt bis zum Ende neu, die alten sind stumm) oder EINFÜGEN (Neues kommt dazwischen, der Rest rückt nach hinten); in gelb gewählten Takten ERSETZEN oder OVERDUB (Neues kommt dazu). Ist genau ein Takt gewählt, gibt es alle vier. Noten auf einer Spur mit Clip werden ein eigener Clip an dieser Stelle – die Szenen bleiben, wie sie sind. ● beendet am letzten logischen Taktstrich (wie FANG TEIL: erst die Phrase, dann ob der neue Takt weniger als halb gespielt war). Halten auf ● öffnet das Blatt jederzeit. Ein Rückgängig nimmt die ganze Aufnahme zurück.',
     'TAKTLEISTE IM SONG: Tipp auf eine Taktnummer wählt den Takt (gelb) und setzt die Positionsmarke ▼ – nichts springt. Zweite Nummer = Bereich, Tipp in die Auswahl hebt sie auf. ▶ (oben oder ▶ SONG) startet an der Marke, sonst dort, wo du gestoppt hast; ⏮ = Takt 1.',
     'TEIL-MARKEN IM SONG: Wo ein Teil liegt, steht sein Name gelb in der Taktleiste statt der Taktnummern (STROPHE′ = an dieser Stelle geändert). Antippen = Marken-Blatt: ▶ Ab hier, ×2/×4, ◀ ▶ tauschen, ⧉ Kopie (dann den Taktstrich antippen), ⇄ Ersetzen durch, ✕ Löschen (der Rest rückt), Nur Name weg, Name, Farbe, Teil-Vorlage, Auf alle übertragen, ● Neu aufnehmen. Nochmal antippen = einzelne Takte darin wählen. Hinter dem Song-Ende eine Nummer antippen = Teil dort einsetzen (die Takte davor bleiben leer).',
-    'GELBE TAKTE IM SONG: Statt der Träger-Leiste erscheint die Bereich-Leiste: ▶ Ab hier, ● Aufnehmen, Als Teil (die Takte werden ein Teil), ⧉ Kopie dahinter, ✕ Takte löschen, ⋯ (Leeren, Teil einsetzen, Akkorde quantisieren, Als Schleife). Liegt ab der Stelle schon etwas, fragt das Einsetzen: ersetzen oder einfügen (alles danach rückt nach hinten).',
+    'GELBE TAKTE IM SONG: Statt der Träger-Leiste erscheint die Bereich-Leiste: ▶ Ab hier, ● Aufnehmen, ❖ Zusammenfassen (die Takte werden ein Teil), ⧉ Takte kopieren (dahinter), ✕ Takte löschen, ⋯ (Leeren, Teil einsetzen, Akkorde quantisieren, Als Schleife). Liegt ab der Stelle schon etwas, fragt das Einsetzen: ersetzen oder einfügen (alles danach rückt nach hinten).',
     'SPUR-NAMEN IM SONG antippen = Spur wählen (die Tastatur spielt sie, NOTEN nimmt sie auf). Passen nicht alle Spuren, blättert ▲▼ die Synth-Spuren; DRUMS, AKKORDE und MELODIE bleiben stehen.',
     'SCHLEIFE: Taste SCHLEIFE → aus │ Song │ Teil (die Marke an der Abspielmarke) │ Bereich (= die gelb gewählten Takte). Die Schleife ist die grüne Linie oben auf der Taktleiste; ihre Griffe ┃ ziehen ändert Anfang und Ende. Am Ende springt der Song taktgenau an den Anfang.',
     'AKKORDE IM SONG: Akkord antippen = ändern (Stufe, Zuletzt, Frei oder Text eintippen, z. B. „Dm7“, „F/A“, „H7“) – der Schlag bleibt. Leere Stelle antippen = neuer Akkord am Taktanfang. AKKORDE (Etikett) → Akkorde quantisieren: Raster Takt, ½ Takt oder Schlag, bei zwei auf einem Punkt gewinnt der zuletzt gespielte.',
@@ -82487,6 +82487,7 @@ function wegeVideoOpen(a, e) {
 // mark id plays Small ('s') or Full ('f'): one undo 'song' (SX11 path: in the run from the next bar line)
 function wegeSfSet(id, f) {
   const song = S.song, m0 = song && song.marks.find(x => x.id === id); if (!m0 || R.songRec || (f !== 's' && f !== 'f')) return null;
+  if (f === 's' && !(m0.vr && m0.vr.c === 'l') && gr1MarkInfo(song, m0).cur === 's') return {ok: false, ver: 0, thin: 0};   // Prüfung 8: spielt schon Small (GR1)
   const lab = markLabel(m0) + (f === 's' ? ' Small' : ' Full'); SX.lab.add(lab); sx11Hold();
   const r = {ver: 0, thin: 0};
   const ok = songEdit(lab, sg => {
@@ -82513,8 +82514,9 @@ function wegeSfSet(id, f) {
 }
 function wegeSfInfo(song, m) {
   const inf = sx11Info(song, m), g = gr1MarkInfo(song, m), small = inf.c === 'l' || g.cur === 's';
+  const gr = g.cur === 's' && inf.c !== 'l';                       // Prüfung 8: alte GR1-Small-Marke – Small zeigt, was jetzt klingt
   const sum = (mask, vs) => { const L = vs.length ? mask.filter(x => !(x.k === 'd' && isDrum(x.t))) : mask; return [sx11Sum(L), vs.length ? 'DR ' + vs.join(' ') : ''].filter(Boolean).join(' · '); };
-  return {small, s: sum(inf.l, g.vs) || 'alles an', f: sum(inf.v, g.vf) || 'alles an', vorschlag: inf.vorschlag && !g.hasS};
+  return {small, gr, s: sum(gr ? inf.v : inf.l, g.vs) || 'alles an', f: sum(inf.v, g.vf) || 'alles an', vorschlag: !gr && inf.vorschlag && !g.hasS};
 }
 function wegeSfRow(m) {
   const I = wegeSfInfo(S.song, m), cp = SX.clip;
@@ -82708,62 +82710,103 @@ function wegeVa1Tap(b) {
   return true;
 }
 
-/* ---------- D8 (a): Making-of aus der Aufzeichnung (HIST) ---------- */
+/* ---------- D8 (a): Making-of aus der Aufzeichnung (HIST) ----------
+   Prüfung (4): nicht mehr die ganze Aufzeichnung bei jeder Geste. Gelesen wird von hinten, Abschnitt für Abschnitt (ein Abschnitt =
+   ein Keyframe bis zum nächsten, ≤ 200 Gesten; die Gesten vor dem ersten Keyframe eines Stücks gehören zum Abschnitt davor), bis 800
+   Ereignisse da sind. Was ein Abschnitt ergibt, bleibt gemerkt (Schlüssel: Stück, Keyframe, Gesten, Ausdünnung) – nach einer neuen
+   Geste wird nur der letzte Abschnitt neu gelesen. Alle 8 ms bekommt der Browser die Hand zurück.
+   Prüfung (7): reicht die Aufzeichnung nicht für 800, kommt das alte VD3-Protokoll davor (S.vd3mo bzw. dieses Gerät), aber nur, was
+   vor der ersten aufgezeichneten Geste liegt (sonst stünde dieselbe Geste aus 4.48 doppelt da). */
 const wegeMoHist = () => typeof HIST !== 'undefined' && !!HIST && HIST.on && HIST.avail !== false;
-// the VD3 events {k, t, s, p, a, b, v, x, id, w, n, n0} from the recorder: Klangwahl, Regler-Gesten (mit Kurve), Clip neu, Noten
-// eingespielt, Teil gebaut. One walk over the stored chunks (keyframe + patches), only the last 800 survive
+const wegePget = (o, seg) => { for (const k of seg) { if (o == null || typeof o !== 'object') return undefined; o = o[k]; } return o; };
+const wegePkey = seg => (seg[3] === 'p' ? (seg[4] === 'wt' || seg[4] === 'fm2' ? seg[4] + '.' + seg[5] : seg[4]) : seg[3] === 'fx' ? (seg[4] === 'chorus' ? 'fx.chorus.' + seg[5] : 'fx.' + seg[4]) : null);
+// one recorded gesture e on the state st → the VD3 events {k, t, s, p, a, b, v, x, id, w, n, n0} into out; returns the new state (null = lost)
+function wegeMoStep(st, e, out) {
+  if (!st || !e || !e.d || !e.d.length) return st;
+  if (e.u === 'ctx' || /^Rückgängig|^Wiederholt/.test(String(e.l || ''))) { try { return histApply(st, e.d); } catch (er) { return null; } }
+  const segs = e.d.map(o => o.path.split('/').slice(1).map(x => x.replace(/~1/g, '/').replace(/~0/g, '~')));
+  const pre = new Map(), clips = new Map(); let marks0 = null, parts0 = null;
+  segs.forEach(sg => {
+    if (sg[0] === 'tracks' && sg[2] === 'sound' && sg.length >= 5) { const k = wegePkey(sg); if (k && !pre.has(k + '@' + sg[1])) pre.set(k + '@' + sg[1], {t: +sg[1], p: k, a: wegePget(st, sg)}); }
+    if (sg[0] === 'tracks' && sg[2] === 'clips' && sg[3] != null) { const ck = sg[1] + ':' + sg[3]; if (!clips.has(ck)) { const c = wegePget(st, sg.slice(0, 4)); clips.set(ck, c && Array.isArray(c.notes) ? c.notes.length : -1); } }
+    if (sg[0] === 'song' && !marks0) marks0 = new Set(((st.song && st.song.marks) || []).map(m => m.id));
+    if (sg[0] === 'parts' && !parts0) parts0 = (st.parts || []).map(Boolean);
+  });
+  const name0 = new Map(); for (const sg of segs) if (sg[0] === 'tracks' && sg[2] === 'sound' && sg.length <= 4) { const tr = wegePget(st, ['tracks', sg[1], 'sound']); name0.set(+sg[1], tr ? tr.name : null); }
+  try { st = histApply(st, e.d); } catch (er) { return null; }
+  for (const [t, n0] of name0) { const x = wegePget(st, ['tracks', t, 'sound']); if (x && x.name && x.name !== n0) out.push({k: 'klang', t, x: String(x.name).slice(0, 40)}); }
+  for (const q of pre.values()) { const b = wegePget(st, ['tracks', q.t, 'sound'].concat(q.p.startsWith('fx.chorus.') ? ['fx', 'chorus', q.p.slice(10)] : q.p.startsWith('fx.') ? ['fx', q.p.slice(3)] : q.p.includes('.') ? ['p'].concat(q.p.split('.')) : ['p', q.p]));
+    if (typeof b !== 'number' || b === q.a) continue; out.push({k: 'regler', t: q.t, p: q.p, a: typeof q.a === 'number' ? q.a : null, b, v: Array.isArray(e.c) && e.c.length ? e.c.slice(-12) : [b], d: 0}); }
+  for (const [ck, n0] of clips) { const [t, sl] = ck.split(':').map(Number), c = wegePget(st, ['tracks', t, 'clips', sl]); if (!c || !Array.isArray(c.notes)) continue;
+    if (n0 < 0) out.push({k: 'clip', t, s: sl, n: c.notes.length}); else if (c.notes.length !== n0) out.push({k: 'noten', t, s: sl, n: c.notes.length, n0}); }
+  if (marks0 && st.song) for (const m of st.song.marks || []) if (!marks0.has(m.id)) out.push({k: 'teil', id: m.id});
+  if (parts0) (st.parts || []).forEach((q, k) => { if (q && !parts0[k]) out.push({k: 'teil', w: 'part', s: k, x: String(q.name || 'Teil ' + (k + 1)).slice(0, 30)}); });
+  return st;
+}
+// nah beieinander: dieselbe Geste nur einmal (wie das alte Protokoll: Regler zusammengefasst, Noten zusammengefasst); copies, never the input
+function wegeMoMerge(list) {
+  const L = [];
+  for (const x of list) { const l = L[L.length - 1];
+    if (l && x.k === 'regler' && l.k === 'regler' && l.t === x.t && l.p === x.p) { l.b = x.b; l.v = l.v.concat(x.v).slice(-12); continue; }
+    if (l && x.k === 'noten' && (l.k === 'noten' || l.k === 'clip') && l.t === x.t && l.s === x.s) { l.n = x.n; continue; }
+    if (l && x.k === 'klang' && l.k === 'klang' && l.t === x.t) { l.x = x.x; continue; }
+    L.push(Object.assign({}, x)); }
+  return L;
+}
 async function wegeMoBuild(force) {
   if (!wegeMoHist() || !HIST.pid) return WEGE.mo;
   if (WEGE.moP) return WEGE.moP;
   const key = HIST.pid + '|' + (histInfo().events | 0);
   if (!force && WEGE.mo && WEGE.moKey === key) return WEGE.mo;
   WEGE.moP = (async () => {
-    const T0 = performance.now(), out = [];
+    const T0 = performance.now(), pid = HIST.pid, parts = []; let tY = T0, all = true, nRead = 0;
+    const pause = async () => { if (performance.now() - tY > 8) { await new Promise(r => setTimeout(r, 0)); tY = performance.now(); } };
+    const C = WEGE.moC && WEGE.moC.pid === pid ? WEGE.moC : {pid, seg: new Map()}, keep = new Map();
     try {
       histDrainNow(); histSweep(); await histFlush();
-      const pget = (o, seg) => { for (const k of seg) { if (o == null || typeof o !== 'object') return undefined; o = o[k]; } return o; };
-      const pkey = seg => (seg[3] === 'p' ? (seg[4] === 'wt' || seg[4] === 'fm2' ? seg[4] + '.' + seg[5] : seg[4]) : seg[3] === 'fx' ? (seg[4] === 'chorus' ? 'fx.chorus.' + seg[5] : 'fx.' + seg[4]) : null);
-      let st = null;
-      for (const {r, evs} of await histItems(HIST.pid)) {
-        let ki = 0;
-        for (let i = 0; i <= evs.length; i++) {
-          while (ki < r.kf.length && r.kf[ki].at <= i) { try { const K = JSON.parse(await histUnzip(r.kf[ki].b)); st = K.p || null; } catch (er) { st = null; } ki++; }
-          if (i >= evs.length) break;
-          const e = evs[i]; if (!e || !e.d || !e.d.length || !st || e.u === 'ctx' || /^Rückgängig|^Wiederholt/.test(String(e.l || ''))) { if (e && e.d && st) try { histApply(st, e.d); } catch (er) { st = null; } continue; }
-          const segs = e.d.map(o => o.path.split('/').slice(1).map(s => s.replace(/~1/g, '/').replace(/~0/g, '~')));
-          const pre = new Map(), clips = new Map(); let marks0 = null, parts0 = null;
-          segs.forEach((sg, j) => {
-            if (sg[0] === 'tracks' && sg[2] === 'sound' && sg.length >= 5) { const k = pkey(sg); if (k && !pre.has(k + '@' + sg[1])) pre.set(k + '@' + sg[1], {t: +sg[1], p: k, a: pget(st, sg)}); }
-            if (sg[0] === 'tracks' && sg[2] === 'clips' && sg[3] != null) { const ck = sg[1] + ':' + sg[3]; if (!clips.has(ck)) { const c = pget(st, sg.slice(0, 4)); clips.set(ck, c && Array.isArray(c.notes) ? c.notes.length : -1); } }
-            if (sg[0] === 'song' && !marks0) marks0 = new Set(((st.song && st.song.marks) || []).map(m => m.id));
-            if (sg[0] === 'parts' && !parts0) parts0 = (st.parts || []).map(Boolean);
-          });
-          const name0 = new Map(); for (const sg of segs) if (sg[0] === 'tracks' && sg[2] === 'sound' && sg.length <= 4) { const tr = pget(st, ['tracks', sg[1], 'sound']); name0.set(+sg[1], tr ? tr.name : null); }
-          try { histApply(st, e.d); } catch (er) { st = null; continue; }
-          for (const [t, n0] of name0) { const s = pget(st, ['tracks', t, 'sound']); if (s && s.name && s.name !== n0) out.push({k: 'klang', t, x: String(s.name).slice(0, 40)}); }
-          for (const q of pre.values()) { const b = pget(st, ['tracks', q.t, 'sound'].concat(q.p.startsWith('fx.chorus.') ? ['fx', 'chorus', q.p.slice(10)] : q.p.startsWith('fx.') ? ['fx', q.p.slice(3)] : q.p.includes('.') ? ['p'].concat(q.p.split('.')) : ['p', q.p]));
-            if (typeof b !== 'number' || b === q.a) continue; out.push({k: 'regler', t: q.t, p: q.p, a: typeof q.a === 'number' ? q.a : null, b, v: Array.isArray(e.c) && e.c.length ? e.c.slice(-12) : [b], d: 0}); }
-          for (const [ck, n0] of clips) { const [t, s] = ck.split(':').map(Number), c = pget(st, ['tracks', t, 'clips', s]); if (!c || !Array.isArray(c.notes)) continue;
-            if (n0 < 0) out.push({k: 'clip', t, s, n: c.notes.length}); else if (c.notes.length !== n0) out.push({k: 'noten', t, s, n: c.notes.length, n0}); }
-          if (marks0 && st.song) for (const m of st.song.marks || []) if (!marks0.has(m.id)) out.push({k: 'teil', id: m.id});
-          if (parts0) (st.parts || []).forEach((q, k) => { if (q && !parts0[k]) out.push({k: 'teil', w: 'part', s: k, x: String(q.name || 'Teil ' + (k + 1)).slice(0, 30)}); });
+      const db = await histDb(), meta = await histMetaGet(pid), ns = Object.keys(meta.chunks).map(Number).sort((a, b) => a - b);
+      const rec = new Map(), evc = new Map();
+      const R_ = async n => { if (!rec.has(n)) rec.set(n, (await histRq(db.transaction('c', 'readonly').objectStore('c').get(histKey(pid, n)))) || null); return rec.get(n); };
+      const EV = async n => { if (!evc.has(n)) { const r = await R_(n); evc.set(n, r && r.ev != null ? JSON.parse(await histUnzip(r.ev)) : []); await pause(); } return evc.get(n); };
+      let tail = [], have = 0;                                       // tail: the runs after the keyframe looked at (up to the next one)
+      for (let j = ns.length - 1; j >= 0 && all; j--) {
+        const n = ns[j], r = await R_(n); if (!r) { tail = []; continue; }
+        const kf = Array.isArray(r.kf) ? r.kf : []; let end = r.ne | 0;
+        for (let ki = kf.length - 1; ki >= 0; ki--) {
+          const runs = [{n, a: kf[ki].at | 0, b: end}].concat(tail); tail = []; end = kf[ki].at | 0;
+          const sk = runs.map(x => x.n + ':' + x.a + '-' + x.b + ':' + ((rec.get(x.n) || {}).thin | 0)).join(',') + '@' + ki;
+          let sg = C.seg.get(sk);
+          if (!sg) {
+            const raw = []; sg = {t0: null};
+            let st = null; try { st = JSON.parse(await histUnzip(kf[ki].b)).p || null; } catch (er) { st = null; }
+            await pause();
+            for (const x of runs) {
+              const evs = await EV(x.n), rx = rec.get(x.n);
+              for (let i = x.a; i < x.b && st; i++) { const e = evs[i]; if (sg.t0 == null && e && isNum(e.t)) sg.t0 = (rx.s0 || 0) + e.t; st = wegeMoStep(st, e, raw); if ((i & 7) === 7) await pause(); }
+            }
+            sg.out = wegeMoMerge(raw); nRead++;
+          }
+          keep.set(sk, sg); parts.unshift(sg); have += sg.out.length;
+          if (have - parts.length >= VD3_MAX) { all = false; break; }   // genug (über Abschnittsgrenzen fasst das Zusammenfassen höchstens 1 je Grenze)
         }
+        if (all) tail = (end > 0 ? [{n, a: 0, b: end}] : []).concat(tail);   // the gestures before this chunk's first keyframe continue the one before
       }
     } catch (er) { logErr(er); }
-    // nah beieinander: dieselbe Geste nur einmal (wie das alte Protokoll: Regler zusammengefasst, Noten zusammengefasst)
-    const L = [];
-    for (const x of out) { const l = L[L.length - 1];
-      if (l && x.k === 'regler' && l.k === 'regler' && l.t === x.t && l.p === x.p) { l.b = x.b; l.v = l.v.concat(x.v).slice(-12); continue; }
-      if (l && x.k === 'noten' && (l.k === 'noten' || l.k === 'clip') && l.t === x.t && l.s === x.s) { l.n = x.n; continue; }
-      if (l && x.k === 'klang' && l.k === 'klang' && l.t === x.t) { l.x = x.x; continue; }
-      L.push(x); }
-    WEGE.mo = L.slice(-VD3_MAX); WEGE.moKey = key; WEGE.moAt = performance.now() - T0;
+    C.seg = keep; WEGE.moC = C;
+    WEGE.mo = wegeMoMerge([].concat(...parts.map(q => q.out))).slice(-VD3_MAX); WEGE.moKey = key; WEGE.moAll = all;
+    WEGE.moT0 = parts.length && parts[0].t0 != null ? parts[0].t0 : null; WEGE.moAt = performance.now() - T0; WEGE.moN = nRead;
     return WEGE.mo;
   })();
   try { return await WEGE.moP; } finally { WEGE.moP = null; }
 }
-// vd3Ev: the recorder's events if there are any; else the old protocol (a project with S.vd3mo, the test API)
-function wegeMoEv() { return wegeMoHist() && WEGE.mo && WEGE.mo.length ? WEGE.mo : null; }
+// vd3Ev: the recorder's events if there are any (+ before them the old protocol, Prüfung 7); else the old protocol (a project with
+// S.vd3mo, the test API)
+function wegeMoEv() {
+  const M = wegeMoHist() && WEGE.mo && WEGE.mo.length ? WEGE.mo : null; if (!M || !WEGE.moAll || M.length >= VD3_MAX) return M;
+  const L = vd3Load(), t0 = WEGE.moT0; if (!L || !L.length) return M;
+  const old = L.filter(e => !(t0 != null && isNum(e.ms) && e.ms >= t0));
+  return old.length ? old.slice(-(VD3_MAX - M.length)).concat(M) : M;
+}
 // Video-Blatt geöffnet: die Aufzeichnung lesen, dann Zeile „Extras“ und Standbild auffrischen
 function wegeMoSoon() {
   if (!wegeMoHist()) return;
@@ -82853,6 +82896,16 @@ function wegeMarkOpen(tab) {
   if (tab) wegeMsTab(p, tab);
   return true;
 }
+// Guide „Clip-Versionen“ (Prüfung 11): das Clip-Blatt der aktuellen Spur – eines Clips mit Versionen, wenn es einen gibt
+function wegeVersOpen() {
+  ui1Home();
+  const song = S.song, ord = [R.selT].concat(trackOrder()).filter((t, i, a) => t >= 0 && a.indexOf(t) === i && S.tracks[t]);
+  let T = -1, Sl = -1;
+  if (song && song.own) for (const t of ord) { const s = S.tracks[t].clips.findIndex((c, k) => c && sx9List(song, t, k).length); if (s >= 0) { T = t; Sl = s; break; } }
+  if (T < 0) { T = ui1ClipT(false); if (T < 0) T = ui1ClipT(true); Sl = T >= 0 ? ui1ClipOf(T) : -1; }
+  if (T < 0 || Sl < 0) { toast('Erst einen Clip aufnehmen – dann den Clip halten'); return false; }
+  setSongView(false); selectSlot(T, Sl); openClipSheet(T, Sl); return true;
+}
 function wegeGuide(L) {
   if (!Array.isArray(L) || L._wege) return L; L._wege = true;
   const G = ui1G, by = id => L.find(x => x.id === id), set = (id, o) => { const E = by(id); if (E) Object.assign(E, o); };
@@ -82861,7 +82914,7 @@ function wegeGuide(L) {
   set('clipsheet', {d: 'Bearbeiten, Quantisieren, Clip kopieren, Versionen im Song, Small/Full, Im Video, Werkzeugkasten.'});
   set('sf', {w: 'Clip-Blatt (Drum-Clip) · Marken-Blatt › Klang & Groove', d: 'Small = leichte Fassung (deine Small-Drums, sonst ausgedünnt), Full = volle; je Songteil umschaltbar.',
     go: songOr(() => wegeMarkOpen('k'), G.clip(true)), q: () => (UI.pop && UI.pop.name === 'mark' ? UI.pop.el.querySelector('.wg-sf') : [...EL.clipSheet.querySelectorAll('button')].find(b => /^Small$/.test(b.textContent.trim())))});
-  set('ue', {n: 'Fills & Breaks (⇥ FILLS)', w: 'Song-Ansicht › ⇥ FILLS'});
+  set('ue', {n: 'Fills & Breaks (⇥ FILLS)', w: 'Song-Ansicht › ⇥ FILLS', s: ((by('ue') || {}).s || '') + ' uebergaenge'});   // Prüfung 6: „Übergänge“ (Reiter) findet ihn
   set('remix', {w: 'Song-Leiste › ⇋ REMIX · Marken-Blatt › Klang & Groove › Remix …'});
   set('harm', {d: 'Auf eine Stufe, Lauf doppeln, Gegenstimme, Akkord-Ideen.'});
   set('copy', {w: 'Noten-Editor › Noten kopieren', q: 'Noten kopieren'});
@@ -82892,7 +82945,7 @@ function wegeGuide(L) {
     E('autosave', 'Automatische Sicherungen', '↶ halten › VERLAUF · Menü › Projekt', 'Alle 10 Minuten Arbeit ein Stand zum Zurückholen.', 'automatische sicherungen aeltere versionen backup zurueck wiederherstellen', () => { ui1Home(); sx14Open(EL.bUndo); return !!(UI.pop && UI.pop.name === 'sx14'); }, () => (UI.pop && UI.pop.el ? UI.pop.el.querySelector('.wg-ah') : null)),
     E('verlauf', 'Verlauf (Schritte zurück)', '↶ halten', 'Jeder Schritt mit Uhrzeit; antippen springt dorthin. ＋ Schnappschuss merkt einen Stand mit Namen.', 'verlauf schritte rueckgaengig undo schnappschuss', () => { ui1Home(); sx14Open(EL.bUndo); return !!(UI.pop && UI.pop.name === 'sx14'); }, () => (UI.pop && UI.pop.el ? UI.pop.el.querySelector('.sx14-l') : null)),
     E('aufz', 'Aufzeichnung (für Making-of)', 'Menü › Projekt', 'Merkt jede Geste mit Zeit – daraus entsteht der Making-of-Vorlauf im Video.', 'aufzeichnung making of rekorder gesten', G.menu, 'Aufzeichnung'),
-    E('vers', 'Clip-Versionen (v1, v2 …)', 'Clip-Blatt › Versionen im Song · Zelle im Song halten', 'Ein Clip in mehreren Fassungen, je Song-Stelle wählbar – das Original bleibt v1.', 'version versionen v2 variante clip', () => { ui1Home(); setSongView(true); return true; }, () => SV.wrap),
+    E('vers', 'Clip-Versionen (v1, v2 …)', 'Clip-Blatt › Versionen im Song · Zelle im Song halten', 'Ein Clip in mehreren Fassungen, je Song-Stelle wählbar – das Original bleibt v1.', 'version versionen v2 variante clip', wegeVersOpen, () => (EL.clipSheet.classList.contains('open') ? EL.clipSheet.querySelector('.wg-cv') || [...EL.clipSheet.querySelectorAll('h3, h4, .lbl')].find(ui1Shown) || null : null)),
     E('trsheet', 'Spur-Blatt', '■ der Spurzeile halten (Matrix)', '＋ Spur, ＋ STIMME-Spur, Effekte, Mit GarageBand aufnehmen, Spur entfernen.', 'spur blatt stimme spur hinzufuegen effekte garageband entfernen', () => { ui1Home(); setSongView(false); const t = R.selT >= 0 ? R.selT : 0; openTrackSheet(t, document.querySelector('.stp') || EL.top); return !!(UI.pop && UI.pop.name === 'track'); }, () => (UI.pop && UI.pop.el ? UI.pop.el.querySelector('h4') : null)),
     E('gfx', 'Gesangs-Effekte', 'Takes-Blatt › Effekte … · Spur-Blatt › Effekte', 'Gesang Synthpop, Auto und mehr – nur für die STIMME-Spur.', 'gesang effekte vocal fx stimme hall', () => { ui1Home(); if (stimmeT() < 0) { toast('Erst eine STIMME-Spur: ■ einer Spur halten › ＋ STIMME-Spur'); return true; } return g4Sheet(null) !== false; }, () => (UI.pop && UI.pop.el ? UI.pop.el : EL.top)),
     E('fade', 'Ausblenden am Ende', 'Tempo-Blatt (BPM antippen) · Marken-Blatt (letzter Teil) · Video-Blatt', 'Der Song wird über die letzten 2, 4 oder 8 Takte leiser – auch im Export.', 'ausblenden fade out ende leiser', () => { ui1Home(); popBpm(); return true; }, () => (UI.pop && UI.pop.el ? UI.pop.el.querySelector('.sx1-r') || UI.pop.el.querySelector('.bpmbig') : null)),
