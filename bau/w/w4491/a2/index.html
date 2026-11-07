@@ -80090,20 +80090,22 @@ function kl1Norm(c, out, kind) {
   }
   notes.sort((x, y) => x.t - y.t);
   out.lw = {a, b: +(a + B).toFixed(4), len, notes};
+  a2Norm(w, out.lw, L, kind);                                          // A2: der Bereich wie gespielt (LAUF)
 }
-function kl1Clean(w) { return {a: w.a, b: w.b, len: w.len, notes: w.notes.map(cleanNote)}; }
+function kl1Clean(w) { const o = {a: w.a, b: w.b, len: w.len, notes: w.notes.map(cleanNote)}; if (w.sn) { o.sn = w.sn.map(cleanNote); o.sg = w.sg; } return o; }   // A2: + sn, sg
 function kl1Sig(ns) { let h = ns.length; for (let k = 0; k < ns.length; k++) { const n = ns[k]; h = (h * 31 + n.n * 977 + Math.round(n.t * 960) * 7 + Math.round(n.d * 96) + Math.round(n.v * 127)) % 2147483647; } return h; }
 // the whole content as one clip (Klammern offen): an own key object and from {t, s} like an own clip (Eine Skala, Locks); no curves
 // (they belong to the window) and no D1 lanes (their lengths count in window steps). Cached until the clip changes
 function kl1Whole(c, t, s) {
   const w = c && c.lw; if (!w || c.ts) return c || null;
-  const m = KL1C || (KL1C = new WeakMap()), h = m.get(c), sg = kl1Sig(c.notes) + ':' + kl1Sig(w.notes);
-  if (h && h.w === w && h.a === w.a && h.len === w.len && h.cl === c.len && h.key === c.key && h.st === c.st && h.sg === sg && h.t === t && h.s === s) return h.o;
+  const m = KL1C || (KL1C = new WeakMap()), h = m.get(c), sg = kl1Sig(c.notes) + ':' + kl1Sig(w.notes), lp = lf1Plan(c);   // A2: lp = LAUF des Fensters (Richtung, Schritt-Effekte)
+  if (h && h.w === w && h.a === w.a && h.len === w.len && h.cl === c.len && h.key === c.key && h.st === c.st && h.sg === sg && h.lp === lp && h.t === t && h.s === s) return h.o;
   const B = clipB(c), notes = w.notes.map(n => Object.assign({}, n));
   for (const n of c.notes) { if (n.t >= B - 1e-9) continue; const x = Object.assign({}, n, {t: +(n.t + w.a).toFixed(6)}); if (n.o != null) x.o = +(n.o + w.a).toFixed(4); notes.push(x); }
   notes.sort((x, y) => x.t - y.t);
   const o = Object.assign({}, c, {len: kl1LenOf(c) / 4, notes, key: Object.assign({}, c.key), from: {t, s}}); delete o.lw; delete o.cv; delete o.lanes;
-  m.set(c, {w, a: w.a, len: w.len, cl: c.len, key: c.key, st: c.st, sg, t, s, o});
+  a2Whole(c, o);                                                       // A2: mit LAUF – die Noten wie gespielt, ohne LAUF darauf
+  m.set(c, {w, a: w.a, len: w.len, cl: c.len, key: c.key, st: c.st, sg, lp, t, s, o});
   return o;
 }
 // ownPlaying: the track plays its scene clip „ganz“ (null: the clip has no whole content → it plays as itself)
@@ -80174,7 +80176,8 @@ function kl1Kon(song, a, e, tp) {
     }
     if (!ok) continue;
     const sig = (l, off) => l.map(n => kl1Key(n, off)).sort().join('|');
-    if (sig(F, 0) === sig(P, 0)) continue;                              // the plain loop: nothing to extend (as before)
+    const snd = a2Sound(song, t, a, e, A);                              // A2: LAUF – so klang der Bereich (null: kein LAUF darin)
+    if (sig(F, 0) === sig(P, 0) && !a2Diff(snd, c, scs, L, A, RB, sig)) continue;   // the plain loop: nothing to extend (as before)
     // the window: the first whole Durchlauf in the range that sounds exactly like the clip; else right behind the range
     const win = sig(c.notes.filter(n => n.t < L - 1e-9), 0);
     let w0 = -1;
@@ -80185,6 +80188,7 @@ function kl1Kon(song, a, e, tp) {
     if (Lt > 256 + 1e-9 || Math.abs(Lt / 4 - Math.round(Lt / 4)) > 1e-9) continue;
     out.items.push({kind: 'clip', track: t, scene: s, before: cleanClip(c), label: 'Clip erweitert'});
     c.lw = {a: w0, b: kl1K4(w0 + L), len: Math.round(Lt / 4), notes: F.filter(n => !(n.t >= w0 - 1e-9 && n.t < w0 + L - 1e-9)).sort((x, y) => x.t - y.t)};
+    if (snd) a2Keep(c, snd, RB, Lt);                                    // A2
     out.kl.push({t, s, a: w0, b: kl1K4(w0 + L)});
     tp.lanes[t] = [{bar: 0, slot: s, own: '~'}];                        // its own clips and restarts are in the content now
   }
@@ -80195,6 +80199,85 @@ function kl1Kon(song, a, e, tp) {
   }
   return out;
 }
+/* A2 ---------- LAUF im ganzen Inhalt (Befund a2). Richtung, Startschritt, Schrittlänge, Chance, Zufall und die Schritt-Effekte (LF1)
+   hängen am Durchlauf eines Clips und an seinem Schritt-Zähler ab Clip-Start (lf1Win). Der ganze Inhalt eines erweiterten Clips
+   („ganz“: der konsolidierte Teil, der Teil im Song eingefügt, das Video) ist aber EIN langer Clip – mit dem LAUF darauf lief
+   „rückwärts“ über alle Takte, die Zusatznote eines eigenen Clips kam im falschen Takt (der alte Weg ohne Erweiterung ließ sie
+   ganz weg: ein Teil spielt keine eigenen Clips). konDo hält darum fest, wie der Bereich klang: lw.sn = seine Noten wie gespielt
+   (Takt für Takt vom Ursprung, der dort wirklich spielt, wie scheduleTrack), lw.sg = Fingerabdruck des ganzen Inhalts samt LAUF.
+   kl1Whole spielt dann diese Noten ohne LAUF darauf – genau wie im Song (Zufall/Chance: derselbe Startwert und Schritt-Zähler).
+   Ändert sich der Inhalt danach (Noten, LAUF, ×2 …), klingt er Durchlauf für Durchlauf mit dem LAUF des Clips (a2Pass). Ein
+   Fenster ◀ ▶ ändert am Klang nichts. Klingt ein Bereich nur durch den Schritt-Zähler anders als die bloße Schleife ab dem
+   Teil-Anfang (Zufall/Chance/hin-her mitten im Song), wird ebenfalls erweitert. Ohne LAUF: nichts davon (Daten wie bisher) ---------- */
+function a2Has(c, ns) { if (c && c.lf) return true; for (const n of ns) if (n.off || n.rt || n.tp || n.pb != null) return true; return false; }
+// the range [a, e) of lane t as it sounds (time from song beat A), bar by bar; null = no LAUF in it (then nothing changes)
+function a2Sound(song, t, a, e, A) {
+  const lane = song.lanes[t], out = []; let pc = null, any = false;
+  for (let b = 0; b < e; b++) {
+    const ob = laneOriginAt(lane, b);
+    if (ob.slot < 0 || !laneClipOk(song, t, ob)) { pc = null; continue; }
+    const src = ob.own && song.own && song.own[ob.own] ? song.own[ob.own] : S.tracks[t].clips[ob.slot], L = clipB(src), ow = ob.own || null;
+    let cs = ob.cs;
+    if (pc && pc.slot === ob.slot && pc.own === ow) { const d = (((cs - pc.cs) % L) + L) % L; if (d < 1e-6 || L - d < 1e-6) cs = pc.cs; }   // laneSwitch: derselbe Clip in Phase läuft weiter (sein Schritt-Zähler auch)
+    pc = {slot: ob.slot, own: ow, cs};
+    if (b < a) continue;
+    const ev = lf1Win(src, cs, barBeat(b), barBeat(b + 1));
+    if (!ev) { kl1Bar(out, src, cs, L, b, A); continue; }
+    any = true;
+    for (const x of ev) { const y = cleanNote(x); y.t = +(cs + x.t - A).toFixed(6); out.push(y); }
+  }
+  for (const y of out) delete y.o;
+  return any ? out.sort((x, y) => x.t - y.t || x.n - y.n) : null;
+}
+// the part without extension plays the scene clip from its Durchlauf at the range start (step counter 0 there): sounds the range different?
+function a2Diff(snd, c, scs, L, A, RB, sig) {
+  if (!snd) return false;
+  const ps = A - ((((A - scs) % L) + L) % L), ev = lf1Win(c, ps, A, A + RB); if (!ev) return true;
+  return sig(snd, 0) !== sig(ev, A - ps);
+}
+// konDo: the sound of the range (+ the window behind it, as the clip starts) and the fingerprint of the whole content it belongs to
+function a2Keep(c, snd, RB, Lt) {
+  if (Lt > RB + 1e-9) { const P = lf1Plan(c), B = clipB(c); for (const x of P ? lf1Ev(P, 0, B) : c.notes.filter(n => n.t < B - 1e-9)) { const y = cleanNote(x); y.t = +(RB + x.t).toFixed(6); delete y.o; snd.push(y); } }
+  c.lw.sn = snd.sort((x, y) => x.t - y.t || x.n - y.n); c.lw.sg = a2Sig(c);
+}
+// the whole content (window + outside) with its LAUF, as stored data (normalised like kl1Norm: Laden ändert ihn nicht)
+function a2Sig(c) {
+  const s = kl1Full(c).map(n => { const x = normNoteExtras(n, {t: kl1K4(n.t), d: kl1K4(Math.min(n.d, 64)), n: clamp(Math.round(n.n), 0, 127), v: Math.round(clamp(n.v, .01, 1) * 1e3) / 1e3}, 'synth'); delete x.o; return JSON.stringify(x); }).sort().join('|') + '#' + JSON.stringify(lf1NormLf(c.lf));
+  let h1 = 0x811c9dc5, h2 = 0x9e3779b9;
+  for (let i = 0; i < s.length; i++) { const k = s.charCodeAt(i); h1 = Math.imul(h1 ^ k, 16777619); h2 = Math.imul(h2 ^ k, 2246822507); }
+  return (h1 >>> 0).toString(36) + '.' + (h2 >>> 0).toString(36) + '.' + s.length.toString(36);
+}
+// kl1Whole: o = the whole content as one clip; with LAUF its notes become the notes as played (and o has no LAUF any more)
+function a2Whole(c, o) {
+  if (!a2Has(c, o.notes)) return;
+  const w = c.lw;
+  o.notes = Array.isArray(w.sn) && w.sg === a2Sig(c) ? w.sn.map(n => Object.assign({}, n)) : a2Pass(c, o.notes, o.len * 4);
+  delete o.lf;
+}
+// the whole content Durchlauf for Durchlauf (window length, in phase with the window) with the clip's LAUF; the step counter runs on
+function a2Pass(c, ns, Lw) {
+  const B = clipB(c), ps0 = c.lw.a - Math.ceil(c.lw.a / B - 1e-9) * B, out = [];
+  for (let k = 0, ps = ps0; ps < Lw - 1e-9; k++, ps = ps0 + k * B) {
+    const src = ns.filter(n => n.t >= ps - 1e-9 && n.t < ps + B - 1e-9).map(n => Object.assign({}, n, {t: +(n.t - ps).toFixed(6)}));
+    if (!src.length) continue;
+    for (const x of lf1Ev(lf1Build(src, B, c.lf || null), k * B, (k + 1) * B)) {
+      const tt = x.t - k * B + ps; if (tt < -1e-9 || tt >= Lw - 1e-9) continue;
+      const y = cleanNote(x); y.t = +Math.max(0, tt).toFixed(6); delete y.o; out.push(y);
+    }
+  }
+  return out.sort((x, y) => x.t - y.t || x.n - y.n);
+}
+// kl1Norm (Laden): lw.sn / lw.sg bleiben (Noten wie lw.notes geprüft)
+function a2Norm(w, lw, L, kind) {
+  if (!Array.isArray(w.sn) || typeof w.sg !== 'string' || kind === 'drum') return;
+  const sn = [];
+  for (const n of w.sn.slice(0, 16384)) {
+    if (!n || !isNum(n.t) || !isNum(n.d) || !isNum(n.n) || !isNum(n.v) || n.t < 0 || n.t >= L || n.d <= 0) continue;
+    const x = normNoteExtras(n, {t: n.t, d: Math.min(n.d, 64), n: clamp(Math.round(n.n), 0, 127), v: Math.round(clamp(n.v, .01, 1) * 1e3) / 1e3}, kind); delete x.o; sn.push(x);
+  }
+  lw.sn = sn.sort((x, y) => x.t - y.t || x.n - y.n); lw.sg = w.sg.slice(0, 40);
+}
+/* /A2 */
 // konKonsNorm: the windows a Ursprung remembers
 function kl1KonNorm(list) { return (Array.isArray(list) ? list : []).filter(x => x && isNum(x.t) && isNum(x.s) && isNum(x.a) && isNum(x.b) && x.b > x.a && x.a >= 0).slice(0, 16).map(x => ({t: Math.round(x.t), s: Math.round(x.s), a: kl1K4(x.a), b: kl1K4(x.b)})); }
 // the whole content's notes (time from its start; the window's notes at +a)
@@ -80208,7 +80291,9 @@ function kl1Put(c, F, a, nl) {
   const NB = nl * 4, len = Math.max(c.lw.len, Math.ceil((a + NB) / 4 - 1e-9)), inW = n => n.t >= a - 1e-9 && n.t < a + NB - 1e-9;
   c.notes = F.filter(inW).map(n => { const x = Object.assign({}, n, {t: +(n.t - a).toFixed(6)}); if (n.o != null) { const q = n.o - a; if (q >= 0 && q < NB) x.o = +q.toFixed(4); else delete x.o; } return x; });
   c.len = nl;
+  const w0 = c.lw;                                                     // A2: der ganze Inhalt bleibt – und wie er klang
   c.lw = {a: kl1K4(a), b: kl1K4(a + NB), len, notes: F.filter(n => !inW(n))};
+  if (w0 && w0.sn) { c.lw.sn = w0.sn; c.lw.sg = w0.sg; }
 }
 // clipLength: Länge (½ −1 +1 ×2) is the window's length inside the whole content (×2 behind the content end: the window doubled)
 function kl1Len(c, nl, f) {
