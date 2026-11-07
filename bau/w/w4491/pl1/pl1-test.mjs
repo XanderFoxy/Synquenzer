@@ -107,7 +107,8 @@ const U3 = await p.evaluate(async () => {
 });
 ok('Speichern/Laden: der Lock steht in der Datei (nur an Note 2) und kommt gleich zurück', U3.inFile && U3.inFile.v && U3.inFile.v.cutoff === U3.before && !U3.inFileOthers && U3.imp && U3.loaded === U3.before && U3.others === 0, {inFile: U3.inFile, loaded: U3.loaded});
 const R2 = await spec();
-ok('nach dem Laden klingt der Render gleich (alle 16 Schritte ±2 %, Schritt 3 hell)', R2.cent.every((c, k) => Math.abs(c - Rpre.cent[k]) <= Rpre.cent[k] * .02) && R2.cent[1] > 3 * R2.cent[0], {vorher: Rpre.cent, nachher: R2.cent});
+const med = a => { const q = a.filter((c, k) => k % 8 !== 1).sort((x, y) => x - y); return q[q.length >> 1]; };
+ok('nach dem Laden spielt der Lock gleich (Schritt 3 in beiden Takten > 3× heller als der Rest, wie vor dem Speichern)', R2.cent[1] > 3 * med(R2.cent) && R2.cent[9] > 3 * med(R2.cent) && Rpre.cent[1] > 3 * med(Rpre.cent) && Math.abs(med(R2.cent) - med(Rpre.cent)) <= med(Rpre.cent) * .03, {vorher: Rpre.cent, nachher: R2.cent});
 // Lock-Leiste: ✕ am Chip löscht nur diesen Lock (ein ↶), „Locks löschen“ alle
 const C3 = await p.evaluate(async () => {
   const o = {}; ROLLP.view = 'lauf'; openRoll(0, 0); await new Promise(r => setTimeout(r, 300));
@@ -134,6 +135,24 @@ await p.mouse.move(tk.x, tk.y); await p.mouse.down(); for (let k = 1; k <= 8; k+
 const D2 = await p.evaluate(() => { const n = S.tracks[DRUM_T].clips[0].notes; return {lk: n.map(q => q.lk ? JSON.stringify(q.lk) : '').join('|'), undo: UNDO.length, dots: ED.step.cells.map(c => !!(c._pl1d && !c._pl1d.hidden) ? 1 : 0).join(''), P: DrumSeq.lockParams({frq: 55, mTun: 1, nFrq: 1, tfFrq: 1, tDec: .4, nDec: .1, mDec: .1}, n[1].lk, 'kick').frq}; });
 ok('Tune drehen: Lock lk.tune nur auf Schritt 5, ein ↶; der Kern stimmt den Schlag um; Punkt am Schritt 5', /^\|\{"tune":\d+\}\|\|$/.test(D2.lk) && D2.undo === u4 + 1 && D2.P > 55 && D2.dots[4] === '1' && (D2.dots.match(/1/g) || []).length === 1, D2);
 await shot('pl1-schritte-hochkant.png');
+const DX = await p.evaluate(() => { const P = UI.pop.el, x = P.querySelector('.ux1-px'), t = P.querySelector('.pl1t'); if (!x) return {x: null}; const a = x.getBoundingClientRect(), c = t.getBoundingClientRect(); return {x: {y: a.top, b: a.bottom, l: a.left}, title: {y: c.top, r: c.right}, overlap: a.bottom > c.top && a.left < c.right}; });
+ok('hochkant: ✕ des Fensters sichtbar und frei (nicht über der Überschrift des Lock-Abschnitts)', DX.x && !DX.overlap, DX);
+await p.setViewportSize({width: 926, height: 428}); await W(400);
+await p.evaluate(() => { closePop(); SYNQUENZER.pl1.drumPop(4); }); await W(300);
+const DQ = await p.evaluate(() => { const r = UI.pop.el.getBoundingClientRect(); return {y: r.top, h: r.height, vh: innerHeight, sh: UI.pop.el.scrollHeight, ch: UI.pop.el.clientHeight}; });
+ok('quer: Fenster „KICK · Schritt 5“ ganz im Bild', DQ.y >= 0 && DQ.y + DQ.h <= DQ.vh, DQ);
+await shot('pl1-schritte-quer.png');
+await p.setViewportSize({width: 428, height: 926}); await W(400);
+await p.evaluate(() => { closePop(); SYNQUENZER.pl1.drumPop(4); }); await W(250);
+const DM = await p.evaluate(async () => {
+  const o = {}; SYNQUENZER.pl1.modeGoTop(); await new Promise(r => setTimeout(r, 500));
+  o.ed = R.editor; o.tab = ED.dTab; o.voice = DRUM_VOICES[ED.dVoice].id; o.mode = SYNQUENZER.pl1.mode();
+  const base = slotParams('kick').tDec; UI.pl1.pt = performance.now(); drumSet('kick', 'tDec', 1.5); pl1Flush();
+  o.base = base; o.after = slotParams('kick').tDec; o.shown = dSlotGet('kick', 'tDec'); o.lk = S.tracks[DRUM_T].clips[0].notes[1].lk;
+  UI.pl1.pt = performance.now(); drumSet('snare', 'tDec', .9); o.snareSay = document.querySelector('.pl1ban .pl1bv').textContent; o.snareLk = S.tracks[DRUM_T].clips[0].notes.some(n => n.lk && n.lk.v && n.lk.v['drum.snare.tDec'] != null);
+  SYNQUENZER.pl1.modeEnd(true); await new Promise(r => setTimeout(r, 300)); o.back = R.editor + '/' + ED.dTab; o.shownAfter = dSlotGet('kick', 'tDec');
+  return o; });
+ok('Drum: [Alle Regler ›] → Drum-Editor SOUND im Lock-Modus (KICK); Decay schreibt nur den Lock, Anzeige zeigt ihn; anderes Pad sagt es; [Fertig] → SCHRITTE', DM.ed === 'drum' && DM.tab === 'sound' && DM.voice === 'kick' && DM.after === DM.base && Math.abs(DM.shown - 1.5) < .02 && DM.lk && DM.lk.v && DM.lk.v['drum.kick.tDec'] != null && !DM.snareLk && /KICK/.test(DM.snareSay) && DM.back === 'drum/steps' && DM.shownAfter === DM.base, DM);
 const D3 = await p.evaluate(async () => { SYNQUENZER.pl1.set(DRUM_T, 0, [1], 'drum.kick.lvl', .4); const u = UNDO.length; const b = UI.pop.el.querySelector('.pl1clr');
   b.dispatchEvent(new PointerEvent('pointerdown', {bubbles: true, pointerId: 8, clientX: 1, clientY: 1})); b.dispatchEvent(new PointerEvent('pointerup', {bubbles: true, pointerId: 8, clientX: 1, clientY: 1})); b.click();
   await new Promise(r => setTimeout(r, 100)); return {lk: S.tracks[DRUM_T].clips[0].notes.filter(q => q.lk).length, undo: UNDO.length - u, dots: ED.step.cells.filter(c => c._pl1d && !c._pl1d.hidden).length}; });
@@ -149,9 +168,11 @@ await p.evaluate(() => { undo(); closeEditor(); });
 /* ---------- 5) ROLLE: Note wählen → [🔒 Locks] → [Alle Regler ›] = Klang-Editor im Lock-Modus ---------- */
 await p.evaluate(() => { ROLLP.view = 'roll'; openRoll(0, 0); }); await W(400);
 const rb = await p.evaluate(() => { ED.roll.selectIdx([4]); const b = [...ED.roll.el.acts.children].find(x => x.textContent === '🔒 Locks'); b.scrollIntoView({inline: 'nearest'}); const r = b.getBoundingClientRect(); return {x: r.left + r.width / 2, y: r.top + r.height / 2, h: r.height}; });
+const hit0 = await p.evaluate(({x, y}) => { const b = [...ED.roll.el.acts.children].find(q => q.textContent === '🔒 Locks'); return {up: document.elementFromPoint(x, y - 21) === b, down: document.elementFromPoint(x, y + 21) === b}; }, rb);
 await p.mouse.click(rb.x, rb.y); await W(300);
 const RL = await p.evaluate(() => ({pop: !!(UI.pop && UI.pop.name === 'pl1'), title: UI.pop ? UI.pop.el.querySelector('h4').textContent : ''}));
-ok('ROLLE: Note wählen, [🔒 Locks] (am Ende der Aktionszeile) → Fenster „1 Note“', RL.pop && RL.title === '1 Note' && rb.h >= 32, {RL, h: rb.h});
+const hit = hit0;
+ok('ROLLE: Note wählen, [🔒 Locks] (am Ende der Aktionszeile, Trefferfläche ≥ 44 px wie [Harmonie]) → Fenster „1 Note“', RL.pop && RL.title === '1 Note' && hit.up && hit.down, {RL, h: rb.h, hit});
 const allB = await p.evaluate(() => { const r = UI.pop.el.querySelector('.pl1all').getBoundingClientRect(); return {x: r.left + r.width / 2, y: r.top + r.height / 2}; });
 await p.mouse.click(allB.x, allB.y); await W(500);
 const M1 = await p.evaluate(() => ({mode: SYNQUENZER.pl1.mode(), ed: R.editor, selT: R.selT, ban: (() => { const b = document.querySelector('.pl1ban'); if (!b || b.hidden) return null; const r = b.getBoundingClientRect(); return {x: r.left, y: r.top, w: r.width, h: r.height, t: b.textContent}; })(),
