@@ -83319,8 +83319,8 @@ function tktMarkTsToast(id, nm, same) {
   const ids = () => (S.song.marks.find(x => x.id === id) ? [id] : []);
   const acts = [{label: 'Clips umwandeln', fn: () => tktFoldMarks(ids())}];
   if (same) acts.push({label: 'Für alle „' + nm + '“', fn: () => { if (setMarkTs(id, m.ts || null, true)) { const all = m.part ? S.song.marks.filter(x => x.part === m.part).map(x => x.id) : [id]; toast(nm + ' überall: Taktart ' + (m.ts || S.ts || '4/4'), [{label: 'Clips umwandeln', fn: () => tktFoldMarks(all)}, songUndoAct()].filter(Boolean)); } }});
-  const u = songUndoAct(); if (u) acts.push(u);
-  toast(nm + ': Taktart ' + (m.ts || S.ts || '4/4'), acts.slice(0, 2)); tktToastMore(acts.slice(2));   // Prüfung 5: toast() zeigt 2 Tasten, die 3. (↶) kommt dazu
+  const u = songUndoAct(); if (u) acts.push(acts.length > 1 ? {label: '↶', fn: u.fn, aria: 'Rückgängig'} : u);   // Prüfung 5: drei Tasten, ↶ kurz
+  toast(nm + ': Taktart ' + (m.ts || S.ts || '4/4'), acts.slice(0, 2)); tktToastMore(acts.slice(2));   // toast() zeigt 2 Tasten, die 3. kommt dazu
 }
 // weitere Tasten an die gerade gezeigte Meldung (gleiches Verhalten wie in toast(): Meldung zu, Schutz gegen Durchtippen, Aktion)
 function tktToastMore(more) {
@@ -83328,9 +83328,13 @@ function tktToastMore(more) {
   for (const a of more) {
     const b = el('button', '', '<span class="bl">' + esc(a.label) + '</span>'), ic = toastIcon(a.label);
     if (ic) { b.dataset.ic = ic; b.setAttribute('aria-label', a.label.replace(/^\W+\s/, '')); }
+    if (a.aria) b.setAttribute('aria-label', a.aria);
+    if (a.label.length <= 2) b.style.minWidth = '44px';                   // ↶: Taste ≥ 44 px
     onTap(b, () => { hideToast(); shieldTap(); a.fn(); }); box.appendChild(b);
   }
-  toastPlace();
+  UI.toastPos = ''; toastPlace();                                          // neu einpassen (toastPlace merkt sich die Lage)
+  const over = () => { const r = t.getBoundingClientRect(); return [...box.children].some(x => x.getBoundingClientRect().right > r.right + .5 || x.scrollWidth > x.clientWidth + 1); };
+  if (over()) { for (const x of box.children) { const q = x.querySelector('.bl'); if (q && /^Für alle /.test(q.textContent)) { x.setAttribute('aria-label', q.textContent); q.textContent = 'Für alle'; } } UI.toastPos = ''; toastPlace(); }   // langer Teilname: kurz
 }
 // Meldung nach dem Wechsel der Song-Taktart (Tempo-Blatt): [Clips umwandeln] [↶]
 function tktSongTsToast(ts, from) {
@@ -83374,8 +83378,15 @@ function tktHarmCls(P, root, q) {
   return T.includes(10) || T.includes(11) ? 'b' : null;
 }
 const tktHw = n => Math.max(.05, Math.min(n.d || .25, .5));                // Fenster ab dem Anschlag
-function tktHAt(ns, y, w, out) { for (const x of ns || []) if (x.t < y + w - 1e-6 && x.t + x.d > y + 1e-6) out.push(x.n); }
-function tktHDet(P, ps) { if (ps.length < 2) return null; const d = Harmony.detectChord(ps); return d && d.kind === 'chord' ? tktHarmCls(P, d.root, d.quality) : null; }
+function tktHAt(ns, y, w, gs) { const g = []; for (const x of ns || []) if (x.t < y + w - 1e-6 && x.t + x.d > y + 1e-6) g.push(x.n); if (g.length) gs.push(g); }
+// je Spur eine Gruppe: klingt ein Akkord (≥ 3 Tonklassen in einer Spur), entscheidet jeder Akkord für sich – über V/vii° immer H (sonst
+// behielte ein Akkord-Clip H und die Melodie hätte B); ohne Akkord-Spur alle Töne zusammen
+function tktHDet(P, gs) {
+  const cls = ps => { if (ps.length < 2) return null; const d = Harmony.detectChord(ps); return d && d.kind === 'chord' ? tktHarmCls(P, d.root, d.quality) : null; };
+  const ch = gs.filter(g => new Set(g.map(PCx)).size >= 3);
+  if (ch.length) { const v = ch.map(cls); return v.includes('v') ? 'v' : v.includes('b') ? 'b' : null; }
+  return cls([].concat(...gs));
+}
 function tktRowAt(row, x) { let e = null; for (const q of row.ch) { if (q.b <= x + 1e-6) e = q; else break; } return e || row.ch[row.ch.length - 1]; }
 // für einen Clip der Szene s (Spur t; s < 0: nur der Clip selbst): Akkord-Zeile der Szene, sonst die Töne aller Spuren der Szene und
 // des Clips; ein Clip, der in der Szene mehrmals läuft, fragt jede Stelle (uneinig: Regel wie bisher)
@@ -83389,7 +83400,7 @@ function tktHarmFn(P, s, t, c) {
       const y = n.t + k * Lc; if (k && (!(Lc > 0) || y >= span - 1e-9)) break;
       const e = row ? tktRowAt(row, ((y % rowL) + rowL) % rowL) : null; let h;
       if (e && e.tg && isNum(e.tg.root)) h = tktHarmCls(P, e.tg.root, e.tg.quality);
-      else { const ps = []; tktHAt(own, n.t, w, ps); for (const o of oth) if (o.L > 0) tktHAt(o.ns, ((y % o.L) + o.L) % o.L, w, ps); h = tktHDet(P, ps); }
+      else { const gs = []; tktHAt(own, n.t, w, gs); for (const o of oth) if (o.L > 0) tktHAt(o.ns, ((y % o.L) + o.L) % o.L, w, gs); h = tktHDet(P, gs); }
       seen.add(h);
     }
     return seen.has('v') && !seen.has('b') ? 'v' : seen.has('b') && !seen.has('v') ? 'b' : null;
@@ -83401,14 +83412,14 @@ function tktHarmSong(P, song, t) {
   return (n, own) => {
     let e = null; for (const c of car) { if (c.beat <= n.t + 1e-6) e = c; else break; }
     if (e && e.target && isNum(e.target.root)) return tktHarmCls(P, e.target.root, e.target.quality);
-    const w = tktHw(n), ps = [], bar = barAt(n.t); tktHAt(own, n.t, w, ps);
+    const w = tktHw(n), gs = [], bar = barAt(n.t); tktHAt(own, n.t, w, gs);
     for (let j = 0; j < NT(); j++) {
       const tr = S.tracks[j]; if (j === t || !tr || tr.stimme || isDrum(j) || percIs(tr)) continue;
       const o = laneOriginAt(song.lanes[j], bar); if (o.slot < 0) continue;
       const c = o.own && song.own && song.own[o.own] ? song.own[o.own] : tr.clips[o.slot], L = c ? clipB(c) : 0; if (!c || c.audio || !(L > 0)) continue;
-      tktHAt(c.notes, (((n.t - o.cs) % L) + L) % L, w, ps);
+      tktHAt(c.notes, (((n.t - o.cs) % L) + L) % L, w, gs);
     }
-    return tktHDet(P, ps);
+    return tktHDet(P, gs);
   };
 }
 // Leitton-Stellen einer Notenliste (Dur → Moll): erst die Harmonie der Stelle (hf), sonst Septime mit Dominant-Klang (G oder D gleichzeitig,

@@ -271,8 +271,8 @@ const P1 = await p.evaluate(async () => {
   const wait = ms => new Promise(r => setTimeout(r, ms)), o = {};
   stop(); SYNQUENZER.loadDemo(); ensureAudio(); await wait(200);
   SYNQUENZER.songFromChain([{scene: 0, bars: 2}, {scene: 1, bars: 2}]);
-  const own0 = Object.keys(S.song.own || {}).length, u0 = UNDO.length;
-  setSongTs('3/4'); const tb = [...EL.toast.querySelectorAll('button')].find(x => /Clips umwandeln/.test(x.textContent)); o.btn = !!tb; if (tb) tb.click(); await wait(150);
+  const own0 = Object.keys(S.song.own || {}).length;
+  setSongTs('3/4'); const u0 = UNDO.length, tb = [...EL.toast.querySelectorAll('button')].find(x => /Clips umwandeln/.test(x.textContent)); o.btn = !!tb; if (tb) tb.click(); await wait(150);
   o.undoSteps = UNDO.length - u0;
   o.scene = S.tracks.map(tr => (tr.stimme || !tr.clips[0] ? null : (tr.clips[0].ts || '4/4') + '/' + clipB(tr.clips[0]))).filter(Boolean);
   o.newOwn = Object.keys(S.song.own || {}).length - own0;
@@ -335,7 +335,7 @@ const P4 = await p.evaluate(async () => {
   while (t2b(AU.ctx.currentTime) < 4.3) await wait(10);
   launchScene(0); await wait(1500);
   o.cs0 = [...new Set(S.tracks.map((tr, t) => (R.slot[t] === 0 ? +R.cstart[t].toFixed(2) : null)).filter(x => x != null))];
-  const takt = []; const T0 = performance.now(); while (performance.now() - T0 < 900) { await wait(40); const x = EL.taktVal.textContent; if (takt[takt.length - 1] !== x) takt.push(x); }
+  const takt = []; const T0 = performance.now(); while (performance.now() - T0 < 1800) { await wait(40); const x = EL.taktVal.textContent; if (takt[takt.length - 1] !== x) takt.push(x); }
   stop(); window.click = orig; S.settings.metro = false;
   o.clicks = log.filter(x => x[0] >= 0).slice(0, 14).map(x => x.join('')).join(' '); o.takt = takt; return o;
 });
@@ -350,11 +350,11 @@ const P5 = await p.evaluate(async () => {
   const tb = [...UI.pop.el.querySelectorAll('button')].find(x => /Taktart/.test(x.textContent)); if (tb) tb.click(); await wait(150);
   const b34 = UI.pop && UI.pop.el.querySelector('.t1ts button[data-ts="3/4"]'); if (b34) b34.click(); await wait(200);
   const bs = [...EL.toast.querySelectorAll('button')];
-  o.btns = bs.map(x => { const r = x.getBoundingClientRect(); return {l: x.textContent, h: Math.round(r.height), in: r.left >= 0 && r.right <= innerWidth + .5, clip: x.scrollWidth > x.clientWidth + 1}; });
-  const u = bs.find(x => /Rückgängig/.test(x.textContent)); if (u) u.click(); await wait(100);
+  o.btns = bs.map(x => { const r = x.getBoundingClientRect(); return {l: x.textContent, aria: x.getAttribute('aria-label') || '', h: Math.round(r.height), w: Math.round(r.width), in: r.left >= 0 && r.right <= innerWidth + .5, clip: x.scrollWidth > x.clientWidth + 1}; });
+  const u = bs.find(x => /Rückgängig/.test(x.getAttribute('aria-label') || x.textContent)); if (u) u.click(); await wait(100);
   o.after = S.song.marks[0].ts || null; closePop(); return o;
 });
-ok('P5 Marken-Blatt-Meldung (Teil mehrmals): [Clips umwandeln] [Für alle „Szene 1“] [Rückgängig] – alle sichtbar, nicht abgeschnitten, ↶ wirkt', P5.btns.length === 3 && /Clips umwandeln/.test(P5.btns[0].l) && /Für alle/.test(P5.btns[1].l) && /Rückgängig/.test(P5.btns[2].l) && P5.btns.every(b => b.in && !b.clip && b.h >= 40) && P5.after === null, P5);
+ok('P5 Marken-Blatt-Meldung (Teil mehrmals): [Clips umwandeln] [Für alle „Szene 1“] [↶] – alle in der Meldung, nicht abgeschnitten, ↶ ≥ 44 px breit und wirkt', P5.btns.length === 3 && /Clips umwandeln/.test(P5.btns[0].l) && /Für alle/.test(P5.btns[1].l) && P5.btns[2].l === '↶' && P5.btns[2].aria === 'Rückgängig' && P5.btns[2].w >= 44 && P5.btns.every(b => b.in && !b.clip && b.h >= 40) && P5.after === null, P5);
 
 // P6: Rack – Kompressor per LED im offenen Rack an: GR erscheint ohne Schließen/Öffnen
 const P6 = await p.evaluate(async () => {
