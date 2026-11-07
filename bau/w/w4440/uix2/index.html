@@ -4833,6 +4833,27 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 .sx14 .sx14-sr .sx14-d{flex:0 0 44px;height:44px;padding:0}
 .sx14 .sx14-e{font:500 12px/1.3 var(--font-ui);color:var(--text-dim);padding:6px 4px}
 /* SX714-CSS-END */
+/* UX2-CSS-BEGIN – Paket UX2: Ziehen in der Matrix (Geist, Einfüge-Linie, Ziel, Zieh-Symbol), Einfügen mit Lupe im Noten-Editor */
+.ux2gh{position:fixed;left:0;top:0;z-index:9000;margin:0;pointer-events:none;opacity:.95;transform-origin:0 0;will-change:transform;box-shadow:0 12px 28px rgba(0,0,0,.65),0 0 0 2px var(--amber);border-radius:var(--r-s,8px)}
+.ux2gh.slot{border-style:solid;background:var(--chassis-2)}
+.ux2gh.ux2c{box-shadow:0 12px 28px rgba(0,0,0,.65),0 0 0 2px var(--play)}
+.ux2gh .ux2bd{position:absolute;left:50%;bottom:calc(100% + 6px);transform:translateX(-50%);padding:3px 7px;border-radius:6px;background:rgba(11,12,15,.92);color:var(--amber);font:700 11px/1.1 var(--font-ui);white-space:nowrap;letter-spacing:.02em;box-shadow:0 2px 8px rgba(0,0,0,.6)}
+.ux2gh.ux2c .ux2bd{color:var(--play)}
+.ux2gh.slot{overflow:visible}
+.ux2src{opacity:.35;outline:2px dashed var(--amber);outline-offset:-2px}
+.ux2ln{position:fixed;left:0;top:0;z-index:8999;pointer-events:none;background:var(--amber);border-radius:2px;box-shadow:0 0 10px var(--amber)}
+.ux2ln.off{display:none}
+.slot.ux2lift{transform:scale(1.06);z-index:4;box-shadow:0 8px 20px rgba(0,0,0,.6),0 0 0 2px var(--amber);transition:transform .12s}
+.slot .ux2mvw{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;color:var(--amber);z-index:5}
+.slot .ux2mvw .ux2mv{width:24px;height:24px;filter:drop-shadow(0 1px 2px #000)}
+.slot.ux2tg{outline:2px dashed var(--amber);outline-offset:-3px;background:rgba(255,178,46,.10)}
+.slot.ux2tg.ux2sw{outline-style:solid}
+.slot.ux2tg.ux2cp{outline-color:var(--play);background:rgba(53,208,127,.10)}
+.slot.ux2no{outline:2px solid var(--rec);outline-offset:-3px}
+.ux2p-ov{position:absolute;inset:0;z-index:1;touch-action:none}
+.ux2p-lupe{position:fixed;z-index:9500;border-radius:12px;border:2px solid var(--amber);box-shadow:0 10px 24px rgba(0,0,0,.7);pointer-events:none;background:#0d0e11}
+.pr-bar .ux2p-lab{color:var(--amber)}
+/* UX2-CSS-END */
 /* NDP-CSS-BEGIN – die North-Platte (Paket ND-P): eigenes Instrument-Gesicht der Drum-Engine MD_NAME. Rote Front, schwarze
    Beschriftungsfelder, beleuchtete Tasten, 3-stelliges Siebensegment-Display, großes Rad. Nur Formen aus CSS/SVG, keine Bilder. */
 .hb.ndpk{display:inline-flex;align-items:center;justify-content:center;gap:5px;flex:none;height:44px;min-height:44px;min-width:58px;padding:0 8px;border-radius:8px;font-weight:800;letter-spacing:.02em;color:#fff;
@@ -20113,6 +20134,117 @@ const RecHelpers = (() => {
     /* MP-END */
     sep(acts);
     btn(acts, 'Dupl.', () => duplicate(), 'Duplizieren (hinter die Auswahl / Clip verdoppeln)');
+    /* UX2P-BEGIN Kopieren / Einfügen mit Lupe (Paket UX2, Xander 07.11.: „kopieren, duplizieren, einfügen – mit so einer kleinen Lupe
+       besser einfügen“). [Kopieren] merkt die Auswahl (sonst alle Noten) in einer Ablage, die für alle Clips, eigene Clips und die
+       Song-Melodie gilt (also auch über Spuren hinweg). [Einfügen] zeigt die Noten als Geist ab einem Einfüge-Punkt: Finger in den
+       Notenbereich = Punkt dorthin, ziehen = verschieben (rastet am Raster, über dem Finger eine Lupe mit dem Raster vergrößert,
+       am Rand rollt die Ansicht mit); [✓ Einfügen] setzt ein (ein Undo-Schritt), [✕] bricht ab. Tonhöhen bleiben, Noten hinter dem
+       Clip-Ende fallen weg (mit Hinweis). [Dupl.] (hinter die Auswahl) bleibt wie es ist. */
+    const UX2P = {on: false, b: 0, drag: null, ov: null, cv: null, lp: null, bar: null, n: 0};
+    const ux2pClip = () => create.ux2 || (create.ux2 = {notes: null, kind: '', span: 0});
+    const ux2pKind = () => (opts.rowName ? 'perc' : 'note');
+    UX2P.copyB = btn(acts, 'Kopieren', () => ux2pCopy(), 'Kopieren (Auswahl, sonst alle Noten)');
+    UX2P.pasteB = btn(acts, 'Einfügen', () => ux2pStart(), 'Einfügen: Punkt mit dem Finger setzen (Lupe), dann ✓');
+    function ux2pCopy() {
+      const ns = scope(); if (!ns.length) { say('Keine Noten zum Kopieren'); return false; }
+      const g = GRID[E.grid] || .25, t0 = Math.floor(Math.min(...ns.map(n => n.t)) / g + 1e-6) * g, NC = ux2pClip();
+      NC.notes = ns.map(n => ({t: +(n.t - t0).toFixed(6), d: n.d, n: n.n, v: n.v})); NC.kind = ux2pKind();
+      NC.span = Math.max(...ns.map(n => n.t + n.d)) - t0;
+      say(ns.length + (ns.length === 1 ? ' Note kopiert' : ' Noten kopiert')); render(); return true;
+    }
+    const ux2pSnap = b => { const g = gridStep(); return clamp(Math.round(b / g) * g, 0, Math.max(0, L() - g)); };
+    function ux2pStart() {
+      const NC = ux2pClip(); if (!NC.notes || !NC.notes.length) { say('Erst Noten kopieren'); return false; }
+      if (NC.kind !== ux2pKind()) { say(NC.kind === 'perc' ? 'Perkussions-Noten passen hier nicht' : 'Diese Noten passen hier nicht'); return false; }
+      measure();
+      let b = E.step != null ? E.step : E.sel.size ? Math.max(...scope().map(n => n.t + n.d)) : Math.max(0, V.x0);
+      if (b >= L() - 1e-9) b = Math.max(0, V.x0);
+      E.ask = false; if (typeof MPS !== 'undefined' && MPS.panel) mpPanel(null);
+      if (!UX2P.on) busyN++;
+      UX2P.on = true; UX2P.b = ux2pSnap(Math.ceil(b / gridStep() - 1e-6) * gridStep());
+      ux2pEls(); render(); say('Finger setzt den Punkt · ✓ = einfügen');
+      return true;
+    }
+    function ux2pEnd() { if (UX2P.on) busyN = Math.max(0, busyN - 1); UX2P.on = false; UX2P.drag = null; ux2pLoupe(null); render(); }
+    function ux2pApply() {
+      if (!UX2P.on) return 0;
+      const NC = ux2pClip(), b0 = UX2P.b, Lb = L(), add = []; let drop = 0;
+      model.begin();
+      for (const n of NC.notes) { const t = b0 + n.t; if (t >= Lb - 1e-9) { drop++; continue; } add.push(addNote(t, n.n, Math.min(n.d, Lb - t), n.v)); }
+      E.sel = new Set(add); sortNotes(); model.end(add.length > 0, 'Einfügen');
+      UX2P.n++; ux2pEnd(); afterExternal();
+      say(add.length + (add.length === 1 ? ' Note' : ' Noten') + ' eingefügt' + (drop ? ' · ' + drop + ' hinter dem Ende weggelassen' : ''));
+      return add.length;
+    }
+    function ux2pSet(b) { const nb = ux2pSnap(b); if (Math.abs(nb - UX2P.b) > 1e-9) { UX2P.b = nb; if (opts.onTick) { try { opts.onTick(); } catch (e) {} } } render(); }
+    // the overlay over the note area (only while pasting) takes the finger; the ruler, the tools and ↶ stay usable
+    function ux2pEls() {
+      if (UX2P.ov) return;
+      const ov = mk('div', 'ux2p-ov'), cv = mk('canvas'); ov.appendChild(cv); main.insertBefore(ov, ph); UX2P.ov = ov; UX2P.cv = cv;
+      ov.addEventListener('touchstart', e => { if (e.cancelable) e.preventDefault(); }, {passive: false});
+      ['contextmenu', 'selectstart'].forEach(ev => ov.addEventListener(ev, e => e.preventDefault()));
+      ov.addEventListener('pointerdown', e => {
+        if (UX2P.drag || !UX2P.on) return;
+        e.preventDefault(); try { ov.setPointerCapture(e.pointerId); } catch (_) {}
+        const p = loc(e, cM), NC = ux2pClip(), b = beatAt(p.x), inG = b >= UX2P.b - gridStep() && b <= UX2P.b + Math.max(NC.span, gridStep());
+        UX2P.drag = {id: e.pointerId, off: inG ? b - UX2P.b : 0, p, cx: e.clientX, cy: e.clientY};
+        const kill = ev => { if (ev.pointerId !== e.pointerId) return; document.removeEventListener('pointerup', kill, true); document.removeEventListener('pointercancel', kill, true); end(ev); };
+        document.addEventListener('pointerup', kill, true); document.addEventListener('pointercancel', kill, true);   // the editor may close under the finger: the loupe never stays
+        if (!inG) ux2pSet(b); else render();
+      });
+      ov.addEventListener('pointermove', e => {
+        const D = UX2P.drag; if (!D || D.id !== e.pointerId) return;
+        const p = loc(e, cM); D.p = p; D.cx = e.clientX; D.cy = e.clientY;
+        if (p.x < EDGE || p.x > V.W - EDGE) { V.x0 += (p.x < EDGE ? -1 : 1) * (V.W / V.ppb) * .03; clampView(); hand('scroll'); }   // am Rand rollt die Ansicht mit
+        ux2pSet(beatAt(p.x) - D.off);
+      });
+      function end(e) { const D = UX2P.drag; if (!D || D.id !== e.pointerId) { if (!D) ux2pLoupe(null); return; } UX2P.drag = null; ux2pLoupe(null); render(); }
+      ov.addEventListener('pointerup', end); ov.addEventListener('pointercancel', end); ov.addEventListener('lostpointercapture', end);
+      UX2P.lab = mk('span', 'ask ux2p-lab', '');
+      UX2P.okB = btn(acts, '✓ Einfügen', () => ux2pApply(), 'Hier einfügen', 'loopb');
+      UX2P.noB = btn(acts, '✕', () => { ux2pEnd(); say('Einfügen abgebrochen'); }, 'Einfügen abbrechen');
+      acts.insertBefore(UX2P.lab, UX2P.okB);
+      UX2P.bar = [UX2P.lab, UX2P.okB, UX2P.noB];
+      for (const b of UX2P.bar) b.hidden = true;
+    }
+    // the magnifier over the finger: the note area and the ghost around the paste point, 2.5×, with the grid and the position
+    function ux2pLoupe(D) {
+      if (!D || dead) { if (UX2P.lp) { UX2P.lp.remove(); UX2P.lp = null; } return; }
+      let lp = UX2P.lp; if (!lp) { lp = UX2P.lp = mk('canvas', 'ux2p-lupe'); lp.setAttribute('aria-hidden', 'true'); lp.style.width = '148px'; lp.style.height = '84px'; document.body.appendChild(lp); }
+      const W = 148, H = 84, Z = 2.5, d = dpr(), x0 = xOf(UX2P.b), y0 = clamp(D.p.y, 0, V.H);
+      const vw = window.innerWidth, left = clamp(D.cx - W / 2, 4, vw - W - 4), top = D.cy - H - 46 >= 4 ? D.cy - H - 46 : D.cy + 46;
+      lp.style.left = left + 'px'; lp.style.top = top + 'px';
+      const g = fit(lp, W, H), sw = W / Z, sh = H / Z, sx = x0 - sw / 2, sy = y0 - sh / 2;
+      g.fillStyle = '#0d0e11'; g.fillRect(0, 0, W, H);
+      try { g.imageSmoothingEnabled = false; g.drawImage(cM, sx * d, sy * d, sw * d, sh * d, 0, 0, W, H); if (UX2P.cv) g.drawImage(UX2P.cv, sx * d, sy * d, sw * d, sh * d, 0, 0, W, H); } catch (e) {}
+      g.strokeStyle = tok('--amber', '#ffb22e'); g.lineWidth = 2; g.beginPath(); g.moveTo(W / 2, 0); g.lineTo(W / 2, H); g.stroke();
+      const txt = fmtPos(UX2P.b); g.font = '700 11px ' + tok('--font-num', 'monospace');
+      const tw = g.measureText(txt).width + 8; g.fillStyle = 'rgba(0,0,0,.75)'; rr(g, W / 2 + 4, 4, tw, 16, 4); g.fill(); g.fillStyle = '#fff'; g.fillText(txt, W / 2 + 8, 16);
+    }
+    // per frame (hook at the end of draw): the paste bar instead of the action bar, the ghost of the notes, the magnifier
+    function ux2pFrame(C) {
+      if (!UX2P.ov) return;
+      const on = UX2P.on;
+      UX2P.ov.style.display = on ? '' : 'none';
+      if (!on) { for (const b of UX2P.bar) b.hidden = true; return; }
+      for (const b of acts.children) b.hidden = !UX2P.bar.includes(b);
+      UX2P.lab.textContent = 'Einfügen bei ' + fmtPos(UX2P.b);
+      const NC = ux2pClip(), x = fit(UX2P.cv, V.W, V.H), Lb = L();
+      x.clearRect(0, 0, V.W, V.H);
+      x.fillStyle = C.amber; x.globalAlpha = .08; x.fillRect(xOf(UX2P.b), 0, Math.max(2, NC.span * V.ppb), V.H); x.globalAlpha = 1;
+      for (const n of NC.notes || []) {
+        const t = UX2P.b + n.t, r = {x: xOf(t), y: yOfRow(rowOfNote(n.n)), w: Math.max(3, n.d * V.ppb), h: V.rowH}; if (r.x > V.W || r.x + r.w < 0 || r.y > V.H || r.y + r.h < 0) continue;
+        const out = t >= Lb - 1e-9;
+        x.globalAlpha = out ? .25 : .55; x.fillStyle = out ? '#ff4538' : C.amber; rr(x, r.x + 1, r.y + 2, r.w - 2, r.h - 4, 4); x.fill();
+        x.globalAlpha = 1; x.strokeStyle = out ? '#ff4538' : C.amber; x.lineWidth = 1.5; x.setLineDash([3, 2]); rr(x, r.x + 1, r.y + 2, r.w - 2, r.h - 4, 4); x.stroke(); x.setLineDash([]);
+      }
+      const px = Math.round(xOf(UX2P.b)) + .5; x.strokeStyle = C.amber; x.lineWidth = 2; x.beginPath(); x.moveTo(px, 0); x.lineTo(px, V.H); x.stroke(); x.lineWidth = 1;
+      x.fillStyle = C.amber; x.beginPath(); x.moveTo(px - 7, 0); x.lineTo(px + 7, 0); x.lineTo(px, 9); x.fill();
+      if (UX2P.drag) ux2pLoupe(UX2P.drag);
+    }
+    acts._ux2p = {copy: () => ux2pCopy(), start: () => ux2pStart(), at: b => { if (UX2P.on) { UX2P.b = ux2pSnap(+b || 0); render(); } return UX2P.b; }, apply: () => ux2pApply(), cancel: () => ux2pEnd(),
+      info: () => { const NC = ux2pClip(); return {on: UX2P.on, b: UX2P.b, n: UX2P.n, clip: NC.notes ? NC.notes.length : 0, kind: NC.kind, span: NC.span, drag: !!UX2P.drag, loupe: !!UX2P.lp}; }};
+    /* UX2P-END */
     btn(acts, 'Quant.', () => { const ns = scope(); if (!ns.length) return; if (opts.onQuant) opts.onQuant(E.sel.size ? ns : null); else act('Quantisieren', x => quantizeNotes(x)); }, 'Quantisieren');
     btn(acts, 'Legato', () => act('Legato', ns => legato(ns)), 'Legato: jede Note bis zur nächsten');
     sep(acts);
@@ -20331,6 +20463,7 @@ const RecHelpers = (() => {
       if (tb.undo && model.canUndo) tb.undo.disabled = !model.canUndo();
       if (tb.redo && model.canRedo) tb.redo.disabled = !model.canRedo();
       mpRender();                                                   /* MP */
+      ux2pFrame(C);                                                 /* UX2P: Einfüge-Leiste, Geist, Lupe */
       if (opts.onRender) opts.onRender(api.state);
     }
     /* N2: mini map of the whole clip (notes as strokes, the visible part as a frame), shown while a 'move' gesture runs;
@@ -33472,6 +33605,7 @@ function pushUndo(track, scene, before, label, mergeKey) {
   undoPush({kind: 'clip', track, scene, before: before ? cleanClip(before) : null, label, mergeKey: mergeKey || null});
 }
 function undoState(e) {
+  if (e.kind === 'ux2') return ux2UndoState(e);                // UX2: Spur-Reihenfolge, Zellen-Tausch, Szenen-Reihenfolge
   if (e.kind === 'group') return null;                     // V2a: the items carry their own states
   if (e.kind === 'sr') return srSnap();                   // N8 I1c
   if (e.kind === 'track') return trackSnapshot(e.track);
@@ -33505,6 +33639,7 @@ function clipRestored(t, s) {
   clipChanged(t, s);
 }
 function undoApply(e, val) {
+  if (e.kind === 'ux2') ux2UndoApply(e, val); else            // UX2
   if (e.kind === 'track') restoreTrack(e.track, val);
   else if (e.kind === 'clip') { S.tracks[e.track].clips[e.scene] = val ? deep(val) : null; clipRestored(e.track, e.scene); }
   else if (e.kind === 'sound') restoreSoundSnapshot(e.track, JSON.parse(val));
@@ -34304,7 +34439,7 @@ function restoreTrack(i, val) {
     R.slot[i] = -1; R.pend[i] = null; R.prev[i] = null; R.cstart[i] = 0;
     if (c) { if (!AU.tracks[i]) buildTrack(i); else { AU.tracks[i].driveAmt = -1; applyTrackParams(i, true); } syncEngine(i, true); }
   }
-  S.ui = Object.assign({}, S.ui, {order: orderFor(NT())});
+  S.ui = Object.assign({}, S.ui, {order: ux2OrderFit(NT())});   // UX2: eine eigene Spur-Reihenfolge bleibt (vorher: orderFor)
   UI.sndVer++; KEYC.ver++; scheduleAutoKey();
   UI.dirty.all = UI.dirty.grid = UI.dirty.song = true; UI.kbRelayout = true;
   if (UI.heads && EL.grid) buildGrid();                               // the matrix (rows, banks) at once, before a selectTrack
@@ -49384,6 +49519,424 @@ function clipChanged(t, s) {
     if (ED.roll) { try { if (ED.roll.state.pointers) ED.roll.render(); else ED.roll.refresh(); } catch (e) {} }
   }
 }
+
+/* UX2-BEGIN ============================================================================================================
+   Paket UX2 (Xander 07.11.: „Spuren austauschen vom linken Rand … Clips per Drag and Drop … Szenen umsortieren von oben …
+   kopieren, duplizieren, einfügen“). Matrix, nur Gesten, die es noch nicht gab – Wisch-Lautstärke, Halten = Solo, Mehrfach-Solo,
+   Tipp und Halten auf Clips bleiben wie sie sind.
+   • Spur verschieben: im LINKEN RAND einer Spurzeile (Farbbalken, ≤ 14 px vom Spurkopf-Rand, auch der Rand davor) aufsetzen und
+     nach RECHTS ziehen → die Spur hebt sich ab; hoch/runter ziehen, eine Linie zeigt den neuen Platz; loslassen = verschoben.
+     Nur die Anzeige-Reihenfolge (S.ui.order) ändert sich: Clips, Klang, FX, Song und Teile hängen an der Spur und folgen. DRUMS
+     bleibt die unterste Zeile. Nach links ziehen, Tipp, Halten bleiben im Rand wie überall (Lautstärke, wählen, Solo).
+   • Clip ziehen: Clip halten (450 ms) → er hebt sich ab (Zieh-Symbol). Loslassen ohne Bewegung = das Clip-Blatt wie bisher;
+     ziehen → auf eine leere Zelle = verschieben, auf einen Clip = tauschen; zweiter Finger irgendwo = Kopie (⧉, noch einmal = aus).
+     In derselben Spur folgen Song, Teile und die laufende Wiedergabe dem Clip (der Song klingt danach gleich).
+   • Szene verschieben: am OBEREN RAND eines Szenen-Kopfs (≤ 12 px) aufsetzen und nach UNTEN ziehen → die Szene hebt sich ab;
+     links/rechts ziehen, loslassen = an den neuen Platz (die anderen rücken). Ein Tipp dort startet die Szene beim Loslassen.
+     Alles mit der Szene wandert mit (Clips, Name, Akkord-Zeile); Song, Teile, Marken und eigene Clips zeigen danach auf die
+     neuen Nummern – der Song klingt gleich.
+   • Federnde Umschalter: beim Ziehen über [SZ] bzw. [▲▼] verweilen (450 ms) blättert um (Szenen 5–8, Spur-Seite 2).
+   Undo: Art 'ux2' (op 'o' Reihenfolge = Zustand, op 'x' Tausch = selbst-invers, op 's' Szenen-Permutation = Gegen-Permutation);
+   Kopieren ist ein gewöhnlicher Clip-Schritt. Kein neues Projektfeld, kein Formatwechsel. */
+const UX2 = {d: null, EDGE: 14, TOPZ: 12, MOVE: 10, LIFT: 12, HOLD: 440, SPRING: 450, n: 0, last: null};
+const UX2_MOVE_SVG = '<svg class="ux2mv" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3"/></svg>';
+// Reihenfolge für n Spuren: die eigene bleibt, neue Zusatzspuren kommen vor DRUMS, entfernte fallen weg (restoreTrack)
+function ux2OrderFit(n) {
+  const o = S.ui && Array.isArray(S.ui.order) ? S.ui.order : [], seen = new Set(), out = [];
+  for (const i of o) if (Number.isInteger(i) && i >= 0 && i < n && i !== DRUM_T && !seen.has(i)) { seen.add(i); out.push(i); }
+  for (const i of orderFor(n)) if (i !== DRUM_T && !seen.has(i)) { seen.add(i); out.push(i); }
+  if (n > DRUM_T) out.push(DRUM_T);
+  return out;
+}
+const ux2Busy = () => !!(rec.state !== 'off' || R.songRec || UI.pick || (typeof songTakeOpen === 'function' && songTakeOpen()));
+function ux2Refresh() {
+  KEYC.ver++; UI.dirty.all = UI.dirty.grid = UI.dirty.song = true; UI.kbRelayout = true;
+  if (UI.songView && typeof svLayout === 'function') { try { svLayout(); } catch (e) { logErr(e); } }
+  markDirty();
+}
+// ---- Spur-Reihenfolge (Zustand) ----
+function ux2OrderOk(o) { const n = NT(); return Array.isArray(o) && o.length === n && o[n - 1] === DRUM_T && new Set(o).size === n && o.every(x => Number.isInteger(x) && x >= 0 && x < n); }
+function ux2OrderPut(o) {
+  if (!ux2OrderOk(o)) return false;
+  S.ui = Object.assign({}, S.ui, {order: o.slice()});
+  MX.key = '';
+  if (UI.heads && EL.grid) buildGrid();
+  ux2Refresh(); return true;
+}
+// Spur i an Platz pos der Synth-Reihenfolge (0 = oben); ein Undo-Schritt
+function ux2MoveTrack(i, pos, quiet) {
+  i = i | 0; if (!S.tracks[i]) return false;
+  if (isDrum(i)) { if (!quiet) { toast('DRUMS bleibt die unterste Spur – die anderen lassen sich verschieben'); haptic('tick'); } return false; }
+  const old = trackOrder().slice(), syn = old.filter(x => x !== DRUM_T), from = syn.indexOf(i); if (from < 0) return false;
+  pos = clamp(pos | 0, 0, syn.length - 1); if (pos === from) return false;
+  syn.splice(from, 1); syn.splice(pos, 0, i);
+  const o = syn.concat([DRUM_T]);
+  if (!ux2OrderPut(o)) return false;
+  undoPush({kind: 'ux2', op: 'o', before: JSON.stringify(old), label: 'Spur verschieben ' + S.tracks[i].name});
+  UX2.n++; UX2.last = {op: 'o', i, pos};
+  if (!quiet) { toast(String(S.tracks[i].name).toUpperCase() + ' → Platz ' + (pos + 1), {label: 'Rückgängig', fn: () => undo()}); haptic('snap'); }
+  return true;
+}
+// ---- Verweise auf Szenen-Plätze umschreiben (Song, Teile, Gedächtnis, Laufzeit). fs(t, slot) → neuer Platz; fp('S3') → 'S5' ----
+function ux2Walk(o, t, fs, fp, depth) {
+  if (!o || typeof o !== 'object' || depth > 24) return;
+  if (Array.isArray(o)) { for (const x of o) ux2Walk(x, t, fs, fp, depth + 1); return; }
+  let tt = t;
+  if (Number.isInteger(o.t) && (Array.isArray(o.e) || isNum(o.b0))) tt = o.t;                          // S0 / SX11: {t, b0, b1, e:[…]}
+  const f = o.from;
+  if (f && typeof f === 'object' && !Array.isArray(f) && Number.isInteger(f.t)) {                       // V2d′: eigener Clip
+    if (isNum(f.s)) f.s = fs(f.t, f.s);
+    if (f.e && isNum(f.e.slot) && f.e.slot >= 0) f.e.slot = fs(f.t, f.e.slot);
+    if (f.prev && isNum(f.prev.slot) && f.prev.slot >= 0) f.prev.slot = fs(f.t, f.prev.slot);
+  }
+  if (isNum(o.slot) && o.slot >= 0 && tt != null) o.slot = fs(tt, o.slot);                              // Spur-Eintrag {bar, slot, …}
+  if (fp && typeof o.part === 'string' && /^S[1-8]$/.test(o.part)) o.part = fp(o.part);                 // Marke „Szene n“
+  for (const k of Object.keys(o)) {
+    if (k === 'from') continue;
+    const v = o[k]; if (!v || typeof v !== 'object') continue;
+    if (k === 'lanes' && Array.isArray(v)) { v.forEach((l, ti) => ux2Walk(l, ti, fs, fp, depth + 1)); continue; }
+    if (k === 'slots' && Array.isArray(v)) { v.forEach((x, ti) => { if (x && typeof x === 'object' && isNum(x.s)) x.s = fs(ti, x.s); }); continue; }   // Teil: {s}
+    ux2Walk(v, tt, fs, fp, depth + 1);
+  }
+}
+function ux2Remap(fs, fp) {
+  if (S.song) ux2Walk(S.song, null, fs, fp, 0);
+  if (Array.isArray(S.parts)) ux2Walk(S.parts, null, fs, fp, 0);
+  for (let t = 0; t < MAX_T; t++) {
+    if (R.slot[t] >= 0) R.slot[t] = fs(t, R.slot[t]);
+    if (R.pend[t] && R.pend[t].slot >= 0) R.pend[t].slot = fs(t, R.pend[t].slot);
+    if (R.prev[t] && R.prev[t].slot >= 0) R.prev[t].slot = fs(t, R.prev[t].slot);
+    if (MEM.ev[t]) for (const e of MEM.ev[t]) if (e && e.slot >= 0) e.slot = fs(t, e.slot);
+  }
+}
+// ---- Zwei Zellen tauschen (leer ↔ Clip = verschieben); selbst-invers ----
+function ux2CellOk(a, b) {
+  const A = S.tracks[a.t], B = S.tracks[b.t]; if (!A || !B || a.s < 0 || b.s < 0 || a.s >= NS() || b.s >= NS()) return false;
+  if (a.t === b.t) return a.s !== b.s;
+  return A.kind === B.kind && !!A.stimme === !!B.stimme;
+}
+function ux2Exchange(a, b) {
+  const A = S.tracks[a.t], B = S.tracks[b.t], c1 = A.clips[a.s], c2 = B.clips[b.s];
+  if (ED.rollAt && !ED.rollAt.own && ((ED.rollAt.t === a.t && ED.rollAt.s === a.s) || (ED.rollAt.t === b.t && ED.rollAt.s === b.s))) closeRoll();
+  if (R.editor === 'clip') closeClipSheet();
+  A.clips[a.s] = c2 || null; B.clips[b.s] = c1 || null;
+  if (a.t === b.t) {
+    // eine Spur: Song, Teile, Gedächtnis und Wiedergabe folgen den Clips (der laufende Clip spielt einfach weiter)
+    const t0 = a.t, s1 = a.s, s2 = b.s;
+    ux2Remap((t, s) => (t !== t0 ? s : s === s1 ? s2 : s === s2 ? s1 : s), null);
+    clipChanged(t0, s1); clipChanged(t0, s2);
+  } else { clipRestored(a.t, a.s); clipRestored(b.t, b.s); }
+  for (const x of [a, b]) if (S.tracks[x.t].kind === 'synth') scheduleAutoKey(x.s);
+  ux2Refresh();
+}
+function ux2DoExchange(a, b, quiet) {
+  if (!ux2CellOk(a, b)) { if (!quiet) toast('Drum- und Synth-Clips sind nicht austauschbar'); return false; }
+  if (ux2Busy()) { if (!quiet) toast('Erst Aufnahme beenden'); return false; }
+  const c1 = S.tracks[a.t].clips[a.s], c2 = S.tracks[b.t].clips[b.s]; if (!c1 && !c2) return false;
+  const swap = !!(c1 && c2), sel = R.selT === a.t && R.selS === a.s;
+  ux2Exchange(a, b);
+  undoPush({kind: 'ux2', op: 'x', before: JSON.stringify({a: {t: a.t, s: a.s}, b: {t: b.t, s: b.s}}), label: swap ? 'Clips tauschen' : 'Clip verschieben'});
+  if (sel) selectSlot(b.t, b.s);
+  UX2.n++; UX2.last = {op: swap ? 'swap' : 'move', a, b};
+  if (!quiet) { toast((swap ? 'Clips getauscht' : 'Clip verschoben') + ' → ' + S.tracks[b.t].name + ' · Szene ' + (b.s + 1), {label: 'Rückgängig', fn: () => undo()}); haptic('snap'); }
+  return true;
+}
+// ---- Clip kopieren (Ziel wird ersetzt; ein Clip-Schritt) ----
+function ux2DoCopy(a, b, quiet) {
+  if (!ux2CellOk(a, b) && !(a.t === b.t && a.s === b.s)) { if (!quiet) toast('Drum- und Synth-Clips sind nicht austauschbar'); return false; }
+  if (a.t === b.t && a.s === b.s) return false;
+  if (ux2Busy()) { if (!quiet) toast('Erst Aufnahme beenden'); return false; }
+  const src = S.tracks[a.t].clips[a.s], tr = S.tracks[b.t]; if (!src) return false;
+  if (ED.rollAt && !ED.rollAt.own && ED.rollAt.t === b.t && ED.rollAt.s === b.s) closeRoll();
+  if (R.editor === 'clip') closeClipSheet();
+  pushUndo(b.t, b.s, tr.clips[b.s], 'Clip kopieren');
+  const c = deep(cleanClip(src)); if (tr.kind === 'drum') c.seed = newSeed();
+  tr.clips[b.s] = c;
+  clipRestored(b.t, b.s); KEYC.ver++;
+  if (tr.kind === 'synth') scheduleAutoKey(b.s);
+  markDirty(); UI.dirty.all = true;
+  UX2.n++; UX2.last = {op: 'copy', a, b};
+  if (!quiet) { toast('Clip kopiert → ' + tr.name + ' · Szene ' + (b.s + 1), {label: 'Rückgängig', fn: () => undo()}); haptic('snap'); }
+  return true;
+}
+// ---- Szenen umsortieren: arr[k] = alter Platz der Szene, die jetzt an Platz k steht ----
+function ux2ScenePerm(arr) {
+  const n = NS(); if (!Array.isArray(arr) || arr.length !== n || new Set(arr).size !== n || !arr.every(x => Number.isInteger(x) && x >= 0 && x < n)) return false;
+  const m = new Array(n); arr.forEach((o, k) => { m[o] = k; });
+  if (ED.rollAt && !ED.rollAt.own) closeRoll();
+  if (R.editor === 'clip') closeClipSheet();
+  for (const tr of S.tracks) { const old = tr.clips.slice(); for (let k = 0; k < n; k++) tr.clips[k] = old[arr[k]] || null; }
+  { const old = S.scenes.slice(); for (let k = 0; k < n; k++) S.scenes[k] = old[arr[k]]; }
+  const fs = (t, s) => (s >= 0 && s < n ? m[s] : s), fp = p => 'S' + (m[+p.slice(1) - 1] + 1);
+  ux2Remap(fs, fp);
+  R.selS = fs(0, R.selS);
+  if (isNum(R.lastScene) && R.lastScene >= 0) R.lastScene = fs(0, R.lastScene);
+  for (const q of [R.row, R.rowPend]) if (q && typeof q.src === 'string' && /^S[1-8]$/.test(q.src)) q.src = fp(q.src);
+  if (typeof KETTE !== 'undefined' && Array.isArray(KETTE.chain)) for (const x of KETTE.chain) if (x && isNum(x.scene)) x.scene = fs(0, x.scene);
+  for (let t = 0; t < NT(); t++) clipChanged(t, R.selS);
+  UI.dirty.parts = UI.dirty.carrier = true;
+  ux2Refresh();
+  return true;
+}
+function ux2MoveScene(from, to, quiet) {
+  const n = NS(); from = from | 0; to = to | 0;
+  if (from < 0 || from >= n || to < 0 || to >= n || from === to) return false;
+  if (ux2Busy()) { if (!quiet) toast('Erst Aufnahme beenden'); return false; }
+  const arr = Array.from({length: n}, (_, k) => k); arr.splice(from, 1); arr.splice(to, 0, from);
+  const inv = new Array(n); arr.forEach((o, k) => { inv[o] = k; });
+  const nm = S.scenes[from] && S.scenes[from].name;
+  if (!ux2ScenePerm(arr)) return false;
+  undoPush({kind: 'ux2', op: 's', before: JSON.stringify(inv), label: 'Szene verschieben ' + (from + 1) + ' → ' + (to + 1)});
+  UX2.n++; UX2.last = {op: 's', from, to};
+  if (MX.bankS && (to >= 4) !== (sceneBankOf() === 1)) setSceneBank(to >= 4 ? 1 : 0);
+  if (!quiet) { toast('Szene ' + (from + 1) + (nm ? ' „' + nm + '“' : '') + ' → Platz ' + (to + 1), {label: 'Rückgängig', fn: () => undo()}); haptic('snap'); }
+  return true;
+}
+// ---- Undo (Hooks in undoState / undoApply) ----
+function ux2UndoState(e) {
+  if (e.op === 'o') return JSON.stringify(trackOrder().slice());
+  if (e.op === 's') { const a = JSON.parse(e.before), inv = new Array(a.length); a.forEach((o, k) => { inv[o] = k; }); return JSON.stringify(inv); }
+  return e.before;                                                                       // 'x': Tausch ist selbst-invers
+}
+function ux2UndoApply(e, val) {
+  if (e.op === 'o') ux2OrderPut(JSON.parse(val));
+  else if (e.op === 's') ux2ScenePerm(JSON.parse(val));
+  else if (e.op === 'x') { const o = JSON.parse(val); if (ux2CellOk(o.a, o.b)) ux2Exchange(o.a, o.b); }
+}
+
+// ---- Gesten (Dokument, Einfangphase: kommt vor den Matrix-Gesten; nur wo UX2 die Geste übernimmt, wird sie dort angehalten) ----
+const ux2R = n => (n ? n.getBoundingClientRect() : null);
+const ux2Vis = n => !!(n && !n.classList.contains('mxoff') && n.getClientRects().length);
+// Spurzeile, deren linker Rand (Kopf-Rand + EDGE, auch der Rand davor) den Punkt enthält
+function ux2EdgeRow(x, y) {
+  for (const i of MX.rows) {
+    const H = UI.heads[i]; if (!H || !ux2Vis(H.el)) continue;
+    const r = ux2R(H.el); if (y >= r.top && y <= r.bottom && x <= r.left + UX2.EDGE) return i;
+  }
+  return -1;
+}
+// Szenen-Kopf, dessen oberer Rand den Punkt enthält
+function ux2TopScene(x, y) {
+  for (const s of MX.scenes) {
+    const b = UI.scenes[s]; if (!ux2Vis(b)) continue;
+    const r = ux2R(b); if (x >= r.left && x <= r.right && y >= r.top - 8 && y <= r.top + UX2.TOPZ) return s;
+  }
+  return -1;
+}
+function ux2Down(e) {
+  const d = UX2.d;
+  if (d && d.id !== e.pointerId) {                                    // ein zweiter Finger: beim Clip-Ziehen = Kopie an/aus
+    if (d.kind === 'drag') { e.preventDefault(); e.stopImmediatePropagation(); if (d.sub === 'clip') { d.copy = !d.copy; ux2Paint(d, d.x, d.y); haptic('tick'); } }
+    return;
+  }
+  if (d) ux2Cancel();
+  if ((e.button || 0) > 0 || !EL.grid || UI.songView) return;
+  const tg = e.target; if (!tg || !tg.closest || !EL.grid.contains(tg) || ux2Busy()) return;
+  const x = e.clientX, y = e.clientY;
+  // Szene: oberer Rand → erst beim Loslassen starten (Tipp) oder nach unten ziehen (umsortieren)
+  const scn = tg.closest('.scn');
+  if (scn || tg === EL.grid) {
+    const s = ux2TopScene(x, y);
+    if (s >= 0 && (!scn || +scn.dataset.s === s)) {
+      if (R.playing && AU.ctx) { try { if (b2t(nextBarFromAudible()) - AU.ctx.currentTime < .35) return; } catch (err) {} }   // knapp vor dem Taktstrich: Start wie immer beim Aufsetzen
+      e.preventDefault(); e.stopImmediatePropagation();
+      UX2.d = {kind: 'scand', id: e.pointerId, s, x0: x, y0: y, x, y};
+      return;
+    }
+  }
+  // Spur: linker Rand → nach rechts ziehen hebt sie ab (SX4 bekommt den Finger wie immer; nach links / Tipp / Halten bleiben)
+  if ((tg.closest('.th') && !tg.closest('.tbb')) || tg === EL.grid) {
+    const i = ux2EdgeRow(x, y);
+    if (i >= 0) { UX2.d = {kind: 'tcand', id: e.pointerId, i, x0: x, y0: y, x, y}; return; }
+  }
+  // Clip halten → abheben (das Clip-Blatt kommt dann beim Loslassen ohne Bewegung)
+  const sl = tg.closest('.slot');
+  if (sl && !UI.pick) {
+    const t = +sl.dataset.t, s = +sl.dataset.s;
+    if (!S.tracks[t] || !S.tracks[t].clips[s]) return;
+    const c = {kind: 'ccand', id: e.pointerId, t, s, x0: x, y0: y, x, y, ptype: e.pointerType, timer: 0};
+    c.timer = setTimeout(() => ux2ClipLift(c), UX2.HOLD);
+    UX2.d = c;
+  }
+}
+function ux2ClipLift(c) {
+  if (UX2.d !== c || !S.tracks[c.t] || !S.tracks[c.t].clips[c.s] || ux2Busy()) return;
+  const p = UI.slotPress;
+  if (p && p.id === c.id) { p.dead = true; clearTimeout(p.timer); slotProvRevert(p); }          // die Matrix-Geste gibt den Finger ab
+  c.kind = 'clift';
+  const C = UI.cells[c.t][c.s];
+  C.el.classList.add('ux2lift'); c.icon = el('span', 'ux2mvw', UX2_MOVE_SVG); C.el.appendChild(c.icon);
+  haptic('pop');
+}
+function ux2Move(e) {
+  const d = UX2.d; if (!d || d.id !== e.pointerId) return;
+  const x = e.clientX, y = e.clientY, dx = x - d.x0, dy = y - d.y0; d.x = x; d.y = y;
+  if (d.kind === 'tcand') {
+    const p = SX4.p && SX4.p.id === d.id ? SX4.p : null;
+    if (p && p.mode) { UX2.d = null; return; }                                  // Solo gehalten / Lautstärke läuft: SX4 bleibt
+    if (dx > UX2.MOVE && Math.abs(dx) > Math.abs(dy) * 2) {
+      if (isDrum(d.i)) { UX2.d = null; toast('DRUMS bleibt die unterste Spur – die anderen lassen sich verschieben'); return; }
+      if (p) sx4End(null);
+      e.preventDefault(); e.stopImmediatePropagation();
+      ux2Start(d, 'track'); return;
+    }
+    if (Math.abs(dy) > UX2.MOVE || dx < -UX2.MOVE) UX2.d = null;
+    return;
+  }
+  if (d.kind === 'scand') {
+    e.preventDefault(); e.stopImmediatePropagation();
+    if (dy > UX2.MOVE && Math.abs(dy) > Math.abs(dx) * 1.5) { ux2Start(d, 'scene'); return; }
+    if (Math.abs(dx) > UX2.MOVE * 1.5 || dy < -UX2.MOVE * 1.5) d.dead = true;      // seitlich weg: weder Start noch Ziehen
+    return;
+  }
+  if (d.kind === 'ccand') { if (Math.abs(dx) > 8 || Math.abs(dy) > 8) { clearTimeout(d.timer); UX2.d = null; } return; }
+  if (d.kind === 'clift') {
+    e.preventDefault(); e.stopImmediatePropagation();
+    if (Math.hypot(dx, dy) >= UX2.LIFT) ux2Start(d, 'clip');
+    return;
+  }
+  if (d.kind === 'drag') { e.preventDefault(); e.stopImmediatePropagation(); ux2Paint(d, x, y); }
+}
+function ux2Up(e) {
+  const d = UX2.d; if (!d || d.id !== e.pointerId) return;
+  const up = e.type === 'pointerup';
+  if (d.kind === 'tcand') { UX2.d = null; return; }
+  if (d.kind === 'ccand') { clearTimeout(d.timer); UX2.d = null; return; }
+  e.stopImmediatePropagation();
+  if (d.kind === 'scand') { UX2.d = null; if (up && !d.dead) launchScene(d.s); return; }
+  if (d.kind === 'clift') {                                                     // gehalten, nicht gezogen = das Clip-Blatt wie bisher
+    ux2Clean(d); UX2.d = null;
+    if (up) { if (d.ptype !== 'touch') { armLongPressGuard(); releaseLongPressGuard(); } selectSlot(d.t, d.s); openClipSheet(d.t, d.s, {empty: true}); }
+    return;
+  }
+  if (d.kind === 'drag') { ux2Clean(d); UX2.d = null; if (up) ux2Drop(d); else haptic('tick'); }
+}
+function ux2Cancel() { const d = UX2.d; if (!d) return; clearTimeout(d.timer); clearTimeout(d.spT); ux2Clean(d); UX2.d = null; }
+// abheben: Geist, Quelle gedimmt, Linie
+function ux2Start(d, sub) {
+  d.kind = 'drag'; d.sub = sub; d.copy = false; d.tg = null; d.sp = null;
+  let src;
+  if (sub === 'track') { src = UI.heads[d.i].el; d.srcEls = [src, ...UI.cells[d.i].map(c => c.el), UI.stops[d.i]]; }
+  else if (sub === 'scene') { src = UI.scenes[d.s]; d.srcEls = [src, ...S.tracks.map((_, t) => UI.cells[t] && UI.cells[t][d.s] && UI.cells[t][d.s].el).filter(Boolean)]; }
+  else { const C = UI.cells[d.t][d.s]; src = C.el; d.srcEls = [src]; }
+  const r = ux2R(src); d.r0 = {left: r.left, top: r.top, w: r.width, h: r.height}; d.gx = d.x0 - r.left; d.gy = d.y0 - r.top;
+  const g = src.cloneNode(true); g.removeAttribute('id'); g.classList.remove('ux2lift', 'sel', 'ux2src'); g.classList.add('ux2gh', 'ux2gh-' + sub);
+  for (const n of g.querySelectorAll('.ux2mvw')) n.remove();
+  g.style.width = r.width + 'px'; g.style.height = r.height + 'px'; g.setAttribute('aria-hidden', 'true');
+  if (sub === 'clip') { d.badge = el('span', 'ux2bd', ''); g.appendChild(d.badge); }
+  document.body.appendChild(g); d.ghost = g;
+  for (const n of d.srcEls) n.classList.add('ux2src');
+  d.line = el('div', 'ux2ln' + (sub === 'scene' ? ' v' : sub === 'clip' ? ' off' : '')); document.body.appendChild(d.line);
+  if (sub === 'clip') { const C = UI.cells[d.t][d.s]; C.el.classList.remove('ux2lift'); if (d.icon) { d.icon.remove(); d.icon = null; } }
+  haptic(sub === 'clip' ? 'tick' : 'pop');
+  ux2Paint(d, d.x, d.y);
+}
+function ux2Clean(d) {
+  clearTimeout(d.spT);
+  if (d.ghost) d.ghost.remove(); if (d.line) d.line.remove();
+  if (d.icon) d.icon.remove();
+  for (const n of d.srcEls || []) n.classList.remove('ux2src');
+  if (d.kind === 'clift' || d.sub === 'clip') { const C = UI.cells[d.t] && UI.cells[d.t][d.s]; if (C) C.el.classList.remove('ux2lift'); }
+  if (d.tgEl) d.tgEl.classList.remove('ux2tg', 'ux2sw', 'ux2no', 'ux2cp');
+  d.ghost = d.line = d.icon = d.tgEl = null;
+}
+// federnde Umschalter [SZ] / [▲▼]: verweilen = umblättern
+function ux2Spring(d, x, y) {
+  const hit = n => { if (!n || n.hidden || !n.isConnected || !n.getClientRects().length) return false; const r = ux2R(n); return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom; };
+  const k = d.sub !== 'track' && MX.bankS && hit(UI.szb) ? 'sz' : d.sub !== 'scene' && MX.bankT && hit(UI.tbb) ? 'tb' : null;
+  if (k === d.sp) return;
+  d.sp = k; clearTimeout(d.spT);
+  if (k) d.spT = setTimeout(() => {
+    if (UX2.d !== d || d.sp !== k) return;
+    if (k === 'sz') setSceneBank(1 - sceneBankOf()); else setTrackBank(MX.pages ? (trackBankOf() + 1) % MX.pages.length : 0);
+    haptic('tick'); d.sp = null; ux2Paint(d, d.x, d.y);
+  }, UX2.SPRING);
+}
+// Ziel aus der Fingerlage; Geist, Linie, Zielzelle zeichnen
+function ux2Paint(d, x, y) {
+  const g = d.ghost; if (!g) return;
+  ux2Spring(d, x, y);
+  const gr = ux2R(EL.grid);
+  if (d.sub === 'track') {
+    g.style.transform = 'translate(' + (d.r0.left + 10) + 'px,' + (y - d.gy) + 'px) scale(1.03)';
+    const rows = MX.rows.filter(i => !isDrum(i) && UI.heads[i] && ux2Vis(UI.heads[i].el));
+    let k = 0; for (const i of rows) { const r = ux2R(UI.heads[i].el); if (y > r.top + r.height / 2) k++; }
+    d.tg = {rows, k};
+    const own = rows.indexOf(d.i), same = own >= 0 && (k === own || k === own + 1);
+    const dH = UI.heads[DRUM_T] && ux2Vis(UI.heads[DRUM_T].el) ? UI.heads[DRUM_T].el : null;
+    const ly = k < rows.length ? ux2R(UI.heads[rows[k]].el).top - 2 : dH ? ux2R(dH).top - 2 : rows.length ? ux2R(UI.heads[rows[rows.length - 1]].el).bottom + 1 : 0;
+    const ln = d.line; ln.style.left = (gr.left + 4) + 'px'; ln.style.width = (gr.width - 8) + 'px'; ln.style.top = (ly - 1) + 'px'; ln.style.height = '3px';
+    ln.classList.toggle('off', same || !rows.length);
+    const key = same ? '' : 'k' + k; if (key && key !== d.tk) haptic('tick'); d.tk = key;
+    return;
+  }
+  if (d.sub === 'scene') {
+    g.style.transform = 'translate(' + (x - d.gx) + 'px,' + (d.r0.top + 10) + 'px) scale(1.03)';
+    const cols = MX.scenes.filter(s => ux2Vis(UI.scenes[s]));
+    let k = 0; for (const s of cols) { const r = ux2R(UI.scenes[s]); if (x > r.left + r.width / 2) k++; }
+    d.tg = {cols, k};
+    const T = k < cols.length ? cols[k] : cols[cols.length - 1] + 1, same = T === d.s || T === d.s + 1;
+    const lx = k < cols.length ? ux2R(UI.scenes[cols[k]]).left - 2 : ux2R(UI.scenes[cols[cols.length - 1]]).right + 1;
+    const ln = d.line; ln.style.left = (lx - 1) + 'px'; ln.style.width = '3px'; ln.style.top = (gr.top + 3) + 'px'; ln.style.height = (gr.height - 6) + 'px';
+    ln.classList.toggle('off', same);
+    const key = same ? '' : 'k' + T; if (key && key !== d.tk) haptic('tick'); d.tk = key;
+    return;
+  }
+  // Clip: Zielzelle unter dem Finger
+  g.style.transform = 'translate(' + (x - d.gx) + 'px,' + (y - d.gy) + 'px) scale(1.06)';
+  const hitEl = document.elementFromPoint(x, y), sl = hitEl && hitEl.closest ? hitEl.closest('.slot') : null;
+  const b = sl && EL.grid.contains(sl) ? {t: +sl.dataset.t, s: +sl.dataset.s} : null;
+  const a = {t: d.t, s: d.s}, same = !!b && b.t === a.t && b.s === a.s;
+  const ok = !!b && !same && ux2CellOk(a, b), full = ok && !!S.tracks[b.t].clips[b.s];
+  const tgEl = b && !same ? sl : null;
+  if (d.tgEl && d.tgEl !== tgEl) d.tgEl.classList.remove('ux2tg', 'ux2sw', 'ux2no', 'ux2cp');
+  if (tgEl) { tgEl.classList.toggle('ux2tg', ok); tgEl.classList.toggle('ux2no', !ok); tgEl.classList.toggle('ux2sw', ok && full && !d.copy); tgEl.classList.toggle('ux2cp', ok && d.copy); }
+  if (tgEl !== d.tgEl && tgEl && ok) haptic('tick');
+  d.tgEl = tgEl; d.tg = b && !same ? {b, ok, full} : null;
+  const txt = d.copy ? '⧉ Kopie' + (ok && full ? ' (ersetzt)' : '') : !d.tg ? '2. Finger = Kopie' : !ok ? 'geht nicht' : full ? '⇄ tauschen' : '→ verschieben';
+  if (d.badge && d.badge.textContent !== txt) d.badge.textContent = txt;
+  g.classList.toggle('ux2c', !!d.copy);
+}
+function ux2Drop(d) {
+  if (d.sub === 'track') {
+    const T = d.tg; if (!T || !T.rows.length) return;
+    const own = T.rows.indexOf(d.i); if (own >= 0 && (T.k === own || T.k === own + 1)) return;
+    const syn = trackOrder().filter(x => x !== DRUM_T), rest = syn.filter(x => x !== d.i);
+    let pos;
+    if (T.k < T.rows.length) pos = rest.indexOf(T.rows[T.k]);
+    else pos = rest.indexOf(T.rows[T.rows.length - 1]) + 1;
+    if (pos < 0) return;
+    ux2MoveTrack(d.i, pos);
+    return;
+  }
+  if (d.sub === 'scene') {
+    const T = d.tg; if (!T || !T.cols.length) return;
+    const tgt = T.k < T.cols.length ? T.cols[T.k] : T.cols[T.cols.length - 1] + 1;
+    if (tgt === d.s || tgt === d.s + 1) return;
+    ux2MoveScene(d.s, tgt > d.s ? tgt - 1 : tgt);
+    return;
+  }
+  const T = d.tg; if (!T) return;
+  if (!T.ok) { toast('Drum- und Synth-Clips sind nicht austauschbar'); return; }
+  if (d.copy) ux2DoCopy({t: d.t, s: d.s}, T.b); else ux2DoExchange({t: d.t, s: d.s}, T.b);
+}
+document.addEventListener('pointerdown', e => { try { ux2Down(e); } catch (err) { logErr(err); } }, true);
+document.addEventListener('pointermove', e => { try { ux2Move(e); } catch (err) { logErr(err); } }, {capture: true, passive: false});
+document.addEventListener('pointerup', e => { try { ux2Up(e); } catch (err) { logErr(err); } }, true);
+document.addEventListener('pointercancel', e => { try { ux2Up(e); } catch (err) { logErr(err); } }, true);
+// Test-API (am Ende an SYNQUENZER gehängt)
+const UX2_API = {
+  ux2Order: () => trackOrder().slice(),
+  ux2MoveTrack: (i, pos) => ux2MoveTrack(i, pos, true),
+  ux2Exchange: (t1, s1, t2, s2) => ux2DoExchange({t: t1 | 0, s: s1 | 0}, {t: t2 | 0, s: s2 | 0}, true),
+  ux2Copy: (t1, s1, t2, s2) => ux2DoCopy({t: t1 | 0, s: s1 | 0}, {t: t2 | 0, s: s2 | 0}, true),
+  ux2MoveScene: (from, to) => ux2MoveScene(from, to, true),
+  ux2Info: () => ({n: UX2.n, last: UX2.last ? JSON.parse(JSON.stringify(UX2.last)) : null, drag: UX2.d ? {kind: UX2.d.kind, sub: UX2.d.sub || null, copy: !!UX2.d.copy, tg: UX2.d.tg ? JSON.parse(JSON.stringify(UX2.d.tg)) : null} : null}),
+  ux2Roll: () => (ED.roll && ED.roll.el && ED.roll.el.acts && ED.roll.el.acts._ux2p ? ED.roll.el.acts._ux2p.info() : null),
+  ux2RollCopy: () => { const p = ED.roll && ED.roll.el.acts._ux2p; return p ? p.copy() : false; },
+  ux2RollPaste: b => { const p = ED.roll && ED.roll.el.acts._ux2p; if (!p || !p.start()) return false; if (b != null) p.at(b); return p.apply(); },
+};
+/* UX2-END */
 
 /* ---------- menu (§2.5, §12.2): full-screen sheet; P stacked, L two columns ---------- */
 // two-step confirm: the second tap only counts after ARM_MIN_MS, so a habitual double-tap can never confirm
@@ -73580,6 +74133,7 @@ Object.assign(SYNQUENZER, {                       // BM6 (Nachtrag 7 §5.3): Bit
   bmRoutes: t => bmRoutes(t), bmRouteClear: (t, k) => (bmLoad(), bmRouteClear(t, k)),
   bmInit: (t, kind) => { const s_ = sndOf(t); if (!s_ || s_.engine !== 'bm') throw new Error('Keine ' + BM_NAME + '-Spur: ' + t); return soundEdit(t, 'Init', () => { const snd = deep(s_); snd.p.bm = SQBM.init(kind); applySound(t, snd); return true; }); },
 });
+Object.assign(SYNQUENZER, UX2_API);                         // UX2: Ziehen in der Matrix, Einfügen mit Lupe
 const NO_SYNC = new Set(['clipCurves', 'bmcLog', 'bmcState', 'oneScaleOf', 'harmInfo', 'kbScaleNow', 'micCheck', 'micCheckJson', 'micCheckEstimate', 'cloud', 'cloudProjects', 'cloudVersions', 'cloudHandoff', 'state', 'project', 'runtime', 'getClip', 'getParam', 'noteLog', 'voices', 'timeline', 'serialize', 'buildMidi', 'buildZip', 'crc32', 'meter', 'outPitch', 'migrate', 'tapTempo',
   'getSound', 'mods', 'library', 'factory', 'previewState', 'soundEdited', 'fmxView', 'fmxPreview', 'fmxBadge',
   'history', 'projects', 'storage', 'engineInfo', 'getBusFx', 'wake', 'gestures', 'roll', 'rollApi', 'detectKey', 'sceneKey',

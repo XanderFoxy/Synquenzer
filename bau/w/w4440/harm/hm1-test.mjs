@@ -47,6 +47,10 @@ ok('1 Glätten: unter C · Am · F · G klingt es wieder wie gespielt', chordTon
 const selR = await E(p, () => { const A = window.SYNQUENZER, c = A.getClip(0, 4), idx = c.notes.map((n, i) => (n.t === 4 ? i : -1)).filter(i => i >= 0); return {idx, c: c.notes, s: A.hm1.smooth(0, 4, 'bar', idx)}; });
 ok('1 Glätten mit Auswahl: nur gewählte Noten (Takt 2) rücken', selR.idx.length === 4 && selR.s.every((n, i) => (selR.idx.includes(i) ? n.n !== selR.c[i].n || n.n % 12 === 0 : n.n === selR.c[i].n)), selR.s.map(n => n.n));
 
+const minor = await E(p, () => { const A = window.SYNQUENZER, ns = []; for (const [t, ch, bs] of [[0, [57, 60, 64], 45], [4, [53, 57, 60], 41], [8, [60, 64, 67], 48], [12, [55, 59, 62], 43]]) { ns.push({t, d: 4, n: bs, v: .9}); for (const n of ch) ns.push({t, d: 2, n, v: .6}); ns.push({t: t + 2, d: 1, n: ch[2] + 12, v: .8}); }
+  A.setClip(1, 3, {len: 4, key: {root: 9, scale: 'aeolian', src: 'user'}, notes: ns}); const sm = A.hm1.smooth(1, 3, 'bar');
+  const r = {segs: A.hm1.segs(1, 3, 'bar').map(g => g.name).join(' '), pcs: [0, 1, 2, 3].map(k => [...new Set(sm.filter(n => n.t >= 4 * k && n.t < 4 * k + 2 && n.d >= 2).map(n => n.n % 12))].sort((a, b) => a - b).join(','))}; A.setClip(1, 3, null); return r; });
+ok('1 Glätten in Moll: Am · F · C · G → jeder Takt auf i (A-C-E)', minor.segs === 'Am F C G' && minor.pcs.every(x => x === '0,4,9'), minor);
 // UI: Noten-Editor → [Harmonie] → Vorschau → Als Clip (+ Akkord-Zeile) – ein Undo-Schritt
 await E(p, () => window.SYNQUENZER.openRoll(0, 4)); await p.waitForTimeout(400);
 const hb = await E(p, () => { const b = [...document.querySelectorAll('#rollSheet .pr-bar.pra button')].find(x => x.textContent === 'Harmonie'); if (!b) return null; b.scrollIntoView({inline: 'center'}); const a = b.parentNode, r = b.getBoundingClientRect(), cx = r.left + r.width / 2;

@@ -4833,6 +4833,28 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 .sx14 .sx14-sr .sx14-d{flex:0 0 44px;height:44px;padding:0}
 .sx14 .sx14-e{font:500 12px/1.3 var(--font-ui);color:var(--text-dim);padding:6px 4px}
 /* SX714-CSS-END */
+/* UIX1-CSS-BEGIN (Xander 07.11.): hochkant kein runder Lautsprecher mehr über dem Song (Schalter im Schleife-Blatt), jedes ✕ mit
+   Trefferfläche ≥ 44 px (Aussehen bleibt), Popups mit Titel bekommen ein ✕ oben rechts (bleibt beim Scrollen stehen), Zeile „Neu als“
+   im Blatt „Teil überarbeitet“ (wie im Blatt „Teil gefangen“) */
+.ux1-hd{display:none}
+@media (orientation:portrait){
+  #songView:not(.side) .sv-scrfab{display:none!important}
+  .sh-x,.fsheet .fs-x,.psheet .ps-x,.crsheet .cr-x,.cp-x{position:relative}
+  .sh-x::after{content:'';position:absolute;left:0;right:0;top:-2px;bottom:-2px}
+  .fsheet .fs-x::after,.psheet .ps-x::after{content:'';position:absolute;left:-2px;right:-2px;top:-2px;bottom:-2px}
+  .crsheet .cr-x::after{content:'';position:absolute;left:-4px;right:-4px;top:-4px;bottom:-4px}
+  .cp-x::after{content:'';position:absolute;left:0;right:0;top:-2px;bottom:-2px}
+  .pop > .ux1-hd{display:block;position:sticky;top:8px;height:0;z-index:3}
+  .pop > .ux1-hd > .ux1-px{position:absolute;right:-8px;top:-8px;width:40px;height:36px;min-width:0;padding:0;font-size:15px}
+  .pop > .ux1-hd > .ux1-px::after{content:'';position:absolute;left:-2px;right:-2px;top:-4px;bottom:-4px}
+  .pop > h4.ux1-h{padding:6px 36px 0 0;min-height:24px;box-sizing:border-box}
+}
+.ux1-lp{margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}
+.ux1-lp .ux1-scr{display:flex;align-items:center;gap:8px;width:100%;min-height:44px;padding:0 10px;text-align:left;font:600 13px/1.15 var(--font-ui)}
+.ux1-lp .ux1-scr span{flex:1 1 auto;min-width:0}
+.ux1-lp .ux1-scr b{flex:none;font:800 11px/1 var(--font-ui);letter-spacing:.06em;text-transform:uppercase}
+.fsheet .ux1-s1 .cp-sc{flex:1 1 auto;min-width:0}
+/* UIX1-CSS-END */
 /* NDP-CSS-BEGIN – die North-Platte (Paket ND-P): eigenes Instrument-Gesicht der Drum-Engine MD_NAME. Rote Front, schwarze
    Beschriftungsfelder, beleuchtete Tasten, 3-stelliges Siebensegment-Display, großes Rad. Nur Formen aus CSS/SVG, keine Bilder. */
 .hb.ndpk{display:inline-flex;align-items:center;justify-content:center;gap:5px;flex:none;height:44px;min-height:44px;min-width:58px;padding:0 8px;border-radius:8px;font-weight:800;letter-spacing:.02em;color:#fff;
