@@ -454,6 +454,28 @@ test('Ohne Daten: freundliche Hinweise (Liste noch nicht erstellt, leerer Bereic
   await o.ctx.close();
 });
 
+test('Film-Einträge des Radars (aktuell.json → filme) stehen nur auf der Filme-Seite, nicht noch einmal unter „Mehr“', { skip: ohnePw }, async () => {
+  const { ctx, page, fehler, zustand } = await oeffne({ pfad: '/mein-vorteil/#mehr' });
+  const a = JSON.parse(readFileSync(join(FIX, 'vertrag', 'vorteile-aktuell.json'), 'utf8'));
+  const eintrag = (id, kategorie) => ({ id, kategorie, titel: `Manta Manta (1991) für 4,99 € ${id}`, zeile: 'Kaufen 4,99 € · auf deiner Wunschliste', soGehts: 'Link öffnen – die TV-App zeigt den Film.',
+    link: `https://itunes.apple.com/de/movie/manta-manta/id${id.length}0${id === 'film-x' ? 1 : 2}`, quelle: 'Apple TV', wert: 95, sofort: true, grund: 'Wunschfilm zum Zielpreis',
+    datum: '2026-11-07T13:05:00.000Z', bis: null, sichtbarBis: '2026-11-10T13:05:00.000Z', preisfehler: false, preis: 4.99, extra: { gruppe: 'wunsch' } });
+  a.kategorien.filme = [eintrag('film-x', 'filme')];
+  a.kategorien.kino = [eintrag('kino-x', 'kino')]; // Gegenprobe: ein Bereich ohne eigene Seite erscheint unter „Mehr“
+  a.namen = { ...a.namen, filme: 'Filme & Serien', kino: 'Kino-Probe' };
+  a.aktualisiert = '2026-11-07T14:05:00.000Z';
+  await ctx.route(/^https:\/\/raw\.githubusercontent\.com\/XanderFoxy\/Synquenzer\/vorteile-daten\/vorteile\/data\/aktuell\.json/,
+    r => r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(a) }));
+  await page.reload();
+  await page.waitForFunction(() => /Kino-Probe/.test(document.getElementById('i-mehr').textContent), null, { timeout: 10000 });
+  const mehr = await page.locator('#i-mehr').textContent();
+  assert.doesNotMatch(mehr, /Filme & Serien|film-x/);
+  assert.doesNotMatch(await page.locator('main').textContent(), /film-x/, 'nirgends in den Abschnitten');
+  assert.ok(!zustand.abrufe.includes('filme.js') && !zustand.abrufe.includes(FILME_PFAD), 'Filme bleiben faul');
+  assert.deepEqual(fehler, []);
+  await ctx.close();
+});
+
 // Kein seitliches Scrollen, alles Tippbare im sichtbaren Bereich ≥ 44 px, Reiter-Wörter passen in ihre Knöpfe
 async function pruefeLayout(page, wo) {
   const r = await page.evaluate(() => {

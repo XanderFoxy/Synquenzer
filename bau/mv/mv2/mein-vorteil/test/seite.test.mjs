@@ -431,8 +431,9 @@ test('Sprungmarken: alte #angebote/#vorteile/#konzerte zeigen auf Abschnitte, Le
     await page.evaluate(h => { location.hash = h; }, alt);
     await page.waitForFunction(h => location.hash === h, neu);
   }
-  // Leiste: alle Abschnitte in Xanders Reihenfolge, wischbar ohne seitliches Scrollen der Seite
-  assert.deepEqual(await page.locator('.sprung a').evaluateAll(as => as.map(a => a.firstChild.textContent.trim())), ['Krypto', 'Meine Produkte', 'Preisfehler', 'Gewinnspiele', 'Cashback', 'Snacks', 'Auftritte', 'Remix', 'Mehr']);
+  // Leiste: alle Abschnitte in Xanders Reihenfolge, danach der eigene Reiter „Filme“; wischbar ohne seitliches Scrollen der Seite
+  assert.deepEqual(await page.locator('.sprung a').evaluateAll(as => as.map(a => a.firstChild.textContent.trim())), ['Krypto', 'Meine Produkte', 'Preisfehler', 'Gewinnspiele', 'Cashback', 'Snacks', 'Auftritte', 'Remix', 'Mehr', 'Filme']);
+  assert.equal(await page.locator('.sprung a[data-reiter="filme"]').count(), 1);
   // Push-Hilfe
   await page.locator('#push').click();
   assert.match(await page.locator('#push-hilfe').innerText(), /xander-schnaeppchen-b5cbf4442aaa9734f3/);

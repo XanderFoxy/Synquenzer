@@ -669,6 +669,8 @@ const BEREICH = {
 // Nie zeigen (Xander 07.11.2026: „Prämien & Freunde werben“ – Strom, Bank, Konto, Freunde werben – komplett raus),
 // auch nicht aus älteren Daten
 const NIE_ZEIGEN = new Set(['praemien']);
+// Bereiche mit eigener Seite (Reiter in der Leiste): nicht noch einmal unter „Mehr“
+const EIGENE_SEITE = new Set(['filme']);
 const SICHTBAR = 4;
 const PREISFEHLER_STUNDEN = 24; // Preisfehler ohne Ende-Angabe: höchstens so lange zeigen (echte sind nach Minuten vorbei)
 const GEWINNSPIEL_OHNE_ENDE_TAGE = 7; // Gewinnspiel ohne bekanntes Ende: nur so lange nach dem Melden
@@ -1315,7 +1317,7 @@ function einteilen() {
     for (const roh of liste || []) {
       if (!roh || weg.has(roh.id)) continue;
       const e = roh.kategorie ? roh : { ...roh, kategorie: k };
-      if (NIE_ZEIGEN.has(e.kategorie)) continue;
+      if (NIE_ZEIGEN.has(e.kategorie) || EIGENE_SEITE.has(e.kategorie)) continue;
       if (e.quelle === 'Schnäppchen-Wecker' || e.extra?.produkt) continue; // steht schon als Produkt-Karte da
       const pf = istPreisfehler(e);
       if (pf && e.kategorie !== 'reisen') continue; // Abschnitt Preisfehler (nur krasse)
