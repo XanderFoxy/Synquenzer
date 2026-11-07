@@ -198,6 +198,13 @@ await P.evaluate(() => { const b = document.querySelector('#rollSheet .bb1rb'); 
 ok('ROLLE-Knopf öffnet das Blatt für diesen Clip', (await P.evaluate(() => { const s = SYNQUENZER.bb1.state(); return s.open && s.t === 0 && s.s === 0; })));
 await P.tap('.pop.bb1s .ms-x'); await P.waitForTimeout(150);
 ok('✕ schließt das Blatt', !(await P.evaluate(() => SYNQUENZER.bb1.state().open)));
+const chipFit = p => p.evaluate(() => { const c = document.querySelector('#sndSheet .brcats .chip[data-c="wkz"]'); if (!c) return null; const r = c.getBoundingClientRect(), s = [...c.querySelectorAll('span')].find(x => getComputedStyle(x).display !== 'none');
+  return {w: Math.round(r.width), h: Math.round(r.height), text: s ? s.textContent : c.textContent, cut: s ? s.scrollWidth > s.clientWidth + 1 || s.getBoundingClientRect().right > r.right - 1 : c.scrollWidth > c.clientWidth + 1, inView: r.left >= 0 && r.right <= innerWidth + 1}; });
+await P.evaluate(() => { closeSheets(); selectTrack(0); SYNQUENZER.openBrowser(0); }); await P.waitForTimeout(300);
+await P.tap('#sndSheet .brcats .chip[data-c="wkz"]'); await P.waitForTimeout(250);
+const rowsP = await P.evaluate(() => SYNQUENZER.browserRows()), cfP = await chipFit(P);
+ok('Klang-Browser: Chip „Werkzeugkasten“ zeigt die 6 neuen Klänge, Text ganz', rowsP.length === 6 && rowsP.every(r => r.role === 'wkz') && cfP && !cfP.cut, {n: rowsP.length, chip: cfP});
+await P.evaluate(() => closeSheets());
 ok('Blatt hochkant ohne Fehler', P.errs.length === 0, P.errs.slice(0, 3));
 
 /* ---------- 3. Vorschau im Lauf: der laufende Clip hört die Figur, ✕ holt das Original zurück (kein Undo, nichts gespeichert) ---------- */
@@ -269,6 +276,10 @@ await L.tap('#clipSheet .bb1cb'); await L.waitForTimeout(300);
 const dq = await L.evaluate(() => ({st: SYNQUENZER.bb1.state(), roles: [...document.querySelectorAll('.pop.bb1s [data-role]')].map(b => b.dataset.role), klang: !!document.querySelector('.pop.bb1s [data-bb="klang"]'), n: document.querySelectorAll('.pop.bb1s [data-fig]').length}));
 ok('Drum-Clip: nur „Drums-Füller“ (6 Figuren), kein [mit Klang]', dq.roles.join() === 'drum' && dq.n === 6 && !dq.klang, dq);
 const gD = await geo(L); ok('Drum-Blatt quer: Tasten ≥ 44 px, ✕ sichtbar', gD && !gD.small.length && gD.x.vis, gD);
+await L.evaluate(() => { closePop(); closeSheets(); selectTrack(0); SYNQUENZER.openBrowser(0); }); await L.waitForTimeout(300);
+await L.tap('#sndSheet .brcats .chip[data-c="wkz"]'); await L.waitForTimeout(250);
+const cfL = await L.evaluate(() => { const c = document.querySelector('#sndSheet .brcats .chip[data-c="wkz"]'); if (!c) return null; const r = c.getBoundingClientRect(), s = [...c.querySelectorAll('span')].find(x => getComputedStyle(x).display !== 'none'); return {w: Math.round(r.width), h: Math.round(r.height), cut: s ? s.scrollWidth > s.clientWidth + 1 || s.getBoundingClientRect().right > r.right - 1 : c.scrollWidth > c.clientWidth + 1}; });
+ok('Klang-Browser quer: Chip „Werkzeugkasten“ ganz lesbar', cfL && !cfL.cut && (await L.evaluate(() => SYNQUENZER.browserRows().length)) === 6, cfL);
 ok('quer ohne Fehler', L.errs.length === 0, L.errs.slice(0, 3));
 await L.close();
 
