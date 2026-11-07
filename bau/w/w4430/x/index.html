@@ -67266,32 +67266,33 @@ function vvDrawMatrix(g, LW, LH, st) {
 /* ===================== VK4-BEGIN: Video-Matrix wie in der App (Konzept V4) =====================
    - Ruhende Teile als Bild: jede Clip-Zelle (Spurfarbe 22 %, Linie, Mini-Noten 60 %, ◆, „4T“), jeder Spurkopf, jede Szenen-Taste und das
      leere Feld werden einmal in ein eigenes Bild (Offscreen-Canvas) in der Pixelgröße des Videos gezeichnet und danach nur 1 : 1 kopiert
-     (16:9 = 3 px je Punkt, 9:16 Kamera ohne Zoom = 5⅓, 9:16 Balken = 1,69). Schlüssel = was man sieht (clipSig = Länge + Noten, Farbe,
-     Größe, Name, Klang …). Höchstens VK4_PX Pixel im Speicher, die ältesten fallen zuerst. Zoomt die 9:16-Kamera (oder die kleine
-     Vorschau), wird direkt gezeichnet: ein skaliertes Kopieren großer Bilder kostet mehr als das Zeichnen selbst.
+     (16:9 = 3 px je Punkt, 9:16 Kamera ohne Zoom = 5⅓, 9:16 Balken = 1,69, Vorschau nach ihrer Größe). Schlüssel = was man sieht
+     (clipSig = Länge + Noten, Farbe, Größe, Name, Klang …). Höchstens VK4_PX Pixel im Speicher, die ältesten fallen zuerst. Zoomt die
+     9:16-Kamera, wird direkt gezeichnet: ein skaliertes Kopieren großer Bilder kostet mehr als das Zeichnen selbst.
    - Mini-Noten: die Rechtecke von miniSvg – dieselbe Funktion malt die Noten in der App-Matrix (Drums als Schlag-Raster in 12 Pad-Zeilen).
    - Je Bild nur das Bewegte: was gerade klingt (voll gedeckt), Drum-Schläge (Blitz + Glühen um die Zelle, Stärke = Anschlag, klingt in
      VK4_D s ab), der dünne Laufstrich, Fortschritt, ■, „n/len“, der grüne Rahmen. Glüh-Quelle im Video: das Noten-Log des Offline-
      Durchlaufs (src.nt, wie VV3/VK3 – so, wie es klingt); ohne Durchlauf (Vorschau) die Schläge des Clips. Kein Zufall, keine Uhr.
    - Nur was im Bild liegt, wird gezeichnet (9:16-Kamera: der Rest der Matrix liegt außerhalb des Fensters). */
-const VK4_D = .16, VK4_PX = 8e6, VK4_LAD = [1, 1.6875, 2, 3, 16 / 3];   // the scales of the video: 9:16 Balken, 16:9, 9:16 Kamera (Zoom 1)
+const VK4_D = .16, VK4_PX = 8e6;
 const VK4 = {spr: new Map(), rects: new Map(), px: 0, gen: -1, stat: {hit: 0, miss: 0, direct: 0}, probe: null};
 // the visible part of the picture in drawing points (the canvas through the current transform), the pixels per point, the transform;
-// L = the picture scale when the view stands at one of the video's own scales (then the resting parts are copied 1 : 1)
+// L = the scale when the view is not zoomed (the whole width: 16:9, Balken, preview; the whole height: 9:16 camera at zoom 1) – then the
+// resting parts are copied 1 : 1; 0 while the 9:16 camera zooms (its scale changes from picture to picture)
 function vk4Vis(g, C) {
   if (VK4.gen !== C.gen) { vk4Clear(); VK4.gen = C.gen; }                       // fonts loaded later: draw the pictures again
   let m = null; try { m = g.getTransform(); } catch (e) { m = null; }
   if (!m || m.b || m.c || !(m.a > 0) || !(m.d > 0) || !g.canvas) return {x0: -1e9, y0: -1e9, x1: 1e9, y1: 1e9, sc: m && m.a > 0 ? m.a : 1, m: null, L: 0};
-  const L = Math.abs(m.a - m.d) < 1e-6 ? VK4_LAD.find(q => Math.abs(q - m.a) < 1e-3) || 0 : 0;
+  const L = Math.abs(m.a - m.d) < 1e-6 && (Math.abs(m.a - g.canvas.width / 640) < 1e-4 || Math.abs(m.a - g.canvas.height / VV_AR) < 1e-4) ? m.a : 0;
   return {x0: -m.e / m.a, y0: -m.f / m.d, x1: (g.canvas.width - m.e) / m.a, y1: (g.canvas.height - m.f) / m.d, sc: Math.max(m.a, m.d), m, L};
 }
 const vk4In = (v, x, y, w, h) => x < v.x1 && x + w > v.x0 && y < v.y1 && y + h > v.y0;
 function vk4Clear() { for (const e of VK4.spr.values()) { e.cv.width = e.cv.height = 0; } VK4.spr.clear(); VK4.px = 0; }   // width 0: iOS frees the memory at once
 // a resting part (w × h points at x, y), drawn by fn(o) in its own points: at a video scale from its picture (drawn once, copied on whole
-// pixels); else (9:16 camera zooming, preview) drawn directly – a scaled copy of big pictures costs more than drawing
+// pixels); else (9:16 camera zooming) drawn directly – a scaled copy of big pictures costs more than drawing them
 function vk4Put(g, vis, key, x, y, w, h, fn) {
   if (!vis.L) { VK4.stat.direct++; g.save(); g.translate(x, y); fn(g); g.restore(); return; }
-  const L = vis.L, M = VK4.spr; key += '@' + L + ':' + w.toFixed(2) + 'x' + h.toFixed(2);
+  const L = vis.L, M = VK4.spr; key += '@' + L.toFixed(4) + ':' + w.toFixed(2) + 'x' + h.toFixed(2);
   let e = M.get(key);
   if (e) { VK4.stat.hit++; M.delete(key); M.set(key, e); }                  // the most recent at the end (the oldest go first)
   else {
@@ -67340,7 +67341,7 @@ function vk4Cell(g, C, vis, st, tr, i, s, c, x, y, w, h, on, tc, bpm, P) {
     if (mh > 3) {
       o.globalAlpha = am * .6;
       if (c.audio) vvRoll(o, c, 3, 3, mw, mh, tc, null);
-      else { o.fillStyle = tc; for (const r of vk4MiniRects(c, drum)) o.fillRect(3 + r[0] * mw / 100, 3 + r[1] * mh / 100, Math.min(r[2] * mw / 100, mw - r[0] * mw / 100), r[3] * mh / 100); }
+      else { o.fillStyle = tc; for (const r of vk4MiniRects(c, drum)) { const rw = Math.min(r[2], 100 - r[0]) * mw / 100; if (rw > 0) o.fillRect(3 + r[0] * mw / 100, 3 + r[1] * mh / 100, rw, r[3] * mh / 100); } }   // as the svg: cut at its edge
     }
     o.globalAlpha = am;
     if (c.st) { const dx = w - 8, dy = 7.5; o.beginPath(); o.moveTo(dx, dy - 4); o.lineTo(dx + 3.5, dy); o.lineTo(dx, dy + 4); o.lineTo(dx - 3.5, dy); o.closePath(); o.fillStyle = C.amber; o.fill(); }   // V6A ◆

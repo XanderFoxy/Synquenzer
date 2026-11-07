@@ -4784,6 +4784,12 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 .pg.percpg.pan-y{overflow-y:auto;overflow-x:hidden;touch-action:pan-y;-webkit-overflow-scrolling:touch}
 .percrow .percplt{height:44px;min-width:86px;margin-left:auto}
 /* NPS-CSS-END */
+/* QF1-CSS-BEGIN: Querformat – nichts unten abgeschnitten; der Körper eines Editor-Blatts rollt innen, wenn auch fit3 nicht reicht */
+.sh-body.qf1s{overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.sh-body.qf1s::-webkit-scrollbar{display:none}
+.pg.percpg.pan-y{overscroll-behavior:contain}
+.pop{overscroll-behavior:contain}
+/* QF1-CSS-END */
 /* SX9-CSS-BEGIN */
 .plsheet .sx9-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 6px}
 .plsheet .sx9-l{font:600 12px/1 var(--font-ui);color:var(--text-dim);margin-right:2px}
@@ -41301,7 +41307,9 @@ function abortAll(why) { RESTPTR.clear(); for (const [id, g] of [...GEST]) { GES
 // V0c-fix: a touch that starts in a sideways swipe list (.cp-sc, .pan-x) keeps its native scrolling (a tap there acts on
 // pointerup as everywhere; its synthetic click is eaten by the ghost-click guard, a swipe ends in pointercancel)
 // VS3-fix: the same for an upright list (.pan-y, e.g. the takes list), so it scrolls by finger
-function guardTouch(node) { node.addEventListener('touchstart', e => { if (e.target && e.target.closest && e.target.closest('.cp-sc,.pan-x,.pan-y')) return; if (e.cancelable) e.preventDefault(); }, {passive: false}); return node; }
+function guardTouch(node) { node.addEventListener('touchstart', e => { if (e.target && e.target.closest && (e.target.closest('.cp-sc,.pan-x,.pan-y') || qf1PopScr(e.target))) return; if (e.cancelable) e.preventDefault(); }, {passive: false}); return node; }
+// QF1: ein Fenster (.pop), das höher ist als der Schirm (quer), rollt mit dem Finger, auch wo sein Inhalt sonst geschützt ist
+function qf1PopScr(t) { const p = t.closest('.pop'); return !!p && p.scrollHeight > p.clientHeight + 1 && !p.classList.contains('abg'); }
 // tap = pointerdown + pointerup on the same element within 12 px. A click right after a handled pointer tap is ignored;
 // keyboard and programmatic clicks still activate. sel: delegate to children matching sel.
 function onTap(node, fn, sel) {
@@ -42131,8 +42139,18 @@ const FIT_LV = ['fit1', 'fit2', 'fit3'];
 function fitOver(b) { return b.scrollHeight > b.clientHeight + 1; }
 function fitBody(b, full) {
   if (!b || !b.isConnected || !b.clientHeight) return;
-  if (full) { if (FIT_LV.some(c => b.classList.contains(c))) b.classList.remove(...FIT_LV); }
+  if (full) { if (FIT_LV.some(c => b.classList.contains(c))) b.classList.remove(...FIT_LV); if (b.classList.contains('qf1s')) b.classList.remove('qf1s', 'pan-y'); }   // QF1
   for (const c of FIT_LV) { if (b.classList.contains(c)) continue; if (!fitOver(b)) break; b.classList.add(c); }
+  qf1Fit(b, full);   // QF1
+}
+/* QF1 (Xander 07.11.: „iPhone nach links drehen … die Elemente nach unten abgeschnitten … das darf nicht sein“): bleibt eine Seite
+   auch in der kleinsten Dichte (fit3) höher als ihr Platz (Querformat mit Safari-Leisten, 926 × 370 / 667 × 375), rollt der Körper
+   des Blatts innen senkrecht mit dem Finger (nur innen, kein Durchreichen an die Seite; ohne sichtbaren Balken). Kopf, ✕, Reiter
+   bleiben fest oben (sie liegen außerhalb des Körpers); Regler behalten touch-action:none, ein Wisch auf ihnen dreht weiter.
+   Passt alles, ändert sich nichts. Ein Neuaufbau derselben Seite (Wert getippt) behält den Scroll-Stand. */
+function qf1Fit(b, full) {
+  if (!b.classList.contains('qf1s') && FIT_LV.every(c => b.classList.contains(c)) && fitOver(b)) b.classList.add('qf1s', 'pan-y');
+  if (full && b._qf1y) { const y = b._qf1y; b._qf1y = null; if (y[0]) b.scrollTop = y[0]; const q = y[1] && b.querySelector('.pg.pan-y'); if (q) q.scrollTop = y[1]; }
 }
 let fitRO = null;
 function fitWatch(body) {
@@ -42143,6 +42161,8 @@ function fitWatch(body) {
 }
 // shared frame of the editor sheets: header row(s), LCD line, tab row, body (no vertical scroll)
 function sheetFrame(sh, title, tabs, curTab, onTab, subs) {
+  const qk = R.selT + '|' + curTab + '|' + (subs ? subs.cur : ''), qb = sh._qf1k === qk ? sh.querySelector(':scope > .sh-body') : null, qp = qb && qb.querySelector('.pg.pan-y');   // QF1
+  const qy = qb && (qb.scrollTop || (qp && qp.scrollTop)) ? [qb.scrollTop, qp ? qp.scrollTop : 0] : null; sh._qf1k = qk;   // QF1
   sh.innerHTML = '';
   const head = el('div', 'sh-head'), r1 = el('div', 'sh-row r1'), r2 = el('div', 'sh-row r2');
   // the Träger chip „⇅ Am7“ (§2.3 / §5.2) sits under the title in the same slot: neither truncates the other
@@ -42161,7 +42181,7 @@ function sheetFrame(sh, title, tabs, curTab, onTab, subs) {
     subs.list.forEach(([id, l]) => { const b = el('button', 'stab' + (subs.cur === id ? ' on' : ''), l); b.dataset.sub = id; sb.appendChild(b); });
     onTap(sb, b => subs.on(b.dataset.sub), '.stab'); bar.appendChild(sb); bar.classList.add('hassubs');
   }
-  const body = el('div', 'sh-body rest');
+  const body = el('div', 'sh-body rest'); body._qf1y = qy;   // QF1
   sh.append(head, bar, body);
   if (sh === EL.synthSheet || sh === EL.drumSheet) fitWatch(body);
   ED.lcd = lcd; lcdHint();
@@ -52315,7 +52335,7 @@ function bindUI() {
   document.addEventListener('contextmenu', e => { if (!inField(e)) e.preventDefault(); });
   [EL.kb, EL.pads, EL.segTr, EL.drumSheet, EL.popLayer.querySelector('.bd')].forEach(n => { if (n) guardTouch(n); });
   // the synth sheet is guarded against the loupe too, except the label columns of its scrolling list (MOD matrix, §1.7.3)
-  EL.synthSheet.addEventListener('touchstart', e => { if (e.cancelable && !(e.target.closest && e.target.closest('.mxlist .ms, .mxlist .md, .mxlist .mempty, .pg-lfo-l1 .routes, .pg-lfo-l2 .routes, .fxv.scr'))) e.preventDefault(); }, {passive: false});
+  EL.synthSheet.addEventListener('touchstart', e => { if (e.cancelable && !(e.target.closest && e.target.closest('.mxlist .ms, .mxlist .md, .mxlist .mempty, .pg-lfo-l1 .routes, .pg-lfo-l2 .routes, .fxv.scr, .pan-y'))) e.preventDefault(); }, {passive: false});   // QF1: + .pan-y (Seite NORTH, rollender Körper)
   // transport
   // keyboard activation (Enter/Space on a focused button) only: clicks that follow a pointer interaction are ignored
   const kbdClick = (elx, fn) => {

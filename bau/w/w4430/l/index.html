@@ -2756,6 +2756,11 @@ a.mbtn[aria-disabled=true]{opacity:.55}
 .cs3 .lenrow{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .cs3 .lenrow .hb{flex:1 1 0;min-width:44px;height:44px;padding:0 6px}
 .cs3 .lenrow .lbl{flex:none;margin-right:2px}
+/* KL1: Fenster eines erweiterten Clips (nur mit clip.lw) – Tasten 44 px */
+#clipSheet .cs3 .kl1row{display:flex;align-items:center;gap:6px}
+#clipSheet .cs3 .kl1row .lbl{flex:none;margin-right:2px}
+#clipSheet .cs3 .kl1row .kl1c{flex:1 1 auto;min-width:0;height:36px;display:inline-flex;align-items:center;justify-content:center;padding:0 10px;border-radius:18px;font:700 13px/1 var(--font-ui);background:var(--lcd);border:1px solid var(--line);color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#clipSheet .cs3 .kl1row .hb{flex:none;width:56px;min-width:44px;height:44px;padding:0}
 .cs3 .fest{display:flex;flex-direction:column;gap:6px}
 .cs3 .fest .seg{max-width:100%}
 .cs3 .fest .seg button{min-width:40px;padding:0 6px}
@@ -27470,6 +27475,7 @@ function normClip(c, kind, pk) {
   if (c.cv) { const cv = cvNorm(c.cv, L); if (cv) out.cv = cv; }                                    // BM8 (§5.4)
   if (cts) out.ts = cts;                                                                              /* T1: Taktart des Clips (4/4 = fehlt) */
   if (c.kl || c.klq != null || c.ln || out.notes.some(n => n.lk && n.lk.k)) lkClipNorm(c, out, kind);   // I2a: kl, klq, ln (fehlen = wie bisher)
+  if (c.lw) kl1Norm(c, out, kind);                                                                   // KL1: Fenster im ganzen Inhalt
   return out;
 }
 function normTrack(t, def, pk, warns) {
@@ -27732,6 +27738,7 @@ function ownNorm(c, pk, nt) {
   const t = isNum(c.from.t) ? Math.round(c.from.t) : -1; if (t < 0 || t >= (nt || MAX_T)) return null;
   const s = isNum(c.from.s) ? clamp(Math.round(c.from.s), 0, N_SCN - 1) : 0, bar = isNum(c.from.bar) ? clamp(Math.round(c.from.bar), 0, SONG_MAX_BARS - 1) : 0;
   const out = normClip(c, t === DRUM_T ? 'drum' : 'synth', pk); if (!out) return null;
+  delete out.lw;                                                   // KL1: nur Szenen-Clips haben ein Fenster
   out.from = {t, s, bar};
   // what „Zurück zum Szenen-Clip“ restores: the lane entry that stood at the own clip's bar before, and whether its end entry was added
   if (c.from.e === null || (c.from.e && typeof c.from.e === 'object' && isNum(c.from.e.slot))) out.from.e = c.from.e ? laneEntryNorm(c.from.e, bar, clamp(Math.round(c.from.e.slot), -1, N_SCN - 1)) : null;
@@ -27877,6 +27884,7 @@ function cleanClip(c) {
   if (c.cv) o.cv = cvClone(c.cv);                                // BM8: die Kurven gehen mit jeder Kopie mit
   if (c.ts) o.ts = c.ts;                                          // T1: Taktart des Clips
   if (c.kl || c.klq != null || c.ln) cleanLkClip(c, o);               // I2a
+  if (c.lw) o.lw = kl1Clean(c.lw);                                // KL1: der ganze Inhalt geht mit
   return o;
 }
 /* ---------------- BM8 (Nachtrag 7 §5.4): Bend, Rad und Druck im Clip ----------------
@@ -30026,11 +30034,11 @@ function v6aEdRef(i) {
   const tr = S.tracks[i]; if (!tr) return null;
   const p = R.pend[i];
   if (R.playing) {                                  // playing: the clip that comes (waiting) or sounds
-    if (p && p.slot >= 0 && v6aClip(i, p.slot, p.own)) return {s: p.slot, own: p.own || null};
-    if (R.slot[i] >= 0 && v6aClip(i, R.slot[i], R.own[i])) return {s: R.slot[i], own: R.own[i] || null};
+    if (p && p.slot >= 0 && v6aClip(i, p.slot, p.own)) return {s: p.slot, own: kl1Ref(p.own)};          // KL1: „ganz“ = der Szenen-Clip
+    if (R.slot[i] >= 0 && v6aClip(i, R.slot[i], R.own[i])) return {s: R.slot[i], own: kl1Ref(R.own[i])};
   }
   if (tr.clips[R.selS]) return {s: R.selS, own: null};   // stopped: the selected cell
-  if (R.slot[i] >= 0 && v6aClip(i, R.slot[i], R.own[i])) return {s: R.slot[i], own: R.own[i] || null};
+  if (R.slot[i] >= 0 && v6aClip(i, R.slot[i], R.own[i])) return {s: R.slot[i], own: kl1Ref(R.own[i])};
   return null;
 }
 function v6aOwnId(clip) { if (!S.song || !S.song.own) return null; for (const k in S.song.own) if (S.song.own[k] === clip) return k; return null; }
@@ -30166,7 +30174,7 @@ function ak1Ref(i) {
   const tr = S.tracks[i]; if (!tr || tr.kind !== 'synth' || !tr.sound || tr.sound._nv || tr.sound.engine === 'bm' || tr.sound.engine === PERC_ENG) return null;
   if (tr.sound.engine === 'mk' && typeof MKUI !== 'undefined' && MKUI.P && MKUI.P.rec) return null;   // AM: ● Bewegung aufnehmen bleibt beim Grundklang
   let ref = null;
-  if (R.playing) { const p = R.pend[i]; ref = p && p.slot >= 0 && v6aClip(i, p.slot, p.own) ? {s: p.slot, own: p.own || null} : R.slot[i] >= 0 && v6aClip(i, R.slot[i], R.own[i]) ? {s: R.slot[i], own: R.own[i] || null} : null; }
+  if (R.playing) { const p = R.pend[i]; ref = p && p.slot >= 0 && v6aClip(i, p.slot, p.own) ? {s: p.slot, own: kl1Ref(p.own)} : R.slot[i] >= 0 && v6aClip(i, R.slot[i], R.own[i]) ? {s: R.slot[i], own: kl1Ref(R.own[i])} : null; }   // KL1
   else ref = v6aEdRef(i);
   const clip = ref && v6aClip(i, ref.s, ref.own);
   if (!clip || clip.audio || (clip.st && !v6aStOk(i, clip.st))) return null;
@@ -31981,6 +31989,7 @@ function scheduleTrack(i, from, to, late) {
 /* V2d′ (song-delta 9.2, 12.1): the own clip track i plays now (R.own, a copy that only holds at this song place), else null.
    The copy names its scene slot (from.s): it only counts while that slot plays */
 function ownPlaying(i) {
+  if (kl1IsW(R.own[i])) return kl1Play(i);                       // KL1: der Szenen-Clip „ganz“ (Klammern offen)
   const id = R.own[i]; if (!id || !S.song) return null;
   const c = (S.song.own && S.song.own[id]) || sx11Held(i, id);   // SX11: a thinned copy plays on until the bar line of the switch
   return c && c.from && c.from.s === R.slot[i] ? c : null;
@@ -36022,6 +36031,7 @@ function normPart(p, k, nt) {
   { const g = v6aGlNorm(p.gl); if (g) o.gl = g; }                       // V6A: Gleiten beim Start dieses Teils
   o.lanes = partLanesNorm(p.lanes, slots, nt);                           // V2d (song-delta 12.1): Part.lanes; slots = the state at bar 0
   s012PartExtra(p, o, nt);   /* S1/S2: Part.mel (+ own, vox) */
+  kl1PartNorm(p, o);         /* KL1: Spur-Einträge „ganz“ */
   return o;
 }
 /* V2d: Part.lanes = [[{bar 0..15, slot -1..7, ph? (bar 0 only), re?}] × NT] (empty = „bleibt“). A part without lanes (V2c data,
@@ -36514,18 +36524,18 @@ function partStateAt(p, st, at) {
   try {
     for (let t = 0; t < NT(); t++) {
       const lane = p.lanes && p.lanes[t]; if (!lane || !lane.length) continue;
-      let slot = null, cs = 0;
+      let slot = null, cs = 0, ow = null;                                 // KL1: ow = „ganz“
       const P0 = partLaneFree(p, lane) ? st : P;                         // V2d-fix: started once, runs on
       for (const e of lane) {
         if (e.bar > j) break;
-        if (e.bar === 0) { slot = e.slot; cs = P0 - (e.ph || 0); }
+        if (e.bar === 0) { slot = e.slot; cs = P0 - (e.ph || 0); ow = kl1PartOwn(e); }
         else if (e.slot < 0) slot = -1;
-        else if (e.re || e.slot !== slot) { slot = e.slot; cs = P + e.bar * Q4 - (e.ph || 0); }
+        else if (e.re || e.slot !== slot) { slot = e.slot; cs = P + e.bar * Q4 - (e.ph || 0); ow = kl1PartOwn(e); }
       }
       if (slot == null) continue;
       const target = slot >= 0 && S.tracks[t].clips[slot] ? slot : -1;
-      if (!R.playing) { R.slot[t] = target; R.own[t] = null; R.pend[t] = null; R.cstart[t] = target >= 0 ? cs : 0; R.prev[t] = null; (R.startCs || (R.startCs = []))[t] = R.cstart[t]; continue; }
-      laneSwitch(t, target, at, cs, false);
+      if (!R.playing) { R.slot[t] = target; R.own[t] = target >= 0 ? ow : null; R.pend[t] = null; R.cstart[t] = target >= 0 ? cs : 0; R.prev[t] = null; (R.startCs || (R.startCs = []))[t] = R.cstart[t]; continue; }
+      laneSwitch(t, target, at, cs, false, ow);
     }
   } finally { R.partApplying = false; }
 }
@@ -36549,7 +36559,7 @@ function partLaneTick(rp, b0, b1) {
           let prev = null; for (const x of lane) { if (x.bar >= j) break; prev = x.slot; }
           if (e.slot < 0) target = -1; else if (e.re || e.slot !== prev) { target = e.slot; cs = B - (e.ph || 0); } else continue;
         }
-        laneSwitch(t, target >= 0 && S.tracks[t].clips[target] ? target : -1, B, cs, false);
+        laneSwitch(t, target >= 0 && S.tracks[t].clips[target] ? target : -1, B, cs, false, kl1PartOwn(e));   // KL1: „ganz“
       }
     } finally { R.partApplying = false; }
   }
@@ -36563,7 +36573,7 @@ function songEnsure() {
   if (!S.song) { S.song = normSong(newSongRaw(NT() > MEL_T && S.tracks[MEL_T].kind === 'synth' ? MEL_T : 3), S.key); }
   return S.song;
 }
-function songClipBeats(song, t, o) { const c = o && o.own && song.own && song.own[o.own]; return c && isNum(c.len) ? clipB(c) : clipBeats(t, o ? o.slot : -1); }
+function songClipBeats(song, t, o) { if (o && kl1IsW(o.own)) return kl1Beats(t, o.slot); const c = o && o.own && song.own && song.own[o.own];   /* KL1 */ return c && isNum(c.len) ? clipB(c) : clipBeats(t, o ? o.slot : -1); }
 // the whole state at song bar x (before an operation changes it)
 /* G-T-merge-fix (S2 x D1): the phase of a clip with D1 lanes repeats only after the lanes come round with the clip
    (12 against 16 steps: 48 steps), so it is kept modulo that period (Zufall: no period, the full offset) */
@@ -37028,13 +37038,13 @@ function partChunk(p, Lf) {
   const L = Lf || partLen(p), lanes = [];
   for (let t = 0; t < NT(); t++) {
     lanes.push(((p.lanes && p.lanes[t]) || []).filter(e => e.bar < L).map(e => {
-      const x = {bar: e.bar, slot: e.slot}; if (e.slot >= 0) { x.re = 1; if (e.bar === 0 && e.ph) x.ph = e.ph; if (e.bar > 0 && e.ph && p.src === 'song') x.ph = e.ph; if (e.own && p.own && p.own[e.own]) x.own = e.own; } return x;   /* S2: ph / own */
+      const x = {bar: e.bar, slot: e.slot}; if (e.slot >= 0) { x.re = 1; if (e.bar === 0 && e.ph) x.ph = e.ph; if (e.bar > 0 && e.ph && p.src === 'song') x.ph = e.ph; if (e.own && ((p.own && p.own[e.own]) || kl1IsW(e.own))) x.own = e.own; } return x;   /* S2: ph / own; KL1: „ganz“ */
     }));
   }
   const row = p.chords || (p.xp && p.xp.tg ? {len: L, ch: [{b: 0, tg: p.xp.tg}]} : null), carrier = [];
   if (row && row.ch.length) { const cl = row.len * 4; for (let m = 0; m * cl < L * 4 - 1e-9; m++) for (const c of row.ch) { const b = c.b + m * cl; if (b < L * 4 - 1e-9) carrier.push({beat: b, target: c.tg ? carrierCopy(c.tg) : null}); } }
   else carrier.push({beat: 0, target: null});
-  return Object.assign({len: L, lanes, carrier, xp: p.sxp ? konSxpChunk(p.sxp, L) : [{beat: 0, semi: p.xp && p.xp.semi ? p.xp.semi : 0}], mel: s1ChunkMel(p, L), marks: [{a: 0, len: L, part: p.id}]}, s2ChunkExtra(p, L));   /* S1: mel, S2: own / vox */
+  return kl1Chunk(Object.assign({len: L, lanes, carrier, xp: p.sxp ? konSxpChunk(p.sxp, L) : [{beat: 0, semi: p.xp && p.xp.semi ? p.xp.semi : 0}], mel: s1ChunkMel(p, L), marks: [{a: 0, len: L, part: p.id}]}, s2ChunkExtra(p, L)));   /* KL1: „ganz“ → eigener Clip */   /* S1: mel, S2: own / vox */
 }
 function sceneChunk(s) {
   let L = 1; const lanes = [];
@@ -49257,6 +49267,7 @@ function openClipSheet(t, s, opts) {
     und.disabled = !UNDO.length; red.disabled = !REDO.length;
     lr.append(L1, L2, L3, L4, und, red);
     body.append(lr);
+    { const kr = kl1Row(t, s, clip, B); if (kr) body.append(kr); }       // KL1: Fenster im ganzen Inhalt (nur ein erweiterter Clip)
   }
   r1.appendChild(x);
   sh.append(head, body);
@@ -49293,7 +49304,8 @@ function clipLength(t, s, f) {
   if (nl === clip.len) return;
   pushUndo(t, s, clip, 'Länge');
   const L = clipB(clip);
-  if (nl < clip.len) {
+  if (clip.lw && !clip.ts) kl1Len(clip, nl, f);                         // KL1: Länge = das Fenster im ganzen Inhalt
+  else if (nl < clip.len) {
     const NL = nl * 4;
     clip.notes = clip.notes.filter(n => n.t < NL - 1e-9);
     clip.notes.forEach(n => { n.d = Math.min(n.d, NL); if (n.o != null) { const w = ((n.o % NL) + NL) % NL; n.o = +(w >= NL - 1e-4 ? 0 : w).toFixed(4); } });   // raw onsets stay inside the clip
@@ -67085,7 +67097,7 @@ function vvCols() {
   return VV.col;
 }
 // the clip a track plays (scene clip or the song's own clip)
-function vvClip(i, s, own) { if (s == null || s < 0) return null; if (own && S.song && S.song.own && S.song.own[own]) return S.song.own[own]; const tr = S.tracks[i]; return tr ? tr.clips[s] || null : null; }
+function vvClip(i, s, own) { if (s == null || s < 0) return null; if (kl1IsW(own) && S.tracks[i] && S.tracks[i].clips[s]) return kl1Whole(S.tracks[i].clips[s], i, s); if (own && S.song && S.song.own && S.song.own[own]) return S.song.own[own]; const tr = S.tracks[i]; return tr ? tr.clips[s] || null : null; }
 const vvRows = () => trackOrder().filter(i => i >= 0 && i < NT() && S.tracks[i]);
 function vvRound(g, x, y, w, h, r) { g.beginPath(); if (g.roundRect) g.roundRect(x, y, w, h, r); else g.rect(x, y, w, h); }
 // the notes of a clip as a small roll in a box (pitch range of the clip; audio clips: their wave)
@@ -72379,6 +72391,7 @@ function konKonsNorm(list, marks, pk, nt) {
     out.push({mark: k.mark, part: k.part, at: Math.max(0, Math.round(k.at)), len: Math.round(k.len), sig: typeof k.sig === 'string' ? k.sig.slice(0, 32) : '',
       mk: marksNorm(k.mk, 0), cut: Array.isArray(k.cut) ? k.cut.filter(x => typeof x === 'string' && mid.test(x)).slice(0, 16) : [], ch});
     const ks = Array.isArray(k.ks) ? konKonsNorm(k.ks, out[out.length - 1].mk, pk, nt) : []; if (ks.length) out[out.length - 1].ks = ks;   // nested: the Ursprünge inside
+    if (Array.isArray(k.kl)) { const kl = kl1KonNorm(k.kl); if (kl.length) out[out.length - 1].kl = kl; }   // KL1: erweiterte Clips (Fenster vorher)
   }
   return out;
 }
@@ -72433,7 +72446,7 @@ function konDo(a, e, name) {
   const bp = partSnap(), bs = songSnapshot();
   const mk = deep(song.marks.filter(m => m.a < e && m.a + m.len > a)), ids0 = new Set(song.marks.map(m => m.id)), ch = konCut(song, a, e);
   const ks = deep((song.kons || []).filter(k => mk.some(m => m.id === k.mark)));   // a konsolidierter Teil inside: its Ursprung goes along
-  const tp = s2Template(song, a, e);
+  const tp = s2Template(song, a, e), kl = kl1Kon(song, a, e, tp);    // KL1: alte Clips werden erweitert, der Teil spielt sie „ganz“
   if (song.carrier.length && tp.chords && tp.chords.ch.length && tp.chords.ch[0].b > 1e-6) tp.chords.ch.unshift({b: 0, tg: null});   // ORIGINAL at its start stays ORIGINAL wherever the part lands
   { const l = []; for (const x of ch.xp || []) { if (l.length && l[l.length - 1].semi === x.semi) continue; l.push({beat: x.beat, semi: x.semi}); } if (l.some(x => x.semi)) tp.sxp = l; }   // Transposition (song.xp) geht mit
   const nm = partUniq(String(name || '').trim().slice(0, 12) || partSuggest(), k);
@@ -72444,8 +72457,8 @@ function konDo(a, e, name) {
   const cut = song.marks.filter(m => !ids0.has(m.id)).map(m => m.id);
   song.marks.push({id: newMarkId(song), a, len: e - a, part: S.parts[k].id}); if (ueOld) ueReanchor(song, ueOld); songTidy(song);
   const m = song.marks.find(x => x.a === a && x.part === S.parts[k].id);
-  if (m) { const kn = {mark: m.id, part: m.part, at: a, len: e - a, sig: konSig(song, a, e), mk, cut, ch}; if (ks.length) kn.ks = ks; (song.kons || (song.kons = [])).push(kn); }
-  undoPush({kind: 'group', label: 'Konsolidiert: ' + nm, items: [{kind: 'part', before: bp}, {kind: 'song', before: bs}]});
+  if (m) { const kn = {mark: m.id, part: m.part, at: a, len: e - a, sig: konSig(song, a, e), mk, cut, ch}; if (ks.length) kn.ks = ks; if (kl.kl.length) kn.kl = kl.kl; (song.kons || (song.kons = [])).push(kn); }
+  undoPush({kind: 'group', label: 'Konsolidiert: ' + nm, items: [{kind: 'part', before: bp}, {kind: 'song', before: bs}].concat(kl.items)});   // KL1: + die erweiterten Clips
   partsChanged(); songChanged();
   return {part: k, name: nm, mark: m ? m.id : null};
 }
@@ -72485,7 +72498,8 @@ function konRestore(id) {
   songTidy(song);
   const k = +kn.part.slice(1) - 1;
   if (S.parts[k] && !song.marks.some(x => x.part === kn.part)) { S.parts[k] = null; if (R.part && !R.part.tmp && R.part.i === k) R.part = null; }
-  undoPush({kind: 'group', label: 'Zurückgeholt: ' + nm, items: [{kind: 'part', before: bp}, {kind: 'song', before: bs}]});
+  const kb = kl1Back(kn, S.parts[k]);                                      // KL1: der erweiterte Clip bekommt sein Fenster zurück
+  undoPush({kind: 'group', label: 'Zurückgeholt: ' + nm, items: [{kind: 'part', before: bp}, {kind: 'song', before: bs}].concat(kb)});
   partsChanged(); songChanged(); songResync(true);
   return true;
 }
@@ -72677,6 +72691,208 @@ const KON_API = {
   kons: () => (S.song && S.song.kons ? S.song.kons.map(k => ({mark: k.mark, part: k.part, at: k.at, len: k.len})) : []),
 };
 /* /KON */
+/* KL1 ---------- Konsolidieren erweitert den alten Clip (Xander: „dass diese Clips … nicht überschrieben werden, sondern dieser Clip
+   erweitert wird. Der Ursprungsclip funktioniert aber noch so innerhalb der Clip-Matrix, mit seinen Loop-Klammern … nur der
+   konsolidierte Teil öffnet die Klammern … Im Clip könnte man auch ein anderes Fenster aus dem ganzen Inhalt wählen“).
+   Daten (additiv, Format bleibt 5; Merkmal 'lw' in der Prüfliste von Baustein N): clip.lw = {a, b, len, notes}. Der Clip selbst
+   (len, notes, key, st …) IST das Fenster [a, b) (Schläge im ganzen Inhalt) und klingt überall genau wie bisher (Matrix, Szenen, jeder
+   Teil, Song, Video, MIDI); lw.len = der ganze Inhalt in Takten, lw.notes = seine Noten außerhalb des Fensters (Zeit ab dem Anfang
+   des ganzen Inhalts). Ganzer Inhalt = lw.notes ∪ Fenster-Noten (+a). Ein Spur-Eintrag eines Teils mit own:'~' („ganz“) spielt den
+   ganzen Inhalt (Klammern offen); R.own trägt dieselbe Kennung wie bei einem eigenen Clip ('~' kann kein Name eines eigenen Clips
+   sein). Im Song steht nie '~': partChunk legt dort einen eigenen Clip mit dem ganzen Inhalt an. konDo: spielt eine Spur im Bereich
+   nur ihren Szenen-Clip (auch eigene Clips davon) und klingt das anders als die bloße Schleife, wird dieser Clip erweitert – im selben
+   Undo-Schritt wie Teil und Song; [Zurückholen] nimmt die Erweiterung zurück, wenn der Teil geht ---------- */
+var KL1C = null;                                                       // ganzer Inhalt je Clip (WeakMap, erst zur Laufzeit)
+function kl1IsW(o) { return o === '~'; }
+function kl1Ref(o) { return o && o !== '~' ? o : null; }               // nur echte eigene Clips (V6A-Bezug, Undo-Art 'own')
+function kl1PartOwn(e) { return e && e.slot >= 0 && e.own === '~' ? '~' : null; }
+// the whole content's length in beats (a window that grew past it counts)
+function kl1LenOf(c) { const w = c.lw; return Math.max(w.len, Math.ceil((w.a + clipB(c)) / 4 - 1e-9)) * 4; }
+function kl1Beats(t, s) { const c = S.tracks[t] && s >= 0 ? S.tracks[t].clips[s] : null; return c && c.lw && !c.ts ? kl1LenOf(c) : clipBeats(t, s); }
+// normClip: clip.lw (fehlt / kaputt / Taktart-Clip = keins); die Fenster-Noten stehen nur im Clip selbst
+function kl1Norm(c, out, kind) {
+  const w = c && c.lw; if (!w || typeof w !== 'object' || out.ts || !isNum(w.a) || !isNum(w.len)) return;
+  const B = clipB(out), a = +Math.max(0, +w.a).toFixed(4), len = Math.max(clamp(Math.round(w.len), 1, 64), Math.ceil((a + B) / 4 - 1e-9));
+  if (len > 64) return;
+  const L = len * 4, notes = [];
+  for (const n of Array.isArray(w.notes) ? w.notes.slice(0, 16384) : []) {
+    if (!n || !isNum(n.t) || !isNum(n.d) || !isNum(n.n) || !isNum(n.v) || n.t < 0 || n.t >= L || n.d <= 0) continue;
+    if (n.t >= a - 1e-9 && n.t < a + B - 1e-9) continue;
+    let nn = clamp(Math.round(n.n), 0, 127); if (kind === 'drum' && !DRUM_GMS.includes(nn)) nn = mapV1Drum(nn);
+    notes.push(normNoteExtras(n, {t: n.t, d: Math.min(n.d, 64), n: nn, v: Math.round(clamp(n.v, .01, 1) * 1e3) / 1e3}, kind));
+  }
+  notes.sort((x, y) => x.t - y.t);
+  out.lw = {a, b: +(a + B).toFixed(4), len, notes};
+}
+function kl1Clean(w) { return {a: w.a, b: w.b, len: w.len, notes: w.notes.map(cleanNote)}; }
+function kl1Sig(ns) { let h = ns.length; for (let k = 0; k < ns.length; k++) { const n = ns[k]; h = (h * 31 + n.n * 977 + Math.round(n.t * 960) * 7 + Math.round(n.d * 96) + Math.round(n.v * 127)) % 2147483647; } return h; }
+// the whole content as one clip (Klammern offen): an own key object and from {t, s} like an own clip (Eine Skala, Locks); no curves
+// (they belong to the window) and no D1 lanes (their lengths count in window steps). Cached until the clip changes
+function kl1Whole(c, t, s) {
+  const w = c && c.lw; if (!w || c.ts) return c || null;
+  const m = KL1C || (KL1C = new WeakMap()), h = m.get(c), sg = kl1Sig(c.notes) + ':' + kl1Sig(w.notes);
+  if (h && h.w === w && h.a === w.a && h.len === w.len && h.cl === c.len && h.key === c.key && h.st === c.st && h.sg === sg && h.t === t && h.s === s) return h.o;
+  const B = clipB(c), notes = w.notes.map(n => Object.assign({}, n));
+  for (const n of c.notes) { if (n.t >= B - 1e-9) continue; const x = Object.assign({}, n, {t: +(n.t + w.a).toFixed(6)}); if (n.o != null) x.o = +(n.o + w.a).toFixed(4); notes.push(x); }
+  notes.sort((x, y) => x.t - y.t);
+  const o = Object.assign({}, c, {len: kl1LenOf(c) / 4, notes, key: Object.assign({}, c.key), from: {t, s}}); delete o.lw; delete o.cv; delete o.lanes;
+  m.set(c, {w, a: w.a, len: w.len, cl: c.len, key: c.key, st: c.st, sg, t, s, o});
+  return o;
+}
+// ownPlaying: the track plays its scene clip „ganz“ (null: the clip has no whole content → it plays as itself)
+function kl1Play(i) { const s = R.slot[i], c = s >= 0 && S.tracks[i] ? S.tracks[i].clips[s] : null; return c && c.lw ? kl1Whole(c, i, s) : null; }
+// normPart: lane entries „ganz“ stay (s2PartExtra only keeps own clips the part holds)
+function kl1PartNorm(p, o) {
+  if (!Array.isArray(p.lanes) || !o.lanes) return;
+  p.lanes.forEach((l, t) => {
+    if (!Array.isArray(l) || !o.lanes[t]) return;
+    for (const e of l) {
+      if (!e || !kl1IsW(e.own) || !isNum(e.bar) || !isNum(e.slot) || e.slot < 0) continue;
+      const x = o.lanes[t].find(y => y.bar === Math.round(e.bar) && y.slot === Math.round(e.slot)); if (x && !x.own) x.own = '~';
+    }
+  });
+}
+// partChunk: an entry „ganz“ becomes an own clip with the whole content in the song (one per track and slot)
+function kl1Chunk(ch) {
+  const ids = {};
+  ch.lanes.forEach((l, t) => {
+    for (const x of l || []) {
+      if (!kl1IsW(x.own)) continue;
+      const c = S.tracks[t] && x.slot >= 0 ? S.tracks[t].clips[x.slot] : null;
+      if (!c || !c.lw || c.ts) { delete x.own; continue; }
+      const k = t + ':' + x.slot;
+      if (!ids[k]) {
+        let id = 'w' + t; for (let j = 2; ch.own && ch.own[id]; j++) id = 'w' + t + '_' + j;
+        const o = cleanClip(kl1Whole(c, t, x.slot)); o.from = {t, s: x.slot, bar: x.bar, e: null};
+        (ch.own || (ch.own = {}))[id] = o; ids[k] = id;
+      }
+      x.own = ids[k];
+    }
+  });
+  return ch;
+}
+const kl1K4 = x => Math.round(x * 1e4) / 1e4;
+// a note as a comparable key (time from off, raw onset left out)
+function kl1Key(n, off) { const x = cleanNote(n); delete x.o; x.t = kl1K4(n.t - (off || 0)); x.d = kl1K4(n.d); return JSON.stringify(x); }
+// the notes of src that start in song bar b (src loops from song beat ocs with length Lb), time from song beat A
+function kl1Bar(out, src, ocs, Lb, b, A) {
+  const b0 = barBeat(b), b1 = barBeat(b + 1);
+  for (let m = Math.floor((b0 - ocs) / Lb) - 1; ocs + m * Lb < b1 - 1e-9; m++) for (const nt of src.notes) {
+    if (nt.t >= Lb - 1e-9) continue;
+    const st = ocs + m * Lb + nt.t; if (st < b0 - 1e-9 || st >= b1 - 1e-9) continue;
+    const x = cleanNote(nt); x.t = +(st - A).toFixed(6); if (nt.o != null) x.o = +(nt.o + st - nt.t - A).toFixed(4); out.push(x);
+  }
+}
+// a clip that can grow (no time signature, D1 lanes, curves, rows, audio) and an own clip of it that sounds like it apart from its notes
+const kl1CanGrow = c => !!c && !c.lw && !c.ts && !c.lanes && !c.cv && !c.ln && !c.audio && !c.take;
+const kl1Shape = c => JSON.stringify([c.key ? c.key.root : null, c.key ? c.key.scale : null, c.st || null, c.seed == null ? null : c.seed, c.pre || null, c.kl || null, c.klq == null ? null : c.klq]);
+const kl1Like = (o, c) => !o.ts && !o.lanes && !o.cv && !o.ln && !o.audio && kl1Shape(o) === kl1Shape(c);
+// konDo: every track that plays only its scene clip in [a, e) (also as own clips of it) and sounds different from the plain loop gets
+// that clip extended (content = what sounds there, the old loop = the window); tp (the new part) plays it „ganz“.
+// Returns {items: undo items 'clip', kl: [{t, s, a, b}] (the window, for [Zurückholen])}
+function kl1Kon(song, a, e, tp) {
+  const out = {items: [], kl: []}; if (!tkPlain() || !tp || !Array.isArray(tp.lanes)) return out;
+  const A = barBeat(a), RB = barBeat(e) - A;
+  for (let t = 0; t < NT(); t++) {
+    const tr = S.tracks[t], lane = song.lanes[t]; if (!tr || tr.stimme || !lane || !tp.lanes[t]) continue;
+    const o0 = laneOriginAt(lane, a); if (o0.slot < 0 || !laneClipOk(song, t, o0)) continue;
+    const s = o0.slot, c = tr.clips[s]; if (!kl1CanGrow(c)) continue;
+    const L = clipB(c), w0own = o0.own && song.own ? song.own[o0.own] : null, rc = w0own ? ownRefCs(song, w0own) : null, scs = rc != null ? rc : o0.cs;
+    const F = [], P = []; let ok = true;
+    for (let b = a; b < e; b++) {
+      const ob = laneOriginAt(lane, b); if (ob.slot !== s || !laneClipOk(song, t, ob)) { ok = false; break; }
+      const own = ob.own && song.own ? song.own[ob.own] : null; if (ob.own && (!own || !kl1Like(own, c))) { ok = false; break; }
+      kl1Bar(F, own || c, ob.cs, own ? clipB(own) : L, b, A);
+      kl1Bar(P, c, scs, L, b, A);
+    }
+    if (!ok) continue;
+    const sig = (l, off) => l.map(n => kl1Key(n, off)).sort().join('|');
+    if (sig(F, 0) === sig(P, 0)) continue;                              // the plain loop: nothing to extend (as before)
+    // the window: the first whole Durchlauf in the range that sounds exactly like the clip; else right behind the range
+    const win = sig(c.notes.filter(n => n.t < L - 1e-9), 0);
+    let w0 = -1;
+    for (let ds = scs + Math.ceil((A - scs) / L - 1e-9) * L; ds + L <= A + RB + 1e-9; ds += L) {
+      const r0 = ds - A; if (sig(F.filter(n => n.t >= r0 - 1e-9 && n.t < r0 + L - 1e-9), r0) === win) { w0 = kl1K4(r0); break; }
+    }
+    const Lt = w0 < 0 ? RB + L : RB; if (w0 < 0) w0 = RB;
+    if (Lt > 256 + 1e-9 || Math.abs(Lt / 4 - Math.round(Lt / 4)) > 1e-9) continue;
+    out.items.push({kind: 'clip', track: t, scene: s, before: cleanClip(c), label: 'Clip erweitert'});
+    c.lw = {a: w0, b: kl1K4(w0 + L), len: Math.round(Lt / 4), notes: F.filter(n => !(n.t >= w0 - 1e-9 && n.t < w0 + L - 1e-9)).sort((x, y) => x.t - y.t)};
+    out.kl.push({t, s, a: w0, b: kl1K4(w0 + L)});
+    tp.lanes[t] = [{bar: 0, slot: s, own: '~'}];                        // its own clips and restarts are in the content now
+  }
+  if (out.kl.length) {
+    tp.slots = partSlotsOf(tp.lanes);
+    if (tp.own) { const used = new Set(); for (const l of tp.lanes) for (const x of l) if (x.own && !kl1IsW(x.own)) used.add(x.own); for (const id of Object.keys(tp.own)) if (!used.has(id)) delete tp.own[id]; if (!Object.keys(tp.own).length) delete tp.own; }
+    for (const x of out.kl) clipChanged(x.t, x.s);
+  }
+  return out;
+}
+// konKonsNorm: the windows a Ursprung remembers
+function kl1KonNorm(list) { return (Array.isArray(list) ? list : []).filter(x => x && isNum(x.t) && isNum(x.s) && isNum(x.a) && isNum(x.b) && x.b > x.a && x.a >= 0).slice(0, 16).map(x => ({t: Math.round(x.t), s: Math.round(x.s), a: kl1K4(x.a), b: kl1K4(x.b)})); }
+// the whole content's notes (time from its start; the window's notes at +a)
+function kl1Full(c) {
+  const w = c.lw, B = clipB(c), o = w.notes.map(cleanNote);
+  for (const n of c.notes) { if (n.t >= B - 1e-9) continue; const x = cleanNote(n); x.t = +(n.t + w.a).toFixed(6); if (n.o != null) x.o = +(n.o + w.a).toFixed(4); o.push(x); }
+  return o.sort((x, y) => x.t - y.t);
+}
+// the window [a, a + nl bars) of the whole content F becomes the clip; the content grows to hold it
+function kl1Put(c, F, a, nl) {
+  const NB = nl * 4, len = Math.max(c.lw.len, Math.ceil((a + NB) / 4 - 1e-9)), inW = n => n.t >= a - 1e-9 && n.t < a + NB - 1e-9;
+  c.notes = F.filter(inW).map(n => { const x = Object.assign({}, n, {t: +(n.t - a).toFixed(6)}); if (n.o != null) { const q = n.o - a; if (q >= 0 && q < NB) x.o = +q.toFixed(4); else delete x.o; } return x; });
+  c.len = nl;
+  c.lw = {a: kl1K4(a), b: kl1K4(a + NB), len, notes: F.filter(n => !inW(n))};
+}
+// clipLength: Länge (½ −1 +1 ×2) is the window's length inside the whole content (×2 behind the content end: the window doubled)
+function kl1Len(c, nl, f) {
+  const w = c.lw, B = clipB(c), NB = nl * 4, a = w.a + NB > 256 ? Math.max(0, 256 - NB) : w.a, L = kl1LenOf(c), F = kl1Full(c);
+  if (f === 2) for (const n of c.notes) { if (n.t >= B - 1e-9) continue; const at = w.a + B + n.t; if (at >= L - 1e-9 && at < a + NB - 1e-9) { const x = cleanNote(n); x.t = +at.toFixed(6); delete x.o; F.push(x); } }
+  F.sort((x, y) => x.t - y.t);
+  kl1Put(c, F, a, nl);
+}
+// ◀ ▶ im Clip-Blatt: the window one bar earlier / later (one undo 'clip')
+function kl1Move(t, s, d) {
+  const c = S.tracks[t] && S.tracks[t].clips[s]; if (!c || !c.lw || c.ts) return false;
+  const B = clipB(c), L = kl1LenOf(c), a = clamp(c.lw.a + (d | 0) * 4, 0, Math.max(0, L - B));
+  if (Math.abs(a - c.lw.a) < 1e-6) return false;
+  pushUndo(t, s, c, 'Fenster');
+  kl1Put(c, kl1Full(c), a, c.len);
+  afterClipEdit(t, s);
+  if (ED.roll && ED.rollAt && ED.rollAt.t === t && ED.rollAt.s === s && !ED.rollAt.own) ED.roll.refresh();
+  return true;
+}
+// konRestore: a clip the Ursprung extended gets its old window back and loses the whole content — unless the part still plays it „ganz“
+function kl1Back(kn, part) {
+  const items = [];
+  for (const x of kn.kl || []) {
+    if (part && part.lanes && part.lanes[x.t] && part.lanes[x.t].some(e => kl1IsW(e.own) && e.slot === x.s)) continue;
+    const c = S.tracks[x.t] && S.tracks[x.t].clips[x.s]; if (!c || !c.lw) continue;
+    items.push({kind: 'clip', track: x.t, scene: x.s, before: cleanClip(c), label: 'Clip zurück'});
+    const nl = Math.round((x.b - x.a) / 4);
+    if (Math.abs(c.lw.a - x.a) > 1e-6 || Math.abs(c.lw.b - x.b) > 1e-6) { if (nl >= 1 && nl <= 64 && !c.ts) kl1Put(c, kl1Full(c), x.a, nl); }
+    delete c.lw;
+    clipRestored(x.t, x.s);
+  }
+  return items;
+}
+// Clip-Blatt: „Fenster Takt 3–4 von 4“ mit ◀ ▶ (nur ein erweiterter Clip); Länge ist die Länge des Fensters
+function kl1Row(t, s, clip, B) {
+  const w = clip && clip.lw; if (!w || clip.ts) return null;
+  const r = el('div', 'kl1row'), nb = clipB(clip), L = kl1LenOf(clip), al = Math.abs(w.a / 4 - Math.round(w.a / 4)) < 1e-6 && Math.abs(nb / 4 - Math.round(nb / 4)) < 1e-6;
+  const txt = al ? 'Takt ' + (Math.round(w.a / 4) + 1) + (nb > 4 ? '–' + Math.round((w.a + nb) / 4) : '') + ' von ' + L / 4 : 'Schlag ' + (+(w.a + 1).toFixed(2)) + '–' + (+(w.a + nb).toFixed(2)) + ' von ' + L;
+  const c = el('span', 'kl1c', esc(txt)); c.setAttribute('aria-label', 'Fenster ' + txt + ' (ganzer Inhalt)');
+  const go = d => { if (kl1Move(t, s, d)) openClipSheet(t, s, {fest: !!(ED.clip && ED.clip.fest)}); };
+  const p = B('◀', () => go(-1), null, 'Fenster einen Takt früher'), n = B('▶', () => go(1), null, 'Fenster einen Takt später');
+  p.disabled = w.a <= 1e-6; n.disabled = w.a + nb >= L - 1e-6;
+  r.append(el('span', 'lbl', 'Fenster'), c, p, n);
+  return r;
+}
+Object.assign(KON_API, {
+  clipWindow: (t, s) => { const c = S.tracks[t] && S.tracks[t].clips[s]; return c && c.lw ? {a: c.lw.a, b: c.lw.b, len: c.lw.len, outside: c.lw.notes.length, len0: c.len} : null; },
+  clipWindowMove: (t, s, d) => kl1Move(t, s, d),
+  clipWhole: (t, s) => { const c = S.tracks[t] && S.tracks[t].clips[s]; return c && c.lw ? kl1Full(c) : null; },
+});
+/* /KL1 */
 /* SX11 ---------- Teil-Fassungen „leicht/voll“ (Konzept Schnitt/Übergänge SX11): eine Stelle (Marke) hat eine leichte und eine volle
    Fassung. Ein Tipp im Marken-Blatt setzt die gespeicherte Auswahl, welche Clips dort an sind (S0, mark.off) – ein Undo-Schritt, im
    Lauf ab dem nächsten Taktstrich (songEdit → songResync, derselbe Weg wie jeder Spurwechsel im Song). Die Drums der leichten Fassung
@@ -73675,7 +73891,7 @@ const SRCORE = (function () {
    I1a/I1b: clip states clip.st {eng, p, fx, slots?, x} and the scene morph {morph} (KZ1-KZ6); native tracks, track values
    (fx.*, gfx.*), FM operators and drums follow on the main thread in steps of 16 ms / per hit.
    Nothing here runs for a project without these fields: no message, no timer, no extra key. ===== */
-let KNOWN_NEED = ['lf', 'lk', 'sr', 'st'];   // N8LOCKS: + lk (Locks / freie Reihen); let: Test-API needKnown
+let KNOWN_NEED = ['lf', 'lk', 'lw', 'sr', 'st'];   /* KL1: + lw */   // N8LOCKS: + lk (Locks / freie Reihen); let: Test-API needKnown
 function needCalc(p) {
   const s = new Set();
   if (!p || !Array.isArray(p.tracks)) return [];
@@ -73684,7 +73900,7 @@ function needCalc(p) {
   for (const t of p.tracks) {
     if (!t) continue;
     const q = t.sound && t.sound.p; if (q && (q.l1f || q.l2f)) s.add('lf');
-    if (Array.isArray(t.clips)) for (const c of t.clips) { if (c && c.st) s.add('st'); if (clipHasLk(c)) s.add('lk'); }   // N8LOCKS: + lk
+    if (Array.isArray(t.clips)) for (const c of t.clips) { if (c && c.st) s.add('st'); if (clipHasLk(c)) s.add('lk'); if (c && c.lw) s.add('lw'); }   /* KL1 */   // N8LOCKS: + lk
   }
   const own = p.song && p.song.own; if (own && typeof own === 'object') for (const id of Object.keys(own)) if (clipHasLk(own[id])) s.add('lk');   // N8LOCKS: eigene Clips
   return [...s].sort();
