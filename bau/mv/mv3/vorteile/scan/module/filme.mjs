@@ -565,13 +565,13 @@ export default async function filme(ctx) {
     const ziel = preisWert(p.item.zielpreis) ?? zielpreis;
     if (t) {
       t.unterZiel = t.preis != null && t.preis <= ziel;
-      t._ziel = ziel;
+      t.ziel = ziel; // Zusatzfeld (nur Wunschliste): die Seite zeigt „dein Ziel: 4,99 €“
       wunschIds.add(t.id);
       gruppen.wunsch.push(t);
     } else {
       gruppen.wunsch.push({
         id: `wunsch:${slug(p.item.titel)}`, typ: 'film', titel: p.item.titel, jahr: p.item.jahr ?? null, ...NULL_TITEL, quelle: 'Apple',
-        unterZiel: false, ...(s?.fehlt ? { fehlt: true } : {}),
+        unterZiel: false, ziel, ...(s?.fehlt ? { fehlt: true } : {}),
       });
     }
   }
