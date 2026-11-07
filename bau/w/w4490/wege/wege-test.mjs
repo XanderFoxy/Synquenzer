@@ -12,7 +12,7 @@ const errs = [];
 async function page(w, h, f) {
   const p = await b.newPage({viewport: {width: w, height: h}, deviceScaleFactor: 2, hasTouch: true, isMobile: true});
   p.on('pageerror', e => errs.push(String(e))); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
-  await p.goto('file://' + (f || file)); await p.waitForFunction(() => window.SYNQUENZER, null, {timeout: 60000}); await p.waitForTimeout(1200);
+  await p.goto('file://' + (f || file)); await p.waitForFunction(() => window.SYNQUENZER, null, {timeout: 60000}); await p.waitForTimeout(2200);
   p._cdp = await p.context().newCDPSession(p);
   return p;
 }
