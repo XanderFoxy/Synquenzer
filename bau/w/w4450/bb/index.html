@@ -78027,7 +78027,8 @@ Object.assign(SYNQUENZER, GR1_API);                         // GR1: Groove (Grun
      abgebildet); läuft der Clip gerade, wird sie im Lauf vorgehört (die Noten des Clips werden nur für die Vorschau getauscht, ohne
      Speichern – Stopp, eine andere Figur, ✕ oder [Einsetzen] holen das Original zurück).
    - [Einsetzen] – Ziel: [Neue Version] (SX9: v2 … im Song an den Stellen, wo v1 spielte; v1 bleibt das Original) │ [Neuer Clip] (der
-     nächste freie Platz der Spur, das Original bleibt) │ [Diesen Clip] (ersetzt; ↶ holt ihn zurück). Lead- und Drums-Füller mischen
+     nächste freie Platz der Spur, das Original bleibt; ein Grundmuster nimmt die Akkord-Zeile in eine freie Szene mit) │ [Diesen Clip]
+     (ersetzt; ↶ holt ihn zurück). Lead- und Drums-Füller mischen
      sich in den Clip (nur ihr Fenster wird ersetzt, bei Drums nur ihre eigenen Pads). Ein Undo-Schritt (mit Klang: eine Gruppe).
    - [mit Klang]: lädt den passenden Werksklang (vorhandene oder die Kategorie „Werkzeugkasten“, BB1_SND) und stellt das Echo des Klangs
      ein (z. B. 1/8 punktiert für den Disco-Bass; Echo ist ein gemeinsamer Bus, der Send je Spur kommt mit dem Klang).
@@ -78408,6 +78409,10 @@ function bb1Insert(t, s, figId, o) {
     if (c.key.ref != null) nc.key.ref = c.key.ref;
     const clip = normClip(nc, isDrum(t) ? 'drum' : 'synth', S.key); if (!clip) return null;
     items.push({kind: 'clip', track: t, scene: Z.s, before: null}); tr.clips[Z.s] = clip; res.s2 = Z.s;
+    // Grundmuster in eine Szene ohne Akkord-Zeile (und ohne andere folgende Clips): die Zeile geht mit (wie HM1-Glätten)
+    if (B.ctx && B.ctx.gm && hm1RowFree(Z.s) && !S.tracks.some((o, i) => i !== t && o && o.kind === 'synth' && o.follow !== false && o.clips[Z.s])) {
+      items.push({kind: 'part', before: partSnap()}); S.scenes[Z.s].chords = normChordRow(deep(S.scenes[s].chords)); res.row = true;
+    }
   } else {
     const before = cleanClip(c);
     c.notes = B.notes; c.len = B.len; delete c.lf; delete c.q; if (isDrum(t)) delete c.lanes;
@@ -78425,7 +78430,7 @@ function bb1Insert(t, s, figId, o) {
   }
   undoPush(items.length === 1 ? Object.assign({label}, items[0]) : {kind: 'group', label, items: items.map(x => Object.assign({label}, x))});
   if (Z.k === 'ver') { songChanged(); songResync(); }
-  else if (Z.k === 'neu') { clipChanged(t, Z.s); if (!isDrum(t)) scheduleAutoKey(Z.s); }
+  else if (Z.k === 'neu') { clipChanged(t, Z.s); if (!isDrum(t)) scheduleAutoKey(Z.s); if (res.row) partsChanged(); }
   else afterClipEdit(t, s, true);                                       // Tonart bleibt (das Grundmuster wurde gegen sie gerechnet)
   markDirty(); UI.dirty.all = true;
   return res;
@@ -78569,7 +78574,7 @@ function bb1Do(t, s, id) {
   haptic('snap'); closePop();
   const what = F.name + (r.klang ? ' + Klang ' + r.klang : '');
   if (r.k === 'ver') toast(what + ' → v' + r.v + ' im Song · v1 bleibt das Original' + (R.playing && R.songPlay ? ' – ab dem nächsten Takt' : ''), [{label: 'Bearbeiten', fn: () => openOwnRoll(t, r.bar)}, {label: 'Rückgängig', fn: () => undo()}]);
-  else if (r.k === 'neu') toast(what + ' → Szene ' + (r.s2 + 1) + ' (das Original bleibt)', [{label: 'Öffnen', fn: () => openRoll(t, r.s2)}, {label: '▶', fn: () => launchClip(t, r.s2)}]);
+  else if (r.k === 'neu') toast(what + ' → Szene ' + (r.s2 + 1) + (r.row ? ' mit Akkord-Zeile' : '') + ' (das Original bleibt)', [{label: 'Öffnen', fn: () => openRoll(t, r.s2)}, {label: '▶', fn: () => launchClip(t, r.s2)}]);
   else toast(what + ' in ' + S.tracks[t].name + ' · Szene ' + (s + 1), {label: 'Rückgängig', fn: () => undo()});
   if (R.editor === 'clip' && ED.clip && ED.clip.t === t && ED.clip.s === s) openClipSheet(t, s);
   return r;
@@ -78583,7 +78588,7 @@ function bb1ClipSheet(g, t, s, clip, reopen) {
 }
 // ROLLE: [Werkzeugkasten] direkt hinter [Spielweise] in der Aktionsleiste
 function bb1RollHook(t, s) {
-  const tr = S.tracks[t], Rl = ED.roll; if (!Rl || !Rl.el || !Rl.el.acts || !tr || tr.kind !== 'synth' || percIs(tr) || tr.stimme) return;
+  const tr = S.tracks[t], Rl = ED.roll; if (!Rl || !Rl.el || !Rl.el.acts || !tr || tr.kind !== 'synth' || percIs(tr) || tr.stimme || (tr.clips[s] && tr.clips[s].ts)) return;
   const acts = Rl.el.acts; if (acts.querySelector('.bb1rb')) return;
   const b = document.createElement('button'); b.type = 'button'; b.className = 'bb1rb'; b.textContent = 'Werkzeugkasten';
   b.title = 'Werkzeugkasten: Standardfiguren je Genre (Bass, Sequenz, Stabs, Pads, Füller)'; b.setAttribute('aria-label', b.title);
@@ -78626,6 +78631,7 @@ function bb1RollHook(t, s) {
         '.bb1s .bb1-roles .rb,.bb1s .bb1-gens .rb{min-width:0;flex:1 1 auto}}',
       '.cs3 .cgrid .hb.bb1cb{white-space:nowrap}',
       '@media (orientation:landscape){#clipSheet .cs3 .cgrid .hb.bb1cb{height:44px;align-self:center}}',
+      '@media (orientation:landscape){#sndSheet .brcats .chip[data-c="wkz"]{padding:0 4px;letter-spacing:0;font-size:11px}}',   // Klang-Browser: der Chip passt in die 120-px-Spalte
       '.pr-bar button.bb1rb{position:relative}.pr-bar button.bb1rb::after{content:"";position:absolute;left:0;right:0;top:-8px;bottom:-8px}',
     ].join('\n');
     document.head.appendChild(st);

@@ -154,6 +154,8 @@ const gm = await P.evaluate(() => {
   return {how: x.how, gm: x.gm, line: x.line, written: [...new Set(B.notes.map(n => n.n % 12))], snd: [0, 4, 8, 12].map(t => B.snd.find(n => Math.abs(n.t - t) < 1e-6).n % 12), len: B.len};
 });
 ok('Akkord-Zeile C | Am | F | G (Spur folgt): Grundmuster auf C geschrieben, klingt als C A F G', gm.how === 'row' && gm.gm && gm.line === 'C | Am | F | G' && gm.written.join() === '0' && gm.snd.join() === ROOT.join(), gm);
+const gmIns = await P.evaluate(() => { const r = SYNQUENZER.bb1.insert(0, 2, 'oktav-disco', {ziel: 'neu'}); const row = S.scenes[r.s2].chords; const a = {r, row: row ? row.ch.length : 0, kinds: (UNDO[UNDO.length - 1].items || []).map(x => x.kind)}; undo(); a.back = !S.tracks[0].clips[r.s2] && !(S.scenes[r.s2].chords && S.scenes[r.s2].chords.ch.length); return a; });
+ok('Grundmuster als neuer Clip in eine freie Szene: die Akkord-Zeile geht mit (ein Undo)', gmIns.r && gmIns.r.row && gmIns.row === 4 && gmIns.kinds.join() === 'clip,part' && gmIns.back, gmIns);
 ok('hochkant ohne Fehler (Daten)', P.errs.length === 0, P.errs.slice(0, 3));
 
 /* ---------- 2. Blatt hochkant: Clip-Blatt [Werkzeugkasten ▾], Tasten, ✕, Vorschau, Einsetzen per Tipp, ROLLE ---------- */
