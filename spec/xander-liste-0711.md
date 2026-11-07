@@ -1,0 +1,7 @@
+# Xander 07.11. – gesammelte Vorschläge (Reihenfolge = mein Plan)
+A (Fehler zuerst): 2 Snare verschwindet beim Tom-Fill im Überblendbereich (Fill-Clip ersetzt Drum-Clip) · 1 Fills/Überblendungen als eigene Layer, Modus ersetzen | dazumischen · 3 Fills frei platzierbar (nicht nur Raster/Schnittmarke), nachträglich editierbar
+B (Video): 13 Klavier: Noten fliegen nach OBEN (heute fallen sie), magischer Auflösungseffekt, Synthie-Pop · 12 Regel: nur echte Instrumente/Umgebungen, Regler nur im Kontext der Original-Platte (kein Einzel-Regler-Clip); Mäusekino + Klavier erlaubt · 11 Auto-Regie mit Ereigniserkennung je Takt (Spur setzt ein, Modulation, Gesang beginnt, Fill), Regeln editierbar
+C (Rhythmus): 10 Small/Full je Songteil, Xander markiert Drum-Clips Small/Full (heute: Leicht/Voll dünnt automatisch aus) · 9 Remix-Stilvorlagen (New Jack Swing, Detroit-Pop, frühes House, Funk House), Bass+Drums neu, eigene Drum-Sounds
+D (Songwriting): 6 Variationen per Knopfdruck (Refrain 2 ≠ Refrain 1) · 8 A/B-Vergleich Songteile · 5 Akkord-/Harmonievorschläge zur Tonart · 7 Gegenmelodie-Generator · 4 Arrangement-Assistent mit Spannungsbogen (Dichte, Spuren, Lautstärke je Takt; Vorschläge per Tipp)
+E (später, nur mit API): 14 Song + Foto an Lip-Sync-Dienst (Hedra/Kling Avatar) – erst prüfen, ob Schnittstelle
+ARBEITSWEISE (15): typische Fehler vorher einkalkulieren, erst bauen, dann EINMAL gesammelt prüfen, möglichst WENIGE parallele Helfer (max. 2), Sicherung alle 2 Min.
