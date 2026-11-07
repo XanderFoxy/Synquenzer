@@ -1,0 +1,11 @@
+import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
+const [file, out, w, h, script] = process.argv.slice(2);
+const b = await chromium.launch({args: ['--autoplay-policy=no-user-gesture-required']});
+const p = await b.newPage({viewport: {width: +w, height: +h}, hasTouch: true});
+const errs = []; p.on('pageerror', e => errs.push(String(e))); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
+await p.goto('file://' + file); await p.waitForTimeout(1500);
+const r = await p.evaluate(async (s) => { const wait = ms => new Promise(r => setTimeout(r, ms)); return await (new Function('wait', 'return (async () => {' + s + '})()'))(wait); }, script);
+await p.waitForTimeout(400);
+await p.screenshot({path: out});
+console.log(JSON.stringify(r), 'errs', JSON.stringify(errs));
+await b.close();
