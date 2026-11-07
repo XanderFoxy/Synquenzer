@@ -281,6 +281,111 @@ await p.close(); await ctxL.close();
   ok('VD4-25', norm(jA) === norm(jZ) && norm(jA) === norm(OLD) && iA.el && iA.frames >= 1, 'Altes Projekt (aus 4.48.1) lädt gleich: dieselbe Projekt-Datei wie in 4.48.1, auch mit Fenster an', {lenA: jA.length, lenZ: jZ.length, frames: iA.frames});
   await pa.close(); await pz.close(); }
 
+/* ======================= 11. Prüfung (Befunde 1–4 des Prüfers) ======================= */
+const SH = sh => JSON.stringify(sh.map(s => [s.a, s.b, s.v, s.t]));
+{ // Befund 1: Clip-Blatt „Im Video“ (per Finger) und Clip löschen → das Fenster rechnet seine Regie neu (= Video-Render)
+  const p = await open(APP, 428, 926); await p.evaluate(SONG, false);
+  await p.evaluate(() => { SYNQUENZER.vd4.on(true); SYNQUENZER.vd4.mode('regie'); setSongView(true); SV.pos = 4; SV.lastStop = 4; UI.dirty.song = true; }); await settle(p, 900);
+  const cmp = () => p.evaluate(() => { const m = s => JSON.stringify(s.map(x => [x.a, x.b, x.v, x.t])); const f = m(vvRun({view: 'auto', range: {a: 0, b: S.song.bars}}).shots); return {same: !!VD4.rt && m(VD4.rt.shots) === f, pip: VD4.rt ? m(VD4.rt.shots) : null, fresh: f, cap: SYNQUENZER.vd4.info().cap}; });
+  const c0 = await cmp();
+  await p.evaluate(() => openClipSheet(1, 0)); await settle(p, 600);
+  const bt = await p.evaluate(() => { const b = [...document.querySelectorAll('button')].find(x => /Im Video/.test(x.textContent) && x.getClientRects().length); if (!b) return null; b.scrollIntoView({block: 'center'}); const q = b.getBoundingClientRect(); return [q.x + q.width / 2, q.y + q.height / 2]; });
+  if (bt) { await p.touchscreen.tap(bt[0], bt[1]); await settle(p, 400); }
+  const kb = await p.evaluate(() => { const b = document.querySelector('.vr1vl button[data-v="klav"]'); if (!b) return null; const q = b.getBoundingClientRect(); return [q.x + q.width / 2, q.y + q.height / 2]; });
+  if (kb) { await p.touchscreen.tap(kb[0], kb[1]); await settle(p, 400); }
+  const vid = await p.evaluate(() => S.tracks[1].clips[0].vid || null);
+  await p.evaluate(() => { try { closePop(); } catch (e) {} if (R.editor === 'clip') closeClipSheet(); }); await settle(p, 900);
+  const c1 = await cmp();
+  await p.evaluate(() => { SYNQUENZER.vd4.reset(); songPlayStart(4); }); await p.waitForTimeout(1300);
+  const lv = await info(p); await p.evaluate(() => songPlayEnd(true)); await settle(p, 400);
+  fs.writeFileSync(OUT + '/vd4-pruef-im-video-klavier.png', Buffer.from(await p.evaluate(() => SYNQUENZER.vd4.png()), 'base64'));
+  const rnd = await p.evaluate(async () => { SYNQUENZER.vvTest({size: [216, 384]}); try { await SYNQUENZER.vvMake({fmt: '9:16', view: 'auto', range: {a: 0, b: 12}}); return JSON.stringify(VV.lastRt.shots.map(s => [s.a, s.b, s.v, s.t])); } finally { SYNQUENZER.vvTest({}); } });
+  await settle(p, 900); const c2 = await cmp();
+  await p.evaluate(() => vr1SetVid(1, 0, null)); await settle(p, 700); const c3 = await cmp();
+  await p.evaluate(() => clearClip(2, 0, true)); await settle(p, 900); const c4 = await cmp();
+  await p.evaluate(() => SYNQUENZER.undo()); await settle(p, 900); const c5 = await cmp();
+  // keine Mehrkosten beim bloßen Abspielen: der Schnittplan wird nur nach einer Änderung neu gerechnet
+  await p.evaluate(() => { const o = window.vvRun; window.__vro = o; window.__vrn = 0; window.vvRun = function () { __vrn++; return o.apply(this, arguments); }; songPlayStart(0); }); await p.waitForTimeout(500);
+  await p.evaluate(() => { __vrn = 0; window.__tk0 = TKGEN; }); await p.waitForTimeout(3000);
+  const quiet = await p.evaluate(() => ({vvRun: __vrn, tk: TKGEN - __tk0, frames: SYNQUENZER.vd4.info().frames}));
+  await p.evaluate(() => { songPlayEnd(true); window.vvRun = window.__vro; }); await settle(p, 300);
+  ok('VD4-28', c0.same && bt && kb && vid === 'klav' && c1.same && /Klavier/.test(c1.cap) && lv.cur.v === 'klav' && rnd === c1.pip && c2.same && c3.same && c3.pip !== c1.pip && c4.same && c4.pip !== c3.pip && c5.same && c5.pip === c3.pip && quiet.vvRun === 0 && quiet.tk === 0,
+    'Befund 1: Clip-Blatt „Im Video: Klavier“ (Finger) → das Fenster zeigt sofort Klavier, auch live ab Takt 5, und hat denselben Schnittplan wie der echte Render danach; „Auto“ zurück, Clip löschen und ↶ → jedes Mal neu = frischer Plan; Song spielt ohne Änderung: 0 neue Pläne', {c0: c0.pip, c1: c1.pip, cap: c1.cap, live: lv.cur && lv.cur.v, render: rnd, c4: c4.pip, c5: c5.same, quiet});
+  await p.close(); }
+{ // Befund 2: gelbe Auswahl → das Fenster rechnet den Bereich des nächsten Videos (Auswahl); außerhalb: wie ganzer Song
+  const sel = [];
+  for (const [a, bb] of [[1, 11], [5, 11]]) {
+    const p = await open(APP, 428, 926); await p.evaluate(SONG, true);
+    await p.evaluate(([a, bb]) => { SYNQUENZER.vd4.on(true); SYNQUENZER.vd4.mode('regie'); setSongView(true); SYNQUENZER.songSelect(a, bb); VV.useSel = false; }, [a, bb]); await settle(p, 900);
+    // live in der Auswahl: am zweiten Takt der Auswahl
+    await p.evaluate(x => { SYNQUENZER.vd4.reset(); songPlayStart(x); }, a + 1); await p.waitForTimeout(1200);
+    const lv = await info(p); await p.evaluate(() => songPlayEnd(true)); await settle(p, 400);
+    await p.evaluate(() => vvOpen()); await settle(p, 900);
+    const segSel = await p.evaluate(() => VV.useSel !== false && vvRange(true).sel);
+    await p.evaluate(() => SYNQUENZER.vvTest({size: [216, 384]}));
+    await tapEl(p, '.vvbtn.go');
+    await p.waitForFunction(() => !VV.busy && VV.lastRt, null, {timeout: 120000}).catch(() => {});
+    await p.evaluate(() => SYNQUENZER.vvTest({})); await p.evaluate(() => { try { vvClose(); } catch (e) { closePop(); } }); await settle(p, 900);
+    const r = await p.evaluate(() => { const job = VV.lastRt, whole = vvRun({view: 'auto', range: {a: 0, b: S.song.bars}}), rows = [];
+      for (let x = 0; x < S.song.bars; x++) { const sb = x * 4 + 2.5, c = SYNQUENZER.vd4.shotAt(sb), j = x >= job.A && x < job.B ? vvShotAt(job, sb) : vvShotAt(whole, sb); rows.push([x + 1, x >= job.A && x < job.B ? 'video' : 'ganz', j.v + (j.t != null ? j.t : ''), c.v + (c.t != null ? c.t : '')]); }
+      return {A: job.A, B: job.B, rows, diff: rows.filter(q => q[2] !== q[3])}; });
+    const jl = await p.evaluate(sb => { const s = vvShotAt(VV.lastRt, sb); return s.v + (s.t != null ? s.t : ''); }, lv.cur.sb);
+    sel.push({sel: [a + 1, bb + 1], segSel, A: r.A, B: r.B, diff: r.diff, liveBar: lv.cur.bar + 1, live: lv.cur.v + (lv.cur.t != null ? lv.cur.t : ''), liveVideo: jl, rows: r.rows.map(q => q.join(':')).join(' ')});
+    await p.close();
+  }
+  ok('VD4-29', sel.every(x => x.segSel && x.A === x.sel[0] - 1 && x.B === 12 && x.diff.length === 0 && x.liveBar > x.sel[0] - 1 && x.live === x.liveVideo),
+    'Befund 2: gelbe Auswahl (Takt 2–12 und 6–12), Blatt mit Vorgabe [Auswahl], [Video erstellen] per Finger → jeder Takt der Auswahl zeigt im Fenster dieselbe Ansicht wie im Video (0 Abweichungen, auch live); Takte außerhalb wie im Video des ganzen Songs', sel);
+}
+{ // Befund 3: Trefferfläche des Umschalters = die Pille (+ Rand), 44 px hoch; daneben = Bild (Tippen → Menü, Ziehen → Fenster wandert)
+  const hit = {};
+  for (const [W, H, fmt] of [[428, 926, '9:16'], [926, 428, '9:16'], [428, 926, '16:9'], [926, 428, '16:9']]) {
+    const p = await open(APP, W, H); const k = `${W}x${H}-${fmt}`; await p.evaluate(SONG, false);
+    await p.evaluate(f => { vvPrefSet('fmt', f); SYNQUENZER.vd4.on(true); SYNQUENZER.vd4.mode('regie'); setSongView(false); }, fmt); await settle(p, 1000);
+    const g = await p.evaluate(() => { const r = e => { const q = e.getBoundingClientRect(); return {x: q.x, y: q.y, w: q.width, h: q.height}; }; return {win: r(document.querySelector('.vd4w')), m: r(document.querySelector('.vd4m')), pill: r(document.querySelector('.vd4m span')), x: r(document.querySelector('.vd4x')), xs: r(document.querySelector('.vd4x span'))}; });
+    const o = {win: [g.win.w, g.win.h], toggle: [Math.round(g.m.w), Math.round(g.m.h)], pill: [Math.round(g.pill.w), Math.round(g.pill.h)], x: [g.x.w, g.x.h]};
+    o.tight = g.m.w >= 44 && g.m.h >= 44 && g.m.w <= Math.max(44, g.pill.w + 12) && g.x.w >= 44 && g.x.h >= 44 && g.xs.x + g.xs.w <= g.win.x + g.win.w && g.xs.y >= g.win.y;
+    // Tipp 30 px rechts neben der Pille (wo davor noch Bild ist) → VD3-Menü statt Umschalten
+    const tx = g.pill.x + g.pill.w + 30, ty = g.win.y + 30;
+    if (tx < g.x.x - 4) {
+      await p.touchscreen.tap(tx, ty); await settle(p, 400);
+      o.tap = await p.evaluate(() => ({m: VD4.m, pop: UI.pop && UI.pop.name})); await p.evaluate(() => closePop()); await settle(p, 300);
+      const c = await cdpOf(p), r0 = (await info(p)).rect;
+      await c.send('Input.dispatchTouchEvent', {type: 'touchStart', touchPoints: [{x: tx, y: ty}]});
+      for (let i = 1; i <= 10; i++) { await c.send('Input.dispatchTouchEvent', {type: 'touchMove', touchPoints: [{x: tx - 15 * i, y: ty - 6 * i}]}); await p.waitForTimeout(16); }
+      await c.send('Input.dispatchTouchEvent', {type: 'touchEnd', touchPoints: []}); await settle(p, 500);
+      const i1 = await info(p); o.drag = {moved: Math.abs(i1.rect.x - r0.x) + Math.abs(i1.rect.y - r0.y) > 20, corner: i1.corner, m: i1.m};
+      await p.evaluate(() => { const o = Object.assign({}, uiPrefs().vd4pos || {}); o[vd4Land() ? 'l' : 'p'] = 'br'; setUiPref('vd4pos', o); vd4Place(false); }); await settle(p, 300);
+    } else o.tap = 'kein Bild rechts der Pille (9:16: die Pille reicht bis an das ✕)';
+    // die Pille selbst schaltet weiter um
+    await tapEl(p, '.vd4w .vd4m span'); await settle(p, 300); o.pillTap = await p.evaluate(() => VD4.m); await p.evaluate(() => SYNQUENZER.vd4.mode('regie'));
+    if (fmt === '16:9') { const r = (await info(p)).rect; await p.screenshot({path: `${OUT}/vd4-pruef-${W > H ? 'quer' : 'hochkant'}-16-9.png`, clip: {x: r.x - 12, y: r.y - 12, width: r.w + 24, height: r.h + 24}}); }
+    hit[k] = o; await p.close();
+  }
+  const H = Object.values(hit), wide = Object.entries(hit).filter(([k]) => /16:9/.test(k)).map(([, v]) => v);
+  ok('VD4-30', H.every(o => o.tight && o.pillTap === 'app') && wide.every(o => o.tap && o.tap.m === 'regie' && o.tap.pop === 'vd3cut' && o.drag.moved && o.drag.m === 'regie'),
+    'Befund 3: der Umschalter reagiert nur auf der Pille (+ Rand, ≥ 44 × 44), ✕ 44 × 44 sichtbar; 16:9 hochkant/quer: Tipp 30 px rechts der Pille öffnet das Menü der Video-Spur, Ziehen von dort verschiebt das Fenster; die Pille schaltet weiter Regie ⇄ App', hit);
+}
+{ // Befund 4: App beim Matrix-Spielen, langer Song (160 Takte, 6 Spuren), noch kein Video in der Sitzung: kein Schnittplan je Bild
+  const p = await open(APP, 428, 926);
+  await p.evaluate(() => { const A = SYNQUENZER; A.setMetronome && A.setMetronome(false);
+    const nt = NT(), syn = (n0, k) => ({len: 1, notes: [0, 1, 2, 3].map(t => ({t, d: .5, n: n0 + ((t * k) % 7), v: .7}))});
+    for (let t = 0; t < nt; t++) for (let s = 0; s < 8; s++) { if (t === DRUM_T) A.setClip(t, s, {len: 1, notes: [{t: 0, d: .25, n: 36 + (s % 3), v: .9}, {t: 2, d: .25, n: 38, v: .8}]}); else A.setClip(t, s, syn(48 + t * 3, s + 1)); }
+    const bars = 160, lanes = Array.from({length: nt}, () => []);
+    for (let t = 0; t < nt; t++) for (let x = 0; x < bars; x += 2) if ((x / 2 + t) % 3) lanes[t].push({bar: x, slot: ((x * 7 + t * 3) >> 2) % 8});
+    const marks = []; for (let x = 0; x < bars; x += 8) marks.push({id: 'm' + x, a: x, len: 8, name: 'T' + x});
+    A.setSong({bars, lanes, carrier: [], marks}); SYNQUENZER.vd4.on(true); SYNQUENZER.vd4.mode('app'); setSongView(false); });
+  await settle(p, 900);
+  await p.evaluate(() => { const o = window.vvRun; window.__vro = o; window.__vr = {n: 0, ms: 0}; window.vvRun = function () { const t = performance.now(), x = o.apply(this, arguments); __vr.ms += performance.now() - t; __vr.n++; return x; }; });
+  const last = await p.evaluate(() => !!VV.lastRt);
+  const sc = await p.evaluate(() => { const q = document.querySelector('#clipGrid .scn').getBoundingClientRect(); return [q.x + q.width / 2, q.y + q.height / 2]; });
+  await p.touchscreen.tap(sc[0], sc[1]); await p.waitForTimeout(700);
+  await p.evaluate(() => { SYNQUENZER.vd4.reset(); __vr.n = 0; __vr.ms = 0; }); await p.waitForTimeout(3000);
+  const m = await p.evaluate(() => { const i = SYNQUENZER.vd4.info(); return {vvRun: __vr.n, ms: +__vr.ms.toFixed(1), frames: i.frames, avg: i.avg, max: i.msMax, live: i.live, songPlay: !!R.songPlay, cap: i.cap}; });
+  await p.evaluate(() => { if (R.playing) stop(); window.vvRun = window.__vro; }); await settle(p, 300);
+  ok('VD4-31', !last && m.live && !m.songPlay && m.frames >= 20 && m.vvRun === 0 && /App-Bild/.test(m.cap || ''),
+    `Befund 4: App beim Matrix-Spielen (Szene per Finger, 160 Takte, kein Video in der Sitzung): 0 Schnittpläne in 3 s (vorher 1 je Bild), ${m.frames} Bilder, ${m.avg} ms/Bild (max ${m.max})`, m);
+  await p.close(); }
+
 /* ======================= Pflichtregeln im Text ======================= */
 const src = fs.readFileSync(APP, 'utf8'), blk = src.slice(src.indexOf('/* VD4-BEGIN'), src.indexOf('/* VD4-END */'));
 const bad = ['Korg', 'microKORG', 'RADIAS', 'DWGS', 'Kodamo', 'Mask1', 'Nord', 'Kompakt', 'Clavia'].filter(w => src.includes(w));
