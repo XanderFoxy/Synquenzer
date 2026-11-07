@@ -49,9 +49,16 @@ nimmt das Fragment sofort per `history.replaceState` aus der Adresse, speichert 
 „übernommen“. Nichts davon geht ans Netz (Test: keine Anfrage enthält die Zahlen). Push bei geschlossener Seite: siehe
 `krypto/` und `.github/workflows/krypto.yml` (Secrets `KRYPTO`, `KRYPTO_NTFY_TOPIC`).
 
-**Platz für weitere Reiter (z. B. „Filme“):** `<a href="#filme" data-reiter="filme">Filme<span class="n"></span></a>` in die
-Leiste, `<section id="p-filme" class="reiter-seite" hidden>` nach `</main>`, `REITER_START.filme = el => …` (läuft beim
-ersten Öffnen), optional `REITER_NEU.filme` (↻). Abschnitts-Links führen zurück.
+**Weitere Reiter:** `<a href="#name" data-reiter="name">Name<span class="n"></span></a>` in die Leiste,
+`<section id="p-name" class="reiter-seite breite" hidden>` nach `</main>`, `REITER_START.name = el => …` (läuft beim
+ersten Öffnen), optional `REITER_NEU.name` (↻ und Rückkehr zur Seite nach > 5 min, für jeden schon geöffneten Reiter).
+Antippen blendet die Abschnitte aus und springt wie ein Abschnitt unter die Leiste; Abschnitts-Links führen zurück.
+
+**Reiter „Filme“ (Film-Radar, `filme.js`):** letzter Link der Leiste, `#filme` öffnet ihn direkt. Skript, CSS (`.fi-…`) und
+Daten (`vorteile-daten/vorteile/data/filme.json`) kommen erst beim ersten Öffnen; vorher lädt die Seite nichts davon.
+Chips Wunschliste · Angebote · Neu · 80er & Kult · Serien · Disney, Tiefstpreis, „dein Ziel“, letzter Stand offline.
+Film-Einträge aus `aktuell.json` (Kategorie `filme`, für die Pushes) stehen nur dort, nicht noch einmal unter „Mehr“.
+Der Service Worker hält `filme.js` wie die Seite (erst Netz, nach 3 s die letzte gute Kopie). Tests: `test/filme.test.mjs`.
 
 ## Was eine Angebotskarte zeigt
 

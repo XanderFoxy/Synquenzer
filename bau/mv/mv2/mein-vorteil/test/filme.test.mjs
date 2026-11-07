@@ -1,5 +1,6 @@
 // Reiter „Filme“ (filme.js): statische Prüfungen (Vertrag, tolerantes Lesen, Haken in index.html/sw.js) und Browser-Tests
-// mit test/fixtures/filme.json (Stand 07.11.2026 14:05). Fotos nach test/fotos-filme/ (iPhone 12 Pro Max, hoch + quer).
+// mit test/fixtures/filme.json (Stand 07.11.2026 14:05). Fotos (iPhone 12 Pro Max, hoch + quer) nach $MV_SHOTS/filme/, sonst ins
+// Temp-Verzeichnis – wie seite.test.mjs, damit keine Bilder im Repo (und auf GitHub Pages) landen.
 // Seit MV2 (Abschnitte statt Reiter) hängt „Filme“ am Einhängepunkt der Sprung-Leiste: <a data-reiter="filme">, eigene Seite
 // #p-filme nach </main>, REITER_START.filme / REITER_NEU.filme.
 // Aufruf: cd mein-vorteil && npm test   (ohne Playwright laufen nur die statischen Prüfungen)
@@ -11,13 +12,14 @@ import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join, normalize, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { tmpdir } from 'node:os';
 import vm from 'node:vm';
 
 const HIER = dirname(fileURLToPath(import.meta.url));
 const MV = join(HIER, '..');
 const WURZEL = join(MV, '..');
 const FIX = join(HIER, 'fixtures');
-const FOTOS = join(HIER, 'fotos-filme');
+const FOTOS = join(process.env.MV_SHOTS || join(tmpdir(), 'mein-vorteil-shots'), 'filme');
 const JETZT = '2026-11-07T15:00:00Z'; // 16:00 Berliner Zeit, Daten von 14:05
 const FILME_PFAD = 'vorteile-daten/vorteile/data/filme.json';
 const FILME = JSON.parse(readFileSync(join(FIX, 'filme.json'), 'utf8'));
