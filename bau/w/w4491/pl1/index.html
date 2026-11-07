@@ -83465,7 +83465,7 @@ function pl1RstLk(tg, p) {
 function pl1ModeGo(tg) {
   const S_ = pl1S(), tr = S.tracks[tg.t]; if (!tr || !pl1Clip(tg)) return false;
   pl1Flush(); closePop(); pl1Ptr();
-  S_.mode = {tg};
+  S_.mode = {tg, sig: pl1Sig(tg)};
   if (tr.kind === 'drum') { selectSlot(DRUM_T, tg.s); const v = DRUM_VOICES.findIndex(x => x.id === tg.sid); if (v >= 0) ED.dVoice = v; ED.dTab = 'sound'; }
   else selectSlot(tg.t, tg.s);
   openEditor();
@@ -83504,7 +83504,15 @@ function pl1Ban() {
   b.querySelector('.pl1bt').textContent = '🔒 LOCK · ' + M.tg.lbl;
   pl1BanSay('Regler drehen = nur ' + M.tg.lbl + ' (nicht ◆)', false);
   pl1BanPlace();
-  if (!S_.banIv) S_.banIv = setInterval(() => { const X = pl1S(); if (!X.mode) { pl1Ban(); return; } if (!pl1Live()) { pl1ModeEnd(false); return; } pl1BanPlace(); }, 250);
+  if (!S_.banIv) S_.banIv = setInterval(() => { const X = pl1S(); if (!X.mode) { pl1Ban(); return; } if (!pl1Live()) { pl1ModeEnd(false); return; } pl1BanPlace(); pl1ModeSync(); }, 250);
+}
+// ↶ / ↷ (auch „Rückgängig“ im Hinweis) ändern die Locks am Editor vorbei: dann zeigen die Regler den neuen Stand (nicht mitten in einer Geste)
+function pl1Sig(tg) { return JSON.stringify(pl1List(tg).map(x => [x.p, x.v])); }
+function pl1ModeSync() {
+  const S_ = pl1S(), M = S_.mode; if (!M || S_.pd > 0 || S_.pend) return false;
+  const sig = pl1Sig(M.tg); if (sig === M.sig) return false; M.sig = sig;
+  try { edRefresh(); if (R.editor === 'synth' && typeof MKUI !== 'undefined' && MKUI.renderSoon) MKUI.renderSoon(); } catch (e) { logErr(e); }
+  return true;
 }
 function pl1BanSay(txt, warn) { const b = UI.pl1 && UI.pl1.ban; if (!b) return; const v = b.querySelector('.pl1bv'); if (v.textContent !== txt) v.textContent = txt; v.classList.toggle('warn', !!warn); }
 function pl1BanPlace() {

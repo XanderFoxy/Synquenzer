@@ -71,7 +71,6 @@ async function runCase(scen, variant) {
     if (V === 'gst') c0.lf = {st: 3, g: '1/8'};
     if (V === 'fx') { c0.notes[1].rt = 3; c0.notes[3].tp = 7; c0.notes[4].off = true; c0.notes[NN - 1].rt = 2; }
     S.tracks[0].clips[0] = normClip(cleanClip(c0), 'synth', S.key);
-    const clipBefore = JSON.stringify(cleanClip(S.tracks[0].clips[0]));
     // ---- Song: S1 4 Takte, eigener Clip in Takt 2 (+ Zusatznote), Bereich 1–4 · S2 2-Takt-Clip, 6 Takte, eigener Clip im
     //      Durchlauf Takt 3–4, Bereich Takt 2–5 (beginnt mitten im Durchlauf) · S3 4 Takte, kein eigener Clip, Bereich Takt 3–4
     const bars = scen === 'S2' ? 6 : 4, ra = scen === 'S2' ? 1 : scen === 'S3' ? 2 : 0, re = scen === 'S2' ? 5 : 4;

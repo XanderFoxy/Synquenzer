@@ -58,7 +58,7 @@ const L2 = await p.evaluate(async () => {
   let tStart = null; for (let n = 0; n < 200; n++) { await wait(100); const x = I(); if (x.busy && tStart == null) tStart = performance.now() - T0; if (x.follows > f0 && x.rampK >= 1) break; }
   o.tStart = tStart && Math.round(tStart); o.tDone = Math.round(performance.now() - T0); o.follows = I().follows - f0;
   const R0 = I().rampLog; o.ramp = {n: R0.length, ms: R0.length ? R0[R0.length - 1].t : 0, g0: R0.length ? R0[0].g : null, g1: R0.length ? R0[R0.length - 1].g : null, maxStep: +Math.max(0, ...R0.slice(1).map((x, j) => Math.abs(x.g - R0[j].g))).toFixed(3), mono: R0.every((x, j) => !j || (R0[R0.length - 1].g <= R0[0].g ? x.g <= R0[j - 1].g + 1e-6 : x.g >= R0[j - 1].g - 1e-6))};
-  await wait(800); o.gain1 = S.fxBus.am.gain; o.dGain = +(o.gain1 - g0).toFixed(2);   // genaue Nachprüfung kommt erst nach dem Gleiten o.last = I().last; o.renders = window.__vr();
+  await wait(800); o.gain1 = S.fxBus.am.gain; o.dGain = +(o.gain1 - g0).toFixed(2); o.last = I().last; o.renders = window.__vr();
   o.fit = SYNQUENZER.mx2Info().fit; o.lout = o.fit && o.fit.info.lout; o.undoNew = UNDO.length - u0;
   // nie während Aufnahme (Selbst singen scharf): Änderung → keine Messung, danach schon
   const f1 = I().follows; G6.arm = {k: 0, t: 0, s: 0, test: 1}; fx.vol = v0; applyTrackParams(k, false); markDirty();
