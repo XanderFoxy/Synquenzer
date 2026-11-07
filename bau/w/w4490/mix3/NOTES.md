@@ -79,11 +79,11 @@ Ein Blatt: `mx3Open` holt ein abgelegtes Blatt zurück (`pshUndock`). `mx3Sug`/`
   - Prüfung 8, 1 (2×), 2, 3, 5, 4 in einem frischen zweiten Tab.
   - Angepasst: Das Chor-Blatt darf den 4. Knopf [A/B · …] zeigen. `gain1` wird 0,8 s nach dem Gleiten gelesen, weil die genaue Nachprüfung jetzt erst nach dem Gleiten kommt.
 - Pflicht: topdefs 0 doppelt / 0 Syntaxfehler, dupkeys 0, Rauchtest `errors []`, Markenwörter 0, „MS 2000“ 1×, „  live: true,“ 1×.
-- Gegenprobe: MX2-Test (w4480/mx2/mx2-test.mjs) auf dieser Kopie (Ergebnis siehe unten).
+- Gegenprobe: MX2-Test (w4480/mx2/mx2-test.mjs) auf dieser Kopie **34/34 OK**.
 - Fotos:
   - `mix3-p-blatt.png` (hochkant, Blatt mit Messen aus/Auto-Nachführen), `mix3-l-blatt.png` (quer).
   - `mix3-p-chor.png` (Chor-Blatt hochkant mit [A/B · nachher]), `mix3-l-chor.png` (quer, Gesang + A/B in der unteren Knopfzeile).
-  - `mix3-l-marke.png` (Marken-Blatt quer), **neu** `mix3-p-vorschlaege.png` (Vorschläge je Spur im Blatt).
+  - `mix3-l-marke.png` (Marken-Blatt quer), **neu** `mix3-p-vorschlaege.png` (quer: Vorschläge je Spur im Blatt mit [Übernehmen]/[Zurück]).
 
 ## Offen
 - Song-Master in der Matrix: Das Nachführen wartet auf ▶ SONG. Nach dem Neuladen eines Projekts mit Song-Master fehlt die Song-Messung, deshalb steht „[Mastern] misst den Song neu“.
