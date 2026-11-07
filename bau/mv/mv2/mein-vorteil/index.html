@@ -249,7 +249,7 @@
   html { scroll-behavior: smooth; }
   @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
   .abschnitt { scroll-margin-top: 70px; padding-top: 4px; }
-  .abschnitt > h2, .abschnitt-kopf h2 {
+  .abschnitt > h2, .abschnitt-kopf h2, .reiter-seite > h2 {
     font-size: 21px; line-height: 1.2; text-transform: none; letter-spacing: -0.01em; color: var(--text); font-weight: 750;
     margin: 26px 2px 10px; justify-content: flex-start; align-items: center;
   }
@@ -389,7 +389,8 @@
   .toast.warm { background: var(--warm); color: var(--bg); }
   .toast p { margin: 0; flex: 1; min-width: 0; font-size: 15px; }
   .toast button.x { background: transparent; border-color: currentColor; color: inherit; }
-  .reiter-seite { padding-top: 6px; }
+  /* eigene Seite eines Reiters (Filme): springt wie ein Abschnitt unter die Leiste, auch solange sie noch kurz ist */
+  .reiter-seite { scroll-margin-top: 70px; padding-top: 4px; min-height: 100vh; }
 </style>
 <script>
 'use strict';
@@ -2035,7 +2036,7 @@ function zeigeReiter(name) {
   }
   const seite = name ? $('p-' + name) : null;
   if (seite && !seite.dataset.gestartet) { seite.dataset.gestartet = '1'; try { REITER_START[name]?.(seite); } catch (e) { console.warn(e); } }
-  if (name) scrollTo({ top: 0 });
+  if (seite) seite.scrollIntoView({ behavior: 'instant', block: 'start' }); // wie ein Abschnitt: Überschrift direkt unter der Leiste
 }
 let gesprungen = false, nutzerScrollt = false, sprungOffen = true;
 function springe(ziel, { sanft = true } = {}) {
