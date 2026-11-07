@@ -33,7 +33,7 @@ Ein JS-Block `WEGE-BEGIN … WEGE-END` (Präfix `wege*`, Objekt `WEGE`, `WEGE_*`
 - VA1: `va1Html` `return h;` → `return wegeVa1Html(h);`; `va1Tap` erste Zeile `if (wegeVa1Tap(b)) return;`.
 - VERLAUF (`sx14Open` paint): neue Zeile nach `p.innerHTML = …`: `wegeSx14Paint(p);`.
 - VD3: `vd3Busy` `|| wegeMoHist()`; `vd3Ev` erst `wegeMoEv()`; `vd3JobStart` neue Zeile `if (P.mo) await wegeMoBuild();`; `vd3VvRow` neue Zeile `wegeMoSoon();`, Tap `mo` → `setTimeout(wegeMoHint, 0)`.
-- `popBpm`: neue Zeile vor `}, {name: 'bpm'});`: `wegeBpmRow(p);` (TAKT ändert in derselben Gegend nur `setSongTs`-Hinweise – kein gemeinsamer Ausdruck).
+- `popBpm`: neue Zeile vor `}, {name: 'bpm'});`: `wegeBpmRow(p);` (TAKT ändert in derselben Gegend nur `setSongTs`-Hinweise – kein gemeinsamer Ausdruck). Quer (Prüfung 10): CSS-Grid nur über `.pop:has(> .wg-bpm)` (Spalte 2 = `.wg-bpm`, `grid-auto-flow: row dense`) – Zeilen anderer Pakete im Tempo-Blatt landen in der linken Spalte.
 - `ui1Entries`: neue Zeile vor `return UI1.ents;`: `wegeGuide(UI1.ents);`.
 - Nach der Prüfung (je ein Ausdruck): `hm1Acts` Titel „Harmonie: Auf eine Stufe, Lauf verlängern, Gegenstimme, Akkord-Ideen“; `renderHistory` leerer Träger-Chip „Verlauf“ → „Letzte Akkorde“; Hilfe-Text „GELBE TAKTE IM SONG“ mit „❖ Zusammenfassen“ und „⧉ Takte kopieren“.
 
@@ -50,6 +50,7 @@ Ein JS-Block `WEGE-BEGIN … WEGE-END` (Präfix `wege*`, Objekt `WEGE`, `WEGE_*`
 - Nicht gebaut (bewusst): toten Knopf „S4 ▾ / ● MEL.“ entfernen (unsichtbar, nur Aufräumen), „Spur-Blatt per ⋯ am Spurkopf“ (würde das Layout verschieben – stattdessen Guide-Eintrag), Grundmuster-Reiter (GEN3), Mix/Master (MIX3), D10.
 - Zusammenführen: TAKT legt im Menü eine Zeile „Song › Dur ↔ Moll …“ an (`tktMenuRow`); dazu passt das Tempo-Blatt (Song-Blatt) als gemeinsamer Ort – Vorschlag, nicht gebaut. MIX3 `ch1MarkSheetPaint`: Zeile „Refrain groß“ landet automatisch im Reiter Klang & Groove.
 - Test mit echtem iPhone (Fingerbreite an der ▼-Marke, Touch-Anpassung von Safari) steht aus.
+- Nach der Prüfung offen: Funk-Fragen D6 (Modulation/Fokus je Teil) und D1 (Zusammenfassen hochkant ausgeschrieben), siehe unten; Regie-Streifen-Tipp 20 statt 44 px (mehr nur auf Kosten von Taktwahl/Clip-Tipp); Making-of: ein älteres Aufzeichnungs-Stück (> 30 min alt) wird beim ersten Lesen nach dem Öffnen des Projekts einmal ganz entpackt (ein JSON-Block, bei 13 MB Rohtext ≈ 40 ms am Desktop), danach nie wieder.
 
 ## Prüfung (unabhängiger Prüfer, 11 Befunde)
 Alle Befunde nachgemessen (Skripte des Prüfers in `pruef/`, eigene Läufe in `../wege-fix/`). Ergebnis je Befund:
@@ -68,7 +69,7 @@ Alle Befunde nachgemessen (Skripte des Prüfers in `pruef/`, eigene Läufe in `.
 
 Dabei gefunden und behoben: das WEGE-CSS kam erst beim ersten WEGE-Blatt – bis dahin war der Lautsprecher-Schalter quer noch zu sehen. Jetzt ab dem Laden.
 
-Tests nach der Prüfung: `wege-test.mjs` **77/77 OK** (neu: Prüfung 1, 2 ×3, 4 ×2, 5/9, 6, 7, 8 ×2, 9, 10 ×2, 11), Konsole ohne Fehler; Prüfer-Sonden p1, p6, p8, p10, p11, p14, p16, p2b (Guide ohne Song quer 101/102, nur „remix“ wie Basis) nachgelaufen. Pflicht: topdefs 0/0, dupkeys 0, Rauchtest `errors []`, Markenwörter 0, „MS 2000“ 1×, „  live: true,“ 1×, `basis.html` unverändert (md5 4d0a2acc…).
+Tests nach der Prüfung: `wege-test.mjs` **77/77 OK** (neu: Prüfung 1, 2 ×3, 4 ×2, 5/9, 6, 7, 8 ×2, 9, 10 ×2, 11), Konsole ohne Fehler; Prüfer-Sonden p1, p6, p8, p10, p11, p14, p16, p2b (Guide ohne Song quer 101/102, nur „remix“ wie Basis) nachgelaufen. Pflicht: topdefs 0/0, dupkeys 0, Rauchtest `errors []`, Markenwörter 0, „MS 2000“ 1×, „  live: true,“ 1×, `basis.html` unverändert (md5 4d0a2acc…). Reproduzierbar: `scratchpad/wege-x/apply.py` (+ 4 Einhänge-Ersetzungen der Prüfung) und `wege-x/wege-block.js` (aktueller Block) auf `basis.html` = `index.html` bytegleich (md5 1957f595…).
 
 **Funk-Vorschläge (nicht gebaut, erst fragen):**
 - D6: „Im Video gab es früher je Teil auch ‚Modulation‘ und ‚Fokus …‘ (Clip-Zelle, Tastatur, Teil-Kopf, Übergang). In der neuen einen Wortliste fehlen sie. Sollen sie als Unterpunkte zurück (z. B. ‚Gerät …‘ › Modulation, ‚Fokus …‘ als eigener Punkt), oder bleiben sie weg?“
