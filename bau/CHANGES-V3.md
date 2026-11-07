@@ -1,3 +1,12 @@
+## 4.42.0 — Klanganker automatisch, Modulation an jedem Regler sichtbar
+
+- **Klanganker ◆ automatisch:** Drehst du im Synth-Editor einen Regler, während ein Clip läuft (ohne Wiedergabe: der gewählte Clip), landet die Änderung sofort hörbar in genau diesem Clip – ohne die Raute anzutippen. Clip wechseln = du hörst dessen Klang; nach Speichern und Laden klingt es wieder genauso. Je Dreh-Geste ein Schritt für ↶.
+- **◆-Taste = Grundklang:** Antippen schaltet um auf „Grundklang“ – dann gehen Änderungen wie früher für alle Clips in den Spur-Klang. Noch einmal = wieder automatisch in den Clip. Gilt für Analog, FM, WT und MS 2000; Bit Mask, Drums und Perkussionsspur bleiben beim Grundklang.
+- **Modulation sichtbar:** Der Punkt am Regler zeigt die Summe aller Quellen (LFO 1, LFO 2, Hüllkurven …), auch im Modulier-Modus einer anderen Quelle (vorher stand z. B. Resonanz mit LFO 2 still). Die Hüllkurve schlägt pro Note sichtbar an. Auf der MS 2000-Platte zeigen die Regler jetzt die VIRTUAL-PATCH-Wege (Bogen + Punkt), auch MOD-Rad und BEND.
+- Zusammengeführt: Die Anzeige liest die wirksamen Wege (Grundklang ⊕ Clip-Zustand), damit neue Wege im Clip auch sichtbar sind.
+- Offen: Bit Mask noch ohne Modulationsanzeige; Clip-Matrix im Video in echten Farben kommt als Nächstes.
+Tests: Regeln (live 1×, MS 2000 1×, Marken 0), acorn 0 doppelt / 0 Syntaxfehler, Rauchtest grün; Auto-Anker 10/10 (inkl. Speichern/Laden, Undo, ohne Wiedergabe); Modulation 11/11 + 7/8 (ein Messpunkt mit sehr kurzer Hüllkurve, wie vorher).
+
 ## 4.41.0 — Video: Klavier-Ansicht und Mäusekino (erste Fassung)
 
 - **Klavier (Video):** Tastatur unten, die Noten fallen als Balken auf die Jetzt-Linie, jede Spur in ihrer Farbe. Leise Töne sind heller und kühler, laute satter und wärmer, Akzente glühen; die klingende Taste leuchtet mit. Drums sind keine Noten, sondern eine Leiste KICK · TOMS · SNARE · HATS, die bei jedem Schlag aufglüht. Wählen: Video-Regie → **Klavier**; die Auto-Regie nimmt sie bei melodischen Teilen manchmal selbst.
