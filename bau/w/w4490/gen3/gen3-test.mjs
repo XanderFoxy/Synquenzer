@@ -222,7 +222,6 @@ try {
     await q.waitForTimeout(300);
     const WK = await q.evaluate(() => { const P = document.querySelector('.bb1s'); if (!P) return null; const bs = [...P.querySelectorAll('button')].filter(b => b.offsetParent).map(b => { const r = b.getBoundingClientRect(); return {t: b.textContent.trim().slice(0, 14), h: Math.round(r.height), vis: r.top >= -1 && r.bottom <= innerHeight + 1}; }); const x = P.querySelector('.ms-x').getBoundingClientRect(); return {small: bs.filter(b => b.vis && b.h < 44).map(b => b.t + ':' + b.h), x: x.top >= 0 && x.bottom <= innerHeight && x.right <= innerWidth}; });
     ok(WK && !WK.small.length && WK.x, tag + ': Werkzeugkasten-Reiter (Tasten ≥ 44 px, ✕ sichtbar)', WK ? WK.small.join(', ') : 'fehlt');
-    if (tag === 'quer') await q.screenshot({path: path.join(out, 'gen3-werkzeugkasten-quer.png')});
     if (tag === 'hochkant') {
       await q.evaluate(() => { const b = document.querySelector('.bb1s .ms-x'); if (b) b.click(); window.SYNQUENZER.ueBar(true); });
       await q.waitForTimeout(400);
@@ -250,7 +249,7 @@ try {
         if (r.on !== g || !r.vis) wrong.push(g + '→' + r.on + (r.vis ? '' : ' (aus dem Bild)'));
       }
       ok(info.length > 10 && info.every(x => x.w >= 44 && x.h >= 44) && !wrong.length, tag + ': Werkzeugkasten › Figuren (' + role + '): ' + info.length + ' Genre-Tasten ≥ 44 px, jeder Tipp trifft, die Zeile behält ihre Stelle', 'schmalste ' + Math.min(...info.map(x => x.w)) + ' px' + (wrong.length ? ' · falsch: ' + wrong.slice(0, 8).join(' ') : ''));
-      if (tag === 'quer' && role === 'Drums') await q.screenshot({path: path.join(out, 'gen3-pruef-figuren-quer.png')});
+      if (tag === 'quer' && role === 'Drums') await q.screenshot({path: path.join(out, 'gen3-werkzeugkasten-quer.png')});   // Reiter Figuren, Genre-Zeile scrollt
       await q.evaluate(() => { const x = document.querySelector('.bb1s .ms-x'); if (x) x.click(); });
       await q.waitForTimeout(150);
     }

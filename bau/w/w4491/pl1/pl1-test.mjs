@@ -1,5 +1,7 @@
 // PL1-Test: Parameter-Locks (LAUF / Drum-SCHRITTE / ROLLE / Lock-Modus Klang-Editor + Platte), Render-Spektrum, Speichern/Laden, ↶,
 // Lauflichter an/aus (Frames/CPU gemessen), Lage (nichts verschiebt sich gegen die Basis), ✕ sichtbar, Tasten ≥ 44 px, Fotos.
+// Prüfung (Befunde 1–4): Mod-Ringe der Platte bei Lauflichtern aus, Doppeltipp im Lock-Modus = Lock weg (Klang-Editor + Platte, „Rückgängig“),
+// [🔒 Locks] per Finger-Wischen erreicht (kein scrollIntoView) und nach [Fertig] im Bild, Menü-Text nennt, was weiterläuft.
 // Aufruf: node pl1-test.mjs <index.html> <ausgabe-ordner>   (ABSOLUTE Pfade; die Basis wird als ../basis.html neben dem Paket gesucht)
 import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
 import fs from 'fs';
@@ -168,12 +170,18 @@ await p.evaluate(() => { undo(); closeEditor(); });
 
 /* ---------- 5) ROLLE: Note wählen → [🔒 Locks] → [Alle Regler ›] = Klang-Editor im Lock-Modus ---------- */
 await p.evaluate(() => { ROLLP.view = 'roll'; openRoll(0, 0); }); await W(400);
-const rb = await p.evaluate(() => { ED.roll.selectIdx([4]); const b = [...ED.roll.el.acts.children].find(x => x.textContent === '🔒 Locks'); b.scrollIntoView({inline: 'nearest'}); const r = b.getBoundingClientRect(); return {x: r.left + r.width / 2, y: r.top + r.height / 2, h: r.height}; });
+await p.evaluate(() => { ED.roll.selectIdx([4]); ED.roll.el.acts.scrollLeft = 0; }); await W(150);
+// Prüfung 3: per Finger wischen (wie auf dem iPhone), nicht per Skript ins Bild holen – gezählt wird, wie oft
+const lockVis = () => p.evaluate(() => { const a = ED.roll.el.acts, ar = a.getBoundingClientRect(), b = a.querySelector('.pl1rb'), br = b.getBoundingClientRect(); return {vis: br.left >= ar.left - 1 && br.right <= ar.right + 1, row: {l: ar.left, r: ar.right, y: ar.top + ar.height / 2, sw: a.scrollWidth}}; });
+let swipes = 0, lv = await lockVis();
+while (!lv.vis && swipes < 8) { const y = lv.row.y, x0 = lv.row.r - 20; await touch('touchStart', [{x: x0, y}]); for (let k = 1; k <= 6; k++) { await touch('touchMove', [{x: x0 - k * 60, y}]); await W(16); } await touch('touchEnd', []); await W(450); swipes++; lv = await lockVis(); }
+const rb = await p.evaluate(() => { const b = ED.roll.el.acts.querySelector('.pl1rb'), r = b.getBoundingClientRect(); return {x: r.left + r.width / 2, y: r.top + r.height / 2, h: r.height}; });
 const hit0 = await p.evaluate(({x, y}) => { const b = [...ED.roll.el.acts.children].find(q => q.textContent === '🔒 Locks'), h = [...ED.roll.el.acts.children].find(q => q.textContent === 'Harmonie'); const span = (el, cx) => { let n = 0; for (let dy = -30; dy <= 30; dy++) if (document.elementFromPoint(cx, y + dy) === el) n++; return n; }; const hr = h ? h.getBoundingClientRect() : null; return {px: span(b, x), harmoniePx: hr ? span(h, hr.left + hr.width / 2) : null}; }, rb);
 await p.mouse.click(rb.x, rb.y); await W(300);
 const RL = await p.evaluate(() => ({pop: !!(UI.pop && UI.pop.name === 'pl1'), title: UI.pop ? UI.pop.el.querySelector('h4').textContent : ''}));
 const hit = hit0;
-ok('ROLLE: Note wählen, [🔒 Locks] (am Ende der Aktionszeile, Trefferfläche ≥ 44 px wie [Harmonie]) → Fenster „1 Note“', RL.pop && RL.title === '1 Note' && hit.px >= 44, {RL, h: rb.h, hit});
+ok('ROLLE hochkant: [🔒 Locks] am Ende der Aktionszeile per Finger erreicht (' + swipes + '× wischen, Zeile ' + Math.round(lv.row.sw) + ' px)', lv.vis && swipes <= 6, {swipes, breite: Math.round(lv.row.sw)});
+ok('ROLLE: Note wählen, [🔒 Locks] (Trefferfläche ≥ 44 px wie [Harmonie]) → Fenster „1 Note“', RL.pop && RL.title === '1 Note' && hit.px >= 44, {RL, h: rb.h, hit});
 const allB = await p.evaluate(() => { const r = UI.pop.el.querySelector('.pl1all').getBoundingClientRect(); return {x: r.left + r.width / 2, y: r.top + r.height / 2}; });
 await p.mouse.click(allB.x, allB.y); await W(500);
 const M1 = await p.evaluate(() => ({mode: SYNQUENZER.pl1.mode(), ed: R.editor, selT: R.selT, ban: (() => { const b = document.querySelector('.pl1ban'); if (!b || b.hidden) return null; const r = b.getBoundingClientRect(); return {x: r.left, y: r.top, w: r.width, h: r.height, t: b.textContent}; })(),
@@ -190,6 +198,17 @@ if (ck) await p.mouse.up(); await W(300);
 const M2 = await p.evaluate(() => { const n = S.tracks[0].clips[0].notes; return {cut: S.tracks[0].sound.p.cutoff, lk: n[4].lk && n[4].lk.v ? Math.round(lkFromN(LKT.cutoff, n[4].lk.v.cutoff)) : null, others: n.filter((q, i) => i !== 4 && i !== 1 && q.lk).length, undo: UNDO.length, last: UNDO[UNDO.length - 1].label}; });
 ok('Lock-Modus: Cutoff im Editor ziehen schreibt nur in Note 5 (Regler und Leiste zeigen den Lock-Wert), Klang unverändert, ein ↶', !!ck && M2.cut === m0.cut && M2.lk != null && M2.lk < m0.cut && M2.others === 0 && M2.undo === m0.undo + 1 && /Lock · Filter|Lock · Cutoff/.test(M2.last) && mMid.ban.startsWith('Filter') && mMid.shown === mMid.ban.replace(/^Filter /, ''), {m0, M2, mMid});
 await shot('pl1-lockmodus-hochkant.png');
+// Prüfung 2: Doppeltipp auf den Regler im Lock-Modus = der Lock geht weg (wie im Schritt-Menü), eigener ↶, „Rückgängig“ holt ihn zurück
+const lkHz = () => p.evaluate(() => { const n = S.tracks[0].clips[0].notes[4]; return {lk: n.lk && n.lk.v && n.lk.v.cutoff != null ? Math.round(lkFromN(LKT.cutoff, n.lk.v.cutoff)) : null, cut: S.tracks[0].sound.p.cutoff, undo: UNDO.length, last: UNDO.length ? UNDO[UNDO.length - 1].label : '', redo: REDO.map(r => r.label), toast: EL.toast ? EL.toast.textContent : '', ban: document.querySelector('.pl1ban .pl1bv').textContent, shown: (() => { const k = [...document.querySelectorAll('#synthSheet .knob')].find(x => x.dataset.key === 'cutoff'); return k ? k.querySelector('.kn').textContent : null; })()}; });
+const dt0 = await lkHz();
+if (ck) { await W(450); await p.mouse.dblclick(ck.x, ck.y); await W(300); }
+const dt1 = await lkHz();
+const tb = await p.evaluate(() => { const b = EL.toast ? [...EL.toast.querySelectorAll('button')].find(x => /Rückgängig/.test(x.textContent)) : null; if (!b) return null; const r = b.getBoundingClientRect(); return {x: r.left + r.width / 2, y: r.top + r.height / 2}; });
+if (tb) { await p.mouse.click(tb.x, tb.y); await W(400); }
+const dt2 = await lkHz();
+ok('Lock-Modus: Doppeltipp auf Cutoff = Lock weg (Klang bleibt, ein ↶ „Lock · Filter weg“, Hinweis „Filter: Lock weg · Rückgängig“); „Rückgängig“ bringt genau den Lock zurück, ↷ hat ihn',
+  dt0.lk != null && dt1.lk == null && dt1.cut === dt0.cut && dt1.undo === dt0.undo + 1 && dt1.last === 'Lock · Filter weg' && /Filter: Lock weg/.test(dt1.toast) && /Rückgängig/.test(dt1.toast) && dt1.shown !== dt0.shown && !!tb && dt2.lk === dt0.lk && dt2.cut === dt0.cut && dt2.undo === dt0.undo && dt2.redo.slice(-1)[0] === 'Lock · Filter weg' && dt2.shown === dt0.shown,
+  {vorher: {lk: dt0.lk, cut: dt0.cut, shown: dt0.shown}, doppeltipp: {lk: dt1.lk, last: dt1.last, toast: dt1.toast, shown: dt1.shown}, rueckgaengig: {lk: dt2.lk, redo: dt2.redo.slice(-1), shown: dt2.shown}});
 // ein Wert, der nur für den ganzen Klang geht (Filtertyp / Welle): bleibt, die Leiste sagt es
 const M3 = await p.evaluate(() => { const o = {}; const before = JSON.stringify(S.tracks[0].sound); UI.pl1.pt = performance.now(); o.r = setP(0, 'mode', 1); o.same = JSON.stringify(S.tracks[0].sound) === before; o.say = document.querySelector('.pl1ban .pl1bv').textContent; o.warn = document.querySelector('.pl1ban .pl1bv').classList.contains('warn'); return o; });
 ok('Lock-Modus: Klang-Struktur (z. B. Mono/Poly) wird kein Lock und bleibt – die Leiste sagt es', M3.same && M3.warn && /ganzen Klang/.test(M3.say), M3);
@@ -205,9 +224,11 @@ const M4 = await p.evaluate(() => {
   // der Punkt an Note 5 in der ROLLE (Pixel rechts oben in der Note)
   const nt = S.tracks[0].clips[0].notes[4], xy = ED.roll._xy(nt.t, nt.n), cv = ED.roll.el.main, r = cv.getBoundingClientRect(), d = cv.width / r.width;
   const V = ED.roll.state.view, w = nt.d * V.ppb, px = cv.getContext('2d').getImageData(Math.round((xy.x - r.left + w - 6) * d), Math.round((xy.y - r.top - V.rowH / 2 + 7) * d), 1, 1).data;
-  o.px = [...px]; o.amber = px[0] > 200 && px[1] > 130 && px[2] < 110; return o;
+  o.px = [...px]; o.amber = px[0] > 200 && px[1] > 130 && px[2] < 110;
+  { const a = ED.roll.el.acts, ar = a.getBoundingClientRect(), br = a.querySelector('.pl1rb').getBoundingClientRect(); o.lockVis = br.left >= ar.left - 1 && br.right <= ar.right + 1; }
+  return o;
 });
-ok('[Fertig] → zurück in die ROLLE (Note bleibt gewählt), Lock-Modus aus; amberfarbener Punkt an der Note', M4.ed === 'roll' && !M4.mode && !M4.ban && M4.sel === 1 && M4.amber, M4);
+ok('[Fertig] → zurück in die ROLLE (Note bleibt gewählt, [🔒 Locks] gleich im Bild), Lock-Modus aus; amberfarbener Punkt an der Note', M4.ed === 'roll' && !M4.mode && !M4.ban && M4.sel === 1 && M4.amber && M4.lockVis, M4);
 await shot('pl1-rolle-hochkant.png');
 
 /* ---------- 6) Platte (MS-Spur) im Lock-Modus: F.CUT schreibt nur den Lock, die Anzeige zeigt ihn ---------- */
@@ -223,12 +244,31 @@ const MK = await p.evaluate(async () => {
 });
 ok('Platte im Lock-Modus: F.CUT → Lock nur auf der Note, Klang bleibt, Anzeige zeigt 20', MK.after === MK.base && MK.lk && MK.lk.v && MK.lk.v['mk.t.0.f.cut'] != null && Math.round(MK.shown) === 20, MK);
 await shot('pl1-platte-hochkant.png');
+// Prüfung 2 (Platte): Doppeltipp auf F.CUT im Lock-Modus = Lock weg, Klang bleibt, ↶ holt ihn zurück (erst in den Halt zoomen, wie mit dem Finger)
+{
+  const kr = () => p.evaluate(() => { const k = document.querySelector('#synthSheet [data-k="f.cut"]'); if (!k) return null; const r = k.getBoundingClientRect(); return {x: r.left + r.width / 2, y: r.top + r.height / 2}; });
+  const tapT = async (q, w) => { await touch('touchStart', [q]); await W(40); await touch('touchEnd', []); await W(w); };
+  let q = await kr(); if (q) { await tapT(q, 600); q = await kr(); await tapT(q, 600); q = await kr(); await tapT(q, 90); await tapT(q, 400); }
+  const PD_ = await p.evaluate(() => { const o = {lk: S.tracks[2].clips[0].notes[1].lk || null, cut: SQMK.mkPathGet(S.tracks[2].sound.p.mk, 't.0.f.cut'), last: UNDO.length ? UNDO[UNDO.length - 1].label : '', ban: document.querySelector('.pl1ban .pl1bv').textContent}; undo(); o.back = S.tracks[2].clips[0].notes[1].lk || null; return o; });
+  ok('Platte im Lock-Modus: Doppeltipp auf F.CUT = Lock weg (Klang bleibt, ein ↶ „Lock · Filter weg“), ↶ bringt ihn zurück', !!q && PD_.lk === null && PD_.cut === MK.base && PD_.last === 'Lock · Filter weg' && PD_.back && PD_.back.v && PD_.back.v['mk.t.0.f.cut'] != null, PD_);
+}
 await p.evaluate(() => { pl1ModeEnd(false); closeEditor(); });
+// Prüfung 1: Lauflichter aus – die Mod-Ringe der Platte (VIRTUAL PATCH) zeigen weiter und folgen den Wegen; nur die LEDs ruhen
+const MA = await p.evaluate(async () => {
+  const w = ms => new Promise(r => setTimeout(r, ms)), n = () => document.querySelectorAll('#synthSheet .ma1mk').length, o = {};
+  pl1LlSet(false); mkSetP(2, 't.0.p.1.i', 40, false); R.selT = 2; openEditor(); await w(1200); o.aus = n(); o.ringCut = !!document.querySelector('#synthSheet [data-k="f.cut"] .ma1mk');
+  mkSetP(2, 't.0.p.1.i', 0, false); await w(600); o.wegAus = n();
+  mkSetP(2, 't.0.p.1.i', 40, false); pl1LlSet(true); await w(600); o.an = n();
+  mkSetP(2, 't.0.p.1.i', 0, false); closeEditor(); return o;
+});
+ok('Lauflichter aus: Mod-Ring (LFO 1 → Cutoff) auf der Platte bleibt sichtbar, Weg auf 0 = Ring weg; an wie vorher', MA.aus === 1 && MA.ringCut && MA.wegAus === 0 && MA.an === 1, MA);
 
 /* ---------- 7) Lauflichter: Menü › Bedienung, an/aus, gemessen (Frames, DOM-Änderungen, CPU) ---------- */
 await p.evaluate(() => { stop(); SYNQUENZER.loadDemo(); ensureAudio(); openMenu(); }); await W(500);
 const menu = await p.evaluate(() => { const r = [...EL.menu.querySelectorAll('.mrow')].find(x => x.querySelector('.lbl') && x.querySelector('.lbl').textContent === 'Lauflichter'); if (!r) return null; r.scrollIntoView({block: 'center'}); const bs = [...r.querySelectorAll('button')]; const o = bs.find(x => x.textContent.trim() === 'Aus').getBoundingClientRect(); return {txt: bs.map(x => x.textContent.trim()), x: o.left + o.width / 2, y: o.top + o.height / 2, h: o.height, on: pl1Ll()}; });
 ok('Menü › Bedienung: Zeile „Lauflichter“ [An | Aus], Standard an', menu && menu.txt.join() === 'An,Aus' && menu.on === true, menu);
+const mtx = await p.evaluate(() => { const r = [...EL.menu.querySelectorAll('.mrow')].find(x => x.querySelector('.lbl') && x.querySelector('.lbl').textContent === 'Lauflichter'), t = r && r.nextElementSibling; return t ? t.textContent : ''; });
+ok('Menü-Text nennt, was bei „Aus“ weiterläuft (Aufnahme, Pegel, Ton-Punkte der Tastatur) – kein „alles steht still“', /Es bleiben: Aufnahme, Pegel, Ton-Punkte der Tastatur/.test(mtx) && !/alles steht still/.test(mtx), mtx);
 await shot('pl1-menu-hochkant.png');
 await W(300);
 const mb = await p.evaluate(() => { const r = [...EL.menu.querySelectorAll('.mrow')].find(x => x.querySelector('.lbl') && x.querySelector('.lbl').textContent === 'Lauflichter'); const o = [...r.querySelectorAll('button')].find(x => x.textContent.trim() === 'Aus').getBoundingClientRect(); return {x: o.left + o.width / 2, y: o.top + o.height / 2}; });
