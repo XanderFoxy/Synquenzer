@@ -226,7 +226,9 @@ async function bleedRun(file, br) {
   await sleep(2500);
   const id = await p.evaluate(() => { const T = SYNQUENZER.takes(); return Object.keys(T).sort((a, b) => T[a].created - T[b].created).pop(); });
   if (await p.evaluate(id => !!SYNQUENZER.takes()[id].cl, id)) await p.waitForFunction(id => !!CL.buf.get(id), id, {timeout: 40000}).catch(() => {});   // gesäuberte Fassung fertig
+  await sleep(300); await p.waitForFunction(id => { tkPlayBuf(id, null); return SYNQUENZER.g4Info().jobs === 0 && !G2.job.size; }, id, {timeout: 40000, polling: 150}).catch(() => {});   // G4/G2 auf der gesäuberten Quelle nachgerechnet
   await sleep(500);
+  if (process.env.VX1DBG) console.log('  DBG', JSON.stringify(await p.evaluate(id => ({buf: !!CL.buf.get(id), a: CL.buf.get(id) && CL.buf.get(id).a, info: CL.info[id], bad: [...CL.bad], job: CL.job.has(id), err: CL.err, order: tkExt().proc.length, heardIsClean: tkPlayBuf(id, null) === (CL.buf.get(id) || {}).b}), id)));
   const r = await p.evaluate(async id => { const raw = await SYNQUENZER.tkPcmRange(id); return {meta: SYNQUENZER.takes()[id], raw: raw.map(v => v / 32767), heard: SYNQUENZER.clPlayRange(id), info: SYNQUENZER.vx1Info ? SYNQUENZER.vx1Info() : null}; }, id);
   // die gesungene Stimme im Take finden (Hüllkurven-Korrelation), dann Pausen (Stimme ±80 ms still) gegen gesungene Stellen
   const D = 480, env = a => { const o = new Float32Array(Math.ceil(a.length / D)); for (let i = 0; i < a.length; i++) o[(i / D) | 0] += a[i] * a[i]; return o; };
@@ -247,7 +249,7 @@ if (want('R')) {
   const rv = await rt(APP), rb = await rt(BASE);
   ok(rv === 'speaker' && rb === 'wired', `Weg beim Start mit eingebautem Mikro: VX1 „${rv}“ (4.42.0: „${rb}“ – dort blieb der alte erkannte Weg kleben, kein Säubern)`);
   // R2: Weg steht auf „Kabel“, die Musik kommt aber hörbar ins Mikro (Lautsprecher)
-  const v = await bleedRun(APP, br), b = await bleedRun(BASE, br);
+  const v = await bleedRun(APP, br), b = process.env.VX1DBG ? v : await bleedRun(BASE, br);
   console.log('  VX1  Take', JSON.stringify({route: v.meta.route, cl: v.meta.cl, rf: v.meta.rf}), 'Probe', JSON.stringify(v.info && v.info.probe), '· Pausen roh', v.rawP, 'dB → gehört', v.heardP, 'dB · Gesang', v.rawV, '→', v.heardV, 'dB');
   console.log('  4.42 Take', JSON.stringify({route: b.meta.route, cl: b.meta.cl, rf: b.meta.rf}), '· Pausen roh', b.rawP, 'dB → gehört', b.heardP, 'dB');
   ok(v.meta.cl === 60 && v.meta.rf > 0 && v.info.probe && v.info.probe.pk >= 15, 'Musik im Mikro erkannt (Echo-Spitze ' + (v.info.probe && v.info.probe.pk) + ' ≥ 15): Referenz nachgetragen, SÄUBERN 60 %');

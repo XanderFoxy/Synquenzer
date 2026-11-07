@@ -58,7 +58,7 @@ const shotAt = (cs, x) => cs.shots.find(s => s.a === x);
 let cs = await cut(); console.log('Schnitte', JSON.stringify(cs.shots.map(s => [s.a, s.b, s.v, s.t, s.why])));
 ok('Auto-Regie: Gesang (Takt 5) → STIMME-Welle', (shotAt(cs, 4) || {}).v === 'spur' && shotAt(cs, 4).t === ST_T, shotAt(cs, 4));
 ok('Auto-Regie: Gegenmelodie (Takt 9) → ihre Spur (Zelle, dann Noten)', (shotAt(cs, 8) || {}).v === 'roll' && shotAt(cs, 8).t === 1, shotAt(cs, 8));
-ok('Auto-Regie: Fill (Takt 12) → Drum-Sequenzer ab Takt 11, Refrain-Anfang bleibt ein Schnitt', (shotAt(cs, 10) || {}).v === 'drum' && !!shotAt(cs, 12), [shotAt(cs, 10), shotAt(cs, 12)]);
+ok('Auto-Regie: Fill (Takt 12) → Drum-Sequenzer ab Takt 11, Refrain-Anfang bleibt ein Schnitt (Synth 4 setzt ein → seine Spur)', (shotAt(cs, 10) || {}).v === 'drum' && (shotAt(cs, 12) || {}).t === 3, [shotAt(cs, 10), shotAt(cs, 12)]);
 ok('Auto-Regie: Klangfahrt (Takt 15) → Mäusekino', (shotAt(cs, 14) || {}).v === 'kino', shotAt(cs, 14));
 ok('Auto-Regie: Drop (Takt 19) → Matrix', (shotAt(cs, 18) || {}).v === 'matrix', shotAt(cs, 18));
 ok('Auto-Regie: Schnitte nur auf Taktstrichen, ≥ 2 Takte, ≤ 8 Takte', cs.shots.every((s, k) => s.b - s.a >= 2 || k === cs.shots.length - 1) && cs.shots.every(s => s.b - s.a <= 8), cs.shots.map(s => s.b - s.a));
@@ -70,6 +70,8 @@ ok('Regel aus: Gesang → Takt 5 zeigt nicht die STIMME', !(shotAt(cs, 4) && sho
 ok('Regel geändert: Klangfahrt → Gerät der Spur', (shotAt(cs, 14) || {}).v === 'geraet' && shotAt(cs, 14).t === 3, shotAt(cs, 14));
 r2 = await p.evaluate(() => { const R_ = SYNQUENZER.vr1Rules(); const j = R_.findIndex(q => q.k === 'ein'); R_.unshift(R_.splice(j, 1)[0]); R_.find(q => q.k === 'gesang').on = true; return SYNQUENZER.vr1RulesSet(R_).map(q => q.k); });
 ok('Regel-Reihenfolge = Vorrang (Spur setzt ein ganz oben gespeichert)', r2[0] === 'ein', r2);
+const pr = await p.evaluate(() => { const R_ = SYNQUENZER.vr1Rules(); const j = R_.findIndex(q => q.k === 'teil'); R_.unshift(R_.splice(j, 1)[0]); SYNQUENZER.vr1RulesSet(R_); return SYNQUENZER.vr1Cuts({range: {a: 0, b: 24}}).shots.find(s => s.a === 12); });
+ok('Vorrang wirkt: Teilwechsel ganz oben → Refrain-Anfang zeigt die App statt Synth 4', pr && pr.v === 'app', pr);
 await p.evaluate(() => SYNQUENZER.vr1RulesSet(null));
 ok('Standard wiederhergestellt → gleiche Schnittliste', (await cut()).hash === h1);
 // Clip „Im Video“: Akkorde → Klavier, Gegenmelodie → aus; Undo; Speichern/Laden
@@ -145,7 +147,7 @@ for (const [W, H, tag] of [[428, 926, 'hochkant'], [926, 428, 'quer']]) {
   const rr = await p.evaluate(() => { const R_ = SYNQUENZER.vr1Rules(); return {ein: R_.find(q => q.k === 'ein'), pos: R_.findIndex(q => q.k === 'ein')}; });
   await p.evaluate(() => { SYNQUENZER.vr1RulesSet(null); closePop(); SYNQUENZER.vvClose(); });
   ui[tag + '-regeln'] = {vb, rp, rr};
-  ok(`Video-Blatt ${tag}: [Regeln] in der Zeile „Bild“ (≥ 44 px, kein Überlauf, ✕ sichtbar); Regel-Blatt: 9 Regeln, Tasten ≥ 44 px, Ansicht + Vorrang per Tipp`, vb.h >= 44 && vb.right <= vb.vw && !vb.rowOver && vb.x && rp.rows === 9 && rp.minBtn >= 44 && rp.inView && rp.xFree && rr.ein.v === 'geraet' && rr.pos === 4, ui[tag + '-regeln']);
+  ok(`Video-Blatt ${tag}: [Regeln] in der Zeile „Bild“ (≥ 44 px, kein Überlauf, ✕ sichtbar); Regel-Blatt: 9 Regeln, Tasten ≥ 44 px, Ansicht + Vorrang per Tipp`, vb.h >= 44 && vb.right <= vb.vw && !vb.rowOver && vb.x && rp.rows === 9 && rp.minBtn >= 44 && rp.inView && rp.xFree && rr.ein.v === 'geraet' && rr.pos === 2, ui[tag + '-regeln']);
   // der Video-Streifen im Song: liegt in der Taktleiste, verdeckt keine Bedienung (Tipp auf die Takt-Zahl wählt weiter)
   await p.evaluate(() => { vvDirSet(5, 7, 'roll', 0); SYNQUENZER.songView(true); SYNQUENZER.songSelect(null); }); await p.waitForTimeout(400);
   const sv = await p.evaluate(() => { const L = svLayoutInfo(), r = SV.cv.getBoundingClientRect(); return {r: [r.x, r.y, r.width, r.height], vvS: SV.vvS, ru: L.rulerH, cw: L.cellW, x0: L.x0}; });

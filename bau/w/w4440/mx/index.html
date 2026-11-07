@@ -4192,6 +4192,10 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 .mxsheet .mx1sp text{font:500 7px var(--font-num);fill:var(--text-faint);text-anchor:middle}
 .mxsheet .mx1kv{flex:1 1 auto;min-width:0;overflow-wrap:anywhere}
 .mxsheet .mx1g{border-top:1px dashed var(--line);padding-top:4px}
+.mxsheet .mx1g .mxrow span{flex:none}
+.mxsheet .mx1amt{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:6px 0}
+.mxsheet .mx1amt .mx1go{grid-column:1/-1}
+@media (orientation:landscape) and (max-height:500px){ .mxsheet .mx1amt{grid-template-columns:repeat(4,minmax(0,1fr)) minmax(0,1.3fr)} .mxsheet .mx1amt .mx1go{grid-column:auto} }
 /* MX1 END */
 .tksheet .clab .mbtn[aria-pressed=true]{box-shadow:inset 0 0 0 2px var(--t8)}
 /* G-GB: Abschnitt „Mit GarageBand aufnehmen“ im STIMME-/Takes-Blatt (Ziele ≥ 44 px) */
@@ -62969,16 +62973,16 @@ function mx1MixTap(b) {
 /* ---------- Auto-Master: Stil, [MASTERN], Multiband-Zeilen ---------- */
 function mx1AmTop(busy) {
   const st = mx1Style(), Y = mx1Core().STYLES;
-  return `<div class="mxz mx1st" role="group" aria-label="Stil">` + Object.keys(Y).map(k => `<button class="mbtn rb" data-a="mx1st" data-v="${k}"${st === k ? ' aria-pressed="true"' : ''}${busy ? ' disabled' : ''}>${esc(Y[k].name)}</button>`).join('') + '</div>' +
-    `<div class="mxtop mx1go"><button class="mbtn rb" data-a="mx1go"${busy ? ' disabled' : ''}>MASTERN</button></div>`;
+  return `<div class="mx1amt" role="group" aria-label="Stil">` + Object.keys(Y).map(k => `<button class="mbtn rb" data-a="mx1st" data-v="${k}"${st === k ? ' aria-pressed="true"' : ''}${busy ? ' disabled' : ''}>${esc(Y[k].name)}</button>`).join('') +
+    `<button class="mbtn rb mx1go" data-a="mx1go"${busy ? ' disabled' : ''}>MASTERN</button></div>`;
 }
 function mx1AmRows(P, I) {
   if (!P || !P.mb || !I) return '';
   const Y = mx1Core().STYLES[P.st] || {}, row = (k, v) => `<div class="mxrow"><span>${k}</span><b>${v}</b></div>`, nm = ['Tief', 'Mitte', 'Hoch'], s = v => (v > 0 ? '+' : '') + mixaF(v);
   let h = '<div class="mxgrid mx1g">' + row('Stil', esc(Y.name || P.st)) + row('Bänder', '< ' + P.mb.f1 + ' Hz · Mitte · > ' + fmtDec(P.mb.f2 / 1000, 1) + ' kHz');
-  P.mb.b.forEach((x, k) => { const g = I.mbGr && I.mbGr[k]; h += row('Multiband ' + nm[k], fmtDec(x[1], 1) + ' : 1 · ' + mixaF(x[0]) + ' dB · ' + s(x[4]) + ' dB' + (g ? ' · Arbeit ' + mixaF(g.avg) + '/' + mixaF(g.max) : '')); });
-  if (I.share) h += row('Klangbild vorher', nm.map((n, k) => n + ' ' + mixaF(I.share[k])).join(' · ') + ' dB');
-  h += row('Sättigung', P.sat ? 'sanft, Spitzen ' + mixaF(I.satDb, 2) + ' dB' : 'aus');
+  P.mb.b.forEach((x, k) => { const g = I.mbGr && I.mbGr[k]; h += row('Band ' + nm[k], fmtDec(x[1], 1) + ':1 · ' + mixaF(x[0], 0) + ' dB · ' + s(x[4]) + ' dB' + (g ? ' · Ø ' + mixaF(g.avg) : '')); });
+  if (I.share) h += row('Klangbild T/M/H', I.share.map(v => mixaF(v)).join(' / ') + ' dB');
+  h += row('Sättigung', P.sat ? 'sanft · ' + mixaF(I.satDb, 2) + ' dB' : 'aus');
   return h + '</div>';
 }
 async function mx1Master() {

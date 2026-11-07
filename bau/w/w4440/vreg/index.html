@@ -70875,8 +70875,9 @@ function vvkApi() {
       Weiches Glühen, Anschlag-Farben wie VK3 (leise heller/kühler, laut satter/wärmer), die Leiste KICK · TOMS · SNARE · HATS bleibt. */
 const VR1 = {ed: true, logOn: false, log: null, sel: null, css: false};
 const VR1K = {up: true, dz: .3, life: 1.15, dt: .055, cap: 900, spr: new Map(), probe: null};   // Klavier: Auflöse-Zone (Anteil oben), Funken-Leben (s), Abstand (s), Höchstzahl
-const VR1_EV = [['drop', 'Drop', 'matrix'], ['gesang', 'Gesang beginnt', 'spur'], ['fill', 'Fill / Übergang', 'noten'], ['teil', 'Teilwechsel', 'app'],
-  ['morph', 'Klangfahrt ◆', 'kino'], ['ein', 'Spur setzt ein', 'spur'], ['neu', 'Neuer Clip', 'spur'], ['xp', 'Transposition', 'tast'], ['aus', 'Spur setzt aus', 'song']];
+// Vorgabe-Reihenfolge = Vorrang; Neues vor Teilanfang wie VV4-D (neuer Clip vor Teil-Kopf), die Klangfahrt danach (V6A gleitet oft genau am Teilanfang)
+const VR1_EV = [['drop', 'Drop', 'matrix'], ['gesang', 'Gesang beginnt', 'spur'], ['fill', 'Fill / Übergang', 'noten'], ['ein', 'Spur setzt ein', 'spur'],
+  ['neu', 'Neuer Clip', 'spur'], ['teil', 'Teilwechsel', 'app'], ['morph', 'Klangfahrt ◆', 'kino'], ['xp', 'Transposition', 'tast'], ['aus', 'Spur setzt aus', 'song']];
 const VR1_VIEW = {spur: 'Spur', geraet: 'Gerät', noten: 'Noten', klav: 'Klavier', kino: 'Mäusekino', app: 'App', matrix: 'Matrix', song: 'Song', tast: 'Tastatur'};
 const VR1_TRKV = ['spur', 'geraet', 'noten'];                       // Ansichten, die eine Spur brauchen
 const VR1_NOTRK = ['teil', 'xp'];                                   // Ereignisse ohne Spur
@@ -71013,6 +71014,7 @@ function vr1Want(X, x, want, cur, rem, pend, ch, enters) {
       try { w = vvkAuto(song, x, X.A) || w; } catch (er) {}
     } else w = vr1Map(cv || r.v, e.t, why, e, c);
     if (!w) continue;
+    if (cur && !cur.u && vvDirSame(w, cur) && (!w.f || cur.f === w.f)) continue;   // schon im Bild: ein anderes Ereignis darf schneiden
     best = e; bw = w;
   }
   if (!best) {
