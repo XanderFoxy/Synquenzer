@@ -1,12 +1,13 @@
-# Krypto-Gewinn-Wecker: alle 30 Minuten Kurs von Bitcoin/Ethereum (Euro) gegen Xanders Einstiegspreis prüfen und EINMAL
-# per ntfy melden, wenn ein Coin in den Gewinn dreht. Code: krypto/. Merk-Zustand (nur ja/nein + Datum): Zweig krypto-daten.
-# Einstiegspreise stehen NUR in den Secrets BTC_EINSTIEG / ETH_EINSTIEG (optional BTC_SCHWELLE_PROZENT / ETH_SCHWELLE_PROZENT).
-# Fehlen sie, endet der Lauf nach wenigen Sekunden ohne Abruf.
+# Krypto-Wecker: stündlich Bitcoin/Ethereum (Euro) gegen Xanders Käufe prüfen und per ntfy melden – beim Wechsel
+# Gewinn ↔ Verlust und beim Erreichen von +5 %, +10 % und −10 %, je Coin, ohne Doppelmeldung. Code: krypto/.
+# Zahlen NUR im Secret KRYPTO („btc:<menge>:<einsatz>,eth:<menge>:<einsatz>“), Nachrichten NUR an das private Thema
+# aus dem Secret KRYPTO_NTFY_TOPIC. Fehlt eins, endet der Lauf nach wenigen Sekunden ohne Abruf.
+# Gemerkt wird im Zweig krypto-daten nur die Zone je Coin als Wort (tief/minus/plus/hoch/top) – keine Zahl.
 name: Krypto-Wecker
 
 on:
   schedule:
-    - cron: '11,41 * * * *'   # alle 30 Minuten (läuft nur vom Standardzweig aus)
+    - cron: '23 * * * *'   # stündlich (läuft nur vom Standardzweig aus)
   workflow_dispatch:
     inputs:
       probe:
@@ -26,14 +27,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Einstiegspreise hinterlegt?
+      - name: Secrets hinterlegt?
         id: an
         env:
-          BTC_EINSTIEG: ${{ secrets.BTC_EINSTIEG }}
-          ETH_EINSTIEG: ${{ secrets.ETH_EINSTIEG }}
+          KRYPTO: ${{ secrets.KRYPTO }}
+          KRYPTO_NTFY_TOPIC: ${{ secrets.KRYPTO_NTFY_TOPIC }}
         run: |
-          if [ -z "${BTC_EINSTIEG}${ETH_EINSTIEG}" ]; then
-            echo "Keine Einstiegspreise hinterlegt (Secrets BTC_EINSTIEG / ETH_EINSTIEG) – nichts zu tun."
+          if [ -z "${KRYPTO}" ] || [ -z "${KRYPTO_NTFY_TOPIC}" ]; then
+            echo "Secrets KRYPTO und KRYPTO_NTFY_TOPIC sind nicht beide hinterlegt – nichts zu tun."
             echo "an=0" >> "$GITHUB_OUTPUT"
           else
             echo "an=1" >> "$GITHUB_OUTPUT"
@@ -50,7 +51,7 @@ jobs:
         with:
           node-version: 22
 
-      - name: Tests
+      - name: Tests (nur erfundene Zahlen)
         if: steps.an.outputs.an == '1'
         working-directory: krypto
         run: npm test
@@ -70,25 +71,21 @@ jobs:
       - name: Kurs prüfen und benachrichtigen
         if: steps.an.outputs.an == '1'
         env:
-          BTC_EINSTIEG: ${{ secrets.BTC_EINSTIEG }}
-          ETH_EINSTIEG: ${{ secrets.ETH_EINSTIEG }}
-          BTC_SCHWELLE_PROZENT: ${{ secrets.BTC_SCHWELLE_PROZENT }}
-          ETH_SCHWELLE_PROZENT: ${{ secrets.ETH_SCHWELLE_PROZENT }}
-          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
-          NTFY_TOKEN: ${{ secrets.NTFY_TOKEN }}
+          KRYPTO: ${{ secrets.KRYPTO }}
+          KRYPTO_NTFY_TOPIC: ${{ secrets.KRYPTO_NTFY_TOPIC }}
           DRY_RUN: ${{ inputs.probe && '1' || '0' }}
-        run: node krypto/wecker.mjs --zustand daten/krypto/zustand.json
+        run: node krypto/wecker.mjs --zustand daten/krypto/zonen.json
 
-      - name: Zustand speichern (nur wenn sich etwas geändert hat)
+      - name: Zonen speichern (nur wenn sich etwas geändert hat)
         if: ${{ steps.an.outputs.an == '1' && !inputs.probe }}
         working-directory: daten
         run: |
           git config user.name "krypto-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          printf '# Merk-Zustand des Krypto-Weckers\nNur „im Gewinn: ja/nein“ und wann gemeldet – keine Preise. Code: Ordner krypto/.\n' > README.md
+          printf '# Merk-Zustand des Krypto-Weckers\nJe Coin nur die Zone als Wort (tief/minus/plus/hoch/top) – keine Mengen, keine Einsätze, keine Kurse. Code: Ordner krypto/.\n' > README.md
           git add -A
           if git diff --cached --quiet; then echo "keine Änderung"; exit 0; fi
-          # Ein einziger Commit -> der Zweig bleibt klein
+          # Ein einziger Commit -> der Zweig bleibt klein und enthält keine alte Geschichte
           git checkout --quiet --orphan neu
-          git commit --quiet -m "Zustand $(date -u +%Y-%m-%dT%H:%MZ)"
+          git commit --quiet -m "Zonen"
           git push --quiet --force origin neu:krypto-daten

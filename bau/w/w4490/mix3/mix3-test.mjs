@@ -150,7 +150,7 @@ const U = await p.evaluate(async () => {
 await shot('mix3-p-chor.png', 428, 926);
 const U2 = await p.evaluate(async () => {
   const wait = ms => new Promise(r => setTimeout(r, ms)), o = {}; closePop(); await wait(200);
-  try { setView('song'); } catch (e) { try { toggleSongView(true); } catch (e2) {} } await wait(300);
+  SYNQUENZER.songView(true); await wait(400);
   const m = S.song.marks[0]; openMarkSheet(m.id); await wait(400);
   const bs = [...document.querySelectorAll('.msheet .ch1-ms button')]; o.mark = bs.map(b => ({t: b.textContent.trim(), h: Math.round(b.getBoundingClientRect().height)}));
   const x = document.querySelector('.msheet .ms-x'), r = x && x.getBoundingClientRect(); o.xVisible = !!(r && r.width >= 30 && r.top >= 0 && r.bottom <= innerHeight && r.right <= innerWidth);
@@ -161,8 +161,8 @@ const U3 = await p.evaluate(() => { const x = document.querySelector('.msheet .m
 ok('Bedienung: Chor-Blatt hat die Zeile Gesang [Chor sauber] [Refrain groß] [Refrain 2× singen], Tasten ≥ 44 px, Blatt passt hochkant', U.chorRow && U.chorRow.length === 3 && U.chorRow.every(b => b.h >= 44) && U.chorFits, U);
 ok('Bedienung: Marken-Blatt eines Refrain-Teils mit [Refrain groß] [Refrain 2× singen] (≥ 44 px), ✕ sichtbar hochkant und quer', U2.mark.length === 2 && U2.mark.every(b => b.h >= 44) && U2.xVisible && U3.xVisibleL, Object.assign({}, U2, U3));
 // Speichern/Laden: die neuen Felder bleiben (additiv), Auto-Nachführen aus bleibt aus
-const RT = await p.evaluate(async () => { const j = SYNQUENZER.exportJSON ? SYNQUENZER.exportJSON() : JSON.stringify(S); const o = JSON.parse(typeof j === 'string' ? j : JSON.stringify(j)); const am = o.fxBus && o.fxBus.am, tk = Object.values(o.takes || {}).find(m => m.ch1); return {amMx3: am ? am.mx3 || null : null, takeCh1: tk ? tk.ch1 : null}; });
-ok('Speichern: fxBus.am.mx3 = {af: 0} und take.ch1 bleiben im Projekt', RT.amMx3 && RT.amMx3.af === 0 && RT.takeCh1 && RT.takeCh1.al === 1, RT);
+const RT = await p.evaluate(async () => { try { closePop(); } catch (e) {} const j = serialize(); importJSON(j); await new Promise(r => setTimeout(r, 600)); const am = S.fxBus.am, tk = Object.values(S.takes || {}).find(m => m.ch1), c = tkRef(window.__r2); return {amMx3: am ? am.mx3 || null : null, takeCh1: tk ? tk.ch1 : null, rg: !!(c && c.a.chor && c.a.chor.grp.ch1 && c.a.chor.grp.ch1.rg)}; });
+ok('Speichern/Laden: fxBus.am.mx3 = {af: 0}, take.ch1 und chor.grp.ch1 bleiben (additiv)', RT.amMx3 && RT.amMx3.af === 0 && RT.takeCh1 && RT.takeCh1.al === 1 && RT.rg, RT);
 ok('Keine Fehler in der Konsole', !errs.length, errs.slice(0, 5));
 fs.writeFileSync(path.join(out, 'mix3-test-ergebnis.json'), JSON.stringify({res, L1, L2, L3, C1, C2, U, U2, U3, RT, errs}, null, 1));
 const bad = res.filter(r => !r.pass).length; console.log((bad ? 'FEHLER ' : 'OK ') + 'gesamt ' + (res.length - bad) + '/' + res.length);
