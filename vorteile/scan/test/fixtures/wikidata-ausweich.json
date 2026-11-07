@@ -1,0 +1,89 @@
+{
+ "head": {
+  "vars": [
+   "item",
+   "name",
+   "itunes",
+   "jahr"
+  ]
+ },
+ "results": {
+  "bindings": [
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q9000003"
+    },
+    "name": {
+     "xml:lang": "de",
+     "type": "literal",
+     "value": "Manta Manta"
+    },
+    "itunes": {
+     "type": "literal",
+     "value": "1191234567"
+    },
+    "jahr": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#integer",
+     "type": "literal",
+     "value": "1991"
+    }
+   },
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q9000004"
+    },
+    "name": {
+     "xml:lang": "de",
+     "type": "literal",
+     "value": "Manta Manta"
+    },
+    "itunes": {
+     "type": "literal",
+     "value": "1678901234"
+    },
+    "jahr": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#integer",
+     "type": "literal",
+     "value": "2023"
+    }
+   },
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q9000005"
+    },
+    "name": {
+     "xml:lang": "de",
+     "type": "literal",
+     "value": "Go Trabi Go 2 – Das war der wilde Osten"
+    },
+    "itunes": {
+     "type": "literal",
+     "value": "id1000002301"
+    },
+    "jahr": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#integer",
+     "type": "literal",
+     "value": "1992"
+    }
+   },
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q9000006"
+    },
+    "name": {
+     "xml:lang": "de",
+     "type": "literal",
+     "value": "kaputt"
+    },
+    "itunes": {
+     "type": "literal",
+     "value": "keine-nummer"
+    }
+   }
+  ]
+ }
+}

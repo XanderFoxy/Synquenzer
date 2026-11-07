@@ -1,16 +1,17 @@
 // Modul "erleben": Therme/Erlebnisbad, Kino, Freizeit, Stadtfeste in der Region – nur, wenn es ungewöhnlich gut ist.
-// Hinweis: Die mydealz-Suche als RSS gibt es nicht mehr (HTTP 404, Stand 31.10.2026) – dann kommen nur Nachrichten.
+// Deals: mydealz-Gruppen (Kino, Freizeitpark, Wellness) mit Stichwortfilter – die mydealz-Suche als RSS gibt
+// es nicht mehr (HTTP 404 seit 31.10.2026), siehe gemeinsam.mjs.
 import { enthaelt, zaehle, parsePrice, euro, round } from '../lib/text.mjs';
 import { dealPruefer, altpreisAusText, preisAngaben } from '../lib/mydealz.mjs';
-import { sammleFeeds, eintrag, mydealzSuche, googleNews, istRegional } from './gemeinsam.mjs';
+import { sammleFeeds, eintrag, mydealzQuellen, googleNews, istRegional } from './gemeinsam.mjs';
 
 export default async function erleben({ holeText, cfg, jetzt, zustand }) {
   const m = cfg.module.erleben;
   const eintraege = [];
   const jetztMs = new Date(jetzt).getTime();
   const feeds = [
-    ...m.suchen.map(q => ({ name: `mydealz „${q}“`, url: mydealzSuche(q), art: 'deal', maxAlterTage: 10 })),
-    ...m.news.map(q => ({ name: `Nachrichten „${q}“`, url: googleNews(`${q} when:21d`), art: 'news', maxAlterTage: 21 })),
+    ...mydealzQuellen({ gruppen: m.mydealz, suchen: m.suchen }, { art: 'deal', maxAlterTage: 10 }),
+    ...(m.news || []).map(q => ({ name: `Nachrichten „${q}“`, url: googleNews(`${q} when:21d`), art: 'news', maxAlterTage: 21 })),
   ];
   const { items, fehler } = await sammleFeeds(holeText, feeds, { jetzt });
   const pruefer = dealPruefer({ holeText, zustand, jetzt });

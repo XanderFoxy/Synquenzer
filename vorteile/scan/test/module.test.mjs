@@ -130,7 +130,7 @@ test('praemien: Netto, Aufwand, Haken; sortiert nach € pro Stunde; Unseriöses
   assert.ok(r.eintraege.filter(e => e.quelle === 'gepflegte Liste').every(e => !e.sofort), 'Liste nie als Push');
   const ps = r.eintraege.map(e => e.extra.proStunde);
   assert.deepEqual(ps, [...ps].sort((a, b) => b - a));
-  assert.ok(r.fehler.some(f => /Wechselbonus/.test(f)), 'kaputter Feed gemeldet, Rest läuft');
+  assert.ok(r.fehler.some(f => /Strom & Gas/.test(f)), 'kaputter Feed (mydealz-Gruppe strom-gas) gemeldet, Rest läuft');
 });
 
 test('praemien: Rechen- und Ausschluss-Regeln', () => {

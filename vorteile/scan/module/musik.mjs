@@ -1,10 +1,11 @@
-// Modul "musik": (1) Wunsch-Geräte (wunschliste.json) – Preisstürze und Tiefstpreise über mydealz-Suche und optional Geizhals,
+// Modul "musik": (1) Wunsch-Geräte (wunschliste.json) – Preisstürze und Tiefstpreise aus mydealz (neue + heiße Deals, je Gerät
+// nach Suchwort gefiltert – die RSS-Suche gibt es nicht mehr) und optional Geizhals,
 // eigene Preis-Historie im Zustand. (2) "Bands gesucht"/Open Calls für elektronische Acts (Google-News-Suche).
 // (3) Remix-Contests mit Stems, passend zu Synth-Pop, 80er, Italo, Euro-Disco, Elektro, Dark Wave, New Wave (Xander 07.11.2026).
 import { enthaelt, zaehle, parsePrice, euro, norm, tageBis, datumDe, round, alterTage } from '../lib/text.mjs';
 import { berlinTag, berlinIso } from '../lib/ende.mjs';
 import { preisAngaben } from '../lib/mydealz.mjs';
-import { sammleFeeds, eintrag, mydealzSuche, googleNews, istRegional } from './gemeinsam.mjs';
+import { sammleFeeds, eintrag, mydealzQuellen, googleNews, istRegional } from './gemeinsam.mjs';
 
 const heuteVon = d => new Date(d).toISOString().slice(0, 10);
 
@@ -33,13 +34,16 @@ function geraetePasst(text, g, liste) {
 
 export async function geraete({ holeText, cfg, wunschliste, zustand, jetzt }) {
   const eintraege = [], fehler = [];
-  for (const g of wunschliste.geraete || []) {
-    if (g.aktiv === false) continue;
+  const geraete = (wunschliste.geraete || []).filter(g => g.aktiv !== false);
+  if (!geraete.length) return { eintraege, fehler };
+  // ein Abruf je Feed für alle Geräte (früher eine mydealz-Suche je Gerät)
+  const mm = cfg?.module?.musik || {};
+  const { items: alleItems, fehler: f } = await sammleFeeds(holeText, mydealzQuellen({ gruppen: mm.geraeteMydealz ?? ['alles', 'trending'] }, { maxAlterTage: 14 }), { jetzt });
+  fehler.push(...f);
+  for (const g of geraete) {
     const funde = [];
     try {
-      const { items, fehler: f } = await sammleFeeds(holeText, [{ name: `mydealz „${g.suche}“`, url: mydealzSuche(g.suche), maxAlterTage: 14 }], { jetzt });
-      fehler.push(...f);
-      for (const it of items) {
+      for (const it of alleItems) {
         const preis = parsePrice(it.preisText);
         if (preis == null || !geraetePasst(it.titel, g, wunschliste)) continue;
         funde.push({ preis, link: it.link, shop: it.shop || 'Online', titel: it.titel, quelle: 'mydealz', datum: it.datum, temperatur: it.temperatur, bis: it.bis });

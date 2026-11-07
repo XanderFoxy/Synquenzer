@@ -64,7 +64,7 @@ test('Cashback im Modul deals: nur Geld-zurück/Cashback-Aktionen, keine Extrapu
 </channel></rss>`;
   const holeText = async url => {
     if (url.includes('rss/gruppe/lebensmittel')) return feed;
-    if (url.includes('Geld%20zur')) return konto;
+    if (url.includes('rss/gruppe/geld-zurueck')) return konto; // Gruppe statt der abgeschalteten Suche
     if (url.includes('schnaeppchen-daten')) return '{"produkte":[],"technik":[]}';
     if (/rss/.test(url)) return '<rss><channel></channel></rss>';
     throw new Error('HTTP 404');
@@ -82,5 +82,5 @@ test('Cashback im Modul deals: nur Geld-zurück/Cashback-Aktionen, keine Extrapu
   assert.equal(r.eintraege.filter(e => e.link === h.link).length, 1, 'nicht noch einmal als normaler Deal');
   assert.ok(!t.some(x => /Lidl Plus: Crunchips/.test(x)), 'Extrapunkte aus dem Lebensmittel-Feed sind keine Cashback-Aktion');
   assert.ok(!t.some(x => /Freunde werben|Girokonto/.test(x)), 'Prämien sind raus');
-  assert.ok(t.some(x => /Cashback 5 € auf Kopfhörer/.test(x)), 'Cashback aus der Suche');
+  assert.ok(t.some(x => /Cashback 5 € auf Kopfhörer/.test(x)), 'Cashback aus der Gruppe geld-zurueck');
 });

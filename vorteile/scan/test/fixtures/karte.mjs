@@ -1,16 +1,18 @@
 // Welche aufgezeichnete Antwort gehört zu welcher URL (erster Treffer gewinnt). '!fehler' simuliert einen Ausfall.
+// mydealz: Gruppen-Feeds statt der abgeschalteten Suche (/rss/search?q=… gibt seit 31.10.2026 HTTP 404) – die früheren
+// Such-Fixtures (Therme, MicroFreak, Prämien, iTunes) stehen jetzt bei der Gruppe, die diese Deals liefert.
 export const FIXTURE_KARTE = [
   ['schnaeppchen-daten', 'schnaeppchen-current.json'],
   ['rss/gruppe/lebensmittel', 'mydealz-lebensmittel.xml'],
   ['rss/gruppe/drogerie', '!fehler'],
   ['rss/gruppe/preisfehler', 'mydealz-preisfehler.xml'],
   ['mydealz.de/deals/waschmittel-preisfehler-2861999', 'mydealz-deal-waschmittel.html'],
-  ['search?q=Therme', 'mydealz-therme.xml'],
+  ['rss/gruppe/wellness-massagen', 'mydealz-therme.xml'],
   ['q=D%C3%B6beln%20Stadtfest', 'news-doebeln-stadtfest.xml'],
   ['rss/gruppe/reisen', 'mydealz-reisen.xml'],
   ['urlaubspiraten', 'urlaubspiraten.xml'],
   ['urlaubsguru', 'kaputt.txt'],
-  ['search?q=microfreak', 'mydealz-microfreak.xml'],
+  ['mydealz.de/rss/alles', 'mydealz-microfreak.xml'],
   ['hl=en-US', 'news-remix-en.xml'],
   ['q=Remix', 'news-remix-de.xml'],
   ['remixcomps.com/feed', 'remixcomps-feed.xml'],
@@ -19,10 +21,13 @@ export const FIXTURE_KARTE = [
   ['arbeitsagentur.de/jobboerse/jobsuche-service/pc/v4/jobs?was=%C3%9Cbersetzer+Arabisch', 'ba-arabisch.json'],
   ['rss/gruppe/freebies', 'mydealz-freebies.xml'],
   ['rss/gruppe/gewinnspiele', 'mydealz-gewinnspiele.xml'],
-  ['search?q=Kontowechselpr', 'mydealz-praemien-konto.xml'],
-  ['search?q=Geld%20zur', 'mydealz-praemien-gzg.xml'],
-  ['search?q=Wechselbonus', '!fehler'],
-  // Modul filme (Apple/iTunes): Suche je Titel, Lookup, Charts je Genre, mydealz-Suche
+  ['rss/gruppe/vertraege-finanzen', 'mydealz-praemien-konto.xml'],
+  ['rss/gruppe/geld-zurueck', 'mydealz-praemien-gzg.xml'],
+  ['rss/gruppe/strom-gas', '!fehler'],
+  // Modul filme (Apple/iTunes): Suche je Titel (DE, für die Ausweichwege auch US), Lookup, Charts je Genre, Wikidata,
+  // mydealz-Gruppe apple-tv. Ohne eigene US-Fixture antwortet der US-Store wie im echten Lauf: leer.
+  ['query.wikidata.org/sparql', 'wikidata-filme.json'],
+  ['country=us', 'echt-0711/itunes-search-film-leer.json'],
   ['itunes.apple.com/search?term=Mallrats', 'itunes-search-mallrats.json'],
   ['term=Shadow%20und%20der%20Fluch', 'itunes-search-shadow.json'],
   ['term=The%20Shadow', 'itunes-search-shadow.json'],
@@ -42,5 +47,6 @@ export const FIXTURE_KARTE = [
   ['genre=4413/json', 'itunes-rss-leer.json'],
   ['genre=4403/json', 'itunes-rss-klassiker.json'],
   ['genre=4410/json', '!fehler'],
-  ['search?q=itunes%20filme', 'mydealz-itunes.xml'],
+  ['/rss/topmovies/', 'itunes-rss-leer.json'], // weitere Genres (z. B. Such-Charts Drama, Independent): leer
+  ['rss/gruppe/apple-tv', 'mydealz-itunes.xml'],
 ];

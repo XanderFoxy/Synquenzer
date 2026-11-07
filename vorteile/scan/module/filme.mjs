@@ -3,15 +3,18 @@
 // 80er-/Kult-Klassiker, Staffeln (Rick and Morty, Star Trek) und Disney – mit eigener Preis-Historie (Tiefstpreis).
 // Listen: vorteile/filme.json (frei änderbar). Ergebnis: Einträge nur für echte Treffer + eigene Datei filme.json
 // (Rückgabefeld „datei“; main.mjs schreibt sie nach <data>/filme.json). Horror kommt nie auf die Seite (außer Wunschliste).
-// Quellen, alle über holeText (Roh-Mitschnitt): iTunes Search API, iTunes Lookup, Legacy-Charts (RSS als JSON), mydealz-Suche.
-// Höflich: höchstens maxAppleAbrufe pro Lauf, höchstens maxSuchen neue Suchen, Zeitbudget; Pause pro Host in lib/http.mjs.
+// Quellen, alle über holeText (Roh-Mitschnitt): iTunes Search API (DE + US), iTunes Lookup, Legacy-Charts (RSS als JSON),
+// Wikidata (P6398 = iTunes movie ID), mydealz-Gruppen (apple-tv, filme-serien).
+// Apple-Nummern ohne die kaputte Film-Suche: siehe Schritt 3 (Wege de → us → wikidata → charts) und QUELLEN-FIX.md.
+// Höflich: höchstens maxAppleAbrufe pro Lauf, höchstens maxSuchen Suchen, maxNeueTitel neue Titel, Zeitbudget; Pause pro
+// Host in lib/http.mjs; nach 3 Apple-Fehlern in Folge kein weiterer Apple-Abruf in diesem Lauf.
 import { readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parsePrice, euro, round, schluessel } from '../lib/text.mjs';
 import { berlinTag } from '../lib/ende.mjs';
 import { preisAngaben, threadId } from '../lib/mydealz.mjs';
-import { sammleFeeds, eintrag, mydealzSuche } from './gemeinsam.mjs';
+import { sammleFeeds, eintrag, mydealzFeeds } from './gemeinsam.mjs';
 
 const HIER = dirname(fileURLToPath(import.meta.url));
 export const LISTEN_PFAD = join(HIER, '..', '..', 'filme.json');
@@ -19,7 +22,12 @@ const APPLE = 'https://itunes.apple.com';
 
 export const STANDARD = {
   maxAppleAbrufe: 45, // alle Apple-Abrufe eines Laufs (Suche + Lookup + Charts)
-  maxSuchen: 25, // neue Suchen pro Lauf (Titel -> Apple-Nummer wird danach im Zustand gemerkt)
+  maxSuchen: 25, // Apple-Suchen pro Lauf, DE und US zusammen (Titel -> Apple-Nummer wird danach im Zustand gemerkt)
+  maxNeueTitel: 25, // so viele Titel pro Lauf neu auflösen (alle Wege zusammen)
+  wegTotNach: 4, // so viele leere Antworten (resultCount 0) in Folge -> Suchweg ruht; jeder neue Lauf probiert ihn einmal
+  wikidata: true, // Weg „wikidata“ (aus = false)
+  wikidataMaxAbrufe: 3, // Wikidata-Abfragen pro Lauf
+  wikidataUrlMax: 3500, // Länge einer Wikidata-Adresse (GET), danach eine weitere Abfrage
   sucheLimit: 20, // Treffer pro Suche (bei „Batman“ o. ä. reichen 10 nicht)
   lookupMax: 150, // IDs pro Lookup-Abruf
   zeitBudgetSek: 170, // danach keine neuen Suchen mehr (main bricht ein Modul nach 240 s ab)
@@ -35,10 +43,73 @@ export const STANDARD = {
   maxStaffelnJeSerie: 20,
 };
 
-export const sucheUrl = (term, staffel = false, limit = STANDARD.sucheLimit) =>
-  `${APPLE}/search?term=${encodeURIComponent(term)}&country=de&media=${staffel ? 'tvShow' : 'movie'}&entity=${staffel ? 'tvSeason' : 'movie'}&limit=${staffel ? 50 : limit}`;
-export const lookupUrl = ids => `${APPLE}/lookup?id=${ids.map(i => String(i).replace(/^itunes:/, '')).join(',')}&country=de`;
+export const sucheUrl = (term, staffel = false, limit = STANDARD.sucheLimit, land = 'de') =>
+  `${APPLE}/search?term=${encodeURIComponent(term)}&country=${land}&media=${staffel ? 'tvShow' : 'movie'}&entity=${staffel ? 'tvSeason' : 'movie'}&limit=${staffel ? 50 : limit}`;
+export const lookupUrl = (ids, land = 'de') => `${APPLE}/lookup?id=${ids.map(i => String(i).replace(/^itunes:/, '')).join(',')}&country=${land}`;
 export const chartUrl = genre => `${APPLE}/de/rss/topmovies/limit=100/genre=${genre}/json`;
+export const MYDEALZ_GRUPPEN = [{ gruppe: 'apple-tv', name: 'Apple TV' }, { gruppe: 'filme-serien', name: 'Filme & Serien' }];
+
+// ---------------------------------------------------------------- Wikidata (Weg „wikidata“)
+// Eigenschaft P6398 „iTunes movie ID“ = Nummer des Films im iTunes Store (US-Fassung, wie bei Apple storefront-übergreifend);
+// gesucht wird über Bezeichnung oder Alias (deutsch/englisch), dazu das früheste Erscheinungsjahr (P577).
+// Antwort im W3C-Format „SPARQL 1.1 Query Results JSON“ (results.bindings).
+export const WIKIDATA = 'https://query.wikidata.org/sparql';
+const sparqlText = s => JSON.stringify(String(s)); // JSON-Escapes (\" \\ \uXXXX) sind auch in SPARQL gültig
+
+export function wikidataAbfrage(namen) {
+  const werte = [...new Set(namen.map(n => String(n).trim()).filter(Boolean))].flatMap(n => [`${sparqlText(n)}@de`, `${sparqlText(n)}@en`]).join(' ');
+  return `SELECT ?item ?name ?itunes (MIN(YEAR(?datum)) AS ?jahr) WHERE { VALUES ?name { ${werte} } `
+    + '?item rdfs:label|skos:altLabel ?name ; wdt:P6398 ?itunes . OPTIONAL { ?item wdt:P577 ?datum . } } GROUP BY ?item ?name ?itunes LIMIT 1000';
+}
+export const wikidataUrl = abfrage => `${WIKIDATA}?format=json&query=${encodeURIComponent(abfrage)}`;
+
+/** Namen eines Listen-Eintrags für Wikidata (genau so geschrieben, wie sie in der Liste stehen). */
+export function wikidataNamen(item) {
+  return [...new Set([item.titel, item.en, ...liste(item.auch)].filter(x => typeof x === 'string' && x.trim()).map(x => x.trim()))];
+}
+
+/** Listen-Einträge in Abfragen aufteilen, deren Adresse höchstens urlMax Zeichen lang ist. -> [{ posten, url }] */
+export function wikidataTeile(posten, urlMax = STANDARD.wikidataUrlMax) {
+  const url = ps => wikidataUrl(wikidataAbfrage(ps.flatMap(p => wikidataNamen(p.item))));
+  const teile = [];
+  let akt = [];
+  for (const p of posten) {
+    if (akt.length && url([...akt, p]).length > urlMax) { teile.push({ posten: akt, url: url(akt) }); akt = []; }
+    akt.push(p);
+  }
+  if (akt.length) teile.push({ posten: akt, url: url(akt) });
+  return teile;
+}
+
+/** Wikidata-Antwort -> [{ qid, name, id: 'itunes:…', jahr }] (kaputte Zeilen fallen weg). */
+export function leseWikidata(text) {
+  let j;
+  try { j = JSON.parse(String(text ?? '').trim()); } catch { throw new Error('keine gültige Wikidata-Antwort'); }
+  const b = j?.results?.bindings;
+  if (!Array.isArray(b)) throw new Error('Wikidata-Antwort ohne results.bindings');
+  const out = [];
+  for (const r of b) {
+    const nr = String(r?.itunes?.value ?? '').trim().replace(/^id/i, '');
+    const name = String(r?.name?.value ?? '').trim();
+    if (!/^\d{5,12}$/.test(nr) || !name) continue;
+    const jahr = Number(r?.jahr?.value);
+    out.push({ qid: String(r?.item?.value ?? '').replace(/^.*\//, '') || null, name, id: `itunes:${nr}`, jahr: Number.isInteger(jahr) && jahr > 1880 && jahr < 2100 ? jahr : null });
+  }
+  return out;
+}
+
+/** Kandidaten (Apple-Nummern) für einen Listen-Eintrag aus den Wikidata-Zeilen: Name gleich, Jahr ±1 (falls bekannt). */
+export function wikidataKandidaten(zeilen, item) {
+  const ziel = new Set(wikidataNamen(item).map(normTitel));
+  const out = [];
+  for (const z of zeilen) {
+    if (!ziel.has(normTitel(z.name))) continue;
+    if (item.jahr && z.jahr != null && Math.abs(z.jahr - item.jahr) > 1) continue;
+    if (out.some(x => x.id === z.id)) continue;
+    out.push({ id: z.id, jahr: z.jahr, w: z.jahr == null ? 1 : z.jahr === item.jahr ? 3 : 2 });
+  }
+  return out.sort((a, b) => b.w - a.w);
+}
 
 // ---------------------------------------------------------------- Titel vergleichen
 
@@ -52,7 +123,17 @@ const FASSUNG = new Set(['extended', 'directors', 'director', 'cut', 'uncut', 'r
 
 /** Titel in Wörter zerlegen: klein, Umlaute ausgeschrieben, Satzzeichen weg, römische Zahlen als Ziffer, „der/die/das/the“
  *  am Anfang egal. Trenner (Doppelpunkt, Gedankenstrich, Klammer, Komma, Schrägstrich) bleiben als '|'. */
+const TOKEN_SPEICHER = new Map();
 export function titelTokens(s) {
+  const schl = String(s ?? '');
+  const c = TOKEN_SPEICHER.get(schl);
+  if (c) return c;
+  const w = Object.freeze(titelTokensRoh(schl));
+  if (TOKEN_SPEICHER.size > 20000) TOKEN_SPEICHER.clear();
+  TOKEN_SPEICHER.set(schl, w);
+  return w;
+}
+function titelTokensRoh(s) {
   const t = String(s ?? '').toLowerCase()
     .replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss')
     .normalize('NFD').replace(/[̀-ͯ]/g, '')
@@ -94,9 +175,9 @@ export function namensWert(storeTitel, name) {
   return 0;
 }
 
-/** Alle Namen eines Listen-Eintrags: Titel, „auch“ und der Haupttitel vor dem ersten Untertitel (schwächer). */
+/** Alle Namen eines Listen-Eintrags: Titel, „en“, „auch“ und der Haupttitel vor dem ersten Untertitel (schwächer). */
 function namen(item) {
-  const liste = [item.titel, ...(Array.isArray(item.auch) ? item.auch : [])].filter(x => typeof x === 'string' && x.trim());
+  const liste = [item.titel, item.en, ...(Array.isArray(item.auch) ? item.auch : [])].filter(x => typeof x === 'string' && x.trim());
   const out = liste.map(n => ({ n, faktor: 1 }));
   const haupt = titelTokens(item.titel);
   const k = haupt.indexOf('|');
@@ -107,28 +188,74 @@ function namen(item) {
   return out;
 }
 
-/** Bester Film-Treffer aus Such-/Lookup-Ergebnissen für einen Listen-Eintrag – oder null (kein Zufallstreffer). */
-export function waehleTreffer(ergebnisse, item) {
-  let best = null;
+/** Wie gut passt ein Film (einheitliche Daten: typ, titel, jahr, Preise) zu einem Listen-Eintrag? 0 = gar nicht. */
+export function filmWert(d, item) {
+  if (!d || d.typ !== 'film') return 0;
+  let w = 0;
+  for (const { n, faktor } of namen(item)) {
+    const nw = namensWert(d.titel, n);
+    // der kurze Haupttitel („Ghostbusters“ für „Ghostbusters – Die Geisterjäger“) zählt nur, wenn er genau so heißt
+    if (faktor < 1 && nw < 85) continue;
+    w = Math.max(w, nw * faktor);
+  }
+  if (!w) return 0;
+  if (item.jahr) {
+    if (d.jahr == null) return 0;
+    const dj = Math.abs(d.jahr - item.jahr);
+    if (dj > 1) return 0;
+    w += dj === 0 ? 20 : 10;
+  }
+  if (d.preisSd != null || d.preisHd != null || d.preis != null) w += 3;
+  return w;
+}
+
+/** Die n besten Film-Treffer aus Such-/Lookup-Ergebnissen -> [{ d, w }] (bei gleichem Wert gewinnt der frühere). */
+export function rangliste(ergebnisse, item, n = 3) {
+  const out = [];
   for (const r of ergebnisse) {
     const d = ausItunes(r);
-    if (!d || d.typ !== 'film') continue;
-    let w = 0;
-    for (const { n, faktor } of namen(item)) {
-      const nw = namensWert(d.titel, n);
-      // der kurze Haupttitel („Ghostbusters“ für „Ghostbusters – Die Geisterjäger“) zählt nur, wenn er genau so heißt
-      if (faktor < 1 && nw < 85) continue;
-      w = Math.max(w, nw * faktor);
-    }
+    const w = filmWert(d, item);
+    if (w) out.push({ d, w });
+  }
+  return out.sort((a, b) => b.w - a.w).slice(0, n);
+}
+
+/** Bester Film-Treffer aus Such-/Lookup-Ergebnissen für einen Listen-Eintrag – oder null (kein Zufallstreffer). */
+export function waehleTreffer(ergebnisse, item) {
+  return rangliste(ergebnisse, item, 1)[0]?.d || null;
+}
+
+/** Englischer Titel für die Suche im US-Store (rein deutsche Filme haben keinen -> null). */
+export const englisch = item => (typeof item?.en === 'string' && item.en.trim() ? item.en.trim() : null);
+
+// ---------------------------------------------------------------- Charts als Weg „charts“ (Titel/Jahr-Abgleich)
+
+/** Chart-Einträge nach erstem Titelwort ordnen (schneller Abgleich mit ~200 Listen-Einträgen). */
+export function chartIndex(eintraege) {
+  const idx = new Map();
+  const gesehen = new Set();
+  for (const e of eintraege) {
+    if (!e?.id || gesehen.has(e.id)) continue;
+    gesehen.add(e.id);
+    const w = titelTokens(e.titel).find(x => x !== '|');
     if (!w) continue;
-    if (item.jahr) {
-      if (d.jahr == null) continue;
-      const dj = Math.abs(d.jahr - item.jahr);
-      if (dj > 1) continue;
-      w += dj === 0 ? 20 : 10;
+    if (!idx.has(w)) idx.set(w, []);
+    idx.get(w).push(e);
+  }
+  return idx;
+}
+
+/** Bester Chart-Eintrag für einen Listen-Eintrag (gleiche Regeln wie bei der Suche: Name + Jahr ±1) -> Film-Daten | null */
+export function chartFilm(idx, item) {
+  let best = null;
+  const erste = new Set(namen(item).map(x => titelTokens(x.n).find(y => y !== '|')).filter(Boolean));
+  for (const w of erste) {
+    for (const e of idx.get(w) || []) {
+      const d = { id: e.id, typ: 'film', titel: e.titel, jahr: e.jahr ?? null, release: e.release ?? null, genre: e.genre ?? null, genreId: e.genreId ?? null,
+        preisSd: null, preisHd: null, preis: e.preis ?? null, leihe: e.leihe ?? null, bild: e.bild ?? null, link: e.link ?? null };
+      const wert = filmWert(d, item);
+      if (wert && (!best || wert > best.wert)) best = { wert, d };
     }
-    if (d.preisSd != null || d.preisHd != null) w += 3;
-    if (!best || w > best.w) best = { w, d };
   }
   return best?.d || null;
 }
@@ -297,10 +424,23 @@ export function postenListe(listen) {
   return [...wunsch, ...serien, ...misch];
 }
 
-/** Suchbegriffe eines Eintrags: suche, Titel, „auch“ – ohne Doppelte, höchstens 3. */
+/** Suchbegriffe eines Eintrags: suche, Titel, „auch“, „en“ – ohne Doppelte, höchstens 3. */
 export function suchbegriffe(item) {
   const gesehen = new Set(), out = [];
-  for (const t of [item.suche, item.titel, ...liste(item.auch)]) {
+  for (const t of [item.suche, item.titel, ...liste(item.auch), item.en]) {
+    if (typeof t !== 'string' || !t.trim()) continue;
+    const k = normTitel(t);
+    if (!k || gesehen.has(k)) continue;
+    gesehen.add(k); out.push(t.trim());
+  }
+  return out.slice(0, 3);
+}
+
+/** Suchbegriffe einer Serie: Titel, „en“, „auch“ (deutsch, englisch, Varianten) – ohne Doppelte, höchstens 3.
+ *  Alle werden gesucht (nicht nur bis zum ersten Treffer): die Apple-Suche liefert je Name nur einen Teil der Staffeln. */
+export function serienBegriffe(item) {
+  const gesehen = new Set(), out = [];
+  for (const t of [item.suche, item.titel, item.en, ...liste(item.auch)]) {
     if (typeof t !== 'string' || !t.trim()) continue;
     const k = normTitel(t);
     if (!k || gesehen.has(k)) continue;
@@ -365,22 +505,25 @@ export default async function filme(ctx) {
   const status = {
     'apple-preise': { ok: true, anzahl: 0, fehler: [] },
     'apple-charts': { ok: true, anzahl: 0, fehler: [] },
-    'apple-suche': { ok: true, anzahl: 0, fehler: [], offen: 0, nichtGefunden: [] },
+    'apple-suche': { ok: true, anzahl: 0, fehler: [], offen: 0, nichtGefunden: [], suchen: 0, wege: { de: 0, us: 0, wikidata: 0, charts: 0 }, leer: { de: 0, us: 0, wikidata: 0 }, ruhend: [] },
     mydealz: { ok: true, anzahl: 0, fehler: [] },
   };
   const melde = (quelle, text) => { status[quelle].ok = false; status[quelle].fehler.push(text); fehler.push(text); };
 
-  // Apple-Abrufe zählen (höflich: höchstens maxAppleAbrufe pro Lauf)
-  let appleAbrufe = 0;
+  // Apple-Abrufe zählen (höflich: höchstens maxAppleAbrufe pro Lauf; nach 3 Fehlern in Folge keiner mehr)
+  let appleAbrufe = 0, appleFehlerInFolge = 0;
+  const appleGestoert = () => appleFehlerInFolge >= 3;
   const apple = async url => {
     if (appleAbrufe >= m.maxAppleAbrufe) throw new Error('Abruf-Grenze für diesen Lauf erreicht');
+    if (appleGestoert()) throw new Error('Apple antwortet gerade nicht – Rest im nächsten Lauf');
     appleAbrufe++;
-    return holeText(url);
+    try { const text = await holeText(url); appleFehlerInFolge = 0; return text; } catch (e) { appleFehlerInFolge++; throw e; }
   };
 
   const chartCfg = listen.charts || {};
   const chartsNeu = liste(chartCfg.neu).length ? liste(chartCfg.neu) : [{ id: 4404, name: 'Komödie' }, { id: 4401, name: 'Action & Abenteuer' }, { id: 4416, name: 'Thriller' }, { id: 4413, name: 'Sci-Fi & Fantasy' }];
   const chartsAngebot = chartCfg.angebot ? liste(chartCfg.angebot) : [{ id: 4403, name: 'Klassiker' }, { id: 4410, name: 'Kinder & Familie' }];
+  const chartsSuche = liste(chartCfg.suche).filter(g => Number.isInteger(Number(g?.id)));
   const horrorIds = new Set(liste(chartCfg.horror ?? [4408]).map(Number));
   const neuMonate = chartCfg.neuMonate ?? 18;
   const neuProGenre = chartCfg.neuProGenre ?? 25;
@@ -430,12 +573,14 @@ export default async function filme(ctx) {
 
   // 2) Charts
   const chartTreffer = new Map(); // id -> { pos, genreId, neu, d }
+  const alleCharts = []; // alle Chart-Einträge dieses Laufs (Weg „charts“: Apple-Nummern per Titel/Jahr-Abgleich)
   const neuGrenze = new Date(new Date(jetzt).getTime() - neuMonate * 30.44 * 864e5);
   for (const g of [...chartsNeu.map(x => ({ ...x, neu: true })), ...chartsAngebot.map(x => ({ ...x, neu: false }))]) {
     let eintraege;
     try {
       eintraege = leseCharts(await apple(chartUrl(g.id)));
       status['apple-charts'].anzahl += eintraege.length;
+      alleCharts.push(...eintraege);
     } catch (e) {
       melde('apple-charts', `Charts ${g.name || g.id}: ${e.message}`);
       // alter Stand dieses Genres (höchstens 3 Tage)
@@ -462,54 +607,249 @@ export default async function filme(ctx) {
     }
     zf.charts[g.id] = { tag, ids: merk };
   }
+  // Such-Charts (z. B. Drama, Independent): nur für den Titel-Abgleich, höchstens einmal am Tag, nur solange Filme offen sind
+  const offeneFilme = [...new Map(posten.filter(p => !p.serie && !zf.ids[p.key]?.id).map(p => [p.key, p])).values()];
+  zf.suchCharts ||= {};
+  for (const k of Object.keys(zf.suchCharts)) if (!chartsSuche.some(g => String(g.id) === k)) delete zf.suchCharts[k];
+  for (const g of offeneFilme.length ? chartsSuche : []) {
+    if (zf.suchCharts[g.id] === tag || appleGestoert() || appleAbrufe >= m.maxAppleAbrufe - 3) continue;
+    try {
+      const e = leseCharts(await apple(chartUrl(g.id)));
+      alleCharts.push(...e.filter(x => !istHorror(x, horrorIds)));
+      status['apple-charts'].anzahl += e.length;
+      zf.suchCharts[g.id] = tag;
+    } catch (e) { melde('apple-charts', `Charts ${g.name || g.id} (nur Suche): ${e.message}`); }
+  }
   // Details (Kauf-/Leihpreis, Genre) für Chart-Titel, die noch nicht bekannt sind: ein Abruf
   const chartIds = [...chartTreffer.entries()].filter(([id, c]) => c.d && !daten.has(id)).sort((a, b) => a[1].pos - b[1].pos).map(([id]) => id).slice(0, m.lookupMax);
   if (chartIds.length) await lookup(chartIds, 'apple-charts');
 
-  // 3) Suchen: neue Titel -> Apple-Nummer (gemerkt), nicht gefundene frühestens nach wiederholenTage, Serien alle serienNeuTage
-  let suchen = 0;
+  // 3) Neue Titel -> Apple-Nummer (im Zustand gemerkt). Die iTunes-Filmsuche liefert seit Herbst 2026 immer 0 Treffer
+  //    (echter Lauf 07.11.2026, alle Filmsuchen; Apple-Forum Thread 848610: auch mit country=us), Lookup und Charts gehen.
+  //    Deshalb mehrere Wege – je Titel wird der erste Erfolg gemerkt (zf.ids[key].weg):
+  //      de       iTunes-Suche im deutschen Store (falls Apple sie repariert)
+  //      us       Suche im US-Store mit englischem Titel („en“) -> Kandidat nach Titel/Jahr -> Lookup im deutschen Store
+  //      wikidata Wikidata P6398 (iTunes movie ID) zu Titel/Originaltitel + Jahr -> Lookup im deutschen Store
+  //      charts   Titel/Jahr-Abgleich mit den Apple-Charts (deutscher Store; kostet keinen Abruf extra)
+  //    „fehlt“ nur, wenn alle Wege leer waren. Ein Suchweg mit wegTotNach leeren Antworten in Folge ruht (zf.wege), jeder
+  //    neue Lauf probiert ihn einmal. Ergebnisse einer Suche gelten für alle offenen Titel (Beifang: „Back to the Future“
+  //    findet auch Teil II und III). Serien: alle Namen (deutsch, englisch, Varianten) im deutschen Store + US-Store mit
+  //    Lookup im deutschen Store; Staffeln aus allen Wegen zusammen, Doppel (Staffel DE/EN-Name) fasst Schritt 5 zusammen.
+  const sw = status['apple-suche'];
+  const zw = (zf.wege ||= {});
+  const probe = new Set(Object.keys(zw).filter(k => (zw[k]?.leer ?? 0) >= m.wegTotNach));
+  const ruht = k => (zw[k]?.leer ?? 0) >= m.wegTotNach && !probe.has(k);
+  const wiederSeit = Object.values(zw).map(w => w?.wieder).filter(Boolean).sort().at(-1) || null;
+  function antwort(k, anzahl) {
+    const w = (zw[k] ||= { leer: 0 });
+    probe.delete(k);
+    if (anzahl > 0) { if ((w.leer ?? 0) >= m.wegTotNach) w.wieder = tag; w.leer = 0; w.zuletzt = tag; }
+    else w.leer = (w.leer ?? 0) + 1;
+  }
+
   const faellig = p => {
     const s = zf.ids[p.key];
     if (!s) return 1;
     if (s.weiter != null) return 1;
-    if (s.fehlt) return tageZwischen(s.fehlt, tag) >= m.wiederholenTage ? 2 : 0;
+    // „fehlt“ aus der alten Fassung (nur die kaputte DE-Suche, ohne Marke alle) -> sofort mit allen Wegen, wie ein neuer Titel
+    if (s.fehlt && !s.alle) return 1;
+    // nicht gefunden: nach wiederholenTage – oder sofort, wenn ein ruhender Suchweg wieder Treffer liefert
+    if (s.fehlt) return tageZwischen(s.fehlt, tag) >= m.wiederholenTage || (wiederSeit && s.fehlt < wiederSeit) ? 2 : 0;
     if (p.serie && (!s.tag || tageZwischen(s.tag, tag) >= m.serienNeuTage)) return 3;
     return 0;
   };
-  const warteschlange = posten.map(p => ({ p, f: faellig(p) })).filter(x => x.f).sort((a, b) => a.f - b.f).map(x => x.p);
-  const erledigt = new Set();
-  const budgetWeg = () => suchen >= m.maxSuchen || zeitUm() || appleAbrufe >= m.maxAppleAbrufe;
-  let fehlerInFolge = 0;
-  for (const p of warteschlange) {
-    if (budgetWeg() || fehlerInFolge >= 2) break; // Rest im nächsten Lauf (Apple nicht weiter belasten)
-    if (erledigt.has(p.key)) continue; // gleicher Film in zwei Listen
-    erledigt.add(p.key);
-    const terme = suchbegriffe(p.item);
-    const vorher = zf.ids[p.key] || {};
-    let gefunden = false, abbruch = false;
-    for (let i = vorher.weiter ?? 0; i < terme.length; i++) {
-      if (budgetWeg()) { zf.ids[p.key] = { ...vorher, weiter: i }; abbruch = true; break; }
-      suchen++;
-      let res;
-      try { res = leseErgebnisse(await apple(sucheUrl(terme[i], p.serie, m.sucheLimit))); fehlerInFolge = 0; }
-      catch (e) { melde('apple-suche', `Suche „${terme[i]}“: ${e.message}`); fehlerInFolge++; abbruch = true; break; } // Zustand bleibt -> nächster Lauf
-      status['apple-suche'].anzahl++;
-      if (p.serie) {
-        const st = staffelnAus(res, p.item);
-        if (st.length) {
-          for (const d of st) daten.set(d.id, { ...daten.get(d.id), ...d });
-          zf.ids[p.key] = { ids: [...new Set([...liste(vorher.ids), ...st.map(d => d.id)])].slice(0, m.maxStaffelnJeSerie * 2), tag };
-          gefunden = true; break;
-        }
+  // Reihenfolge innerhalb gleicher Stufe: Wunschliste und nie Versuchte zuerst, dann die am längsten nicht Versuchten.
+  // Sonst blockieren dauerhaft offene Titel (Wikidata/Lookup gestört -> „weiter“) für immer die ersten maxNeueTitel Plätze.
+  const versucht = p => (p.gruppe === 'wunsch' ? '' : String(zf.ids[p.key]?.versucht || ''));
+  const runde = []; // dieser Lauf: höchstens maxNeueTitel Titel (gleicher Film in zwei Listen nur einmal)
+  for (const { p } of posten.map(p => ({ p, f: faellig(p) })).filter(x => x.f).sort((a, b) => a.f - b.f || (versucht(a.p) < versucht(b.p) ? -1 : versucht(a.p) > versucht(b.p) ? 1 : 0))) {
+    if (runde.length >= m.maxNeueTitel) break;
+    if (!runde.some(x => x.key === p.key)) runde.push(p);
+  }
+  const serienPosten = [...new Map(posten.filter(p => p.serie).map(p => [p.key, p])).values()];
+
+  const gefunden = new Map(); // key -> { id, weg }
+  const idKandidaten = new Map(); // key -> [{ id, weg, w, jahr }] (brauchen den Lookup im deutschen Store)
+  const neuKandidat = (key, k) => {
+    const l = idKandidaten.get(key) || [];
+    if (!l.some(x => x.id === k.id && x.weg === k.weg)) l.push(k);
+    idKandidaten.set(key, l);
+  };
+  const treffer = (p, d, weg) => {
+    if (gefunden.has(p.key)) return;
+    gefunden.set(p.key, { id: d.id, weg });
+    if (!daten.has(d.id)) daten.set(d.id, d);
+  };
+  // Beifang: eine Suche gilt für alle offenen Filme
+  function beifang(res, land) {
+    for (const q of offeneFilme) {
+      if (gefunden.has(q.key)) continue;
+      if (land === 'de') { const d = waehleTreffer(res, q.item); if (d) { daten.set(d.id, { ...daten.get(d.id), ...d }); treffer(q, d, 'de'); } }
+      else for (const { d, w } of rangliste(res, q.item, 3)) neuKandidat(q.key, { id: d.id, weg: 'us', w, jahr: d.jahr });
+    }
+  }
+  const serienFunde = new Map(); // key -> Map(id -> weg)
+  const serienKand = new Map(); // key -> Set(id) aus dem US-Store (Lookup DE nötig)
+  function beifangSerie(res, land) {
+    for (const q of serienPosten) {
+      const st = staffelnAus(res, q.item);
+      if (!st.length) continue;
+      if (land === 'de') {
+        const f = serienFunde.get(q.key) || new Map();
+        for (const d of st) { daten.set(d.id, { ...daten.get(d.id), ...d }); if (!f.has(d.id)) f.set(d.id, 'de'); }
+        serienFunde.set(q.key, f);
       } else {
-        const d = waehleTreffer(res, p.item);
-        if (d) { daten.set(d.id, { ...daten.get(d.id), ...d }); zf.ids[p.key] = { id: d.id, tag }; gefunden = true; break; }
+        const s = serienKand.get(q.key) || new Set();
+        for (const d of st) s.add(d.id);
+        serienKand.set(q.key, s);
       }
     }
-    if (abbruch || gefunden) continue;
-    if (p.serie && liste(vorher.ids).length) zf.ids[p.key] = { ids: vorher.ids, tag }; // keine neuen Staffeln: alte behalten
-    else zf.ids[p.key] = { fehlt: tag, n: (vorher.n || 0) + 1 };
   }
+
+  let suchen = 0, fehlerInFolge = 0;
+  const sucheGeht = () => suchen < m.maxSuchen && !zeitUm() && appleAbrufe < m.maxAppleAbrufe - 1 && fehlerInFolge < 2 && !appleGestoert();
+  async function suche(term, serie, land) {
+    suchen++;
+    try {
+      const res = leseErgebnisse(await apple(sucheUrl(term, serie, m.sucheLimit, land)));
+      fehlerInFolge = 0;
+      if (!res.length) sw.leer[land]++;
+      if (!serie) antwort(`${land}-film`, res.length);
+      return res;
+    } catch (e) {
+      melde('apple-suche', `Suche „${term}“${land === 'us' ? ' (US-Store)' : ''}: ${e.message}`);
+      fehlerInFolge++;
+      return null; // Zustand bleibt offen -> nächster Lauf
+    }
+  }
+
+  // Weg „wikidata“ vorab für alle Filme dieses Laufs (wenige Abfragen, kein Apple-Abruf)
+  const wd = new Map(); // key -> 'ok' | 'fehler'
+  const filmeRunde = runde.filter(p => !p.serie);
+  if (m.wikidata !== false && filmeRunde.length) {
+    let n = 0;
+    for (const teil of wikidataTeile(filmeRunde, m.wikidataUrlMax)) {
+      if (n >= m.wikidataMaxAbrufe || zeitUm()) break; // Rest im nächsten Lauf
+      n++;
+      try {
+        const zeilen = leseWikidata(await holeText(teil.url, { headers: { accept: 'application/sparql-results+json' } }));
+        for (const p of teil.posten) {
+          wd.set(p.key, 'ok');
+          const ks = wikidataKandidaten(zeilen, p.item);
+          for (const k of ks) neuKandidat(p.key, { ...k, weg: 'wikidata' });
+          if (!ks.length) sw.leer.wikidata++;
+        }
+      } catch (e) {
+        melde('apple-suche', `Wikidata: ${e.message}`);
+        for (const p of teil.posten) wd.set(p.key, 'fehler');
+        break; // nicht weiter hämmern
+      }
+    }
+    sw.wikidataAbfragen = n;
+  }
+
+  // Suchwege de und us der Reihe nach
+  const proto = new Map(); // key -> { de, us } je 'leer' | 'offen' | 'treffer' | 'fertig'
+  for (const p of runde) {
+    if (zeitUm()) break; // Rest bleibt unverändert -> nächster Lauf
+    const pr = {};
+    proto.set(p.key, pr);
+    if (p.serie) {
+      for (const term of serienBegriffe(p.item)) {
+        if (!sucheGeht()) { pr.de = 'offen'; break; }
+        const res = await suche(term, true, 'de');
+        if (!res) { pr.de = 'offen'; break; }
+        beifangSerie(res, 'de');
+      }
+      pr.de ??= 'fertig';
+      if (!sucheGeht()) pr.us = 'offen';
+      else { const res = await suche(englisch(p.item) || p.item.titel, true, 'us'); pr.us = res ? 'fertig' : 'offen'; if (res) beifangSerie(res, 'us'); }
+      continue;
+    }
+    if (gefunden.has(p.key)) { pr.de = 'treffer'; continue; } // Beifang einer früheren Suche
+    if (ruht('de-film')) pr.de = 'leer';
+    else {
+      for (const term of suchbegriffe(p.item)) {
+        if (ruht('de-film')) break;
+        if (!sucheGeht()) { pr.de = 'offen'; break; }
+        const res = await suche(term, false, 'de');
+        if (!res) { pr.de = 'offen'; break; }
+        beifang(res, 'de');
+        if (gefunden.has(p.key)) { pr.de = 'treffer'; break; }
+      }
+      pr.de ??= 'leer';
+    }
+    if (pr.de === 'treffer') continue;
+    const en = englisch(p.item);
+    if (!en || ruht('us-film')) pr.us = 'leer';
+    else if (!sucheGeht()) pr.us = 'offen';
+    else { const res = await suche(en, false, 'us'); pr.us = res ? 'fertig' : 'offen'; if (res) beifang(res, 'us'); }
+  }
+  sw.suchen = suchen;
+
+  // Weg „charts“ für alle offenen Filme vormerken (Apple-Nummer aus dem deutschen Store, Details per Lookup)
+  const chartIdx = chartIndex(alleCharts);
+  const chartFunde = new Map();
+  for (const p of offeneFilme) if (!gefunden.has(p.key)) { const d = chartFilm(chartIdx, p.item); if (d) chartFunde.set(p.key, d); }
+
+  // ein Lookup im deutschen Store für alle Kandidaten (US, Wikidata, Charts, US-Staffeln)
+  const kIds = new Set();
+  for (const l of idKandidaten.values()) for (const k of l) kIds.add(k.id);
+  for (const d of chartFunde.values()) kIds.add(d.id);
+  for (const s of serienKand.values()) for (const id of s) kIds.add(id);
+  const kListe = [...kIds].filter(id => !daten.has(id));
+  let kandidatenOk = true;
+  for (let i = 0; i < kListe.length; i += m.lookupMax) {
+    const teil = kListe.slice(i, i + m.lookupMax);
+    const set = new Set(teil);
+    try {
+      const res = leseErgebnisse(await apple(lookupUrl(teil)));
+      for (const r of res) { const d = ausItunes(r); if (d && set.has(d.id)) daten.set(d.id, { ...daten.get(d.id), ...d }); }
+    } catch (e) { kandidatenOk = false; melde('apple-suche', `Lookup der Kandidaten: ${e.message}`); }
+  }
+  // Entscheidung je Film in der Reihenfolge der Wege: us, wikidata, charts (de ist schon entschieden)
+  const passt = (d, item, k) => d && d.typ === 'film'
+    && (!item.jahr || (d.jahr != null ? Math.abs(d.jahr - item.jahr) <= 1 : k.jahr != null && Math.abs(k.jahr - item.jahr) <= 1));
+  for (const p of offeneFilme) {
+    if (gefunden.has(p.key)) continue;
+    for (const weg of ['us', 'wikidata']) {
+      const ks = (idKandidaten.get(p.key) || []).filter(k => k.weg === weg).sort((a, b) => b.w - a.w);
+      const k = ks.find(x => passt(daten.get(x.id), p.item, x));
+      if (k) { treffer(p, daten.get(k.id), weg); break; }
+    }
+    if (gefunden.has(p.key)) continue;
+    const c = chartFunde.get(p.key);
+    if (c) treffer(p, daten.get(c.id)?.typ === 'film' ? daten.get(c.id) : c, 'charts');
+  }
+
+  // Zustand: gefunden -> Nummer + Weg; alle Wege leer -> fehlt; sonst offen (nächster Lauf)
+  for (const [key, g] of gefunden) { zf.ids[key] = { id: g.id, tag, weg: g.weg }; sw.wege[g.weg]++; }
+  for (const p of filmeRunde) {
+    const pr = proto.get(p.key);
+    if (gefunden.has(p.key) || !pr) continue; // nicht mehr drangekommen -> unverändert
+    const wdOffen = m.wikidata !== false && wd.get(p.key) !== 'ok';
+    const lookupOffen = !kandidatenOk && (idKandidaten.get(p.key)?.length || chartFunde.has(p.key));
+    const vorher = zf.ids[p.key] || {};
+    zf.ids[p.key] = pr.de === 'offen' || pr.us === 'offen' || wdOffen || lookupOffen
+      ? { weiter: 0, versucht: tag, ...(vorher.n ? { n: vorher.n } : {}) }
+      : { fehlt: tag, n: (vorher.n || 0) + 1, alle: 1 };
+  }
+  for (const p of serienPosten) {
+    const funde = new Map(serienFunde.get(p.key) || []);
+    for (const id of serienKand.get(p.key) || []) if (daten.get(id)?.typ === 'staffel' && !funde.has(id)) funde.set(id, 'us');
+    const vorher = zf.ids[p.key] || {};
+    const alt = liste(vorher.ids);
+    const neu = [...funde.keys()].filter(id => !alt.includes(id));
+    for (const weg of new Set(neu.map(id => funde.get(id)))) sw.wege[weg]++;
+    const ids = [...new Set([...alt, ...funde.keys()])].slice(0, m.maxStaffelnJeSerie * 2);
+    const pr = proto.get(p.key);
+    if (!pr) { if (neu.length) zf.ids[p.key] = { ids, ...(vorher.tag ? { tag: vorher.tag } : {}) }; continue; } // nur Beifang
+    const offen = pr.de === 'offen' || pr.us === 'offen' || (!kandidatenOk && serienKand.get(p.key)?.size > 0);
+    if (ids.length) zf.ids[p.key] = offen ? { ids, ...(vorher.tag ? { tag: vorher.tag } : {}), weiter: 0, versucht: tag } : { ids, tag };
+    else zf.ids[p.key] = offen ? { weiter: 0, versucht: tag } : { fehlt: tag, n: (vorher.n || 0) + 1, alle: 1 };
+  }
+  sw.anzahl = Object.values(sw.wege).reduce((a, b) => a + b, 0);
+  sw.ruhend = Object.entries(zw).filter(([, w]) => (w?.leer ?? 0) >= m.wegTotNach).map(([k]) => k).sort();
   // Staffel-Daten aus dem Lookup gehören zu ihrer Serie
   for (const p of posten.filter(x => x.serie)) {
     for (const id of liste(zf.ids[p.key]?.ids)) {
@@ -520,7 +860,10 @@ export default async function filme(ctx) {
 
   // 4) mydealz: Apple-Film-Aktionen
   const deals = [];
-  const feeds = liste(listen.mydealz).filter(q => typeof q === 'string' && q.trim()).map(q => ({ name: `mydealz „${q}“`, url: mydealzSuche(q), maxAlterTage: 7 }));
+  // Gruppen statt Suche (die mydealz-RSS-Suche gibt es nicht mehr). Alte Liste mit Suchwörtern -> Standard-Gruppen, [] = aus.
+  const md = listen.mydealz;
+  const mdGruppen = md === false ? [] : Array.isArray(md) ? (md.length ? MYDEALZ_GRUPPEN : []) : liste(md?.gruppen ?? MYDEALZ_GRUPPEN);
+  const feeds = mydealzFeeds(mdGruppen, { maxAlterTage: 7 });
   if (feeds.length) {
     const { items, fehler: f } = await sammleFeeds(holeText, feeds, { jetzt, maxAlterTage: 7 });
     for (const x of f) melde('mydealz', x);

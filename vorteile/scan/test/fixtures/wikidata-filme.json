@@ -1,0 +1,94 @@
+{
+ "head": {
+  "vars": [
+   "item",
+   "name",
+   "itunes",
+   "jahr"
+  ]
+ },
+ "results": {
+  "bindings": [
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q9000001"
+    },
+    "name": {
+     "xml:lang": "en",
+     "type": "literal",
+     "value": "Mallrats"
+    },
+    "itunes": {
+     "type": "literal",
+     "value": "286617745"
+    },
+    "jahr": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#integer",
+     "type": "literal",
+     "value": "1995"
+    }
+   },
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q9000002"
+    },
+    "name": {
+     "xml:lang": "en",
+     "type": "literal",
+     "value": "The Shadow"
+    },
+    "itunes": {
+     "type": "literal",
+     "value": "1440794321"
+    },
+    "jahr": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#integer",
+     "type": "literal",
+     "value": "1994"
+    }
+   },
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q9000003"
+    },
+    "name": {
+     "xml:lang": "de",
+     "type": "literal",
+     "value": "Manta Manta"
+    },
+    "itunes": {
+     "type": "literal",
+     "value": "1191234567"
+    },
+    "jahr": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#integer",
+     "type": "literal",
+     "value": "1991"
+    }
+   },
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q9000004"
+    },
+    "name": {
+     "xml:lang": "de",
+     "type": "literal",
+     "value": "Manta Manta"
+    },
+    "itunes": {
+     "type": "literal",
+     "value": "1678901234"
+    },
+    "jahr": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#integer",
+     "type": "literal",
+     "value": "2023"
+    }
+   }
+  ]
+ }
+}

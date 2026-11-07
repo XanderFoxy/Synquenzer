@@ -30,7 +30,7 @@ const abruf = () => macheFixtureAbruf(FX, [
   ['rss/gruppe/drogerie', '!fehler'],
   ['rss/gruppe/preisfehler', '!fehler'],
   ['rss/gruppe/reisen', 'echt-1739/mydealz-reisen.xml'],
-  ['urlaubspiraten', '!fehler'], ['urlaubsguru', '!fehler'], ['search?q=bahn', '!fehler'],
+  ['urlaubspiraten', '!fehler'], ['urlaubsguru', '!fehler'], ['rss/gruppe/bus-bahn', '!fehler'],
   ['-2862219', 'echt-1739/deal-2862219.html'], ['-2862136', 'echt-1739/deal-2862136.html'], ['-2862107', 'echt-1739/deal-2862107.html'],
   ['-2861776', 'echt-1739/deal-2861776.html'], ['-2861548', 'echt-1739/deal-2861548.html'], ['-2854033', 'echt-1739/deal-2854033.html'],
 ]);

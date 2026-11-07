@@ -13,6 +13,7 @@ import { lauf, main } from '../main.mjs';
 import filme, {
   namensWert, waehleTreffer, ausItunes, leseErgebnisse, leseCharts, staffelnAus, staffelInfo,
   merkeFilmPreis, preisLage, preisWert, istAppleFilmDeal, postenListe, sucheUrl,
+  chartIndex, chartFilm, serienBegriffe, wikidataAbfrage, wikidataTeile, leseWikidata, wikidataKandidaten, englisch,
 } from '../module/filme.mjs';
 
 const HIER = dirname(fileURLToPath(import.meta.url));
@@ -302,4 +303,227 @@ test('Modul nicht fällig -> keine neue Datei, alte filme.json bleibt; erster Fi
     assert.ok(!(r3.plan.digest?.liste || []).some(e => e.kategorie === 'filme'));
     assert.notEqual(await readFile(pfad, 'utf8'), alt, 'gelaufen -> neue Datei');
   } finally { console.log = log; await rm(dir, { recursive: true, force: true }); }
+});
+
+// ---------------------------------------------------------------- Ausweichwege (echter Lauf 07.11.2026: Filmsuche immer leer)
+// Echte Antworten in fixtures/echt-0711 (leere Film-/Staffel-Suche, Staffel-Suchen, Lookup, Charts Komödie + Kinder & Familie),
+// dazu Antworten im echten Format für die Ausweichwege: US-Store-Suche, Lookup DE der Kandidaten, Wikidata.
+const ECHT = 'echt-0711';
+const AUSWEICH = [
+  ['query.wikidata.org/sparql', 'wikidata-ausweich.json'],
+  ['term=Mallrats&country=us', 'itunes-search-us-mallrats.json'],
+  ['term=The%20Shadow&country=us', 'itunes-search-us-shadow.json'],
+  ['term=Back%20to%20the%20Future&country=us', 'itunes-search-us-backtothefuture.json'],
+  ['term=Star%20Trek%3A%20The%20Next%20Generation&country=us', 'itunes-search-us-startrek-tng.json'],
+  ['term=Star%20Trek%3A%20The%20Original%20Series&country=us', 'itunes-search-us-startrek-tos.json'],
+  ['country=us', `${ECHT}/itunes-search-film-leer.json`],
+  ['term=Rick%20and%20Morty&country=de&media=tvShow', `${ECHT}/itunes-search-rickandmorty.json`],
+  ['term=Star%20Trek%3A%20Raumschiff%20Enterprise&country=de&media=tvShow', `${ECHT}/itunes-search-startrek-raumschiff-enterprise.json`],
+  ['term=Star%20Trek%3A%20Enterprise&country=de&media=tvShow', `${ECHT}/itunes-search-startrek-enterprise.json`],
+  ['media=tvShow', `${ECHT}/itunes-search-serie-leer.json`],
+  ['itunes.apple.com/search?', `${ECHT}/itunes-search-film-leer.json`],
+  ['genre=4404/json', `${ECHT}/itunes-rss-komoedie.json`],
+  ['genre=4410/json', `${ECHT}/itunes-rss-kinder.json`],
+  ['/rss/topmovies/', 'itunes-rss-leer.json'],
+];
+/** Abruf wie Apple: der Lookup liefert nur die angefragten Nummern (aus dem echten Lookup + den Kandidaten im deutschen Store). */
+async function ausweichAbruf(vorne = [], karte = AUSWEICH, lookupDateien = [`${ECHT}/itunes-lookup.json`, 'itunes-lookup-ausweich.json']) {
+  const alle = (await Promise.all(lookupDateien.map(ergebnisse))).flat();
+  const h = macheFixtureAbruf(FIX, [...vorne, ...karte]);
+  const z = { urls: [] };
+  z.holeText = async url => {
+    z.urls.push(url);
+    if (url.includes('itunes.apple.com/lookup?') && !vorne.some(([teil]) => url.includes(teil))) {
+      const ids = new URL(url).searchParams.get('id').split(',');
+      const res = alle.filter(r => ids.includes(String(r.trackId ?? r.collectionId)));
+      return JSON.stringify({ resultCount: res.length, results: res });
+    }
+    return h(url);
+  };
+  z.suchen = land => z.urls.filter(u => u.includes('itunes.apple.com/search?') && (!land || u.includes(`&country=${land}&`))).length;
+  return z;
+}
+const CHARTS_ECHT = { neu: [{ id: 4404, name: 'Komödie' }], angebot: [{ id: 4410, name: 'Kinder & Familie' }], suche: [] };
+const nurFilme = (wunschliste, achtziger = []) => ({ ...listen, wunschliste, serien: [], achtziger, disney: [], charts: CHARTS_ECHT, mydealz: [] });
+const zukunft = listen.achtziger.filter(x => /^Zurück in die Zukunft( II)?$/.test(x.titel));
+const schluesselVon = (titel, jahr) => postenListe({ wunschliste: [{ titel, jahr }] })[0].key;
+
+test('Ausweichwege: echte leere DE-Suche -> US-Suche -> Lookup DE -> Treffer; Shadow 1994 (nicht 1940/2018), Manta Manta 1991 (nicht 2023); fehlt nur, wenn alle Wege leer', async () => {
+  // echte Antwort: Filmsuche im deutschen Store leer
+  assert.deepEqual(await ergebnisse(`${ECHT}/itunes-search-film-leer.json`), []);
+  const zustand = {};
+  const z = await ausweichAbruf();
+  const r = await filme(ctx(z.holeText, zustand, JETZT, { filmListen: nurFilme(listen.wunschliste, zukunft) }));
+  const ids = zustand.filme.ids;
+  const w = r.datei.gruppen.wunsch;
+  // US-Store: The Shadow (1994) – nicht das Serial von 1940, nicht „Shadow“ (2018), nicht „The Shadow Strays“
+  assert.deepEqual(ids[schluesselVon('Shadow und der Fluch des Khan', 1994)], { id: 'itunes:1440794321', tag: '2026-11-07', weg: 'us' });
+  assert.equal(w[1].titel, 'Shadow und der Fluch des Khan', 'deutsche Daten aus dem Lookup im deutschen Store');
+  assert.match(w[1].link, /^https:\/\/itunes\.apple\.com\/de\/movie\//);
+  assert.equal(ids[schluesselVon('Mallrats', 1995)].weg, 'us');
+  // Wikidata: „Manta Manta“ 1991, nicht der Alias der Fortsetzung von 2023
+  assert.deepEqual(ids[schluesselVon('Manta Manta', 1991)], { id: 'itunes:1191234567', tag: '2026-11-07', weg: 'wikidata' });
+  assert.equal(w[3].jahr, 1991);
+  // Beifang: die US-Suche nach „Back to the Future“ findet auch Teil II
+  assert.equal(ids[postenListe({ achtziger: [zukunft[1]] })[0].key].id, 'itunes:1000000102');
+  // Go Trabi Go: deutsch, kein englischer Titel; DE leer, Wikidata ohne Treffer, nicht in den Charts -> fehlt
+  assert.equal(ids[schluesselVon('Go Trabi Go', 1991)].fehlt, '2026-11-07');
+  assert.equal(w[2].fehlt, true);
+  const s = r.datei.status['apple-suche'];
+  assert.deepEqual(s.wege, { de: 0, us: 4, wikidata: 1, charts: 0 });
+  assert.equal(s.anzahl, 5, 'auf der Seite: 5 neu gefunden');
+  assert.deepEqual(s.nichtGefunden, ['Go Trabi Go']);
+  // Suchweg „de“ ruht nach 4 leeren Antworten (Mallrats 1, Shadow 2, Go Trabi Go 1) – danach keine DE-Suche mehr
+  assert.equal(z.suchen('de'), 4, z.urls.filter(u => u.includes('country=de&')).join('\n'));
+  assert.deepEqual(s.ruhend, ['de-film']);
+  assert.equal(zustand.filme.wege['de-film'].leer, 4);
+  assert.ok(z.urls.some(u => u.includes('query.wikidata.org/sparql?format=json&query=')), 'Wikidata gefragt');
+  assert.ok(r.datei.status['apple-suche'].ok, 'leere Antworten sind kein Fehler');
+});
+
+test('Weg „charts“ mit echten Antworten (07.11.2026): Manta Manta 1991 für 3,99 € statt „Zwoter Teil“ 2023, Zurück in die Zukunft aus Kinder & Familie', async () => {
+  const zustand = {};
+  const z = await ausweichAbruf([['query.wikidata.org/sparql', 'wikidata-leer.json'], ['country=us', `${ECHT}/itunes-search-film-leer.json`]]);
+  const r = await filme(ctx(z.holeText, zustand, JETZT, { filmListen: nurFilme([{ titel: 'Manta Manta', jahr: 1991 }], [zukunft[0]]) }));
+  const ids = zustand.filme.ids;
+  assert.deepEqual(ids[schluesselVon('Manta Manta', 1991)], { id: 'itunes:524404062', tag: '2026-11-07', weg: 'charts' });
+  const manta = r.datei.gruppen.wunsch[0];
+  assert.deepEqual([manta.titel, manta.jahr, manta.preis, manta.preisHd, manta.unterZiel], ['Manta Manta', 1991, 3.99, 3.99, true]);
+  assert.ok(!alleTitel(r.datei).some(t => t.id === 'itunes:1684919227' && r.datei.gruppen.wunsch.includes(t)), 'nicht die Fortsetzung');
+  assert.equal(ids[postenListe({ achtziger: [zukunft[0]] })[0].key].id, 'itunes:592361446');
+  assert.equal(r.datei.gruppen.achtziger[0].preis, 9.99, 'Preis aus dem Chart-Feed (nicht im Lookup)');
+  assert.deepEqual(r.datei.status['apple-suche'].wege, { de: 0, us: 0, wikidata: 0, charts: 2 });
+  const e = r.eintraege.find(x => /^Manta Manta \(1991\) für 3,99/.test(x.titel));
+  assert.ok(e?.sofort, 'Wunschfilm zum Zielpreis -> sofort');
+  // Charts-Abgleich unabhängig vom Lauf: Fortsetzung, Jahr und Untertitel
+  const idx = chartIndex(leseCharts(await fix(`${ECHT}/itunes-rss-komoedie.json`)));
+  assert.equal(chartFilm(idx, { titel: 'Manta Manta', jahr: 1991 }).id, 'itunes:524404062');
+  assert.equal(chartFilm(idx, { titel: 'Manta Manta', jahr: 2023 }), null, 'Jahr passt nicht, Fortsetzung heißt anders');
+  assert.equal(chartFilm(idx, { titel: 'Ghostbusters – Die Geisterjäger', jahr: 1984, auch: ['Ghostbusters'] }).id, 'itunes:532285804');
+});
+
+test('Suchweg ruht -> jeder Lauf eine Probe; repariert -> wieder aktiv, nicht Gefundenes sofort neu', async () => {
+  const zustand = {};
+  const film = titel => listen.achtziger.find(x => x.titel === titel);
+  const mehr = [...zukunft, film('Ghostbusters II'), film('Stirb langsam')];
+  await filme(ctx((await ausweichAbruf()).holeText, zustand, JETZT, { filmListen: nurFilme(listen.wunschliste, zukunft) }));
+  assert.equal(zustand.filme.wege['de-film'].leer, 4);
+  // Tag 2: neue Titel, Apple weiter kaputt -> genau eine Probe im deutschen Store, Weg ruht weiter
+  const z1 = await ausweichAbruf();
+  const r1 = await filme(ctx(z1.holeText, zustand, tagPlus(1), { filmListen: nurFilme(listen.wunschliste, mehr) }));
+  assert.equal(z1.suchen('de'), 1, 'eine Probe');
+  assert.deepEqual(r1.datei.status['apple-suche'].ruhend, ['de-film']);
+  assert.equal(zustand.filme.ids[postenListe({ achtziger: [mehr[2]] })[0].key].weg, 'charts', 'Ghostbusters II (1990 im Chart) über die Charts');
+  assert.ok(zustand.filme.ids[postenListe({ achtziger: [mehr[3]] })[0].key].fehlt, 'Stirb langsam: alle Wege leer');
+  // Tag 3: Apple repariert (Suche liefert wieder) -> Probe mit Treffern, Weg aktiv, „wieder“ gemerkt
+  const neu = [...mehr, film('Zurück in die Zukunft III')];
+  const z2 = abruf();
+  const r2 = await filme(ctx(z2.holeText, zustand, tagPlus(2), { filmListen: { ...nurFilme(listen.wunschliste, neu), charts: listen.charts } }));
+  assert.deepEqual(r2.datei.status['apple-suche'].ruhend, []);
+  assert.equal(zustand.filme.wege['de-film'].wieder, '2026-11-09');
+  assert.equal(zustand.filme.ids[postenListe({ achtziger: [neu[4]] })[0].key].weg, 'de');
+  // „fehlt“-Titel werden bei jedem Lauf kostenlos mit den Charts abgeglichen: Stirb langsam steht in den (Fixture-)Klassikern
+  assert.equal(zustand.filme.ids[postenListe({ achtziger: [mehr[3]] })[0].key].weg, 'charts');
+  // Tag 4: was vor der Reparatur „fehlt“ bekam, wird sofort neu gesucht (nicht erst nach 7 Tagen)
+  assert.equal(zustand.filme.ids[schluesselVon('Go Trabi Go', 1991)].fehlt, '2026-11-07');
+  const z3 = abruf();
+  await filme(ctx(z3.holeText, zustand, tagPlus(3), { filmListen: { ...nurFilme(listen.wunschliste, neu), charts: listen.charts } }));
+  assert.ok(z3.urls.some(u => u.includes('term=Go%20Trabi%20Go&country=de')), 'Go Trabi Go neu gesucht');
+});
+
+test('Serien: deutsche + englische Namen, US-Store + Lookup DE; Staffel-Doppel (DE-/EN-Name) nur einmal, günstigere Fassung', async () => {
+  const sr = listen.serien.filter(s => /^(Rick and Morty|Star Trek: (Raumschiff Enterprise|Das nächste Jahrhundert|Enterprise))$/.test(s.titel));
+  assert.equal(sr.length, 4);
+  assert.deepEqual(serienBegriffe(sr[2]), ['Star Trek: Das nächste Jahrhundert', 'Star Trek: The Next Generation']);
+  const zustand = {};
+  const z = await ausweichAbruf([['query.wikidata.org/sparql', 'wikidata-leer.json']]);
+  const r = await filme(ctx(z.holeText, zustand, JETZT, { filmListen: { ...nurFilme([]), serien: sr } }));
+  const se = r.datei.gruppen.serien;
+  // TNG: im deutschen Store unter keinem Namen gefunden (echte Antwort), über den US-Store + Lookup DE drei Staffeln
+  assert.ok(z.urls.some(u => u.includes('term=Star%20Trek%3A%20Das%20n%C3%A4chste%20Jahrhundert&country=de')));
+  assert.ok(z.urls.some(u => u.includes('term=Star%20Trek%3A%20The%20Next%20Generation&country=de')));
+  assert.deepEqual(se.filter(t => t.serie === 'Star Trek: Das nächste Jahrhundert').map(t => t.nr).sort(), [1, 2, 3]);
+  assert.ok(!se.some(t => /Deep Space/.test(t.titel)), 'DS9 gehört nicht zu TNG');
+  const tng2 = se.find(t => t.serie === 'Star Trek: Das nächste Jahrhundert' && t.nr === 2);
+  assert.deepEqual([tng2.preis, tng2.angebot], [9.99, true]);
+  // TOS: Staffel 1 im deutschen Store zweimal (deutscher und englischer Name) -> ein Eintrag, die günstigere (19,99 € statt 29,99 €)
+  const tos1 = se.filter(t => t.serie === 'Star Trek: Raumschiff Enterprise' && t.nr === 1);
+  assert.equal(tos1.length, 1);
+  assert.equal(tos1[0].preis, 19.99);
+  assert.ok(zustand.filme.ids['serie:star-trek-raumschiff-enterprise'].ids.includes('itunes:648533852'), 'beide Nummern bleiben für die Preis-Historie');
+  assert.ok(zustand.filme.ids['serie:star-trek-raumschiff-enterprise'].ids.includes('itunes:291000001'));
+  assert.equal(se.filter(t => t.serie === 'Star Trek: Raumschiff Enterprise' && t.nr === 2).length, 1);
+  // Rick and Morty aus der echten Staffel-Suche, ohne „The Anime“
+  assert.deepEqual(se.filter(t => t.serie === 'Rick and Morty').map(t => t.nr).sort((a, b) => a - b), [1, 2, 4, 5, 6, 9]);
+  // Star Trek: Enterprise: nur Treffer anderer Serien (TOS, Animated) -> nichts, nach allen Wegen „fehlt“
+  assert.ok(zustand.filme.ids['serie:star-trek-enterprise'].fehlt);
+  const s = r.datei.status['apple-suche'];
+  assert.deepEqual([s.wege.de, s.wege.us], [2, 2]);
+});
+
+test('Offen statt „fehlt“: Wikidata oder der Lookup der Kandidaten gestört -> nächster Lauf noch einmal', async () => {
+  const zustand = {};
+  const trabi = schluesselVon('Go Trabi Go', 1991);
+  const zw = await ausweichAbruf([['query.wikidata.org/sparql', '!fehler']]);
+  const r = await filme(ctx(zw.holeText, zustand, JETZT, { filmListen: nurFilme([{ titel: 'Go Trabi Go', jahr: 1991 }]) }));
+  assert.deepEqual(zustand.filme.ids[trabi], { weiter: 0, versucht: '2026-11-07' });
+  assert.ok(r.datei.status['apple-suche'].fehler.some(f => /^Wikidata: HTTP 503/.test(f)));
+  assert.equal(r.datei.gruppen.wunsch[0].fehlt, undefined, 'auf der Seite noch nicht „nicht im Store“');
+  const z2 = await ausweichAbruf();
+  await filme(ctx(z2.holeText, zustand, tagPlus(1), { filmListen: nurFilme([{ titel: 'Go Trabi Go', jahr: 1991 }]) }));
+  assert.equal(zustand.filme.ids[trabi].fehlt, '2026-11-08');
+  // Kandidat gefunden, aber der Lookup im deutschen Store fällt aus -> offen
+  const z3 = await ausweichAbruf([['itunes.apple.com/lookup?', '!fehler']]);
+  const z3z = {};
+  await filme(ctx(z3.holeText, z3z, JETZT, { filmListen: nurFilme([listen.wunschliste[0]]) }));
+  assert.deepEqual(z3z.filme.ids[schluesselVon('Mallrats', 1995)], { weiter: 0, versucht: '2026-11-07' });
+});
+
+test('Altes „fehlt“ (nur kaputte DE-Suche, ohne Marke) -> sofort mit allen Wegen; dauerhaft Offene blockieren die Runde nicht', async () => {
+  // Zustand wie nach einem Lauf der alten Fassung (heute, 20:41 UTC): Mallrats „fehlt“ ohne „alle“
+  const mall = schluesselVon('Mallrats', 1995);
+  const zustand = { filme: { ids: { [mall]: { fehlt: '2026-11-07', n: 1 } } } };
+  const z = await ausweichAbruf();
+  await filme(ctx(z.holeText, zustand, JETZT, { filmListen: nurFilme([listen.wunschliste[0]]) }));
+  assert.ok(z.urls.some(u => u.includes('term=Mallrats&country=us')), 'US-Weg probiert, nicht erst in 7 Tagen');
+  assert.deepEqual(zustand.filme.ids[mall], { id: 'itunes:286617745', tag: '2026-11-07', weg: 'us' });
+  // neues „fehlt“ trägt die Marke -> erst nach wiederholenTage wieder dran
+  const leer = await ausweichAbruf([['query.wikidata.org/sparql', 'wikidata-leer.json'], ['country=us', `${ECHT}/itunes-search-film-leer.json`]]);
+  const z2 = {};
+  await filme(ctx(leer.holeText, z2, JETZT, { filmListen: nurFilme([{ titel: 'Go Trabi Go', jahr: 1991 }]) }));
+  assert.deepEqual(z2.filme.ids[schluesselVon('Go Trabi Go', 1991)], { fehlt: '2026-11-07', n: 1, alle: 1 });
+  // Wikidata dauerhaft gestört, maxNeueTitel 2: Lauf 2 nimmt die zwei noch nie Versuchten statt wieder dieselben zwei
+  const vier = ['Eins', 'Zwei', 'Drei', 'Vier'].map((x, i) => ({ titel: `Probefilm ${x}`, jahr: 1981 + i })); // in keiner Quelle
+  const z3 = {};
+  const kaputt = () => ausweichAbruf([['query.wikidata.org/sparql', '!fehler']]);
+  const lauf = async (jetzt) => filme({ ...ctx((await kaputt()).holeText, z3, jetzt, { filmListen: { ...nurFilme([], vier), charts: { ...CHARTS_ECHT, neu: [], angebot: [] } } }), cfg: { module: { filme: { maxNeueTitel: 2 } } } });
+  await lauf(JETZT);
+  const keys = postenListe({ achtziger: vier }).map(p => p.key);
+  assert.deepEqual(keys.map(k => z3.filme.ids[k]?.versucht ?? null), ['2026-11-07', '2026-11-07', null, null]);
+  await lauf(tagPlus(1));
+  assert.deepEqual(keys.map(k => z3.filme.ids[k]?.versucht ?? null), ['2026-11-07', '2026-11-07', '2026-11-08', '2026-11-08']);
+});
+
+test('Wikidata: Abfrage (Name deutsch/englisch, P6398, Jahr), Aufteilung nach Adresslänge, tolerantes Lesen', async () => {
+  const q = wikidataAbfrage(['Mallrats', 'Ralph reicht\'s', 'Die "Schöne"', 'Mallrats']);
+  assert.match(q, /VALUES \?name \{ "Mallrats"@de "Mallrats"@en "Ralph reicht's"@de "Ralph reicht's"@en "Die \\"Schöne\\""@de/);
+  assert.match(q, /wdt:P6398 \?itunes/);
+  assert.equal((q.match(/"Mallrats"@de/g) || []).length, 1, 'doppelte Namen einmal');
+  const teile = wikidataTeile(postenListe(listen).filter(p => !p.serie).slice(0, 25), 3500);
+  assert.ok(teile.length >= 2 && teile.every(t => t.url.length <= 3500 || t.posten.length === 1), teile.map(t => t.url.length).join(','));
+  assert.equal(teile.reduce((n, t) => n + t.posten.length, 0), 25);
+  const zeilen = leseWikidata(await fix('wikidata-ausweich.json'));
+  assert.deepEqual(zeilen.map(z => [z.id, z.jahr]), [['itunes:1191234567', 1991], ['itunes:1678901234', 2023], ['itunes:1000002301', 1992]], 'kaputte Nummer fällt weg, „id…“ wird gelesen');
+  assert.deepEqual(wikidataKandidaten(zeilen, { titel: 'Manta Manta', jahr: 1991 }).map(k => k.id), ['itunes:1191234567']);
+  assert.deepEqual(wikidataKandidaten(zeilen, { titel: 'Go Trabi Go', jahr: 1991 }), []);
+  assert.deepEqual(leseWikidata('{"head":{},"results":{"bindings":[]}}'), []);
+  assert.throws(() => leseWikidata('<html>Too Many Requests</html>'), /Wikidata/);
+  assert.throws(() => leseWikidata('{"error":"x"}'), /bindings/);
+  assert.equal(englisch({ titel: 'Manta Manta' }), null);
+  assert.equal(englisch(listen.wunschliste[1]), 'The Shadow');
+  assert.match(sucheUrl('The Shadow', false, 20, 'us'), /term=The%20Shadow&country=us&media=movie&entity=movie&limit=20$/);
+  // jeder kuratierte Film ohne englischen Titel ist ein deutscher Film
+  const ohne = postenListe(listen).filter(p => !p.serie && !p.item.en).map(p => p.item.titel);
+  assert.deepEqual(ohne.sort(), ['Ballermann 6', 'Bang Boom Bang – Ein todsicheres Ding', 'Erkan & Stefan', 'Go Trabi Go', 'Manta Manta', 'Otto – Der Außerfriesische', 'Otto – Der Film', 'Schtonk!', 'Werner – Beinhart!', 'Werner – Das muss kesseln!!!']);
+  assert.ok(postenListe(listen).filter(p => p.serie).every(p => p.item.en), 'jede Serie mit englischem Namen');
 });

@@ -1,27 +1,101 @@
 // Gemeinsame Bausteine der Scanner-Module: Feeds sammeln (fehlertolerant), Einträge bauen, Google-News-Suche.
 import { leseRss } from '../lib/rss.mjs';
-import { schluessel, alterTage } from '../lib/text.mjs';
+import { schluessel, alterTage, enthaelt } from '../lib/text.mjs';
 import { endeAusFuer, abAus, bestimmeEnde, berlinTag, alterStunden, HOECHSTALTER_STUNDEN } from '../lib/ende.mjs';
 import { istMydealzDeal, altpreisAusText, preisAngaben, preisZeile, versandImPreis } from '../lib/mydealz.mjs';
 import { parsePrice, euro } from '../lib/text.mjs';
 import { krass as krassPruefen } from '../lib/krass.mjs';
 
 export const googleNews = q => `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=de&gl=DE&ceid=DE:de`;
-export const mydealzSuche = q => `https://www.mydealz.de/rss/search?q=${encodeURIComponent(q)}`;
+
+// ---------------------------------------------------------------- mydealz ohne Suche
+// Die RSS-Suche (/rss/search?q=…) gibt es nicht mehr: HTTP 404 (HTML „Ups...“) seit 31.10.2026, im echten Lauf vom
+// 07.11.2026 bei allen 20 Suchen. Ersatz (Belege in QUELLEN-FIX.md):
+//   - Gruppen-Feeds /rss/gruppe/<name> – Name = Adresse der Gruppenseite mydealz.de/gruppe/<name> (lebensmittel,
+//     preisfehler, reisen, freebies, gewinnspiele liefern im echten Lauf 200; weitere Gruppen: apple-tv, filme-serien,
+//     kino, freizeitpark, wellness-massagen, geld-zurueck, bus-bahn, vertraege-finanzen, strom-gas …)
+//   - /rss/alles (alle neuen Deals) und /rss/trending (heiß) – /rss/new und /rss/hot leiten dorthin weiter.
+// Was früher eine Suche war, ist jetzt: Gruppe(n) + Stichwortfilter (stichwoerter am Feed, siehe sammleFeeds).
+export const MYDEALZ = 'https://www.mydealz.de';
+export const MYDEALZ_ALLE = `${MYDEALZ}/rss/alles`;
+export const MYDEALZ_HEISS = `${MYDEALZ}/rss/trending`;
+export const mydealzGruppe = name => `${MYDEALZ}/rss/gruppe/${encodeURIComponent(String(name).trim().toLowerCase())}`;
+
+/**
+ * Feeds für mydealz-Gruppen. eintraege: ["kino", { gruppe: "wellness-massagen", stichwoerter: ["Therme"] }, …]
+ * ("alles" / "trending" = Feed aller neuen bzw. heißen Deals). rest (maxAlterTage, art, …) gilt für alle.
+ */
+export function mydealzFeeds(eintraege = [], rest = {}) {
+  const out = [];
+  for (const e of Array.isArray(eintraege) ? eintraege : [eintraege]) {
+    const g = typeof e === 'string' ? { gruppe: e } : e;
+    const name = String(g?.gruppe ?? '').trim();
+    if (!name) continue;
+    const url = name === 'alles' ? MYDEALZ_ALLE : name === 'trending' ? MYDEALZ_HEISS : mydealzGruppe(name);
+    const sw = Array.isArray(g.stichwoerter) ? g.stichwoerter.filter(x => typeof x === 'string' && x.trim()) : [];
+    const anzeige = g.name || (name === 'alles' ? 'neue Deals' : name === 'trending' ? 'heiße Deals' : (name.charAt(0).toUpperCase() + name.slice(1)).replace(/-/g, ' '));
+    out.push({ name: `mydealz ${anzeige}`, url, ...rest, ...(g.maxAlterTage != null ? { maxAlterTage: g.maxAlterTage } : {}), ...(sw.length ? { stichwoerter: sw } : {}) });
+  }
+  return out;
+}
+
+/** mydealz-Feeds eines Moduls: gruppen (siehe mydealzFeeds) + alte „suchen“ als Stichwörter im Feed aller neuen Deals. */
+export function mydealzQuellen({ gruppen = [], suchen = [] } = {}, rest = {}) {
+  const feeds = mydealzFeeds(gruppen || [], rest);
+  const sw = (Array.isArray(suchen) ? suchen : []).filter(q => typeof q === 'string' && q.trim());
+  if (sw.length) feeds.push(...mydealzFeeds([{ gruppe: 'alles', name: 'neue Deals', stichwoerter: sw }], rest));
+  return feeds;
+}
+
+/** Passt ein Text zu einem der Stichwörter? Ein Stichwort aus mehreren Wörtern braucht alle Wörter; "a|b" = Alternativen. */
+export function passtStichwort(text, stichwoerter = []) {
+  if (!stichwoerter?.length) return true;
+  return stichwoerter.some(s => String(s).split('|').some(alt => {
+    const woerter = alt.trim().split(/\s+/).filter(Boolean);
+    return woerter.length > 0 && woerter.every(w => enthaelt(text, [w]));
+  }));
+}
+
+/** Alte Such-Adresse (/rss/search?q=…) in der config -> Feed aller neuen Deals + Stichwort, statt jedes Mal HTTP 404. */
+export function ohneMydealzSuche(f) {
+  const m = String(f?.url || '').match(/^https:\/\/www\.mydealz\.de\/rss\/search\?(?:.*&)?q=([^&#]*)/);
+  if (!m) return f;
+  let q = m[1];
+  try { q = decodeURIComponent(q.replace(/\+/g, ' ')); } catch { /* bleibt roh */ }
+  return { ...f, url: MYDEALZ_ALLE, stichwoerter: [...(f.stichwoerter || []), q] };
+}
+
+// Gleicher Feed in einem Lauf (gleiche holeText-Funktion) nur einmal abrufen – mehrere Module teilen sich z. B. /rss/alles.
+const FEED_SPEICHER = new WeakMap();
+const FEED_HALTEN_MS = 10 * 60e3;
+function holeFeed(holeText, url) {
+  let m = FEED_SPEICHER.get(holeText);
+  if (!m) { m = new Map(); FEED_SPEICHER.set(holeText, m); }
+  const jetzt = Date.now();
+  const c = m.get(url);
+  if (c && jetzt - c.t < FEED_HALTEN_MS) return c.p;
+  const p = holeText(url);
+  m.set(url, { t: jetzt, p });
+  p.catch(() => m.delete(url)); // Fehler nicht merken: ein anderes Modul darf es noch einmal versuchen
+  return p;
+}
 
 /**
  * Holt mehrere Feeds nacheinander; ein kaputter Feed landet in fehler, die anderen laufen weiter.
+ * Feed mit stichwoerter: nur Einträge, deren Titel/Beschreibung eines davon enthält (Ersatz für die mydealz-Suche).
  * Jedes Item bekommt bis/ab aus dem Text (lib/ende.mjs). Steht ein Ende im Text: vorbei -> raus, noch offen -> bleibt
  * (auch wenn älter als maxAlterTage). Ohne Ende im Text gilt maxAlterTage des Feeds.
  */
 export async function sammleFeeds(holeText, feeds, { jetzt = new Date(), maxAlterTage = 30 } = {}) {
   const items = [], fehler = [];
   const jetztMs = new Date(jetzt).getTime();
-  for (const f of feeds) {
+  for (const f0 of feeds) {
+    const f = ohneMydealzSuche(f0);
     try {
-      const liste = leseRss(await holeText(f.url));
+      const liste = leseRss(await holeFeed(holeText, f.url));
       for (const it of liste) {
         const text = `${it.titel} ${it.langtext ?? it.beschreibung}`;
+        if (f.stichwoerter && !passtStichwort(`${it.titel} ${it.beschreibung}`, f.stichwoerter)) continue;
         const ende = endeAusFuer(text, it.datum, new Date(jetztMs));
         if (ende ? Date.parse(ende.bis) < jetztMs : alterTage(it.datum, jetzt) > (f.maxAlterTage ?? maxAlterTage)) continue;
         const { langtext, ...rest } = it;

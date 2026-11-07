@@ -3,7 +3,7 @@
 // Pro Eintrag: Prämie (€), Kosten, Netto, Aufwand (Minuten), Haken. Sortiert nach Netto pro Aufwand (€/Stunde).
 // Quellen: öffentliche mydealz-RSS (ohne Login) + gepflegte Programm-Liste in config.json. Unseriöses fliegt strikt raus.
 import { enthaelt, parsePrice, altpreisAus, euro, round } from '../lib/text.mjs';
-import { sammleFeeds, eintrag, mydealzSuche } from './gemeinsam.mjs';
+import { sammleFeeds, eintrag, mydealzQuellen } from './gemeinsam.mjs';
 
 const ART_NAME = {
   konto: 'Konto-/Neukundenprämie', energie: 'Strom-/Gas-Wechselbonus', handy: 'Handy-Wechselbonus', freunde: 'Freunde werben',
@@ -191,7 +191,7 @@ export function cashbackEintraege(items, cfg, { jetzt = new Date() } = {}) {
 
 export default async function praemien({ holeText, cfg, jetzt }) {
   const m = cfg.module.praemien;
-  const feeds = [...m.feeds, ...(m.suchen || []).map(q => ({ name: `mydealz „${q}“`, url: mydealzSuche(q), maxAlterTage: m.maxAlterTage ?? 14 }))];
+  const feeds = [...(m.feeds || []), ...mydealzQuellen({ gruppen: m.mydealz, suchen: m.suchen }, { maxAlterTage: m.maxAlterTage ?? 14 })];
   const { items, fehler } = await sammleFeeds(holeText, feeds, { jetzt });
   const eintraege = programmEintraege(m);
   const kandidaten = [];

@@ -54,7 +54,8 @@
         "arten": ["gzg", "cashback"],
         "minNetto": 1,
         "maxAlterTage": 14,
-        "suchen": ["Geld zurück Aktion", "Gratis testen", "Cashback Aktion"]
+        "gruppen": [{ "gruppe": "geld-zurueck", "name": "Geld zurück" }],
+        "_gruppen": "mydealz-Gruppen (Feed /rss/gruppe/<gruppe>, Gruppenseite mydealz.de/gruppe/<gruppe>) statt der abgeschalteten mydealz-Suche (HTTP 404 seit 31.10.2026). Optional \"stichwoerter\": nur Deals mit einem dieser Wörter."
       },
       "aktionWoerter": ["zum preis von", "gratis", "geschenkt", "1+1", "halben preis", "coupon", "cashback", "scondoo", "lidl plus", "kaufland card", "geld zurück|geld zurueck"]
     },
@@ -62,7 +63,12 @@
       "aktiv": true,
       "intervallStunden": 6,
       "minTemperatur": 250,
-      "suchen": ["Therme", "Erlebnisbad", "Kino", "Kinotag", "Freizeitpark", "Konzert Tickets"],
+      "mydealz": [
+        { "gruppe": "kino", "name": "Kino" },
+        { "gruppe": "freizeitpark", "name": "Freizeitparks" },
+        { "gruppe": "wellness-massagen", "name": "Wellness & Thermen", "stichwoerter": ["Therme", "Thermen", "Erlebnisbad", "Spaßbad|Spassbad", "Schwimmbad", "Badewelt"] }
+      ],
+      "_mydealz": "mydealz-Gruppen statt der abgeschalteten mydealz-Suche (HTTP 404 seit 31.10.2026); stichwoerter = nur Deals mit einem dieser Wörter. Nicht „kultur-freizeit“: das ist nur eine Hub-Seite (mydealz.de/gruppe/hub/kultur-freizeit), ein Gruppen-Feed dafür ist nicht belegt.",
       "news": ["Döbeln Stadtfest", "Döbeln Veranstaltung", "Mittelsachsen Fest", "Therme Sachsen Angebot"],
       "gutWoerter": ["gratis", "kostenlos", "freier eintritt|eintritt frei", "2 für 1|2 fuer 1", "halber preis|halben preis", "50 %|50%", "kinotag", "rabatt", "gutschein"],
       "bundesweitWoerter": ["kino", "cinemaxx", "cineplex", "uci", "cinestar", "kinotag", "kinogutschein"]
@@ -75,7 +81,7 @@
         { "name": "mydealz Reisen", "url": "https://www.mydealz.de/rss/gruppe/reisen", "maxAlterTage": 4 },
         { "name": "Urlaubspiraten", "url": "https://www.urlaubspiraten.de/feed", "maxAlterTage": 4 },
         { "name": "Urlaubsguru", "url": "https://www.urlaubsguru.de/feed/", "maxAlterTage": 4 },
-        { "name": "mydealz Bahn", "url": "https://www.mydealz.de/rss/search?q=bahn%20sparpreis", "maxAlterTage": 7 }
+        { "name": "mydealz Bus & Bahn", "url": "https://www.mydealz.de/rss/gruppe/bus-bahn", "maxAlterTage": 7 }
       ],
       "abflug": ["Leipzig", "Dresden", "Berlin", "Halle", "LEJ", "DRS", "BER"],
       "fremdAbflug": ["Frankfurt", "München", "Muenchen", "Hamburg", "Düsseldorf", "Duesseldorf", "Köln", "Koeln", "Stuttgart", "Hannover", "Nürnberg", "Nuernberg", "Wien", "Zürich", "Amsterdam", "Bremen", "Dortmund", "Weeze", "Memmingen", "Karlsruhe", "Paderborn", "Münster", "Basel", "Prag", "Kattowitz", "Breslau", "Posen"],
@@ -87,6 +93,8 @@
       "aktiv": true,
       "intervallStunden": 6,
       "geraeteSuche": true,
+      "geraeteMydealz": ["alles", "trending"],
+      "_geraeteMydealz": "Wunsch-Geräte: neue (/rss/alles) und heiße (/rss/trending) mydealz-Deals, je Gerät nach seinem Suchwort gefiltert (die mydealz-Suche als RSS gibt es nicht mehr). Eine passende mydealz-Gruppe kann hier ergänzt werden.",
       "aufrufe": [
         "\"Bands gesucht\" Festival",
         "\"Bands gesucht\" Stadtfest Sachsen",
@@ -160,7 +168,13 @@
         { "name": "mydealz Freebies", "url": "https://www.mydealz.de/rss/gruppe/freebies", "maxAlterTage": 7 },
         { "name": "mydealz Lebensmittel", "url": "https://www.mydealz.de/rss/gruppe/lebensmittel", "maxAlterTage": 14, "nurArten": ["gzg", "cashback"], "minNetto": 1, "_nurArten": "nur Geld-zurück- und Cashback-Aktionen (Seite: Abschnitt Cashback); ab 1 € netto, weil Geld-zurück für Snacks oft nur 1–3 € bringt" }
       ],
-      "suchen": ["Kontowechselprämie", "Neukundenprämie Girokonto", "Freunde werben Prämie", "Geld zurück Aktion", "Gratis testen", "Cashback Aktion", "Wechselbonus Strom", "Payback Extrapunkte", "Startguthaben App"],
+      "mydealz": [
+        { "gruppe": "vertraege-finanzen", "name": "Verträge & Finanzen" },
+        { "gruppe": "strom-gas", "name": "Strom & Gas" },
+        { "gruppe": "geld-zurueck", "name": "Geld zurück" },
+        { "gruppe": "payback", "name": "Payback" },
+        { "gruppe": "shoop", "name": "Shoop" }
+      ],
       "maxAlterTage": 14,
       "minTemperatur": 0,
       "minNetto": 3,

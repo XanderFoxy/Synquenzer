@@ -5,7 +5,7 @@
 import { rechne, bestesAngebot, parseAktion, couponImPreis } from '../rechnen.mjs';
 import { parsePrice, grammAus, enthaelt, euro, round } from '../lib/text.mjs';
 import { dealPruefer, preisAngaben, altpreisAusText } from '../lib/mydealz.mjs';
-import { sammleFeeds, eintrag, preisfehlerEintrag, PREISFEHLER, mydealzSuche } from './gemeinsam.mjs';
+import { sammleFeeds, eintrag, preisfehlerEintrag, PREISFEHLER, mydealzQuellen } from './gemeinsam.mjs';
 import { cashbackEintraege } from './praemien.mjs';
 
 const prozent = v => `−${Math.round(v * 100)} %`;
@@ -112,11 +112,11 @@ export default async function deals({ holeText, cfg, jetzt, zustand }) {
   fehler.push(...f2);
   const pruefer = dealPruefer({ holeText, zustand, jetzt });
   const istPreisfehler = it => !!(it.feedInfo.preisfehler || PREISFEHLER.test(it.titel));
-  // c) Geld zurück / Cashback: aus diesen Feeds und eigenen mydealz-Suchen (Abschnitt Cashback, nicht noch einmal als Deal)
+  // c) Geld zurück / Cashback: aus diesen Feeds und eigenen mydealz-Gruppen (Abschnitt Cashback, nicht noch einmal als Deal)
   const cashbackLinks = new Set();
   if (m.cashback) {
     const c = m.cashback;
-    const { items: such, fehler: f3 } = await sammleFeeds(holeText, (c.suchen || []).map(q => ({ name: `mydealz „${q}“`, url: mydealzSuche(q), maxAlterTage: c.maxAlterTage ?? 14 })), { jetzt });
+    const { items: such, fehler: f3 } = await sammleFeeds(holeText, mydealzQuellen({ gruppen: c.gruppen, suchen: c.suchen }, { maxAlterTage: c.maxAlterTage ?? 14 }), { jetzt });
     fehler.push(...f3);
     const gesehen = new Set(items.map(it => it.link));
     const cb = cashbackEintraege([...items.filter(it => !istPreisfehler(it)), ...such.filter(it => !gesehen.has(it.link))], cfg, { jetzt });
