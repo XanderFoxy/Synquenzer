@@ -27810,6 +27810,7 @@ function normFxBus(b) {
   set('hall', 'width', N(h, 'width', 0, 2)); set('hall', 'ret', N(h, 'ret', 0, 1)); set('hall', 'pump', N(h, 'pump', 0, 1));
   if (['1/64', '1/32', '1/16'].includes(h.predelay)) d.hall.predelay = h.predelay; else if (isNum(h.predelay)) d.hall.predelay = clamp(h.predelay, 0, 250);
   d.hall.freeze = h.freeze === true;
+  tktFxNorm(h, d.hall);                                          // TKT: Hall-Raum (tktRaum, tktLen; fehlt = eingebauter Hall)
   if (['pp', 'st', 'mono'].includes(e.mode)) d.echo.mode = e.mode;
   if (ECHO_DIVS.includes(e.divL)) d.echo.divL = e.divL; if (ECHO_DIVS.includes(e.divR)) d.echo.divR = e.divR;
   set('echo', 'fb', N(e, 'fb', 0, 1.1)); set('echo', 'lowcut', N(e, 'lowcut', 20, 2000)); set('echo', 'highcut', N(e, 'highcut', 1000, 16000));
@@ -28036,7 +28037,7 @@ function tBarLen(b) { if (tkPlain()) return 4; const off = tSongOff(b); return o
 function tBarNext(b, eps) { const f = tBarFloor(b, eps); return f + tBarLen(f + 1e-6); }
 function tTsAt(b) { if (tkPlain()) return '4/4'; const off = tSongOff(b); return off == null ? (S.ts || '4/4') : tsAtBar(barAt(b - off)); }
 // Schläge je Takt am Startpunkt (Einzähler/Vorzähler)
-function tCountBeats(n) { if (tkPlain()) return 4 * n; const sp = R.songPlay; return n * (sp && sp.bar0 != null ? barLen(sp.bar0) : tsBeats(S.ts)); }
+function tCountBeats(n) { const tc = tktCountTs(); if (tc) return n * tsBeats(tc); if (tkPlain()) return 4 * n; const sp = R.songPlay; return n * (sp && sp.bar0 != null ? barLen(sp.bar0) : tsBeats(S.ts)); }
 // Taktart beim Speichern/Laden eines Takt-Abschnitts (Marke)
 function tsAllUsed() { const o = new Set(); if (S.ts) o.add(S.ts); for (const m of (S.song && S.song.marks) || []) if (m.ts) o.add(m.ts); return o; }
 /* Schlag-Ereignisse des Songs (Träger, Teil-Transposition, Melodie) an ihren Takt binden: [obj, key, bar, off]; nach einer Änderung
@@ -28105,6 +28106,7 @@ function normClip(c, kind, pk) {
   if (cts) out.ts = cts;                                                                              /* T1: Taktart des Clips (4/4 = fehlt) */
   if (c.kl || c.klq != null || c.ln || out.notes.some(n => n.lk && n.lk.k)) lkClipNorm(c, out, kind);   // I2a: kl, klq, ln (fehlen = wie bisher)
   gr1ClipNorm(c, out);                                                                                // GR1: clip.sf (Small/Full), clip.gr (Remix-Version)
+  tktClipNorm(c, out);                                                                                // TKT: clip.tkt (Faltung / Dur-Moll-Version)
   if (kind !== 'drum' && c.lf) { const lf = lf1NormLf(c.lf); if (lf) out.lf = lf; }   // LF1: Richtung / Startschritt des Laufs (fehlt = wie bisher)
   if (c.lw) kl1Norm(c, out, kind);                                                                   // KL1: Fenster im ganzen Inhalt
   if (typeof c.vid === 'string' && /^(geraet|klav|kino|noten|aus)$/.test(c.vid)) out.vid = c.vid;   // VR1: Im Video (fehlt = Auto; läuft schon beim Start)
@@ -28522,6 +28524,7 @@ function cleanClip(c) {
   if (c.lf) o.lf = Object.assign({}, c.lf);                          // LF1
   if (c.lw) o.lw = kl1Clean(c.lw);                                // KL1: der ganze Inhalt geht mit
   if (c.vid) o.vid = c.vid;                                       // VR1: Im Video
+  tktClipClean(c, o);                                             // TKT: clip.tkt
   return o;
 }
 /* ---------------- BM8 (Nachtrag 7 §5.4): Bend, Rad und Druck im Clip ----------------
@@ -29461,6 +29464,7 @@ function applyHall(h, commit, t) {
       bass: 1, predelay: 0, lowcut: h.lowcut, highcut: h.tone, ret: 1});
   }
   AU.hallRet.gain.setTargetAtTime(h.ret, t, .02);
+  tktHallApply(h, commit, t);                                     // TKT: Hall-Raum (Faltung / Öltank) im selben Bus
 }
 // the worklet hall replaces the convolution hall as soon as the module is ready; the old tail rings out (§1.4)
 function upgradeHall() {
@@ -29476,6 +29480,7 @@ function upgradeHall() {
 // ringing ones (the old ones fade in 10 ms)
 function hallClear() {
   const c = AU.ctx; if (!c || !AU.hall) return;
+  tktHallClear();                                                 // TKT: Raum leeren
   // the return is muted for 250 ms: what is still in the pre-delay line and the fading echo would start a new tail
   // the tail is faded out (τ 5 ms, like the echo's 8 ms), never cut in one sample (a click); the worklet's buffers are
   // cleared only once the return is silent
@@ -31870,6 +31875,7 @@ function click(t, accent, soft) {
 
 // T1: Klicks im Fenster [b0, b1) – je Zählzeit (♩ oder ♪), Betonung 2 = Eins (1760 Hz), 1 = Schlag/Gruppe, 0 = leise Zwischen-Zählzeit
 function t1Clicks(b0, b1) {
+  if (tktClicks(b0, b1)) return;                                   // TKT: Matrix in der Taktart der klingenden Clips, Einzähler
   let a = tBarFloor(b0); if (a < 0 && R.countIn) { const cb = R.ciB || tCountBeats(1); a = -cb; }   // Einzähler: ab dem ersten Einzähl-Takt
   for (let guard = 0; guard < 64 && a < b1 - 1e-9; guard++) {
     const ci = a < -1e-9, ts = ci ? t1CountTs() : tTsAt(a + 1e-6), d = tsOf(ts), L = ci ? d.b : tBarLen(a + 1e-6);
@@ -32530,7 +32536,7 @@ function tick(h) {
     b1 = bEnd;
     if (b2t(b0) < now - .2) b0 = Math.max(b0, t2b(now));        // fell behind (throttled timer): skip, never burst
     try {
-      if (!tkPlain()) t1Clicks(b0, b1);                            // T1: ein Klick je Zählzeit mit dem Betonungsmuster der Taktart
+      if (!tkPlain() || tktClickOn(b0)) t1Clicks(b0, b1);          // T1: ein Klick je Zählzeit mit dem Betonungsmuster der Taktart; TKT: auch die Taktart der Clips (Matrix)
       else for (let b = Math.ceil(b0 - 1e-9); b < b1 - 1e-9; b++) {
         if (b <= R.lastClick) continue;                            // never click the same beat twice (float edges)
         R.lastClick = b;
@@ -34144,6 +34150,7 @@ function undoState(e) {
   if (e.kind === 'percf') return percfSnap(e.track);                                            // PERC: Schild „folgt nicht“
   if (e.kind === 'sx4m') return S.tracks[e.track] && S.tracks[e.track].mute ? '1' : '0';       // SX4: stumm per Spurkopf
   if (e.kind === 'sx14') return sx14State();                                                    // SX714: ganzer Stand (Schnappschuss)
+  if (e.kind === 'tkt') return tktUndoState(e);                                                 // TKT: Tonart + Song + Teile (Dur ↔ Moll)
   return fxSnapshot();
 }
 // a restored clip that is playing is heard at once (like an editor gesture, §3.3 afterClipEdit)
@@ -34178,6 +34185,7 @@ function undoApply(e, val) {
   else if (e.kind === 'part') partRestore(JSON.parse(val));
   else if (e.kind === 'ts') t1Restore(JSON.parse(val));                                            // T1
   else if (e.kind === 'sx14') sx14Put(val);                      // SX714: Schnappschuss zurückgeholt (ganzer Stand)
+  else if (e.kind === 'tkt') tktUndoApply(e, val);               // TKT: Dur ↔ Moll
   else restoreFx(JSON.parse(val));
   UI.dirty.all = true; markDirty();
   if (typeof edUndoBtns === 'function') edUndoBtns();
@@ -40209,7 +40217,7 @@ function openMarkSheet(id) {
       const v = b.dataset.ts === 'song' ? null : b.dataset.ts, nm = markLabel(m);
       if (setMarkTs(id, v, false)) {
         const same = m.part ? S.song.marks.filter(x => x.part === m.part && x.id !== id && (x.ts || null) !== (m.ts || null)).length : 0;
-        toast(nm + ': Taktart ' + (m.ts || S.ts || '4/4'), same ? [{label: 'Für alle „' + nm + '“', fn: () => { setMarkTs(id, m.ts || null, true); }}, songUndoAct()] : songUndoAct());
+        tktMarkTsToast(id, nm, same);                                 // TKT: [Clips umwandeln] [Für alle „Teil“] [↶]
       }
       paint(); popDock(p);
     }, '.t1ts button[data-ts]');
@@ -41954,7 +41962,7 @@ function setSongTs(ts, o) {
   UI.dirty.all = true;
   if (!o.quiet && !o.clips) {
     const cand = S.tracks.some(tr => !tr.stimme && tr.clips.some(c => c && (c.ts || null) === old));
-    toast('Taktart ' + (ts || '4/4'), cand ? [{label: 'Clips umrechnen', fn: () => setSongTs(ts, {clips: true, from: old})}, {label: '↶', fn: () => undo()}] : {label: '↶ Rückgängig', fn: () => undo()});
+    if (cand || S.song) tktSongTsToast(ts); else toast('Taktart ' + (ts || '4/4'), {label: '↶ Rückgängig', fn: () => undo()});   // TKT: [Clips umwandeln] faltet (Song: Versionen)
   }
   return o.clips ? n : true;
 }
@@ -42433,9 +42441,10 @@ function uiFrame() {
   if (UI.toastActs) toastPlace();                           // sheets opened/closed/rebuilt under an action toast
 }
 // the count-in shows the remaining beats: 4…1 (1 bar) or 8…1 (2 bars), never the few ms of start lead
-const ciMax = () => tkPlain() ? 4 * Math.max(1, R.ciBars || 1) : Math.ceil(R.ciB || tCountBeats(Math.max(1, R.ciBars || 1)));   // T1
+const ciMax = () => tkPlain() && !TKT.ci ? 4 * Math.max(1, R.ciBars || 1) : Math.ceil(R.ciB || tCountBeats(Math.max(1, R.ciBars || 1)));   // T1
 // T1: Anzeige „Takt.Zählzeit“ und die LED (Zählzeit bei ♩, Gruppe bei ♪; nur 4 LEDs); 0 = Eins
 function t1BarPos(b) {
+  { const mx = tktMx(b); if (mx) return tktBarPos(b, mx); }       // TKT: Taktart der Clips (Matrix)
   const a = tBarFloor(b), off = tSongOff(b), ts = tTsAt(b), d = tsOf(ts);
   const bar = off == null ? Math.floor(a / tsBeats(S.ts) + 1e-9) : barAt(a - off);
   const k = Math.min(d.n - 1, Math.floor((b - a) / d.u + 1e-9)); let g = 0, p = 0; for (let j = 0; j < d.grp.length; j++) { p += d.grp[j]; if (k < p) { g = j; break; } }
@@ -42444,17 +42453,17 @@ function t1BarPos(b) {
 function t1TaktTxt(b) { const q = t1BarPos(b); return (q.bar + 1) + '.' + (q.k + 1); }
 function t1Led(b) { const q = t1BarPos(b); return q.g === 0 ? 0 : 1 + ((q.g - 1) % 3); }
 function renderTakt(bAud) {
-  let txt, cls = '';
+  let txt, cls = ''; tktLeds(bAud);                                 // TKT: so viele Takt-LEDs wie die Taktart Zählzeiten hat
   // plain ▶ starts a few ms in the future: until the audible beat reaches 0 show 1.1 (no count-in look)
   if (R.playing && bAud < 0 && !R.ciRun) bAud = 0;
   if (!R.playing) { txt = '1.1'; cls = 'dim'; }
   else if (bAud < 0) { txt = String(clamp(-Math.floor(bAud), 1, ciMax())); cls = 'ci'; }
-  else if (!tkPlain()) txt = t1TaktTxt(bAud);                     // T1: Takt.Zählzeit der Taktart
+  else if (!tkPlain() || tktMx(bAud)) txt = t1TaktTxt(bAud);                     // T1: Takt.Zählzeit der Taktart
   else txt = (Math.floor(bAud / 4) + 1) + '.' + (Math.floor(bAud) % 4 + 1);
   if (txt.length > 4) cls += (cls ? ' ' : '') + 'long';          // bar 100+: the 76 px TAKT block keeps its width (P)
   if (txt !== UI.last.takt) { EL.taktVal.textContent = txt; UI.last.takt = txt; }
   if (cls !== UI.last.taktCls) { EL.taktVal.className = cls; UI.last.taktCls = cls; }
-  const led = !R.playing ? -1 : tkPlain() ? ((Math.floor(bAud) % 4) + 4) % 4 : t1Led(bAud);
+  const led = !R.playing ? -1 : tkPlain() && !tktMx(bAud) ? ((Math.floor(bAud) % 4) + 4) % 4 : t1Led(bAud);
   if (led !== UI.last.led) {
     UI.last.led = led;
     UI.leds.forEach((l, k) => l.classList.toggle('on', k === led));
@@ -47153,6 +47162,7 @@ function pageFx(pg, i) {
   else if (sub === 'master') pageFxMaster(pg);
   else pageFxSpur(pg, i);
   fxLongLabels(pg);
+  tktFxPage(pg, sub, i);                                          // TKT: [RACK]; HALL: [RAUM ▾]
 }
 // knob labels of 9+ letters get the class 'lg': a smaller font where the cells are narrow (P < 390 px, L < 760 px)
 function fxLongLabels(pg) { for (const l of pg.querySelectorAll('.knob .kl')) if (l.textContent.trim().length >= 9) l.classList.add('lg'); }
@@ -48761,6 +48771,7 @@ function buildDrumEd() {
   else if (ED.dFx === 'master') pageFxMaster(pg);
   else pageDrumSpur(pg);
   if (ED.dTab === 'fx') fxLongLabels(pg);
+  if (ED.dTab === 'fx') tktFxPage(pg, ED.dFx, DRUM_T);             // TKT: [RACK]; HALL: [RAUM ▾]
   ED.refreshers.push(() => drumHeadRefresh());
   if (MDE.solo) { if (mdp) mdSoloApply(); else { MDE.solo = false; mdSolo(-1); } }   // ND2: SOLO PART folgt dem Pad
   mdHeadSolo(); sh.classList.toggle('mdsub', mdp && ED.dTab === 'sound');   // ND2: „SOLO PART“ im Kopf, Unter-Reiter 44 px
@@ -51582,6 +51593,7 @@ function openMenu(goto) {
   va1MenuRow(s1, row, btn);                                       // VA1: Menü → Export (WAV, Einzelspuren, MIDI, Video, Container)
   gr1MenuRow(s1, row, btn);                                       // GR1: Song › [Remix …] [Transponieren …]
   mx2MenuRow(s1, row, btn);                                       // MX2: Mix › [Mix & Master …]
+  tktMenuRow(s1, row, btn);                                       // TKT: Song › [Dur ↔ Moll …]
   on(bProj, 'click', () => { projBox.hidden = !projBox.hidden; histBox.hidden = true; if (!projBox.hidden) menuProjRefresh(); });
   on(bHist, 'click', () => { histBox.hidden = !histBox.hidden; projBox.hidden = true; if (!histBox.hidden) menuHistRefresh(); });
   // 1b Sounds (WP3, §2.5): the user library as a file
@@ -83061,6 +83073,755 @@ Object.assign(SYNQUENZER, {gr2: GR2_API});                  /* GR2: Test-API (Ob
 Object.assign(SYNQUENZER, {ui1: UI1_API});                  /* UI1: Test-API (Objekt, wird nicht umhüllt) */
 ueLibAdd(ui1UeLib()); ui1BmTrim(); ui1GlowInit();           // UI1: ◆ ÜBERGÄNGE-Vorlagen, 2 Bit-Mask-Pegel, Leucht-Look (Gerät)
 Object.assign(SYNQUENZER, {vd3: VD3_API});                  /* VD3: Test-API (Objekt, wird nicht umhüllt) */
+/* ===================== TKT BEGIN (Paket TAKT; Xander 07.11. (6): „TAKT: 3/4 – Metronom/Lauflicht zeigt weiter 4 → Fehler; beim
+   Taktartwechsel alle Clips im Raster automatisch umwandeln (Option). DUR→MOLL ganzer Song („traurig“, wie Moll-Versionen).
+   FXR: Effektgeräte sichtbarer (Rack-Ansicht); Faltungshall + „Öltank“ … zum Ausprobieren (synthetische IR / FDN, iPhone-tauglich).“)
+   (1) Taktart der Stelle: in der Matrix (ohne ▶ SONG) gilt die Taktart der Clips, die gerade klingen (alle gleich, z. B. 3/4) – nicht
+       nur S.ts. Metronom (Betonung je Zählzeit), Einzähler (Länge und Muster), TAKT-Anzeige und die Takt-LEDs folgen ihr; die Eins sitzt
+       am Clip-Anfang. Die LEDs zeigen so viele Lampen wie die Taktart Zählzeiten/Gruppen hat (3/4 = 3, 6/8 = 2; die übrigen unsichtbar,
+       nichts verschiebt sich). LAUF zeigt je Seite einen Takt der Clip-Taktart (3/4 bei 1/16 = 12 Schritte). Das Starten der Clips
+       (Quantisierung) bleibt wie es war.
+   (2) Clips umwandeln: nach einem Taktartwechsel (Teil im Marken-Blatt, Song im Tempo-Blatt) bietet die Meldung [Clips umwandeln]:
+       jeder Takt jedes Clips wird anteilig ins neue Raster gefaltet (4 Schläge → 3, wie GR2-Walzer bei 0 %) und auf 1/16 gerastet.
+       Im Song entstehen neue Versionen (SX9, clip.tkt = {f: Taktart, v: Quell-Version}), v1 bleibt; an den Teilgrenzen beginnen die
+       Clips neu (gr2Restart). Ohne Song werden die Szenen-Clips umgerechnet. Gesang/Audio bleibt. Ein ↶.
+   (3) Dur ↔ Moll (≡ › Song › [Dur ↔ Moll …]): alle Melodie-, Akkord- und Bass-Noten, Song-Melodie, Träger und Akkord-Zeilen in die
+       gleichnamige (C-Dur → c-Moll: Terz, Sexte, Septime tiefer) oder parallele Tonart (C-Dur → a-Moll); über der Dominante bleibt der
+       Leitton (harmonisch Moll), Akkorde werden mitgeführt (V bleibt Dur). Moll → Dur ebenso. Drums/Perkussion bleiben, Gesang/Audio wird
+       nicht umgerechnet (Hinweis). Clips werden Versionen (clip.tkt = {m, k, v}); A/B im Blatt, ein ↶ (Art 'tkt': Tonart + Song + Teile).
+   (4) Hall-Räume: S.fxBus.hall.tktRaum ('' = der eingebaute Hall) studio · kammer · saal · kirche (Faltung, IR aus FX.irGenerator) und
+       oel = „Öltank“ (riesiger Betontank, extrem langer Nachhall): kurze synthetische IR (2,6 s: Vorverzögerung, Flatterecho, tiefe
+       Tank-Moden) + ein natives FDN (4 Leitungen, Householder, Kuhschwanz je Leitung) für den Nachhall 8 / 30 / 75 s (hall.tktLen),
+       Tiefen ×1,5 (bis ~112 s bei 125 Hz), Höhen kürzer. Hängt im vorhandenen Hall-Bus (hallPre → Raum → hallRet), nicht doppelt;
+       Bass-Cut, Ton, Pre-Delay und Rückweg wirken weiter. Nur native Knoten: geht live und im Offline-Render (Video/WAV).
+   (5) Effekt-Rack (FX › [RACK]): je Spur SPUR · CHORUS · EQ · KOMP, dann HALL · ECHO · MASTER als Geräte-Fronten mit An/Aus-LED,
+       Haupt-Reglern und Live-Anzeige (Pegel; Gain-Reduction bei EQ · KOMP und MASTER). Das FX-Blatt bleibt, wie es ist.
+   Daten additiv (clip.tkt, hall.tktRaum, hall.tktLen); ohne sie bleibt alles byte-gleich. */
+const TKT = {mxK: '', mxT: 0, mxV: null, ci: null, ledN: -1, inner: false, hxm: new WeakMap(), irc: new Map(), ab: null, eqLast: {}, chLast: {}, busLast: {}, rk: null, mode: {k: 'g', h: true}};
+/* ---------- (1) Taktart der Stelle ---------- */
+function tktSlotClip(i, s) { const own = R.own && R.own[i]; if (own && S.song && S.song.own && S.song.own[own]) return S.song.own[own]; return S.tracks[i] && S.tracks[i].clips[s] || null; }
+// die Taktart, die in der Matrix bei Schlag b klingt (alle Clips dieselbe ausdrückliche Taktart, anders als S.ts) – sonst null (T1 wie bisher)
+function tktMx(b) {
+  if (!R.playing || R.songPlay) return null;
+  const k = R.runId + ':' + Math.floor(b * 4), now = performance.now();
+  if (k === TKT.mxK && now - TKT.mxT < 120) return TKT.mxV;
+  let ts = null, any = false, anc = -1, ancDr = false, mixed = false;
+  for (let i = 0; i < NT() && !mixed; i++) {
+    const tr = S.tracks[i]; if (!tr || tr.stimme) continue;
+    const vs = visualSlots(i, b); let s = vs.playing;
+    if (vs.queued != null && vs.queued >= 0 && vs.qBeat != null && b >= vs.qBeat - 1e-9) s = vs.queued;
+    if (s == null || s < 0) continue;
+    const c = tktSlotClip(i, s); if (!c || c.audio) continue;
+    const x = c.ts || null; if (!any) { ts = x; any = true; } else if (x !== ts) mixed = true;
+    if (anc < 0 || (isDrum(i) && !ancDr)) { anc = i; ancDr = isDrum(i); }
+  }
+  let v = null;
+  if (any && !mixed && ts && ts !== (S.ts || null)) { const a0 = audCstart(anc, b); v = {ts, L: tsBeats(ts), a0: isNum(a0) ? a0 : 0, i: anc}; }   // nur eine ausdrückliche Clip-Taktart (ohne Feld = 4/4) übertönt die Song-Taktart
+  TKT.mxK = k; TKT.mxT = now; TKT.mxV = v; return v;
+}
+// Einzähler: die Taktart der Clips, die bei Schlag 0 starten (vor dem Start: R.pend) – null: wie bisher
+function tktCountTs() {
+  if (R.songPlay) return (TKT.ci = null);
+  let ts = null, any = false;
+  for (let i = 0; i < NT(); i++) {
+    const tr = S.tracks[i]; if (!tr || tr.stimme) continue;
+    const s = R.pend[i] ? R.pend[i].slot : R.slot[i]; if (s == null || s < 0) continue;
+    const c = tktSlotClip(i, s); if (!c || c.audio) continue;
+    const x = c.ts || null; if (!any) { ts = x; any = true; } else if (x !== ts) return (TKT.ci = null);
+  }
+  return (TKT.ci = any && ts && ts !== (S.ts || null) ? ts : null);
+}
+function tktClickOn(b0) { return !!((R.countIn && TKT.ci && b0 < 0) || tktMx(Math.max(b0, 0) + 1e-6)); }
+// ein Klick je Zählzeit ab dem Anker A (Taktlänge L) mit dem Betonungsmuster der Taktart – dieselben Bedingungen wie t1Clicks
+function tktClickRun(x0, x1, A, ts, L) {
+  const d = tsOf(ts); L = L || d.b;
+  let a = A + Math.floor((x0 - A) / L + 1e-9) * L;
+  for (let g = 0; g < 64 && a < x1 - 1e-9; g++, a += L) {
+    for (let k = 0; k < d.n && k * d.u < L - 1e-9; k++) {
+      const b = a + k * d.u; if (b < x0 - 1e-9 || b >= x1 - 1e-9 || b <= R.lastClick + 1e-9) continue;
+      R.lastClick = b; const lv = d.acc[k];
+      if (b < -1e-9) { if (R.countIn) click(b2t(b), lv === 2, lv === 0); }
+      else if (S.settings.metro || (recClickOn(b) && (rec.vox ? UI.vocClick === 'always' : S.settings.metroInRec)) || recCdClick(b)) click(b2t(b), lv === 2, lv === 0);
+    }
+  }
+}
+function tktPlainRun(x0, x1) {
+  for (let b = Math.ceil(x0 - 1e-9); b < x1 - 1e-9; b++) {
+    if (b <= R.lastClick) continue; R.lastClick = b;
+    if (b < 0) { if (R.countIn) click(b2t(b), ((b % 4) + 4) % 4 === 0); }
+    else if (S.settings.metro || (recClickOn(b) && (rec.vox ? UI.vocClick === 'always' : S.settings.metroInRec)) || recCdClick(b)) click(b2t(b), b % 4 === 0);
+  }
+}
+// Einhänger in t1Clicks: true = erledigt (Einzähler und/oder Matrix in der Taktart der Clips)
+function tktClicks(b0, b1) {
+  if (TKT.inner || R.songPlay) return false;
+  const mx = b1 > 1e-9 ? tktMx(Math.max(b0, 0) + 1e-6) : null, ci = b0 < -1e-9 && R.countIn && TKT.ci;
+  if (!mx && !ci) return false;
+  const rest = (x0, x1) => { if (!tkPlain()) { TKT.inner = true; try { t1Clicks(x0, x1); } finally { TKT.inner = false; } } else tktPlainRun(x0, x1); };
+  if (b0 < -1e-9) { if (ci) tktClickRun(b0, Math.min(b1, 0), -(R.ciB || tsBeats(TKT.ci)), TKT.ci, tsBeats(TKT.ci)); else rest(b0, Math.min(b1, 0)); }
+  if (b1 > 1e-9) { const x0 = Math.max(b0, 0); if (mx) tktClickRun(x0, b1, mx.a0, mx.ts, mx.L); else rest(x0, b1); }
+  return true;
+}
+// Takt.Zählzeit und LED in der Taktart der Clips (Einhänger in t1BarPos); die Takte vor dem Anker zählen in der Song-Taktart
+function tktBarPos(b, mx) {
+  const d = tsOf(mx.ts), L = mx.L, k0 = Math.floor((b - mx.a0) / L + 1e-9), a = mx.a0 + k0 * L;
+  const pre = Math.max(0, Math.round(mx.a0 / (tkPlain() ? 4 : tsBeats(S.ts))));
+  const k = Math.min(d.n - 1, Math.max(0, Math.floor((b - a) / d.u + 1e-9))); let g = 0, p = 0;
+  for (let j = 0; j < d.grp.length; j++) { p += d.grp[j]; if (k < p) { g = j; break; } }
+  return {bar: pre + k0, k, g: d.grp.every(x => x === 1) ? k : g};
+}
+function tktLedCount(ts) { const d = tsOf(ts); return Math.max(1, Math.min(4, d.grp.every(x => x === 1) ? d.n : d.grp.length)); }
+// gestoppt: die Taktart der gewählten Szene (alle Clips gleich), im Song die Song-Taktart
+function tktIdleTs() {
+  if (UI.songView || !S.tracks) return S.ts || '4/4';
+  let ts = null, any = false;
+  for (let i = 0; i < NT(); i++) { const tr = S.tracks[i]; if (!tr || tr.stimme) continue; const c = tr.clips[R.selS]; if (!c || c.audio) continue; const x = c.ts || null; if (!any) { ts = x; any = true; } else if (x !== ts) return S.ts || '4/4'; }
+  return any && ts ? ts : S.ts || '4/4';
+}
+// die Takt-LEDs: so viele sichtbar, wie die Taktart der Stelle Zählzeiten (Gruppen) hat – unsichtbar, nicht entfernt (kein Verschieben)
+function tktLeds(bAud) {
+  if (!UI.leds || !UI.leds.length) return;
+  let ts;
+  if (R.playing) { const mx = tktMx(Math.max(0, bAud)); ts = mx ? mx.ts : bAud < 0 && R.countIn && TKT.ci ? TKT.ci : tTsAt(Math.max(0, bAud)); }
+  else ts = tktIdleTs();
+  const n = tktLedCount(ts); if (n === TKT.ledN) return; TKT.ledN = n;
+  UI.leds.forEach((l, k) => l.classList.toggle('tktx', k >= n));
+}
+// LAUF: eine Seite = ein Takt der Clip-Taktart (bei 1/16T und 1/32 ein halber; über 16 Schritte ein halber Takt)
+function tktLaufPerOf(g, def) {
+  try {
+    const at = ED && ED.rollAt; if (!at) return def;
+    const c = at.own && S.song && S.song.own ? S.song.own[at.own] : at.s >= 0 && S.tracks[at.t] ? S.tracks[at.t].clips[at.s] : null;
+    if (!c || !c.ts) return def;
+    const st = LAUFG[g] || .25; let n = Math.round(clipBarB(c) / st);
+    if (g === '1/16T' || g === '1/32' || n > 16) { const h = n / 2; if (Number.isInteger(h)) n = h; }
+    return n >= 2 ? n : def;
+  } catch (e) { return def; }
+}
+(function tktLaufInit() { try { const base = Object.assign({}, LAUF_PER); for (const g of Object.keys(base)) Object.defineProperty(LAUF_PER, g, {get: () => tktLaufPerOf(g, base[g]), enumerable: true, configurable: true}); } catch (e) { logErr(e); } })();
+/* ---------- (2) Clips umwandeln (falten ins neue Raster) ---------- */
+// jeder Takt anteilig in die neue Taktart (Schlag × LB/LA), auf 1/16 gerastet; gleiche Note auf gleichem Schritt einmal (lauteste)
+function tktFoldNotes(c, toTs, drum) {
+  const LA = clipBarB(c), LB = tsBeats(tsNorm(toTs)), f = LB / LA, bars = Math.max(1, c.len | 0), q = .25, out = [], seen = new Map();
+  for (const n of c.notes || []) {
+    if (n.t >= bars * LA - 1e-9) continue;
+    const b = Math.floor(n.t / LA + 1e-9); let w = Math.round((n.t - b * LA) * f / q) * q; if (w > LB - q + 1e-9) w = LB - q;
+    const t = +(b * LB + w).toFixed(4), key = n.n + '@' + t;
+    const x = Object.assign({}, n, {t, d: +Math.max(drum ? .1 : q / 2, Math.min(n.d * f, bars * LB - t)).toFixed(4)});
+    delete x.o; delete x.born; delete x.bornRun;
+    const k = seen.get(key); if (k != null) { if (x.v > out[k].v) out[k] = x; continue; }
+    seen.set(key, out.length); out.push(x);
+  }
+  return out.sort((a, b) => a.t - b.t || a.n - b.n);
+}
+// die Quelle einer Stelle: eine TKT-Faltung nimmt ihre Quell-Version (kein Falten von Gefaltetem), sonst das, was dort spielt
+function tktSrcOf(song, t, sp, kind) {
+  const c = gr1ClipOf(song, t, sp); if (!c || !c.tkt || !(kind === 'f' ? c.tkt.f : c.tkt.m)) return {v: sp.v, id: sp.id, c};
+  const id = c.tkt.v > 1 ? sx9Find(song, t, sp.s, c.tkt.v) : null;
+  return id ? {v: c.tkt.v, id, c: song.own[id]} : {v: 1, id: null, c: S.tracks[t].clips[sp.s] || null};
+}
+// die Version (t, s) mit Kennung mk bekommt diese Noten (gleiche Kennung = dieselbe Version, kein Stapel); null: kein Platz
+function tktVerPut(song, t, s, srcC, mk, notes, ts, key) {
+  const same = c => c.tkt && c.tkt.v === mk.v && (mk.f ? c.tkt.f === mk.f : c.tkt.m === mk.m && c.tkt.k === mk.k);
+  const tsSet = c => { const n = tsNorm(ts); if (ts !== undefined && (c.ts || null) !== n) { if (n) c.ts = n; else delete c.ts; delete c.lanes; } };
+  for (const q of sx9List(song, t, s)) { const c = song.own[q.id]; if (same(c)) { c.notes = notes; tsSet(c); if (key) c.key = Object.assign({}, key); c.tkt = Object.assign({}, mk); return q.id; } }
+  const v = sx9List(song, t, s).reduce((m, q) => Math.max(m, q.v), 1) + 1;
+  if (v > sx9Max() || ownCount(song) >= OWN_MAX) return null;
+  const c = deep(srcC); delete c.from; delete c.ver; delete c.sf; delete c.gr; delete c.tkt;
+  tsSet(c); if (key) c.key = Object.assign({}, key);
+  c.notes = notes; c.tkt = Object.assign({}, mk); c.from = {t, s, bar: 0}; c.ver = v;
+  const id = ownNewId(song); (song.own || (song.own = {}))[id] = c;
+  return id;
+}
+// [a, b) des Songs in die Taktart der Takte falten (in songEdit); Ergebnis {n, audio, full, own}
+function tktFoldRange(song, a, b) {
+  const res = {n: 0, audio: 0, full: 0, own: 0}, done = new Set();
+  for (let t = 0; t < NT(); t++) {
+    const tr = S.tracks[t]; if (!tr || tr.stimme) continue;
+    for (const sp of gr2Spans(song, t, a, b)) {
+      const want = tsNorm(tsAtBar(sp.a)), src = tktSrcOf(song, t, sp, 'f'); if (!src.c) continue;
+      if (src.c.audio) { res.audio++; continue; }
+      if ((src.c.ts || null) === want) { if (sp.id !== src.id && gr1ClipOf(song, t, sp) && gr1ClipOf(song, t, sp).tkt && gr1ClipOf(song, t, sp).tkt.f) { sx9Set(song, t, sp.a, sp.b, src.id); res.n++; } continue; }
+      const id = tktVerPut(song, t, sp.s, src.c, {f: want || '4/4', v: src.v}, tktFoldNotes(src.c, want || '4/4', isDrum(t)), want);
+      if (!id) { res.full++; continue; }
+      if (id !== sp.id) sx9Set(song, t, sp.a, sp.b, id);
+      res.n++;
+    }
+    const lane = song.lanes[t]; if (!lane) continue;
+    for (let x = Math.max(0, a); x < Math.min(b, song.bars); x++) {          // eigene Clips (keine Versionen): an Ort und Stelle
+      const o = laneOriginAt(lane, x); if (!o.own || sx9Ver(song, o.own) || done.has(o.own)) continue; done.add(o.own);
+      const c = song.own && song.own[o.own], want = tsNorm(tsAtBar(x)); if (!c || c.audio) continue;
+      if ((c.ts || null) === want) continue;
+      c.notes = tktFoldNotes(c, want || '4/4', isDrum(t)); if (want) c.ts = want; else delete c.ts; delete c.lanes; res.own++; res.n++;
+    }
+  }
+  return res;
+}
+const tktFoldTxt = r => (r.n ? r.n + (r.n === 1 ? ' Clip' : ' Clips') + ' umgewandelt' : 'Nichts umzuwandeln') + (r.audio ? ' · Gesang/Audio bleibt' : '') + (r.full ? ' · ' + r.full + ' ohne Platz (höchstens ' + sx9Max() + ' Versionen)' : '');
+// die Clips der Teile (Marken-IDs) in deren Taktart falten – ein ↶
+function tktFoldMarks(ids) {
+  const song = S.song; if (!song || !song.bars) return null;
+  if (rec.state !== 'off' || R.songRec) { toast('Erst Aufnahme beenden'); return null; }
+  let res = null;
+  songEdit('Clips umwandeln', sg => {
+    res = {n: 0, audio: 0, full: 0, own: 0};
+    for (const id of ids) { const m = sg.marks.find(x => x.id === id); if (!m) continue; const r = tktFoldRange(sg, m.a, Math.min(sg.bars, m.a + m.len)); for (const k in res) res[k] += r[k]; gr2Restart(sg, m.a); gr2Restart(sg, m.a + m.len); }
+  });
+  if (!res) res = {n: 0, audio: 0, full: 0, own: 0};
+  toast(tktFoldTxt(res), res.n ? songUndoAct() : null);
+  return res;
+}
+// ganzer Song (Song-Taktart gewechselt): Song-Versionen; ohne Song die Szenen-Clips (an Ort und Stelle, ein ↶ wie T1)
+function tktFoldSong() {
+  if (rec.state !== 'off' || R.songRec) { toast('Erst Aufnahme beenden'); return null; }
+  const song = S.song; let res = null;
+  if (song && song.bars) {
+    songEdit('Clips umwandeln', sg => { res = tktFoldRange(sg, 0, sg.bars); for (const m of sg.marks) if (m.ts) { gr2Restart(sg, m.a); gr2Restart(sg, m.a + m.len); } });
+    if (!res) res = {n: 0, audio: 0, full: 0, own: 0};
+  } else {
+    const before = t1Snap(), want = tsNorm(S.ts); res = {n: 0, audio: 0, full: 0, own: 0};
+    S.tracks.forEach((tr, t) => { if (tr.stimme) return; tr.clips.forEach((c, s) => { if (!c) return; if (c.audio) { res.audio++; return; } if ((c.ts || null) === want) return; c.notes = tktFoldNotes(c, want || '4/4', isDrum(t)); if (want) c.ts = want; else delete c.ts; delete c.lanes; clipChanged(t, s); res.n++; }); });
+    if (res.n) { undoPush({kind: 'ts', before, label: 'Clips umwandeln'}); markDirty(); UI.dirty.all = true; }
+  }
+  toast(tktFoldTxt(res), res.n ? {label: 'Rückgängig', fn: () => undo()} : null);
+  return res;
+}
+// was beim Song umzuwandeln wäre (Clips in einer anderen Taktart als ihre Stelle)
+function tktFoldCand() {
+  const song = S.song, want = tsNorm(S.ts);
+  if (song && song.bars) { for (let t = 0; t < NT(); t++) { if (S.tracks[t].stimme) continue; for (const sp of gr2Spans(song, t, 0, song.bars)) { const c = tktSrcOf(song, t, sp, 'f').c; if (c && !c.audio && (c.ts || null) !== tsNorm(tsAtBar(sp.a))) return true; } } return false; }
+  return S.tracks.some(tr => !tr.stimme && tr.clips.some(c => c && !c.audio && (c.ts || null) !== want));
+}
+// Meldung nach dem Taktartwechsel eines Teils (Marken-Blatt): [Clips umwandeln] [Für alle „Teil“] [↶]
+function tktMarkTsToast(id, nm, same) {
+  const m = S.song && S.song.marks.find(x => x.id === id); if (!m) return;
+  const ids = () => (S.song.marks.find(x => x.id === id) ? [id] : []);
+  const acts = [{label: 'Clips umwandeln', fn: () => tktFoldMarks(ids())}];
+  if (same) acts.push({label: 'Für alle „' + nm + '“', fn: () => { if (setMarkTs(id, m.ts || null, true)) { const all = m.part ? S.song.marks.filter(x => x.part === m.part).map(x => x.id) : [id]; toast(nm + ' überall: Taktart ' + (m.ts || S.ts || '4/4'), [{label: 'Clips umwandeln', fn: () => tktFoldMarks(all)}, songUndoAct()].filter(Boolean)); } }});
+  const u = songUndoAct(); if (u) acts.push(u);
+  toast(nm + ': Taktart ' + (m.ts || S.ts || '4/4'), acts);
+}
+// Meldung nach dem Wechsel der Song-Taktart (Tempo-Blatt): [Clips umwandeln] [↶]
+function tktSongTsToast(ts) {
+  const u = {label: '↶', fn: () => undo()};
+  toast('Taktart ' + (ts || '4/4'), tktFoldCand() ? [{label: 'Clips umwandeln', fn: () => tktFoldSong()}, u] : {label: '↶ Rückgängig', fn: () => undo()});
+}
+// normClip / cleanClip (Laden, Kopie): clip.tkt – Funktions-Deklarationen (normalizeProject läuft schon beim Laden des Skripts)
+function tktClipNorm(c, out) {
+  const g = c && c.tkt; if (!g || typeof g !== 'object') return;
+  const o = {v: isNum(g.v) && g.v >= 1 ? Math.min(8, Math.round(g.v)) : 1};
+  if (typeof g.f === 'string' && tsDefs()[g.f]) o.f = g.f;
+  else if (g.m === 'moll' || g.m === 'dur') { o.m = g.m; o.k = g.k === 'p' ? 'p' : 'g'; }
+  else return;
+  out.tkt = o;
+}
+function tktClipClean(c, o) { if (c && c.tkt) o.tkt = Object.assign({}, c.tkt); }
+/* ---------- (3) Dur ↔ Moll ---------- */
+const TKT_MAJ = [0, 2, 4, 5, 7, 9, 11], TKT_MIN = [0, 2, 3, 5, 7, 8, 10];
+const tktIsMinor = k => !!k && ['aeolian', 'dorian', 'phrygian', 'locrian'].includes(k.scale);
+// die Abbildung: Quelle = Projekt-Tonart; k 'g' gleichnamig (C → c), 'p' parallel (C → a, a → C)
+function tktModePlan(key, kind) {
+  const minor = tktIsMinor(key), shift = kind === 'p' ? (minor ? 3 : -3) : 0;
+  return {minor, src: minor ? TKT_MIN : TKT_MAJ, tgt: minor ? TKT_MAJ : TKT_MIN, shift, root: key.root, kind: kind === 'p' ? 'p' : 'g',
+    toRoot: PCx(key.root + shift), toScale: minor ? 'ionian' : 'aeolian', to: minor ? 'dur' : 'moll'};
+}
+// neue Tonhöhe der Note n; raised: Leitton über der Dominante (Dur → Moll: harmonisch Moll, bleibt)
+function tktMapNote(P, n, raised) {
+  const rel = PCx(n - P.root); let k = P.src.indexOf(rel);
+  if (k < 0 && P.minor && rel === 11) k = 6;                              // Moll: der große Leitton zählt als 7. Stufe
+  if (k >= 0) { let to = P.tgt[k]; if (k === 6 && (P.minor || raised)) to = 11; return n + (to - rel) + P.shift; }
+  if (!P.shift && P.tgt.includes(rel)) return n;                           // Zwischenton, der in der Ziel-Tonleiter liegt: bleibt
+  const kb = P.src.indexOf(PCx(rel - 1));                                  // sonst wie der Nachbar darunter
+  return n + (kb >= 0 ? P.tgt[kb] - P.src[kb] : 0) + P.shift;
+}
+// Leitton-Stellen einer Notenliste (Dur → Moll): Septime mit Dominant-Klang (G oder D gleichzeitig, ohne Grundton) oder Auflösung zum Grundton
+function tktRaised(P, notes) {
+  const out = new Set(); if (P.minor) return out;
+  const rel = n => PCx(n.n - P.root), ns = notes.slice().sort((a, b) => a.t - b.t);
+  ns.forEach((n, j) => {
+    if (rel(n) !== 11) return;
+    let dom = false, ton = false;
+    for (const m of ns) { if (m === n || m.t >= n.t + n.d - 1e-6 || m.t + m.d <= n.t + 1e-6) continue; const r = rel(m); if (r === 7 || r === 2 || r === 5) dom = true; if (r === 0) ton = true; }
+    const nx = ns.slice(j + 1).find(m => m.t > n.t + 1e-6);
+    const up = nx && rel(nx) === 0 && nx.n > n.n && nx.t - (n.t + n.d) <= 1;
+    if ((dom && !ton) || up) out.add(n);
+  });
+  return out;
+}
+function tktMapNotes(P, notes) { const up = tktRaised(P, notes); return notes.map(n => Object.assign({}, n, {n: clamp(tktMapNote(P, n.n, up.has(n)), 0, 127)})); }
+// ein Akkord-Ziel (Träger, Akkord-Zeile): Töne abbilden, Grundton und Art neu (die Dominante bleibt Dur)
+function tktMapTarget(P, tg) {
+  if (!tg || typeof tg !== 'object' || !isNum(tg.root)) return tg;
+  const rr = PCx(tg.root - P.root), raised = !P.minor && (rr === 7 || rr === 11), pc = x => PCx(tktMapNote(P, 60 + PCx(x), raised));
+  const o = carrierCopy(tg); o.root = pc(tg.root); o.bass = pc(isNum(tg.bass) ? tg.bass : tg.root);
+  if (tg.kind === 'chord' && tg.quality) {
+    const C = Harmony.CHORDS.find(c => c.q === tg.quality);
+    if (C) { const iv = C.iv.map(x => PCx(pc(tg.root + x) - o.root)).sort((a, b) => a - b).join(','), hit = Harmony.CHORDS.find(c => c.iv.slice().sort((a, b) => a - b).join(',') === iv); o.quality = hit ? hit.q : (iv.includes('3') ? 'min' : 'maj'); }
+    o.name = Harmony.chordName(o.root, o.quality, o.bass);
+  } else o.name = Harmony.NAMES[o.root];
+  if (isNum(tg.rootNote)) o.rootNote = clamp(tktMapNote(P, tg.rootNote, raised), 0, 127);
+  if (Array.isArray(tg.keys)) o.keys = tg.keys.map(n => clamp(tktMapNote(P, n, raised), 0, 127));
+  return o;
+}
+function tktMapRow(P, r) { if (r && Array.isArray(r.ch)) for (const c of r.ch) if (c.tg) c.tg = tktMapTarget(P, c.tg); }
+// Stand für ↶ und A/B: Projekt-Tonart + Song + Teile/Akkord-Zeilen
+function tktModeSnap() { return JSON.stringify({k: S.key, s: songSnapshot(), p: partSnap()}); }
+function tktModePut(val) {
+  const o = JSON.parse(val); restoreSong(JSON.parse(o.s)); partRestore(JSON.parse(o.p)); setProjectKey(o.k);
+  songChanged(); try { songResync(true); } catch (e) { logErr(e); } UI.dirty.all = true; markDirty();
+}
+function tktUndoState(e) { return tktModeSnap(); }
+function tktUndoApply(e, val) { tktModePut(val); }
+const tktKeyTxt = (root, minor) => { const n = noteNames()[PCx(root)] || ''; return minor ? n.toLowerCase() + '-Moll' : n + '-Dur'; };
+// Dur ↔ Moll für den ganzen Song: Clips → Versionen, Song-Melodie, Träger, Akkord-Zeilen, Projekt-Tonart; ein ↶ (Art 'tkt')
+function tktModeDo(kind) {
+  const song = S.song; if (!song || !song.bars) { toast('Erst einen Song bauen'); return null; }
+  if (rec.state !== 'off' || R.songRec) { toast('Erst Aufnahme beenden'); return null; }
+  const P = tktModePlan(S.key, kind), before = tktModeSnap(), key = {root: P.toRoot, scale: P.toScale, src: 'user'};
+  const res = {n: 0, dr: 0, audio: 0, full: 0, mel: 0, chords: 0, from: tktKeyTxt(P.root, P.minor), to: tktKeyTxt(P.toRoot, !P.minor)};
+  const done = new Set();
+  for (let t = 0; t < NT(); t++) {
+    const tr = S.tracks[t]; if (!tr) continue;
+    if (tr.stimme) { if (tr.clips.some(Boolean)) res.audio++; continue; }
+    if (isDrum(t) || percIs(tr)) { res.dr++; continue; }
+    for (const sp of gr1Spans(song, t, 0, song.bars)) {
+      const cur = gr1ClipOf(song, t, sp); if (!cur) continue;
+      if (cur.audio) { res.audio++; continue; }
+      const src = cur.tkt && cur.tkt.m === P.to && cur.tkt.k === P.kind ? tktSrcOf(song, t, sp, 'm') : {v: sp.v, id: sp.id, c: cur};   // dasselbe nochmal: von der Quelle
+      if (!src.c) continue;
+      const id = tktVerPut(song, t, sp.s, src.c, {m: P.to, k: P.kind, v: src.v}, tktMapNotes(P, src.c.notes || []), undefined, key);
+      if (!id) { res.full++; continue; }
+      if (id !== sp.id) sx9Set(song, t, sp.a, sp.b, id);
+      res.n++;
+    }
+    const lane = song.lanes[t];
+    if (lane) for (let x = 0; x < song.bars; x++) {
+      const o = laneOriginAt(lane, x); if (!o.own || sx9Ver(song, o.own) || done.has(o.own)) continue; done.add(o.own);
+      const c = song.own && song.own[o.own]; if (!c || c.audio) continue; c.notes = tktMapNotes(P, c.notes || []); c.key = Object.assign({}, key); res.n++;
+    }
+  }
+  for (const k of Object.keys(song.mel || {})) {
+    const t = +k, M = song.mel[k]; if (!M || !Array.isArray(M.notes) || !M.notes.length || isDrum(t) || (S.tracks[t] && percIs(S.tracks[t]))) continue;
+    M.notes = tktMapNotes(P, M.notes); if (M.key) M.key = Object.assign({}, M.key, {root: key.root, scale: key.scale}); res.mel++;
+  }
+  for (const c of song.carrier || []) if (c.target) { c.target = tktMapTarget(P, c.target); res.chords++; }
+  for (const sc of S.scenes || []) if (sc && sc.chords) { tktMapRow(P, sc.chords); res.chords += sc.chords.ch.length; }
+  for (const pt of S.parts || []) { if (!pt) continue; if (pt.chords) { tktMapRow(P, pt.chords); res.chords += pt.chords.ch.length; } if (pt.xp && pt.xp.tg) pt.xp.tg = tktMapTarget(P, pt.xp.tg); }
+  setProjectKey({root: key.root, scale: key.scale});
+  songTidy(song);
+  const after = tktModeSnap();
+  if (after === before) return res;
+  undoPush({kind: 'tkt', before, label: res.from + ' → ' + res.to});
+  songChanged(); try { songResync(true); } catch (e) { logErr(e); } UI.dirty.all = true; markDirty();
+  TKT.ab = {a: before, b: after, from: res.from, to: res.to};
+  return res;
+}
+// A (vorher) / B (nachher) im offenen Blatt – nur zum Vergleichen (kein ↶-Schritt); geht, solange nichts anderes geändert wurde
+function tktModeAB(ab) {
+  const A = TKT.ab; if (!A) return false;
+  const cur = tktModeSnap(); if (cur !== A.a && cur !== A.b) { TKT.ab = null; return false; }
+  const want = ab === 'a' ? A.a : A.b; if (cur === want) return true;
+  tktModePut(want); return true;
+}
+const tktModeWhich = () => { const A = TKT.ab; if (!A) return null; const cur = tktModeSnap(); return cur === A.a ? 'a' : cur === A.b ? 'b' : null; };
+function tktModeOpen() {
+  if (!S.song || !S.song.bars) { toast('Erst einen Song bauen'); return false; }
+  openPop(null, p => {
+    p.classList.add('msheet', 'tktmode'); guardTouch(p);
+    const paint = () => {
+      if (!S.song || !S.song.bars) { closePop(); return; }
+      const w = tktModeWhich(); if (!w) TKT.ab = null;
+      const P0 = tktModePlan(S.key, TKT.mode.k), A = TKT.ab, minor = tktIsMinor(S.key);
+      const g = tktModePlan(S.key, 'g'), pa = tktModePlan(S.key, 'p'), voc = S.tracks.some(t => t.stimme && t.clips.some(Boolean));
+      const B = (k, html, on, aria, dis) => `<button class="rb ms-b${on ? ' on' : ''}" data-tk="${k}" aria-pressed="${!!on}" aria-label="${esc(aria)}"${dis ? ' disabled' : ''}>${html}</button>`;
+      p.innerHTML = `<div class="ms-h"><b>DUR ↔ MOLL</b><span>· ganzer Song · jetzt ${esc(tktKeyTxt(S.key.root, minor))}</span><button class="rb ms-x" data-tk="x" aria-label="Schließen">✕</button></div>` +
+        `<div class="ms-r tkt-r">` + B('k:g', 'gleichnamig<small>' + esc(tktKeyTxt(g.toRoot, !minor)) + '</small>', TKT.mode.k === 'g', 'Gleichnamige Tonart ' + tktKeyTxt(g.toRoot, !minor)) +
+        B('k:p', 'parallel<small>' + esc(tktKeyTxt(pa.toRoot, !minor)) + '</small>', TKT.mode.k === 'p', 'Parallele Tonart ' + tktKeyTxt(pa.toRoot, !minor)) + `</div>` +
+        `<div class="ms-r tkt-r">` + B('go', (minor ? 'Moll → Dur' : 'Dur → Moll') + '<small>' + esc(tktKeyTxt(P0.toRoot, !minor)) + '</small>', false, 'Umwandeln nach ' + tktKeyTxt(P0.toRoot, !minor)) + `</div>` +
+        `<div class="ms-r tkt-r">` + B('a', 'A<small>' + esc(A ? A.from : 'vorher') + '</small>', w === 'a', 'A: vorher', !A) + B('b', 'B<small>' + esc(A ? A.to : 'nachher') + '</small>', w === 'b', 'B: nachher', !A) +
+        B('play', R.playing && R.songPlay ? '■ Stopp' : '▶ Hören', false, R.playing ? 'Stopp' : 'Song hören') + `</div>` +
+        `<p class="gr1-tip">${minor ? 'Moll → Dur: die kleine Terz, Sexte und Septime werden groß.' : 'Dur → Moll: Terz, Sexte und Septime eine Stufe tiefer; über der Dominante bleibt der Leitton (harmonisch Moll), Akkorde wandern mit (V bleibt Dur).'} ` +
+        `Melodie, Akkorde, Bass, Song-Melodie, Träger und Akkord-Zeilen – als neue Versionen (das Original bleibt v1). Drums bleiben.` + (voc ? ' Gesang/Audio wird nicht umgerechnet.' : '') + `</p>`;
+    };
+    paint(); p._paint = paint;
+    onTap(p, b => {
+      const a = b.dataset.tk; if (a === 'x') { closePop(); return; }
+      if (a.startsWith('k:')) { TKT.mode.k = a.slice(2); haptic('tick'); }
+      else if (a === 'go') { const r = tktModeDo(TKT.mode.k); if (r && r.n + r.mel + r.chords) { haptic('snap'); toast(r.from + ' → ' + r.to + ': ' + r.n + ' Clips' + (r.chords ? ' · ' + r.chords + ' Akkorde' : '') + (r.dr ? ' · Drums bleiben' : '') + (r.audio ? ' · Gesang nicht umgerechnet' : '') + (r.full ? ' · ' + r.full + ' ohne Platz' : '') + (R.playing && R.songPlay ? ' – ab dem nächsten Takt' : ''), songUndoAct()); } else if (r) toast('Hier gibt es nichts umzuwandeln'); }
+      else if (a === 'a' || a === 'b') { if (tktModeAB(a)) { haptic('tick'); toast(a === 'a' ? 'A: vorher' : 'B: nachher'); } }
+      else if (a === 'play') { if (R.playing) stop(); else songPlayStart(0); }
+      if (UI.pop && UI.pop.el === p) { paint(); popDock(p); }
+    }, 'button[data-tk]');
+  }, {name: 'tktmode'});
+  popDock(UI.pop && UI.pop.el);
+  return true;
+}
+// Menü › Song: [Dur ↔ Moll …] in die Zeile „Song“ (neben Remix/Transponieren), sonst eigene Zeile
+function tktMenuRow(sec, row, btn) {
+  if (!(S.song && S.song.bars)) return;
+  const b = btn('Dur ↔ Moll …'); b.setAttribute('aria-label', 'Ganzen Song nach Moll oder Dur umwandeln');
+  on(b, 'click', () => { closeMenu(); tktModeOpen(); });
+  const x = sec.querySelector('button[aria-label="Ganzen Song transponieren"]');
+  if (x && x.parentNode) x.parentNode.appendChild(b); else row(sec, 'Song', b);
+}
+/* ---------- (4) Hall-Räume: Faltung + Öltank (IR + FDN) im vorhandenen Hall-Bus ---------- */
+const TKT_ROOMS = [
+  {id: '', name: 'Standard', tip: 'der eingebaute Hall – alle Regler wirken'},
+  {id: 'studio', name: 'Studio', tip: 'kleiner Aufnahmeraum · 0,7 s', ir: {decay: .7, size: .25, damp: .35, bass: .9, seed: 11}},
+  {id: 'kammer', name: 'Kammer', tip: 'Hallkammer · 1,5 s, dicht', ir: {decay: 1.5, size: .45, damp: .25, bass: 1, seed: 23}},
+  {id: 'saal', name: 'Saal', tip: 'Konzertsaal · 2,4 s, warm', ir: {decay: 2.4, size: .75, damp: .45, bass: 1.15, seed: 31}},
+  {id: 'kirche', name: 'Kirche', tip: 'Steinkirche · 4,5 s, dunkel', ir: {decay: 4.5, size: .95, damp: .55, bass: 1.3, seed: 47}},
+  {id: 'oel', name: 'Öltank', tip: 'riesiger Betontank, extrem langer Nachhall'}];
+const TKT_OEL_LEN = [8, 30, 75];
+const tktRoom = id => TKT_ROOMS.find(r => r.id === id) || TKT_ROOMS[0];
+// normFxBus (läuft schon beim Laden des Skripts: nur Literale, keine Konstanten dieses Blocks)
+function tktFxNorm(h, d) {
+  if (!h || !d) return;
+  if (['studio', 'kammer', 'saal', 'kirche', 'oel'].includes(h.tktRaum)) d.tktRaum = h.tktRaum;
+  if (h.tktLen === 8 || h.tktLen === 75) d.tktLen = h.tktLen;
+}
+const tktOelLen = h => (h && (h.tktLen === 8 || h.tktLen === 75) ? h.tktLen : 30);
+function tktRnd(seed) { let a = seed >>> 0 || 1; return () => { a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+// Öltank-IR (2,6 s + 45 ms Vorverzögerung): diffuses Rauschen mit tiefem Schwerpunkt (FX.irGenerator), Flatterecho zwischen parallelen
+// Betonwänden (52,5 ms), unharmonische Tank-Moden 41–700 Hz; Energie 1. Der lange Nachhall kommt aus dem FDN dahinter.
+function tktOelIR(sr, seed) {
+  const pre = Math.round(.045 * sr), n = Math.round(2.6 * sr), L = new Float32Array(pre + n), Rr = new Float32Array(pre + n);
+  const P = FX.irParams({decay: 2.6, size: 1, damp: .85, bass: 1.5, seed: seed || 75, maxLen: 2.6});
+  const bl = new Float32Array(FX.irLength(sr, P)), br = new Float32Array(bl.length);
+  const g = FX.irGenerator(sr, P, [bl, br]); let r; do { r = g.next(); } while (!r.done);
+  for (let i = 0; i < bl.length && pre + i < L.length; i++) { L[pre + i] = bl[i] * r.value; Rr[pre + i] = br[i] * r.value; }
+  const rnd = tktRnd((seed || 75) * 7919), fl = .0525 * sr;
+  for (let k = 1; k * fl < n; k++) {
+    const a = .5 * Math.exp(-k * .0525 / .55) * (k & 1 ? 1 : -1);
+    const iL = pre + Math.round(k * fl + (rnd() - .5) * .002 * sr), iR = pre + Math.round(k * fl * 1.013 + (rnd() - .5) * .002 * sr);
+    for (let j = 0; j < 24; j++) { const w = Math.exp(-j / 6) * .2; if (iL + j < L.length) L[iL + j] += a * w; if (iR + j < Rr.length) Rr[iR + j] += a * w; }
+  }
+  for (const f0 of [41.2, 58.7, 87.3, 124.6, 131.9, 176.4, 233.1, 262.8, 349.7, 466.2, 523.9, 702.4]) {
+    const f = f0 * (1 + (rnd() - .5) * .01), amp = .012 * Math.pow(125 / Math.max(f, 60), .8), tau = 2.6 / 6.9 * (f < 200 ? 1.6 : 1), phL = rnd() * 6.283, phR = rnd() * 6.283, w = 6.2832 * f / sr;
+    for (let i = 0; i < n; i++) { const e = amp * Math.exp(-i / sr / tau) * Math.min(1, i / (.08 * sr)); L[pre + i] += e * Math.sin(w * i + phL); Rr[pre + i] += e * Math.sin(w * i + phR); }
+  }
+  const fade = Math.round(.35 * sr); let en = 0;
+  for (let i = 0; i < L.length; i++) { const k = L.length - i; if (k < fade) { L[i] *= k / fade; Rr[i] *= k / fade; } en += L[i] * L[i] + Rr[i] * Rr[i]; }
+  const gn = Math.sqrt(2 / en); for (let i = 0; i < L.length; i++) { L[i] *= gn; Rr[i] *= gn; }
+  return [L, Rr];
+}
+// die IR eines Raums (Cache je Raum und Abtastrate: das Offline-Render bekommt sie sofort)
+function tktIR(id, sr) {
+  const key = id + '|' + sr; let x = TKT.irc.get(key); if (x) return x;
+  const T0 = performance.now(); let ch;
+  if (id === 'oel') ch = tktOelIR(sr, 75);
+  else {
+    const R0 = tktRoom(id), P = FX.irParams(Object.assign({maxLen: 6}, R0.ir)), L = new Float32Array(FX.irLength(sr, P)), Rr = new Float32Array(L.length);
+    const g = FX.irGenerator(sr, P, [L, Rr]); let r; do { r = g.next(); } while (!r.done);
+    for (let i = 0; i < L.length; i++) { L[i] *= r.value; Rr[i] *= r.value; }
+    ch = [L, Rr];
+  }
+  x = {ch, ms: performance.now() - T0, bytes: ch[0].length * 8, sec: ch[0].length / sr};
+  TKT.irc.set(key, x); if (TKT.irc.size > 8) TKT.irc.delete(TKT.irc.keys().next().value);
+  return x;
+}
+// FDN: 4 Verzögerungen (149–297 ms), Householder-Mischung (I − ½·J), je Leitung Kuhschwanz tief/hoch + Abkling-Gewinn; nur native Knoten
+const TKT_FDN_D = [.1493, .1931, .2417, .2971];
+function tktFdn(c) {
+  const F = {in: c.createGain(), out: c.createChannelMerger(2), sum: c.createGain(), neg: c.createGain(), L: []};
+  F.neg.gain.value = -.5; F.sum.connect(F.neg);
+  TKT_FDN_D.forEach((dt, k) => {
+    const d = c.createDelay(.35), ls = c.createBiquadFilter(), hs = c.createBiquadFilter(), g = c.createGain(), o = c.createGain();
+    d.delayTime.value = dt; ls.type = 'lowshelf'; ls.frequency.value = 160; hs.type = 'highshelf'; hs.frequency.value = 3500; g.gain.value = 0;
+    F.in.connect(d); d.connect(ls); ls.connect(hs); hs.connect(g); g.connect(d); g.connect(F.sum); F.neg.connect(d);
+    o.gain.value = k < 2 ? 1 : -1; g.connect(o); o.connect(F.out, 0, k & 1);
+    F.L.push({dt, d, ls, hs, g});
+  });
+  // mid: RT60 bei 1 kHz (die Kuhschwanz-Übergänge kosten dort etwas: gerechnet wird mit 1,22 × mid, gemessen), lo: Tiefen, hi: Höhen
+  F.set = (mid, lo, hi, t) => { t = t == null ? c.currentTime : t; const m = mid * 1.22; for (const x of F.L) {
+    x.g.gain.setTargetAtTime(Math.pow(10, -3 * x.dt / m), t, .02);
+    x.ls.gain.setTargetAtTime(Math.max(0, -60 * x.dt * (1 / lo - 1 / m)), t, .02); x.hs.gain.setTargetAtTime(Math.min(0, -60 * x.dt * (1 / hi - 1 / m)), t, .02); } };
+  F.mute = t => { for (const x of F.L) { x.g.gain.cancelScheduledValues(t); x.g.gain.setValueAtTime(0, t); } };
+  return F;
+}
+const TKT_OEL_OUT = .4;                                                   // Öltank: früher Pegel wie ein Standard-Hall (gemessen, −8 dB)
+// der Raum-Zweig eines Kontexts: in → Faltung (+ FDN) → Bass-Cut → Ton → out → hallRet
+function tktHallBuild(c) {
+  const X = {ctx: c, in: c.createGain(), mix: c.createGain(), hp: c.createBiquadFilter(), lp: c.createBiquadFilter(), out: c.createGain(), cv: null, room: '', len: 0, on: false, pre: null, hall: null, fdn: null, fIn: null, fOut: null};
+  X.in.channelCount = 1; X.in.channelCountMode = 'explicit';
+  X.hp.type = 'highpass'; X.lp.type = 'lowpass'; X.hp.Q.value = .5; X.lp.Q.value = .5;
+  X.mix.connect(X.hp); X.hp.connect(X.lp); X.lp.connect(X.out);
+  TKT.hxm.set(c, X); return X;
+}
+function tktHallIn(X, id) {
+  const c = X.ctx, ir = tktIR(id, c.sampleRate), b = c.createBuffer(2, ir.ch[0].length, c.sampleRate);
+  b.copyToChannel(ir.ch[0], 0); b.copyToChannel(ir.ch[1], 1);
+  if (R.playing && c === AU.ctx && !(typeof OfflineAudioContext === 'function' && c instanceof OfflineAudioContext)) tickAhead(.35);                            // das Setzen des Puffers blockiert kurz
+  const cv = c.createConvolver(); cv.normalize = false; cv.buffer = b;
+  const gi = c.createGain(), go = c.createGain(), t = c.currentTime + .01; gi.gain.value = 0; gi.gain.setValueAtTime(1, t);
+  X.in.connect(gi); gi.connect(cv); cv.connect(go); go.connect(X.mix);
+  const old = X.cv; X.cv = {cv, gi, go, sec: b.duration};
+  if (old) { old.gi.gain.setValueAtTime(0, t); setTimeout(() => { try { old.gi.disconnect(); old.cv.disconnect(); old.go.disconnect(); } catch (e) {} }, (old.sec + .3) * 1000); }   // altes Ende klingt aus
+  return X.cv;
+}
+function tktHallRoute(X, on) {
+  const std = AU.hallKind === 'worklet' ? AU.hall : AU.hall && AU.hall.input;
+  if (on) {
+    if (X.on && X.pre === AU.hallPre && X.hall === AU.hall) return;
+    if (std) { try { AU.hallPre.disconnect(std); } catch (e) {} }
+    if (X.pre !== AU.hallPre) { try { AU.hallPre.connect(X.in); } catch (e) { logErr(e); } }
+    if (!X.on || X.ret !== AU.hallRet) { try { X.out.connect(AU.hallRet); } catch (e) { logErr(e); } X.ret = AU.hallRet; }
+    X.on = true; X.pre = AU.hallPre; X.hall = AU.hall;
+  } else {
+    if (!X.on) return;
+    try { X.pre.disconnect(X.in); } catch (e) {}
+    if (std) { try { AU.hallPre.connect(std); } catch (e) { logErr(e); } }
+    X.on = false; X.pre = null;                                           // der Raum klingt über hallRet aus (der Ausgang bleibt verbunden)
+  }
+}
+// Einhänger am Ende von applyHall: der gewählte Raum (oder der eingebaute Hall) im selben Bus
+function tktHallApply(h, commit, t) {
+  const c = AU.ctx; if (!c || !AU.hallPre || !AU.hallRet) return;
+  const id = (h && h.tktRaum) || ''; let X = TKT.hxm.get(c) || null;
+  if (!id) { if (X) tktHallRoute(X, false); return; }
+  if (!X) X = tktHallBuild(c);
+  if (X.clrT && c.currentTime < X.clrT) return;                            // gerade geleert (tktHallClear baut gleich neu)
+  t = t == null ? c.currentTime : t;
+  X.hp.frequency.setTargetAtTime(clamp(h.lowcut || 90, 10, 600), t, .02); X.lp.frequency.setTargetAtTime(clamp(h.tone || 12000, 500, 20000), t, .02);
+  const len = id === 'oel' ? tktOelLen(h) : 0;
+  if (X.room !== id) {
+    tktHallIn(X, id); X.room = id;
+    if (id === 'oel' && !X.fdn) { X.fdn = tktFdn(c); X.fIn = c.createGain(); X.fOut = c.createGain(); X.cvTap = null; X.fIn.connect(X.fdn.in); X.fdn.out.connect(X.fOut); X.fOut.connect(X.mix); }
+    if (X.fdn) { if (X.cvTap) { try { X.cvTap.disconnect(X.fIn); } catch (e) {} X.cvTap = null; } if (id === 'oel') { X.cv.go.connect(X.fIn); X.cvTap = X.cv.go; } else X.fdn.mute(t); }
+    X.len = 0;
+  }
+  if (id === 'oel' && X.len !== len) { X.fdn.set(len, len * 1.5, Math.max(1.5, len * .3), t); X.len = len; }
+  X.mix.gain.setTargetAtTime(id === 'oel' ? TKT_OEL_OUT : 1, t, .02);
+  tktHallRoute(X, true);
+}
+// Panik / zweites ■: der Raum verstummt (FDN-Rückkopplung 0, Faltung weg); nach 400 ms baut tktHallApply ihn frisch (gleiche IR)
+function tktHallClear() {
+  const c = AU.ctx, X = c && TKT.hxm.get(c); if (!X || !X.room || !X.cv) return;
+  const t = c.currentTime, o = X.cv;
+  o.gi.gain.cancelScheduledValues(t); o.gi.gain.setValueAtTime(0, t); o.go.gain.setTargetAtTime(0, t, .01);
+  setTimeout(() => { try { o.gi.disconnect(); o.cv.disconnect(); o.go.disconnect(); } catch (e) {} }, 300);
+  X.cv = null; X.cvTap = null; X.room = ''; X.len = 0; X.clrT = t + .35;
+  if (X.fdn) X.fdn.mute(t);
+  clearTimeout(X.clrTo); X.clrTo = setTimeout(() => { X.clrT = 0; if (AU.ctx === c) tktHallApply(S.fxBus.hall); }, 400);
+}
+// Raum wählen (ein ↶ wie jeder Effekt-Regler)
+function tktSetRoom(id, len) {
+  const h = S.fxBus.hall, before = fxSnapshot();
+  if (id != null) { if (id) h.tktRaum = id; else delete h.tktRaum; }
+  if (len != null) { if (TKT_OEL_LEN.includes(len) && len !== 30) h.tktLen = len; else delete h.tktLen; }
+  S.fxBus = normFxBus(S.fxBus); applyHall(S.fxBus.hall, true);
+  const r = tktRoom(S.fxBus.hall.tktRaum || '');
+  fxUndo.commit(before, 'Hall-Raum ' + r.name + (r.id === 'oel' ? ' ' + tktOelLen(S.fxBus.hall) + ' s' : ''));
+  if (R.editor === 'synth' || R.editor === 'drum') { try { for (const f of ED.refreshers || []) f(); } catch (e) {} }
+  return S.fxBus.hall.tktRaum || '';
+}
+const tktRoomTxt = () => { const h = S.fxBus.hall, r = tktRoom(h.tktRaum || ''); return r.id === 'oel' ? 'Öltank ' + tktOelLen(h) + ' s' : r.name; };
+function tktRoomHtml() {
+  const h = S.fxBus.hall, cur = h.tktRaum || '';
+  return `<div class="tkt-rooms" role="group" aria-label="Hall-Raum">` + TKT_ROOMS.map(r => `<button class="rb ms-b${r.id === cur ? ' on' : ''}" data-tkr="r:${r.id}" aria-pressed="${r.id === cur}" title="${esc(r.tip)}">${esc(r.name)}</button>`).join('') + `</div>` +
+    (cur === 'oel' ? `<div class="tkt-rooms tkt-len" role="group" aria-label="Öltank-Länge">` + TKT_OEL_LEN.map(s => `<button class="rb ms-b${s === tktOelLen(h) ? ' on' : ''}" data-tkr="l:${s}" aria-pressed="${s === tktOelLen(h)}">${s} s</button>`).join('') + `</div>` : '') +
+    `<p class="tkt-rtip">${esc(tktRoom(cur).tip)}${cur && cur !== 'oel' ? ' · Länge, Größe, Dämpfung, Bewegung gehören zum Standard-Hall' : cur === 'oel' ? ' · Tiefen klingen länger (bis ×1,5), Höhen kürzer' : ''}</p>`;
+}
+function tktRoomTap(b) { const a = b.dataset.tkr; if (a.startsWith('r:')) tktSetRoom(a.slice(2), null); else if (a.startsWith('l:')) tktSetRoom(null, +a.slice(2)); haptic('tick'); lcdShow('Hall-Raum', tktRoomTxt()); }
+function tktRoomPop(anchor) {
+  openPop(anchor, p => {
+    p.classList.add('tktroompop');
+    const paint = () => { p.innerHTML = `<h4>Hall-Raum</h4>` + tktRoomHtml(); };
+    paint(); onTap(p, b => { tktRoomTap(b); paint(); popFit(p); }, 'button[data-tkr]');
+  }, {name: 'tktroom'});
+}
+/* ---------- (5) Effekt-Rack ---------- */
+function tktRackOpen(i) {
+  if (i == null || !S.tracks[i]) i = R.selT;
+  if (!S.tracks[i]) return false;
+  TKT.rk = {i, an: {}, raf: 0, ctls: [], node: null, gr: null, grT: 0};
+  openPop(null, p => { p.classList.add('msheet', 'tktrack', 'pan-y'); guardTouch(p); tktRackPaint(p); }, {name: 'tktrack', onClose: tktRackEnd});
+  popDock(UI.pop && UI.pop.el, true);
+  tktRackLive();
+  return true;
+}
+function tktRackEnd() {
+  const K = TKT.rk; if (!K) return; TKT.rk = null; if (K.raf) cancelAnimationFrame(K.raf);
+  for (const k of Object.keys(K.an || {})) { const a = K.an[k]; if (a && a.src) { try { a.src.disconnect(a.an); } catch (e) {} } }
+  if (K.node) { try { K.node.port.postMessage({mt: 0}); K.node.port.onmessage = null; } catch (e) {} }
+}
+const tktTrOk = i => S.tracks[i] && !S.tracks[i].stimme;
+function tktRackDev(id, name, sub, on, extra) {
+  return `<section class="tkr-dev" data-dev="${id}"><i class="tkr-ear"></i><div class="tkr-face"><div class="tkr-top">` +
+    `<button class="rb tkr-led${on ? ' on' : ''}" data-rk="led:${id}" aria-pressed="${!!on}" aria-label="${esc(name)} an oder aus"><i></i></button>` +
+    `<b class="tkr-nm">${esc(name)}</b><small>${esc(sub)}</small>${extra || ''}</div><div class="tkr-row"><div class="tkr-k"></div>` +
+    `<div class="tkr-mtr" aria-hidden="true"><span class="tkr-mt"><i class="tkr-bar"></i></span><em>–</em><small>${id === 'master' || id === 'eq' ? 'GR' : 'Pegel'}</small></div></div></div><i class="tkr-ear"></i></section>`;
+}
+function tktFxGet(i, key) { const tr = S.tracks[i]; return tr.kind === 'drum' ? sndGet(tr.sound, key) : kv1Get(i, key); }
+function tktFxSet(i, key, v) { const tr = S.tracks[i]; if (tr.kind === 'drum') drumFxSet(key, v); else setP(i, key, v); }
+function tktRackPaint(p) {
+  const K = TKT.rk; if (!K) return;
+  const i = K.i, tr = S.tracks[i], syn = tr.kind === 'synth' && !percIs(tr) && !tr.sound._nv, fx = fxOfSound(tr.sound), h = S.fxBus.hall, e = S.fxBus.echo, m = S.fxBus.master;
+  const eqOn = !!(tr.mix && (tr.mix.hp > 0 || tr.mix.ls || tr.mix.pg || tr.mix.hs || tr.mix.ra > 1.001 || tr.mix.mk));
+  let html = `<div class="ms-h"><b>EFFEKT-RACK</b><button class="rb tkr-nv" data-rk="prev" aria-label="Spur davor">‹</button><span class="tkr-tn">${esc(tr.name)}</span><button class="rb tkr-nv" data-rk="next" aria-label="Spur danach">›</button><button class="rb ms-x" data-rk="x" aria-label="Schließen">✕</button></div><div class="tkr-list">`;
+  if (tktTrOk(i)) {
+    html += tktRackDev('spur', 'SPUR', tr.name + ' · Anteile zum Bus', !tr.mute);
+    if (syn) html += tktRackDev('chorus', 'CHORUS', 'Spur-Effekt', !!(fx.chorus && fx.chorus.mode && fx.chorus.mode !== 'off'),
+      `<span class="tkr-x">` + [['I', 'I'], ['II', 'II'], ['I+II', 'I+II'], ['ENS', 'ENS'], ['BREIT', 'BREIT']].map(([v, l]) => `<button class="rb tkr-chip${fx.chorus && fx.chorus.mode === v ? ' on' : ''}" data-rk="ch:${v}">${l}</button>`).join('') + `</span>`);
+    html += tktRackDev('eq', 'EQ · KOMP', 'Kanalzug', eqOn, `<span class="tkr-x"><button class="rb tkr-chip" data-rk="eqmore">Mehr …</button></span>`);
+  }
+  html += tktRackDev('hall', 'HALL', 'Bus · alle Spuren · ' + tktRoomTxt(), h.ret > .001, `<span class="tkr-x tkr-room">${tktRoomHtml()}</span>`);
+  html += tktRackDev('echo', 'ECHO', 'Bus · alle Spuren', e.ret > .001);
+  html += tktRackDev('master', 'MASTER', 'Summe · Kompressor + Ausgang', !(m.thr >= -.01 && m.ratio <= 1.001)) + `</div>`;
+  p.innerHTML = html;
+  K.ctls = [];
+  const put = (dev, ctl) => { const box = p.querySelector('.tkr-dev[data-dev="' + dev + '"] .tkr-k'); if (box) { box.appendChild(ctl); K.ctls.push(ctl); } };
+  if (tktTrOk(i)) {
+    for (const key of ['fx.drive', 'fx.rev', 'fx.dly', 'fx.vol']) if (PD[key]) put('spur', makeCtl(PD[key], () => tktFxGet(i, key), v => tktFxSet(i, key, v), {undo: soundUndo(i), fmt: v => fmtVal(PD[key].fmt, v), label: {'fx.rev': 'Hall', 'fx.dly': 'Echo'}[key] || PD[key].l}));
+    if (syn) for (const key of ['fx.chorus.rate', 'fx.chorus.depth', 'fx.chorus.mix']) if (PD[key]) put('chorus', makeCtl(PD[key], () => tktFxGet(i, key), v => tktFxSet(i, key, v), {undo: soundUndo(i), fmt: v => fmtVal(PD[key].fmt, v)}));
+    for (const [k, l, d] of MX1_EQK.concat(MX1_CPK)) if (['ls', 'pg', 'hs', 'thr', 'ra'].includes(k)) put('eq', makeCtl(Object.assign({l}, d), () => mx1EqGet(i, k), v => mx1EqSet(i, k, v), {undo: mx1EqUndo(i), label: l}));
+  }
+  for (const k of ['hall.decay', 'hall.predelay', 'hall.ret']) { const c = busKnob(k); if (k === 'hall.decay' && h.tktRaum) c.classList.add('inert'); put('hall', c); }
+  for (const k of ['echo.divL', 'echo.fb', 'echo.toHall', 'echo.ret']) put('echo', busKnob(k));
+  for (const k of ['master.thr', 'master.ratio', 'master.makeup', 'master.vol']) put('master', busKnob(k));
+  if (!p._tk) { p._tk = true; onTap(p, b => tktRackTap(p, b), 'button[data-rk],button[data-tkr]'); }
+  K.mt = {}; for (const d of p.querySelectorAll('.tkr-dev')) K.mt[d.dataset.dev] = {bar: d.querySelector('.tkr-bar'), em: d.querySelector('.tkr-mtr em'), last: ''};
+}
+function tktRackTap(p, b) {
+  const K = TKT.rk; if (!K) return;
+  const i = K.i, tr = S.tracks[i];
+  if (b.dataset.tkr) { tktRoomTap(b); tktRackPaint(p); return; }
+  const a = b.dataset.rk;
+  if (a === 'x') { closePop(); return; }
+  if (a === 'prev' || a === 'next') { const ord = trackOrder().filter(t => S.tracks[t]); const k = ord.indexOf(i); K.i = ord[(k + (a === 'next' ? 1 : ord.length - 1)) % ord.length]; tktRackEnd2(); tktRackPaint(p); tktRackLive(); haptic('tick'); return; }
+  if (a === 'eqmore') { mx1EqSheet(i); return; }
+  if (a.startsWith('ch:')) { const before = soundSnapshot(i), v = a.slice(3); setP(i, 'fx.chorus.mode', v); TKT.chLast[i] = v; commitSound(i, before, 'Chorus ' + v); }
+  else if (a === 'led:spur') setMute(i, !tr.mute);
+  else if (a === 'led:chorus') { const before = soundSnapshot(i), cur = (fxOfSound(tr.sound).chorus || {}).mode || 'off'; if (cur !== 'off') TKT.chLast[i] = cur; setP(i, 'fx.chorus.mode', cur !== 'off' ? 'off' : TKT.chLast[i] || 'I'); commitSound(i, before, 'Chorus ' + (cur !== 'off' ? 'aus' : 'an')); }
+  else if (a === 'led:eq') {
+    const before = mixaSnap(), on = !!tr.mix && Object.keys(tr.mix).some(k => k !== 'sec');
+    if (on) { TKT.eqLast[i] = Object.assign({}, tr.mix); delete TKT.eqLast[i].sec; const s = tr.mix.sec; if (s) tr.mix = {sec: s}; else delete tr.mix; }
+    else { const L = TKT.eqLast[i] || {ls: 1.5, hs: 1.5, thr: -18, ra: 2}; for (const k of Object.keys(L)) mx1EqSet(i, k, L[k]); }
+    if (before !== mixaSnap()) { undoPush({kind: 'mixa', before, label: 'EQ/Komp ' + tr.name + (on ? ' aus' : ' an')}); mixaAfter([i], false); }
+  }
+  else if (a === 'led:hall' || a === 'led:echo') { const bk = a.slice(4), cur = S.fxBus[bk].ret, before = fxSnapshot(); if (cur > .001) TKT.busLast[bk] = cur; busSet(bk + '.ret', cur > .001 ? 0 : TKT.busLast[bk] || .8, false); fxUndo.commit(before, (bk === 'hall' ? 'Hall' : 'Echo') + (cur > .001 ? ' aus' : ' an')); }
+  else if (a === 'led:master') { const M = S.fxBus.master, on = !(M.thr >= -.01 && M.ratio <= 1.001), before = fxSnapshot(); if (on) { TKT.busLast.m = {thr: M.thr, ratio: M.ratio}; busSet('master.thr', 0, false); busSet('master.ratio', 1, false); } else { const L = TKT.busLast.m || {thr: -16, ratio: 2}; busSet('master.thr', L.thr, false); busSet('master.ratio', L.ratio, false); } fxUndo.commit(before, 'Master-Kompressor ' + (on ? 'aus' : 'an')); }
+  haptic('tick'); tktRackPaint(p);
+}
+function tktRackEnd2() { const K = TKT.rk; if (!K) return; if (K.raf) cancelAnimationFrame(K.raf); K.raf = 0; for (const k of Object.keys(K.an || {})) { const a = K.an[k]; if (a && a.src) { try { a.src.disconnect(a.an); } catch (e) {} } } K.an = {}; if (K.node) { try { K.node.port.postMessage({mt: 0}); K.node.port.onmessage = null; } catch (e) {} K.node = null; } }
+// Live-Anzeige: eigene Analyser nur solange das Rack offen ist (≤ 20 Bilder/s); GR des Spur-Kompressors über den MIX-A-Knoten (wie MX2)
+function tktRackLive() {
+  const K = TKT.rk, c = AU.ctx; if (!K) return;
+  const tap = (k, src) => { if (!c || !src || K.an[k]) return; try { const an = c.createAnalyser(); an.fftSize = 1024; an.smoothingTimeConstant = 0; src.connect(an); K.an[k] = {an, src, d: new Float32Array(1024)}; } catch (e) {} };
+  const A = AU.tracks && AU.tracks[K.i];
+  if (A && A.cut) tap('spur', A.cut);
+  if (A && A.trem) tap('chorus', A.trem);
+  tap('hall', AU.hallRet); if (AU.echo) tap('echo', AU.echo.output);
+  const N = A && A.mixa && A.mixa.node;
+  if (N && K.node !== N) { K.node = N; try { N.port.onmessage = e => { const m = e.data; if (m && m.mt) { K.gr = m.mt[0]; K.grT = performance.now(); } }; N.port.postMessage({mt: 1}); } catch (e) {} }
+  const loop = t => {
+    if (TKT.rk !== K) return; K.raf = requestAnimationFrame(loop); if (t - (K.lt || 0) < 50) return; K.lt = t;
+    if (!UI.pop || UI.pop.name !== 'tktrack') { tktRackEnd(); return; }
+    const lvl = k => { const a = K.an[k]; if (!a) return null; a.an.getFloatTimeDomainData(a.d); let pk = 0; for (let j = 0; j < a.d.length; j++) { const x = a.d[j] < 0 ? -a.d[j] : a.d[j]; if (x > pk) pk = x; } return pk > 1e-5 ? 20 * Math.log10(pk) : -99; };
+    const show = (dev, frac, txt) => { const M = K.mt && K.mt[dev]; if (!M) return; const f = Math.max(0, Math.min(1, frac)); M.bar.style.transform = 'scaleY(' + f.toFixed(3) + ')'; if (txt !== M.last) { M.last = txt; M.em.textContent = txt; } };
+    const db = v => (v == null || v < -60 ? '–' : (v < -.05 ? MINUS : '') + Math.abs(Math.round(v)) + ' dB');
+    for (const k of ['spur', 'chorus', 'hall', 'echo']) { const v = lvl(k); show(k, v == null ? 0 : (v + 60) / 60, db(v)); }
+    const g = K.gr != null && performance.now() - K.grT < 400 ? Math.max(0, -K.gr) : 0; show('eq', g / 12, g >= .05 ? MINUS + fmtDec(g, 1) + ' dB' : '0 dB');
+    const mg = AU.M && AU.M.reductionDb ? Math.max(0, -(AU.M.reductionDb() || 0)) : 0; show('master', mg / 20, mg >= .05 ? MINUS + fmtDec(mg, 1) + ' dB' : '0 dB');
+  };
+  K.raf = requestAnimationFrame(loop);
+}
+/* ---------- Einhänger im FX-Blatt: [RACK] auf jeder FX-Seite, [RAUM ▾] auf HALL ---------- */
+function tktFxPage(pg, sub, i) {
+  if (!pg || pg.querySelector('.tktrk')) return;
+  const rk = el('button', 'rb tktrk', '<b>RACK</b><small>alle Effekte</small>'); rk.setAttribute('aria-label', 'Effekt-Rack: alle Effekte als Geräte');
+  onTap(rk, () => { haptic('tick'); tktRackOpen(i); });
+  if (sub === 'hall') {
+    const rm = el('button', 'rb tktrm', '<b>RAUM ▾</b><small></small>'); rm.setAttribute('aria-label', 'Hall-Raum wählen');
+    const upd = () => { const s = rm.querySelector('small'), t = tktRoomTxt(); if (s.textContent !== t) s.textContent = t; rm.classList.toggle('on', !!S.fxBus.hall.tktRaum);
+      for (const k of pg.querySelectorAll('.knob')) { const l = k.getAttribute('aria-label'); if (['Länge', 'Größe', 'Dämpfung', 'Bewegung'].includes(l)) k.classList.toggle('tktinert', !!S.fxBus.hall.tktRaum); } };
+    onTap(rm, () => { haptic('tick'); tktRoomPop(rm); });
+    pg.append(rm); upd(); if (ED.refreshers) ED.refreshers.push(upd);
+  }
+  pg.append(rk);
+}
+/* ---------- Aussehen ---------- */
+(function tktCss() {
+  try {
+    const s = document.createElement('style'); s.id = 'tkt-css';
+    s.textContent = `#leds i.tktx{visibility:hidden}
+.pg-fxg>.tktrk,.pg-fxg>.tktrm{grid-column:span 2;min-height:44px;height:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:0 6px;font:700 11px/1.1 var(--font-ui);letter-spacing:.08em;align-self:center}
+.pg-fxg>.tktrk small,.pg-fxg>.tktrm small{font:600 9px/1 var(--font-ui);letter-spacing:.02em;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.pg-fxg>.tktrm.on{border-color:var(--amber);color:var(--amber)}
+.pg-fxg .knob.tktinert{opacity:.38}
+@media (orientation:portrait){.pg-fxg>.tktrk{grid-column:3/-1}.pg-fxg>.tktrm{grid-column:1/3}.pg-fx-hall>.tktrm,.pg-fx-hall>.tktrk{margin-top:6px}}
+@media (orientation:landscape){.pg-fx-spur>.tktrk{grid-row:1;grid-column:9}.pg-fx-master>.tktrk{grid-row:1;grid-column:9}.pg-fx-chorus>.tktrk{grid-row:2;grid-column:9}
+ .pg-fx-echo>.fxmode{grid-column:1/9}.pg-fx-echo>.tktrk{grid-row:2;grid-column:9}
+ .pg-fx-hall>.fxcap{grid-column:5/7}.pg-fx-hall>.tktrm{grid-row:2;grid-column:7/9}.pg-fx-hall>.tktrk{grid-row:2;grid-column:9}
+ .pg-fxg>.tktrk,.pg-fxg>.tktrm{grid-column-end:auto;height:44px}}
+.tktroompop{max-width:min(420px,calc(100vw - 16px))}
+.tkt-rooms{display:flex;flex-wrap:wrap;gap:4px;margin:4px 0}
+.tkt-rooms .ms-b{flex:1 1 30%;min-height:44px;font:700 11px/1.1 var(--font-ui)}
+.tkt-rooms .ms-b.on{border-color:var(--amber);color:var(--amber);box-shadow:0 0 8px rgba(255,178,46,.25) inset}
+.tkt-rtip{font:600 10px/1.3 var(--font-ui);color:var(--text-dim);margin:2px 0 0}
+.msheet.tktmode .tkt-r{display:flex;gap:4px;height:auto;margin-top:6px}
+.msheet.tktmode .tkt-r .ms-b{min-height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:700 12px/1.1 var(--font-ui)}
+.msheet.tktmode .tkt-r .ms-b small{font:600 10px/1 var(--font-ui);color:var(--text-dim)}
+.msheet.tktmode .tkt-r .ms-b.on{border-color:var(--amber);color:var(--amber)}
+.pop.tktrack{padding-top:0;max-height:calc(100% - 4px)}
+.tktrack .ms-h{position:sticky;top:0;z-index:4;height:44px;background:linear-gradient(var(--chassis-2),var(--chassis));margin:0 -12px 6px;padding:0 48px 0 12px;border-bottom:1px solid var(--line)}
+.tktrack .ms-h b{color:#e6e9ef;letter-spacing:.12em}
+.tktrack .ms-h .ms-x{height:44px;top:0}
+.tktrack .tkr-nv{min-width:44px;height:44px;font-size:18px}
+.tktrack .tkr-tn{font:700 12px/1 var(--font-ui);color:var(--amber);min-width:0;overflow:hidden;text-overflow:ellipsis}
+.tkr-list{display:grid;grid-template-columns:1fr;gap:8px}
+@media (orientation:landscape){.tkr-list{grid-template-columns:1fr 1fr}}
+.tkr-dev{display:flex;align-items:stretch;border-radius:6px;background:linear-gradient(180deg,#2b2f37,#1b1e24 60%,#15171c);border:1px solid #3a3f49;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 2px 6px rgba(0,0,0,.5);min-width:0}
+.tkr-ear{flex:0 0 14px;background:radial-gradient(circle at 50% 18px,#0b0c0f 3px,#5b616c 4px,transparent 5px),radial-gradient(circle at 50% calc(100% - 18px),#0b0c0f 3px,#5b616c 4px,transparent 5px),linear-gradient(90deg,#3c414b,#2a2e35);border-radius:5px 0 0 5px}
+.tkr-ear:last-child{border-radius:0 5px 5px 0}
+.tkr-face{flex:1 1 auto;min-width:0;padding:6px 8px 4px;background:repeating-linear-gradient(90deg,rgba(255,255,255,.015) 0 1px,transparent 1px 3px)}
+.tkr-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-height:44px}
+.tkr-led{flex:0 0 44px;width:44px;height:44px;padding:0;border-radius:8px;display:flex;align-items:center;justify-content:center}
+.tkr-led i{width:14px;height:14px;border-radius:50%;background:#3a1210;box-shadow:inset 0 1px 2px rgba(0,0,0,.8)}
+.tkr-led.on i{background:#ff5a3c;box-shadow:0 0 10px #ff5a3c,0 0 3px #ffd2c8 inset}
+.tkr-nm{font:800 17px/1 var(--font-ui);letter-spacing:.16em;color:#eef1f6;text-shadow:0 1px 0 #000}
+.tkr-top>small{font:600 10px/1.2 var(--font-ui);color:var(--text-dim);min-width:0;flex:1 1 80px}
+.tkr-x{display:flex;flex-wrap:wrap;gap:4px;flex:1 1 100%}
+.tkr-x.tkr-room .tkt-rooms{margin:0;flex:1 1 100%}
+.tkr-x.tkr-room .tkt-rtip{flex:1 1 100%}
+.tkr-chip{min-height:44px;min-width:44px;padding:0 8px;font:700 11px/1 var(--font-ui)}
+.tkr-chip.on{border-color:var(--amber);color:var(--amber)}
+.tkr-row{display:flex;align-items:flex-end;gap:6px;min-width:0}
+.tkr-k{display:grid;grid-template-columns:repeat(auto-fill,minmax(68px,1fr));gap:2px 4px;flex:1 1 auto;min-width:0}
+.tkr-k>.knob{width:auto;min-width:0}
+.tkr-k>.knob .kl{font-size:10px;letter-spacing:0}
+.tkr-k>.knob.inert{opacity:.38}
+.tkr-mtr{flex:0 0 46px;display:flex;flex-direction:column;align-items:center;gap:2px;padding-bottom:4px}
+.tkr-mt{position:relative;width:12px;height:58px;border-radius:3px;background:#0b0c0f;border:1px solid #2d3139;overflow:hidden}
+.tkr-bar{position:absolute;left:0;right:0;bottom:0;top:0;transform-origin:bottom;transform:scaleY(0);background:linear-gradient(0deg,#39d353 0,#39d353 60%,#ffb22e 82%,#ff4d3a 100%)}
+.tkr-dev[data-dev="eq"] .tkr-bar,.tkr-dev[data-dev="master"] .tkr-bar{transform-origin:top;background:linear-gradient(180deg,#ffb22e,#ff6a3d)}
+.tkr-mtr em{font:700 9px/1 var(--font-num);font-style:normal;color:#cfd3dc;white-space:nowrap}
+.tkr-mtr small{font:600 8px/1 var(--font-ui);color:var(--text-dim);letter-spacing:.08em}`;
+    document.head.appendChild(s);
+  } catch (e) {}
+})();
+/* ---------- Test-Schnittstelle ---------- */
+const TKT_API = {
+  mx: b => { const x = tktMx(b == null ? (R.playing ? t2b(AU.ctx.currentTime) : 0) : b); return x ? Object.assign({}, x) : null; },
+  countTs: () => TKT.ci, leds: () => (UI.leds || []).map(l => (l.classList.contains('tktx') ? 'x' : l.classList.contains('on') ? '1' : '0')).join(''),
+  laufPer: g => LAUF_PER[g || LAUF.grid],
+  fold: (c, ts, drum) => tktFoldNotes(deep(c), ts, !!drum), foldMarks: ids => tktFoldMarks(ids), foldSong: () => tktFoldSong(), foldCand: () => tktFoldCand(),
+  plan: k => tktModePlan(S.key, k || 'g'), mapNote: (n, k, raised) => tktMapNote(tktModePlan(S.key, k || 'g'), n, !!raised),
+  mapTarget: (tg, k) => tktMapTarget(tktModePlan(S.key, k || 'g'), tg), mode: k => tktModeDo(k || 'g'), ab: x => tktModeAB(x), which: () => tktModeWhich(), modeOpen: () => tktModeOpen(),
+  rooms: () => TKT_ROOMS.map(r => ({id: r.id, name: r.name})), room: (id, len) => tktSetRoom(id, len), hallInfo: () => { const c = AU.ctx, X = c && TKT.hxm.get(c); return {raum: S.fxBus.hall.tktRaum || '', len: tktOelLen(S.fxBus.hall), on: !!(X && X.on), room: X ? X.room : '', fdnLen: X ? X.len : 0, ir: X && X.cv ? +X.cv.sec.toFixed(3) : 0}; },
+  ir: (id, sr) => { const x = tktIR(id, sr || 48000); return {sec: +x.sec.toFixed(3), bytes: x.bytes, ms: Math.round(x.ms)}; },
+  // Öltank im Offline-Kontext: Impuls → derselbe Raum-Zweig (ohne Bus) – für RT60-Messung und CPU
+  oelRender: async (len, sec, sr) => {
+    sr = sr || 24000; const oc = new OfflineAudioContext(2, Math.round(sec * sr), sr), ib = oc.createBuffer(1, 64, sr); ib.getChannelData(0)[0] = 1;
+    const src = oc.createBufferSource(); src.buffer = ib; const X = tktHallBuild(oc); tktHallIn(X, 'oel'); X.room = 'oel';
+    X.fdn = tktFdn(oc); X.fIn = oc.createGain(); X.fdn.out.connect(X.mix); X.fIn.connect(X.fdn.in); X.cv.go.connect(X.fIn); X.fdn.set(len, len * 1.5, Math.max(1.5, len * .3), 0);
+    X.mix.gain.value = TKT_OEL_OUT; X.hp.frequency.value = 20; X.lp.frequency.value = 20000; src.connect(X.in); X.out.connect(oc.destination); src.start(0);
+    const T0 = performance.now(), b = await oc.startRendering(); return {ms: performance.now() - T0, L: b.getChannelData(0), R: b.getChannelData(1), sr};
+  },
+  rackOpen: i => tktRackOpen(i), rackInfo: () => { const K = TKT.rk; return K ? {i: K.i, devs: [...document.querySelectorAll('.tktrack .tkr-dev')].map(d => d.dataset.dev), an: Object.keys(K.an || {}), ctls: K.ctls.length} : null; },
+};
+Object.assign(SYNQUENZER, {tkt: TKT_API});                  /* TKT: Test-API (Objekt, wird nicht umhüllt) */
+/* TKT-END */
 const NO_SYNC = new Set(['clipCurves', 'bmcLog', 'bmcState', 'oneScaleOf', 'harmInfo', 'kbScaleNow', 'micCheck', 'micCheckJson', 'micCheckEstimate', 'cloud', 'cloudProjects', 'cloudVersions', 'cloudHandoff', 'state', 'project', 'runtime', 'getClip', 'getParam', 'noteLog', 'voices', 'timeline', 'serialize', 'buildMidi', 'buildZip', 'crc32', 'meter', 'outPitch', 'migrate', 'tapTempo',
   'getSound', 'mods', 'library', 'factory', 'previewState', 'soundEdited', 'fmxView', 'fmxPreview', 'fmxBadge',
   'history', 'projects', 'storage', 'engineInfo', 'getBusFx', 'wake', 'gestures', 'roll', 'rollApi', 'detectKey', 'sceneKey',

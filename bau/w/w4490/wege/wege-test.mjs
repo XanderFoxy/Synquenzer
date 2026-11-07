@@ -64,8 +64,10 @@ const xSees = () => [...document.querySelectorAll('.pop .ms-x, .pop .sh-x, .pop 
 try {
   /* ================= Basis: Leicht / Voll (zum Vergleich) und ein altes Projekt mit Leicht-Marke ================= */
   const pb = await page(428, 926, basis);
+  await run(pb, () => SETUP());
+  const zipB = await pb.evaluate(async () => (await window.SYNQUENZER.va1BoxB64()).length);
   const BA = await run(pb, () => {
-    const ids = SETUP(), D = window.SYNQUENZER, m = S.song.marks[2], r = {orig: NC(m.a, m.a + m.len)};
+    const D = window.SYNQUENZER, m = S.song.marks[2], r = {orig: NC(m.a, m.a + m.len)};
     D.markFassungSet(m.id, 'leicht'); r.l = NC(m.a, m.a + m.len); r.file = serializeProject();
     D.markFassungSet(m.id, 'voll'); r.v = NC(m.a, m.a + m.len);
     r.midi = btoa(String.fromCharCode(...buildMidi({mode: 'scene', scene: 0, withCarrier: true}).bytes));
@@ -73,7 +75,6 @@ try {
     return r;
   });
   const wavB = await pb.evaluate(async () => { const r = await window.SYNQUENZER.va1Export('song'); const d = new Uint8Array(await new Response(VA1.res.data).arrayBuffer()); const h = await crypto.subtle.digest('SHA-256', d); return {size: r && r.size, h: btoa(String.fromCharCode(...new Uint8Array(h))).slice(0, 16)}; });
-  const zipB = await pb.evaluate(async () => (await window.SYNQUENZER.va1BoxB64()).length);
   await pb.close();
 
   /* ================= hochkant 428 × 926 ================= */
@@ -189,7 +190,7 @@ try {
   // ---- D11: ▼-Marke ziehen = mithören (Finger) ----
   await run(p, () => { SV.x = 0; window.SYNQUENZER.songPos(0); window.SYNQUENZER.songSelect(null); SV.sel = null; svDraw(true); });
   await p.waitForTimeout(200);
-  const g = await p.evaluate(() => { const r = SV.wrap.getBoundingClientRect(); return {x: r.left + 4, y: r.top + 6, cw: SV.cellW, pos: SV.pos}; });
+  const g = await p.evaluate(() => { const r = SV.wrap.getBoundingClientRect(); return {x: r.left + 14, y: r.top + 6, cw: SV.cellW, pos: SV.pos}; });
   await drag(p, g.x, g.y, g.x + g.cw * 3.2, g.y + 2, 12);
   const SC = await p.evaluate(() => ({pos: SV.pos, last: window.SYNQUENZER.wege.lastScrub(), sx7: SX7.n}));
   ok(SC.pos === 3 && SC.last && SC.last.n >= 3, 'D11: ▼-Marke ziehen (Finger): Marke auf Takt 4, ' + (SC.last ? SC.last.n : 0) + ' Schläge angeklungen – ohne Schalter', 'Lautsprecher-Knopf weg');
@@ -269,10 +270,10 @@ try {
   /* ================= Exporte gleich wie vorher (WAV, MIDI, ZIP) ================= */
   let q = await page(428, 926);
   await run(q, () => { SETUP(); });
+  const zipW = await q.evaluate(async () => (await window.SYNQUENZER.va1BoxB64()).length);
   const wavW = await q.evaluate(async () => { const r = await window.SYNQUENZER.va1Export('song'); const d = new Uint8Array(await new Response(VA1.res.data).arrayBuffer()); const h = await crypto.subtle.digest('SHA-256', d); return {size: r && r.size, h: btoa(String.fromCharCode(...new Uint8Array(h))).slice(0, 16)}; });
   ok(wavW.size === wavB.size && wavW.size > 1000, 'D7: WAV Ganzer Song wie vorher', wavW.size + ' Bytes' + (wavW.h === wavB.h ? ', bitgleich' : ', gleiche Länge'));
   ok(mw.midi === BA.midi && mw.va1 === BA.va1, 'D7: MIDI (Szene, Ganzer Song) bytegleich wie vorher');
-  const zipW = await q.evaluate(async () => (await window.SYNQUENZER.va1BoxB64()).length);
   ok(Math.abs(zipW - zipB) <= 64 && zipW > 1000, 'D7: Container (ZIP) wie vorher', zipW + ' / ' + zipB + ' Zeichen');
   // altes Projekt (Leicht-Marke aus der Basis) lädt und klingt gleich; das Marken-Blatt zeigt Small
   const OLD = await run(q, f => { importJSON(f); const m = S.song.marks[2]; return {n: NC(m.a, m.a + m.len), small: window.SYNQUENZER.wege.sfInfo(m.id).small, vr: m.vr && m.vr.c}; }, BA.file);
@@ -319,16 +320,16 @@ try {
   const scr = await p.evaluate(() => [...document.querySelectorAll('.sv-scr')].filter(x => x.offsetParent).length);
   ok(scr === 0, 'quer: kein Lautsprecher-Schalter mehr in der Song-Leiste (Mithören = ▼ ziehen)');
   await run(p, () => { SV.x = 0; window.SYNQUENZER.songPos(0); SV.sel = null; svDraw(true); });
-  const gL = await p.evaluate(() => { const r = SV.wrap.getBoundingClientRect(); return {x: r.left + 4, y: r.top + 6, cw: SV.cellW}; });
+  const gL = await p.evaluate(() => { const r = SV.wrap.getBoundingClientRect(); return {x: r.left + 14, y: r.top + 6, cw: SV.cellW}; });
   await drag(p, gL.x, gL.y, gL.x + gL.cw * 5.2, gL.y + 2, 14);
   const SCL = await p.evaluate(() => ({pos: SV.pos, last: window.SYNQUENZER.wege.lastScrub()}));
   ok(SCL.pos === 5 && SCL.last && SCL.last.n >= 4, 'quer: ▼-Marke ziehen (Finger) = mithören', 'Takt ' + (SCL.pos + 1) + ', ' + (SCL.last ? SCL.last.n : 0) + ' Schläge');
   // Bereich-Leiste quer: ❖ Zusammenfassen …
   await run(p, () => window.SYNQUENZER.songSelect(4, 5)); await p.waitForTimeout(400);
-  const rq = await p.evaluate(() => { const b = document.querySelector('#rangeBar [data-a="part"]'); const r = b.getBoundingClientRect(); return {t: b.textContent.trim(), h: r.height}; });
-  ok(/Zusammenfassen …/.test(rq.t) && rq.h >= 44, 'quer: Bereich-Leiste „❖ Zusammenfassen …“', rq.t);
+  const rq = await p.evaluate(() => { const b = document.querySelector('#rangeBar [data-a="part"]'); const r = b.getBoundingClientRect(); return {t: b.textContent.trim(), a: b.getAttribute('aria-label'), h: r.height}; });
+  ok(/Zusammenfassen …/.test(rq.a) && rq.h >= 44, 'quer: Bereich-Leiste ❖ = „Zusammenfassen …“ (schmal: „Teil …“)', rq.t);
   await tapAt(p, () => document.querySelector('#rangeBar [data-a="part"]'));
-  ok(await p.evaluate(() => !!(UI.pop && UI.pop.name === 's2sum') && xSees()), 'quer: Zusammenfassen-Blatt mit ✕');
+  ok(await p.evaluate(() => !!(UI.pop && UI.pop.name === 's2sum')) && await p.evaluate(xSees), 'quer: Zusammenfassen-Blatt mit ✕');
   await run(p, () => closePop());
   // Export quer
   await run(p, () => va1Sheet()); await p.waitForTimeout(300);
