@@ -124,11 +124,22 @@ const clipSig = (p, t, s) => p.evaluate(([t, s]) => { const c = S.tracks[t].clip
   c = await cellR(p, 2, 0); d3 = await cellR(p, 3, 3);
   await T.raw('touchStart', [{x: c.x + c.w / 2, y: c.y + c.h / 2, id: 1}]); await sleep(600);
   for (let k = 1; k <= 8; k++) { await T.raw('touchMove', [{x: c.x + c.w / 2 + (d3.x - c.x) * k / 8, y: c.y + c.h / 2 + (d3.y - c.y) * k / 8, id: 1}]); await sleep(16); }
-  await T.raw('touchStart', [{x: d3.x + d3.w / 2, y: d3.y + d3.h / 2 - 2, id: 1}, {x: 214, y: 1, id: 2}]); await sleep(40);   // zweiter Finger
+  const mb = await p.evaluate(() => { const r = EL.bMenu.getBoundingClientRect(); return {x: r.left + r.width / 2, y: r.top + r.height / 2}; });
+  await T.raw('touchStart', [{x: d3.x + d3.w / 2, y: d3.y + d3.h / 2 - 2, id: 1}, {x: mb.x, y: mb.y, id: 2}]); await sleep(40);   // zweiter Finger (auf ☰)
   await T.raw('touchEnd', [{x: d3.x + d3.w / 2, y: d3.y + d3.h / 2 - 2, id: 1}]); await sleep(40);
   const cp = await p.evaluate(() => SYNQUENZER.ux2Info().drag);
   await T.raw('touchEnd', []); await sleep(150);
   ok('Zweiter Finger = Kopie (Original bleibt)', await clipSig(p, 2, 0) === s30 && await clipSig(p, 3, 3) === s30, {cp});
+  ok('Der zweite Finger löst sonst nichts aus (☰ bleibt zu)', await p.evaluate(() => R.editor !== 'menu'));
+  await p.evaluate(() => { if (R.editor === 'menu') closeMenu(); });
+  // Halten, zweiter Finger noch vor dem Ziehen = Kopie
+  const s31 = await clipSig(p, 2, 1); c = await cellR(p, 2, 1); d3 = await cellR(p, 2, 3);
+  await T.raw('touchStart', [{x: c.x + c.w / 2, y: c.y + c.h / 2, id: 1}]); await sleep(600);
+  await T.raw('touchStart', [{x: c.x + c.w / 2, y: c.y + c.h / 2, id: 1}, {x: 200, y: 600, id: 3}]); await sleep(40);
+  await T.raw('touchEnd', [{x: 200, y: 600, id: 3}]); await sleep(30);   // CDP: touchEnd nennt den Finger, der losgelassen wird
+  for (let k = 1; k <= 8; k++) { await T.raw('touchMove', [{x: c.x + c.w / 2 + (d3.x - c.x) * k / 8, y: c.y + c.h / 2, id: 1}]); await sleep(16); }
+  await T.raw('touchEnd', []); await sleep(150);
+  ok('Halten + zweiter Finger, dann ziehen = Kopie', await clipSig(p, 2, 1) === s31 && await clipSig(p, 2, 3) === s31);
 
   // 7. Szene von oben ziehen: Szene 2 hinter Szene 4
   const before = await p.evaluate(() => ({c: S.tracks.map(t => t.clips.map(x => !!x)), n: S.scenes.map(s => s.name || ''), lanes: S.song.lanes.map(l => l.map(e => e.bar + ':' + e.slot).join(','))}));

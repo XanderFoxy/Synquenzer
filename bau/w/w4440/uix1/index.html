@@ -4841,6 +4841,7 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
   #songView:not(.side) .sv-scrfab{display:none!important}
   .sh-x,.fsheet .fs-x,.psheet .ps-x,.crsheet .cr-x,.cp-x{position:relative}
   .sh-x::after{content:'';position:absolute;left:-1px;right:-1px;top:-3px;bottom:-3px}   /* ab der Innenkante (1 px Rand): 44 × 44 */
+  .sheet .sh-x{z-index:1}   /* kleine iPhones (Kopfzeile 40 px): die Trefferfläche des ✕ geht vor die Taste darunter */
   .fsheet .fs-x::after,.psheet .ps-x::after{content:'';position:absolute;left:-3px;right:-3px;top:-3px;bottom:-3px}
   .crsheet .cr-x::after{content:'';position:absolute;left:-5px;right:-5px;top:-5px;bottom:-5px}
   .cp-x::after{content:'';position:absolute;left:-1px;right:-1px;top:-3px;bottom:-3px}

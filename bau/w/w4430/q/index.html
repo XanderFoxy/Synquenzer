@@ -4799,6 +4799,7 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
   .sheet.ed .sh-head .r1.qf1h .folc .rl{display:none}
   .sheet.ed .sh-head .r1.qf1h .folc .rs{display:inline}
   .sheet.ed .sh-head .r1.qf1h .folc::after{content:attr(data-ws);font-size:8.5px;letter-spacing:0}
+  .sheet.ed .sh-head .r1.qf1t .sh-title .stt{display:none}
   .sheet.ed .sh-head .r1.qf1hx{overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;touch-action:pan-x;scrollbar-width:none}
   .sheet.ed .sh-head .r1.qf1hx::-webkit-scrollbar{display:none}
   .sheet.ed .sh-head .r1.qf1hx > .sh-x{position:sticky;right:0;z-index:2;box-shadow:-10px 0 8px -4px #16181d}
@@ -41321,9 +41322,14 @@ function abortAll(why) { RESTPTR.clear(); for (const [id, g] of [...GEST]) { GES
 // V0c-fix: a touch that starts in a sideways swipe list (.cp-sc, .pan-x) keeps its native scrolling (a tap there acts on
 // pointerup as everywhere; its synthetic click is eaten by the ghost-click guard, a swipe ends in pointercancel)
 // VS3-fix: the same for an upright list (.pan-y, e.g. the takes list), so it scrolls by finger
-function guardTouch(node) { node.addEventListener('touchstart', e => { if (e.target && e.target.closest && (e.target.closest('.cp-sc,.pan-x,.pan-y') || qf1PopScr(e.target))) return; if (e.cancelable) e.preventDefault(); }, {passive: false}); return node; }
+function guardTouch(node) { node.addEventListener('touchstart', e => { if (e.target && e.target.closest && (e.target.closest('.cp-sc,.pan-x,.pan-y') && !qf1Knob(e.target) || qf1PopScr(e.target))) return; if (e.cancelable) e.preventDefault(); }, {passive: false}); return node; }
 // QF1: ein Fenster (.pop), das höher ist als der Schirm (quer), rollt mit dem Finger, auch wo sein Inhalt sonst geschützt ist
-function qf1PopScr(t) { const p = t.closest('.pop'); return !!p && p.scrollHeight > p.clientHeight + 1 && !p.classList.contains('abg'); }
+function qf1PopScr(t) { const p = t.closest('.pop'); return !!p && p.scrollHeight > p.clientHeight + 1 && !p.classList.contains('abg') && !qf1Ctl(t, p); }
+// QF1: in einer rollenden Fläche bleibt ein Regler / eine Zieh-Fläche (touch-action:none – rollt ohnehin nicht) gegen die iOS-Lupe
+// geschützt wie bisher (Halten = modulieren); nur die Stellen dazwischen lassen den Finger rollen
+function qf1Ctl(t, s) { for (let n = t; n && n !== s && n.nodeType === 1; n = n.parentElement) if (getComputedStyle(n).touchAction === 'none') return true; return false; }
+function qf1Knob(t) { const b = t.closest('.qf1s'); return !!b && qf1Ctl(t, b); }
+function qf1Pan(t) { const q = t.closest('.pan-y'); return !!q && !qf1Ctl(t, q); }
 // tap = pointerdown + pointerup on the same element within 12 px. A click right after a handled pointer tap is ignored;
 // keyboard and programmatic clicks still activate. sel: delegate to children matching sel.
 function onTap(node, fn, sel) {
@@ -42172,9 +42178,10 @@ function qf1Fit(b, full) {
 // und die Zeile davor lässt sich seitlich wischen. Quer (eine Kopfzeile, display:contents) und wenn alles passt: unverändert.
 function qf1Head(sh) {
   const r1 = sh && sh.querySelector(':scope > .sh-head > .r1'); if (!r1) return;
-  if (r1.classList.contains('qf1h')) r1.classList.remove('qf1h', 'qf1hx', 'pan-x');
+  if (r1.classList.contains('qf1h')) r1.classList.remove('qf1h', 'qf1hx', 'pan-x', 'qf1t');
   if (getComputedStyle(r1).display === 'contents' || r1.scrollWidth <= r1.clientWidth + 1) return;
   r1.classList.add('qf1h');
+  const st = r1.querySelector('.sh-title .stt'); if (st && st.getBoundingClientRect().width < 24) r1.classList.add('qf1t');   // ein Titel-Rest von wenigen px wäre nur ein Strich
   if (r1.scrollWidth > r1.clientWidth + 1) r1.classList.add('qf1hx', 'pan-x');
 }
 let fitRO = null;
@@ -52364,7 +52371,7 @@ function bindUI() {
   document.addEventListener('contextmenu', e => { if (!inField(e)) e.preventDefault(); });
   [EL.kb, EL.pads, EL.segTr, EL.drumSheet, EL.popLayer.querySelector('.bd')].forEach(n => { if (n) guardTouch(n); });
   // the synth sheet is guarded against the loupe too, except the label columns of its scrolling list (MOD matrix, §1.7.3)
-  EL.synthSheet.addEventListener('touchstart', e => { if (e.cancelable && !(e.target.closest && e.target.closest('.mxlist .ms, .mxlist .md, .mxlist .mempty, .pg-lfo-l1 .routes, .pg-lfo-l2 .routes, .fxv.scr, .pan-y, .r1.qf1hx'))) e.preventDefault(); }, {passive: false});   // QF1: + .pan-y (Seite NORTH, rollender Körper), Kopfzeile seitlich
+  EL.synthSheet.addEventListener('touchstart', e => { if (e.cancelable && !(e.target.closest && e.target.closest('.mxlist .ms, .mxlist .md, .mxlist .mempty, .pg-lfo-l1 .routes, .pg-lfo-l2 .routes, .fxv.scr, .r1.qf1hx') || qf1Pan(e.target))) e.preventDefault(); }, {passive: false});   // QF1: + .pan-y (Seite NORTH, rollender Körper; Regler darin bleiben geschützt), Kopfzeile seitlich
   // transport
   // keyboard activation (Enter/Space on a focused button) only: clicks that follow a pointer interaction are ignored
   const kbdClick = (elx, fn) => {
