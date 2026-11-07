@@ -75568,13 +75568,13 @@ function vd3DrawLane(g, song, X, W, y, h) {
 }
 // a touch on the lane (svBindGestures pointerdown, before the song gestures): edge → move the cut, still → the menu, sideways → scroll
 function vd3LaneDown(e, w) {
-  if (!VD3 || !vd3CutOn() || !S.song || !SV.vvS || (e.pointerType === 'mouse' && e.button !== 0) || R.songRec || SV.pinch || SV.gOn || VD3.lane) return false;
+  if (!VD3 || !vd3CutOn() || !S.song || !SV.vvS || (e.pointerType === 'mouse' && e.button !== 0) || R.songRec || SV.pinch || SV.gOn || (VD3.lane && performance.now() - VD3.laneT < 4000)) return false;
   const r = w.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top, y0 = SV.rulerH - SV.vvS;
   if (y < y0 - 2 || y >= SV.rulerH) return false;
   e.preventDefault(); try { w.setPointerCapture(e.pointerId); } catch (_) {}
   const L = vd3Chips(S.song), cw = SV.cellW, X = b => b * cw - SV.x;
   let edge = -1, best = 15; for (let k = 0; k + 1 < L.length; k++) { const d = Math.abs(X(L[k].b) - x); if (d < best) { best = d; edge = k; } }
-  VD3.lane = true;
+  VD3.lane = true; VD3.laneT = performance.now();
   const G = {id: e.pointerId, x0: e.clientX, y0: e.clientY, sx: SV.x, x, mode: edge >= 0 ? 'edge' : null, k: edge, t0: performance.now()};
   if (edge >= 0) { VD3.drag = {k: edge, m: L[edge].b, m0: L[edge].b, lo: L[edge].a + 1, hi: L[edge + 1].b - 1}; UI.dirty.song = true; haptic('tick'); }
   const mv = ev => {
@@ -75755,11 +75755,15 @@ function vd3UndoOne(e) {
       if (l && l.k === 'noten' && l.t === e.track && l.s === e.scene && Date.now() - l.ms < 8000) { l.n = na; l.ms = Date.now(); }
       else vd3Push({k: 'noten', t: e.track, s: e.scene, n: na, n0: nb});
     }
-  } else if (e.kind === 'song') {
-    const song = S.song, ms = (song && song.marks) || [], prev = VD3.marks || new Set(ms.map(m => m.id)); VD3.marks = new Set(ms.map(m => m.id));
+  } else if (e.kind === 'song') {   // new marks against the song before the step (its snapshot in the undo entry)
+    const song = S.song, ms = (song && song.marks) || []; let prev = VD3.marks || new Set(ms.map(m => m.id));
+    try { const o = typeof e.before === 'string' ? JSON.parse(e.before) : e.before; prev = new Set(((o && o.marks) || []).map(m => m.id)); } catch (er) {}
+    VD3.marks = new Set(ms.map(m => m.id));
     for (const m of ms) if (!prev.has(m.id)) vd3Push({k: 'teil', id: m.id, x: markLabel(m).slice(0, 30)});
   } else if (e.kind === 'part') {
-    const P = S.parts || [], prev = VD3.parts || P.map(q => !!q); VD3.parts = P.map(q => !!q);
+    const P = S.parts || []; let prev = VD3.parts || P.map(q => !!q);
+    try { const o = typeof e.before === 'string' ? JSON.parse(e.before) : null; if (o && Array.isArray(o.p)) prev = P.map((q, k) => !!o.p[k]); } catch (er) {}
+    VD3.parts = P.map(q => !!q);
     P.forEach((q, k) => { if (q && !prev[k]) vd3Push({k: 'teil', w: 'part', s: k, x: String(q.name || 'Teil ' + (k + 1)).slice(0, 30)}); });
   }
 }
