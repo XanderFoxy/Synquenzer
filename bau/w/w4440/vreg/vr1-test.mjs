@@ -77,8 +77,8 @@ const cv = await p.evaluate(() => { const a = SYNQUENZER.vr1SetVid(2, 0, 'klav')
 cs = await cut();
 ok('Clip „Im Video: Klavier“: Einsatz der Akkorde (Takt 3) zeigt Klavier', (shotAt(cs, 2) || {}).v === 'klav', shotAt(cs, 2));
 ok('Clip „Im Video: aus“: die Gegenmelodie kommt nie in den Fokus', !cs.shots.some(s => s.t === 1), cs.shots.map(s => [s.a, s.v, s.t]));
-const rt = await p.evaluate(() => { const j = SYNQUENZER.serialize(); SYNQUENZER.importJSON(j); return {v2: SYNQUENZER.vr1Vid(2, 0), v1: SYNQUENZER.vr1Vid(1, 0), same: SYNQUENZER.serialize() === j}; });
-ok('Speichern → Laden: „Im Video“ bleibt (deep-equal)', rt.v2 === 'klav' && rt.v1 === 'aus' && rt.same, rt);
+const rt = await p.evaluate(() => { const nos = j => { const o = JSON.parse(j); delete o.sum; return JSON.stringify(o); }, j = SYNQUENZER.serialize(); SYNQUENZER.importJSON(j); return {v2: SYNQUENZER.vr1Vid(2, 0), v1: SYNQUENZER.vr1Vid(1, 0), same: nos(SYNQUENZER.serialize()) === nos(j)}; });
+ok('Speichern → Laden: „Im Video“ bleibt (deep-equal; die Prüfsumme „sum“ ändert sich mit STIMME-Take auch in 4.42.0)', rt.v2 === 'klav' && rt.v1 === 'aus' && rt.same, rt);
 const un = await p.evaluate(() => { SYNQUENZER.vr1SetVid(2, 0, null); const a = SYNQUENZER.vr1Vid(2, 0); SYNQUENZER.undo(); const b = SYNQUENZER.vr1Vid(2, 0); SYNQUENZER.redo(); const c = SYNQUENZER.vr1Vid(2, 0); SYNQUENZER.vr1SetVid(1, 0, null); return {a, b, c}; });
 ok('Undo/Redo: ein Schritt je Änderung', un.a === null && un.b === 'klav' && un.c === null, un);
 const cp = await p.evaluate(() => { SYNQUENZER.vr1SetVid(0, 0, 'geraet'); SYNQUENZER.copyClip(0, 0); SYNQUENZER.pasteClip(0, 3); const k = SYNQUENZER.duplicateClip(0, 0); return {paste: SYNQUENZER.vr1Vid(0, 3), dup: k >= 0 ? SYNQUENZER.vr1Vid(0, k) : 'kein Platz'}; });
@@ -111,9 +111,11 @@ ok('Gerät (VA): Editor-Blatt der App, Fokus auf dem gleitenden Regler', ger.ger
 const mod = await p.evaluate(t => { const g = SYNQUENZER.vr1Pic(t, 'mod', 0, '16:9'); return {png: g.png, mod: g.vv4 && g.vv4.mod ? {ed: g.vv4.mod.ed, focus: g.vv4.mod.focus, knobs: g.vv4.mod.knobs.map(k => k.key), rows: g.vv4.mod.rows.length} : null, els: g.vv4 ? g.vv4.els.map(e => e.el) : []}; }, await tOf(2.5));
 save('modulation-16x9-synth1.png', mod.png);
 ok('Modulation: Regler im Editor-Blatt (Reiter, Seite) + Mod-Übersicht, kein Einzel-Regler', mod.mod && mod.mod.ed && mod.els.includes('Reiter') && mod.mod.rows >= 1 && mod.mod.knobs.length >= 1, mod.mod);
-const mk = await p.evaluate(async t => { setEngine(2, 'mk'); if (typeof mkLoad === 'function') mkLoad(); for (let k = 0; k < 40 && !(window.MKUI && MKUI.ELS); k++) await new Promise(r => setTimeout(r, 100)); const g = SYNQUENZER.vr1Pic(t, 'geraet', 2, '9:16'); const g2 = SYNQUENZER.vr1Pic(t, 'geraet', 2, '16:9'); SYNQUENZER.undo(); return {png: g.png, png2: g2.png, kind: g.vv4 && g.vv4.ger && g.vv4.ger.kind, eng: sndOf(2).engine}; }, await tOf(5.5));
+const mk = await p.evaluate(async t => { const e0 = sndOf(2).engine; setEngine(2, 'mk'); if (typeof mkLoad === 'function') mkLoad(); for (let k = 0; k < 40 && !(window.MKUI && MKUI.ELS); k++) await new Promise(r => setTimeout(r, 100)); const g = SYNQUENZER.vr1Pic(t, 'geraet', 2, '9:16'); const g2 = SYNQUENZER.vr1Pic(t, 'geraet', 2, '16:9'); setEngine(2, e0); return {png: g.png, png2: g2.png, kind: g.vv4 && g.vv4.ger && g.vv4.ger.kind, zoom: g.vv4 && g.vv4.ger && g.vv4.ger.zoom, eng: sndOf(2).engine}; }, await tOf(5.5));
 save('geraet-9x16-platte.png', mk.png); save('geraet-16x9-platte.png', mk.png2);
-ok('Gerät (Geräte-Platte): die Original-Platte', mk.kind === 'plate', {kind: mk.kind, engAfterUndo: mk.eng});
+ok('Gerät (Geräte-Platte): die Original-Platte, hochkant mit Nahaufnahme am Regler', mk.kind === 'plate' && mk.zoom === 'f.cut', {kind: mk.kind, zoom: mk.zoom, engDanach: mk.eng});
+const pages = await p.evaluate(t => { const keep = vr1Page, out = {}; try { for (const id of Object.keys(VR1_PG)) { vr1Page = () => id; for (const f of ['9:16', '16:9']) { const g = SYNQUENZER.vr1Pic(t, 'geraet', 0, f); out[id + '@' + f] = g.vv4 && g.vv4.ger && g.vv4.ger.ed ? g.vv4.ger.ed.knobs.length : -1; } } } finally { vr1Page = keep; } return out; }, await tOf(2.5));
+ok('Editor-Blatt: alle Seiten (Filter, Osz 1–3, Mix, Stimme, Makro, FX) zeichnen ohne Fehler', Object.values(pages).every(n => n >= 2), pages);
 const dr = await p.evaluate(t => { const g = SYNQUENZER.vr1Pic(t, 'geraet', DRUM_T, '9:16'); return g.vv4 && g.vv4.ger ? g.vv4.ger.kind : null; }, await tOf(5.5));
 ok('Gerät (Drums): Drum-Sequenzer', dr === 'drum', dr);
 // ---------- 4. Bedienung: Clip-Blatt, Regel-Blatt, Video-Streifen (hochkant + quer) ----------

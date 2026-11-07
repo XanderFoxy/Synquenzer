@@ -68631,14 +68631,14 @@ function va1MidiPick() {
 }
 /* ---------- 4. Projekt-Container: Inhaltsliste ---------- */
 function va1Inventory() {
-  const W = new Map(), put = (id, w) => { if (!id || !(S.takes && S.takes[id])) return; let a = W.get(id); if (!a) W.set(id, a = []); if (!a.includes(w)) a.push(w); };
-  const scan = (a, w) => { if (!a) return; for (const s of tkSegs(a)) put(s.take, w); const c = new Set(); try { tkChorIds(a, c); } catch (e) {} for (const id of c) put(id, w + ' · Chor'); };
+  const W = new Map(), NM = new Map(), put = (id, w) => { if (!id || !(S.takes && S.takes[id])) return; let a = W.get(id); if (!a) W.set(id, a = []); if (!a.includes(w)) a.push(w); };
+  const scan = (a, w) => { if (!a) return; for (const s of tkSegs(a)) { put(s.take, w); if (!NM.has(s.take) && (s.name || s.no)) NM.set(s.take, s.name || 'Take ' + s.no); } const c = new Set(); try { tkChorIds(a, c); } catch (e) {} for (const id of c) put(id, w + ' · Chor'); };   // Name wie im Takes-Blatt
   S.tracks.forEach((tr, t) => tr.clips.forEach((c, s) => { if (!c) return; const w = 'Szene ' + (s + 1) + ' · ' + tr.name; scan(c.audio, w); if (c.take) put(c.take, w); }));
   if (S.song) { for (const v of S.song.vox || []) scan(v, 'Song · Takt ' + (v.bar + 1)); for (const k in S.song.own || {}) { const c = S.song.own[k]; scan(c.audio, 'Song · eigener Clip'); if (c.take) put(c.take, 'Song · eigener Clip'); } }
   const ids = tkUsedIds(), takes = [];
   for (const id of ids) {
     const m = S.takes[id]; if (!m) continue;
-    takes.push({id, name: m.name || 'Take ' + id.slice(0, 4), sec: +(m.len / (m.sr || 48000)).toFixed(2), sr: m.sr, where: W.get(id) || ['Projekt'], miss: TK.missing.has(id)});
+    takes.push({id, name: NM.get(id) || m.name || 'Take ' + id.slice(0, 4), sec: +(m.len / (m.sr || 48000)).toFixed(2), sr: m.sr, where: W.get(id) || ['Projekt'], miss: TK.missing.has(id)});
   }
   return {takes, sounds: LIB.ok ? LIB.lib.all().length : 0};
 }
@@ -68678,7 +68678,8 @@ async function va1BoxSave() {
 function va1MenuRow(sec, row, btn) {
   const b = btn('Export'); b.setAttribute('aria-label', 'Export: WAV, Einzelspuren, MIDI, Video, Projekt-Container');
   on(b, 'click', () => { closeMenu(); va1Sheet(); });
-  row(sec, null, b);
+  const last = sec.lastElementChild;                                // neben [Video] in derselben Zeile: darunter verschiebt sich nichts
+  if (last && last.classList.contains('mrow') && last.children.length === 1 && /^Video$/.test(last.textContent.trim())) last.appendChild(b); else row(sec, null, b);
 }
 function va1Css() {
   if (VA1.css) return; VA1.css = true;

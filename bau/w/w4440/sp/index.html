@@ -26985,7 +26985,7 @@ const SP1 = (function () {
   const VA = (...a) => rec('analog', ...a);
   // WT: like WT_FACTORY (flat patch + p.wt, native engine)
   const WT = (id, name, cat, demo, ref, tip, p, mods, fx, bus) => rec('wt', id, name, cat, demo, ref, tip, Object.assign({level: .3}, p), mods, fx, bus);
-  // FM: flat keys as FM_BASE (filter open, VA hull only with fmAmp 1) + p.fm6; no `common`, so LFO 1 may be S&H (shape 4)
+  // FM: flat keys as FM_BASE (filter open, the VA envelope only with fmAmp 1) + p.fm6; no `common`, so LFO 1 may be S&H (shape 4)
   const FMB = {ftype: 1, cutoff: 20000, res: 0, drive: 0, kt: 0, fenv: 0, fvel: 0, bass: 0, lq: 0, aA: .002, aD: .05, aS: 1, aR: .05, ampVel: 0, fmAmp: 0, analog: 0, spread: .15};
   const OP = (coarse, ol, r, l, x) => Object.assign({on: 1, fixed: 0, coarse, fine: 0, det: 0, ol, r, l, vs: 0, rs: 0}, x || {});
   const OFF = () => OP(1, 0, [99, 99, 99, 99], [0, 0, 0, 0]);
@@ -27010,7 +27010,7 @@ const SP1 = (function () {
         aA: .002, aD: .3, aS: 1, aR: .25, ampVel: .3, l1shape: 4, l1sync: .25, l2shape: 3, l2sync: .25, mode: 1, poly: 1, analog: 0, spread: 0, level: .39},
       [M('lfo1', 'pitch', .5), M('lfo1', 'cutoff', .15), M('lfo2', 'amp', -1), M('mw', 'res', .35)], {rev: .3, dly: .45}, ECHO8),
     VA('daten-blubbern', 'Daten-Blubbern', 'effekt', 'fx', 'Sample & Hold auf dem Filter · blubbernde Resonanz',
-      'Die Tonhöhe bleibt, nur das Filter springt: Sample & Hold (LFO 1, 1/32) setzt den Cutoff bei jedem Schritt neu (±30 Halbtöne) – bei 88 % Resonanz blubbert es wie Wasser im Rechner. Kurze Filter-Hüllkurve gibt jedem Ton einen Plopp. Mod-Rad = Nässe.',
+      'Die Tonhöhe bleibt, nur das Filter springt: Sample & Hold (LFO 1, 1/32) setzt den Cutoff bei jedem Schritt neu (±30 Halbtöne) – bei 90 % Resonanz blubbert es wie Wasser im Rechner. Kurze Filter-Hüllkurve gibt jedem Ton einen Plopp. Mod-Rad = Nässe.',
       {o1w: 0, o2w: 1, o2pw: .4, o2fine: -6, o2lvl: .5, ftype: 0, cutoff: 700, res: .9, drive: .1, bass: .2, kt: .5, fenv: .25, fvel: .2,
         fA: .001, fD: .09, fS: 0, fR: .1, aA: .002, aD: .4, aS: .85, aR: .2, ampVel: .4, l1shape: 4, l1sync: .125, mode: 1, poly: 1, analog: .1, spread: 0, level: .79},
       [M('lfo1', 'cutoff', .25), M('mw', 'res', .2)], {chorus: {mode: 'I', mix: .4}, rev: .3, dly: .4}, ECHO8),
@@ -27020,7 +27020,7 @@ const SP1 = (function () {
         aA: .003, aD: .3, aS: 1, aR: .12, ampVel: .3, l1shape: 4, l1rate: 22, l2shape: 3, l2rate: 11, mode: 1, poly: 1, analog: 0, spread: 0, level: .42},
       [M('lfo1', 'pitch', .75), M('lfo1', 'cutoff', .1), M('lfo2', 'amp', -.8), M('mw', 'noise', .4)], {rev: .2, dly: .2}, {echo: {mode: 'pp', divL: '1/16', fb: .3}}),
     VA('roboter-blips', 'Roboter-Blips', 'effekt', 'seq8', 'Zufalls-Tonhöhe je Ton · Roboter spricht',
-      'Sinus + Dreieck eine Oktave darüber, jeder Ton ein kurzer Blip (Ausklang 150 ms). Hüllkurve 2 lässt die Tonhöhe beim Anschlag in 60 ms um 7 Halbtöne fallen, Sample & Hold (1/16) verschiebt jeden Blip zufällig um bis zu ±7 Halbtöne – der Roboter „spricht“. Mod-Rad = Nässe (mehr Resonanz).',
+      'Sinus (zwei Oktaven hoch) + Dreieck eine Oktave darüber, jeder Ton ein kurzer Blip (Ausklang 220 ms). Hüllkurve 2 lässt die Tonhöhe beim Anschlag in 60 ms um 7 Halbtöne fallen, Sample & Hold (1/16) verschiebt jeden Blip zufällig um bis zu ±7 Halbtöne – der Roboter „spricht“. Mod-Rad = Nässe (mehr Resonanz).',
       {o1w: 3, o1oct: 2, o2w: 2, o2oct: 2, o2semi: 12, o2fine: 0, o2lvl: .3, ftype: 1, cutoff: 5000, res: .3, drive: 0, bass: 0, kt: .8, fenv: 0,
         aA: .001, aD: .22, aS: 0, aR: .08, aCurve: .7, ampVel: .4, mA: .001, mD: .06, mS: 0, mR: .05, mCurve: .6, l1shape: 4, l1sync: .25, poly: 4, analog: 0, spread: .4, level: 2.5},
       [M('menv', 'pitch', .29), M('lfo1', 'pitch', .29), M('mw', 'res', .4)], {rev: .3, dly: .35}, ECHO8),
@@ -27040,7 +27040,7 @@ const SP1 = (function () {
         fA: .002, fD: .2, fS: .3, fR: .3, aA: .005, aD: .5, aS: .8, aR: .35, ampVel: .4, l1shape: 1, l1sync: 1, poly: 6, analog: .15, spread: .3, level: .45},
       [M('lfo1', 'cutoff', .3), M('mw', 'res', .25)], {chorus: {mode: 'I', mix: .6}, rev: .35, dly: .4}, ECHO8),
     VA('resonanz-pfeifen', 'Resonanz-Pfeifen', 'effekt', 'arp', 'Pfeifendes Filter auf jeder Note',
-      'Fast nur Rauschen in ein Tiefpass mit 110 % Resonanz: das Filter pfeift von selbst, Keytrack 100 % stimmt es zwei Oktaven über die Note. Die Filter-Hüllkurve setzt jeden Ton mit einem kurzen „Tüit“ von oben an. Echo 1/8 punktiert. Mod-Rad = das „Tüit“ kommt von weiter oben.',
+      'Wenig Säge und Rauschen in ein Tiefpass mit 110 % Resonanz: das Filter pfeift von selbst, Keytrack 100 % stimmt es zwei Oktaven über die Note. Die Filter-Hüllkurve setzt jeden Ton mit einem kurzen „Tüit“ von oben an. Echo 1/8 punktiert. Mod-Rad = das „Tüit“ kommt von weiter oben.',
       {o1w: 0, o1lvl: .08, o2lvl: 0, noise: .06, ftype: 1, cutoff: 1060, res: 1.1, drive: 0, bass: 0, kt: 1, fenv: .17, fvel: 0,
         fA: .001, fD: .05, fS: 0, fR: .05, aA: .002, aD: .35, aS: .2, aR: .2, ampVel: .4, poly: 6, analog: 0, spread: .4, level: .59},
       [M('mw', 'fenv', .2)], {rev: .35, dly: .4}, ECHO8),
@@ -27062,7 +27062,7 @@ const SP1 = (function () {
       [M('lfo2', 'pitch', .002), M('mw', 'unidet', .4)], {chorus: {mode: 'ENS', mix: 1}, rev: .45}),
     /* ---------------- Flächen (WT) ---------------- */
     WT('chor-pad', 'Chor-Pad', 'flaeche', 'pad', 'Vokal-Tabelle · Chor',
-      'Die Vokal-Tabelle wandert in 4 s von O nach A – die Fläche „singt“. Weiches Einschwingen, Ensemble-Chorus und langer Hall machen einen Chor daraus. LFO 1 lässt den Cutoff atmen.',
+      'Die Vokal-Tabelle wandert in 4 s durch die Vokale – die Fläche „singt“. Weiches Einschwingen, Ensemble-Chorus und langer Hall machen einen Chor daraus. LFO 1 lässt den Cutoff atmen.',
       {ftype: 0, cutoff: 1800, res: .12, fenv: .15, kt: .3, fA: 1, fD: 2, fS: .7, fR: 2, aA: 1, aD: 1.5, aS: .9, aR: 3, ampVel: .25, l1shape: 0, l1rate: .2, poly: 6,
         level: .36, wt: {table: 'vocal', pos: .1, scan: .6, scanTime: 4}}, [M('lfo1', 'cutoff', .05)], {chorus: {mode: 'ENS', mix: .6}, rev: .6, dly: .1, vol: .75}, {hall: {decay: 6, size: 1.2}}),
     WT('morph-sweep-pad', 'Morph-Sweep-Pad', 'flaeche', 'pad', 'Tabelle wandert · Filter fegt',
@@ -27102,7 +27102,7 @@ const SP1 = (function () {
         'mfx.type': 1, 'mfx.spd': 40, 'mfx.dep': 100, 'dly.dep': 20, 't.0.a.lvl': 118}, 0, {rev: .45}),
     /* ---------------- BM_NAME ---------------- */
     BMr('bit-dialing', 'Bit-Dialing', 'effekt', 'fx', BM_NAME + ' · Zufalls-LFO, Mod-Rad = Tempo',
-      'LFO 1 auf Zufall springt mit der Tonhöhe, LFO 2 (Rechteck) zerhackt die Lautstärke – der Rechner wählt. Mod-Rad: LFO 1 schneller (Blubber-Tempo) und mehr Echo (Nässe).',
+      'LFO 1 auf Zufall springt mit der Tonhöhe, LFO 2 (Rechteck) lässt die Lautstärke pulsieren – der Rechner wählt. Mod-Rad: LFO 1 schneller (Blubber-Tempo) und mehr Echo (Nässe).',
       {'a.o1.m': 15, 'a.o1.st': 24, 'a.o2.m': 7, 'a.o2.st': 36, 'a.o2.e.l': 50, 'a.f.cu': 70, 'a.f.re': 40,
         'a.l1.w': 'rand', 'a.l1.sp': 70, 'a.l1.t': [['freq', 45], ['flt', 30], ['mask', 0], ['vol', 0]],
         'a.l2.w': 'sqr', 'a.l2.sp': 76, 'a.l2.t': [['vol', 80], ['freq', 0], ['mask', 0], ['vol', 0]],

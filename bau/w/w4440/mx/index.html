@@ -4165,6 +4165,34 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 .mxsheet .mxrow b{font-family:var(--font-num);font-weight:600;color:var(--text);text-align:right}
 .mxsheet .mxwarn{color:var(--amber)}
 @media (orientation:landscape) and (max-height:500px){.pop.mxsheet{max-width:min(720px,calc(100vw - 16px));width:min(720px,calc(100vw - 16px))}.mxsheet > .small:first-of-type{display:none}.mxsheet .mxgrid{grid-template-columns:1fr 1fr;column-gap:16px}}
+/* MX1 BEGIN: EQ · KOMP in FX › SPUR, Blatt EQ · Kompressor, Mix-Assistent (Rolle, Spektrum, Vorher/Nachher), Auto-Master (Stil, MASTERN) – Ziele ≥ 44 px */
+.pg-fx-spur>.mx1b{grid-row:2;grid-column:3/span 2;align-self:center;justify-self:stretch;min-height:44px;height:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:4px 8px;white-space:nowrap}
+.mx1b b{font:700 12px/1.1 var(--font-ui);letter-spacing:.06em;color:var(--text)}
+.mx1b .mx1bs{font:500 10px/1 var(--font-num);color:var(--text-faint)}
+.mx1b.on .mx1bs{color:var(--amber)}
+@media (orientation:landscape){
+  .pg-fx-spur>.mx1b{grid-row:1;grid-column:7/span 3;justify-self:start;min-width:120px}
+  .pg-fx-spur:has(>.mx1b)>.bush{grid-column:7/span 2}
+  .pg-fx-spur:has(>.bush)>.mx1b{grid-column:9;min-width:0;justify-self:stretch}
+}
+.mx1eqs .mx1cv{display:block;width:100%;height:72px;margin:4px 0 2px;background:var(--lcd);border-radius:6px;border:1px solid var(--panel-edge)}
+.mx1eqs .mx1cv path{fill:none;vector-effect:non-scaling-stroke}
+.mx1eqs .mx1p0{stroke:rgba(255,255,255,.12);stroke-width:1}
+.mx1eqs .mx1pv{stroke:var(--amber);stroke-width:2}
+.mx1eqs .mx1h{margin:6px 0 0;font:700 11px/1.2 var(--font-ui);letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim)}
+.mx1eqs .mx1k{display:grid;grid-template-columns:repeat(3,72px);gap:2px 18px;justify-content:center}
+.mx1eqs .mx1kcp{grid-template-columns:repeat(5,72px);gap:2px 4px}
+@media (orientation:landscape) and (max-height:500px){ .mx1eqs .mx1keq{grid-template-columns:repeat(6,72px)} .mx1eqs .mx1k{gap:0 14px} .mx1eqs .mx1cv{height:52px} .mx1eqs .mx1h{margin:2px 0 0} }
+.mxsheet .mx1rl{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;margin:6px 0 2px}
+.mxsheet .mx1rl .mbtn{min-width:108px}
+.mxsheet .mx1rs{display:grid;grid-template-columns:repeat(auto-fit,minmax(92px,1fr));gap:6px;margin:4px 0}
+.mxsheet .mx1sw{display:flex;align-items:center;gap:10px;margin:2px 0}
+.mxsheet .mx1sp{flex:none;width:180px;height:44px}
+.mxsheet .mx1sp rect{fill:var(--sel)}
+.mxsheet .mx1sp text{font:500 7px var(--font-num);fill:var(--text-faint);text-anchor:middle}
+.mxsheet .mx1kv{flex:1 1 auto;min-width:0;overflow-wrap:anywhere}
+.mxsheet .mx1g{border-top:1px dashed var(--line);padding-top:4px}
+/* MX1 END */
 .tksheet .clab .mbtn[aria-pressed=true]{box-shadow:inset 0 0 0 2px var(--t8)}
 /* G-GB: Abschnitt „Mit GarageBand aufnehmen“ im STIMME-/Takes-Blatt (Ziele ≥ 44 px) */
 .tksheet .ggb{margin:8px 0 6px;padding-top:8px;border-top:1px solid var(--line)}
@@ -27507,6 +27535,7 @@ function normTrack(t, def, pk, warns) {
   if (o.stimme) { const g = g4Norm(t.gfx); if (g) o.gfx = g; }    // G4: Effekte der STIMME-Spur
   if (o.stimme && t.chor) { const ch = g6pNormLanes(t.chor); if (ch) o.chor = ch; }   // G6+a: Chor-Spuren (nur an der STIMME-Spur)
   { const mx = mixaNormMix(t.mix); if (mx) o.mix = mx; }          // MIX-A: Mix-Einschub der Spur (fehlt = nichts)
+  { const ro = mx1NormRole(t.mxRole); if (ro) o.mxRole = ro; }    // MX1: Rolle im Mix (fehlt = automatisch)
   return o;
 }
 function normalizeProject(obj) {
@@ -45922,6 +45951,7 @@ function pageFxSpur(pg, i) {
   const oc = makeSeg([['follow', 'mitziehen'], ['hold', 'halten']], () => S.tracks[i].onChange, v => { S.tracks[i].onChange = v; markDirty(); }, null, {undo: soundUndo(i), label: 'Gehaltene Töne bei Akkordwechsel'});
   ks.forEach(k => pg.appendChild(k));
   const bh = busHintChip(i); if (bh) pg.appendChild(bh);
+  pg.appendChild(mx1EqBtn(i));                                    // MX1: EQ · KOMP
   pg.append(lgrp('Pump-Rel.', rel, 'fxrow r1'), lgrp('Gehaltene Töne bei Akkordwechsel', oc, 'fxrow r2 gtw'));
   ED.refreshers.push(() => { ks.forEach(x => x.update()); rel.update(); oc.update(); });
 }
@@ -47808,6 +47838,7 @@ function pageDrumSpur(pg) {
   const ks = ['fx.drive', 'fx.rev', 'fx.dly', 'fx.vol', 'fx.pan', 'fx.pump'].map(dfxKnob);
   const rel = dfxSeg('fx.pumpRel', [['1/16', '1/16'], ['1/8', '1/8'], ['1/4', '1/4']], null, 'Pump-Release');
   ks.forEach(k => pg.appendChild(k));
+  pg.appendChild(mx1EqBtn(DRUM_T));                               // MX1: EQ · KOMP
   pg.append(lgrp('Pump-Rel.', rel, 'fxrow r1'));
   ED.refreshers.push(() => { ks.forEach(x => x.update()); rel.update(); });
 }
@@ -61559,32 +61590,33 @@ function mixaDspMake() {
   /* ---------- Spur: Hochpass · Glocke · Höhen-Shelf · Kompressor · Make-up · Songteil-Pegel · Ein/Aus ----------
      Spitzen-Kompressor (Stereo gekoppelt, weiches Knie 6 dB, ohne Vorausschau = keine Latenz). Werte gleiten (EQ je Block,
      Pegel je Sample), Ein-/Ausblenden 30 ms. Bei wet 0 ist der Ausgang bitgleich der Eingang. */
-  const TDEF = {hp: 0, pf: 100, pg: 0, pq: 1.4, hs: 0, thr: 0, ra: 1, at: 10, rl: 120, mk: 0};
+  const TDEF = {hp: 0, pf: 100, pg: 0, pq: 1.4, hs: 0, thr: 0, ra: 1, at: 10, rl: 120, mk: 0, ls: 0};   // MX1: + ls (Bass-Shelf 150 Hz)
   class Track {
-    constructor(sr) { this.sr = sr; this.z = new Float64Array(12); this.cur = Object.assign({}, TDEF); this.gr = 0; this.mk = 0; this.w = 0; this.wT = 0; this.wk = 1 - Math.exp(-1 / (0.008 * sr)); this.gk = 1 - Math.exp(-1 / (0.02 * sr)); this.grMin = 0; this.set({}, true); }
+    constructor(sr) { this.sr = sr; this.z = new Float64Array(16); this.cur = Object.assign({}, TDEF); this.gr = 0; this.mk = 0; this.w = 0; this.wT = 0; this.wk = 1 - Math.exp(-1 / (0.008 * sr)); this.gk = 1 - Math.exp(-1 / (0.02 * sr)); this.grMin = 0; this.set({}, true); }
     set(P, now) {
       const p = this.P = Object.assign({}, TDEF, P || {}); const sr = this.sr;
       this.aA = Math.exp(-1 / (Math.max(0.05, p.at) * 1e-3 * sr)); this.aR = Math.exp(-1 / (Math.max(1, p.rl) * 1e-3 * sr));
       this.sl = p.ra > 1.001 ? 1 - 1 / p.ra : 0;
       if (now) { Object.assign(this.cur, p); this.mk = p.mk; this.coefs(); }
     }
-    coefs() { const c = this.cur, sr = this.sr; this.cH = c.hp > 0 ? bq('hp', c.hp, sr, Math.SQRT1_2) : null; this.cP = Math.abs(c.pg) > 0.005 ? bq('pk', c.pf, sr, c.pq, c.pg) : null; this.cS = Math.abs(c.hs) > 0.005 ? bq('hs', 6000, sr, 0, c.hs) : null; }
+    coefs() { const c = this.cur, sr = this.sr; this.cH = c.hp > 0 ? bq('hp', c.hp, sr, Math.SQRT1_2) : null; this.cP = Math.abs(c.pg) > 0.005 ? bq('pk', c.pf, sr, c.pq, c.pg) : null; this.cS = Math.abs(c.hs) > 0.005 ? bq('hs', 6000, sr, 0, c.hs) : null; this.cL = Math.abs(c.ls) > 0.005 ? bq('ls', 150, sr, 0, c.ls) : null; }   // MX1: cL
     glide() {
       const c = this.cur, p = this.P; let ch = false;
       const to = (k, v, lin) => { if (c[k] === v) return; ch = true; const d = lin ? v - c[k] : Math.log(v / c[k]); if (Math.abs(d) < (lin ? 0.02 : 0.003)) c[k] = v; else c[k] = lin ? c[k] + d * 0.25 : c[k] * Math.exp(d * 0.25); };
       if (p.hp > 0 && !(c.hp > 0)) { c.hp = 10; ch = true; }
       if (p.hp > 0) to('hp', p.hp); else if (c.hp > 0) { ch = true; c.hp *= 0.75; if (c.hp < 12) c.hp = 0; }
-      to('pf', p.pf); to('pq', p.pq); to('pg', p.pg, true); to('hs', p.hs, true);
+      to('pf', p.pf); to('pq', p.pq); to('pg', p.pg, true); to('hs', p.hs, true); to('ls', p.ls, true);   // MX1: ls
       if (ch) this.coefs();
     }
     // iL/iR → oL/oR (n Samples), sec = Songteil-Pegel in dB
     process(iL, iR, oL, oR, n, sec) {
       this.glide();
-      const z = this.z, cH = this.cH, cP = this.cP, cS = this.cS, sl = this.sl, thr = this.P.thr, aA = this.aA, aR = this.aR, wk = this.wk, gk = this.gk, wT = this.wT, mkT = this.P.mk + (sec || 0);
+      const z = this.z, cH = this.cH, cP = this.cP, cS = this.cS, cL = this.cL, sl = this.sl, thr = this.P.thr, aA = this.aA, aR = this.aR, wk = this.wk, gk = this.gk, wT = this.wT, mkT = this.P.mk + (sec || 0);
       let gr = this.gr, mk = this.mk, w = this.w, gmin = this.grMin;
       for (let i = 0; i < n; i++) {
         const xl = iL[i], xr = iR[i]; let l = xl === xl ? xl : 0, r = xr === xr ? xr : 0;
         if (cH) { l = run(cH, z, 0, l); r = run(cH, z, 2, r); }
+        if (cL) { l = run(cL, z, 12, l); r = run(cL, z, 14, r); }   // MX1: Bass-Shelf
         if (cP) { l = run(cP, z, 4, l); r = run(cP, z, 6, r); }
         if (cS) { l = run(cS, z, 8, l); r = run(cS, z, 10, r); }
         if (sl) {
@@ -61909,7 +61941,7 @@ class SynqMixa extends AudioWorkletProcessor {
   static get parameterDescriptors() { return [{name: 'sec', defaultValue: 0, minValue: -24, maxValue: 24, automationRate: 'k-rate'}]; }
   constructor(o) {
     super(); const p = (o && o.processorOptions) || {}; this.m = p.mode === 'master';
-    this.d = this.m ? new MIXA_D.Master(sampleRate, p.lat) : new MIXA_D.Track(sampleRate);
+    this.d = this.m ? new (typeof MX1_D !== 'undefined' ? MX1_D.Master : MIXA_D.Master)(sampleRate, p.lat) : new MIXA_D.Track(sampleRate);   // MX1: Multiband/Sättigung (ohne = MIX-A)
     this.d.set(p.P || {}, true); if (!this.m) { this.d.wT = p.wet == null ? 1 : p.wet; this.d.w = p.fade ? 0 : this.d.wT; }
     this.z = new Float32Array(128); this.alive = true;
     this.port.onmessage = e => { const m = e.data; if (!m) return; if (m.P) this.d.set(m.P, !!m.now); if (m.wet != null && !this.m) this.d.wT = m.wet; if (m.dispose) this.alive = false; };
@@ -61955,7 +61987,7 @@ class SynqMixaAn extends AudioWorkletProcessor {
 registerProcessor('synq-mixa-an', SynqMixaAn);
 `;
 const MIXA = {mods: new WeakMap(), w: null, wid: 0, wq: new Map(), busy: false, prog: 0, res: null, am: null, amBusy: false, amProg: 0, ab: false, done: new Map(), err: 0, run: -1, how: null, ziel: -14, last: null, cap: null};
-const mixaModSrc = () => 'const MIXA_D = (' + mixaDspMake.toString() + ')();\n' + MIXA_PROC_SRC;
+const mixaModSrc = () => 'const MIXA_D = (' + mixaDspMake.toString() + ')();\n' + MIXA_PROC_SRC + mx1ModSrc();   // MX1
 function mixaAddModule(c) {
   let m = MIXA.mods.get(c); if (m === true) return Promise.resolve(true); if (m === false) return Promise.resolve(false); if (m) return m;
   if (!c || !c.audioWorklet || typeof AudioWorkletNode !== 'function') { MIXA.mods.set(c, false); return Promise.resolve(false); }
@@ -61978,7 +62010,7 @@ function mixaSyncAll(now) { if (!AU.ctx) return; for (let i = 0; i < NT(); i++) 
 
 /* ---------- Daten ---------- */
 // beide Normalisierer sind in sich geschlossen (laufen schon beim Start in demoProject / normalizeProject, vor diesem Abschnitt)
-function mixaMixR() { return {hp: [0, 500], pf: [20, 20000], pg: [-12, 12], pq: [0.3, 8], hs: [-12, 12], thr: [-60, 0], ra: [1, 20], at: [0.05, 200], rl: [5, 2000], mk: [-12, 12]}; }
+function mixaMixR() { return {hp: [0, 500], pf: [20, 20000], pg: [-12, 12], pq: [0.3, 8], hs: [-12, 12], thr: [-60, 0], ra: [1, 20], at: [0.05, 200], rl: [5, 2000], mk: [-12, 12], ls: [-12, 12]}; }   // MX1: + ls
 function mixaNormMix(m) {
   if (!m || typeof m !== 'object' || Array.isArray(m)) return null;
   const o = {}, R = mixaMixR(), num = v => typeof v === 'number' && isFinite(v), cl = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -61991,14 +62023,16 @@ function mixaNormAm(a) {
   if (!a || typeof a !== 'object' || Array.isArray(a)) return null;
   const N = (k, lo, hi, d) => (typeof a[k] === 'number' && isFinite(a[k]) ? +(a[k] < lo ? lo : a[k] > hi ? hi : a[k]).toFixed(2) : d);
   return {on: a.on !== false, ziel: a.ziel === -9 ? -9 : -14, lo: N('lo', -6, 6, 0), hi: N('hi', -6, 6, 0), thr: N('thr', -60, 0, 0), ra: N('ra', 1, 10, 1),
-    at: N('at', 0.1, 200, 30), rl: N('rl', 10, 2000, 200), gain: N('gain', -24, 30, 0), ceil: N('ceil', -6, 0, -1)};
+    at: N('at', 0.1, 200, 30), rl: N('rl', 10, 2000, 200), gain: N('gain', -24, 30, 0), ceil: N('ceil', -6, 0, -1), ...mx1NormAmX(a)};   // MX1: st, mb, sat
 }
-const mixaFxOf = tr => { const f = (tr && tr.sound && tr.sound.fx) || {}; return {vol: f.vol === undefined ? null : f.vol, pan: f.pan === undefined ? null : f.pan, pump: f.pump === undefined ? null : f.pump, pumpRel: f.pumpRel === undefined ? null : f.pumpRel}; };
-function mixaSnap() { return JSON.stringify({t: S.tracks.map(tr => [tr.mix || null, mixaFxOf(tr)]), am: (S.fxBus && S.fxBus.am) || null, ps: S.fxBus ? S.fxBus.pumpSrc : null}); }
+const mixaFxOf = tr => { const f = (tr && tr.sound && tr.sound.fx) || {}; return {vol: f.vol === undefined ? null : f.vol, pan: f.pan === undefined ? null : f.pan, pump: f.pump === undefined ? null : f.pump, pumpRel: f.pumpRel === undefined ? null : f.pumpRel, rev: f.rev === undefined ? null : f.rev, dly: f.dly === undefined ? null : f.dly}; };   // MX1: + rev/dly (Tiefe)
+function mixaSnap() { return JSON.stringify({t: S.tracks.map(tr => [tr.mix || null, mixaFxOf(tr), tr.mxRole || null]),   // MX1: + Rolle
+    am: (S.fxBus && S.fxBus.am) || null, ps: S.fxBus ? S.fxBus.pumpSrc : null}); }
 function mixaRestore(val) {
   const o = JSON.parse(val); if (!o) return;
-  (o.t || []).forEach(([m, fx], i) => {
+  (o.t || []).forEach(([m, fx, ro], i) => {
     const tr = S.tracks[i]; if (!tr) return;
+    if (mx1NormRole(ro)) tr.mxRole = ro; else delete tr.mxRole;   // MX1
     const mm = mixaNormMix(m); if (mm) tr.mix = mm; else delete tr.mix;
     if (fx && tr.sound) { if (!tr.sound.fx) tr.sound.fx = {}; for (const k of Object.keys(fx)) { if (fx[k] === null) delete tr.sound.fx[k]; else tr.sound.fx[k] = fx[k]; } }
   });
@@ -62097,7 +62131,7 @@ function mixaIdle() {
 /* ---------- Master-Knoten: parallel zu Limiter/Soft-Ceiling (gleicher Zeitversatz), A = bisher, B = Auto-Master ----------
    vol → [Limiter → Soft-Ceiling] → A ┐
    vol → synq-mixa (Master)        → B ┴→ out → destination, Analyser, Meter, Song-Aufnahme, Stimme-Referenz */
-function mixaAmP() { const a = S.fxBus && S.fxBus.am; return a && a.on ? {lo: a.lo, hi: a.hi, thr: a.thr, ra: a.ra, at: a.at, rl: a.rl, gain: a.gain, ceil: a.ceil} : null; }
+function mixaAmP() { const a = S.fxBus && S.fxBus.am; return a && a.on ? mx1AmP(a, {lo: a.lo, hi: a.hi, thr: a.thr, ra: a.ra, at: a.at, rl: a.rl, gain: a.gain, ceil: a.ceil}) : null; }   // MX1
 function mixaMoveTaps(from, to) {
   try { if (AU.meter && AU.meter.node && AU.meter.ctx === AU.ctx) { try { from.disconnect(AU.meter.node); } catch (e) {} to.connect(AU.meter.node, 0, MAX_T); } } catch (e) { logErr(e); }
   try { if (typeof SREC !== 'undefined' && SREC.dst) { try { from.disconnect(SREC.dst); } catch (e) {} to.connect(SREC.dst); } } catch (e) { logErr(e); }
@@ -62158,6 +62192,7 @@ function mixaTapBuild(off) {
   try { M.ceil.disconnect(c.destination); } catch (e) {}
   X.chunks = []; X.nw = 0; X.n = n;
   an.port.onmessage = e => { const m = e.data; if (m && m.w) { X.chunks.push(m.w); X.nw += m.n; } };
+  mx1TapBuild(off);                                               // MX1: Oktavbänder + Mitte/Seite je Spur
 }
 async function mixaRender(onProg) {
   const song = S.song; if (!song || !song.bars) throw new Error('Noch kein Song – erst ● SONG');
@@ -62166,6 +62201,7 @@ async function mixaRender(onProg) {
   try { r = await vvRenderAudio({range: {a: 0, b: song.bars, sel: false}, mixa: X, onProgress: onProg}); } finally { VV.last = keep; }
   const want = Math.floor(r.buf.length / 512) - 1, W0 = performance.now();
   while (X.nw < want && performance.now() - W0 < 2000) await sleep(15);
+  await mx1Wait(X);                                               // MX1
   const S1 = 1 + X.n * 15, win = new Float32Array(X.nw * S1); let o = 0; for (const ch of X.chunks) { win.set(ch, o); o += ch.length; }
   X.chunks = null;
   return {r, X, win, S1};
@@ -62175,7 +62211,7 @@ async function mixaCopy(src) { const out = new Float32Array(src.length); for (le
 
 /* ---------- Worker ---------- */
 function mixaJob(D, m) {
-  if (m.op === 'am') return D.amFit(m.L, m.R, m.sr, m.o);
+  if (m.op === 'am') return m.o && m.o.st && typeof mx1Fit === 'function' ? mx1Fit(D, m.L, m.R, m.sr, m.o) : D.amFit(m.L, m.R, m.sr, m.o);   // MX1: Multiband-Master
   const S1 = 1 + m.nIn * D.NF, nw = Math.floor(m.win.length / S1), T = [];
   for (const t of m.tracks) {
     const f = D.feats(m.win, m.nIn, t.i, m.wsec, null), c = D.classify(t, t.ns, f);
@@ -62190,12 +62226,12 @@ function mixaJob(D, m) {
     secs.push({id: s.id, name: s.name, a: s.a, b: s.b, L: Ld.map(v => +v.toFixed(1)), act: m.tracks.map(t => Ld[t.i] > mx - 30 && Ld[t.i] > -60)});
   }
   const sug = D.suggest(T, {bpm: m.bpm, pumpSrc: m.pumpSrc, otherPump: m.otherPump, secs});
-  return {T, secs, sug};
+  return typeof mx1JobEnd === 'function' ? mx1JobEnd(D, m, {T, secs, sug}) : {T, secs, sug};   // MX1: Rolle, Oktavbänder, Überdeckung, Tiefe
 }
 function mixaWorker() {
   if (MIXA.w !== null) return MIXA.w;
   try {
-    const src = 'const D = (' + mixaDspMake.toString() + ')();\n' + mixaJob.toString() + '\nonmessage = e => { const m = e.data; try { postMessage({id: m.id, r: mixaJob(D, m)}); } catch (err) { postMessage({id: m.id, err: String(err && err.message || err)}); } };';
+    const src = 'const D = (' + mixaDspMake.toString() + ')();\n' + mixaJob.toString() + mx1WorkerSrc() + '\nonmessage = e => { const m = e.data; try { postMessage({id: m.id, r: mixaJob(D, m)}); } catch (err) { postMessage({id: m.id, err: String(err && err.message || err)}); } };';
     const u = URL.createObjectURL(new Blob([src], {type: 'application/javascript'}));
     const w = new Worker(u); setTimeout(() => { try { URL.revokeObjectURL(u); } catch (e) {} }, 30000);
     w.onmessage = e => { const m = e.data, q = MIXA.wq.get(m.id); if (!q) return; MIXA.wq.delete(m.id); if (m.err) q.no(new Error(m.err)); else q.ok(m.r); };
@@ -62254,20 +62290,22 @@ async function mixaMeasure(what) {
   if (MIXA.busy) return null;
   if (!S.song || !S.song.bars) { toast('Noch kein Song – erst ● SONG'); return null; }
   MIXA.busy = what; MIXA.prog = 0; mixaPaint(); amPaint();
+  MX1.tap = what !== 'am';                                        // MX1: zweiter Abgriff nur für den Mix-Assistenten
   const T0 = performance.now();
   try {
     const sig = mixaStateSig(), {r, X, win, S1} = await mixaRender(p => { MIXA.prog = p * 0.7; mixaProg(); });
     const sr = r.sr, nIn = X.n, out = {sig, ms: 0};
     if (what === 'mix' || what === 'beide') {
       const tracks = S.tracks.map((tr, i) => ({i, name: tr.name, kind: tr.kind, stimme: !!tr.stimme, chor: !!(tr.chor && tr.chor.length), mute: !!tr.mute, ns: mixaNoteStats(i), fx: Object.assign({drive: 0}, fxOfSound(tr.sound)), mix: tr.mix || null})).filter(t => !t.mute);
-      const res = await mixaCall({op: 'mix', win, nIn, wsec: 512 / sr, tracks, secs: mixaSections(), t0: X.t0, a0: 0, spb: 60 / r.bpm, bpm: r.bpm, pumpSrc: S.fxBus.pumpSrc, otherPump: S.tracks.some(t => t.sound && t.sound.fx && t.sound.fx.pump > 0)}, [win.buffer]);
+      const mxm = mx1Msg(X, r);                                      // MX1
+      const res = await mixaCall({op: 'mix', win, nIn, wsec: 512 / sr, tracks, secs: mixaSections(), t0: X.t0, a0: 0, spb: 60 / r.bpm, bpm: r.bpm, pumpSrc: S.fxBus.pumpSrc, otherPump: S.tracks.some(t => t.sound && t.sound.fx && t.sound.fx.pump > 0), mx1: mxm}, mxm ? [win.buffer, mxm.win.buffer] : [win.buffer]);
       MIXA.res = Object.assign(res, {sig, at: Date.now()}); MIXA.done.clear();
     }
     MIXA.prog = 0.75; mixaProg();
     if (what === 'am' || what === 'beide') {
       const L = await mixaCopy(r.ch[0]), Rr = await mixaCopy(r.ch[1]);
       const lat = Math.round((AU.compLat || FX.COMP_LATENCY) * sr), ziel = MIXA.ziel;
-      const P = await mixaCall({op: 'am', L, R: Rr, sr, o: {ziel, ceil: -1, bpm: r.bpm, lat}}, [L.buffer, Rr.buffer]);
+      const P = await mixaCall({op: 'am', L, R: Rr, sr, o: {ziel, ceil: -1, bpm: r.bpm, lat, st: mx1Style()}}, [L.buffer, Rr.buffer]);   // MX1: Stil
       if (!P) { toast('Song zu leise zum Messen'); MIXA.am = null; }
       else MIXA.am = {P, ziel, sig, at: Date.now()};
     }
@@ -62281,6 +62319,7 @@ async function mixaMeasure(what) {
 // Vorschläge übernehmen: list = [{i, s}] – ein Undo-Schritt
 function mixaApply(list, label) {
   const before = mixaSnap(), did = [];
+  mx1AbMark(before);                                              // MX1: Vorher = Stand vor dem ersten Übernehmen
   for (const {i, s} of list) { if (!s || !s.patch || !S.tracks[i] || mixaIsApplied(i, s)) continue; MIXA.done.set(i + ':' + s.id, mixaPatchGet(i, s.patch)); mixaPatchSet(i, s.patch); did.push(i); }
   if (!did.length) return false;
   undoPush({kind: 'mixa', before, label}); mixaAfter([...new Set(did)], list.some(x => x.s && x.s.patch && x.s.patch.bus));
@@ -62301,7 +62340,7 @@ function mixaAll() {
 // Auto-Master übernehmen / aus (je ein Undo-Schritt)
 function amApply() {
   const a = MIXA.am; if (!a) return false;
-  const before = mixaSnap(), P = a.P; S.fxBus.am = mixaNormAm({on: true, ziel: a.ziel, lo: P.lo, hi: P.hi, thr: P.thr, ra: P.ra, at: P.at, rl: P.rl, gain: P.gain, ceil: P.ceil});
+  const before = mixaSnap(), P = a.P; S.fxBus.am = mixaNormAm(Object.assign({on: true, ziel: a.ziel, lo: P.lo, hi: P.hi, thr: P.thr, ra: P.ra, at: P.at, rl: P.rl, gain: P.gain, ceil: P.ceil}, mx1AmPick(P)));   // MX1
   if (before === mixaSnap()) return false;
   undoPush({kind: 'mixa', before, label: 'Auto-Master ' + a.ziel + ' LUFS'}); mixaAfter([], true); return true;
 }
@@ -62323,25 +62362,28 @@ function mixaSheet(anchor) {
   openPop(null, p => { p.classList.add('tksheet', 'mxsheet', 'pan-y'); guardTouch(p); mixaPaint(true, p);
     onTap(p, b => {
       const a = b.dataset.a, i = +b.dataset.i, s = a === 'ok' || a === 'back' ? mixaSug(i, b.dataset.s) : null;
+      if (a && a.startsWith('mx1')) { mx1MixTap(b); return; }   // MX1: Rolle, EQ · KOMP, Vorher/Nachher
+      mx1AbEnd();
       if (a === 'go') { mixaMeasure('mix'); haptic('pop'); }
       else if (a === 'all') { if (mixaAll()) haptic('pop'); }
       else if (a === 'ok' && s) { if (mixaApply([{i, s}], 'Mix: ' + S.tracks[i].name + ' ' + s.titel)) haptic('pop'); }
       else if (a === 'back' && s) { if (mixaRevert(i, s)) haptic('tick'); }
       else if (a === 'x') closePop();
     }, 'button[data-a]');
-  }, {name: 'mixa'});
+  }, {name: 'mixa', onClose: () => mx1AbEnd()});                 // MX1: Schließen = wieder NACHHER
   return true;
 }
 function mixaPaint(full, el0) {
   const p = el0 || (UI.pop && UI.pop.name === 'mixa' ? UI.pop.el : null); if (!p) return;
   const r = MIXA.res, old = r && r.sig !== mixaStateSig(), busy = !!MIXA.busy, sc = p.scrollTop;
   let h = `<h4>Mix-Assistent</h4><div class="small">Erkennt Rolle und Charakter jeder Spur (Noten, Hüllkurve, Frequenzbild, Dynamik) und schlägt Werkzeuge vor. Nichts ändert sich ohne Tipp.</div>` +
-    `<div class="mxtop"><button class="mbtn rb" data-a="go"${busy ? ' disabled' : ''}>${r ? 'Neu analysieren' : 'Analysieren'}</button><button class="mbtn rb" data-a="all"${r && !busy ? '' : ' disabled'}>Alle übernehmen</button><button class="mbtn rb" data-a="x">Fertig</button></div>` +
+    `<div class="mxtop"><button class="mbtn rb" data-a="go"${busy ? ' disabled' : ''}>${r ? 'Neu analysieren' : 'Analysieren'}</button><button class="mbtn rb" data-a="all"${r && !busy ? '' : ' disabled'}>Alle übernehmen</button><button class="mbtn rb" data-a="x">Fertig</button></div>` + mx1MixTop(busy) +   // MX1
     `<div class="small mxst">${busy ? '<span class="mxprog">rechnet … ' + Math.round(MIXA.prog * 100) + ' %</span>' : r ? (old ? 'Mix geändert seit der Analyse – neu analysieren' : 'Analyse ' + r.T.length + ' Spuren') : 'Noch nicht analysiert'}</div>`;
   if (r) {
     r.T.forEach((t, k) => {
       const f = t.f || {}, ns = t.ns, L = r.sug[k] || [];
       h += `<div class="mxcard"><div class="mxhd"><b>${esc(t.name)}</b> <span class="mxcl">${f.silent ? 'still' : esc(MIXA_CLS[t.cls] || t.cls) + ' · ' + esc(t.chr)}</span></div>`;
+      h += mx1CardHtml(t);                                         // MX1: Rolle, Spektrum, Breite, Hall/Echo, Überdeckung
       if (!f.silent) h += `<div class="small mxkv">${ns ? 'Lage ' + mixaNote(ns.medP) + ' · ' + fmtDec(ns.dens, 1) + ' Einsätze/Schlag · Länge ' + fmtDec(ns.durB, 2) + ' Schl. · ' : ''}Attack ${f.att == null ? '–' : Math.round(f.att) + ' ms'} · Schwerpunkt ${f.cen} Hz · Tiefen ${mixaF(f.lowDb)} dB · Höhen ${mixaF(f.hiDb)} dB · Crest ${mixaF(f.crest)} dB · ${mixaF(f.I)} LUFS</div>`;
       for (const s of L) {
         const ap = s.patch && mixaIsApplied(t.i, s), can = MIXA.done.has(t.i + ':' + s.id);
@@ -62363,6 +62405,7 @@ function amSheet(anchor) {
       else if (a === 'ok') { if (amApply()) haptic('pop'); }
       else if (a === 'ab') { mixaAB(); haptic('tick'); }
       else if (a === 'off') { if (amOff()) haptic('tick'); }
+      else if (a && a.startsWith('mx1')) mx1AmTap(b);                // MX1: Stil, MASTERN
       else if (a === 'x') closePop();
     }, 'button[data-a]');
   }, {name: 'am', onClose: () => { if (MIXA.ab) mixaAB(false); }});
@@ -62371,9 +62414,9 @@ function amSheet(anchor) {
 function amPaint(full, el0) {
   const p = el0 || (UI.pop && UI.pop.name === 'am' ? UI.pop.el : null); if (!p) return;
   const a = MIXA.am, on = S.fxBus.am && S.fxBus.am.on ? S.fxBus.am : null, busy = !!MIXA.busy, P = a && a.P, I = P && P.info, old = a && a.sig !== mixaStateSig();
-  const same = on && P && ['lo', 'hi', 'thr', 'ra', 'at', 'rl', 'gain', 'ceil'].every(k => Math.abs(on[k] - P[k]) < 0.006) && on.ziel === a.ziel;
+  const same = on && P && ['lo', 'hi', 'thr', 'ra', 'at', 'rl', 'gain', 'ceil'].every(k => Math.abs(on[k] - P[k]) < 0.006) && on.ziel === a.ziel && mx1AmSame(on, P);   // MX1
   let h = `<h4>Auto-Master</h4><div class="small">Bus-Kompressor · EQ-Neigung · Pegel · True-Peak-Limiter −1 dBTP – im Video und im GarageBand-Instrumental gleich.</div>` +
-    `<div class="mxz" role="group" aria-label="Ziel-Lautheit">${MIXA_ZIELE.map(([v, l]) => `<button class="mbtn rb" data-a="z" data-v="${v}"${MIXA.ziel === v ? ' aria-pressed="true"' : ''}${busy ? ' disabled' : ''}>${esc(l)}</button>`).join('')}</div>` +
+    `<div class="mxz" role="group" aria-label="Ziel-Lautheit">${MIXA_ZIELE.map(([v, l]) => `<button class="mbtn rb" data-a="z" data-v="${v}"${MIXA.ziel === v ? ' aria-pressed="true"' : ''}${busy ? ' disabled' : ''}>${esc(l)}</button>`).join('')}</div>` + mx1AmTop(busy) +   // MX1: Stil, MASTERN
     `<div class="mxtop"><button class="mbtn rb" data-a="go"${busy ? ' disabled' : ''}>Messen</button><button class="mbtn rb" data-a="ok"${P && !busy && !same ? '' : ' disabled'}>Übernehmen</button>` +
     `<button class="mbtn rb" data-a="ab"${on ? '' : ' disabled'}${MIXA.ab ? ' aria-pressed="true"' : ''}>Vorher/Nachher</button><button class="mbtn rb" data-a="off"${on ? '' : ' disabled'}>Aus</button></div>` +
     `<div class="small mxst">${busy ? '<span class="mxprog">rechnet … ' + Math.round(MIXA.prog * 100) + ' %</span>' : on ? 'An: ' + on.ziel + ' LUFS' + (MIXA.ab ? ' · du hörst VORHER' : '') + (old ? ' · Mix geändert – neu messen' : '') : P ? 'Vorschlag bereit – Übernehmen' : 'Ziel wählen und messen (Song einmal offline)'}</div>`;
@@ -62382,6 +62425,7 @@ function amPaint(full, el0) {
     h += '<div class="mxgrid">' + row('Lautheit', mixaF(I.lin) + ' → ' + mixaF(I.lout) + ' LUFS') + row('True-Peak', mixaF(I.tp) + ' dBTP') + row('Dynamik (LRA)', fmtDec(I.lraIn, 1) + ' → ' + fmtDec(I.lraOut, 1) + ' LU') +
       row('EQ-Neigung', 'Tief ' + (P.lo > 0 ? '+' : '') + mixaF(P.lo) + ' · Hoch ' + (P.hi > 0 ? '+' : '') + mixaF(P.hi) + ' dB') + row('Kompressor', fmtDec(P.ra, 1) + ' : 1 · ' + mixaF(P.thr) + ' dB · ' + P.at + '/' + P.rl + ' ms') + row('Kompressor-Arbeit', 'max ' + mixaF(I.compMax) + ' · Mittel ' + mixaF(I.compAvg) + ' dB') +
       row('Pegel', (P.gain > 0 ? '+' : '') + mixaF(P.gain, 2) + ' dB') + row('Limiter', 'max ' + mixaF(I.limMax) + ' dB · Mittel ' + mixaF(I.limAvg) + ' dB') + '</div>';
+    h += mx1AmRows(P, I);                                           // MX1: Multiband, Sättigung, Stil
     if (I.limAvg > 2) h += '<div class="small mxwarn">Der Limiter arbeitet viel – „Streaming −14“ klingt offener.</div>';
   }
   p.innerHTML = h;
@@ -62403,6 +62447,563 @@ const MIXA_API = {
   mixaCore: () => mixaDspMake(),
   mixaNoteStats: i => mixaNoteStats(i), mixaSections: () => mixaSections()
 };
+
+/* ===================== MX1 BEGIN: Mix & Master „wie gemastert“ (Paket MX1, baut auf MIX-A auf) =====================
+   Gleicher Worklet-Kern, gleicher Worker, gleiche Undo-Art 'mixa' wie MIX-A. Neu:
+   - Spur-Einschub: + Bass-Shelf (track.mix.ls, 150 Hz); Blatt „EQ · KOMP“ (Low-Cut, Bass, Mitte, Güte, Höhen, Kompressor) aus FX › SPUR
+     und aus dem Mix-Assistenten; jede Dreh-Geste ein Undo-Schritt
+   - Analyse je Spur im selben Offline-Durchlauf: Oktavbänder 63 Hz … 16 kHz, Stereo-Breite (Seitenanteil), Hall-/Echo-Anteil aus den
+     Werten (Send · Rückweg · Länge bzw. Feedback); Rolle je Spur überschreibbar (track.mxRole, fehlt = automatisch)
+   - Vorschläge im Kontext: Überdeckung je Band (wer hat dort Vorrang), Bass-Shelf, Tiefenstaffelung (Hall, Höhen), Breite; Bass-Low-Cut
+     nur als Subsonic unter dem tiefsten Ton
+   - Master: 3-Band-Multiband-Kompressor (Linkwitz-Riley 4. Ordnung) + sanfte Sättigung vor dem MIX-A-Master (EQ, Bus-Kompressor,
+     Pegel, True-Peak-Limiter); Stil-Vorgaben; [MASTERN] = messen + einstellen; fxBus.am.{st, mb, sat}
+   - Mix Vorher/Nachher (nur Hören, kein Undo-Schritt)
+   Alte Projekte: ohne die neuen Felder läuft alles bitgleich wie vorher (Master ohne mb/sat = MIX-A-Master, Spur ohne ls = wie vorher). */
+function mx1DspMake(D) {
+  'use strict';
+  const LN = Math.LN10 / 20, clampN = (x, a, b) => (x < a ? a : x > b ? b : x), lg = x => 10 * Math.log10(x > 1e-30 ? x : 1e-30);
+  const OCT = [63, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
+  // Allpass 2. Ordnung (Q = √½) = Summe aus LR4-Tief- und -Hochpass bei f: hält das tiefe Band phasengleich mit Mitte + Höhen
+  function ap(f, sr) { const w = 2 * Math.PI * clampN(f, 1, sr * 0.45) / sr, cw = Math.cos(w), al = Math.sin(w) / (2 * Math.SQRT1_2), a0 = 1 + al; return [(1 - al) / a0, -2 * cw / a0, 1, -2 * cw / a0, (1 - al) / a0]; }
+  // |H|² eines normierten Biquads bei w (rad/Sample)
+  function mag2(c, w) {
+    const c1 = Math.cos(w), s1 = Math.sin(w), c2 = Math.cos(2 * w), s2 = Math.sin(2 * w);
+    const nr = c[0] + c[1] * c1 + c[2] * c2, ni = -(c[1] * s1 + c[2] * s2), dr = 1 + c[3] * c1 + c[4] * c2, di = -(c[3] * s1 + c[4] * s2);
+    return (nr * nr + ni * ni) / (dr * dr + di * di + 1e-30);
+  }
+  // Frequenzgang (dB) des Spur-EQs (gleiche Filter wie MIXA_D.Track: Hochpass, Bass-Shelf 150 Hz, Glocke, Höhen-Shelf 6 kHz)
+  function eqDb(m, f, sr) {
+    if (!m) return 0; const w = 2 * Math.PI * Math.min(f, sr * 0.49) / sr; let p = 1;
+    if (m.hp > 0) p *= mag2(D.bq('hp', m.hp, sr, Math.SQRT1_2), w);
+    if (m.ls && Math.abs(m.ls) > 0.005) p *= mag2(D.bq('ls', 150, sr, 0, m.ls), w);
+    if (m.pg && Math.abs(m.pg) > 0.005) p *= mag2(D.bq('pk', m.pf == null ? 100 : m.pf, sr, m.pq == null ? 1.4 : m.pq, m.pg), w);
+    if (m.hs && Math.abs(m.hs) > 0.005) p *= mag2(D.bq('hs', 6000, sr, 0, m.hs), w);
+    return lg(p);
+  }
+
+  /* ---------- Multiband (3 Bänder, LR4 bei f1/f2): je Band RMS-Kompressor (5 ms, Stereo gekoppelt, weiches Knie 6 dB) + Pegel ---------- */
+  class MB3 {
+    constructor(sr) { this.sr = sr; this.z = new Float64Array(36); this.on = false; this.e = new Float64Array(3); this.gr = new Float64Array(3); this.mk = new Float64Array(3); this.B = null; this.f = [0, 0];
+      this.cR = Math.exp(-1 / (0.005 * sr)); this.gk = 1 - Math.exp(-1 / (0.05 * sr)); this.st = {grMin: [0, 0, 0], grSum: [0, 0, 0], n: 0}; }
+    set(mb, now) {
+      if (!mb || !Array.isArray(mb.b) || mb.b.length !== 3) { this.on = false; return; }
+      const sr = this.sr, f1 = clampN(+mb.f1 || 150, 40, 500), f2 = clampN(+mb.f2 || 3000, 800, 9000), Q = Math.SQRT1_2;
+      if (f1 !== this.f[0] || f2 !== this.f[1]) { this.f = [f1, f2]; this.cL1 = D.bq('lp', f1, sr, Q); this.cH1 = D.bq('hp', f1, sr, Q); this.cL2 = D.bq('lp', f2, sr, Q); this.cH2 = D.bq('hp', f2, sr, Q); this.cA2 = ap(f2, sr); }
+      this.B = mb.b.map(x => { const ra = Math.max(1, +x[1] || 1), at = Math.max(0.1, +x[2] || 10), rl = Math.max(5, +x[3] || 150);
+        return {thr: +x[0] || 0, sl: ra > 1.001 ? 1 - 1 / ra : 0, aA: Math.exp(-1 / (at * 1e-3 * sr)), aR: Math.exp(-1 / (rl * 1e-3 * sr)), mk: +x[4] || 0}; });
+      if (!this.on) { this.z.fill(0); this.e.fill(0); this.gr.fill(0); }
+      if (!this.on || now) for (let k = 0; k < 3; k++) this.mk[k] = this.B[k].mk;
+      this.on = true;
+    }
+    process(iL, iR, oL, oR, n) {
+      const z = this.z, B = this.B, e = this.e, gr = this.gr, mk = this.mk, cR = this.cR, gk = this.gk, st = this.st, run = D.run;
+      const cL1 = this.cL1, cH1 = this.cH1, cL2 = this.cL2, cH2 = this.cH2, cA2 = this.cA2, B0 = B[0], B1 = B[1], B2 = B[2];
+      for (let i = 0; i < n; i++) {
+        let xl = iL[i], xr = iR[i]; if (!(xl === xl)) xl = 0; if (!(xr === xr)) xr = 0;
+        const l0 = run(cA2, z, 4, run(cL1, z, 2, run(cL1, z, 0, xl))), hl = run(cH1, z, 8, run(cH1, z, 6, xl)), l1 = run(cL2, z, 12, run(cL2, z, 10, hl)), l2 = run(cH2, z, 16, run(cH2, z, 14, hl));
+        const r0 = run(cA2, z, 22, run(cL1, z, 20, run(cL1, z, 18, xr))), hr = run(cH1, z, 26, run(cH1, z, 24, xr)), r1 = run(cL2, z, 30, run(cL2, z, 28, hr)), r2 = run(cH2, z, 34, run(cH2, z, 32, hr));
+        let ol = 0, or = 0;
+        for (let k = 0; k < 3; k++) {
+          const a = k === 0 ? l0 : k === 1 ? l1 : l2, b = k === 0 ? r0 : k === 1 ? r1 : r2, P = k === 0 ? B0 : k === 1 ? B1 : B2;
+          let g = 0;
+          if (P.sl) {
+            const p2 = (a * a + b * b) * 0.5; e[k] = p2 + (e[k] - p2) * cR;
+            const o = 10 * Math.log10(e[k] > 1e-20 ? e[k] : 1e-20) - P.thr, gc = o <= -3 ? 0 : o >= 3 ? -P.sl * o : -P.sl * (o + 3) * (o + 3) / 12;
+            g = gr[k] = gc < gr[k] ? gc + (gr[k] - gc) * P.aA : gc + (gr[k] - gc) * P.aR;
+            if (g < st.grMin[k]) st.grMin[k] = g; st.grSum[k] += g;
+          }
+          mk[k] += (P.mk - mk[k]) * gk;
+          const q = Math.exp((g + mk[k]) * LN); ol += a * q; or += b * q;
+        }
+        st.n++; oL[i] = ol; oR[i] = or;
+      }
+      if (!(gr[0] === gr[0]) || !(gr[1] === gr[1]) || !(gr[2] === gr[2]) || !(z[0] === z[0]) || !(z[18] === z[18])) { this.z.fill(0); this.e.fill(0); this.gr.fill(0); }
+    }
+  }
+  // sanfte Sättigung: tanh(k·x)/k (Kleinsignal-Verstärkung 1); k gleitet je Block
+  function satRun(L, R, n, k) { const ik = 1 / k; for (let i = 0; i < n; i++) { L[i] = Math.tanh(k * L[i]) * ik; R[i] = Math.tanh(k * R[i]) * ik; } }
+  /* ---------- Master: [Multiband → Sättigung] → MIX-A-Master (EQ-Neigung, Bus-Kompressor, Pegel, True-Peak-Limiter) ----------
+     Ohne P.mb und P.sat ist das genau der MIX-A-Master (bitgleich). Kein Zusatz-Versatz (IIR, keine Vorausschau). */
+  class Master {
+    constructor(sr, lat) { this.m = new D.Master(sr, lat); this.mb = new MB3(sr); this.k = 0; this.kT = 0; this.bL = new Float32Array(128); this.bR = new Float32Array(128); this.st = this.m.st; this.D = this.m.D; }
+    set(P, now) { this.m.set(P, now); this.mb.set(P && P.mb, now); const s = P && P.sat && +P.sat.k > 0 ? +P.sat.k : 0; this.kT = s; if (now) this.k = s; }
+    process(iL, iR, oL, oR, n) {
+      if (!this.mb.on && !(this.k > 1e-6) && !(this.kT > 1e-6)) { this.k = 0; return this.m.process(iL, iR, oL, oR, n); }
+      if (this.bL.length < n) { this.bL = new Float32Array(n); this.bR = new Float32Array(n); }
+      const L = this.bL, R = this.bR;
+      if (this.mb.on) this.mb.process(iL, iR, L, R, n); else for (let i = 0; i < n; i++) { const a = iL[i], b = iR[i]; L[i] = a === a ? a : 0; R[i] = b === b ? b : 0; }
+      if (this.k !== this.kT) { this.k += (this.kT - this.k) * 0.25; if (Math.abs(this.k - this.kT) < 1e-4) this.k = this.kT; }
+      if (this.k > 1e-6) satRun(L, R, n, this.k);
+      this.m.process(L, R, oL, oR, n);
+    }
+  }
+  // Multiband + Sättigung auf ein ganzes Signal (Fit/Prüfung); gibt neue Puffer + Kompressor-Arbeit je Band zurück
+  function pre(L, R, sr, P) {
+    const n = L.length, oL = new Float32Array(n), oR = new Float32Array(n), M = new MB3(sr); M.set(P.mb, true);
+    const k = P.sat && P.sat.k > 0 ? P.sat.k : 0;
+    for (let i = 0; i < n; i += 4096) {
+      const e = Math.min(n, i + 4096), a = oL.subarray(i, e), b = oR.subarray(i, e);
+      if (M.on) M.process(L.subarray(i, e), R.subarray(i, e), a, b, e - i); else { a.set(L.subarray(i, e)); b.set(R.subarray(i, e)); }
+      if (k) satRun(a, b, e - i, k);
+    }
+    return {L: oL, R: oR, gr: M.on ? M.st.grSum.map((s, j) => ({avg: +(-s / Math.max(1, M.st.n)).toFixed(2), max: +(-M.st.grMin[j]).toFixed(1)})) : null};
+  }
+
+  /* ---------- Master anpassen (Stil + Ziel): Bänder messen → Multiband, Sättigung, Bus-Kompressor, Pegel (Sekante wie MIX-A) ----------
+     ref = Energieanteil je Band (tief < f1, Mitte, hoch > f2) in dB an der Gesamtleistung, den der Stil anstrebt; korrigiert wird
+     höchstens ±2,5 dB (behutsam); der Kompressor jedes Bandes trifft am 95-%-Pegel genau „gr“ dB. */
+  const STYLES = {
+    synthpop: {name: 'Synth-Pop', f1: 150, f2: 3000, ra: [2.5, 2, 2], gr: [2.5, 2, 2], at: [30, 15, 8], rl: [220, 160, 120], sat: 0.3, ref: [-3.5, -3.5, -17], glue: [1.5, 1.5]},
+    disco: {name: 'Disco', f1: 140, f2: 3200, ra: [3, 2, 2], gr: [3, 2, 1.5], at: [25, 15, 8], rl: [180, 150, 110], sat: 0.3, ref: [-3.5, -3.7, -16.5], glue: [1.6, 1.5]},
+    house: {name: 'House', f1: 130, f2: 3000, ra: [3.5, 2.5, 2], gr: [3.5, 2.5, 2], at: [20, 12, 6], rl: [160, 130, 100], sat: 0.45, ref: [-3, -4, -17.5], glue: [1.8, 2]},
+    sanft: {name: 'Sanft', f1: 150, f2: 3000, ra: [1.6, 1.4, 1.4], gr: [1.2, 1, 1], at: [40, 25, 15], rl: [300, 250, 200], sat: 0.1, ref: [-4, -3, -18], glue: [1.3, 0.8]}
+  };
+  const r05 = x => Math.round(x * 2) / 2;
+  // Energie und 5-ms-RMS-Pegel (alle 5 ms) je Band; gleiche Weiche und gleicher Detektor wie MB3
+  function bands(L, R, sr, f1, f2) {
+    const Q = Math.SQRT1_2, cL1 = D.bq('lp', f1, sr, Q), cH1 = D.bq('hp', f1, sr, Q), cL2 = D.bq('lp', f2, sr, Q), cH2 = D.bq('hp', f2, sr, Q), cA2 = ap(f2, sr), z = new Float64Array(36), run = D.run;
+    const E = [0, 0, 0], e = [0, 0, 0], cR = Math.exp(-1 / (0.005 * sr)), H = Math.max(1, Math.round(0.005 * sr)), lv = [[], [], []]; let tot = 0;
+    for (let i = 0, n = L.length; i < n; i++) {
+      const xl = L[i], xr = R[i]; tot += (xl * xl + xr * xr) * 0.5;
+      const l0 = run(cA2, z, 4, run(cL1, z, 2, run(cL1, z, 0, xl))), hl = run(cH1, z, 8, run(cH1, z, 6, xl)), l1 = run(cL2, z, 12, run(cL2, z, 10, hl)), l2 = run(cH2, z, 16, run(cH2, z, 14, hl));
+      const r0 = run(cA2, z, 22, run(cL1, z, 20, run(cL1, z, 18, xr))), hr = run(cH1, z, 26, run(cH1, z, 24, xr)), r1 = run(cL2, z, 30, run(cL2, z, 28, hr)), r2 = run(cH2, z, 34, run(cH2, z, 32, hr));
+      const p0 = (l0 * l0 + r0 * r0) * 0.5, p1 = (l1 * l1 + r1 * r1) * 0.5, p2 = (l2 * l2 + r2 * r2) * 0.5;
+      E[0] += p0; E[1] += p1; E[2] += p2; e[0] = p0 + (e[0] - p0) * cR; e[1] = p1 + (e[1] - p1) * cR; e[2] = p2 + (e[2] - p2) * cR;
+      if (i % H === 0) for (let k = 0; k < 3; k++) lv[k].push(lg(e[k]));
+    }
+    return {share: E.map(v => lg(v / (tot || 1e-30))), lv};
+  }
+  function fit(L, R, sr, o) {
+    const T0 = Date.now(), Y = STYLES[o.st] || STYLES.synthpop, ziel = o.ziel, ceil = o.ceil == null ? -1 : o.ceil, lat = o.lat | 0 || Math.round(0.006 * sr);
+    const bl = D.kblocks([L, R], sr), Lin = D.integ(bl); if (!isFinite(Lin) || Lin < -60) return null;
+    const bd = bands(L, R, sr, Y.f1, Y.f2), b = [], corr = [];
+    for (let k = 0; k < 3; k++) {
+      const lv = bd.lv[k], mx = D.pct(lv, 0.99), act = lv.filter(v => v > mx - 30), ra = Y.ra[k], grT = Y.gr[k];
+      const thr = act.length ? clampN(r05(D.pct(act, 0.95) - grT / (1 - 1 / ra)), -80, 0) : 0;
+      const c = clampN(r05((Y.ref[k] - bd.share[k]) * 0.4), -2.5, 2.5); corr.push(c);
+      b.push([thr, ra, Y.at[k], Y.rl[k], clampN(r05(grT * 0.5 + c), -6, 6)]);
+    }
+    const mb = {f1: Y.f1, f2: Y.f2, b};
+    // Spitze nach dem Multiband (99 % der Spitzen je 64 Proben) → Sättigung: an dieser Spitze ≈ Y.sat·1,2 „weich“ (tanh)
+    const m0 = pre(L, R, sr, {mb}), ab = [];
+    for (let i = 0, N = m0.L.length; i < N; i += 64) { let a = 0; for (let j = i, e = Math.min(N, i + 64); j < e; j++) { const x = m0.L[j] < 0 ? -m0.L[j] : m0.L[j], y = m0.R[j] < 0 ? -m0.R[j] : m0.R[j]; if (x > a) a = x; if (y > a) a = y; } if (a > 1e-6) ab.push(a); }
+    const pk = ab.length ? D.pct(ab, 0.99) : 0, k = pk > 1e-4 && Y.sat > 0 ? +(Y.sat * 1.2 / pk).toFixed(3) : 0, sat = k ? {k} : null;
+    const y = pre(L, R, sr, {mb, sat});
+    // Bus-Kompressor (sanft, „Kleber“) wie MIX-A: Schwelle am 95-%-Pegel der lauten Stellen (10 ms RMS)
+    const ra = Y.glue[0], grT = Y.glue[1], at = 30, rl = clampN(Math.round(60000 / (o.bpm || 120) / 2 / 10) * 10, 100, 300), cR = Math.exp(-1 / (0.010 * sr)), Ls = []; let e = 0;
+    for (let i = 0, n = y.L.length; i < n; i++) { const l = y.L[i], r = y.R[i], p2 = (l * l + r * r) * 0.5; e = p2 + (e - p2) * cR; if (i % 480 === 0) Ls.push(10 * Math.log10(e > 1e-20 ? e : 1e-20)); }
+    const mx = D.pct(Ls, 0.99), act = Ls.filter(v => v > mx - 30), thr = r05(D.pct(act, 0.95) - grT / (1 - 1 / ra));
+    const P = {lo: 0, hi: 0, thr, ra, at, rl, gain: 0, ceil};
+    const Ly = D.integ(D.kblocks([y.L, y.R], sr));
+    let g0 = ziel - Ly + grT * 0.5, r0 = D.amSim(y.L, y.R, sr, Object.assign({}, P, {gain: g0}), lat), e0 = ziel - r0.I, it = 1;
+    let g1 = g0 + e0, r1 = D.amSim(y.L, y.R, sr, Object.assign({}, P, {gain: g1}), lat), e1 = ziel - r1.I; it++;
+    while (Math.abs(e1) > 0.08 && it < 9) {
+      const sl = (r1.I - r0.I) / (g1 - g0 || 1e-9), stp = clampN(e1 / (sl > 0.2 ? sl : 0.2), -12, 12);
+      g0 = g1; r0 = r1; g1 = g1 + stp; r1 = D.amSim(y.L, y.R, sr, Object.assign({}, P, {gain: g1}), lat); e1 = ziel - r1.I; it++;
+    }
+    P.gain = Math.round(clampN(g1, -24, 30) * 100) / 100;
+    const fin = D.amSim(y.L, y.R, sr, P, lat, true);
+    const satDb = k ? +(20 * Math.log10(Math.tanh(k * pk) / (k * pk))).toFixed(2) : 0;
+    return Object.assign(P, {st: Y === STYLES[o.st] ? o.st : 'synthpop', mb, sat, info: {lin: +Lin.toFixed(2), lraIn: +D.lra(bl).toFixed(1), lout: +fin.I.toFixed(2), lraOut: +fin.lra.toFixed(1), tp: +fin.tp.toFixed(2),
+      compMax: +(-fin.grMin).toFixed(1), compAvg: +(-fin.grAvg).toFixed(1), limMax: +(-fin.lmMin).toFixed(1), limAvg: +(-fin.lmAvg).toFixed(2), lowDb: +bd.share[0].toFixed(1), hiDb: +bd.share[2].toFixed(1),
+      share: bd.share.map(v => +v.toFixed(1)), corr, mbGr: y.gr, satDb, iters: it + 1, ms: Date.now() - T0}});
+  }
+
+  /* ---------- Spur-Analyse (Fenster des Analyse-Worklets 'synq-mx1-an', je 2048 Proben: Oktavbänder des Mono-Mittels, Mitte, Seite) ----------
+     X = {win, n, S, NB, F, wsec, sr, tr: [{i, role, rev, dly, vol, drive, pan, ch, mix}], hall {decay, ret}, echo {fb, ret}} */
+  function wetOf(tr, X) {
+    const h = X.hall || {}, e = X.echo || {}, fb = clampN(e.fb == null ? 0.4 : e.fb, 0, 0.95);
+    const hall = tr && tr.rev > 0.001 ? 20 * Math.log10(tr.rev * (h.ret == null ? 0.8 : h.ret) + 1e-9) + 10 * Math.log10(clampN(h.decay || 3, 0.3, 20) / 2) : null;
+    const echo = tr && tr.dly > 0.001 ? 20 * Math.log10(tr.dly * (e.ret == null ? 0.8 : e.ret) + 1e-9) - 10 * Math.log10(1 - fb * fb) : null;
+    return {hall: hall == null ? null : +hall.toFixed(1), echo: echo == null ? null : +echo.toFixed(1)};
+  }
+  function analyse(X) {
+    const n = X.n, S1 = X.S, NB = X.NB, K = NB + 2, w = X.win, nw = Math.floor(w.length / S1), F = X.F, sr = X.sr || 48000;
+    const spec = [], width = [], act = [], wet = [], E = [], lvl = [];
+    for (let i = 0; i < n; i++) {
+      const tr = X.tr[i] || {}; let mx = 0;
+      wet.push(wetOf(tr, X));
+      for (let k = 0; k < nw; k++) { const v = w[k * S1 + 1 + i * K + NB]; if (v > mx) mx = v; }
+      if (!(mx > 1e-10)) { spec.push(null); width.push(null); act.push(0); E.push(null); lvl.push(null); continue; }
+      const thr = mx * 1e-4, B = new Float64Array(NB), vol = tr.vol == null ? 0.8 : tr.vol, ga = vol * vol / (1 + 1.5 * (tr.drive || 0)) * Math.pow(10, ((tr.mix && tr.mix.mk) || 0) / 20), g = ga * ga;
+      const eq = F.map(f => Math.pow(10, eqDb(tr.mix, f, sr) / 10)), Ei = new Float32Array(nw * NB); let es = 0, em = 0, na = 0;
+      for (let k = 0; k < nw; k++) {
+        const o = k * S1 + 1 + i * K, m = w[o + NB]; if (m <= thr) continue;
+        na++; em += m; es += w[o + NB + 1];
+        for (let b = 0; b < NB; b++) { const v = w[o + b]; B[b] += v; Ei[k * NB + b] = v * g * eq[b]; }
+      }
+      let bm = 0; for (let b = 0; b < NB; b++) if (B[b] > bm) bm = B[b];
+      spec.push(Array.from(B, v => +lg(v / (bm || 1e-30)).toFixed(1))); width.push(+(es / (em + es || 1e-30)).toFixed(3)); act.push(+(na / Math.max(1, nw)).toFixed(3)); E.push(Ei);
+      lvl.push(+lg(em / Math.max(1, na) * g).toFixed(1));
+    }
+    // Überdeckung: mask[j][i][b] = Anteil der Energie von j im Band b, gegen den i gleichzeitig mindestens gleich laut ist (Σ min / Σ E_j),
+    // mal Raum-Faktor (gegenüber gepannt = halb so viel)
+    const mask = [];
+    for (let j = 0; j < n; j++) {
+      const row = []; mask.push(row);
+      for (let i = 0; i < n; i++) {
+        if (i === j || !E[j] || !E[i]) { row.push(null); continue; }
+        const sp = 1 - 0.5 * Math.min(1, Math.abs(((X.tr[i] || {}).pan || 0) - ((X.tr[j] || {}).pan || 0))), Ej = E[j], Ei = E[i], r = [];
+        for (let b = 0; b < NB; b++) { let num = 0, den = 0; for (let k = b; k < nw * NB; k += NB) { const a = Ej[k], c = Ei[k]; den += a; num += a < c ? a : c; } r.push(den > 0 ? +(num / den * sp).toFixed(2) : 0); }
+        row.push(r);
+      }
+    }
+    return {F, spec, width, act, wet, mask, lvl};
+  }
+
+  /* ---------- Vorschläge verfeinern (im Kontext der anderen Spuren) ----------
+     Vorrang je Band (63 … 16k): wer dort „gewinnt“, bekommt keine Absenkung; Absenkungen nur für Fläche, Sequenz und Lead (Lead nur
+     gegen Gesang) und nie im Bereich ihrer eigenen Grundtöne. */
+  const PRIO = {bass: [6, 6, 5, 3, 2, 2, 1, 1, 1], drums: [5, 5, 4, 3, 4, 4, 4, 6, 6], voc: [2, 3, 6, 6, 6, 6, 6, 5, 5], lead: [1, 2, 4, 5, 5, 5, 5, 4, 4], arp: [1, 1, 3, 4, 3, 3, 3, 3, 3], pad: [1, 1, 2, 2, 2, 2, 2, 2, 2]};
+  const NAME = {bass: 'Bass', arp: 'Sequenz', pad: 'Fläche', lead: 'Lead', drums: 'Drums', voc: 'Gesang'};
+  const HALL_T = {drums: -20, bass: -28, lead: -15, arp: -12, pad: -7}, HALL_TOL = 5;
+  const fz = (v, d) => (v < 0 ? '−' : '') + Math.abs(v).toFixed(d == null ? 1 : d).replace('.', ',').replace(/,0$/, '');
+  const sz = (v, d) => (v > 0 ? '+' : '') + fz(v, d);
+  const fHz = f => (f >= 1000 ? fz(f / 1000, 1) + ' kHz' : Math.round(f) + ' Hz');
+  const mtof = m => 440 * Math.pow(2, (m - 69) / 12), r5 = x => Math.round(x / 5) * 5;
+  const pctT = v => Math.round(v * 100) + ' %';
+  function refine(Dd, T, sug, A, ctx) {
+    const live = T.filter(t => t.f && !t.f.silent), byC = c => live.filter(t => t.cls === c), at = t => sug[T.indexOf(t)], has = (t, id) => at(t).some(s => s.id === id);
+    const fundOk = (t, f) => { const ns = t.ns; if (!ns || ns.p10 == null) return true; return f < mtof(ns.p10) / 1.25 || f > mtof(ns.p90 == null ? ns.p10 + 12 : ns.p90) * 1.25; };
+    for (const t of live) {
+      const L = at(t), i = t.i, sp = A.spec[i], mix = t.mix || {}, c = t.cls;
+      // 1) Bass: kein Low-Cut, nur Subsonic unter dem tiefsten Ton
+      if (c === 'bass') {
+        const k = L.findIndex(s => s.id === 'hp');
+        if (k >= 0) {
+          const f0 = t.ns && t.ns.p10 != null ? mtof(t.ns.p10) : 41, hp = Math.min(30, r5(f0 / 1.6));
+          if (hp < 20) L.splice(k, 1);
+          else L[k] = {id: 'sub', art: 'eq', titel: 'Subsonic', text: hp + ' Hz – nur Rumpeln unter dem tiefsten Ton (' + fHz(f0) + '), der Bass bleibt voll', patch: {mix: {hp}}};
+        }
+      }
+      if (!sp) continue;
+      // 2) Überdeckung je Band: stärkste Stelle, an der eine Spur mit Vorrang zugedeckt wird
+      if ((c === 'pad' || c === 'arp' || c === 'lead') && !has(t, 'kick') && !(mix.pg && Math.abs(mix.pg) > 0.05)) {
+        let best = null;
+        for (let b = 2; b < A.F.length; b++) {
+          if (sp[b] < -15 || !fundOk(t, A.F[b])) continue;
+          for (const j of live) {
+            if (j === t || !A.spec[j.i] || !PRIO[j.cls] || !PRIO[c]) continue;
+            if (c === 'lead' && j.cls !== 'voc') continue;
+            if (PRIO[j.cls][b] <= PRIO[c][b] || A.spec[j.i][b] < -12) continue;
+            const m = A.mask[j.i] && A.mask[j.i][i] ? A.mask[j.i][i][b] : 0;
+            if (m >= 0.35 && (!best || m > best.m)) best = {m, b, j};
+          }
+        }
+        if (best) {
+          const pg = best.m >= 0.6 ? -3 : -2, pf = A.F[best.b];
+          L.push({id: 'mask', art: 'eq', titel: 'Platz für ' + best.j.name, text: 'Glocke ' + fHz(pf) + ' ' + sz(pg, 0) + ' dB – dort deckt diese Spur ' + best.j.name + ' (' + NAME[best.j.cls] + ') zu ' + pctT(best.m) + ' zu', patch: {mix: {pf, pg, pq: 1}}});
+        }
+      }
+      // 3) Bass-Shelf: Bass ohne Fundament (+2 dB) · Lead/Sequenz mit Mulm unter dem Bass (−3 dB), wenn kein Low-Cut vorgeschlagen ist
+      if (c === 'bass' && Math.max(sp[0], sp[1]) < -6 && !(mix.ls)) L.push({id: 'ls', art: 'eq', titel: 'Bass-Shelf', text: '150 Hz +2 dB – mehr Fundament (Tiefen ' + fz(Math.max(sp[0], sp[1])) + ' dB unter dem Kern)', patch: {mix: {ls: 2}}});
+      const bass = byC('bass')[0];
+      if ((c === 'lead' || c === 'arp') && bass && A.mask[bass.i] && A.mask[bass.i][i] && !has(t, 'hp') && !(mix.hp >= 120) && !(mix.ls) && sp[1] >= -10) {
+        const m = Math.max(A.mask[bass.i][i][0], A.mask[bass.i][i][1]);
+        if (m >= 0.3) L.push({id: 'ls', art: 'eq', titel: 'Bass-Shelf', text: '150 Hz ' + (m >= 0.5 ? '−3' : '−2') + ' dB – weniger Mulm, ' + bass.name + ' bleibt klar (Überdeckung ' + pctT(m) + ')', patch: {mix: {ls: m >= 0.5 ? -3 : -2}}});
+      }
+      // 4) Tiefenstaffelung: Hall-Anteil nach Rolle (vorne trocken, hinten nass); Fläche dazu weniger Höhen
+      const wt = A.wet[i], tgt = HALL_T[c], tr = A.tr ? A.tr[i] : null;
+      if (tgt != null && tr) {
+        const cur = wt && wt.hall != null ? wt.hall : -60, d = cur - tgt;
+        const back = c === 'pad' && d < -HALL_TOL, front = (c === 'lead' || c === 'bass' || c === 'arp' || c === 'drums') && d > HALL_TOL, wetPad = c === 'pad' && d > HALL_TOL + 3;
+        if (back || front || wetPad) {
+          const ret = A.hall && A.hall.ret != null ? A.hall.ret : 0.8, dec = clampN(A.hall && A.hall.decay || 3, 0.3, 20);
+          const rev = clampN(Math.round(Math.pow(10, (tgt - 10 * Math.log10(dec / 2)) / 20) / Math.max(0.05, ret) * 100) / 100, 0, 1);
+          if (Math.abs(rev - (tr.rev || 0)) >= 0.03) {
+            const why = back ? 'Fläche nach hinten, sie schwebt' : wetPad ? 'Fläche weniger verwaschen' : c === 'lead' ? 'Lead nach vorne' : c === 'bass' ? 'Bass trocken = vorne und druckvoll' : c === 'drums' ? 'Drums knackiger' : 'Sequenz klarer';
+            const patch = {fx: {rev}}; let hs = '';
+            if (back && !has(t, 'hs') && !(mix.hs < 0) && t.f.hiDb > -16) { patch.mix = {hs: -2}; hs = ', Höhen −2 dB'; }
+            L.push({id: 'tiefe', art: 'tiefe', titel: 'Tiefe', text: 'Hall ' + (wt && wt.hall != null ? fz(wt.hall) : 'aus') + ' → ' + fz(tgt, 0) + ' dB (Send ' + pctT(tr.rev || 0) + ' → ' + pctT(rev) + hs + ') – ' + why, patch});
+          }
+        }
+        if ((c === 'bass' || c === 'drums') && wt && wt.echo != null && wt.echo > -24) L.push({id: 'echo', art: 'tiefe', titel: 'Echo', text: 'Echo am ' + (c === 'bass' ? 'Bass' : 'Schlagzeug') + ' (' + fz(wt.echo) + ' dB) verwischt den Grundschlag – aus', patch: {fx: {dly: 0}}});
+      }
+      // 5) Stereo-Breite (nur Hinweis)
+      const wd = A.width[i];
+      if (wd != null) {
+        if (c === 'bass' && wd > 0.18) L.push({id: 'breite', art: 'hinweis', titel: 'Breite', text: 'Bass ist breit (Seitenanteil ' + pctT(wd) + ') – unten mono hat mehr Druck: Chorus oder Stereo am Bass aus.'});
+        else if (c === 'pad' && wd < 0.04 && !(tr && tr.pan)) L.push({id: 'breite', art: 'hinweis', titel: 'Breite', text: 'Fläche ist fast mono (' + pctT(wd) + ') – Chorus BREIT oder ENS. macht sie breit und schwebend.'});
+        else if (c === 'lead' && wd > 0.4) L.push({id: 'breite', art: 'hinweis', titel: 'Breite', text: 'Lead sehr breit (' + pctT(wd) + ') – schmaler steht er besser in der Mitte.'});
+      }
+    }
+    return sug;
+  }
+  return {OCT, STYLES, MB3, Master, pre, bands, fit, analyse, refine, wetOf, eqDb, mag2, ap};
+}
+let MX1_W = null;                                                 // MX1-Kern im Hauptfaden (Notlösung ohne Worker, Blätter)
+// Worker: Master anpassen (mixaJob → op 'am' mit Stil) und Spur-Analyse verfeinern (Ende von mixaJob)
+function mx1Fit(D, L, R, sr, o) { if (!MX1_W) MX1_W = mx1DspMake(D); return MX1_W.fit(L, R, sr, o); }
+function mx1JobEnd(D, m, res) {
+  if (!MX1_W) MX1_W = mx1DspMake(D);
+  const X = m.mx1, ctx = {bpm: m.bpm, pumpSrc: m.pumpSrc, otherPump: m.otherPump, secs: res.secs};
+  for (const t of res.T) t.auto = t.cls;
+  res.ctx = ctx;
+  if (!X) return res;
+  let re = false;
+  for (const t of res.T) { const r = X.tr[t.i] && X.tr[t.i].role; if (r && r !== t.cls) { t.cls = r; t.chr = D.character(r, t.ns, t.f); re = true; } }
+  if (re) res.sug = D.suggest(res.T, ctx);
+  const A = MX1_W.analyse(X); A.tr = X.tr; A.hall = X.hall; A.echo = X.echo;
+  MX1_W.refine(D, res.T, res.sug, A, ctx);
+  res.mx1 = A;
+  return res;
+}
+function mx1WorkerSrc() { return '\nlet MX1_W = null;\n' + mx1DspMake.toString() + '\n' + mx1Fit.toString() + '\n' + mx1JobEnd.toString() + '\n'; }
+// Worklet-Modul: Kern + Analyse-Prozessor (nur im Messdurchlauf gebaut)
+function mx1ModSrc() {
+  return '\nconst MX1_D = (' + mx1DspMake.toString() + ')(MIXA_D);\n' + `
+class SynqMx1An extends AudioWorkletProcessor {
+  constructor(o) {
+    super(); const p = (o && o.processorOptions) || {}, sr = sampleRate; this.n = (o && o.numberOfInputs) | 0;
+    this.C = MX1_D.OCT.map(f => MIXA_D.bq('bp', f, sr, 1.414)); this.NB = this.C.length; this.K = this.NB + 2;
+    this.z = new Float64Array(this.n * this.NB * 2); this.a = new Float64Array(this.n * this.K); this.k = 0; this.W = 16; this.S = 1 + this.n * this.K;
+    this.batch = 32; this.buf = new Float32Array(this.batch * this.S); this.bi = 0; this.total = +p.total || 0; this.done = false;
+  }
+  process(inputs) {
+    if (this.done) return true;
+    const n = this.n, C = this.C, NB = this.NB, K = this.K, z = this.z, a = this.a, run = MIXA_D.run;
+    for (let k = 0; k < n; k++) {
+      const ch = inputs[k]; if (!ch || !ch.length) continue;
+      const L = ch[0], R = ch.length > 1 ? ch[1] : ch[0], zo = k * NB * 2, ao = k * K; let em = a[ao + NB], es = a[ao + NB + 1];
+      for (let i = 0; i < L.length; i++) {
+        let l = L[i], r = R[i]; if (!(l === l)) l = 0; if (!(r === r)) r = 0;
+        const m = (l + r) * 0.5, s = (l - r) * 0.5; em += m * m; es += s * s;
+        for (let b = 0; b < NB; b++) { const v = run(C[b], z, zo + 2 * b, m); a[ao + b] += v * v; }
+      }
+      a[ao + NB] = em; a[ao + NB + 1] = es;
+    }
+    if (++this.k >= this.W) {
+      const N = this.W * 128, o = this.bi * this.S, B = this.buf; B[o] = currentTime + 128 / sampleRate;
+      for (let j = 0, m = n * K; j < m; j++) B[o + 1 + j] = a[j] / N;
+      a.fill(0); this.k = 0;
+      if (++this.bi >= this.batch) { this.port.postMessage({w: this.buf.slice(0, this.bi * this.S), n: this.bi}); this.bi = 0; }
+    }
+    if (this.total && currentFrame + 128 >= this.total) { this.port.postMessage({w: this.buf.slice(0, this.bi * this.S), n: this.bi, end: true}); this.bi = 0; this.done = true; }
+    return true;
+  }
+}
+registerProcessor('synq-mx1-an', SynqMx1An);
+`;
+}
+
+/* ---------- Zustand, Daten (Normalisierer sind in sich geschlossen: sie laufen schon beim Start, vor diesem Abschnitt) ---------- */
+const MX1 = {st: null, roleOpen: -1, ab: {base: null, at: 0, cur: null, on: false}, tap: false, core: null, eqI: -1};
+const MX1_ROLES = [['drums', 'Drums'], ['bass', 'Bass'], ['lead', 'Lead'], ['pad', 'Fläche'], ['arp', 'Sequenz'], ['voc', 'Gesang']];
+function mx1NormRole(r) { return ['drums', 'bass', 'lead', 'pad', 'arp', 'voc'].includes(r) ? r : null; }
+function mx1NormAmX(a) {
+  const o = {}, num = v => typeof v === 'number' && isFinite(v), cl = (v, lo, hi, d) => +(v < lo ? lo : v > hi ? hi : v).toFixed(d == null ? 2 : d);
+  if (!a || typeof a !== 'object') return o;
+  if (typeof a.st === 'string' && /^(synthpop|disco|house|sanft)$/.test(a.st)) o.st = a.st;
+  const m = a.mb;
+  if (m && typeof m === 'object' && Array.isArray(m.b) && m.b.length === 3 && m.b.every(x => Array.isArray(x) && x.length === 5 && x.every(num)))
+    o.mb = {f1: num(m.f1) ? cl(m.f1, 40, 500, 1) : 150, f2: num(m.f2) ? cl(m.f2, 800, 9000, 0) : 3000, b: m.b.map(x => [cl(x[0], -80, 0), cl(x[1], 1, 10), cl(x[2], 0.1, 200), cl(x[3], 5, 2000), cl(x[4], -12, 12)])};
+  if (a.sat && typeof a.sat === 'object' && num(a.sat.k) && a.sat.k > 0) o.sat = {k: cl(a.sat.k, 0.001, 50, 3)};
+  return o;
+}
+function mx1AmP(a, P) { if (a.mb) P.mb = a.mb; if (a.sat) P.sat = a.sat; return P; }        // Master-Knoten bekommt Multiband/Sättigung
+function mx1AmPick(P) { const o = {}; if (P && P.st) o.st = P.st; if (P && P.mb) o.mb = P.mb; if (P && P.sat) o.sat = P.sat; return o; }
+function mx1AmSame(on, P) { return JSON.stringify(mx1NormAmX(on)) === JSON.stringify(mx1NormAmX(mx1AmPick(P))); }
+function mx1Style() { if (!MX1.st) MX1.st = (S.fxBus && S.fxBus.am && S.fxBus.am.st) || 'synthpop'; return MX1.st; }
+function mx1RoleOf(i) { const tr = S.tracks[i]; return tr && tr.mxRole ? tr.mxRole : null; }
+function mx1Core() { if (!MX1.core) MX1.core = mx1DspMake(MIXA_D0.v || (MIXA_D0.v = mixaDspMake())); return MX1.core; }
+
+/* ---------- Messdurchlauf: zweiter Analyse-Abgriff (Oktavbänder, Mitte/Seite) an jeder Spur ---------- */
+function mx1TapBuild(off) {
+  const c = AU.ctx, n = NT(), X = off && off.mixa; if (!X || !MX1.tap) return;
+  try {
+    const an = new AudioWorkletNode(c, 'synq-mx1-an', {numberOfInputs: n, numberOfOutputs: 1, outputChannelCount: [1], channelCount: 2, channelCountMode: 'explicit', channelInterpretation: 'speakers', processorOptions: {total: c.length}});
+    an.connect(c.destination);
+    for (let i = 0; i < n; i++) { const A = AU.tracks[i]; if (A && A.trem) A.trem.connect(an, 0, i); }
+    const Y = X.mx1 = {chunks: [], nw: 0, n, end: false};
+    an.port.onmessage = e => { const m = e.data; if (!m) return; if (m.w && m.n) { Y.chunks.push(m.w); Y.nw += m.n; } if (m.end) Y.end = true; };
+  } catch (e) { logErr(e); }
+}
+async function mx1Wait(X) { const Y = X && X.mx1; if (!Y) return; const W0 = performance.now(); while (!Y.end && performance.now() - W0 < 2500) await sleep(15); }
+// Nachricht an den Worker: Fenster + Werte der Spuren (Send, Pegel, Pan, Rolle, EQ) + Hall/Echo
+function mx1Msg(X, r) {
+  const Y = X && X.mx1; if (!Y || !Y.nw || !Y.chunks) return null;
+  const K = MX1_D_OCT_N + 2, S1 = 1 + Y.n * K, win = new Float32Array(Y.nw * S1); let o = 0;
+  for (const ch of Y.chunks) { if (o + ch.length > win.length) break; win.set(ch, o); o += ch.length; }
+  Y.chunks = null;
+  const tr = S.tracks.map((t, i) => { const f = fxOfSound(t.sound); return {i, role: mx1RoleOf(i), rev: f.rev, dly: f.dly, vol: f.vol, drive: f.drive, pan: f.pan, ch: (f.chorus && f.chorus.mode) || 'off', mix: t.mix || null}; });
+  const h = S.fxBus.hall || {}, e = S.fxBus.echo || {};
+  return {win, n: Y.n, S: S1, NB: MX1_D_OCT_N, F: [63, 125, 250, 500, 1000, 2000, 4000, 8000, 16000], wsec: 2048 / r.sr, sr: r.sr, tr, hall: {decay: h.decay, ret: h.ret}, echo: {fb: e.fb, ret: e.ret}};
+}
+const MX1_D_OCT_N = 9;
+
+/* ---------- Rolle je Spur: setzen (ein Undo-Schritt), Vorschläge ohne neuen Durchlauf neu rechnen ---------- */
+function mx1SetRole(i, role) {
+  const tr = S.tracks[i]; if (!tr) return false;
+  const r = mx1NormRole(role), old = tr.mxRole || null; if (r === old) return false;
+  mx1AbEnd();
+  const before = mixaSnap(); if (r) tr.mxRole = r; else delete tr.mxRole;
+  undoPush({kind: 'mixa', before, label: 'Mix: Rolle ' + tr.name + ' → ' + (r ? MX1_ROLES.find(x => x[0] === r)[1] : 'automatisch')}); markDirty();
+  mx1Resuggest(); return true;
+}
+function mx1Resuggest() {
+  const res = MIXA.res; if (!res || !res.T) return false;
+  const D = MIXA_D0.v || (MIXA_D0.v = mixaDspMake()), M = mx1Core(), ctx = res.ctx || {bpm: S.bpm, pumpSrc: S.fxBus.pumpSrc, otherPump: false, secs: res.secs || []};
+  for (const t of res.T) { if (t.auto == null) t.auto = t.cls; const r = mx1RoleOf(t.i); t.cls = r || t.auto; t.chr = D.character(t.cls, t.ns, t.f); }
+  res.sug = D.suggest(res.T, ctx);
+  if (res.mx1) { for (const t of res.T) if (res.mx1.tr && res.mx1.tr[t.i]) res.mx1.tr[t.i].role = mx1RoleOf(t.i); M.refine(D, res.T, res.sug, res.mx1, ctx); }
+  mixaPaint(); return true;
+}
+
+/* ---------- Mix Vorher/Nachher: Stand vor dem ersten Übernehmen seit der Analyse ↔ jetzt (nur Hören, kein Undo-Schritt) ---------- */
+function mx1AbMark(before) { const r = MIXA.res; if (!r) return; if (MX1.ab.at !== r.at) { MX1.ab.at = r.at; MX1.ab.base = before; MX1.ab.on = false; MX1.ab.cur = null; } }
+function mx1MixAB(v) {
+  const A = MX1.ab; if (!A.base) return false;
+  const want = v == null ? !A.on : !!v; if (want === A.on) return A.on;
+  if (want) { const cur = mixaSnap(); if (cur === A.base) return false; A.cur = cur; A.on = true; mixaRestore(A.base); }
+  else { A.on = false; const c = A.cur; A.cur = null; if (c) mixaRestore(c); }
+  mixaPaint(); return A.on;
+}
+function mx1AbEnd() { if (MX1.ab.on) mx1MixAB(false); }
+
+/* ---------- Spur-EQ + Kompressor (Blatt „EQ · KOMP“): Werte in track.mix, Undo-Art 'mixa' ---------- */
+const MX1_EQK = [['hp', 'Low-Cut', {min: 10, max: 500, c: 'exp', def: 10, fmt: 'hz0'}], ['ls', 'Bass', {min: -12, max: 12, c: 'bip', def: 0, fmt: 'dbv'}],
+  ['pf', 'Mitte', {min: 60, max: 12000, c: 'exp', def: 1000, fmt: 'hz'}], ['pg', 'Mitte dB', {min: -12, max: 12, c: 'bip', def: 0, fmt: 'dbv'}],
+  ['pq', 'Güte', {min: 0.3, max: 8, c: 'exp', def: 1.4, fmt: 'num1'}], ['hs', 'Höhen', {min: -12, max: 12, c: 'bip', def: 0, fmt: 'dbv'}]];
+const MX1_CPK = [['thr', 'Schwelle', {min: -60, max: 0, c: 'lin', def: 0, fmt: 'dbv'}], ['ra', 'Ratio', {min: 1, max: 20, c: 'exp', def: 1, fmt: 'ratio2'}],
+  ['at', 'Attack', {min: 0.1, max: 200, c: 'exp', def: 10, fmt: 'ms'}], ['rl', 'Release', {min: 5, max: 2000, c: 'exp', def: 120, fmt: 'ms'}],
+  ['mk', 'Make-up', {min: -12, max: 12, c: 'bip', def: 0, fmt: 'dbv'}]];
+const MX1_DEFV = {hp: 0, ls: 0, pf: 1000, pg: 0, pq: 1.4, hs: 0, thr: 0, ra: 1, at: 10, rl: 120, mk: 0};
+function mx1EqGet(i, k) { const m = S.tracks[i] && S.tracks[i].mix; return m && m[k] != null ? m[k] : MX1_DEFV[k]; }
+function mx1EqSet(i, k, v) {
+  const tr = S.tracks[i]; if (!tr || !(k in MX1_DEFV)) return;
+  const m = Object.assign({}, tr.mix || {});
+  if (k === 'hp') v = v < 20 ? 0 : Math.round(v);
+  m[k] = v;
+  if (k === 'pg' && m.pf == null) m.pf = MX1_DEFV.pf;                // Mitte ohne Frequenz: 1 kHz (der Spur-Kern nimmt sonst 100 Hz)
+  if (k === 'pg' && m.pq == null) m.pq = MX1_DEFV.pq;
+  if (k === 'ra' && m.thr == null) m.thr = -18;
+  const neutral = !(m.hp > 0) && !m.ls && !m.pg && !m.hs && !(m.ra > 1.001) && !m.mk;
+  if (neutral) { const s = m.sec; for (const q of Object.keys(m)) delete m[q]; if (s) m.sec = s; }   // alles neutral: kein Einschub (keine Rechenarbeit)
+  const n = mixaNormMix(m); if (n) tr.mix = n; else delete tr.mix;
+  try { applyTrackParams(i, false); } catch (e) { logErr(e); }
+  mx1EqCurve();
+}
+const mx1EqUndo = i => ({snap: mixaSnap, commit: (before, label) => { if (before == null || before === mixaSnap()) return false; undoPush({kind: 'mixa', before, label: 'EQ/Komp ' + ((S.tracks[i] && S.tracks[i].name) || '') + ': ' + label}); markDirty(); UI.dirty.all = true; return true; }});
+// Frequenzgang als SVG-Pfad (20 Hz … 20 kHz, ±15 dB)
+function mx1EqPath(m) {
+  const M = mx1Core(), sr = (AU.ctx && AU.ctx.sampleRate) || 48000, W = 300, H = 72, pts = [];
+  for (let k = 0; k <= 96; k++) { const f = 20 * Math.pow(1000, k / 96), d = clamp(M.eqDb(m, f, sr), -15, 15); pts.push((k / 96 * W).toFixed(1) + ',' + (H / 2 - d / 15 * (H / 2 - 4)).toFixed(1)); }
+  return 'M' + pts.join('L');
+}
+function mx1EqCurve() {
+  const p = UI.pop && UI.pop.name === 'mx1eq' ? UI.pop.el : null; if (!p) return;
+  const pa = p.querySelector('.mx1cv path.mx1pv'), m = S.tracks[MX1.eqI] && S.tracks[MX1.eqI].mix; if (pa) pa.setAttribute('d', mx1EqPath(m || null));
+  const st = p.querySelector('.mx1est'); if (st) st.textContent = mx1EqState(MX1.eqI);
+}
+function mx1EqState(i) { const m = S.tracks[i] && S.tracks[i].mix; if (!m) return 'aus – kein Rechenaufwand'; const eq = m.hp > 0 || m.ls || m.pg || m.hs, cp = m.ra > 1.001; return (eq && cp ? 'EQ + Kompressor' : eq ? 'EQ' : cp ? 'Kompressor' : m.mk ? 'Pegel' : 'Songteil-Pegel') + ' an'; }
+function mx1EqSheet(i) {
+  const tr = S.tracks[i]; if (!tr) return false;
+  mx1AbEnd(); MX1.eqI = i;
+  openPop(null, p => {
+    p.classList.add('tksheet', 'mxsheet', 'mx1eqs', 'pan-y'); guardTouch(p);
+    p.innerHTML = `<h4>EQ · Kompressor – ${esc(tr.name)}</h4><div class="mxtop"><button class="mbtn rb" data-a="off">Aus</button><button class="mbtn rb" data-a="mix">Mix-Assistent</button><button class="mbtn rb" data-a="x">Fertig</button></div>` +
+      `<div class="small mx1est">${esc(mx1EqState(i))}</div><svg class="mx1cv" viewBox="0 0 300 72" preserveAspectRatio="none" aria-hidden="true"><path class="mx1p0" d="M0,36L300,36"/>` +
+      [100, 1000, 10000].map(f => { const x = (Math.log(f / 20) / Math.log(1000) * 300).toFixed(1); return `<path class="mx1p0 mx1pg" d="M${x},0L${x},72"/>`; }).join('') + `<path class="mx1pv" d="${mx1EqPath(tr.mix || null)}"/></svg>` +
+      `<div class="mx1h">EQ</div><div class="mx1k mx1keq"></div><div class="mx1h">Kompressor</div><div class="mx1k mx1kcp"></div>`;
+    const mk = (k, l, d) => makeCtl(Object.assign({l}, d), () => { const v = mx1EqGet(i, k); return k === 'hp' && !(v > 0) ? d.min : v; }, v => mx1EqSet(i, k, v),
+      {undo: mx1EqUndo(i), label: l, fmt: k === 'at' ? (v => (v < 10 ? fmtDec(v, 1) : String(Math.round(v))) + ' ms') : k === 'hp' ? (v => (v < 20 ? 'aus' : fmtVal('hz', v))) : undefined});
+    const ks = [];
+    for (const [k, l, d] of MX1_EQK) { const c = mk(k, l, d); ks.push(c); p.querySelector('.mx1keq').appendChild(c); }
+    for (const [k, l, d] of MX1_CPK) { const c = mk(k, l, d); ks.push(c); p.querySelector('.mx1kcp').appendChild(c); }
+    p._mx1ks = ks;
+    onTap(p, b => {
+      const a = b.dataset.a;
+      if (a === 'off') { const before = mixaSnap(), m = tr.mix && tr.mix.sec ? {sec: tr.mix.sec} : null; if (m) tr.mix = m; else delete tr.mix; if (before !== mixaSnap()) { undoPush({kind: 'mixa', before, label: 'EQ/Komp ' + tr.name + ' aus'}); mixaAfter([i], false); } ks.forEach(x => x.update()); mx1EqCurve(); haptic('tick'); }
+      else if (a === 'mix') { mixaSheet(); haptic('tick'); }
+      else if (a === 'x') closePop();
+    }, 'button[data-a]');
+  }, {name: 'mx1eq', onClose: () => { MX1.eqI = -1; try { if (R.editor === 'synth' || R.editor === 'drum') for (const f of ED.refreshers || []) f(); } catch (e) {} }});
+  return true;
+}
+// FX › SPUR: Knopf „EQ · KOMP“ (eine Zelle im Raster; Stand darunter)
+function mx1EqBtn(i) {
+  const b = el('button', 'chip rb mx1b', '<b>EQ · KOMP</b><span class="mx1bs"></span>'); b.setAttribute('aria-label', 'EQ und Kompressor der Spur');
+  const upd = () => { const s = b.querySelector('.mx1bs'), m = S.tracks[i] && S.tracks[i].mix, t = m && (m.hp > 0 || m.ls || m.pg || m.hs || m.ra > 1.001 || m.mk) ? 'an' : 'aus'; if (s.textContent !== t) s.textContent = t; b.classList.toggle('on', t === 'an'); };
+  onTap(b, () => { haptic('tick'); mx1EqSheet(i); });
+  upd(); ED.refreshers.push(upd);
+  return b;
+}
+
+/* ---------- Mix-Assistent: Rolle, Spektrum, Breite, Hall/Echo, Überdeckung je Spur; Vorher/Nachher ---------- */
+function mx1MixTop(busy) {
+  const A = MX1.ab, r = MIXA.res, can = !!(A.base && r && A.at === r.at);
+  return `<div class="mxtop mx1ab"><button class="mbtn rb" data-a="mx1ab"${can && !busy ? '' : ' disabled'}${A.on ? ' aria-pressed="true"' : ''}>${A.on ? 'Du hörst VORHER' : 'Vorher/Nachher'}</button></div>`;
+}
+function mx1SpecSvg(sp) {
+  if (!sp) return '';
+  const n = sp.length, W = 180, H = 34; let h = `<svg class="mx1sp" viewBox="0 0 ${W} ${H + 10}" aria-hidden="true">`;
+  sp.forEach((v, b) => { const hh = Math.max(1, (1 - Math.min(30, -v) / 30) * H), x = b * W / n + 1; h += `<rect x="${x.toFixed(1)}" y="${(H - hh).toFixed(1)}" width="${(W / n - 2).toFixed(1)}" height="${hh.toFixed(1)}" rx="1.5"/>`; });
+  ['63', '250', '1k', '4k', '16k'].forEach((t, k) => { const b = [0, 2, 4, 6, 8][k]; h += `<text x="${((b + 0.5) * W / n).toFixed(1)}" y="${H + 9}">${t}</text>`; });
+  return h + '</svg>';
+}
+function mx1CardHtml(t) {
+  const r = MIXA.res, A = r && r.mx1, i = t.i, tr = S.tracks[i]; if (!tr) return '';
+  const ro = mx1RoleOf(i), auto = t.auto || t.cls, nm = c => (MX1_ROLES.find(x => x[0] === c) || [c, MIXA_CLS[c] || c])[1];
+  let h = `<div class="mx1c"><div class="mx1rl"><button class="mbtn rb" data-a="mx1role" data-i="${i}" aria-expanded="${MX1.roleOpen === i}">Rolle: ${esc(nm(ro || auto))}${ro ? ' (gesetzt)' : ' (erkannt)'}</button><button class="mbtn rb" data-a="mx1eq" data-i="${i}">EQ · KOMP</button></div>`;
+  if (MX1.roleOpen === i) h += `<div class="mx1rs" role="group" aria-label="Rolle">` + [['', 'Automatisch (' + nm(auto) + ')']].concat(MX1_ROLES).map(([v, l]) => `<button class="mbtn rb" data-a="mx1r" data-i="${i}" data-v="${v}"${(ro || '') === v ? ' aria-pressed="true"' : ''}>${esc(l)}</button>`).join('') + '</div>';
+  if (A && A.spec && A.spec[i]) {
+    const w = A.wet[i] || {}, kv = [];
+    if (A.width[i] != null) kv.push('Breite ' + Math.round(A.width[i] * 100) + ' %');
+    kv.push('Hall ' + (w.hall == null ? 'aus' : mixaF(w.hall) + ' dB')); kv.push('Echo ' + (w.echo == null ? 'aus' : mixaF(w.echo) + ' dB'));
+    let best = null; (A.mask[i] || []).forEach((row, j) => { if (!row || j === i) return; row.forEach((m, b) => { if (b >= 1 && m > (best ? best.m : 0.3)) best = {m, j, b}; }); });
+    if (best && S.tracks[best.j]) kv.push('zugedeckt von ' + S.tracks[best.j].name + ' bei ' + (A.F[best.b] >= 1000 ? fmtDec(A.F[best.b] / 1000, 0) + ' kHz' : A.F[best.b] + ' Hz') + ' (' + Math.round(best.m * 100) + ' %)');
+    h += `<div class="mx1sw">${mx1SpecSvg(A.spec[i])}<div class="small mx1kv">${esc(kv.join(' · '))}</div></div>`;
+  }
+  return h + '</div>';
+}
+function mx1MixTap(b) {
+  const a = b.dataset.a, i = +b.dataset.i;
+  if (a === 'mx1ab') { mx1MixAB(); haptic('tick'); return; }
+  mx1AbEnd();
+  if (a === 'mx1role') { MX1.roleOpen = MX1.roleOpen === i ? -1 : i; mixaPaint(); haptic('tick'); }
+  else if (a === 'mx1r') { MX1.roleOpen = -1; if (!mx1SetRole(i, b.dataset.v || null)) mixaPaint(); haptic('pop'); }
+  else if (a === 'mx1eq') { haptic('tick'); mx1EqSheet(i); }
+}
+
+/* ---------- Auto-Master: Stil, [MASTERN], Multiband-Zeilen ---------- */
+function mx1AmTop(busy) {
+  const st = mx1Style(), Y = mx1Core().STYLES;
+  return `<div class="mxz mx1st" role="group" aria-label="Stil">` + Object.keys(Y).map(k => `<button class="mbtn rb" data-a="mx1st" data-v="${k}"${st === k ? ' aria-pressed="true"' : ''}${busy ? ' disabled' : ''}>${esc(Y[k].name)}</button>`).join('') + '</div>' +
+    `<div class="mxtop mx1go"><button class="mbtn rb" data-a="mx1go"${busy ? ' disabled' : ''}>MASTERN</button></div>`;
+}
+function mx1AmRows(P, I) {
+  if (!P || !P.mb || !I) return '';
+  const Y = mx1Core().STYLES[P.st] || {}, row = (k, v) => `<div class="mxrow"><span>${k}</span><b>${v}</b></div>`, nm = ['Tief', 'Mitte', 'Hoch'], s = v => (v > 0 ? '+' : '') + mixaF(v);
+  let h = '<div class="mxgrid mx1g">' + row('Stil', esc(Y.name || P.st)) + row('Bänder', '< ' + P.mb.f1 + ' Hz · Mitte · > ' + fmtDec(P.mb.f2 / 1000, 1) + ' kHz');
+  P.mb.b.forEach((x, k) => { const g = I.mbGr && I.mbGr[k]; h += row('Multiband ' + nm[k], fmtDec(x[1], 1) + ' : 1 · ' + mixaF(x[0]) + ' dB · ' + s(x[4]) + ' dB' + (g ? ' · Arbeit ' + mixaF(g.avg) + '/' + mixaF(g.max) : '')); });
+  if (I.share) h += row('Klangbild vorher', nm.map((n, k) => n + ' ' + mixaF(I.share[k])).join(' · ') + ' dB');
+  h += row('Sättigung', P.sat ? 'sanft, Spitzen ' + mixaF(I.satDb, 2) + ' dB' : 'aus');
+  return h + '</div>';
+}
+async function mx1Master() {
+  if (MIXA.busy) return false;
+  const r = await mixaMeasure('am'); if (!r || !MIXA.am) return false;
+  return amApply() || !!(S.fxBus.am && S.fxBus.am.on);
+}
+function mx1AmTap(b) {
+  const a = b.dataset.a;
+  if (a === 'mx1st') { MX1.st = b.dataset.v; if (MIXA.am && MIXA.am.P && MIXA.am.P.st !== MX1.st) MIXA.am = null; amPaint(true); haptic('tick'); }
+  else if (a === 'mx1go') { mx1Master(); haptic('pop'); }
+}
+
+/* ---------- Test-Schnittstelle ---------- */
+const MX1_API = {
+  mx1Info: () => ({st: mx1Style(), ab: {base: !!MX1.ab.base, on: MX1.ab.on}, roles: S.tracks.map(t => t.mxRole || null), mix: S.tracks.map(t => (t.mix ? JSON.parse(JSON.stringify(t.mix)) : null)),
+    am: S.fxBus.am ? JSON.parse(JSON.stringify(S.fxBus.am)) : null, res: MIXA.res && MIXA.res.mx1 ? JSON.parse(JSON.stringify(Object.assign({}, MIXA.res.mx1, {tr: undefined}))) : null,
+    T: MIXA.res ? MIXA.res.T.map(t => ({i: t.i, name: t.name, cls: t.cls, auto: t.auto, chr: t.chr})) : null, sug: MIXA.res ? JSON.parse(JSON.stringify(MIXA.res.sug)) : null}),
+  mx1Role: (i, r) => mx1SetRole(i, r), mx1Resuggest: () => mx1Resuggest(),
+  mx1EqSet: (i, k, v) => { const before = mixaSnap(); mx1EqSet(i, k, v); return mx1EqUndo(i).commit(before, k); },
+  mx1EqSheet: i => mx1EqSheet(i), mx1Close: () => { if (UI.pop && ['mx1eq', 'mixa', 'am'].includes(UI.pop.name)) closePop(); return true; },
+  mx1MixAB: v => mx1MixAB(v), mx1Style: st => { if (st && mx1Core().STYLES[st]) MX1.st = st; return mx1Style(); },
+  mx1Master: () => mx1Master(), mx1Core: () => mx1Core(), mx1Node: () => (AU.M && AU.M.am && AU.M.am.node ? {on: !!AU.M.am.on, sig: AU.M.am.sig} : null)
+};
+/* ===================== MX1 END ===================== */
 
 /* =====================================================================================================================
    G5 (Nachtrag 5 „G5 — Gesang jederzeit in Melodie umwandeln“): Takes-Blatt → [In Melodie umwandeln]
@@ -73580,6 +74181,7 @@ Object.assign(SYNQUENZER, {                       // BM6 (Nachtrag 7 §5.3): Bit
   bmRoutes: t => bmRoutes(t), bmRouteClear: (t, k) => (bmLoad(), bmRouteClear(t, k)),
   bmInit: (t, kind) => { const s_ = sndOf(t); if (!s_ || s_.engine !== 'bm') throw new Error('Keine ' + BM_NAME + '-Spur: ' + t); return soundEdit(t, 'Init', () => { const snd = deep(s_); snd.p.bm = SQBM.init(kind); applySound(t, snd); return true; }); },
 });
+Object.assign(SYNQUENZER, MX1_API);                        // MX1: Mix & Master
 const NO_SYNC = new Set(['clipCurves', 'bmcLog', 'bmcState', 'oneScaleOf', 'harmInfo', 'kbScaleNow', 'micCheck', 'micCheckJson', 'micCheckEstimate', 'cloud', 'cloudProjects', 'cloudVersions', 'cloudHandoff', 'state', 'project', 'runtime', 'getClip', 'getParam', 'noteLog', 'voices', 'timeline', 'serialize', 'buildMidi', 'buildZip', 'crc32', 'meter', 'outPitch', 'migrate', 'tapTempo',
   'getSound', 'mods', 'library', 'factory', 'previewState', 'soundEdited', 'fmxView', 'fmxPreview', 'fmxBadge',
   'history', 'projects', 'storage', 'engineInfo', 'getBusFx', 'wake', 'gestures', 'roll', 'rollApi', 'detectKey', 'sceneKey',

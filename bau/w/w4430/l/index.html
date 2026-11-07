@@ -48328,7 +48328,7 @@ function rollModel(t, s) {
     getClip: cur,
     // undo base without a running overdub's notes (they belong to the overdub's own undo step); revert uses the full state
     begin() { snap = cleanClip(cur()); usnap = cleanClip(clipSansOverdub(t, s)); },
-    end(changed, label) { if (changed && snap) { pushUndo(t, s, usnap || snap, label || 'Bearbeiten'); afterClipEdit(t, s); folEdit('roll'); } snap = usnap = null; },
+    end(changed, label) { if (changed && snap) { kl1Roll(t, s, snap); /* KL1 */ pushUndo(t, s, usnap || snap, label || 'Bearbeiten'); afterClipEdit(t, s); folEdit('roll'); } snap = usnap = null; },
     revert() { usnap = null; if (snap && cur()) { const c = cur(), d = deep(snap); Object.keys(c).forEach(k => { if (!(k in d)) delete c[k]; }); Object.assign(c, d); afterClipEdit(t, s, true); } snap = null; },   // same object: the roll keeps its references
     undo: () => { undo(); }, redo: () => { redo(); },
     canUndo: () => UNDO.length > 0, canRedo: () => REDO.length > 0,
@@ -48338,6 +48338,7 @@ function rollModel(t, s) {
 // an edit of a playing clip is heard in the same pass: re-schedule its notes from now (§3.3 Audio)
 function afterClipEdit(t, s, noKey) {
   const c = S.tracks[t].clips[s]; if (!c) { clipChanged(t, s); return; }
+  if (c.lw) kl1Fit(c);                                             // KL1: Fenster-Länge woanders geändert (Drum ×2 …)
   c.notes.sort((a, b) => a.t - b.t);
   if (R.playing && R.slot[t] === s && !R.pend[t] && AU.ctx) { const now = AU.ctx.currentTime + .006; cancelTrackFrom(t, now); scheduleTrack(t, Math.max(R.cstart[t], t2b(now)), R.schedBeat, true); }
   if (!noKey && S.tracks[t].kind === 'synth') scheduleAutoKey(s);
@@ -72849,6 +72850,31 @@ function kl1Len(c, nl, f) {
   if (f === 2) for (const n of c.notes) { if (n.t >= B - 1e-9) continue; const at = w.a + B + n.t; if (at >= L - 1e-9 && at < a + NB - 1e-9) { const x = cleanNote(n); x.t = +at.toFixed(6); delete x.o; F.push(x); } }
   F.sort((x, y) => x.t - y.t);
   kl1Put(c, F, a, nl);
+}
+// KL1-GP: a window whose length changed elsewhere (Drum-Editor ×2, Einfügen im Noten-Editor …): the window holds, as after Laden
+function kl1Fit(c) {
+  const w = c && c.lw; if (!w || c.ts) return;
+  const B = clipB(c); if (Math.abs(w.b - w.a - B) < 1e-6) return;
+  w.notes = w.notes.filter(n => !(n.t >= w.a - 1e-9 && n.t < w.a + B - 1e-9));
+  w.b = kl1K4(w.a + B); w.len = Math.min(64, Math.max(w.len, Math.ceil((w.a + B) / 4 - 1e-9)));
+  if (w.a + B > 256 + 1e-9) { kl1Put(c, kl1Full(c), Math.max(0, 256 - B), c.len); c.lw.notes = c.lw.notes.filter(n => n.t < 256 - 1e-9); }
+}
+// KL1-GP: Noten-Editor (rollModel.end, bf = Stand davor). Ändert eine Geste die Länge, bleibt der ganze Inhalt: Länge-Griff/Länge =
+// wie Länge im Clip-Blatt, ×2 = wie ×2 dort, Zuschneiden = das gewählte Stück wird das Fenster; sonst gilt das Fenster (kl1Fit)
+function kl1Roll(t, s, bf) {
+  const c = S.tracks[t] && S.tracks[t].clips[s]; if (!c || !c.lw || c.ts || !bf || !bf.lw || bf.ts || !isNum(bf.len)) return;
+  const B0 = clipB(bf), B1 = clipB(c), nl = c.len, a0 = bf.lw.a; if (Math.abs(B1 - B0) < 1e-9) return;
+  const K = (ns, lo, hi, off) => ns.filter(n => n.t >= lo - 1e-9 && n.t < hi - 1e-9).map(n => kl1K4(n.t - off) + ':' + n.n).sort().join('|');
+  const back = () => { c.notes = bf.notes.map(n => Object.assign({}, n)); c.len = bf.len; c.lw = deep(bf.lw); };
+  if (B1 < B0) {
+    const k1 = K(c.notes, 0, B1, 0);
+    for (let d = 0; d <= B0 - B1 + 1e-9; d += 4) if (K(bf.notes, d, d + B1, d) === k1) { back(); kl1Put(c, kl1Full(c), a0 + d, nl); return; }
+  } else if (K(c.notes, 0, B0, 0) === K(bf.notes, 0, B0, 0)) {
+    const nw = K(c.notes, B0, B1, B0);
+    if (nw === K(bf.notes, B0, B1, B0)) { back(); kl1Len(c, nl, 1); return; }
+    if (Math.abs(B1 - 2 * B0) < 1e-9 && nw === K(bf.notes, 0, B0, 0)) { back(); kl1Len(c, nl, 2); return; }
+  }
+  kl1Fit(c);
 }
 // ◀ ▶ im Clip-Blatt: the window one bar earlier / later (one undo 'clip')
 function kl1Move(t, s, d) {

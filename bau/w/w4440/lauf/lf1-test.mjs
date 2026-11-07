@@ -1,4 +1,4 @@
-// LF1 – gezielter Test: Schritt aus, Schritt-Menü (Ratsche/Transponieren/Chance), Richtung, Spielweise (Strum), Speichern/Laden,
+// LF1 – gezielter Test: Schritt aus, Schritt-Menü (Wirbel/Transponieren/Chance), Richtung, Spielweise (Strum), Speichern/Laden,
 // MIDI, alte Clips unverändert; Fotos hochkant 428×926 und quer 926×428. Aufruf: node lf1-test.mjs <index.html> <ausgabe-ordner>
 import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
 const file = process.argv[2], out = process.argv[3];
@@ -57,7 +57,7 @@ function midiOns(bytes) {
   let c = await p.evaluate(() => SYNQUENZER.getClip(1, 0));
   ok('Tipp: Schritt 3 aus, Note bleibt', c.notes.length === 8 && c.notes[2].off === true && c.notes[2].n === 52, JSON.stringify(c.notes[2]));
   ok('Schritt 3 gedimmt (lf1off)', await p.evaluate(() => SYNQUENZER.laufApi().se.cells[2].classList.contains('lf1off')));
-  // 2 langer Druck auf Schritt 5 -> Menü; Ratsche 3, Transponieren +12 auf Schritt 2, Chance 50 % auf Schritt 8
+  // 2 langer Druck auf Schritt 5 -> Menü; Wirbel 3, Transponieren +12 auf Schritt 2, Chance 50 % auf Schritt 8
   await hold(p, await cellXY(p, 4));
   ok('langer Druck öffnet Schritt-Menü', await p.evaluate(() => !!document.querySelector('.pop.lf1pop')), await p.evaluate(() => (document.querySelector('.pop h4') || {}).textContent));
   c = await p.evaluate(() => SYNQUENZER.getClip(1, 0));
@@ -79,7 +79,7 @@ function midiOns(bytes) {
   const pb = []; for (let k = 0; k < 16; k++) pb.push((await p.evaluate(k => SYNQUENZER.lf1Events(1, 0, k), k)).some(e => e.n === 60) ? 1 : 0);
   const pb2 = []; for (let k = 0; k < 16; k++) pb2.push((await p.evaluate(k => SYNQUENZER.lf1Events(1, 0, k), k)).some(e => e.n === 60) ? 1 : 0);
   ok('Chance 50 %: mal ja, mal nein, jedes Mal gleich', pb.includes(1) && pb.includes(0) && pb.join('') === pb2.join(''), pb.join(''));
-  // 3 Wiedergabe: Noten-Log ohne den stummen Schritt, Ratsche 3 Schläge je Durchgang
+  // 3 Wiedergabe: Noten-Log ohne den stummen Schritt, Wirbel 3 Schläge je Durchgang
   await p.keyboard.press('F10');   // Nutzergeste (Audio frei)
   await p.evaluate(() => { const Q = SYNQUENZER; Q.clearLog(); Q.launchScene(0); });
   await sl(2600);
@@ -90,7 +90,7 @@ function midiOns(bytes) {
   ok('Noten-Log: Wirbel 3 Schläge in Takt 1', bar0.filter(e => e.clipNote === 55).length === 3, JSON.stringify(bar0.map(e => [e.clipNote, e.beat])));
   ok('Noten-Log: +12 klingt als D4', log.some(e => e.clipNote === 62));
   // 4 Richtung per Knopf: rückwärts; Reihenfolge (Durchgang 0: Schritte 16…1 -> Noten ab Schlag 2 rückwärts)
-  await p.evaluate(() => { for (let k = 0; k < 3; k++) SYNQUENZER.undo(); });     // Ratsche/Transp./Chance zurück (Schritt 3 bleibt aus)
+  await p.evaluate(() => { for (let k = 0; k < 3; k++) SYNQUENZER.undo(); });     // Wirbel/Transp./Chance zurück (Schritt 3 bleibt aus)
   c = await p.evaluate(() => SYNQUENZER.getClip(1, 0));
   ok('Undo je Aktion ein Schritt', c.notes[2].off === true && !c.notes[4].rt && !c.notes[1].tp && c.notes[7].pb == null, JSON.stringify(c.notes.map(n => [n.off, n.rt, n.tp, n.pb])));
   const db = await center(p, () => { const b = document.querySelector('.lbar .lf1dir'); const r = b.getBoundingClientRect(); return {x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height, right: r.right}; });
@@ -118,7 +118,7 @@ function midiOns(bytes) {
   ok('Start bei Schritt 5', c.lf && c.lf.st === 4 && ev[0].n === 55 && Math.abs(ev[0].t) < 1e-6, JSON.stringify([c.lf, ev.slice(0, 3)]));
   ok('Start-Dreieck an Schritt 5', await p.evaluate(() => { const m = SYNQUENZER.laufApi().se.cells[4].querySelector('.lf1s'); return !!m && !m.hidden; }));
   await p.evaluate(() => closePop()); await sl(150);
-  // Effekte für das Foto: Ratsche 3 auf Schritt 2, +7 auf Schritt 6, 50 % auf Schritt 8
+  // Effekte für das Foto: Wirbel 3 auf Schritt 2, +7 auf Schritt 6, 50 % auf Schritt 8
   await p.evaluate(() => { const Q = SYNQUENZER; Q.lf1Step(1, 0, 1, 'rt', 3); Q.lf1Step(1, 0, 5, 'tp', 7); Q.lf1Step(1, 0, 7, 'pb', .5); });
   await sl(200);
   ok('Effekt-Marken in den Schritten', await p.evaluate(() => { const C = SYNQUENZER.laufApi().se.cells; return C[1].querySelector('.lf1b').textContent === '3×' && C[5].querySelector('.lf1b').textContent === '+7' && C[7].querySelector('.lf1b').textContent === '50%'; }));

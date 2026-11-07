@@ -71168,6 +71168,17 @@ function vr1EdIn(g, x, y, w, h, i, t, st, src, C, pref) {
   const mods = {}; try { for (const k of vv4Knobs(i, t, src)) mods[k.key] = k; } catch (e) {}
   let moving = new Set(); try { if (run && X.tau != null && X.tau <= Math.max(run.ea, run.t1) + VK2_HOLD) moving = new Set(vk2Mv(run)); } catch (e) {}
   const nar = w < 300, fs = nar ? 9 : 11;
+  // the height it needs (knob size from the width): the sheet fits its content; Gerät stands a little above the middle
+  const pre = {}; {
+    let sb0 = null; try { sb0 = subTabsFor(tab, eng); } catch (e) { sb0 = null; }
+    const hd = (nar ? 26 : 32) + 5 + (sb0 && !nar ? 31 : 0), ph0 = h - hd; pre.land = w > ph0 * 1.6;
+    const nC = Math.max(...(pre.land ? [P.rows.flat()] : P.rows).map(r => r.length)) + (P.fad && pre.land ? P.fad.length : 0), cw0 = (w - 16) / Math.max(1, nC), nr = pre.land ? 1 : P.rows.length;
+    const segH = P.seg ? (nar ? 24 : 30) + 8 : 0; pre.fadH = P.fad && !pre.land ? Math.min(150, (ph0 - 8 - segH) * .5) : 0;
+    pre.sc = clamp(Math.min(cw0 / 82, (ph0 - 16 - segH - (pre.fadH ? pre.fadH + 6 : 0)) / nr / 104), .5, 1.35);
+    const need = hd + 8 + segH + (pre.fadH ? pre.fadH + 6 : 0) + nr * 104 * pre.sc + 6;
+    if (need < h) { if (pref === 'st') y += Math.round((h - need) * .4); h = need; }
+  }
+  res.y = y; res.h = h;
   g.save(); g.textBaseline = 'middle';
   // the tab row (as sheetFrame: OSZ/WT/FM · FILTER · HÜLLK. · LFO · MOD · FX)
   const tabs = [['osc', eng === 'analog' ? 'OSZ' : eng === 'wt' ? 'WT' : 'FM'], ['filter', 'FILTER'], ['env', 'HÜLLK.'], ['lfo', 'LFO'], ['mod', 'MOD'], ['fx', 'FX']];
@@ -71187,7 +71198,7 @@ function vr1EdIn(g, x, y, w, h, i, t, st, src, C, pref) {
   // the page
   const ph = y + h - yy; if (ph < 40) { g.restore(); return res; }
   vvRound(g, x, yy, w, ph, 8); g.fillStyle = C.ch; g.fill(); g.strokeStyle = C.line; g.lineWidth = 1; g.stroke();
-  let py = yy + 8; const px = x + 8, pw = w - 16, land = w > ph * 1.6;
+  let py = yy + 8; const px = x + 8, pw = w - 16, land = pre.land;
   if (P.seg) {
     const [k, labs] = P.seg, cur = Math.round(val(k)), sh = nar ? 24 : 30, sw = pw / labs.length;
     vvRound(g, px, py, pw, sh, 6); g.fillStyle = '#0d0f12'; g.fill();
@@ -71197,12 +71208,11 @@ function vr1EdIn(g, x, y, w, h, i, t, st, src, C, pref) {
   }
   const rows = land ? [P.rows.flat()] : P.rows, fad = P.fad || null;
   let nCol = Math.max(...rows.map(r => r.length)) + (fad ? (land ? fad.length : 0) : 0);
-  const fadH = fad && !land ? Math.min(150, (y + h - 8 - py) * .5) : 0;
-  const avail = y + h - 8 - py - fadH, cw = pw / Math.max(1, nCol), sc = clamp(Math.min(cw / 82, avail / rows.length / 104), .5, 1.35), rowH = 104 * sc;
+  const fadH = pre.fadH, cw = pw / Math.max(1, nCol), sc = pre.sc, rowH = 104 * sc;
   const cells = [];
   // faders (MIX): track, fill in the track colour, the cap; a real modulation as a range beside it
   if (fad) {
-    const fw = land ? cw : pw / fad.length, fy = py, fh = land ? Math.min(avail, rowH) : fadH;
+    const fw = land ? cw : pw / fad.length, fy = py, fh = land ? rowH : fadH;
     fad.forEach((k, j) => {
       const d = PD[k]; if (!d) return; const v = val(k), n = clamp(toNorm(d, v), 0, 1), m = mods[k], cx = px + fw * (j + .5), ty = fy + 14, tb = fy + fh - 18, tl = tb - ty;
       g.font = '600 ' + fs + 'px ' + C.ui; g.textAlign = 'center'; g.fillStyle = C.dim; g.fillText(String(P.fl[j] || d.l).toUpperCase(), cx, fy + 6);
@@ -71244,7 +71254,7 @@ function vr1EdIn(g, x, y, w, h, i, t, st, src, C, pref) {
 function vr1ModEd(g, x, y, w, h, i, st, C, src, t, port, res) {
   const eh = Math.round(port ? h * .56 : h * .62), r = vr1EdIn(g, x, y, w, eh, i, t, st, src, C, 'mod');
   if (r) { res.ed = r.page; res.knobs = r.knobs.filter(c => c.mod); res.focus = r.focus; }
-  return eh + 8;
+  return (r && r.h ? Math.min(eh, r.h) : eh) + 8;
 }
 // Gerät: the instrument of track i as it is in the app
 function vr1GerIn(g, x, y, w, h, i, st, C, src, t) {
@@ -71255,8 +71265,8 @@ function vr1GerIn(g, x, y, w, h, i, st, C, src, t) {
   if (s && !s._nv && s.engine === 'mk') {
     const ms = vv3MkState(i, t, st, src), hm = vv4HasMod(i);
     if (ms) {
-      ms.i = i; const pw = Math.min(w, (hm ? (port ? h * .42 : h * .56) : (port ? h * .9 : h * .98)) * 1.95), ph = pw / 1.95, py = hm ? y : y + Math.max(0, (h - ph) / 2);
-      if (vv3DrawPlate(g, x + (w - pw) / 2, py, pw, ms, C)) {
+      ms.i = i; const pw = Math.min(w, (port ? h * .42 : h * .56) * 1.95), ph = pw / 1.95;
+      if (hm ? vv3DrawPlate(g, x + (w - pw) / 2, y, pw, ms, C) : vr1PlateIn(g, x, y, w, h, i, st, C, ms, res)) {
         res.kind = 'plate'; res.cutMod = ms.cutMod; res.cutKnob = ms.T.f.cut; vv4El('Geräte-Platte', 'MKUI Platte (#mkPlate, Regler mit Mod-Bogen)');
         if (hm) res.rows = vv4K1Rows(g, x, y + ph + 8, w, h - ph - 8, i, C);
         return res;
@@ -71267,6 +71277,29 @@ function vr1GerIn(g, x, y, w, h, i, st, C, src, t) {
   // Bit Mask, Perkussion, fremde Klänge: no picture of their panel in the video yet – the notes (Piano-Roll)
   res.kind = 'roll'; const sl = st.slots[i], c = sl != null && sl >= 0 ? vvClip(i, sl, st.own[i]) : null; res.roll = vv4RollIn(g, x, y, w, h, st, i, c, C, src);
   return res;
+}
+/* the plate without a modulation list: landscape the whole plate; portrait the whole plate on top and below the same plate closer
+   (2,4×) around the knob that moves (◆ glide of the render, else CUTOFF) – a camera on the original, a frame shows where it looks */
+function vr1PlateIn(g, x, y, w, h, i, st, C, ms, res) {
+  const M = window.MKUI; if (!M || !M.ELS) return false;
+  const k = g.getTransform().a || 1, port = h > w * .9;
+  if (!port) { const pw = Math.min(w, h * 1.95); return vv3DrawPlate(g, x + (w - pw) / 2, y + Math.max(0, (h - pw / 1.95) / 2), pw, ms, C); }
+  const Z = 2.4, PWz = w * Z, px = Math.max(1, Math.round(PWz * k)), py = Math.ceil(px / 1.95), ph = w / 1.95, gap = 12, zy = y + ph + gap, zh = Math.min(h - ph - gap, py / k);
+  let cv = VR1.pz; if (!cv || cv.width !== px || cv.height !== py) { cv = VR1.pz = document.createElement('canvas'); cv.width = px; cv.height = py; }
+  const q = cv.getContext('2d'); q.setTransform(1, 0, 0, 1, 0, 0); q.clearRect(0, 0, px, py); q.setTransform(k, 0, 0, k, 0, 0);
+  if (!vv3DrawPlate(q, 0, 0, PWz, ms, C)) return false;
+  g.drawImage(cv, x, y, w, ph);
+  let id = 'f.cut';
+  try { const X = vk2Src(st), r = X && X.runs ? vk2Act(X.runs[i], X.tau) : null; if (r && X.tau <= Math.max(r.ea, r.t1) + VK2_HOLD) { const m = vk2Mv(r).find(k_ => k_.startsWith('mk.t.0.') && M.ELS.some(e => e.id === k_.slice(7))); if (m) id = m.slice(7); } } catch (e) {}
+  const e = M.ELS.find(q_ => q_.id === id) || M.ELS.find(q_ => q_.id === 'f.cut'), fx = e ? e.X / 1000 * px : px / 2, fy = e ? e.Y / (1000 / 1.95) * py : py / 2;
+  const sw = w * k, sh = zh * k, sx = clamp(fx - sw / 2, 0, Math.max(0, px - sw)), sy = clamp(fy - sh / 2, 0, Math.max(0, py - sh));
+  if (zh > 40) {
+    g.save(); vvRound(g, x, zy, w, zh, 8); g.clip(); g.drawImage(cv, sx, sy, Math.min(sw, px), Math.min(sh, py), x, zy, Math.min(sw, px) / k, Math.min(sh, py) / k); g.restore();
+    g.strokeStyle = vr1SelCol(); g.lineWidth = 1.5; g.strokeRect(x + sx / px * w, y + sy / py * ph, Math.min(sw, px) / px * w, Math.min(sh, py) / py * ph);
+    vvRound(g, x + .75, zy + .75, w - 1.5, zh - 1.5, 8); g.stroke();
+    if (res) res.zoom = id;
+  }
+  return true;
 }
 function vr1DrawGer(g, t, rect, track, src) { return vv4Into(g, t, rect, track, (g_, w, h, st, i) => vv4Shot(g_, w, h, st, i, 'geraet'), src); }
 /* ---------- Klavier: die Noten steigen auf ---------- */
