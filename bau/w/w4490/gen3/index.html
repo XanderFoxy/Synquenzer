@@ -78001,6 +78001,7 @@ function uePaintBar() {
   }).join('') : '<div class="ue-empty">Hier ist noch nichts.</div>';
   fllBarPaint(bar);                                              // FX1: Raster, gewählte Vorlage
   gr2UeBarPaint(bar);                                            // GR2: Knopf „Genre“ (Fills je Stil)
+  gen3UeBarPaint(bar);                                           // GEN3: eine Fill-Bibliothek (keine Doppel, nach Genre)
 }
 // die Reiter-Liste der einzeiligen Leiste
 function ueTabPick(anchor) {
@@ -81238,6 +81239,7 @@ function gr1ClipNorm(c, out) {
     const o = {s: g.s, v: typeof g.v === 'number' && g.v >= 1 ? Math.min(8, Math.round(g.v)) : 1};
     if (typeof g.z === 'number' && g.z >= 0) o.z = Math.min(100, Math.round(g.z));
     gr2GrNorm(g, o);                                                  // GR2: clip.gr.u (Stärke der Übersetzung)
+    gen3GrNorm(g, o);                                                 // GEN3: clip.gr.o/.t (Tempo-Version), .m (Matrix-Remix)
     out.gr = o;
   }
 }
@@ -81257,12 +81259,12 @@ function gr1DrumNotes(src, st) {
     const P = pat.length >= 32 ? 2 : 1;
     for (let b = 0; b < bars; b++) for (let i = 0; i < 16; i++) {
       const ch = pat[(b % P) * 16 + i]; if (!ch || ch === '.') continue;
-      const t = +(b * 4 + gr1SwT(i, st.sw)).toFixed(4), v = ch === 'X' ? 1 : ch === 'x' ? .8 : .45, k = gm + '@' + t, o = by.get(k);
+      const t = +(b * 4 + gr2T(st, i)).toFixed(4), v = ch === 'X' ? 1 : ch === 'x' ? .8 : .45, k = gm + '@' + t, o = by.get(k);   // GEN3: gr2T (auch Achtel-Triolen)
       if (o && o.v >= v) continue;
       by.set(k, Object.assign({t, d: .1, n: gm, v}, ch === 'X' ? {a: 1} : null));
     }
   }
-  return [...by.values()].sort((a, b) => a.t - b.t || a.n - b.n);
+  return gen3DrumX(st, [...by.values()].sort((a, b) => a.t - b.t || a.n - b.n), bars);   // GEN3: Wirbel / laid back des Stils
 }
 // the root of each half bar: what sounds on its first beat (lowest), else the first note in it, else the one before
 function gr1Roots(src) {
@@ -81282,7 +81284,7 @@ function gr1BassNotes(src, st) {
   const bars = Math.max(1, src.len | 0), roots = gr1Roots(src), ns = src.notes || [];
   const avg = ns.length ? ns.reduce((s, n) => s + n.v, 0) / ns.length : .8, out = [];
   for (let b = 0; b < bars; b++) for (const [i, iv, ln, lv] of st.b) {
-    const t = +(b * 4 + gr1SwT(i, st.sw)).toFixed(4), r = roots[Math.min(roots.length - 1, Math.floor((b * 4 + i * .25) / 2 + 1e-9))];
+    const t = +(b * 4 + gr2T(st, i)).toFixed(4), r = roots[Math.min(roots.length - 1, Math.floor((b * 4 + i * .25) / 2 + 1e-9))];
     out.push({t, d: +Math.max(.1, ln * .25 * .9).toFixed(4), n: clamp(r + iv, 0, 127), v: +clamp(avg * lv / .8, .1, 1).toFixed(3)});
   }
   return out.sort((a, b) => a.t - b.t || a.n - b.n);
@@ -81431,7 +81433,7 @@ function gr1PatPop(anchor, t, s, after) {
 function gr1PatternsHook(p, anchor) {
   const L = p.querySelector('.plist'); if (!L) return;
   L.insertAdjacentHTML('beforeend', '<button class="rb gr1pk" data-gr1p="1">Stil-Grundmuster ›</button>');
-  onTap(p, () => { closePop(); gr1PatPop(anchor, DRUM_T, R.selS); }, 'button[data-gr1p]');
+  onTap(p, () => { closePop(); if (!gen3GmOpen(DRUM_T, R.selS)) gr1PatPop(anchor, DRUM_T, R.selS); }, 'button[data-gr1p]');   // GEN3: Reiter Grundmuster
 }
 /* ---------- Small / Full ---------- */
 function gr1Cands(song, t, s) {
@@ -81623,7 +81625,7 @@ function gr1RemixOpen(scope) {
 /* ---------- Einhänge-Punkte ---------- */
 // Menü › Projekt: Zeile „Song“ [Remix …] [Transponieren …]
 function gr1MenuRow(sec, row, btn) {
-  if (!(S.song && S.song.bars)) return;
+  if (!(S.song && S.song.bars)) { gen3MenuRow(sec, row, btn); return; }   // GEN3: ohne Song [Matrix-Remix …]
   const bR = btn('Remix …'), bT = btn('Transponieren …');
   bR.setAttribute('aria-label', 'Remix des ganzen Songs'); bT.setAttribute('aria-label', 'Ganzen Song transponieren');
   on(bR, 'click', () => { closeMenu(); gr1RemixOpen(null); });
@@ -81666,10 +81668,7 @@ function gr1MarkTap(p, b) {
 // Clip-Blatt (Szenen-Clip): [Grundmuster ▾] (Drums, Bass) und Small │ Full (Drum-Clips)
 function gr1ClipSheet(g, t, s, clip, reopen) {
   const tr = S.tracks[t]; if (!tr || !clip || clip.audio || tr.stimme) return;
-  if (gr1PatOk(t, clip)) {
-    const b = el('button', 'hb rb gr1cb', 'Grundmuster ▾'); b.setAttribute('aria-label', 'Grundmuster eines Stils einsetzen');
-    on(b, 'click', () => gr1PatPop(b, t, s, reopen)); g.append(b);
-  }
+  // GEN3: [Grundmuster ▾] ist jetzt der Reiter „Grundmuster“ im [Werkzeugkasten ▾] (Inventar D4)
   if (isDrum(t)) {
     const w = el('div', 'gr1-sfc'); w.setAttribute('role', 'group'); w.setAttribute('aria-label', 'Rhythmus Small oder Full');
     for (const [f, L] of [['s', 'Small'], ['f', 'Full']]) {
@@ -82121,11 +82120,11 @@ const bb1EchoTxt = e => (e ? 'Echo ' + String(e.divL || '1/8').replace('.', ' pu
 // Einsetzen: o = {ziel, klang}; ein Undo-Schritt (Gruppe mit Klang/Echo) → {k, t, s, v?, id?, bar?, n, len} oder null
 function bb1Insert(t, s, figId, o) {
   o = o || {};
-  const F = bb1Fig(figId), tr = S.tracks[t], c = tr && tr.clips[s]; if (!F || !bb1Ok(t, c)) return null;
+  const F = o.F || bb1Fig(figId), tr = S.tracks[t], c = tr && tr.clips[s]; if (!F || !bb1Ok(t, c)) return null;   // GEN3: o.F/o.mk (Grundmuster, Spielweise)
   if (c.ts) { toast('Den Werkzeugkasten gibt es nur für Clips im 4/4-Takt'); return null; }
   if (R.songRec || songTakeOpen()) { toast('Erst die Aufnahme beenden (●)'); return null; }
   bb1PvStop();
-  const Z = bb1Targets(t, s).find(z => z.k === (o.ziel || 'auto')) || bb1Ziel(t, s), B = bb1Build(t, s, F, Z.k); if (!B || !B.gen) { toast('Diese Figur passt hier nicht'); return null; }
+  const Z = bb1Targets(t, s).find(z => z.k === (o.ziel || 'auto')) || bb1Ziel(t, s), B = o.mk ? o.mk(Z.k) : bb1Build(t, s, F, Z.k); if (!B || !B.gen) { toast('Diese Figur passt hier nicht'); return null; }
   const label = 'Werkzeugkasten: ' + F.name, items = [], res = {k: Z.k, t, s, n: B.gen, len: B.len};
   if (Z.k === 'ver') {
     const song = S.song, sb = songSnapshot();
@@ -82185,10 +82184,10 @@ function bb1SwapBack(w) {
   c.notes = w.notes; bb1Resched(w.t, w.s);
 }
 // eine Figur vorhören: läuft der Clip, im Lauf (Noten nur geliehen); sonst im Kontext der Szene, in Schleifen (≤ 16 s)
-function bb1PvStart(t, s, figId) {
+function bb1PvStart(t, s, figId, mk) {                                 // GEN3: mk = fertige Noten (Grundmuster, Spielweise)
   bb1PvStop(); ensureAudio(); const ac = AU.ctx; if (!ac) return false;
-  const F = bb1Fig(figId), c = S.tracks[t] && S.tracks[t].clips[s]; if (!F || !c) return false;
-  const Z = bb1Ziel(t, s), B = bb1Build(t, s, F, Z.k); if (!B || !B.gen) return false;
+  const F = bb1Fig(figId) || (mk ? {} : null), c = S.tracks[t] && S.tracks[t].clips[s]; if (!F || !c) return false;
+  const Z = bb1Ziel(t, s), B = mk ? mk(Z.k) : bb1Build(t, s, F, Z.k); if (!B || !B.gen) return false;
   const pv = {t, s, id: figId, voices: [], hits: [], timer: 0, swap: null};
   if (R.playing && R.slot[t] === s && !R.pend[t] && !R.own[t]) {
     const L0 = clipB(c);
@@ -82253,9 +82252,10 @@ function bb1Open(t, s, role) {
   bb1Paint();
   return true;
 }
-function bb1List(U) { return BB1_FIG.filter(f => f.r === U.role && (BB1.gen === 'alle' || f.g === BB1.gen)); }
+function bb1List(U) { return gen3BbList(U) || BB1_FIG.filter(f => f.r === U.role && (BB1.gen === 'alle' || f.g === BB1.gen)); }   // GEN3: Drums-Füller = Fill-Kacheln
 function bb1Paint() {
   const U = BB1.ui; if (!U || !U.p || !U.p.isConnected) return;
+  if (gen3BbPaint()) return;                                           // GEN3: Reiter Grundmuster │ Spielweise
   const p = U.p, tr = S.tracks[U.t], c = tr && tr.clips[U.s]; if (!c) { closePop(); return; }
   const drum = isDrum(U.t), roles = bb1Roles(U.t), list = bb1List(U);
   if (U.fig && !list.some(f => f.id === U.fig)) U.fig = null;
@@ -82283,10 +82283,12 @@ function bb1Paint() {
   const sc = p.querySelector('.bb1-grid'), y = sc ? sc.scrollTop : 0;
   p.innerHTML = h;
   const sc2 = p.querySelector('.bb1-grid'); if (sc2) sc2.scrollTop = y;
+  gen3BbHead(p);                                                      // GEN3: Reiter im Kopf
   bb1PvBtn(); popDock(p);
 }
 function bb1Act(b) {
   const U = BB1.ui; if (!U) return;
+  if (gen3BbAct(b)) return;                                            // GEN3: Reiter, Grundmuster, Spielweise
   if (b.dataset.role) { U.role = b.dataset.role; BB1.role[U.t] = U.role; BB1.gen = 'alle'; U.fig = null; bb1PvStop(); haptic('tick'); bb1Paint(); return; }
   if (b.dataset.gen) { BB1.gen = b.dataset.gen; haptic('tick'); bb1Paint(); return; }
   if (b.dataset.ziel) { BB1.ziel = b.dataset.ziel; haptic('tick'); if (BB1.pv && !BB1.pv.swap) { const id = BB1.pv.id; bb1PvStart(U.t, U.s, id); } bb1Paint(); return; }
@@ -82645,6 +82647,7 @@ function gr2Drums(ns, st, s, N, LB, bars) {
 // die Noten eines Clips im Stil st, Stärke s (0–1), Rolle role; eine andere Taktart (4/4 ↔ 3/4) wird je Takt anteilig gefaltet
 function gr2Translate(src, st, s, role) {
   s = clamp(+s || 0, 0, 1);
+  if (st && st.tv) return gen3TvNotes(src, st, s, role);               // GEN3: Tempo-Version
   const LA = clipBarB(src), tTs = st.ts || null, LB = tsBeats(tTs), bars = Math.max(1, src.len | 0), conv = (src.ts || null) !== tTs, f = LB / LA, ns = [];
   for (const n of src.notes || []) {
     if (n.t >= bars * LA - 1e-9) continue;
@@ -82654,7 +82657,7 @@ function gr2Translate(src, st, s, role) {
   }
   if (s <= 0) return ns.sort((a, b) => a.t - b.t || a.n - b.n);
   const N = Math.round(LB * 4);
-  return role === 'dr' ? gr2Drums(ns, st, s, N, LB, bars) : gr2Melo(ns, st, s, role || 'lead', N, LB, bars);
+  return gen3Post(st, s, role, role === 'dr' ? gr2Drums(ns, st, s, N, LB, bars) : gr2Melo(ns, st, s, role || 'lead', N, LB, bars));   // GEN3: Wirbel, Gleiten, laid back
 }
 // die Rolle einer Spur im Remix: dr · bass · comp (Akkorde) · pad · seq (laufende Figur, Perkussion) · lead — null: Gesang, Audio
 function gr2Role(t, c) {
@@ -82762,6 +82765,7 @@ function gr2RemixDo(song, st, a, b, k, art) {
       const notes = pat ? (role === 'dr' ? gr1DrumNotes(src.c, st) : gr1BassNotes(src.c, st)) : gr2Translate(src.c, st, k / 100, role);
       const id = gr2VerPut(song, t, sp.s, src.c, pat ? {s: st.id, v: src.v} : {s: st.id, v: src.v, u: k}, notes, tTs);
       if (!id) { res.full++; continue; }
+      gen3VerSt(song.own[id], src.c, st, k, t);                          // GEN3: Klangzustand der Version (Tempo-Version: Hall, Release)
       if (id !== sp.id) sx9Set(song, t, sp.a, sp.b, id);
       res.n++; if (role === 'dr') res.dr++; else if (role === 'bass') res.bass++; else res.other++;
     }
@@ -82775,12 +82779,14 @@ const gr2Rg = (song, a, b) => { a = clamp(a | 0, 0, song.bars - 1); return [a, c
 function gr2Remix(stId, a, b, k, art) {
   const st = gr2Style(stId), song = S.song; if (!st || !song || !song.bars || R.songRec) return null;
   [a, b] = gr2Rg(song, a, b); k = clamp(Math.round(+k || 0), 0, 100); art = art === 'm' && !st.only ? 'm' : 'u';
+  const g3 = gen3TvPre(song, a, b);                                      // GEN3: Tempo vorher
   const re = gr2TsMove(song, a, b, st) && R.songPlay && R.playing;
   if (re) songPlayEnd(true);
   let res = null;
   const ok = songEdit(GR1_LAB('Remix ' + st.name + ' ' + k + ' %' + (art === 'm' ? ' (Stil-Muster)' : '')), sg => { res = gr2RemixDo(sg, st, a, b, k, art); });
   if (!res) res = {n: 0, dr: 0, bass: 0, other: 0, ts: 0, full: 0, audio: 0, songTs: null, tsSet: 0};
   res.ok = !!ok; res.restart = !!re;
+  if (ok) gen3TvPost(g3, S.song, a, b);                                  // GEN3: das Tempo folgt der Tempo-Version
   if (re) songPlayStart(a);
   return res;
 }
@@ -82789,8 +82795,10 @@ function gr2AB(ab, a, b, stId) {
   const song = S.song; if (!song || !song.bars || R.songRec) return 0;
   [a, b] = gr2Rg(song, a, b);
   const st = gr2Style(stId || GR2.st), re = gr2TsMove(song, a, b, st) && R.songPlay && R.playing; let n = 0;
+  const g3 = gen3TvPre(song, a, b);                                      // GEN3: Tempo vorher
   if (re) songPlayEnd(true);
   songEdit(GR1_LAB(ab === 'a' ? 'Remix: Original' : 'Remix: ' + (st ? st.name : '')), sg => { n = gr1ABDo(sg, ab, a, b, st ? st.id : ''); gr2TsSync(sg, a, b); });
+  if (n) gen3TvPost(g3, S.song, a, b);                                    // GEN3: A/B stellt auch das Tempo um
   if (re) songPlayStart(a);
   return n;
 }
@@ -82853,6 +82861,7 @@ function gr2Paint(p) {
   const sc = p.querySelector('.gr2-grid'), y = sc ? sc.scrollTop : 0;
   p.innerHTML = h;
   const sc2 = p.querySelector('.gr2-grid'); if (sc2) sc2.scrollTop = y;
+  gen3RxPaint(p);                                                       // GEN3: Tempo-Version, Bereich Matrix
   popDock(p);
 }
 function gr2Go(play) {
@@ -83058,6 +83067,843 @@ const GR2_API = {
 };
 Object.assign(SYNQUENZER, {gr2: GR2_API});                  /* GR2: Test-API (Objekt, wird nicht umhüllt) */
 /* GR2-END */
+/* GEN3-BEGIN ===================== Eine Genre-Liste, eine Fill-Bibliothek, neue Groove-Stile, Tempo-Version, Remix in der Matrix
+   (Paket GEN3, Xander 07.11. (5)–(10), Inventar D4 + D5 – „Ja, mach das mal bitte so“)
+   Xander: „Remix wahlweise auch Clip-Matrix (neue Szene/Versionen) oder unberührt“ · „langsame/schnelle Version, die nicht nur Tempo
+   ändert, sondern das Arrangement anpasst – auf meinen Noten … fett und poppig“ · „Hip-Hop Boom Bap, G-Funk, Trap, Reggae Steppers …
+   immer Übersetzung meiner Noten“.
+   - EINE Genre-Liste: die GR2-Stil-Bibliothek (gr2Order) ist die einzige Quelle für Remix, Grundmuster, Werkzeugkasten (BB1_GEN wird
+     daraus gebaut, die alten Werkzeugkasten-Genres zeigen auf Stile), Fills (◆ ÜBERGÄNGE, Knopf „Genre“) und die Namen der
+     Master-Stile, die ein Genre sind (Euro-Disco, Italo-Disco, Disco klassisch, House). „Frühes House“ heißt überall „House“.
+   - GR3: 27 Stile dazu (GEN3_NEW, GR1-Format; Halftime-Shuffle mit Achtel-Triolen sw8 – gr1DrumNotes/gr1BassNotes rechnen jetzt mit
+     gr2T, also auch Triolen). Je Stil ein Genre-Fill (GEN3_FILLS → GR2_FILLS + ◆ ÜBERGÄNGE) und passende Werkzeugkasten-Figuren
+     (GEN3_FIG). Besonderheiten je Stil (x.post): Trap = Hi-Hat-Wirbel (Drum-Noten r 2/3) und 808-Gleiten (Bass-Töne binden wie
+     BINDUNG), G-Funk = gleitender Bass, Boom Bap = Snare etwas hinter dem Schlag (laid back).
+   - Werkzeugkasten in Reitern: „Grundmuster │ Figuren │ Spielweise“ im Kopf des Blatts; alle drei mit derselben Zeile
+     „Ziel: Neue Version · Neuer Clip · Diesen Clip“ (bb1Targets/bb1Insert, ein Undo). Das Clip-Blatt hat nur noch [Werkzeugkasten ▾];
+     Drum-Editor › Muster ▾ › Stil-Grundmuster öffnet den Reiter Grundmuster. Zwingen-% (GR1) gibt es nur noch als Stärke (GR2-Blatt).
+   - EINE Fill-Bibliothek: ◆ ÜBERGÄNGE (Reiter Übergänge) zeigt jede Figur einmal (gleiche Schläge = gleiche Kachel, die Genres werden
+     zusammengelegt), nach Genre sortiert; der Werkzeugkasten-Reiter Drums-Füller zeigt genau diese Kacheln (Ids „ue:<Bibliothek>“).
+   - Tempo-Version (Remix-Blatt, zwei Kacheln vor den Stilen): langsam → Tempo × (1 − 0,35·Stärke), mehr Fülle auf deinen Noten
+     (Hi-Hats in Sechzehnteln, Ghost-Snares, kleiner Füller am Clip-Ende, Flächen/Bass gebunden, Sequenzen verdoppelt, Fläche mit
+     Bewegung), mehr Hall und längeres Release (Klangzustand ◆ der Version: st.fx.rev, st.p.aR); schnell → Tempo × (1 + 0,3·Stärke),
+     dezenter (16tel-Hats und Ghosts raus, Bass vereinfacht auf Achtel, kürzere Gates, weniger Hall). Versionen wie jeder Remix
+     (clip.gr = {s: 'tvslow'|'tvfast', v, u, o: Tempo vorher, t: Tempo der Version}); A/B stellt auch das Tempo um.
+   - Remix in der Matrix: Bereich [Ganzer Song │ Teil │ Matrix]. Matrix = die gewählte Szene wird in eine freie Szene übersetzt
+     (neue Clips mit clip.gr = {s, v: 1, u, m: Quell-Szene}, Akkord-Zeile mit), der Song bleibt unberührt; [A] spielt die Quell-Szene,
+     [B] den Remix, Stil-Tipps beim Abspielen ändern dieselbe Remix-Szene. Ohne Song: ≡ › Song › [Matrix-Remix …].
+   Daten additiv: clip.gr.o / .t / .m (gen3GrNorm), sonst nur Clips, Versionen, Klangzustände. Einhänge-Zeilen: gr1ClipNorm,
+   gr1DrumNotes, gr1BassNotes, gr1PatternsHook, gr1MenuRow, gr1ClipSheet, bb1List, bb1Paint, bb1Act, bb1Insert, bb1PvStart,
+   uePaintBar, gr2Translate, gr2RemixDo, gr2Remix, gr2AB, gr2Paint. */
+const GEN3 = {sync: '', dup: new Set(), gs: new Map(), bbTab: 'fig', gm: null, sw: null, mx: null, rx: false};
+const GEN3_TVID = {tvslow: 'slow', tvfast: 'fast'};
+// ---------- die neuen Stile (GR1-Format: 16 Schritte je Takt, X Akzent · x normal · o leise; Bass [Schritt, Intervall, Länge, Pegel]) ----------
+const GEN3_NEW = [
+  // Disco / Pop der 80er
+  {id: 'disco', name: 'Disco klassisch', bpm: 118, sw: .52,
+    d: {kick: 'x...x...x...x...', snare: '....X.......X...', hatC: 'x...x...x...x...', hatO: '..x...x...x...x.', shaker: 'oxoxoxoxoxoxoxox'},
+    b: [[0, 0, 1, 1], [2, 12, 1, .8], [3, 12, 1, .55], [4, 0, 1, .9], [6, 12, 1, .8], [8, 0, 1, 1], [10, 12, 1, .8], [11, 10, 1, .6], [12, 7, 1, .85], [14, 12, 1, .8]],
+    x: {comp: '..X..x....X..x..', seq: 'xoxoxoxoxoxoxoxo', gate: {bass: .6, comp: .45, seq: .6},
+      tip: 'Bassdrum auf jedem Viertel, offene Hi-Hat im Offbeat, Sechzehntel-Shaker, springender Oktav-Bass mit Septime, kurze Gitarren-Akkorde zwischen den Schlägen – Disco der späten 70er.'}},
+  {id: 'motown80', name: 'Motown-Beat 80er', bpm: 122, sw: .5,
+    d: {kick: 'x...x...x...x...', snare: 'x...X...x...X...', clap: '....x.......x...', shaker: 'x.x.x.x.x.x.x.x.'},
+    b: [[0, 0, 2, 1], [2, 7, 1, .7], [3, 12, 1, .55], [4, 0, 2, .9], [6, 7, 1, .7], [8, 0, 2, 1], [10, 7, 1, .7], [11, 12, 1, .55], [12, 5, 2, .85], [14, 7, 2, .75]],
+    x: {comp: 'x...X...x...X...', seq: 'x.x.x.x.x.x.x.x.', gate: {bass: .75, comp: .5},
+      tip: 'Der Motown-Beat im Klang der 80er: Snare auf allen vier Vierteln (2 und 4 betont), Bassdrum auf jedem Viertel, Tamburin in Achteln, laufender Bass mit Quinte und Oktave – die 80er-Neuauflagen des 60er-Soul-Pop.'}},
+  {id: 'eurodance', name: 'Eurodance', bpm: 134, sw: .5,
+    d: {kick: 'x...x...x...x...', clap: '....X.......X...', snare: '....x.......x...', hatO: '..x...x...x...x.', hatC: 'x..ox..ox..ox..o'},
+    b: gr2Per4([[1, 0, 1, .7], [2, 12, 1, .95], [3, 0, 1, .75]]),
+    x: {comp: '..X...X...X...X.', seq: 'XxXxXxXxXxXxXxXx', gate: {bass: .7, comp: .45, seq: .6},
+      tip: 'Bassdrum auf jedem Viertel, rollender Bass um die Bassdrum herum (Grundton – Oktave – Grundton), offene Hi-Hat und Akkorde im Offbeat – Eurodance der 90er.'}},
+  {id: 'synthwave', name: 'Synthwave', bpm: 100, sw: .5,
+    d: {kick: 'x.......x.x.....', snare: '....X.......X...', hatC: 'x.x.x.x.x.x.x.x.'},
+    b: gr2Per4([[0, 0, 1, 1], [1, 0, 1, .55], [2, 0, 1, .8], [3, 0, 1, .55]]),
+    x: {comp: 'X.......X.......', seq: 'XxxxXxxxXxxxXxxx', gate: {bass: .5, seq: .6},
+      tip: 'Gerader Beat aus der Drum-Machine, Snare mit großem Hall auf 2 und 4, pulsierender Sechzehntel-Bass, lange Flächen und Arpeggios – der Retro-Sound, der die Filmmusik der 80er nachbaut.'}},
+  {id: 'powerpop', name: 'Power Pop 80er', bpm: 140, sw: .5,
+    d: {kick: 'x.x.....x.x.....', snare: '....X.......X...', hatC: 'x.x.x.x.x.x.x.x.'},
+    b: [[0, 0, 1, 1], [2, 0, 1, .8], [4, 0, 1, .9], [6, 0, 1, .8], [8, 0, 1, 1], [10, 0, 1, .8], [12, 7, 1, .9], [14, 7, 1, .8]],
+    x: {comp: 'X.x.X.x.X.x.X.x.', seq: 'x.x.x.x.x.x.x.x.', gate: {bass: .8, comp: .8},
+      tip: 'Schneller Rock-Beat (Bassdrum auf 1 und 3 doppelt), Snare auf 2 und 4, Achtel-Bass auf dem Grundton, Gitarren-Akkorde in Achteln – gitarrenlastiger Pop der frühen 80er.'}},
+  {id: 'freestyle', name: 'Freestyle', bpm: 116, sw: .5,
+    d: {kick: 'x.....x...x..x..', snare: '....X.......X...', clap: '....x.......x...', hatC: 'xoxoxoxoxoxoxoxo', perc: '..x..x....x..x..'},
+    b: [[0, 0, 1, 1], [3, 12, 1, .7], [6, 0, 1, .85], [8, 0, 1, .9], [10, 12, 1, .7], [11, 0, 1, .6], [14, 7, 1, .8]],
+    x: {comp: 'X..x..x...x.x...', seq: 'XxxxXxxxXxxxXxxx', gate: {bass: .55, comp: .45},
+      tip: 'Drum-Machine mit synkopierter Bassdrum, Sechzehntel-Hi-Hats und lateinamerikanischer Perkussion (Timbales, Cowbell), hüpfender Synth-Bass – Latin-Freestyle der 80er.'}},
+  {id: 'seqtrack', name: 'Soundtrack-Sequenz', bpm: 112, sw: .5,
+    d: {kick: 'x.......x.......', snare: '....X.......X...', hatC: 'x.x.x.x.x.x.x.x.'},
+    b: gr2Per4([[0, 0, 1, 1], [1, 0, 1, .55], [2, 7, 1, .75], [3, 12, 1, .7]]),
+    x: {comp: 'X...............', seq: 'XxxxXxxxXxxxXxxx', gate: {bass: .6, seq: .55},
+      tip: 'Eine treibende Sechzehntel-Sequenz (Grundton – Quinte – Oktave) ist der Motor, darüber lange Flächen, schlichter Beat mit Snare auf 2 und 4 – die arpeggio-getriebenen Fernseh- und Filmthemen der 80er.'}},
+  {id: 'electro', name: 'Electro/Miami Bass', bpm: 126, sw: .5,
+    d: {kick: 'x.....x...x.....', clap: '....X.......X...', hatC: 'xoxoxoxoxoxoxoxo', perc: '......x.......x.'},
+    b: [[0, 0, 6, 1], [6, 0, 4, .85], [10, 0, 6, .9]],
+    x: {comp: '....X.......X...', seq: 'xoxoxoxoxoxoxoxo', gate: {bass: .95, comp: .4},
+      tip: 'Synkopierte Bassdrum der Drum-Machine (1, 2+, 3+), Clap auf 2 und 4, Sechzehntel-Hi-Hats, Cowbell, langer dröhnender Bass auf den Bassdrum-Schlägen – Electro der frühen 80er und Miami Bass.'}},
+  // Hip-Hop, Breaks
+  {id: 'boombap', name: 'Hip-Hop Boom Bap', bpm: 90, sw: .6,
+    d: {kick: 'x......x..x.....', snare: '....X.......X...', hatC: 'x.x.x.xox.x.x.xo'},
+    b: [[0, 0, 3, 1], [7, 0, 2, .8], [10, 0, 3, .85], [14, 7, 2, .7]],
+    x: {comp: 'X.....x...x.....', seq: 'x.x.x.xox.x.x.xo', gate: {bass: .85, comp: .6}, post: 'lay',
+      tip: 'Schwere Bassdrum (1, 2a, 3+), harte Snare auf 2 und 4 etwas hinter dem Schlag, Hi-Hats mit geswingten Sechzehnteln (60 %) – Hip-Hop der späten 80er und 90er.'}},
+  {id: 'gfunk', name: 'G-Funk', bpm: 94, sw: .56,
+    d: {kick: 'x.....x.x.....x.', snare: '....X.......X...', clap: '....x.......x...', hatC: 'xoxoxoxoxoxoxoxo'},
+    b: [[0, 0, 4, 1], [6, 7, 2, .8], [8, 0, 3, .9], [11, 12, 1, .6], [14, 10, 2, .75]],
+    x: {comp: 'X.......x.......', seq: 'xoxoxoxoxoxoxoxo', gate: {comp: .9}, post: 'glide',
+      tip: 'Entspannter Westküsten-Groove: Clap und Snare auf 2 und 4, geswingte Sechzehntel-Hi-Hats (56 %), gleitender Synth-Bass (die Töne werden gebunden), lange Flächen und ein hoher, pfeifender Lead – Hip-Hop der frühen 90er.'}},
+  {id: 'trap', name: 'Trap', bpm: 140, sw: .5,
+    d: {kick: 'x.....x...x..x..', snare: '........X.......', clap: '........x.......', hatC: 'xxxxxxxxxxxxxxxx'},
+    b: [[0, 0, 6, 1], [6, 0, 4, .85], [10, 12, 3, .8], [13, 7, 3, .8]],
+    x: {comp: 'X.......x.......', seq: 'xxxxxxxxxxxxxxxx', gate: {comp: 1}, post: 'trap', roll: {6: 2, 7: 2, 14: 3, 15: 3},
+      tip: 'Halftime-Gefühl: Snare und Clap nur auf der Drei, Sechzehntel-Hi-Hats mit Wirbeln (32tel und Triolen), lange 808-Bässe auf der Bassdrum, die zum nächsten Ton gleiten (Klang auf LEGATO).'}},
+  {id: 'triphop', name: 'Trip-Hop', bpm: 80, sw: .57,
+    d: {kick: 'x.......x.x.....', snare: '....X.......X...', hatC: 'x.ox..ox..ox..ox', shaker: '..o...o...o...o.'},
+    b: [[0, 0, 6, 1], [8, 0, 4, .85], [14, 10, 2, .7]],
+    x: {comp: 'X...............', seq: 'x.x.x.x.x.x.x.x.', gate: {bass: .95},
+      tip: 'Langsamer, schwerer Breakbeat, Snare auf 2 und 4, leise geswingte Hi-Hats, tiefer Bass mit langen Tönen und dunkle, lange Flächen – der Bristol-Sound der 90er.'}},
+  {id: 'bigbeat', name: 'Breakbeat/Big Beat', bpm: 126, sw: .54,
+    d: {kick: 'x......x..x.....', snare: '....X..o....X..o', hatC: 'x.x.x.x.x.x.x...', hatO: '..............x.'},
+    b: [[0, 0, 2, 1], [7, 0, 1, .7], [10, 0, 2, .9], [13, 12, 2, .7]],
+    x: {comp: 'X.......X.......', seq: 'x.x.x.x.x.x.x.x.', gate: {bass: .7, comp: .5},
+      tip: 'Funk-Breakbeat mit Ghost-Snares, synkopierte Bassdrum (1, 2a, 3+), laute Snare auf 2 und 4, verzerrter Bass – Big Beat der späten 90er.'}},
+  {id: 'dnb', name: 'Drum & Bass/Jungle', bpm: 172, sw: .5,
+    d: {kick: 'x.x.......xx....', snare: '....X..o.o..X..o', hatC: 'x.x.x.x.x.x.x.x.'},
+    b: [[0, 0, 8, 1], [10, 0, 6, .85]],
+    x: {comp: 'X...............', seq: 'x.x.x.x.x.x.x.x.', gate: {},
+      tip: 'Zerhackter Breakbeat bei 170 BPM: Bassdrum auf 1, 1+, 3+ und 3a, Snare auf 2 und 4 mit Ghost-Notes dazwischen; darunter ein tiefer Sub-Bass in langen Tönen, der halb so schnell geht.'}},
+  {id: 'ukfunky', name: 'UK Funky', bpm: 130, sw: .58,
+    d: {kick: 'x.....x.x.......', clap: '....X.......X...', rim: '..x..x.....x..x.', hatC: 'x.ox..ox..ox..ox', perc: '...x......x.....'},
+    b: [[0, 0, 1, 1], [3, 0, 1, .7], [6, 12, 1, .8], [10, 0, 1, .85], [13, 7, 1, .75]],
+    x: {comp: '...x..x.......x.', seq: 'x.ox..ox..ox..ox', gate: {bass: .5, comp: .4},
+      tip: 'House-Tempo ohne durchgehende Bassdrum: synkopierte Kicks, Rimshots und Perkussion in Dreier-Gruppen, Clap auf 2 und 4, geswingte Hi-Hats (58 %), kurzer Bass – Londoner Club-Sound um 2009.'}},
+  {id: 'jersey', name: 'Jersey Club', bpm: 140, sw: .5,
+    d: {kick: 'x...x...x.x.x...' + 'x...x...x.x.x.x.', clap: '....X.......X...', hatC: '..x...x...x...x.'},
+    b: [[0, 0, 1, 1], [4, 0, 1, .85], [8, 0, 1, .9], [10, 0, 1, .8], [12, 7, 1, .85]],
+    x: {comp: '....X.......X...', seq: '..x...x...x...x.', gate: {bass: .5, comp: .4},
+      tip: 'Schnelle hüpfende Bassdrum-Folgen (1, 2, 3, 3+, 4 – im zweiten Takt eine mehr), Clap auf 2 und 4, kurze gehackte Stimm- oder Synth-Schnipsel – Club-Musik aus New Jersey.'}},
+  {id: 'gogo', name: 'Go-Go', bpm: 98, sw: .6,
+    d: {kick: 'x.....x...x.....', snare: '....X.......X...', hatC: 'x.xxx.xxx.xxx.xx', perc: 'x..x..x...x.x...'},
+    b: [[0, 0, 2, 1], [3, 0, 1, .6], [6, 7, 2, .8], [10, 0, 2, .9], [13, 12, 1, .6], [14, 10, 2, .7]],
+    x: {comp: '..x...x...x...x.', seq: 'x.xxx.xxx.xxx.xx', gate: {bass: .7, comp: .45},
+      tip: 'Der „Pocket“-Groove aus Washington: geswingte Hi-Hats (60 %), Bassdrum auf 1, 2+ und 3+, Snare auf 2 und 4, Cowbell und Congas im Clave-Rhythmus darüber.'}},
+  // Welt
+  {id: 'afrobeat', name: 'Afrobeat', bpm: 110, sw: .55,
+    d: {kick: 'x..x....x.....x.', snare: '....X..o..o.X...', hatC: 'x.x.x.x.x.x.x.x.', hatO: '...o.......o....', shaker: 'xoxoxoxoxoxoxoxo', perc: 'x..x..x...x.x...'},
+    b: [[0, 0, 2, 1], [3, 0, 1, .7], [6, 12, 1, .7], [8, 7, 2, .85], [11, 0, 1, .7], [14, 5, 2, .75]],
+    x: {comp: '..x..x....x..x..', seq: 'xoxoxoxoxoxoxoxo', gate: {bass: .6, comp: .35},
+      tip: 'Westafrikanischer Groove der 70er: die Bassdrum tanzt um die Schläge, Snare mit Ghost-Notes, offene Hi-Hat zwischen den Schlägen, Shaker in Sechzehnteln, Clave darüber; kurze Gitarren-Riffs greifen ineinander.'}},
+  {id: 'bossa', name: 'Bossa Nova', bpm: 128, sw: .5,
+    d: {kick: 'x.....x.x.....x.', rim: 'x..x..x...x..x..' + '..x..x...x..x...', hatC: 'x.o.x.o.x.o.x.o.'},
+    b: [[0, 0, 6, 1], [6, 7, 2, .8], [8, 0, 6, .95], [14, 7, 2, .8]],
+    x: {comp: 'x..x..x...x..x..', seq: 'x.x.x.x.x.x.x.x.', gate: {bass: .9, comp: .6},
+      tip: 'Leise Bassdrum im Rhythmus punktierte Viertel – Achtel (wie die Surdo), Rimshot im Bossa-Clave über zwei Takte, Achtel auf dem Becken; der Bass wechselt Grundton und Quinte, die Gitarre spielt synkopierte Akkorde.'}},
+  {id: 'samba', name: 'Samba', bpm: 100, sw: .55,
+    d: {kick: 'o...X...o...X...', snare: 'o.ox.o.xo.ox.o.x', shaker: 'xooXxooXxooXxooX', perc: 'x.xx.x.x.xx.x.x.'},
+    b: [[0, 0, 2, .85], [4, 7, 2, 1], [8, 0, 2, .85], [12, 7, 2, 1], [14, 12, 1, .6]],
+    x: {comp: 'x.xx.x.x.xx.x.x.', seq: 'xooXxooXxooXxooX', gate: {bass: .8, comp: .4},
+      tip: 'Die Surdo (hier die Bassdrum) betont die Zwei und die Vier, Ganzá in Sechzehnteln mit Betonung auf der letzten, Tamborim-Rhythmus darüber, Bass im Wechsel Grundton – Quinte – brasilianischer Samba.'}},
+  {id: 'ska', name: 'Ska', bpm: 138, sw: .5,
+    d: {kick: 'x.......x.......', snare: '....X.......X...', hatC: '..x...x...x.....', hatO: '..............x.'},
+    b: [[0, 0, 4, 1], [4, 7, 4, .85], [8, 12, 4, .9], [12, 7, 4, .8]],
+    x: {comp: '..X...X...X...X.', seq: '..x...x...x...x.', gate: {bass: .9, comp: .3},
+      tip: 'Die Gitarre schlägt kurz auf jedem Offbeat (Skank), die Hi-Hat ebenso, Bassdrum auf 1 und 3, Snare auf 2 und 4, laufender Viertel-Bass – jamaikanischer Ska und seine zweite Welle Ende der 70er.'}},
+  {id: 'steppers', name: 'Reggae Steppers', bpm: 74, sw: .58,
+    d: {kick: 'x...x...x...x...', rim: '........X.......', hatC: 'x.ox..ox..ox..ox'},
+    b: [[0, 0, 2, 1], [4, 0, 2, .85], [8, 0, 2, .9], [10, 12, 1, .6], [12, 7, 2, .85]],
+    x: {comp: '....X.......X...', seq: '..x...x...x...x.', gate: {bass: .85, comp: .12},
+      tip: 'Bassdrum auf allen vier Vierteln („steppen“), Rimshot auf der Drei, geswingte Hi-Hats; Gitarre und Orgel kurz auf 2 und 4 (Skank), treibender Bass auf den Schlägen – Roots-Reggae der späten 70er.'}},
+  {id: 'rockers', name: 'Reggae Rockers', bpm: 78, sw: .58,
+    d: {kick: 'x.......x.......', rim: '....X.......X...', hatC: 'xoxoxoxoxoxoxoxo'},
+    b: [[0, 0, 2, 1], [3, 0, 1, .6], [6, 7, 2, .8], [8, 12, 2, .85], [11, 7, 1, .6], [14, 5, 2, .75]],
+    x: {comp: '..X...X...X...X.', seq: 'xoxoxoxoxoxoxoxo', gate: {bass: .8, comp: .15},
+      tip: 'Bassdrum auf 1 und 3, Rimshot auf 2 und 4, dichte Sechzehntel-Hi-Hats; die Orgel spielt im Offbeat doppelt („Bubble“), der Bass ist melodisch mit Pausen – Reggae der mittleren 70er.'}},
+  {id: 'dancehall', name: 'Dancehall', bpm: 96, sw: .52,
+    d: {kick: 'x..x....x..x....', snare: '....X..x....X...', hatC: 'x.x.x.x.x.x.x.x.', perc: '..x...x...x...x.'},
+    b: [[0, 0, 2, 1], [3, 0, 2, .8], [6, 7, 2, .75], [8, 0, 2, .95], [11, 0, 2, .8], [14, 12, 2, .75]],
+    x: {comp: '...x..x....x..x.', seq: 'x.x.x.x.x.x.x.x.', gate: {bass: .8, comp: .35},
+      tip: 'Digitaler Dancehall der 90er: Bassdrum und Bass im Rhythmus 3-3-2 (1, 1a, 3, 3a), Snare auf 2, 2a und 4, Perkussion im Offbeat.'}},
+  {id: 'dembow', name: 'Dembow (Reggaeton)', bpm: 92, sw: .5,
+    d: {kick: 'x...x...x...x...', snare: '...X..X....X..X.', hatC: 'x.x.x.x.x.x.x.x.'},
+    b: [[0, 0, 3, 1], [3, 0, 3, .8], [6, 0, 2, .85], [8, 0, 3, 1], [11, 0, 3, .8], [14, 0, 2, .85]],
+    x: {comp: '...x..x....x..x.', seq: 'x.x.x.x.x.x.x.x.', gate: {bass: .85, comp: .4},
+      tip: 'Bassdrum auf jedem Viertel, die Snare im Dembow-Rhythmus auf 1a und 2+ (und 3a, 4+), der Bass im selben 3-3-2-Muster – der Grundrhythmus des Reggaeton.'}},
+  // Rock, Shuffle
+  {id: 'hshuffle', name: 'Halftime-Shuffle', bpm: 86, sw: .5, sw8: .667,
+    d: {kick: 'x.........x.....', snare: '.o...o..X....o..', hatC: 'x.x.x.x.x.x.x.x.'},
+    b: [[0, 0, 4, 1], [6, 0, 2, .7], [10, 7, 2, .85], [14, 12, 2, .7]],
+    x: {comp: 'X.......x.......', seq: 'x.x.x.x.x.x.x.x.', gate: {bass: .85, comp: .7},
+      tip: 'Triolen-Shuffle im halben Tempo: Hi-Hat auf dem ersten und dritten Triolen-Achtel, leise Ghost-Snares auf dem mittleren, die laute Snare nur auf der Drei – der Halftime-Shuffle der 70er.'}},
+  {id: 'rockhalf', name: 'Rock-Halftime', bpm: 140, sw: .5,
+    d: {kick: 'x.....x.........', snare: '........X.......', hatC: 'x.x.x.x.x.x.x.x.'},
+    b: [[0, 0, 4, 1], [6, 0, 2, .8], [8, 0, 4, .9], [14, 7, 2, .75]],
+    x: {comp: 'X.......x.......', seq: 'x.x.x.x.x.x.x.x.', gate: {bass: .9},
+      tip: 'Rock im halben Tempo: Snare nur auf der Drei, Bassdrum auf 1 und 2+, Achtel auf der Hi-Hat, lange Gitarren-Akkorde – wirkt doppelt so breit bei gleichem Tempo.'}},
+];
+// die Tempo-Versionen: Remix-„Stile“ ohne eigenes Raster (gr2Translate → gen3TvNotes), Tempo aus der Stärke
+const GEN3_TV = [
+  {id: 'tvslow', name: 'Langsame Version', tv: 'slow', only: 1, sw: .5, d: {}, b: [], get bpm() { return gen3TvTarget(this, gen3TvBase(), GR2.k / 100); },
+    x: {tip: 'Langsamer und voller: Hi-Hats in Sechzehnteln, leise Ghost-Snares, ein kleiner Füller am Clip-Ende, Flächen und Bass gebunden, Sequenzen verdoppelt, die Fläche bewegt sich; mehr Hall, längeres Release.'}},
+  {id: 'tvfast', name: 'Schnelle Version', tv: 'fast', only: 1, sw: .5, d: {}, b: [], get bpm() { return gen3TvTarget(this, gen3TvBase(), GR2.k / 100); },
+    x: {tip: 'Schneller und dezenter: Sechzehntel-Hats und Ghost-Notes fallen weg, der Bass wird auf Achtel vereinfacht (weniger, längere Töne), kürzere Gates, weniger Hall – bleibt fett und poppig.'}},
+];
+// Reihenfolge der Kacheln (alle Stile, nach Familien): Disco/Pop · Dance · Hip-Hop/Breaks · Welt · Rock/Country
+const GEN3_ORDER = ['euro', 'italo', 'hinrg', 'disco', 'motown80', 'detroit', 'synthpop', 'synthwave', 'powerpop', 'freestyle', 'seqtrack', 'darkwave', 'ebm',
+  'italodance', 'eurodance', 'house', 'funk', 'garage', 'ukfunky', 'jersey', 'minimal', 'electro',
+  'njs', 'boombap', 'gfunk', 'trap', 'triphop', 'bigbeat', 'dnb', 'gogo',
+  'reggae', 'steppers', 'rockers', 'dancehall', 'dembow', 'ska', 'afrobeat', 'bossa', 'samba',
+  'rockhalf', 'hshuffle', 'train', 'shuffle', 'walzer'];
+// ---------- Genre-Fills (GR2_FILLS-Format; Schläge ab Fill-Beginn) ----------
+const gen3S = (i, sw) => gr2S(i, sw);
+const GEN3_FILLS = [
+  {gs: 'motown80', id: 'gen3f-motown', name: 'Snare-Achtel mit Tamburin', short: 'Motown', k: 'fill', len: 2, tip: 'Snare in Achteln, das Tamburin schlägt mit – der Auftakt im Motown-Beat.',
+    notes: gr2Fn([[0, 'snare', .7], [0, 'shaker', .6], [.5, 'snare', .74], [.5, 'shaker', .6], [1, 'snare', .82], [1, 'shaker', .62], [1.5, 'snare', .96, {a: 1}], [1.5, 'shaker', .7]])},
+  {gs: 'synthwave', id: 'gen3f-synthwave', name: 'Gated-Toms hinab', short: 'Synthw.', k: 'tom', len: 2, tip: 'Toms in Sechzehnteln von hoch nach tief, zwei Snare-Schläge am Ende – mit großem Hall.',
+    notes: gr2Fn([[0, 'tomH', .75], [.25, 'tomH', .7], [.5, 'tomM', .78], [.75, 'tomM', .74], [1, 'tomL', .82], [1.25, 'tomL', .8], [1.5, 'snare', .9], [1.75, 'snare', 1, {a: 1}]])},
+  {gs: 'powerpop', id: 'gen3f-powerpop', name: 'Rock-Fill 16tel', short: 'PowerPop', k: 'fill', len: 4, tip: 'Zwei Schläge Snare in Sechzehnteln, dann die Toms hinab – der Rock-Fill vor dem Refrain.',
+    notes: gr2Fn([0, 1, 2, 3, 4, 5, 6, 7].map(i => [i * .25, 'snare', .5 + i * .05]).concat([[2, 'tomH', .8], [2.25, 'tomH', .78], [2.5, 'tomM', .84], [2.75, 'tomM', .82], [3, 'tomL', .9], [3.25, 'tomL', .88], [3.5, 'kick', .9], [3.5, 'snare', 1, {a: 1}]]))},
+  {gs: 'freestyle', id: 'gen3f-freestyle', name: 'Timbales-Lauf', short: 'Freest.', k: 'tom', len: 2, tip: 'Cowbell und Timbales (hohe Toms) in Sechzehnteln hinab.',
+    notes: gr2Fn([[0, 'perc', .6], [.25, 'tomH', .65], [.5, 'tomH', .7], [.75, 'perc', .65], [1, 'tomM', .75], [1.25, 'tomM', .78], [1.5, 'tomL', .85], [1.75, 'tomL', .95, {a: 1}]])},
+  {gs: 'seqtrack', id: 'gen3f-seqtrack', name: 'Sequenzer-Toms aufwärts', short: 'Sequenz', k: 'tom', len: 2, tip: 'Toms in Sechzehnteln von tief nach hoch wie eine Sequenz, Snare am Ende.',
+    notes: gr2Fn([[0, 'tomL', .6], [.25, 'tomL', .62], [.5, 'tomM', .66], [.75, 'tomM', .7], [1, 'tomH', .74], [1.25, 'tomH', .78], [1.5, 'snare', .9], [1.75, 'snare', 1, {a: 1}]])},
+  {gs: 'electro', id: 'gen3f-electro', name: '808-Tom-Antwort', short: 'Electro', k: 'tom', len: 2, tip: 'Drei Drum-Machine-Toms im Abstand punktierter Achtel aufwärts, Clap zum Schluss.',
+    notes: gr2Fn([[0, 'tomL', .8], [.75, 'tomM', .82], [1.5, 'tomH', .86], [1.75, 'clap', .95, {a: 1}]])},
+  {gs: 'boombap', id: 'gen3f-boombap', name: 'Kick-Snare-Wechsel', short: 'BoomBap', k: 'fill', len: 2, tip: 'Bassdrum, leise Ghost-Snare, Bassdrum, dann zwei Snares – geswingt (60 %).',
+    notes: gr2Fn([[0, 'kick', .9], [gen3S(3, .6), 'snare', .4], [1, 'kick', .85], [gen3S(6, .6), 'snare', .85], [gen3S(7, .6), 'snare', 1, {a: 1}]])},
+  {gs: 'gfunk', id: 'gen3f-gfunk', name: 'Clap-Doppel mit Ghosts', short: 'G-Funk', k: 'fill', len: 2, tip: 'Leise Ghost-Snares um zwei Claps, geswingt (56 %).',
+    notes: gr2Fn([[gen3S(1, .56), 'snare', .3], [gen3S(3, .56), 'snare', .35], [1, 'clap', .85], [gen3S(5, .56), 'snare', .35], [gen3S(6, .56), 'clap', .9], [gen3S(7, .56), 'snare', .6]])},
+  {gs: 'trap', id: 'gen3f-trap', name: 'Hi-Hat-Wirbel', short: 'Trap', k: 'fill', len: 2, tip: 'Sechzehntel-Hi-Hats mit Wirbeln in 32teln und Triolen, immer dichter.',
+    notes: gr2Fn([[0, 'hatC', .6], [.25, 'hatC', .6, {r: 2}], [.5, 'hatC', .65], [.75, 'hatC', .65, {r: 3}], [1, 'hatC', .7, {r: 2}], [1.25, 'hatC', .72, {r: 2}], [1.5, 'hatC', .8, {r: 3}], [1.75, 'hatC', .85, {r: 4}]])},
+  {gs: 'triphop', id: 'gen3f-triphop', name: 'Langsamer Tom-Fall', short: 'TripHop', k: 'tom', len: 2, tip: 'Snare, dann zwei tiefe Toms und ein Doppelschlag – schwer und langsam.',
+    notes: gr2Fn([[0, 'snare', .7], [1, 'tomM', .75], [1.5, 'tomL', .85], [1.75, 'tomL', .9, {a: 1}]])},
+  {gs: 'bigbeat', id: 'gen3f-bigbeat', name: 'Snare-Wirbel mit Zuschlag', short: 'BigBeat', k: 'fill', len: 2, tip: 'Snare in Achteln, dann als Doppelschlag-Wirbel, laut am Ende.',
+    notes: gr2Fn([[0, 'snare', .7], [.5, 'snare', .72], [1, 'snare', .8, {r: 2}], [1.5, 'snare', .9, {r: 2}], [1.75, 'snare', 1, {a: 1, r: 2}]])},
+  {gs: 'dnb', id: 'gen3f-dnb', name: 'Break-Abschlag', short: 'D&B', k: 'fill', len: 2, tip: 'Snare und Bassdrum zerhackt in Sechzehnteln mit Ghost-Notes – das Ende eines Breaks.',
+    notes: gr2Fn([[0, 'snare', .8], [.25, 'snare', .5], [.5, 'kick', .85], [.75, 'snare', .85], [1, 'snare', .55], [1.25, 'snare', .85], [1.5, 'kick', .8], [1.75, 'snare', 1, {a: 1}]])},
+  {gs: 'ukfunky', id: 'gen3f-ukfunky', name: 'Rim-Perc-Antwort', short: 'UKFunky', k: 'fill', len: 2, tip: 'Rimshot und Perkussion im Wechsel, geswingt (58 %), Clap zum Schluss.',
+    notes: gr2Fn([[0, 'rim', .7], [gen3S(2, .58), 'perc', .7], [gen3S(3, .58), 'rim', .75], [gen3S(5, .58), 'perc', .8], [gen3S(6, .58), 'rim', .85], [gen3S(7, .58), 'clap', .95, {a: 1}]])},
+  {gs: 'jersey', id: 'gen3f-jersey', name: 'Kick-Triolen', short: 'Jersey', k: 'build', len: 2, tip: 'Die Bassdrum in Triolen-Achteln, lauter werdend.',
+    notes: gr2Fn([[0, 'kick', .8], [1 / 3, 'kick', .8], [2 / 3, 'kick', .85], [1, 'kick', .9], [4 / 3, 'kick', .92], [5 / 3, 'kick', 1, {a: 1}]])},
+  {gs: 'gogo', id: 'gen3f-gogo', name: 'Conga-Tom-Lauf', short: 'Go-Go', k: 'tom', len: 2, tip: 'Cowbell, dann Toms hinab, geswingt (60 %).',
+    notes: gr2Fn([[gen3S(0, .6), 'perc', .7], [gen3S(2, .6), 'perc', .6], [gen3S(3, .6), 'tomH', .7], [gen3S(4, .6), 'tomH', .75], [gen3S(5, .6), 'tomM', .75], [gen3S(6, .6), 'tomM', .8], [gen3S(7, .6), 'tomL', .9, {a: 1}]])},
+  {gs: 'afrobeat', id: 'gen3f-afrobeat', name: 'Snare-Antwort mit Toms', short: 'Afrob.', k: 'fill', len: 2, tip: 'Snare mit Ghost-Notes, dann hohe und tiefe Tom im Wechsel.',
+    notes: gr2Fn([[0, 'snare', .5], [.25, 'snare', .35], [.5, 'snare', .7], [1, 'tomH', .75], [1.25, 'snare', .4], [1.5, 'tomM', .8], [1.75, 'tomL', .9, {a: 1}]])},
+  {gs: 'bossa', id: 'gen3f-bossa', name: 'Rimshot-Auftakt', short: 'Bossa', k: 'fill', len: 2, tip: 'Leise Rimshots im Clave-Abstand, eine tiefe Tom führt in die Eins.',
+    notes: gr2Fn([[0, 'rim', .6], [.75, 'rim', .65], [1.5, 'rim', .7], [1.75, 'tomL', .6]])},
+  {gs: 'samba', id: 'gen3f-samba', name: 'Chamada (Ruf)', short: 'Samba', k: 'break', len: 2, tip: 'Der Ruf der Bateria: drei laute Schläge (punktierte Achtel), Surdo dazu.',
+    notes: gr2Fn([[0, 'snare', .9], [.75, 'snare', .9], [1.5, 'snare', 1, {a: 1}], [1.5, 'kick', 1]])},
+  {gs: 'ska', id: 'gen3f-ska', name: 'Ska-Snare-Lauf', short: 'Ska', k: 'fill', len: 2, tip: 'Snare in Achteln, dann vier Sechzehntel bis in die Eins.',
+    notes: gr2Fn([[0, 'snare', .7], [.5, 'snare', .75], [1, 'snare', .8], [1.25, 'snare', .82], [1.5, 'snare', .9], [1.75, 'snare', 1, {a: 1}]])},
+  {gs: 'steppers', id: 'gen3f-steppers', name: 'Rim-Tom-Fill', short: 'Steppers', k: 'tom', len: 2, tip: 'Zwei Rimshots, dann Toms in Sechzehnteln hinab.',
+    notes: gr2Fn([[0, 'rim', .7], [.5, 'rim', .7], [1, 'tomH', .75], [1.25, 'tomH', .7], [1.5, 'tomM', .8], [1.75, 'tomL', .9, {a: 1}]])},
+  {gs: 'rockers', id: 'gen3f-rockers', name: 'Flam-Fill', short: 'Rockers', k: 'fill', len: 2, tip: 'Ein Flam (Vorschlag), eine Snare, dann mittlere und tiefe Tom.',
+    notes: gr2Fn([[0, 'snare', .5], [.06, 'snare', .9], [.75, 'snare', .7], [1, 'tomM', .8], [1.5, 'tomL', .9, {a: 1}]])},
+  {gs: 'dancehall', id: 'gen3f-dancehall', name: 'Tom-Antwort 3-3-2', short: 'Dancehall', k: 'tom', len: 2, tip: 'Drei Toms im Rhythmus 3-3-2 hinab.',
+    notes: gr2Fn([[0, 'tomH', .8], [.75, 'tomM', .8], [1.5, 'tomL', .9, {a: 1}]])},
+  {gs: 'dembow', id: 'gen3f-dembow', name: 'Dembow-Snare-Rolle', short: 'Dembow', k: 'fill', len: 2, tip: 'Die Dembow-Snare, am Ende als Doppelschlag-Wirbel.',
+    notes: gr2Fn([[0, 'kick', .8], [.75, 'snare', .75], [1.25, 'snare', .7], [1.5, 'snare', .85, {r: 2}], [1.75, 'snare', .95, {a: 1, r: 2}]])},
+  {gs: 'hshuffle', id: 'gen3f-hshuffle', name: 'Halftime-Triolen-Fill', short: 'Shuffle½', k: 'fill', len: 4, tip: 'Auf der Drei und Vier Snare-Triolen, dann hohe und tiefe Tom.',
+    notes: gr2Fn([[2, 'snare', .5], [2 + 1 / 3, 'snare', .4], [2 + 2 / 3, 'snare', .6], [3, 'snare', .7], [3 + 1 / 3, 'tomH', .7], [3 + 2 / 3, 'tomL', .9, {a: 1}]])},
+  {gs: 'rockhalf', id: 'gen3f-rockhalf', name: 'Halftime-Wirbel', short: 'Rock½', k: 'tom', len: 4, tip: 'Snare auf der Drei, Toms in Sechzehnteln auf der Vier, Bassdrum in die Eins.',
+    notes: gr2Fn([[0, 'snare', .9], [1, 'kick', .8], [2, 'tomH', .75], [2.25, 'tomH', .7], [2.5, 'tomM', .8], [2.75, 'tomM', .78], [3, 'tomL', .88], [3.25, 'tomL', .85], [3.5, 'kick', .9]])},
+];
+// vorhandene Kacheln, die ein Genre bekommen (die übrigen gehören zu „Allgemein“)
+const GEN3_UEGS = {'ui1-disco-fill': ['disco'], 'ui1-fill-becken': ['eurodance'], 'ui1-openhat': ['euro', 'disco'], 'ui1-ghost': ['funk', 'njs'],
+  'ui1-clap-aufbau': ['house'], 'ui1-rim-lauf': ['minimal'], 'ui1-kick-snare': ['boombap']};
+// ---------- Werkzeugkasten-Figuren der neuen Stile (BB1-Format) ----------
+const GEN3_FIG = [
+  {id: 'g3-disco-bass', r: 'bass', g: 'disco', name: 'Disco-Oktav-Lauf', p: 16, e: '0 1 R .95|2 1 O .8|3 1 O .55|4 1 R .9|6 1 O .8|8 1 R .95|10 1 O .8|11 1 7 .6|12 1 5 .85|14 1 O .8', gate: .6, snd: 'f-bb-disco-bass',
+    tip: 'Oktav-Achtel mit Sechzehntel-Abprall, Septime und Quinte zum Taktende – der springende Bass der 70er-Disco.'},
+  {id: 'g3-motown-bass', r: 'bass', g: 'motown80', name: 'Motown-Laufbass', p: 16, e: '0 2 R 1|2 1 5 .7|3 1 O .55|4 2 R .9|6 1 5 .7|8 2 R .95|10 1 5 .7|11 1 O .55|12 2 s3 .85|14 2 5 .75', gate: .75, snd: 'f-pop-bass-dx',
+    tip: 'Laufender Bass mit Quinte, Oktave und der Quarte der Tonleiter vor dem nächsten Takt.'},
+  {id: 'g3-motown-piano', r: 'stab', g: 'motown80', name: 'Viertel-Akkorde', p: 16, e: '0 1 C .8|4 1 C .95|8 1 C .8|12 1 C .95', gate: .5, snd: 'f-fm-fluegel',
+    tip: 'Klavier-Akkorde auf allen vier Vierteln, 2 und 4 betont – wie die Snare im Motown-Beat.'},
+  {id: 'g3-synthwave-lead', r: 'lead', g: 'synthwave', name: 'Retro-Lead-Antwort', p: 32, fill: 1, e: '24 2 a2 .8|26 2 a3 .85|28 4 a4 .9', gate: .9, snd: 'f-sync-lead',
+    tip: 'Drei lange Töne durch den Akkord hinauf am Ende jeder Zwei-Takt-Phrase.'},
+  {id: 'g3-powerpop-gtr', r: 'stab', g: 'powerpop', name: 'Achtel-Akkorde', p: 16, e: '0 1 C .95|2 1 C .7|4 1 C .85|6 1 C .7|8 1 C .95|10 1 C .7|12 1 C .85|14 1 C .7', v: 'stack', gate: .85, snd: 'f-poly-stab',
+    tip: 'Durchgeschlagene Achtel-Akkorde mit Grundton darunter, betont auf den Schlägen.'},
+  {id: 'g3-freestyle-bass', r: 'bass', g: 'freestyle', name: 'Freestyle-Synthbass', p: 16, e: '0 1 R .95|3 1 O .7|6 1 R .85|8 1 R .9|10 1 O .7|11 1 R .6|14 1 5 .8', gate: .55, snd: 'f-gummi-bass',
+    tip: 'Synkopierter Synth-Bass mit Oktavsprüngen, kurz gespielt.'},
+  {id: 'g3-seqtrack-seq', r: 'seq', g: 'seqtrack', name: 'Treibende Sequenz', p: 16, e: '0 1 R .9|1 1 R .5|2 1 5 .7|3 1 O .65|4 1 R .85|5 1 R .5|6 1 5 .7|7 1 O .65|8 1 R .9|9 1 R .5|10 1 5 .7|11 1 O .65|12 1 7 .8|13 1 5 .6|14 1 O .7|15 1 5 .6', gate: .5, snd: 'f-moroder-puls',
+    tip: 'Sechzehntel Grundton – Grundton – Quinte – Oktave, am Taktende mit Septime: der Motor der Fernseh-Themen.'},
+  {id: 'g3-electro-bass', r: 'bass', g: 'electro', name: '808-Dröhnbass', p: 16, e: '0 6 R 1|6 4 R .85|10 6 R .9', gate: .95, snd: 'f-moog-bass',
+    tip: 'Lange tiefe Töne auf den Bassdrum-Schlägen (1, 2+, 3+).'},
+  {id: 'g3-boombap-stab', r: 'stab', g: 'boombap', name: 'Akkord-Schnipsel', p: 16, e: '0 3 C .9|6 1 C .7|10 2 C .8', v: 'v7', gate: .8, snd: 'f-fm-fluegel',
+    tip: 'Kurze Akkord-Schnipsel wie von einer gesampelten Jazz-Platte: lang – kurz – mittel, mit Septime.'},
+  {id: 'g3-gfunk-bass', r: 'bass', g: 'gfunk', name: 'Gleitbass', p: 16, e: '0 4 R 1|6 2 5 .8|8 3 R .9|11 1 O .6|14 2 7 .75', gate: 1, snd: 'f-moog-bass',
+    tip: 'Langer Grundton, Quinte, Oktave und Septime – gebunden gespielt, damit der Bass gleitet.'},
+  {id: 'g3-gfunk-lead', r: 'lead', g: 'gfunk', name: 'Pfeif-Lead-Antwort', p: 32, fill: 1, e: '24 4 s4 .8|28 2 s5 .75|30 2 s4 .8', gate: .95, snd: 'f-pfeif-lead',
+    tip: 'Ein hoher, gleitender Synth-Ton als Antwort am Ende jeder Zwei-Takt-Phrase.'},
+  {id: 'g3-trap-808', r: 'bass', g: 'trap', name: '808-Gleitbass', p: 16, e: '0 6 R 1|6 4 R .85|10 3 O .8|13 3 5 .8', gate: 1, snd: 'f-moog-bass',
+    tip: 'Lange 808-Töne auf der Bassdrum, die Oktave und die Quinte gleiten in den nächsten Ton.'},
+  {id: 'g3-triphop-pad', r: 'stab', g: 'triphop', name: 'Dunkle halbe Akkorde', p: 16, e: '0 8 C .7|8 8 C .65', v: 'v7', gate: .98, snd: 'f-juno-streicher',
+    tip: 'Zwei lange Akkorde je Takt mit Septime, leise und dunkel.'},
+  {id: 'g3-bigbeat-bass', r: 'bass', g: 'bigbeat', name: 'Riff-Bass', p: 16, e: '0 2 R 1|3 1 R .7|6 1 3 .8|7 1 R .7|10 2 R .9|13 2 7 .8', gate: .7, snd: 'f-gummi-bass',
+    tip: 'Ein kurzes Riff mit Terz und Septime, synkopiert zur Bassdrum.'},
+  {id: 'g3-dnb-sub', r: 'bass', g: 'dnb', name: 'Sub-Bass halbe Zeit', p: 16, e: '0 8 R 1|10 6 5 .85', gate: 1, snd: 'f-moog-bass',
+    tip: 'Zwei lange Sub-Töne je Takt: Grundton und Quinte – halb so schnell wie die Drums.'},
+  {id: 'g3-ukfunky-stab', r: 'stab', g: 'ukfunky', name: 'Orgel-Stöße', p: 16, e: '3 1 C .8|6 1 C .9|14 1 C .8', v: 'v7', gate: .5, snd: 'f-wt-orgel',
+    tip: 'Drei kurze Orgel-Akkorde mit Septime zwischen den Schlägen.'},
+  {id: 'g3-jersey-chop', r: 'seq', g: 'jersey', name: 'Gehackte Rufe', p: 16, e: '0 1 a2 .9|4 1 a2 .85|8 1 a2 .9|10 1 a2 .8|12 1 a3 .85', gate: .4, snd: 'f-pop-pluck',
+    tip: 'Ein kurzer Ton im Rhythmus der Bassdrum – wie ein gehacktes Stimm-Schnipsel.'},
+  {id: 'g3-gogo-horn', r: 'stab', g: 'gogo', name: 'Bläser-Stöße', p: 16, e: '2 1 C .85|6 1 C .8|9 1 C .9|14 2 C .85', gate: .5, snd: 'f-dx-brass',
+    tip: 'Kurze Bläser-Akkorde im Offbeat, einer vorgezogen.'},
+  {id: 'g3-afrobeat-gtr', r: 'seq', g: 'afrobeat', name: 'Gitarren-Riff', p: 16, e: '0 1 a0 .85|2 1 a2 .7|3 1 a1 .75|6 1 a0 .8|8 1 a2 .85|10 1 a1 .7|11 1 a0 .75|14 1 a2 .8', gate: .4, snd: 'f-glas-pluck',
+    tip: 'Kurze gezupfte Akkordtöne, ineinander verzahnt wie zwei Gitarren.'},
+  {id: 'g3-bossa-gtr', r: 'stab', g: 'bossa', name: 'Bossa-Gitarre', p: 32, e: '0 1 C .85|3 1 C .7|6 1 C .8|10 1 C .75|13 1 C .7|18 1 C .7|21 1 C .75|25 1 C .7|28 1 C .8', v: 'v7', gate: .7, snd: 'f-glas-pluck',
+    tip: 'Synkopierte Akkorde mit Septime über zwei Takte, wie auf der Nylon-Gitarre.'},
+  {id: 'g3-bossa-bass', r: 'bass', g: 'bossa', name: 'Bossa-Bass', p: 16, e: '0 6 R .95|6 2 5 .8|8 6 R .9|14 2 5 .8', gate: .9, snd: 'f-pop-bass-dx',
+    tip: 'Grundton (punktierte Viertel) und Quinte (Achtel), zweimal je Takt.'},
+  {id: 'g3-samba-tam', r: 'seq', g: 'samba', name: 'Tamborim-Figur', p: 16, e: '0 1 a0 .85|2 1 a0 .7|3 1 a1 .8|5 1 a0 .7|7 1 a1 .75|8 1 a0 .85|10 1 a0 .7|11 1 a1 .8|13 1 a0 .7|15 1 a1 .75', gate: .4, snd: 'f-glas-pluck',
+    tip: 'Kurze Töne im Rhythmus des Tamborims.'},
+  {id: 'g3-ska-skank', r: 'stab', g: 'ska', name: 'Offbeat-Skank', p: 16, per: 4, e: '2 1 C .9', gate: .3, snd: 'f-wt-orgel',
+    tip: 'Ein kurzer Akkord auf jedem Offbeat – der Skank.'},
+  {id: 'g3-ska-bass', r: 'bass', g: 'ska', name: 'Ska-Laufbass', p: 16, e: '0 4 R .95|4 4 3 .8|8 4 5 .9|12 4 s5 .8', gate: .9, snd: 'f-pop-bass-dx',
+    tip: 'Viertel durch den Akkord: Grundton – Terz – Quinte – Sexte.'},
+  {id: 'g3-reggae-skank', r: 'stab', g: 'reggae', name: 'One-Drop-Skank', p: 16, e: '4 1 C .9|12 1 C .9', gate: .3, snd: 'f-wt-orgel',
+    tip: 'Kurze Akkorde auf 2 und 4 – Gitarre und Orgel im Roots-Reggae.'},
+  {id: 'g3-steppers-bass', r: 'bass', g: 'steppers', name: 'Steppers-Bass', p: 16, e: '0 2 R 1|4 2 R .85|8 2 R .9|10 1 O .6|12 2 5 .85', gate: .85, snd: 'f-moog-bass',
+    tip: 'Treibender Bass auf den Schlägen mit Oktave und Quinte.'},
+  {id: 'g3-rockers-bubble', r: 'stab', g: 'rockers', name: 'Orgel-Bubble', p: 16, per: 4, e: '2 1 C .8|3 1 C .6', gate: .45, snd: 'f-wt-orgel',
+    tip: 'Die Orgel im Offbeat doppelt (laut – leise).'},
+  {id: 'g3-dancehall-bass', r: 'bass', g: 'dancehall', name: 'Bass 3-3-2', p: 16, e: '0 2 R 1|3 2 R .8|6 2 5 .75|8 2 R .95|11 2 R .8|14 2 O .75', gate: .8, snd: 'f-moog-bass',
+    tip: 'Der Bass im Dancehall-Rhythmus 3-3-2 mit Quinte und Oktave.'},
+  {id: 'g3-dembow-bass', r: 'bass', g: 'dembow', name: 'Dembow-Bass', p: 16, e: '0 3 R 1|3 3 R .8|6 2 R .85|8 3 R 1|11 3 R .8|14 2 R .85', gate: .85, snd: 'f-moog-bass',
+    tip: 'Grundton im Dembow-Rhythmus 3-3-2, zweimal je Takt.'},
+  {id: 'g3-hshuffle-keys', r: 'stab', g: 'hshuffle', name: 'Klavier-Achtel', p: 16, e: '0 1 C .8|2 1 C .6|4 1 C .85|6 1 C .6|8 1 C .8|10 1 C .6|12 1 C .85|14 1 C .6', v: 'v7', gate: .7, snd: 'f-fm-fluegel',
+    tip: 'Akkorde mit Septime in Achteln, betont auf den Schlägen.'},
+  {id: 'g3-rockhalf-power', r: 'stab', g: 'rockhalf', name: 'Halftime-Akkorde', p: 16, e: '0 8 C .95|8 6 C .85|14 2 C .8', v: 'stack', gate: .95, snd: 'f-poly-stab',
+    tip: 'Zwei lange Akkorde je Takt mit Grundton darunter, ein kurzer Anstoß zum nächsten.'},
+  {id: 'g3-eurodance-stab', r: 'stab', g: 'eurodance', name: 'Piano-Offbeat-Stabs', p: 16, e: '2 1 C .85|6 1 C .8|10 1 C .85|13 1 C .7|14 1 C .8', v: 'v7', gate: .5, snd: 'f-fm-fluegel',
+    tip: 'Piano-Akkorde mit Septime im Offbeat, einer vorgezogen – Eurodance der 90er.'},
+];
+// Werkzeugkasten-Genres von früher → Stil-Ids der einen Liste (BB1 'detroit' waren Detroit-House-Figuren → House; 'soul60' = Soul-Pop 60er)
+const GEN3_BBMAP = {disco: 'euro', eurodance: 'eurodance', synthpop: 'synthpop', njs: 'njs', house: 'house', detroit: 'house', hinrg: 'hinrg', italo: 'italo',
+  italodance: 'italodance', minimal: 'minimal', ebm: 'ebm', darkwave: 'darkwave', reggae: 'reggae', country: 'train', garage: 'garage', soul60: 'detroit', funkhouse: 'funk'};
+// Master-Stile (MX2), die ein Genre sind: derselbe Name wie in der Genre-Liste
+const GEN3_MXNAME = {eurodisco: 'euro', italo: 'italo', disco: 'disco', house: 'house', hinrg: 'hinrg', synthpop: 'synthpop'};
+(function gen3Lib() {
+  const h = gr1Style('house'); if (h) h.name = 'House';
+  for (const s of GEN3_NEW) if (!gr1Style(s.id)) GR1_STYLES.push(s);
+  for (const s of GEN3_TV) if (!GR2_ONLY.some(x => x.id === s.id)) GR2_ONLY.push(s);
+  const all = new Set(GR2_ORDER.concat(GEN3_ORDER)), ord = GEN3_ORDER.filter(id => gr2Style(id)).concat([...all].filter(id => !GEN3_ORDER.includes(id) && gr2Style(id)));
+  GR2_ORDER.length = 0; GR2_ORDER.push(...ord);
+  // Werkzeugkasten: Genres = die eine Liste; alte Figuren zeigen auf Stile; neue Figuren dazu
+  for (const f of BB1_FIG) if (GEN3_BBMAP[f.g]) f.g = GEN3_BBMAP[f.g];
+  for (const f of GEN3_FIG) if (!bb1Fig(f.id)) BB1_FIG.push(f);
+  BB1_GEN.length = 0; BB1_GEN.push(['allg', 'Allgemein', null, 120]);
+  for (const x of gr2Order()) if (!x.tv) BB1_GEN.push([x.id, x.name, gr1Style(x.id) ? x.id : null, x.bpm]);
+  // Fills
+  for (const f of GEN3_FILLS) if (!GR2_FILLS.some(x => x.id === f.id)) GR2_FILLS.push(f);
+  ueLibAdd(GEN3_FILLS.map(f => ({id: f.id, tab: 'ue', name: f.name, short: f.short, k: f.k, a: -f.len, len: f.len, mode: 'ersetzt', notes: f.notes, gs: f.gs})));
+  // Master-Stile: Namen der Genre-Liste
+  try { for (const p of MX2_PF) { const g = GEN3_MXNAME[p.id], st = g && gr2Style(g); if (st) p.name = st.name; } } catch (e) {}
+})();
+/* ---------- Normalisierung (Laden/Kopie): clip.gr.o / .t (Tempo der Tempo-Version), clip.gr.m (Quell-Szene des Matrix-Remix) ----------
+   Funktions-Deklaration ohne Konstanten des Blocks: normalizeProject läuft schon beim Laden des Skripts. */
+function gen3GrNorm(g, o) {
+  if (!g || !o) return;
+  for (const k of ['o', 't']) if (typeof g[k] === 'number' && isFinite(g[k]) && g[k] >= 40 && g[k] <= 240) o[k] = Math.round(g[k]);
+  if (typeof g.m === 'number' && isFinite(g.m) && g.m >= 0 && g.m < 64) o.m = Math.round(g.m);
+}
+/* ---------- Besonderheiten je Stil (x.post): Wirbel, laid back, Gleiten ---------- */
+const GEN3_HAT = new Set([42, 46, 70]), GEN3_SN = new Set([38, 39, 37]);
+// Drum-Noten im Stil (Grundmuster / Stil-Muster, gr1DrumNotes): Trap-Wirbel auf den Wirbel-Schritten, Boom Bap laid back
+function gen3DrumX(st, ns, bars) {
+  const X = st && (st.x || null); if (!X || !X.post) return ns;
+  const L = Math.max(1, bars | 0) * 4;
+  for (const n of ns) {
+    if (X.post === 'trap' && X.roll && GEN3_HAT.has(n.n)) { const j = Math.round(((n.t % 4) + 4) % 4 / .25); if (X.roll[j] && Math.abs(n.t - Math.round(n.t / .25) * .25) < .02) n.r = X.roll[j]; }
+    if (X.post === 'lay' && GEN3_SN.has(n.n) && n.t + .03 < L) n.t = +(n.t + .025).toFixed(4);
+  }
+  return ns;
+}
+// deine Noten im Stil (gr2Translate): Trap = Wirbel auf deinen Hats (ab 50 %; ab 75 % kommen Hats auf die Wirbel-Stellen, wo der
+// Schlag schon Hats hat) und 808-Gleiten im Bass; G-Funk = gleitender Bass; Boom Bap = Snare laid back
+function gen3Post(st, s, role, ns) {
+  const X = gr2X(st); if (!X.post || !ns || !ns.length || s <= 0) return ns;
+  if (role === 'dr') {
+    if (X.post === 'lay' && s >= .5) for (const n of ns) if (GEN3_SN.has(n.n)) n.t = +(n.t + .025 * Math.min(1, s * 1.4)).toFixed(4);
+    if (X.post === 'trap' && X.roll && s >= .5) {
+      const step = t => Math.round((((t % 4) + 4) % 4) / .25), on = t => Math.abs(t - Math.round(t / .25) * .25) < .02;
+      if (s >= .75) {
+        const bars = Math.ceil((Math.max(...ns.map(n => n.t)) + 1e-6) / 4), add = [];
+        for (let b = 0; b < bars; b++) for (const j of Object.keys(X.roll).map(Number)) {
+          const T = b * 4 + j * .25, beat = Math.floor(T), hs = ns.filter(n => GEN3_HAT.has(n.n) && n.t >= beat - 1e-6 && n.t < beat + 1 - 1e-6);
+          if (hs.length && !ns.some(n => GEN3_HAT.has(n.n) && Math.abs(n.t - T) < .02)) add.push({t: +T.toFixed(4), d: .1, n: hs[0].n, v: +Math.min(1, hs[0].v * .85).toFixed(3)});
+        }
+        ns = ns.concat(add);
+      }
+      for (const n of ns) if (GEN3_HAT.has(n.n) && on(n.t) && X.roll[step(n.t)]) n.r = X.roll[step(n.t)];
+    }
+    return gr2Uniq(ns);
+  }
+  if (role === 'bass' && (X.post === 'trap' || X.post === 'glide') && s >= .6) gen3Glide(ns);
+  return ns;
+}
+// Gleiten: ein Ton reicht 1/64 in den nächsten anderen Ton hinein, wenn höchstens ½ Schlag dazwischen liegt (wie LAUF › BINDUNG)
+function gen3Glide(ns) {
+  const a = ns.slice().sort((p, q) => p.t - q.t || p.n - q.n);
+  for (let i = 0; i + 1 < a.length; i++) {
+    const n = a[i], m = a[i + 1]; if (m.t - n.t < 1e-6 || m.n === n.n) continue;
+    if (m.t - (n.t + n.d) <= .5 + 1e-6) n.d = +(m.t - n.t + 1 / 64).toFixed(4);
+  }
+  return ns;
+}
+/* ---------- Tempo-Version: deine Noten langsamer/voller oder schneller/dezenter ---------- */
+const gen3TvTarget = (st, base, s) => clamp(Math.round(base * (st.tv === 'slow' ? 1 - .35 * clamp(s, 0, 1) : 1 + .3 * clamp(s, 0, 1))), 40, 240);
+// das Tempo „vorher“: eine Tempo-Version im Projekt kennt es (gr.o), sonst das jetzige
+function gen3TvBase() {
+  const look = c => (c && c.gr && GEN3_TVID[c.gr.s] && c.gr.o ? c.gr.o : 0);
+  if (S.song && S.song.own) for (const k in S.song.own) { const o = look(S.song.own[k]); if (o) return o; }
+  for (const tr of S.tracks) for (const c of tr.clips || []) { const o = look(c); if (o) return o; }
+  return S.bpm;
+}
+const gen3Off = (t, g) => Math.abs(t / g - Math.round(t / g)) > .02;
+function gen3TvNotes(src, st, s, role) {
+  const bars = Math.max(1, src.len | 0), L = bars * clipBarB(src), slow = st.tv === 'slow';
+  const ns = (src.notes || []).filter(n => n.t < L - 1e-9).map(n => gr2Clean(Object.assign({}, n))).sort((a, b) => a.t - b.t || a.n - b.n);
+  if (s <= 0 || !ns.length) return ns;
+  if (role === 'dr') return gr2Uniq(slow ? gen3TvDrSlow(ns, s, L) : gen3TvDrFast(ns, s));
+  return gr2Uniq(slow ? gen3TvMeSlow(ns, s, role, L, src) : gen3TvMeFast(ns, s, role, L));
+}
+function gen3TvDrSlow(ns, s, L) {
+  const out = ns.slice(), has = (n, t) => out.some(x => x.n === n && Math.abs(x.t - t) < .03);
+  const hats = ns.filter(n => GEN3_HAT.has(n.n));
+  if (s >= .3 && hats.length) {                                        // feiner unterteilt: Achtel-Hats → Sechzehntel
+    const pad = hats.some(n => n.n === 42) ? 42 : hats[0].n, vA = hats.reduce((a, n) => a + n.v, 0) / hats.length;
+    for (const h of hats) { if (gen3Off(h.t, .5)) continue; const t = h.t + .25; if (t < L - 1e-6 && !ns.some(x => GEN3_HAT.has(x.n) && Math.abs(x.t - t) < .03)) out.push({t: +t.toFixed(4), d: .1, n: pad, v: +clamp(vA * .55, .05, 1).toFixed(3)}); }
+  }
+  if (s >= .5) for (const n of ns) {                                    // Ghost-Snare vor jedem lauten Backbeat
+    if (n.n !== 38 || n.v < .6 || gen3Off(n.t, 1)) continue;
+    const t = n.t - .25; if (t > 0 && !has(38, t)) out.push({t: +t.toFixed(4), d: .1, n: 38, v: .28});
+  }
+  if (s >= .8 && L >= 8) for (let t = L - 1; t < L - 1e-6; t += .25) if (!has(38, t)) out.push({t: +t.toFixed(4), d: .1, n: 38, v: +(.45 + (t - L + 1) * .45).toFixed(3)});   // kleiner Füller am Clip-Ende
+  return out;
+}
+function gen3TvDrFast(ns, s) {
+  return ns.filter(n => {
+    if (GEN3_HAT.has(n.n) && s >= .3 && gen3Off(n.t, .5)) return false;  // Hats ausgedünnt (Sechzehntel raus)
+    if (n.n !== 36 && n.v < .45 && s >= .4) return false;                 // Ghost-Notes raus
+    if (n.n === 36 && s >= .7 && gen3Off(n.t, .5)) return false;          // Bassdrum nur noch auf Achteln
+    return true;
+  });
+}
+const gen3Groups = ns => { const G = []; for (const n of ns) { const g = G[G.length - 1]; if (g && Math.abs(g.t - n.t) < 1e-3) g.ns.push(n); else G.push({t: n.t, ns: [n]}); } return G; };
+function gen3TvMeSlow(ns, s, role, L, src) {
+  const G = gen3Groups(ns), out = [];
+  G.forEach((g, i) => {
+    const nx = i + 1 < G.length ? G[i + 1].t : L, gap = Math.max(.05, nx - g.t);
+    for (const n of g.ns) {
+      const x = Object.assign({}, n);
+      if (role === 'pad' || role === 'comp') x.d = +Math.max(n.d, Math.min(gap, L - n.t) * (.9 + .1 * s)).toFixed(4);            // längere Flächen
+      else if (role === 'bass' || role === 'lead') x.d = +Math.max(n.d, Math.min(gap - .01, n.d * (1 + s))).toFixed(4);           // gebundener
+      out.push(x);
+      if (role === 'seq' && s >= .3 && gap >= .5 - 1e-6 && gap <= 1 + 1e-6) {                                                   // Sequenz verdoppelt
+        const t = g.t + gap / 2, d = gap / 2 * .8;
+        if (t < L - 1e-6) out.push({t: +t.toFixed(4), d: +Math.max(.05, d).toFixed(4), n: s >= .7 && n.n + 12 <= 127 ? n.n + 12 : n.n, v: +clamp(n.v * .6, .05, 1).toFixed(3)});
+        x.d = +Math.min(x.d, gap / 2 * .9).toFixed(4);
+      }
+    }
+    // Fläche mit Bewegung (Werkzeugkasten „Haltetöne mit Bewegung“): die Oberstimme geht zur Hälfte einen Leiterton hinauf und zurück
+    if ((role === 'pad' || role === 'comp') && s >= .6 && g.ns.length >= 3) {
+      const top = out.filter(x => Math.abs(x.t - g.t) < 1e-3).sort((p, q) => q.n - p.n)[0], span = top ? top.d : 0;
+      if (top && span >= 2 - 1e-6) {
+        const key = src.key || S.key, h = span / 2, q = Math.min(1, span / 4), nb = hm1Deg(top.n, key, 1);
+        top.d = +h.toFixed(4);
+        out.push({t: +(top.t + h).toFixed(4), d: +q.toFixed(4), n: clamp(nb, 0, 127), v: +clamp(top.v * .92, .05, 1).toFixed(3)});
+        out.push({t: +(top.t + h + q).toFixed(4), d: +(span - h - q).toFixed(4), n: top.n, v: +clamp(top.v * .9, .05, 1).toFixed(3)});
+      }
+    }
+  });
+  return out;
+}
+function gen3TvMeFast(ns, s, role, L) {
+  let G = gen3Groups(ns);
+  if ((role === 'bass' || role === 'seq') && s >= .3) {                  // vereinfacht: Sechzehntel zwischen den Achteln fallen weg
+    const keep = G.filter(g => !gen3Off(g.t, .5));
+    // jeder halbe Takt behält mindestens einen Ton
+    for (let h = 0; h * 2 < L - 1e-6; h++) { const a = h * 2, b = a + 2; if (!keep.some(g => g.t >= a - 1e-6 && g.t < b - 1e-6)) { const f = G.find(g => g.t >= a - 1e-6 && g.t < b - 1e-6); if (f) keep.push(f); } }
+    G = keep.sort((p, q) => p.t - q.t);
+  }
+  const out = [];
+  G.forEach((g, i) => {
+    const nx = i + 1 < G.length ? G[i + 1].t : L, gap = Math.max(.05, nx - g.t);
+    for (const n of g.ns) {
+      let d = n.d;
+      if (role === 'bass') d = Math.min(gap, Math.max(n.d, Math.min(gap, n.d * (1 + s)))) * (1 - .3 * s);   // längere Werte, kürzeres Gate
+      else if (role === 'comp' || role === 'seq') d = Math.min(n.d, gap) * (1 - .4 * s);
+      else if (role === 'pad') d = n.d * (1 - .25 * s);
+      else d = n.d * (1 - .2 * s);
+      out.push(Object.assign({}, n, {d: +Math.max(.05, Math.min(d, L - n.t)).toFixed(4)}));
+    }
+  });
+  return out;
+}
+// der Klangzustand (◆) einer Remix-Version: Tempo-Version = mehr/weniger Hall und Release; jeder andere Stil = wie die Quelle
+function gen3VerSt(c, srcC, st, k, t) {
+  if (!c) return;
+  if (!(st && st.tv)) { if (c.gr && GEN3_TVID[c.gr.s] == null) { delete c.gr.o; delete c.gr.t; } if (srcC && srcC.st) c.st = deep(srcC.st); else delete c.st; return; }
+  const s = clamp((+k || 0) / 100, 0, 1), base = gen3TvBase();
+  if (c.gr) { c.gr.o = base; c.gr.t = gen3TvTarget(st, base, s); }
+  const tr = S.tracks[t]; if (!tr || tr.kind !== 'synth' || isDrum(t) || percIs(tr) || tr.stimme || !tr.sound || !tr.sound.p) return;   // Drums: nur Noten
+  const b = srcC && srcC.st && v6aStOk(t, srcC.st) ? v6aApply(tr.sound, srcC.st) : tr.sound, f = fxOfSound(b);
+  const x = srcC && srcC.st ? deep(srcC.st) : {p: {}}; if (!x.p || typeof x.p !== 'object') x.p = {};
+  const rev = st.tv === 'slow' ? Math.min(1, f.rev + .12 + .25 * s) : Math.max(0, f.rev * (1 - .7 * s));
+  x.fx = Object.assign({}, x.fx || null, {rev: +rev.toFixed(3)});
+  if (typeof b.p.aR === 'number') x.p.aR = +(st.tv === 'slow' ? Math.min(4, b.p.aR * (1 + 2 * s) + .1 * s) : Math.max(.02, b.p.aR * (1 - .5 * s))).toFixed(3);
+  const n = v6aNorm(x); if (n) c.st = n; else delete c.st;
+}
+// Tempo folgt dem, was im Bereich spielt (gr2Remix, gr2AB): eine Tempo-Version → ihr Tempo; keine mehr → das Tempo vorher
+function gen3TvPre(song, a, b) {
+  if (!song || !song.bars) return null;
+  for (let t = 0; t < NT(); t++) for (const sp of gr1Spans(song, t, a, b)) { const c = gr1ClipOf(song, t, sp); if (c && c.gr && GEN3_TVID[c.gr.s] && c.gr.o) return {o: c.gr.o, t: c.gr.t || c.gr.o, s: c.gr.s}; }
+  return null;
+}
+function gen3TvPost(pre, song, a, b) {
+  const now = gen3TvPre(song, a, b), want = now ? now.t : pre ? pre.o : null;
+  if (want && want !== S.bpm) { setBpm(want); UI.dirty.all = true; GEN3.bpmMsg = want; }
+}
+/* ---------- EINE Fill-Bibliothek: Genres je Kachel, gleiche Schläge = eine Kachel, Drums-Füller = dieselben Kacheln ---------- */
+const gen3Sig = L => L.tab + '|' + (L.len || 0) + '|' + (L.notes || []).map(n => Math.round(n.t * 1000) + ':' + n.n).sort().join(',') + '|' + (Array.isArray(L.stop) ? L.stop.length : 0);
+const gen3OrdIx = id => { const i = GR2_ORDER.indexOf(id); return i < 0 ? 999 : i; };
+function gen3Sync() {
+  const key = UE_LIB.length + ':' + BB1_FIG.length; if (GEN3.sync === key) return;
+  GEN3.dup.clear(); GEN3.gs.clear();
+  const seen = new Map();
+  for (const L of UE_LIB) {
+    const gs = [].concat(L.gs ? [L.gs] : [], GEN3_UEGS[L.id] || []);
+    if (L.tab === 'eigen') { GEN3.gs.set(L.id, gs); continue; }
+    const sg = gen3Sig(L), k = seen.get(sg);
+    if (k) { GEN3.dup.add(L.id); const kg = GEN3.gs.get(k); for (const g of gs) if (!kg.includes(g)) kg.push(g); continue; }
+    seen.set(sg, L.id); GEN3.gs.set(L.id, gs);
+  }
+  // Drums-Füller im Werkzeugkasten: jede sichtbare Fill-Kachel (Reiter Übergänge, vor der Kante) als Figur „ue:<Id>“
+  for (const L of UE_LIB) {
+    if (L.tab !== 'ue' || GEN3.dup.has(L.id) || !(L.a < 0) || !['fill', 'tom', 'build'].includes(L.k) || !(L.notes && L.notes.length)) continue;
+    const id = 'ue:' + L.id, g = (GEN3.gs.get(L.id) || [])[0] || 'allg', F = bb1Fig(id);
+    if (F) { F.g = g; continue; }
+    const G2 = GR2_FILLS.find(f => f.id === L.id);
+    BB1_FIG.push({id, r: 'drum', g, name: L.name, ue: L.id, tip: (G2 && G2.tip) || 'Die Vorlage aus ◆ ÜBERGÄNGE: ersetzt im letzten Stück des Clips nur ihre eigenen Pads.'});
+  }
+  GEN3.sync = UE_LIB.length + ':' + BB1_FIG.length;
+}
+const gen3Gs = id => { gen3Sync(); return GEN3.gs.get(id) || []; };
+// ◆ ÜBERGÄNGE › Übergänge: Doppel weg, Genre-Filter mit allen Genres einer Kachel, nach Genre sortiert (Einhänge-Zeile in uePaintBar)
+function gen3UeBarPaint(bar) {
+  const tl = bar && bar.lastChild; if (!tl || UE.tab !== 'ue') return;
+  gen3Sync();
+  const f = GR2.ueg, tiles = [...tl.querySelectorAll('.ue-tile')];
+  for (const t of tiles) {
+    const id = t.dataset.id; if (GEN3.dup.has(id)) { t.remove(); continue; }
+    const gs = GEN3.gs.get(id) || [];
+    t.classList.toggle('gr2-hid', f !== 'alle' && !gs.includes(f));
+  }
+  const rank = t => { const gs = GEN3.gs.get(t.dataset.id) || []; return gs.length ? 1 + Math.min(...gs.map(gen3OrdIx)) : 0; };
+  const live = tiles.filter(t => t.isConnected), ix = new Map(live.map((t, i) => [t, i])), sorted = live.slice().sort((p, q) => rank(p) - rank(q) || ix.get(p) - ix.get(q));
+  if (sorted.some((t, i) => t !== live[i])) for (const t of sorted) tl.appendChild(t);
+}
+// Werkzeugkasten › Drums-Füller: dieselben Kacheln (Einhänge-Zeile in bb1List); null = Liste wie bisher
+function gen3BbList(U) {
+  if (!U || U.role !== 'drum') return null;
+  gen3Sync();
+  return BB1_FIG.filter(f => f.r === 'drum' && f.id.startsWith('ue:') && (BB1.gen === 'alle' || f.g === BB1.gen || gen3Gs(f.ue).includes(BB1.gen)))
+    .sort((p, q) => (p.g === 'allg' ? -1 : gen3OrdIx(p.g)) - (q.g === 'allg' ? -1 : gen3OrdIx(q.g)));
+}
+/* ---------- Werkzeugkasten in Reitern: Grundmuster │ Figuren │ Spielweise (alle mit Ziel-Zeile) ---------- */
+const GEN3_TABS = [['gm', 'Grundmuster'], ['fig', 'Figuren'], ['sw', 'Spielweise']];
+const gen3GmStyles = () => gr2Order().filter(x => !x.ts && !x.tv);
+function gen3TabsHtml() {
+  return `<div class="gen3-tabs" role="tablist" aria-label="Werkzeugkasten">` + GEN3_TABS.map(([k, l]) =>
+    `<button class="rb${GEN3.bbTab === k ? ' on' : ''}" data-g3t="${k}" role="tab" aria-selected="${GEN3.bbTab === k}">${esc(l)}</button>`).join('') + `</div>`;
+}
+// Kopf jedes Reiters: die Reiter statt des Titels, ✕ bleibt (Einhänge-Zeile am Ende von bb1Paint)
+function gen3BbHead(p) {
+  const h = p && p.querySelector('.ms-h'); if (!h || h.classList.contains('gen3-bbh')) return;
+  const x = h.querySelector('.ms-x'); h.classList.add('gen3-bbh'); h.innerHTML = gen3TabsHtml(); if (x) h.appendChild(x);
+}
+// Grundmuster: die Noten des Stils für Clip (t, s) (Drums mit den Pads des Kits, Bass auf den Grundtönen des Clips)
+function gen3GmNotes(t, s, stId) {
+  const st = gr2Style(stId), c = S.tracks[t] && S.tracks[t].clips[s]; if (!st || !c || c.ts || st.ts || st.tv) return null;
+  if (!gr1PatOk(t, c)) return null;
+  return isDrum(t) ? gr1DrumNotes(c, st) : gr1BassNotes(c, st);
+}
+const gen3Mk = (c, notes) => () => (notes ? {notes: notes.map(n => Object.assign({}, n)), snd: notes, len: c.len, ctx: null, gen: notes.length} : null);
+function gen3SwNotes(t, s, style) {
+  const c = S.tracks[t] && S.tracks[t].clips[s]; if (!c || isDrum(t) || !(c.notes || []).length) return null;
+  const gen = lf1Gen(style, c.notes.map(cleanNote), c);
+  return gen.length ? gen.sort((a, b) => a.t - b.t || a.n - b.n) : null;
+}
+// Reiter Grundmuster / Spielweise zeichnen (Einhänge-Zeile am Anfang von bb1Paint); false = Reiter Figuren (BB1 zeichnet)
+function gen3BbPaint() {
+  const U = BB1.ui; if (!U || !U.p || !U.p.isConnected || GEN3.bbTab === 'fig') return false;
+  const p = U.p, tr = S.tracks[U.t], c = tr && tr.clips[U.s]; if (!c) { closePop(); return true; }
+  const drum = isDrum(U.t), Zs = bb1Targets(U.t, U.s), Z = bb1Ziel(U.t, U.s), gm = GEN3.bbTab === 'gm';
+  const zl = z => z.k === 'ver' ? ['Neue Version', 'v' + z.v + ' · im Song'] : z.k === 'neu' ? ['Neuer Clip', 'Szene ' + (z.s + 1)] : ['Diesen Clip', '↶ holt ihn zurück'];
+  const pvId = BB1.pv ? BB1.pv.id : null;
+  let h = `<div class="ms-h gen3-bbh">${gen3TabsHtml()}<button class="rb ms-x" data-bb="x" aria-label="Schließen">✕</button></div>`, ok = true, sel = null, tip = '';
+  if (gm) {
+    ok = gr1PatOk(U.t, c);
+    const L = gen3GmStyles(); if (!L.some(x => x.id === GEN3.gm)) GEN3.gm = null; sel = GEN3.gm ? gr2Style(GEN3.gm) : null;
+    h += `<p class="bb1-info"><b>${esc(tr.name)} · Szene ${U.s + 1}</b> · ${ok ? esc(drum ? 'das Muster des Stils mit den Pads deines Kits' : 'Rhythmus des Stils auf den Grundtönen deines Clips') : 'Grundmuster gibt es für Drums und Bass'}</p>`;
+    h += `<div class="bb1-grid gen3-gmg pan-y">` + L.map(x => `<button class="rb bb1-f${GEN3.gm === x.id ? ' on' : ''}${pvId === 'g3:gm:' + x.id ? ' pl' : ''}" data-g3gm="${x.id}" aria-pressed="${GEN3.gm === x.id}"${ok ? '' : ' disabled'} aria-label="${esc('Grundmuster ' + x.name + ' – antippen: Vorschau')}"><b>${esc(x.name)}</b><small>${esc(gr2Sub(x))}</small></button>`).join('') + `</div>`;
+    tip = sel ? '<b>' + esc(sel.name) + ':</b> ' + esc(gr2X(sel).tip || '') : (ok ? 'Stil antippen = Vorschau. [Einsetzen] schreibt das Muster' + (Z.k === 'hier' ? ' in diesen Clip.' : ' als ' + (Z.k === 'ver' ? 'neue Version' : 'neuen Clip') + ' – das Original bleibt.') : 'Für Synth-Spuren: Reiter Figuren oder Spielweise.');
+  } else {
+    ok = !drum && !!(c.notes || []).length;
+    if (!LF1_SW.some(x => x[0] === GEN3.sw)) GEN3.sw = null; sel = GEN3.sw ? LF1_SW.find(x => x[0] === GEN3.sw) : null;
+    h += `<p class="bb1-info"><b>${esc(tr.name)} · Szene ${U.s + 1}</b> · ${ok ? 'aus den Akkorden und der Tonart des ganzen Clips' : drum ? 'Spielweisen gibt es für Synth-Spuren' : 'erst Noten oder Akkorde setzen'}</p>`;
+    h += `<div class="bb1-grid gen3-swg pan-y">` + LF1_SW.map(([k, l]) => `<button class="rb bb1-f${GEN3.sw === k ? ' on' : ''}${pvId === 'g3:sw:' + k ? ' pl' : ''}" data-g3sw="${k}" aria-pressed="${GEN3.sw === k}"${ok ? '' : ' disabled'} aria-label="${esc('Spielweise ' + l + ' – antippen: Vorschau')}"><b>${esc(l)}</b><small>${esc(k.startsWith('str') ? 'Strum ' + LF1.strumMs + ' ms' : 'aus deinen Akkorden')}</small></button>`).join('') + `</div>`;
+    h += `<div class="bb1-row gen3-ms"><span class="lbl">Strum</span>` + LF1_MS.map(x => `<button class="rb${LF1.strumMs === x ? ' on' : ''}" data-g3ms="${x}" aria-pressed="${LF1.strumMs === x}" aria-label="Strum ${x} Millisekunden"${ok ? '' : ' disabled'}>${x} ms</button>`).join('') + `</div>`;
+    tip = sel ? '<b>' + esc(sel[1]) + ':</b> rechnet vom Original aus, das Original bleibt bei Neue Version / Neuer Clip.' : (ok ? 'Spielweise antippen = Vorschau, [Einsetzen] schreibt sie.' : '');
+  }
+  h += `<p class="bb1-tip">${tip}</p>`;
+  h += `<div class="bb1-foot"><div class="bb1-row bb1-act"><span class="lbl">Ziel</span><div class="bb1-ziel" role="group" aria-label="Ziel">` + Zs.map(z => { const [a, b] = zl(z); return `<button class="rb${Z.k === z.k ? ' on' : ''}" data-ziel="${z.k}" aria-pressed="${Z.k === z.k}" aria-label="${esc(a + ': ' + b)}">${esc(a)}<small>${esc(b)}</small></button>`; }).join('') + `</div></div>`;
+  h += `<div class="bb1-row bb1-go"><button class="rb bb1-pv${pvId ? ' on' : ''}" data-bb="pv"${sel && ok ? '' : ' disabled'} aria-pressed="${!!pvId}">${pvId ? '■ Stopp' : '▶ Vorschau'}</button>` +
+    `<button class="rb bb1-ins" data-bb="ins"${sel && ok ? '' : ' disabled'}>Einsetzen</button></div></div>`;
+  const sc = p.querySelector('.bb1-grid'), y = sc ? sc.scrollTop : 0;
+  p.innerHTML = h;
+  const sc2 = p.querySelector('.bb1-grid'); if (sc2) sc2.scrollTop = y;
+  popDock(p);
+  return true;
+}
+function gen3BbMk(U) {
+  const c = S.tracks[U.t] && S.tracks[U.t].clips[U.s]; if (!c) return null;
+  if (GEN3.bbTab === 'gm' && GEN3.gm) { const ns = gen3GmNotes(U.t, U.s, GEN3.gm); return ns ? {id: 'g3:gm:' + GEN3.gm, mk: gen3Mk(c, ns), name: 'Grundmuster ' + gr2Style(GEN3.gm).name} : null; }
+  if (GEN3.bbTab === 'sw' && GEN3.sw) { const ns = gen3SwNotes(U.t, U.s, GEN3.sw); return ns ? {id: 'g3:sw:' + GEN3.sw, mk: gen3Mk(c, ns), name: 'Spielweise ' + LF1_SW.find(x => x[0] === GEN3.sw)[1]} : null; }
+  return null;
+}
+function gen3BbPv(U) { const M = gen3BbMk(U); if (!M) { toast(GEN3.bbTab === 'sw' ? 'Keine Akkorde für diese Spielweise' : 'Dieses Grundmuster passt hier nicht'); return false; } return bb1PvStart(U.t, U.s, M.id, M.mk); }
+// Tipps in den Reitern (Einhänge-Zeile am Anfang von bb1Act); false = BB1 macht weiter
+function gen3BbAct(b) {
+  const U = BB1.ui; if (!U || !b || !b.dataset) return false;
+  if (b.dataset.g3t) { GEN3.bbTab = b.dataset.g3t; bb1PvStop(); haptic('tick'); bb1Paint(); return true; }
+  if (GEN3.bbTab === 'fig') return false;
+  const d = b.dataset;
+  if (d.g3gm || d.g3sw) {
+    const id = d.g3gm || d.g3sw, cur = d.g3gm ? GEN3.gm : GEN3.sw;
+    if (cur === id && BB1.pv) { bb1PvStop(); bb1Paint(); return true; }
+    if (d.g3gm) GEN3.gm = id; else GEN3.sw = id;
+    haptic('tick'); gen3BbPv(U); bb1Paint(); return true;
+  }
+  if (d.g3ms) { LF1.strumMs = +d.g3ms; haptic('tick'); if (BB1.pv && GEN3.sw && GEN3.sw.startsWith('str')) gen3BbPv(U); bb1Paint(); return true; }
+  if (d.ziel) { BB1.ziel = d.ziel; haptic('tick'); if (BB1.pv && !BB1.pv.swap) gen3BbPv(U); bb1Paint(); return true; }
+  if (d.bb === 'pv') { if (BB1.pv) bb1PvStop(); else gen3BbPv(U); bb1Paint(); return true; }
+  if (d.bb === 'ins') { gen3BbIns(U); return true; }
+  return false;                                                         // ✕ und alles andere: wie BB1
+}
+function gen3BbIns(U) {
+  const M = gen3BbMk(U); if (!M) { toast('Hier passt das nicht'); return null; }
+  const F = {id: M.id, name: M.name, r: isDrum(U.t) ? 'drum' : 'bass'};
+  const r = bb1Insert(U.t, U.s, M.id, {ziel: bb1Ziel(U.t, U.s).k, F, mk: M.mk}); if (!r) return null;
+  haptic('snap'); const t = U.t, s = U.s; closePop();
+  if (r.k === 'ver') toast(M.name + ' → v' + r.v + ' im Song · v1 bleibt das Original' + (R.playing && R.songPlay ? ' – ab dem nächsten Takt' : ''), [{label: 'Bearbeiten', fn: () => openOwnRoll(t, r.bar)}, {label: 'Rückgängig', fn: () => undo()}]);
+  else if (r.k === 'neu') toast(M.name + ' → Szene ' + (r.s2 + 1) + ' (das Original bleibt)', [{label: 'Öffnen', fn: () => openRoll(t, r.s2)}, {label: '▶', fn: () => launchClip(t, r.s2)}]);
+  else toast(M.name + ' in ' + S.tracks[t].name + ' · Szene ' + (s + 1), {label: 'Rückgängig', fn: () => undo()});
+  if (R.editor === 'clip' && ED.clip && ED.clip.t === t && ED.clip.s === s) openClipSheet(t, s);
+  return r;
+}
+// der Werkzeugkasten auf einem Reiter öffnen (Drum-Editor › Muster ▾ › Stil-Grundmuster); false = kein Clip (alter Weg)
+function gen3BbOpen(t, s, tab) {
+  const c = S.tracks[t] && S.tracks[t].clips[s]; if (!c || !bb1Ok(t, c) || c.ts) return false;
+  GEN3.bbTab = tab || GEN3.bbTab; return bb1Open(t, s);
+}
+const gen3GmOpen = (t, s) => gen3BbOpen(t, s, 'gm');
+/* ---------- Remix-Blatt (Song/Teil): Kacheln der Tempo-Version und [Matrix] im Bereich (Einhänge-Zeile am Ende von gr2Paint) ---------- */
+function gen3TvTile(x, on, attr) {
+  const base = gen3TvBase(), tgt = gen3TvTarget(x, base, GR2.k / 100);
+  return `<button class="rb gr2-t gen3-tv${on ? ' on' : ''}" ${attr}="st:${x.id}" aria-pressed="${on}" aria-label="${esc(x.name + ', Tempo ' + base + ' auf ' + tgt + ' BPM')}"><b>${esc(x.tv === 'slow' ? 'Langsam · voller' : 'Schnell · dezenter')}</b><small>${base} → ${tgt} BPM</small></button>`;
+}
+function gen3RxPaint(p) {
+  if (!p || !p.isConnected) return;
+  if (!p._g3) { p._g3 = true; onTap(p, b => { if (b.dataset.g3 === 'mx') { haptic('tick'); closePop(); gen3MxOpen(); } }, 'button[data-g3]'); }
+  const seg = p.querySelector('.gr2-top .gr2-seg');
+  if (seg && !seg.querySelector('[data-g3]')) seg.insertAdjacentHTML('beforeend', `<button class="rb" data-g3="mx" aria-pressed="false" aria-label="Bereich: Matrix – die gewählte Szene als neue Szene, der Song bleibt">Matrix</button>`);
+  const grid = p.querySelector('.gr2-grid'), st = gr2Style(GR2.st);
+  if (grid && !grid.querySelector('.gen3-tv')) grid.insertAdjacentHTML('afterbegin', GEN3_TV.map(x => gen3TvTile(x, !!st && st.id === x.id, 'data-g2')).join(''));
+  if (st && st.tv) {
+    const tp = p.querySelector('.gr2-tip'), base = gen3TvBase();
+    if (tp) tp.innerHTML = `<b>${esc(st.name)}</b> · Tempo ${base} → ${gen3TvTarget(st, base, GR2.k / 100)} BPM: ${esc(st.x.tip)} Neue Versionen wie jeder Remix, A/B stellt auch das Tempo um. v1 bleibt das Original.`;
+  }
+}
+/* ---------- Remix in der Matrix: die gewählte Szene → eine freie Szene (der Song bleibt unberührt) ---------- */
+const gen3MxSrc = () => clamp(R.selS | 0, 0, NS() - 1);
+const gen3MxHas = s => S.tracks.some(tr => tr && tr.clips[s]);
+// eine Szene gehört diesem Remix, wenn alle ihre Clips Remix-Clips der Quelle sind
+const gen3MxOwn = (dst, src) => dst != null && dst !== src && S.tracks.every(tr => { const c = tr && tr.clips[dst]; return !c || (c.gr && c.gr.m === src); }) && gen3MxHas(dst);
+function gen3MxFree(src) { for (let k = 1; k < NS(); k++) { const x = (src + k) % NS(); if (!gen3MxHas(x) && hm1RowFree(x)) return x; } return null; }
+// die Remix-Szene von src (eine vorhandene wird wiederverwendet): Noten jeder Spur im Stil st, Stärke k, Art 'u' │ 'm'; ein Undo
+function gen3MxRemix(src, stId, k, art) {
+  const st = gr2Style(stId); if (!st) return null;
+  src = clamp(src | 0, 0, NS() - 1); k = clamp(Math.round(+k || 0), 0, 100); art = art === 'm' && !st.only ? 'm' : 'u';
+  if (!gen3MxHas(src)) return {err: 'leer', src};
+  if (!st.ts && S.ts) return {err: 'ts', src};
+  const M = GEN3.mx && GEN3.mx.src === src ? GEN3.mx : null;
+  let dst = M && gen3MxOwn(M.dst, src) ? M.dst : null;
+  if (dst == null) for (let x = 0; x < NS(); x++) if (x !== src && gen3MxOwn(x, src)) { dst = x; break; }
+  if (dst == null) dst = gen3MxFree(src);
+  if (dst == null) return {err: 'voll', src};
+  const label = 'Matrix-Remix ' + st.name + ' ' + k + ' % · Szene ' + (src + 1) + ' → ' + (dst + 1), items = [], pb = partSnap(), ch = [];
+  const res = {src, dst, n: 0, dr: 0, bass: 0, other: 0, skip: 0, st: st.id, k};
+  const pre = gen3MxTv(dst);
+  for (let t = 0; t < NT(); t++) {
+    const tr = S.tracks[t]; if (!tr) continue;
+    const c = tr.clips[src], old = tr.clips[dst];
+    const role = c ? gr2Role(t, c) : null, sTs = c ? c.ts || null : null, tTs = st.ts || null, conv = sTs !== tTs;
+    if (!c || !role || (conv && !gr2TsPair(sTs, tTs))) {
+      if (c) res.skip++;
+      if (old) { items.push({kind: 'clip', track: t, scene: dst, before: cleanClip(old)}); tr.clips[dst] = null; ch.push(t); }
+      continue;
+    }
+    const pat = art === 'm' && !conv && (role === 'dr' || role === 'bass');
+    const notes = !k && !conv ? (c.notes || []).map(cleanNote) : pat ? (role === 'dr' ? gr1DrumNotes(c, st) : gr1BassNotes(c, st)) : gr2Translate(c, st, k / 100, role);
+    const nc = cleanClip(c); delete nc.sf; delete nc.gr;
+    if (pat && role === 'dr') delete nc.lanes;
+    if (conv) { if (tTs) nc.ts = tTs; else delete nc.ts; delete nc.lanes; }
+    nc.notes = notes.map(cleanNote); nc.gr = pat ? {s: st.id, v: 1, m: src} : {s: st.id, v: 1, u: k, m: src};
+    gen3VerSt(nc, c, st, k, t);
+    const clip = normClip(nc, tr.kind === 'drum' ? 'drum' : 'synth', S.key); if (!clip) { res.skip++; continue; }
+    items.push({kind: 'clip', track: t, scene: dst, before: old ? cleanClip(old) : null});
+    tr.clips[dst] = clip; ch.push(t); res.n++;
+    if (role === 'dr') res.dr++; else if (role === 'bass') res.bass++; else res.other++;
+  }
+  const row = S.scenes[src] && S.scenes[src].chords;
+  if (S.scenes[dst]) { const nr = row && row.ch && row.ch.length ? normChordRow(deep(row)) : null; if (nr) S.scenes[dst].chords = nr; else delete S.scenes[dst].chords; }
+  if (partSnap() !== pb) items.push({kind: 'part', before: pb});
+  if (!items.length) { res.same = true; return res; }
+  undoPush(items.length === 1 ? Object.assign({label}, items[0]) : {kind: 'group', label, items: items.map(x => Object.assign({label}, x))});
+  for (const t of ch) { clipChanged(t, dst); if (R.playing && R.slot[t] === dst && AU.ctx) { try { const now = AU.ctx.currentTime + .006; cancelTrackFrom(t, now); scheduleTrack(t, Math.max(R.cstart[t], t2b(now)), R.schedBeat, true); } catch (e) { logErr(e); } } }
+  scheduleAutoKey(dst); partsChanged(); markDirty(); UI.dirty.all = true;
+  if (GEN3.mx) { GEN3.mx.src = src; GEN3.mx.dst = dst; }
+  const now = gen3MxTv(dst), want = now ? now.t : pre ? pre.o : null;
+  if (want && want !== S.bpm && (gen3MxPlaying(dst) || !R.playing)) { setBpm(want); res.bpm = want; }
+  return res;
+}
+// eine Tempo-Version in Szene s: {o, t}
+function gen3MxTv(s) { for (const tr of S.tracks) { const c = tr && tr.clips[s]; if (c && c.gr && GEN3_TVID[c.gr.s] && c.gr.o) return {o: c.gr.o, t: c.gr.t || c.gr.o}; } return null; }
+const gen3MxPlaying = s => !!R.playing && S.tracks.some((tr, i) => tr && R.slot[i] === s);
+function gen3MxStyles(s) { const o = new Set(); for (const tr of S.tracks) { const c = tr && tr.clips[s]; if (c && c.gr) o.add(c.gr.s); } return [...o]; }
+function gen3MxOpen(src) {
+  const s0 = src != null ? clamp(src | 0, 0, NS() - 1) : gen3MxSrc();
+  GEN3.mx = {src: s0, dst: null};
+  for (let x = 0; x < NS(); x++) if (gen3MxOwn(x, s0)) { GEN3.mx.dst = x; break; }
+  openPop(null, p => {
+    p.classList.add('msheet', 'gr2s', 'gen3mx'); guardTouch(p); p._paint = () => gen3MxPaint(p);
+    onTap(p, btn => { try { gen3MxAct(p, btn); } catch (e) { logErr(e); } }, 'button[data-g3m]');
+    p.addEventListener('input', e => { const i = e.target; if (!i || !i.classList || !i.classList.contains('gr2-k')) return; const o = p.querySelector('.gr2-kv'); if (o) o.textContent = clamp(Math.round(+i.value / 5) * 5, 0, 100) + ' %'; });
+    p.addEventListener('change', e => {
+      const i = e.target; if (!i || !i.classList || !i.classList.contains('gr2-k')) return;
+      GR2.k = clamp(Math.round(+i.value / 5) * 5, 0, 100); haptic('tick');
+      if (GEN3.mx && gen3MxPlaying(GEN3.mx.dst)) gen3MxGo(false);
+      if (UI.pop && UI.pop.el === p) gen3MxPaint(p);
+    });
+  }, {name: 'gen3mx', onClose: () => { GEN3.mx = null; }});
+  if (UI.pop && UI.pop.name === 'gen3mx') gen3MxPaint(UI.pop.el);
+  return !!(UI.pop && UI.pop.name === 'gen3mx');
+}
+function gen3MxPaint(p) {
+  if (!p || !p.isConnected || !GEN3.mx) return;
+  const M = GEN3.mx, src = M.src, dst = M.dst != null && gen3MxOwn(M.dst, src) ? M.dst : null, st = gr2Style(GR2.st) || gr2Style('italo'), art = st.only ? 'u' : GR2.art;
+  const sg = S.song, hasSong = !!(sg && sg.bars), pm = hasSong && GR2.sc ? gr2Part() : null, free = dst == null ? gen3MxFree(src) : dst, plays = dst != null ? gen3MxStyles(dst) : [];
+  const B = (k, html, on, aria, dis, cls) => `<button class="rb${cls ? ' ' + cls : ''}${on ? ' on' : ''}" data-g3m="${k}" aria-pressed="${!!on}" aria-label="${esc(aria)}"${dis ? ' disabled' : ''}>${html}</button>`;
+  let h = `<div class="ms-h"><b>REMIX</b><span>· Matrix · Szene ${src + 1} → ${free != null ? 'Szene ' + (free + 1) + (dst == null ? ' (frei)' : '') : 'keine freie Szene'}</span><button class="rb ms-x" data-g3m="x" aria-label="Schließen">✕</button></div>`;
+  h += `<div class="gr2-row gr2-top"><div class="gr2-seg" role="group" aria-label="Bereich">` + B('sc:song', 'Ganzer Song', false, hasSong ? 'Bereich: ganzer Song' : 'Noch kein Song', !hasSong) +
+    B('sc:part', pm ? 'Teil: ' + esc(markLabel(pm)) : 'Teil', false, 'Bereich: Teil', !hasSong) + B('sc:mx', 'Matrix', true, 'Bereich: Matrix (Szene ' + (src + 1) + ')') + `</div>` +
+    `<div class="gr2-seg" role="group" aria-label="Art">` + B('art:u', 'Deine Noten', art === 'u', 'Art: deine Noten in den Stil übersetzen') +
+    B('art:m', 'Stil-Muster', art === 'm', 'Art: Drums und Bass durch das Muster des Stils ersetzen', !!st.only) + `</div></div>`;
+  h += `<div class="gr2-grid pan-y" role="group" aria-label="Stil">` + GEN3_TV.map(x => gen3TvTile(x, x.id === st.id, 'data-g3m')).join('') + gr2Order().filter(x => !x.tv).map(x => {
+    const on = x.id === st.id, pl = plays.includes(x.id);
+    return `<button class="rb gr2-t${on ? ' on' : ''}${pl ? ' pl' : ''}" data-g3m="st:${x.id}" aria-pressed="${on}" aria-label="${esc(x.name + ', ' + gr2Feel(x) + (pl ? ', spielt in der Remix-Szene' : ''))}"><b>${esc(x.name)}</b><small>${esc(gr2Sub(x))}</small></button>`;
+  }).join('') + `</div>`;
+  const playing = gen3MxPlaying(src) || (dst != null && gen3MxPlaying(dst)) || !!R.playing;
+  h += `<div class="gr2-foot"><div class="gr2-row gr2-kr pan-x"><span class="lbl">${art === 'm' ? 'Stärke<br>übrige' : 'Stärke'}</span><input type="range" class="rng gr2-k" min="0" max="100" step="5" value="${GR2.k}" aria-label="Stärke in Prozent"><b class="gr2-kv">${GR2.k} %</b></div>` +
+    `<div class="gr2-row gr2-act">` +
+    B('go', playing ? '■ Stopp<small>anhalten</small>' : '▶ Hören<small>erzeugen + spielen</small>', playing, playing ? 'Anhalten' : 'Remix-Szene erzeugen und spielen', false, 'gr2-go') +
+    B('a', 'A<small>Szene ' + (src + 1) + '</small>', gen3MxPlaying(src), 'A: die Original-Szene ' + (src + 1) + ' spielen') +
+    B('b', 'B<small>' + (dst != null ? 'Szene ' + (dst + 1) : 'Remix') + '</small>', dst != null && gen3MxPlaying(dst), 'B: die Remix-Szene spielen', free == null) +
+    B('bpm', '♩ ' + st.bpm + '<small>Tempo</small>', false, 'Tempo ' + st.bpm + ' BPM übernehmen', S.bpm === st.bpm) + `</div></div>`;
+  const now = dst != null ? 'Szene ' + (dst + 1) + ': ' + plays.map(id => (gr2Style(id) || {name: id}).name).join(', ') : 'Noch kein Remix dieser Szene';
+  const what = st.tv ? 'Tempo ' + gen3TvBase() + ' → ' + gen3TvTarget(st, gen3TvBase(), GR2.k / 100) + ' BPM: ' + st.x.tip : '≈ ' + st.bpm + ' BPM · ' + gr2Feel(st) + ': ' + (gr2X(st).tip || '');
+  h += `<p class="gr2-tip"><b>${esc(now)}.</b> <b>${esc(st.name)}</b> · ${esc(what)} Szene ${src + 1} bleibt, der Song bleibt unberührt.</p>`;
+  const sc = p.querySelector('.gr2-grid'), y = sc ? sc.scrollTop : 0;
+  p.innerHTML = h;
+  const sc2 = p.querySelector('.gr2-grid'); if (sc2) sc2.scrollTop = y;
+  popDock(p);
+}
+function gen3MxGo(play) {
+  const M = GEN3.mx; if (!M) return null;
+  const r = gen3MxRemix(M.src, GR2.st, GR2.k, GR2.art);
+  if (!r) return null;
+  if (r.err) { toast(r.err === 'leer' ? 'Szene ' + (r.src + 1) + ' ist leer – erst eine Szene mit Clips wählen' : r.err === 'ts' ? 'Das Projekt steht nicht auf 4/4 – dieser Stil braucht 4/4' : 'Keine freie Szene mehr – eine Szene leeren'); return r; }
+  const st = gr2Style(GR2.st), parts = []; if (r.dr) parts.push('Drums ' + r.dr); if (r.bass) parts.push('Bass ' + r.bass); if (r.other) parts.push('weitere ' + r.other);
+  if (play) launchScene(r.dst);
+  toast(st.name + ' ' + GR2.k + ' % → Szene ' + (r.dst + 1) + (parts.length ? ': ' + parts.join(' · ') : '') + (r.skip ? ' · ' + r.skip + ' bleiben (Gesang/Taktart)' : '') + (r.bpm ? ' · Tempo ' + r.bpm : '') + ' · der Song bleibt', {label: 'Rückgängig', fn: () => undo()});
+  return r;
+}
+function gen3MxAct(p, btn) {
+  const a = btn.dataset.g3m, M = GEN3.mx; if (a === 'x') { closePop(); return; }
+  if (!M) { closePop(); return; }
+  if (a === 'sc:song' || a === 'sc:part') { if (!(S.song && S.song.bars)) return; closePop(); gr2RemixOpen(null); GR2.part = a === 'sc:part' && !!gr2Part(); if (UI.pop && UI.pop.name === 'gr2remix') gr2Paint(UI.pop.el); return; }
+  if (a === 'sc:mx') return;
+  const live = M.dst != null && gen3MxPlaying(M.dst);
+  if (a.startsWith('art:')) { GR2.art = a.slice(4) === 'm' ? 'm' : 'u'; haptic('tick'); if (live) gen3MxGo(false); }
+  else if (a.startsWith('st:')) { if (gr2Style(a.slice(3))) GR2.st = a.slice(3); haptic('tick'); if (live) gen3MxGo(false); }
+  else if (a === 'go') { if (R.playing) { stop(); } else { haptic('snap'); gen3MxGo(true); } }
+  else if (a === 'a') { haptic('tick'); launchScene(M.src); const tv = M.dst != null ? gen3MxTv(M.dst) : null; if (tv && S.bpm !== tv.o) setBpm(tv.o); }
+  else if (a === 'b') { if (M.dst == null || !gen3MxOwn(M.dst, M.src)) gen3MxGo(true); else { haptic('tick'); launchScene(M.dst); const tv = gen3MxTv(M.dst); if (tv && S.bpm !== tv.t) setBpm(tv.t); } }
+  else if (a === 'bpm') { const st = gr2Style(GR2.st); if (!st) return; const old = S.bpm; setBpm(st.bpm); haptic('tick'); UI.dirty.all = true; toast('Tempo ' + st.bpm + ' BPM', {label: 'Zurück auf ' + old, fn: () => { setBpm(old); UI.dirty.all = true; if (UI.pop && UI.pop.el === p) gen3MxPaint(p); }}); }
+  if (UI.pop && UI.pop.el === p) gen3MxPaint(p);
+}
+// ≡ › Song ohne Song: [Matrix-Remix …] (Einhänge-Zeile in gr1MenuRow)
+function gen3MenuRow(sec, row, btn) {
+  if (!S.tracks.some(tr => tr && tr.clips.some(Boolean))) return;
+  const b = btn('Matrix-Remix …'); b.setAttribute('aria-label', 'Remix der gewählten Szene als neue Szene');
+  on(b, 'click', () => { closeMenu(); gen3MxOpen(); });
+  row(sec, 'Song', b);
+}
+(function gen3Css() {
+  try {
+    if (document.getElementById('gen3-css')) return;
+    const s = document.createElement('style'); s.id = 'gen3-css';
+    s.textContent = [
+      '.gr2s .gr2-t.gen3-tv{border-left:3px solid #6b4c16}.gr2s .gr2-t.gen3-tv small{color:#d8b06a}',
+      '.bb1s .ms-h.gen3-bbh{display:flex;align-items:center;gap:6px}',
+      '.bb1s .gen3-tabs{flex:1 1 auto;display:flex;gap:4px;min-width:0}',
+      '.bb1s .gen3-tabs .rb{flex:1 1 0;min-width:0;height:44px;padding:0 4px;font:700 12px/1.1 var(--font-ui);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      '.bb1s .gen3-ms{align-items:center}.bb1s .gen3-ms .lbl{flex:0 0 auto;font:700 10px/1 var(--font-ui);color:var(--text-dim);padding:0 2px}',
+      '.bb1s .gen3-ms .rb{flex:1 1 0;min-width:0;height:44px;padding:0 2px;font:700 11px/1 var(--font-ui);white-space:nowrap}',
+      '@media (orientation:landscape){.bb1s .gen3-swg,.bb1s .gen3-gmg{grid-template-columns:repeat(5,minmax(0,1fr))}}',
+    ].join('\n');
+    document.head.appendChild(s);
+  } catch (e) {}
+})();
+const GEN3_API = {
+  genres: () => gr2Order().filter(x => !x.tv).map(x => ({id: x.id, name: x.name, bpm: x.bpm, sw: x.sw, sw8: x.sw8 || null, ts: x.ts || null})),
+  names: () => {
+    gen3Sync();
+    const fillG = new Set(); for (const L of UE_LIB) for (const g of GEN3.gs.get(L.id) || []) fillG.add(g);
+    return {
+      remix: gr2Order().filter(x => !x.tv).map(x => x.name), grundmuster: gen3GmStyles().map(x => x.name),
+      werkzeugkasten: BB1_GEN.filter(g => BB1_FIG.some(f => f.g === g[0])).map(g => g[1]).filter(n => n !== 'Allgemein'),
+      werkzeugkastenIds: BB1_GEN.filter(g => BB1_FIG.some(f => f.g === g[0])).map(g => g[0]).filter(id => id !== 'allg'),
+      fills: [...fillG].map(id => (gr2Style(id) || {name: '?' + id}).name), fillIds: [...fillG],
+      master: MX2_PF.map(p => p.name), masterGenre: MX2_PF.filter(p => GEN3_MXNAME[p.id]).map(p => [p.id, p.name, gr2Style(GEN3_MXNAME[p.id]).name]),
+    };
+  },
+  ue: () => { gen3Sync(); const vis = UE_LIB.filter(L => L.tab === 'ue' && !GEN3.dup.has(L.id)); return {visible: vis.map(L => L.id), dup: [...GEN3.dup], sigs: vis.map(gen3Sig), gs: vis.map(L => [L.id, GEN3.gs.get(L.id) || []])}; },
+  bbDrum: () => { gen3Sync(); return BB1_FIG.filter(f => f.r === 'drum' && f.id.startsWith('ue:')).map(f => ({id: f.id, ue: f.ue, g: f.g, name: f.name})); },
+  tv: (c, dir, k, role) => gen3TvNotes(deep(c), GEN3_TV[dir === 'fast' ? 1 : 0], clamp((k == null ? 70 : k) / 100, 0, 1), role || 'lead'),
+  tvTarget: (dir, base, k) => gen3TvTarget(GEN3_TV[dir === 'fast' ? 1 : 0], base, (k == null ? 70 : k) / 100),
+  verSt: id => (S.song && S.song.own && S.song.own[id] ? deep({st: S.song.own[id].st || null, gr: S.song.own[id].gr || null}) : null),
+  mxRemix: (st, o) => { o = o || {}; if (!GEN3.mx || (o.src != null && GEN3.mx.src !== o.src)) GEN3.mx = {src: o.src != null ? o.src : gen3MxSrc(), dst: null}; return gen3MxRemix(GEN3.mx.src, st, o.k == null ? 70 : o.k, o.art || 'u'); },
+  mxOpen: src => gen3MxOpen(src), mxState: () => (GEN3.mx ? Object.assign({open: !!(UI.pop && UI.pop.name === 'gen3mx')}, GEN3.mx) : null),
+  mxAct: sel => { const P = UI.pop && UI.pop.name === 'gen3mx' ? UI.pop.el : null, b = P && P.querySelector(sel); if (b && !b.disabled) gen3MxAct(P, b); return !!b; },
+  bbOpen: (t, s, tab) => gen3BbOpen(t, s, tab), bbTab: () => GEN3.bbTab,
+  bbAct: sel => { const b = BB1.ui && BB1.ui.p && BB1.ui.p.querySelector(sel); if (b && !b.disabled) { if (!gen3BbAct(b)) bb1Act(b); } return !!b; },
+  gmNotes: (t, s, st) => gen3GmNotes(t, s, st),
+  gmInsert: (t, s, st, ziel) => { const c = S.tracks[t] && S.tracks[t].clips[s], ns = gen3GmNotes(t, s, st); if (!c || !ns) return null; return bb1Insert(t, s, 'g3:gm:' + st, {ziel: ziel || 'hier', F: {id: 'g3:gm:' + st, name: 'Grundmuster ' + gr2Style(st).name, r: isDrum(t) ? 'drum' : 'bass'}, mk: gen3Mk(c, ns)}); },
+  swInsert: (t, s, sw, ziel) => { const c = S.tracks[t] && S.tracks[t].clips[s], ns = gen3SwNotes(t, s, sw); if (!c || !ns) return null; return bb1Insert(t, s, 'g3:sw:' + sw, {ziel: ziel || 'hier', F: {id: 'g3:sw:' + sw, name: 'Spielweise', r: 'bass'}, mk: gen3Mk(c, ns)}); },
+};
+Object.assign(SYNQUENZER, {gen3: GEN3_API});                /* GEN3: Test-API (Objekt, wird nicht umhüllt) */
+/* GEN3-END */
 Object.assign(SYNQUENZER, {ui1: UI1_API});                  /* UI1: Test-API (Objekt, wird nicht umhüllt) */
 ueLibAdd(ui1UeLib()); ui1BmTrim(); ui1GlowInit();           // UI1: ◆ ÜBERGÄNGE-Vorlagen, 2 Bit-Mask-Pegel, Leucht-Look (Gerät)
 Object.assign(SYNQUENZER, {vd3: VD3_API});                  /* VD3: Test-API (Objekt, wird nicht umhüllt) */

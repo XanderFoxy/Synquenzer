@@ -143,7 +143,7 @@ ok('CH1b: ein ↶ (Stelle + Chor-Spuren + Sends), ↷ wieder', C2.undoSteps === 
 const U = await p.evaluate(async () => {
   const wait = ms => new Promise(r => setTimeout(r, ms)), o = {};
   SYNQUENZER.g6Sheet(window.__r2); await wait(400);
-  const row = document.querySelector('.ch1row'); o.chorRow = row ? [...row.querySelectorAll('button')].map(b => ({t: b.textContent.trim(), h: Math.round(b.getBoundingClientRect().height), w: Math.round(b.getBoundingClientRect().width)})) : null;
+  const row = document.querySelector('.ch1row'); o.chorRow = row ? [...row.querySelectorAll('button')].map(b => ({t: b.textContent.trim(), h: Math.round(b.getBoundingClientRect().height), w: Math.round(b.getBoundingClientRect().width), vis: b.getBoundingClientRect().top >= 0 && b.getBoundingClientRect().bottom <= innerHeight})) : null;
   const pop = UI.pop && UI.pop.el, rc = pop && pop.getBoundingClientRect(); o.chorFits = !!(rc && rc.right <= innerWidth + 0.5 && rc.left >= -0.5);
   return o;
 });
@@ -160,7 +160,11 @@ await p.evaluate(() => closePop()); await p.setViewportSize({width: 926, height:
 const U3 = await p.evaluate(async () => { openMarkSheet(S.song.marks[0].id); await new Promise(r => setTimeout(r, 450)); const x = document.querySelector('.msheet .ms-x'), r = x && x.getBoundingClientRect(), bs = [...document.querySelectorAll('.msheet .ch1-ms button')];
   return {xVisibleL: !!(r && r.width >= 30 && r.top >= 0 && r.bottom <= innerHeight && r.right <= innerWidth), markL: bs.map(b => Math.round(b.getBoundingClientRect().height)), sheetBottom: Math.round(document.querySelector('.msheet').getBoundingClientRect().bottom), vh: innerHeight}; });
 await shot('mix3-l-marke.png', 926, 428);
-ok('Bedienung: Chor-Blatt hat die Zeile Gesang [Chor sauber] [Refrain groß] [Refrain 2× singen], Tasten ≥ 44 px, Blatt passt hochkant', U.chorRow && U.chorRow.length === 3 && U.chorRow.every(b => b.h >= 44) && U.chorFits, U);
+const UL = await p.evaluate(async () => { closePop(); await new Promise(r => setTimeout(r, 200)); SYNQUENZER.g6Sheet(window.__r2); await new Promise(r => setTimeout(r, 450));
+  const bs = [...document.querySelectorAll('.ch1row button')], x = UI.pop && UI.pop.el && (UI.pop.el.querySelector('.psh-x') || (UI.pop.el._psh && UI.pop.el._psh.querySelector('.psh-x')) || document.querySelector('.psh-x')), rx = x && x.getBoundingClientRect();
+  return {n: bs.length, vis: bs.length === 3 && bs.every(b => { const r = b.getBoundingClientRect(); return r.height >= 44 && r.top >= 0 && r.bottom <= innerHeight; }), x: !!(rx && rx.top >= 0 && rx.bottom <= innerHeight && rx.right <= innerWidth)}; });
+await shot('mix3-l-chor.png', 926, 428);
+ok('Bedienung: Chor-Blatt hat die Zeile Gesang [Chor sauber] [Refrain groß] [Refrain 2× singen], Tasten ≥ 44 px, Blatt passt hochkant', U.chorRow && U.chorRow.length === 3 && U.chorRow.every(b => b.h >= 44 && b.vis) && U.chorFits && UL.vis && UL.x, {U, UL});
 ok('Bedienung: Marken-Blatt eines Refrain-Teils mit [Refrain groß] [Refrain 2× singen] (≥ 44 px), ✕ sichtbar hochkant und quer', U2.mark.length === 2 && U2.mark.every(b => b.h >= 44) && U2.xVisible && U3.xVisibleL, Object.assign({}, U2, U3));
 // Speichern/Laden: die neuen Felder bleiben (additiv), Auto-Nachführen aus bleibt aus
 const RT = await p.evaluate(async () => { try { closePop(); } catch (e) {} const j = serialize(); importJSON(j); await new Promise(r => setTimeout(r, 600)); const am = S.fxBus.am, tk = Object.values(S.takes || {}).find(m => m.ch1), c = tkRef(window.__r2); return {amMx3: am ? am.mx3 || null : null, takeCh1: tk ? tk.ch1 : null, rg: !!(c && c.a.chor && c.a.chor.grp.ch1 && c.a.chor.grp.ch1.rg)}; });

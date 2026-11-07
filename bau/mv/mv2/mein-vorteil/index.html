@@ -341,6 +341,55 @@
   details.kasten-innen > summary { color: var(--text); font-weight: 600; }
   details.kasten-innen[open] { padding-bottom: 12px; }
   .krypto > div:first-child { padding-top: 4px; }
+
+  /* Krypto (07.11. abends): Ergebnis je Coin, Käufe bearbeiten, Pop-up bei Zonenwechsel, Hinweis nach Import */
+  .coin .gv-zeile { margin: 0; font-size: 16px; }
+  .coin .gv-zeile b { font-size: 19px; font-weight: 750; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .coin .ergebnis.gewinn .gv-zeile b { color: var(--akzent); }
+  .coin .ergebnis.verlust .gv-zeile b { color: var(--rot); }
+  .coin .ergebnis.verlust { background: var(--rot-hell); }
+  .kz { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 12px; margin: 8px 0 4px; }
+  @media (min-width: 600px) { .kz { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  .kz div { min-width: 0; }
+  .kz dt { font-size: 12px; color: var(--leise); font-weight: 600; }
+  .kz dd { margin: 0; font-size: 16px; font-weight: 650; font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--text); }
+  .coin-edit { border: 0; margin: 0 0 6px; padding: 8px 0 12px; border-bottom: 1px solid var(--linie); min-width: 0; }
+  .coin-edit legend { font-weight: 700; font-size: 16px; padding: 0; }
+  .coin-edit label { display: flex; flex-direction: column; gap: 3px; font-size: 13px; color: var(--leise); font-weight: 600; min-width: 0; }
+  .coin-edit label.aktuell { margin-top: 12px; }
+  .kaeufe { list-style: none; margin: 6px 0 0; padding: 0; }
+  .kaeufe li { display: flex; align-items: center; gap: 10px; min-height: 48px; border-top: 1px solid var(--linie); font-size: 14px; }
+  .kaeufe li:first-child { border-top: 0; }
+  .kaeufe li span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  .summe { font-size: 14px; margin: 6px 0 2px; font-weight: 600; }
+  .kauf-neu { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 12px; margin-top: 10px; }
+  .kauf-neu .breit { grid-column: 1 / -1; }
+  .formfehler { margin: 0; color: var(--rot); font-size: 14px; font-weight: 600; }
+  .secret-zeile { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-top: 6px; }
+  .secret-zeile code { overflow-wrap: anywhere; }
+  button.klein-knopf:disabled { opacity: .55; }
+  a.zweit-link { display: flex; align-items: center; justify-content: center; min-height: 46px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--linie); color: var(--text); text-decoration: none; font-weight: 600; }
+  button.x { flex: none; width: 44px; height: 44px; border-radius: 999px; border: 1px solid var(--linie); background: var(--flaeche); color: var(--text); font-size: 18px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; padding: 0; }
+  #krypto-alarm { width: min(460px, calc(100vw - 24px)); }
+  .alarm-kopf { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+  .alarm-kopf h2 { flex: 1; min-width: 0; margin: 0; font-size: 20px; }
+  .alarm { padding: 12px 0; border-top: 1px solid var(--linie); }
+  .alarm:first-child { border-top: 0; }
+  .alarm p { margin: 4px 0 0; font-size: 16px; color: var(--leise); }
+  .alarm .was { color: var(--text); font-size: 20px; font-weight: 700; margin: 0; }
+  .alarm .gv { color: var(--text); font-size: 32px; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .alarm .gv span { font-size: 22px; }
+  .alarm.gewinn .gv { color: var(--akzent); }
+  .alarm.verlust .gv { color: var(--rot); }
+  .toast {
+    position: fixed; z-index: 20; left: max(12px, env(safe-area-inset-left)); right: max(12px, env(safe-area-inset-right));
+    bottom: calc(12px + env(safe-area-inset-bottom)); max-width: 616px; margin: 0 auto; display: flex; align-items: center; gap: 10px;
+    padding: 8px 8px 8px 14px; border-radius: 14px; background: var(--akzent); color: var(--akzent-text); box-shadow: 0 10px 30px rgba(0, 0, 0, .3); font-weight: 600;
+  }
+  .toast.warm { background: var(--warm); color: var(--bg); }
+  .toast p { margin: 0; flex: 1; min-width: 0; font-size: 15px; }
+  .toast button.x { background: transparent; border-color: currentColor; color: inherit; }
+  .reiter-seite { padding-top: 6px; }
 </style>
 <script>
 'use strict';
@@ -604,7 +653,7 @@ const URLS = {
 const REITER = ['angebote', 'vorteile', 'konzerte'];
 const NAMEN = { angebote: 'Angebote', vorteile: 'Vorteile', konzerte: 'Konzerte' };
 // Abschnitte in Reihenfolge; alte Sprungmarken (Push-Links, alte Seiten) zeigen auf den passenden Abschnitt
-const ABSCHNITTE = ['krypto', 'produkte', 'preisfehler', 'gewinnspiele', 'cashback', 'snacks', 'auftritte', 'mehr'];
+const ABSCHNITTE = ['krypto', 'produkte', 'preisfehler', 'gewinnspiele', 'cashback', 'snacks', 'auftritte', 'remix', 'mehr'];
 const ALTE_MARKEN = { angebote: 'produkte', vorteile: 'gewinnspiele', konzerte: 'auftritte', schnaeppchen: 'produkte' };
 // Daten-Stand gilt als alt (rot), wenn der letzte Lauf so lange her ist (Schnäppchen/Vorteile stündlich, Konzerte alle 3 h)
 const ALT_STUNDEN = { angebote: 3, vorteile: 3, konzerte: 7 };
@@ -612,8 +661,10 @@ const ALT_STUNDEN = { angebote: 3, vorteile: 3, konzerte: 7 };
 const BEREICH = {
   deals: ['Andere Deals', 'echt durchgerechnet'], erleben: ['Erleben', 'Therme, Kino, Feste'], reisen: ['Reisen', 'ab Leipzig, Dresden, Berlin'],
   musik: ['Musik', 'Geräte & Auftritte'], nebenverdienst: ['Nebenverdienst', 'von zu Hause'], tests: ['Tests & Gewinnspiele', 'ohne Fallen'],
-  praemien: ['Prämien & Freunde werben', 'netto pro Stunde Aufwand'],
 };
+// Nie zeigen (Xander 07.11.2026: „Prämien & Freunde werben“ – Strom, Bank, Konto, Freunde werben – komplett raus),
+// auch nicht aus älteren Daten
+const NIE_ZEIGEN = new Set(['praemien']);
 const SICHTBAR = 4;
 const PREISFEHLER_STUNDEN = 24; // Preisfehler ohne Ende-Angabe: höchstens so lange zeigen (echte sind nach Minuten vorbei)
 const GEWINNSPIEL_OHNE_ENDE_TAGE = 7; // Gewinnspiel ohne bekanntes Ende: nur so lange nach dem Melden
@@ -764,7 +815,7 @@ function stoerHinweis(q) {
 // --- Krasse Preisfehler: Wort für Wort wie schnaeppchen/scan/krass.mjs und vorteile/scan/lib/krass.mjs (Test: regeln.test.mjs) ---
 const KRASS_STANDARD = Object.freeze({
   minProzent: 75, minErsparnisEuro: 20, absurdMaxEuro: 5, absurdMinVorher: 15,
-  spielMaxEuro: 2, spielMinProzent: 85, spielMinErsparnisEuro: 40,
+  spielMaxEuro: 1.5, spielMinProzent: 98, spielMinErsparnisEuro: 40,
 });
 
 // Was so ein Gerät mindestens kostet (vorsichtig niedrig) – nur für Preisfehler ohne bekannten Vorher-Preis
@@ -1095,7 +1146,7 @@ function produktZeile(p) {
 const istPreisfehler = e => e.preisfehler === true || (e.preisfehler == null && /preisfehler/i.test(`${e.grund || ''}`));
 
 // Preisfehler aus beiden Weckern (Technik vom Schnäppchen-Wecker, sonstige vom Radar) – nur laufende und nur KRASSE
-// (krass(): ≥ 75 % unter dem Vorher-Preis und ≥ 20 € gespart, teures Gerät fast geschenkt, Spiele nur ≈ geschenkt)
+// (krass(): ≥ 75 % unter dem Vorher-Preis und ≥ 20 € gespart, teures Gerät fast geschenkt, Spiele nur ≈ 1 €)
 function preisfehlerListe() {
   const liste = [];
   for (const t of S.angebote?.d?.technik || []) {
@@ -1239,9 +1290,10 @@ Xander`],
 let weg = new Set([...lies('mein-vorteil-weg', []), ...lies('vorteile-weg', [])]);
 const offen = new Set();
 const istGewinnspielArt = e => e.kategorie === 'tests';
-const istAufruf = e => e.kategorie === 'musik' && (e.grund === 'Aufruf' || e.grund === 'Bewerbung mit Frist' || /bands gesucht|aufruf|bewerb/i.test(`${e.zeile || ''} ${e.grund || ''}`));
-const istCashback = e => (e.kategorie === 'praemien' && ['gzg', 'cashback'].includes(e.extra?.art) && !e.extra?.richtwert)
-  || (e.kategorie !== 'praemien' && CASHBACK.test(`${e.titel} ${e.zeile || ''}`));
+const istRemix = e => e.kategorie === 'musik' && (e.extra?.art === 'remix' || e.grund === 'Remix-Contest');
+const istAufruf = e => e.kategorie === 'musik' && !istRemix(e) && (e.grund === 'Aufruf' || e.grund === 'Bewerbung mit Frist' || /bands gesucht|aufruf|bewerb/i.test(`${e.zeile || ''} ${e.grund || ''}`));
+// Geld zurück / Cashback: vom Radar markiert (grund 'cashback', extra.art gzg|cashback) oder am Text erkennbar
+const istCashback = e => !NIE_ZEIGEN.has(e.kategorie) && (['gzg', 'cashback'].includes(e.extra?.art) || e.grund === 'cashback' || CASHBACK.test(`${e.titel} ${e.zeile || ''}`));
 // Einfach teilnehmen: ohne Kauf, ohne Abo; ohne bekanntes Ende nur frisch gemeldete
 function gewinnspielEinfach(e) {
   if (KAUF_NOETIG.test(`${e.titel} ${e.zeile || ''} ${e.soGehts || ''}`.replace(/kein newsletter-zwang|nie geld/gi, ''))) return false;
@@ -1252,13 +1304,14 @@ const nachEnde = (a, b) => (zeit(a.bis) ?? Infinity) - (zeit(b.bis) ?? Infinity)
 
 function einteilen() {
   const d = S.vorteile?.d;
-  const r = { da: !!d, produkt: [], gewinnspiele: [], cashback: [], snacks: [], auftritte: [], synths: [], mehr: {} };
+  const r = { da: !!d, produkt: [], gewinnspiele: [], cashback: [], snacks: [], auftritte: [], remix: [], synths: [], mehr: {} };
   if (!d) return r;
   const links = new Set();
   for (const [k, liste] of Object.entries(d.kategorien || {})) {
     for (const roh of liste || []) {
       if (!roh || weg.has(roh.id)) continue;
       const e = roh.kategorie ? roh : { ...roh, kategorie: k };
+      if (NIE_ZEIGEN.has(e.kategorie)) continue;
       if (e.quelle === 'Schnäppchen-Wecker' || e.extra?.produkt) continue; // steht schon als Produkt-Karte da
       const pf = istPreisfehler(e);
       if (pf && e.kategorie !== 'reisen') continue; // Abschnitt Preisfehler (nur krasse)
@@ -1266,18 +1319,20 @@ function einteilen() {
       if (links.has(e.link)) continue;
       links.add(e.link);
       const text = `${e.titel} ${e.zeile || ''}`;
-      if (istCashback(e) && interessant(text)) { r.cashback.push(e); continue; }
+      if (istCashback(e)) { if (interessant(text)) r.cashback.push(e); continue; } // Cashback für anderes: weg
       if (istGewinnspielArt(e)) { if (gewinnspielEinfach(e)) r.gewinnspiele.push(e); continue; } // mit Kaufpflicht: weg
-      if (e.kategorie === 'musik') { (istAufruf(e) ? r.auftritte : r.synths).push(e); continue; }
+      if (e.kategorie === 'musik') { (istRemix(e) ? r.remix : istAufruf(e) ? r.auftritte : r.synths).push(e); continue; }
       if (e.kategorie === 'deals') {
         const p = meinProdukt(text);
         if (p) { r.produkt.push({ ...e, meins: p }); continue; }
         if (istSnack(text)) { r.snacks.push(e); continue; }
+        // „komische Angebote“ raus: andere Deals nur, wenn sie zu Musik-Technik passen (weniger ist mehr)
+        if (!einWort(text, MUSIK_WOERTER)) continue;
       }
       (r.mehr[e.kategorie] ||= []).push(e);
     }
   }
-  r.gewinnspiele.sort(nachEnde); r.cashback.sort(nachEnde); r.auftritte.sort(nachEnde);
+  r.gewinnspiele.sort(nachEnde); r.cashback.sort(nachEnde); r.auftritte.sort(nachEnde); r.remix.sort(nachEnde);
   return r;
 }
 
@@ -1411,7 +1466,7 @@ function zeichneMehr(t) {
   }
   if (d) {
     const namen = namenVorteile();
-    const quellen = Object.entries(d.status || {}).map(([k, q]) =>
+    const quellen = Object.entries(d.status || {}).filter(([k, q]) => !NIE_ZEIGEN.has(k) && !q.aus).map(([k, q]) =>
       `<li class="${q.ok ? '' : 'stoerung'}">${esc(namen[k] || k)}: ${q.aus || q.uebersprungen ? 'aus' : q.ok ? `${esc(q.anzahl ?? 0)} gefunden` : 'gestört – ' + esc((q.fehler || [])[0] || '')}</li>`);
     teile.push(quellenKasten('Quellen & Hinweise (Vorteile)', quellen, weg.size ? '<button class="mehr" type="button" id="zeigen">Ausgeblendete wieder zeigen</button>' : ''));
   }
@@ -1547,13 +1602,29 @@ function zeichneAuftritte(t) {
   return { html: teile.join(''), n: t.auftritte.filter(laeuftSchon).length + nKonzerte };
 }
 
-// --- Krypto: Kurs (öffentliche Quellen, im Browser) + Gewinn/Verlust aus Einstieg und Menge (nur auf diesem Gerät) ----
-const COINS = { btc: { name: 'Bitcoin', kurz: 'BTC', zeichen: '₿', min: 1000, max: 1e7 }, eth: { name: 'Ethereum', kurz: 'ETH', zeichen: 'Ξ', min: 10, max: 1e6 } };
-const KRYPTO = 'mein-vorteil-krypto'; // { btc: { einstieg, menge }, eth: {…}, schwelle } – bleibt im localStorage, wird nie gesendet
-const KURS = 'mein-vorteil-kurs';     // letzter Kurs (für den sofortigen Start)
-const KURS_ALLE_MS = 60000;
+// --- Abschnitt: Remix-Contests (Radar, Modul musik) ----------------------------------------------------------------
+function zeichneRemix(t) {
+  if (!t.da) return { html: vorteileFehlen(), n: 0 };
+  const namen = { ...namenVorteile(), musik: 'Remix-Contest' };
+  const l = t.remix;
+  const karten = (offen.has('remix') ? l : l.slice(0, SICHTBAR)).map(e => {
+    const b = zeit(e.bis);
+    const heute = b != null && tag(b) === 'heute' ? '<span class="marke heute">endet heute</span>' : '';
+    return vorteilKarte(e, namen).replace('<article class="karte', '<article class="karte remix gewinnspiel').replace('<div class="oben">', `<div class="oben">${heute}`);
+  }).join('');
+  return { html: [stoerHinweis('vorteile'), l.length ? karten + (l.length > SICHTBAR && !offen.has('remix') ? `<button class="mehr" type="button" data-mehr="remix">${l.length - SICHTBAR} weitere zeigen</button>` : '')
+    : '<p class="leer">Gerade kein laufender Remix-Contest in deinen Genres. Neue kommen mit der Zusammenfassung – endet einer in ≤ 14 Tagen, sofort per Push.</p>'].join(''), n: l.filter(laeuftSchon).length };
+}
 
-/** „67.500“, „67500,50“, „0,25“ -> Zahl (wie krypto/wecker.mjs). tausenderPunkt: „67.500“ = 67500 (Euro-Beträge). */
+// --- Krypto: Kurs live im Browser (öffentliche Quellen) + Käufe nur auf diesem Gerät + Pop-up bei Zonenwechsel ---------
+// Rechnung, Zonen und Import-Format: Block <krypto-zonen> im <head> (Wort für Wort wie krypto/zonen.mjs).
+const KRYPTO = 'mein-vorteil-krypto';             // { v: 2, coins: { btc: { kaeufe: [{ betrag, kurs | menge }], aktuell } } }
+const KRYPTO_ZONE = 'mein-vorteil-krypto-zone';   // { btc: 'plus', … } – zuletzt gemeldete Zone je Coin (nur Wörter)
+const KRYPTO_TOPIC = 'mein-vorteil-krypto-topic'; // eigenes, privates ntfy-Thema für den Krypto-Wecker (zufällig)
+const KURS = 'mein-vorteil-kurs';                 // letzter Kurs (für den sofortigen Start)
+const KURS_ALLE_MS = 60000;                       // Kurs prüfen beim Öffnen und alle 60 s, solange die Seite offen ist
+
+/** „67.500“, „67500,50“, „0,25“ -> Zahl. tausenderPunkt: „67.500“ = 67500 (Euro-Beträge). */
 function zahlAus(s, { tausenderPunkt = false } = {}) {
   if (typeof s === 'number') return Number.isFinite(s) ? s : null;
   let t = String(s ?? '').trim().replace(/[\s€]|eur(o)?$/gi, '').replace(/^\+/, '');
@@ -1565,25 +1636,23 @@ function zahlAus(s, { tausenderPunkt = false } = {}) {
   const v = Number(t);
   return Number.isFinite(v) ? v : null;
 }
-/** Gewinn/Verlust. pos = { einstieg, menge } -> { prozent (0.042 = +4,2 %), gewinn €, wert €, einsatz € } (ohne Menge: nur prozent) */
-function kryptoRechnung(kurs, pos) {
-  if (!(kurs > 0) || !(pos?.einstieg > 0)) return null;
-  const menge = pos.menge > 0 ? pos.menge : null;
-  return {
-    prozent: kurs / pos.einstieg - 1,
-    gewinn: menge != null ? (kurs - pos.einstieg) * menge : null,
-    wert: menge != null ? kurs * menge : null,
-    einsatz: menge != null ? pos.einstieg * menge : null,
-  };
-}
-// Schwelle in Prozent (5 = ab +5 %); ohne Schwelle zählt jeder Gewinn
-const imGewinn = (r, schwelle = 0) => !!r && r.prozent > 0 && r.prozent * 100 >= (schwelle > 0 ? schwelle : 0) - 1e-9;
 
-let krypto = (() => {
-  const k = lies(KRYPTO, {}) || {};
-  const pos = c => ({ einstieg: zahl(k[c]?.einstieg), menge: zahl(k[c]?.menge) });
-  return { btc: pos('btc'), eth: pos('eth'), schwelle: zahl(k.schwelle) };
-})();
+function kryptoLaden() {
+  const d = lies(KRYPTO, null);
+  const coins = {};
+  for (const c of Object.keys(KRYPTO_COINS)) {
+    const x = d?.v === 2 ? d.coins?.[c] : null;
+    const kaeufe = (Array.isArray(x?.kaeufe) ? x.kaeufe : [])
+      .filter(k => zahl(k?.betrag) > 0 && (zahl(k.menge) > 0 || zahl(k.kurs) > 0))
+      .map(k => ({ betrag: k.betrag, ...(zahl(k.menge) > 0 ? { menge: k.menge } : { kurs: k.kurs }), ...(k.uebernommen ? { uebernommen: true } : {}) }));
+    coins[c] = { kaeufe, aktuell: zahl(x?.aktuell) > 0 ? x.aktuell : null };
+  }
+  return coins;
+}
+let krypto = kryptoLaden();
+const kryptoMerken = () => merk(KRYPTO, { v: 2, coins: krypto });
+let zonen = (() => { const z = lies(KRYPTO_ZONE, {}) || {}; const o = {}; for (const c of Object.keys(KRYPTO_COINS)) if (ZONEN.includes(z[c])) o[c] = z[c]; return o; })();
+const zonenMerken = () => merk(KRYPTO_ZONE, zonen);
 let kurs = (() => { const k = lies(KURS, null); return k?.kurse ? { ...k, fehler: null, ausSpeicher: true } : { kurse: null, quelle: null, zeit: 0, fehler: null }; })();
 
 async function holJson(url) {
@@ -1613,12 +1682,13 @@ const KURS_QUELLEN = [
     return { btc: c(b), eth: c(e) };
   } },
 ];
-const kursOk = (c, x) => !!x && typeof x.kurs === 'number' && x.kurs >= COINS[c].min && x.kurs <= COINS[c].max;
+const kursOk = (c, x) => !!x && typeof x.kurs === 'number' && x.kurs >= KRYPTO_COINS[c].min && x.kurs <= KRYPTO_COINS[c].max;
 let kursLaeuft = false;
 async function ladeKurs() {
   if (kursLaeuft) return;
   kursLaeuft = true;
   const fehler = [];
+  let frisch = false;
   try {
     for (const q of KURS_QUELLEN) {
       try {
@@ -1626,6 +1696,7 @@ async function ladeKurs() {
         if (!kursOk('btc', k.btc) || !kursOk('eth', k.eth)) { fehler.push(`${q.name}: kein gültiger Kurs`); continue; }
         kurs = { kurse: { btc: k.btc, eth: k.eth }, quelle: q.name, zeit: Date.now(), fehler: null };
         merk(KURS, { kurse: kurs.kurse, quelle: kurs.quelle, zeit: kurs.zeit });
+        frisch = true;
         return;
       } catch (e) { fehler.push(`${q.name}: ${e?.name === 'AbortError' ? 'Zeitlimit' : e?.message || e}`); }
     }
@@ -1634,39 +1705,74 @@ async function ladeKurs() {
     kursLaeuft = false;
     zeichneKrypto();
     zeichneWichtig();
+    if (frisch) pruefeZonen(); // nur mit frischem Kurs (ein alter aus dem Speicher löst nie ein Pop-up aus)
   }
 }
 
 const prozentText = (p, nk = 1) => `${p > 0 ? '+' : p < 0 ? '−' : '±'}${Math.abs(p * 100).toLocaleString('de-DE', { minimumFractionDigits: nk, maximumFractionDigits: nk })} %`;
-const euroVz = v => `${v > 0 ? '+' : v < 0 ? '−' : '±'}${euro(Math.abs(v))}`;
+const pzText = p => prozentText(p / 100); // p in Prozent (5.3 = +5,3 %)
+const euroVz = v => `${v > 0.004 ? '+' : v < -0.004 ? '−' : '±'}${euro(Math.abs(v))}`;
 const kursEuro = v => v.toLocaleString('de-DE', { style: 'currency', currency: 'EUR', minimumFractionDigits: v < 100 ? 2 : 0, maximumFractionDigits: v < 100 ? 2 : 0 });
-function kryptoStand() { // für „Heute wichtig“ und den Zähler
-  const out = [];
-  for (const c of Object.keys(COINS)) {
-    const k = kurs.kurse?.[c]?.kurs;
-    const r = kryptoRechnung(k, krypto[c]);
-    if (r) out.push({ c, r, gewinn: imGewinn(r, krypto.schwelle) });
-  }
-  return out;
+const mengeZahl = v => v.toLocaleString('de-DE', { maximumFractionDigits: v >= 1 ? 4 : 8 });
+const mengeText = (v, c) => `${mengeZahl(v)} ${KRYPTO_COINS[c].kurz}`;
+
+function kryptoStand() { // je Coin: Position (Käufe) und Ergebnis (mit Kurs)
+  return Object.keys(KRYPTO_COINS).map(c => { const pos = kryptoPosition(krypto[c]); return { c, pos, e: kryptoErgebnis(pos, kurs.kurse?.[c]?.kurs) }; });
 }
+
+// Zonen prüfen: Pop-up beim Wechsel Gewinn ↔ Verlust und bei +5 %, +10 %, −10 % – je Coin, nie doppelt
+function pruefeZonen() {
+  const meldungen = [];
+  for (const { c, e } of kryptoStand()) {
+    if (!e) continue;
+    const z = naechsteZone(zonen[c], e.prozent);
+    if (z.zone) zonen[c] = z.zone;
+    if (z.meldung) meldungen.push({ c, e, meldung: z.meldung });
+  }
+  zonenMerken();
+  if (meldungen.length) zeigeAlarm(meldungen);
+}
+const alarm = $('krypto-alarm');
+function zeigeAlarm(meldungen) {
+  $('alarm-titel').textContent = meldungen.length === 1 ? `${KRYPTO_COINS[meldungen[0].c].name}: ${MELDUNG[meldungen[0].meldung]}` : 'Krypto: neue Lage';
+  $('alarm-inhalt').innerHTML = meldungen.map(({ c, e, meldung }) => {
+    const m = KRYPTO_COINS[c];
+    const art = e.gv >= 0 ? 'gewinn' : 'verlust';
+    return `<div class="alarm ${art}" data-alarm="${c}">
+      <p class="was">${esc(m.zeichen)} ${esc(m.name)}: ${esc(MELDUNG[meldung])}</p>
+      <p class="gv">${esc(euroVz(e.gv))} <span>(${esc(pzText(e.prozent))})</span></p>
+      <p>Kurs ${esc(kursEuro(e.kurs))} · Wert ${esc(euro(e.wert))} · im Plus ab ${esc(kursEuro(e.schwelle))}</p>
+    </div>`;
+  }).join('');
+  if (!alarm.open) { if (alarm.showModal) alarm.showModal(); else alarm.setAttribute('open', ''); }
+}
+const alarmZu = () => { if (alarm.close) alarm.close(); else alarm.removeAttribute('open'); };
+$('alarm-zu').addEventListener('click', alarmZu);
+alarm.addEventListener('click', ev => { if (ev.target === alarm) alarmZu(); });
+
 function zeichneKrypto() {
   const el = $('i-krypto');
   const zeilen = [];
-  for (const [c, m] of Object.entries(COINS)) {
+  for (const { c, pos, e } of kryptoStand()) {
+    const m = KRYPTO_COINS[c];
     const x = kurs.kurse?.[c];
-    const pos = krypto[c];
-    const r = kryptoRechnung(x?.kurs, pos);
     const a = zahl(x?.aenderung);
     let ergebnis = '';
-    if (r) {
-      const g = imGewinn(r, krypto.schwelle);
-      const klasse = r.prozent > 0 ? (g ? 'gewinn' : '') : 'verlust';
-      const betrag = r.gewinn != null ? `${euroVz(r.gewinn)} (${prozentText(r.prozent)})` : prozentText(r.prozent);
-      const titel = r.prozent > 0 ? (g ? `Im Gewinn: <b>${esc(betrag)}</b>` : `Leicht im Plus: <b>${esc(betrag)}</b>`) : `Im Minus: <b>${esc(betrag)}</b>`;
-      const unter = [`Einstieg ${kursEuro(pos.einstieg)}`, r.wert != null ? `Wert jetzt ${kursEuro(r.wert)}` : '', !g && r.prozent > 0 && krypto.schwelle > 0 ? `Hinweis ab +${krypto.schwelle.toLocaleString('de-DE')} %` : ''].filter(Boolean).join(' · ');
-      ergebnis = `<div class="ergebnis ${klasse}" data-coin-ergebnis="${c}">${titel}<small>${esc(unter)}</small></div>`;
+    if (e) {
+      const art = e.gv > 0.004 ? 'gewinn' : e.gv < -0.004 ? 'verlust' : '';
+      ergebnis = `<div class="ergebnis ${art}" data-coin-ergebnis="${c}">
+        <p class="gv-zeile">${e.gv >= 0 ? 'Im Gewinn' : 'Im Verlust'} <b>${esc(euroVz(e.gv))}</b> <b>(${esc(pzText(e.prozent))})</b></p>
+        <dl class="kz">
+          <div><dt>Wert jetzt</dt><dd>${esc(euro(e.wert))}</dd></div>
+          <div><dt>Einsatz</dt><dd>${esc(euro(e.einsatz))}</dd></div>
+          <div><dt>Ø-Kaufkurs</dt><dd>${esc(kursEuro(e.kaufkurs))}</dd></div>
+          <div><dt>Im Plus ab</dt><dd>${esc(kursEuro(e.schwelle))}</dd></div>
+        </dl>
+        <small>Menge ${esc(mengeText(e.menge, c))}${krypto[c].aktuell ? ' (aktuelle Menge)' : ''}</small></div>`;
+    } else if (pos) {
+      ergebnis = '<div class="ergebnis"><small>Gewinn/Verlust erscheint, sobald der Kurs da ist.</small></div>';
     } else if (x?.kurs > 0) {
-      ergebnis = `<div class="ergebnis"><small>Einstieg fehlt – unten bei „Einstieg &amp; Gewinn-Hinweis“ eintragen, dann siehst du hier Gewinn oder Verlust.</small></div>`;
+      ergebnis = '<div class="ergebnis"><small>Noch keine Käufe – unten bei „Käufe &amp; Menge“ eintragen.</small></div>';
     }
     zeilen.push(`<div class="coin" data-coin="${c}"><div class="name">${m.zeichen} ${m.name}<span>${m.kurz}</span></div>
       <div class="kurs">${x?.kurs > 0 ? esc(kursEuro(x.kurs)) : '–'}</div>
@@ -1675,42 +1781,142 @@ function zeichneKrypto() {
   }
   const alt = kurs.zeit && Date.now() - kurs.zeit > 10 * 60000;
   const stand = kurs.fehler
-    ? `<p class="kurs-stand alt">${esc(kurs.fehler === 'keine Verbindung' ? 'Keine Verbindung' : 'Kurs gerade nicht abrufbar (Quellen gestört)')}${kurs.zeit ? ` – letzter Kurs von ${esc(uhrzeit(new Date(kurs.zeit).toISOString()))}` : ''}.</p>`
+    ? `<p class="kurs-stand alt">${esc(kurs.fehler === 'keine Verbindung' ? 'Keine Verbindung' : 'Kurs gerade nicht abrufbar (Quellen gestört)')}${kurs.zeit ? ` – letzter Kurs von ${esc(uhrzeit(new Date(kurs.zeit).toISOString()))}` : ''}. Neuer Versuch in einer Minute.</p>`
     : kurs.zeit ? `<p class="kurs-stand${alt ? ' alt' : ''}">Kurs ${esc(vor(new Date(kurs.zeit).toISOString()))} · ${esc(kurs.quelle || '')}${kurs.ausSpeicher ? ' · wird aktualisiert …' : ''}</p>` : '<p class="kurs-stand">Lade Kurse …</p>';
   el.innerHTML = zeilen.join('') + stand;
-  // im Gewinn: Zahl nur in der Sprung-Leiste (die Überschrift zeigt die Karte selbst)
-  const n = kryptoStand().filter(x => x.gewinn).length;
-  const chip = document.querySelector('.sprung [data-ziel="krypto"] .n');
-  if (chip) chip.textContent = n ? String(n) : '';
+  setzeZahl('krypto', kryptoStand().filter(x => x.e && x.e.gv > 0.004).length);
 }
-function kryptoFormularFuellen() {
-  const f = (v, genau) => (v == null ? '' : v.toLocaleString('de-DE', { maximumFractionDigits: genau ? 8 : 2, useGrouping: false }));
-  $('btc-einstieg').value = f(krypto.btc.einstieg); $('btc-menge').value = f(krypto.btc.menge, true);
-  $('eth-einstieg').value = f(krypto.eth.einstieg); $('eth-menge').value = f(krypto.eth.menge, true);
-  $('krypto-schwelle').value = f(krypto.schwelle);
-  // noch nichts eingetragen -> Formular offen (so findet man es)
-  if (!krypto.btc.einstieg && !krypto.eth.einstieg) $('krypto-form').open = true;
+
+// Käufe & Menge bearbeiten (nur dieses Gerät)
+function kaufText(x, c) {
+  const menge = zahl(x.menge) > 0 ? x.menge : x.betrag / x.kurs;
+  const kurs = zahl(x.kurs) > 0 ? x.kurs : x.betrag / x.menge;
+  return `${euro(x.betrag)} → ${mengeText(menge, c)} · Kurs ${kursEuro(kurs)}${x.uebernommen ? ' · per Link übernommen' : ''}`;
 }
-let kryptoTimer = 0;
-function kryptoAusFormular() {
-  const pos = c => ({ einstieg: zahlAus($(`${c}-einstieg`).value, { tausenderPunkt: true }), menge: zahlAus($(`${c}-menge`).value) });
-  const s = zahlAus($('krypto-schwelle').value);
-  krypto = { btc: pos('btc'), eth: pos('eth'), schwelle: s > 0 ? s : null };
-  merk(KRYPTO, krypto);
+function zeichneKryptoEditor() {
+  const teile = [];
+  for (const [c, m] of Object.entries(KRYPTO_COINS)) {
+    const k = krypto[c];
+    const pos = kryptoPosition(k);
+    teile.push(`<fieldset class="coin-edit" data-coin="${c}"><legend>${m.zeichen} ${m.name}</legend>
+      ${k.kaeufe.length ? `<ul class="kaeufe">${k.kaeufe.map((x, i) => `<li><span>${esc(kaufText(x, c))}</span><button type="button" class="zweit klein-knopf" data-kauf-raus="${c}:${i}" aria-label="Kauf ${i + 1} (${esc(m.name)}) entfernen">Entfernen</button></li>`).join('')}</ul>` : '<p class="mini">Noch keine Käufe.</p>'}
+      ${pos ? `<p class="summe">Zusammen ${esc(euro(pos.einsatz))} für ${esc(mengeText(pos.mengeKaeufe, c))} · Ø-Kaufkurs ${esc(kursEuro(pos.kaufkurs))}</p>` : ''}
+      <form class="kauf-neu" data-coin="${c}" novalidate>
+        <label class="breit">Betrag in € (inkl. Gebühren)<input name="betrag" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="next" placeholder="z. B. 250"></label>
+        <label>Kurs beim Kauf (€)<input name="kurs" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="next" placeholder="z. B. ${c === 'btc' ? '61.500' : '2.400'}"></label>
+        <label>oder Menge (${m.kurz})<input name="menge" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="done" placeholder="z. B. ${c === 'btc' ? '0,004' : '0,1'}"></label>
+        <p class="formfehler breit" role="alert" hidden></p>
+        <button class="los breit" type="submit">Kauf hinzufügen</button>
+      </form>
+      <label class="aktuell">Aktuelle Menge (${m.kurz}), z. B. mit Auto Earn – leer = Summe der Käufe
+        <input data-aktuell="${c}" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="done" value="${k.aktuell ? esc(mengeZahl(k.aktuell)) : ''}" placeholder="${pos ? esc(mengeZahl(pos.mengeKaeufe)) : 'z. B. 0,0125'}"></label>
+    </fieldset>`);
+  }
+  teile.push('<p class="privat">Nur auf diesem iPhone gespeichert – wird nie gesendet.</p>');
+  $('krypto-editor').innerHTML = teile.join('');
+}
+// Zahlen eines Coins geändert -> Zone neu bestimmen, ohne Pop-up
+function kryptoGeaendert(c) {
+  kryptoMerken();
+  delete zonen[c];
+  zonenMerken();
   zeichneKrypto();
   zeichneWichtig();
+  if (kurs.zeit && !kurs.ausSpeicher) pruefeZonen();
 }
-$('krypto-form').addEventListener('input', () => { clearTimeout(kryptoTimer); kryptoTimer = setTimeout(kryptoAusFormular, 350); });
-$('krypto-form').addEventListener('change', () => { clearTimeout(kryptoTimer); kryptoAusFormular(); });
+$('krypto-editor').addEventListener('submit', ev => {
+  const f = ev.target.closest('form.kauf-neu');
+  if (!f) return;
+  ev.preventDefault();
+  const c = f.dataset.coin;
+  const betrag = zahlAus(f.betrag.value, { tausenderPunkt: true });
+  const kursK = zahlAus(f.kurs.value, { tausenderPunkt: true });
+  const menge = zahlAus(f.menge.value);
+  const fehlerText = !(betrag > 0) ? 'Bitte den Betrag in € eintragen.'
+    : !(menge > 0) && !(kursK > 0) ? 'Bitte den Kurs beim Kauf ODER die Menge eintragen.'
+    : !(menge > 0) && (kursK < KRYPTO_COINS[c].min || kursK > KRYPTO_COINS[c].max) ? 'Der Kurs sieht nicht richtig aus (Euro pro ganzem Coin).' : '';
+  const fe = f.querySelector('.formfehler');
+  if (fehlerText) { fe.textContent = fehlerText; fe.hidden = false; return; }
+  krypto[c].kaeufe.push(menge > 0 ? { betrag, menge } : { betrag, kurs: kursK });
+  kryptoGeaendert(c);
+  zeichneKryptoEditor();
+});
+$('krypto-editor').addEventListener('click', ev => {
+  const b = ev.target.closest('button[data-kauf-raus]');
+  if (!b) return;
+  const [c, i] = b.dataset.kaufRaus.split(':');
+  krypto[c].kaeufe.splice(Number(i), 1);
+  kryptoGeaendert(c);
+  zeichneKryptoEditor();
+});
+let aktuellTimer = 0;
+function aktuellAus(inp) {
+  const c = inp.dataset.aktuell;
+  const v = zahlAus(inp.value);
+  const neu = v > 0 ? v : null;
+  if (neu === krypto[c].aktuell) return;
+  krypto[c].aktuell = neu;
+  kryptoGeaendert(c);
+}
+$('krypto-editor').addEventListener('input', ev => { const i = ev.target.closest('input[data-aktuell]'); if (i) { clearTimeout(aktuellTimer); aktuellTimer = setTimeout(() => aktuellAus(i), 500); } });
+$('krypto-editor').addEventListener('change', ev => { const i = ev.target.closest('input[data-aktuell]'); if (i) { clearTimeout(aktuellTimer); aktuellAus(i); } });
+
+// Push über GitHub: Wert für das Secret KRYPTO (aus den Zahlen hier) und eigenes privates Thema – beides nur kopieren
+function kryptoSecret() {
+  const teile = [];
+  for (const { c, pos } of kryptoStand()) {
+    if (!pos) continue;
+    const menge = Number(pos.menge.toFixed(8)), einsatz = Math.round(pos.einsatz * 100) / 100;
+    teile.push(`${c}:${String(menge)}:${String(einsatz)}`);
+  }
+  return teile.join(',');
+}
+function kryptoTopic() {
+  let t = lies(KRYPTO_TOPIC, null);
+  if (typeof t !== 'string' || !/^xander-krypto-[0-9a-f]{12,}$/.test(t)) {
+    const b = new Uint8Array(8);
+    (self.crypto?.getRandomValues ? crypto.getRandomValues(b) : b.forEach((_, i) => (b[i] = Math.floor(Math.random() * 256))));
+    t = 'xander-krypto-' + [...b].map(x => x.toString(16).padStart(2, '0')).join('');
+    merk(KRYPTO_TOPIC, t);
+  }
+  return t;
+}
+function zeichneKryptoPush() {
+  const t = kryptoTopic();
+  $('krypto-topic').textContent = t;
+  $('krypto-ntfy').href = `https://ntfy.sh/${t}`;
+  const s = $('krypto-secret-kopie');
+  const leer = !kryptoSecret();
+  s.disabled = leer;
+  s.textContent = leer ? 'erst Käufe eintragen' : 'Wert kopieren';
+}
+$('krypto-secret-kopie').addEventListener('click', ev => { const v = kryptoSecret(); if (v) kopiere(v, ev.currentTarget); });
+$('krypto-topic-kopie').addEventListener('click', ev => kopiere(kryptoTopic(), ev.currentTarget));
+$('krypto-push').addEventListener('toggle', () => { if ($('krypto-push').open) zeichneKryptoPush(); });
+
+// Import per Link (#krypto=…): schon im <head> übernommen, hier nur die Bestätigung
+function zeigeHinweis(text, warm = false) {
+  const h = $('hinweis');
+  h.querySelector('p').textContent = text;
+  h.classList.toggle('warm', warm);
+  h.hidden = false;
+  clearTimeout(zeigeHinweis.t);
+  zeigeHinweis.t = setTimeout(() => (h.hidden = true), 9000);
+}
+$('hinweis').querySelector('button').addEventListener('click', () => ($('hinweis').hidden = true));
 
 // --- Heute wichtig (oben, höchstens 4 Zeilen) ----------------------------------------------------------------------
 let letzteEinteilung = null, letztePreisfehler = [];
 const kurzTitel = (s, n = 54) => { s = String(s || '').replace(/\s+/g, ' ').trim(); return s.length > n ? s.slice(0, n - 1) + '…' : s; };
 function wichtigZeilen() {
   const z = [];
-  for (const k of kryptoStand()) if (k.gewinn) {
-    const m = COINS[k.c];
-    z.push({ ziel: 'krypto', text: `${m.zeichen} ${m.name} im Gewinn: ${k.r.gewinn != null ? `${euroVz(k.r.gewinn)} (${prozentText(k.r.prozent)})` : prozentText(k.r.prozent)}` });
+  // Krypto nur, wenn es etwas zu sagen gibt: ab +5 % oder ab −10 %
+  for (const { c, e } of kryptoStand()) {
+    if (!e) continue;
+    const zone = zonen[c] || rohZone(e.prozent);
+    if (zone !== 'hoch' && zone !== 'top' && zone !== 'tief') continue;
+    const m = KRYPTO_COINS[c];
+    z.push({ ziel: 'krypto', warm: zone === 'tief', text: `${m.zeichen} ${m.name} ${pzText(e.prozent)} (${euroVz(e.gv)})` });
   }
   for (const x of letztePreisfehler.slice(0, 1)) z.push({ ziel: 'preisfehler', warm: true, text: `Preisfehler: ${kurzTitel(String(x.titel).replace(/^[\[(]?\s*(möglicher\s+)?preisfehler\s*[\])]?\s*[:!–-]?\s*/i, ''), 40)} für ${euro(x.preis)}` });
   // Deals für meine Produkte (laufend), sonst Angebote, die heute enden
@@ -1733,6 +1939,8 @@ function wichtigZeilen() {
   if (c.length) z.push({ ziel: 'cashback', text: `Cashback endet ${tag(zeit(c[0].bis))}: ${kurzTitel(c[0].titel, 40)}` });
   const a = bald(letzteEinteilung?.auftritte || [], 7 * 24);
   if (a.length) z.push({ ziel: 'auftritte', warm: true, text: `Bewerbung bis ${tag(zeit(a[0].bis))}: ${kurzTitel(a[0].titel, 40)}` });
+  const rx = bald(letzteEinteilung?.remix || [], 7 * 24);
+  if (rx.length) z.push({ ziel: 'remix', warm: true, text: `Remix-Contest bis ${tag(zeit(rx[0].bis))}: ${kurzTitel(rx[0].titel, 40)}` });
   return z.slice(0, 4);
 }
 function zeichneWichtig() {
@@ -1757,7 +1965,7 @@ function kastenSchluessel(d) {
   const ab = d.closest('.abschnitt')?.id || '';
   return k ? `p:${k.dataset.produkt}:${d.className}` : `s:${ab}:${d.querySelector('summary')?.textContent.trim().replace(/\d+/g, '#')}`;
 }
-const ZEICHNER = { produkte: zeichneProdukte, preisfehler: zeichnePreisfehler, gewinnspiele: zeichneGewinnspiele, cashback: zeichneCashback, snacks: zeichneSnacks, auftritte: zeichneAuftritte, mehr: zeichneMehr };
+const ZEICHNER = { produkte: zeichneProdukte, preisfehler: zeichnePreisfehler, gewinnspiele: zeichneGewinnspiele, cashback: zeichneCashback, snacks: zeichneSnacks, auftritte: zeichneAuftritte, remix: zeichneRemix, mehr: zeichneMehr };
 function zeichne() {
   naechstesEnde = Infinity;
   const main = document.querySelector('main');
@@ -1780,8 +1988,29 @@ const zeichneAlles = () => zeichne();
 
 // --- Sprungmarken: #krypto … #mehr; alte #angebote/#vorteile/#konzerte zeigen auf den passenden Abschnitt -------------
 function zielAusHash() {
-  const h = decodeURIComponent(location.hash.replace('#', '')).toLowerCase();
+  let h = '';
+  try { h = decodeURIComponent(location.hash.replace('#', '')).toLowerCase(); } catch {}
   return ABSCHNITTE.includes(h) ? h : ALTE_MARKEN[h] || null;
+}
+
+// --- Weitere Reiter (Platz für „Filme“ vom Kollegen) -------------------------------------------------------------------
+// Ein weiterer Reiter = Link <a href="#name" data-reiter="name">Name<span class="n"></span></a> in der Leiste und
+// <section id="p-name" class="reiter-seite" hidden> nach </main>. Antippen zeigt nur diese Seite (die Abschnitte sind
+// dann ausgeblendet), jeder Abschnitts-Link führt zurück. REITER_START[name](element) läuft beim ersten Öffnen (z. B.
+// Skript und Daten erst dann laden), REITER_NEU[name]() bei ↻.
+const REITER_START = {}, REITER_NEU = {};
+let reiterOffen = null;
+const reiterAusHash = () => { const h = location.hash.replace('#', '').toLowerCase(); return /^[a-z0-9-]+$/.test(h) && document.querySelector(`.sprung a[data-reiter="${h}"]`) && $('p-' + h) ? h : null; };
+function zeigeReiter(name) {
+  reiterOffen = name || null;
+  document.querySelector('main').hidden = !!name;
+  for (const sk of document.querySelectorAll('.reiter-seite')) sk.hidden = sk.id !== 'p-' + name;
+  for (const a of document.querySelectorAll('.sprung a')) {
+    if (name && a.dataset.reiter === name) a.setAttribute('aria-current', 'true'); else if (name || a.dataset.reiter) a.removeAttribute('aria-current');
+  }
+  const seite = name ? $('p-' + name) : null;
+  if (seite && !seite.dataset.gestartet) { seite.dataset.gestartet = '1'; try { REITER_START[name]?.(seite); } catch (e) { console.warn(e); } }
+  if (name) scrollTo({ top: 0 });
 }
 let gesprungen = false, nutzerScrollt = false, sprungOffen = true;
 function springe(ziel, { sanft = true } = {}) {
@@ -1800,7 +2029,12 @@ function springNachLaden() {
 }
 addEventListener('touchstart', () => { if (gesprungen) nutzerScrollt = true; }, { passive: true });
 addEventListener('wheel', () => { if (gesprungen) nutzerScrollt = true; }, { passive: true });
-addEventListener('hashchange', () => { const z = zielAusHash(); if (z) { if ('#' + z !== location.hash) history.replaceState(null, '', '#' + z); springe(z); } });
+addEventListener('hashchange', () => {
+  const r = reiterAusHash();
+  if (r) { zeigeReiter(r); return; }
+  const z = zielAusHash();
+  if (z) { if (reiterOffen) zeigeReiter(null); if ('#' + z !== location.hash) history.replaceState(null, '', '#' + z); springe(z); }
+});
 function markiereSprung(ziel) {
   for (const a of document.querySelectorAll('.sprung a')) {
     const an = a.dataset.ziel === ziel;
@@ -1819,16 +2053,21 @@ if ('IntersectionObserver' in window) {
   for (const a of ABSCHNITTE) io.observe($(a));
 }
 document.querySelector('.sprung').addEventListener('click', ev => {
+  const r = ev.target.closest('a[data-reiter]');
+  if (r) { ev.preventDefault(); history.replaceState(null, '', '#' + r.dataset.reiter); zeigeReiter(r.dataset.reiter); markiereReiterLink(r); return; }
   const a = ev.target.closest('a[data-ziel]');
   if (!a) return;
   ev.preventDefault();
+  if (reiterOffen) zeigeReiter(null);
   history.replaceState(null, '', '#' + a.dataset.ziel);
   springe(a.dataset.ziel);
 });
+function markiereReiterLink(a) { const z = a.parentElement; if (a.offsetLeft + a.offsetWidth > z.scrollLeft + z.clientWidth || a.offsetLeft < z.scrollLeft) z.scrollTo({ left: Math.max(0, a.offsetLeft - 16), behavior: 'smooth' }); }
 $('wichtig').addEventListener('click', ev => {
   const a = ev.target.closest('a[data-sprung]');
   if (!a) return;
   ev.preventDefault();
+  if (reiterOffen) zeigeReiter(null);
   history.replaceState(null, '', '#' + a.dataset.sprung);
   springe(a.dataset.sprung);
 });
@@ -1895,17 +2134,27 @@ $('kopieren').addEventListener('click', ev => kopiere(TOPIC, ev.currentTarget));
 })();
 
 // --- Start -------------------------------------------------------------------------------------------------------
-$('neu').addEventListener('click', () => { lade(); ladeKurs(); });
-kryptoFormularFuellen();
+$('neu').addEventListener('click', () => { lade(); ladeKurs(); if (reiterOffen) try { REITER_NEU[reiterOffen]?.(); } catch {} });
+zeichneKryptoEditor();
+// noch keine Käufe -> Eingabe offen (so findet man sie)
+if (!kryptoStand().some(x => x.pos)) $('krypto-form').open = true;
 zeichneAlles();
+if (KRYPTO_IMPORT) {
+  zeigeHinweis(KRYPTO_IMPORT.ok ? `Krypto-Daten übernommen ✓ (${KRYPTO_IMPORT.coins.map(c => KRYPTO_COINS[c].name).join(', ')}) – nur auf diesem iPhone gespeichert.`
+    : KRYPTO_IMPORT.speicher ? 'Krypto-Daten konnten nicht gespeichert werden (privates Surfen?).' : 'Krypto-Link ungültig – nichts geändert.', !KRYPTO_IMPORT.ok);
+  springe('krypto', { sanft: false });
+}
+if (reiterAusHash()) zeigeReiter(reiterAusHash());
 lade();
 ladeKurs();
 // Abgelaufenes verschwindet auch, wenn die Seite offen bleibt; Stand-Zeile und Kurs laufen mit
 setInterval(() => {
   if (document.hidden) return;
   if (Date.now() >= naechstesEnde) zeichneAlles(); else zeigeStand();
-  if (Date.now() - (kurs.zeit || 0) >= KURS_ALLE_MS) ladeKurs(); else zeichneKrypto();
+  zeichneKrypto();
 }, 30000);
+// Kurs alle 60 s, solange die Seite offen ist (mit Zonen-Prüfung und Pop-up)
+setInterval(() => { if (!document.hidden) ladeKurs(); }, KURS_ALLE_MS);
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) return;
   zeichneAlles();
@@ -1913,7 +2162,7 @@ document.addEventListener('visibilitychange', () => {
   if (Date.now() - (kurs.zeit || 0) >= KURS_ALLE_MS) ladeKurs();
 });
 // Nur lesen, für die Tests (test/regeln.test.mjs): dieselben Regeln wie die Wecker
-window.meinVorteil = Object.freeze({ krass, istSpiel, geraetAb, KRASS_STANDARD, kryptoRechnung, imGewinn, zahlAus, meinProdukt, istSnack, interessant, gewinnspielEinfach, istCashback, STANDARD_PRODUKTE });
+window.meinVorteil = Object.freeze({ krass, istSpiel, geraetAb, KRASS_STANDARD, naechsteZone, rohZone, kryptoPosition, kryptoErgebnis, leseKryptoText, zahlAus, meinProdukt, istSnack, interessant, gewinnspielEinfach, istCashback, istRemix, STANDARD_PRODUKTE });
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
   navigator.serviceWorker.register('sw.js', { scope: './' }).catch(() => {});
   // Kam diese Seite (oder vorher eine alte Weiterleitung) über den SYNQUENZER-Worker der Wurzel, hat er sie als Offline-Kopie
