@@ -20687,6 +20687,7 @@ const RecHelpers = (() => {
         VI.set(nt, {bx: r.x + .5, by: r.y + 1.5, bw: r.w - 1, bh: r.h - 3, fy, name: nmI});
         // resize grip
         if (r.w >= 18) { x.fillStyle = '#0b0c0f'; x.globalAlpha = .5; x.fillRect(r.x + r.w - 5, r.y + r.h * .3, 2, r.h * .4); x.globalAlpha = 1; }
+        if (opts.noteDeco) opts.noteDeco(x, nt, r);              // PL1: Punkt an der Note mit Lock
         if (nt.off) { x.fillStyle = C.bg; x.globalAlpha = .62; x.fillRect(r.x, r.y + 1, r.w, r.h - 2); x.globalAlpha = 1; }   // LF1: ein ausgeschalteter Schritt (note.off) gedimmt
       }
       if (opts.syl) { const SY = opts.syl(c.notes); if (SY && SY.size) {         /* G9E: Silbe klein unter dem Noten-Anfang (links unten, nie am Griff rechts) */
@@ -21567,6 +21568,7 @@ const RecHelpers = (() => {
     // run dot (§5.1) on the running bar's chip: steady with the playhead in view, else blinking; chip outside: „◂ 3“ / „3 ▸“
     let rdSig = '';
     function playhead(beat) {
+      if (typeof pl1Ll === 'function' && !pl1Ll()) beat = -1;   // PL1: Lauflichter aus – keine Marke
       if (beat == null || beat < 0 || dead) { if (ph.style.opacity !== '0') ph.style.opacity = '0'; if (rdSig !== '') { rdSig = ''; rd.className = 'pr-rd'; rd.textContent = ''; } return; }
       const x = xOf(beat); ph.style.opacity = x < 0 || x > V.W ? '0' : '1'; ph.style.transform = 'translateX(' + x.toFixed(1) + 'px)';
       const bar = tkAt(beat), cx = xOf(tkB(bar)) + NUMW - 8, inV = x >= 0 && x <= V.W;
@@ -29867,6 +29869,7 @@ function mkWheelApi(t, w, v) { if (w !== 'bend' && w !== 'mod') throw new Error(
 // one value of p.mk (path 't.0.f.cut', 'mfx.dep' ...): stored rounded through normMk; the worklet gets the fraction while a
 // gesture runs (live), the stored value at its end
 function mkSetP(i, path, v, live) {
+  if (pl1Wr(i, 'mk.' + path, v)) return v;                       // PL1: Lock-Modus (Platte)
   ak1Go(i, 'mk.' + path);                                        // AK1
   const s_ = sndOf(i); if (!s_ || !s_.p.mk) return undefined;
   if (path === 'voc.hold') {
@@ -30588,6 +30591,7 @@ function kv1Go(i, old, st1, t0, t1, at, c) {
 }
 // the value a knob of track i shows for path k ('cutoff', 'wt.pos', 'mk.t.0.f.cut', 'fm6.ops.0.ol', 'fx.vol'); undefined = track.sound
 function kv1Ov(i, k) {
+  { const x = pl1Shown(i, k); if (x !== undefined) return x; }   // PL1: Lock-Modus – der Regler zeigt den Lock-Wert
   const cur = R.v6aCur && R.v6aCur[i]; if (!cur || (V6A.ed && V6A.ed.i === i)) return undefined;
   const tr = S.tracks[i]; if (!tr || tr.kind !== 'synth') return undefined;
   const h = KV1.hand[i]; if (h && h.cur === cur && h.k.has(k)) return undefined;              // the hand holds it (Griff-Wert)
@@ -36318,6 +36322,7 @@ function renderGrid(bAud) {
   }
 }
 function renderProgress(bAud) {
+  if (pl1LlProg()) return;                                   // PL1: Lauflichter aus – keine Fortschritts-Balken (eine Aufnahme zeigt weiter)
   for (const i of MX.rows) {
     const tr = S.tracks[i], vs = R.playing ? visualSlots(i, bAud) : null;
     for (const s of MX.scenes) {
@@ -40971,7 +40976,7 @@ function songFrame(bAud) {
   // V2e′ (FP-SONG): another project / track count / order / bank → the rows and the Spurbank pages are laid out again (never stale rows)
   { const o = trackOrder(), k = o.join() + '|' + trackBankOf(); if (SV.ordK !== k) { SV.ordK = k; svLayout(); } }
   if (SV.sel || SV.mark || SV.copy || SV.blk || SV.inBlk) svSelFix();                    // V2e-fix: undo / project switch / a shorter song
-  const sb = svSongBeat(bAud);
+  const sb = pl1SongSb(svSongBeat(bAud));                   // PL1: Lauflichter aus = die Stelle ruhig je Takt
   svAutoScroll(false);
   const t = performance.now(), ph = sb == null ? -1 : Math.round(sb * 16) / 16;
   if (UI.dirty.song || ph !== SV.ph) {
@@ -41686,10 +41691,10 @@ function padFlashes(tAud) {
     let fire = false;
     while (q.length && q[0] <= tAud) { q.shift(); fire = true; }
     if (q.length > 12) q.splice(0, q.length - 12);
-    if (fire && UI.padEls[i] && EL.app.classList.contains('drumpads')) {
+    if (fire && pl1Ll() && UI.padEls[i] && EL.app.classList.contains('drumpads')) {   // PL1: Lauflichter aus = kein Pad-Blitz
       const b = UI.padEls[i]; b.classList.remove('fl'); void 0; requestAnimationFrame(() => b.classList.add('fl'));
     }
-    if (fire && UI.drumChips && UI.drumChips[i]) { const c = UI.drumChips[i]; c.classList.remove('fl'); requestAnimationFrame(() => c.classList.add('fl')); }
+    if (fire && pl1Ll() && UI.drumChips && UI.drumChips[i]) { const c = UI.drumChips[i]; c.classList.remove('fl'); requestAnimationFrame(() => c.classList.add('fl')); }
   }
 }
 
@@ -42410,7 +42415,7 @@ function uiFrame() {
   if (UI.dirty.kb) { UI.dirty.kb = false; kbPaint(); padPaint(); }
   mkWheelFrame();                                            // MK1: BEND / MOD wheels left of the keys on AM tracks
   bmWheelFrame();                                            // BM5: BEND / MOD wheels on BM_NAME tracks
-  if (R.editor === 'synth' && typeof MKUI !== 'undefined' && MKUI.arpFrame) MKUI.arpFrame(now, bAud);   // MK5: ARP / tempo LED, running step
+  if (R.editor === 'synth' && pl1Ll() && typeof MKUI !== 'undefined' && MKUI.arpFrame) MKUI.arpFrame(now, bAud);   // MK5: ARP / tempo LED, running step · PL1: Lauflichter aus = stehen still
   paintGhosts(tAud);
   padFlashes(tAud);
   recLaneFrame(bAud);
@@ -42458,7 +42463,7 @@ function renderTakt(bAud) {
   if (txt.length > 4) cls += (cls ? ' ' : '') + 'long';          // bar 100+: the 76 px TAKT block keeps its width (P)
   if (txt !== UI.last.takt) { EL.taktVal.textContent = txt; UI.last.takt = txt; }
   if (cls !== UI.last.taktCls) { EL.taktVal.className = cls; UI.last.taktCls = cls; }
-  const led = !R.playing ? -1 : tkPlain() ? ((Math.floor(bAud) % 4) + 4) % 4 : t1Led(bAud);
+  const led = !R.playing || !pl1Ll() ? -1 : tkPlain() ? ((Math.floor(bAud) % 4) + 4) % 4 : t1Led(bAud);   // PL1: Lauflichter aus = LEDs aus
   if (led !== UI.last.led) {
     UI.last.led = led;
     UI.leds.forEach((l, k) => l.classList.toggle('on', k === led));
@@ -43518,6 +43523,7 @@ function clampParam(key, v, cur) {
 /* the one way a sound parameter changes (knobs, faders, segments, XY, envelope editor, API): value, live update of the
    sounding notes, dirty marks. Undo is per gesture (soundUndo / commitSound around it). */
 function setP(i, key, v) {
+  if (pl1Wr(i, key, v)) return v;                                            // PL1: Lock-Modus – nur in die gehaltenen Noten
   ak1Go(i, key);                                                             // AK1: läuft / gewählt ein Clip -> dessen ◆
   const snd = sndOf(i); if (!snd) return undefined;
   const nv = clampParam(key, v, sndGet(snd, key));
@@ -44410,6 +44416,7 @@ function fmGetOp(i, k, key) { const ov = kv1Ov(i, 'fm6.ops.' + k + (FM_KS.includ
   const op = fmOf(i).ops[k]; return FM_KS.includes(key) ? (op.ks || FM_KS_DEF())[key] : op[key]; }
 // one operator value (Anhang A.2 ranges; ks.* = bp ld rd lc rc); nothing happens when the value does not change
 function fmSetOp(i, k, key, v) {
+  if (pl1Wr(i, 'fm6.ops.' + k + (FM_KS.includes(key) ? '.ks.' : '.') + key, v)) return v;   // PL1: Lock-Modus
   ak1Go(i, 'fm6');                                          // AK1
   const fm = fmOf(i); if (!fm) return undefined;
   const op = fm.ops[k], nv = fmClampV(key, v);
@@ -44421,6 +44428,7 @@ function fmSetOp(i, k, key, v) {
 }
 // rate ('r') or level ('l') of one envelope stage (0..3)
 function fmSetEnv(i, k, which, stage, v) {
+  if (pl1Wr(i, 'fm6.ops.' + k + '.' + which + '.' + stage, v)) return v;   // PL1: Lock-Modus
   ak1Go(i, 'fm6');                                          // AK1
   const a = fmOf(i).ops[k][which], nv = clamp(Math.round(+v || 0), 0, 99);
   if (a[stage] === nv) return nv; a[stage] = nv; fmChanged(i); return nv;
@@ -48505,6 +48513,7 @@ function drumChanged(id) {
 // one parameter of one slot (engine units): clamped to its range (a factory value beyond it is kept until moved past),
 // stored as a diff against DrumSynth.DEFAULTS (§7.4: model and choke always written), heard at once on its strip
 function drumSet(id, key, v) {
+  if (pl1Wr(DRUM_T, 'drum.' + id + '.' + key, v)) return v;   // PL1: Lock-Modus (Drum-Editor)
   const sl = DRUM_BY_ID[id], snd = drumSnd(); if (!sl || !snd) return undefined;
   const d = DPD[key], P = slotParams(id), cur = P[key];
   let nv = v;
@@ -48523,7 +48532,7 @@ function drumSet(id, key, v) {
   drumChanged(id);
   return nv;
 }
-const dSlotGet = (id, key) => slotParams(id)[key];
+const dSlotGet = (id, key) => { const x = pl1Shown(DRUM_T, 'drum.' + id + '.' + key); return x !== undefined ? x : slotParams(id)[key]; };   // PL1: Lock-Modus zeigt den Lock-Wert
 // §16 setDrumParam(slotId, key, value): v3 keys (DrumSynth.DEFAULTS) and the v2 names of Anhang C.1
 function setDrumParam(voice, key, value) {
   const sl = resolveDrum(voice); if (!sl) throw new Error('Unbekannte Drum-Stimme: ' + voice);
@@ -48901,7 +48910,8 @@ function pageDrumSteps(pg) {
     reg: folReg('steps'),
     onTap: (i, onS) => { ED.step.flash(i); haptic('tick'); lcdShow(DRUM_VOICES[ED.dVoice].l + ' · Schritt ' + (ED.page * dStepsOf(S.tracks[DRUM_T].clips[R.selS]) + i + 1), onS ? 'an' : 'aus'); },
     onVel: (i, n, v0) => velStepHear('d', i, n, v0),               /* I2f */
-    decorate: (c, n, i) => d1Decorate(c, i)});                     /* D1 */
+    decorate: (c, n, i) => { d1Decorate(c, i); pl1Deco(c, n); }});   /* D1 · PL1: Punkt am Schritt mit Lock */
+  pl1DrumHold(ED.step);                                            // PL1: gesetzten Schritt lang drücken = Locks
   // the lane tabs carry a short form for narrow screens (P < 360, L < 760): all 7 lanes stay reachable
   const LSH = {vel: 'VEL', acc: 'AKZ.', prob: 'CHANCE', rat: 'WIRB.', nud: 'TIM.', tune: 'TUNE', dec: 'DEC.'};
   for (const b of stabs.querySelectorAll('.se-tabs button[data-lane]')) { const l = b.textContent; b.innerHTML = `<span class="tl">${esc(l)}</span><span class="ts">${esc(LSH[b.dataset.lane] || l)}</span>`; }
@@ -49536,6 +49546,7 @@ function drumEdFrame(bAud) {
   { const l = ph >= 0 && d1Lane(clip, DRUM_VOICES[ED.dVoice].gm); if (l) { const q = d1Pos(l, Math.floor((bAud - audCstart(DRUM_T, bAud)) / .25 + 1e-6), DRUM_VOICES[ED.dVoice].gm); st = Math.floor(q / N) === ED.page ? q % N : -1; } }   /* D1: the lane's own step */
   if (run !== ED.runBar) { ED.runBar = run; if (ED.pgnav) ED.pgnav._run(run); }
   folChipPaint('steps');
+  if (!pl1Ll()) st = -1;                                     // PL1: Lauflichter aus
   if (st !== ED.lastStep) {
     ED.step.setPlayhead(st);
     if (ED.lastStep >= 0) for (let v = 0; v < 12; v++) { const d = ED.ovEls[v * 16 + ED.lastStep]; if (d) d.classList.remove('ph'); }
@@ -49641,7 +49652,7 @@ function buildRoll() {
   const kAt = () => shownClipKey(s, S.tracks[t].clips[s]);              // EDIT 4.29: Tonart der Stelle (Pinsel + Magic Scale)
   ED.roll = PianoRoll.create(body, rollModel(t, s), {color: col || '#4cc9f0', grid: ROLLP.grid, fold: ROLLP.fold, rowH: 22, undoHold: sx14UndoHold, toolbarHost: host,
     extraTools: extra, center: 12 * ((tr.kbOct || 4) + 1) + 7, rowName: percIs(tr) ? percRowName : null,   // PERC: Kanal-Namen
-    endActs: hm1Acts(t, s),   /* HM1: [Harmonie] am Ende der Aktionsleiste (Merge 4.45: endActs, damit LF1-extraActs es nicht überschreibt) */
+    endActs: hm1Acts(t, s).concat(pl1Acts(t, s)), noteDeco: pl1RollDeco,   /* PL1: [🔒 Locks], Punkt an der Note · HM1: [Harmonie] am Ende der Aktionsleiste (Merge 4.45: endActs, damit LF1-extraActs es nicht überschreibt) */
     mp: mpRollOpts(t, 'c:' + t + ':' + s, kAt),   /* MP */
     tap: (b, fn) => b.addEventListener('click', () => { try { fn(); } catch (e) { logErr(e); } }),
     reg: folReg('roll'), onHand: () => folHand('roll'),
@@ -50143,6 +50154,7 @@ function buildLauf() {
       if (n && rg) { cell.style.setProperty('--v', (.22 + .78 * clamp((p.idx - rg[0]) / Math.max(1, rg[1] - rg[0]), 0, 1)).toFixed(3)); cell.style.setProperty('--o', (.4 + .6 * n.v).toFixed(2)); }
       cell.classList.toggle('sel', LAUF.page * per + i === LAUF.sel);
       lf1Deco(cell, n, i, LAUF.page * per + i, cl);                // LF1: aus, Effekt-Marken, Start, [Richtung]
+      pl1Deco(cell, n);                                            // PL1: Punkt am Schritt mit Lock
     }});
   E.sel = LAUF.sel - LAUF.page * per;
   // bottom row: [Skala: a-Moll ▾] [Zufall in Tonart] [Leeren]
@@ -50324,6 +50336,7 @@ function laufFrame(bAud) {
   if (L.pages > 1) folStep('lauf', k, L.per, LAUF.page * L.per, x => laufSetPage(Math.round(x / L.per))); else FOL.st.lauf = folState('lauf');
   const run = k >= 0 ? Math.floor(k / L.per) : -1;
   if (run === LAUF.page) st = k % L.per;
+  if (!pl1Ll()) st = -1;                                     // PL1: Lauflichter aus
   if (st !== L.ph) { L.ph = st; L.se.setPlayhead(st); }
   if (run !== L.run) { L.run = run; if (L.pager) L.pager._run(run); }
   folChipPaint('lauf');
@@ -50530,6 +50543,7 @@ function lf1StepRender(p, t, s, k) {
   }
   h += '<div class="plist lf1one">' + lf1B('start', 0, st0 ? 'Start hier – zurück auf normal' : 'Hier starten', st0) + '</div>';
   p.innerHTML = h;
+  pl1LaufSect(p, t, s, k);                                         // PL1: „🔒 Regler nur für Schritt n“
 }
 function lf1StepPop(t, s, k, anchor) {
   if (!S.tracks[t] || !S.tracks[t].clips[s]) return;
@@ -51767,6 +51781,7 @@ function openMenu(goto) {
   if (micAvail()) { const bMic = btn('Mikro-Check'); bMic.classList.add('mmic'); on(bMic, 'click', () => micOpen()); row(s9, null, bMic).appendChild(el('span', 'small', 'Test fürs Einsingen: Mikrofon, Verzögerung, Speicher')); }
   { const bPr = btn('Leistungs-Probe'); bPr.classList.add('mprobe'); on(bPr, 'click', () => { closeMenu(); mkLoad().probeSheet(); }); row(s9, null, bPr).appendChild(el('span', 'small', MK_LABEL + ': misst 10 s die Rechenzeit (ohne Netz)')); }
   ui1MenuHook(sec, colL, s6, row, btn, goto);                 // UI1: „Wo finde ich …?“ + Leucht-Look
+  pl1MenuRow(s6, row);                                        // PL1: Lauflichter an/aus
   m.classList.add('open');
   if (goto === 'info') requestAnimationFrame(() => { try { s9.scrollIntoView({block: 'start'}); } catch (e) {} });
   if (goto === 'online') requestAnimationFrame(() => { try { sOn.scrollIntoView({block: 'start'}); } catch (e) {} });
@@ -55056,6 +55071,8 @@ function ui1Entries() {
     E('dx7', 'DX7-Bank (.syx)', 'Menü › Sounds', 'FM-Klänge aus einer Bank importieren oder als Bank exportieren.', 'dx7 syx bank import fm', G.menu, 'DX7-Bank importieren'),
     E('panic', 'Alle Töne aus', 'Menü › Klang', 'Wenn ein Ton hängt.', 'haengt panik notaus ton haengt', G.menu, 'Alle Töne aus'),
     E('help', 'Alle Hilfetexte', 'Menü › Hilfe', 'Ausführliche Erklärungen zu jeder Funktion.', 'hilfe help erklaerung', G.menu, () => [...EL.menu.querySelectorAll('.msec h3')].find(h => h.textContent.trim() === 'Hilfe')),
+    E('locks', 'Parameter-Locks (Regler je Schritt)', 'LAUF / SCHRITTE: Schritt lang drücken · ROLLE: Noten wählen › 🔒 Locks', 'Regler drehen, während du den Schritt hältst – der Wert gilt nur für diesen Schritt (Punkt am Schritt). „Alle Regler ›“ = Klang-Editor im Lock-Modus. ◆ gilt dagegen für den ganzen Clip.', 'lock locks parameter plock p-lock schritt note regler wert filter je schritt groovebox', G.roll, '🔒 Locks'),   // PL1
+    E('lauflicht', 'Lauflichter an/aus', 'Menü › Bedienung › Lauflichter', 'Aus = Matrix, Song, LAUF, Schritte und Geräte-LEDs laufen nicht mit – ruhiger, spart Akku.', 'lauflicht lauflichter abspielmarke playhead animation led akku ruhig strom', G.menu, 'Lauflichter'),   // PL1
   ];
   return UI1.ents;
 }
@@ -83073,6 +83090,417 @@ Object.assign(SYNQUENZER, {gr2: GR2_API});                  /* GR2: Test-API (Ob
 Object.assign(SYNQUENZER, {ui1: UI1_API});                  /* UI1: Test-API (Objekt, wird nicht umhüllt) */
 ueLibAdd(ui1UeLib()); ui1BmTrim(); ui1GlowInit();           // UI1: ◆ ÜBERGÄNGE-Vorlagen, 2 Bit-Mask-Pegel, Leucht-Look (Gerät)
 Object.assign(SYNQUENZER, {vd3: VD3_API});                  /* VD3: Test-API (Objekt, wird nicht umhüllt) */
+/* ===== PL1-BEGIN (Paket PL1, Xander 07.11. (11): „Hast du auch schon an Parameter-Locks gedacht und an die Lauflichter, die man an-
+   und ausschalten kann?“)
+   1 Parameter-Locks bedienbar. Der Kern steht seit 4.38 (note.lk.v[Pfad] = Reglerstand 0…1, bei Drums dazu lk.tune / lk.dec; Wiedergabe,
+     Song-Render und Export spielen die Locks sample-genau über denselben Planer) – hier nur die Bedienung, kein zweiter Kern:
+     - LAUF: Schritt lang drücken → Schritt-Menü (LF1) mit „🔒 Regler nur für Schritt n“: vier Regler je Klangerzeugung (VA: Filter, Reso,
+       Hüllk., Decay · FM: Helligkeit, Biss, Länge, Pegel · Platte: Filter, Reso, Decay, Pegel), darunter die Lock-Leiste (welcher Regler,
+       welcher Wert, ✕) und [Locks löschen] · [Alle Regler ›]. Mit dem zweiten Finger drehen, während der erste den Schritt hält – oder
+       loslassen und in Ruhe drehen. Quer steht der Abschnitt rechts neben dem Schritt-Menü (das Menü selbst bleibt, wie es ist).
+     - Drum-SCHRITTE: einen gesetzten Schritt lang drücken → dasselbe für diesen Schlag (Tune, Decay, Pegel, Drive). Leere Schritte wie bisher.
+     - ROLLE: Noten wählen → [🔒 Locks] am Ende der Aktionszeile.
+     - [Alle Regler ›] öffnet den Klang-Editor, den Drum-Editor (SOUND) bzw. die Platte im Lock-Modus: eine Leiste über der Anzeige
+       („🔒 LOCK · Schritt 3 … [Fertig]“); jeder Regler schreibt dann nur in die gehaltenen Noten und zeigt deren Wert. Werte, die nur für
+       den ganzen Klang gehen (Welle, Algorithmus, Spur-Effekte …), sagen es und bleiben unverändert. [Fertig] führt zurück.
+     - Punkt am Schritt (LAUF, SCHRITTE) bzw. an der Note (ROLLE), wenn ein Lock darauf liegt. ↶ je Geste (ein Dreh = ein Schritt).
+     - Klar getrennt von ◆ (Regler je Clip, Klanganker): ein Lock gilt für eine Note und geht nie in den Clip-Klang.
+   2 Lauflichter an/aus (≡ › Bedienung „Lauflichter“, Einstellung des Geräts, Standard an). Aus: Matrix-Fortschritt, LAUF-, Schritt- und
+     ROLLE-Marke, Takt-LEDs, Pad-Blitze und die LEDs der Platte stehen still; der Song zeigt die Stelle ruhig je Takt. Aufnahme-Anzeigen bleiben.
+   Neue Schlüssel nur mit Präfix: UI.pl1 (Zustand), UI.pl1ll / UI.pl1llC (Lauflichter), uiPrefs().pl1ll, SYNQUENZER.pl1. Ohne Locks und mit
+   Lauflichtern an läuft jede Zeile wie vorher. ===== */
+const PL1_QK = {
+  va: [['cutoff', 'Filter'], ['res', 'Reso'], ['fenv', 'Hüllk.'], ['aD', 'Decay']],
+  fm6: [['fmBright', 'Helligkeit'], ['fmBite', 'Biss'], ['fmDec', 'Länge'], ['level', 'Pegel']],
+  mk: [['mk.t.0.f.cut', 'Filter'], ['mk.t.0.f.res', 'Reso'], ['mk.t.0.e2.d', 'Decay'], ['mk.t.0.a.lvl', 'Pegel']],
+  drum: [['tune', 'Tune'], ['dec', 'Decay'], ['lvl', 'Pegel'], ['drv', 'Drive']]};
+// der Zustand (auf UI: die Einhänge-Zeilen dürfen ihn jederzeit lesen)
+function pl1S() { return UI.pl1 || (UI.pl1 = {mode: null, pend: null, pendT: 0, pd: 0, pt: 0, ptr: false, ban: null, banIv: 0, css: false}); }
+function pl1Css() {
+  const S_ = pl1S(); if (S_.css) return; S_.css = true;
+  const st = document.createElement('style'); st.id = 'pl1-css';
+  st.textContent = `
+.pl1s{margin-top:10px;padding-top:8px;border-top:1px solid var(--line)}
+.pl1s .pl1t{display:flex;align-items:baseline;justify-content:space-between;gap:8px;font:700 10px/1.25 var(--font-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--amber,#ffb22e)}
+.pl1s .pl1t span{flex:none;font-weight:600;letter-spacing:.02em;text-transform:none;color:var(--text-dim)}
+.pl1s .pl1k{display:grid;grid-template-columns:repeat(4,72px);justify-content:space-between;margin-top:4px}
+.pl1s .knob.pl1on .kv{stroke:var(--amber,#ffb22e)}
+.pl1s .knob.pl1on::after{content:'';position:absolute;right:5px;top:15px;width:7px;height:7px;border-radius:50%;background:var(--amber,#ffb22e);box-shadow:0 0 0 2px rgba(0,0,0,.6);pointer-events:none}
+.pl1s .pl1l{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin-top:4px;min-height:44px;align-items:center;touch-action:pan-x}
+.pl1s .pl1l::-webkit-scrollbar{display:none}
+.pl1s .pl1c{flex:none;min-height:44px;padding:0 10px;gap:6px;border:1px solid var(--amber,#ffb22e);color:var(--text);font:600 12px/1 var(--font-ui);white-space:nowrap}
+.pl1s .pl1c i{font-style:normal;color:var(--amber,#ffb22e)}
+.pl1s .pl1n{font:500 11px/1.3 var(--font-ui);color:var(--text-dim)}
+.pl1s .pl1a{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}
+.pl1s .pl1a button{min-height:44px;padding:0 6px;font-size:12px}
+.pl1s .pl1a button:disabled{opacity:.4}
+.pl1s .pl1h{margin:6px 0 0;font:500 11px/1.35 var(--font-ui);color:var(--text-dim)}
+.pop.pl1pop{width:min(352px,calc(100vw - 16px))}
+.pop.pl1pop>h4{margin:0 0 2px}
+.pop.pl1pop .pl1s{margin-top:4px;padding-top:0;border-top:0}
+@media (orientation:landscape){
+  .pop.lf1pop.pl1w{width:min(910px,calc(100vw - 16px));padding-right:322px;min-height:286px}
+  .pop.lf1pop.pl1w>.pl1s{position:absolute;top:12px;right:12px;width:300px;box-sizing:border-box;margin:0;padding:0 0 0 10px;border-top:0;border-left:1px solid var(--line)}
+  .pop.lf1pop.pl1w>.pl1s .pl1k{grid-template-columns:repeat(4,72px);gap:0;justify-content:space-between}
+}
+.se-cell .pl1d{position:absolute;right:4px;top:4px;z-index:2;width:7px;height:7px;border-radius:50%;background:var(--amber,#ffb22e);box-shadow:0 0 0 1.5px rgba(0,0,0,.7);pointer-events:none}
+.se-cell .pl1d[hidden]{display:none}
+.pl1ban{position:fixed;z-index:50;height:48px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 1px 0 10px;border-radius:8px;background:#2b2108;border:1px solid var(--amber,#ffb22e);color:var(--text);box-shadow:0 6px 18px rgba(0,0,0,.5);-webkit-user-select:none;user-select:none}
+.pl1ban[hidden]{display:none}
+.pl1ban .pl1bx{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:2px}
+.pl1ban .pl1bt{font:700 11px/1.2 var(--font-ui);letter-spacing:.05em;color:var(--amber,#ffb22e);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl1ban .pl1bv{font:500 11px/1.2 var(--font-num,monospace);color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl1ban .pl1bv.warn{color:#ffb4a8}
+.pl1ban .pl1bf{flex:none;min-height:44px;min-width:72px;padding:0 12px;font-weight:700}
+`;
+  document.head.appendChild(st);
+}
+
+/* ---------- 2 Lauflichter ---------- */
+function pl1Ll() { if (UI.pl1ll == null) { let v = true; try { v = uiPrefs().pl1ll !== false; } catch (e) {} UI.pl1ll = v; } return UI.pl1ll; }
+function pl1LlSet(on) {
+  on = !!on; UI.pl1ll = on; UI.pl1llC = false;
+  try { setUiPref('pl1ll', on); } catch (e) { logErr(e); }
+  UI.dirty.all = true; UI.dirty.song = true; UI.last.led = null;
+  return on;
+}
+// renderProgress (erste Zeile): aus = die Fortschritts-Balken der Matrix einmal auf 0, dann nichts mehr je Bild (eine Aufnahme zeigt weiter)
+function pl1LlProg() {
+  if (pl1Ll() || rec.state === 'recording') { UI.pl1llC = false; return false; }
+  if (!UI.pl1llC) {
+    UI.pl1llC = true;
+    for (const i of MX.rows) for (const s of MX.scenes) { const C = UI.cells[i] && UI.cells[i][s]; if (C && C.pg) { C.ph = -1; C.pg.style.transform = 'scaleX(0)'; } }
+  }
+  return true;
+}
+// songFrame: aus = die Abspielstelle springt nur am Taktstrich (eine ruhige Marke, ein Bild je Takt statt 30 je Sekunde)
+function pl1SongSb(sb) { if (sb == null || !(sb >= 0) || pl1Ll()) return sb; try { return barBeat(barAt(sb)); } catch (e) { return Math.floor(sb); } }
+function pl1MenuRow(s6, row) {
+  try {
+    pl1Css();
+    const sg = makeSeg([[true, 'An'], [false, 'Aus']], () => pl1Ll(), v => pl1LlSet(v));
+    row(s6, 'Lauflichter', sg).classList.add('pl1llr');
+    s6.appendChild(el('div', 'small', 'Lauflichter: die laufende Stelle in Matrix, Song, LAUF, Schritten und ROLLE, die Takt-LEDs, Pad-Blitze und die LEDs der Platte. Aus = alles steht still (der Song zeigt die Stelle ruhig je Takt) – ruhiger, spart Rechenzeit und Akku. Aufnahme-Anzeigen bleiben.'));
+  } catch (e) { logErr(e); }
+}
+
+/* ---------- 1 Locks: das Ziel (gehaltene Schritte / gewählte Noten) ---------- */
+// tg = {t, s, src: 'lauf' | 'drum' | 'rolle', lbl, keys: [{t, n}], sid}; die Noten werden über Ort und Tonhöhe wiedergefunden (↶ ersetzt die Notenobjekte)
+function pl1Tg(t, s, src, notes, lbl) {
+  const tr = S.tracks[t], sl = tr && tr.kind === 'drum' && notes[0] ? DRUM_BY_GM[notes[0].n] : null;
+  return {t, s, src, lbl, keys: notes.map(n => ({t: n.t, n: n.n})), sid: sl ? sl.id : null};
+}
+const pl1Clip = tg => (S.tracks[tg.t] && S.tracks[tg.t].clips[tg.s]) || null;
+function pl1Notes(tg) { const c = pl1Clip(tg); if (!c) return []; return c.notes.filter(n => tg.keys.some(k => Math.abs(n.t - k.t) < 1e-6 && n.n === k.n)); }
+// welche Regler-Familie die Spur hat (null = keine Locks: Bit Mask, Perkussion, Gesang …)
+function pl1Eng(t) {
+  const tr = S.tracks[t]; if (!tr || tr.stimme) return null;
+  if (tr.kind === 'drum') return 'drum';
+  const e = tr.sound && tr.sound.engine;
+  return e === 'analog' || e === 'wt' ? 'va' : e === 'fm6' || e === 'mk' ? e : null;
+}
+const pl1QPath = (tg, k) => (S.tracks[tg.t].kind === 'drum' && k !== 'tune' && k !== 'dec' ? 'drum.' + tg.sid + '.' + k : k);
+const pl1HasAny = n => !!(n && n.lk && ((n.lk.v && Object.keys(n.lk.v).length) || n.lk.tune != null || n.lk.dec != null));
+function pl1Has(n, p) { const lk = n && n.lk; return !!lk && (p === 'tune' ? lk.tune != null : p === 'dec' ? lk.dec != null : !!(lk.v && lk.v[p] != null)); }
+// der Wert ohne Lock (Klang der Spur bzw. des Pads)
+function pl1Base(tg, p) {
+  if (p === 'tune') return 0; if (p === 'dec') return 1;
+  const tr = S.tracks[tg.t]; if (!tr) return undefined;
+  if (tr.kind === 'drum') { const q = p.split('.'), P = slotParams(q[1]); return P ? P[q[2]] : undefined; }
+  return lkBase(tr.sound, p);
+}
+// der Lock-Wert (Engine-Einheiten) der ersten Ziel-Note mit diesem Lock, sonst undefined
+function pl1LkOf(tg, p) {
+  for (const n of pl1Notes(tg)) {
+    const lk = n.lk; if (!lk) continue;
+    if (p === 'tune' || p === 'dec') { if (lk[p] != null) return lk[p]; continue; }
+    if (lk.v && lk.v[p] != null && LKT[p]) return lkFromN(LKT[p], lk.v[p]);
+  }
+  return undefined;
+}
+function pl1Get(tg, p) { const x = pl1LkOf(tg, p); return x !== undefined ? x : pl1Base(tg, p); }
+// der Regler-Bauplan eines Pfads (Kennlinie / Format wie der Regler im Editor, Standard = der Wert ohne Lock)
+function pl1Desc(tg, p, lbl) {
+  if (p === 'tune') return {p, l: lbl || 'Tune', min: -12, max: 12, c: 'lin', def: 0, fmt: 'semi', vals: Array.from({length: 25}, (_, k) => k - 12)};
+  if (p === 'dec') return {p, l: lbl || 'Decay', min: .25, max: 4, c: 'exp', def: 1, fmt: 'x1'};
+  const e = LKT[p]; if (!e) return null;
+  const q = p.split('.'), src = q[0] === 'drum' ? DPD[q[2]] : PD[p];
+  const d = Object.assign({min: e.lo, max: e.hi, c: e.c === 'vals' ? 'lin' : e.c, k: e.k, fmt: e.q ? 'int' : 'num1'}, src ? {min: src.min, max: src.max, c: src.c, k: src.k, fmt: src.fmt} : null);
+  if (e.vals) d.vals = e.vals.slice(); else if (src && src.vals) d.vals = src.vals.slice();
+  const b = pl1Base(tg, p);
+  d.p = p; d.l = lbl || (src && src.l) || e.lbl; d.def = b !== undefined ? b : d.min;
+  return d;
+}
+function pl1Lbl(tg, p) { const eng = pl1Eng(tg.t), q = (PL1_QK[eng] || []).find(x => pl1QPath(tg, x[0]) === p); return q ? q[1] : p === 'tune' ? 'Tune' : p === 'dec' ? 'Decay' : LKT[p] ? LKT[p].lbl : p; }
+function pl1Fmt(tg, p, v) { const d = pl1Desc(tg, p); if (!d) return String(v); if (typeof v === 'number' && !d.fmt) return fmtDec(v, 2); return fmtVal(d.fmt, v); }
+// alle Locks des Ziels: [{p, v, txt}] (Reihenfolge wie in der ersten Note)
+function pl1List(tg) {
+  const m = new Map();
+  for (const n of pl1Notes(tg)) {
+    const lk = n.lk; if (!lk) continue;
+    for (const k of ['tune', 'dec']) if (lk[k] != null && !m.has(k)) m.set(k, lk[k]);
+    if (lk.v) for (const p in lk.v) if (!m.has(p) && LKT[p]) m.set(p, lkFromN(LKT[p], lk.v[p]));
+  }
+  return [...m].map(([p, v]) => ({p, v, txt: pl1Lbl(tg, p) + ' ' + pl1Fmt(tg, p, v)}));
+}
+// schreiben ohne Undo (die Geste fasst zusammen): v = Engine-Wert, null = Lock weg; über lkW (Kopie beim Schreiben, Kern 4.38)
+function pl1Put(tg, p, v) {
+  let n0 = 0, full = 0;
+  for (const nt of pl1Notes(tg)) {
+    if (p === 'tune' || p === 'dec') {
+      const off = v == null || (p === 'tune' ? !Math.round(v) : Math.abs(v - 1) < .02);
+      if (off && !pl1Has(nt, p)) continue;
+      const lk = nt.lk = Object.assign({}, nt.lk); if (lk.v) lk.v = Object.assign({}, lk.v);
+      if (off) delete lk[p]; else lk[p] = p === 'tune' ? clamp(Math.round(v), -12, 12) : +clamp(v, .25, 4).toFixed(2);
+      if (!Object.keys(lk).length) delete nt.lk;
+      n0++; continue;
+    }
+    const e = LKT[p]; if (!e) continue;
+    if (v == null) {
+      if (!pl1Has(nt, p)) continue;
+      delete lkW(nt)[p]; if (!Object.keys(nt.lk.v).length) delete nt.lk.v; if (!Object.keys(nt.lk).length) delete nt.lk; n0++; continue;
+    }
+    if (!pl1Has(nt, p) && nt.lk && nt.lk.v && Object.keys(nt.lk.v).length >= LK_MAX.note) { full++; continue; }
+    lkW(nt)[p] = lkToN(e, v); n0++;
+  }
+  if (full) lkSay('Höchstens ' + LK_MAX.note + ' Locks je Note');
+  return n0;
+}
+// ein Regler-Wert; genau auf dem Wert ohne Lock (Doppeltipp = Standard) geht der Lock weg
+function pl1Set(tg, p, v, d) {
+  const atBase = !!d && d.def !== undefined && (d.vals ? v === d.def : isNum(v) && isNum(d.def) && Math.abs(toNorm(d, v) - toNorm(d, d.def)) < 1e-4);
+  return pl1Put(tg, p, atBase ? null : v);
+}
+// eine Geste = ein Undo-Schritt (Art 'clip'); danach hört der laufende Clip die neuen Werte sofort (afterClipEdit plant neu)
+function pl1Commit(tg, before, label) {
+  const c = pl1Clip(tg); if (!c || before == null) return false;
+  if (JSON.stringify(cleanClip(c)) === JSON.stringify(before)) return false;
+  pushUndo(tg.t, tg.s, before, 'Lock · ' + label); afterClipEdit(tg.t, tg.s); pl1Paint();
+  return true;
+}
+function pl1Clear(tg, p) {
+  const c = pl1Clip(tg); if (!c) return false;
+  const before = cleanClip(c), L = p ? [p] : pl1List(tg).map(x => x.p);
+  for (const q of L) pl1Put(tg, q, null);
+  const ok = pl1Commit(tg, before, p ? pl1Lbl(tg, p) + ' weg' : 'alle weg');
+  if (ok) haptic('tick');
+  return ok;
+}
+// Punkte und offene Lock-Abschnitte neu zeichnen
+function pl1Paint() {
+  try {
+    if (ED.lauf && ED.rollAt) laufPaint();
+    if (R.editor === 'drum' && ED.step) paintSteps();
+    if (ED.roll && ED.rollAt) ED.roll.select(ED.roll.selection);
+    for (const w of document.querySelectorAll('.pl1s')) if (w._pl1) { for (const k of w._pl1.ks) k.update(); pl1Chips(w); }
+  } catch (e) { logErr(e); }
+}
+// LAUF / SCHRITTE: Punkt rechts oben am Schritt mit Lock
+function pl1Deco(cell, n) {
+  const on = pl1HasAny(n); let d = cell._pl1d;
+  if (on && !d) { d = cell._pl1d = el('i', 'pl1d'); d.setAttribute('aria-hidden', 'true'); cell.appendChild(d); }
+  if (d && d.hidden !== !on) d.hidden = !on;
+}
+// ROLLE (PianoRoll opts.noteDeco, je gezeichnete Note): Punkt rechts oben in der Note
+function pl1RollDeco(x, nt, r) {
+  if (!pl1HasAny(nt) || r.w < 8) return;
+  const S_ = pl1S(); if (!S_.amb) { try { S_.amb = getComputedStyle(document.documentElement).getPropertyValue('--amber').trim() || '#ffb22e'; } catch (e) { S_.amb = '#ffb22e'; } }
+  const cx = r.x + r.w - 6, cy = r.y + 7;
+  x.beginPath(); x.arc(cx, cy, 3.4, 0, 7); x.fillStyle = S_.amb; x.fill(); x.lineWidth = 1.5; x.strokeStyle = 'rgba(0,0,0,.75)'; x.stroke(); x.lineWidth = 1;
+}
+
+/* ---------- der Abschnitt „🔒 Regler nur für …“ (Regler, Lock-Leiste, Löschen, Alle Regler) ---------- */
+function pl1Sect(host, tg) {
+  pl1Css();
+  const eng = pl1Eng(tg.t), w = el('div', 'pl1s');
+  w.setAttribute('role', 'group'); w.setAttribute('aria-label', 'Parameter-Locks für ' + tg.lbl);
+  if (!eng || (eng === 'drum' && (!tg.sid || (typeof mdIsSrc === 'function' && mdIsSrc(tg.sid))))) {
+    w.appendChild(el('p', 'pl1h', '🔒 Bei diesem Klang gibt es noch keine Locks.')); host.appendChild(w); return w;
+  }
+  w.appendChild(el('div', 'pl1t', '<b>🔒 Regler nur für ' + esc(tg.lbl) + '</b><span>◆ = ganzer Clip</span>'));
+  const row = el('div', 'pl1k'), ks = [];
+  for (const [k, lbl] of PL1_QK[eng]) {
+    const p = pl1QPath(tg, k), d = pl1Desc(tg, p, lbl); if (!d) continue;
+    const kn = makeCtl(d, () => pl1Get(tg, p), v => pl1Set(tg, p, v, d), {label: lbl, fmt: v => fmtVal(d.fmt, v),
+      undo: {snap: () => cleanClip(pl1Clip(tg)), commit: (b) => pl1Commit(tg, b, lbl)}, onChange: () => pl1Chips(w)});
+    kn.dataset.pl1 = p; kn.classList.add('pl1kn'); ks.push(kn); row.appendChild(kn);
+  }
+  w.appendChild(row);
+  const lst = el('div', 'pl1l'); w.appendChild(lst);
+  const acts = el('div', 'pl1a'), bClr = el('button', 'rb pl1clr', 'Locks löschen'), bAll = el('button', 'rb pl1all', 'Alle Regler ›');
+  bClr.setAttribute('aria-label', 'Alle Locks von ' + tg.lbl + ' löschen'); bAll.setAttribute('aria-label', 'Alle Regler im Lock-Modus (Klang-Editor)');
+  acts.append(bClr, bAll); w.appendChild(acts);
+  onTap(bClr, () => pl1Clear(tg, null)); onTap(bAll, () => pl1ModeGo(tg));
+  onTap(lst, b => pl1Clear(tg, b.dataset.p), 'button[data-p]');
+  w._pl1 = {tg, ks}; host.appendChild(w); pl1Chips(w);
+  return w;
+}
+function pl1Chips(w) {
+  const tg = w._pl1 && w._pl1.tg, lst = w.querySelector('.pl1l'); if (!tg || !lst) return;
+  const L = pl1List(tg);
+  const h = L.length ? L.map(x => `<button class="rb pl1c" data-p="${esc(x.p)}" aria-label="${esc(x.txt)} – Lock löschen"><span>${esc(x.txt)}</span><i>✕</i></button>`).join('')
+    : '<span class="pl1n">Noch kein Lock – Regler drehen (Schritt dabei halten geht auch).</span>';
+  if (lst._h !== h) { lst._h = h; lst.innerHTML = h; }
+  const clr = w.querySelector('.pl1clr'); if (clr) clr.disabled = !L.length;
+  for (const k of w._pl1.ks) k.classList.toggle('pl1on', L.some(x => x.p === k.dataset.pl1));
+}
+// ein eigenes kleines Fenster (Drum-Schritt, ROLLE)
+function pl1Pop(anchor, tg) {
+  openPop(anchor, p => {
+    p.classList.add('pl1pop'); guardTouch(p);
+    p.appendChild(el('h4', '', esc(tg.lbl)));
+    pl1Sect(p, tg);
+  }, {name: 'pl1'});
+}
+// LAUF: am Ende des Schritt-Menüs (lf1StepRender) – nur für einen gesetzten Schritt
+function pl1LaufSect(p, t, s, k) {
+  try {
+    const c = S.tracks[t] && S.tracks[t].clips[s], n = c ? laufFind(c, k) : null;
+    p.classList.toggle('pl1w', !!n && !!pl1Eng(t));
+    if (!n) return;
+    pl1Sect(p, pl1Tg(t, s, 'lauf', [n], 'Schritt ' + (k + 1)));
+  } catch (e) { logErr(e); }
+}
+// Drum-SCHRITTE: einen gesetzten Schritt lang drücken (480 ms ohne Bewegung > 8 px, wie LF1) → Locks dieses Schlags; leer = wie bisher
+function pl1DrumTg(i) {
+  const s = R.selS, c = S.tracks[DRUM_T].clips[s]; if (!c) return null;
+  const V = DRUM_VOICES[ED.dVoice]; if (!V) return null;
+  const N = dStepsOf(c), NS = Math.round(clipB(c) * 4), si = (ED.page | 0) * N + i;
+  const ns = c.notes.filter(n => n.n === V.gm && Math.round(n.t / .25) % NS === si); if (!ns.length) return null;
+  return pl1Tg(DRUM_T, s, 'drum', ns, V.l + ' · Schritt ' + (si + 1));
+}
+function pl1DrumHold(E) {
+  if (!E || !E.el) return;
+  const row = E.el.row; let H = null;
+  const stop = () => { if (H) { clearTimeout(H.tm); H = null; } };
+  row.addEventListener('pointerdown', e => {
+    stop(); if (e.button > 0) return;
+    const cell = e.target && e.target.closest ? e.target.closest('.se-cell') : null, i = E.cells.indexOf(cell); if (i < 0) return;
+    H = {id: e.pointerId, x: e.clientX, y: e.clientY, i, tm: setTimeout(() => {
+      const h = H; H = null; if (!h || ED.step !== E || R.editor !== 'drum') return;
+      const tg = pl1DrumTg(h.i); if (!tg) return;
+      E.abort(); armLongPressGuard(); haptic('tick');
+      pl1Pop(E.cells[h.i], tg);
+    }, 480)};
+  });
+  row.addEventListener('pointermove', e => { if (H && e.pointerId === H.id && Math.hypot(e.clientX - H.x, e.clientY - H.y) > 8) stop(); });
+  for (const ev of ['pointerup', 'pointercancel']) row.addEventListener(ev, e => { if (H && e.pointerId === H.id) stop(); releaseLongPressGuard(); });
+}
+// ROLLE: [🔒 Locks] am Ende der Aktionszeile (PianoRoll endActs)
+function pl1Acts(t, s) {
+  if (!pl1Eng(t)) return [];
+  return [{id: 'pl1', label: '🔒 Locks', title: 'Parameter-Locks: Regler nur für die gewählten Noten', cls: 'pl1rb', fn: b => pl1RollPop(b, t, s)}];
+}
+function pl1RollPop(b, t, s) {
+  const ns = ED.roll ? ED.roll.selection : [];
+  if (!ns.length) { toast('Erst Noten wählen (antippen oder ⬚) – dann 🔒 Locks'); return false; }
+  pl1Pop(b, pl1Tg(t, s, 'rolle', ns, ns.length === 1 ? '1 Note' : ns.length + ' Noten'));
+  return true;
+}
+
+/* ---------- Lock-Modus: [Alle Regler ›] = Klang-Editor / Drum-Editor / Platte, jeder Regler nur für das Ziel ---------- */
+function pl1Ptr() {
+  const S_ = pl1S(); if (S_.ptr) return; S_.ptr = true;
+  window.addEventListener('pointerdown', () => { S_.pd++; S_.pt = performance.now(); }, true);
+  const up = () => { S_.pd = Math.max(0, S_.pd - 1); S_.pt = performance.now(); if (S_.pend && !S_.pd) setTimeout(pl1Flush, 0); };
+  window.addEventListener('pointerup', up, true); window.addEventListener('pointercancel', up, true);
+  window.addEventListener('blur', () => { S_.pd = 0; if (S_.pend) pl1Flush(); });
+}
+function pl1Live() {
+  const M = UI.pl1 && UI.pl1.mode; if (!M) return false;
+  const tr = S.tracks[M.tg.t];
+  return (R.editor === 'synth' || R.editor === 'drum') && R.selT === M.tg.t && !!tr && !!tr.clips[M.tg.s];
+}
+// kv1Ov / dSlotGet (erste Zeile): im Lock-Modus zeigt der Regler den Lock-Wert des Ziels
+function pl1Shown(i, k) {
+  const M = UI.pl1 && UI.pl1.mode; if (!M || M.tg.t !== i || !pl1Live()) return undefined;
+  return pl1LkOf(M.tg, k);
+}
+// setP / mkSetP / fmSetOp / fmSetEnv / drumSet (erste Zeile): true = erledigt (der Klang bleibt unberührt). Nur Gesten (Finger auf dem
+// Schirm oder eben losgelassen) – was die App selbst setzt, geht wie immer in den Klang
+function pl1Wr(i, path, v) {
+  const S_ = UI.pl1, M = S_ && S_.mode; if (!M || M.tg.t !== i || !pl1Live()) return false;
+  if (!(S_.pd > 0 || performance.now() - S_.pt < 400)) return false;
+  const tg = M.tg, tr = S.tracks[i], e = LKT[path];
+  let why = '';
+  if (!e || e.cls === 's' || e.cls === 'r') why = 'gilt nur für den ganzen Klang – kein Lock';
+  else if (tr.kind === 'drum' ? path.split('.')[1] !== tg.sid : !lkFamOk(e, tr.sound)) why = tr.kind === 'drum' ? 'der Lock gehört zu ' + tg.lbl.split(' · ')[0] + ' – dieses Pad wählen' : 'wirkt bei diesem Klang nicht';
+  if (why) { pl1BanSay((e ? e.lbl : path) + ': ' + why, true); return true; }
+  if (e.vals ? !e.vals.includes(v) : !(typeof v === 'number' && isFinite(v))) return true;
+  if (!S_.pend) { const c = pl1Clip(tg); if (!c) return true; S_.pend = {tg, before: cleanClip(c), lbl: pl1Lbl(tg, path)}; }
+  pl1Put(tg, path, v);
+  clearTimeout(S_.pendT); S_.pendT = setTimeout(function chk() { if (S_.pd > 0) S_.pendT = setTimeout(chk, 400); else pl1Flush(); }, 900);
+  pl1BanSay(pl1Lbl(tg, path) + ' ' + pl1Fmt(tg, path, v), false);
+  return true;
+}
+function pl1Flush() {
+  const S_ = pl1S(), P = S_.pend; S_.pend = null; clearTimeout(S_.pendT);
+  if (P) pl1Commit(P.tg, P.before, P.lbl);
+}
+function pl1ModeGo(tg) {
+  const S_ = pl1S(), tr = S.tracks[tg.t]; if (!tr || !pl1Clip(tg)) return false;
+  pl1Flush(); closePop(); pl1Ptr();
+  S_.mode = {tg};
+  if (tr.kind === 'drum') { selectSlot(DRUM_T, tg.s); const v = DRUM_VOICES.findIndex(x => x.id === tg.sid); if (v >= 0) ED.dVoice = v; ED.dTab = 'sound'; }
+  else selectSlot(tg.t, tg.s);
+  openEditor();
+  pl1Ban(); haptic('tick');
+  return true;
+}
+function pl1ModeEnd(back) {
+  const S_ = pl1S(), M = S_.mode; pl1Flush(); S_.mode = null; pl1Ban();
+  if (!M) return false;
+  if (!back) { if ((R.editor === 'synth' || R.editor === 'drum') && R.selT === M.tg.t) safeRebuild(openEditor); return true; }
+  const tg = M.tg;
+  if (tg.src === 'drum') { ED.dTab = 'steps'; openRoll(DRUM_T, tg.s); }
+  else { ROLLP.view = tg.src === 'lauf' ? 'lauf' : 'roll'; openRoll(tg.t, tg.s); if (tg.src === 'rolle' && ED.roll) ED.roll.select(pl1Notes(tg)); }
+  return true;
+}
+// die Leiste liegt über der Anzeige (LCD) des Editors – sie verschiebt nichts; ✕ des Editors bleibt frei
+function pl1Ban() {
+  const S_ = pl1S(), M = S_.mode; let b = S_.ban;
+  if (!M) { if (b) b.hidden = true; if (S_.banIv) { clearInterval(S_.banIv); S_.banIv = 0; } return; }
+  pl1Css();
+  if (!b) {
+    b = S_.ban = el('div', 'pl1ban'); b.setAttribute('role', 'status');
+    b.innerHTML = '<div class="pl1bx"><span class="pl1bt"></span><span class="pl1bv"></span></div><button class="rb pl1bf" aria-label="Lock-Modus beenden">Fertig</button>';
+    document.body.appendChild(b); guardTouch(b); onTap(b.querySelector('.pl1bf'), () => pl1ModeEnd(true));
+  }
+  b.hidden = false; b._sig = '';
+  b.querySelector('.pl1bt').textContent = '🔒 LOCK · ' + M.tg.lbl;
+  pl1BanSay('Regler drehen = nur ' + M.tg.lbl + ' (nicht ◆)', false);
+  pl1BanPlace();
+  if (!S_.banIv) S_.banIv = setInterval(() => { const X = pl1S(); if (!X.mode) { pl1Ban(); return; } if (!pl1Live()) { pl1ModeEnd(false); return; } pl1BanPlace(); }, 250);
+}
+function pl1BanSay(txt, warn) { const b = UI.pl1 && UI.pl1.ban; if (!b) return; const v = b.querySelector('.pl1bv'); if (v.textContent !== txt) v.textContent = txt; v.classList.toggle('warn', !!warn); }
+function pl1BanPlace() {
+  const b = UI.pl1 && UI.pl1.ban; if (!b || b.hidden) return;
+  const L = ED.lcd, r = L && L.isConnected ? L.getBoundingClientRect() : null;
+  let x, y, w;
+  if (r && r.width > 160 && r.height > 0) { x = r.left; w = r.width; y = r.top + r.height / 2 - 24; }
+  else { w = Math.min(420, window.innerWidth - 16); x = (window.innerWidth - w) / 2; y = window.innerHeight - 56; }
+  const sig = [x, y, w].map(Math.round).join(); if (b._sig === sig) return; b._sig = sig;
+  b.style.left = Math.round(x) + 'px'; b.style.top = Math.round(Math.max(4, y)) + 'px'; b.style.width = Math.round(w) + 'px';
+}
+
+/* ---------- Test-API ---------- */
+const PL1_API = {
+  ll: on => (on == null ? pl1Ll() : pl1LlSet(on)),
+  get: (t, s) => lkGet(t, s),
+  // Lock wie ein Regler-Dreh: Ziel = Noten (Indizes) des Clips, v = Engine-Wert (null = weg); ein Undo-Schritt
+  set: (t, s, idx, path, v) => { const c = S.tracks[t] && S.tracks[t].clips[s]; if (!c) return false; const tg = pl1Tg(t, s, 'api', idx.map(i => c.notes[i]).filter(Boolean), 'API'); const b = cleanClip(c); pl1Put(tg, path, v); return pl1Commit(tg, b, pl1Lbl(tg, path)); },
+  list: (t, s, idx) => { const c = S.tracks[t] && S.tracks[t].clips[s]; if (!c) return []; return pl1List(pl1Tg(t, s, 'api', idx.map(i => c.notes[i]).filter(Boolean), 'API')); },
+  clear: (t, s, idx, path) => { const c = S.tracks[t] && S.tracks[t].clips[s]; if (!c) return false; return pl1Clear(pl1Tg(t, s, 'api', idx.map(i => c.notes[i]).filter(Boolean), 'API'), path || null); },
+  laufPop: k => { if (!ED.lauf) return false; const L = ED.lauf, per = L.per, cell = L.se.cells[k - LAUF.page * per]; lf1StepPop(L.t, L.s, k, cell || null); return !!(UI.pop && UI.pop.el.querySelector('.pl1s')); },
+  drumPop: i => { if (!ED.step) return false; const tg = pl1DrumTg(i); if (!tg) return false; pl1Pop(ED.step.cells[i], tg); return true; },
+  rollPop: () => { const b = ED.roll && ED.roll.el.acts ? [...ED.roll.el.acts.children].find(x => x.textContent === '🔒 Locks') : null; if (!b || !ED.rollAt) return false; return pl1RollPop(b, ED.rollAt.t, ED.rollAt.s); },
+  mode: () => { const M = UI.pl1 && UI.pl1.mode; return M ? {t: M.tg.t, s: M.tg.s, src: M.tg.src, lbl: M.tg.lbl, live: pl1Live(), ban: !!(UI.pl1.ban && !UI.pl1.ban.hidden)} : null; },
+  modeGoTop: () => { const w = UI.pop && UI.pop.el.querySelector('.pl1s'); if (!w || !w._pl1) return false; return pl1ModeGo(w._pl1.tg); },
+  modeEnd: back => pl1ModeEnd(back !== false),
+  info: () => ({mode: !!(UI.pl1 && UI.pl1.mode), pend: !!(UI.pl1 && UI.pl1.pend), ll: pl1Ll(), qk: Object.keys(PL1_QK)}),
+};
+/* ===== PL1-END ===== */
+Object.assign(SYNQUENZER, {pl1: PL1_API});                  /* PL1: Test-API (Objekt, wird nicht umhüllt) */
 const NO_SYNC = new Set(['clipCurves', 'bmcLog', 'bmcState', 'oneScaleOf', 'harmInfo', 'kbScaleNow', 'micCheck', 'micCheckJson', 'micCheckEstimate', 'cloud', 'cloudProjects', 'cloudVersions', 'cloudHandoff', 'state', 'project', 'runtime', 'getClip', 'getParam', 'noteLog', 'voices', 'timeline', 'serialize', 'buildMidi', 'buildZip', 'crc32', 'meter', 'outPitch', 'migrate', 'tapTempo',
   'getSound', 'mods', 'library', 'factory', 'previewState', 'soundEdited', 'fmxView', 'fmxPreview', 'fmxBadge',
   'history', 'projects', 'storage', 'engineInfo', 'getBusFx', 'wake', 'gestures', 'roll', 'rollApi', 'detectKey', 'sceneKey',
