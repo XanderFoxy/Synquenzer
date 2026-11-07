@@ -82636,6 +82636,7 @@ function wegeScrubEnd(ok) {
 
 /* ---------- D7: ein Blatt „Export“ ---------- */
 function wegeVa1Html(h) {
+  wegeCss();
   try {
     const song = !!(S.song && S.song.bars), busy = va1Busy();
     const B = (a, t, s, ok, cls, more) => `<button class="mbtn rb${cls ? ' ' + cls : ''}" data-va="${a}"${more || ''}${ok ? '' : ' disabled'}><b>${esc(t)}</b>${s ? '<small>' + esc(s) + '</small>' : ''}</button>`;
