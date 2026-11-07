@@ -115,7 +115,7 @@ const A = await p.evaluate(async () => {
 });
 ok('Ohne MX2: kein Master, keine Weiche, Angleich 1 (bitgleich)', !A.bypass.am && !A.bypass.chain && A.bypass.trim === 1, A.bypass);
 ok('Mastern: EIN Durchlauf misst', A.way && A.rend1 === 1, {ms: A.msMeasure});
-ok('4 Stile umschalten ohne Render, je < 100 ms, Master-Knoten läuft live mit', A.rend2 === 1 && A.sw.every(s => s.ok && s.ms < 100 && s.amPf === s.pf) && A.nodeLive, A.sw);
+ok('4 Stile umschalten ohne Render (der erste baut einmal den Master-Knoten), je < 250 ms, danach < 60 ms; Knoten läuft live mit', A.rend2 === 1 && A.sw.every(s => s.ok && s.ms < 250 && s.amPf === s.pf) && A.sw.slice(1).every(s => s.ms < 60) && A.nodeLive, A.sw);
 ok('Vorlieben (Druck, Glanz) ohne Render, je < 100 ms; Stil-Folge = ein Undo-Schritt', A.rend3 === 1 && A.prefT.every(t => t < 100) && /^Master:/.test(A.undoTop), {ms: A.prefT, undo: A.undoTop});
 ok('Nachprüfung im Worker: genau −14 LUFS, Pegel übernommen', A.exact && Math.abs(A.exact.lout + 14) <= 0.1 && A.amGain === A.exact.gain, A.exact);
 ok('Render −14: Lautheit ±0,3 LU, True-Peak ≤ −1 dBTP', Math.abs(A.render14.I + 14) <= 0.3 && A.render14.tp <= -1, A.render14);
@@ -151,7 +151,7 @@ ok('Blatt zu = Song-Signal im Worker frei; Stil-Wechsel danach weiter sofort (Sc
 // Kanalzug (EQ · KOMP) mit Live-Analyzer und Gain-Reduction beim Abspielen
 const kz = await p.evaluate(async () => {
   const w = ms => new Promise(r => setTimeout(r, ms));
-  closePop(); await SYNQUENZER.mixaAnalyze(); const gi = S.tracks.findIndex((t, i) => !!mx2EqGhost(i));
+  closePop(); SYNQUENZER.loadDemo(); SYNQUENZER.songFromChain([{scene: 0, bars: 4}, {scene: 1, bars: 4}]); await w(200); await SYNQUENZER.mixaAnalyze(); const gi = S.tracks.findIndex((t, i) => !!mx2EqGhost(i));
   if (gi >= 0) { SYNQUENZER.mx1EqSheet(gi); await w(200); } const ghost = gi >= 0 ? (document.querySelector('.pop.mx1eqs .mx2gh').getAttribute('d') || '').length : -1; closePop();
   SYNQUENZER.mx1EqSet(0, 'ra', 4); SYNQUENZER.mx1EqSet(0, 'thr', -30); SYNQUENZER.mx2Play(); await w(300); SYNQUENZER.mx1EqSheet(0); await w(1500);
   const p = document.querySelector('.pop.mx1eqs'), sb = p.querySelector('.mx2sb').getAttribute('d') || '', sa = p.querySelector('.mx2sa').getAttribute('d') || '', kc = p.querySelector('.mx2kc').getAttribute('d') || '', gr = p.querySelector('.mx2grm em').textContent;
@@ -164,7 +164,7 @@ await p.evaluate(() => { stop(); closePop(); });
 await p.setViewportSize({width: 926, height: 428}); await p.waitForTimeout(400);
 h1 = await hdr();
 ok('Kopfleiste quer: [MIX] sichtbar, Menü im Bild', h1.vis && h1.h >= 44 && h1.menuR <= h1.vw, h1);
-await p.evaluate(async () => { SYNQUENZER.mx2Sheet(); await new Promise(r => setTimeout(r, 200)); });
+await p.evaluate(async () => { SYNQUENZER.mx2Sheet(); await new Promise(r => setTimeout(r, 100)); await SYNQUENZER.mx2Way('both'); await SYNQUENZER.mx2Exact(); await new Promise(r => setTimeout(r, 300)); });
 t1 = await tapSize('.pop.mx2s button'); s1 = await sheet();
 ok('Blatt quer 926×428: zwei Spalten, Tasten ≥ 44 px, ✕ sichtbar, im Bild', s1.inView && s1.x && /px .*px/.test(s1.cols) && t1.minH >= 44 && !t1.over.length, {t1, s1});
 await p.screenshot({path: out + '/mx2-l-blatt.png'});

@@ -4321,7 +4321,7 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 .mx2s .mx2n{stroke:var(--amber);stroke-width:2}
 .mx2s .mx2c0{stroke:var(--sel);stroke-width:2}
 .mx2kv,.mx2kn,.mx2kg{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin:0 2px;background:var(--text-dim)}
-.mx2kn{background:var(--amber)}.mx2kg{background:transparent;border-top:2px dashed var(--sel);height:0;border-radius:0}
+.mx2kn{background:var(--amber)}.mx2kf{display:inline-block;width:14px;height:8px;border-radius:2px;vertical-align:middle;margin:0 2px;background:rgba(96,196,255,.55)}.mx2kg{background:transparent;border-top:2px dashed var(--sel);height:0;border-radius:0}
 .mx2s .mx2mt{display:grid;gap:3px;margin:2px 0 4px}
 .mx2s .mx2mr{display:grid;grid-template-columns:58px minmax(0,1fr) 64px;gap:8px;align-items:center;font:500 11px/1.2 var(--font-ui);color:var(--text-dim)}
 .mx2s .mx2mr i,.mx1eqs .mx2grm i{display:block;height:10px;background:var(--lcd);border:1px solid var(--panel-edge);border-radius:3px;overflow:hidden}
@@ -4342,7 +4342,7 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
   .mx2s .mx2c{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:14px;align-items:start}
   .mx2s .mx2pf .mbtn{min-height:44px}.mx2s .mx2w .mbtn{min-height:48px}
 }
-.mx1eqs .mx1cv .mx2sb{fill:rgba(255,190,80,.16);stroke:none}
+.mx1eqs .mx1cv .mx2sb{fill:rgba(96,196,255,.2);stroke:none}
 .mx1eqs .mx1cv .mx2sa{stroke:rgba(255,255,255,.35);stroke-width:1}
 .mx1eqs .mx1cv .mx2gh{stroke:var(--sel);stroke-width:1.5;stroke-dasharray:4 3}
 .mx1eqs .mx2leg{margin:0 0 2px}
@@ -65411,11 +65411,12 @@ function mx2Master() {
 // genaue Nachprüfung im Worker (verzögert: schnelles Durchschalten rechnet nur das letzte nach)
 function mx2ExactSoon() { clearTimeout(MX2.xT); MX2.xT = setTimeout(mx2Exact, 350); }
 async function mx2Exact() {
-  const F = MX2.fit, c = MX2.cache; if (!F || !c || F.exact) return null;
+  const F = MX2.fit, c = MX2.cache; if (!F || !c || F.exact || F.miss) return null;
   const gen = F.gen, lat = Math.round((AU.compLat || FX.COMP_LATENCY) * c.sr);
   let r; try { r = await mixaCall({op: 'mx2exact', key: c.key, P: F.P, o: {ziel: F.ziel, lat}}); } catch (e) { logErr(e); return null; }
+  if (r && r.miss && MX2.fit && MX2.fit.gen === gen) { F.miss = true; mx2Paint(); return null; }   // Signal schon freigegeben (Blatt war zu): bleibt Schätzung
   if (!r || r.miss || !MX2.fit || MX2.fit.gen !== gen) return null;
-  F.exact = r; F.P.gain = r.gain; Object.assign(F.info, r.info);
+  F.exact = r; F.miss = false; F.P.gain = r.gain; Object.assign(F.info, r.info);
   const a = S.fxBus.am;
   if (a && a.on && a.mx2 && JSON.stringify(a.mb) === JSON.stringify(F.P.mb) && a.thr === F.P.thr && Math.abs(a.gain - r.gain) > 0.004) { a.gain = r.gain; markDirty(); mixaMasterSync(false); }
   if (MX2.ab) MX2.ab.LB = r.info.lout;
@@ -65619,6 +65620,7 @@ function mx2Closed() {
   mx2AbEnd(); MX2.open = false; MX2.ab = null; MIXA.ab = false;
   mx2MeterOff(); cancelAnimationFrame(MX2.raf); MX2.raf = 0;
   const N = AU.M && AU.M.am; if (N && AU.ctx) mixaAbSet(N, false);
+  clearTimeout(MX2.xT); if (MX2.cache) mixaCall({op: 'mx2drop'}).catch(() => {});   // Speicher: das Song-Signal im Worker freigeben (Merkmale bleiben)
 }
 function mx2Tap(b) {
   const a = b.dataset.x2, v = b.dataset.v, i = +b.dataset.i;
@@ -65694,7 +65696,7 @@ function mx2Paint() {
   else if (!S.song || !S.song.bars) st = 'Noch kein Song – erst ● SONG';
   else if (!cache) st = 'Ein Tipp misst den Song einmal (offline) – danach schalten Stil, Ziel und Vorlieben sofort.';
   else if (!fresh) st = '<b class="mx2warn">Song geändert seit der Messung – neu messen</b> <button class="mbtn rb mx2m" data-x2="meas">neu messen</button>';
-  else st = 'Gemessen (' + mx2F(cache.ms / 1000, 1) + ' s) · Stile und Vorlieben schalten sofort, ohne neu zu rendern' + (F ? (F.exact ? ' · <b class="mx2ok">genau nachgeprüft ✓</b>' : ' · <span class="mx2dim">wird genau nachgeprüft …</span>') : '');
+  else st = 'Gemessen (' + mx2F(cache.ms / 1000, 1) + ' s) · Stile und Vorlieben schalten sofort, ohne neu zu rendern' + (F ? (F.exact ? ' · <b class="mx2ok">genau nachgeprüft ✓</b>' : F.miss ? ' · <span class="mx2dim">Schätzung (± 0,2 dB) – „neu messen“ prüft genau nach</span>' : ' · <span class="mx2dim">wird genau nachgeprüft …</span>') : '');
   const stelle = cache ? mx2Stelle() : null;
   let L = `<div class="mx2w" role="group" aria-label="Wege">` +
     `<button class="mbtn rb" data-x2="w" data-v="mix"${busy ? ' disabled' : ''}${MX2.way === 'mix' ? ' aria-pressed="true"' : ''}><b>Mischen</b><small>Spuren ausbalancieren</small></button>` +
@@ -65772,7 +65774,7 @@ function mx2EqAdd(p, i) {
   const NS = 'http://www.w3.org/2000/svg', mk = cls => { const e = document.createElementNS(NS, 'path'); e.setAttribute('class', cls); return e; };
   const sa = mk('mx2sa'), sb = mk('mx2sb'), gh = mk('mx2gh');
   sv.insertBefore(sb, pv); sv.insertBefore(sa, pv); sv.insertBefore(gh, pv);
-  sv.after(el('div', 'small mx2leg', '<i class="mx2kv"></i> vor dem EQ · <i class="mx2kn"></i> nach EQ + Kompressor (live beim Abspielen) · <i class="mx2kg"></i> Vorschlag des Mix-Assistenten'));
+  sv.after(el('div', 'small mx2leg', '<i class="mx2kv"></i> vor dem EQ · <i class="mx2kf"></i> nach EQ + Kompressor (live beim Abspielen) · <i class="mx2kg"></i> Vorschlag des Mix-Assistenten'));
   const cp = p.querySelector('.mx1kcp');
   const box = el('div', 'mx2cpv', '<svg class="mx2kl" viewBox="0 0 64 64" aria-hidden="true"><path class="mx2g" d="M0,64L64,0"/><path class="mx2kc"/><circle class="mx2kt" r="2.5"/></svg>' +
     '<div class="mx2grm"><span>Gain-Reduction</span><i><b></b></i><em>–</em><small class="mx2kx"></small></div>');

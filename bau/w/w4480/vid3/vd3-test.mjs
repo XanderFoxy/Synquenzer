@@ -117,11 +117,11 @@ void shotCut;
 // aus = alles wie vorher (ohne Einträge: dieselbe Höhe und dasselbe Bild wie der Grundstand)
 await p.evaluate(() => { for (let k = 0; k < 8 && S.song.video; k++) SYNQUENZER.undo(); SYNQUENZER.vd3.cut(false); if (typeof hideToast === 'function') hideToast(); }); await p.waitForTimeout(400);
 const L5 = await p.evaluate(() => ({ru: SV.rulerH, rowH: SV.rowH, vvS: SV.vvS, cuts: SYNQUENZER.vvCuts({range: {a: 0, b: 12}}).hash, lbl: SYNQUENZER.vd3.info().lbl}));
-const shotOff1 = await p.locator('#songView .sv-cw').screenshot();
+const shotOff1 = await p.locator('#songView .sv-cw').screenshot(); fs.writeFileSync(OUT + '/dbg-off0.png', shotOff0); fs.writeFileSync(OUT + '/dbg-off1.png', shotOff1);
 ok('Aus = unverändert: Takt-Leiste, Zeilen, Regie und Bild der Song-Fläche wie vor dem Einschalten', L5.ru === L0.ru && L5.rowH === L0.rowH && L5.vvS === 0 && !L5.lbl && L5.cuts === L0.cuts && shotOff0.equals(shotOff1), {L0, L5, gleichesBild: shotOff0.equals(shotOff1)});
 // Grundstand (basis.html): dieselbe Song-Fläche
 const pb = await open(BASE, 428, 926, true); await pb.evaluate(SONG); await pb.evaluate(() => setSongView(true)); await pb.waitForTimeout(400);
-const shotBase = await pb.locator('#songView .sv-cw').screenshot(), cutsBase = await pb.evaluate(() => SYNQUENZER.vvCuts({range: {a: 0, b: 12}}).hash);
+const shotBase = await pb.locator('#songView .sv-cw').screenshot(); fs.writeFileSync(OUT + '/dbg-base.png', shotBase); const cutsBase = await pb.evaluate(() => SYNQUENZER.vvCuts({range: {a: 0, b: 12}}).hash);
 ok('Gegen den Grundstand: Song-Fläche pixelgleich, Auto-Regie (Schnittliste) gleich', shotBase.equals(shotOff1) && cutsBase === L0.cuts, {cutsBase, cuts: L0.cuts});
 await pb.close();
 await p.close();

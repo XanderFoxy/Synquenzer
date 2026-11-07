@@ -54741,6 +54741,9 @@ const UI1_CSS = `
 .ui1tour .r{display:flex;gap:8px;justify-content:flex-end}
 .ui1tour button{min-width:44px;height:44px;padding:0 14px;font:700 13px/1 var(--font-ui)}
 .ui1tour .x{flex:none;width:44px;padding:0}
+.ui1tour.ld{width:min(390px,46vw);max-width:none;margin:0}
+.ui1tour.ld.r{left:auto;right:8px}
+.ui1tour.ld.l{left:8px;right:auto}
 #synthSheet .sh-head .seg.eng.ui1eng{gap:4px}
 #synthSheet .sh-head .seg.eng.ui1eng button{min-width:36px;padding:0 5px;position:relative;z-index:1}
 #synthSheet .sh-head .seg.eng.ui1eng.ui1c{gap:2px}
@@ -55057,8 +55060,10 @@ function ui1TourStep() {
     if (UI1.tour !== U || U.T.steps[U.k] !== st) return;
     const t = ok && E ? ui1Find(E.q) : null;
     if (t) ui1Ring(t, null, 0);
-    const b = t ? t.getBoundingClientRect() : null, vh = window.innerHeight, sa = 8;
-    if (b && b.top + b.height / 2 > vh * .5) { c.style.bottom = ''; c.style.top = sa + 'px'; } else { c.style.top = ''; c.style.bottom = sa + 'px'; }
+    const b = t ? t.getBoundingClientRect() : null, vh = window.innerHeight, vw = window.innerWidth, sa = 8, land = vw > vh;
+    // hochkant: die Karte oben oder unten, wo die Stelle nicht ist; quer: links oder rechts daneben (unten)
+    c.classList.toggle('ld', land); c.classList.toggle('r', land && !!b && b.left + b.width / 2 < vw * .5); c.classList.toggle('l', land && !(b && b.left + b.width / 2 < vw * .5));
+    if (!land && b && b.top + b.height / 2 > vh * .5) { c.style.bottom = ''; c.style.top = sa + 'px'; } else { c.style.top = ''; c.style.bottom = sa + 'px'; }
   }, 280);
 }
 /* ---------- Menü: „Wo finde ich …?“ (oben) und Leucht-Look (Bedienung) ---------- */
@@ -55160,6 +55165,11 @@ const UI1_BM_HELP = [
   '<b>Init</b> drücken, mit [Value] 1OSC / 2OSC / VEL / RAND wählen, noch einmal Init = neutraler Startklang. <b>Compare</b> vergleicht mit dem gespeicherten Klang, <b>Write</b> sichert unter U00 …',
   '<b>Layer / Split:</b> zwei Programme A und B übereinander oder links/rechts geteilt (Split halten + Taste = Teilungspunkt).',
   '<b>Octave</b> (die zwei Tasten oben links) verschiebt die Tastatur, <b>Vol</b> ist die Lautstärke. Jede Änderung nimmt ↶ zurück.'];
+// Pegel (gemessen: 3-Ton-Akkord, Anschlag 0,8, lautestes 300-ms-Fenster; Ziel wie BM7 ≈ −19 dB): zwei Bässe lagen 4–8 dB darunter
+// und haben Luft bis −1 dBFS → VOL angehoben (Säge-Bass 79 → 99: −23,2 → −19,3 dB; Puls-Bass 63 → 94: −27,3 → −20,3 dB). Nur der
+// Werks-Datensatz; ein gespeichertes Projekt trägt seinen eigenen Klang und klingt gleich. Kurze Plucks/Tasten stehen an −1 dBFS.
+const UI1_BM_VO = {'f-bm-p00': 99, 'f-bm-p02': 94};
+function ui1BmTrim() { for (const id in UI1_BM_VO) { const r = FACTORY_BY_ID.get(id); try { if (r && r.p && r.p.bm && r.p.bm.a && r.p.bm.a.g) r.p.bm.a.g.vo = UI1_BM_VO[id]; } catch (e) { logErr(e); } } }
 function ui1BmList() { return SYNTH_LIB.filter(f => engKey(f.engine) === 'bm' && soundRole(f) !== 'init'); }
 function ui1BmCats() { const have = new Set(ui1BmList().map(soundRole)); return [['alle', 'Alle']].concat(BM_ROLES.filter(([id]) => id !== 'init' && have.has(id))); }
 function ui1BmSheet(t) {
@@ -80745,7 +80755,7 @@ Object.assign(SYNQUENZER, {hm1: HM1_API});                  /* HM1: Test-API (Ob
 Object.assign(SYNQUENZER, UIX1_API);                        // UIX1: FANG-Teil-Namen, Mithören-Schalter, ✕, Tastatur
 Object.assign(SYNQUENZER, UX2_API);                         // UX2: Ziehen in der Matrix, Einfügen mit Lupe
 Object.assign(SYNQUENZER, {ui1: UI1_API});                  /* UI1: Test-API (Objekt, wird nicht umhüllt) */
-ueLibAdd(ui1UeLib()); ui1GlowInit();                        // UI1: ◆ ÜBERGÄNGE-Vorlagen, Leucht-Look (Gerät)
+ueLibAdd(ui1UeLib()); ui1BmTrim(); ui1GlowInit();           // UI1: ◆ ÜBERGÄNGE-Vorlagen, 2 Bit-Mask-Pegel, Leucht-Look (Gerät)
 const NO_SYNC = new Set(['clipCurves', 'bmcLog', 'bmcState', 'oneScaleOf', 'harmInfo', 'kbScaleNow', 'micCheck', 'micCheckJson', 'micCheckEstimate', 'cloud', 'cloudProjects', 'cloudVersions', 'cloudHandoff', 'state', 'project', 'runtime', 'getClip', 'getParam', 'noteLog', 'voices', 'timeline', 'serialize', 'buildMidi', 'buildZip', 'crc32', 'meter', 'outPitch', 'migrate', 'tapTempo',
   'getSound', 'mods', 'library', 'factory', 'previewState', 'soundEdited', 'fmxView', 'fmxPreview', 'fmxBadge',
   'history', 'projects', 'storage', 'engineInfo', 'getBusFx', 'wake', 'gestures', 'roll', 'rollApi', 'detectKey', 'sceneKey',
