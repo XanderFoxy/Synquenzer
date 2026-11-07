@@ -135,7 +135,24 @@ await p.waitForTimeout(300);
 const rx = await p.evaluate(() => { const P = document.querySelector('.gr1sheet'); const bs = [...P.querySelectorAll('button:not(.ms-x)')].map(x => { const q = x.getBoundingClientRect(); return {t: x.textContent, h: Math.round(q.height), w: Math.round(q.width), cut: x.scrollWidth > x.clientWidth + 1}; }); const q = P.getBoundingClientRect(), x = P.querySelector('.ms-x').getBoundingClientRect(); return {bs, top: q.top, bottom: q.bottom, x: {top: x.top, right: x.right}}; });
 ok('Remix-Blatt hochkant: Tasten ≥ 44 px, ✕ sichtbar', rx.bs.every(x => x.h >= 44 && x.w >= 44 && !x.cut) && rx.x.top >= 0 && rx.x.right <= 428 && rx.bottom <= 926, JSON.stringify(rx).slice(0, 600));
 await p.screenshot({path: dir + '/gr1-remix-hochkant.png'});
-// tap through the sheet: B/A per tap
+// echte Tipps im Blatt während ▶ SONG läuft: Remix erzeugen → A → B (je ab dem nächsten Takt), dann Stopp
+await p.evaluate(() => { const D = window.SYNQUENZER; D.songPlay(0); });
+await p.waitForTimeout(400);
+await p.click('.gr1sheet [data-gr="go"]'); await p.waitForTimeout(250);
+const t1 = await p.evaluate(() => window.SYNQUENZER.grRemixInfo({st: 'njs'}));
+await p.click('.gr1sheet [data-gr="a"]'); await p.waitForTimeout(250);
+const t2 = await p.evaluate(() => window.SYNQUENZER.grRemixInfo({st: 'njs'}));
+await p.click('.gr1sheet [data-gr="b"]'); await p.waitForTimeout(900);
+const t3 = await p.evaluate(() => { const D = window.SYNQUENZER, i = D.grRemixInfo({st: 'njs'}); D.songPlay(false); D.stop(); return i; });
+ok('Tipps im Remix-Blatt beim Abspielen: erzeugen → A → B', t1.onSt > 0 && t2.on === 0 && t3.onSt > 0 && t3.canB === 0, JSON.stringify({t1, t2, t3}));
+// Menü › Song und Drum-Editor › Muster ▾ › Stil-Grundmuster
+const ent = await p.evaluate(() => {
+  closePop(); openMenu(); const mb = [...document.querySelectorAll('#menu button')].map(x => x.textContent.trim()); closeMenu();
+  const D = window.SYNQUENZER; D.selectTrack(4); D.openEditor(); const a = document.querySelector('#drumSheet') || document.body; openPatterns(a);
+  const pk = !!document.querySelector('.pop [data-gr1p]'); closePop();
+  return {remix: mb.includes('Remix …'), xp: mb.includes('Transponieren …'), pk};
+});
+ok('Einstiege: Menü › Song [Remix …] [Transponieren …], Muster ▾ › Stil-Grundmuster', ent.remix && ent.xp && ent.pk, JSON.stringify(ent));
 await p.close();
 
 // quer: Remix-Blatt + Clip-Blatt der Drum-Spur
@@ -145,6 +162,8 @@ await q.evaluate(() => { const D = window.SYNQUENZER; D.grRemix('garage', {z: 50
 await q.waitForTimeout(300);
 const rxl = await q.evaluate(() => { const P = document.querySelector('.gr1sheet'); const bs = [...P.querySelectorAll('button:not(.ms-x)')].map(x => { const r = x.getBoundingClientRect(); return {t: x.textContent, h: Math.round(r.height), w: Math.round(r.width), cut: x.scrollWidth > x.clientWidth + 1}; }); const r = P.getBoundingClientRect(), x = P.querySelector('.ms-x').getBoundingClientRect(); return {bs, top: r.top, bottom: r.bottom, x: {top: x.top, right: x.right}}; });
 ok('Remix-Blatt quer: Tasten ≥ 44 px, ✕ sichtbar, passt ins Bild', rxl.bs.every(x => x.h >= 44 && x.w >= 44 && !x.cut) && rxl.x.top >= 0 && rxl.x.right <= 926 && rxl.top >= 0, JSON.stringify(rxl).slice(0, 600));
+const pre = await q.evaluate(() => ({on: document.querySelector('.gr1sheet .gr1-st .on').textContent, b: document.querySelector('.gr1sheet [data-gr="b"]').classList.contains('on'), z: document.querySelector('.gr1sheet .gr1-zr .on').textContent}));
+ok('Blatt zeigt Stil und Zwingen, die spielen (Garage 2-Step, 50 %, B an)', pre.on === 'Garage 2-Step' && pre.b && pre.z === '50 %', JSON.stringify(pre));
 await q.screenshot({path: dir + '/gr1-remix-quer.png'});
 await q.evaluate(() => { const D = window.SYNQUENZER; document.querySelector('.gr1sheet [data-gr="x"]').click(); D.songView(false); D.clipMenuItems(4, 0); });
 await q.waitForTimeout(300);

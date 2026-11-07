@@ -30159,6 +30159,8 @@ function ak1Key(key) {
   if (key.startsWith('fx.')) return V6A_FX.includes(key.slice(3));
   return !key.startsWith('fm2.') && !key.startsWith('mk.arp.') && !V6A_NO.has(key) && !AK1_NO.has(key);   // GP-AK1: ARP (läuft im Hauptthread, liest den Grundklang) bleibt im Grundklang
 }
+// GP-AK1: the undo name of a gesture that ends without commitSound (timer, a new snapshot, two fingers on the panel): the knob, else the engine
+function ak1Lb(key) { const d = PD[key]; return d && d.l ? d.l : key.startsWith('mk.') ? MK_LABEL : key === 'fm6' ? 'FM' : null; }
 // the clip a knob of track i writes to now (null = Grundklang): the open synth editor of the track, not in the Grundklang mode;
 // playing = the clip that sounds or comes (nothing on the track = Grundklang), stopped = the chosen / last started clip (v6aEdRef)
 function ak1Ref(i) {
@@ -30181,7 +30183,7 @@ function ak1Go(i, key) {
   const r = ak1Ref(i); if (!r) return;
   const tr = S.tracks[i], base = tr.sound, clip = r.clip, st = clip.st || null, cur = R.v6aCur && R.v6aCur[i];
   const own = r.ref.own ? v6aOwnId(clip) || r.ref.own : null;
-  V6A.ed = {i, s: r.ref.s, own, base, undoN: UNDO.length, x: st ? {x: st.x, n: st.n} : null, ak1: true, snap: soundSnapshot(i), t: performance.now()};
+  V6A.ed = {i, s: r.ref.s, own, base, undoN: UNDO.length, x: st ? {x: st.x, n: st.n} : null, ak1: true, snap: soundSnapshot(i), t: performance.now(), lb: ak1Lb(key)};   // GP-AK1: lb
   tr.sound = deep(st ? v6aApply(base, st) : base);                            // the working copy = what the track plays (Grundklang ⊕ ◆)
   UI.sndVer++;
   if ((cur ? cur.st : null) !== st && AU.ctx) { syncEngine(i, true); applyTrackParams(i, false); }   // the engine played another state: this one now
@@ -30217,7 +30219,7 @@ function ak1End(label, before) {
     if (JSON.stringify(G) === JSON.stringify(B)) G = B;
   }
   tr.sound = G;
-  const clip = v6aClip(i, e.s, e.own), L = '◆ ' + (label || 'Klang') + ' · ' + (e.own ? 'Song-Clip' : trackShort(i) + ' Sz' + (e.s + 1));
+  const clip = v6aClip(i, e.s, e.own), L = '◆ ' + (label || e.lb || 'Klang') + ' · ' + (e.own ? 'Song-Clip' : trackShort(i) + ' Sz' + (e.s + 1));
   let st = null, it = null;
   if (clip) {
     const old = clip.st || null, was = e.own ? JSON.stringify(clip) : cleanClip(clip), x = old && old.x ? old.x : e.x && e.x.x, nn = old && old.n ? old.n : e.x && e.x.n;

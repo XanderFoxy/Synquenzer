@@ -73774,15 +73774,15 @@ function gr1ABDo(song, ab, a, b, stId) {
 }
 // what [a, b) plays now: places with a remix (and its styles), places a remix of stId could take over
 function gr1Info(song, a, b, stId) {
-  const o = {spans: 0, on: 0, canB: 0, styles: []}; if (!song || !song.bars) return o;
-  const ss = new Set();
+  const o = {spans: 0, on: 0, onSt: 0, canB: 0, styles: [], zs: []}; if (!song || !song.bars) return o;
+  const ss = new Set(), zs = new Set();
   for (let t = 0; t < NT(); t++) for (const sp of gr1Spans(song, t, a, b)) {
     o.spans++; const c = gr1ClipOf(song, t, sp); if (!c) continue;
-    if (c.gr) { o.on++; ss.add(c.gr.s); if (c.gr.s === stId) continue; }
+    if (c.gr) { o.on++; ss.add(c.gr.s); if (c.gr.z) zs.add(c.gr.z); if (c.gr.s === stId) { o.onSt++; continue; } }
     const src = gr1Src(song, t, sp), id = gr1Find(song, t, sp.s, stId, src.v), rc = id ? song.own[id] : null;
     if (rc && !(rc.gr.z === 0 && gr1Role(t, src.c) === 'z')) o.canB++;
   }
-  o.styles = [...ss];
+  o.styles = [...ss]; o.zs = [...zs];
   return o;
 }
 const GR1_LAB = l => { try { SX.lab.add(l); } catch (e) {} return l; };   // ↶ ↷ while ▶ SONG: from the next bar line (SX11 path)
@@ -73982,21 +73982,23 @@ function gr1XpOpen() {
 function gr1RemixOpen(scope) {
   const song = S.song; if (!song || !song.bars) { toast('Erst einen Song bauen'); return; }
   const sc = scope || {a: 0, b: song.bars, name: null};
+  { const i0 = gr1Info(song, Math.min(sc.a, song.bars - 1), sc.name ? Math.min(sc.b, song.bars) : song.bars, GR1.st); if (i0.styles.length === 1) { GR1.st = i0.styles[0]; if (i0.zs.length <= 1) GR1.z = i0.zs.length ? i0.zs[0] : 0; } }   // the style (and Zwingen) that plays here
   openPop(null, p => {
     p.classList.add('msheet', 'gr1sheet'); guardTouch(p);
     const paint = () => {
       const sg = S.song; if (!sg || !sg.bars) { closePop(); return; }
       const a = Math.min(sc.a, sg.bars - 1), b = sc.name ? Math.min(sc.b, sg.bars) : sg.bars, st = gr1Style(GR1.st) || GR1_STYLES[0], inf = gr1Info(sg, a, b, st.id);
-      const rng = b - a > 1 ? 'Takt ' + (a + 1) + '–' + b : 'Takt ' + (a + 1), has = inf.on > 0 || inf.canB > 0, bOn = inf.on > 0 && !inf.canB;
+      const rng = b - a > 1 ? 'Takt ' + (a + 1) + '–' + b : 'Takt ' + (a + 1), aOk = inf.on > 0 || inf.canB > 0, aOn = !inf.on && inf.canB > 0;
+      const bOk = inf.onSt > 0 || inf.canB > 0, bOn = inf.onSt > 0 && !inf.canB, nmOf = id => (gr1Style(id) || {name: id}).name;
       p.innerHTML = `<div class="ms-h"><b>REMIX</b><span>· ${sc.name ? esc(sc.name) + ' · ' : 'ganzer Song · '}${rng}</span><button class="rb ms-x" data-gr="x" aria-label="Schließen">✕</button></div>` +
         `<div class="gr1-st" role="group" aria-label="Stil">` + GR1_STYLES.map(x => `<button class="rb ms-b${x.id === st.id ? ' on' : ''}" data-gr="st:${x.id}" aria-pressed="${x.id === st.id}">${esc(x.name)}</button>`).join('') + `</div>` +
         `<div class="v6gl gr1-zr"><span class="lbl">Zwingen</span><div class="seg v6seg">` + GR1_Z.map(v => `<button class="rb${GR1.z === v ? ' on' : ''}" data-gr="z:${v}" aria-label="Zwingen ${v} Prozent" aria-pressed="${GR1.z === v}">${v} %</button>`).join('') + `</div></div>` +
         `<div class="ms-r gr1-ar"><button class="rb ms-b gr1-go" data-gr="go">${inf.on && inf.styles.includes(st.id) ? 'Neu erzeugen' : 'Remix erzeugen'}</button>` +
-        `<button class="rb ms-b${has && !inf.on ? ' on' : ''}" data-gr="a"${has ? '' : ' disabled'} aria-pressed="${has && !inf.on}">A Original</button>` +
-        `<button class="rb ms-b${bOn ? ' on' : ''}" data-gr="b"${has ? '' : ' disabled'} aria-pressed="${bOn}">B Remix</button>` +
+        `<button class="rb ms-b${aOn ? ' on' : ''}" data-gr="a"${aOk ? '' : ' disabled'} aria-pressed="${aOn}">A Original</button>` +
+        `<button class="rb ms-b${bOn ? ' on' : ''}" data-gr="b"${bOk ? '' : ' disabled'} aria-pressed="${bOn}" aria-label="B Remix ${esc(st.name)}">B Remix</button>` +
         `<button class="rb ms-b gr1-bpm" data-gr="bpm"${S.bpm === st.bpm ? ' disabled' : ''} aria-label="Tempo ${st.bpm} BPM übernehmen">♩ ${st.bpm}</button></div>` +
         `<p class="gr1-tip"><b>${esc(st.name)}</b> · ≈ ${st.bpm} BPM · ${st.sw > .5 ? 'Swing ' + Math.round(st.sw * 100) + ' %' : 'gerade'}. Drums und Bass werden neue Versionen (v2 …) mit deinen Kit-Sounds und Klängen, v1 bleibt das Original. Zwingen rückt die übrigen Spuren auf Raster und Swing des Stils.` +
-        (inf.on ? ` Jetzt: ${inf.on} ${inf.on === 1 ? 'Stelle' : 'Stellen'} im Remix.` : '') + `</p>`;
+        (inf.on ? ` Jetzt im Remix: ${esc(inf.styles.map(nmOf).join(', '))} (${inf.on} ${inf.on === 1 ? 'Stelle' : 'Stellen'}).` : '') + `</p>`;
     };
     paint(); p._paint = paint;
     onTap(p, btn => {
