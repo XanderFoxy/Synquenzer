@@ -135,6 +135,20 @@ async function runCase(scen, variant) {
       out.winMove = mv ? J(part(r.part, RB)) === J(rng0) : 'kein ◀ ▶'; out.winAt = A.clipWindow(0, 0);
       if (mv) undo(); while (UNDO.length > u0) undo();
     }
+    // ---- Noten im Fenster danach geändert (der Clip in der Matrix): das Fenster klingt wie der Clip jetzt, der Rest wie gespielt
+    if (r.ext) {
+      const c = S.tracks[0].clips[0], keepC = cleanClip(c), W = A.clipWindow(0, 0);
+      c.notes[0].n += 1; clipChanged(0, 0);
+      const sE = song(bars * 4), pE = part(r.part, RB);
+      const exp = rng0.filter(x => !(x[2] >= W.a - 1e-6 && x[2] < W.b - 1e-6)).concat(W.a < RB ? win(sE, A0 + W.a, A0 + W.b).map(x => [x[0], x[1], +(x[2] + W.a).toFixed(3), x[3], x[4]]) : []).sort((x, y) => x[2] - y[2] || x[0] - y[0] || x[1] - y[1]);
+      out.editWin = J(pE) === J(exp);
+      if (!out.editWin) out.editWinD = {want: exp.map(x => x[1] + '@' + x[2]).join(' '), got: pE.map(x => x[1] + '@' + x[2]).join(' ')};
+      S.tracks[0].clips[0] = normClip(keepC, 'synth', S.key); clipChanged(0, 0);
+      out.editBack = J(part(r.part, RB)) === J(rng0);
+      // alter Stand (4.48.1, ohne sn): der ganze Inhalt Durchlauf für Durchlauf mit dem LAUF des Clips
+      const lw = S.tracks[0].clips[0].lw, kept = {sn: lw.sn, sg: lw.sg, sw: lw.sw, sk: lw.sk};
+      if (lw.sn) { delete lw.sn; delete lw.sg; delete lw.sw; delete lw.sk; clipChanged(0, 0); out.oldPass = J(part(r.part, RB)) === J(rng0); Object.assign(lw, kept); if (kept.sk == null) delete lw.sk; clipChanged(0, 0); }
+    }
     // ---- Speichern / Laden
     { const js = serializeProject(); importJSON(js); await sl(400); const k = S.parts.findIndex(x => x && x.name === 'Kern'); out.reload = k >= 0 ? J(part(k, RB)) === J(rng0) : 'kein Teil'; out.reloadLw = S.tracks[0].clips[0] && S.tracks[0].clips[0].lw ? Object.keys(S.tracks[0].clips[0].lw).sort().join(',') : null; }
     return out;
@@ -214,6 +228,9 @@ for (const scen of SCENS) for (const v of VARS) {
   ok(tag + ' MIDI-Export: eingefügter Teil = Bereich', midiOk, {mR: mR.map(x => x[0] + '@' + x[1]).join(' '), mP: mP.map(x => x[0] + '@' + x[1]).join(' ')});
   ok(tag + ' Video-Clip „ganz“ ohne LAUF-Plan (wie gespielt)', r.vvPlain || !r.ext, r.vvPlain);
   if (r.ext) ok(tag + ' Fenster ◀/▶ verschoben – Teil klingt gleich', r.winMove === true, r.winMove);
+  if (r.ext) ok(tag + ' Fenster-Noten danach geändert: Fenster wie der Clip, Rest wie gespielt', r.editWin, r.editWinD);
+  if (r.ext) ok(tag + ' Fenster-Noten zurück: Teil wieder wie der Bereich', r.editBack);
+  if (r.oldPass !== undefined && tag.startsWith('S1/') && ['rev', 'st', 'g', 'gst', 'fx'].includes(v)) ok(tag + ' alter Stand ohne Klang-Daten (4.48.1): Durchlauf für Durchlauf = Bereich', r.oldPass);
   ok(tag + ' Speichern/Laden – Teil klingt gleich', r.reload === true, {reload: r.reload, lw: r.reloadLw});
   if (r.err) { ok(tag + ' Regression', false, r.err); continue; }
   ok(tag + ' Zurückholen: Clip ohne Erweiterung, Song gleich', r.back && r.backLw && r.backSong, {back: r.back, lw: r.backLw, song: r.backSong});

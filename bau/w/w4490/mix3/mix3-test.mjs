@@ -182,12 +182,13 @@ const AB = await p.evaluate(async () => {
 ok('Prüfung 9: A/B „Refrain groß“ = echtes Vorher/Nachher (Chor-Gruppe UND Lead-Sends wie vorher, dann wieder nachher)', AB.side0 === 'B' && AB.big && AB.sideB === 'B' && AB.rgB && AB.toA && AB.sideA === 'A' && !AB.rgA && AB.sendsA.rev === 0.25 && AB.sendsA.dly === 0.15 && AB.toB && AB.side2 === 'B' && AB.rg2 && AB.sends2.rev <= 0.08 && AB.sends2.dly <= 0.04, AB);
 const P7 = await p.evaluate(async () => {
   const wait = ms => new Promise(r => setTimeout(r, ms)), o = {}, r = window.__r2;
-  await SYNQUENZER.g6pWait(r); stop(); await wait(200); R.selS = r.s; SYNQUENZER.mix3.src('live'); SYNQUENZER.mx2Sheet(); await wait(200); play(); await wait(600);
+  await SYNQUENZER.g6pWait(r); stop(); await wait(200); R.selS = r.s; SYNQUENZER.mix3.src('live'); SYNQUENZER.mx2Sheet(); await wait(200); launchScene(r.s); if (!R.playing) play(); await wait(900);
+  o.slot = R.slot[r.t] === r.s;
   o.way = await SYNQUENZER.mx2Way('mix'); o.voc = SYNQUENZER.mix3.info().voc; o.T = MIXA.res ? MIXA.res.T.map(t => t.name + ':' + t.cls) : null;
   await wait(200); const row = [...document.querySelectorAll('.mx2s .mx3g .mx2fr small')].map(x => x.textContent); o.row = row;
   stop(); return o;
 });
-ok('Prüfung 7: Mischen live misst den Chor als eigene Rolle (Lead nach dem Regler ↔ Chor-Gruppen-Bus), Abstand im Blatt', P7.way && P7.voc && P7.voc.lead != null && P7.voc.chor != null && P7.voc.d != null && P7.voc.pieces >= 0 && P7.row.some(t => /gemessen .* dem Lead/.test(t)), P7);
+ok('Prüfung 7: Mischen live misst den Chor als eigene Rolle (Lead nach dem Regler ↔ Chor-Gruppen-Bus), Abstand im Blatt', P7.way && P7.slot && P7.voc && P7.voc.lead != null && P7.voc.chor != null && P7.voc.d != null && P7.voc.pieces >= 0 && P7.row.some(t => /gemessen .* dem Lead/.test(t)), P7);
 const P6 = await p.evaluate(async () => {
   const wait = ms => new Promise(r => setTimeout(r, ms)), o = {};
   const b = document.querySelector('.mx2s button[data-x2="asst"]'); o.label = b && b.textContent.trim();

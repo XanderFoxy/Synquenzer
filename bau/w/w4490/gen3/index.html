@@ -34121,6 +34121,7 @@ function pushUndo(track, scene, before, label, mergeKey) {
 }
 function undoState(e) {
   if (e.kind === 'ux2') return ux2UndoState(e);                // UX2: Spur-Reihenfolge, Zellen-Tausch, Szenen-Reihenfolge
+  if (e.kind === 'gen3bpm') return String(S.bpm);                // GEN3: Tempo im selben Schritt wie die Tempo-Version
   if (e.kind === 'group') return null;                     // V2a: the items carry their own states
   if (e.kind === 'sr') return srSnap();                   // N8 I1c
   if (e.kind === 'track') return trackSnapshot(e.track);
@@ -34155,6 +34156,7 @@ function clipRestored(t, s) {
 }
 function undoApply(e, val) {
   if (e.kind === 'ux2') ux2UndoApply(e, val); else            // UX2
+  if (e.kind === 'gen3bpm') gen3BpmPut(val); else              // GEN3: Tempo im selben Schritt wie die Tempo-Version
   if (e.kind === 'track') restoreTrack(e.track, val);
   else if (e.kind === 'clip') { S.tracks[e.track].clips[e.scene] = val ? deep(val) : null; clipRestored(e.track, e.scene); }
   else if (e.kind === 'sound') restoreSoundSnapshot(e.track, JSON.parse(val));
