@@ -80210,7 +80210,8 @@ function kl1Kon(song, a, e, tp) {
    Fenster ◀ ▶ / Länge ändern am Klang nichts; geänderte Noten im Fenster (der Clip) klingen im Fenster wie der Clip, der Rest wie
    gespielt; sonst (LAUF geändert, alter Stand ohne sn …) klingt der ganze Inhalt Durchlauf für Durchlauf mit dem LAUF des Clips
    (a2Pass). Klingt ein Bereich nur durch den Schritt-Zähler anders als die bloße Schleife ab dem Teil-Anfang (Zufall, Chance,
-   hin und her mitten im Song), wird ebenfalls erweitert. Ohne LAUF: nichts davon (Daten und Klang wie bisher) ---------- */
+   hin und her mitten im Song), wird ebenfalls erweitert. Drums: die Schritt-Chance (p, DrumSeq.expandStep je Durchlauf) genauso –
+   sn hält die Schritte, die dort klangen (ohne p). Ohne LAUF und ohne Drum-Chance: nichts davon (Daten und Klang wie bisher) ---------- */
 function a2Has(c, ns) { if (c && c.lf) return true; for (const n of ns) if (n.off || n.rt || n.tp || n.pb != null) return true; return false; }
 // the range [a, e) of lane t as it sounds (ns: time from song beat A), bar by bar, and the origin playing each bar (cs); null = no LAUF in it
 function a2Sound(song, t, a, e, A) {
