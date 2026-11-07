@@ -165,8 +165,11 @@ export function preisWert(v) {
   if (typeof v === 'string') v = /^\s*-?\d+(\.\d+)?\s*$/.test(v) ? Number(v) : parsePrice(v);
   return typeof v === 'number' && Number.isFinite(v) && v > 0 ? round(v, 2) : null;
 }
-const bildUrl = u => (typeof u === 'string' && /^https:\/\//.test(u) ? u.replace(/\/\d+x\d+(bb|-\d+)?\.(jpg|png|webp)$/i, '/200x200bb.jpg') : null);
-const appleLink = u => (typeof u === 'string' && /^https:\/\//.test(u) ? u.replace(/[?&]uo=\d+/, '').replace(/\?$/, '') : null);
+const bildUrl = u => (typeof u === 'string' && /^https:\/\//.test(u) ? u.replace(/\/\d+x\d+(?:bb)?(?:-\d+)?\.(?:jpg|png|webp)$/i, '/200x200bb.jpg') : null);
+function appleLink(u) {
+  if (typeof u !== 'string' || !/^https:\/\//.test(u)) return null;
+  try { const x = new URL(u); x.searchParams.delete('uo'); return x.toString(); } catch { return null; }
+}
 const jahrAus = d => { const m = String(d ?? '').match(/^(\d{4})/); return m ? Number(m[1]) : null; };
 
 /** Ein Ergebnis der Search-/Lookup-API (Film oder Staffel) -> einheitliche Daten, sonst null. */
