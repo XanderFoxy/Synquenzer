@@ -71094,7 +71094,7 @@ function vr1RulesOpen(anchor) {
             `<button class="rb vr1m" data-a="up" aria-label="${esc(d[1])} höher"${j === 0 ? ' disabled' : ''}>▲</button><button class="rb vr1m" data-a="dn" aria-label="${esc(d[1])} tiefer"${j === R_.length - 1 ? ' disabled' : ''}>▼</button></div>`; }).join('') +
           `</div><div class="vr1ft"><button class="rb" data-a="std">Standard</button><small>Manuelle Regie (Teil/Marke) und „Im Video“ am Clip gehen vor.</small></div>`;
       }
-      popFit(p);
+      popFit(p); vr1RpFit(p);
     };
     paint();
     onTap(p, b => {
@@ -71111,6 +71111,12 @@ function vr1RulesOpen(anchor) {
       vr1RulesSet(R_); haptic('tick'); paint();
     }, 'button[data-a]');
   }, {name: 'vr1rules'});
+  vr1RpFit(UI.pop && UI.pop.el);
+}
+// the sheet's head with its ✕ stays free (hochkant und quer): the pop starts below it
+function vr1RpFit(p) {
+  const hd = VV.ui && VV.ui.sh ? VV.ui.sh.querySelector('.vvh') : null; if (!p || !p.isConnected || !hd) return;
+  const hb = Math.round(hd.getBoundingClientRect().bottom + 4); if ((parseFloat(p.style.top) || 0) < hb) p.style.top = hb + 'px';
 }
 function vr1Css() {
   if (VR1.css) return; VR1.css = true;
@@ -71119,7 +71125,7 @@ function vr1Css() {
     '.vr1vp .plp button.on{border-color:var(--sel);color:var(--sel);box-shadow:inset 0 0 0 1px var(--sel)}' +
     '.hb.vr1cb{min-height:44px}.hb.vr1cb.has{color:var(--sel)}' +
     '.vr1rb{flex:0 0 auto;min-width:48px;height:44px;margin-left:0;padding:0 6px;font:700 11px/1 var(--font-ui)}' +
-    '.vr1rp{width:min(404px,calc(100vw - 16px))}.vr1rl{display:flex;flex-direction:column;gap:4px;max-height:min(440px,calc(100vh - 140px));overflow-y:auto;touch-action:pan-y}' +
+    '.vr1rp{width:min(404px,calc(100vw - 16px))}.vr1rl{display:flex;flex-direction:column;gap:4px;max-height:min(440px,calc(100vh - 210px));overflow-y:auto;touch-action:pan-y}' +
     '.vr1r{display:flex;align-items:center;gap:4px;min-height:44px}.vr1r .rb{height:44px;min-width:44px;padding:0 6px;font:700 12px/1 var(--font-ui)}' +
     '.vr1r .vr1on{flex:0 0 48px}.vr1r .vr1on.on{border-color:var(--sel);color:var(--sel);box-shadow:inset 0 0 0 1px var(--sel)}.vr1r.off .vr1n,.vr1r.off .vr1v{opacity:.45}' +
     '.vr1r .vr1n{flex:1 1 auto;min-width:0;font:700 12px/1.15 var(--font-ui);color:var(--text)}.vr1r .vr1v{flex:0 0 112px;white-space:nowrap;overflow:hidden}.vr1r .vr1m{flex:0 0 44px}' +

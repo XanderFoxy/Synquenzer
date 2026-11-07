@@ -225,7 +225,7 @@ async function bleedRun(file, br) {
   await p.waitForFunction(() => !SYNQUENZER.vsInfo().busy && !SYNQUENZER.tkInfo().pend.length && SYNQUENZER.tkInfo().writes === 0, null, {timeout: 40000});
   await sleep(2500);
   const id = await p.evaluate(() => { const T = SYNQUENZER.takes(); return Object.keys(T).sort((a, b) => T[a].created - T[b].created).pop(); });
-  if (await p.evaluate(id => !!SYNQUENZER.takes()[id].cl, id)) await p.evaluate(id => SYNQUENZER.clWait(id), id);
+  if (await p.evaluate(id => !!SYNQUENZER.takes()[id].cl, id)) await p.waitForFunction(id => !!CL.buf.get(id), id, {timeout: 40000}).catch(() => {});   // gesäuberte Fassung fertig
   await sleep(500);
   const r = await p.evaluate(async id => { const raw = await SYNQUENZER.tkPcmRange(id); return {meta: SYNQUENZER.takes()[id], raw: raw.map(v => v / 32767), heard: SYNQUENZER.clPlayRange(id), info: SYNQUENZER.vx1Info ? SYNQUENZER.vx1Info() : null}; }, id);
   // die gesungene Stimme im Take finden (Hüllkurven-Korrelation), dann Pausen (Stimme ±80 ms still) gegen gesungene Stellen
