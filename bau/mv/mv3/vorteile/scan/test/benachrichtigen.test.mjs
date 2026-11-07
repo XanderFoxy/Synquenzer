@@ -57,7 +57,7 @@ test('Gesamtlauf mit Fixtures: Erstlauf still, zweiter Lauf meldet nur Neues', a
     assert.equal(r1.plan.sofort.length, 0);
     assert.ok(r1.alleEintraege.length >= 10);
     const a = JSON.parse(await readFile(join(dir, 'aktuell.json'), 'utf8'));
-    assert.deepEqual(Object.keys(a.kategorien), ['deals', 'erleben', 'reisen', 'musik', 'nebenverdienst', 'tests', 'praemien']);
+    assert.deepEqual(Object.keys(a.kategorien), ['deals', 'erleben', 'reisen', 'musik', 'nebenverdienst', 'tests', 'praemien', 'filme']);
     assert.ok(a.sofort.length > 0);
     assert.equal(a.status.reisen.ok, false);
     const r2 = await main(['--fixtures', '--data', dir, '--jetzt', '2026-10-31T20:00:00Z']);
