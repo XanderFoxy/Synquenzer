@@ -1,0 +1,84 @@
+{
+  "head" : {
+    "vars" : [ "item", "name", "itunes", "jahr" ]
+  },
+  "results" : {
+    "bindings" : [ {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q105598"
+      },
+      "name" : {
+        "xml:lang" : "de",
+        "type" : "literal",
+        "value" : "Stirb langsam"
+      },
+      "itunes" : {
+        "type" : "literal",
+        "value" : "270711082"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1988"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q105598"
+      },
+      "name" : {
+        "xml:lang" : "de",
+        "type" : "literal",
+        "value" : "Stirb langsam"
+      },
+      "itunes" : {
+        "type" : "literal",
+        "value" : "364888403"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1988"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q105598"
+      },
+      "name" : {
+        "xml:lang" : "de",
+        "type" : "literal",
+        "value" : "Stirb langsam"
+      },
+      "itunes" : {
+        "type" : "literal",
+        "value" : "405569725"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1988"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q105598"
+      },
+      "name" : {
+        "xml:lang" : "de",
+        "type" : "literal",
+        "value" : "Stirb langsam"
+      },
+      "itunes" : {
+        "type" : "literal",
+        "value" : "616107863"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1988"
+      }
+    } ]
+  }
+}
