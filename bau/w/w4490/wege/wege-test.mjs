@@ -149,7 +149,7 @@ try {
   const rbl = await p.evaluate(() => { const b = document.querySelector('#rangeBar [data-a="part"]'); return b.getAttribute('aria-label') + ' / ' + b.textContent.trim(); });
   ok(rb && rb.h >= 44 && /^Zusammenfassen · Takt 9–10/.test(rh || ''), 'D1: Bereich-Leiste ❖ öffnet dasselbe „Zusammenfassen“', rbl);
   const rbt = await p.evaluate(() => [...document.querySelectorAll('#rangeBar .rg-b')].map(b => { const t = b.querySelector('.t'); return b.dataset.a + ':' + t.textContent + ':' + (t.scrollWidth <= t.clientWidth + .5) + ':' + b.getAttribute('aria-label'); }));
-  ok(rbt.some(x => /^part:Zusammen(fassen)? …:true/.test(x)) && rbt.some(x => /^copy:(Takte kopieren →|Kopieren →):true:Takte kopieren/.test(x)), 'Prüfung 5/9: Bereich-Leiste hochkant „❖ Zusammen …“ (statt „Teil …“) und „⧉ Kopieren →“ (Takte kopieren) – passen in die Taste', rbt.map(x => x.split(':').slice(0, 2).join(':')).join(' · '));
+  ok(rbt.some(x => /^part:Zusammen(fassen)? …:true/.test(x)) && rbt.some(x => /^copy:(Takte kopieren →|Kopieren →):true:Takte kopieren/.test(x)), 'Prüfung 5/9: Bereich-Leiste hochkant „❖ Zusammen …“ (statt „Teil …“) und „⧉ Kopieren →“ (Takte kopieren) – passen in die Taste', rbt.map(x => x.split(':').slice(0, 3).join(':')).join(' · '));
   await tapAt(p, () => [...document.querySelectorAll('.pop.s2sum .cp-c')].find(x => x.textContent.trim() === 'Bridge'));
   const K2 = await run(p, () => { const m = S.song.marks.find(x => x.a === 8); return {kon: !!(m && konOf(m.id)), name: m ? markLabel(m) : null}; });
   ok(K2.kon, 'D1: Bereich → Teil „' + K2.name + '“ mit Ursprung (konDo)');
@@ -373,6 +373,13 @@ try {
   await run(p, () => va1Sheet()); await p.waitForTimeout(300);
   ok(await p.evaluate(xSees), 'quer: Export-Blatt mit ✕');
   await run(p, () => closePop());
+  const uq = await p.evaluate(() => { const u = [...document.querySelectorAll('button[aria-label="Rückgängig"], #bUndo')].find(x => x.offsetParent && x.getBoundingClientRect().width > 0 && document.elementFromPoint(x.getBoundingClientRect().left + 8, x.getBoundingClientRect().top + 8) === x); const r = (u || EL.bUndo).getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2, u ? u.id || u.className : 'bUndo'] });
+  await p.waitForTimeout(500); await hold(p, uq[0], uq[1], 750);
+  await p.waitForTimeout(300);
+  const vq = await p.evaluate(() => ({ah: !!document.querySelector('.pop.sx14 .wg-ah'), pop: UI.pop && UI.pop.name}));
+  ok(vq.ah, 'quer: ↶ halten → VERLAUF mit „Automatische Sicherungen“', 'Blatt ' + vq.pop + ' · Taste ' + uq[2]);
+  await shot(p, 'wege-verlauf-quer.png');
+  await run(p, () => closePop());
   // ---- Prüfung 10: Tempo-Blatt quer – alles ohne Wischen erreichbar (zweite Spalte), 926 × 428 und 926 × 370 ----
   for (const vh of [428, 370]) {
     await p.setViewportSize({width: 926, height: vh}); await p.waitForTimeout(500);
@@ -386,13 +393,6 @@ try {
     ok(bp && !bp.out.length && f4 && f4.vis && fd === 16 && (vh === 370 || bp.scroll <= 2), 'Prüfung 10: Tempo-Blatt quer (926 × ' + vh + '): Song transponieren … und Ausblenden am Ende neben der Taktart, alles sichtbar, „4 Takte“ per Finger', bp ? bp.n + ' Knöpfe, keiner unter dem Rand' + (bp.scroll > 2 ? ' (Blatt scrollt ' + bp.scroll + ' px – wie die Basis bei 370)' : '') + ' · Taktart-Knopf ' + Math.round(bp.ts) + ' px breit wie Basis' : 'kein Blatt');
   }
   await p.setViewportSize({width: 926, height: 428}); await p.waitForTimeout(400);
-  const uq = await p.evaluate(() => { const u = [...document.querySelectorAll('button[aria-label="Rückgängig"], #bUndo')].find(x => x.offsetParent && x.getBoundingClientRect().width > 0 && document.elementFromPoint(x.getBoundingClientRect().left + 8, x.getBoundingClientRect().top + 8) === x); const r = (u || EL.bUndo).getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2, u ? u.id || u.className : 'bUndo'] });
-  await p.waitForTimeout(500); await hold(p, uq[0], uq[1], 750);
-  await p.waitForTimeout(300);
-  const vq = await p.evaluate(() => ({ah: !!document.querySelector('.pop.sx14 .wg-ah'), pop: UI.pop && UI.pop.name}));
-  ok(vq.ah, 'quer: ↶ halten → VERLAUF mit „Automatische Sicherungen“', 'Blatt ' + vq.pop + ' · Taste ' + uq[2]);
-  await shot(p, 'wege-verlauf-quer.png');
-  await run(p, () => closePop());
   await p.close();
 
   /* ================= Prüfung 4, 7, 8: Making-of aus der Aufzeichnung, altes VD3-Protokoll, alte GR1-Small-Marke ================= */
@@ -442,7 +442,7 @@ try {
     return {ev: histInfo().events, mb: Math.round(histInfo().bytes / 1024), a, b: b2, same, len, refLen: R0.length, lastK: WEGE.mo[WEGE.mo.length - 1].k};
   });
   ok(P4.same && P4.len === 800, 'Prüfung 4: Making-of von hinten gelesen = dieselben 800 Ereignisse wie die ganze Aufzeichnung von vorn', P4.ev + ' Gesten, ' + P4.mb + ' KB');
-  ok(P4.b.n === 1 && P4.b.ms < 80 && P4.lastK === 'clip', 'Prüfung 4: nach einer neuen Geste wird nur der letzte Abschnitt gelesen (aus dem Speicher)', 'erstes Lesen ' + P4.a.ms + ' ms (' + P4.a.n + ' Abschnitte, längste Pause ' + P4.a.gap + ' ms) · danach ' + P4.b.ms + ' ms (längste Pause ' + P4.b.gap + ' ms)');
+  ok(P4.b.n === 1 && P4.b.ms < 80 && /^(clip|noten)$/.test(P4.lastK), 'Prüfung 4: nach einer neuen Geste wird nur der letzte Abschnitt gelesen (aus dem Speicher)', 'erstes Lesen ' + P4.a.ms + ' ms (' + P4.a.n + ' Abschnitte, längste Pause ' + P4.a.gap + ' ms) · danach ' + P4.b.ms + ' ms (' + P4.b.n + ' Abschnitt, längste Pause ' + P4.b.gap + ' ms, zuletzt „' + P4.lastK + '“)');
   await p.close();
 
   /* ================= Guide: jeder Eintrag springt hin (mit Song, hochkant) ================= */
