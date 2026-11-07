@@ -150,7 +150,8 @@ const clipSig = (p, t, s) => p.evaluate(([t, s]) => { const c = S.tracks[t].clip
   await T.end(); await sleep(150);
   const after = await p.evaluate(() => ({c: S.tracks.map(t => t.clips.map(x => !!x)), n: S.scenes.map(s => s.name || ''), lanes: S.song.lanes.map(l => l.map(e => e.bar + ':' + e.slot).join(',')), playing: R.playing}));
   const perm = [0, 2, 3, 1, 4, 5, 6, 7];
-  ok('Szene 2 → Platz 4 (Clips und Namen wandern mit)', after.c.every((row, t) => row.every((v, k) => v === before.c[t][perm[k]])) && after.n.every((v, k) => v === before.n[perm[k]]), {n0: before.n, n1: after.n});
+  const dn = (v, k) => (/^Szene \d$/.test(v) ? 'Szene ' + (k + 1) : v);   // Standard-Namen nehmen die neue Nummer an
+  ok('Szene 2 → Platz 4 (Clips und eigene Namen wandern mit, Nummern folgen)', after.c.every((row, t) => row.every((v, k) => v === before.c[t][perm[k]])) && after.n.every((v, k) => v === dn(before.n[perm[k]], k)), {n0: before.n, n1: after.n});
   ok('Song-Bezüge zeigen auf die neuen Nummern', after.lanes.every((l, t) => l === before.lanes[t].replace(/:(\d)/g, (m, s) => ':' + ({0: 0, 1: 3, 2: 1, 3: 2}[s] ?? s))), {b: before.lanes[1], a: after.lanes[1]});
   ok('Szene ziehen startet nichts', !after.playing);
   // ↶ ↷ der ganzen Reihe ist verlustfrei

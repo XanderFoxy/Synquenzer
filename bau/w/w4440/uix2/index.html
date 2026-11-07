@@ -49670,6 +49670,7 @@ function ux2ScenePerm(arr) {
   if (R.editor === 'clip') closeClipSheet();
   for (const tr of S.tracks) { const old = tr.clips.slice(); for (let k = 0; k < n; k++) tr.clips[k] = old[arr[k]] || null; }
   { const old = S.scenes.slice(); for (let k = 0; k < n; k++) S.scenes[k] = old[arr[k]]; }
+  for (let k = 0; k < n; k++) { const sc = S.scenes[k]; if (sc && sc.name === 'Szene ' + (arr[k] + 1)) sc.name = 'Szene ' + (k + 1); }   // Nummern folgen: ein Standard-Name nimmt die neue Nummer an, eigene Namen wandern mit
   const fs = (t, s) => (s >= 0 && s < n ? m[s] : s), fp = p => 'S' + (m[+p.slice(1) - 1] + 1);
   ux2Remap(fs, fp);
   R.selS = fs(0, R.selS);
@@ -49687,7 +49688,7 @@ function ux2MoveScene(from, to, quiet) {
   if (ux2Busy()) { if (!quiet) toast('Erst Aufnahme beenden'); return false; }
   const arr = Array.from({length: n}, (_, k) => k); arr.splice(from, 1); arr.splice(to, 0, from);
   const inv = new Array(n); arr.forEach((o, k) => { inv[o] = k; });
-  const nm = S.scenes[from] && S.scenes[from].name;
+  const nm0 = S.scenes[from] && S.scenes[from].name, nm = nm0 && nm0 !== 'Szene ' + (from + 1) ? nm0 : '';
   if (!ux2ScenePerm(arr)) return false;
   undoPush({kind: 'ux2', op: 's', before: JSON.stringify(inv), label: 'Szene verschieben ' + (from + 1) + ' → ' + (to + 1)});
   UX2.n++; UX2.last = {op: 's', from, to};
@@ -49730,7 +49731,7 @@ function ux2TopScene(x, y) {
 function ux2Down(e) {
   const d = UX2.d;
   if (d && d.id !== e.pointerId) {                                    // ein zweiter Finger: beim Clip-Ziehen = Kopie an/aus
-    if (d.kind === 'drag' || d.kind === 'clift') {
+    if ((d.kind === 'drag' || d.kind === 'clift') && performance.now() - (d.lt || 0) < 8000) {   // (ein Rest ohne Loslassen hält nie die Bedienung fest)
       e.preventDefault(); e.stopImmediatePropagation(); UX2.eat = {t: performance.now(), x: e.clientX, y: e.clientY};   // sein Tipp löst nichts aus
       if (d.kind === 'clift' || d.sub === 'clip') { d.copy = !d.copy; if (d.ghost) ux2Paint(d, d.x, d.y); haptic('tick'); }
       return;
@@ -49770,13 +49771,14 @@ function ux2ClipLift(c) {
   if (UX2.d !== c || !S.tracks[c.t] || !S.tracks[c.t].clips[c.s] || ux2Busy()) return;
   const p = UI.slotPress;
   if (p && p.id === c.id) { p.dead = true; clearTimeout(p.timer); slotProvRevert(p); }          // die Matrix-Geste gibt den Finger ab
-  c.kind = 'clift';
+  c.kind = 'clift'; c.lt = performance.now();
   const C = UI.cells[c.t][c.s];
   C.el.classList.add('ux2lift'); c.icon = el('span', 'ux2mvw', UX2_MOVE_SVG); C.el.appendChild(c.icon);
   haptic('pop');
 }
 function ux2Move(e) {
   const d = UX2.d; if (!d || d.id !== e.pointerId) return;
+  d.lt = performance.now();
   const x = e.clientX, y = e.clientY, dx = x - d.x0, dy = y - d.y0; d.x = x; d.y = y;
   if (d.kind === 'tcand') {
     const p = SX4.p && SX4.p.id === d.id ? SX4.p : null;
