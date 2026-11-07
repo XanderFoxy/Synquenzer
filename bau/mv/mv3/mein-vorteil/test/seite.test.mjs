@@ -554,6 +554,8 @@ for (const [ordner, nach, cache, altSeite] of [
 // Bereich als Offline-Kopie des Synthesizers. Ohne Zurücksetzen der Kopie: nach jedem Weg zu Mein Vorteil startet der SYNQUENZER
 // ohne Netz und bei schwachem Netz (> 3 s) wieder als SYNQUENZER.
 const SYNTH = '<!doctype html><meta charset="utf-8"><title>SYNQUENZER</title><p>Synth</p>';
+// Cache-Name des Wurzel-Workers aus seiner sw.js (seit 01.11.: synq-app-2) – nicht fest eintragen
+const SYNQ_CACHE = readFileSync(join(WURZEL, 'sw.js'), 'utf8').match(/const CACHE = '([^']+)'/)[1];
 async function mitWurzelWorker() {
   const ctx = await browser.newContext({ serviceWorkers: 'allow' });
   await ctx.route('https://**', r => r.fulfill({ status: 404, body: '' }));
@@ -561,12 +563,12 @@ async function mitWurzelWorker() {
   ersatz.set('/', { typ: TYP['.html'], text: SYNTH });
   await page.goto(`${basis}/`);
   await page.evaluate(async () => { await navigator.serviceWorker.register('/sw.js', { scope: '/' }); await navigator.serviceWorker.ready; });
-  const kopie = () => page.evaluate(async () => { const r = await (await caches.open('synq-app-1')).match('/'); return r ? (await r.text()).match(/<title>([^<]*)/)?.[1] || '?' : null; });
-  await page.waitForFunction(async () => !!(await (await caches.open('synq-app-1')).match('/')));
+  const kopie = () => page.evaluate(async c => { const r = await (await caches.open(c)).match('/'); return r ? (await r.text()).match(/<title>([^<]*)/)?.[1] || '?' : null; }, SYNQ_CACHE);
+  await page.waitForFunction(async c => !!(await (await caches.open(c)).match('/')), SYNQ_CACHE);
   assert.equal(await kopie(), 'SYNQUENZER');
   const istSynth = async wo => { // die Seite prüft die Kopie 1,5 s nach dem Laden (vorher kann der Wurzel-Worker noch speichern)
     await page.waitForTimeout(2000);
-    await page.waitForFunction(async () => { const r = await (await caches.open('synq-app-1')).match('/'); return !!r && /<title>SYNQUENZER/.test(await r.text()); }, null, { timeout: 6000 })
+    await page.waitForFunction(async c => { const r = await (await caches.open(c)).match('/'); return !!r && /<title>SYNQUENZER/.test(await r.text()); }, SYNQ_CACHE, { timeout: 6000 })
       .catch(async () => assert.fail(`${wo}: Offline-Kopie des SYNQUENZER ist jetzt „${await kopie()}“`));
   };
   const synthStart = async (wie, wo) => { // SYNQUENZER-Symbol antippen: ohne Netz bzw. mit Antwort erst nach 5 s

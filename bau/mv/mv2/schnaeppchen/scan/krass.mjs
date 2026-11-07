@@ -53,7 +53,7 @@ export function geraetAb(titel) {
   for (const [re, name, ab] of GERAETE_AB) if (re.test(t)) return { name, ab };
   return null;
 }
-const euro = v => `${(Math.round(v * 100) / 100).toFixed(2).replace('.', ',').replace(/,00$/, '')} €`;
+const krassEuro = v => `${(Math.round(v * 100) / 100).toFixed(2).replace('.', ',').replace(/,00$/, '')} €`;
 
 /**
  * Ist das ein krasser Preisfehler? e = { titel, preis, preisVorher } (Preise in €, inkl. Versand, wenn bekannt).
@@ -68,16 +68,16 @@ export function krass(e, regeln = {}) {
   const spar = vorher ? Math.round((vorher - preis) * 100) / 100 : null;
   const titel = String(e.titel || '');
   if (istSpiel(titel)) {
-    if (preis <= r.spielMaxEuro && (vorher == null || vorher >= 10)) return { ok: true, grund: `Spiel für ${euro(preis)} – praktisch geschenkt` };
+    if (preis <= r.spielMaxEuro && (vorher == null || vorher >= 10)) return { ok: true, grund: `Spiel für ${krassEuro(preis)} – praktisch geschenkt` };
     if (pz != null && pz >= r.spielMinProzent && spar >= r.spielMinErsparnisEuro) return { ok: true, grund: `Spiel ${pz} % unter dem Vorher-Preis` };
     return { ok: false, grund: 'Spiel – nicht krass genug' };
   }
   if (vorher != null) {
     if (pz >= r.minProzent && spar >= r.minErsparnisEuro) return { ok: true, grund: `${pz} % unter dem Vorher-Preis` };
-    if (preis <= r.absurdMaxEuro && vorher >= r.absurdMinVorher) return { ok: true, grund: `nur ${euro(preis)} statt ${euro(vorher)}` };
-    return { ok: false, grund: `nur ${pz} % / ${euro(spar)} unter dem Vorher-Preis` };
+    if (preis <= r.absurdMaxEuro && vorher >= r.absurdMinVorher) return { ok: true, grund: `nur ${krassEuro(preis)} statt ${krassEuro(vorher)}` };
+    return { ok: false, grund: `nur ${pz} % / ${krassEuro(spar)} unter dem Vorher-Preis` };
   }
   const g = geraetAb(titel);
-  if (g && preis <= g.ab * (1 - r.minProzent / 100)) return { ok: true, grund: `${g.name} kosten sonst ab ca. ${euro(g.ab)}`, normalAb: g.ab };
+  if (g && preis <= g.ab * (1 - r.minProzent / 100)) return { ok: true, grund: `${g.name} kosten sonst ab ca. ${krassEuro(g.ab)}`, normalAb: g.ab };
   return { ok: false, grund: g ? `für ${g.name} nicht krass genug` : 'Vorher-Preis unbekannt' };
 }

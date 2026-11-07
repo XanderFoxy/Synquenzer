@@ -93,6 +93,16 @@
     font-variant-numeric: tabular-nums;
   }
   .segment button[aria-selected="true"] .n { background: var(--akzent-text); color: var(--akzent); }
+  /* Vier Reiter: auf schmalen Bildschirmen (iPhone hochkant) steht die Zahl als kleines Abzeichen oben rechts am Knopf –
+     neben dem Wort passt „Angebote 12“ bei vier Knöpfen nicht mehr */
+  @media (max-width: 540px) {
+    .segment button { position: relative; padding: 0 4px; }
+    .segment .n {
+      position: absolute; top: -7px; right: -5px; min-width: 19px; height: 19px; padding: 0 5px; font-size: 11px;
+      background: var(--akzent); color: var(--akzent-text); box-shadow: 0 0 0 2px var(--bg);
+    }
+    .segment button[aria-selected="true"] .n { background: var(--akzent-text); color: var(--akzent); box-shadow: 0 0 0 2px var(--akzent); }
+  }
 
   /* Abschnitte */
   main { padding-top: 6px; }

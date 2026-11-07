@@ -117,12 +117,14 @@
   }
 
   // --- Karten ------------------------------------------------------------------------------------------------------------
+  const zeigeTiefst = t => t.istTiefst && !t.fehlt && t.preis != null && (t.vorher != null || t.angebot || t.unterZiel || t.preis <= 3.99);
   function initialen(s) { return s.split(/[\s:–-]+/).filter(w => /^[\p{L}\d]/u.test(w)).slice(0, 2).map(w => w[0].toUpperCase()).join(''); }
   function karte(t, staffel) {
     const name = staffel && staffelNr(t) != null ? `Staffel ${staffelNr(t)}` : t.titel;
     const marken = [];
     if (t.fehlt) marken.push('<span class="fi-marke fi-grau">nicht im Apple-Store</span>');
-    if (t.istTiefst && !t.fehlt) marken.push('<span class="fi-marke fi-stark">Tiefstpreis</span>');
+    // „Tiefstpreis“ nur, wenn es etwas heißt: gesenkt, Angebot oder ≤ 3,99 € – nicht bei einem Preis, der sich nie bewegt hat
+    if (zeigeTiefst(t)) marken.push('<span class="fi-marke fi-stark">Tiefstpreis</span>');
     if (t.angebot && !t.fehlt) marken.push('<span class="fi-marke">Angebot</span>');
     if (t.unterZiel && !t.fehlt) marken.push('<span class="fi-marke fi-warm">unter deinem Ziel</span>');
     const preis = t.fehlt ? ''
@@ -133,9 +135,14 @@
     if (!t.fehlt && t.preis != null && t.vorher != null && t.vorher > t.preis + 0.004) klein.push(`statt <s>${esc(euro(t.vorher))}</s>`);
     if (!t.fehlt && t.tiefst) {
       const hoeher = t.preis != null && t.preis > t.tiefst.p + 0.004;
-      const am = hoeher && t.tiefst.tag ? ` am ${tm(t.tiefst.tag)}` : '';
-      const seit = t.seit ? (t.seit === tagKey(Date.now()) ? ' (seit heute)' : ` (seit ${tm(t.seit)})`) : '';
-      klein.push(esc(`Tiefstpreis ${euro(t.tiefst.p)}${am}${seit}`));
+      const heute = t.seit === tagKey(Date.now());
+      if (!hoeher && t.vorher == null && !zeigeTiefst(t)) { // Preis hat sich nie bewegt
+        if (t.seit && !heute) klein.push(esc(`Preis unverändert seit ${tm(t.seit)}`));
+      } else {
+        const am = hoeher && t.tiefst.tag ? ` am ${tm(t.tiefst.tag)}` : '';
+        const seit = t.seit ? (heute ? ' (seit heute)' : ` (seit ${tm(t.seit)})`) : '';
+        klein.push(esc(`Tiefstpreis ${euro(t.tiefst.p)}${am}${seit}`));
+      }
     }
     if (t.ziel != null && !t.fehlt && !t.unterZiel) klein.push(esc(`dein Ziel: ${euro(t.ziel)}`));
     if (/mydealz/i.test(t.quelle)) klein.push('Tipp von mydealz');
@@ -393,6 +400,6 @@ a.fi-karte:active { background: var(--flaeche); }
     start, lade,
     get gestartet() { return !!S.el; },
     // für Tests (ohne Browser): reine Funktionen
-    _intern: { normalisiere, titelNorm, serieVon, staffelNr, bildUrl, startChip, standText, karte, CHIPS, CSS: () => CSS },
+    _intern: { normalisiere, titelNorm, serieVon, staffelNr, bildUrl, startChip, standText, karte, zeigeTiefst, CHIPS, CSS: () => CSS },
   };
 })();
