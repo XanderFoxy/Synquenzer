@@ -20371,12 +20371,12 @@ const RecHelpers = (() => {
     const MPS = {panel: null};
     MPS.sep = bar.appendChild(mk('span', 'sep'));
     tb.mpBrush = btn(bar, 'Pinsel', () => setTool('mpBrush'), 'Pinsel: in den Lauf malen, Noten folgen dem Finger');
-    if (opts.mp && opts.mp.listen) tb.mpListen = btn(bar, 'Mithören', () => mpPanel(MPS.panel === 'listen' ? null : 'listen'), 'Mithören: welche Spuren beim Bearbeiten mitspielen (nur Abhören)');
+    if (opts.mp && opts.mp.listen) tb.mpListen = btn(bar, 'Mitspielen …', () => mpPanel(MPS.panel === 'listen' ? null : 'listen'), 'Mitspielen: welche Spuren beim Bearbeiten mitspielen (nur Abhören)');   // WEGE (D11)
     /* MP-END */
     sep(bar);
     tb.grid = btn(bar, '1/16', () => { const k = Object.keys(GRID), i = k.indexOf(E.grid); setGrid(k[(i + 1) % k.length]); }, 'Raster');
     tb.len = btn(bar, '♪ 1/16', () => { const L8 = [null, .25, .5, 1, 2, 4], i = L8.indexOf(E.noteLen); E.noteLen = L8[(i + 1) % L8.length]; render(); }, 'Notenlänge für neue Noten (= Raster, oder fest)');
-    tb.fold = btn(bar, 'Tonart', () => { E.fold = !E.fold; buildRows(true); render(); if (opts.onPrefs) opts.onPrefs({grid: E.grid, fold: E.fold}); }, 'Nur Töne der Tonart zeigen');
+    tb.fold = btn(bar, 'Nur Leitertöne', () => { E.fold = !E.fold; buildRows(true); render(); if (opts.onPrefs) opts.onPrefs({grid: E.grid, fold: E.fold}); }, 'Nur Töne der Tonart zeigen');
     tb.step = btn(bar, 'Schritt', () => { setStep(E.step == null); }, 'Schritt-Eingabe mit der Tastatur');
     tb.fit = btn(bar, '⤢', () => { fitView(V.ppb > V.W * FITK / L() + 1 ? 'clip' : 'bar'); hand('zoom'); }, 'Ganzer Clip / 1 Takt');
     for (const x of opts.extraTools || []) { tb[x.id] = btn(bar, x.label, () => x.fn(tb[x.id]), x.title); if (x.cls) tb[x.id].classList.add(x.cls); }
@@ -20429,8 +20429,8 @@ const RecHelpers = (() => {
     const UX2P = {on: false, b: 0, drag: null, ov: null, cv: null, lp: null, bar: null, n: 0};
     const ux2pClip = () => create.ux2 || (create.ux2 = {notes: null, kind: '', span: 0});
     const ux2pKind = () => (opts.rowName ? 'perc' : 'note');
-    UX2P.copyB = btn(acts, 'Kopieren', () => ux2pCopy(), 'Kopieren (Auswahl, sonst alle Noten)');
-    UX2P.pasteB = btn(acts, 'Einfügen', () => ux2pStart(), 'Einfügen: Punkt mit dem Finger setzen (Lupe), dann ✓');
+    UX2P.copyB = btn(acts, 'Noten kopieren', () => ux2pCopy(), 'Noten kopieren (Auswahl, sonst alle Noten)');   // WEGE (D13)
+    UX2P.pasteB = btn(acts, 'Noten einfügen', () => ux2pStart(), 'Noten einfügen: Punkt mit dem Finger setzen (Lupe), dann ✓');
     UX2P.copyB.classList.add('ux2pb'); UX2P.pasteB.classList.add('ux2pb');
     function ux2pCopy() {
       const ns = scope(); if (!ns.length) { say('Keine Noten zum Kopieren'); return false; }
@@ -20566,12 +20566,12 @@ const RecHelpers = (() => {
       MPB.kMode = MP_MODES.map(([sc, nm]) => { const b = btn(acts, nm, () => { const k = mpKey(0); MPK.set(mpId(), {root: k.root, scale: sc}); render(); }, nm); P.push(b); return b; });
       P.push(btn(acts, 'Fertig', () => mpPanel(null), 'Tonart-Wahl schließen')); }
     { const P = MPB.panel.listen;
-      P.push(acts.appendChild(mk('span', 'mplab', 'MITHÖREN')));
+      P.push(acts.appendChild(mk('span', 'mplab', 'MITSPIELEN')));
       MPB.lChips = mk('span'); MPB.lChips.style.cssText = 'display:contents'; acts.appendChild(MPB.lChips); P.push(MPB.lChips);
       P.push(acts.appendChild(mk('span', 'sep')));
       P.push(btn(acts, 'Ohne Drums', () => { opts.mp.listen.noDrums(); mpChips(); render(); }, 'Alle Spuren außer Drums spielen mit'));
       P.push(btn(acts, 'Alle ab', () => { opts.mp.listen.none(); mpChips(); render(); }, 'Keine andere Spur spielt mit'));
-      P.push(btn(acts, 'Fertig', () => mpPanel(null), 'Mithören-Leiste schließen (die Wahl bleibt)')); }
+      P.push(btn(acts, 'Fertig', () => mpPanel(null), 'Mitspielen-Leiste schließen (die Wahl bleibt)')); }
     MPB.panelEls = new Set([...MPB.panel.key, ...MPB.panel.listen]);
     for (const x of MPB.panelEls) x.hidden = true;
     for (const x of [tb.mpBrush, tb.mpListen, A.mpAxis, ...MPB.opts, ...MPB.panelEls]) if (x && x.tagName === 'BUTTON') x.classList.add('mpb');   // DOPPEL: Spiegeln/Umdrehen/Tauschen haben n1b (gleiche 44-px-Trefferfläche)   // touch target ≥ 44 px (36 + 2 × 7)
@@ -21668,7 +21668,7 @@ const RecHelpers = (() => {
     B.key = K.btn(row, 'Auto', () => keyPick(), 'Tonart für das Wischen (Auto = erkannt)');
     B.inUp = K.btn(row, 'Umk. ▲', () => invert(1), 'Umkehrung nach oben (tiefster Ton eine Oktave höher)');
     B.inDn = K.btn(row, 'Umk. ▼', () => invert(-1), 'Umkehrung nach unten (höchster Ton eine Oktave tiefer)');
-    B.smooth = K.btn(row, 'Glatt', () => smooth(), 'Umkehrungen mit glatter Stimmführung wählen');
+    B.smooth = K.btn(row, 'Stimmführung', () => smooth(), 'Umkehrungen mit glatter Stimmführung wählen');   // WEGE (D12)
     // Tonart-Auswahl: Auto · 12 Grundtöne · Dur / Moll (auf der Notenfläche, schließt mit der Wahl oder ✕)
     const kp = K.mk('div', 'ms-kp'); kp.hidden = true; K.mainEl.appendChild(kp);
     ['pointerdown', 'pointerup', 'touchstart'].forEach(ev => kp.addEventListener(ev, e => e.stopPropagation()));
@@ -34355,6 +34355,7 @@ function sx14Open(anchor) {
         `<div class="sx14-s">SCHNAPPSCHÜSSE${sn.length ? ' · ' + sn.length + '/' + SX14_N : ''}</div>` +
         (sn.length ? sn.slice().reverse().map(z => `<div class="sx14-sr"><button class="rb sx14-r" data-a="r" data-id="${esc(z.id)}" aria-label="Schnappschuss ${esc(z.name)} zurückholen"><span class="n">${esc(z.name)}</span><span class="z">${dayTime(z.at)}</span></button><button class="rb sx14-d" data-a="d" data-id="${esc(z.id)}" aria-label="Schnappschuss ${esc(z.name)} löschen">✕</button></div>`).join('')
           : '<div class="sx14-e">Noch keiner. [＋ Schnappschuss] merkt den jetzigen Stand mit Namen – z. B. „vor dem Umbau“.</div>') + `</div></div>`;
+      wegeSx14Paint(p);   // WEGE (D8): Automatische Sicherungen – alles Zurückholen an einer Stelle
     };
     paint(); p._paint = paint;
     onTap(p, b => {
@@ -34913,11 +34914,11 @@ async function histClear() {
 function histMenu(s1, row) {
   if (!HIST) return;
   histInit();
-  if (HIST.avail === false) { s1.appendChild(el('div', 'small', 'Verlauf aus (Speicher nicht verfügbar)')); return; }
+  if (HIST.avail === false) { s1.appendChild(el('div', 'small', 'Aufzeichnung aus (Speicher nicht verfügbar)')); return; }
   const sz = el('span', 'mval', esc(histSizeTxt()));
-  row(s1, 'Verlauf', makeSeg([[true, 'An'], [false, 'Aus']], () => HIST.on, v => { histSetOn(v); sz.textContent = histSizeTxt(); }), sz).classList.add('mhist');
-  row(s1, 'Projektdatei', makeSeg([[false, 'ohne Verlauf'], [true, 'mit Verlauf']], () => !!UI.histFile, v => { UI.histFile = !!v; })).classList.add('mhist');
-  const bDel = el('button', 'mbtn rb', 'Verlauf dieses Projekts löschen');
+  row(s1, 'Aufzeichnung (für Making-of)', makeSeg([[true, 'An'], [false, 'Aus']], () => HIST.on, v => { histSetOn(v); sz.textContent = histSizeTxt(); }), sz).classList.add('mhist');   // WEGE (D8): „Verlauf“ heißt nur noch die ↶-Liste
+  row(s1, 'Projektdatei', makeSeg([[false, 'ohne Aufzeichnung'], [true, 'mit Aufzeichnung']], () => !!UI.histFile, v => { UI.histFile = !!v; })).classList.add('mhist');
+  const bDel = el('button', 'mbtn rb', 'Aufzeichnung dieses Projekts löschen');
   twoStep(bDel, 'Wirklich löschen?', () => { histClear().then(() => { sz.textContent = histSizeTxt(); }); });
   row(s1, null, bDel);
   if (HIST.wq) HIST.wq.then(() => { if (sz.isConnected) sz.textContent = histSizeTxt(); }, () => {});
@@ -36396,7 +36397,7 @@ function buildSongView() {
   // V2e′ (N7-R12, 6.5): [▦│◧] Kästchen │ Glas, 44 × 40 at the right of the row (L / P3: in the transport column)
   const bGl = el('button', 'rb sv-b sv-gl', '<span class="on">▦</span><i></i><span>◧</span>'); bGl.setAttribute('aria-label', 'Ansicht: Kästchen (antippen: Glas)'); bGl.setAttribute('aria-pressed', 'false');
   // UE-B: [◆ Übergänge] öffnet unten die Bibliothek-Leiste (über dem Song-Bereich, die Tastatur bleibt)
-  const bUe = el('button', 'rb sv-b sv-ue', '<span class="d">◆</span><span class="t"><span class="tl">ÜBERGÄNGE</span><span class="ts">ÜBERG.</span></span>'); bUe.setAttribute('aria-label', 'Übergänge: Bibliothek öffnen'); bUe.setAttribute('aria-pressed', 'false');
+  const bUe = el('button', 'rb sv-b sv-ue', '<span class="d">⇥</span><span class="t"><span class="tl">FILLS</span><span class="ts">FILLS</span></span>'); bUe.setAttribute('aria-label', 'Fills & Breaks: Bibliothek öffnen');   // WEGE (D9): ◆ nur noch für Klang bUe.setAttribute('aria-pressed', 'false');
   const bScr = el('button', 'rb sv-b sv-scr', SX7_SVG); bScr.setAttribute('aria-label', 'Mithören beim Wischen: aus'); bScr.setAttribute('aria-pressed', 'false');   // SX714: SX7 Scrubbing
   // V0c: [● MEL.] leaves the row – ● with the target MELODIE does the same (overdub, punch-in while the song plays; the API
   // songMel stays); two „● MEL“ side by side would say two different things
@@ -36434,7 +36435,7 @@ function buildSongView() {
   // SX4: am Spurnamen Tipp = stumm (+ wählen), Halten = Solo, waagrecht = Lautstärke (vorher: Tipp = wählen)
   on(labs, 'pointerdown', e => { const d = e.target.closest('.sv-l.trk'); const t = d ? +d.dataset.t : -1; if (t >= 0 && S.tracks[t]) sx4Down(e, d, t); });
   const wrap = el('div', 'sv-cw'), cv = el('canvas', 'sv-cv'), empty = el('div', 'sv-empty');
-  const ueFab = el('button', 'rb sv-uefab', '◆'); ueFab.setAttribute('aria-label', 'Übergänge: Bibliothek öffnen'); ueFab.addEventListener('pointerdown', e => e.stopPropagation()); onTap(ueFab, () => { ueBar(true); haptic('tick'); });   // UE-B: Ersatz für [◆] in sehr schmalen Ansichten
+  const ueFab = el('button', 'rb sv-uefab', '⇥'); ueFab.setAttribute('aria-label', 'Fills & Breaks: Bibliothek öffnen'); ueFab.addEventListener('pointerdown', e => e.stopPropagation()); onTap(ueFab, () => { ueBar(true); haptic('tick'); });   // UE-B: Ersatz für [◆] in sehr schmalen Ansichten
   // V2e (6.4/6.5): the empty song names both ways in; [＋ Teil einsetzen ▾] also when the song is still empty (Xander 24.10. b)
   empty.innerHTML = 'Noch kein Song.<br>FANG TEIL beim Spielen, dann den Teil in den Song ziehen – oder <b>● SONG</b>.';
   const kr = el('div', 'kbrow');
@@ -37949,6 +37950,7 @@ function songRange(kind, a, b, arg) {
 function rangeAsPart(a, e, arg) {
   if (e - a > 16) { toast('Ein Teil hat höchstens 16 Takte'); return false; }
   partsEnsure(); const k = S.parts.findIndex(x => !x); if (k < 0) { toast('Teil-Leiste voll – erst einen Teil löschen'); return false; }
+  { const r = konDo(a, e, String((arg && arg.name) || arg || '').trim()); return r ? {part: r.part, name: r.name} : false; }   // WEGE (Inventar Abschnitt 5): wie Zusammenfassen – eigene Clips, Melodie, Gesang, Zurückholen
   const bp = partSnap(), bs = songSnapshot(), tp = templateFrom(S.song, a, e);
   const name = partUniq(String((arg && arg.name) || arg || '').trim().slice(0, 12) || partSuggest(), k);
   S.parts[k] = normPart({name, color: PART_COLORS[k % PART_COLORS.length], slots: tp.slots, lanes: tp.lanes, chords: tp.chords, len: tp.len, src: 'song'}, k, NT());
@@ -39140,7 +39142,7 @@ function hm1Paint() {
   const sy = U.p.scrollTop;
   const {tr, c, sel, segs} = D, tab = HM1.tab, N = noteNames();
   let h = `<div class="hm1-h"><b>HARMONIE</b><span class="hm1-i">${esc(tr.name)} · Szene ${U.s + 1} · ${esc(keyName(c.key))}${sel.length ? ' · ' + sel.length + ' gewählt' : ''}</span><button class="rb hm1-x" data-a="x" aria-label="Schließen">✕</button></div>`;
-  h += '<div class="seg hm1-tabs">' + [['glatt', 'Glätten'], ['lauf', 'Lauf'], ['gegen', 'Gegenstimme'], ['akk', 'Akkorde']].map(([v, l]) => `<button data-tab="${v}" class="${tab === v ? 'on' : ''}">${l}</button>`).join('') + '</div>';
+  h += '<div class="seg hm1-tabs">' + [['glatt', 'Auf eine Stufe'], ['lauf', 'Lauf'], ['gegen', 'Gegenstimme'], ['akk', 'Akkord-Ideen']].map(([v, l]) => `<button data-tab="${v}" class="${tab === v ? 'on' : ''}">${l}</button>`).join('') + '</div>';
   if (tab === 'glatt') {
     const x = hm1Free(U.t, U.s), hasRow = !!(S.scenes[U.s] && S.scenes[U.s].chords && S.scenes[U.s].chords.ch.length), bb = clipBarB(c);
     const chips = segs.map(g => `<span class="hm1-c"><small>${Math.floor(g.a / bb + 1e-6) + 1}${Math.abs(g.a / bb - Math.round(g.a / bb)) > 1e-6 ? '½' : ''}</small>${esc(g.tg ? prettyTarget(g.tg) : 'ORIG.')}</span>`).join('');
@@ -39153,7 +39155,7 @@ function hm1Paint() {
   } else if (tab === 'lauf') {
     h += `<div class="hm1-r"><span class="hm1-t">${sel.length ? sel.length + ' Noten gewählt – die Auswahl wird verlängert' : 'Nichts gewählt – der ganze Clip wird verlängert'} · ${c.len} ${c.len === 1 ? 'Takt' : 'Takte'}</span></div>`;
     h += '<div class="hm1-r"><button class="rb" data-a="dbl">Doppeln</button><button class="rb" data-a="fup">Fortsetzen ▲</button><button class="rb" data-a="fdn">Fortsetzen ▼</button></div>';
-    h += `<div class="hm1-r"><button class="rb" data-a="lm"${c.len <= 1 ? ' disabled' : ''}>Takte −</button><span class="hm1-n">${c.len} ${c.len === 1 ? 'Takt' : 'Takte'}</span><button class="rb" data-a="lp"${c.len >= 64 ? ' disabled' : ''}>Takte +</button></div>`;
+    // WEGE (D13): [Takte −/+] weg – die Länge geht über den Griff ┃ in ROLLE und das Clip-Blatt (gleiche Funktion)
   } else if (tab === 'gegen') {
     const tgs = hm1Targets(U.t, U.s), tg = tgs.length ? tgs[U.tg % tgs.length] : null;
     h += '<div class="seg hm1-var">' + HM1_VAR.map(([v, l], k) => `<button data-var="${k}" class="${U.v === k ? 'on' : ''}">${l}</button>`).join('') + '</div>';
@@ -39413,8 +39415,7 @@ function openLoopPop(anchor) {
       `<button class="rb${cur === 'part' ? ' on' : ''}" data-l="part"${tm ? '' : ' disabled'}>Teil<small>${tm ? esc(markLabel(tm)) : 'keine Marke'}</small></button>` +
       `<button class="rb${cur === 'range' ? ' on' : ''}" data-l="range">Bereich<small>${cur === 'range' && !sel ? loopLabel(song) : (rb - ra === 1 ? 'Takt ' + (ra + 1) : 'Takt ' + (ra + 1) + '–' + rb)}</small></button></div>` +
       '<p class="small">Bereich = die gelb gewählten Takte (Taktleiste antippen). Die grünen Griffe ┃ ziehen ändert Anfang und Ende.</p>';
-    ux1LoopRow(p);   /* UIX1: Mithören beim Wischen (Lautsprecher) */
-    vd3LoopRow(p);   /* VD3: Video-Schnitt im Song an/aus */
+    // WEGE: Mithören = ▼-Marke ziehen (D11), Video-Schnitt = Video-Blatt › Extras / Regie-Streifen (Abschnitt 4) – nicht mehr unter SCHLEIFE
     onTap(p, b => {
       const l = b.dataset.l; closePop();
       if (l === 'off') songLoopRange({on: false});
@@ -39594,6 +39595,7 @@ function svBindGestures(w) {
   ['gesturestart', 'gesturechange', 'gestureend'].forEach(ev => w.addEventListener(ev, e => e.preventDefault()));   // SX8: iOS-Pinch zoomt nie die Seite
   w.addEventListener('pointerdown', e => {
     if (vd3LaneDown(e, w)) return;                                     // VD3: die Video-Spur (Schnitt-Modus) hat ihre eigenen Gesten
+    if (wegeSvDown(e, w)) return;                                      // WEGE: ▼-Marke ziehen = mithören (D11); Tipp auf den Regie-Streifen = Video-Spur
     // SX8: der zweite Finger macht aus der Ein-Finger-Geste (noch ohne Bearbeitung) einen Pinch-Zoom
     if (e.pointerType !== 'mouse' && !DRG) {
       if (SV.pinch || P.size >= 2) { e.preventDefault(); return; }       // ein dritter Finger: nichts
@@ -40169,19 +40171,20 @@ function openMarkSheet(id) {
           B('play', '▶ Ab hier') + B('rep2', '×2', {aria: nm + ' zweimal'}) + B('rep4', '×4', {aria: nm + ' viermal'}) +
           B('swapL', '◀', {dis: k <= 0, aria: 'Mit dem Teil davor tauschen'}) + B('swapR', '▶', {dis: k < 0 || k >= ms.length - 1, aria: 'Mit dem Teil danach tauschen', cls: 'ms-sw'}) +
         `</div><div class="ms-r">` +
-          B('copy', narrow ? '⧉ Kopie' : '⧉ Kopie …', {aria: 'Kopie – danach den Ablage-Taktstrich antippen'}) + B('repl', narrow || land ? '⇄ Ersetzen ▾' : '⇄ Ersetzen durch ▾') +
+          B('copy', narrow ? '⧉ Kopie' : '⧉ Teil kopieren …', {aria: 'Teil kopieren – danach den Ablage-Taktstrich antippen'}) + B('repl', narrow || land ? '⇄ Ersetzen ▾' : '⇄ Ersetzen durch ▾') +
           B('del', narrow ? '✕' : '✕ Löschen', {aria: 'Takte löschen, der Rest rückt'}) + B('unname', narrow ? 'Name weg' : 'Nur Name weg') +
         `</div></div><div class="ms-bb"><div class="ms-r ms-r3">` +
           B('name', '✎ Name') + B('color', `Farbe <i style="background:${pcol}"></i>`, {dis: !isP}) +
           B('tpl', 'Teil-Vorlage ›', {dis: !isP}) + (same >= 2 ? B('all', land || narrow ? 'Auf alle übertragen' : `Auf alle ${same} „${esc(nm)}“ übertragen`, {cls: 'ms-all'}) : B('all', 'Auf alle übertragen', {dis: true})) +
         `</div><div class="ms-r">` + B('rec', '● Neu aufnehmen …', {cls: 'ms-rec'}) + B('ts', 'Taktart ' + (m.ts || S.ts || '4/4') + (p._ts ? ' ▴' : ' ▾'), {aria: 'Taktart dieses Teils', cls: m.ts ? 'on' : ''}) + `</div>` +
-        (p._ts ? t1TsGrid(m.ts || 'song', ['song', 'wie Song']) : '') + `</div>` + vvDirRow(m.a, m.a + m.len, 'ms-b');   // VV2: Zeile „Video“; T1: Taktart des Teils
+        (p._ts ? t1TsGrid(m.ts || 'song', ['song', 'wie Song']) : '') + `</div>` + wegeVideoRow(m.a, m.a + m.len);   // VV2: Zeile „Video“ (WEGE D6: „Im Video ▸“ öffnet die Video-Spur); T1: Taktart des Teils
       s012MarkSheetPaint(p, m);   /* S0/S2 */
       konMarkSheetPaint(p, m);    /* KON: [Als neuen Teil konsolidieren] [Zurückholen] */
       v6aMarkSheetPaint(p, m);    // V6A: [Gleiten: Clip|aus|kurz|1 T|2 T|frei] an dieser Song-Kante
       sx11MarkSheetPaint(p, m);   /* SX11: Fassung [Leicht] [Voll] [Kopieren] [Einfügen] */
       sx126MarkSheetPaint(p, m);  // SX126: [Bei Takt …] (Klinge), beim letzten Teil „Ausblenden am Ende“
       gr1MarkSheetPaint(p, m);    // GR1: Rhythmus [Small] [Full] [Vorschlag] [Remix …]
+      wegeMarkSheetPaint(p, m);   // WEGE: Small │ Full (D2), Reiter Ablauf │ Teil │ Klang & Groove │ Video (Abschnitt 4)
       for (const b of p.querySelectorAll('.ms-b')) if (b.scrollWidth > b.clientWidth + 1) b.classList.add('tight');
     };
     paint(); p._paint = paint;
@@ -40835,7 +40838,7 @@ function buildRangeBar() {
   const side = document.getElementById('side'); if (!side || document.getElementById('rangeBar')) return;
   const rb = el('div', '', ''); rb.id = 'rangeBar'; rb.setAttribute('role', 'toolbar'); rb.setAttribute('aria-label', 'Gewählte Takte');
   const B = (a, d, t, ts, aria) => `<button class="rb rg-b" data-a="${a}" aria-label="${esc(aria)}"><span class="d">${d}</span><span class="t" data-l="${esc(t)}" data-s="${esc(ts)}">${esc(t)}</span></button>`;
-  rb.innerHTML = B('play', '▶', 'Ab hier', 'Ab hier', 'Ab hier abspielen') + B('rec', '●', 'Aufnehmen …', 'Aufn.', 'Hier aufnehmen …') + B('part', '❖', 'Als Teil …', 'Teil', 'Als Teil …') +
+  rb.innerHTML = B('play', '▶', 'Ab hier', 'Ab hier', 'Ab hier abspielen') + B('rec', '●', 'Aufnehmen …', 'Aufn.', 'Hier aufnehmen …') + B('part', '❖', 'Zusammenfassen …', 'Teil …', 'Zusammenfassen …') +
     B('copy', '⧉', 'Kopie →', 'Kopie', 'Kopie dahinter') + B('del', '✕', 'Takte löschen', 'Löschen', 'Takte löschen, der Rest rückt') + B('more', '⋯', 'Mehr', 'Mehr', 'Mehr: Leeren, Teil einsetzen, Akkorde quantisieren, Schleife');
   side.insertBefore(rb, document.getElementById('carrier'));
   guardTouch(rb);
@@ -40873,7 +40876,7 @@ function rangeAct(a, btn) {
   const A = sel.a, Bb = Math.min(sel.b, song.bars - 1), n = Bb - A + 1, rng = n === 1 ? 'Takt ' + (A + 1) : 'Takte ' + (A + 1) + '–' + (Bb + 1);
   if (a === 'play') { songPlayFrom(A); return; }
   if (a === 'rec') { openRecStart(btn); return; }
-  if (a === 'part') { openAsPart(btn, A, Bb); return; }
+  if (a === 'part') { s2OpenSum(btn, A, Bb + 1, {kon: true}); return; }   // WEGE (D1): ein Zusammenfassen (konDo)
   if (a === 'copy') { if (songRange('copy', A, Bb)) { SV.sel = {a: Bb + 1, b: Bb + n}; SV.pos = Bb + 1; svShiftAnim(Bb + 1, n); toast(rng + ' kopiert → ' + (n === 1 ? 'Takt ' + (Bb + 2) : 'Takte ' + (Bb + 2) + '–' + (Bb + 1 + n)), songUndoAct()); svButtons(); } return; }
   if (a === 'del') { if (songRange('delete', A, Bb)) { SV.sel = null; SV.pos = Math.min(A, Math.max(0, S.song.bars - 1)); toast(rng + ' gelöscht · der Rest rückt', songUndoAct()); svButtons(); } return; }
   if (a === 'more') openRangeMore(btn);
@@ -40884,13 +40887,14 @@ function openRangeMore(anchor) {
   openPop(anchor, p => {
     guardTouch(p);
     p.innerHTML = `<h4>Takt ${A + 1}${Bb > A ? '–' + (Bb + 1) : ''}</h4><div class="plist">` +
-      (narrow ? '<button class="rb" data-a="part">❖ Als Teil …</button>' : '') +
+      (narrow ? '<button class="rb" data-a="part">❖ Zusammenfassen …</button>' : '') +
       '<button class="rb" data-a="clear">○ Leeren</button><button class="rb" data-a="ins">＋ Teil einsetzen ▾</button>' +
-      '<button class="rb" data-a="quant">Akkorde quantisieren …</button><button class="rb" data-a="loop">⟲ Als Schleife</button>' + s2RangeItem() + konuxRangeItem() + '</div>' + vvDirRow(A, Bb + 1, 'vvdb');   /* S2 */   // VV2: Zeile „Video“
+      '<button class="rb" data-a="quant">Akkorde quantisieren …</button><button class="rb" data-a="loop">⟲ Als Schleife</button>' + konuxRangeItem() + '</div>' + wegeVideoRow(A, Bb + 1, 'range');   /* S2 */   // VV2: Zeile „Video“ (WEGE D1/D6: ein Zusammenfassen, „Im Video ▸“)
     onTap(p, b => {
       const a = b.dataset.a; if (a && a.startsWith('vv-')) { vvDirTap(a, b, A, Bb + 1, () => { if (UI.pop && UI.pop.el === p) closePop(); }); return; }   // VV2
       closePop();
-      if (a === 'part') openAsPart(anchor, A, Bb);
+      if (a === 'part') s2OpenSum(anchor, A, Bb + 1, {kon: true});   // WEGE (D1)
+      else if (a === 'wgvideo') wegeVideoOpen(A, Bb + 1);   // WEGE (D6)
       else if (a === 'clear') { if (songRange('clear', A, Bb)) toast('Takt ' + (A + 1) + (Bb > A ? '–' + (Bb + 1) : '') + ' geleert · die Länge bleibt', songUndoAct()); }
       else if (a === 'ins') openPlacePick(anchor, A);
       else if (a === 'quant') openQuantChords(anchor);
@@ -42002,6 +42006,7 @@ function popBpm() {
     on(p.querySelector('#pbDn'), 'click', () => { setBpm(S.bpm - 1); upd(); });
     on(p.querySelector('#pbUp'), 'click', () => { setBpm(S.bpm + 1); upd(); });
     on(p.querySelector('#pbTap'), 'pointerdown', e => { e.preventDefault(); tapTempo(); upd(); });
+    wegeBpmRow(p);   // WEGE (Abschnitt 4): Song transponieren …, Ausblenden am Ende
   }, {name: 'bpm'});
 }
 const TAP = {times: []};
@@ -49306,7 +49311,7 @@ function mdMore(anchor) {
   const sl = mdCurSl();
   openPop(anchor, p => {
     const ch = mdChans().filter(v => v.id !== sl.id);
-    p.innerHTML = '<h4>Kanal ' + esc(sl.l) + '</h4><div class="plist mdmore">' + [['copy', 'Kopieren'], ['paste', MDE.all ? 'Einfügen in alle' : 'Einfügen', !MDE.clip], ['swap', 'Tauschen mit …', !ch.length], ['init', 'Init'], ['save', 'Programm sichern']]
+    p.innerHTML = '<h4>Kanal ' + esc(sl.l) + '</h4><div class="plist mdmore">' + [['copy', 'Klang kopieren'], ['paste', MDE.all ? 'Klang in alle einfügen' : 'Klang einfügen', !MDE.clip], ['swap', 'Tauschen mit …', !ch.length], ['init', 'Init'], ['save', 'Programm sichern']]
       .map(([a, l, dis]) => `<button class="rb" data-a="${a}"${dis ? ' disabled' : ''}>${esc(l)}</button>`).join('') + '</div><div class="plist mdswap" hidden>' + ch.map(v => `<button class="rb" data-sw="${v.id}">${esc(v.l)}</button>`).join('') + '</div>';
     guardTouch(p);
     onTap(p, b => {
@@ -50853,7 +50858,7 @@ function openClipSheet(t, s, opts) {
     // an empty slot (long-press with something in the clipboard): paste or start an empty clip
     const g = el('div', 'cgrid');
     g.append(B('✎ Neuer Clip', () => { closeClipSheet(); openRoll(t, s); }, 'big'));
-    const pb = B('Einfügen', () => { if (pasteClip(t, s)) reopen(); }); pb.disabled = !CLIPBOARD.clip; g.append(pb);
+    const pb = B('Clip einfügen', () => { if (pasteClip(t, s)) reopen(); }); pb.disabled = !CLIPBOARD.clip; g.append(pb);
     g.append(B('✕ Schließen', closeClipSheet));
     body.append(g);
   } else {
@@ -50879,9 +50884,9 @@ function openClipSheet(t, s, opts) {
     const playing = R.playing && AU.ctx && visualSlots(t, audBeat()).playing === s;
     const g = el('div', 'cgrid');
     g.append(B('✎ Bearbeiten', () => { closeClipSheet(); openRoll(t, s); }, 'big'));
-    g.append(B('Quantisieren…', () => (tr.stimme && clip.audio ? (wpOpen({t, s}) ? closeClipSheet() : toast('Audio nur auf der eigenen Seite')) : openQuantSheet(t, s))));   // K3: STIMME → Marken-Editor
-    g.append(B('Kopieren', () => { copyClip(t, s); toast('Clip kopiert'); reopen(); }));
-    const pb = B('Einfügen', () => { if (pasteClip(t, s)) reopen(); }); pb.disabled = !CLIPBOARD.clip; g.append(pb);
+    g.append(B(tr.stimme && clip.audio ? 'Marken & Timing …' : 'Quantisieren…', () => (tr.stimme && clip.audio ? (wpOpen({t, s}) ? closeClipSheet() : toast('Audio nur auf der eigenen Seite')) : openQuantSheet(t, s))));   // K3: STIMME → Marken-Editor
+    g.append(B('Clip kopieren', () => { copyClip(t, s); toast('Clip kopiert'); reopen(); }));   // WEGE (D13)
+    const pb = B('Clip einfügen', () => { if (pasteClip(t, s)) reopen(); }); pb.disabled = !CLIPBOARD.clip; g.append(pb);
     g.append(B('Duplizieren → frei', () => { const k = duplicateClip(t, s); if (k >= 0) toast('Dupliziert in Szene ' + (k + 1)); }, null, 'Duplizieren → freier Platz'));
     if (cvHas(clip)) { const kb = B('Kurven löschen<small>Bend · Rad · Druck</small>', () => { clipCurvesClear(t, s); toast('Kurven gelöscht', {label: 'Rückgängig', fn: () => undo()}); reopen(); }, 'cvdel', 'Kurven löschen (Bend · Rad · Druck)'); g.append(kb); }   // BM8 (§5.4): nur bei Clips mit Kurven
     if (!tr.stimme) { const tb = B('Taktart ' + (clip.ts || '4/4') + ' ▾', () => openPop(tb, p => {   // T1: Taktart des Clips (Umrechnung, ein Undo)
@@ -50902,6 +50907,7 @@ function openClipSheet(t, s, opts) {
     gr1ClipSheet(g, t, s, clip, reopen);                                                     // GR1: [Grundmuster ▾] · Small │ Full
     g.append(vr1ClipBtn(t, s, clip, reopen));                         // VR1: Im Video · Auto | Gerät | Klavier | Mäusekino | Noten | aus
     bb1ClipSheet(g, t, s, clip, reopen);                                                     // BB1: [Werkzeugkasten ▾]
+    wegeClipSheet(g, t, s, clip);                                                           // WEGE (D9): Versionen im Song
     body.append(g);
     const lr = el('div', 'lenrow');
     lr.append(el('span', 'lbl', 'Länge'));
@@ -51538,7 +51544,7 @@ function openMenu(goto) {
   s1.appendChild(status); UI.menuStatus = status;
   const sOn = menuCloudSection(sec, colL);         // VO1: Abschnitt „Online“ direkt unter „Projekt“ (§6.1)
   const mem = !kv || kv.mode === 'memory';
-  const bNew = btn('Neu ▾'), bDemo = btn('Demo laden'), bSave = btn('Als Datei sichern (.json)', 'go'), bOpen = btn('Datei öffnen');
+  const bNew = btn('Neu ▾'), bDemo = btn('Demo laden'), bSave = btn('Als Datei sichern (.json)', 'go'), bOpen = btn('Öffnen …'); bOpen.setAttribute('aria-label', 'Öffnen: Projektdatei (.json) oder Projekt mit Audios (.zip)');   // WEGE (D7)
   // V0b U-05: [Neu ▾] → [Mit Startsounds] │ [Leer (Init)]; the current project is parked first (§12.2), memory mode: two-step
   const newBox = el('div', 'mrow mnew'); newBox.hidden = true;
   const nStd = btn('Mit Startsounds'), nInit = btn('Leer (Init)');
@@ -51566,47 +51572,20 @@ function openMenu(goto) {
   row(s1, 'Spuren ' + NT() + '/' + MAX_T, bAddT, bRemT);
   UI.openConfirm = row(s1, null); UI.openConfirm.hidden = true;
   UI.dlRow = row(s1, null); UI.dlRow.hidden = true;
-  const bProj = btn('Projekte ▾'), bHist = btn('Ältere Versionen ▾');
+  const bProj = btn('Projekte ▾'), bHist = btn('Automatische Sicherungen ▾');   // WEGE (D8)
   row(s1, null, bProj, bHist);
   const projBox = el('div', 'mlist'); projBox.hidden = true; s1.appendChild(projBox); UI.projBox = projBox;
   const histBox = el('div', 'mlist'); histBox.hidden = true; s1.appendChild(histBox); UI.histBox = histBox;
   if (mem) { bProj.disabled = true; bHist.disabled = true; s1.appendChild(el('div', 'small', 'Nur ein Projekt möglich – bitte ‚Als Datei sichern‘')); }
   histMenu(s1, row);  // VC2a
-  // §3.9 P1: [Song als Audio] — the song once in real time through the master into an audio file (MediaRecorder)
-  if (typeof MediaRecorder === 'function' && S.song && S.song.bars) {
-    const bAud = btn(SREC.on ? 'Aufnahme läuft … (abbrechen)' : 'Song als Audio', SREC.on ? 'arm' : '');
-    on(bAud, 'click', () => { if (SREC.on) songAudioStop(true); else { closeMenu(); songAudioStart(); } });
-    row(s1, null, bAud);
-  }
+  // WEGE (D7): [Song als Audio] steht jetzt im Blatt Export › Audio (Echtzeit-Mitschnitt)
   vvMenuRow(s1, row, btn);                                        // VV1 (Nachtrag 5): Menü → Video
   va1MenuRow(s1, row, btn);                                       // VA1: Menü → Export (WAV, Einzelspuren, MIDI, Video, Container)
-  gr1MenuRow(s1, row, btn);                                       // GR1: Song › [Remix …] [Transponieren …]
+  if (!(S.song && S.song.bars)) gr1MenuRow(s1, row, btn);         // GR1: Song › [Remix …] [Transponieren …] (WEGE Abschnitt 4: mit Song = REMIX in der Song-Leiste, Transponieren im Tempo-Blatt)
   mx2MenuRow(s1, row, btn);                                       // MX2: Mix › [Mix & Master …]
   on(bProj, 'click', () => { projBox.hidden = !projBox.hidden; histBox.hidden = true; if (!projBox.hidden) menuProjRefresh(); });
   on(bHist, 'click', () => { histBox.hidden = !histBox.hidden; projBox.hidden = true; if (!histBox.hidden) menuHistRefresh(); });
-  // 1b Sounds (WP3, §2.5): the user library as a file
-  const sS = sec('Sounds', colL, 2);
-  const bSx = btn('Alle eigenen Sounds exportieren'), bSi = btn('Sounds importieren');
-  on(bSx, 'click', () => exportSounds()); on(bSi, 'click', () => { EL.sndIn.value = ''; EL.sndIn.click(); });
-  row(sS, null, bSx, bSi);
-  // §6.6 (WP7): a DX7 bank (.syx); the picker has no `accept` attribute (iOS greys out .syx otherwise, §1.7.8)
-  const bSyx = btn('DX7-Bank importieren (.syx)'); on(bSyx, 'click', () => { EL.syxIn.value = ''; EL.syxIn.click(); });
-  // V4c (Spec §9.6): up to 32 DX-tauglich FM sounds of the library as a DX7 bank (in the viewer as .zip, EN-12)
-  const bSyxE = btn('DX7-Bank exportieren (.syx)'); on(bSyxE, 'click', () => { exportSyxBank().catch(e => { logErr(e); toast('Export fehlgeschlagen'); }); });
-  row(sS, null, bSyx, bSyxE);
-  const nLib = LIB.ok ? LIB.lib.all().length : 0;
-  sS.appendChild(el('div', 'small', nLib ? nLib + (nLib === 1 ? ' eigener Sound' : ' eigene Sounds') + ' im Browser – „Als Datei sichern“ nimmt sie mit.' : 'Eigene Sounds entstehen im Klang-Editor mit „Sichern“. Eine Projektdatei enthält immer alle eigenen Sounds.'));
-  // 2 MIDI export
-  const s2 = sec('MIDI-Export', colR, 3);
-  UI.expMode = UI.expMode || 'scene'; UI.expCarrier = UI.expCarrier !== false;
-  if (UI.expMode === 'song' && !(S.song && S.song.bars)) UI.expMode = 'scene';
-  row(s2, 'Umfang', makeSeg([['scene', 'Szene ' + (R.selS + 1)], ['all', 'Alle Szenen'], ['log', 'Mitschnitt']].concat(S.song && S.song.bars ? [['song', 'Song']] : []), () => UI.expMode, v => { UI.expMode = v; }));
-  row(s2, 'Transposition', makeSeg([[true, 'mit Träger'], [false, 'Original']], () => UI.expCarrier, v => { UI.expCarrier = v; }));
-  const bExp = btn('Exportieren', 'go'); on(bExp, 'click', () => exportMidi({mode: UI.expMode, scene: R.selS, withCarrier: UI.expCarrier}));
-  row(s2, null, bExp);
-  // V2a: the export writes Synth 1–4 and DRUMS (N tracks: V2a′)
-  if (NT() > MIDI_T) s2.appendChild(el('div', 'small', 'MIDI enthält Synth 1–4 und DRUMS, bei „Song“ auch die Song-Melodie jeder Spur (z. B. MELODIE). Clips weiterer Spuren kommen in einer der nächsten Versionen dazu.'));
-  UI.dlRowMidi = row(s2, null); UI.dlRowMidi.hidden = true;
+  // WEGE (D7): Sounds und MIDI-Export stehen jetzt im Blatt Export (Menü › Export)
   // 3 Harmonie
   const s3 = sec('Harmonie', colR, 4);
   const keySeg = makeSeg(Harmony.PRETTY.map((n, k) => [k, noteNames()[k]]), () => S.key.root, v => setProjectKey({root: v, scale: S.key.scale}));
@@ -51827,7 +51806,7 @@ async function menuProjRefresh() {
   };
   mk({id: S.id, name: S.name, mt: Date.now(), bars: projBars(S)}, true);
   ix.forEach(e => mk(e, false));
-  if (!ix.length) box.appendChild(el('div', 'small', 'Weitere Projekte erscheinen hier, sobald du „Neu“, „Demo laden“ oder „Datei öffnen“ benutzt – das aktuelle Projekt wird dabei automatisch aufgehoben.'));
+  if (!ix.length) box.appendChild(el('div', 'small', 'Weitere Projekte erscheinen hier, sobald du „Neu“, „Demo laden“ oder „Öffnen …“ benutzt – das aktuelle Projekt wird dabei automatisch aufgehoben.'));
 }
 // [Ältere Versionen]: the autosave history (one per 10 min of editing + every file save); tap -> two-step -> load
 // V0b U-05: „Ältere Versionen“ of the open project (+ old global entries of it)
@@ -51847,7 +51826,7 @@ async function menuHistRefresh() {
   const projs = await Promise.all(list.map(it => autosave.loadHistory(it.key).catch(() => null)));
   if (UI.histBox !== box) return;
   box.innerHTML = '';
-  if (!list.length) { box.appendChild(el('div', 'small', 'Noch keine älteren Versionen. Beim Sichern als Datei und alle 10 Minuten Bearbeitung wird eine angelegt.')); return; }
+  if (!list.length) { box.appendChild(el('div', 'small', 'Noch keine automatischen Sicherungen. Beim Sichern als Datei und alle 10 Minuten Bearbeitung wird eine angelegt.')); return; }
   list.forEach((it, k) => {
     const p = projs[k];
     const r = el('button', 'hrow rb', `<b>${esc(dayTime(it.mt))}</b><span>${p ? esc((p.name || 'Projekt') + ' · ' + projBars(p) + ' Takte') : ''}</span>`);
@@ -52227,7 +52206,7 @@ async function restoreHistory(key) {
   if (raw.id && raw.id !== S.id) { p.id = newProjectId(); p.name = (p.name || 'Projekt').slice(0, 26) + ' (ältere Version)'; await cloudInherit(raw.id, p.id); await switchProject(p, {}); }
   else { p.id = S.id; applyProject(p, {}); }
   await autosave.flush();
-  toast('Ältere Version geladen (' + dayTime(+String(key).slice(String(key).lastIndexOf(':') + 1)) + ')');
+  toast('Automatische Sicherung geladen (' + dayTime(+String(key).slice(String(key).lastIndexOf(':') + 1)) + ')');
   return true;
 }
 // the old "Speicherplätze 1–4" become projects once (they are replaced by [Projekte], §12.2); the old keys stay
@@ -55052,6 +55031,7 @@ function ui1Entries() {
     E('panic', 'Alle Töne aus', 'Menü › Klang', 'Wenn ein Ton hängt.', 'haengt panik notaus ton haengt', G.menu, 'Alle Töne aus'),
     E('help', 'Alle Hilfetexte', 'Menü › Hilfe', 'Ausführliche Erklärungen zu jeder Funktion.', 'hilfe help erklaerung', G.menu, () => [...EL.menu.querySelectorAll('.msec h3')].find(h => h.textContent.trim() === 'Hilfe')),
   ];
+  wegeGuide(UI1.ents);   // WEGE: verschobene / umbenannte Wege + neue Einträge
   return UI1.ents;
 }
 function ui1Search(q) {
@@ -58923,6 +58903,7 @@ function tkSheet(r, anchor) {
       if (d.a === 'g5') { closePop(); g5Convert(rr); return; }   // G5: Gesang → Melodie
       if (d.a === 'g7') { g7Toggle(rr); if (UI.pop && UI.pop.name === 'takes') tkSheetPaint(UI.pop.el); return; }   // G-GES: G7 je Take
       if (d.a === 'g2') { closePop(); g2Open(rr); return; }      // G2: Tonhöhe · Noten
+      if (d.a === 'g4') { closePop(); g4Sheet(null); return; }   // WEGE (Abschnitt 4): Gesangs-Effekte auch hier
       if (d.a === 'g6') { closePop(); g6Sheet(rr); return; }     // G6: Chor
       if (g6pfSheetTap(d, rr)) return;                            // G6+f: Als Chor-Stimme duplizieren, Herkunft
       if (d.a === 'gc') { G10C.gcAsk = true; G10C.gcSig = ''; g10cGcEstimate(); tkSheetPaint(p); return; }   // G10c: Aufräumen mit Größe, nach Rückfrage
@@ -58951,10 +58932,10 @@ function tkSheetPaint(p) {
     `<div class="tklist pan-y">${rows}${g6pfSheetRows(x.a)}</div>` +   /* G6+f: Herkunft der Chor-Stimmen-Takes */
     g10cFoot(x, segs, ok) +
     `<div class="small">${esc(est + per)}</div>` +
-    (ok ? '<button class="mbtn rb tk-wp" data-a="wp">✎ Marken · Quantisieren</button>' : '') +
-    (ok ? `<div class="tkg57"><button class="mbtn rb tk-g5" data-a="g5"${G5.busy || TK.missing.has(x.a.take) ? ' disabled' : ''}>In Melodie umwandeln</button>` +   // G5
+    (ok ? '<button class="mbtn rb tk-wp" data-a="wp">✎ Marken & Timing …</button>' : '') +
+    (ok ? `<div class="tkg57"><button class="mbtn rb tk-g5" data-a="g5"${G5.busy || TK.missing.has(x.a.take) ? ' disabled' : ''}>Noten-Clip aus Gesang</button>` +   // G5 (WEGE D14)
       `<button class="mbtn rb tk-g7${g7Follows(x.a.take) ? ' on' : ''}" data-a="g7" aria-pressed="${g7Follows(x.a.take)}">${g7Follows(x.a.take) ? '✓ ' : ''}folgt Transponieren</button></div>` : '') +   // G-GES: G7 je Take
-    (ok ? '<div class="tkedrow">' + (TK.dupAsk ? g6pfSheetBtn(x.a) : '<button class="mbtn rb tk-g2" data-a="g2">♪ Tonhöhe · Noten</button><button class="mbtn rb tk-g6" data-a="g6">Chor</button>' + g6pfSheetBtn(x.a)) + '</div>' : '') +   /* G2 */
+    (ok ? '<div class="tkedrow">' + (TK.dupAsk ? g6pfSheetBtn(x.a) : '<button class="mbtn rb tk-g2" data-a="g2">Tonhöhe korrigieren</button><button class="mbtn rb tk-g6" data-a="g6">Chor</button><button class="mbtn rb tk-g4" data-a="g4">Effekte …</button>' + g6pfSheetBtn(x.a)) + '</div>' : '') +   /* G2 */
     `<div class="savrow g10c-sav"><button class="mbtn rb" data-a="ab"${segs.length > 1 ? '' : ' disabled'}>A/B</button><button class="mbtn rb" data-a="wav"${ok ? '' : ' disabled'}>WAV</button><button class="mbtn rb" data-a="zip"${ok ? '' : ' disabled'}>ZIP + Projekt</button></div>` +
     (ok && S.song && S.song.bars ? ggbHtml() : '') +              // G-GB: Mit GarageBand aufnehmen (braucht einen Song)
     '<div class="small">Tipp = hörbar machen (A/B: die zwei obersten tauschen). Halten oder ✎ = Name, Farbe, ★. Nach links wischen oder ✕ = löschen, ↶ holt ihn zurück.</div>';
@@ -66562,7 +66543,7 @@ const MX2_API = {
    (Ergebnis-Blatt wie FANG: Oktave, Einrasten, Raster, Verwerfen, Bearbeiten); Song-Stimme → Song-Melodie an derselben Stelle.
    Je ein Undo. Der MELODIE-Clip nennt den Take (clip.take, wie FANG – „Audio folgt“ beim Quantisieren).
    ===================================================================================================================== */
-const G5_LABEL = 'In Melodie umwandeln';
+const G5_LABEL = 'Noten-Clip aus Gesang';   // WEGE (D14)
 const G5 = {busy: false, last: null, runs: 0};
 // Take → VS2-Analyse (dieselbe 3:1-Dezimierung wie das Worklet, 5-ms-Raster); base = Schlag von a.at auf der Zielachse (Clip bzw. Song)
 // stage-ges2: Take mit G2-Tonhöhe (take.pitch: Quantisieren / verschobene Noten) → die Noten der gehörten Höhe; G7 (Transponieren) nicht,
@@ -73579,7 +73560,7 @@ function va1Html() {
     `<div class="small va1sum${nM ? ' warn' : ''}">${esc(n + (n === 1 ? ' Audio-Take' : ' Audio-Takes') + (n ? ' (' + va1Mmss(sec) + ')' : '') + ' aus allen Clip-Slots, Gesang und Chor · ' + inv.sounds + ' eigene Klänge' + (nM ? ' · ' + nM + ' fehlt auf diesem Gerät' : n ? ' · alle auf diesem Gerät' : ''))}</div>` +
     (n ? '<div class="va1list pan-y">' + inv.takes.map(x => `<div class="va1li${x.miss ? ' miss' : ''}"><b>${esc(x.name)}</b><span>${esc(x.where.join(' · ') + ' · ' + va1Mmss(x.sec))}</span></div>`).join('') + '</div>' : '') +
     '<div class="va1g">' + B('box', VA1.boxBusy ? 'Sichert …' : 'Container sichern', 'eine ZIP · Projekt + alle Audios', !busy && !VA1.boxBusy, 'go') + B('boxin', 'Container öffnen', 'ZIP · ersetzt das Projekt', !busy) + '</div>';
-  return h;
+  return wegeVa1Html(h);   // WEGE (D7): ein Blatt Export (Echtzeit, MIDI Szene/Mitschnitt, Projekt, Sounds)
 }
 function va1Paint() {
   const p = va1Pop(); if (!p) return;
@@ -73597,6 +73578,7 @@ function va1Sheet(focus) {
   return p;
 }
 function va1Tap(b) {
+  if (wegeVa1Tap(b)) return;   // WEGE (D7)
   const a = b.dataset.va;
   if (a === 'cancel') { if (VA1.job) VV.cancel = true; return; }
   if (a === 'share') { va1Share(); return; }
@@ -77268,7 +77250,7 @@ function vd3Push(e) {
   if (VD3.ui) vd3VvSync(VV.ui);
   return e;
 }
-const vd3Busy = () => !VD3 || VD3.mute > 0 || !!VV.off || !!VV.busy;
+const vd3Busy = () => !VD3 || VD3.mute > 0 || !!VV.off || !!VV.busy || wegeMoHist();   // WEGE (D8): mit Aufzeichnung kein zweites Protokoll
 const vd3Hand = ms => performance.now() - VD3.touchT < ms;          // a finger was on the screen just now (no automation, no load)
 const vd3Val = v => (typeof v === 'number' && isFinite(v) ? +v.toPrecision(6) : typeof v === 'string' ? v.slice(0, 24) : null);
 // setP: a knob gesture (merged while the same knob moves; ≤ 12 values of the way)
@@ -77534,6 +77516,7 @@ function vd3PreSnd(pre, sr, A0, A1, r, n) {
 async function vd3JobStart(o, W, H) {
   if (!VD3) return null;
   const P = Object.assign(vd3P(), o && o.vd3 ? o.vd3 : null), job = {ti: !!P.ti, rd: !!P.rd, pre: null, msPlan: 0};
+  if (P.mo) await wegeMoBuild();                                    // WEGE (D8): die Aufzeichnung frisch lesen
   if (P.mo) { const T0 = performance.now(); try { job.pre = vd3Plan(vd3Ev(), {range: o && o.range}); } catch (e) { logErr(e); job.pre = null; } job.msPlan = performance.now() - T0; }
   if (job.pre) { job.pre.ti = job.ti; await vvAppPrep(); }
   VD3.job = job.ti || job.rd || job.pre ? job : null;
@@ -77576,7 +77559,7 @@ function vd3PreSrc(job, c, r, dst, z, at) {
   b.getChannelData(0).set(D[0]); b.getChannelData(1).set(D[1]);
   const s = c.createBufferSource(); s.buffer = b; s.connect(dst); s.connect(z); s.start(at); return s;
 }
-function vd3Ev() { const L = vd3Load(); return L ? L.slice() : []; }
+function vd3Ev() { const W = wegeMoEv(); if (W) return W.slice(); const L = vd3Load(); return L ? L.slice() : []; }   // WEGE (D8): Making-of aus der Aufzeichnung (HIST)
 
 /* ---------- 8. Video-Blatt: Zeile „Extras“ [Titel] [Untertitel-Rand] [Making-of] [Schnitt im Song] + Hinweis ---------- */
 function vd3Css() {
@@ -77606,11 +77589,13 @@ function vd3VvRow(ctl, acts) {
   ctl.insertBefore(r, acts);
   onTap(box, b => {
     const k = b.dataset.k; if (!k || VV.busy) return;
+    if (k === 'mo') setTimeout(wegeMoHint, 0);                      // WEGE (D8)
     if (k === 'cut') { vd3CutSet(!vd3CutOn()); if (vd3CutOn()) { vvClose(); if (!UI.songView) setSongView(true); lcdOrToast('Video-Spur: Chip antippen = Bild wählen'); return; } }
     else vvPrefSet('vd3' + k, !vd3P()[k]);
     haptic('tick'); vd3VvSync(VV.ui); vvStill();
   }, 'button[data-k]');
   VD3.ui = {r, bT, bR, bM, bS, hint};
+  wegeMoSoon();                                                     // WEGE (D8): Making-of aus der Aufzeichnung
   return VD3.ui;
 }
 function vd3VvSync(u) {
@@ -79660,10 +79645,10 @@ function s2OpenSum(anchor, a, e, ko) {   // X2 (Xander 01.11.: „vorher konnte 
   const kon = !!(ko && ko.kon);                                          /* KON: Konsolidieren — dasselbe Namens-Blatt */
   openPop(anchor, p => {
     guardTouch(p); p.classList.add('mname', 's2sum');
-    p.innerHTML = `<h4>${kon ? 'Als neuen Teil konsolidieren' : 'Zusammenfassen'} · Takt ${a + 1}${e - a > 1 ? '–' + e : ''}</h4><div class="cp-sc mn-sc">` + PART_NAMES.map(n => `<button class="rb cp-c" data-n="${n}">${n}</button>`).join('') + '</div>' +
+    p.innerHTML = `<h4>Zusammenfassen · Takt ${a + 1}${e - a > 1 ? '–' + e : ''}</h4><div class="cp-sc mn-sc">` + PART_NAMES.map(n => `<button class="rb cp-c" data-n="${n}">${n}</button>`).join('') + '</div>' +
       `<div class="mn-r"><input class="mn-in" type="text" maxlength="12" enterkeyhint="done" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="${esc(sug)}" aria-label="Eigener Name"><button class="rb mn-ok" data-a="ok" aria-label="Übernehmen">✓</button></div>`;
     const inp = p.querySelector('.mn-in');
-    const go = v => { closePop(); const r = (kon ? konDo : s2Sum)(a, e, String(v || '').trim() || sug); if (r) { SV.sel = null; SV.mark = null; toast((kon ? 'Konsolidiert: neuer Teil ' : 'Neuer Teil ') + r.name + ' · Takt ' + (a + 1) + (e - a > 1 ? '–' + e : ''), {label: 'Rückgängig', fn: () => undo()}); } svButtons(); UI.dirty.song = true; };   /* KON */
+    const go = v => { closePop(); const r = (kon ? konDo : s2Sum)(a, e, String(v || '').trim() || sug); if (r) { SV.sel = null; SV.mark = null; toast('Neuer Teil ' + r.name + ' · Takt ' + (a + 1) + (e - a > 1 ? '–' + e : ''), {label: 'Rückgängig', fn: () => undo()}); } svButtons(); UI.dirty.song = true; };   /* KON */
     on(inp, 'keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); go(inp.value); } });
     inp.addEventListener('pointerdown', ev => ev.stopPropagation()); inp.addEventListener('touchstart', ev => ev.stopPropagation(), {passive: true});
     on(inp, 'focus', () => popDock(p, true)); on(inp, 'blur', () => setTimeout(() => popDock(p), 50));
@@ -79673,8 +79658,8 @@ function s2OpenSum(anchor, a, e, ko) {   // X2 (Xander 01.11.: „vorher konnte 
 }
 // Marken-Blatt: [Zusammenfassen] next to [Bearbeiten]; Bereich-Leiste ⋯: „Zusammenfassen“
 // KONUX: überholt — kein eigener Knopf mehr (das geführte Blatt konuxOpen ersetzt ihn); bleibt als Verweis
-const s2SumButton = m => `<button class="rb ms-b s2-sb" data-s012="sum" aria-label="Zusammenfassen: alles in Takt ${m.a + 1}${m.len > 1 ? '–' + (m.a + m.len) : ''} wird ein neuer Teil">Zusammen&shy;fassen</button>`;
-function s2SumMark(id) { const m = S.song && S.song.marks.find(x => x.id === id); if (!m) return false; const a = m.a, e = m.a + m.len, anchor = UI.pop && UI.pop.el; closePop(); s2OpenSum(anchor, a, e); return true; }
+const s2SumButton = m => `<button class="rb ms-b s2-sb" data-s012="sum" aria-label="Zusammenfassen: alles in Takt ${m.a + 1}${m.len > 1 ? '–' + (m.a + m.len) : ''} wird ein neuer Teil">Zusammen&shy;fassen …</button>`;   // WEGE (D1): öffnet die Namens-Chips, intern konDo
+function s2SumMark(id) { const m = S.song && S.song.marks.find(x => x.id === id); if (!m) return false; const a = m.a, e = m.a + m.len, anchor = UI.pop && UI.pop.el; closePop(); s2OpenSum(anchor, a, e, {kon: true}); return true; }   // WEGE (D1): immer mit Zurückholen
 // KONUX: überholt — kein eigener Knopf mehr (das geführte Blatt konuxOpen ersetzt ihn); bleibt als Verweis
 const s2RangeItem = () => '<button class="rb" data-a="s2sum">Zusammenfassen</button>';
 Object.assign(S012_API, {
@@ -80024,7 +80009,7 @@ function konMarkSheetPaint(p, m) {   // KONUX: eine Zeile mit Bild-Knopf „Zu T
   if (!p._kon) { p._kon = true; onTap(p, b => konMarkTap(b), 'button[data-kon]'); }
   const bb = p.querySelector('.ms-bb'); if (!bb) return;
   const kn = konOf(m.id);
-  bb.insertAdjacentHTML('afterend', `<div class="ms-r kon-r"><button class="rb ms-b kx-entry" data-kon="ux" aria-label="Zu einem Teil oder Block machen">${KXI.ent}Zu Teil / Block …</button>` +
+  bb.insertAdjacentHTML('afterend', `<div class="ms-r kon-r"><button class="rb ms-b kx-entry" data-kon="ux" aria-label="Als Block gruppieren">${KXI.blk}▣ Block …</button>` +
     (kn ? `<button class="rb ms-b kx-entry" data-kon="back" aria-label="Den Zustand vor dem Teil-Machen zurückholen">${KXI.back}Zurückholen …</button>` : '') + `</div>`);
 }
 function konMarkTap(b) {   // KONUX
@@ -80511,7 +80496,7 @@ function sx11Tap(p, b) {
   const live = () => (R.playing && R.songPlay ? ' ab dem nächsten Takt' : '');
   if (svRecBusy()) return;
   if (a === 'l' || a === 'v') { if (sx11Set(m.id, a)) { haptic('tick'); toast(nm + (a === 'l' ? ' leicht' : ' voll') + live(), songUndoAct()); svButtons(); } re(); return; }
-  if (a === 'cp') { sx11Copy(m.id); haptic('tick'); toast('Variante von ' + nm + ' kopiert – bei einem anderen Teil [Einfügen]'); re(); return; }
+  if (a === 'cp') { sx11Copy(m.id); haptic('tick'); toast('Fassung von ' + nm + ' kopiert – bei einem anderen Teil [Fassung einfügen]'); re(); return; }
   if (a === 'pa') { const c = SX.clip; if (c && sx11Paste(m.id)) { haptic('tick'); toast(nm + (c.f === 'l' ? ' leicht' : ' voll') + ' wie ' + c.name + live(), songUndoAct()); svButtons(); } re(); }
 }
 const SX11_API = {
@@ -80560,7 +80545,7 @@ function konuxBacks(s) {
 // die Karten (k, Titel, eine Zeile, ob es geht) — Reihenfolge = Wichtigkeit
 function konuxCards(s) {
   const song = S.song, n = s.e - s.a; partsEnsure(); const full = S.parts.findIndex(x => !x) < 0;
-  const out = [{k: 'part', t: 'Zu einem Teil machen', x: n > 16 ? 'Geht bis 16 Takte – hier ' + n : full ? 'Teil-Leiste voll' : 'Klingt gleich · Ursprung bleibt', dis: n > 16 || full}];
+  const out = s.kind !== 'block' ? [] : [{k: 'part', t: 'Zusammenfassen', x: n > 16 ? 'Geht bis 16 Takte – hier ' + n : full ? 'Teil-Leiste voll' : 'Klingt gleich · Ursprung bleibt', dis: n > 16 || full}];   // WEGE (D1): Teil machen = „Zusammenfassen …“ im Marken-Blatt / in der Bereich-Leiste
   if (s.kind !== 'block') { const occ = (song.blocks || []).some(b => b.a < s.e && b.a + b.len > s.a); out.push({k: 'blk', t: 'Als Block gruppieren', x: occ ? 'Hier liegt schon ein Block' : 'Zusammen schieben · Inhalt bleibt', dis: occ}); }
   if (konuxBacks(s).length) out.push({k: 'back', t: 'Zurückholen', x: 'Wie vor dem Teil-Machen'});
   return out;
@@ -80752,7 +80737,7 @@ const KONUX_API = {
   konuxName: n => { if (!KX.el) return false; KX.name = n == null ? null : String(n); const i = KX.el.querySelector('.kx-in'); if (i) i.value = KX.name && !(KX.el.querySelector(`.cp-c[data-n="${CSS.escape(KX.name)}"]`)) ? KX.name : ''; konuxSync(KX.el); return true; },
   konuxGo: () => konuxGo(), konuxClose: () => { if (KX.el) closePop(); return true; },
 };
-const konuxRangeItem = () => '<button class="rb kx-entry" data-a="konux" aria-label="Zu einem Teil oder Block machen">' + KXI.ent + 'Zu Teil / Block …</button>';
+const konuxRangeItem = () => '<button class="rb kx-entry" data-a="konux" aria-label="Als Block gruppieren">' + KXI.blk + '▣ Block …</button>';   // WEGE (D1)
 /* /KONUX */
 /* S0/S1/S2 Nachprüfung (QA-Befunde D1–D7) */
 // D3 marksCut: a mark trimmed at its front / split keeps its content; mark.off (relative to the mark start) is moved along
@@ -82389,6 +82374,504 @@ Object.assign(SYNQUENZER, LF1_API);                       // LF1: Lauf-Schritte,
 Object.assign(SYNQUENZER, {hm1: HM1_API});                  /* HM1: Test-API (Objekt, wird nicht umhüllt) */
 Object.assign(SYNQUENZER, UIX1_API);                        // UIX1: FANG-Teil-Namen, Mithören-Schalter, ✕, Tastatur
 Object.assign(SYNQUENZER, UX2_API);                         // UX2: Ziehen in der Matrix, Einfügen mit Lupe
+/* ===== WEGE-BEGIN (Paket WEGE, Xander 07.11. – Inventar Abschnitte 2–5, „Ja, mach das mal bitte so“): Doppel aufräumen, Wege kürzer =====
+   D1  Ein Knopf „Zusammenfassen …“ (Namens-Chips sofort, intern immer konDo → [Zurückholen] geht immer): Marken-Blatt (Reiter Teil),
+       Bereich-Leiste ❖. „▣ Block …“ öffnet das geführte Blatt nur noch für Block und Zurückholen. songRange('asPart') = konDo.
+   D2  Eine Zeile „Small │ Full“ (Reiter Klang & Groove). Small = je Drum-Stelle die als Small markierte Version; gibt es keine,
+       die Ausdünnung von „Leicht“ (sx11). Dazu wie bisher die Spuren, die in Small aus sind (mark.vr). Full = die als Full markierte
+       Version, sonst zurück auf das Volle (sx11 „Voll“; eine Small-Version weicht der dichtesten anderen). Ein ↶. Alte Marken
+       (mark.vr, mark.off, clip.sf) bleiben, wie sie sind, und klingen gleich. [⧉ Fassung kopieren] [Fassung einfügen] [Remix …].
+   D6  Regie je Bereich nur noch in der Video-Spur (VD3): im Marken-Blatt (Reiter Video) und in der Bereich-Leiste ⋯ ein Knopf
+       „Im Video ▸“, der die Video-Spur einschaltet und das Chip-Menü genau für diesen Bereich öffnet. Eine Wortliste überall:
+       Auto · App · Song · Matrix · Klavier · Mäusekino · Gerät · Noten · Tastatur · Text · aus. Nicht mehr unter SCHLEIFE ▾:
+       Video-Blatt › Extras › Schnitt oder Tipp auf den Regie-Streifen.
+   D7  Ein Blatt „Export“: Audio (+ Echtzeit-Mitschnitt als Notweg), MIDI (+ Szene, Alle Szenen, Mitschnitt, mit Träger │ Original),
+       Video, Projekt (Sichern mit allen Audios, Öffnen … für .json und .zip), Sounds. Im Menü fallen MIDI-Export, Song als Audio
+       und der Abschnitt Sounds weg; „Datei öffnen“ heißt „Öffnen …“.
+   D8  (a) Making-of aus der Aufzeichnung (HIST, der Gesten-Rekorder) statt eines zweiten Protokolls; (b) Namen: „Aufzeichnung (für
+       Making-of)“, „Automatische Sicherungen“; (c) Automatische Sicherungen im VERLAUF-Blatt (↶ halten).
+   D9  ◆ nur noch für Klang: die Übergänge heißen „⇥ FILLS“ (Xanders Wort). Clip-Versionen auch im Clip-Blatt der Matrix.
+   D11 ROLLE „Mitspielen …“; Mithören ohne Schalter: die ▼-Marke in der Taktleiste ziehen = der Schlag darunter klingt an.
+   D12–D14 Umbenennungen (Stimmführung, Auf eine Stufe, Nur Leitertöne, Akkord-Ideen, Clip/Noten/Klang/Fassung kopieren,
+       Noten-Clip aus Gesang, Tonhöhe korrigieren); Harmonie › Lauf ohne [Takte −/+].
+   Abschnitt 4: Marken-Blatt in Reitern Ablauf │ Teil │ Klang & Groove │ Video; Tempo-Blatt (BPM) mit „Song transponieren …“ und
+       „Ausblenden am Ende“; Gesangs-Effekte auch im Takes-Blatt; STIMME-Clip „Marken & Timing …“; Guide-Einträge für Spur-Blatt,
+       Automatische Sicherungen, Öffnen, Mithören u. a.
+   Daten: nichts Neues im Projekt (nur Ansicht: WEGE.msTab). Einhänge-Zeilen: siehe NOTES.md (openMarkSheet, openRangeMore,
+   buildRangeBar, rangeAct, svBindGestures, openLoopPop, sx14Open, openMenu, histMenu, va1Html, va1Tap, vd3Busy, vd3Ev,
+   vd3JobStart, vd3VvRow, popBpm, openClipSheet, ui1Entries, Takes-Blatt). */
+const WEGE = {msTab: 'a', css: false, mo: null, moKey: '', moP: null, moAt: 0, sc: null};
+const WEGE_VORD = ['auto', 'app', 'song', 'matrix', 'klav', 'kino', 'geraet', 'noten', 'tast', 'text', 'aus'];
+const WEGE_TABS = [['a', 'Ablauf', 'Ablauf'], ['t', 'Teil', 'Teil'], ['k', 'Klang & Groove', 'Klang'], ['v', 'Video', 'Video']];
+function wegeCss() {
+  if (WEGE.css) return; WEGE.css = true;
+  try {
+    const s = document.createElement('style'); s.id = 'wege-css';
+    s.textContent = [
+      '.msheet .wg-tabs{display:flex;gap:4px;margin:0 0 6px}',
+      '.msheet .wg-tabs .rb{flex:1 1 0;min-width:0;height:44px;padding:0 4px;font:700 12.5px/1.1 var(--font-ui);letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      '.msheet .wg-tabs .rb.on{color:#ffcf7a;border-color:#6b4c16;box-shadow:inset 0 0 0 1px #6b4c16}',
+      '.msheet[data-wgt="a"] [data-wgr]:not([data-wgr="a"]),.msheet[data-wgt="t"] [data-wgr]:not([data-wgr="t"]),.msheet[data-wgt="k"] [data-wgr]:not([data-wgr="k"]),.msheet[data-wgt="v"] [data-wgr]:not([data-wgr="v"]){display:none!important}',
+      '.msheet .wg-sf .sx-f{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;line-height:1}',
+      '.msheet .wg-sf .sx-f small{display:block;max-width:100%;font:600 9.5px/1.1 var(--font-ui);color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      '.msheet .wg-sf .sx-f.on{color:#ffcf7a;border-color:#6b4c16;box-shadow:inset 0 0 0 1px #6b4c16}',
+      '.msheet .wg-vr .wg-vb{display:flex;align-items:center;justify-content:center;gap:8px}.msheet .wg-vr .wg-vb small{font:600 11px/1 var(--font-ui);color:var(--text-dim)}',
+      '.msheet .wg-vr .wg-vh{flex:2 1 0;align-self:center;font:500 11.5px/1.3 var(--font-ui);color:var(--text-dim);padding:0 6px}',
+      '.pop .wg-rv{display:flex;align-items:center;gap:8px;width:100%;min-height:44px}',
+      '.cs3 .cgrid .wg-cv{grid-column:1 / -1;display:flex;align-items:center;gap:4px;min-width:0;flex-wrap:wrap}',
+      '.cs3 .cgrid .wg-cv .lbl{font:700 11px/1 var(--font-ui);letter-spacing:.06em;color:var(--text-dim);margin-right:4px}',
+      '.cs3 .cgrid .wg-cv .hb{flex:0 0 auto;width:auto;min-width:48px;height:44px;padding:0 10px}',
+      '.cs3 .cgrid .wg-cv .hb.on{color:#ffcf7a;border-color:#6b4c16;box-shadow:inset 0 0 0 1px #6b4c16}',
+      '.va1 .wg-va1wc .mbtn.on{color:var(--sel);border-color:var(--sel);box-shadow:inset 0 0 0 1px var(--sel)}',
+      '.va1 .wg-va1rt{grid-template-columns:1fr;margin-top:6px}.va1 .wg-va1rt .mbtn{opacity:.85}',
+      '.va1 .wg-va1mx{grid-template-columns:1fr 1fr 1fr;margin-top:6px}',
+      '.pop .wg-bpm{margin-top:10px;display:flex;flex-direction:column;gap:6px}.pop .wg-bpm .mbtn{min-height:44px;width:100%}',
+      '.pop .wg-bpm .sx1-r{display:flex;align-items:center;gap:4px;flex-wrap:wrap}.pop .wg-bpm .sx1-r .ms-b{flex:1 1 0;min-width:44px;height:44px}',
+      '.pop .wg-bpm .sx1-r .sx1-l{flex:1 1 100%;font:700 11px/1 var(--font-ui);letter-spacing:.06em;color:var(--text-dim);text-transform:uppercase}',
+      '.pop .wg-bpm .sx1-r .ms-b.on{color:#ffcf7a;border-color:#6b4c16}',
+      '.sx14 .wg-ah .sx14-r.arm{color:#ffcf7a;border-color:#6b4c16}',
+      '.sv-top .sv-scr{display:none!important}',            // D11: Mithören braucht keinen Schalter mehr (▼ ziehen)
+    ].join('\n');
+    document.head.appendChild(s);
+  } catch (e) { logErr(e); }
+}
+
+/* ---------- D6: eine Wortliste (Reihenfolge überall gleich) ---------- */
+(function wegeWords() {
+  try {
+    const L = {auto: 'Auto', app: 'App', song: 'Song', matrix: 'Matrix', klav: 'Klavier', kino: 'Mäusekino', geraet: 'Gerät …', noten: 'Noten …', tast: 'Tastatur', text: 'Text'};
+    VD3_OPTS.length = 0; for (const k of WEGE_VORD) if (L[k]) VD3_OPTS.push([k, L[k]]);
+    VR1_VID_L.sort((x, y) => WEGE_VORD.indexOf(x[0]) - WEGE_VORD.indexOf(y[0]));
+  } catch (e) { logErr(e); }
+})();
+const wegeRng = (a, b) => (b - a > 1 ? 'Takt ' + (a + 1) + '–' + b : 'Takt ' + (a + 1));
+// was das Video in [a, b) zeigt (deine Wahl), sonst „Auto“
+function wegeVidName(a, b) {
+  const cur = (S.song && vvDirOf(a, b)) || '', v = cur.split(':')[0];
+  if (!v || v === 'auto') return 'Auto';
+  return VD3_SHORT[v] || VV4_NAME[v] || v;
+}
+// die Zeile „Video“ im Marken-Blatt (Reiter Video) bzw. in der Bereich-Leiste ⋯: ein Knopf „Im Video ▸“
+function wegeVideoRow(a, b, where) {
+  const nm = wegeVidName(a, b);
+  if (where === 'range') return `<button class="rb wg-rv" data-a="wgvideo" aria-label="${esc('Im Video: ' + wegeRng(a, b) + ' – jetzt ' + nm)}">${VD3_CAM}<span>Im Video ▸</span><small>${esc(nm)}</small></button>`;
+  return `<div class="ms-r wg-vr" data-wgr="v"><button class="rb ms-b wg-vb" data-wg="video" aria-label="${esc('Im Video: ' + wegeRng(a, b) + ' – jetzt ' + nm)}">${VD3_CAM}<span>Im Video ▸</span><small>${esc(nm)}</small></button>` +
+    `<span class="wg-vh">Die Video-Spur unter den Taktnummern: je Bereich eine Ansicht.</span></div>`;
+}
+// „Im Video ▸“: Video-Spur an, der Bereich ins Bild, das Chip-Menü genau für [a, e)
+function wegeVideoOpen(a, e) {
+  const song = S.song; if (!song || !song.bars || typeof VD3 === 'undefined' || !VD3) return false;
+  e = Math.min(e, song.bars); if (e <= a) return false;
+  if (UI.pop) closePop();
+  if (!UI.songView) setSongView(true);
+  if (!vd3CutOn()) vd3CutSet(true);
+  const W = SV.w || (SV.wrap && SV.wrap.clientWidth) || 300, cw = SV.cellW;
+  if (a * cw < SV.x || a * cw > SV.x + W - Math.min(W / 2, (e - a) * cw)) { SV.x = clamp(a * cw - 24, 0, svMaxX()); SV.lastUser = performance.now(); }
+  try { svDraw(true); } catch (er) { logErr(er); }
+  const pop = () => {
+    const L = vd3Chips(S.song), c0 = L.find(q => a >= q.a && a < q.b) || null;
+    const c = {a, b: e, v: c0 ? c0.v : 'auto', t: c0 ? c0.t : null, man: !!(c0 && c0.man && c0.a <= a && c0.b >= e)};
+    const r = SV.wrap ? SV.wrap.getBoundingClientRect() : {left: 0, right: 300, top: 0};
+    const cx = clamp(r.left + ((a + e) / 2) * SV.cellW - SV.x, r.left + 24, r.right - 24), cy = r.top + SV.rulerH - (SV.vvS || 20) / 2;
+    vd3ChipPop(c, a, cx, cy); WEGE.lastVid = {a, b: e, pop: !!(UI.pop && UI.pop.name === 'vd3cut')};
+  };
+  requestAnimationFrame(() => requestAnimationFrame(pop));
+  return true;
+}
+
+/* ---------- D2: Small │ Full (Leicht/Voll geht darin auf) ---------- */
+// mark id plays Small ('s') or Full ('f'): one undo 'song' (SX11 path: in the run from the next bar line)
+function wegeSfSet(id, f) {
+  const song = S.song, m0 = song && song.marks.find(x => x.id === id); if (!m0 || R.songRec || (f !== 's' && f !== 'f')) return null;
+  const lab = markLabel(m0) + (f === 's' ? ' Small' : ' Full'); SX.lab.add(lab); sx11Hold();
+  const r = {ver: 0, thin: 0};
+  const ok = songEdit(lab, sg => {
+    const m = sg.marks.find(x => x.id === id); if (!m) return;
+    const vr = m.vr = m.vr ? deep(m.vr) : {}, cur = vr.c === 'l' ? 'l' : 'v', want = f === 's' ? 'l' : 'v';
+    const verT = new Set();
+    for (let t = 0; t < NT(); t++) if (isDrum(t) && gr1Spans(sg, t, m.a, m.a + m.len).some(sp => gr1Pick(sg, t, sp.s, f))) verT.add(t);
+    if (cur !== want) vr[cur] = sx11Cur(sg, m);
+    let mask = vr[want] ? deep(vr[want]) : want === 'l' ? sx11Propose(sg, m) : [];
+    if (want === 'l') mask = mask.filter(x => !(x.k === 'd' && verT.has(x.t)));   // eine Small-Version ersetzt das Ausdünnen
+    sx11Apply(sg, id, mask);
+    if (want === 'l') { vr.c = 'l'; vr.l = mask; } else { delete vr.c; if (mask.length) vr.v = mask; else delete vr.v; }
+    r.thin = mask.filter(x => x.k === 'd').length;
+    for (let t = 0; t < NT(); t++) {
+      if (!isDrum(t)) continue;
+      for (const sp of gr1Spans(sg, t, m.a, m.a + m.len)) {
+        let k = gr1Pick(sg, t, sp.s, f);
+        if (!k && f === 'f') { const c = gr1ClipOf(sg, t, sp); if (c && c.sf === 's') k = gr1Cands(sg, t, sp.s).filter(x => x.c.sf !== 's').sort((p, q) => gr1Dens(q.c) - gr1Dens(p.c))[0] || null; }
+        if (k && k.id !== sp.id) { sx9Set(sg, t, sp.a, sp.b, k.id); r.ver++; }
+      }
+    }
+  });
+  r.ok = !!ok; return r;
+}
+function wegeSfInfo(song, m) {
+  const inf = sx11Info(song, m), g = gr1MarkInfo(song, m), small = inf.c === 'l' || g.cur === 's';
+  const sum = (mask, vs) => { const L = vs.length ? mask.filter(x => !(x.k === 'd' && isDrum(x.t))) : mask; return [sx11Sum(L), vs.length ? 'DR ' + vs.join(' ') : ''].filter(Boolean).join(' · '); };
+  return {small, s: sum(inf.l, g.vs) || 'alles an', f: sum(inf.v, g.vf) || 'alles an', vorschlag: inf.vorschlag && !g.hasS};
+}
+function wegeSfRow(m) {
+  const I = wegeSfInfo(S.song, m), cp = SX.clip;
+  return `<div class="ms-r sx-r wg-sf" data-wgr="k" role="group" aria-label="Small oder Full">` +
+    `<button class="rb ms-b sx-f${I.small ? ' on' : ''}" data-wg="sf" data-f="s" aria-pressed="${I.small}" aria-label="${esc('Small: ' + I.s + (I.vorschlag ? ' (Vorschlag)' : ''))}">Small<small>${esc(I.s)}</small></button>` +
+    `<button class="rb ms-b sx-f${I.small ? '' : ' on'}" data-wg="sf" data-f="f" aria-pressed="${!I.small}" aria-label="${esc('Full: ' + I.f)}">Full<small>${esc(I.f)}</small></button>` +
+    `<button class="rb ms-b sx-c" data-wg="fc" aria-label="Fassung kopieren">⧉ Fassung kopieren</button>` +
+    `<button class="rb ms-b sx-c" data-wg="fp"${cp ? ` aria-label="${esc('Fassung einfügen: ' + cp.name + (cp.f === 'l' ? ' Small' : ' Full'))}"` : ' disabled aria-label="Fassung einfügen – erst bei einem Teil kopieren"'}>Fassung einfügen</button>` +
+    `<button class="rb ms-b" data-gr1="rx" aria-label="Remix dieses Teils">Remix …</button></div>`;
+}
+
+/* ---------- Abschnitt 4: Marken-Blatt in Reitern (nach allen Einhängern; die Zeilen bleiben, wer sie gebaut hat) ---------- */
+function wegeMarkSheetPaint(p, m) {
+  wegeCss();
+  if (p.classList.contains('s0-ed')) { delete p.dataset.wgt; p.style.minHeight = ''; return; }
+  if (!p._wg) { p._wg = true; onTap(p, b => wegeMsTap(p, b), 'button[data-wg]'); }
+  // D2: die Zeilen „Fassung“ (SX11) und „Rhythmus“ (GR1) werden eine Zeile Small │ Full
+  const kw = p.querySelector('.sx-kw');
+  if (kw) { for (const x of [...kw.children]) if (!x.classList.contains('sx-r')) kw.parentNode.insertBefore(x, kw); kw.remove(); }
+  const g = p.querySelector('.gr1r'); if (g) g.remove();
+  const gl = p.querySelector('.v6gl.ms'), kr = p.querySelector('.kon-r'), bb = p.querySelector('.ms-bb'), sf = wegeSfRow(m);
+  if (gl) gl.insertAdjacentHTML('beforebegin', sf); else (kr || bb || p.lastElementChild).insertAdjacentHTML('afterend', sf);
+  const ch = p.querySelector('.ms-bb .ch1-ms'); if (ch) { const at = p.querySelector('.v6gl.ms') || p.querySelector('.wg-sf'); if (at) at.after(ch); }   // MIX3 „Refrain groß“ → Klang & Groove
+  // die Reiter: jede Zeile gehört zu einem
+  const tag = (sel, t) => { for (const x of p.querySelectorAll(sel)) x.dataset.wgr = t; };
+  tag('.ms-a', 'a'); tag('.ms-bb', 't'); tag('.kon-r', 't'); tag('.sx2-r', 't'); tag('.sx1-r', 'a');
+  tag('.v6gl.ms', 'k'); tag('.wg-sf', 'k'); tag('.ch1-ms', 'k'); tag('.wg-vr', 'v'); tag('.vvdr', 'v');
+  for (const x of p.children) if (!x.dataset.wgr && !x.matches('.ms-h, .wg-tabs, .sx126-rows')) x.dataset.wgr = 't';
+  const narrow = window.innerWidth < 360, t0 = WEGE.msTab;
+  const head = p.querySelector('.ms-h');
+  if (head && !p.querySelector('.wg-tabs')) head.insertAdjacentHTML('afterend', `<div class="wg-tabs" role="tablist" aria-label="Marken-Blatt">` +
+    WEGE_TABS.map(([k, l, s]) => `<button class="rb${k === t0 ? ' on' : ''}" role="tab" data-wg="tab" data-t="${k}" aria-selected="${k === t0}">${esc(narrow ? s : l)}</button>`).join('') + `</div>`);
+  // gleiche Höhe in allen Reitern (nichts springt beim Umschalten)
+  p.style.minHeight = '';
+  let mx = 0; for (const [k] of WEGE_TABS) { p.dataset.wgt = k; mx = Math.max(mx, p.scrollHeight); }
+  p.dataset.wgt = t0; p.style.minHeight = Math.min(mx, Math.round(window.innerHeight * .62)) + 'px';
+}
+function wegeMsTab(p, t) {
+  if (!p || !WEGE_TABS.some(x => x[0] === t)) return false;
+  WEGE.msTab = t; p.dataset.wgt = t;
+  for (const x of p.querySelectorAll('.wg-tabs .rb')) { const on = x.dataset.t === t; x.classList.toggle('on', on); x.setAttribute('aria-selected', String(on)); }
+  popDock(p); return true;
+}
+function wegeMsTap(p, b) {
+  const id = SV.mark, m = S.song && S.song.marks.find(x => x.id === id); if (!m) { closePop(); return; }
+  const a = b.dataset.wg;
+  if (a === 'tab') { wegeMsTab(p, b.dataset.t); haptic('tick'); return; }
+  if (a === 'video') { wegeVideoOpen(m.a, m.a + m.len); return; }
+  if (a === 'fc' || a === 'fp') { sx11Tap(p, {dataset: {sx: a === 'fc' ? 'cp' : 'pa'}}); return; }   // ⧉ Fassung kopieren / einfügen (SX11)
+  if (a === 'sf') {
+    if (svRecBusy()) return;
+    const f = b.dataset.f, L = f === 's' ? 'Small' : 'Full', nm = markLabel(m), r = wegeSfSet(m.id, f);
+    if (r && r.ok) { haptic('tick'); toast(nm + ' ' + L + (R.playing && R.songPlay ? ' – ab dem nächsten Takt' : ''), songUndoAct()); svButtons(); }
+    else toast(nm + ' spielt schon ' + L);
+    if (UI.pop && UI.pop.el === p && p._paint) { p._paint(); popDock(p); }
+  }
+}
+
+/* ---------- D11: Mithören ohne Schalter – die ▼-Marke ziehen; Abschnitt 4: Tipp auf den Regie-Streifen = Video-Spur ---------- */
+function wegeSvDown(e, w) {
+  const song = S.song; if (!song || !song.bars || (e.pointerType === 'mouse' && e.button !== 0) || R.songRec || SV.pinch || SV.gOn || (typeof DRG !== 'undefined' && DRG)) return false;
+  const r = w.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top, cw = SV.cellW;
+  const strip = typeof VD3 !== 'undefined' && VD3 && !vd3CutOn() && SV.vvS > 0 && y >= SV.rulerH - SV.vvS - 3 && y < SV.rulerH + 2;
+  const xp = songStartBar() * cw - SV.x, mark = !R.playing && !strip && y < SV.rulerH && Math.abs(x - xp) <= 22 && !(SV.blS && y < SV.blS) &&
+    !(SV.grips && y < 34 && Math.min(Math.abs(x - SV.grips.a), Math.abs(x - SV.grips.b)) <= 18);
+  if (!strip && !mark) return false;
+  e.preventDefault(); try { w.setPointerCapture(e.pointerId); } catch (_) {}
+  const G = {id: e.pointerId, x0: e.clientX, y0: e.clientY, sx: SV.x, x, y, mode: null, t0: performance.now()};
+  const mv = ev => {
+    if (ev.pointerId !== G.id) return;
+    const dx = ev.clientX - G.x0;
+    if (!G.mode && (Math.abs(dx) > 6 || Math.abs(ev.clientY - G.y0) > 10)) {
+      G.mode = mark && Math.abs(dx) >= Math.abs(ev.clientY - G.y0) ? 'pos' : 'scroll';
+      if (G.mode === 'pos') { try { ensureAudio(); } catch (er) {} WEGE.sc = {b: null, t: 0, q: 0, n: 0}; haptic('tick'); folHand('song'); }
+      else folHand('song');
+    }
+    if (G.mode === 'pos') {
+      const fx = G.x + dx + SV.x, bar = clamp(Math.round(fx / cw), 0, song.bars - 1);
+      if (SV.pos !== bar) { SV.pos = bar; if (SV.sel && (bar < SV.sel.a || bar > SV.sel.b)) SV.sel = null; UI.dirty.song = true; }
+      // am Rand rollt das Bild mit
+      const W = SV.w || r.width; if (G.x + dx > W - 24) SV.x = clamp(SV.x + 6, 0, svMaxX()); else if (G.x + dx < 24) SV.x = clamp(SV.x - 6, 0, svMaxX());
+      svDraw(true); wegeScrubAt(Math.floor(barBeat(clamp(fx, 0, song.bars * cw - .5) / cw) + 1e-6));
+      return;
+    }
+    if (G.mode === 'scroll') { SV.x = clamp(G.sx - dx, 0, svMaxX()); SV.lastUser = performance.now(); svDraw(true); }
+  };
+  const up = ev => {
+    if (ev.pointerId !== G.id) return;
+    w.removeEventListener('pointermove', mv); w.removeEventListener('pointerup', up); w.removeEventListener('pointercancel', up);
+    if (ev.type !== 'pointerup') { if (G.mode === 'pos') wegeScrubEnd(false); return; }
+    if (G.mode === 'pos') { wegeScrubEnd(true); return; }
+    if (G.mode || performance.now() - G.t0 > 350) return;
+    if (strip) { vd3CutSet(true); haptic('tick'); lcdOrToast('Video-Spur: Chip antippen = Bild wählen'); return; }
+    svTap(G.x, G.y);
+  };
+  w.addEventListener('pointermove', mv); w.addEventListener('pointerup', up); w.addEventListener('pointercancel', up);
+  return true;
+}
+// the beat under the finger sounds (SX7 audition: höchstens alle 45 ms, der neueste Schlag gewinnt; am Taktstrich kein Blitz nötig)
+function wegeScrubAt(b) {
+  const Z = WEGE.sc; if (!Z || b === Z.b) return;
+  Z.b = b; const now = performance.now(), wait = 45 - (now - Z.t);
+  const go = () => { Z.q = 0; if (WEGE.sc !== Z || Z.b == null) return; Z.t = performance.now(); Z.n++; try { sx7Hear(Z.b); } catch (er) { logErr(er); } };
+  if (wait <= 0) go(); else if (!Z.q) Z.q = setTimeout(go, wait);
+}
+function wegeScrubEnd(ok) {
+  const Z = WEGE.sc; WEGE.sc = null; if (Z && Z.q) clearTimeout(Z.q);
+  WEGE.lastScrub = Z ? {n: Z.n, pos: SV.pos} : null;
+  if (!ok) { try { sx7Quiet(.03); } catch (er) {} }
+  folEdit('song'); UI.dirty.song = true; svButtons();
+  if (ok && SV.pos != null) lcdOrToast('▼ Takt ' + (SV.pos + 1) + ' · ▶ startet hier');
+}
+
+/* ---------- D7: ein Blatt „Export“ ---------- */
+function wegeVa1Html(h) {
+  try {
+    const song = !!(S.song && S.song.bars), busy = va1Busy();
+    const B = (a, t, s, ok, cls, more) => `<button class="mbtn rb${cls ? ' ' + cls : ''}" data-va="${a}"${more || ''}${ok ? '' : ' disabled'}><b>${esc(t)}</b>${s ? '<small>' + esc(s) + '</small>' : ''}</button>`;
+    const rt = typeof MediaRecorder === 'function' && song ? '<div class="va1g wg-va1rt">' + B('wg-rt', SREC.on ? 'Aufnahme läuft … (abbrechen)' : 'Echtzeit-Mitschnitt', SREC.on ? '' : 'Notweg · spielt den Song einmal ab', SREC.on || !busy) + '</div>' : '';
+    if (rt) h = h.replace('<h5>MIDI</h5>', rt + '<h5>MIDI</h5>');
+    const wc = UI.expCarrier !== false;
+    const mx = '<div class="va1g wg-va1mx">' + B('wg-mx', 'Szene ' + (R.selS + 1), 'Synth 1–4 + DRUMS', !busy, '', ' data-m="scene"') + B('wg-mx', 'Alle Szenen', 'nacheinander', !busy, '', ' data-m="all"') +
+      B('wg-mx', 'Mitschnitt', 'was du gespielt hast', !busy, '', ' data-m="log"') + '</div>' +
+      `<div class="va1tr wg-va1wc" role="group" aria-label="Transposition"><span class="small">Transposition:</span><button class="mbtn rb${wc ? ' on' : ''}" data-va="wg-wc" data-v="1" aria-pressed="${wc}">mit Träger</button><button class="mbtn rb${wc ? '' : ' on'}" data-va="wg-wc" data-v="0" aria-pressed="${!wc}">Original</button></div>`;
+    h = h.replace('<h5>Video</h5>', mx + '<h5>Video</h5>');
+    h = h.replace('>Projekt-Container</h5>', '>Projekt</h5>')
+      .replace('<b>Container sichern</b><small>eine ZIP · Projekt + alle Audios</small>', '<b>Sichern mit allen Audios</b><small>eine ZIP · Projekt + alle Audios</small>')
+      .replace('<b>Container öffnen</b><small>ZIP · ersetzt das Projekt</small>', '<b>Öffnen …</b><small>.json oder .zip</small>');
+    const nLib = typeof LIB !== 'undefined' && LIB.ok ? LIB.lib.all().length : 0;
+    h += '<h5 class="wg-va1snd">Sounds</h5><div class="va1g">' + B('wg-sx', 'Eigene Sounds exportieren', nLib ? nLib + (nLib === 1 ? ' Sound' : ' Sounds') : 'noch keine', nLib > 0) + B('wg-si', 'Sounds importieren', 'Datei', true) +
+      B('wg-syx', 'DX7-Bank importieren', '.syx', true) + B('wg-syxe', 'DX7-Bank exportieren', '.syx', true) + '</div>' +
+      '<div class="small">Nur die Projektdatei ohne Audios: Menü › Projekt › Als Datei sichern (.json).</div>';
+  } catch (e) { logErr(e); }
+  return h;
+}
+function wegeVa1Tap(b) {
+  const a = b.dataset.va; if (!a || a.slice(0, 3) !== 'wg-') return false;
+  if (a === 'wg-rt') { if (SREC.on) songAudioStop(true); else { closePop(); songAudioStart(); } }
+  else if (a === 'wg-mx') { WEGE.lastMidi = b.dataset.m; exportMidi({mode: b.dataset.m, scene: R.selS, withCarrier: UI.expCarrier !== false}); }
+  else if (a === 'wg-wc') { UI.expCarrier = b.dataset.v === '1'; haptic('tick'); va1Paint(); }
+  else if (a === 'wg-sx') exportSounds();
+  else if (a === 'wg-si') { EL.sndIn.value = ''; EL.sndIn.click(); }
+  else if (a === 'wg-syx') { EL.syxIn.value = ''; EL.syxIn.click(); }
+  else if (a === 'wg-syxe') exportSyxBank().catch(e => { logErr(e); toast('Export fehlgeschlagen'); });
+  return true;
+}
+
+/* ---------- D8 (a): Making-of aus der Aufzeichnung (HIST) ---------- */
+const wegeMoHist = () => typeof HIST !== 'undefined' && !!HIST && HIST.on && HIST.avail !== false;
+// the VD3 events {k, t, s, p, a, b, v, x, id, w, n, n0} from the recorder: Klangwahl, Regler-Gesten (mit Kurve), Clip neu, Noten
+// eingespielt, Teil gebaut. One walk over the stored chunks (keyframe + patches), only the last 800 survive
+async function wegeMoBuild(force) {
+  if (!wegeMoHist() || !HIST.pid) return WEGE.mo;
+  if (WEGE.moP) return WEGE.moP;
+  const key = HIST.pid + '|' + (histInfo().events | 0);
+  if (!force && WEGE.mo && WEGE.moKey === key) return WEGE.mo;
+  WEGE.moP = (async () => {
+    const T0 = performance.now(), out = [];
+    try {
+      histDrainNow(); histSweep(); await histFlush();
+      const pget = (o, seg) => { for (const k of seg) { if (o == null || typeof o !== 'object') return undefined; o = o[k]; } return o; };
+      const pkey = seg => (seg[3] === 'p' ? (seg[4] === 'wt' || seg[4] === 'fm2' ? seg[4] + '.' + seg[5] : seg[4]) : seg[3] === 'fx' ? (seg[4] === 'chorus' ? 'fx.chorus.' + seg[5] : 'fx.' + seg[4]) : null);
+      let st = null;
+      for (const {r, evs} of await histItems(HIST.pid)) {
+        let ki = 0;
+        for (let i = 0; i <= evs.length; i++) {
+          while (ki < r.kf.length && r.kf[ki].at <= i) { try { const K = JSON.parse(await histUnzip(r.kf[ki].b)); st = K.p || null; } catch (er) { st = null; } ki++; }
+          if (i >= evs.length) break;
+          const e = evs[i]; if (!e || !e.d || !e.d.length || !st || e.u === 'ctx' || /^Rückgängig|^Wiederholt/.test(String(e.l || ''))) { if (e && e.d && st) try { histApply(st, e.d); } catch (er) { st = null; } continue; }
+          const segs = e.d.map(o => o.path.split('/').slice(1).map(s => s.replace(/~1/g, '/').replace(/~0/g, '~')));
+          const pre = new Map(), clips = new Map(); let marks0 = null, parts0 = null;
+          segs.forEach((sg, j) => {
+            if (sg[0] === 'tracks' && sg[2] === 'sound' && sg.length >= 5) { const k = pkey(sg); if (k && !pre.has(k + '@' + sg[1])) pre.set(k + '@' + sg[1], {t: +sg[1], p: k, a: pget(st, sg)}); }
+            if (sg[0] === 'tracks' && sg[2] === 'clips' && sg[3] != null) { const ck = sg[1] + ':' + sg[3]; if (!clips.has(ck)) { const c = pget(st, sg.slice(0, 4)); clips.set(ck, c && Array.isArray(c.notes) ? c.notes.length : -1); } }
+            if (sg[0] === 'song' && !marks0) marks0 = new Set(((st.song && st.song.marks) || []).map(m => m.id));
+            if (sg[0] === 'parts' && !parts0) parts0 = (st.parts || []).map(Boolean);
+          });
+          const name0 = new Map(); for (const sg of segs) if (sg[0] === 'tracks' && sg[2] === 'sound' && sg.length <= 4) { const tr = pget(st, ['tracks', sg[1], 'sound']); name0.set(+sg[1], tr ? tr.name : null); }
+          try { histApply(st, e.d); } catch (er) { st = null; continue; }
+          for (const [t, n0] of name0) { const s = pget(st, ['tracks', t, 'sound']); if (s && s.name && s.name !== n0) out.push({k: 'klang', t, x: String(s.name).slice(0, 40)}); }
+          for (const q of pre.values()) { const b = pget(st, ['tracks', q.t, 'sound'].concat(q.p.startsWith('fx.chorus.') ? ['fx', 'chorus', q.p.slice(10)] : q.p.startsWith('fx.') ? ['fx', q.p.slice(3)] : q.p.includes('.') ? ['p'].concat(q.p.split('.')) : ['p', q.p]));
+            if (typeof b !== 'number' || b === q.a) continue; out.push({k: 'regler', t: q.t, p: q.p, a: typeof q.a === 'number' ? q.a : null, b, v: Array.isArray(e.c) && e.c.length ? e.c.slice(-12) : [b], d: 0}); }
+          for (const [ck, n0] of clips) { const [t, s] = ck.split(':').map(Number), c = pget(st, ['tracks', t, 'clips', s]); if (!c || !Array.isArray(c.notes)) continue;
+            if (n0 < 0) out.push({k: 'clip', t, s, n: c.notes.length}); else if (c.notes.length !== n0) out.push({k: 'noten', t, s, n: c.notes.length, n0}); }
+          if (marks0 && st.song) for (const m of st.song.marks || []) if (!marks0.has(m.id)) out.push({k: 'teil', id: m.id});
+          if (parts0) (st.parts || []).forEach((q, k) => { if (q && !parts0[k]) out.push({k: 'teil', w: 'part', s: k, x: String(q.name || 'Teil ' + (k + 1)).slice(0, 30)}); });
+        }
+      }
+    } catch (er) { logErr(er); }
+    // nah beieinander: dieselbe Geste nur einmal (wie das alte Protokoll: Regler zusammengefasst, Noten zusammengefasst)
+    const L = [];
+    for (const x of out) { const l = L[L.length - 1];
+      if (l && x.k === 'regler' && l.k === 'regler' && l.t === x.t && l.p === x.p) { l.b = x.b; l.v = l.v.concat(x.v).slice(-12); continue; }
+      if (l && x.k === 'noten' && (l.k === 'noten' || l.k === 'clip') && l.t === x.t && l.s === x.s) { l.n = x.n; continue; }
+      if (l && x.k === 'klang' && l.k === 'klang' && l.t === x.t) { l.x = x.x; continue; }
+      L.push(x); }
+    WEGE.mo = L.slice(-VD3_MAX); WEGE.moKey = key; WEGE.moAt = performance.now() - T0;
+    return WEGE.mo;
+  })();
+  try { return await WEGE.moP; } finally { WEGE.moP = null; }
+}
+// vd3Ev: the recorder's events if there are any; else the old protocol (a project with S.vd3mo, the test API)
+function wegeMoEv() { return wegeMoHist() && WEGE.mo && WEGE.mo.length ? WEGE.mo : null; }
+// Video-Blatt geöffnet: die Aufzeichnung lesen, dann Zeile „Extras“ und Standbild auffrischen
+function wegeMoSoon() {
+  if (!wegeMoHist()) return;
+  wegeMoBuild().then(() => { try { if (VV.ui) { vd3VvSync(VV.ui); wegeMoHint(); vvStill(); } } catch (e) { logErr(e); } }, e => logErr(e));
+}
+function wegeMoHint() {
+  const x = VD3 && VD3.ui; if (!x || !x.hint || !x.hint.isConnected || !vd3P().mo) return;
+  if (!wegeMoHist()) x.hint.innerHTML = '<b>Aufzeichnung ist aus</b> – Menü › Projekt › Aufzeichnung (für Making-of) an.';
+  else if (!wegeMoEv() && !(VD3.log && VD3.log.length)) x.hint.innerHTML = '<b>Noch nichts aufgezeichnet</b> – Klang, Regler, Clips, Noten und Teile kommen aus der Aufzeichnung (Menü › Projekt).';
+  x.hint.hidden = false;
+}
+
+/* ---------- D8 (c): Automatische Sicherungen im VERLAUF-Blatt ---------- */
+function wegeSx14Paint(p) {
+  const k = p.querySelector('.sx14-k'); if (!k || !autosave) return;
+  wegeCss();
+  const box = el('div', 'wg-ah'); box.innerHTML = '<div class="sx14-s">AUTOMATISCHE SICHERUNGEN</div>'; k.appendChild(box);
+  projHistory().then(list => {
+    if (!box.isConnected) return;
+    if (!list.length) { box.insertAdjacentHTML('beforeend', '<div class="sx14-e">Noch keine. Alle 10 Minuten Arbeit und bei jedem „Als Datei sichern“ legt die App eine an.</div>'); popFit(p); return; }
+    box.firstChild.textContent = 'AUTOMATISCHE SICHERUNGEN · ' + list.length;
+    for (const it of list.slice(0, 12)) {
+      const b = el('button', 'rb sx14-r wg-hr', `<span class="n">${esc(dayTime(it.mt))}</span><span class="z">laden</span>`); b.setAttribute('aria-label', 'Automatische Sicherung ' + dayTime(it.mt) + ' laden');
+      let armT = 0;
+      onTap(b, () => {
+        if (!b.classList.contains('arm')) { b.classList.add('arm'); b.querySelector('.z').textContent = 'nochmal = laden'; clearTimeout(armT); armT = setTimeout(() => { if (b.isConnected) { b.classList.remove('arm'); b.querySelector('.z').textContent = 'laden'; } }, 3000); return; }
+        clearTimeout(armT); closePop(); restoreHistory(it.key);
+      });
+      box.appendChild(b);
+    }
+    popFit(p);
+  }, e => logErr(e));
+}
+
+/* ---------- D9: Clip-Versionen im Clip-Blatt der Matrix ---------- */
+function wegeClipSheet(g, t, s, clip) {
+  wegeCss();
+  const song = S.song, tr = S.tracks[t]; if (!song || !tr || !clip || clip.audio) return;
+  const list = sx9List(song, t, s); if (!list.length) return;
+  let cur = null, any = false;   // die Version, die überall im Song spielt (null = gemischt)
+  for (let x = 0; x < song.bars; x++) { const h = sx9At(song, t, x); if (!h || h.s !== s) continue; const v = h.id || ''; if (!any) { cur = v; any = true; } else if (cur !== v) { cur = null; break; } }
+  const row = el('div', 'wg-cv'); row.setAttribute('role', 'group'); row.setAttribute('aria-label', 'Versionen im Song');
+  row.appendChild(el('span', 'lbl', 'VERSIONEN IM SONG'));
+  const B = (v, id) => {
+    const act = any && cur === (id || ''), b = el('button', 'hb rb' + (act ? ' on' : ''), 'v' + v);
+    b.setAttribute('aria-pressed', String(act)); b.setAttribute('aria-label', act ? 'v' + v + ' spielt überall – antippen = bearbeiten' : 'Überall im Song v' + v);
+    on(b, 'click', () => {
+      if (act) { wegeVerEdit(t, s, id); return; }
+      if (sx9PickAll(t, s, id || null)) { haptic('snap'); toast(tr.name + ': überall v' + v + ' (Szene ' + (s + 1) + ')', songUndoAct()); svButtons(); }
+      if (R.editor === 'clip') openClipSheet(t, s);
+    });
+    return b;
+  };
+  row.appendChild(B(1, null)); for (const q of list) row.appendChild(B(q.v, q.id));
+  g.append(row);
+}
+function wegeVerEdit(t, s, id) {
+  const song = S.song;
+  if (!id) { closeClipSheet(); openRoll(t, s); return true; }
+  for (let x = 0; x < song.bars; x++) { const h = sx9At(song, t, x); if (h && h.id === id) { closeClipSheet(); openOwnRoll(t, x); return true; } }
+  toast('Diese Version spielt im Song gerade nirgends'); return false;
+}
+
+/* ---------- Abschnitt 4: Tempo-Blatt = auch das Song-Blatt (Song transponieren …, Ausblenden am Ende) ---------- */
+function wegeBpmRow(p) {
+  const song = S.song; if (!song || !song.bars) return;
+  wegeCss();
+  const r = el('div', 'grp wg-bpm');
+  r.innerHTML = '<button class="mbtn rb" data-wgb="xp" aria-label="Den ganzen Song transponieren">Song transponieren …</button>' + sx1RowHtml(song);
+  p.appendChild(r);
+  onTap(r, b => {
+    if (b.dataset.wgb === 'xp') { closePop(); gr1XpOpen(); return; }
+    const a = b.dataset.sx; if (!a || a[0] !== 'f') return;
+    const n = +a.slice(1);
+    if (sx1Set(n)) { haptic('tick'); toast(n ? 'Ausblenden über die letzten ' + n + ' Takte' : 'Ausblenden aus', songUndoAct()); }
+    const x = r.querySelector('.sx1-r'); if (x && S.song) x.outerHTML = sx1RowHtml(S.song);
+  }, 'button[data-wgb],button[data-sx]');
+  if (UI.pop && UI.pop.el) popFit(UI.pop.el);
+}
+
+/* ---------- Guide (UI1): jeder verschobene / umbenannte Weg springt hin ---------- */
+function wegeMarkOpen(tab) {
+  const song = S.song; if (!song || !song.bars || !song.marks.length) return false;
+  ui1Home(); setSongView(true);
+  const m = song.marks.find(x => SV.pos != null && x.a <= SV.pos && x.a + x.len > SV.pos) || song.marks[0];
+  openMarkSheet(m.id); const p = UI.pop && UI.pop.name === 'mark' ? UI.pop.el : null; if (!p) return false;
+  if (tab) wegeMsTab(p, tab);
+  return true;
+}
+function wegeGuide(L) {
+  if (!Array.isArray(L) || L._wege) return L; L._wege = true;
+  const G = ui1G, by = id => L.find(x => x.id === id), set = (id, o) => { const E = by(id); if (E) Object.assign(E, o); };
+  const E = (id, n, w, d, s, go, q) => ({id, n, w, d, s, go, q});
+  const songOr = (go, alt) => () => (S.song && S.song.bars && S.song.marks.length ? go() : alt());
+  set('clipsheet', {d: 'Bearbeiten, Quantisieren, Clip kopieren, Versionen im Song, Small/Full, Im Video, Werkzeugkasten.'});
+  set('sf', {w: 'Clip-Blatt (Drum-Clip) · Marken-Blatt › Klang & Groove', d: 'Small = leichte Fassung (deine Small-Drums, sonst ausgedünnt), Full = volle; je Songteil umschaltbar.',
+    go: songOr(() => wegeMarkOpen('k'), G.clip(true)), q: () => (UI.pop && UI.pop.name === 'mark' ? UI.pop.el.querySelector('.wg-sf') : [...EL.clipSheet.querySelectorAll('button')].find(b => /^Small$/.test(b.textContent.trim())))});
+  set('ue', {n: 'Fills & Breaks (⇥ FILLS)', w: 'Song-Ansicht › ⇥ FILLS'});
+  set('remix', {w: 'Song-Leiste › ⇋ REMIX · Marken-Blatt › Klang & Groove › Remix …'});
+  set('harm', {d: 'Auf eine Stufe, Lauf doppeln, Gegenstimme, Akkord-Ideen.'});
+  set('copy', {w: 'Noten-Editor › Noten kopieren', q: 'Noten kopieren'});
+  set('loop', {d: 'aus · Song · Teil · Bereich.'});
+  set('marks', {d: 'Antippen = Marken-Blatt in Reitern: Ablauf (▶ Ab hier, ×2, Kopie) │ Teil │ Klang & Groove (Small/Full, Gleiten) │ Video.'});
+  set('kons', {n: 'Zusammenfassen (Takte → Teil)', w: 'Takte wählen › Bereich-Leiste ❖ · Marken-Blatt › Teil', d: 'Aus den Takten wird ein neuer Teil – klingt gleich, „Zurückholen“ geht immer.',
+    s: 'zusammenfassen konsolidieren teil bereich bounce als teil', go: songOr(() => wegeMarkOpen('t'), G.song(false)), q: () => (UI.pop && UI.pop.name === 'mark' ? [...UI.pop.el.querySelectorAll('.s2-sb')].find(ui1Shown) : SV.wrap)});
+  set('xp', {w: 'Tempo-Blatt (BPM antippen) › Song transponieren …', go: () => { ui1Home(); if (!(S.song && S.song.bars)) { setSongView(false); toast('Das gibt es, sobald ein Song da ist – SONG ⇄'); UI1.alt = () => UI.corner; return true; } UI1.alt = null; popBpm(); return true; },
+    q: () => (UI1.alt ? UI1.alt() : UI.pop && UI.pop.el ? UI.pop.el.querySelector('[data-wgb="xp"]') : null)});
+  set('vcut', {w: 'Marken-Blatt › Video › Im Video ▸ · Video-Blatt › Extras › Schnitt', d: 'Eigene Video-Spur unter der Taktleiste: je Bereich eine Ansicht wählen, ab einem Takt teilen, Kanten ziehen. Tipp auf den Regie-Streifen schaltet sie ein.'});
+  set('makingof', {d: 'Vor dem Song ein kurzer Vorlauf aus der Aufzeichnung (Menü › Projekt › Aufzeichnung).'});
+  set('export', {d: 'Audio (Song, Einzelspuren, Gesang, Chor), MIDI (Song, Spur, Szene, Mitschnitt), Video, Projekt mit allen Audios, Sounds.'});
+  set('savefile', {d: 'Nur die Projektdatei (.json). Mit allen Audios: Export › Projekt › Sichern mit allen Audios. „Öffnen …“ holt beides zurück.'});
+  set('projects', {n: 'Projekte und automatische Sicherungen', d: 'Alle Projekte im Browser; automatische Sicherungen zurückholen (auch: ↶ halten).'});
+  set('dx7', {w: 'Menü › Export › Sounds', go: () => { ui1Home(); va1Sheet(); return true; }, q: 'DX7-Bank importieren'});
+  set('imvideo', {n: 'Im Video (je Clip)'});
+  L.push(
+    E('scrub', 'Mithören (Scrubbing)', 'Song-Ansicht › die ▼-Marke in der Taktleiste ziehen', 'Beim Ziehen klingt der Schlag unter dem Finger kurz an; losgelassen startet ▶ dort.', 'mithoeren scrubbing scrub wischen hoeren marke positionsmarke', G.song(false), () => SV.wrap),
+    E('block', 'Block (Takte gruppieren)', 'Marken-Blatt › Teil › ▣ Block … · Bereich-Leiste ⋯', 'Mehrere Teile zusammen verschieben und kopieren – der Inhalt bleibt, wie er ist.', 'block gruppieren gruppe zusammen schieben', songOr(() => wegeMarkOpen('t'), G.song(false)), () => (UI.pop && UI.pop.name === 'mark' ? UI.pop.el.querySelector('.kx-entry') : SV.wrap)),
+    E('vteil', 'Im Video (je Teil / Bereich)', 'Marken-Blatt › Video › Im Video ▸', 'Öffnet die Video-Spur genau an dieser Stelle: Auto, App, Song, Matrix, Klavier, Mäusekino, Gerät, Noten, Tastatur, Text.', 'im video teil bereich regie ansicht', songOr(() => wegeMarkOpen('v'), G.song(false)), () => (UI.pop && UI.pop.name === 'mark' ? UI.pop.el.querySelector('.wg-vb') : SV.wrap)),
+    E('open', 'Öffnen … (.json / .zip)', 'Menü › Projekt › Öffnen … · Export › Projekt', 'Öffnet eine Projektdatei oder ein Projekt mit allen Audios (ZIP).', 'oeffnen laden datei container zip json import', G.menu, 'Öffnen …'),
+    E('boxsave', 'Sichern mit allen Audios', 'Menü › Export › Projekt', 'Eine ZIP mit Projekt, allen Audio-Takes und eigenen Klängen.', 'container zip sichern audios backup', () => { ui1Home(); va1Sheet('box'); return true; }, 'Sichern mit allen Audios'),
+    E('midiex', 'MIDI: Szene, Alle Szenen, Mitschnitt', 'Menü › Export › MIDI', 'Mit Träger │ Original wählt, ob die Transposition mit hineinkommt.', 'midi export szene mitschnitt traeger', () => { ui1Home(); va1Sheet(); return true; }, 'Mitschnitt'),
+    E('rt', 'Song als Audio (Echtzeit)', 'Menü › Export › Audio › Echtzeit-Mitschnitt', 'Notweg: spielt den Song einmal ab und nimmt den Ausgang auf.', 'song als audio echtzeit mitschnitt aufnehmen', () => { ui1Home(); va1Sheet(); return true; }, () => (S.song && S.song.bars ? 'Echtzeit-Mitschnitt' : '.va1-bd')),
+    E('sounds', 'Eigene Sounds exportieren / importieren', 'Menü › Export › Sounds', 'Deine Klänge als Datei – auf einem anderen Gerät wieder importieren.', 'sounds klaenge export import datei bibliothek', () => { ui1Home(); va1Sheet(); return true; }, 'Sounds importieren'),
+    E('autosave', 'Automatische Sicherungen', '↶ halten › VERLAUF · Menü › Projekt', 'Alle 10 Minuten Arbeit ein Stand zum Zurückholen.', 'automatische sicherungen aeltere versionen backup zurueck wiederherstellen', () => { ui1Home(); sx14Open(EL.bUndo); return !!(UI.pop && UI.pop.name === 'sx14'); }, () => (UI.pop && UI.pop.el ? UI.pop.el.querySelector('.wg-ah') : null)),
+    E('verlauf', 'Verlauf (Schritte zurück)', '↶ halten', 'Jeder Schritt mit Uhrzeit; antippen springt dorthin. ＋ Schnappschuss merkt einen Stand mit Namen.', 'verlauf schritte rueckgaengig undo schnappschuss', () => { ui1Home(); sx14Open(EL.bUndo); return !!(UI.pop && UI.pop.name === 'sx14'); }, () => (UI.pop && UI.pop.el ? UI.pop.el.querySelector('.sx14-l') : null)),
+    E('aufz', 'Aufzeichnung (für Making-of)', 'Menü › Projekt', 'Merkt jede Geste mit Zeit – daraus entsteht der Making-of-Vorlauf im Video.', 'aufzeichnung making of rekorder gesten', G.menu, 'Aufzeichnung'),
+    E('vers', 'Clip-Versionen (v1, v2 …)', 'Clip-Blatt › Versionen im Song · Zelle im Song halten', 'Ein Clip in mehreren Fassungen, je Song-Stelle wählbar – das Original bleibt v1.', 'version versionen v2 variante clip', () => { ui1Home(); setSongView(true); return true; }, () => SV.wrap),
+    E('trsheet', 'Spur-Blatt', '■ der Spurzeile halten (Matrix)', '＋ Spur, ＋ STIMME-Spur, Effekte, Mit GarageBand aufnehmen, Spur entfernen.', 'spur blatt stimme spur hinzufuegen effekte garageband entfernen', () => { ui1Home(); setSongView(false); const t = R.selT >= 0 ? R.selT : 0; openTrackSheet(t, document.querySelector('.stp') || EL.top); return !!(UI.pop && UI.pop.name === 'track'); }, () => (UI.pop && UI.pop.el ? UI.pop.el.querySelector('h4') : null)),
+    E('gfx', 'Gesangs-Effekte', 'Takes-Blatt › Effekte … · Spur-Blatt › Effekte', 'Gesang Synthpop, Auto und mehr – nur für die STIMME-Spur.', 'gesang effekte vocal fx stimme hall', () => { ui1Home(); if (stimmeT() < 0) { toast('Erst eine STIMME-Spur: ■ einer Spur halten › ＋ STIMME-Spur'); return true; } return g4Sheet(null) !== false; }, () => (UI.pop && UI.pop.el ? UI.pop.el : EL.top)),
+    E('fade', 'Ausblenden am Ende', 'Tempo-Blatt (BPM antippen) · Marken-Blatt (letzter Teil) · Video-Blatt', 'Der Song wird über die letzten 2, 4 oder 8 Takte leiser – auch im Export.', 'ausblenden fade out ende leiser', () => { ui1Home(); popBpm(); return true; }, () => (UI.pop && UI.pop.el ? UI.pop.el.querySelector('.sx1-r') || UI.pop.el.querySelector('.bpmbig') : null)),
+  );
+  // Kurz-Anleitungen: dieselben Wörter
+  try {
+    for (const T of UI1_TOURS) for (const st of T.steps) {
+      if (st.e === 'ue') st.t = 'Fills und Breaks: Song-Ansicht › ⇥ FILLS. Kachel auf die Kante vor einem Teil ziehen – oder antippen und in den Song tippen.';
+      if (st.e === 'sf') st.t = 'Small / Full: den Drum-Clip als leicht oder voll markieren; im Song je Teil umschalten (Marken-Blatt › Klang & Groove).';
+      if (st.e === 'marks') st.t = 'Gelbe Teil-Marke antippen = Marken-Blatt mit Reitern: Ablauf, Teil, Klang & Groove, Video.';
+      if (st.e === 'kons') st.t = 'Zusammenfassen: Taktnummern antippen (gelb), dann ❖ in der Bereich-Leiste – aus den Takten wird ein Teil, „Zurückholen“ geht immer.';
+      if (st.e === 'vcut') st.t = 'Schnitt im Song: Marken-Blatt › Video › Im Video ▸ – je Bereich eine Ansicht, teilen, Kanten ziehen.';
+      if (st.e === 'export') st.t = 'Fertig? Menü › Export: Audio, MIDI, Video, Projekt mit allen Audios, Sounds.';
+    }
+  } catch (e) { logErr(e); }
+  return L;
+}
+
+/* ---------- Test-API ---------- */
+const WEGE_API = {
+  sfSet: (id, f) => wegeSfSet(id, f), sfInfo: id => { const m = S.song && S.song.marks.find(x => x.id === id); return m ? wegeSfInfo(S.song, m) : null; },
+  msTab: t => { const p = UI.pop && UI.pop.name === 'mark' ? UI.pop.el : null; if (!p) return null; if (t) wegeMsTab(p, t); return p.dataset.wgt || null; },
+  msInfo: () => { const p = UI.pop && UI.pop.name === 'mark' ? UI.pop.el : null; if (!p) return null; const r = p.getBoundingClientRect();
+    return {tab: p.dataset.wgt, h: Math.round(r.height), top: Math.round(r.top), vis: [...p.querySelectorAll('button')].filter(b => b.offsetParent && b.getBoundingClientRect().width > 0).map(b => b.textContent.trim().replace(/\s+/g, ' ').slice(0, 30))}; },
+  videoOpen: (a, e) => wegeVideoOpen(a, e), lastVid: () => (WEGE.lastVid ? Object.assign({}, WEGE.lastVid) : null),
+  lastScrub: () => (WEGE.lastScrub ? Object.assign({}, WEGE.lastScrub) : null),
+  moBuild: async () => { const L = await wegeMoBuild(true); return L ? JSON.parse(JSON.stringify(L)) : null; }, moMs: () => WEGE.moAt,
+  words: () => ({vd3: VD3_OPTS.map(x => x[0]), clip: VR1_VID_L.map(x => x[0])}),
+};
+Object.assign(SYNQUENZER, {wege: WEGE_API});                /* WEGE: Test-API (Objekt, wird nicht umhüllt) */
+/* WEGE-END */
 /* GR2-BEGIN ===================== Genres echt & Remix übersetzt deine Noten (Xander 07.11., Paket GR2)
    Xander: „Blue System / Modern Talking … ich dachte, das wäre Detroit Pop … was ist das für ein Stil?“ (Euro-Disco) · „Referenzen:
    Disco, Italo-Pop, Italo-Dance … sogar auf Walzer ummünzen … dass er mit meinen Elementen spielt: meine Sequenzen, mein Schlagzeug,
