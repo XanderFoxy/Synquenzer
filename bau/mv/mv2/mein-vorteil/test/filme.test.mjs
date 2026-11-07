@@ -1,5 +1,7 @@
 // Reiter „Filme“ (filme.js): statische Prüfungen (Vertrag, tolerantes Lesen, Haken in index.html/sw.js) und Browser-Tests
 // mit test/fixtures/filme.json (Stand 07.11.2026 14:05). Fotos nach test/fotos-filme/ (iPhone 12 Pro Max, hoch + quer).
+// Seit MV2 (Abschnitte statt Reiter) hängt „Filme“ am Einhängepunkt der Sprung-Leiste: <a data-reiter="filme">, eigene Seite
+// #p-filme nach </main>, REITER_START.filme / REITER_NEU.filme.
 // Aufruf: cd mein-vorteil && npm test   (ohne Playwright laufen nur die statischen Prüfungen)
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
@@ -137,15 +139,18 @@ test('Start-Chip: Wunschliste bei neuem Wunsch-Angebot, sonst der gemerkte, sons
   assert.equal(I.startChip(mit), 'wunsch', 'kommt das Angebot wieder, steht die Wunschliste wieder vorn');
 });
 
-test('Haken: index.html (Reiter, Bereich, Skript erst beim Öffnen), sw.js (filme.js im Zwischenspeicher)', () => {
+test('Haken: index.html (Link in der Sprung-Leiste, eigene Seite, Skript erst beim Öffnen), sw.js (filme.js im Zwischenspeicher)', () => {
   const html = readFileSync(join(MV, 'index.html'), 'utf8');
-  assert.match(html, /<button type="button" role="tab" id="t-filme" data-reiter="filme" aria-controls="p-filme" aria-selected="false" tabindex="-1">Filme<\/button>/);
-  assert.match(html, /<section id="p-filme" role="tabpanel" aria-labelledby="t-filme" hidden>/);
+  const leiste = html.match(/<div class="breite sprung-zeile">([\s\S]*?)<\/div>/)[1];
+  assert.match(leiste, /<a href="#filme" data-reiter="filme">Filme<span class="n"><\/span><\/a>/);
+  assert.match(html, /<\/main>\s*(<!--[^>]*-->\s*)?<section id="p-filme" class="reiter-seite breite" aria-labelledby="h-filme" hidden>/);
+  assert.match(html, /<div id="i-filme"><p class="leer">Lade Filme …<\/p><\/div>/);
   assert.doesNotMatch(html, /<script[^>]+src="filme\.js"/, 'kein festes Skript-Tag: filme.js erst beim ersten Öffnen');
   assert.match(html, /filmeSkript\.src = 'filme\.js'/);
+  assert.match(html, /REITER_START\.filme = starteFilme;/);
+  assert.match(html, /REITER_NEU\.filme = /);
   assert.doesNotMatch(html, /filme\.json/, 'Daten-Adresse steht nur in filme.js');
   assert.doesNotMatch(html, /\.fi-/, 'kein Film-CSS in der Seite');
-  assert.match(html, /const TABS = \[\.\.\.REITER, 'filme'\]/);
   const sw = readFileSync(join(MV, 'sw.js'), 'utf8');
   assert.match(sw, /addAll\(\[SEITE, 'filme\.js',/);
   assert.match(sw, /rest === 'filme\.js'/);
@@ -221,6 +226,14 @@ async function oeffne({ breite = 428, hoehe = 926, pfad = '/mein-vorteil/#filme'
     if (bildVerzug) await new Promise(r => setTimeout(r, bildVerzug));
     return route.fulfill({ status: 200, contentType: 'image/svg+xml', body: poster(route.request().url()) }).catch(() => {});
   });
+  // Kurs-Quellen der Krypto-Karte (MV2) gemockt – erfundene Kurse, kein echtes Netz
+  await ctx.route(/^https:\/\/(api\.coingecko\.com|api\.crypto\.com|api\.exchange\.coinbase\.com)\//, route => {
+    const u = new URL(route.request().url()), cors = { 'access-control-allow-origin': '*' };
+    const json = b => route.fulfill({ status: 200, contentType: 'application/json', headers: cors, body: JSON.stringify(b) });
+    if (u.host === 'api.coingecko.com') return json({ bitcoin: { eur: 60000, eur_24h_change: 1 }, ethereum: { eur: 2000, eur_24h_change: -1 } });
+    if (u.host === 'api.crypto.com') { const i = u.searchParams.get('instrument_name'); return json({ code: 0, result: { data: [{ i, a: i === 'BTC_EUR' ? '60000' : '2000', c: '0.01' }] } }); }
+    return route.fulfill({ status: 404, headers: cors, body: '' });
+  });
   // Layout-Sprünge mitschreiben (ohne die direkt nach einem Tippen)
   await ctx.addInitScript(() => {
     window.__cls = [];
@@ -246,16 +259,27 @@ async function waehle(page, k) {
 }
 const karten = page => page.locator('#fi-liste .fi-karte');
 const karte = (page, titel) => page.locator('#fi-liste .fi-karte', { has: page.locator('.fi-titel', { hasText: titel }) });
+const filmeLink = page => page.locator('.sprung a[data-reiter="filme"]');
+async function zuAbschnitt(page, ab) { // Abschnitts-Link in der Sprung-Leiste: Filme zu, Abschnitte wieder da
+  await page.locator(`.sprung a[data-ziel="${ab}"]`).click();
+  await page.waitForFunction(ab => location.hash === '#' + ab && !document.querySelector('main').hidden && document.getElementById('p-filme').hidden, ab);
+}
 
 test('Lazy: filme.js und filme.json erst beim Öffnen des Reiters, danach nicht bei jedem Wechsel', { skip: ohnePw }, async () => {
   const { ctx, page, fehler, zustand } = await oeffne({ pfad: '/mein-vorteil/#angebote' });
   await page.waitForTimeout(300);
   assert.ok(!zustand.abrufe.includes('filme.js') && !zustand.abrufe.includes(FILME_PFAD), 'vor dem Öffnen nichts geholt: ' + zustand.abrufe);
   assert.equal(await page.evaluate(() => !!document.getElementById('fi-stil') || 'MeinVorteilFilme' in window), false);
-  await page.locator('#t-filme').click();
+  await filmeLink(page).click();
   await filmeDa(page);
   assert.equal(new URL(page.url()).hash, '#filme');
-  for (const r of ['angebote', 'vorteile', 'konzerte', 'filme']) { await page.locator(`#t-${r}`).click(); await page.waitForFunction(r => !document.getElementById('p-' + r).hidden, r); }
+  assert.equal(await page.locator('main').isHidden(), true, 'Abschnitte ausgeblendet');
+  assert.equal(await filmeLink(page).getAttribute('aria-current'), 'true');
+  for (const ab of ['produkte', 'remix', 'mehr']) {
+    await zuAbschnitt(page, ab);
+    await filmeLink(page).click();
+    await page.waitForFunction(() => !document.getElementById('p-filme').hidden && document.querySelector('main').hidden);
+  }
   assert.equal(zustand.abrufe.filter(a => a === 'filme.js').length, 1);
   assert.equal(zustand.abrufe.filter(a => a === FILME_PFAD).length, 1);
   // ↻ holt die Filme mit
@@ -263,12 +287,13 @@ test('Lazy: filme.js und filme.json erst beim Öffnen des Reiters, danach nicht 
   await page.waitForFunction(() => !document.getElementById('neu').hasAttribute('aria-busy'));
   await page.waitForTimeout(200);
   assert.equal(zustand.abrufe.filter(a => a === FILME_PFAD).length, 2);
-  // Pfeiltasten im Reiter-Streifen laufen über alle vier
-  await page.locator('#t-konzerte').click();
-  await page.keyboard.press('ArrowRight');
-  assert.equal(await page.locator('#t-filme').getAttribute('aria-selected'), 'true');
-  await page.keyboard.press('ArrowRight');
-  assert.equal(await page.locator('#t-angebote').getAttribute('aria-selected'), 'true');
+  // ↻ auf einem Abschnitt: Filme waren schon offen -> holen trotzdem frisch (wie die anderen Daten), aber nichts doppelt
+  await zuAbschnitt(page, 'produkte');
+  await page.locator('#neu').click();
+  await page.waitForFunction(() => !document.getElementById('neu').hasAttribute('aria-busy'));
+  await page.waitForTimeout(200);
+  assert.equal(zustand.abrufe.filter(a => a === FILME_PFAD).length, 3);
+  assert.equal(zustand.abrufe.filter(a => a === 'filme.js').length, 1);
   assert.deepEqual(fehler, []);
   await ctx.close();
 });
@@ -405,8 +430,8 @@ test('Offline-Kopie: letzter Stand sofort; Quelle gestört bzw. offline steht in
 
 test('Ohne Daten: freundliche Hinweise (Liste noch nicht erstellt, leerer Bereich), Einträge ohne Titel fallen weg', { skip: ohnePw }, async () => {
   let o = await oeffne({ fehlt: true });
-  assert.equal(nbsp(await o.page.locator('#p-filme').innerText()), 'Die Filmliste wird gerade zum ersten Mal erstellt – schau später noch einmal rein.');
-  for (const r of ['angebote', 'vorteile', 'konzerte']) { await o.page.locator(`#t-${r}`).click(); assert.ok((await o.page.locator(`#p-${r} h2`).count()) > 0, r); }
+  assert.equal(nbsp(await o.page.locator('#i-filme').innerText()), 'Die Filmliste wird gerade zum ersten Mal erstellt – schau später noch einmal rein.');
+  for (const ab of ['produkte', 'auftritte']) { await zuAbschnitt(o.page, ab); assert.ok(await o.page.locator(`#${ab} h2`).isVisible(), ab); }
   assert.deepEqual(o.fehler.filter(f => !/Failed to load resource/.test(f)), []);
   await o.ctx.close();
   const patch = d => {
@@ -438,15 +463,15 @@ async function pruefeLayout(page, wo) {
       if (!b.width || !b.height || el.closest('[hidden]') || el.closest('dialog:not([open])')) continue;
       if (b.height < 44 || b.width < 44) zuKlein.push(`${el.tagName} „${el.textContent.trim().slice(0, 30)}“ ${Math.round(b.width)}×${Math.round(b.height)}`);
     }
-    const eng = [...document.querySelectorAll('.segment button')].map(b => {
+    const eng = [...document.querySelectorAll('.sprung a')].map(b => {
       const rg = document.createRange(); rg.selectNodeContents(b.firstChild);
       const t = rg.getBoundingClientRect(), k = b.getBoundingClientRect();
-      return t.left >= k.left && t.right <= k.right ? null : b.id;
+      return t.left >= k.left && t.right <= k.right ? null : b.getAttribute('href');
     }).filter(Boolean);
     return { zuKlein, eng, sw: document.documentElement.scrollWidth, bw: document.body.scrollWidth };
   });
   assert.deepEqual(r.zuKlein, [], `${wo}: Tippflächen unter 44 px`);
-  assert.deepEqual(r.eng, [], `${wo}: Reiter-Wort passt nicht in den Knopf`);
+  assert.deepEqual(r.eng, [], `${wo}: Wort passt nicht in seinen Link der Sprung-Leiste`);
   const vw = page.viewportSize().width;
   assert.ok(r.sw <= vw && r.bw <= vw, `${wo}: seitliches Scrollen (${r.sw}/${r.bw} > ${vw})`);
 }
@@ -474,15 +499,14 @@ for (const [breite, hoehe, lage] of [[428, 926, 'hoch'], [926, 428, 'quer']]) {
     }
     const cls = await page.evaluate(s => window.__cls.filter(e => e.t >= s).reduce((a, e) => a + e.v, 0), start);
     assert.ok(cls < 0.01, `Layout-Sprünge (CLS) ${cls}`);
-    // die anderen Reiter laufen wie vorher (Zahlen-Abzeichen passen auch bei vier Knöpfen)
-    for (const r of ['angebote', 'vorteile', 'konzerte']) {
-      await page.locator(`#t-${r}`).click();
-      await page.waitForFunction(r => !document.getElementById('p-' + r).hidden && document.getElementById('p-filme').hidden, r);
-      assert.ok((await page.locator(`#p-${r} h2`).count()) > 0, r);
-      await pruefeLayout(page, `${lage} ${r}`);
+    // zurück zu den Abschnitten: die Seite läuft wie vorher
+    for (const ab of ['krypto', 'produkte', 'remix']) {
+      await zuAbschnitt(page, ab);
+      assert.ok(await page.locator(`#${ab} h2`).isVisible(), ab);
+      await pruefeLayout(page, `${lage} ${ab}`);
     }
-    await page.locator('#t-angebote').click();
-    await page.screenshot({ path: join(FOTOS, `${lage}-reiter-angebote.png`) });
+    await zuAbschnitt(page, 'krypto');
+    await page.screenshot({ path: join(FOTOS, `${lage}-zurueck-krypto.png`) });
     assert.deepEqual(fehler, []);
     await ctx.close();
   });
