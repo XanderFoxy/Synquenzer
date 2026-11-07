@@ -27470,6 +27470,7 @@ function normClip(c, kind, pk) {
   if (c.cv) { const cv = cvNorm(c.cv, L); if (cv) out.cv = cv; }                                    // BM8 (§5.4)
   if (cts) out.ts = cts;                                                                              /* T1: Taktart des Clips (4/4 = fehlt) */
   if (c.kl || c.klq != null || c.ln || out.notes.some(n => n.lk && n.lk.k)) lkClipNorm(c, out, kind);   // I2a: kl, klq, ln (fehlen = wie bisher)
+  gr1ClipNorm(c, out);                                                                                // GR1: clip.sf (Small/Full), clip.gr (Remix-Version)
   return out;
 }
 function normTrack(t, def, pk, warns) {
@@ -27877,6 +27878,7 @@ function cleanClip(c) {
   if (c.cv) o.cv = cvClone(c.cv);                                // BM8: die Kurven gehen mit jeder Kopie mit
   if (c.ts) o.ts = c.ts;                                          // T1: Taktart des Clips
   if (c.kl || c.klq != null || c.ln) cleanLkClip(c, o);               // I2a
+  if (c.sf) o.sf = c.sf; if (c.gr) o.gr = Object.assign({}, c.gr);  // GR1: Small/Full, Remix-Version
   return o;
 }
 /* ---------------- BM8 (Nachtrag 7 §5.4): Bend, Rad und Druck im Clip ----------------
@@ -38983,6 +38985,7 @@ function openMarkSheet(id) {
       v6aMarkSheetPaint(p, m);    // V6A: [Gleiten: Clip|aus|kurz|1 T|2 T|frei] an dieser Song-Kante
       sx11MarkSheetPaint(p, m);   /* SX11: Fassung [Leicht] [Voll] [Kopieren] [Einfügen] */
       sx126MarkSheetPaint(p, m);  // SX126: [Bei Takt …] (Klinge), beim letzten Teil „Ausblenden am Ende“
+      gr1MarkSheetPaint(p, m);    // GR1: Rhythmus [Small] [Full] [Vorschlag] [Remix …]
       for (const b of p.querySelectorAll('.ms-b')) if (b.scrollWidth > b.clientWidth + 1) b.classList.add('tight');
     };
     paint(); p._paint = paint;
@@ -39523,6 +39526,7 @@ function openCellSheet(t, bar) {
     p.classList.add('plsheet', 'csheet'); guardTouch(p);
     p.innerHTML = `<div class="ms-h"><b>${esc(tr.name.toUpperCase())}</b><span>· ${rng} · ${own ? 'eigener Clip' : 'Szene ' + sc + (vh && vh.v > 1 ? ' · v' + vh.v : '')}</span><button class="rb ms-x" data-a="x" aria-label="Schließen">✕</button></div>` +
       (vh ? sx9RowHtml(song, t, vh) : '') +                                                  // SX9: Versionen v1 · v2 · ＋
+      (vh ? gr1CellRow(song, t, vh) : '') +                                                  // GR1: v2 ist Small │ Full
       (own ? `<button class="rb pl-o" data-a="edit"><b>Bearbeiten</b><small>ROLLE auf diesem eigenen Clip</small></button>` +
              `<button class="rb pl-o" data-a="back"><b>Zurück zum Szenen-Clip</b><small>die Kopie fällt weg, hier spielt wieder Szene ${sc}</small></button>` +
              (cvHas(song.own && song.own[own]) ? `<button class="rb pl-o" data-a="cvdel" aria-label="Kurven löschen (Bend · Rad · Druck)"><b>Kurven löschen</b><small>Bend · Rad · Druck</small></button>` : '')   // BM8 (§5.4)
@@ -39533,6 +39537,7 @@ function openCellSheet(t, bar) {
     onTap(p, b => {
       const a = b.dataset.a; closePop(); if (a === 'x') return;
       if (a === 'vvshow') { vvCellTap(t, run.bs, Math.min(run.be, song.bars)); return; }   // VV2
+      if (gr1CellTap(a, b, t, bar)) return;                                                 // GR1: Small │ Full der Version
       if (a === 'edit') { openOwnRoll(t, bar); return; }
       if (a === 'sx9v') {                                                                     // SX9: diese Version hier
         const id = b.dataset.id || null, c = id ? sx9Ver(S.song, id) : null, v = c ? c.ver : 1, sp = sx9Pick(t, bar, id);
@@ -47776,6 +47781,7 @@ function openPatterns(anchor) {
   openPop(anchor, p => {
     p.innerHTML = '<h4>Muster – ersetzt Takt ' + ((ED.page | 0) + 1) + '</h4><div class="plist">' + Object.keys(DRUM_PATTERNS).map(n => `<button class="rb" data-n="${esc(n)}">${esc(n)}</button>`).join('') + '</div>';
     guardTouch(p); onTap(p, b => { closePop(); applyPattern(b.dataset.n); toast('Muster „' + b.dataset.n + '“', {label: 'Rückgängig', fn: () => undo()}); }, 'button[data-n]');
+    gr1PatternsHook(p, anchor);   // GR1: [Stil-Grundmuster ›]
   }, {name: 'muster', above: true});
 }
 // KIT (§7.3): Kit ‹ › and list · Gate-Länge, Gate-Pegel, Raum-Pegel, Akzent, Swing (global) · Pad-Anschlag · [Kit sichern]
@@ -49246,6 +49252,7 @@ function openClipSheet(t, s, opts) {
     });
     g.append(del);
     if (tr.kind === 'synth' && !clip.audio && !nvTr(tr)) g.append(v6aClipBtn(t, s, clip, reopen));   // V6A: ◆ Klangzustand + Gleiten (eigenes Blatt)
+    gr1ClipSheet(g, t, s, clip, reopen);                                                     // GR1: [Grundmuster ▾] · Small │ Full
     body.append(g);
     const lr = el('div', 'lenrow');
     lr.append(el('span', 'lbl', 'Länge'));
@@ -49495,6 +49502,7 @@ function openMenu(goto) {
     row(s1, null, bAud);
   }
   vvMenuRow(s1, row, btn);                                        // VV1 (Nachtrag 5): Menü → Video
+  gr1MenuRow(s1, row, btn);                                       // GR1: Song › [Remix …] [Transponieren …]
   on(bProj, 'click', () => { projBox.hidden = !projBox.hidden; histBox.hidden = true; if (!projBox.hidden) menuProjRefresh(); });
   on(bHist, 'click', () => { histBox.hidden = !histBox.hidden; projBox.hidden = true; if (!histBox.hidden) menuHistRefresh(); });
   // 1b Sounds (WP3, §2.5): the user library as a file
@@ -73580,6 +73588,554 @@ Object.assign(SYNQUENZER, {                       // BM6 (Nachtrag 7 §5.3): Bit
   bmRoutes: t => bmRoutes(t), bmRouteClear: (t, k) => (bmLoad(), bmRouteClear(t, k)),
   bmInit: (t, kind) => { const s_ = sndOf(t); if (!s_ || s_.engine !== 'bm') throw new Error('Keine ' + BM_NAME + '-Spur: ' + t); return soundEdit(t, 'Init', () => { const snd = deep(s_); snd.p.bm = SQBM.init(kind); applySound(t, snd); return true; }); },
 });
+/* GR1-BEGIN ===================== Groove (Xander 07.11., Paket GR1): Stil-Grundmuster, Remix per Knopf, Zwingen-%, Small/Full, Song transponieren
+   Xander: „Remix-Funktion auf Knopfdruck mit Stilvorlagen … ersetzt das Fundament aus Bass und Schlagzeug, nutzt aber meine eigenen
+   Drum-Sounds“ · „einen Zwingen-Prozentwert, dass die anderen Spuren … sich anpassen“ · „Small/Full-Rhythmus-Schalter pro Songteil. Ich
+   markiere selbst, welche Drum-Clips Small und welche Full sind“ · „den ganzen Song transponierbar machen“.
+   - Stil-Bibliothek GR1_STYLES (eigene Daten, keine fremden Samples): Drum-Muster je Pad (16 Schritte je Takt, 32 = zwei Takte;
+     X Akzent · x normal · o leise), Swing sw (Lage der zweiten Sechzehntel im Achtel-Paar, 0,5 = gerade), Bass-Rhythmus
+     [Schritt, Intervall, Länge in Schritten, Pegel] auf dem Grundton der Stelle, typisches Tempo.
+   - Grundmuster (Clip-Blatt [Grundmuster ▾], Drum-Editor Muster ▾ › Stil-Grundmuster): ersetzt die Noten eines Drum- oder Bass-Clips,
+     ein Undo. Drums spielen die Pads des eigenen Kits; Backbeat und Hats nehmen das Pad, das der Clip schon benutzt (Clap statt Snare,
+     Shaker statt Hi-Hat …). Bass: Grundton je halbem Takt aus den Noten des Clips (leerer Clip: Grundton der Clip-Tonart).
+   - Remix (Menü › Song › [Remix …] für den ganzen Song, Marken-Blatt › Rhythmus › [Remix …] für einen Teil): Drum- und Bass-Clips
+     werden Versionen (SX9) mit clip.gr = {s: Stil, v: Quell-Version, z?: Zwingen-%}; v1 bleibt das Original. [A Original] / [B Remix]
+     schalten die Stellen um (ein Undo 'song' je Tipp, im Lauf ab dem nächsten Takt). Zwingen 0–100 %: die übrigen Spuren bekommen eine
+     Version mit Quantisierung + Swing des Stils (Stärke = %), 0 = unverändert.
+   - Small/Full: clip.sf = 's' | 'f' (Drum-Clips, Szenen-Clip im Clip-Blatt, Version im Zell-Blatt). Marken-Blatt
+     „Rhythmus [Small] [Full] [Vorschlag] [Remix …]“: Small/Full wählt je Stelle des Teils die passend markierte Version; Vorschlag
+     markiert (dünn = Small) und legt bei nur einem Clip eine ausgedünnte Version an.
+   - Song transponieren (Menü › Song › [Transponieren …]): alle Einträge der Teil-Transposition song.xp ±1 Halbton – Drums und
+     Perkussion folgen nicht; Gesang nur Takes mit „folgt Transponieren“ (G7).
+   Daten additiv (clip.sf, clip.gr; ohne Felder byte-gleich), Format bleibt. */
+const GR1 = {st: 'njs', z: 0};
+const GR1_STYLES = [
+  {id: 'njs', name: 'New Jack Swing', bpm: 104, sw: .62,
+    d: {kick: 'x..x......x..x..', snare: '....X.......X...', clap: '....x.......x...', hatC: 'xoxoxoxoxoxoxoxo'},
+    b: [[0, 0, 3, 1], [3, 0, 2, .8], [6, 12, 1, .7], [8, 0, 2, .9], [10, 7, 2, .8], [13, 0, 2, .8]]},
+  {id: 'euro', name: 'Euro Disco', bpm: 124, sw: .5,
+    d: {kick: 'x...x...x...x...', snare: '....X.......X...', clap: '....x.......x...', hatC: 'xo.oxo.oxo.oxo.o', hatO: '..x...x...x...x.'},
+    b: [[0, 0, 1, 1], [2, 12, 1, .8], [4, 0, 1, .9], [6, 12, 1, .8], [8, 0, 1, 1], [10, 12, 1, .8], [12, 0, 1, .9], [14, 12, 1, .8]]},
+  {id: 'detroit', name: 'Detroit Pop', bpm: 116, sw: .55,
+    d: {kick: 'x.......x.....x.', snare: 'o...X...o...X...', clap: '....x.......x...', hatC: 'x.o.x.o.x.o.x.o.', shaker: 'x.x.x.x.x.x.x.x.'},
+    b: [[0, 0, 2, 1], [3, 0, 1, .6], [4, 7, 2, .8], [6, 12, 2, .8], [8, 0, 2, 1], [11, 0, 1, .6], [12, 7, 2, .8], [14, 5, 2, .7]]},
+  {id: 'house', name: 'Frühes House', bpm: 122, sw: .55,
+    d: {kick: 'x...x...x...x...', clap: '....x.......x...', hatC: 'oo.ooo.ooo.ooo.o', hatO: '..x...x...x...x.', rim: '...o......o.....'},
+    b: [[0, 0, 2, 1], [3, 0, 1, .7], [6, 12, 1, .8], [8, 0, 2, .9], [11, 0, 1, .7], [14, 7, 1, .8]]},
+  {id: 'funk', name: 'Funk House', bpm: 124, sw: .58,
+    d: {kick: 'x...x...x...x...', clap: '....X.......X...', snare: '.......o.o......', hatC: 'xoxoxoxoxoxoxoxo', hatO: '..x.......x.....', perc: '...x.....x....x.'},
+    b: [[0, 0, 1, 1], [3, 12, 1, .7], [4, 0, 1, .8], [6, 0, 1, .6], [7, 12, 1, .8], [10, 0, 1, .9], [12, 7, 1, .8], [14, 12, 1, .8], [15, 0, 1, .6]]},
+  {id: 'garage', name: 'Garage 2-Step', bpm: 132, sw: .64,
+    d: {kick: 'x.........x.....' + '..x.......x..x..', snare: '....X.......X...', hatC: 'x.ox.oxox.ox.oxo', shaker: 'o.o.o.o.o.o.o.o.', rim: '.......x......x.'},
+    b: [[0, 0, 3, 1], [6, 0, 2, .8], [10, 12, 2, .8], [13, 7, 3, .8]]},
+  {id: 'synthpop', name: 'Synth-Pop', bpm: 118, sw: .5,
+    d: {kick: 'x.....x.x.......', snare: '....X.......X...', hatC: 'x.x.x.x.x.x.x.x.', clap: '............x...'},
+    b: [[0, 0, 1, 1], [2, 0, 1, .8], [4, 0, 1, .9], [6, 0, 1, .8], [8, 0, 1, 1], [10, 0, 1, .8], [12, 12, 1, .9], [14, 7, 1, .8]]},
+];
+// which pad a style lane plays: the first pad of the list the clip already uses (its own sounds), else the style's pad
+const GR1_SUB = {snare: ['snare', 'clap', 'rim'], clap: ['clap', 'snare'], rim: ['rim', 'perc'], hatC: ['hatC', 'shaker'], hatO: ['hatO', 'hatC'], shaker: ['shaker', 'hatC'], perc: ['perc', 'rim', 'shaker']};
+const GR1_Z = [0, 25, 50, 75, 100];
+const gr1Style = id => GR1_STYLES.find(x => x.id === id) || null;
+// normClip (load / copy): clip.sf, clip.gr – a function declaration (normalizeProject runs while the script loads)
+function gr1ClipNorm(c, out) {
+  if (c.sf === 's' || c.sf === 'f') out.sf = c.sf;
+  const g = c.gr;
+  if (g && typeof g === 'object' && typeof g.s === 'string' && /^[a-z0-9]{1,12}$/.test(g.s)) {
+    const o = {s: g.s, v: typeof g.v === 'number' && g.v >= 1 ? Math.min(8, Math.round(g.v)) : 1};
+    if (typeof g.z === 'number' && g.z >= 0) o.z = Math.min(100, Math.round(g.z));
+    out.gr = o;
+  }
+}
+// step i (16th of a bar) → beats, the 2nd 16th of each 8th later by the swing
+const gr1SwT = (i, sw) => i * .25 + (i & 1 ? (sw - .5) * .5 : 0);
+function gr1Pad(id, used) {
+  const L = GR1_SUB[id] || [id], gm = k => (DRUM_BY_ID[k] ? DRUM_BY_ID[k].gm : null);
+  if (!used.size || used.has(gm(L[0]))) return gm(L[0]);
+  for (const k of L) if (used.has(gm(k))) return gm(k);
+  return gm(L[0]);
+}
+// the style's drums over the clip's bars, with the pads the clip uses
+function gr1DrumNotes(src, st) {
+  const bars = Math.max(1, src.len | 0), used = new Set((src.notes || []).map(n => n.n)), by = new Map();
+  for (const id of Object.keys(st.d)) {
+    const pat = st.d[id], gm = gr1Pad(id, used); if (gm == null) continue;
+    const P = pat.length >= 32 ? 2 : 1;
+    for (let b = 0; b < bars; b++) for (let i = 0; i < 16; i++) {
+      const ch = pat[(b % P) * 16 + i]; if (!ch || ch === '.') continue;
+      const t = +(b * 4 + gr1SwT(i, st.sw)).toFixed(4), v = ch === 'X' ? 1 : ch === 'x' ? .8 : .45, k = gm + '@' + t, o = by.get(k);
+      if (o && o.v >= v) continue;
+      by.set(k, Object.assign({t, d: .1, n: gm, v}, ch === 'X' ? {a: 1} : null));
+    }
+  }
+  return [...by.values()].sort((a, b) => a.t - b.t || a.n - b.n);
+}
+// the root of each half bar: what sounds on its first beat (lowest), else the first note in it, else the one before
+function gr1Roots(src) {
+  const L = clipB(src), ns = (src.notes || []).filter(n => n.t < L - 1e-9).slice().sort((a, b) => a.t - b.t || a.n - b.n);
+  const out = []; let prev = ns.length ? Math.min(...ns.map(n => n.n)) : 36 + (((src.key && src.key.root) | 0) % 12);
+  for (let h = 0, H = Math.max(1, Math.round(L / 2)); h < H; h++) {
+    const h0 = h * 2, on = ns.filter(n => n.t <= h0 + 1e-6 && n.t + n.d > h0 + 1e-6);
+    let r = on.length ? Math.min(...on.map(n => n.n)) : null;
+    if (r == null) { const f = ns.find(n => n.t >= h0 - 1e-6 && n.t < h0 + 2 - 1e-6); if (f) r = Math.min(...ns.filter(n => Math.abs(n.t - f.t) < 1e-6).map(n => n.n)); }
+    if (r == null) r = prev;
+    out.push(r); prev = r;
+  }
+  return out;
+}
+// the style's bass rhythm on the clip's roots (harmony stays, the rhythm is the style's)
+function gr1BassNotes(src, st) {
+  const bars = Math.max(1, src.len | 0), roots = gr1Roots(src), ns = src.notes || [];
+  const avg = ns.length ? ns.reduce((s, n) => s + n.v, 0) / ns.length : .8, out = [];
+  for (let b = 0; b < bars; b++) for (const [i, iv, ln, lv] of st.b) {
+    const t = +(b * 4 + gr1SwT(i, st.sw)).toFixed(4), r = roots[Math.min(roots.length - 1, Math.floor((b * 4 + i * .25) / 2 + 1e-9))];
+    out.push({t, d: +Math.max(.1, ln * .25 * .9).toFixed(4), n: clamp(r + iv, 0, 127), v: +clamp(avg * lv / .8, .1, 1).toFixed(3)});
+  }
+  return out.sort((a, b) => a.t - b.t || a.n - b.n);
+}
+// Zwingen: the notes move z % of the way onto the style's 1/16 grid with its swing (KeyDetect.quantize)
+function gr1ForceNotes(src, st, z) {
+  return KeyDetect.quantize(src.notes || [], {grid: '1/16', swing: st.sw, strength: z / 100, len: clipB(src)}).map(n => Object.assign({}, n, {t: +n.t.toFixed(4)}));
+}
+// what a track is in a remix: 'dr' (Drums), 'bass', 'z' (the rest, Zwingen) — null: not touched (STIMME, audio)
+function gr1Role(t, c) {
+  const tr = S.tracks[t]; if (!tr || !c || c.audio || tr.stimme) return null;
+  if (isDrum(t)) return 'dr';
+  if (percIs(tr)) return 'z';
+  return sx11Role(t, c) === 'bass' ? 'bass' : 'z';
+}
+// the places in [a, b) where track t plays a scene clip or one of its versions: [{a, b, s, v, id}] (own clips are left out)
+function gr1Spans(song, t, a, b) {
+  const out = []; b = Math.min(b, song.bars);
+  for (let x = Math.max(0, a); x < b;) {
+    const h = sx9At(song, t, x); if (!h) { x++; continue; }
+    let y = x + 1; while (y < b) { const q = sx9At(song, t, y); if (!q || q.s !== h.s || q.id !== h.id) break; y++; }
+    out.push({a: x, b: y, s: h.s, v: h.v, id: h.id}); x = y;
+  }
+  return out;
+}
+const gr1ClipOf = (song, t, sp) => (sp.id ? song.own && song.own[sp.id] : S.tracks[t].clips[sp.s]) || null;
+// the source of a place: a remix version's source version, else the version itself
+function gr1Src(song, t, sp) {
+  const c = gr1ClipOf(song, t, sp); if (!c || !c.gr) return {v: sp.v, id: sp.id, c};
+  const id = c.gr.v > 1 ? sx9Find(song, t, sp.s, c.gr.v) : null;
+  return id ? {v: c.gr.v, id, c: song.own[id]} : {v: 1, id: null, c: S.tracks[t].clips[sp.s] || null};
+}
+function gr1Find(song, t, s, st, v) {
+  for (const q of sx9List(song, t, s)) { const c = song.own[q.id]; if (c.gr && c.gr.s === st && c.gr.v === v) return q.id; }
+  return null;
+}
+// the remix version of (t, s, style, source) gets these notes – made as the next version when there is none yet (null: no room)
+function gr1VerPut(song, t, s, srcC, gr, notes) {
+  let id = gr1Find(song, t, s, gr.s, gr.v);
+  if (id) { const c = song.own[id]; c.notes = notes; c.gr = gr; return id; }
+  const v = sx9List(song, t, s).reduce((m, q) => Math.max(m, q.v), 1) + 1;
+  if (v > sx9Max() || ownCount(song) >= OWN_MAX) return null;
+  const c = deep(srcC); delete c.from; delete c.ver; delete c.sf; delete c.gr;
+  if (isDrum(t)) delete c.lanes;                                       // D1: lane lengths of the old pattern would cut the new one
+  c.notes = notes; c.gr = gr; c.from = {t, s, bar: 0}; c.ver = v;      // key order as normClip + ownNorm write it
+  id = ownNewId(song); (song.own || (song.own = {}))[id] = c;
+  return id;
+}
+// the remix of [a, b) on song (inside songEdit)
+function gr1RemixDo(song, st, a, b, z) {
+  const res = {dr: 0, bass: 0, z: 0, ts: 0, full: 0};
+  for (let t = 0; t < NT(); t++) {
+    const spans = gr1Spans(song, t, a, b); if (!spans.length) continue;
+    const role = gr1Role(t, gr1Src(song, t, spans[0]).c); if (!role) continue;
+    for (const sp of spans) {
+      const src = gr1Src(song, t, sp); if (!src.c) continue;
+      if (role === 'z' && !z) {                                        // 0 %: unverändert (a Zwingen version of this style rests)
+        const id = gr1Find(song, t, sp.s, st.id, src.v); if (id) song.own[id].gr.z = 0;
+        if (sp.id !== src.id) sx9Set(song, t, sp.a, sp.b, src.id);
+        continue;
+      }
+      if (role !== 'z' && src.c.ts) { res.ts++; continue; }           // the patterns are 4/4
+      const notes = role === 'dr' ? gr1DrumNotes(src.c, st) : role === 'bass' ? gr1BassNotes(src.c, st) : gr1ForceNotes(src.c, st, z);
+      const id = gr1VerPut(song, t, sp.s, src.c, role === 'z' ? {s: st.id, v: src.v, z} : {s: st.id, v: src.v}, notes);
+      if (!id) { res.full++; continue; }
+      if (id !== sp.id) sx9Set(song, t, sp.a, sp.b, id);
+      res[role]++;
+    }
+  }
+  return res;
+}
+// A (Original) / B (Remix of style stId) in [a, b)
+function gr1ABDo(song, ab, a, b, stId) {
+  let n = 0;
+  for (let t = 0; t < NT(); t++) for (const sp of gr1Spans(song, t, a, b)) {
+    const c = gr1ClipOf(song, t, sp); if (!c) continue;
+    if (ab === 'a') { if (c.gr) { sx9Set(song, t, sp.a, sp.b, gr1Src(song, t, sp).id); n++; } continue; }
+    if (c.gr && c.gr.s === stId) continue;
+    const src = gr1Src(song, t, sp), id = gr1Find(song, t, sp.s, stId, src.v), rc = id ? song.own[id] : null;
+    if (!rc || (rc.gr.z === 0 && gr1Role(t, src.c) === 'z')) continue;
+    sx9Set(song, t, sp.a, sp.b, id); n++;
+  }
+  return n;
+}
+// what [a, b) plays now: places with a remix (and its styles), places a remix of stId could take over
+function gr1Info(song, a, b, stId) {
+  const o = {spans: 0, on: 0, canB: 0, styles: []}; if (!song || !song.bars) return o;
+  const ss = new Set();
+  for (let t = 0; t < NT(); t++) for (const sp of gr1Spans(song, t, a, b)) {
+    o.spans++; const c = gr1ClipOf(song, t, sp); if (!c) continue;
+    if (c.gr) { o.on++; ss.add(c.gr.s); if (c.gr.s === stId) continue; }
+    const src = gr1Src(song, t, sp), id = gr1Find(song, t, sp.s, stId, src.v), rc = id ? song.own[id] : null;
+    if (rc && !(rc.gr.z === 0 && gr1Role(t, src.c) === 'z')) o.canB++;
+  }
+  o.styles = [...ss];
+  return o;
+}
+const GR1_LAB = l => { try { SX.lab.add(l); } catch (e) {} return l; };   // ↶ ↷ while ▶ SONG: from the next bar line (SX11 path)
+function gr1Remix(stId, a, b, z) {
+  const st = gr1Style(stId), song = S.song; if (!st || !song || !song.bars || R.songRec) return null;
+  a = clamp(a | 0, 0, song.bars - 1); b = clamp(b == null ? song.bars : b | 0, a + 1, song.bars); z = clamp(Math.round(+z || 0), 0, 100);
+  let res = null;
+  const ok = songEdit(GR1_LAB('Remix ' + st.name + (z ? ' · Zwingen ' + z + ' %' : '')), sg => { res = gr1RemixDo(sg, st, a, b, z); });
+  if (!res) res = {dr: 0, bass: 0, z: 0, ts: 0, full: 0};
+  res.ok = !!ok; return res;
+}
+function gr1AB(ab, a, b, stId) {
+  const song = S.song; if (!song || !song.bars || R.songRec) return 0;
+  a = clamp(a | 0, 0, song.bars - 1); b = clamp(b == null ? song.bars : b | 0, a + 1, song.bars);
+  const st = gr1Style(stId || GR1.st); let n = 0;
+  songEdit(GR1_LAB(ab === 'a' ? 'Remix: Original' : 'Remix: ' + (st ? st.name : '')), sg => { n = gr1ABDo(sg, ab, a, b, st ? st.id : ''); });
+  return n;
+}
+/* ---------- Grundmuster: the style replaces the notes of a drum or bass clip (one undo 'clip') ---------- */
+function gr1PatOk(t, c) { const tr = S.tracks[t]; return !!tr && (isDrum(t) || (!!c && !c.audio && !tr.stimme && sx11Role(t, c) === 'bass')); }
+function gr1Pattern(t, s, stId) {
+  const st = gr1Style(stId), tr = S.tracks[t]; if (!st || !tr) return false;
+  const drum = isDrum(t); let c = tr.clips[s];
+  if (!c && !drum) return false;
+  if (!gr1PatOk(t, c)) return false;
+  if (c && c.ts) { toast('Grundmuster gibt es nur für Clips im 4/4-Takt'); return false; }
+  const before = cleanClip(c);
+  if (!c) c = drumClipFor(s);
+  if (c.ts) { if (!before) { tr.clips[s] = null; clipChanged(t, s); } toast('Grundmuster gibt es nur für Clips im 4/4-Takt'); return false; }
+  c.notes = drum ? gr1DrumNotes(c, st) : gr1BassNotes(c, st);
+  if (drum) delete c.lanes;
+  pushUndo(t, s, before, 'Grundmuster ' + st.name);
+  afterClipEdit(t, s); UI.dirty.grid = true;
+  if (drum && R.editor === 'drum') { try { if (!before) safeRebuild(buildDrumEd); else paintSteps(); } catch (e) {} }
+  return true;
+}
+function gr1PatPop(anchor, t, s, after) {
+  const drum = isDrum(t);
+  openPop(anchor, p => {
+    guardTouch(p); p.classList.add('gr1pat');
+    p.innerHTML = `<h4>Grundmuster · ${drum ? 'Drums' : 'Bass'} – ersetzt den Clip</h4><div class="plist mtl gr1pl">` +
+      GR1_STYLES.map(x => `<button class="rb" data-gs="${x.id}" aria-label="${esc('Grundmuster ' + x.name)}"><b>${esc(x.name)}</b><small>≈ ${x.bpm} BPM${x.sw > .5 ? ' · Swing ' + Math.round(x.sw * 100) + ' %' : ''}</small></button>`).join('') +
+      `</div><p class="gr1-tip">${drum ? 'Spielt die Pads deines Kits – Clap, Rim oder Shaker, wenn der Clip sie statt Snare oder Hi-Hat benutzt.' : 'Grundtöne aus deinem Clip, Rhythmus aus dem Stil, Klang deiner Spur.'} ↶ holt den alten Clip zurück.</p>`;
+    onTap(p, b => {
+      const st = gr1Style(b.dataset.gs); closePop(); if (!st) return;
+      if (gr1Pattern(t, s, st.id)) { haptic('tick'); toast('Grundmuster „' + st.name + '“', {label: 'Rückgängig', fn: () => undo()}); if (after) after(); }
+    }, 'button[data-gs]');
+  }, {name: 'gr1pat', above: true});
+}
+// Drum-Editor › Muster ▾: one more entry at the end (the style list opens above the same key)
+function gr1PatternsHook(p, anchor) {
+  const L = p.querySelector('.plist'); if (!L) return;
+  L.insertAdjacentHTML('beforeend', '<button class="rb gr1pk" data-gr1p="1">Stil-Grundmuster ›</button>');
+  onTap(p, () => { closePop(); gr1PatPop(anchor, DRUM_T, R.selS); }, 'button[data-gr1p]');
+}
+/* ---------- Small / Full ---------- */
+function gr1Cands(song, t, s) {
+  const out = [{v: 1, id: null, c: S.tracks[t].clips[s]}];
+  if (song) for (const q of sx9List(song, t, s)) out.push({v: q.v, id: q.id, c: song.own[q.id]});
+  return out.filter(x => x.c);
+}
+const gr1Pick = (song, t, s, f) => gr1Cands(song, t, s).find(x => x.c.sf === f) || null;
+const gr1Dens = c => (c.notes || []).length / Math.max(1, c.len | 0);
+// a scene clip of the clip sheet: Small │ Full │ none (one undo 'clip')
+function gr1ClipSf(t, s, f) {
+  const c = S.tracks[t] && S.tracks[t].clips[s]; if (!c) return false;
+  const nf = f === 's' || f === 'f' ? f : null; if ((c.sf || null) === nf) return false;
+  const before = cleanClip(c); if (nf) c.sf = nf; else delete c.sf;
+  pushUndo(t, s, before, nf ? (nf === 's' ? 'Small' : 'Full') : 'Small/Full aus'); clipChanged(t, s); markDirty(); UI.dirty.song = true;
+  return true;
+}
+// a version (own clip): Small │ Full │ none (one undo 'song')
+function gr1VerSf(id, f) {
+  const c = S.song && sx9Ver(S.song, id); if (!c) return false;
+  const nf = f === 's' || f === 'f' ? f : null; if ((c.sf || null) === nf) return false;
+  return !!songEdit('v' + c.ver + ': ' + (nf ? (nf === 's' ? 'Small' : 'Full') : 'Small/Full aus'), sg => { const x = sg.own[id]; if (nf) x.sf = nf; else delete x.sf; });
+}
+// the Rhythmus state of a part: what plays (all Small / all Full), which versions Small / Full would take
+function gr1MarkInfo(song, m) {
+  const o = {n: 0, cur: '', vs: [], vf: [], hasS: 0, hasF: 0}; if (!song || !m) return o;
+  let s = 0, f = 0; const vs = new Set(), vf = new Set();
+  for (let t = 0; t < NT(); t++) {
+    if (!isDrum(t)) continue;
+    for (const sp of gr1Spans(song, t, m.a, m.a + m.len)) {
+      o.n++; const c = gr1ClipOf(song, t, sp); if (c && c.sf === 's') s++; else if (c && c.sf === 'f') f++;
+      const ks = gr1Pick(song, t, sp.s, 's'), kf = gr1Pick(song, t, sp.s, 'f');
+      if (ks) { o.hasS++; vs.add('v' + ks.v); } if (kf) { o.hasF++; vf.add('v' + kf.v); }
+    }
+  }
+  o.cur = o.n && s === o.n ? 's' : o.n && f === o.n ? 'f' : ''; o.vs = [...vs]; o.vf = [...vf];
+  return o;
+}
+// [Small] / [Full] of a part: every place of the drums plays its version marked so (one undo 'song'); miss = places without one
+function gr1MarkSf(id, f) {
+  const song = S.song, m0 = song && song.marks.find(x => x.id === id); if (!m0 || R.songRec || (f !== 's' && f !== 'f')) return null;
+  const r = {n: 0, miss: 0};
+  const ok = songEdit(GR1_LAB(markLabel(m0) + ' ' + (f === 's' ? 'Small' : 'Full')), sg => {
+    const m = sg.marks.find(x => x.id === id); if (!m) return;
+    for (let t = 0; t < NT(); t++) {
+      if (!isDrum(t)) continue;
+      for (const sp of gr1Spans(sg, t, m.a, m.a + m.len)) { const k = gr1Pick(sg, t, sp.s, f); if (!k) { r.miss++; continue; } if (k.id !== sp.id) { sx9Set(sg, t, sp.a, sp.b, k.id); r.n++; } }
+    }
+  });
+  r.ok = !!ok; return r;
+}
+// a thinner copy of drum notes (null: nothing to thin): first as „leicht“ does (SX11), then without ghosts and off-beat hats
+function gr1Thin(c) {
+  const a = sx11ThinNotes(c); if (a) return a;
+  const out = []; let ch = false;
+  for (const n of c.notes || []) {
+    if (n.v < .5 && n.n !== 36) { ch = true; continue; }
+    if ([42, 46, 56, 70].includes(n.n) && Math.abs(n.t - Math.round(n.t)) > .02) { ch = true; continue; }
+    out.push(Object.assign({}, n));
+  }
+  return ch && out.length ? out : null;
+}
+// [Vorschlag]: the drum clips of the part get Small / Full (thin = Small); only one clip: a thinned version becomes Small.
+// Marks the user set stay. One undo (group: scene clips + song)
+function gr1Vorschlag(id) {
+  const song = S.song, m0 = song && song.marks.find(x => x.id === id); if (!m0 || R.songRec) return null;
+  const sb = songSnapshot(), cb = new Map(), out = [], keys = new Set();
+  for (let t = 0; t < NT(); t++) if (isDrum(t)) for (const sp of gr1Spans(song, t, m0.a, m0.a + m0.len)) keys.add(t + ':' + sp.s);
+  for (const k of keys) {
+    const [t, s] = k.split(':').map(Number), cs = gr1Cands(song, t, s);
+    const hasS = () => cs.some(x => x.c.sf === 's'), hasF = () => cs.some(x => x.c.sf === 'f');
+    if (hasS() && hasF()) continue;
+    const mark = (x, f) => { if (x.c.sf) return; if (!x.id && !cb.has(k)) cb.set(k, cleanClip(x.c)); x.c.sf = f; out.push({t, s, v: x.v, f}); };
+    const by = cs.slice().sort((p, q) => gr1Dens(p.c) - gr1Dens(q.c)), lo = by[0], hi = by[by.length - 1];
+    if (cs.length >= 2 && gr1Dens(hi.c) > gr1Dens(lo.c) * 1.15) { if (!hasS()) mark(lo, 's'); if (!hasF()) mark(hi, 'f'); continue; }
+    if (!hasS()) {
+      const th = gr1Thin(hi.c), v = sx9List(song, t, s).reduce((mm, q) => Math.max(mm, q.v), 1) + 1;
+      if (!th || v > sx9Max() || ownCount(song) >= OWN_MAX) continue;
+      const c = deep(hi.c); delete c.from; delete c.ver; delete c.sf; delete c.gr;
+      c.notes = th; c.sf = 's'; c.from = {t, s, bar: 0}; c.ver = v;
+      (song.own || (song.own = {}))[ownNewId(song)] = c; out.push({t, s, v, f: 's', neu: true});
+    }
+    if (!hasF()) mark(hi, 'f');
+  }
+  const items = [];
+  for (const [k, before] of cb) { const [t, s] = k.split(':').map(Number); items.push({kind: 'clip', track: t, scene: s, before}); clipChanged(t, s); }
+  if (songSnapshot() !== sb) { items.push({kind: 'song', before: sb}); songChanged(); }
+  if (items.length) { const label = 'Vorschlag Small/Full · ' + markLabel(m0); undoPush(items.length === 1 ? Object.assign({label}, items[0]) : {kind: 'group', label, items}); markDirty(); UI.dirty.all = true; }
+  return out;
+}
+/* ---------- Song transponieren: every entry of the Teil-Transposition song.xp ±d (one undo 'song'); ▶ SONG: from the next bar ---------- */
+function gr1XpInfo() {
+  const song = S.song, xs = song && song.xp ? song.xp : [];
+  const vals = [(!xs.length || xs[0].beat > 1e-6) ? 0 : xs[0].semi].concat(xs.filter(x => x.beat > 1e-6).map(x => x.semi));
+  const lo = Math.min(...vals), hi = Math.max(...vals);
+  return {base: vals[0], uniform: lo === hi, lo, hi, n: xs.length};
+}
+function gr1XpShift(d) {
+  const song = S.song; d = Math.round(+d || 0); if (!song || !song.bars || R.songRec || !d) return false;
+  const xs = (song.xp || []).map(x => ({beat: x.beat, semi: x.semi}));
+  if (!xs.length || xs[0].beat > 1e-6) xs.unshift({beat: 0, semi: 0});
+  if (xs.some(x => Math.abs(x.semi + d) > 12)) { toast('Höchstens ±12 Halbtöne'); return false; }
+  const ok = songEdit('Song transponieren ' + (d > 0 ? '+' : '−') + Math.abs(d), sg => { sg.xp = xs.map(x => ({beat: x.beat, semi: x.semi + d})); });
+  if (ok) gr1XpLive();
+  return !!ok;
+}
+function gr1XpLive() {
+  if (!R.playing || !R.songPlay || !S.song || !AU.ctx) return;
+  const nb = nextBarFromAudible(), sb = songBeatOf(nb); if (sb == null) return;
+  let v = 0; for (const x of S.song.xp || []) { if (x.beat > sb + 1e-6) break; v = x.semi; }
+  xpSet(nb, v);
+}
+const gr1Semi = v => (v > 0 ? '+' : v < 0 ? '−' : '±') + Math.abs(v);
+function gr1XpOpen() {
+  if (!S.song || !S.song.bars) { toast('Erst einen Song bauen'); return; }
+  openPop(null, p => {
+    p.classList.add('msheet', 'gr1sheet'); guardTouch(p);
+    const paint = () => {
+      if (!S.song || !S.song.bars) { closePop(); return; }
+      const i = gr1XpInfo(), vx = i.uniform ? gr1Semi(i.base) : gr1Semi(i.lo) + ' … ' + gr1Semi(i.hi), voc = S.tracks.some(t => t.stimme);
+      p.innerHTML = `<div class="ms-h"><b>SONG TRANSPONIEREN</b><span>· ${i.uniform ? 'ganzer Song ' + esc(vx) + ' HT' : 'Teile verschieden'}</span><button class="rb ms-x" data-gx="x" aria-label="Schließen">✕</button></div>` +
+        `<div class="ms-r gr1-xr"><button class="rb ms-b" data-gx="-1" aria-label="Ganzen Song einen Halbton tiefer">− 1</button>` +
+        `<div class="gr1-xv" aria-live="polite"><b>${esc(vx)}</b><small>Halbtöne</small></div>` +
+        `<button class="rb ms-b" data-gx="1" aria-label="Ganzen Song einen Halbton höher">+ 1</button>` +
+        `<button class="rb ms-b" data-gx="0"${i.uniform && i.base ? '' : ' disabled'} aria-label="Zurück auf 0">Auf 0</button></div>` +
+        `<p class="gr1-tip">Alle Spuren außer Drums und Perkussion, in jedem Teil gleich weit (die Teil-Transposition des Songs). Läuft der Song, ab dem nächsten Takt.` +
+        (voc ? ' Gesang folgt nur bei Takes mit „folgt Transponieren“ (Takes-Blatt).' : '') + `</p>`;
+    };
+    paint(); p._paint = paint;
+    onTap(p, b => {
+      const a = b.dataset.gx; if (a === 'x') { closePop(); return; }
+      const i = gr1XpInfo(), d = a === '0' ? -i.base : +a;
+      if (d && gr1XpShift(d)) { haptic('tick'); const j = gr1XpInfo(); toast('Song ' + (j.uniform ? gr1Semi(j.base) : 'um ' + gr1Semi(d)) + ' Halbtöne', songUndoAct()); }
+      paint(); popDock(p);
+    }, 'button[data-gx]');
+  }, {name: 'gr1xp'});
+  popDock(UI.pop && UI.pop.el);
+}
+/* ---------- Remix-Blatt: Stil · Zwingen · [Remix erzeugen] [A Original] [B Remix] [♩ Tempo] ---------- */
+function gr1RemixOpen(scope) {
+  const song = S.song; if (!song || !song.bars) { toast('Erst einen Song bauen'); return; }
+  const sc = scope || {a: 0, b: song.bars, name: null};
+  openPop(null, p => {
+    p.classList.add('msheet', 'gr1sheet'); guardTouch(p);
+    const paint = () => {
+      const sg = S.song; if (!sg || !sg.bars) { closePop(); return; }
+      const a = Math.min(sc.a, sg.bars - 1), b = sc.name ? Math.min(sc.b, sg.bars) : sg.bars, st = gr1Style(GR1.st) || GR1_STYLES[0], inf = gr1Info(sg, a, b, st.id);
+      const rng = b - a > 1 ? 'Takt ' + (a + 1) + '–' + b : 'Takt ' + (a + 1), has = inf.on > 0 || inf.canB > 0, bOn = inf.on > 0 && !inf.canB;
+      p.innerHTML = `<div class="ms-h"><b>REMIX</b><span>· ${sc.name ? esc(sc.name) + ' · ' : 'ganzer Song · '}${rng}</span><button class="rb ms-x" data-gr="x" aria-label="Schließen">✕</button></div>` +
+        `<div class="gr1-st" role="group" aria-label="Stil">` + GR1_STYLES.map(x => `<button class="rb ms-b${x.id === st.id ? ' on' : ''}" data-gr="st:${x.id}" aria-pressed="${x.id === st.id}">${esc(x.name)}</button>`).join('') + `</div>` +
+        `<div class="v6gl gr1-zr"><span class="lbl">Zwingen</span><div class="seg v6seg">` + GR1_Z.map(v => `<button class="rb${GR1.z === v ? ' on' : ''}" data-gr="z:${v}" aria-label="Zwingen ${v} Prozent" aria-pressed="${GR1.z === v}">${v} %</button>`).join('') + `</div></div>` +
+        `<div class="ms-r gr1-ar"><button class="rb ms-b gr1-go" data-gr="go">${inf.on && inf.styles.includes(st.id) ? 'Neu erzeugen' : 'Remix erzeugen'}</button>` +
+        `<button class="rb ms-b${has && !inf.on ? ' on' : ''}" data-gr="a"${has ? '' : ' disabled'} aria-pressed="${has && !inf.on}">A Original</button>` +
+        `<button class="rb ms-b${bOn ? ' on' : ''}" data-gr="b"${has ? '' : ' disabled'} aria-pressed="${bOn}">B Remix</button>` +
+        `<button class="rb ms-b gr1-bpm" data-gr="bpm"${S.bpm === st.bpm ? ' disabled' : ''} aria-label="Tempo ${st.bpm} BPM übernehmen">♩ ${st.bpm}</button></div>` +
+        `<p class="gr1-tip"><b>${esc(st.name)}</b> · ≈ ${st.bpm} BPM · ${st.sw > .5 ? 'Swing ' + Math.round(st.sw * 100) + ' %' : 'gerade'}. Drums und Bass werden neue Versionen (v2 …) mit deinen Kit-Sounds und Klängen, v1 bleibt das Original. Zwingen rückt die übrigen Spuren auf Raster und Swing des Stils.` +
+        (inf.on ? ` Jetzt: ${inf.on} ${inf.on === 1 ? 'Stelle' : 'Stellen'} im Remix.` : '') + `</p>`;
+    };
+    paint(); p._paint = paint;
+    onTap(p, btn => {
+      const a = btn.dataset.gr, sg = S.song; if (a === 'x') { closePop(); return; }
+      if (!sg || !sg.bars) { closePop(); return; }
+      const A = Math.min(sc.a, sg.bars - 1), B = sc.name ? Math.min(sc.b, sg.bars) : sg.bars, st = gr1Style(GR1.st) || GR1_STYLES[0];
+      if (a.startsWith('st:')) { GR1.st = a.slice(3); haptic('tick'); }
+      else if (a.startsWith('z:')) { GR1.z = +a.slice(2); haptic('tick'); }
+      else if (a === 'go') {
+        if (svRecBusy()) return;
+        const r = gr1Remix(st.id, A, B, GR1.z);
+        if (r && r.ok) {
+          haptic('snap'); svButtons();
+          const parts = []; if (r.dr) parts.push('Drums ' + r.dr); if (r.bass) parts.push('Bass ' + r.bass); if (r.z) parts.push('Zwingen ' + r.z);
+          toast('Remix ' + st.name + (parts.length ? ': ' + parts.join(' · ') : '') + (r.full ? ' · ' + r.full + ' Stellen ohne Platz (höchstens ' + sx9Max() + ' Versionen)' : '') + (R.playing && R.songPlay ? ' – ab dem nächsten Takt' : ''), songUndoAct());
+        } else if (r && (r.dr || r.bass || r.z)) toast('Remix ' + st.name + ' ist schon so');
+        else toast(r && r.ts ? 'Remix nur für Clips im 4/4-Takt' : r && r.full ? 'Kein Platz mehr: höchstens ' + sx9Max() + ' Versionen je Clip' : 'Hier gibt es keine Drum- oder Bass-Clips zum Umbauen');
+      }
+      else if (a === 'a' || a === 'b') { if (svRecBusy()) return; const n = gr1AB(a, A, B, st.id); if (n) { haptic('snap'); svButtons(); toast((a === 'a' ? 'Original' : 'Remix ' + st.name) + ' · ' + n + (n === 1 ? ' Stelle' : ' Stellen') + (R.playing && R.songPlay ? ' – ab dem nächsten Takt' : ''), songUndoAct()); } }
+      else if (a === 'bpm') { const old = S.bpm; setBpm(st.bpm); haptic('tick'); toast('Tempo ' + st.bpm + ' BPM', {label: 'Zurück auf ' + old, fn: () => { setBpm(old); UI.dirty.all = true; if (UI.pop && UI.pop.el === p) { paint(); popDock(p); } }}); UI.dirty.all = true; }
+      if (UI.pop && UI.pop.el === p) { paint(); popDock(p); }
+    }, 'button[data-gr]');
+  }, {name: 'gr1remix'});
+  popDock(UI.pop && UI.pop.el);
+}
+/* ---------- Einhänge-Punkte ---------- */
+// Menü › Projekt: Zeile „Song“ [Remix …] [Transponieren …]
+function gr1MenuRow(sec, row, btn) {
+  if (!(S.song && S.song.bars)) return;
+  const bR = btn('Remix …'), bT = btn('Transponieren …');
+  bR.setAttribute('aria-label', 'Remix des ganzen Songs'); bT.setAttribute('aria-label', 'Ganzen Song transponieren');
+  on(bR, 'click', () => { closeMenu(); gr1RemixOpen(null); });
+  on(bT, 'click', () => { closeMenu(); gr1XpOpen(); });
+  row(sec, 'Song', bR, bT);
+}
+// Marken-Blatt: Zeile „Rhythmus“ [Small] [Full] [Vorschlag] [Remix …] (unter Gleiten)
+function gr1MarkSheetPaint(p, m) {
+  if (p.classList.contains('s0-ed')) return;
+  if (!p._gr1) { p._gr1 = true; onTap(p, b => gr1MarkTap(p, b), 'button[data-gr1]'); }
+  p._gr1m = m.id;
+  const anchor = p.querySelector('.v6gl.ms') || p.querySelector('.sx-kw') || p.querySelector('.ms-bb'); if (!anchor) return;
+  const inf = gr1MarkInfo(S.song, m), sub = l => (l.length ? l.join(' ') : '–');
+  const B = (k, html, on, aria, dis, cls) => `<button class="rb${cls ? ' ' + cls : ''}${on ? ' on' : ''}" data-gr1="${k}" aria-pressed="${!!on}" aria-label="${esc(aria)}"${dis ? ' disabled' : ''}>${html}</button>`;
+  anchor.insertAdjacentHTML('afterend', `<div class="v6gl ms ms-r gr1r"><span class="lbl">Rhythmus</span><div class="seg v6seg">` +
+    B('s', `Small<small>${esc(sub(inf.vs))}</small>`, inf.cur === 's', 'Small: ' + (inf.vs.length ? 'spielt ' + inf.vs.join(', ') : 'noch kein Drum-Clip als Small markiert'), !inf.n, 'gr1sf') +
+    B('f', `Full<small>${esc(sub(inf.vf))}</small>`, inf.cur === 'f', 'Full: ' + (inf.vf.length ? 'spielt ' + inf.vf.join(', ') : 'noch kein Drum-Clip als Full markiert'), !inf.n, 'gr1sf') + `</div>` +
+    B('vs', 'Vorschlag', false, 'Vorschlag: Drum-Clips als Small und Full markieren (dünn = Small)', !inf.n, 'hb gr1b') +
+    B('rx', 'Remix …', false, 'Remix dieses Teils', false, 'hb gr1b') + `</div>`);
+}
+function gr1MarkTap(p, b) {
+  const id = p._gr1m || SV.mark, m = S.song && S.song.marks.find(x => x.id === id); if (!m) return;
+  const a = b.dataset.gr1, nm = markLabel(m), re = () => { if (UI.pop && UI.pop.el === p && p._paint) { p._paint(); popDock(p); } };
+  if (svRecBusy()) return;
+  if (a === 'rx') { closePop(); gr1RemixOpen({a: m.a, b: m.a + m.len, name: nm}); return; }
+  if (a === 's' || a === 'f') {
+    const r = gr1MarkSf(id, a), L = a === 's' ? 'Small' : 'Full';
+    if (r && r.ok) { haptic('tick'); toast(nm + ' ' + L + (r.miss ? ' · ' + r.miss + ' Stelle ohne ' + L + '-Clip' : '') + (R.playing && R.songPlay ? ' – ab dem nächsten Takt' : ''), songUndoAct()); svButtons(); }
+    else if (r && r.miss) toast('Kein Drum-Clip als ' + L + ' markiert – im Clip-Blatt markieren oder [Vorschlag]');
+    else if (r) toast(nm + ' spielt schon ' + L);
+    re(); return;
+  }
+  if (a === 'vs') {
+    const out = gr1Vorschlag(id);
+    if (out && out.length) { haptic('tick'); toast('Vorschlag: ' + out.map(x => 'Sz. ' + (x.s + 1) + ' v' + x.v + ' ' + (x.f === 's' ? 'Small' : 'Full') + (x.neu ? ' (neu, dünn)' : '')).join(' · '), {label: 'Rückgängig', fn: () => undo()}); }
+    else toast('Schon markiert – oder nichts zum Ausdünnen');
+    re();
+  }
+}
+// Clip-Blatt (Szenen-Clip): [Grundmuster ▾] (Drums, Bass) und Small │ Full (Drum-Clips)
+function gr1ClipSheet(g, t, s, clip, reopen) {
+  const tr = S.tracks[t]; if (!tr || !clip || clip.audio || tr.stimme) return;
+  if (gr1PatOk(t, clip)) {
+    const b = el('button', 'hb rb gr1cb', 'Grundmuster ▾'); b.setAttribute('aria-label', 'Grundmuster eines Stils einsetzen');
+    on(b, 'click', () => gr1PatPop(b, t, s, reopen)); g.append(b);
+  }
+  if (isDrum(t)) {
+    const w = el('div', 'gr1-sfc'); w.setAttribute('role', 'group'); w.setAttribute('aria-label', 'Rhythmus Small oder Full');
+    for (const [f, L] of [['s', 'Small'], ['f', 'Full']]) {
+      const on_ = clip.sf === f, b = el('button', 'hb rb' + (on_ ? ' on' : ''), L);
+      b.setAttribute('aria-pressed', String(on_)); b.setAttribute('aria-label', L + (on_ ? ' (an – antippen = aus)' : ''));
+      on(b, 'click', () => { if (gr1ClipSf(t, s, on_ ? null : f)) { haptic('tick'); toast(tr.name + ' · Szene ' + (s + 1) + ': ' + (on_ ? 'ohne Small/Full' : L), {label: 'Rückgängig', fn: () => undo()}); } reopen(); });
+      w.append(b);
+    }
+    g.append(w);
+  }
+}
+// Zell-Blatt im Song (Drum-Spur): die Version an dieser Stelle als Small │ Full markieren
+function gr1CellRow(song, t, vh) {
+  if (!isDrum(t) || !vh) return '';
+  const c = vh.id ? song.own && song.own[vh.id] : S.tracks[t].clips[vh.s]; if (!c) return '';
+  const B = (f, L) => `<button class="rb sx9-v gr1-cv${c.sf === f ? ' on' : ''}" data-a="gr1sf" data-f="${f}" aria-pressed="${c.sf === f}" aria-label="${esc('v' + vh.v + ' als ' + L + (c.sf === f ? ' (an – antippen = aus)' : ''))}">${L}</button>`;
+  return `<div class="sx9-row gr1-cr" role="group" aria-label="Rhythmus"><span class="sx9-l">v${vh.v} ist:</span>` + B('s', 'Small') + B('f', 'Full') + `</div>`;
+}
+function gr1CellTap(a, b, t, bar) {
+  if (a !== 'gr1sf') return false;
+  const song = S.song, vh = song && sx9At(song, t, bar); if (!vh) return true;
+  const c = vh.id ? song.own[vh.id] : S.tracks[t].clips[vh.s], f = b.dataset.f, nf = c && c.sf === f ? null : f, L = f === 's' ? 'Small' : 'Full';
+  const ok = vh.id ? gr1VerSf(vh.id, nf) : gr1ClipSf(t, vh.s, nf);
+  if (ok) { haptic('tick'); toast(S.tracks[t].name + ' v' + vh.v + ': ' + (nf ? L : 'ohne Small/Full'), {label: 'Rückgängig', fn: () => undo()}); svButtons(); }
+  return true;
+}
+(function gr1Css() {
+  try {
+    if (document.getElementById('gr1-css')) return;
+    const s = document.createElement('style'); s.id = 'gr1-css';
+    s.textContent = [
+      '.msheet .gr1r{gap:4px}.msheet .gr1r .lbl{min-width:0}',
+      '.msheet .gr1r .gr1sf{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;line-height:1}',
+      '.msheet .gr1r .gr1sf small{display:block;max-width:100%;font:600 9.5px/1.1 var(--font-ui);color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      '.msheet .gr1r .gr1b{flex:0 1 auto;min-width:72px;height:44px !important;padding:0 8px;font:700 12px/1.1 var(--font-ui);white-space:nowrap}',
+      '.msheet .gr1r button.on,.gr1sheet .ms-b.on{color:#ffcf7a;border-color:#6b4c16;box-shadow:inset 0 0 0 1px #6b4c16}',
+      '.gr1sheet .gr1-st{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin-top:4px}',
+      '.gr1sheet .gr1-st .ms-b{height:44px;line-height:1.05}',
+      '@media (orientation:landscape){.gr1sheet .gr1-st{grid-template-columns:repeat(7,minmax(0,1fr))}}',
+      '.gr1sheet .gr1-zr{margin-top:4px;padding:0}.gr1sheet .gr1-ar{margin-top:4px}.gr1sheet .gr1-ar .gr1-go{flex:1.4 1 0;color:var(--text)}.gr1sheet .gr1-ar .gr1-bpm{flex:.8 1 0}',
+      '.gr1sheet .gr1-xr{margin-top:4px}.gr1sheet .gr1-xv{flex:1.2 1 0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}',
+      '.gr1sheet .gr1-xv b{font:800 18px/1 var(--font-num);color:#ffcf7a}.gr1sheet .gr1-xv small{font:600 10px/1 var(--font-ui);color:var(--text-dim)}',
+      '.gr1-tip{margin:6px 2px 2px;font:600 10.5px/1.3 var(--font-ui);color:var(--text-dim)}.gr1-tip b{color:var(--text)}',
+      '.pop.gr1pat{max-width:min(420px,calc(100vw - 16px))}.pop.gr1pat .plist.mtl b{font:700 12.5px/1.1 var(--font-ui)}',
+      '.cs3 .cgrid .gr1-sfc{display:flex;gap:4px;min-width:0}.cs3 .cgrid .gr1-sfc .hb{flex:1 1 0;width:auto}',
+      '.cs3 .cgrid .gr1-sfc .hb.on,.plsheet .gr1-cv.on{color:#ffcf7a;border-color:#6b4c16;box-shadow:inset 0 0 0 1px #6b4c16}',
+      '.plsheet .gr1-cv{font-size:12px;min-width:64px}',
+    ].join('\n');
+    document.head.appendChild(s);
+  } catch (e) {}
+})();
+const GR1_API = {
+  grStyles: () => GR1_STYLES.map(x => ({id: x.id, name: x.name, bpm: x.bpm, sw: x.sw})),
+  grPattern: (t, s, st) => gr1Pattern(t | 0, s | 0, st),
+  grDrumNotes: (c, st) => gr1DrumNotes(deep(c), gr1Style(st)), grBassNotes: (c, st) => gr1BassNotes(deep(c), gr1Style(st)),
+  grRemix: (st, o) => { o = o || {}; return gr1Remix(st, o.a || 0, o.b, o.z || 0); },
+  grAB: (ab, o) => { o = o || {}; return gr1AB(ab, o.a || 0, o.b, o.st); },
+  grRemixInfo: o => { o = o || {}; const s = S.song; return gr1Info(s, o.a || 0, o.b == null ? (s ? s.bars : 0) : o.b, o.st || GR1.st); },
+  grRemixOpen: o => { gr1RemixOpen(o || null); return !!(UI.pop && UI.pop.name === 'gr1remix'); },
+  grSetUi: o => { if (o && gr1Style(o.st)) GR1.st = o.st; if (o && GR1_Z.includes(o.z)) GR1.z = o.z; return {st: GR1.st, z: GR1.z}; },
+  grClipSf: (t, s, f) => gr1ClipSf(t | 0, s | 0, f), grVerSf: (id, f) => gr1VerSf(id, f),
+  grMarkSf: (id, f) => gr1MarkSf(id, f), grMarkInfo: id => { const m = S.song && S.song.marks.find(x => x.id === id); return m ? gr1MarkInfo(S.song, m) : null; },
+  grVorschlag: id => gr1Vorschlag(id),
+  grXp: d => gr1XpShift(d), grXpInfo: () => gr1XpInfo(), grXpOpen: () => { gr1XpOpen(); return !!(UI.pop && UI.pop.name === 'gr1xp'); },
+};
+Object.assign(SYNQUENZER, GR1_API);                         // GR1: Groove (Grundmuster, Remix, Zwingen, Small/Full, Song transponieren)
+/* GR1-END */
 const NO_SYNC = new Set(['clipCurves', 'bmcLog', 'bmcState', 'oneScaleOf', 'harmInfo', 'kbScaleNow', 'micCheck', 'micCheckJson', 'micCheckEstimate', 'cloud', 'cloudProjects', 'cloudVersions', 'cloudHandoff', 'state', 'project', 'runtime', 'getClip', 'getParam', 'noteLog', 'voices', 'timeline', 'serialize', 'buildMidi', 'buildZip', 'crc32', 'meter', 'outPitch', 'migrate', 'tapTempo',
   'getSound', 'mods', 'library', 'factory', 'previewState', 'soundEdited', 'fmxView', 'fmxPreview', 'fmxBadge',
   'history', 'projects', 'storage', 'engineInfo', 'getBusFx', 'wake', 'gestures', 'roll', 'rollApi', 'detectKey', 'sceneKey',
