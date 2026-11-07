@@ -65,7 +65,7 @@ function midiOns(bytes) {
   const b3 = await popBtn(p, '3×'); await tap(p, b3);
   ok('Menü-Knöpfe ≥ 44 px', await p.evaluate(() => [...document.querySelectorAll('.pop.lf1pop button')].every(x => x.getBoundingClientRect().height >= 43.5 && x.getBoundingClientRect().width >= 43.5)));
   c = await p.evaluate(() => SYNQUENZER.getClip(1, 0));
-  ok('Ratsche 3 gesetzt', c.notes[4].rt === 3, JSON.stringify(c.notes[4]));
+  ok('Wirbel 3 gesetzt', c.notes[4].rt === 3, JSON.stringify(c.notes[4]));
   await p.screenshot({path: out + '/lf1-p-menue.png'});
   await p.evaluate(() => { closePop(); SYNQUENZER.lf1Step(1, 0, 1, 'tp', 12); SYNQUENZER.lf1Step(1, 0, 7, 'pb', .5); });
   c = await p.evaluate(() => SYNQUENZER.getClip(1, 0));
@@ -74,7 +74,7 @@ function midiOns(bytes) {
   const ev0 = await p.evaluate(() => SYNQUENZER.lf1Events(1, 0, 0));
   ok('Ereignisse: stumm fehlt', !ev0.some(e => e.n === 52), JSON.stringify(ev0.map(e => e.n)));
   const r3 = ev0.filter(e => e.n === 55);
-  ok('Ratsche 3 = 3 Schläge', r3.length === 3 && r3[1].t > r3[0].t && r3[2].t > r3[1].t && r3[2].t < 1.25, JSON.stringify(r3));
+  ok('Wirbel 3 = 3 Schläge', r3.length === 3 && r3[1].t > r3[0].t && r3[2].t > r3[1].t && r3[2].t < 1.25, JSON.stringify(r3));
   ok('Transponieren +12', ev0.some(e => e.n === 62) && !ev0.some(e => e.n === 50), '');
   const pb = []; for (let k = 0; k < 16; k++) pb.push((await p.evaluate(k => SYNQUENZER.lf1Events(1, 0, k), k)).some(e => e.n === 60) ? 1 : 0);
   const pb2 = []; for (let k = 0; k < 16; k++) pb2.push((await p.evaluate(k => SYNQUENZER.lf1Events(1, 0, k), k)).some(e => e.n === 60) ? 1 : 0);
@@ -87,7 +87,7 @@ function midiOns(bytes) {
   await p.evaluate(() => SYNQUENZER.stop());
   const bar0 = log.filter(e => e.beat != null && e.beat >= 0 && e.beat < 4 - 1e-6);
   ok('Noten-Log: Schritt 3 (E3) nicht gespielt', log.length > 0 && !log.some(e => e.clipNote === 52), JSON.stringify(log.map(e => e.clipNote)));
-  ok('Noten-Log: Ratsche 3 Schläge in Takt 1', bar0.filter(e => e.clipNote === 55).length === 3, JSON.stringify(bar0.map(e => [e.clipNote, e.beat])));
+  ok('Noten-Log: Wirbel 3 Schläge in Takt 1', bar0.filter(e => e.clipNote === 55).length === 3, JSON.stringify(bar0.map(e => [e.clipNote, e.beat])));
   ok('Noten-Log: +12 klingt als D4', log.some(e => e.clipNote === 62));
   // 4 Richtung per Knopf: rückwärts; Reihenfolge (Durchgang 0: Schritte 16…1 -> Noten ab Schlag 2 rückwärts)
   await p.evaluate(() => { for (let k = 0; k < 3; k++) SYNQUENZER.undo(); });     // Ratsche/Transp./Chance zurück (Schritt 3 bleibt aus)
@@ -126,6 +126,13 @@ function midiOns(bytes) {
   ok('ROLLE zeigt den ausgeschalteten Schritt (Daten)', await p.evaluate(() => SYNQUENZER.getClip(1, 0).notes.filter(n => n.off).length === 1));
   ok('kein Überlauf, ✕ sichtbar (hochkant)', lay.sw <= lay.cw && lay.sh <= lay.ch && lay.x[2] <= 428 && lay.x[1] >= 0, JSON.stringify(lay));
   await p.screenshot({path: out + '/lf1-p-lauf.png'});
+  // 4b live: Start 5 + Wirbel/Transp./Chance -> der Noten-Log in Takt 1 = die Ereignisse von Durchgang 0 (Tonhöhe und Schlag)
+  await p.evaluate(() => { const Q = SYNQUENZER; Q.stop(); Q.clearLog(); Q.launchScene(0); });
+  await sl(2600);
+  const lg = await p.evaluate(() => SYNQUENZER.noteLog(400).filter(e => e.track === 1 && e.src === 'clip' && e.beat != null && e.beat >= -1e-3 && e.beat < 4 - 1e-3).map(e => [e.clipNote, +e.beat.toFixed(3)]));
+  await p.evaluate(() => SYNQUENZER.stop());
+  const ex = (await p.evaluate(() => SYNQUENZER.lf1Events(1, 0, 0))).map(e => [e.n, +e.t.toFixed(3)]);
+  ok('live = Ereignisse (Start 5, Wirbel, +7, Chance)', JSON.stringify(lg) === JSON.stringify(ex), JSON.stringify([lg, ex]));
   // 5 MIDI: Szene 1, Spur 2 = Kanal 2: 7 Noten (Schritt 3 stumm), Schritt 2 dreimal -> 9; Startschritt 5 verschiebt nur die Zeiten
   const mb = await p.evaluate(() => Array.from(SYNQUENZER.buildMidi({mode: 'scene', scene: 0}).bytes));
   const evm = await p.evaluate(() => { const L = Math.max(...S.tracks.slice(0, 5).map(tr => (tr.clips[0] ? clipB(tr.clips[0]) : 0))), o = []; for (let k = 0; k * 4 < L - 1e-9; k++) o.push(...SYNQUENZER.lf1Events(1, 0, k)); return o; });

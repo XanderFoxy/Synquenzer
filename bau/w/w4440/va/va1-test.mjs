@@ -41,7 +41,8 @@ function wav(buf) {
   const ch = dv.getUint16(22, true), sr = dv.getUint32(24, true), bits = dv.getUint16(34, true), n = dv.getUint32(40, true) / (ch * 2);
   let pk = 0; const zc = []; let prev = 0, z = 0, half = Math.floor(n / 2), e1 = 0, e2 = 0;
   for (let i = 0; i < n; i++) { const v = dv.getInt16(44 + i * ch * 2, true), a = Math.abs(v); if (a > pk) pk = a; if ((v >= 0) !== (prev >= 0)) z++; prev = v; if (i < half) e1 += v * v; else e2 += v * v; }
-  return {ch, sr, bits, n, sec: n / sr, db: pk ? +(20 * Math.log10(pk / 32768)).toFixed(1) : -200, zcr: Math.round(z / (n / sr)), rms1: Math.sqrt(e1 / Math.max(1, half)), rms2: Math.sqrt(e2 / Math.max(1, n - half))};
+  const rmsAt = (a, z) => { let e = 0, k = 0; for (let i = Math.round(a * sr); i < Math.min(n, Math.round(z * sr)); i++) { const v = dv.getInt16(44 + i * ch * 2, true); e += v * v; k++; } return Math.round(Math.sqrt(e / Math.max(1, k))); };
+  return {rmsAt, ch, sr, bits, n, sec: n / sr, db: pk ? +(20 * Math.log10(pk / 32768)).toFixed(1) : -200, zcr: Math.round(z / (n / sr)), rms1: Math.sqrt(e1 / Math.max(1, half)), rms2: Math.sqrt(e2 / Math.max(1, n - half))};
 }
 function unzip(buf) {
   const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength), out = []; let o = 0;
@@ -101,11 +102,12 @@ if (vA.b64) {
   ok('Ton in der Datei hörbar (PCM-Spitze > −40 dBFS) und vollständig', pcmA && pcmA.db > -40 && pcmA.frames === a.scnt, pcmA);
   ok('Prüfung „Datei hat Tonspur“ (va1HasSound) = ja', vA.snd === true);
 }
-const vA2 = await video({}, '9:16');
-if (vA2.b64 && vA.b64) {
-  const b1 = B(vA.b64), b2 = B(vA2.b64), a1 = mp4(b1).tracks.find(x => x.handler === 'soun'), a2 = mp4(b2).tracks.find(x => x.handler === 'soun');
-  let same = a1.scnt === a2.scnt; if (same) { const n = 4096; for (let c = 1; c <= Math.min(a1.chunks, 3) && same; c++) { const x = b1.subarray(a1.co[c - 1], a1.co[c - 1] + n), y = b2.subarray(a2.co[c - 1], a2.co[c - 1] + n); same = Buffer.compare(Buffer.from(x), Buffer.from(y)) === 0; } }
-  ok('Deterministisch: zweites Video, gleicher Ton (bitgleich)', same, {n1: a1.scnt, n2: a2.scnt});
+// Ton in der Datei = der Offline-Ton (bitgleich, erste 2 s): das Muxen verändert nichts
+if (vA.b64) {
+  const ref = await p.evaluate(() => window.SYNQUENZER.vvPcm(0, 2)), want = B(ref.b64), buf = B(vA.b64), a = mp4(buf).tracks.find(x => x.handler === 'soun');
+  const got = new Uint8Array(want.length); let o = 0, sci = 0;
+  for (let c = 1; c <= a.chunks && o < want.length; c++) { while (sci + 1 < a.sc.length && a.sc[sci + 1][0] <= c) sci++; const n = Math.min(a.sc[sci][1] * 4, want.length - o); got.set(buf.subarray(a.co[c - 1], a.co[c - 1] + n), o); o += n; }
+  ok('Ton im Video = Offline-Ton des Songs (bitgleich, erste 2 s)', Buffer.compare(Buffer.from(got), Buffer.from(want)) === 0, {bytes: want.length, sr: ref.sr});
 }
 const vO = await video({opus: true}, '16:9');
 if (vO.b64) { const m = mp4(B(vO.b64)), a = m.tracks.find(x => x.handler === 'soun'); ok('AudioEncoder-Weg (Opus): MP4 mit Tonspur (Opus, soun)', m.brand === 'isom' && a && a.entry === 'Opus' && a.scnt > 10 && vO.res.ext === 'mp4', {brand: m.brand, entry: a && a.entry, scnt: a && a.scnt}); }
@@ -115,8 +117,10 @@ if (vF.b64) { const m = mp4(B(vF.b64)), a = m.tracks.find(x => x.handler === 'so
 else ok('AudioEncoder ohne Ton → Rückfall PCM', false, vF.err);
 const vR = await video({noVE: true}, '9:16');
 ok('Aufnahme-Weg (ohne VideoEncoder): Datei mit Tonspur', vR.res && vR.res.how === 'recorder' && vR.snd === true, vR.res ? {mime: vR.res.mime, aChk: vR.res.aChk} : vR.err);
-const vN = await video({noVE: true, va1NoTrack: true}, '9:16');
-ok('Aufnahme-Weg ohne Tonspur: klare Meldung, kein stummes Video', !vN.res && /keine Tonspur/.test(vN.err || ''), vN.err);
+const vN = await video({noVE: true, noDecode: true, va1NoTrack: true}, '9:16');
+ok('Aufnahme-Weg: Datei ohne Tonspur (nicht dekodierbar) → klare Meldung, kein stummes Video', !vN.res && /keine Tonspur/.test(vN.err || ''), vN.err || vN.res);
+const vD = await video({noVE: true, noDecode: true}, '9:16');
+ok('Aufnahme-Weg: nicht dekodierbar, aber Tonspur da → angenommen', vD.res && vD.res.aChk && !vD.res.aChk.noTrack && vD.snd === true, vD.res ? vD.res.aChk : vD.err);
 
 /* ===== 3. Fehler: Clip verschwindet nach WAV-Export (Take lud während des Offline-Durchlaufs) ===== */
 const bug = await p.evaluate(async () => {
@@ -149,7 +153,7 @@ ok('Nach den Exporten: Live-Zustand unverändert (Solo, Gesang an)', solo.solo =
 const ch = await p.evaluate(async st => { const D = window.SYNQUENZER; try { D.g6Make({t: st, s: 0}); const w = await D.g6Wait({t: st, s: 0}); return {w, info: D.va1Info().chor}; } catch (e) { return {err: String(e)}; } }, setup.st);
 if (ch.info) {
   const eC = await exp('chor');
-  if (eC.b64) { const w = wav(B(eC.b64)); ok('Nur Chor: hörbar, nur im ersten Takt (Take 1 hat den Chor, Take 2 nicht)', w && w.db > -50 && w.rms1 > 4 * w.rms2, w); } else ok('Nur Chor', false, eC.r);
+  if (eC.b64) { const w = wav(B(eC.b64)); const b1 = w && w.rmsAt(.3, 1.8), b2 = w && w.rmsAt(2.8, 3.9), lead = wav(B(eL.b64)), l2 = lead.rmsAt(2.8, 3.9); ok('Nur Chor: hörbar im Takt 1 (Take mit Chor); Takt 2 (Take ohne Chor) ohne Lead', w && w.db > -50 && b1 > 300 && b2 < l2 / 4, {takt1: b1, takt2: b2, leadTakt2: l2}); } else ok('Nur Chor', false, eC.r);
   const eL2 = await exp('lead');
   if (eL2.b64 && eL.b64) { const a = wav(B(eL.b64)), c = wav(B(eL2.b64)); ok('Nur Gesang mit Chor im Projekt: Chor bleibt draußen (gleich wie ohne Chor, ±1 dB)', Math.abs(20 * Math.log10(c.rms1 / a.rms1)) < 1, {ohne: Math.round(a.rms1), mit: Math.round(c.rms1)}); }
 } else ok('Chor anlegen (g6Make) für „Nur Chor“', false, ch);
