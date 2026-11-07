@@ -2273,6 +2273,33 @@ a.mbtn[aria-disabled=true]{opacity:.55}
 @media (orientation:landscape) and (max-width:759px){#rollSheet .rinfo{display:none}#rollSheet .rhead .sh-title b{display:none}}
 /* L up to 899 px: compact toolbar buttons, so that [LAUF] … [↶][↷] fit next to the title */
 @media (orientation:landscape) and (max-width:899px){#rollSheet .rhead .pr-bar button{min-width:36px;padding:0 5px;font-size:12px}#rollSheet .rhead .pr-bar{gap:3px}#rollSheet .rhead .pr-bar .sep{margin:0}}
+/* ===== LF1 BEGIN: LAUF wie ein Lauflicht – Schritt aus (gedimmt, schraffiert), Effekt-Marken, Start-Dreieck, [Richtung ▾], Menüs ===== */
+.lauf .se-cell.lf1off .f{opacity:.2!important}
+.lauf .se-cell.lf1off{background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.08) 0 4px,transparent 4px 9px)}
+.lauf .se-cell.lf1off .ln{color:var(--text-faint);text-decoration:line-through}
+.lauf .se-cell .lf1b{position:absolute;left:3px;bottom:3px;z-index:2;padding:2px 3px;border-radius:4px;background:rgba(0,0,0,.62);color:#fff;font:700 9px/1.2 var(--font-num);white-space:pre;text-align:left;pointer-events:none}
+.lauf .se-cell .lf1s{position:absolute;left:3px;top:17px;z-index:2;width:0;height:0;border-left:8px solid var(--sel);border-top:5px solid transparent;border-bottom:5px solid transparent;pointer-events:none}
+.lacts .lf1dir{flex:none;min-width:52px;padding:0 8px;gap:2px}
+.lacts .lf1dir .lf1i{flex:none}
+.lacts .lf1dir .lf1dv{font-size:11px}
+.lacts .lf1dir.lf1on{border-color:var(--sel);color:var(--sel)}
+.pop.lf1pop{width:min(352px,calc(100vw - 16px))}
+.pop .lf1r{display:flex;align-items:center;gap:6px;margin-top:8px}
+.pop .lf1r>.lbl{flex:0 0 50px;font:700 9px/1.15 var(--font-ui);letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim)}
+.pop .lf1r>.plist{flex:1 1 auto;min-width:0}
+.pop .plist.lf1q{grid-template-columns:repeat(4,minmax(0,1fr))}
+.pop .plist.lf1t{grid-template-columns:repeat(5,minmax(0,1fr))}
+.pop .plist.lf1t3{grid-template-columns:48px minmax(0,1fr) 48px}
+.pop .plist.lf1ms{grid-template-columns:repeat(5,minmax(0,1fr))}
+.pop .plist.lf1q button,.pop .plist.lf1t button,.pop .plist.lf1ms button{min-width:44px;padding:0 2px;font-size:12px}
+.pop .plist.lf1one{grid-template-columns:1fr;margin-top:8px}
+.pop .plist.lf1dirs,.pop .plist.lf1sw{grid-template-columns:repeat(2,minmax(0,1fr))}
+.pop .plist.lf1dirs button{gap:6px}
+.pop .plist.lf1sw button{padding:0 6px;font-size:12px}
+.pop .plist button.lf1del{color:var(--rec)}
+.pop .lf1hint{margin:8px 0 0;font:500 11px/1.35 var(--font-ui);color:var(--text-dim)}
+@media (orientation:landscape){.pop.lf1pop{width:min(520px,calc(100vw - 16px))}.pop .plist.lf1sw{grid-template-columns:repeat(3,minmax(0,1fr))}.pop .plist.lf1dirs{grid-template-columns:repeat(4,minmax(0,1fr))}}
+/* ===== LF1 END ===== */
 @media (orientation:portrait) and (max-height:700px){#rollSheet .rhead{height:40px}#rollSheet .pr-bar.prt,#rollSheet .pr>.pr-bar.pra{height:40px}#rollSheet .pr-bar button{height:34px}#rollSheet .pr{--pr-vh:48px}}
 @media (orientation:portrait) and (max-height:600px){#rollSheet .rhead{height:36px}#rollSheet .pr-bar.prt,#rollSheet .pr>.pr-bar.pra{height:38px}#rollSheet .pr-bar button{height:32px}#rollSheet .pr{--pr-vh:40px}#rollSheet .rhead .folc{height:32px}}
 /* ---------- quantize sheet (§3.5): P bottom sheet 300 px over the lower half of the sheet area; L 360 px panel on the right ---------- */
@@ -20115,6 +20142,7 @@ const RecHelpers = (() => {
     btn(acts, 'Dupl.', () => duplicate(), 'Duplizieren (hinter die Auswahl / Clip verdoppeln)');
     btn(acts, 'Quant.', () => { const ns = scope(); if (!ns.length) return; if (opts.onQuant) opts.onQuant(E.sel.size ? ns : null); else act('Quantisieren', x => quantizeNotes(x)); }, 'Quantisieren');
     btn(acts, 'Legato', () => act('Legato', ns => legato(ns)), 'Legato: jede Note bis zur nächsten');
+    for (const x of opts.extraActs || []) A[x.id] = btn(acts, x.label, () => x.fn(A[x.id], scope(), E.sel.size > 0), x.title, x.cls);   // LF1: Aktionen der App (Spielweise)
     sep(acts);
     btn(acts, 'Takte −', () => setLen(clip().len - 1), 'Clip einen Takt kürzer');
     btn(acts, 'Takte +', () => setLen(clip().len + 1), 'Clip einen Takt länger (leer)');
@@ -21722,7 +21750,8 @@ const RecHelpers = (() => {
       if (!g || e.pointerId !== g.id) return;
       if (!g.mode && Math.hypot(e.clientX - g.x0, e.clientY - g.y0) < 10) {   // a tap: on/off, nothing else
         const n = model.get(g.i0), TL = LANES[E.lane];
-        if (TL.tapToggle && n) { TL.set(n, TL.get(n, g.i0) >= .5 ? 0 : 1, g.i0); model.set(g.i0, n); }   // AKZENT / BINDUNG: a tap toggles the flag
+        if (n && !TL.tapToggle && opts.tapOff) { opts.tapOff(n, g.i0); model.set(g.i0, n); }   // LF1: LAUF – ein Tipp schaltet den Schritt aus/an, die Note bleibt
+        else if (TL.tapToggle && n) { TL.set(n, TL.get(n, g.i0) >= .5 ? 0 : 1, g.i0); model.set(g.i0, n); }   // AKZENT / BINDUNG: a tap toggles the flag
         else { model.set(g.i0, n ? null : newNote(g.i0)); if (!n && model.audition) model.audition(g.i0, opts.defVel || .8); }
         g.changed = true;
         if (opts.onTap) opts.onTap(g.i0, !!model.get(g.i0));
@@ -23370,7 +23399,7 @@ function formNorm(f) { return FORM.norm(f); }
   // compact notes in files: [t, d, n, v] (+ {o?, a?, p?, r?, m?, lk?} as a 5th element, §12.1) - about half the size of
   // {t,d,n,v} objects. WP3: the numbers are written exactly as they are (no rounding), so a project reopened from a file,
   // the autosave or [Projekte] is deep-equal to the saved one (§12.7 G3, PF8); values on the grid are short anyway
-  const NOTE_EXTRA = ['o', 'a', 'p', 'r', 'm', 'lk'];       // WP1: extra note fields survive packing (§12.1)
+  const NOTE_EXTRA = ['o', 'a', 'p', 'r', 'm', 'lk', 'off', 'rt', 'tp', 'pb'];       // WP1: extra note fields survive packing (§12.1); LF1: off, rt, tp, pb
   function packNote(n) {
     const a = [n.t, n.d, n.n | 0, n.v]; let x = null;
     for (const k of NOTE_EXTRA) if (n[k] != null) { (x || (x = {}))[k] = typeof n[k] === 'number' ? n[k] : JSON.parse(JSON.stringify(n[k])); }
@@ -27316,6 +27345,7 @@ const newSeed = () => (Math.random() * 2147483647) | 0;
 function normNoteExtras(src, out, kind) {
   if (isNum(src.o) && src.o >= 0) out.o = +(+src.o).toFixed(4);
   if (typeof src.sy === 'string' && kind !== 'drum') { const y = src.sy.replace(/[\s\u0000-\u001f\u007f]/g, '').slice(0, 24); if (y) out.sy = y; }   // G9E: Silbe (G5 „In Melodie umwandeln“)
+  if (kind !== 'drum') lf1NoteNorm(src, out);                       // LF1: Schritt aus, Ratsche, Transponieren, Chance (Synth-Noten)
   if (kind !== 'drum') { const lk = lkNoteNorm(src.lk, null); if (lk) out.lk = lk; return out; }   // I2a: lk.v / lk.k auch an Synth-Noten
   if (src.a) out.a = 1;
   if (isNum(src.p) && src.p < 1) out.p = clamp(Math.round(src.p * 100) / 100, .05, 1);
@@ -27470,6 +27500,7 @@ function normClip(c, kind, pk) {
   if (c.cv) { const cv = cvNorm(c.cv, L); if (cv) out.cv = cv; }                                    // BM8 (§5.4)
   if (cts) out.ts = cts;                                                                              /* T1: Taktart des Clips (4/4 = fehlt) */
   if (c.kl || c.klq != null || c.ln || out.notes.some(n => n.lk && n.lk.k)) lkClipNorm(c, out, kind);   // I2a: kl, klq, ln (fehlen = wie bisher)
+  if (kind !== 'drum' && c.lf) { const lf = lf1NormLf(c.lf); if (lf) out.lf = lf; }   // LF1: Richtung / Startschritt des Laufs (fehlt = wie bisher)
   return out;
 }
 function normTrack(t, def, pk, warns) {
@@ -27821,7 +27852,7 @@ function freshProjectName(d) {
 function newProject(opts) { const p = normalizeProject(newProjectRaw(!!(opts && opts.init))); p.name = freshProjectName(); if (HIST) HIST.mark.set(p, 'new'); return p; }
 const demoProject = () => normalizeProject(demoProjectRaw());
 function cleanKey(k) { const o = {root: k.root, scale: k.scale}; if (k.ref != null) o.ref = k.ref; o.src = k.src || 'auto'; return o; }
-const NOTE_X = ['o', 'a', 'p', 'r', 'm', 'sy'];
+const NOTE_X = ['o', 'a', 'p', 'r', 'm', 'sy', 'off', 'rt', 'tp', 'pb'];   // LF1: off, rt, tp, pb
 function cleanNote(n) { const o = {t: n.t, d: n.d, n: n.n, v: n.v}; for (const k of NOTE_X) if (n[k] != null) o[k] = n[k]; if (n.lk) o.lk = cleanLk(n.lk); return o; }   // I2a: lk.v tief kopiert
 /* D1: Drum-Sequencer – Länge je Spur (Polymeter, 1–64 Schritte) und Richtung. clip.lanes = {gm: {len, dir, seed}}; nur Abweichungen
    vom Standard (len fehlt = Clip-Länge, dir fehlt = vorwärts). Schritt g zählt ab Clip-Start durch (nicht je Clip-Runde): eine Spur mit
@@ -27877,6 +27908,7 @@ function cleanClip(c) {
   if (c.cv) o.cv = cvClone(c.cv);                                // BM8: die Kurven gehen mit jeder Kopie mit
   if (c.ts) o.ts = c.ts;                                          // T1: Taktart des Clips
   if (c.kl || c.klq != null || c.ln) cleanLkClip(c, o);               // I2a
+  if (c.lf) o.lf = Object.assign({}, c.lf);                          // LF1
   return o;
 }
 /* ---------------- BM8 (Nachtrag 7 §5.4): Bend, Rad und Druck im Clip ----------------
@@ -31946,8 +31978,8 @@ function scheduleTrack(i, from, to, late) {
   const um = R.songPlay && S.song && S.song.ue ? ueMutes(i) : null;   // UE: „ersetzt“ – der Groove schweigt im Übergang
   if (clip.ln) { try { scheduleLanes(i, clip, from, to, late); } catch (e) { logErr(e); } }   // I2c: Reihen vor den Noten (gleiches Fenster)
   if (tr.kind === 'drum') { scheduleDrums(i, clip, from, to, late, oc ? 'own' : null, mu, um); return; }
-  const L = clipB(clip), cs = R.cstart[i], sp = spb(), now = AU.ctx.currentTime, ev = new Map();
-  for (const nt of clip.notes) {
+  const cs = R.cstart[i], LF = lf1Win(clip, cs, from, to), L = LF ? 1e9 : clipB(clip), sp = spb(), now = AU.ctx.currentTime, ev = new Map();   // LF1: ein Lauf mit Schritt-Effekten/Richtung kommt als Einzel-Ereignisse (t ab cs; L = 1e9: jedes einmal)
+  for (const nt of LF || clip.notes) {
     if (nt.t >= L - 1e-9) continue;                              // V0a K-06: a note behind the clip end never plays
     let k = Math.ceil((from - cs - nt.t) / L - 1e-9); if (k < 0) k = 0;
     for (let B = cs + nt.t + k * L; B < to - 1e-9; B += L) {
@@ -48393,6 +48425,7 @@ function buildRoll() {
     onPrefs: p => { ROLLP.grid = p.grid; ROLLP.fold = p.fold; },
     onStep: on => { if (on) cancelTapStop(t, s); STEPQ.notes.length = 0; },
     onQuant: sel => openQuantSheet(t, s, sel),
+    extraActs: tr.kind === 'synth' && !percIs(tr) ? [{id: 'lf1sw', label: 'Spielweise', title: 'Spielweise: Gitarren-Strum, Riff, Glissando, Harfe, Glocken … aus den Akkorden (Auswahl, sonst ganzer Clip)', fn: (b, ns, sel) => lf1SwPop(b, t, s, ns, sel)}] : null,   // LF1
     syl: t === MEL_T ? ns => lyNoteSyl(ns, lySylScene(s)) : null,          // G9E: Silben an den Noten
     msKey: kAt, msKeyName: k => keyName(k), msNoteNames: () => noteNames(),   /* MAGIC */
     onTick: () => haptic('tick')});
@@ -48869,6 +48902,7 @@ function buildLauf() {
   const E = StepEditor.create(se, laufModel(t, s), {defVel: LAUF_V, laneDefs: laufLanes(t, s), lanes: ['ton', 'okt', 'vel', 'acc', 'tie'], lane: LAUF.lane,
     tap: (node, fn, sel) => onTap(node, fn, sel), onLane: k => { LAUF.lane = k; },
     reg: folReg('lauf'),
+    tapOff: n => lf1TapOff(t, n),                                  // LF1: Tipp auf einen gesetzten Schritt = aus/an
     onDown: (i, strip) => { if (!strip) { LAUF.sel = LAUF.page * per + i; E.setSel(i); laufNavUpd(); } },
     onVel: (i, n, v0) => velStepHear('l', i, n, v0, t),               /* I2f */
     onTap: () => haptic('tick'),
@@ -48884,6 +48918,7 @@ function buildLauf() {
       cell.classList.toggle('tie', tied); cell.classList.toggle('acc', !!(n && n.v >= .995)); cell.classList.toggle('chr', !!(p && p.chroma));
       if (n && rg) { cell.style.setProperty('--v', (.22 + .78 * clamp((p.idx - rg[0]) / Math.max(1, rg[1] - rg[0]), 0, 1)).toFixed(3)); cell.style.setProperty('--o', (.4 + .6 * n.v).toFixed(2)); }
       cell.classList.toggle('sel', LAUF.page * per + i === LAUF.sel);
+      lf1Deco(cell, n, i, LAUF.page * per + i, cl);                // LF1: aus, Effekt-Marken, Start, [Richtung]
     }});
   E.sel = LAUF.sel - LAUF.page * per;
   // bottom row: [Skala: a-Moll ▾] [Zufall in Tonart] [Leeren]
@@ -48894,6 +48929,7 @@ function buildLauf() {
   acts.append(...laufNavMake(), kbtn, rnd, clr);                  /* I2f: ◀ ▶ vorn, sobald ein Schritt gewählt ist */
   body.appendChild(acts);
   ED.lauf = {se: E, t, s, per, pages, tot: laufTot(c), kbtn, ph: -2, pager, run: -2};
+  lf1LaufAttach(t, s, E, acts, per);                               // LF1: [Richtung ▾] ans Ende, langer Druck = Schritt-Menü
   laufPaint();
   rollKbApply(); rollHeadUpdate(); renderEdChip();
   sh.classList.add('open');
@@ -49059,6 +49095,7 @@ function laufFrame(bAud) {
   if (vs && vs.playing === L.s && bAud >= 0) {
     const len = clipB(c), ph = (((bAud - audCstart(L.t, bAud)) % len) + len) % len; k = Math.floor(ph / LAUFG[LAUF.grid] + 1e-9);
   }
+  if (k >= 0 && c.lf) k = lf1PhK(c, bAud - audCstart(L.t, bAud), k);   // LF1: der Schritt, der mit Richtung/Start gerade spielt
   // V0b FOLGEN in steps: the page = per steps (one bar; half a bar at 1/16T and 1/32)
   if (L.pages > 1) folStep('lauf', k, L.per, LAUF.page * L.per, x => laufSetPage(Math.round(x / L.per))); else FOL.st.lauf = folState('lauf');
   const run = k >= 0 ? Math.floor(k / L.per) : -1;
@@ -49067,6 +49104,401 @@ function laufFrame(bAud) {
   if (run !== L.run) { L.run = run; if (L.pager) L.pager._run(run); }
   folChipPaint('lauf');
 }
+/* ===== LF1 BEGIN (Paket LF1 – LAUF wie ein Lauflicht, Spielweisen auf Abruf; Xander: „Schritte an- und ausschalten … ohne dabei
+   die Note zu löschen … Effekte wie Transpose … rückwärts, an einer bestimmten Note anfangen, hin und her … Strums wie bei einer
+   Gitarre … Harfe … Glockengeläut … typische Spielmuster auf Abruf“)
+   (1) Tipp auf einen gesetzten Schritt (Reiter TON/OKT/VEL) schaltet ihn aus/an – die Note bleibt (note.off = true, gedimmt);
+   (2) langer Druck auf einen Schritt = Schritt-Menü: Ratsche 2/3/4 (note.rt), Transponieren ±Halbtöne/Oktave (note.tp),
+       Chance % (note.pb), Slide (= BINDUNG), Akzent, Hier starten, Löschen;
+   (3) Richtung je Clip (clip.lf = {dir, st, seed, g}): vorwärts · rückwärts · hin und her (wie ALT 1 des Arpeggiators: die Enden
+       einmal) · Zufall (Muster 1–99) und Startschritt; der Schritt-Zähler läuft ab Clip-Start durch (wie D1 bei den Drums);
+   (4) Spielweisen in der ROLLE (Aktionszeile [Spielweise]): aus den Akkorden und der Tonart der Auswahl / des Clips.
+   Alles additiv: ein Clip ohne diese Felder spielt wie bisher (lf1Win = null, der alte Weg). Wiedergabe, Song-Video und
+   MIDI-Export lesen dieselben Ereignisse (lf1Win / lf1Pass): stumme Schritte klingen nirgends; Chance und Zufall hängen nur an
+   Startwert und Schritt (DrumSeq.rand01) – jedes Abspielen und jedes Video gleich. ===== */
+const LF1_DIRS = [['fwd', 'vorwärts'], ['rev', 'rückwärts'], ['pend', 'hin und her'], ['rnd', 'Zufall']];
+const LF1_GRID = {'1/8': .5, '1/16': .25, '1/16T': 1 / 6, '1/32': .125};
+const LF1_SW = [['strD', 'Gitarre: ab'], ['strDU', 'Gitarre: ab-auf'], ['strF', 'Gitarre: Folk'], ['riff', 'Gitarre: Riff'],
+  ['gli', 'Glissando'], ['hArp', 'Harfe: Arpeggio'], ['hGli', 'Harfe: Glissando'], ['bell', 'Glockengeläut'],
+  ['mand', 'Mandoline: Tremolo'], ['albe', 'Klavier: Alberti-Bass'], ['pizz', 'Pizzicato-Ostinato']];
+const LF1_MS = [5, 10, 15, 25, 40];
+const LF1 = {strumMs: 15, sw: null};                          // Strum-Zeit (Ansicht), die offene Spielweise-Sitzung
+const LF1_C = new WeakMap();                                   // clip -> {ns, sig, lsig, L, P}
+// Noten-Felder (Synth, additiv; beim Start schon gebraucht: keine Konstanten dieses Blocks): off · rt 2…4 · tp ±24 · pb .05….99
+function lf1NoteNorm(src, out) {
+  if (src.off === true || src.off === 1) out.off = true;
+  if (isNum(src.rt) && src.rt >= 2) out.rt = clamp(Math.round(src.rt), 2, 4);
+  if (isNum(src.tp) && Math.round(src.tp)) out.tp = clamp(Math.round(src.tp), -24, 24);
+  if (isNum(src.pb) && src.pb < 1) out.pb = clamp(Math.round(src.pb * 100) / 100, .05, .99);
+  return out;
+}
+// clip.lf: nur Abweichungen von „vorwärts ab Schritt 1“ (null = wie bisher); g = Schrittlänge der Richtung (1/16 = fehlt)
+function lf1NormLf(x) {
+  if (!x || typeof x !== 'object' || Array.isArray(x)) return null;
+  const o = {};
+  if (x.dir === 'rev' || x.dir === 'pend' || x.dir === 'rnd') o.dir = x.dir;
+  if (isNum(x.st) && x.st >= 0 && (Math.round(x.st) > 0 || o.dir === 'rev')) o.st = Math.min(4095, Math.round(x.st));
+  if (!o.dir && o.st == null) return null;
+  if (o.dir === 'rnd') o.seed = isNum(x.seed) ? clamp(Math.round(x.seed), 1, 99) : 1;
+  if (x.g === '1/8' || x.g === '1/16T' || x.g === '1/32') o.g = x.g;
+  return o;
+}
+// the play plan of a clip (cached per note content); null = nothing of LF1 in it
+function lf1Plan(c) {
+  if (!c || !Array.isArray(c.notes) || !c.notes.length) return null;
+  const ns = c.notes, lf = c.lf || null; let any = !!lf;
+  for (let k = 0; k < ns.length && !any; k++) { const n = ns[k]; if (n.off || n.rt || n.tp || n.pb != null) any = true; }
+  if (!any) return null;
+  const L = clipB(c); let sig = ns.length * 7 + Math.round(L * 96);
+  for (let k = 0; k < ns.length; k++) { const n = ns[k]; sig = (sig * 31 + n.n * 1009 + Math.round(n.t * 960) * 7 + Math.round(n.d * 960) * 3 + Math.round(n.v * 1000) * 11 + (n.off ? 5 : 0) + (n.rt | 0) * 13 + (n.tp | 0) * 17 + Math.round((n.pb || 0) * 100) * 19) % 2147483647; }
+  const lsig = lf ? [lf.dir, lf.st, lf.seed, lf.g].join(':') : '', rec = LF1_C.get(c);
+  if (rec && rec.ns === ns && rec.sig === sig && rec.lsig === lsig && rec.L === L) return rec.P;
+  const P = lf1Build(ns, L, lf);
+  LF1_C.set(c, {ns, sig, lsig, L, P});
+  return P;
+}
+function lf1Build(ns, L, lf) {
+  const live = ns.filter(n => n.t < L - 1e-9).sort((a, b) => a.t - b.t || a.n - b.n);
+  const map = !!lf, gs = lf && lf.g ? LF1_GRID[lf.g] : .25, T = Math.max(1, Math.round(L / gs));
+  const items = live.map((n, k) => {
+    // the next start in time (the clip loops): span of a ratchet; a tie into the next note is cut back to its own step
+    let nx = null; for (let j = k + 1; j < live.length; j++) if (live[j].t > n.t + 1e-6) { nx = live[j].t; break; }
+    if (nx == null) nx = live[0].t + L;
+    const gap = Math.max(1 / 64, nx - n.t), it = {n, d: n.d, span: Math.min(n.d, gap)};
+    if (map) {
+      const r = Math.round(n.t / gs + 1e-9); it.k = ((r % T) + T) % T; it.f = n.t - r * gs;
+      it.dOwn = n.t + n.d > nx + 1e-6 ? Math.max(1 / 32, gap - Math.min(gs, gap) * .02) : n.d;
+      let j = k - 1; while (j >= 0 && live[j].t > n.t - 1e-6) j--;
+      it.tin = j >= 0 && live[j].t + live[j].d > n.t + 1e-6;         // BINDUNG / Slide in diesen Schritt
+    }
+    return it;
+  });
+  const P = {L, map, gs, T, items, seed: (lf && lf.seed) || 1, dir: (lf && lf.dir) || 'fwd', st: 0, by: null};
+  if (map) {
+    const st = lf.st != null ? lf.st : P.dir === 'rev' ? T - 1 : 0; P.st = ((st % T) + T) % T;
+    P.by = new Map(); for (const it of items) { if (!P.by.has(it.k)) P.by.set(it.k, []); P.by.get(it.k).push(it); }
+  }
+  return P;
+}
+// the source step played at step g (counted from the clip start)
+function lf1Pos(P, g) {
+  const T = P.T; if (T <= 1) return 0;
+  if (P.dir === 'rev') return (((P.st - g) % T) + T) % T;
+  if (P.dir === 'pend') { const M = 2 * T - 2, m = (((g + P.st) % M) + M) % M; return m < T ? m : M - m; }
+  if (P.dir === 'rnd') return g === 0 ? P.st : Math.min(T - 1, Math.floor(DrumSeq.rand01(P.seed, g, 7, 3) * T));
+  return (g + P.st) % T;
+}
+// the events in [a, b) beats from the clip start: plain notes {t, d, n, v, lk …} (stumm weg, Chance, Ratsche, Transponieren, Richtung)
+function lf1Ev(P, a, b) {
+  const out = []; if (!(b > a)) return out;
+  if (!P.map) {
+    const L = P.L, p1 = Math.ceil(b / L);
+    for (let p = Math.max(0, Math.floor(a / L) - 1); p < p1; p++) for (const it of P.items) lf1Emit(P, it, p * L + it.n.t, it.d, p, out, a, b);
+  } else {
+    const gs = P.gs, g1 = Math.ceil(b / gs) + 1;
+    for (let g = Math.max(0, Math.floor(a / gs) - 1); g < g1; g++) {
+      const its = P.by.get(lf1Pos(P, g)); if (!its) continue;
+      const nx = P.by.get(lf1Pos(P, g + 1)), tn = nx ? nx.find(q => q.tin && !q.n.off) : null;   // Slide: reicht in den nächsten Schritt (Spielfolge)
+      for (const it of its) lf1Emit(P, it, g * gs + it.f, tn ? Math.max(it.dOwn, gs - it.f + tn.f + 1 / 64) : it.dOwn, g, out, a, b);
+    }
+  }
+  out.sort((x, y) => x.t - y.t || x.n - y.n);
+  return out;
+}
+function lf1Emit(P, it, t0, d, g, out, a, b) {
+  const n = it.n; if (n.off) return;
+  if (n.pb != null && n.pb < 1 && DrumSeq.rand01(P.seed, g, Math.round(n.t * 96), n.n) >= n.pb) return;
+  const r = n.rt > 1 ? n.rt : 1, sp = P.map ? Math.min(it.dOwn, P.gs) : it.span, pitch = clamp(n.n + (n.tp | 0), 0, 127);
+  for (let m = 0; m < r; m++) {
+    const t = t0 + m * sp / r; if (t < -1e-9 || t < a - 1e-9 || t >= b - 1e-9) continue;
+    const o = Object.assign({}, n); o.t = Math.max(0, t); o.d = Math.max(1 / 64, r > 1 && m < r - 1 ? sp / r * .8 : d - m * sp / r); o.n = pitch;
+    if (m) o.v = Math.round(n.v * 800) / 1000;                 // Ratsche: die Wiederholungen mit 80 % (wie die Drums)
+    delete o.off; delete o.rt; delete o.tp; delete o.pb;
+    out.push(o);
+  }
+}
+// scheduler: the window [from, to) of a clip started at cs (t = beats from cs); null = the clip plays as before
+function lf1Win(c, cs, from, to) { const P = lf1Plan(c); return P ? lf1Ev(P, from - cs, to - cs) : null; }
+// exports (MIDI, video score): the notes of pass p (t inside the pass); null = c.notes as before
+function lf1Pass(c, p) {
+  const P = lf1Plan(c); if (!P) return null;
+  const o = lf1Ev(P, p * P.L, (p + 1) * P.L); for (const x of o) x.t -= p * P.L;
+  return o;
+}
+// LAUF: the step that plays now with direction / start (laufFrame)
+function lf1PhK(c, rel, k) { const P = lf1Plan(c); if (!P || !P.map || rel < 0 || Math.abs(P.gs - LAUFG[LAUF.grid]) > 1e-9) return k; return lf1Pos(P, Math.floor(rel / P.gs + 1e-9)); }
+// Tipp auf einen gesetzten Schritt (StepEditor opts.tapOff): aus <-> an, die Note bleibt; an = kurz hören
+function lf1TapOff(t, n) { if (n.off) { delete n.off; laufHear(t, clamp(n.n + (n.tp | 0), 0, 127), n.v); } else n.off = true; }
+// the cell: stumm (gedimmt), Effekt-Marken (3× · +7 · 50 %), Start-Dreieck; the direction button once per paint
+function lf1Deco(cell, n, i, k, c) {
+  cell.classList.toggle('lf1off', !!(n && n.off));
+  let tx = '';
+  if (n) { if (n.rt > 1) tx += n.rt + '×'; if (n.tp) tx += (tx ? '\n' : '') + (n.tp > 0 ? '+' : MINUS) + Math.abs(n.tp); if (n.pb != null && n.pb < 1) tx += (tx ? '\n' : '') + Math.round(n.pb * 100) + '%'; }
+  let b = cell._lf1b; if (tx && !b) { b = cell._lf1b = el('i', 'lf1b'); cell.appendChild(b); }
+  if (b) { if (b.textContent !== tx) b.textContent = tx; b.hidden = !tx; }
+  const P = c && c.lf ? lf1Plan(c) : null, st = P && P.map && Math.abs(P.gs - LAUFG[LAUF.grid]) < 1e-9 ? P.st : -1;
+  let m = cell._lf1s; if (st === k && !m) { m = cell._lf1s = el('i', 'lf1s'); cell.appendChild(m); }
+  if (m) m.hidden = st !== k;
+  if (i === 0) lf1DirUpd(c);
+}
+function lf1Edit(t, s, label, fn) {
+  const c = S.tracks[t] && S.tracks[t].clips[s]; if (!c) return false;
+  const before = cleanClip(c);
+  if (fn(c) === false) return false;
+  c.notes.sort((a, b) => a.t - b.t);
+  if (JSON.stringify(cleanClip(c)) === JSON.stringify(before)) return false;
+  pushUndo(t, s, before, label); afterClipEdit(t, s); if (ED.lauf) laufPaint();
+  return true;
+}
+// clip.lf ändern (null in patch = Feld weg); die Schrittlänge ist die der LAUF-Ansicht
+function lf1SetLf(c, patch) {
+  const o = Object.assign({}, c.lf || {}, patch); for (const k of Object.keys(patch)) if (patch[k] == null) delete o[k];
+  if (!('g' in patch)) o.g = ED.lauf ? LAUF.grid : (c.lf && c.lf.g) || '1/16';
+  const n = lf1NormLf(o); if (n) c.lf = n; else delete c.lf;
+}
+function lf1StartOf(c) { const P = c && c.lf ? lf1Plan(c) : null; return P && P.map ? P.st : -1; }
+// one step action (menu, test API): a = off · acc · tie · del · rt · tp · pb · start; one undo step each
+function lf1StepDo(t, s, k, a, v) {
+  const lbl = {off: 'Schritt an/aus', acc: 'Akzent', tie: 'Slide', del: 'Schritt löschen', rt: 'Ratsche', tp: 'Transponieren', pb: 'Chance', start: 'Startschritt'}[a];
+  if (!lbl) return false;
+  return lf1Edit(t, s, lbl, c => {
+    if (a === 'start') { lf1SetLf(c, {st: lf1StartOf(c) === k ? null : k}); return; }
+    const n = laufFind(c, k); if (!n) return false;
+    if (a === 'off') { if (n.off) delete n.off; else n.off = true; }
+    else if (a === 'acc') n.v = n.v >= .995 ? laufNormVel(c) : 1;
+    else if (a === 'tie') { if (!laufSetTie(c, n, !laufTied(c, n))) return false; }
+    else if (a === 'del') { if (laufTied(c, n)) laufSetTie(c, n, false); c.notes.splice(c.notes.indexOf(n), 1); }
+    else if (a === 'rt') { if (v > 1) n.rt = clamp(v | 0, 2, 4); else delete n.rt; }
+    else if (a === 'tp') { const x = v === 0 ? 0 : clamp((n.tp | 0) + (v | 0), -24, 24); if (n.n + x < 0 || n.n + x > 127) return false; if (x) n.tp = x; else delete n.tp; }
+    else if (a === 'pb') { if (!(v < 1)) delete n.pb; else n.pb = clamp(Math.round(v * 100) / 100, .05, .99); }
+  });
+}
+// langer Druck (480 ms ohne Bewegung > 8 px) auf einen Schritt: die Geste des StepEditors endet ohne Änderung, das Menü geht auf
+function lf1Hold(E, t, s, per) {
+  const row = E.el.row; let H = null;
+  const stop = () => { if (H) { clearTimeout(H.tm); H = null; } };
+  row.addEventListener('pointerdown', e => {
+    stop(); if (e.button > 0) return;
+    const cell = e.target && e.target.closest ? e.target.closest('.se-cell') : null, i = E.cells.indexOf(cell); if (i < 0) return;
+    H = {id: e.pointerId, x: e.clientX, y: e.clientY, i, tm: setTimeout(() => {
+      const h = H; H = null; if (!h || !ED.lauf || ED.lauf.se !== E) return;
+      E.abort(); armLongPressGuard(); haptic('tick');
+      lf1StepPop(t, s, LAUF.page * per + h.i, E.cells[h.i]);
+    }, 480)};
+  });
+  row.addEventListener('pointermove', e => { if (H && e.pointerId === H.id && Math.hypot(e.clientX - H.x, e.clientY - H.y) > 8) stop(); });
+  for (const ev of ['pointerup', 'pointercancel']) row.addEventListener(ev, e => { if (H && e.pointerId === H.id) stop(); releaseLongPressGuard(); });
+}
+const lf1B = (a, v, label, on, dis, cls) => `<button class="rb${on ? ' on' : ''}${cls ? ' ' + cls : ''}" data-a="${a}" data-v="${v}"${dis ? ' disabled' : ''}>${label}</button>`;
+function lf1StepRender(p, t, s, k) {
+  const c = S.tracks[t] && S.tracks[t].clips[s]; if (!c) { closePop(); return; }
+  const n = laufFind(c, k), nm = n ? (percIs(S.tracks[t]) ? percRowName(n.n) : noteLabel(n.n)) : '–', st0 = lf1StartOf(c) === k;
+  let h = `<h4>Schritt ${k + 1} · ${esc(nm)}${n && n.off ? ' · aus' : ''}</h4>`;
+  if (!n) h += '<p class="lf1hint">Leerer Schritt – antippen setzt eine Note.</p>';
+  else {
+    const tp = n.tp | 0, pb = n.pb == null ? 1 : n.pb, rt = n.rt || 1;
+    h += '<div class="plist lf1q">' + lf1B('off', 0, n.off ? 'Schritt an' : 'Schritt aus', n.off) + lf1B('acc', 0, 'Akzent', n.v >= .995) +
+      lf1B('tie', 0, 'Slide', laufTied(c, n), !laufPrev(c, n)) + lf1B('del', 0, 'Löschen', false, false, 'lf1del') + '</div>';
+    h += '<div class="lf1r"><span class="lbl">Ratsche</span><div class="plist lf1q">' + [1, 2, 3, 4].map(r => lf1B('rt', r, r + '×', rt === r)).join('') + '</div></div>';
+    h += '<div class="lf1r"><span class="lbl">Transp.</span><div class="plist lf1t">' + lf1B('tp', -12, MINUS + '12') + lf1B('tp', -1, MINUS + '1') +
+      lf1B('tp', 0, tp ? (tp > 0 ? '+' : MINUS) + Math.abs(tp) : '±0', !!tp) + lf1B('tp', 1, '+1') + lf1B('tp', 12, '+12') + '</div></div>';
+    h += '<div class="lf1r"><span class="lbl">Chance</span><div class="plist lf1q">' + [1, .75, .5, .25].map(x => lf1B('pb', x, Math.round(x * 100) + ' %', Math.abs(pb - x) < .005)).join('') + '</div></div>';
+  }
+  h += '<div class="plist lf1one">' + lf1B('start', 0, st0 ? 'Start hier – zurück auf normal' : 'Hier starten', st0) + '</div>';
+  p.innerHTML = h;
+}
+function lf1StepPop(t, s, k, anchor) {
+  if (!S.tracks[t] || !S.tracks[t].clips[s]) return;
+  openPop(anchor, p => {
+    p.classList.add('lf1pop'); guardTouch(p); lf1StepRender(p, t, s, k);
+    onTap(p, b => {
+      const a = b.dataset.a, ok = lf1StepDo(t, s, k, a, +b.dataset.v);
+      if (ok) { haptic('tick'); if (a === 'tp' || a === 'off') { const n = laufFind(S.tracks[t].clips[s], k); if (n && !n.off) laufHear(t, clamp(n.n + (n.tp | 0), 0, 127), n.v); } }
+      if (a === 'del' && ok) { closePop(); return; }
+      lf1StepRender(p, t, s, k); popFit(p);
+    }, 'button[data-a]');
+  }, {name: 'lf1step'});
+}
+// [Richtung ▾] am Ende der LAUF-Aktionszeile: Zeichen der Richtung (gezeichnet), hervorgehoben wenn nicht „vorwärts ab 1“
+const LF1_ICON = {
+  fwd: '<path d="M3 8h15M13 3l5 5-5 5"/>', rev: '<path d="M19 8H4M9 3L4 8l5 5"/>', pend: '<path d="M4 8h14M8 4L4 8l4 4M14 4l4 4-4 4"/>',
+  rnd: '<path d="M2 4h4l9 8h4M2 12h4l9-8h4M17 2l2 2-2 2M17 10l2 2-2 2"/>'};
+const lf1Icon = d => `<svg class="lf1i" viewBox="0 0 22 16" width="22" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${LF1_ICON[d] || LF1_ICON.fwd}</svg>`;
+function lf1DirUpd(c) {
+  const b = ED.lauf && ED.lauf.lf1b; if (!b || !c) return;
+  const d = (c.lf && c.lf.dir) || 'fwd', sig = d + (c.lf ? '1' : '0'); if (b._sig === sig) return; b._sig = sig;
+  b.innerHTML = lf1Icon(d) + '<span class="lf1dv">▾</span>'; b.classList.toggle('lf1on', !!c.lf);
+  b.setAttribute('aria-label', 'Richtung: ' + LF1_DIRS.find(x => x[0] === d)[1] + (c.lf && c.lf.st != null ? ', eigener Start' : ''));
+}
+function lf1DirRender(p, t, s) {
+  const c = S.tracks[t] && S.tracks[t].clips[s]; if (!c) { closePop(); return; }
+  const lf = c.lf || {}, dir = lf.dir || 'fwd', st = lf1StartOf(c), T = laufTot(c), stShow = st >= 0 ? st : dir === 'rev' ? T - 1 : 0;
+  let h = '<h4>Richtung des Laufs</h4><div class="plist lf1dirs">' + LF1_DIRS.map(([k, l]) => `<button class="rb${dir === k ? ' on' : ''}" data-a="dir" data-v="${k}">${lf1Icon(k)}<span>${l}</span></button>`).join('') + '</div>';
+  h += '<div class="lf1r"><span class="lbl">Start</span><div class="plist lf1t3">' + lf1B('st', -1, '‹') + lf1B('st0', 0, 'Schritt ' + (stShow + 1), lf.st != null) + lf1B('st', 1, '›') + '</div></div>';
+  if (dir === 'rnd') h += '<div class="lf1r"><span class="lbl">Muster</span><div class="plist lf1t3">' + lf1B('sd', -1, '‹') + lf1B('sd0', 0, 'Muster ' + (lf.seed || 1)) + lf1B('sd', 1, '›') + '</div></div>';
+  h += '<p class="lf1hint">Langer Druck auf einen Schritt: Ratsche, Transponieren, Chance, Slide, hier starten. Tipp auf einen Schritt: aus / an – die Note bleibt.</p>';
+  p.innerHTML = h;
+}
+function lf1DirDo(t, s, a, v) {
+  return lf1Edit(t, s, a === 'dir' ? 'Richtung' : a === 'sd' ? 'Zufall-Muster' : 'Startschritt', c => {
+    const lf = c.lf || {}, T = laufTot(c), st = lf1StartOf(c), cur = st >= 0 ? st : lf.dir === 'rev' ? T - 1 : 0;
+    if (a === 'dir') lf1SetLf(c, {dir: v === 'fwd' ? null : v, seed: v === 'rnd' ? lf.seed || 1 : null});
+    else if (a === 'st') lf1SetLf(c, {st: (((cur + (v | 0)) % T) + T) % T});
+    else if (a === 'st0') lf1SetLf(c, {st: null});
+    else if (a === 'sd') lf1SetLf(c, {seed: ((((lf.seed || 1) - 1 + (v | 0)) % 99) + 99) % 99 + 1});
+    else return false;
+  });
+}
+function lf1DirPop(anchor, t, s) {
+  openPop(anchor, p => {
+    p.classList.add('lf1pop'); guardTouch(p); lf1DirRender(p, t, s);
+    onTap(p, b => { const a = b.dataset.a; if (lf1DirDo(t, s, a, a === 'dir' ? b.dataset.v : +b.dataset.v)) haptic('tick'); lf1DirRender(p, t, s); popFit(p); }, 'button[data-a]');
+  }, {name: 'lf1dir', above: true});
+}
+// LAUF gebaut (buildLauf): [Richtung ▾] ans Ende der Aktionszeile, langer Druck auf die Schritte
+function lf1LaufAttach(t, s, E, acts, per) {
+  if (!ED.lauf || !acts) return;
+  const b = el('button', 'rb lf1dir'); b.setAttribute('aria-label', 'Richtung'); onTap(b, () => lf1DirPop(b, t, s)); acts.appendChild(b);
+  ED.lauf.lf1b = b; lf1DirUpd(S.tracks[t].clips[s]);
+  lf1Hold(E, t, s, per);
+}
+/* ---- Spielweisen (ROLLE, Aktionszeile [Spielweise]): die Noten der Auswahl (sonst des Clips) als Akkorde (gleicher Anschlag
+   ± 1/16 Schlag) -> typische Spielmuster mit den Synths; eine Einzelnote wird zum Dreiklang der Clip-Tonart. Jede Wahl rechnet
+   vom Original der Sitzung aus (Wechseln stapelt nicht) und ist ein Schritt ↶. */
+function lf1Chords(ns, key, L) {
+  const s = ns.filter(n => n.t < L - 1e-9).sort((a, b) => a.t - b.t || a.n - b.n), G = [];
+  for (const n of s) { const g = G[G.length - 1]; if (g && n.t - g.t < 1 / 16) { g.ps.push(n.n); g.e = Math.max(g.e, n.t + n.d); g.v = Math.max(g.v, n.v); } else G.push({t: n.t, e: n.t + n.d, ps: [n.n], v: n.v}); }
+  const SC = Harmony.SCALES[key.scale] || Harmony.SCALES.ionian, N = SC.length;
+  G.forEach((g, k) => {
+    g.ps = [...new Set(g.ps)].sort((a, b) => a - b);
+    if (new Set(g.ps.map(PCx)).size < 2) {                     // Einzelnote: Terz und Quinte der Tonart darüber
+      const n = g.ps[0], r = PCx(n - key.root); let deg = 0; for (let j = 0; j < N; j++) if (SC[j] <= r) deg = j;
+      const ton = n - r + 0, at = q => ton + 12 * Math.floor((deg + q) / N) + SC[(deg + q) % N];
+      g.ps = [n, at(2), at(4)].filter(p => p > n && p <= 127).concat([n]).sort((a, b) => a - b);
+    }
+    const nx = G[k + 1]; g.e = Math.min(L, nx ? Math.max(nx.t, g.t + 1 / 16) : Math.max(g.e, g.t + 1 / 8));
+  });
+  return G;
+}
+function lf1Gen(style, ns, c) {
+  const L = clipB(c), key = c.key || S.key, G = lf1Chords(ns, key, L), out = [], beatS = spb(), SC = Harmony.SCALES[key.scale] || Harmony.SCALES.ionian;
+  const msB = x => x / 1000 / beatS;
+  const add = (t, d, n, v) => { if (t < -1e-9 || t >= L - 1e-6 || n < 0 || n > 127) return; t = Math.max(0, t); out.push({t: +t.toFixed(5), d: +Math.max(1 / 64, Math.min(d, L - t)).toFixed(5), n, v: Math.round(clamp(v, .05, 1) * 1000) / 1000}); };
+  const inScale = p => SC.includes(PCx(p - key.root));
+  for (const g of G) {
+    const pcs = new Set(g.ps.map(PCx)), vb = clamp(g.v / .8, .6, 1.2), span = g.e - g.t;
+    const tones = (lo, hi) => { const o = []; for (let p = Math.max(0, lo); p <= Math.min(127, hi); p++) if (pcs.has(PCx(p))) o.push(p); return o; };
+    const scale = (lo, hi) => { const o = []; for (let p = Math.max(0, lo); p <= Math.min(127, hi); p++) if (inScale(p)) o.push(p); return o; };
+    const bassIn = (lo, hi) => { let b = g.ps[0]; while (b > hi) b -= 12; while (b < lo) b += 12; return b; };
+    // the hits of a pattern [[offset, kind]…] repeated every per beats inside the chord; next = start of the following hit
+    const hits = (pat, per) => { const o = []; for (let b0 = g.t; b0 < g.e - 1e-6; b0 += per) for (const [x, kd] of pat) { const t = b0 + x; if (t < g.e - 1e-6) o.push({t, kd}); } o.forEach((h, j) => { h.next = j + 1 < o.length ? o[j + 1].t : g.e; }); return o; };
+    if (style === 'strD' || style === 'strDU' || style === 'strF') {
+      // Gitarren-Griff: Bass E2…D#3, darüber Akkordtöne mit ≥ 3 Halbtönen Abstand, höchstens 6 Saiten; ab = tief -> hoch, auf = die oberen 4
+      const b = bassIn(40, 51), vo = [b]; for (let p = b + 1; p <= b + 26 && vo.length < 6; p++) if (pcs.has(PCx(p)) && p - vo[vo.length - 1] >= 3) vo.push(p);
+      const pat = style === 'strD' ? [[[0, 'D']], 1] : style === 'strDU' ? [[[0, 'D'], [.5, 'U']], 1] : [[[0, 'D'], [1, 'D'], [1.5, 'U'], [2.5, 'U'], [3, 'D'], [3.5, 'U']], 4];
+      const st = msB(LF1.strumMs);
+      hits(pat[0], pat[1]).forEach((h, j) => {
+        const seq = h.kd === 'D' ? vo : vo.slice(-4).reverse(), v0 = (h.kd === 'D' ? (j === 0 ? .92 : .8) : .62) * vb;
+        seq.forEach((p, q) => add(h.t + q * st, Math.max(.06, h.next - h.t - q * st - .02), p, v0 * (1 - q * .03)));
+      });
+    } else if (style === 'riff') {
+      // Power-Riff in Achteln: Powerchord (Grundton, Quinte, Oktave) und gedämpfte Grundtöne, Oktave und Quinte zum Schluss
+      const r = bassIn(40, 51), st = msB(6);
+      for (const h of hits([[0, 'P'], [.5, 'm'], [1, 'm'], [1.5, 'P'], [2, 'm'], [2.5, 'm'], [3, 'o'], [3.5, 'f']], 4)) {
+        if (h.kd === 'P') [r, r + 7, r + 12].forEach((p, q) => add(h.t + q * st, Math.min(.45, h.next - h.t - .02), p, (h.t === g.t ? .95 : .85) * vb));
+        else add(h.t, h.kd === 'm' ? .18 : Math.min(.4, h.next - h.t - .02), h.kd === 'o' ? r + 12 : h.kd === 'f' ? r + 7 : r, (h.kd === 'm' ? .66 : .8) * vb);
+      }
+    } else if (style === 'gli') {
+      // Glissando (Tasten): schneller Lauf der Tonleiter eine Oktave unter dem Spitzenton hinauf, dann der Akkord
+      const top = g.ps[g.ps.length - 1], run = scale(top - 12, top - 1), len = Math.min(1, span / 2), stp = len / Math.max(1, run.length);
+      run.forEach((p, q) => add(g.t + q * stp, stp * 1.6, p, (.45 + .35 * q / Math.max(1, run.length)) * vb));
+      for (const p of g.ps) add(g.t + len, g.e - g.t - len, p, .86 * vb);
+    } else if (style === 'hArp') {
+      // Harfen-Arpeggio: Akkordtöne über zwei Oktaven hinauf und hinab in Sechzehnteln, die Saiten klingen nach
+      const b = bassIn(48, 59), up = tones(b, b + 24), seq = up.length > 2 ? up.concat(up.slice(1, -1).reverse()) : up;
+      hits([[0, 'x']], .25).forEach((h, j) => { const p = seq[j % seq.length]; add(h.t, Math.min(1.5, g.e - h.t + .25), p, (.55 + .3 * (p - b) / 24) * vb); });
+    } else if (style === 'hGli') {
+      // Harfen-Glissando: die Tonleiter über zwei Oktaven je Schlag hinauf, dann hinab (klingt nach)
+      const b = bassIn(48, 59), up = scale(b, b + 24);
+      hits([[0, 'u'], [1, 'd']], 2).forEach(h => {
+        const seq = h.kd === 'u' ? up : up.slice().reverse(), len = Math.min(1, h.next - h.t), stp = len / Math.max(1, seq.length);
+        seq.forEach((p, q) => add(h.t + q * stp, Math.min(.8, g.e - h.t - q * stp + .2), p, (.5 + .3 * (h.kd === 'u' ? q : seq.length - q) / seq.length) * vb));
+      });
+    } else if (style === 'bell') {
+      // Glockengeläut: große Glocke (Grundton) alle zwei Schläge, darüber ein Geläut der Akkordtöne von oben nach unten in Achteln
+      const big = bassIn(60, 71), peal = tones(72, 89).reverse().slice(0, 5);
+      for (let t = g.t; t < g.e - 1e-6; t += 2) add(t, Math.min(2.5, g.e - t + .5), big, .9 * vb);
+      if (peal.length) for (let t = g.t + .5, j = 0; t < g.e - 1e-6; t += .5, j++) add(t, Math.min(1.5, g.e - t + .5), peal[j % peal.length], (j % 2 ? .56 : .72) * vb);
+    } else if (style === 'mand') {
+      // Mandolinen-Tremolo: die zwei oberen Akkordtöne (D4…A5) als Doppelgriff in Zweiunddreißigsteln, Wechselschlag
+      const tp = tones(62, 81), a = tp[tp.length - 1], b2 = tp.length > 1 ? tp[tp.length - 2] : null, st = msB(4);
+      if (a != null) hits([[0, 'x']], .125).forEach((h, j) => { const v = (j % 2 ? .56 : .7) * vb; add(h.t, .11, a, v); if (b2 != null) add(h.t + st, .1, b2, v * .92); });
+    } else if (style === 'albe') {
+      // Alberti-Bass: tief – hoch – Mitte – hoch in Achteln, enge Lage ab dem Grundton (C3…B3)
+      const lo = bassIn(48, 59), up = tones(lo + 1, lo + 12), mid = up[0] != null ? up[0] : lo + 4, hi = up[1] != null ? up[1] : lo + 7;
+      for (const h of hits([[0, 'l'], [.5, 'h'], [1, 'm'], [1.5, 'h']], 2)) add(h.t, Math.min(.45, h.next - h.t), h.kd === 'l' ? lo : h.kd === 'm' ? mid : hi, (h.kd === 'l' ? .72 : h.kd === 'm' ? .6 : .55) * vb);
+    } else if (style === 'pizz') {
+      // Pizzicato-Ostinato: kurz gezupft Grundton – Quinte – Oktave – Quinte in Achteln, betont auf den Schlägen
+      const r = bassIn(48, 59), f5 = pcs.has(PCx(r + 7)) ? r + 7 : (tones(r + 3, r + 9).pop() || r + 7);
+      for (const h of hits([[0, 'r'], [.5, 'f'], [1, 'o'], [1.5, 'f']], 2)) add(h.t, .12, h.kd === 'r' ? r : h.kd === 'o' ? r + 12 : f5, (Math.abs(h.t - Math.round(h.t)) < 1e-6 ? .84 : .64) * vb);
+    }
+  }
+  return out;
+}
+function lf1SwSession(t, s, ns, sel) {
+  const c = S.tracks[t] && S.tracks[t].clips[s]; if (!c) return null;
+  const idx = ns.map(n => c.notes.indexOf(n)).filter(i => i >= 0);
+  return {t, s, idx, sel: !!sel, orig: c.notes.map(cleanNote), cur: null};
+}
+function lf1SwApply(W, style) {
+  const c = W && S.tracks[W.t] && S.tracks[W.t].clips[W.s]; if (!c || !LF1_SW.some(x => x[0] === style)) return 0;
+  const base = W.orig.map(n => Object.assign({}, n)), set = new Set(W.idx), scoped = base.filter((n, i) => set.has(i)), rest = base.filter((n, i) => !set.has(i));
+  const gen = lf1Gen(style, scoped, c); if (!gen.length) { toast('Keine Akkorde für diese Spielweise'); return 0; }
+  const before = cleanClip(c);
+  c.notes = rest.concat(gen).sort((a, b) => a.t - b.t || a.n - b.n);
+  pushUndo(W.t, W.s, before, 'Spielweise: ' + LF1_SW.find(x => x[0] === style)[1]); afterClipEdit(W.t, W.s);
+  if (ED.roll && ED.rollAt && ED.rollAt.t === W.t && ED.rollAt.s === W.s && !ED.rollAt.own && !ED.rollAt.mel) { try { ED.roll.refresh(); if (W.sel) ED.roll.select(gen); } catch (e) { logErr(e); } }
+  W.cur = style;
+  return gen.length;
+}
+function lf1SwRender(p) {
+  const W = LF1.sw; if (!W) return;
+  const n = W.idx.length;
+  let h = `<h4>Spielweise · ${W.sel ? n + (n === 1 ? ' Note' : ' Noten') + ' der Auswahl' : 'ganzer Clip'}</h4><div class="plist lf1sw">` +
+    LF1_SW.map(([k, l]) => `<button class="rb${W.cur === k ? ' on' : ''}" data-a="sw" data-v="${k}">${l}</button>`).join('') + '</div>';
+  h += '<div class="lf1r"><span class="lbl">Strum</span><div class="plist lf1ms">' + LF1_MS.map(x => lf1B('ms', x, x + ' ms', LF1.strumMs === x)).join('') + '</div></div>';
+  h += '<p class="lf1hint">Aus den Akkorden und der Tonart des Clips. Jede Wahl rechnet vom Original aus und ist ein Schritt ↶.</p>';
+  h += '<div class="plist lf1one">' + lf1B('ok', 0, 'Fertig') + '</div>';
+  p.innerHTML = h;
+}
+// ROLLE: [Spielweise] (PianoRoll opts.extraActs) – ns = Auswahl, sonst alle Noten
+function lf1SwPop(anchor, t, s, ns, sel) {
+  if (!ns || !ns.length) { toast('Erst Noten oder Akkorde setzen'); return; }
+  LF1.sw = lf1SwSession(t, s, ns, sel); if (!LF1.sw) return;
+  openPop(anchor, p => {
+    p.classList.add('lf1pop'); guardTouch(p); lf1SwRender(p);
+    onTap(p, b => {
+      const a = b.dataset.a, W = LF1.sw; if (!W) return;
+      if (a === 'ok') { closePop(); return; }
+      if (a === 'ms') { LF1.strumMs = +b.dataset.v; if (W.cur && W.cur.startsWith('str')) lf1SwApply(W, W.cur); }
+      else if (a === 'sw') { const k = lf1SwApply(W, b.dataset.v); if (k) { haptic('tick'); toast('Spielweise: ' + LF1_SW.find(x => x[0] === b.dataset.v)[1] + ' · ' + k + ' Noten'); } }
+      lf1SwRender(p); popFit(p);
+    }, 'button[data-a]');
+  }, {name: 'lf1sw', above: true, onClose: () => { LF1.sw = null; }});
+}
+const LF1_API = {
+  // LF1 (Tests): Ereignisse eines Durchgangs p (wie gespielt/exportiert), Schritt-Aktion, Richtung, Spielweise, Menüs
+  lf1Events: (t, s, p) => { const c = S.tracks[t] && S.tracks[t].clips[s]; const x = c ? lf1Pass(c, p | 0) : null; return x ? x.map(n => ({t: +n.t.toFixed(5), d: +n.d.toFixed(5), n: n.n, v: n.v})) : null; },
+  lf1Step: (t, s, k, a, v) => lf1StepDo(t, s, k, a, v == null ? 0 : v),
+  lf1Dir: (t, s, patch) => lf1Edit(t, s, 'Richtung', c => { lf1SetLf(c, patch || {}); }),
+  lf1Style: (t, s, style, o) => { o = o || {}; if (o.ms) LF1.strumMs = o.ms; const c = S.tracks[t] && S.tracks[t].clips[s]; if (!c) return 0; const ns = o.idx ? o.idx.map(i => c.notes[i]).filter(Boolean) : c.notes.slice(); return lf1SwApply(lf1SwSession(t, s, ns, !!o.idx), style); },
+  lf1Styles: () => LF1_SW.map(x => ({id: x[0], label: x[1]})),
+  lf1StepMenu: k => { const L = ED.lauf; if (!L) return false; const i = k - LAUF.page * L.per; lf1StepPop(L.t, L.s, k, L.se.cells[i] || null); return !!UI.pop; },
+  lf1DirMenu: () => { const L = ED.lauf; if (!L || !L.lf1b) return false; lf1DirPop(L.lf1b, L.t, L.s); return !!UI.pop; },
+  lf1SwMenu: () => { if (!ED.roll || !ED.rollAt || !ED.roll.el.acts) return false; const b = [...ED.roll.el.acts.children].find(x => x.textContent === 'Spielweise'); if (b) b.click(); return !!UI.pop; },
+  lf1Info: () => ({strumMs: LF1.strumMs, sw: LF1.sw ? {t: LF1.sw.t, s: LF1.sw.s, n: LF1.sw.idx.length, cur: LF1.sw.cur} : null, dirs: LF1_DIRS.map(x => x[0])}),
+};
+/* ===== LF1 END ===== */
 
 /* ---------- quantize sheet (§3.5): Raster, Stärke, Swing, Humanize; previewed live, Anwenden = one undo step ---------- */
 const QS = {open: false};
@@ -51969,7 +52401,7 @@ function buildMidi(opts) {
     S.tracks.forEach((tr, i) => {
       const c = tr.clips[s]; if (!c || !c.notes.length || i >= MIDI_T) return;
       const cL = clipB(c), ch = tr.kind === 'drum' || percIs(tr) ? 9 : i, ded = new Map();   // PERC
-      for (let o = 0; o < L - 1e-9; o += cL) for (const nt of c.notes) {
+      for (let o = 0; o < L - 1e-9; o += cL) for (const nt of lf1Pass(c, Math.round(o / cL)) || c.notes) {   // LF1: wie gespielt
         if (nt.t >= cL - 1e-9) continue;                         // V0a K-06: behind the clip end = never heard, never exported
         const st = o + nt.t; if (st >= L - 1e-9) continue;
         const en = Math.min(L, st + Math.max(nt.d, 1 / 32));
@@ -52044,7 +52476,7 @@ function buildMidiSong(withC) {
     for (const bk of blocks) {
       const c = bk.own && song.own && song.own[bk.own] ? song.own[bk.own] : tr.clips[bk.slot]; if (!c || !c.notes.length) continue;   // V2d′: own clips
       const b0 = bk.start, b1 = Math.min(L, bk.end), cL = clipB(c);
-      for (let o = bk.cs + Math.floor((b0 - bk.cs) / cL + 1e-9) * cL; o < b1 - 1e-9; o += cL) for (const nt of c.notes) {
+      for (let o = bk.cs + Math.floor((b0 - bk.cs) / cL + 1e-9) * cL; o < b1 - 1e-9; o += cL) for (const nt of lf1Pass(c, Math.round((o - bk.cs) / cL)) || c.notes) {   // LF1: wie gespielt
         if (nt.t >= cL - 1e-9) continue;                         // V0a K-06
         const st = o + nt.t; if (st >= b1 - 1e-9 || st < b0 - 1e-9) continue;
         const en = Math.min(b1, st + Math.max(nt.d, 1 / 32));
@@ -67098,7 +67530,7 @@ function vvRoll(g, c, x, y, w, h, col, ph) {
     const L = Math.max(1, clipB(c)); let lo = 127, hi = 0; for (const n of c.notes) { if (n.n < lo) lo = n.n; if (n.n > hi) hi = n.n; }
     const span = Math.max(6, hi - lo + 1), nh = Math.max(1, Math.min(3, h / span));
     g.fillStyle = col;
-    for (const n of c.notes) { if (n.t >= L) continue; const nx = x + n.t / L * w, nw = Math.max(1.2, Math.min(n.d, L - n.t) / L * w); g.fillRect(nx, y + (1 - (n.n - lo + .5) / span) * h - nh / 2, nw, nh); }
+    for (const n of c.notes) { if (n.t >= L || n.off /* LF1 */) continue; const nx = x + n.t / L * w, nw = Math.max(1.2, Math.min(n.d, L - n.t) / L * w); g.fillRect(nx, y + (1 - (n.n - lo + .5) / span) * h - nh / 2, nw, nh); }
   }
   if (ph != null) { g.fillStyle = 'rgba(242,244,248,.85)'; g.fillRect(x + ph * w - .5, y - 1, 1.2, h + 2); }
 }
@@ -70297,6 +70729,7 @@ function vv4RollIn(g, x, y, w, h, st, i, c, C, src) {
   g.globalAlpha = 1; vv4El('Raster', 'PianoRoll Rasterlinien');
   const shown = [];
   for (const nt of c.notes) {
+    if (nt.off) continue;                                          // LF1: stumme Schritte zeigt das Video nicht
     if (nt.t >= L || nt.t + nt.d <= x0 || nt.t >= x0 + pw) continue;
     const nx = xOf(nt.t), nw = Math.max(3, Math.min(nt.d, L - nt.t) * ppb), ny = yOf(nt.n), on = pb >= nt.t && pb < nt.t + nt.d;
     g.fillStyle = col; g.globalAlpha = .45 + .55 * clamp(nt.v == null ? .8 : nt.v, 0, 1);
@@ -70610,7 +71043,7 @@ function vvkScore(a, b) {
     for (const bk of blocks) {
       const c = bk.own && song.own && song.own[bk.own] ? song.own[bk.own] : tr.clips[bk.slot]; if (!c || !c.notes || !c.notes.length) continue;
       const b0 = Math.max(B0, bk.start), b1 = Math.min(B1, bk.end), cL = clipB(c); if (b1 <= b0 || !(cL > 0)) continue;
-      for (let o = bk.cs + Math.floor((b0 - bk.cs) / cL + 1e-9) * cL; o < b1 - 1e-9; o += cL) for (const nt of c.notes) {
+      for (let o = bk.cs + Math.floor((b0 - bk.cs) / cL + 1e-9) * cL; o < b1 - 1e-9; o += cL) for (const nt of lf1Pass(c, Math.round((o - bk.cs) / cL)) || c.notes) {   // LF1: wie gespielt
         if (nt.t >= cL - 1e-9) continue;
         const s = o + nt.t; if (s >= b1 - 1e-9 || s < b0 - 1e-9) continue;
         let p = nt.n;
@@ -73580,6 +74013,7 @@ Object.assign(SYNQUENZER, {                       // BM6 (Nachtrag 7 §5.3): Bit
   bmRoutes: t => bmRoutes(t), bmRouteClear: (t, k) => (bmLoad(), bmRouteClear(t, k)),
   bmInit: (t, kind) => { const s_ = sndOf(t); if (!s_ || s_.engine !== 'bm') throw new Error('Keine ' + BM_NAME + '-Spur: ' + t); return soundEdit(t, 'Init', () => { const snd = deep(s_); snd.p.bm = SQBM.init(kind); applySound(t, snd); return true; }); },
 });
+Object.assign(SYNQUENZER, LF1_API);                       // LF1: Lauf-Schritte, Richtung, Spielweisen (Test-API)
 const NO_SYNC = new Set(['clipCurves', 'bmcLog', 'bmcState', 'oneScaleOf', 'harmInfo', 'kbScaleNow', 'micCheck', 'micCheckJson', 'micCheckEstimate', 'cloud', 'cloudProjects', 'cloudVersions', 'cloudHandoff', 'state', 'project', 'runtime', 'getClip', 'getParam', 'noteLog', 'voices', 'timeline', 'serialize', 'buildMidi', 'buildZip', 'crc32', 'meter', 'outPitch', 'migrate', 'tapTempo',
   'getSound', 'mods', 'library', 'factory', 'previewState', 'soundEdited', 'fmxView', 'fmxPreview', 'fmxBadge',
   'history', 'projects', 'storage', 'engineInfo', 'getBusFx', 'wake', 'gestures', 'roll', 'rollApi', 'detectKey', 'sceneKey',

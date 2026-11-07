@@ -529,6 +529,39 @@ svg{display:block}
 .msheet.uesheet .ue-ll{flex:0 0 auto;font:700 10px/1 var(--font-ui);color:var(--text-dim);padding:0 4px}
 .msheet.uesheet .ms-b.on{border-color:#ffb22e;color:#ffcf7a}
 .msheet.uesheet .ms-x{min-height:44px;min-width:44px}
+/* FX1-BEGIN: Fills/Breaks als Ebene – Raster-Knopf, gewählte Vorlage, Mischen-Chip, freier Chip (Griff rechts), Blatt-Zeilen, Noten-Raster */
+.ue-tile.fll-arm{border-color:#ffb22e;box-shadow:inset 0 0 0 2px #ffb22e,0 0 8px rgba(255,178,46,.45)}
+.fll-grid{flex:0 0 auto;width:64px;min-width:64px;min-height:62px;height:62px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:4px;touch-action:manipulation}
+.fll-grid .fll-gl{font:700 9px/1 var(--font-ui);letter-spacing:.06em;color:var(--text-dim);text-transform:uppercase}
+.fll-grid b{font:800 13px/1 var(--font-num);color:#ffcf7a}
+.ue-chip.fll-mix .ue-cl,.ue-chip.fll-mix .ue-grip{background:rgba(38,28,10,.94);color:#ffcf7a;box-shadow:inset 0 0 0 1.5px #ffb22e}
+.ue-chip.fll-mix .ue-grip i{border-color:#ffcf7a}
+.ue-chip.fll-free{flex-direction:row-reverse}
+.ue-chip.fll-free .ue-grip{border-radius:0 5px 5px 0;border-right:0;border-left:1px solid rgba(27,16,4,.35)}
+.ue-chip.fll-free .ue-cl{border-radius:5px 0 0 5px}
+.ue-chip.fll-free .ue-grip::before{left:-8px;right:-22px}
+.ue-ghost.fll-free{background:rgba(255,178,46,.85);color:#1b1004;border-style:dashed}
+.msheet.uesheet .ms-b.fll-pm{flex:0 0 44px}
+.fll-rows .ms-r,.fll-rows .fll-pg{margin-top:4px}
+.msheet.uesheet .ms-b.fll-n{flex:0 0 44px}
+.msheet.uesheet .ms-b.fll-g{flex:0 0 84px;font-size:11px}
+.fll-at{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;overflow:hidden;white-space:nowrap}
+.fll-at b{font:800 12px/1 var(--font-ui);color:#ffcf7a;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.fll-at small{font:600 10px/1 var(--font-ui);color:var(--text-dim)}
+.fll-pg{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px}
+.msheet .fll-pg .ms-b.fll-pd{position:relative;height:44px;font-size:10.5px;letter-spacing:0;padding:0 2px 0 6px}
+.fll-pg .ms-b.fll-pd::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--pc)}
+.fllsheet .fll-chips{margin-top:4px}
+.fllsheet .fll-chips .chip{min-height:34px}
+.fllsheet .fll-chips .chip.fll-has::after{content:'';position:absolute;right:4px;top:4px;width:6px;height:6px;border-radius:50%;background:var(--pc);box-shadow:0 0 0 1px rgba(0,0,0,.6)}
+.fllsheet .fll-tabs{margin-top:6px}
+.fllsheet .fll-tabs .se-tabs button{min-height:36px;padding:0 9px;font-size:10.5px}
+.fllsheet .fll-se{margin-top:6px;--se-lh:44px}
+.fllsheet .se-cell.fll-off{opacity:.2}
+.fllsheet .fll-pgr{margin-top:6px}
+.fll-pl{flex:0 0 auto;align-self:center;padding:0 6px;font:700 11px/1 var(--font-ui);color:var(--text-dim);white-space:nowrap}
+@media (orientation:landscape){.fll-rows{display:grid;grid-template-columns:1fr 1fr;column-gap:4px}.fll-rows .fll-pg{grid-column:1/-1;grid-template-columns:repeat(12,minmax(0,1fr))}.fllsheet .fll-chips .chip{min-height:30px}}
+/* FX1-END */
 /* ---------- song view (§3.9, WP6): replaces the clip grid in the grid area ---------- */
 .corner.sw{flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:0 4px;font:700 11px/1 var(--font-ui);letter-spacing:.06em;color:var(--text);min-height:0;height:100%}
 .corner.sw .swl{white-space:nowrap}
@@ -71439,6 +71472,398 @@ const UE_API = {
   ueHits: () => { ueFresh(); return UE.hits.map(h => ({sb: h.sb, n: h.n, v: h.v, t: h.t, id: h.id})); },
   ueInfo: () => ({bar: !!(UE.bar && !UE.bar.hidden), tab: UE.tab, drag: UE.drag ? {kind: UE.drag.kind, m: UE.drag.m, over: UE.drag.over} : null, chips: [...UE.chips.keys()], pend: UE.pend.length}),
 };
+
+/* ===================== FX1-BEGIN (Paket FX1, Xander 07.11.): Fills und Breaks als eigene Ebene über dem Drum-Clip =====================
+   „Fills und Überblendungen als eigene Layer, Modus ersetzen oder dazumischen“ · „Snare-Bug: beim Tom-Fill verschwindet die Snare im
+   Überblendbereich“ · „Fills frei platzierbar, auch innerhalb der Clips/Takte, nachträglich editierbar“.
+   Die Ebene ist ein Eintrag in song.ue (UE-A/B, §1.5), nur additiv ergänzt (Format bleibt; ein Song ohne Übergänge speichert nichts Neues):
+     at    – frei gesetzt: Start als Song-Schlag (a = 0), unabhängig von Kanten und Taktstrichen (Raster 1/4 · 1/8 · 1/16 · frei)
+     mode  – 'ersetzt' (Ersetzen) | 'dazu' (Mischen); 'ersetzen' / 'mischen' werden beim Laden übernommen
+     pads  – nur bei Ersetzen: die Pads (GM-Nummern) des Drum-Clips, die im Bereich schweigen; fehlt = alle (Stopps, Breaks wie bisher).
+             Ein Fill (k fill/tom/build) ohne pads ersetzt nur die Pads, die er selbst spielt – das behebt den Snare-Fehler (der Tom-Fill
+             nahm dem Groove alles, auch die Snare). „Alle“ in der Bedienung speichert die 12 Pads ausdrücklich.
+     notes – die eigenen Noten (Drum-Clip-Noten, t ab dem Start der Ebene); bearbeitet im Schritt-Raster des Drum-Editors (StepEditor).
+   Abspielen (ueBuild/ueMutes/ueMutedAt pad-genau), Video-Ton (Offline-Render über denselben Scheduler) und MIDI-Export „Song“ nehmen
+   die Ebene mit. Raster und gewählte Vorlage sind Bedienung (nie im Projekt). ---------- */
+const FLL_GRID = [['1/4', 1], ['1/8', .5], ['1/16', .25], ['frei', 0]];
+const FLL_FILLK = new Set(['fill', 'tom', 'build']);
+const FLL_TOMS = [45, 47, 50];
+const FLL = {grid: 2, arm: null, pads: false, page: 0, pad: 0, ed: null, lsn: false};
+try { const v = localStorage.getItem('synq-fll-grid'); if (v != null && /^[0-3]$/.test(v)) FLL.grid = +v; } catch (e) {}
+const fllStepB = () => FLL_GRID[FLL.grid][1];
+const fllGridName = () => FLL_GRID[FLL.grid][0];
+const fllNum = v => String(+(+v).toFixed(3)).replace('.', ',');
+const fllLenTxt = b => (Math.abs(b - 1) < 1e-9 ? '1 Schlag' : fllNum(b) + ' Schläge');
+const fllAll = () => DRUM_GMS.slice().sort((p, q) => p - q);
+const fllOwnPads = e => [...new Set((e.notes || []).map(n => mapV1Drum(Math.round(n.n))))].sort((p, q) => p - q);
+// Schlag → Raster, gezählt vom Taktstrich seines Takts (Taktarten: Taktkarte); frei = 1/48 Schlag
+function fllSnap(b, q) {
+  if (!isNum(b)) return 0;
+  q = q == null ? fllStepB() : q; if (!(q > 0)) q = 1 / 48;
+  const a = barBeat(barAt(Math.max(0, b)));
+  return +Math.max(0, a + Math.round((b - a) / q) * q).toFixed(4);
+}
+// der nächste Rasterpunkt in Richtung dir (vom Taktstrich aus gezählt)
+function fllStepTo(st, dir, q) {
+  const a = barBeat(barAt(st + 1e-6)), k = (st - a) / q;
+  return +(a + (dir > 0 ? Math.floor(k + 1e-6) + 1 : Math.ceil(k - 1e-6) - 1) * q).toFixed(4);
+}
+function fllWhere(b) { const bar = barAt(b + 1e-6); return 'Takt ' + (bar + 1) + ' · Schlag ' + fllNum(b - barBeat(bar) + 1); }
+// ueNorm (laden, Undo, nach jeder Änderung): Mischen-Alias, Pads nur beim Ersetzen; ein Fill ohne Pads ersetzt seine eigenen Pads
+function fllNorm(e, x) {
+  if (e.mode === 'mischen') x.mode = 'dazu';
+  if (x.mode !== 'ersetzt' || x.k === 'break') return;
+  if (Array.isArray(e.pads)) {
+    const s = [...new Set(e.pads.filter(isNum).map(v => Math.round(v)).filter(v => DRUM_GMS.includes(v)))].sort((p, q) => p - q);
+    if (s.length) { x.pads = s; return; }
+  }
+  if (FLL_FILLK.has(x.k) && x.notes.length) x.pads = fllOwnPads(x);
+}
+// ueBuild: die Pads eines „ersetzt“-Fensters (null = alle)
+function fllPadSet(e) { return Array.isArray(e.pads) && e.pads.length && e.pads.length < DRUM_GMS.length ? new Set(e.pads) : null; }
+function fllPadsName(list) {
+  if (!list || !list.length || list.length >= DRUM_GMS.length) return 'alle';
+  if (list.every(g => FLL_TOMS.includes(g))) return 'Toms';
+  if (list.length <= 2) return list.map(g => (DRUM_BY_GM[g] ? DRUM_BY_GM[g].sl : String(g))).join(' + ');
+  return list.length + ' Pads';
+}
+/* ---------- Bearbeiten (je Aktion ein Undo-Schritt; verknüpfte Kopien wie in UE-B über ueEditGroup) ---------- */
+// API fllPlace(libId, beat): eine Vorlage frei an Song-Schlag beat (Start), auch mitten im Takt / im Clip
+function fllPlace(libId, beat, o) {
+  const L = ueLib(libId), song = S.song; if (!L || !song || R.songRec || !isNum(beat)) return null;
+  const b = +Math.max(0, beat).toFixed(4); if (b >= barBeat(song.bars) - 1e-6) return null;
+  let id = null;
+  const ok = songEdit(L.name + ' · ' + fllWhere(b), s => {
+    const e = Object.assign({id: ueNewId(s), at: b}, ueFromLib(L, o)); e.a = 0; id = e.id;
+    (s.ue || (s.ue = [])).push(e);
+  });
+  return ok ? id : null;
+}
+// frei an einen Song-Schlag (ein Kanten-Übergang wird dabei frei; die Verknüpfung löst sich)
+function fllMoveFree(id, beat) {
+  const e0 = ueFind(id), song = S.song; if (!e0 || !song || R.songRec || !isNum(beat)) return false;
+  const b = +Math.max(0, beat).toFixed(4); if (b >= barBeat(song.bars) - 1e-6) return false;
+  return !!songEdit(ueName(e0) + ' → ' + fllWhere(b), s => { const e = s.ue.find(x => x.id === id); if (!e) return; delete e.m; delete e.g; e.at = b; e.a = 0; });
+}
+// ◀ ▶: um einen Rasterschritt (frei: 1/8 Schlag); an einer Kante bleibt er an der Kante (a), frei wandert at
+function fllNudge(id, dir) {
+  const e0 = ueFind(id), song = S.song; if (!e0 || !song || R.songRec) return false;
+  const st = ueStart(song, e0); if (st == null) return false;
+  const nb = fllStepTo(st, dir, fllStepB() || .125); if (nb < 0 || nb >= barBeat(song.bars) - 1e-6) return false;
+  if (e0.m == null) return !!songEdit(ueName(e0) + ' → ' + fllWhere(nb), s => { const e = s.ue.find(x => x.id === id); if (e) e.at = nb; });
+  const d = nb - st;
+  return ueEditGroup(id, ueName(e0) + ' → ' + fllWhere(nb), x => { x.a = +clamp((x.a || 0) + d, -64, 64).toFixed(4); });
+}
+// Länge − / +: auf den Rasterschritt (frei: 1/16)
+function fllLenStep(id, dir) {
+  const e = ueFind(id); if (!e || R.songRec) return false;
+  const q = fllStepB() || .25, L = dir > 0 ? (Math.floor(e.len / q + 1e-6) + 1) * q : (Math.ceil(e.len / q - 1e-6) - 1) * q;
+  if (L < Math.min(q, 1 / 16) - 1e-9 || L > 64) return false;
+  return ueSetLen(id, +L.toFixed(4));
+}
+function fllSetMode(id, mode) {
+  mode = mode === 'mischen' || mode === 'dazu' ? 'dazu' : 'ersetzt';
+  const e0 = ueFind(id); if (!e0 || e0.mode === mode || R.songRec) return false;
+  return ueEditGroup(id, ueName(e0) + ': ' + (mode === 'dazu' ? 'Mischen' : 'Ersetzen'), x => { x.mode = mode; delete x.pads; });
+}
+// was = 'all' | 'fill' | GM-Nummer (umschalten) | Liste
+function fllSetPads(id, what) {
+  const e0 = ueFind(id); if (!e0 || e0.mode !== 'ersetzt' || e0.k === 'break' || R.songRec) return false;
+  const cur = e0.pads && e0.pads.length ? e0.pads.slice() : fllAll();
+  let nx;
+  if (what === 'all') nx = fllAll();
+  else if (what === 'fill') { nx = fllOwnPads(e0); if (!nx.length) nx = fllAll(); }
+  else if (Array.isArray(what)) nx = what.filter(isNum).map(v => Math.round(v)).filter(v => DRUM_GMS.includes(v));
+  else if (isNum(what)) { const g = Math.round(what); if (!DRUM_GMS.includes(g)) return false; nx = cur.includes(g) ? cur.filter(v => v !== g) : cur.concat([g]); }
+  else return false;
+  nx = [...new Set(nx)].sort((p, q) => p - q);
+  if (!nx.length) { lcdOrToast('Mindestens ein Pad – sonst Mischen wählen'); return false; }
+  if (nx.join() === cur.join() && e0.pads) return false;
+  return ueEditGroup(id, ueName(e0) + ': ersetzt ' + fllPadsName(nx), x => { x.pads = nx.slice(); });
+}
+// Break: es schweigen die Drums (Drop) oder alle Spuren außer Gesang (Stille)
+function fllStopAll() { const o = []; for (let i = 0; i < NT(); i++) if (!isStimmeT(i)) o.push(i); return o; }
+function fllSetStop(id, all) {
+  const e0 = ueFind(id); if (!e0 || R.songRec) return false;
+  return ueEditGroup(id, ueName(e0) + ': ' + (all ? 'alle Spuren still' : 'Drums still'), x => { x.stop = all ? fllStopAll() : [x.t]; });
+}
+function fllGridCycle() {
+  FLL.grid = (FLL.grid + 1) % FLL_GRID.length;
+  try { localStorage.setItem('synq-fll-grid', String(FLL.grid)); } catch (e) {}
+  if (UE.bar && !UE.bar.hidden) fllBarPaint(UE.bar);
+  lcdOrToast('Raster ' + fllGridName()); haptic('tick');
+  return fllGridName();
+}
+/* ---------- Vorlage wählen (Tipp auf eine Kachel) → Tipp in den Song setzt sie an die Stelle (nach Raster) ---------- */
+function fllArm(lib) {
+  const L = ueLib(lib); if (!L) return;
+  FLL.arm = FLL.arm === lib ? null : lib;
+  if (FLL.arm) { fllLsn(); lcdOrToast(L.name + ': in den Song tippen · Raster ' + fllGridName()); }
+  if (UE.bar && !UE.bar.hidden) fllBarPaint(UE.bar);
+}
+function fllDisarm() { if (!FLL.arm) return; FLL.arm = null; if (UE.bar) fllBarPaint(UE.bar); }
+// gewählt endet mit jedem anderen Tipp (außer Kacheln und Song-Raster)
+function fllLsn() {
+  if (FLL.lsn) return; FLL.lsn = true;
+  document.addEventListener('pointerdown', ev => {
+    if (!FLL.arm) return;
+    const t = ev.target;
+    if (t && t.closest && (t.closest('.ue-tiles') || (SV.wrap && SV.wrap.contains(t) && !t.closest('.ue-chip')))) return;
+    fllDisarm();
+  }, true);
+}
+function fllBarPaint(bar) {
+  const tl = bar && bar.lastChild; if (!tl) return;
+  let gb = tl.querySelector('.fll-grid');
+  if (!gb) { gb = el('button', 'rb fll-grid'); tl.insertBefore(gb, tl.firstChild); onTap(gb, () => fllGridCycle()); }
+  const gn = fllGridName(), h = `<span class="fll-gl">Raster</span><b>${gn}</b>`;
+  if (gb.innerHTML !== h) gb.innerHTML = h;
+  gb.setAttribute('aria-label', 'Raster ' + gn + ' – antippen: wechseln (1/4 · 1/8 · 1/16 · frei)');
+  for (const t of tl.querySelectorAll('.ue-tile')) {
+    const on = t.dataset.id === FLL.arm; t.classList.toggle('fll-arm', on); t.setAttribute('aria-pressed', String(on));
+    const L = ueLib(t.dataset.id); if (L) t.setAttribute('aria-label', L.name + ', ' + ueLenAria(L.len) + ' – antippen: vorhören und wählen, dann in den Song tippen; ziehen: auf eine Kante oder frei ablegen');
+  }
+}
+// svTap: der Tipp setzt die gewählte Vorlage (Start = Stelle nach Raster); die Taktleiste bleibt, was sie ist
+function fllSvTap(x, y) {
+  if (!FLL.arm || !UE.bar || UE.bar.hidden || !UI.songView) { FLL.arm = null; return false; }
+  if (y < SV.rulerH) { fllDisarm(); return false; }
+  if (svRecBusy()) return true;
+  const song = S.song; if (!song || !song.bars) { toast('Noch kein Song – erst ● SONG'); return true; }
+  const b = fllSnap(barBeat((x + SV.x) / SV.cellW)), lib = FLL.arm;
+  fllDisarm();
+  const id = fllPlace(lib, b);
+  if (id) { UE.lastDrop = id; toast(ueName(ueFind(id)) + ' · ' + fllWhere(b), songUndoAct()); haptic('tick'); }
+  else lcdOrToast('Hier geht es nicht – hinter dem Song-Ende');
+  return true;
+}
+/* ---------- Ziehen: neben einer Kante = frei (Kachel: Start unter dem Finger; Chip: Abstand Finger–Start bleibt) ---------- */
+function fllDragFree(d, x, y) {
+  const was = d.fb; d.fb = null;
+  if (d.st === 'drag' && !d.m && d.over && d.e && S.song && S.song.bars && SV.wrap) {
+    const r = SV.wrap.getBoundingClientRect(), at = cx => barBeat((cx - r.left + SV.x) / SV.cellW);
+    if (d.fo == null) { const st = d.kind === 'chip' ? ueStart(S.song, d.e) : null; d.fo = st != null ? at(d.x0) - st : 0; }
+    const b = fllSnap(at(x) - d.fo);
+    if (b < barBeat(S.song.bars) - 1e-6) d.fb = b;
+  }
+  if (d.ghost) {
+    d.ghost.classList.toggle('fll-free', d.fb != null);
+    const sm = d.ghost.querySelector('small'), t = d.fb != null ? fllWhere(d.fb) : ueLenTxt(d.e ? d.e.len : 0);
+    if (sm && sm.textContent !== t) sm.textContent = t;
+  }
+  if (d.fb !== was) UI.dirty.song = true;
+}
+function fllDrop(d, g) {
+  if (d.fb == null || !S.song) return false;
+  ueGone(g);
+  if (d.kind === 'tile') {
+    const id = fllPlace(d.lib, d.fb); if (!id) return true;
+    UE.lastDrop = id; toast(ueName(ueFind(id)) + ' · ' + fllWhere(d.fb), songUndoAct()); haptic('tick');
+    return true;
+  }
+  if (fllMoveFree(d.ue, d.fb)) { toast(d.name + ' → ' + fllWhere(d.fb), songUndoAct()); haptic('tick'); }
+  return true;
+}
+// ueSvDraw: Mischen = gestrichelter Rahmen über der Schraffur; beim freien Ziehen die Stelle (Linie + Schraffur)
+function fllSvDraw(g, song, XB, ru, rh, W, H, hatch) {
+  const dr = SV.rows.indexOf(DRUM_T), d = UE.drag; if (dr < 0) return;
+  const y = ru + dr * rh;
+  if (song.ue) for (const e of song.ue) {
+    if (e.mode !== 'dazu' || (d && d.kind === 'chip' && d.ue === e.id)) continue;
+    const s = ueStart(song, e); if (s == null) continue;
+    const xa = XB(s), xb = XB(s + e.len); if (xb < 0 || xa > W) continue;
+    g.save(); g.setLineDash([4, 3]); g.strokeStyle = 'rgba(255,207,122,.95)'; g.lineWidth = 1.5; g.strokeRect(xa + .75, y + 2.75, Math.max(1, xb - xa - 1.5), Math.max(1, rh - 5.5)); g.restore();
+  }
+  if (d && d.st === 'drag' && !d.m && d.fb != null && d.e) {
+    hatch(d.fb, d.fb + d.e.len, y + 1, rh - 2, 'rgba(255,178,46,A)');
+    g.fillStyle = '#ffb22e'; g.fillRect(XB(d.fb) - 1, 0, 2, H);
+  }
+}
+// ueChipsSync: Mischen = heller Rahmen-Chip, frei = Griff rechts (Länge nach rechts)
+function fllChip(c, e) {
+  const mix = e.mode === 'dazu', fr = e.m == null;
+  if (c.classList.contains('fll-mix') !== mix) c.classList.toggle('fll-mix', mix);
+  if (c.classList.contains('fll-free') !== fr) c.classList.toggle('fll-free', fr);
+  if (fr) { const a = c.getAttribute('aria-label'); if (a && a.indexOf('Griff links') >= 0) c.setAttribute('aria-label', a.replace('Griff links', 'Griff rechts')); }
+}
+// Griff eines frei gesetzten Fills: Länge nach Raster (frei: 1/16 Schlag), wächst nach rechts; loslassen = 1 Undo
+function fllGripArm(c, ev) {
+  const id = c.dataset.id, e = ueFind(id); if (!e || e.m != null || R.songRec || !SV.wrap || ueStart(S.song, e) == null) return false;
+  const r = SV.wrap.getBoundingClientRect(), at = cx => barBeat((cx - r.left + SV.x) / SV.cellW), b0 = at(ev.clientX);
+  const d = {id: ev.pointerId, ue: id, len: e.len, len0: e.len, node: c};
+  try { c.setPointerCapture(ev.pointerId); } catch (_) {}
+  const mv = q => {
+    if (q.pointerId !== d.id) return;
+    const st = fllStepB() || 1 / 16; let L = Math.round((d.len0 + at(q.clientX) - b0) / st) * st; L = +clamp(L, Math.max(1 / 16, st), 64).toFixed(4);
+    if (Math.abs(L - d.len) > 1e-9) { d.len = L; haptic('tick'); }
+    UE.grip = d; UI.dirty.song = true;
+  };
+  const end = (q, ok) => {
+    if (q.pointerId !== d.id) return;
+    c.removeEventListener('pointermove', mv); c.removeEventListener('pointerup', upF); c.removeEventListener('pointercancel', ccF);
+    try { c.releasePointerCapture(d.id); } catch (_) {}
+    UE.grip = null; UI.dirty.song = true; gestEnd(d.id);
+    if (ok && Math.abs(d.len - d.len0) > 1e-9 && ueSetLen(id, d.len)) toast(ueName(ueFind(id)) + ' · ' + fllLenTxt(d.len), songUndoAct());
+  };
+  const upF = q => end(q, true), ccF = q => end(q, false);
+  c.addEventListener('pointermove', mv); c.addEventListener('pointerup', upF); c.addEventListener('pointercancel', ccF);
+  gestBegin(d.id, () => end({pointerId: d.id}, false));
+  UE.grip = d;
+  return true;
+}
+/* ---------- Chip-Blatt: Stelle ◀ ▶ + Raster, Länge − +, Ersetzen | Mischen, welche Pads, Noten … ---------- */
+function fllSheetRows(p, e) {
+  const song = S.song; if (!song) return;
+  if (p._fllId == null) FLL.pads = false;                       // ein neues Blatt: Pad-Liste zu
+  const brk = e.k === 'break', st = ueStart(song, e), gn = fllGridName();
+  const B = (a, html, o) => `<button class="rb ms-b${o && o.on ? ' on' : ''}${o && o.cls ? ' ' + o.cls : ''}" data-fl="${a}"${o && o.dis ? ' disabled' : ''}${o && o.aria ? ' aria-label="' + esc(o.aria) + '"' : ''}>${html}</button>`;
+  const hs = p.querySelector('.ms-h span'); if (hs && e.m == null && st != null) hs.textContent = '· frei · ' + fllWhere(st);
+  const lr = p.querySelector('.ue-lr'); if (!lr) return;
+  lr.insertAdjacentHTML('beforeend', B('l-', '−', {cls: 'fll-pm', aria: 'Kürzer (Raster ' + gn + ')'}) + B('l+', '+', {cls: 'fll-pm', aria: 'Länger (Raster ' + gn + ')'}));
+  let h = '<div class="fll-rows">';
+  h += '<div class="ms-r fll-pos">' + B('p-', '◀', {cls: 'fll-n', aria: 'Früher (Raster ' + gn + ')'}) +
+    `<span class="fll-at"><b>${st != null ? esc(fllWhere(st)) : '–'}</b><small>${esc(fllLenTxt(e.len))}</small></span>` +
+    B('p+', '▶', {cls: 'fll-n', aria: 'Später (Raster ' + gn + ')'}) + B('grid', 'Raster ' + gn, {cls: 'fll-g', aria: 'Raster ' + gn + ' – antippen: wechseln'}) + '</div>';
+  if (brk) {
+    const all = !!(e.stop && e.stop.length > 1);
+    h += '<div class="ms-r fll-mode"><span class="ue-ll">Still</span>' + B('s-d', 'Drums', {on: !all, aria: 'Nur die Drums schweigen (Drop)'}) + B('s-a', 'Alle Spuren', {on: all, aria: 'Alle Spuren außer Gesang schweigen'}) + B('notes', 'Noten …', {aria: 'Noten im Drum-Raster bearbeiten'}) + '</div>';
+  } else {
+    const rep = e.mode === 'ersetzt';
+    h += '<div class="ms-r fll-mode">' + B('m-r', 'Ersetzen', {on: rep, aria: 'Ersetzen: der Drum-Clip schweigt hier (die gewählten Pads)'}) + B('m-m', 'Mischen', {on: !rep, aria: 'Mischen: der Drum-Clip spielt weiter, der Fill kommt dazu'}) + B('notes', 'Noten …', {aria: 'Noten im Drum-Raster bearbeiten'}) + '</div>';
+    if (rep) {
+      const cur = e.pads && e.pads.length ? e.pads : fllAll(), own = fllOwnPads(e), isAll = cur.length >= DRUM_GMS.length, isOwn = !isAll && own.length && own.join() === cur.join();
+      h += '<div class="ms-r fll-pads"><span class="ue-ll">ersetzt</span>' + B('pa', 'Alle', {on: isAll, aria: 'Alle Pads des Drum-Clips schweigen'}) +
+        B('pf', own.length && own.length < DRUM_GMS.length ? 'Nur ' + esc(fllPadsName(own)) : 'Wie Fill', {on: !!isOwn, dis: !own.length, aria: 'Nur die Pads, die der Fill selbst spielt (z. B. Toms) – Snare und Kick bleiben'}) +
+        B('pp', 'Pads …', {on: FLL.pads || (!isAll && !isOwn), aria: 'Pads einzeln wählen'}) + '</div>';
+      if (FLL.pads) h += '<div class="fll-pg">' + DRUM_VOICES.map(v => B('g' + v.gm, esc(v.sl), {on: cur.includes(v.gm), cls: 'fll-pd', aria: v.l + (cur.includes(v.gm) ? ' schweigt' : ' spielt')}).replace('<button ', `<button style="--pc:var(--p${v.idx + 1})" `)).join('') + '</div>';
+    }
+  }
+  lr.insertAdjacentHTML('afterend', h + '</div>');
+  p._fllId = e.id;
+  if (!p._fll) { p._fll = 1; onTap(p, b => fllSheetAct(p, b.dataset.fl), 'button[data-fl]'); }
+}
+function fllSheetAct(p, a) {
+  const id = p._fllId, e = ueFind(id); if (!e) { closePop(); return; }
+  if (R.songRec) { svRecBusy(); return; }
+  const re = () => { if (UI.pop && UI.pop.el === p && p._paint) { p._paint(); popDock(p); } };
+  const say = ok => { if (ok) { const x = ueFind(id); toast(fllLastLabel() || ueName(x || e), songUndoAct()); haptic('tick'); } re(); };
+  if (a === 'notes') { closePop(); fllNotesOpen(id); return; }
+  if (a === 'grid') { fllGridCycle(); re(); return; }
+  if (a === 'pp') { FLL.pads = !FLL.pads; haptic('tick'); re(); return; }
+  if (a === 'p-' || a === 'p+') { say(fllNudge(id, a === 'p+' ? 1 : -1)); return; }
+  if (a === 'l-' || a === 'l+') { say(fllLenStep(id, a === 'l+' ? 1 : -1)); return; }
+  if (a === 'm-r' || a === 'm-m') { say(fllSetMode(id, a === 'm-m' ? 'dazu' : 'ersetzt')); return; }
+  if (a === 'pa' || a === 'pf') { say(fllSetPads(id, a === 'pa' ? 'all' : 'fill')); return; }
+  if (a === 's-d' || a === 's-a') { say(fllSetStop(id, a === 's-a')); return; }
+  if (a[0] === 'g') { say(fllSetPads(id, +a.slice(1))); }
+}
+const fllLastLabel = () => { const u = UNDO[UNDO.length - 1]; return u && u.kind === 'song' ? u.label : null; };
+/* ---------- Noten der Ebene im Schritt-Raster (StepEditor wie im Drum-Editor: Pads, VEL/AKZENT/CHANCE/WIRBEL/TIMING/TUNE/DECAY) ---------- */
+function fllStepModel(id) {
+  let snapS = null, snapN = null;
+  const ent = () => ueFind(id), gm = () => DRUM_VOICES[FLL.pad].gm;
+  const hit = i => n => mapV1Drum(Math.round(n.n)) === gm() && Math.round(n.t / .25) === FLL.page * 16 + i;
+  return {
+    steps: 16,
+    get(i) { const e = ent(); return e ? e.notes.find(hit(i)) || null : null; },
+    set(i, n) {
+      const e = ent(); if (!e) return;
+      if (!n) { e.notes = e.notes.filter(x => !hit(i)(x)); return; }
+      const t = +(FLL.page * 4 + i * .25).toFixed(6); if (t >= e.len - 1e-9 || e.notes.find(hit(i))) return;
+      const o = Object.assign({}, n, {t, d: .1, n: gm()}); if (o.v == null) o.v = .8;
+      e.notes.push(o); e.notes.sort((p, q) => p.t - q.t);
+    },
+    begin() { const e = ent(); snapS = songSnapshot(); snapN = e ? deep(e.notes) : null; },
+    commit() {
+      const e = ent(), before = snapS; snapS = null; snapN = null; if (!e || !before || !S.song) return;
+      if (e.g) for (const x of S.song.ue) if (x !== e && x.g === e.g) x.notes = deep(e.notes);   // verknüpft: die Kopien hören gleich
+      songTidy(S.song);
+      if (songSnapshot() === before) return;
+      pushSongUndo(before, ueName(e) + ': Noten'); songChanged();
+      fllNotesPaint();
+    },
+    revert() { const e = ent(); if (e && snapN) e.notes = snapN; snapS = null; snapN = null; },
+    audition(i, v) { ensureAudio(); return AU.ctx ? drumHit(gm(), v || .8, AU.ctx.currentTime + .005, 'audition') : null; }
+  };
+}
+function fllNotesPaint() { const P = UI.pop; if (P && P.name === 'fllnotes' && P.el && P.el._paint) P.el._paint(); }
+function fllNotesOpen(id) {
+  const e0 = ueFind(id); if (!e0 || svRecBusy()) return false;
+  if (!isDrum(e0.t)) { toast('Noten gibt es nur auf der Drum-Spur'); return false; }
+  FLL.page = 0;
+  const used = fllOwnPads(e0); if (used.length && DRUM_BY_GM[used[0]]) FLL.pad = DRUM_BY_GM[used[0]].idx;
+  openPop(null, p => {
+    p.classList.add('msheet', 'uesheet', 'fllsheet'); guardTouch(p);
+    p.innerHTML = '<div class="ms-h"><b></b><span></span><button class="rb ms-x" data-n="x" aria-label="Schließen – zurück zum Fill">✕</button></div>' +
+      '<div class="vchips v12 fll-chips"></div><div class="stabs fll-tabs"></div><div class="fll-se"></div><div class="ms-r fll-pgr"></div>';
+    const se = p.querySelector('.fll-se'), tabs = p.querySelector('.fll-tabs'), ch = p.querySelector('.fll-chips'), pr = p.querySelector('.fll-pgr');
+    FLL.ed = StepEditor.create(se, fllStepModel(id), {defVel: .8, lanes: ['vel', 'acc', 'prob', 'rat', 'nud', 'tune', 'dec'], lane: ED.sLane || 'vel', tabsHost: tabs,
+      tap: (node, fn, sel) => onTap(node, fn, sel), onLane: k => { ED.sLane = k; },
+      decorate: (c, n, i) => { const e = ueFind(id); c.classList.toggle('fll-off', !e || FLL.page * 4 + i * .25 >= e.len - 1e-9); }});
+    const LSH = {vel: 'VEL', acc: 'AKZ.', prob: 'CHANCE', rat: 'WIRB.', nud: 'TIM.', tune: 'TUNE', dec: 'DEC.'};
+    for (const b of tabs.querySelectorAll('.se-tabs button[data-lane]')) { b.textContent = LSH[b.dataset.lane] || b.textContent; b.setAttribute('aria-label', StepEditor.LANES[b.dataset.lane] ? StepEditor.LANES[b.dataset.lane].l : b.textContent); }
+    const st = tabs.querySelector('.se-tabs'); if (st) st.classList.add('pan-x');
+    const paint = () => {
+      const e = ueFind(id); if (!e) { closePop(); return; }
+      const pages = Math.max(1, Math.ceil(e.len / 4 - 1e-9)); if (FLL.page >= pages) FLL.page = pages - 1;
+      const s = ueStart(S.song, e), own = new Set(fllOwnPads(e));
+      p.querySelector('.ms-h b').textContent = '◆ ' + ueName(e).toUpperCase() + ' · NOTEN';
+      p.querySelector('.ms-h span').textContent = '· ' + fllLenTxt(e.len) + (s != null ? ' · ' + fllWhere(s) : '');
+      const pc = `var(--p${FLL.pad + 1})`; se.style.setProperty('--pc', pc); tabs.style.setProperty('--pc', pc);
+      ch.innerHTML = DRUM_VOICES.map((v, k) => `<button class="chip vchip rb${k === FLL.pad ? ' on' : ''}${own.has(v.gm) ? ' fll-has' : ''}" data-i="${k}" style="--pc:var(--p${k + 1})" aria-label="${esc(v.l)}${own.has(v.gm) ? ' (spielt im Fill)' : ''}"><span class="l12">${esc(v.sl)}</span></button>`).join('');
+      pr.innerHTML = (pages > 1 ? `<button class="rb ms-b fll-n" data-n="pg-" aria-label="Voriger Takt"${FLL.page ? '' : ' disabled'}>◀</button><span class="fll-pl">Takt ${FLL.page + 1} / ${pages}</span><button class="rb ms-b fll-n" data-n="pg+" aria-label="Nächster Takt"${FLL.page < pages - 1 ? '' : ' disabled'}>▶</button>` : '') +
+        '<button class="rb ms-b" data-n="undo" aria-label="Rückgängig">↶ Zurück</button><button class="rb ms-b" data-n="prev" aria-label="Fill vorhören">▶ Vorhören</button>';
+      if (FLL.ed) FLL.ed.paint();
+    };
+    p._paint = paint; paint();
+    onTap(ch, b => { FLL.pad = +b.dataset.i; drumAudition(FLL.pad); haptic('tick'); paint(); }, 'button[data-i]');
+    onTap(p, b => {
+      const a = b.dataset.n, e = ueFind(id); if (!e) { closePop(); return; }
+      if (a === 'x') { closePop(); ueChipSheet(id); return; }
+      if (a === 'prev') { uePreview(id); haptic('tick'); return; }
+      if (a === 'undo') { if (undo() && !ueFind(id)) { closePop(); return; } paint(); return; }
+      if (a === 'pg-' || a === 'pg+') { FLL.page = Math.max(0, FLL.page + (a === 'pg+' ? 1 : -1)); haptic('tick'); paint(); }
+    }, 'button[data-n]');
+  }, {name: 'fllnotes', onClose: () => { if (FLL.ed && FLL.ed.abort) { try { FLL.ed.abort(); } catch (e) {} } FLL.ed = null; }});
+  popDock(UI.pop && UI.pop.el);
+  return true;
+}
+/* ---------- MIDI-Export „Song“: die Fenster (ersetzt / Break) wie gehört, die Noten der Ebene auf der Drum-Spur ---------- */
+function fllMidiMutes(i) { if (!S.song || !S.song.ue) return null; ueFresh(); const l = UE.mutes && UE.mutes[i]; return l && l.length ? l : null; }
+function fllMidiAdd(song, i, ded, add) {
+  if (!song.ue || !isDrum(i)) return;
+  const L = barBeat(song.bars);
+  for (const e of song.ue) {
+    if (e.t !== i || !e.notes || !e.notes.length) continue;
+    const s = ueStart(song, e); if (s == null) continue;
+    for (const nt of e.notes) {
+      if (nt.t >= e.len - 1e-9) continue;
+      const st = s + nt.t; if (st < -1e-9 || st >= L - 1e-9) continue;
+      add(i, 9, ded, st, Math.min(L, st + Math.max(nt.d, 1 / 32)), clamp(Math.round(nt.n), 0, 127), nt.v);
+    }
+  }
+}
+/* ---------- kleine Vorlagen: Tom-Fill, Snare-Wirbel, Crash, Break (Drop = Drums still, Stille = alle Spuren außer Gesang) ---------- */
+const fll16 = l => l.map(([s, n, v, x]) => Object.assign({t: s * .25, d: .25, n, v}, x || null));
+ueLibAdd([
+  {id: 'fx-tom-fill', tab: 'ue', name: 'Tom-Fill', short: 'Toms', k: 'tom', a: -4, len: 4, mode: 'ersetzt',
+    notes: fll16([[0, 50, .6], [1, 50, .52], [2, 50, .64], [3, 50, .56], [4, 47, .66], [5, 47, .58], [6, 47, .7], [7, 47, .62], [8, 45, .72], [9, 45, .64], [10, 45, .76], [11, 45, .68], [12, 45, .8], [13, 45, .84], [14, 45, .9], [15, 45, .98, {a: 1}]])},
+  {id: 'fx-snare-wirbel', tab: 'ue', name: 'Snare-Wirbel', short: 'Wirbel', k: 'fill', a: -2, len: 2, mode: 'ersetzt',
+    notes: fll16([[0, 38, .45], [1, 38, .5], [2, 38, .56], [3, 38, .62], [4, 38, .68, {r: 2}], [5, 38, .75, {r: 2}], [6, 38, .84, {r: 2}], [7, 38, .95, {r: 2, a: 1}]])},
+  {id: 'fx-crash', tab: 'ue', name: 'Crash', short: 'Crash', k: 'crash', a: 0, len: 1, mode: 'dazu',
+    notes: [{t: 0, d: .25, n: 49, v: 1}, {t: 0, d: .25, n: 36, v: .95}]},
+  {id: 'fx-drop', tab: 'break', name: 'Drop', short: 'Drop', k: 'break', a: -4, len: 4, mode: 'ersetzt', notes: [], stop: [DRUM_T]},
+  {id: 'fx-stille', tab: 'break', name: 'Stille', short: 'Stille', k: 'break', a: -2, len: 2, mode: 'ersetzt', notes: [], get stop() { return S && S.tracks ? fllStopAll() : [DRUM_T]; }},
+]);
+const FLL_API = {
+  fllPlace: (lib, beat, o) => fllPlace(lib, beat, o), fllMove: (id, beat) => fllMoveFree(id, beat), fllNudge: (id, dir) => fllNudge(id, dir),
+  fllLen: (id, dir) => fllLenStep(id, dir), fllMode: (id, m) => fllSetMode(id, m), fllPads: (id, w) => fllSetPads(id, w), fllStop: (id, all) => fllSetStop(id, all),
+  fllGrid: g => { if (g != null) { const k = FLL_GRID.findIndex(x => x[0] === String(g)); if (k >= 0) { FLL.grid = k; if (UE.bar && !UE.bar.hidden) fllBarPaint(UE.bar); } } return fllGridName(); },
+  fllSnap: (b, q) => fllSnap(b, q), fllArm: lib => { fllArm(lib); return FLL.arm; }, fllArmed: () => FLL.arm,
+  fllNotes: id => fllNotesOpen(id), fllNotesInfo: () => { const P = UI.pop; return P && P.name === 'fllnotes' ? {pad: FLL.pad, page: FLL.page, steps: FLL.ed ? [...Array(16).keys()].map(i => !!FLL.ed.el.row.children[i].classList.contains('on')) : null} : null; },
+  fllMidi: () => { const m = buildMidi({mode: 'song'}); return m ? {counts: m.counts.slice(), beats: m.beats, bytes: Array.from(m.bytes)} : null; },
+};
+/* FX1-END */
 
 const SYNQUENZER = {
   // ND4/ND2: Drum-Engine MD_NAME (Quelle je Pad, Offline-Render, Zustand, SOLO PART)
