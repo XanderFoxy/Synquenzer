@@ -190,10 +190,10 @@ try {
   // ---- D11: ▼-Marke ziehen = mithören (Finger) ----
   await run(p, () => { SV.x = 0; window.SYNQUENZER.songPos(0); window.SYNQUENZER.songSelect(null); SV.sel = null; svDraw(true); });
   await p.waitForTimeout(200);
-  const g = await p.evaluate(() => { const r = SV.wrap.getBoundingClientRect(); return {x: r.left + 14, y: r.top + 6, cw: SV.cellW, pos: SV.pos}; });
+  const g = await p.evaluate(() => { const r = SV.wrap.getBoundingClientRect(); return {x: r.left + 14, y: r.top + Math.round(SV.rulerH * .6), cw: SV.cellW, pos: SV.pos}; });
   await drag(p, g.x, g.y, g.x + g.cw * 3.2, g.y + 2, 12);
   const SC = await p.evaluate(() => ({pos: SV.pos, last: window.SYNQUENZER.wege.lastScrub(), sx7: SX7.n}));
-  ok(SC.pos === 3 && SC.last && SC.last.n >= 3, 'D11: ▼-Marke ziehen (Finger): Marke auf Takt 4, ' + (SC.last ? SC.last.n : 0) + ' Schläge angeklungen – ohne Schalter', 'Lautsprecher-Knopf weg');
+  ok(SC.pos === Math.round((14 + g.cw * 3.2) / g.cw) && SC.last && SC.last.n >= 3, 'D11: ▼-Marke ziehen (Finger): Marke auf Takt ' + (SC.pos + 1) + ', ' + (SC.last ? SC.last.n : 0) + ' Schläge angeklungen – ohne Schalter', 'Lautsprecher-Knopf weg');
 
   // ---- D9: ⇥ FILLS, Clip-Versionen im Clip-Blatt ----
   const ue = await p.evaluate(() => ({t: SV.btn.bUe.textContent, fab: document.querySelector('.sv-uefab').textContent, dia: [...document.querySelectorAll('.sv-top button')].filter(x => x.offsetParent).some(x => x.textContent.includes('◆'))}));
@@ -320,10 +320,10 @@ try {
   const scr = await p.evaluate(() => [...document.querySelectorAll('.sv-scr')].filter(x => x.offsetParent).length);
   ok(scr === 0, 'quer: kein Lautsprecher-Schalter mehr in der Song-Leiste (Mithören = ▼ ziehen)');
   await run(p, () => { SV.x = 0; window.SYNQUENZER.songPos(0); SV.sel = null; svDraw(true); });
-  const gL = await p.evaluate(() => { const r = SV.wrap.getBoundingClientRect(); return {x: r.left + 14, y: r.top + 6, cw: SV.cellW}; });
+  const gL = await p.evaluate(() => { const r = SV.wrap.getBoundingClientRect(); return {x: r.left + 14, y: r.top + Math.round(SV.rulerH * .6), cw: SV.cellW}; });
   await drag(p, gL.x, gL.y, gL.x + gL.cw * 5.2, gL.y + 2, 14);
   const SCL = await p.evaluate(() => ({pos: SV.pos, last: window.SYNQUENZER.wege.lastScrub()}));
-  ok(SCL.pos === 5 && SCL.last && SCL.last.n >= 4, 'quer: ▼-Marke ziehen (Finger) = mithören', 'Takt ' + (SCL.pos + 1) + ', ' + (SCL.last ? SCL.last.n : 0) + ' Schläge');
+  ok(SCL.pos === Math.round((14 + gL.cw * 5.2) / gL.cw) && SCL.last && SCL.last.n >= 4, 'quer: ▼-Marke ziehen (Finger) = mithören', 'Takt ' + (SCL.pos + 1) + ', ' + (SCL.last ? SCL.last.n : 0) + ' Schläge');
   // Bereich-Leiste quer: ❖ Zusammenfassen …
   await run(p, () => window.SYNQUENZER.songSelect(4, 5)); await p.waitForTimeout(400);
   const rq = await p.evaluate(() => { const b = document.querySelector('#rangeBar [data-a="part"]'); const r = b.getBoundingClientRect(); return {t: b.textContent.trim(), a: b.getAttribute('aria-label'), h: r.height}; });
@@ -335,7 +335,8 @@ try {
   await run(p, () => va1Sheet()); await p.waitForTimeout(300);
   ok(await p.evaluate(xSees), 'quer: Export-Blatt mit ✕');
   await run(p, () => closePop());
-  await hold(p, ...(await p.evaluate(() => { const r = EL.bUndo.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; })), 700);
+  const uq = await p.evaluate(() => { const u = [...document.querySelectorAll('button[aria-label="Rückgängig"], #bUndo')].find(x => x.offsetParent && x.getBoundingClientRect().width > 0 && document.elementFromPoint(x.getBoundingClientRect().left + 8, x.getBoundingClientRect().top + 8) === x); const r = (u || EL.bUndo).getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2, u ? u.id || u.className : 'bUndo'] });
+  await hold(p, uq[0], uq[1], 700);
   await p.waitForTimeout(300);
   ok(await p.evaluate(() => !!document.querySelector('.pop.sx14 .wg-ah')), 'quer: ↶ halten → VERLAUF mit „Automatische Sicherungen“');
   await shot(p, 'wege-verlauf-quer.png');

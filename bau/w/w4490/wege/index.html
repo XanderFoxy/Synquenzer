@@ -82431,6 +82431,10 @@ function wegeCss() {
       '.pop .wg-bpm .sx1-r .ms-b.on{color:#ffcf7a;border-color:#6b4c16}',
       '.sx14 .wg-ah .sx14-r.arm{color:#ffcf7a;border-color:#6b4c16}',
       '.sv-top .sv-scr{display:none!important}',            // D11: Mithören braucht keinen Schalter mehr (▼ ziehen)
+      // ✕ auch quer in den Blättern dieses Pakets (Zusammenfassen, Bereich ⋯) – wie hochkant (UIX1)
+      '@media (orientation:landscape){.pop.s2sum > .ux1-hd,.pop:has(> .wg-rv) > .ux1-hd{display:block;position:sticky;top:8px;height:0;z-index:3}' +
+      '.pop.s2sum > .ux1-hd > .ux1-px,.pop:has(> .wg-rv) > .ux1-hd > .ux1-px{position:absolute;right:-8px;top:-8px;width:44px;height:36px;min-width:0;padding:0;font-size:15px}' +
+      '.pop.s2sum > h4.ux1-h,.pop:has(> .wg-rv) > h4.ux1-h{padding:6px 40px 0 0;min-height:24px;box-sizing:border-box}}',
     ].join('\n');
     document.head.appendChild(s);
   } catch (e) { logErr(e); }
@@ -82834,6 +82838,8 @@ function wegeGuide(L) {
   set('projects', {n: 'Projekte und automatische Sicherungen', d: 'Alle Projekte im Browser; automatische Sicherungen zurückholen (auch: ↶ halten).'});
   set('dx7', {w: 'Menü › Export › Sounds', go: () => { ui1Home(); va1Sheet(); return true; }, q: 'DX7-Bank importieren'});
   set('imvideo', {n: 'Im Video (je Clip)'});
+  // mit Song steht „＋ Teil einsetzen ▾“ in der Bereich-Leiste ⋯ (ohne Song im leeren Song wie bisher)
+  { const E0 = by('insert'), g0 = E0 && E0.go; if (E0) E0.go = () => { if (!(S.song && S.song.bars)) return g0(); ui1Home(); setSongView(true); songSelect(SV.pos != null ? SV.pos : 0); rangeBarSync(); const mb = SV.rbar && SV.rbar.querySelector('[data-a="more"]'); if (!mb) return false; openRangeMore(mb); return true; }; }
   L.push(
     E('scrub', 'Mithören (Scrubbing)', 'Song-Ansicht › die ▼-Marke in der Taktleiste ziehen', 'Beim Ziehen klingt der Schlag unter dem Finger kurz an; losgelassen startet ▶ dort.', 'mithoeren scrubbing scrub wischen hoeren marke positionsmarke', G.song(false), () => SV.wrap),
     E('block', 'Block (Takte gruppieren)', 'Marken-Blatt › Teil › Block … · Bereich-Leiste ⋯', 'Mehrere Teile zusammen verschieben und kopieren – der Inhalt bleibt, wie er ist.', 'block gruppieren gruppe zusammen schieben', songOr(() => wegeMarkOpen('t'), G.song(false)), () => (UI.pop && UI.pop.name === 'mark' ? UI.pop.el.querySelector('.kx-entry') : SV.wrap)),
@@ -82841,7 +82847,7 @@ function wegeGuide(L) {
     E('open', 'Öffnen … (.json / .zip)', 'Menü › Projekt › Öffnen … · Export › Projekt', 'Öffnet eine Projektdatei oder ein Projekt mit allen Audios (ZIP).', 'oeffnen laden datei container zip json import', G.menu, 'Öffnen …'),
     E('boxsave', 'Sichern mit allen Audios', 'Menü › Export › Projekt', 'Eine ZIP mit Projekt, allen Audio-Takes und eigenen Klängen.', 'container zip sichern audios backup', () => { ui1Home(); va1Sheet('box'); return true; }, 'Sichern mit allen Audios'),
     E('midiex', 'MIDI: Szene, Alle Szenen, Mitschnitt', 'Menü › Export › MIDI', 'Mit Träger │ Original wählt, ob die Transposition mit hineinkommt.', 'midi export szene mitschnitt traeger', () => { ui1Home(); va1Sheet(); return true; }, 'Mitschnitt'),
-    E('rt', 'Song als Audio (Echtzeit)', 'Menü › Export › Audio › Echtzeit-Mitschnitt', 'Notweg: spielt den Song einmal ab und nimmt den Ausgang auf.', 'song als audio echtzeit mitschnitt aufnehmen', () => { ui1Home(); va1Sheet(); return true; }, () => (S.song && S.song.bars ? 'Echtzeit-Mitschnitt' : '.va1-bd')),
+    E('rt', 'Song als Audio (Echtzeit)', 'Menü › Export › Audio › Echtzeit-Mitschnitt', 'Notweg: spielt den Song einmal ab und nimmt den Ausgang auf.', 'song als audio echtzeit mitschnitt aufnehmen', () => { ui1Home(); va1Sheet(); return true; }, () => [...document.querySelectorAll('.pop.va1 button')].find(x => /^Echtzeit|^Aufnahme läuft/.test(x.textContent.trim())) || document.querySelector('.pop.va1 .va1-bd')),
     E('sounds', 'Eigene Sounds exportieren / importieren', 'Menü › Export › Sounds', 'Deine Klänge als Datei – auf einem anderen Gerät wieder importieren.', 'sounds klaenge export import datei bibliothek', () => { ui1Home(); va1Sheet(); return true; }, 'Sounds importieren'),
     E('autosave', 'Automatische Sicherungen', '↶ halten › VERLAUF · Menü › Projekt', 'Alle 10 Minuten Arbeit ein Stand zum Zurückholen.', 'automatische sicherungen aeltere versionen backup zurueck wiederherstellen', () => { ui1Home(); sx14Open(EL.bUndo); return !!(UI.pop && UI.pop.name === 'sx14'); }, () => (UI.pop && UI.pop.el ? UI.pop.el.querySelector('.wg-ah') : null)),
     E('verlauf', 'Verlauf (Schritte zurück)', '↶ halten', 'Jeder Schritt mit Uhrzeit; antippen springt dorthin. ＋ Schnappschuss merkt einen Stand mit Namen.', 'verlauf schritte rueckgaengig undo schnappschuss', () => { ui1Home(); sx14Open(EL.bUndo); return !!(UI.pop && UI.pop.name === 'sx14'); }, () => (UI.pop && UI.pop.el ? UI.pop.el.querySelector('.sx14-l') : null)),
