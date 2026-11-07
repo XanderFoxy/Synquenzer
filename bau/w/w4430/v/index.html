@@ -68716,7 +68716,7 @@ const VK2_MK = {'f.cut': 'cutoff', 'f.res': 'res', 'f.type': 'ftype', 'f.eg': 'f
 const VK2_NM = {cutoff: 'CUTOFF', res: 'RESONANZ', ftype: 'FILTERTYP', fenv: 'FILTER-HK', aA: 'AMP A', aD: 'AMP D', aS: 'AMP S', aR: 'AMP R', fA: 'FILTER A', fD: 'FILTER D', fS: 'FILTER S', fR: 'FILTER R'};
 const VK2_FT = ['LP24', 'LP12', 'BP24', 'BP12', 'HP24', 'HP12'];
 // the button of the Regie row (vvDirRow, second line, at its end)
-function vk2DirBtn(B, v) { return B(VK2_ID, 'Mäusekino', v === VK2_ID, 'Video hier: Mäusekino'); }
+function vk2DirBtn(B, v) { return B(VK2_ID, 'Mäuse&shy;kino', v === VK2_ID, 'Video hier: Mäusekino'); }   // VK2-GP: &shy; – in der schmalen Bereich-Liste bricht es „Mäuse-/kino“ statt abgeschnitten
 // v6aGo: one glide of track i (old = R.v6aCur[i] before it). Offline render: per render (VV.off.tl); live: the last 8 per track
 function vk2Cap(i, old, st1, t0, t1, at, c) {
   try {
@@ -69044,19 +69044,31 @@ function vk2Syn(i, st, X) {
   const t = X.t, src = X.src, r = X.runs ? vk2Act(X.runs[i], X.tau) : null, E = vk2Eff(i, r, X.tau, false), eng3 = base.engine === 'mk';
   let vo = [], notes = [], mod = null, envs = null, nv = null;
   if (eng3 && E.T) {
-    const ms = E.raw ? vv3MkState(i, t, st, src) : vv3MkState0(i, t, st, src, E.T); if (!ms) return null;
+    const ms = E.raw ? vv3MkState(i, t, st, src) : vk2Lk(i, t, st, src, E); if (!ms) return null;   // VK2-GP: mit den Locks der klingenden Note
     const T = ms.T, gate = !!(T.a && T.a.gate);
     notes = ms.notes.filter(x => x.a <= t); vo = ms.voices.map(x => ({n: x.n, v: x.v, a: x.a, b: x.b, env: gate ? (x.b >= t ? 1 : 0) : vv3MkEnv(T.e2, x.a, x.b, t)}));
     mod = {fc: vk2Cz(ms.cut), res: 1.1 * clamp(+T.f.res || 0, 0, 127) / 127, ft: [0, 1, 3, 5][clamp(Math.round(+T.f.type || 0), 0, 3)]}; envs = vk2Envs({T}); nv = ms.nv;
   } else {
-    const vs = E.raw ? vv3VaState(i, t, src) : vv3VaState0(i, t, src, E.p); if (!vs) return null;
+    const vs = E.raw ? vv3VaState(i, t, src) : vk2Lk(i, t, st, src, E); if (!vs) return null;   // VK2-GP: mit den Locks der klingenden Note
     notes = vs.notes; vo = notes.filter(x => x.b >= t || vv3Adsr(vs.ae, x.a, x.b, t) > .002).map(x => ({n: x.n, v: x.v, a: x.a, b: x.b, env: vv3Adsr(vs.ae, x.a, x.b, t)}));
     if (typeof vs.p.cutoff === 'number') mod = {fc: vs.cutHz, res: clamp((+vs.p.res || 0) + (vs.dst.res || 0), 0, 1.15), ft: clamp(Math.round(+vs.p.ftype || 0), 0, 5)};
     envs = vk2Envs({p: vs.p}); nv = vs.nv;
   }
+  if (base.engine === 'bm') { vo = notes.filter(x => x.a <= t && x.b >= t).map(x => ({n: x.n, v: x.v, a: x.a, b: x.b, env: 1})); mod = null; envs = null; }   // VK2-GP: Bit Mask hat eigene Filter/Hüllkurven – keine VA-Werte zeigen, nur die gehaltenen Noten
   if (vo.length > 64) vo = vo.slice(-64);
   let held = 0; for (const x of notes) if (x.a <= t && x.b > t) held++;
   return {i, vo, notes, held, mod, envs, nv, E, r};
+}
+// VK2-GP: under a state ◆ the sounding note's locks win too (worklet: „Lock schlägt Reihe schlägt Grundwert“), as vv3VaState /
+// vv3MkState do it for the Grundklang – with the Auto-Klanganker (AK1) most clips carry a state, so this path is the usual one
+function vk2Lk(i, t, st, src, E) {
+  if (E.T) {
+    const m0 = vv3MkState0(i, t, st, src, E.T), lk = m0 && m0.nv && m0.nv.lk; if (!lk) return m0;
+    const T1 = JSON.parse(JSON.stringify(E.T)), pm = E.base.p.mk; let any = false;
+    for (const k in lk) { const e = LKT[k]; if (!e || !k.startsWith('mk.t.0.')) continue; any = true; SQMK.mkPathSet({t: [T1, JSON.parse(JSON.stringify(pm.t[1]))]}, k.slice(3), lkFromN(e, lk[k])); }
+    return any ? vv3MkState0(i, t, st, src, T1) || m0 : m0;
+  }
+  const v0 = vv3VaState0(i, t, src, E.p); return v0 && v0.nv && v0.nv.lk ? vv3VaState0(i, t, src, vv3LkP(E.p, v0.nv.lk)) || v0 : v0;
 }
 // the head: bar · beat · 16th, part, tempo, Summe
 function vk2Head(g, L, X, st, sb, bar, bs, C, o) {
@@ -70667,8 +70679,8 @@ function vvkRange(src, t, fut, sc) {
     c.tq = tq; lo = c.lo; hi = c.hi;
   }
   if (lo > hi) { lo = 48; hi = 71; }
-  lo = clamp(Math.floor(lo / 12) * 12, 0, 108); hi = clamp(Math.floor(hi / 12) * 12 + 11, lo + 11, 119);
-  while (hi - lo + 1 < 24) { if (hi + 12 <= 119) hi += 12; else lo -= 12; }
+  lo = clamp(Math.floor(lo / 12) * 12, 0, 120); hi = Math.min(127, Math.max(Math.floor(hi / 12) * 12 + 11, lo + 11));   // VK3-GP: bis MIDI 127 (vorher endete die Tastatur bei H8, Noten darüber fehlten)
+  while (hi - lo + 1 < 24) { if (hi + 12 <= 127) hi += 12; else lo -= 12; }
   return {lo, hi};
 }
 // one colour per track colour and touch (16 steps): soft = lighter and cooler, loud = fuller and warmer; up = lit
@@ -70737,7 +70749,7 @@ function vvkDraw(g, W, H, st, vt) {
   // the beat grid ahead: beats faint, bar lines with their number, a part start amber with its name
   const yOf = dt => L.nowY - dt * pps, sb1 = sb + fut / sp;
   g.textBaseline = 'middle'; g.textAlign = 'left';
-  g.fillStyle = 'rgba(255,255,255,.035)'; for (let x = Math.ceil(sb - 1e-6); x <= sb1; x++) g.fillRect(L.kx, yOf((x - sb) * sp), L.kw, 1);
+  g.fillStyle = 'rgba(255,255,255,.035)'; for (let bb = barAt(Math.max(0, sb)), n = 0; n < 64; bb++, n++) { const B0 = barBeat(bb), B1 = barBeat(bb + 1); if (B0 > sb1 + 1e-6) break; for (let x = B0; x < B1 - 1e-6; x++) if (x >= sb - 1e-6 && x <= sb1) g.fillRect(L.kx, yOf((x - sb) * sp), L.kw, 1); }   // VK3-GP: Schläge ab jedem Taktstrich (7/8: sonst ein halber Schlag versetzt)
   if (song) {
     const ms = song.marks || [];
     for (let bar = Math.max(0, barAt(Math.max(0, sb)) ), n = 0; n < 64; bar++, n++) {
