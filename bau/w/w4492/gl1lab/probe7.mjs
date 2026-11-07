@@ -1,0 +1,12 @@
+import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
+import path from 'path';
+const [file] = process.argv.slice(2);
+const here = path.dirname(new URL(import.meta.url).pathname);
+const b = await chromium.launch(); const ctx = await b.newContext({viewport: {width: 428, height: 926}, hasTouch: true}); const p = await ctx.newPage();
+await p.goto('file://' + path.resolve(file)); await p.waitForTimeout(1500);
+await p.addScriptTag({path: path.join(here, 'setup.js')});
+await p.evaluate(() => __gl1Setup()); await p.evaluate(() => { setSongView(true); SYNQUENZER.blockMake(0, 7); SYNQUENZER.vd3.cut(true); }); await p.waitForTimeout(500);
+console.log(JSON.stringify(await p.evaluate(() => { const lr = document.querySelector('.sv-lr'); const R = e => { const r = e.getBoundingClientRect(); return [+r.left.toFixed(1), +r.top.toFixed(1), +r.width.toFixed(1), +r.height.toFixed(1)]; };
+  return [...lr.children].map(c => ({cls: c.className, txt: c.textContent.slice(0, 12), r: R(c), fs: getComputedStyle(c).fontSize, ff: getComputedStyle(c).fontFamily.slice(0, 30), pos: getComputedStyle(c).position, hidden: c.hidden})).concat([{lr: R(lr), svr: getComputedStyle(SV.labs).getPropertyValue('--svr')}]); })));
+console.log(JSON.stringify(await p.evaluate(() => [...document.styleSheets].length)));
+await b.close();
