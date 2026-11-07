@@ -1,0 +1,10 @@
+import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
+const [file] = process.argv.slice(2);
+const b = await chromium.launch({args: ['--autoplay-policy=no-user-gesture-required']});
+const p = await b.newPage({viewport: {width: 428, height: 926}});
+await p.goto('file://' + file); await p.waitForTimeout(1500);
+await p.evaluate(async () => { SYNQUENZER.loadDemo(); ensureAudio(); await new Promise(r => setTimeout(r, 300)); SYNQUENZER.tkt.rackOpen(0); });
+await p.waitForTimeout(400);
+console.log(await p.evaluate(() => { const e = UI.pop.el, cs = getComputedStyle(e), L = e.parentNode; return JSON.stringify({h: e.offsetHeight, sh: e.scrollHeight, mh: cs.maxHeight, ov: cs.overflowY, pos: cs.position, top: e.style.top, layer: {h: L.offsetHeight, cls: L.className, pos: getComputedStyle(L).position}, cls: e.className}); }));
+await p.screenshot({path: 'dbg-rack.png'});
+await b.close();

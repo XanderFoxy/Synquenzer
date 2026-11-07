@@ -83412,8 +83412,8 @@ function tktModeDo(kind) {
   const after = tktModeSnap();
   if (after === before) return res;
   undoPush({kind: 'tkt', before, label: res.from + ' → ' + res.to});
-  songChanged(); try { songResync(true); } catch (e) { logErr(e); } UI.dirty.all = true; markDirty();
-  TKT.ab = {a: before, b: after, from: res.from, to: res.to};
+  tktModePut(after);                                                       // einmal normalisiert (wie nach ↶/↷): B ist genau dieser Stand
+  TKT.ab = {a: before, b: tktModeSnap(), from: res.from, to: res.to};
   return res;
 }
 // A (vorher) / B (nachher) im offenen Blatt – nur zum Vergleichen (kein ↶-Schritt); geht, solange nichts anderes geändert wurde
@@ -83663,7 +83663,7 @@ function tktRackPaint(p) {
     html += tktRackDev('spur', 'SPUR', tr.name + ' · Anteile zum Bus', !tr.mute);
     if (syn) html += tktRackDev('chorus', 'CHORUS', 'Spur-Effekt', !!(fx.chorus && fx.chorus.mode && fx.chorus.mode !== 'off'),
       `<span class="tkr-x">` + [['I', 'I'], ['II', 'II'], ['I+II', 'I+II'], ['ENS', 'ENS'], ['BREIT', 'BREIT']].map(([v, l]) => `<button class="rb tkr-chip${fx.chorus && fx.chorus.mode === v ? ' on' : ''}" data-rk="ch:${v}">${l}</button>`).join('') + `</span>`);
-    html += tktRackDev('eq', 'EQ · KOMP', 'Kanalzug', eqOn, `<span class="tkr-x"><button class="rb tkr-chip" data-rk="eqmore">Mehr …</button></span>`);
+    html += tktRackDev('eq', 'EQ · KOMP', 'Kanalzug', eqOn, `<span class="tkr-x tkr-in"><button class="rb tkr-chip" data-rk="eqmore" aria-label="EQ und Kompressor: alle Regler">Mehr …</button></span>`);
   }
   html += tktRackDev('hall', 'HALL', 'Bus · alle Spuren · ' + tktRoomTxt(), h.ret > .001, `<span class="tkr-x tkr-room">${tktRoomHtml()}</span>`);
   html += tktRackDev('echo', 'ECHO', 'Bus · alle Spuren', e.ret > .001);
@@ -83763,7 +83763,7 @@ function tktFxPage(pg, sub, i) {
 .msheet.tktmode .tkt-r .ms-b{min-height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:700 12px/1.1 var(--font-ui)}
 .msheet.tktmode .tkt-r .ms-b small{font:600 10px/1 var(--font-ui);color:var(--text-dim)}
 .msheet.tktmode .tkt-r .ms-b.on{border-color:var(--amber);color:var(--amber)}
-.pop.tktrack{padding-top:0;max-height:calc(100% - 4px)}
+.pop.msheet.tktrack{padding-top:0;max-height:calc(100% - 4px);overflow-y:auto;overscroll-behavior:contain}
 .tktrack .ms-h{position:sticky;top:0;z-index:4;height:44px;background:linear-gradient(var(--chassis-2),var(--chassis));margin:0 -12px 6px;padding:0 48px 0 12px;border-bottom:1px solid var(--line)}
 .tktrack .ms-h b{color:#e6e9ef;letter-spacing:.12em}
 .tktrack .ms-h .ms-x{height:44px;top:0}
@@ -83782,6 +83782,7 @@ function tktFxPage(pg, sub, i) {
 .tkr-nm{font:800 17px/1 var(--font-ui);letter-spacing:.16em;color:#eef1f6;text-shadow:0 1px 0 #000}
 .tkr-top>small{font:600 10px/1.2 var(--font-ui);color:var(--text-dim);min-width:0;flex:1 1 80px}
 .tkr-x{display:flex;flex-wrap:wrap;gap:4px;flex:1 1 100%}
+.tkr-x.tkr-in{flex:0 0 auto;margin-left:auto}
 .tkr-x.tkr-room .tkt-rooms{margin:0;flex:1 1 100%}
 .tkr-x.tkr-room .tkt-rtip{flex:1 1 100%}
 .tkr-chip{min-height:44px;min-width:44px;padding:0 8px;font:700 11px/1 var(--font-ui)}
@@ -83813,9 +83814,9 @@ const TKT_API = {
   // Öltank im Offline-Kontext: Impuls → derselbe Raum-Zweig (ohne Bus) – für RT60-Messung und CPU
   oelRender: async (len, sec, sr) => {
     sr = sr || 24000; const oc = new OfflineAudioContext(2, Math.round(sec * sr), sr), ib = oc.createBuffer(1, 64, sr); ib.getChannelData(0)[0] = 1;
-    const src = oc.createBufferSource(); src.buffer = ib; const X = tktHallBuild(oc); tktHallIn(X, 'oel'); X.room = 'oel';
+    const src = oc.createBufferSource(); src.buffer = ib; const X = tktHallBuild(oc);   // Impuls bei 0,1 s (die Faltung blendet in 10 ms ein) tktHallIn(X, 'oel'); X.room = 'oel';
     X.fdn = tktFdn(oc); X.fIn = oc.createGain(); X.fdn.out.connect(X.mix); X.fIn.connect(X.fdn.in); X.cv.go.connect(X.fIn); X.fdn.set(len, len * 1.5, Math.max(1.5, len * .3), 0);
-    X.mix.gain.value = TKT_OEL_OUT; X.hp.frequency.value = 20; X.lp.frequency.value = 20000; src.connect(X.in); X.out.connect(oc.destination); src.start(0);
+    X.mix.gain.value = TKT_OEL_OUT; X.hp.frequency.value = 20; X.lp.frequency.value = 20000; src.connect(X.in); X.out.connect(oc.destination); src.start(.1);
     const T0 = performance.now(), b = await oc.startRendering(); return {ms: performance.now() - T0, L: b.getChannelData(0), R: b.getChannelData(1), sr};
   },
   rackOpen: i => tktRackOpen(i), rackInfo: () => { const K = TKT.rk; return K ? {i: K.i, devs: [...document.querySelectorAll('.tktrack .tkr-dev')].map(d => d.dataset.dev), an: Object.keys(K.an || {}), ctls: K.ctls.length} : null; },

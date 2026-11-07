@@ -1,0 +1,12 @@
+import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
+const [file] = process.argv.slice(2);
+const b = await chromium.launch({args: ['--autoplay-policy=no-user-gesture-required']});
+const p = await b.newPage({viewport: {width: 428, height: 926}, hasTouch: false});
+await p.goto('file://' + file); await p.waitForTimeout(1500);
+await p.evaluate(async () => { SYNQUENZER.loadDemo(); ensureAudio(); await new Promise(r => setTimeout(r, 300)); SYNQUENZER.tkt.rackOpen(0); });
+await p.waitForTimeout(400);
+const k = await p.evaluate(() => { const k = [...document.querySelectorAll('.tktrack .tkr-dev[data-dev="hall"] .knob')].find(x => x.getAttribute('aria-label') === 'Rückweg'); k.scrollIntoView({block: 'center'}); const r = k.querySelector('svg').getBoundingClientRect(); const x = r.left + r.width / 2, y = r.top + r.height / 2; const e = document.elementFromPoint(x, y); return {x, y, hit: e && (e.className && e.className.baseVal !== undefined ? 'svg:' + e.className.baseVal : e.className), inKnob: k.contains(e), v: S.fxBus.hall.ret, popTop: UI.pop.el.getBoundingClientRect().top, sc: UI.pop.el.scrollTop}; });
+console.log(JSON.stringify(k));
+await p.mouse.move(k.x, k.y); await p.mouse.down(); for (let i = 1; i <= 10; i++) { await p.mouse.move(k.x, k.y - i * 6); await p.waitForTimeout(16); } await p.mouse.up(); await p.waitForTimeout(200);
+console.log(await p.evaluate(() => JSON.stringify({ret: S.fxBus.hall.ret, u: UNDO.length && UNDO[UNDO.length - 1].label})));
+await b.close();

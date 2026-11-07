@@ -58,6 +58,7 @@ const byText = (sel, txt) => [...document.querySelectorAll(sel)].find(x => x.off
 async function touch(p, type, x, y) { await p._cdp.send('Input.dispatchTouchEvent', {type, touchPoints: type === 'touchEnd' ? [] : [{x, y, radiusX: 4, radiusY: 4, force: 1, id: 1}]}); }
 async function drag(p, x0, y0, x1, y1, n) { await touch(p, 'touchStart', x0, y0); for (let k = 1; k <= n; k++) { await touch(p, 'touchMove', x0 + (x1 - x0) * k / n, y0 + (y1 - y0) * k / n); await p.waitForTimeout(30); } await touch(p, 'touchEnd'); await p.waitForTimeout(250); }
 async function hold(p, x, y, ms) { await touch(p, 'touchStart', x, y); await p.waitForTimeout(ms); await touch(p, 'touchEnd'); await p.waitForTimeout(250); }
+const zone = () => { try { if (typeof hideToast === 'function') hideToast(); } catch (e) {} const r = SV.wrap.getBoundingClientRect(); let y = r.top + Math.round(SV.rulerH * .5); for (let d = 3; d < SV.rulerH - 1; d++) { const e = document.elementFromPoint(r.left + 14, r.top + d); if (e === SV.cv) { y = r.top + d; break; } } return {x: r.left + 14, y, cw: SV.cellW, pos: SV.pos}; };
 const shot = (p, n) => p.screenshot({path: path.join(out, n)});
 const xSees = () => [...document.querySelectorAll('.pop .ms-x, .pop .sh-x, .pop [aria-label="Schließen"]')].some(x => { const r = x.getBoundingClientRect(); return x.offsetParent && r.width >= 40 && r.height >= 30 && r.top >= 0 && r.bottom <= innerHeight && r.right <= innerWidth; });
 
@@ -66,6 +67,7 @@ try {
   const pb = await page(428, 926, basis);
   await run(pb, () => SETUP());
   const zipB = await pb.evaluate(async () => (await window.SYNQUENZER.va1BoxB64()).length);
+  const wavB = await pb.evaluate(async () => { const r = await window.SYNQUENZER.va1Export('song'); const d = new Uint8Array(await new Response(VA1.res.data).arrayBuffer()); const h = await crypto.subtle.digest('SHA-256', d); return {size: r && r.size, h: btoa(String.fromCharCode(...new Uint8Array(h))).slice(0, 16)}; });
   const BA = await run(pb, () => {
     const D = window.SYNQUENZER, m = S.song.marks[2], r = {orig: NC(m.a, m.a + m.len)};
     D.markFassungSet(m.id, 'leicht'); r.l = NC(m.a, m.a + m.len); r.file = serializeProject();
@@ -74,7 +76,6 @@ try {
     r.va1 = btoa(String.fromCharCode(...va1MidiBuild(null).bytes)); r.id = m.id;
     return r;
   });
-  const wavB = await pb.evaluate(async () => { const r = await window.SYNQUENZER.va1Export('song'); const d = new Uint8Array(await new Response(VA1.res.data).arrayBuffer()); const h = await crypto.subtle.digest('SHA-256', d); return {size: r && r.size, h: btoa(String.fromCharCode(...new Uint8Array(h))).slice(0, 16)}; });
   await pb.close();
 
   /* ================= hochkant 428 × 926 ================= */
@@ -190,7 +191,7 @@ try {
   // ---- D11: ▼-Marke ziehen = mithören (Finger) ----
   await run(p, () => { SV.x = 0; window.SYNQUENZER.songPos(0); window.SYNQUENZER.songSelect(null); SV.sel = null; svDraw(true); });
   await p.waitForTimeout(200);
-  const g = await p.evaluate(() => { const r = SV.wrap.getBoundingClientRect(); return {x: r.left + 14, y: r.top + Math.round(SV.rulerH * .6), cw: SV.cellW, pos: SV.pos}; });
+  await p.waitForTimeout(400); const g = await p.evaluate(zone);
   await drag(p, g.x, g.y, g.x + g.cw * 3.2, g.y + 2, 12);
   const SC = await p.evaluate(() => ({pos: SV.pos, last: window.SYNQUENZER.wege.lastScrub(), sx7: SX7.n}));
   ok(SC.pos === Math.round((14 + g.cw * 3.2) / g.cw) && SC.last && SC.last.n >= 3, 'D11: ▼-Marke ziehen (Finger): Marke auf Takt ' + (SC.pos + 1) + ', ' + (SC.last ? SC.last.n : 0) + ' Schläge angeklungen – ohne Schalter', 'Lautsprecher-Knopf weg');
@@ -272,7 +273,7 @@ try {
   await run(q, () => { SETUP(); });
   const zipW = await q.evaluate(async () => (await window.SYNQUENZER.va1BoxB64()).length);
   const wavW = await q.evaluate(async () => { const r = await window.SYNQUENZER.va1Export('song'); const d = new Uint8Array(await new Response(VA1.res.data).arrayBuffer()); const h = await crypto.subtle.digest('SHA-256', d); return {size: r && r.size, h: btoa(String.fromCharCode(...new Uint8Array(h))).slice(0, 16)}; });
-  ok(wavW.size === wavB.size && wavW.size > 1000, 'D7: WAV Ganzer Song wie vorher', wavW.size + ' Bytes' + (wavW.h === wavB.h ? ', bitgleich' : ', gleiche Länge'));
+  ok(wavW.size === wavB.size && wavW.size > 1000, 'D7: WAV Ganzer Song wie vorher', wavW.size + ' / ' + wavB.size + ' Bytes' + (wavW.h === wavB.h ? ', bitgleich' : ''));
   ok(mw.midi === BA.midi && mw.va1 === BA.va1, 'D7: MIDI (Szene, Ganzer Song) bytegleich wie vorher');
   ok(Math.abs(zipW - zipB) <= 64 && zipW > 1000, 'D7: Container (ZIP) wie vorher', zipW + ' / ' + zipB + ' Zeichen');
   // altes Projekt (Leicht-Marke aus der Basis) lädt und klingt gleich; das Marken-Blatt zeigt Small
@@ -320,7 +321,7 @@ try {
   const scr = await p.evaluate(() => [...document.querySelectorAll('.sv-scr')].filter(x => x.offsetParent).length);
   ok(scr === 0, 'quer: kein Lautsprecher-Schalter mehr in der Song-Leiste (Mithören = ▼ ziehen)');
   await run(p, () => { SV.x = 0; window.SYNQUENZER.songPos(0); SV.sel = null; svDraw(true); });
-  const gL = await p.evaluate(() => { const r = SV.wrap.getBoundingClientRect(); return {x: r.left + 14, y: r.top + Math.round(SV.rulerH * .6), cw: SV.cellW}; });
+  await p.waitForTimeout(400); const gL = await p.evaluate(zone);
   await drag(p, gL.x, gL.y, gL.x + gL.cw * 5.2, gL.y + 2, 14);
   const SCL = await p.evaluate(() => ({pos: SV.pos, last: window.SYNQUENZER.wege.lastScrub()}));
   ok(SCL.pos === Math.round((14 + gL.cw * 5.2) / gL.cw) && SCL.last && SCL.last.n >= 4, 'quer: ▼-Marke ziehen (Finger) = mithören', 'Takt ' + (SCL.pos + 1) + ', ' + (SCL.last ? SCL.last.n : 0) + ' Schläge');
@@ -336,9 +337,10 @@ try {
   ok(await p.evaluate(xSees), 'quer: Export-Blatt mit ✕');
   await run(p, () => closePop());
   const uq = await p.evaluate(() => { const u = [...document.querySelectorAll('button[aria-label="Rückgängig"], #bUndo')].find(x => x.offsetParent && x.getBoundingClientRect().width > 0 && document.elementFromPoint(x.getBoundingClientRect().left + 8, x.getBoundingClientRect().top + 8) === x); const r = (u || EL.bUndo).getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2, u ? u.id || u.className : 'bUndo'] });
-  await hold(p, uq[0], uq[1], 700);
+  await p.waitForTimeout(500); await hold(p, uq[0], uq[1], 750);
   await p.waitForTimeout(300);
-  ok(await p.evaluate(() => !!document.querySelector('.pop.sx14 .wg-ah')), 'quer: ↶ halten → VERLAUF mit „Automatische Sicherungen“');
+  const vq = await p.evaluate(() => ({ah: !!document.querySelector('.pop.sx14 .wg-ah'), pop: UI.pop && UI.pop.name}));
+  ok(vq.ah, 'quer: ↶ halten → VERLAUF mit „Automatische Sicherungen“', 'Blatt ' + vq.pop + ' · Taste ' + uq[2]);
   await shot(p, 'wege-verlauf-quer.png');
   await run(p, () => closePop());
   await p.close();

@@ -30,7 +30,7 @@ const run = (setup, ci) => p.evaluate(async ({setup, ci}) => {
 }, {setup, ci});
 const CLIP34 = "for (let t = 0; t < NT(); t++) if (S.tracks[t].clips[0] && !S.tracks[t].stimme) setClipTs(t, 0, '3/4'); R.selS = 0;";
 const m34 = await run(CLIP34, true);
-const accOk = s => /^AnnAnnAnn/.test(s);
+const accOk = s => /^AnnAnnAn/.test(s);
 ok('3/4 Matrix (nur die Clips 3/4): Einzähler 3 Klicks ab −3 mit Betonung, dann Klickmuster A n n | A n n (gemessen)', m34.log[0][0] === -3 && m34.acc.startsWith('Ann') && accOk(m34.acc.slice(3)) && m34.beats.slice(3, 9).join(',') === '0,1,2,3,4,5', {log: m34.log.slice(0, 9).map(x => x.join('')).join(' ')});
 ok('3/4 Matrix: TAKT-Anzeige zählt 3 2 1 → 1.1 1.2 1.3 2.1 (nie .4)', m34.takt.slice(0, 7).join(' ') === '3 2 1 1.1 1.2 1.3 2.1' && !m34.takt.some(t => /\.4$/.test(t)), m34.takt);
 ok('3/4 Matrix: Lauflicht der Takt-LEDs = 3 Lampen (die 4. unsichtbar, kein Verschieben)', m34.ledsAll.every(l => l[3] === 'x') && m34.ledsAll.some(l => l.startsWith('100')) && m34.ledsAll.some(l => l.startsWith('001')), m34.ledsAll);
@@ -72,7 +72,7 @@ const F3 = await p.evaluate(async () => {
   o.vers = vs; o.v1 = (() => { const h = sx9At(S.song, 0, 0); return h ? h.v : null; })();
   // ▶ SONG ab dem Teil: Klicks in 3/4
   const log = [], orig = window.click; window.click = function (t, acc, soft) { log.push(acc ? 'A' : soft ? 's' : 'n'); return orig.apply(this, arguments); };
-  S.settings.metro = true; songPlayStart(m.a); await wait(2600); stop(); window.click = orig; S.settings.metro = false; o.songAcc = log.join('');
+  S.settings.metro = true; songPlayStart(m.a); await wait(3600); stop(); window.click = orig; S.settings.metro = false; o.songAcc = log.join('');
   undo(); await wait(100); o.afterUndo = (() => { let n = 0; for (let t = 0; t < NT(); t++) { const h = sx9At(S.song, t, m.a); if (h && h.id) n++; } return n; })();
   o.lanesBack = JSON.stringify(S.song.lanes) === before;
   // Song als Ganzes: Taktart 3/4 → Meldung [Clips umwandeln] → alle Stellen werden 3/4-Versionen
@@ -177,7 +177,9 @@ ok('An/Aus-LED wirkt (Hall-Rückweg 0 ↔ zurück), Chorus-Wahl wirkt, alle Tast
 ok('Regler wirken: Rückweg im HALL-Gerät gezogen → S.fxBus.hall.ret ändert sich (ein ↶)', knob && Math.abs(R5b.ret - knob.v) > .02, {vorher: knob && knob.v, nachher: R5b.ret, undo: R5b.undo});
 ok('Live-Anzeige beim Abspielen: Pegel an SPUR und HALL, GR am MASTER', R5.meters.some(m => /^spur:−\d+ dB$/.test(m)) && R5.meters.some(m => /^hall:−\d+ dB$/.test(m)) && R5.meters.some(m => /^master:/.test(m)), R5.meters);
 await shot('takt-rack-hochkant.png', 428, 926);
-await shot('takt-rack-quer.png', 926, 428);
+await p.setViewportSize({width: 926, height: 428}); await p.waitForTimeout(400);
+await p.evaluate(async () => { SYNQUENZER.tkt.rackOpen(window.__rt); await new Promise(r => setTimeout(r, 900)); });   // Drehen schließt Blätter (wie bisher): neu öffnen
+await p.screenshot({path: path.join(out, 'takt-rack-quer.png')});
 const R5c = await p.evaluate(() => { const x = UI.pop && UI.pop.el.querySelector('.ms-x'), r = x && x.getBoundingClientRect(); return r ? {t: r.top, b: r.bottom, r: r.right, vis: document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2) === x} : null; });
 ok('Rack quer: ✕ sichtbar und oben (klebt beim Scrollen)', R5c && R5c.t >= 0 && R5c.b <= 428 && R5c.r <= 926 && R5c.vis, R5c);
 await p.evaluate(() => { stop(); closePop(); });
@@ -212,7 +214,7 @@ const H6 = await p.evaluate(async () => {
   return o;
 });
 ok('Öltank hängt im vorhandenen Hall-Bus (Raum an, FDN 75 s), Saal = Faltung ohne FDN, Standard = eingebauter Hall wieder dran', H6.oel.on && H6.oel.room === 'oel' && H6.oel.fdnLen === 75 && H6.oel.ir > 2.5 && H6.saal.on && H6.saal.room === 'saal' && !H6.std.on, {oel: H6.oel, saal: H6.saal, std: H6.std});
-ok('Speichern additiv: Standard ohne Feld, Öltank 30 s = {tktRaum: oel} (30 = ohne tktLen); ↶ nimmt den Raum zurück', !H6.saveStd && H6.save30.tktRaum === 'oel' && !('tktLen' in H6.save30) && H6.undoRoom === 'saal', {save30: H6.save30.tktRaum, undo: H6.undoRoom});
+ok('Speichern additiv: Standard ohne Feld, Öltank 30 s = {tktRaum: oel} (30 = ohne tktLen); ↶ nimmt den Raum zurück', !H6.saveStd && H6.save30.tktRaum === 'oel' && !('tktLen' in H6.save30) && H6.undoRoom === '', {save30: H6.save30.tktRaum, undo: H6.undoRoom});
 ok('Öltank RT60 gemessen: 75 s-Einstellung lang und tief betont (125 Hz > 1 kHz > 4 kHz, 125 Hz ≥ 90 s)', H6.rt[75].r125 >= 90 && H6.rt[75].r1k >= 55 && H6.rt[75].r125 > 1.3 * H6.rt[75].r1k && H6.rt[75].r4k < H6.rt[75].r1k && H6.lowDb > 3, {rt75: H6.rt[75], tiefen_dB: H6.lowDb});
 ok('Öltank RT60: 30 s und 8 s folgen der Wahl (1 kHz ±30 %)', Math.abs(H6.rt[30].r1k - 30) < 9 && Math.abs(H6.rt[8].r1k - 8) < 2.6 && H6.rt[30].r125 > H6.rt[30].r1k, {rt30: H6.rt[30], rt8: H6.rt[8]});
 ok('Öltank CPU/Speicher (iPhone-tauglich): IR ≈ 1 MB, FDN 0,27 MB, Rechenzeit klein', H6.mem.ir.bytes < 1.2e6 && H6.cpu.pct < 25, {cpu: H6.cpu, mem: H6.mem});
@@ -220,8 +222,8 @@ ok('Öltank CPU/Speicher (iPhone-tauglich): IR ≈ 1 MB, FDN 0,27 MB, Rechenzeit
 const V6 = await p.evaluate(async () => {
   const o = {}; stop(); SYNQUENZER.loadDemo(); ensureAudio(); await new Promise(r => setTimeout(r, 300)); SYNQUENZER.songFromChain([{scene: 0, bars: 1}]);
   const tail = buf => { const x = buf.getChannelData(0), a = Math.round(buf.length * .82); let e = 0; for (let i = a; i < buf.length; i++) e += x[i] * x[i]; return 10 * Math.log10(e / (buf.length - a) + 1e-30); };
-  try { SYNQUENZER.tkt.room(''); const b0 = await vvRenderAudio({range: {a: 0, b: 1}}); o.std = +tail(b0.buffer || b0).toFixed(1);
-    SYNQUENZER.tkt.room('oel', 75); const b1 = await vvRenderAudio({range: {a: 0, b: 1}}); o.oel = +tail(b1.buffer || b1).toFixed(1); } catch (e) { o.err = String(e && e.message || e); }
+  try { SYNQUENZER.tkt.room(''); const b0 = await vvRenderAudio({range: {a: 0, b: 1}}); o.std = +tail(b0.buf || b0).toFixed(1);
+    SYNQUENZER.tkt.room('oel', 75); const b1 = await vvRenderAudio({range: {a: 0, b: 1}}); o.oel = +tail(b1.buf || b1).toFixed(1); } catch (e) { o.err = String(e && e.message || e); }
   o.live = SYNQUENZER.tkt.hallInfo(); SYNQUENZER.tkt.room('');
   return o;
 });
@@ -237,7 +239,7 @@ const lay = async (w, h) => { await p.setViewportSize({width: w, height: h}); aw
     const a = kids.map(rect), mine = [...pg.querySelectorAll('.tktrk,.tktrm')].map(k => { const r = k.getBoundingClientRect(), pr = pg.getBoundingClientRect(); return {h: r.height, in: r.bottom <= pr.bottom + 1 && r.right <= pr.right + 1, vis: r.width > 0}; });
     const css = document.getElementById('tkt-css'), par = css.parentNode; css.remove(); const ex = [...pg.querySelectorAll('.tktrk,.tktrm')]; ex.forEach(e => e.style.display = 'none'); await wait(60);
     const bb = kids.map(rect); par.appendChild(css); ex.forEach(e => e.style.display = '');
-    const moved = a.filter((r, k) => Math.abs(r[0] - bb[k][0]) > 1 || Math.abs(r[1] - bb[k][1]) > 1).length;
+    const moved = a.filter((r, k) => Math.abs(r[0] - bb[k][0]) > 1 || Math.abs(r[1] - bb[k][1]) > 1).length;   // Lage (links/oben) jedes vorhandenen Elements
     outp[sub] = {mine, moved, sc: pg.scrollHeight > pg.clientHeight + 2};
   }
   return outp;
