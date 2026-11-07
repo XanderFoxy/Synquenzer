@@ -163,8 +163,9 @@ try {
     const r = (sel) => G.bbAct(sel);
     r('[data-g3gm="trap"]'); r('[data-ziel="neu"]'); o.before = D.getClip(4, 0).notes.length;
     o.s2 = null; const P2 = document.querySelector('.bb1s'); o.insBtn = !!(P2 && P2.querySelector('[data-bb="ins"]:not([disabled])'));
+    const zn = D.bb1.targets(4, 0).find(z => z.k === 'neu'); o.free = zn ? zn.s : null; o.wasEmpty = o.free != null && !D.getClip(4, o.free);
     r('[data-bb="ins"]');
-    for (let s = 1; s < 8; s++) { const c = D.getClip(4, s); if (c && c.notes.some(n => n.r)) { o.s2 = s; break; } }
+    if (o.free != null) { const c = D.getClip(4, o.free); if (o.wasEmpty && c && c.notes.some(n => n.r)) o.s2 = o.free; }
     o.after = D.getClip(4, 0).notes.length;
     D.undo(); o.undo = o.s2 != null ? !D.getClip(4, o.s2) : null;
     // Figuren-Reiter: Drums-Füller = Fill-Kacheln

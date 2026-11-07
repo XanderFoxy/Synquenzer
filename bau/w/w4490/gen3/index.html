@@ -83872,6 +83872,8 @@ function gen3MenuRow(sec, row, btn) {
       '.bb1s .gen3-ms{align-items:center}.bb1s .gen3-ms .lbl{flex:0 0 auto;font:700 10px/1 var(--font-ui);color:var(--text-dim);padding:0 2px}',
       '.bb1s .gen3-ms .rb{flex:1 1 0;min-width:0;height:44px;padding:0 2px;font:700 11px/1 var(--font-ui);white-space:nowrap}',
       '@media (orientation:landscape){.bb1s .gen3-swg,.bb1s .gen3-gmg{grid-template-columns:repeat(5,minmax(0,1fr))}}',
+      // hochkant: Bereich (Song │ Teil │ Matrix) und Art (Deine Noten │ Stil-Muster) je eine Zeile, damit nichts abgeschnitten wird
+      '@media (orientation:portrait){.gr2s .gr2-top{flex-wrap:wrap}.gr2s .gr2-top > .gr2-seg{flex:1 1 100%}}',
     ].join('\n');
     document.head.appendChild(s);
   } catch (e) {}

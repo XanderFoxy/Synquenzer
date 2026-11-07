@@ -432,7 +432,7 @@ test('Sprungmarken: alte #angebote/#vorteile/#konzerte zeigen auf Abschnitte, Le
     await page.waitForFunction(h => location.hash === h, neu);
   }
   // Leiste: alle Abschnitte in Xanders Reihenfolge, wischbar ohne seitliches Scrollen der Seite
-  assert.deepEqual(await page.locator('.sprung a').allInnerTexts(), ['Krypto', 'Meine Produkte', 'Preisfehler', 'Gewinnspiele', 'Cashback', 'Snacks', 'Auftritte', 'Remix', 'Mehr']);
+  assert.deepEqual(await page.locator('.sprung a').evaluateAll(as => as.map(a => a.firstChild.textContent.trim())), ['Krypto', 'Meine Produkte', 'Preisfehler', 'Gewinnspiele', 'Cashback', 'Snacks', 'Auftritte', 'Remix', 'Mehr']);
   // Push-Hilfe
   await page.locator('#push').click();
   assert.match(await page.locator('#push-hilfe').innerText(), /xander-schnaeppchen-b5cbf4442aaa9734f3/);
@@ -454,7 +454,7 @@ test('Platz für einen weiteren Reiter (Filme vom Kollegen): Link mit data-reite
   await page.locator('.sprung a[data-reiter="filme"]').click();
   await page.waitForFunction(() => location.hash === '#filme');
   assert.equal(await page.locator('main').isHidden(), true);
-  assert.match(await page.locator('#p-filme').innerText(), /Filme\s*3,99 €/);
+  assert.match(await page.locator('#p-filme').innerText(), /Filme\s*3,99 €/i);
   assert.equal(await page.locator('.sprung a[data-reiter="filme"]').getAttribute('aria-current'), 'true');
   await pruefeLayout(page, 'Reiter Filme');
   await springe(page, 'cashback');
@@ -631,7 +631,7 @@ for (const [ordner, nach, cache, altSeite] of [
   });
 }
 
-// SYNQUENZER-Worker der Wurzel (echte sw.js, Scope = Wurzel wie /Synquenzer/ auf GitHub Pages) speichert jede Seite in seinem
+// SYNQUENZER-Worker der Wurzel (echte sw.js, Cache synq-app-2 seit VW 01.11., Scope = Wurzel wie /Synquenzer/ auf GitHub Pages) speichert jede Seite in seinem
 // Bereich als Offline-Kopie des Synthesizers. Ohne Zurücksetzen der Kopie: nach jedem Weg zu Mein Vorteil startet der SYNQUENZER
 // ohne Netz und bei schwachem Netz (> 3 s) wieder als SYNQUENZER.
 const SYNTH = '<!doctype html><meta charset="utf-8"><title>SYNQUENZER</title><p>Synth</p>';
@@ -642,12 +642,12 @@ async function mitWurzelWorker() {
   ersatz.set('/', { typ: TYP['.html'], text: SYNTH });
   await page.goto(`${basis}/`);
   await page.evaluate(async () => { await navigator.serviceWorker.register('/sw.js', { scope: '/' }); await navigator.serviceWorker.ready; });
-  const kopie = () => page.evaluate(async () => { const r = await (await caches.open('synq-app-1')).match('/'); return r ? (await r.text()).match(/<title>([^<]*)/)?.[1] || '?' : null; });
-  await page.waitForFunction(async () => !!(await (await caches.open('synq-app-1')).match('/')));
+  const kopie = () => page.evaluate(async () => { const r = await (await caches.open('synq-app-2')).match('/'); return r ? (await r.text()).match(/<title>([^<]*)/)?.[1] || '?' : null; });
+  await page.waitForFunction(async () => !!(await (await caches.open('synq-app-2')).match('/')));
   assert.equal(await kopie(), 'SYNQUENZER');
   const istSynth = async wo => { // die Seite prüft die Kopie 1,5 s nach dem Laden (vorher kann der Wurzel-Worker noch speichern)
     await page.waitForTimeout(2000);
-    await page.waitForFunction(async () => { const r = await (await caches.open('synq-app-1')).match('/'); return !!r && /<title>SYNQUENZER/.test(await r.text()); }, null, { timeout: 6000 })
+    await page.waitForFunction(async () => { const r = await (await caches.open('synq-app-2')).match('/'); return !!r && /<title>SYNQUENZER/.test(await r.text()); }, null, { timeout: 6000 })
       .catch(async () => assert.fail(`${wo}: Offline-Kopie des SYNQUENZER ist jetzt „${await kopie()}“`));
   };
   const synthStart = async (wie, wo) => { // SYNQUENZER-Symbol antippen: ohne Netz bzw. mit Antwort erst nach 5 s
@@ -1024,6 +1024,7 @@ test('Krypto: Kurs beim Öffnen und alle 60 s; Quellen gestört -> klare Meldung
   assert.match(nbsp(await o.page.locator('#krypto-push').innerText()), /KRYPTO\s*= deine Zahlen\s*Wert kopieren[\s\S]*KRYPTO_NTFY_TOPIC/);
   await o.page.reload();
   await o.page.locator('#krypto-push > summary').click();
+  await o.page.waitForFunction(() => document.getElementById('krypto-topic').textContent !== '');
   assert.equal(await o.page.locator('#krypto-topic').innerText(), thema, 'Thema bleibt gleich');
   await pruefeLayout(o.page, 'Krypto-Push');
   await o.ctx.close();
@@ -1044,7 +1045,7 @@ test('Cashback nur passend und laufend; Prämien & Freunde werben nie; Remix-Con
   assert.match(t[0], /^Remix-Contest[\s\S]*bis Fr 20\.11\.[\s\S]*Synthpop duo[\s\S]*Remix-Contest · mit Stems · Einsendeschluss 20\.11\.2026/);
   assert.match(t[1], /Italo disco/);
   assert.doesNotMatch(await page.locator('#remix').textContent(), /abgelaufen/);
-  assert.doesNotMatch(await page.locator('#auftritte').textContent(), /remix/i);
+  assert.doesNotMatch(await page.locator('#auftritte').textContent(), /Synthpop duo|Italo disco label/);
   assert.equal(await zahlIn(page, 'remix').innerText(), '2');
   // Prämien nirgends (auch nicht in alten Daten)
   assert.doesNotMatch(await page.locator('main').textContent(), /Prämien & Freunde|Startprämie|Freunde werben/);

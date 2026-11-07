@@ -1822,6 +1822,7 @@ function kryptoGeaendert(c) {
   zonenMerken();
   zeichneKrypto();
   zeichneWichtig();
+  zeichneKryptoPush();
   if (kurs.zeit && !kurs.ausSpeicher) pruefeZonen();
 }
 $('krypto-editor').addEventListener('submit', ev => {
@@ -2136,6 +2137,7 @@ $('kopieren').addEventListener('click', ev => kopiere(TOPIC, ev.currentTarget));
 // --- Start -------------------------------------------------------------------------------------------------------
 $('neu').addEventListener('click', () => { lade(); ladeKurs(); if (reiterOffen) try { REITER_NEU[reiterOffen]?.(); } catch {} });
 zeichneKryptoEditor();
+zeichneKryptoPush();
 // noch keine Käufe -> Eingabe offen (so findet man sie)
 if (!kryptoStand().some(x => x.pos)) $('krypto-form').open = true;
 zeichneAlles();

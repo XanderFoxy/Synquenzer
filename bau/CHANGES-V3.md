@@ -1,3 +1,13 @@
+## 4.48.1 — Korrekturen nach dem Zusammenführen
+
+- **Guide „Remix“** springt jetzt hin: mit Song direkt ins Remix-Blatt (Stil-Kacheln), ohne Song zu SONG ⇄ mit Hinweis. Die Kurz-Anleitung „Song bauen“ zeigt den Remix-Schritt wieder.
+- **Bit Mask klingt nach ■ nicht mehr nach** (vorher bei etwa jedem dritten Stopp eine geplante Note, auch beim Szenenwechsel).
+- **Speicherleck behoben:** jedes Öffnen eines Synth-Editors ließ alte Knöpfe im Speicher (10× öffnen: +510 Elemente) – jetzt +0. Längeres Arbeiten bleibt flüssig.
+- **Zwei Renders klingen gleich** (MS 2000 bekam im Export einen zufälligen Startwert) – Mix-Assistent und Mastern messen damit wiederholbar.
+- **Konsolidieren → Clip verschieben → Zurückholen** findet den Clip wieder.
+- **MIDI aus dem Export-Blatt** (Song/Szene) enthält jetzt LAUF, Fills und deren Stille-/Ersetzen-Fenster – gleich wie gespielt.
+Tests: Regeln, acorn 0 / doppelte Schlüssel 0, Rauchtest grün; Guide 38/38, Remix 36/36; unabhängige Prüfung: Freigabe (Bit Mask 0/16 Nachklingen, Editor 10× +0 Knoten).
+
 ## 4.48.0 — Mix & Master 2, Remix übersetzt deine Noten (17 Stile), Guide „Wo finde ich …?“, Video wie die App mit Schnitt im Song und Making-of
 
 - **Mix & Master** (oben **MIX** neben ≡; auf schmalen iPhones ≡ › Mix › Mix & Master …): **Mischen**, **Mastern** oder **beides**. Die App hört den Song **einmal** durch – danach rechnen 9 Stile (Euro-Disco 80er, Hi-NRG, Synth-Pop weit, Italo, Modern, Synth-Pop, Disco, House, Sanft), Ziel −14/−9 und die Regler **Transparenz ↔ Druck** und **Wärme ↔ Glanz** sofort neu, ohne neues Rendern. Feste Grenzen: True-Peak ≤ −1 dBTP, Klang je Band ±3 dB, kein Pumpen. **A/B** auch während der Song läuft, **pegelgleich** (der lautere Weg wird zum Vergleich leiser – nie im Export). Dazu: **Seitenkette Kick → Bass**, **Feinschliff je Spur** (Fläche weicher/Atmosphäre, Bass schärfen/Druck, Lead herausstellen/einbetten), **Tiefenstaffelung**, Liste „Warum“; im **EQ · KOMP** jeder Spur Spektrum vor/nach dem EQ, Kennlinie und Gain-Reduction live.
