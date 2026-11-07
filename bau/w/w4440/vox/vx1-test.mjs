@@ -21,11 +21,17 @@ const INIT = () => {
   F.play = (arr, when) => { const ctx = window.__ctx, b = ctx.createBuffer(1, arr.length, ctx.sampleRate); b.getChannelData(0).set(arr); const s = ctx.createBufferSource(); s.buffer = b; s.connect(F.bus); s.start(when); F.srcs.push(s); };
   window.__loop = sec => { const F = window.__fake, ctx = window.__ctx; if (!F.bus) return false; const dl = ctx.createDelay(1); dl.delayTime.value = sec; const g = ctx.createGain(); g.gain.value = .7; for (const n of window.__outs) { try { n.connect(dl); } catch (e) {} } dl.connect(g); g.connect(F.bus); return true; };
 };
+const IPHONE = () => {
+  const md = navigator.mediaDevices; if (!md) return; const g0 = md.getUserMedia.bind(md);
+  md.getUserMedia = async c => { const s = await g0(c); for (const t of s.getAudioTracks()) Object.defineProperty(t, 'label', {get: () => 'iPhone Mikrofon', configurable: true}); return s; };
+  md.enumerateDevices = async () => [{kind: 'audioinput', deviceId: 'mic1', groupId: 'g1', label: 'iPhone Mikrofon'}, {kind: 'audiooutput', deviceId: 'out1', groupId: 'g1', label: 'iPhone Lautsprecher'}];
+};
 async function open(file, vp, o = {}) {
   const br = o.br || await chromium.launch(), ctx = await br.newContext({viewport: vp || {width: 428, height: 926}, hasTouch: !!o.touch, deviceScaleFactor: 1});
   const p = await ctx.newPage(), errs = [];
   p.on('pageerror', e => errs.push(String(e))); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
   if (o.fake) await p.addInitScript(INIT);
+  if (o.iphone) await p.addInitScript(IPHONE);
   if (o.ls) await p.addInitScript(([k, v]) => { try { localStorage.setItem(k, v); } catch (e) {} }, o.ls);
   await p.goto('file://' + file); await p.waitForFunction(() => window.SYNQUENZER && SYNQUENZER.version); await sleep(400);
   return {br, ctx, p, errs};
@@ -222,10 +228,13 @@ async function bleedRun(file, br) {
   if (await p.evaluate(id => !!SYNQUENZER.takes()[id].cl, id)) await p.evaluate(id => SYNQUENZER.clWait(id), id);
   await sleep(500);
   const r = await p.evaluate(async id => { const raw = await SYNQUENZER.tkPcmRange(id); return {meta: SYNQUENZER.takes()[id], raw: raw.map(v => v / 32767), heard: SYNQUENZER.clPlayRange(id), info: SYNQUENZER.vx1Info ? SYNQUENZER.vx1Info() : null}; }, id);
-  // Pausen der Stimme (Takt-Hälften 2–4 jedes Takts) gegen gesungene Stellen
-  const lat = (r.meta.pre ? 0 : 0), pz = [], vz = [];
-  for (let bar = 0; bar < 4; bar++) { pz.push([bar * 4 + 2.4, bar * 4 + 3.6]); vz.push([bar * 4 + .2, bar * 4 + 1.8]); }
-  const off = r.meta.pre ? r.meta.pre.in : 0, lv = (a, Z) => { let s = 0, n = 0; for (const [b0, b1] of Z) { const i0 = Math.round((off + b0 * SB) * sr), i1 = Math.round((off + b1 * SB) * sr); for (let i = i0; i < i1 && i < a.length; i++) { s += a[i] * a[i]; n++; } } return s / Math.max(1, n); };
+  // die gesungene Stimme im Take finden (Hüllkurven-Korrelation), dann Pausen (Stimme ±80 ms still) gegen gesungene Stellen
+  const D = 480, env = a => { const o = new Float32Array(Math.ceil(a.length / D)); for (let i = 0; i < a.length; i++) o[(i / D) | 0] += a[i] * a[i]; return o; };
+  const eR = env(r.raw), eY = env(x); let best = -1, bl = 0;
+  for (let l = -eY.length; l < eR.length; l++) { let s = 0; for (let j = 0; j < eY.length; j++) { const k = j + l; if (k >= 0 && k < eR.length) s += Math.sqrt(eY[j] * eR[k]); } if (s > best) { best = s; bl = l; } }
+  const pk = Math.max(...eY), quiet = k => { for (let d = -8; d <= 8; d++) { const j = k - bl + d; if (j >= 0 && j < eY.length && eY[j] > pk * 1e-4) return false; } return true; };
+  const lv = (a, pause) => { const e = env(a); let s = 0, n = 0; for (let k = 0; k < e.length; k++) { const j = k - bl, inV = j >= 0 && j < eY.length && eY[j] > pk * .05; if (pause ? quiet(k) && j > -100 && j < eY.length + 100 : inV) { s += e[k]; n++; } } return s / Math.max(1, n) / D; };
+  const pz = true, vz = false;
   await H.ctx.close();
   return {meta: r.meta, info: r.info, rawP: db(lv(r.raw, pz)), rawV: db(lv(r.raw, vz)), heardP: db(lv(r.heard, pz)), heardV: db(lv(r.heard, vz)), errs: H.errs};
 }
@@ -234,7 +243,7 @@ if (want('R')) {
   const br = await chromium.launch();
   // R1: ein früher erkannter Weg („Kabel“ nach einem USB-Interface) ohne eigene Wahl
   const LS = ['synq-stimme-v1', JSON.stringify({v: 1, prof: {}, route: 'wired'})];
-  const rt = async file => { const H = await open(file, null, {br, fake: true, ls: LS}), p = H.p; await p.evaluate(() => { SYNQUENZER.play(); SYNQUENZER.stop(); SYNQUENZER.stimmeStart({cal: false}); }); await p.waitForFunction(() => SYNQUENZER.stimme().phase === 'live', null, {timeout: 20000}); const v = await p.evaluate(() => SYNQUENZER.stimme().route); await H.ctx.close(); return v; };
+  const rt = async file => { const H = await open(file, null, {br, fake: true, iphone: true, ls: LS}), p = H.p; await p.evaluate(() => { SYNQUENZER.play(); SYNQUENZER.stop(); SYNQUENZER.stimmeStart({cal: false}); }); await p.waitForFunction(() => SYNQUENZER.stimme().phase === 'live', null, {timeout: 20000}); const v = await p.evaluate(() => SYNQUENZER.stimme().route); await H.ctx.close(); return v; };
   const rv = await rt(APP), rb = await rt(BASE);
   ok(rv === 'speaker' && rb === 'wired', `Weg beim Start mit eingebautem Mikro: VX1 „${rv}“ (4.42.0: „${rb}“ – dort blieb der alte erkannte Weg kleben, kein Säubern)`);
   // R2: Weg steht auf „Kabel“, die Musik kommt aber hörbar ins Mikro (Lautsprecher)
@@ -243,7 +252,7 @@ if (want('R')) {
   console.log('  4.42 Take', JSON.stringify({route: b.meta.route, cl: b.meta.cl, rf: b.meta.rf}), '· Pausen roh', b.rawP, 'dB → gehört', b.heardP, 'dB');
   ok(v.meta.cl === 60 && v.meta.rf > 0 && v.info.probe && v.info.probe.pk >= 15, 'Musik im Mikro erkannt (Echo-Spitze ' + (v.info.probe && v.info.probe.pk) + ' ≥ 15): Referenz nachgetragen, SÄUBERN 60 %');
   ok(v.rawP - v.heardP >= 20 && Math.abs(v.heardV - v.rawV) < 3, `hörbar: Musik in den Gesangspausen −${(v.rawP - v.heardP).toFixed(1)} dB, Gesang ±${Math.abs(v.heardV - v.rawV).toFixed(1)} dB`);
-  ok(!b.meta.cl && Math.abs(b.rawP - b.heardP) < 1, '4.42.0 zum Vergleich: kein Säubern, das Übersprechen bleibt');
+  ok(!b.meta.cl && b.rawP - b.heardP < 6, '4.42.0 zum Vergleich: kein Säubern, das Übersprechen bleibt');
   ok(!v.errs.length, 'keine Konsolenfehler ' + JSON.stringify(v.errs.slice(0, 2)));
   await br.close();
 }

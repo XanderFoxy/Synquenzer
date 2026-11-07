@@ -71392,13 +71392,15 @@ function vr1Klav(g, W, H, st, vt) {
     g.fillStyle = vvkCol(col, o.v, on ? .3 + f * .9 : 0); vvRound(g, x, y0, w, hgt, r); g.fill();
     g.fillStyle = 'rgba(255,255,255,.18)'; g.fillRect(x + .6, y0 + r * .6, 1, Math.max(0, hgt - r * 1.2));
     if (yT >= top - 2) { g.fillStyle = 'rgba(255,255,255,' + (.35 + .3 * o.v).toFixed(3) + ')'; g.fillRect(x + r * .6, yT + .4, Math.max(0, w - r * 1.2), 1.4); }
-    if (on && f > .02) { const hh = Math.min(hgt, 10 + 8 * o.v); const gr = g.createLinearGradient(0, nowY - hh, 0, nowY); gr.addColorStop(0, 'rgba(255,255,255,0)'); gr.addColorStop(1, 'rgba(255,255,255,' + (.55 * f).toFixed(3) + ')'); g.fillStyle = gr; g.fillRect(x, nowY - hh, w, hh); }
+    if (on && f > .02) { if (!L.vr1hot) { L.vr1hot = g.createLinearGradient(0, nowY - 18, 0, nowY); L.vr1hot.addColorStop(0, 'rgba(255,255,255,0)'); L.vr1hot.addColorStop(1, 'rgba(255,255,255,.55)'); }
+      const hh = Math.min(hgt, 18); g.fillStyle = L.vr1hot; g.globalAlpha = f * (.6 + .4 * o.v); g.fillRect(x, nowY - hh, w, hh); g.globalAlpha = 1; }
     if (w >= 11 && hgt >= 15 && yT > yD) { g.font = '700 ' + Math.min(10, w * .55).toFixed(1) + 'px ' + C.num; g.textAlign = 'center'; g.fillStyle = 'rgba(10,11,14,.78)'; g.fillText(VV4_NAMES[PCx(o.n)], x + w / 2, yT + 8); g.textAlign = 'left'; }
     if (rows.length < 64) rows.push({i: o.i, n: o.n, v: +o.v.toFixed(3), a: +o.a.toFixed(3), b: +o.b.toFixed(3), x: +x.toFixed(1), y: +y0.toFixed(1), w: +w.toFixed(1), h: +hgt.toFixed(1), on});
   }
   g.restore();
   // the top part: the bars fade into the background (the grid with them) …
-  const fo = g.createLinearGradient(0, yD, 0, top); fo.addColorStop(0, 'rgba(0,0,0,0)'); fo.addColorStop(1, C.bg); g.fillStyle = fo; g.fillRect(0, top - 1, LW, yD - top + 1);
+  if (!L.vr1fo) { L.vr1fo = g.createLinearGradient(0, yD, 0, top); L.vr1fo.addColorStop(0, 'rgba(0,0,0,0)'); L.vr1fo.addColorStop(1, C.bg); }   // je Layout einmal (wie das Tastatur-Bild)
+  g.fillStyle = L.vr1fo; g.fillRect(0, top - 1, LW, yD - top + 1);
   // … and turn into sparks: points of a note at fixed times after its start (spacing dt), each one born when it crosses the line
   // yD, rising with its own speed, swaying and fading; the strike itself throws a few sparks off the key
   g.globalCompositeOperation = 'lighter';
