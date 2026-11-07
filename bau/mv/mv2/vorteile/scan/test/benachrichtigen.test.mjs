@@ -63,9 +63,12 @@ test('Gesamtlauf mit Fixtures: Erstlauf still, zweiter Lauf meldet nur Neues', a
     const r2 = await main(['--fixtures', '--data', dir, '--jetzt', '2026-10-31T20:00:00Z']);
     assert.equal(r2.plan.sofort.length, 0, 'alles schon bekannt');
     assert.equal(r2.plan.digest, null);
-    // Prämien sortiert nach Netto pro Stunde Aufwand
-    const pr = a.kategorien.praemien.map(e => e.extra.proStunde);
-    assert.deepEqual(pr, [...pr].sort((x, y) => y - x));
+    // Prämien & Freunde werben sind aus (Xander 07.11.2026), Cashback kommt aus dem Modul deals
+    assert.equal(a.status.praemien.aus, true);
+    assert.deepEqual(a.kategorien.praemien, []);
+    assert.ok(a.kategorien.deals.some(e => e.grund === 'cashback' && ['gzg', 'cashback'].includes(e.extra?.art)));
+    // Remix-Contests stehen bei Musik
+    assert.ok(a.kategorien.musik.some(e => e.extra?.art === 'remix'));
   } finally { console.log = log; }
 });
 
@@ -74,14 +77,14 @@ test('Neues Modul in laufendem Radar: erster Lauf meldet nichts nach (keine Push
   const log = console.log; console.log = () => {};
   try {
     await main(['--fixtures', '--data', dir, '--jetzt', '2026-10-31T19:00:00Z']);
-    // so tun, als hätte es das Prämien-Modul vorher nicht gegeben
+    // so tun, als hätte es das Musik-Modul vorher nicht gegeben (Prämien sind seit 07.11.2026 aus)
     const zp = join(dir, 'zustand.json');
     const z = JSON.parse(await readFile(zp, 'utf8'));
-    delete z.lauf.praemien; z.gemeldet = {}; z.digestTag = '2026-10-31';
+    delete z.lauf.musik; z.gemeldet = {}; z.digestTag = '2026-10-31';
     const { writeFile } = await import('node:fs/promises');
     await writeFile(zp, JSON.stringify(z));
     const r = await main(['--fixtures', '--data', dir, '--jetzt', '2026-10-31T20:00:00Z', '--modus', 'digest']);
-    assert.ok(!r.plan.sofort.some(s => s.e.kategorie === 'praemien'));
-    assert.ok(!(r.plan.digest?.liste || []).some(e => e.kategorie === 'praemien'));
+    assert.ok(!r.plan.sofort.some(s => s.e.kategorie === 'musik'));
+    assert.ok(!(r.plan.digest?.liste || []).some(e => e.kategorie === 'musik'));
   } finally { console.log = log; }
 });

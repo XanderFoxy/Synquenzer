@@ -36,13 +36,13 @@
     "dealSeitenProLauf": 10,
     "neuPruefenNachMinuten": 45,
     "krass": {
-      "_hinweis": "Nur krasse Preisfehler (Xander 07.11.2026: „4K-Fernseher für 35 €“, kein „Switch-2-Spiel 49 → 39 €“). Mit Vorher-Preis: ≥ minProzent darunter UND ≥ minErsparnisEuro gespart, oder ≤ absurdMaxEuro statt ≥ absurdMinVorher. Ohne Vorher-Preis: nur teure Geräte (scan/krass.mjs GERAETE_AB), ≥ minProzent unter dem Mindestpreis solcher Geräte. Spiele: ≤ spielMaxEuro oder ≥ spielMinProzent UND ≥ spielMinErsparnisEuro.",
+      "_hinweis": "Nur krasse Preisfehler (Xander 07.11.2026: „4K-Fernseher für 35 €“, kein „Switch-2-Spiel 49 → 39 €“). Mit Vorher-Preis: ≥ minProzent darunter UND ≥ minErsparnisEuro gespart, oder ≤ absurdMaxEuro statt ≥ absurdMinVorher. Ohne Vorher-Preis: nur teure Geräte (scan/krass.mjs GERAETE_AB), ≥ minProzent unter dem Mindestpreis solcher Geräte. Spiele nur ≈ 1 €: ≤ spielMaxEuro oder ≥ spielMinProzent UND ≥ spielMinErsparnisEuro.",
       "minProzent": 75,
       "minErsparnisEuro": 20,
       "absurdMaxEuro": 5,
       "absurdMinVorher": 15,
-      "spielMaxEuro": 2,
-      "spielMinProzent": 85,
+      "spielMaxEuro": 1.5,
+      "spielMinProzent": 98,
       "spielMinErsparnisEuro": 40
     }
   },

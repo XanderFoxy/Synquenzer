@@ -4,15 +4,15 @@
 // mein-vorteil/test/regeln.test.mjs prüft, dass alle drei gleich entscheiden.
 //
 // Regeln (Grenzen in der config, sonst KRASS_STANDARD):
-//  1. Spiele (Switch/Switch 2/PS5/Xbox/PC): nur praktisch geschenkt (≤ spielMaxEuro) oder ein wirklich spürbarer
-//     Unterschied (≥ spielMinProzent UND ≥ spielMinErsparnisEuro gespart).
+//  1. Spiele (Switch/Switch 2/PS5/Xbox/PC): nur praktisch geschenkt, also ≈ 1 € (≤ spielMaxEuro, oder
+//     ≥ spielMinProzent UND ≥ spielMinErsparnisEuro unter dem Vorher-Preis).
 //  2. Vorher-Preis bekannt: ≥ minProzent unter dem Vorher-Preis UND ≥ minErsparnisEuro gespart,
 //     oder absurd billig (≤ absurdMaxEuro, obwohl es sonst ≥ absurdMinVorher kostete).
 //  3. Vorher-Preis unbekannt: nur teure Geräte (Fernseher, Laptop, Konsole …, kein Zubehör), deren Preis ≥ minProzent
 //     unter dem, was so ein Gerät mindestens kostet („Fernseher ab ca. 200 €“ -> höchstens 50 €).
 export const KRASS_STANDARD = Object.freeze({
   minProzent: 75, minErsparnisEuro: 20, absurdMaxEuro: 5, absurdMinVorher: 15,
-  spielMaxEuro: 2, spielMinProzent: 85, spielMinErsparnisEuro: 40,
+  spielMaxEuro: 1.5, spielMinProzent: 98, spielMinErsparnisEuro: 40,
 });
 
 // Was so ein Gerät mindestens kostet (vorsichtig niedrig) – nur für Preisfehler ohne bekannten Vorher-Preis

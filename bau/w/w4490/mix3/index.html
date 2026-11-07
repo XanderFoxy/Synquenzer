@@ -4356,6 +4356,21 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 .mx1eqs .mx2grm small{grid-column:1/-1;color:var(--text-faint)}
 @media (orientation:landscape) and (max-height:500px){ .mx1eqs .mx2leg,.mx1eqs .mx2kl,.mx1eqs .mx2grm small{display:none} .mx1eqs .mx2cpv{margin:-15px 0 1px 104px;height:15px} .mx1eqs .mx2grm{gap:0 8px} }   /* quer: Meter in der Zeile „Kompressor“, Kennlinie nur hochkant */
 /* MX2 END */
+/* MX3 BEGIN: Mix & Master live (Messen aus, Auto-Nachführen), hervorgehobener Weg, Gesang-Zeilen; CH1 Zeile „Gesang“ im Chor- und Marken-Blatt – Ziele ≥ 44 px */
+.mx2s .mx3row{margin:0 0 6px}
+.mx2s .mx3row .mx2r2,.mx2s .mx3row .mx2r3{margin:4px 0}
+.mx2s .mx3row .mx3st{margin:2px 0 0;line-height:1.35}
+.mx2s .mx2w .mbtn.mx3f{box-shadow:inset 0 0 0 2px var(--amber),0 0 10px rgba(255,176,0,.35)}
+.mx2s .mx3g .mx2fr .mbtn{min-height:44px}
+.mx2s .mx3gr{grid-template-columns:minmax(0,1fr) minmax(0,1.6fr)}
+.mx2s .mx3gr .small{line-height:1.3}
+.ch1row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;align-items:center;margin:6px 0 2px}
+.ch1row>.small{grid-column:1/-1;font:700 11px/1.2 var(--font-ui);letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim)}
+.ch1row .mbtn{min-height:44px;padding:0 4px;font-size:12px}
+@media (orientation:landscape) and (max-height:500px){ .ch1row{grid-template-columns:auto repeat(3,minmax(0,1fr))} .ch1row>.small{grid-column:auto} }
+.msheet .ch1-ms{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.msheet .ch1-ms .ms-b{min-height:44px}
+/* MX3 END */
 .tksheet .clab .mbtn[aria-pressed=true]{box-shadow:inset 0 0 0 2px var(--t8)}
 /* G-GB: Abschnitt „Mit GarageBand aufnehmen“ im STIMME-/Takes-Blatt (Ziele ≥ 44 px) */
 .tksheet .ggb{margin:8px 0 6px;padding-top:8px;border-top:1px solid var(--line)}
@@ -40182,6 +40197,7 @@ function openMarkSheet(id) {
       sx11MarkSheetPaint(p, m);   /* SX11: Fassung [Leicht] [Voll] [Kopieren] [Einfügen] */
       sx126MarkSheetPaint(p, m);  // SX126: [Bei Takt …] (Klinge), beim letzten Teil „Ausblenden am Ende“
       gr1MarkSheetPaint(p, m);    // GR1: Rhythmus [Small] [Full] [Vorschlag] [Remix …]
+      ch1MarkSheetPaint(p, m);    // CH1: [Refrain groß] [Refrain 2× singen] (nur Refrain-Teile mit Gesang)
       for (const b of p.querySelectorAll('.ms-b')) if (b.scrollWidth > b.clientWidth + 1) b.classList.add('tight');
     };
     paint(); p._paint = paint;
@@ -47305,7 +47321,7 @@ function mtrMasterBtn(where) {
   const b = el('button', 'mtrm mtrm-' + where); b.setAttribute('aria-label', 'Master-Pegel – MASTER-Seite öffnen'); b.title = 'Master-Pegel (antippen: MASTER)';
   b.appendChild(mtrEl(where === 'sv' ? 'hz' : '')); guardTouch(b);
   b.addEventListener('pointerdown', e => e.stopPropagation());       // never a grid / song gesture
-  onTap(b, () => { haptic('tick'); openMasterPage(); });
+  onTap(b, () => { haptic('tick'); mx3Open(null); });   // MX3 (D3): der Balken öffnet Mix & Master
   return b;
 }
 // Tipp auf den Master-Balken: der Klang-Editor der gewählten Spur auf FX › MASTER (Drums: FX › MASTER des Drum-Editors)
@@ -64759,7 +64775,7 @@ class SynqMixaAn extends AudioWorkletProcessor {
 registerProcessor('synq-mixa-an', SynqMixaAn);
 `;
 const MIXA = {mods: new WeakMap(), w: null, wid: 0, wq: new Map(), busy: false, prog: 0, res: null, am: null, amBusy: false, amProg: 0, ab: false, done: new Map(), err: 0, run: -1, how: null, ziel: -14, last: null, cap: null};
-const mixaModSrc = () => 'const MIXA_D = (' + mixaDspMake.toString() + ')();\n' + MIXA_PROC_SRC + mx1ModSrc() + mx2ModSrc();   // MX1; MX2
+const mixaModSrc = () => 'const MIXA_D = (' + mixaDspMake.toString() + ')();\n' + MIXA_PROC_SRC + mx1ModSrc() + mx2ModSrc() + mx3ModSrc();   // MX1; MX2; MX3
 function mixaAddModule(c) {
   let m = MIXA.mods.get(c); if (m === true) return Promise.resolve(true); if (m === false) return Promise.resolve(false); if (m) return m;
   if (!c || !c.audioWorklet || typeof AudioWorkletNode !== 'function') { MIXA.mods.set(c, false); return Promise.resolve(false); }
@@ -64795,7 +64811,7 @@ function mixaNormAm(a) {
   if (!a || typeof a !== 'object' || Array.isArray(a)) return null;
   const N = (k, lo, hi, d) => (typeof a[k] === 'number' && isFinite(a[k]) ? +(a[k] < lo ? lo : a[k] > hi ? hi : a[k]).toFixed(2) : d);
   return {on: a.on !== false, ziel: a.ziel === -9 ? -9 : -14, lo: N('lo', -6, 6, 0), hi: N('hi', -6, 6, 0), thr: N('thr', -60, 0, 0), ra: N('ra', 1, 10, 1),
-    at: N('at', 0.1, 200, 30), rl: N('rl', 10, 2000, 200), gain: N('gain', -24, 30, 0), ceil: N('ceil', -6, 0, -1), ...mx1NormAmX(a), ...mx2NormAmX(a)};   // MX1: st, mb, sat; MX2: mx2
+    at: N('at', 0.1, 200, 30), rl: N('rl', 10, 2000, 200), gain: N('gain', -24, 30, 0), ceil: N('ceil', -6, 0, -1), ...mx1NormAmX(a), ...mx2NormAmX(a), ...mx3NormAmX(a)};   // MX1: st, mb, sat; MX2: mx2; MX3: mx3 (Auto-Nachführen aus)
 }
 const mixaFxOf = tr => { const f = (tr && tr.sound && tr.sound.fx) || {}; return {vol: f.vol === undefined ? null : f.vol, pan: f.pan === undefined ? null : f.pan, pump: f.pump === undefined ? null : f.pump, pumpRel: f.pumpRel === undefined ? null : f.pumpRel, rev: f.rev === undefined ? null : f.rev, dly: f.dly === undefined ? null : f.dly}; };   // MX1: + rev/dly (Tiefe)
 function mixaSnap() { return JSON.stringify({t: S.tracks.map(tr => [tr.mix || null, mixaFxOf(tr), tr.mxRole || null]),   // MX1: + Rolle
@@ -65130,7 +65146,7 @@ function mixaBtns() {
   const d = el('div', 'mxab');
   d.innerHTML = '<button class="mbtn rb" data-a="am">AUTO-MASTER</button><button class="mbtn rb" data-a="mix">MIX-ASSISTENT</button>';
   guardTouch(d);
-  onTap(d, b => { haptic('tick'); if (b.dataset.a === 'am') amSheet(b); else mixaSheet(b); }, 'button[data-a]');
+  onTap(d, b => { haptic('tick'); mx3Open(b.dataset.a === 'am' ? 'am' : 'mix'); }, 'button[data-a]');   // MX3 (D3): ein Blatt – Mix & Master
   return d;
 }
 function mixaSheet(anchor) {
@@ -66065,6 +66081,7 @@ function mx2TapBuild(off) {
 async function mx2TapWait(X) { const Y = X && X.mx2; if (!Y) return null; const W0 = performance.now(); while (!Y.end && performance.now() - W0 < 2500) await sleep(15); return Y.bl; }
 function mx2Prog() { const p = mx2El(); const s = p && p.querySelector('.mx2prog'); if (s) s.textContent = (MX2.busy === 'mix' ? 'Mix-Analyse' : MX2.busy === 'mix2' ? 'Nachmessen' : 'Messen') + ' … ' + Math.round(MIXA.prog * 100) + ' %'; }
 async function mx2Run(withMix, tag) {
+  if (mx3UseLive()) return mx3Run(withMix, tag);                 // MX3: Messen live aus der laufenden Szene/Matrix
   if (MIXA.busy) { toast('Rechnet noch …'); return null; }
   if (!S.song || !S.song.bars) { toast('Noch kein Song – erst ● SONG'); return null; }
   MIXA.busy = 'mx2'; MIXA.prog = 0; MX2.busy = tag || (withMix ? 'mix' : 'am'); MX2.renders = (MX2.renders | 0) + 1; mx2Paint();
@@ -66106,7 +66123,7 @@ function mx2Master() {
   const ms = +(performance.now() - T0).toFixed(1);
   if (!MX2.ab) mx2AbBase();
   const before = mixaSnap(), P = res.P;
-  S.fxBus.am = mixaNormAm(Object.assign({on: true, ziel: MIXA.ziel, lo: P.lo, hi: P.hi, thr: P.thr, ra: P.ra, at: P.at, rl: P.rl, gain: P.gain, ceil: P.ceil, st: P.st, mb: P.mb, sat: P.sat}, {mx2: {pf: pr.pf, d: pr.d, w: pr.w}}));
+  S.fxBus.am = mixaNormAm(Object.assign({on: true, ziel: MIXA.ziel, lo: P.lo, hi: P.hi, thr: P.thr, ra: P.ra, at: P.at, rl: P.rl, gain: P.gain, ceil: P.ceil, st: P.st, mb: P.mb, sat: P.sat}, {mx2: {pf: pr.pf, d: pr.d, w: pr.w}}, mx3Keep()));   // MX3: mx3 bleibt
   MX2.fit = Object.assign(res, {gen: ++MX2.gen, sig: c.sig, pf: pr.pf, d: pr.d, w: pr.w, ziel: MIXA.ziel, ms, exact: null});
   if (MX2.ab) { MX2.ab.LB = res.info.lout; MX2.ab.amOn = true; }
   if (before !== mixaSnap()) { mx2UndoMerge(before, 'Master: ' + Y.name + ' · ' + MIXA.ziel + ' LUFS'); mixaAfter([], true); }
@@ -66330,6 +66347,7 @@ function mx2Closed() {
   clearTimeout(MX2.xT); if (MX2.cache) mixaCall({op: 'mx2drop'}).catch(() => {});   // Speicher: das Song-Signal im Worker freigeben (Merkmale bleiben)
 }
 function mx2Tap(b) {
+  if (mx3Tap(b)) return;                                          // MX3: Quelle, Auto-Nachführen, Gesang
   const a = b.dataset.x2, v = b.dataset.v, i = +b.dataset.i;
   if (a === 'play') { mx2Play(); haptic('tick'); return; }
   if (a === 'A' || a === 'B') { mx2AB(a); haptic('tick'); return; }
@@ -66450,6 +66468,7 @@ function mx2Paint() {
   Rr += `<div class="mx2sec"><h5>Feinschliff je Spur</h5><div class="small">Ein Tipp = ein Schritt in Grenzen, ↶ nimmt ihn zurück.${MX2.last && MX2.last.txt ? ' Zuletzt: ' + esc(S.tracks[MX2.last.i] ? S.tracks[MX2.last.i].name : '') + ' – ' + esc(MX2.last.txt) : ''}</div>${fl}` +
     `<div class="mx2r3"><button class="mbtn rb" data-x2="depth"${busy ? ' disabled' : ''}>Tiefenstaffelung</button><button class="mbtn rb" data-x2="undo">↶ Zurück</button><button class="mbtn rb" data-x2="asst">Mix-Assistent …</button></div></div>`;
   c.innerHTML = `<div class="mx2L">${L}</div><div class="mx2R">${Rr}</div>`;
+  mx3Paint(p, c);                                                 // MX3: Messen aus, Auto-Nachführen, Pegel in dB, Gesang
   p.scrollTop = sc;
   if (p.isConnected && !p.classList.contains('abg')) popFit(p);
   MX2.ver++;
@@ -66554,6 +66573,587 @@ const MX2_API = {
   mx2Core: () => mx2Core(), mx2Snap: () => mx2Snap(), mx2Roles: () => mx2Roles()
 };
 /* ===================== MX2 END ===================== */
+/* ===================== MX3 BEGIN: Mix & Master live in der Matrix, Auto-Nachführen, ein Blatt überall (D3/D15); CH1 Chor sauber + „Refrain groß“ =====================
+   Xander 07.11. (8): „das Mixing und Mastering soll auch innerhalb der Clip-Matrix funktionieren, wenn ich am Bauen bin … und immer wieder
+   drüber rechnen können, automatisch nach meinen Änderungen“. (9): Chor sauber, großer 80er-Refrain (in der UI keine Personennamen).
+   INVENTAR D3/D15 (genehmigt): das MX2-Blatt ist DAS Mix-&-Master-Blatt. [AUTO-MASTER] / [MIX-ASSISTENT] auf FX › MASTER und der
+   Master-Pegel-Balken öffnen es (Weg Mastern bzw. Mischen leuchtet); [Messen]/[Übernehmen] gibt es nicht mehr, [MASTERN] bleibt (Weg
+   Mastern); Kanalzug = EQ · KOMP-Blatt; Spur-Pegel im Blatt mit derselben dB-Zahl wie Spurkopf und FX › SPUR (sx4DbTxt).
+   MX3 – live:
+   - Messen aus [Song] (Offline-Render wie MX2) oder [Live] (Mitschnitt des Master-Eingangs, 4 Takte, 4–8 s, dazu der bisherige Weg für
+     den pegelgleichen A/B). „Auto“ = live, wenn die Matrix läuft oder es noch keinen Song gibt. Mischen live: dieselben Analyse-Worklets
+     wie der Mix-Assistent am laufenden Klang (ohne Songteile). Merkmale und Nachprüfung im Worker (mx2feat/mx2exact). Das Ergebnis
+     wirkt sofort auf den Master – in der Matrix wie im Song.
+   - Auto-Nachführen (fxBus.am.mx3.af; fehlt = an, sobald das Blatt gemastert hat): Änderung an Clips, Klang, Pegel, Stumm, Chor →
+     4 s Ruhe → Live-Mitschnitt → Stil/Ziel/Vorlieben neu angepasst → der Master gleitet in 1,5 s auf die neuen Werte (nie springen).
+     Nie während Aufnahme, Selbst-Singen, Render, Messung oder auf der A-Seite. Kein eigener ↶-Schritt (das ↶ der Änderung führt den
+     Master wieder zurück, die Wiederholen-Liste bleibt heil); im Blatt [↶ Nachführen zurück].
+   CH1 – Chor (baut auf der Chor-Gruppe G6+ auf, nichts doppelt):
+   - [Chor sauber] (Chor-Blatt, Mix & Master › Gesang): selbst gesungene Chorstimmen im Timing an den Lead (Silben-Anfänge, höchstens
+     ±40 ms, Zeitkarte „Dehnen“ = WSOLA, die ersten 20 ms je Silbe bitgleich), Tonhöhe enger aber natürlich (G2 weich, Raster der
+     Tonart, Stärke 85 %, natürlich 40), Säubern 60 % (Brummen/Rauschen, HP 80 Hz); Gruppe: Low-Cut ≥ 160 Hz, Zischlaute „leiser“,
+     Chor hinter und breiter als der Lead (Hall über dem Lead-Send, Vorverzögerung, Breite ≥ 0,6). Ein ↶ für alles.
+   - [Refrain groß] (Chor-Blatt, Marken-Blatt eines Refrain-Teils, Mix & Master › Gesang): alle Lead-Stellen im Refrain (Song-Teile bzw.
+     Szenen „Refrain“/„Chorus“/„Hook“) bekommen aus EINER Lead-Aufnahme die Chor-Gruppe G6+ mit dem Rezept CH1_RG: Unisono 3× gedoppelt
+     (±5–12 ct, 10–30 ms, L/R breit, formant-erhaltend), Oktave tiefer, Akkordtöne oben (Terz/Quinte aus den Akkorden); dazu am Stück
+     (grp.ch1.rg): leise Hauch-Schicht, Parallel-Kompression, Luft (parallel ab 8 kHz), Gated-Plate und Echo-Würfe 1/8 punktiert
+     (Ping-Pong) nur am Zeilenende. Strophe trocken/nah: STIMME-Hall-/Echo-Send klein. Ein ↶; A/B: [Chor an/aus] im Chor-Blatt.
+   - [Refrain 2× singen]: zwei Doppel-Spuren (L/R) an der Stelle, „Selbst singen“ für die nächste leere; jede Aufnahme wird automatisch an
+     den Lead ausgerichtet (grp.ch1.al, eigener ↶-Schritt „Chor ausgerichtet“).
+   Daten (additiv): fxBus.am.mx3 = {af: 0} (nur „aus“ wird gespeichert), chor.grp.ch1 = {rg?: 1, al?: 1}, take.ch1 = {al: 1, n, d0, d1}.
+   Alte Projekte: ohne diese Felder läuft alles wie vorher. */
+
+/* ---------- Normalisierer (in sich geschlossen: laufen schon beim Start über mixaNormAm / g6pNormGrp / tkExt) ---------- */
+function mx3NormAmX(a) { const x = a && a.mx3; return x && typeof x === 'object' && x.af === 0 ? {mx3: {af: 0}} : {}; }
+function mx3Keep() { const a = typeof S !== 'undefined' && S && S.fxBus && S.fxBus.am; return a && a.mx3 && a.mx3.af === 0 ? {mx3: {af: 0}} : null; }
+function ch1NormGrp(x) {
+  if (!x || typeof x !== 'object' || Array.isArray(x)) return null;
+  const o = {}; if (x.rg === 1 || x.rg === true) o.rg = 1; if (x.al === 1 || x.al === true) o.al = 1;
+  return Object.keys(o).length ? o : null;
+}
+tkExt().take.push((m, o) => {
+  const x = m && m.ch1; if (!x || typeof x !== 'object' || x.al !== 1) return;
+  const n = v => (typeof v === 'number' && isFinite(v) ? Math.round(Math.max(0, Math.min(1000, v)) * 10) / 10 : 0);
+  o.ch1 = {al: 1, n: Math.max(0, Math.min(4000, x.n | 0)), d0: n(x.d0), d1: n(x.d1)};
+});
+
+/* ---------- Zustand ---------- */
+const MX3 = {src: 'auto', busy: false, focus: null, sig0: null, gen: -1, seen: null, tChange: 0, pending: false, iv: 0, last: null, ramp: 0, rampK: 1, rampLog: [],
+  follows: 0, caps: 0, lastCap: null, undoAm: null, deb: 4000, rampMs: 1500, paintT: 0};
+const MX3_SRC = [['Auto', 'auto'], ['Song', 'song'], ['Live', 'live']];
+const mx3AutoOn = () => { const a = S.fxBus && S.fxBus.am; return !!(a && a.on && a.mx2 && !(a.mx3 && a.mx3.af === 0)); };
+function mx3RecBusy() { return rec.state !== 'off' || !!R.songRec || !!(typeof SREC !== 'undefined' && SREC.on) || !!(typeof G6 !== 'undefined' && G6.arm) || !!UI.vvOff || !!(VV && VV.busy); }
+function mx3UseLive() { if (MX3.src === 'live') return true; if (MX3.src === 'song') return false; return !S.song || !S.song.bars || (!!R.playing && !R.songPlay); }
+// Zustand, nach dem nachgeführt wird: Klänge, Mix, Stumm, Chor, Clips (Prüfsumme), Hall/Echo/Master-Bus, Song – ohne den Auto-Master selbst
+function mx3Sig() {
+  let h = 0x811c9dc5; const add = s => { for (let j = 0; j < s.length; j++) { h ^= s.charCodeAt(j); h = Math.imul(h, 0x01000193) >>> 0; } };
+  try {
+    for (const t of S.tracks) {
+      add(JSON.stringify([t.sound, t.mix || null, !!t.mute, t.chor || null]));
+      for (const c of t.clips) {
+        if (!c) { add('-'); continue; }
+        let q = ((c.len || 0) * 31 + (c.notes ? c.notes.length : 0)) >>> 0;
+        if (c.notes) for (const n of c.notes) q = (Math.imul(q, 33) + Math.round((n.t || 0) * 960) * 7 + (n.n | 0) * 13 + Math.round((n.d || 0) * 960) * 3 + Math.round((n.v || 0) * 127)) >>> 0;
+        add(String(q)); if (c.audio) add(JSON.stringify(c.audio));
+      }
+    }
+    const F = S.fxBus || {}; add(JSON.stringify([F.master || null, F.hall || null, F.echo || null, F.pumpSrc || null, S.bpm]));
+    if (S.song) add(JSON.stringify([S.song.bars, S.song.lanes || null, S.song.vox || null, S.song.own || null]));
+  } catch (e) { return String(Math.random()); }
+  return h.toString(16);
+}
+
+/* ---------- Live-Mitschnitt (Worklet im MIX-A-Modul): Master-Eingang + bisheriger Weg; mit Mischen die Analyse-Worklets je Spur ---------- */
+function mx3ModSrc() {
+  return `
+class SynqMx3Cap extends AudioWorkletProcessor {
+  constructor(o) { super(); const p = (o && o.processorOptions) || {}; this.n = Math.max(128, p.n | 0); this.L = new Float32Array(this.n); this.R = new Float32Array(this.n); this.i = 0; this.done = false; this.port.onmessage = e => { if (e.data && e.data.stop) this.done = true; }; }
+  process(inputs) {
+    if (this.done) return false;
+    const ch = inputs[0], room = this.n - this.i;
+    if (!ch || !ch.length) this.i += Math.min(128, room);
+    else { const L = ch[0], R = ch.length > 1 ? ch[1] : ch[0], k = Math.min(L.length, room); for (let j = 0; j < k; j++) { const a = L[j], b = R[j]; this.L[this.i + j] = a === a ? a : 0; this.R[this.i + j] = b === b ? b : 0; } this.i += k; }
+    if (this.i >= this.n) { this.port.postMessage({L: this.L, R: this.R}, [this.L.buffer, this.R.buffer]); this.done = true; return false; }
+    return true;
+  }
+}
+registerProcessor('synq-mx3-cap', SynqMx3Cap);
+`;
+}
+// die Analyse-Worklets des Mix-Assistenten (MIX-A + MX1) an den laufenden Spuren, Ende nach n Samples (absolut gezählt)
+function mx3MixTaps(c, n) {
+  const N = NT(), tot = Math.round(c.currentTime * c.sampleRate) + n, X = {chunks: [], nw: 0, n: N, t0: 0}, con = [];
+  const opt = (k, p) => ({numberOfInputs: k, numberOfOutputs: 1, outputChannelCount: [1], channelCount: 2, channelCountMode: 'explicit', channelInterpretation: 'speakers', processorOptions: p});
+  const sink = c.createGain(); sink.gain.value = 0; sink.connect(c.destination);
+  const an = new AudioWorkletNode(c, 'synq-mixa-an', opt(N, {total: tot})); an.connect(sink);
+  an.port.onmessage = e => { const m = e.data; if (m && m.w) { X.chunks.push(m.w); X.nw += m.n; } };
+  let a1 = null;
+  try { a1 = new AudioWorkletNode(c, 'synq-mx1-an', opt(N, {total: tot})); a1.connect(sink); const Y = X.mx1 = {chunks: [], nw: 0, n: N, end: false}; a1.port.onmessage = e => { const m = e.data; if (!m) return; if (m.w && m.n) { Y.chunks.push(m.w); Y.nw += m.n; } if (m.end) Y.end = true; }; } catch (e) { logErr(e); a1 = null; }
+  for (let i = 0; i < N; i++) { const A = AU.tracks[i]; if (A && A.trem) { try { A.trem.connect(an, 0, i); if (a1) A.trem.connect(a1, 0, i); con.push(A.trem); } catch (e) {} } }
+  X.drop = () => { con.forEach((t, k) => { try { t.disconnect(an); } catch (e) {} try { if (a1) t.disconnect(a1); } catch (e) {} }); try { an.disconnect(); if (a1) a1.disconnect(); sink.disconnect(); } catch (e) {} };
+  return X;
+}
+async function mx3Capture(sec, withMix) {
+  const c = AU.ctx, M = AU.M; if (!c || !M || UI.vvOff) throw new Error('Audio aus');
+  if (MIXA.mods.get(c) !== true && !(await mixaAddModule(c))) throw new Error('Analyse-Modul fehlt');
+  const sr = c.sampleRate, n = Math.round(sec * sr), opt = p => ({numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [1], channelCount: 2, channelCountMode: 'explicit', channelInterpretation: 'speakers', processorOptions: p});
+  const sink = c.createGain(); sink.gain.value = 0; sink.connect(c.destination);
+  const pre = new AudioWorkletNode(c, 'synq-mx3-cap', opt({n})), post = new AudioWorkletNode(c, 'synq-mx3-cap', opt({n}));
+  pre.connect(sink); post.connect(sink);
+  const outN = M.am ? M.am.ceil : M.ceil;                         // bisheriger Weg (ohne Auto-Master) = was man VORHER hört
+  const got = nd => new Promise((ok, no) => { const T = setTimeout(() => no(new Error('Mitschnitt: keine Antwort')), sec * 1000 + 6000); nd.port.onmessage = e => { clearTimeout(T); ok(e.data); }; });
+  const pA = got(pre), pB = got(post);
+  M.vol.connect(pre); outN.connect(post);
+  const X = withMix ? mx3MixTaps(c, n) : null;
+  try {
+    const [a, b] = await Promise.all([pA, pB]);
+    if (X) { const want = Math.floor(n / 512) - 2, W0 = performance.now(); while ((X.nw < want || (X.mx1 && !X.mx1.end)) && performance.now() - W0 < 1500) await sleep(20); }
+    return {L: a.L, R: a.R, aL: b.L, aR: b.R, sr, X};
+  } finally {
+    try { M.vol.disconnect(pre); } catch (e) {} try { outN.disconnect(post); } catch (e) {}
+    try { pre.disconnect(); post.disconnect(); sink.disconnect(); } catch (e) {}
+    if (X) X.drop();
+  }
+}
+// Messen live (gleiche Ergebnis-Form wie mx2Run: MX2.cache, mit Mischen MIXA.res); läuft nichts, startet die Szene (nicht beim Nachführen)
+async function mx3Run(withMix, tag, quiet) {
+  if (MIXA.busy || MX3.busy) { if (!quiet) toast('Rechnet noch …'); return null; }
+  if (mx3RecBusy()) { if (!quiet) toast('Erst Aufnahme beenden'); return null; }
+  if (!AU.ctx) { try { ensureAudio(); } catch (e) {} }
+  if (!R.playing) { if (quiet) return null; play(); await sleep(400); if (!R.playing) { toast('Abspielen ging nicht'); return null; } }
+  const bpm = S.bpm || 120, sec = clamp(16 * 60 / bpm, 4, 8);
+  MIXA.busy = 'mx3'; MIXA.prog = 0; MX3.busy = true; MX2.busy = tag || (withMix ? 'mix' : 'am'); mx2Paint(); mx3PaintSoon();
+  const T0 = performance.now(), D = MIXA_D0.v || (MIXA_D0.v = mixaDspMake());
+  const pt = setInterval(() => { MIXA.prog = Math.min(0.9, (performance.now() - T0) / 1000 / sec * 0.9); mx2Prog(); }, 200);
+  try {
+    const sig = mixaStateSig(), cap = await mx3Capture(sec, withMix), sr = cap.sr;
+    if (withMix && cap.X) {
+      const X = cap.X, S1 = 1 + X.n * 15, win = new Float32Array(X.nw * S1); let o = 0; for (const ch of X.chunks) { if (o + ch.length > win.length) break; win.set(ch, o); o += ch.length; }
+      X.chunks = null;
+      const tracks = S.tracks.map((tr, i) => ({i, name: tr.name, kind: tr.kind, stimme: !!tr.stimme, chor: !!(tr.chor && tr.chor.length), mute: !!tr.mute, ns: mixaNoteStats(i), fx: Object.assign({drive: 0}, fxOfSound(tr.sound)), mix: tr.mix || null})).filter(t => !t.mute);
+      const mxm = mx1Msg(X, {sr});
+      const res = await mixaCall({op: 'mix', win, nIn: X.n, wsec: 512 / sr, tracks, secs: [], t0: 0, a0: 0, spb: 60 / bpm, bpm, pumpSrc: S.fxBus.pumpSrc, otherPump: S.tracks.some(t => t.sound && t.sound.fx && t.sound.fx.pump > 0), mx1: mxm}, mxm ? [win.buffer, mxm.win.buffer] : [win.buffer]);
+      MIXA.res = Object.assign(res, {sig, at: Date.now(), live: true}); MIXA.done.clear();
+    }
+    MIXA.prog = 0.92; mx2Prog();
+    let LA = null; try { const v = D.integ(D.kblocks([cap.aL, cap.aR], sr)); if (isFinite(v) && v > -70) LA = +v.toFixed(2); } catch (e) {}
+    const key = sig + ':live:' + Date.now(), L = cap.L, Rr = cap.R;
+    const C = await mixaCall({op: 'mx2feat', L, R: Rr, sr, key}, [L.buffer, Rr.buffer]);
+    MX2.cache = {sig, key, C, LA, sr, bpm, t0: 0, at: Date.now(), ms: Math.round(performance.now() - T0), featMs: C.ms, src: 'live', sec: +sec.toFixed(2)};
+    MX2.stelle = {a: 0, b: Math.min(8, S.song && S.song.bars ? S.song.bars : 8)};
+    MX3.caps++; MX3.lastCap = {sec: +sec.toFixed(2), Lin: C.Lin, LA, scene: R.songPlay ? null : R.selS, song: !!R.songPlay, mix: !!withMix, ms: MX2.cache.ms};
+    MX3.sig0 = mx3Sig(); MX3.gen = TKGEN; MX3.pending = false; MX3.seen = MX2.cache;
+    return MX2.cache;
+  } catch (e) {
+    const m = String(e && e.message || e); if (!/Aufnahme|Audio aus/.test(m)) logErr(e); if (!quiet) toast('Live messen: ' + m);
+    return null;
+  } finally { clearInterval(pt); MIXA.busy = false; MIXA.prog = 0; MX2.busy = null; MX3.busy = false; mx2Paint(); mx3PaintSoon(); }
+}
+
+/* ---------- Auto-Nachführen: entprellt messen, sanft gleiten ---------- */
+function mx3Tick() {
+  if (typeof document !== 'undefined' && document.hidden) return;
+  try { ch1AutoTick(); } catch (e) { logErr(e); }
+  if (MX2.cache && MX2.cache !== MX3.seen) { MX3.seen = MX2.cache; MX3.sig0 = mx3Sig(); MX3.gen = TKGEN; MX3.pending = false; }   // frisch gemessen (Blatt): neue Grundlage
+  if (!mx3AutoOn()) { MX3.pending = false; return; }
+  if (TKGEN !== MX3.gen) {
+    MX3.gen = TKGEN; const s = mx3Sig();
+    if (MX3.sig0 == null) MX3.sig0 = s;
+    else if (s !== MX3.sig0) { MX3.sig0 = s; MX3.pending = true; MX3.tChange = performance.now(); mx3PaintSoon(); }
+  }
+  if (!MX3.pending || MX3.busy || MIXA.busy) return;
+  if (performance.now() - MX3.tChange < MX3.deb) return;
+  if (!R.playing || mx3RecBusy() || (MX2.ab && mx2Side() === 'A')) return;   // wartet ruhig auf ▶ bzw. das Ende der Aufnahme
+  MX3.pending = false; mx3Follow().catch(logErr);
+}
+async function mx3Follow() {
+  const am = S.fxBus.am; if (!am || !am.mx2) return false;
+  const c = await mx3Run(false, 'follow', true); if (!c) { MX3.pending = true; MX3.tChange = performance.now(); return false; }
+  return mx3Apply('Auto-Nachführen');
+}
+// Anpassung aus dem Zwischenspeicher wie mx2Master – aber ohne ↶-Schritt und mit Gleiten (nur Nachführen)
+function mx3Apply(why) {
+  const c = MX2.cache, am0 = S.fxBus.am; if (!c || !am0 || !am0.on) return false;
+  const pr = mx2Pref(), Y = mx2Pf(pr.pf); MIXA.ziel = am0.ziel === -9 ? -9 : -14;
+  const T0 = performance.now(), res = mx2Core().fit(c.C, {Y, d: pr.d, w: pr.w, ziel: MIXA.ziel, ceil: -1, bpm: c.bpm}); if (!res) return false;
+  const P = res.P, old = mixaAmP(), before = JSON.stringify(am0), g0 = am0.gain || 0;
+  S.fxBus.am = mixaNormAm(Object.assign({on: true, ziel: MIXA.ziel, lo: P.lo, hi: P.hi, thr: P.thr, ra: P.ra, at: P.at, rl: P.rl, gain: P.gain, ceil: P.ceil, st: P.st, mb: P.mb, sat: P.sat}, {mx2: {pf: pr.pf, d: pr.d, w: pr.w}}, mx3Keep0(am0)));
+  MX2.fit = Object.assign(res, {gen: ++MX2.gen, sig: c.sig, pf: pr.pf, d: pr.d, w: pr.w, ziel: MIXA.ziel, ms: +(performance.now() - T0).toFixed(1), exact: null});
+  if (MX2.ab) { MX2.ab.LB = res.info.lout; }
+  MX3.undoAm = before; MX3.last = {t: Date.now(), dG: +(P.gain - g0).toFixed(2), why, lout: res.info.lout, Lin: c.C.Lin}; MX3.follows++;
+  markDirty(); mixaMasterSync(false); mx3RampFrom(old);
+  mx2ExactSoon(); mx2Paint(); mx3PaintSoon();
+  return true;
+}
+const mx3Keep0 = a => (a && a.mx3 && a.mx3.af === 0 ? {mx3: {af: 0}} : null);
+// Gleiten: alte Werte sofort zurück an den Master-Knoten, dann in 1,5 s (S-Kurve, alle 60 ms) auf die neuen; eine andere Änderung gewinnt
+function mx3Lerp(a, b, t) {
+  if (typeof b === 'number') return typeof a === 'number' && isFinite(a) ? a + (b - a) * t : b;
+  if (Array.isArray(b)) return b.map((v, i) => mx3Lerp(Array.isArray(a) ? a[i] : undefined, v, t));
+  if (b && typeof b === 'object') { const o = {}; for (const k of Object.keys(b)) o[k] = mx3Lerp(a && typeof a === 'object' && a[k] != null ? a[k] : mx3Neutral(k, b[k]), b[k], t); return o; }
+  return t < 1 && a !== undefined ? a : b;
+}
+function mx3Neutral(k, v) {
+  if (k === 'mb' && v && Array.isArray(v.b)) return {f1: v.f1, f2: v.f2, b: v.b.map(q => [q[0], 1, q[2], q[3], 0])};   // Multiband neutral: 1 : 1, kein Make-up
+  if (k === 'sat' && v) return {k: 1e-5};
+  return undefined;
+}
+function mx3RampFrom(old) {
+  const A = AU.M && AU.M.am, nw = mixaAmP(); clearInterval(MX3.ramp); MX3.ramp = 0; MX3.rampK = 1;
+  if (!A || !A.node || !old || !nw || UI.vvOff) return;
+  const sg = A.sig, node = A.node, t0 = performance.now(), log = MX3.rampLog = [{t: 0, g: old.gain}];
+  try { node.port.postMessage({P: old}); } catch (e) { return; }
+  MX3.rampK = 0;
+  MX3.ramp = setInterval(() => {
+    const k = Math.min(1, (performance.now() - t0) / MX3.rampMs);
+    if (A.node !== node || A.sig !== sg) { clearInterval(MX3.ramp); MX3.ramp = 0; MX3.rampK = 1; return; }
+    const e = k * k * (3 - 2 * k), P = k >= 1 ? nw : mx3Lerp(old, nw, e);
+    try { node.port.postMessage({P}); } catch (x) {}
+    MX3.rampK = k; log.push({t: Math.round(performance.now() - t0), g: +(+P.gain).toFixed(3)});
+    if (k >= 1) { clearInterval(MX3.ramp); MX3.ramp = 0; }
+  }, 60);
+}
+function mx3UndoFollow() {
+  const v = MX3.undoAm; if (!v) return false;
+  const am = mixaNormAm(JSON.parse(v)); if (!am) return false;
+  const old = mixaAmP(); S.fxBus.am = am; MX3.undoAm = null; MX3.last = {t: Date.now(), dG: 0, why: 'zurück', lout: null};
+  MX3.sig0 = mx3Sig(); MX3.gen = TKGEN; MX3.pending = false;
+  markDirty(); mixaMasterSync(false); mx3RampFrom(old); MX2.fit = null; mx2Paint(); return true;
+}
+function mx3SetAuto(on) {
+  const a = S.fxBus.am; if (!a) return false;
+  if (on) delete a.mx3; else a.mx3 = {af: 0};
+  MX3.pending = false; MX3.sig0 = mx3Sig(); MX3.gen = TKGEN; markDirty(); mx2Paint(); return mx3AutoOn();
+}
+function mx3Boot() { if (!MX3.iv) MX3.iv = setInterval(mx3Tick, 1000); }
+
+/* ---------- ein Blatt überall (D3): FX › MASTER [AUTO-MASTER] / [MIX-ASSISTENT], Master-Balken ---------- */
+function mx3Open(way) {
+  MX3.focus = way === 'am' || way === 'mix' ? way : null;
+  if (mx2El()) { mx2Paint(); return true; }
+  return mx2Sheet();
+}
+function mx3PaintSoon() { if (MX3.paintT) return; MX3.paintT = setTimeout(() => { MX3.paintT = 0; const p = mx2El(); if (p) { const c = p.querySelector('.mx2c'); if (c) mx3Paint(p, c); } }, 120); }
+const mx3Ago = t => { const s = Math.max(0, Math.round((Date.now() - t) / 1000)); return s < 60 ? 'vor ' + s + ' s' : 'vor ' + Math.round(s / 60) + ' min'; };
+// nach mx2Paint: Zeile „Messen aus … · Auto-Nachführen“, hervorgehobener Weg, Pegel je Spur (dB wie Spurkopf), Gesang-Zeilen
+function mx3Paint(p, c) {
+  if (!c || !c.isConnected && !p) return;
+  c.querySelectorAll('.mx3row,.mx3g,.mx3st').forEach(e => e.remove());
+  const busy = !!MIXA.busy, live = mx3UseLive(), cache = MX2.cache, am = S.fxBus.am, auto = mx3AutoOn(), can = !!(am && am.on && am.mx2);
+  const seg = MX3_SRC.map(([l, v]) => `<button class="mbtn rb" data-x2="x3src" data-v="${v}"${MX3.src === v ? ' aria-pressed="true"' : ''}${busy ? ' disabled' : ''}>${esc(l)}</button>`).join('');
+  let st = 'Messen aus: <b>' + (live ? 'Live – was gerade läuft (' + (R.playing && !R.songPlay ? 'Matrix' : R.playing ? 'Song' : 'startet die Szene') + ', 4 Takte)' : 'Song (einmal offline)') + '</b>';
+  if (cache && cache.src === 'live' && MX3.lastCap) st += ' · zuletzt live ' + mx2F(MX3.lastCap.sec, 1) + ' s';
+  let fl = '';
+  if (!can) fl = 'Auto-Nachführen: nach dem ersten [Mastern] hier';
+  else if (!auto) fl = 'Auto-Nachführen aus';
+  else if (MX3.busy && MX2.busy === 'follow') fl = '<b class="mx2warn">Nachführen: hört mit …</b>';
+  else if (MX3.pending) fl = R.playing ? 'Änderung erkannt – misst nach ' + Math.max(0, Math.ceil((MX3.deb - (performance.now() - MX3.tChange)) / 1000)) + ' s Ruhe' : 'Änderung erkannt – misst beim nächsten ▶';
+  else if (MX3.last && MX3.last.why === 'Auto-Nachführen') fl = 'Nachgeführt ' + mx3Ago(MX3.last.t) + ' · Pegel ' + mx2S(MX3.last.dG) + ' dB' + (MX3.rampK < 1 ? ' · gleitet …' : '');
+  else fl = 'Auto-Nachführen an – nach jeder Änderung (4 s Ruhe) misst es live und gleitet sanft nach';
+  const row = el('div', 'mx3row', `<div class="mx2r3 mx3src" role="group" aria-label="Messen aus">${seg}</div>` +
+    `<div class="mx2r2"><button class="mbtn rb" data-x2="x3auto"${auto ? ' aria-pressed="true"' : ''}${can ? '' : ' disabled'}>Auto-Nachführen ${auto ? 'an' : 'aus'}</button>` +
+    `<button class="mbtn rb" data-x2="x3undo"${MX3.undoAm && !busy ? '' : ' disabled'}>↶ Nachführen zurück</button></div>` +
+    `<div class="small mx3st">${st}<br>${fl}</div>`);
+  const s0 = c.querySelector('.mx2st'); if (s0) s0.after(row);
+  if (MX3.focus) { const fb = c.querySelector(`.mx2w button[data-v="${MX3.focus}"]`); if (fb) fb.classList.add('mx3f'); }
+  // Pegel je Spur: dieselbe dB-Zahl wie Spurkopf und FX › SPUR (D15); STIMME = Lead-Gesang, dazu die Chor-Gruppe
+  const st0 = stimmeT();
+  c.querySelectorAll('.mx2fr').forEach(r => {
+    const b = r.querySelector('[data-i]'), i = b ? +b.dataset.i : -1, tr = S.tracks[i], sm = r.querySelector('.mx2fn small'); if (!tr || !sm || !tr.sound) return;
+    const f = fxOfSound(tr.sound); sm.textContent = (i === st0 ? 'Lead-Gesang' : sm.textContent) + ' · ' + sx4DbTxt(f.vol, f.drive);
+    if (i === st0) r.after(ch1MxRows(busy));
+  });
+}
+function mx3Tap(b) {
+  const a = b.dataset.x2; if (!a) return false;
+  if (a === 'w') { MX3.focus = null; return false; }
+  if (a === 'x3src') { MX3.src = b.dataset.v; haptic('tick'); mx2Paint(); return true; }
+  if (a === 'x3auto') { mx3SetAuto(!mx3AutoOn()); haptic('tick'); return true; }
+  if (a === 'x3undo') { if (mx3UndoFollow()) haptic('tick'); return true; }
+  if (a === 'x3cl' || a === 'x3cu') { const L = chsTrk(), v = (L && isNum(L.db) ? L.db : 0) + (a === 'x3cu' ? 1.5 : -1.5); chsSet('bg', v, true); haptic('tick'); mx2Paint(); return true; }
+  if (a === 'x3clean') { haptic('pop'); ch1Clean(null).then(() => mx2Paint()); return true; }
+  if (a === 'x3big') { haptic('pop'); ch1Big(null, null).then(() => mx2Paint()); return true; }
+  return false;
+}
+
+/* =====================================================================================================================
+   CH1 – Chor sauber, Refrain groß
+   ===================================================================================================================== */
+const CH1 = {ir: new Map(), busy: null, last: null, done: new Set(), q: null, nodes: 0, throws: 0, aligned: 0};
+const CH1_RE = /refrain|chorus|hook|kehrvers/i;
+const ch1C = (ms, ct, p) => ({ms, ct, p});
+// Rezept „Refrain groß“ (80er-Pop-Refrain): Form wie eine Stil-Zeile der Chor-Gruppe (G6P_STYLE), eigener Schlüssel, nichts doppelt
+const CH1_RG = Object.freeze({style: null, label: 'Refrain groß', sub: '80er-Pop-Refrain', echo: '1/8.',
+  voices: [{rule: 'uni', pan: 0, w: 1, db: 0, dbl: [ch1C(11, -9, -1), ch1C(19, 7, 1), ch1C(27, -5, -0.55)]},
+    {rule: 'oct-1', pan: 0, w: 0.3, db: -6, dbl: [ch1C(14, -4, -1), ch1C(23, 5, 1)]},
+    {rule: 'ch+1', pan: 0, w: 0.75, db: -5, dbl: [ch1C(13, -6, -1), ch1C(25, 7, 1)]},
+    {rule: 'ch+2', pan: 0, w: 0.6, db: -8, dbl: [ch1C(17, 6, -1), ch1C(29, -6, 1)]}],
+  grp: {below: 5, hp: 150, mid: -2, midF: 350, air: 3, sib: -12, rev: 0.55, pre: '1/32', dly: 0.06, ch1: {rg: 1, al: 1}}});
+// alle Lead-Stellen der STIMME-Spur im Refrain: Song-Stücke in Teilen „Refrain/Chorus/Hook“ (oder im Teil mid), Szenen mit diesem Namen
+function ch1Refrain(mid) {
+  const st = stimmeT(); if (st < 0) return [];
+  const song = S.song, marks = song && Array.isArray(song.marks) ? song.marks.filter(m => (mid ? m.id === mid : CH1_RE.test(markLabel(m) || ''))) : [], out = [];
+  for (const p of g6pPlaces(st)) {
+    if (p.r.vox) { const v = p.a, b0 = v.bar | 0, b1 = b0 + Math.max(1, v.len | 0); if (marks.some(m => b0 < m.a + m.len && b1 > m.a)) out.push(p); }
+    else if (!mid) { const sc = S.scenes[p.r.s]; if (sc && CH1_RE.test(sc.name || '')) out.push(p); }
+  }
+  return out;
+}
+const ch1Cur = () => { const r = G6.sheet || (stimmeT() >= 0 ? {t: stimmeT(), s: R.selS} : null), x = r && tkRef(r); return x ? {r, a: x.a} : null; };
+// Gruppen-↶ aus mehreren Schritten (verschachtelte Gruppen werden flach)
+function ch1Merge(n0, label, extra) {
+  const es = UNDO.splice(n0), items = [];
+  for (const e of es) { if (e.kind === 'group') items.push(...e.items); else items.push(e); }
+  if (extra) items.push(...extra);
+  if (!items.length) return false;
+  undoPush({kind: 'group', label, items}); markDirty(); UI.dirty.all = true; return true;
+}
+
+/* ---------- Ausrichten: Silben-Anfänge einer selbst gesungenen Chorstimme an den Lead (±40 ms) ---------- */
+const CH1_MAX = 0.04, CH1_WIN = 0.09;
+function ch1VoiceWin(a, v) { const m = S.takes && S.takes[v.take.take]; return m && (m.src === 'dup' || m.src === 'chor') ? null : v.take; }
+// Lead-Zeit → Zeit im Stimmen-Take (wie der Klangweg G6+c, g6pcOff)
+const ch1Map = (a, w, tL) => w.in + (tL - a.in) + (a.at - w.at) * spb();
+function ch1Match(lead, voice) {
+  const used = new Set(), pairs = [];
+  for (const tV of voice) {
+    let best = -1, bd = CH1_WIN;
+    for (let j = 0; j < lead.length; j++) { if (used.has(j)) continue; const d = Math.abs(lead[j] - tV); if (d < bd) { bd = d; best = j; } }
+    if (best >= 0) { used.add(best); pairs.push({v: tV, l: lead[best], d: lead[best] - tV}); }
+  }
+  return pairs;
+}
+async function ch1Onsets(a, v, heard) {
+  const w = ch1VoiceWin(a, v); if (!w) return null;
+  const mkL = await wpDetect(a.take); if (!mkL) return null;
+  let tv;
+  if (heard) {
+    const id = v.take.take; for (let n = 0; n < 400 && !(wpReady(id) && (typeof g2Ready !== 'function' || g2Ready(id, w))); n++) { tkPlayBuf(id, w); await sleep(25); }
+    const b = tkPlayBuf(id, w) || tkBuffer(id); if (!b) return null;
+    const r = await wpCall({op: 'det', x: b.getChannelData(0), sr: b.sampleRate}); tv = (wpNormMarks(r, b.length / b.sampleRate) || []).map(k => k.t);
+  } else { const mk = await wpDetect(v.take.take); if (!mk) return null; tv = mk.map(k => k.t); }
+  const lead = mkL.map(k => k.t).filter(t => t >= a.in - 0.05 && t <= a.out + 0.05).map(t => ch1Map(a, w, t));
+  return {lead, voice: tv.filter(t => t >= w.in - 0.05 && t <= w.out + 0.05), w};
+}
+const ch1Mean = ps => (ps.length ? ps.reduce((s, x) => s + Math.abs(x.d), 0) / ps.length * 1000 : 0);
+// eine Stimme ausrichten: Zeitkarte „Dehnen“ am Stimmen-Take (eigene Aufnahme ohne eigene Quantisierung); Ergebnis {n, d0, d1} oder null
+async function ch1AlignVoice(a, v) {
+  const id = v.take && v.take.take, m = id && S.takes && S.takes[id]; if (!m) return null;
+  if (m.warp && !m.ch1) return {skip: 'quantisiert'};
+  const O = await ch1Onsets(a, v, false); if (!O) return null;
+  const pairs = ch1Match(O.lead, O.voice); if (pairs.length < 2) return {n: 0, d0: 0, d1: 0};
+  const len = m.len / m.sr, src = [], dst = [];
+  for (const p of pairs.sort((x, y) => x.v - y.v)) {
+    const sh = Math.abs(p.d) < 0.004 ? 0 : clamp(p.d, -CH1_MAX, CH1_MAX), s = wpSmp(m, p.v), d = wpSmp(m, clamp(p.v + sh, 0.001, len - 0.001));
+    if (s <= 0.001 || s >= len - 0.001) continue;
+    if (src.length && (s <= src[src.length - 1] + 0.03 || d <= dst[dst.length - 1] + 0.03)) continue;
+    src.push(s); dst.push(d);
+  }
+  const d0 = ch1Mean(pairs), d1 = ch1Mean(pairs.map(p => ({d: p.d - clamp(Math.abs(p.d) < 0.004 ? 0 : p.d, -CH1_MAX, CH1_MAX)})));
+  if (!src.length) { delete m.warp; m.ch1 = {al: 1, n: 0, d0: +d0.toFixed(1), d1: +d0.toFixed(1)}; return {n: 0, d0, d1: d0}; }
+  const W = VSM.makeWarp(src, dst, len);
+  m.warp = {mode: 'stretch', grid: 'auto', res: '1/16', strength: 1, swing: 0.5, bpm: +(+S.bpm || 120).toFixed(3), t0: tkR6(wpT0(id, null) || 0), map: {v: 1, src: Array.from(W.src, tkR6), dst: Array.from(W.dst, tkR6)}};
+  m.ch1 = {al: 1, n: src.length, d0: +d0.toFixed(1), d1: +d1.toFixed(1)};
+  return {n: src.length, d0, d1};
+}
+// selbst gesungene Stimmen (eigene Takes, nicht geteilt) einer Stelle
+const ch1OwnVoices = a => (a && a.chor && a.chor.v === 2 ? a.chor.voices.map((v, k) => ({v, k})).filter(z => z.v.take && ch1VoiceWin(a, z.v)) : []);
+// Tonhöhe enger aber natürlich: G2 weich, Raster der Tonart, Stärke 85 %, natürlich 40 (nur ohne eigene Tonhöhen-Einstellung)
+async function ch1Pitch(r, id) {
+  const m = S.takes && S.takes[id]; if (!m || m.pitch) return false;
+  let A = null; try { A = await g2Analyse(id); } catch (e) { logErr(e); }
+  const mm = S.takes && S.takes[id]; if (!mm || !A || !A.notes || !A.notes.length || mm.pitch) return false;
+  const P = g2NormPitch({mode: 'soft', str: 0.85, q: true, key: g10gNewKey(id, r), notes: A.notes.map(n => ({t0: n.t0, t1: n.t1, m: n.m})), v: 2, nat: 40}, mm.len / mm.sr);
+  if (!P) return false; mm.pitch = P; return true;
+}
+/* [Chor sauber] an einer Stelle (r = null: die Stelle des Chor-Blatts, sonst alle Chor-Stellen der STIMME-Spur) – ein ↶ */
+async function ch1Clean(r) {
+  if (CH1.busy) { toast('Rechnet noch …'); return false; }
+  const st = stimmeT(); if (st < 0) { toast('Noch keine STIMME-Spur'); return false; }
+  const cur = r ? {r, a: (tkRef(r) || {}).a} : (G6.sheet ? ch1Cur() : null);
+  const places = (cur && cur.a ? [cur] : g6pPlaces(st)).filter(p => p.a && p.a.chor && p.a.chor.v === 2);
+  if (!places.length) { toast('Erst einen Chor wählen (Chor-Blatt › Stil)'); return false; }
+  CH1.busy = 'clean'; g6SheetPaintSafe();
+  const n0 = UNDO.length, tb = JSON.stringify(S.takes || {}), mb = mixaSnap(), stats = [], ids = new Set();
+  try {
+    for (const p of places) {
+      for (const {v} of ch1OwnVoices(p.a)) {
+        const id = v.take.take; if (ids.has(id)) continue; ids.add(id);
+        const m = S.takes[id]; if (!(m.cl | 0)) m.cl = CL_DEF;                       // Säubern: Brummen/Rauschen, HP 80 Hz
+        const s = await ch1AlignVoice(p.a, v); if (s) stats.push(s);
+        await ch1Pitch(p.r, id);
+      }
+      const lead = fxOfSound(S.tracks[st].sound), lr = isNum(lead.rev) ? lead.rev : 0.2;
+      const it = g6pEditPlace(p.r, au => {
+        const g = au.chor.grp; let ch = false;
+        if (g.hp < 160) { g.hp = 160; ch = true; }
+        if (g.sib > -12) { g.sib = -12; ch = true; }
+        const rv = +clamp(Math.max(g.rev, lr + 0.1), 0, 1).toFixed(2); if (rv !== g.rev) { g.rev = rv; ch = true; }
+        if (g.pre === 'aus') { g.pre = '1/32'; ch = true; }
+        g.ch1 = Object.assign({}, g.ch1 || {}, {al: 1});
+        for (const v of au.chor.voices) { v.rev = g.rev; v.dly = g.dly; if (!v.take && v.w < 0.6) { v.w = 0.6; ch = true; } }
+        return ch || true;
+      });
+      if (it && it.kind !== 'none') UNDO.push(it);
+    }
+    const extra = [];
+    if (JSON.stringify(S.takes || {}) !== tb) extra.push({kind: 'takes', before: tb});
+    ch1Merge(n0, 'Chor sauber', extra);
+    for (const id of ids) { try { if (S.takes[id] && S.takes[id].cl) clEnsure(id); wpPlay(id); tkPlayBuf(id); } catch (e) {} }
+    try { clSync(); wpResync(); } catch (e) {}
+    g6Refresh();
+    const al = stats.filter(s => s.n), d0 = al.length ? al.reduce((s, x) => s + x.d0, 0) / al.length : 0, d1 = al.length ? al.reduce((s, x) => s + x.d1, 0) / al.length : 0;
+    CH1.last = {op: 'clean', places: places.length, voices: ids.size, stats, d0: +d0.toFixed(1), d1: +d1.toFixed(1)};
+    toast('Chor sauber' + (ids.size ? ' · ' + ids.size + (ids.size === 1 ? ' eigene Stimme' : ' eigene Stimmen') + (al.length ? ' im Timing ±' + Math.round(d0) + ' → ±' + Math.round(d1) + ' ms' : '') : '') + ' · tiefer Schnitt, Zischlaute, Tiefe');
+    void mb; return true;
+  } catch (e) { logErr(e); toast('Chor sauber: ' + (e && e.message || e)); return false; }
+  finally { CH1.busy = null; g6SheetPaintSafe(); }
+}
+function g6SheetPaintSafe() { try { if (typeof g6SheetPaint === 'function' && G6.sheet) g6SheetPaint(); } catch (e) {} }
+// selbst gesungene Doppel-/Chorstimmen an Stellen mit grp.ch1.al automatisch ausrichten (nach der Aufnahme, eigener ↶-Schritt)
+function ch1AutoTick() {
+  if (CH1.q || CH1.busy || mx3RecBusy() || !S.takes) return;
+  const st = stimmeT(); if (st < 0) return;
+  for (const p of g6pPlaces(st)) {
+    const g = p.a && p.a.chor && p.a.chor.v === 2 ? p.a.chor.grp : null; if (!g || !g.ch1 || !g.ch1.al) continue;
+    for (const {v} of ch1OwnVoices(p.a)) {
+      const id = v.take.take, m = S.takes[id]; if (!m || m.ch1 || m.warp || CH1.done.has(id) || !tkBuffer(id)) continue;
+      CH1.done.add(id);
+      CH1.q = (async () => {
+        const tb = JSON.stringify(S.takes); const s = await ch1AlignVoice(p.a, v);
+        if (s && s.n != null && JSON.stringify(S.takes) !== tb) { undoPush({kind: 'takes', before: tb, label: 'Chor ausgerichtet'}); markDirty(); UI.dirty.all = true; wpPlay(id); g6Refresh(); CH1.aligned++; toast('Doppel ausgerichtet · ±' + Math.round(s.d0) + ' → ±' + Math.round(s.d1) + ' ms'); }
+      })().catch(logErr).then(() => { CH1.q = null; });
+      return;
+    }
+  }
+}
+
+/* ---------- [Refrain groß]: Chor-Gruppe aus EINER Lead-Aufnahme an allen Refrain-Stellen + Strophe trocken (ein ↶) ---------- */
+async function ch1Big(mid, places0) {
+  if (CH1.busy) { toast('Rechnet noch …'); return false; }
+  const st = stimmeT(); if (st < 0) { toast('Noch keine STIMME-Spur – erst singen'); return false; }
+  let places = places0 || ch1Refrain(mid);
+  if (!places.length && !mid) { const c = ch1Cur(); if (c && c.a) places = [c]; }
+  if (!places.length) { toast('Kein Refrain mit Gesang gefunden (Teil „Refrain“ oder Szene „Refrain“)'); return false; }
+  CH1.busy = 'big'; g6SheetPaintSafe();
+  const n0 = UNDO.length, before = mixaSnap(); let ok = 0;
+  try {
+    for (const p of places) { if (await g6pApplyStyle(p.r, CH1_RG)) ok++; }
+    if (!ok) { ch1Merge(n0, 'Refrain groß'); return false; }
+    // Strophe trocken/nah: der Lead selbst mit wenig Hall/Echo – der Refrain geht über die Gruppe auf
+    const f = S.tracks[st].sound && S.tracks[st].sound.fx; let fx = false;
+    if (f) { if (!(f.rev <= 0.08)) { f.rev = 0.08; fx = true; } if (!(f.dly <= 0.04)) { f.dly = 0.04; fx = true; } }
+    ch1Merge(n0, 'Refrain groß', fx && before !== mixaSnap() ? [{kind: 'mixa', before}] : null);
+    if (fx) mixaAfter([st], false);
+    g6Refresh();
+    CH1.last = {op: 'big', places: places.length, ok, fx};
+    toast('Refrain groß · ' + ok + (ok === 1 ? ' Stelle' : ' Stellen') + ': Doppel L/R, Oktave tiefer, Akkordtöne, Hauch, Plate, Echo am Zeilenende · Strophe trocken');
+    return true;
+  } catch (e) { logErr(e); toast('Refrain groß: ' + (e && e.message || e)); return false; }
+  finally { CH1.busy = null; g6SheetPaintSafe(); }
+}
+/* [Refrain 2× singen]: zwei Doppel-Spuren L/R an der Stelle, „Selbst singen“ für die nächste leere (Aufnahme → automatisch ausgerichtet) */
+async function ch1Twice(r) {
+  const c = r ? {r, a: (tkRef(r) || {}).a} : ch1Cur(); if (!c || !c.a) { toast('Erst eine Gesangs-Stelle wählen'); return false; }
+  let a = c.a;
+  if (!a.chor || a.chor.v !== 2) { if (!(await g6pApplyStyle(c.r, CH1_RG))) return false; a = tkRef(c.r).a; }
+  const own = a.chor.voices.filter(v => v.take && ch1VoiceWin(a, v)).length;
+  if (own >= 2) { toast('Beide Doppel sind gesungen – sie sind an den Lead ausgerichtet'); return true; }
+  // die Unisono-Stimme wird „Doppel L“; eine zweite freie Unisono-Stimme „Doppel R“
+  let k = a.chor.voices.findIndex(v => v.rule === 'uni' && !v.take);
+  if (k < 0 || own === 1) {
+    const u = a.chor.voices.find(v => v.rule === 'uni') || a.chor.voices[0], st = g6pTrackOf(c.r), lb = g6pLanesSnap(st), TR = S.tracks[st];
+    const n1 = UNDO.length, l = g6pLaneFor(TR.chor, 'free', new Set(a.chor.voices.map(v => v.lane)), g6pChoirs(S, st).filter(x => x !== a.chor), 'Doppel R');
+    if (!l) { toast('Höchstens 8 Chor-Spuren'); return false; }
+    const it = g6pEditPlace(c.r, au => { if (au.chor.voices.length >= 6) return false; au.chor.voices.push({lane: l.id, rule: 'free', n: deep(u.n).map(n => Object.assign(n, {d: 0, iv: 0})), db: -3, pan: 0.85, w: 0, dbl: [{ms: 0, ct: 0, p: 0}], dblOff: true}); au.chor.grp.ch1 = Object.assign({}, au.chor.grp.ch1 || {}, {al: 1}); });
+    if (!it || it.kind === 'none') { g6pLanesRestore(st, lb); toast('Höchstens 6 Stimmen'); return false; }
+    UNDO.push(it); ch1Merge(n1, 'Doppel R', [{kind: 'chorlanes', track: st, before: lb}]);
+    a = tkRef(c.r).a; k = a.chor.voices.findIndex(v => v.lane === l.id);
+  } else {
+    g6pVoiceSet(c.r, k, {pan: -0.85, dblOff: true});
+    const it = g6pEditPlace(c.r, au => { au.chor.grp.ch1 = Object.assign({}, au.chor.grp.ch1 || {}, {al: 1}); }); if (it && it.kind !== 'none') UNDO.push(it);
+  }
+  const ok = g6pgSing(c.r, k);
+  if (ok) toast('Refrain singen (' + (own ? '2' : '1') + ' von 2) – ● Aufnahme; danach wird das Doppel automatisch an den Lead ausgerichtet');
+  return ok;
+}
+
+/* ---------- Klang am Stück (nur grp.ch1.rg): Hauch, Parallel-Kompression, Luft, Gated-Plate, Echo-Würfe am Zeilenende ---------- */
+function ch1PlateIR(c) {
+  const sr = c.sampleRate, k = 'p' + sr; if (CH1.ir.has(k)) return CH1.ir.get(k);
+  const len = Math.round(0.42 * sr), b = c.createBuffer(2, len, sr); let s = 12345;
+  const rnd = () => ((s = (Math.imul(s, 1103515245) + 12345) >>> 0) / 4294967296) * 2 - 1;
+  for (let ch = 0; ch < 2; ch++) {
+    const d = b.getChannelData(ch); let lp = 0, hp = 0;
+    for (let i = 0; i < len; i++) {
+      const t = i / sr, env = Math.min(1, t / 0.004) * Math.exp(-t / 0.9) * (t < 0.3 ? 1 : Math.max(0, 1 - (t - 0.3) / 0.04));   // dicht, dann hart abgeschnitten (Gate)
+      const x = rnd(); lp += (x - lp) * 0.5; hp = lp - hp * 0.0; d[i] = (0.45 * x + 0.55 * lp) * env * 0.3;
+    }
+  }
+  CH1.ir.set(k, b); return b;
+}
+function ch1GroupX(G, a) {
+  const c = G.c, X = {nodes: []}, mk = (f, ...p) => { const n = c[f](...p); X.nodes.push(n); return n; }, bq = (type, f, q) => { const n = mk('createBiquadFilter'); n.type = type; n.frequency.value = f; if (q != null) n.Q.value = q; return n; }, gn = v => { const n = mk('createGain'); n.gain.value = v; return n; };
+  X.inp = gn(1); X.lead = gn(0); X.lead.connect(X.inp); G.guide.connect(X.inp);
+  const out = G.dest;
+  // Parallel-Kompression (Lead + Chor), Luft parallel ab 8 kHz
+  const cp = mk('createDynamicsCompressor'); cp.threshold.value = -32; cp.knee.value = 6; cp.ratio.value = 10; cp.attack.value = 0.003; cp.release.value = 0.12;
+  const cpg = gn(0.3); X.inp.connect(cp); cp.connect(cpg); cpg.connect(out);
+  const air = bq('highpass', 8000, 0.7), airg = gn(0.3); X.inp.connect(air); air.connect(airg); airg.connect(out);
+  // Hauch-Schicht: nur Lead – Höhen, sanft gesättigt, links/rechts versetzt, leise
+  const h1 = bq('highpass', 3500, 0.7), ws = mk('createWaveShaper'), h2 = bq('highpass', 5000, 0.7), hg = gn(0.07), dL = mk('createDelay', 0.05), dR = mk('createDelay', 0.05), mg = mk('createChannelMerger', 2);
+  const cv = new Float32Array(257); for (let i = 0; i < 257; i++) { const x = i / 128 - 1; cv[i] = Math.tanh(3 * x) / Math.tanh(3); } ws.curve = cv;
+  dL.delayTime.value = 0.009; dR.delayTime.value = 0.015;
+  X.lead.connect(h1); h1.connect(ws); ws.connect(h2); h2.connect(hg); hg.connect(dL); hg.connect(dR); dL.connect(mg, 0, 0); dR.connect(mg, 0, 1); mg.connect(out);
+  // Gated-Plate (eigene kurze Hallfahne, hart abgeschnitten)
+  const pd = mk('createDelay', 0.1), cvn = mk('createConvolver'), ph = bq('highpass', 250, 0.7), pl = bq('lowpass', 9000, 0.7), pg = gn(0.28);
+  pd.delayTime.value = 0.015; try { cvn.buffer = ch1PlateIR(c); } catch (e) { logErr(e); }
+  X.inp.connect(pd); pd.connect(cvn); cvn.connect(ph); ph.connect(pl); pl.connect(pg); pg.connect(out);
+  // Echo-Würfe 1/8 punktiert, Ping-Pong; der Send ist zu und öffnet nur am Zeilenende (ch1Start)
+  const sp = 60 / (S.bpm || 120), dt = Math.min(1.9, 0.75 * sp), thr = gn(0), ef = bq('lowpass', 3500, 0.7), eh = bq('highpass', 300, 0.7);
+  const e1 = mk('createDelay', 2), e2 = mk('createDelay', 2), fb1 = gn(0.38), fb2 = gn(0.38), em = mk('createChannelMerger', 2), eg = gn(0.55);
+  e1.delayTime.value = dt; e2.delayTime.value = dt;
+  X.inp.connect(thr); thr.connect(eh); eh.connect(ef); ef.connect(e1); e1.connect(fb1); fb1.connect(e2); e2.connect(fb2); fb2.connect(e1);
+  e1.connect(em, 0, 0); e2.connect(em, 0, 1); em.connect(eg); eg.connect(out);
+  X.thr = thr; X.dt = dt; X.started = null;
+  G.ch1 = X; CH1.nodes += X.nodes.length; return X;
+}
+function ch1GroupDrop(G) { const X = G.ch1; if (!X) return; G.ch1 = null; for (const n of X.nodes) { try { n.disconnect(); } catch (e) {} } CH1.nodes -= X.nodes.length; }
+// beim Einsetzen eines Lead-Stücks: Lead einspeisen (Spur-Pegel), Würfe ans Zeilenende planen (Lücke ≥ 0,3 s nach einer Note)
+function ch1Start(G, a, o, r) {
+  const X = G.ch1; if (!X || X.started === o) return; X.started = o;
+  const st = stimmeT(), tr = st >= 0 ? S.tracks[st] : null, f = tr && tr.sound ? fxOfSound(tr.sound) : {vol: 0.8}, on = tr && !tr.mute && (typeof sx4Pass !== 'function' || sx4Pass(st));
+  X.lead.gain.value = on ? (f.vol || 0) * (f.vol || 0) : 0;
+  try { if (r && r.g) r.g.connect(X.lead); } catch (e) {}
+  const v0 = a.chor.voices.find(v => !v.take) || a.chor.voices[0], ns = (v0 && v0.n ? v0.n : []).filter(n => n.t1 > a.in && n.t0 < a.out).slice().sort((x, y) => x.t0 - y.t0);
+  const p = X.thr.gain, c = G.c; try { p.cancelScheduledValues(0); p.setValueAtTime(0, c.currentTime); } catch (e) {}
+  for (let k = 0; k < ns.length; k++) {
+    const nx = ns[k + 1], end = ns[k].t1; if (nx && nx.t0 - end < 0.3) continue;
+    const tw = o.when + (end - o.off); if (tw < c.currentTime + 0.02 || tw > o.end + 0.05) continue;
+    try { p.setValueAtTime(0, Math.max(c.currentTime, tw - 0.22)); p.linearRampToValueAtTime(0.6, tw - 0.06); p.setValueAtTime(0.6, tw + 0.03); p.linearRampToValueAtTime(0, tw + 0.12); CH1.throws++; } catch (e) {}
+  }
+}
+
+/* ---------- Bedienung: Chor-Blatt, Marken-Blatt, Mix & Master › Gesang ---------- */
+function ch1G6Row(p, X) {
+  if (!p || p.querySelector('.ch1row')) return;
+  const busy = CH1.busy, own = X && X.c && X.c.v === 2 ? ch1OwnVoices(X.a).length : 0;
+  const row = el('div', 'ch1row', `<span class="small">Gesang</span><button class="mbtn rb" data-ch1="clean"${busy || !(X && X.c && X.c.v === 2) ? ' disabled' : ''}>${busy === 'clean' ? 'rechnet …' : 'Chor sauber'}</button>` +
+    `<button class="mbtn rb" data-ch1="big"${busy ? ' disabled' : ''}>${busy === 'big' ? 'rechnet …' : 'Refrain groß'}</button><button class="mbtn rb" data-ch1="twice"${busy ? ' disabled' : ''}>Refrain 2× singen${own ? ' (' + Math.min(2, own) + '/2)' : ''}</button>`);
+  const at = p.querySelector('.g6pe-st') || p.querySelector('.savrow'); if (at) at.before(row); else p.appendChild(row);
+}
+function ch1Tap(b) {
+  const a = b.dataset.ch1; if (!a) return false; haptic('pop');
+  const r = G6.sheet || null;
+  if (a === 'clean') ch1Clean(r);
+  else if (a === 'big') { const x = r && tkRef(r), rf = ch1Refrain(null); ch1Big(null, rf.length ? rf : x ? [{r, a: x.a}] : null); }
+  else if (a === 'twice') ch1Twice(r);
+  return true;
+}
+function ch1MarkSheetPaint(p, m) {
+  if (!p || p.classList.contains('s0-ed') || !CH1_RE.test(markLabel(m) || '')) return;
+  if (!ch1Refrain(m.id).length) return;
+  if (!p._ch1) { p._ch1 = true; onTap(p, b => { const id = SV.mark; if (!id) return; haptic('pop'); if (b.dataset.ch1 === 'big') ch1Big(id, null); else { const pl = ch1Refrain(id); closePop(); if (pl.length) ch1Twice(pl[0].r); } }, 'button[data-ch1]'); }
+  const box = p.querySelector('.ms-bb') || p; box.insertAdjacentHTML('beforeend', `<div class="ms-r ch1-ms"><button class="rb ms-b" data-ch1="big">Refrain groß</button><button class="rb ms-b" data-ch1="twice">Refrain 2× singen</button></div>`);
+}
+function ch1MxRows(busy) {
+  const L = typeof chsTrk === 'function' ? chsTrk() : null, has = stimmeT() >= 0 && g6pPlaces(stimmeT()).some(x => x.a && x.a.chor), db = L && isNum(L.db) ? L.db : 0;
+  return el('div', 'mx3g', (has ? `<div class="mx2fr"><span class="mx2fn"><b>Chor</b><small>Background · ${mx2S(db)} dB</small></span><button class="mbtn rb" data-x2="x3cl"${busy ? ' disabled' : ''}>leiser</button><button class="mbtn rb" data-x2="x3cu"${busy ? ' disabled' : ''}>lauter</button><button class="mbtn rb" data-x2="x3clean"${busy || CH1.busy ? ' disabled' : ''}>sauber</button></div>` : '') +
+    `<div class="mx2r2 mx3gr"><button class="mbtn rb" data-x2="x3big"${busy || CH1.busy ? ' disabled' : ''}>Refrain groß</button><span class="small">Lead und Chor getrennt: der Chor sitzt hinter und breiter als der Lead.</span></div>`);
+}
+
+/* ---------- Test-Schnittstelle ---------- */
+const MIX3_API = {
+  info: () => ({src: MX3.src, live: mx3UseLive(), busy: MX3.busy, focus: MX3.focus, auto: mx3AutoOn(), pending: MX3.pending, follows: MX3.follows, caps: MX3.caps, lastCap: MX3.lastCap, last: MX3.last, rampK: MX3.rampK,
+    rampLog: MX3.rampLog.slice(), cacheSrc: MX2.cache ? MX2.cache.src || 'song' : null, am: S.fxBus.am ? deep(S.fxBus.am) : null, open: !!mx2El(), undoAm: !!MX3.undoAm, deb: MX3.deb, mixLive: !!(MIXA.res && MIXA.res.live)}),
+  open: way => mx3Open(way), src: v => { MX3.src = v; mx2Paint(); return mx3UseLive(); }, measure: withMix => mx3Run(!!withMix, null), auto: on => mx3SetAuto(on), tick: () => mx3Tick(),
+  deb: ms => { if (isNum(ms)) MX3.deb = ms; return MX3.deb; }, follow: () => mx3Follow(), undoFollow: () => mx3UndoFollow(), sig: () => mx3Sig(),
+  ch1: () => ({busy: CH1.busy, last: CH1.last ? deep(CH1.last) : null, nodes: CH1.nodes, throws: CH1.throws, aligned: CH1.aligned, places: ch1Refrain(null).map(p => p.r)}),
+  clean: r => ch1Clean(r || null), big: (mid, r) => ch1Big(mid || null, r ? [{r, a: tkRef(r).a}] : null), twice: r => ch1Twice(r || null), rg: () => deep(CH1_RG),
+  dev: async (r, k, heard) => { const x = tkRef(r), a = x && x.a, v = a && a.chor && a.chor.voices[k]; if (!v) return null; const O = await ch1Onsets(a, v, !!heard); if (!O) return null; const ps = ch1Match(O.lead, O.voice); return {n: ps.length, ms: +ch1Mean(ps).toFixed(1), max: ps.length ? +(Math.max(...ps.map(q => Math.abs(q.d))) * 1000).toFixed(1) : 0, lead: O.lead.length, voice: O.voice.length}; },
+  testTake: (pcm, sr) => { const r = tkAddPcmTake(Int16Array.from(pcm), sr || 48000, 'rec'); return r.stored.then(() => r.id); }
+};
+/* ===================== MX3 END ===================== */
 
 /* =====================================================================================================================
    G5 (Nachtrag 5 „G5 — Gesang jederzeit in Melodie umwandeln“): Takes-Blatt → [In Melodie umwandeln]
@@ -67649,7 +68249,7 @@ function g6Sheet(r, anchor) {
 function g6SheetPaint(p) {   // G6+e: v2 bzw. noch kein Chor → neues Blatt; ein Chor aus 4.25 → alte Ansicht mit Kopfzeile
   p = p || (UI.pop && UI.pop.name === 'chor' ? UI.pop.el : null); const X = g6peCur(); if (!p || !X) return;
   if (X.c && X.c.v !== 2) { g6SheetPaintV1(p); g6peV1Head(p); p.classList.add('g6v1'); return; }
-  p.classList.remove('g6v1'); g6pePaint(p, X); if (p.isConnected) popFit(p);
+  p.classList.remove('g6v1'); g6pePaint(p, X); ch1G6Row(p, X); if (p.isConnected) popFit(p);   // CH1
 }
 function g6SheetPaintV1(p) {
   const r = G6.sheet, x = r && tkRef(r); if (!p || !x) return;
@@ -68170,6 +68770,7 @@ function g6pNormGrp(g) {
     midF: g6pInt(g.midF, 100, 10000, D.midF), air: g6pNum(g.air, -12, 12, D.air, 1), sib: G6P_SIB.includes(sib) ? sib : D.sib,
     rev: g6pNum(g.rev, 0, 1, D.rev, 2), pre: G6P_PRE.includes(pre) ? pre : D.pre, dly: g6pNum(g.dly, 0, 1, D.dly, 2)};
   if (g.cpl === false) { o.cpl = false; o.ref = g6pNum(g.ref, -120, 24, 0, 2); }
+  { const q = ch1NormGrp(g.ch1); if (q) o.ch1 = q; }               // CH1: Refrain groß / Ausrichten
   return o;
 }
 // Halbtöne aus Stufen (nur Rückfall, wenn iv fehlt: Dur-Leiter ab dem Ton)
@@ -68445,6 +69046,7 @@ function g6pcGroup(c, a, dest, hall, echo, meas) {
   G.air.connect(G.lvl); G.lvl.connect(G.guide); G.guide.connect(dest);
   if (!meas) { G.guide.connect(G.pre); G.pre.connect(G.rev); if (hall) G.rev.connect(hall); G.guide.connect(G.dly); if (echo) G.dly.connect(echo); G6PC.nodes += 8; }
   G.lvl.gain.value = meas ? 1 : 0;
+  if (!meas && a.chor.grp && a.chor.grp.ch1 && a.chor.grp.ch1.rg) ch1GroupX(G, a);   // CH1: Hauch, Parallel-Kompression, Luft, Gated-Plate, Echo-Würfe
   g6pcGroupSet(G, a, true, meas);
   return G;
 }
@@ -68464,7 +69066,7 @@ function g6pcCopyNodes(c, v, C, G, meas, vi) {
   if (!meas) G6PC.nodes += N.pan ? 3 : 2;
   return N;
 }
-function g6pcGroupDrop(G) { for (const k of ['hp', 'mid', 'air', 'lvl', 'guide', 'pre', 'rev', 'dly']) { try { G[k].disconnect(); } catch (e) {} } G6PC.nodes -= 8; }
+function g6pcGroupDrop(G) { if (G.ch1) ch1GroupDrop(G); for (const k of ['hp', 'mid', 'air', 'lvl', 'guide', 'pre', 'rev', 'dly']) { try { G[k].disconnect(); } catch (e) {} } G6PC.nodes -= 8; }
 /* ---------- Abspielen ---------- */
 // Kennung der laufenden Kopien (Puffer + Versatz): gleich → nur Werte rampen, sonst neu einsetzen
 const g6pcSig = (a, bufs) => a.chor.voices.map(v => g6pcCopies(v).map(C => C.ms).join(',') + (v.take ? 't' : '')).join(';') + '#' + bufs.map(b => wpBid(b)).join(',');
@@ -68477,6 +69079,7 @@ function g6pStart(o, r) {
   if (!r.chG || r.chG.c !== ctx) { r.chG = g6pcGroup(ctx, a, AU.masterSum, AU.hallIn, AU.echoIn); if (G6PC.tap) try { r.chG.guide.connect(G6PC.tap.chor); r.chG.rev.connect(G6PC.tap.rv); } catch (e) {} }
   const G = r.chG, V = vpGet(o.buf), Vg = V ? V.g : 1;   // VS-P des Leads (r.G ohne Clip-Pegel: der steckt im Lead-Pegel der Gruppe)
   g6pcGroupSet(G, a, false, false, gA);
+  if (G.ch1) ch1Start(G, a, o, r);                                // CH1: Lead einspeisen, Würfe ans Zeilenende
   r.chSig = g6pcSig(a, bufs); r.chA = a;
   let j = 0;
   a.chor.voices.forEach((v, vi) => g6pcCopies(v).forEach((C, k) => {
@@ -68685,7 +69288,7 @@ function g6pEditPlace(r, fn) {   // wie g6Edit, aber das Undo-Element wird zurü
 const g6pFmt = v => String(v).replace('.', ',');
 /* ---------- Stil auf eine Stelle (ein Tipp, ein Undo) ---------- */
 async function g6pApplyStyle(r, id) {
-  const S0 = G6P_STYLE[id], x0 = tkRef(r), st = g6pTrackOf(r); if (!S0 || !x0 || st < 0) return false;
+  const S0 = id && id.voices ? id : G6P_STYLE[id], x0 = tkRef(r), st = g6pTrackOf(r); if (!S0 || !x0 || st < 0) return false;
   const c0 = x0.a.chor, isV2 = !!(c0 && c0.v === 2), keep = [];
   // Stimmen mit eigener Aufnahme bleiben (v2: mit Spur; v1: selbst gesungene Stimme → freie Spur mit ihrem Namen)
   if (c0) for (const v of c0.voices || []) if (v.take) keep.push(isV2 ? deep(v) : {v1: v});
@@ -68710,7 +69313,7 @@ async function g6pApplyStyle(r, id) {
     const o = v.v1, l = g6pLaneFor(TR.chor, 'free', taken, others, String(o.name || '').slice(0, 24) || null); if (!l) return fail(); taken.add(l.id);
     voices.push({lane: l.id, rule: 'free', n: (o.n || []).map(n => ({t0: n.t0, t1: n.t1, m: n.m, d: 0, iv: n.iv})), db: isNum(o.db) ? clamp(o.db, -24, 6) : 0, pan: isNum(o.pan) ? o.pan : 0, w: 0, dbl: [{ms: 0, ct: 0, p: 0}], take: deep(o.take), dblOff: true});
   }
-  const chor = g6pFallback({v: 2, style: id, grp: deep(S0.grp), voices, _st: st});
+  const chor = g6pFallback({v: 2, style: id && id.voices ? id.style : id, grp: deep(S0.grp), voices, _st: st});
   const it = g6pEditPlace(r, au => { au.chor = chor; });
   if (!it) { g6pLanesRestore(st, lanesBefore); return false; }
   g6pCommit('Chor · ' + S0.label, [it, {kind: 'chorlanes', track: st, before: lanesBefore}].filter(z => z.kind !== 'none'));
@@ -68968,6 +69571,7 @@ function g6peV1Head(p) {
 }
 // Tipp im Blatt (true = erledigt)
 function g6peTap(b) {
+  if (b.dataset.ch1) return ch1Tap(b);                            // CH1: Chor sauber, Refrain groß, 2× singen
   const X = g6peCur(); if (!X) return false; const d = b.dataset, {r, st} = X;
   if (d.sty) {
     if (G6PE.busy) return true;
@@ -83061,6 +83665,7 @@ Object.assign(SYNQUENZER, {gr2: GR2_API});                  /* GR2: Test-API (Ob
 Object.assign(SYNQUENZER, {ui1: UI1_API});                  /* UI1: Test-API (Objekt, wird nicht umhüllt) */
 ueLibAdd(ui1UeLib()); ui1BmTrim(); ui1GlowInit();           // UI1: ◆ ÜBERGÄNGE-Vorlagen, 2 Bit-Mask-Pegel, Leucht-Look (Gerät)
 Object.assign(SYNQUENZER, {vd3: VD3_API});                  /* VD3: Test-API (Objekt, wird nicht umhüllt) */
+Object.assign(SYNQUENZER, {mix3: MIX3_API}); mx3Boot();      /* MX3/CH1: Test-API (Objekt, wird nicht umhüllt), Auto-Nachführen */
 const NO_SYNC = new Set(['clipCurves', 'bmcLog', 'bmcState', 'oneScaleOf', 'harmInfo', 'kbScaleNow', 'micCheck', 'micCheckJson', 'micCheckEstimate', 'cloud', 'cloudProjects', 'cloudVersions', 'cloudHandoff', 'state', 'project', 'runtime', 'getClip', 'getParam', 'noteLog', 'voices', 'timeline', 'serialize', 'buildMidi', 'buildZip', 'crc32', 'meter', 'outPitch', 'migrate', 'tapTempo',
   'getSound', 'mods', 'library', 'factory', 'previewState', 'soundEdited', 'fmxView', 'fmxPreview', 'fmxBadge',
   'history', 'projects', 'storage', 'engineInfo', 'getBusFx', 'wake', 'gestures', 'roll', 'rollApi', 'detectKey', 'sceneKey',

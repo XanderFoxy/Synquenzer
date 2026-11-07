@@ -106,7 +106,7 @@ export const istRemixContest = (text, r) => enthaelt(text, r.contestWoerter);
 
 const MONAT_EN = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
 // „Deadline: December 15, 2026“, „closes 15 Dec“, „submissions close on Nov 30th“, „entries due by 1st of December“
-const FRIST_EN = /\b(deadline|closes?|closing date|ends?|until|due|submit (?:it )?by|submissions? (?:close|end|due)|entries (?:close|due))\b\s*(?:on|is|by|date)?\s*[:\-–]?\s*(?:(\d{1,2})(?:st|nd|rd|th)?\s+(?:of\s+)?([a-z]{3,9})\.?|([a-z]{3,9})\.?\s+(\d{1,2})(?:st|nd|rd|th)?\b)(?:,?\s*(\d{4}))?/gi;
+const FRIST_EN = /\b(deadline|closes?|closing date|ends?|until|due|submit (?:it )?by|submissions? (?:close|end|due)|entries (?:close|due))\b\s*(?:on|is|was|by|date)?\s*[:\-–]?\s*(?:(\d{1,2})(?:st|nd|rd|th)?\s+(?:of\s+)?([a-z]{3,9})\.?|([a-z]{3,9})\.?\s+(\d{1,2})(?:st|nd|rd|th)?\b)(?:,?\s*(\d{4}))?/gi;
 
 /** Einsendeschluss aus englischem Text -> ISO (23:59:59 Berliner Zeit) | null. Ohne Jahr: dieses, liegt es > 2 Monate zurück, das nächste. */
 export function englischeFrist(text, jetzt = new Date()) {
@@ -134,6 +134,7 @@ export function bewerteRemix(it, r, jetzt = new Date()) {
   const genre = zaehle(text, r.genreWoerter);
   if (!genre) return { grund: 'Genre passt nicht' };
   if (enthaelt(text, r.nichtWoerter) && genre < 2) return { grund: 'Hip-Hop/Metal/Schlager' };
+  if (enthaelt(text, ['winners announced|winner announced|gewinner stehen fest|gewinner bekannt|gewinner gekuert|gewinner gekürt'])) return { grund: 'schon entschieden' };
   const jetztMs = new Date(jetzt).getTime();
   const bis = it.bis || englischeFrist(`${it.titel} ${it.langtext || it.beschreibung || ''}`, jetzt);
   if (bis && Date.parse(bis) <= jetztMs) return { grund: 'Einsendeschluss vorbei' };

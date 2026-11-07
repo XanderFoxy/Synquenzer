@@ -16,7 +16,10 @@ test('krass: Xanders Beispiele', () => {
   nein('Mario Kart World (Switch 2) für 39 €', 39, 49); // Spiel im Angebot – kein Preisfehler
   ja('Donkey Kong Bananza – Nintendo Switch 2 Spiel für 0,99 €', 0.99, 69.99); // praktisch geschenkt
   ja('Donkey Kong Bananza – Nintendo Switch 2 Spiel für 1 €', 1); // ohne Vorher-Preis auch
-  ja('Zelda Tears of the Kingdom – Switch 2 Edition', 9.99, 79.99); // −88 %, 70 € gespart: spürbar
+  nein('Zelda Tears of the Kingdom – Switch 2 Edition', 9.99, 79.99); // −88 %: für Spiele zählt nur ≈ 1 €
+  ja('Zelda Tears of the Kingdom – Switch 2 Edition', 1.49, 79.99); // ≈ 1 €
+  nein('Zelda Tears of the Kingdom – Switch 2 Edition', 1.99, 69.99); // −97 %, aber 1,99 € ist nicht ≈ 1 €
+  ja('Zelda Tears of the Kingdom – Switch 2 Edition', 1.59, 89.99); // −98 %
   nein('Zelda Tears of the Kingdom – Switch 2 Edition', 29.99, 79.99); // −62 %: nur Angebot
   nein('Pokémon Legends Z-A (Switch 2)', 4.99, 69.99, { spielMaxEuro: 2, spielMinProzent: 95 });
 });
