@@ -5006,6 +5006,58 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 .sx14 .sx14-sr .sx14-d{flex:0 0 44px;height:44px;padding:0}
 .sx14 .sx14-e{font:500 12px/1.3 var(--font-ui);color:var(--text-dim);padding:6px 4px}
 /* SX714-CSS-END */
+/* UIX1-CSS-BEGIN (Xander 07.11.): hochkant kein runder Lautsprecher mehr über dem Song (Schalter im Schleife-Blatt), jedes ✕ mit
+   Trefferfläche ≥ 44 px (Aussehen bleibt), Popups mit Titel bekommen ein ✕ oben rechts (bleibt beim Scrollen stehen), Zeile „Neu“
+   im Blatt „Teil überarbeitet“ (wie im Blatt „Teil gefangen“) */
+.ux1-hd{display:none}
+@media (orientation:portrait){
+  #songView:not(.side) .sv-scrfab{display:none!important}
+  .sh-x,.fsheet .fs-x,.psheet .ps-x,.crsheet .cr-x,.cp-x{position:relative}
+  .sh-x::after{content:'';position:absolute;left:-1px;right:-1px;top:-3px;bottom:-3px}   /* ab der Innenkante (1 px Rand): 44 × 44 */
+  .ue-tabs > .ue-x{position:sticky;right:0;z-index:1}   /* Übergänge: das ✕ scrollt nicht mit den Reitern aus dem Bild */
+  .sheet .sh-x{z-index:1}   /* kleine iPhones (Kopfzeile 40 px): die Trefferfläche des ✕ geht vor die Taste darunter */
+  #rollSheet .rhead .sh-x::after{bottom:-6px}   /* Noten-Editor: oben schneidet der Blattrand ab, unten liegt nur der Zusatz-Rand der Werkzeuge */
+  .fsheet .fs-x::after,.psheet .ps-x::after{content:'';position:absolute;left:-3px;right:-3px;top:-3px;bottom:-3px}
+  .crsheet .cr-x::after{content:'';position:absolute;left:-5px;right:-5px;top:-5px;bottom:-5px}
+  .cp-x::after{content:'';position:absolute;left:-1px;right:-1px;top:-3px;bottom:-3px}
+  .pop > .ux1-hd{display:block;position:sticky;top:8px;height:0;z-index:3}
+  .pop > .ux1-hd > .ux1-px{position:absolute;right:-8px;top:-8px;width:40px;height:36px;min-width:0;padding:0;font-size:15px}
+  .pop > .ux1-hd > .ux1-px::after{content:'';position:absolute;left:-3px;right:-3px;top:-5px;bottom:-5px}
+  .pop > h4.ux1-h{padding:6px 36px 0 0;min-height:24px;box-sizing:border-box}
+}
+.ux1-lp{margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}
+.ux1-lp .ux1-scr{display:flex;align-items:center;gap:8px;width:100%;min-height:44px;padding:0 10px;text-align:left;font:600 13px/1.15 var(--font-ui)}
+.ux1-lp .ux1-scr span{flex:1 1 auto;min-width:0}
+.ux1-lp .ux1-scr b{flex:none;font:800 11px/1 var(--font-ui);letter-spacing:.06em;text-transform:uppercase}
+.fsheet .ux1-s1 .cp-sc{flex:1 1 auto;min-width:0}
+.fsheet .fs-row.ux1-s1:has(.ux1-w){height:auto;min-height:40px;align-items:flex-start;padding:2px 0}
+.fsheet .ux1-s1 .lbl{line-height:36px}
+.fsheet .ux1-s1 .ux1-w{flex:1 1 auto;min-width:0;display:flex;flex-wrap:wrap;gap:4px}
+.fsheet .ux1-s1 .ux1-w .cp-c{flex:1 0 auto;min-width:52px;height:40px;padding:0 8px;white-space:nowrap}
+/* UIX1-CSS-END */
+/* UX2-CSS-BEGIN – Paket UX2: Ziehen in der Matrix (Geist, Einfüge-Linie, Ziel, Zieh-Symbol), Einfügen mit Lupe im Noten-Editor */
+.ux2gh{position:fixed;left:0;top:0;z-index:9000;margin:0;pointer-events:none;opacity:.95;transform-origin:0 0;will-change:transform;box-shadow:0 12px 28px rgba(0,0,0,.65),0 0 0 2px var(--amber);border-radius:var(--r-s,8px)}
+.ux2gh.slot{border-style:solid;background:var(--chassis-2)}
+.ux2gh.ux2c{box-shadow:0 12px 28px rgba(0,0,0,.65),0 0 0 2px var(--play)}
+.ux2gh .ux2bd{position:absolute;left:50%;bottom:calc(100% + 6px);transform:translateX(-50%);padding:3px 7px;border-radius:6px;background:rgba(11,12,15,.92);color:var(--amber);font:700 11px/1.1 var(--font-ui);white-space:nowrap;letter-spacing:.02em;box-shadow:0 2px 8px rgba(0,0,0,.6)}
+.ux2gh.ux2c .ux2bd{color:var(--play)}
+.ux2gh.slot{overflow:visible}
+.ux2src{opacity:.35;outline:2px dashed var(--amber);outline-offset:-2px}
+.ux2ln{position:fixed;left:0;top:0;z-index:8999;pointer-events:none;background:var(--amber);border-radius:2px;box-shadow:0 0 10px var(--amber)}
+.ux2ln.off{display:none}
+.slot.ux2lift{transform:scale(1.06);z-index:4;box-shadow:0 8px 20px rgba(0,0,0,.6),0 0 0 2px var(--amber);transition:transform .12s}
+.slot .ux2mvw{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;color:var(--amber);z-index:5}
+.slot .ux2mvw .ux2mv{width:24px;height:24px;filter:drop-shadow(0 1px 2px #000)}
+.slot.ux2tg{outline:2px dashed var(--amber);outline-offset:-3px;background:rgba(255,178,46,.10)}
+.slot.ux2tg.ux2sw{outline-style:solid}
+.slot.ux2tg.ux2cp{outline-color:var(--play);background:rgba(53,208,127,.10)}
+.slot.ux2no{outline:2px solid var(--rec);outline-offset:-3px}
+.ux2p-ov{position:absolute;inset:0;z-index:1;touch-action:none}
+.ux2p-lupe{position:fixed;z-index:9500;border-radius:12px;border:2px solid var(--amber);box-shadow:0 10px 24px rgba(0,0,0,.7);pointer-events:none;background:#0d0e11}
+.pr-bar .ux2p-lab{color:var(--amber)}
+.pr-bar button.ux2pb{position:relative}.pr-bar button.ux2pb::after{content:'';position:absolute;left:0;right:0;top:-7px;bottom:-7px}   /* Trefferfläche ≥ 44 px wie die anderen Knöpfe der Leiste */
+#clipGrid{touch-action:none}                 /* UX2: kein Browser-Wischen in der Matrix (sonst bricht iOS das Ziehen von Szenen-Köpfen und dem Rand ab) */
+/* UX2-CSS-END */
 /* NDP-CSS-BEGIN – die North-Platte (Paket ND-P): eigenes Instrument-Gesicht der Drum-Engine MD_NAME. Rote Front, schwarze
    Beschriftungsfelder, beleuchtete Tasten, 3-stelliges Siebensegment-Display, großes Rad. Nur Formen aus CSS/SVG, keine Bilder. */
 .hb.ndpk{display:inline-flex;align-items:center;justify-content:center;gap:5px;flex:none;height:44px;min-height:44px;min-width:58px;padding:0 8px;border-radius:8px;font-weight:800;letter-spacing:.02em;color:#fff;
@@ -18423,6 +18475,7 @@ registerProcessor('synq-meter', SynqMeter);
 'use strict';
 const SR = sampleRate, ISR = 1 / SR, CR = 16, NCH = 12, NV = 2, MAXM = 48, LN1K = 6.907755278982137;
 const M_LIM1 = 24, M_LIM2 = 12, H_MAX = 32, H_LIM1 = 16, H_LIM2 = 12;
+const H_GCAP2 = 4;   /* NS1: formant energy cap of the H family (gain 2 = +6 dB) */
 const LG_T = 2, LG_C = 3.9810717055349722, LG_W = LG_C - LG_T;
 const H_FC = 5, P_SIG = 0.4, P_TILT = 6, P_TSH = 1;
 const PI = Math.PI, TAU = 2 * Math.PI;
@@ -18594,7 +18647,7 @@ function envEnd(m, T) { return m === M_E2 ? 2.7 * T : m === M_E3 ? 4 * T : m ===
 function tnh(x) { if (x > 3) return 1; if (x < -3) return -1; const x2 = x * x; return x * (27 + x2) / (27 + 9 * x2); }
 class Voice {
 constructor(eng, ch) {
-this.E = eng; this.ch = ch; this.on = false; this.bp = 0;
+this.E = eng; this.ch = ch; this.on = false; this.bp = 0; this.gen = 0;   /* NS1: stop generation of the hit that started this voice */
 this.zr = new Float64Array(MAXM); this.zi = new Float64Array(MAXM); this.cr = new Float64Array(MAXM); this.ci = new Float64Array(MAXM);
 this.mf = new Float64Array(MAXM); this.ptl = new Float64Array(MAXM); this.mr = new Float64Array(MAXM); this.nm = 0;
 this.TB = new Float64Array(CR); this.NB = new Float64Array(CR);
@@ -18692,6 +18745,9 @@ if (s === 2 && k % 2 === 0) continue; if (s === 3 && k % 3 === 0) continue; if (
 cnt++; const f = s === 6 ? k * f0 * Math.sqrt(1 + 0.0008 * k * k) : k * f0;
 this.add(f, Math.pow(k, -al) * this.wH(f, fc, s === 5) * nrm, Math.pow(k, -0.5));
 }
+/* NS1: the resonance centre lifts the level of the struck partials by at most +6 dB (energy of all added partials against the plain tilt);
+   SPECTRA low put the formant on the fundamental (+17 dB, hot peaks). Below the cap nothing changes (factory programs at most +5.6 dB) */
+{ let e = 0; for (let k = 0; k < this.nm; k++) e += this.zr[k] * this.zr[k] + this.zi[k] * this.zi[k]; if (e > H_GCAP2) { const q = Math.sqrt(H_GCAP2 / e); for (let k = 0; k < this.nm; k++) { this.zr[k] *= q; this.zi[k] *= q; } } }
 } else if (fam === FAM_D) {
 const D = DMOD[s - 1], fF = f0 * Math.pow(2, (this.spc - 33) / 33), tc = 0.004 * Math.pow(0.025, F0 / 50);
 const bodyA = Math.pow(10, D.bd / 20); let ss = bodyA * bodyA;
@@ -19094,7 +19150,7 @@ this.chs = []; for (let i = 0; i < NCH; i++) this.chs.push(new Chan(this, i));
 this.nz = new Uint32Array(NCH);
 this.mskT = new Float64Array(NCH); this.mskN = new Float64Array(NCH); this.mskC = new Float64Array(NCH);
 this.soloCh = -1; this.soloP = 0; this.lim = 0; this.tap = 0; this.sent = true; this.errAt = -1e12; this.qover = 0; this.dcOn = true; this.dcA = 1 - TAU * 5 / SR; this.dcX = 0.1; this.dcY = 0.1; this.dcW = 0.1; this.dcZ = 0.1;
-this.QN = 4096; this.q = []; for (let i = 0; i < this.QN; i++) this.q.push({fr: 0, ch: 0, v: 0, acc: 0, tune: 0, dec: 1, id: 0}); this.qn = 0;
+this.QN = 4096; this.q = []; for (let i = 0; i < this.QN; i++) this.q.push({fr: 0, ch: 0, v: 0, acc: 0, tune: 0, dec: 1, id: 0, gen: 0}); this.qn = 0; this.gen = 0; this.stopGen = 0;   /* NS1: gen */
 this.late = 0; this.lateSent = 0;
 this.stopFr = -1; this.stopTau = 0.02; this.pan = 0;
 this.K = {rvT: 1, rvC: 0, dlR: 50, dlM: 0, dlB: 60, dlF: 0};
@@ -19160,7 +19216,10 @@ break; }
 case 'hit': { const L = m.list || []; for (const h of L) this.enqueue(h); break; }
 case 'all': { const L = m.list || []; for (const x of L) this.onMsg(x); break; }
 case 'mute': { const s = m.solo; this.soloCh = s ? (m.ch | 0) : -1; this.soloP = s === 'tone' ? 1 : s === 'noise' ? 2 : s === 'click' ? 3 : 0; for (const C of this.chs) this.levels(C); break; }
-case 'stop': { this.stopFr = Math.round((+m.at || 0) * SR); this.stopTau = Math.max(0.001, +m.tau || 0.02); break; }
+case 'stop': { this.stopFr = Math.round((+m.at || 0) * SR); this.stopTau = Math.max(0.001, +m.tau || 0.02);
+/* NS1: the hits planned before this stop (from its time on) go now; hits sent after it (a restart in the same render quantum) stay and are not damped */
+{ let j = 0; for (let i = 0; i < this.qn; i++) { if (this.q[i].fr < this.stopFr) { const t = this.q[j]; this.q[j] = this.q[i]; this.q[i] = t; j++; } } this.qn = j; this.stopGen = ++this.gen; }
+break; }
 case 'cancel': { const ids = m.ids || []; if (!ids.length) break; const S = new Set(ids); let j = 0;
 for (let i = 0; i < this.qn; i++) { if (!S.has(this.q[i].id)) { const t = this.q[j]; this.q[j] = this.q[i]; this.q[i] = t; j++; } } this.qn = j; break; }
 case 'panic': { this.qn = 0; this.pan = Math.max(1, Math.round(0.01 * SR)); this.panN = this.pan; break; }
@@ -19182,7 +19241,7 @@ const fr = Math.round((+h.at || 0) * SR);
 let j = this.qn; const q = this.q, rec = q[j];
 while (j > 0 && q[j - 1].fr > fr) { q[j] = q[j - 1]; j--; }
 q[j] = rec; this.qn++;
-rec.fr = fr; rec.ch = ch; rec.v = clampN(h.v, 0, 1, 0.8); rec.acc = clampN(h.acc, 0, 1, 0); rec.tune = clampN(h.tune, -48, 48, 0); rec.dec = clampN(h.dec, 0.05, 20, 1); rec.id = (+h.id || 0) | 0;
+rec.fr = fr; rec.ch = ch; rec.v = clampN(h.v, 0, 1, 0.8); rec.acc = clampN(h.acc, 0, 1, 0); rec.tune = clampN(h.tune, -48, 48, 0); rec.dec = clampN(h.dec, 0.05, 20, 1); rec.id = (+h.id || 0) | 0; rec.gen = this.gen;   /* NS1 */
 }
 renderTo(C, s) { for (let j = 0; j < NV; j++) { const v = C.v[j]; if (v.on && v.bp < s) { v.render(C.buf, v.bp, s); v.bp = s; } } }
 hit(h, off) {
@@ -19193,7 +19252,7 @@ let nv = null;
 for (let j = 0; j < NV; j++) { const v = C.v[j]; if (v.on && v.fadeSt === 0) v.fadeSt = 1 / (0.003 * SR); }
 for (let j = 0; j < NV; j++) if (!C.v[j].on) { nv = C.v[j]; break; }
 if (!nv) nv = C.v[0].fade <= C.v[1].fade ? C.v[0] : C.v[1];
-nv.start(C.P, h.v, h.acc, h.tune, h.dec); nv.bp = off;
+nv.start(C.P, h.v, h.acc, h.tune, h.dec); nv.bp = off; nv.gen = h.gen;   /* NS1 */
 if (nv.ctab) C.act = true;
 C.act = true;
 }
@@ -19205,7 +19264,7 @@ const fr0 = currentFrame, fr1 = fr0 + N;
 let stopK = 0;
 if (this.stopFr >= 0 && this.stopFr < fr1) {
 stopK = Math.exp(-CR / (this.stopTau * SR));
-let j = 0; for (let i = 0; i < this.qn; i++) { if (this.q[i].fr < this.stopFr) { const t = this.q[j]; this.q[j] = this.q[i]; this.q[i] = t; j++; } } this.qn = j;
+let j = 0; for (let i = 0; i < this.qn; i++) { if (this.q[i].fr < this.stopFr || this.q[i].gen >= this.stopGen) { const t = this.q[j]; this.q[j] = this.q[i]; this.q[i] = t; j++; } } this.qn = j;
 this.stopFr = -1;
 }
 let any = false;
@@ -19218,7 +19277,7 @@ const C = this.chs[h.ch]; if (C.has && !C.act) { C.buf.fill(0); C.act = true; an
 this.hit(h, off); qi++;
 }
 if (qi > 0) { const q = this.q; for (let i = qi; i < this.qn; i++) { const t = q[i - qi]; q[i - qi] = q[i]; q[i] = t; } this.qn -= qi; }
-if (stopK > 0) for (let c = 0; c < NCH; c++) for (let j = 0; j < NV; j++) { const v = this.chs[c].v[j]; if (v.on) v.stpK = stopK; }
+if (stopK > 0) for (let c = 0; c < NCH; c++) for (let j = 0; j < NV; j++) { const v = this.chs[c].v[j]; if (v.on && v.gen < this.stopGen) v.stpK = stopK; }   /* NS1: gen */
 if (!any && this.hsleep > 0.5 * SR / N && this.pan === 0 && this.dcY === 0 && this.dcZ === 0) { this.dlyS = Math.round(this.dlyT * SR); this.fbS = this.dlyFb; this.cS = this.K.rvC; this.account(t0, N); return true; }
 let needD = false; for (let c = 0; c < NCH; c++) { const C = this.chs[c]; if (C.act && (C.tDl > 0 || C.sDl > 0 || C.dlHold > 0 || C.dlyE > 0)) needD = true; }
 if (needD) { const tg = Math.round(this.dlyT * SR), st = this.dlySt, DT = this.dT; let d = this.dlyS;
@@ -20286,6 +20345,118 @@ const RecHelpers = (() => {
     /* MP-END */
     sep(acts);
     btn(acts, 'Dupl.', () => duplicate(), 'Duplizieren (hinter die Auswahl / Clip verdoppeln)');
+    /* UX2P-BEGIN Kopieren / Einfügen mit Lupe (Paket UX2, Xander 07.11.: „kopieren, duplizieren, einfügen – mit so einer kleinen Lupe
+       besser einfügen“). [Kopieren] merkt die Auswahl (sonst alle Noten) in einer Ablage, die für alle Clips, eigene Clips und die
+       Song-Melodie gilt (also auch über Spuren hinweg). [Einfügen] zeigt die Noten als Geist ab einem Einfüge-Punkt: Finger in den
+       Notenbereich = Punkt dorthin, ziehen = verschieben (rastet am Raster, über dem Finger eine Lupe mit dem Raster vergrößert,
+       am Rand rollt die Ansicht mit); [✓ Einfügen] setzt ein (ein Undo-Schritt), [✕] bricht ab. Tonhöhen bleiben, Noten hinter dem
+       Clip-Ende fallen weg (mit Hinweis). [Dupl.] (hinter die Auswahl) bleibt wie es ist. */
+    const UX2P = {on: false, b: 0, drag: null, ov: null, cv: null, lp: null, bar: null, n: 0};
+    const ux2pClip = () => create.ux2 || (create.ux2 = {notes: null, kind: '', span: 0});
+    const ux2pKind = () => (opts.rowName ? 'perc' : 'note');
+    UX2P.copyB = btn(acts, 'Kopieren', () => ux2pCopy(), 'Kopieren (Auswahl, sonst alle Noten)');
+    UX2P.pasteB = btn(acts, 'Einfügen', () => ux2pStart(), 'Einfügen: Punkt mit dem Finger setzen (Lupe), dann ✓');
+    UX2P.copyB.classList.add('ux2pb'); UX2P.pasteB.classList.add('ux2pb');
+    function ux2pCopy() {
+      const ns = scope(); if (!ns.length) { say('Keine Noten zum Kopieren'); return false; }
+      const g = GRID[E.grid] || .25, t0 = Math.floor(Math.min(...ns.map(n => n.t)) / g + 1e-6) * g, NC = ux2pClip();
+      NC.notes = ns.map(n => ({t: +(n.t - t0).toFixed(6), d: n.d, n: n.n, v: n.v})); NC.kind = ux2pKind();
+      NC.span = Math.max(...ns.map(n => n.t + n.d)) - t0;
+      say(ns.length + (ns.length === 1 ? ' Note kopiert' : ' Noten kopiert')); render(); return true;
+    }
+    const ux2pSnap = b => { const g = gridStep(); return clamp(Math.round(b / g) * g, 0, Math.max(0, L() - g)); };
+    function ux2pStart() {
+      const NC = ux2pClip(); if (!NC.notes || !NC.notes.length) { say('Erst Noten kopieren'); return false; }
+      if (NC.kind !== ux2pKind()) { say(NC.kind === 'perc' ? 'Perkussions-Noten passen hier nicht' : 'Diese Noten passen hier nicht'); return false; }
+      measure();
+      let b = E.step != null ? E.step : E.sel.size ? Math.max(...scope().map(n => n.t + n.d)) : Math.max(0, V.x0);
+      if (b >= L() - 1e-9) b = Math.max(0, V.x0);
+      E.ask = false; if (typeof MPS !== 'undefined' && MPS.panel) mpPanel(null);
+      if (!UX2P.on) busyN++;
+      UX2P.on = true; UX2P.b = ux2pSnap(Math.ceil(b / gridStep() - 1e-6) * gridStep());
+      ux2pEls(); render(); say('Finger setzt den Punkt · ✓ = einfügen');
+      return true;
+    }
+    function ux2pEnd() { if (UX2P.on) busyN = Math.max(0, busyN - 1); UX2P.on = false; UX2P.drag = null; ux2pLoupe(null); render(); }
+    function ux2pApply() {
+      if (!UX2P.on) return 0;
+      const NC = ux2pClip(), b0 = UX2P.b, Lb = L(), add = []; let drop = 0;
+      model.begin();
+      for (const n of NC.notes) { const t = b0 + n.t; if (t >= Lb - 1e-9) { drop++; continue; } add.push(addNote(t, n.n, Math.min(n.d, Lb - t), n.v)); }
+      E.sel = new Set(add); sortNotes(); model.end(add.length > 0, 'Einfügen');
+      UX2P.n++; ux2pEnd(); afterExternal();
+      say(add.length + (add.length === 1 ? ' Note' : ' Noten') + ' eingefügt' + (drop ? ' · ' + drop + ' hinter dem Ende weggelassen' : ''));
+      return add.length;
+    }
+    function ux2pSet(b) { const nb = ux2pSnap(b); if (Math.abs(nb - UX2P.b) > 1e-9) { UX2P.b = nb; if (opts.onTick) { try { opts.onTick(); } catch (e) {} } } render(); }
+    // the overlay over the note area (only while pasting) takes the finger; the ruler, the tools and ↶ stay usable
+    function ux2pEls() {
+      if (UX2P.ov) return;
+      const ov = mk('div', 'ux2p-ov'), cv = mk('canvas'); ov.appendChild(cv); main.insertBefore(ov, ph); UX2P.ov = ov; UX2P.cv = cv;
+      ov.addEventListener('touchstart', e => { if (e.cancelable) e.preventDefault(); }, {passive: false});
+      ['contextmenu', 'selectstart'].forEach(ev => ov.addEventListener(ev, e => e.preventDefault()));
+      ov.addEventListener('pointerdown', e => {
+        if (UX2P.drag || !UX2P.on) return;
+        e.preventDefault(); try { ov.setPointerCapture(e.pointerId); } catch (_) {}
+        const p = loc(e, cM), NC = ux2pClip(), b = beatAt(p.x), inG = b >= UX2P.b - gridStep() && b <= UX2P.b + Math.max(NC.span, gridStep());
+        UX2P.drag = {id: e.pointerId, off: inG ? b - UX2P.b : 0, p, cx: e.clientX, cy: e.clientY};
+        const kill = ev => { if (ev.pointerId !== e.pointerId) return; document.removeEventListener('pointerup', kill, true); document.removeEventListener('pointercancel', kill, true); end(ev); };
+        document.addEventListener('pointerup', kill, true); document.addEventListener('pointercancel', kill, true);   // the editor may close under the finger: the loupe never stays
+        if (!inG) ux2pSet(b); else render();
+      });
+      ov.addEventListener('pointermove', e => {
+        const D = UX2P.drag; if (!D || D.id !== e.pointerId) return;
+        const p = loc(e, cM); D.p = p; D.cx = e.clientX; D.cy = e.clientY;
+        if (p.x < EDGE || p.x > V.W - EDGE) { V.x0 += (p.x < EDGE ? -1 : 1) * (V.W / V.ppb) * .03; clampView(); hand('scroll'); }   // am Rand rollt die Ansicht mit
+        ux2pSet(beatAt(p.x) - D.off);
+      });
+      function end(e) { const D = UX2P.drag; if (!D || D.id !== e.pointerId) { if (!D) ux2pLoupe(null); return; } UX2P.drag = null; ux2pLoupe(null); render(); }
+      ov.addEventListener('pointerup', end); ov.addEventListener('pointercancel', end); ov.addEventListener('lostpointercapture', end);
+      UX2P.lab = mk('span', 'ask ux2p-lab', '');
+      UX2P.okB = btn(acts, '✓ Einfügen', () => ux2pApply(), 'Hier einfügen', 'loopb');
+      UX2P.noB = btn(acts, '✕', () => { ux2pEnd(); say('Einfügen abgebrochen'); }, 'Einfügen abbrechen');
+      acts.insertBefore(UX2P.lab, UX2P.okB);
+      UX2P.bar = [UX2P.lab, UX2P.okB, UX2P.noB]; UX2P.okB.classList.add('ux2pb'); UX2P.noB.classList.add('ux2pb');
+      for (const b of UX2P.bar) b.hidden = true;
+    }
+    // the magnifier over the finger: the note area and the ghost around the paste point, 2.5×, with the grid and the position
+    function ux2pLoupe(D) {
+      if (!D || dead) { if (UX2P.lp) { UX2P.lp.remove(); UX2P.lp = null; } return; }
+      let lp = UX2P.lp; if (!lp) { lp = UX2P.lp = mk('canvas', 'ux2p-lupe'); lp.setAttribute('aria-hidden', 'true'); lp.style.width = '148px'; lp.style.height = '84px'; document.body.appendChild(lp); }
+      const W = 148, H = 84, Z = 2.5, d = dpr(), x0 = xOf(UX2P.b), y0 = clamp(D.p.y, 0, V.H);
+      const vw = window.innerWidth, left = clamp(D.cx - W / 2, 4, vw - W - 4), top = D.cy - H - 46 >= 4 ? D.cy - H - 46 : D.cy + 46;
+      lp.style.left = left + 'px'; lp.style.top = top + 'px';
+      const g = fit(lp, W, H), sw = W / Z, sh = H / Z, sx = x0 - sw / 2, sy = y0 - sh / 2;
+      g.fillStyle = '#0d0e11'; g.fillRect(0, 0, W, H);
+      try { g.imageSmoothingEnabled = false; g.drawImage(cM, sx * d, sy * d, sw * d, sh * d, 0, 0, W, H); if (UX2P.cv) g.drawImage(UX2P.cv, sx * d, sy * d, sw * d, sh * d, 0, 0, W, H); } catch (e) {}
+      g.strokeStyle = tok('--amber', '#ffb22e'); g.lineWidth = 2; g.beginPath(); g.moveTo(W / 2, 0); g.lineTo(W / 2, H); g.stroke();
+      const txt = fmtPos(UX2P.b); g.font = '700 11px ' + tok('--font-num', 'monospace');
+      const tw = g.measureText(txt).width + 8; g.fillStyle = 'rgba(0,0,0,.75)'; rr(g, W / 2 + 4, 4, tw, 16, 4); g.fill(); g.fillStyle = '#fff'; g.fillText(txt, W / 2 + 8, 16);
+    }
+    // per frame (hook at the end of draw): the paste bar instead of the action bar, the ghost of the notes, the magnifier
+    function ux2pFrame(C) {
+      if (!UX2P.ov) return;
+      const on = UX2P.on;
+      UX2P.ov.style.display = on ? '' : 'none';
+      if (!on) { for (const b of UX2P.bar) b.hidden = true; return; }
+      for (const b of acts.children) b.hidden = !UX2P.bar.includes(b);
+      UX2P.lab.textContent = 'Einfügen bei ' + fmtPos(UX2P.b);
+      const NC = ux2pClip(), x = fit(UX2P.cv, V.W, V.H), Lb = L();
+      x.clearRect(0, 0, V.W, V.H);
+      x.fillStyle = C.amber; x.globalAlpha = .08; x.fillRect(xOf(UX2P.b), 0, Math.max(2, NC.span * V.ppb), V.H); x.globalAlpha = 1;
+      for (const n of NC.notes || []) {
+        const t = UX2P.b + n.t, r = {x: xOf(t), y: yOfRow(rowOfNote(n.n)), w: Math.max(3, n.d * V.ppb), h: V.rowH}; if (r.x > V.W || r.x + r.w < 0 || r.y > V.H || r.y + r.h < 0) continue;
+        const out = t >= Lb - 1e-9;
+        x.globalAlpha = out ? .25 : .55; x.fillStyle = out ? '#ff4538' : C.amber; rr(x, r.x + 1, r.y + 2, r.w - 2, r.h - 4, 4); x.fill();
+        x.globalAlpha = 1; x.strokeStyle = out ? '#ff4538' : C.amber; x.lineWidth = 1.5; x.setLineDash([3, 2]); rr(x, r.x + 1, r.y + 2, r.w - 2, r.h - 4, 4); x.stroke(); x.setLineDash([]);
+      }
+      const px = Math.round(xOf(UX2P.b)) + .5; x.strokeStyle = C.amber; x.lineWidth = 2; x.beginPath(); x.moveTo(px, 0); x.lineTo(px, V.H); x.stroke(); x.lineWidth = 1;
+      x.fillStyle = C.amber; x.beginPath(); x.moveTo(px - 7, 0); x.lineTo(px + 7, 0); x.lineTo(px, 9); x.fill();
+      if (UX2P.drag) ux2pLoupe(UX2P.drag);
+    }
+    acts._ux2p = {copy: () => ux2pCopy(), start: () => ux2pStart(), at: b => { if (UX2P.on) { UX2P.b = ux2pSnap(+b || 0); render(); } return UX2P.b; }, apply: () => ux2pApply(), cancel: () => ux2pEnd(),
+      info: () => { const NC = ux2pClip(); return {on: UX2P.on, b: UX2P.b, n: UX2P.n, clip: NC.notes ? NC.notes.length : 0, kind: NC.kind, span: NC.span, drag: !!UX2P.drag, loupe: !!UX2P.lp}; }};
+    /* UX2P-END */
     btn(acts, 'Quant.', () => { const ns = scope(); if (!ns.length) return; if (opts.onQuant) opts.onQuant(E.sel.size ? ns : null); else act('Quantisieren', x => quantizeNotes(x)); }, 'Quantisieren');
     btn(acts, 'Legato', () => act('Legato', ns => legato(ns)), 'Legato: jede Note bis zur nächsten');
     for (const x of opts.extraActs || []) A[x.id] = btn(acts, x.label, () => x.fn(A[x.id], scope(), E.sel.size > 0), x.title, x.cls);   // LF1: Aktionen der App (Spielweise)
@@ -20507,6 +20678,7 @@ const RecHelpers = (() => {
       if (tb.undo && model.canUndo) tb.undo.disabled = !model.canUndo();
       if (tb.redo && model.canRedo) tb.redo.disabled = !model.canRedo();
       mpRender();                                                   /* MP */
+      ux2pFrame(C);                                                 /* UX2P: Einfüge-Leiste, Geist, Lupe */
       if (opts.onRender) opts.onRender(api.state);
     }
     /* N2: mini map of the whole clip (notes as strokes, the visible part as a frame), shown while a 'move' gesture runs;
@@ -26668,7 +26840,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '4.45.0';
+const VERSION = '4.46.0';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -27805,6 +27977,7 @@ function normClip(c, kind, pk) {
   gr1ClipNorm(c, out);                                                                                // GR1: clip.sf (Small/Full), clip.gr (Remix-Version)
   if (kind !== 'drum' && c.lf) { const lf = lf1NormLf(c.lf); if (lf) out.lf = lf; }   // LF1: Richtung / Startschritt des Laufs (fehlt = wie bisher)
   if (c.lw) kl1Norm(c, out, kind);                                                                   // KL1: Fenster im ganzen Inhalt
+  if (typeof c.vid === 'string' && /^(geraet|klav|kino|noten|aus)$/.test(c.vid)) out.vid = c.vid;   // VR1: Im Video (fehlt = Auto; läuft schon beim Start)
   return out;
 }
 function normTrack(t, def, pk, warns) {
@@ -28217,6 +28390,7 @@ function cleanClip(c) {
   if (c.sf) o.sf = c.sf; if (c.gr) o.gr = Object.assign({}, c.gr);  // GR1: Small/Full, Remix-Version
   if (c.lf) o.lf = Object.assign({}, c.lf);                          // LF1
   if (c.lw) o.lw = kl1Clean(c.lw);                                // KL1: der ganze Inhalt geht mit
+  if (c.vid) o.vid = c.vid;                                       // VR1: Im Video
   return o;
 }
 /* ---------------- BM8 (Nachtrag 7 §5.4): Bend, Rad und Druck im Clip ----------------
@@ -33815,6 +33989,7 @@ function pushUndo(track, scene, before, label, mergeKey) {
   undoPush({kind: 'clip', track, scene, before: before ? cleanClip(before) : null, label, mergeKey: mergeKey || null});
 }
 function undoState(e) {
+  if (e.kind === 'ux2') return ux2UndoState(e);                // UX2: Spur-Reihenfolge, Zellen-Tausch, Szenen-Reihenfolge
   if (e.kind === 'group') return null;                     // V2a: the items carry their own states
   if (e.kind === 'sr') return srSnap();                   // N8 I1c
   if (e.kind === 'track') return trackSnapshot(e.track);
@@ -33848,6 +34023,7 @@ function clipRestored(t, s) {
   clipChanged(t, s);
 }
 function undoApply(e, val) {
+  if (e.kind === 'ux2') ux2UndoApply(e, val); else            // UX2
   if (e.kind === 'track') restoreTrack(e.track, val);
   else if (e.kind === 'clip') { S.tracks[e.track].clips[e.scene] = val ? deep(val) : null; clipRestored(e.track, e.scene); }
   else if (e.kind === 'sound') restoreSoundSnapshot(e.track, JSON.parse(val));
@@ -34647,7 +34823,7 @@ function restoreTrack(i, val) {
     R.slot[i] = -1; R.pend[i] = null; R.prev[i] = null; R.cstart[i] = 0;
     if (c) { if (!AU.tracks[i]) buildTrack(i); else { AU.tracks[i].driveAmt = -1; applyTrackParams(i, true); } syncEngine(i, true); }
   }
-  S.ui = Object.assign({}, S.ui, {order: orderFor(NT())});
+  S.ui = Object.assign({}, S.ui, {order: ux2OrderFit(NT())});   // UX2: eine eigene Spur-Reihenfolge bleibt (vorher: orderFor)
   UI.sndVer++; KEYC.ver++; scheduleAutoKey();
   UI.dirty.all = UI.dirty.grid = UI.dirty.song = true; UI.kbRelayout = true;
   if (UI.heads && EL.grid) buildGrid();                               // the matrix (rows, banks) at once, before a selectTrack
@@ -39105,6 +39281,7 @@ function openLoopPop(anchor) {
       `<button class="rb${cur === 'part' ? ' on' : ''}" data-l="part"${tm ? '' : ' disabled'}>Teil<small>${tm ? esc(markLabel(tm)) : 'keine Marke'}</small></button>` +
       `<button class="rb${cur === 'range' ? ' on' : ''}" data-l="range">Bereich<small>${cur === 'range' && !sel ? loopLabel(song) : (rb - ra === 1 ? 'Takt ' + (ra + 1) : 'Takt ' + (ra + 1) + '–' + rb)}</small></button></div>` +
       '<p class="small">Bereich = die gelb gewählten Takte (Taktleiste antippen). Die grünen Griffe ┃ ziehen ändert Anfang und Ende.</p>';
+    ux1LoopRow(p);   /* UIX1: Mithören beim Wischen (Lautsprecher) */
     onTap(p, b => {
       const l = b.dataset.l; closePop();
       if (l === 'off') songLoopRange({on: false});
@@ -40418,11 +40595,13 @@ function openCellSheet(t, bar) {
            : `<button class="rb pl-o" data-a="own"><b>Eigener Clip (dieser Durchlauf)</b><small>${rng} wird eine Kopie, die nur hier gilt</small></button>`) +
       `<button class="rb pl-o" data-a="whole"><b>Ganzer Block</b><small>${Math.min(blk.be, song.bars) - blk.bs > 1 ? 'Takt ' + (blk.bs + 1) + '–' + Math.min(blk.be, song.bars) : 'Takt ' + (blk.bs + 1)} wird ein eigener Clip</small></button>` +
       vvCellOpt(t, run.bs, Math.min(run.be, song.bars)) +                                    // VV2: „Im Video zeigen“
+      (own ? vr1OwnOpt(own) : '') +                                                           // VR1: Im Video (eigener Clip)
       `<button class="rb pl-c" data-a="x">Abbrechen</button>`;
     onTap(p, b => {
       const a = b.dataset.a; closePop(); if (a === 'x') return;
       if (a === 'vvshow') { vvCellTap(t, run.bs, Math.min(run.be, song.bars)); return; }   // VV2
       if (gr1CellTap(a, b, t, bar)) return;                                                 // GR1: Small │ Full der Version
+      if (a === 'vr1vid') { vr1OwnTap(own); return; }                                      // VR1
       if (a === 'edit') { openOwnRoll(t, bar); return; }
       if (a === 'sx9v') {                                                                     // SX9: diese Version hier
         const id = b.dataset.id || null, c = id ? sx9Ver(S.song, id) : null, v = c ? c.ver : 1, sp = sx9Pick(t, bar, id);
@@ -41385,6 +41564,7 @@ function openPop(anchor, build, opts) {
   const L = EL.popLayer, p = el('div', 'pop');
   if (opts.sheet) pshMake(p, opts.sheet);                         // 4.30.1: Kopf mit ✕, Ablegen, Transport
   build(p); if (opts.sheet) pshKeep(p); L.appendChild(p); L.classList.add('open');
+  ux1PopX(p);                                                     /* UIX1: ✕ in Popups mit Titel (hochkant) */
   const vw = window.innerWidth, vh = window.innerHeight, pw = p.offsetWidth, ph = p.offsetHeight;
   let x, y;
   if (anchor) {
@@ -48808,7 +48988,7 @@ const MD_CELL = {
     if (f === 'A' && w !== 'A6' || w === 't2') { const h = MD_VERST[v]; return (h > 0 ? '+' : h < 0 ? '−' : '') + mdDec(Math.abs(h), Math.abs(h) < 1 && h ? 2 : Math.abs(h) % 1 ? 2 : 0) + ' HT'; }
     if (w === 'A6') return 'Puls ' + Math.round(50 - 45 * v / 99) + ' %';
     if (f === 'F' || f === 'r') return 'Verh. ' + mdRatio(MD_VERH[v]);
-    if (f === 'H') return 'Formant ' + mdHz(440 * Math.pow(2, (p - 69) / 12) * Math.pow(2, 8 * v / 99));
+    if (f === 'H') return 'Formant ' + mdHz(440 * Math.pow(2, (p - 69) / 12) * Math.pow(2, 5 * v / 99));   // NS1: dieselbe Formel wie die Engine (H_FC 5, vorher stand hier 8)
     if (f === 'd') return 'Fell ' + mdRatio(Math.pow(2, (v - 33) / 33));
     if (f === 'P') return 'Rohr ' + mdRatio(Math.pow(2, (v - 24) / 25));
     return 'Stimmung ' + mdRatio(Math.pow(2, (v - 50) / 50)); }, inert: s => s.mWav === 'A1' || s.mWav === 't1', what: 'Klangfarbe des Modells'},
@@ -50581,6 +50761,7 @@ function openClipSheet(t, s, opts) {
     g.append(del);
     if (tr.kind === 'synth' && !clip.audio && !nvTr(tr)) g.append(v6aClipBtn(t, s, clip, reopen));   // V6A: ◆ Klangzustand + Gleiten (eigenes Blatt)
     gr1ClipSheet(g, t, s, clip, reopen);                                                     // GR1: [Grundmuster ▾] · Small │ Full
+    g.append(vr1ClipBtn(t, s, clip, reopen));                         // VR1: Im Video · Auto | Gerät | Klavier | Mäusekino | Noten | aus
     body.append(g);
     const lr = el('div', 'lenrow');
     lr.append(el('span', 'lbl', 'Länge'));
@@ -50721,6 +50902,432 @@ function clipChanged(t, s) {
     if (ED.roll) { try { if (ED.roll.state.pointers) ED.roll.render(); else ED.roll.refresh(); } catch (e) {} }
   }
 }
+
+/* UX2-BEGIN ============================================================================================================
+   Paket UX2 (Xander 07.11.: „Spuren austauschen vom linken Rand … Clips per Drag and Drop … Szenen umsortieren von oben …
+   kopieren, duplizieren, einfügen“). Matrix, nur Gesten, die es noch nicht gab – Wisch-Lautstärke, Halten = Solo, Mehrfach-Solo,
+   Tipp und Halten auf Clips bleiben wie sie sind.
+   • Spur verschieben: im LINKEN RAND einer Spurzeile (Farbbalken, ≤ 14 px vom Spurkopf-Rand, auch der Rand davor) aufsetzen und
+     nach RECHTS ziehen → die Spur hebt sich ab; hoch/runter ziehen, eine Linie zeigt den neuen Platz; loslassen = verschoben.
+     Nur die Anzeige-Reihenfolge (S.ui.order) ändert sich: Clips, Klang, FX, Song und Teile hängen an der Spur und folgen. DRUMS
+     bleibt die unterste Zeile. Nach links ziehen, Tipp, Halten bleiben im Rand wie überall (Lautstärke, wählen, Solo).
+   • Clip ziehen: Clip halten (450 ms) → er hebt sich ab (Zieh-Symbol). Loslassen ohne Bewegung = das Clip-Blatt wie bisher;
+     ziehen → auf eine leere Zelle = verschieben, auf einen Clip = tauschen; zweiter Finger irgendwo = Kopie (⧉, noch einmal = aus).
+     In derselben Spur folgen Song, Teile und die laufende Wiedergabe dem Clip (der Song klingt danach gleich).
+   • Szene verschieben: am OBEREN RAND eines Szenen-Kopfs (≤ 12 px) aufsetzen und nach UNTEN ziehen → die Szene hebt sich ab;
+     links/rechts ziehen, loslassen = an den neuen Platz (die anderen rücken). Ein Tipp dort startet die Szene beim Loslassen.
+     Alles mit der Szene wandert mit (Clips, Name, Akkord-Zeile); Song, Teile, Marken und eigene Clips zeigen danach auf die
+     neuen Nummern – der Song klingt gleich.
+   • Federnde Umschalter: beim Ziehen über [SZ] bzw. [▲▼] verweilen (450 ms) blättert um (Szenen 5–8, Spur-Seite 2).
+   Undo: Art 'ux2' (op 'o' Reihenfolge = Zustand, op 'x' Tausch = selbst-invers, op 's' Szenen-Permutation = Gegen-Permutation);
+   Kopieren ist ein gewöhnlicher Clip-Schritt. Kein neues Projektfeld, kein Formatwechsel. */
+const UX2 = {d: null, EDGE: 14, TOPZ: 12, MOVE: 10, LIFT: 12, HOLD: 440, SPRING: 450, n: 0, last: null};
+const UX2_MOVE_SVG = '<svg class="ux2mv" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3"/></svg>';
+// Reihenfolge für n Spuren: die eigene bleibt, neue Zusatzspuren kommen vor DRUMS, entfernte fallen weg (restoreTrack)
+function ux2OrderFit(n) {
+  const o = S.ui && Array.isArray(S.ui.order) ? S.ui.order : [], seen = new Set(), out = [];
+  for (const i of o) if (Number.isInteger(i) && i >= 0 && i < n && i !== DRUM_T && !seen.has(i)) { seen.add(i); out.push(i); }
+  for (const i of orderFor(n)) if (i !== DRUM_T && !seen.has(i)) { seen.add(i); out.push(i); }
+  if (n > DRUM_T) out.push(DRUM_T);
+  return out;
+}
+const ux2Busy = () => !!(rec.state !== 'off' || R.songRec || UI.pick || (typeof songTakeOpen === 'function' && songTakeOpen()));
+function ux2Refresh() {
+  KEYC.ver++; UI.dirty.all = UI.dirty.grid = UI.dirty.song = true; UI.kbRelayout = true;
+  if (UI.songView && typeof svLayout === 'function') { try { svLayout(); } catch (e) { logErr(e); } }
+  markDirty();
+}
+// ---- Spur-Reihenfolge (Zustand) ----
+function ux2OrderOk(o) { const n = NT(); return Array.isArray(o) && o.length === n && o[n - 1] === DRUM_T && new Set(o).size === n && o.every(x => Number.isInteger(x) && x >= 0 && x < n); }
+function ux2OrderPut(o) {
+  if (!ux2OrderOk(o)) return false;
+  S.ui = Object.assign({}, S.ui, {order: o.slice()});
+  MX.key = '';
+  if (UI.heads && EL.grid) buildGrid();
+  ux2Refresh(); return true;
+}
+// Spur i an Platz pos der Synth-Reihenfolge (0 = oben); ein Undo-Schritt
+function ux2MoveTrack(i, pos, quiet) {
+  i = i | 0; if (!S.tracks[i]) return false;
+  if (isDrum(i)) { if (!quiet) { toast('DRUMS bleibt die unterste Spur – die anderen lassen sich verschieben'); haptic('tick'); } return false; }
+  const old = trackOrder().slice(), syn = old.filter(x => x !== DRUM_T), from = syn.indexOf(i); if (from < 0) return false;
+  pos = clamp(pos | 0, 0, syn.length - 1); if (pos === from) return false;
+  syn.splice(from, 1); syn.splice(pos, 0, i);
+  const o = syn.concat([DRUM_T]);
+  if (!ux2OrderPut(o)) return false;
+  undoPush({kind: 'ux2', op: 'o', before: JSON.stringify(old), label: 'Spur verschieben ' + S.tracks[i].name});
+  UX2.n++; UX2.last = {op: 'o', i, pos};
+  if (!quiet) { toast(String(S.tracks[i].name).toUpperCase() + ' → Platz ' + (pos + 1), {label: 'Rückgängig', fn: () => undo()}); haptic('snap'); }
+  return true;
+}
+// ---- Verweise auf Szenen-Plätze umschreiben (Song, Teile, Gedächtnis, Laufzeit). fs(t, slot) → neuer Platz; fp('S3') → 'S5' ----
+function ux2Walk(o, t, fs, fp, depth) {
+  if (!o || typeof o !== 'object' || depth > 24) return;
+  if (Array.isArray(o)) { for (const x of o) ux2Walk(x, t, fs, fp, depth + 1); return; }
+  let tt = t;
+  if (Number.isInteger(o.t) && (Array.isArray(o.e) || isNum(o.b0))) tt = o.t;                          // S0 / SX11: {t, b0, b1, e:[…]}
+  const f = o.from;
+  if (f && typeof f === 'object' && !Array.isArray(f) && Number.isInteger(f.t)) {                       // V2d′: eigener Clip
+    if (isNum(f.s)) f.s = fs(f.t, f.s);
+    if (f.e && isNum(f.e.slot) && f.e.slot >= 0) f.e.slot = fs(f.t, f.e.slot);
+    if (f.prev && isNum(f.prev.slot) && f.prev.slot >= 0) f.prev.slot = fs(f.t, f.prev.slot);
+  }
+  if (isNum(o.slot) && o.slot >= 0 && tt != null) o.slot = fs(tt, o.slot);                              // Spur-Eintrag {bar, slot, …}
+  if (fp && typeof o.part === 'string' && /^S[1-8]$/.test(o.part)) o.part = fp(o.part);                 // Marke „Szene n“
+  for (const k of Object.keys(o)) {
+    if (k === 'from') continue;
+    const v = o[k]; if (!v || typeof v !== 'object') continue;
+    if (k === 'lanes' && Array.isArray(v)) { v.forEach((l, ti) => ux2Walk(l, ti, fs, fp, depth + 1)); continue; }
+    if (k === 'slots' && Array.isArray(v)) { v.forEach((x, ti) => { if (x && typeof x === 'object' && isNum(x.s)) x.s = fs(ti, x.s); }); continue; }   // Teil: {s}
+    ux2Walk(v, tt, fs, fp, depth + 1);
+  }
+}
+function ux2Remap(fs, fp) {
+  if (S.song) ux2Walk(S.song, null, fs, fp, 0);
+  if (Array.isArray(S.parts)) ux2Walk(S.parts, null, fs, fp, 0);
+  for (let t = 0; t < MAX_T; t++) {
+    if (R.slot[t] >= 0) R.slot[t] = fs(t, R.slot[t]);
+    if (R.pend[t] && R.pend[t].slot >= 0) R.pend[t].slot = fs(t, R.pend[t].slot);
+    if (R.prev[t] && R.prev[t].slot >= 0) R.prev[t].slot = fs(t, R.prev[t].slot);
+    if (MEM.ev[t]) for (const e of MEM.ev[t]) if (e && e.slot >= 0) e.slot = fs(t, e.slot);
+  }
+}
+// ---- Zwei Zellen tauschen (leer ↔ Clip = verschieben); selbst-invers ----
+function ux2CellOk(a, b) {
+  const A = S.tracks[a.t], B = S.tracks[b.t]; if (!A || !B || a.s < 0 || b.s < 0 || a.s >= NS() || b.s >= NS()) return false;
+  if (a.t === b.t) return a.s !== b.s;
+  return A.kind === B.kind && !!A.stimme === !!B.stimme;
+}
+function ux2Exchange(a, b) {
+  const A = S.tracks[a.t], B = S.tracks[b.t], c1 = A.clips[a.s], c2 = B.clips[b.s];
+  if (ED.rollAt && !ED.rollAt.own && ((ED.rollAt.t === a.t && ED.rollAt.s === a.s) || (ED.rollAt.t === b.t && ED.rollAt.s === b.s))) closeRoll();
+  if (R.editor === 'clip') closeClipSheet();
+  A.clips[a.s] = c2 || null; B.clips[b.s] = c1 || null;
+  if (a.t === b.t) {
+    // eine Spur: Song, Teile, Gedächtnis und Wiedergabe folgen den Clips (der laufende Clip spielt einfach weiter)
+    const t0 = a.t, s1 = a.s, s2 = b.s;
+    ux2Remap((t, s) => (t !== t0 ? s : s === s1 ? s2 : s === s2 ? s1 : s), null);
+    clipChanged(t0, s1); clipChanged(t0, s2);
+  } else { clipRestored(a.t, a.s); clipRestored(b.t, b.s); }
+  for (const x of [a, b]) if (S.tracks[x.t].kind === 'synth') scheduleAutoKey(x.s);
+  ux2Refresh();
+}
+function ux2DoExchange(a, b, quiet) {
+  if (!ux2CellOk(a, b)) { if (!quiet) toast('Drum- und Synth-Clips sind nicht austauschbar'); return false; }
+  if (ux2Busy()) { if (!quiet) toast('Erst Aufnahme beenden'); return false; }
+  const c1 = S.tracks[a.t].clips[a.s], c2 = S.tracks[b.t].clips[b.s]; if (!c1 && !c2) return false;
+  const swap = !!(c1 && c2), sel = R.selT === a.t && R.selS === a.s;
+  ux2Exchange(a, b);
+  undoPush({kind: 'ux2', op: 'x', before: JSON.stringify({a: {t: a.t, s: a.s}, b: {t: b.t, s: b.s}}), label: swap ? 'Clips tauschen' : 'Clip verschieben'});
+  if (sel) selectSlot(b.t, b.s);
+  UX2.n++; UX2.last = {op: swap ? 'swap' : 'move', a, b};
+  if (!quiet) { toast((swap ? 'Clips getauscht' : 'Clip verschoben') + ' → ' + S.tracks[b.t].name + ' · Szene ' + (b.s + 1), {label: 'Rückgängig', fn: () => undo()}); haptic('snap'); }
+  return true;
+}
+// ---- Clip kopieren (Ziel wird ersetzt; ein Clip-Schritt) ----
+function ux2DoCopy(a, b, quiet) {
+  if (!ux2CellOk(a, b) && !(a.t === b.t && a.s === b.s)) { if (!quiet) toast('Drum- und Synth-Clips sind nicht austauschbar'); return false; }
+  if (a.t === b.t && a.s === b.s) return false;
+  if (ux2Busy()) { if (!quiet) toast('Erst Aufnahme beenden'); return false; }
+  const src = S.tracks[a.t].clips[a.s], tr = S.tracks[b.t]; if (!src) return false;
+  if (ED.rollAt && !ED.rollAt.own && ED.rollAt.t === b.t && ED.rollAt.s === b.s) closeRoll();
+  if (R.editor === 'clip') closeClipSheet();
+  pushUndo(b.t, b.s, tr.clips[b.s], 'Clip kopieren');
+  const c = deep(cleanClip(src)); if (tr.kind === 'drum') c.seed = newSeed();
+  tr.clips[b.s] = c;
+  clipRestored(b.t, b.s); KEYC.ver++;
+  if (tr.kind === 'synth') scheduleAutoKey(b.s);
+  markDirty(); UI.dirty.all = true;
+  UX2.n++; UX2.last = {op: 'copy', a, b};
+  if (!quiet) { toast('Clip kopiert → ' + tr.name + ' · Szene ' + (b.s + 1), {label: 'Rückgängig', fn: () => undo()}); haptic('snap'); }
+  return true;
+}
+// ---- Szenen umsortieren: arr[k] = alter Platz der Szene, die jetzt an Platz k steht ----
+function ux2ScenePerm(arr) {
+  const n = NS(); if (!Array.isArray(arr) || arr.length !== n || new Set(arr).size !== n || !arr.every(x => Number.isInteger(x) && x >= 0 && x < n)) return false;
+  const m = new Array(n); arr.forEach((o, k) => { m[o] = k; });
+  if (ED.rollAt && !ED.rollAt.own) closeRoll();
+  if (R.editor === 'clip') closeClipSheet();
+  for (const tr of S.tracks) { const old = tr.clips.slice(); for (let k = 0; k < n; k++) tr.clips[k] = old[arr[k]] || null; }
+  { const old = S.scenes.slice(); for (let k = 0; k < n; k++) S.scenes[k] = old[arr[k]]; }
+  for (let k = 0; k < n; k++) { const sc = S.scenes[k]; if (sc && sc.name === 'Szene ' + (arr[k] + 1)) sc.name = 'Szene ' + (k + 1); }   // Nummern folgen: ein Standard-Name nimmt die neue Nummer an, eigene Namen wandern mit
+  const fs = (t, s) => (s >= 0 && s < n ? m[s] : s), fp = p => 'S' + (m[+p.slice(1) - 1] + 1);
+  ux2Remap(fs, fp);
+  R.selS = fs(0, R.selS);
+  if (isNum(R.lastScene) && R.lastScene >= 0) R.lastScene = fs(0, R.lastScene);
+  for (const q of [R.row, R.rowPend]) if (q && typeof q.src === 'string' && /^S[1-8]$/.test(q.src)) q.src = fp(q.src);
+  if (typeof KETTE !== 'undefined' && Array.isArray(KETTE.chain)) for (const x of KETTE.chain) if (x && isNum(x.scene)) x.scene = fs(0, x.scene);
+  for (let t = 0; t < NT(); t++) clipChanged(t, R.selS);
+  UI.dirty.parts = UI.dirty.carrier = true;
+  ux2Refresh();
+  return true;
+}
+function ux2MoveScene(from, to, quiet) {
+  const n = NS(); from = from | 0; to = to | 0;
+  if (from < 0 || from >= n || to < 0 || to >= n || from === to) return false;
+  if (ux2Busy()) { if (!quiet) toast('Erst Aufnahme beenden'); return false; }
+  const arr = Array.from({length: n}, (_, k) => k); arr.splice(from, 1); arr.splice(to, 0, from);
+  const inv = new Array(n); arr.forEach((o, k) => { inv[o] = k; });
+  const nm0 = S.scenes[from] && S.scenes[from].name, nm = nm0 && nm0 !== 'Szene ' + (from + 1) ? nm0 : '';
+  if (!ux2ScenePerm(arr)) return false;
+  undoPush({kind: 'ux2', op: 's', before: JSON.stringify(inv), label: 'Szene verschieben ' + (from + 1) + ' → ' + (to + 1)});
+  UX2.n++; UX2.last = {op: 's', from, to};
+  if (MX.bankS && (to >= 4) !== (sceneBankOf() === 1)) setSceneBank(to >= 4 ? 1 : 0);
+  if (!quiet) { toast('Szene ' + (from + 1) + (nm ? ' „' + nm + '“' : '') + ' → Platz ' + (to + 1), {label: 'Rückgängig', fn: () => undo()}); haptic('snap'); }
+  return true;
+}
+// ---- Undo (Hooks in undoState / undoApply) ----
+function ux2UndoState(e) {
+  if (e.op === 'o') return JSON.stringify(trackOrder().slice());
+  if (e.op === 's') { const a = JSON.parse(e.before), inv = new Array(a.length); a.forEach((o, k) => { inv[o] = k; }); return JSON.stringify(inv); }
+  return e.before;                                                                       // 'x': Tausch ist selbst-invers
+}
+function ux2UndoApply(e, val) {
+  if (e.op === 'o') ux2OrderPut(JSON.parse(val));
+  else if (e.op === 's') ux2ScenePerm(JSON.parse(val));
+  else if (e.op === 'x') { const o = JSON.parse(val); if (ux2CellOk(o.a, o.b)) ux2Exchange(o.a, o.b); }
+}
+
+HIST.kind('ux2', e => (e.op === 'o' ? [] : e.op === 's' ? [['tracks'], ['scenes'], ['song'], ['parts']] : [['tracks'], ['song'], ['parts']]));   // VC2a-Rekorder: Teilbaum der Art (Reihenfolge = nur Ansicht)
+// ---- Gesten (Dokument, Einfangphase: kommt vor den Matrix-Gesten; nur wo UX2 die Geste übernimmt, wird sie dort angehalten) ----
+const ux2R = n => (n ? n.getBoundingClientRect() : null);
+const ux2Vis = n => !!(n && !n.classList.contains('mxoff') && n.getClientRects().length);
+// Spurzeile, deren linker Rand (Kopf-Rand + EDGE, auch der Rand davor) den Punkt enthält
+function ux2EdgeRow(x, y) {
+  for (const i of MX.rows) {
+    const H = UI.heads[i]; if (!H || !ux2Vis(H.el)) continue;
+    const r = ux2R(H.el); if (y >= r.top && y <= r.bottom && x <= r.left + UX2.EDGE) return i;
+  }
+  return -1;
+}
+// Szenen-Kopf, dessen oberer Rand den Punkt enthält
+function ux2TopScene(x, y) {
+  for (const s of MX.scenes) {
+    const b = UI.scenes[s]; if (!ux2Vis(b)) continue;
+    const r = ux2R(b); if (x >= r.left && x <= r.right && y >= r.top - 8 && y <= r.top + Math.min(UX2.TOPZ, r.height * .28)) return s;   // flache Köpfe (32 px): ≤ 28 %
+  }
+  return -1;
+}
+function ux2Down(e) {
+  const d = UX2.d;
+  if (d && d.id !== e.pointerId) {                                    // ein zweiter Finger: beim Clip-Ziehen = Kopie an/aus
+    if ((d.kind === 'drag' || d.kind === 'clift') && performance.now() - (d.lt || 0) < 8000) {   // (ein Rest ohne Loslassen hält nie die Bedienung fest)
+      e.preventDefault(); e.stopImmediatePropagation(); UX2.eat = {t: performance.now(), x: e.clientX, y: e.clientY};   // sein Tipp löst nichts aus
+      if (d.kind === 'clift' || d.sub === 'clip') { d.copy = !d.copy; if (d.ghost) ux2Paint(d, d.x, d.y); haptic('tick'); }
+      return;
+    }
+  }
+  if (d) ux2Cancel();                                                  // ein Kandidat (noch nicht abgehoben) endet mit jedem neuen Finger
+  if ((e.button || 0) > 0 || !EL.grid || UI.songView) return;
+  const tg = e.target; if (!tg || !tg.closest || !EL.grid.contains(tg) || ux2Busy()) return;
+  const x = e.clientX, y = e.clientY;
+  // Szene: oberer Rand → erst beim Loslassen starten (Tipp) oder nach unten ziehen (umsortieren)
+  const scn = tg.closest('.scn');
+  if (scn || tg === EL.grid) {
+    const s = ux2TopScene(x, y);
+    if (s >= 0 && (!scn || +scn.dataset.s === s)) {
+      if (R.playing && AU.ctx) { try { if (b2t(nextBarFromAudible()) - AU.ctx.currentTime < .35) return; } catch (err) {} }   // knapp vor dem Taktstrich: Start wie immer beim Aufsetzen
+      e.preventDefault(); e.stopImmediatePropagation();
+      UX2.d = {kind: 'scand', id: e.pointerId, s, x0: x, y0: y, x, y};
+      return;
+    }
+  }
+  // Spur: linker Rand → nach rechts ziehen hebt sie ab (SX4 bekommt den Finger wie immer; nach links / Tipp / Halten bleiben)
+  if ((tg.closest('.th') && !tg.closest('.tbb')) || tg === EL.grid) {
+    const i = ux2EdgeRow(x, y);
+    if (i >= 0) { UX2.d = {kind: 'tcand', id: e.pointerId, i, x0: x, y0: y, x, y}; return; }
+  }
+  // Clip halten → abheben (das Clip-Blatt kommt dann beim Loslassen ohne Bewegung)
+  const sl = tg.closest('.slot');
+  if (sl && !UI.pick) {
+    const t = +sl.dataset.t, s = +sl.dataset.s;
+    if (!S.tracks[t] || !S.tracks[t].clips[s]) return;
+    const c = {kind: 'ccand', id: e.pointerId, t, s, x0: x, y0: y, x, y, ptype: e.pointerType, timer: 0};
+    c.timer = setTimeout(() => ux2ClipLift(c), UX2.HOLD);
+    UX2.d = c;
+  }
+}
+function ux2ClipLift(c) {
+  if (UX2.d !== c || !S.tracks[c.t] || !S.tracks[c.t].clips[c.s] || ux2Busy()) return;
+  const p = UI.slotPress;
+  if (p && p.id === c.id) { p.dead = true; clearTimeout(p.timer); slotProvRevert(p); }          // die Matrix-Geste gibt den Finger ab
+  c.kind = 'clift'; c.lt = performance.now();
+  const C = UI.cells[c.t][c.s];
+  C.el.classList.add('ux2lift'); c.icon = el('span', 'ux2mvw', UX2_MOVE_SVG); C.el.appendChild(c.icon);
+  haptic('pop');
+}
+function ux2Move(e) {
+  const d = UX2.d; if (!d || d.id !== e.pointerId) return;
+  d.lt = performance.now();
+  const x = e.clientX, y = e.clientY, dx = x - d.x0, dy = y - d.y0; d.x = x; d.y = y;
+  if (d.kind === 'tcand') {
+    const p = SX4.p && SX4.p.id === d.id ? SX4.p : null;
+    if (p && p.mode) { UX2.d = null; return; }                                  // Solo gehalten / Lautstärke läuft: SX4 bleibt
+    if (dx > UX2.MOVE && Math.abs(dx) > Math.abs(dy) * 2) {
+      if (isDrum(d.i)) { UX2.d = null; toast('DRUMS bleibt die unterste Spur – die anderen lassen sich verschieben'); return; }
+      if (p) sx4End(null);
+      e.preventDefault(); e.stopImmediatePropagation();
+      ux2Start(d, 'track'); return;
+    }
+    if (Math.abs(dy) > UX2.MOVE || dx < -UX2.MOVE) UX2.d = null;
+    return;
+  }
+  if (d.kind === 'scand') {
+    e.preventDefault(); e.stopImmediatePropagation();
+    if (dy > UX2.MOVE && Math.abs(dy) > Math.abs(dx) * 1.5) { ux2Start(d, 'scene'); return; }
+    if (Math.abs(dx) > UX2.MOVE * 1.5 || dy < -UX2.MOVE * 1.5) d.dead = true;      // seitlich weg: weder Start noch Ziehen
+    return;
+  }
+  if (d.kind === 'ccand') { if (Math.abs(dx) > 8 || Math.abs(dy) > 8) { clearTimeout(d.timer); UX2.d = null; } return; }
+  if (d.kind === 'clift') {
+    e.preventDefault(); e.stopImmediatePropagation();
+    if (Math.hypot(dx, dy) >= UX2.LIFT) ux2Start(d, 'clip');
+    return;
+  }
+  if (d.kind === 'drag') { e.preventDefault(); e.stopImmediatePropagation(); ux2Paint(d, x, y); }
+}
+function ux2Up(e) {
+  const d = UX2.d; if (!d || d.id !== e.pointerId) return;
+  const up = e.type === 'pointerup';
+  if (d.kind === 'tcand') { UX2.d = null; return; }
+  if (d.kind === 'ccand') { clearTimeout(d.timer); UX2.d = null; return; }
+  e.stopImmediatePropagation();
+  if (UI.slotPress && UI.slotPress.id === e.pointerId) UI.slotPress = null;     // die Matrix-Geste dieses Fingers ist vorbei
+  if (d.kind === 'scand') { UX2.d = null; if (up && !d.dead) launchScene(d.s); return; }
+  if (d.kind === 'clift') {                                                     // gehalten, nicht gezogen = das Clip-Blatt wie bisher
+    ux2Clean(d); UX2.d = null;
+    if (up) { if (d.ptype !== 'touch') { armLongPressGuard(); releaseLongPressGuard(); } selectSlot(d.t, d.s); openClipSheet(d.t, d.s, {empty: true}); }
+    return;
+  }
+  if (d.kind === 'drag') { ux2Clean(d); UX2.d = null; if (up) ux2Drop(d); else haptic('tick'); }
+}
+function ux2Cancel() { const d = UX2.d; if (!d) return; clearTimeout(d.timer); clearTimeout(d.spT); ux2Clean(d); UX2.d = null; }
+// abheben: Geist, Quelle gedimmt, Linie
+function ux2Start(d, sub) {
+  d.kind = 'drag'; d.sub = sub; d.copy = !!d.copy; d.tg = null; d.sp = null;
+  let src;
+  if (sub === 'track') { src = UI.heads[d.i].el; d.srcEls = [src, ...UI.cells[d.i].map(c => c.el), UI.stops[d.i]]; }
+  else if (sub === 'scene') { src = UI.scenes[d.s]; d.srcEls = [src, ...S.tracks.map((_, t) => UI.cells[t] && UI.cells[t][d.s] && UI.cells[t][d.s].el).filter(Boolean)]; }
+  else { const C = UI.cells[d.t][d.s]; src = C.el; d.srcEls = [src]; }
+  const r = ux2R(src); d.r0 = {left: r.left, top: r.top, w: r.width, h: r.height}; d.gx = d.x0 - r.left; d.gy = d.y0 - r.top;
+  const g = src.cloneNode(true); g.removeAttribute('id'); g.classList.remove('ux2lift', 'sel', 'ux2src'); g.classList.add('ux2gh', 'ux2gh-' + sub);
+  for (const n of g.querySelectorAll('.ux2mvw')) n.remove();
+  g.style.width = r.width + 'px'; g.style.height = r.height + 'px'; g.setAttribute('aria-hidden', 'true');
+  if (sub === 'clip') { d.badge = el('span', 'ux2bd', ''); g.appendChild(d.badge); }
+  document.body.appendChild(g); d.ghost = g;
+  for (const n of d.srcEls) n.classList.add('ux2src');
+  d.line = el('div', 'ux2ln' + (sub === 'scene' ? ' v' : sub === 'clip' ? ' off' : '')); document.body.appendChild(d.line);
+  if (sub === 'clip') { const C = UI.cells[d.t][d.s]; C.el.classList.remove('ux2lift'); if (d.icon) { d.icon.remove(); d.icon = null; } }
+  haptic(sub === 'clip' ? 'tick' : 'pop');
+  ux2Paint(d, d.x, d.y);
+}
+function ux2Clean(d) {
+  clearTimeout(d.spT);
+  if (d.ghost) d.ghost.remove(); if (d.line) d.line.remove();
+  if (d.icon) d.icon.remove();
+  for (const n of d.srcEls || []) n.classList.remove('ux2src');
+  if (d.kind === 'clift' || d.sub === 'clip') { const C = UI.cells[d.t] && UI.cells[d.t][d.s]; if (C) C.el.classList.remove('ux2lift'); }
+  if (d.tgEl) d.tgEl.classList.remove('ux2tg', 'ux2sw', 'ux2no', 'ux2cp');
+  d.ghost = d.line = d.icon = d.tgEl = null;
+}
+// federnde Umschalter [SZ] / [▲▼]: verweilen = umblättern
+function ux2Spring(d, x, y) {
+  const hit = n => { if (!n || n.hidden || !n.isConnected || !n.getClientRects().length) return false; const r = ux2R(n); return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom; };
+  const k = d.sub !== 'track' && MX.bankS && hit(UI.szb) ? 'sz' : d.sub !== 'scene' && MX.bankT && hit(UI.tbb) ? 'tb' : null;
+  if (k === d.sp) return;
+  d.sp = k; clearTimeout(d.spT);
+  if (k) d.spT = setTimeout(() => {   // [▲▼] liegt im DRUMS-Kopf: dort etwas länger verweilen (kein Umblättern aus Versehen)
+    if (UX2.d !== d || d.sp !== k) return;
+    if (k === 'sz') setSceneBank(1 - sceneBankOf()); else setTrackBank(MX.pages ? (trackBankOf() + 1) % MX.pages.length : 0);
+    haptic('tick'); d.sp = null; ux2Paint(d, d.x, d.y);
+  }, k === 'tb' ? UX2.SPRING + 250 : UX2.SPRING);
+}
+// Ziel aus der Fingerlage; Geist, Linie, Zielzelle zeichnen
+function ux2Paint(d, x, y) {
+  const g = d.ghost; if (!g) return;
+  ux2Spring(d, x, y);
+  const gr = ux2R(EL.grid);
+  if (d.sub === 'track') {
+    g.style.transform = 'translate(' + (d.r0.left + 10) + 'px,' + (y - d.gy) + 'px) scale(1.03)';
+    const rows = MX.rows.filter(i => !isDrum(i) && UI.heads[i] && ux2Vis(UI.heads[i].el));
+    let k = 0; for (const i of rows) { const r = ux2R(UI.heads[i].el); if (y > r.top + r.height / 2) k++; }
+    d.tg = {rows, k};
+    const own = rows.indexOf(d.i), same = own >= 0 && (k === own || k === own + 1);
+    const dH = UI.heads[DRUM_T] && ux2Vis(UI.heads[DRUM_T].el) ? UI.heads[DRUM_T].el : null;
+    const ly = k < rows.length ? ux2R(UI.heads[rows[k]].el).top - 2 : dH ? ux2R(dH).top - 2 : rows.length ? ux2R(UI.heads[rows[rows.length - 1]].el).bottom + 1 : 0;
+    const ln = d.line; ln.style.left = (gr.left + 4) + 'px'; ln.style.width = (gr.width - 8) + 'px'; ln.style.top = (ly - 1) + 'px'; ln.style.height = '3px';
+    ln.classList.toggle('off', same || !rows.length);
+    const key = same ? '' : 'k' + k; if (key && key !== d.tk) haptic('tick'); d.tk = key;
+    return;
+  }
+  if (d.sub === 'scene') {
+    g.style.transform = 'translate(' + (x - d.gx) + 'px,' + (d.r0.top + 10) + 'px) scale(1.03)';
+    const cols = MX.scenes.filter(s => ux2Vis(UI.scenes[s]));
+    let k = 0; for (const s of cols) { const r = ux2R(UI.scenes[s]); if (x > r.left + r.width / 2) k++; }
+    d.tg = {cols, k};
+    const T = k < cols.length ? cols[k] : cols[cols.length - 1] + 1, same = T === d.s || T === d.s + 1;
+    const lx = k < cols.length ? ux2R(UI.scenes[cols[k]]).left - 2 : ux2R(UI.scenes[cols[cols.length - 1]]).right + 1;
+    const ln = d.line; ln.style.left = (lx - 1) + 'px'; ln.style.width = '3px'; ln.style.top = (gr.top + 3) + 'px'; ln.style.height = (gr.height - 6) + 'px';
+    ln.classList.toggle('off', same);
+    const key = same ? '' : 'k' + T; if (key && key !== d.tk) haptic('tick'); d.tk = key;
+    return;
+  }
+  // Clip: Zielzelle unter dem Finger
+  g.style.transform = 'translate(' + (x - d.gx) + 'px,' + (y - d.gy) + 'px) scale(1.06)';
+  const hitEl = document.elementFromPoint(x, y), sl = hitEl && hitEl.closest ? hitEl.closest('.slot') : null;
+  const b = sl && EL.grid.contains(sl) ? {t: +sl.dataset.t, s: +sl.dataset.s} : null;
+  const a = {t: d.t, s: d.s}, same = !!b && b.t === a.t && b.s === a.s;
+  const ok = !!b && !same && ux2CellOk(a, b), full = ok && !!S.tracks[b.t].clips[b.s];
+  const tgEl = b && !same ? sl : null;
+  if (d.tgEl && d.tgEl !== tgEl) d.tgEl.classList.remove('ux2tg', 'ux2sw', 'ux2no', 'ux2cp');
+  if (tgEl) { tgEl.classList.toggle('ux2tg', ok); tgEl.classList.toggle('ux2no', !ok); tgEl.classList.toggle('ux2sw', ok && full && !d.copy); tgEl.classList.toggle('ux2cp', ok && d.copy); }
+  if (tgEl !== d.tgEl && tgEl && ok) haptic('tick');
+  d.tgEl = tgEl; d.tg = b && !same ? {b, ok, full} : null;
+  const txt = d.copy ? '⧉ Kopie' + (ok && full ? ' (ersetzt)' : '') : !d.tg ? '2. Finger = Kopie' : !ok ? 'geht nicht' : full ? '⇄ tauschen' : '→ verschieben';
+  if (d.badge && d.badge.textContent !== txt) d.badge.textContent = txt;
+  g.classList.toggle('ux2c', !!d.copy);
+}
+function ux2Drop(d) {
+  if (d.sub === 'track') {
+    const T = d.tg; if (!T || !T.rows.length) return;
+    const own = T.rows.indexOf(d.i); if (own >= 0 && (T.k === own || T.k === own + 1)) return;
+    const syn = trackOrder().filter(x => x !== DRUM_T), rest = syn.filter(x => x !== d.i);
+    let pos;
+    if (T.k < T.rows.length) pos = rest.indexOf(T.rows[T.k]);
+    else pos = rest.indexOf(T.rows[T.rows.length - 1]) + 1;
+    if (pos < 0) return;
+    ux2MoveTrack(d.i, pos);
+    return;
+  }
+  if (d.sub === 'scene') {
+    const T = d.tg; if (!T || !T.cols.length) return;
+    const tgt = T.k < T.cols.length ? T.cols[T.k] : T.cols[T.cols.length - 1] + 1;
+    if (tgt === d.s || tgt === d.s + 1) return;
+    ux2MoveScene(d.s, tgt > d.s ? tgt - 1 : tgt);
+    return;
+  }
+  const T = d.tg; if (!T) return;
+  if (!T.ok) { toast('Drum- und Synth-Clips sind nicht austauschbar'); return; }
+  if (d.copy) ux2DoCopy({t: d.t, s: d.s}, T.b); else ux2DoExchange({t: d.t, s: d.s}, T.b);
+}
+document.addEventListener('pointerdown', e => { try { ux2Down(e); } catch (err) { logErr(err); } }, true);
+document.addEventListener('pointermove', e => { try { ux2Move(e); } catch (err) { logErr(err); } }, {capture: true, passive: false});
+document.addEventListener('pointerup', e => { try { ux2Up(e); } catch (err) { logErr(err); } }, true);
+document.addEventListener('pointercancel', e => { try { ux2Up(e); } catch (err) { logErr(err); } }, true);
+document.addEventListener('click', e => { const q = UX2.eat; if (!q || performance.now() - q.t > 900 || Math.abs(e.clientX - q.x) > 30 || Math.abs(e.clientY - q.y) > 30) return; UX2.eat = null; e.preventDefault(); e.stopImmediatePropagation(); }, true);
+// Test-API (am Ende an SYNQUENZER gehängt)
+const UX2_API = {
+  ux2Order: () => trackOrder().slice(),
+  ux2MoveTrack: (i, pos) => ux2MoveTrack(i, pos, true),
+  ux2Exchange: (t1, s1, t2, s2) => ux2DoExchange({t: t1 | 0, s: s1 | 0}, {t: t2 | 0, s: s2 | 0}, true),
+  ux2Copy: (t1, s1, t2, s2) => ux2DoCopy({t: t1 | 0, s: s1 | 0}, {t: t2 | 0, s: s2 | 0}, true),
+  ux2MoveScene: (from, to) => ux2MoveScene(from, to, true),
+  ux2Info: () => ({n: UX2.n, last: UX2.last ? JSON.parse(JSON.stringify(UX2.last)) : null, drag: UX2.d ? {kind: UX2.d.kind, sub: UX2.d.sub || null, copy: !!UX2.d.copy, tg: UX2.d.tg ? JSON.parse(JSON.stringify(UX2.d.tg)) : null} : null}),
+  ux2Roll: () => (ED.roll && ED.roll.el && ED.roll.el.acts && ED.roll.el.acts._ux2p ? ED.roll.el.acts._ux2p.info() : null),
+  ux2RollCopy: () => { const p = ED.roll && ED.roll.el.acts._ux2p; return p ? p.copy() : false; },
+  ux2RollPaste: b => { const p = ED.roll && ED.roll.el.acts._ux2p; if (!p || !p.start()) return false; if (b != null) p.at(b); return p.apply(); },
+};
+/* UX2-END */
 
 /* ---------- menu (§2.5, §12.2): full-screen sheet; P stacked, L two columns ---------- */
 // two-step confirm: the second tap only counts after ARM_MIN_MS, so a habitual double-tap can never confirm
@@ -70411,6 +71018,7 @@ function vvOpen() {
   const segV = makeSeg([['auto', 'Auto'], ['song', 'Song'], ['matrix', 'Matrix']], () => vvPrefs().view, v => { vvPrefSet('view', v); vvSync(); }, 'vvseg');
   const segC = makeSeg([['kamera', 'Kamera'], ['balken', 'Ganz mit Balken'], ['app', 'Ganze App']], () => vvPrefs().cam, v => { vvPrefSet('cam', v); if (v === 'app') vvAppPrep().then(() => vvStill()); vvSync(); vvStill(); }, 'vvseg');   // VV2: 9:16; VV4-A: [Ganze App]
   rowOf('Format', segF); rowOf('Bild', segV); rowOf('9:16', segC);
+  vr1VvBtn(segV);                                                   // VR1: [Regeln] am Ende der Zeile „Bild“
   const rng = el('span', 'vvtxt'), segR = makeSeg([['song', 'Ganzer Song'], ['sel', 'Auswahl']], () => VV.useSel !== false ? 'sel' : 'song', v => { VV.useSel = v === 'sel'; vvSync(); vvStill(); }, 'vvseg');
   const rngBox = el('span', 'vvrng'); rngBox.append(rng, segR);
   const rowR = rowOf('Bereich', rngBox); rowR.classList.toggle('txt', !vvHasSel());
@@ -71510,7 +72118,7 @@ function vv4StripeCol(e, C) {
 function vvDirRow(a, b, cls) {
   const cur = vvDirOf(a, b) || '', v = cur.split(':')[0], tt = cur.includes(':') ? +cur.split(':')[1] : -1;
   const B = (k, html, on, aria) => `<button class="rb ${cls}${on ? ' on' : ''}" data-a="vv-${k}" aria-pressed="${on}" aria-label="${esc(aria)}">${html}</button>`;
-  const dot = tt >= 0 ? `<i style="background:var(--t${tt + 1})"></i>` : '', sp = ['spur', 'roll', 'drum', 'mod'].includes(v), fk = v.startsWith('f-');
+  const dot = tt >= 0 ? `<i style="background:var(--t${tt + 1})"></i>` : '', sp = ['spur', 'roll', 'drum', 'mod', 'geraet'].includes(v), fk = v.startsWith('f-');   // VR1: + Gerät
   return `<div class="vvdr"><span class="vvdl">Video</span>` + B('auto', 'Auto', v === 'auto', 'Video hier: Auto') + B('app', 'App', v === 'app', 'Video hier: ganze App') +
     B('song', 'Song', v === 'song', 'Video hier: Song') + B('matrix', 'Matrix', v === 'matrix', 'Video hier: Matrix') +
     `</div><div class="vvdr vv4r2"><span class="vvdl"></span>` + B('spur', (sp ? dot : '') + 'Spur …', sp, 'Video hier: eine Spur zeigen …') +
@@ -71533,7 +72141,7 @@ function vvDirTap(k, btn, a, b, after) {
 // VV4-B: „Spur …“ / „Fokus …“: erst die Art, dann (wo nötig) die Spur – im selben Fenster
 function vv4Pick(btn, a, b, kind, rng) {
   const cur = vvDirOf(a, b) || '', cv = cur.split(':')[0], ct = cur.includes(':') ? +cur.split(':')[1] : -1;
-  const L = kind === 'spur' ? [['roll', 'Piano-Roll'], ['drum', 'Drum-Sequenzer'], ['mod', 'Modulation']] : [['f-zelle', 'Clip-Zelle'], ['f-tast', 'Tastatur'], ['f-teil', 'Teil-Kopf'], ['f-ue', 'Übergang']];
+  const L = kind === 'spur' ? [['roll', 'Piano-Roll'], ['drum', 'Drum-Sequenzer'], ['mod', 'Modulation'], ['geraet', 'Gerät']] : [['f-zelle', 'Clip-Zelle'], ['f-tast', 'Tastatur'], ['f-teil', 'Teil-Kopf'], ['f-ue', 'Übergang']];   // VR1: + Gerät
   const set = (v, t) => { closePop(); if (vvDirSet(a, b, v, t)) toast('Video ' + rng + ': ' + vv4Nm(v, t), songUndoAct()); };
   openPop(btn, p => {
     guardTouch(p); p.classList.add('plpick');
@@ -71600,6 +72208,7 @@ function vvDrawStripe(g, song, X, W, y, h) {
    (Transposition: höchstens 2 Takte). */
 function vvCuts(song, A, B) {
   const rows = vvRows(), starts = new Set((song.marks || []).map(m => m.a));
+  const VR1X = vr1Ctx(song, A, B);                                // VR1: Ereignisse je Takt + Regel-Blatt
   const user = (song.video || []).filter(e => e.v !== 'auto' && (!VV4_TRK.includes(e.v) || (e.t < NT() && S.tracks[e.t])));
   const ueW = vv4UeWin(song, A, B);                               // VV4-D: the transitions – under the user's entries
   const uAt = x => user.find(e => x >= e.a && x < e.b) || ueW.find(e => x >= e.a && x < e.b) || null;
@@ -71645,6 +72254,7 @@ function vvCuts(song, A, B) {
     else if (cur && cur.v === 'spur' && !playing.includes(cur.t)) want = {v: 'song', why: 'ende'};
     const done = () => { if (want && want.o) pend = pend.filter(o => o !== want.o); };
     const he = hardEnd(x), rem = he - x, nx = he < B ? uAt(he) : null;
+    want = vr1Want(VR1X, x, want, cur, rem, pend, ch, enters);      // VR1: das Ereignis mit Vorrang (Regeln), Clip „Im Video“
     if (!cur || cur.u) {
       // a free stretch begins (song start, or right after an entry)
       if (rem < 2 && (cur || nx)) { const r = cur || nx; push(x, r.v, r.t, null, 'kurz', cur ? cur.s : x); continue; }   // too short for its own shot: the neighbour's picture
@@ -72394,6 +73004,7 @@ function vv4Pic(g, W, H, v, t, st, bpm) {
     else if (v === 'roll') vvDrawRoll(g, vt, R0, t);
     else if (v === 'drum') vvDrawDrumSeq(g, vt, R0, t);
     else if (v === 'mod') vvDrawMod(g, vt, R0, t);
+    else if (v === 'geraet') vr1DrawGer(g, vt, R0, t);              // VR1: Gerät im Original
     else if (v === 'klav') vvkDraw(g, W, H, st, vt);               // VK3: Klavier
     else vv4Focus(g, W, H, v === 'tast' ? 'tast' : v.slice(2), t, vt, v === 'tast');
   } catch (e) { logErr(e); }
@@ -73674,6 +74285,7 @@ function vv4ModIn(g, x, y, w, h, i, st, C, src, t) {
   if (s.engine === 'mk') {   // the device plate of the app (its knobs move only by real modulations: VV3 / V-B)
     const ms = vv3MkState(i, t, st, src);
     if (ms) { ms.i = i; const pw = Math.min(w, (port ? h * .42 : h * .5) * 1.95); if (vv3DrawPlate(g, x + (w - pw) / 2, y, pw, ms, C)) { kh = pw / 1.95 + 8; res.plate = true; res.cutMod = ms.cutMod; res.cutKnob = ms.T.f.cut; vv4El('Geräte-Platte', 'MKUI Platte (#mkPlate, Regler mit Mod-Bogen)'); } }
+  } else if (VR1.ed) { kh = vr1ModEd(g, x, y, w, h, i, st, C, src, t, port, res);   // VR1: Regler nur im Editor-Blatt der Spur (nie allein)
   } else {
     const K = vv4Knobs(i, t, src);
     if (K.length) {
@@ -73697,6 +74309,7 @@ function vv4Shot(g, LW, LH, st, i, what) {
   try {
     if (what === 'drum') VV4.probe.drum = vv4DrumIn(g, x, y, w, h, st, i, C, src, t);
     else if (what === 'mod') VV4.probe.mod = vv4ModIn(g, x, y, w, h, i, st, C, src, t);
+    else if (what === 'geraet') VV4.probe.ger = vr1GerIn(g, x, y, w, h, i, st, C, src, t);   // VR1: Gerät im Original
     else if (what === 'voice') { vv3DrawVoice(g, x, y, w, h, i, t, st, C); vv4El('Welle', 'Spur-Zelle Take-Welle (STIMME)'); }
     else {   // roll, with the real modulation next to it (only a track with a real one: 2.1)
       const m = what === 'roll+mod';
@@ -73866,7 +74479,8 @@ function vvkCol(col, v, up) {
 // the layout in points (LW × LH, u px per point) for range lo … hi, per context (gradients belong to it); the unlit keyboard is
 // drawn once into its own canvas (pixel-aligned) and copied per picture
 function vvkLayout(g, LW, LH, lo, hi, u, C) {
-  const key = LW.toFixed(2) + 'x' + LH.toFixed(2) + ':' + lo + '-' + hi + ':' + u + ':' + C.gen; let c = VVK.lay.get(g); if (c && c.key === key) return c;   // C.gen: a web font that arrived later redraws the C names · VK3-GP: der Cache-Blick stand im Kommentar (je Bild eine neue Tastatur-Leinwand, globales c)
+  const key = LW.toFixed(2) + 'x' + LH.toFixed(2) + ':' + lo + '-' + hi + ':' + u + ':' + C.gen;   // C.gen: a web font that arrived later redraws the C names
+  let c = VVK.lay.get(g); if (c && c.key === key) return c;       // VR1-fix: stand im Kommentar – Tastatur-Bild und Verläufe wurden je Bild neu gebaut
   const port = LH > LW, headH = port ? 50 : 30, padX = 8, kx = padX, kw = LW - 2 * padX, keys = [];
   let nW = 0; for (let n = lo; n <= hi; n++) if (![1, 3, 6, 8, 10].includes(PCx(n))) nW++;
   const ww = kw / nW, kbH = clamp(ww * 5.4, port ? 60 : 54, LH * (port ? .2 : .27)), kbY = LH - (port ? 12 : 6) - kbH, railH = port ? 15 : 13, railY = kbY - railH - 2;
@@ -73905,6 +74519,7 @@ function vvkKeys(g, L, C, lit, all) {
 }
 /* the picture: g (canvas pixels W × H), st = picture state (st.src = render, st.t = video time), vt = video time */
 function vvkDraw(g, W, H, st, vt) {
+  if (VR1K.up) return vr1Klav(g, W, H, st, vt);                    // VR1: die Noten steigen auf (Xander 07.11.)
   const C = vvCols(), u = Math.min(W, H) / 360, LW = W / u, LH = H / u, song = S.song;
   const src = st && st.src && st.src.nt ? st.src : null, bpm = (src && src.bpm) || S.bpm, sp = 60 / bpm, fut = vvkFut(bpm);
   const rg = vvkRg(src), sb = st && st.sb != null ? st.sb : barBeat(rg.a), t = src ? (st.t != null ? st.t : vt || 0) : 0;
@@ -74022,6 +74637,655 @@ function vvkApi() {
   };
 }
 /* VK3-END */
+/* VR1-BEGIN ===================== Video-Regie: Ereignisse je Takt, Regel-Blatt, Clip „Im Video“, Gerät im Original, Klavier steigt auf =====================
+   (Xander 07.11., Liste B 11–13 und zweite Liste VREG)
+   1. Ereignisse (vr1Events – nur aus dem Song, gleiche Eingabe → gleiche Liste): drop · gesang · fill · teil · morph (◆-Klangzustand,
+      Kurven/Locks im Clip, Fahrt im Song) · ein (Spur setzt ein) · neu (Clip zum ersten Mal auf einer laufenden Spur) · xp
+      (Transposition) · aus (Spur setzt aus). Die Auto-Regie (vvCuts: zwei Einhänge-Zeilen) nimmt je Takt das Ereignis mit dem
+      höchsten Vorrang aus dem Regel-Blatt (Ereignis → Ansicht, an/aus, Reihenfolge = Vorrang; Geräteprofil uiPrefs().vr1 wie
+      Format/Bild). Manuelle Regie (song.video, Teil/Marke) geht weiter vor; ein Ereignis, das wegen der 2-Takt-Grenze nicht sofort
+      geschnitten werden kann, wartet höchstens 2 Takte, solange sein Clip läuft. Ohne Ereignis bleibt alles wie vorher
+      (8-Takt-Regel, Matrix bei vielen Wechseln, allein spielende Spur); ein Grund der alten Regie, dessen Regel aus ist, entfällt.
+   2. Clip „Im Video“ (clip.vid: geraet | klav | kino | noten | aus; fehlt = Auto, additiv, Format bleibt): zeigt die Regie diesen Clip,
+      dann so; „aus“ = dieser Clip kommt nie in den Fokus. Gilt überall, wo der Clip spielt (Szenen-Clip und eigener Clip).
+   3. Gerät (Regie-Wert 'geraet', mit Spur): die Spur im Original – Geräte-Platte (Regler drehen nur durch echte Modulation),
+      VA/FM/WT das Editor-Blatt der App (Reiter, Unter-Reiter, Regler wie makeCtl, Werte inkl. ◆-Gleiten aus dem Render) mit dem
+      Fokus-Rahmen der App (.k1hl) auf dem gleitenden bzw. modulierten Regler; Drums → Drum-Sequenzer, STIMME → Welle, sonst Piano-Roll.
+      'mod' zeigt die Regler nicht mehr allein, sondern im selben Editor-Blatt (Einhänge-Zeile in vv4ModIn).
+   4. Klavier (VK3): die Noten steigen auf – der Anschlag beginnt an der Taste, der Balken wächst, solange der Ton klingt, und
+      steigt dann; oben lösen sich die Balken in Funken auf (Samen aus Spur/Note/Startzeit: kein Zufall, zwei Renders gleich).
+      Weiches Glühen, Anschlag-Farben wie VK3 (leise heller/kühler, laut satter/wärmer), die Leiste KICK · TOMS · SNARE · HATS bleibt. */
+const VR1 = {ed: true, logOn: false, log: null, sel: null, css: false};
+const VR1K = {up: true, dz: .3, life: 1.15, dt: .055, cap: 900, spr: new Map(), probe: null};   // Klavier: Auflöse-Zone (Anteil oben), Funken-Leben (s), Abstand (s), Höchstzahl
+// Vorgabe-Reihenfolge = Vorrang; Neues vor Teilanfang wie VV4-D (neuer Clip vor Teil-Kopf), die Klangfahrt danach (V6A gleitet oft genau am Teilanfang)
+const VR1_EV = [['drop', 'Drop', 'matrix'], ['gesang', 'Gesang beginnt', 'spur'], ['fill', 'Fill / Übergang', 'noten'], ['ein', 'Spur setzt ein', 'spur'],
+  ['neu', 'Neuer Clip', 'spur'], ['teil', 'Teilwechsel', 'app'], ['morph', 'Klangfahrt ◆', 'kino'], ['xp', 'Transposition', 'tast'], ['aus', 'Spur setzt aus', 'song']];
+const VR1_VIEW = {spur: 'Spur', geraet: 'Gerät', noten: 'Noten', klav: 'Klavier', kino: 'Mäusekino', app: 'App', matrix: 'Matrix', song: 'Song', tast: 'Tastatur'};
+const VR1_TRKV = ['spur', 'geraet', 'noten'];                       // Ansichten, die eine Spur brauchen
+const VR1_NOTRK = ['teil', 'xp'];                                   // Ereignisse ohne Spur
+const VR1_VID = ['geraet', 'klav', 'kino', 'noten', 'aus'];
+const VR1_VID_L = [['auto', 'Auto', 'die Regie entscheidet'], ['geraet', 'Gerät', 'Synth / Platte im Original'], ['klav', 'Klavier', 'Noten steigen auf'],
+  ['kino', 'Mäusekino', 'Pegel, Lauflicht, Filter'], ['noten', 'Noten', 'Piano-Roll / Drum-Sequenzer'], ['aus', 'aus', 'nie im Fokus']];
+// the old director's reasons → the event that stands for them (its rule switched off → that reason is gone)
+const VR1_WHY = {'neu-clip': 'neu', 'neu-drum': 'neu', drums: 'ein', neu: 'ein', teil: 'teil', melodie: 'teil', transposition: 'xp', ende: 'aus'};
+VV_DIRV.push('geraet'); VV4_OWN.add('geraet'); VV4_TRK.push('geraet'); VV4_NAME.geraet = 'Gerät';   // die neue Ansicht: Regie-Wert (mit Spur), ganzes Bild, Name
+const vr1VidName = v => (VR1_VID_L.find(x => x[0] === (v || 'auto')) || VR1_VID_L[0])[1];
+const vr1Key = (song, t, x) => { if (!song || x < 0 || x >= song.bars || !song.lanes[t]) return ''; const o = laneOriginAt(song.lanes[t], x); return laneClipOk(song, t, o) ? o.slot + '|' + (o.own || '') : ''; };
+function vr1ClipAt(song, t, x) {
+  if (!song || x < 0 || x >= song.bars || !song.lanes[t]) return null; const o = laneOriginAt(song.lanes[t], x); if (!laneClipOk(song, t, o)) return null;
+  return o.own && song.own && song.own[o.own] ? song.own[o.own] : (S.tracks[t] && S.tracks[t].clips[o.slot]) || null;
+}
+/* ---------- Regeln (Geräteprofil): Reihenfolge = Vorrang ---------- */
+const vr1ViewOk = (k, v) => !!VR1_VIEW[v] && !(VR1_NOTRK.includes(k) && VR1_TRKV.includes(v));
+function vr1Rules() {
+  const p = uiPrefs().vr1, L = p && Array.isArray(p.r) ? p.r : [], out = [], seen = new Set();
+  for (const e of L) { if (!e || typeof e !== 'object') continue; const d = VR1_EV.find(x => x[0] === e.k); if (!d || seen.has(e.k)) continue; seen.add(e.k); out.push({k: e.k, on: e.on !== false, v: vr1ViewOk(e.k, e.v) ? e.v : d[2]}); }
+  for (const d of VR1_EV) if (!seen.has(d[0])) out.push({k: d[0], on: true, v: d[2]});
+  return out;
+}
+function vr1RulesSet(r) {
+  const out = Array.isArray(r) ? r.filter(e => e && VR1_EV.some(d => d[0] === e.k)).map(e => ({k: e.k, on: e.on !== false, v: vr1ViewOk(e.k, e.v) ? e.v : VR1_EV.find(d => d[0] === e.k)[2]})) : [];
+  if (out.length) setUiPref('vr1', {r: out}); else setUiPref('vr1', null);
+  vr1Dirty(); return vr1Rules();
+}
+// the picture shown later is computed again (a running preview takes the new cut list)
+function vr1Dirty() { if (VV.prev && VV.prev.rt) VV.prev.rt.ver = -1; if (VV.ui && !VV.busy) { try { vvStill(); } catch (e) { logErr(e); } } }
+/* ---------- Ereignisse je Takt (vr1Events): [{x, ev: [{k, t, why, fresh?}]}] für die Takte [A, B) ---------- */
+function vr1Events(song, A, B) {
+  if (!song || !(song.bars > 0)) return [];
+  const rows = vvRows(), bars = song.bars, starts = new Map(), out = [];
+  A = clamp(A | 0, 0, bars); B = clamp(B == null ? bars : B | 0, A, bars);
+  for (const m of song.marks || []) if (m && m.len > 0 && !starts.has(m.a)) starts.set(m.a, m);
+  const sT = stimmeT(), vox = Array.isArray(song.vox) ? song.vox.filter(v => v && isNum(v.bar) && isNum(v.len) && v.len > 0) : [];
+  const voxAt = x => vox.some(v => x >= v.bar && x < v.bar + v.len);
+  // fills: the transitions on the edges (song.ue) and a drum clip of ≤ 1 bar between the same clip (or before a part start / a stop)
+  const fills = new Map();
+  try { for (const w of vv4UeWin(song, 0, bars, true)) if (!fills.has(w.a)) fills.set(w.a, {t: w.t, why: 'ue'}); } catch (e) { logErr(e); }
+  for (const t of rows) {
+    if (!isDrum(t)) continue;
+    const seg = []; let k0 = null, s0 = 0;
+    for (let x = 0; x <= bars; x++) { const k = x < bars ? vr1Key(song, t, x) : null; if (x === bars || k !== k0) { if (x > 0) seg.push({a: s0, b: x, k: k0}); k0 = k; s0 = x; } }
+    for (let j = 1; j < seg.length; j++) {
+      const s = seg[j], p = seg[j - 1], n = seg[j + 1];
+      if (!s.k || !p.k || s.b - s.a > 1 || p.b - p.a < 2 || fills.has(s.a)) continue;   // A A F A: ein Takt anders zwischen dem gleichen Clip
+      if ((n && (n.k === p.k || !n.k)) || starts.has(s.b)) fills.set(s.a, {t, why: 'kurz'});
+    }
+  }
+  // rides in the song (song.sr): a Klangfahrt without a track
+  const rides = new Set(); for (const e of Array.isArray(song.sr) ? song.sr : []) if (e && isNum(e.a)) { const b = barAt(e.a); if (b >= 0 && b < bars) rides.add(b); }
+  const seen = new Set(); for (let x = 0; x < A; x++) rows.forEach(t => { const k = vr1Key(song, t, x); if (k) seen.add(t + '#' + k); });
+  let prev = rows.map(t => vr1Key(song, t, A - 1)), pVox = A > 0 && voxAt(A - 1);
+  const stOf = c => (c && c.st ? JSON.stringify(c.st) : '');
+  for (let x = A; x < B; x++) {
+    const keys = rows.map(t => vr1Key(song, t, x)), ev = [], m = starts.get(x), vNow = voxAt(x), start = x === 0;
+    const ent = [], ext = [], chg = [];
+    rows.forEach((t, j) => { if (keys[j] && !prev[j]) ent.push(t); else if (!keys[j] && prev[j]) ext.push(t); else if (keys[j] && keys[j] !== prev[j]) chg.push(t); });
+    const fresh = t => !seen.has(t + '#' + keys[rows.indexOf(t)]);
+    if (m || x === A) ev.push({k: 'teil', t: null, why: m ? 'teil' : 'start'});
+    if (!start) {
+      const dIn = ent.filter(t => isDrum(t)), nm = m ? String(markLabel(m) || '') : '';
+      if (/drop/i.test(nm) || (dIn.length && ent.length >= 2)) ev.push({k: 'drop', t: dIn.length ? dIn[0] : ent.length ? ent[0] : null, why: /drop/i.test(nm) ? 'name' : 'einsatz'});
+      if (sT >= 0 && ent.includes(sT)) ev.push({k: 'gesang', t: sT, why: 'stimme', fresh: fresh(sT)});
+      else if (sT >= 0 && vNow && !pVox && !keys[rows.indexOf(sT)]) ev.push({k: 'gesang', t: sT, why: 'vox'});
+      const f = fills.get(x); if (f) ev.push({k: 'fill', t: f.t, why: f.why});
+      for (const t of ent.concat(chg)) {
+        if (isDrum(t) || isStimmeT(t)) continue;
+        const c = vr1ClipAt(song, t, x), pc = prev[rows.indexOf(t)] ? vr1ClipAt(song, t, x - 1) : null;
+        if (((c && c.st) || (pc && pc.st)) && stOf(c) !== stOf(pc)) ev.push({k: 'morph', t, why: 'st'});
+        else if (c && c !== pc && (c.cv || c.ln)) ev.push({k: 'morph', t, why: 'kurven'});
+      }
+      if (rides.has(x)) ev.push({k: 'morph', t: null, why: 'fahrt'});
+      const eIn = ent.filter(t => t !== sT);                               // mehrere Spuren auf einmal: ein Ereignis ohne Spur (Matrix)
+      if (eIn.length >= 2) ev.push({k: 'ein', t: null, why: 'mehrere', n: eIn.length});
+      else for (const t of eIn) ev.push({k: 'ein', t, why: fresh(t) ? 'neu' : 'wieder', fresh: fresh(t)});
+      for (const t of chg) if (fresh(t)) ev.push({k: 'neu', t, why: isDrum(t) ? 'neu-drum' : 'neu-clip', fresh: true});
+      for (const t of ext) ev.push({k: 'aus', t, why: 'ende'});
+    }
+    let xp = false; try { xp = vv4Xp(song, x); } catch (e) {} if (xp) ev.push({k: 'xp', t: null, why: 'transposition'});
+    rows.forEach((t, j) => { if (keys[j]) seen.add(t + '#' + keys[j]); });
+    if (ev.length) out.push({x, ev});
+    prev = keys; pVox = vNow;
+  }
+  return out;
+}
+/* ---------- Auto-Regie: Einhänge-Punkte in vvCuts ---------- */
+function vr1Ctx(song, A, B) {
+  if (!song) return null;
+  const rules = vr1Rules(), pr = {}; rules.forEach((r, j) => { pr[r.k] = r.on ? j : -1; });
+  const ev = new Map(); try { for (const e of vr1Events(song, A, B)) ev.set(e.x, e.ev); } catch (e) { logErr(e); }
+  // a fill of one bar right before a part start: its picture begins one bar earlier (2 bars, the part start stays a cut)
+  for (const [x, L] of [...ev]) { const f = L.find(e => e.k === 'fill'), nx = ev.get(x + 1); if (!f || x - 1 < A || !(nx && nx.some(e => e.k === 'teil' || e.k === 'drop'))) continue;
+    const p = ev.get(x - 1) || []; if (!p.some(e => e.k === 'fill')) { p.push(Object.assign({}, f, {why: 'fill-vor'})); ev.set(x - 1, p); } }
+  return {song, A, B, rules, pr, ev, pend: []};
+}
+// the picture of view v for track t (want of vvCuts)
+function vr1Map(v, t, why, e, c) {
+  const tr = t != null ? S.tracks[t] : null;
+  if (v === 'klav' || v === 'kino' || v === 'app' || v === 'matrix' || v === 'song' || v === 'tast') return {v, why};
+  if (t == null || !tr) return {v: ({morph: 'kino', ein: 'matrix', drop: 'matrix'})[e && e.k] || 'app', why};   // ein Bild einer Spur ohne Spur
+  if (v === 'geraet') return {v: 'geraet', t, why};
+  if (v === 'noten') return {v: tr.kind === 'drum' ? 'drum' : tr.stimme ? 'spur' : 'roll', t, why};
+  if (tr.kind === 'drum') return {v: 'drum', t, why};                       // 'spur': Drums → Drum-Sequenzer
+  if (tr.stimme) return c ? {v: 'spur', t, why} : {v: 'app', why};           // Gesang nur als Punch (song.vox): kein Clip, keine Welle
+  if (e && e.fresh) return {v: 'roll', t, why, f: 'zelle'};                  // zum ersten Mal: kurz die Zelle, dann die Noten (wie VV4-D)
+  return {v: 'spur', t, why};
+}
+// the clip's own choice („Im Video“) for a picture of track t at bar x; null = this clip is never in focus
+function vr1ClipView(song, w, x, e) {
+  if (!w || w.t == null || !VV4_TRK.includes(w.v)) return w;
+  const c = vr1ClipAt(song, w.t, x), cv = c && VR1_VID.includes(c.vid) ? c.vid : null; if (!cv) return w;
+  if (cv === 'aus') return null;
+  return vr1Map(cv, w.t, w.why, e || null, c);
+}
+const VR1_WHYN = {drop: 'drop', gesang: 'gesang', fill: 'fill', teil: 'teil', morph: 'morph', ein: 'neu', aus: 'ende', xp: 'transposition'};
+/* want of vvCuts at bar x → the want of the rules. cur/rem/pend/ch/enters as in vvCuts; X.pend: events that wait (≤ 2 bars) */
+function vr1Want(X, x, want, cur, rem, pend, ch, enters) {
+  if (!X) return want;
+  const song = X.song, now = (X.ev.get(x) || []).map(e => Object.assign({x0: x, key: e.t != null ? vr1Key(song, e.t, x) : ''}, e));
+  X.pend = X.pend.filter(e => x - e.x0 <= 2 && e.t != null && vr1Key(song, e.t, x) === e.key);
+  let best = null, bw = null;
+  for (const e of X.pend.concat(now)) {
+    const p = X.pr[e.k]; if (p == null || p < 0 || (best && X.pr[best.k] <= p)) continue;
+    if (e.k === 'aus' && !(cur && cur.t === e.t && VV4_TRK.includes(cur.v))) continue;   // „setzt aus“ zählt nur für die Spur im Bild
+    const r = X.rules[p], why = e.k === 'neu' ? e.why : VR1_WHYN[e.k] || e.k, c = e.t != null ? vr1ClipAt(song, e.t, x) : null, cv = c && VR1_VID.includes(c.vid) ? c.vid : null;
+    if (cv === 'aus') continue;                                           // Clip „Im Video: aus“: nie im Fokus
+    let w;
+    if (!cv && e.k === 'teil' && r.v === 'app') {                         // Teilanfang wie VV4-D: App; ist das Bild schon App: was dort neu ist; jeder zweite Teil mit Song-Melodie: Klavier
+      w = {v: 'app', why};
+      if (cur && vvDirSame(w, cur)) w = ch >= 2 ? {v: 'matrix', why} : enters.length === 1 ? vr1ClipView(song, {v: 'spur', t: enters[0], why}, x) || {v: 'matrix', why} : {v: 'matrix', why};
+      try { w = vvkAuto(song, x, X.A) || w; } catch (er) {}
+    } else w = vr1Map(cv || r.v, e.t, why, e, c);
+    if (!w) continue;
+    if (cur && !cur.u && vvDirSame(w, cur) && (!w.f || cur.f === w.f)) continue;   // schon im Bild: ein anderes Ereignis darf schneiden
+    best = e; bw = w;
+  }
+  if (!best) {
+    // no event: the old director's choice, unless its rule is off; the clip's „Im Video“ applies to its picture
+    if (want && VR1_WHY[want.why] && X.pr[VR1_WHY[want.why]] < 0) return null;
+    return vr1ClipView(song, want, x);
+  }
+  const free = !cur || cur.u, can = free ? rem >= 2 || !cur : x - cur.s >= 2 && rem >= 2;
+  if (!can) { if (best.t != null && !X.pend.includes(best)) X.pend.push(best); return want; }
+  X.pend = X.pend.filter(e => e !== best && !(best.t != null && e.t === best.t));
+  if (best.t != null) for (let j = pend.length - 1; j >= 0; j--) if (pend[j].t === best.t) pend.splice(j, 1);   // the old „new“ of this track is in the picture now
+  if (best.k === 'xp') for (let j = pend.length - 1; j >= 0; j--) if (pend[j].k === 'xp') pend.splice(j, 1);
+  if (VR1.log) VR1.log.push({x, k: best.k, t: best.t, v: bw.v, why: bw.why});
+  return bw;
+}
+/* ---------- Clip „Im Video“: Daten, Blatt-Taste, Auswahl ---------- */
+function vr1SetVid(t, s, v) {
+  const tr = S.tracks[t], c = tr && tr.clips[s]; if (!c) return false;
+  const nv = VR1_VID.includes(v) ? v : null; if ((c.vid || null) === nv) return false;
+  pushUndo(t, s, c, 'Im Video: ' + vr1VidName(nv));
+  if (nv) c.vid = nv; else delete c.vid;
+  markDirty(); UI.dirty.grid = true; vr1Dirty();
+  return true;
+}
+function vr1SetOwnVid(id, v) {
+  const nv = VR1_VID.includes(v) ? v : null;
+  const r = songEdit('Im Video: ' + vr1VidName(nv), song => { const c = song.own && song.own[id]; if (!c) return false; if (nv) c.vid = nv; else delete c.vid; return true; });
+  if (r) vr1Dirty(); return !!r;
+}
+function vr1VidPick(anchor, cur, title, onPick) {
+  vr1Css();
+  openPop(anchor, p => {
+    guardTouch(p); p.classList.add('plpick', 'vr1vp');
+    p.innerHTML = `<h4>${esc(title)}</h4><div class="plist plp vr1vl">` + VR1_VID_L.map(([v, nm, sub]) => { const on = (cur || 'auto') === v;
+      return `<button class="rb${on ? ' on' : ''}" data-v="${v}" aria-pressed="${on}" aria-label="Im Video: ${esc(nm)}"><b>${esc(nm)}</b><small>${esc(sub)}</small></button>`; }).join('') +
+      '</div><p class="vr1note">Gilt überall, wo der Clip spielt. Die Regie-Zeile in Teil/Marke geht vor.</p>';
+    onTap(p, b => { closePop(); onPick(b.dataset.v === 'auto' ? null : b.dataset.v); }, 'button[data-v]');
+  }, {name: 'vr1vid'});
+}
+// the key of the Clip-Blatt (all tracks): „Im Video · Auto“
+function vr1ClipBtn(t, s, clip, reopen) {
+  vr1Css();
+  const cur = clip && VR1_VID.includes(clip.vid) ? clip.vid : null, b = el('button', 'hb rb vr1cb' + (cur ? ' has' : ''), 'Im Video · ' + esc(vr1VidName(cur)));
+  b.setAttribute('aria-label', 'Im Video: ' + vr1VidName(cur) + ' – ändern');
+  on(b, 'click', () => vr1VidPick(b, cur, 'Im Video · ' + S.tracks[t].name + ' · Szene ' + (s + 1), v => { if (vr1SetVid(t, s, v)) toast('Im Video: ' + vr1VidName(v), {label: 'Rückgängig', fn: () => undo()}); if (reopen) reopen(); }));
+  return b;
+}
+// the Zell-Blatt of an own clip (song): the same choice (one song undo)
+function vr1OwnOpt(id) {
+  const c = S.song && S.song.own && S.song.own[id], cur = c && VR1_VID.includes(c.vid) ? c.vid : null;
+  return `<button class="rb pl-o" data-a="vr1vid"><b>Im Video: ${esc(vr1VidName(cur))}</b><small>was das Video zeigt, wenn dieser Clip dran ist</small></button>`;
+}
+function vr1OwnTap(id) {
+  const c = S.song && S.song.own && S.song.own[id]; if (!c) return;
+  vr1VidPick(null, VR1_VID.includes(c.vid) ? c.vid : null, 'Im Video · eigener Clip', v => { if (vr1SetOwnVid(id, v)) toast('Im Video: ' + vr1VidName(v), songUndoAct()); });
+}
+/* ---------- Regel-Blatt (Video-Blatt, Zeile „Bild“: [Regeln]) ---------- */
+function vr1VvBtn(segV) {
+  vr1Css();
+  const row = segV && segV.parentNode; if (!row) return;
+  const b = el('button', 'rb vr1rb', 'Regeln'); b.setAttribute('aria-label', 'Regie-Regeln: Ereignis → Ansicht');
+  onTap(b, () => { if (!VV.busy) vr1RulesOpen(b); }); row.appendChild(b);
+  VR1.vvB = {b, rowV: row}; requestAnimationFrame(vr1VvPlace);
+  if (!VR1.onRs) { VR1.onRs = () => { if (VV.open) requestAnimationFrame(vr1VvPlace); }; window.addEventListener('resize', VR1.onRs); }
+}
+// [Regeln] stands at the end of „Bild“; where that row is too narrow (320 px) at the end of „Format“
+function vr1VvPlace() {
+  const o = VR1.vvB, u = VV.ui; if (!o || !u || !o.b.isConnected) return;
+  const rowF = u.segF && u.segF.parentNode; if (!rowF) return;
+  if (o.b.parentNode !== o.rowV) o.rowV.appendChild(o.b);
+  if (o.rowV.scrollWidth > o.rowV.clientWidth + 1) rowF.appendChild(o.b);
+}
+function vr1RulesOpen(anchor) {
+  vr1Css();
+  let pick = null;
+  openPop(anchor, p => {
+    guardTouch(p); p.classList.add('vr1rp');
+    const paint = () => {
+      const R_ = vr1Rules();
+      if (pick) {
+        const r = R_.find(q => q.k === pick), d = VR1_EV.find(q => q[0] === pick), vs = Object.keys(VR1_VIEW).filter(v => vr1ViewOk(pick, v));
+        p.innerHTML = `<h4>${esc(d[1])} → Ansicht</h4><div class="plist vr1vw">` + vs.map(v => `<button class="rb${r.v === v ? ' on' : ''}" data-a="pv" data-v="${v}" aria-pressed="${r.v === v}">${esc(VR1_VIEW[v])}</button>`).join('') +
+          `</div><div class="vr1ft"><button class="rb" data-a="back">Zurück</button></div>`;
+      } else {
+        p.innerHTML = `<h4>Regie-Regeln · oben = Vorrang</h4><div class="vr1rl">` + R_.map((r, j) => { const d = VR1_EV.find(q => q[0] === r.k);
+          return `<div class="vr1r${r.on ? '' : ' off'}" data-k="${r.k}"><button class="rb vr1on${r.on ? ' on' : ''}" data-a="on" aria-pressed="${r.on}" aria-label="${esc(d[1])}: ${r.on ? 'an' : 'aus'}">${r.on ? 'an' : 'aus'}</button>` +
+            `<span class="vr1n">${esc(d[1])}</span><button class="rb vr1v" data-a="v" aria-label="${esc(d[1])}: Ansicht ${esc(VR1_VIEW[r.v])}">${esc(VR1_VIEW[r.v])}</button>` +
+            `<button class="rb vr1m" data-a="up" aria-label="${esc(d[1])} höher"${j === 0 ? ' disabled' : ''}>▲</button><button class="rb vr1m" data-a="dn" aria-label="${esc(d[1])} tiefer"${j === R_.length - 1 ? ' disabled' : ''}>▼</button></div>`; }).join('') +
+          `</div><div class="vr1ft"><button class="rb" data-a="std">Standard</button><small>Manuelle Regie (Teil/Marke) und „Im Video“ am Clip gehen vor.</small></div>`;
+      }
+      popFit(p); vr1RpFit(p);
+    };
+    paint();
+    onTap(p, b => {
+      if (b.disabled) return;
+      const a = b.dataset.a, row = b.closest('.vr1r'), k = row ? row.dataset.k : pick, R_ = vr1Rules(), j = R_.findIndex(q => q.k === k);
+      if (a === 'back') { pick = null; paint(); return; }
+      if (a === 'std') { vr1RulesSet(null); haptic('tick'); paint(); return; }
+      if (a === 'pv' && j >= 0) { R_[j].v = b.dataset.v; vr1RulesSet(R_); pick = null; haptic('tick'); paint(); return; }
+      if (j < 0) return;
+      if (a === 'on') R_[j].on = !R_[j].on;
+      else if (a === 'v') { pick = k; paint(); return; }
+      else if (a === 'up' && j > 0) R_.splice(j - 1, 0, R_.splice(j, 1)[0]);
+      else if (a === 'dn' && j < R_.length - 1) R_.splice(j + 1, 0, R_.splice(j, 1)[0]);
+      vr1RulesSet(R_); haptic('tick'); paint();
+    }, 'button[data-a]');
+  }, {name: 'vr1rules'});
+  vr1RpFit(UI.pop && UI.pop.el);
+}
+// the sheet's head with its ✕ stays free (hochkant und quer): the pop starts below it
+function vr1RpFit(p) {
+  const hd = VV.ui && VV.ui.sh ? VV.ui.sh.querySelector('.vvh') : null; if (!p || !p.isConnected || !hd) return;
+  const hb = Math.round(hd.getBoundingClientRect().bottom + 4); if ((parseFloat(p.style.top) || 0) < hb) p.style.top = hb + 'px';
+}
+function vr1Css() {
+  if (VR1.css) return; VR1.css = true;
+  const s = document.createElement('style'); s.id = 'vr1css';
+  s.textContent = '.vr1vp .plp{grid-template-columns:repeat(3,minmax(0,1fr))}.vr1vp .plp small{font-size:10px;line-height:1.15;text-align:center}.vr1vp .vr1note{margin:8px 2px 0;font:500 11px/1.3 var(--font-ui);color:var(--text-dim);max-width:340px}' +
+    '.vr1vp .plp button.on{border-color:var(--sel);color:var(--sel);box-shadow:inset 0 0 0 1px var(--sel)}' +
+    '.hb.vr1cb{min-height:44px}.hb.vr1cb.has{color:var(--sel)}' +
+    '.vr1rb{flex:0 0 auto;min-width:48px;height:44px;margin-left:0;padding:0 6px;font:700 11px/1 var(--font-ui)}' +
+    '.vr1rp{width:min(404px,calc(100vw - 16px))}.vr1rl{display:flex;flex-direction:column;gap:4px;max-height:min(440px,calc(100vh - 210px));overflow-y:auto;touch-action:pan-y}' +
+    '.vr1r{display:flex;align-items:center;gap:4px;min-height:44px}.vr1r .rb{height:44px;min-width:44px;padding:0 6px;font:700 12px/1 var(--font-ui)}' +
+    '.vr1r .vr1on{flex:0 0 48px}.vr1r .vr1on.on{border-color:var(--sel);color:var(--sel);box-shadow:inset 0 0 0 1px var(--sel)}.vr1r.off .vr1n,.vr1r.off .vr1v{opacity:.45}' +
+    '.vr1r .vr1n{flex:1 1 auto;min-width:0;font:700 12px/1.15 var(--font-ui);color:var(--text)}.vr1r .vr1v{flex:0 0 112px;white-space:nowrap;overflow:hidden}.vr1r .vr1m{flex:0 0 44px}' +
+    '.vr1vw{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}.vr1vw button{min-height:44px}.vr1vw button.on{border-color:var(--sel);color:var(--sel);box-shadow:inset 0 0 0 1px var(--sel)}' +
+    '.vr1ft{display:flex;align-items:center;gap:8px;margin-top:8px}.vr1ft .rb{min-height:44px;padding:0 12px}.vr1ft small{font:500 11px/1.3 var(--font-ui);color:var(--text-dim)}';
+  document.head.appendChild(s);
+}
+/* ---------- Gerät im Original (vv4Shot 'geraet') und das Editor-Blatt der App für 'mod' ---------- */
+const VR1_PG = {
+  'filter/ctl': {seg: ['ftype', FTYPE_LBL], rows: [['cutoff', 'res', 'drive', 'fenv'], ['kt', 'fvel', 'bass', '#lq']]},
+  'osc/o1': {seg: ['o1w', WAVE_NAME], rows: [['o1semi', 'o1fine', 'o1lvl', 'o1pw', 'o1uni']]},
+  'osc/o2': {seg: ['o2w', WAVE_NAME], rows: [['o2semi', 'o2fine', 'o2lvl', 'o2pw', 'o2uni']]},
+  'osc/o3': {seg: ['o3w', WAVE_NAME], rows: [['o3semi', 'o3fine', 'o3lvl', 'o3pw', 'o3uni']]},
+  'osc/mix': {fad: ['o1lvl', 'o2lvl', 'o3lvl', 'subLvl', 'noise'], fl: ['Osz 1', 'Osz 2', 'Osz 3', 'Sub', 'Rausch.'], rows: [['level', 'analog']]},
+  'osc/voice': {seg: ['mode', ['POLY', 'MONO', 'LEGATO']], rows: [['poly', 'glide', 'uniDet', 'uniMix'], ['uniWidth', 'spread', 'ampVel']]},
+  'osc/makro': {rows: [['fmBright', 'fmBite', 'fmAtk', 'fmDec'], ['fmRel', 'level']]},
+  'fx/spur': {rows: [['fx.drive', 'fx.rev', 'fx.dly'], ['fx.vol', 'fx.pan', 'fx.pump']]}};
+const VR1_LAB = {o1lvl: 'Anteil', o2lvl: 'Anteil', o3lvl: 'Anteil'};
+function vr1PgOk(id, eng) {
+  if (!VR1_PG[id]) return false; const [tab, sub] = id.split('/'); let subs = null;
+  try { subs = subTabsFor(tab, eng); } catch (e) { subs = null; }
+  return !subs || subs.some(x => x[0] === sub);
+}
+function vr1PgOfKey(k, eng) {
+  if (!(k in PD)) return null; const tryIt = id => (vr1PgOk(id, eng) && (VR1_PG[id].rows.some(r => r.includes(k)) || (VR1_PG[id].fad || []).includes(k)) ? id : null);
+  if (K1_PG[k]) { const id = K1_PG[k].join('/'); if (tryIt(id)) return id; }
+  for (const id in VR1_PG) if (tryIt(id)) return id;
+  return null;
+}
+// the page: the keys of a ◆ state of the clip (the event), else the real modulations, else FILTER · REGLER
+function vr1Page(i, s, st, pref) {
+  const eng = s.engine, c = st ? vvClip(i, st.slots[i], st.own[i]) : null, stK = c && c.st && c.st.p ? Object.keys(c.st.p) : [];
+  let mk = []; try { mk = vv4Knobs(i, st && st.t != null ? st.t : 0, st && st.src).map(k => k.key); } catch (e) { mk = []; }
+  const L = pref === 'mod' ? mk.concat(stK) : stK.concat(mk);
+  for (const k of L) { const id = vr1PgOfKey(k, eng); if (id) return id; }
+  return 'filter/ctl';
+}
+function vr1SelCol() { if (!VR1.sel) { let v = ''; try { v = getComputedStyle(document.documentElement).getPropertyValue('--sel').trim(); } catch (e) {} VR1.sel = v || '#3a86ff'; } return VR1.sel; }
+// the editor sheet of the app (tab row, sub tabs, the page with its knobs) in x, y, w, h (app points)
+function vr1EdIn(g, x, y, w, h, i, t, st, src, C, pref) {
+  const s = sndOf(i), tr = S.tracks[i]; if (!s || !tr) return null;
+  const eng = s.engine, pid = vr1Page(i, s, st, pref), P = VR1_PG[pid], [tab, sub] = pid.split('/'), col = C.t[i] || C.text, sel = vr1SelCol();
+  const res = {page: pid, knobs: [], focus: null, morph: false};
+  let X = null, run = null; try { X = vk2Src(st); run = X && X.runs ? vk2Act(X.runs[i], X.tau) : null; } catch (e) { run = null; }
+  const val = k => { let v; try { v = run ? vk2V(run, s, k, X.tau) : sndGet(s, k); } catch (e) { v = null; } if (typeof v !== 'number' || !isFinite(v)) { try { v = +sndGet(s, k); } catch (e) { v = 0; } } return isFinite(v) ? v : 0; };
+  const mods = {}; try { for (const k of vv4Knobs(i, t, src)) mods[k.key] = k; } catch (e) {}
+  let moving = new Set(); try { if (run && X.tau != null && X.tau <= Math.max(run.ea, run.t1) + VK2_HOLD) moving = new Set(vk2Mv(run)); } catch (e) {}
+  const nar = w < 300, fs = nar ? 9 : 11;
+  // the height it needs (knob size from the width): the sheet fits its content; Gerät stands a little above the middle
+  const pre = {}; {
+    let sb0 = null; try { sb0 = subTabsFor(tab, eng); } catch (e) { sb0 = null; }
+    const hd = (nar ? 26 : 32) + 5 + (sb0 && !nar ? 31 : 0), ph0 = h - hd; pre.land = w > ph0 * 1.6;
+    const nC = Math.max(...(pre.land ? [P.rows.flat()] : P.rows).map(r => r.length)) + (P.fad && pre.land ? P.fad.length : 0), cw0 = (w - 16) / Math.max(1, nC), nr = pre.land ? 1 : P.rows.length;
+    const segH = P.seg ? (nar ? 24 : 30) + 8 : 0; pre.fadH = P.fad && !pre.land ? Math.min(150, (ph0 - 8 - segH) * .5) : 0;
+    pre.sc = clamp(Math.min(cw0 / 82, (ph0 - 16 - segH - (pre.fadH ? pre.fadH + 6 : 0)) / nr / 104), .5, 1.35);
+    const need = hd + 8 + segH + (pre.fadH ? pre.fadH + 6 : 0) + nr * 104 * pre.sc + 6;
+    if (need < h) { if (pref === 'st') y += Math.round((h - need) * .4); h = need; }
+  }
+  res.y = y; res.h = h;
+  g.save(); g.textBaseline = 'middle';
+  // the tab row (as sheetFrame: OSZ/WT/FM · FILTER · HÜLLK. · LFO · MOD · FX)
+  const tabs = [['osc', eng === 'analog' ? 'OSZ' : eng === 'wt' ? 'WT' : 'FM'], ['filter', 'FILTER'], ['env', 'HÜLLK.'], ['lfo', 'LFO'], ['mod', 'MOD'], ['fx', 'FX']];
+  const th = nar ? 26 : 32, tw = w / tabs.length;
+  tabs.forEach(([id, l], k) => { const on = id === tab; vv4Btn(g, x + k * tw + 1.5, y, tw - 3, th, C, {on}); g.font = '700 ' + fs + 'px ' + C.ui; g.textAlign = 'center'; g.fillStyle = on ? C.text : C.dim; g.fillText(l, x + k * tw + tw / 2, y + th / 2 + .5);
+  });
+  vv4El('Reiter', '.sh-tabs (OSZ · FILTER · HÜLLK. · LFO · MOD · FX)');
+  let yy = y + th + 5;
+  let subs = null; try { subs = subTabsFor(tab, eng); } catch (e) { subs = null; }
+  if (subs && !nar) {
+    const sh = 26, sw = w / subs.length;
+    subs.forEach(([id, l], k) => { const on = id === sub, lb = String(l).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim(); vv4Btn(g, x + k * sw + 1.5, yy, sw - 3, sh, C, {on});
+      g.font = '700 ' + (fs - 1) + 'px ' + C.ui; g.textAlign = 'center'; g.fillStyle = on ? C.text : C.dim; g.fillText(lb.slice(0, 14), x + k * sw + sw / 2, yy + sh / 2 + .5);
+      if (on) { g.fillStyle = sel; g.fillRect(x + k * sw + 6, yy + sh - 2.5, sw - 12, 1.5); } });
+    yy += sh + 5; vv4El('Unter-Reiter', '.sh-sub');
+  }
+  // the page
+  const ph = y + h - yy; if (ph < 40) { g.restore(); return res; }
+  vvRound(g, x, yy, w, ph, 8); g.fillStyle = C.ch; g.fill(); g.strokeStyle = C.line; g.lineWidth = 1; g.stroke();
+  let py = yy + 8; const px = x + 8, pw = w - 16, land = pre.land;
+  if (P.seg) {
+    const [k, labs] = P.seg, cur = Math.round(val(k)), sh = nar ? 24 : 30, sw = pw / labs.length;
+    vvRound(g, px, py, pw, sh, 6); g.fillStyle = '#0d0f12'; g.fill();
+    labs.forEach((l, j) => { const on = j === cur; if (on) vv4Btn(g, px + j * sw + 2, py + 2, sw - 4, sh - 4, C, {on: true}); g.font = '700 ' + (fs - (nar ? 1 : 0)) + 'px ' + C.ui; g.textAlign = 'center'; g.fillStyle = on ? C.text : C.dim; g.fillText(String(l).toUpperCase().slice(0, 8), px + j * sw + sw / 2, py + sh / 2 + .5);
+      if (on) { g.fillStyle = sel; g.beginPath(); g.arc(px + j * sw + sw / 2, py + 5, 1.6, 0, Math.PI * 2); g.fill(); } });
+    py += sh + 8; vv4El('Segment', '.seg (' + k + ')');
+  }
+  const rows = land ? [P.rows.flat()] : P.rows, fad = P.fad || null;
+  let nCol = Math.max(...rows.map(r => r.length)) + (fad ? (land ? fad.length : 0) : 0);
+  const fadH = pre.fadH, cw = pw / Math.max(1, nCol), sc = pre.sc, rowH = 104 * sc;
+  const cells = [];
+  // faders (MIX): track, fill in the track colour, the cap; a real modulation as a range beside it
+  if (fad) {
+    const fw = land ? cw : pw / fad.length, fy = py, fh = land ? rowH : fadH;
+    fad.forEach((k, j) => {
+      const d = PD[k]; if (!d) return; const v = val(k), n = clamp(toNorm(d, v), 0, 1), m = mods[k], cx = px + fw * (j + .5), ty = fy + 14, tb = fy + fh - 18, tl = tb - ty;
+      g.font = '600 ' + fs + 'px ' + C.ui; g.textAlign = 'center'; g.fillStyle = C.dim; g.fillText(String(P.fl[j] || d.l).toUpperCase(), cx, fy + 6);
+      vvRound(g, cx - 4, ty, 8, tl, 4); g.fillStyle = '#2a2e36'; g.fill();
+      vvRound(g, cx - 4, tb - tl * n, 8, tl * n, 4); g.fillStyle = col; g.fill();
+      if (m) { g.globalAlpha = .9; g.fillStyle = m.c; const a = clamp(Math.min(m.lo, m.hi), 0, 1), b = clamp(Math.max(m.lo, m.hi), 0, 1); g.fillRect(cx + 7, tb - tl * b, 2.5, tl * (b - a)); g.globalAlpha = 1;
+        g.fillStyle = '#fff'; g.beginPath(); g.arc(cx + 8.25, tb - tl * m.dot, 2.6, 0, Math.PI * 2); g.fill(); }
+      vvRound(g, cx - 11, tb - tl * n - 4, 22, 8, 2.5); g.fillStyle = '#d8d4cb'; g.fill();
+      g.font = '500 ' + (fs - 1) + 'px ' + C.num; g.fillStyle = C.text; g.fillText(fmtVal(d.fmt, v), cx, fy + fh - 6);
+      const cell = {key: k, x: cx - fw / 2, y: fy, w: fw, h: fh, n, mod: !!m, mv: moving.has(k)}; cells.push(cell);
+    });
+    if (!land) py += fadH + 6;
+    vv4El('Fader', 'makeFader .fader (Anteil)');
+  }
+  rows.forEach((row, ri) => row.forEach((k, ci) => {
+    const off = fad && land ? fad.length : 0, cx = px + cw * (ci + off + .5), top = py + ri * rowH;
+    if (k === '#lq') {   // Qualität ECO | ANALOG (as the app's .qcell)
+      const q = Math.round(val('lq')), bw = Math.min(cw - 8, 92 * sc), bx = cx - bw / 2, by = top + 16 * sc, bh = 64 * sc;
+      g.font = '600 ' + (11 * Math.min(1.2, sc)).toFixed(1) + 'px ' + C.ui; g.textAlign = 'center'; g.fillStyle = C.dim; g.fillText('QUALITÄT', cx, top + 6 * sc);
+      vvRound(g, bx, by, bw, bh, 6); g.fillStyle = '#0d0f12'; g.fill(); g.strokeStyle = C.line; g.stroke();
+      ['ECO', 'ANALOG'].forEach((l, j) => { const yb = by + 3 + j * (bh - 6) / 2, hb = (bh - 6) / 2 - 2; if (q === j) vv4Btn(g, bx + 3, yb, bw - 6, hb, C, {on: true}); g.font = '700 ' + (10 * Math.min(1.2, sc)).toFixed(1) + 'px ' + C.ui; g.fillStyle = q === j ? C.text : C.dim; g.fillText(l, cx, yb + hb / 2 + .5); });
+      return;
+    }
+    const d = PD[k]; if (!d) return;
+    const v = val(k), n = clamp(toNorm(d, v), 0, 1), m = mods[k];
+    vv4Knob(g, cx, top, sc, n, m ? [{lo: m.lo, hi: m.hi, c: m.c}] : [], m ? m.dot : null, col, VR1_LAB[k] || d.l, fmtVal(d.fmt, v), C);
+    g.textBaseline = 'middle';
+    cells.push(Object.assign({key: k, x: cx - cw / 2, y: top, w: cw, h: rowH, n: +n.toFixed(4), mod: !!m, mv: moving.has(k)}, m ? {lo: m.lo, hi: m.hi, dot: m.dot, c: m.c, src: m.src, lab: m.lab, val: m.val} : {}));
+  }));
+  vv4El('Regler', 'makeCtl .knob (.kt .kv .kc .kp)'); if (Object.keys(mods).length) { vv4El('Mod-Ring', '.knob .kmr / .kmx'); vv4El('Live-Punkt', '.knob .kdg .kd'); }
+  // the focus: the gliding (◆) knob first, else the first modulated one – the frame of the app's highlight (.k1hl: 2 px, --sel)
+  const f = cells.find(c => c.mv) || cells.find(c => c.mod) || null;
+  if (f) { g.strokeStyle = sel; g.lineWidth = 2; vvRound(g, f.x + 3, f.y - 2, f.w - 6, f.h - 2, 8); g.stroke(); res.focus = f.key; vv4El('Fokus', '.k1hl (Regler hervorgehoben)'); }
+  res.knobs = cells; res.morph = moving.size > 0;
+  g.restore();
+  return res;
+}
+// 'mod' (VV4-E) for VA/FM/WT: the editor sheet instead of knobs alone; returns the height used (the K1 list below)
+function vr1ModEd(g, x, y, w, h, i, st, C, src, t, port, res) {
+  const eh = Math.round(port ? h * .56 : h * .62), r = vr1EdIn(g, x, y, w, eh, i, t, st, src, C, 'mod');
+  if (r) { res.ed = r.page; res.knobs = r.knobs.filter(c => c.mod); res.focus = r.focus; }
+  return (r && r.h ? Math.min(eh, r.h) : eh) + 8;
+}
+// Gerät: the instrument of track i as it is in the app
+function vr1GerIn(g, x, y, w, h, i, st, C, src, t) {
+  const tr = S.tracks[i], s = sndOf(i), port = h > w * .9, res = {i, t, kind: ''};
+  if (!tr) return res;
+  if (tr.stimme) { res.kind = 'voice'; vv3DrawVoice(g, x, y, w, h, i, t, st, C); vv4El('Welle', 'Spur-Zelle Take-Welle (STIMME)'); return res; }
+  if (tr.kind === 'drum') { res.kind = 'drum'; res.drum = vv4DrumIn(g, x, y, w, h, st, i, C, src, t); return res; }
+  if (s && !s._nv && s.engine === 'mk') {
+    const ms = vv3MkState(i, t, st, src), hm = vv4HasMod(i);
+    if (ms) {
+      ms.i = i; const pw = Math.min(w, (port ? h * .42 : h * .56) * 1.95), ph = pw / 1.95;
+      if (hm ? vv3DrawPlate(g, x + (w - pw) / 2, y, pw, ms, C) : vr1PlateIn(g, x, y, w, h, i, st, C, ms, res)) {
+        res.kind = 'plate'; res.cutMod = ms.cutMod; res.cutKnob = ms.T.f.cut; vv4El('Geräte-Platte', 'MKUI Platte (#mkPlate, Regler mit Mod-Bogen)');
+        if (hm) res.rows = vv4K1Rows(g, x, y + ph + 8, w, h - ph - 8, i, C);
+        return res;
+      }
+    }
+  }
+  if (s && !s._nv && s.engine !== 'mk' && s.engine !== 'bm' && !percIs(tr)) { res.kind = 'editor'; res.ed = vr1EdIn(g, x, y, w, h, i, t, st, src, C, 'st'); return res; }
+  // Bit Mask, Perkussion, fremde Klänge: no picture of their panel in the video yet – the notes (Piano-Roll)
+  res.kind = 'roll'; const sl = st.slots[i], c = sl != null && sl >= 0 ? vvClip(i, sl, st.own[i]) : null; res.roll = vv4RollIn(g, x, y, w, h, st, i, c, C, src);
+  return res;
+}
+/* the plate without a modulation list: landscape the whole plate; portrait the whole plate on top and below the same plate closer
+   (2,4×) around the knob that moves (◆ glide of the render, else CUTOFF) – a camera on the original, a frame shows where it looks */
+function vr1PlateIn(g, x, y, w, h, i, st, C, ms, res) {
+  const M = window.MKUI; if (!M || !M.ELS) return false;
+  const k = g.getTransform().a || 1, port = h > w * .9;
+  if (!port) { const pw = Math.min(w, h * 1.95); return vv3DrawPlate(g, x + (w - pw) / 2, y + Math.max(0, (h - pw / 1.95) / 2), pw, ms, C); }
+  const Z = 2.4, PWz = w * Z, px = Math.max(1, Math.round(PWz * k)), py = Math.ceil(px / 1.95), ph = w / 1.95, gap = 12, zy = y + ph + gap, zh = Math.min(h - ph - gap, py / k);
+  let cv = VR1.pz; if (!cv || cv.width !== px || cv.height !== py) { cv = VR1.pz = document.createElement('canvas'); cv.width = px; cv.height = py; }
+  const q = cv.getContext('2d'); q.setTransform(1, 0, 0, 1, 0, 0); q.clearRect(0, 0, px, py); q.setTransform(k, 0, 0, k, 0, 0);
+  if (!vv3DrawPlate(q, 0, 0, PWz, ms, C)) return false;
+  g.drawImage(cv, x, y, w, ph);
+  let id = 'f.cut';
+  try { const X = vk2Src(st), r = X && X.runs ? vk2Act(X.runs[i], X.tau) : null; if (r && X.tau <= Math.max(r.ea, r.t1) + VK2_HOLD) { const m = vk2Mv(r).find(k_ => k_.startsWith('mk.t.0.') && M.ELS.some(e => e.id === k_.slice(7))); if (m) id = m.slice(7); } } catch (e) {}
+  const e = M.ELS.find(q_ => q_.id === id) || M.ELS.find(q_ => q_.id === 'f.cut'), fx = e ? e.X / 1000 * px : px / 2, fy = e ? e.Y / (1000 / 1.95) * py : py / 2;
+  const sw = w * k, sh = zh * k, sx = clamp(fx - sw / 2, 0, Math.max(0, px - sw)), sy = clamp(fy - sh / 2, 0, Math.max(0, py - sh));
+  if (zh > 40) {
+    g.save(); vvRound(g, x, zy, w, zh, 8); g.clip(); g.drawImage(cv, sx, sy, Math.min(sw, px), Math.min(sh, py), x, zy, Math.min(sw, px) / k, Math.min(sh, py) / k); g.restore();
+    g.strokeStyle = vr1SelCol(); g.lineWidth = 1.5; g.strokeRect(x + sx / px * w, y + sy / py * ph, Math.min(sw, px) / px * w, Math.min(sh, py) / py * ph);
+    vvRound(g, x + .75, zy + .75, w - 1.5, zh - 1.5, 8); g.stroke();
+    if (res) res.zoom = id;
+  }
+  return true;
+}
+function vr1DrawGer(g, t, rect, track, src) { return vv4Into(g, t, rect, track, (g_, w, h, st, i) => vv4Shot(g_, w, h, st, i, 'geraet'), src); }
+/* ---------- Klavier: die Noten steigen auf ---------- */
+// a seed from track, note and start (ms) → 32 bit; vr1R(h, k): the k-th number of it in [0, 1)
+function vr1H(a, b, c) { let h = Math.imul(a + 1, 374761393) ^ Math.imul(b + 7, 668265263) ^ Math.imul(c | 0, 1274126177); h = Math.imul(h ^ (h >>> 15), 2246822519); h = Math.imul(h ^ (h >>> 13), 3266489917); return (h ^ (h >>> 16)) >>> 0; }
+function vr1R(h, k) { let x = (h ^ Math.imul(k + 1, 2654435761)) >>> 0; x = Math.imul(x ^ (x >>> 16), 2246822519); x = Math.imul(x ^ (x >>> 13), 3266489917); return ((x ^ (x >>> 16)) >>> 0) / 4294967296; }
+// a soft glowing dot (cached per colour): white core, the colour, transparent edge
+function vr1Spr(col) {
+  let c = VR1K.spr.get(col); if (c) return c;
+  c = document.createElement('canvas'); c.width = c.height = 32; const q = c.getContext('2d'), gr = q.createRadialGradient(16, 16, 0, 16, 16, 16);
+  gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(.22, col); gr.addColorStop(.55, col); gr.addColorStop(1, 'rgba(0,0,0,0)');
+  q.globalAlpha = 1; q.fillStyle = gr; q.beginPath(); q.arc(16, 16, 16, 0, Math.PI * 2); q.fill();
+  // the colour edge fades: a second pass makes the outer half transparent
+  q.globalCompositeOperation = 'destination-in'; const g2 = q.createRadialGradient(16, 16, 0, 16, 16, 16); g2.addColorStop(0, 'rgba(0,0,0,1)'); g2.addColorStop(.45, 'rgba(0,0,0,.85)'); g2.addColorStop(1, 'rgba(0,0,0,0)'); q.fillStyle = g2; q.fillRect(0, 0, 32, 32);
+  if (VR1K.spr.size > 400) VR1K.spr.clear(); VR1K.spr.set(col, c); return c;
+}
+/* what the picture shows: notes that started until now and ended at most `back` s ago [{i, n, v, a, b, s}] (a, b relative to now,
+   s = absolute start for the seed), drum hits of the last second */
+function vr1Gather(src, t, sb, sp, back, sc) {
+  const notes = [], hits = [], nt = NT();
+  if (src) {
+    for (let i = 0; i < nt; i++) {
+      const L = src.nt[i]; if (!L || !L.length) continue; const syn = vvkSyn(i), drm = !syn && vvkDrumT(i); if (!syn && !drm) continue;
+      for (let k = vvkFirst(L, drm ? t - 1 : t - back - (L.mx || 0) - .05, 'a'); k < L.length; k++) {
+        const o = L[k]; if (o.a > t + 1e-6) break; const e = o.e; if (!e || e.removed) continue;
+        const v = e.vel == null ? .8 : clamp(+e.vel, 0, 1);
+        if (drm) { hits.push({i, z: vvkZone(isDrum(i) ? e.out : percGm(e.out)), v, a: o.a - t}); continue; }
+        const b = e.dur != null ? o.a + e.dur : o.a + .25 * sp; if (b < t - back) continue;
+        notes.push({i, n: Math.round(e.out), v, a: o.a - t, b: b - t, s: o.a});
+      }
+    }
+  } else if (sc) {
+    const bb = back / sp;
+    sc.tr.forEach((L, i) => { if (!L) return; for (let k = vvkFirst(L, sb - bb - L.mx - 1e-6, 's'); k < L.length; k++) { const x = L[k]; if (x.s > sb + 1e-6) break; if (x.e < sb - bb) continue; notes.push({i, n: x.n, v: x.v, a: (x.s - sb) * sp, b: (x.e - sb) * sp, s: x.s * sp}); } });
+    sc.dr.forEach((L, i) => { if (!L) return; for (let k = vvkFirst(L, sb - 1 / sp, 's'); k < L.length; k++) { const x = L[k]; if (x.s > sb + 1e-6) break; hits.push({i, z: vvkZone(x.n), v: x.v, a: (x.s - sb) * sp}); } });
+  }
+  return {notes, hits};
+}
+/* the picture (VK3 vvkDraw hands over here): keyboard at the bottom, a note begins at its key when it is struck, grows while it
+   sounds and rises; in the top part it fades and turns into sparks */
+function vr1Klav(g, W, H, st, vt) {
+  const C = vvCols(), u = Math.min(W, H) / 360, LW = W / u, LH = H / u, song = S.song;
+  const src = st && st.src && st.src.nt ? st.src : null, bpm = (src && src.bpm) || S.bpm, sp = 60 / bpm, rise = vvkFut(bpm);
+  const rg = vvkRg(src), sb = st && st.sb != null ? st.sb : barBeat(rg.a), t = src ? (st.t != null ? st.t : vt || 0) : 0;
+  const sc = song ? vvkScore(rg.a, rg.b) : null, R_ = vvkRange(src, t, rise, sc);
+  g.save(); g.setTransform(u, 0, 0, u, 0, 0);
+  const L = vvkLayout(g, LW, LH, R_.lo, R_.hi, u, C), K = L.keys, pps = L.fallH / rise, top = L.fallTop, nowY = L.nowY;
+  const yD = top + L.fallH * VR1K.dz, tD = (nowY - yD) / pps, back = rise + VR1K.life + .15;
+  const D = vr1Gather(src, t, sb, sp, back, src ? null : sc);
+  // the still background (one image per layout): the colour, the octave lanes, a faint violet haze from the top (synth pop)
+  if (!L.vr1bg || L.vr1bg.u !== u) {
+    const cv = document.createElement('canvas'); cv.width = Math.ceil(LW * u); cv.height = Math.ceil(LH * u); const q = cv.getContext('2d', {alpha: false}); q.setTransform(u, 0, 0, u, 0, 0);
+    q.fillStyle = C.bg; q.fillRect(0, 0, LW, LH);
+    const hz = q.createLinearGradient(0, top, 0, yD + (nowY - yD) * .45); hz.addColorStop(0, 'rgba(150,70,255,.13)'); hz.addColorStop(1, 'rgba(150,70,255,0)'); q.fillStyle = hz; q.fillRect(L.kx, top, L.kw, nowY - top);
+    q.fillStyle = 'rgba(255,255,255,.05)'; for (let n = L.lo; n <= L.hi; n += 12) if (K[n]) q.fillRect(K[n].x, top, 1, L.fallH);
+    L.vr1bg = {cv, u};
+  }
+  g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(L.vr1bg.cv, 0, 0); g.setTransform(u, 0, 0, u, 0, 0);
+  // the beat grid rises with the notes: beats faint, bar lines with their number, a part start amber with its name
+  const yOf = dt => nowY + dt * pps, sb0 = sb - rise / sp;
+  g.textBaseline = 'middle'; g.textAlign = 'left';
+  g.fillStyle = 'rgba(255,255,255,.035)'; for (let x = Math.floor(sb + 1e-6); x >= sb0; x--) g.fillRect(L.kx, yOf((x - sb) * sp), L.kw, 1);
+  if (song) {
+    const ms = song.marks || [];
+    for (let bar = Math.min(song.bars, Math.max(0, barAt(Math.max(0, sb)))), n = 0; bar >= 0 && n < 64; bar--, n++) {
+      const B = barBeat(bar); if (B > sb + 1e-6) continue; if (B < sb0 - 1e-6) break;
+      const y = yOf((B - sb) * sp), mk = ms.find(m => m.a === bar);
+      g.fillStyle = mk ? C.amber : 'rgba(255,255,255,.12)'; g.globalAlpha = mk ? .7 : 1; g.fillRect(L.kx, y, L.kw, mk ? 1.5 : 1); g.globalAlpha = 1;
+      if (bar < song.bars && y - 16 > top && y < nowY - 4) {
+        g.font = '600 9px ' + C.num; g.fillStyle = C.faint; g.fillText(String(bar + 1), L.kx + 2, y - 6);
+        if (mk) { const nm = markLabel(mk).toUpperCase(); g.font = '700 10px ' + C.ui; const tw = g.measureText(nm).width + 10, x0 = L.kx + 20; vvRound(g, x0, y - 15, tw, 13, 3); g.fillStyle = C.amber; g.fill(); g.fillStyle = '#111'; g.fillText(nm, x0 + 5, y - 8.5); }
+      }
+    }
+  }
+  // the notes: long ones first (a short note on the same key stays visible), white-key notes under black-key notes
+  const lit = [], rows = [], ord = D.notes.slice().sort((p, q) => (q.b - q.a) - (p.b - p.a) || p.s - q.s || p.n - q.n), geo = [];
+  g.save(); g.beginPath(); g.rect(0, top, LW, nowY - top); g.clip();
+  for (const pass of [0, 1]) for (const o of ord) {
+    const k = K[o.n]; if (!k || (k.blk ? 1 : 0) !== pass) continue;
+    const col = C.t[o.i] || '#888', on = o.b > 1e-6, yT = yOf(o.a), yB = on ? nowY : yOf(o.b), f = on ? Math.exp(o.a / .3) : 0;
+    const x = k.x + (k.blk ? .5 : 1), w = k.w - (k.blk ? 1 : 2), r = Math.min(3, w / 3);
+    if (on) { const p = lit[o.n]; if (!p || o.a >= p.a) lit[o.n] = {i: o.i, v: o.v, a: o.a, f, col}; }
+    geo.push({o, x, w, col, on, yT});
+    if (yB < top - 2) continue;
+    const y0 = Math.max(top - 4, yT), hgt = Math.max(2.5, yB - y0);
+    // soft glow (stronger for loud notes), the body in the touch colour, the attack edge bright, a fresh note hot at the key
+    g.globalCompositeOperation = 'lighter';
+    g.fillStyle = vvkCol(col, o.v, .2); g.globalAlpha = .12 + .16 * o.v + (o.v >= .88 ? .18 : 0); vvRound(g, x - 2.5, y0 - 2.5, w + 5, hgt + 5, r + 2.5); g.fill();
+    g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;
+    g.fillStyle = vvkCol(col, o.v, on ? .3 + f * .9 : 0); vvRound(g, x, y0, w, hgt, r); g.fill();
+    g.fillStyle = 'rgba(255,255,255,.18)'; g.fillRect(x + .6, y0 + r * .6, 1, Math.max(0, hgt - r * 1.2));
+    if (yT >= top - 2) { g.fillStyle = 'rgba(255,255,255,' + (.35 + .3 * o.v).toFixed(3) + ')'; g.fillRect(x + r * .6, yT + .4, Math.max(0, w - r * 1.2), 1.4); }
+    if (on && f > .02) { if (!L.vr1hot) { L.vr1hot = g.createLinearGradient(0, nowY - 18, 0, nowY); L.vr1hot.addColorStop(0, 'rgba(255,255,255,0)'); L.vr1hot.addColorStop(1, 'rgba(255,255,255,.55)'); }
+      const hh = Math.min(hgt, 18); g.fillStyle = L.vr1hot; g.globalAlpha = f * (.6 + .4 * o.v); g.fillRect(x, nowY - hh, w, hh); g.globalAlpha = 1; }
+    if (w >= 11 && hgt >= 15 && yT > yD) { g.font = '700 ' + Math.min(10, w * .55).toFixed(1) + 'px ' + C.num; g.textAlign = 'center'; g.fillStyle = 'rgba(10,11,14,.78)'; g.fillText(VV4_NAMES[PCx(o.n)], x + w / 2, yT + 8); g.textAlign = 'left'; }
+    if (rows.length < 64) rows.push({i: o.i, n: o.n, v: +o.v.toFixed(3), a: +o.a.toFixed(3), b: +o.b.toFixed(3), x: +x.toFixed(1), y: +y0.toFixed(1), w: +w.toFixed(1), h: +hgt.toFixed(1), on});
+  }
+  g.restore();
+  // the top part: the bars fade into the background (the grid with them) …
+  if (!L.vr1fo) { L.vr1fo = g.createLinearGradient(0, yD, 0, top); L.vr1fo.addColorStop(0, 'rgba(0,0,0,0)'); L.vr1fo.addColorStop(1, C.bg); }   // je Layout einmal (wie das Tastatur-Bild)
+  g.fillStyle = L.vr1fo; g.fillRect(0, top - 1, LW, yD - top + 1);
+  // … and turn into sparks: points of a note at fixed times after its start (spacing dt), each one born when it crosses the line
+  // yD, rising with its own speed, swaying and fading; the strike itself throws a few sparks off the key
+  g.globalCompositeOperation = 'lighter';
+  let np = 0; const lifeMx = VR1K.life;
+  const sw = Math.max(1, Math.ceil(geo.reduce((s_, q) => s_ + Math.min(30, Math.max(0, (Math.min(q.o.b, -tD) - Math.max(q.o.a, -tD - lifeMx)) / VR1K.dt + 1)), 0) / VR1K.cap));
+  for (const q of geo) {
+    const o = q.o, h = vr1H(o.i, o.n, Math.round(o.s * 1000)), spr = vr1Spr(vvkCol(q.col, Math.min(1, o.v + .15), .6));
+    const k0 = Math.max(0, Math.ceil((-tD - lifeMx - o.a) / VR1K.dt)), k1 = Math.floor((Math.min(o.b, 0, -tD) - o.a) / VR1K.dt);
+    for (let k = k0; k <= k1 && k - k0 < 40; k++) {
+      if ((k % sw) !== 0) continue;
+      const tau = o.a + (k + .5 * vr1R(h, k * 8 + 7)) * VR1K.dt; if (tau > Math.min(o.b, 0)) continue;
+      const life = lifeMx * (.55 + .45 * vr1R(h, k * 8 + 1)), age = -tD - tau; if (age < 0 || age > life) continue;
+      const qq = age / life, vy = pps * (.35 + .5 * vr1R(h, k * 8 + 2)), ph = 6.2832 * vr1R(h, k * 8 + 3), fr = 2 + 3 * vr1R(h, k * 8 + 4), amp = 2 + 7 * vr1R(h, k * 8 + 5);
+      const px = q.x + q.w * (.12 + .76 * vr1R(h, k * 8)) + Math.sin(ph + age * fr) * amp * qq, py = yD - age * vy; if (py < top - 24) continue;
+      const rr = (1.1 + 2.2 * vr1R(h, k * 8 + 6)) * (.65 + .5 * o.v) * (1 - .55 * qq);
+      g.globalAlpha = Math.pow(1 - qq, 1.4) * (.45 + .55 * o.v); g.drawImage(spr, px - rr * 2, py - rr * 2, rr * 4, rr * 4); np++;
+    }
+    if (o.a > -.36 && o.a <= 1e-6) {                                     // the strike: sparks off the key
+      const age = -o.a, qq = age / .36;
+      for (let k = 0; k < 5; k++) { const px = q.x + q.w / 2 + (vr1R(h, 900 + k) - .5) * q.w * 1.8 * qq, py = nowY - qq * (8 + 22 * vr1R(h, 910 + k)), rr = (1 + 1.6 * vr1R(h, 920 + k)) * (1 - .5 * qq);
+        g.globalAlpha = (1 - qq) * (1 - qq) * (.4 + .6 * o.v); g.drawImage(spr, px - rr * 2, py - rr * 2, rr * 4, rr * 4); np++; }
+    }
+  }
+  g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
+  // drum rail: four zones, a hit glows with its touch and fades (as VK3)
+  const lv = [0, 0, 0, 0], lc = [null, null, null, null];
+  for (const hh of D.hits) { const dt = -hh.a; if (dt < -1e-6) continue; const xx = hh.v * Math.exp(-dt / VVK_TAU[hh.z]); if (xx > lv[hh.z]) { lv[hh.z] = xx; lc[hh.z] = C.t[hh.i] || C.amber; } }
+  const zg = 3, zw = (L.kw - zg * 3) / 4;
+  g.textAlign = 'center'; g.font = '700 ' + (L.port ? 9 : 8.5) + 'px ' + C.ui; g.textBaseline = 'middle';
+  for (let z = 0; z < 4; z++) {
+    const x = L.kx + z * (zw + zg), y = L.railY + 2.5, h = L.railH - 2.5, a = lv[z];
+    g.fillStyle = 'rgba(255,255,255,.05)'; vvRound(g, x, y, zw, h, 3); g.fill();
+    if (a > .004) {
+      g.fillStyle = vvkCol(lc[z], Math.min(1, a + .2), [0, .12, .3, .5][z]);
+      g.globalAlpha = .16 * a; vvRound(g, x - 2, y - 7 * a - 2, zw + 4, h + 7 * a + 4, 5); g.fill();
+      g.globalAlpha = .3 * a; vvRound(g, x - 1, y - 3 * a - 1, zw + 2, h + 3 * a + 2, 4); g.fill();
+      g.globalAlpha = Math.min(1, 1.15 * a); vvRound(g, x, y, zw, h, 3); g.fill(); g.globalAlpha = 1;
+    }
+  }
+  // a sounding note is joined to its key: a light through the rail (strength = touch, brighter right after the strike); the names stay on top
+  for (let n = L.lo; n <= L.hi; n++) { const p = lit[n]; if (!p) continue; const k = K[n]; g.fillStyle = vvkCol(p.col, p.v, .4 + p.f * .8); g.globalAlpha = .4 + .3 * p.f; g.fillRect(k.x + (k.blk ? .5 : 1), nowY, k.w - (k.blk ? 1 : 2), L.kbY - nowY); }
+  g.globalAlpha = 1;
+  for (let z = 0; z < 4; z++) { const x = L.kx + z * (zw + zg), y = L.railY + 2.5, h = L.railH - 2.5, a = lv[z]; g.fillStyle = a > .45 ? '#0b0c0f' : a > .12 ? C.text : C.dim; g.fillText(VVK_ZN[z], x + zw / 2, y + h / 2 + .5); }
+  // the line at the keys (a kick makes it brighter)
+  g.fillStyle = C.play; g.globalAlpha = .55 + .45 * lv[0]; g.fillRect(L.kx, nowY - 1, L.kw, 2); g.globalAlpha = 1;
+  // the keyboard: white keys, lit ones in the colour of their note, C names; black keys over them; the touch as a light on top
+  g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(L.img, L.X0, L.Y0); g.setTransform(u, 0, 0, u, 0, 0);
+  vvkKeys(g, L, C, lit, false);
+  for (let n = L.lo; n <= L.hi; n++) { const p = lit[n]; if (!p || p.f < .02) continue; const k = K[n]; g.fillStyle = vvkCol(p.col, p.v, 1.4); g.globalAlpha = Math.min(1, p.f * (.35 + .65 * p.v)); g.fillRect(k.x + 1, k.y, k.w - 2, 3); g.globalAlpha = 1; }
+  // the head: who plays, the part and the bar (as VK3)
+  const who = [...new Set(D.notes.filter(o => o.b > -tD).map(o => o.i))].sort((p, q) => vvRows().indexOf(p) - vvRows().indexOf(q));
+  const bar = Math.max(0, barAt(Math.max(0, sb))), mk = song ? (song.marks || []).find(m => bar >= m.a && bar < m.a + m.len) : null;
+  const rowY = L.port ? [16, 38] : [15, 15];
+  g.textAlign = 'right'; g.font = '700 12px ' + C.num; g.fillStyle = C.dim; const tt = 'TAKT ' + (bar + 1); g.fillText(tt, LW - 10, rowY[0]);
+  let rx = LW - 10 - g.measureText(tt).width - 8;
+  if (mk) { const nm = markLabel(mk).toUpperCase(); g.font = '700 11px ' + C.ui; const tw = Math.min(g.measureText(nm).width + 12, rx - 10); if (tw > 24) { vvRound(g, rx - tw, rowY[0] - 8, tw, 16, 4); g.fillStyle = C.amber; g.fill(); g.save(); g.beginPath(); g.rect(rx - tw, rowY[0] - 8, tw, 16); g.clip(); g.textAlign = 'left'; g.fillStyle = '#111'; g.fillText(nm, rx - tw + 6, rowY[0] + .5); g.restore(); rx -= tw + 8; } }
+  g.textAlign = 'left'; g.font = '700 12px ' + C.ui; let lx = 10; const lim = L.port ? LW - 10 : rx;
+  for (const i of who) {
+    const nm = svShort(i), w = g.measureText(nm).width + 16; if (lx + w > lim) break;
+    g.fillStyle = C.t[i] || '#888'; vvRound(g, lx, (L.port ? rowY[1] : rowY[0]) - 4.5, 9, 9, 2.5); g.fill();
+    g.fillStyle = C.text; g.fillText(nm, lx + 13, (L.port ? rowY[1] : rowY[0]) + .5); lx += w + 8;
+  }
+  g.restore();
+  VVK.probe = {src: src ? 'render' : sc ? 'song' : 'none', rise: true, t: +t.toFixed(4), sb: +sb.toFixed(4), fut: rise, lo: L.lo, hi: L.hi, ww: +L.ww.toFixed(2), nowY: +nowY.toFixed(1), yD: +yD.toFixed(1), top: +top.toFixed(1), u,
+    notes: D.notes.length, sparks: np, lit: lit.map((p, n) => (p ? {n, i: p.i, v: +p.v.toFixed(3), f: +p.f.toFixed(3)} : null)).filter(Boolean), drums: lv.map(x => +x.toFixed(3)), who, rows};
+  return VVK.probe;
+}
+/* ---------- Test-API ---------- */
+function vr1Api() {
+  return {
+    vr1Events: (a, b) => (S.song ? vr1Events(S.song, a == null ? 0 : a, b == null ? S.song.bars : b) : null),
+    vr1Rules: () => vr1Rules(), vr1RulesSet: r => vr1RulesSet(r),
+    vr1Cuts: o => { o = o || {}; const rg = o.range || vvRange(false); if (!rg || !S.song) return null; VR1.log = []; const s = vvCuts(S.song, rg.a, rg.b), l = VR1.log; VR1.log = null; return {shots: s.map(x => ({a: x.a, b: x.b, v: x.v, t: x.t, why: x.why, f: x.f || null})), log: l, hash: vvCutHash(s)}; },
+    vr1SetVid: (t, s, v) => vr1SetVid(t, s, v), vr1Vid: (t, s) => { const c = S.tracks[t] && S.tracks[t].clips[s]; return c ? c.vid || null : null; },
+    vr1SetOwnVid: (id, v) => vr1SetOwnVid(id, v),
+    vr1RulesOpen: () => { vr1RulesOpen(VV.ui && VV.ui.ctl ? VV.ui.ctl.querySelector('.vr1rb') : null); return !!(UI.pop && UI.pop.name === 'vr1rules'); },
+    // a picture of view v (track tr) at video time t of the last render (fmt), PNG + the probes of VV4 / Klavier
+    vr1Pic: (t, v, tr, fmt) => { const r = VV.last, [W, H] = VV_SIZE[fmt || '9:16'], cv = document.createElement('canvas'); cv.width = W; cv.height = H; const st = r ? vvStateAt(r, t || 0) : vvLiveState(); if (r) st.t = t || 0;
+      VV4.probe = null; const T0 = performance.now(); vv4Pic(cv.getContext('2d', {alpha: false}), W, H, v, tr, st, r ? r.bpm : S.bpm); const ms = performance.now() - T0;
+      return {png: cv.toDataURL('image/png').split(',')[1], ms: +ms.toFixed(2), vv4: VV4.probe ? JSON.parse(JSON.stringify(VV4.probe)) : null, klav: v === 'klav' && VVK.probe ? JSON.parse(JSON.stringify(VVK.probe)) : null}; },
+    vr1Klav: on => { if (on != null) VR1K.up = !!on; return VR1K.up; },
+    vr1KlavMs: (t, fmt, n) => { const r = VV.last; if (!r) return null; const [W, H] = VV_SIZE[fmt || '9:16'], cv = document.createElement('canvas'); cv.width = W; cv.height = H; const g = cv.getContext('2d', {alpha: false}); let T = 0, N = n || 30;
+      for (let k = 0; k < N + 3; k++) { const st = vvStateAt(r, t + k / 30); st.t = t + k / 30; const T0 = performance.now(); vv4Pic(g, W, H, 'klav', null, st, r.bpm); g.getImageData(0, 0, 1, 1); if (k >= 3) T += performance.now() - T0; } return +(T / N).toFixed(2); },
+  };
+}
+/* VR1-END */
 
 
 /* ===================== UE-A + UE-B (Konzept Schnitt/Übergänge §1): Übergänge auf der Schnittkante =====================
@@ -75792,6 +77056,7 @@ function s1OpenSheet() {
       `<div class="fs-end">Letzter Durchlauf eingefangen${S1.n ? ' · ' + S1.n + (S1.n === 1 ? ' Note' : ' Noten') + ' dazugespielt' : ''}</div>` +
       `<div class="fs-cl"><b>Neu</b> ${esc(fangClipsText(v))}</div><div class="fs-cl s1-old"><b>Bisher</b> ${esc(fangClipsText(p0))}</div>` +
       `<div class="cr-bot fs-bot"><button class="rb" data-s1="disc">Verwerfen</button><button class="rb" data-s1="new">Als neuen Teil</button><button class="rb fs-ok" data-s1="rep">Teil ersetzen</button></div>`;
+    ux1S1Row(p);   /* UIX1: Zeile „Neu“ (Namen wie im Blatt „Teil gefangen“) */
     for (const b of p.querySelectorAll('.fs-bot .rb')) if (b.scrollWidth > b.clientWidth + 1) b.classList.add('tight');
     onTap(p, b => { const a = b.dataset.s1; if (a === 'x' || a === 'disc') { s1Discard(); return; } if (a === 'new') { s1Accept('new'); return; } if (a === 'rep') s1Accept('replace'); }, 'button[data-s1]');
     fangPlace(p); rowFit(p);
@@ -75802,6 +77067,146 @@ Object.assign(S012_API, {
   s1Fang: o => s1Fang(o || {}), s1Info: () => s1Info(), s1Accept: mode => s1Accept(mode === 'new' ? 'new' : 'replace'), s1Discard: () => s1Discard(), s1Active: () => s1Active(),
 });
 /* /S1 */
+/* UIX1-BEGIN ---------- Paket UX1 (Xander 07.11.): „FANG im Songteil wie früher“ – das Blatt „Teil überarbeitet“ bekommt die Namen
+   wieder (Zeile „Neu“, alle Namen sichtbar wie beim Zusammenfassen: ein Tipp auf einen freien Namen = neuer Teil mit diesem Namen, ein vergebener
+   Name ▾ öffnet die zweite Ebene [＋ Strophe 2] [⟳ Strophe ersetzen] wie im Blatt „Teil gefangen“, ✎ frei = eigener Name); Mithören beim Wischen als Schalter im
+   Schleife-Blatt (hochkant kein runder Knopf mehr über dem Song); ✕ in Popups mit Titel (hochkant, bleibt beim Scrollen oben);
+   ein Popup mit aktivem Textfeld bleibt über der iOS-Tastatur (visualViewport). Keine neuen Projektfelder. ---------- */
+const UX1 = {s1: {lvl: null, name: null}, kb: {el: null, st: null, raf: 0}};
+// 1 · Blatt „Teil überarbeitet“ (s1OpenSheet): die Namenszeile über den drei Tasten
+function ux1S1Row(p) {
+  if (!p || !S1.v) return;
+  UX1.s1 = {lvl: null, name: null};
+  const row = el('div', 'fs-row fs-nm ux1-s1'); p.insertBefore(row, p.querySelector('.fs-bot'));
+  ux1S1Paint(row);
+  onTap(row, b => ux1S1Tap(row, b), 'button');
+}
+function ux1S1Paint(row) {
+  const st = UX1.s1;
+  if (st.lvl === 'edit') {
+    row.innerHTML = `<span class="lbl">Neu</span><input class="cp-in fs-in ux1-in" type="text" maxlength="12" enterkeyhint="done" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(st.name || '')}" aria-label="Eigener Name"><button class="rb cp-ok" data-u="ok" aria-label="Übernehmen">✓</button><button class="rb" data-u="back" aria-label="Zurück">‹</button>`;
+    const inp = row.querySelector('.ux1-in');
+    inp.addEventListener('pointerdown', ev => ev.stopPropagation()); inp.addEventListener('touchstart', ev => ev.stopPropagation(), {passive: true});
+    on(inp, 'keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); ux1S1Text(row); } });
+    setTimeout(() => { try { inp.focus(); inp.select(); } catch (e) {} }, 30);
+  } else if (st.lvl === 'dup') {
+    const n = st.name;
+    row.innerHTML = `<span class="lbl">Neu</span><div class="cp-sc"><button class="rb cp-c" data-u="new">＋ ${esc(partUniq(n, -1))}</button><button class="rb cp-c" data-u="rep">⟳ ${esc(n)} ersetzen</button></div><button class="rb" data-u="back" aria-label="Zurück">‹</button>`;
+  } else {
+    row.innerHTML = `<span class="lbl">Neu</span><div class="ux1-w">` + PART_NAMES.map(n => `<button class="rb cp-c" data-n="${n}">${n}${partNameFree(n) ? '' : ' ▾'}</button>`).join('') +
+      `<button class="rb cp-c" data-u="ed" aria-label="Eigener Name">✎ frei</button></div>`;   // alle Namen sichtbar (wie Zusammenfassen), nichts zu wischen
+  }
+  const p = row.closest('.pop'); if (p && p.isConnected) fangPlace(p);   // die Zeile wechselt die Höhe: das Blatt bleibt unten angelegt
+}
+function ux1S1Tap(row, b) {
+  const st = UX1.s1, u = b.dataset.u;
+  if (b.dataset.n) { const n = b.dataset.n; if (partNameFree(n)) { ux1S1New(n); return; } st.lvl = 'dup'; st.name = n; haptic('tick'); ux1S1Paint(row); return; }
+  if (u === 'new') { ux1S1New(st.name); return; }
+  if (u === 'rep') { ux1S1Replace(st.name); return; }
+  if (u === 'ed') { st.lvl = 'edit'; st.name = ''; ux1S1Paint(row); return; }
+  if (u === 'ok') { ux1S1Text(row); return; }
+  if (u === 'back') { st.lvl = null; st.name = null; ux1S1Paint(row); }
+}
+function ux1S1Text(row) {
+  const inp = row.querySelector('.ux1-in'), v = inp ? inp.value.trim() : '';
+  if (!PART_NAME_RE.test(v)) { if (inp) inp.classList.add('bad'); haptic('snap'); return false; }
+  return ux1S1New(v);
+}
+// [Neu als …]: die eingefangene Fassung wird ein neuer Teil mit diesem Namen (vergeben → „Strophe 2“), ein Undo 'part' (wie s1Accept 'new')
+function ux1S1New(name) {
+  const v = S1.v, i = S1.i; if (!v || !S.parts[i]) return false;
+  partsEnsure(); const k = S.parts.findIndex(x => !x); if (k < 0) { toast('Teil-Leiste voll – erst einen Teil löschen'); return false; }
+  const nm = String(name == null ? '' : name).trim().slice(0, 12) || S.parts[i].name, before = partSnap();
+  const q = deep(v); q.name = partUniq(nm, k); q.color = PART_COLORS[k % PART_COLORS.length];
+  S.parts[k] = normPart(q, k, NT()); S.parts[k].len = partLen(S.parts[k]);
+  pushPartUndo(before, 'Neue Fassung als ' + S.parts[k].name);
+  partsChanged(); S1.v = null; closePop();
+  toast('Neuer Teil ' + S.parts[k].name, {label: 'Rückgängig', fn: () => undo()}); haptic('snap');
+  return {part: k, name: S.parts[k].name};
+}
+// [⟳ Name ersetzen]: der laufende Teil → wie [Teil ersetzen]; ein anderer Teil mit dem Namen bekommt die Fassung (Name, Farbe, Wechsel bleiben)
+function ux1S1Replace(name) {
+  const v = S1.v; if (!v) return false;
+  partsEnsure();
+  const j = S.parts.findIndex(x => x && x.name.toLowerCase() === String(name).toLowerCase());
+  if (j < 0) return ux1S1New(name);
+  if (j === S1.i) return s1Accept('replace');
+  const old = S.parts[j], before = partSnap(), q = deep(v);
+  q.name = old.name; q.color = old.color; q.start = old.start; if (old.st) q.st = deep(old.st);
+  S.parts[j] = normPart(q, j, NT()); S.parts[j].len = partLen(S.parts[j]);
+  pushPartUndo(before, old.name + ': neue Fassung');
+  partsChanged(); S1.v = null; closePop();
+  toast(old.name + ' ersetzt (neue Fassung)', {label: 'Rückgängig', fn: () => undo()}); haptic('snap');
+  return {part: j};
+}
+// 2 · Schleife-Blatt: [Lautsprecher · Mithören beim Wischen · an/aus] (dieselbe Funktion wie der Knopf in der Song-Leiste quer)
+function ux1LoopRow(p) {
+  if (!p) return;
+  const r = el('div', 'ux1-lp'), b = el('button', 'rb sv-scr ux1-scr');
+  const paint = () => { b.classList.toggle('on', SX7.on); b.setAttribute('aria-pressed', String(SX7.on)); b.setAttribute('aria-label', 'Mithören beim Wischen: ' + (SX7.on ? 'an' : 'aus'));
+    b.innerHTML = SX7_SVG + '<span>Mithören beim Wischen</span><b>' + (SX7.on ? 'an' : 'aus') + '</b>'; };
+  paint(); r.appendChild(b); p.appendChild(r);
+  onTap(b, () => { sx7Toggle(); paint(); });
+}
+// 3 · ✕ in Popups: hat ein Popup kein Schließen und beginnt mit einem Titel (h4), kommt oben rechts ein ✕ dazu (nur hochkant sichtbar);
+//     nach einem Neuzeichnen des Popups (innerHTML) kommt es wieder, das Popup bleibt im Bild
+const ux1IsX = b => { const t = (b.textContent || '').trim(), al = b.getAttribute('aria-label') || ''; return !/Löschen|löschen|Entfernen|lösen/.test(al) && (t === '✕' || /schließen/i.test(al)); };
+function ux1PopX(p) {
+  if (!p || !p.isConnected || p._ux1) return;
+  p._ux1 = 1; ux1PopXAdd(p);
+  try { const mo = new MutationObserver(() => { if (p.isConnected && ux1PopXAdd(p)) ux1PopRefit(p); }); mo.observe(p, {childList: true}); p._ux1Mo = mo; } catch (e) {}
+}
+function ux1PopXAdd(p) {
+  const h = p.firstElementChild;
+  if (!h || h.tagName !== 'H4' || p.classList.contains('abg') || p.querySelector(':scope > .ux1-hd')) return false;
+  if ([...p.querySelectorAll('button')].some(ux1IsX)) return false;
+  if (getComputedStyle(p).display !== 'block') return false;
+  const hd = el('div', 'ux1-hd'), b = el('button', 'rb ux1-px', '✕');
+  b.setAttribute('aria-label', 'Schließen'); hd.appendChild(b);
+  onTap(b, () => { if (UI.pop && UI.pop.el === p) closePop(); });
+  for (const ev of ['pointerdown', 'pointerup', 'click']) b.addEventListener(ev, e => e.stopPropagation());   // die Tasten-Logik des Popups sieht diesen Tipp nicht
+  h.classList.add('ux1-h'); p.insertBefore(hd, h);
+  return true;
+}
+function ux1PopRefit(p) {
+  if (p.classList.contains('dock')) popDock(p, parseFloat(p.style.top) <= 0.5 && window.innerHeight - p.offsetHeight > 1);
+  else popFit(p);
+}
+// 4 · iOS-Textfeld-Tastatur: liegt das aktive Feld in einem Popup, rückt das Popup über die Tastatur (und wird dort höchstens so hoch wie
+//     der sichtbare Teil); geht die Tastatur zu, kommt es an seinen Platz zurück. Online-Blatt und Songtext haben ihre eigene Lösung.
+function ux1Kb() {
+  const vv = window.visualViewport; if (!vv) return;
+  const K = UX1.kb, ih = window.innerHeight, top0 = vv.offsetTop || 0, vis = vv.height, hide = Math.max(0, ih - vis - top0), a = document.activeElement;
+  const field = a && (a.tagName === 'TEXTAREA' || (a.tagName === 'INPUT' && !/^(range|file|checkbox|radio|button)$/.test(a.type))) ? a : null;
+  const host = field && hide > 120 && UI.pop && UI.pop.el && UI.pop.el.contains(field) ? UI.pop.el : null;
+  if (K.el && (K.el !== host || !K.el.isConnected)) ux1KbOff();
+  if (!host) return;
+  if (!K.el) { K.el = host; K.st = {top: host.style.top, maxHeight: host.style.maxHeight}; host.classList.add('ux1kb'); }
+  host.style.maxHeight = Math.max(120, Math.round(vis - 8)) + 'px';
+  const h = host.offsetHeight, t = parseFloat(host.style.top) || host.getBoundingClientRect().top;
+  const lo = top0, hi = top0 + vis - h - (host.classList.contains('dock') ? 0 : 4);   // ganz sichtbar: bleibt, wo es ist
+  if (t > hi + .5 || t < lo - .5) host.style.top = Math.round(Math.max(lo, hi)) + 'px';
+  requestAnimationFrame(() => { try { field.scrollIntoView({block: 'nearest'}); } catch (e) {} });
+}
+function ux1KbOff() {
+  const K = UX1.kb, p = K.el; K.el = null; if (!p) return;
+  p.classList.remove('ux1kb');
+  if (K.st) { p.style.maxHeight = K.st.maxHeight; p.style.top = K.st.top; } K.st = null;
+  if (!p.isConnected) return;
+  if (p.classList.contains('fsheet')) fangPlace(p); else if (p.classList.contains('dock')) popDock(p); else popFit(p);
+}
+function ux1KbSoon() { const K = UX1.kb; if (K.raf) return; K.raf = requestAnimationFrame(() => { K.raf = 0; try { ux1Kb(); } catch (e) { logErr(e); } }); }
+try {
+  if (window.visualViewport) { window.visualViewport.addEventListener('resize', ux1KbSoon); window.visualViewport.addEventListener('scroll', ux1KbSoon); }
+  document.addEventListener('focusin', ux1KbSoon); document.addEventListener('focusout', () => setTimeout(ux1KbSoon, 60));
+} catch (e) {}
+const UIX1_API = {
+  ux1S1Row: () => { const r = UI.pop && UI.pop.el && UI.pop.el.querySelector('.ux1-s1'); return r ? [...r.querySelectorAll('button')].map(b => b.textContent.trim()) : null; },
+  ux1S1Pick: (name, mode) => (mode === 'replace' ? ux1S1Replace(name) : ux1S1New(name)),
+  ux1Scrub: on => (on == null ? SX7.on : sx7Toggle(!!on)),
+  ux1Kb: () => ({on: !!UX1.kb.el, top: UX1.kb.el ? UX1.kb.el.style.top : null}),
+};
+/* UIX1-END */
 /* S2 ---------- Zusammenfassen (Nachtrag 5 S2): a mark (Marken-Blatt) or the yellow selection over chained marks (Bereich-Leiste ⋯)
    becomes ONE new part with everything in its range: lanes (also own clips and phases), chords, the song melody recorded there,
    the song voice; the song keeps sounding as it is (only the marks change). One undo group [part, song] ---------- */
@@ -77342,6 +78747,7 @@ Object.assign(SYNQUENZER, vv4bdApi());                      // VV4-B/D
 Object.assign(SYNQUENZER, SX126_API);                       // SX126: Ausblenden, Klinge, Form-Vorlage
 Object.assign(SYNQUENZER, vk2Api());                        // VK2: Mäusekino
 Object.assign(SYNQUENZER, va1Api());                        // VA1: Export, Container, MIDI, Video-Ton
+Object.assign(SYNQUENZER, vr1Api());                        // VR1: Video-Regie mit Ereignissen, Clip „Im Video“, Gerät, Klavier steigt auf
 /* V6A: Test-API (weicher Szenenwechsel). Jede Änderung ist ein Undo-Schritt wie in der Oberfläche */
 function v6aSetState(t, s, st) {
   const tr = S.tracks[t], c = tr && tr.clips[s]; if (!c) throw new Error('Kein Clip: ' + t + '/' + s);
@@ -77951,6 +79357,8 @@ Object.assign(SYNQUENZER, GR1_API);                         // GR1: Groove (Grun
 /* GR1-END */
 Object.assign(SYNQUENZER, LF1_API);                       // LF1: Lauf-Schritte, Richtung, Spielweisen (Test-API)
 Object.assign(SYNQUENZER, {hm1: HM1_API});                  /* HM1: Test-API (Objekt, wird nicht umhüllt) */
+Object.assign(SYNQUENZER, UIX1_API);                        // UIX1: FANG-Teil-Namen, Mithören-Schalter, ✕, Tastatur
+Object.assign(SYNQUENZER, UX2_API);                         // UX2: Ziehen in der Matrix, Einfügen mit Lupe
 const NO_SYNC = new Set(['clipCurves', 'bmcLog', 'bmcState', 'oneScaleOf', 'harmInfo', 'kbScaleNow', 'micCheck', 'micCheckJson', 'micCheckEstimate', 'cloud', 'cloudProjects', 'cloudVersions', 'cloudHandoff', 'state', 'project', 'runtime', 'getClip', 'getParam', 'noteLog', 'voices', 'timeline', 'serialize', 'buildMidi', 'buildZip', 'crc32', 'meter', 'outPitch', 'migrate', 'tapTempo',
   'getSound', 'mods', 'library', 'factory', 'previewState', 'soundEdited', 'fmxView', 'fmxPreview', 'fmxBadge',
   'history', 'projects', 'storage', 'engineInfo', 'getBusFx', 'wake', 'gestures', 'roll', 'rollApi', 'detectKey', 'sceneKey',

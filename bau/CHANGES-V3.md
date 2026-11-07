@@ -1,3 +1,13 @@
+## 4.46.0 — FANG-Teil mit Namen, ✕ überall, Video-Regie mit Ereignissen, Ziehen & Tauschen, North-Kick
+
+- **FANG im laufenden Teil:** das Blatt „Teil überarbeitet“ hat wieder die Namen: Intro, Strophe, Pre, Refrain, Bridge, Break, Outro und „✎ frei“ – ein Tipp legt den neuen Teil an; ist der Name schon vergeben, kommt die zweite Ebene „＋ Strophe 2 | ⟳ Strophe ersetzen“.
+- **✕ hochkant überall erreichbar** (gemessen auf 39 Flächen, 3 iPhone-Größen); Popups haben oben rechts ein ✕, das nicht wegscrollt. **Lautsprecher (Scrubbing)** hochkant nicht mehr über dem Song: SCHLEIFE ▾ → „Mithören beim Wischen“.
+- **Video-Regie mit Ereignissen:** erkennt je Takt Spur setzt ein/aus, neuer Clip, Gesang beginnt, Fill, ◆-Klangfahrt, Teilwechsel, Drop, Transposition – und schneidet dorthin. [Regeln] im Video-Blatt: Ereignis → Ansicht, an/aus, Vorrang. Deine Regie in Teil/Marke gewinnt.
+- **Nichts Erfundenes:** neue Ansicht **Gerät** – Regler nur im echten Editor/auf der echten Platte, mit Fokus-Rahmen auf dem Regler, der sich bewegt. **Im Clip-Blatt: „Im Video: Auto | Gerät | Klavier | Mäusekino | Noten | aus“.** **Klavier:** die Noten steigen jetzt nach oben und lösen sich auf.
+- **Ziehen & Tauschen:** Spur vom linken Rand (Farbbalken) nach rechts ziehen = Reihenfolge; Clip halten bis er wächst → auf leere Zelle = verschieben, auf Clip = tauschen, zweiter Finger = kopieren (Song folgt); Szene am oberen Rand des Szenen-Kopfs ziehen = umsortieren (Song, Teile, Marken folgen). Wisch-Lautstärke und Halten-Solo bleiben.
+- **North:** „manchmal gar nichts“ – nach Neustart der Wiedergabe ging der erste Schlag (meist die Kick) verloren → behoben (auch Perkussionsspur). „manchmal hart“ – die Wellen H1–H6 waren bis zu 16 dB zu laut → begrenzt. Werksklänge bitgleich wie vorher.
+Tests: Regeln, acorn 0 / doppelte Schlüssel 0, Rauchtest grün; FANG/✕ 36/36 + ✕-Messung, Ziehen 41/41, North 10/10, Remix 30/30, Video-Regie bis auf zwei Messpunkte (das neue Popup-✕ ist 40×36 sichtbar, Trefferfläche ≥ 44 px) grün.
+
 ## 4.45.0 — Ton im Video, Export, Fills frei, Gesang natürlicher, Remix, LAUF, Harmonie, Querformat, Konsolidieren
 
 - **Video mit Ton auf dem iPhone:** das iPhone kann Ton nicht selbst kodieren – die App baut das Video jetzt selbst mit Bild und Ton (.mov), spielt in Fotos und jedem Schnittprogramm.
