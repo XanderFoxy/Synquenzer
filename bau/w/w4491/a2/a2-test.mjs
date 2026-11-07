@@ -131,8 +131,8 @@ async function runCase(scen, variant) {
     restoreSong(JSON.parse(keep)); songTidy(S.song); songChanged();
     // ---- Fenster ▶ (der Teil klingt gleich)
     if (r.ext) {
-      const u0 = UNDO.length, mv = A.clipWindowMove(0, 0, 1);
-      out.winMove = mv ? J(part(r.part, RB)) === J(rng0) : 'kein ▶';
+      const u0 = UNDO.length, mv = A.clipWindowMove(0, 0, 1) || A.clipWindowMove(0, 0, -1);   // ▶ (am Ende: ◀)
+      out.winMove = mv ? J(part(r.part, RB)) === J(rng0) : 'kein ◀ ▶'; out.winAt = A.clipWindow(0, 0);
       if (mv) undo(); while (UNDO.length > u0) undo();
     }
     // ---- Speichern / Laden
@@ -213,7 +213,7 @@ for (const scen of SCENS) for (const v of VARS) {
   ok(tag + ' Teil im Song eingefügt klingt wie der Bereich', r.placed, r.placedD);
   ok(tag + ' MIDI-Export: eingefügter Teil = Bereich', midiOk, {mR: mR.map(x => x[0] + '@' + x[1]).join(' '), mP: mP.map(x => x[0] + '@' + x[1]).join(' ')});
   ok(tag + ' Video-Clip „ganz“ ohne LAUF-Plan (wie gespielt)', r.vvPlain || !r.ext, r.vvPlain);
-  if (r.ext) ok(tag + ' Fenster ▶ – Teil klingt gleich', r.winMove === true, r.winMove);
+  if (r.ext) ok(tag + ' Fenster ◀/▶ verschoben – Teil klingt gleich', r.winMove === true, r.winMove);
   ok(tag + ' Speichern/Laden – Teil klingt gleich', r.reload === true, {reload: r.reload, lw: r.reloadLw});
   if (r.err) { ok(tag + ' Regression', false, r.err); continue; }
   ok(tag + ' Zurückholen: Clip ohne Erweiterung, Song gleich', r.back && r.backLw && r.backSong, {back: r.back, lw: r.backLw, song: r.backSong});
@@ -224,7 +224,7 @@ for (const scen of SCENS) for (const v of VARS) {
   ok(tag + ' Clip ziehen (ux2) danach: Teil klingt gleich', r.ux2 && r.ux2.mv && r.ux2Part, r.ux2);
   ok(tag + ' Clip ziehen danach: Zurückholen findet den Clip, Song gleich', r.ux2Back && r.ux2Song, {b: r.ux2Back, s: r.ux2Song});
   if (RT) ok(tag + ' Echtzeit-Gegenprobe (noteLog) = Zeitraffer', r.rtSong && r.rtPart, {song: r.rtSong, part: r.rtPart});
-  if (r.lwKeys) console.log('     lw:', r.lwKeys, 'Fenster', JSON.stringify(r.win));
+  console.log('     ' + tag + ' erweitert: ' + (r.ext ? 'ja' : 'nein') + (r.lwKeys ? ' · lw ' + r.lwKeys + ' · Fenster ' + JSON.stringify(r.win) : ''));
 }
 const fail = res.filter(x => !x.ok);
 console.log('\nA2-Test: ' + (res.length - fail.length) + '/' + res.length + ' OK · errors ' + JSON.stringify(errs.slice(0, 6)));

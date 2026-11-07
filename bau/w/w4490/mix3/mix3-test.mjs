@@ -162,14 +162,135 @@ const U3 = await p.evaluate(async () => { openMarkSheet(S.song.marks[0].id); awa
 await shot('mix3-l-marke.png', 926, 428);
 const UL = await p.evaluate(async () => { closePop(); await new Promise(r => setTimeout(r, 200)); SYNQUENZER.g6Sheet(window.__r2); await new Promise(r => setTimeout(r, 450));
   const bs = [...document.querySelectorAll('.g6sheet button[data-ch1]')], okb = document.querySelector('.g6sheet [data-pe="x"]'), rk = okb && okb.getBoundingClientRect(), x = UI.pop && UI.pop.el && (UI.pop.el.querySelector('.psh-x') || (UI.pop.el._psh && UI.pop.el._psh.querySelector('.psh-x')) || document.querySelector('.psh-x')), rx = x && x.getBoundingClientRect();
-  return {okVis: !!(rk && rk.bottom <= innerHeight && rk.height >= 44), n: bs.length, vis: bs.length === 3 && bs.every(b => { const r = b.getBoundingClientRect(); return r.height >= 44 && r.top >= 0 && r.bottom <= innerHeight; }), x: !!(rx && rx.top >= 0 && rx.bottom <= innerHeight && rx.right <= innerWidth)}; });
+  return {okVis: !!(rk && rk.bottom <= innerHeight && rk.height >= 44), n: bs.length, vis: bs.length >= 3 && bs.every(b => { const r = b.getBoundingClientRect(); return r.height >= 44 && r.top >= 0 && r.bottom <= innerHeight; }), x: !!(rx && rx.top >= 0 && rx.bottom <= innerHeight && rx.right <= innerWidth)}; });
 await shot('mix3-l-chor.png', 926, 428);
-ok('Bedienung: Chor-Blatt hat die Zeile Gesang [Chor sauber] [Refrain groß] [Refrain 2× singen], Tasten ≥ 44 px, [OK] und ✕ sichtbar hochkant und quer', U.chorRow && U.chorRow.length === 3 && U.chorRow.every(b => b.h >= 44 && b.vis) && U.chorFits && U.okVis && UL.vis && UL.x && UL.okVis, {U, UL});
+ok('Bedienung: Chor-Blatt hat die Zeile Gesang [Chor sauber] [Refrain groß] [Refrain 2× singen], Tasten ≥ 44 px, [OK] und ✕ sichtbar hochkant und quer', U.chorRow && U.chorRow.length >= 3 && U.chorRow.slice(0, 3).map(b => b.t).join('|') === 'Chor sauber|Refrain groß|Refrain 2× singen' && (U.chorRow.length === 3 || /^A\/B/.test(U.chorRow[3].t)) && U.chorRow.every(b => b.h >= 44 && b.vis) && U.chorFits && U.okVis && UL.vis && UL.x && UL.okVis, {U, UL});
 ok('Bedienung: Marken-Blatt eines Refrain-Teils mit [Refrain groß] [Refrain 2× singen] (≥ 44 px), ✕ sichtbar hochkant und quer', U2.mark.length === 2 && U2.mark.every(b => b.h >= 44) && U2.xVisible && U3.xVisibleL, Object.assign({}, U2, U3));
+
+/* ---------- 6) Prüfung (unabhängiger Prüfer): Befunde 9, 7, 6 im selben Projekt (STIMME + Chor, Refrain) ---------- */
+const AB = await p.evaluate(async () => {
+  const wait = ms => new Promise(r => setTimeout(r, ms)), o = {}, r = window.__r2, I = () => SYNQUENZER.mix3.info(), st = stimmeT();
+  try { closePop(); } catch (e) {} await wait(150);
+  const rg = () => { const c = tkRef(r).a.chor; return !!(c && c.grp && c.grp.ch1 && c.grp.ch1.rg); }, sends = () => { const f = fxOfSound(S.tracks[st].sound); return {rev: f.rev, dly: f.dly}; };
+  o.side0 = I().ab; undo(); await wait(200);                        // zurück vor „Refrain groß“ – dann Lead-Sends wie beim Prüfer
+  const f = S.tracks[st].sound.fx; f.rev = 0.25; f.dly = 0.15; applyTrackParams(st, false); markDirty();
+  o.big = await SYNQUENZER.mix3.big(null, null); o.sideB = I().ab; o.rgB = rg(); o.sendsB = sends();
+  o.toA = SYNQUENZER.mix3.ab(); await wait(300); o.sideA = I().ab; o.rgA = rg(); o.sendsA = sends();
+  o.toB = SYNQUENZER.mix3.ab(); await wait(300); o.side2 = I().ab; o.rg2 = rg(); o.sends2 = sends();
+  return o;
+});
+ok('Prüfung 9: A/B „Refrain groß“ = echtes Vorher/Nachher (Chor-Gruppe UND Lead-Sends wie vorher, dann wieder nachher)', AB.side0 === 'B' && AB.big && AB.sideB === 'B' && AB.rgB && AB.toA && AB.sideA === 'A' && !AB.rgA && AB.sendsA.rev === 0.25 && AB.sendsA.dly === 0.15 && AB.toB && AB.side2 === 'B' && AB.rg2 && AB.sends2.rev <= 0.08 && AB.sends2.dly <= 0.04, AB);
+const P7 = await p.evaluate(async () => {
+  const wait = ms => new Promise(r => setTimeout(r, ms)), o = {}, r = window.__r2;
+  await SYNQUENZER.g6pWait(r); stop(); await wait(200); R.selS = r.s; SYNQUENZER.mix3.src('live'); SYNQUENZER.mx2Sheet(); await wait(200); play(); await wait(600);
+  o.way = await SYNQUENZER.mx2Way('mix'); o.voc = SYNQUENZER.mix3.info().voc; o.T = MIXA.res ? MIXA.res.T.map(t => t.name + ':' + t.cls) : null;
+  await wait(200); const row = [...document.querySelectorAll('.mx2s .mx3g .mx2fr small')].map(x => x.textContent); o.row = row;
+  stop(); return o;
+});
+ok('Prüfung 7: Mischen live misst den Chor als eigene Rolle (Lead nach dem Regler ↔ Chor-Gruppen-Bus), Abstand im Blatt', P7.way && P7.voc && P7.voc.lead != null && P7.voc.chor != null && P7.voc.d != null && P7.voc.pieces >= 0 && P7.row.some(t => /gemessen .* dem Lead/.test(t)), P7);
+const P6 = await p.evaluate(async () => {
+  const wait = ms => new Promise(r => setTimeout(r, ms)), o = {};
+  const b = document.querySelector('.mx2s button[data-x2="asst"]'); o.label = b && b.textContent.trim();
+  b.scrollIntoView({block: 'center'}); b.click();
+  for (let n = 0; n < 300; n++) { await wait(100); if (!MIXA.busy && document.querySelector('.mx2s .mx3sg')) break; }
+  stop(); await wait(300);
+  o.pop = UI.pop && UI.pop.name; o.rows = document.querySelectorAll('.mx2s .mx3sg .mx3sgi').length;
+  const ob = document.querySelector('.mx2s .mx3sg button[data-x2="x3sg"]:not([data-v])'); const u0 = UNDO.length;
+  if (ob) { ob.scrollIntoView({block: 'center'}); ob.click(); await wait(300); }
+  o.applied = UNDO.length - u0; o.label2 = UNDO[UNDO.length - 1] && UNDO[UNDO.length - 1].label; o.pop2 = UI.pop && UI.pop.name;
+  o.small = [...document.querySelectorAll('.mx2s .mx3sg button')].filter(x => x.getBoundingClientRect().height && x.getBoundingClientRect().height < 44).length;
+  return o;
+});
+await p.screenshot({path: path.join(out, 'mix3-p-vorschlaege.png')});
+const P6b = await p.evaluate(async () => {
+  const wait = ms => new Promise(r => setTimeout(r, ms)), o = {};
+  const e = document.querySelector('.mx2s button[data-x2="eq"]'); e.scrollIntoView({block: 'center'}); e.click(); await wait(500);
+  o.eqOpen = UI.pop && UI.pop.name; const m = UI.pop && UI.pop.el.querySelector('button[data-a="mix"]'); if (m) m.click(); await wait(500);
+  o.after = UI.pop && UI.pop.name; o.dock = PSH.dock ? PSH.dock.name : null; o.focus = (document.querySelector('.mx2s .mx2w .mx3f') || {dataset: {}}).dataset.v || null;
+  SYNQUENZER.mx2Close(); await wait(300); mx1EqSheet(0); await wait(400); const m2 = UI.pop && UI.pop.el.querySelector('button[data-a="mix"]'); if (m2) m2.click(); await wait(500);
+  o.after2 = UI.pop && UI.pop.name; o.mixa = !!(UI.pop && UI.pop.name === 'mixa');
+  SYNQUENZER.mx2Close(); await wait(200); SYNQUENZER.mix3.src('auto');
+  return o;
+});
+ok('Prüfung 6: [Vorschläge je Spur] (vorher Mix-Assistent …) bleibt im einen Blatt – Vorschläge je Spur mit [Übernehmen] (ein ↶), ≥ 44 px', P6.label === 'Vorschläge je Spur' && P6.pop === 'mx2' && P6.rows > 0 && P6.applied === 1 && /^Mix: /.test(P6.label2 || '') && P6.pop2 === 'mx2' && P6.small === 0, P6);
+ok('Prüfung 6: [Mix-Assistent] im EQ · KOMP-Blatt öffnet das eine Blatt (aus dem Blatt heraus und aus FX › SPUR), nie das alte', P6b.eqOpen === 'mx1eq' && P6b.after === 'mx2' && !P6b.dock && P6b.focus === 'mix' && P6b.after2 === 'mx2' && !P6b.mixa, P6b);
 // Speichern/Laden: die neuen Felder bleiben (additiv), Auto-Nachführen aus bleibt aus
 const RT = await p.evaluate(async () => { try { closePop(); } catch (e) {} const j = serialize(); importJSON(j); await new Promise(r => setTimeout(r, 600)); const am = S.fxBus.am, tk = Object.values(S.takes || {}).find(m => m.ch1), c = tkRef(window.__r2); return {amMx3: am ? am.mx3 || null : null, takeCh1: tk ? tk.ch1 : null, rg: !!(c && c.a.chor && c.a.chor.grp.ch1 && c.a.chor.grp.ch1.rg)}; });
 ok('Speichern/Laden: fxBus.am.mx3 = {af: 0}, take.ch1 und chor.grp.ch1 bleiben (additiv)', RT.amMx3 && RT.amMx3.af === 0 && RT.takeCh1 && RT.takeCh1.al === 1 && RT.rg, RT);
+
+/* ---------- 7) Prüfung: Auto-Nachführen (Befunde 1–5, 8) in einem frischen Projekt ---------- */
+const p2 = await b.newPage({viewport: {width: 428, height: 926}});
+p2.on('pageerror', e => errs.push('p2 ' + String(e))); p2.on('console', m => { if (m.type() === 'error') errs.push('p2 ' + m.text()); });
+await p2.goto('file://' + path.resolve(file)); await p2.waitForTimeout(1500);
+const Q = await p2.evaluate(async () => {
+  const o = {}, wait = ms => new Promise(r => setTimeout(r, ms)), I = () => SYNQUENZER.mix3.info();
+  const until = async (f, ms) => { const T = performance.now(); while (performance.now() - T < ms) { if (f()) return true; await wait(100); } return false; };
+  const vol = (i, dB) => { const fx = S.tracks[i].sound.fx, v = fx.vol == null ? 0.8 : fx.vol; fx.vol = +Math.min(1, v * Math.pow(10, dB / 40)).toFixed(4); applyTrackParams(i, false); markDirty(); };
+  SYNQUENZER.loadDemo(); ensureAudio(); await wait(500); o.noSong = !S.song || !S.song.bars;
+  R.selS = 0; play(); await wait(500); SYNQUENZER.mx2Sheet(); await wait(200); SYNQUENZER.mix3.src('auto');
+  o.way = await SYNQUENZER.mx2Way('am'); await wait(1200);
+  const stx = document.querySelector('.mx2s .mx2st'); o.status = stx ? stx.textContent : null; o.src = I().cacheSrc; o.base = I().base;
+  SYNQUENZER.mx2Close(); SYNQUENZER.mix3.deb(1500); await wait(1500);
+  // Befund 1: Stumm ist keine Änderung; eine echte Änderung wartet, solange Stumm anders ist
+  let f0 = I().follows, g0 = S.fxBus.am.gain; const muted = [];
+  S.tracks.forEach((t, i) => { if (i && !t.mute && !t.stimme) { t.mute = true; muted.push(i); try { applyTrackParams(i, false); } catch (e) {} } }); markDirty(); UI.dirty.all = true;
+  await wait(4500); o.mute = {n: muted.length, follows: I().follows - f0, pending: I().pending, dGain: +(S.fxBus.am.gain - g0).toFixed(2)};
+  vol(0, 2); await wait(4000); o.muteWait = {follows: I().follows - f0, pending: I().pending, wait: I().wait};
+  muted.forEach(i => { S.tracks[i].mute = false; try { applyTrackParams(i, false); } catch (e) {} }); markDirty(); UI.dirty.all = true;
+  await until(() => I().follows > f0 && I().rampK >= 1 && !I().busy, 25000); o.unmute = {follows: I().follows - f0, dG: I().last && I().last.dG, dGain: +(S.fxBus.am.gain - g0).toFixed(2)};
+  // Befund 1: höchstens ±2 dB je Nachführen (alle Spuren −12 dB)
+  f0 = I().follows; g0 = S.fxBus.am.gain; S.tracks.forEach((t, i) => { if (t.sound && t.sound.fx) vol(i, -12); });
+  await until(() => I().follows > f0 && I().rampK >= 1 && !I().busy, 25000); o.cap = {follows: I().follows - f0, dGain: +(S.fxBus.am.gain - g0).toFixed(2), capped: !!(I().last && I().last.capped)};
+  S.tracks.forEach((t, i) => { if (t.sound && t.sound.fx) vol(i, 12); }); f0 = I().follows;
+  await until(() => I().follows > f0 && I().rampK >= 1 && !I().busy, 25000);
+  // Befund 2: „Selbst singen“ wird während der Messung scharf → nichts übernommen, kein Gleiten; danach misst es
+  await wait(500); f0 = I().follows; let d0 = I().drops; g0 = S.fxBus.am.gain; vol(1, -4);
+  await until(() => I().busy, 10000); await wait(2000); G6.arm = {k: 0, t: 0, s: 0, test: 1};
+  await until(() => !I().busy, 15000); await wait(2500);
+  o.rec = {follows: I().follows - f0, drops: I().drops - d0, pending: I().pending, wait: I().wait, dGain: +(S.fxBus.am.gain - g0).toFixed(3), ramp: I().rampK};
+  G6.arm = null; await until(() => I().follows > f0 && I().rampK >= 1 && !I().busy, 20000); o.recAfter = {follows: I().follows - f0};
+  // Befund 3: Änderung spät in der laufenden Messung → wird nachgemessen
+  await wait(500); f0 = I().follows; d0 = I().drops; vol(2, -4);
+  await until(() => I().busy, 10000); await wait(6000); vol(3, 6);
+  await until(() => !I().busy, 10000); await wait(300); o.late1 = {follows: I().follows - f0, drops: I().drops - d0, pending: I().pending};
+  await until(() => I().follows > f0 && I().rampK >= 1 && !I().busy, 25000); await wait(500);
+  o.late2 = {follows: I().follows - f0, pending: I().pending, sigSame: SYNQUENZER.mix3.sig() === MX3.sig0};
+  // Befund 5: Projekt laden (nichts geändert) + ▶ → kein Nachführen, Master bleibt
+  stop(); await wait(400); const jB = serialize(); importJSON(jB); await wait(2000);
+  f0 = I().follows; g0 = S.fxBus.am.gain; o.load = {pending: I().pending}; R.selS = 0; play(); await wait(7000);
+  o.load.follows = I().follows - f0; o.load.dGain = +(S.fxBus.am.gain - g0).toFixed(3); stop();
+  return o;
+});
+ok('Prüfung 8: ohne Song nach live [Mastern] kein „erst ● SONG“ – der Status passt zu „Messen aus: Live“', Q.way && Q.noSong && Q.src === 'live' && Q.status && !/Noch kein Song/.test(Q.status) && /Live gemessen/.test(Q.status), {status: Q.status, noSong: Q.noSong});
+ok('Prüfung 1: Stumm/Solo löst kein Nachführen aus; eine Änderung wartet, solange Stumm anders ist als beim Messen; danach misst es', Q.mute.n >= 3 && Q.mute.follows === 0 && !Q.mute.pending && Q.mute.dGain === 0 && Q.muteWait.follows === 0 && Q.muteWait.pending && Q.muteWait.wait === 'mute' && Q.unmute.follows === 1 && Math.abs(Q.unmute.dG) < 1.5, {mute: Q.mute, muteWait: Q.muteWait, unmute: Q.unmute});
+ok('Prüfung 1: höchstens ±2 dB je Nachführen (alle Spuren −12 dB → +2,0 dB, nicht +12)', Q.cap.follows === 1 && Q.cap.dGain > 1.5 && Q.cap.dGain <= 2.001 && Q.cap.capped, Q.cap);
+ok('Prüfung 2: Aufnahme beginnt während der Messung → nichts übernommen, kein Gleiten; misst nach der Aufnahme', Q.rec.follows === 0 && Q.rec.drops === 1 && Q.rec.pending && Q.rec.wait === 'rec' && Q.rec.dGain === 0 && Q.recAfter.follows === 1, {rec: Q.rec, recAfter: Q.recAfter});
+ok('Prüfung 3: Änderung während der laufenden Messung geht nicht verloren (verworfen, nachgemessen)', Q.late1.follows === 0 && Q.late1.drops === 1 && Q.late1.pending && Q.late2.follows === 1 && !Q.late2.pending && Q.late2.sigSame, {late1: Q.late1, late2: Q.late2});
+ok('Prüfung 5: Projekt laden + ▶ ohne Änderung → kein Nachführen, Master unverändert', !Q.load.pending && Q.load.follows === 0 && Q.load.dGain === 0, Q.load);
+// Befund 4: Song-Master (Messen aus: Song) → Nachführen nur über die Pegeldifferenz derselben Takte, wartet in der Matrix
+const Q4 = await p2.evaluate(async () => {
+  const o = {}, wait = ms => new Promise(r => setTimeout(r, ms)), I = () => SYNQUENZER.mix3.info();
+  const until = async (f, ms) => { const T = performance.now(); while (performance.now() - T < ms) { if (f()) return true; await wait(100); } return false; };
+  SYNQUENZER.loadDemo(); ensureAudio(); await wait(500);
+  const padT = S.tracks.findIndex(t => /Synth 3/.test(t.name)), sQ = 7;
+  S.tracks.forEach((t, i) => { t.clips[sQ] = i === padT && t.clips[0] ? deep(t.clips[0]) : null; }); markDirty(); UI.dirty.all = true;
+  SYNQUENZER.songFromChain([{scene: sQ, bars: 8}, {scene: 0, bars: 8}]);
+  stop(); SYNQUENZER.mx2Sheet(); await wait(300); SYNQUENZER.mix3.src('song');
+  o.way = await SYNQUENZER.mx2Way('am'); o.base = I().base; o.src = I().cacheSrc;
+  await wait(1500); SYNQUENZER.mx2Close(); SYNQUENZER.mix3.deb(1500); await wait(1500); const am0 = deep(S.fxBus.am); o.g0 = am0.gain;
+  // Matrix läuft: eine Änderung wartet auf den Song (kein 4-Takte-Ersatz)
+  R.selS = 0; play(); await wait(400); const f0 = I().follows;
+  const fx = S.tracks[padT].sound.fx, v0 = fx.vol == null ? 0.8 : fx.vol; fx.vol = Math.min(1, v0 * Math.pow(10, 0.5 / 40)); applyTrackParams(padT, false); markDirty();
+  await wait(4500); o.matrix = {follows: I().follows - f0, pending: I().pending, wait: I().wait, gain: S.fxBus.am.gain};
+  stop(); await wait(300); SYNQUENZER.songPlay(0);
+  await until(() => I().follows > f0 && I().rampK >= 1 && !I().busy, 30000);
+  o.song = {follows: I().follows - f0, last: I().last, cap: I().lastCap, gain: S.fxBus.am.gain, same: ['thr', 'ra', 'lo', 'hi', 'at', 'rl', 'ceil'].every(k => S.fxBus.am[k] === am0[k]) && JSON.stringify(S.fxBus.am.mb) === JSON.stringify(am0.mb), base: I().base};
+  SYNQUENZER.songPlay(false); stop(); SYNQUENZER.mix3.src('auto');
+  return o;
+});
+ok('Prüfung 4: Song-Master bleibt beim Song – in der Matrix wartet das Nachführen, beim Song nur die Pegeldifferenz derselben Takte (Klang/Kompression bleiben)', Q4.way && Q4.base === 'song' && Q4.matrix.follows === 0 && Q4.matrix.pending && Q4.matrix.wait === 'song' && Q4.matrix.gain === Q4.g0 && Q4.song.follows === 1 && Q4.song.last && Q4.song.last.rel && Math.abs(Q4.song.last.dG) <= 1 && Q4.song.same && Q4.song.base === 'song', Q4);
+await p2.close();
 ok('Keine Fehler in der Konsole', !errs.length, errs.slice(0, 5));
-fs.writeFileSync(path.join(out, 'mix3-test-ergebnis.json'), JSON.stringify({res, L1, L2, L3, C1, C2, U, U2, U3, RT, errs}, null, 1));
+fs.writeFileSync(path.join(out, 'mix3-test-ergebnis.json'), JSON.stringify({res, L1, L2, L3, C1, C2, U, U2, U3, AB, P7, P6, P6b, RT, Q, Q4, errs}, null, 1));
 const bad = res.filter(r => !r.pass).length; console.log((bad ? 'FEHLER ' : 'OK ') + 'gesamt ' + (res.length - bad) + '/' + res.length);
 await b.close(); process.exit(bad ? 1 : 0);
