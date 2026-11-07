@@ -66817,7 +66817,7 @@ function mx3PaintSoon() { if (MX3.paintT) return; MX3.paintT = setTimeout(() => 
 const mx3Ago = t => { const s = Math.max(0, Math.round((Date.now() - t) / 1000)); return s < 60 ? 'vor ' + s + ' s' : 'vor ' + Math.round(s / 60) + ' min'; };
 // nach mx2Paint: Zeile „Messen aus … · Auto-Nachführen“, hervorgehobener Weg, Pegel je Spur (dB wie Spurkopf), Gesang-Zeilen
 function mx3Paint(p, c) {
-  if (!c || !c.isConnected && !p) return;
+  if (!c) return;
   c.querySelectorAll('.mx3row,.mx3g,.mx3st').forEach(e => e.remove());
   const busy = !!MIXA.busy, live = mx3UseLive(), cache = MX2.cache, am = S.fxBus.am, auto = mx3AutoOn(), can = !!(am && am.on && am.mx2);
   const seg = MX3_SRC.map(([l, v]) => `<button class="mbtn rb" data-x2="x3src" data-v="${v}"${MX3.src === v ? ' aria-pressed="true"' : ''}${busy ? ' disabled' : ''}>${esc(l)}</button>`).join('');
@@ -66873,8 +66873,10 @@ const CH1_RG = Object.freeze({style: null, label: 'Refrain groß', sub: '80er-Po
 function ch1Refrain(mid) {
   const st = stimmeT(); if (st < 0) return [];
   const song = S.song, marks = song && Array.isArray(song.marks) ? song.marks.filter(m => (mid ? m.id === mid : CH1_RE.test(markLabel(m) || ''))) : [], out = [];
+  const sc0 = new Set(marks.map(m => /^S(\d+)$/.exec(m.part || '')).filter(Boolean).map(q => +q[1] - 1));   // Song-Teil aus einer Szene: deren Clip-Stelle
   for (const p of g6pPlaces(st)) {
     if (p.r.vox) { const v = p.a, b0 = v.bar | 0, b1 = b0 + Math.max(1, v.len | 0); if (marks.some(m => b0 < m.a + m.len && b1 > m.a)) out.push(p); }
+    else if (sc0.has(p.r.s)) out.push(p);
     else if (!mid) { const sc = S.scenes[p.r.s]; if (sc && CH1_RE.test(sc.name || '')) out.push(p); }
   }
   return out;
@@ -66954,7 +66956,7 @@ async function ch1Clean(r) {
   const places = (cur && cur.a ? [cur] : g6pPlaces(st)).filter(p => p.a && p.a.chor && p.a.chor.v === 2);
   if (!places.length) { toast('Erst einen Chor wählen (Chor-Blatt › Stil)'); return false; }
   CH1.busy = 'clean'; g6SheetPaintSafe();
-  const n0 = UNDO.length, tb = JSON.stringify(S.takes || {}), mb = mixaSnap(), stats = [], ids = new Set();
+  const n0 = UNDO.length, tb = JSON.stringify(S.takes || {}), stats = [], ids = new Set();
   try {
     for (const p of places) {
       for (const {v} of ch1OwnVoices(p.a)) {
@@ -66985,7 +66987,7 @@ async function ch1Clean(r) {
     const al = stats.filter(s => s.n), d0 = al.length ? al.reduce((s, x) => s + x.d0, 0) / al.length : 0, d1 = al.length ? al.reduce((s, x) => s + x.d1, 0) / al.length : 0;
     CH1.last = {op: 'clean', places: places.length, voices: ids.size, stats, d0: +d0.toFixed(1), d1: +d1.toFixed(1)};
     toast('Chor sauber' + (ids.size ? ' · ' + ids.size + (ids.size === 1 ? ' eigene Stimme' : ' eigene Stimmen') + (al.length ? ' im Timing ±' + Math.round(d0) + ' → ±' + Math.round(d1) + ' ms' : '') : '') + ' · tiefer Schnitt, Zischlaute, Tiefe');
-    void mb; return true;
+    return true;
   } catch (e) { logErr(e); toast('Chor sauber: ' + (e && e.message || e)); return false; }
   finally { CH1.busy = null; g6SheetPaintSafe(); }
 }
