@@ -95,7 +95,8 @@ await p.evaluate(() => { const n = S.tracks[0].clips[0].notes[1]; window.__lk = 
 const ratio = R1.cent.map((c, k) => +(c / R0.cent[k]).toFixed(3)), rest = ratio.filter((r, k) => k % 8 !== 1);
 ok('Render (Song als Audio = Export-Weg): nur Schritt 3 (in beiden Takten) klingt anders – Spektralschwerpunkt mit/ohne Lock', ratio[1] > 3 && ratio[9] > 3 && rest.every(r => Math.abs(r - 1) < .05), {mitLockHz: R1.cent, ohneLockHz: R0.cent, verhaeltnis: ratio, hfDbMit: R1.hf, hfDbOhne: R0.hf});
 
-/* ---------- 3) ↶ / ↷ und Speichern / Laden ---------- */
+/* ---------- 3) Speichern / Laden ---------- */
+const Rpre = await spec();
 const U3 = await p.evaluate(async () => {
   const o = {}; const lk = () => { const n = S.tracks[0].clips[0].notes[1]; return n.lk && n.lk.v ? n.lk.v.cutoff : null; };
   o.before = lk();
@@ -106,7 +107,7 @@ const U3 = await p.evaluate(async () => {
 });
 ok('Speichern/Laden: der Lock steht in der Datei (nur an Note 2) und kommt gleich zurück', U3.inFile && U3.inFile.v && U3.inFile.v.cutoff === U3.before && !U3.inFileOthers && U3.imp && U3.loaded === U3.before && U3.others === 0, {inFile: U3.inFile, loaded: U3.loaded});
 const R2 = await spec();
-ok('nach dem Laden klingt der Render gleich (Schritt 3 hell)', Math.abs(R2.cent[1] - R1.cent[1]) <= R1.cent[1] * .02 && Math.abs(R2.cent[0] - R1.cent[0]) <= R1.cent[0] * .02, {vorher: [R1.cent[0], R1.cent[1]], nachher: [R2.cent[0], R2.cent[1]]});
+ok('nach dem Laden klingt der Render gleich (alle 16 Schritte ±2 %, Schritt 3 hell)', R2.cent.every((c, k) => Math.abs(c - Rpre.cent[k]) <= Rpre.cent[k] * .02) && R2.cent[1] > 3 * R2.cent[0], {vorher: Rpre.cent, nachher: R2.cent});
 // Lock-Leiste: ✕ am Chip löscht nur diesen Lock (ein ↶), „Locks löschen“ alle
 const C3 = await p.evaluate(async () => {
   const o = {}; ROLLP.view = 'lauf'; openRoll(0, 0); await new Promise(r => setTimeout(r, 300));

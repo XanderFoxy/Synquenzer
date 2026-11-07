@@ -1,0 +1,20 @@
+import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
+const [file] = process.argv.slice(2);
+const b = await chromium.launch({args: ['--autoplay-policy=no-user-gesture-required']});
+const p = await b.newPage({viewport: {width: 428, height: 926}});
+await p.goto('file://' + file); await p.waitForTimeout(1500);
+const r = await p.evaluate(async () => {
+  stop(); SYNQUENZER.loadDemo(); ensureAudio();
+  for (let t = 0; t < NT(); t++) if (S.tracks[t]) for (let s = 0; s < NS(); s++) if (t !== 0) S.tracks[t].clips[s] = null;
+  S.tracks[0].clips[0] = {len: 1, key: {root: 0, scale: 'ionian', src: 'user'}, notes: [0, .5, 1, 1.5, 2, 2.5, 3, 3.5].map(t => ({t, d: .2, n: 48, v: .8}))};
+  setP(0, 'fx.rev', 0); setP(0, 'fx.dly', 0); for (let t = 0; t < NT(); t++) clipChanged(t, 0);
+  const spec = async () => { stop(); SYNQUENZER.songFromChain([{scene: 0, bars: 2}]); VV.cancel = false; const r = await vvRenderAudio({range: {a: 0, b: 2}}), x = r.ch[0], sr = r.sr || AU.ctx.sampleRate;
+    let on = 0; while (on < x.length && Math.abs(x[on]) < .004) on++; const sp = 60 / S.bpm * .5, out = [];
+    for (let k = 0; k < 4; k++) { const s0 = on + Math.round((k * sp + .004) * sr); let e = 0, d = 0; for (let i = 1; i < 2048; i++) { const a = x[s0 + i], q = a - x[s0 + i - 1]; e += a * a; d += q * q; } out.push(+(d / e * 1000).toFixed(2)); } return out; };
+  const o = {}; o.clean = await spec(); o.clean2 = await spec();
+  SYNQUENZER.pl1.set(0, 0, [1], 'cutoff', 20000); o.lock = await spec(); o.lock2 = await spec();
+  SYNQUENZER.pl1.clear(0, 0, [1]); o.after = await spec(); o.after2 = await spec();
+  o.songOwn = S.song && S.song.own ? Object.keys(S.song.own).length : 0;
+  return o;
+});
+console.log(JSON.stringify(r)); await b.close();
