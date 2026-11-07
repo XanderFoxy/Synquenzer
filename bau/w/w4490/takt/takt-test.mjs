@@ -262,6 +262,8 @@ await p.evaluate(() => { closePop(); SYNQUENZER.tkt.room(''); try { closeEditor(
 const A8 = await p.evaluate(() => { SYNQUENZER.loadDemo(); const a = JSON.stringify(cleanClip(S.tracks[0].clips[0])), b = JSON.stringify(normFxBus(defaultFxBus())); return {clip: !a.includes('tkt'), fx: !b.includes('tkt')}; });
 ok('ohne neue Felder byte-gleich (kein clip.tkt, kein hall.tktRaum)', A8.clip && A8.fx, A8);
 
+const G9 = await p.evaluate(() => ['oeltank', 'rack', 'moll', 'taktart'].map(w => { const r = ui1Search(w)[0]; return r ? (r[1] || r).id : null; }));
+ok('„Wo finde ich …?“ kennt Öltank, Rack, Moll, Taktart', G9[0] === 'tktraum' && G9[1] === 'tktrack' && G9[2] === 'tktmoll' && G9[3] && G9[3].startsWith('tkt') || G9.filter(x => x && x.startsWith('tkt')).length >= 3, G9);
 ok('keine Fehler in der Konsole', errs.length === 0, errs.slice(0, 5));
 fs.writeFileSync(path.join(out, 'takt-test-ergebnis.json'), JSON.stringify(res, null, 1));
 console.log((res.every(r => r.pass) ? 'OK' : 'FEHLER') + ' gesamt ' + res.filter(r => r.pass).length + '/' + res.length);

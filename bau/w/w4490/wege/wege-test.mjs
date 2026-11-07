@@ -58,7 +58,7 @@ const byText = (sel, txt) => [...document.querySelectorAll(sel)].find(x => x.off
 async function touch(p, type, x, y) { await p._cdp.send('Input.dispatchTouchEvent', {type, touchPoints: type === 'touchEnd' ? [] : [{x, y, radiusX: 4, radiusY: 4, force: 1, id: 1}]}); }
 async function drag(p, x0, y0, x1, y1, n) { await touch(p, 'touchStart', x0, y0); for (let k = 1; k <= n; k++) { await touch(p, 'touchMove', x0 + (x1 - x0) * k / n, y0 + (y1 - y0) * k / n); await p.waitForTimeout(30); } await touch(p, 'touchEnd'); await p.waitForTimeout(250); }
 async function hold(p, x, y, ms) { await touch(p, 'touchStart', x, y); await p.waitForTimeout(ms); await touch(p, 'touchEnd'); await p.waitForTimeout(250); }
-const zone = () => { try { if (typeof hideToast === 'function') hideToast(); } catch (e) {} const r = SV.wrap.getBoundingClientRect(); let y = r.top + Math.round(SV.rulerH * .5); for (let d = 3; d < SV.rulerH - 1; d++) { const e = document.elementFromPoint(r.left + 14, r.top + d); if (e === SV.cv) { y = r.top + d; break; } } return {x: r.left + 14, y, cw: SV.cellW, pos: SV.pos}; };
+const zone = () => { try { if (typeof hideToast === 'function') hideToast(); } catch (e) {} const r = SV.wrap.getBoundingClientRect(); let y = r.top + Math.round(SV.rulerH * .5); for (let d = Math.max(7, Math.round((SV.rulerH - SV.vvS) * .5)); d < SV.rulerH - 1; d++) { const e = document.elementFromPoint(r.left + 14, r.top + d); if (e === SV.cv) { y = r.top + d; break; } } return {x: r.left + 14, y, cw: SV.cellW, pos: SV.pos}; };
 const shot = (p, n) => p.screenshot({path: path.join(out, n)});
 const xSees = () => [...document.querySelectorAll('.pop .ms-x, .pop .sh-x, .pop [aria-label="Schließen"]')].some(x => { const r = x.getBoundingClientRect(); return x.offsetParent && r.width >= 40 && r.height >= 30 && r.top >= 0 && r.bottom <= innerHeight && r.right <= innerWidth; });
 
@@ -192,7 +192,6 @@ try {
   await run(p, () => { SV.x = 0; window.SYNQUENZER.songPos(0); window.SYNQUENZER.songSelect(null); SV.sel = null; svDraw(true); });
   await p.waitForTimeout(200);
   await p.waitForTimeout(400); const g = await p.evaluate(zone);
-  console.log('DBG', JSON.stringify(g), JSON.stringify(await p.evaluate(() => ({gOn: SV.gOn, DRG: typeof DRG !== 'undefined' && !!DRG, pl: R.playing, rec: R.songRec, pinch: SV.pinch, ru: SV.rulerH, xp: songStartBar() * SV.cellW - SV.x, blS: SV.blS, vvS: SV.vvS, cut: vd3CutOn(), sx: SV.x, top: SV.wrap.getBoundingClientRect().top}))));
   await drag(p, g.x, g.y, g.x + g.cw * 3.2, g.y + 2, 12);
   const SC = await p.evaluate(() => ({pos: SV.pos, last: window.SYNQUENZER.wege.lastScrub(), sx7: SX7.n}));
   ok(SC.pos === Math.round((14 + g.cw * 3.2) / g.cw) && SC.last && SC.last.n >= 3, 'D11: ▼-Marke ziehen (Finger): Marke auf Takt ' + (SC.pos + 1) + ', ' + (SC.last ? SC.last.n : 0) + ' Schläge angeklungen – ohne Schalter', 'Lautsprecher-Knopf weg');

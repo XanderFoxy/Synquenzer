@@ -83812,6 +83812,16 @@ function tktFxPage(pg, sub, i) {
     document.head.appendChild(s);
   } catch (e) {}
 })();
+/* ---------- „Wo finde ich …?“ (UI1): vier Einträge ans Ende der Liste ---------- */
+(function tktGuide() {
+  try {
+    const L = ui1Entries(), G = ui1G, E = (id, n, w, d, s, go, q) => ({id, n, w, d, s, go, q}); if (L.some(x => x.id === 'tktrack')) return;
+    L.push(E('tktrack', 'Effekt-Rack', 'Klang › FX › [RACK]', 'Hall, Echo, Chorus, EQ · KOMP und Master als Geräte: An/Aus-LED, Haupt-Regler, Pegel live.', 'rack effekte geraete effektgeraete hall echo chorus eq komp master', G.ed('fx', 'spur'), '.tktrk'),
+      E('tktraum', 'Hall-Raum / Öltank', 'Klang › FX › HALL › [RAUM ▾]', 'Studio, Kammer, Saal, Kirche – oder der Öltank: riesiger Betontank, 8 / 30 / 75 s Nachhall.', 'hall raum oeltank faltung kirche saal kammer studio nachhall', G.ed('fx', 'hall'), '.tktrm'),
+      E('tktmoll', 'Dur ↔ Moll (ganzer Song)', 'Menü › Song › Dur ↔ Moll …', 'Macht eine Moll-Version (oder Dur) – als neue Versionen, A/B, ↶. Drums bleiben.', 'moll dur traurig tonart umwandeln version', ui1SongMenu, 'Dur ↔ Moll …'),
+      E('tkttakt', 'Taktart 3/4 · Clips umwandeln', 'BPM antippen › Taktart · Teilname › Taktart', 'Nach dem Wechsel: [Clips umwandeln] faltet die Clips ins neue Raster (neue Versionen).', 'taktart 3/4 walzer umwandeln falten metronom lauflicht', G.main, '#bBpm'));
+  } catch (e) {}
+})();
 /* ---------- Test-Schnittstelle ---------- */
 const TKT_API = {
   mx: b => { const x = tktMx(b == null ? (R.playing ? t2b(AU.ctx.currentTime) : 0) : b); return x ? Object.assign({}, x) : null; },
