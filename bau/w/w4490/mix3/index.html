@@ -4369,6 +4369,12 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 @media (orientation:landscape) and (max-height:500px){ .g6sheet .ch1low{display:flex;flex-wrap:nowrap;gap:6px} .g6sheet .ch1low>.mbtn{flex:1 1 0;min-width:44px;min-height:44px;padding:0 4px;font-size:11px;white-space:normal;line-height:1.1} }
 .msheet .ch1-ms{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
 .msheet .ch1-ms .ms-b{min-height:44px}
+.ch1row.ch1ab{grid-template-columns:repeat(4,minmax(0,1fr))}
+.mx2s .mx3sg{display:grid;gap:4px;margin:0 0 6px}
+.mx2s .mx3sgi{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;align-items:center}
+.mx2s .mx3sgi .mbtn{min-height:44px;min-width:96px;padding:0 8px}
+.mx2s .mx3sgi.on .small{opacity:.7}
+.mx2s .mx3g .mbtn.mx3f{box-shadow:inset 0 0 0 2px var(--amber),0 0 10px rgba(255,176,0,.35)}
 /* MX3 END */
 .tksheet .clab .mbtn[aria-pressed=true]{box-shadow:inset 0 0 0 2px var(--t8)}
 /* G-GB: Abschnitt „Mit GarageBand aufnehmen“ im STIMME-/Takes-Blatt (Ziele ≥ 44 px) */
@@ -65707,7 +65713,7 @@ function mx1EqSheet(i) {
     onTap(p, b => {
       const a = b.dataset.a;
       if (a === 'off') { const before = mixaSnap(), m = tr.mix && tr.mix.sec ? {sec: tr.mix.sec} : null; if (m) tr.mix = m; else delete tr.mix; if (before !== mixaSnap()) { undoPush({kind: 'mixa', before, label: 'EQ/Komp ' + tr.name + ' aus'}); mixaAfter([i], false); } ks.forEach(x => x.update()); mx1EqCurve(); haptic('tick'); }
-      else if (a === 'mix') { mixaSheet(); haptic('tick'); }
+      else if (a === 'mix') { mx3Open('mix'); haptic('tick'); }   // MX3 (D3): das eine Blatt, Weg Mischen
       else if (a === 'x') closePop();
     }, 'button[data-a]');
   }, {name: 'mx1eq', onClose: () => { MX1.eqI = -1; mx2EqEnd(); try { if (R.editor === 'synth' || R.editor === 'drum') for (const f of ED.refreshers || []) f(); } catch (e) {} }});
@@ -66596,15 +66602,22 @@ const MX2_API = {
      Szenen „Refrain“/„Chorus“/„Hook“) bekommen aus EINER Lead-Aufnahme die Chor-Gruppe G6+ mit dem Rezept CH1_RG: Unisono 3× gedoppelt
      (±5–12 ct, 10–30 ms, L/R breit, formant-erhaltend), Oktave tiefer, Akkordtöne oben (Terz/Quinte aus den Akkorden); dazu am Stück
      (grp.ch1.rg): leise Hauch-Schicht, Parallel-Kompression, Luft (parallel ab 8 kHz), Gated-Plate und Echo-Würfe 1/8 punktiert
-     (Ping-Pong) nur am Zeilenende. Strophe trocken/nah: STIMME-Hall-/Echo-Send klein. Ein ↶; A/B: [Chor an/aus] im Chor-Blatt.
+     (Ping-Pong) nur am Zeilenende. Strophe trocken/nah: STIMME-Hall-/Echo-Send klein. Ein ↶; A/B: [A/B · vorher|nachher] (↶/↷ genau dieses Schritts).
    - [Refrain 2× singen]: zwei Doppel-Spuren (L/R) an der Stelle, „Selbst singen“ für die nächste leere; jede Aufnahme wird automatisch an
      den Lead ausgerichtet (grp.ch1.al, eigener ↶-Schritt „Chor ausgerichtet“).
-   Daten (additiv): fxBus.am.mx3 = {af: 0} (nur „aus“ wird gespeichert), chor.grp.ch1 = {rg?: 1, al?: 1}, take.ch1 = {al: 1, n, d0, d1}.
-   Alte Projekte: ohne diese Felder läuft alles wie vorher. */
+   Daten (additiv): fxBus.am.mx3 = {af?: 0, b?: 's'} (Nachführen aus; Master aus der Song-Messung), chor.grp.ch1 = {rg?: 1, al?: 1}, take.ch1 = {al: 1, n, d0, d1}.
+   Alte Projekte: ohne diese Felder läuft alles wie vorher.
+   MX3-Prüfung (unabhängiger Prüfer, 07.11.): Stumm/Solo (auch Chor aus, Chor-Spur stumm) zählt nicht als Änderung, und das Nachführen wartet,
+   solange Stumm/Solo anders ist als bei der Messung; je Nachführen höchstens ±2 dB Pegel; beginnt eine Aufnahme während der Messung, wird nichts
+   übernommen, während des Gleitens bleibt der Master auf dem Zwischenstand; eine Änderung während der Messung wird nachgemessen; ein Song-Master
+   (am.mx3.b = 's') wird nur über die Pegeldifferenz DERSELBEN Song-Takte nachgeführt (Song-Messung vorher ↔ live jetzt), nie durch 4 Takte
+   ersetzt; anderes Projekt → neue Grundlage; [Mix-Assistent] im Blatt und im EQ · KOMP-Blatt → dieses Blatt, Vorschläge je Spur im Weg Mischen;
+   der Chor wird beim Mischen live als eigene Rolle gemessen (Lead nach dem Regler ↔ Chor-Gruppen-Bus). */
 
 /* ---------- Normalisierer (in sich geschlossen: laufen schon beim Start über mixaNormAm / g6pNormGrp / tkExt) ---------- */
-function mx3NormAmX(a) { const x = a && a.mx3; return x && typeof x === 'object' && x.af === 0 ? {mx3: {af: 0}} : {}; }
-function mx3Keep() { const a = typeof S !== 'undefined' && S && S.fxBus && S.fxBus.am; return a && a.mx3 && a.mx3.af === 0 ? {mx3: {af: 0}} : null; }
+function mx3NormAmX(a) { const x = a && a.mx3; if (!x || typeof x !== 'object') return {}; const o = {}; if (x.af === 0) o.af = 0; if (x.b === 's') o.b = 's'; return Object.keys(o).length ? {mx3: o} : {}; }
+// mx2Master: „aus“ bleibt; b = 's' = dieser Master kommt aus der Song-Messung (dann führt das Nachführen über den Song nach, Prüfung Befund 4)
+function mx3Keep() { const a = typeof S !== 'undefined' && S && S.fxBus && S.fxBus.am, o = {}; if (a && a.mx3 && a.mx3.af === 0) o.af = 0; if (MX2.cache && MX2.cache.src !== 'live') o.b = 's'; return Object.keys(o).length ? {mx3: o} : null; }
 function ch1NormGrp(x) {
   if (!x || typeof x !== 'object' || Array.isArray(x)) return null;
   const o = {}; if (x.rg === 1 || x.rg === true) o.rg = 1; if (x.al === 1 || x.al === true) o.al = 1;
@@ -66618,17 +66631,18 @@ tkExt().take.push((m, o) => {
 
 /* ---------- Zustand ---------- */
 const MX3 = {src: 'auto', busy: false, focus: null, sig0: null, gen: -1, seen: null, tChange: 0, pending: false, iv: 0, last: null, ramp: 0, rampK: 1, rampLog: [],
-  follows: 0, caps: 0, lastCap: null, undoAm: null, deb: 4000, rampMs: 1500, paintT: 0};
+  follows: 0, caps: 0, lastCap: null, undoAm: null, deb: 4000, rampMs: 1500, paintT: 0,
+  mute0: null, S0: null, cacheS: null, wait: null, rel: null, rampP: null, frozen: 0, drops: 0, capDb: 2, sugOn: false, voc: null};   // Prüfung
 const MX3_SRC = [['Auto', 'auto'], ['Song', 'song'], ['Live', 'live']];
 const mx3AutoOn = () => { const a = S.fxBus && S.fxBus.am; return !!(a && a.on && a.mx2 && !(a.mx3 && a.mx3.af === 0)); };
 function mx3RecBusy() { return rec.state !== 'off' || !!R.songRec || !!(typeof SREC !== 'undefined' && SREC.on) || !!(typeof G6 !== 'undefined' && G6.arm) || !!UI.vvOff || !!(VV && VV.busy); }
 function mx3UseLive() { if (MX3.src === 'live') return true; if (MX3.src === 'song') return false; return !S.song || !S.song.bars || (!!R.playing && !R.songPlay); }
-// Zustand, nach dem nachgeführt wird: Klänge, Mix, Stumm, Chor, Clips (Prüfsumme), Hall/Echo/Master-Bus, Song – ohne den Auto-Master selbst
+// Zustand, nach dem nachgeführt wird: Klänge, Mix, Chor (ohne Stumm), Clips (Prüfsumme), Hall/Echo/Master-Bus, Song – ohne den Auto-Master selbst
 function mx3Sig() {
   let h = 0x811c9dc5; const add = s => { for (let j = 0; j < s.length; j++) { h ^= s.charCodeAt(j); h = Math.imul(h, 0x01000193) >>> 0; } };
   try {
     for (const t of S.tracks) {
-      add(JSON.stringify([t.sound, t.mix || null, !!t.mute, t.chor || null]));
+      add(JSON.stringify([t.sound, t.mix || null, mx3ChorNoMute(t.chor)]));
       for (const c of t.clips) {
         if (!c) { add('-'); continue; }
         let q = ((c.len || 0) * 31 + (c.notes ? c.notes.length : 0)) >>> 0;
@@ -66641,6 +66655,30 @@ function mx3Sig() {
   } catch (e) { return String(Math.random()); }
   return h.toString(16);
 }
+// Stumm/Solo (Spur stumm, Solo, Chor aus, Chor-Spur stumm) ist Abhören, keine Änderung: nicht in mx3Sig, eigener Schlüssel (Prüfung Befund 1)
+const mx3ChorNoMute = ch => (ch && typeof ch === 'object' ? Object.assign({}, ch, {mute: undefined, lanes: Array.isArray(ch.lanes) ? ch.lanes.map(l => (l && typeof l === 'object' ? Object.assign({}, l, {mute: undefined}) : l)) : ch.lanes}) : ch || null);
+function mx3MuteKey() {
+  let k = '';
+  S.tracks.forEach((t, i) => { const c = t.chor; k += (t.mute ? 'm' : '-') + (sx4Pass(i) ? '' : 's') + (c && typeof c === 'object' ? (c.mute ? 'c' : '') + (Array.isArray(c.lanes) ? c.lanes.filter(l => l && l.mute).map(l => 'l' + l.id).join('') : '') : '') + '|'; });
+  return k;
+}
+// Grundlage des Masters: 'song' (aus der Song-Messung, am.mx3.b) oder 'live'. Weg des Nachführens: [Live] → live, [Song] → Song, Auto → wie die Grundlage
+const mx3Base = () => { const a = S.fxBus && S.fxBus.am; return a && a.mx3 && a.mx3.b === 's' ? 'song' : 'live'; };
+const mx3Mode = () => (MX3.src === 'live' ? 'live' : MX3.src === 'song' ? 'song' : mx3Base());
+// die Song-Messung (vorher) taugt für die Pegeldifferenz: dieses Projekt, gleiches Tempo
+function mx3RelOk() { const c = MX2.cache; return !!(c && c.src !== 'live' && c.C && c.C.Kf && c.C.H && MX3.cacheS === S && c.bpm === S.bpm && S.song && S.song.bars); }
+// worauf das Nachführen gerade wartet (null = es darf messen)
+function mx3WaitWhy() {
+  if (mx3RecBusy()) return 'rec';
+  if (MX2.ab && mx2Side() === 'A') return 'ab';
+  if (MX3.mute0 != null && mx3MuteKey() !== MX3.mute0) return 'mute';
+  if (mx3Mode() === 'song') return !mx3RelOk() ? 'songm' : !R.playing || !R.songPlay ? 'song' : null;
+  return R.playing ? null : 'play';
+}
+const MX3_WAIT = {rec: 'Änderung erkannt – wartet, bis die Aufnahme fertig ist', ab: 'Änderung erkannt – wartet, solange du A (vorher) hörst',
+  mute: 'Änderung erkannt – wartet, bis Stumm/Solo wieder wie beim Messen ist', play: 'Änderung erkannt – misst beim nächsten ▶',
+  song: 'Mit dem Song gemastert – nachgeführt wird beim Abspielen des Songs (▶ SONG), gleiche Takte vorher/nachher',
+  songm: 'Mit dem Song gemastert – [Mastern] misst den Song neu (die Song-Messung fehlt oder das Tempo ist anders)'};
 
 /* ---------- Live-Mitschnitt (Worklet im MIX-A-Modul): Master-Eingang + bisheriger Weg; mit Mischen die Analyse-Worklets je Spur ---------- */
 function mx3ModSrc() {
@@ -66649,10 +66687,11 @@ class SynqMx3Cap extends AudioWorkletProcessor {
   constructor(o) { super(); const p = (o && o.processorOptions) || {}; this.n = Math.max(128, p.n | 0); this.L = new Float32Array(this.n); this.R = new Float32Array(this.n); this.i = 0; this.done = false; this.port.onmessage = e => { if (e.data && e.data.stop) this.done = true; }; }
   process(inputs) {
     if (this.done) return false;
+    if (this.f0 === undefined) this.f0 = currentFrame;
     const ch = inputs[0], room = this.n - this.i;
     if (!ch || !ch.length) this.i += Math.min(128, room);
     else { const L = ch[0], R = ch.length > 1 ? ch[1] : ch[0], k = Math.min(L.length, room); for (let j = 0; j < k; j++) { const a = L[j], b = R[j]; this.L[this.i + j] = a === a ? a : 0; this.R[this.i + j] = b === b ? b : 0; } this.i += k; }
-    if (this.i >= this.n) { this.port.postMessage({L: this.L, R: this.R}, [this.L.buffer, this.R.buffer]); this.done = true; return false; }
+    if (this.i >= this.n) { this.port.postMessage({L: this.L, R: this.R, f0: this.f0}, [this.L.buffer, this.R.buffer]); this.done = true; return false; }
     return true;
   }
 }
@@ -66683,16 +66722,39 @@ async function mx3Capture(sec, withMix) {
   const got = nd => new Promise((ok, no) => { const T = setTimeout(() => no(new Error('Mitschnitt: keine Antwort')), sec * 1000 + 6000); nd.port.onmessage = e => { clearTimeout(T); ok(e.data); }; });
   const pA = got(pre), pB = got(post);
   M.vol.connect(pre); outN.connect(post);
-  const X = withMix ? mx3MixTaps(c, n) : null;
+  const X = withMix ? mx3MixTaps(c, n) : null, V = withMix ? mx3VocTaps(c, n, opt, sink, got) : null;
   try {
     const [a, b] = await Promise.all([pA, pB]);
     if (X) { const want = Math.floor(n / 512) - 2, W0 = performance.now(); while ((X.nw < want || (X.mx1 && !X.mx1.end)) && performance.now() - W0 < 1500) await sleep(20); }
-    return {L: a.L, R: a.R, aL: b.L, aR: b.R, sr, X};
+    let voc = null; if (V) { try { const [l, h] = await Promise.all([V.pL, V.pC]); voc = {lead: [l.L, l.R], chor: [h.L, h.R], pieces: V.k}; } catch (e) {} }
+    return {L: a.L, R: a.R, aL: b.L, aR: b.R, sr, X, f0: a.f0, voc};
   } finally {
     try { M.vol.disconnect(pre); } catch (e) {} try { outN.disconnect(post); } catch (e) {}
     try { pre.disconnect(); post.disconnect(); sink.disconnect(); } catch (e) {}
-    if (X) X.drop();
+    if (X) X.drop(); if (V) V.drop();
   }
+}
+// Lead (STIMME nach dem Regler) und Chor-Gruppen-Bus getrennt mitschneiden – der Chor ist beim Mischen eine eigene Rolle (Prüfung Befund 7)
+function mx3VocTaps(c, n, opt, sink, got) {
+  const st = stimmeT(), A = st >= 0 ? AU.tracks[st] : null; if (!A || !A.cut) return null;
+  const lead = new AudioWorkletNode(c, 'synq-mx3-cap', opt({n})), chor = new AudioWorkletNode(c, 'synq-mx3-cap', opt({n})), bus = c.createGain(), rv = c.createGain();
+  lead.connect(sink); chor.connect(sink); bus.connect(chor);
+  const V = {pL: got(lead), pC: got(chor), k: 0}, own = !G6PC.tap;
+  try { A.cut.connect(lead); } catch (e) {}
+  if (own) G6PC.tap = {chor: bus, rv};                              // Chor-Stücke, die währenddessen einsetzen, hängen sich selbst an (G6+c)
+  for (const r of TK.src) if (!r.dead && r.chG) { try { r.chG.guide.connect(bus); V.k++; } catch (e) {} }
+  V.drop = () => {
+    if (own && G6PC.tap && G6PC.tap.chor === bus) G6PC.tap = null;
+    try { A.cut.disconnect(lead); } catch (e) {}
+    for (const r of TK.src) if (r.chG) { try { r.chG.guide.disconnect(bus); } catch (e) {} try { r.chG.rev.disconnect(rv); } catch (e) {} }
+    for (const nd of [lead, chor, bus, rv]) { try { nd.disconnect(); } catch (e) {} }
+  };
+  return V;
+}
+function mx3VocMeas(v, sr) {
+  const D = MIXA_D0.v || (MIXA_D0.v = mixaDspMake()), L = x => { try { const q = D.integ(D.kblocks(x, sr)); return isFinite(q) && q > -70 ? +q.toFixed(1) : null; } catch (e) { return null; } };
+  const lead = L(v.lead), chor = L(v.chor), d = lead != null && chor != null ? +(chor - lead).toFixed(1) : null;
+  return {lead, chor, d, pieces: v.pieces, at: Date.now(), sig: mx3Sig(), rec: d == null ? null : d > -3 ? 'leiser' : d < -14 ? 'lauter' : 'ok'};
 }
 // Messen live (gleiche Ergebnis-Form wie mx2Run: MX2.cache, mit Mischen MIXA.res); läuft nichts, startet die Szene (nicht beim Nachführen)
 async function mx3Run(withMix, tag, quiet) {
@@ -66705,11 +66767,14 @@ async function mx3Run(withMix, tag, quiet) {
   const T0 = performance.now(), D = MIXA_D0.v || (MIXA_D0.v = mixaDspMake());
   const pt = setInterval(() => { MIXA.prog = Math.min(0.9, (performance.now() - T0) / 1000 / sec * 0.9); mx2Prog(); }, 200);
   try {
-    const sig = mixaStateSig(), cap = await mx3Capture(sec, withMix), sr = cap.sr;
+    const sig = mixaStateSig(), s0 = mx3Sig(), m0 = mx3MuteKey(), cap = await mx3Capture(sec, withMix), sr = cap.sr;
+    // Prüfung (Befunde 2, 3): beim Nachführen nichts übernehmen, wenn währenddessen geändert wurde oder eine Aufnahme beginnt – es misst nach
+    if (quiet && (mx3Sig() !== s0 || mx3MuteKey() !== m0 || mx3RecBusy())) { MX3.drops++; MX3.sig0 = s0; MX3.mute0 = m0; MX3.gen = -1; return null; }
+    if (cap.voc) MX3.voc = mx3VocMeas(cap.voc, sr);
     if (withMix && cap.X) {
       const X = cap.X, S1 = 1 + X.n * 15, win = new Float32Array(X.nw * S1); let o = 0; for (const ch of X.chunks) { if (o + ch.length > win.length) break; win.set(ch, o); o += ch.length; }
       X.chunks = null;
-      const tracks = S.tracks.map((tr, i) => ({i, name: tr.name, kind: tr.kind, stimme: !!tr.stimme, chor: !!(tr.chor && tr.chor.length), mute: !!tr.mute, ns: mixaNoteStats(i), fx: Object.assign({drive: 0}, fxOfSound(tr.sound)), mix: tr.mix || null})).filter(t => !t.mute);
+      const tracks = S.tracks.map((tr, i) => ({i, name: tr.name, kind: tr.kind, stimme: !!tr.stimme, chor: !!(tr.chor && Array.isArray(tr.chor.lanes) && tr.chor.lanes.length), mute: !!tr.mute, ns: mixaNoteStats(i), fx: Object.assign({drive: 0}, fxOfSound(tr.sound)), mix: tr.mix || null})).filter(t => !t.mute);
       const mxm = mx1Msg(X, {sr});
       const res = await mixaCall({op: 'mix', win, nIn: X.n, wsec: 512 / sr, tracks, secs: [], t0: 0, a0: 0, spb: 60 / bpm, bpm, pumpSrc: S.fxBus.pumpSrc, otherPump: S.tracks.some(t => t.sound && t.sound.fx && t.sound.fx.pump > 0), mx1: mxm}, mxm ? [win.buffer, mxm.win.buffer] : [win.buffer]);
       MIXA.res = Object.assign(res, {sig, at: Date.now(), live: true}); MIXA.done.clear();
@@ -66721,7 +66786,7 @@ async function mx3Run(withMix, tag, quiet) {
     MX2.cache = {sig, key, C, LA, sr, bpm, t0: 0, at: Date.now(), ms: Math.round(performance.now() - T0), featMs: C.ms, src: 'live', sec: +sec.toFixed(2)};
     MX2.stelle = {a: 0, b: Math.min(8, S.song && S.song.bars ? S.song.bars : 8)};
     MX3.caps++; MX3.lastCap = {sec: +sec.toFixed(2), Lin: C.Lin, LA, scene: R.songPlay ? null : R.selS, song: !!R.songPlay, mix: !!withMix, ms: MX2.cache.ms};
-    MX3.sig0 = mx3Sig(); MX3.gen = TKGEN; MX3.pending = false; MX3.seen = MX2.cache;
+    MX3.sig0 = s0; MX3.mute0 = m0; MX3.gen = -1; MX3.pending = false; MX3.seen = MX2.cache; MX3.cacheS = S;   // Grundlage = Stand bei Messbeginn (Befund 3)
     return MX2.cache;
   } catch (e) {
     const m = String(e && e.message || e); if (!/Aufnahme|Audio aus/.test(m)) logErr(e); if (!quiet) toast('Live messen: ' + m);
@@ -66733,35 +66798,78 @@ async function mx3Run(withMix, tag, quiet) {
 function mx3Tick() {
   if (typeof document !== 'undefined' && document.hidden) return;
   try { ch1AutoTick(); } catch (e) { logErr(e); }
-  if (MX2.cache && MX2.cache !== MX3.seen) { MX3.seen = MX2.cache; MX3.sig0 = mx3Sig(); MX3.gen = TKGEN; MX3.pending = false; }   // frisch gemessen (Blatt): neue Grundlage
-  if (!mx3AutoOn()) { MX3.pending = false; return; }
+  if (MX3.S0 !== S) { MX3.S0 = S; mx3Reset(); return; }             // anderes Projekt: neue Grundlage, nichts nachzuführen (Prüfung Befund 5)
+  if (MX2.cache && MX2.cache !== MX3.seen) {                         // frisch gemessen (Blatt): neue Grundlage
+    MX3.seen = MX2.cache; MX3.cacheS = S; MX3.sig0 = mx3Sig(); MX3.mute0 = mx3MuteKey(); MX3.gen = TKGEN; MX3.pending = false;
+    if (MX2.cache.src !== 'live' && MX2.cache.sig !== mixaStateSig()) { MX3.pending = true; MX3.tChange = performance.now(); }   // während des Song-Messdurchlaufs geändert
+  }
+  if (!mx3AutoOn()) { MX3.pending = false; MX3.wait = null; return; }
+  if (ch1AbSide() === 'A') return;                                    // A/B „Refrain groß“: vorher hören ist keine Änderung
   if (TKGEN !== MX3.gen) {
     MX3.gen = TKGEN; const s = mx3Sig();
     if (MX3.sig0 == null) MX3.sig0 = s;
     else if (s !== MX3.sig0) { MX3.sig0 = s; MX3.pending = true; MX3.tChange = performance.now(); mx3PaintSoon(); }
   }
-  if (!MX3.pending || MX3.busy || MIXA.busy) return;
+  if (MX3.mute0 == null) MX3.mute0 = mx3MuteKey();
+  const w = MX3.pending ? mx3WaitWhy() : null; if (w !== MX3.wait) { MX3.wait = w; mx3PaintSoon(); }   // wartet ruhig auf ▶, Song, Aufnahme-Ende, Stumm wie vorher
+  if (!MX3.pending || MX3.busy || MIXA.busy || w) return;
   if (performance.now() - MX3.tChange < MX3.deb) return;
-  if (!R.playing || mx3RecBusy() || (MX2.ab && mx2Side() === 'A')) return;   // wartet ruhig auf ▶ bzw. das Ende der Aufnahme
   MX3.pending = false; mx3Follow().catch(logErr);
+}
+function mx3Reset() {
+  clearInterval(MX3.ramp); MX3.ramp = 0; MX3.rampK = 1;
+  MX3.sig0 = mx3Sig(); MX3.mute0 = mx3MuteKey(); MX3.gen = TKGEN; MX3.pending = false; MX3.wait = null;
+  MX3.undoAm = null; MX3.last = null; MX3.rel = null; MX3.voc = null; MX3.seen = MX2.cache; MX3.cacheS = null;
 }
 async function mx3Follow() {
   const am = S.fxBus.am; if (!am || !am.mx2) return false;
-  const c = await mx3Run(false, 'follow', true); if (!c) { MX3.pending = true; MX3.tChange = performance.now(); return false; }
+  if (mx3Mode() === 'song') return mx3FollowRel();                   // Song-Master: nur die Pegeldifferenz derselben Takte (Befund 4)
+  const c = await mx3Run(false, 'follow', true);
+  if (!c || mx3RecBusy() || (MX2.ab && mx2Side() === 'A')) { MX3.pending = true; MX3.tChange = performance.now(); return false; }   // Befund 2: nie während einer Aufnahme
   return mx3Apply('Auto-Nachführen');
+}
+// Song-Master: Klang, Kompression und Grenzen bleiben die des ganzen Songs; nur die Pegeldifferenz DERSELBEN Song-Takte (Song-Messung vorher ↔
+// jetzt live, K-gewichtet, gleiche Fenster) geht in den Pegel, höchstens ±2 dB je Mal. Ohne ▶ SONG wartet es (Prüfung Befund 4).
+async function mx3FollowRel() {
+  const am = S.fxBus.am; if (!am || !mx3RelOk() || !R.playing || !R.songPlay || MIXA.busy || MX3.busy) { MX3.pending = true; return false; }
+  const c = MX2.cache, C = c.C, sp = R.songPlay, off0 = sp.off, st0 = R.startTime, s0 = mx3Sig(), m0 = mx3MuteKey(), sec = clamp(16 * 60 / S.bpm, 4, 8);
+  const retry = () => { MX3.pending = true; MX3.tChange = performance.now(); MX3.drops++; return false; };
+  MX3.busy = true; MX2.busy = 'follow'; mx3PaintSoon();
+  try {
+    const cap = await mx3Capture(sec, false), sr = cap.sr;
+    if (mx3RecBusy() || !R.playing || R.songPlay !== sp || sp.off !== off0 || R.startTime !== st0 || mx3Sig() !== s0 || mx3MuteKey() !== m0 || !(cap.f0 >= 0)) return retry();
+    const bt = 60 / c.bpm, a0 = ((cap.f0 / sr - st0) / bt - off0) * bt, fr = C.sr / C.H, f0 = Math.round((c.t0 + a0) * fr), nb = Math.floor(cap.L.length / sr * 10);
+    if (a0 < 0 || nb < 8 || f0 + nb * 20 > C.NF) return retry();
+    const bl = new Float64Array(nb); for (let b = 0; b < nb; b++) { let q = 0; for (let j = f0 + b * 20, e = j + 20; j < e; j++) q += C.Kf[j]; bl[b] = q / 20; }
+    const D = MIXA_D0.v || (MIXA_D0.v = mixaDspMake()), Lb = D.integ(bl), La = D.integ(D.kblocks([cap.L, cap.R], sr));
+    if (!isFinite(Lb) || !isFinite(La) || Lb < -60 || La < -60) return retry();
+    const d = La - Lb, F = MX2.fit, g0 = F && F.sig === c.sig && F.P && isNum(F.P.gain) ? F.P.gain : MX3.rel && MX3.rel.key === c.key ? MX3.rel.g0 : am.gain || 0;
+    MX3.rel = {key: c.key, g0}; MX3.caps++; MX3.follows++;
+    const gCur = am.gain || 0, gT = g0 - d, gN = +clamp(gT, gCur - MX3.capDb, gCur + MX3.capDb).toFixed(2);
+    MX3.lastCap = {sec: +sec.toFixed(2), Lin: +La.toFixed(2), Lb: +Lb.toFixed(2), d: +d.toFixed(2), beat: +(a0 / bt).toFixed(2), song: true, rel: true, mix: false};
+    if (Math.abs(gN - gCur) < 0.05) { MX3.last = {t: Date.now(), dG: 0, why: 'Auto-Nachführen', rel: true, d: +d.toFixed(2), lout: null, Lin: +La.toFixed(2)}; return true; }
+    const old = mixaAmP(), before = JSON.stringify(am);
+    S.fxBus.am = mixaNormAm(Object.assign({}, am, {gain: gN}));
+    MX3.undoAm = before; MX3.last = {t: Date.now(), dG: +(gN - gCur).toFixed(2), why: 'Auto-Nachführen', rel: true, d: +d.toFixed(2), capped: Math.abs(gT - gN) > 0.01, lout: null, Lin: +La.toFixed(2)};
+    markDirty(); mixaMasterSync(false); mx3RampFrom(old);
+    return true;
+  } catch (e) { if (!/Audio aus/.test(String(e && e.message || e))) logErr(e); return retry(); }
+  finally { MX3.busy = false; MX2.busy = null; mx2Paint(); mx3PaintSoon(); }
 }
 // Anpassung aus dem Zwischenspeicher wie mx2Master – aber ohne ↶-Schritt und mit Gleiten (nur Nachführen)
 function mx3Apply(why) {
   const c = MX2.cache, am0 = S.fxBus.am; if (!c || !am0 || !am0.on) return false;
   const pr = mx2Pref(), Y = mx2Pf(pr.pf); MIXA.ziel = am0.ziel === -9 ? -9 : -14;
   const T0 = performance.now(), res = mx2Core().fit(c.C, {Y, d: pr.d, w: pr.w, ziel: MIXA.ziel, ceil: -1, bpm: c.bpm}); if (!res) return false;
-  const P = res.P, old = mixaAmP(), before = JSON.stringify(am0), g0 = am0.gain || 0;
+  const P = res.P, old = mixaAmP(), before = JSON.stringify(am0), g0 = am0.gain || 0, dg0 = P.gain - g0, capd = Math.abs(dg0) > MX3.capDb;
+  if (capd) { const dg = clamp(dg0, -MX3.capDb, MX3.capDb); P.gain = +(g0 + dg).toFixed(2); if (res.info && isFinite(res.info.lout)) res.info.lout = +(res.info.lout + dg - dg0).toFixed(1); }   // Prüfung Befund 1: höchstens ±2 dB je Nachführen
   S.fxBus.am = mixaNormAm(Object.assign({on: true, ziel: MIXA.ziel, lo: P.lo, hi: P.hi, thr: P.thr, ra: P.ra, at: P.at, rl: P.rl, gain: P.gain, ceil: P.ceil, st: P.st, mb: P.mb, sat: P.sat}, {mx2: {pf: pr.pf, d: pr.d, w: pr.w}}, mx3Keep0(am0)));
-  MX2.fit = Object.assign(res, {gen: ++MX2.gen, sig: c.sig, pf: pr.pf, d: pr.d, w: pr.w, ziel: MIXA.ziel, ms: +(performance.now() - T0).toFixed(1), exact: null});
+  MX2.fit = Object.assign(res, {gen: ++MX2.gen, sig: c.sig, pf: pr.pf, d: pr.d, w: pr.w, ziel: MIXA.ziel, ms: +(performance.now() - T0).toFixed(1), exact: null, miss: capd});
   if (MX2.ab) { MX2.ab.LB = res.info.lout; }
-  MX3.undoAm = before; MX3.last = {t: Date.now(), dG: +(P.gain - g0).toFixed(2), why, lout: res.info.lout, Lin: c.C.Lin}; MX3.follows++;
+  MX3.undoAm = before; MX3.last = {t: Date.now(), dG: +(P.gain - g0).toFixed(2), why, lout: res.info.lout, Lin: c.C.Lin, capped: capd}; MX3.follows++;
   markDirty(); mixaMasterSync(false); mx3RampFrom(old);
-  mx2ExactSoon(); mx2Paint(); mx3PaintSoon();
+  if (!capd) { const gq = MX2.fit.gen; setTimeout(() => { if (MX2.fit && MX2.fit.gen === gq) mx2ExactSoon(); }, MX3.rampMs + 100); }   // genau nachprüfen erst nach dem Gleiten
+  mx2Paint(); mx3PaintSoon();
   return true;
 }
 const mx3Keep0 = a => (a && a.mx3 && a.mx3.af === 0 ? {mx3: {af: 0}} : null);
@@ -66782,15 +66890,23 @@ function mx3RampFrom(old) {
   if (!A || !A.node || !old || !nw || UI.vvOff) return;
   const sg = A.sig, node = A.node, t0 = performance.now(), log = MX3.rampLog = [{t: 0, g: old.gain}];
   try { node.port.postMessage({P: old}); } catch (e) { return; }
-  MX3.rampK = 0;
+  MX3.rampK = 0; MX3.rampP = old;
   MX3.ramp = setInterval(() => {
     const k = Math.min(1, (performance.now() - t0) / MX3.rampMs);
     if (A.node !== node || A.sig !== sg) { clearInterval(MX3.ramp); MX3.ramp = 0; MX3.rampK = 1; return; }
+    if (k < 1 && mx3RecBusy()) { clearInterval(MX3.ramp); MX3.ramp = 0; MX3.rampK = 1; mx3Freeze(MX3.rampP); return; }   // Befund 2: Aufnahme beginnt → bleibt, wo es ist
     const e = k * k * (3 - 2 * k), P = k >= 1 ? nw : mx3Lerp(old, nw, e);
     try { node.port.postMessage({P}); } catch (x) {}
-    MX3.rampK = k; log.push({t: Math.round(performance.now() - t0), g: +(+P.gain).toFixed(3)});
+    MX3.rampP = P; MX3.rampK = k; log.push({t: Math.round(performance.now() - t0), g: +(+P.gain).toFixed(3)});
     if (k >= 1) { clearInterval(MX3.ramp); MX3.ramp = 0; }
   }, 60);
+}
+// eine Aufnahme beginnt mitten im Gleiten: der Master bleibt genau auf dem Zwischenstand (Knoten = Daten); nach der Aufnahme misst es neu
+function mx3Freeze(P) {
+  const a = S.fxBus.am; if (!P || !a || !a.on) return;
+  S.fxBus.am = mixaNormAm(Object.assign({}, a, {lo: P.lo, hi: P.hi, thr: P.thr, ra: P.ra, at: P.at, rl: P.rl, gain: P.gain, ceil: P.ceil}, P.mb ? {mb: P.mb} : null, P.sat ? {sat: P.sat} : null));
+  MX3.frozen++; MX3.pending = true; MX3.tChange = performance.now(); if (MX3.last) MX3.last.frozen = true; if (MX2.fit) MX2.fit.miss = true;
+  markDirty(); mixaMasterSync(false); mx3PaintSoon();
 }
 function mx3UndoFollow() {
   const v = MX3.undoAm; if (!v) return false;
@@ -66801,23 +66917,42 @@ function mx3UndoFollow() {
 }
 function mx3SetAuto(on) {
   const a = S.fxBus.am; if (!a) return false;
-  if (on) delete a.mx3; else a.mx3 = {af: 0};
+  if (on) { if (a.mx3) { delete a.mx3.af; if (!Object.keys(a.mx3).length) delete a.mx3; } } else a.mx3 = Object.assign({}, a.mx3 || {}, {af: 0});
   MX3.pending = false; MX3.sig0 = mx3Sig(); MX3.gen = TKGEN; markDirty(); mx2Paint(); return mx3AutoOn();
 }
 function mx3Boot() { if (!MX3.iv) MX3.iv = setInterval(mx3Tick, 1000); }
 
 /* ---------- ein Blatt überall (D3): FX › MASTER [AUTO-MASTER] / [MIX-ASSISTENT], Master-Balken ---------- */
 function mx3Open(way) {
-  MX3.focus = way === 'am' || way === 'mix' ? way : null;
+  MX3.focus = way === 'am' || way === 'mix' ? way : null; if (way === 'mix') MX3.sugOn = true;
+  if (PSH.dock && PSH.dock.name === 'mx2' && pshUndock()) { mx2Paint(); return true; }   // abgelegt (z. B. EQ · KOMP liegt darüber): zurückholen
   if (mx2El()) { mx2Paint(); return true; }
   return mx2Sheet();
+}
+// [Vorschläge je Spur] (vorher [Mix-Assistent …] = eigenes Blatt): analysieren ohne zu übernehmen, je Vorschlag [Übernehmen]/[Zurück] im Weg Mischen
+async function mx3Sug() {
+  MX3.focus = 'mix'; MX3.sugOn = true;
+  if (!MIXA.busy && (!MIXA.res || MIXA.res.sig !== mixaStateSig())) await mx2Run(true, 'mix');
+  mx2Paint(); const p = mx2El(), s = p && p.querySelector('.mx3sg');
+  if (s && s.scrollIntoView) s.scrollIntoView({block: 'center'}); else if (!MIXA.res) toast('Noch keine Analyse – erst ▶ oder ● SONG');
+  return !!MIXA.res;
+}
+function mx3SugRow(i, busy) {
+  const r = MIXA.res, k = r && r.T ? r.T.findIndex(t => t.i === i) : -1; if (k < 0) return null;
+  const L = (r.sug[k] || []).filter(s => s.patch).slice(0, 4); if (!L.length) return null;
+  return el('div', 'mx3sg', L.map(s => {
+    const ap = mixaIsApplied(i, s), can = MIXA.done.has(i + ':' + s.id);
+    const b = ap ? (can ? `<button class="mbtn rb" data-x2="x3sg" data-v="back" data-i="${i}" data-s="${esc(s.id)}"${busy ? ' disabled' : ''}>Zurück</button>` : '<button class="mbtn rb" disabled aria-pressed="true">Übernommen</button>') :
+      `<button class="mbtn rb" data-x2="x3sg" data-i="${i}" data-s="${esc(s.id)}"${busy ? ' disabled' : ''}>Übernehmen</button>`;
+    return `<div class="mx3sgi${ap ? ' on' : ''}"><span class="small"><b>${esc(s.titel)}</b> ${esc(s.text)}${s.art === 'option' ? ' (Wahl)' : ''}</span>${b}</div>`;
+  }).join(''));
 }
 function mx3PaintSoon() { if (MX3.paintT) return; MX3.paintT = setTimeout(() => { MX3.paintT = 0; const p = mx2El(); if (p) { const c = p.querySelector('.mx2c'); if (c) mx3Paint(p, c); } }, 120); }
 const mx3Ago = t => { const s = Math.max(0, Math.round((Date.now() - t) / 1000)); return s < 60 ? 'vor ' + s + ' s' : 'vor ' + Math.round(s / 60) + ' min'; };
 // nach mx2Paint: Zeile „Messen aus … · Auto-Nachführen“, hervorgehobener Weg, Pegel je Spur (dB wie Spurkopf), Gesang-Zeilen
 function mx3Paint(p, c) {
   if (!c) return;
-  c.querySelectorAll('.mx3row,.mx3g,.mx3st').forEach(e => e.remove());
+  c.querySelectorAll('.mx3row,.mx3g,.mx3st,.mx3sg').forEach(e => e.remove());
   const busy = !!MIXA.busy, live = mx3UseLive(), cache = MX2.cache, am = S.fxBus.am, auto = mx3AutoOn(), can = !!(am && am.on && am.mx2);
   const seg = MX3_SRC.map(([l, v]) => `<button class="mbtn rb" data-x2="x3src" data-v="${v}"${MX3.src === v ? ' aria-pressed="true"' : ''}${busy ? ' disabled' : ''}>${esc(l)}</button>`).join('');
   let st = 'Messen aus: <b>' + (live ? 'Live – was gerade läuft (' + (R.playing && !R.songPlay ? 'Matrix' : R.playing ? 'Song' : 'startet die Szene') + ', 4 Takte)' : 'Song (einmal offline)') + '</b>';
@@ -66826,14 +66961,23 @@ function mx3Paint(p, c) {
   if (!can) fl = 'Auto-Nachführen: nach dem ersten [Mastern] hier';
   else if (!auto) fl = 'Auto-Nachführen aus';
   else if (MX3.busy && MX2.busy === 'follow') fl = '<b class="mx2warn">Nachführen: hört mit …</b>';
-  else if (MX3.pending) fl = R.playing ? 'Änderung erkannt – misst nach ' + Math.max(0, Math.ceil((MX3.deb - (performance.now() - MX3.tChange)) / 1000)) + ' s Ruhe' : 'Änderung erkannt – misst beim nächsten ▶';
-  else if (MX3.last && MX3.last.why === 'Auto-Nachführen') fl = 'Nachgeführt ' + mx3Ago(MX3.last.t) + ' · Pegel ' + mx2S(MX3.last.dG) + ' dB' + (MX3.rampK < 1 ? ' · gleitet …' : '');
+  else if (MX3.pending) fl = MX3.wait ? MX3_WAIT[MX3.wait] || 'Änderung erkannt – wartet' : 'Änderung erkannt – misst nach ' + Math.max(0, Math.ceil((MX3.deb - (performance.now() - MX3.tChange)) / 1000)) + ' s Ruhe';
+  else if (MX3.last && MX3.last.why === 'Auto-Nachführen') fl = 'Nachgeführt ' + mx3Ago(MX3.last.t) + (MX3.last.rel ? ' (Song: gleiche Takte vorher/nachher)' : '') + ' · Pegel ' + mx2S(MX3.last.dG) + ' dB' + (MX3.last.capped ? ' (höchstens ±2 dB je Mal)' : '') + (MX3.last.frozen ? ' · bei der Aufnahme angehalten' : '') + (MX3.rampK < 1 ? ' · gleitet …' : '');
+  else if (mx3Mode() === 'song') fl = 'Auto-Nachführen an (Song) – nach einer Änderung gleicht es beim Abspielen des Songs den Pegel derselben Takte an';
   else fl = 'Auto-Nachführen an – nach jeder Änderung (4 s Ruhe) misst es live und gleitet sanft nach';
   const row = el('div', 'mx3row', `<div class="mx2r3 mx3src" role="group" aria-label="Messen aus">${seg}</div>` +
     `<div class="mx2r2"><button class="mbtn rb" data-x2="x3auto"${auto ? ' aria-pressed="true"' : ''}${can ? '' : ' disabled'}>Auto-Nachführen ${auto ? 'an' : 'aus'}</button>` +
     `<button class="mbtn rb" data-x2="x3undo"${MX3.undoAm && !busy ? '' : ' disabled'}>↶ Nachführen zurück</button></div>` +
     `<div class="small mx3st">${st}<br>${fl}</div>`);
   const s0 = c.querySelector('.mx2st'); if (s0) s0.after(row);
+  if (s0 && live && !busy) {                                       // Prüfung Befund 8: live braucht keinen Song – kein „erst ● SONG“ über „Messen aus: Live“
+    const fr = mx2Fresh();
+    if (!cache) s0.innerHTML = 'Ein Tipp auf einen Weg hört 4 Takte live mit (was gerade läuft) – kein Song nötig; danach schalten Stil, Ziel und Vorlieben sofort.';
+    else if (!fr) s0.innerHTML = '<b class="mx2warn">Geändert seit der Messung</b> <button class="mbtn rb mx2m" data-x2="meas">neu messen</button>';
+    else if (!S.song || !S.song.bars) s0.innerHTML = (cache.src === 'live' ? 'Live gemessen (' + mx2F(cache.ms / 1000, 1) + ' s)' : 'Gemessen') + ' · Stile und Vorlieben schalten sofort';
+  }
+  const ab = c.querySelector('button[data-x2="asst"]'); if (ab) ab.textContent = 'Vorschläge je Spur';   // Befund 6: kein eigenes Mix-Assistent-Blatt mehr
+  const sugOn = !!(MIXA.res && MIXA.res.T) && (MX3.sugOn || MX3.focus === 'mix' || MX2.way === 'mix');
   if (MX3.focus) { const fb = c.querySelector(`.mx2w button[data-v="${MX3.focus}"]`); if (fb) fb.classList.add('mx3f'); }
   // Pegel je Spur: dieselbe dB-Zahl wie Spurkopf und FX › SPUR (D15); STIMME = Lead-Gesang, dazu die Chor-Gruppe
   const st0 = stimmeT();
@@ -66841,11 +66985,19 @@ function mx3Paint(p, c) {
     const b = r.querySelector('[data-i]'), i = b ? +b.dataset.i : -1, tr = S.tracks[i], sm = r.querySelector('.mx2fn small'); if (!tr || !sm || !tr.sound) return;
     const f = fxOfSound(tr.sound); sm.textContent = (i === st0 ? 'Lead-Gesang' : sm.textContent) + ' · ' + sx4DbTxt(f.vol, f.drive);
     if (i === st0) r.after(ch1MxRows(busy));
+    if (sugOn) { const sg = mx3SugRow(i, busy); if (sg) r.after(sg); }
   });
 }
 function mx3Tap(b) {
   const a = b.dataset.x2; if (!a) return false;
-  if (a === 'w') { MX3.focus = null; return false; }
+  if (a === 'w') { MX3.focus = null; MX3.sugOn = b.dataset.v !== 'am'; return false; }
+  if (a === 'asst') { haptic('tick'); mx3Sug(); return true; }      // Prüfung Befund 6: Vorschläge hier im Blatt statt im alten Blatt
+  if (a === 'x3sg') {
+    const i = +b.dataset.i, s = mixaSug(i, b.dataset.s); if (!s || !S.tracks[i]) return true; mx1AbEnd();
+    if (b.dataset.v === 'back') { if (mixaRevert(i, s)) haptic('tick'); } else if (mixaApply([{i, s}], 'Mix: ' + S.tracks[i].name + ' ' + s.titel)) haptic('pop');
+    mx2Paint(); return true;
+  }
+  if (a === 'x3ab') { if (ch1AB()) haptic('tick'); mx2Paint(); return true; }
   if (a === 'x3src') { MX3.src = b.dataset.v; haptic('tick'); mx2Paint(); return true; }
   if (a === 'x3auto') { mx3SetAuto(!mx3AutoOn()); haptic('tick'); return true; }
   if (a === 'x3undo') { if (mx3UndoFollow()) haptic('tick'); return true; }
@@ -66858,7 +67010,7 @@ function mx3Tap(b) {
 /* =====================================================================================================================
    CH1 – Chor sauber, Refrain groß
    ===================================================================================================================== */
-const CH1 = {ir: new Map(), busy: null, last: null, done: new Set(), q: null, nodes: 0, throws: 0, aligned: 0};
+const CH1 = {ir: new Map(), busy: null, last: null, done: new Set(), q: null, nodes: 0, throws: 0, aligned: 0, abN: 0, abId: 0};
 const CH1_RE = /refrain|chorus|hook|kehrvers/i;
 // ein Refrain-Teil: Name des Teils oder – bei einem Teil aus einer Szene – der Name der Szene
 function ch1IsRefrain(m) { if (CH1_RE.test(markLabel(m) || '')) return true; const q = /^S(\d+)$/.exec(m.part || ''), sc = q && S.scenes[+q[1] - 1]; return !!(sc && CH1_RE.test(sc.name || '')); }
@@ -66884,13 +67036,22 @@ function ch1Refrain(mid) {
 }
 const ch1Cur = () => { const r = G6.sheet || (stimmeT() >= 0 ? {t: stimmeT(), s: R.selS} : null), x = r && tkRef(r); return x ? {r, a: x.a} : null; };
 // Gruppen-↶ aus mehreren Schritten (verschachtelte Gruppen werden flach)
-function ch1Merge(n0, label, extra) {
+function ch1Merge(n0, label, extra, tag) {
   const es = UNDO.splice(n0), items = [];
   for (const e of es) { if (e.kind === 'group') items.push(...e.items); else items.push(e); }
   if (extra) items.push(...extra);
   if (!items.length) return false;
-  undoPush({kind: 'group', label, items}); markDirty(); UI.dirty.all = true; return true;
+  undoPush(Object.assign({kind: 'group', label, items}, tag ? {ch1ab: tag} : null)); markDirty(); UI.dirty.all = true; return true;
 }
+// A/B „Refrain groß“ (Prüfung Befund 9): echtes Vorher/Nachher = ↶/↷ genau dieses Schritts (die Kennung ch1ab wandert mit über groupSwap);
+// geht, solange er oben auf ↶ (B, nachher) bzw. ↷ (A, vorher) liegt
+function ch1AbSide() { const id = CH1.abId; if (!id) return null; const u = UNDO[UNDO.length - 1], r = REDO[REDO.length - 1]; return u && u.ch1ab === id ? 'B' : r && r.ch1ab === id ? 'A' : null; }
+function ch1AB() {
+  const s = ch1AbSide(); if (!s) { toast('Vorher/Nachher geht direkt nach „Refrain groß“'); return false; }
+  if (!(s === 'B' ? undo() : redo())) return false;
+  toast(s === 'B' ? 'A · vorher (ohne „Refrain groß“)' : 'B · nachher (mit „Refrain groß“)'); g6SheetPaintSafe(); return true;
+}
+const ch1AbBtn = (attr, busy) => { const s = ch1AbSide(); return s ? `<button class="mbtn rb" ${attr}${s === 'A' ? ' aria-pressed="true"' : ''}${busy ? ' disabled' : ''}>A/B · ${s === 'A' ? 'vorher' : 'nachher'}</button>` : ''; };
 
 /* ---------- Ausrichten: Silben-Anfänge einer selbst gesungenen Chorstimme an den Lead (±40 ms) ---------- */
 const CH1_MAX = 0.04, CH1_WIN = 0.09;
@@ -67032,7 +67193,7 @@ async function ch1Big(mid, places0) {
     // Strophe trocken/nah: der Lead selbst mit wenig Hall/Echo – der Refrain geht über die Gruppe auf
     const f = S.tracks[st].sound && S.tracks[st].sound.fx; let fx = false;
     if (f) { if (!(f.rev <= 0.08)) { f.rev = 0.08; fx = true; } if (!(f.dly <= 0.04)) { f.dly = 0.04; fx = true; } }
-    ch1Merge(n0, 'Refrain groß', fx && before !== mixaSnap() ? [{kind: 'mixa', before}] : null);
+    const tag = ++CH1.abN; if (ch1Merge(n0, 'Refrain groß', fx && before !== mixaSnap() ? [{kind: 'mixa', before}] : null, tag)) CH1.abId = tag;
     if (fx) mixaAfter([st], false);
     g6Refresh();
     CH1.last = {op: 'big', places: places.length, ok, fx};
@@ -67128,8 +67289,8 @@ function ch1G6Row(p, X) {
   if (!p || p.querySelector('.ch1row,.ch1low')) return;
   const busy = CH1.busy, own = X && X.c && X.c.v === 2 ? ch1OwnVoices(X.a).length : 0;
   const row = el('div', 'ch1row', `<button class="mbtn rb" data-ch1="clean"${busy || !(X && X.c && X.c.v === 2) ? ' disabled' : ''}>${busy === 'clean' ? 'rechnet …' : 'Chor sauber'}</button>` +
-    `<button class="mbtn rb" data-ch1="big"${busy ? ' disabled' : ''}>${busy === 'big' ? 'rechnet …' : 'Refrain groß'}</button><button class="mbtn rb" data-ch1="twice"${busy ? ' disabled' : ''}>Refrain 2× singen${own ? ' (' + Math.min(2, own) + '/2)' : ''}</button>`);
-  row.setAttribute('role', 'group'); row.setAttribute('aria-label', 'Gesang');
+    `<button class="mbtn rb" data-ch1="big"${busy ? ' disabled' : ''}>${busy === 'big' ? 'rechnet …' : 'Refrain groß'}</button><button class="mbtn rb" data-ch1="twice"${busy ? ' disabled' : ''}>Refrain 2× singen${own ? ' (' + Math.min(2, own) + '/2)' : ''}</button>` + ch1AbBtn('data-ch1="ab"', busy));
+  row.setAttribute('role', 'group'); row.setAttribute('aria-label', 'Gesang'); if (ch1AbSide()) row.classList.add('ch1ab');
   // hochkant direkt unter den Stil-Kacheln; quer in der unteren Knopfzeile (das Blatt wird nicht höher, [OK] bleibt sichtbar)
   const low = isLand() && (p.querySelector('.g6pe-addrow') || p.querySelector('.savrow')), g = p.querySelector('.g6pe-grid');
   if (low) { row.classList.add('ch1in'); const ok = low.querySelector('[data-pe="x"]'); while (row.firstChild) { const b = row.firstChild; if (ok) ok.before(b); else low.appendChild(b); } low.classList.add('ch1low'); low.dataset.ch1 = ''; }
@@ -67141,6 +67302,7 @@ function ch1Tap(b) {
   if (a === 'clean') ch1Clean(r);
   else if (a === 'big') { const x = r && tkRef(r), rf = ch1Refrain(null); ch1Big(null, rf.length ? rf : x ? [{r, a: x.a}] : null); }
   else if (a === 'twice') ch1Twice(r);
+  else if (a === 'ab') ch1AB();
   return true;
 }
 function ch1MarkSheetPaint(p, m) {
@@ -67151,16 +67313,22 @@ function ch1MarkSheetPaint(p, m) {
 }
 function ch1MxRows(busy) {
   const L = typeof chsTrk === 'function' ? chsTrk() : null, has = stimmeT() >= 0 && g6pPlaces(stimmeT()).some(x => x.a && x.a.chor), db = L && isNum(L.db) ? L.db : 0;
-  return el('div', 'mx3g', (has ? `<div class="mx2fr"><span class="mx2fn"><b>Chor</b><small>Background · ${mx2S(db)} dB</small></span><button class="mbtn rb" data-x2="x3cl"${busy ? ' disabled' : ''}>leiser</button><button class="mbtn rb" data-x2="x3cu"${busy ? ' disabled' : ''}>lauter</button><button class="mbtn rb" data-x2="x3clean"${busy || CH1.busy ? ' disabled' : ''}>sauber</button></div>` : '') +
-    `<div class="mx2r2 mx3gr"><button class="mbtn rb" data-x2="x3big"${busy || CH1.busy ? ' disabled' : ''}>Refrain groß</button><span class="small">Lead und Chor getrennt: der Chor sitzt hinter und breiter als der Lead.</span></div>`);
+  // Prüfung Befund 7: beim Mischen (live) als eigene Rolle gemessen – Abstand Chor ↔ Lead, Empfehlung leuchtet ([leiser]/[lauter] bleiben Handarbeit)
+  const V = MX3.voc && MX3.voc.d != null ? MX3.voc : null, cur = V && V.sig === mx3Sig(), hi = k => (cur && V.rec === k ? ' mx3f' : '');
+  const vt = V ? ' · gemessen ' + mx2F(Math.abs(V.d)) + (V.d <= 0 ? ' dB unter' : ' dB über') + ' dem Lead' + (cur ? (V.rec === 'ok' ? ' – passt' : '') : ' (vor der Änderung)') : '';
+  const abB = ch1AbBtn('data-x2="x3ab"', busy);
+  return el('div', 'mx3g', (has ? `<div class="mx2fr"><span class="mx2fn"><b>Chor</b><small>Background · ${mx2S(db)} dB${vt}</small></span><button class="mbtn rb${hi('leiser')}" data-x2="x3cl"${busy ? ' disabled' : ''}>leiser</button><button class="mbtn rb${hi('lauter')}" data-x2="x3cu"${busy ? ' disabled' : ''}>lauter</button><button class="mbtn rb" data-x2="x3clean"${busy || CH1.busy ? ' disabled' : ''}>sauber</button></div>` : '') +
+    `<div class="mx2r2 mx3gr"><button class="mbtn rb" data-x2="x3big"${busy || CH1.busy ? ' disabled' : ''}>Refrain groß</button>${abB || '<span class="small">Lead und Chor getrennt: der Chor sitzt hinter und breiter als der Lead.</span>'}</div>`);
 }
 
 /* ---------- Test-Schnittstelle ---------- */
 const MIX3_API = {
   info: () => ({src: MX3.src, live: mx3UseLive(), busy: MX3.busy, focus: MX3.focus, auto: mx3AutoOn(), pending: MX3.pending, follows: MX3.follows, caps: MX3.caps, lastCap: MX3.lastCap, last: MX3.last, rampK: MX3.rampK,
-    rampLog: MX3.rampLog.slice(), cacheSrc: MX2.cache ? MX2.cache.src || 'song' : null, am: S.fxBus.am ? deep(S.fxBus.am) : null, open: !!mx2El(), undoAm: !!MX3.undoAm, deb: MX3.deb, mixLive: !!(MIXA.res && MIXA.res.live)}),
+    rampLog: MX3.rampLog.slice(), cacheSrc: MX2.cache ? MX2.cache.src || 'song' : null, am: S.fxBus.am ? deep(S.fxBus.am) : null, open: !!mx2El(), undoAm: !!MX3.undoAm, deb: MX3.deb, mixLive: !!(MIXA.res && MIXA.res.live),
+    wait: MX3.wait, mode: mx3Mode(), base: mx3Base(), muteSame: MX3.mute0 === mx3MuteKey(), frozen: MX3.frozen, drops: MX3.drops, rel: MX3.rel ? deep(MX3.rel) : null, voc: MX3.voc ? deep(MX3.voc) : null, ab: ch1AbSide(), sugOn: MX3.sugOn}),
   open: way => mx3Open(way), src: v => { MX3.src = v; mx2Paint(); return mx3UseLive(); }, measure: withMix => mx3Run(!!withMix, null), auto: on => mx3SetAuto(on), tick: () => mx3Tick(),
   deb: ms => { if (isNum(ms)) MX3.deb = ms; return MX3.deb; }, follow: () => mx3Follow(), undoFollow: () => mx3UndoFollow(), sig: () => mx3Sig(),
+  ab: () => ch1AB(), sugg: () => mx3Sug(), muteKey: () => mx3MuteKey(),
   ch1: () => ({busy: CH1.busy, last: CH1.last ? deep(CH1.last) : null, nodes: CH1.nodes, throws: CH1.throws, aligned: CH1.aligned, places: ch1Refrain(null).map(p => p.r)}),
   clean: r => ch1Clean(r || null), big: (mid, r) => ch1Big(mid || null, r ? [{r, a: tkRef(r).a}] : null), twice: r => ch1Twice(r || null), rg: () => deep(CH1_RG),
   dev: async (r, k, heard) => { const x = tkRef(r), a = x && x.a, v = a && a.chor && a.chor.voices[k]; if (!v) return null; const O = await ch1Onsets(a, v, !!heard); if (!O) return null; const ps = ch1Match(O.lead, O.voice); return {n: ps.length, ms: +ch1Mean(ps).toFixed(1), max: ps.length ? +(Math.max(...ps.map(q => Math.abs(q.d))) * 1000).toFixed(1) : 0, lead: O.lead.length, voice: O.voice.length}; },
