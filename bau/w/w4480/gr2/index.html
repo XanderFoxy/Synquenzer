@@ -80549,6 +80549,8 @@ function gr2Toast(r, st) {
   if (r.tsSet) m += ' · ' + r.tsSet + (r.tsSet === 1 ? ' Teil' : ' Teile') + ' jetzt ' + (st.ts || '4/4');
   if (r.ts) m += ' · ' + r.ts + (r.ts === 1 ? ' Stelle' : ' Stellen') + ' bleiben (Taktart)';
   if (r.full) m += ' · ' + r.full + ' ohne Platz (höchstens ' + sx9Max() + ' Versionen)';
+  if (r.audio) m += st.ts && r.tsSet ? ' · Gesang/Audio läuft im alten Takt weiter' : ' · Gesang/Audio bleibt';
+  if (!k && r.ok && !r.tsSet) m = 'Stärke 0 % = Original' + (r.n ? ' · ' + r.n + (r.n === 1 ? ' Stelle' : ' Stellen') : '');
   if (!r.ok) m = r.n ? st.name + ' ' + k + ' % spielt schon so' : r.ts ? 'Hier geht es nicht: andere Taktart oder eigene Clips im Teil' : 'Hier gibt es keine Clips zum Umbauen';
   else if (R.playing && R.songPlay && !r.restart) m += ' – ab dem nächsten Takt';
   toast(m, r.ok ? songUndoAct() : null);

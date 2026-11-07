@@ -89,6 +89,14 @@ ok('Walzer: alle Versionen 3/4, Noten im 3/4-Raster (nichts hinter dem Clip-Ende
 ok('Walzer: Bass behält seine Töne, Drums: Kick nur auf der Eins, Snare auf zwei und drei (Um-pa-pa)', wz.wbass.every(n => [36, 39, 41, 43, 46, 48].includes(n)) && wz.wdr.filter(x => x.endsWith(':36')).join() === '0:36' && wz.wdr.includes('1:38') && wz.wdr.includes('2:38'), wz.wbass.join(',') + ' | ' + wz.wdr.join(' '));
 ok('Walzer A → 4/4 (16 Schläge), B → 3/4 (12 Schläge); Teilgrenze ohne Phasen-Versatz', wz.a > 0 && wz.marksA.every(m => !m.ts) && wz.beatsA === 16 && wz.b > 0 && wz.marksB.every(m => m.ts === '3/4') && wz.beatsB === 12 && wz.lanes.flat().every(e => e.ph == null),
   JSON.stringify({a: wz.a, b: wz.b, beatsA: wz.beatsA, beatsB: wz.beatsB, lanes: wz.lanes}));
+// Walzer-Song abspielen (3/4-Teile): keine Fehler im Takt-Raster
+await p.evaluate(() => window.SYNQUENZER.songPlay(0)); await p.waitForTimeout(2600);
+const wp = await p.evaluate(() => { const D = window.SYNQUENZER, o = {play: !!(R.songPlay && R.playing), err: D.tickErrors(), bar: barAt(songBeatOf(audBeat()))}; D.songPlay(false); D.stop(); return o; });
+ok('Walzer-Song spielt (3/4-Teile) ohne Fehler im Takt', wp.play && wp.err === 0 && wp.bar >= 1, JSON.stringify(wp));
+// Art „Stil-Muster“: Drums/Bass = Muster des Stils (ohne u), übrige Spuren übersetzt (u)
+const sm = await p.evaluate(() => { const D = window.SYNQUENZER, G = D.gr2, r = G.remix('hinrg', {k: 50, art: 'm'}), own = Object.values(D.song().own).filter(c => c.gr && c.gr.s === 'hinrg');
+  const dv = own.find(c => c.from.t === 4 && c.from.s === 0); const o = {r, pat: own.filter(c => c.gr.u == null).map(c => c.from.t), u: own.filter(c => c.gr.u === 50).map(c => c.from.t), dk: dv ? dv.notes.filter(n => n.n === 36).map(n => n.t).join(',') : ''}; D.undo(); return o; });
+ok('Art „Stil-Muster“: Drums und Bass spielen das Hi-NRG-Muster, übrige Spuren übersetzt (50 %)', sm.r.ok && sm.pat.includes(4) && sm.pat.includes(0) && sm.u.length >= 3 && !sm.u.includes(4) && sm.dk === '0,1,2,3', JSON.stringify(sm));
 // 5) Speichern / Laden (serialisieren → normalisieren → anwenden): gr.u und Taktart der Teile bleiben
 const sl = await p.evaluate(() => {
   const D = window.SYNQUENZER, a = D.project();

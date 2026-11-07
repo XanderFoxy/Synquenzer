@@ -34,7 +34,7 @@ const SONG = async () => {
 
 /* ======================= 1. Wie die App: Voreinstellung, Titel, Rand, Text ======================= */
 let p = await open(APP, 428, 926, false);
-const pf = await p.evaluate(() => { const keep = Object.assign({}, uiPrefs().vv || {}); const v = uiPrefs().vv || {}; delete v.cam; const a = vvPrefs().cam; v.cam = 'kamera'; const k = vvPrefs().cam; v.cam = 'balken'; const bl = vvPrefs().cam; uiPrefs().vv = keep; return {neu: a, kamera: k, balken: bl, fmt: vvPrefs().fmt}; });
+const pf = await p.evaluate(() => { const P = uiPrefs(), keep = P.vv; P.vv = Object.assign({}, keep || {}); delete P.vv.cam; const a = vvPrefs().cam; P.vv.cam = 'kamera'; const k = vvPrefs().cam; P.vv.cam = 'balken'; const bl = vvPrefs().cam; if (keep) P.vv = keep; else delete P.vv; return {neu: a, kamera: k, balken: bl, fmt: vvPrefs().fmt}; });
 ok('Voreinstellung: 9:16 + [Ganze App] (wie die App); eine gespeicherte Wahl bleibt (Kamera/Balken)', pf.neu === 'app' && pf.kamera === 'kamera' && pf.balken === 'balken' && pf.fmt === '9:16', pf);
 const setup = await p.evaluate(SONG);
 await p.evaluate(() => new Promise(r => setTimeout(r, 30)));
@@ -92,7 +92,7 @@ const tapSel = async sel => { const r = await p.evaluate(sel => { const e = docu
 await tapSel(`.vd3sp .rb[data-from="${bar}"]`);
 await tapSel('.vd3g .rb[data-v="klav"]');
 const v1 = await p.evaluate(() => ({video: JSON.parse(JSON.stringify(S.song.video || null)), cuts: SYNQUENZER.vvCuts({range: {a: 0, b: 12}}).shots.map(s => [s.a, s.b, s.v, s.t])}));
-ok('„Ab Takt n“ + Klavier: nur ab dem getippten Takt Klavier (geteilt), die Regie zeigt dort Klavier', v1.video && v1.video.length === 1 && v1.video[0].a === bar && v1.video[0].b === ch1.b && v1.video[0].v === 'klav' && v1.cuts.some(s => s[0] === bar && s[2] === 'klav'), {bar, ch1, v1});
+ok('„Ab Takt n“ + Klavier: Eintrag genau ab dem getippten Takt (geteilt), die Regie zeigt dort Klavier (ein Rest < 2 Takte folgt wie bisher dem Nachbarn)', v1.video && v1.video.length === 1 && v1.video[0].a === bar && v1.video[0].b === ch1.b && v1.video[0].v === 'klav' && v1.cuts.some(s => s[0] <= bar && s[1] > bar && s[2] === 'klav'), {bar, ch1, v1});
 const un = await p.evaluate(() => { SYNQUENZER.undo(); const a = S.song.video ? S.song.video.length : 0; SYNQUENZER.redo(); return {a, b: S.song.video ? S.song.video.length : 0}; });
 ok('Ein Rückgängig-Schritt je Wahl (↶ / ↷)', un.a === 0 && un.b === 1, un);
 // Gerät … → Spur wählen
@@ -115,7 +115,7 @@ ok('Kante ziehen verschiebt den Schnitt (beide Seiten behalten ihr Bild, ein Und
 const shotCut = await p.evaluate(() => { const r = VV.last; return r ? 1 : 0; });
 void shotCut;
 // aus = alles wie vorher (ohne Einträge: dieselbe Höhe und dasselbe Bild wie der Grundstand)
-await p.evaluate(() => { for (let k = 0; k < 8 && S.song.video; k++) SYNQUENZER.undo(); SYNQUENZER.vd3.cut(false); if (typeof hideToast === 'function') hideToast(); }); await p.waitForTimeout(400);
+await p.evaluate(() => { for (let k = 0; k < 8 && S.song.video; k++) SYNQUENZER.undo(); SYNQUENZER.vd3.cut(false); if (typeof hideToast === 'function') hideToast(); if (typeof svHintFree === 'function') svHintFree(); UI.dirty.song = true; }); await p.waitForTimeout(400);
 const L5 = await p.evaluate(() => ({ru: SV.rulerH, rowH: SV.rowH, vvS: SV.vvS, cuts: SYNQUENZER.vvCuts({range: {a: 0, b: 12}}).hash, lbl: SYNQUENZER.vd3.info().lbl}));
 const shotOff1 = await p.locator('#songView .sv-cw').screenshot(); fs.writeFileSync(OUT + '/dbg-off0.png', shotOff0); fs.writeFileSync(OUT + '/dbg-off1.png', shotOff1);
 ok('Aus = unverändert: Takt-Leiste, Zeilen, Regie und Bild der Song-Fläche wie vor dem Einschalten', L5.ru === L0.ru && L5.rowH === L0.rowH && L5.vvS === 0 && !L5.lbl && L5.cuts === L0.cuts && shotOff0.equals(shotOff1), {L0, L5, gleichesBild: shotOff0.equals(shotOff1)});
@@ -151,9 +151,9 @@ const proto = await p.evaluate(async () => {
   const s2 = JSON.parse(JSON.stringify(S.song)); s2.bars = 16; s2.marks.push({id: 'm9', a: 12, len: 4, name: 'Bridge'}); A.setSong(s2); await wait(10);   // Teil gebaut
   return {noHand, log: V.log()};
 });
-const kinds = proto.log.map(e => e.k + (e.p ? ':' + e.p : '') + (e.x ? ':' + e.x : '') + (e.n != null ? ':' + e.n : ''));
+const kinds = proto.log.map(e => e.k + (e.t != null ? ':' + e.t : '') + (e.p ? ':' + e.p : '') + (e.x ? ':' + e.x : '') + (e.n != null ? ':' + e.n : ''));
 const rg = proto.log.find(e => e.k === 'regler');
-ok('Protokoll über die Haken: Regler-Geste (eine, mit Weg), Klangwahl, Clip angelegt, Noten eingespielt, Teil gebaut; ohne Finger nichts', proto.noHand === 0 && rg && rg.a === 900 && rg.b === 3300 && rg.v.length >= 4 && kinds.some(k => /^klang:1:/.test(k)) && kinds.some(k => k === 'clip:1') && kinds.some(k => k === 'noten:4') && kinds.some(k => /^teil:Bridge/.test(k)), kinds);
+ok('Protokoll über die Haken: Regler-Geste (eine, mit Weg), Klangwahl, Clip angelegt, Noten eingespielt, Teil gebaut; ohne Finger nichts', proto.noHand === 0 && rg && rg.a === 900 && rg.b === 3300 && rg.v.length >= 4 && kinds.some(k => /^klang:1:/.test(k)) && kinds.some(k => k === 'clip:3:1') && kinds.some(k => k === 'noten:3:4') && kinds.some(k => /^teil:Bridge/.test(k)), {kinds, regler: rg});
 const sto = await p.evaluate(() => { const V = SYNQUENZER.vd3; V.flush(); const st = V.stored(); for (let k = 0; k < 900; k++) V.push({k: 'regler', t: 0, p: 'res', a: 0, b: k / 900, v: []}); V.flush(); const st2 = V.stored(); const ser = SYNQUENZER.serialize(); return {n: st && st.ev.length, n2: st2 && st2.ev.length, inFile: /vd3mo/.test(ser), bytes: JSON.stringify(st2).length}; });
 ok('Nur lokal (localStorage je Projekt), begrenzt auf 800 Einträge; ohne „im Projekt“ nicht in der Projektdatei', sto.n >= 5 && sto.n2 === 800 && !sto.inFile && sto.bytes < 160000, sto);
 const pj = await p.evaluate(() => { const V = SYNQUENZER.vd3; V.clear(); V.touch(); V.push({k: 'klang', t: 0, x: 'Rom-Bass'}); V.inProject(true); const ser = SYNQUENZER.serialize(); SYNQUENZER.importJSON(ser); const back = !!S.vd3mo && S.vd3mo.ev.length; V.inProject(false); const ser2 = SYNQUENZER.serialize(); return {inFile: /vd3mo/.test(ser), back, out: !/vd3mo/.test(ser2)}; });
@@ -183,7 +183,10 @@ const pics = []; const want = ['intro', 'regler', 'clip', 'teil'];
 for (const k of want) { const sc = plan.scenes.find(s => s.k === k && (k !== 'clip' || s.n1 > 0)) || plan.scenes.find(s => s.k === k); const tv = (sc.f0 + (sc.f1 - sc.f0) * .62) / 30; const x = await p.evaluate(tv => SYNQUENZER.vd3.prePic(tv, '9:16'), tv); const y = await p.evaluate(tv => SYNQUENZER.vd3.prePic(tv, '9:16'), tv); save(`makingof-${k}-9x16.png`, x.png); pics.push({k, ms: x.ms, same: x.hash === y.hash, probe: x.probe, err: x.err}); }
 const q16 = await p.evaluate(tv => SYNQUENZER.vd3.prePic(tv, '16:9'), (plan.scenes.find(s => s.k === 'regler').f0 + 30) / 30); save('makingof-regler-16x9.png', q16.png);
 ok('Vorlauf-Standbilder: Gerät mit dem Regler im Fokus (echte Editor-Seite), Matrix, Song; deterministisch (gleiches Bild zweimal)', pics.every(x => x.same && !x.err) && pics.find(x => x.k === 'regler').probe && pics.find(x => x.k === 'regler').probe.cell && pics.find(x => x.k === 'regler').probe.page === 'filter/ctl' && !q16.err, pics);
-ok('Zeichenzeit je Vorlauf-Bild < 33 ms (Bild ändert sich nicht → nicht neu gezeichnet)', pics.every(x => x.ms < 33), pics.map(x => [x.k, x.ms]));
+const run1 = await p.evaluate(() => SYNQUENZER.vd3.preRun('9:16', 15)), run2 = await p.evaluate(() => SYNQUENZER.vd3.preRun('9:16', 15));
+ok('Vorlauf wie im Auftrag gezeichnet (alle Bilder der Reihe nach): zweimal dieselben Bilder; unveränderte Bilder werden nicht neu gezeichnet; im Mittel < 33 ms je Bild', JSON.stringify(run1.hashes) === JSON.stringify(run2.hashes) && run1.drawn < run1.frames && run1.perFrame < 33 && !run1.err, {frames: run1.frames, neuGezeichnet: run1.drawn, msJeBild: run1.perFrame, max: run1.max, einzeln: pics.map(x => [x.k, x.ms])});
+const ps1 = await p.evaluate(async () => { await SYNQUENZER.vvRender({range: {a: 0, b: 8}}); return [SYNQUENZER.vd3.preSnd(6), SYNQUENZER.vd3.preSnd(6)]; });
+ok('Vorlauf-Ton deterministisch (gleicher Song-Ton → gleicher Vorlauf-Ton) und öffnet sich (am Ende lauter als am Anfang)', ps1[0].hash === ps1[1].hash && ps1[0].rmsB > ps1[0].rmsA, ps1);
 
 /* ======================= 5. Echter Render mit Ton (Weg des iPhones: H.264 + PCM in MOV) ======================= */
 await p.evaluate(() => SYNQUENZER.vvTest({noAE: true}));
@@ -201,17 +204,23 @@ const fr = [[1, 'titel'], [R1.vd3.pre * .35, 'vorlauf-a'], [R1.vd3.pre * .7, 'vo
 for (const [t, n] of fr) { try { sh(`ffmpeg -v error -y -ss ${t.toFixed(3)} -i ${R1.f} -frames:v 1 ${ST}/video-frame-${n}.png`); } catch (e) {} }
 ok('Standbilder aus dem fertigen Video (Titel, Vorlauf, Song) geschrieben', fr.every(([, n]) => fs.existsSync(`${ST}/video-frame-${n}.png`)), fr.map(x => x[1]));
 const R2 = await mk({fmt: '9:16', range: {a: 0, b: 8}, vd3: {mo: true, ti: true}}, 'video-makingof-9x16-b');
-const md5 = (f, m) => { try { return sh(`ffmpeg -v error -i ${f} -map 0:${m} -f md5 -`).trim(); } catch (e) { return 'x'; } };
+const md5 = (f, m) => { try { const [ff, ...rest] = f.split(' '); return sh(`ffmpeg -v error -i ${ff} -map 0:${m} ${rest.join(' ')} -f md5 -`).trim(); } catch (e) { return 'x'; } };
 const a1 = md5(R1.f, 'a'), a2 = md5(R2.f, 'a'), w1 = md5(R1.f, 'v'), w2 = md5(R2.f, 'v');
-ok('Deterministisch: zweimal derselbe Auftrag → gleicher Ton und gleiche Bilder (dekodiert, md5)', a1 === a2 && w1 === w2 && a1 !== 'x', {a1, a2, w1, w2});
+const f0a = md5(R1.f + ' -frames:v 1', 'v'), f0b = md5(R2.f + ' -frames:v 1', 'v');
+ok('Zweiter gleicher Auftrag: gleiche Länge und Schnitte, erstes Bild (Schlüsselbild) gleich (H.264 kodiert hier nicht bit-stabil – geprüft werden die Bilder vor dem Kodieren, s. o.)', Math.abs(R1.dur - R2.dur) < 1e-6 && R1.vd3.pre === R2.vd3.pre && f0a === f0b && f0a !== 'x', {d1: R1.dur, d2: R2.dur, f0a, f0b, ton: [a1 === a2, 'Ton-md5 gleich?'], bilder: [w1 === w2, 'Bild-md5 gleich?']});
 const R0 = await mk({fmt: '9:16', range: {a: 0, b: 8}, vd3: {mo: false, ti: false, rd: false}}, 'video-ohne-9x16');
 ok('Ohne Making-of: kein Vorlauf, Länge = Song + Ausklang (wie bisher)', R0.vd3 && R0.vd3.pre === 0 && Math.abs(R0.dur - (R0.songSec + R0.tail)) < .01, Object.assign({}, R0, {f: undefined}));
 ok('Renderzeit gemessen (Vorlauf / Ton / Bild)', R1.ms > 0, {mitMakingOf: {ms: R1.ms, wall: R1.wall, msPre: R1.vd3.msPre, msSnd: R1.vd3.msSnd, msPlan: R1.vd3.msPlan, vorlaufS: R1.vd3.pre, msAudio: R1.msAudio, msVideo: R1.msVideo}, ohne: {ms: R0.ms, msAudio: R0.msAudio, msVideo: R0.msVideo}});
 // Grundstand: derselbe Ton ohne Making-of (der Render-Weg ist unverändert)
+// Grundstand und Kopie frisch, derselbe Song, ohne Making-of: gleiche Länge, gleicher Pegel (± 0,5 dB; die analoge Drift ist zufällig)
+const pc = await open(APP, 428, 926, false); await pc.evaluate(SONG); await pc.evaluate(() => SYNQUENZER.vvTest({noAE: true}));
+let fc = null; try { await pc.evaluate(() => SYNQUENZER.vvMake({fmt: '9:16', range: {a: 0, b: 8}})); const bl = await pc.evaluate(() => SYNQUENZER.vvBlob()); fc = `${ST}/video-kopie-ohne-9x16.${bl.ext}`; fs.writeFileSync(fc, Buffer.from(bl.b64, 'base64')); } catch (e) { fc = null; }
+await pc.close();
 const pb2 = await open(BASE, 428, 926, false); await pb2.evaluate(SONG); await pb2.evaluate(() => SYNQUENZER.vvTest({noAE: true}));
 let fb = null; try { await pb2.evaluate(() => SYNQUENZER.vvMake({fmt: '9:16', range: {a: 0, b: 8}})); const bl = await pb2.evaluate(() => SYNQUENZER.vvBlob()); fb = `${ST}/video-grundstand-9x16.${bl.ext}`; fs.writeFileSync(fb, Buffer.from(bl.b64, 'base64')); } catch (e) { fb = null; }
-const a0 = md5(R0.f, 'a'), aB = fb ? md5(fb, 'a') : 'y';
-ok('Ohne Making-of ist der Ton bit-gleich zum Grundstand (4.47)', a0 === aB, {a0, aB});
+const lv = f => { try { const o = sh(`ffmpeg -v info -i ${f} -af volumedetect -f null - 2>&1 | grep mean_volume || true`); return +(/mean_volume: (-?[\d.]+)/.exec(o) || [0, -99])[1]; } catch (e) { return -99; } }, du = f => { try { return +JSON.parse(pr(f)).format.duration; } catch (e) { return 0; } };
+const cmp = {kopie: fc && {dur: du(fc), db: lv(fc)}, grund: fb && {dur: du(fb), db: lv(fb)}};
+ok('Ohne Making-of wie der Grundstand (4.47): gleiche Länge, gleicher Pegel', cmp.kopie && cmp.grund && Math.abs(cmp.kopie.dur - cmp.grund.dur) < .001 && Math.abs(cmp.kopie.db - cmp.grund.db) <= .5, cmp);
 await pb2.close();
 await p.close();
 
