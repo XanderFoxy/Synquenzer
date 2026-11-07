@@ -116,11 +116,12 @@ try {
     const D = window.SYNQUENZER, m = S.song.marks[0]; D.grVorschlag(m.id);
     const L = sx9List(S.song, 4, 0), sm = L.find(q => S.song.own[q.id].sf === 's');
     const r1 = window.SYNQUENZER.wege.sfSet(m.id, 's'), at1 = sx9At(S.song, 4, 1);
-    const thin = (S.song.marks[0].vr && S.song.marks[0].vr.dn || []).length;
+    const vr = S.song.marks[0].vr || {}, thin = (vr.l || []).filter(x => x.k === 'd').length;   // Prüfung 11: vr.l (vorher das nicht vorhandene vr.dn)
+    const sv = sm ? S.song.own[sm.id] : null, dn = NC(m.a, m.a + m.len).slice(4 * m.len, 5 * m.len), svn = sv ? sv.notes.filter(n => n.t < 4).length : -1;
     const r2 = window.SYNQUENZER.wege.sfSet(m.id, 'f'), at2 = sx9At(S.song, 4, 1);
-    return {sm: sm ? sm.id : null, r1, at1, thin, r2, at2, full: S.tracks[4].clips[0].sf};
+    return {sm: sm ? sm.id : null, r1, at1, thin, dn, svn, vrc: vr.c, r2, at2, full: S.tracks[4].clips[0].sf};
   });
-  ok(V1.sm && V1.at1 && V1.at1.id === V1.sm && V1.thin === 0, 'D2: Small nimmt den als Small markierten Drum-Clip (kein Ausdünnen)', 'v' + (V1.at1 && V1.at1.v));
+  ok(V1.sm && V1.at1 && V1.at1.id === V1.sm && V1.vrc === 'l' && V1.thin === 0 && V1.dn.every(x => x === V1.svn), 'D2: Small nimmt den als Small markierten Drum-Clip (kein Ausdünnen)', 'v' + (V1.at1 && V1.at1.v) + ' · Drums ' + V1.dn.join('/') + ' Noten je Takt = Small-Version ' + V1.svn + ' · vr.l ohne Drum-Ausdünnung');
   ok(V1.at2 && V1.at2.id === null && V1.full === 'f', 'D2: Full nimmt den als Full markierten Drum-Clip', 'v' + (V1.at2 && V1.at2.v));
 
   // ---- D1: ein „Zusammenfassen …“ (Finger), intern konDo mit Zurückholen ----
@@ -147,6 +148,8 @@ try {
   const rh = await p.evaluate(() => (UI.pop && UI.pop.name === 's2sum' ? UI.pop.el.querySelector('h4').textContent : null));
   const rbl = await p.evaluate(() => { const b = document.querySelector('#rangeBar [data-a="part"]'); return b.getAttribute('aria-label') + ' / ' + b.textContent.trim(); });
   ok(rb && rb.h >= 44 && /^Zusammenfassen · Takt 9–10/.test(rh || ''), 'D1: Bereich-Leiste ❖ öffnet dasselbe „Zusammenfassen“', rbl);
+  const rbt = await p.evaluate(() => [...document.querySelectorAll('#rangeBar .rg-b')].map(b => { const t = b.querySelector('.t'); return b.dataset.a + ':' + t.textContent + ':' + (t.scrollWidth <= t.clientWidth + .5) + ':' + b.getAttribute('aria-label'); }));
+  ok(rbt.some(x => /^part:Zusammen(fassen)? …:true/.test(x)) && rbt.some(x => /^copy:(Takte kopieren →|Kopieren →):true:Takte kopieren/.test(x)), 'Prüfung 5/9: Bereich-Leiste hochkant „❖ Zusammen …“ (statt „Teil …“) und „⧉ Kopieren →“ (Takte kopieren) – passen in die Taste', rbt.map(x => x.split(':').slice(0, 2).join(':')).join(' · '));
   await tapAt(p, () => [...document.querySelectorAll('.pop.s2sum .cp-c')].find(x => x.textContent.trim() === 'Bridge'));
   const K2 = await run(p, () => { const m = S.song.marks.find(x => x.a === 8); return {kon: !!(m && konOf(m.id)), name: m ? markLabel(m) : null}; });
   ok(K2.kon, 'D1: Bereich → Teil „' + K2.name + '“ mit Ursprung (konDo)');
@@ -181,6 +184,11 @@ try {
   const st = await p.evaluate(() => { const r = SV.wrap.getBoundingClientRect(); return {x: r.left + SV.cellW * 6 - SV.x, y: r.top + SV.rulerH - SV.vvS / 2, vvS: SV.vvS}; });
   await p.touchscreen.tap(st.x, st.y); await p.waitForTimeout(300);
   ok(st.vvS > 0 && await p.evaluate(() => window.SYNQUENZER.vd3.cut()), 'Abschnitt 4: Tipp auf den Regie-Streifen schaltet die Video-Spur ein', 'Streifen ' + st.vvS + ' px');
+  await run(p, () => { window.SYNQUENZER.vd3.cut(false); svLayout(); svDraw(true); });
+  await p.waitForTimeout(250);
+  const st2 = await p.evaluate(() => { const r = SV.wrap.getBoundingClientRect(); return {x: r.left + SV.cellW * 6 - SV.x, y: r.top + SV.rulerH + 6, a: SV.rulerH - SV.vvS - 4, b: SV.rulerH + 8}; });
+  await p.touchscreen.tap(st2.x, st2.y); await p.waitForTimeout(300);
+  ok(await p.evaluate(() => window.SYNQUENZER.vd3.cut()), 'Prüfung 2: Regie-Streifen-Tipp greift auch 6 px darunter', 'Band y ' + st2.a + '–' + st2.b + ' (' + (st2.b - st2.a) + ' px, vorher 12)');
   await run(p, () => { window.SYNQUENZER.vd3.cut(false); svLayout(); });
   // SCHLEIFE ▾ ohne Mithören- und Video-Zeile
   await tapAt(p, () => SV.btn.bLoop);
@@ -195,6 +203,35 @@ try {
   await drag(p, g.x, g.y, g.x + g.cw * 3.2, g.y + 2, 12);
   const SC = await p.evaluate(() => ({pos: SV.pos, last: window.SYNQUENZER.wege.lastScrub(), sx7: SX7.n}));
   ok(SC.pos === Math.round((14 + g.cw * 3.2) / g.cw) && SC.last && SC.last.n >= 3, 'D11: ▼-Marke ziehen (Finger): Marke auf Takt ' + (SC.pos + 1) + ', ' + (SC.last ? SC.last.n : 0) + ' Schläge angeklungen – ohne Schalter', 'Lautsprecher-Knopf weg');
+  // ---- Prüfung 1: Teil-Marke an der ▼-Marke (Takt 1, 12 px rechts) halten / halten + ziehen wie in der Basis ----
+  for (const dims of [null]) {
+    await run(p, () => { if (UI.pop) closePop(); SV.x = 0; window.SYNQUENZER.songPos(0); SV.sel = null; svDraw(true); });
+    await p.waitForTimeout(300);
+    const gm = await p.evaluate(() => { const r = SV.wrap.getBoundingClientRect(), y0 = (SV.blS | 0) + 3, y1 = SV.rulerH - (SV.vvS || 0) - 5; return {x: r.left + songStartBar() * SV.cellW - SV.x + 12, y: r.top + Math.round((y0 + y1) / 2), snap: songSnapshot()}; });
+    await hold(p, gm.x, gm.y, 700); await p.waitForTimeout(300);
+    const h1 = await p.evaluate(() => (UI.pop ? UI.pop.name : null));
+    await run(p, () => { if (UI.pop) closePop(); }); await p.waitForTimeout(250);
+    await touch(p, 'touchStart', gm.x, gm.y); await p.waitForTimeout(600);
+    let drg = false; for (let k = 1; k <= 12; k++) { await touch(p, 'touchMove', gm.x + 10 * k, gm.y); await p.waitForTimeout(40); if (!drg) drg = await p.evaluate(() => !!(typeof DRG !== 'undefined' && DRG)); }
+    const pm = await p.evaluate(() => SV.pos); await touch(p, 'touchEnd'); await p.waitForTimeout(600);
+    await p.evaluate(s0 => { if (UI.pop) closePop(); if (songSnapshot() !== s0) undo(); }, gm.snap);
+    ok(h1 === 'mark' && drg && pm === 0, 'Prüfung 1: Teil-Marke an der ▼-Marke: halten = Marken-Blatt, halten + ziehen = Teil anheben/verschieben (wie Basis), ▼ bleibt', 'Blatt ' + h1 + ' · Drag ' + drg + ' · ▼ Takt ' + (pm + 1));
+  }
+  // ---- Prüfung 2: ▼ greift bis 30 px unter dem Lineal (sofort zur Seite ziehen); Halten dort hebt die Zelle wie bisher ----
+  await run(p, () => { if (UI.pop) closePop(); SV.x = 0; SV.pos = 2; SV.sel = null; svDraw(true); });
+  await p.waitForTimeout(250);
+  const gz = await p.evaluate(() => { const r = SV.wrap.getBoundingClientRect(); return {x: r.left + songStartBar() * SV.cellW - SV.x + 4, y: r.top + SV.rulerH + 24, cw: SV.cellW}; });
+  await drag(p, gz.x, gz.y, gz.x + gz.cw * 3, gz.y, 8);
+  const z2 = await p.evaluate(() => ({pos: SV.pos, last: window.SYNQUENZER.wege.lastScrub(), x: SV.x}));
+  ok(z2.pos === 5 && z2.last && z2.last.n >= 3 && z2.x === 0, 'Prüfung 2: ▼ ziehen greift auch 24 px unter dem Lineal (in den Spuren)', 'Takt ' + (z2.pos + 1) + ' · ' + (z2.last ? z2.last.n : 0) + ' Schläge · Bild bleibt');
+  await run(p, () => { SV.pos = 2; svDraw(true); }); await p.waitForTimeout(200);
+  await hold(p, gz.x, gz.y, 700); await p.waitForTimeout(300);
+  const hc = await p.evaluate(() => ({pop: UI.pop ? UI.pop.name : null, pos: SV.pos}));
+  ok(hc.pop && hc.pos === 2, 'Prüfung 2: dort halten = Zell-Blatt wie bisher (kein ▼-Ziehen)', 'Blatt ' + hc.pop);
+  await run(p, () => { if (UI.pop) closePop(); });
+  // ---- Prüfung 9: ROLLE-Knopf Harmonie, Träger-Feld ----
+  const t9 = await p.evaluate(() => ({h: (hm1Acts(0, 0)[0] || {}).title, tr: EL.hist ? EL.hist.textContent : ''}));
+  ok(/Auf eine Stufe/.test(t9.h) && /Akkord-Ideen/.test(t9.h) && !/Glätten|Akkorde,|Akkorde$/.test(t9.h) && !/^Verlauf$/.test(t9.tr), 'Prüfung 9: ROLLE „Harmonie“-Titel mit den neuen Wörtern; Träger-Feld ohne „Verlauf“', t9.h + ' · Träger: „' + t9.tr + '“');
 
   // ---- D9: ⇥ FILLS, Clip-Versionen im Clip-Blatt ----
   const ue = await p.evaluate(() => ({t: SV.btn.bUe.textContent, fab: document.querySelector('.sv-uefab').textContent, dia: [...document.querySelectorAll('.sv-top button')].filter(x => x.offsetParent).some(x => x.textContent.includes('◆'))}));
@@ -328,7 +365,7 @@ try {
   // Bereich-Leiste quer: ❖ Zusammenfassen …
   await run(p, () => window.SYNQUENZER.songSelect(4, 5)); await p.waitForTimeout(400);
   const rq = await p.evaluate(() => { const b = document.querySelector('#rangeBar [data-a="part"]'); const r = b.getBoundingClientRect(); return {t: b.textContent.trim(), a: b.getAttribute('aria-label'), h: r.height}; });
-  ok(/Zusammenfassen …/.test(rq.a) && rq.h >= 44, 'quer: Bereich-Leiste ❖ = „Zusammenfassen …“ (schmal: „Teil …“)', rq.t);
+  ok(/Zusammenfassen …/.test(rq.a) && rq.h >= 44 && /Zusammen/.test(rq.t), 'quer: Bereich-Leiste ❖ = „Zusammenfassen …“ (schmal: „Zusammen …“)', rq.t);
   await tapAt(p, () => document.querySelector('#rangeBar [data-a="part"]'));
   ok(await p.evaluate(() => !!(UI.pop && UI.pop.name === 's2sum')) && await p.evaluate(xSees), 'quer: Zusammenfassen-Blatt mit ✕');
   await run(p, () => closePop());
@@ -336,6 +373,19 @@ try {
   await run(p, () => va1Sheet()); await p.waitForTimeout(300);
   ok(await p.evaluate(xSees), 'quer: Export-Blatt mit ✕');
   await run(p, () => closePop());
+  // ---- Prüfung 10: Tempo-Blatt quer – alles ohne Wischen erreichbar (zweite Spalte), 926 × 428 und 926 × 370 ----
+  for (const vh of [428, 370]) {
+    await p.setViewportSize({width: 926, height: vh}); await p.waitForTimeout(500);
+    await run(p, () => { if (UI.pop) closePop(); window.SYNQUENZER.setBpm(112); });
+    await tapAt(p, () => EL.bBpm); await p.waitForTimeout(400);
+    const bp = await p.evaluate(() => { const pp = UI.pop && UI.pop.name === 'bpm' ? UI.pop.el : null; if (!pp) return null; const bs = [...pp.querySelectorAll('button')].filter(b => b.offsetParent && b.getBoundingClientRect().width > 0);
+      return {n: bs.length, out: bs.filter(b => { const r = b.getBoundingClientRect(); return r.bottom > innerHeight + .5 || r.top < 0 || r.height < 40; }).map(b => b.textContent.trim()), scroll: pp.scrollHeight - pp.clientHeight, ts: pp.querySelector('.t1ts button').getBoundingClientRect().width}; });
+    const f4 = await tapAt(p, () => [...document.querySelectorAll('.pop .wg-bpm .sx1-r button')].find(b => b.textContent.trim() === '4'));
+    const fd = await run(p, () => (S.song.fade ? S.song.fade.out : 0));
+    await run(p, () => { if (S.song.fade) undo(); if (UI.pop) closePop(); });
+    ok(bp && !bp.out.length && f4 && f4.vis && fd === 16 && (vh === 370 || bp.scroll <= 2), 'Prüfung 10: Tempo-Blatt quer (926 × ' + vh + '): Song transponieren … und Ausblenden am Ende neben der Taktart, alles sichtbar, „4 Takte“ per Finger', bp ? bp.n + ' Knöpfe, keiner unter dem Rand' + (bp.scroll > 2 ? ' (Blatt scrollt ' + bp.scroll + ' px – wie die Basis bei 370)' : '') + ' · Taktart-Knopf ' + Math.round(bp.ts) + ' px breit wie Basis' : 'kein Blatt');
+  }
+  await p.setViewportSize({width: 926, height: 428}); await p.waitForTimeout(400);
   const uq = await p.evaluate(() => { const u = [...document.querySelectorAll('button[aria-label="Rückgängig"], #bUndo')].find(x => x.offsetParent && x.getBoundingClientRect().width > 0 && document.elementFromPoint(x.getBoundingClientRect().left + 8, x.getBoundingClientRect().top + 8) === x); const r = (u || EL.bUndo).getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2, u ? u.id || u.className : 'bUndo'] });
   await p.waitForTimeout(500); await hold(p, uq[0], uq[1], 750);
   await p.waitForTimeout(300);
@@ -356,6 +406,13 @@ try {
     const r = await p.evaluate(() => ({j: window.SYNQUENZER.ui1.lastJump(), ring: !!window.SYNQUENZER.ui1.ring()}));
     if (!r.j.ok || !r.j.target || !r.ring) gb.push(id);
   }
+  const g6 = await p.evaluate(() => ['Übergänge', 'ÜBERGÄNGE'].map(q => (window.SYNQUENZER.ui1.search(q)[0] || {}).id));
+  ok(g6.every(x => x === 'ue'), 'Prüfung 6: Guide-Suche „Übergänge“ / „ÜBERGÄNGE“ findet Fills & Breaks (⇥ FILLS)', g6.join(', '));
+  await run(p, () => { window.SYNQUENZER.grVorschlag(S.song.marks[0].id); ui1Home(); });
+  await p.evaluate(() => window.SYNQUENZER.ui1.jump('vers')); await p.waitForTimeout(820);
+  const g11 = await p.evaluate(() => ({open: EL.clipSheet.classList.contains('open'), cv: !!EL.clipSheet.querySelector('.wg-cv'), j: window.SYNQUENZER.ui1.lastJump(), ring: !!window.SYNQUENZER.ui1.ring()}));
+  ok(g11.open && g11.cv && g11.j.ok && g11.ring, 'Prüfung 11: Guide „Clip-Versionen“ öffnet das Clip-Blatt mit „Versionen im Song“', 'Clip-Blatt ' + g11.open + ' · Zeile ' + g11.cv);
+  await run(p, () => { ui1Home(); undo(); });
   ok(!gb.length, 'Guide: ' + (entries.length - gb.length) + '/' + entries.length + ' Einträge springen hin (mit Song)', gb.length ? 'nicht: ' + gb.join(', ') : 'neu: scrub, block, vteil, open, boxsave, midiex, rt, sounds, autosave, verlauf, aufz, vers, trsheet, gfx, fade');
   // Marken-Blatt für das Foto (Klang & Groove)
   await run(p, () => { ui1Home(); window.SYNQUENZER.openMarkSheet(S.song.marks[2].id); });
