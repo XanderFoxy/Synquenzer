@@ -10251,7 +10251,7 @@ function ma1Frame() {
   const now = performance.now(); if (now - MA1.last < 33) return; MA1.last = now;
   const want = new Map();
   if (PL.ui && P.tab !== 'spiel' && !P.view && !voc()) {
-    const T = ct();
+    const es = typeof v6aSnd === 'function' ? v6aSnd(P.i) : null, T = es && es.p && es.p.mk && es.p.mk.t ? es.p.mk.t[ti()] || ct() : ct();   // MA1+AK1: die wirksamen Wege (Grundklang ⊕ Clip-Zustand ◆ – mit dem Auto-Anker liegen neue Wege im Clip)
     T.p.forEach(c => { const d = Math.round(c.d), id = MA1_KN[d]; if (!c.i || !id || (d === 7 && (T.l2.sync || P.seqSel))) return; if (!want.has(id)) want.set(id, []); want.get(id).push(c); });
   }
   for (const id of [...MA1.ids]) if (!want.has(id) || !PL.ui.knob[id] || !PL.ui.knob[id].ma1) ma1Off(id);
