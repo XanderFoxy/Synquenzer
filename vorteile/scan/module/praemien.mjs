@@ -164,6 +164,31 @@ export function programmEintraege(m) {
   return out;
 }
 
+/**
+ * Geld-zurück-/Cashback-Aktionen für den Abschnitt Cashback der Seite (Modul deals ruft das auf – auch wenn dieses Modul
+ * aus ist: Xander 07.11.2026 „Prämien & Freunde werben komplett raus“, Cashback bleibt). Bewertung mit den Regeln oben
+ * (cfg.module.praemien), nur die Arten aus cfg.module.deals.cashback.arten, ab deren minNetto. Kein Sofort-Push.
+ */
+export function cashbackEintraege(items, cfg, { jetzt = new Date() } = {}) {
+  const p = cfg.module.praemien || {}, c = cfg.module.deals?.cashback || {};
+  const m = { ...p, minNetto: c.minNetto ?? p.minNetto };
+  const arten = c.arten || ['gzg', 'cashback'];
+  const out = [];
+  for (const it of items) {
+    if (it.temperatur != null && it.temperatur < (p.minTemperatur ?? -1e9)) continue;
+    const b = bewertePraemie(`${it.titel} ${it.beschreibung}`, m, { preisText: it.preisText });
+    if (!b || !arten.includes(b.art)) continue;
+    out.push(eintrag({
+      kategorie: 'deals', titel: it.titel, quelle: it.shop ? `${it.shop} via ${it.feed}` : it.feed, link: it.link, datum: it.datum, jetzt,
+      bis: it.bis || null, ab: it.ab || null, art: 'freebie',
+      zeile: `${ART_NAME[b.art]}: ${euro(b.praemie)}${b.kosten ? ` (netto ${euro(b.netto)})` : ''}`,
+      soGehts: SO_GEHTS[b.art], wert: b.wert, sofort: false, grund: 'cashback',
+      extra: { art: b.art, praemie: b.praemie, kosten: b.kosten, netto: b.netto, haken: b.haken },
+    }));
+  }
+  return out;
+}
+
 export default async function praemien({ holeText, cfg, jetzt }) {
   const m = cfg.module.praemien;
   const feeds = [...m.feeds, ...(m.suchen || []).map(q => ({ name: `mydealz „${q}“`, url: mydealzSuche(q), maxAlterTage: m.maxAlterTage ?? 14 }))];
@@ -173,8 +198,12 @@ export default async function praemien({ holeText, cfg, jetzt }) {
   for (const it of items) {
     if (it.temperatur != null && it.temperatur < (m.minTemperatur ?? -1e9)) continue; // von der Community abgestraft
     const text = `${it.titel} ${it.beschreibung}`;
-    const b = bewertePraemie(text, m, { preisText: it.preisText });
+    // Feeds mit „minNetto“: eigene Untergrenze (Geld-zurück für Snacks bringt oft nur 1–3 €, ist aber gratis)
+    const mm = it.feedInfo?.minNetto != null ? { ...m, minNetto: it.feedInfo.minNetto } : m;
+    const b = bewertePraemie(text, mm, { preisText: it.preisText });
     if (!b) continue;
+    // Feeds mit „nurArten“ (z. B. mydealz Lebensmittel): nur Geld-zurück-/Cashback-Aktionen, keine normalen Deals
+    if (it.feedInfo?.nurArten && !it.feedInfo.nurArten.includes(b.art)) continue;
     kandidaten.push(eintrag({
       kategorie: 'praemien', titel: it.titel, quelle: it.shop ? `${it.shop} via ${it.feed}` : it.feed, link: it.link, datum: it.datum,
       zeile: zeileAus(b), soGehts: SO_GEHTS[b.art], wert: b.wert, sofort: b.sofort, grund: b.art,

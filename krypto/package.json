@@ -1,0 +1,11 @@
+{
+  "name": "krypto-wecker",
+  "private": true,
+  "type": "module",
+  "description": "Krypto-Wecker: meldet per ntfy (privates Thema) Gewinn ↔ Verlust, +5 %, +10 %, −10 % je Coin (Zahlen nur im Secret KRYPTO)",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "probe": "node wecker.mjs --probe --zustand /tmp/krypto-probe/zonen.json"
+  }
+}

@@ -1,0 +1,91 @@
+# Krypto-Wecker: stündlich Bitcoin/Ethereum (Euro) gegen Xanders Käufe prüfen und per ntfy melden – beim Wechsel
+# Gewinn ↔ Verlust und beim Erreichen von +5 %, +10 % und −10 %, je Coin, ohne Doppelmeldung. Code: krypto/.
+# Zahlen NUR im Secret KRYPTO („btc:<menge>:<einsatz>,eth:<menge>:<einsatz>“), Nachrichten NUR an das private Thema
+# aus dem Secret KRYPTO_NTFY_TOPIC. Fehlt eins, endet der Lauf nach wenigen Sekunden ohne Abruf.
+# Gemerkt wird im Zweig krypto-daten nur die Zone je Coin als Wort (tief/minus/plus/hoch/top) – keine Zahl.
+name: Krypto-Wecker
+
+on:
+  schedule:
+    - cron: '23 * * * *'   # stündlich (läuft nur vom Standardzweig aus)
+  workflow_dispatch:
+    inputs:
+      probe:
+        description: 'Nur prüfen, keine Push-Nachricht senden, nichts speichern'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: krypto
+  cancel-in-progress: false
+
+jobs:
+  pruefen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Secrets hinterlegt?
+        id: an
+        env:
+          KRYPTO: ${{ secrets.KRYPTO }}
+          KRYPTO_NTFY_TOPIC: ${{ secrets.KRYPTO_NTFY_TOPIC }}
+        run: |
+          if [ -z "${KRYPTO}" ] || [ -z "${KRYPTO_NTFY_TOPIC}" ]; then
+            echo "Secrets KRYPTO und KRYPTO_NTFY_TOPIC sind nicht beide hinterlegt – nichts zu tun."
+            echo "an=0" >> "$GITHUB_OUTPUT"
+          else
+            echo "an=1" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.an.outputs.an == '1'
+        with:
+          fetch-depth: 1
+          sparse-checkout: krypto
+
+      - uses: actions/setup-node@v4
+        if: steps.an.outputs.an == '1'
+        with:
+          node-version: 22
+
+      - name: Tests (nur erfundene Zahlen)
+        if: steps.an.outputs.an == '1'
+        working-directory: krypto
+        run: npm test
+
+      - name: Daten-Zweig holen (oder neu anlegen)
+        if: steps.an.outputs.an == '1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          URL="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          if git ls-remote --exit-code --heads "$URL" krypto-daten >/dev/null; then
+            git clone --quiet --depth 1 --branch krypto-daten "$URL" daten
+          else
+            mkdir daten && git -C daten init --quiet -b krypto-daten && git -C daten remote add origin "$URL"
+          fi
+
+      - name: Kurs prüfen und benachrichtigen
+        if: steps.an.outputs.an == '1'
+        env:
+          KRYPTO: ${{ secrets.KRYPTO }}
+          KRYPTO_NTFY_TOPIC: ${{ secrets.KRYPTO_NTFY_TOPIC }}
+          DRY_RUN: ${{ inputs.probe && '1' || '0' }}
+        run: node krypto/wecker.mjs --zustand daten/krypto/zonen.json
+
+      - name: Zonen speichern (nur wenn sich etwas geändert hat)
+        if: ${{ steps.an.outputs.an == '1' && !inputs.probe }}
+        working-directory: daten
+        run: |
+          git config user.name "krypto-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          printf '# Merk-Zustand des Krypto-Weckers\nJe Coin nur die Zone als Wort (tief/minus/plus/hoch/top) – keine Mengen, keine Einsätze, keine Kurse. Code: Ordner krypto/.\n' > README.md
+          git add -A
+          if git diff --cached --quiet; then echo "keine Änderung"; exit 0; fi
+          # Ein einziger Commit -> der Zweig bleibt klein und enthält keine alte Geschichte
+          git checkout --quiet --orphan neu
+          git commit --quiet -m "Zonen"
+          git push --quiet --force origin neu:krypto-daten

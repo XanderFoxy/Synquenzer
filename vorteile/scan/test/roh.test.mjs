@@ -44,7 +44,7 @@ test('Normaler Lauf schreibt keine Rohdateien', async () => {
     const { n } = await mitNetz(n => main(['--data', join(dir, 'daten'), '--jetzt', JETZT, '--alle'], { DRY_RUN: '1' }, { fetchImpl: n.fetch, abruf: { pauseMs: 0 } }));
     assert.ok(n.abrufe > 5, 'Quellen wurden abgefragt');
     assert.deepEqual(await readdir(dir), ['daten']);
-    assert.deepEqual((await readdir(join(dir, 'daten'))).sort(), ['aktuell.json', 'zustand.json']);
+    assert.deepEqual((await readdir(join(dir, 'daten'))).sort(), ['aktuell.json', 'filme.json', 'zustand.json']);
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
 
@@ -62,7 +62,7 @@ test('Roh-Modus: alle Module, jede Antwort + Ergebnis gespeichert, kein Push', a
     for (const a of index.abrufe.filter(x => x.datei)) assert.ok((await stat(join(rohDir, a.datei))).size > 0, a.datei);
     assert.ok(index.abrufe.some(a => a.url.includes('schnaeppchen-daten') && a.datei.endsWith('.json')));
     assert.ok(index.abrufe.some(a => a.url.includes('rss/gruppe/preisfehler') && a.datei.endsWith('.xml')));
-    assert.deepEqual((await readdir(join(rohDir, 'ausgabe'))).sort(), ['aktuell.json', 'pushes.json', 'zustand.json']);
+    assert.deepEqual((await readdir(join(rohDir, 'ausgabe'))).sort(), ['aktuell.json', 'filme.json', 'pushes.json', 'zustand.json']);
     assert.equal(await readFile(join(rohDir, 'ausgabe', 'aktuell.json'), 'utf8'), await readFile(join(dir, 'daten', 'aktuell.json'), 'utf8'));
   } finally { await rm(dir, { recursive: true, force: true }); }
 });

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <title>Mein Vorteil</title>
-<meta name="description" content="Angebote, Preisfehler, Vorteile und Konzerte – alles auf einer Seite">
+<meta name="description" content="Krypto, deine Produkte im Angebot, krasse Preisfehler, Gewinnspiele, Cashback, Snacks und Auftritte – alles auf einer Seite">
 <meta name="theme-color" content="#f4f2ee" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#141317" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -17,6 +17,7 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://raw.githubusercontent.com" crossorigin>
+<link rel="preconnect" href="https://api.coingecko.com" crossorigin>
 <style>
   :root {
     color-scheme: light dark;
@@ -243,7 +244,279 @@
   @media (max-height: 500px) { dialog { padding-top: 14px; } dialog h2 { margin-bottom: 6px; } dialog p { margin: 6px 0; } }
   .thema { display: flex; gap: 8px; align-items: center; margin: 0 0 12px; }
   .thema code { flex: 1; min-width: 0; overflow-wrap: anywhere; background: var(--flaeche); border-radius: 10px; padding: 10px 12px; font-size: 14px; }
+
+  /* ===== MV2 (07.11.2026): eine Seite mit Abschnitten statt Reitern ===== */
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  .abschnitt { scroll-margin-top: 70px; padding-top: 4px; }
+  .abschnitt > h2, .abschnitt-kopf h2, .reiter-seite > h2 {
+    font-size: 21px; line-height: 1.2; text-transform: none; letter-spacing: -0.01em; color: var(--text); font-weight: 750;
+    margin: 26px 2px 10px; justify-content: flex-start; align-items: center;
+  }
+  .abschnitt-kopf { display: flex; align-items: center; gap: 8px; }
+  .abschnitt-kopf h2 { flex: 1; min-width: 0; }
+  .abschnitt-kopf button { margin-top: 14px; }
+  h2 .zahl { font-size: 13px; font-weight: 700; color: var(--akzent); background: var(--akzent-hell); border-radius: 999px; padding: 1px 9px; letter-spacing: 0; }
+  h2 .zahl:empty { display: none; }
+  h3.unter { font-size: 13px; text-transform: uppercase; letter-spacing: .07em; color: var(--leise); font-weight: 650; margin: 16px 4px 8px; display: flex; justify-content: space-between; gap: 8px; }
+  h3.unter small { text-transform: none; letter-spacing: 0; font-weight: 400; font-size: 13px; }
+  .regel { color: var(--leise); font-size: 13px; margin: -4px 4px 12px; }
+
+  /* Heute wichtig */
+  .wichtig { margin: 10px 0 0; padding: 4px 14px; border-radius: 16px; background: var(--karte); border: 1px solid var(--linie); }
+  .wichtig > b { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: .07em; color: var(--leise); margin: 8px 0 0; }
+  .wichtig ul { list-style: none; margin: 0; padding: 0; }
+  .wichtig li + li { border-top: 1px solid var(--linie); }
+  .wichtig a, .wichtig p { display: flex; align-items: center; gap: 10px; min-height: 44px; margin: 0; text-decoration: none; color: var(--text); font-size: 15px; }
+  .wichtig a::after { content: "›"; margin-left: auto; color: var(--leise); font-size: 20px; }
+  .wichtig .ruhig { color: var(--leise); }
+  .wichtig .punkt { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--akzent); }
+  .wichtig .punkt.warm { background: var(--warm); }
+
+  /* Sprung-Leiste (bleibt oben, seitlich wischbar – die Seite selbst scrollt nie seitlich) */
+  .sprung { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--linie); margin-top: 10px; }
+  @supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+    .sprung { background: color-mix(in srgb, var(--bg) 86%, transparent); -webkit-backdrop-filter: saturate(1.4) blur(14px); backdrop-filter: saturate(1.4) blur(14px); }
+  }
+  .sprung-zeile { display: flex; gap: 6px; padding-top: 8px; padding-bottom: 8px; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .sprung-zeile::-webkit-scrollbar { display: none; }
+  .sprung a {
+    flex: none; min-height: 44px; min-width: 44px; padding: 0 13px; border-radius: 999px; border: 1px solid var(--linie);
+    background: var(--karte); color: var(--text); font-size: 15px; font-weight: 600; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+  }
+  .sprung a[aria-current="true"] { background: var(--akzent); border-color: var(--akzent); color: var(--akzent-text); }
+  .sprung .n { font-size: 12px; font-weight: 700; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--akzent-hell); color: var(--akzent); display: inline-flex; align-items: center; justify-content: center; font-variant-numeric: tabular-nums; }
+  .sprung a[aria-current="true"] .n { background: var(--akzent-text); color: var(--akzent); }
+  .sprung .n:empty { display: none; }
+
+  /* Krypto */
+  .krypto { padding: 4px 16px; }
+  .coin { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 12px 0; border-top: 1px solid var(--linie); align-items: baseline; }
+  .coin:first-child { border-top: 0; }
+  .coin .name { font-size: 17px; font-weight: 650; }
+  .coin .name span { color: var(--leise); font-weight: 500; font-size: 14px; margin-left: 4px; }
+  .coin .kurs { font-size: 22px; font-weight: 750; letter-spacing: -0.02em; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .coin .tag24 { font-size: 14px; color: var(--leise); }
+  .coin .tag24 .plus { color: var(--akzent); font-weight: 650; }
+  .coin .tag24 .minus { color: var(--rot); font-weight: 650; }
+  .coin .ergebnis { grid-column: 1 / -1; margin-top: 8px; padding: 10px 12px; border-radius: 12px; background: var(--flaeche); font-size: 15px; }
+  .coin .ergebnis.gewinn { background: var(--akzent-hell); color: var(--text); }
+  .coin .ergebnis.gewinn b { color: var(--akzent); }
+  .coin .ergebnis.verlust b { color: var(--rot); }
+  .coin .ergebnis small { display: block; color: var(--leise); font-size: 13px; margin-top: 2px; }
+  .kurs-stand { font-size: 13px; color: var(--leise); margin: 0 0 10px; }
+  .kurs-stand.alt { color: var(--warm); }
+  .formular { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; margin: 4px 0 8px; }
+  .formular fieldset { grid-column: 1 / -1; border: 0; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 12px; }
+  .formular legend { font-weight: 650; font-size: 15px; padding: 0; margin: 4px 0 2px; }
+  .formular label { display: flex; flex-direction: column; gap: 3px; font-size: 13px; color: var(--leise); font-weight: 600; min-width: 0; }
+  .formular label.breit { grid-column: 1 / -1; }
+  input[type="text"], input[type="search"] {
+    font: inherit; font-size: 16px; min-height: 44px; width: 100%; min-width: 0; padding: 0 12px; border-radius: 10px;
+    border: 1px solid var(--linie); background: var(--bg); color: var(--text);
+  }
+  .privat { font-size: 13px; color: var(--leise); margin: 2px 0 10px; }
+  .schritte-gh { margin: 6px 0 8px; padding-left: 20px; font-size: 14px; }
+  .schritte-gh li { margin-bottom: 6px; }
+  .schritte-gh code { background: var(--flaeche); border-radius: 6px; padding: 1px 5px; font-size: 13px; }
+
+  /* Meine Produkte: Liste bearbeiten */
+  .zweit.klein-knopf { min-height: 44px; padding: 0 12px; font-size: 14px; border-radius: 999px; background: var(--karte); }
+  .editor { background: var(--karte); border: 1px solid var(--linie); border-radius: 16px; padding: 6px 16px 14px; margin-bottom: 12px; }
+  .editor ul { list-style: none; margin: 0; padding: 0; }
+  .editor li { display: flex; align-items: center; gap: 10px; min-height: 48px; border-top: 1px solid var(--linie); }
+  .editor li:first-child { border-top: 0; }
+  .editor li span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  .editor li.aus span { color: var(--leise); text-decoration: line-through; }
+  .editor .neu-zeile { display: flex; gap: 8px; margin-top: 10px; }
+  .editor .neu-zeile button { flex: none; }
+  .editor .aktionen { margin-top: 10px; }
+  .mini { font-size: 12px; color: var(--leise); }
+
+  /* Kompakte Zeilen (Snacks, Neuerscheinungen) */
+  .liste .rechts.warm { color: var(--warm); font-weight: 600; }
+  .gewinnspiel .oben .marke.heute { background: var(--warm); color: var(--bg); }
+  details.kasten-innen { border-top: 1px solid var(--linie); }
+  details.kasten-innen > summary { color: var(--text); font-weight: 600; }
+  details.kasten-innen[open] { padding-bottom: 12px; }
+  .krypto > div:first-child { padding-top: 4px; }
+
+  /* Krypto (07.11. abends): Ergebnis je Coin, Käufe bearbeiten, Pop-up bei Zonenwechsel, Hinweis nach Import */
+  .coin .gv-zeile { margin: 0; font-size: 16px; }
+  .coin .gv-zeile b { font-size: 19px; font-weight: 750; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .coin .ergebnis.gewinn .gv-zeile b { color: var(--akzent); }
+  .coin .ergebnis.verlust .gv-zeile b { color: var(--rot); }
+  .coin .ergebnis.verlust { background: var(--rot-hell); }
+  .kz { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 12px; margin: 8px 0 4px; }
+  @media (min-width: 600px) { .kz { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  .kz div { min-width: 0; }
+  .kz dt { font-size: 12px; color: var(--leise); font-weight: 600; }
+  .kz dd { margin: 0; font-size: 16px; font-weight: 650; font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--text); }
+  .coin-edit { border: 0; margin: 0 0 6px; padding: 8px 0 12px; border-bottom: 1px solid var(--linie); min-width: 0; }
+  .coin-edit legend { font-weight: 700; font-size: 16px; padding: 0; }
+  .coin-edit label { display: flex; flex-direction: column; gap: 3px; font-size: 13px; color: var(--leise); font-weight: 600; min-width: 0; }
+  .coin-edit label.aktuell { margin-top: 12px; }
+  .kaeufe { list-style: none; margin: 6px 0 0; padding: 0; }
+  .kaeufe li { display: flex; align-items: center; gap: 10px; min-height: 48px; border-top: 1px solid var(--linie); font-size: 14px; }
+  .kaeufe li:first-child { border-top: 0; }
+  .kaeufe li span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  .summe { font-size: 14px; margin: 6px 0 2px; font-weight: 600; }
+  .kauf-neu { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 12px; margin-top: 10px; }
+  .kauf-neu .breit { grid-column: 1 / -1; }
+  .formfehler { margin: 0; color: var(--rot); font-size: 14px; font-weight: 600; }
+  .secret-zeile { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-top: 6px; }
+  .secret-zeile code { overflow-wrap: anywhere; }
+  button.klein-knopf:disabled { opacity: .55; }
+  a.zweit-link { display: flex; align-items: center; justify-content: center; min-height: 46px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--linie); color: var(--text); text-decoration: none; font-weight: 600; }
+  button.x { flex: none; width: 44px; height: 44px; border-radius: 999px; border: 1px solid var(--linie); background: var(--flaeche); color: var(--text); font-size: 18px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; padding: 0; }
+  #krypto-alarm { width: min(460px, calc(100vw - 24px)); }
+  .alarm-kopf { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+  .alarm-kopf h2 { flex: 1; min-width: 0; margin: 0; font-size: 20px; }
+  .alarm { padding: 12px 0; border-top: 1px solid var(--linie); }
+  .alarm:first-child { border-top: 0; }
+  .alarm p { margin: 4px 0 0; font-size: 16px; color: var(--leise); }
+  .alarm .was { color: var(--text); font-size: 20px; font-weight: 700; margin: 0; }
+  .alarm .gv { color: var(--text); font-size: 32px; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .alarm .gv span { font-size: 22px; }
+  .alarm.gewinn .gv { color: var(--akzent); }
+  .alarm.verlust .gv { color: var(--rot); }
+  .toast {
+    position: fixed; z-index: 20; left: max(12px, env(safe-area-inset-left)); right: max(12px, env(safe-area-inset-right));
+    bottom: calc(12px + env(safe-area-inset-bottom)); max-width: 616px; margin: 0 auto; display: flex; align-items: center; gap: 10px;
+    padding: 8px 8px 8px 14px; border-radius: 14px; background: var(--akzent); color: var(--akzent-text); box-shadow: 0 10px 30px rgba(0, 0, 0, .3); font-weight: 600;
+  }
+  .toast.warm { background: var(--warm); color: var(--bg); }
+  .toast p { margin: 0; flex: 1; min-width: 0; font-size: 15px; }
+  .toast button.x { background: transparent; border-color: currentColor; color: inherit; }
+  /* eigene Seite eines Reiters (Filme): springt wie ein Abschnitt unter die Leiste, auch solange sie noch kurz ist */
+  .reiter-seite { scroll-margin-top: 70px; padding-top: 4px; min-height: 100vh; }
 </style>
+<script>
+'use strict';
+// Krypto-Rechnung, Zonen und Import-Format – Wort für Wort wie krypto/zonen.mjs (test/regeln.test.mjs prüft das).
+// <krypto-zonen>
+const KRYPTO_COINS = Object.freeze({
+  btc: { name: 'Bitcoin', kurz: 'BTC', zeichen: '₿', min: 1000, max: 1e7 },
+  eth: { name: 'Ethereum', kurz: 'ETH', zeichen: 'Ξ', min: 10, max: 1e6 },
+});
+// Zonen nach Gewinn/Verlust in Prozent: tief ≤ −10 | minus < 0 | plus ≥ 0 | hoch ≥ +5 | top ≥ +10
+const ZONEN = ['tief', 'minus', 'plus', 'hoch', 'top'];
+const HYSTERESE = 0.5; // Prozentpunkte
+// Gemeldet wird: Wechsel Gewinn ↔ Verlust, Erreichen von +5 %, +10 % und −10 %
+const MELDUNG = Object.freeze({ gewinn: 'jetzt im Gewinn', verlust: 'jetzt im Verlust', plus5: '+5 % erreicht', plus10: '+10 % erreicht', minus10: '−10 % erreicht' });
+// Zonen-Grenzen: hoch über Grenze i (von Zone i nach i+1) ab AUF[i]; runter (von i+1 nach i) erst unter AB[i].
+// Die Meldungs-Richtung löst genau an der Grenze aus, die Gegenrichtung erst 0,5 Punkte dahinter (macht wieder „scharf“);
+// Gewinn ↔ Verlust in beide Richtungen erst 0,5 Punkte hinter der Null (kein Hin und Her bei ±0,1 %).
+const GRENZEN = [
+  { auf: -10 + HYSTERESE, ab: -10, aufMeldung: null, abMeldung: 'minus10', abBisGleich: true },
+  { auf: HYSTERESE, ab: -HYSTERESE, aufMeldung: 'gewinn', abMeldung: 'verlust' },
+  { auf: 5, ab: 5 - HYSTERESE, aufMeldung: 'plus5', abMeldung: null },
+  { auf: 10, ab: 10 - HYSTERESE, aufMeldung: 'plus10', abMeldung: null },
+];
+
+// Rechen-Rauschen weg (0,02 × 45.000 ist im Rechner 900,0000000000001): auf Millionstel-Prozent runden
+const glatt = p => Math.round(p * 1e6) / 1e6;
+
+/** Zone ohne Vorgeschichte (erster Blick): reine Grenzen −10 / 0 / +5 / +10. */
+function rohZone(prozent) {
+  if (!Number.isFinite(prozent)) return null;
+  prozent = glatt(prozent);
+  return prozent <= -10 ? 'tief' : prozent < 0 ? 'minus' : prozent < 5 ? 'plus' : prozent < 10 ? 'hoch' : 'top';
+}
+
+/**
+ * Nächste Zone mit Hysterese. alt = zuletzt gemerkte Zone (oder nichts), prozent = Gewinn/Verlust in Prozent.
+ * -> { zone, meldung } – meldung ist null oder ein Schlüssel von MELDUNG (bei einem Sprung über mehrere Grenzen die
+ * äußerste, z. B. von minus direkt auf top -> plus10). Ohne gültige alte Zone: rohZone, keine Meldung.
+ */
+function naechsteZone(alt, prozent) {
+  if (!Number.isFinite(prozent)) return { zone: ZONEN.includes(alt) ? alt : null, meldung: null };
+  let i = ZONEN.indexOf(alt);
+  if (i < 0) return { zone: rohZone(prozent), meldung: null };
+  prozent = glatt(prozent);
+  let meldung = null;
+  while (i < ZONEN.length - 1 && prozent >= GRENZEN[i].auf) { meldung = GRENZEN[i].aufMeldung || meldung; i++; }
+  while (i > 0 && (GRENZEN[i - 1].abBisGleich ? prozent <= GRENZEN[i - 1].ab : prozent < GRENZEN[i - 1].ab)) { meldung = GRENZEN[i - 1].abMeldung || meldung; i--; }
+  return { zone: ZONEN[i], meldung };
+}
+
+/**
+ * Käufe -> Position. k = { kaeufe: [{ betrag (€ inkl. Gebühren), kurs (€ je Coin) ODER menge }], aktuell? (Menge jetzt,
+ * z. B. durch Auto Earn gewachsen – überschreibt die Summe) }.
+ * -> { einsatz, mengeKaeufe, menge, kaufkurs (Ø), schwelle (Kurs, ab dem im Plus), kaeufe: Anzahl } | null
+ */
+function kryptoPosition(k) {
+  let einsatz = 0, mengeKaeufe = 0, n = 0;
+  for (const x of Array.isArray(k?.kaeufe) ? k.kaeufe : []) {
+    const betrag = Number(x?.betrag);
+    if (!(betrag > 0) || !Number.isFinite(betrag)) continue;
+    const menge = Number(x.menge) > 0 ? Number(x.menge) : Number(x.kurs) > 0 ? betrag / Number(x.kurs) : NaN;
+    if (!(menge > 0) || !Number.isFinite(menge)) continue;
+    einsatz += betrag; mengeKaeufe += menge; n++;
+  }
+  if (!n) return null;
+  const aktuell = Number(k.aktuell);
+  const menge = aktuell > 0 && Number.isFinite(aktuell) ? aktuell : mengeKaeufe;
+  return { einsatz, mengeKaeufe, menge, kaufkurs: einsatz / mengeKaeufe, schwelle: einsatz / menge, kaeufe: n };
+}
+
+/** Position + Kurs -> { kurs, wert, gv (€), prozent (z. B. 5.3 = +5,3 %), einsatz, menge, kaufkurs, schwelle } | null */
+function kryptoErgebnis(pos, kurs) {
+  if (!pos || !(kurs > 0)) return null;
+  const wert = pos.menge * kurs;
+  return { kurs, wert, gv: wert - pos.einsatz, prozent: (wert / pos.einsatz - 1) * 100, einsatz: pos.einsatz, menge: pos.menge, kaufkurs: pos.kaufkurs, schwelle: pos.schwelle };
+}
+
+/**
+ * Import-Text (Link-Fragment #krypto=… und GitHub-Secret KRYPTO): „btc:<menge>:<einsatz>,eth:<menge>:<einsatz>“,
+ * Dezimalpunkt (0.0123), Einsatz in € inkl. Gebühren. -> { ok: true, coins: { btc: { menge, einsatz } } } | { ok: false, fehler }
+ * Ein ungültiger Teil -> nichts übernehmen (kein halber Import).
+ */
+function leseKryptoText(text) {
+  let s = String(text ?? '').trim();
+  try { s = decodeURIComponent(s); } catch {}
+  s = s.replace(/^#?krypto=/i, '').trim();
+  if (!s) return { ok: false, fehler: 'leer' };
+  const coins = {};
+  for (const teil of s.split(/[,;\s]+/).filter(Boolean)) {
+    const m = teil.match(/^([a-z]{2,6}):(\d+(?:\.\d+)?):(\d+(?:\.\d+)?)$/i);
+    if (!m) return { ok: false, fehler: 'Format' };
+    const c = m[1].toLowerCase(), menge = Number(m[2]), einsatz = Number(m[3]);
+    if (!KRYPTO_COINS[c]) return { ok: false, fehler: 'unbekannter Coin' };
+    if (!(menge > 0 && menge < 1e6 && einsatz > 0 && einsatz < 1e9)) return { ok: false, fehler: 'Zahl' };
+    coins[c] = { menge, einsatz };
+  }
+  return Object.keys(coins).length ? { ok: true, coins } : { ok: false, fehler: 'leer' };
+}
+// </krypto-zonen>
+
+// Krypto-Import per Link (z. B. von Claude): …/mein-vorteil/#krypto=btc:<menge>:<einsatz>,eth:<menge>:<einsatz>
+// Läuft vor allem anderen: Fragment sofort aus der Adresse (history.replaceState), Zahlen nur in localStorage –
+// nie senden, nie loggen (ein Fragment geht ohnehin nie an einen Server).
+const KRYPTO_IMPORT = (() => {
+  if (!/^#krypto=/i.test(location.hash)) return null;
+  const roh = location.hash;
+  history.replaceState(history.state, '', location.pathname + location.search);
+  const r = leseKryptoText(roh);
+  if (!r.ok) return { ok: false };
+  try {
+    let d = null;
+    try { d = JSON.parse(localStorage.getItem('mein-vorteil-krypto')); } catch {}
+    if (!d || d.v !== 2 || typeof d.coins !== 'object' || !d.coins) d = { v: 2, coins: {} };
+    let z = null;
+    try { z = JSON.parse(localStorage.getItem('mein-vorteil-krypto-zone')); } catch {}
+    z = z && typeof z === 'object' ? z : {};
+    for (const [c, x] of Object.entries(r.coins)) {
+      d.coins[c] = { kaeufe: [{ betrag: x.einsatz, menge: x.menge, uebernommen: true }], aktuell: null };
+      delete z[c]; // neue Zahlen -> Zone neu bestimmen, ohne Meldung
+    }
+    localStorage.setItem('mein-vorteil-krypto', JSON.stringify(d));
+    localStorage.setItem('mein-vorteil-krypto-zone', JSON.stringify(z));
+    return { ok: true, coins: Object.keys(r.coins) };
+  } catch { return { ok: false, speicher: true }; }
+})();
+</script>
 </head>
 <body>
 <header class="kopf">
@@ -257,22 +530,107 @@
     </div>
     <p id="stand" class="stand" aria-live="polite">Lade …</p>
     <div id="umzug" class="umzug" hidden><p>Neu: alles auf einer Seite. Für das neue Symbol in Safari <b>Teilen → Zum Home-Bildschirm</b>, das alte Symbol kannst du löschen.</p><button id="umzug-zu" type="button">Verstanden</button></div>
+    <section id="wichtig" class="wichtig" aria-label="Heute wichtig" aria-live="polite"><b>Heute wichtig</b><ul><li><p class="ruhig">Lade …</p></li></ul></section>
   </div>
 </header>
 
-<nav class="reiter" aria-label="Bereiche">
-  <div class="breite segment" role="tablist">
-    <button type="button" role="tab" id="t-angebote" data-reiter="angebote" aria-controls="p-angebote" aria-selected="true">Angebote<span class="n" hidden></span></button>
-    <button type="button" role="tab" id="t-vorteile" data-reiter="vorteile" aria-controls="p-vorteile" aria-selected="false" tabindex="-1">Vorteile<span class="n" hidden></span></button>
-    <button type="button" role="tab" id="t-konzerte" data-reiter="konzerte" aria-controls="p-konzerte" aria-selected="false" tabindex="-1">Konzerte<span class="n" hidden></span></button>
+<nav class="sprung" aria-label="Abschnitte">
+  <div class="breite sprung-zeile">
+    <a href="#krypto" data-ziel="krypto">Krypto<span class="n"></span></a>
+    <a href="#produkte" data-ziel="produkte">Meine Produkte<span class="n"></span></a>
+    <a href="#preisfehler" data-ziel="preisfehler">Preisfehler<span class="n"></span></a>
+    <a href="#gewinnspiele" data-ziel="gewinnspiele">Gewinnspiele<span class="n"></span></a>
+    <a href="#cashback" data-ziel="cashback">Cashback<span class="n"></span></a>
+    <a href="#snacks" data-ziel="snacks">Snacks<span class="n"></span></a>
+    <a href="#auftritte" data-ziel="auftritte">Auftritte<span class="n"></span></a>
+    <a href="#remix" data-ziel="remix">Remix<span class="n"></span></a>
+    <a href="#mehr" data-ziel="mehr">Mehr<span class="n"></span></a>
+    <!-- Weitere Reiter: <a data-reiter="name"> + <section id="p-name" class="reiter-seite"> nach </main> + REITER_START.name (siehe „Weitere Reiter“ im Skript) -->
+    <a href="#filme" data-reiter="filme">Filme<span class="n"></span></a>
   </div>
 </nav>
 
 <main class="breite">
-  <section id="p-angebote" role="tabpanel" aria-labelledby="t-angebote"><p class="leer">Lade Angebote …</p></section>
-  <section id="p-vorteile" role="tabpanel" aria-labelledby="t-vorteile" hidden><p class="leer">Lade Vorteile …</p></section>
-  <section id="p-konzerte" role="tabpanel" aria-labelledby="t-konzerte" hidden><p class="leer">Lade Konzerte …</p></section>
+  <section id="krypto" class="abschnitt" aria-labelledby="h-krypto">
+    <h2 id="h-krypto">Krypto</h2>
+    <div class="karte krypto"><div id="i-krypto"><p class="leer">Lade Kurse …</p></div>
+      <details class="kasten-innen" id="krypto-form">
+        <summary>Käufe &amp; Menge</summary>
+        <div id="krypto-editor"></div>
+      </details>
+      <details class="kasten-innen" id="krypto-push">
+        <summary>Push auch bei geschlossener Seite</summary>
+        <ol class="schritte-gh">
+          <li>In GitHub <b>Settings → Secrets and variables → Actions → New repository secret</b> öffnen (Knopf unten) und zwei Secrets anlegen:
+            <span class="secret-zeile"><code>KRYPTO</code> = deine Zahlen <button id="krypto-secret-kopie" class="zweit klein-knopf" type="button">Wert kopieren</button></span>
+            <span class="secret-zeile"><code>KRYPTO_NTFY_TOPIC</code> = <code id="krypto-topic"></code> <button id="krypto-topic-kopie" class="zweit klein-knopf" type="button">Kopieren</button></span></li>
+          <li>In der App <b>ntfy</b> auf <b>+</b> tippen und genau dieses Thema abonnieren (Server ntfy.sh).</li>
+          <li>Fertig: Der <b>Krypto-Wecker</b> prüft stündlich und meldet Gewinn ↔ Verlust, +5 %, +10 % und −10 %. Beim ersten Lauf kommt „Krypto-Wecker ist aktiv“.</li>
+        </ol>
+        <p class="privat">Das Thema gehört nur dir (zufällig erzeugt, nicht das gemeinsame Push-Thema). Deine Zahlen liegen nur im Secret – nie im Code, im Log oder in den Daten. Ändern sich deine Käufe: Wert neu kopieren und das Secret <code>KRYPTO</code> überschreiben.</p>
+        <div class="aktionen"><a class="los" href="https://github.com/XanderFoxy/Synquenzer/settings/secrets/actions/new" target="_blank" rel="noopener">Secret anlegen</a><a id="krypto-ntfy" class="zweit-link" href="#" target="_blank" rel="noopener">In ntfy öffnen</a></div>
+      </details>
+    </div>
+  </section>
+
+  <section id="produkte" class="abschnitt" aria-labelledby="h-produkte">
+    <div class="abschnitt-kopf"><h2 id="h-produkte">Meine Produkte <span class="zahl"></span></h2><button id="liste-bearbeiten" class="zweit klein-knopf" type="button" aria-expanded="false" aria-controls="editor">Liste bearbeiten</button></div>
+    <div id="editor" class="editor" hidden></div>
+    <div id="i-produkte"><p class="leer">Lade Angebote …</p></div>
+  </section>
+
+  <section id="preisfehler" class="abschnitt" aria-labelledby="h-preisfehler">
+    <h2 id="h-preisfehler">Preisfehler <span class="zahl"></span></h2>
+    <p class="regel">Nur No-Brainer, die gerade laufen: mind. 75 % unter dem Vorher-Preis und mind. 20 € gespart (oder ein teures Gerät fast geschenkt, z. B. 4K-Fernseher für 35 €). Spiele nur für ≈ 1 €.</p>
+    <div id="i-preisfehler"><p class="leer">Lade …</p></div>
+  </section>
+
+  <section id="gewinnspiele" class="abschnitt" aria-labelledby="h-gewinnspiele">
+    <h2 id="h-gewinnspiele">Gewinnspiele <span class="zahl"></span></h2>
+    <p class="regel">Nur laufende, ohne Kauf und ohne Abo – was zuerst endet, steht oben.</p>
+    <div id="i-gewinnspiele"><p class="leer">Lade …</p></div>
+  </section>
+
+  <section id="cashback" class="abschnitt" aria-labelledby="h-cashback">
+    <h2 id="h-cashback">Cashback <span class="zahl"></span></h2>
+    <p class="regel">Geld zurück für Sachen, die dich interessieren (deine Produkte, Snacks, Musik-Technik) – nur laufende.</p>
+    <div id="i-cashback"><p class="leer">Lade …</p></div>
+  </section>
+
+  <section id="snacks" class="abschnitt" aria-labelledby="h-snacks">
+    <h2 id="h-snacks">Snacks <span class="zahl"></span></h2>
+    <p class="regel">Andere Snack-Angebote, die nicht auf deiner Liste stehen.</p>
+    <div id="i-snacks"><p class="leer">Lade …</p></div>
+  </section>
+
+  <section id="auftritte" class="abschnitt" aria-labelledby="h-auftritte">
+    <h2 id="h-auftritte">Auftritte &amp; Konzerte <span class="zahl"></span></h2>
+    <div id="i-auftritte"><p class="leer">Lade Konzerte …</p></div>
+  </section>
+
+  <section id="remix" class="abschnitt" aria-labelledby="h-remix">
+    <h2 id="h-remix">Remix-Contests <span class="zahl"></span></h2>
+    <p class="regel">Laufende Remix-Wettbewerbe mit Stems: Synth-Pop, 80er, Italo, Euro-Disco, Elektro, Dark Wave, New Wave – was zuerst endet, steht oben.</p>
+    <div id="i-remix"><p class="leer">Lade …</p></div>
+  </section>
+
+  <section id="mehr" class="abschnitt" aria-labelledby="h-mehr">
+    <h2 id="h-mehr">Mehr <span class="zahl"></span></h2>
+    <p class="regel">Erleben, Reisen, Nebenverdienst und Vorlagen – eingeklappt.</p>
+    <div id="i-mehr"><p class="leer">Lade …</p></div>
+  </section>
 </main>
+<!-- Filme: Inhalt kommt aus filme.js (Skript, CSS und Daten erst beim ersten Öffnen) -->
+<section id="p-filme" class="reiter-seite breite" aria-labelledby="h-filme" hidden>
+  <h2 id="h-filme">Filme &amp; Serien</h2>
+  <div id="i-filme"><p class="leer">Lade Filme …</p></div>
+</section>
+
+<dialog id="krypto-alarm" aria-labelledby="alarm-titel">
+  <div class="alarm-kopf"><h2 id="alarm-titel">Krypto</h2><button id="alarm-zu" class="x" type="button" aria-label="Schließen">✕</button></div>
+  <div id="alarm-inhalt"></div>
+</dialog>
+<div id="hinweis" class="toast" role="status" hidden><p></p><button class="x" type="button" aria-label="Hinweis schließen">✕</button></div>
 
 <dialog id="push-hilfe" aria-labelledby="push-titel">
   <h2 id="push-titel">Push aufs iPhone</h2>
@@ -281,11 +639,10 @@
     <li>In ntfy auf <b>+</b> tippen und dieses Thema eintragen (Server bleibt ntfy.sh):</li>
   </ol>
   <div class="thema"><code id="topic"></code><button id="kopieren" class="zweit" type="button">Kopieren</button></div>
-  <p>Angebote, Preisfehler, Vorteile und Konzerte kommen alle über dieses eine Thema. Tippst du auf eine Nachricht, öffnet sich direkt das Angebot.</p>
+  <p>Angebote, Preisfehler, Vorteile, Konzerte und der Krypto-Wecker kommen alle über dieses eine Thema. Tippst du auf eine Nachricht, öffnet sich direkt das Angebot.</p>
   <p class="klein">Als App auf den Home-Bildschirm: in Safari „Teilen“ → „Zum Home-Bildschirm“.</p>
   <div class="aktionen"><a id="abo" class="los" href="#" target="_blank" rel="noopener">In ntfy öffnen</a><button id="zu" class="zweit" type="button">Schließen</button></div>
 </dialog>
-
 <script>
 'use strict';
 const TOPIC = 'xander-schnaeppchen-b5cbf4442aaa9734f3';
@@ -297,18 +654,27 @@ const URLS = {
   releases: RAW + 'konzerte-daten/konzerte/data/releases.json',
   kstatus: RAW + 'konzerte-daten/konzerte/data/status.json',
 };
+// Datenquellen (je ein Wecker); die Seite zeigt sie in Abschnitten, nicht mehr als Reiter
 const REITER = ['angebote', 'vorteile', 'konzerte'];
 const NAMEN = { angebote: 'Angebote', vorteile: 'Vorteile', konzerte: 'Konzerte' };
+// Abschnitte in Reihenfolge; alte Sprungmarken (Push-Links, alte Seiten) zeigen auf den passenden Abschnitt
+const ABSCHNITTE = ['krypto', 'produkte', 'preisfehler', 'gewinnspiele', 'cashback', 'snacks', 'auftritte', 'remix', 'mehr'];
+const ALTE_MARKEN = { angebote: 'produkte', vorteile: 'gewinnspiele', konzerte: 'auftritte', schnaeppchen: 'produkte' };
 // Daten-Stand gilt als alt (rot), wenn der letzte Lauf so lange her ist (Schnäppchen/Vorteile stündlich, Konzerte alle 3 h)
 const ALT_STUNDEN = { angebote: 3, vorteile: 3, konzerte: 7 };
 // Vorteile: Anzeigenamen, falls die Daten keine liefern (neue Bereiche kommen mit ihrem Namen aus den Daten)
 const BEREICH = {
-  deals: ['Deals', 'echt durchgerechnet'], erleben: ['Erleben', 'Therme, Kino, Feste'], reisen: ['Reisen', 'ab Leipzig, Dresden, Berlin'],
+  deals: ['Andere Deals', 'echt durchgerechnet'], erleben: ['Erleben', 'Therme, Kino, Feste'], reisen: ['Reisen', 'ab Leipzig, Dresden, Berlin'],
   musik: ['Musik', 'Geräte & Auftritte'], nebenverdienst: ['Nebenverdienst', 'von zu Hause'], tests: ['Tests & Gewinnspiele', 'ohne Fallen'],
-  praemien: ['Prämien & Freunde werben', 'netto pro Stunde Aufwand'],
 };
+// Nie zeigen (Xander 07.11.2026: „Prämien & Freunde werben“ – Strom, Bank, Konto, Freunde werben – komplett raus),
+// auch nicht aus älteren Daten
+const NIE_ZEIGEN = new Set(['praemien']);
+// Bereiche mit eigener Seite (Reiter in der Leiste): nicht noch einmal unter „Mehr“
+const EIGENE_SEITE = new Set(['filme']);
 const SICHTBAR = 4;
 const PREISFEHLER_STUNDEN = 24; // Preisfehler ohne Ende-Angabe: höchstens so lange zeigen (echte sind nach Minuten vorbei)
+const GEWINNSPIEL_OHNE_ENDE_TAGE = 7; // Gewinnspiel ohne bekanntes Ende: nur so lange nach dem Melden
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -417,7 +783,7 @@ function lade() {
       if (S[q]) { S[q].gestoert = true; S[q].fehler = String(e?.message || e); } else S[q] = { d: null, gestoert: true, fehler: String(e?.message || e) };
     }).then(() => {
       zeichne(q);
-      if (--laeuft === 0) { $('neu').removeAttribute('aria-busy'); geladenUm = Date.now(); }
+      if (--laeuft === 0) { $('neu').removeAttribute('aria-busy'); geladenUm = Date.now(); sprungOffen = false; }
     });
   }
 }
@@ -452,6 +818,126 @@ function stoerHinweis(q) {
   if (!s?.gestoert || !s.d || offline()) return '';
   return `<p class="gestoert">Quelle gerade gestört – du siehst den letzten Stand von ${esc(uhrzeit(standZeit(q)))}.</p>`;
 }
+
+// --- Krasse Preisfehler: Wort für Wort wie schnaeppchen/scan/krass.mjs und vorteile/scan/lib/krass.mjs (Test: regeln.test.mjs) ---
+const KRASS_STANDARD = Object.freeze({
+  minProzent: 75, minErsparnisEuro: 20, absurdMaxEuro: 5, absurdMinVorher: 15,
+  spielMaxEuro: 1.5, spielMinProzent: 98, spielMinErsparnisEuro: 40,
+});
+
+// Was so ein Gerät mindestens kostet (vorsichtig niedrig) – nur für Preisfehler ohne bekannten Vorher-Preis
+const GERAETE_AB = [
+  [/\b(fernseher|smart[-\s]?tv|tv|oled[-\s]?tv|qled[-\s]?tv)\b/i, 'Fernseher', 200],
+  [/\b(laptop|notebook|macbook|chromebook)\b/i, 'Laptops', 300],
+  [/\b(playstation|ps5|xbox series|xbox|nintendo switch|switch 2|steam deck|konsole)\b/i, 'Konsolen', 250],
+  [/\b(grafikkarte|rtx\s?\d{4}|radeon rx)\b/i, 'Grafikkarten', 250],
+  [/\b(iphone|smartphone|galaxy s\d+|pixel \d+)\b/i, 'Smartphones', 200],
+  [/\b(ipad|tablet)\b/i, 'Tablets', 150],
+  [/\b(beamer|projektor)\b/i, 'Beamer', 150],
+  [/\b(saugroboter|staubsauger[-\s]?roboter)\b/i, 'Saugroboter', 150],
+  [/\b(synthesizer|synth|minilogue|microfreak|digitakt|keystep)\b/i, 'Synthesizer', 150],
+  [/\b(monitor|bildschirm)\b/i, 'Monitore', 120],
+  [/\b(smartwatch|apple watch)\b/i, 'Smartwatches', 120],
+  [/\b(soundbar)\b/i, 'Soundbars', 100],
+  [/\b(airpods)\b/i, 'AirPods', 100],
+  [/\b(kopfhörer|kopfhoerer|headphones|earbuds|in-ears?)\b/i, 'Kopfhörer', 60],
+];
+// Zubehör kostet wenig – „iPhone-Hülle für 1 €“ ist kein Preisfehler
+const ZUBEHOER = /\b(hülle|huelle|case|cover|schutzfolie|displayschutz|panzerglas|folie|kabel|adapter|halterung|wandhalterung|ladegerät|ladegeraet|ladekabel|netzteil|tasche|ständer|staender|fernbedienung|ersatz\w*|armband|skin|sticker|reiniger|stick|dongle)\b/i;
+// Spiele: Spiel-Wort, Plattform in Klammern („(Switch 2)“, „[PS5]“) oder bekannte Reihe + Plattform – aber keine Konsole/kein Controller
+const KEIN_SPIEL = /\b(konsole|console|controller|joy-?cons?|headset|ladestation|dock|speicherkarte|micro\s?sd|amiibo)\b/i;
+const SPIEL_WORT = /\b(spiel|videospiel|game|games|dlc|season pass|switch 2 edition|deluxe edition|complete edition|goty)\b/i;
+const PLATTFORM_KLAMMER = /[([]\s*(nintendo\s*)?(switch(\s*2)?|ps\s?[45]|playstation\s*[45]?|xbox[^)\]]{0,20}|pc)\s*[)\]]/i;
+const PLATTFORM = /\b(nintendo\s*)?switch(\s*2)?\b|\bps\s?[45]\b|\bplaystation\b|\bxbox\b|\bsteam\b/i;
+const REIHE = /\b(mario|zelda|pok[eé]mon|kirby|metroid|donkey kong|ea sports fc|fifa|call of duty|assassin'?s creed|hogwarts|minecraft|gta|grand theft auto|elden ring|final fantasy|resident evil|sonic|animal crossing|splatoon|smash bros)\b/i;
+
+function istSpiel(titel) {
+  const t = String(titel || '');
+  if (KEIN_SPIEL.test(t)) return false;
+  return SPIEL_WORT.test(t) || PLATTFORM_KLAMMER.test(t) || (PLATTFORM.test(t) && REIHE.test(t));
+}
+const istZubehoer = titel => ZUBEHOER.test(String(titel || ''));
+function geraetAb(titel) {
+  const t = String(titel || '');
+  if (istZubehoer(t) || istSpiel(t)) return null;
+  for (const [re, name, ab] of GERAETE_AB) if (re.test(t)) return { name, ab };
+  return null;
+}
+const krassEuro = v => `${(Math.round(v * 100) / 100).toFixed(2).replace('.', ',').replace(/,00$/, '')} €`;
+
+/**
+ * Ist das ein krasser Preisfehler? e = { titel, preis, preisVorher } (Preise in €, inkl. Versand, wenn bekannt).
+ * -> { ok: true, grund, normalAb? } oder { ok: false, grund }
+ */
+function krass(e, regeln = {}) {
+  const r = { ...KRASS_STANDARD, ...(regeln || {}) };
+  const preis = typeof e?.preis === 'number' && Number.isFinite(e.preis) ? e.preis : null;
+  if (preis == null || preis < 0) return { ok: false, grund: 'Preis unbekannt' };
+  const vorher = typeof e.preisVorher === 'number' && e.preisVorher > preis ? e.preisVorher : null;
+  const pz = vorher ? Math.round((1 - preis / vorher) * 100) : null;
+  const spar = vorher ? Math.round((vorher - preis) * 100) / 100 : null;
+  const titel = String(e.titel || '');
+  if (istSpiel(titel)) {
+    if (preis <= r.spielMaxEuro && (vorher == null || vorher >= 10)) return { ok: true, grund: `Spiel für ${krassEuro(preis)} – praktisch geschenkt` };
+    if (pz != null && pz >= r.spielMinProzent && spar >= r.spielMinErsparnisEuro) return { ok: true, grund: `Spiel ${pz} % unter dem Vorher-Preis` };
+    return { ok: false, grund: 'Spiel – nicht krass genug' };
+  }
+  if (vorher != null) {
+    if (pz >= r.minProzent && spar >= r.minErsparnisEuro) return { ok: true, grund: `${pz} % unter dem Vorher-Preis` };
+    if (preis <= r.absurdMaxEuro && vorher >= r.absurdMinVorher) return { ok: true, grund: `nur ${krassEuro(preis)} statt ${krassEuro(vorher)}` };
+    return { ok: false, grund: `nur ${pz} % / ${krassEuro(spar)} unter dem Vorher-Preis` };
+  }
+  const g = geraetAb(titel);
+  if (g && preis <= g.ab * (1 - r.minProzent / 100)) return { ok: true, grund: `${g.name} kosten sonst ab ca. ${krassEuro(g.ab)}`, normalAb: g.ab };
+  return { ok: false, grund: g ? `für ${g.name} nicht krass genug` : 'Vorher-Preis unbekannt' };
+}
+
+// --- Text-Regeln: Meine Produkte, Snacks, Interessen, Gewinnspiele, Cashback --------------------------------------
+const normText = s => ` ${String(s ?? '').toLowerCase().replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss')
+  .replace(/[’'`´]/g, '').replace(/[^a-z0-9]+/g, ' ').trim()} `;
+// „a|b“ = a oder b. Kurze Wörter (< 5 Zeichen) nur als ganzes Wort („eis“ trifft nicht „Eisenstadt“), längere auch als
+// Wortanfang („jerry“ trifft „Jerry's“, „schoko“ trifft „Schokoriegel“)
+const hatWort = (t, w) => String(w).split('|').some(a => { const n = normText(a).trim(); return !!n && t.includes(' ' + n + (n.length >= 5 ? '' : ' ')); });
+const alleWoerter = (text, woerter) => { const t = normText(text); return woerter.length > 0 && woerter.every(w => hatWort(t, w)); };
+const einWort = (text, woerter) => { const t = normText(text); return woerter.some(w => hatWort(t, w)); };
+
+// Xanders Produkte (wie schnaeppchen/watchlist.json „muss“; test/regeln.test.mjs prüft, dass beide gleich sind)
+const STANDARD_PRODUKTE = [
+  { id: 'softys-fruchtmix', name: 'Lachgummi Softys Fruchtmix', muss: ['lachgummi', 'softys'] },
+  { id: 'softys-rote-fruechte', name: 'Lachgummi Softys Rote Früchte', muss: ['lachgummi', 'softys'] },
+  { id: 'crunchips', name: 'Lorenz Crunchips', muss: ['crunchips'] },
+  { id: 'crunchips-xcut', name: 'Lorenz Crunchips X-Cut', muss: ['crunchips', 'x cut|xcut'] },
+  { id: 'choco-crossies', name: 'Nestlé Choco Crossies', muss: ['crossies'] },
+  { id: 'knoppers-schnitte', name: 'Knoppers Schnitte', muss: ['knoppers'] },
+  { id: 'knoppers-nussriegel', name: 'Knoppers NussRiegel', muss: ['knoppers', 'nussriegel|nuss riegel'] },
+  { id: 'haribo-colorado', name: 'Haribo Colorado', muss: ['haribo', 'colorado'] },
+  { id: 'haribo-tropi-frutti', name: 'Haribo Tropi Frutti', muss: ['haribo', 'tropi'] },
+  { id: 'ben-jerrys', name: "Ben & Jerry's Eis", muss: ['ben', 'jerry'] },
+];
+const SNACK_WOERTER = ['chips', 'crisps', 'gummi', 'fruchtgummi', 'weingummi', 'lakritz', 'schoko', 'schokolade', 'riegel', 'keks', 'kekse', 'cookie',
+  'eis', 'eiscreme', 'bonbon', 'suessigkeit', 'snack', 'nuesse', 'erdnuss', 'popcorn', 'haribo', 'katjes', 'trolli', 'milka', 'ritter sport', 'kinder riegel', 'kinder bueno', 'kinderschokolade',
+  'ferrero', 'duplo', 'hanuta', 'knoppers', 'lorenz', 'pringles', 'chio', 'funny frisch', 'oreo', 'twix', 'mars', 'snickers', 'bounty', 'kitkat',
+  'toffifee', 'lindt', 'magnum', 'langnese', 'haeagen', 'crunchips', 'nic nacs', 'brezel', 'salzstangen', 'mentos', 'smarties', 'maoam', 'nimm2'];
+const MUSIK_WOERTER = ['synth', 'synthesizer', 'kopfhoerer', 'lautsprecher', 'audio', 'mikrofon', 'midi', 'keyboard', 'musik', 'thomann', 'korg', 'arturia', 'roland', 'behringer'];
+const istSnack = text => einWort(String(text).replace(/\bohne\s+\S+/gi, ' '), SNACK_WOERTER); // „ohne Schokolade“ zählt nicht
+// Gewinnspiel ohne Kauf/Abo (der Radar filtert schon Abo-Fallen; hier zusätzlich alles mit Kaufpflicht)
+const KAUF_NOETIG = /kassenbon|kaufbeleg|kassenzettel|beim kauf|mit dem kauf|nach dem kauf|kauf eines|kauf von|mindestbestellwert|mindesteinkauf|aktionsprodukt|\babo\b|abonnement|kostenpflichtig|teilnahmegeb(ü|ue)hr|einsatz von/i;
+const CASHBACK = /cashback|geld[-\s]zur(ü|ue)ck|\bgzg\b|gratis testen|kostenlos testen|scondoo|couponplatz/i;
+
+// --- Meine Produkte (nur auf diesem Gerät) -----------------------------------------------------------------------
+// { aus: [Produkt-IDs, die Xander ausgeblendet hat], eigene: ['Nutella', …] }
+const MEINE = 'mein-vorteil-produkte';
+let meine = (() => { const m = lies(MEINE, null); return { aus: Array.isArray(m?.aus) ? m.aus.map(String) : [], eigene: Array.isArray(m?.eigene) ? m.eigene.map(String).filter(Boolean) : [] }; })();
+const merkMeine = () => merk(MEINE, meine);
+const ausgeblendet = id => meine.aus.includes(id);
+const eigeneWoerter = name => normText(name).trim().split(' ').filter(w => w.length >= 3 && !/^(und|der|die|das|mit|fuer|von|pack|packung|stueck|gramm)$/.test(w));
+// Welches meiner Produkte meint dieser Text? -> { id, name } oder null
+function meinProdukt(text) {
+  for (const p of STANDARD_PRODUKTE) if (!ausgeblendet(p.id) && alleWoerter(text, p.muss)) return { id: p.id, name: p.name };
+  for (const n of meine.eigene) { const w = eigeneWoerter(n); if (w.length && alleWoerter(text, w)) return { id: 'eigen:' + n, name: n }; }
+  return null;
+}
+const interessant = text => !!meinProdukt(text) || istSnack(text) || einWort(text, MUSIK_WOERTER);
 
 // --- Angebote (Schnäppchen-Wecker + Preisfehler) ------------------------------------------------------------------
 const BASIS_KURZ = { stueck: 'pro Stück', '100g': 'pro 100 g', '100ml': 'pro 100 ml' };
@@ -666,6 +1152,8 @@ function produktZeile(p) {
 
 const istPreisfehler = e => e.preisfehler === true || (e.preisfehler == null && /preisfehler/i.test(`${e.grund || ''}`));
 
+// Preisfehler aus beiden Weckern (Technik vom Schnäppchen-Wecker, sonstige vom Radar) – nur laufende und nur KRASSE
+// (krass(): ≥ 75 % unter dem Vorher-Preis und ≥ 20 € gespart, teures Gerät fast geschenkt, Spiele nur ≈ 1 €)
 function preisfehlerListe() {
   const liste = [];
   for (const t of S.angebote?.d?.technik || []) {
@@ -673,19 +1161,20 @@ function preisfehlerListe() {
       titel: t.titel, shop: t.shop, preis: zahl(t.preis), versand: zahl(t.versand),
       preisVorher: zahl(t.preisVorher ?? t.preisAlt), vorherQuelle: t.vorherQuelle ?? null,
       ersparnisEuro: zahl(t.ersparnisEuro), ersparnisProzent: zahl(t.ersparnisProzent),
-      datum: t.datum, bis: t.bis ?? null, sichtbarBis: t.sichtbarBis ?? null, link: t.link,
+      datum: t.datum, bis: t.bis ?? null, sichtbarBis: t.sichtbarBis ?? null, link: t.link, geprueft: t.geprueft ?? null,
       endeBekannt: t.bis && t.bisGeschaetzt !== true ? t.bis : null, // geschätztes Ende (gemeldet + 24 h) nicht anzeigen
       versandInklusive: t.versandInklusive === true,
       echt: typeof t.preisfehler === 'boolean' ? t.preisfehler : /preisfehler/i.test(`${t.grund || ''} ${t.titel || ''}`),
     });
   }
-  for (const e of Object.values(S.vorteile?.d?.kategorien || {}).flat()) {
-    if (!e || !istPreisfehler(e)) continue;
+  for (const [k, l] of Object.entries(S.vorteile?.d?.kategorien || {})) for (const e of l || []) {
+    // Reise-„Preisfehler“ (Error Fares) bleiben bei den Reisen
+    if (!e || !istPreisfehler(e) || (e.kategorie || k) === 'reisen') continue;
     liste.push({
       titel: e.titel, shop: e.extra?.shop || null, preis: zahl(e.preis), versand: zahl(e.extra?.versand),
       preisVorher: zahl(e.preisVorher), vorherQuelle: e.vorherQuelle ?? null,
       ersparnisEuro: zahl(e.ersparnisEuro), ersparnisProzent: zahl(e.ersparnisProzent),
-      datum: e.datum, bis: e.bis ?? null, sichtbarBis: e.sichtbarBis ?? null, link: e.link, echt: true,
+      datum: e.datum, bis: e.bis ?? null, sichtbarBis: e.sichtbarBis ?? null, link: e.link, echt: true, geprueft: null,
       endeBekannt: e.bis || null, // Radar: bis nur mit echter Quelle (Deal-Seite/Text), sonst sichtbarBis
       versandInklusive: e.extra?.versandInklusive === true || /inkl\. Versand/.test(e.zeile || ''),
       zeile: e.zeile,
@@ -698,11 +1187,16 @@ function preisfehlerListe() {
     const weg = zeit(x.datum) != null ? zeit(x.datum) + PREISFEHLER_STUNDEN * 36e5 : null;
     if (x.endeBekannt && weg != null && zeit(x.endeBekannt) > weg) x.endeBekannt = null;
     if (x.versandInklusive) x.versand = 0;
+    // Krass? mit Versand gerechnet (wenn er nicht schon im Preis steckt)
+    const k = krass({ titel: x.titel, preis: x.preis != null ? x.preis + (zahl(x.versand) > 0 ? x.versand : 0) : null, preisVorher: x.preisVorher });
+    if (!k.ok) continue;
+    x.krass = k;
     const alt = nachLink.get(x.link);
     if (!alt || (x.preisVorher && !alt.preisVorher)) nachLink.set(x.link, x);
   }
   return [...nachLink.values()].sort((a, b) => (zeit(b.datum) || 0) - (zeit(a.datum) || 0));
 }
+const preisfehlerGilt = x => !pfVorbei(x) && krass({ titel: x.titel, preis: x.preis, preisVorher: x.preisVorher }).ok;
 
 // Preisfehler und Technik-Deals: höchstens 24 h nach dem Melden, auch wenn ein späteres Ende bekannt ist
 function pfVorbei(x) {
@@ -727,6 +1221,7 @@ function preisfehlerKarte(x) {
   if (x.endeBekannt) oben.push(`<span class="marke warm">${esc(bisText(x.endeBekannt))}</span>`);
   const preis = x.preis != null ? esc(euro(x.preis)) : null; // ohne bekannten Preis nie „jetzt ?“
   const versand = x.versandInklusive ? ' · inkl. Versand' : zahl(x.versand) > 0 ? ` · zzgl. ${euro(x.versand)} Versand` : '';
+  const geprueft = zeit(x.geprueft) != null ? `<p class="klein">Läuft laut Deal-Seite (geprüft ${esc(vor(x.geprueft))})</p>` : '';
   return `<article class="karte fehler" data-preisfehler>
     <div class="oben">${oben.join('')}</div>
     <h3>${esc(x.titel)}</h3>
@@ -735,7 +1230,8 @@ function preisfehlerKarte(x) {
          <p class="spart">du sparst ${esc(euro(spar))} (−${esc(pz)} %)</p>
          <p class="klein">${esc(x.vorherQuelle || 'Vorher-Preis laut Deal')}${esc(versand)}</p>`
       : `${preis ? `<p class="vj"><span>jetzt <span class="jetzt">${preis}</span></span></p>` : '<p class="unbekannt-vorher">Preis siehe Angebot</p>'}
-         <p class="unbekannt-vorher">Originalpreis unbekannt</p>${versand ? `<p class="klein">${esc(versand.slice(3))}</p>` : ''}`}
+         <p class="unbekannt-vorher">Originalpreis unbekannt${x.krass?.normalAb ? ` – ${esc(x.krass.grund)}` : ''}</p>${versand ? `<p class="klein">${esc(versand.slice(3))}</p>` : ''}`}
+    ${geprueft}
     ${x.echt ? '<p class="klein">Preisfehler werden oft schnell storniert – nur mit Käuferschutz (z. B. PayPal) bezahlen.</p>' : ''}
     <a class="los" href="${esc(sicher(x.link))}" target="_blank" rel="noopener">Zum Deal</a>
   </article>`;
@@ -746,54 +1242,7 @@ function quellenKasten(titel, zeilen, zusatz = '') {
   return `<details class="kasten"><summary>${esc(titel)}</summary>${zeilen.length ? `<ul class="quellen">${zeilen.join('')}</ul>` : ''}${zusatz}</details>`;
 }
 
-function zeichneAngebote() {
-  const s = S.angebote, el = $('p-angebote');
-  const d = s?.d;
-  const fehler = preisfehlerListe();
-  if (!d) {
-    el.innerHTML = (fehler.length ? `<h2>Preisfehler <small>${fehler.length}</small></h2>${fehler.map(preisfehlerKarte).join('')}` : '')
-      + `<p class="leer">${s ? 'Angebots-Daten gerade nicht erreichbar. Später noch einmal auf ↻ tippen.' : 'Lade Angebote …'}</p>`;
-    return fehler.length;
-  }
-  const deals = [], bald = [], liste = [], ohne = [];
-  for (const p of d.produkte || []) {
-    const { o, rest } = angebotWahl(p);
-    if (!o) { ohne.push(p); continue; }
-    const k = produktKarte(p, o, rest);
-    // Angebote, die erst später beginnen, stehen unter „Bald günstig“ (nicht unter „Jetzt“, nicht im Zähler)
-    if (o === p.bestes && p.deal && mengeSicher(o)) (startetSpaeter(o) ? bald : deals).push(k);
-    else liste.push(k);
-  }
-  const teile = [stoerHinweis('angebote')];
-  const nurTechnik = fehler.length && fehler.every(x => !x.echt);
-  const pfTitel = !fehler.length || fehler.every(x => x.echt) ? 'Preisfehler' : nurTechnik ? 'Technik-Deals' : 'Preisfehler &amp; Technik-Deals';
-  const pfBlock = `<h2>${pfTitel} <small>${fehler.length ? fehler.length : ''}</small></h2>` + (fehler.length ? fehler.map(preisfehlerKarte).join('')
-    : '<p class="leer">Gerade kein laufender Preisfehler. Abgelaufene zeigt die Seite nicht – Preisfehler sind oft nach Minuten vorbei.</p>');
-  if (fehler.length) teile.push(pfBlock);
-  teile.push(`<h2>Jetzt günstig <small>${deals.length || ''}</small></h2>`);
-  teile.push(deals.length ? deals.join('') : '<p class="leer">Gerade kein echtes Schnäppchen bei deinen Produkten. Du bekommst eine Push-Nachricht, sobald etwas richtig günstig ist.</p>');
-  if (bald.length) teile.push(`<h2>Bald günstig <small>${bald.length}</small></h2>${bald.join('')}`);
-  if (!fehler.length) teile.push(pfBlock);
-  if (liste.length || ohne.length) {
-    teile.push('<h2>Deine Liste</h2>');
-    teile.push(liste.join(''));
-    if (ohne.length) teile.push(`<ul class="liste">${ohne.map(produktZeile).join('')}</ul>`);
-  }
-  const quellen = (d.quellen || []).map(q => {
-    const f = (q.fehler || []).length;
-    return `<li class="${q.ok && !f ? '' : 'stoerung'}">${esc(q.name)}: ${q.ok ? `${esc(q.anzahl)} Einträge` : 'nicht erreichbar'}${q.hinweis ? ' – ' + esc(q.hinweis) : ''}${f ? ' – ' + esc(q.fehler.slice(0, 3).join('; ')) : ''}</li>`;
-  });
-  teile.push(quellenKasten('Quellen & Hinweise', quellen,
-    `<p class="klein">Prüft stündlich die Prospekte der Märkte in ${esc(d.ort || 'Döbeln')} (${esc(d.plz || '')}, über marktguru) und mydealz. Preise ohne Gewähr – im Laden zählt das Preisschild.</p>`));
-  el.innerHTML = teile.join('');
-  return deals.length + fehler.length;
-}
-
-// --- Vorteile (alle Bereiche aus den Daten – neue Bereiche erscheinen von selbst) -----------------------------------
-let weg = new Set([...lies('mein-vorteil-weg', []), ...lies('vorteile-weg', [])]);
-const offen = new Set();
-const gehoertZuAngebote = e => e.quelle === 'Schnäppchen-Wecker' || !!e.extra?.produkt || istPreisfehler(e);
-
+// --- Vorteils-Karte (Deals, Gewinnspiele, Cashback, Auftritte, Mehr) ---------------------------------------------
 function vorteilKarte(e, namen) {
   const oben = [`<span class="marke">${esc(namen[e.kategorie] || BEREICH[e.kategorie]?.[0] || e.kategorie || '')}</span>`];
   if (startetSpaeter(e)) oben.push(`<span class="marke warm">${esc(abText(e.ab))}</span>`);
@@ -843,50 +1292,192 @@ Viele Grüße
 Xander`],
 ];
 
-function zeichneVorteile() {
-  const s = S.vorteile, el = $('p-vorteile');
-  const d = s?.d;
-  if (!d) { el.innerHTML = `<p class="leer">${s ? 'Vorteils-Daten gerade nicht erreichbar. Später noch einmal auf ↻ tippen.' : 'Lade Vorteile …'}</p>`; return 0; }
-  const namen = { ...Object.fromEntries(Object.entries(BEREICH).map(([k, v]) => [k, v[0]])), ...(d.namen || {}) };
-  const kat = d.kategorien || {};
-  const gueltig = {};
-  for (const [k, liste] of Object.entries(kat)) gueltig[k] = (liste || []).filter(e => e && !gehoertZuAngebote(e) && !vorbei(e));
-  const nachId = Object.fromEntries(Object.values(gueltig).flat().map(e => [e.id, e]));
-  const jetzt = (d.sofort || []).map(id => nachId[id]).filter(e => e && !weg.has(e.id)).slice(0, 5);
-  const schonOben = new Set(jetzt.map(e => e.id));
-  const teile = [stoerHinweis('vorteile')];
-  let anzahl = 0;
-  if (jetzt.length) teile.push('<h2>Jetzt lohnt es sich</h2>' + jetzt.map(e => vorteilKarte(e, namen)).join(''));
-  // Zähler wie bei den Angeboten: was erst später beginnt („ab Mo 2.11.“), zählt nicht mit
-  const laeuft = e => !startetSpaeter(e);
-  anzahl += jetzt.filter(laeuft).length;
-  for (const k of Object.keys(kat)) {
-    const liste = gueltig[k].filter(e => !weg.has(e.id) && !schonOben.has(e.id));
-    anzahl += liste.filter(laeuft).length;
-    const unter = BEREICH[k]?.[1] || '';
-    const st = d.status?.[k];
-    let inhalt;
-    if (liste.length) {
-      const zeigen = offen.has(k) ? liste : liste.slice(0, SICHTBAR);
-      inhalt = zeigen.map(e => vorteilKarte(e, namen)).join('')
-        + (liste.length > zeigen.length ? `<button class="mehr" type="button" data-mehr="${esc(k)}">${liste.length - zeigen.length} weitere zeigen</button>` : '');
-    } else {
-      inhalt = '<p class="leer">Gerade nichts Besonderes. Hier erscheint nur, was sich wirklich lohnt.</p>'
-        + (st && st.ok === false && st.fehler?.length ? `<p class="hinweis">Quelle gestört: ${esc(st.fehler[0])}</p>` : '');
+
+// --- Vorteile auf die Abschnitte verteilen -------------------------------------------------------------------------
+let weg = new Set([...lies('mein-vorteil-weg', []), ...lies('vorteile-weg', [])]);
+const offen = new Set();
+const istGewinnspielArt = e => e.kategorie === 'tests';
+const istRemix = e => e.kategorie === 'musik' && (e.extra?.art === 'remix' || e.grund === 'Remix-Contest');
+const istAufruf = e => e.kategorie === 'musik' && !istRemix(e) && (e.grund === 'Aufruf' || e.grund === 'Bewerbung mit Frist' || /bands gesucht|aufruf|bewerb/i.test(`${e.zeile || ''} ${e.grund || ''}`));
+// Geld zurück / Cashback: vom Radar markiert (grund 'cashback', extra.art gzg|cashback) oder am Text erkennbar
+const istCashback = e => !NIE_ZEIGEN.has(e.kategorie) && (['gzg', 'cashback'].includes(e.extra?.art) || e.grund === 'cashback' || CASHBACK.test(`${e.titel} ${e.zeile || ''}`));
+// Einfach teilnehmen: ohne Kauf, ohne Abo; ohne bekanntes Ende nur frisch gemeldete
+function gewinnspielEinfach(e) {
+  if (KAUF_NOETIG.test(`${e.titel} ${e.zeile || ''} ${e.soGehts || ''}`.replace(/kein newsletter-zwang|nie geld/gi, ''))) return false;
+  if (zeit(e.bis) == null) { const d = zeit(e.datum); if (d != null && Date.now() - d > GEWINNSPIEL_OHNE_ENDE_TAGE * 864e5) return false; }
+  return true;
+}
+const nachEnde = (a, b) => (zeit(a.bis) ?? Infinity) - (zeit(b.bis) ?? Infinity) || (zeit(b.datum) || 0) - (zeit(a.datum) || 0);
+
+function einteilen() {
+  const d = S.vorteile?.d;
+  const r = { da: !!d, produkt: [], gewinnspiele: [], cashback: [], snacks: [], auftritte: [], remix: [], synths: [], mehr: {} };
+  if (!d) return r;
+  const links = new Set();
+  for (const [k, liste] of Object.entries(d.kategorien || {})) {
+    for (const roh of liste || []) {
+      if (!roh || weg.has(roh.id)) continue;
+      const e = roh.kategorie ? roh : { ...roh, kategorie: k };
+      if (NIE_ZEIGEN.has(e.kategorie) || EIGENE_SEITE.has(e.kategorie)) continue;
+      if (e.quelle === 'Schnäppchen-Wecker' || e.extra?.produkt) continue; // steht schon als Produkt-Karte da
+      const pf = istPreisfehler(e);
+      if (pf && e.kategorie !== 'reisen') continue; // Abschnitt Preisfehler (nur krasse)
+      if (vorbei(e, pf ? PREISFEHLER_STUNDEN : 0)) continue;
+      if (links.has(e.link)) continue;
+      links.add(e.link);
+      const text = `${e.titel} ${e.zeile || ''}`;
+      if (istCashback(e)) { if (interessant(text)) r.cashback.push(e); continue; } // Cashback für anderes: weg
+      if (istGewinnspielArt(e)) { if (gewinnspielEinfach(e)) r.gewinnspiele.push(e); continue; } // mit Kaufpflicht: weg
+      if (e.kategorie === 'musik') { (istRemix(e) ? r.remix : istAufruf(e) ? r.auftritte : r.synths).push(e); continue; }
+      if (e.kategorie === 'deals') {
+        const p = meinProdukt(text);
+        if (p) { r.produkt.push({ ...e, meins: p }); continue; }
+        if (istSnack(text)) { r.snacks.push(e); continue; }
+        // „komische Angebote“ raus: andere Deals nur, wenn sie zu Musik-Technik passen (weniger ist mehr)
+        if (!einWort(text, MUSIK_WOERTER)) continue;
+      }
+      (r.mehr[e.kategorie] ||= []).push(e);
     }
-    teile.push(`<h2>${esc(namen[k] || k)} <small>${esc(unter)}</small></h2>${inhalt}`);
   }
-  teile.push('<h2>Spar-Tipps &amp; Vorlagen</h2>');
+  r.gewinnspiele.sort(nachEnde); r.cashback.sort(nachEnde); r.auftritte.sort(nachEnde); r.remix.sort(nachEnde);
+  return r;
+}
+
+const laeuftSchon = e => !startetSpaeter(e);
+function namenVorteile() {
+  const d = S.vorteile?.d || {};
+  return { ...Object.fromEntries(Object.entries(BEREICH).map(([k, v]) => [k, v[0]])), ...(d.namen || {}), deals: 'Deal' };
+}
+function vorteilsKarten(liste, namen, schluessel) {
+  const zeigen = offen.has(schluessel) ? liste : liste.slice(0, SICHTBAR);
+  return zeigen.map(e => vorteilKarte(e, namen)).join('')
+    + (liste.length > zeigen.length ? `<button class="mehr" type="button" data-mehr="${esc(schluessel)}">${liste.length - zeigen.length} weitere zeigen</button>` : '');
+}
+const vorteileFehlen = () => `<p class="leer">${S.vorteile ? 'Vorteils-Daten gerade nicht erreichbar. Später noch einmal auf ↻ tippen.' : 'Lade …'}</p>`;
+
+// --- Abschnitt: Meine Produkte -------------------------------------------------------------------------------------
+function zeichneProdukte(t) {
+  const s = S.angebote, d = s?.d;
+  if (!d && !t.produkt.length) return { html: `<p class="leer">${s ? 'Angebots-Daten gerade nicht erreichbar. Später noch einmal auf ↻ tippen.' : 'Lade Angebote …'}</p>`, n: 0 };
+  const deals = [], bald = [], liste = [], ohne = [];
+  for (const p of d?.produkte || []) {
+    if (ausgeblendet(p.id)) continue;
+    const { o, rest } = angebotWahl(p);
+    if (!o) { ohne.push(p); continue; }
+    const k = produktKarte(p, o, rest);
+    // Angebote, die erst später beginnen, stehen unter „Bald günstig“ (nicht unter „Jetzt“, nicht im Zähler)
+    if (o === p.bestes && p.deal && mengeSicher(o)) (startetSpaeter(o) ? bald : deals).push(k);
+    else liste.push(k);
+  }
+  const namen = namenVorteile();
+  const radar = t.produkt;
+  const teile = [stoerHinweis('angebote')];
+  const jetzt = deals.length + radar.filter(laeuftSchon).length;
+  teile.push(`<h3 class="unter">Jetzt günstig <small>${jetzt || ''}</small></h3>`);
+  teile.push(deals.length || radar.length ? deals.join('') + radar.map(e => vorteilKarte(e, namen)).join('')
+    : '<p class="leer">Gerade kein echtes Schnäppchen bei deinen Produkten. Du bekommst eine Push-Nachricht, sobald etwas richtig günstig ist.</p>');
+  if (bald.length) teile.push(`<h3 class="unter">Bald günstig <small>${bald.length}</small></h3>${bald.join('')}`);
+  if (liste.length) teile.push(`<h3 class="unter">Weitere Angebote <small>${liste.length}</small></h3>${liste.join('')}`);
+  if (ohne.length) teile.push(`<details class="kasten ohne-angebot"><summary>Gerade ohne Angebot (${ohne.length})</summary><ul class="liste">${ohne.map(produktZeile).join('')}</ul></details>`);
+  if (d) {
+    const quellen = (d.quellen || []).map(q => {
+      const f = (q.fehler || []).length;
+      return `<li class="${q.ok && !f ? '' : 'stoerung'}">${esc(q.name)}: ${q.ok ? `${esc(q.anzahl)} Einträge` : 'nicht erreichbar'}${q.hinweis ? ' – ' + esc(q.hinweis) : ''}${f ? ' – ' + esc(q.fehler.slice(0, 3).join('; ')) : ''}</li>`;
+    });
+    teile.push(quellenKasten('Quellen & Hinweise (Angebote)', quellen,
+      `<p class="klein">Prüft stündlich die Prospekte der Märkte in ${esc(d.ort || 'Döbeln')} (${esc(d.plz || '')}, über marktguru) und mydealz. Preise ohne Gewähr – im Laden zählt das Preisschild.</p>`));
+  }
+  return { html: teile.join(''), n: jetzt };
+}
+
+// Liste bearbeiten: Watchlist-Produkte aus- und einblenden, eigene Produkte (nur Deals/Cashback) dazu
+function produktNamen() {
+  const ausDaten = new Map((S.angebote?.d?.produkte || []).map(p => [p.id, produktName(p, null)]));
+  const ids = [...new Set([...STANDARD_PRODUKTE.map(p => p.id), ...ausDaten.keys()])];
+  return ids.map(id => ({ id, name: ausDaten.get(id) || STANDARD_PRODUKTE.find(p => p.id === id)?.name || id }));
+}
+function zeichneEditor() {
+  const ed = $('editor');
+  const alle = produktNamen();
+  const an = alle.filter(p => !ausgeblendet(p.id)), aus = alle.filter(p => ausgeblendet(p.id));
+  ed.innerHTML = `<h3 class="unter">Was du immer kaufst</h3>
+    <ul>${an.map(p => `<li><span>${esc(p.name)}</span><button class="zweit klein-knopf" type="button" data-raus="${esc(p.id)}">Entfernen</button></li>`).join('')}
+    ${meine.eigene.map(n => `<li><span>${esc(n)} <span class="mini">(eigenes)</span></span><button class="zweit klein-knopf" type="button" data-eigen-raus="${esc(n)}">Entfernen</button></li>`).join('')}</ul>
+    ${aus.length ? `<h3 class="unter">Ausgeblendet</h3><ul>${aus.map(p => `<li class="aus"><span>${esc(p.name)}</span><button class="zweit klein-knopf" type="button" data-rein="${esc(p.id)}">Wieder rein</button></li>`).join('')}</ul>` : ''}
+    <form class="neu-zeile" id="neu-produkt"><input type="text" id="neu-name" placeholder="Neues Produkt, z. B. Nutella" autocomplete="off" enterkeyhint="done" aria-label="Neues Produkt"><button class="los" type="submit">Hinzufügen</button></form>
+    <p class="privat">Nur auf diesem iPhone gemerkt. Neue Produkte findet die Seite in mydealz-Deals und Cashback-Aktionen; für Prospekt-Preise und Push sag Claude Bescheid.</p>
+    <div class="aktionen"><button class="zweit" type="button" id="editor-fertig">Fertig</button></div>`;
+}
+
+// --- Abschnitte: Preisfehler, Gewinnspiele, Cashback, Snacks ------------------------------------------------------
+function zeichnePreisfehler() {
+  const fehler = preisfehlerListe();
+  if (!S.angebote?.d && !S.vorteile?.d && !fehler.length) return { html: `<p class="leer">${S.angebote || S.vorteile ? 'Daten gerade nicht erreichbar.' : 'Lade …'}</p>`, n: 0 };
+  return { html: fehler.length ? fehler.map(preisfehlerKarte).join('')
+    : '<p class="leer">Gerade kein krasser Preisfehler. Hier erscheinen nur No-Brainer, die gerade laufen – abgelaufene nie.</p>', n: fehler.length };
+}
+function gewinnspielKarte(e, namen) {
+  const k = vorteilKarte(e, { ...namen, tests: e.grund === 'test' ? 'Produkttest' : 'Gewinnspiel' });
+  const b = zeit(e.bis);
+  const heute = b != null && tag(b) === 'heute' ? '<span class="marke heute">endet heute</span>' : '';
+  return k.replace('<article class="karte', '<article class="karte gewinnspiel').replace('<div class="oben">', `<div class="oben">${heute}`);
+}
+function zeichneGewinnspiele(t) {
+  if (!t.da) return { html: vorteileFehlen(), n: 0 };
+  const namen = namenVorteile();
+  const l = t.gewinnspiele;
+  const zeigen = offen.has('gewinnspiele') ? l : l.slice(0, 6);
+  return { html: [stoerHinweis('vorteile'), l.length ? zeigen.map(e => gewinnspielKarte(e, namen)).join('')
+    + (l.length > zeigen.length ? `<button class="mehr" type="button" data-mehr="gewinnspiele">${l.length - zeigen.length} weitere zeigen</button>` : '')
+    : '<p class="leer">Gerade kein laufendes Gewinnspiel ohne Kauf. Neue kommen mit der Zusammenfassung am Abend.</p>'].join(''), n: l.filter(laeuftSchon).length };
+}
+function zeichneCashback(t) {
+  if (!t.da) return { html: vorteileFehlen(), n: 0 };
+  const namen = { ...namenVorteile(), deals: 'Cashback', erleben: 'Cashback', tests: 'Cashback' };
+  return { html: t.cashback.length ? vorteilsKarten(t.cashback, namen, 'cashback')
+    : '<p class="leer">Gerade keine Cashback-Aktion zu deinen Sachen.</p>', n: t.cashback.filter(laeuftSchon).length };
+}
+function snackZeile(e) {
+  const b = zeit(e.bis);
+  const rechts = startetSpaeter(e) ? abText(e.ab) : b != null ? bisText(e.bis) : '';
+  return `<li><a class="reihe" href="${esc(sicher(e.link))}" target="_blank" rel="noopener"><div class="haupt"><b>${esc(e.titel)}</b>${e.zeile ? `<span class="zeile">${esc(e.zeile)}</span>` : ''}<span>${esc(e.quelle || '')}</span></div>${rechts ? `<div class="rechts${b != null && tag(b) === 'heute' ? ' warm' : ''}">${esc(rechts)}</div>` : ''}</a></li>`;
+}
+function zeichneSnacks(t) {
+  if (!t.da) return { html: vorteileFehlen(), n: 0 };
+  const l = t.snacks;
+  const zeigen = offen.has('snacks') ? l : l.slice(0, 5);
+  return { html: l.length ? `<ul class="liste">${zeigen.map(snackZeile).join('')}</ul>`
+    + (l.length > zeigen.length ? `<button class="mehr" type="button" data-mehr="snacks">${l.length - zeigen.length} weitere zeigen</button>` : '')
+    : '<p class="leer">Gerade keine anderen Snack-Deals.</p>', n: l.filter(laeuftSchon).length };
+}
+
+// --- Abschnitt: Mehr (alles andere, eingeklappt) -------------------------------------------------------------------
+function zeichneMehr(t) {
+  const d = S.vorteile?.d;
+  const teile = [];
+  let n = 0;
+  if (!d) teile.push(vorteileFehlen());
+  else {
+    const namen = { ...namenVorteile(), deals: 'Andere Deals' };
+    for (const k of [...new Set([...Object.keys(d.kategorien || {}), ...Object.keys(t.mehr)])]) {
+      const l = t.mehr[k] || [];
+      if (!l.length) continue;
+      n += l.filter(laeuftSchon).length;
+      teile.push(`<details class="kasten" data-kat="${esc(k)}"><summary>${esc(namen[k] || k)} (${l.length})</summary>${vorteilsKarten(l, namen, 'mehr-' + k)}</details>`);
+    }
+    if (!teile.length) teile.push('<p class="leer">Sonst gerade nichts Besonderes.</p>');
+  }
   teile.push(`<details class="kasten"><summary>Spar-Tipps</summary><p>Coupons stapeln, Mehrkauf richtig nutzen, Apps, Cashback, gebrauchte Synths verhandeln.</p><a class="block" href="../vorteile/spartipps.html">Spar-Tipps öffnen ›</a></details>`);
-  for (const [id, titel, text] of VORLAGEN) {
+  for (const [id, titel, text] of VORLAGEN.filter(v => v[0] !== 'v-band')) {
     teile.push(`<details class="kasten"><summary>${esc(titel)}</summary><pre id="${id}">${esc(text)}</pre><button class="zweit kopie" type="button" data-ziel="${id}">Kopieren</button></details>`);
   }
-  const quellen = Object.entries(d.status || {}).map(([k, q]) =>
-    `<li class="${q.ok ? '' : 'stoerung'}">${esc(namen[k] || k)}: ${q.aus || q.uebersprungen ? 'aus' : q.ok ? `${esc(q.anzahl ?? 0)} gefunden` : 'gestört – ' + esc((q.fehler || [])[0] || '')}</li>`);
-  teile.push(quellenKasten('Quellen & Hinweise', quellen,
-    weg.size ? '<button class="mehr" type="button" id="zeigen">Ausgeblendete wieder zeigen</button>' : ''));
-  el.innerHTML = teile.join('');
-  return anzahl;
+  if (d) {
+    const namen = namenVorteile();
+    const quellen = Object.entries(d.status || {}).filter(([k, q]) => !NIE_ZEIGEN.has(k) && !q.aus).map(([k, q]) =>
+      `<li class="${q.ok ? '' : 'stoerung'}">${esc(namen[k] || k)}: ${q.aus || q.uebersprungen ? 'aus' : q.ok ? `${esc(q.anzahl ?? 0)} gefunden` : 'gestört – ' + esc((q.fehler || [])[0] || '')}</li>`);
+    teile.push(quellenKasten('Quellen & Hinweise (Vorteile)', quellen, weg.size ? '<button class="mehr" type="button" id="zeigen">Ausgeblendete wieder zeigen</button>' : ''));
+  }
+  return { html: teile.join(''), n };
 }
 
 // --- Konzerte & Neuerscheinungen -------------------------------------------------------------------------------------
@@ -946,22 +1537,37 @@ function konzertSuche(st) {
 }
 const KONZERT_QUELLE = { ticketmaster: 'Ticketmaster', seiten: 'Festival-Seiten', musicbrainz: 'MusicBrainz', deezer: 'Deezer' };
 
-function zeichneKonzerte() {
-  const s = S.konzerte, el = $('p-konzerte');
-  const d = s?.d;
-  if (!d) { el.innerHTML = `<p class="leer">${s ? 'Konzert-Daten gerade nicht erreichbar. Später noch einmal auf ↻ tippen.' : 'Lade Konzerte …'}</p>`; return 0; }
-  const teile = [stoerHinweis('konzerte')];
+// --- Abschnitt: Auftritte & Konzerte -------------------------------------------------------------------------------
+function zeichneAuftritte(t) {
+  const teile = [];
+  const namen = namenVorteile();
+  // 1. Auftrittsmöglichkeiten („Bands gesucht“, Open Calls) aus dem Radar
+  teile.push(`<h3 class="unter">Auftrittsmöglichkeiten <small>${t.auftritte.length || ''}</small></h3>`);
+  teile.push(!t.da ? vorteileFehlen() : t.auftritte.length ? vorteilsKarten(t.auftritte, namen, 'auftritte')
+    : '<p class="leer">Gerade keine offene Ausschreibung für Bands. Neue kommen per Push, wenn eine Frist dabei ist.</p>');
+  const band = VORLAGEN.find(v => v[0] === 'v-band');
+  teile.push(`<details class="kasten"><summary>${esc(band[1])}</summary><pre id="${band[0]}">${esc(band[2])}</pre><button class="zweit kopie" type="button" data-ziel="${band[0]}">Kopieren</button></details>`);
+  if (t.synths.length) teile.push(`<h3 class="unter">Synths im Angebot <small>${t.synths.length}</small></h3>${vorteilsKarten(t.synths, namen, 'synths')}`);
+  // 2. Konzerte & Festivals
+  const s = S.konzerte, d = s?.d;
+  let nKonzerte = 0;
+  teile.push(stoerHinweis('konzerte'));
+  if (!d) {
+    teile.push(`<h3 class="unter">Konzerte &amp; Festivals</h3><p class="leer">${s ? 'Konzert-Daten gerade nicht erreichbar. Später noch einmal auf ↻ tippen.' : 'Lade Konzerte …'}</p>`);
+    return { html: teile.join(''), n: t.auftritte.filter(laeuftSchon).length };
+  }
   const radius = d.k?.pushRadiusKm || 200;
   const alle = (d.k?.konzerte || []).filter(k => !konzertVorbei(k));
   const liste = alle.filter(k => !nurNah || k.km == null || k.km <= radius);
+  nKonzerte = liste.length;
   const tm = d.s?.quellen?.ticketmaster;
   const suche = konzertSuche(d.s);
+  teile.push(`<h3 class="unter">Konzerte &amp; Festivals <small>${liste.length || ''}</small></h3>`);
   if (d.k) teile.push(`<div class="filter" role="group" aria-label="Umkreis"><button type="button" data-nah="1" aria-pressed="${nurNah}">Bis ${radius} km</button><button type="button" data-nah="0" aria-pressed="${!nurNah}">Alle</button></div>`);
-  teile.push(`<h2>Konzerte &amp; Festivals <small>${liste.length || ''}</small></h2>`);
   if (!d.k) {
     teile.push('<p class="leer">Konzerttermine gerade nicht erreichbar. Später noch einmal auf ↻ tippen.</p>');
   } else if (liste.length) {
-    teile.push(`<ul class="liste">${liste.map(k => {
+    teile.push(`<ul class="liste konzerte">${liste.map(k => {
       const vv = vorverkaufText(k);
       return `<li><a class="reihe" href="${esc(sicher(k.link))}" target="_blank" rel="noopener">
         ${datumBox(k.datum)}
@@ -984,14 +1590,14 @@ function zeichneKonzerte() {
   } else if (suche.an && suche.seiten?.gestoert.length) {
     teile.push(`<p class="hinweis">Festival-Seiten: ${esc(seiten)}.</p>`);
   }
+  // 3. Neuerscheinungen (eingeklappt)
   const rel = d.r?.releases || [];
-  teile.push(`<h2>Neue Veröffentlichungen <small>${rel.length || ''}</small></h2>`);
   teile.push(!d.r ? '<p class="leer">Neuerscheinungen gerade nicht erreichbar. Später noch einmal auf ↻ tippen.</p>'
-    : rel.length ? `<ul class="liste">${rel.map(x => `<li><a class="reihe" href="${esc(sicher(x.link))}" target="_blank" rel="noopener">
+    : `<details class="kasten neuerscheinungen"><summary>Neue Veröffentlichungen (${rel.length})</summary>${rel.length ? `<ul class="liste">${rel.map(x => `<li><a class="reihe" href="${esc(sicher(x.link))}" target="_blank" rel="noopener">
       ${/^https:\/\//.test(x.cover || '') ? `<img class="cover" src="${esc(x.cover)}" alt="" loading="lazy" decoding="async" width="50" height="50">` : datumBox(x.datum)}
       <div class="haupt"><b>${esc(x.band)}${x.neu ? '<span class="tag neu">neu</span>' : ''}${x.angekuendigt ? '<span class="tag fest">angekündigt</span>' : ''}</b>
         <span>${esc(x.typ)} „${esc(x.titel)}“</span><span>${esc(tagBerlinAusDatum(x.datum))}</span></div></a></li>`).join('')}</ul>`
-    : '<p class="leer">Keine neuen Veröffentlichungen im letzten Jahr.</p>');
+      : '<p class="leer">Keine neuen Veröffentlichungen im letzten Jahr.</p>'}</details>`);
   const quellen = Object.entries(d.s?.quellen || {}).map(([n, q]) => {
     const name = KONZERT_QUELLE[n] || n;
     if (zahl(q.gesamt) != null && zahl(q.geprueft) != null) { // mehrere Seiten: einzeln zählen
@@ -999,96 +1605,526 @@ function zeichneKonzerte() {
     }
     return `<li class="${q.ok || q.uebersprungen ? '' : 'stoerung'}">${esc(name)}: ${q.uebersprungen ? esc(q.uebersprungen) : q.ok ? `${esc(q.treffer ?? 0)} Treffer` : 'gestört – ' + esc((q.fehler || [])[0] || '')}</li>`;
   });
-  teile.push(quellenKasten('Quellen', quellen));
-  el.innerHTML = teile.join('');
-  return liste.length;
+  teile.push(quellenKasten('Quellen (Konzerte)', quellen));
+  return { html: teile.join(''), n: t.auftritte.filter(laeuftSchon).length + nKonzerte };
 }
 
-// --- Zeichnen & Reiter -------------------------------------------------------------------------------------------
-const ZEICHNER = { angebote: zeichneAngebote, vorteile: zeichneVorteile, konzerte: zeichneKonzerte };
-const anzahl = {};
-function zeichne(q) {
-  // Preisfehler kommen aus beiden Quellen -> bei neuen Vorteils-Daten auch Angebote neu zeichnen.
-  // Nur die betroffenen Reiter neu zeichnen (aufgeklappte Kästen in den anderen bleiben offen).
-  const welche = q === 'alle' ? REITER : q === 'vorteile' ? ['angebote', 'vorteile'] : [q];
-  naechstesEnde = Infinity;
-  for (const r of REITER) {
-    if (welche.includes(r)) anzahl[r] = zeichneOffen(r);
-    else pruefeEnden(r); // nur das nächste Ende einsammeln
+// --- Abschnitt: Remix-Contests (Radar, Modul musik) ----------------------------------------------------------------
+function zeichneRemix(t) {
+  if (!t.da) return { html: vorteileFehlen(), n: 0 };
+  const namen = { ...namenVorteile(), musik: 'Remix-Contest' };
+  const l = t.remix;
+  const karten = (offen.has('remix') ? l : l.slice(0, SICHTBAR)).map(e => {
+    const b = zeit(e.bis);
+    const heute = b != null && tag(b) === 'heute' ? '<span class="marke heute">endet heute</span>' : '';
+    return vorteilKarte(e, namen).replace('<article class="karte', '<article class="karte remix gewinnspiel').replace('<div class="oben">', `<div class="oben">${heute}`);
+  }).join('');
+  return { html: [stoerHinweis('vorteile'), l.length ? karten + (l.length > SICHTBAR && !offen.has('remix') ? `<button class="mehr" type="button" data-mehr="remix">${l.length - SICHTBAR} weitere zeigen</button>` : '')
+    : '<p class="leer">Gerade kein laufender Remix-Contest in deinen Genres. Neue kommen mit der Zusammenfassung – endet einer in ≤ 14 Tagen, sofort per Push.</p>'].join(''), n: l.filter(laeuftSchon).length };
+}
+
+// --- Krypto: Kurs live im Browser (öffentliche Quellen) + Käufe nur auf diesem Gerät + Pop-up bei Zonenwechsel ---------
+// Rechnung, Zonen und Import-Format: Block <krypto-zonen> im <head> (Wort für Wort wie krypto/zonen.mjs).
+const KRYPTO = 'mein-vorteil-krypto';             // { v: 2, coins: { btc: { kaeufe: [{ betrag, kurs | menge }], aktuell } } }
+const KRYPTO_ZONE = 'mein-vorteil-krypto-zone';   // { btc: 'plus', … } – zuletzt gemeldete Zone je Coin (nur Wörter)
+const KRYPTO_TOPIC = 'mein-vorteil-krypto-topic'; // eigenes, privates ntfy-Thema für den Krypto-Wecker (zufällig)
+const KURS = 'mein-vorteil-kurs';                 // letzter Kurs (für den sofortigen Start)
+const KURS_ALLE_MS = 60000;                       // Kurs prüfen beim Öffnen und alle 60 s, solange die Seite offen ist
+
+/** „67.500“, „67500,50“, „0,25“ -> Zahl. tausenderPunkt: „67.500“ = 67500 (Euro-Beträge). */
+function zahlAus(s, { tausenderPunkt = false } = {}) {
+  if (typeof s === 'number') return Number.isFinite(s) ? s : null;
+  let t = String(s ?? '').trim().replace(/[\s€]|eur(o)?$/gi, '').replace(/^\+/, '');
+  if (!t) return null;
+  if (t.includes(',')) t = t.replace(/\./g, '').replace(',', '.');
+  else if (tausenderPunkt && /^\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, '');
+  else if ((t.match(/\./g) || []).length > 1) t = t.replace(/\./g, '');
+  if (!/^-?\d+(\.\d+)?$/.test(t)) return null;
+  const v = Number(t);
+  return Number.isFinite(v) ? v : null;
+}
+
+function kryptoLaden() {
+  const d = lies(KRYPTO, null);
+  const coins = {};
+  for (const c of Object.keys(KRYPTO_COINS)) {
+    const x = d?.v === 2 ? d.coins?.[c] : null;
+    const kaeufe = (Array.isArray(x?.kaeufe) ? x.kaeufe : [])
+      .filter(k => zahl(k?.betrag) > 0 && (zahl(k.menge) > 0 || zahl(k.kurs) > 0))
+      .map(k => ({ betrag: k.betrag, ...(zahl(k.menge) > 0 ? { menge: k.menge } : { kurs: k.kurs }), ...(k.uebernommen ? { uebernommen: true } : {}) }));
+    coins[c] = { kaeufe, aktuell: zahl(x?.aktuell) > 0 ? x.aktuell : null };
   }
-  for (const r of REITER) {
-    const n = document.querySelector(`#t-${r} .n`);
-    n.hidden = !anzahl[r];
-    n.textContent = anzahl[r] || '';
+  return coins;
+}
+let krypto = kryptoLaden();
+const kryptoMerken = () => merk(KRYPTO, { v: 2, coins: krypto });
+let zonen = (() => { const z = lies(KRYPTO_ZONE, {}) || {}; const o = {}; for (const c of Object.keys(KRYPTO_COINS)) if (ZONEN.includes(z[c])) o[c] = z[c]; return o; })();
+const zonenMerken = () => merk(KRYPTO_ZONE, zonen);
+let kurs = (() => { const k = lies(KURS, null); return k?.kurse ? { ...k, fehler: null, ausSpeicher: true } : { kurse: null, quelle: null, zeit: 0, fehler: null }; })();
+
+async function holJson(url) {
+  const ctl = new AbortController();
+  const t = setTimeout(() => ctl.abort(), 8000);
+  try {
+    const r = await fetch(url, { cache: 'no-store', signal: ctl.signal });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return await r.json();
+  } finally { clearTimeout(t); }
+}
+// Der Reihe nach, bis eine Quelle beide Kurse liefert (alle öffentlich, ohne Schlüssel, mit CORS)
+const KURS_QUELLEN = [
+  { name: 'CoinGecko', hole: async () => {
+    const d = await holJson('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=eur&include_24hr_change=true');
+    const c = x => ({ kurs: zahl(x?.eur), aenderung: zahl(x?.eur_24h_change) != null ? x.eur_24h_change / 100 : null });
+    return { btc: c(d?.bitcoin), eth: c(d?.ethereum) };
+  } },
+  { name: 'Crypto.com', hole: async () => {
+    const [b, e] = await Promise.all(['BTC_EUR', 'ETH_EUR'].map(i => holJson(`https://api.crypto.com/exchange/v1/public/get-tickers?instrument_name=${i}`)));
+    const c = r => { const x = r?.result?.data?.[0]; return { kurs: zahlAus(x?.a), aenderung: zahlAus(x?.c) }; };
+    return { btc: c(b), eth: c(e) };
+  } },
+  { name: 'Coinbase', hole: async () => {
+    const [b, e] = await Promise.all(['BTC-EUR', 'ETH-EUR'].map(p => holJson(`https://api.exchange.coinbase.com/products/${p}/stats`)));
+    const c = x => { const l = zahlAus(x?.last), o = zahlAus(x?.open); return { kurs: l, aenderung: l > 0 && o > 0 ? l / o - 1 : null }; };
+    return { btc: c(b), eth: c(e) };
+  } },
+];
+const kursOk = (c, x) => !!x && typeof x.kurs === 'number' && x.kurs >= KRYPTO_COINS[c].min && x.kurs <= KRYPTO_COINS[c].max;
+let kursLaeuft = false;
+async function ladeKurs() {
+  if (kursLaeuft) return;
+  kursLaeuft = true;
+  const fehler = [];
+  let frisch = false;
+  try {
+    for (const q of KURS_QUELLEN) {
+      try {
+        const k = await q.hole();
+        if (!kursOk('btc', k.btc) || !kursOk('eth', k.eth)) { fehler.push(`${q.name}: kein gültiger Kurs`); continue; }
+        kurs = { kurse: { btc: k.btc, eth: k.eth }, quelle: q.name, zeit: Date.now(), fehler: null };
+        merk(KURS, { kurse: kurs.kurse, quelle: kurs.quelle, zeit: kurs.zeit });
+        frisch = true;
+        return;
+      } catch (e) { fehler.push(`${q.name}: ${e?.name === 'AbortError' ? 'Zeitlimit' : e?.message || e}`); }
+    }
+    kurs = { ...kurs, fehler: navigator.onLine === false ? 'keine Verbindung' : 'Kurs-Quellen gerade gestört', fehlerDetail: fehler };
+  } finally {
+    kursLaeuft = false;
+    zeichneKrypto();
+    zeichneWichtig();
+    if (frisch) pruefeZonen(); // nur mit frischem Kurs (ein alter aus dem Speicher löst nie ein Pop-up aus)
   }
-  zeigeStand();
+}
+
+const prozentText = (p, nk = 1) => `${p > 0 ? '+' : p < 0 ? '−' : '±'}${Math.abs(p * 100).toLocaleString('de-DE', { minimumFractionDigits: nk, maximumFractionDigits: nk })} %`;
+const pzText = p => prozentText(p / 100); // p in Prozent (5.3 = +5,3 %)
+const euroVz = v => `${v > 0.004 ? '+' : v < -0.004 ? '−' : '±'}${euro(Math.abs(v))}`;
+const kursEuro = v => v.toLocaleString('de-DE', { style: 'currency', currency: 'EUR', minimumFractionDigits: v < 100 ? 2 : 0, maximumFractionDigits: v < 100 ? 2 : 0 });
+const mengeZahl = v => v.toLocaleString('de-DE', { maximumFractionDigits: v >= 1 ? 4 : 8 });
+const mengeText = (v, c) => `${mengeZahl(v)} ${KRYPTO_COINS[c].kurz}`;
+
+function kryptoStand() { // je Coin: Position (Käufe) und Ergebnis (mit Kurs)
+  return Object.keys(KRYPTO_COINS).map(c => { const pos = kryptoPosition(krypto[c]); return { c, pos, e: kryptoErgebnis(pos, kurs.kurse?.[c]?.kurs) }; });
+}
+
+// Zonen prüfen: Pop-up beim Wechsel Gewinn ↔ Verlust und bei +5 %, +10 %, −10 % – je Coin, nie doppelt
+function pruefeZonen() {
+  const meldungen = [];
+  for (const { c, e } of kryptoStand()) {
+    if (!e) continue;
+    const z = naechsteZone(zonen[c], e.prozent);
+    if (z.zone) zonen[c] = z.zone;
+    if (z.meldung) meldungen.push({ c, e, meldung: z.meldung });
+  }
+  zonenMerken();
+  if (meldungen.length) zeigeAlarm(meldungen);
+}
+const alarm = $('krypto-alarm');
+function zeigeAlarm(meldungen) {
+  $('alarm-titel').textContent = `Krypto-Hinweis · ${uhr(Date.now()) || 'jetzt'}`;
+  $('alarm-inhalt').innerHTML = meldungen.map(({ c, e, meldung }) => {
+    const m = KRYPTO_COINS[c];
+    const art = e.gv >= 0 ? 'gewinn' : 'verlust';
+    return `<div class="alarm ${art}" data-alarm="${c}">
+      <p class="was">${esc(m.zeichen)} ${esc(m.name)}: ${esc(MELDUNG[meldung])}</p>
+      <p class="gv">${esc(euroVz(e.gv))} <span>(${esc(pzText(e.prozent))})</span></p>
+      <p>Kurs ${esc(kursEuro(e.kurs))} · Wert ${esc(euro(e.wert))} · im Plus ab ${esc(kursEuro(e.schwelle))}</p>
+    </div>`;
+  }).join('');
+  if (!alarm.open) { if (alarm.showModal) alarm.showModal(); else alarm.setAttribute('open', ''); }
+}
+const alarmZu = () => { if (alarm.close) alarm.close(); else alarm.removeAttribute('open'); };
+$('alarm-zu').addEventListener('click', alarmZu);
+alarm.addEventListener('click', ev => { if (ev.target === alarm) alarmZu(); });
+
+function zeichneKrypto() {
+  const el = $('i-krypto');
+  const zeilen = [];
+  for (const { c, pos, e } of kryptoStand()) {
+    const m = KRYPTO_COINS[c];
+    const x = kurs.kurse?.[c];
+    const a = zahl(x?.aenderung);
+    let ergebnis = '';
+    if (e) {
+      const art = e.gv > 0.004 ? 'gewinn' : e.gv < -0.004 ? 'verlust' : '';
+      ergebnis = `<div class="ergebnis ${art}" data-coin-ergebnis="${c}">
+        <p class="gv-zeile">${e.gv >= 0 ? 'Im Gewinn' : 'Im Verlust'} <b>${esc(euroVz(e.gv))}</b> <b>(${esc(pzText(e.prozent))})</b></p>
+        <dl class="kz">
+          <div><dt>Wert jetzt</dt><dd>${esc(euro(e.wert))}</dd></div>
+          <div><dt>Einsatz</dt><dd>${esc(euro(e.einsatz))}</dd></div>
+          <div><dt>Ø-Kaufkurs</dt><dd>${esc(kursEuro(e.kaufkurs))}</dd></div>
+          <div><dt>Im Plus ab</dt><dd>${esc(kursEuro(e.schwelle))}</dd></div>
+        </dl>
+        <small>Menge ${esc(mengeText(e.menge, c))}${krypto[c].aktuell ? ' (aktuelle Menge)' : ''}</small></div>`;
+    } else if (pos) {
+      ergebnis = '<div class="ergebnis"><small>Gewinn/Verlust erscheint, sobald der Kurs da ist.</small></div>';
+    } else if (x?.kurs > 0) {
+      ergebnis = '<div class="ergebnis"><small>Noch keine Käufe – unten bei „Käufe &amp; Menge“ eintragen.</small></div>';
+    }
+    zeilen.push(`<div class="coin" data-coin="${c}"><div class="name">${m.zeichen} ${m.name}<span>${m.kurz}</span></div>
+      <div class="kurs">${x?.kurs > 0 ? esc(kursEuro(x.kurs)) : '–'}</div>
+      <div class="tag24">${a != null ? `24 h <span class="${a >= 0 ? 'plus' : 'minus'}">${esc(prozentText(a, 2))}</span>` : x?.kurs > 0 ? '' : 'Kurs noch nicht da'}</div><div></div>
+      ${ergebnis}</div>`);
+  }
+  const alt = kurs.zeit && Date.now() - kurs.zeit > 10 * 60000;
+  const stand = kurs.fehler
+    ? `<p class="kurs-stand alt">${esc(kurs.fehler === 'keine Verbindung' ? 'Keine Verbindung' : 'Kurs gerade nicht abrufbar (Quellen gestört)')}${kurs.zeit ? ` – letzter Kurs von ${esc(uhrzeit(new Date(kurs.zeit).toISOString()))}` : ''}. Neuer Versuch in einer Minute.</p>`
+    : kurs.zeit ? `<p class="kurs-stand${alt ? ' alt' : ''}">Kurs ${esc(vor(new Date(kurs.zeit).toISOString()))} · ${esc(kurs.quelle || '')}${kurs.ausSpeicher ? ' · wird aktualisiert …' : ''}</p>` : '<p class="kurs-stand">Lade Kurse …</p>';
+  el.innerHTML = zeilen.join('') + stand;
+  setzeZahl('krypto', kryptoStand().filter(x => x.e && x.e.gv > 0.004).length);
+}
+
+// Käufe & Menge bearbeiten (nur dieses Gerät)
+function kaufText(x, c) {
+  const menge = zahl(x.menge) > 0 ? x.menge : x.betrag / x.kurs;
+  const kurs = zahl(x.kurs) > 0 ? x.kurs : x.betrag / x.menge;
+  return `${euro(x.betrag)} → ${mengeText(menge, c)} · Kurs ${kursEuro(kurs)}${x.uebernommen ? ' · per Link übernommen' : ''}`;
+}
+function zeichneKryptoEditor() {
+  const teile = [];
+  for (const [c, m] of Object.entries(KRYPTO_COINS)) {
+    const k = krypto[c];
+    const pos = kryptoPosition(k);
+    teile.push(`<fieldset class="coin-edit" data-coin="${c}"><legend>${m.zeichen} ${m.name}</legend>
+      ${k.kaeufe.length ? `<ul class="kaeufe">${k.kaeufe.map((x, i) => `<li><span>${esc(kaufText(x, c))}</span><button type="button" class="zweit klein-knopf" data-kauf-raus="${c}:${i}" aria-label="Kauf ${i + 1} (${esc(m.name)}) entfernen">Entfernen</button></li>`).join('')}</ul>` : '<p class="mini">Noch keine Käufe.</p>'}
+      ${pos ? `<p class="summe">Zusammen ${esc(euro(pos.einsatz))} für ${esc(mengeText(pos.mengeKaeufe, c))} · Ø-Kaufkurs ${esc(kursEuro(pos.kaufkurs))}</p>` : ''}
+      <form class="kauf-neu" data-coin="${c}" novalidate>
+        <label class="breit">Betrag in € (inkl. Gebühren)<input name="betrag" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="next" placeholder="z. B. 250"></label>
+        <label>Kurs beim Kauf (€)<input name="kurs" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="next" placeholder="z. B. ${c === 'btc' ? '61.500' : '2.400'}"></label>
+        <label>oder Menge (${m.kurz})<input name="menge" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="done" placeholder="z. B. ${c === 'btc' ? '0,004' : '0,1'}"></label>
+        <p class="formfehler breit" role="alert" hidden></p>
+        <button class="los breit" type="submit">Kauf hinzufügen</button>
+      </form>
+      <label class="aktuell">Aktuelle Menge (${m.kurz}), z. B. mit Auto Earn – leer = Summe der Käufe
+        <input data-aktuell="${c}" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="done" value="${k.aktuell ? esc(mengeZahl(k.aktuell)) : ''}" placeholder="${pos ? esc(mengeZahl(pos.mengeKaeufe)) : 'z. B. 0,0125'}"></label>
+    </fieldset>`);
+  }
+  teile.push('<p class="privat">Nur auf diesem iPhone gespeichert – wird nie gesendet.</p>');
+  $('krypto-editor').innerHTML = teile.join('');
+}
+// Zahlen eines Coins geändert -> Zone neu bestimmen, ohne Pop-up
+function kryptoGeaendert(c) {
+  kryptoMerken();
+  delete zonen[c];
+  zonenMerken();
+  zeichneKrypto();
+  zeichneWichtig();
+  zeichneKryptoPush();
+  if (kurs.zeit && !kurs.ausSpeicher) pruefeZonen();
+}
+$('krypto-editor').addEventListener('submit', ev => {
+  const f = ev.target.closest('form.kauf-neu');
+  if (!f) return;
+  ev.preventDefault();
+  const c = f.dataset.coin;
+  const betrag = zahlAus(f.betrag.value, { tausenderPunkt: true });
+  const kursK = zahlAus(f.kurs.value, { tausenderPunkt: true });
+  const menge = zahlAus(f.menge.value);
+  const fehlerText = !(betrag > 0) ? 'Bitte den Betrag in € eintragen.'
+    : !(menge > 0) && !(kursK > 0) ? 'Bitte den Kurs beim Kauf ODER die Menge eintragen.'
+    : !(menge > 0) && (kursK < KRYPTO_COINS[c].min || kursK > KRYPTO_COINS[c].max) ? 'Der Kurs sieht nicht richtig aus (Euro pro ganzem Coin).' : '';
+  const fe = f.querySelector('.formfehler');
+  if (fehlerText) { fe.textContent = fehlerText; fe.hidden = false; return; }
+  krypto[c].kaeufe.push(menge > 0 ? { betrag, menge } : { betrag, kurs: kursK });
+  kryptoGeaendert(c);
+  zeichneKryptoEditor();
+});
+$('krypto-editor').addEventListener('click', ev => {
+  const b = ev.target.closest('button[data-kauf-raus]');
+  if (!b) return;
+  const [c, i] = b.dataset.kaufRaus.split(':');
+  krypto[c].kaeufe.splice(Number(i), 1);
+  kryptoGeaendert(c);
+  zeichneKryptoEditor();
+});
+let aktuellTimer = 0;
+function aktuellAus(inp) {
+  const c = inp.dataset.aktuell;
+  const v = zahlAus(inp.value);
+  const neu = v > 0 ? v : null;
+  if (neu === krypto[c].aktuell) return;
+  krypto[c].aktuell = neu;
+  kryptoGeaendert(c);
+}
+$('krypto-editor').addEventListener('input', ev => { const i = ev.target.closest('input[data-aktuell]'); if (i) { clearTimeout(aktuellTimer); aktuellTimer = setTimeout(() => aktuellAus(i), 500); } });
+$('krypto-editor').addEventListener('change', ev => { const i = ev.target.closest('input[data-aktuell]'); if (i) { clearTimeout(aktuellTimer); aktuellAus(i); } });
+
+// Push über GitHub: Wert für das Secret KRYPTO (aus den Zahlen hier) und eigenes privates Thema – beides nur kopieren
+function kryptoSecret() {
+  const teile = [];
+  for (const { c, pos } of kryptoStand()) {
+    if (!pos) continue;
+    const menge = Number(pos.menge.toFixed(8)), einsatz = Math.round(pos.einsatz * 100) / 100;
+    teile.push(`${c}:${String(menge)}:${String(einsatz)}`);
+  }
+  return teile.join(',');
+}
+function kryptoTopic() {
+  let t = lies(KRYPTO_TOPIC, null);
+  if (typeof t !== 'string' || !/^xander-krypto-[0-9a-f]{12,}$/.test(t)) {
+    const b = new Uint8Array(8);
+    (self.crypto?.getRandomValues ? crypto.getRandomValues(b) : b.forEach((_, i) => (b[i] = Math.floor(Math.random() * 256))));
+    t = 'xander-krypto-' + [...b].map(x => x.toString(16).padStart(2, '0')).join('');
+    merk(KRYPTO_TOPIC, t);
+  }
+  return t;
+}
+function zeichneKryptoPush() {
+  const t = kryptoTopic();
+  $('krypto-topic').textContent = t;
+  $('krypto-ntfy').href = `https://ntfy.sh/${t}`;
+  const s = $('krypto-secret-kopie');
+  const leer = !kryptoSecret();
+  s.disabled = leer;
+  s.textContent = leer ? 'erst Käufe eintragen' : 'Wert kopieren';
+}
+$('krypto-secret-kopie').addEventListener('click', ev => { const v = kryptoSecret(); if (v) kopiere(v, ev.currentTarget); });
+$('krypto-topic-kopie').addEventListener('click', ev => kopiere(kryptoTopic(), ev.currentTarget));
+$('krypto-push').addEventListener('toggle', () => { if ($('krypto-push').open) zeichneKryptoPush(); });
+
+// Import per Link (#krypto=…): schon im <head> übernommen, hier nur die Bestätigung
+function zeigeHinweis(text, warm = false) {
+  const h = $('hinweis');
+  h.querySelector('p').textContent = text;
+  h.classList.toggle('warm', warm);
+  h.hidden = false;
+  clearTimeout(zeigeHinweis.t);
+  zeigeHinweis.t = setTimeout(() => (h.hidden = true), 9000);
+}
+$('hinweis').querySelector('button').addEventListener('click', () => ($('hinweis').hidden = true));
+
+// --- Heute wichtig (oben, höchstens 4 Zeilen) ----------------------------------------------------------------------
+let letzteEinteilung = null, letztePreisfehler = [];
+const kurzTitel = (s, n = 54) => { s = String(s || '').replace(/\s+/g, ' ').trim(); return s.length > n ? s.slice(0, n - 1) + '…' : s; };
+function wichtigZeilen() {
+  const z = [];
+  // Krypto nur, wenn es etwas zu sagen gibt: ab +5 % oder ab −10 %
+  for (const { c, e } of kryptoStand()) {
+    if (!e) continue;
+    const zone = zonen[c] || rohZone(e.prozent);
+    if (zone !== 'hoch' && zone !== 'top' && zone !== 'tief') continue;
+    const m = KRYPTO_COINS[c];
+    z.push({ ziel: 'krypto', warm: zone === 'tief', text: `${m.zeichen} ${m.name} ${pzText(e.prozent)} (${euroVz(e.gv)})` });
+  }
+  for (const x of letztePreisfehler.slice(0, 1)) z.push({ ziel: 'preisfehler', warm: true, text: `Preisfehler: ${kurzTitel(String(x.titel).replace(/^[\[(]?\s*(möglicher\s+)?preisfehler\s*[\])]?\s*[:!–-]?\s*/i, ''), 40)} für ${euro(x.preis)}` });
+  // Deals für meine Produkte (laufend), sonst Angebote, die heute enden
+  const d = S.angebote?.d;
+  const deals = [], heute = [];
+  for (const p of d?.produkte || []) {
+    if (ausgeblendet(p.id)) continue;
+    const { o } = angebotWahl(p);
+    if (!o || startetSpaeter(o)) continue;
+    if (o === p.bestes && p.deal && mengeSicher(o)) deals.push(`${produktName(p, o)} ${euro(o.preis)} bei ${o.shop}`);
+    else { const b = zeit(o.bis ?? o.gueltigBis); if (b != null && tag(b) === 'heute') heute.push(`${produktName(p, o)} ${euro(o.preis)} bei ${o.shop} – nur noch ${uhr(b) ? 'bis ' + uhr(b) : 'heute'}`); }
+  }
+  for (const e of letzteEinteilung?.produkt || []) if (!startetSpaeter(e)) deals.push(kurzTitel(e.titel, 44));
+  if (deals.length) z.push({ ziel: 'produkte', text: deals.length === 1 ? `Deal: ${deals[0]}` : `${deals.length} Deals für deine Produkte: ${deals[0]} …` });
+  else if (heute.length) z.push({ ziel: 'produkte', warm: true, text: heute[0] });
+  const bald = (l, stunden) => l.filter(e => { const b = zeit(e.bis); return b != null && b - Date.now() < stunden * 36e5; });
+  const g = bald(letzteEinteilung?.gewinnspiele || [], 36);
+  if (g.length) z.push({ ziel: 'gewinnspiele', warm: true, text: `Gewinnspiel endet ${tag(zeit(g[0].bis))}: ${kurzTitel(g[0].titel, 40)}` });
+  const c = bald(letzteEinteilung?.cashback || [], 72);
+  if (c.length) z.push({ ziel: 'cashback', text: `Cashback endet ${tag(zeit(c[0].bis))}: ${kurzTitel(c[0].titel, 40)}` });
+  const a = bald(letzteEinteilung?.auftritte || [], 7 * 24);
+  if (a.length) z.push({ ziel: 'auftritte', warm: true, text: `Bewerbung bis ${tag(zeit(a[0].bis))}: ${kurzTitel(a[0].titel, 40)}` });
+  const rx = bald(letzteEinteilung?.remix || [], 7 * 24);
+  if (rx.length) z.push({ ziel: 'remix', warm: true, text: `Remix-Contest bis ${tag(zeit(rx[0].bis))}: ${kurzTitel(rx[0].titel, 40)}` });
+  return z.slice(0, 4);
+}
+function zeichneWichtig() {
+  const z = wichtigZeilen();
+  const laedt = !S.angebote && !S.vorteile && !S.konzerte;
+  $('wichtig').innerHTML = `<b>Heute wichtig</b><ul>${z.length
+    ? z.map(x => `<li><a href="#${x.ziel}" data-sprung="${x.ziel}"><span class="punkt${x.warm ? ' warm' : ''}" aria-hidden="true"></span><span>${esc(x.text)}</span></a></li>`).join('')
+    : `<li><p class="ruhig">${laedt ? 'Lade …' : 'Heute nichts Dringendes – Push kommt, sobald sich etwas tut.'}</p></li>`}</ul>`;
+}
+
+// --- Zeichnen ---------------------------------------------------------------------------------------------------------
+function setzeZahl(ab, n) {
+  const a = document.querySelector(`.sprung [data-ziel="${ab}"] .n`);
+  if (a) a.textContent = n ? String(n) : '';
+  const h = document.querySelector(`#h-${ab} .zahl`);
+  if (h) h.textContent = n ? String(n) : '';
 }
 // Neuzeichnen (Rückkehr zur Seite, neue Daten) schließt sonst jeden aufgeklappten Kasten („1 weiteres Angebot“, Quellen,
 // Vorlagen) – vorher merken, danach wieder öffnen
 function kastenSchluessel(d) {
   const k = d.closest('[data-produkt]');
-  return k ? `p:${k.dataset.produkt}:${d.className}` : `s:${d.querySelector('summary')?.textContent.trim().replace(/\d+/g, '#')}`;
+  const ab = d.closest('.abschnitt')?.id || '';
+  return k ? `p:${k.dataset.produkt}:${d.className}` : `s:${ab}:${d.querySelector('summary')?.textContent.trim().replace(/\d+/g, '#')}`;
 }
-function zeichneOffen(r) {
-  const el = $('p-' + r);
-  const offenVorher = new Set([...el.querySelectorAll('details[open]')].map(kastenSchluessel));
-  const n = ZEICHNER[r]();
-  if (offenVorher.size) for (const d of el.querySelectorAll('details')) if (offenVorher.has(kastenSchluessel(d))) d.open = true;
-  return n;
-}
-function pruefeEnden(r) {
-  const d = S[r]?.d;
-  if (!d) return;
-  if (r === 'angebote') {
-    for (const p of d.produkte || []) for (const o of [p.bestes, ...(p.weitere || [])]) if (o) { vorbei(o); merkeEnde(zeit(o.ab ?? o.gueltigAb)); }
-    for (const t of d.technik || []) vorbei(t, PREISFEHLER_STUNDEN);
+const ZEICHNER = { produkte: zeichneProdukte, preisfehler: zeichnePreisfehler, gewinnspiele: zeichneGewinnspiele, cashback: zeichneCashback, snacks: zeichneSnacks, auftritte: zeichneAuftritte, remix: zeichneRemix, mehr: zeichneMehr };
+function zeichne() {
+  naechstesEnde = Infinity;
+  const main = document.querySelector('main');
+  const offenVorher = new Set([...main.querySelectorAll('[id^="i-"] details[open]')].map(kastenSchluessel));
+  letzteEinteilung = einteilen();
+  letztePreisfehler = preisfehlerListe();
+  for (const [ab, fn] of Object.entries(ZEICHNER)) {
+    const { html, n } = fn(letzteEinteilung);
+    $('i-' + ab).innerHTML = html;
+    setzeZahl(ab, n);
   }
-  if (r === 'vorteile') for (const e of Object.values(d.kategorien || {}).flat()) if (e) vorbei(e, istPreisfehler(e) ? PREISFEHLER_STUNDEN : 0);
-  if (r === 'konzerte') for (const k of d.k?.konzerte || []) { konzertVorbei(k); vorverkaufText(k); }
+  if (offenVorher.size) for (const d of main.querySelectorAll('[id^="i-"] details')) if (offenVorher.has(kastenSchluessel(d))) d.open = true;
+  if (!$('editor').hidden) zeichneEditor();
+  zeichneKrypto();
+  zeichneWichtig();
+  zeigeStand();
+  springNachLaden();
 }
-const zeichneAlles = () => zeichne('alle');
+const zeichneAlles = () => zeichne();
 
-let aktiv = 'angebote';
-function zeigeReiter(r, { merken = true, fokus = false } = {}) {
-  if (!REITER.includes(r)) r = 'angebote';
-  aktiv = r;
-  for (const x of REITER) {
-    const t = $('t-' + x), p = $('p-' + x);
-    const an = x === r;
-    t.setAttribute('aria-selected', String(an));
-    t.tabIndex = an ? 0 : -1;
-    p.hidden = !an;
-  }
-  if (fokus) $('t-' + r).focus();
-  if (merken) {
-    merk('mein-vorteil-reiter', r);
-    if (location.hash !== '#' + r) history.replaceState(null, '', '#' + r);
-  }
+// --- Sprungmarken: #krypto … #mehr; alte #angebote/#vorteile/#konzerte zeigen auf den passenden Abschnitt -------------
+function zielAusHash() {
+  let h = '';
+  try { h = decodeURIComponent(location.hash.replace('#', '')).toLowerCase(); } catch {}
+  return ABSCHNITTE.includes(h) ? h : ALTE_MARKEN[h] || null;
 }
-function reiterAusHash() { const h = location.hash.replace('#', '').toLowerCase(); return REITER.includes(h) ? h : null; }
 
-document.querySelector('.segment').addEventListener('click', ev => {
-  const b = ev.target.closest('[data-reiter]');
-  if (!b) return;
-  const war = aktiv;
-  zeigeReiter(b.dataset.reiter);
-  if (war !== aktiv) window.scrollTo(0, 0);
+// --- Weitere Reiter (Platz für „Filme“ vom Kollegen) -------------------------------------------------------------------
+// Ein weiterer Reiter = Link <a href="#name" data-reiter="name">Name<span class="n"></span></a> in der Leiste und
+// <section id="p-name" class="reiter-seite" hidden> nach </main>. Antippen zeigt nur diese Seite (die Abschnitte sind
+// dann ausgeblendet), jeder Abschnitts-Link führt zurück. REITER_START[name](element) läuft beim ersten Öffnen (z. B.
+// Skript und Daten erst dann laden), REITER_NEU[name]() bei ↻.
+const REITER_START = {}, REITER_NEU = {};
+// ↻ und Rückkehr zur Seite (nach > 5 min): jeder schon geöffnete Reiter holt frisch (nicht bei jedem Wechsel)
+function reiterNeu() { for (const [n, f] of Object.entries(REITER_NEU)) if ($('p-' + n)?.dataset.gestartet) try { f(); } catch (e) { console.warn(e); } }
+
+// --- Filme: alles in filme.js (Logik + CSS); Skript und Daten erst beim ersten Öffnen des Reiters ---------------------
+let filmeSkript = null;
+function starteFilme() {
+  if (filmeSkript) return;
+  filmeSkript = document.createElement('script');
+  filmeSkript.src = 'filme.js';
+  filmeSkript.onload = () => window.MeinVorteilFilme?.start($('i-filme'));
+  filmeSkript.onerror = () => {
+    filmeSkript.remove(); filmeSkript = null; // ↻ versucht es noch einmal
+    $('i-filme').innerHTML = '<p class="leer">Filme gerade nicht erreichbar. Später noch einmal auf ↻ tippen.</p>';
+  };
+  document.head.appendChild(filmeSkript);
+}
+REITER_START.filme = starteFilme;
+REITER_NEU.filme = () => { if (window.MeinVorteilFilme?.gestartet) MeinVorteilFilme.lade(); else if (reiterOffen === 'filme') starteFilme(); };
+let reiterOffen = null;
+const reiterAusHash = () => { const h = location.hash.replace('#', '').toLowerCase(); return /^[a-z0-9-]+$/.test(h) && document.querySelector(`.sprung a[data-reiter="${h}"]`) && $('p-' + h) ? h : null; };
+function zeigeReiter(name) {
+  reiterOffen = name || null;
+  document.querySelector('main').hidden = !!name;
+  for (const sk of document.querySelectorAll('.reiter-seite')) sk.hidden = sk.id !== 'p-' + name;
+  for (const a of document.querySelectorAll('.sprung a')) {
+    if (name && a.dataset.reiter === name) a.setAttribute('aria-current', 'true'); else if (name || a.dataset.reiter) a.removeAttribute('aria-current');
+  }
+  const seite = name ? $('p-' + name) : null;
+  if (seite && !seite.dataset.gestartet) { seite.dataset.gestartet = '1'; try { REITER_START[name]?.(seite); } catch (e) { console.warn(e); } }
+  if (seite) seite.scrollIntoView({ behavior: 'instant', block: 'start' }); // wie ein Abschnitt: Überschrift direkt unter der Leiste
+}
+let gesprungen = false, nutzerScrollt = false, sprungOffen = true;
+function springe(ziel, { sanft = true } = {}) {
+  const el = $(ziel);
+  if (!el) return;
+  el.scrollIntoView({ behavior: sanft ? 'smooth' : 'instant', block: 'start' }); // 'auto' wäre wegen scroll-behavior: smooth doch sanft
+  markiereSprung(ziel);
+}
+// Push-Link mit Sprungmarke: nach dem ersten Zeichnen (und nach frischen Daten, solange niemand selbst scrollt) dorthin
+function springNachLaden() {
+  const z = zielAusHash();
+  if (!z || nutzerScrollt || !sprungOffen) return;
+  if ('#' + z !== location.hash) history.replaceState(null, '', '#' + z);
+  springe(z, { sanft: false });
+  gesprungen = true;
+}
+addEventListener('touchstart', () => { if (gesprungen) nutzerScrollt = true; }, { passive: true });
+addEventListener('wheel', () => { if (gesprungen) nutzerScrollt = true; }, { passive: true });
+addEventListener('hashchange', () => {
+  const r = reiterAusHash();
+  if (r) { zeigeReiter(r); return; }
+  const z = zielAusHash();
+  if (z) { if (reiterOffen) zeigeReiter(null); if ('#' + z !== location.hash) history.replaceState(null, '', '#' + z); springe(z); }
 });
-document.querySelector('.segment').addEventListener('keydown', ev => {
-  const i = REITER.indexOf(aktiv);
-  if (ev.key === 'ArrowRight') { zeigeReiter(REITER[(i + 1) % REITER.length], { fokus: true }); ev.preventDefault(); }
-  if (ev.key === 'ArrowLeft') { zeigeReiter(REITER[(i + REITER.length - 1) % REITER.length], { fokus: true }); ev.preventDefault(); }
+function markiereSprung(ziel) {
+  for (const a of document.querySelectorAll('.sprung a')) {
+    const an = a.dataset.ziel === ziel;
+    if (an) a.setAttribute('aria-current', 'true'); else a.removeAttribute('aria-current');
+    if (an) { const z = a.parentElement; const l = a.offsetLeft - 16; if (l < z.scrollLeft || a.offsetLeft + a.offsetWidth > z.scrollLeft + z.clientWidth) z.scrollTo({ left: Math.max(0, l), behavior: 'smooth' }); }
+  }
+}
+// aktiver Abschnitt beim Scrollen (oben unter der Leiste)
+if ('IntersectionObserver' in window) {
+  const sichtbar = new Map();
+  const io = new IntersectionObserver(eintraege => {
+    for (const e of eintraege) sichtbar.set(e.target.id, e.isIntersecting);
+    const erster = ABSCHNITTE.find(a => sichtbar.get(a));
+    if (erster) markiereSprung(erster);
+  }, { rootMargin: '-70px 0px -55% 0px' });
+  for (const a of ABSCHNITTE) io.observe($(a));
+}
+document.querySelector('.sprung').addEventListener('click', ev => {
+  const r = ev.target.closest('a[data-reiter]');
+  if (r) { ev.preventDefault(); history.replaceState(null, '', '#' + r.dataset.reiter); zeigeReiter(r.dataset.reiter); markiereReiterLink(r); return; }
+  const a = ev.target.closest('a[data-ziel]');
+  if (!a) return;
+  ev.preventDefault();
+  if (reiterOffen) zeigeReiter(null);
+  history.replaceState(null, '', '#' + a.dataset.ziel);
+  springe(a.dataset.ziel);
 });
-window.addEventListener('hashchange', () => { const r = reiterAusHash(); if (r && r !== aktiv) { zeigeReiter(r); window.scrollTo(0, 0); } });
+function markiereReiterLink(a) { const z = a.parentElement; if (a.offsetLeft + a.offsetWidth > z.scrollLeft + z.clientWidth || a.offsetLeft < z.scrollLeft) z.scrollTo({ left: Math.max(0, a.offsetLeft - 16), behavior: 'smooth' }); }
+$('wichtig').addEventListener('click', ev => {
+  const a = ev.target.closest('a[data-sprung]');
+  if (!a) return;
+  ev.preventDefault();
+  if (reiterOffen) zeigeReiter(null);
+  history.replaceState(null, '', '#' + a.dataset.sprung);
+  springe(a.dataset.sprung);
+});
 
+// --- Klicks ------------------------------------------------------------------------------------------------------------
 document.addEventListener('click', ev => {
   const b = ev.target.closest('button');
   if (!b) return;
-  if (b.classList.contains('weg')) { weg.add(b.dataset.id); merk('mein-vorteil-weg', [...weg].slice(-300)); zeichne('vorteile'); }
-  else if (b.dataset.mehr) { offen.add(b.dataset.mehr); anzahl.vorteile = zeichneOffen('vorteile'); }
-  else if (b.id === 'zeigen') { weg = new Set(); merk('mein-vorteil-weg', []); merk('vorteile-weg', []); zeichne('vorteile'); }
-  else if (b.dataset.nah) { nurNah = b.dataset.nah === '1'; merk('konz-alle', nurNah ? 0 : 1); zeichne('konzerte'); }
+  if (b.classList.contains('weg')) { weg.add(b.dataset.id); merk('mein-vorteil-weg', [...weg].slice(-300)); zeichne(); }
+  else if (b.dataset.mehr) { offen.add(b.dataset.mehr); zeichne(); }
+  else if (b.id === 'zeigen') { weg = new Set(); merk('mein-vorteil-weg', []); merk('vorteile-weg', []); zeichne(); }
+  else if (b.dataset.nah) { nurNah = b.dataset.nah === '1'; merk('konz-alle', nurNah ? 0 : 1); zeichne(); }
   else if (b.classList.contains('kopie')) kopiere($(b.dataset.ziel).textContent, b);
+  else if (b.id === 'liste-bearbeiten' || b.id === 'editor-fertig') {
+    const auf = $('editor').hidden;
+    $('editor').hidden = !auf;
+    $('liste-bearbeiten').setAttribute('aria-expanded', String(auf));
+    $('liste-bearbeiten').textContent = auf ? 'Fertig' : 'Liste bearbeiten';
+    if (auf) zeichneEditor();
+  }
+  else if (b.dataset.raus) { if (!meine.aus.includes(b.dataset.raus)) meine.aus.push(b.dataset.raus); merkMeine(); zeichne(); }
+  else if (b.dataset.rein) { meine.aus = meine.aus.filter(x => x !== b.dataset.rein); merkMeine(); zeichne(); }
+  else if (b.dataset.eigenRaus) { meine.eigene = meine.eigene.filter(x => x !== b.dataset.eigenRaus); merkMeine(); zeichne(); }
+});
+document.addEventListener('submit', ev => {
+  if (ev.target.id !== 'neu-produkt') return;
+  ev.preventDefault();
+  const n = $('neu-name').value.replace(/\s+/g, ' ').trim().slice(0, 60);
+  if (n && !meine.eigene.some(x => x.toLowerCase() === n.toLowerCase())) { meine.eigene.push(n); merkMeine(); }
+  zeichne();
+  $('neu-name')?.focus();
 });
 
 function kopiere(text, knopf) {
@@ -1124,17 +2160,36 @@ $('kopieren').addEventListener('click', ev => kopiere(TOPIC, ev.currentTarget));
 })();
 
 // --- Start -------------------------------------------------------------------------------------------------------
-$('neu').addEventListener('click', lade);
-zeigeReiter(reiterAusHash() || lies('mein-vorteil-reiter', 'angebote'), { merken: !!reiterAusHash() });
+$('neu').addEventListener('click', () => { lade(); ladeKurs(); reiterNeu(); });
+zeichneKryptoEditor();
+zeichneKryptoPush();
+// noch keine Käufe -> Eingabe offen (so findet man sie)
+if (!kryptoStand().some(x => x.pos)) $('krypto-form').open = true;
 zeichneAlles();
+if (KRYPTO_IMPORT) {
+  zeigeHinweis(KRYPTO_IMPORT.ok ? `Krypto-Daten übernommen ✓ (${KRYPTO_IMPORT.coins.map(c => KRYPTO_COINS[c].name).join(', ')}) – nur auf diesem iPhone gespeichert.`
+    : KRYPTO_IMPORT.speicher ? 'Krypto-Daten konnten nicht gespeichert werden (privates Surfen?).' : 'Krypto-Link ungültig – nichts geändert.', !KRYPTO_IMPORT.ok);
+  springe('krypto', { sanft: false });
+}
+if (reiterAusHash()) zeigeReiter(reiterAusHash());
 lade();
-// Abgelaufenes verschwindet auch, wenn die Seite offen bleibt; Stand-Zeile läuft mit
-setInterval(() => { if (document.hidden) return; if (Date.now() >= naechstesEnde) zeichneAlles(); else zeigeStand(); }, 30000);
+ladeKurs();
+// Abgelaufenes verschwindet auch, wenn die Seite offen bleibt; Stand-Zeile und Kurs laufen mit
+setInterval(() => {
+  if (document.hidden) return;
+  if (Date.now() >= naechstesEnde) zeichneAlles(); else zeigeStand();
+  zeichneKrypto();
+}, 30000);
+// Kurs alle 60 s, solange die Seite offen ist (mit Zonen-Prüfung und Pop-up)
+setInterval(() => { if (!document.hidden) ladeKurs(); }, KURS_ALLE_MS);
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) return;
   zeichneAlles();
-  if (Date.now() - geladenUm > 5 * 60000) lade();
+  if (Date.now() - geladenUm > 5 * 60000) { lade(); reiterNeu(); }
+  if (Date.now() - (kurs.zeit || 0) >= KURS_ALLE_MS) ladeKurs();
 });
+// Nur lesen, für die Tests (test/regeln.test.mjs): dieselben Regeln wie die Wecker
+window.meinVorteil = Object.freeze({ krass, istSpiel, geraetAb, KRASS_STANDARD, naechsteZone, rohZone, kryptoPosition, kryptoErgebnis, leseKryptoText, zahlAus, meinProdukt, istSnack, interessant, gewinnspielEinfach, istCashback, istRemix, STANDARD_PRODUKTE });
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
   navigator.serviceWorker.register('sw.js', { scope: './' }).catch(() => {});
   // Kam diese Seite (oder vorher eine alte Weiterleitung) über den SYNQUENZER-Worker der Wurzel, hat er sie als Offline-Kopie
@@ -1173,3 +2228,4 @@ async function synthKopiePruefen() {
 </script>
 </body>
 </html>
+

@@ -1,6 +1,6 @@
 # Mein Vorteil
 
-**Eine Seite für alles:** Angebote & Preisfehler, Vorteile, Konzerte.
+**Eine Seite für alles:** Krypto, deine Produkte, krasse Preisfehler, Gewinnspiele, Cashback, Snacks, Auftritte, Remix-Contests.
 <https://xanderfoxy.github.io/Synquenzer/mein-vorteil/> (Safari → Teilen → „Zum Home-Bildschirm“, dann wie eine App)
 
 Die alten Seiten `schnaeppchen/`, `vorteile/` und `konzerte/` leiten sofort hierher weiter (`#angebote`,
@@ -23,18 +23,42 @@ alte Adresse kommt, sieht einmal den Hinweis „Teilen → Zum Home-Bildschirm�
 - Im alten Home-Bildschirm-Symbol (eigenes Fenster ohne Safari-Leiste) nennt der Umzug-Hinweis die Adresse mit
   „Adresse kopieren“, weil es dort kein „Teilen“ gibt.
 
-## Reiter
+## Abschnitte (seit 07.11.2026: eine Seite statt Reitern)
 
-| Reiter | Inhalt | Daten |
+Oben „Heute wichtig“ (höchstens 4 Zeilen), darunter eine Sprung-Leiste (bleibt oben, seitlich wischbar):
+**Krypto · Meine Produkte · Preisfehler · Gewinnspiele · Cashback · Snacks · Auftritte · Remix · Mehr**.
+Alte Marken zeigen auf den passenden Abschnitt: `#angebote` → Meine Produkte, `#vorteile` → Gewinnspiele,
+`#konzerte` → Auftritte.
+
+| Abschnitt | Inhalt | Daten |
 |---|---|---|
-| **Angebote** | Preisfehler (oben, wenn es welche gibt), „Jetzt günstig“, „Deine Liste“ | `schnaeppchen-daten` `current.json` + Preisfehler aus `vorteile-daten` |
-| **Vorteile** | alle Bereiche aus den Daten, in der Reihenfolge der Daten – ein neuer Bereich (z. B. „Prämien & Freunde werben“) erscheint von selbst; Spar-Tipps & Vorlagen | `vorteile-daten` `aktuell.json` |
-| **Konzerte** | Konzerte & Festivals (Umkreis-Schalter), neue Veröffentlichungen | `konzerte-daten` `konzerte.json`, `releases.json`, `status.json` |
+| **Krypto** | Kurs BTC/ETH live (CoinGecko → Crypto.com → Coinbase, beim Öffnen und alle 60 s), je Coin Käufe (Betrag € inkl. Gebühren + Kurs oder Menge), „aktuelle Menge“ (Auto Earn), Wert, Gewinn/Verlust € und %, Ø-Kaufkurs, Gewinnschwelle; Pop-up bei Gewinn ↔ Verlust, +5 %, +10 %, −10 % | nur `localStorage` (`mein-vorteil-krypto`, Zone in `mein-vorteil-krypto-zone`) |
+| **Meine Produkte** | Angebote zu Xanders Produkten (Liste bearbeitbar, nur auf dem Gerät) | `schnaeppchen-daten` + Radar-Deals |
+| **Preisfehler** | nur krasse (≥ 75 % und ≥ 20 € unter Vorher-Preis, teures Gerät fast geschenkt, Spiele nur ≈ 1 €) | beide Wecker, Regeln `krass.mjs` |
+| **Gewinnspiele** | nur laufende, ohne Kauf/Abo | `vorteile-daten` (tests) |
+| **Cashback** | Geld zurück/Cashback nur zu Produkten, Snacks, Musik-Technik | Radar-Modul deals (`grund: 'cashback'`) |
+| **Snacks**, **Auftritte** | andere Snack-Deals; Bands gesucht, Konzerte, Neuerscheinungen | Radar, `konzerte-daten` |
+| **Remix** | laufende Remix-Contests (Synth-Pop, 80er, Italo, Euro-Disco, Elektro, Dark/New Wave), nach Einsendeschluss | Radar-Modul musik (`extra.art: 'remix'`) |
+| **Mehr** | Erleben, Reisen, Nebenverdienst, Spar-Tipps, Vorlagen – eingeklappt | Radar |
 
-Schnäppchen-Angebote und Preisfehler stehen nur unter „Angebote“ (nicht doppelt unter „Vorteile“). Derselbe Preisfehler
-aus beiden Quellen (gleicher Link) erscheint einmal. Der letzte Reiter wird gemerkt; `#angebote` usw. öffnen direkt.
-Oben: „Stand“ je Quelle (rot, wenn der letzte Lauf zu lange her ist oder keine Verbindung besteht) und „Push einrichten“
-(ntfy-Thema `xander-schnaeppchen-b5cbf4442aaa9734f3`, gilt für alle drei).
+„Prämien & Freunde werben“ (Strom, Bank, Konto, Freunde werben) zeigt die Seite nie, auch nicht aus alten Daten;
+Deals ohne Bezug zu Produkten/Snacks/Musik-Technik fallen weg.
+
+**Krypto-Import per Link:** `…/mein-vorteil/#krypto=btc:<menge>:<einsatz>,eth:<menge>:<einsatz>` – das Skript im `<head>`
+nimmt das Fragment sofort per `history.replaceState` aus der Adresse, speichert nur in `localStorage` und zeigt
+„übernommen“. Nichts davon geht ans Netz (Test: keine Anfrage enthält die Zahlen). Push bei geschlossener Seite: siehe
+`krypto/` und `.github/workflows/krypto.yml` (Secrets `KRYPTO`, `KRYPTO_NTFY_TOPIC`).
+
+**Weitere Reiter:** `<a href="#name" data-reiter="name">Name<span class="n"></span></a>` in die Leiste,
+`<section id="p-name" class="reiter-seite breite" hidden>` nach `</main>`, `REITER_START.name = el => …` (läuft beim
+ersten Öffnen), optional `REITER_NEU.name` (↻ und Rückkehr zur Seite nach > 5 min, für jeden schon geöffneten Reiter).
+Antippen blendet die Abschnitte aus und springt wie ein Abschnitt unter die Leiste; Abschnitts-Links führen zurück.
+
+**Reiter „Filme“ (Film-Radar, `filme.js`):** letzter Link der Leiste, `#filme` öffnet ihn direkt. Skript, CSS (`.fi-…`) und
+Daten (`vorteile-daten/vorteile/data/filme.json`) kommen erst beim ersten Öffnen; vorher lädt die Seite nichts davon.
+Chips Wunschliste · Angebote · Neu · 80er & Kult · Serien · Disney, Tiefstpreis, „dein Ziel“, letzter Stand offline.
+Film-Einträge aus `aktuell.json` (Kategorie `filme`, für die Pushes) stehen nur dort, nicht noch einmal unter „Mehr“.
+Der Service Worker hält `filme.js` wie die Seite (erst Netz, nach 3 s die letzte gute Kopie). Tests: `test/filme.test.mjs`.
 
 ## Was eine Angebotskarte zeigt
 

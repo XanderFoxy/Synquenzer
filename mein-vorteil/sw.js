@@ -1,14 +1,16 @@
 /* „Mein Vorteil“: eigener Service Worker nur für /mein-vorteil/ (hat hier Vorrang vor dem SYNQUENZER-Worker im Wurzelordner).
-   Seite: erst Netz; antwortet es nicht binnen 3 s oder gar nicht, die letzte gute Kopie (Start ohne Netz).
+   Seite und filme.js (Reiter „Filme“): erst Netz; antwortet es nicht binnen 3 s oder gar nicht, die letzte gute Kopie
+   (Start ohne Netz). So passen Seite und filme.js nach einer neuen Fassung immer zusammen.
    Symbole/Manifest: aus dem Zwischenspeicher. Daten (raw.githubusercontent.com) gehen nie durch diesen Worker –
    die Seite merkt sich den letzten Stand selbst. */
 const CACHE = 'mein-vorteil-1';
 const SEITE = new URL('./', self.registration.scope).href;
+const FILME = new URL('filme.js', self.registration.scope).href;
 const LANGSAM = 3000;
 const STATISCH = /\/(icon-\d+\.png|icon\.svg|manifest\.webmanifest)$/;
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll([SEITE, 'icon-192.png', 'icon.svg', 'manifest.webmanifest'])).catch(() => {}));
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll([SEITE, 'filme.js', 'icon-192.png', 'icon.svg', 'manifest.webmanifest'])).catch(() => {}));
   self.skipWaiting();
 });
 self.addEventListener('activate', e => {
@@ -22,13 +24,15 @@ self.addEventListener('fetch', e => {
   const u = new URL(rq.url), scope = new URL(self.registration.scope);
   if (u.origin !== scope.origin || !u.pathname.startsWith(scope.pathname)) return;
   const rest = u.pathname.slice(scope.pathname.length);
-  if (rq.mode === 'navigate' || rest === '' || rest === 'index.html') {
+  const seite = rq.mode === 'navigate' || rest === '' || rest === 'index.html';
+  if (seite || rest === 'filme.js') {
+    const schluessel = seite ? SEITE : FILME;
     let ablegen = Promise.resolve();
     const netz = fetch(rq).then(r => {
-      if (r && r.ok && r.type === 'basic') { const k = r.clone(); ablegen = caches.open(CACHE).then(c => c.put(SEITE, k)).catch(() => {}); }
+      if (r && r.ok && r.type === 'basic') { const k = r.clone(); ablegen = caches.open(CACHE).then(c => c.put(schluessel, k)).catch(() => {}); }
       return r;
     });
-    const kopie = () => caches.open(CACHE).then(c => c.match(SEITE)).catch(() => undefined);
+    const kopie = () => caches.open(CACHE).then(c => c.match(schluessel)).catch(() => undefined);
     e.respondWith(new Promise(fertig => {
       let erledigt = false;
       const gib = r => { if (!erledigt && r) { erledigt = true; fertig(r); } };

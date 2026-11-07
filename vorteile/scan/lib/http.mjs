@@ -1,5 +1,7 @@
 // Höfliches Abrufen (gleiches Muster wie schnaeppchen/scan/http.mjs und konzerte/scan/lib.mjs):
 // eigener User-Agent, Zeitlimit, Mindestabstand pro Host, ein kleiner Wiederholversuch bei 429/5xx.
+// abruf.pauseMsJeHost: längerer Abstand für einzelne Hosts (z. B. Apple: höchstens ~20 Abrufe pro Minute).
+// pauseMs 0 (Tests) = ganz ohne Pausen.
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
@@ -9,9 +11,10 @@ export function macheAbruf(abruf, fetchImpl = globalThis.fetch) {
   const letzter = new Map();
   return async function holeText(url, { headers = {}, method = 'GET', body } = {}) {
     const host = new URL(url).host;
+    const pause = abruf.pauseMs > 0 ? Math.max(abruf.pauseMs, abruf.pauseMsJeHost?.[host] ?? 0) : 0;
     for (let versuch = 0; ; versuch++) {
       const seit = Date.now() - (letzter.get(host) || 0);
-      if (seit < abruf.pauseMs) await warte(abruf.pauseMs - seit);
+      if (seit < pause) await warte(pause - seit);
       letzter.set(host, Date.now());
       const ctl = new AbortController();
       const t = setTimeout(() => ctl.abort(), abruf.timeoutMs);

@@ -4,6 +4,7 @@ import { schluessel, alterTage } from '../lib/text.mjs';
 import { endeAusFuer, abAus, bestimmeEnde, berlinTag, alterStunden, HOECHSTALTER_STUNDEN } from '../lib/ende.mjs';
 import { istMydealzDeal, altpreisAusText, preisAngaben, preisZeile, versandImPreis } from '../lib/mydealz.mjs';
 import { parsePrice, euro } from '../lib/text.mjs';
+import { krass as krassPruefen } from '../lib/krass.mjs';
 
 export const googleNews = q => `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=de&gl=DE&ceid=DE:de`;
 export const mydealzSuche = q => `https://www.mydealz.de/rss/search?q=${encodeURIComponent(q)}`;
@@ -81,7 +82,8 @@ export const PREISFEHLER = /preisfehler|fehlerpreis|error fare/i;
  * (der RSS-Feed kennt kein „abgelaufen“). Altpreis: Vergleichspreis der Deal-Seite (nextBestPrice), sonst eindeutige
  * Formulierung im Text (UVP, Vergleichspreis, „statt“ …) – nur wenn höher als jetzt, sonst null.
  */
-export async function preisfehlerEintrag(it, { kategorie, pruefer, jetzt, wert = 90, preis: preisErsatz = null, mitPreis = false, soGehts } = {}) {
+// krass (optional, Grenzen aus der config): nur krasse Preisfehler (lib/krass.mjs) – sonst { grund: 'nicht krass: …' }
+export async function preisfehlerEintrag(it, { kategorie, pruefer, jetzt, wert = 90, preis: preisErsatz = null, mitPreis = false, soGehts, krass = null } = {}) {
   if (mitPreis && parsePrice(it.preisText) == null && preisErsatz == null) return { grund: 'ohne Preis' };
   // ohne lesbares Datum lässt sich das 24-Stunden-Fenster nicht prüfen -> weglassen (wie der Schnäppchen-Wecker)
   if (!Number.isFinite(Date.parse(it.datum || ''))) return { grund: 'ohne Datum' };
@@ -105,6 +107,9 @@ export async function preisfehlerEintrag(it, { kategorie, pruefer, jetzt, wert =
   const p = preisAngaben({ preis, preisVorher: vorher?.preis, vorherQuelle: vorher?.quelle });
   const shop = info?.haendler || it.shop || '';
   const inkl = versandImPreis(it.titel, info);
+  // Nur No-Brainer (Xander 07.11.2026): Versand zählt mit, wenn er nicht schon im Preis steckt
+  const k = krass ? krassPruefen({ titel: it.titel, preis: p.preis != null ? p.preis + (!inkl && info?.versand > 0 ? info.versand : 0) : null, preisVorher: p.preisVorher }, krass) : null;
+  if (k && !k.ok) return { grund: `nicht krass: ${k.grund}` };
   const versand = inkl ? ' inkl. Versand' : info?.versand > 0 ? ` + ${euro(info.versand)} Versand` : '';
   const endeSeite = info?.ende || null;
   const eintragDaten = eintrag({
@@ -114,7 +119,7 @@ export async function preisfehlerEintrag(it, { kategorie, pruefer, jetzt, wert =
     art: 'preisfehler', bis: endeSeite || it.bis || null, bisQuelle: endeSeite ? 'deal-seite' : it.bis ? 'text' : null, ab: it.ab,
     wert, sofort: true, grund: 'Preisfehler', preisfehler: true, preise: p,
     // Versand steckt schon im Preis (CAMELBAK „0,99 € + VSK“ = 6,98 €) -> versand 0, damit die Seite nicht „zzgl.“ schreibt
-    extra: { shop: shop || null, versand: inkl ? 0 : info?.versand ?? null, versandInklusive: inkl, temperatur: info?.temperatur ?? it.temperatur ?? null, geprueft: !!info },
+    extra: { shop: shop || null, versand: inkl ? 0 : info?.versand ?? null, versandInklusive: inkl, temperatur: info?.temperatur ?? it.temperatur ?? null, geprueft: !!info, ...(k ? { krass: k.grund, normalAb: k.normalAb ?? null } : {}) },
   });
   return { eintrag: eintragDaten };
 }

@@ -21,7 +21,9 @@
   "abruf": {
     "userAgent": "Vorteils-Radar/1.0 (privat, wenige Abrufe pro Stunde; +https://github.com/XanderFoxy/Synquenzer/tree/vorteile/vorteile)",
     "timeoutMs": 20000,
-    "pauseMs": 2000
+    "pauseMs": 2000,
+    "pauseMsJeHost": { "itunes.apple.com": 3200 },
+    "_pauseMsJeHost": "Apple erlaubt etwa 20 Abrufe pro Minute -> 3,2 s Abstand."
   },
   "module": {
     "deals": {
@@ -37,6 +39,23 @@
         { "name": "mydealz Drogerie", "url": "https://www.mydealz.de/rss/gruppe/drogerie", "maxAlterTage": 7 },
         { "name": "mydealz Preisfehler", "url": "https://www.mydealz.de/rss/gruppe/preisfehler", "maxAlterTage": 3, "preisfehler": true }
       ],
+      "preisfehlerKrass": {
+        "_hinweis": "Nur krasse Preisfehler (Xander 07.11.2026). Regeln: scan/lib/krass.mjs (gleich wie schnaeppchen/config.json preisfehler.krass).",
+        "minProzent": 75,
+        "minErsparnisEuro": 20,
+        "absurdMaxEuro": 5,
+        "absurdMinVorher": 15,
+        "spielMaxEuro": 1.5,
+        "spielMinProzent": 98,
+        "spielMinErsparnisEuro": 40
+      },
+      "cashback": {
+        "_hinweis": "Geld-zurück- und Cashback-Aktionen für den Abschnitt Cashback (Xander 07.11.2026: Prämien & Freunde werben sind raus, Cashback bleibt). Bewertet mit den Regeln aus module.praemien (artWoerter, ausschluss, Haken), nur die Arten unten, ab minNetto € netto; Push nur in der Zusammenfassung.",
+        "arten": ["gzg", "cashback"],
+        "minNetto": 1,
+        "maxAlterTage": 14,
+        "suchen": ["Geld zurück Aktion", "Gratis testen", "Cashback Aktion"]
+      },
       "aktionWoerter": ["zum preis von", "gratis", "geschenkt", "1+1", "halben preis", "coupon", "cashback", "scondoo", "lidl plus", "kaufland card", "geld zurück|geld zurueck"]
     },
     "erleben": {
@@ -79,7 +98,20 @@
       ],
       "aufrufWoerter": ["gesucht", "bewerben", "bewerbung", "open call", "ausschreibung", "bandcontest|band contest", "wettbewerb", "newcomer", "talente", "line-up|lineup", "auftrittsmöglichkeit|auftrittsmoeglichkeit"],
       "genreWoerter": ["synth", "elektro", "electro", "electronic", "elektronisch", "wave", "pop", "indie", "singer-songwriter|solokünstler|solokuenstler", "alle genres|jedes genre|genreoffen"],
-      "nichtWoerter": ["coverband|cover-band", "blaskapelle", "schlager", "fußball|fussball", "kirchenchor", "gestorben|trauer", "verhaftet|polizei"]
+      "nichtWoerter": ["coverband|cover-band", "blaskapelle", "schlager", "fußball|fussball", "kirchenchor", "gestorben|trauer", "verhaftet|polizei"],
+      "remix": {
+        "_hinweis": "Remix-Contests mit Stems (Xander 07.11.2026): nur Synth-Pop, 80er, Italo, Euro-Disco, Elektro, Dark Wave, New Wave – keine reinen Hip-Hop-/Metal-/Schlager-Contests. Nur laufende: Einsendeschluss in der Zukunft, ohne Einsendeschluss höchstens maxAlterTage alt. Push: Zusammenfassung, sofort nur bei Frist ≤ sofortBisTage. Seite: Abschnitt Remix-Contests. Sammelseiten-RSS (feeds) ist ungeprüft (Container ohne Netz): fällt er dauerhaft aus, steht das im Status – dann hier entfernen.",
+        "maxAlterTage": 30,
+        "sofortBisTage": 14,
+        "suchen": ["Remix-Wettbewerb", "Remix Contest Stems elektronisch", "remix contest synthpop"],
+        "suchenEnglisch": ["remix contest synthpop", "remix contest synthwave", "remix contest 80s", "remix contest italo disco", "remix contest darkwave", "remix competition stems"],
+        "feeds": [
+          { "name": "RemixComps", "url": "https://www.remixcomps.com/feed/", "maxAlterTage": 30 }
+        ],
+        "contestWoerter": ["remix contest|remix-contest|remixcontest|remix competition|remix-competition|remix comp|remix-wettbewerb|remixwettbewerb|remix wettbewerb|remix challenge|remix-challenge|remixchallenge"],
+        "genreWoerter": ["synthpop|synth-pop|synth pop|synthie-pop|synthiepop", "synth|synthesizer", "synthwave|retrowave|outrun", "80s|80er|eighties|80's", "italo", "euro disco|eurodisco|euro-disco|disco", "electro|elektro|electronic|elektronisch|electronica", "darkwave|dark wave|dark-wave|coldwave|cold wave|post-punk|postpunk", "new wave|newwave|new-wave", "depeche mode|erasure|pet shop boys|a-ha|alphaville|ultravox|kraftwerk|new order|human league|soft cell|camouflage|wolfsheim|de/vision|and one|mesh|covenant|omd|orchestral manoeuvres|yazoo|tears for fears|eurythmics|gary numan|modern talking|sandra|kim wilde|the cure|duran duran"],
+        "nichtWoerter": ["hip hop|hip-hop|hiphop", "rap|rapper|trap|drill|grime", "metal|metalcore|deathcore|death metal|black metal", "schlager", "country", "gospel", "k-pop|kpop"]
+      }
     },
     "nebenverdienst": {
       "aktiv": true,
@@ -117,14 +149,16 @@
       "gewinnWoerter": ["gewinnspiel", "gewinnen", "verlosung", "verlost"],
       "themaWoerter": ["synth", "synthesizer", "kopfhörer|kopfhoerer", "lautsprecher", "mikrofon", "audio", "musik", "technik", "laptop", "tablet", "ipad", "iphone", "kamera", "software", "chips", "snack", "schokolade", "süßigkeiten|suessigkeiten", "kaffee", "reise", "konzert", "tickets", "therme", "gutschein"],
       "leichtWoerter": ["ohne anmeldung", "nur e-mail|nur email", "kurzes formular", "kommentar", "einfach teilnehmen", "regional", "leser"],
-      "fallenWoerter": ["gewinnspielservice|gewinnspiel-service|gewinnspieleintrag", "abo|abonnement", "kostenpflichtig", "0900|0137", "sms", "lotto|lotterie|losnummer", "glücksrad|gluecksrad", "gewinnbenachrichtigung", "sie haben gewonnen", "versandkosten", "probanden|klinisch|medikament|studie", "umfrage gegen", "paysafe", "krypto"]
+      "fallenWoerter": ["gewinnspielservice|gewinnspiel-service|gewinnspieleintrag", "abo|abonnement", "kostenpflichtig", "kaufbeleg|kassenbon|kassenzettel|beim kauf|mit dem kauf|nach dem kauf|kauf eines|kauf von|mindestbestellwert|mindesteinkauf|aktionsprodukt|teilnahmegebühr|teilnahmegebuehr|einsatz von", "0900|0137", "sms", "lotto|lotterie|losnummer", "glücksrad|gluecksrad", "gewinnbenachrichtigung", "sie haben gewonnen", "versandkosten", "probanden|klinisch|medikament|studie", "umfrage gegen", "paysafe", "krypto"]
     },
     "praemien": {
-      "aktiv": true,
+      "aktiv": false,
+      "_aktiv": "Aus seit 07.11.2026 (Xander: „Prämien & Freunde werben“ – Strom, Bank, Konto, Freunde werben – komplett raus). Die Regeln unten nutzt weiter das Modul deals für Geld-zurück/Cashback (deals.cashback).",
       "intervallStunden": 3,
       "_hinweis": "Prämien & Freunde werben. Netto = Prämie − Kosten (Gebühren × Laufzeit, Versand). Sortiert nach Netto pro Stunde Aufwand. Sofort-Push nur ab sofortAbNetto € netto oder Gratis-Produkt ohne Haken ab gratisSofortAbWert €, höchstens maxSofortProLauf pro Lauf.",
       "feeds": [
-        { "name": "mydealz Freebies", "url": "https://www.mydealz.de/rss/gruppe/freebies", "maxAlterTage": 7 }
+        { "name": "mydealz Freebies", "url": "https://www.mydealz.de/rss/gruppe/freebies", "maxAlterTage": 7 },
+        { "name": "mydealz Lebensmittel", "url": "https://www.mydealz.de/rss/gruppe/lebensmittel", "maxAlterTage": 14, "nurArten": ["gzg", "cashback"], "minNetto": 1, "_nurArten": "nur Geld-zurück- und Cashback-Aktionen (Seite: Abschnitt Cashback); ab 1 € netto, weil Geld-zurück für Snacks oft nur 1–3 € bringt" }
       ],
       "suchen": ["Kontowechselprämie", "Neukundenprämie Girokonto", "Freunde werben Prämie", "Geld zurück Aktion", "Gratis testen", "Cashback Aktion", "Wechselbonus Strom", "Payback Extrapunkte", "Startguthaben App"],
       "maxAlterTage": 14,
@@ -179,6 +213,11 @@
         { "id": "cashback-lebensmittel", "name": "Cashback auf Lebensmittel (Scondoo/Marktguru): Kassenbon hochladen", "art": "cashback", "praemie": 15, "kosten": 0, "aufwandMin": 10, "richtwert": true, "einheit": "pro Jahr", "link": "https://www.scondoo.de/", "haken": ["Kassenbon fotografieren", "Auszahlung erst ab Mindestguthaben", "lohnt nur bei Produkten, die du sowieso kaufst"] },
         { "id": "cashback-portal", "name": "Cashback-Portal (z. B. Shoop) vor Online-Einkäufen", "art": "cashback", "praemie": 20, "kosten": 0, "aufwandMin": 5, "richtwert": true, "einheit": "pro Jahr", "link": "https://www.shoop.de/", "haken": ["Cashback kommt erst nach Wochen", "Werbeblocker/Cookies können die Gutschrift verhindern", "lohnt nur, wenn du das sowieso kaufst"] }
       ]
+    },
+    "filme": {
+      "aktiv": true,
+      "intervallStunden": 3,
+      "_hinweis": "Filme & Serien bei Apple TV: Wunschfilme, Angebote (3,99 €), neue Filme, 80er/Kult, Rick and Morty/Star Trek, Disney – mit Tiefstpreis. Die Listen stehen in filme.json. Seite: <data>/filme.json."
     }
   }
 }
