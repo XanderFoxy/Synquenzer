@@ -82433,7 +82433,7 @@ function wegeCss() {
       '.sv-top .sv-scr{display:none!important}',            // D11: Mithören braucht keinen Schalter mehr (▼ ziehen)
       '#rangeBar .rg-b[data-a="part"] .t{letter-spacing:0}',  // Prüfung 5: „Zusammen …“ passt hochkant (Kurzform von „Zusammenfassen …“)
       // Prüfung 10: Tempo-Blatt quer – „Song transponieren …“ und „Ausblenden am Ende“ als zweite Spalte neben Tempo/Taktart (nichts unter dem Rand)
-      '@media (orientation:landscape){.pop:has(> .wg-bpm){display:grid;grid-template-columns:auto 212px;column-gap:14px;grid-auto-flow:row dense;align-items:start}' +
+      '@media (orientation:landscape){.pop:has(> .wg-bpm){display:grid;grid-template-columns:auto 236px;column-gap:14px;grid-auto-flow:row dense;align-items:start}' +
       '.pop:has(> .wg-bpm) > *{grid-column:1}.pop:has(> .wg-bpm) > .ux1-hd{grid-column:1 / -1}' +
       '.pop:has(> .wg-bpm) > .wg-bpm{grid-column:2;grid-row:span 5;align-self:end;margin-top:0}.pop .wg-bpm .sx1-r .ms-b{min-width:40px}}',
       // ✕ auch quer in den Blättern dieses Pakets (Zusammenfassen, Bereich ⋯) – wie hochkant (UIX1)
@@ -82493,7 +82493,8 @@ function wegeVideoOpen(a, e) {
 // mark id plays Small ('s') or Full ('f'): one undo 'song' (SX11 path: in the run from the next bar line)
 function wegeSfSet(id, f) {
   const song = S.song, m0 = song && song.marks.find(x => x.id === id); if (!m0 || R.songRec || (f !== 's' && f !== 'f')) return null;
-  if (f === 's' && !(m0.vr && m0.vr.c === 'l') && gr1MarkInfo(song, m0).cur === 's') return {ok: false, ver: 0, thin: 0};   // Prüfung 8: spielt schon Small (GR1)
+  const grS = !(m0.vr && m0.vr.c === 'l') && gr1MarkInfo(song, m0).cur === 's';   // Prüfung 8: alte GR1-Small-Marke (nur die Drum-Version)
+  if (f === 's' && grS) return {ok: false, ver: 0, thin: 0};                        // spielt schon Small
   const lab = markLabel(m0) + (f === 's' ? ' Small' : ' Full'); SX.lab.add(lab); sx11Hold();
   const r = {ver: 0, thin: 0};
   const ok = songEdit(lab, sg => {
@@ -82502,6 +82503,7 @@ function wegeSfSet(id, f) {
     const verT = new Set();
     for (let t = 0; t < NT(); t++) if (isDrum(t) && gr1Spans(sg, t, m.a, m.a + m.len).some(sp => gr1Pick(sg, t, sp.s, f))) verT.add(t);
     if (cur !== want) vr[cur] = sx11Cur(sg, m);
+    if (grS && !vr.l) vr.l = sx11Cur(sg, m);                       // Prüfung 8: ihr Small bleibt, wie es klang (Full → Small = wieder 84 Noten)
     let mask = vr[want] ? deep(vr[want]) : want === 'l' ? sx11Propose(sg, m) : [];
     if (want === 'l') mask = mask.filter(x => !(x.k === 'd' && verT.has(x.t)));   // eine Small-Version ersetzt das Ausdünnen
     sx11Apply(sg, id, mask);
