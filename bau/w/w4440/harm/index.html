@@ -38377,6 +38377,7 @@ function hm1Suggest(src, lo, hi) {
     if (d1) for (const P of POP) for (let j = 0; j < P.length; j++) if (P[j] === d1 && P[(j + 1) % P.length] === d.deg) pop += d2 && P[(j + P.length - 1) % P.length] === d2 ? .3 : .12;
     sc += Math.min(.4, pop);
     if (p1 && d.root === p1.root) sc -= .6;                          // derselbe Akkord noch einmal ist kein Wechsel
+    if (d.q === 'dim') sc -= .15;                                    // vermindert nur, wenn die Melodie ihn wirklich will
     let fit = null;
     if (mel) { const tones = Harmony.BY_Q[d.q].iv.map(x => PCx(d.root + x)); let a = 0; for (let pc = 0; pc < 12; pc++) a += (tones.includes(pc) ? 1 : -.6) * mel.w[pc]; fit = a / mel.tot; sc += .7 * fit; }
     return {k, deg: d.deg, root: d.root, q: d.q, sc, why: (HM1_WHY[d.deg] || d.deg) + (pop ? ' · beliebte Folge' : '') + (fit != null && fit > .5 ? ' · passt zur Melodie' : '')};
@@ -50111,7 +50112,7 @@ function openMenu(goto) {
   s3.appendChild(el('div', 'small harm-help', 'Takt (Standard): ein neuer Akkord wirkt am nächsten Taktstrich – ein laufender Lauf bleibt bis dahin in seiner Skala. Schlag/Sofort nur, wenn du es bewusst willst.'));   // HARM
   row(s3, 'Oktave', makeSeg([['nearest', 'Nächste'], ['absolute', 'Absolut (CV)']], () => h.octaveMode, v => setHarmony({octaveMode: v}))).classList.add('harm44');   // HARM
   row(s3, 'Split', makeSeg([[null, 'Aus'], [48, 'C3'], [60, 'C4']], () => h.split, v => setHarmony({split: v})));
-  row(s3, 'Tastatur beim Spielen', makeSeg([['show', 'Tonart zeigen'], ['lock', 'Tonart sperren'], ['off', 'Aus'], ['chord', 'Akkord sperren']], () => st.kbScale, v => setKbScale(v)));   /* HM1: + Akkord sperren */
+  row(s3, 'Tastatur beim Spielen', makeSeg([['show', 'Tonart zeigen'], ['lock', 'Tonart sperren'], ['off', 'Aus'], ['chord', 'Akkord', 'Akkord sperren: nur Töne des Akkords, der gerade gilt (auch: SPIELEN halten)']], () => st.kbScale, v => setKbScale(v)));   /* HM1: + Akkord sperren */
   s3.appendChild(el('div', 'small', 'Tonart zeigen: passende Töne leuchten. Tonart sperren: eine unpassende Taste spielt den nächsten passenden Ton darunter.'));
   // V2c′ „Eine Skala“ (E3-25; Nachtrag 2, Xander 24.10.: Akkord-Skala-Quantisierer, Brain-Schalter, Drums für Fills)
   row(s3, 'Eine Skala', makeSeg([[true, 'An'], [false, 'Aus']], () => !!h.oneScale, v => setHarmony({oneScale: v}))).classList.add('mos', 'harm44');   // HARM: ≥ 44

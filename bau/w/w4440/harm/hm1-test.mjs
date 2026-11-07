@@ -29,6 +29,8 @@ ok('1 Glätten: Akkorde je Takt erkannt C · Am · F · G', segs.map(s => s.name
 const half = await E(p, () => window.SYNQUENZER.hm1.segs(0, 4, 'half').length);
 ok('1 Glätten: ½ Takt = 8 Stücke', half === 8, half);
 const sm = await E(p, () => window.SYNQUENZER.hm1.smooth(0, 4, 'bar'));
+const rowT = await E(p, () => { const A = window.SYNQUENZER; A.setChordRow('S5', {len: 4, ch: ['C', 'Am', 'F', 'G'].map((x, k) => ({b: 4 * k, tg: {kind: 'chord', root: [0, 9, 5, 7][k], quality: k === 1 ? 'min' : 'maj'}}))}); const r = {segs: A.hm1.segs(0, 4, 'row').map(g => g.name).join(' '), sm: A.hm1.smooth(0, 4, 'row').map(n => n.n)}; A.setChordRow('S5', null); return r; });
+ok('1 Glätten aus der Akkord-Zeile: gleiche Akkorde, gleiches Grundmuster', rowT.segs === 'C Am F G' && rowT.sm.join(',') === sm.map(n => n.n).join(','), rowT.segs);
 const inC = n => [0, 2, 4, 5, 7, 9, 11].includes(((n % 12) + 12) % 12);
 ok('1 Glätten: alle Töne in C-Dur (stufentreu)', sm.every(n => inC(n.n)), sm.filter(n => !inC(n.n)).map(n => n.n));
 const pcsBar = k => [...new Set(sm.filter(n => n.t >= 4 * k && n.t < 4 * k + 2 && n.d >= 2).map(n => n.n % 12))].sort((a, b) => a - b).join(',');
@@ -107,7 +109,6 @@ const g2 = await glide(C0, C0 + 7);
 ok('Wischen C…G mit Akkord-Sperre: nur C E G', rel(g2) === '0,4,7', g2);
 const tap1 = await E(p, c => window.SYNQUENZER.hm1.kbNote(c + 2), C0);
 ok('Akkord-Sperre: D (Taste) spielt C (nächster Akkordton, tiefer bei Gleichstand)', tap1 === C0, tap1);
-await p.screenshot({path: out + '/hm1-sperre-hoch.png', clip: {x: 0, y: 600, width: 428, height: 326}});
 await hold();
 const ks3 = await E(p, () => window.SYNQUENZER.project().settings.kbScale);
 const g3 = await glide(C0, C0 + 2);
