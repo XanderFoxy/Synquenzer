@@ -249,7 +249,7 @@ try {
         const r = await q.evaluate(() => { const x = document.querySelector('.bb1s .bb1-gens .rb.on'), g = document.querySelector('.bb1s .bb1-gens'); if (!x || !g) return {}; const a = x.getBoundingClientRect(), z = g.getBoundingClientRect(); return {on: x.dataset.gen, vis: a.left >= z.left - 1 && a.right <= z.right + 1}; });
         if (r.on !== g || !r.vis) wrong.push(g + '→' + r.on + (r.vis ? '' : ' (aus dem Bild)'));
       }
-      ok(tag + ': Werkzeugkasten › Figuren (' + role + '): ' + info.length + ' Genre-Tasten ≥ 44 px, jeder Tipp trifft, die Zeile behält ihre Stelle', info.every(x => x.w >= 44 && x.h >= 44) && !wrong.length, 'schmalste ' + Math.min(...info.map(x => x.w)) + ' px' + (wrong.length ? ' · falsch: ' + wrong.slice(0, 8).join(' ') : ''));
+      ok(info.length > 10 && info.every(x => x.w >= 44 && x.h >= 44) && !wrong.length, tag + ': Werkzeugkasten › Figuren (' + role + '): ' + info.length + ' Genre-Tasten ≥ 44 px, jeder Tipp trifft, die Zeile behält ihre Stelle', 'schmalste ' + Math.min(...info.map(x => x.w)) + ' px' + (wrong.length ? ' · falsch: ' + wrong.slice(0, 8).join(' ') : ''));
       if (tag === 'quer' && role === 'Drums') await q.screenshot({path: path.join(out, 'gen3-pruef-figuren-quer.png')});
       await q.evaluate(() => { const x = document.querySelector('.bb1s .ms-x'); if (x) x.click(); });
       await q.waitForTimeout(150);
@@ -329,7 +329,7 @@ try {
   const J = await P8.evaluate(() => ({j: window.SYNQUENZER.ui1.lastJump(), tab: window.SYNQUENZER.gen3.bbTab(), open: !!document.querySelector('.bb1s')}));
   ok(R4.grund && /Werkzeugkasten ▾ › Grundmuster/.test(R4.grund.w) && J.j && J.j.ok && J.j.target && J.tab === 'gm' && J.open, 'Hilfe › Stil-Grundmuster: „Clip-Blatt › Werkzeugkasten ▾ › Grundmuster“, der Sprung öffnet den Reiter', R4.grund && R4.grund.w);
   ok(R4.remix && R4.remix.d.startsWith(N.remix.length + ' Stile'), 'Hilfe › Remix nennt die Zahl der Stile', R4.remix && R4.remix.d.slice(0, 40));
-  await P8.evaluate(() => { const x = document.querySelector('.bb1s .ms-x'); if (x) x.click(); window.SYNQUENZER.songView(true); window.SYNQUENZER.ueBar(true); });
+  await P8.evaluate(() => { const D = window.SYNQUENZER; D.ui1.home(); D.songView(true); D.ueBar(true); });
   await P8.waitForTimeout(400);
   await tapQ(P8, '.gr2-ueg');
   const UG = await P8.evaluate(() => { const P = document.querySelector('.pop.gr2ueg'); return P ? [...P.querySelectorAll('[data-ueg]')].map(x => x.textContent) : null; });
