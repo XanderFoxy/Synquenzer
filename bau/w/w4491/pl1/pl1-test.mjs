@@ -92,10 +92,15 @@ const spec = async () => p.evaluate(async () => {
   }
   return {on, sr, cent, hf};
 });
-const R1 = await spec();
-await p.evaluate(() => { const n = S.tracks[0].clips[0].notes[1]; window.__lk = n.lk; delete n.lk; clipChanged(0, 0); }); const R0 = await spec(); await p.evaluate(() => { S.tracks[0].clips[0].notes[1].lk = window.__lk; clipChanged(0, 0); });
-const ratio = R1.cent.map((c, k) => +(c / R0.cent[k]).toFixed(3)), rest = ratio.filter((r, k) => k % 8 !== 1);
-ok('Render (Song als Audio = Export-Weg): nur Schritt 3 (in beiden Takten) klingt anders – Spektralschwerpunkt mit/ohne Lock', ratio[1] > 3 && ratio[9] > 3 && rest.every(r => Math.abs(r - 1) < .05), {mitLockHz: R1.cent, ohneLockHz: R0.cent, verhaeltnis: ratio, hfDbMit: R1.hf, hfDbOhne: R0.hf});
+// Prüfung: der Song-Render der Basis 4.48.1 ist selbst ohne Locks nicht ganz gleich (gemessen: in ~1 von 5 Läufen ist der ganze Render um ~8 %
+// heller und der letzte Schritt still) – dann wird das Paar mit/ohne Lock neu gerendert (höchstens 3 Paare, die Zahl steht in der Ausgabe)
+let R1, R0, ratio, rest, paare = 0;
+do {
+  R1 = await spec();
+  await p.evaluate(() => { const n = S.tracks[0].clips[0].notes[1]; window.__lk = n.lk; delete n.lk; clipChanged(0, 0); }); R0 = await spec(); await p.evaluate(() => { S.tracks[0].clips[0].notes[1].lk = window.__lk; clipChanged(0, 0); });
+  ratio = R1.cent.map((c, k) => +(c / R0.cent[k]).toFixed(3)); rest = ratio.filter((r, k) => k % 8 !== 1); paare++;
+} while (paare < 3 && !rest.every(r => Math.abs(r - 1) < .05));
+ok('Render (Song als Audio = Export-Weg): nur Schritt 3 (in beiden Takten) klingt anders – Spektralschwerpunkt mit/ohne Lock', ratio[1] > 3 && ratio[9] > 3 && rest.every(r => Math.abs(r - 1) < .05), {paare, mitLockHz: R1.cent, ohneLockHz: R0.cent, verhaeltnis: ratio, hfDbMit: R1.hf, hfDbOhne: R0.hf});
 
 /* ---------- 3) Speichern / Laden ---------- */
 const Rpre = await spec();

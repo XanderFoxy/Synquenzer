@@ -49,7 +49,7 @@ Test-API: `SYNQUENZER.gen3` (genres, names, ue, bbDrum, tv, mxRemix, mxOpen, bbO
 
 ## Tests
 
-- `node gen3-test.mjs <index.html> <ordner>`: **78 × OK, 0 FEHLER**. Geprüft werden:
+- `node gen3-test.mjs <index.html> <ordner>`: **98 Prüfungen OK, 0 FEHLER**. Geprüft werden:
   - Namen in allen Listen und die Master-Namen
   - keine doppelten Fill-Ids oder Schlag-Muster
   - Drums-Füller = Kacheln
@@ -66,18 +66,35 @@ Test-API: `SYNQUENZER.gen3` (genres, names, ue, bbDrum, tv, mxRemix, mxOpen, bbO
   - Werkzeugkasten-Reiter, Grundmuster als neuer Clip mit ↶, Spielweise mit Ziel und ↶, Clip-Blatt
   - Tasten ≥ 44 px und ✕ sichtbar (hochkant 428×926, quer 926×428 und 926×370)
   - Standard-Projekt = Basis, Konsole ohne Fehler
-- Pflicht: topdefs 0/0 (5799 Namen), dupkeys 0, smoke errors [], Markenwörter 0, „MS 2000“ 1×, „  live: true,“ 1×.
-- Fotos: `gen3-remix-hochkant.png`, `gen3-matrix-quer.png`, `gen3-werkzeugkasten-quer.png`, `gen3-uebergaenge-hochkant.png`.
+  - Abschnitt 8 „Prüfung“: Genre-Zeile Figuren (Drums 46, Bass 21 Tasten) quer 926×428, 926×370 und hochkant – jede ≥ 44 px, jeder Touch-Tipp trifft, die Zeile behält ihre Stelle; ↶/↷ mit Tempo; Teil ändert das Song-Tempo nicht (Kachel + Tipp sagen es); Matrix per Touch (Hören 91, A 120, B 91, ✕ 120, ↶ 120, ♩ bleibt); Hilfe-Sprung „Stil-Grundmuster“ öffnet den Reiter; Remix-Hilfe nennt 44 Stile; [Genre] in ◆ ÜBERGÄNGE 44 Genres; Drums-Füller 55 von 57 (ohne die zwei Crash-Kacheln auf der Eins); Klavier-Achtel Halftime-Shuffle auf 0,667; Bossa-Clave 0 / 1,5 / 3 │ 5 / 6,5 (Drums und Gitarre); Figuren je neuem Stil; leere gewählte Szene → Quelle Szene 1
+- Pflicht: topdefs 0/0 (5810 Namen), dupkeys 0, smoke errors [], Markenwörter 0, „MS 2000“ 1×, „  live: true,“ 1×.
+- Fotos: `gen3-remix-hochkant.png`, `gen3-matrix-quer.png`, `gen3-werkzeugkasten-quer.png` (jetzt Reiter Figuren quer mit scrollender Genre-Zeile), `gen3-uebergaenge-hochkant.png`.
 - Alte Paket-Tests gegen diese Kopie:
   - GR2-Test: 30/36. Die 6 Abweichungen sind gewollt: 44 statt 17 Stile, Grundmuster nicht mehr im Clip-Blatt, BB1-Genre-Ids sind jetzt Stil-Ids, die letzte Kachel liegt quer im Scrollbereich.
-  - BB1-Test: Abweichungen bei Genre-Zahl und Drums-Füllern (jetzt 54 Fill-Kacheln statt 6 Figuren), ebenfalls gewollt. Der Schritt „alte Projekte“ läuft dort auf einen Basis-Pfad, den es hier nicht gibt.
+  - BB1-Test: Abweichungen bei Genre-Zahl und Drums-Füllern (jetzt 55 Fill-Kacheln statt 6 Figuren), ebenfalls gewollt. Der Schritt „alte Projekte“ läuft dort auf einen Basis-Pfad, den es hier nicht gibt.
+  - Nach der Prüfung: GR2 30/36 (dieselben Zeilen wie vorher), BB1 52/55 (dieselben drei gewollten), UI1 33/38 = die Fehler der Basis (Remix-Sprung, Anleitung song:6, VA-Chip) plus die gewollte Doppel-Entfernung in ◆ ÜBERGÄNGE (57 statt 58); „grund“ hochkant/quer und Anleitung groove:2 sind wieder grün.
 
 ## Offen
 
-- Ziel-Zeile auch im Harmonie-Blatt (HM1: Glätten, Gegenstimme), bisher nur in den drei Werkzeugkasten-Reitern. Das Remix-Blatt hat stattdessen den Bereich.
+- Ziel-Zeile im Harmonie-Blatt (HM1) und im Remix-Blatt: Funk-Frage an Xander (siehe Prüfung, Befund 8).
 - ROLLE behält [Spielweise] für die **Auswahl** im Editor (der Reiter wirkt auf den ganzen Clip). Frage an Xander: diesen Knopf in den Werkzeugkasten legen?
-- Tempo-Version: Das Tempo gilt für den ganzen Song (Tempo je Teil gibt es nicht). ↶ nimmt die Noten zurück, das Tempo nur über A/B oder ♩. „Zusätzliche Begleitfiguren“ gibt es bisher nur als Bewegung der Fläche, kein neues Instrument auf leerer Spur.
-- Matrix-Remix: Gesang- und Audio-Clips kommen nicht mit in die Remix-Szene. Die Quell-Szene ist die gewählte Szene (R.selS), im Blatt gibt es keine Auswahl. Szenen-Namen werden nicht geändert.
-- Guide-Text nennt noch „17 Stile“ (UI1-Eintrag, wegen Merge nicht angefasst).
+- Tempo-Version: Tempo je Teil gibt es nicht; im Teil bleibt das Song-Tempo (♩ übernimmt es). In der Matrix gilt das Tempo nur beim Hören im Blatt – eine Remix-Szene, die später von Hand gestartet wird, spielt im Song-Tempo. „Zusätzliche Begleitfiguren“ (neues Instrument auf leerer Spur): Funk-Vorschlag (Befund 9).
+- Matrix-Remix: Gesang- und Audio-Clips kommen nicht mit in die Remix-Szene. Die Quelle ist die gewählte Szene (leer → erste Szene mit Clips), eine Auswahl im Blatt gibt es nicht. Szenen-Namen werden nicht geändert.
 - Stil-Namen „Motown-Beat 80er“ (Plattenfirmen-Name als Genre-Begriff, von Xander so gewünscht) und „Jersey Club“: prüfen, ob das so bleiben darf.
-- Halftime-Shuffle-Figuren im Werkzeugkasten spielen gerade, weil BB1 keine Triolen kennt. Die Drums dieses Stils sind triolisch.
+- Werkzeugkasten-Figuren: 8 der 27 neuen Stile haben noch eine Figur (Big Beat, UK Funky, Jersey Club, Go-Go, Steppers, Rockers, Halftime-Shuffle, Rock-Halftime).
+
+## Prüfung (unabhängiger Prüfer, 11 Befunde)
+
+1. **Genre-Zeile quer nicht bedienbar (hoch)** – behoben. Quer gilt jetzt dieselbe Regel wie hochkant (`flex:1 0 auto;min-width:44px`, die Zeile scrollt). Zusätzlich behält die Zeile nach einem Tipp ihre Stelle und holt das gewählte Genre ins Bild (`gen3GensKeep`; sonst sprang sie nach jedem Tipp an den Anfang). Test: alle 46 / 21 Tasten ≥ 44 px, jeder Touch-Tipp trifft (quer 926×428, 926×370, hochkant).
+2. **↶ nimmt das Tempo nicht zurück (mittel)** – behoben. Das Tempo ist Teil desselben ↶-Schritts (neue Undo-Art `gen3bpm`, zwei Einhänge-Zeilen in `undoState`/`undoApply`, Gruppe über `undoMergeSince`). Gilt für Remix und A/B. Test: 120 → 86, ↶ 120, ↷ 86.
+3. **Tempo ändert den ganzen Song auch bei Teil und Matrix (mittel)** – behoben. Teil: das Song-Tempo bleibt (Tempo je Teil gibt es nicht); Kachel („Tempo bleibt · ♩ 86“) und Tipp sagen es, ♩ übernimmt es auf Wunsch für den ganzen Song. Matrix: der Remix setzt kein Tempo mehr; ▶ Hören/B = Tempo der Version, A = Tempo vorher, ✕ und ↶ (Toast) = zurück auf das Tempo vorher; ♩ oder ein eigenes Tempo bleibt. „Der Song bleibt unberührt“ stimmt jetzt auch fürs Tempo.
+4. **Hilfe „Stil-Grundmuster“ ins Leere (mittel)** – behoben. „Clip-Blatt › Werkzeugkasten ▾ › Grundmuster“, der Sprung öffnet den Reiter Grundmuster (Rahmen um den Reiter); Anleitung „Groove bauen“ angepasst; Remix-Eintrag nennt die Stilzahl aus der Liste (44) und Tempo-Version/Matrix. Alter UI1-Test: „grund“ und groove:2 wieder grün.
+5. **Genre-Listen nicht überall gleich (niedrig)** – behoben. [Genre] in ◆ ÜBERGÄNGE kommt aus derselben Quelle wie die Kacheln (`gen3FillGs`, 44 Genres, mit Disco klassisch und Eurodance). Samba-Fill ist jetzt ein Füller (`k: 'fill'`) → Drums-Füller 55. **Teilweise abgelehnt:** die zwei Crash-Kacheln (p-becken-stopp, fx-crash) liegen *auf* der Eins nach der Kante; ein Drums-Füller schreibt ans Clip-Ende – dort wäre ein Crash falsch. 55 von 57 ist gewollt.
+6. **Halftime-Shuffle-Figur gerade (niedrig)** – behoben. Werkzeugkasten-Figuren eines Triolen-Stils laufen über dieselbe Zeitkurve wie `gr2T` (`gen3Trip`, Einhänge-Zeile in `bb1Notes`): 0 / 0,667 / 1 / 1,667 …
+7. **Bossa-Clave doppelt so schnell (niedrig)** – behoben. Rim und Begleit-Raster als Zwei-Takt-Clave im Achtel-Raster: Takt 1 auf 1, 2+, 4 (0 / 1,5 / 3), Takt 2 auf 2, 3+ (5 / 6,5). Die Figur „Bossa-Gitarre“ folgt demselben Rhythmus.
+8. **Ziel-Zeile fehlt im Remix- und Harmonie-Blatt (niedrig)** – nicht gebaut, Funk-Frage. Remix: der Bereich ist dort das Ziel (Ganzer Song/Teil = neue Versionen, Matrix = neue Szene); „Diesen Clip“ würde das Original überschreiben, das A/B braucht. Harmonie › Glätten schreibt ein Grundmuster *samt Akkord-Zeile* in eine freie Szene – in „Diesen Clip“ oder als Version klänge es ohne diese Zeile anders; Gegenstimme hat als Ziel eine andere Spur. Das ist eine sichtbare Bedienungsänderung in HM1 → erst Vorschlag an Xander (Regel 3).
+9. **Langsam: keine zusätzlichen Begleitfiguren (niedrig)** – nicht gebaut, Funk-Vorschlag. Xanders Wunsch (7) sagt „auf SEINEN Noten“ (Fülle durch feinere Hats, Ghosts, Füller, längere Flächen, Hall, Release – alles da). Ein neues Instrument auf einer leeren Spur ist fremdes Material und eine sichtbare Änderung (welche Spur, welcher Klang) → Vorschlag: „Langsam ab 80 %: auf einer freien Synth-Spur eine Werkzeugkasten-Figur des Song-Stils als Version dazu?“
+10. **Quell-Szene im Matrix-Blatt nicht wählbar (niedrig)** – behoben (automatisch). Ist die gewählte Szene leer, nimmt das Blatt die erste Szene mit eigenen Clips (keine Remix-Szene); Kopf zeigt „Szene 1 → Szene 3“, ▶ Hören erzeugt die Szene. Eine eigene Auswahl im Blatt: offen.
+11. **Wenige Figuren für die neuen Stile (niedrig)** – teilweise. 14 Begleitfiguren dazu (Streicher-Stöße Disco, Retro-Arp, Gitarren-Arpeggio, Synth-Stöße Freestyle, Fläche Soundtrack-Sequenz, Roboter-Sequenz, Bläser-Ruf Boom Bap, Glocken-Ostinato Trap, Dunkle Antwort, Schwebende Fläche D&B, Digi-Stöße 3-3-2, Dembow-Akkorde, Bläser-Riff Afrobeat, Cavaquinho-Akkorde). **Abgelehnt** für Bass: den Bass jedes der 44 Stile gibt es schon im Reiter Grundmuster (auf den Grundtönen des Clips) – eigene Bass-Figuren je Stil wären eine doppelte Funktion.
+
+Ohne Befund laut Prüfer: Pflichtprüfungen, altes Basis-Projekt, Ladezeit, MX2 – unverändert.
