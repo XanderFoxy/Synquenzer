@@ -82579,45 +82579,84 @@ function wegeMsTap(p, b) {
   }
 }
 
-/* ---------- D11: Mithören ohne Schalter – die ▼-Marke ziehen; Abschnitt 4: Tipp auf den Regie-Streifen = Video-Spur ---------- */
+/* ---------- D11: Mithören ohne Schalter – die ▼-Marke ziehen; Abschnitt 4: Tipp auf den Regie-Streifen = Video-Spur ----------
+   Prüfung (1/2): an der ▼-Marke (± 22 px, vom Lineal bis 30 px in die Spuren hinein) behält der alte Weg den Finger: Tipp, Halten
+   (Teil-Marke / Zelle anheben, Marken-Blatt, verschieben), Wischen. Nur ein Ziehen zur Seite sofort (vor dem Anheben, ≤ 440 ms; wo
+   nichts anzuheben ist, auch später) wird ▼-Ziehen: der alte Weg gibt die Geste ab (pointercancel, das Bild springt zurück), ▼ folgt
+   dem Finger. Der Regie-Streifen (Video-Spur aus) bleibt ein eigener Tipp: 4 px darüber bis 8 px darunter (vorher 3/2 px). */
+const WEGE_SCRUB_DY = 30, WEGE_LIFT_MS = 440;
 function wegeSvDown(e, w) {
   const song = S.song; if (!song || !song.bars || (e.pointerType === 'mouse' && e.button !== 0) || R.songRec || SV.pinch || SV.gOn || (typeof DRG !== 'undefined' && DRG)) return false;
-  const r = w.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top, cw = SV.cellW;
-  const strip = typeof VD3 !== 'undefined' && VD3 && !vd3CutOn() && SV.vvS > 0 && y >= SV.rulerH - SV.vvS - 3 && y < SV.rulerH + 2;
-  const xp = songStartBar() * cw - SV.x, mark = !R.playing && !strip && y < SV.rulerH && Math.abs(x - xp) <= 22 && !(SV.blS && y < SV.blS) &&
-    !(SV.grips && y < 34 && Math.min(Math.abs(x - SV.grips.a), Math.abs(x - SV.grips.b)) <= 18);
-  if (!strip && !mark) return false;
+  const r = w.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+  const strip = typeof VD3 !== 'undefined' && VD3 && !vd3CutOn() && SV.vvS > 0 && y >= SV.rulerH - SV.vvS - 4 && y < SV.rulerH + 8;
+  const xp = songStartBar() * SV.cellW - SV.x, near = !R.playing && y < SV.rulerH + WEGE_SCRUB_DY && Math.abs(x - xp) <= 22 && !(SV.blS && y < SV.blS) &&
+    !(SV.grips && y < Math.max(34, SV.rulerH + 4) && Math.min(Math.abs(x - SV.grips.a), Math.abs(x - SV.grips.b)) <= 18);
+  if (!strip && !near) return false;
+  const G = {id: e.pointerId, x0: e.clientX, y0: e.clientY, sx: SV.x, x, y, mode: null, t0: performance.now(), w: r.width};
+  if (!strip) { wegeScrubWatch(w, G); return false; }                // der alte Weg behält den Finger
   e.preventDefault(); try { w.setPointerCapture(e.pointerId); } catch (_) {}
-  const G = {id: e.pointerId, x0: e.clientX, y0: e.clientY, sx: SV.x, x, y, mode: null, t0: performance.now()};
+  const off = () => { w.removeEventListener('pointermove', mv); w.removeEventListener('pointerup', up); w.removeEventListener('pointercancel', up); };
   const mv = ev => {
     if (ev.pointerId !== G.id) return;
-    const dx = ev.clientX - G.x0;
-    if (!G.mode && (Math.abs(dx) > 6 || Math.abs(ev.clientY - G.y0) > 10)) {
-      G.mode = mark && Math.abs(dx) >= Math.abs(ev.clientY - G.y0) ? 'pos' : 'scroll';
-      if (G.mode === 'pos') { try { ensureAudio(); } catch (er) {} WEGE.sc = {b: null, t: 0, q: 0, n: 0}; haptic('tick'); folHand('song'); }
-      else folHand('song');
-    }
-    if (G.mode === 'pos') {
-      const fx = G.x + dx + SV.x, bar = clamp(Math.round(fx / cw), 0, song.bars - 1);
-      if (SV.pos !== bar) { SV.pos = bar; if (SV.sel && (bar < SV.sel.a || bar > SV.sel.b)) SV.sel = null; UI.dirty.song = true; }
-      // am Rand rollt das Bild mit
-      const W = SV.w || r.width; if (G.x + dx > W - 24) SV.x = clamp(SV.x + 6, 0, svMaxX()); else if (G.x + dx < 24) SV.x = clamp(SV.x - 6, 0, svMaxX());
-      svDraw(true); wegeScrubAt(Math.floor(barBeat(clamp(fx, 0, song.bars * cw - .5) / cw) + 1e-6));
-      return;
+    const dx = ev.clientX - G.x0, dy = ev.clientY - G.y0;
+    if (!G.mode && (Math.abs(dx) > 6 || Math.abs(dy) > 10)) {
+      if (near && Math.abs(dx) >= Math.abs(dy)) { off(); wegeScrubGo(w, G, ev); return; }
+      G.mode = 'scroll'; folHand('song');
     }
     if (G.mode === 'scroll') { SV.x = clamp(G.sx - dx, 0, svMaxX()); SV.lastUser = performance.now(); svDraw(true); }
   };
   const up = ev => {
     if (ev.pointerId !== G.id) return;
-    w.removeEventListener('pointermove', mv); w.removeEventListener('pointerup', up); w.removeEventListener('pointercancel', up);
-    if (ev.type !== 'pointerup') { if (G.mode === 'pos') wegeScrubEnd(false); return; }
-    if (G.mode === 'pos') { wegeScrubEnd(true); return; }
-    if (G.mode || performance.now() - G.t0 > 350) return;
-    if (strip) { vd3CutSet(true); haptic('tick'); lcdOrToast('Video-Spur: Chip antippen = Bild wählen'); return; }
-    svTap(G.x, G.y);
+    off();
+    if (ev.type !== 'pointerup' || G.mode || performance.now() - G.t0 > 350) return;
+    vd3CutSet(true); haptic('tick'); lcdOrToast('Video-Spur: Chip antippen = Bild wählen');
   };
   w.addEventListener('pointermove', mv); w.addEventListener('pointerup', up); w.addEventListener('pointercancel', up);
   return true;
+}
+// hält der alte Weg hier nach 450 ms etwas fest? (Teil-Marke, Zelle, Träger-Chip – wie in svBindGestures)
+function wegeLiftable(x, y) {
+  if (SV.copy || !S.song) return false;
+  if (svChipAt(x, y) != null) return true;
+  if (y < SV.rulerH) { const m = y >= (SV.blS | 0) ? sx8MarkHit(x) : null; return !!(m && !svMarkOpen(m)); }
+  if (SV.cellW < SX8_EDIT) return false;
+  const row = svRowAt(y), bar = Math.floor((x + SV.x) / SV.cellW), t = row >= 0 && row < svChordRow() ? SV.rows[row] : -1;
+  return t >= 0 && !!svCellRef(t, bar);
+}
+// the old way keeps the finger; a sideways drag at once takes it over as ▼ (the old gesture is cancelled, the view goes back)
+function wegeScrubWatch(w, G) {
+  const lift = wegeLiftable(G.x, G.y), s0 = [SV.mark, SV.cell, SV.blk];
+  const off = () => { w.removeEventListener('pointermove', mv); w.removeEventListener('pointerup', end); w.removeEventListener('pointercancel', end); if (WEGE.wt === G) WEGE.wt = null; };
+  const end = ev => { if (ev.pointerId === G.id) off(); };
+  const mv = ev => {
+    if (ev.pointerId !== G.id) return;
+    if (SV.pinch || (typeof DRG !== 'undefined' && DRG) || SV.mark !== s0[0] || SV.cell !== s0[1] || SV.blk !== s0[2] || R.songRec) { off(); return; }   // Pinch, angehoben, Drag: der alte Weg
+    const dx = ev.clientX - G.x0, dy = ev.clientY - G.y0;
+    if (Math.abs(dx) <= 6 && Math.abs(dy) <= 10) return;
+    off();
+    if (Math.abs(dx) < Math.abs(dy) || (lift && performance.now() - G.t0 > WEGE_LIFT_MS)) return;
+    try { w.dispatchEvent(new PointerEvent('pointercancel', {pointerId: G.id, pointerType: ev.pointerType, isPrimary: true, bubbles: true})); } catch (er) { return; }
+    SV.x = G.sx; wegeScrubGo(w, G, ev);
+  };
+  if (WEGE.wt && WEGE.wt.off) WEGE.wt.off();                     // a watch whose finger never came up
+  G.off = off; WEGE.wt = G;
+  w.addEventListener('pointermove', mv); w.addEventListener('pointerup', end); w.addEventListener('pointercancel', end);
+}
+// ▼ follows the finger, the beat under it sounds; released = ▶ starts there
+function wegeScrubGo(w, G, ev0) {
+  G.mode = 'pos'; try { ensureAudio(); } catch (er) {} WEGE.sc = {b: null, t: 0, q: 0, n: 0}; haptic('tick'); folHand('song');
+  const off = () => { w.removeEventListener('pointermove', mv); w.removeEventListener('pointerup', up); w.removeEventListener('pointercancel', up); };
+  const mv = ev => {
+    const song = S.song; if (ev.pointerId !== G.id || !song || !song.bars) return;
+    const cw = SV.cellW, dx = ev.clientX - G.x0, fx = G.x + dx + SV.x, bar = clamp(Math.round(fx / cw), 0, song.bars - 1);
+    if (SV.pos !== bar) { SV.pos = bar; if (SV.sel && (bar < SV.sel.a || bar > SV.sel.b)) SV.sel = null; UI.dirty.song = true; }
+    // am Rand rollt das Bild mit
+    const W = SV.w || G.w; if (G.x + dx > W - 24) SV.x = clamp(SV.x + 6, 0, svMaxX()); else if (G.x + dx < 24) SV.x = clamp(SV.x - 6, 0, svMaxX());
+    svDraw(true); wegeScrubAt(Math.floor(barBeat(clamp(fx, 0, song.bars * cw - .5) / cw) + 1e-6));
+  };
+  const up = ev => { if (ev.pointerId !== G.id) return; off(); wegeScrubEnd(ev.type === 'pointerup'); };
+  w.addEventListener('pointermove', mv); w.addEventListener('pointerup', up); w.addEventListener('pointercancel', up);
+  mv(ev0);
 }
 // the beat under the finger sounds (SX7 audition: höchstens alle 45 ms, der neueste Schlag gewinnt; am Taktstrich kein Blitz nötig)
 function wegeScrubAt(b) {
