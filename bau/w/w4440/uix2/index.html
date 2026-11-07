@@ -4853,6 +4853,7 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 .ux2p-ov{position:absolute;inset:0;z-index:1;touch-action:none}
 .ux2p-lupe{position:fixed;z-index:9500;border-radius:12px;border:2px solid var(--amber);box-shadow:0 10px 24px rgba(0,0,0,.7);pointer-events:none;background:#0d0e11}
 .pr-bar .ux2p-lab{color:var(--amber)}
+.pr-bar button.ux2pb{position:relative}.pr-bar button.ux2pb::after{content:'';position:absolute;left:0;right:0;top:-7px;bottom:-7px}   /* Trefferfläche ≥ 44 px wie die anderen Knöpfe der Leiste */
 #clipGrid{touch-action:none}                 /* UX2: kein Browser-Wischen in der Matrix (sonst bricht iOS das Ziehen von Szenen-Köpfen und dem Rand ab) */
 /* UX2-CSS-END */
 /* NDP-CSS-BEGIN – die North-Platte (Paket ND-P): eigenes Instrument-Gesicht der Drum-Engine MD_NAME. Rote Front, schwarze
@@ -20146,6 +20147,7 @@ const RecHelpers = (() => {
     const ux2pKind = () => (opts.rowName ? 'perc' : 'note');
     UX2P.copyB = btn(acts, 'Kopieren', () => ux2pCopy(), 'Kopieren (Auswahl, sonst alle Noten)');
     UX2P.pasteB = btn(acts, 'Einfügen', () => ux2pStart(), 'Einfügen: Punkt mit dem Finger setzen (Lupe), dann ✓');
+    UX2P.copyB.classList.add('ux2pb'); UX2P.pasteB.classList.add('ux2pb');
     function ux2pCopy() {
       const ns = scope(); if (!ns.length) { say('Keine Noten zum Kopieren'); return false; }
       const g = GRID[E.grid] || .25, t0 = Math.floor(Math.min(...ns.map(n => n.t)) / g + 1e-6) * g, NC = ux2pClip();
@@ -20205,7 +20207,7 @@ const RecHelpers = (() => {
       UX2P.okB = btn(acts, '✓ Einfügen', () => ux2pApply(), 'Hier einfügen', 'loopb');
       UX2P.noB = btn(acts, '✕', () => { ux2pEnd(); say('Einfügen abgebrochen'); }, 'Einfügen abbrechen');
       acts.insertBefore(UX2P.lab, UX2P.okB);
-      UX2P.bar = [UX2P.lab, UX2P.okB, UX2P.noB];
+      UX2P.bar = [UX2P.lab, UX2P.okB, UX2P.noB]; UX2P.okB.classList.add('ux2pb'); UX2P.noB.classList.add('ux2pb');
       for (const b of UX2P.bar) b.hidden = true;
     }
     // the magnifier over the finger: the note area and the ghost around the paste point, 2.5×, with the grid and the position
@@ -49705,6 +49707,7 @@ function ux2UndoApply(e, val) {
   else if (e.op === 'x') { const o = JSON.parse(val); if (ux2CellOk(o.a, o.b)) ux2Exchange(o.a, o.b); }
 }
 
+HIST.kind('ux2', e => (e.op === 'o' ? [] : e.op === 's' ? [['tracks'], ['scenes'], ['song'], ['parts']] : [['tracks'], ['song'], ['parts']]));   // VC2a-Rekorder: Teilbaum der Art (Reihenfolge = nur Ansicht)
 // ---- Gesten (Dokument, Einfangphase: kommt vor den Matrix-Gesten; nur wo UX2 die Geste übernimmt, wird sie dort angehalten) ----
 const ux2R = n => (n ? n.getBoundingClientRect() : null);
 const ux2Vis = n => !!(n && !n.classList.contains('mxoff') && n.getClientRects().length);

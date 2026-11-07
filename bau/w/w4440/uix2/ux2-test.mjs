@@ -225,6 +225,18 @@ const clipSig = (p, t, s) => p.evaluate(([t, s]) => { const c = S.tracks[t].clip
   const xb = await p.evaluate(() => { const r = UI.corner.getBoundingClientRect(); return r.left >= 0; });
   ok('quer: Layout unverändert (Matrix-Ecke an ihrem Platz)', xb);
   ok('quer: undoRedoCheck', await p.evaluate(() => undoRedoCheck()));
+  // während der Wiedergabe: der laufende Clip spielt nach Tausch / Szenen-Umzug einfach weiter (Laufzeit folgt)
+  const play = await p.evaluate(async () => {
+    launchScene(0); await new Promise(r => setTimeout(r, 900));
+    const a0 = R.slot[2], sig0 = S.tracks[2].clips[R.slot[2]] ? S.tracks[2].clips[R.slot[2]].notes.length : -1;
+    SYNQUENZER.ux2Exchange(2, 0, 2, 5); await new Promise(r => setTimeout(r, 300));
+    const a1 = R.slot[2], sig1 = S.tracks[2].clips[R.slot[2]] ? S.tracks[2].clips[R.slot[2]].notes.length : -1;
+    SYNQUENZER.ux2MoveScene(5, 0); await new Promise(r => setTimeout(r, 300));
+    const a2 = R.slot[2], sig2 = S.tracks[2].clips[R.slot[2]] ? S.tracks[2].clips[R.slot[2]].notes.length : -1;
+    const run = R.playing; stop();
+    return {a0, a1, a2, sig0, sig1, sig2, run};
+  });
+  ok('Wiedergabe: Tausch und Szenen-Umzug – der laufende Clip läuft weiter', play.run && play.a0 === 0 && play.a1 === 5 && play.a2 === 0 && play.sig0 === play.sig1 && play.sig1 === play.sig2, play);
   ok('keine Fehler (quer)', errs.length === 0, errs.slice(0, 3));
   await ctx.close();
 }

@@ -52371,7 +52371,7 @@ function bindUI() {
   document.addEventListener('contextmenu', e => { if (!inField(e)) e.preventDefault(); });
   [EL.kb, EL.pads, EL.segTr, EL.drumSheet, EL.popLayer.querySelector('.bd')].forEach(n => { if (n) guardTouch(n); });
   // the synth sheet is guarded against the loupe too, except the label columns of its scrolling list (MOD matrix, §1.7.3)
-  EL.synthSheet.addEventListener('touchstart', e => { if (e.cancelable && !(e.target.closest && e.target.closest('.mxlist .ms, .mxlist .md, .mxlist .mempty, .pg-lfo-l1 .routes, .pg-lfo-l2 .routes, .fxv.scr, .r1.qf1hx') || qf1Pan(e.target))) e.preventDefault(); }, {passive: false});   // QF1: + .pan-y (Seite NORTH, rollender Körper; Regler darin bleiben geschützt), Kopfzeile seitlich
+  EL.synthSheet.addEventListener('touchstart', e => { if (e.cancelable && !(e.target.closest && (e.target.closest('.mxlist .ms, .mxlist .md, .mxlist .mempty, .pg-lfo-l1 .routes, .pg-lfo-l2 .routes, .fxv.scr, .r1.qf1hx') || qf1Pan(e.target)))) e.preventDefault(); }, {passive: false});   // QF1: + .pan-y (Seite NORTH, rollender Körper; Regler darin bleiben geschützt), Kopfzeile seitlich
   // transport
   // keyboard activation (Enter/Space on a focused button) only: clicks that follow a pointer interaction are ignored
   const kbdClick = (elx, fn) => {
