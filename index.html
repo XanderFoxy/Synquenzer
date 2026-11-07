@@ -1497,6 +1497,7 @@ body[data-mod] #synthSheet .sh-body .pg:not(.pg-mod) .qcell .seg{opacity:1}
 .pop.plpick .plp.vvsp{grid-template-columns:repeat(4,minmax(44px,1fr))}   /* VV2-fix: a short range – each track ≥ 44 px wide */
 .pop.plpick .plp.vvsp + h4{margin-top:14px}   /* VV4-E: the [Modulation] row keeps the track keys' 44 px free */
 .vvdr.vv4r2{margin-top:4px}   /* VV4-B: zweite Zeile [Spur …] [Tastatur] [Fokus …] */
+.vvdr.vv4r2 .rb.vvdb{flex:1 1 auto;min-width:44px}.vvdr .rb[data-a="vv-kino"]{white-space:normal;text-align:center;line-height:1.05}   /* VK2-GP: fünf Tasten in der schmalen Bereich-Liste: je Taste so breit wie ihr Wort (sonst „Tastatur“/„Mäusekino“ abgeschnitten); wird es noch enger, bricht „Mäuse-kino“ */
 .pop.plpick .plp.vv4l{grid-template-columns:repeat(2,minmax(44px,1fr))}
 .pop.plpick .plp.vv4l button:disabled{opacity:.4}
 /* VV2: the sheet „Video“ has one row more (9:16 [Kamera] [Ganz mit Balken]); quer passt die Bedienung ohne Rollen in 375 px Höhe */
@@ -26491,7 +26492,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '4.42.0';
+const VERSION = '4.43.0';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -67201,42 +67202,180 @@ function vvMatrixLayout(LW, LH, st) {
   const chh = Math.max(28, Math.min(port ? 96 : 60, (LH - head - pad * 3) / rows.length)), y0 = Math.max(pad, (LH - head - rows.length * chh) / 2);
   return {port, rows, nc, c0, labW, head, pad, cw, chh, y0, cell: (r, k) => ({x: labW + pad + k * cw + 2, y: y0 + head + r * chh + 2, w: cw - 4, h: chh - 4})};
 }
+// VK4: the matrix as in the app (Konzept V4): scene keys .scn, track heads .th (colour bar, name, sound, ⇅/lock), clips in the track
+// colour with the app matrix's mini notes (miniSvg); the playing clip: green frame, ■, progress, n/len and a thin Laufstrich; drum clips
+// glow at a hit (strength = velocity). Layout = vvMatrixLayout (camera and tests unchanged). The resting parts are cached pictures (VK4).
 function vvDrawMatrix(g, LW, LH, st) {
-  const C = vvCols(), {port, rows, nc, c0, labW, head, pad, cw, chh, y0} = vvMatrixLayout(LW, LH, st);
-  const sp = st.sb == null ? 0 : st.sb, kb = st.sb == null || st.sb < 0 ? 0 : 1 - (st.sb - Math.floor(st.sb));   // the beat pulse (1 on the beat, falls to 0)
+  const C = vvCols(), {rows, nc, c0, labW, head, pad, cw, chh, y0} = vvMatrixLayout(LW, LH, st), play = st.sb != null && st.sb >= 0;
+  const vis = vk4Vis(g, C), P = VK4.probe = {cells: [], heads: [], cache: null}, bpm = (st.src && st.src.bpm) || S.bpm, nt = NT();
   g.fillStyle = C.bg; g.fillRect(0, 0, LW, LH);
-  g.textBaseline = 'middle'; g.textAlign = 'center';
-  // scene heads
+  // scene keys (.scn): ▶ + number, the scene key below where it fits; a green frame when the whole scene plays (.scn.full)
   for (let k = 0; k < nc; k++) {
-    const s = c0 + k, x = labW + pad + k * cw, on = rows.some(i => st.slots[i] === s);
-    vvRound(g, x + 2, y0, cw - 4, head - 6, 5); g.fillStyle = on ? '#16241c' : C.ch2; g.fill(); g.strokeStyle = on ? C.play : C.line; g.lineWidth = 1; g.stroke();
-    g.font = '700 13px ' + C.num; g.fillStyle = on ? C.play : C.text;
-    const cy = y0 + (head - 6) / 2, tx = x + cw / 2 - 9;          // the ▶ as a drawn triangle (never a font glyph / emoji)
-    g.beginPath(); g.moveTo(tx - 4, cy - 5); g.lineTo(tx + 4, cy); g.lineTo(tx - 4, cy + 5); g.closePath(); g.fill();
-    g.fillText(String(s + 1), x + cw / 2 + 6, cy);
+    const s = c0 + k, x = labW + pad + k * cw + 2, w = cw - 4, h = head - 6;
+    if (!vk4In(vis, x, y0, w, h)) continue;
+    let any = false, all = true; for (let i = 0; i < nt; i++) if (S.tracks[i] && S.tracks[i].clips[s]) { any = true; if (st.slots[i] !== s) all = false; }
+    const full = any && all && play;
+    let lab = ''; if (h >= 26) { try { const sk = sceneKeyOf(s); lab = sk ? keyShort(sk) : ''; } catch (e) { lab = ''; } }
+    vk4Put(g, vis, 'scn|' + s + '|' + lab + '|' + full, x, y0, w, h, o => {
+      vv4Btn(o, 0, 0, w, h, C, full ? {line: C.play} : null);
+      if (full) { vvRound(o, 1.5, 1.5, w - 3, h - 3, 4); o.strokeStyle = C.play; o.lineWidth = 1; o.stroke(); }
+      const cy = h / 2 - (lab ? 5 : 0), num = String(s + 1); o.font = '700 14px ' + C.ui; o.textBaseline = 'middle';
+      const tx = w / 2 - (15 + o.measureText(num).width) / 2;                     // ▶ (9) + gap (6) + number, centred
+      vv4Tri(o, tx + 4, cy, 9, C.play); vv4Txt(o, num, tx + 15, cy + .5, o.font, C.text);
+      if (lab) vv4Txt(o, lab, w / 2, cy + 13, '600 9px ' + C.ui, C.dim, 'center');
+    });
   }
   rows.forEach((i, r) => {
-    const y = y0 + head + r * chh, tc = C.t[i] || '#888';
-    g.fillStyle = C.ch2; vvRound(g, 4, y + 2, labW - 6, chh - 4, 5); g.fill(); g.fillStyle = tc; g.fillRect(4, y + 4, 3, chh - 8);
-    g.textAlign = 'left'; g.font = '700 12px ' + C.ui; g.fillStyle = C.text; g.fillText(S.tracks[i].name.toUpperCase().slice(0, port ? 8 : 12), 12, y + chh / 2);
+    const tr = S.tracks[i], y = y0 + head + r * chh, tc = C.t[i] || '#888';
+    // the track head (.th): raised button, colour bar, NAME, sound (where two lines fit), ⇅ / FEST / lock / mic at the bottom right
+    const hx = 4, hy = y + 2, hw = labW - 6, hh = chh - 4;
+    if (vk4In(vis, hx, hy, hw, hh)) {
+      let sl = ''; try { sl = tr.stimme ? 'Audio' : soundLabel(tr); } catch (e) { sl = ''; }   // STIMME: the app's „🎤 STIMME · Audio“ (name line = STIMME, 🎤 = the drawn mic)
+      const sym = tr.stimme ? 'mic' : tr.kind === 'drum' && !(S.settings && S.settings.harmony && S.settings.harmony.drums) ? 'lock' : tr.kind === 'synth' && !tr.follow ? 'fest' : 'f', nm0 = String(tr.name || '').toUpperCase();
+      P.heads.push({i, nm: nm0});
+      vk4Put(g, vis, 'th|' + nm0 + '|' + sl + '|' + sym + '|' + tc + '|' + !!tr.mute, hx, hy, hw, hh, o => {
+        vv4Btn(o, 0, 0, hw, hh, C);
+        o.save(); vvRound(o, 0, 0, hw, hh, 5); o.clip(); o.fillStyle = tc; o.fillRect(0, 0, 3, hh); o.restore();
+        const nx = 10, two = hh >= 30; o.textBaseline = 'middle';
+        o.font = '700 9px ' + C.ui; const sw = sym === 'fest' ? o.measureText('FEST').width + 2 : 12;
+        o.font = '700 12px ' + C.ui; const nm = vv4Fit(o, nm0, hw - nx - (two ? 4 : sw + 6)), ny = two ? hh / 2 - 6.5 : hh / 2;
+        vv4Txt(o, nm, nx, ny, o.font, tr.mute ? C.faint : C.text);
+        if (tr.mute) { o.fillStyle = C.faint; o.fillRect(nx, ny, o.measureText(nm).width, 1); }
+        if (two) { o.font = '500 10px ' + C.ui; vv4Txt(o, vv4Fit(o, sl, hw - nx - sw - 6), nx, hh / 2 + 7.5, o.font, C.dim); }
+        const fx = hw - 8, fy = two ? hh - 9 : hh / 2;
+        if (sym === 'mic') vv4Mic(o, fx, fy, 10, C.faint);
+        else if (sym === 'lock') vv4Lock(o, fx, fy, 9, C.faint);
+        else if (sym === 'fest') vv4Txt(o, 'FEST', hw - 4, fy, '700 9px ' + C.ui, C.dim, 'right');
+        else vv4Txt(o, '⇅', fx, fy, '700 11px ' + C.ui, C.faint, 'center');
+      });
+    }
+    // the clips (.slot): an empty slot dashed, a clip in the track colour with its mini notes
     for (let k = 0; k < nc; k++) {
-      const s = c0 + k, x = labW + pad + k * cw, play = st.slots[i] === s, c = play ? vvClip(i, s, st.own[i]) : S.tracks[i].clips[s];
-      vvRound(g, x + 2, y + 2, cw - 4, chh - 4, 5);
-      if (!c) { g.strokeStyle = 'rgba(255,255,255,.07)'; g.setLineDash([3, 3]); g.lineWidth = 1; g.stroke(); g.setLineDash([]); continue; }
-      g.fillStyle = play ? 'rgba(53,208,127,' + (.10 + .22 * kb * kb).toFixed(3) + ')' : '#121418'; g.fill();
-      g.strokeStyle = play ? C.play : 'rgba(255,255,255,.12)'; g.lineWidth = play ? 2 : 1; g.stroke();
-      let ph = null;
-      if (play && st.sb != null && st.sb >= 0) { const L = Math.max(1, (c.len || 1) * 4), cs = st.cs[i] || 0, tb = st.tB != null ? st.tB : sp; ph = (((tb - cs) % L) + L) % L / L; }
-      g.save(); g.beginPath(); g.rect(x + 4, y + 4, cw - 8, chh - 8); g.clip();
-      g.globalAlpha = play ? 1 : .55; vvRoll(g, c, x + 6, y + 6, cw - 12, chh - 12, tc, ph); g.globalAlpha = 1;
-      g.restore();
+      const s = c0 + k, on = st.slots[i] === s, c = on ? vvClip(i, s, st.own[i]) : tr.clips[s], x = labW + pad + k * cw + 2, cy = y + 2, w = cw - 4, h = chh - 4;
+      if (!vk4In(vis, x - 4, cy - 4, w + 8, h + 8)) continue;
+      if (!c) { vk4Put(g, vis, 'empty', x, cy, w, h, o => { vvRound(o, .5, .5, w - 1, h - 1, 6); o.strokeStyle = C.line; o.lineWidth = 1; o.setLineDash([3, 2]); o.stroke(); }); continue; }
+      vk4Cell(g, C, vis, st, tr, i, s, c, x, cy, w, h, on && play, tc, bpm, P);
     }
   });
+  g.textBaseline = 'middle'; g.textAlign = 'left'; g.globalAlpha = 1;
+  P.cache = {size: VK4.spr.size, px: VK4.px, hit: VK4.stat.hit, miss: VK4.stat.miss};
   // VV4-F: the level bars as in the matrix (beside the colour bar; master at the left of the corner row)
   const mb = rows.map((i, r) => ({k: i, x: 8.5, y: y0 + head + r * chh + 6, w: 2.5, h: chh - 12}));
   mb.push({k: MAX_T, x: 6, y: y0 + 4, w: 2, h: head - 14});
   vvDrawMeters(g, st.t, {src: st.src, bars: mb});
 }
+/* ===================== VK4-BEGIN: Video-Matrix wie in der App (Konzept V4) =====================
+   - Ruhende Teile als Bild: jede Clip-Zelle (Spurfarbe 22 %, Linie, Mini-Noten 60 %, ◆, „4T“), jeder Spurkopf, jede Szenen-Taste und das
+     leere Feld werden einmal in ein eigenes Bild (Offscreen-Canvas) in der Pixelgröße des Videos gezeichnet und danach nur 1 : 1 kopiert
+     (16:9 = 3 px je Punkt, 9:16 Kamera ohne Zoom = 5⅓, 9:16 Balken = 1,69, Vorschau nach ihrer Größe). Schlüssel = was man sieht
+     (clipSig = Länge + Noten, Farbe, Größe, Name, Klang …). Höchstens VK4_PX Pixel im Speicher, die ältesten fallen zuerst. Zoomt die
+     9:16-Kamera, wird direkt gezeichnet: ein skaliertes Kopieren großer Bilder kostet mehr als das Zeichnen selbst.
+   - Mini-Noten: die Rechtecke von miniSvg – dieselbe Funktion malt die Noten in der App-Matrix (Drums als Schlag-Raster in 12 Pad-Zeilen).
+   - Je Bild nur das Bewegte: was gerade klingt (voll gedeckt), Drum-Schläge (Blitz + Glühen um die Zelle, Stärke = Anschlag, klingt in
+     VK4_D s ab), der dünne Laufstrich, Fortschritt, ■, „n/len“, der grüne Rahmen. Glüh-Quelle im Video: das Noten-Log des Offline-
+     Durchlaufs (src.nt, wie VV3/VK3 – so, wie es klingt); ohne Durchlauf (Vorschau) die Schläge des Clips. Kein Zufall, keine Uhr.
+   - Nur was im Bild liegt, wird gezeichnet (9:16-Kamera: der Rest der Matrix liegt außerhalb des Fensters). */
+const VK4_D = .16, VK4_PX = 8e6;
+const VK4 = {spr: new Map(), rects: new Map(), px: 0, gen: -1, stat: {hit: 0, miss: 0, direct: 0}, probe: null, noc: false};   // noc: no context (canvas memory full) – draw directly
+// the visible part of the picture in drawing points (the canvas through the current transform), the pixels per point, the transform;
+// L = the scale when the view is not zoomed (the whole width: 16:9, Balken, preview; the whole height: 9:16 camera at zoom 1) – then the
+// resting parts are copied 1 : 1; 0 while the 9:16 camera zooms (its scale changes from picture to picture)
+function vk4Vis(g, C) {
+  if (VK4.gen !== C.gen) { vk4Clear(); VK4.gen = C.gen; }                       // fonts loaded later: draw the pictures again
+  let m = null; try { m = g.getTransform(); } catch (e) { m = null; }
+  if (!m || m.b || m.c || !(m.a > 0) || !(m.d > 0) || !g.canvas) return {x0: -1e9, y0: -1e9, x1: 1e9, y1: 1e9, sc: m && m.a > 0 ? m.a : 1, m: null, L: 0};
+  const L = Math.abs(m.a - m.d) < 1e-6 && (Math.abs(m.a - g.canvas.width / 640) < 1e-4 || Math.abs(m.a - g.canvas.height / VV_AR) < 1e-4) ? m.a : 0;
+  return {x0: -m.e / m.a, y0: -m.f / m.d, x1: (g.canvas.width - m.e) / m.a, y1: (g.canvas.height - m.f) / m.d, sc: Math.max(m.a, m.d), m, L};
+}
+const vk4In = (v, x, y, w, h) => x < v.x1 && x + w > v.x0 && y < v.y1 && y + h > v.y0;
+function vk4Clear(re) { for (const e of VK4.spr.values()) { e.cv.width = e.cv.height = 0; } VK4.spr.clear(); VK4.px = 0; if (re) VK4.noc = false; }   // width 0: iOS frees the memory at once; re: the sheet closes (vvClose) – try pictures again next time
+// a resting part (w × h points at x, y), drawn by fn(o) in its own points: at a video scale from its picture (drawn once, copied on whole
+// pixels); else (9:16 camera zooming) drawn directly – a scaled copy of big pictures costs more than drawing them
+function vk4Put(g, vis, key, x, y, w, h, fn) {
+  if (!vis.L || VK4.noc) { VK4.stat.direct++; g.save(); g.translate(x, y); fn(g); g.restore(); return; }
+  const L = vis.L, M = VK4.spr; key += '@' + L.toFixed(4) + ':' + w.toFixed(2) + 'x' + h.toFixed(2);
+  let e = M.get(key);
+  if (e) { VK4.stat.hit++; M.delete(key); M.set(key, e); }                  // the most recent at the end (the oldest go first)
+  else {
+    VK4.stat.miss++;
+    const W = Math.max(1, Math.ceil(w * L)), H = Math.max(1, Math.ceil(h * L)), cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+    const o = cv.getContext('2d');
+    if (!o) { cv.width = cv.height = 0; VK4.noc = true; vk4Clear(); VK4.stat.direct++; g.save(); g.translate(x, y); fn(g); g.restore(); return; }   // canvas memory full (iOS: null): free the pictures, draw directly
+    o.setTransform(L, 0, 0, L, 0, 0); fn(o);
+    e = {cv, px: W * H}; M.set(key, e); VK4.px += e.px;
+    while (VK4.px > VK4_PX && M.size > 1) { const k0 = M.keys().next().value, z = M.get(k0); M.delete(k0); VK4.px -= z.px; z.cv.width = z.cv.height = 0; }
+  }
+  const m = vis.m; g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(e.cv, Math.round(m.a * x + m.e), Math.round(m.d * y + m.f)); g.setTransform(m.a, m.b, m.c, m.d, m.e, m.f);
+}
+// the mini notes of the app matrix as rectangles [x, y, w, h] in 0 … 100 (miniSvg: note j = rectangle j, at most 160)
+function vk4MiniRects(c, drum) {
+  const key = clipSig(c) + '|' + (drum ? 1 : 0) + '|' + (c.ts || ''), M = VK4.rects; let r = M.get(key); if (r) return r;
+  r = []; const re = /<rect x="([-\d.]+)" y="([-\d.]+)" width="([-\d.]+)" height="([-\d.]+)"/g, svg = miniSvg(c, drum); let m;
+  while ((m = re.exec(svg))) r.push([+m[1], +m[2], +m[3], +m[4]]);
+  if (M.size > 512) M.clear(); M.set(key, r); return r;
+}
+// the glow of a drum clip at the picture: the strongest hit of the last VK4_D s, velocity × (1 − Δt/D)²
+function vk4Glow(st, i, c, phB, Lb, bpm) {
+  const src = st.src; let gm = 0;
+  if (src && src.nt && st.t != null) {
+    const L_ = src.nt[i]; if (!L_ || !L_.length) return 0;
+    let lo = 0, hi = L_.length; while (lo < hi) { const m = (lo + hi) >> 1; if (L_[m].a <= st.t + 1e-9) lo = m + 1; else hi = m; }
+    for (let k = lo - 1; k >= 0; k--) { const o = L_[k], dt = st.t - o.a; if (dt >= VK4_D) break; if (!o.e || o.e.removed) continue; const v = o.e.vel == null ? .8 : o.e.vel, q = v * (1 - dt / VK4_D) ** 2; if (q > gm) gm = q; }
+    return Math.min(1, gm);
+  }
+  const spb = 60 / bpm;
+  for (const n of c.notes || []) { const dt = (((phB - n.t) % Lb) + Lb) % Lb * spb; if (dt < VK4_D) { const q = (n.v == null ? .8 : n.v) * (1 - dt / VK4_D) ** 2; if (q > gm) gm = q; } }
+  return Math.min(1, gm);
+}
+// one clip cell (.slot.filled) at x, y (w × h points); on = it plays now
+function vk4Cell(g, C, vis, st, tr, i, s, c, x, y, w, h, on, tc, bpm, P) {
+  const drum = tr.kind === 'drum', len = Math.max(1, c.len || 1), Lb = Math.max(1, clipB(c)), am = tr.mute ? .55 : 1;   // .slot.muted
+  let phB = null; if (on) { const cs = st.cs[i] || 0, tb = st.tB != null ? st.tB : st.sb; phB = (((tb - cs) % Lb) + Lb) % Lb; }
+  const ph = phB == null ? null : phB / Lb, gl = on && drum && !c.audio ? vk4Glow(st, i, c, phB, Lb, bpm) : 0;
+  const tx = on && len > 1 ? (Math.floor(phB / clipBarB(c) + 1e-9) + 1) + '/' + len : '', lnS = len + 'T', lnOff = !!tx && 4 + 15 + 6 * (lnS.length + tx.length) + 3 > w;
+  const mx = x + 3, my = y + 3, mw = w - 6, mh = h - 17;
+  let sig = ''; try { sig = c.audio ? tkCellSig(c) : clipSig(c) + '|' + (c.ts || ''); } catch (e) { sig = String(len); }
+  // glow: a halo in the gap around the cell
+  if (gl > .01) { g.strokeStyle = tc; g.lineWidth = 1.2; [[1.2, .6], [2.4, .28]].forEach(([d, a]) => { vvRound(g, x - d, y - d, w + 2 * d, h + 2 * d, 6 + d); g.globalAlpha = am * a * gl; g.stroke(); }); g.globalAlpha = 1; }
+  // the resting cell as a picture: track colour 22 %, faint line, mini notes 60 % (.slot .mini: inset 3 3 14 3), ◆, „4T“
+  vk4Put(g, vis, 'c|' + sig + '|' + (drum ? 1 : 0) + '|' + tc + '|' + am + '|' + (c.st ? 1 : 0) + '|' + (lnOff ? '' : lnS), x, y, w, h, o => {
+    vvRound(o, 0, 0, w, h, 6); o.fillStyle = tc; o.globalAlpha = am * .22; o.fill();
+    vvRound(o, .5, .5, w - 1, h - 1, 5.5); o.globalAlpha = am; o.strokeStyle = 'rgba(255,255,255,.05)'; o.lineWidth = 1; o.stroke();
+    if (mh > 3) {
+      o.globalAlpha = am * .6;
+      if (c.audio) vvRoll(o, c, 3, 3, mw, mh, tc, null);
+      else { o.fillStyle = tc; for (const r of vk4MiniRects(c, drum)) { const rw = Math.min(r[2], 100 - r[0]) * mw / 100; if (rw > 0) o.fillRect(3 + r[0] * mw / 100, 3 + r[1] * mh / 100, rw, r[3] * mh / 100); } }   // as the svg: cut at its edge
+    }
+    o.globalAlpha = am;
+    if (c.st) { const dx = w - 8, dy = 7.5; o.beginPath(); o.moveTo(dx, dy - 4); o.lineTo(dx + 3.5, dy); o.lineTo(dx, dy + 4); o.lineTo(dx - 3.5, dy); o.closePath(); o.fillStyle = C.amber; o.fill(); }   // V6A ◆
+    if (!lnOff) { o.textBaseline = 'alphabetic'; vv4Txt(o, lnS, 4, h - 4, '600 10px ' + C.num, C.dim); }
+  });
+  if (on) {
+    if (gl > .01) { vvRound(g, x, y, w, h, 6); g.fillStyle = tc; g.globalAlpha = am * .3 * gl; g.fill(); }
+    // what sounds now: full colour; a drum hit flashes (velocity, fading as the glow)
+    if (mh > 3 && !c.audio && c.notes) {
+      const R_ = vk4MiniRects(c, drum), spb = 60 / bpm;
+      for (let j = 0; j < R_.length && j < c.notes.length; j++) {
+        const n = c.notes[j]; let e = 0;
+        if (drum) { const dt = (((phB - n.t) % Lb) + Lb) % Lb * spb; if (dt < VK4_D) e = (n.v == null ? .8 : n.v) * (1 - dt / VK4_D) ** 2; }
+        else { const end = n.t + n.d; if ((phB >= n.t && phB < end) || phB < end - Lb) e = 1; }
+        if (e <= .02) continue;
+        const r = R_[j], rx = mx + r[0] * mw / 100, ry = my + r[1] * mh / 100, rw = Math.min(r[2] * mw / 100, mx + mw - rx), rh = r[3] * mh / 100; if (rw <= 0) continue;
+        g.globalAlpha = am; g.fillStyle = tc; g.fillRect(rx, ry, rw, rh);
+        if (drum) { g.globalAlpha = am * .7 * e; g.fillStyle = '#fff'; g.fillRect(rx, ry, rw, rh); }
+      }
+    }
+    g.globalAlpha = am;
+    if (tx) { g.textBaseline = 'alphabetic'; vv4Txt(g, tx, x + w - 15, y + h - 4, '700 10px ' + C.num, C.text, 'right'); g.textBaseline = 'middle'; }   // .tx
+    if (mh > 3) { g.fillStyle = 'rgba(242,244,248,.85)'; g.fillRect(mx + ph * mw - .5, my - 1, 1, mh + 2); }              // the Laufstrich
+    vvRound(g, x + 1, y + 1, w - 2, h - 2, 5); g.strokeStyle = C.play; g.lineWidth = 2; g.stroke();                    // .slot.playing::after
+    g.save(); vvRound(g, x, y, w, h, 6); g.clip(); g.fillStyle = tc; g.fillRect(x, y + h - 2, w * ph, 2); g.restore();   // .pg (above the frame, as in the app)
+    vv4Sq(g, x + w - 6.5, y + h - 6.5, 6.5, tc);                                                                        // .sq ■
+    g.globalAlpha = 1;
+  }
+  P.cells.push({i, s, play: on, drum, ph, glow: gl, x, y, w, h});
+}
+/* VK4-END */
 /* VV4-F: the level bars of the video at video time t. rect = {src: the render result (r.mtr: the meter windows of the render),
    bars: [{k: input (track index, MAX_T = master), x, y, w, h, hz?}]}. Values = the same meter as in the app, measured in the offline
    render: peak (faint), RMS (solid), hold line (max peak of the last 1.5 s), red LED (a peak over −0.3 dBFS in the last 1.5 s).
@@ -67818,6 +67957,7 @@ function vvOpen() {
 }
 function vvClose() {
   if (!VV.open) return;
+  vk4Clear(1);                                                      // VK4: the matrix pictures (≤ 8 Mpx canvas memory) go with the sheet
   if (VV.busy) VV.cancel = true;
   vvPrevStop();
   VV.open = false; if (VV.el) { VV.el.classList.remove('open'); VV.el.innerHTML = ''; }
@@ -68716,7 +68856,7 @@ const VK2_MK = {'f.cut': 'cutoff', 'f.res': 'res', 'f.type': 'ftype', 'f.eg': 'f
 const VK2_NM = {cutoff: 'CUTOFF', res: 'RESONANZ', ftype: 'FILTERTYP', fenv: 'FILTER-HK', aA: 'AMP A', aD: 'AMP D', aS: 'AMP S', aR: 'AMP R', fA: 'FILTER A', fD: 'FILTER D', fS: 'FILTER S', fR: 'FILTER R'};
 const VK2_FT = ['LP24', 'LP12', 'BP24', 'BP12', 'HP24', 'HP12'];
 // the button of the Regie row (vvDirRow, second line, at its end)
-function vk2DirBtn(B, v) { return B(VK2_ID, 'Mäusekino', v === VK2_ID, 'Video hier: Mäusekino'); }
+function vk2DirBtn(B, v) { return B(VK2_ID, 'Mäuse&shy;kino', v === VK2_ID, 'Video hier: Mäusekino'); }   // VK2-GP: &shy; – in der schmalen Bereich-Liste bricht es „Mäuse-/kino“ statt abgeschnitten
 // v6aGo: one glide of track i (old = R.v6aCur[i] before it). Offline render: per render (VV.off.tl); live: the last 8 per track
 function vk2Cap(i, old, st1, t0, t1, at, c) {
   try {
@@ -69044,19 +69184,31 @@ function vk2Syn(i, st, X) {
   const t = X.t, src = X.src, r = X.runs ? vk2Act(X.runs[i], X.tau) : null, E = vk2Eff(i, r, X.tau, false), eng3 = base.engine === 'mk';
   let vo = [], notes = [], mod = null, envs = null, nv = null;
   if (eng3 && E.T) {
-    const ms = E.raw ? vv3MkState(i, t, st, src) : vv3MkState0(i, t, st, src, E.T); if (!ms) return null;
+    const ms = E.raw ? vv3MkState(i, t, st, src) : vk2Lk(i, t, st, src, E); if (!ms) return null;   // VK2-GP: mit den Locks der klingenden Note
     const T = ms.T, gate = !!(T.a && T.a.gate);
     notes = ms.notes.filter(x => x.a <= t); vo = ms.voices.map(x => ({n: x.n, v: x.v, a: x.a, b: x.b, env: gate ? (x.b >= t ? 1 : 0) : vv3MkEnv(T.e2, x.a, x.b, t)}));
     mod = {fc: vk2Cz(ms.cut), res: 1.1 * clamp(+T.f.res || 0, 0, 127) / 127, ft: [0, 1, 3, 5][clamp(Math.round(+T.f.type || 0), 0, 3)]}; envs = vk2Envs({T}); nv = ms.nv;
   } else {
-    const vs = E.raw ? vv3VaState(i, t, src) : vv3VaState0(i, t, src, E.p); if (!vs) return null;
+    const vs = E.raw ? vv3VaState(i, t, src) : vk2Lk(i, t, st, src, E); if (!vs) return null;   // VK2-GP: mit den Locks der klingenden Note
     notes = vs.notes; vo = notes.filter(x => x.b >= t || vv3Adsr(vs.ae, x.a, x.b, t) > .002).map(x => ({n: x.n, v: x.v, a: x.a, b: x.b, env: vv3Adsr(vs.ae, x.a, x.b, t)}));
     if (typeof vs.p.cutoff === 'number') mod = {fc: vs.cutHz, res: clamp((+vs.p.res || 0) + (vs.dst.res || 0), 0, 1.15), ft: clamp(Math.round(+vs.p.ftype || 0), 0, 5)};
     envs = vk2Envs({p: vs.p}); nv = vs.nv;
   }
+  if (base.engine === 'bm') { vo = notes.filter(x => x.a <= t && x.b >= t).map(x => ({n: x.n, v: x.v, a: x.a, b: x.b, env: 1})); mod = null; envs = null; }   // VK2-GP: Bit Mask hat eigene Filter/Hüllkurven – keine VA-Werte zeigen, nur die gehaltenen Noten
   if (vo.length > 64) vo = vo.slice(-64);
   let held = 0; for (const x of notes) if (x.a <= t && x.b > t) held++;
   return {i, vo, notes, held, mod, envs, nv, E, r};
+}
+// VK2-GP: under a state ◆ the sounding note's locks win too (worklet: „Lock schlägt Reihe schlägt Grundwert“), as vv3VaState /
+// vv3MkState do it for the Grundklang – with the Auto-Klanganker (AK1) most clips carry a state, so this path is the usual one
+function vk2Lk(i, t, st, src, E) {
+  if (E.T) {
+    const m0 = vv3MkState0(i, t, st, src, E.T), lk = m0 && m0.nv && m0.nv.lk; if (!lk) return m0;
+    const T1 = JSON.parse(JSON.stringify(E.T)), pm = E.base.p.mk; let any = false;
+    for (const k in lk) { const e = LKT[k]; if (!e || !k.startsWith('mk.t.0.')) continue; any = true; SQMK.mkPathSet({t: [T1, JSON.parse(JSON.stringify(pm.t[1]))]}, k.slice(3), lkFromN(e, lk[k])); }
+    return any ? vv3MkState0(i, t, st, src, T1) || m0 : m0;
+  }
+  const v0 = vv3VaState0(i, t, src, E.p); return v0 && v0.nv && v0.nv.lk ? vv3VaState0(i, t, src, vv3LkP(E.p, v0.nv.lk)) || v0 : v0;
 }
 // the head: bar · beat · 16th, part, tempo, Summe
 function vk2Head(g, L, X, st, sb, bar, bs, C, o) {
@@ -70667,8 +70819,8 @@ function vvkRange(src, t, fut, sc) {
     c.tq = tq; lo = c.lo; hi = c.hi;
   }
   if (lo > hi) { lo = 48; hi = 71; }
-  lo = clamp(Math.floor(lo / 12) * 12, 0, 108); hi = clamp(Math.floor(hi / 12) * 12 + 11, lo + 11, 119);
-  while (hi - lo + 1 < 24) { if (hi + 12 <= 119) hi += 12; else lo -= 12; }
+  lo = clamp(Math.floor(lo / 12) * 12, 0, 120); hi = Math.min(127, Math.max(Math.floor(hi / 12) * 12 + 11, lo + 11));   // VK3-GP: bis MIDI 127 (vorher endete die Tastatur bei H8, Noten darüber fehlten)
+  while (hi - lo + 1 < 24) { if (hi + 12 <= 127) hi += 12; else lo -= 12; }
   return {lo, hi};
 }
 // one colour per track colour and touch (16 steps): soft = lighter and cooler, loud = fuller and warmer; up = lit
@@ -70686,7 +70838,7 @@ function vvkCol(col, v, up) {
 // the layout in points (LW × LH, u px per point) for range lo … hi, per context (gradients belong to it); the unlit keyboard is
 // drawn once into its own canvas (pixel-aligned) and copied per picture
 function vvkLayout(g, LW, LH, lo, hi, u, C) {
-  const key = LW.toFixed(2) + 'x' + LH.toFixed(2) + ':' + lo + '-' + hi + ':' + u + ':' + C.gen;   // C.gen: a web font that arrived later redraws the C names let c = VVK.lay.get(g); if (c && c.key === key) return c;
+  const key = LW.toFixed(2) + 'x' + LH.toFixed(2) + ':' + lo + '-' + hi + ':' + u + ':' + C.gen; let c = VVK.lay.get(g); if (c && c.key === key) return c;   // C.gen: a web font that arrived later redraws the C names · VK3-GP: der Cache-Blick stand im Kommentar (je Bild eine neue Tastatur-Leinwand, globales c)
   const port = LH > LW, headH = port ? 50 : 30, padX = 8, kx = padX, kw = LW - 2 * padX, keys = [];
   let nW = 0; for (let n = lo; n <= hi; n++) if (![1, 3, 6, 8, 10].includes(PCx(n))) nW++;
   const ww = kw / nW, kbH = clamp(ww * 5.4, port ? 60 : 54, LH * (port ? .2 : .27)), kbY = LH - (port ? 12 : 6) - kbH, railH = port ? 15 : 13, railY = kbY - railH - 2;
@@ -70737,7 +70889,7 @@ function vvkDraw(g, W, H, st, vt) {
   // the beat grid ahead: beats faint, bar lines with their number, a part start amber with its name
   const yOf = dt => L.nowY - dt * pps, sb1 = sb + fut / sp;
   g.textBaseline = 'middle'; g.textAlign = 'left';
-  g.fillStyle = 'rgba(255,255,255,.035)'; for (let x = Math.ceil(sb - 1e-6); x <= sb1; x++) g.fillRect(L.kx, yOf((x - sb) * sp), L.kw, 1);
+  g.fillStyle = 'rgba(255,255,255,.035)'; for (let bb = barAt(Math.max(0, sb)), n = 0; n < 64; bb++, n++) { const B0 = barBeat(bb), B1 = barBeat(bb + 1); if (B0 > sb1 + 1e-6) break; for (let x = B0; x < B1 - 1e-6; x++) if (x >= sb - 1e-6 && x <= sb1) g.fillRect(L.kx, yOf((x - sb) * sp), L.kw, 1); }   // VK3-GP: Schläge ab jedem Taktstrich (7/8: sonst ein halber Schlag versetzt)
   if (song) {
     const ms = song.marks || [];
     for (let bar = Math.max(0, barAt(Math.max(0, sb)) ), n = 0; n < 64; bar++, n++) {
