@@ -64,3 +64,19 @@ Die Skripte liegen in `tests/`, die Bilder in `vk4-out/` und `vk4-zeit/`. Die wi
 - **Kleine Abweichungen von der App:**
   - Bei Perkussion steht im Kopf „FEST“ statt „folgt nicht“.
   - Die Auswahl (gewählte Spur/Zelle) wird im Video nicht gezeigt, wie bisher.
+
+## Gegenprüfung VK4 (Bilder angesehen, Tests neu, kleine Fehler behoben)
+
+- **Für Xander:** Die Matrix im Video passt zur App (Farben, Mini-Noten, Drum-Raster, Laufstrich, Glühen). Drei kleine Dinge habe ich nachgebessert: Die STIMME-Zeile zeigte im Kopf einen Synth-Klang („VA · INIT …“), jetzt steht dort „Audio“ wie in der App. Außerdem stürzt das Video nicht mehr ab, wenn der iPhone-Speicher für Bilder knapp wird, und der Bild-Speicher der Matrix wird beim Schließen des Video-Blatts freigegeben.
+- **Geprüft und in Ordnung:** echte Spurfarben (`--tNa` = Spurfarbe 22 %), Mini-Noten = Rechtecke von `miniSvg` (Einzug 3/3/14/3, 60 %), Drum-Raster (12 Pad-Zeilen), Laufposition auch bei 3/4-Clips („2/2“ an der richtigen Stelle), Glühen nach Anschlag, `.scn.full` wie in der App, leerer Song (16:9, 9:16 Kamera, 9:16 Balken, Vorschau vor dem Start) ohne Fehler.
+- **Basis-Befund bestätigt:** Auch in 4.42.0 unterscheiden sich die Pegelbalken zwischen zwei Renders (mit Pegel ungleich, ohne Pegel bitgleich – in Basis und Kopie gleich).
+- **Tempo nachgemessen (ms je Bild, gleiche Maschine):** Basis 3,7 / 3,3 / 3,1 → VK4 2,4 / 2,0 / 1,6 (16:9 / 9:16 Kamera / 9:16 Balken). Video-Render je Bild gleich oder schneller.
+
+**Behoben (VK4):**
+- `vk4Put`: `getContext('2d')` liefert auf iOS `null`, wenn der Canvas-Speicher voll ist → vorher `TypeError` und Abbruch des Videos. Jetzt: Bilder frei (`vk4Clear`), `VK4.noc = true`, direkt zeichnen (wie beim Kamera-Zoom).
+- `vvClose`: eine Zeile `vk4Clear(1)` – die Bilder (bis 8 Mpx ≈ 32 MB Canvas-Speicher) bleiben nach dem Video nicht mehr liegen; `noc` wird zurückgesetzt. **Merge:** damit 3 Stellen statt 2 (Hunk `vvDrawMatrix`, VK4-Block, eine Zeile in `vvClose`).
+- Spurkopf STIMME: „Audio“ statt `soundLabel` (App-Kopf: „🎤 STIMME · Audio“; 🎤 = das gezeichnete Mikro).
+
+**Tests der Gegenprüfung:** `tests/vk4-pruef.mjs` (leerer Song, 3/4-Clip, Determinismus mit/ohne Pegel, `getContext` = null, `vvClose` gibt frei, STIMME-Kopf) – alles grün; `vk4-test.mjs` und `vk4-extra.mjs` erneut ALLE OK; topdefs 0 Syntaxfehler / 0 doppelt; smoke errors []; Markenwörter 0, „MS 2000“ 1×, „  live: true,“ 1×. Bilder: `vk4-pruef/`, `vk4-matrix-16x9-stumm-stimme.png` neu.
+
+**Offen / klein (nicht gebaut):** Tonart-Abzeichen `.kbg` (Clip-Tonart ≠ Szenen-Tonart) fehlt im Video; ⇅ leuchtet im Video nie amber (App: bei aktivem Träger); der Lichthof eines glühenden Drum-Clips reicht 1 Punkt über die halbe Lücke hinaus (kaum sichtbar).

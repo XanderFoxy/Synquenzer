@@ -30157,12 +30157,12 @@ const AK1_NO = new Set(['mw', 'wt.tab', 'mk.mode', 'mk.voc.hold']);           //
 // can a clip state hold this value? ('fm6' = a value of the FM block; 'fx.k' only Lautstärke / Pan / Hall / Echo)
 function ak1Key(key) {
   if (key.startsWith('fx.')) return V6A_FX.includes(key.slice(3));
-  return !key.startsWith('fm2.') && !V6A_NO.has(key) && !AK1_NO.has(key);
+  return !key.startsWith('fm2.') && !key.startsWith('mk.arp.') && !V6A_NO.has(key) && !AK1_NO.has(key);   // GP-AK1: ARP (läuft im Hauptthread, liest den Grundklang) bleibt im Grundklang
 }
 // the clip a knob of track i writes to now (null = Grundklang): the open synth editor of the track, not in the Grundklang mode;
 // playing = the clip that sounds or comes (nothing on the track = Grundklang), stopped = the chosen / last started clip (v6aEdRef)
 function ak1Ref(i) {
-  if (V6A.gk || UI.vvOff || R.editor !== 'synth' || R.selT !== i) return null;
+  if (V6A.gk || UI.vvOff || R.editor !== 'synth' || R.selT !== i || (R.sr && R.sr.cap)) return null;   // GP-AK1: beim Vormachen (Super-Regler) gehen die Regler in die Vormach-Kopie
   const tr = S.tracks[i]; if (!tr || tr.kind !== 'synth' || !tr.sound || tr.sound._nv || tr.sound.engine === 'bm' || tr.sound.engine === PERC_ENG) return null;
   if (tr.sound.engine === 'mk' && typeof MKUI !== 'undefined' && MKUI.P && MKUI.P.rec) return null;   // AM: ● Bewegung aufnehmen bleibt beim Grundklang
   let ref = null;
@@ -30205,7 +30205,7 @@ function ak1Put(snd, path, v) {
   if (o != null && typeof o === 'object') o[q[q.length - 1]] = v;
 }
 // the end of the gesture (commitSound, the timer, anything that ends a ◆ editor): the differences go into the clip – one undo step
-function ak1End(label) {
+function ak1End(label, before) {
   const e = V6A.ed; if (!e || !e.ak1) return false;
   V6A.ed = null;
   const i = e.i, tr = S.tracks[i]; if (!tr) return false;
@@ -30226,7 +30226,7 @@ function ak1End(label) {
     const now = e.own ? JSON.stringify(clip) : cleanClip(clip);
     if (JSON.stringify(now) !== JSON.stringify(was)) it = e.own ? {kind: 'own', id: e.own, before: was, label: L} : {kind: 'clip', track: i, scene: e.s, before: was, label: L};
   }
-  const sg = G !== B ? {kind: 'sound', track: i, before: e.snap, label: L} : null;
+  const sb = before != null ? before : e.snap, sg = G !== B || (sb !== e.snap && soundSnapshot(i) !== sb) ? {kind: 'sound', track: i, before: sb, label: L} : null;   // GP-AK1: ein Grundklang-Wert vor dem ◆ derselben Geste (commitSound) gehört in denselben Schritt
   if (it && sg) undoPush({kind: 'group', label: L, items: [sg, it]}); else if (it || sg) undoPush(it || sg);
   if (it || sg) markDirty();
   v6aRt(); const ok = v6aStOk(i, st) ? st : null; R.v6aCur[i] = {st: ok, sig: v6aSig(ok)};
@@ -42188,6 +42188,7 @@ function renderEdChip() {
 
 /* ---------- sound undo: one entry per gesture (§10.4, Anhang D.13) ---------- */
 function soundSnapshot(t) {
+  if (V6A.ed && V6A.ed.ak1 && V6A.ed.i === t) ak1End();          // GP-AK1: neuer Schnappschuss = neue Geste – das offene ◆ zuerst schließen (nie die Arbeitskopie Grundklang ⊕ ◆ ins Undo)
   const tr = S.tracks[t];
   if (tr.kind === 'synth') return JSON.stringify(Object.assign({$: 'trk', sound: tr.sound, onChange: tr.onChange}, percSnap(tr)));   // PERC: + pf nur bei North-Spuren
   return JSON.stringify(tr.sound);
@@ -42203,7 +42204,7 @@ function restoreSoundSnapshot(t, o) {
   if (R.editor === 'browser' && t === BR.t) brRefresh();
 }
 function commitSound(t, before, label) {
-  if (V6A.ed && V6A.ed.ak1 && V6A.ed.i === t) return ak1End(label);   // AK1: Ende der Geste = ein Undo-Schritt im Clip ◆
+  if (V6A.ed && V6A.ed.ak1 && V6A.ed.i === t) return ak1End(label, before);   // AK1: Ende der Geste = ein Undo-Schritt im Clip ◆
   const j = UI.mkInJoin && UI.mkInJoin.track === t ? UI.mkInJoin : null; if (j) UI.mkInJoin = null;   // G-MKP8: E2 = mic with the switch to Vocoder
   if (before == null || soundSnapshot(t) === before) { if (j) undoPush(j); return false; }      // a tap or a drag back to the start adds nothing
   if (j) undoPush({kind: 'group', label, items: [{kind: 'sound', track: t, before, label}, j]}); else
@@ -46190,6 +46191,7 @@ function stepSound(i, dir) {
 }
 // A/B (§11.3): while „geändert“, toggle between the edited sound (kept in memory until the next load) and its origin
 function toggleAB(i) {
+  if (V6A.ed && V6A.ed.ak1 && V6A.ed.i === i) ak1End();          // GP-AK1: A = der Grundklang, nie die Arbeitskopie eines offenen ◆
   const tr = S.tracks[i], snd = tr.sound, rec = originRec(snd);
   if (UI.ab && UI.ab.t === i && UI.ab.side === 'B') { const a = UI.ab.a; UI.ab.side = 'A'; applySound(i, deep(a)); }
   else { if (!rec) return; UI.ab = {t: i, a: deep(snd), side: 'B'}; const o = soundCopy(rec); applySound(i, o); }
@@ -74041,6 +74043,7 @@ function srEdit(label, fn) { const before = srSnap(); const r = fn(); if (srSnap
    (continuous as delta in the knob space, stepped as the copy's value), the ground sound is restored deep-equal and the engine
    gets {set: base, sr: table} in ONE message - at p base + SR = copy, nothing audible changes. One undo step 'sr'. */
 function srCapture(scope, t) {
+  if (V6A.ed && V6A.ed.ak1) ak1End();                               // GP-AK1: ein offenes ◆ zuerst schließen – das Vormachen beginnt beim Grundklang
   if (R.sr.cap) return {ok: false, why: 'Vormachen läuft schon'};
   if (rec.state === 'recording' || rec.state === 'overdub') return {ok: false, why: 'Erst Aufnahme beenden'};
   const x = r4(R.sr.x), Z = S.sr ? S.sr.z : [];
