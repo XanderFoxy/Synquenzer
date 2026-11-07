@@ -169,7 +169,6 @@ const BL = await page(basis, 926, 428);
   const tgt = await P.evaluate(() => { const r = SV.wrap.getBoundingClientRect(); return {x: r.left + SV.cellW * 6.5 - SV.x, y: r.top + 40}; });
   await tapAt(P, tgt); await P.waitForTimeout(500);
   const placed = await P.evaluate(() => (S.song.ue || []).filter(e => e.src === 'ui1-ad-clap3').map(e => ({at: e.at, k: e.k, n: e.notes.length})));
-  await P.screenshot({path: OUT + 'ui1-p-uebergaenge.png'});
   ok('Touch: Einwurf „Clap ×3“ antippen und in den Song tippen = gesetzt', placed.length === 1 && placed[0].n === 3, {armed, placed});
   await P.evaluate(() => { while ((S.song.ue || []).length && UNDO.length) undo(); ueBar(false); setSongView(false); });
 }
@@ -182,7 +181,7 @@ const BL = await page(basis, 926, 428);
   await tapAt(P, bt[0]); await P.waitForTimeout(500);
   const s1 = await P.evaluate(() => ({pop: UI.pop && UI.pop.name, tiles: document.querySelectorAll('.ui1bm .ui1p').length, cats: [...document.querySelectorAll('.ui1bm .ui1cats button[data-u^="cat"]')].map(b => b.textContent), x: (() => { const x = document.querySelector('.ui1bm .psh-x'); if (!x) return null; const r = x.getBoundingClientRect(); return r.top >= 0 && r.width >= 40; })()}));
   ok('KLÄNGE: Blatt mit allen Werksklängen (≥ 40) und Kategorien (Bass, Lead, Pad, Keys …), ✕ sichtbar', s1.pop === 'ui1bm' && s1.tiles >= 40 && s1.cats.length >= 8 && s1.x, s1);
-  const cat = await P.evaluate(() => { const b = document.querySelector('.ui1bm [data-u="cat|bass"]'); const r = b.getBoundingClientRect(); return {x: r.left + r.width / 2, y: r.top + r.height / 2}; });
+  const cat = await P.evaluate(() => { const b = document.querySelector('.ui1bm [data-u="cat|bass"]'); const r = b.getBoundingClientRect(); const x = r.left + r.width / 2, y = r.top + r.height / 2, h = document.elementFromPoint(x, y); return {x, y, at: h ? h.outerHTML.slice(0, 80) : null, n: document.querySelectorAll('.ui1bm').length}; });
   await tapAt(P, cat); await P.waitForTimeout(300);
   const u0 = await P.evaluate(() => UNDO.length), o0 = await P.evaluate(() => S.tracks[0].sound.origin);
   const tile = await P.evaluate(() => { const b = document.querySelector('.ui1bm [data-u="p|f-bm-p02"]'); const r = b.getBoundingClientRect(); return {x: r.left + r.width / 2, y: r.top + r.height / 2, n: document.querySelectorAll('.ui1bm .ui1p').length}; });
@@ -243,7 +242,6 @@ const BL = await page(basis, 926, 428);
   const v1 = await P.evaluate(() => [0, 2, 4, 1].map(t => sx4Vol(t))), u1 = await P.evaluate(() => ({n: UNDO.length, lab: UNDO[UNDO.length - 1].label}));
   const d = v1.map((v, k) => +(v - v0[k]).toFixed(3));
   ok('Wischen auf einer gewählten Spur: alle drei leiser um denselben Schritt, SYNTH 2 bleibt, ein ↶ „Lautstärke 3 Spuren“', d[0] < -.1 && d[0] === d[1] && d[1] === d[2] && d[3] === 0 && u1.n - u0 === 1 && u1.lab === 'Lautstärke 3 Spuren', {v0, v1, d, u1});
-  await P.screenshot({path: OUT + 'ui1-p-gruppe.png'});
   await P.evaluate(() => undo()); const v2 = await P.evaluate(() => [0, 2, 4].map(t => sx4Vol(t)));
   ok('↶ stellt alle drei zurück', JSON.stringify(v2) === JSON.stringify(v0.slice(0, 3)), {v2});
   // Stumm / Laut für die Gruppe (ein ↶), Solo, ✕

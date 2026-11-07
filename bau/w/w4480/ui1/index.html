@@ -55177,6 +55177,7 @@ function ui1BmSheet(t) {
   t = t == null || t < 0 ? ui1SynthT(true) : t; const tr = S.tracks[t];
   if (!tr || tr.kind !== 'synth' || tr.stimme || percIs(tr)) { toast('Erst eine Synth-Spur wählen'); return false; }
   ui1Css(); UI1.bmT = t;
+  try { hideToast(); } catch (e) {}                                 // ein Toast liegt sonst über der Kategorie-Zeile
   if (!ui1BmCats().some(([id]) => id === UI1.bmCat)) UI1.bmCat = 'alle';
   openPop(EL.top, p => {
     p.classList.add('ui1bm', 'pan-y'); guardTouch(p);
