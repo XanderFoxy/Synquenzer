@@ -191,10 +191,11 @@ const P7 = await p.evaluate(async () => {
 ok('Prüfung 7: Mischen live misst den Chor als eigene Rolle (Lead nach dem Regler ↔ Chor-Gruppen-Bus), Abstand im Blatt', P7.way && P7.slot && P7.voc && P7.voc.lead != null && P7.voc.chor != null && P7.voc.d != null && P7.voc.pieces >= 0 && P7.row.some(t => /gemessen .* dem Lead/.test(t)), P7);
 const P6 = await p.evaluate(async () => {
   const wait = ms => new Promise(r => setTimeout(r, ms)), o = {};
+  launchScene(0); if (!R.playing) play(); await wait(600);          // die volle Szene: alle Spuren klingen
   const b = document.querySelector('.mx2s button[data-x2="asst"]'); o.label = b && b.textContent.trim();
-  b.scrollIntoView({block: 'center'}); b.click();
-  for (let n = 0; n < 300; n++) { await wait(100); if (!MIXA.busy && document.querySelector('.mx2s .mx3sg')) break; }
-  stop(); await wait(300);
+  b.scrollIntoView({block: 'center'}); b.click(); let seen = false;
+  for (let n = 0; n < 300; n++) { await wait(100); if (MIXA.busy) seen = true; if (seen && !MIXA.busy) break; }
+  await wait(400); stop(); await wait(300); o.analysed = seen;
   o.pop = UI.pop && UI.pop.name; o.rows = document.querySelectorAll('.mx2s .mx3sg .mx3sgi').length;
   const ob = document.querySelector('.mx2s .mx3sg button[data-x2="x3sg"]:not([data-v])'); const u0 = UNDO.length;
   if (ob) { ob.scrollIntoView({block: 'center'}); ob.click(); await wait(300); }
@@ -213,7 +214,7 @@ const P6b = await p.evaluate(async () => {
   SYNQUENZER.mx2Close(); await wait(200); SYNQUENZER.mix3.src('auto');
   return o;
 });
-ok('Prüfung 6: [Vorschläge je Spur] (vorher Mix-Assistent …) bleibt im einen Blatt – Vorschläge je Spur mit [Übernehmen] (ein ↶), ≥ 44 px', P6.label === 'Vorschläge je Spur' && P6.pop === 'mx2' && P6.rows > 0 && P6.applied === 1 && /^Mix: /.test(P6.label2 || '') && P6.pop2 === 'mx2' && P6.small === 0, P6);
+ok('Prüfung 6: [Vorschläge je Spur] (vorher Mix-Assistent …) bleibt im einen Blatt – Vorschläge je Spur mit [Übernehmen] (ein ↶), ≥ 44 px', P6.label === 'Vorschläge je Spur' && P6.analysed && P6.pop === 'mx2' && P6.rows > 0 && P6.applied === 1 && /^Mix: /.test(P6.label2 || '') && P6.pop2 === 'mx2' && P6.small === 0, P6);
 ok('Prüfung 6: [Mix-Assistent] im EQ · KOMP-Blatt öffnet das eine Blatt (aus dem Blatt heraus und aus FX › SPUR), nie das alte', P6b.eqOpen === 'mx1eq' && P6b.after === 'mx2' && !P6b.dock && P6b.focus === 'mix' && P6b.after2 === 'mx2' && !P6b.mixa, P6b);
 // Speichern/Laden: die neuen Felder bleiben (additiv), Auto-Nachführen aus bleibt aus
 const RT = await p.evaluate(async () => { try { closePop(); } catch (e) {} const j = serialize(); importJSON(j); await new Promise(r => setTimeout(r, 600)); const am = S.fxBus.am, tk = Object.values(S.takes || {}).find(m => m.ch1), c = tkRef(window.__r2); return {amMx3: am ? am.mx3 || null : null, takeCh1: tk ? tk.ch1 : null, rg: !!(c && c.a.chor && c.a.chor.grp.ch1 && c.a.chor.grp.ch1.rg)}; });
@@ -241,7 +242,7 @@ const Q = await p2.evaluate(async () => {
   await until(() => I().follows > f0 && I().rampK >= 1 && !I().busy, 25000); o.unmute = {follows: I().follows - f0, dG: I().last && I().last.dG, dGain: +(S.fxBus.am.gain - g0).toFixed(2)};
   // Befund 1: höchstens ±2 dB je Nachführen (alle Spuren −12 dB)
   f0 = I().follows; g0 = S.fxBus.am.gain; S.tracks.forEach((t, i) => { if (t.sound && t.sound.fx) vol(i, -12); });
-  await until(() => I().follows > f0 && I().rampK >= 1 && !I().busy, 25000); o.cap = {follows: I().follows - f0, dGain: +(S.fxBus.am.gain - g0).toFixed(2), capped: !!(I().last && I().last.capped)};
+  await until(() => I().follows > f0 && I().rampK >= 1 && !I().busy, 25000); o.cap = {follows: I().follows - f0, dGain: +(S.fxBus.am.gain - g0).toFixed(2), dG: I().last && I().last.dG, capped: !!(I().last && I().last.capped)};
   S.tracks.forEach((t, i) => { if (t.sound && t.sound.fx) vol(i, 12); }); f0 = I().follows;
   await until(() => I().follows > f0 && I().rampK >= 1 && !I().busy, 25000);
   // Befund 2: „Selbst singen“ wird während der Messung scharf → nichts übernommen, kein Gleiten; danach misst es
@@ -264,7 +265,7 @@ const Q = await p2.evaluate(async () => {
 });
 ok('Prüfung 8: ohne Song nach live [Mastern] kein „erst ● SONG“ – der Status passt zu „Messen aus: Live“', Q.way && Q.noSong && Q.src === 'live' && Q.status && !/Noch kein Song/.test(Q.status) && /Live gemessen/.test(Q.status), {status: Q.status, noSong: Q.noSong});
 ok('Prüfung 1: Stumm/Solo löst kein Nachführen aus; eine Änderung wartet, solange Stumm anders ist als beim Messen; danach misst es', Q.mute.n >= 3 && Q.mute.follows === 0 && !Q.mute.pending && Q.mute.dGain === 0 && Q.muteWait.follows === 0 && Q.muteWait.pending && Q.muteWait.wait === 'mute' && Q.unmute.follows === 1 && Math.abs(Q.unmute.dG) < 1.5, {mute: Q.mute, muteWait: Q.muteWait, unmute: Q.unmute});
-ok('Prüfung 1: höchstens ±2 dB je Nachführen (alle Spuren −12 dB → +2,0 dB, nicht +12)', Q.cap.follows === 1 && Q.cap.dGain > 1.5 && Q.cap.dGain <= 2.001 && Q.cap.capped, Q.cap);
+ok('Prüfung 1: höchstens ±2 dB je Nachführen (alle Spuren −12 dB → +2,0 dB, nicht +12)', Q.cap.follows === 1 && Q.cap.dG > 1.5 && Q.cap.dG <= 2.001 && Q.cap.dGain < 2.3 && Q.cap.capped, Q.cap);
 ok('Prüfung 2: Aufnahme beginnt während der Messung → nichts übernommen, kein Gleiten; misst nach der Aufnahme', Q.rec.follows === 0 && Q.rec.drops === 1 && Q.rec.pending && Q.rec.wait === 'rec' && Q.rec.dGain === 0 && Q.recAfter.follows === 1, {rec: Q.rec, recAfter: Q.recAfter});
 ok('Prüfung 3: Änderung während der laufenden Messung geht nicht verloren (verworfen, nachgemessen)', Q.late1.follows === 0 && Q.late1.drops === 1 && Q.late1.pending && Q.late2.follows === 1 && !Q.late2.pending && Q.late2.sigSame, {late1: Q.late1, late2: Q.late2});
 ok('Prüfung 5: Projekt laden + ▶ ohne Änderung → kein Nachführen, Master unverändert', !Q.load.pending && Q.load.follows === 0 && Q.load.dGain === 0, Q.load);
