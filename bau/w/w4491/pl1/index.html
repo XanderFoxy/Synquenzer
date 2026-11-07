@@ -10317,7 +10317,7 @@ function knobDefault(d) {
   if (d.sst != null) v = 0; else if (/^trim/.test(d.p)) v = 100; else if (d.p === 'mw') v = 0;
   else if (d.p && !VIEWP.test(d.p) && d.p !== 'bpm' && d.p !== 'vol') { const x = SQMK.mkPathGet(SQMK.init(), d.p); if (typeof x === 'number') v = x; }
   if (v == null) return;
-  if (isSnd(d)) soundEdit(P.i, MK_LABEL + ' ' + d.l + ' Standard', () => setv(d, v, false)); else setv(d, v, false);
+  pl1Rst(() => { if (isSnd(d)) soundEdit(P.i, MK_LABEL + ' ' + d.l + ' Standard', () => setv(d, v, false)); else setv(d, v, false); });   // PL1: Lock-Modus – Standard = Lock weg
   haptic('snap'); P.lastKnob = d; lcdOf(d); showVal(d); renderSoon();
 }
 // test API: a knob gesture through the panel logic (start, values, end); path of the value table ('t.0.f.cut') or an element id ('k3')
@@ -10523,6 +10523,7 @@ function runStep(tA) {
 function frame(now, bAud) {
   const U = P.el; if (!U || !U.fr || !U.fr.isConnected || P.i < 0) return;
   const s_ = sndOf(P.i); if (!s_ || s_.engine !== 'mk' || !s_.p.mk) return;
+  if (typeof pl1Ll === 'function' && !pl1Ll()) { ma1Frame(); return; }   // PL1: Lauflichter aus = LEDs stehen still, die Mod-Ringe (MA1) zeigen weiter
   const tA = now - (AU.outLat || 0), ph = R.playing ? bAud : tA * S.bpm / 60, led = ((ph % 1) + 1) % 1 < .5;
   setLed('arp.led', led ? 'on' : '');
   if (P.sp && P.sp.keys['arp.on']) { const L = P.sp.keys['arp.on'].querySelector('.tl'); if (L && L._on !== led) { L._on = led; L.classList.toggle('on', led); } }
@@ -42415,7 +42416,7 @@ function uiFrame() {
   if (UI.dirty.kb) { UI.dirty.kb = false; kbPaint(); padPaint(); }
   mkWheelFrame();                                            // MK1: BEND / MOD wheels left of the keys on AM tracks
   bmWheelFrame();                                            // BM5: BEND / MOD wheels on BM_NAME tracks
-  if (R.editor === 'synth' && pl1Ll() && typeof MKUI !== 'undefined' && MKUI.arpFrame) MKUI.arpFrame(now, bAud);   // MK5: ARP / tempo LED, running step · PL1: Lauflichter aus = stehen still
+  if (R.editor === 'synth' && typeof MKUI !== 'undefined' && MKUI.arpFrame) MKUI.arpFrame(now, bAud);   // MK5: ARP / tempo LED, running step
   paintGhosts(tAud);
   padFlashes(tAud);
   recLaneFrame(bAud);
@@ -43163,7 +43164,7 @@ function makeCtl(d, get, set, o) {
   function resetDefault(before) {
     const was = get();
     if (was === d.def || (isNum(was) && isNum(d.def) && Math.abs(toNorm(d, was) - toNorm(d, d.def)) < 1e-9)) { lcd(); return; }
-    setVal(d.def);
+    if (pl1Rst(() => setVal(d.def))) { lcd(); return; }   // PL1: Lock-Modus – Doppeltipp / ↺ Std. = Lock weg (eigener ↶), der Klang bleibt
     const lb = label + ' zurückgesetzt';
     if (o.undo) o.undo.commit(before != null ? before : null, lb);
     toast(lb, {label: 'Rückgängig', fn: () => undo()});
@@ -83106,7 +83107,9 @@ Object.assign(SYNQUENZER, {vd3: VD3_API});                  /* VD3: Test-API (Ob
      - Punkt am Schritt (LAUF, SCHRITTE) bzw. an der Note (ROLLE), wenn ein Lock darauf liegt. ↶ je Geste (ein Dreh = ein Schritt).
      - Klar getrennt von ◆ (Regler je Clip, Klanganker): ein Lock gilt für eine Note und geht nie in den Clip-Klang.
    2 Lauflichter an/aus (≡ › Bedienung „Lauflichter“, Einstellung des Geräts, Standard an). Aus: Matrix-Fortschritt, LAUF-, Schritt- und
-     ROLLE-Marke, Takt-LEDs, Pad-Blitze und die LEDs der Platte stehen still; der Song zeigt die Stelle ruhig je Takt. Aufnahme-Anzeigen bleiben.
+     ROLLE-Marke, Takt-LEDs, Pad-Blitze und die LEDs der Platte stehen still; der Song zeigt die Stelle ruhig je Takt. Es bleiben (keine
+     Lauflichter): Aufnahme-Anzeigen, Pegel, die Ton-Punkte der Tastatur (welche Töne gerade klingen) und die Mod-Ringe der Platte (MA1).
+   Prüfung: „Standard“ (Doppeltipp, ↺ Std.) im Lock-Modus nimmt den Lock weg (eigener ↶, „Rückgängig“), wie im Schritt-Menü (pl1Rst).
    Neue Schlüssel nur mit Präfix: UI.pl1 (Zustand), UI.pl1ll / UI.pl1llC (Lauflichter), uiPrefs().pl1ll, SYNQUENZER.pl1. Ohne Locks und mit
    Lauflichtern an läuft jede Zeile wie vorher. ===== */
 const PL1_QK = {
@@ -83115,7 +83118,7 @@ const PL1_QK = {
   mk: [['mk.t.0.f.cut', 'Filter'], ['mk.t.0.f.res', 'Reso'], ['mk.t.0.e2.d', 'Decay'], ['mk.t.0.a.lvl', 'Pegel']],
   drum: [['tune', 'Tune'], ['dec', 'Decay'], ['lvl', 'Pegel'], ['drv', 'Drive']]};
 // der Zustand (auf UI: die Einhänge-Zeilen dürfen ihn jederzeit lesen)
-function pl1S() { return UI.pl1 || (UI.pl1 = {mode: null, pend: null, pendT: 0, pd: 0, pt: 0, ptr: false, ban: null, banIv: 0, css: false}); }
+function pl1S() { return UI.pl1 || (UI.pl1 = {mode: null, pend: null, pendT: 0, pd: 0, pt: 0, ptr: false, ban: null, banIv: 0, css: false, rst: null}); }
 function pl1Css() {
   const S_ = pl1S(); if (S_.css) return; S_.css = true;
   const st = document.createElement('style'); st.id = 'pl1-css';
@@ -83181,7 +83184,7 @@ function pl1MenuRow(s6, row) {
     pl1Css();
     const sg = makeSeg([[true, 'An'], [false, 'Aus']], () => pl1Ll(), v => pl1LlSet(v));
     row(s6, 'Lauflichter', sg).classList.add('pl1llr');
-    s6.appendChild(el('div', 'small', 'Lauflichter: die laufende Stelle in Matrix, Song, LAUF, Schritten und ROLLE, die Takt-LEDs, Pad-Blitze und die LEDs der Platte. Aus = alles steht still (der Song zeigt die Stelle ruhig je Takt) – ruhiger, spart Rechenzeit und Akku. Aufnahme-Anzeigen bleiben.'));
+    s6.appendChild(el('div', 'small', 'Lauflichter: die laufende Stelle in Matrix, Song, LAUF, Schritten und ROLLE, Takt-LEDs, Pad-Blitze, LEDs der Platte. Aus = sie stehen still (Song: ruhig je Takt) – spart Rechenzeit und Akku. Es bleiben: Aufnahme, Pegel, Ton-Punkte der Tastatur.'));
   } catch (e) { logErr(e); }
 }
 
@@ -83422,12 +83425,14 @@ function pl1Shown(i, k) {
 // Schirm oder eben losgelassen) – was die App selbst setzt, geht wie immer in den Klang
 function pl1Wr(i, path, v) {
   const S_ = UI.pl1, M = S_ && S_.mode; if (!M || M.tg.t !== i || !pl1Live()) return false;
-  if (!(S_.pd > 0 || performance.now() - S_.pt < 400)) return false;
+  if (!(S_.rst || S_.pd > 0 || performance.now() - S_.pt < 400)) return false;
   const tg = M.tg, tr = S.tracks[i], e = LKT[path];
   let why = '';
   if (!e || e.cls === 's' || e.cls === 'r') why = 'gilt nur für den ganzen Klang – kein Lock';
   else if (tr.kind === 'drum' ? path.split('.')[1] !== tg.sid : !lkFamOk(e, tr.sound)) why = tr.kind === 'drum' ? 'der Lock gehört zu ' + tg.lbl.split(' · ')[0] + ' – dieses Pad wählen' : 'wirkt bei diesem Klang nicht';
+  if (S_.rst) S_.rst.hit = true;
   if (why) { pl1BanSay((e ? e.lbl : path) + ': ' + why, true); return true; }
+  if (S_.rst) { pl1RstLk(tg, path); return true; }
   if (e.vals ? !e.vals.includes(v) : !(typeof v === 'number' && isFinite(v))) return true;
   if (!S_.pend) { const c = pl1Clip(tg); if (!c) return true; S_.pend = {tg, before: cleanClip(c), lbl: pl1Lbl(tg, path)}; }
   pl1Put(tg, path, v);
@@ -83438,6 +83443,24 @@ function pl1Wr(i, path, v) {
 function pl1Flush() {
   const S_ = pl1S(), P = S_.pend; S_.pend = null; clearTimeout(S_.pendT);
   if (P) pl1Commit(P.tg, P.before, P.lbl);
+}
+// makeCtl resetDefault / Platte knobDefault (Einhänge-Zeile): fn = das bisherige Zurücksetzen. Im Lock-Modus läuft es mit Merker – trifft es
+// einen Lock-Regler (pl1Wr), geht nur dessen Lock weg (pl1RstLk) und true = erledigt; sonst (kein Lock-Modus, Regler ohne Lock-Weg) wie immer
+function pl1Rst(fn) {
+  const S_ = UI.pl1; if (!S_ || !S_.mode || S_.rst) { fn(); return false; }
+  const R_ = S_.rst = {hit: false};
+  try { fn(); } finally { S_.rst = null; }
+  return R_.hit;
+}
+// „Standard“ im Lock-Modus = der Lock dieses Reglers weg: ein eigener ↶ („Lock · Filter weg“), „Rückgängig“ holt ihn zurück (wie im Schritt-Menü)
+function pl1RstLk(tg, p) {
+  pl1Flush();
+  const lbl = pl1Lbl(tg, p);
+  if (!pl1Notes(tg).some(n => pl1Has(n, p))) { pl1BanSay(lbl + ': kein Lock – der Klang bleibt', false); return false; }
+  pl1Clear(tg, p);
+  pl1BanSay(lbl + ': Lock weg', false);
+  toast(lbl + ': Lock weg', {label: 'Rückgängig', fn: () => undo()});
+  return true;
 }
 function pl1ModeGo(tg) {
   const S_ = pl1S(), tr = S.tracks[tg.t]; if (!tr || !pl1Clip(tg)) return false;
@@ -83455,8 +83478,17 @@ function pl1ModeEnd(back) {
   if (!back) { if ((R.editor === 'synth' || R.editor === 'drum') && R.selT === M.tg.t) safeRebuild(openEditor); return true; }
   const tg = M.tg;
   if (tg.src === 'drum') { ED.dTab = 'steps'; openRoll(DRUM_T, tg.s); }
-  else { ROLLP.view = tg.src === 'lauf' ? 'lauf' : 'roll'; openRoll(tg.t, tg.s); if (tg.src === 'rolle' && ED.roll) ED.roll.select(pl1Notes(tg)); }
+  else { ROLLP.view = tg.src === 'lauf' ? 'lauf' : 'roll'; openRoll(tg.t, tg.s); if (tg.src === 'rolle' && ED.roll) { ED.roll.select(pl1Notes(tg)); pl1RollShow(); } }
   return true;
+}
+// zurück in der ROLLE: die Aktionszeile steht so, dass [🔒 Locks] im Bild ist (gleich wieder antippbar; nur die Rollstellung, nichts verschiebt sich)
+function pl1RollShow() {
+  try {
+    const a = ED.roll && ED.roll.el && ED.roll.el.acts, b = a ? a.querySelector('.pl1rb') : null; if (!b || b.hidden) return false;
+    const ar = a.getBoundingClientRect(), br = b.getBoundingClientRect();
+    if (br.right > ar.right - 4) a.scrollLeft += br.right - ar.right + 8; else if (br.left < ar.left + 4) a.scrollLeft -= ar.left - br.left + 8;
+    return true;
+  } catch (e) { logErr(e); return false; }
 }
 // die Leiste liegt über der Anzeige (LCD) des Editors – sie verschiebt nichts; ✕ des Editors bleibt frei
 function pl1Ban() {

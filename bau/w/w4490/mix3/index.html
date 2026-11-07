@@ -66777,7 +66777,7 @@ async function mx3Run(withMix, tag, quiet) {
       const tracks = S.tracks.map((tr, i) => ({i, name: tr.name, kind: tr.kind, stimme: !!tr.stimme, chor: !!(tr.chor && Array.isArray(tr.chor.lanes) && tr.chor.lanes.length), mute: !!tr.mute, ns: mixaNoteStats(i), fx: Object.assign({drive: 0}, fxOfSound(tr.sound)), mix: tr.mix || null})).filter(t => !t.mute);
       const mxm = mx1Msg(X, {sr});
       const res = await mixaCall({op: 'mix', win, nIn: X.n, wsec: 512 / sr, tracks, secs: [], t0: 0, a0: 0, spb: 60 / bpm, bpm, pumpSrc: S.fxBus.pumpSrc, otherPump: S.tracks.some(t => t.sound && t.sound.fx && t.sound.fx.pump > 0), mx1: mxm}, mxm ? [win.buffer, mxm.win.buffer] : [win.buffer]);
-      MIXA.res = Object.assign(res, {sig, at: Date.now(), live: true}); MIXA.done.clear();
+      MIXA.res = Object.assign(res, {sig, at: Date.now(), live: true, mx3s: R.songPlay ? -1 : R.selS}); MIXA.done.clear();
     }
     MIXA.prog = 0.92; mx2Prog();
     let LA = null; try { const v = D.integ(D.kblocks([cap.aL, cap.aR], sr)); if (isFinite(v) && v > -70) LA = +v.toFixed(2); } catch (e) {}
@@ -66932,9 +66932,10 @@ function mx3Open(way) {
 // [Vorschläge je Spur] (vorher [Mix-Assistent …] = eigenes Blatt): analysieren ohne zu übernehmen, je Vorschlag [Übernehmen]/[Zurück] im Weg Mischen
 async function mx3Sug() {
   MX3.focus = 'mix'; MX3.sugOn = true;
-  if (!MIXA.busy && (!MIXA.res || MIXA.res.sig !== mixaStateSig())) await mx2Run(true, 'mix');
+  const r0 = MIXA.res, other = !!(r0 && r0.live && R.playing && (R.songPlay ? r0.mx3s !== -1 : r0.mx3s !== R.selS));   // live gemessen, jetzt läuft etwas anderes
+  if (!MIXA.busy && (!r0 || r0.sig !== mixaStateSig() || other)) await mx2Run(true, 'mix');
   mx2Paint(); const p = mx2El(), s = p && p.querySelector('.mx3sg');
-  if (s && s.scrollIntoView) s.scrollIntoView({block: 'center'}); else if (!MIXA.res) toast('Noch keine Analyse – erst ▶ oder ● SONG');
+  if (s && s.scrollIntoView) s.scrollIntoView({block: 'center'}); else toast(MIXA.res ? 'Keine offenen Vorschläge – der Mix passt so' : 'Noch keine Analyse – erst ▶ oder ● SONG');
   return !!MIXA.res;
 }
 function mx3SugRow(i, busy) {
