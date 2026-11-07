@@ -15,9 +15,11 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
 // a real pass of a running part, then FANG (s1Fang) → Blatt „Teil überarbeitet“
 const S1OPEN = `const A = SYNQUENZER; if (!R.playing) { A.play(); A.launchScene(0); await new Promise(r=>setTimeout(r,1200)); }
   if (!S.parts || !S.parts[0]) { A.partFromNow(0,'Strophe'); closePop(); }
-  A.launchPart(0); if (window.__ux1Chg) { await new Promise(r=>setTimeout(r,300)); A.launchClip(2, 1); }   // eine Änderung im Lauf (Synth 3 → Szene 2)
+  A.launchPart(0);
   const L = partLen(S.parts[0]); await new Promise(r=>setTimeout(r, (L*2+1.5) * 4 * 60000/S.bpm));
-  const r = A.s1Fang({}); await new Promise(r=>setTimeout(r,250)); return !!r && UI.pop && UI.pop.name === 's1';`;
+  const r = A.s1Fang({});
+  if (r && window.__ux1Chg) { S1.v.lanes[2] = [{bar: 0, slot: 1}]; S1.v.slots = partSlotsOf(S1.v.lanes); }   // wie eine Änderung im Lauf (Synth 3 → Szene 2)
+  await new Promise(r=>setTimeout(r,250)); return !!r && UI.pop && UI.pop.name === 's1';`;
 const inView = `(sel) => { const e = document.querySelector(sel); if (!e) return false; const r = e.getBoundingClientRect(); return r.width > 0 && r.top >= 0 && r.left >= 0 && r.bottom <= innerHeight && r.right <= innerWidth; }`;
 
 // ---------- 1 · FANG im Songteil: Namen im Blatt „Teil überarbeitet“ ----------

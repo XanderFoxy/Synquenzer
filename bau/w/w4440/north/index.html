@@ -18421,7 +18421,7 @@ function envEnd(m, T) { return m === M_E2 ? 2.7 * T : m === M_E3 ? 4 * T : m ===
 function tnh(x) { if (x > 3) return 1; if (x < -3) return -1; const x2 = x * x; return x * (27 + x2) / (27 + 9 * x2); }
 class Voice {
 constructor(eng, ch) {
-this.E = eng; this.ch = ch; this.on = false; this.bp = 0;
+this.E = eng; this.ch = ch; this.on = false; this.bp = 0; this.gen = 0;   /* NS1: stop generation of the hit that started this voice */
 this.zr = new Float64Array(MAXM); this.zi = new Float64Array(MAXM); this.cr = new Float64Array(MAXM); this.ci = new Float64Array(MAXM);
 this.mf = new Float64Array(MAXM); this.ptl = new Float64Array(MAXM); this.mr = new Float64Array(MAXM); this.nm = 0;
 this.TB = new Float64Array(CR); this.NB = new Float64Array(CR);
@@ -18921,7 +18921,7 @@ this.chs = []; for (let i = 0; i < NCH; i++) this.chs.push(new Chan(this, i));
 this.nz = new Uint32Array(NCH);
 this.mskT = new Float64Array(NCH); this.mskN = new Float64Array(NCH); this.mskC = new Float64Array(NCH);
 this.soloCh = -1; this.soloP = 0; this.lim = 0; this.tap = 0; this.sent = true; this.errAt = -1e12; this.qover = 0; this.dcOn = true; this.dcA = 1 - TAU * 5 / SR; this.dcX = 0.1; this.dcY = 0.1; this.dcW = 0.1; this.dcZ = 0.1;
-this.QN = 4096; this.q = []; for (let i = 0; i < this.QN; i++) this.q.push({fr: 0, ch: 0, v: 0, acc: 0, tune: 0, dec: 1, id: 0}); this.qn = 0;
+this.QN = 4096; this.q = []; for (let i = 0; i < this.QN; i++) this.q.push({fr: 0, ch: 0, v: 0, acc: 0, tune: 0, dec: 1, id: 0, gen: 0}); this.qn = 0; this.gen = 0; this.stopGen = 0;   /* NS1: gen */
 this.late = 0; this.lateSent = 0;
 this.stopFr = -1; this.stopTau = 0.02; this.pan = 0;
 this.K = {rvT: 1, rvC: 0, dlR: 50, dlM: 0, dlB: 60, dlF: 0};
@@ -18987,7 +18987,10 @@ break; }
 case 'hit': { const L = m.list || []; for (const h of L) this.enqueue(h); break; }
 case 'all': { const L = m.list || []; for (const x of L) this.onMsg(x); break; }
 case 'mute': { const s = m.solo; this.soloCh = s ? (m.ch | 0) : -1; this.soloP = s === 'tone' ? 1 : s === 'noise' ? 2 : s === 'click' ? 3 : 0; for (const C of this.chs) this.levels(C); break; }
-case 'stop': { this.stopFr = Math.round((+m.at || 0) * SR); this.stopTau = Math.max(0.001, +m.tau || 0.02); break; }
+case 'stop': { this.stopFr = Math.round((+m.at || 0) * SR); this.stopTau = Math.max(0.001, +m.tau || 0.02);
+/* NS1: the hits planned before this stop (from its time on) go now; hits sent after it (a restart in the same render quantum) stay and are not damped */
+{ let j = 0; for (let i = 0; i < this.qn; i++) { if (this.q[i].fr < this.stopFr) { const t = this.q[j]; this.q[j] = this.q[i]; this.q[i] = t; j++; } } this.qn = j; this.stopGen = ++this.gen; }
+break; }
 case 'cancel': { const ids = m.ids || []; if (!ids.length) break; const S = new Set(ids); let j = 0;
 for (let i = 0; i < this.qn; i++) { if (!S.has(this.q[i].id)) { const t = this.q[j]; this.q[j] = this.q[i]; this.q[i] = t; j++; } } this.qn = j; break; }
 case 'panic': { this.qn = 0; this.pan = Math.max(1, Math.round(0.01 * SR)); this.panN = this.pan; break; }
@@ -19009,7 +19012,7 @@ const fr = Math.round((+h.at || 0) * SR);
 let j = this.qn; const q = this.q, rec = q[j];
 while (j > 0 && q[j - 1].fr > fr) { q[j] = q[j - 1]; j--; }
 q[j] = rec; this.qn++;
-rec.fr = fr; rec.ch = ch; rec.v = clampN(h.v, 0, 1, 0.8); rec.acc = clampN(h.acc, 0, 1, 0); rec.tune = clampN(h.tune, -48, 48, 0); rec.dec = clampN(h.dec, 0.05, 20, 1); rec.id = (+h.id || 0) | 0;
+rec.fr = fr; rec.ch = ch; rec.v = clampN(h.v, 0, 1, 0.8); rec.acc = clampN(h.acc, 0, 1, 0); rec.tune = clampN(h.tune, -48, 48, 0); rec.dec = clampN(h.dec, 0.05, 20, 1); rec.id = (+h.id || 0) | 0; rec.gen = this.gen;   /* NS1 */
 }
 renderTo(C, s) { for (let j = 0; j < NV; j++) { const v = C.v[j]; if (v.on && v.bp < s) { v.render(C.buf, v.bp, s); v.bp = s; } } }
 hit(h, off) {
@@ -19020,7 +19023,7 @@ let nv = null;
 for (let j = 0; j < NV; j++) { const v = C.v[j]; if (v.on && v.fadeSt === 0) v.fadeSt = 1 / (0.003 * SR); }
 for (let j = 0; j < NV; j++) if (!C.v[j].on) { nv = C.v[j]; break; }
 if (!nv) nv = C.v[0].fade <= C.v[1].fade ? C.v[0] : C.v[1];
-nv.start(C.P, h.v, h.acc, h.tune, h.dec); nv.bp = off;
+nv.start(C.P, h.v, h.acc, h.tune, h.dec); nv.bp = off; nv.gen = h.gen;   /* NS1 */
 if (nv.ctab) C.act = true;
 C.act = true;
 }
@@ -19032,7 +19035,7 @@ const fr0 = currentFrame, fr1 = fr0 + N;
 let stopK = 0;
 if (this.stopFr >= 0 && this.stopFr < fr1) {
 stopK = Math.exp(-CR / (this.stopTau * SR));
-let j = 0; for (let i = 0; i < this.qn; i++) { if (this.q[i].fr < this.stopFr) { const t = this.q[j]; this.q[j] = this.q[i]; this.q[i] = t; j++; } } this.qn = j;
+let j = 0; for (let i = 0; i < this.qn; i++) { if (this.q[i].fr < this.stopFr || this.q[i].gen >= this.stopGen) { const t = this.q[j]; this.q[j] = this.q[i]; this.q[i] = t; j++; } } this.qn = j;
 this.stopFr = -1;
 }
 let any = false;
@@ -19045,7 +19048,7 @@ const C = this.chs[h.ch]; if (C.has && !C.act) { C.buf.fill(0); C.act = true; an
 this.hit(h, off); qi++;
 }
 if (qi > 0) { const q = this.q; for (let i = qi; i < this.qn; i++) { const t = q[i - qi]; q[i - qi] = q[i]; q[i] = t; } this.qn -= qi; }
-if (stopK > 0) for (let c = 0; c < NCH; c++) for (let j = 0; j < NV; j++) { const v = this.chs[c].v[j]; if (v.on) v.stpK = stopK; }
+if (stopK > 0) for (let c = 0; c < NCH; c++) for (let j = 0; j < NV; j++) { const v = this.chs[c].v[j]; if (v.on && v.gen < this.stopGen) v.stpK = stopK; }   /* NS1: gen */
 if (!any && this.hsleep > 0.5 * SR / N && this.pan === 0 && this.dcY === 0 && this.dcZ === 0) { this.dlyS = Math.round(this.dlyT * SR); this.fbS = this.dlyFb; this.cS = this.K.rvC; this.account(t0, N); return true; }
 let needD = false; for (let c = 0; c < NCH; c++) { const C = this.chs[c]; if (C.act && (C.tDl > 0 || C.sDl > 0 || C.dlHold > 0 || C.dlyE > 0)) needD = true; }
 if (needD) { const tg = Math.round(this.dlyT * SR), st = this.dlySt, DT = this.dT; let d = this.dlyS;
