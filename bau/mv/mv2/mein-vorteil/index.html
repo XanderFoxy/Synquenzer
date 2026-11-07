@@ -342,6 +342,131 @@
   details.kasten-innen[open] { padding-bottom: 12px; }
   .krypto > div:first-child { padding-top: 4px; }
 </style>
+<script>
+'use strict';
+// Krypto-Rechnung, Zonen und Import-Format – Wort für Wort wie krypto/zonen.mjs (test/regeln.test.mjs prüft das).
+// <krypto-zonen>
+const KRYPTO_COINS = Object.freeze({
+  btc: { name: 'Bitcoin', kurz: 'BTC', zeichen: '₿', min: 1000, max: 1e7 },
+  eth: { name: 'Ethereum', kurz: 'ETH', zeichen: 'Ξ', min: 10, max: 1e6 },
+});
+// Zonen nach Gewinn/Verlust in Prozent: tief ≤ −10 | minus < 0 | plus ≥ 0 | hoch ≥ +5 | top ≥ +10
+const ZONEN = ['tief', 'minus', 'plus', 'hoch', 'top'];
+const HYSTERESE = 0.5; // Prozentpunkte
+// Gemeldet wird: Wechsel Gewinn ↔ Verlust, Erreichen von +5 %, +10 % und −10 %
+const MELDUNG = Object.freeze({ gewinn: 'jetzt im Gewinn', verlust: 'jetzt im Verlust', plus5: '+5 % erreicht', plus10: '+10 % erreicht', minus10: '−10 % erreicht' });
+// Zonen-Grenzen: hoch über Grenze i (von Zone i nach i+1) ab AUF[i]; runter (von i+1 nach i) erst unter AB[i].
+// Die Meldungs-Richtung löst genau an der Grenze aus, die Gegenrichtung erst 0,5 Punkte dahinter (macht wieder „scharf“);
+// Gewinn ↔ Verlust in beide Richtungen erst 0,5 Punkte hinter der Null (kein Hin und Her bei ±0,1 %).
+const GRENZEN = [
+  { auf: -10 + HYSTERESE, ab: -10, aufMeldung: null, abMeldung: 'minus10', abBisGleich: true },
+  { auf: HYSTERESE, ab: -HYSTERESE, aufMeldung: 'gewinn', abMeldung: 'verlust' },
+  { auf: 5, ab: 5 - HYSTERESE, aufMeldung: 'plus5', abMeldung: null },
+  { auf: 10, ab: 10 - HYSTERESE, aufMeldung: 'plus10', abMeldung: null },
+];
+
+// Rechen-Rauschen weg (0,02 × 45.000 ist im Rechner 900,0000000000001): auf Millionstel-Prozent runden
+const glatt = p => Math.round(p * 1e6) / 1e6;
+
+/** Zone ohne Vorgeschichte (erster Blick): reine Grenzen −10 / 0 / +5 / +10. */
+function rohZone(prozent) {
+  if (!Number.isFinite(prozent)) return null;
+  prozent = glatt(prozent);
+  return prozent <= -10 ? 'tief' : prozent < 0 ? 'minus' : prozent < 5 ? 'plus' : prozent < 10 ? 'hoch' : 'top';
+}
+
+/**
+ * Nächste Zone mit Hysterese. alt = zuletzt gemerkte Zone (oder nichts), prozent = Gewinn/Verlust in Prozent.
+ * -> { zone, meldung } – meldung ist null oder ein Schlüssel von MELDUNG (bei einem Sprung über mehrere Grenzen die
+ * äußerste, z. B. von minus direkt auf top -> plus10). Ohne gültige alte Zone: rohZone, keine Meldung.
+ */
+function naechsteZone(alt, prozent) {
+  if (!Number.isFinite(prozent)) return { zone: ZONEN.includes(alt) ? alt : null, meldung: null };
+  let i = ZONEN.indexOf(alt);
+  if (i < 0) return { zone: rohZone(prozent), meldung: null };
+  prozent = glatt(prozent);
+  let meldung = null;
+  while (i < ZONEN.length - 1 && prozent >= GRENZEN[i].auf) { meldung = GRENZEN[i].aufMeldung || meldung; i++; }
+  while (i > 0 && (GRENZEN[i - 1].abBisGleich ? prozent <= GRENZEN[i - 1].ab : prozent < GRENZEN[i - 1].ab)) { meldung = GRENZEN[i - 1].abMeldung || meldung; i--; }
+  return { zone: ZONEN[i], meldung };
+}
+
+/**
+ * Käufe -> Position. k = { kaeufe: [{ betrag (€ inkl. Gebühren), kurs (€ je Coin) ODER menge }], aktuell? (Menge jetzt,
+ * z. B. durch Auto Earn gewachsen – überschreibt die Summe) }.
+ * -> { einsatz, mengeKaeufe, menge, kaufkurs (Ø), schwelle (Kurs, ab dem im Plus), kaeufe: Anzahl } | null
+ */
+function kryptoPosition(k) {
+  let einsatz = 0, mengeKaeufe = 0, n = 0;
+  for (const x of Array.isArray(k?.kaeufe) ? k.kaeufe : []) {
+    const betrag = Number(x?.betrag);
+    if (!(betrag > 0) || !Number.isFinite(betrag)) continue;
+    const menge = Number(x.menge) > 0 ? Number(x.menge) : Number(x.kurs) > 0 ? betrag / Number(x.kurs) : NaN;
+    if (!(menge > 0) || !Number.isFinite(menge)) continue;
+    einsatz += betrag; mengeKaeufe += menge; n++;
+  }
+  if (!n) return null;
+  const aktuell = Number(k.aktuell);
+  const menge = aktuell > 0 && Number.isFinite(aktuell) ? aktuell : mengeKaeufe;
+  return { einsatz, mengeKaeufe, menge, kaufkurs: einsatz / mengeKaeufe, schwelle: einsatz / menge, kaeufe: n };
+}
+
+/** Position + Kurs -> { kurs, wert, gv (€), prozent (z. B. 5.3 = +5,3 %), einsatz, menge, kaufkurs, schwelle } | null */
+function kryptoErgebnis(pos, kurs) {
+  if (!pos || !(kurs > 0)) return null;
+  const wert = pos.menge * kurs;
+  return { kurs, wert, gv: wert - pos.einsatz, prozent: (wert / pos.einsatz - 1) * 100, einsatz: pos.einsatz, menge: pos.menge, kaufkurs: pos.kaufkurs, schwelle: pos.schwelle };
+}
+
+/**
+ * Import-Text (Link-Fragment #krypto=… und GitHub-Secret KRYPTO): „btc:<menge>:<einsatz>,eth:<menge>:<einsatz>“,
+ * Dezimalpunkt (0.0123), Einsatz in € inkl. Gebühren. -> { ok: true, coins: { btc: { menge, einsatz } } } | { ok: false, fehler }
+ * Ein ungültiger Teil -> nichts übernehmen (kein halber Import).
+ */
+function leseKryptoText(text) {
+  let s = String(text ?? '').trim();
+  try { s = decodeURIComponent(s); } catch {}
+  s = s.replace(/^#?krypto=/i, '').trim();
+  if (!s) return { ok: false, fehler: 'leer' };
+  const coins = {};
+  for (const teil of s.split(/[,;\s]+/).filter(Boolean)) {
+    const m = teil.match(/^([a-z]{2,6}):(\d+(?:\.\d+)?):(\d+(?:\.\d+)?)$/i);
+    if (!m) return { ok: false, fehler: 'Format' };
+    const c = m[1].toLowerCase(), menge = Number(m[2]), einsatz = Number(m[3]);
+    if (!KRYPTO_COINS[c]) return { ok: false, fehler: 'unbekannter Coin' };
+    if (!(menge > 0 && menge < 1e6 && einsatz > 0 && einsatz < 1e9)) return { ok: false, fehler: 'Zahl' };
+    coins[c] = { menge, einsatz };
+  }
+  return Object.keys(coins).length ? { ok: true, coins } : { ok: false, fehler: 'leer' };
+}
+// </krypto-zonen>
+
+// Krypto-Import per Link (z. B. von Claude): …/mein-vorteil/#krypto=btc:<menge>:<einsatz>,eth:<menge>:<einsatz>
+// Läuft vor allem anderen: Fragment sofort aus der Adresse (history.replaceState), Zahlen nur in localStorage –
+// nie senden, nie loggen (ein Fragment geht ohnehin nie an einen Server).
+const KRYPTO_IMPORT = (() => {
+  if (!/^#krypto=/i.test(location.hash)) return null;
+  const roh = location.hash;
+  history.replaceState(history.state, '', location.pathname + location.search);
+  const r = leseKryptoText(roh);
+  if (!r.ok) return { ok: false };
+  try {
+    let d = null;
+    try { d = JSON.parse(localStorage.getItem('mein-vorteil-krypto')); } catch {}
+    if (!d || d.v !== 2 || typeof d.coins !== 'object' || !d.coins) d = { v: 2, coins: {} };
+    let z = null;
+    try { z = JSON.parse(localStorage.getItem('mein-vorteil-krypto-zone')); } catch {}
+    z = z && typeof z === 'object' ? z : {};
+    for (const [c, x] of Object.entries(r.coins)) {
+      d.coins[c] = { kaeufe: [{ betrag: x.einsatz, menge: x.menge, uebernommen: true }], aktuell: null };
+      delete z[c]; // neue Zahlen -> Zone neu bestimmen, ohne Meldung
+    }
+    localStorage.setItem('mein-vorteil-krypto', JSON.stringify(d));
+    localStorage.setItem('mein-vorteil-krypto-zone', JSON.stringify(z));
+    return { ok: true, coins: Object.keys(r.coins) };
+  } catch { return { ok: false, speicher: true }; }
+})();
+</script>
 </head>
 <body>
 <header class="kopf">
@@ -368,7 +493,11 @@
     <a href="#cashback" data-ziel="cashback">Cashback<span class="n"></span></a>
     <a href="#snacks" data-ziel="snacks">Snacks<span class="n"></span></a>
     <a href="#auftritte" data-ziel="auftritte">Auftritte<span class="n"></span></a>
+    <a href="#remix" data-ziel="remix">Remix<span class="n"></span></a>
     <a href="#mehr" data-ziel="mehr">Mehr<span class="n"></span></a>
+    <!-- Platz für einen weiteren Reiter (Filme kommt vom Kollegen):
+         <a href="#filme" data-reiter="filme">Filme<span class="n"></span></a> + <section id="p-filme" class="reiter-seite" hidden> nach </main>
+         + REITER_START.filme = el => …  (siehe „Weitere Reiter“ im Skript) -->
   </div>
 </nav>
 
@@ -377,29 +506,20 @@
     <h2 id="h-krypto">Krypto</h2>
     <div class="karte krypto"><div id="i-krypto"><p class="leer">Lade Kurse …</p></div>
       <details class="kasten-innen" id="krypto-form">
-        <summary>Einstieg &amp; Gewinn-Hinweis</summary>
-        <div class="formular">
-          <fieldset><legend>Bitcoin</legend>
-            <label>Einstiegspreis (€ pro BTC)<input type="text" inputmode="decimal" autocomplete="off" enterkeyhint="done" id="btc-einstieg" placeholder="z. B. 61.500"></label>
-            <label>Menge (BTC)<input type="text" inputmode="decimal" autocomplete="off" enterkeyhint="done" id="btc-menge" placeholder="z. B. 0,05"></label>
-          </fieldset>
-          <fieldset><legend>Ethereum</legend>
-            <label>Einstiegspreis (€ pro ETH)<input type="text" inputmode="decimal" autocomplete="off" enterkeyhint="done" id="eth-einstieg" placeholder="z. B. 2.400"></label>
-            <label>Menge (ETH)<input type="text" inputmode="decimal" autocomplete="off" enterkeyhint="done" id="eth-menge" placeholder="z. B. 1,2"></label>
-          </fieldset>
-          <label class="breit">Hinweis ab Gewinn von (%) – leer = jeder Gewinn<input type="text" inputmode="decimal" autocomplete="off" enterkeyhint="done" id="krypto-schwelle" placeholder="z. B. 5"></label>
-        </div>
-        <p class="privat">Nur auf diesem iPhone gespeichert – wird nie gesendet. Ohne Menge zeigt die Seite nur die Prozent.</p>
+        <summary>Käufe &amp; Menge</summary>
+        <div id="krypto-editor"></div>
       </details>
       <details class="kasten-innen" id="krypto-push">
         <summary>Push auch bei geschlossener Seite</summary>
         <ol class="schritte-gh">
-          <li>In GitHub <b>Settings → Secrets and variables → Actions</b> öffnen (Knopf unten).</li>
-          <li><b>New repository secret</b>: Name <code>BTC_EINSTIEG</code>, Wert dein Einstiegspreis in € (z. B. 61500). Genauso <code>ETH_EINSTIEG</code>. Optional <code>BTC_SCHWELLE_PROZENT</code> / <code>ETH_SCHWELLE_PROZENT</code> (z. B. 5 = erst ab +5 %).</li>
-          <li><b>Actions → Krypto-Wecker → Run workflow</b> einmal starten. Danach prüft er alle 30 Minuten und schickt <b>einmal</b> eine Nachricht über dein ntfy-Thema, wenn ein Coin in den Gewinn dreht.</li>
+          <li>In GitHub <b>Settings → Secrets and variables → Actions → New repository secret</b> öffnen (Knopf unten) und zwei Secrets anlegen:
+            <span class="secret-zeile"><code>KRYPTO</code> = deine Zahlen <button id="krypto-secret-kopie" class="zweit klein-knopf" type="button">Wert kopieren</button></span>
+            <span class="secret-zeile"><code>KRYPTO_NTFY_TOPIC</code> = <code id="krypto-topic"></code> <button id="krypto-topic-kopie" class="zweit klein-knopf" type="button">Kopieren</button></span></li>
+          <li>In der App <b>ntfy</b> auf <b>+</b> tippen und genau dieses Thema abonnieren (Server ntfy.sh).</li>
+          <li>Fertig: Der <b>Krypto-Wecker</b> prüft stündlich und meldet Gewinn ↔ Verlust, +5 %, +10 % und −10 %. Beim ersten Lauf kommt „Krypto-Wecker ist aktiv“.</li>
         </ol>
-        <p class="privat">Die Nachricht nennt nur den Kurs – nie deinen Einstieg (das ntfy-Thema ist nicht geheim).</p>
-        <a class="los" href="https://github.com/XanderFoxy/Synquenzer/settings/secrets/actions" target="_blank" rel="noopener">Secrets in GitHub öffnen</a>
+        <p class="privat">Das Thema gehört nur dir (zufällig erzeugt, nicht das gemeinsame Push-Thema). Deine Zahlen liegen nur im Secret – nie im Code, im Log oder in den Daten. Ändern sich deine Käufe: Wert neu kopieren und das Secret <code>KRYPTO</code> überschreiben.</p>
+        <div class="aktionen"><a class="los" href="https://github.com/XanderFoxy/Synquenzer/settings/secrets/actions/new" target="_blank" rel="noopener">Secret anlegen</a><a id="krypto-ntfy" class="zweit-link" href="#" target="_blank" rel="noopener">In ntfy öffnen</a></div>
       </details>
     </div>
   </section>
@@ -412,7 +532,7 @@
 
   <section id="preisfehler" class="abschnitt" aria-labelledby="h-preisfehler">
     <h2 id="h-preisfehler">Preisfehler <span class="zahl"></span></h2>
-    <p class="regel">Nur No-Brainer, die gerade laufen: mind. 75 % unter dem Vorher-Preis und mind. 20 € gespart (oder ein teures Gerät fast geschenkt). Spiele nur, wenn sie praktisch nichts kosten.</p>
+    <p class="regel">Nur No-Brainer, die gerade laufen: mind. 75 % unter dem Vorher-Preis und mind. 20 € gespart (oder ein teures Gerät fast geschenkt, z. B. 4K-Fernseher für 35 €). Spiele nur für ≈ 1 €.</p>
     <div id="i-preisfehler"><p class="leer">Lade …</p></div>
   </section>
 
@@ -424,7 +544,7 @@
 
   <section id="cashback" class="abschnitt" aria-labelledby="h-cashback">
     <h2 id="h-cashback">Cashback <span class="zahl"></span></h2>
-    <p class="regel">Geld zurück für Sachen, die dich interessieren (deine Produkte, Snacks, Musik-Technik) – nur aktuelle.</p>
+    <p class="regel">Geld zurück für Sachen, die dich interessieren (deine Produkte, Snacks, Musik-Technik) – nur laufende.</p>
     <div id="i-cashback"><p class="leer">Lade …</p></div>
   </section>
 
@@ -439,12 +559,24 @@
     <div id="i-auftritte"><p class="leer">Lade Konzerte …</p></div>
   </section>
 
+  <section id="remix" class="abschnitt" aria-labelledby="h-remix">
+    <h2 id="h-remix">Remix-Contests <span class="zahl"></span></h2>
+    <p class="regel">Laufende Remix-Wettbewerbe mit Stems: Synth-Pop, 80er, Italo, Euro-Disco, Elektro, Dark Wave, New Wave – was zuerst endet, steht oben.</p>
+    <div id="i-remix"><p class="leer">Lade …</p></div>
+  </section>
+
   <section id="mehr" class="abschnitt" aria-labelledby="h-mehr">
     <h2 id="h-mehr">Mehr <span class="zahl"></span></h2>
-    <p class="regel">Alles andere – eingeklappt.</p>
+    <p class="regel">Erleben, Reisen, Nebenverdienst und Vorlagen – eingeklappt.</p>
     <div id="i-mehr"><p class="leer">Lade …</p></div>
   </section>
 </main>
+
+<dialog id="krypto-alarm" aria-labelledby="alarm-titel">
+  <div class="alarm-kopf"><h2 id="alarm-titel">Krypto</h2><button id="alarm-zu" class="x" type="button" aria-label="Schließen">✕</button></div>
+  <div id="alarm-inhalt"></div>
+</dialog>
+<div id="hinweis" class="toast" role="status" hidden><p></p><button class="x" type="button" aria-label="Hinweis schließen">✕</button></div>
 
 <dialog id="push-hilfe" aria-labelledby="push-titel">
   <h2 id="push-titel">Push aufs iPhone</h2>

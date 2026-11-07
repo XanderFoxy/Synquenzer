@@ -66670,7 +66670,7 @@ function mx3MixTaps(c, n) {
   let a1 = null;
   try { a1 = new AudioWorkletNode(c, 'synq-mx1-an', opt(N, {total: tot})); a1.connect(sink); const Y = X.mx1 = {chunks: [], nw: 0, n: N, end: false}; a1.port.onmessage = e => { const m = e.data; if (!m) return; if (m.w && m.n) { Y.chunks.push(m.w); Y.nw += m.n; } if (m.end) Y.end = true; }; } catch (e) { logErr(e); a1 = null; }
   for (let i = 0; i < N; i++) { const A = AU.tracks[i]; if (A && A.trem) { try { A.trem.connect(an, 0, i); if (a1) A.trem.connect(a1, 0, i); con.push(A.trem); } catch (e) {} } }
-  X.drop = () => { con.forEach((t, k) => { try { t.disconnect(an); } catch (e) {} try { if (a1) t.disconnect(a1); } catch (e) {} }); try { an.disconnect(); if (a1) a1.disconnect(); sink.disconnect(); } catch (e) {} };
+  X.drop = () => { an.port.onmessage = null; if (a1) a1.port.onmessage = null; con.forEach((t, k) => { try { t.disconnect(an); } catch (e) {} try { if (a1) t.disconnect(a1); } catch (e) {} }); try { an.disconnect(); if (a1) a1.disconnect(); sink.disconnect(); } catch (e) {} };
   return X;
 }
 async function mx3Capture(sec, withMix) {
@@ -66861,6 +66861,8 @@ function mx3Tap(b) {
    ===================================================================================================================== */
 const CH1 = {ir: new Map(), busy: null, last: null, done: new Set(), q: null, nodes: 0, throws: 0, aligned: 0};
 const CH1_RE = /refrain|chorus|hook|kehrvers/i;
+// ein Refrain-Teil: Name des Teils oder – bei einem Teil aus einer Szene – der Name der Szene
+function ch1IsRefrain(m) { if (CH1_RE.test(markLabel(m) || '')) return true; const q = /^S(\d+)$/.exec(m.part || ''), sc = q && S.scenes[+q[1] - 1]; return !!(sc && CH1_RE.test(sc.name || '')); }
 const ch1C = (ms, ct, p) => ({ms, ct, p});
 // Rezept „Refrain groß“ (80er-Pop-Refrain): Form wie eine Stil-Zeile der Chor-Gruppe (G6P_STYLE), eigener Schlüssel, nichts doppelt
 const CH1_RG = Object.freeze({style: null, label: 'Refrain groß', sub: '80er-Pop-Refrain', echo: '1/8.',
@@ -66872,7 +66874,7 @@ const CH1_RG = Object.freeze({style: null, label: 'Refrain groß', sub: '80er-Po
 // alle Lead-Stellen der STIMME-Spur im Refrain: Song-Stücke in Teilen „Refrain/Chorus/Hook“ (oder im Teil mid), Szenen mit diesem Namen
 function ch1Refrain(mid) {
   const st = stimmeT(); if (st < 0) return [];
-  const song = S.song, marks = song && Array.isArray(song.marks) ? song.marks.filter(m => (mid ? m.id === mid : CH1_RE.test(markLabel(m) || ''))) : [], out = [];
+  const song = S.song, marks = song && Array.isArray(song.marks) ? song.marks.filter(m => (mid ? m.id === mid : ch1IsRefrain(m))) : [], out = [];
   const sc0 = new Set(marks.map(m => /^S(\d+)$/.exec(m.part || '')).filter(Boolean).map(q => +q[1] - 1));   // Song-Teil aus einer Szene: deren Clip-Stelle
   for (const p of g6pPlaces(st)) {
     if (p.r.vox) { const v = p.a, b0 = v.bar | 0, b1 = b0 + Math.max(1, v.len | 0); if (marks.some(m => b0 < m.a + m.len && b1 > m.a)) out.push(p); }
@@ -66905,6 +66907,12 @@ function ch1Match(lead, voice) {
   }
   return pairs;
 }
+// Silben-Anfang = Marke, nach der die Energie deutlich steigt (≥ +6 dB, 40 ms davor gegen 40 ms danach) – Ausklang-Marken zählen nicht
+function ch1Rise(b, ts) {
+  if (!b) return ts; const x = b.getChannelData(0), sr = b.sampleRate, n = x.length, W = Math.round(0.04 * sr), G = Math.round(0.004 * sr);
+  const e = (a0, a1) => { let s = 0, c = 0; for (let i = Math.max(0, a0); i < Math.min(n, a1); i++) { s += x[i] * x[i]; c++; } return c ? s / c : 0; };
+  return ts.filter(t => { const i = Math.round(t * sr); return e(i + G, i + G + W) > 4 * e(i - G - W, i - G) + 1e-9; });
+}
 async function ch1Onsets(a, v, heard) {
   const w = ch1VoiceWin(a, v); if (!w) return null;
   const mkL = await wpDetect(a.take); if (!mkL) return null;
@@ -66912,9 +66920,9 @@ async function ch1Onsets(a, v, heard) {
   if (heard) {
     const id = v.take.take; for (let n = 0; n < 400 && !(wpReady(id) && (typeof g2Ready !== 'function' || g2Ready(id, w))); n++) { tkPlayBuf(id, w); await sleep(25); }
     const b = tkPlayBuf(id, w) || tkBuffer(id); if (!b) return null;
-    const r = await wpCall({op: 'det', x: b.getChannelData(0), sr: b.sampleRate}); tv = (wpNormMarks(r, b.length / b.sampleRate) || []).map(k => k.t);
-  } else { const mk = await wpDetect(v.take.take); if (!mk) return null; tv = mk.map(k => k.t); }
-  const lead = mkL.map(k => k.t).filter(t => t >= a.in - 0.05 && t <= a.out + 0.05).map(t => ch1Map(a, w, t));
+    const r = await wpCall({op: 'det', x: b.getChannelData(0), sr: b.sampleRate}); tv = ch1Rise(b, (wpNormMarks(r, b.length / b.sampleRate) || []).map(k => k.t));
+  } else { const mk = await wpDetect(v.take.take); if (!mk) return null; tv = ch1Rise(tkBuffer(v.take.take), mk.map(k => k.t)); }
+  const lead = ch1Rise(tkBuffer(a.take), mkL.map(k => k.t)).filter(t => t >= a.in - 0.05 && t <= a.out + 0.05).map(t => ch1Map(a, w, t));
   return {lead, voice: tv.filter(t => t >= w.in - 0.05 && t <= w.out + 0.05), w};
 }
 const ch1Mean = ps => (ps.length ? ps.reduce((s, x) => s + Math.abs(x.d), 0) / ps.length * 1000 : 0);
@@ -67133,7 +67141,7 @@ function ch1Tap(b) {
   return true;
 }
 function ch1MarkSheetPaint(p, m) {
-  if (!p || p.classList.contains('s0-ed') || !CH1_RE.test(markLabel(m) || '')) return;
+  if (!p || p.classList.contains('s0-ed') || !ch1IsRefrain(m)) return;
   if (!ch1Refrain(m.id).length) return;
   if (!p._ch1) { p._ch1 = true; onTap(p, b => { const id = SV.mark; if (!id) return; haptic('pop'); if (b.dataset.ch1 === 'big') ch1Big(id, null); else { const pl = ch1Refrain(id); closePop(); if (pl.length) ch1Twice(pl[0].r); } }, 'button[data-ch1]'); }
   const box = p.querySelector('.ms-bb') || p; box.insertAdjacentHTML('beforeend', `<div class="ms-r ch1-ms"><button class="rb ms-b" data-ch1="big">Refrain groß</button><button class="rb ms-b" data-ch1="twice">Refrain 2× singen</button></div>`);

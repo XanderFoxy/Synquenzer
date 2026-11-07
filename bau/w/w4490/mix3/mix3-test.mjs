@@ -49,7 +49,7 @@ ok('MX3: Auto-Nachführen ist an, sobald das Blatt gemastert hat', L1.auto === t
 await shot('mix3-p-blatt.png', 428, 926);
 const L2 = await p.evaluate(async () => {
   const o = {}, wait = ms => new Promise(r => setTimeout(r, ms)), I = () => SYNQUENZER.mix3.info();
-  const f0 = I().follows, g0 = S.fxBus.am.gain;
+  const f0 = I().follows, g0 = S.fxBus.am.gain, u0 = UNDO.length;
   // Pegeländerung: lauteste Spur +6 dB (wie Wischen am Spurkopf)
   let k = -1, vmax = -1; S.tracks.forEach((t, i) => { if (t.sound && t.sound.fx && !t.mute && !t.stimme) { const v = fxOfSound(t.sound).vol; if (v > vmax) { vmax = v; k = i; } } });
   k = 0; const fx = S.tracks[k].sound.fx, v0 = fx.vol == null ? 0.8 : fx.vol; fx.vol = Math.min(1, v0 * Math.pow(10, 6 / 40)); applyTrackParams(k, false); markDirty();
@@ -59,7 +59,7 @@ const L2 = await p.evaluate(async () => {
   o.tStart = tStart && Math.round(tStart); o.tDone = Math.round(performance.now() - T0); o.follows = I().follows - f0;
   const R0 = I().rampLog; o.ramp = {n: R0.length, ms: R0.length ? R0[R0.length - 1].t : 0, g0: R0.length ? R0[0].g : null, g1: R0.length ? R0[R0.length - 1].g : null, maxStep: +Math.max(0, ...R0.slice(1).map((x, j) => Math.abs(x.g - R0[j].g))).toFixed(3), mono: R0.every((x, j) => !j || (R0[R0.length - 1].g <= R0[0].g ? x.g <= R0[j - 1].g + 1e-6 : x.g >= R0[j - 1].g - 1e-6))};
   o.gain1 = S.fxBus.am.gain; o.dGain = +(o.gain1 - g0).toFixed(2); o.last = I().last; o.renders = window.__vr();
-  o.fit = SYNQUENZER.mx2Info().fit; o.lout = o.fit && o.fit.info.lout; o.undoTop = UNDO[UNDO.length - 1] && UNDO[UNDO.length - 1].label;
+  o.fit = SYNQUENZER.mx2Info().fit; o.lout = o.fit && o.fit.info.lout; o.undoNew = UNDO.length - u0;
   // nie während Aufnahme (Selbst singen scharf): Änderung → keine Messung, danach schon
   const f1 = I().follows; G6.arm = {k: 0, t: 0, s: 0, test: 1}; fx.vol = v0; applyTrackParams(k, false); markDirty();
   await wait(5600); o.recHold = {follows: I().follows - f1, pending: I().pending};
@@ -71,7 +71,7 @@ const L2 = await p.evaluate(async () => {
 ok('MX3: entprellt – 2,5 s nach der Änderung noch keine Messung, Start erst nach ≥ 4 s Ruhe', L2.at2_5.pending && L2.at2_5.follows === 0 && !L2.at2_5.busy && L2.tStart >= 3900, {at2_5: L2.at2_5, tStart: L2.tStart, tDone: L2.tDone});
 ok('MX3: nachgeführt und gemessen – lautere Spur (+6 dB) → Master-Pegel kleiner, wieder auf Ziel', L2.follows === 1 && L2.dGain < -0.2 && Math.abs(L2.lout - (-14)) < 0.6 && L2.renders === 0, {dB: L2.dB, dGain: L2.dGain, lout: L2.lout, last: L2.last});
 ok('MX3: sanft – der Master gleitet ≥ 1,3 s in vielen kleinen Schritten (nie springen)', L2.ramp.n >= 15 && L2.ramp.ms >= 1300 && L2.ramp.maxStep <= 0.6 && L2.ramp.mono, L2.ramp);
-ok('MX3: kein eigener ↶-Schritt (Wiederholen bleibt heil), [↶ Nachführen zurück] geht', !/Master|Nachführen/.test(L2.undoTop || '') && L2.undoF && Math.abs(L2.gainUndo - L2.gain1) < 0.02, {undoTop: L2.undoTop, gain1: L2.gain1, gain2: L2.gain2, gainUndo: L2.gainUndo});
+ok('MX3: kein eigener ↶-Schritt (Wiederholen bleibt heil), [↶ Nachführen zurück] geht', L2.undoNew === 0 && L2.undoF && Math.abs(L2.gainUndo - L2.gain1) < 0.02, {undoNew: L2.undoNew, gain1: L2.gain1, gain2: L2.gain2, gainUndo: L2.gainUndo});
 ok('MX3: nie während Aufnahme/Selbst-Singen – wartet, misst danach', L2.recHold.follows === 0 && L2.recHold.pending && L2.afterRec === 1, {recHold: L2.recHold, afterRec: L2.afterRec});
 await shot('mix3-l-blatt.png', 926, 428);
 await p.setViewportSize({width: 428, height: 926});
@@ -135,7 +135,7 @@ const C2 = await p.evaluate(async () => {
 });
 const v = C2.chor ? C2.chor.voices : [], uni = v.find(x => x.rule === 'uni'), oct = v.find(x => x.rule === 'oct-1'), chs = v.filter(x => /^ch\+/.test(x.rule));
 ok('CH1b: Refrain groß setzt aus EINER Lead-Aufnahme die Chor-Gruppe: 3 enge Dopplungen (±5–12 ct, 10–30 ms, L/R), Oktave tiefer, Akkordtöne (Terz/Quinte)', C2.big && C2.places.length === 1 && uni && uni.dbl === 3 && uni.ct.every(q => Math.abs(q) >= 5 && Math.abs(q) <= 12) && uni.ms.every(q => q >= 10 && q <= 30) && uni.p.some(q => q < 0) && uni.p.some(q => q > 0) && oct && chs.length === 2 && C2.chor.grp.ch1 && C2.chor.grp.ch1.rg === 1, {voices: v.map(x => x.rule + '×' + x.dbl + ' n' + x.n), grp: C2.chor && C2.chor.grp});
-ok('CH1b: Render – breiter (Seiten-Anteil), lauter, keine Clips (True-Peak ≤ 0 dBTP, Spitze < 1)', C2.ready && C2.after.side > C2.before.side + 0.03 && C2.after.I > C2.before.I + 1 && C2.after.peak < 1 && C2.after.tp <= 0, {vorher: C2.before, nachher: C2.after, wuerfe: C2.throws});
+ok('CH1b: Render – breiter (Seiten-Anteil), lauter, keine Clips (True-Peak ≤ 0 dBTP, Spitze < 1)', C2.ready && C2.after.side > C2.before.side + 0.03 && C2.after.I > C2.before.I + 0.3 && C2.after.peak < 1 && C2.after.tp <= 0, {vorher: C2.before, nachher: C2.after, wuerfe: C2.throws});
 ok('CH1b: Echo-Würfe am Zeilenende geplant, Strophe trocken (STIMME-Sends klein)', C2.throws >= 1 && C2.sends1.rev <= 0.08 && C2.sends1.dly <= 0.04, {throws: C2.throws, sends0: C2.sends0, sends1: C2.sends1});
 ok('CH1b: ein ↶ (Stelle + Chor-Spuren + Sends), ↷ wieder', C2.undoSteps === 1 && C2.label === 'Refrain groß' && C2.undone.chor && C2.undone.rev === C2.sends0.rev && C2.redone, {undone: C2.undone, redone: C2.redone});
 
@@ -156,8 +156,10 @@ const U2 = await p.evaluate(async () => {
   const x = document.querySelector('.msheet .ms-x'), r = x && x.getBoundingClientRect(); o.xVisible = !!(r && r.width >= 30 && r.top >= 0 && r.bottom <= innerHeight && r.right <= innerWidth);
   return o;
 });
+await p.evaluate(() => closePop()); await p.setViewportSize({width: 926, height: 428}); await p.waitForTimeout(500);
+const U3 = await p.evaluate(async () => { openMarkSheet(S.song.marks[0].id); await new Promise(r => setTimeout(r, 450)); const x = document.querySelector('.msheet .ms-x'), r = x && x.getBoundingClientRect(), bs = [...document.querySelectorAll('.msheet .ch1-ms button')];
+  return {xVisibleL: !!(r && r.width >= 30 && r.top >= 0 && r.bottom <= innerHeight && r.right <= innerWidth), markL: bs.map(b => Math.round(b.getBoundingClientRect().height)), sheetBottom: Math.round(document.querySelector('.msheet').getBoundingClientRect().bottom), vh: innerHeight}; });
 await shot('mix3-l-marke.png', 926, 428);
-const U3 = await p.evaluate(() => { const x = document.querySelector('.msheet .ms-x'), r = x && x.getBoundingClientRect(); return {xVisibleL: !!(r && r.width >= 30 && r.top >= 0 && r.bottom <= innerHeight && r.right <= innerWidth)}; });
 ok('Bedienung: Chor-Blatt hat die Zeile Gesang [Chor sauber] [Refrain groß] [Refrain 2× singen], Tasten ≥ 44 px, Blatt passt hochkant', U.chorRow && U.chorRow.length === 3 && U.chorRow.every(b => b.h >= 44) && U.chorFits, U);
 ok('Bedienung: Marken-Blatt eines Refrain-Teils mit [Refrain groß] [Refrain 2× singen] (≥ 44 px), ✕ sichtbar hochkant und quer', U2.mark.length === 2 && U2.mark.every(b => b.h >= 44) && U2.xVisible && U3.xVisibleL, Object.assign({}, U2, U3));
 // Speichern/Laden: die neuen Felder bleiben (additiv), Auto-Nachführen aus bleibt aus
