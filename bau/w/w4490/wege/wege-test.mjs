@@ -387,6 +387,7 @@ try {
     await tapAt(p, () => EL.bBpm); await p.waitForTimeout(400);
     const bp = await p.evaluate(() => { const pp = UI.pop && UI.pop.name === 'bpm' ? UI.pop.el : null; if (!pp) return null; const bs = [...pp.querySelectorAll('button')].filter(b => b.offsetParent && b.getBoundingClientRect().width > 0);
       return {n: bs.length, out: bs.filter(b => { const r = b.getBoundingClientRect(); return r.bottom > innerHeight + .5 || r.top < 0 || r.height < 40; }).map(b => b.textContent.trim()), scroll: pp.scrollHeight - pp.clientHeight, ts: pp.querySelector('.t1ts button').getBoundingClientRect().width}; });
+    if (vh === 428) await shot(p, 'wege-tempo-quer.png');
     const f4 = await tapAt(p, () => [...document.querySelectorAll('.pop .wg-bpm .sx1-r button')].find(b => b.textContent.trim() === '4'));
     const fd = await run(p, () => (S.song.fade ? S.song.fade.out : 0));
     await run(p, () => { if (S.song.fade) undo(); if (UI.pop) closePop(); });
