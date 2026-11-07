@@ -213,6 +213,17 @@ const live = await P.evaluate(async () => {
   stop(); return a;
 });
 ok('Vorschau im Lauf: Clip spielt die Figur (64 Noten), ✕ → Original exakt zurück, kein Undo-Schritt', live.playing && live.swap && live.during === 64 && live.back && live.undo === 0, live);
+const run2 = await P.evaluate(async () => {
+  closeSheets(); SYNQUENZER.setClip(2, 1, {len: 1, notes: [{t: 0, d: 4, n: 60, v: .7}]});
+  launchScene(1); await new Promise(r => setTimeout(r, 300));
+  const nb = b2t(nextBarFromAudible());
+  SYNQUENZER.bb1.open(0, 0); SYNQUENZER.bb1.act('button[data-fig="oktav-disco"]');
+  for (let k = 0; k < 60 && AU.ctx.currentTime < nb + .05; k++) await new Promise(r => setTimeout(r, 50));
+  const st = SYNQUENZER.bb1.state(), au = VOICES.filter(v => !v.dead && v.src === 'audition'), tracks = [...new Set(au.map(v => v.track))], first = au.length ? Math.min(...au.map(v => v.start)) : null;
+  SYNQUENZER.bb1.act('.ms-x'); stop();
+  return {swap: st.pv && st.pv.swap, tracks, aligned: first != null && first >= nb - .01, first, nb};
+});
+ok('Vorschau, während ein anderer Clip der Spur läuft: auf den nächsten Taktstrich, nur die Figur', run2.swap === false && run2.tracks.join() === '0' && run2.aligned, run2);
 ok('Vorschau ohne Fehler', P.errs.length === 0, P.errs.slice(0, 3));
 
 /* ---------- 4. Pegel der neuen Klänge: trocken (Vorhör-Phrase, 112 BPM) + Song-Render ---------- */

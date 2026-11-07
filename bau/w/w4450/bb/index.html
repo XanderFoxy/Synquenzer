@@ -78453,15 +78453,15 @@ function bb1PvStart(t, s, figId) {
   const F = bb1Fig(figId), c = S.tracks[t] && S.tracks[t].clips[s]; if (!F || !c) return false;
   const Z = bb1Ziel(t, s), B = bb1Build(t, s, F, Z.k); if (!B || !B.gen) return false;
   const pv = {t, s, id: figId, voices: [], hits: [], timer: 0, swap: null};
-  if (R.playing && R.slot[t] === s && !R.pend[t]) {
+  if (R.playing && R.slot[t] === s && !R.pend[t] && !R.own[t]) {
     const L0 = clipB(c);
     pv.swap = {t, s, c, notes: c.notes};
     c.notes = B.notes.filter(n => n.t < L0 - 1e-6).map(n => Object.assign({}, n));
     bb1Resched(t, s); BB1.pv = pv; bb1PvBtn(); return true;
   }
-  const L = B.len * 4, list = [];
+  const L = B.len * 4, list = [], run = R.playing && R.startTime != null;   // läuft der Transport (ein anderer Clip der Spur): auf den nächsten Taktstrich, ohne Kontext
   for (const n of B.snd) list.push({tr: t, n: n.n, v: n.v, t: n.t, d: n.d});
-  for (let i = 0; i < NT(); i++) {                                      // die übrigen Clips der Szene leise dazu
+  for (let i = 0; i < NT() && !run; i++) {                             // die übrigen Clips der Szene leise dazu
     const tr = S.tracks[i], oc = i !== t && tr ? tr.clips[s] : null; if (!oc || !oc.notes || !oc.notes.length || oc.audio || tr.mute || tr.stimme) continue;
     const Lo = clipB(oc); if (!(Lo > 0)) continue;
     const ctx = B.ctx, gmap = ctx && ctx.how === 'row' && tr.kind === 'synth' && tr.follow !== false;
@@ -78472,7 +78472,8 @@ function bb1PvStart(t, s, figId) {
     }
   }
   list.sort((a, b) => a.t - b.t);
-  const sp = spb(); Object.assign(pv, {list, k: 0, loop: 0, L, t0: ac.currentTime + .08, loops: Math.max(1, Math.min(8, Math.ceil(16 / Math.max(.5, L * sp))))});
+  const sp = spb(), t0 = run ? Math.max(ac.currentTime + .05, b2t(nextBarFromAudible())) : ac.currentTime + .08;
+  Object.assign(pv, {list, k: 0, loop: 0, L, t0, loops: Math.max(1, Math.min(8, Math.ceil(16 / Math.max(.5, L * sp))))});
   const pump = () => {
     if (BB1.pv !== pv || !AU.ctx) return;
     const now = AU.ctx.currentTime, spb_ = spb();
