@@ -374,7 +374,7 @@
 
 <main class="breite">
   <section id="krypto" class="abschnitt" aria-labelledby="h-krypto">
-    <h2 id="h-krypto">Krypto <span class="zahl"></span></h2>
+    <h2 id="h-krypto">Krypto</h2>
     <div class="karte krypto"><div id="i-krypto"><p class="leer">Lade Kurse …</p></div>
       <details class="kasten-innen" id="krypto-form">
         <summary>Einstieg &amp; Gewinn-Hinweis</summary>
@@ -729,7 +729,7 @@ const SNACK_WOERTER = ['chips', 'crisps', 'gummi', 'fruchtgummi', 'weingummi', '
   'ferrero', 'duplo', 'hanuta', 'knoppers', 'lorenz', 'pringles', 'chio', 'funny frisch', 'oreo', 'twix', 'mars', 'snickers', 'bounty', 'kitkat',
   'toffifee', 'lindt', 'magnum', 'langnese', 'haeagen', 'crunchips', 'nic nacs', 'brezel', 'salzstangen', 'mentos', 'smarties', 'maoam', 'nimm2'];
 const MUSIK_WOERTER = ['synth', 'synthesizer', 'kopfhoerer', 'lautsprecher', 'audio', 'mikrofon', 'midi', 'keyboard', 'musik', 'thomann', 'korg', 'arturia', 'roland', 'behringer'];
-const istSnack = text => einWort(text, SNACK_WOERTER);
+const istSnack = text => einWort(String(text).replace(/\bohne\s+\S+/gi, ' '), SNACK_WOERTER); // „ohne Schokolade“ zählt nicht
 // Gewinnspiel ohne Kauf/Abo (der Radar filtert schon Abo-Fallen; hier zusätzlich alles mit Kaufpflicht)
 const KAUF_NOETIG = /kassenbon|kaufbeleg|kassenzettel|beim kauf|mit dem kauf|nach dem kauf|kauf eines|kauf von|mindestbestellwert|mindesteinkauf|aktionsprodukt|\babo\b|abonnement|kostenpflichtig|teilnahmegeb(ü|ue)hr|einsatz von/i;
 const CASHBACK = /cashback|geld[-\s]zur(ü|ue)ck|\bgzg\b|gratis testen|kostenlos testen|scondoo|couponplatz/i;
@@ -1223,7 +1223,7 @@ function zeichnePreisfehler() {
     : '<p class="leer">Gerade kein krasser Preisfehler. Hier erscheinen nur No-Brainer, die gerade laufen – abgelaufene nie.</p>', n: fehler.length };
 }
 function gewinnspielKarte(e, namen) {
-  const k = vorteilKarte(e, namen);
+  const k = vorteilKarte(e, { ...namen, tests: e.grund === 'test' ? 'Produkttest' : 'Gewinnspiel' });
   const b = zeit(e.bis);
   const heute = b != null && tag(b) === 'heute' ? '<span class="marke heute">endet heute</span>' : '';
   return k.replace('<article class="karte', '<article class="karte gewinnspiel').replace('<div class="oben">', `<div class="oben">${heute}`);
@@ -1531,7 +1531,7 @@ function zeichneKrypto() {
       const klasse = r.prozent > 0 ? (g ? 'gewinn' : '') : 'verlust';
       const betrag = r.gewinn != null ? `${euroVz(r.gewinn)} (${prozentText(r.prozent)})` : prozentText(r.prozent);
       const titel = r.prozent > 0 ? (g ? `Im Gewinn: <b>${esc(betrag)}</b>` : `Leicht im Plus: <b>${esc(betrag)}</b>`) : `Im Minus: <b>${esc(betrag)}</b>`;
-      const unter = [`Einstieg ${euro(pos.einstieg)}`, r.wert != null ? `Wert jetzt ${euro(r.wert)}` : '', !g && r.prozent > 0 && krypto.schwelle > 0 ? `Hinweis ab +${krypto.schwelle.toLocaleString('de-DE')} %` : ''].filter(Boolean).join(' · ');
+      const unter = [`Einstieg ${kursEuro(pos.einstieg)}`, r.wert != null ? `Wert jetzt ${kursEuro(r.wert)}` : '', !g && r.prozent > 0 && krypto.schwelle > 0 ? `Hinweis ab +${krypto.schwelle.toLocaleString('de-DE')} %` : ''].filter(Boolean).join(' · ');
       ergebnis = `<div class="ergebnis ${klasse}" data-coin-ergebnis="${c}">${titel}<small>${esc(unter)}</small></div>`;
     } else if (x?.kurs > 0) {
       ergebnis = `<div class="ergebnis"><small>Einstieg fehlt – unten bei „Einstieg &amp; Gewinn-Hinweis“ eintragen, dann siehst du hier Gewinn oder Verlust.</small></div>`;
@@ -1546,8 +1546,10 @@ function zeichneKrypto() {
     ? `<p class="kurs-stand alt">${esc(kurs.fehler === 'keine Verbindung' ? 'Keine Verbindung' : 'Kurs gerade nicht abrufbar (Quellen gestört)')}${kurs.zeit ? ` – letzter Kurs von ${esc(uhrzeit(new Date(kurs.zeit).toISOString()))}` : ''}.</p>`
     : kurs.zeit ? `<p class="kurs-stand${alt ? ' alt' : ''}">Kurs ${esc(vor(new Date(kurs.zeit).toISOString()))} · ${esc(kurs.quelle || '')}${kurs.ausSpeicher ? ' · wird aktualisiert …' : ''}</p>` : '<p class="kurs-stand">Lade Kurse …</p>';
   el.innerHTML = zeilen.join('') + stand;
+  // im Gewinn: Zahl nur in der Sprung-Leiste (die Überschrift zeigt die Karte selbst)
   const n = kryptoStand().filter(x => x.gewinn).length;
-  setzeZahl('krypto', n);
+  const chip = document.querySelector('.sprung [data-ziel="krypto"] .n');
+  if (chip) chip.textContent = n ? String(n) : '';
 }
 function kryptoFormularFuellen() {
   const f = (v, genau) => (v == null ? '' : v.toLocaleString('de-DE', { maximumFractionDigits: genau ? 8 : 2, useGrouping: false }));
@@ -1578,7 +1580,7 @@ function wichtigZeilen() {
     const m = COINS[k.c];
     z.push({ ziel: 'krypto', text: `${m.zeichen} ${m.name} im Gewinn: ${k.r.gewinn != null ? `${euroVz(k.r.gewinn)} (${prozentText(k.r.prozent)})` : prozentText(k.r.prozent)}` });
   }
-  for (const x of letztePreisfehler.slice(0, 1)) z.push({ ziel: 'preisfehler', warm: true, text: `Preisfehler: ${kurzTitel(x.titel, 40)} für ${euro(x.preis)}` });
+  for (const x of letztePreisfehler.slice(0, 1)) z.push({ ziel: 'preisfehler', warm: true, text: `Preisfehler: ${kurzTitel(String(x.titel).replace(/^[\[(]?\s*(möglicher\s+)?preisfehler\s*[\])]?\s*[:!–-]?\s*/i, ''), 40)} für ${euro(x.preis)}` });
   // Deals für meine Produkte (laufend), sonst Angebote, die heute enden
   const d = S.angebote?.d;
   const deals = [], heute = [];

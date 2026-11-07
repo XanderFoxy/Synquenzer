@@ -86,6 +86,8 @@ export function namensWert(storeTitel, name) {
   if (j < n.length) return 0;
   const rest = k.slice(i), restPlain = rest.filter(x => x !== '|');
   if (!restPlain.length) return 100;
+  // „Manta Manta (1991)“: Jahr in Klammern = gleicher Film; „Blade Runner 2049“ (ohne Trenner) = anderer Film
+  if (rest[0] === '|' && restPlain.length === 1 && /^(19|20)\d\d$/.test(restPlain[0])) return 85;
   if (FORTSETZUNG.test(restPlain[0])) return 0;
   if (restPlain.every(x => FASSUNG.has(x))) return 85;
   if (rest[0] === '|') return 70;
@@ -112,7 +114,12 @@ export function waehleTreffer(ergebnisse, item) {
     const d = ausItunes(r);
     if (!d || d.typ !== 'film') continue;
     let w = 0;
-    for (const { n, faktor } of namen(item)) w = Math.max(w, namensWert(d.titel, n) * faktor);
+    for (const { n, faktor } of namen(item)) {
+      const nw = namensWert(d.titel, n);
+      // der kurze Haupttitel („Ghostbusters“ für „Ghostbusters – Die Geisterjäger“) zählt nur, wenn er genau so heißt
+      if (faktor < 1 && nw < 85) continue;
+      w = Math.max(w, nw * faktor);
+    }
     if (!w) continue;
     if (item.jahr) {
       if (d.jahr == null) continue;
@@ -468,18 +475,21 @@ export default async function filme(ctx) {
   };
   const warteschlange = posten.map(p => ({ p, f: faellig(p) })).filter(x => x.f).sort((a, b) => a.f - b.f).map(x => x.p);
   const erledigt = new Set();
+  const budgetWeg = () => suchen >= m.maxSuchen || zeitUm() || appleAbrufe >= m.maxAppleAbrufe;
+  let fehlerInFolge = 0;
   for (const p of warteschlange) {
+    if (budgetWeg() || fehlerInFolge >= 2) break; // Rest im nächsten Lauf (Apple nicht weiter belasten)
     if (erledigt.has(p.key)) continue; // gleicher Film in zwei Listen
     erledigt.add(p.key);
     const terme = suchbegriffe(p.item);
     const vorher = zf.ids[p.key] || {};
     let gefunden = false, abbruch = false;
     for (let i = vorher.weiter ?? 0; i < terme.length; i++) {
-      if (suchen >= m.maxSuchen || zeitUm() || appleAbrufe >= m.maxAppleAbrufe) { zf.ids[p.key] = { ...vorher, weiter: i }; abbruch = true; break; }
+      if (budgetWeg()) { zf.ids[p.key] = { ...vorher, weiter: i }; abbruch = true; break; }
       suchen++;
       let res;
-      try { res = leseErgebnisse(await apple(sucheUrl(terme[i], p.serie, m.sucheLimit))); }
-      catch (e) { melde('apple-suche', `Suche „${terme[i]}“: ${e.message}`); abbruch = true; break; } // Zustand bleibt -> nächster Lauf
+      try { res = leseErgebnisse(await apple(sucheUrl(terme[i], p.serie, m.sucheLimit))); fehlerInFolge = 0; }
+      catch (e) { melde('apple-suche', `Suche „${terme[i]}“: ${e.message}`); fehlerInFolge++; abbruch = true; break; } // Zustand bleibt -> nächster Lauf
       status['apple-suche'].anzahl++;
       if (p.serie) {
         const st = staffelnAus(res, p.item);
@@ -523,9 +533,11 @@ export default async function filme(ctx) {
   function baue(id) {
     if (titel.has(id)) return titel.get(id);
     let t = null;
-    const d = daten.get(id) || (chartTreffer.get(id)?.d ? { ...chartTreffer.get(id).d, typ: 'film', preisHd: chartTreffer.get(id).d.preis, preisSd: null } : null);
+    // nur Chart-Daten (Details-Abruf fehlgeschlagen): ein Preis, ohne SD/HD-Aufteilung
+    const c = chartTreffer.get(id)?.d;
+    const d = daten.get(id) || (c ? { ...c, typ: 'film', preisSd: null, preisHd: null } : null);
     if (d) {
-      const preis = d.preisHd ?? d.preisSd ?? null;
+      const preis = d.preisHd ?? d.preisSd ?? d.preis ?? null;
       const { v, tiefstVorher, ersteBeobachtung } = merkeFilmPreis(zf, id, preis, tag, m.historieTage);
       const lage = { ...preisLage(v, preis, tag, { typ: d.typ, ...opts }), seit: v.seit };
       if (preis != null && tiefstVorher && !ersteBeobachtung && preis < tiefstVorher.p) neueTiefst.add(id);

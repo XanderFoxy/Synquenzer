@@ -21,7 +21,9 @@
   "abruf": {
     "userAgent": "Vorteils-Radar/1.0 (privat, wenige Abrufe pro Stunde; +https://github.com/XanderFoxy/Synquenzer/tree/vorteile/vorteile)",
     "timeoutMs": 20000,
-    "pauseMs": 2000
+    "pauseMs": 2000,
+    "pauseMsJeHost": { "itunes.apple.com": 3200 },
+    "_pauseMsJeHost": "Apple erlaubt etwa 20 Abrufe pro Minute -> 3,2 s Abstand."
   },
   "module": {
     "deals": {
@@ -179,6 +181,11 @@
         { "id": "cashback-lebensmittel", "name": "Cashback auf Lebensmittel (Scondoo/Marktguru): Kassenbon hochladen", "art": "cashback", "praemie": 15, "kosten": 0, "aufwandMin": 10, "richtwert": true, "einheit": "pro Jahr", "link": "https://www.scondoo.de/", "haken": ["Kassenbon fotografieren", "Auszahlung erst ab Mindestguthaben", "lohnt nur bei Produkten, die du sowieso kaufst"] },
         { "id": "cashback-portal", "name": "Cashback-Portal (z. B. Shoop) vor Online-Einkäufen", "art": "cashback", "praemie": 20, "kosten": 0, "aufwandMin": 5, "richtwert": true, "einheit": "pro Jahr", "link": "https://www.shoop.de/", "haken": ["Cashback kommt erst nach Wochen", "Werbeblocker/Cookies können die Gutschrift verhindern", "lohnt nur, wenn du das sowieso kaufst"] }
       ]
+    },
+    "filme": {
+      "aktiv": true,
+      "intervallStunden": 3,
+      "_hinweis": "Filme & Serien bei Apple TV: Wunschfilme, Angebote (3,99 €), neue Filme, 80er/Kult, Rick and Morty/Star Trek, Disney – mit Tiefstpreis. Die Listen stehen in filme.json. Seite: <data>/filme.json."
     }
   }
 }

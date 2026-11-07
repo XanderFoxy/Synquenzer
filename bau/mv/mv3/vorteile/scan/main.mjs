@@ -17,21 +17,28 @@ import musik from './module/musik.mjs';
 import nebenverdienst from './module/nebenverdienst.mjs';
 import tests from './module/tests.mjs';
 import praemien from './module/praemien.mjs';
+import filme from './module/filme.mjs';
 import { FIXTURE_KARTE } from './test/fixtures/karte.mjs';
 
 const HIER = dirname(fileURLToPath(import.meta.url));
-export const MODULE = { deals, erleben, reisen, musik, nebenverdienst, tests, praemien };
-const MAX_ALTER_TAGE = { deals: 7, erleben: 21, reisen: 5, musik: 30, nebenverdienst: 21, tests: 21, praemien: 14 };
+export const MODULE = { deals, erleben, reisen, musik, nebenverdienst, tests, praemien, filme };
+const MAX_ALTER_TAGE = { deals: 7, erleben: 21, reisen: 5, musik: 30, nebenverdienst: 21, tests: 21, praemien: 14, filme: 3 };
 
 const mitZeitlimit = (p, ms, name) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error(`${name}: Zeitlimit`)), ms).unref())]);
 
-/** Ein kompletter Lauf ohne Dateizugriff (testbar). */
-export async function lauf({ cfg, wunschliste, vorher, zustand, holeText, env = {}, jetzt = new Date(), alle = false, log = () => {} }) {
+/**
+ * Ein kompletter Lauf ohne Dateizugriff (testbar).
+ * filmListen = vorteile/filme.json, dateienVorher = { <modul>: alte eigene Datei } (z. B. filme.json des letzten Laufs).
+ * Ergebnis „dateien“: eigene Dateien der Module, die in diesem Lauf gelaufen sind ({ filme: {...} } -> <data>/filme.json);
+ * ein übersprungenes oder abgestürztes Modul liefert keine -> die alte Datei bleibt stehen.
+ */
+export async function lauf({ cfg, wunschliste, filmListen = null, dateienVorher = {}, vorher, zustand, holeText, env = {}, jetzt = new Date(), alle = false, log = () => {} }) {
   const jetztMs = new Date(jetzt).getTime();
   zustand ||= {};
   zustand.lauf ||= {};
   const kategorien = {};
   const status = {};
+  const dateien = {};
   const neueModule = [];
   for (const [name, fn] of Object.entries(MODULE)) {
     const m = cfg.module[name];
@@ -46,7 +53,8 @@ export async function lauf({ cfg, wunschliste, vorher, zustand, holeText, env = 
     }
     const t0 = Date.now();
     try {
-      const r = await mitZeitlimit(fn({ holeText, cfg, wunschliste, zustand, env, jetzt }), 240000, name);
+      const r = await mitZeitlimit(fn({ holeText, cfg, wunschliste, zustand, env, jetzt, filmListen, vorherDatei: dateienVorher?.[name] ?? null }), 240000, name);
+      if (r.datei) dateien[name] = r.datei;
       // komplett kaputte Quelle -> alte Einträge behalten statt leere Liste
       const kaputt = !r.eintraege.length && r.fehler.length > 0;
       kategorien[name] = kaputt ? alt : r.eintraege;
@@ -82,7 +90,7 @@ export async function lauf({ cfg, wunschliste, vorher, zustand, holeText, env = 
     kategorien,
     status,
   };
-  return { aktuell, zustand, alleEintraege };
+  return { aktuell, zustand, alleEintraege, dateien };
 }
 
 function arg(args, name) { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : undefined; }
@@ -100,7 +108,9 @@ export async function main(args = process.argv.slice(2), env = process.env, test
   const cfg = JSON.parse(await readFile(join(basis, 'config.json'), 'utf8'));
   if (env.NTFY_TOPIC) cfg.ntfy.topic = env.NTFY_TOPIC;
   const wunschliste = JSON.parse(await readFile(join(basis, 'wunschliste.json'), 'utf8'));
+  const filmListen = await leseJson(join(basis, 'filme.json'), null);
   const vorher = await leseJson(join(daten, 'aktuell.json'), null);
+  const dateienVorher = { filme: await leseJson(join(daten, 'filme.json'), null) };
   const zustand = await leseJson(join(daten, 'zustand.json'), {});
   const fetchImpl = roh ? roh.fetch(test.fetchImpl) : test.fetchImpl;
   const holeText = fixtures ? macheFixtureAbruf(join(HIER, 'test', 'fixtures'), FIXTURE_KARTE) : macheAbruf({ ...cfg.abruf, ...test.abruf }, fetchImpl);
@@ -108,7 +118,7 @@ export async function main(args = process.argv.slice(2), env = process.env, test
   const modus = arg(args, '--modus') || env.MODUS || 'auto';
 
   let r;
-  try { r = await lauf({ cfg, wunschliste, vorher, zustand, holeText, env, jetzt, alle: fixtures || !!rohDir || args.includes('--alle'), log: console.log }); }
+  try { r = await lauf({ cfg, wunschliste, filmListen, dateienVorher, vorher, zustand, holeText, env, jetzt, alle: fixtures || !!rohDir || args.includes('--alle'), log: console.log }); }
   catch (e) { roh?.abschluss({ absturz: String(e?.message || e) }); throw e; }
   // Erster Lauf überhaupt: nichts nachmelden, nur einmal Bescheid geben (kein Push-Gewitter)
   const erstlauf = !zustand.gemeldet;
@@ -127,9 +137,12 @@ export async function main(args = process.argv.slice(2), env = process.env, test
   await mkdir(daten, { recursive: true });
   await writeFile(join(daten, 'aktuell.json'), JSON.stringify(r.aktuell, null, 1) + '\n');
   await writeFile(join(daten, 'zustand.json'), JSON.stringify(r.zustand) + '\n');
+  // eigene Dateien der Module (filme.json); nicht gelaufen -> alte Datei bleibt
+  for (const [name, inhalt] of Object.entries(r.dateien || {})) await writeFile(join(daten, `${name}.json`), JSON.stringify(inhalt) + '\n');
   if (roh) {
     roh.ausgabe('aktuell.json', JSON.stringify(r.aktuell, null, 1) + '\n');
     roh.ausgabe('zustand.json', JSON.stringify(r.zustand) + '\n');
+    for (const [name, inhalt] of Object.entries(r.dateien || {})) roh.ausgabe(`${name}.json`, JSON.stringify(inhalt) + '\n');
     roh.ausgabe('pushes.json', { sofort: plan.sofort.map(s => s.msg), digest: plan.digest?.msg || null, modus: erstlauf ? 'still' : modus });
     roh.abschluss({ dryRun: true, eintraege: r.alleEintraege.length, sofort: plan.sofort.length, digest: !!plan.digest });
     console.log(`Roh-Mitschnitt: ${roh.abrufe.length} Abrufe → ${roh.dir}`);
