@@ -26840,7 +26840,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '4.46.0';
+const VERSION = '4.47.0';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -27472,6 +27472,61 @@ const SP1 = (function () {
   return {ROLE, LABEL, list, ids: () => list.map(f => f.id)};
 })();
 /* SP1-END */
+/* ===== BB1-SND-BEGIN (Paket BB1, Xander 07.11.): Werks-Kategorie „Werkzeugkasten“ (Rolle 'wkz') – die Klänge, die der Werkzeugkasten
+   mit [mit Klang] auf die Spur legt, wo die vorhandenen Werksklänge nicht reichen: kurzer Disco-Bass für das Echo-Staccato, rollender
+   Euro-Bass, hüpfender Italo-Bass, weiche Disco-Bläser für die Stapel-Akkorde, House-Orgel und eine Gate-Fläche. Nur Daten wie SP1:
+   neue Werks-Einträge in FACTORY, FACTORY_BY_ID und SYNTH_LIB (vor den INIT-Klängen), der Chip am ENDE von BROLES. `cat` steuert die
+   Spur-Rolle (sx11Role: 'bass' = Bass für Grundmuster/Remix). Echo: `bus.echo` (Teilung 1/8 punktiert usw.), der Send steht in fx.dly.
+   Pegel: offline gemessen wie die übrigen Werksklänge (trocken auf der Vorhör-Phrase, Ziel −18 LUFS, Spitze ≤ −1 dBFS). ===== */
+const BB1_SND = (function () {
+  const ROLE = 'wkz', LABEL = 'Werkzeugkasten';
+  const FXo = o => Object.assign({drive: 0, chorus: {mode: 'off', mix: 1, rate: 1, depth: 1}, rev: .15, dly: 0, vol: .8, pan: 0}, o,
+    o && o.chorus ? {chorus: Object.assign({mode: 'off', mix: 1, rate: 1, depth: 1}, o.chorus)} : {});
+  const M = (src, dst, amt) => ({src, dst, amt});
+  const VA = (id, name, cat, demo, ref, tip, p, mods, fx, bus) => ({id: 'f-bb-' + id, name, cat, role: ROLE, engine: 'analog', ev: 1, demo, ref, tip, p,
+    mods: mods || [], fx: FXo(fx), bus: bus || null});
+  const list = [
+    // Stil-Hinweis: der kurze Oktav-Bass der Euro-Disco (Modern Talking, Bad Boys Blue) – das Echo 1/8 punktiert macht die Sechzehntel
+    VA('disco-bass', 'Disco-Echo-Bass', 'bass', 'bass', 'Werkzeugkasten · Disco-Pop · Staccato mit Echo',
+      'Säge + Puls eine Oktave höher, Filter fast zu und eine kurze Filter-Hüllkurve (140 ms): jeder Ton ist ein kurzer „Plopp“. Das Echo (1/8 punktiert, 35 %) wirft jede Offbeat-Oktave noch einmal zwischen die Sechzehntel – der Disco-Pop-Galopp.',
+      {o1w: 0, o2w: 1, o2pw: .4, o2oct: 1, o2fine: 0, o2lvl: .35, subLvl: .35, ftype: 0, cutoff: 480, res: .28, drive: .25, bass: .4, kt: .45, fenv: .5, fvel: .4,
+        fA: .001, fD: .14, fS: .08, fR: .08, fCurve: .7, aA: .001, aD: .28, aS: .35, aR: .06, ampVel: .5, mode: 1, poly: 1, reset: 1, analog: .1, spread: 0, level: 1.6},
+      [], {rev: .06, dly: .35}, {echo: {mode: 'pp', divL: '1/8.', fb: .35, highcut: 3500}}),
+    VA('euro-bass', 'Euro-Rolling-Bass', 'bass', 'bass', 'Werkzeugkasten · Eurodance · rollende Sechzehntel',
+      'Zwei Sägezähne gegeneinander verstimmt + Sub, Drive 35 %: dicht und rund für die Sechzehntel um die Bassdrum. Die Filter-Hüllkurve (160 ms) gibt jedem Ton Biss, ohne die Bassdrum zu verdecken.',
+      {o1w: 0, o2w: 0, o2fine: -8, o2lvl: .8, subLvl: .4, ftype: 0, cutoff: 620, res: .22, drive: .35, bass: .5, kt: .5, fenv: .42, fvel: .35,
+        fA: .001, fD: .16, fS: .2, fR: .1, aA: .001, aD: .3, aS: .6, aR: .05, ampVel: .45, mode: 1, poly: 1, reset: 1, analog: .12, spread: 0, level: .67},
+      [], {rev: .04}),
+    VA('italo-bass', 'Italo-Arp-Bass', 'bass', 'seq16', 'Werkzeugkasten · Italo-Disco · Arpeggio-Bass',
+      'Schmaler Puls + Säge eine Oktave tiefer, Resonanz 38 %, sehr kurze Filter-Hüllkurve (110 ms) – der hüpfende Bass der Italo-Disco. Etwas Echo 1/8 punktiert.',
+      {o1w: 1, o1pw: .32, o2w: 0, o2oct: -1, o2fine: 0, o2lvl: .45, ftype: 0, cutoff: 820, res: .38, drive: .2, bass: .4, kt: .5, fenv: .38, fvel: .4,
+        fA: .001, fD: .11, fS: .05, fR: .08, fCurve: .7, aA: .001, aD: .22, aS: .25, aR: .05, ampVel: .5, mode: 1, poly: 1, reset: 1, analog: .1, spread: 0, level: 1.15},
+      [], {rev: .08, dly: .2}, {echo: {mode: 'pp', divL: '1/8.', fb: .28, highcut: 4000}}),
+    // Stil-Hinweis: weiche Bläser-Stapel der Disco statt der harten Hardrock-Fanfare
+    VA('disco-brass', 'Disco-Brass', 'poly', 'stab', 'Werkzeugkasten · Disco · weiche Bläser-Stöße',
+      'Zwei Sägezähne 8 Cent auseinander + Puls, 12-dB-Filter: die Filter-Hüllkurve (35 ms Einschwingen) öffnet etwas nach der Lautstärke – erst laut, dann hell wie ein Bläsersatz. Hüllkurve 2 gibt jedem Stoß einen winzigen Tonhöhen-Ansatz. Chorus I macht es breit, aber nicht brachial.',
+      {o1w: 0, o2w: 0, o2fine: 8, o2lvl: .85, o3w: 1, o3oct: 0, o3lvl: .25, ftype: 1, cutoff: 600, res: .1, drive: .2, kt: .55, fenv: .48, fvel: .45,
+        fA: .035, fD: .4, fS: .5, fR: .25, fCurve: .6, aA: .012, aD: .35, aS: .85, aR: .18, ampVel: .45, mA: .001, mD: .08, mS: 0, mR: .05, analog: .25, spread: .5, poly: 6, level: .4},
+      [M('menv', 'pitch', -.005)], {chorus: {mode: 'I', mix: .35}, rev: .25, dly: .08}),
+    // Stil-Hinweis: die Orgel-Stöße des frühen House (Robin S, CeCe Peniston)
+    VA('house-orgel', 'House-Orgel', 'poly', 'stab', 'Werkzeugkasten · House · Orgel-Stoß',
+      'Zwei Rechtecke im Oktav-Abstand + ein Sinus eine Duodezime höher (wie die Zugriegel 8′ 4′ 2⅔′), Sustain 0: jeder Ton ist ein kurzer Orgel-Stoß, der von selbst ausklingt. Ideal für Offbeat-Bässe und Akkord-Stöße.',
+      {o1w: 1, o1pw: .5, o2w: 1, o2pw: .5, o2oct: 1, o2fine: 2, o2lvl: .55, o3w: 3, o3oct: 1, o3semi: 7, o3lvl: .3, ftype: 1, cutoff: 2600, res: .08, drive: .15, kt: .4, fenv: .25, fvel: .3,
+        fA: .001, fD: .18, fS: .2, fR: .15, aA: .001, aD: .42, aS: 0, aR: .12, ampVel: .45, analog: .05, spread: .2, poly: 6, level: .4},
+      [], {rev: .2}),
+    VA('gate-flaeche', 'Gate-Fläche', 'poly', 'chord', 'Werkzeugkasten · Eurodance · gehackte Fläche',
+      'Fünf verstimmte Sägezähne + Puls, schnelle Hüllkurven (Einschwingen 3 ms, Ausklang 50 ms): in Sechzehnteln gespielt wird die Fläche zum Trance-Gate. Ensemble-Chorus und etwas Hall.',
+      {o1uni: 5, uniDet: .25, uniMix: .7, uniWidth: 1, o2w: 1, o2pw: .4, o2fine: -6, o2lvl: .5, ftype: 1, cutoff: 2400, res: .15, drive: .1, kt: .4, fenv: .15,
+        fA: .002, fD: .2, fS: .6, fR: .08, aA: .003, aD: .15, aS: .85, aR: .05, ampVel: .4, analog: .2, spread: .4, poly: 6, level: .192},
+      [], {chorus: {mode: 'ENS', mix: .5}, rev: .3, dly: .12}),
+  ];
+  for (const f of list) FACTORY_BY_ID.set(f.id, f);
+  FACTORY.push(...list);
+  const k = SYNTH_LIB.findIndex(x => x.cat === 'init'); SYNTH_LIB.splice(k < 0 ? SYNTH_LIB.length : k, 0, ...list);
+  BROLES.push([ROLE, LABEL]); ROLE_LABEL[ROLE] = LABEL;
+  return {ROLE, LABEL, list, ids: () => list.map(f => f.id)};
+})();
+/* BB1-SND-END */
 const FCACHE = new Map();
 // a drum sound as a track uses it (§7.4): all 12 slots as full copies (a stored slot lacking model / choke has the slot's
 // own; a missing slot comes from the base kit, else Rom Pop), base = the kit name, the kit bus block always present
@@ -49515,6 +49570,7 @@ function buildRoll() {
   ED.laufBtn = ED.roll.el.bar ? [...ED.roll.el.bar.children].find(b => b.textContent === 'LAUF') || null : null;
   // the view switch goes first in the toolbar (in P it scrolls sideways: the tools behind it stay where the thumb expects them)
   if (ED.laufBtn) { const bar = ED.roll.el.bar; bar.insertBefore(ED.laufBtn, bar.firstChild); bar.insertBefore(el('span', 'sep'), ED.laufBtn.nextSibling); ED.laufBtn.classList.add('lgo'); }
+  bb1RollHook(t, s);                                                 // BB1: [Werkzeugkasten] neben [Spielweise]
   rollKbApply();
   rollHeadUpdate(); renderEdChip();
   sh.classList.add('open');
@@ -50762,6 +50818,7 @@ function openClipSheet(t, s, opts) {
     if (tr.kind === 'synth' && !clip.audio && !nvTr(tr)) g.append(v6aClipBtn(t, s, clip, reopen));   // V6A: ◆ Klangzustand + Gleiten (eigenes Blatt)
     gr1ClipSheet(g, t, s, clip, reopen);                                                     // GR1: [Grundmuster ▾] · Small │ Full
     g.append(vr1ClipBtn(t, s, clip, reopen));                         // VR1: Im Video · Auto | Gerät | Klavier | Mäusekino | Noten | aus
+    bb1ClipSheet(g, t, s, clip, reopen);                                                     // BB1: [Werkzeugkasten ▾]
     body.append(g);
     const lr = el('div', 'lenrow');
     lr.append(el('span', 'lbl', 'Länge'));
@@ -79355,6 +79412,653 @@ const GR1_API = {
 };
 Object.assign(SYNQUENZER, GR1_API);                         // GR1: Groove (Grundmuster, Remix, Zwingen, Small/Full, Song transponieren)
 /* GR1-END */
+/* ===== BB1-BEGIN (Paket BB1, Xander 07.11.): „Brot und Butter“-Werkzeugkasten – Standardfiguren je Rolle und Genre per Tipp =====
+   Xander: „dass solche Füller gemacht werden können, so Sequenzen aufgefüllt werden können … typische Disco-Pop-16tel … immer im
+   Offbeat … die schon die richtigen Echoeinstellungen haben … Stack-Akkorde … nicht brachial, sondern was im Disco typisch ist …
+   Brot-und-Butter-Rhythmen … ein Rolling Bass im Eurodance … wie ein Werkzeugkasten für verschiedene Genres und Spielweisen“.
+   - Ein Blatt (Clip-Blatt [Werkzeugkasten ▾], ROLLE: [Werkzeugkasten] neben [Spielweise]): Reiter Bass · Sequenz/Arp · Akkord-Stabs ·
+     Pads · Lead-Füller (Synth-Spuren) bzw. Drums-Füller (Drum-Spur) × Genre (Disco-Pop, Eurodance, Synth-Pop, New Jack Swing, House,
+     Detroit, Hi-NRG, Italo). BB1_FIG: 39 Figuren (eigene Daten; Liedtitel/Bandnamen nur hier in den Kommentaren als Stil-Hinweis).
+   - Figur = Muster in Sechzehnteln (p 16 = ein Takt, 32 = zwei Takte; per = Wiederholung im Muster) aus [Schritt, Länge, Ton, Anschlag].
+     Töne: R Grundton · O Oktave · 5 Quinte · 3 Terz · 7 Septime (ohne Septime: Oktave) · a0… Akkordtöne aufwärts · s0… Leiterstufen ab
+     dem Grundton · C Akkord in der Lage der Rolle (v: 'stack' Grundton darunter, 'v7' mit Septime, 'v9' mit Septime und None).
+     Lage: Bass Grundton A1…H2 (stimmführend am vorigen Grundton), Sequenz G3…F#4, Stabs ab F3, Pads ab D3, Lead ab D4.
+     Swing und Tempo-Hinweis aus GR1 (gr1Style: njs 62 %, house/detroit 55 %, sonst gerade), Drums-Füller bauen auf den Vorlagen der
+     Fills (UE_LIB: Snare-Lauf, Tom-Wirbel) auf.
+   - Akkorde: (1) Akkord-Zeile der Szene: folgt die Spur (⇅), wird das Grundmuster auf der Stufe I der Clip-Tonart geschrieben – die
+     Zeile bildet es beim Abspielen auf jeden Akkord ab (wie HM1-Glätten); folgt sie nicht, folgen die Noten den Akkorden direkt.
+     (2) sonst die Akkorde je Takt aus den Noten des Clips und der übrigen Synth-Spuren der Szene (hm1Chord, wie die Gegenstimme);
+     (3) sonst der Dreiklang der Tonart. Ein kurzer Clip wächst (Neuer Clip / Diesen Clip) auf die Länge der Akkorde (≤ 16 Takte).
+   - Vorschau: Tipp auf eine Figur. Steht der Transport, spielt sie im Kontext (die übrigen Clips der Szene leise mit, Akkord-Zeile
+     abgebildet); läuft der Clip gerade, wird sie im Lauf vorgehört (die Noten des Clips werden nur für die Vorschau getauscht, ohne
+     Speichern – Stopp, eine andere Figur, ✕ oder [Einsetzen] holen das Original zurück).
+   - [Einsetzen] – Ziel: [Neue Version] (SX9: v2 … im Song an den Stellen, wo v1 spielte; v1 bleibt das Original) │ [Neuer Clip] (der
+     nächste freie Platz der Spur, das Original bleibt; ein Grundmuster nimmt die Akkord-Zeile in eine freie Szene mit) │ [Diesen Clip]
+     (ersetzt; ↶ holt ihn zurück). Lead- und Drums-Füller mischen
+     sich in den Clip (nur ihr Fenster wird ersetzt, bei Drums nur ihre eigenen Pads). Ein Undo-Schritt (mit Klang: eine Gruppe).
+   - [mit Klang]: lädt den passenden Werksklang (vorhandene oder die Kategorie „Werkzeugkasten“, BB1_SND) und stellt das Echo des Klangs
+     ein (z. B. 1/8 punktiert für den Disco-Bass; Echo ist ein gemeinsamer Bus, der Send je Spur kommt mit dem Klang).
+   Daten: nur normale Clips, Versionen (SX9) und Klänge – keine neuen Projekt-Felder, alte Projekte unverändert. ===== */
+const BB1_ROLES = [['bass', 'Bass'], ['seq', 'Sequenz/Arp'], ['stab', 'Akkord-Stabs'], ['pad', 'Pads'], ['lead', 'Lead-Füller'], ['drum', 'Drums-Füller']];
+// [id, Name, GR1-Stil (Swing/Tempo), Tempo ohne Stil]
+const BB1_GEN = [['disco', 'Disco-Pop', 'euro', 0], ['eurodance', 'Eurodance', null, 134], ['synthpop', 'Synth-Pop', 'synthpop', 0], ['njs', 'New Jack Swing', 'njs', 0],
+  ['house', 'House', 'house', 0], ['detroit', 'Detroit', 'detroit', 0], ['hinrg', 'Hi-NRG', null, 128], ['italo', 'Italo', null, 120]];
+const BB1_REG = {bass: [33, 47, 38], seq: [55, 66, 60], stab: [53, 64, 58], pad: [50, 60, 55], lead: [62, 73, 67]};   // [tiefster, höchster, Mitte] des Grundtons / der Lage
+const BB1 = {ui: null, pv: null, ziel: null, klang: false, role: {}, gen: 'alle'};
+const BB1_FIG = [
+  /* ---------------- Bass ---------------- */
+  // Stil-Hinweis: Euro-Disco der 80er (Modern Talking „You’re My Heart, You’re My Soul“, Bad Boys Blue)
+  {id: 'disco-galopp', r: 'bass', g: 'disco', name: 'Disco-Galopp', p: 16, per: 4, e: '0 1 R .95|2 1 O .8|3 1 O .6', gate: .55, snd: 'f-bb-disco-bass',
+    tip: 'Grundton auf dem Schlag, die Oktave im Offbeat als Doppel-Sechzehntel – der Galopp der Euro-Disco.'},
+  {id: 'disco-echo', r: 'bass', g: 'disco', name: 'Offbeat-Staccato mit Echo', p: 16, per: 4, e: '0 1 R .9|2 1 O .85', gate: .35, snd: 'f-bb-disco-bass', echo: {mode: 'pp', divL: '1/8.', fb: .38, highcut: 3500},
+    tip: 'Kurze Oktave im Offbeat, das Echo (1/8 punktiert) wirft die Sechzehntel dazwischen. Mit Klang hört man den Disco-Pop-Effekt sofort.'},
+  {id: 'oktav-disco', r: 'bass', g: 'disco', name: 'Oktav-Disco-Bass', p: 16, per: 4, e: '0 1 R .95|2 1 O .8', gate: .6, snd: 'f-synthpop-bass',
+    tip: 'Achtel im Wechsel Grundton – Oktave, kurz gespielt: der klassische Disco-Bass.'},
+  // Stil-Hinweis: 90er-Eurodance (Culture Beat, Snap!, 2 Unlimited)
+  {id: 'euro-rolling', r: 'bass', g: 'eurodance', name: 'Rolling Bass', p: 16, per: 4, e: '1 1 R .7|2 1 O .95|3 1 R .75', gate: .7, snd: 'f-bb-euro-bass',
+    tip: 'Drei Sechzehntel um die Bassdrum herum (die Eins bleibt frei): Grundton – Oktave – Grundton. Rollt unter jedem Eurodance-Beat.'},
+  // Stil-Hinweis: Hi-NRG (Bobby O, Stock Aitken Waterman, Divine)
+  {id: 'hinrg-16', r: 'bass', g: 'hinrg', name: 'Hi-NRG-Sechzehntel', p: 16, per: 4, e: '0 1 R .95|1 1 R .55|2 1 O .85|3 1 R .6', gate: .6, snd: 'f-bb-euro-bass',
+    tip: 'Durchgehende Sechzehntel, die Oktave auf der dritten – treibt wie die schnellen Dance-Produktionen der 80er.'},
+  // Stil-Hinweis: Italo-Disco (Gazebo, Ryan Paris, Den Harrow)
+  {id: 'italo-arp', r: 'bass', g: 'italo', name: 'Italo-Arp-Bass', p: 16, per: 4, e: '0 1 R .95|1 1 O .6|2 1 5 .8|3 1 O .6', gate: .55, snd: 'f-bb-italo-bass',
+    tip: 'Grundton – Oktave – Quinte – Oktave in Sechzehnteln: der hüpfende Arpeggio-Bass der Italo-Disco.'},
+  // Stil-Hinweis: Synth-Pop (Depeche Mode, Erasure)
+  {id: 'synthpop-8', r: 'bass', g: 'synthpop', name: 'Synth-Pop-Achtel', p: 16, e: '0 1 R .95|2 1 R .75|4 1 R .9|6 1 R .75|8 1 R .95|10 1 R .75|12 1 O .85|14 1 5 .8', gate: .7, snd: 'f-synthpop-bass',
+    tip: 'Gerade Achtel auf dem Grundton, am Taktende Oktave und Quinte als Überleitung.'},
+  // Stil-Hinweis: New Jack Swing (Teddy Riley, Bobby Brown, Bell Biv DeVoe)
+  {id: 'njs-bass', r: 'bass', g: 'njs', name: 'New-Jack-Swing-Bass', p: 16, e: '0 3 R 1|3 2 R .8|6 1 O .7|8 2 R .9|10 2 5 .8|13 2 R .8', gate: .85, snd: 'f-pop-bass-dx',
+    tip: 'Synkopen mit dem Swing des New Jack Swing (62 %): lang – kurz – Oktave, die Quinte vor der Drei.'},
+  {id: 'house-orgel', r: 'bass', g: 'house', name: 'House-Orgelbass-Stab', p: 16, per: 4, e: '2 1 R .9|2 1 O .7', gate: .5, snd: 'f-bb-house-orgel',
+    tip: 'Grundton und Oktave zusammen als kurzer Stoß im Offbeat – die Orgel-Bässe des frühen House.'},
+  // Stil-Hinweis: Detroit (Inner City, Kevin Saunderson)
+  {id: 'detroit-bass', r: 'bass', g: 'detroit', name: 'Detroit-Synkopen-Bass', p: 16, e: '0 2 R 1|3 1 R .6|6 2 O .8|8 2 R .9|11 1 R .6|12 1 5 .8|14 2 7 .75', gate: .8, snd: 'f-moog-bass',
+    tip: 'Synkopierter Bass mit leichtem Swing; die Septime (wenn der Akkord eine hat) führt in den nächsten Takt.'},
+  /* ---------------- Akkord-Stabs ---------------- */
+  {id: 'disco-brass', r: 'stab', g: 'disco', name: 'Disco-Brass-Stabs', p: 32, e: '0 2 C .95|3 1 C .8|6 2 C .9|16 1 C .85|18 1 C .85|20 4 C .95|28 1 C .7|30 2 C .8', v: 'stack', gate: .8, snd: 'f-bb-disco-brass',
+    tip: 'Kurze Bläser-Stöße als Akkord-Stapel (Grundton darunter): ta – ta – taa, im zweiten Takt die Antwort. Weich, nicht brachial.'},
+  // Stil-Hinweis: Fanfaren-Stapel wie „The Final Countdown“ (Europe) – hier weich und disco-typisch statt Hardrock
+  {id: 'fanfare-stack', r: 'stab', g: 'hinrg', name: 'Fanfaren-Stack', p: 32, e: '0 1 C .8|1 1 C .8|2 2 C .9|4 6 C .95|12 2 C .85|14 2 C .85|16 1 C .8|17 1 C .8|18 1 C .85|19 1 C .85|20 8 C .95', v: 'stack', gate: .85, snd: 'f-bb-disco-brass',
+    tip: 'Die Fanfare der 80er als Stapel-Akkorde: zwei Sechzehntel, Achtel, lange Note – weich wie in der Disco statt brachial.'},
+  {id: 'offbeat-akkorde', r: 'stab', g: 'eurodance', name: 'Offbeat-Akkorde', p: 16, per: 4, e: '2 1 C .85', gate: .5, snd: 'f-poly-stab',
+    tip: 'Ein kurzer Akkord auf jedem Offbeat – das Pumpen von Eurodance und House.'},
+  {id: 'house-piano', r: 'stab', g: 'house', name: 'House-Piano-Stabs', p: 16, e: '0 2 C .95|3 2 C .8|6 2 C .9|10 1 C .75|12 2 C .85', v: 'v7', gate: .75, snd: 'f-fm-fluegel',
+    tip: 'Der Klavier-Rhythmus des House (x..x..x...x.x...) mit Septime, leicht geswingt.'},
+  {id: 'synthpop-stabs', r: 'stab', g: 'synthpop', name: 'Synth-Pop-Stabs', p: 16, e: '0 1 C .95|2 1 C .7|4 2 C .85|7 1 C .75|10 2 C .85|12 1 C .7|14 1 C .8', gate: .6, snd: 'f-prophet-poly',
+    tip: 'Achtel-Stöße mit Akzent und einer Synkope vor der Drei.'},
+  {id: 'njs-stabs', r: 'stab', g: 'njs', name: 'New-Jack-Swing-Stabs', p: 16, e: '0 1 C .95|3 1 C .75|6 2 C .85|11 1 C .7|14 1 C .8', v: 'v7', gate: .7, snd: 'f-dx-brass',
+    tip: 'Geswingte Bläser-Stöße mit Septime: kurz – kurz – lang, die Antwort auf der Vier.'},
+  {id: 'detroit-chord', r: 'stab', g: 'detroit', name: 'Detroit-Akkord-Stab', p: 16, e: '0 2 C .95|3 1 C .7|6 2 C .85|10 1 C .75|11 2 C .85', v: 'v9', gate: .65, snd: 'f-poly-stab',
+    tip: 'Akkord-Stoß mit Septime und None, synkopiert und leicht geswingt – der Stab aus Detroit.'},
+  {id: 'italo-stabs', r: 'stab', g: 'italo', name: 'Italo-Offbeat-Doppel', p: 16, per: 4, e: '2 1 C .85|3 1 C .6', gate: .55, snd: 'f-poly-stab',
+    tip: 'Zwei Sechzehntel-Akkorde auf jedem Offbeat: der federnde Italo-Rhythmus.'},
+  /* ---------------- Sequenz / Arp ---------------- */
+  {id: 'pluck-16', r: 'seq', g: 'synthpop', name: '16tel-Pluck-Ostinato', p: 16, per: 4, e: '0 1 a0 .9|1 1 a2 .65|2 1 a1 .8|3 1 a2 .65', gate: .6, snd: 'f-pop-pluck',
+    tip: 'Sechzehntel durch die Akkordtöne: Grundton – Quinte – Terz – Quinte. Mit Klang: Pluck mit Echo.'},
+  {id: 'arp-auf', r: 'seq', g: 'detroit', name: 'Arp aufwärts', p: 16, per: 4, e: '0 1 a0 .9|1 1 a1 .7|2 1 a2 .8|3 1 a3 .7', gate: .7, snd: 'f-glas-pluck',
+    tip: 'Die Akkordtöne aufwärts in Sechzehnteln, jeder Schlag von vorn.'},
+  {id: 'arp-ab', r: 'seq', g: 'eurodance', name: 'Arp abwärts', p: 16, per: 4, e: '0 1 a3 .9|1 1 a2 .7|2 1 a1 .8|3 1 a0 .7', gate: .7, snd: 'f-pop-pluck',
+    tip: 'Die Akkordtöne von oben nach unten in Sechzehnteln.'},
+  // Stil-Hinweis: Hi-NRG-Sequenzen (Patrick Cowley)
+  {id: 'arp-oktave', r: 'seq', g: 'hinrg', name: 'Arp auf/ab mit Oktave', p: 16, per: 8, e: '0 1 a0 .9|1 1 a1 .7|2 1 a2 .75|3 1 a3 .8|4 1 a4 .85|5 1 a3 .7|6 1 a2 .7|7 1 a1 .7', gate: .7, snd: 'f-moroder-puls',
+    tip: 'Auf und ab über mehr als eine Oktave, ohne die Enden zu doppeln.'},
+  // Stil-Hinweis: Trance-Gate des 90er-Eurodance
+  {id: 'gated-pad', r: 'seq', g: 'eurodance', name: 'Gated-Pad-Rhythmus', p: 16, e: '0 1 C .9|2 1 C .7|3 1 C .8|5 1 C .7|6 1 C .85|8 1 C .9|10 1 C .7|11 1 C .8|13 1 C .7|15 1 C .75', reg: 'pad', gate: .8, snd: 'f-bb-gate-flaeche',
+    tip: 'Der Akkord gehackt in Sechzehnteln (x.xx.xx.x.xx.x.x) – das Trance-Gate des Eurodance.'},
+  // Stil-Hinweis: Sequenzer-Linie (Giorgio Moroder „I Feel Love“, Italo-Disco)
+  {id: 'seq-puls', r: 'seq', g: 'italo', name: 'Sequenz-Puls', p: 16, e: '0 1 R .9|1 1 R .55|2 1 O .8|3 1 R .55|4 1 R .85|5 1 R .55|6 1 O .8|7 1 5 .65|8 1 R .9|9 1 R .55|10 1 O .8|11 1 R .55|12 1 R .85|13 1 5 .6|14 1 O .8|15 1 5 .6', gate: .55, snd: 'f-moroder-puls',
+    tip: 'Grundton-Puls in Sechzehnteln mit Oktave und Quinte – die Sequenzer-Linie der Italo-Disco.'},
+  /* ---------------- Pads ---------------- */
+  {id: 'pad-bewegung', r: 'pad', g: 'synthpop', name: 'Haltetöne mit Bewegung', seg: 'move', snd: 'f-juno-pad',
+    tip: 'Der Akkord liegt, die obere Stimme geht zur Hälfte einen Leiterton hinauf und zurück – die Fläche lebt.'},
+  {id: 'pad-sus', r: 'pad', g: 'house', name: 'Vorhalt 4 – 3', seg: 'sus', snd: 'f-pwm-flaeche',
+    tip: 'Jeder Akkord beginnt mit der Quarte statt der Terz und löst sich nach einem Schlag auf.'},
+  {id: 'pad-breit', r: 'pad', g: 'eurodance', name: 'Breite Fläche mit Grundton', seg: 'wide', snd: 'f-ensemble-streicher',
+    tip: 'Grundton und Quinte tief, darüber der Akkord eng – groß und ruhig.'},
+  {id: 'pad-achtel', r: 'pad', g: 'italo', name: 'Achtel-Puls-Fläche', p: 16, per: 4, e: '0 2 C .85|2 2 C .6', reg: 'pad', gate: .9, snd: 'f-juno-streicher',
+    tip: 'Der Akkord in Achteln wiederholt, betont auf den Schlägen: Fläche mit Puls.'},
+  /* ---------------- Lead-Füller (Antworten zwischen den Gesangszeilen: das Ende jeder Zwei-Takt-Phrase) ---------------- */
+  {id: 'antwort-auf', r: 'lead', g: 'disco', name: 'Antwort-Lauf aufwärts', p: 32, fill: 1, e: '24 1 a0 .7|25 1 a1 .75|26 1 a2 .8|27 1 a3 .85|28 4 a4 .9', gate: .85, snd: 'f-sync-lead',
+    tip: 'Am Ende jeder Zwei-Takt-Phrase ein Lauf durch die Akkordtöne hinauf, Halteton oben – füllt die Pause nach dem Gesang.'},
+  {id: 'echo-ruf', r: 'lead', g: 'eurodance', name: 'Echo-Ruf', p: 32, fill: 1, e: '26 1 a2 .85|27 1 a3 .9|30 2 a2 .75', gate: .5, snd: 'f-mini-lead', echo: {mode: 'pp', divL: '1/8.', fb: .4},
+    tip: 'Zwei kurze Rufe (Quinte – Oktave) und eine Antwort, das Echo trägt sie in die nächste Zeile.'},
+  {id: 'fall-ab', r: 'lead', g: 'synthpop', name: 'Fall abwärts', p: 32, fill: 1, e: '24 1 s7 .85|25 1 s6 .7|26 1 s5 .75|27 1 s4 .7|28 1 s3 .75|29 1 s2 .7|30 1 s1 .7|31 1 s0 .8', gate: .9, snd: 'f-pulse-lead',
+    tip: 'Die Tonleiter in Sechzehnteln von der Oktave hinab zum Grundton – die Überleitung in die nächste Zeile.'},
+  {id: 'hook-kurz', r: 'lead', g: 'italo', name: 'Kurzer Ruf', p: 32, fill: 1, e: '26 1 s2 .8|27 1 s1 .7|28 2 s0 .85|30 2 s4 .8', gate: .85, snd: 'f-sync-lead',
+    tip: 'Drei Töne als Antwort (Terz – Sekunde – Grundton) und ein Sprung zur Quinte.'},
+  {id: 'njs-lick', r: 'lead', g: 'njs', name: 'Swing-Lick', p: 32, fill: 1, e: '24 1 s0 .8|25 1 s2 .7|26 1 s3 .75|27 1 s4 .85|28 2 s2 .75|30 2 s0 .8', gate: .8, snd: 'f-mini-lead',
+    tip: 'Ein geswingter Lauf aus der Tonleiter (1 – 3 – 4 – 5, zurück zur 3 und 1) – die Antwort im New Jack Swing.'},
+  /* ---------------- Drums-Füller (mischen sich in den Drum-Clip; ersetzt werden nur die eigenen Pads im Fenster) ---------------- */
+  {id: 'snare-wirbel', r: 'drum', g: 'disco', name: 'Snare-Wirbel', ue: 'p-snare-lauf',
+    tip: 'Der Snare-Lauf im letzten Takt: Achtel, dann Sechzehntel, lauter werdend. Bassdrum und Hi-Hat spielen weiter.'},
+  {id: 'tom-fill', r: 'drum', g: 'synthpop', name: 'Tom-Wirbel', ue: 'p-tom-kurz',
+    tip: 'Toms hoch – mitte – tief in Sechzehnteln auf den letzten zwei Schlägen. Snare und Hi-Hat bleiben.'},
+  {id: 'clap-aufbau', r: 'drum', g: 'house', name: 'Clap-Aufbau', build: 'clap',
+    tip: 'Claps über den ganzen Clip immer dichter: Viertel, Achtel, Sechzehntel, lauter werdend – der Aufbau vor dem Refrain.'},
+  {id: 'openhat-offbeat', r: 'drum', g: 'disco', name: 'Open-Hat im Offbeat', each: '2 1 hatO .75|6 1 hatO .75|10 1 hatO .75|14 1 hatO .75', clr: ['hatC'],
+    tip: 'Offene Hi-Hat auf jedem Offbeat (die geschlossene macht dort Platz) – das Disco-„Tss“.'},
+  {id: 'njs-ghost', r: 'drum', g: 'njs', name: 'Ghost-Snares mit Swing', each: '3 1 snare .3|7 1 snare .35|9 1 snare .3|14 1 snare .35|15 1 snare .4',
+    tip: 'Leise Snare-Schläge zwischen den Backbeats, mit dem Swing des New Jack Swing.'},
+  {id: 'fill-becken', r: 'drum', g: 'eurodance', name: 'Fill mit Becken', last: '12 1 snare .7|13 1 snare .8|14 1 snare .9|15 1 snare 1', first: '0 1 cym .9',
+    tip: 'Vier Snare-Sechzehntel auf dem letzten Schlag, das Becken auf der Eins des Clips.'},
+];
+const bb1Fig = id => BB1_FIG.find(f => f.id === id) || null;
+const bb1Gen = id => BB1_GEN.find(g => g[0] === id) || null;
+const bb1Sw = F => { const g = bb1Gen(F.g), st = g && g[2] ? gr1Style(g[2]) : null; return st ? st.sw : .5; };
+const bb1Bpm = F => { const g = bb1Gen(F.g), st = g && g[2] ? gr1Style(g[2]) : null; return st ? st.bpm : g ? g[3] : 120; };
+const bb1Beat = (i, sw) => Math.floor(i / 16) * 4 + gr1SwT(i % 16, sw);      // Schritt (1/16) → Schlag, Swing wie GR1
+// '0 1 R .95|2 1 O .8' → [[Schritt, Länge, Ton, Anschlag]…], wiederholt alle per Schritte bis p
+function bb1Ev(str, p, per) {
+  const one = String(str || '').split('|').map(x => x.trim().split(/\s+/)).filter(x => x.length >= 4).map(([s, l, t, v]) => [+s, +l, t, +v]);
+  if (!per) return one;
+  const out = []; for (let k = 0; k * per < p; k++) for (const e of one) out.push([e[0] + k * per, e[1], e[2], e[3]]);
+  return out;
+}
+// eine Spur kann den Werkzeugkasten nehmen: Synth (nicht Perkussion, nicht STIMME) oder die Drum-Spur; Clip im 4/4-Takt, kein Audio
+function bb1Ok(t, c) {
+  const tr = S.tracks[t]; if (!tr || !c || c.audio || tr.stimme) return false;
+  return isDrum(t) || (tr.kind === 'synth' && !percIs(tr));
+}
+const bb1Roles = t => (isDrum(t) ? BB1_ROLES.filter(r => r[0] === 'drum') : BB1_ROLES.filter(r => r[0] !== 'drum'));
+// die Rolle, mit der das Blatt aufgeht: Bass-Spur → Bass, Akkord → Stabs, Fläche → Pads, Melodie/Phrase → Lead-Füller
+function bb1RoleOf(t, c) {
+  if (isDrum(t)) return 'drum';
+  const r = sx11Role(t, c);
+  return r === 'bass' ? 'bass' : r === 'chord' ? 'stab' : r === 'pad' ? 'pad' : r === 'mel' ? 'lead' : (c && c.notes && c.notes.length ? 'seq' : 'bass');
+}
+/* ---------- Akkorde der Stelle ---------- */
+function bb1Map(n, key, tg) { return T.mapEvent(n, 0, HM1_TRK, {key}, {time: 0, target: tg, shift: Harmony.nearestShift(tg.root, S.key.root, 0)}); }
+// Noten des Clips und der übrigen Synth-Spuren der Szene (gleiche Tonart, gleiches ⇅), auf L Schläge geschleift; maxBars = längster Clip
+function bb1CtxNotes(t, s, c, L) {
+  const out = [], fol = S.tracks[t].follow !== false; let maxBars = c ? c.len : 1;
+  const add = (o, w) => { const Lo = clipB(o); if (!(Lo > 0)) return; maxBars = Math.max(maxBars, o.len); for (let k = 0; k * Lo < L - 1e-6; k++) for (const n of liveNotes(o)) { const x = n.t + k * Lo; if (x < L - 1e-6) out.push({t: x, d: n.d, n: n.n, v: (n.v || .8) * w}); } };
+  if (c && c.notes && c.notes.length) add(c, 1);
+  for (const i of synthTracks()) {
+    const tr = S.tracks[i], o = i !== t && tr ? tr.clips[s] : null;
+    if (!o || !o.notes || !o.notes.length || o.audio || o.ts || percIs(tr) || tr.stimme || (tr.follow !== false) !== fol) continue;
+    if (c && c.key && o.key && (o.key.root !== c.key.root || o.key.scale !== c.key.scale)) continue;
+    add(o, .7);
+  }
+  return {ns: out, maxBars};
+}
+// {key, segs [{a, b, tg, orig}], how 'row'|'notes'|'key', gm (Grundmuster: Stufe I schreiben, die Zeile bildet ab), bars (Länge der Akkorde)}
+function bb1Ctx(t, s, c, L) {
+  const tr = S.tracks[t], key = c && c.key ? {root: c.key.root, scale: c.key.scale} : (sceneKeyOf(s) || {root: S.key.root, scale: S.key.scale});
+  const minor = hm1Sc(key)[2] === 3, tonic = chordTarget(key.root, minor ? 'min' : 'maj'), rw = S.scenes[s] && S.scenes[s].chords;
+  let segs = [], how = 'key', bars = c ? c.len : 1;
+  if (rw && rw.ch && rw.ch.length) {
+    how = 'row'; bars = rw.len;
+    const RL = rw.len * 4, at = x => { const m = ((x % RL) + RL) % RL; let e = null; for (const q of rw.ch) if (q.b <= m + 1e-6) e = q; return e || rw.ch[rw.ch.length - 1]; };
+    const bs = new Set([0]);
+    for (let k = 0; k * RL < L - 1e-6; k++) for (const q of rw.ch) { const x = k * RL + q.b; if (x < L - 1e-6) bs.add(+x.toFixed(4)); }
+    const B = [...bs].sort((x, y) => x - y); let prev = null;
+    B.forEach((a, k) => { const e = at(a), tg = e && e.tg ? normTarget(e.tg) : null; segs.push({a, b: k + 1 < B.length ? B[k + 1] : L, tg: tg || prev || tonic, orig: !tg}); if (tg) prev = tg; });
+  } else {
+    const {ns, maxBars} = bb1CtxNotes(t, s, c, L);
+    if (ns.length) {
+      how = 'notes'; bars = maxBars; let prev = null;
+      for (let a = 0; a < L - 1e-6; a += 4) { const tg = hm1Chord(hm1Prof(ns, a, Math.min(L, a + 4)), key) || prev; segs.push({a, b: Math.min(L, a + 4), tg}); if (tg) prev = tg; }
+      const f = segs.find(x => x.tg); if (f) for (const x of segs) { if (x.tg) break; x.tg = f.tg; }
+    }
+  }
+  if (!segs.length || !segs.some(x => x.tg)) { segs = [{a: 0, b: L, tg: tonic}]; how = 'key'; }
+  for (const x of segs) if (!x.tg) x.tg = tonic;
+  const gm = how === 'row' && !isDrum(t) && tr.follow !== false;
+  return {key, segs, how, gm, bars, tonic};
+}
+// die Akkord-Namen (gleiche Nachbarn zusammen) je Takt: „C | Am | F | G“
+function bb1ChordLine(ctx) {
+  const out = []; let last = null;
+  for (const g of ctx.segs) { const nm = prettyTarget(g.tg); if (nm !== last) out.push(nm); last = nm; }
+  return out.slice(0, 8).join(' | ') + (out.length > 8 ? ' …' : '');
+}
+/* ---------- Figur → Noten ---------- */
+// die Tonklassen eines Akkords (Grundton zuerst) mit den Erweiterungen der Figur (v7/v9 aus der Tonleiter, wenn der Akkord keine hat)
+function bb1Pcs(tg, key, v) {
+  const pcs = (hm1Pcs(tg, key) || [0, 4, 7]).slice(), r = pcs[0], deg = d => PCx(hm1Deg(60 + r, key, d));
+  if ((v === 'v7' || v === 'v9') && pcs.length < 4) pcs.push(deg(6));
+  if (v === 'v9') { const nine = deg(1); if (!pcs.includes(nine)) { if (pcs.length >= 4) pcs.splice(2, 1); pcs.push(nine); } }   // mit None ohne Quinte (vier Stimmen)
+  return pcs;
+}
+// enge Lage: alle Umkehrungen mit dem tiefsten Ton in [lo, lo + 11]; die nächste an prev (gleich viele Stimmen), sonst an der Mitte
+function bb1Voice(pcs, lo, mid, prev) {
+  const cand = [];
+  for (let inv = 0; inv < pcs.length; inv++) {
+    const ord = pcs.slice(inv).concat(pcs.slice(0, inv));
+    for (let b = lo; b < lo + 12; b++) {
+      if (PCx(b) !== ord[0]) continue;
+      const v = [b]; for (let k = 1; k < ord.length; k++) { let p = v[k - 1] + 1; while (PCx(p) !== ord[k]) p++; v.push(p); }
+      cand.push(v);
+    }
+  }
+  let best = cand[0], bs = Infinity;
+  for (const v of cand) {
+    const c = (v[0] + v[v.length - 1]) / 2, rub = v[1] - v[0] <= 2 ? 6 : 0;   // keine Sekunde ganz unten (Septime unter dem Grundton reibt)
+    const sc = (prev && prev.length === v.length ? v.reduce((a, p, k) => a + Math.abs(p - prev[k]), 0) + Math.abs(c - mid) * .05 : Math.abs(c - mid - 4)) + rub;
+    if (sc < bs - 1e-9) { bs = sc; best = v; }
+  }
+  return best;
+}
+// der Grundton in [lo, hi], am nächsten an prev (sonst an der Mitte)
+function bb1Root(pc, R0, prev) {
+  let best = null, bd = Infinity;
+  for (let n = R0[0]; n <= R0[1]; n++) if (PCx(n) === pc) { const d = Math.abs(n - (prev != null ? prev : R0[2])); if (d < bd) { bd = d; best = n; } }
+  return best != null ? best : R0[0] + PCx(pc - R0[0]);
+}
+// klingende Noten einer Figur über die Akkorde der Stelle: {notes, win: [[a, b]…] (Fenster der Füller)}
+function bb1Notes(F, ctx, L) {
+  const out = [], win = [], key = ctx.key, sw = bb1Sw(F);
+  const segs = ctx.gm ? [{a: 0, b: L, tg: ctx.tonic}] : ctx.segs;      // Grundmuster: Stufe I, die Akkord-Zeile bildet ab
+  const segAt = x => hm1SegAt(segs, x) || segs[0];
+  const add = (t, d, n, v) => { if (t < -1e-9 || t >= L - 1e-6 || n < 0 || n > 127) return; out.push({t: +Math.max(0, t).toFixed(4), d: +Math.max(1 / 32, Math.min(d, L - t)).toFixed(4), n: Math.round(n), v: Math.round(clamp(v, .05, 1) * 1e3) / 1e3}); };
+  if (F.seg) {                                                          // Pads je Akkord: liegen von Wechsel zu Wechsel
+    const R0 = BB1_REG.pad; let prev = null, pr = null;
+    for (const g of segs) {
+      const pcs = bb1Pcs(g.tg, key), V = bb1Voice(pcs.slice(0, 3), R0[0], R0[2], prev), span = g.b - g.a; prev = V;
+      if (F.seg === 'move') {
+        const lowv = V.slice(0, -1), top = V[V.length - 1], nb = hm1Deg(top, key, 1);
+        for (const p of lowv) add(g.a, span, p, .72);
+        if (span >= 2 - 1e-6) { const h = span / 2, q = Math.min(1, span / 4); add(g.a, h, top, .74); add(g.a + h, q, nb, .7); add(g.a + h + q, span - h - q, top, .7); }
+        else add(g.a, span, top, .74);
+      } else if (F.seg === 'sus') {
+        const third = pcs[1], has3 = PCx(third - pcs[0]) === 3 || PCx(third - pcs[0]) === 4, x = Math.min(1, span / 4);
+        for (const p of V) {
+          if (has3 && PCx(p) === third && span >= 1 - 1e-6) { const four = p + (PCx(pcs[0] + 5 - third)); add(g.a, x, four, .74); add(g.a + x, span - x, p, .7); }
+          else add(g.a, span, p, .72);
+        }
+      } else if (F.seg === 'wide') {
+        const r = bb1Root(pcs[0], [36, 47, 41], pr); pr = r;
+        add(g.a, span, r, .7); add(g.a, span, r + PCx(pcs[2] - pcs[0]), .62);
+        for (const p of V) add(g.a, span, p + 12 <= 84 ? p + (V[0] < 57 ? 12 : 0) : p, .66);
+      }
+    }
+    return {notes: out, win};
+  }
+  const P = F.p || 16, PB = P / 4, all = bb1Ev(F.e, P, F.per);
+  let evs = all, per = PB, sh = 0;
+  if (PB > L + 1e-9) {                                                  // Muster länger als der Clip: Füller nehmen das Ende, sonst den Anfang
+    const cut = Math.round(L * 4);
+    if (F.fill) { sh = P - cut; evs = all.filter(e => e[0] >= sh); } else evs = all.filter(e => e[0] < cut);
+    per = L;
+  }
+  const reg = F.reg || F.r, R0 = BB1_REG[reg] || BB1_REG.seq, gate = F.gate || .9;
+  const st = {root: null, base: null, voice: null};
+  const startOf = e => bb1Beat(e[0] - sh, sw) - bb1Beat(0, sw);
+  if (F.fill && evs.length) { const a0 = Math.min(...evs.map(startOf)); for (let k = 0; k * per < L - 1e-6; k++) win.push([k * per + a0, Math.min(L, (k + 1) * per)]); }
+  for (let k = 0; k * per < L - 1e-6; k++) {
+    for (const e of evs) {
+      const t0 = k * per + startOf(e); if (t0 >= L - 1e-6) continue;
+      const g = segAt(t0 + 1e-6), pcs = bb1Pcs(g.tg, key, F.v), iv = pcs.map(p => PCx(p - pcs[0])).sort((a, b) => a - b);
+      const d = Math.max(1 / 32, e[1] * .25 * gate), v = e[3], tone = e[2];
+      if (tone === 'C') {
+        let V = bb1Voice(F.v === 'stack' ? pcs.slice(0, 3) : pcs, R0[0], R0[2], st.voice); st.voice = V;
+        if (F.v === 'stack') { let r = V[0] - 1; while (PCx(r) !== pcs[0]) r--; V = [r].concat(V); }
+        for (const p of V) add(t0, d, p, v * (p === V[0] && F.v === 'stack' ? .85 : 1));
+        continue;
+      }
+      if (reg === 'bass') st.root = bb1Root(pcs[0], R0, st.root);
+      else st.base = bb1Root(pcs[0], R0, st.base);
+      const r = reg === 'bass' ? st.root : st.base, n3 = iv[1] || 4, n5 = iv.find(x => x >= 6 && x <= 8) || 7, n7 = iv.find(x => x >= 9);
+      let n;
+      if (tone === 'R') n = r; else if (tone === 'O') n = r + 12; else if (tone === '5') n = r + n5; else if (tone === '3') n = r + n3;
+      else if (tone === '7') n = n7 != null ? r + n7 : r + 12;
+      else if (tone[0] === 'a') { const k2 = +tone.slice(1) || 0, m = iv.length; n = r + 12 * Math.floor(k2 / m) + iv[k2 % m]; }
+      else if (tone[0] === 's') n = hm1Deg(r, key, +tone.slice(1) || 0);
+      else continue;
+      add(t0, d, n, v);
+    }
+  }
+  return {notes: out.sort((a, b) => a.t - b.t || a.n - b.n), win};
+}
+// Drums-Füller: {notes, clear(n) → ob eine vorhandene Note weichen muss}
+function bb1Drum(F, L) {
+  const out = [], sw = bb1Sw(F), gm = id => (DRUM_BY_ID[id] ? DRUM_BY_ID[id].gm : null), rules = [];
+  const add = (t, d, n, v) => { if (n == null || t < -1e-9 || t >= L - 1e-6) return; out.push(Object.assign({t: +t.toFixed(4), d: +Math.max(.05, d).toFixed(4), n, v: Math.round(clamp(v, .05, 1) * 1e3) / 1e3}, v >= .999 ? {a: 1} : null)); };
+  const evs = s => String(s || '').split('|').map(x => x.trim().split(/\s+/)).filter(x => x.length >= 4).map(([a, l, id, v]) => [+a, +l, id, +v]);
+  const lastBar = Math.max(0, L - 4);
+  if (F.ue) {
+    const U = typeof ueLib === 'function' ? ueLib(F.ue) : null; if (U && U.notes) {
+      const w = Math.min(U.len || 4, L), a = L - w, pads = new Set();
+      for (const n of U.notes) { if (n.t >= w - 1e-6) continue; add(a + n.t, n.d || .25, n.n, n.v); pads.add(n.n); }
+      rules.push(n => n.t >= a - 1e-6 && n.t < L && pads.has(n.n));
+    }
+  }
+  if (F.last) {
+    const E = evs(F.last), pads = new Set(E.map(e => gm(e[2]))), a = lastBar + Math.min(...E.map(e => bb1Beat(e[0], sw)));
+    for (const e of E) add(lastBar + bb1Beat(e[0], sw), e[1] * .25, gm(e[2]), e[3]);
+    rules.push(n => n.t >= a - 1e-6 && n.t < L && pads.has(n.n));
+  }
+  if (F.first) for (const e of evs(F.first)) { add(bb1Beat(e[0], sw), e[1] * .25, gm(e[2]), e[3]); const g0 = gm(e[2]), t0 = bb1Beat(e[0], sw); rules.push(n => n.n === g0 && Math.abs(n.t - t0) < 1e-3); }
+  if (F.each) {
+    const E = evs(F.each), clr = new Set((F.clr || []).map(gm)), at = new Set();
+    for (let b = 0; b < L - 1e-6; b += 4) for (const e of E) { const t = b + bb1Beat(e[0], sw); add(t, e[1] * .25, gm(e[2]), e[3]); at.add(Math.round(t * 1000)); }
+    const own = new Set(E.map(e => gm(e[2])));
+    rules.push(n => at.has(Math.round(n.t * 1000)) && (own.has(n.n) || clr.has(n.n)));
+  }
+  if (F.build === 'clap') {
+    const c = gm('clap'), q = L / 4;
+    const steps = []; for (let t = 0; t < 2 * q - 1e-6; t += 1) steps.push(t); for (let t = 2 * q; t < 3 * q - 1e-6; t += .5) steps.push(t); for (let t = 3 * q; t < L - 1e-6; t += .25) steps.push(t);
+    for (const t of steps) add(t, .2, c, .45 + .55 * t / Math.max(1e-6, L - .25));
+    const at = new Set(steps.map(t => Math.round(t * 1000)));
+    rules.push(n => n.n === c && at.has(Math.round(n.t * 1000)));
+  }
+  return {notes: out.sort((a, b) => a.t - b.t || a.n - b.n), clear: n => rules.some(r => r(n))};
+}
+// die Länge (Takte), die die Figur bekommt: Version = wie der Clip; sonst bis zur Länge der Akkorde (Vielfaches, ≤ 16 Takte)
+function bb1Bars(t, c, ctx, ziel) {
+  if (ziel === 'ver' || isDrum(t) || ctx.gm) return c.len;
+  const b = ctx.bars | 0;
+  return b > c.len && b <= 16 && b % c.len === 0 ? b : c.len;
+}
+// das Ergebnis für Clip (t, s): {notes (geschrieben), snd (klingend, für die Vorschau), len, ctx}
+function bb1Build(t, s, F, ziel) {
+  const c = S.tracks[t] && S.tracks[t].clips[s]; if (!c || !F || c.ts) return null;
+  const drum = isDrum(t); if (drum !== (F.r === 'drum')) return null;
+  let ctx = drum ? null : bb1Ctx(t, s, c, clipB(c));
+  const bars = drum ? c.len : bb1Bars(t, c, ctx, ziel), L = bars * 4;
+  if (!drum && bars !== c.len) ctx = bb1Ctx(t, s, c, L);
+  const orig = [];                                                      // das Original auf die neue Länge geschleift
+  for (let k = 0; k * clipB(c) < L - 1e-6; k++) for (const n of liveNotes(c)) { const x = cleanNote(n); x.t = +(n.t + k * clipB(c)).toFixed(5); if (x.t < L - 1e-6) orig.push(x); }
+  let notes, gen;
+  if (drum) { const D = bb1Drum(F, L); gen = D.notes; notes = orig.filter(n => !D.clear(n)).concat(gen.map(n => Object.assign({}, n))); }
+  else {
+    const G = bb1Notes(F, ctx, L); gen = G.notes;
+    if (F.fill) notes = orig.filter(n => !G.win.some(([a, b]) => n.t >= a - 1e-6 && n.t < b - 1e-6)).concat(gen.map(n => Object.assign({}, n)));
+    else notes = gen.map(n => Object.assign({}, n));
+  }
+  notes.sort((a, b) => a.t - b.t || a.n - b.n);
+  // klingend (Vorschau): Grundmuster unter der Akkord-Zeile abgebildet
+  const snd = !drum && ctx.gm ? notes.map(n => { const g = hm1SegAt(ctx.segs, n.t) || ctx.segs[0]; return g && !g.orig ? Object.assign({}, n, {n: clamp(bb1Map(n.n, ctx.key, g.tg), 0, 127)}) : n; }) : notes;
+  return {notes, snd, len: bars, ctx, gen: gen.length};
+}
+/* ---------- Ziele: neue Version (SX9) │ neuer Clip │ dieser Clip ---------- */
+function bb1Targets(t, s) {
+  const out = [], song = S.song, c = S.tracks[t] && S.tracks[t].clips[s];
+  if (song && song.bars && !R.songRec && c) {
+    let n = 0, bar = -1;
+    for (const sp of gr1Spans(song, t, 0, song.bars)) if (sp.s === s && !sp.id) { n += sp.b - sp.a; if (bar < 0) bar = sp.a; }
+    const v = sx9List(song, t, s).reduce((m, q) => Math.max(m, q.v), 1) + 1;
+    if (n && v <= sx9Max() && ownCount(song) < OWN_MAX) out.push({k: 'ver', v, n, bar});
+  }
+  const x = hm1Free(t, s); if (x != null) out.push({k: 'neu', s: x});
+  out.push({k: 'hier'});
+  return out;
+}
+const bb1Ziel = (t, s) => { const L = bb1Targets(t, s); return L.find(z => z.k === BB1.ziel) || L[0]; };
+// der Klang einer Figur (nur Synth-Spuren): {rec, echo}
+function bb1Snd(t, F) {
+  const tr = S.tracks[t]; if (!F || !F.snd || !tr || tr.kind !== 'synth' || percIs(tr) || tr.stimme || tr.sound._nv) return null;
+  const rec = FACTORY_BY_ID.get(F.snd); if (!rec) return null;
+  return {rec, echo: F.echo || (rec.bus && rec.bus.echo) || null};
+}
+const bb1EchoTxt = e => (e ? 'Echo ' + String(e.divL || '1/8').replace('.', ' punktiert') : '');
+// Einsetzen: o = {ziel, klang}; ein Undo-Schritt (Gruppe mit Klang/Echo) → {k, t, s, v?, id?, bar?, n, len} oder null
+function bb1Insert(t, s, figId, o) {
+  o = o || {};
+  const F = bb1Fig(figId), tr = S.tracks[t], c = tr && tr.clips[s]; if (!F || !bb1Ok(t, c)) return null;
+  if (c.ts) { toast('Den Werkzeugkasten gibt es nur für Clips im 4/4-Takt'); return null; }
+  if (R.songRec || songTakeOpen()) { toast('Erst die Aufnahme beenden (●)'); return null; }
+  bb1PvStop();
+  const Z = bb1Targets(t, s).find(z => z.k === (o.ziel || 'auto')) || bb1Ziel(t, s), B = bb1Build(t, s, F, Z.k); if (!B || !B.gen) { toast('Diese Figur passt hier nicht'); return null; }
+  const label = 'Werkzeugkasten: ' + F.name, items = [], res = {k: Z.k, t, s, n: B.gen, len: B.len};
+  if (Z.k === 'ver') {
+    const song = S.song, sb = songSnapshot();
+    const nc = cleanClip(c); delete nc.from; delete nc.ver; delete nc.sf; delete nc.gr; delete nc.lf; delete nc.q; delete nc.lanes; delete nc.lw;
+    nc.notes = B.notes; nc.from = {t, s, bar: 0}; nc.ver = Z.v;                     // Reihenfolge wie normClip + ownNorm
+    const id = ownNewId(song); (song.own || (song.own = {}))[id] = nc;
+    for (const sp of gr1Spans(song, t, 0, song.bars)) if (sp.s === s && !sp.id) sx9Set(song, t, sp.a, sp.b, id);
+    songTidy(song);
+    items.push({kind: 'song', before: sb}); Object.assign(res, {v: Z.v, id, bar: Z.bar});
+    try { SX.lab.add(label); } catch (e) {}
+  } else if (Z.k === 'neu') {
+    const nc = {len: B.len, key: {root: c.key.root, scale: c.key.scale, src: 'user'}, notes: B.notes};   // die Tonart, gegen die gerechnet wurde
+    if (c.key.ref != null) nc.key.ref = c.key.ref;
+    const clip = normClip(nc, isDrum(t) ? 'drum' : 'synth', S.key); if (!clip) return null;
+    items.push({kind: 'clip', track: t, scene: Z.s, before: null}); tr.clips[Z.s] = clip; res.s2 = Z.s;
+    // Grundmuster in eine Szene ohne Akkord-Zeile (und ohne andere folgende Clips): die Zeile geht mit (wie HM1-Glätten)
+    if (B.ctx && B.ctx.gm && hm1RowFree(Z.s) && !S.tracks.some((o, i) => i !== t && o && o.kind === 'synth' && o.follow !== false && o.clips[Z.s])) {
+      items.push({kind: 'part', before: partSnap()}); S.scenes[Z.s].chords = normChordRow(deep(S.scenes[s].chords)); res.row = true;
+    }
+  } else {
+    const before = cleanClip(c);
+    c.notes = B.notes; c.len = B.len; delete c.lf; delete c.q; if (isDrum(t)) delete c.lanes;
+    items.push({kind: 'clip', track: t, scene: s, before});
+  }
+  const K = o.klang ? bb1Snd(t, F) : null;
+  if (K) {
+    if (tr.sound.origin !== K.rec.id || soundEdited(tr.sound)) { items.push({kind: 'sound', track: t, before: soundSnapshot(t)}); loadPreset(t, K.rec.id); }
+    if (K.echo) {
+      const fb = fxSnapshot();
+      S.fxBus.echo = Object.assign({}, S.fxBus.echo, K.echo); S.fxBus = normFxBus(S.fxBus); applyFxBus(); applyTempoDependents();
+      if (fxSnapshot() !== fb) items.push({kind: 'fx', before: fb});
+    }
+    res.klang = K.rec.name;
+  }
+  undoPush(items.length === 1 ? Object.assign({label}, items[0]) : {kind: 'group', label, items: items.map(x => Object.assign({label}, x))});
+  if (Z.k === 'ver') { songChanged(); songResync(); }
+  else if (Z.k === 'neu') { clipChanged(t, Z.s); if (!isDrum(t)) scheduleAutoKey(Z.s); if (res.row) partsChanged(); }
+  else afterClipEdit(t, s, true);                                       // Tonart bleibt (das Grundmuster wurde gegen sie gerechnet)
+  markDirty(); UI.dirty.all = true;
+  return res;
+}
+/* ---------- Vorschau ---------- */
+function bb1PvStop() {
+  const pv = BB1.pv; if (!pv) return; BB1.pv = null; clearInterval(pv.timer);
+  if (pv.swap) bb1SwapBack(pv.swap);
+  const now = AU.ctx ? AU.ctx.currentTime : 0;
+  for (const v of pv.voices) { try { if (v.dead) continue; if (v.start >= now - 1e-4 && v.cancel) v.cancel(); else v.release(now, .01); } catch (e) {} }
+  for (const h of pv.hits) { try { if (!h.dead && h.start > now + 1e-3) hitCancel(h); } catch (e) {} }
+  bb1PvBtn();
+}
+function bb1Resched(t, s) {
+  if (R.playing && R.slot[t] === s && !R.pend[t] && AU.ctx) { const now = AU.ctx.currentTime + .006; cancelTrackFrom(t, now); scheduleTrack(t, Math.max(R.cstart[t], t2b(now)), R.schedBeat, true); }
+  clipChanged(t, s);
+}
+function bb1SwapBack(w) {
+  const c = S.tracks[w.t] && S.tracks[w.t].clips[w.s]; if (!c || c !== w.c) return;
+  c.notes = w.notes; bb1Resched(w.t, w.s);
+}
+// eine Figur vorhören: läuft der Clip, im Lauf (Noten nur geliehen); sonst im Kontext der Szene, in Schleifen (≤ 16 s)
+function bb1PvStart(t, s, figId) {
+  bb1PvStop(); ensureAudio(); const ac = AU.ctx; if (!ac) return false;
+  const F = bb1Fig(figId), c = S.tracks[t] && S.tracks[t].clips[s]; if (!F || !c) return false;
+  const Z = bb1Ziel(t, s), B = bb1Build(t, s, F, Z.k); if (!B || !B.gen) return false;
+  const pv = {t, s, id: figId, voices: [], hits: [], timer: 0, swap: null};
+  if (R.playing && R.slot[t] === s && !R.pend[t] && !R.own[t]) {
+    const L0 = clipB(c);
+    pv.swap = {t, s, c, notes: c.notes};
+    c.notes = B.notes.filter(n => n.t < L0 - 1e-6).map(n => Object.assign({}, n));
+    bb1Resched(t, s); BB1.pv = pv; bb1PvBtn(); return true;
+  }
+  const L = B.len * 4, list = [], run = R.playing && R.startTime != null;   // läuft der Transport (ein anderer Clip der Spur): auf den nächsten Taktstrich, ohne Kontext
+  for (const n of B.snd) list.push({tr: t, n: n.n, v: n.v, t: n.t, d: n.d});
+  for (let i = 0; i < NT() && !run; i++) {                             // die übrigen Clips der Szene leise dazu
+    const tr = S.tracks[i], oc = i !== t && tr ? tr.clips[s] : null; if (!oc || !oc.notes || !oc.notes.length || oc.audio || tr.mute || tr.stimme) continue;
+    const Lo = clipB(oc); if (!(Lo > 0)) continue;
+    const ctx = B.ctx, gmap = ctx && ctx.how === 'row' && tr.kind === 'synth' && tr.follow !== false;
+    for (let k = 0; k * Lo < L - 1e-6; k++) for (const n of liveNotes(oc)) {
+      const x = n.t + k * Lo; if (x >= L - 1e-6) continue;
+      let p = n.n; if (gmap) { const g = hm1SegAt(ctx.segs, x) || ctx.segs[0]; if (g && !g.orig) p = clamp(bb1Map(p, oc.key, g.tg), 0, 127); }
+      list.push({tr: i, n: p, v: (n.v || .8) * .7, t: x, d: n.d});
+    }
+  }
+  list.sort((a, b) => a.t - b.t);
+  const sp = spb(), t0 = run ? Math.max(ac.currentTime + .05, b2t(nextBarFromAudible())) : ac.currentTime + .08;
+  Object.assign(pv, {list, k: 0, loop: 0, L, t0, loops: Math.max(1, Math.min(8, Math.ceil(16 / Math.max(.5, L * sp))))});
+  const pump = () => {
+    if (BB1.pv !== pv || !AU.ctx) return;
+    const now = AU.ctx.currentTime, spb_ = spb();
+    for (let guard = 0; guard < 512 && pv.list.length; guard++) {
+      const e = pv.list[pv.k], at = pv.t0 + (pv.loop * pv.L + e.t) * spb_;
+      if (at >= now + .25) break;
+      if (at >= now - .02) {
+        const st = Math.max(now + .005, at);
+        try {
+          if (isDrum(e.tr)) { const h = drumHit(e.n, e.v, st, 'audition'); if (h) pv.hits.push(h); }
+          else { const v = spawnVoice(e.tr, clamp(Math.round(e.n), 0, 127), e.v, st, {src: 'audition'}); if (v) { v.release(st + Math.max(e.d, 1 / 32) * spb_); pv.voices.push(v); } }
+        } catch (err) { logErr(err); }
+      }
+      if (++pv.k >= pv.list.length) { pv.k = 0; if (++pv.loop >= pv.loops) { pv.list = []; break; } }
+    }
+    if (pv.voices.length > 64) pv.voices = pv.voices.filter(v => !v.dead);
+    if (pv.hits.length > 64) pv.hits = pv.hits.filter(h => !h.dead);
+    if (!pv.list.length && now > pv.t0 + pv.loops * pv.L * spb_ + .1) { clearInterval(pv.timer); BB1.pv = null; bb1PvBtn(); }
+  };
+  BB1.pv = pv; pv.timer = setInterval(pump, 50); pump(); bb1PvBtn();
+  return true;
+}
+function bb1PvBtn() {
+  const U = BB1.ui, p = U && U.p; if (!p || !p.isConnected) return;
+  const on = !!BB1.pv, id = on ? BB1.pv.id : null;
+  for (const b of p.querySelectorAll('button[data-fig]')) { const x = on && b.dataset.fig === id; b.classList.toggle('pl', x); }
+  const pb = p.querySelector('[data-bb="pv"]'); if (pb) { pb.textContent = on ? '■ Stopp' : '▶ Vorschau'; pb.classList.toggle('on', on); pb.setAttribute('aria-pressed', String(on)); }
+}
+/* ---------- das Blatt ---------- */
+function bb1Open(t, s, role) {
+  const tr = S.tracks[t], c = tr && tr.clips[s]; if (!bb1Ok(t, c)) { toast('Erst einen Clip mit Noten oder einen leeren Clip anlegen'); return false; }
+  if (c.ts) { toast('Den Werkzeugkasten gibt es nur für Clips im 4/4-Takt'); return false; }
+  bb1PvStop();
+  const roles = bb1Roles(t), r0 = role && roles.some(r => r[0] === role) ? role : (BB1.role[t] && roles.some(r => r[0] === BB1.role[t]) ? BB1.role[t] : bb1RoleOf(t, c));
+  BB1.ui = {t, s, role: r0, fig: null, p: null};
+  openPop(null, p => {
+    p.classList.add('msheet', 'bb1s'); guardTouch(p); BB1.ui.p = p;
+    onTap(p, b => { try { bb1Act(b); } catch (e) { logErr(e); } }, 'button');
+  }, {name: 'bb1', onClose: () => { bb1PvStop(); BB1.ui = null; }});
+  bb1Paint();
+  return true;
+}
+function bb1List(U) { return BB1_FIG.filter(f => f.r === U.role && (BB1.gen === 'alle' || f.g === BB1.gen)); }
+function bb1Paint() {
+  const U = BB1.ui; if (!U || !U.p || !U.p.isConnected) return;
+  const p = U.p, tr = S.tracks[U.t], c = tr && tr.clips[U.s]; if (!c) { closePop(); return; }
+  const drum = isDrum(U.t), roles = bb1Roles(U.t), list = bb1List(U);
+  if (U.fig && !list.some(f => f.id === U.fig)) U.fig = null;
+  const F = U.fig ? bb1Fig(U.fig) : null, Zs = bb1Targets(U.t, U.s), Z = bb1Ziel(U.t, U.s);
+  const ctx = drum ? null : bb1Ctx(U.t, U.s, c, clipB(c)), bars = drum ? c.len : bb1Bars(U.t, c, ctx, Z.k);
+  const src = !ctx ? '' : ctx.how === 'row' ? (ctx.gm ? 'Akkord-Zeile (Grundmuster)' : 'Akkord-Zeile') : ctx.how === 'notes' ? 'Noten der Szene' : 'Tonart';
+  const info = drum ? esc(c.len + (c.len === 1 ? ' Takt' : ' Takte') + ' · Füller mischen sich ein, nur ihre Pads werden ersetzt')
+    : '<b>' + esc(bb1ChordLine(ctx)) + '</b> · aus ' + esc(src) + ' · ' + bars + (bars === 1 ? ' Takt' : ' Takte') + (bars !== c.len ? ' (wie die Akkorde)' : '');
+  const gens = [['alle', 'Alle']].concat(BB1_GEN.filter(g => BB1_FIG.some(f => f.r === U.role && f.g === g[0])).map(g => [g[0], g[1]]));
+  if (!gens.some(g => g[0] === BB1.gen)) BB1.gen = 'alle';
+  const K = F ? bb1Snd(U.t, F) : null;
+  const zl = z => z.k === 'ver' ? ['Neue Version', 'v' + z.v + ' · im Song'] : z.k === 'neu' ? ['Neuer Clip', 'Szene ' + (z.s + 1)] : ['Diesen Clip', '↶ holt ihn zurück'];
+  let h = `<div class="ms-h"><b>WERKZEUGKASTEN</b><span>· ${esc(tr.name)} · Szene ${U.s + 1}</span><button class="rb ms-x" data-bb="x" aria-label="Schließen">✕</button></div>`;
+  h += `<div class="bb1-row bb1-roles pan-x" role="tablist" aria-label="Rolle">` + roles.map(([k, l]) => `<button class="rb${U.role === k ? ' on' : ''}" data-role="${k}" role="tab" aria-selected="${U.role === k}">${esc(l)}</button>`).join('') + `</div>`;
+  h += `<div class="bb1-row bb1-gens pan-x" role="group" aria-label="Genre">` + gens.map(([k, l]) => `<button class="rb${BB1.gen === k ? ' on' : ''}" data-gen="${k}" aria-pressed="${BB1.gen === k}">${esc(l)}</button>`).join('') + `</div>`;
+  h += `<p class="bb1-info">${info}</p>`;
+  h += `<div class="bb1-grid pan-y">` + list.map(f => { const g = bb1Gen(f.g), sw = bb1Sw(f);
+    return `<button class="rb bb1-f${U.fig === f.id ? ' on' : ''}" data-fig="${f.id}" aria-pressed="${U.fig === f.id}" aria-label="${esc(f.name + ', ' + (g ? g[1] : '') + ' – antippen: Vorschau')}"><b>${esc(f.name)}</b><small>${esc((g ? g[1] : '') + ' · ≈ ' + bb1Bpm(f) + (sw > .5 ? ' · Swing ' + Math.round(sw * 100) + ' %' : ''))}</small></button>`; }).join('') + `</div>`;
+  h += `<p class="bb1-tip">${F ? '<b>' + esc(F.name) + ':</b> ' + esc(F.tip) + (K && BB1.klang ? ' Klang: ' + esc(K.rec.name + (K.echo ? ', ' + bb1EchoTxt(K.echo) : '')) + '.' : '') : 'Figur antippen = Vorschau' + (R.playing && R.slot[U.t] === U.s ? ' im laufenden Clip' : ' mit den übrigen Clips der Szene') + '. [Einsetzen] schreibt sie' + (Z.k === 'hier' ? ' in diesen Clip' : ' als ' + (Z.k === 'ver' ? 'neue Version' : 'neuen Clip') + ' – das Original bleibt') + '.'}</p>`;
+  h += `<div class="bb1-foot"><div class="bb1-row bb1-act"><span class="lbl">Ziel</span><div class="bb1-ziel" role="group" aria-label="Ziel">` + Zs.map(z => { const [a, b] = zl(z); return `<button class="rb${Z.k === z.k ? ' on' : ''}" data-ziel="${z.k}" aria-pressed="${Z.k === z.k}" aria-label="${esc(a + ': ' + b)}">${esc(a)}<small>${esc(b)}</small></button>`; }).join('') + `</div></div>`;
+  h += `<div class="bb1-row bb1-go">` +
+    (drum ? '' : `<button class="rb bb1-k${BB1.klang && K ? ' on' : ''}" data-bb="klang" aria-pressed="${!!(BB1.klang && K)}"${K ? '' : ' disabled'} aria-label="${esc('mit Klang' + (K ? ': ' + K.rec.name + (K.echo ? ', ' + bb1EchoTxt(K.echo) : '') : ''))}">mit Klang<small>${esc(K ? K.rec.name + (K.echo ? ' + Echo' : '') : F ? 'eigener Klang' : '–')}</small></button>`) +
+    `<button class="rb bb1-pv${BB1.pv ? ' on' : ''}" data-bb="pv"${F ? '' : ' disabled'} aria-pressed="${!!BB1.pv}">${BB1.pv ? '■ Stopp' : '▶ Vorschau'}</button>` +
+    `<button class="rb bb1-ins" data-bb="ins"${F ? '' : ' disabled'}>Einsetzen</button></div></div>`;
+  const sc = p.querySelector('.bb1-grid'), y = sc ? sc.scrollTop : 0;
+  p.innerHTML = h;
+  const sc2 = p.querySelector('.bb1-grid'); if (sc2) sc2.scrollTop = y;
+  bb1PvBtn(); popDock(p);
+}
+function bb1Act(b) {
+  const U = BB1.ui; if (!U) return;
+  if (b.dataset.role) { U.role = b.dataset.role; BB1.role[U.t] = U.role; BB1.gen = 'alle'; U.fig = null; bb1PvStop(); haptic('tick'); bb1Paint(); return; }
+  if (b.dataset.gen) { BB1.gen = b.dataset.gen; haptic('tick'); bb1Paint(); return; }
+  if (b.dataset.ziel) { BB1.ziel = b.dataset.ziel; haptic('tick'); if (BB1.pv && !BB1.pv.swap) { const id = BB1.pv.id; bb1PvStart(U.t, U.s, id); } bb1Paint(); return; }
+  if (b.dataset.fig) {
+    const id = b.dataset.fig;
+    if (U.fig === id && BB1.pv && BB1.pv.id === id) { bb1PvStop(); bb1Paint(); return; }
+    U.fig = id; haptic('tick'); bb1PvStart(U.t, U.s, id); bb1Paint(); return;
+  }
+  const a = b.dataset.bb;
+  if (a === 'x') { closePop(); return; }
+  if (a === 'klang') { BB1.klang = !BB1.klang; haptic('tick'); bb1Paint(); return; }
+  if (a === 'pv') { if (BB1.pv) bb1PvStop(); else if (U.fig) bb1PvStart(U.t, U.s, U.fig); bb1Paint(); return; }
+  if (a === 'ins') { if (U.fig) bb1Do(U.t, U.s, U.fig); }
+}
+function bb1Do(t, s, id) {
+  const F = bb1Fig(id), r = bb1Insert(t, s, id, {ziel: bb1Ziel(t, s).k, klang: BB1.klang}); if (!r) return null;
+  haptic('snap'); closePop();
+  const what = F.name + (r.klang ? ' + Klang ' + r.klang : '');
+  if (r.k === 'ver') toast(what + ' → v' + r.v + ' im Song · v1 bleibt das Original' + (R.playing && R.songPlay ? ' – ab dem nächsten Takt' : ''), [{label: 'Bearbeiten', fn: () => openOwnRoll(t, r.bar)}, {label: 'Rückgängig', fn: () => undo()}]);
+  else if (r.k === 'neu') toast(what + ' → Szene ' + (r.s2 + 1) + (r.row ? ' mit Akkord-Zeile' : '') + ' (das Original bleibt)', [{label: 'Öffnen', fn: () => openRoll(t, r.s2)}, {label: '▶', fn: () => launchClip(t, r.s2)}]);
+  else toast(what + ' in ' + S.tracks[t].name + ' · Szene ' + (s + 1), {label: 'Rückgängig', fn: () => undo()});
+  if (R.editor === 'clip' && ED.clip && ED.clip.t === t && ED.clip.s === s) openClipSheet(t, s);
+  return r;
+}
+/* ---------- Einhänge-Punkte ---------- */
+// Clip-Blatt: [Werkzeugkasten ▾] (Synth- und Drum-Clips)
+function bb1ClipSheet(g, t, s, clip, reopen) {
+  if (!bb1Ok(t, clip) || clip.ts) return;
+  const b = el('button', 'hb rb bb1cb', 'Werkzeugkasten ▾'); b.setAttribute('aria-label', 'Werkzeugkasten: Standardfiguren je Genre einsetzen');
+  on(b, 'click', () => { void reopen; bb1Open(t, s); }); g.append(b);
+}
+// ROLLE: [Werkzeugkasten] direkt hinter [Spielweise] in der Aktionsleiste
+function bb1RollHook(t, s) {
+  const tr = S.tracks[t], Rl = ED.roll; if (!Rl || !Rl.el || !Rl.el.acts || !tr || tr.kind !== 'synth' || percIs(tr) || tr.stimme || (tr.clips[s] && tr.clips[s].ts)) return;
+  const acts = Rl.el.acts; if (acts.querySelector('.bb1rb')) return;
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'bb1rb'; b.textContent = 'Werkzeugkasten';
+  b.title = 'Werkzeugkasten: Standardfiguren je Genre (Bass, Sequenz, Stabs, Pads, Füller)'; b.setAttribute('aria-label', b.title);
+  b.addEventListener('click', () => { try { const c = S.tracks[t].clips[s]; if (c) bb1Open(t, s); } catch (e) { logErr(e); } });
+  const sw = [...acts.children].find(x => x.textContent === 'Spielweise');
+  if (sw) sw.after(b); else acts.appendChild(b);
+}
+(function bb1Css() {
+  try {
+    if (document.getElementById('bb1-css')) return;
+    const st = document.createElement('style'); st.id = 'bb1-css';
+    st.textContent = [
+      '.pop.msheet.bb1s{display:flex;flex-direction:column;max-height:calc(100vh - 8px);max-height:calc(100dvh - 8px);box-sizing:border-box}',
+      '.pop.msheet.bb1s.dock{padding:0 8px calc(6px + env(safe-area-inset-bottom,0px))}',
+      '.bb1s .ms-h{flex:0 0 auto;height:44px}.bb1s .ms-h .ms-x{height:44px;min-width:44px}',
+      '.bb1s .bb1-row{flex:0 0 auto;display:flex;gap:4px;margin-top:4px;min-width:0}',
+      '.bb1s .bb1-roles,.bb1s .bb1-gens{overflow-x:auto;overflow-y:hidden;scrollbar-width:none;touch-action:pan-x}',
+      '.bb1s .bb1-roles::-webkit-scrollbar,.bb1s .bb1-gens::-webkit-scrollbar{display:none}',
+      '.bb1s .bb1-roles .rb,.bb1s .bb1-gens .rb{flex:1 0 auto;min-width:44px;height:44px;padding:0 7px;font:700 12px/1.1 var(--font-ui);white-space:nowrap}',
+      '.bb1s .bb1-gens .rb{font-weight:600;padding:0 9px}',
+      '.bb1s .rb.on{color:#ffcf7a;border-color:#6b4c16;box-shadow:inset 0 0 0 1px #6b4c16}',
+      '.bb1s .bb1-info{flex:0 0 auto;margin:5px 2px 0;font:600 11px/1.3 var(--font-ui);color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      '.bb1s .bb1-info b{color:var(--text)}',
+      '.bb1s .bb1-grid{flex:1 1 auto;min-height:100px;overflow-y:auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;margin-top:5px;align-content:start;touch-action:pan-y}',
+      '.bb1s .bb1-f{position:relative;height:50px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:3px;padding:0 10px;text-align:left;min-width:0}',
+      '.bb1s .bb1-f b{display:block;max-width:100%;font:700 12.5px/1.1 var(--font-ui);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      '.bb1s .bb1-f small{display:block;max-width:100%;font:600 10px/1.1 var(--font-ui);color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      '.bb1s .bb1-f.pl::after{content:"";position:absolute;right:8px;top:8px;width:8px;height:8px;border-radius:2px;background:#ffcf7a}',
+      '.bb1s .bb1-tip{flex:0 0 auto;margin:5px 2px 0;font:600 10.5px/1.3 var(--font-ui);color:var(--text-dim);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}',
+      '.bb1s .bb1-tip b{color:var(--text)}',
+      '.bb1s .bb1-act{align-items:center}.bb1s .bb1-act .lbl{flex:0 0 auto;font:700 10px/1 var(--font-ui);color:var(--text-dim);padding:0 2px}',
+      '.bb1s .bb1-ziel{flex:1 1 auto;display:flex;gap:4px;min-width:0}',
+      '.bb1s .bb1-ziel .rb,.bb1s .bb1-go .rb{flex:1 1 0;min-width:0;height:44px;padding:0 4px;font:700 12px/1.1 var(--font-ui);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;overflow:hidden}',
+      '.bb1s .bb1-ziel small,.bb1s .bb1-go small{display:block;max-width:100%;font:600 9.5px/1.1 var(--font-ui);color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      '.bb1s .bb1-go .bb1-k{flex:1.4 1 0}.bb1s .bb1-go .bb1-ins{color:var(--text);flex:1.1 1 0}',
+      '.bb1s .bb1-go .bb1-ins:not([disabled]){border-color:#6b4c16;color:#ffcf7a}',
+      '.bb1s .bb1-foot{flex:0 0 auto;display:flex;flex-direction:column;min-width:0}',
+      '@media (orientation:landscape){.bb1s .bb1-grid{grid-template-columns:repeat(4,minmax(0,1fr));min-height:96px}.bb1s .bb1-tip{-webkit-line-clamp:1}' +
+        '.bb1s .bb1-foot{flex-direction:row;gap:4px}.bb1s .bb1-foot>.bb1-row{flex:1 1 0;min-width:0}' +
+        '.bb1s .bb1-roles .rb,.bb1s .bb1-gens .rb{min-width:0;flex:1 1 auto}}',
+      '.cs3 .cgrid .hb.bb1cb{white-space:nowrap}',
+      '@media (orientation:landscape){#clipSheet .cs3 .cgrid .hb.bb1cb{height:44px;align-self:center}}',
+      '@media (orientation:landscape){#sndSheet .brcats .chip[data-c="wkz"]{padding:0 4px;letter-spacing:0;font-size:11px}}',   // Klang-Browser: der Chip passt in die 120-px-Spalte
+      '.pr-bar button.bb1rb{position:relative}.pr-bar button.bb1rb::after{content:"";position:absolute;left:0;right:0;top:-8px;bottom:-8px}',
+    ].join('\n');
+    document.head.appendChild(st);
+  } catch (e) {}
+})();
+const BB1_API = {
+  // BB1 (Tests): Figuren, Akkorde der Stelle, Ergebnis ohne Einsetzen, Einsetzen, Ziele, Blatt, Vorschau
+  figs: () => BB1_FIG.map(f => ({id: f.id, r: f.r, g: f.g, name: f.name, snd: f.snd || null, sw: bb1Sw(f), bpm: bb1Bpm(f)})),
+  roles: () => BB1_ROLES.map(r => r[0]), genres: () => BB1_GEN.map(g => g[0]),
+  ctx: (t, s) => { const c = S.tracks[t] && S.tracks[t].clips[s]; if (!c) return null; const x = bb1Ctx(t, s, c, clipB(c)); return {how: x.how, gm: x.gm, bars: x.bars, line: bb1ChordLine(x), segs: x.segs.map(g => ({a: g.a, b: g.b, name: prettyTarget(g.tg), pcs: hm1Pcs(g.tg, x.key)}))}; },
+  build: (t, s, id, ziel) => { const B = bb1Build(t, s, bb1Fig(id), ziel || bb1Ziel(t, s).k); return B ? {notes: B.notes, snd: B.snd, len: B.len, gen: B.gen, how: B.ctx ? B.ctx.how : null, gm: B.ctx ? B.ctx.gm : false} : null; },
+  targets: (t, s) => bb1Targets(t, s),
+  insert: (t, s, id, o) => bb1Insert(t, s, id, o || {}),
+  open: (t, s, role) => bb1Open(t, s, role),
+  state: () => (BB1.ui ? {open: !!(BB1.ui.p && BB1.ui.p.isConnected), t: BB1.ui.t, s: BB1.ui.s, role: BB1.ui.role, fig: BB1.ui.fig, gen: BB1.gen, ziel: bb1Ziel(BB1.ui.t, BB1.ui.s).k, klang: BB1.klang, pv: BB1.pv ? {id: BB1.pv.id, swap: !!BB1.pv.swap} : null} : {open: false, pv: BB1.pv ? {id: BB1.pv.id, swap: !!BB1.pv.swap} : null}),
+  act: sel => { const b = BB1.ui && BB1.ui.p && BB1.ui.p.querySelector(sel); if (b && !b.disabled) bb1Act(b); return !!b; },
+  pv: (t, s, id) => bb1PvStart(t, s, id), pvStop: () => bb1PvStop(),
+  sounds: () => BB1_SND.ids(),
+};
+/* ===== BB1-END ===== */
+Object.assign(SYNQUENZER, {bb1: BB1_API});                  /* BB1: Test-API (Objekt, wird nicht umhüllt) */
 Object.assign(SYNQUENZER, LF1_API);                       // LF1: Lauf-Schritte, Richtung, Spielweisen (Test-API)
 Object.assign(SYNQUENZER, {hm1: HM1_API});                  /* HM1: Test-API (Objekt, wird nicht umhüllt) */
 Object.assign(SYNQUENZER, UIX1_API);                        // UIX1: FANG-Teil-Namen, Mithören-Schalter, ✕, Tastatur
