@@ -41694,7 +41694,7 @@ function padFlashes(tAud) {
     if (fire && pl1Ll() && UI.padEls[i] && EL.app.classList.contains('drumpads')) {   // PL1: Lauflichter aus = kein Pad-Blitz
       const b = UI.padEls[i]; b.classList.remove('fl'); void 0; requestAnimationFrame(() => b.classList.add('fl'));
     }
-    if (fire && pl1Ll() && UI.drumChips && UI.drumChips[i]) { const c = UI.drumChips[i]; c.classList.remove('fl'); requestAnimationFrame(() => c.classList.add('fl')); }
+    if (fire && pl1Ll() && UI.drumChips && UI.drumChips[i]) { const c = UI.drumChips[i]; c.classList.remove('fl'); requestAnimationFrame(() => c.classList.add('fl')); }   // PL1
   }
 }
 
