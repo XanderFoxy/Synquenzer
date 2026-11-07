@@ -83914,7 +83914,7 @@ const TKT_API = {
   mx: b => { const x = tktMx(b == null ? (R.playing ? t2b(AU.ctx.currentTime) : 0) : b); return x ? Object.assign({}, x) : null; },
   countTs: () => TKT.ci, leds: () => (UI.leds || []).map(l => (l.classList.contains('tktx') ? 'x' : l.classList.contains('on') ? '1' : '0')).join(''),
   laufPer: g => LAUF_PER[g || LAUF.grid],
-  fold: (c, ts, drum) => tktFoldNotes(deep(c), ts, !!drum), foldMarks: ids => tktFoldMarks(ids), foldSong: () => tktFoldSong(), foldCand: () => tktFoldCand(),
+  fold: (c, ts, drum) => tktFoldNotes(deep(c), ts, !!drum), foldMarks: ids => tktFoldMarks(ids), foldSong: from => tktFoldSong(from), foldCand: () => tktFoldCand(),
   plan: k => tktModePlan(S.key, k || 'g'), mapNote: (n, k, raised) => tktMapNote(tktModePlan(S.key, k || 'g'), n, !!raised),
   mapTarget: (tg, k) => tktMapTarget(tktModePlan(S.key, k || 'g'), tg), mode: k => tktModeDo(k || 'g'), ab: x => tktModeAB(x), which: () => tktModeWhich(), modeOpen: () => tktModeOpen(),
   rooms: () => TKT_ROOMS.map(r => ({id: r.id, name: r.name})), room: (id, len) => tktSetRoom(id, len), hallInfo: () => { const c = AU.ctx, X = c && TKT.hxm.get(c); return {raum: S.fxBus.hall.tktRaum || '', len: tktOelLen(S.fxBus.hall), on: !!(X && X.on), room: X ? X.room : '', fdnLen: X ? X.len : 0, ir: X && X.cv ? +X.cv.sec.toFixed(3) : 0}; },
