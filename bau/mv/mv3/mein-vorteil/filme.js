@@ -69,7 +69,7 @@
   const staffelNr = t => { const m = STAFFEL.exec(t.titel); return m ? Number(m[1]) : null; };
   function serieVon(t) { // „Star Trek: The Next Generation, Staffel 3“ -> „Star Trek: The Next Generation“
     if (t.serie) return t.serie;
-    const m = /^(.*?)[\s,:–—-]*\b(?:Staffel|Season|Series|Volume|Vol\.|Teil)\s*\d+\b/i.exec(t.titel);
+    const m = /^(.*?)[\s,:–—(\[-]*\b(?:Staffel|Season|Series|Volume|Vol\.|Teil)\s*\d+\b/i.exec(t.titel); // auch „(Staffel 5)“
     return m && m[1].trim() ? m[1].trim() : t.titel;
   }
 

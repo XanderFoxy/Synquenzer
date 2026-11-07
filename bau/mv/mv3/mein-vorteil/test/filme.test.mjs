@@ -29,6 +29,8 @@ function modul(speicher = {}) {
   return { F: ctx.window.MeinVorteilFilme, speicher };
 }
 
+const plain = x => JSON.parse(JSON.stringify(x)); // Ergebnis aus vm (anderer Realm) -> normale Objekte
+
 // --- statisch ------------------------------------------------------------------------------------------------------------
 test('Vertrag: Fixture filme.json hat alle Gruppen und Felder', () => {
   assert.equal(FILME.version, 1);
@@ -58,7 +60,7 @@ test('Vertrag: Fixture filme.json hat alle Gruppen und Felder', () => {
 test('filme.js liest tolerant: Einzelobjekt, Preis -1, ohne Titel, Zahlen als Text, kaputte Links', () => {
   const { F } = modul();
   const I = F._intern;
-  const n = I.normalisiere({
+  const n = plain(I.normalisiere({
     aktualisiert: '2026-11-07T13:05:00Z',
     gruppen: {
       disney: { id: 'itunes:1', typ: 'film', titel: 'Aladdin', preis: '9,99', jahr: '1992-11-25T08:00:00Z', bild: 'https://is1-ssl.mzstatic.com/a/b/100x100bb.jpg' },
@@ -72,7 +74,7 @@ test('filme.js liest tolerant: Einzelobjekt, Preis -1, ohne Titel, Zahlen als Te
       neu: 'kaputt',
       serien: [{ titel: 'Star Trek: Picard – Staffel 3', typ: 'staffel', preis: 9.99, angebot: true, tiefst: { p: 'x' } }],
     },
-  });
+  }));
   assert.deepEqual(n.gruppen.disney.map(t => [t.titel, t.preis, t.jahr, t.bild]), [['Aladdin', 9.99, 1992, 'https://is1-ssl.mzstatic.com/a/b/200x200bb.jpg']]);
   assert.equal(n.gruppen.angebot.length, 1, 'ohne Titel / doppelt / kein Objekt fällt weg');
   assert.equal(n.gruppen.angebot[0].preis, 3.99, 'Preis -1 -> SD-Preis');
@@ -80,8 +82,8 @@ test('filme.js liest tolerant: Einzelobjekt, Preis -1, ohne Titel, Zahlen als Te
   assert.deepEqual(n.gruppen.neu, []);
   assert.deepEqual(n.gruppen.wunsch, []);
   assert.equal(n.gruppen.serien[0].tiefst, null);
-  assert.deepEqual(I.normalisiere(null).gruppen.wunsch, []);
-  assert.deepEqual(I.normalisiere({ gruppen: [] }).gruppen.angebot, []);
+  assert.deepEqual(plain(I.normalisiere(null).gruppen.wunsch), []);
+  assert.deepEqual(plain(I.normalisiere({ gruppen: [] }).gruppen.angebot), []);
   // Serie + Staffel aus dem Titel
   for (const [titel, serie, nr] of [
     ['Rick and Morty, Staffel 3', 'Rick and Morty', 3], ['Star Trek: The Next Generation, Season 7', 'Star Trek: The Next Generation', 7],
@@ -218,7 +220,7 @@ async function oeffne({ breite = 428, hoehe = 926, pfad = '/mein-vorteil/#filme'
   return { ctx, page, fehler, zustand };
 }
 const filmeDa = page => page.waitForFunction(() => document.querySelector('#p-filme .fi-chips, #p-filme .fi-leer:not(.fi-erst), #p-filme .fi-erst:not(:empty)') && !/Lade Filme/.test(document.getElementById('p-filme').textContent), null, { timeout: 10000 });
-const nbsp = s => s.replace(/ /g, ' ');
+const nbsp = s => s.replace(/[\u00a0\u202f]/g, ' '); // geschütztes Leerzeichen (de-DE: „3,99\u00a0€“) -> normales
 const chip = (page, k) => page.locator(`[data-fi-chip="${k}"]`);
 async function waehle(page, k) {
   await chip(page, k).click();
