@@ -80262,8 +80262,8 @@ function a2Sig(c, all) {
 }
 // kl1Whole: o = the whole content as one clip; with LAUF its notes become the notes as played (and o has no LAUF any more)
 function a2Whole(c, o) {
-  if (!a2Has(c, o.notes)) return;
   const w = c.lw, sn = Array.isArray(w.sn) ? w.sn : null;
+  if (!sn && !a2Has(c, o.notes)) return;                                  // mit sn auch ohne LAUF im Clip: ein eigener Clip im Bereich hatte ihn (Richtung)
   if (sn && w.sg === a2Sig(c, 1)) o.notes = sn.map(n => Object.assign({}, n));
   else if (sn && w.sw === a2Sig(c, 0)) {                                 // only the window (the clip) changed: the rest as it sounded
     const B = clipB(c), inW = n => n.t >= w.a - 1e-9 && n.t < w.a + B - 1e-9;

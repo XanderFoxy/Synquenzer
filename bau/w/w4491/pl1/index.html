@@ -49653,7 +49653,7 @@ function buildRoll() {
   const kAt = () => shownClipKey(s, S.tracks[t].clips[s]);              // EDIT 4.29: Tonart der Stelle (Pinsel + Magic Scale)
   ED.roll = PianoRoll.create(body, rollModel(t, s), {color: col || '#4cc9f0', grid: ROLLP.grid, fold: ROLLP.fold, rowH: 22, undoHold: sx14UndoHold, toolbarHost: host,
     extraTools: extra, center: 12 * ((tr.kbOct || 4) + 1) + 7, rowName: percIs(tr) ? percRowName : null,   // PERC: Kanal-Namen
-    endActs: hm1Acts(t, s).concat(pl1Acts(t, s)), noteDeco: pl1RollDeco,   /* PL1: [🔒 Locks], Punkt an der Note · HM1: [Harmonie] am Ende der Aktionsleiste (Merge 4.45: endActs, damit LF1-extraActs es nicht überschreibt) */
+    endActs: hm1Acts(t, s).concat(pl1Acts(t, s)), noteDeco: pl1RollDeco,   /* PL1: [Locks], Punkt an der Note · HM1: [Harmonie] am Ende der Aktionsleiste (Merge 4.45: endActs, damit LF1-extraActs es nicht überschreibt) */
     mp: mpRollOpts(t, 'c:' + t + ':' + s, kAt),   /* MP */
     tap: (b, fn) => b.addEventListener('click', () => { try { fn(); } catch (e) { logErr(e); } }),
     reg: folReg('roll'), onHand: () => folHand('roll'),
@@ -50544,7 +50544,7 @@ function lf1StepRender(p, t, s, k) {
   }
   h += '<div class="plist lf1one">' + lf1B('start', 0, st0 ? 'Start hier – zurück auf normal' : 'Hier starten', st0) + '</div>';
   p.innerHTML = h;
-  pl1LaufSect(p, t, s, k);                                         // PL1: „🔒 Regler nur für Schritt n“
+  pl1LaufSect(p, t, s, k);                                         // PL1: „Lock: Regler nur für Schritt n“
 }
 function lf1StepPop(t, s, k, anchor) {
   if (!S.tracks[t] || !S.tracks[t].clips[s]) return;
@@ -55072,7 +55072,7 @@ function ui1Entries() {
     E('dx7', 'DX7-Bank (.syx)', 'Menü › Sounds', 'FM-Klänge aus einer Bank importieren oder als Bank exportieren.', 'dx7 syx bank import fm', G.menu, 'DX7-Bank importieren'),
     E('panic', 'Alle Töne aus', 'Menü › Klang', 'Wenn ein Ton hängt.', 'haengt panik notaus ton haengt', G.menu, 'Alle Töne aus'),
     E('help', 'Alle Hilfetexte', 'Menü › Hilfe', 'Ausführliche Erklärungen zu jeder Funktion.', 'hilfe help erklaerung', G.menu, () => [...EL.menu.querySelectorAll('.msec h3')].find(h => h.textContent.trim() === 'Hilfe')),
-    E('locks', 'Parameter-Locks (Regler je Schritt)', 'LAUF / SCHRITTE: Schritt lang drücken · ROLLE: Noten wählen › 🔒 Locks', 'Regler drehen, während du den Schritt hältst – der Wert gilt nur für diesen Schritt (Punkt am Schritt). „Alle Regler ›“ = Klang-Editor im Lock-Modus. ◆ gilt dagegen für den ganzen Clip.', 'lock locks parameter plock p-lock schritt note regler wert filter je schritt groovebox', G.roll, '🔒 Locks'),   // PL1
+    E('locks', 'Parameter-Locks (Regler je Schritt)', 'LAUF / SCHRITTE: Schritt lang drücken · ROLLE: Noten wählen › Locks', 'Regler drehen, während du den Schritt hältst – der Wert gilt nur für diesen Schritt (Punkt am Schritt). „Alle Regler ›“ = Klang-Editor im Lock-Modus. ◆ gilt dagegen für den ganzen Clip.', 'lock locks parameter plock p-lock schritt note regler wert filter je schritt groovebox', G.roll, 'Locks'),   // PL1
     E('lauflicht', 'Lauflichter an/aus', 'Menü › Bedienung › Lauflichter', 'Aus = Matrix, Song, LAUF, Schritte und Geräte-LEDs laufen nicht mit – ruhiger, spart Akku.', 'lauflicht lauflichter abspielmarke playhead animation led akku ruhig strom', G.menu, 'Lauflichter'),   // PL1
   ];
   return UI1.ents;
@@ -83095,14 +83095,14 @@ Object.assign(SYNQUENZER, {vd3: VD3_API});                  /* VD3: Test-API (Ob
    und ausschalten kann?“)
    1 Parameter-Locks bedienbar. Der Kern steht seit 4.38 (note.lk.v[Pfad] = Reglerstand 0…1, bei Drums dazu lk.tune / lk.dec; Wiedergabe,
      Song-Render und Export spielen die Locks sample-genau über denselben Planer) – hier nur die Bedienung, kein zweiter Kern:
-     - LAUF: Schritt lang drücken → Schritt-Menü (LF1) mit „🔒 Regler nur für Schritt n“: vier Regler je Klangerzeugung (VA: Filter, Reso,
+     - LAUF: Schritt lang drücken → Schritt-Menü (LF1) mit „Lock: Regler nur für Schritt n“: vier Regler je Klangerzeugung (VA: Filter, Reso,
        Hüllk., Decay · FM: Helligkeit, Biss, Länge, Pegel · Platte: Filter, Reso, Decay, Pegel), darunter die Lock-Leiste (welcher Regler,
        welcher Wert, ✕) und [Locks löschen] · [Alle Regler ›]. Mit dem zweiten Finger drehen, während der erste den Schritt hält – oder
        loslassen und in Ruhe drehen. Quer steht der Abschnitt rechts neben dem Schritt-Menü (das Menü selbst bleibt, wie es ist).
      - Drum-SCHRITTE: einen gesetzten Schritt lang drücken → dasselbe für diesen Schlag (Tune, Decay, Pegel, Drive). Leere Schritte wie bisher.
-     - ROLLE: Noten wählen → [🔒 Locks] am Ende der Aktionszeile.
+     - ROLLE: Noten wählen → [Locks] am Ende der Aktionszeile.
      - [Alle Regler ›] öffnet den Klang-Editor, den Drum-Editor (SOUND) bzw. die Platte im Lock-Modus: eine Leiste über der Anzeige
-       („🔒 LOCK · Schritt 3 … [Fertig]“); jeder Regler schreibt dann nur in die gehaltenen Noten und zeigt deren Wert. Werte, die nur für
+       („LOCK · Schritt 3 … [Fertig]“); jeder Regler schreibt dann nur in die gehaltenen Noten und zeigt deren Wert. Werte, die nur für
        den ganzen Klang gehen (Welle, Algorithmus, Spur-Effekte …), sagen es und bleiben unverändert. [Fertig] führt zurück.
      - Punkt am Schritt (LAUF, SCHRITTE) bzw. an der Note (ROLLE), wenn ein Lock darauf liegt. ↶ je Geste (ein Dreh = ein Schritt).
      - Klar getrennt von ◆ (Regler je Clip, Klanganker): ein Lock gilt für eine Note und geht nie in den Clip-Klang.
@@ -83313,15 +83313,15 @@ function pl1RollDeco(x, nt, r) {
   x.beginPath(); x.arc(cx, cy, 3.4, 0, 7); x.fillStyle = S_.amb; x.fill(); x.lineWidth = 1.5; x.strokeStyle = 'rgba(0,0,0,.75)'; x.stroke(); x.lineWidth = 1;
 }
 
-/* ---------- der Abschnitt „🔒 Regler nur für …“ (Regler, Lock-Leiste, Löschen, Alle Regler) ---------- */
+/* ---------- der Abschnitt „Lock: Regler nur für …“ (Regler, Lock-Leiste, Löschen, Alle Regler) ---------- */
 function pl1Sect(host, tg) {
   pl1Css();
   const eng = pl1Eng(tg.t), w = el('div', 'pl1s');
   w.setAttribute('role', 'group'); w.setAttribute('aria-label', 'Parameter-Locks für ' + tg.lbl);
   if (!eng || (eng === 'drum' && (!tg.sid || (typeof mdIsSrc === 'function' && mdIsSrc(tg.sid))))) {
-    w.appendChild(el('p', 'pl1h', '🔒 Bei diesem Klang gibt es noch keine Locks.')); host.appendChild(w); return w;
+    w.appendChild(el('p', 'pl1h', 'Bei diesem Klang gibt es noch keine Locks.')); host.appendChild(w); return w;
   }
-  w.appendChild(el('div', 'pl1t', '<b>🔒 Regler nur für ' + esc(tg.lbl) + '</b><span>◆ = ganzer Clip</span>'));
+  w.appendChild(el('div', 'pl1t', '<b>Lock: Regler nur für ' + esc(tg.lbl) + '</b><span>◆ = ganzer Clip</span>'));
   const row = el('div', 'pl1k'), ks = [];
   for (const [k, lbl] of PL1_QK[eng]) {
     const p = pl1QPath(tg, k), d = pl1Desc(tg, p, lbl); if (!d) continue;
@@ -83390,15 +83390,15 @@ function pl1DrumHold(E) {
   row.addEventListener('pointermove', e => { if (H && e.pointerId === H.id && Math.hypot(e.clientX - H.x, e.clientY - H.y) > 8) stop(); });
   for (const ev of ['pointerup', 'pointercancel']) row.addEventListener(ev, e => { if (H && e.pointerId === H.id) stop(); releaseLongPressGuard(); });
 }
-// ROLLE: [🔒 Locks] am Ende der Aktionszeile (PianoRoll endActs)
+// ROLLE: [Locks] am Ende der Aktionszeile (PianoRoll endActs)
 function pl1Acts(t, s) {
   if (!pl1Eng(t)) return [];
   pl1Css();
-  return [{id: 'pl1', label: '🔒 Locks', title: 'Parameter-Locks: Regler nur für die gewählten Noten', cls: 'pl1rb', fn: b => pl1RollPop(b, t, s)}];
+  return [{id: 'pl1', label: 'Locks', title: 'Parameter-Locks: Regler nur für die gewählten Noten', cls: 'pl1rb', fn: b => pl1RollPop(b, t, s)}];
 }
 function pl1RollPop(b, t, s) {
   const ns = ED.roll ? ED.roll.selection : [];
-  if (!ns.length) { toast('Erst Noten wählen (antippen oder ⬚) – dann 🔒 Locks'); return false; }
+  if (!ns.length) { toast('Erst Noten wählen (antippen oder ⬚) – dann Locks'); return false; }
   pl1Pop(b, pl1Tg(t, s, 'rolle', ns, ns.length === 1 ? '1 Note' : ns.length + ' Noten'));
   return true;
 }
@@ -83481,7 +83481,7 @@ function pl1ModeEnd(back) {
   else { ROLLP.view = tg.src === 'lauf' ? 'lauf' : 'roll'; openRoll(tg.t, tg.s); if (tg.src === 'rolle' && ED.roll) { ED.roll.select(pl1Notes(tg)); pl1RollShow(); } }
   return true;
 }
-// zurück in der ROLLE: die Aktionszeile steht so, dass [🔒 Locks] im Bild ist (gleich wieder antippbar; nur die Rollstellung, nichts verschiebt sich)
+// zurück in der ROLLE: die Aktionszeile steht so, dass [Locks] im Bild ist (gleich wieder antippbar; nur die Rollstellung, nichts verschiebt sich)
 function pl1RollShow() {
   try {
     const a = ED.roll && ED.roll.el && ED.roll.el.acts, b = a ? a.querySelector('.pl1rb') : null; if (!b || b.hidden) return false;
@@ -83501,7 +83501,7 @@ function pl1Ban() {
     document.body.appendChild(b); guardTouch(b); onTap(b.querySelector('.pl1bf'), () => pl1ModeEnd(true));
   }
   b.hidden = false; b._sig = '';
-  b.querySelector('.pl1bt').textContent = '🔒 LOCK · ' + M.tg.lbl;
+  b.querySelector('.pl1bt').textContent = 'LOCK · ' + M.tg.lbl;
   pl1BanSay('Regler drehen = nur ' + M.tg.lbl + ' (nicht ◆)', false);
   pl1BanPlace();
   if (!S_.banIv) S_.banIv = setInterval(() => { const X = pl1S(); if (!X.mode) { pl1Ban(); return; } if (!pl1Live()) { pl1ModeEnd(false); return; } pl1BanPlace(); pl1ModeSync(); }, 250);
@@ -83540,7 +83540,7 @@ const PL1_API = {
   clear: (t, s, idx, path) => { const c = S.tracks[t] && S.tracks[t].clips[s]; if (!c) return false; return pl1Clear(pl1Tg(t, s, 'api', idx.map(i => c.notes[i]).filter(Boolean), 'API'), path || null); },
   laufPop: k => { if (!ED.lauf) return false; const L = ED.lauf, per = L.per, cell = L.se.cells[k - LAUF.page * per]; lf1StepPop(L.t, L.s, k, cell || null); return !!(UI.pop && UI.pop.el.querySelector('.pl1s')); },
   drumPop: i => { if (!ED.step) return false; const tg = pl1DrumTg(i); if (!tg) return false; pl1Pop(ED.step.cells[i], tg); return true; },
-  rollPop: () => { const b = ED.roll && ED.roll.el.acts ? [...ED.roll.el.acts.children].find(x => x.textContent === '🔒 Locks') : null; if (!b || !ED.rollAt) return false; return pl1RollPop(b, ED.rollAt.t, ED.rollAt.s); },
+  rollPop: () => { const b = ED.roll && ED.roll.el.acts ? [...ED.roll.el.acts.children].find(x => x.textContent === 'Locks') : null; if (!b || !ED.rollAt) return false; return pl1RollPop(b, ED.rollAt.t, ED.rollAt.s); },
   mode: () => { const M = UI.pl1 && UI.pl1.mode; return M ? {t: M.tg.t, s: M.tg.s, src: M.tg.src, lbl: M.tg.lbl, live: pl1Live(), ban: !!(UI.pl1.ban && !UI.pl1.ban.hidden)} : null; },
   modeGoTop: () => { const w = UI.pop && UI.pop.el.querySelector('.pl1s'); if (!w || !w._pl1) return false; return pl1ModeGo(w._pl1.tg); },
   modeEnd: back => pl1ModeEnd(back !== false),
