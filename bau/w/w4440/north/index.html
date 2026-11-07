@@ -18250,6 +18250,7 @@ registerProcessor('synq-meter', SynqMeter);
 'use strict';
 const SR = sampleRate, ISR = 1 / SR, CR = 16, NCH = 12, NV = 2, MAXM = 48, LN1K = 6.907755278982137;
 const M_LIM1 = 24, M_LIM2 = 12, H_MAX = 32, H_LIM1 = 16, H_LIM2 = 12;
+const H_GCAP2 = 4;   /* NS1: formant energy cap of the H family (gain 2 = +6 dB) */
 const LG_T = 2, LG_C = 3.9810717055349722, LG_W = LG_C - LG_T;
 const H_FC = 5, P_SIG = 0.4, P_TILT = 6, P_TSH = 1;
 const PI = Math.PI, TAU = 2 * Math.PI;
@@ -18519,6 +18520,9 @@ if (s === 2 && k % 2 === 0) continue; if (s === 3 && k % 3 === 0) continue; if (
 cnt++; const f = s === 6 ? k * f0 * Math.sqrt(1 + 0.0008 * k * k) : k * f0;
 this.add(f, Math.pow(k, -al) * this.wH(f, fc, s === 5) * nrm, Math.pow(k, -0.5));
 }
+/* NS1: the resonance centre lifts the level of the struck partials by at most +6 dB (energy of all added partials against the plain tilt);
+   SPECTRA low put the formant on the fundamental (+17 dB, hot peaks). Below the cap nothing changes (factory programs at most +5.6 dB) */
+{ let e = 0; for (let k = 0; k < this.nm; k++) e += this.zr[k] * this.zr[k] + this.zi[k] * this.zi[k]; if (e > H_GCAP2) { const q = Math.sqrt(H_GCAP2 / e); for (let k = 0; k < this.nm; k++) { this.zr[k] *= q; this.zi[k] *= q; } } }
 } else if (fam === FAM_D) {
 const D = DMOD[s - 1], fF = f0 * Math.pow(2, (this.spc - 33) / 33), tc = 0.004 * Math.pow(0.025, F0 / 50);
 const bodyA = Math.pow(10, D.bd / 20); let ss = bodyA * bodyA;
@@ -47880,7 +47884,7 @@ const MD_CELL = {
     if (f === 'A' && w !== 'A6' || w === 't2') { const h = MD_VERST[v]; return (h > 0 ? '+' : h < 0 ? '−' : '') + mdDec(Math.abs(h), Math.abs(h) < 1 && h ? 2 : Math.abs(h) % 1 ? 2 : 0) + ' HT'; }
     if (w === 'A6') return 'Puls ' + Math.round(50 - 45 * v / 99) + ' %';
     if (f === 'F' || f === 'r') return 'Verh. ' + mdRatio(MD_VERH[v]);
-    if (f === 'H') return 'Formant ' + mdHz(440 * Math.pow(2, (p - 69) / 12) * Math.pow(2, 8 * v / 99));
+    if (f === 'H') return 'Formant ' + mdHz(440 * Math.pow(2, (p - 69) / 12) * Math.pow(2, 5 * v / 99));   // NS1: dieselbe Formel wie die Engine (H_FC 5, vorher stand hier 8)
     if (f === 'd') return 'Fell ' + mdRatio(Math.pow(2, (v - 33) / 33));
     if (f === 'P') return 'Rohr ' + mdRatio(Math.pow(2, (v - 24) / 25));
     return 'Stimmung ' + mdRatio(Math.pow(2, (v - 50) / 50)); }, inert: s => s.mWav === 'A1' || s.mWav === 't1', what: 'Klangfarbe des Modells'},
