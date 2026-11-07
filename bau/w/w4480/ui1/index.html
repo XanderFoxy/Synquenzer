@@ -43980,6 +43980,7 @@ function buildSynthEd() {
   fillSynthTab(F.body, i);
   sh.classList.add('open');
   if (!mkQ) edHeadFit(sh, i, engSeg);
+  ui1EdHook(sh, i, mkQ);                                     // UI1: Klangerzeugung hochkant nebeneinander, Bit Mask [KLÄNGE] [?]
   if (UI.lcdNext) { lcdShow(UI.lcdNext[0], UI.lcdNext[1]); UI.lcdNext = null; }
   if (UI.modSrc) requestAnimationFrame(() => modModeRefresh());
   if (UI.wia) { wiaPaint(); wiaTrick(); }
@@ -51677,6 +51678,7 @@ function openMenu(goto) {
   // VS0: verstecktes Testblatt, nur mit getUserMedia im obersten Fenster (in der Claude-App unsichtbar, N2-VS0-01)
   if (micAvail()) { const bMic = btn('Mikro-Check'); bMic.classList.add('mmic'); on(bMic, 'click', () => micOpen()); row(s9, null, bMic).appendChild(el('span', 'small', 'Test fürs Einsingen: Mikrofon, Verzögerung, Speicher')); }
   { const bPr = btn('Leistungs-Probe'); bPr.classList.add('mprobe'); on(bPr, 'click', () => { closeMenu(); mkLoad().probeSheet(); }); row(s9, null, bPr).appendChild(el('span', 'small', MK_LABEL + ': misst 10 s die Rechenzeit (ohne Netz)')); }
+  ui1MenuHook(sec, colL, s6, row, btn, goto);                 // UI1: „Wo finde ich …?“ + Leucht-Look
   m.classList.add('open');
   if (goto === 'info') requestAnimationFrame(() => { try { s9.scrollIntoView({block: 'start'}); } catch (e) {} });
   if (goto === 'online') requestAnimationFrame(() => { try { sOn.scrollIntoView({block: 'start'}); } catch (e) {} });
@@ -54635,6 +54637,7 @@ function sx4SliderTap(S_) {
 }
 // die Geste am Spurkopf (Matrix .th, Song .sv-l.trk): pointerdown → Halten | Schieben | Tipp
 function sx4Down(e, el, i) {
+  if (ui1MultiDown(e, el, i)) return;                         // UI1: Spuren-Gruppe (zweiter Finger, aktive Gruppe)
   if (e.button > 0 || !S.tracks[i]) return;
   if (SX4.p) sx4End(null);
   e.preventDefault();
@@ -54696,6 +54699,675 @@ function sx4HeadSync(el, i) {
   if (b) b.hidden = !so;
 }
 /* SX4-END */
+/* ===== UI1-BEGIN (Paket UI1, Xander 07.11. (5)): Bedienung aufräumen, Guide, Komfort =====
+   Xander: „manchmal suche ich noch ein bisschen nach der Funktion, da fehlt mir so ein bisschen Guide … Tutorials für Sound Design
+   oder Spielarten oder Grooves … bei den Fills und Breaks sind noch nicht alle Muster drin … dass VA und FM nebeneinander waren …
+   mit Bit Mask komm ich nicht klar … mehrere Spuren mit einmal von der Lautstärke regeln … einzelne Spuren muten … Lichter/Look“.
+   1 Guide: Menü ≡ → „Wo finde ich …?“ – Suchfeld + Liste aller Funktionen (Name, wo, ein Satz). Ein Tipp springt hin bzw. öffnet
+     das Blatt; ein leuchtender Rahmen zeigt die Stelle. Kurz-Anleitungen (5–8 Schritte) mit „Zeig es mir“: eine Karte, die jeden
+     Schritt vorführt (◀ ▶, ✕ immer sichtbar).
+   2 Klangerzeugung hochkant: seit 4.36 (fünfte Taste Bit Mask) passte die Reihe nicht mehr und wurde EIN Chip „VA ▾“. Jetzt wieder
+     nebeneinander: VA │ FM │ WT │ ▾ (▾ = die Liste mit MS-Platte, Bit Mask, North); passt das nicht, VA │ FM │ ▾; erst wenn
+     auch das nicht passt, bleibt der Chip. Quer unverändert (dort stehen alle fünf).
+   3 ◆ ÜBERGÄNGE vollständig: jeder Reiter hat Vorlagen (Übergänge, Breaks, Einwürfe, Verknüpfer), die Drums-Füller des
+     Werkzeugkastens (BB1) als Kacheln dazu. Nur Bibliothek (ueLibAdd, Ids „ui1-…“), kein neues Projektfeld.
+   4 Bit Mask: im Gerät [KLÄNGE] (Werksklänge nach Kategorie, Tipp = laden + sofort hören, ein ↶) und [?] (kurze Anleitung).
+   5 Spuren-Gruppe: eine Spur halten + weitere antippen = Gruppe. Wischen auf einer gewählten Spur = Lautstärke aller (ein ↶),
+     Leiste mit Stumm/Laut (ein ↶), Solo, ✕. Wisch-Lautstärke, Halten-Solo, Mehrfach-Solo, Rand-Ziehen bleiben wie sie sind.
+   6 Leucht-Look (Menü › Bedienung, Standard AUS): reine CSS-Klasse auf <body> – nur Glühen/Schatten, nichts verschiebt sich.
+   Daten: nichts im Projekt (Gruppe = Laufzeit wie Solo, Look = Geräte-Einstellung 'ui1glow'). Einhänge-Zeilen: buildSynthEd
+   (ui1EdHook), sx4Down (ui1MultiDown), openMenu (ui1MenuHook), Ende (API, Bibliothek, Look). */
+const UI1 = {sel: new Set(), g: null, bar: null, iv: 0, slT: 0, ring: null, tour: null, card: null, bmT: -1, bmCat: 'alle', bmTab: 'klang', lastJump: null, ents: null, all: false, css: false};
+const UI1_CSS = `
+#menu .ui1g .ui1q{flex:1 1 200px;max-width:none;font-size:16px}
+#menu .ui1g .ui1tours .mbtn{padding:0 10px}
+#menu .ui1g .ui1tours>.lbl{min-width:0;width:100%}
+.ui1res{display:flex;flex-direction:column;gap:4px;margin:6px 0}
+.ui1res[hidden]{display:none}
+.ui1it{display:flex;flex-direction:column;align-items:flex-start;gap:3px;width:100%;min-height:48px;padding:6px 12px;text-align:left;border-radius:var(--r-s);background:var(--chassis-2);border:1px solid var(--line)}
+.ui1it b{font:700 14px/1.15 var(--font-ui);color:var(--text)}
+.ui1it .w{font:600 11px/1.25 var(--font-ui);color:var(--amber);letter-spacing:.02em}
+.ui1it .d{font:500 12px/1.3 var(--font-ui);color:var(--text-dim)}
+.ui1none{font:500 12px/1.3 var(--font-ui);color:var(--text-dim);padding:4px 2px}
+.ui1ring{position:fixed;z-index:2147483000;pointer-events:none;border:2px solid var(--amber);border-radius:10px;box-shadow:0 0 0 3px rgba(255,178,46,.22),0 0 18px 4px var(--amber-glow);animation:ui1pulse 1.1s ease-in-out infinite}
+.ui1ring .ui1rl{position:absolute;left:-2px;bottom:100%;margin-bottom:4px;max-width:70vw;padding:3px 7px;border-radius:6px;background:var(--amber);color:#111;font:700 11px/1.2 var(--font-ui);letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ui1ring.lb .ui1rl{bottom:auto;top:100%;margin:4px 0 0}
+@keyframes ui1pulse{0%,100%{opacity:1}50%{opacity:.45}}
+.ui1tour{position:fixed;left:8px;right:8px;z-index:2147483001;max-width:520px;margin:0 auto;background:linear-gradient(#24272e,#17191e);border:1px solid var(--amber);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.6);padding:8px 8px 8px 14px;color:var(--text)}
+.ui1tour .h{display:flex;align-items:center;gap:8px}
+.ui1tour .h b{flex:1 1 auto;min-width:0;font:700 12px/1.2 var(--font-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--amber);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ui1tour .h .n{flex:none;font:600 12px/1 var(--font-num);color:var(--text-dim)}
+.ui1tour .t{font:500 14px/1.4 var(--font-ui);margin:4px 6px 8px 0}
+.ui1tour .r{display:flex;gap:8px;justify-content:flex-end}
+.ui1tour button{min-width:44px;height:44px;padding:0 14px;font:700 13px/1 var(--font-ui)}
+.ui1tour .x{flex:none;width:44px;padding:0}
+#synthSheet .sh-head .seg.eng.ui1eng{gap:4px}
+#synthSheet .sh-head .seg.eng.ui1eng button{min-width:36px;padding:0 5px;position:relative;z-index:1}
+#synthSheet .sh-head .seg.eng.ui1eng.ui1c{gap:2px}
+#synthSheet .sh-head .seg.eng.ui1eng.ui1c button{min-width:32px;padding:0 3px}
+#synthSheet .sh-head .seg.eng.ui1eng button::before{content:'';position:absolute;left:0;right:0;top:-6px;bottom:-6px}
+#synthSheet .sh-head .seg.eng.ui1eng button.ui1m2{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-size:10.5px;line-height:1}
+#synthSheet .sh-head:has(.ui1eng) .sh-row.r2>*{position:relative}
+#synthSheet .sh-tabs .ui1bt{flex:0 0 auto;min-width:44px;padding:0 10px;border-radius:6px 6px 0 0;font:700 12px/1 var(--font-ui);letter-spacing:.08em;color:var(--amber);background:var(--chassis);border:1px solid var(--line);border-bottom:0;position:relative;white-space:nowrap}
+#synthSheet .sh-tabs .ui1bt::before{content:'';position:absolute;left:0;right:0;top:-5px;bottom:-4px}
+.pop.ui1bm{width:min(560px,calc(100vw - 16px))}
+.ui1bm .ui1bd{padding:4px 10px 12px}
+.ui1bm .ui1cats{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px}
+.ui1bm .ui1cats button{min-height:44px;padding:0 12px;font:700 12px/1 var(--font-ui);letter-spacing:.04em}
+.ui1bm .ui1cats button.on{border-color:var(--amber);color:var(--amber)}
+.ui1bm .ui1grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(122px,1fr));gap:6px}
+.ui1bm .ui1p{min-height:52px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:3px;padding:6px 10px;text-align:left;border-radius:var(--r-s);background:var(--chassis-2);border:1px solid var(--line)}
+.ui1bm .ui1p b{font:700 13px/1.1 var(--font-ui)}
+.ui1bm .ui1p small{font:600 10.5px/1 var(--font-num);color:var(--text-dim)}
+.ui1bm .ui1p.on{border-color:var(--amber);box-shadow:inset 0 0 0 1px var(--amber)}
+.ui1bm .ui1tip{font:500 12px/1.3 var(--font-ui);color:var(--text-dim);margin:0 0 8px}
+.ui1bm .ui1help p{margin:0 0 9px;font:500 13.5px/1.4 var(--font-ui)}
+.ui1bm .ui1help b{color:var(--amber)}
+.ui1gb{position:fixed;z-index:70;display:flex;align-items:center;gap:6px;padding:2px 6px 2px 10px;box-sizing:border-box;background:linear-gradient(#2a2e37,#1c1f25);border:1px solid var(--amber);border-radius:10px;box-shadow:0 4px 14px rgba(0,0,0,.5)}
+.ui1gb[hidden]{display:none}
+.ui1gb .n{flex:1 1 auto;min-width:0;font:700 12px/1.2 var(--font-ui);letter-spacing:.04em;color:var(--amber);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ui1gb .n small{display:block;font:500 10.5px/1.2 var(--font-ui);letter-spacing:0;color:var(--text-dim)}
+.ui1gb button{flex:none;min-width:44px;height:44px;padding:0 10px;font:700 12px/1 var(--font-ui)}
+.ui1gb button.on{color:var(--amber);border-color:var(--amber)}
+.th.ui1sel,.sv-l.trk.ui1sel{outline:2px solid var(--amber);outline-offset:-2px}
+body.ui1glow .rb.on,body.ui1glow .tab.on,body.ui1glow .stab.on,body.ui1glow button[aria-pressed="true"]{filter:drop-shadow(0 0 4px rgba(255,178,46,.55))}
+body.ui1glow .seg button.on{filter:drop-shadow(0 0 5px var(--tc,rgba(244,241,234,.55)))}
+body.ui1glow .seg button.on::after{box-shadow:0 0 6px 2px var(--tc,var(--sel))}
+body.ui1glow .slot.playing{box-shadow:0 0 12px 1px rgba(53,208,127,.5),inset 0 0 16px rgba(53,208,127,.2)}
+body.ui1glow .slot.queued{box-shadow:0 0 8px rgba(53,208,127,.35)}
+body.ui1glow .th.sel{filter:drop-shadow(0 0 5px var(--tc))}
+body.ui1glow #bPlay.on,body.ui1glow #bPlay.play{filter:drop-shadow(0 0 6px rgba(53,208,127,.8))}
+body.ui1glow #bRec.on,body.ui1glow #bRec.rec{filter:drop-shadow(0 0 6px rgba(255,69,56,.8))}
+body.ui1glow .sh-head{box-shadow:inset 0 2px 0 var(--tc,var(--amber))}
+body.ui1glow #menu .mh,body.ui1glow .psh-h{box-shadow:inset 0 2px 0 rgba(255,178,46,.7)}
+body.ui1glow .msec h3{color:var(--amber);text-shadow:0 0 8px var(--amber-glow)}
+`;
+function ui1Css() { if (UI1.css) return; UI1.css = true; try { const s = document.createElement('style'); s.id = 'ui1-css'; s.textContent = UI1_CSS; document.head.appendChild(s); } catch (e) { logErr(e); } }
+
+/* ---------- 6 Leucht-Look ---------- */
+function ui1GlowOn() { return document.body.classList.contains('ui1glow'); }
+function ui1Glow(on) { on = !!on; ui1Css(); document.body.classList.toggle('ui1glow', on); try { setUiPref('ui1glow', on); } catch (e) { logErr(e); } return on; }
+function ui1GlowInit() { ui1Css(); try { if (uiPrefs().ui1glow) document.body.classList.add('ui1glow'); } catch (e) {} }
+
+/* ---------- Finden, Rahmen, Zurück zur Hauptansicht ---------- */
+const ui1Norm = s => String(s == null ? '' : s).toLowerCase().replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss').replace(/[^a-z0-9]+/g, ' ').trim();
+function ui1Shown(x) { if (!x || !x.isConnected) return false; const r = x.getBoundingClientRect(); if (r.width < 2 || r.height < 2) return false; const cs = getComputedStyle(x); return cs.visibility !== 'hidden' && cs.display !== 'none'; }
+// die Ebenen von oben: Popup, Video-Blatt, Menü, offene Blätter, der Rest
+function ui1Roots() {
+  const o = [];
+  if (UI.pop && UI.pop.el) o.push(UI.pop.el);
+  if (typeof VV !== 'undefined' && VV.open && VV.el) o.push(VV.el);
+  if (EL.menu.classList.contains('open')) o.push(EL.menu);
+  for (const s of [EL.synthSheet, EL.drumSheet, EL.rollSheet, EL.clipSheet, EL.sndSheet]) if (s && s.classList.contains('open')) o.push(s);
+  if (UI.songView && EL.songView) o.push(EL.songView);
+  o.push(document.body);
+  return o;
+}
+function ui1Find(q) {
+  try {
+    if (!q) return null;
+    if (typeof q === 'function') { const x = q(); if (ui1Shown(x)) { try { x.scrollIntoView({block: 'nearest', inline: 'nearest'}); } catch (e) {} return x; } return null; }
+    for (const R_ of ui1Roots()) {
+      let L;
+      if (/^[#.[]/.test(q)) L = [...R_.querySelectorAll(q)];
+      else {
+        const n = ui1Norm(q); if (!n) return null;
+        L = [...R_.querySelectorAll('button, h3, h4, .lbl, label, .ue-tile')].filter(x => ui1Norm(x.textContent).includes(n));
+        L.sort((a, b) => ui1Norm(a.textContent).length - ui1Norm(b.textContent).length);
+      }
+      for (const x of L) if (ui1Shown(x)) { const t = x.matches('.lbl') && x.parentElement && x.parentElement.matches('.mrow') ? x.parentElement : x; try { t.scrollIntoView({block: 'nearest', inline: 'nearest'}); } catch (e) {} return t; }
+    }
+  } catch (e) { logErr(e); }
+  return null;
+}
+function ui1RingOff() { const R_ = UI1.ring; if (!R_) return; UI1.ring = null; clearInterval(R_.iv); clearTimeout(R_.to); try { R_.r.remove(); } catch (e) {} }
+function ui1Ring(t, label, ms) {
+  ui1Css(); ui1RingOff();
+  const r = el('div', 'ui1ring'); r.setAttribute('aria-hidden', 'true'); if (label) r.appendChild(el('span', 'ui1rl', esc(label)));
+  document.body.appendChild(r);
+  const place = () => {
+    if (!t.isConnected || !ui1Shown(t)) { r.style.display = 'none'; return; }
+    const b = t.getBoundingClientRect(); r.style.display = '';
+    r.style.left = Math.round(b.left - 4) + 'px'; r.style.top = Math.round(b.top - 4) + 'px'; r.style.width = Math.round(b.width + 8) + 'px'; r.style.height = Math.round(b.height + 8) + 'px';
+    r.classList.toggle('lb', b.top < 34);
+  };
+  place();
+  UI1.ring = {r, t, t0: performance.now(), iv: setInterval(place, 200), to: ms ? setTimeout(ui1RingOff, ms) : 0};
+  return r;
+}
+// ein Tipp irgendwo beendet den Rahmen eines Sprungs (nicht den einer Anleitung)
+document.addEventListener('pointerdown', () => { const R_ = UI1.ring; if (R_ && !UI1.tour && performance.now() - R_.t0 > 500) ui1RingOff(); }, true);
+// alles zu, was über der Hauptansicht liegt (Blätter, Menü, Popups, Video)
+function ui1Home() {
+  try { if (UI.pop) closePop(); } catch (e) { logErr(e); }
+  try { if (EL.menu.classList.contains('open')) closeMenu(); } catch (e) { logErr(e); }
+  try { if (typeof VV !== 'undefined' && VV.open) vvClose(); } catch (e) { logErr(e); }
+  try { if (R.editor === 'roll') closeRoll(); else if (R.editor === 'browser') closeBrowser(false); else if (R.editor === 'clip') closeClipSheet(); else if (R.editor && R.editor !== 'menu') closeEditor(); } catch (e) { logErr(e); }
+}
+// eine Synth-Spur für die Klang-Seiten: die gewählte, sonst die erste (any: auch MS-Platte / Bit Mask)
+function ui1SynthT(any) {
+  const ok = i => { const tr = S.tracks[i]; return !!(tr && tr.kind === 'synth' && !tr.stimme && !percIs(tr) && (any || ['analog', 'fm6', 'wt'].includes(engKey(tr.sound.engine)))); };
+  if (ok(R.selT)) return R.selT;
+  const o = trackOrder().find(ok); return o == null ? -1 : o;
+}
+const ui1ClipOf = t => { const tr = S.tracks[t]; return tr ? tr.clips.findIndex(Boolean) : -1; };
+// Sprung-Bausteine (geben false zurück, wenn es die Stelle gerade nicht gibt)
+const ui1G = {
+  main: () => { ui1Home(); return true; },
+  mx: () => { ui1Home(); setSongView(false); return true; },
+  menu: () => { ui1Home(); openMenu(); return true; },
+  ed: (tab, sub) => () => { ui1Home(); const t = ui1SynthT(false); if (t < 0) return false; selectTrack(t); ED.tab = tab; if (sub) ED.sub[tab] = sub; FXF.big = null; openEditor(); return true; },
+  drum: tab => () => { ui1Home(); selectTrack(DRUM_T); ED.dTab = tab; openEditor(); return true; },
+  song: bar => () => { ui1Home(); setSongView(true); if (bar) ueBar(true); return true; },
+  clip: drum => () => { ui1Home(); setSongView(false); const t = drum ? DRUM_T : ui1SynthT(true), s = t >= 0 ? ui1ClipOf(t) : -1; if (s < 0) { toast('Erst einen Clip aufnehmen – dann den Clip halten'); return false; } selectSlot(t, s); openClipSheet(t, s); return true; },
+  roll: () => { ui1Home(); setSongView(false); const t = ui1SynthT(true), s = t >= 0 ? ui1ClipOf(t) : -1; if (s < 0) { toast('Erst einen Clip aufnehmen – dann ✎'); return false; } openRoll(t, s); return true; },
+};
+/* ---------- 1 Guide: alle Funktionen (Name, wo, ein Satz, Suchwörter, Sprung, Stelle) ---------- */
+function ui1Entries() {
+  if (UI1.ents) return UI1.ents;
+  const E = (id, n, w, d, s, go, q) => ({id, n, w, d, s, go, q});
+  const G = ui1G, svB = k => () => (SV.btn ? SV.btn[k] : null);
+  UI1.ents = [
+    E('play', 'Abspielen / Stopp', 'oben ▶', 'Startet und stoppt die Wiedergabe (Computer: Leertaste).', 'start stop transport wiedergabe', G.main, '#bPlay'),
+    E('rec', 'Aufnehmen ●', 'oben ●', 'Spur wählen, leeren Platz antippen, ● – nach dem Einzählen einspielen.', 'aufnahme record einspielen', G.main, '#bRec'),
+    E('bpm', 'Tempo (BPM)', 'oben BPM', 'Antippen und ziehen ändert das Tempo des Songs.', 'tempo bpm geschwindigkeit schneller langsamer', G.main, '#bBpm'),
+    E('metro', 'Metronom', 'oben ♩', 'Klick an/aus; Lautstärke und Einzähler stehen im Menü › Aufnahme.', 'klick metronom click', G.main, '#bMetro'),
+    E('fang', 'FANG', 'unten rechts FANG', 'Gespielt ohne Aufnahme? FANG macht daraus einen Clip, der im Takt weiterläuft.', 'fang capture mitschnitt', G.main, '#bFang'),
+    E('scene', 'Szene starten', 'Matrix ▶ 1–4 (Kopfzeile)', 'Startet alle Clips einer Szene am nächsten Takt.', 'szene starten launch spalte', G.mx, '.scn'),
+    E('stop', 'Spur oder alles stoppen', 'Matrix ■ rechts', '■ stoppt zum nächsten Takt, zweimal = sofort. ■ einer Spur halten = Spur-Blatt.', 'stop stoppen spurblatt', G.mx, '.stp'),
+    E('vol', 'Lautstärke einer Spur', 'Spurname waagrecht wischen', 'Am Spurnamen nach links/rechts schieben – mit dB-Anzeige; Doppeltipp auf den Schieber = 0 dB.', 'lautstaerke volume pegel mix fader leiser lauter', G.mx, '.th'),
+    E('solo', 'Solo', 'Spurname ½ s halten', 'Halten = Solo an/aus; mehrere Solos gehen (nacheinander halten).', 'solo allein hoeren', G.mx, '.th'),
+    E('multi', 'Mehrere Spuren zugleich', 'eine Spur halten + weitere antippen', 'Dann wirkt Wischen auf alle gewählten (Lautstärke); die Leiste hat Stumm, Solo und ✕.', 'gruppe mehrere spuren gleichzeitig lautstaerke stumm mute auswahl', G.mx, '.th'),
+    E('mute', 'Stumm (Mute)', 'M unter der Matrix', 'Schaltet die gewählte Spur stumm; mehrere auf einmal: Spuren-Gruppe › Stumm.', 'mute stumm aus', G.mx, '#bMute'),
+    E('move', 'Spur verschieben', 'linker Rand der Spur → nach rechts ziehen', 'Am Farbbalken aufsetzen, nach rechts ziehen, dann hoch/runter – loslassen = neuer Platz.', 'reihenfolge verschieben sortieren tauschen spur', G.mx, '.th'),
+    E('clipdrag', 'Clip verschieben, tauschen, kopieren', 'Clip halten, bis er wächst', 'Dann ziehen: leere Zelle = verschieben, Clip = tauschen, zweiter Finger = Kopie.', 'drag drop kopieren verschieben clip ziehen', G.mx, '.slot.filled'),
+    E('clipsheet', 'Clip-Blatt', 'Clip lange drücken', 'Bearbeiten, Quantisieren, Kopieren, Grundmuster, Small/Full, Im Video, Werkzeugkasten.', 'clip menue blatt optionen', G.clip(false), '✎ Bearbeiten'),
+    E('parts', 'TEILE (Teil speichern)', 'Leiste unter den Clips ＋', '＋ speichert, was gerade klingt. Antippen = startet am nächsten Takt, halten = Teil-Blatt.', 'teil part speichern strophe refrain', G.mx, '#partBar'),
+    E('chord', 'Akkord-Zeile und Träger', 'AKKORD ▾ und die Träger-Anzeige', 'Akkorde je Szene oder Teil; Kästchen antippen, dann Stufe oder Text (z. B. „Dm7“).', 'akkord traeger harmonie chord akkorde', G.main, '#readout'),
+    E('latch', 'LATCH', 'neben der Träger-Anzeige', 'Der Träger bleibt nach dem Loslassen stehen; ORIGINAL = zurück.', 'latch halten original', G.main, '#bLatch'),
+    E('transp', 'Transponieren (live)', 'Modus TRANSP. über der Tastatur', 'Die Tastatur ist stumm: eine Taste verschiebt alle folgenden Spuren in eine neue Tonart.', 'transponieren tonart verschieben live', G.main, '#segTr'),
+    E('sing', 'Singen / Gesang aufnehmen', 'Modus SINGEN über der Tastatur', 'Stimme als Noten oder als Take auf der STIMME-Spur; das Mikrofon-Blatt hat Quelle und Einrasten.', 'gesang singen mikrofon stimme vocal take', G.main, () => ['#segMic', '#modeSeg'].map(q => document.querySelector(q)).find(ui1Shown)),
+    E('lock', 'Skalen-Sperre', 'SPIELEN ½ s halten', 'frei · Skala · Akkord – unpassende Tasten spielen den nächsten passenden Ton.', 'skala sperre tonleiter falsche toene akkord sperren', G.main, '#segPlay'),
+    E('klang', 'Klang-Editor', 'KLANG (oder ✎ der gewählten Spur)', 'Regler ziehen = ändern, seitlich = fein, doppelt tippen = Standard, halten = modulieren.', 'sound editor synth regler klang', G.ed('osc'), '.sh-tabs .tab.on'),
+    E('engine', 'Klangerzeugung VA / FM / WT …', 'Klang-Editor oben links', 'VA (analog), FM (6 Operatoren), WT (Wellentabelle); ▾ = ' + MK_LABEL + '-Platte, ' + BM_NAME + ', ' + MD_NAME + '.', 'engine va fm wt klangerzeugung synth art', G.ed('osc'), '.sh-head .seg.eng'),
+    E('filter', 'Filter (Cutoff, Resonanz)', 'Klang-Editor › FILTER', 'Cutoff macht heller/dunkler, Resonanz betont die Kante – der Kern jedes Synth-Klangs.', 'filter cutoff resonanz hell dunkel', G.ed('filter'), '.sh-tabs .tab.on'),
+    E('env', 'Hüllkurve (A·D·S·R)', 'Klang-Editor › HÜLLK.', 'Attack, Decay, Sustain, Release: wie ein Ton anschwillt, abfällt und ausklingt.', 'huellkurve adsr attack release envelope', G.ed('env'), '.sh-tabs .tab.on'),
+    E('lfo', 'LFO', 'Klang-Editor › LFO', 'Langsame Schwingung für Vibrato, Wah oder Pulsieren; auch im Song-Tempo.', 'lfo vibrato modulation wah', G.ed('lfo'), '.sh-tabs .tab.on'),
+    E('mod', 'Modulation', 'Klang-Editor › MOD', 'Quelle antippen (LFO, Hüllkurve, Anschlag …), dann einen Regler ziehen = Tiefe; „Fertig“ beendet.', 'modulation matrix quelle ziel', G.ed('mod'), '.sh-tabs .tab.on'),
+    E('modov', 'Alle Modulationen', 'Klang-Editor › ⋯ › Modulationen', 'Jede aktive Modulation; Tipp = zum Regler, ✕ = löschen.', 'modulationen uebersicht liste', G.ed('osc'), () => [...EL.synthSheet.querySelectorAll('.edm')].find(ui1Shown)),
+    E('wia', 'Was ist anders? ◎', 'Klang-Editor ◎', 'Zeigt, welche Regler diesen Sound vom Startklang unterscheiden.', 'vergleich was ist anders abgucken lernen', G.ed('osc'), () => [...EL.synthSheet.querySelectorAll('.wia')].find(ui1Shown)),
+    E('anker', 'Klanganker ◆', 'Klang-Editor ◆', 'Drehen, während ein Clip läuft, ändert genau diesen Clip; ◆ antippen = Grundklang für alle Clips.', 'anker clip klang automation raute', G.ed('osc'), '.v6ab'),
+    E('browser', 'Klang-Bibliothek', 'Klang-Editor › Sound-Name antippen', 'Alle Werks- und eigenen Klänge nach Rolle; ▶ hört vor, der Name lädt.', 'presets bibliothek sounds laden klaenge', G.ed('osc'), '.sh-head .pv'),
+    E('save', 'Klang sichern', 'Klang-Editor › Sichern', 'Speichert den Klang in deiner Bibliothek (Eigene).', 'sichern speichern preset eigene', G.ed('osc'), '.sh-head .sv'),
+    E('dice', 'Zufall', 'Klang-Editor › Würfel', 'Würfelt Oszillator, Filter und Hüllkurve neu (↶ holt es zurück).', 'zufall random wuerfel', G.ed('osc'), () => [...EL.synthSheet.querySelectorAll('.sh-head button')].find(b => b.getAttribute('aria-label') === 'Zufall')),
+    E('init', 'Init (neutraler Startklang)', 'Klang-Editor › ⋯ › Init', 'Setzt den Klang auf den neutralen Startklang seiner Klangerzeugung.', 'init reset neu anfang', G.ed('osc'), () => [...EL.synthSheet.querySelectorAll('.edm')].find(ui1Shown)),
+    E('eqk', 'EQ · KOMP je Spur', 'Klang-Editor › FX › SPUR', 'Low-Cut, Bass, Mitte, Höhen und Kompressor für diese Spur.', 'eq kompressor equalizer bass hoehen', G.ed('fx', 'spur'), 'EQ · KOMP'),
+    E('hall', 'Hall', 'Klang-Editor › FX › HALL', 'Gemeinsamer Hall für alle Spuren; den Anteil je Spur regelt FX › SPUR.', 'hall reverb raum', G.ed('fx', 'hall'), '.sh-subs .stab.on'),
+    E('echo', 'Echo', 'Klang-Editor › FX › ECHO', 'Gemeinsames Echo (Teilung im Song-Tempo, Rückkopplung).', 'echo delay', G.ed('fx', 'echo'), '.sh-subs .stab.on'),
+    E('chorus', 'Chorus', 'Klang-Editor › FX › CHORUS', 'Breiter, schwebender Klang je Spur.', 'chorus breit schweben', G.ed('fx', 'chorus'), '.sh-subs .stab.on'),
+    E('master', 'Auto-Master (MASTERN)', 'Klang-Editor › FX › MASTER › AUTO-MASTER', 'Stil und Ziel wählen, MASTERN – Multiband, Sättigung und Limiter auf die Ziel-Lautheit.', 'master mastern lufs laut limiter', () => { ui1Home(); return openMasterPage(); }, 'AUTO-MASTER'),
+    E('mixa', 'Mix-Assistent', 'Klang-Editor › FX › MASTER › MIX-ASSISTENT', 'Vorschläge je Spur (Pegel, EQ, Panorama, Tiefe) im Zusammenhang; einzeln oder alle.', 'mix mischen assistent abmischen', () => { ui1Home(); return openMasterPage(); }, 'MIX-ASSISTENT'),
+    E('synpop', 'Synthie-Pop-Klänge', 'Klang-Bibliothek › Synthie-Pop FX', 'Computer-Dialing, Resonanz-Sweeps, schwebende Flächen … (Mod-Rad = Makro).', 'synthie pop fx dialing sweep', () => { ui1Home(); const t = ui1SynthT(true); if (t < 0) return false; selectTrack(t); openBrowser(t); return true; }, 'Synthie-Pop'),
+    E('bmk', BM_NAME + ': Werksklänge', 'Klang-Editor (' + BM_NAME + ') › KLÄNGE', 'Nach Kategorie zum Durchprobieren – antippen lädt und spielt sofort.', 'bit mask presets werksklaenge ausprobieren', () => { ui1Home(); UI1.bmTab = 'klang'; return ui1BmSheet(ui1SynthT(true)); }, '.ui1bm .ui1grid'),
+    E('bmh', BM_NAME + ': Anleitung', 'Klang-Editor (' + BM_NAME + ') › ?', 'Was die Tasten, die Anzeige und der Value-Regler tun.', 'bit mask anleitung hilfe bedienung', () => { ui1Home(); UI1.bmTab = 'hilfe'; return ui1BmSheet(ui1SynthT(true)); }, '.ui1bm .ui1help'),
+    E('mkp', MK_LABEL + '-Platte', 'Klang-Editor › Klangerzeugung ▾', 'Die Vorderseite des Geräts: jeder Wert hat seinen Regler; 128 Programme A01–H16.', 'platte programme vocoder', G.ed('osc'), '.sh-head .seg.eng'),
+    E('north', MD_NAME + ' (Drum-Synthese)', 'Klang-Bibliothek der DRUMS › ' + MD_NAME, 'Synthetische Drums je Pad; Kits und Programme.', 'north drum synthese kits', () => { ui1Home(); ndiGoNorth(); return true; }, '.pop, .on'),
+    E('perc', 'Perkussionsspur', 'Klang-Editor › ⋯ › ' + MD_NAME + ' – Perkussionsspur', 'Eine Synth-Spur spielt 12 ' + MD_NAME + '-Kanäle (folgt nicht der Transposition).', 'perkussion percussion', G.ed('osc'), () => [...EL.synthSheet.querySelectorAll('.edm')].find(ui1Shown)),
+    E('drumed', 'Drum-Editor', 'DRUMS-Spur › KLANG', 'SOUND, TIEF (Schichten), SCHRITTE, KIT, FX.', 'drums schlagzeug kit editor', G.drum('sound'), '.sh-tabs .tab.on'),
+    E('steps', 'Schritte (Drum-Raster)', 'Drum-Editor › SCHRITTE', 'Antippen = Schlag an/aus; Euklid und Muster.', 'schritte step sequencer raster beat', G.drum('steps'), '.sh-tabs .tab.on'),
+    E('grund', 'Stil-Grundmuster', 'Clip-Blatt › Grundmuster ▾', 'New Jack Swing, Euro Disco, House … mit deinen eigenen Drum-Klängen.', 'grundmuster stil genre beat groove', G.clip(true), 'Grundmuster'),
+    E('sf', 'Small / Full', 'Clip-Blatt (Drum-Clip) · Marken-Blatt › Rhythmus', 'Drum-Clips als leicht oder voll markieren; je Songteil umschaltbar.', 'small full leicht voll rhythmus', G.clip(true), 'Small'),
+    E('swing', 'Swing', 'Menü › Aufnahme › Swing', 'Jede zweite Sechzehntel kommt später – Groove statt Maschine.', 'swing shuffle groove', G.menu, 'Swing'),
+    E('quant', 'Quantisieren', 'Clip-Blatt › Quantisieren …', 'Rückt Noten aufs Raster; beim Einspielen: Menü › Aufnahme › Quantisieren.', 'quantisieren raster timing', G.clip(false), 'Quantisieren'),
+    E('ue', 'Fills & Breaks (◆ ÜBERGÄNGE)', 'Song-Ansicht › ◆ ÜBERGÄNGE', 'Kachel auf eine Teil-Kante ziehen – oder antippen und frei in den Song tippen.', 'fill fills break breaks uebergang wirbel crash einwurf', G.song(true), '.ue-bar .ue-tiles'),
+    E('fillchip', 'Fill bearbeiten', 'Song-Ansicht › Fill-Chip antippen', 'Länge, Ersetzen | Mischen, Pads, Noten … – jeder Schritt ein ↶.', 'fill bearbeiten ersetzen mischen noten', G.song(false), svB('bUe')),
+    E('wkz', 'Werkzeugkasten', 'Clip-Blatt › Werkzeugkasten ▾ (oder ROLLE)', 'Fertige Standardfiguren je Genre: Bässe, Stabs, Arps, Pads, Lead- und Drums-Füller.', 'werkzeugkasten figuren bass arp disco stabs', G.clip(false), 'Werkzeugkasten'),
+    E('remix', 'Remix', 'Menü › Song › Remix …', 'Bass und Drums des ganzen Songs in einem Stil neu – A Original / B Remix.', 'remix genre stil', G.menu, 'Remix'),
+    E('roll', 'Noten-Editor (ROLLE)', 'Clip › ✎', 'Zeichnen, Auswählen, Radieren; zwei Finger zoomen.', 'noten editor piano roll zeichnen', G.roll, () => EL.rollSheet),
+    E('lauf', 'LAUF (Schritt-Lauf)', 'Noten-Editor › LAUF', 'Basslauf oder Sequenz Schritt für Schritt; lang drücken = Wirbel, Chance, Slide …', 'lauf sequenz arp schritt ratchet', G.roll, 'LAUF'),
+    E('spiel', 'Spielweise', 'Noten-Editor › Spielweise', 'Gitarre (ab-auf, Riff), Glissando, Harfe, Glocken, Alberti, Pizzicato …', 'spielweise gitarre strum harfe glissando', G.roll, 'Spielweise'),
+    E('harm', 'Harmonie', 'Noten-Editor › Harmonie', 'Glätten, Lauf doppeln, Gegenstimme, Akkordvorschläge.', 'harmonie gegenstimme gegenmelodie akkordvorschlag glaetten', G.roll, 'Harmonie'),
+    E('copy', 'Noten kopieren / einfügen', 'Noten-Editor › Kopieren', 'Auswahl kopieren, duplizieren, mit Lupe einfügen.', 'kopieren einfuegen duplizieren', G.roll, 'Kopieren'),
+    E('song', 'Song-Ansicht', 'SONG ⇄ (Ecke oben links)', 'Der ganze Song als Zeitleiste; ● SONG nimmt alles mit, ▶ SONG spielt ab.', 'song arrangement timeline zeitleiste', G.mx, () => UI.corner),
+    E('songrec', 'Song aufnehmen', 'Song-Ansicht › ● SONG', 'Schneidet Szenenwechsel, Clip-Stopps, Akkorde und deine Melodie mit.', 'song aufnehmen mitschnitt', G.song(false), svB('bRec')),
+    E('loop', 'Schleife', 'Song-Ansicht › SCHLEIFE', 'aus · Song · Teil · Bereich; dort auch „Mithören beim Wischen“.', 'schleife loop wiederholen', G.song(false), svB('bLoop')),
+    E('marks', 'Teil-Marken', 'Song-Ansicht › Taktleiste (gelbe Namen)', 'Antippen = Marken-Blatt: ▶ Ab hier, ×2, Kopie, Gleiten, Rhythmus.', 'marke marken teil strophe refrain', G.song(false), () => SV.wrap),
+    E('kons', 'Konsolidieren', 'Song-Ansicht › Takte wählen › Bereich-Leiste', 'Aus einem Bereich wird ein Clip – der alte Clip bleibt erhalten.', 'konsolidieren bounce zusammenfassen bereich', G.song(false), () => SV.wrap),
+    E('insert', 'Teil einsetzen', 'Song-Ansicht › ＋ Teil einsetzen ▾', 'Setzt einen gespeicherten Teil ans Song-Ende oder an eine Stelle.', 'teil einsetzen anhaengen', G.song(false), 'Teil einsetzen'),
+    E('xp', 'Song transponieren', 'Menü › Song › Transponieren …', 'Der ganze Song ±1 Halbton – Drums bleiben.', 'transponieren song tonart hoeher tiefer', G.menu, 'Transponieren …'),
+    E('video', 'Video', 'Menü › Video', '9:16 oder 16:9 mit Ton; Ansicht, Regie, Teilen.', 'video tiktok film clip youtube', () => { ui1Home(); vvOpen(); return true; }, () => VV.el),
+    E('vregie', 'Video-Regie: Regeln', 'Video-Blatt › Regeln', 'Welches Ereignis (Fill, Gesang beginnt, Drop …) welche Ansicht bekommt.', 'regie regeln schnitt kamera', () => { ui1Home(); vvOpen(); return true; }, '.vr1rb'),
+    E('imvideo', 'Im Video (je Clip)', 'Clip-Blatt › Im Video', 'Auto, Gerät, Klavier, Mäusekino, Noten oder aus.', 'im video ansicht clip klavier maeusekino', G.clip(false), 'Im Video'),
+    E('export', 'Export (WAV, Einzelspuren, MIDI)', 'Menü › Export', 'Ganzer Song, Einzelspuren als ZIP, nur Gesang, MIDI, Projekt-Container.', 'export wav midi zip stems spuren', () => { ui1Home(); va1Sheet(); return true; }, '.va1-bd'),
+    E('midiimp', 'MIDI importieren', 'Menü › Export › MIDI importieren', 'Eine MIDI-Datei als Clips ins Projekt.', 'midi import datei', () => { ui1Home(); va1Sheet(); return true; }, 'MIDI importieren'),
+    E('savefile', 'Projekt als Datei sichern', 'Menü › Projekt', 'Eine Sicherung mit allem als .json – „Datei öffnen“ holt sie zurück.', 'sichern datei backup speichern json', G.menu, 'Als Datei sichern'),
+    E('projects', 'Projekte und ältere Versionen', 'Menü › Projekt', 'Alle Projekte im Browser; ältere Stände zurückholen.', 'projekte versionen oeffnen wiederherstellen', G.menu, 'Projekte'),
+    E('addtrack', 'Spur hinzufügen', 'Menü › Projekt › ＋ Spur', 'Synth 5 und 6 dazu; die zuletzt hinzugefügte lässt sich wieder entfernen.', 'spur hinzufuegen neue spur', G.menu, '＋ Spur'),
+    E('key', 'Projekt-Tonart', 'Menü › Harmonie', 'Grundton und Dur/Moll des Projekts.', 'tonart key dur moll grundton', G.menu, 'Projekt-Tonart'),
+    E('onescale', 'Eine Skala', 'Menü › Harmonie', 'Unter einem Akkord klingen alle Spuren in seiner Tonleiter.', 'skala tonleiter eine skala', G.menu, 'Eine Skala'),
+    E('reclen', 'Aufnahme-Einstellungen', 'Menü › Aufnahme', 'Clip-Länge, Quantisieren, Einzähler, Metronom, Swing.', 'laenge einzaehler aufnahme einstellungen', G.menu, 'Einzähler'),
+    E('haptik', 'Haptik', 'Menü › Bedienung', 'Kurzes Klicken bei Rastungen und Schritten.', 'haptik vibration klicken', G.menu, 'Haptik'),
+    E('glow', 'Leucht-Look', 'Menü › Bedienung', 'Aktive Tasten mit LED-Glühen, laufende Clips leuchten weich – nur der Look, nichts verschiebt sich.', 'leuchten glow look led licht lichter design', G.menu, 'Leucht-Look'),
+    E('online', 'Online', 'Menü › Online', 'Songs zusätzlich auf dem Server; Zusammenarbeit nur auf Anfrage.', 'online cloud teilen server', () => { ui1Home(); openMenu('online'); return true; }, 'Online'),
+    E('dx7', 'DX7-Bank (.syx)', 'Menü › Sounds', 'FM-Klänge aus einer Bank importieren oder als Bank exportieren.', 'dx7 syx bank import fm', G.menu, 'DX7-Bank importieren'),
+    E('panic', 'Alle Töne aus', 'Menü › Klang', 'Wenn ein Ton hängt.', 'haengt panik notaus ton haengt', G.menu, 'Alle Töne aus'),
+    E('help', 'Alle Hilfetexte', 'Menü › Hilfe', 'Ausführliche Erklärungen zu jeder Funktion.', 'hilfe help erklaerung', G.menu, () => [...EL.menu.querySelectorAll('.msec h3')].find(h => h.textContent.trim() === 'Hilfe')),
+  ];
+  return UI1.ents;
+}
+function ui1Search(q) {
+  const w = ui1Norm(q).split(' ').filter(Boolean); if (!w.length) return [];
+  const out = [];
+  for (const E of ui1Entries()) {
+    const n = ui1Norm(E.n), s = ui1Norm(E.s), h = n + ' ' + s + ' ' + ui1Norm(E.w) + ' ' + ui1Norm(E.d);
+    let sc = 0, ok = true;
+    for (const x of w) {
+      if (!h.includes(x)) { ok = false; break; }
+      sc += n.split(' ').some(y => y.startsWith(x)) ? 10 : n.includes(x) ? 6 : s.split(' ').some(y => y.startsWith(x)) ? 5 : s.includes(x) ? 3 : 1;
+    }
+    if (ok) out.push([sc, E]);
+  }
+  return out.sort((a, b) => b[0] - a[0]).map(x => x[1]);
+}
+// Sprung: öffnet die Stelle und zeigt sie mit dem Rahmen (Ergebnis für Tests in UI1.lastJump)
+function ui1Jump(id) {
+  const E = ui1Entries().find(x => x.id === id); if (!E) return null;
+  const res = {id, ok: false, target: false, at: null};
+  UI1.tour && ui1TourEnd();
+  let ok = true; try { ok = E.go() !== false; } catch (e) { logErr(e); ok = false; }
+  res.ok = ok; UI1.lastJump = res;
+  const show = k => { const t = ok ? ui1Find(E.q) : null; if (!t && k < 3) { setTimeout(() => show(k + 1), 180); return; } res.target = !!t; if (t) { ui1Ring(t, E.n, 5000); const b = t.getBoundingClientRect(); res.at = {x: Math.round(b.left), y: Math.round(b.top), w: Math.round(b.width), h: Math.round(b.height)}; } };
+  setTimeout(() => show(0), 240);
+  return res;
+}
+/* ---------- Kurz-Anleitungen mit „Zeig es mir“ ---------- */
+const UI1_TOURS = [
+  {id: 'klang', n: 'Klang formen', steps: [
+    {e: 'klang', t: 'Synth-Spur wählen und KLANG tippen – der Klang-Editor. Spiel ab jetzt immer wieder ein paar Töne auf der Tastatur.'},
+    {e: 'engine', t: 'Oben links die Klangerzeugung. VA ist der klassische Analog-Synth – damit fängst du am besten an.'},
+    {e: 'filter', t: 'FILTER: Cutoff runter = dunkler, rauf = heller. Resonanz betont die Kante – halt eine Taste und dreh dabei.'},
+    {e: 'env', t: 'HÜLLK.: Attack = wie schnell der Ton kommt, Release = wie lange er ausklingt. Kurz = Bass/Pluck, lang = Fläche.'},
+    {e: 'lfo', t: 'LFO: eine langsame Schwingung. Rate = Tempo; Ziel Tonhöhe = Vibrato, Ziel Filter = Wah.'},
+    {e: 'mod', t: 'MOD: Quelle antippen (LFO 1, Hüllkurve, Anschlag …), dann einen Regler ziehen = so tief wirkt sie. „Fertig“ beendet.'},
+    {e: 'wia', t: '◎ zeigt, welche Regler diesen Sound machen – gut zum Abgucken bei Werksklängen. A/B vergleicht mit dem Original.'},
+    {e: 'save', t: 'Gefällt es dir? Sichern legt den Klang in deine Bibliothek (Eigene).'}]},
+  {id: 'groove', n: 'Groove bauen', steps: [
+    {e: 'drumed', t: 'DRUMS-Spur wählen und KLANG tippen – der Drum-Editor.'},
+    {e: 'steps', t: 'SCHRITTE: jedes Kästchen ein Sechzehntel. Antippen = Schlag an/aus.'},
+    {e: 'grund', t: 'Schneller zum Genre: Drum-Clip halten › Grundmuster ▾ (New Jack Swing, House, Euro Disco …) – mit deinen eigenen Drum-Klängen.'},
+    {e: 'swing', t: 'Swing: Menü › Aufnahme › Swing – jede zweite Sechzehntel kommt später. Die Grundmuster bringen ihren Swing schon mit.'},
+    {e: 'sf', t: 'Small / Full: den Drum-Clip als leicht oder voll markieren; im Song je Teil umschaltbar.'},
+    {e: 'ue', t: 'Fills und Breaks: Song-Ansicht › ◆ ÜBERGÄNGE. Kachel auf die Kante vor einem Teil ziehen – oder antippen und in den Song tippen.'},
+    {e: 'wkz', t: 'Noch mehr Füller und Figuren: Clip halten › Werkzeugkasten ▾ (z. B. Drums-Füller, Disco-Bass).'}]},
+  {id: 'song', n: 'Song bauen', steps: [
+    {e: 'scene', t: 'Szenen sind Spalten: ▶ 1–4 startet alle Clips einer Szene am nächsten Takt.'},
+    {e: 'parts', t: 'TEILE: ＋ speichert, was gerade klingt, als Teil (Strophe, Refrain …).'},
+    {e: 'song', t: 'SONG ⇄ zeigt den Song als Zeitleiste. Teil-Taste halten und in den Song ziehen.'},
+    {e: 'songrec', t: '● SONG nimmt alles mit, was du spielst; ▶ SONG spielt den Song ab.'},
+    {e: 'marks', t: 'Gelbe Teil-Marke antippen = Marken-Blatt: Ab hier, ×2, Kopie, Gleiten, Rhythmus.'},
+    {e: 'kons', t: 'Konsolidieren: Taktnummern antippen (gelb), dann in der Bereich-Leiste – aus dem Bereich wird ein Clip, der alte bleibt.'},
+    {e: 'remix', t: 'Remix und Transponieren für den ganzen Song: Menü › Song.'}]},
+  {id: 'mix', n: 'Mischen & Mastern', steps: [
+    {e: 'vol', t: 'Lautstärke: am Spurnamen waagrecht wischen. Doppeltipp auf den Schieber = 0 dB.'},
+    {e: 'solo', t: 'Solo: Spurname ½ s halten. Mehrere Solos gehen.'},
+    {e: 'multi', t: 'Mehrere Spuren auf einmal: eine Spur halten und weitere antippen – Wischen wirkt dann auf alle; die Leiste hat Stumm, Solo und ✕.'},
+    {e: 'eqk', t: 'EQ · KOMP je Spur: Klang-Editor › FX › SPUR.'},
+    {e: 'hall', t: 'Hall und Echo sind für alle Spuren gemeinsam (FX › HALL / ECHO); den Anteil je Spur regelt FX › SPUR.'},
+    {e: 'mixa', t: 'Mix-Assistent: FX › MASTER › MIX-ASSISTENT – Vorschläge je Spur, einzeln oder alle auf einmal.'},
+    {e: 'master', t: 'Mastern: AUTO-MASTER → Stil und Ziel → MASTERN. Danach Vorher/Nachher vergleichen.'}]},
+  {id: 'video', n: 'Video', steps: [
+    {e: 'video', t: 'Menü › Video öffnet das Video-Blatt.'},
+    {e: 'vregie', t: 'Format 9:16 (TikTok) oder 16:9; Regeln: welches Ereignis welche Ansicht bekommt.'},
+    {e: 'imvideo', t: 'Je Clip festlegen, was im Video zu sehen ist: Clip halten › Im Video.'},
+    {e: 'export', t: 'Fertig? Menü › Export: Video, WAV, Einzelspuren, MIDI.'}]},
+];
+function ui1TourEnd() { const U = UI1.tour; UI1.tour = null; ui1RingOff(); if (UI1.card) { try { UI1.card.remove(); } catch (e) {} UI1.card = null; } return !!U; }
+function ui1Tour(id, k) {
+  const T = UI1_TOURS.find(x => x.id === id); if (!T) return false;
+  ui1Css(); UI1.tour = {T, k: clamp(k | 0, 0, T.steps.length - 1)}; ui1TourStep(); return true;
+}
+function ui1TourGo(d) { const U = UI1.tour; if (!U) return; const k = U.k + d; if (k < 0) return; if (k >= U.T.steps.length) { ui1TourEnd(); toast('Anleitung „' + U.T.n + '“ fertig'); return; } U.k = k; ui1TourStep(); }
+function ui1TourStep() {
+  const U = UI1.tour; if (!U) return;
+  const st = U.T.steps[U.k], E = st.e ? ui1Entries().find(x => x.id === st.e) : null;
+  ui1RingOff();
+  let ok = true; try { ok = E && E.go ? E.go() !== false : true; } catch (e) { logErr(e); ok = false; }
+  let c = UI1.card;
+  if (!c) {
+    c = UI1.card = el('div', 'ui1tour'); c.setAttribute('role', 'dialog'); c.setAttribute('aria-label', 'Anleitung');
+    document.body.appendChild(c);
+    for (const ev of ['pointerdown', 'pointerup', 'click', 'touchstart']) c.addEventListener(ev, e => e.stopPropagation(), ev === 'touchstart' ? {passive: true} : false);
+    onTap(c, b => { const a = b.dataset.a; if (a === 'x') ui1TourEnd(); else ui1TourGo(a === 'next' ? 1 : -1); }, 'button[data-a]');
+  }
+  const last = U.k === U.T.steps.length - 1;
+  c.innerHTML = `<div class="h"><b>${esc(U.T.n)}</b><span class="n">${U.k + 1}/${U.T.steps.length}</span><button class="rb x" data-a="x" aria-label="Anleitung schließen">✕</button></div>` +
+    `<div class="t">${esc(st.t)}${E && E.w ? '<br><small style="color:var(--amber)">' + esc(E.w) + '</small>' : ''}</div>` +
+    `<div class="r"><button class="rb" data-a="prev"${U.k ? '' : ' disabled'}>◀ Zurück</button><button class="rb go" data-a="next">${last ? 'Fertig' : 'Weiter ▶'}</button></div>`;
+  c.style.top = ''; c.style.bottom = '8px';
+  setTimeout(() => {
+    if (UI1.tour !== U || U.T.steps[U.k] !== st) return;
+    const t = ok && E ? ui1Find(E.q) : null;
+    if (t) ui1Ring(t, null, 0);
+    const b = t ? t.getBoundingClientRect() : null, vh = window.innerHeight, sa = 8;
+    if (b && b.top + b.height / 2 > vh * .5) { c.style.bottom = ''; c.style.top = sa + 'px'; } else { c.style.top = ''; c.style.bottom = sa + 'px'; }
+  }, 280);
+}
+/* ---------- Menü: „Wo finde ich …?“ (oben) und Leucht-Look (Bedienung) ---------- */
+function ui1MenuHook(sec, colL, s6, row, btn, goto) {
+  ui1Css();
+  try {
+    const g = sec('Wo finde ich …?', colL, 0); g.classList.add('ui1g');
+    const q = el('input', 'tin ui1q'); q.type = 'search'; q.placeholder = 'Suchen: z. B. Swing, Fill, Lautstärke'; q.setAttribute('aria-label', 'Funktion suchen'); q.autocomplete = 'off'; q.spellcheck = false; q.setAttribute('autocapitalize', 'off');
+    const all = btn(UI1.all ? 'Alle ▴' : 'Alle ▾'); all.setAttribute('aria-label', 'Alle Funktionen zeigen');
+    row(g, null, q, all);
+    const tl = el('div', 'mrow ui1tours'); tl.appendChild(el('span', 'lbl', 'Kurz-Anleitungen – „Zeig es mir“'));
+    for (const T of UI1_TOURS) { const b = btn(T.n); b.dataset.tour = T.id; tl.appendChild(b); }
+    g.appendChild(tl);
+    const res = el('div', 'ui1res'); g.appendChild(res);
+    const paint = () => {
+      const v = q.value.trim(), L = v ? ui1Search(v) : UI1.all ? ui1Entries() : [];
+      res.hidden = !v && !UI1.all;
+      res.innerHTML = L.length ? L.map(E => `<button class="rb ui1it" data-id="${E.id}"><b>${esc(E.n)}</b><span class="w">${esc(E.w)}</span><span class="d">${esc(E.d)}</span></button>`).join('') :
+        v ? '<div class="ui1none">Nichts gefunden – anderes Wort versuchen (z. B. „Hall“, „Video“, „Solo“) oder „Alle ▾“.</div>' : '';
+    };
+    on(q, 'input', paint);
+    on(all, 'click', () => { UI1.all = !UI1.all; all.textContent = UI1.all ? 'Alle ▴' : 'Alle ▾'; paint(); });
+    onTap(tl, b => ui1Tour(b.dataset.tour), 'button[data-tour]');
+    onTap(res, b => ui1Jump(b.dataset.id), 'button[data-id]');
+    paint();
+    UI1.menuQ = q; UI1.menuPaint = paint;
+    if (s6) {
+      const gs = makeSeg([[false, 'Aus'], [true, 'An']], () => ui1GlowOn(), v => ui1Glow(v));
+      row(s6, 'Leucht-Look', gs).classList.add('ui1glw');
+      s6.appendChild(el('div', 'small', 'Leucht-Look: aktive Tasten glühen wie LEDs, laufende Clips leuchten weich, Kopfzeilen tragen einen Farbbalken – nur der Look, nichts verschiebt sich.'));
+    }
+    if (goto === 'guide') requestAnimationFrame(() => { try { g.scrollIntoView({block: 'start'}); } catch (e) {} });
+  } catch (e) { logErr(e); }
+}
+/* ---------- 2 Klangerzeugung hochkant nebeneinander ---------- */
+// VA │ FM │ WT (three: nur VA │ FM) und ▾ = die Liste (engChip, gleiche Bedienung, gleiches Undo)
+function ui1EngSeg(i, three, compact) {
+  const cur = engKey(S.tracks[i].sound.engine), vis = three ? ['analog', 'fm6'] : ['analog', 'fm6', 'wt'];
+  const s = el('div', 'seg eng ui1eng' + (compact ? ' ui1c' : ''));
+  for (const e of vis) { const b = el('button', e === cur ? 'on' : '', ENGINE_LABEL[e]); b.dataset.e = e; b.setAttribute('aria-pressed', String(e === cur)); b.setAttribute('aria-label', 'Klangerzeugung ' + ENGINE_LABEL[e]); s.appendChild(b); }
+  const mb = engChip(i).firstChild, inMore = !vis.includes(cur);
+  mb.className = 'ui1more' + (inMore ? ' on' : ''); mb.setAttribute('aria-pressed', String(inMore));
+  const lab = inMore ? ENGINE_LABEL[cur] || '' : '';
+  if (inMore && lab.includes(' ')) { mb.classList.add('ui1m2'); mb.innerHTML = '<span>' + esc(lab).replace(' ', '</span><span>') + ' ▾</span>'; }
+  else mb.textContent = inMore ? lab + ' ▾' : '▾';
+  mb.setAttribute('aria-label', 'Weitere Klangerzeugungen: ' + (three ? 'WT, ' : '') + MK_LABEL + ', ' + BM_NAME + ', ' + MD_NAME);
+  s.appendChild(mb);
+  onTap(s, b => { const e = b.dataset.e; if (!e || e === engKey(S.tracks[i].sound.engine)) return; const bf = soundSnapshot(i); setEngine(i, e); commitSound(i, bf, 'Klangerzeugung'); if (ED.lcd) lcdShow('Klangerzeugung', ENGINE_LABEL[e]); }, 'button[data-e]');
+  s.update = () => {};
+  return s;
+}
+function ui1EngFit(sh, i) {
+  if (window.innerHeight <= window.innerWidth || engChipWanted()) return false;
+  const tr = S.tracks[i]; if (!tr || tr.kind !== 'synth' || percIs(tr)) return false;
+  const chip = sh.querySelector('.sh-head .r1 > .engchip'); if (!chip) return false;
+  const r1 = chip.parentElement, so = EL.app.classList.contains('sheet-open');
+  if (!so) EL.app.classList.add('sheet-open');
+  let put = null;
+  try {
+    if (!r1.getBoundingClientRect().width) return false;
+    const tt = () => r1.querySelector('.sh-title .stt b') || r1.querySelector('.sh-title');
+    // zu eng: der Spurname gekürzt (auch um Bruchteile: dann ist der Zwischenraum 0), die Zeile läuft über, eine Taste ragt hinaus
+    const sp = r1.querySelector(':scope > .sh-sp');
+    const bad = () => { const t = tt(), rr = r1.getBoundingClientRect().right; return !!t && (t.scrollWidth > t.clientWidth || t.getBoundingClientRect().width < 40) || (!!sp && sp.getBoundingClientRect().width < 1) || r1.scrollWidth > r1.clientWidth + 1 || [...r1.querySelectorAll('button')].some(b => b.offsetParent && b.getBoundingClientRect().right > rr + .5); };
+    for (const [three, compact] of [[false, false], [false, true], [true, false], [true, true]]) {
+      const s = ui1EngSeg(i, three, compact); (put || chip).replaceWith(s); put = s;
+      if (!bad()) break;
+      s.replaceWith(chip); put = null;
+    }
+  } catch (e) { logErr(e); if (put && put.isConnected) put.replaceWith(chip); put = null; }
+  finally { if (!so) EL.app.classList.remove('sheet-open'); }
+  if (!put) return false;
+  ED.ecoB = put.querySelector('button.on') || put.firstChild;
+  if (ED.eco && ED.ecoB) ED.ecoB.classList.toggle('eco', !ED.eco.hidden);
+  return true;
+}
+// Einhänger am Ende von buildSynthEd: Klangerzeugung hochkant, Bit Mask [KLÄNGE] [?]
+function ui1EdHook(sh, i, mkQ) {
+  ui1Css();
+  try { if (!mkQ) ui1EngFit(sh, i); } catch (e) { logErr(e); }
+  try {
+    const tr = S.tracks[i];
+    if (tr && tr.kind === 'synth' && engKey(tr.sound.engine) === 'bm') {
+      const tb = sh.querySelector('.sh-tabs'); if (!tb || tb.querySelector('.ui1bt')) return;
+      const k = el('button', 'ui1bt rb', 'KLÄNGE'), h = el('button', 'ui1bt rb', '?');
+      k.setAttribute('aria-label', BM_NAME + ': Werksklänge zum Durchprobieren'); h.setAttribute('aria-label', BM_NAME + ': kurze Anleitung');
+      onTap(k, () => { UI1.bmTab = 'klang'; ui1BmSheet(i); }); onTap(h, () => { UI1.bmTab = 'hilfe'; ui1BmSheet(i); });
+      tb.append(k, h);
+    }
+  } catch (e) { logErr(e); }
+}
+/* ---------- 4 Bit Mask: Werksklänge + Anleitung ---------- */
+const UI1_BM_HELP = [
+  '<b>Klang wählen:</b> unter KLÄNGE antippen – oder am Gerät [Voice] drücken und am Rad [Value] drehen: P00 … P39 sind die Werksklänge, U00 … deine gesicherten.',
+  '<b>Ein Bereich, eine Taste:</b> Osc1, Osc2, Noise, Filter, LFO1, LFO2, FX, Arp, Pitch, Mod, General. Taste drücken – die rote Anzeige zeigt den ersten Wert, die Zeile über dem Gerät nennt ihn mit Namen.',
+  '<b>Wert ändern:</b> am Rad [Value] drehen. Die zwei Tasten [Param] rechts neben der Anzeige – oder dieselbe Bereich-Taste noch einmal – gehen zum nächsten Wert.',
+  '<b>Masken – das Herz:</b> Osc1 bzw. Osc2, Wert MASK (000–255): jede Maske formt die Welle anders. Die Bildchen unten (007 … 120) zeigen, wie einige davon aussehen.',
+  '<b>Hüllkurven:</b> [Seq/Env] einschalten, dann Osc1, Osc2, Noise oder Filter – nun ändern die Tasten deren Hüllkurve (A · D · S · R).',
+  '<b>Init</b> drücken, mit [Value] 1OSC / 2OSC / VEL / RAND wählen, noch einmal Init = neutraler Startklang. <b>Compare</b> vergleicht mit dem gespeicherten Klang, <b>Write</b> sichert unter U00 …',
+  '<b>Layer / Split:</b> zwei Programme A und B übereinander oder links/rechts geteilt (Split halten + Taste = Teilungspunkt).',
+  '<b>Octave</b> (die zwei Tasten oben links) verschiebt die Tastatur, <b>Vol</b> ist die Lautstärke. Jede Änderung nimmt ↶ zurück.'];
+function ui1BmList() { return SYNTH_LIB.filter(f => engKey(f.engine) === 'bm' && soundRole(f) !== 'init'); }
+function ui1BmCats() { const have = new Set(ui1BmList().map(soundRole)); return [['alle', 'Alle']].concat(BM_ROLES.filter(([id]) => id !== 'init' && have.has(id))); }
+function ui1BmSheet(t) {
+  t = t == null || t < 0 ? ui1SynthT(true) : t; const tr = S.tracks[t];
+  if (!tr || tr.kind !== 'synth' || tr.stimme || percIs(tr)) { toast('Erst eine Synth-Spur wählen'); return false; }
+  ui1Css(); UI1.bmT = t;
+  if (!ui1BmCats().some(([id]) => id === UI1.bmCat)) UI1.bmCat = 'alle';
+  openPop(EL.top, p => {
+    p.classList.add('ui1bm', 'pan-y'); guardTouch(p);
+    const bd = el('div', 'ui1bd'); p.appendChild(bd); p._ui1 = bd; ui1BmPaint(p);
+    onTap(p, b => ui1BmTap(p, b), 'button[data-u]');
+  }, {name: 'ui1bm', sheet: {title: () => BM_NAME + ' · ' + (UI1.bmTab === 'hilfe' ? 'Anleitung' : 'Werksklänge'), repaint: p => ui1BmPaint(p)}});
+  return true;
+}
+function ui1BmPaint(p) {
+  const bd = p && p._ui1; if (!bd) return;
+  const snd = S.tracks[UI1.bmT] ? S.tracks[UI1.bmT].sound : null, cur = snd ? snd.origin : null, cat = UI1.bmCat || 'alle', help = UI1.bmTab === 'hilfe';
+  let h = `<div class="ui1cats"><button class="rb${help ? '' : ' on'}" data-u="tab|klang">KLÄNGE</button><button class="rb${help ? ' on' : ''}" data-u="tab|hilfe">? ANLEITUNG</button></div>`;
+  if (help) h += '<div class="ui1help">' + UI1_BM_HELP.map(x => '<p>' + x + '</p>').join('') + '</div>';
+  else {
+    const L = ui1BmList().filter(f => cat === 'alle' || soundRole(f) === cat);
+    h += '<div class="ui1cats">' + ui1BmCats().map(([id, l]) => `<button class="rb${id === cat ? ' on' : ''}" data-u="cat|${id}">${esc(l)}</button>`).join('') + '</div>' +
+      '<div class="ui1tip">Antippen = laden und sofort hören (auf der Spur ' + esc(S.tracks[UI1.bmT] ? S.tracks[UI1.bmT].name : '') + ') · ↶ holt den Klang davor zurück.</div>' +
+      '<div class="ui1grid">' + L.map(f => `<button class="rb ui1p${f.id === cur ? ' on' : ''}" data-u="p|${esc(f.id)}" aria-pressed="${f.id === cur}"><b>${esc(f.name)}</b><small>${esc(String(f.ref || ROLE_LABEL[soundRole(f)] || ''))}</small></button>`).join('') + '</div>';
+  }
+  bd.innerHTML = h;
+  try { pshHeadSync(p); } catch (e) {}
+}
+function ui1BmTap(p, b) {
+  const [k, v] = String(b.dataset.u).split('|');
+  if (k === 'tab') { UI1.bmTab = v === 'hilfe' ? 'hilfe' : 'klang'; ui1BmPaint(p); p.scrollTop = 0; return; }
+  if (k === 'cat') { UI1.bmCat = v; ui1BmPaint(p); return; }
+  if (k === 'p') ui1BmLoad(UI1.bmT, v);
+}
+// laden (ein ↶) und sofort hören: die Phrase der Rolle über die Spur
+function ui1BmLoad(t, id) {
+  const tr = S.tracks[t], rec = FACTORY_BY_ID.get(id); if (!tr || tr.kind !== 'synth' || !rec || engKey(rec.engine) !== 'bm') return false;
+  try { previewStop(); } catch (e) {}
+  soundEdit(t, 'Sound ' + rec.name, () => loadPreset(t, id));
+  lcdShow(BM_NAME, rec.name, ROLE_LABEL[soundRole(rec)] || '');
+  try { ensureAudio(); previewStart(t, S.tracks[t].sound, rec.demo || 'lead', id); } catch (e) { logErr(e); }
+  if (UI.pop && UI.pop.name === 'ui1bm') ui1BmPaint(UI.pop.el);
+  return true;
+}
+/* ---------- 5 Spuren-Gruppe (Laufzeit, nie im Projekt) ---------- */
+const ui1SelIdx = () => [...UI1.sel].map(tr => S.tracks.indexOf(tr)).filter(i => i >= 0).sort((a, b) => a - b);
+const ui1Heads = t => [...document.querySelectorAll('.th[data-t="' + t + '"], .sv-l.trk[data-t="' + t + '"]')].filter(h => h.offsetParent);
+function ui1SelSet(list) { UI1.sel.clear(); for (const i of list || []) if (S.tracks[i]) UI1.sel.add(S.tracks[i]); if (UI1.sel.size < 2) UI1.sel.clear(); ui1SelSync(); return ui1SelIdx(); }
+function ui1SelToggle(i) { const tr = S.tracks[i]; if (!tr) return; if (UI1.sel.has(tr)) UI1.sel.delete(tr); else UI1.sel.add(tr); if (UI1.sel.size < 2) UI1.sel.clear(); ui1SelSync(); }
+function ui1SelClear() { if (!UI1.sel.size) return; UI1.sel.clear(); ui1SelSync(); }
+function ui1SelSay() { const L = ui1SelIdx(); sx4Say(L.length ? L.length + ' Spuren gewählt – wischen = Lautstärke aller' : 'Gruppe aufgelöst'); }
+// zweiter Finger auf einem anderen Spurkopf, während der erste hält → Gruppe; bei aktiver Gruppe: eigene Geste am Spurkopf
+function ui1MultiDown(e, h, i) {
+  const p = SX4.p;
+  if (p && p.id !== e.pointerId && p.el !== h && S.tracks[p.i] && S.tracks[i] && (p.mode === '' || p.mode === 'hold')) {
+    e.preventDefault(); clearTimeout(p.timer);
+    if (p.mode === 'hold') sx4Solo(p.i);                           // der erste Finger wählt – sein Solo von eben zurück
+    p.mode = 'ui1';
+    if (!UI1.sel.has(S.tracks[p.i])) UI1.sel.add(S.tracks[p.i]);
+    UI1.sel.add(S.tracks[i]); ui1SelSync(); haptic('pop'); ui1SelSay();
+    return true;
+  }
+  if (!UI1.sel.size || !S.tracks[i]) return false;
+  if (e.button > 0) return true;
+  e.preventDefault();
+  if (UI1.g) ui1GEnd(null);
+  try { h.setPointerCapture(e.pointerId); } catch (err) {}
+  const g = UI1.g = {id: e.pointerId, el: h, i, x: e.clientX, y: e.clientY, mode: '', timer: 0};
+  g.timer = setTimeout(() => { if (UI1.g !== g || g.mode) return; g.mode = 'hold'; const on = sx4Solo(i); haptic('pop'); sx4Say((on ? 'Solo ' : 'Solo aus ') + sx4Name(i)); ui1SelSync(); }, SX4.HOLD);
+  return true;
+}
+function ui1GMove(e) {
+  const g = UI1.g; if (!g || g.id !== e.pointerId) return;
+  const dx = e.clientX - g.x, dy = e.clientY - g.y;
+  if (!g.mode) {
+    if (Math.abs(dx) > SX4.DRAG && Math.abs(dx) > Math.abs(dy) * 2) {
+      clearTimeout(g.timer); g.mode = 'vol'; g.x = e.clientX;
+      g.ts = UI1.sel.has(S.tracks[g.i]) ? ui1SelIdx() : [g.i]; g.v0 = g.ts.map(sx4Vol); g.before = g.ts.map(t => soundSnapshot(t));
+      ui1Sliders(g.ts, 0); return;
+    }
+    if (Math.abs(dy) > SX4.DRAG) { clearTimeout(g.timer); g.mode = 'dead'; }
+    return;
+  }
+  if (g.mode !== 'vol') return;
+  e.preventDefault();
+  const d = dx / SX4.PX; g.ts.forEach((t, k) => sx4VolSet(t, g.v0[k] + d)); ui1Sliders(g.ts, 0);
+}
+function ui1GEnd(e) {
+  const g = UI1.g; if (!g || (e && g.id !== e.pointerId)) return;
+  UI1.g = null; clearTimeout(g.timer);
+  try { g.el.releasePointerCapture(g.id); } catch (err) {}
+  if (g.mode === 'vol') { ui1VolCommit(g); ui1Sliders(g.ts, SX4.SHOW); return; }
+  if (g.mode || !e || e.type !== 'pointerup') return;
+  ui1SelToggle(g.i); haptic('tick'); ui1SelSay();                    // Tipp bei aktiver Gruppe = Spur dazu / weg
+}
+on(window, 'pointermove', ui1GMove, {passive: false});
+on(window, 'pointerup', ui1GEnd); on(window, 'pointercancel', ui1GEnd);
+// eine Geste = ein Undo-Schritt für alle Spuren der Gruppe
+function ui1VolCommit(g) {
+  const items = [];
+  g.ts.forEach((t, k) => { if (S.tracks[t] && soundSnapshot(t) !== g.before[k]) items.push({kind: 'sound', track: t, before: g.before[k], label: 'Lautstärke ' + S.tracks[t].name}); });
+  if (!items.length) return false;
+  if (typeof V6A !== 'undefined' && V6A.ed && V6A.ed.ak1 && g.ts.includes(V6A.ed.i)) { g.ts.forEach((t, k) => commitSound(t, g.before[k], 'Lautstärke ' + S.tracks[t].name)); return true; }
+  const label = 'Lautstärke ' + (items.length > 1 ? items.length + ' Spuren' : S.tracks[items[0].track].name);
+  undoPush(items.length > 1 ? {kind: 'group', label, items} : Object.assign(items[0], {label}));
+  markDirty();
+  return true;
+}
+// API/Leiste: alle gewählten Spuren um d (0…1-Skala wie das Wischen) – ein Undo-Schritt
+function ui1GroupVol(d) { const ts = ui1SelIdx(); if (!ts.length) return false; const g = {ts, before: ts.map(t => soundSnapshot(t))}; ts.forEach(t => sx4VolSet(t, sx4Vol(t) + d)); ui1Sliders(ts, SX4.SHOW); return ui1VolCommit(g); }
+function ui1Sliders(ts, ms) {
+  clearTimeout(UI1.slT);
+  for (const t of ts) for (const h of ui1Heads(t)) { sx4Slider(h, t); h.classList.add('sx4on'); }
+  if (ms) UI1.slT = setTimeout(() => { for (const t of ts) for (const h of ui1Heads(t)) if (!SX4.vis || SX4.vis.el !== h) h.classList.remove('sx4on'); }, ms);
+}
+// Stumm/Laut für die Gruppe: ein Undo-Schritt (Art 'sx4m' je Spur)
+function ui1GroupMute(m) {
+  const ts = ui1SelIdx(); if (!ts.length) return false;
+  if (m == null) m = !ts.every(t => S.tracks[t].mute);
+  const items = [];
+  for (const t of ts) { const tr = S.tracks[t]; if (!!tr.mute === !!m) continue; items.push({kind: 'sx4m', track: t, before: tr.mute ? '1' : '0', label: (m ? 'Stumm ' : 'Laut ') + tr.name}); setMute(t, m); }
+  if (!items.length) return m;
+  undoPush(items.length > 1 ? {kind: 'group', label: (m ? 'Stumm: ' : 'Laut: ') + items.length + ' Spuren', items} : items[0]);
+  haptic('tick'); sx4Say((m ? 'Stumm: ' : 'Wieder an: ') + ts.map(t => sx4Name(t)).join(' · ')); ui1SelSync();
+  return m;
+}
+function ui1GroupSolo() { const ts = ui1SelIdx(); if (!ts.length) return false; const on = !ts.every(t => sx4IsSolo(t)); for (const t of ts) { const tr = S.tracks[t]; if (on) SX4.solo.add(tr); else SX4.solo.delete(tr); } sx4SoloApply(); haptic('pop'); sx4Say((on ? 'Solo: ' : 'Solo aus: ') + ts.map(t => sx4Name(t)).join(' · ')); ui1SelSync(); return on; }
+function ui1BarMake() {
+  const b = el('div', 'ui1gb'); b.hidden = true; b.setAttribute('role', 'toolbar'); b.setAttribute('aria-label', 'Spuren-Gruppe');
+  b.innerHTML = '<span class="n"></span><button class="rb" data-g="m">Stumm</button><button class="rb" data-g="s">Solo</button><button class="rb" data-g="x" aria-label="Gruppe auflösen">✕</button>';
+  guardTouch(b);
+  onTap(b, x => { const a = x.dataset.g; if (a === 'm') ui1GroupMute(); else if (a === 's') ui1GroupSolo(); else { ui1SelClear(); sx4Say('Gruppe aufgelöst'); } }, 'button[data-g]');
+  document.body.appendChild(b); return b;
+}
+function ui1SelSync() {
+  ui1Css();
+  for (const tr of [...UI1.sel]) if (!S.tracks.includes(tr)) UI1.sel.delete(tr);   // anderes Projekt, Spur entfernt
+  if (UI1.sel.size < 2) UI1.sel.clear();
+  const ts = ui1SelIdx(), set = new Set(ts);
+  for (const h of document.querySelectorAll('.th[data-t], .sv-l.trk[data-t]')) { const want = set.has(+h.dataset.t); if (h.classList.contains('ui1sel') !== want) h.classList.toggle('ui1sel', want); }
+  if (!ts.length) { if (UI1.bar) UI1.bar.hidden = true; if (UI1.iv) { clearInterval(UI1.iv); UI1.iv = 0; } return; }
+  if (!UI1.iv) UI1.iv = setInterval(ui1SelSync, 400);
+  const b = UI1.bar || (UI1.bar = ui1BarMake());
+  const hide = !!((R.editor && R.editor !== 'menu') || UI.pop || EL.menu.classList.contains('open') || (typeof VV !== 'undefined' && VV.open));
+  if (b.hidden !== hide) b.hidden = hide;
+  if (hide) return;
+  const allM = ts.every(t => S.tracks[t].mute), allS = ts.every(t => sx4IsSolo(t));
+  const txt = ts.length + ' Spuren: ' + ts.map(t => sx4Name(t)).join(' · ');
+  const n = b.querySelector('.n'); if (n._t !== txt) { n._t = txt; n.innerHTML = esc(txt) + '<small>wischen = Lautstärke aller · Tipp = dazu/weg</small>'; }
+  const bm = b.querySelector('[data-g="m"]'), bs = b.querySelector('[data-g="s"]');
+  if (bm.textContent !== (allM ? 'Laut' : 'Stumm')) bm.textContent = allM ? 'Laut' : 'Stumm';
+  bs.classList.toggle('on', allS); bs.setAttribute('aria-pressed', String(allS));
+  const st = document.getElementById('strip'), r = st && st.offsetParent && !UI.songView ? st.getBoundingClientRect() : null;
+  let L, T, W, H;
+  if (r && r.width > 200 && r.height >= 40) { L = r.left; T = r.top; W = r.width; H = r.height; }
+  else { const a = (EL.gridArea || document.body).getBoundingClientRect(); W = Math.min(460, a.width - 16); L = a.left + (a.width - W) / 2; H = 50; T = a.bottom - H - 6; }
+  const css = Math.round(L) + ',' + Math.round(T) + ',' + Math.round(W) + ',' + Math.round(H);
+  if (b._pos !== css) { b._pos = css; b.style.left = Math.round(L) + 'px'; b.style.top = Math.round(T) + 'px'; b.style.width = Math.round(W) + 'px'; b.style.height = Math.round(H) + 'px'; }
+}
+/* ---------- 3 ◆ ÜBERGÄNGE: die fehlenden Vorlagen (nur Bibliothek) ---------- */
+function ui1UeLib() {
+  const K = 36, SN = 38, RIM = 37, CL = 39, HC = 42, HO = 46, TL = 45, TM = 47, TH = 50, CY = 49, PC = 56, SH = 70;
+  const N = l => l.map(([b, n, v, x]) => Object.assign({t: +(+b).toFixed(4), d: .25, n, v: +(+v).toFixed(2)}, x || null));   // b in Schlägen
+  const ramp = (n, a, z) => Array.from({length: n}, (_, k) => +(a + (z - a) * k / Math.max(1, n - 1)).toFixed(2));
+  const run = (pad, from, step, n, a, z, acc) => ramp(n, a, z).map((v, k) => [from + k * step, pad, v, acc && k === n - 1 ? {a: 1} : null]);
+  const DR = typeof DRUM_T === 'number' ? DRUM_T : 4;
+  return [
+    // Übergänge (Fills vor einer Kante; ein Fill ersetzt nur die Pads, die er selbst spielt)
+    {id: 'ui1-fill-becken', tab: 'ue', name: 'Fill mit Becken', short: 'Becken', k: 'fill', a: -1, len: 2, mode: 'ersetzt', notes: N(run(SN, 0, .25, 4, .7, 1, true).concat([[1, CY, 1], [1, K, 1]]))},
+    {id: 'ui1-tom-lauf', tab: 'ue', name: 'Tom-Lauf hoch → tief', short: 'Tom-Lauf', k: 'tom', a: -4, len: 4, mode: 'ersetzt',
+      notes: N([TH, TH, TH, TH, TM, TM, TM, TM, TL, TL, TL, TL, SN, SN, TL, TL].map((n, k) => [k * .25, n, ramp(16, .6, 1)[k], k === 15 ? {a: 1} : null]))},
+    {id: 'ui1-kick-snare', tab: 'ue', name: 'Kick-Snare-Fill', short: 'K-S', k: 'fill', a: -2, len: 2, mode: 'ersetzt', notes: N([[0, K, .85], [.5, SN, .8], [1, K, .85], [1.25, K, .8], [1.5, SN, .9], [1.75, SN, 1, {a: 1}]])},
+    {id: 'ui1-disco-fill', tab: 'ue', name: 'Disco-Fill (Snare + offene Hi-Hat)', short: 'Disco', k: 'fill', a: -2, len: 2, mode: 'ersetzt', notes: N(run(SN, 0, .25, 8, .55, 1, true).concat([[.5, HO, .7], [1.5, HO, .75]]))},
+    {id: 'ui1-wirbel32', tab: 'ue', name: 'Wirbel in 32teln', short: '32tel', k: 'fill', a: -1, len: 1, mode: 'ersetzt', notes: N(run(SN, 0, .25, 4, .6, .95, true).map(x => (x[3] = Object.assign({r: 2}, x[3] || null), x)))},
+    {id: 'ui1-rim-lauf', tab: 'ue', name: 'Rim-Lauf (leise)', short: 'Rim', k: 'fill', a: -2, len: 2, mode: 'ersetzt', notes: N(run(RIM, 0, .25, 8, .3, .75))},
+    {id: 'ui1-snare-aufbau', tab: 'ue', name: 'Snare-Aufbau (2 Takte)', short: 'Aufbau', k: 'build', a: -8, len: 8, mode: 'ersetzt', notes: N(run(SN, 0, .5, 8, .4, .65).concat(run(SN, 4, .25, 16, .66, 1, true)))},
+    {id: 'ui1-clap-aufbau', tab: 'ue', name: 'Clap-Aufbau (4 Takte)', short: 'Claps', k: 'build', a: -16, len: 16, mode: 'dazu', notes: N(run(CL, 0, 1, 8, .45, .62).concat(run(CL, 8, .5, 8, .64, .8), run(CL, 12, .25, 16, .82, 1, true)))},
+    {id: 'ui1-openhat', tab: 'ue', name: 'Open-Hat im Offbeat (1 Takt)', short: 'Open-Hat', k: 'build', a: -4, len: 4, mode: 'ersetzt', notes: N([0, 1, 2, 3].flatMap(b => [[b, HC, .55], [b + .5, HO, .75]]))},
+    {id: 'ui1-ghost', tab: 'ue', name: 'Ghost-Snares (1 Takt)', short: 'Ghost', k: 'fill', a: -4, len: 4, mode: 'dazu', notes: N([[.75, SN, .3], [1.75, SN, .35], [2.25, SN, .3], [3.5, SN, .35], [3.75, SN, .4]])},
+    // Breaks (die Drum-Spur pausiert im Fenster, die eigenen Schläge spielen)
+    {id: 'ui1-drop-2t', tab: 'break', name: 'Drop 2 Takte', short: 'Drop 2', k: 'break', a: -8, len: 8, mode: 'ersetzt', notes: [], stop: [DR]},
+    {id: 'ui1-stille-1t', tab: 'break', name: 'Stille 1 Takt', short: 'Stille', k: 'break', a: -4, len: 4, mode: 'ersetzt', notes: [], get stop() { return S && S.tracks ? fllStopAll() : [DR]; }},
+    {id: 'ui1-nur-kick', tab: 'break', name: 'Nur Kick (1 Takt)', short: 'Kick', k: 'break', a: -4, len: 4, mode: 'ersetzt', notes: N([0, 1, 2, 3].map(b => [b, K, .95])), stop: [DR]},
+    {id: 'ui1-halbzeit', tab: 'break', name: 'Halbe Zeit (1 Takt)', short: 'Halb', k: 'break', a: -4, len: 4, mode: 'ersetzt', notes: N([[0, K, 1], [2, SN, .95]].concat(run(HC, 0, .5, 8, .5, .5))), stop: [DR]},
+    {id: 'ui1-nur-hats', tab: 'break', name: 'Nur Hi-Hat (1 Takt)', short: 'Hats', k: 'break', a: -4, len: 4, mode: 'ersetzt', notes: N([0, .5, 1, 1.5, 2, 2.5, 3].map((b, k) => [b, HC, k % 2 ? .45 : .65]).concat([[3.5, HO, .7]])), stop: [DR]},
+    {id: 'ui1-tom-groove', tab: 'break', name: 'Tom-Groove (1 Takt)', short: 'Toms', k: 'break', a: -4, len: 4, mode: 'ersetzt', notes: N([[0, K, .95], [.75, TL, .7], [1.5, TM, .75], [2, K, .9], [2.75, TL, .75], [3.25, TM, .8], [3.5, TH, .85]]), stop: [DR]},
+    {id: 'ui1-schlag-pause', tab: 'break', name: 'Schlag + Pause (1 Takt)', short: 'Schlag', k: 'break', a: 0, len: 4, mode: 'ersetzt', notes: N([[0, CY, 1], [0, K, 1]]), stop: [DR]},
+    // Einwürfe (frei in den Song setzen; mischen sich dazu)
+    {id: 'ui1-ad-becken', tab: 'adlib', name: 'Becken', short: 'Becken', k: 'adlib', a: 0, len: 1, mode: 'dazu', notes: N([[0, CY, .9]])},
+    {id: 'ui1-ad-clap3', tab: 'adlib', name: 'Clap ×3', short: 'Clap ×3', k: 'adlib', a: 0, len: 1, mode: 'dazu', notes: N([[0, CL, .7], [.25, CL, .8], [.5, CL, .95]])},
+    {id: 'ui1-ad-openhat', tab: 'adlib', name: 'Offene Hi-Hat', short: 'Open', k: 'adlib', a: 0, len: 1, mode: 'dazu', notes: N([[0, HO, .8]])},
+    {id: 'ui1-ad-cowbell', tab: 'adlib', name: 'Cowbell', short: 'Cowbell', k: 'adlib', a: 0, len: 1, mode: 'dazu', notes: N([[0, PC, .8], [.5, PC, .6]])},
+    {id: 'ui1-ad-flam', tab: 'adlib', name: 'Snare-Flam', short: 'Flam', k: 'adlib', a: 0, len: 1, mode: 'dazu', notes: [{t: 0, d: .06, n: SN, v: .5}, {t: .06, d: .25, n: SN, v: 1, a: 1}]},
+    {id: 'ui1-ad-shaker', tab: 'adlib', name: 'Shaker-Lauf', short: 'Shaker', k: 'adlib', a: 0, len: 1, mode: 'dazu', notes: N(run(SH, 0, .25, 4, .5, .8))},
+    {id: 'ui1-ad-tom', tab: 'adlib', name: 'Tom + Kick', short: 'Tom', k: 'adlib', a: 0, len: 1, mode: 'dazu', notes: N([[0, TL, .95], [0, K, .9]])},
+    {id: 'ui1-ad-kick2', tab: 'adlib', name: 'Doppel-Kick', short: 'Kick ×2', k: 'adlib', a: 0, len: 1, mode: 'dazu', notes: N([[0, K, .9], [.75, K, .8]])},
+    // Verknüpfer (längere Läufe, die zwei Teile verbinden)
+    {id: 'ui1-lk-tom-ab', tab: 'lauf', name: 'Tom-Lauf abwärts (2 Takte)', short: 'Toms ab', k: 'tom', a: -8, len: 8, mode: 'ersetzt', notes: N([TH, TH, TH, TH, TH, TH, TM, TM, TM, TM, TM, TL, TL, TL, TL, TL].map((n, k) => [k * .5, n, ramp(16, .55, 1)[k], k === 15 ? {a: 1} : null]))},
+    {id: 'ui1-lk-snare-2t', tab: 'lauf', name: 'Snare-Lauf (2 Takte)', short: 'Snare 2T', k: 'build', a: -8, len: 8, mode: 'ersetzt', notes: N(run(SN, 0, 1, 4, .45, .6).concat(run(SN, 4, .5, 4, .62, .78), run(SN, 6, .25, 8, .8, 1, true)))},
+    {id: 'ui1-lk-kick-auf', tab: 'lauf', name: 'Kick-Aufbau (2 Takte)', short: 'Kick auf', k: 'build', a: -8, len: 8, mode: 'ersetzt', notes: N(run(K, 0, 1, 4, .7, .8).concat(run(K, 4, .5, 4, .82, .9), run(K, 6, .25, 8, .9, 1, true)))},
+    {id: 'ui1-lk-rim-tom', tab: 'lauf', name: 'Rim → Toms (1 Takt)', short: 'Rim-Tom', k: 'tom', a: -4, len: 4, mode: 'ersetzt', notes: N(run(RIM, 0, .5, 4, .5, .65).concat(run(TH, 2, .25, 4, .7, .8), run(TM, 3, .25, 2, .82, .88), run(TL, 3.5, .25, 2, .92, 1, true)))},
+  ];
+}
+/* ---------- Test-API ---------- */
+const UI1_API = {
+  search: q => ui1Search(q).map(E => ({id: E.id, n: E.n, w: E.w})), entries: () => ui1Entries().map(E => ({id: E.id, n: E.n, w: E.w, d: E.d})),
+  jump: id => ui1Jump(id), lastJump: () => (UI1.lastJump ? Object.assign({}, UI1.lastJump) : null), ring: () => { const R_ = UI1.ring; if (!R_) return null; const b = R_.r.getBoundingClientRect(); return {x: Math.round(b.left), y: Math.round(b.top), w: Math.round(b.width), h: Math.round(b.height), shown: R_.r.style.display !== 'none'}; },
+  home: () => { ui1Home(); return true; }, tours: () => UI1_TOURS.map(T => ({id: T.id, n: T.n, steps: T.steps.length})),
+  tour: (id, k) => ui1Tour(id, k), tourGo: d => { ui1TourGo(d || 1); return UI1.tour ? UI1.tour.k : null; }, tourEnd: () => ui1TourEnd(), tourInfo: () => (UI1.tour ? {id: UI1.tour.T.id, k: UI1.tour.k, card: !!(UI1.card && UI1.card.isConnected), ring: !!UI1.ring} : null),
+  glow: v => (v == null ? ui1GlowOn() : ui1Glow(v)),
+  engInfo: () => { const s = EL.synthSheet.querySelector('.sh-head .r1 .seg.eng'); return s ? {cls: s.className, keys: [...s.children].map(b => b.textContent.trim()), on: (s.querySelector('button.on') || {}).textContent || null} : null; },
+  bmSheet: (t, tab) => { if (tab) UI1.bmTab = tab; return ui1BmSheet(t); }, bmList: () => ui1BmList().map(f => ({id: f.id, name: f.name, role: soundRole(f), ref: f.ref || ''})), bmCats: () => ui1BmCats(), bmLoad: (t, id) => ui1BmLoad(t, id),
+  sel: list => (list ? ui1SelSet(list) : ui1SelIdx()), selClear: () => { ui1SelClear(); return true; }, groupVol: d => ui1GroupVol(d), groupMute: m => ui1GroupMute(m), groupSolo: () => ui1GroupSolo(),
+  bar: () => (UI1.bar && !UI1.bar.hidden ? (() => { const b = UI1.bar.getBoundingClientRect(); return {x: Math.round(b.left), y: Math.round(b.top), w: Math.round(b.width), h: Math.round(b.height), txt: UI1.bar.textContent}; })() : null),
+  ueIds: () => ui1UeLib().map(x => x.id),
+};
+/* UI1-END */
 
 /* ---------- computer keyboard ---------- */
 function onKeyDown(e) {
@@ -80063,6 +80735,8 @@ Object.assign(SYNQUENZER, LF1_API);                       // LF1: Lauf-Schritte,
 Object.assign(SYNQUENZER, {hm1: HM1_API});                  /* HM1: Test-API (Objekt, wird nicht umhüllt) */
 Object.assign(SYNQUENZER, UIX1_API);                        // UIX1: FANG-Teil-Namen, Mithören-Schalter, ✕, Tastatur
 Object.assign(SYNQUENZER, UX2_API);                         // UX2: Ziehen in der Matrix, Einfügen mit Lupe
+Object.assign(SYNQUENZER, {ui1: UI1_API});                  /* UI1: Test-API (Objekt, wird nicht umhüllt) */
+ueLibAdd(ui1UeLib()); ui1GlowInit();                        // UI1: ◆ ÜBERGÄNGE-Vorlagen, Leucht-Look (Gerät)
 const NO_SYNC = new Set(['clipCurves', 'bmcLog', 'bmcState', 'oneScaleOf', 'harmInfo', 'kbScaleNow', 'micCheck', 'micCheckJson', 'micCheckEstimate', 'cloud', 'cloudProjects', 'cloudVersions', 'cloudHandoff', 'state', 'project', 'runtime', 'getClip', 'getParam', 'noteLog', 'voices', 'timeline', 'serialize', 'buildMidi', 'buildZip', 'crc32', 'meter', 'outPitch', 'migrate', 'tapTempo',
   'getSound', 'mods', 'library', 'factory', 'previewState', 'soundEdited', 'fmxView', 'fmxPreview', 'fmxBadge',
   'history', 'projects', 'storage', 'engineInfo', 'getBusFx', 'wake', 'gestures', 'roll', 'rollApi', 'detectKey', 'sceneKey',

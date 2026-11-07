@@ -65474,7 +65474,8 @@ function mx2AbBase() {
 const mx2Side = () => (MX2.ab ? (MX2.ab.mode === 'gain' ? (MIXA.ab ? 'A' : 'B') : MX2.ab.side) : 'B');
 function mx2AB(side) {
   const A = MX2.ab; if (!A || !A.base) { toast('Erst mischen oder mastern – dann A/B'); return false; }
-  side = side === 'A' ? 'A' : 'B'; if (mx2Side() === side) return true;
+  side = side === 'A' ? 'A' : 'B'; const cmp = A.cmp; A.cmp = true;                 // ab dem ersten A/B-Tipp: Vergleich (pegelgleich)
+  if (mx2Side() === side) { if (!cmp) mx2TrimSync(); mx2Paint(); return true; }
   if (A.mode === 'gain' && A.amOn && S.fxBus.am && S.fxBus.am.on) { MIXA.ab = side === 'A'; mx2TrimSync(); }
   else {
     if (A.mode === 'gain') A.mode = 'snap';
@@ -65487,7 +65488,7 @@ function mx2AB(side) {
 function mx2AbEnd() { const A = MX2.ab; if (!A) return; if (A.mode === 'gain') { if (MIXA.ab) mixaAB(false); } else if (A.side === 'A') mx2AB('B'); }
 // Pegelangleich: der lautere Weg wird leiser (nie lauter: kein Übersteuern); nur live, nur während das Blatt einen Vergleich hat
 function mx2Trim() {
-  const A = MX2.ab; if (UI.vvOff || !A || !MX2.match || !MX2.open || (typeof SREC !== 'undefined' && SREC.on)) return 1;
+  const A = MX2.ab; if (UI.vvOff || !A || !A.cmp || !MX2.match || !MX2.open || (typeof SREC !== 'undefined' && SREC.on)) return 1;
   const LA = A.LA, LB = A.LB; if (!(isFinite(LA) && isFinite(LB))) return 1;
   return mx2Side() === 'A' ? (LA > LB ? Math.pow(10, (LB - LA) / 20) : 1) : (LB > LA ? Math.pow(10, (LA - LB) / 20) : 1);
 }
@@ -65501,7 +65502,7 @@ function mx2Chain() {
   mixaMoveTaps(ceil, out);
   M.am = {ga, gb, out, ceil, node: null, on: false}; M.ceil = out; return M.am;
 }
-function mx2TrimSync() { const A = MX2.ab; if (A && MX2.match && MX2.open && isFinite(A.LA) && isFinite(A.LB) && Math.abs(A.LA - A.LB) > 0.05) mx2Chain(); const N = AU.M && AU.M.am; if (N && AU.ctx) mixaAbSet(N, false); }
+function mx2TrimSync() { const A = MX2.ab; if (A && A.cmp && MX2.match && MX2.open && isFinite(A.LA) && isFinite(A.LB) && Math.abs(A.LA - A.LB) > 0.05) mx2Chain(); const N = AU.M && AU.M.am; if (N && AU.ctx) mixaAbSet(N, false); }
 // lauteste Stelle (8 Takte, sonst die Hälfte des Songs) aus den gemessenen K-Energien
 function mx2Stelle() {
   if (MX2.stelle) return MX2.stelle;
@@ -65699,8 +65700,8 @@ function mx2Paint() {
     `<button class="mbtn rb" data-x2="w" data-v="both"${busy ? ' disabled' : ''}${MX2.way === 'both' ? ' aria-pressed="true"' : ''}><b>Mischen + Mastern</b><small>beides nacheinander</small></button></div>` +
     `<div class="small mx2st">${st}</div>`;
   L += `<div class="mx2sec"><h5>Abhören</h5><div class="mx2r3">` + mx2Seg('rng', [['Song', 'song'], [stelle ? 'Lauteste Stelle T' + (stelle.a + 1) + '–' + stelle.b + ' ⟲' : 'Lauteste Stelle ⟲', 'stelle']], MX2.rng, false) +
-    `<button class="mbtn rb" data-x2="lm"${MX2.match ? ' aria-pressed="true"' : ''}>${MX2.match ? '≈ pegelgleich: an' : 'pegelgleich: aus'}</button></div>` +
-    `<div class="small">${A ? 'Oben im Kopf: <b>A</b> = vorher, <b>B</b> = nachher – auch während es läuft.' + (MX2.match && isFinite(A.LA) && isFinite(A.LB) ? ' Angleich ' + mx2F(Math.abs(A.LB - A.LA)) + ' dB (der lautere wird leiser, nur zum Vergleich).' : '') : 'A/B gibt es, sobald gemischt oder gemastert ist.'}</div></div>`;
+    `<button class="mbtn rb" data-x2="lm"${MX2.match ? ' aria-pressed="true"' : ''}>${MX2.match ? '≈ pegelgleich beim A/B' : 'pegelgleich: aus'}</button></div>` +
+    `<div class="small">${A ? 'Oben im Kopf: <b>A</b> = vorher, <b>B</b> = nachher – auch während es läuft.' + (MX2.match && isFinite(A.LA) && isFinite(A.LB) ? (A.cmp ? ' Vergleich pegelgleich: ' : ' Beim Vergleich pegelgleich: ') + mx2F(Math.abs(A.LB - A.LA)) + ' dB Unterschied, der lautere wird leiser (nach dem Schließen wieder volle Lautheit).' : '') : 'A/B gibt es, sobald gemischt oder gemastert ist.'}</div></div>`;
   L += `<div class="mx2sec"><h5>Stil · Handschrift</h5><div class="mx2pf" role="group" aria-label="Stil">` + MX2_PF.map(y => `<button class="mbtn rb" data-x2="pf" data-v="${y.id}"${pr.pf === y.id ? ' aria-pressed="true"' : ''}${busy ? ' disabled' : ''}><b>${esc(y.name)}</b><small>${esc(y.sub)}</small></button>`).join('') + '</div>' +
     `<div class="mx2r2" role="group" aria-label="Ziel-Lautheit">${mx2Seg('z', MIXA_ZIELE.map(([v, l]) => [l, v]), MIXA.ziel, busy)}</div></div>`;
   L += `<div class="mx2sec"><h5>Transparenz ↔ Druck</h5><div class="mx2r5" role="group" aria-label="Transparenz oder Druck">${mx2Seg('d', MX2_D, pr.d, busy)}</div>` +
@@ -65832,7 +65833,7 @@ function mx2MenuRow(sec, row, btn) {
 const MX2_API = {
   mx2Info: () => ({busy: MX2.busy, fresh: mx2Fresh(), cache: MX2.cache ? {sig: MX2.cache.sig, LA: MX2.cache.LA, ms: MX2.cache.ms, featMs: MX2.cache.featMs, NF: MX2.cache.C.NF, Lin: MX2.cache.C.Lin, share: MX2.cache.C.share} : null,
     fit: MX2.fit ? JSON.parse(JSON.stringify({P: MX2.fit.P, info: MX2.fit.info, ms: MX2.fit.ms, exact: !!MX2.fit.exact, pf: MX2.fit.pf, d: MX2.fit.d, w: MX2.fit.w, ziel: MX2.fit.ziel})) : null,
-    pref: Object.assign({}, mx2Pref()), am: S.fxBus.am ? JSON.parse(JSON.stringify(S.fxBus.am)) : null, ab: MX2.ab ? {side: mx2Side(), mode: MX2.ab.mode, LA: MX2.ab.LA, LB: MX2.ab.LB} : null, trim: mx2Trim(),
+    pref: Object.assign({}, mx2Pref()), am: S.fxBus.am ? JSON.parse(JSON.stringify(S.fxBus.am)) : null, ab: MX2.ab ? {side: mx2Side(), mode: MX2.ab.mode, LA: MX2.ab.LA, LB: MX2.ab.LB, cmp: !!MX2.ab.cmp} : null, trim: mx2Trim(),
     gains: AU.M && AU.M.am ? {ga: AU.M.am.ga.gain.value, gb: AU.M.am.gb.gain.value} : null, match: MX2.match, open: !!MX2.open, roles: mx2Roles(), duck: mx2DuckInfo(), stelle: MX2.cache ? mx2Stelle() : null, mt: MX2.mt, mixWhy: MX2.mixWhy, renders: MX2.renders | 0}),
   mx2Sheet: () => mx2Sheet(), mx2Close: () => { if (UI.pop && UI.pop.name === 'mx2') closePop(); else pshDockClose(); return true; },
   mx2Measure: () => mx2Run(false), mx2Way: w => mx2Way(w),

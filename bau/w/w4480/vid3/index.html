@@ -75878,13 +75878,14 @@ function vd3Ger(g, W, H, x, u) {
   return {key, v, page: pid, cell: !!cell};
 }
 // the caption (safe zone, upper part): small amber head, the line, the step
-function vd3Cap(g, W, H, head, line, step, a) {
+function vd3Cap(g, W, H, head, line, step, a, low) {
   if (!(a > 0)) return;
-  const C = vvCols(), port = H >= W, k = port ? W / 360 : H / 360, cx = port ? W * .465 : W / 2, y = H * (port ? .118 : .1), mw = W * (port ? .8 : .46);
+  const C = vvCols(), port = H >= W, k = port ? W / 360 : H / 360, cx = port ? W * .465 : W / 2, y = H * (low ? (port ? .497 : .5) : port ? .118 : .1), mw = W * (port ? .8 : .46);   // low: über der Spur-Zeile (die Matrix bleibt frei)
   g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = a; g.textBaseline = 'middle';
   g.font = '700 ' + (15 * k).toFixed(1) + 'px ' + C.ui; const lw = Math.min(mw - 24 * k, g.measureText(line).width);
-  g.font = '700 ' + (9 * k).toFixed(1) + 'px ' + C.ui; const hw = g.measureText(head).width + (step ? g.measureText(step).width + 14 * k : 0);
-  const w = Math.min(mw, Math.max(lw, hw) + 28 * k), h = 46 * k, x = cx - w / 2;
+  g.font = '700 ' + (9 * k).toFixed(1) + 'px ' + C.ui; const hw = g.measureText(head).width + head.length * 1.6 * k;
+  g.font = '600 ' + (9 * k).toFixed(1) + 'px ' + C.num; const sw = step ? g.measureText(step).width + 14 * k : 0;
+  const w = Math.min(mw, Math.max(lw, hw + sw) + 28 * k), h = 46 * k, x = cx - w / 2;
   vvRound(g, x, y, w, h, 10 * k); g.fillStyle = 'rgba(13,14,17,.9)'; g.fill(); g.strokeStyle = C.amber; g.lineWidth = Math.max(1, k); g.stroke();
   g.textAlign = 'left'; g.fillStyle = C.amber; if ('letterSpacing' in g) g.letterSpacing = (1.6 * k).toFixed(1) + 'px'; g.fillText(head, x + 14 * k, y + 13 * k); if ('letterSpacing' in g) g.letterSpacing = '0px';
   if (step) { g.textAlign = 'right'; g.font = '600 ' + (9 * k).toFixed(1) + 'px ' + C.num; g.fillStyle = C.dim; g.fillText(step, x + w - 12 * k, y + 13 * k); }
@@ -75932,8 +75933,8 @@ function vd3PreDraw(g, W, H, pre, tv) {
     }
   } catch (e) { if (!pre.err) { pre.err = String(e && e.message || e); logErr(e); } g.setTransform(1, 0, 0, 1, 0, 0); }
   if (sc.k === 'intro') vd3Title(g, W, H, Math.min(1, (sc.f1 - f) / 8), 'MAKING-OF');
-  else if (sc.k === 'outro') vd3Cap(g, W, H, 'UND JETZT', 'der ganze Song', '', fade);
-  else { const [hd, ln] = vd3Text(sc, u); vd3Cap(g, W, H, hd, ln, step, fade); }
+  else if (sc.k === 'outro') vd3Cap(g, W, H, 'UND JETZT', 'der ganze Song', '', fade, true);
+  else { const [hd, ln] = vd3Text(sc, u); vd3Cap(g, W, H, hd, ln, step, fade, sc.k === 'clip' || sc.k === 'teil'); }
   g.setTransform(1, 0, 0, 1, 0, 0);
   return true;
 }
