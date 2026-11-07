@@ -77698,7 +77698,7 @@ try { const th = e => { if (VD3 && (e.type === 'pointerdown' || e.buttons || e.p
 const VD4_FPS = 12, VD4_REC = 6, VD4_CHK = 250, VD4_SZ = {p: [110, 196], l: [88, 156]};
 const VD4_ICO = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false"><rect x="2.5" y="4.5" width="19" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><rect x="12" y="11" width="7" height="6" rx="1" fill="currentColor"/></svg>';
 var VD4 = {on: false, m: 'regie', el: null, cv: null, g: null, cap: null, capS: '', bM: null, bX: null, w: 0, h: 0, pos: null, geo: null, lay: '', rt: null, rtKey: '',
-  sig: '', pend: false, vis: false, t: 0, tChk: 0, drag: null, frames: 0, ms: 0, msMax: 0, cur: null, css: false, lv: null, snapT: 0};
+  sig: '', pend: false, vis: false, t: 0, tChk: 0, drag: null, frames: 0, ms: 0, msMax: 0, cur: null, css: false, lv: null, lvAt: null, snapT: 0};
 try { const p = uiPrefs(); VD4.on = p.vd4on === true; VD4.m = p.vd4m === 'app' ? 'app' : 'regie'; } catch (e) {}
 
 const vd4Land = () => window.innerWidth > window.innerHeight;
@@ -77727,7 +77727,10 @@ function vd4Css() {
     '.vd4w .vd4c{position:absolute;left:5px;bottom:5px;max-width:calc(100% - 10px);height:17px;padding:0 6px;box-sizing:border-box;border-radius:5px;font:700 9px/15px var(--font-ui);color:#0d0e11;background:#b8bdc7;border:1px solid transparent;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}' +
     '.vd4w .vd4c.auto{background:rgba(13,14,17,.82);color:#d6dae1;border-style:dashed}.vd4w .vd4c[hidden]{display:none}' +
     '.vvsheet .vd3-box .rb.vd4-lv{flex:1 1 100%;display:flex;align-items:center;gap:8px;padding:0 10px;text-align:left;font:600 12px/1.1 var(--font-ui)}' +
-    '.vvsheet .vd3-box .rb.vd4-lv span{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}.vvsheet .vd3-box .rb.vd4-lv b{flex:none;font:700 12px/1 var(--font-ui)}';
+    '.vvsheet .vd3-box .rb.vd4-lv span{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}.vvsheet .vd3-box .rb.vd4-lv b{flex:none;font:700 12px/1 var(--font-ui)}' +
+    '.vvsheet .vd4-vr .rb.vd4-lv{flex:1 1 auto;min-width:0;height:44px;display:flex;align-items:center;gap:8px;padding:0 10px;text-align:left;font:600 12px/1.1 var(--font-ui)}.vvsheet .vd4-vr .rb.vd4-lv span{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.vvsheet .vd4-vr .rb.vd4-lv b{flex:none;font:700 12px/1 var(--font-ui)}' +
+    '.vvsheet .rb.vd4-lv.on{border-color:var(--sel);color:var(--sel);box-shadow:inset 0 0 0 1px var(--sel)}' +
+    '@media (orientation:landscape){.vvsheet .vvb.vvlq.vd4q{grid-template-rows:minmax(0,1fr) auto auto auto}.vvb.vvlq.vd4q>.vvrow.vd4-vr{grid-column:1;grid-row:4}.vvb.vvlq.vd4q>.vvctl{grid-row:1 / span 4}}';
   document.head.appendChild(s);
 }
 function vd4Mount() {
@@ -77900,18 +77903,31 @@ function vd4Check() {
   if (sg !== VD4.sig) { VD4.sig = sg; if (!live) VD4.pend = true; }
 }
 
-/* ---------- Video-Blatt › Extras: [Live-Vorschau beim Komponieren · an/aus] (eigene Zeile im Extras-Kasten) ---------- */
+/* ---------- Video-Blatt › Extras: [Live-Vorschau beim Komponieren · an/aus] ----------
+   hochkant: eine eigene Zeile im Extras-Kasten (unter Titel · Rand · Making-of · Schnitt); quer: eine Zeile „Extras“ unter dem
+   Vorschaubild (wie Abspann und Ausblenden) – die Bedienspalte rechts bleibt, wie sie war ([Video erstellen] ohne Rollen). */
 function vd4LvPaint() {
   const b = VD4.lv; if (!b || !b.isConnected) return;
   b.classList.toggle('on', VD4.on); b.setAttribute('aria-pressed', String(VD4.on)); b.setAttribute('aria-label', 'Live-Vorschau beim Komponieren: ' + (VD4.on ? 'an' : 'aus'));
   b.innerHTML = VD4_ICO + '<span>Live-Vorschau beim Komponieren</span><b>' + (VD4.on ? 'an' : 'aus') + '</b>';
 }
+function vd4LvFit() {
+  const b = VD4.lv, L = VD4.lvAt; if (!b || !L || !L.box.isConnected) return;
+  let lq = false; try { lq = matchMedia('(orientation:landscape)').matches; } catch (e) {}
+  if (lq) { if (b.parentNode !== L.row) L.row.appendChild(b); if (L.row.parentNode !== L.body) L.body.appendChild(L.row); }
+  else { if (b.parentNode !== L.box) L.box.insertBefore(b, L.hint); if (L.row.parentNode) L.row.remove(); }
+  L.body.classList.toggle('vd4q', lq);
+}
 function vd4VvRow(u) {
   if (!u || !u.hint || !u.hint.parentNode) return null; vd4Css();
-  const b = VD4.lv = el('button', 'rb vd4-lv'); u.hint.parentNode.insertBefore(b, u.hint); vd4LvPaint();
+  const box = u.hint.parentNode, body = box.closest('.vvb'), b = VD4.lv = el('button', 'rb vd4-lv'), row = el('div', 'vvrow vd4-vr');
+  row.appendChild(el('span', 'lbl', 'Extras'));
+  VD4.lvAt = {box, hint: u.hint, body: body || box, row};
+  box.insertBefore(b, u.hint); vd4LvPaint(); vd4LvFit();
   onTap(b, () => { if (VV.busy) return; vd4Set(!VD4.on); haptic('tick'); if (VD4.on) lcdOrToast('Live-Vorschau an – zeigt sich über Matrix/Song'); });
   return b;
 }
+try { window.addEventListener('resize', () => { if (VD4.lv && VD4.lv.isConnected) vd4LvFit(); }); } catch (e) {}   // vor vvFit (das misst danach die Bühne)
 
 /* ---------- Test-API (Objekt, wird nicht umhüllt) ---------- */
 const VD4_API = {
