@@ -68,7 +68,7 @@ const SATZ = {
 
 // Kurs-Quellen gemockt (Stand 07.11.2026 ~17:36 UTC): kurs = 'ok' | 'kaputt' (alle Quellen gestört) | 'cryptocom' (nur Crypto.com geht)
 const KURS = { btc: 67971.07, eth: 2004.49, btc24: 0.25, eth24: -1.2 };
-async function kursMock(ctx, art, abrufe) {
+async function kursMock(ctx, art, abrufe, KURS) {
   const cors = { 'access-control-allow-origin': '*' };
   const json = (route, body) => route.fulfill({ status: 200, contentType: 'application/json', headers: cors, body: JSON.stringify(body) });
   await ctx.route(/^https:\/\/(api\.coingecko\.com|api\.crypto\.com|api\.exchange\.coinbase\.com)\//, route => {
@@ -86,7 +86,7 @@ async function oeffne({ satz = 'vertrag', jetzt = JETZT, breite = 428, hoehe = 9
     viewport: { width: breite, height: hoehe }, deviceScaleFactor: 2, isMobile: true, hasTouch: true,
     locale: 'de-DE', timezoneId: 'Europe/Berlin', colorScheme: dunkel ? 'dark' : 'light', serviceWorkers: sw,
   });
-  const zustand = { satz, offline: false, fehlt: new Set(fehlt), kursAbrufe: [] }; // fehlt: Dateinamen (z. B. 'konzerte-releases.json') -> 404
+  const zustand = { satz, offline: false, fehlt: new Set(fehlt), kursAbrufe: [], kurse: { ...KURS }, alleAbrufe: [] }; // fehlt: Dateinamen (z. B. 'konzerte-releases.json') -> 404
   await ctx.route('https://raw.githubusercontent.com/**', async route => {
     if (zustand.offline) return route.abort('internetdisconnected');
     const u = new URL(route.request().url());
@@ -98,7 +98,8 @@ async function oeffne({ satz = 'vertrag', jetzt = JETZT, breite = 428, hoehe = 9
     return route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body });
   });
   await ctx.route(/^https:\/\/(?!raw\.githubusercontent\.com)/, route => route.fulfill({ status: 200, contentType: 'image/png', body: PNG }));
-  await kursMock(ctx, kurs, zustand.kursAbrufe);
+  await kursMock(ctx, kurs, zustand.kursAbrufe, zustand.kurse);
+  ctx.on('request', r => zustand.alleAbrufe.push(r.url()));
   // Einstieg/Menge bzw. Produktliste wie von Xander eingetragen (nur localStorage)
   if (krypto || produkte) await ctx.addInitScript(([k, p]) => { try { if (k) localStorage.setItem('mein-vorteil-krypto', JSON.stringify(k)); if (p) localStorage.setItem('mein-vorteil-produkte', JSON.stringify(p)); } catch {} }, [krypto, produkte]);
   if (vorher) await ctx.addInitScript(vorher);
@@ -323,22 +324,22 @@ test('Preisfehler verschwinden von selbst: Technik-Deal am Deal-Ende, Preisfehle
   await ctx.close();
 });
 
-test('Mehr: alle übrigen Bereiche aus den Daten eingeklappt, neuer Bereich „Prämien & Freunde werben“ erscheint von selbst', { skip: ohnePw }, async () => {
+test('Mehr: übrige Bereiche eingeklappt; Prämien & Freunde werben und „komische“ Deals erscheinen nirgends', { skip: ohnePw }, async () => {
   const { ctx, page, fehler } = await oeffne({ satz: 'vertrag', pfad: '/mein-vorteil/#mehr' });
   const p = page.locator('#mehr');
   const kaesten = await p.locator('details.kasten > summary').allInnerTexts();
-  for (const n of [/^Andere Deals \(\d\)$/, /^Reisen \(\d\)$/, /^Prämien & Freunde werben \(2\)$/]) assert.ok(kaesten.some(h => n.test(h)), `${n} fehlt: ${kaesten}`);
+  assert.ok(kaesten.some(h => /^Reisen \(\d\)$/.test(h)), `Reisen fehlt: ${kaesten}`);
+  assert.ok(!kaesten.some(h => /Prämien|Andere Deals/.test(h)), `${kaesten}`);
   assert.equal(await p.locator('details.kasten[open]').count(), 0, 'alles eingeklappt');
   await aufklappen(page, '#mehr');
-  const pr = nbsp(await p.locator('article', { hasText: 'Startprämie' }).innerText());
-  assert.match(pr, /Haken: Geldeingang 700 € pro Monat/);
-  assert.match(nbsp(await p.locator('article[data-id="praemie-test-2"]').innerText()), /Haken: keine bekannten/);
+  // Prämien (Konto, Freunde werben) und Deals ohne Bezug (Butter, Tee-Kalender, Konfitüre) nirgends auf der Seite
+  const alles = await page.locator('main').textContent();
+  assert.doesNotMatch(alles, /Startprämie|Freunde werben|Girokonto|Meersalzbutter|Adventskalender|Bonne Maman/);
   // Schnäppchen-Angebote und Preisfehler stehen nicht hier
   const t = await p.textContent();
   assert.doesNotMatch(t, /Knoppers|Ben & Jerry|Lumaland|Jetzt lohnt es sich/);
-  // Reise-„Preisfehler“ (Hotel Test) ist abgelaufen -> weg
-  assert.doesNotMatch(t, /Hotel Test/);
-  // Ende unbekannt / bis …
+  assert.doesNotMatch(t, /Hotel Test/, 'Reise-„Preisfehler“ ist abgelaufen');
+  assert.doesNotMatch(t, /Prämien/, 'auch nicht in den Quellen');
   assert.match(nbsp(await p.locator('article', { hasText: 'SAS Sale' }).innerText()), /bis Mo 2\.11\./);
   assert.match(nbsp(await p.locator('article', { hasText: 'Ryanair' }).innerText()), /Ende unbekannt/);
   // Ausblenden merkt sich die Seite
@@ -352,13 +353,15 @@ test('Mehr: alle übrigen Bereiche aus den Daten eingeklappt, neuer Bereich „P
 
 test('Konzerte: Vergangenes fehlt, Umkreis-Schalter, Vorverkauf, Neuerscheinungen', { skip: ohnePw }, async () => {
   const { ctx, page, fehler } = await oeffne({ satz: 'vertrag', pfad: '/mein-vorteil/#konzerte' });
-  const p = page.locator('#p-konzerte');
+  const p = page.locator('#auftritte');
+  assert.equal(new URL(page.url()).hash, '#auftritte', 'alte Marke #konzerte zeigt auf Auftritte & Konzerte');
   let t = nbsp(await p.innerText());
   assert.match(t, /Depeche Mode/);
   assert.match(t, /Magenta-Vorverkauf ab Mo 2\.11\., 10:00 Uhr/);
   assert.match(t, /OMD/);
   assert.doesNotMatch(t, /Camouflage|ABGELAUFEN/);
   await p.getByRole('button', { name: 'Alle' }).click();
+  await aufklappen(page, '#auftritte');
   t = nbsp(await p.innerText());
   assert.match(t, /Camouflage\s*weit/);
   assert.doesNotMatch(t, /ABGELAUFEN/);
@@ -369,7 +372,7 @@ test('Konzerte: Vergangenes fehlt, Umkreis-Schalter, Vorverkauf, Neuerscheinunge
   // echte Daten (31.10., Lauf 41230376427): TM_KEY fehlt, nur 1 von 4 Festival-Seiten gestört (Gothic meets Klassik).
   // Die anderen drei wurden geprüft (HTTP 200) und melden neue Erwähnungen per Push -> nicht „Konzertsuche aus“.
   const echt = await oeffne({ satz: 'v2', pfad: '/mein-vorteil/#konzerte' });
-  const kt = nbsp(await echt.page.locator('#p-konzerte').innerText());
+  const kt = nbsp(await echt.page.locator('#auftritte').innerText());
   assert.doesNotMatch(kt, /Konzertsuche gerade aus|kein Push|README/);
   assert.match(kt, /Gerade nichts im Umkreis von 200 km\. Sobald etwas angekündigt wird, kommt ein Push\./);
   assert.match(kt, /Bis dahin kommen Termine nur von den Festival-Seiten \(Gothic meets Klassik gerade nicht erreichbar\)\./);
@@ -390,8 +393,8 @@ test('Konzerte: Festival-Seiten einzeln gezählt (status.seiten.geprueft/gesamt)
     await o.ctx.route(/^https:\/\/raw\.githubusercontent\.com\/.*\/konzerte\/data\/status\.json/, r => r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: mit(seiten) }));
     await o.page.reload();
     await geladen(o.page);
-    await o.page.evaluate(() => document.querySelectorAll('#p-konzerte details').forEach(d => (d.open = true)));
-    const kt = nbsp(await o.page.locator('#p-konzerte').innerText());
+    await o.page.evaluate(() => document.querySelectorAll('#auftritte details').forEach(d => (d.open = true)));
+    const kt = nbsp(await o.page.locator('#auftritte').innerText());
     assert.match(kt, erwartet);
     assert.doesNotMatch(kt, nicht);
     assert.deepEqual(o.fehler, []);
@@ -399,23 +402,47 @@ test('Konzerte: Festival-Seiten einzeln gezählt (status.seiten.geprueft/gesamt)
   }
 });
 
-test('Reiter: Direktlinks #angebote/#vorteile/#konzerte, letzter Reiter wird gemerkt', { skip: ohnePw }, async () => {
+test('Sprungmarken: alte #angebote/#vorteile/#konzerte zeigen auf Abschnitte, Leiste markiert den Abschnitt; Push-Hilfe', { skip: ohnePw }, async () => {
   const { ctx, page, fehler } = await oeffne({ satz: 'v2', pfad: '/mein-vorteil/#konzerte' });
-  assert.equal(await page.locator('#t-konzerte').getAttribute('aria-selected'), 'true');
-  assert.equal(await page.locator('#p-angebote').isHidden(), true);
-  await reiter(page, 'vorteile');
-  assert.equal(new URL(page.url()).hash, '#vorteile');
-  await page.goto(basis + '/mein-vorteil/'); // wie vom Home-Bildschirm: ohne #
-  await geladen(page);
-  assert.equal(await page.locator('#t-vorteile').getAttribute('aria-selected'), 'true');
-  await page.evaluate(() => { location.hash = '#angebote'; });
-  await page.waitForFunction(() => !document.getElementById('p-angebote').hidden);
+  await page.waitForFunction(() => location.hash === '#auftritte');
+  await page.waitForFunction(() => document.querySelector('.sprung a[data-ziel="auftritte"]').getAttribute('aria-current') === 'true');
+  await springe(page, 'gewinnspiele');
+  await page.waitForFunction(() => document.querySelector('.sprung a[data-ziel="gewinnspiele"]').getAttribute('aria-current') === 'true');
+  for (const [alt, neu] of [['#angebote', '#produkte'], ['#vorteile', '#gewinnspiele'], ['#remix', '#remix']]) {
+    await page.evaluate(h => { location.hash = h; }, alt);
+    await page.waitForFunction(h => location.hash === h, neu);
+  }
+  // Leiste: alle Abschnitte in Xanders Reihenfolge, wischbar ohne seitliches Scrollen der Seite
+  assert.deepEqual(await page.locator('.sprung a').allInnerTexts(), ['Krypto', 'Meine Produkte', 'Preisfehler', 'Gewinnspiele', 'Cashback', 'Snacks', 'Auftritte', 'Remix', 'Mehr']);
   // Push-Hilfe
   await page.locator('#push').click();
   assert.match(await page.locator('#push-hilfe').innerText(), /xander-schnaeppchen-b5cbf4442aaa9734f3/);
   await pruefeLayout(page, 'Push-Hilfe');
   await page.locator('#zu').click();
   assert.equal(await page.locator('#push-hilfe').isVisible(), false);
+  assert.deepEqual(fehler, []);
+  await ctx.close();
+});
+
+test('Platz für einen weiteren Reiter (Filme vom Kollegen): Link mit data-reiter zeigt eigene Seite, Abschnitts-Link führt zurück', { skip: ohnePw }, async () => {
+  const { ctx, page, fehler } = await oeffne({ satz: 'v2' });
+  await page.evaluate(() => {
+    document.querySelector('.sprung-zeile').insertAdjacentHTML('beforeend', '<a href="#filme" data-reiter="filme">Filme<span class="n"></span></a>');
+    document.querySelector('main').insertAdjacentHTML('afterend', '<section id="p-filme" class="reiter-seite breite" hidden><p class="leer">Lade Filme …</p></section>');
+    window.gestartet = 0;
+    REITER_START.filme = el => { window.gestartet++; el.innerHTML = '<h2>Filme</h2><p>3,99 €</p>'; };
+  });
+  await page.locator('.sprung a[data-reiter="filme"]').click();
+  await page.waitForFunction(() => location.hash === '#filme');
+  assert.equal(await page.locator('main').isHidden(), true);
+  assert.match(await page.locator('#p-filme').innerText(), /Filme\s*3,99 €/);
+  assert.equal(await page.locator('.sprung a[data-reiter="filme"]').getAttribute('aria-current'), 'true');
+  await pruefeLayout(page, 'Reiter Filme');
+  await springe(page, 'cashback');
+  assert.equal(await page.locator('main').isVisible(), true);
+  assert.equal(await page.locator('#p-filme').isHidden(), true);
+  await page.locator('.sprung a[data-reiter="filme"]').click();
+  assert.equal(await page.evaluate(() => window.gestartet), 1, 'Start nur beim ersten Öffnen');
   assert.deepEqual(fehler, []);
   await ctx.close();
 });
@@ -432,16 +459,16 @@ test('ohne Netz: letzter Stand aus dem Speicher, als offline markiert', { skip: 
   await ctx.close();
 });
 
-test('alte Adressen leiten sofort auf die neue Seite (mit passendem Reiter)', { skip: ohnePw }, async () => {
+test('alte Adressen leiten sofort auf die neue Seite (mit passendem Abschnitt)', { skip: ohnePw }, async () => {
   const ctx = await browser.newContext({ serviceWorkers: 'block' });
   await ctx.route('https://**', r => r.fulfill({ status: 404, body: '' }));
   const page = await ctx.newPage();
-  for (const [von, nach] of [['/schnaeppchen/', '#angebote'], ['/vorteile/', '#vorteile'], ['/vorteile/#schnaeppchen', '#angebote'], ['/konzerte/', '#konzerte']]) {
+  for (const [von, nach] of [['/schnaeppchen/', '#produkte'], ['/vorteile/', '#gewinnspiele'], ['/vorteile/#schnaeppchen', '#produkte'], ['/konzerte/', '#auftritte']]) {
     await page.goto(basis + von);
     await page.waitForURL(u => u.pathname === '/mein-vorteil/');
-    assert.equal(new URL(page.url()).hash, nach, von);
+    await page.waitForFunction(h => location.hash === h, nach);
     assert.equal(new URL(page.url()).search, '', 'Marker ?von= wird aus der Adresse entfernt');
-    assert.equal(await page.locator(`#t-${nach.slice(1)}`).getAttribute('aria-selected'), 'true', von);
+    await page.waitForFunction(z => document.querySelector(`.sprung a[data-ziel="${z}"]`).getAttribute('aria-current') === 'true', nach.slice(1));
     // einmaliger Hinweis aufs neue Symbol (bis „Verstanden“)
     if (von === '/schnaeppchen/') {
       assert.equal(await page.locator('#umzug').isVisible(), true);
@@ -455,25 +482,34 @@ test('alte Adressen leiten sofort auf die neue Seite (mit passendem Reiter)', { 
   await ctx.close();
 });
 
-test('Preisfehler/Technik (vertrag-b): Versand im Preis = „inkl. Versand“, echtes Ende nach 24 h wird nicht als „bis“ gezeigt', { skip: ohnePw }, async () => {
-  const { ctx, page, fehler } = await oeffne({ satz: 'vertragB' });
-  const karten = page.locator('#p-angebote [data-preisfehler]');
+test('Preisfehler/Technik (vertrag-b): nicht krasse fehlen; krasse mit „inkl. Versand“, Ende nach 24 h nicht als „bis“', { skip: ohnePw }, async () => {
+  // so wie gemeldet: CAMELBAK −42 % und Sony −68 % sind keine No-Brainer
+  let o = await oeffne({ satz: 'vertragB' });
+  assert.doesNotMatch(await o.page.locator('#preisfehler').textContent(), /CAMELBAK|Sony/);
+  await o.ctx.close();
+  // krass gemacht: CAMELBAK 6,98 statt 39,99 € (−83 %), Sony 29 statt 399 € (−93 %)
+  const patch = { 'schnaeppchen-current.json': d => {
+    const c = d.technik.find(t => /CAMELBAK/.test(t.titel)); Object.assign(c, { preisVorher: 39.99, ersparnisEuro: 33.01, ersparnisProzent: 83 });
+    const so = d.technik.find(t => /Sony/.test(t.titel)); Object.assign(so, { preis: 29, ersparnisEuro: 370, ersparnisProzent: 93 });
+  } };
+  o = await oeffne({ satz: 'vertragB', patch });
+  const { page, fehler } = o;
+  const karten = page.locator('#preisfehler [data-preisfehler]');
   const camel = nbsp(await karten.filter({ hasText: 'CAMELBAK' }).innerText());
-  assert.match(camel, /vorher 11,99 €\s*→\s*jetzt 6,98 €/);
-  assert.match(camel, /du sparst 5,01 € \(−42 %\)/);
+  assert.match(camel, /vorher 39,99 €\s*→\s*jetzt 6,98 €/);
+  assert.match(camel, /du sparst 33,01 € \(−83 %\)/);
   assert.match(camel, /Vergleichspreis laut mydealz · inkl\. Versand/);
   assert.doesNotMatch(camel, /zzgl/);
   const sony = nbsp(await karten.filter({ hasText: 'Sony' }).innerText());
   assert.match(sony, /^Technik-Deal/);
   assert.doesNotMatch(sony, /\bbis\b|storniert/, 'Ende (3.11.) liegt nach dem Verschwinden der Karte (1.11. 11:00)');
-  assert.match(await page.locator('#p-angebote h2').first().innerText(), /^Preisfehler & Technik-Deals/i);
   // 24 h nach dem Melden weg, obwohl die Deal-Seite ein späteres Ende nennt (Daten veraltet: kein neuer Lauf)
   await page.clock.setFixedTime(new Date('2026-11-01T10:00:30Z'));
   await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
   assert.equal(await karten.filter({ hasText: 'Sony' }).count(), 0);
   assert.equal(await karten.filter({ hasText: 'CAMELBAK' }).count(), 1);
   assert.deepEqual(fehler, []);
-  await ctx.close();
+  await o.ctx.close();
 });
 
 test('Tiefstpreis auf der Seite: nie „Einziges Angebot“, wenn auf derselben Karte ein billigeres steht (ältere Daten)', { skip: ohnePw }, async () => {
@@ -488,7 +524,8 @@ test('Tiefstpreis auf der Seite: nie „Einziges Angebot“, wenn auf derselben 
 test('Unplausibles Angebot (eher anderes Produkt) wird nie zur Hauptkarte, auch wenn das beste abgelaufen ist', { skip: ohnePw }, async () => {
   const { ctx, page, fehler } = await oeffne({ satz: 'vertragB', jetzt: '2026-10-31T18:30:00Z' });
   assert.equal(await page.locator('[data-produkt="knoppers-schnitte"]').count(), 0);
-  const t = nbsp(await page.locator('#p-angebote').innerText());
+  await aufklappen(page, '#produkte');
+  const t = nbsp(await page.locator('#produkte').innerText());
   assert.match(t, /Knoppers Schnitte\s*Gerade kein Angebot · zuletzt 0,19 € pro Stück bei Kaufland/);
   assert.doesNotMatch(t, /Knoppers Minis|0,050 €/);
   assert.deepEqual(fehler, []);
@@ -497,10 +534,10 @@ test('Unplausibles Angebot (eher anderes Produkt) wird nie zur Hauptkarte, auch 
 
 test('Vorverkauf: Beginn und Ende werden gemerkt – die Zeile wechselt von selbst, während die Seite offen ist', { skip: ohnePw }, async () => {
   const { ctx, page, fehler } = await oeffne({ satz: 'vertrag', pfad: '/mein-vorteil/#konzerte', jetzt: '2026-11-02T08:58:00Z', uhr: 'laeuft' });
-  const dm = page.locator('#p-konzerte .liste > li', { hasText: 'Depeche Mode' }).first();
+  const dm = page.locator('#auftritte .liste > li', { hasText: 'Depeche Mode' }).first();
   assert.match(nbsp(await dm.innerText()), /Magenta-Vorverkauf ab heute, 10:00 Uhr/);
   await page.clock.fastForward('03:00');
-  await page.waitForFunction(() => /läuft bis/.test(document.getElementById('p-konzerte').textContent));
+  await page.waitForFunction(() => /läuft bis/.test(document.getElementById('auftritte').textContent));
   assert.match(nbsp(await dm.innerText()), /Magenta-Vorverkauf läuft bis Mi 4\.11\., 10:00 Uhr/);
   assert.deepEqual(fehler, []);
   await ctx.close();
@@ -508,13 +545,15 @@ test('Vorverkauf: Beginn und Ende werden gemerkt – die Zeile wechselt von selb
 
 test('Neuerscheinungen gestört ≠ keine; Konzerttermine gestört -> Neuerscheinungen trotzdem da', { skip: ohnePw }, async () => {
   let o = await oeffne({ satz: 'vertrag', pfad: '/mein-vorteil/#konzerte', fehlt: ['konzerte-releases.json'] });
-  let t = nbsp(await o.page.locator('#p-konzerte').innerText());
+  await aufklappen(o.page, '#auftritte');
+  let t = nbsp(await o.page.locator('#auftritte').innerText());
   assert.match(t, /Neuerscheinungen gerade nicht erreichbar/);
   assert.doesNotMatch(t, /Keine neuen Veröffentlichungen/);
   assert.match(t, /Depeche Mode/);
   await o.ctx.close();
   o = await oeffne({ satz: 'vertrag', pfad: '/mein-vorteil/#konzerte', fehlt: ['konzerte-konzerte.json'] });
-  t = nbsp(await o.page.locator('#p-konzerte').innerText());
+  await aufklappen(o.page, '#auftritte');
+  t = nbsp(await o.page.locator('#auftritte').innerText());
   assert.match(t, /Konzerttermine gerade nicht erreichbar/);
   assert.match(t, /Plastic Autumn/);
   assert.deepEqual(o.fehler.filter(f => !/Failed to load resource/.test(f)), []);
@@ -530,7 +569,7 @@ test('Eine Quelle gestört (Telefon online): nicht „offline“, sondern „let
   assert.match(stand, /Angebote: letzter Stand von 17:35 Uhr – Quelle gerade gestört/);
   assert.match(stand, /Vorteile gerade eben/);
   assert.doesNotMatch(stand, /offline/);
-  assert.match(nbsp(await text(page, '#p-angebote')), /^Quelle gerade gestört – du siehst den letzten Stand von 17:35 Uhr\./);
+  assert.match(nbsp(await text(page, '#i-produkte')), /^Quelle gerade gestört – du siehst den letzten Stand von 17:35 Uhr\./);
   assert.match(nbsp(await page.locator('[data-produkt="knoppers-schnitte"]').innerText()), /15 × 25 g/, 'Karten aus dem letzten Stand');
   assert.deepEqual(fehler.filter(f => !/Failed to load resource/.test(f)), []);
   await ctx.close();
@@ -538,8 +577,8 @@ test('Eine Quelle gestört (Telefon online): nicht „offline“, sondern „let
 
 const ALT_SEITE = '<!doctype html><meta charset="utf-8"><title>alt</title><p>alte Seite</p>';
 for (const [ordner, nach, cache, altSeite] of [
-  ['schnaeppchen', '#angebote', 'schnaeppchen-1', readFileSync(join(FIX, 'alt', 'schnaeppchen-index.html'))],
-  ['vorteile', '#vorteile', 'vorteile-v1', ALT_SEITE],
+  ['schnaeppchen', '#produkte', 'schnaeppchen-1', readFileSync(join(FIX, 'alt', 'schnaeppchen-index.html'))],
+  ['vorteile', '#gewinnspiele', 'vorteile-v1', ALT_SEITE],
 ]) {
   test(`alter Service Worker (${ordner}) wird ersetzt: Zwischenspeicher weg, kleiner Worker bleibt, Seite landet auf Mein Vorteil`, { skip: ohnePw }, async () => {
     const ctx = await browser.newContext({ serviceWorkers: 'allow' });
@@ -557,7 +596,7 @@ for (const [ordner, nach, cache, altSeite] of [
     // 2. Umzug veröffentlicht: neuer kleiner sw.js + Weiterleitung. Update wie beim nächsten Öffnen.
     await page.evaluate(() => navigator.serviceWorker.getRegistration().then(r => r.update()).catch(() => {}));
     await page.waitForURL(u => u.pathname === '/mein-vorteil/', { timeout: 15000 });
-    assert.equal(new URL(page.url()).hash, nach);
+    await page.waitForFunction(h => location.hash === h, nach);
     const rest = await page.evaluate(async o => ({
       caches: await caches.keys(),
       regs: (await navigator.serviceWorker.getRegistrations()).map(r => ({ scope: new URL(r.scope).pathname, skript: r.active?.scriptURL || '' })),
@@ -708,12 +747,11 @@ test('Grundpreis bei „465 ml oder 4 × 100 ml“: die Karte sagt, für welche 
   await ctx.close();
 });
 
-test('Preisfehler ohne bekannten Preis: „Preis siehe Angebot“ statt „jetzt ?“', { skip: ohnePw }, async () => {
+test('Preisfehler ohne bekannten Preis: nie „jetzt ?“ – ohne Preis ist er nicht als krass prüfbar und fehlt', { skip: ohnePw }, async () => {
   const patch = { 'schnaeppchen-current.json': d => { d.technik.find(t => /RTX/.test(t.titel)).preis = null; } };
   const { ctx, page, fehler } = await oeffne({ satz: 'vertrag', patch });
-  const rtx = nbsp(await page.locator('#p-angebote [data-preisfehler]', { hasText: 'RTX 5070' }).innerText());
-  assert.match(rtx, /Preis siehe Angebot\s*Originalpreis unbekannt/);
-  assert.doesNotMatch(rtx, /\?|jetzt/);
+  const pf = nbsp(await page.locator('#preisfehler').innerText());
+  assert.doesNotMatch(pf, /RTX 5070|jetzt \?/);
   assert.deepEqual(fehler, []);
   await ctx.close();
 });
@@ -722,31 +760,33 @@ test('Aufgeklappte Kästen bleiben offen, wenn die Seite neu zeichnet (Rückkehr
   const { ctx, page, fehler } = await oeffne({ satz: 'v2' });
   const weitere = page.locator('[data-produkt="ben-jerrys"] details.weitere');
   await weitere.locator('summary').click();
-  await page.locator('#p-angebote details.kasten summary').click();
+  await page.locator('#produkte details.kasten:not(.ohne-angebot) summary').click();
   assert.equal(await weitere.evaluate(d => d.open), true);
   await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange'))); // zurück aus dem Prospekt
   await page.locator('#neu').click(); // neue Daten
   await geladen(page);
   await page.waitForFunction(() => !document.getElementById('neu').hasAttribute('aria-busy'));
   assert.equal(await weitere.evaluate(d => d.open), true, '„1 weiteres Angebot“ bleibt offen');
-  assert.equal(await page.locator('#p-angebote details.kasten').evaluate(d => d.open), true, 'Quellen bleiben offen');
+  assert.equal(await page.locator('#produkte details.kasten:not(.ohne-angebot)').evaluate(d => d.open), true, 'Quellen bleiben offen');
   assert.equal(await page.locator('[data-produkt="knoppers-schnitte"] details.weitere').count(), 0);
   assert.deepEqual(fehler, []);
   await ctx.close();
 });
 
-test('Vorteile-Zähler wie bei den Angeboten: was erst Montag beginnt, zählt nicht mit', { skip: ohnePw }, async () => {
-  const { ctx, page, fehler } = await oeffne({ satz: 'v2', pfad: '/mein-vorteil/#vorteile' });
-  const ab = await page.locator('#p-vorteile article .marke.warm', { hasText: 'ab Mo 2.11.' }).count();
-  const karten = await page.locator('#p-vorteile article').count();
-  assert.equal(ab, 2, 'Butter und Bonne Maman');
-  assert.equal(await page.locator('#t-vorteile .n').innerText(), String(karten - ab));
-  // die Zeile nennt den Beginn im selben Format wie die Marke
-  assert.match(nbsp(await page.locator('#p-vorteile article', { hasText: 'Président' }).innerText()), /ab Mo 2\.11\./);
-  // am Montag zählen sie mit
+test('Zähler: was erst Montag beginnt, zählt nicht mit (Gewinnspiele, Remix-Contests)', { skip: ohnePw }, async () => {
+  const patch = { 'vorteile-aktuell.json': d => {
+    d.kategorien.tests.push({ id: 'gs-montag', kategorie: 'tests', titel: 'Synthesizer gewinnen – ab Montag', zeile: 'Kommentar schreiben', link: 'https://example.org/gs-montag', quelle: 'Test', grund: 'gewinnspiel', datum: '2026-10-31T10:00:00Z', ab: '2026-11-02T07:00:00.000Z', bis: '2026-11-20T22:59:59.000Z', sichtbarBis: '2026-11-20T22:59:59.000Z' });
+    d.kategorien.musik.push(...REMIX_TEST());
+  } };
+  const { ctx, page, fehler } = await oeffne({ satz: 'vertrag', patch });
+  const n = async ab => Number(await zahlIn(page, ab).innerText() || 0);
+  const gs = await page.locator('#gewinnspiele article').count();
+  assert.equal(await page.locator('#gewinnspiele article .marke.warm', { hasText: 'ab Mo 2.11.' }).count(), 1);
+  assert.equal(await n('gewinnspiele'), gs - 1);
+  assert.equal(await n('remix'), 2);
   await page.clock.setFixedTime(new Date('2026-11-02T08:00:00Z'));
   await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
-  assert.equal(await page.locator('#t-vorteile .n').innerText(), String(await page.locator('#p-vorteile article').count()));
+  assert.equal(await n('gewinnspiele'), await page.locator('#gewinnspiele article').count());
   assert.deepEqual(fehler, []);
   await ctx.close();
 });
@@ -770,14 +810,14 @@ test('Umzug-Hinweis im alten Home-Bildschirm-Symbol: Adresse zum Kopieren statt 
 });
 
 test('Spar-Tipps: „Zurück“ führt direkt zu Mein Vorteil (nicht über die alte Seite mit Umzug-Hinweis)', { skip: ohnePw }, async () => {
-  const { ctx, page } = await oeffne({ satz: 'v2', pfad: '/mein-vorteil/#vorteile' });
-  await page.locator('#p-vorteile details.kasten summary', { hasText: 'Spar-Tipps' }).click();
-  await page.locator('#p-vorteile a', { hasText: 'Spar-Tipps öffnen' }).click();
+  const { ctx, page } = await oeffne({ satz: 'v2', pfad: '/mein-vorteil/#mehr' });
+  await page.locator('#mehr details.kasten summary', { hasText: 'Spar-Tipps' }).click();
+  await page.locator('#mehr a', { hasText: 'Spar-Tipps öffnen' }).click();
   await page.waitForURL(u => u.pathname === '/vorteile/spartipps.html');
   await page.locator('a.zurueck').click();
   await page.waitForURL(u => u.pathname === '/mein-vorteil/');
   await geladen(page);
-  assert.equal(new URL(page.url()).hash, '#vorteile');
+  assert.equal(new URL(page.url()).hash, '#mehr');
   assert.equal(await page.locator('#umzug').isHidden(), true);
   await ctx.close();
 });
@@ -791,7 +831,7 @@ test('Alte Vorteils-Adresse baut die alte Seite nicht mehr auf (keine Datenabruf
   page.on('response', async r => { if (new URL(r.url()).pathname === '/vorteile/') html.push(r.url()); });
   await page.goto(`${basis}/vorteile/#konzerte`, { waitUntil: 'commit' });
   await page.waitForURL(u => u.pathname === '/mein-vorteil/');
-  assert.equal(new URL(page.url()).hash, '#konzerte');
+  await page.waitForFunction(() => location.hash === '#auftritte');
   assert.equal(html.length, 1);
   // vor dem Weiterleiten: nur Mein Vorteils eigene fünf Datenabrufe, nicht die drei der alten Seite
   await geladen(page);
@@ -819,12 +859,9 @@ for (const [breite, hoehe, lage] of [[428, 926, 'hoch'], [926, 428, 'quer']]) {
   for (const dunkel of [false, true]) {
     test(`Layout ${breite}×${hoehe} (${lage}, ${dunkel ? 'dunkel' : 'hell'}): kein seitliches Scrollen, Tippflächen ≥ 44 px, Bildschirmfotos`, { skip: ohnePw }, async () => {
       for (const satz of dunkel ? ['vertrag', 'v3'] : ['vertrag', 'v2', 'v3']) {
-        const { ctx, page, fehler } = await oeffne({ satz, breite, hoehe, dunkel });
-        for (const r of ['angebote', 'vorteile', 'konzerte']) {
-          await reiter(page, r);
-          await pruefeLayout(page, `${satz} ${r} ${lage}`);
-          await page.screenshot({ path: join(SHOTS, `${satz}-${r}-${lage}${dunkel ? '-dunkel' : ''}.png`), fullPage: !dunkel && lage === 'hoch' });
-        }
+        const { ctx, page, fehler } = await oeffne({ satz, breite, hoehe, dunkel, krypto: KRYPTO_TEST, patch: { 'vorteile-aktuell.json': d => { d.kategorien.musik.push(...REMIX_TEST()); } } });
+        await pruefeLayout(page, `${satz} ${lage}`);
+        await page.screenshot({ path: join(SHOTS, `${satz}-${lage}${dunkel ? '-dunkel' : ''}.png`), fullPage: !dunkel && lage === 'hoch' });
         if (!dunkel && lage === 'hoch') {
           await page.locator('#push').click();
           await page.screenshot({ path: join(SHOTS, `${satz}-push-hilfe-${lage}.png`) });
