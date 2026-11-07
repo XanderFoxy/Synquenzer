@@ -1,3 +1,9 @@
+## 4.43.1 — Klanganker sicherer
+
+- **Klanganker (Gegenprüfung):** Kein Datenverlust mehr im Grundklang: Undo nach Preset laden, Klangerzeugung wechseln, 🎲 oder Init holte während einer laufenden Geste die Clip-Werte in den Grundklang – behoben (auch A/B). Gemischte Gesten (ein Grundklang-Schalter + ein Regler) sind jetzt EIN Undo-Schritt. Super-Regler-Vormachen landet nicht mehr im Clip. ARP an der MS 2000-Platte bleibt beim Loslassen an. Undo-Schritte tragen den Reglernamen.
+- **Chor-Blatt:** malte nach „Selbst singen“ nicht neu (der Aufruf stand versehentlich im Kommentar) – behoben.
+Tests: Regeln, acorn 0 doppelt / 0 Syntaxfehler, Rauchtest grün; Klanganker-Tests (10/10 + Gegenprüfung) alle OK.
+
 ## 4.43.0 — Video-Matrix wie in der App, Korrekturen Klavier/Mäusekino
 
 - **Video-Matrix:** Clips in den echten Spurfarben statt grün, darin die kleinen Noten wie in der App (Drums als Schlag-Raster), laufende Clips hervorgehoben, Laufposition als Linie, Drum-Clips glühen bei Schlägen. Spurköpfe wie in der App (STIMME zeigt „Audio“). Video nicht langsamer.
