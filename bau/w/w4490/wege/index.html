@@ -82431,6 +82431,11 @@ function wegeCss() {
       '.pop .wg-bpm .sx1-r .ms-b.on{color:#ffcf7a;border-color:#6b4c16}',
       '.sx14 .wg-ah .sx14-r.arm{color:#ffcf7a;border-color:#6b4c16}',
       '.sv-top .sv-scr{display:none!important}',            // D11: Mithören braucht keinen Schalter mehr (▼ ziehen)
+      '#rangeBar .rg-b[data-a="part"] .t{letter-spacing:0}',  // Prüfung 5: „Zusammen …“ passt hochkant (Kurzform von „Zusammenfassen …“)
+      // Prüfung 10: Tempo-Blatt quer – „Song transponieren …“ und „Ausblenden am Ende“ als zweite Spalte neben Tempo/Taktart (nichts unter dem Rand)
+      '@media (orientation:landscape){.pop:has(> .wg-bpm){display:grid;grid-template-columns:auto 212px;column-gap:14px;grid-auto-flow:row dense;align-items:start}' +
+      '.pop:has(> .wg-bpm) > *{grid-column:1}.pop:has(> .wg-bpm) > .ux1-hd{grid-column:1 / -1}' +
+      '.pop:has(> .wg-bpm) > .wg-bpm{grid-column:2;grid-row:span 5;align-self:end;margin-top:0}.pop .wg-bpm .sx1-r .ms-b{min-width:40px}}',
       // ✕ auch quer in den Blättern dieses Pakets (Zusammenfassen, Bereich ⋯) – wie hochkant (UIX1)
       '@media (orientation:landscape){.pop.s2sum > .ux1-hd,.pop:has(> .wg-rv) > .ux1-hd{display:block;position:sticky;top:8px;height:0;z-index:3}' +
       '.pop.s2sum > .ux1-hd > .ux1-px,.pop:has(> .wg-rv) > .ux1-hd > .ux1-px{position:absolute;right:-8px;top:-8px;width:44px;height:36px;min-width:0;padding:0;font-size:15px}' +
@@ -82442,6 +82447,7 @@ function wegeCss() {
 
 /* ---------- D6: eine Wortliste (Reihenfolge überall gleich) ---------- */
 (function wegeWords() {
+  wegeCss();                                                      // Prüfung: von Anfang an (sonst ist der Lautsprecher quer bis zum ersten WEGE-Blatt da)
   try {
     const L = {auto: 'Auto', app: 'App', song: 'Song', matrix: 'Matrix', klav: 'Klavier', kino: 'Mäusekino', geraet: 'Gerät …', noten: 'Noten …', tast: 'Tastatur', text: 'Text'};
     VD3_OPTS.length = 0; for (const k of WEGE_VORD) if (L[k]) VD3_OPTS.push([k, L[k]]);

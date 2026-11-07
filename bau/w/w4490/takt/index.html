@@ -41963,7 +41963,7 @@ function setSongTs(ts, o) {
   UI.dirty.all = true;
   if (!o.quiet && !o.clips) {
     const cand = S.tracks.some(tr => !tr.stimme && tr.clips.some(c => c && (c.ts || null) === old));
-    if (cand || S.song) tktSongTsToast(ts, old); else toast('Taktart ' + (ts || '4/4'), {label: '↶ Rückgängig', fn: () => undo()});   // TKT: [Clips umwandeln] faltet (Song: Versionen)
+    if (cand || S.song) tktSongTsToast(ts, old); else toast('Taktart ' + (ts || '4/4'), {label: '↶ Rückgängig', fn: () => undo()});   // TKT: [Clips umwandeln] faltet (Szenen-Clips + Song)
   }
   return o.clips ? n : true;
 }
