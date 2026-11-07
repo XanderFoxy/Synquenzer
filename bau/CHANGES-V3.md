@@ -1,3 +1,17 @@
+## 4.45.0 — Ton im Video, Export, Fills frei, Gesang natürlicher, Remix, LAUF, Harmonie, Querformat, Konsolidieren
+
+- **Video mit Ton auf dem iPhone:** das iPhone kann Ton nicht selbst kodieren – die App baut das Video jetzt selbst mit Bild und Ton (.mov), spielt in Fotos und jedem Schnittprogramm.
+- **Menü → Export:** ganzer Song WAV, **Einzelspuren** (ZIP), **nur Gesang**, **nur Chor**, Song als MIDI, **eine Spur als MIDI**, Video 9:16/16:9, **Projekt-Container** (zeigt vorher alle enthaltenen Audios, prüft beim Öffnen „5 von 5 ✓“), **MIDI importieren**. Behoben: Clip verschwand nach WAV-Export.
+- **Fills & Breaks:** Snare-Fehler behoben (ein Tom-Fill nimmt nur die Toms weg). Fill-Chip → **Ersetzen | Mischen** (Ersetzen: Alle / Nur Toms / Pads …). Frei setzen: ◆ ÜBERGÄNGE → Kachel → irgendwo in den Song tippen (Raster 1/4 · 1/8 · 1/16 · frei), Chip ziehen, Länge am Griff, **Noten …** bearbeiten.
+- **Gesang:** [M] an STIMME schaltet nur den Lead stumm – Chor singt weiter. Tonhöhe **Natürlich ↔ Hart** (Standard natürlich: Vibrato bleibt). Wort aus der Welle löschen → Rest rückt nach (oder Lücke lassen). Übersprechen der Musik wird wieder gesäubert (der Fehler kam seit 4.25.4 vom gemerkten Kabel-Weg). Audio-Editor: größere Griffe, Lupe beim Ziehen.
+- **Remix & Genre:** ≡ → Song → **Remix …** (oder Marke → Rhythmus): New Jack Swing, Euro Disco, Detroit Pop, Frühes House, Funk House, Garage 2-Step, Synth-Pop, Zwingen 0–100 %, A Original / B Remix. **Grundmuster ▾** im Clip-Blatt. **Small/Full** je Drum-Clip und je Teil. **Song transponieren** (≡ → Song).
+- **LAUF:** Schritt antippen = aus/an (Note bleibt), lang drücken = Wirbel, Transponieren, Chance, Slide, Akzent, Start. Richtung vorwärts/rückwärts/hin-her/Zufall. **Spielweise** in der ROLLE: Gitarre (ab, ab-auf, Folk, Riff), Glissando, Harfe, Glocken, Mandoline, Alberti, Pizzicato.
+- **Harmonie** (Noten-Editor ganz rechts): **Glätten** → Grundmuster auf C (Moll: a) als neuer Clip, Akkorde gleich in die Akkord-Zeile; **Lauf** doppeln/fortsetzen; **Gegenstimme** (3 Varianten); **Akkordvorschläge**. Skalen-Sperre: SPIELEN ½ s halten → frei / Skala / Akkord.
+- **Querformat:** nichts mehr unten abgeschnitten – passt eine Seite nicht, rollt nur der Inhalt, Kopf und ✕ bleiben stehen; ✕ quer in jedem Editor am selben Platz.
+- **Konsolidieren:** kein Clip wird mehr überschrieben – der alte Clip bekommt den ganzen Inhalt, spielt in der Matrix weiter nur seine Loop-Klammern; nur der neue Teil spielt alles. Clip-Blatt: „Fenster Takt 1–2 von 4“, ◀ ▶ verschiebt das Fenster.
+- Zusammengeführt: Harmonie- und Spielweise-Knopf im Noten-Editor teilten sich eine Einstellung (einer verschwand) – getrennt. Neue Prüfung auf doppelte Schlüssel: 0.
+Tests: Regeln, acorn 0 doppelt / 0 Syntaxfehler, Rauchtest grün; Export 38/38, Fills 25/25, Remix 30/30, LAUF 49/49, Harmonie 47/47, Konsolidieren 34/34, Querformat-Messung 0 abgeschnitten; Gesang alle Punkte grün (die Übersprech-Messung schwankt unter Last).
+
 ## 4.44.0 — Mix & Master auf Knopfdruck, Synthie-Pop-Klänge
 
 - **MASTERN:** FX › MASTER → AUTO-MASTER → Stil (Synth-Pop · Disco · House · Sanft) und Ziel (Streaming −14 / Laut −9 LUFS) → **MASTERN**. Die App hört den Song einmal durch und stellt 3-Band-Multiband-Kompressor, sanfte Sättigung, Bus-Kompressor und Limiter so ein, dass er genau auf der Ziel-Lautheit liegt, ohne Übersteuern (gemessen −1,5 dBTP). **Vorher/Nachher** zum Vergleichen.
