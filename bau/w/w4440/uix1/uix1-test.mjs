@@ -15,7 +15,8 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
 // a real pass of a running part, then FANG (s1Fang) → Blatt „Teil überarbeitet“
 const S1OPEN = `const A = SYNQUENZER; if (!R.playing) { A.play(); A.launchScene(0); await new Promise(r=>setTimeout(r,1200)); }
   if (!S.parts || !S.parts[0]) { A.partFromNow(0,'Strophe'); closePop(); }
-  A.launchPart(0); const L = partLen(S.parts[0]); await new Promise(r=>setTimeout(r, (L*2+1.5) * 4 * 60000/S.bpm));
+  A.launchPart(0); if (window.__ux1Chg) { await new Promise(r=>setTimeout(r,300)); A.launchClip(2, 1); }   // eine Änderung im Lauf (Synth 3 → Szene 2)
+  const L = partLen(S.parts[0]); await new Promise(r=>setTimeout(r, (L*2+1.5) * 4 * 60000/S.bpm));
   const r = A.s1Fang({}); await new Promise(r=>setTimeout(r,250)); return !!r && UI.pop && UI.pop.name === 's1';`;
 const inView = `(sel) => { const e = document.querySelector(sel); if (!e) return false; const r = e.getBoundingClientRect(); return r.width > 0 && r.top >= 0 && r.left >= 0 && r.bottom <= innerHeight && r.right <= innerWidth; }`;
 
@@ -36,7 +37,7 @@ const inView = `(sel) => { const e = document.querySelector(sel); if (!e) return
   await ev(p, 'undo(); return true'); await wait(100);
   ok('↶ nimmt den neuen Teil zurück', !(await ev(p, `return S.parts.some(x => x && x.name === 'Refrain')`)));
   // vergebener Name → zweite Ebene → ⟳ ersetzen (= Teil ersetzen)
-  ok('S1 wieder offen', await ev(p, S1OPEN));
+  ok('S1 wieder offen (mit Änderung im Lauf)', await ev(p, 'window.__ux1Chg = true; ' + S1OPEN));
   const before = await ev(p, 'return JSON.stringify(S.parts[0])');
   await p.tap('.ux1-s1 button[data-n="Strophe"]'); await wait(200);
   const lvl2 = await ev(p, 'return SYNQUENZER.ux1S1Row()');
@@ -48,13 +49,13 @@ const inView = `(sel) => { const e = document.querySelector(sel); if (!e) return
   await ev(p, 'undo(); return true');
   ok('↶ stellt die alte Strophe her', (await ev(p, 'return JSON.stringify(S.parts[0])')) === before);
   // ✎ frei → eigener Name
-  ok('S1 wieder offen (2)', await ev(p, S1OPEN));
+  ok('S1 wieder offen (2)', await ev(p, 'window.__ux1Chg = false; ' + S1OPEN));
   await p.tap('.ux1-s1 button[data-u="ed"]'); await wait(150);
   await p.fill('.ux1-s1 .ux1-in', 'Hook'); await p.tap('.ux1-s1 button[data-u="ok"]'); await wait(250);
   ok('✎ frei → Teil „Hook“', await ev(p, `return S.parts.some(x => x && x.name === 'Hook') && !UI.pop`));
   // „Teil gefangen“ (ohne laufenden Teil) unverändert: Namen-Chips + ✎ wie vorher
   await ev(p, `SYNQUENZER.stop(); return true`); await wait(200);
-  ok('FANG-TEIL-Blatt hat weiter seine Namenszeile', await ev(p, `const A = SYNQUENZER; A.play(); A.launchScene(1); await new Promise(r=>setTimeout(r,2600)); A.fangTeil({}); await new Promise(r=>setTimeout(r,200)); return UI.pop && UI.pop.name === 'fang' && document.querySelectorAll('.fsheet .fs-nm .cp-c').length === 8 && !document.querySelector('.fsheet .ux1-s1')`));
+  ok('FANG-TEIL-Blatt hat weiter seine Namenszeile', await ev(p, `const A = SYNQUENZER; A.play(); A.launchScene(1); await new Promise(r=>setTimeout(r,2600)); A.fangTeil({}); await new Promise(r=>setTimeout(r,200)); return UI.pop && UI.pop.name === 'fang' && document.querySelectorAll('.fsheet .fs-nm .cp-c[data-n]').length === 7 && !!document.querySelector('.fsheet .fs-nm [data-a="nm"]') && !document.querySelector('.fsheet .ux1-s1')`));
   ok('keine Seitenfehler (FANG)', !p._errs.length, p._errs);
   await p.close();
 }
