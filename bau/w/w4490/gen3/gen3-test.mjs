@@ -128,7 +128,7 @@ try {
   /* ---------- 4 Remix in der Matrix: neue Szene, Song unverändert ---------- */
   const M = await p.evaluate(() => {
     const D = window.SYNQUENZER, o = {}, G = D.gen3;
-    o.song0 = JSON.stringify(D.song());
+    o.song0 = JSON.stringify(D.song()); o.bpm0 = D.project().bpm;
     o.r1 = G.mxRemix('reggae', {src: 0, k: 70});
     const dst = o.r1 && o.r1.dst;
     o.clips = [0, 2, 4].map(t => D.getClip(t, dst)); o.src = [0, 2, 4].map(t => D.getClip(t, 0));
@@ -147,7 +147,7 @@ try {
   ok(M.src[2].notes.length === 15 && M.src[0].notes.length === 9 && M.src.every(c => !c.gr), 'Quell-Szene bleibt unverändert');
   ok(M.dst2 === M.r1.dst && M.trapDr.gr.s === 'trap', 'zweiter Stil ändert dieselbe Remix-Szene (kein Szenen-Stapel)', 'Szene ' + (M.dst2 + 1));
   ok(M.song0 === M.song1, 'Song bleibt beim Matrix-Remix unberührt');
-  ok(M.r3gr && M.r3gr.t === Math.round(120 * (1 - .35 * .6)) && M.bpm3 === 120, 'Tempo-Version auch in der Matrix (Tempo der Version gemerkt, das Projekt-Tempo bleibt)', M.r3gr && M.r3gr.o + ' → ' + M.r3gr.t + ' · Projekt ' + M.bpm3);
+  ok(M.r3gr && M.r3gr.t === Math.round(120 * (1 - .35 * .6)) && M.bpm3 === M.bpm0, 'Tempo-Version auch in der Matrix (Tempo der Version gemerkt, das Projekt-Tempo bleibt)', M.r3gr && M.r3gr.o + ' → ' + M.r3gr.t + ' · Projekt ' + M.bpm0 + ' → ' + M.bpm3);
   ok(M.after && M.after.m === 0 && M.afterBass && M.afterBass.o === 120 && M.afterBass.t === M.r3gr.t, 'Speichern/Laden: gr.m, gr.o, gr.t bleiben', JSON.stringify(M.afterBass));
   ok(M.undoClip === 'trap', '↶ holt die vorige Remix-Szene zurück', String(M.undoClip));
   ok(true, 'Akkord-Zeile der Szene', 'Quelle ' + (M.chordsSrc ? 'mit' : 'ohne') + ' Zeile, Remix ' + (M.chordsDst ? 'mit' : 'ohne'));
@@ -311,7 +311,7 @@ try {
     o.fillGs = G.names().fillIds.length; o.bb = G.bbDrum().map(f => f.ue); o.vis = G.ue().visible;
     o.noBb = o.vis.filter(id => !o.bb.includes(id)).map(id => { const L = UE_LIB.find(x => x.id === id); return id + ':' + L.k + '@' + L.a; });
     // Befund 6: Halftime-Shuffle-Figur auf Triolen
-    D.setClip(2, 1, {len: 1, notes: [[0, 60], [0, 64], [0, 67]].map(([t, n]) => ({t, d: 4, n, v: .7}))});
+    D.setClip(2, 1, {len: 2, notes: [[0, 60], [0, 64], [0, 67]].map(([t, n]) => ({t, d: 8, n, v: .7}))});
     const B6 = D.bb1.build(2, 1, 'g3-hshuffle-keys', 'hier'); o.hs = B6 && B6.notes ? [...new Set(B6.notes.map(n => +n.t.toFixed(3)))] : null;
     // Befund 7: Bossa-Clave über zwei Takte
     const dr = []; for (let bar = 0; bar < 2; bar++) for (const t of [0, 1, 2, 3]) dr.push({t: bar * 4 + t, d: .1, n: t % 2 ? 38 : 36, v: .9});
@@ -331,9 +331,10 @@ try {
   ok(R4.remix && R4.remix.d.startsWith(N.remix.length + ' Stile'), 'Hilfe › Remix nennt die Zahl der Stile', R4.remix && R4.remix.d.slice(0, 40));
   await P8.evaluate(() => { const x = document.querySelector('.bb1s .ms-x'); if (x) x.click(); window.SYNQUENZER.songView(true); window.SYNQUENZER.ueBar(true); });
   await P8.waitForTimeout(400);
-  const UG = await P8.evaluate(async () => { const b = document.querySelector('.gr2-ueg'); if (!b) return null; b.click(); await new Promise(r => setTimeout(r, 250)); const P = document.querySelector('.pop.gr2ueg'); return P ? [...P.querySelectorAll('[data-ueg]')].map(x => x.textContent) : null; });
+  await tapQ(P8, '.gr2-ueg');
+  const UG = await P8.evaluate(() => { const P = document.querySelector('.pop.gr2ueg'); return P ? [...P.querySelectorAll('[data-ueg]')].map(x => x.textContent) : null; });
   ok(UG && UG.length - 1 === R4.fillGs && UG.includes('Disco klassisch') && UG.includes('Eurodance'), '◆ ÜBERGÄNGE › [Genre]: alle Genres der Kacheln (auch Disco klassisch, Eurodance)', UG ? (UG.length - 1) + ' Genres' : 'fehlt');
-  await P8.evaluate(() => { const x = document.querySelector('.pop.gr2ueg [data-ueg="alle"]'); if (x) x.click(); });
+  await tapQ(P8, '.pop.gr2ueg [data-ueg="alle"]');
   ok(R4.bb.includes('gen3f-samba') && R4.noBb.every(x => /:crash@0$/.test(x)), 'Drums-Füller = alle Füller-Kacheln vor der Kante (auch Samba); nur die zwei Crash-Kacheln auf der Eins fehlen mit Absicht', R4.bb.length + ' von ' + R4.vis.length + ' · ohne: ' + R4.noBb.join(', '));
   ok(R4.hs && R4.hs.some(t => Math.abs((t % 1) - .667) < .01) && !R4.hs.some(t => Math.abs((t % 1) - .5) < .01), 'Halftime-Shuffle › Klavier-Achtel auf Triolen (zweite Achtel auf 0,667)', R4.hs && R4.hs.slice(0, 6).join(' '));
   ok(JSON.stringify(R4.rim) === JSON.stringify([0, 1.5, 3, 5, 6.5]), 'Bossa Nova: Rimshot-Clave über zwei Takte (1, 2+, 4 │ 2, 3+)', R4.rim && R4.rim.join(' '));
