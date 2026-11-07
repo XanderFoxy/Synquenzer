@@ -82771,11 +82771,26 @@ async function wegeMoBuild(force) {
     const pause = async () => { if (performance.now() - tY > 8) { await new Promise(r => setTimeout(r, 0)); tY = performance.now(); } };
     const C = WEGE.moC && WEGE.moC.pid === pid ? WEGE.moC : {pid, seg: new Map()}, keep = new Map();
     try {
-      histDrainNow(); histSweep(); await histFlush();
+      histDrainNow(); histSweep();
+      if (!(HIST.cur && HIST.cur.pid === pid && HIST.cur.n != null)) await histFlush();   // only a chunk never written yet: the running one is read from memory (no 10-MB flush)
       const db = await histDb(), meta = await histMetaGet(pid), ns = Object.keys(meta.chunks).map(Number).sort((a, b) => a - b);
-      const rec = new Map(), evc = new Map();
-      const R_ = async n => { if (!rec.has(n)) rec.set(n, (await histRq(db.transaction('c', 'readonly').objectStore('c').get(histKey(pid, n)))) || null); return rec.get(n); };
-      const EV = async n => { if (!evc.has(n)) { const r = await R_(n); evc.set(n, r && r.ev != null ? JSON.parse(await histUnzip(r.ev)) : []); await pause(); } return evc.get(n); };
+      const rec = new Map(), evc = new Map(), cur = HIST.cur && HIST.cur.pid === pid && HIST.cur.n != null ? HIST.cur : null;
+      if (cur && !ns.includes(cur.n)) ns.push(cur.n);
+      // the running chunk straight from memory (one JSON string per gesture: only the gestures needed are parsed – no 10-MB read);
+      // older chunks from IndexedDB (read once; what they give stays in the segment cache)
+      const R_ = async n => {
+        if (!rec.has(n)) rec.set(n, cur && cur.n === n ? {live: cur, ne: cur.strs.length, kf: cur.kf.slice(), s0: cur.s0, thin: cur.thin | 0} : (await histRq(db.transaction('c', 'readonly').objectStore('c').get(histKey(pid, n)))) || null);
+        return rec.get(n);
+      };
+      const EV = async n => {
+        if (!evc.has(n)) {
+          const r = await R_(n);
+          if (r && r.live) { const L = r.live.strs; evc.set(n, i => { try { return JSON.parse(L[i]); } catch (er) { return null; } }); }
+          else { const A = r && r.ev != null ? JSON.parse(await histUnzip(r.ev)) : []; evc.set(n, i => A[i]); await pause(); }
+        }
+        return evc.get(n);
+      };
+      const KF = k => (k.txt != null ? k.txt : histUnzip(k.b));
       let tail = [], have = 0;                                       // tail: the runs after the keyframe looked at (up to the next one)
       for (let j = ns.length - 1; j >= 0 && all; j--) {
         const n = ns[j], r = await R_(n); if (!r) { tail = []; continue; }
@@ -82786,11 +82801,11 @@ async function wegeMoBuild(force) {
           let sg = C.seg.get(sk);
           if (!sg) {
             const raw = []; sg = {t0: null};
-            let st = null; try { st = JSON.parse(await histUnzip(kf[ki].b)).p || null; } catch (er) { st = null; }
+            let st = null; try { st = JSON.parse(await KF(kf[ki])).p || null; } catch (er) { st = null; }
             await pause();
             for (const x of runs) {
-              const evs = await EV(x.n), rx = rec.get(x.n);
-              for (let i = x.a; i < x.b && st; i++) { const e = evs[i]; if (sg.t0 == null && e && isNum(e.t)) sg.t0 = (rx.s0 || 0) + e.t; st = wegeMoStep(st, e, raw); if ((i & 7) === 7) await pause(); }
+              const at = await EV(x.n), rx = rec.get(x.n);
+              for (let i = x.a; i < x.b && st; i++) { const e = at(i); if (sg.t0 == null && e && isNum(e.t)) sg.t0 = (rx.s0 || 0) + e.t; st = wegeMoStep(st, e, raw); if ((i & 7) === 7) await pause(); }
             }
             sg.out = wegeMoMerge(raw); nRead++;
           }
