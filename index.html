@@ -12559,7 +12559,11 @@ var BMK = (function () {
         case 'ly': this.ly = fill(lyInit(), m.p); this.lyNew(); break;
         case 'gl': this.gl = fill(glInit(), m.p); break;
         case 'on': for (const x of m.list || []) { const at = num(x.at, 0); if (at < now - 1 / this.sr) this.late++; this.q.push({k: 1, at, n: num(x.n, 60), v: num(x.v, .8), d: x.d | 0, id: x.id == null ? -1 : x.id}); } this.sortQ(); break;
-        case 'off': for (const x of m.list || []) this.q.push({k: 2, at: num(x.at, 0), n: num(x.n, 60), id: x.id == null ? -1 : x.id, tau: num(x.tau, 0), kill: x.kill ? 1 : 0}); this.sortQ(); break;
+        case 'off': for (const x of m.list || []) {
+            // QA46: KILL of a note that has not started = its queued ON (and its OFF / RT) go, like the synth worklet. Before, the
+            // OFF sorted before the ON of the same time (QPR), so the note still played after the stop (stop / scene change).
+            if (x.kill && x.id != null && x.id >= 0) { let j = 0, hit = false; for (let i = 0; i < this.q.length; i++) { const e = this.q[i]; if (e.id === x.id && (e.k === 1 || e.k === 2 || e.k === 3)) { if (e.k === 1) hit = true; continue; } this.q[j++] = e; } this.q.length = j; if (hit) continue; }
+            this.q.push({k: 2, at: num(x.at, 0), n: num(x.n, 60), id: x.id == null ? -1 : x.id, tau: num(x.tau, 0), kill: x.kill ? 1 : 0}); } this.sortQ(); break;
         case 'rt': for (const x of m.list || []) this.q.push({k: 3, at: num(x.at, 0), n: num(x.n, 60), to: num(x.to, 60), id: x.id == null ? -1 : x.id}); this.sortQ(); break;
         case 'ctl': this.ctl(m); break;
         case 'tr': { const run = !!m.run; if (m.bpm) this.bpm = clamp(+m.bpm || 120, 20, 400); if (run) { this.q.push({k: 6, at: num(m.at, now)}); this.sortQ(); } this.trRun = run; break; }
@@ -26915,7 +26919,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '4.48.0';
+const VERSION = '4.48.1';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -30786,7 +30790,7 @@ function v6aBtnPaint(b) {
 function v6aHeadBtn(i) {
   const b = el('button', 'hb rb v6ab'); b.dataset.t = String(i); v6aBtnPaint(b);
   onTap(b, () => { if (V6A.ed && !V6A.ed.ak1 && V6A.ed.i === i) v6aEdEnd(); else ak1Gk(!V6A.gk); });   // AK1: [◆] = Grundklang an / aus (◆ bearbeiten: Clip-Blatt)
-  (ED.v6aB || (ED.v6aB = [])).push(b);
+  ED.v6aB = (ED.v6aB || []).filter(x => x.isConnected); ED.v6aB.push(b);   // QA46: abgehängte alte [◆]-Knöpfe nicht festhalten (jedes Öffnen hielt sonst den ganzen alten Editor-Kopf: ≈ 48 Knoten, 66 Listener)
   return b;
 }
 /* ---------- AK1 (Xander 01.11.: „ich lege jetzt was ab, öffne es wieder und es klingt gar nicht so, wie ich es eingestellt habe“ – „eigentlich
@@ -51119,6 +51123,7 @@ function ux2Walk(o, t, fs, fp, depth) {
     const v = o[k]; if (!v || typeof v !== 'object') continue;
     if (k === 'lanes' && Array.isArray(v)) { v.forEach((l, ti) => ux2Walk(l, ti, fs, fp, depth + 1)); continue; }
     if (k === 'slots' && Array.isArray(v)) { v.forEach((x, ti) => { if (x && typeof x === 'object' && isNum(x.s)) x.s = fs(ti, x.s); }); continue; }   // Teil: {s}
+    if (k === 'kl' && Array.isArray(v)) { for (const x of v) if (x && Number.isInteger(x.t) && isNum(x.s) && x.s >= 0) x.s = fs(x.t, x.s); continue; }   // QA46: KL1-Fenster im Ursprung (song.kons[].kl = {t, s, a, b}) – sonst findet „Zurückholen“ den erweiterten Clip nach Ziehen nicht mehr
     ux2Walk(v, tt, fs, fp, depth + 1);
   }
 }
@@ -55019,7 +55024,7 @@ function ui1Entries() {
     E('ue', 'Fills & Breaks (◆ ÜBERGÄNGE)', 'Song-Ansicht › ◆ ÜBERGÄNGE', 'Kachel auf eine Teil-Kante ziehen – oder antippen und frei in den Song tippen.', 'fill fills break breaks uebergang wirbel crash einwurf', G.song(true), '.ue-bar .ue-tiles'),
     E('fillchip', 'Fill bearbeiten', 'Song-Ansicht › Fill-Chip antippen', 'Länge, Ersetzen | Mischen, Pads, Noten … – jeder Schritt ein ↶.', 'fill bearbeiten ersetzen mischen noten', G.song(false), svB('bUe')),
     E('wkz', 'Werkzeugkasten', 'Clip-Blatt › Werkzeugkasten ▾ (oder ROLLE)', 'Fertige Standardfiguren je Genre: Bässe, Stabs, Arps, Pads, Lead- und Drums-Füller.', 'werkzeugkasten figuren bass arp disco stabs', G.clip(false), 'Werkzeugkasten'),
-    E('remix', 'Remix (deine Noten im Stil)', 'Song-Leiste › ⇋ REMIX · Menü › Song › Remix …', '17 Stile – deine Töne bleiben und rücken in Groove und Betonung des Stils; Stärke, ▶ Hören, A Original / B Remix.', 'remix genre stil groove uebersetzen reggae garage walzer italo disco country techno', () => { ui1Home(); gr2RemixOpen(null); return !!(UI.pop && UI.pop.name === 'gr2remix'); }, '.gr2-grid'),   // 4.48: GR2-Blatt
+    E('remix', 'Remix (deine Noten im Stil)', 'Song-Leiste › ⇋ REMIX · Menü › Song › Remix …', '17 Stile – deine Töne bleiben und rücken in Groove und Betonung des Stils; Stärke, ▶ Hören, A Original / B Remix.', 'remix genre stil groove uebersetzen reggae garage walzer italo disco country techno', () => { UI1.alt = null; if (S.song && S.song.bars) { ui1Home(); try { gr2RemixOpen(null); } catch (e) { logErr(e); } if (UI.pop && UI.pop.name === 'gr2remix') return true; } return ui1SongMenu(); }, () => (UI1.alt ? UI1.alt() : UI.pop && UI.pop.name === 'gr2remix' ? UI.pop.el.querySelector('.gr2-grid') : ui1Find('Remix …'))),   // 4.48: GR2-Blatt; ohne Song SONG ⇄ (wie Transponieren)
     E('roll', 'Noten-Editor (ROLLE)', 'Clip › ✎', 'Zeichnen, Auswählen, Radieren; zwei Finger zoomen.', 'noten editor piano roll zeichnen', G.roll, () => EL.rollSheet),
     E('lauf', 'LAUF (Schritt-Lauf)', 'Noten-Editor › LAUF', 'Basslauf oder Sequenz Schritt für Schritt; lang drücken = Wirbel, Chance, Slide …', 'lauf sequenz arp schritt ratchet', G.roll, 'LAUF'),
     E('spiel', 'Spielweise', 'Noten-Editor › Spielweise', 'Gitarre (ab-auf, Riff), Glissando, Harfe, Glocken, Alberti, Pizzicato …', 'spielweise gitarre strum harfe glissando', G.roll, 'Spielweise'),
@@ -71594,6 +71599,10 @@ async function vvSwapIn(oc, wk, off) {
     Object.assign(BMX, {ctx: oc, st: ok ? 'ready' : 'failed', p: Promise.resolve(ok)}); if (!ok) toast(BM_NAME + ' im Video nicht verfügbar');
   }
   if (wk) syncEngines(); else for (const i of synthTracks()) rebuildNativeLfos(i);
+  // QA46: MK-Engine (MK_LABEL) im Render mit festem Startwert je Spur (sonst zieht die Engine bei der ersten Note einen Zufallswert: zwei Videos /
+  // zwei Analysen desselben Songs klangen nie bitgleich). Live bleibt es wie bisher.
+  if (wk) for (let i = 0; i < NT(); i++) { const E = AU.synth[i], tr = S.tracks[i]; if (!E || !E.node || !tr || !tr.sound || tr.sound.engine !== 'mk') continue;
+    let h = 2166136261; for (const ch of String(tr.uid || i)) h = Math.imul(h ^ ch.charCodeAt(0), 16777619); try { E.node.port.postMessage({mkSeed: (h >>> 0) || 1}); } catch (e) { logErr(e); } }
   await mdVvBoot(oc);                                              // NORTH (ND4-08): Knoten der Drum-Engine im Offline-Kontext
   await percVvBoot(oc);                                            // PERC: je Perkussionsspur ein Knoten im Offline-Kontext
   if (sv.bmx) bmVvSync(oc);                                        // BM6-06: Bit Mask quittiert vor jedem Weiterrechnen
@@ -73341,6 +73350,7 @@ function va1MidiSong(idxs, withC) {
   for (const i of idxs) {
     if (!va1MidiOk(i)) continue;
     const tr = S.tracks[i], ded = new Map(), ch = tr.kind === 'drum' || percIs(tr) ? 9 : midiCh(i), lane = song.lanes[i] || [];
+    const fxm = fllMidiMutes(i);                                 // QA46: Fills/Breaks (ersetzt, Stille) wie gehört – wie buildMidiSong
     const add = (st, en, p, vv) => { const v = clamp(Math.round(vv * 127), 1, 127), t0 = Math.round(st * PPQ), t1 = Math.max(t0 + 1, Math.round(en * PPQ)), k = t0 + ':' + p, x = ded.get(k); if (x) { x.v = Math.max(x.v, v); x.t1 = Math.max(x.t1, t1); } else ded.set(k, {t0, t1, p, v}); };
     const blocks = []; let cur = null;
     for (const e of lane) {
@@ -73352,9 +73362,10 @@ function va1MidiSong(idxs, withC) {
     for (const bk of blocks) {
       const c = bk.own && song.own && song.own[bk.own] ? song.own[bk.own] : tr.clips[bk.slot]; if (!c || !c.notes || !c.notes.length) continue;
       const b0 = bk.start, b1 = Math.min(L, bk.end), cL = clipB(c);
-      for (let o = bk.cs + Math.floor((b0 - bk.cs) / cL + 1e-9) * cL; o < b1 - 1e-9; o += cL) for (const nt of c.notes) {
+      for (let o = bk.cs + Math.floor((b0 - bk.cs) / cL + 1e-9) * cL; o < b1 - 1e-9; o += cL) for (const nt of lf1Pass(c, Math.round((o - bk.cs) / cL)) || c.notes) {   // QA46: LAUF wie gespielt (LF1, wie buildMidiSong)
         if (nt.t >= cL - 1e-9) continue;
         const st = o + nt.t; if (st >= b1 - 1e-9 || st < b0 - 1e-9) continue;
+        if (fxm && ueMutedAt(fxm, st, nt.n)) continue;            // QA46: FX1-Fenster schweigen auch im Export
         const en = Math.min(b1, st + Math.max(nt.d, 1 / 32));
         let p = nt.n;
         if (tr.kind === 'synth' && withC) { const e2 = entAt(st); if (e2 && e2.target) p = mapOut(i, c.key || S.key, nt.n, 0, e2); }
@@ -73362,6 +73373,7 @@ function va1MidiSong(idxs, withC) {
         add(st, en, percIs(tr) ? percGm(nt.n) : clamp(Math.round(p), 0, 127), nt.v);
       }
     }
+    fllMidiAdd(song, i, ded, (i2, c2, d2, st, en, p, v) => add(st, en, p, v));   // QA46: die Noten der Fills/Einwürfe (FX1)
     const m = song.mel && song.mel[i];
     if (m && m.notes) for (const n of m.notes) { if (n.t >= L - 1e-9) continue; add(n.t, Math.min(L, n.t + Math.max(n.d, 1 / 32)), percIs(tr) ? percGm(n.n) : clamp(n.n, 0, 127), n.v); }
     if (!ded.size) continue;
@@ -73376,7 +73388,7 @@ function va1MidiSong(idxs, withC) {
 function va1MidiClip(i, s, withC) {
   const tr = S.tracks[i], c = tr && tr.clips[s]; if (!va1MidiOk(i) || !c || !c.notes || !c.notes.length) return null;
   const PPQ = 480, {evs, counts} = midiArrs(), cL = clipB(c), ch = tr.kind === 'drum' || percIs(tr) ? 9 : midiCh(i), ded = new Map();
-  for (const nt of c.notes) {
+  for (const nt of lf1Pass(c, 0) || c.notes) {                    // QA46: LAUF wie gespielt (ein Durchgang)
     if (nt.t >= cL - 1e-9) continue;
     let p = nt.n; if (tr.kind === 'synth' && withC) p = mapOut(i, c.key || S.key, nt.n, Infinity); if (percIs(tr)) p = percGm(nt.n); p = clamp(Math.round(p), 0, 127);
     const v = clamp(Math.round(nt.v * 127), 1, 127), t0 = Math.round(nt.t * PPQ), t1 = Math.max(t0 + 1, Math.round(Math.min(cL, nt.t + Math.max(nt.d, 1 / 32)) * PPQ)), k = t0 + ':' + p, x = ded.get(k);
