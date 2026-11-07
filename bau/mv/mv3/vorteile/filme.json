@@ -1,1285 +1,240 @@
 {
- "_hinweis": "Filme & Serien bei Apple TV (Modul „filme“). Frei änderbar: Titel möglichst so, wie er im deutschen Store heißt, dazu das Erscheinungsjahr (der Film muss auf ±1 Jahr passen, damit kein falscher Film mit gleichem Namen genommen wird). „auch“ = andere Namen (z. B. Originaltitel), nach denen ebenfalls gesucht wird. Optional „id“ = Apple-Nummer aus dem Link (…/id123456789), dann wird nicht gesucht. Horror kommt nie auf die Seite (außer auf deiner Wunschliste).",
- "zielpreis": 4.99,
- "_zielpreis": "Wunschfilm zu diesem Kaufpreis oder billiger -> sofort Push. Pro Film änderbar mit \"zielpreis\".",
- "wunschliste": [
-  {
-   "titel": "Mallrats",
-   "jahr": 1995
-  },
-  {
-   "titel": "Shadow und der Fluch des Khan",
-   "jahr": 1994,
-   "auch": [
-    "The Shadow"
-   ]
-  },
-  {
-   "titel": "Go Trabi Go",
-   "jahr": 1991
-  },
-  {
-   "titel": "Manta Manta",
-   "jahr": 1991
-  }
- ],
- "staffelZiel": 9.99,
- "_staffelZiel": "Staffel zu diesem Kaufpreis oder billiger gilt als Angebot.",
- "serien": [
-  {
-   "titel": "Rick and Morty"
-  },
-  {
-   "titel": "Star Trek: Raumschiff Enterprise",
-   "auch": [
-    "Star Trek: The Original Series",
-    "Raumschiff Enterprise"
-   ]
-  },
-  {
-   "titel": "Star Trek: Das nächste Jahrhundert",
-   "auch": [
-    "Star Trek: The Next Generation"
-   ]
-  },
-  {
-   "titel": "Star Trek: Deep Space Nine",
-   "auch": [
-    "Star Trek: Deep Space 9"
-   ]
-  },
-  {
-   "titel": "Star Trek: Raumschiff Voyager",
-   "auch": [
-    "Star Trek: Voyager"
-   ]
-  },
-  {
-   "titel": "Star Trek: Enterprise"
-  },
-  {
-   "titel": "Star Trek: Discovery"
-  },
-  {
-   "titel": "Star Trek: Picard"
-  },
-  {
-   "titel": "Star Trek: Strange New Worlds"
-  },
-  {
-   "titel": "Star Trek: Lower Decks"
-  },
-  {
-   "titel": "Star Trek: Prodigy"
-  }
- ],
- "disney": [
-  {
-   "titel": "Der König der Löwen",
-   "jahr": 1994,
-   "auch": [
-    "The Lion King"
-   ]
-  },
-  {
-   "titel": "Aladdin",
-   "jahr": 1992
-  },
-  {
-   "titel": "Arielle, die Meerjungfrau",
-   "jahr": 1989,
-   "auch": [
-    "The Little Mermaid"
-   ]
-  },
-  {
-   "titel": "Die Schöne und das Biest",
-   "jahr": 1991,
-   "auch": [
-    "Beauty and the Beast"
-   ]
-  },
-  {
-   "titel": "Toy Story",
-   "jahr": 1995
-  },
-  {
-   "titel": "Toy Story 2",
-   "jahr": 1999
-  },
-  {
-   "titel": "Toy Story 3",
-   "jahr": 2010
-  },
-  {
-   "titel": "A Toy Story: Alles hört auf kein Kommando",
-   "jahr": 2019,
-   "auch": [
-    "Toy Story 4"
-   ]
-  },
-  {
-   "titel": "Die Monster AG",
-   "jahr": 2001,
-   "auch": [
-    "Monsters, Inc."
-   ]
-  },
-  {
-   "titel": "Findet Nemo",
-   "jahr": 2003,
-   "auch": [
-    "Finding Nemo"
-   ]
-  },
-  {
-   "titel": "Die Unglaublichen – The Incredibles",
-   "jahr": 2004,
-   "auch": [
-    "Die Unglaublichen",
-    "The Incredibles"
-   ]
-  },
-  {
-   "titel": "Cars",
-   "jahr": 2006
-  },
-  {
-   "titel": "Ratatouille",
-   "jahr": 2007
-  },
-  {
-   "titel": "WALL·E – Der Letzte räumt die Erde auf",
-   "jahr": 2008,
-   "auch": [
-    "WALL·E"
-   ]
-  },
-  {
-   "titel": "Oben",
-   "jahr": 2009,
-   "auch": [
-    "Up"
-   ]
-  },
-  {
-   "titel": "Coco – Lebendiger als das Leben!",
-   "jahr": 2017,
-   "auch": [
-    "Coco"
-   ]
-  },
-  {
-   "titel": "Vaiana",
-   "jahr": 2016,
-   "auch": [
-    "Moana"
-   ]
-  },
-  {
-   "titel": "Die Eiskönigin – Völlig unverfroren",
-   "jahr": 2013,
-   "auch": [
-    "Die Eiskönigin",
-    "Frozen"
-   ]
-  },
-  {
-   "titel": "Rapunzel – Neu verföhnt",
-   "jahr": 2010,
-   "auch": [
-    "Rapunzel",
-    "Tangled"
-   ]
-  },
-  {
-   "titel": "Zoomania",
-   "jahr": 2016,
-   "auch": [
-    "Zootopia"
-   ]
-  },
-  {
-   "titel": "Encanto",
-   "jahr": 2021
-  },
-  {
-   "titel": "Mulan",
-   "jahr": 1998
-  },
-  {
-   "titel": "Tarzan",
-   "jahr": 1999
-  },
-  {
-   "titel": "Hercules",
-   "jahr": 1997
-  },
-  {
-   "titel": "Der Glöckner von Notre Dame",
-   "jahr": 1996,
-   "auch": [
-    "The Hunchback of Notre Dame"
-   ]
-  },
-  {
-   "titel": "Pocahontas",
-   "jahr": 1995
-  },
-  {
-   "titel": "Das Dschungelbuch",
-   "jahr": 1967,
-   "auch": [
-    "The Jungle Book"
-   ]
-  },
-  {
-   "titel": "101 Dalmatiner",
-   "jahr": 1961,
-   "auch": [
-    "One Hundred and One Dalmatians"
-   ]
-  },
-  {
-   "titel": "Bambi",
-   "jahr": 1942
-  },
-  {
-   "titel": "Schneewittchen und die sieben Zwerge",
-   "jahr": 1937,
-   "auch": [
-    "Snow White and the Seven Dwarfs"
-   ]
-  },
-  {
-   "titel": "Cinderella",
-   "jahr": 1950
-  },
-  {
-   "titel": "Susi und Strolch",
-   "jahr": 1955,
-   "auch": [
-    "Lady and the Tramp"
-   ]
-  },
-  {
-   "titel": "Alice im Wunderland",
-   "jahr": 1951,
-   "auch": [
-    "Alice in Wonderland"
-   ]
-  },
-  {
-   "titel": "Peter Pan",
-   "jahr": 1953
-  },
-  {
-   "titel": "Robin Hood",
-   "jahr": 1973
-  },
-  {
-   "titel": "Aristocats",
-   "jahr": 1970,
-   "auch": [
-    "The Aristocats"
-   ]
-  },
-  {
-   "titel": "Bernard und Bianca – Die Mäusepolizei",
-   "jahr": 1977,
-   "auch": [
-    "The Rescuers"
-   ]
-  },
-  {
-   "titel": "Cap und Capper",
-   "jahr": 1981,
-   "auch": [
-    "The Fox and the Hound"
-   ]
-  },
-  {
-   "titel": "Basil, der große Mäusedetektiv",
-   "jahr": 1986,
-   "auch": [
-    "The Great Mouse Detective"
-   ]
-  },
-  {
-   "titel": "Oliver & Co.",
-   "jahr": 1988
-  },
-  {
-   "titel": "Fluch der Karibik",
-   "jahr": 2003,
-   "auch": [
-    "Pirates of the Caribbean: Fluch der Karibik",
-    "Pirates of the Caribbean: The Curse of the Black Pearl"
-   ]
-  },
-  {
-   "titel": "Alles steht Kopf",
-   "jahr": 2015,
-   "auch": [
-    "Inside Out"
-   ]
-  },
-  {
-   "titel": "Baymax – Riesiges Robowabohu",
-   "jahr": 2014,
-   "auch": [
-    "Baymax",
-    "Big Hero 6"
-   ]
-  },
-  {
-   "titel": "Lilo & Stitch",
-   "jahr": 2002
-  },
-  {
-   "titel": "Ein Königreich für ein Lama",
-   "jahr": 2000,
-   "auch": [
-    "The Emperor's New Groove"
-   ]
-  },
-  {
-   "titel": "Atlantis – Das Geheimnis der verlorenen Stadt",
-   "jahr": 2001,
-   "auch": [
-    "Atlantis: The Lost Empire"
-   ]
-  },
-  {
-   "titel": "Bolt – Ein Hund für alle Fälle",
-   "jahr": 2008,
-   "auch": [
-    "Bolt"
-   ]
-  },
-  {
-   "titel": "Küss den Frosch",
-   "jahr": 2009,
-   "auch": [
-    "The Princess and the Frog"
-   ]
-  },
-  {
-   "titel": "Ralph reicht's",
-   "jahr": 2012,
-   "auch": [
-    "Wreck-It Ralph"
-   ]
-  },
-  {
-   "titel": "Das große Krabbeln",
-   "jahr": 1998,
-   "auch": [
-    "A Bug's Life"
-   ]
-  }
- ],
- "achtziger": [
-  {
-   "titel": "Zurück in die Zukunft",
-   "jahr": 1985,
-   "auch": [
-    "Back to the Future"
-   ]
-  },
-  {
-   "titel": "Zurück in die Zukunft II",
-   "jahr": 1989,
-   "auch": [
-    "Back to the Future Part II"
-   ]
-  },
-  {
-   "titel": "Zurück in die Zukunft III",
-   "jahr": 1990,
-   "auch": [
-    "Back to the Future Part III"
-   ]
-  },
-  {
-   "titel": "Ghostbusters – Die Geisterjäger",
-   "jahr": 1984,
-   "auch": [
-    "Ghostbusters"
-   ]
-  },
-  {
-   "titel": "Ghostbusters II",
-   "jahr": 1989
-  },
-  {
-   "titel": "Jäger des verlorenen Schatzes",
-   "jahr": 1981,
-   "auch": [
-    "Indiana Jones und der Jäger des verlorenen Schatzes",
-    "Raiders of the Lost Ark"
-   ]
-  },
-  {
-   "titel": "Indiana Jones und der Tempel des Todes",
-   "jahr": 1984,
-   "auch": [
-    "Indiana Jones and the Temple of Doom"
-   ]
-  },
-  {
-   "titel": "Indiana Jones und der letzte Kreuzzug",
-   "jahr": 1989,
-   "auch": [
-    "Indiana Jones and the Last Crusade"
-   ]
-  },
-  {
-   "titel": "Stirb langsam",
-   "jahr": 1988,
-   "auch": [
-    "Die Hard"
-   ]
-  },
-  {
-   "titel": "Stirb langsam 2",
-   "jahr": 1990,
-   "auch": [
-    "Die Hard 2"
-   ]
-  },
-  {
-   "titel": "Stirb langsam – Jetzt erst recht",
-   "jahr": 1995,
-   "auch": [
-    "Die Hard with a Vengeance"
-   ]
-  },
-  {
-   "titel": "Terminator",
-   "jahr": 1984,
-   "auch": [
-    "The Terminator"
-   ]
-  },
-  {
-   "titel": "Terminator 2 – Tag der Abrechnung",
-   "jahr": 1991,
-   "auch": [
-    "Terminator 2: Judgment Day",
-    "Terminator 2"
-   ]
-  },
-  {
-   "titel": "Beverly Hills Cop – Ich lös’ den Fall auf jeden Fall",
-   "jahr": 1984,
-   "auch": [
-    "Beverly Hills Cop"
-   ]
-  },
-  {
-   "titel": "Beverly Hills Cop II",
-   "jahr": 1987
-  },
-  {
-   "titel": "Top Gun – Sie fürchten weder Tod noch Teufel",
-   "jahr": 1986,
-   "auch": [
-    "Top Gun"
-   ]
-  },
-  {
-   "titel": "Lethal Weapon – Zwei stahlharte Profis",
-   "jahr": 1987,
-   "auch": [
-    "Lethal Weapon"
-   ]
-  },
-  {
-   "titel": "Lethal Weapon 2 – Brennpunkt L.A.",
-   "jahr": 1989,
-   "auch": [
-    "Lethal Weapon 2"
-   ]
-  },
-  {
-   "titel": "Lethal Weapon 3 – Die Profis sind zurück",
-   "jahr": 1992,
-   "auch": [
-    "Lethal Weapon 3"
-   ]
-  },
-  {
-   "titel": "Predator",
-   "jahr": 1987
-  },
-  {
-   "titel": "RoboCop",
-   "jahr": 1987
-  },
-  {
-   "titel": "Aliens – Die Rückkehr",
-   "jahr": 1986,
-   "auch": [
-    "Aliens"
-   ]
-  },
-  {
-   "titel": "E.T. – Der Außerirdische",
-   "jahr": 1982,
-   "auch": [
-    "E.T. the Extra-Terrestrial"
-   ]
-  },
-  {
-   "titel": "Die Goonies",
-   "jahr": 1985,
-   "auch": [
-    "The Goonies"
-   ]
-  },
-  {
-   "titel": "Gremlins – Kleine Monster",
-   "jahr": 1984,
-   "auch": [
-    "Gremlins"
-   ]
-  },
-  {
-   "titel": "Die unendliche Geschichte",
-   "jahr": 1984,
-   "auch": [
-    "The NeverEnding Story"
-   ]
-  },
-  {
-   "titel": "Rambo",
-   "jahr": 1982,
-   "auch": [
-    "First Blood"
-   ]
-  },
-  {
-   "titel": "Rambo II – Der Auftrag",
-   "jahr": 1985,
-   "auch": [
-    "Rambo: First Blood Part II"
-   ]
-  },
-  {
-   "titel": "Rambo III",
-   "jahr": 1988
-  },
-  {
-   "titel": "Rocky III – Das Auge des Tigers",
-   "jahr": 1982,
-   "auch": [
-    "Rocky III"
-   ]
-  },
-  {
-   "titel": "Rocky IV – Der Kampf des Jahrhunderts",
-   "jahr": 1985,
-   "auch": [
-    "Rocky IV"
-   ]
-  },
-  {
-   "titel": "Ferris macht blau",
-   "jahr": 1986,
-   "auch": [
-    "Ferris Bueller's Day Off"
-   ]
-  },
-  {
-   "titel": "The Breakfast Club",
-   "jahr": 1985,
-   "auch": [
-    "Der Frühstücksclub"
-   ]
-  },
-  {
-   "titel": "Die nackte Kanone",
-   "jahr": 1988,
-   "auch": [
-    "The Naked Gun"
-   ]
-  },
-  {
-   "titel": "Die nackte Kanone 2½",
-   "jahr": 1991,
-   "auch": [
-    "The Naked Gun 2½: The Smell of Fear"
-   ]
-  },
-  {
-   "titel": "Blues Brothers",
-   "jahr": 1980,
-   "auch": [
-    "The Blues Brothers"
-   ]
-  },
-  {
-   "titel": "Ein Fisch namens Wanda",
-   "jahr": 1988,
-   "auch": [
-    "A Fish Called Wanda"
-   ]
-  },
-  {
-   "titel": "Twins – Zwillinge",
-   "jahr": 1988,
-   "auch": [
-    "Twins"
-   ]
-  },
-  {
-   "titel": "Big",
-   "jahr": 1988
-  },
-  {
-   "titel": "Crocodile Dundee – Ein Krokodil zum Küssen",
-   "jahr": 1986,
-   "auch": [
-    "Crocodile Dundee"
-   ]
-  },
-  {
-   "titel": "Highlander – Es kann nur einen geben",
-   "jahr": 1986,
-   "auch": [
-    "Highlander"
-   ]
-  },
-  {
-   "titel": "Footloose",
-   "jahr": 1984
-  },
-  {
-   "titel": "Dirty Dancing",
-   "jahr": 1987
-  },
-  {
-   "titel": "Karate Kid",
-   "jahr": 1984,
-   "auch": [
-    "The Karate Kid"
-   ]
-  },
-  {
-   "titel": "Blade Runner",
-   "jahr": 1982,
-   "auch": [
-    "Blade Runner: The Final Cut"
-   ]
-  },
-  {
-   "titel": "Das Boot",
-   "jahr": 1981
-  },
-  {
-   "titel": "Otto – Der Film",
-   "jahr": 1985
-  },
-  {
-   "titel": "Otto – Der Außerfriesische",
-   "jahr": 1989
-  },
-  {
-   "titel": "Werner – Beinhart!",
-   "jahr": 1990
-  },
-  {
-   "titel": "Werner – Das muss kesseln!!!",
-   "jahr": 1996
-  },
-  {
-   "titel": "Police Academy – Dümmer als die Polizei erlaubt",
-   "jahr": 1984,
-   "auch": [
-    "Police Academy"
-   ]
-  },
-  {
-   "titel": "Batman",
-   "jahr": 1989
-  },
-  {
-   "titel": "Tango & Cash",
-   "jahr": 1989
-  },
-  {
-   "titel": "Running Man",
-   "jahr": 1987,
-   "auch": [
-    "The Running Man"
-   ]
-  },
-  {
-   "titel": "Phantom Kommando",
-   "jahr": 1985,
-   "auch": [
-    "Commando"
-   ]
-  },
-  {
-   "titel": "Red Heat",
-   "jahr": 1988
-  },
-  {
-   "titel": "Nur 48 Stunden",
-   "jahr": 1982,
-   "auch": [
-    "48 Hrs.",
-    "48 Stunden"
-   ]
-  },
-  {
-   "titel": "Die Glücksritter",
-   "jahr": 1983,
-   "auch": [
-    "Trading Places"
-   ]
-  },
-  {
-   "titel": "Der Prinz aus Zamunda",
-   "jahr": 1988,
-   "auch": [
-    "Coming to America"
-   ]
-  },
-  {
-   "titel": "Midnight Run – 5 Tage bis Mitternacht",
-   "jahr": 1988,
-   "auch": [
-    "Midnight Run"
-   ]
-  },
-  {
-   "titel": "Spaceballs",
-   "jahr": 1987
-  },
-  {
-   "titel": "Top Secret!",
-   "jahr": 1984
-  },
-  {
-   "titel": "Nummer 5 lebt!",
-   "jahr": 1986,
-   "auch": [
-    "Short Circuit"
-   ]
-  },
-  {
-   "titel": "L.I.S.A. – Der helle Wahnsinn",
-   "jahr": 1985,
-   "auch": [
-    "Weird Science"
-   ]
-  },
-  {
-   "titel": "Big Trouble in Little China",
-   "jahr": 1986
-  },
-  {
-   "titel": "Die Klapperschlange",
-   "jahr": 1981,
-   "auch": [
-    "Escape from New York"
-   ]
-  },
-  {
-   "titel": "Tron",
-   "jahr": 1982
-  },
-  {
-   "titel": "WarGames – Kriegsspiele",
-   "jahr": 1983,
-   "auch": [
-    "WarGames"
-   ]
-  },
-  {
-   "titel": "Willow",
-   "jahr": 1988
-  },
-  {
-   "titel": "Die Braut des Prinzen",
-   "jahr": 1987,
-   "auch": [
-    "The Princess Bride"
-   ]
-  },
-  {
-   "titel": "Falsches Spiel mit Roger Rabbit",
-   "jahr": 1988,
-   "auch": [
-    "Who Framed Roger Rabbit"
-   ]
-  },
-  {
-   "titel": "Beetlejuice",
-   "jahr": 1988
-  },
-  {
-   "titel": "Scarface",
-   "jahr": 1983
-  },
-  {
-   "titel": "Star Trek II: Der Zorn des Khan",
-   "jahr": 1982,
-   "auch": [
-    "Star Trek II: The Wrath of Khan"
-   ]
-  },
-  {
-   "titel": "Star Trek III: Auf der Suche nach Mr. Spock",
-   "jahr": 1984,
-   "auch": [
-    "Star Trek III: The Search for Spock"
-   ]
-  },
-  {
-   "titel": "Star Trek IV: Zurück in die Gegenwart",
-   "jahr": 1986,
-   "auch": [
-    "Star Trek IV: The Voyage Home"
-   ]
-  },
-  {
-   "titel": "Star Trek V: Am Rande des Universums",
-   "jahr": 1989,
-   "auch": [
-    "Star Trek V: The Final Frontier"
-   ]
-  },
-  {
-   "titel": "Star Trek VI: Das unentdeckte Land",
-   "jahr": 1991,
-   "auch": [
-    "Star Trek VI: The Undiscovered Country"
-   ]
-  },
-  {
-   "titel": "Star Wars: Episode IV – Eine neue Hoffnung",
-   "jahr": 1977,
-   "auch": [
-    "Star Wars: Eine neue Hoffnung",
-    "Krieg der Sterne"
-   ]
-  },
-  {
-   "titel": "Star Wars: Episode V – Das Imperium schlägt zurück",
-   "jahr": 1980,
-   "auch": [
-    "Das Imperium schlägt zurück"
-   ]
-  },
-  {
-   "titel": "Star Wars: Episode VI – Die Rückkehr der Jedi-Ritter",
-   "jahr": 1983,
-   "auch": [
-    "Die Rückkehr der Jedi-Ritter"
-   ]
-  },
-  {
-   "titel": "Platoon",
-   "jahr": 1986
-  },
-  {
-   "titel": "Stand by Me – Das Geheimnis eines Sommers",
-   "jahr": 1986,
-   "auch": [
-    "Stand by Me"
-   ]
-  },
-  {
-   "titel": "Ein Ticket für zwei",
-   "jahr": 1987,
-   "auch": [
-    "Planes, Trains and Automobiles"
-   ]
-  },
-  {
-   "titel": "Die Ritter der Kokosnuss",
-   "jahr": 1975,
-   "auch": [
-    "Monty Python and the Holy Grail"
-   ]
-  },
-  {
-   "titel": "Das Leben des Brian",
-   "jahr": 1979,
-   "auch": [
-    "Monty Python's Life of Brian"
-   ]
-  },
-  {
-   "titel": "Jagd auf Roter Oktober",
-   "jahr": 1990,
-   "auch": [
-    "The Hunt for Red October"
-   ]
-  },
-  {
-   "titel": "Die Unbestechlichen",
-   "jahr": 1987,
-   "auch": [
-    "The Untouchables"
-   ]
-  },
-  {
-   "titel": "Conan der Barbar",
-   "jahr": 1982,
-   "auch": [
-    "Conan the Barbarian"
-   ]
-  },
-  {
-   "titel": "Die City-Cobra",
-   "jahr": 1986,
-   "auch": [
-    "Cobra"
-   ]
-  },
-  {
-   "titel": "Der Wüstenplanet",
-   "jahr": 1984,
-   "auch": [
-    "Dune"
-   ]
-  },
-  {
-   "titel": "Flash Gordon",
-   "jahr": 1980
-  },
-  {
-   "titel": "Masters of the Universe",
-   "jahr": 1987
-  },
-  {
-   "titel": "Die Reise ins Labyrinth",
-   "jahr": 1986,
-   "auch": [
-    "Labyrinth"
-   ]
-  },
-  {
-   "titel": "Der dunkle Kristall",
-   "jahr": 1982,
-   "auch": [
-    "The Dark Crystal"
-   ]
-  },
-  {
-   "titel": "Der Flug des Navigators",
-   "jahr": 1986,
-   "auch": [
-    "Flight of the Navigator"
-   ]
-  },
-  {
-   "titel": "Die Reise ins Ich",
-   "jahr": 1987,
-   "auch": [
-    "Innerspace"
-   ]
-  },
-  {
-   "titel": "Mad Max II – Der Vollstrecker",
-   "jahr": 1981,
-   "auch": [
-    "Mad Max 2",
-    "The Road Warrior"
-   ]
-  },
-  {
-   "titel": "Bloodsport – Eine wahre Geschichte",
-   "jahr": 1988,
-   "auch": [
-    "Bloodsport"
-   ]
-  },
-  {
-   "titel": "Fletch – Der Troublemaker",
-   "jahr": 1985,
-   "auch": [
-    "Fletch"
-   ]
-  },
-  {
-   "titel": "Der Name der Rose",
-   "jahr": 1986
-  },
-  {
-   "titel": "Zwei bärenstarke Typen",
-   "jahr": 1983
-  },
-  {
-   "titel": "Zwei Asse trumpfen auf",
-   "jahr": 1981
-  },
-  {
-   "titel": "Der Bomber",
-   "jahr": 1982
-  },
-  {
-   "titel": "Die Miami Cops",
-   "jahr": 1985
-  },
-  {
-   "titel": "Das Krokodil und sein Nilpferd",
-   "jahr": 1979
-  },
-  {
-   "titel": "Clerks – Die Ladenhüter",
-   "jahr": 1994,
-   "auch": [
-    "Clerks"
-   ]
-  },
-  {
-   "titel": "Dogma",
-   "jahr": 1999
-  },
-  {
-   "titel": "Jay und Silent Bob schlagen zurück",
-   "jahr": 2001,
-   "auch": [
-    "Jay and Silent Bob Strike Back"
-   ]
-  },
-  {
-   "titel": "Hot Shots! – Die Mutter aller Filme",
-   "jahr": 1991,
-   "auch": [
-    "Hot Shots!"
-   ]
-  },
-  {
-   "titel": "Hot Shots! Der zweite Versuch",
-   "jahr": 1993,
-   "auch": [
-    "Hot Shots! Part Deux"
-   ]
-  },
-  {
-   "titel": "Wayne's World",
-   "jahr": 1992
-  },
-  {
-   "titel": "Kevin – Allein zu Haus",
-   "jahr": 1990,
-   "auch": [
-    "Home Alone"
-   ]
-  },
-  {
-   "titel": "Kevin – Allein in New York",
-   "jahr": 1992,
-   "auch": [
-    "Home Alone 2: Lost in New York"
-   ]
-  },
-  {
-   "titel": "Total Recall – Die totale Erinnerung",
-   "jahr": 1990,
-   "auch": [
-    "Total Recall"
-   ]
-  },
-  {
-   "titel": "Kindergarten Cop",
-   "jahr": 1990
-  },
-  {
-   "titel": "Last Action Hero",
-   "jahr": 1993
-  },
-  {
-   "titel": "Demolition Man",
-   "jahr": 1993
-  },
-  {
-   "titel": "True Lies – Wahre Lügen",
-   "jahr": 1994,
-   "auch": [
-    "True Lies"
-   ]
-  },
-  {
-   "titel": "Speed",
-   "jahr": 1994
-  },
-  {
-   "titel": "Bad Boys – Harte Jungs",
-   "jahr": 1995,
-   "auch": [
-    "Bad Boys"
-   ]
-  },
-  {
-   "titel": "Men in Black",
-   "jahr": 1997
-  },
-  {
-   "titel": "Independence Day",
-   "jahr": 1996
-  },
-  {
-   "titel": "Jurassic Park",
-   "jahr": 1993
-  },
-  {
-   "titel": "Matrix",
-   "jahr": 1999,
-   "auch": [
-    "The Matrix"
-   ]
-  },
-  {
-   "titel": "Pulp Fiction",
-   "jahr": 1994
-  },
-  {
-   "titel": "Ace Ventura – Ein tierischer Detektiv",
-   "jahr": 1994,
-   "auch": [
-    "Ace Ventura: Pet Detective"
-   ]
-  },
-  {
-   "titel": "Die Maske",
-   "jahr": 1994,
-   "auch": [
-    "The Mask"
-   ]
-  },
-  {
-   "titel": "Dumm und Dümmer",
-   "jahr": 1994,
-   "auch": [
-    "Dumb and Dumber"
-   ]
-  },
-  {
-   "titel": "Robin Hood – Helden in Strumpfhosen",
-   "jahr": 1993,
-   "auch": [
-    "Robin Hood: Men in Tights"
-   ]
-  },
-  {
-   "titel": "Face/Off – Im Körper des Feindes",
-   "jahr": 1997,
-   "auch": [
-    "Face/Off"
-   ]
-  },
-  {
-   "titel": "The Rock – Fels der Entscheidung",
-   "jahr": 1996,
-   "auch": [
-    "The Rock"
-   ]
-  },
-  {
-   "titel": "Con Air",
-   "jahr": 1997
-  },
-  {
-   "titel": "Das fünfte Element",
-   "jahr": 1997,
-   "auch": [
-    "The Fifth Element"
-   ]
-  },
-  {
-   "titel": "The Big Lebowski",
-   "jahr": 1998,
-   "auch": [
-    "Big Lebowski"
-   ]
-  },
-  {
-   "titel": "Bube, Dame, König, grAS",
-   "jahr": 1998,
-   "auch": [
-    "Lock, Stock and Two Smoking Barrels"
-   ]
-  },
-  {
-   "titel": "Lola rennt",
-   "jahr": 1998
-  },
-  {
-   "titel": "Der Schuh des Manitu",
-   "jahr": 2001
-  },
-  {
-   "titel": "Bang Boom Bang – Ein todsicheres Ding",
-   "jahr": 1999,
-   "auch": [
-    "Bang Boom Bang"
-   ]
-  },
-  {
-   "titel": "Ballermann 6",
-   "jahr": 1997
-  },
-  {
-   "titel": "Knockin' on Heaven's Door",
-   "jahr": 1997
-  },
-  {
-   "titel": "Erkan & Stefan",
-   "jahr": 2000
-  },
-  {
-   "titel": "Schtonk!",
-   "jahr": 1992
-  }
- ],
- "charts": {
-  "_hinweis": "Apple-Charts (Top 100 je Genre). neu = neue Filme (höchstens neuMonate alt), angebot = nur für Angebote. Horror (4408) ist immer raus.",
-  "neu": [
-   {
-    "id": 4404,
-    "name": "Komödie"
-   },
-   {
-    "id": 4401,
-    "name": "Action & Abenteuer"
-   },
-   {
-    "id": 4416,
-    "name": "Thriller"
-   },
-   {
-    "id": 4413,
-    "name": "Sci-Fi & Fantasy"
-   }
+  "_hinweis": "Filme & Serien bei Apple TV (Modul „filme“). Frei änderbar: Titel möglichst so, wie er im deutschen Store heißt, dazu das Erscheinungsjahr (der Film muss auf ±1 Jahr passen, damit kein falscher Film mit gleichem Namen genommen wird). „auch“ = andere Namen (z. B. Originaltitel), nach denen ebenfalls gesucht wird. Optional „id“ = Apple-Nummer aus dem Link (…/id123456789), dann wird nicht gesucht. Horror kommt nie auf die Seite (außer auf deiner Wunschliste).",
+  "zielpreis": 4.99,
+  "_zielpreis": "Wunschfilm zu diesem Kaufpreis oder billiger -> sofort Push. Pro Film änderbar mit \"zielpreis\".",
+  "wunschliste": [
+    {"titel": "Mallrats", "jahr": 1995},
+    {"titel": "Shadow und der Fluch des Khan", "jahr": 1994, "auch": ["The Shadow"]},
+    {"titel": "Go Trabi Go", "jahr": 1991},
+    {"titel": "Manta Manta", "jahr": 1991}
   ],
-  "angebot": [
-   {
-    "id": 4403,
-    "name": "Klassiker"
-   },
-   {
-    "id": 4410,
-    "name": "Kinder & Familie"
-   }
+  "staffelZiel": 9.99,
+  "_staffelZiel": "Staffel zu diesem Kaufpreis oder billiger gilt als Angebot.",
+  "serien": [
+    {"titel": "Rick and Morty"},
+    {"titel": "Star Trek: Raumschiff Enterprise", "auch": ["Star Trek: The Original Series", "Raumschiff Enterprise"]},
+    {"titel": "Star Trek: Das nächste Jahrhundert", "auch": ["Star Trek: The Next Generation"]},
+    {"titel": "Star Trek: Deep Space Nine", "auch": ["Star Trek: Deep Space 9"]},
+    {"titel": "Star Trek: Raumschiff Voyager", "auch": ["Star Trek: Voyager"]},
+    {"titel": "Star Trek: Enterprise"},
+    {"titel": "Star Trek: Discovery"},
+    {"titel": "Star Trek: Picard"},
+    {"titel": "Star Trek: Strange New Worlds"},
+    {"titel": "Star Trek: Lower Decks"},
+    {"titel": "Star Trek: Prodigy"}
   ],
-  "horror": [
-   4408
+  "disney": [
+    {"titel": "Der König der Löwen", "jahr": 1994, "auch": ["The Lion King"]},
+    {"titel": "Aladdin", "jahr": 1992},
+    {"titel": "Arielle, die Meerjungfrau", "jahr": 1989, "auch": ["The Little Mermaid"]},
+    {"titel": "Die Schöne und das Biest", "jahr": 1991, "auch": ["Beauty and the Beast"]},
+    {"titel": "Toy Story", "jahr": 1995},
+    {"titel": "Toy Story 2", "jahr": 1999},
+    {"titel": "Toy Story 3", "jahr": 2010},
+    {"titel": "A Toy Story: Alles hört auf kein Kommando", "jahr": 2019, "auch": ["Toy Story 4"]},
+    {"titel": "Die Monster AG", "jahr": 2001, "auch": ["Monsters, Inc."]},
+    {"titel": "Findet Nemo", "jahr": 2003, "auch": ["Finding Nemo"]},
+    {"titel": "Die Unglaublichen – The Incredibles", "jahr": 2004, "auch": ["Die Unglaublichen", "The Incredibles"]},
+    {"titel": "Cars", "jahr": 2006},
+    {"titel": "Ratatouille", "jahr": 2007},
+    {"titel": "WALL·E – Der Letzte räumt die Erde auf", "jahr": 2008, "auch": ["WALL·E"]},
+    {"titel": "Oben", "jahr": 2009, "auch": ["Up"]},
+    {"titel": "Coco – Lebendiger als das Leben!", "jahr": 2017, "auch": ["Coco"]},
+    {"titel": "Vaiana", "jahr": 2016, "auch": ["Moana"]},
+    {"titel": "Die Eiskönigin – Völlig unverfroren", "jahr": 2013, "auch": ["Die Eiskönigin", "Frozen"]},
+    {"titel": "Rapunzel – Neu verföhnt", "jahr": 2010, "auch": ["Rapunzel", "Tangled"]},
+    {"titel": "Zoomania", "jahr": 2016, "auch": ["Zootopia"]},
+    {"titel": "Encanto", "jahr": 2021},
+    {"titel": "Mulan", "jahr": 1998},
+    {"titel": "Tarzan", "jahr": 1999},
+    {"titel": "Hercules", "jahr": 1997},
+    {"titel": "Der Glöckner von Notre Dame", "jahr": 1996, "auch": ["The Hunchback of Notre Dame"]},
+    {"titel": "Pocahontas", "jahr": 1995},
+    {"titel": "Das Dschungelbuch", "jahr": 1967, "auch": ["The Jungle Book"]},
+    {"titel": "101 Dalmatiner", "jahr": 1961, "auch": ["One Hundred and One Dalmatians"]},
+    {"titel": "Bambi", "jahr": 1942},
+    {"titel": "Schneewittchen und die sieben Zwerge", "jahr": 1937, "auch": ["Snow White and the Seven Dwarfs"]},
+    {"titel": "Cinderella", "jahr": 1950},
+    {"titel": "Susi und Strolch", "jahr": 1955, "auch": ["Lady and the Tramp"]},
+    {"titel": "Alice im Wunderland", "jahr": 1951, "auch": ["Alice in Wonderland"]},
+    {"titel": "Peter Pan", "jahr": 1953},
+    {"titel": "Robin Hood", "jahr": 1973},
+    {"titel": "Aristocats", "jahr": 1970, "auch": ["The Aristocats"]},
+    {"titel": "Bernard und Bianca – Die Mäusepolizei", "jahr": 1977, "auch": ["The Rescuers"]},
+    {"titel": "Cap und Capper", "jahr": 1981, "auch": ["The Fox and the Hound"]},
+    {"titel": "Basil, der große Mäusedetektiv", "jahr": 1986, "auch": ["The Great Mouse Detective"]},
+    {"titel": "Oliver & Co.", "jahr": 1988},
+    {"titel": "Fluch der Karibik", "jahr": 2003, "auch": ["Pirates of the Caribbean: Fluch der Karibik", "Pirates of the Caribbean: The Curse of the Black Pearl"]},
+    {"titel": "Alles steht Kopf", "jahr": 2015, "auch": ["Inside Out"]},
+    {"titel": "Baymax – Riesiges Robowabohu", "jahr": 2014, "auch": ["Baymax", "Big Hero 6"]},
+    {"titel": "Lilo & Stitch", "jahr": 2002},
+    {"titel": "Ein Königreich für ein Lama", "jahr": 2000, "auch": ["The Emperor's New Groove"]},
+    {"titel": "Atlantis – Das Geheimnis der verlorenen Stadt", "jahr": 2001, "auch": ["Atlantis: The Lost Empire"]},
+    {"titel": "Bolt – Ein Hund für alle Fälle", "jahr": 2008, "auch": ["Bolt"]},
+    {"titel": "Küss den Frosch", "jahr": 2009, "auch": ["The Princess and the Frog"]},
+    {"titel": "Ralph reicht's", "jahr": 2012, "auch": ["Wreck-It Ralph"]},
+    {"titel": "Das große Krabbeln", "jahr": 1998, "auch": ["A Bug's Life"]}
   ],
-  "neuMonate": 18,
-  "neuProGenre": 25
- },
- "mydealz": [
-  "itunes filme",
-  "apple tv filme 3,99",
-  "itunes disney",
-  "itunes staffel"
- ]
+  "achtziger": [
+    {"titel": "Zurück in die Zukunft", "jahr": 1985, "auch": ["Back to the Future"]},
+    {"titel": "Zurück in die Zukunft II", "jahr": 1989, "auch": ["Back to the Future Part II"]},
+    {"titel": "Zurück in die Zukunft III", "jahr": 1990, "auch": ["Back to the Future Part III"]},
+    {"titel": "Ghostbusters – Die Geisterjäger", "jahr": 1984, "auch": ["Ghostbusters"]},
+    {"titel": "Ghostbusters II", "jahr": 1989},
+    {"titel": "Jäger des verlorenen Schatzes", "jahr": 1981, "auch": ["Indiana Jones und der Jäger des verlorenen Schatzes", "Raiders of the Lost Ark"]},
+    {"titel": "Indiana Jones und der Tempel des Todes", "jahr": 1984, "auch": ["Indiana Jones and the Temple of Doom"]},
+    {"titel": "Indiana Jones und der letzte Kreuzzug", "jahr": 1989, "auch": ["Indiana Jones and the Last Crusade"]},
+    {"titel": "Stirb langsam", "jahr": 1988, "auch": ["Die Hard"]},
+    {"titel": "Stirb langsam 2", "jahr": 1990, "auch": ["Die Hard 2"]},
+    {"titel": "Stirb langsam – Jetzt erst recht", "jahr": 1995, "auch": ["Die Hard with a Vengeance"]},
+    {"titel": "Terminator", "jahr": 1984, "auch": ["The Terminator"]},
+    {"titel": "Terminator 2 – Tag der Abrechnung", "jahr": 1991, "auch": ["Terminator 2: Judgment Day", "Terminator 2"]},
+    {"titel": "Beverly Hills Cop – Ich lös’ den Fall auf jeden Fall", "jahr": 1984, "auch": ["Beverly Hills Cop"]},
+    {"titel": "Beverly Hills Cop II", "jahr": 1987},
+    {"titel": "Top Gun – Sie fürchten weder Tod noch Teufel", "jahr": 1986, "auch": ["Top Gun"]},
+    {"titel": "Lethal Weapon – Zwei stahlharte Profis", "jahr": 1987, "auch": ["Lethal Weapon"]},
+    {"titel": "Lethal Weapon 2 – Brennpunkt L.A.", "jahr": 1989, "auch": ["Lethal Weapon 2"]},
+    {"titel": "Lethal Weapon 3 – Die Profis sind zurück", "jahr": 1992, "auch": ["Lethal Weapon 3"]},
+    {"titel": "Predator", "jahr": 1987},
+    {"titel": "RoboCop", "jahr": 1987},
+    {"titel": "Aliens – Die Rückkehr", "jahr": 1986, "auch": ["Aliens"]},
+    {"titel": "E.T. – Der Außerirdische", "jahr": 1982, "auch": ["E.T. the Extra-Terrestrial"]},
+    {"titel": "Die Goonies", "jahr": 1985, "auch": ["The Goonies"]},
+    {"titel": "Gremlins – Kleine Monster", "jahr": 1984, "auch": ["Gremlins"]},
+    {"titel": "Die unendliche Geschichte", "jahr": 1984, "auch": ["The NeverEnding Story"]},
+    {"titel": "Rambo", "jahr": 1982, "auch": ["First Blood"]},
+    {"titel": "Rambo II – Der Auftrag", "jahr": 1985, "auch": ["Rambo: First Blood Part II"]},
+    {"titel": "Rambo III", "jahr": 1988},
+    {"titel": "Rocky III – Das Auge des Tigers", "jahr": 1982, "auch": ["Rocky III"]},
+    {"titel": "Rocky IV – Der Kampf des Jahrhunderts", "jahr": 1985, "auch": ["Rocky IV"]},
+    {"titel": "Ferris macht blau", "jahr": 1986, "auch": ["Ferris Bueller's Day Off"]},
+    {"titel": "The Breakfast Club", "jahr": 1985, "auch": ["Der Frühstücksclub"]},
+    {"titel": "Die nackte Kanone", "jahr": 1988, "auch": ["The Naked Gun"]},
+    {"titel": "Die nackte Kanone 2½", "jahr": 1991, "auch": ["The Naked Gun 2½: The Smell of Fear"]},
+    {"titel": "Blues Brothers", "jahr": 1980, "auch": ["The Blues Brothers"]},
+    {"titel": "Ein Fisch namens Wanda", "jahr": 1988, "auch": ["A Fish Called Wanda"]},
+    {"titel": "Twins – Zwillinge", "jahr": 1988, "auch": ["Twins"]},
+    {"titel": "Big", "jahr": 1988},
+    {"titel": "Crocodile Dundee – Ein Krokodil zum Küssen", "jahr": 1986, "auch": ["Crocodile Dundee"]},
+    {"titel": "Highlander – Es kann nur einen geben", "jahr": 1986, "auch": ["Highlander"]},
+    {"titel": "Footloose", "jahr": 1984},
+    {"titel": "Dirty Dancing", "jahr": 1987},
+    {"titel": "Karate Kid", "jahr": 1984, "auch": ["The Karate Kid"]},
+    {"titel": "Blade Runner", "jahr": 1982, "auch": ["Blade Runner: The Final Cut"]},
+    {"titel": "Das Boot", "jahr": 1981},
+    {"titel": "Otto – Der Film", "jahr": 1985},
+    {"titel": "Otto – Der Außerfriesische", "jahr": 1989},
+    {"titel": "Werner – Beinhart!", "jahr": 1990},
+    {"titel": "Werner – Das muss kesseln!!!", "jahr": 1996},
+    {"titel": "Police Academy – Dümmer als die Polizei erlaubt", "jahr": 1984, "auch": ["Police Academy"]},
+    {"titel": "Batman", "jahr": 1989},
+    {"titel": "Tango & Cash", "jahr": 1989},
+    {"titel": "Running Man", "jahr": 1987, "auch": ["The Running Man"]},
+    {"titel": "Phantom Kommando", "jahr": 1985, "auch": ["Commando"]},
+    {"titel": "Red Heat", "jahr": 1988},
+    {"titel": "Nur 48 Stunden", "jahr": 1982, "auch": ["48 Hrs.", "48 Stunden"]},
+    {"titel": "Die Glücksritter", "jahr": 1983, "auch": ["Trading Places"]},
+    {"titel": "Der Prinz aus Zamunda", "jahr": 1988, "auch": ["Coming to America"]},
+    {"titel": "Midnight Run – 5 Tage bis Mitternacht", "jahr": 1988, "auch": ["Midnight Run"]},
+    {"titel": "Spaceballs", "jahr": 1987},
+    {"titel": "Top Secret!", "jahr": 1984},
+    {"titel": "Nummer 5 lebt!", "jahr": 1986, "auch": ["Short Circuit"]},
+    {"titel": "L.I.S.A. – Der helle Wahnsinn", "jahr": 1985, "auch": ["Weird Science"]},
+    {"titel": "Big Trouble in Little China", "jahr": 1986},
+    {"titel": "Die Klapperschlange", "jahr": 1981, "auch": ["Escape from New York"]},
+    {"titel": "Tron", "jahr": 1982},
+    {"titel": "WarGames – Kriegsspiele", "jahr": 1983, "auch": ["WarGames"]},
+    {"titel": "Willow", "jahr": 1988},
+    {"titel": "Die Braut des Prinzen", "jahr": 1987, "auch": ["The Princess Bride"]},
+    {"titel": "Falsches Spiel mit Roger Rabbit", "jahr": 1988, "auch": ["Who Framed Roger Rabbit"]},
+    {"titel": "Beetlejuice", "jahr": 1988},
+    {"titel": "Scarface", "jahr": 1983},
+    {"titel": "Star Trek II: Der Zorn des Khan", "jahr": 1982, "auch": ["Star Trek II: The Wrath of Khan"]},
+    {"titel": "Star Trek III: Auf der Suche nach Mr. Spock", "jahr": 1984, "auch": ["Star Trek III: The Search for Spock"]},
+    {"titel": "Star Trek IV: Zurück in die Gegenwart", "jahr": 1986, "auch": ["Star Trek IV: The Voyage Home"]},
+    {"titel": "Star Trek V: Am Rande des Universums", "jahr": 1989, "auch": ["Star Trek V: The Final Frontier"]},
+    {"titel": "Star Trek VI: Das unentdeckte Land", "jahr": 1991, "auch": ["Star Trek VI: The Undiscovered Country"]},
+    {"titel": "Star Wars: Episode IV – Eine neue Hoffnung", "jahr": 1977, "auch": ["Star Wars: Eine neue Hoffnung", "Krieg der Sterne"]},
+    {"titel": "Star Wars: Episode V – Das Imperium schlägt zurück", "jahr": 1980, "auch": ["Das Imperium schlägt zurück"]},
+    {"titel": "Star Wars: Episode VI – Die Rückkehr der Jedi-Ritter", "jahr": 1983, "auch": ["Die Rückkehr der Jedi-Ritter"]},
+    {"titel": "Platoon", "jahr": 1986},
+    {"titel": "Stand by Me – Das Geheimnis eines Sommers", "jahr": 1986, "auch": ["Stand by Me"]},
+    {"titel": "Ein Ticket für zwei", "jahr": 1987, "auch": ["Planes, Trains and Automobiles"]},
+    {"titel": "Die Ritter der Kokosnuss", "jahr": 1975, "auch": ["Monty Python and the Holy Grail"]},
+    {"titel": "Das Leben des Brian", "jahr": 1979, "auch": ["Monty Python's Life of Brian"]},
+    {"titel": "Jagd auf Roter Oktober", "jahr": 1990, "auch": ["The Hunt for Red October"]},
+    {"titel": "Die Unbestechlichen", "jahr": 1987, "auch": ["The Untouchables"]},
+    {"titel": "Conan der Barbar", "jahr": 1982, "auch": ["Conan the Barbarian"]},
+    {"titel": "Die City-Cobra", "jahr": 1986, "auch": ["Cobra"]},
+    {"titel": "Der Wüstenplanet", "jahr": 1984, "auch": ["Dune"]},
+    {"titel": "Flash Gordon", "jahr": 1980},
+    {"titel": "Masters of the Universe", "jahr": 1987},
+    {"titel": "Die Reise ins Labyrinth", "jahr": 1986, "auch": ["Labyrinth"]},
+    {"titel": "Der dunkle Kristall", "jahr": 1982, "auch": ["The Dark Crystal"]},
+    {"titel": "Der Flug des Navigators", "jahr": 1986, "auch": ["Flight of the Navigator"]},
+    {"titel": "Die Reise ins Ich", "jahr": 1987, "auch": ["Innerspace"]},
+    {"titel": "Mad Max II – Der Vollstrecker", "jahr": 1981, "auch": ["Mad Max 2", "The Road Warrior"]},
+    {"titel": "Bloodsport – Eine wahre Geschichte", "jahr": 1988, "auch": ["Bloodsport"]},
+    {"titel": "Fletch – Der Troublemaker", "jahr": 1985, "auch": ["Fletch"]},
+    {"titel": "Der Name der Rose", "jahr": 1986},
+    {"titel": "Zwei bärenstarke Typen", "jahr": 1983},
+    {"titel": "Zwei Asse trumpfen auf", "jahr": 1981},
+    {"titel": "Der Bomber", "jahr": 1982},
+    {"titel": "Die Miami Cops", "jahr": 1985},
+    {"titel": "Das Krokodil und sein Nilpferd", "jahr": 1979},
+    {"titel": "Clerks – Die Ladenhüter", "jahr": 1994, "auch": ["Clerks"]},
+    {"titel": "Dogma", "jahr": 1999},
+    {"titel": "Jay und Silent Bob schlagen zurück", "jahr": 2001, "auch": ["Jay and Silent Bob Strike Back"]},
+    {"titel": "Hot Shots! – Die Mutter aller Filme", "jahr": 1991, "auch": ["Hot Shots!"]},
+    {"titel": "Hot Shots! Der zweite Versuch", "jahr": 1993, "auch": ["Hot Shots! Part Deux"]},
+    {"titel": "Wayne's World", "jahr": 1992},
+    {"titel": "Kevin – Allein zu Haus", "jahr": 1990, "auch": ["Home Alone"]},
+    {"titel": "Kevin – Allein in New York", "jahr": 1992, "auch": ["Home Alone 2: Lost in New York"]},
+    {"titel": "Total Recall – Die totale Erinnerung", "jahr": 1990, "auch": ["Total Recall"]},
+    {"titel": "Kindergarten Cop", "jahr": 1990},
+    {"titel": "Last Action Hero", "jahr": 1993},
+    {"titel": "Demolition Man", "jahr": 1993},
+    {"titel": "True Lies – Wahre Lügen", "jahr": 1994, "auch": ["True Lies"]},
+    {"titel": "Speed", "jahr": 1994},
+    {"titel": "Bad Boys – Harte Jungs", "jahr": 1995, "auch": ["Bad Boys"]},
+    {"titel": "Men in Black", "jahr": 1997},
+    {"titel": "Independence Day", "jahr": 1996},
+    {"titel": "Jurassic Park", "jahr": 1993},
+    {"titel": "Matrix", "jahr": 1999, "auch": ["The Matrix"]},
+    {"titel": "Pulp Fiction", "jahr": 1994},
+    {"titel": "Ace Ventura – Ein tierischer Detektiv", "jahr": 1994, "auch": ["Ace Ventura: Pet Detective"]},
+    {"titel": "Die Maske", "jahr": 1994, "auch": ["The Mask"]},
+    {"titel": "Dumm und Dümmer", "jahr": 1994, "auch": ["Dumb and Dumber"]},
+    {"titel": "Robin Hood – Helden in Strumpfhosen", "jahr": 1993, "auch": ["Robin Hood: Men in Tights"]},
+    {"titel": "Face/Off – Im Körper des Feindes", "jahr": 1997, "auch": ["Face/Off"]},
+    {"titel": "The Rock – Fels der Entscheidung", "jahr": 1996, "auch": ["The Rock"]},
+    {"titel": "Con Air", "jahr": 1997},
+    {"titel": "Das fünfte Element", "jahr": 1997, "auch": ["The Fifth Element"]},
+    {"titel": "The Big Lebowski", "jahr": 1998, "auch": ["Big Lebowski"]},
+    {"titel": "Bube, Dame, König, grAS", "jahr": 1998, "auch": ["Lock, Stock and Two Smoking Barrels"]},
+    {"titel": "Lola rennt", "jahr": 1998},
+    {"titel": "Der Schuh des Manitu", "jahr": 2001},
+    {"titel": "Bang Boom Bang – Ein todsicheres Ding", "jahr": 1999, "auch": ["Bang Boom Bang"]},
+    {"titel": "Ballermann 6", "jahr": 1997},
+    {"titel": "Knockin' on Heaven's Door", "jahr": 1997},
+    {"titel": "Erkan & Stefan", "jahr": 2000},
+    {"titel": "Schtonk!", "jahr": 1992}
+  ],
+  "charts": {
+    "_hinweis": "Apple-Charts (Top 100 je Genre). neu = neue Filme (höchstens neuMonate alt), angebot = nur für Angebote. Horror (4408) ist immer raus.",
+    "neu": [
+      {"id": 4404, "name": "Komödie"},
+      {"id": 4401, "name": "Action & Abenteuer"},
+      {"id": 4416, "name": "Thriller"},
+      {"id": 4413, "name": "Sci-Fi & Fantasy"}
+    ],
+    "angebot": [
+      {"id": 4403, "name": "Klassiker"},
+      {"id": 4410, "name": "Kinder & Familie"}
+    ],
+    "horror": [4408],
+    "neuMonate": 18,
+    "neuProGenre": 25
+  },
+  "mydealz": ["itunes filme", "apple tv filme 3,99", "itunes disney", "itunes staffel"]
 }
