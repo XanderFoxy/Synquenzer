@@ -77826,8 +77826,8 @@ function vd4Pick(cx, cy) {
 
 /* ---------- Bild ---------- */
 // visible: no sheet, menu or video over it, the page in front; a hit test on its middle (toasts and small windows do not count)
-// cheap (every frame): the page in front, no video job, no sheet or menu over the app
-const vd4Free = () => !(document.hidden || VV.open || VV.busy || VV.off || UI.vvOff || R.editor || (EL.menu && EL.menu.classList.contains('open')));
+// cheap (every frame): the page in front, no video job, no sheet, tall window or menu over the app
+const vd4Free = () => !(document.hidden || VV.open || VV.busy || VV.off || UI.vvOff || R.editor || (UI.pop && UI.pop.sheet) || (EL.menu && EL.menu.classList.contains('open')));   // UI.pop.sheet: ein hohes Blatt (Mix & Master, Chor, Takes …)
 function vd4Vis() {
   const w = VD4.el; if (!w || !w.isConnected || !vd4Free()) return false;
   const r = w.getBoundingClientRect(); if (r.width < 4 || r.height < 4) return false;
