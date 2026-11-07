@@ -2494,6 +2494,9 @@ a.mbtn[aria-disabled=true]{opacity:.55}
 #songView.gl1flat2 .sv-lm .mlt small{display:none}
 .slot .mini rect.g1g{opacity:.32}
 .pr-bar .gl1pv[hidden]{display:none}
+.sv-loop .v.gl1fit{font-size:9px;letter-spacing:-.02em}
+.sv-l.chs>span{letter-spacing:0}
+.sv-l.chs{gap:3px}
 /* GL1-CSS-END */
 #wpSheet .g6pglq{flex:none;height:44px;padding:0 10px;font:700 12px/1 var(--font-ui)}
 #wpSheet .g6pglq.on{color:var(--ink);background:var(--sel);border-color:var(--sel)}
@@ -36619,7 +36622,7 @@ function svButtons() {
   B.bHome.hidden = !B.bBack.hidden;
   EL.songView.classList.toggle('tight', !B.bBack.hidden);           // top row with ↩ SONG: the ● / ▶ / MEL. labels go two-line
   const ll = loopLabel(song), lv = B.bLoop.lastChild, lt = '⟲ ' + loopShortLabel(song, B.bLoop.clientWidth && B.bLoop.clientWidth < 80) + ' ▾';
-  if (lv.textContent !== lt) { lv.textContent = lt; B.bLoop.setAttribute('aria-label', 'Schleife: ' + ll); }
+  if (lv._gl1 !== lt + '|' + B.bLoop.clientWidth) { lv._gl1 = lt + '|' + B.bLoop.clientWidth; lv.textContent = lt; B.bLoop.setAttribute('aria-label', 'Schleife: ' + ll); gl1FitV(lv, B.bLoop); }   // GL1: zu breit → enger statt links/rechts abgeschnitten
   if (SV.tbb && !SV.tbb.hidden) { const hid = svBankHiddenPlays(); if (SV.tbb.classList.contains('dot') !== hid) SV.tbb.classList.toggle('dot', hid); }
   B.bLoop.classList.toggle('on', !!(song && song.loop.on));
   SV.empty.hidden = !!(song && (song.bars || rec)) || !!SV.pv;          // V2e′: a part on its way in shows its preview
@@ -49730,6 +49733,7 @@ function buildRoll() {
   ED.laufBtn = ED.roll.el.bar ? [...ED.roll.el.bar.children].find(b => b.textContent === 'LAUF') || null : null;
   // the view switch goes first in the toolbar (in P it scrolls sideways: the tools behind it stay where the thumb expects them)
   if (ED.laufBtn) { const bar = ED.roll.el.bar; bar.insertBefore(ED.laufBtn, bar.firstChild); bar.insertBefore(el('span', 'sep'), ED.laufBtn.nextSibling); ED.laufBtn.classList.add('lgo'); }
+  gl1RollPlace();                                                    // GL1: [wie gespielt] gleich hinter LAUF (nur mit LAUF-Richtung zu sehen)
   bb1RollHook(t, s);                                                 // BB1: [Werkzeugkasten] neben [Spielweise]
   rollKbApply();
   rollHeadUpdate(); renderEdChip();
@@ -81377,6 +81381,17 @@ function gl1RollOpts(t, s) {
   };
 }
 
+// ROLLE: [wie gespielt] gleich hinter [LAUF] (vor dem Trennstrich), wo der Daumen den Wechsel der Ansicht findet
+function gl1RollPlace() {
+  const bar = ED.roll && ED.roll.el && ED.roll.el.bar, b = bar && bar.querySelector('.gl1pv'); if (!b) return;
+  if (ED.laufBtn && ED.laufBtn.parentNode === bar) bar.insertBefore(b, ED.laufBtn.nextSibling);
+  const c = ED.rollAt && S.tracks[ED.rollAt.t] && S.tracks[ED.rollAt.t].clips[ED.rollAt.s]; b.hidden = !(c && lf1Plan(c)); b.classList.toggle('on', ROLLP.gl1 !== 'notated');
+}
+// ein Wert, der breiter ist als sein Knopf: erst ohne Leerzeichen, dann eine Spur kleiner (nie links/rechts abgeschnitten)
+function gl1FitV(v, btn) {
+  v.classList.remove('gl1fit'); const room = btn.clientWidth - 4; if (!(room > 0) || v.offsetWidth <= room) return;
+  v.textContent = v.textContent.replace(/ /g, ''); if (v.offsetWidth > room) v.classList.add('gl1fit');
+}
 const GL1_API = {
   gl1Info: () => ({mxFlat: !!(EL.grid && EL.grid.classList.contains('gl1flat')), mxFlat2: !!(EL.grid && EL.grid.classList.contains('gl1flat2')), mxRow: GL1.mxRow || null,
     svFlat: !!(EL.songView && EL.songView.classList.contains('gl1flat')), svRowH: SV.rowH || null, svParts: (GL1.svParts || []).slice(), roll: GL1.rollLast ? JSON.parse(JSON.stringify(GL1.rollLast)) : null, mode: ROLLP.gl1 || 'played'}),
