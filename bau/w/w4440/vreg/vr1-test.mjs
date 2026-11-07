@@ -145,8 +145,8 @@ for (const [W, H, tag] of [[428, 926, 'hochkant'], [926, 428, 'quer']]) {
   ok(`Video-Blatt ${tag}: [Regeln] in der Zeile „Bild“ (≥ 44 px, kein Überlauf, ✕ sichtbar); Regel-Blatt: 9 Regeln, Tasten ≥ 44 px, Ansicht + Vorrang per Tipp`, vb.h >= 44 && vb.right <= vb.vw && !vb.rowOver && vb.x && rp.rows === 9 && rp.minBtn >= 44 && rp.inView && rr.ein.v === 'geraet' && rr.pos === 4, ui[tag + '-regeln']);
   // der Video-Streifen im Song: liegt in der Taktleiste, verdeckt keine Bedienung (Tipp auf die Takt-Zahl wählt weiter)
   await p.evaluate(() => { vvDirSet(5, 7, 'roll', 0); SYNQUENZER.songView(true); SYNQUENZER.songSelect(null); }); await p.waitForTimeout(400);
-  const sv = await p.evaluate(() => { const c = document.querySelector('#songView canvas'), r = c.getBoundingClientRect(), L = svLayoutInfo ? svLayoutInfo() : null; return {r: [r.x, r.y, r.width, r.height], vvS: SV.vvS, ru: SV.rulerH, cw: L && L.cw, x0: SV.x, labW: L && L.labW}; });
-  const sx = sv.r[0] + (sv.labW != null ? sv.labW : 0) + 5.5 * (sv.cw || 40) - (sv.x0 || 0), sy = sv.r[1] + sv.ru - sv.vvS / 2;
+  const sv = await p.evaluate(() => { const L = svLayoutInfo(), r = SV.cv.getBoundingClientRect(); return {r: [r.x, r.y, r.width, r.height], vvS: SV.vvS, ru: L.rulerH, cw: L.cellW, x0: L.x0}; });
+  const sx = sv.r[0] + 5.5 * sv.cw - sv.x0, sy = sv.r[1] + sv.ru - sv.vvS / 2;
   const hit = await p.evaluate(([x, y]) => { const e = document.elementFromPoint(x, y); return e ? e.tagName + '.' + (e.className || '') : null; }, [sx, sy]);
   ui[tag + '-streifen'] = {sv, hit};
   ok(`Song ${tag}: Video-Streifen (8 px) liegt auf der Song-Fläche, nichts Fremdes darüber`, sv.vvS === 8 && /^CANVAS/.test(hit || ''), ui[tag + '-streifen']);

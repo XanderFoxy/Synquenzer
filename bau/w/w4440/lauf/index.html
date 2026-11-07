@@ -2299,7 +2299,7 @@ a.mbtn[aria-disabled=true]{opacity:.55}
 .pop .plist.lf1sw button{padding:0 6px;font-size:12px}
 .pop .plist button.lf1del{color:var(--rec)}
 .pop .lf1hint{margin:8px 0 0;font:500 11px/1.35 var(--font-ui);color:var(--text-dim)}
-@media (orientation:landscape){.pop.lf1pop{width:min(520px,calc(100vw - 16px))}.pop .plist.lf1sw{grid-template-columns:repeat(3,minmax(0,1fr))}.pop .plist.lf1dirs{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media (orientation:landscape){.pop.lf1pop{width:min(600px,calc(100vw - 16px))}.pop .plist.lf1sw{grid-template-columns:repeat(4,minmax(0,1fr))}.pop .plist.lf1sw button{line-height:1.15}.pop .plist.lf1dirs{grid-template-columns:repeat(4,minmax(0,1fr))}}
 /* ===== LF1 END ===== */
 @media (orientation:portrait) and (max-height:700px){#rollSheet .rhead{height:40px}#rollSheet .pr-bar.prt,#rollSheet .pr>.pr-bar.pra{height:40px}#rollSheet .pr-bar button{height:34px}#rollSheet .pr{--pr-vh:48px}}
 @media (orientation:portrait) and (max-height:600px){#rollSheet .rhead{height:36px}#rollSheet .pr-bar.prt,#rollSheet .pr>.pr-bar.pra{height:38px}#rollSheet .pr-bar button{height:32px}#rollSheet .pr{--pr-vh:40px}#rollSheet .rhead .folc{height:32px}}
@@ -20291,6 +20291,7 @@ const RecHelpers = (() => {
         VI.set(nt, {bx: r.x + .5, by: r.y + 1.5, bw: r.w - 1, bh: r.h - 3, fy, name: nmI});
         // resize grip
         if (r.w >= 18) { x.fillStyle = '#0b0c0f'; x.globalAlpha = .5; x.fillRect(r.x + r.w - 5, r.y + r.h * .3, 2, r.h * .4); x.globalAlpha = 1; }
+        if (nt.off) { x.fillStyle = C.bg; x.globalAlpha = .62; x.fillRect(r.x, r.y + 1, r.w, r.h - 2); x.globalAlpha = 1; }   // LF1: ein ausgeschalteter Schritt (note.off) gedimmt
       }
       if (opts.syl) { const SY = opts.syl(c.notes); if (SY && SY.size) {         /* G9E: Silbe klein unter dem Noten-Anfang (links unten, nie am Griff rechts) */
         x.font = '600 10px ' + tok('--font-ui', 'sans-serif'); x.textBaseline = 'alphabetic';
@@ -27346,7 +27347,7 @@ const newSeed = () => (Math.random() * 2147483647) | 0;
 function normNoteExtras(src, out, kind) {
   if (isNum(src.o) && src.o >= 0) out.o = +(+src.o).toFixed(4);
   if (typeof src.sy === 'string' && kind !== 'drum') { const y = src.sy.replace(/[\s\u0000-\u001f\u007f]/g, '').slice(0, 24); if (y) out.sy = y; }   // G9E: Silbe (G5 „In Melodie umwandeln“)
-  if (kind !== 'drum') lf1NoteNorm(src, out);                       // LF1: Schritt aus, Ratsche, Transponieren, Chance (Synth-Noten)
+  if (kind !== 'drum') lf1NoteNorm(src, out);                       // LF1: Schritt aus, Wirbel, Transponieren, Chance (Synth-Noten)
   if (kind !== 'drum') { const lk = lkNoteNorm(src.lk, null); if (lk) out.lk = lk; return out; }   // I2a: lk.v / lk.k auch an Synth-Noten
   if (src.a) out.a = 1;
   if (isNum(src.p) && src.p < 1) out.p = clamp(Math.round(src.p * 100) / 100, .05, 1);
@@ -49109,7 +49110,7 @@ function laufFrame(bAud) {
    die Note zu löschen … Effekte wie Transpose … rückwärts, an einer bestimmten Note anfangen, hin und her … Strums wie bei einer
    Gitarre … Harfe … Glockengeläut … typische Spielmuster auf Abruf“)
    (1) Tipp auf einen gesetzten Schritt (Reiter TON/OKT/VEL) schaltet ihn aus/an – die Note bleibt (note.off = true, gedimmt);
-   (2) langer Druck auf einen Schritt = Schritt-Menü: Ratsche 2/3/4 (note.rt), Transponieren ±Halbtöne/Oktave (note.tp),
+   (2) langer Druck auf einen Schritt = Schritt-Menü: Wirbel (Ratchet) 2/3/4 (note.rt), Transponieren ±Halbtöne/Oktave (note.tp),
        Chance % (note.pb), Slide (= BINDUNG), Akzent, Hier starten, Löschen;
    (3) Richtung je Clip (clip.lf = {dir, st, seed, g}): vorwärts · rückwärts · hin und her (wie ALT 1 des Arpeggiators: die Enden
        einmal) · Zufall (Muster 1–99) und Startschritt; der Schritt-Zähler läuft ab Clip-Start durch (wie D1 bei den Drums);
@@ -49189,7 +49190,7 @@ function lf1Pos(P, g) {
   if (P.dir === 'rnd') return g === 0 ? P.st : Math.min(T - 1, Math.floor(DrumSeq.rand01(P.seed, g, 7, 3) * T));
   return (g + P.st) % T;
 }
-// the events in [a, b) beats from the clip start: plain notes {t, d, n, v, lk …} (stumm weg, Chance, Ratsche, Transponieren, Richtung)
+// the events in [a, b) beats from the clip start: plain notes {t, d, n, v, lk …} (stumm weg, Chance, Wirbel, Transponieren, Richtung)
 function lf1Ev(P, a, b) {
   const out = []; if (!(b > a)) return out;
   if (!P.map) {
@@ -49213,7 +49214,7 @@ function lf1Emit(P, it, t0, d, g, out, a, b) {
   for (let m = 0; m < r; m++) {
     const t = t0 + m * sp / r; if (t < -1e-9 || t < a - 1e-9 || t >= b - 1e-9) continue;
     const o = Object.assign({}, n); o.t = Math.max(0, t); o.d = Math.max(1 / 64, r > 1 && m < r - 1 ? sp / r * .8 : d - m * sp / r); o.n = pitch;
-    if (m) o.v = Math.round(n.v * 800) / 1000;                 // Ratsche: die Wiederholungen mit 80 % (wie die Drums)
+    if (m) o.v = Math.round(n.v * 800) / 1000;                 // Wirbel: die Wiederholungen mit 80 % (wie die Drums)
     delete o.off; delete o.rt; delete o.tp; delete o.pb;
     out.push(o);
   }
@@ -49260,7 +49261,7 @@ function lf1SetLf(c, patch) {
 function lf1StartOf(c) { const P = c && c.lf ? lf1Plan(c) : null; return P && P.map ? P.st : -1; }
 // one step action (menu, test API): a = off · acc · tie · del · rt · tp · pb · start; one undo step each
 function lf1StepDo(t, s, k, a, v) {
-  const lbl = {off: 'Schritt an/aus', acc: 'Akzent', tie: 'Slide', del: 'Schritt löschen', rt: 'Ratsche', tp: 'Transponieren', pb: 'Chance', start: 'Startschritt'}[a];
+  const lbl = {off: 'Schritt an/aus', acc: 'Akzent', tie: 'Slide', del: 'Schritt löschen', rt: 'Wirbel', tp: 'Transponieren', pb: 'Chance', start: 'Startschritt'}[a];
   if (!lbl) return false;
   return lf1Edit(t, s, lbl, c => {
     if (a === 'start') { lf1SetLf(c, {st: lf1StartOf(c) === k ? null : k}); return; }
@@ -49293,15 +49294,15 @@ function lf1Hold(E, t, s, per) {
 const lf1B = (a, v, label, on, dis, cls) => `<button class="rb${on ? ' on' : ''}${cls ? ' ' + cls : ''}" data-a="${a}" data-v="${v}"${dis ? ' disabled' : ''}>${label}</button>`;
 function lf1StepRender(p, t, s, k) {
   const c = S.tracks[t] && S.tracks[t].clips[s]; if (!c) { closePop(); return; }
-  const n = laufFind(c, k), nm = n ? (percIs(S.tracks[t]) ? percRowName(n.n) : noteLabel(n.n)) : '–', st0 = lf1StartOf(c) === k;
+  const perc = percIs(S.tracks[t]), n = laufFind(c, k), nm = n ? (perc ? percRowName(n.n) : noteLabel(n.n) + (n.tp ? ' → ' + noteLabel(clamp(n.n + n.tp, 0, 127)) : '')) : '–', st0 = lf1StartOf(c) === k;
   let h = `<h4>Schritt ${k + 1} · ${esc(nm)}${n && n.off ? ' · aus' : ''}</h4>`;
   if (!n) h += '<p class="lf1hint">Leerer Schritt – antippen setzt eine Note.</p>';
   else {
     const tp = n.tp | 0, pb = n.pb == null ? 1 : n.pb, rt = n.rt || 1;
     h += '<div class="plist lf1q">' + lf1B('off', 0, n.off ? 'Schritt an' : 'Schritt aus', n.off) + lf1B('acc', 0, 'Akzent', n.v >= .995) +
       lf1B('tie', 0, 'Slide', laufTied(c, n), !laufPrev(c, n)) + lf1B('del', 0, 'Löschen', false, false, 'lf1del') + '</div>';
-    h += '<div class="lf1r"><span class="lbl">Ratsche</span><div class="plist lf1q">' + [1, 2, 3, 4].map(r => lf1B('rt', r, r + '×', rt === r)).join('') + '</div></div>';
-    h += '<div class="lf1r"><span class="lbl">Transp.</span><div class="plist lf1t">' + lf1B('tp', -12, MINUS + '12') + lf1B('tp', -1, MINUS + '1') +
+    h += '<div class="lf1r"><span class="lbl">Wirbel</span><div class="plist lf1q">' + [1, 2, 3, 4].map(r => lf1B('rt', r, r + '×', rt === r)).join('') + '</div></div>';
+    if (!perc) h += '<div class="lf1r"><span class="lbl">Transp.</span><div class="plist lf1t">' + lf1B('tp', -12, MINUS + '12') + lf1B('tp', -1, MINUS + '1') +
       lf1B('tp', 0, tp ? (tp > 0 ? '+' : MINUS) + Math.abs(tp) : '±0', !!tp) + lf1B('tp', 1, '+1') + lf1B('tp', 12, '+12') + '</div></div>';
     h += '<div class="lf1r"><span class="lbl">Chance</span><div class="plist lf1q">' + [1, .75, .5, .25].map(x => lf1B('pb', x, Math.round(x * 100) + ' %', Math.abs(pb - x) < .005)).join('') + '</div></div>';
   }
@@ -49337,7 +49338,7 @@ function lf1DirRender(p, t, s) {
   let h = '<h4>Richtung des Laufs</h4><div class="plist lf1dirs">' + LF1_DIRS.map(([k, l]) => `<button class="rb${dir === k ? ' on' : ''}" data-a="dir" data-v="${k}">${lf1Icon(k)}<span>${l}</span></button>`).join('') + '</div>';
   h += '<div class="lf1r"><span class="lbl">Start</span><div class="plist lf1t3">' + lf1B('st', -1, '‹') + lf1B('st0', 0, 'Schritt ' + (stShow + 1), lf.st != null) + lf1B('st', 1, '›') + '</div></div>';
   if (dir === 'rnd') h += '<div class="lf1r"><span class="lbl">Muster</span><div class="plist lf1t3">' + lf1B('sd', -1, '‹') + lf1B('sd0', 0, 'Muster ' + (lf.seed || 1)) + lf1B('sd', 1, '›') + '</div></div>';
-  h += '<p class="lf1hint">Langer Druck auf einen Schritt: Ratsche, Transponieren, Chance, Slide, hier starten. Tipp auf einen Schritt: aus / an – die Note bleibt.</p>';
+  h += '<p class="lf1hint">Langer Druck auf einen Schritt: Wirbel, Transponieren, Chance, Slide, hier starten. Tipp auf einen Schritt: aus / an – die Note bleibt.</p>';
   p.innerHTML = h;
 }
 function lf1DirDo(t, s, a, v) {
@@ -49459,16 +49460,17 @@ function lf1SwApply(W, style) {
   c.notes = rest.concat(gen).sort((a, b) => a.t - b.t || a.n - b.n);
   pushUndo(W.t, W.s, before, 'Spielweise: ' + LF1_SW.find(x => x[0] === style)[1]); afterClipEdit(W.t, W.s);
   if (ED.roll && ED.rollAt && ED.rollAt.t === W.t && ED.rollAt.s === W.s && !ED.rollAt.own && !ED.rollAt.mel) { try { ED.roll.refresh(); if (W.sel) ED.roll.select(gen); } catch (e) { logErr(e); } }
-  W.cur = style;
+  W.cur = style; W.n = gen.length;
   return gen.length;
 }
 function lf1SwRender(p) {
   const W = LF1.sw; if (!W) return;
   const n = W.idx.length;
-  let h = `<h4>Spielweise · ${W.sel ? n + (n === 1 ? ' Note' : ' Noten') + ' der Auswahl' : 'ganzer Clip'}</h4><div class="plist lf1sw">` +
+  const cur = W.cur ? LF1_SW.find(x => x[0] === W.cur) : null;
+  let h = `<h4>Spielweise · ${W.sel ? n + (n === 1 ? ' Note' : ' Noten') + ' der Auswahl' : 'ganzer Clip'}${cur ? ' · ' + cur[1] + ' (' + W.n + ' Noten)' : ''}</h4><div class="plist lf1sw">` +
     LF1_SW.map(([k, l]) => `<button class="rb${W.cur === k ? ' on' : ''}" data-a="sw" data-v="${k}">${l}</button>`).join('') + '</div>';
   h += '<div class="lf1r"><span class="lbl">Strum</span><div class="plist lf1ms">' + LF1_MS.map(x => lf1B('ms', x, x + ' ms', LF1.strumMs === x)).join('') + '</div></div>';
-  h += '<p class="lf1hint">Aus den Akkorden und der Tonart des Clips. Jede Wahl rechnet vom Original aus und ist ein Schritt ↶.</p>';
+  h += '<p class="lf1hint">Aus den Akkorden und der Tonart des Clips. Jede Wahl rechnet vom Original aus (je ein Schritt ↶).</p>';
   h += '<div class="plist lf1one">' + lf1B('ok', 0, 'Fertig') + '</div>';
   p.innerHTML = h;
 }
@@ -49482,7 +49484,7 @@ function lf1SwPop(anchor, t, s, ns, sel) {
       const a = b.dataset.a, W = LF1.sw; if (!W) return;
       if (a === 'ok') { closePop(); return; }
       if (a === 'ms') { LF1.strumMs = +b.dataset.v; if (W.cur && W.cur.startsWith('str')) lf1SwApply(W, W.cur); }
-      else if (a === 'sw') { const k = lf1SwApply(W, b.dataset.v); if (k) { haptic('tick'); toast('Spielweise: ' + LF1_SW.find(x => x[0] === b.dataset.v)[1] + ' · ' + k + ' Noten'); } }
+      else if (a === 'sw') { if (lf1SwApply(W, b.dataset.v)) haptic('tick'); }
       lf1SwRender(p); popFit(p);
     }, 'button[data-a]');
   }, {name: 'lf1sw', above: true, onClose: () => { LF1.sw = null; }});

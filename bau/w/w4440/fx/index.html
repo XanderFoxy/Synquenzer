@@ -551,6 +551,7 @@ svg{display:block}
 .fll-pg{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px}
 .msheet .fll-pg .ms-b.fll-pd{position:relative;height:44px;font-size:10.5px;letter-spacing:0;padding:0 2px 0 6px}
 .fll-pg .ms-b.fll-pd::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--pc)}
+.fllsheet .ms-h,.fllsheet .ms-h .ms-x{height:44px}
 .fllsheet .fll-chips{margin-top:4px}
 .fllsheet .fll-chips .chip{height:44px;min-height:44px}
 .fllsheet .fll-chips .chip.fll-has::after{content:'';position:absolute;right:4px;top:4px;width:6px;height:6px;border-radius:50%;background:var(--pc);box-shadow:0 0 0 1px rgba(0,0,0,.6)}
@@ -71719,7 +71720,8 @@ function fllSheetRows(p, e) {
   const B = (a, html, o) => `<button class="rb ms-b${o && o.on ? ' on' : ''}${o && o.cls ? ' ' + o.cls : ''}" data-fl="${a}"${o && o.dis ? ' disabled' : ''}${o && o.aria ? ' aria-label="' + esc(o.aria) + '"' : ''}>${html}</button>`;
   const hs = p.querySelector('.ms-h span'); if (hs && e.m == null && st != null) hs.textContent = '· frei · ' + fllWhere(st);
   const lr = p.querySelector('.ue-lr'); if (!lr) return;
-  lr.insertAdjacentHTML('beforeend', B('l-', '−', {cls: 'fll-pm', aria: 'Kürzer (Raster ' + gn + ')'}) + B('l+', '+', {cls: 'fll-pm', aria: 'Länger (Raster ' + gn + ')'}));
+  const ll = lr.querySelector('.ue-ll');                         // − + gleich hinter „Länge“ (rechts liegt ✕ über der Zeile)
+  (ll || lr).insertAdjacentHTML(ll ? 'afterend' : 'beforeend', B('l-', '−', {cls: 'fll-pm', aria: 'Kürzer (Raster ' + gn + ')'}) + B('l+', '+', {cls: 'fll-pm', aria: 'Länger (Raster ' + gn + ')'}));
   let h = '<div class="fll-rows">';
   h += '<div class="ms-r fll-pos">' + B('p-', '◀', {cls: 'fll-n', aria: 'Früher (Raster ' + gn + ')'}) +
     `<span class="fll-at"><b>${st != null ? esc(fllWhere(st)) : '–'}</b><small>${esc(fllLenTxt(e.len))}</small></span>` +

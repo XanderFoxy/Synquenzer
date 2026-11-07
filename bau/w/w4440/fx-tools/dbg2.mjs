@@ -1,0 +1,26 @@
+import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
+const FILE = '/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/w4440/fx/index.html', T = '/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/w4440/fx-tools/';
+const b = await chromium.launch(); const ctx = await b.newContext({viewport: {width: 428, height: 926}, hasTouch: true, isMobile: true}); const p = await ctx.newPage();
+const errs = []; p.on('pageerror', e => errs.push(String(e)));
+await p.goto('file://' + FILE); await p.waitForTimeout(1500);
+const id = await p.evaluate(() => {
+  const Q = window.SYNQUENZER;
+  Q.setClip(4, 0, {len: 1, notes: [[0, 36], [1, 38], [2, 36], [3, 38]].map(([t, n]) => ({t, d: .25, n, v: .9}))});
+  const nt = Q.state().project.tracks.length; Q.setSong({bars: 8, lanes: Array.from({length: nt}, (_, i) => (i === 4 ? [{bar: 0, slot: 0}] : [])), marks: [{id: 'M1', a: 0, len: 4}, {id: 'M2', a: 4, len: 4}]});
+  Q.songView(true); const a = Q.uePlace('fx-tom-fill', 'M2'); Q.fllPlace('fx-crash', 16); Q.fllPlace('fx-drop', 24); Q.fllMode(a, 'mischen'); return a;
+});
+await p.evaluate(id => window.SYNQUENZER.fllNotes(id), id); await p.waitForTimeout(300);
+await p.screenshot({path: T + 'dbg-hoch-noten.png'});
+const m = await p.evaluate(() => { const P = document.querySelector('.pop'); const r = P.getBoundingClientRect(); return {h: r.height, top: r.top, small: [...P.querySelectorAll('button')].filter(x => x.offsetWidth && (x.offsetHeight < 44 || x.offsetWidth < 44)).map(x => x.textContent)}; });
+console.log(JSON.stringify(m));
+await p.evaluate(() => closePop());
+await p.setViewportSize({width: 926, height: 370}); await p.waitForTimeout(400);
+await p.evaluate(() => { window.SYNQUENZER.ueBar(true); UE.tab = 'break'; uePaintBar(); });
+await p.waitForTimeout(300);
+await p.screenshot({path: T + 'dbg-quer-leiste.png'});
+const drop = await p.evaluate(() => window.SYNQUENZER.ueList().find(e => e.src === 'fx-drop').id);
+await p.evaluate(() => window.SYNQUENZER.ueBar(false));
+await p.evaluate(id => window.SYNQUENZER.ueSheet(id), drop); await p.waitForTimeout(300);
+await p.screenshot({path: T + 'dbg-quer-drop.png'});
+console.log(JSON.stringify(errs));
+await b.close();

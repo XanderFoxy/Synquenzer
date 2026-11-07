@@ -123,6 +123,7 @@ function midiOns(bytes) {
   await sl(200);
   ok('Effekt-Marken in den Schritten', await p.evaluate(() => { const C = SYNQUENZER.laufApi().se.cells; return C[1].querySelector('.lf1b').textContent === '3×' && C[5].querySelector('.lf1b').textContent === '+7' && C[7].querySelector('.lf1b').textContent === '50%'; }));
   const lay = await p.evaluate(() => ({sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth, sh: document.documentElement.scrollHeight, ch: document.documentElement.clientHeight, x: (() => { const r = document.querySelector('#rollSheet .sh-x').getBoundingClientRect(); return [r.left, r.top, r.right, r.bottom]; })()}));
+  ok('ROLLE zeigt den ausgeschalteten Schritt (Daten)', await p.evaluate(() => SYNQUENZER.getClip(1, 0).notes.filter(n => n.off).length === 1));
   ok('kein Überlauf, ✕ sichtbar (hochkant)', lay.sw <= lay.cw && lay.sh <= lay.ch && lay.x[2] <= 428 && lay.x[1] >= 0, JSON.stringify(lay));
   await p.screenshot({path: out + '/lf1-p-lauf.png'});
   // 5 MIDI: Szene 1, Spur 2 = Kanal 2: 7 Noten (Schritt 3 stumm), Schritt 2 dreimal -> 9; Startschritt 5 verschiebt nur die Zeiten
@@ -185,7 +186,19 @@ function midiOns(bytes) {
   ok('nach allen Spielweisen + Undo: Akkord unverändert', c.notes.length === 3, c.notes.length);
   await p.context().close();
 }
+// ---------- weitere Größen: kein Überlauf, ✕ sichtbar, [Richtung] im Bild (428/926 Pflicht, andere nur Info) ----------
+for (const [w, h] of [[390, 844], [375, 667], [844, 390], [926, 370]]) {
+  const p = await page(w, h);
+  const r = await p.evaluate(() => {
+    const Q = SYNQUENZER; Q.setClip(1, 0, {len: 2, key: {root: 0, scale: 'ionian', src: 'user'}, notes: [0, 1, 2, 3, 4, 5, 6, 7].map(k => ({t: k * .25, d: .245, n: 48 + k, v: .8, off: k === 2}))}); Q.openLauf(1, 0);
+    const d = document.documentElement, x = document.querySelector('#rollSheet .sh-x').getBoundingClientRect(), b = document.querySelector('.lbar .lf1dir').getBoundingClientRect(), bar = document.querySelector('.lbar').getBoundingClientRect();
+    return {over: d.scrollWidth > d.clientWidth || d.scrollHeight > d.clientHeight, x: x.right <= innerWidth && x.top >= 0 && x.bottom <= innerHeight, dir: b.right <= Math.min(innerWidth, bar.right) + .5 && b.left >= bar.left - .5, off: document.querySelector('.lauf .se-cell.lf1off') != null};
+  });
+  ok(`${w}×${h}: kein Überlauf, ✕ sichtbar, Schritt aus gedimmt`, !r.over && r.x && r.off, JSON.stringify(r));
+  res.push({name: `${w}×${h}: [Richtung] ohne Wischen sichtbar (Info)`, ok: true, info: '', infoOnly: r.dir});
+  await p.context().close();
+}
 await b.close();
 ok('keine Fehler in der Konsole', errs.length === 0, JSON.stringify(errs));
-for (const r of res) console.log((r.ok ? 'OK  ' : 'FAIL') + ' ' + r.name + (r.ok ? '' : ' :: ' + r.info));
+for (const r of res) console.log((r.ok ? 'OK  ' : 'FAIL') + ' ' + r.name + (r.ok ? '' : ' :: ' + r.info) + (r.infoOnly !== undefined ? ' -> ' + r.infoOnly : ''));
 console.log(res.filter(r => r.ok).length + '/' + res.length);
