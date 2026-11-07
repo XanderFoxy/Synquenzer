@@ -83478,7 +83478,7 @@ const tktRoom = id => TKT_ROOMS.find(r => r.id === id) || TKT_ROOMS[0];
 function tktFxNorm(h, d) {
   if (!h || !d) return;
   if (['studio', 'kammer', 'saal', 'kirche', 'oel'].includes(h.tktRaum)) d.tktRaum = h.tktRaum;
-  if (h.tktLen === 8 || h.tktLen === 75) d.tktLen = h.tktLen;
+  if (d.tktRaum === 'oel' && (h.tktLen === 8 || h.tktLen === 75)) d.tktLen = h.tktLen;   // die Länge gehört nur zum Öltank
 }
 const tktOelLen = h => (h && (h.tktLen === 8 || h.tktLen === 75) ? h.tktLen : 30);
 function tktRnd(seed) { let a = seed >>> 0 || 1; return () => { a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
@@ -83753,7 +83753,7 @@ function tktFxPage(pg, sub, i) {
 @media (orientation:landscape){.pg-fx-spur>.tktrk{grid-row:1;grid-column:9}.pg-fx-master>.tktrk{grid-row:1;grid-column:9}.pg-fx-chorus>.tktrk{grid-row:2;grid-column:9}
  .pg-fx-echo>.fxmode{grid-column:1/9}.pg-fx-echo>.tktrk{grid-row:2;grid-column:9}
  .pg-fx-hall>.fxcap{grid-column:5/7}.pg-fx-hall>.tktrm{grid-row:2;grid-column:7/9}.pg-fx-hall>.tktrk{grid-row:2;grid-column:9}
- .pg-fxg>.tktrk,.pg-fxg>.tktrm{grid-column-end:auto;height:44px}}
+ .pg-fxg>.tktrk,.pg-fxg>.tktrm{grid-column-end:auto;height:44px;margin:-4px 0}}   /* 44 px zum Tippen, die Zeile bleibt so hoch wie vorher (nichts rückt) */
 .tktroompop{max-width:min(420px,calc(100vw - 16px))}
 .tkt-rooms{display:flex;flex-wrap:wrap;gap:4px;margin:4px 0}
 .tkt-rooms .ms-b{flex:1 1 30%;min-height:44px;font:700 11px/1.1 var(--font-ui)}
@@ -83764,7 +83764,7 @@ function tktFxPage(pg, sub, i) {
 .msheet.tktmode .tkt-r .ms-b small{font:600 10px/1 var(--font-ui);color:var(--text-dim)}
 .msheet.tktmode .tkt-r .ms-b.on{border-color:var(--amber);color:var(--amber)}
 .pop.msheet.tktrack{padding-top:0;max-height:calc(100% - 4px);overflow-y:auto;overscroll-behavior:contain}
-.tktrack .ms-h{position:sticky;top:0;z-index:4;height:44px;background:linear-gradient(var(--chassis-2),var(--chassis));margin:0 -12px 6px;padding:0 48px 0 12px;border-bottom:1px solid var(--line)}
+.tktrack .ms-h{position:sticky;top:0;z-index:4;height:44px;background:linear-gradient(var(--chassis-2),var(--chassis));margin:0 0 6px;padding:0 48px 0 0;border-bottom:1px solid var(--line);box-shadow:0 -12px 0 var(--chassis-2)}
 .tktrack .ms-h b{color:#e6e9ef;letter-spacing:.12em}
 .tktrack .ms-h .ms-x{height:44px;top:0}
 .tktrack .tkr-nv{min-width:44px;height:44px;font-size:18px}
@@ -83814,7 +83814,7 @@ const TKT_API = {
   // Öltank im Offline-Kontext: Impuls → derselbe Raum-Zweig (ohne Bus) – für RT60-Messung und CPU
   oelRender: async (len, sec, sr) => {
     sr = sr || 24000; const oc = new OfflineAudioContext(2, Math.round(sec * sr), sr), ib = oc.createBuffer(1, 64, sr); ib.getChannelData(0)[0] = 1;
-    const src = oc.createBufferSource(); src.buffer = ib; const X = tktHallBuild(oc);   // Impuls bei 0,1 s (die Faltung blendet in 10 ms ein) tktHallIn(X, 'oel'); X.room = 'oel';
+    const src = oc.createBufferSource(); src.buffer = ib; const X = tktHallBuild(oc); tktHallIn(X, 'oel'); X.room = 'oel';   // Impuls bei 0,1 s (die Faltung blendet in 10 ms ein)
     X.fdn = tktFdn(oc); X.fIn = oc.createGain(); X.fdn.out.connect(X.mix); X.fIn.connect(X.fdn.in); X.cv.go.connect(X.fIn); X.fdn.set(len, len * 1.5, Math.max(1.5, len * .3), 0);
     X.mix.gain.value = TKT_OEL_OUT; X.hp.frequency.value = 20; X.lp.frequency.value = 20000; src.connect(X.in); X.out.connect(oc.destination); src.start(.1);
     const T0 = performance.now(), b = await oc.startRendering(); return {ms: performance.now() - T0, L: b.getChannelData(0), R: b.getChannelData(1), sr};

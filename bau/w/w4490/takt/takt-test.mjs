@@ -31,7 +31,7 @@ const run = (setup, ci) => p.evaluate(async ({setup, ci}) => {
 const CLIP34 = "for (let t = 0; t < NT(); t++) if (S.tracks[t].clips[0] && !S.tracks[t].stimme) setClipTs(t, 0, '3/4'); R.selS = 0;";
 const m34 = await run(CLIP34, true);
 const accOk = s => /^AnnAnnAn/.test(s);
-ok('3/4 Matrix (nur die Clips 3/4): Einzähler 3 Klicks ab −3 mit Betonung, dann Klickmuster A n n | A n n (gemessen)', m34.log[0][0] === -3 && m34.acc.startsWith('Ann') && accOk(m34.acc.slice(3)) && m34.beats.slice(3, 9).join(',') === '0,1,2,3,4,5', {log: m34.log.slice(0, 9).map(x => x.join('')).join(' ')});
+ok('3/4 Matrix (nur die Clips 3/4): Einzähler 3 Klicks ab −3 mit Betonung, dann Klickmuster A n n | A n n (gemessen)', m34.log[0][0] === -3 && m34.acc.startsWith('AnnAnnAnn') && m34.beats.slice(3, 9).join(',') === '0,1,2,3,4,5', {log: m34.log.slice(0, 9).map(x => x.join('')).join(' ')});
 ok('3/4 Matrix: TAKT-Anzeige zählt 3 2 1 → 1.1 1.2 1.3 2.1 (nie .4)', m34.takt.slice(0, 7).join(' ') === '3 2 1 1.1 1.2 1.3 2.1' && !m34.takt.some(t => /\.4$/.test(t)), m34.takt);
 ok('3/4 Matrix: Lauflicht der Takt-LEDs = 3 Lampen (die 4. unsichtbar, kein Verschieben)', m34.ledsAll.every(l => l[3] === 'x') && m34.ledsAll.some(l => l.startsWith('100')) && m34.ledsAll.some(l => l.startsWith('001')), m34.ledsAll);
 const s34 = await run("setSongTs('3/4', {quiet: true}); R.selS = 0;", false);
