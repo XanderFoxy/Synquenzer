@@ -172,7 +172,7 @@ const ma = await info(p);
 await p.evaluate(() => { SYNQUENZER.vd4.mode('regie'); }); await p.waitForTimeout(600); await p.evaluate(() => SYNQUENZER.vd4.reset()); await p.waitForTimeout(1500);
 const mr = await info(p);
 await p.evaluate(() => { if (R.playing) stop(); }); await settle(p, 600);
-ok('VD4-13', ma.live && ma.frames >= 15 && ma.cur.live && mr.frames === 0, 'App-Bild läuft live mit der Matrix (≈ 12 Bilder/s); Regie folgt dem Song – während nur die Matrix spielt, steht ihr Bild (0 neue Bilder)', {app: {frames: ma.frames, live: ma.live}, regie: {frames: mr.frames, live: mr.live}});
+ok('VD4-13', ma.live && ma.frames >= 12 && ma.cur.live && mr.frames === 0, 'App-Bild läuft live mit der Matrix (≈ 10 Bilder/s); Regie folgt dem Song – während nur die Matrix spielt, steht ihr Bild (0 neue Bilder)', {app: {frames: ma.frames, live: ma.live}, regie: {frames: mr.frames, live: mr.live}});
 
 /* ======================= 6. Tippen = Ansicht für diesen Bereich wählen (VD3-Menü) ======================= */
 await p.evaluate(() => { if (R.playing) stop(); setSongView(true); SV.pos = 4; UI.dirty.song = true; }); await settle(p, 700);
@@ -212,7 +212,10 @@ const playFor = async (ms) => { await p.evaluate(() => { SYNQUENZER.vd4.reset();
 const cOn1 = await playFor(5000);
 // verdeckt: Klang-Editor offen, Song spielt → keine Bilder
 await p.evaluate(() => { SYNQUENZER.vd4.reset(); songPlayStart(0); openEditor(); }); await p.waitForTimeout(2000);
-const cov = await info(p); await p.evaluate(() => { closeEditor(); }); await p.waitForTimeout(1200); const cov2 = await info(p); await p.evaluate(() => songPlayEnd(true)); await settle(p, 500);
+const cov = await info(p); await p.evaluate(() => { closeEditor(); }); await p.waitForTimeout(1200); const cov2 = await info(p);
+// verdeckt von einem großen Fenster (Mix & Master): keine Bilder; ein kleines Fenster (Menü der Video-Spur) daneben zählt nicht
+await p.evaluate(() => { mx2Sheet(); SYNQUENZER.vd4.reset(); }); await p.waitForTimeout(1500); const covMx = await info(p); await p.evaluate(() => closePop()); await p.waitForTimeout(1000); const covMx2 = await info(p);
+await p.evaluate(() => songPlayEnd(true)); await settle(p, 500);
 // Stillstand: nichts ändert sich → keine Bilder
 await p.evaluate(() => SYNQUENZER.vd4.reset()); await p.waitForTimeout(3000); const still = await info(p);
 // aus per ✕
@@ -224,7 +227,7 @@ const cOn2 = await playFor(5000);
 await p.evaluate(() => SYNQUENZER.vd4.on(false)); await settle(p, 300);
 const cOff2 = await playFor(5000);
 const onT = (cOn1.task + cOn2.task) / 2, offT = (cOff1.task + cOff2.task) / 2;
-ok('VD4-17', cOn1.fps >= 9 && cOn1.fps <= 13.5 && cOn1.avg < 8 && cov.frames === 0 && cov2.frames > 0 && still.frames === 0, 'An: gedrosselt auf ≈ 12 Bilder/s, kleine Zeichenzeit je Bild; verdeckt (Klang-Editor offen) 0 Bilder, danach weiter; Stillstand ohne Änderung 0 Bilder', {on: cOn1, verdeckt: cov.frames, danach: cov2.frames, still: still.frames});
+ok('VD4-17', cOn1.fps >= 8 && cOn1.fps <= 11.5 && cOn1.avg < 8 && cov.frames === 0 && cov2.frames > 0 && covMx.frames === 0 && covMx2.frames > 0 && still.frames === 0, 'An: gedrosselt auf ≈ 10 Bilder/s, kleine Zeichenzeit je Bild; verdeckt (Klang-Editor bzw. Mix & Master offen) 0 Bilder, danach weiter; Stillstand ohne Änderung 0 Bilder', {on: cOn1, editor: cov.frames, danach: cov2.frames, mix: covMx.frames, danach2: covMx2.frames, still: still.frames});
 ok('VD4-18', !off.on && !off.el && off.pref === false && cOff1.frames === 0 && cOff2.frames === 0, '✕ = aus: Fenster weg, Gerät merkt „aus“; beim Abspielen 0 Bilder (gemessen)', {off, cOff1, cOff2});
 ok('VD4-19', true, `CPU (Hauptfaden, Song spielt, je 5 s, 2 Läufe): an ${onT.toFixed(1)} ms/s · aus ${offT.toFixed(1)} ms/s · Zeichnen ${cOn1.avg} ms/Bild (max ${cOn1.max}) bei ${cOn1.fps} Bildern/s ≈ ${(cOn1.avg * cOn1.fps / 10).toFixed(1)} % eines Kerns`, {on: [cOn1, cOn2], off: [cOff1, cOff2]});
 fs.writeFileSync(OUT + '/vd4-cpu.json', JSON.stringify({on: [cOn1, cOn2], off: [cOff1, cOff2], onT, offT}, null, 1));

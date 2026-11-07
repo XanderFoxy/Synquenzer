@@ -77685,7 +77685,7 @@ try { const th = e => { if (VD3 && (e.type === 'pointerdown' || e.buttons || e.p
    1. Ein kleines Bild-im-Bild über Matrix bzw. Song (9:16: 110 × 196 pt hochkant, 88 × 156 pt quer; 16:9 gedreht). Ein/aus:
       Video-Blatt › Extras „Live-Vorschau“, Guide, ✕ im Fenster. Nur dieses Gerät (uiPrefs vd4on, vd4m, vd4pos) – nichts im Projekt.
    2. Das Bild kommt aus denselben Zeichnern wie das Video: vvRun (Auto-Regie mit Schnitt-Spur VD3 und Regeln VR1) + vvDraw, Format,
-      Bild und 9:16-Art aus dem Video-Blatt, Bereich = ganzer Song. Beim Abspielen des Songs live (12 Bilder/s, beim Aufnehmen 6), sonst
+      Bild und 9:16-Art aus dem Video-Blatt, Bereich = ganzer Song. Beim Abspielen des Songs live (10 Bilder/s, beim Aufnehmen 5), sonst
       ein Standbild an der Song-Position (neu gezeichnet nur, wenn sich Song, Regie, Position oder Wahl ändern).
       [Regie ⇄ App]: die Ansicht der Regie bzw. das App-Bild des Videos (die Original-App, wie sie das Video zeigt; App läuft auch
       beim Abspielen der Matrix mit).
@@ -77695,7 +77695,7 @@ try { const th = e => { if (VD3 && (e.type === 'pointerdown' || e.buttons || e.p
       (Kopf, Tastatur und Seitenleiste bleiben frei) und unter allen Blättern, Menüs und Fenstern; ✕ und Umschalter: 44 px.
    4. Kosten: kleine Leinwand (≤ 2 × Pixel), gedrosselt; verdeckt / Blatt offen / Video-Render = kein Bild; aus = kein Element, kein
       Bild (uiFrame prüft nur VD4.on). Gemessen: VD4.frames, VD4.ms (Zeichenzeit). */
-const VD4_FPS = 12, VD4_REC = 6, VD4_CHK = 250, VD4_SZ = {p: [110, 196], l: [88, 156]};
+const VD4_FPS = 10, VD4_REC = 5, VD4_CHK = 250, VD4_SZ = {p: [110, 196], l: [88, 156]};
 const VD4_ICO = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false"><rect x="2.5" y="4.5" width="19" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><rect x="12" y="11" width="7" height="6" rx="1" fill="currentColor"/></svg>';
 var VD4 = {on: false, m: 'regie', el: null, cv: null, g: null, cap: null, capS: '', bM: null, bX: null, w: 0, h: 0, pos: null, geo: null, lay: '', rt: null, rtKey: '',
   sig: '', pend: false, vis: false, t: 0, tChk: 0, drag: null, frames: 0, ms: 0, msMax: 0, cur: null, css: false, lv: null, lvAt: null, snapT: 0};
@@ -77832,7 +77832,9 @@ function vd4Vis() {
   const w = VD4.el; if (!w || !w.isConnected || !vd4Free()) return false;
   const r = w.getBoundingClientRect(); if (r.width < 4 || r.height < 4) return false;
   const e = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
-  return !!e && (w.contains(e) || !!(e.closest && e.closest('#popLayer,#toast,#bub,.drg-ghost,.ue-ghost')));
+  if (!e) return false; if (w.contains(e)) return true;
+  if (e.closest && e.closest('#popLayer') && !e.closest('.pop')) return true;                   // nur der Hintergrund eines kleinen Fensters
+  return !!(e.closest && e.closest('#toast,#bub,.drg-ghost,.ue-ghost'));
 }
 // the song plays (Regie) or anything plays (App): live pictures; else one still at the song position
 const vd4Live = () => !!(R.playing && AU.ctx && (R.songPlay || VD4.m === 'app'));
