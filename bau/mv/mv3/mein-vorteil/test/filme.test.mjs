@@ -105,6 +105,24 @@ test('filme.js liest tolerant: Einzelobjekt, Preis -1, ohne Titel, Zahlen als Te
   for (const s of selektoren) assert.match(s, /^(a)?\.fi(-|\b)/, `fremder Selektor: ${s}`);
 });
 
+test('Echte Scanner-Ausgabe (test/fixtures/filme-scanner.json aus „npm run probe“ im Vorteils-Radar) wird gelesen und gezeichnet', () => {
+  const roh = JSON.parse(readFileSync(join(FIX, 'filme-scanner.json'), 'utf8'));
+  const { F } = modul();
+  const I = F._intern;
+  const n = plain(I.normalisiere(roh));
+  for (const g of GRUPPEN) assert.equal(n.gruppen[g].length, (Array.isArray(roh.gruppen[g]) ? roh.gruppen[g] : []).filter(t => t?.titel).length, g);
+  assert.ok(n.gruppen.wunsch.some(t => t.fehlt), 'Go Trabi Go nicht im Store');
+  assert.ok(n.gruppen.wunsch.some(t => t.unterZiel && t.ziel === 4.99), 'Manta Manta unter dem Ziel');
+  assert.ok(n.gruppen.angebot.some(t => /mydealz/.test(t.quelle)));
+  // Staffeln nach dem Feld „serie“ des Scanners
+  assert.deepEqual([...new Set(n.gruppen.serien.map(t => I.serieVon(t)))].sort(), ['Rick and Morty', 'Star Trek: Das nächste Jahrhundert']);
+  for (const g of GRUPPEN) for (const t of n.gruppen[g]) {
+    const html = I.karte(t, t.typ === 'staffel');
+    assert.match(html, /class="fi-karte/);
+    if (t.link) assert.match(html, /target="_blank" rel="noopener"/);
+  }
+});
+
 test('Start-Chip: Wunschliste bei neuem Wunsch-Angebot, sonst der gemerkte, sonst „Angebote“', () => {
   const { F, speicher } = modul();
   const I = F._intern;
