@@ -1075,11 +1075,11 @@ test('Fotos: Krypto mit Pop-up, Import-Hinweis, Remix-Contests, Cashback (428 ×
     await page.locator('#krypto-form > summary').click();
     await page.locator('#krypto-form').scrollIntoViewIfNeeded();
     await page.screenshot({ path: join(SHOTS, `mv2-krypto-kaeufe-${lage}.png`) });
-    await springe(page, 'remix');
-    await page.waitForTimeout(400);
+    await page.evaluate(z => springe(z, { sanft: false }), 'remix');
+    await page.waitForTimeout(300);
     await page.screenshot({ path: join(SHOTS, `mv2-remix-${lage}.png`) });
-    await springe(page, 'cashback');
-    await page.waitForTimeout(400);
+    await page.evaluate(z => springe(z, { sanft: false }), 'cashback');
+    await page.waitForTimeout(300);
     await page.screenshot({ path: join(SHOTS, `mv2-cashback-${lage}.png`) });
     assert.deepEqual(fehler, []);
     await ctx.close();

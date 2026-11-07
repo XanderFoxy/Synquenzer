@@ -1426,7 +1426,7 @@ function zeichneGewinnspiele(t) {
 }
 function zeichneCashback(t) {
   if (!t.da) return { html: vorteileFehlen(), n: 0 };
-  const namen = namenVorteile();
+  const namen = { ...namenVorteile(), deals: 'Cashback', erleben: 'Cashback', tests: 'Cashback' };
   return { html: t.cashback.length ? vorteilsKarten(t.cashback, namen, 'cashback')
     : '<p class="leer">Gerade keine Cashback-Aktion zu deinen Sachen.</p>', n: t.cashback.filter(laeuftSchon).length };
 }
@@ -1734,7 +1734,7 @@ function pruefeZonen() {
 }
 const alarm = $('krypto-alarm');
 function zeigeAlarm(meldungen) {
-  $('alarm-titel').textContent = meldungen.length === 1 ? `${KRYPTO_COINS[meldungen[0].c].name}: ${MELDUNG[meldungen[0].meldung]}` : 'Krypto: neue Lage';
+  $('alarm-titel').textContent = `Krypto-Hinweis · ${uhr(Date.now()) || 'jetzt'}`;
   $('alarm-inhalt').innerHTML = meldungen.map(({ c, e, meldung }) => {
     const m = KRYPTO_COINS[c];
     const art = e.gv >= 0 ? 'gewinn' : 'verlust';
@@ -2017,7 +2017,7 @@ let gesprungen = false, nutzerScrollt = false, sprungOffen = true;
 function springe(ziel, { sanft = true } = {}) {
   const el = $(ziel);
   if (!el) return;
-  el.scrollIntoView({ behavior: sanft ? 'smooth' : 'auto', block: 'start' });
+  el.scrollIntoView({ behavior: sanft ? 'smooth' : 'instant', block: 'start' }); // 'auto' wäre wegen scroll-behavior: smooth doch sanft
   markiereSprung(ziel);
 }
 // Push-Link mit Sprungmarke: nach dem ersten Zeichnen (und nach frischen Daten, solange niemand selbst scrollt) dorthin
