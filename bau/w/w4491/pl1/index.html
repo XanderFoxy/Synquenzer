@@ -83479,6 +83479,11 @@ function pl1BanPlace() {
   let x, y, w;
   if (r && r.width > 160 && r.height > 0) { x = r.left; w = r.width; y = r.top + r.height / 2 - 24; }
   else { w = Math.min(420, window.innerWidth - 16); x = (window.innerWidth - w) / 2; y = window.innerHeight - 56; }
+  // ✕ des offenen Editors bleibt immer frei: liegt er im Weg, rückt die Leiste darunter
+  for (const q of document.querySelectorAll('#synthSheet.open .sh-x, #drumSheet.open .sh-x')) {
+    const xr = q.getBoundingClientRect(); if (!xr.width) continue;
+    if (x < xr.right && xr.left < x + w && y < xr.bottom && xr.top < y + 48) y = xr.bottom + 2;
+  }
   const sig = [x, y, w].map(Math.round).join(); if (b._sig === sig) return; b._sig = sig;
   b.style.left = Math.round(x) + 'px'; b.style.top = Math.round(Math.max(4, y)) + 'px'; b.style.width = Math.round(w) + 'px';
 }

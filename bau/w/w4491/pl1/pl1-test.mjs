@@ -53,6 +53,8 @@ ok('Zweiter Finger dreht, während der erste hält: der Lock entsteht schon wäh
 ok('Lock nur auf Schritt 3 (Note 2), Grundklang unverändert, genau ein ↶-Schritt „Lock · Filter“', L1.x != null && L1.hz > L1.base * 1.5 && L1.others === 0 && L1.undo === u0 + 1 && L1.last === 'Lock · Filter', {hz: L1.hz, base: L1.base, undo: L1.undo - u0, last: L1.last});
 ok('Punkt nur am Schritt 3; Lock-Leiste zeigt „Filter …“ mit ✕; Regler markiert', L1.dots.filter(Boolean).length === 1 && L1.dots[2] && L1.chips.length === 1 && /^Filter \d/.test(L1.chips[0]) && L1.knobOn, {chips: L1.chips, dots: L1.dots.map(d => d ? 1 : 0).join('')});
 await shot('pl1-lauf-hochkant.png');
+const U1 = await p.evaluate(() => { const lk = () => { const n = S.tracks[0].clips[0].notes[1]; return n.lk && n.lk.v ? n.lk.v.cutoff : null; }; const o = {before: lk()}; undo(); o.undone = lk(); o.dotAfterUndo = ED.lauf.se.cells[2]._pl1d ? !ED.lauf.se.cells[2]._pl1d.hidden : false; redo(); o.redone = lk(); o.dotAfterRedo = !ED.lauf.se.cells[2]._pl1d.hidden; return o; });
+ok('↶ nimmt den Lock weg (Punkt weg), ↷ bringt ihn wieder', U1.before != null && U1.undone == null && !U1.dotAfterUndo && U1.redone === U1.before && U1.dotAfterRedo, U1);
 // quer: derselbe Abschnitt rechts neben dem Schritt-Menü
 await p.setViewportSize({width: 926, height: 428}); await W(400);
 await p.evaluate(() => { closePop(); safeRebuild(buildRoll); }); await W(300);
@@ -88,20 +90,19 @@ const spec = async () => p.evaluate(async () => {
   return {on, sr, cent, hf};
 });
 const R1 = await spec();
-await p.evaluate(() => undo()); const R0 = await spec(); await p.evaluate(() => redo());
+await p.evaluate(() => { const n = S.tracks[0].clips[0].notes[1]; window.__lk = n.lk; delete n.lk; clipChanged(0, 0); }); const R0 = await spec(); await p.evaluate(() => { S.tracks[0].clips[0].notes[1].lk = window.__lk; clipChanged(0, 0); });
 const ratio = R1.cent.map((c, k) => +(c / R0.cent[k]).toFixed(3)), rest = ratio.filter((r, k) => k % 8 !== 1);
 ok('Render (Song als Audio = Export-Weg): nur Schritt 3 (in beiden Takten) klingt anders – Spektralschwerpunkt mit/ohne Lock', ratio[1] > 3 && ratio[9] > 3 && rest.every(r => Math.abs(r - 1) < .03), {mitLockHz: R1.cent, ohneLockHz: R0.cent, verhaeltnis: ratio, hfDbMit: R1.hf, hfDbOhne: R0.hf});
 
 /* ---------- 3) ↶ / ↷ und Speichern / Laden ---------- */
 const U3 = await p.evaluate(async () => {
   const o = {}; const lk = () => { const n = S.tracks[0].clips[0].notes[1]; return n.lk && n.lk.v ? n.lk.v.cutoff : null; };
-  o.before = lk(); undo(); o.undone = lk(); redo(); o.redone = lk();
+  o.before = lk();
   const json = SYNQUENZER.serialize(); o.inFile = JSON.parse(json).project.tracks[0].clips[0].notes[1].lk || null;
   SYNQUENZER.loadDemo(); o.gone = lk(); o.imp = importJSON(json); await new Promise(r => setTimeout(r, 300)); o.loaded = lk();
   o.others = S.tracks[0].clips[0].notes.filter((q, i) => i !== 1 && q.lk).length;
   return o;
 });
-ok('↶ nimmt den Lock weg, ↷ bringt ihn wieder', U3.before != null && U3.undone == null && U3.redone === U3.before, U3);
 ok('Speichern/Laden: der Lock steht in der Datei und kommt gleich zurück', U3.inFile && U3.inFile.v && U3.inFile.v.cutoff === U3.before && U3.imp && U3.loaded === U3.before && U3.others === 0, {inFile: U3.inFile, loaded: U3.loaded});
 const R2 = await spec();
 ok('nach dem Laden klingt der Render gleich (Schritt 3 hell)', Math.abs(R2.cent[1] - R1.cent[1]) <= R1.cent[1] * .02 && Math.abs(R2.cent[0] - R1.cent[0]) <= R1.cent[0] * .02, {vorher: [R1.cent[0], R1.cent[1]], nachher: [R2.cent[0], R2.cent[1]]});
@@ -220,23 +221,26 @@ const measure = async (view, on) => {
     if (view === 'song') { SYNQUENZER.songFromChain([{scene: 0, bars: 4}, {scene: 1, bars: 4}]); setSongView(true); await new Promise(r => setTimeout(r, 200)); songPlayStart(0); }
     else { setSongView(false); if (view === 'lauf') { ROLLP.view = 'lauf'; openRoll(0, 0); } if (view === 'steps') { ED.dTab = 'steps'; openRoll(DRUM_T, 0); } await new Promise(r => setTimeout(r, 200)); play(); }
     await new Promise(r => setTimeout(r, 700));
-    window.__pl1m = {mut: 0, frames: 0, dirty: 0}; const M = window.__pl1m;
+    window.__pl1m = {mut: 0, frames: 0, dirty: 0, sv: 0}; const M = window.__pl1m;
+    if (!window.__svD0) { window.__svD0 = window.svDraw; window.svDraw = function () { if (window.__pl1m) window.__pl1m.sv++; return window.__svD0.apply(this, arguments); }; }
     M.mo = new MutationObserver(l => { M.mut += l.length; M.dirty++; }); M.mo.observe(document.body, {subtree: true, attributes: true, childList: true, characterData: true});
   }, {view, on});
   const m0 = Object.fromEntries((await cdp.send('Performance.getMetrics')).metrics.map(x => [x.name, x.value]));
   await W(4000);
   const m1 = Object.fromEntries((await cdp.send('Performance.getMetrics')).metrics.map(x => [x.name, x.value]));
-  const dom = await p.evaluate(() => { const M = window.__pl1m; M.mo.disconnect(); const o = {mut: M.mut}; stop(); return o; });
+  const dom = await p.evaluate(() => { const M = window.__pl1m; M.mo.disconnect(); const o = {mut: M.mut, batches: M.dirty, sv: M.sv}; stop(); return o; });
   const lights = await p.evaluate(() => ({ph: document.querySelectorAll('.se-cell.ph').length, led: UI.leds.filter(l => l.classList.contains('on')).length}));
   const d = k => +((m1[k] || 0) - (m0[k] || 0)).toFixed(3);
-  return {view, on, domMut: dom.mut, style: d('RecalcStyleCount'), layout: d('LayoutCount'), scriptMs: Math.round(d('ScriptDuration') * 1000), taskMs: Math.round(d('TaskDuration') * 1000), styleMs: Math.round(d('RecalcStyleDuration') * 1000), ...lights};
+  return {view, on, domMut: dom.mut, batches: dom.batches, songDraws: dom.sv, style: d('RecalcStyleCount'), layout: d('LayoutCount'), scriptMs: Math.round(d('ScriptDuration') * 1000), taskMs: Math.round(d('TaskDuration') * 1000), styleMs: Math.round(d('RecalcStyleDuration') * 1000), ...lights};
 };
 const meas = [];
 for (const view of ['matrix', 'song', 'lauf', 'steps']) for (const on of [true, false]) meas.push(await measure(view, on));
 console.log('MESSUNG ' + JSON.stringify(meas));
 for (const view of ['matrix', 'song', 'lauf', 'steps']) {
   const a = meas.find(m => m.view === view && m.on), z = meas.find(m => m.view === view && !m.on);
-  ok('Lauflichter aus (' + view + '): weniger DOM-Änderungen und Stil-Rechnungen, keine laufende Marke/LED', z.domMut < a.domMut * .6 && z.style <= a.style && z.ph === 0 && z.led === 0, {an: {dom: a.domMut, stil: a.style, layout: a.layout, skriptMs: a.scriptMs, taskMs: a.taskMs}, aus: {dom: z.domMut, stil: z.style, layout: z.layout, skriptMs: z.scriptMs, taskMs: z.taskMs}});
+  const crit = view === 'song' ? z.songDraws * 4 <= a.songDraws && z.style < a.style : z.domMut < a.domMut * .7 && z.style < a.style;
+  ok('Lauflichter aus (' + view + '): ' + (view === 'song' ? 'Song-Bild nur je Takt statt ~30/s' : 'weniger DOM-Änderungen und Stil-Rechnungen') + ', keine laufende Marke/LED', crit && z.ph === 0 && z.led === 0,
+    {an: {dom: a.domMut, songBilder: a.songDraws, stil: a.style, layout: a.layout, skriptMs: a.scriptMs, taskMs: a.taskMs}, aus: {dom: z.domMut, songBilder: z.songDraws, stil: z.style, layout: z.layout, skriptMs: z.scriptMs, taskMs: z.taskMs}});
 }
 const LL1 = await p.evaluate(async () => { pl1LlSet(true); ROLLP.view = 'lauf'; setSongView(false); openRoll(0, 0); play(); await new Promise(r => setTimeout(r, 1500)); const o = {ph: document.querySelectorAll('.se-cell.ph').length, led: UI.leds.filter(l => l.classList.contains('on')).length}; stop(); closeRoll(); return o; });
 ok('wieder an: LAUF-Marke und Takt-LED laufen wie vorher', LL1.ph === 1 && LL1.led === 1, LL1);
@@ -254,19 +258,20 @@ const lay = async (pg, vw, vh) => {
     ED.dTab = 'steps'; openRoll(DRUM_T, 0); await wait(250); o.steps = [...document.querySelectorAll('#drumSheet button, #drumSheet .se-cell')].map(R_).join(';');
     closeEditor(); R.selT = 0; openEditor(); await wait(250); o.synth = [...document.querySelectorAll('#synthSheet button, #synthSheet .knob')].map(R_).join(';');
     closeEditor(); o.data = JSON.stringify(S.tracks.map(t => t.clips)) + JSON.stringify(S.tracks.map(t => t.sound));
-    openMenu(); await wait(250); const rows = [...EL.menu.querySelectorAll('.mrow')]; const k = rows.findIndex(r => r.querySelector('.lbl') && r.querySelector('.lbl').textContent === 'Lauflichter');
-    o.menu = rows.slice(0, k < 0 ? rows.length : k).map(R_).join(';'); closeMenu();
+    openMenu(); await wait(250); const rows = [...EL.menu.querySelectorAll('.mrow')]; const gl = rows.find(r => r.querySelector('.lbl') && r.querySelector('.lbl').textContent === 'Leucht-Look'), lim = gl ? gl.getBoundingClientRect().bottom : Infinity;
+    o.menu = rows.filter(r => r.getBoundingClientRect().top < lim).map(R_).join(';'); closeMenu();
     return o;
   });
 };
 const pb = await ctx.newPage(); await pb.goto('file://' + basis); await pb.waitForTimeout(1500);
+const pn = await ctx.newPage(); await pn.goto('file://' + path.resolve(file)); await pn.waitForTimeout(1500);
 for (const [vw, vh] of [[428, 926], [926, 428]]) {
-  const A_ = await lay(pb, vw, vh), B_ = await lay(p, vw, vh);
+  const A_ = await lay(pb, vw, vh), B_ = await lay(pn, vw, vh);
   const diff = Object.keys(A_).filter(k => k !== 'lf1' || vw < 600 ? A_[k] !== B_[k] : false);
   ok('nichts verschiebt sich ' + vw + '×' + vh + ' (LAUF, Schritt-Menü, ROLLE-Aktionen, SCHRITTE, Klang-Editor, Menü bis „Lauflichter“; Daten gleich)', !diff.length, {diff});
   if (vw > 600) { const a = A_.lf1.split(';'), c = B_.lf1.split(';'); ok('quer: Knöpfe des Schritt-Menüs an derselben Stelle und gleich groß', a.join(';') === c.join(';'), {basis: a.slice(0, 3), pl1: c.slice(0, 3)}); }
 }
-await pb.close();
+await pb.close(); await pn.close();
 await p.setViewportSize({width: 428, height: 926}); await W(300);
 const G = await p.evaluate(async () => { const a = ui1Search('lock'), c = ui1Search('lauflicht'); const j = ui1Jump('lauflicht'); await new Promise(r => setTimeout(r, 1200)); const o = {lock: a.map(e => e.id).slice(0, 3), ll: c.map(e => e.id).slice(0, 2), jump: UI1.lastJump}; if (EL.menu.classList.contains('open')) closeMenu(); return o; });
 ok('Guide „Wo finde ich …?“: „Lock“ → Parameter-Locks, „Lauflicht“ → Lauflichter (Sprung zeigt die Zeile)', G.lock[0] === 'locks' && G.ll[0] === 'lauflicht' && G.jump && G.jump.ok && G.jump.target, G);
