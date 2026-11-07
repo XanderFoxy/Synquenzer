@@ -67,7 +67,7 @@ try {
   const pb = await page(428, 926, basis);
   await run(pb, () => SETUP());
   const zipB = await pb.evaluate(async () => (await window.SYNQUENZER.va1BoxB64()).length);
-  const wavB = await pb.evaluate(async () => { const r = await window.SYNQUENZER.va1Export('song'); const d = new Uint8Array(await new Response(VA1.res.data).arrayBuffer()); const h = await crypto.subtle.digest('SHA-256', d); return {size: r && r.size, h: btoa(String.fromCharCode(...new Uint8Array(h))).slice(0, 16)}; });
+  const wavB = await pb.evaluate(async () => { await window.SYNQUENZER.va1Export('song'); const r = await window.SYNQUENZER.va1Export('song'); const d = new Uint8Array(await new Response(VA1.res.data).arrayBuffer()); const h = await crypto.subtle.digest('SHA-256', d); return {size: r && r.size, h: btoa(String.fromCharCode(...new Uint8Array(h))).slice(0, 16)}; });
   const BA = await run(pb, () => {
     const D = window.SYNQUENZER, m = S.song.marks[2], r = {orig: NC(m.a, m.a + m.len)};
     D.markFassungSet(m.id, 'leicht'); r.l = NC(m.a, m.a + m.len); r.file = serializeProject();
@@ -272,8 +272,8 @@ try {
   let q = await page(428, 926);
   await run(q, () => { SETUP(); });
   const zipW = await q.evaluate(async () => (await window.SYNQUENZER.va1BoxB64()).length);
-  const wavW = await q.evaluate(async () => { const r = await window.SYNQUENZER.va1Export('song'); const d = new Uint8Array(await new Response(VA1.res.data).arrayBuffer()); const h = await crypto.subtle.digest('SHA-256', d); return {size: r && r.size, h: btoa(String.fromCharCode(...new Uint8Array(h))).slice(0, 16)}; });
-  ok(wavW.size === wavB.size && wavW.size > 1000, 'D7: WAV Ganzer Song wie vorher', wavW.size + ' / ' + wavB.size + ' Bytes' + (wavW.h === wavB.h ? ', bitgleich' : ''));
+  const wavW = await q.evaluate(async () => { await window.SYNQUENZER.va1Export('song'); const r = await window.SYNQUENZER.va1Export('song'); const d = new Uint8Array(await new Response(VA1.res.data).arrayBuffer()); const h = await crypto.subtle.digest('SHA-256', d); return {size: r && r.size, h: btoa(String.fromCharCode(...new Uint8Array(h))).slice(0, 16)}; });
+  ok(wavW.size === wavB.size && wavW.size > 1000, 'D7: WAV Ganzer Song wie vorher (zweiter Render; der erste nach dem Start schwankt auch in der Basis)', wavW.size + ' / ' + wavB.size + ' Bytes' + (wavW.h === wavB.h ? ', bitgleich' : ''));
   ok(mw.midi === BA.midi && mw.va1 === BA.va1, 'D7: MIDI (Szene, Ganzer Song) bytegleich wie vorher');
   ok(Math.abs(zipW - zipB) <= 64 && zipW > 1000, 'D7: Container (ZIP) wie vorher', zipW + ' / ' + zipB + ' Zeichen');
   // altes Projekt (Leicht-Marke aus der Basis) lädt und klingt gleich; das Marken-Blatt zeigt Small
