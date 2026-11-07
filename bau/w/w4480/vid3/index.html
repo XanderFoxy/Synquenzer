@@ -75430,10 +75430,20 @@ function vd3Safe(g, W, H, fn) {
 function vd3Opts() { return VD3.job || (VV.ui && !VV.busy ? vd3P() : null); }
 // video time of a state (render: st.t; Vorschau / Standbild: from the song beat and the range start)
 function vd3T(st, rt) { if (st && isNum(st.t)) return st.t; if (st && st.sb != null && rt) return Math.max(0, (st.sb - barBeat(rt.A)) * 60 / (rt.bpm || S.bpm)); return 0; }
+// the sheet's still with Making-of on: a picture of the first step of the prelude (the plan is kept while log and song stay)
+function vd3StillPre(g, W, H) {
+  const L = vd3Load(), key = (L ? L.length : 0) + '|' + (UI.songVer | 0) + '|' + NT();
+  let pl = VD3.stillP && VD3.stillP.key === key ? VD3.stillP.pl : null;
+  if (!VD3.stillP || VD3.stillP.key !== key) { try { pl = vd3Plan(vd3Ev(), {}); } catch (e) { pl = null; } VD3.stillP = {key, pl}; }
+  if (!pl) return false;
+  const sc = pl.scenes[Math.min(1, pl.scenes.length - 1)]; pl.lastSig = null;
+  vd3PreDraw(g, W, H, pl, (sc.f0 + (sc.f1 - sc.f0) * .6) / VV_FPS); return true;
+}
 // vvDraw: false = vvDrawRun draws as before (no title, no margin)
 function vd3Draw(g, W, H, view, st, rt) {
   if (!VD3) return false;
   const o = vd3Opts(); if (!o) return false;
+  if (!VD3.job && o.mo && VV.ui && !VV.prev && vd3StillPre(g, W, H)) return true;   // Standbild im Blatt: so sieht der Vorlauf aus (erster Schritt)
   const safe = !!o.rd && H > W, ti = o.ti && !o.pre ? vd3TitleA(vd3T(st, rt)) : 0;
   if (!safe && !(ti > 0)) return false;
   if (safe) vd3Safe(g, W, H, (q, w, h) => vvDrawRun(q, w, h, view, st, rt)); else vvDrawRun(g, W, H, view, st, rt);
@@ -76015,9 +76025,9 @@ function vd3Css() {
   if (VD3.css) return; VD3.css = true;
   const s = document.createElement('style'); s.id = 'vd3css';
   s.textContent = '.vvrow.vd3-vr{align-items:flex-start;flex-wrap:wrap;row-gap:4px}.vvrow.vd3-vr .lbl{padding-top:16px}' +
-    '.vd3-box{display:flex;flex-wrap:wrap;gap:6px;flex:1 1 0;min-width:0}.vvsheet .vd3-box .rb{flex:1 1 auto;min-width:64px;height:44px;padding:0 8px;font:700 12px/1.1 var(--font-ui);white-space:nowrap}' +
+    '.vd3-box{display:flex;flex-wrap:wrap;gap:6px;flex:1 1 0;min-width:0}.vvsheet .vd3-box .rb{flex:1 1 0;min-width:52px;height:44px;padding:0 6px;font:700 12px/1.1 var(--font-ui);white-space:nowrap}' +
     '.vvsheet .vd3-box .rb.on{border-color:var(--sel);color:var(--sel);box-shadow:inset 0 0 0 1px var(--sel)}' +
-    '.vd3-h{flex:1 1 100%;min-height:14px;font:500 11px/1.25 var(--font-ui);color:var(--text-dim);overflow-wrap:anywhere}.vd3-h b{color:var(--amber);font-weight:700}' +
+    '.vd3-h[hidden]{display:none}.vd3-h{flex:1 1 100%;min-height:14px;font:500 11px/1.25 var(--font-ui);color:var(--text-dim);overflow-wrap:anywhere}.vd3-h b{color:var(--amber);font-weight:700}' +
     '.vd3-lbl{position:absolute;left:4px;right:2px;bottom:0;display:flex;align-items:center;font:700 8px/1 var(--font-ui);letter-spacing:.06em;color:#d9c3ff;pointer-events:none}.vd3-lbl[hidden]{display:none}' +
     '.vd3-lp{margin-top:8px}.vd3-lb{display:flex;align-items:center;gap:8px;width:100%;min-height:44px;padding:0 10px;font:600 12px/1.1 var(--font-ui);text-align:left}.vd3-lb span{flex:1 1 auto}.vd3-lb b{font:700 12px/1 var(--font-ui)}.vd3-lb.on{border-color:var(--sel);color:var(--sel)}' +
     '.vd3pop{width:min(380px,calc(100vw - 16px))}.vd3h{display:flex;align-items:center;gap:8px;margin-bottom:6px}.vd3h b{flex:1 1 auto;font:700 13px/1.2 var(--font-ui)}.vd3h .vd3x{flex:0 0 44px;width:44px;height:44px;padding:0}' +
@@ -76033,7 +76043,7 @@ function vd3VvRow(ctl, acts) {
   if (!VD3) return null; vd3Css();
   const r = el('div', 'vvrow vd3-vr'); r.appendChild(el('span', 'lbl', 'Extras'));
   const box = el('div', 'vd3-box'), mk = (k, l, al) => { const b = el('button', 'rb', l); b.dataset.k = k; b.setAttribute('aria-label', al); box.appendChild(b); return b; };
-  const bT = mk('ti', 'Titel', 'Titel in der ersten Sekunde an oder aus'), bR = mk('rd', 'Untertitel-Rand', 'Rand für Untertitel (9:16) an oder aus'), bM = mk('mo', 'Making-of', 'Making-of-Vorlauf vor dem Song an oder aus'), bS = mk('cut', 'Schnitt im Song', 'Video-Schnitt im Song an oder aus');
+  const bT = mk('ti', 'Titel', 'Titel in der ersten Sekunde an oder aus'), bR = mk('rd', 'Rand', 'Rand für Untertitel (9:16) an oder aus'), bM = mk('mo', 'Making-of', 'Making-of-Vorlauf vor dem Song an oder aus'), bS = mk('cut', 'Schnitt', 'Video-Schnitt im Song an oder aus');
   const hint = el('div', 'vd3-h'); box.appendChild(hint); r.appendChild(box);
   ctl.insertBefore(r, acts);
   onTap(box, b => {
@@ -76053,9 +76063,9 @@ function vd3VvSync(u) {
   let h = '';
   if (P.mo) {
     let pl = null; try { pl = vd3Plan(vd3Ev(), {}); } catch (e) { pl = null; }
-    h = pl ? '<b>Making-of:</b> ' + pl.steps + ' Schritte · Vorlauf ' + Math.round(pl.sec) + ' s, dann der ganze Song' : '<b>Noch kein Protokoll</b> – ab jetzt merkt sich die App Klangwahl, Regler, Clips, Noten und Teile (nur auf diesem Gerät). Danach zeigt das Video die Entstehung.';
-  } else if (P.rd && fmt === '9:16') h = 'Das Bild rückt in die sichere Zone – unten bleibt Platz für Untertitel.';
-  if (x.hint.innerHTML !== h) x.hint.innerHTML = h;
+    h = pl ? '<b>Making-of:</b> ' + pl.steps + (pl.steps === 1 ? ' Schritt' : ' Schritte') + ' · Vorlauf ' + Math.round(pl.sec) + ' s, dann der ganze Song' : '<b>Noch kein Protokoll</b> – die App merkt sich ab jetzt Klang, Regler, Clips, Noten, Teile (nur hier).';
+  } else if (P.rd && fmt === '9:16') h = 'Rand: unten bleibt Platz für Untertitel.';
+  if (x.hint.innerHTML !== h) x.hint.innerHTML = h; x.hint.hidden = !h;
 }
 
 /* ---------- Test-API (Objekt, wird nicht umhüllt) ---------- */

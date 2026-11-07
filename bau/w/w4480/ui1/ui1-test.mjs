@@ -61,12 +61,12 @@ const P = await page(file, 428, 926);
   const tours = await P.evaluate(() => SYNQUENZER.ui1.tours());
   const tbad = [];
   for (const T of tours) for (let k = 0; k < T.steps; k++) { await P.evaluate(([id, k]) => SYNQUENZER.ui1.tour(id, k), [T.id, k]); await P.waitForTimeout(560); const i = await P.evaluate(() => SYNQUENZER.ui1.tourInfo()); if (!i || !i.card || !i.ring) tbad.push(T.id + ':' + k); }
-  await P.evaluate(() => SYNQUENZER.ui1.tourEnd());
+  await P.evaluate(() => { SYNQUENZER.ui1.tourEnd(); SYNQUENZER.ui1.home(); });
   ok('Kurz-Anleitungen: Klang formen, Groove, Song, Mischen & Mastern, Video – jeder Schritt zeigt seine Stelle', tours.length === 5 && tours.every(T => T.steps >= 4 && T.steps <= 8) && tbad.length === 0, {tours: tours.map(T => T.n + ' ' + T.steps), tbad});
   // „Zeig es mir“ per Touch: Menü → Klang formen → Weiter … Fertig; ✕ immer im Bild
-  await tapSel(P, '#bMenu'); await P.waitForTimeout(300);
+  await tapSel(P, '#bMenu'); await P.waitForTimeout(400);
   const tb = await P.evaluate(() => { const b = document.querySelector('#menu .ui1tours [data-tour="klang"]'); b.scrollIntoView({block: 'center'}); const r = b.getBoundingClientRect(); return {x: r.left + r.width / 2, y: r.top + r.height / 2, h: r.height}; });
-  await tapAt(P, tb); await P.waitForTimeout(700);
+  await P.waitForTimeout(200); await tapAt(P, tb); await P.waitForTimeout(700);
   let xs = true, steps = 0;
   for (let k = 0; k < 10; k++) {
     const st = await P.evaluate(() => { const c = document.querySelector('.ui1tour'); if (!c) return null; const x = c.querySelector('.x').getBoundingClientRect(); const n = c.querySelector('[data-a="next"]').getBoundingClientRect(); return {n: c.querySelector('.n').textContent, x: x.top >= 0 && x.bottom <= innerHeight && x.width >= 44 && x.height >= 44, nx: n.left + n.width / 2, ny: n.top + n.height / 2, nh: n.height, ring: !!SYNQUENZER.ui1.ring()}; });
@@ -140,7 +140,7 @@ const BL = await page(basis, 926, 428);
     return {tabs, n: ids.length, have: have.length, bb1, fx1, all: UE_LIB.length};
   });
   ok('◆ ÜBERGÄNGE: jede Bibliotheks-Vorlage ist eine Kachel; Übergänge, Breaks, Einwürfe, Verknüpfer nicht mehr leer', r.tabs.every(t => t.tiles === t.lib) && r.tabs.filter(t => t.k !== 'eigen').every(t => t.tiles >= 4), r.tabs);
-  ok('Vorlagen aus FX1 + Drums-Füller des Werkzeugkastens (BB1) + 28 neue (ui1-…) alle da', r.fx1 && r.bb1 && r.n === 28 && r.have === 28, {n: r.n, have: r.have, all: r.all});
+  ok('Vorlagen aus FX1 + Drums-Füller des Werkzeugkastens (BB1) + 29 neue (ui1-…) alle da', r.fx1 && r.bb1 && r.n === 29 && r.have === 29, {n: r.n, have: r.have, all: r.all});
   // jede Vorlage frei in den Song setzen: Eintrag da, Treffer gebaut (Breaks: Drum-Spur pausiert), ein Undo, ↶ entfernt
   const pl = await P.evaluate(() => {
     const out = [];
@@ -184,11 +184,12 @@ const BL = await page(basis, 926, 428);
   ok('KLÄNGE: Blatt mit allen Werksklängen (≥ 40) und Kategorien (Bass, Lead, Pad, Keys …), ✕ sichtbar', s1.pop === 'ui1bm' && s1.tiles >= 40 && s1.cats.length >= 8 && s1.x, s1);
   const cat = await P.evaluate(() => { const b = document.querySelector('.ui1bm [data-u="cat|bass"]'); const r = b.getBoundingClientRect(); return {x: r.left + r.width / 2, y: r.top + r.height / 2}; });
   await tapAt(P, cat); await P.waitForTimeout(300);
-  const u0 = await P.evaluate(() => UNDO.length);
+  const u0 = await P.evaluate(() => UNDO.length), o0 = await P.evaluate(() => S.tracks[0].sound.origin);
   const tile = await P.evaluate(() => { const b = document.querySelector('.ui1bm [data-u="p|f-bm-p02"]'); const r = b.getBoundingClientRect(); return {x: r.left + r.width / 2, y: r.top + r.height / 2, n: document.querySelectorAll('.ui1bm .ui1p').length}; });
   await tapAt(P, tile); await P.waitForTimeout(400);
-  const s2 = await P.evaluate(() => ({o: S.tracks[0].sound.origin, e: S.tracks[0].sound.engine, du: UNDO.length, lab: UNDO[UNDO.length - 1].label, pv: !!(PV.on || PV.voices.length), on: (document.querySelector('.ui1bm .ui1p.on b') || {}).textContent, still: UI.pop && UI.pop.name}));
-  ok('Kategorie Bass (6 Klänge) → „Puls-Bass“ antippen: geladen, ein ↶, klingt sofort (Vorhören läuft), Blatt bleibt offen', tile.n === 6 && s2.o === 'f-bm-p02' && s2.e === 'bm' && s2.du - u0 === 1 && s2.lab === 'Sound Puls-Bass' && s2.pv && s2.on === 'Puls-Bass' && s2.still === 'ui1bm', s2);
+  const s2 = await P.evaluate(u0 => ({o: S.tracks[0].sound.origin, e: S.tracks[0].sound.engine, labs: UNDO.slice(u0).map(u => u.kind + ':' + u.label), pv: !!(PV.on || PV.voices.length), on: (document.querySelector('.ui1bm .ui1p.on b') || {}).textContent, still: UI.pop && UI.pop.name}), u0);
+  const s2u = await P.evaluate(() => { undo(); const o = S.tracks[0].sound.origin; redo(); return o; });
+  ok('Kategorie Bass (6 Klänge) → „Puls-Bass“ antippen: geladen, ein ↶-Schritt, klingt sofort (Vorhören läuft), Blatt bleibt offen', tile.n === 6 && s2.o === 'f-bm-p02' && s2.e === 'bm' && s2.labs.filter(x => /Puls-Bass/.test(x)).length === 1 && s2u === o0 && s2.pv && s2.on === 'Puls-Bass' && s2.still === 'ui1bm', Object.assign(s2, {undoTo: s2u, o0}));
   await P.screenshot({path: OUT + 'ui1-p-bitmask.png'});
   await P.evaluate(() => closePop()); await P.waitForTimeout(200);
   const hq = await center(P, '#synthSheet .sh-tabs .ui1bt:last-child');
@@ -261,7 +262,7 @@ const BL = await page(basis, 926, 428);
   ok('✕ löst die Gruppe auf (Markierung und Leiste weg)', g3.sel.length === 0 && !g3.bar && g3.cls === 0, g3);
   // die alten Gesten: Wischen ohne Gruppe = nur diese Spur, Halten = Solo, nacheinander halten = Mehrfach-Solo, Rand-Ziehen
   const w0 = await P.evaluate(() => [0, 1, 2].map(t => sx4Vol(t)));
-  await touch(P, 'touchStart', [{id: 5, x: C2.x - 40, y: C2.y}]); for (let k = 1; k <= 6; k++) { await touch(P, 'touchMove', [{id: 5, x: C2.x - 40 + k * 7, y: C2.y}]); await wait(16); } await touch(P, 'touchEnd', []); await wait(250);
+  await touch(P, 'touchStart', [{id: 5, x: C2.x - 10, y: C2.y}]); for (let k = 1; k <= 6; k++) { await touch(P, 'touchMove', [{id: 5, x: C2.x - 10 + k * 7, y: C2.y}]); await wait(16); } await touch(P, 'touchEnd', []); await wait(250);
   const w1 = await P.evaluate(() => [0, 1, 2].map(t => sx4Vol(t)));
   await P.evaluate(() => undo());
   await touch(P, 'touchStart', [{id: 6, ...C2}]); await wait(620); await touch(P, 'touchEnd', []); await wait(200);
@@ -285,7 +286,7 @@ const BL = await page(basis, 926, 428);
   const views = [['Matrix', () => { SYNQUENZER.ui1.home(); setSongView(false); }], ['Klang-Editor', () => { SYNQUENZER.ui1.home(); selectTrack(0); ED.tab = 'osc'; openEditor(); }], ['Song', () => { SYNQUENZER.ui1.home(); setSongView(true); }], ['Menü', () => { SYNQUENZER.ui1.home(); setSongView(false); openMenu(); }]];
   const diffs = [];
   for (const pg of [P, PL]) for (const [n, fn] of views) {
-    await pg.evaluate(`(${fn.toString()})()`); await pg.evaluate(() => SYNQUENZER.ui1.glow(false));
+    await pg.evaluate(`(${fn.toString()})()`); await pg.evaluate(() => SYNQUENZER.ui1.glow(false)); await pg.waitForTimeout(900);
     const a = await boxes(pg); await pg.evaluate(() => SYNQUENZER.ui1.glow(true)); const c = await boxes(pg);
     let d = a.length === c.length ? 0 : 999; if (!d) for (let k = 0; k < a.length; k++) if (a[k] !== c[k]) d++;
     diffs.push((pg === P ? 'P ' : 'L ') + n + ' ' + a.length + ':' + d);

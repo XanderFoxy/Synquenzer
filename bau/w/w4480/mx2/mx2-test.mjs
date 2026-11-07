@@ -169,6 +169,8 @@ t1 = await tapSize('.pop.mx2s button'); s1 = await sheet();
 ok('Blatt quer 926×428: zwei Spalten, Tasten ≥ 44 px, ✕ sichtbar, im Bild', s1.inView && s1.x && /px .*px/.test(s1.cols) && t1.minH >= 44 && !t1.over.length, {t1, s1});
 await p.screenshot({path: out + '/mx2-l-blatt.png'});
 await p.evaluate(() => closePop());
+const eqq = await p.evaluate(async () => { SYNQUENZER.mx1EqSheet(0); await new Promise(r => setTimeout(r, 300)); const s = document.querySelector('.pop.mx1eqs'), r = s.getBoundingClientRect(), g = s.querySelector('.mx2grm').getBoundingClientRect(); const o = {fit: s.scrollHeight <= s.clientHeight + 1, inView: r.top >= 0 && r.bottom <= innerHeight, meter: g.height > 0 && g.width > 100}; closePop(); return o; });
+ok('Kanalzug quer 926×428: passt ohne Rollen (Meter in der Zeile „Kompressor“)', eqq.fit && eqq.inView && eqq.meter, eqq);
 await p.setViewportSize({width: 926, height: 370}); await p.waitForTimeout(400);
 await p.evaluate(async () => { SYNQUENZER.mx2Sheet(); await new Promise(r => setTimeout(r, 200)); });
 t1 = await tapSize('.pop.mx2s button'); s1 = await sheet();
