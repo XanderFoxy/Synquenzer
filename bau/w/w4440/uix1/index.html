@@ -38241,6 +38241,7 @@ function openLoopPop(anchor) {
       `<button class="rb${cur === 'part' ? ' on' : ''}" data-l="part"${tm ? '' : ' disabled'}>Teil<small>${tm ? esc(markLabel(tm)) : 'keine Marke'}</small></button>` +
       `<button class="rb${cur === 'range' ? ' on' : ''}" data-l="range">Bereich<small>${cur === 'range' && !sel ? loopLabel(song) : (rb - ra === 1 ? 'Takt ' + (ra + 1) : 'Takt ' + (ra + 1) + '–' + rb)}</small></button></div>` +
       '<p class="small">Bereich = die gelb gewählten Takte (Taktleiste antippen). Die grünen Griffe ┃ ziehen ändert Anfang und Ende.</p>';
+    ux1LoopRow(p);   /* UIX1: Mithören beim Wischen (Lautsprecher) */
     onTap(p, b => {
       const l = b.dataset.l; closePop();
       if (l === 'off') songLoopRange({on: false});
@@ -40516,6 +40517,7 @@ function openPop(anchor, build, opts) {
   const L = EL.popLayer, p = el('div', 'pop');
   if (opts.sheet) pshMake(p, opts.sheet);                         // 4.30.1: Kopf mit ✕, Ablegen, Transport
   build(p); if (opts.sheet) pshKeep(p); L.appendChild(p); L.classList.add('open');
+  ux1PopX(p);                                                     /* UIX1: ✕ in Popups mit Titel (hochkant) */
   const vw = window.innerWidth, vh = window.innerHeight, pw = p.offsetWidth, ph = p.offsetHeight;
   let x, y;
   if (anchor) {
@@ -72232,6 +72234,7 @@ function s1OpenSheet() {
       `<div class="fs-end">Letzter Durchlauf eingefangen${S1.n ? ' · ' + S1.n + (S1.n === 1 ? ' Note' : ' Noten') + ' dazugespielt' : ''}</div>` +
       `<div class="fs-cl"><b>Neu</b> ${esc(fangClipsText(v))}</div><div class="fs-cl s1-old"><b>Bisher</b> ${esc(fangClipsText(p0))}</div>` +
       `<div class="cr-bot fs-bot"><button class="rb" data-s1="disc">Verwerfen</button><button class="rb" data-s1="new">Als neuen Teil</button><button class="rb fs-ok" data-s1="rep">Teil ersetzen</button></div>`;
+    ux1S1Row(p);   /* UIX1: Zeile „Neu als“ (Namen wie im Blatt „Teil gefangen“) */
     for (const b of p.querySelectorAll('.fs-bot .rb')) if (b.scrollWidth > b.clientWidth + 1) b.classList.add('tight');
     onTap(p, b => { const a = b.dataset.s1; if (a === 'x' || a === 'disc') { s1Discard(); return; } if (a === 'new') { s1Accept('new'); return; } if (a === 'rep') s1Accept('replace'); }, 'button[data-s1]');
     fangPlace(p); rowFit(p);
@@ -72242,6 +72245,145 @@ Object.assign(S012_API, {
   s1Fang: o => s1Fang(o || {}), s1Info: () => s1Info(), s1Accept: mode => s1Accept(mode === 'new' ? 'new' : 'replace'), s1Discard: () => s1Discard(), s1Active: () => s1Active(),
 });
 /* /S1 */
+/* UIX1-BEGIN ---------- Paket UX1 (Xander 07.11.): „FANG im Songteil wie früher“ – das Blatt „Teil überarbeitet“ bekommt die Namen
+   wieder (Zeile „Neu als“ wie im Blatt „Teil gefangen“: ein Tipp auf einen freien Namen = neuer Teil mit diesem Namen, ein vergebener
+   Name ▾ öffnet die zweite Ebene [＋ Strophe 2] [⟳ Strophe ersetzen], ✎ = eigener Name); Mithören beim Wischen als Schalter im
+   Schleife-Blatt (hochkant kein runder Knopf mehr über dem Song); ✕ in Popups mit Titel (hochkant, bleibt beim Scrollen oben);
+   ein Popup mit aktivem Textfeld bleibt über der iOS-Tastatur (visualViewport). Keine neuen Projektfelder. ---------- */
+const UX1 = {s1: {lvl: null, name: null}, kb: {el: null, st: null, raf: 0}};
+// 1 · Blatt „Teil überarbeitet“ (s1OpenSheet): die Namenszeile über den drei Tasten
+function ux1S1Row(p) {
+  if (!p || !S1.v) return;
+  UX1.s1 = {lvl: null, name: null};
+  const row = el('div', 'fs-row fs-nm ux1-s1'); p.insertBefore(row, p.querySelector('.fs-bot'));
+  ux1S1Paint(row);
+  onTap(row, b => ux1S1Tap(row, b), 'button');
+}
+function ux1S1Paint(row) {
+  const st = UX1.s1;
+  if (st.lvl === 'edit') {
+    row.innerHTML = `<span class="lbl">Neu als</span><input class="cp-in fs-in ux1-in" type="text" maxlength="12" enterkeyhint="done" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(st.name || '')}" aria-label="Eigener Name"><button class="rb cp-ok" data-u="ok" aria-label="Übernehmen">✓</button><button class="rb" data-u="back" aria-label="Zurück">‹</button>`;
+    const inp = row.querySelector('.ux1-in');
+    inp.addEventListener('pointerdown', ev => ev.stopPropagation()); inp.addEventListener('touchstart', ev => ev.stopPropagation(), {passive: true});
+    on(inp, 'keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); ux1S1Text(row); } });
+    setTimeout(() => { try { inp.focus(); inp.select(); } catch (e) {} }, 30);
+  } else if (st.lvl === 'dup') {
+    const n = st.name;
+    row.innerHTML = `<span class="lbl">Neu als</span><div class="cp-sc"><button class="rb cp-c" data-u="new">＋ ${esc(partUniq(n, -1))}</button><button class="rb cp-c" data-u="rep">⟳ ${esc(n)} ersetzen</button></div><button class="rb" data-u="back" aria-label="Zurück">‹</button>`;
+  } else {
+    row.innerHTML = `<span class="lbl">Neu als</span><div class="cp-sc">` + PART_NAMES.map(n => `<button class="rb cp-c" data-n="${n}">${n}${partNameFree(n) ? '' : ' ▾'}</button>`).join('') +
+      `<button class="rb cp-c" data-u="ed" aria-label="Eigener Name">✎</button></div>`;
+  }
+}
+function ux1S1Tap(row, b) {
+  const st = UX1.s1, u = b.dataset.u;
+  if (b.dataset.n) { const n = b.dataset.n; if (partNameFree(n)) { ux1S1New(n); return; } st.lvl = 'dup'; st.name = n; haptic('tick'); ux1S1Paint(row); return; }
+  if (u === 'new') { ux1S1New(st.name); return; }
+  if (u === 'rep') { ux1S1Replace(st.name); return; }
+  if (u === 'ed') { st.lvl = 'edit'; st.name = ''; ux1S1Paint(row); return; }
+  if (u === 'ok') { ux1S1Text(row); return; }
+  if (u === 'back') { st.lvl = null; st.name = null; ux1S1Paint(row); }
+}
+function ux1S1Text(row) {
+  const inp = row.querySelector('.ux1-in'), v = inp ? inp.value.trim() : '';
+  if (!PART_NAME_RE.test(v)) { if (inp) inp.classList.add('bad'); haptic('snap'); return false; }
+  return ux1S1New(v);
+}
+// [Neu als …]: die eingefangene Fassung wird ein neuer Teil mit diesem Namen (vergeben → „Strophe 2“), ein Undo 'part' (wie s1Accept 'new')
+function ux1S1New(name) {
+  const v = S1.v, i = S1.i; if (!v || !S.parts[i]) return false;
+  partsEnsure(); const k = S.parts.findIndex(x => !x); if (k < 0) { toast('Teil-Leiste voll – erst einen Teil löschen'); return false; }
+  const nm = String(name == null ? '' : name).trim().slice(0, 12) || S.parts[i].name, before = partSnap();
+  const q = deep(v); q.name = partUniq(nm, k); q.color = PART_COLORS[k % PART_COLORS.length];
+  S.parts[k] = normPart(q, k, NT()); S.parts[k].len = partLen(S.parts[k]);
+  pushPartUndo(before, 'Neue Fassung als ' + S.parts[k].name);
+  partsChanged(); S1.v = null; closePop();
+  toast('Neuer Teil ' + S.parts[k].name, {label: 'Rückgängig', fn: () => undo()}); haptic('snap');
+  return {part: k, name: S.parts[k].name};
+}
+// [⟳ Name ersetzen]: der laufende Teil → wie [Teil ersetzen]; ein anderer Teil mit dem Namen bekommt die Fassung (Name, Farbe, Wechsel bleiben)
+function ux1S1Replace(name) {
+  const v = S1.v; if (!v) return false;
+  partsEnsure();
+  const j = S.parts.findIndex(x => x && x.name.toLowerCase() === String(name).toLowerCase());
+  if (j < 0) return ux1S1New(name);
+  if (j === S1.i) return s1Accept('replace');
+  const old = S.parts[j], before = partSnap(), q = deep(v);
+  q.name = old.name; q.color = old.color; q.start = old.start; if (old.st) q.st = deep(old.st);
+  S.parts[j] = normPart(q, j, NT()); S.parts[j].len = partLen(S.parts[j]);
+  pushPartUndo(before, old.name + ': neue Fassung');
+  partsChanged(); S1.v = null; closePop();
+  toast(old.name + ' ersetzt (neue Fassung)', {label: 'Rückgängig', fn: () => undo()}); haptic('snap');
+  return {part: j};
+}
+// 2 · Schleife-Blatt: [Lautsprecher · Mithören beim Wischen · an/aus] (dieselbe Funktion wie der Knopf in der Song-Leiste quer)
+function ux1LoopRow(p) {
+  if (!p) return;
+  const r = el('div', 'ux1-lp'), b = el('button', 'rb sv-scr ux1-scr');
+  const paint = () => { b.classList.toggle('on', SX7.on); b.setAttribute('aria-pressed', String(SX7.on)); b.setAttribute('aria-label', 'Mithören beim Wischen: ' + (SX7.on ? 'an' : 'aus'));
+    b.innerHTML = SX7_SVG + '<span>Mithören beim Wischen</span><b>' + (SX7.on ? 'an' : 'aus') + '</b>'; };
+  paint(); r.appendChild(b); p.appendChild(r);
+  onTap(b, () => { sx7Toggle(); paint(); });
+}
+// 3 · ✕ in Popups: hat ein Popup kein Schließen und beginnt mit einem Titel (h4), kommt oben rechts ein ✕ dazu (nur hochkant sichtbar);
+//     nach einem Neuzeichnen des Popups (innerHTML) kommt es wieder, das Popup bleibt im Bild
+const ux1IsX = b => { const t = (b.textContent || '').trim(), al = b.getAttribute('aria-label') || ''; return !/Löschen|löschen|Entfernen|lösen/.test(al) && (t === '✕' || /schließen/i.test(al)); };
+function ux1PopX(p) {
+  if (!p || !p.isConnected || p._ux1) return;
+  p._ux1 = 1; ux1PopXAdd(p);
+  try { const mo = new MutationObserver(() => { if (p.isConnected && ux1PopXAdd(p)) ux1PopRefit(p); }); mo.observe(p, {childList: true}); p._ux1Mo = mo; } catch (e) {}
+}
+function ux1PopXAdd(p) {
+  const h = p.firstElementChild;
+  if (!h || h.tagName !== 'H4' || p.classList.contains('abg') || p.querySelector(':scope > .ux1-hd')) return false;
+  if ([...p.querySelectorAll('button')].some(ux1IsX)) return false;
+  if (getComputedStyle(p).display !== 'block') return false;
+  const hd = el('div', 'ux1-hd'), b = el('button', 'rb ux1-px', '✕');
+  b.setAttribute('aria-label', 'Schließen'); hd.appendChild(b);
+  onTap(b, () => { if (UI.pop && UI.pop.el === p) closePop(); });
+  for (const ev of ['pointerdown', 'pointerup', 'click']) b.addEventListener(ev, e => e.stopPropagation());   // die Tasten-Logik des Popups sieht diesen Tipp nicht
+  h.classList.add('ux1-h'); p.insertBefore(hd, h);
+  return true;
+}
+function ux1PopRefit(p) {
+  if (p.classList.contains('dock')) popDock(p, parseFloat(p.style.top) <= 0.5 && window.innerHeight - p.offsetHeight > 1);
+  else popFit(p);
+}
+// 4 · iOS-Textfeld-Tastatur: liegt das aktive Feld in einem Popup, rückt das Popup über die Tastatur (und wird dort höchstens so hoch wie
+//     der sichtbare Teil); geht die Tastatur zu, kommt es an seinen Platz zurück. Online-Blatt und Songtext haben ihre eigene Lösung.
+function ux1Kb() {
+  const vv = window.visualViewport; if (!vv) return;
+  const K = UX1.kb, ih = window.innerHeight, top0 = vv.offsetTop || 0, vis = vv.height, hide = Math.max(0, ih - vis - top0), a = document.activeElement;
+  const field = a && (a.tagName === 'TEXTAREA' || (a.tagName === 'INPUT' && !/^(range|file|checkbox|radio|button)$/.test(a.type))) ? a : null;
+  const host = field && hide > 120 && UI.pop && UI.pop.el && UI.pop.el.contains(field) ? UI.pop.el : null;
+  if (K.el && (K.el !== host || !K.el.isConnected)) ux1KbOff();
+  if (!host) return;
+  if (!K.el) { K.el = host; K.st = {top: host.style.top, maxHeight: host.style.maxHeight}; host.classList.add('ux1kb'); }
+  host.style.maxHeight = Math.max(120, Math.round(vis - 8)) + 'px';
+  const h = host.offsetHeight, t = parseFloat(host.style.top) || host.getBoundingClientRect().top;
+  const lo = top0 + 4, hi = top0 + vis - h - (host.classList.contains('dock') ? 0 : 4);
+  if (t > hi || t < lo) host.style.top = Math.round(Math.max(lo, hi)) + 'px';
+  requestAnimationFrame(() => { try { field.scrollIntoView({block: 'nearest'}); } catch (e) {} });
+}
+function ux1KbOff() {
+  const K = UX1.kb, p = K.el; K.el = null; if (!p) return;
+  p.classList.remove('ux1kb');
+  if (K.st) { p.style.maxHeight = K.st.maxHeight; p.style.top = K.st.top; } K.st = null;
+  if (!p.isConnected) return;
+  if (p.classList.contains('fsheet')) fangPlace(p); else if (p.classList.contains('dock')) popDock(p); else popFit(p);
+}
+function ux1KbSoon() { const K = UX1.kb; if (K.raf) return; K.raf = requestAnimationFrame(() => { K.raf = 0; try { ux1Kb(); } catch (e) { logErr(e); } }); }
+try {
+  if (window.visualViewport) { window.visualViewport.addEventListener('resize', ux1KbSoon); window.visualViewport.addEventListener('scroll', ux1KbSoon); }
+  document.addEventListener('focusin', ux1KbSoon); document.addEventListener('focusout', () => setTimeout(ux1KbSoon, 60));
+} catch (e) {}
+const UIX1_API = {
+  ux1S1Row: () => { const r = UI.pop && UI.pop.el && UI.pop.el.querySelector('.ux1-s1'); return r ? [...r.querySelectorAll('button')].map(b => b.textContent.trim()) : null; },
+  ux1S1Pick: (name, mode) => (mode === 'replace' ? ux1S1Replace(name) : ux1S1New(name)),
+  ux1Scrub: on => (on == null ? SX7.on : sx7Toggle(!!on)),
+  ux1Kb: () => ({on: !!UX1.kb.el, top: UX1.kb.el ? UX1.kb.el.style.top : null}),
+};
+/* UIX1-END */
 /* S2 ---------- Zusammenfassen (Nachtrag 5 S2): a mark (Marken-Blatt) or the yellow selection over chained marks (Bereich-Leiste ⋯)
    becomes ONE new part with everything in its range: lanes (also own clips and phases), chords, the song melody recorded there,
    the song voice; the song keeps sounding as it is (only the marks change). One undo group [part, song] ---------- */
@@ -73602,6 +73744,7 @@ Object.assign(SYNQUENZER, {                       // BM6 (Nachtrag 7 §5.3): Bit
   bmRoutes: t => bmRoutes(t), bmRouteClear: (t, k) => (bmLoad(), bmRouteClear(t, k)),
   bmInit: (t, kind) => { const s_ = sndOf(t); if (!s_ || s_.engine !== 'bm') throw new Error('Keine ' + BM_NAME + '-Spur: ' + t); return soundEdit(t, 'Init', () => { const snd = deep(s_); snd.p.bm = SQBM.init(kind); applySound(t, snd); return true; }); },
 });
+Object.assign(SYNQUENZER, UIX1_API);                        // UIX1: FANG-Teil-Namen, Mithören-Schalter, ✕, Tastatur
 const NO_SYNC = new Set(['clipCurves', 'bmcLog', 'bmcState', 'oneScaleOf', 'harmInfo', 'kbScaleNow', 'micCheck', 'micCheckJson', 'micCheckEstimate', 'cloud', 'cloudProjects', 'cloudVersions', 'cloudHandoff', 'state', 'project', 'runtime', 'getClip', 'getParam', 'noteLog', 'voices', 'timeline', 'serialize', 'buildMidi', 'buildZip', 'crc32', 'meter', 'outPitch', 'migrate', 'tapTempo',
   'getSound', 'mods', 'library', 'factory', 'previewState', 'soundEdited', 'fmxView', 'fmxPreview', 'fmxBadge',
   'history', 'projects', 'storage', 'engineInfo', 'getBusFx', 'wake', 'gestures', 'roll', 'rollApi', 'detectKey', 'sceneKey',
