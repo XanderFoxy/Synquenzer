@@ -54717,7 +54717,7 @@ function sx4HeadSync(el, i) {
    6 Leucht-Look (Menü › Bedienung, Standard AUS): reine CSS-Klasse auf <body> – nur Glühen/Schatten, nichts verschiebt sich.
    Daten: nichts im Projekt (Gruppe = Laufzeit wie Solo, Look = Geräte-Einstellung 'ui1glow'). Einhänge-Zeilen: buildSynthEd
    (ui1EdHook), sx4Down (ui1MultiDown), openMenu (ui1MenuHook), Ende (API, Bibliothek, Look). */
-const UI1 = {sel: new Set(), g: null, bar: null, iv: 0, slT: 0, ring: null, tour: null, card: null, bmT: -1, bmCat: 'alle', bmTab: 'klang', lastJump: null, ents: null, all: false, css: false};
+const UI1 = {sel: new Set(), g: null, bar: null, iv: 0, slT: 0, ring: null, tour: null, card: null, bmT: -1, bmCat: 'alle', bmTab: 'klang', lastJump: null, ents: null, all: false, css: false, alt: null};
 const UI1_CSS = `
 #menu .ui1g .ui1q{flex:1 1 200px;max-width:none;font-size:16px}
 #menu .ui1g .ui1tours .mbtn{padding:0 10px}
@@ -54851,6 +54851,15 @@ function ui1SynthT(any) {
   const o = trackOrder().find(ok); return o == null ? -1 : o;
 }
 const ui1ClipOf = t => { const tr = S.tracks[t]; return tr ? tr.clips.findIndex(Boolean) : -1; };
+// eine Spur mit Clip: die gewählte, sonst die erste Synth-Spur mit Clip (drum: die Drum-Spur)
+function ui1ClipT(drum) {
+  if (drum) return ui1ClipOf(DRUM_T) >= 0 ? DRUM_T : -1;
+  const ok = i => { const tr = S.tracks[i]; return !!(tr && tr.kind === 'synth' && !tr.stimme && ui1ClipOf(i) >= 0); };
+  if (ok(R.selT)) return R.selT;
+  const o = trackOrder().find(ok); return o == null ? -1 : o;
+}
+// gibt es den Song noch nicht, zeigt der Sprung SONG ⇄ (Remix, Transponieren)
+function ui1SongMenu() { UI1.alt = null; ui1Home(); if (S.song && S.song.bars) { openMenu(); return true; } setSongView(false); toast('Das gibt es, sobald ein Song da ist – SONG ⇄'); UI1.alt = () => UI.corner; return true; }
 // Sprung-Bausteine (geben false zurück, wenn es die Stelle gerade nicht gibt)
 const ui1G = {
   main: () => { ui1Home(); return true; },
@@ -54859,8 +54868,8 @@ const ui1G = {
   ed: (tab, sub) => () => { ui1Home(); const t = ui1SynthT(false); if (t < 0) return false; selectTrack(t); ED.tab = tab; if (sub) ED.sub[tab] = sub; FXF.big = null; openEditor(); return true; },
   drum: tab => () => { ui1Home(); selectTrack(DRUM_T); ED.dTab = tab; openEditor(); return true; },
   song: bar => () => { ui1Home(); setSongView(true); if (bar) ueBar(true); return true; },
-  clip: drum => () => { ui1Home(); setSongView(false); const t = drum ? DRUM_T : ui1SynthT(true), s = t >= 0 ? ui1ClipOf(t) : -1; if (s < 0) { toast('Erst einen Clip aufnehmen – dann den Clip halten'); return false; } selectSlot(t, s); openClipSheet(t, s); return true; },
-  roll: () => { ui1Home(); setSongView(false); const t = ui1SynthT(true), s = t >= 0 ? ui1ClipOf(t) : -1; if (s < 0) { toast('Erst einen Clip aufnehmen – dann ✎'); return false; } openRoll(t, s); return true; },
+  clip: drum => () => { ui1Home(); setSongView(false); const t = ui1ClipT(drum), s = t >= 0 ? ui1ClipOf(t) : -1; if (s < 0) { toast('Erst einen Clip aufnehmen – dann den Clip halten'); return false; } selectSlot(t, s); openClipSheet(t, s); return true; },
+  roll: () => { ui1Home(); setSongView(false); const t = ui1ClipT(false), s = t >= 0 ? ui1ClipOf(t) : -1; if (s < 0) { toast('Erst einen Clip aufnehmen – dann ✎'); return false; } openRoll(t, s); return true; },
 };
 /* ---------- 1 Guide: alle Funktionen (Name, wo, ein Satz, Suchwörter, Sprung, Stelle) ---------- */
 function ui1Entries() {
@@ -54872,7 +54881,7 @@ function ui1Entries() {
     E('rec', 'Aufnehmen ●', 'oben ●', 'Spur wählen, leeren Platz antippen, ● – nach dem Einzählen einspielen.', 'aufnahme record einspielen', G.main, '#bRec'),
     E('bpm', 'Tempo (BPM)', 'oben BPM', 'Antippen und ziehen ändert das Tempo des Songs.', 'tempo bpm geschwindigkeit schneller langsamer', G.main, '#bBpm'),
     E('metro', 'Metronom', 'oben ♩', 'Klick an/aus; Lautstärke und Einzähler stehen im Menü › Aufnahme.', 'klick metronom click', G.main, '#bMetro'),
-    E('fang', 'FANG', 'unten rechts FANG', 'Gespielt ohne Aufnahme? FANG macht daraus einen Clip, der im Takt weiterläuft.', 'fang capture mitschnitt', G.main, '#bFang'),
+    E('fang', 'FANG', 'unten rechts FANG', 'Gespielt ohne Aufnahme? FANG macht daraus einen Clip, der im Takt weiterläuft.', 'fang capture mitschnitt', G.main, () => ['#bFang', '#fangSlot'].map(q => document.querySelector(q)).find(ui1Shown)),
     E('scene', 'Szene starten', 'Matrix ▶ 1–4 (Kopfzeile)', 'Startet alle Clips einer Szene am nächsten Takt.', 'szene starten launch spalte', G.mx, '.scn'),
     E('stop', 'Spur oder alles stoppen', 'Matrix ■ rechts', '■ stoppt zum nächsten Takt, zweimal = sofort. ■ einer Spur halten = Spur-Blatt.', 'stop stoppen spurblatt', G.mx, '.stp'),
     E('vol', 'Lautstärke einer Spur', 'Spurname waagrecht wischen', 'Am Spurnamen nach links/rechts schieben – mit dB-Anzeige; Doppeltipp auf den Schieber = 0 dB.', 'lautstaerke volume pegel mix fader leiser lauter', G.mx, '.th'),
@@ -54922,7 +54931,7 @@ function ui1Entries() {
     E('ue', 'Fills & Breaks (◆ ÜBERGÄNGE)', 'Song-Ansicht › ◆ ÜBERGÄNGE', 'Kachel auf eine Teil-Kante ziehen – oder antippen und frei in den Song tippen.', 'fill fills break breaks uebergang wirbel crash einwurf', G.song(true), '.ue-bar .ue-tiles'),
     E('fillchip', 'Fill bearbeiten', 'Song-Ansicht › Fill-Chip antippen', 'Länge, Ersetzen | Mischen, Pads, Noten … – jeder Schritt ein ↶.', 'fill bearbeiten ersetzen mischen noten', G.song(false), svB('bUe')),
     E('wkz', 'Werkzeugkasten', 'Clip-Blatt › Werkzeugkasten ▾ (oder ROLLE)', 'Fertige Standardfiguren je Genre: Bässe, Stabs, Arps, Pads, Lead- und Drums-Füller.', 'werkzeugkasten figuren bass arp disco stabs', G.clip(false), 'Werkzeugkasten'),
-    E('remix', 'Remix', 'Menü › Song › Remix …', 'Bass und Drums des ganzen Songs in einem Stil neu – A Original / B Remix.', 'remix genre stil', G.menu, 'Remix'),
+    E('remix', 'Remix', 'Menü › Song › Remix …', 'Bass und Drums des ganzen Songs in einem Stil neu – A Original / B Remix.', 'remix genre stil', ui1SongMenu, () => (UI1.alt ? UI1.alt() : ui1Find('Remix …'))),
     E('roll', 'Noten-Editor (ROLLE)', 'Clip › ✎', 'Zeichnen, Auswählen, Radieren; zwei Finger zoomen.', 'noten editor piano roll zeichnen', G.roll, () => EL.rollSheet),
     E('lauf', 'LAUF (Schritt-Lauf)', 'Noten-Editor › LAUF', 'Basslauf oder Sequenz Schritt für Schritt; lang drücken = Wirbel, Chance, Slide …', 'lauf sequenz arp schritt ratchet', G.roll, 'LAUF'),
     E('spiel', 'Spielweise', 'Noten-Editor › Spielweise', 'Gitarre (ab-auf, Riff), Glissando, Harfe, Glocken, Alberti, Pizzicato …', 'spielweise gitarre strum harfe glissando', G.roll, 'Spielweise'),
@@ -54934,7 +54943,7 @@ function ui1Entries() {
     E('marks', 'Teil-Marken', 'Song-Ansicht › Taktleiste (gelbe Namen)', 'Antippen = Marken-Blatt: ▶ Ab hier, ×2, Kopie, Gleiten, Rhythmus.', 'marke marken teil strophe refrain', G.song(false), () => SV.wrap),
     E('kons', 'Konsolidieren', 'Song-Ansicht › Takte wählen › Bereich-Leiste', 'Aus einem Bereich wird ein Clip – der alte Clip bleibt erhalten.', 'konsolidieren bounce zusammenfassen bereich', G.song(false), () => SV.wrap),
     E('insert', 'Teil einsetzen', 'Song-Ansicht › ＋ Teil einsetzen ▾', 'Setzt einen gespeicherten Teil ans Song-Ende oder an eine Stelle.', 'teil einsetzen anhaengen', G.song(false), 'Teil einsetzen'),
-    E('xp', 'Song transponieren', 'Menü › Song › Transponieren …', 'Der ganze Song ±1 Halbton – Drums bleiben.', 'transponieren song tonart hoeher tiefer', G.menu, 'Transponieren …'),
+    E('xp', 'Song transponieren', 'Menü › Song › Transponieren …', 'Der ganze Song ±1 Halbton – Drums bleiben.', 'transponieren song tonart hoeher tiefer', ui1SongMenu, () => (UI1.alt ? UI1.alt() : [...EL.menu.querySelectorAll('button')].find(b => b.textContent.trim() === 'Transponieren …'))),
     E('video', 'Video', 'Menü › Video', '9:16 oder 16:9 mit Ton; Ansicht, Regie, Teilen.', 'video tiktok film clip youtube', () => { ui1Home(); vvOpen(); return true; }, () => VV.el),
     E('vregie', 'Video-Regie: Regeln', 'Video-Blatt › Regeln', 'Welches Ereignis (Fill, Gesang beginnt, Drop …) welche Ansicht bekommt.', 'regie regeln schnitt kamera', () => { ui1Home(); vvOpen(); return true; }, '.vr1rb'),
     E('imvideo', 'Im Video (je Clip)', 'Clip-Blatt › Im Video', 'Auto, Gerät, Klavier, Mäusekino, Noten oder aus.', 'im video ansicht clip klavier maeusekino', G.clip(false), 'Im Video'),
@@ -54972,11 +54981,11 @@ function ui1Search(q) {
 // Sprung: öffnet die Stelle und zeigt sie mit dem Rahmen (Ergebnis für Tests in UI1.lastJump)
 function ui1Jump(id) {
   const E = ui1Entries().find(x => x.id === id); if (!E) return null;
-  const res = {id, ok: false, target: false, at: null};
-  UI1.tour && ui1TourEnd();
+  const res = {id, ok: false, target: false, at: null, txt: null};
+  if (UI1.tour) ui1TourEnd(); ui1RingOff(); UI1.alt = null;
   let ok = true; try { ok = E.go() !== false; } catch (e) { logErr(e); ok = false; }
   res.ok = ok; UI1.lastJump = res;
-  const show = k => { const t = ok ? ui1Find(E.q) : null; if (!t && k < 3) { setTimeout(() => show(k + 1), 180); return; } res.target = !!t; if (t) { ui1Ring(t, E.n, 5000); const b = t.getBoundingClientRect(); res.at = {x: Math.round(b.left), y: Math.round(b.top), w: Math.round(b.width), h: Math.round(b.height)}; } };
+  const show = k => { const t = ok ? ui1Find(E.q) : null; if (!t && k < 3) { setTimeout(() => show(k + 1), 180); return; } res.target = !!t; if (t) { ui1Ring(t, E.n, 5000); const b = t.getBoundingClientRect(); res.at = {x: Math.round(b.left), y: Math.round(b.top), w: Math.round(b.width), h: Math.round(b.height)}; res.txt = String(t.getAttribute('aria-label') || t.textContent || t.className).trim().slice(0, 40); } };
   setTimeout(() => show(0), 240);
   return res;
 }

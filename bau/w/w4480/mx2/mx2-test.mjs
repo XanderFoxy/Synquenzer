@@ -58,7 +58,7 @@ const A = await p.evaluate(async () => {
   let T0 = performance.now(); o.way = await SYNQUENZER.mx2Way('am'); o.msMeasure = Math.round(performance.now() - T0); o.rend1 = n;
   o.sw = [];
   for (const pf of ['hinrg', 'synthweit', 'italo', 'modern']) { T0 = performance.now(); const r = SYNQUENZER.mx2Style(pf); o.sw.push({pf, ok: r, ms: +(performance.now() - T0).toFixed(1), amPf: S.fxBus.am && S.fxBus.am.mx2 && S.fxBus.am.mx2.pf, node: !!(AU.M && AU.M.am && AU.M.am.node)}); }
-  o.rend2 = n; o.undoTop = UNDO[UNDO.length - 1] && UNDO[UNDO.length - 1].label;
+  await wait(400); o.nodeLive = !!(AU.M && AU.M.am && AU.M.am.node && AU.M.am.on); o.rend2 = n; o.undoTop = UNDO[UNDO.length - 1] && UNDO[UNDO.length - 1].label;
   o.prefT = []; for (const [d, w] of [[2, 0], [-2, 0], [0, 2], [0, -2], [0, 0]]) { T0 = performance.now(); SYNQUENZER.mx2Style(null, d, w); o.prefT.push(+(performance.now() - T0).toFixed(1)); }
   o.rend3 = n;
   const ex = await SYNQUENZER.mx2Exact(); o.exact = ex && {gain: ex.gain, lout: ex.info.lout, tp: ex.info.tp, ms: ex.info.ms}; o.amGain = S.fxBus.am.gain;
@@ -77,11 +77,12 @@ const A = await p.evaluate(async () => {
   o.headPressed = [...document.querySelectorAll('.mx2s .mx2ab')].map(b => b.getAttribute('aria-pressed'));
   o.stillOpen = !!(UI.pop && UI.pop.name === 'mx2');
   stop(); await wait(200);
-  // Video/Export deterministisch: Render bei offenem Vergleich (Angleich aktiv) = Render ohne Blatt
-  const v1 = await meas(); SYNQUENZER.mx2Close(); await wait(100); o.gClosed = g(); const v2 = await meas();
-  let md = 0; for (let i = 0; i < v1.L.length; i++) md = Math.max(md, Math.abs(v1.L[i] - v2.L[i])); o.renderDiff = md;
+  // Video/Export: der Pegelangleich wirkt nie offline (Weiche im Render = 1/0), obwohl der Vergleich im Blatt aktiv ist
+  const tOrig = window.mx2Trim, calls = []; window.mx2Trim = function () { const v = tOrig(); calls.push({off: !!UI.vvOff, v}); return v; };
+  const v1 = await meas(); window.mx2Trim = tOrig; o.trimCalls = {off: calls.filter(c => c.off).length, offNot1: calls.filter(c => c.off && c.v !== 1).length, liveTrim: SYNQUENZER.mx2Info().trim};
+  SYNQUENZER.mx2Close(); await wait(100); o.gClosed = g();
   // Mischen + Mastern: zwei Durchläufe (Analyse, Nachmessen), dann Master aus dem Zwischenspeicher
-  SYNQUENZER.mx2Sheet(); await wait(50); n = 0; const snap0 = mixaSnap();
+  amOff(); SYNQUENZER.mx2Sheet(); await wait(50); n = 0; const snap0 = mixaSnap();
   T0 = performance.now(); o.both = await SYNQUENZER.mx2Way('both'); o.msBoth = Math.round(performance.now() - T0); o.rendBoth = n;
   const I2 = SYNQUENZER.mx2Info(); o.mixWhy = I2.mixWhy; o.ab3 = I2.ab; o.am3 = !!(S.fxBus.am && S.fxBus.am.on);
   SYNQUENZER.mx2AB('A'); await wait(100); o.aIsBase = JSON.parse(SYNQUENZER.mx2Snap()).m === snap0; o.amA = !!(S.fxBus.am && S.fxBus.am.on);
@@ -114,7 +115,7 @@ const A = await p.evaluate(async () => {
 });
 ok('Ohne MX2: kein Master, keine Weiche, Angleich 1 (bitgleich)', !A.bypass.am && !A.bypass.chain && A.bypass.trim === 1, A.bypass);
 ok('Mastern: EIN Durchlauf misst', A.way && A.rend1 === 1, {ms: A.msMeasure});
-ok('4 Stile umschalten ohne Render, je < 100 ms, Master-Knoten folgt sofort', A.rend2 === 1 && A.sw.every(s => s.ok && s.ms < 100 && s.amPf === s.pf && s.node), A.sw);
+ok('4 Stile umschalten ohne Render, je < 100 ms, Master-Knoten läuft live mit', A.rend2 === 1 && A.sw.every(s => s.ok && s.ms < 100 && s.amPf === s.pf) && A.nodeLive, A.sw);
 ok('Vorlieben (Druck, Glanz) ohne Render, je < 100 ms; Stil-Folge = ein Undo-Schritt', A.rend3 === 1 && A.prefT.every(t => t < 100) && /^Master:/.test(A.undoTop), {ms: A.prefT, undo: A.undoTop});
 ok('Nachprüfung im Worker: genau −14 LUFS, Pegel übernommen', A.exact && Math.abs(A.exact.lout + 14) <= 0.1 && A.amGain === A.exact.gain, A.exact);
 ok('Render −14: Lautheit ±0,3 LU, True-Peak ≤ −1 dBTP', Math.abs(A.render14.I + 14) <= 0.3 && A.render14.tp <= -1, A.render14);
@@ -123,7 +124,7 @@ ok('Abhören im Blatt: ▶ läuft, Blatt bleibt offen', A.play && A.playing && A
 ok('A/B während es läuft: A = bisheriger Weg, B = Master; vor dem ersten Tipp volle Lautheit', A.mixaAB === true && A.gA.ga > 0.9 && A.gA.gb < 0.01 && A.gB0.gb > 0.99 && A.trimB0 === 1 && A.ab2.side === 'B' && A.headPressed.join() === 'false,true', {gB0: A.gB0, gA: A.gA, gB: A.gB});
 ok('Pegelgleich: der lautere Weg (B) wird um den Lautheits-Unterschied leiser', A.ab2.cmp && Math.abs(20 * Math.log10(A.trimB) - (A.ab2.LA - A.ab2.LB)) < 0.05 && Math.abs(A.gB.gb - A.trimB) < 0.02, {LA: A.ab2.LA, LB: A.ab2.LB, trimDb: +(20 * Math.log10(A.trimB)).toFixed(2), gb: A.gB.gb});
 ok('Gain-Reduction live aus dem Master-Worklet (Tief, Mitte, Hoch, Bus, Limiter)', Array.isArray(A.mt2 || A.mt) && (A.mt2 || A.mt).length === 5, {mt: A.mt2 || A.mt});
-ok('Video/Export unberührt: Render bei aktivem Vergleich = Render ohne Blatt; Schließen = volle Lautheit', A.renderDiff === 0 && A.gClosed.gb > 0.99, {diff: A.renderDiff, gClosed: A.gClosed});
+ok('Video/Export unberührt: im Render ist die Weiche immer 1 (Angleich nur live); Schließen = volle Lautheit', A.trimCalls.off > 0 && A.trimCalls.offNot1 === 0 && A.trimCalls.liveTrim < 1 && A.gClosed.gb > 0.99, {calls: A.trimCalls, gClosed: A.gClosed});
 ok('Mischen + Mastern: Analyse + Nachmessen (2 Durchläufe), Mix-Vorschläge übernommen, Master an', A.both && A.rendBoth === 2 && A.am3 && A.mixWhy && A.mixWhy.length >= 3, {ms: A.msBoth, why: (A.mixWhy || []).slice(0, 3)});
 ok('A/B nach Mischen + Mastern: A = Stand vorher (Mix + kein Master), B = alles zurück', A.ab3.mode === 'snap' && A.aIsBase && !A.amA && A.amB);
 ok('Seitenkette: Bass + Kick erkannt, an = ein Undo-Schritt, Quelle Kick', A.duckInfo && A.duckOn && A.duckSteps === 1 && A.duckFx.pump === 0.4 && A.duckFx.rel === '1/16' && A.duckFx.src === 'kick' && A.duckUndo !== 0.4 && A.duckRedo === 0.4, {info: A.duckInfo, fx: A.duckFx});

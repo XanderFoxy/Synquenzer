@@ -4294,6 +4294,7 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 .mx2s .mx2w{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:2px 0 6px}
 .mx2s .mbtn b{display:block;font:700 12px/1.15 var(--font-ui)}
 .mx2s .mbtn small{display:block;font:500 10px/1.15 var(--font-ui);color:var(--text-dim);margin-top:2px}
+.mx2s .mx2w .mbtn,.mx2s .mx2pf .mbtn{flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2px 4px;line-height:1.1}
 .mx2s .mx2w .mbtn{min-height:52px}
 .mx2s .mbtn[aria-pressed=true] b{color:var(--amber)}
 .mx2s .mx2st{margin:2px 0 6px;min-height:16px}
@@ -4314,7 +4315,7 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 .mx2s .mx2cap{margin:6px 0 2px;font:600 10px/1.2 var(--font-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--text-faint)}
 .mx2s .mx2sp,.mx2s .mx2eq{display:block;width:100%;height:64px;background:var(--lcd);border:1px solid var(--panel-edge);border-radius:6px}
 .mx2s .mx2eq{height:44px}
-.mx2s svg path{fill:none;vector-effect:non-scaling-stroke}
+.mx2s .mx2sp path,.mx2s .mx2eq path{fill:none;vector-effect:non-scaling-stroke}
 .mx2s .mx2g{stroke:rgba(255,255,255,.1);stroke-width:1}
 .mx2s .mx2v{stroke:var(--text-dim);stroke-width:1.5}
 .mx2s .mx2n{stroke:var(--amber);stroke-width:2}
@@ -65362,6 +65363,7 @@ async function mx2Run(withMix, tag) {
   if (MIXA.busy) { toast('Rechnet noch …'); return null; }
   if (!S.song || !S.song.bars) { toast('Noch kein Song – erst ● SONG'); return null; }
   MIXA.busy = 'mx2'; MIXA.prog = 0; MX2.busy = tag || (withMix ? 'mix' : 'am'); MX2.renders = (MX2.renders | 0) + 1; mx2Paint();
+  if (AU.ctx && !UI.vvOff) mixaAddModule(AU.ctx);                // Modul schon live laden: der erste Stil klingt sofort
   MX1.tap = !!withMix; MX2.tapOn = true;
   const T0 = performance.now(), D = MIXA_D0.v || (MIXA_D0.v = mixaDspMake());
   try {
@@ -65785,7 +65787,7 @@ function mx2EqGhost(i) {
   return any ? m : null;
 }
 function mx2EqUpd() {
-  const E = MX2.eq; if (!E || !E.p.isConnected) return;
+  const E = MX2.eq; if (!E) return;
   const i = E.i, g = mx2EqGhost(i); E.gh.setAttribute('d', g ? mx1EqPath(g) : '');
   const thr = mx1EqGet(i, 'thr'), ra = mx1EqGet(i, 'ra'), sl = ra > 1.001 ? 1 - 1 / ra : 0, pts = [];
   for (let k = 0; k <= 32; k++) { const x = -60 + k * 60 / 32, o = x - thr, gc = !sl || o <= -3 ? 0 : o >= 3 ? -sl * o : -sl * (o + 3) * (o + 3) / 12, y = x + gc; pts.push(((x + 60) / 60 * 64).toFixed(1) + ',' + (64 - (y + 60) / 60 * 64).toFixed(1)); }

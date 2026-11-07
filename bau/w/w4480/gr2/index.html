@@ -80186,6 +80186,7 @@ const gr2X = st => (st && (st.x || GR2_X[st.id])) || {};
 const gr2Order = () => GR2_ORDER.map(gr2Style).filter(Boolean);
 const gr2N = st => (st.ts ? Math.round(tsBeats(st.ts) * 4) : 16);
 const gr2Feel = x => (x.ts ? 'Dreiertakt' : x.sw8 ? 'Shuffle' : x.sw > .5 ? 'Swing ' + Math.round(x.sw * 100) + ' %' : 'gerade');
+const gr2Sub = x => x.bpm + ' · ' + (x.sw > .5 && !x.sw8 && !x.ts ? 'Swing ' + Math.round(x.sw * 100) : gr2Feel(x));   // Kachel: kurz
 // Schritt j (16tel ab Taktanfang) → Schläge; Swing des Stils (16tel) bzw. Achtel-Triolen (sw8)
 function gr2T(st, j) {
   const q = Math.floor(j / 4), r = j - q * 4;
@@ -80516,17 +80517,17 @@ function gr2Paint(p) {
     B('art:m', 'Stil-Muster', art === 'm', st.only ? 'Stil-Muster gibt es für diesen Stil nicht' : 'Art: Drums und Bass durch das Muster des Stils ersetzen', !!st.only) + `</div></div>`;
   h += `<div class="gr2-grid pan-y" role="group" aria-label="Stil">` + gr2Order().map(x => {
     const on = x.id === st.id, pl = inf.styles.includes(x.id);
-    return `<button class="rb gr2-t${on ? ' on' : ''}${pl ? ' pl' : ''}" data-g2="st:${x.id}" aria-pressed="${on}" aria-label="${esc(x.name + ', ' + gr2Feel(x) + (pl ? ', spielt im Remix' : ''))}"><b>${esc(x.name)}</b><small>${esc('≈ ' + x.bpm + ' · ' + gr2Feel(x))}</small></button>`;
+    return `<button class="rb gr2-t${on ? ' on' : ''}${pl ? ' pl' : ''}" data-g2="st:${x.id}" aria-pressed="${on}" aria-label="${esc(x.name + ', ' + gr2Feel(x) + (pl ? ', spielt im Remix' : ''))}"><b>${esc(x.name)}</b><small>${esc(gr2Sub(x))}</small></button>`;
   }).join('') + `</div>`;
   h += `<div class="gr2-foot"><div class="gr2-row gr2-kr pan-x"><span class="lbl">${art === 'm' ? 'Stärke<br>übrige' : 'Stärke'}</span><input type="range" class="rng gr2-k" min="0" max="100" step="5" value="${GR2.k}" aria-label="Stärke in Prozent"><b class="gr2-kv">${GR2.k} %</b></div>` +
     `<div class="gr2-row gr2-act">` +
     B('go', playing ? '■ Stopp<small>Song anhalten</small>' : '▶ Hören<small>erzeugen + spielen</small>', playing, playing ? 'Song anhalten' : 'Remix erzeugen und ab dem Bereich hören', false, 'gr2-go') +
-    B('a', 'A<small>Original</small>', !inf.on, 'A: Original', !inf.on) +
+    B('a', 'A<small>Original</small>', !inf.on, inf.on ? 'A: Original' : 'A: Original (spielt schon)') +
     B('b', 'B<small>Remix</small>', bOn, 'B: Remix ' + st.name) +
     B('bpm', '♩ ' + st.bpm + '<small>Tempo</small>', false, 'Tempo ' + st.bpm + ' BPM übernehmen', S.bpm === st.bpm) + `</div></div>`;
   const now = inf.on ? 'Jetzt: ' + inf.styles.map(id => (gr2Style(id) || {name: id}).name).join(', ') + (u != null && inf.styles.length === 1 ? ' ' + u + ' %' : '') + ' (' + inf.on + (inf.on === 1 ? ' Stelle' : ' Stellen') + ')' : 'Jetzt: Original';
-  const how = art === 'm' ? 'Drums und Bass spielen das Muster des Stils mit deinen Pads und Grundtönen, die übrigen Spuren werden übersetzt.' : 'Deine Töne und Motive bleiben und rücken ins Raster des Stils; je stärker, desto mehr Noten auf schwachen Stellen fallen weg.';
-  h += `<p class="gr2-tip"><b>${esc(st.name)}</b> · ≈ ${st.bpm} BPM · ${esc(gr2Feel(st))}. ${esc(gr2X(st).tip || '')} ${esc(how)} v1 bleibt das Original. <b>${esc(now)}.</b></p>`;
+  const how = art === 'm' ? 'Stil-Muster: Drums und Bass spielen das Muster des Stils (deine Pads, deine Grundtöne), die übrigen Spuren werden übersetzt.' : 'Deine Noten: Töne und Motive bleiben und rücken ins Raster des Stils; je stärker, desto mehr Noten auf schwachen Stellen fallen weg.';
+  h += `<p class="gr2-tip"><b>${esc(now)}.</b> <b>${esc(st.name)}</b> · ≈ ${st.bpm} BPM · ${esc(gr2Feel(st))}: ${esc(gr2X(st).tip || '')} ${esc(how)} v1 bleibt das Original.</p>`;
   const sc = p.querySelector('.gr2-grid'), y = sc ? sc.scrollTop : 0;
   p.innerHTML = h;
   const sc2 = p.querySelector('.gr2-grid'); if (sc2) sc2.scrollTop = y;
@@ -80565,6 +80566,7 @@ function gr2Act(p, btn) {
     const [A, B] = gr2Rng(), st = gr2Style(GR2.st); if (!st) return;
     const inf = gr1Info(sg, A, B, st.id);
     if (a === 'b' && !inf.onSt && !inf.canB) gr2Go(false);              // noch keine Version: B erzeugt sie
+    else if (a === 'a' && !inf.on) toast('Hier spielt schon das Original');
     else { const n = gr2AB(a, A, B, st.id); if (n) { haptic('snap'); svButtons(); toast((a === 'a' ? 'Original' : 'Remix ' + st.name) + ' · ' + n + (n === 1 ? ' Stelle' : ' Stellen') + (R.playing && R.songPlay ? ' – ab dem nächsten Takt' : ''), songUndoAct()); } }
   }
   else if (a === 'bpm') {
@@ -80692,7 +80694,7 @@ function gr2UegPick(anchor) {
       '.gr2s .gr2-act .rb{flex:1 1 0;min-width:0;height:44px;padding:0 4px;font:700 12px/1.1 var(--font-ui);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;overflow:hidden}',
       '.gr2s .gr2-act small{display:block;max-width:100%;font:600 9.5px/1.1 var(--font-ui);color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
       '.gr2s .gr2-act .gr2-go{flex:1.4 1 0;color:var(--text)}.gr2s .gr2-act .gr2-go:not(.on){border-color:#6b4c16;color:#ffcf7a}',
-      '.gr2s .gr2-tip{flex:0 0 auto;margin:5px 2px 0;font:600 10.5px/1.3 var(--font-ui);color:var(--text-dim);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}',
+      '.gr2s .gr2-tip{flex:0 0 auto;margin:5px 2px 0;font:600 10.5px/1.3 var(--font-ui);color:var(--text-dim);display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}',
       '.gr2s .gr2-tip b{color:var(--text)}',
       '@media (orientation:landscape){.gr2s .gr2-grid{grid-template-columns:repeat(9,minmax(0,1fr));min-height:100px}.gr2s .gr2-foot{flex-direction:row;gap:4px}' +
         '.gr2s .gr2-foot > .gr2-row{flex:1 1 0;min-width:0}.gr2s .gr2-tip{-webkit-line-clamp:2}}',
@@ -80701,6 +80703,10 @@ function gr2UegPick(anchor) {
       '.gr2-ueg .fll-gl{font:700 9px/1 var(--font-ui);letter-spacing:.06em;color:var(--text-dim);text-transform:uppercase}',
       '.gr2-ueg b{max-width:100%;font:800 11px/1.1 var(--font-ui);color:#ffcf7a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
       '.ue-tile.gr2-hid{display:none}',
+      // GR1 › Grundmuster ▾: 15 Stile – als Raster, damit die Liste auch quer ganz ins Bild passt
+      '.pop.gr1pat{max-width:min(560px,calc(100vw - 16px))}.pop.gr1pat .plist.gr1pl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}',
+      '.pop.gr1pat .plist.gr1pl button{min-width:0;overflow:hidden}.pop.gr1pat .plist.gr1pl b{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      '@media (orientation:landscape){.pop.gr1pat{max-width:min(760px,calc(100vw - 16px))}.pop.gr1pat .plist.gr1pl{grid-template-columns:repeat(5,minmax(0,1fr))}}',
       '.pop.gr2ueg{max-width:min(440px,calc(100vw - 16px))}',
       '.pop.gr2ueg .gr2-ul{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;max-height:min(330px,calc(100vh - 90px));overflow-y:auto;touch-action:pan-y}',
       '.pop.gr2ueg .gr2-ul .rb{height:44px;padding:0 6px;font:700 12px/1.1 var(--font-ui);white-space:normal;overflow:hidden}',
