@@ -30162,7 +30162,7 @@ function ak1Key(key) {
 // the clip a knob of track i writes to now (null = Grundklang): the open synth editor of the track, not in the Grundklang mode;
 // playing = the clip that sounds or comes (nothing on the track = Grundklang), stopped = the chosen / last started clip (v6aEdRef)
 function ak1Ref(i) {
-  if (V6A.gk || UI.vvOff || R.editor !== 'synth' || R.selT !== i || (R.sr && R.sr.cap)) return null;   // GP-AK1: beim Vormachen (Super-Regler) gehen die Regler in die Vormach-Kopie
+  if (V6A.gk || UI.vvOff || R.editor !== 'synth' || R.selT !== i || (R.sr && R.sr.cap && (R.sr.cap.sc !== 'track' || R.sr.cap.t === i))) return null;   // GP-AK1: beim Vormachen (Super-Regler) gehen die Regler in die Vormach-Kopie
   const tr = S.tracks[i]; if (!tr || tr.kind !== 'synth' || !tr.sound || tr.sound._nv || tr.sound.engine === 'bm' || tr.sound.engine === PERC_ENG) return null;
   if (tr.sound.engine === 'mk' && typeof MKUI !== 'undefined' && MKUI.P && MKUI.P.rec) return null;   // AM: ● Bewegung aufnehmen bleibt beim Grundklang
   let ref = null;

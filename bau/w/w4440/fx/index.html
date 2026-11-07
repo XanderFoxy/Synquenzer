@@ -31999,7 +31999,7 @@ function scheduleDrums(i, clip, from, to, late, lsrc, mu, um) {
     for (let B = cs + nt.t + k * L; B < to + .12 - 1e-9; B += L, k++) {
       if (nt.born != null && nt.bornRun === R.runId && B < nt.born + .5) continue;
       if (mu && mutedAt(mu, B)) continue;
-      if (um && ueMutedAt(um, B)) continue;                       // UE
+      if (um && ueMutedAt(um, B, nt.n)) continue;                 // UE · FX1: pad-genau
       const loopStart = cs + k * L;
       for (const h of DrumSeq.expandStep(nt, k, seed)) {
         const hb = Math.max(B + h.beat, loopStart);
@@ -32036,7 +32036,7 @@ function d1Sched(D, cs, from, to, late, now, mu, seed, ev, um) {
       const f = nt.t - Math.floor(nt.t / .25 + 1e-6) * .25, B = cs + g * .25 + f;
       if (nt.born != null && nt.bornRun === R.runId && B < nt.born + .5) continue;
       if (mu && mutedAt(mu, B)) continue;
-      if (um && ueMutedAt(um, B)) continue;                       // UE
+      if (um && ueMutedAt(um, B, nt.n)) continue;                 // UE · FX1: pad-genau
       for (const h of DrumSeq.expandStep(nt, Math.floor(g / X.l.Ls), seed)) {
         const hb = Math.max(B + h.beat, cs);
         if (hb < from - 1e-9 || hb >= to - 1e-9) continue;
@@ -38721,6 +38721,7 @@ function svChipAt(x, y) {
 function svTap(x, y) {
   const song = S.song, row = svRowAt(y), bar = Math.floor((x + SV.x) / SV.cellW);
   if (x + SV.x < 0) return;                                          // SX714: links vor Takt 1 (nur beim Mithören erreichbar)
+  if (FLL.arm && fllSvTap(x, y)) return;                             // FX1: gewählte Vorlage per Tipp an die Stelle setzen
   // V2e: ⧉ Kopie waits for a bar line (the nearest one, anywhere over the canvas)
   if (SV.copy) {
     const id = SV.copy; SV.copy = null; SV.mark = null; svHintFree();
@@ -52033,6 +52034,7 @@ function buildMidiSong(withC) {
   };
   S.tracks.slice(0, MIDI_T).forEach((tr, i) => {
     const ded = new Map(), ch = tr.kind === 'drum' || percIs(tr) ? 9 : i, lane = song.lanes[i];   // PERC
+    const fxm = fllMidiMutes(i);                                 // FX1: Fills/Breaks (ersetzt) im MIDI wie gehört
     // V2d: blocks with their clip origin (re / ph; the same clip without re goes on in phase)
     const blocks = []; let cur = null;
     for (const e of lane) {
@@ -52047,6 +52049,7 @@ function buildMidiSong(withC) {
       for (let o = bk.cs + Math.floor((b0 - bk.cs) / cL + 1e-9) * cL; o < b1 - 1e-9; o += cL) for (const nt of c.notes) {
         if (nt.t >= cL - 1e-9) continue;                         // V0a K-06
         const st = o + nt.t; if (st >= b1 - 1e-9 || st < b0 - 1e-9) continue;
+        if (fxm && ueMutedAt(fxm, st, nt.n)) continue;            // FX1
         const en = Math.min(b1, st + Math.max(nt.d, 1 / 32));
         let p = nt.n;
         if (tr.kind === 'synth' && withC) { const en2 = entAt(st); if (en2 && en2.target) p = mapOut(i, c.key || S.key, nt.n, 0, en2); }
@@ -52054,6 +52057,7 @@ function buildMidiSong(withC) {
         dedAdd(i, ch, ded, st, en, percIs(tr) ? percGm(nt.n) : clamp(Math.round(p), 0, 127), nt.v);   // PERC
       }
     }
+    fllMidiAdd(song, i, ded, dedAdd);                            // FX1: die Noten der Fills/Einwürfe
     if (song.mel[i]) for (const n of song.mel[i].notes) { if (n.t >= L - 1e-9) continue; dedAdd(i, ch, ded, n.t, Math.min(L, n.t + Math.max(n.d, 1 / 32)), percIs(tr) ? percGm(n.n) : clamp(n.n, 0, 127), n.v); }   // PERC
     for (const x of ded.values()) { evs[i].push({tk: x.t0, b: [0x90 | x.ch, x.p, x.v], o: 1}, {tk: x.t1, b: [0x80 | x.ch, x.p, 0], o: 0}); counts[i]++; }
   });
@@ -70900,6 +70904,7 @@ function ueNorm(list, marks, bars, nt) {
     if (e.name != null && typeof e.name === 'string' && e.name.trim()) x.name = e.name.trim().slice(0, 24);
     if (e.kit && typeof e.kit === 'object' && !Array.isArray(e.kit)) x.kit = deep(e.kit);
     if (e.baked && typeof e.baked === 'object') x.baked = deep(e.baked);
+    fllNorm(e, x);                                               // FX1: Pads beim Ersetzen, Mischen, Fill ersetzt nur seine Pads
     out.push(x);
   }
   // eine Kante trägt höchstens einen Übergang (der spätere gewinnt, wie beim Ablegen: ersetzen)
@@ -70930,7 +70935,7 @@ function ueBuild() {
   for (const e of song.ue) {
     const s = ueStart(song, e); if (s == null) continue;
     const E = s + e.len;
-    if (e.mode === 'ersetzt' && e.k !== 'break') (mutes[e.t] || (mutes[e.t] = [])).push([s, E]);
+    if (e.mode === 'ersetzt' && e.k !== 'break') (mutes[e.t] || (mutes[e.t] = [])).push([s, E, fllPadSet(e)]);   // FX1: [3] = Pads (null = alle)
     if (e.stop) for (const k of e.stop) (mutes[k] || (mutes[k] = [])).push([s, E]);
     if (!S.tracks[e.t] || S.tracks[e.t].kind !== 'drum' || !e.notes.length) continue;
     const seed = ((+String(e.id).slice(1)) | 0) * 7919 + 17;
@@ -70963,15 +70968,15 @@ function ueMutes(i) {
   let m = c.t[i]; if (m) return m;
   m = [];
   for (const w of l) {
-    if (sp.wrapAt != null) { const a = w[0] + sp.prevOff, b = Math.min(w[1] + sp.prevOff, sp.wrapAt); if (b > a) m.push([a, b]); const a2 = Math.max(w[0] + sp.off, sp.wrapAt), b2 = w[1] + sp.off; if (b2 > a2) m.push([a2, b2]); }
-    else m.push([w[0] + sp.off, w[1] + sp.off]);
+    if (sp.wrapAt != null) { const a = w[0] + sp.prevOff, b = Math.min(w[1] + sp.prevOff, sp.wrapAt); if (b > a) m.push([a, b, w[2]]); const a2 = Math.max(w[0] + sp.off, sp.wrapAt), b2 = w[1] + sp.off; if (b2 > a2) m.push([a2, b2, w[2]]); }   // FX1: w[2] Pads
+    else m.push([w[0] + sp.off, w[1] + sp.off, w[2]]);   // FX1: w[2] Pads
   }
   m.sort((p, q) => p[0] - q[0]); m.lo = m.length ? m[0][0] : Infinity; m.hi = m.length ? Math.max(...m.map(w => w[1])) : -Infinity;
   return (c.t[i] = m);
 }
-function ueMutedAt(l, B) {
+function ueMutedAt(l, B, n) {   // FX1: n = Note des Drum-Clips (Fenster mit Pads: nur diese schweigen)
   if (B < l.lo - 1e-9 || B >= l.hi - 1e-9) return false;
-  for (let k = 0; k < l.length; k++) { const w = l[k]; if (B < w[0] - 1e-9) return false; if (B < w[1] - 1e-9) return true; }
+  for (let k = 0; k < l.length; k++) { const w = l[k]; if (B < w[0] - 1e-9) return false; if (B < w[1] - 1e-9 && !(w[2] && n != null && !w[2].has(mapV1Drum(n)))) return true; }   // FX1
   return false;
 }
 // die Treffer des Fensters [b0, b1) (Schläge des Transports) vormerken; scheduleDrums nimmt die seiner Spur in seine Zeitordnung
@@ -71175,6 +71180,7 @@ function uePaintBar() {
     return `<button class="rb ue-tile" data-id="${esc(L.id)}" aria-label="${esc(L.name)}, ${ueLenAria(L.len)} – antippen: vorhören, nach oben ziehen: auf eine Kante legen">` +
       `<span class="ue-tn">${esc(L.name)}</span>${ueMiniSvg(e)}<span class="ue-tl">${ueLenTxt(L.len)}</span></button>`;
   }).join('') : '<div class="ue-empty">Hier ist noch nichts.</div>';
+  fllBarPaint(bar);                                              // FX1: Raster, gewählte Vorlage
 }
 // die Reiter-Liste der einzeiligen Leiste
 function ueTabPick(anchor) {
@@ -71245,6 +71251,7 @@ function ueDragMove(d, x, y) {
   if (d.st !== 'drag') return;
   const s = ueSnapAt(x, y), was = d.m;
   d.over = s.over; d.m = s.m;
+  fllDragFree(d, x, y);                                          // FX1: neben einer Kante = frei nach Raster
   if (d.m !== was) { if (d.m) haptic('tick'); if (d.ghost) d.ghost.classList.toggle('snap', !!d.m); }
   if (d.ghost) d.ghost.classList.toggle('out', d.kind === 'chip' && !d.over);
   UE.drag = d; UI.dirty.song = true;
@@ -71259,7 +71266,7 @@ function ueDragBegin(d) {
   if (d.srcEl) d.srcEl.classList.add('lift');
   if (UE.bar && !UE.bar.hidden) UE.bar.classList.add('away');        // die Leiste tritt beiseite: die Drum-Zeile bleibt sichtbar
   gestBegin(d.id, () => ueDragCancel(d));
-  if (!(S.song && ueEdges().length)) lcdOrToast('Noch keine Teilgrenze – erst Teile in den Song setzen');
+  if (!S.song) lcdOrToast('Noch kein Song – erst ● SONG');   // FX1: frei setzen geht auch ohne Teilgrenze
   UE.drag = d; UI.dirty.song = true;
 }
 function ueDragUp(d, x, y) {
@@ -71267,7 +71274,7 @@ function ueDragUp(d, x, y) {
   if (d.st === 'down') {                                         // ein Tipp
     d.st = 'gone';
     if (performance.now() - d.t0 > 600) return;
-    if (d.kind === 'tile') { uePreview(d.lib); haptic('tick'); }
+    if (d.kind === 'tile') { uePreview(d.lib); haptic('tick'); fllArm(d.lib); }   // FX1: gewählt – Tipp in den Song setzt
     else ueChipSheet(d.ue);
     return;
   }
@@ -71276,6 +71283,7 @@ function ueDragUp(d, x, y) {
   const g = d.ghost; d.ghost = null;
   ueDragEnd();
   if (d.kind === 'tile') {
+    if (!d.m && fllDrop(d, g)) return;                              // FX1: frei abgelegt
     if (!d.m) { ueFly(g, d.srcEl); return; }                       // daneben: zurück, 0 Änderungen
     const id = uePlace(d.lib, d.m);
     ueGone(g);
@@ -71287,6 +71295,7 @@ function ueDragUp(d, x, y) {
     haptic('tick');
   } else {
     if (!d.over) { const nm = d.name; ueGone(g); if (ueRemove(d.ue)) toast(nm + ' entfernt', songUndoAct()); return; }   // aus dem Song gezogen = löschen
+    if (!d.m && fllDrop(d, g)) return;                              // FX1: frei verschoben
     if (!d.m || d.m === d.from) { ueFly(g, d.srcEl); return; }
     ueGone(g); if (ueMove(d.ue, d.m)) { const ed = ueEdges().find(x => x.m === d.m); toast(d.name + ' → Kante Takt ' + (ed ? ed.bar + 1 : ''), songUndoAct()); }
   }
@@ -71322,6 +71331,7 @@ function ueLayer() {
 // Griff: rastet auf ¼ · ½ · 1 · 2 Takte vor der Kante (sichtbar mit Längen-Anzeige); loslassen = 1 Undo (für alle Kopien)
 const UE_GRIP = [1, 2, 4, 8];
 function ueGripArm(c, ev) {
+  if (fllGripArm(c, ev)) return;                                 // FX1: frei gesetzter Fill – Länge nach Raster
   const id = c.dataset.id, e = ueFind(id); if (!e || R.songRec) return;
   const ex = ueEdgeX(e); if (ex == null) return;
   const d = {id: ev.pointerId, ue: id, len: e.len, len0: e.len, node: c};
@@ -71362,6 +71372,7 @@ function ueSvDraw(g, song, XB, ru, rh, W, H) {
       g.fillStyle = '#ffb22e'; g.shadowColor = 'rgba(255,178,46,.8)'; g.shadowBlur = 8; g.fillRect(x - 1.5, 0, 3, H); g.shadowBlur = 0;
     }
   }
+  fllSvDraw(g, song, XB, ru, rh, W, H, hatch);                   // FX1: freie Stelle beim Ziehen, Mischen gestrichelt
 }
 // die Chips (DOM-Knöpfe, mindestens 44 × 44) an ihren Kanten nachführen – nur wenn sich etwas geändert hat
 function ueChipsSync(song, ru, rh, W) {
@@ -71386,6 +71397,7 @@ function ueChipsSync(song, ru, rh, W) {
       c.classList.toggle('lnk', !!e.g); c.classList.toggle('lift', !!(d && d.ue === e.id));
       c.setAttribute('aria-label', ueName(e) + ' · ' + ueLenAria(e.len) + (e.g ? ' · verknüpft' : '') + ' – antippen: Blatt, ziehen: verschieben, aus dem Song ziehen: löschen, Griff links: Länge');
     }
+    fllChip(c, e);                                               // FX1: Mischen heller, frei: Griff rechts
     const vis = left + w > -44 && left < W + 44; if (c.hidden === vis) c.hidden = !vis;
   }
   for (const [id, c] of UE.chips) if (!seen.has(id)) { c.remove(); UE.chips.delete(id); }
@@ -71404,6 +71416,7 @@ function ueChipSheet(id) {
         `<div class="ms-r ue-lr"><span class="ue-ll">Länge</span>` + UE_GRIP.map(v => B('len' + v, ueLenTxt(v), {on: Math.abs(e.len - v) < 1e-9, aria: 'Länge ' + ueLenAria(v)})).join('') + `</div>` +
         `<div class="ms-r">` + B('prev', '▶ Vorhören') + (n ? B('only', 'Nur hier ändern', {aria: 'Diese Kopie lösen – die anderen ' + (n - 1) + ' bleiben verknüpft'}) : B('all', tw ? 'Überall (' + (tw + 1) + ')' : 'Überall', {dis: !tw, aria: 'An allen gleichen Kanten'})) + B('del', '✕ Entfernen') + `</div>` +
         (n ? `<div class="kon-tip">Verknüpft mit ${n - 1} ${n - 1 === 1 ? 'Kopie' : 'Kopien'} – eine Änderung gilt für alle.</div>` : '');
+      fllSheetRows(p, e);                                          // FX1: Stelle + Raster, Ersetzen | Mischen, Pads, Noten
     };
     paint(); p._paint = paint;
     onTap(p, b => {
@@ -73580,6 +73593,7 @@ Object.assign(SYNQUENZER, {                       // BM6 (Nachtrag 7 §5.3): Bit
   bmRoutes: t => bmRoutes(t), bmRouteClear: (t, k) => (bmLoad(), bmRouteClear(t, k)),
   bmInit: (t, kind) => { const s_ = sndOf(t); if (!s_ || s_.engine !== 'bm') throw new Error('Keine ' + BM_NAME + '-Spur: ' + t); return soundEdit(t, 'Init', () => { const snd = deep(s_); snd.p.bm = SQBM.init(kind); applySound(t, snd); return true; }); },
 });
+Object.assign(SYNQUENZER, FLL_API);                         // FX1: Fills/Breaks als Ebene
 const NO_SYNC = new Set(['clipCurves', 'bmcLog', 'bmcState', 'oneScaleOf', 'harmInfo', 'kbScaleNow', 'micCheck', 'micCheckJson', 'micCheckEstimate', 'cloud', 'cloudProjects', 'cloudVersions', 'cloudHandoff', 'state', 'project', 'runtime', 'getClip', 'getParam', 'noteLog', 'voices', 'timeline', 'serialize', 'buildMidi', 'buildZip', 'crc32', 'meter', 'outPitch', 'migrate', 'tapTempo',
   'getSound', 'mods', 'library', 'factory', 'previewState', 'soundEdited', 'fmxView', 'fmxPreview', 'fmxBadge',
   'history', 'projects', 'storage', 'engineInfo', 'getBusFx', 'wake', 'gestures', 'roll', 'rollApi', 'detectKey', 'sceneKey',

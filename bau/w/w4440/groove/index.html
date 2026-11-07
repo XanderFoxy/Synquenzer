@@ -73899,27 +73899,30 @@ function gr1Thin(c) {
   }
   return ch && out.length ? out : null;
 }
-// [Vorschlag]: the drum clips of the part get Small / Full (thin = Small); only one clip: a thinned version becomes Small.
-// Marks the user set stay. One undo (group: scene clips + song)
+// [Vorschlag]: the drum clips of the part get Small / Full (thin = Small). Full = the clip marked Full, else the densest; Small = a
+// clearly thinner one (≤ 87 %), else a thinned copy of Full becomes a new version. Remix versions (gr) are left out; marks the user
+// set stay. One undo (group: scene clips + song)
 function gr1Vorschlag(id) {
   const song = S.song, m0 = song && song.marks.find(x => x.id === id); if (!m0 || R.songRec) return null;
   const sb = songSnapshot(), cb = new Map(), out = [], keys = new Set();
   for (let t = 0; t < NT(); t++) if (isDrum(t)) for (const sp of gr1Spans(song, t, m0.a, m0.a + m0.len)) keys.add(t + ':' + sp.s);
   for (const k of keys) {
-    const [t, s] = k.split(':').map(Number), cs = gr1Cands(song, t, s);
-    const hasS = () => cs.some(x => x.c.sf === 's'), hasF = () => cs.some(x => x.c.sf === 'f');
-    if (hasS() && hasF()) continue;
+    const [t, s] = k.split(':').map(Number), all = gr1Cands(song, t, s), cs = all.filter(x => !x.c.gr);
+    if (!cs.length || (all.some(x => x.c.sf === 's') && all.some(x => x.c.sf === 'f'))) continue;
     const mark = (x, f) => { if (x.c.sf) return; if (!x.id && !cb.has(k)) cb.set(k, cleanClip(x.c)); x.c.sf = f; out.push({t, s, v: x.v, f}); };
-    const by = cs.slice().sort((p, q) => gr1Dens(p.c) - gr1Dens(q.c)), lo = by[0], hi = by[by.length - 1];
-    if (cs.length >= 2 && gr1Dens(hi.c) > gr1Dens(lo.c) * 1.15) { if (!hasS()) mark(lo, 's'); if (!hasF()) mark(hi, 'f'); continue; }
-    if (!hasS()) {
-      const th = gr1Thin(hi.c), v = sx9List(song, t, s).reduce((mm, q) => Math.max(mm, q.v), 1) + 1;
-      if (!th || v > sx9Max() || ownCount(song) >= OWN_MAX) continue;
-      const c = deep(hi.c); delete c.from; delete c.ver; delete c.sf; delete c.gr;
-      c.notes = th; c.sf = 's'; c.from = {t, s, bar: 0}; c.ver = v;
-      (song.own || (song.own = {}))[ownNewId(song)] = c; out.push({t, s, v, f: 's', neu: true});
+    const F = cs.find(x => x.c.sf === 'f') || cs.filter(x => !x.c.sf).sort((p, q) => gr1Dens(q.c) - gr1Dens(p.c))[0] || null; if (!F) continue;
+    if (!all.some(x => x.c.sf === 's')) {
+      const lo = cs.filter(x => x !== F && !x.c.sf && gr1Dens(x.c) <= gr1Dens(F.c) * .87).sort((p, q) => gr1Dens(p.c) - gr1Dens(q.c))[0];
+      if (lo) mark(lo, 's');
+      else {
+        const th = gr1Thin(F.c), v = sx9List(song, t, s).reduce((mm, q) => Math.max(mm, q.v), 1) + 1;
+        if (!th || v > sx9Max() || ownCount(song) >= OWN_MAX) continue;
+        const c = deep(F.c); delete c.from; delete c.ver; delete c.sf; delete c.gr;
+        c.notes = th; c.sf = 's'; c.from = {t, s, bar: 0}; c.ver = v;
+        (song.own || (song.own = {}))[ownNewId(song)] = c; out.push({t, s, v, f: 's', neu: true});
+      }
     }
-    if (!hasF()) mark(hi, 'f');
+    mark(F, 'f');
   }
   const items = [];
   for (const [k, before] of cb) { const [t, s] = k.split(':').map(Number); items.push({kind: 'clip', track: t, scene: s, before}); clipChanged(t, s); }
@@ -74116,6 +74119,7 @@ function gr1CellTap(a, b, t, bar) {
       '.cs3 .cgrid .gr1-sfc{display:flex;gap:4px;min-width:0}.cs3 .cgrid .gr1-sfc .hb{flex:1 1 0;width:auto}',
       '.cs3 .cgrid .gr1-sfc .hb.on,.plsheet .gr1-cv.on{color:#ffcf7a;border-color:#6b4c16;box-shadow:inset 0 0 0 1px #6b4c16}',
       '.plsheet .gr1-cv{font-size:12px;min-width:64px}',
+      '@media (orientation:landscape){#clipSheet .cs3 .cgrid .hb.gr1cb,#clipSheet .cs3 .cgrid .gr1-sfc .hb{height:44px;align-self:center}}',
     ].join('\n');
     document.head.appendChild(s);
   } catch (e) {}

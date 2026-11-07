@@ -1,3 +1,11 @@
+## 4.43.0 — Video-Matrix wie in der App, Korrekturen Klavier/Mäusekino
+
+- **Video-Matrix:** Clips in den echten Spurfarben statt grün, darin die kleinen Noten wie in der App (Drums als Schlag-Raster), laufende Clips hervorgehoben, Laufposition als Linie, Drum-Clips glühen bei Schlägen. Spurköpfe wie in der App (STIMME zeigt „Audio“). Video nicht langsamer.
+- **Klavier (Korrekturen):** Tastatur reicht jetzt bis ganz oben (vorher fehlten sehr hohe Noten), Taktlinien bei 7/8 stimmen, schneller (Bild-Puffer wird wiederverwendet).
+- **Mäusekino (Korrekturen):** zeigt unter einem ◆-Klangzustand die richtigen Werte; Bit-Mask-Spuren zeigen keine falschen Filterkurven mehr. In der Takt-Leiste wird „Mäusekino“ nicht mehr abgeschnitten.
+- iPhone: wenn der Bild-Speicher knapp ist, bricht das Video nicht mehr ab; Matrix-Bilder werden beim Schließen freigegeben.
+Tests: Regeln (live 1×, MS 2000 1×, Marken 0), acorn 0 doppelt / 0 Syntaxfehler, Rauchtest grün; Klavier-Test alle OK; Matrix-Tests und Gegenprüfungen grün.
+
 ## 4.42.0 — Klanganker automatisch, Modulation an jedem Regler sichtbar
 
 - **Klanganker ◆ automatisch:** Drehst du im Synth-Editor einen Regler, während ein Clip läuft (ohne Wiedergabe: der gewählte Clip), landet die Änderung sofort hörbar in genau diesem Clip – ohne die Raute anzutippen. Clip wechseln = du hörst dessen Klang; nach Speichern und Laden klingt es wieder genauso. Je Dreh-Geste ein Schritt für ↶.
