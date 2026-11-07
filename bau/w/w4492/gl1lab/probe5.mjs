@@ -1,0 +1,10 @@
+import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
+import path from 'path';
+const [file] = process.argv.slice(2);
+const here = path.dirname(new URL(import.meta.url).pathname);
+const b = await chromium.launch(); const ctx = await b.newContext({viewport: {width: 428, height: 926}, hasTouch: true}); const p = await ctx.newPage();
+await p.goto('file://' + path.resolve(file)); await p.waitForTimeout(1500);
+await p.addScriptTag({path: path.join(here, 'setup.js')});
+await p.evaluate(() => __gl1Setup()); await p.evaluate(() => { SYNQUENZER.chsOpen(true); setTrackBank(1); }); await p.waitForTimeout(500);
+console.log(JSON.stringify(await p.evaluate(() => { const g = document.querySelector('#clipGrid .chsth.chsgrp'); const R = e => { const r = e.getBoundingClientRect(); return [+r.left.toFixed(1), +r.top.toFixed(1), +r.width.toFixed(1), +r.height.toFixed(1)]; }; const cs = getComputedStyle(g); return {g: R(g), tri: R(g.children[0]), nm: R(g.children[1]), sb: R(g.children[2]), disp: cs.display, fd: cs.flexDirection, fw: cs.flexWrap, triDisp: getComputedStyle(g.children[0]).display, nmFlex: getComputedStyle(g.children[1]).flex, nmDisp: getComputedStyle(g.children[1]).display}; })));
+await b.close();

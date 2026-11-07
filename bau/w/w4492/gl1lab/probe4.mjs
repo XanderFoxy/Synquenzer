@@ -1,0 +1,16 @@
+import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
+import fs from 'fs'; import path from 'path';
+const [file] = process.argv.slice(2);
+const here = path.dirname(new URL(import.meta.url).pathname);
+const b = await chromium.launch({args: ['--autoplay-policy=no-user-gesture-required']});
+const ctx = await b.newContext({viewport: {width: 926, height: 370}, hasTouch: true, deviceScaleFactor: 2});
+const p = await ctx.newPage();
+await p.goto('file://' + path.resolve(file)); await p.waitForTimeout(1500);
+await p.addScriptTag({path: path.join(here, 'setup.js')}); await p.addScriptTag({path: path.join(here, 'scan.js')});
+await p.evaluate(() => __gl1Setup()); await p.evaluate(() => SYNQUENZER.chsOpen(true)); await p.waitForTimeout(500);
+await p.evaluate(() => setTrackBank(1)); await p.waitForTimeout(400);
+console.log(JSON.stringify(await p.evaluate(() => { const R = e => { const r = e.getBoundingClientRect(); return [+r.top.toFixed(1), +r.bottom.toFixed(1), +r.height.toFixed(1)]; }; const h = document.querySelector('#clipGrid .chsth[data-chs=lane]'); const g = document.querySelector('#clipGrid .chsth.chsgrp'); const cs = getComputedStyle(h);
+  return {head: R(h), nm: R(h.querySelector('.chsnm')), sb: R(h.querySelector('.chssb')), sw: R(h.querySelector('.chssw')), pad: cs.paddingTop + ' ' + cs.paddingBottom, disp: cs.display, fd: cs.flexDirection, grp: R(g), tri: R(g.querySelector('.chstri')), gnm: R(g.querySelector('.chsnm')), gw: g.getBoundingClientRect().width, triW: g.querySelector('.chstri').getBoundingClientRect().width, gnmW: g.querySelector('.chsnm').getBoundingClientRect().width, drum: R(UI.heads[DRUM_T].el), tbb: R(UI.tbb), tbbB: R(UI.tbb.children[0]), tbbS: R(UI.tbb.children[1])}; })));
+await p.evaluate(() => setSongView(true)); await p.waitForTimeout(500); await p.evaluate(() => { setTrackBank(1); svLayout(); }); await p.waitForTimeout(400);
+console.log(JSON.stringify(await p.evaluate(() => { const R = e => { const r = e.getBoundingClientRect(); return [+r.top.toFixed(1), +r.bottom.toFixed(1), +r.height.toFixed(1)]; }; const m = document.querySelector('.sv-lm'); return {lm: R(m), b: R(m.querySelector('b')), sm: R(m.querySelector('small')), lc: R(document.querySelector('.sv-lc')), ov: getComputedStyle(m).overflow}; })));
+await b.close();
