@@ -42435,6 +42435,7 @@ function uiFrame() {
   else if (ED.lauf && ED.rollAt) laufFrame(bAud);
   mpTick();                                                 /* MP Mithören */
   if (UI.toastActs) toastPlace();                           // sheets opened/closed/rebuilt under an action toast
+  if (VD4 && VD4.on) vd4Frame();                            // VD4: Regie-Vorschau (aus = nur diese Prüfung)
 }
 // the count-in shows the remaining beats: 4…1 (1 bar) or 8…1 (2 bars), never the few ms of start lead
 const ciMax = () => tkPlain() ? 4 * Math.max(1, R.ciBars || 1) : Math.ceil(R.ciB || tCountBeats(Math.max(1, R.ciBars || 1)));   // T1
@@ -55042,6 +55043,7 @@ function ui1Entries() {
     E('imvideo', 'Im Video (je Clip)', 'Clip-Blatt › Im Video', 'Auto, Gerät, Klavier, Mäusekino, Noten oder aus.', 'im video ansicht clip klavier maeusekino', G.clip(false), 'Im Video'),
     E('vcut', 'Video-Schnitt im Song', 'Song-Ansicht › SCHLEIFE ▾ › Video-Schnitt im Song (oder Video-Blatt › Schnitt)', 'Eigene Video-Spur unter der Taktleiste: je Bereich eine Ansicht wählen, ab einem Takt teilen, Kanten ziehen.', 'video schnitt spur ansicht kamera cut regie', () => { vd3CutSet(true); return G.song(false)(); }, () => SV.wrap),   // 4.48: VD3
     E('makingof', 'Making-of im Video', 'Video-Blatt › Extras › Making-of', 'Vor dem Song ein kurzer Vorlauf, wie das Lied entstanden ist.', 'making of entstehung vorlauf video', () => { ui1Home(); vvOpen(); return true; }, () => VV.el),   // 4.48: VD3
+    E('vd4live', 'Live-Vorschau der Video-Regie', 'Video-Blatt › Extras › Live-Vorschau', 'Kleines Fenster über Matrix/Song: zeigt beim Abspielen, was das Video hier filmt; Regie ⇄ App, antippen = Ansicht wählen, ziehen = verschieben, ✕ = aus.', 'live vorschau regie bild im bild fenster pip video kamera schnitt was wird gefilmt', () => { ui1Home(); vvOpen(); return true; }, '.vd4-lv'),   // VD4
     E('export', 'Export (WAV, Einzelspuren, MIDI)', 'Menü › Export', 'Ganzer Song, Einzelspuren als ZIP, nur Gesang, MIDI, Projekt-Container.', 'export wav midi zip stems spuren', () => { ui1Home(); va1Sheet(); return true; }, '.va1-bd'),
     E('midiimp', 'MIDI importieren', 'Menü › Export › MIDI importieren', 'Eine MIDI-Datei als Clips ins Projekt.', 'midi import datei', () => { ui1Home(); va1Sheet(); return true; }, 'MIDI importieren'),
     E('savefile', 'Projekt als Datei sichern', 'Menü › Projekt', 'Eine Sicherung mit allem als .json – „Datei öffnen“ holt sie zurück.', 'sichern datei backup speichern json', G.menu, 'Als Datei sichern'),
@@ -72660,6 +72662,7 @@ function vvOpen() {
   bPrev.setAttribute('aria-label', 'Vorschau mit Ton'); acts.append(bPrev, bMake); ctl.appendChild(acts);
   const sx1 = sx1VvRow(ctl, acts);                                 // SX126: Zeile „Ausblenden“
   vd3VvRow(ctl, acts);                                              // VD3: Zeile „Extras“ (Titel, Untertitel-Rand, Making-of, Schnitt im Song)
+  vd4VvRow(VD3 && VD3.ui);                                          // VD4: Extras › Live-Vorschau beim Komponieren
   const bar = el('div', 'vvprog', '<i></i><span></span>'), bCan = el('button', 'rb vvbtn', 'Abbrechen'); bar.appendChild(bCan);
   const done = el('div', 'vvdone'), bShare = el('button', 'rb vvbtn go', 'Teilen'), bSave = el('button', 'rb vvbtn', 'Sichern');
   done.append(bShare, bSave); ctl.append(bar, done);
@@ -77677,6 +77680,256 @@ function vd3Hash(g, W, H) { const d = g.getImageData(0, 0, W, H).data; let h = 2
 // a finger on the screen (for the knob / sound log: only gestures of the hand count)
 try { const th = e => { if (VD3 && (e.type === 'pointerdown' || e.buttons || e.pointerType === 'touch')) VD3.touchT = performance.now(); }; window.addEventListener('pointerdown', th, {capture: true, passive: true}); window.addEventListener('pointermove', th, {capture: true, passive: true}); window.addEventListener('pagehide', () => { try { if (VD3 && VD3.log) vd3Flush(); } catch (e) {} }); } catch (e) {}
 /* VD3-END */
+/* VD4-BEGIN ===================== Regie-Vorschau live beim Komponieren (Paket VD4, Xander 07.11. (6)) =====================
+   „Live-Videoregisseur-Vorschau beim Entstehen“ – „zeigt, was gefilmt würde, mit Original-App-Umschaltung“.
+   1. Ein kleines Bild-im-Bild über Matrix bzw. Song (9:16: 110 × 196 pt hochkant, 88 × 156 pt quer; 16:9 gedreht). Ein/aus:
+      Video-Blatt › Extras „Live-Vorschau“, Guide, ✕ im Fenster. Nur dieses Gerät (uiPrefs vd4on, vd4m, vd4pos) – nichts im Projekt.
+   2. Das Bild kommt aus denselben Zeichnern wie das Video: vvRun (Auto-Regie mit Schnitt-Spur VD3 und Regeln VR1) + vvDraw, Format,
+      Bild und 9:16-Art aus dem Video-Blatt, Bereich = ganzer Song. Beim Abspielen des Songs live (12 Bilder/s, beim Aufnehmen 6), sonst
+      ein Standbild an der Song-Position (neu gezeichnet nur, wenn sich Song, Regie, Position oder Wahl ändern).
+      [Regie ⇄ App]: die Ansicht der Regie bzw. das App-Bild des Videos (die Original-App, wie sie das Video zeigt; App läuft auch
+      beim Abspielen der Matrix mit).
+   3. Tippen aufs Bild = das Menü der Video-Spur (VD3) für den Bereich an dieser Stelle. Ziehen = verschieben, loslassen = an die
+      nächste Ecke der Inhaltsfläche andocken (Matrix: zwischen Spurköpfen, Stopp-Spalte, Szenen-Kopf und Teil-Leiste; Song: unter der
+      Taktleiste, rechts der Spaltennamen) – je Lage (hochkant / quer) gemerkt. Das Fenster liegt in der Fläche der Matrix/des Songs
+      (Kopf, Tastatur und Seitenleiste bleiben frei) und unter allen Blättern, Menüs und Fenstern; ✕ und Umschalter: 44 px.
+   4. Kosten: kleine Leinwand (≤ 2 × Pixel), gedrosselt; verdeckt / Blatt offen / Video-Render = kein Bild; aus = kein Element, kein
+      Bild (uiFrame prüft nur VD4.on). Gemessen: VD4.frames, VD4.ms (Zeichenzeit). */
+const VD4_FPS = 12, VD4_REC = 6, VD4_CHK = 250, VD4_SZ = {p: [110, 196], l: [88, 156]};
+const VD4_ICO = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false"><rect x="2.5" y="4.5" width="19" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><rect x="12" y="11" width="7" height="6" rx="1" fill="currentColor"/></svg>';
+var VD4 = {on: false, m: 'regie', el: null, cv: null, g: null, cap: null, capS: '', bM: null, bX: null, w: 0, h: 0, pos: null, geo: null, lay: '', rt: null, rtKey: '',
+  sig: '', pend: false, vis: false, t: 0, tChk: 0, drag: null, frames: 0, ms: 0, msMax: 0, cur: null, css: false, lv: null, snapT: 0};
+try { const p = uiPrefs(); VD4.on = p.vd4on === true; VD4.m = p.vd4m === 'app' ? 'app' : 'regie'; } catch (e) {}
+
+const vd4Land = () => window.innerWidth > window.innerHeight;
+function vd4Corner() { const p = uiPrefs().vd4pos, c = p && typeof p === 'object' ? p[vd4Land() ? 'l' : 'p'] : null; return ['tl', 'tr', 'bl', 'br'].includes(c) ? c : 'br'; }
+function vd4Set(on) {
+  on = !!on; setUiPref('vd4on', on); VD4.on = on;
+  if (!on) vd4Unmount(); else { VD4.pend = true; VD4.tChk = 0; }
+  vd4LvPaint();
+  return on;
+}
+function vd4ModeSet(m) { VD4.m = m === 'app' ? 'app' : 'regie'; setUiPref('vd4m', VD4.m); vd4Ui(); VD4.sig = ''; VD4.pend = true; return VD4.m; }
+
+/* ---------- das Fenster ---------- */
+function vd4Css() {
+  if (VD4.css) return; VD4.css = true;
+  const s = document.createElement('style'); s.id = 'vd4css';
+  s.textContent = '.vd4w{position:absolute;left:0;top:0;z-index:7;border-radius:10px;overflow:hidden;background:#000;box-shadow:0 0 0 1px rgba(255,255,255,.16),0 6px 18px rgba(0,0,0,.6);touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;will-change:transform}' +
+    '.vd4w.snap{transition:transform .18s ease-out}.vd4w.drag{box-shadow:0 0 0 1px var(--sel),0 10px 26px rgba(0,0,0,.7)}' +
+    '.vd4cv{display:block;width:100%;height:100%;pointer-events:none}' +
+    '.vd4w>button{position:absolute;top:0;height:44px;margin:0;padding:5px;border:0;border-radius:0;background:none;box-shadow:none;color:#e9ebef;display:flex;align-items:flex-start;-webkit-tap-highlight-color:transparent}' +
+    '.vd4w .vd4m{left:0;right:44px;justify-content:flex-start}.vd4w .vd4x{right:0;width:44px;justify-content:flex-end}' +
+    '.vd4w .vd4m span,.vd4w .vd4x span{display:flex;align-items:center;justify-content:center;height:22px;border-radius:11px;background:rgba(8,9,11,.8);border:1px solid rgba(255,255,255,.28)}' +
+    '.vd4w .vd4m span{padding:0 7px;gap:4px;font:700 9px/1 var(--font-ui);letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}.vd4w .vd4m span i{font-style:normal;color:#9aa0aa}' +
+    '.vd4w.app .vd4m span{border-color:var(--sel);color:var(--sel)}.vd4w.narrow .vd4m span i{display:none}' +
+    '.vd4w .vd4x span{width:22px;font:700 11px/1 var(--font-ui)}' +
+    '.vd4w .vd4c{position:absolute;left:5px;bottom:5px;max-width:calc(100% - 10px);height:17px;padding:0 6px;box-sizing:border-box;border-radius:5px;font:700 9px/15px var(--font-ui);color:#0d0e11;background:#b8bdc7;border:1px solid transparent;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}' +
+    '.vd4w .vd4c.auto{background:rgba(13,14,17,.82);color:#d6dae1;border-style:dashed}.vd4w .vd4c[hidden]{display:none}' +
+    '.vvsheet .vd3-box .rb.vd4-lv{flex:1 1 100%;display:flex;align-items:center;gap:8px;padding:0 10px;text-align:left;font:600 12px/1.1 var(--font-ui)}' +
+    '.vvsheet .vd3-box .rb.vd4-lv span{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}.vvsheet .vd3-box .rb.vd4-lv b{flex:none;font:700 12px/1 var(--font-ui)}';
+  document.head.appendChild(s);
+}
+function vd4Mount() {
+  const ga = EL && EL.gridArea; if (!ga || !BOOT.done) return false;
+  vd4Css();
+  const w = el('div', 'vd4w'), cv = el('canvas', 'vd4cv'), bM = el('button', 'vd4m'), bX = el('button', 'vd4x', '<span>✕</span>'), cap = el('span', 'vd4c');
+  w.setAttribute('role', 'group'); w.setAttribute('aria-label', 'Live-Vorschau: was das Video hier zeigt (antippen = Ansicht wählen, ziehen = verschieben)');
+  bX.setAttribute('aria-label', 'Live-Vorschau schließen'); cap.hidden = true;
+  w.append(cv, bM, bX, cap); ga.appendChild(w);
+  Object.assign(VD4, {el: w, cv, g: cv.getContext('2d', {alpha: false}), cap, capS: '', bM, bX, lay: '', sig: '', pend: true, tChk: 0, vis: false, pos: null});
+  guardTouch(w);
+  onTap(bM, () => { vd4ModeSet(VD4.m === 'app' ? 'regie' : 'app'); haptic('tick'); lcdOrToast(VD4.m === 'app' ? 'Vorschau: App-Bild' : 'Vorschau: Regie'); });
+  onTap(bX, () => { vd4Set(false); haptic('tick'); lcdOrToast('Live-Vorschau aus'); });
+  w.addEventListener('pointerdown', vd4Down);
+  vd4Ui();
+  return true;
+}
+function vd4Unmount() {
+  const w = VD4.el; VD4.el = VD4.cv = VD4.g = VD4.cap = VD4.bM = VD4.bX = null; VD4.drag = null; VD4.vis = false; VD4.rt = null; VD4.rtKey = ''; VD4.cur = null; VD4.w = VD4.h = 0;
+  if (w) { const c = w.querySelector('canvas'); if (c) c.width = c.height = 0; w.remove(); }   // width 0: iOS gibt den Speicher sofort frei
+}
+function vd4Ui() {
+  const b = VD4.bM; if (!b) return;
+  const app = VD4.m === 'app';
+  b.innerHTML = '<span>' + (app ? 'App' : 'Regie') + '<i>⇄</i></span>';
+  b.setAttribute('aria-label', 'Vorschau zeigt ' + (app ? 'das App-Bild' : 'die Regie') + ' – antippen für ' + (app ? 'Regie' : 'App-Bild'));
+  b.setAttribute('aria-pressed', String(app));
+  VD4.el.classList.toggle('app', app);
+}
+// the content area in gridArea coordinates: where the window may rest (nothing important under it)
+function vd4Geo() {
+  const ga = EL.gridArea, G = ga.getBoundingClientRect(), land = vd4Land(), f9 = vvPrefs().fmt !== '16:9', B0 = VD4_SZ[land ? 'l' : 'p'];
+  const w = f9 ? B0[0] : B0[1], h = f9 ? B0[1] : B0[0];
+  const rc = e => (e && e.getClientRects().length ? e.getBoundingClientRect() : null);
+  let L = 4, T = 4, R_ = G.width - 4, B = G.height - 4;
+  if (UI.songView && SV.wrap) {
+    const r = rc(SV.wrap); if (r && r.width > 0) { L = Math.max(L, r.left - G.left + 4); T = Math.max(T, r.top - G.top + (SV.rulerH | 0) + 4); R_ = Math.min(R_, r.right - G.left - 4); B = Math.min(B, r.bottom - G.top - 4); }
+  } else if (EL.grid) {
+    const th = rc(EL.grid.querySelector('.th')), sp = rc(EL.grid.querySelector('.stp:not(.all)')), sc = rc(EL.grid.querySelector('.scn')), pb = EL.partBar && EL.partBar.parentNode === ga ? rc(EL.partBar) : null;
+    if (th) L = Math.max(L, th.right - G.left + 4); if (sp) R_ = Math.min(R_, sp.left - G.left - 4); if (sc) T = Math.max(T, sc.bottom - G.top + 4);
+    if (pb && pb.height > 0 && pb.top > G.top) B = Math.min(B, pb.top - G.top - 4);
+  }
+  // too small for the window: it may use the whole area (2 px margin), never outside the matrix/song
+  if (R_ - L < w) { L = Math.max(2, Math.min(L, G.width - 2 - w)); R_ = Math.min(G.width - 2, Math.max(R_, L + w)); }
+  if (B - T < h) { T = Math.max(2, Math.min(T, G.height - 2 - h)); B = Math.min(G.height - 2, Math.max(B, T + h)); }
+  return {W: G.width, H: G.height, L, T, R: R_, B, w, h, gx: G.left, gy: G.top};
+}
+function vd4XY(c, g) { return {x: Math.round(c[1] === 'l' ? g.L : g.R - g.w), y: Math.round(c[0] === 't' ? g.T : g.B - g.h)}; }
+function vd4Put(x, y) { VD4.pos = {x, y}; VD4.el.style.transform = 'translate3d(' + x + 'px,' + y + 'px,0)'; }
+// size + corner (after a layout change, a drag, a format change); anim = slide there
+function vd4Place(anim) {
+  if (!VD4.el) return;
+  const g = VD4.geo = vd4Geo(), el_ = VD4.el;
+  if (g.w !== VD4.w || g.h !== VD4.h) {
+    VD4.w = g.w; VD4.h = g.h; el_.style.width = g.w + 'px'; el_.style.height = g.h + 'px';
+    const d = Math.min(2, window.devicePixelRatio || 1); VD4.cv.width = Math.round(g.w * d); VD4.cv.height = Math.round(g.h * d); VD4.pend = true;
+  }
+  el_.classList.toggle('narrow', g.w < 100);
+  if (anim) { el_.classList.add('snap'); clearTimeout(VD4.snapT); VD4.snapT = setTimeout(() => { if (VD4.el) VD4.el.classList.remove('snap'); }, 220); }
+  const p = vd4XY(vd4Corner(), g); vd4Put(p.x, p.y);
+}
+// a finger on the window (not on its keys): still → the menu of this place, moved → drag, release → the nearest corner
+function vd4Down(e) {
+  const w = VD4.el; if (!w || (e.pointerType === 'mouse' && e.button !== 0) || (e.target && e.target.closest && e.target.closest('button'))) return;
+  e.preventDefault(); try { w.setPointerCapture(e.pointerId); } catch (_) {}
+  const P = VD4.pos || {x: 0, y: 0}, D = VD4.drag = {id: e.pointerId, x0: e.clientX, y0: e.clientY, px: P.x, py: P.y, t0: performance.now(), mv: false};
+  const mv = ev => {
+    if (ev.pointerId !== D.id || !VD4.el) return;
+    const dx = ev.clientX - D.x0, dy = ev.clientY - D.y0;
+    if (!D.mv && Math.hypot(dx, dy) > 8) { D.mv = true; w.classList.remove('snap'); w.classList.add('drag'); }
+    if (D.mv) { const g = VD4.geo || vd4Geo(); vd4Put(Math.round(clamp(D.px + dx, 2, g.W - VD4.w - 2)), Math.round(clamp(D.py + dy, 2, g.H - VD4.h - 2))); }
+  };
+  const up = ev => {
+    if (ev.pointerId !== D.id) return;
+    w.removeEventListener('pointermove', mv); w.removeEventListener('pointerup', up); w.removeEventListener('pointercancel', up);
+    VD4.drag = null; w.classList.remove('drag'); if (!VD4.el) return;
+    if (ev.type !== 'pointerup') { vd4Place(true); return; }
+    if (D.mv) {
+      const g = VD4.geo = vd4Geo(), cx = VD4.pos.x + VD4.w / 2, cy = VD4.pos.y + VD4.h / 2;
+      const c = (cy < (g.T + g.B) / 2 ? 't' : 'b') + (cx < (g.L + g.R) / 2 ? 'l' : 'r'), o = Object.assign({}, uiPrefs().vd4pos || {});
+      o[vd4Land() ? 'l' : 'p'] = c; setUiPref('vd4pos', o); vd4Place(true); haptic('tick');
+    } else if (performance.now() - D.t0 < 600) vd4Pick(ev.clientX, ev.clientY);
+  };
+  w.addEventListener('pointermove', mv); w.addEventListener('pointerup', up); w.addEventListener('pointercancel', up);
+}
+// tap: the VD3 menu of the chip at the bar the window shows (Ganzer Bereich | Ab Takt n, the pictures, Gerät …/Noten …)
+function vd4Pick(cx, cy) {
+  const song = S.song; if (!song || !song.bars) { lcdOrToast('Noch kein Song – die Regie filmt den Song (● SONG)'); return false; }
+  const bar = clamp(VD4.cur && isNum(VD4.cur.bar) ? VD4.cur.bar : songStartBar(), 0, song.bars - 1), c = vd3Chips(song).find(q => bar >= q.a && bar < q.b);
+  if (!c) return false;
+  haptic('tick'); vd3ChipPop(c, bar, cx, cy); return true;
+}
+
+/* ---------- Bild ---------- */
+// visible: no sheet, menu or video over it, the page in front; a hit test on its middle (toasts and small windows do not count)
+function vd4Vis() {
+  const w = VD4.el; if (!w || !w.isConnected || document.hidden || VV.open || VV.busy || VV.off || UI.vvOff || R.editor) return false;
+  if (EL.menu && EL.menu.classList.contains('open')) return false;
+  const r = w.getBoundingClientRect(); if (r.width < 4 || r.height < 4) return false;
+  const e = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+  return !!e && (w.contains(e) || !!(e.closest && e.closest('#popLayer,#toast,#bub,.drg-ghost,.ue-ghost')));
+}
+// the song plays (Regie) or anything plays (App): live pictures; else one still at the song position
+const vd4Live = () => !!(R.playing && AU.ctx && (R.songPlay || VD4.m === 'app'));
+function vd4Rt() {
+  const song = S.song; if (!song || !song.bars) return null;
+  if (!VD4.rt) VD4.rt = vvRun({view: vvViewOf(vvPrefs().view), range: {a: 0, b: song.bars}});
+  return VD4.rt;
+}
+// the still: the state at bar (as the sheet's still) a little into the bar – after the 300-ms blend and the 2-beat Fokus of a cut
+function vd4StillSt(bar) {
+  const song = S.song, a = barBeat(bar), bl = Math.max(1, barLen(bar)), sb = a + Math.min(bl - .05, VV4_FB + VV_BLEND * S.bpm / 60 + .05), st = {sb, tB: sb - a, slots: [], cs: [], own: []};
+  if (song) for (let i = 0; i < NT(); i++) { const o = laneOriginAt(song.lanes[i], bar), ok = laneClipOk(song, i, o); st.slots[i] = ok ? o.slot : -1; st.cs[i] = ok ? o.cs - a : 0; st.own[i] = ok ? o.own : null; }
+  return st;
+}
+// App: the app picture of the video (vvDrawApp, its song/matrix as the Regie says), with this window's own run
+function vd4App(g, W, H, st, rt) {
+  const keep = VV4B.st; VV4B.st = st; g.setTransform(1, 0, 0, 1, 0, 0);
+  try { return vvDrawApp(g, 0, {x: 0, y: 0, w: W, h: H}, rt ? {rt} : {view: 'matrix'}); } finally { VV4B.st = keep; g.setTransform(1, 0, 0, 1, 0, 0); }
+}
+function vd4Draw(play) {
+  const g = VD4.g; if (!g) return null;
+  const T0 = performance.now(), W = VD4.cv.width, H = VD4.cv.height, song = S.song, has = !!(song && song.bars);
+  const lv = play ? vvLiveState() : null, songLive = !!(lv && lv.sb != null && has);
+  const bar = songLive ? clamp(barAt(Math.max(0, lv.sb)), 0, song.bars - 1) : songStartBar();
+  const st = songLive || (lv && VD4.m === 'app') ? lv : vd4StillSt(bar);
+  const view = vvViewOf(vvPrefs().view), rt = has ? vd4Rt() : null;
+  let cur = {bar, sb: st.sb, live: !!lv, m: VD4.m, v: 'app', t: null, k: -1, man: false};
+  try {
+    if (VD4.m === 'app' || !rt) vd4App(g, W, H, st, lv && !songLive ? null : rt);   // die Matrix spielt: das App-Bild der Matrix, live
+    else {
+      const sh = view === 'auto' ? vvShotAt(rt, st.sb) : {k: 0, v: view, t: null};
+      vvDraw(g, W, H, view, st, rt);
+      const e = vvDirAt(song, bar);
+      cur = Object.assign(cur, {v: sh.v, t: sh.t != null ? sh.t : null, k: sh.k, a: sh.a, b: sh.b, f: sh.f || null, man: !!(e && e.v === sh.v && (!VV4_TRK.includes(e.v) || e.t === sh.t))});
+    }
+  } catch (e) { logErr(e); }
+  g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1;
+  VD4.cur = cur;
+  // the caption: bar + picture (full = your choice, dashed = Auto – as the chips of the Video-Spur)
+  const nm = VD4.m === 'app' ? 'App-Bild' : !has ? 'Noch kein Song' : vd3ChipName({v: cur.v, t: cur.t}, 999);
+  const cs = (has ? 'T' + (bar + 1) + ' · ' : '') + nm, auto = VD4.m !== 'app' && has && !cur.man, key = cs + '|' + auto + '|' + cur.v + '|' + cur.t;
+  if (VD4.cap && key !== VD4.capS) {
+    VD4.capS = key; VD4.cap.textContent = cs; VD4.cap.hidden = false; VD4.cap.classList.toggle('auto', auto);
+    const col = VD4.m === 'app' || !has ? '#b8bdc7' : vd3ChipCol({v: cur.v, t: cur.t}, vvCols());
+    VD4.cap.style.background = auto ? '' : col; VD4.cap.style.borderColor = auto ? col : 'transparent';
+  }
+  VD4.frames++; const d = performance.now() - T0; VD4.ms += d; if (d > VD4.msMax) VD4.msMax = d;
+  return cur;
+}
+// uiFrame (only while on): mount, the checks every 250 ms, then a picture when due
+function vd4Frame() {
+  if (!VD4.el && !vd4Mount()) return;
+  const now = performance.now();
+  if (now - VD4.tChk >= VD4_CHK) { VD4.tChk = now; vd4Check(); }
+  if (!VD4.vis || VD4.drag && VD4.drag.mv && !R.playing) return;
+  if (vd4Live()) { if (now - VD4.t < 1000 / (rec.state !== 'off' || R.songRec ? VD4_REC : VD4_FPS) - 4) return; }
+  else if (!VD4.pend) return;
+  VD4.pend = false; VD4.t = now; vd4Draw(vd4Live());
+}
+function vd4Check() {
+  const lk = [window.innerWidth, window.innerHeight, UI.songView ? 1 : 0, NT(), SV.rulerH | 0, vvPrefs().fmt, EL.partBar && EL.partBar.parentNode === EL.gridArea ? 1 : 0].join('|');
+  if (lk !== VD4.lay && !VD4.drag) { VD4.lay = lk; vd4Place(false); }
+  const vis = vd4Vis(); if (vis !== VD4.vis) { VD4.vis = vis; if (vis) VD4.pend = true; }
+  if (!vis) return;
+  const song = S.song, pf = vvPrefs();
+  const rk = song && song.bars ? [S.id, UI.songVer | 0, NT(), song.bars, S.bpm, vd3RulesSig(), pf.view, pf.cam, pf.fmt].join('|') : '';
+  if (rk !== VD4.rtKey) { VD4.rtKey = rk; VD4.rt = null; VD4.pend = true; }
+  const live = vd4Live(), sg = live ? 'live' : [rk, songStartBar(), VD4.m, R.selT | 0, UI.partsVer | 0, R.playing ? 1 : 0, VD4.w + 'x' + VD4.h].join('|');
+  if (sg !== VD4.sig) { VD4.sig = sg; if (!live) VD4.pend = true; }
+}
+
+/* ---------- Video-Blatt › Extras: [Live-Vorschau beim Komponieren · an/aus] (eigene Zeile im Extras-Kasten) ---------- */
+function vd4LvPaint() {
+  const b = VD4.lv; if (!b || !b.isConnected) return;
+  b.classList.toggle('on', VD4.on); b.setAttribute('aria-pressed', String(VD4.on)); b.setAttribute('aria-label', 'Live-Vorschau beim Komponieren: ' + (VD4.on ? 'an' : 'aus'));
+  b.innerHTML = VD4_ICO + '<span>Live-Vorschau beim Komponieren</span><b>' + (VD4.on ? 'an' : 'aus') + '</b>';
+}
+function vd4VvRow(u) {
+  if (!u || !u.hint || !u.hint.parentNode) return null; vd4Css();
+  const b = VD4.lv = el('button', 'rb vd4-lv'); u.hint.parentNode.insertBefore(b, u.hint); vd4LvPaint();
+  onTap(b, () => { if (VV.busy) return; vd4Set(!VD4.on); haptic('tick'); if (VD4.on) lcdOrToast('Live-Vorschau an – zeigt sich über Matrix/Song'); });
+  return b;
+}
+
+/* ---------- Test-API (Objekt, wird nicht umhüllt) ---------- */
+const VD4_API = {
+  on: v => (v != null ? vd4Set(!!v) : VD4.on),
+  mode: m => (m ? vd4ModeSet(m) : VD4.m),
+  info: () => { const w = VD4.el, r = w ? w.getBoundingClientRect() : null;
+    return {on: VD4.on, m: VD4.m, el: !!w, inDom: !!(w && w.isConnected), vis: VD4.vis, frames: VD4.frames, ms: +VD4.ms.toFixed(2), msMax: +VD4.msMax.toFixed(2), avg: VD4.frames ? +(VD4.ms / VD4.frames).toFixed(3) : 0,
+      rect: r ? {x: r.left, y: r.top, w: r.width, h: r.height} : null, px: VD4.cv ? [VD4.cv.width, VD4.cv.height] : null, corner: vd4Corner(), geo: VD4.geo, cur: VD4.cur ? Object.assign({}, VD4.cur) : null,
+      cap: VD4.cap && !VD4.cap.hidden ? VD4.cap.textContent : null, capAuto: !!(VD4.cap && VD4.cap.classList.contains('auto')), live: vd4Live(), drag: !!VD4.drag}; },
+  reset: () => { VD4.frames = 0; VD4.ms = 0; VD4.msMax = 0; return true; },
+  draw: () => { if (!VD4.el && !vd4Mount()) return null; vd4Place(false); VD4.tChk = 0; vd4Check(); const c = vd4Draw(vd4Live()); VD4.pend = false; return c; },
+  // the shot the Regie gives a song beat (the same run as the window)
+  shotAt: sb => { const rt = vd4Rt(); if (!rt) return null; const s = vvShotAt(rt, sb); return {k: s.k, v: s.v, t: s.t, a: s.a, b: s.b, f: s.f || null}; },
+  png: () => (VD4.cv ? VD4.cv.toDataURL('image/png').split(',')[1] : null),
+  hash: () => (VD4.g ? vd3Hash(VD4.g, VD4.cv.width, VD4.cv.height) : null),
+  pick: () => { const r = VD4.el && VD4.el.getBoundingClientRect(); return r ? vd4Pick(r.left + r.width / 2, r.top + r.height / 2) && !!(UI.pop && UI.pop.name === 'vd3cut') : false; },
+};
+/* VD4-END */
 
 
 /* ===================== UE-A + UE-B (Konzept Schnitt/Übergänge §1): Übergänge auf der Schnittkante =====================
@@ -83073,6 +83326,7 @@ Object.assign(SYNQUENZER, {gr2: GR2_API});                  /* GR2: Test-API (Ob
 Object.assign(SYNQUENZER, {ui1: UI1_API});                  /* UI1: Test-API (Objekt, wird nicht umhüllt) */
 ueLibAdd(ui1UeLib()); ui1BmTrim(); ui1GlowInit();           // UI1: ◆ ÜBERGÄNGE-Vorlagen, 2 Bit-Mask-Pegel, Leucht-Look (Gerät)
 Object.assign(SYNQUENZER, {vd3: VD3_API});                  /* VD3: Test-API (Objekt, wird nicht umhüllt) */
+Object.assign(SYNQUENZER, {vd4: VD4_API});                  /* VD4: Test-API (Objekt, wird nicht umhüllt) */
 const NO_SYNC = new Set(['clipCurves', 'bmcLog', 'bmcState', 'oneScaleOf', 'harmInfo', 'kbScaleNow', 'micCheck', 'micCheckJson', 'micCheckEstimate', 'cloud', 'cloudProjects', 'cloudVersions', 'cloudHandoff', 'state', 'project', 'runtime', 'getClip', 'getParam', 'noteLog', 'voices', 'timeline', 'serialize', 'buildMidi', 'buildZip', 'crc32', 'meter', 'outPitch', 'migrate', 'tapTempo',
   'getSound', 'mods', 'library', 'factory', 'previewState', 'soundEdited', 'fmxView', 'fmxPreview', 'fmxBadge',
   'history', 'projects', 'storage', 'engineInfo', 'getBusFx', 'wake', 'gestures', 'roll', 'rollApi', 'detectKey', 'sceneKey',
