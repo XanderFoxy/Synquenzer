@@ -1,0 +1,32 @@
+import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
+import fs from 'fs'; import path from 'path';
+const [file, out] = process.argv.slice(2); fs.mkdirSync(out, {recursive: true});
+const b = await chromium.launch({args: ['--autoplay-policy=no-user-gesture-required']});
+const ctx = await b.newContext({viewport: {width: 428, height: 926}, hasTouch: true, deviceScaleFactor: 2});
+const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(String(e))); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
+await p.goto('file://' + path.resolve(file)); await p.waitForTimeout(1500);
+const r = await p.evaluate(async () => {
+  stop(); SYNQUENZER.loadDemo(); ensureAudio();
+  for (let t = 0; t < NT(); t++) if (S.tracks[t]) for (let s = 0; s < NS(); s++) if (t !== 0) S.tracks[t].clips[s] = null;
+  // aufsteigende Linie C D E F G A B C (Achtel)
+  S.tracks[0].clips[0] = {len: 1, key: {root: 0, scale: 'ionian', src: 'user'}, notes: [0, 2, 4, 5, 7, 9, 11, 12].map((d, k) => ({t: k * .5, d: .4, n: 48 + d, v: .8}))};
+  for (let t = 0; t < NT(); t++) clipChanged(t, 0); R.selS = 0;
+  const o = {};
+  o.fwd = SYNQUENZER.lf1Events(0, 0, 0);
+  SYNQUENZER.lf1Dir(0, 0, {dir: 'rev', g: '1/8'}); o.lf = S.tracks[0].clips[0].lf; o.rev = SYNQUENZER.lf1Events(0, 0, 0).map(n => n.t + ':' + n.n);
+  o.tag = SYNQUENZER.gl1Tag(0, 0); o.mini = SYNQUENZER.gl1Mini(0, 0).slice(0, 300);
+  return o;
+});
+console.log(JSON.stringify(r));
+await p.waitForTimeout(500); await p.screenshot({path: path.join(out, 'mx-rev.png')});
+await p.evaluate(() => { ROLLP.view = 'roll'; openRoll(0, 0); }); await p.waitForTimeout(700);
+console.log(JSON.stringify(await p.evaluate(() => SYNQUENZER.gl1Info())));
+await p.screenshot({path: path.join(out, 'roll-rev.png')});
+await p.evaluate(() => { SYNQUENZER.lf1Dir(0, 0, {dir: 'down'}); }); await p.waitForTimeout(300);
+console.log(JSON.stringify(await p.evaluate(() => ({ev: SYNQUENZER.lf1Events(0, 0, 0).map(n => n.t + ':' + n.n), lf: S.tracks[0].clips[0].lf}))));
+await p.evaluate(() => { closeRoll(); ROLLP.view = 'lauf'; openRoll(0, 0); }); await p.waitForTimeout(600);
+await p.screenshot({path: path.join(out, 'lauf-down.png')});
+await p.evaluate(() => SYNQUENZER.lf1DirMenu()); await p.waitForTimeout(400);
+await p.screenshot({path: path.join(out, 'lauf-dirmenu.png')});
+console.log('errs', JSON.stringify(errs));
+await b.close();
