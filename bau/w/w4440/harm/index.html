@@ -4512,6 +4512,40 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 .cr-gt{flex:1 1 auto;min-width:0;font:600 12px/1.25 var(--font-ui);overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2}
 .cr-gt b{color:var(--amber)}
 .cr-gd{flex:none;height:40px;min-width:80px}
+/* HM1-CSS-BEGIN: Harmonie-Blatt im Noten-Editor (unten angedockt, alle Tasten ≥ 44 px, ✕ immer im Kopf), Vorschlags-Nummern im
+   Akkord-Zeilen-Blatt, Schloss an SPIELEN (Sperre an) */
+.pop.hm1p{min-width:0}
+.pop.hm1p.dock{padding:2px 8px calc(6px + env(safe-area-inset-bottom,0px))}
+.hm1p .hm1-h{display:flex;align-items:center;gap:6px;height:44px;min-width:0}
+.hm1p .hm1-h b{flex:none;font:700 9px/1 var(--font-ui);letter-spacing:.12em;color:var(--text-dim)}
+.hm1p .hm1-i{flex:1 1 auto;min-width:0;font:600 12px/1.2 var(--font-ui);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--amber)}
+.hm1p .hm1-x{flex:none;width:44px;height:44px;padding:0;font-size:18px}
+.hm1p .seg.hm1-tabs,.hm1p .seg.hm1-var{display:flex;flex-wrap:nowrap;width:100%;min-width:0}
+.hm1p .seg.hm1-tabs button,.hm1p .seg.hm1-var button{flex:1 1 0;min-width:44px;height:44px;padding:0 4px;font:700 12px/1 var(--font-ui);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hm1p .seg.hm1-var{margin-top:4px}
+.hm1p .hm1-r{display:flex;align-items:center;gap:6px;min-height:44px;margin-top:4px;min-width:0}
+.hm1p .hm1-r>.rb{flex:1 1 0;min-width:44px;height:44px;padding:0 6px;font:700 12px/1 var(--font-ui);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hm1p .hm1-r>.rb.on{border-color:var(--amber);color:var(--amber)}
+.hm1p .hm1-r>.rb:disabled{opacity:.4}
+.hm1p .hm1-go{color:#1b1004;background:linear-gradient(#ffc45a,#e89c1c);border-color:#ffd27a}
+.hm1p .hm1-go:disabled{color:var(--text-dim);background:linear-gradient(var(--chassis-2),var(--chassis));border-color:var(--line)}
+.hm1p .hm1-cv{display:block;width:100%;height:56px;margin-top:4px;border-radius:6px;background:var(--lcd,#0b0c0f)}
+.hm1p .hm1-t{flex:1 1 auto;min-width:0;font:600 11px/1.3 var(--font-ui);color:var(--text-dim)}
+.hm1p .hm1-n{flex:none;min-width:64px;text-align:center;font:700 13px/1 var(--font-num)}
+.hm1p .hm1-ch,.hm1p .hm1-sg{height:44px}
+.hm1p .seg.hm1-how{flex:none;display:flex;flex-wrap:nowrap}
+.hm1p .seg.hm1-how button{min-width:44px;height:44px;padding:0 8px;font:700 12px/1 var(--font-ui)}
+.hm1p .hm1-c{flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:40px;height:38px;padding:0 6px;border:1px solid var(--line);border-radius:6px;font:700 12px/1 var(--font-num)}
+.hm1p .hm1-c small,.hm1p .hm1-s small{font:600 8px/1 var(--font-ui);color:var(--text-dim)}
+.hm1p .hm1-s{flex:none;min-width:58px;height:44px;flex-direction:column;gap:3px;padding:0 8px;font:700 13px/1 var(--font-num)}
+.cp-c.hm1s{position:relative;box-shadow:inset 0 -3px 0 var(--amber)}
+.cp-c .hm1r{position:absolute;top:2px;right:3px;font:700 9px/1 var(--font-num);font-style:normal;color:var(--amber);pointer-events:none}
+#kbRef.hm1lk::before{content:'';display:inline-block;width:7px;height:8px;margin-right:3px;vertical-align:-1px;background:currentColor;
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 12'%3E%3Cpath d='M2.6 5.2V3.6a2.4 2.4 0 0 1 4.8 0v1.6' fill='none' stroke='%23000' stroke-width='1.7'/%3E%3Crect x='.8' y='5' width='8.4' height='7' rx='1.3'/%3E%3C/svg%3E") center/contain no-repeat;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 12'%3E%3Cpath d='M2.6 5.2V3.6a2.4 2.4 0 0 1 4.8 0v1.6' fill='none' stroke='%23000' stroke-width='1.7'/%3E%3Crect x='.8' y='5' width='8.4' height='7' rx='1.3'/%3E%3C/svg%3E") center/contain no-repeat}
+@media (orientation:landscape){.hm1p .hm1-cv{height:40px}}
+@media (orientation:portrait) and (max-width:379px){.hm1p .seg.hm1-tabs button{font-size:11px;padding:0 2px}.hm1p .hm1-r>.rb{font-size:11px;padding:0 3px}}
+/* HM1-CSS-END */
 @media (orientation:portrait) and (max-width:420px){
   .crsheet .cr-lab{display:none}
 }
@@ -20119,6 +20153,7 @@ const RecHelpers = (() => {
     btn(acts, 'Takte −', () => setLen(clip().len - 1), 'Clip einen Takt kürzer');
     btn(acts, 'Takte +', () => setLen(clip().len + 1), 'Clip einen Takt länger (leer)');
     tb.del = btn(acts, 'Löschen', () => deleteScope(), 'Löschen (Auswahl, sonst alle Noten)');
+    for (const x of opts.extraActs || []) { tb[x.id] = btn(acts, x.label, () => x.fn(tb[x.id]), x.title); if (x.cls) tb[x.id].classList.add(x.cls); }   /* HM1: Aktionen der App ans Ende der Aktionsleiste */
     // in-place confirm for „ALLE“ + Löschen (no modal)
     A.ask = mk('span', 'ask', 'Alle Noten löschen?'); A.ask.hidden = true; acts.appendChild(A.ask);
     A.yes = btn(acts, 'Löschen', () => { E.ask = false; act('Alle löschen', () => { const c = clip(); c.notes = []; E.sel.clear(); return true; }, true); }, 'Alle Noten löschen', 'warn');
@@ -27528,7 +27563,7 @@ function normalizeProject(obj) {
     d.countIn = s.countIn === true ? 1 : s.countIn === false ? 0 : [0, 1, 2].includes(s.countIn) ? s.countIn : d.countIn;
     d.recLength = [1, 2, 4, 8, 16, 32, 64].includes(s.recLength) ? s.recLength : 'auto';   // VS-L: + 16; G8: + 32, 64
     d.inQuant = normEnum(s.inQuant, IN_QUANTS, d.inQuant);
-    d.kbScale = normEnum(s.kbScale, ['show', 'lock', 'off'], 'show');
+    d.kbScale = normEnum(s.kbScale, ['show', 'lock', 'off', 'chord'], 'show');   /* HM1: + Akkord sperren */
     const co = s.coach && typeof s.coach === 'object' ? s.coach : {};
     d.coach = {trans: normBool(co.trans, false), mod: normBool(co.mod, false), fang: normBool(co.fang, false)};
     d.swing = normNum(s.swing, 0, 1, 0);
@@ -35117,6 +35152,7 @@ const CAP = {buf: [], open: new Map(), last: new Array(8).fill(-1e9)};
 const STEPQ = {notes: [], vel: .8, timer: 0};
 // "Tastatur: Tonart sperren" (§4.2): an out-of-key key plays the nearest in-key note below (heard = stored)
 function kbLockNote(note) {
+  if (S.settings.kbScale === 'chord') return hm1KbNote(note);   /* HM1: Akkord-Sperre */
   if (S.settings.kbScale !== 'lock') return note;
   const Z = kbOneZ();                                             // V2c′: under a Träger with „Eine Skala“ the one scale itself
   if (Z) { let n = note; for (let g = 0; g < 12 && !Z.includes(PCx(n)); g++) n--; return n; }
@@ -35305,7 +35341,7 @@ function setHarmony(p) {
   UI.dirty.all = true; markDirty();
 }
 function setKbScale(m) {
-  S.settings.kbScale = normEnum(m, ['show', 'lock', 'off'], S.settings.kbScale);
+  S.settings.kbScale = normEnum(m, ['show', 'lock', 'off', 'chord'], S.settings.kbScale);   /* HM1 */
   releaseInputs(r => r === 'play');
   UI.dirty.kb = true; markDirty();
 }
@@ -37980,6 +38016,7 @@ function crPaint(p) {
     }
   }
   p.innerHTML = h;
+  hm1CrMark(p);   /* HM1: Akkordvorschläge */
   if (CR.frei) {
     bindSegTap(p, 'crTab', v => { CR.st.tab = v; crPaint(p); });
     const inp = p.querySelector('.cr-in');
@@ -38107,6 +38144,545 @@ function crGrabDown(note, id, vel) {
   }, (S.settings.harmony.gatherMs || 40) + 2);
 }
 function crGrabUp(id) { const g = CR.g; if (!g) return; const v = g.voices.get(id); if (v) { g.voices.delete(id); try { v.release(nowT()); } catch (e) {} } }
+/* ===== HM1-BEGIN (Paket HM1, Xander 07.11.): Harmonie-Werkzeuge =====
+   1 Glätten → Grundmuster: die Akkorde eines Clips je Takt / ½ Takt (aus seinen Noten) oder aus der Akkord-Zeile seiner Szene; jedes
+     Stück rückt mit der Umkehrung der Träger-Abbildung (T.mapEvent) auf die Grundstufe der Clip-Tonart (I, in Moll i) – unter denselben
+     Akkorden klingt das Grundmuster wieder wie gespielt; Töne außerhalb werden stufentreu in die Tonleiter gesetzt. Ergebnis = neuer
+     Clip auf dem nächsten freien Platz der Spur (das Original bleibt), wahlweise mit den Akkorden als Akkord-Zeile dieser Szene.
+   2 Sperre beim Wischen: S.settings.kbScale 'lock' (Skala) │ 'chord' (Akkord, neu). Beim Gleiten über die Tasten werden gesperrte
+     Tasten übersprungen (der Ton davor klingt weiter, kein Neuanschlag). Schalter: SPIELEN halten (½ s) schaltet Frei → Skala →
+     Akkord → Frei (ein Tipp bleibt wie bisher); auch Menü › Harmonie › Tastatur beim Spielen.
+   3 Lauf verlängern: Doppeln / Fortsetzen ▲▼ (stufenweise in der Clip-Tonart) – Auswahl, sonst ganzer Clip; der Clip wächst bei Bedarf
+     mit, die neuen Noten sind danach gewählt (nochmal tippen = weiter). Takte − / +.
+   4 Gegenstimme: Terzen │ Sexten │ Gegenbewegung (ruht auf Akkordtönen, füllt die Pausen der Melodie) → Clip derselben Szene auf einer
+     freien Synth-Spur (Ziel wählbar). Vorschau spielt Melodie + Gegenstimme.
+   5 Akkordvorschläge: im Akkord-Zeilen-Blatt tragen die 3–4 passenden nächsten Stufen eine Nummer (Funktionsharmonik, Pop-Folgen,
+     feste Melodie im Takt); im Harmonie-Blatt Reiter „Akkorde“ schreibt ein Tipp den Akkord in das nächste freie Kästchen.
+   Daten: nur normale Clips und Akkord-Zeilen; neu ist allein der Wert 'chord' in S.settings.kbScale (ältere Stände lesen ihn als
+   'show'). Jede Aktion = ein Undo-Schritt. Keine Allokation im Audio-Pfad; die Vorschau plant Stimmen 0,25 s voraus. */
+const HM1 = {pv: null, ui: null, tab: 'glatt', kbPrev: 'show', k: {t: 0, z: null, name: '', last: null, lastT: 0}};
+const HM1_TRK = {kind: 'synth', follow: true};
+const HM1_Q = [['maj', [0, 4, 7]], ['min', [0, 3, 7]], ['dim', [0, 3, 6]], ['7', [0, 4, 7, 10]], ['maj7', [0, 4, 7, 11]], ['m7', [0, 3, 7, 10]], ['sus4', [0, 5, 7]], ['aug', [0, 4, 8]]];
+const HM1_VAR = [['terz', 'Terzen'], ['sext', 'Sexten'], ['gegen', 'Gegenbewegung']];
+const hm1Sc = key => Harmony.SCALES[key && key.scale] || Harmony.SCALES.ionian;
+const hm1InKey = (n, key) => hm1Sc(key).includes(PCx(n - key.root));
+// n um d Stufen der Tonart verschieben (ein Ton außerhalb behält seinen Abstand zur Stufe darunter)
+function hm1Deg(n, key, d) {
+  const SC = hm1Sc(key), rel = PCx(n - key.root), base = n - rel;
+  let i = SC.indexOf(rel), off = 0;
+  if (i < 0) { i = 0; for (let k = 0; k < 7; k++) if (SC[k] < rel) i = k; off = rel - SC[i]; }
+  const j = i + d, o = Math.floor(j / 7);
+  return base + 12 * o + SC[j - 7 * o] + off;
+}
+// Gewichte der Tonklassen in [a, b): klingende Dauer × Anschlag; lo = tiefster Ton (Bass)
+function hm1Prof(notes, a, b) {
+  const w = new Array(12).fill(0); let tot = 0, lo = null;
+  for (const n of notes) {
+    const s = Math.max(a, n.t), e = Math.min(b, n.t + Math.max(n.d, .05)); if (e - s <= 1e-6) continue;
+    const x = (e - s) * (.6 + .4 * clamp(n.v == null ? .8 : n.v, 0, 1));
+    w[PCx(n.n)] += x; tot += x; if (!lo || n.n < lo.n) lo = n;
+  }
+  return tot > 0 ? {w, tot, lo} : null;
+}
+// der Akkord eines Bereichs als Träger-Ziel (chordTarget) oder null
+function hm1Chord(pr, key) {
+  if (!pr) return null;
+  const {w, tot, lo} = pr, bass = PCx(lo.n), pcs = [];
+  for (let k = 0; k < 12; k++) if (w[k] > tot * .04) pcs.push(k);   // ein Hauch unter 4 % zählt nicht
+  const SC = hm1Sc(key), dia = r => SC.includes(PCx(r - key.root));
+  if (pcs.length <= 1) {                                           // ein Ton (Basslauf): der leitereigene Dreiklang auf ihm
+    const r = pcs.length ? pcs[0] : bass, dc = degreeChords(key).find(d => d.root === r && !d.dur);
+    return chordTarget(r, dc ? dc.q : 'maj');
+  }
+  let best = null;
+  for (const r of pcs) for (const [q, iv] of HM1_Q) {
+    let inS = 0; for (const x of iv) inS += w[(r + x) % 12];
+    const fr = inS / tot, allDia = iv.every(x => dia(r + x));
+    let sc = fr - .75 * (1 - fr) + (bass === r ? .22 : iv.some(x => (r + x) % 12 === bass) ? .04 : -.06) + (allDia ? .12 : 0) - (iv.length > 3 ? .07 : 0) - (q === 'sus4' || q === 'aug' ? .09 : 0);
+    if (iv.length > 3 && w[(r + iv[3]) % 12] < tot * .08) sc -= .2;   // eine Septime zählt erst, wenn sie wirklich klingt
+    if (!w[(r + iv[1]) % 12]) sc -= .03;                             // ohne Terz: der leitereigene gewinnt (Bonus oben)
+    if (!best || sc > best.sc + 1e-9) best = {r, q, sc};
+  }
+  return best ? chordTarget(best.r, best.q) : null;
+}
+// die Akkord-Töne (Tonklassen, Grundton zuerst) eines Ziels; ein Einzelton = der Dreiklang der Tonart auf ihm
+function hm1Pcs(tg, key) {
+  if (!tg) return null;
+  const c = tg.kind === 'chord' && tg.quality && Harmony.BY_Q[tg.quality];
+  if (c) return c.iv.map(x => PCx(tg.root + x));
+  const k = key || S.key, SC = hm1Sc(k), i = SC.indexOf(PCx(tg.root - k.root));
+  if (i < 0) return [0, 4, 7].map(x => PCx(tg.root + x));
+  return [0, 2, 4].map(j => PCx(k.root + SC[(i + j) % 7]));
+}
+const hm1Same = (a, b) => (!a && !b) || (!!a && !!b && a.root === b.root && (a.quality || null) === (b.quality || null));
+// die Akkorde eines Clips: [{a, b, tg}] je Takt ('bar') / ½ Takt ('half') aus den Noten oder aus der Akkord-Zeile der Szene ('row')
+function hm1Segs(s, c, how, notes) {
+  const L = clipB(c), bb = clipBarB(c), out = [];
+  const rw = how === 'row' && s != null && S.scenes[s] && S.scenes[s].chords;
+  if (rw && rw.ch.length) {
+    const RL = rw.len * 4, at = x => { const m = ((x % RL) + RL) % RL; let e = null; for (const q of rw.ch) if (q.b <= m + 1e-6) e = q; return e || rw.ch[rw.ch.length - 1]; };
+    const bs = new Set([0]);
+    for (let k = 0; k * RL < L - 1e-6; k++) for (const q of rw.ch) { const x = k * RL + q.b; if (x < L - 1e-6) bs.add(+x.toFixed(4)); }
+    const B = [...bs].sort((x, y) => x - y);
+    B.forEach((a, k) => { const e = at(a); out.push({a, b: k + 1 < B.length ? B[k + 1] : L, tg: e && e.tg ? normTarget(e.tg) : null}); });
+    return out;
+  }
+  const step = how === 'half' ? bb / 2 : bb, src = notes || liveNotes(c);
+  let prev = null;
+  for (let a = 0; a < L - 1e-6; a += step) { const tg = hm1Chord(hm1Prof(src, a, Math.min(L, a + step)), c.key) || prev; out.push({a, b: Math.min(L, a + step), tg}); if (tg) prev = tg; }
+  const f = out.find(x => x.tg); if (f) for (const x of out) { if (x.tg) break; x.tg = f.tg; }   // vorn ohne Noten: der erste Akkord
+  return out;
+}
+const hm1SegAt = (segs, x) => segs.find(g => x >= g.a - 1e-6 && x < g.b - 1e-6) || (x < 0 ? segs[0] : segs[segs.length - 1]) || null;
+// der Ton n der Grundstufe, der unter dem Akkord tg (Clip-Tonart key) als o klingt; sonst der Leiterton, der o am nächsten kommt
+function hm1Inv(o, key, tg) {
+  const e = {time: 0, target: tg, shift: Harmony.nearestShift(tg.root, S.key.root, 0)}, sh = Harmony.nearestShift(tg.root, key.root, e.shift), K = {key};
+  let best = o - sh, bd = Infinity;
+  for (let d = 0; d <= 19; d++) for (const n of d ? [o - sh - d, o - sh + d] : [o - sh]) {
+    if (n < 0 || n > 127 || !hm1InKey(n, key)) continue;
+    const m = T.mapEvent(n, 0, HM1_TRK, K, e), err = Math.abs(m - o) * 10 + d * .01;
+    if (err < bd - 1e-9) { bd = err; best = n; }
+  }
+  return clamp(best, 0, 127);
+}
+// das Grundmuster (Noten wie cleanNote); sel = nur diese Noten (Set), die übrigen bleiben
+function hm1Smooth(c, segs, sel) {
+  const key = c.key, L = clipB(c);
+  return c.notes.map(n => {
+    const x = cleanNote(n); if (sel && !sel.has(n)) return x;
+    const g = hm1SegAt(segs, n.t >= L ? n.t - L : n.t); if (g && g.tg) x.n = hm1Inv(n.n, key, g.tg);
+    return x;
+  });
+}
+// die Akkord-Zeile der Stücke (gleiche Nachbarn zusammen, Takte zu 4 Schlägen wie im Akkord-Zeilen-Blatt)
+function hm1RowOf(segs, c) {
+  const ch = []; let last;
+  for (const g of segs) { if (g.a >= 64 - 1e-6) break; if (ch.length && hm1Same(last, g.tg)) continue; ch.push({b: +g.a.toFixed(4), tg: g.tg ? carrierCopy(g.tg) : null}); last = g.tg; }
+  return {len: clamp(Math.ceil(clipB(c) / 4 - 1e-6), 1, 16), ch};
+}
+// Doppeln (d = 0) / Fortsetzen (d = ±1 Stufe): die Auswahl (sonst alle Noten) noch einmal direkt dahinter; der Clip wächst bei Bedarf
+function hm1Extend(c, sel, d) {
+  const all = !sel || !sel.length, ns = all ? liveNotes(c) : sel; if (!ns.length) return null;
+  const bb = clipBarB(c);
+  let span;
+  if (all) span = clipB(c);
+  else { const t0 = Math.min(...ns.map(n => n.t)), t1 = Math.max(...ns.map(n => n.t + n.d)); span = Math.max(.25, Math.ceil((t1 - t0) / .25 - 1e-6) * .25); }
+  const end = Math.max(...ns.map(n => n.t)) + span + 1e-6, bars = Math.max(c.len, Math.ceil(end / bb - 1e-6));
+  if (bars > 64) return {err: 'max. 64 Takte'};
+  const copies = ns.map(n => { const x = cleanNote(n); x.t = +(n.t + span).toFixed(6); if (x.o != null) x.o = +(x.o + span).toFixed(4); if (d) x.n = clamp(hm1Deg(n.n, c.key, d), 0, 127); return x; });
+  return {copies, bars, span, all};
+}
+// die Melodie: je Einsatz der höchste Ton
+function hm1Line(ns) {
+  const srt = ns.slice().sort((a, b) => a.t - b.t || b.n - a.n), out = [];
+  for (const n of srt) { const l = out[out.length - 1]; if (l && Math.abs(l.t - n.t) < 1e-3) continue; out.push(n); }
+  return out;
+}
+// die Noten der übrigen folgenden Spuren der Szene in derselben Tonart (für die Akkorde der Gegenstimme), auf die Clip-Länge geschleift
+function hm1Ctx(t, s, c) {
+  const L = clipB(c), out = liveNotes(c).slice(), fol = S.tracks[t].follow !== false;
+  for (const i of synthTracks()) {
+    const tr = S.tracks[i], o = i !== t && tr ? tr.clips[s] : null;
+    if (!o || !o.notes.length || percIs(tr) || tr.stimme || (tr.follow !== false) !== fol || !o.key || o.key.root !== c.key.root || o.key.scale !== c.key.scale) continue;
+    const Lo = clipB(o); for (let k = 0; k * Lo < L - 1e-6; k++) for (const n of liveNotes(o)) { const x = n.t + k * Lo; if (x < L - 1e-6) out.push({t: x, d: n.d, n: n.n, v: (n.v || .8) * .7}); }
+  }
+  return out;
+}
+// Gegenstimme zur Melodie (sel, sonst der ganze Clip): v 0 Terzen, 1 Sexten (parallel darunter, auf schweren Zeiten Akkordtöne),
+// 2 Gegenbewegung (ruht auf Akkordtönen, setzt in den Pausen der Melodie und bei Akkordwechseln ein, Richtung gegen die Melodie)
+function hm1Counter(c, segs, v, sel) {
+  const key = c.key, L = clipB(c), mel = hm1Line(sel && sel.length ? sel : liveNotes(c)); if (!mel.length) return [];
+  const ct = x => { const g = hm1SegAt(segs, x); return g ? hm1Pcs(g.tg, key) : null; };
+  const vel = x => Math.round(clamp((x || .8) * .82, .05, 1) * 1e3) / 1e3;
+  const out = [];
+  if (v === 0 || v === 1) {
+    const cand = v === 0 ? [-2, -3, -4] : [-5, -4, -7];
+    for (const m of mel) {
+      const C = ct(m.t), strong = Math.abs(m.t - Math.round(m.t)) < 1e-3 || m.d >= 1 - 1e-6;
+      let p = hm1Deg(m.n, key, cand[0]);
+      if (C && strong && !C.includes(PCx(p))) for (const k of cand.slice(1)) { const q = hm1Deg(m.n, key, k); if (C.includes(PCx(q))) { p = q; break; } }
+      out.push({t: m.t, d: m.d, n: clamp(p, 24, 108), v: vel(m.v)});
+    }
+    return out;
+  }
+  const melAt = x => { let r = null; for (const m of mel) { if (m.t <= x + 1e-6) r = m; else break; } return r || mel[0]; };
+  const pos = [];
+  for (let x = 0; x < L - 1e-6; x += 1) {
+    const on = mel.some(m => m.t >= x - 1e-6 && m.t < x + 1 - 1e-6), chg = segs.some(g => Math.abs(g.a - x) < 1e-6);
+    if (chg || !on || x === 0) pos.push(x);
+  }
+  const lowM = Math.min(...mel.map(m => m.n));
+  let prev = null, prevM = null;
+  pos.forEach((x, k) => {
+    const m = melAt(x), hi = Math.min(m.n, lowM + 5) - 3, lo = hi - 15, C = ct(x) || [0, 2, 4].map(j => PCx(key.root + hm1Sc(key)[j]));
+    const cand = []; for (let p = lo; p <= hi; p++) if (C.includes(PCx(p))) cand.push(p);
+    if (!cand.length) return;
+    const dir = prevM == null ? 0 : Math.sign(m.n - prevM);
+    let best = cand[0], bs = Infinity;
+    for (const p of cand) {
+      const sc = prev == null ? Math.abs(p - (hi - 6)) : Math.abs(p - prev) + (dir && Math.sign(p - prev) === dir ? 6 : 0) + (p === prev ? 2 : 0) + (Math.abs(p - prev) > 7 ? 8 : 0);
+      if (sc < bs) { bs = sc; best = p; }
+    }
+    const nx = k + 1 < pos.length ? pos[k + 1] : L, d = Math.max(.25, Math.min(2, nx - x) * .95);
+    out.push({t: x, d: +d.toFixed(4), n: clamp(best, 24, 108), v: vel(m.v)});
+    prev = best; prevM = m.n;
+  });
+  return out;
+}
+/* ---------- Akkordvorschläge (Funktionsharmonik, beliebte Pop-Folgen, feste Melodie im Takt) ---------- */
+const HM1_FN = {
+  maj: {_: {I: .9, vi: .7, IV: .55}, I: {IV: .9, V: .85, vi: .8, ii: .6, iii: .3}, ii: {V: .95, IV: .45, 'vii°': .4, I: .3}, iii: {vi: .85, IV: .7, ii: .4},
+    IV: {V: .9, I: .8, ii: .55, vi: .5}, V: {I: .95, vi: .75, IV: .5}, vi: {IV: .9, ii: .7, V: .6, iii: .4}, 'vii°': {I: .9, iii: .4}},
+  min: {_: {i: .9, VI: .65, iv: .55}, i: {iv: .85, VI: .85, VII: .8, V: .7, v: .55, III: .5}, 'ii°': {V: .9, v: .6}, III: {VI: .8, VII: .7, iv: .6},
+    iv: {V: .85, i: .8, VII: .7, v: .5}, v: {i: .9, VI: .7}, V: {i: .95, VI: .7}, VI: {VII: .85, iv: .7, III: .6, i: .5}, VII: {III: .8, i: .85, VI: .5}}};
+const HM1_POP = {maj: [['I', 'V', 'vi', 'IV'], ['vi', 'IV', 'I', 'V'], ['I', 'vi', 'IV', 'V'], ['I', 'IV', 'vi', 'V'], ['ii', 'V', 'I', 'I'], ['I', 'IV', 'V', 'IV']],
+  min: [['i', 'VI', 'III', 'VII'], ['i', 'VII', 'VI', 'V'], ['i', 'iv', 'VII', 'III'], ['i', 'VI', 'VII', 'i'], ['iv', 'V', 'i', 'i']]};
+const HM1_WHY = {I: 'Tonika', i: 'Tonika', ii: 'Subdominant-Parallele', 'ii°': 'Subdominante', iii: 'Dominant-Parallele', III: 'Tonika-Parallele', IV: 'Subdominante', iv: 'Subdominante',
+  V: 'Dominante', v: 'Dominante (Moll)', vi: 'Tonika-Parallele', VI: 'Subdominant-Parallele', 'vii°': 'Dominante (verkürzt)', VII: 'Dominant-Parallele'};
+// die Clips einer Akkord-Zeile: Szene S1..S8 → ihre Clips, Teil P1..P8 → die Clips seiner Plätze
+function hm1RowClips(src) {
+  const q = rowSrcParse(src), out = []; if (!q) return out;
+  for (let t = 0; t < NT(); t++) {
+    const tr = S.tracks[t]; if (!tr || tr.kind !== 'synth' || percIs(tr) || tr.stimme) continue;
+    let s = q.kind === 'S' ? q.k : null;
+    if (q.kind === 'P') { const p = S.parts && S.parts[q.k], sl = p && p.slots[t]; s = sl && sl !== -1 ? sl.s : null; }
+    if (s != null && tr.clips[s] && tr.clips[s].notes.length) out.push({t, tr, c: tr.clips[s]});
+  }
+  return out;
+}
+// die feste Melodie (Spuren, die nicht folgen) im Bereich [lo, hi) der Zeile
+function hm1MelProf(src, lo, hi) {
+  const ns = [];
+  for (const {tr, c} of hm1RowClips(src)) {
+    if (tr.follow !== false) continue;
+    const L = clipB(c); for (let k = Math.floor(lo / L) - 1; k * L < hi; k++) for (const n of liveNotes(c)) ns.push({t: n.t + k * L, d: n.d, n: n.n, v: n.v});
+  }
+  return hm1Prof(ns, lo, hi);
+}
+// 3–4 Vorschläge für das Kästchen ab Schlag lo (null = live nach dem Träger, der jetzt gilt): [{k (Index in degreeChords), deg, root, q, sc, why}]
+function hm1Suggest(src, lo, hi) {
+  const key = rowKey(src), deg = degreeChords(key), rw = rowOf(src), mj = hm1Sc(key)[2] === 4, F = HM1_FN[mj ? 'maj' : 'min'], POP = HM1_POP[mj ? 'maj' : 'min'];
+  const bef = lo == null ? [] : rw ? rw.ch.filter(c => c.b < lo - 1e-6 && c.tg) : [];
+  const live = lo == null ? T.targetAt(nowT()).target : null;
+  const p1 = live || (bef.length ? bef[bef.length - 1].tg : null), p2 = !live && bef.length > 1 ? bef[bef.length - 2].tg : null;
+  const degOf = tg => { if (!tg) return null; const iv = Harmony.BY_Q[tg.quality], mi = iv && iv.iv[1] === 3; let d = deg.find(x => x.root === tg.root && (!iv || (x.q === 'min' || x.q === 'dim') === !!mi)); if (!d) d = deg.find(x => x.root === tg.root); return d ? d.deg : null; };
+  const d1 = degOf(p1), d2 = degOf(p2), mel = lo == null ? null : hm1MelProf(src, lo, hi == null ? lo + 4 : hi);
+  const out = deg.map((d, k) => {
+    let sc;
+    if (!p1) sc = F._[d.deg] || .15;
+    else if (d1 && F[d1]) sc = F[d1][d.deg] || .1;
+    else { const iv = PCx(d.root - p1.root); sc = iv === 5 ? .8 : iv === 0 ? 0 : iv === 7 || iv === 8 || iv === 9 ? .5 : iv === 2 || iv === 10 ? .45 : .3; }
+    let pop = 0;
+    if (d1) for (const P of POP) for (let j = 0; j < P.length; j++) if (P[j] === d1 && P[(j + 1) % P.length] === d.deg) pop += d2 && P[(j + P.length - 1) % P.length] === d2 ? .3 : .12;
+    sc += Math.min(.4, pop);
+    if (p1 && d.root === p1.root) sc -= .6;                          // derselbe Akkord noch einmal ist kein Wechsel
+    let fit = null;
+    if (mel) { const tones = Harmony.BY_Q[d.q].iv.map(x => PCx(d.root + x)); let a = 0; for (let pc = 0; pc < 12; pc++) a += (tones.includes(pc) ? 1 : -.6) * mel.w[pc]; fit = a / mel.tot; sc += .7 * fit; }
+    return {k, deg: d.deg, root: d.root, q: d.q, sc, why: (HM1_WHY[d.deg] || d.deg) + (pop ? ' · beliebte Folge' : '') + (fit != null && fit > .5 ? ' · passt zur Melodie' : '')};
+  }).sort((a, b) => b.sc - a.sc || a.k - b.k);
+  const top = out.filter(x => x.sc > .05).slice(0, 4);
+  return top.length >= 3 ? top : out.slice(0, 3);
+}
+// das Kästchen, für das die Vorschläge gelten: das gewählte, sonst das erste leere Takt-Kästchen, sonst live (null)
+function hm1CrBox(src) {
+  if (CR.sel && !CR.sel.auto) return {lo: crSelLo(), hi: crSelHi()};
+  const rw = rowOf(src), len = rw ? rw.len : rowDefaultLen(src);
+  for (const bx of crBoxes(rw, len)) if (bx.txt === '–') return {lo: bx.lo, hi: bx.hi};
+  return CR.sel ? {lo: crSelLo(), hi: crSelHi()} : null;
+}
+// Akkord-Zeilen-Blatt: die vorgeschlagenen Stufen tragen ihre Nummer (Tipp = wie bisher)
+function hm1CrMark(p) {
+  if (!p || CR.frei || CR.grab || CR.quant) return;
+  const bs = p.querySelectorAll('.cp-st .cp-c[data-d]'); if (!bs.length) return;
+  let sg; try { const bx = hm1CrBox(CR.src); sg = hm1Suggest(CR.src, bx ? bx.lo : null, bx ? bx.hi : null); } catch (e) { logErr(e); return; }
+  sg.forEach((x, r) => {
+    const b = [...bs].find(y => +y.dataset.d === x.k); if (!b) return;
+    b.classList.add('hm1s'); const i = document.createElement('i'); i.className = 'hm1r'; i.textContent = String(r + 1); b.appendChild(i);
+    b.title = 'Vorschlag ' + (r + 1) + ': ' + x.why; b.setAttribute('aria-label', chordShort(x.root, x.q) + ' – Vorschlag ' + (r + 1) + ', ' + x.why);
+  });
+}
+/* ---------- Tastatur: Akkord-Sperre und Wischen ---------- */
+// der Akkord, der jetzt gilt: der Träger (auch Akkord-Zeile / Song), sonst der Akkord der klingenden Clip-Noten (hält 1,5 s),
+// sonst der Grundakkord der Tonart. {z: Tonklassen (Grundton zuerst), name}
+function hm1KbChord() {
+  const now = performance.now(), K = HM1.k; if (K.z && now - K.t < 80) return K;
+  const tg = R.kbMode !== 'transpose' && !R.momentary ? T.targetAt(nowT()).target : null, ref = kbRefKey();
+  let z = null, name = '';
+  if (tg) { z = hm1Pcs(tg, ref); name = prettyTarget(tg); }
+  if (!z) {
+    const t = nowT(), ns = [];
+    for (const v of VOICES) if (!v.dead && v.src === 'clip' && v.start <= t && t < v.end) ns.push({t: 0, d: 1, n: v.outAt ? v.outAt(t) : v.out, v: .8});
+    if (new Set(ns.map(n => PCx(n.n))).size >= 2) { const c = hm1Chord(hm1Prof(ns, 0, 1), ref); if (c) { K.last = c; K.lastT = now; } }
+    if (K.last && now - K.lastT < 1500) { z = hm1Pcs(K.last, ref); name = prettyTarget(K.last); }
+  }
+  if (!z) { const SC = hm1Sc(ref); z = [0, 2, 4].map(j => PCx(ref.root + SC[j])); name = chordShort(z[0], PCx(z[1] - z[0]) === 3 ? (PCx(z[2] - z[0]) === 6 ? 'dim' : 'min') : 'maj'); }
+  K.t = now; K.z = z; K.name = name; return K;
+}
+// 'chord': eine Taste außerhalb spielt den nächsten Akkordton (Gleichstand: der tiefere)
+function hm1KbNote(note) {
+  const z = hm1KbChord().z;
+  for (let d = 0; d < 12; d++) { if (z.includes(PCx(note - d))) return note - d; if (d && z.includes(PCx(note + d))) return note + d; }
+  return note;
+}
+// Wischen mit Sperre: eine gesperrte Taste wird übersprungen (der Ton davor klingt weiter); derselbe Ton schlägt nicht neu an
+function hm1KbGlide(id, note, old) {
+  const m = S.settings.kbScale; if ((m !== 'lock' && m !== 'chord') || note == null || old == null) return false;
+  const inp = R.inputs['p' + id]; if (!inp || inp.route !== 'play') return false;
+  const n = kbLockNote(note);
+  if (n !== note) return true;
+  if (inp.note === n) { KB.ptr.set(id, note); return true; }
+  return false;
+}
+// SPIELEN halten (im Modus SPIELEN): Frei → Skala → Akkord → Frei
+function hm1KbHold(b) {
+  let tm = 0, x0 = 0, y0 = 0;
+  const clr = () => { clearTimeout(tm); tm = 0; };
+  b.addEventListener('pointerdown', e => { if (e.button > 0) return; clr(); x0 = e.clientX; y0 = e.clientY; tm = setTimeout(() => { tm = 0; try { hm1KbCycle(); } catch (err) { logErr(err); } }, 450); });
+  b.addEventListener('pointermove', e => { if (tm && Math.hypot(e.clientX - x0, e.clientY - y0) > 12) clr(); });
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => b.addEventListener(ev, clr));
+  b.addEventListener('contextmenu', e => e.preventDefault());
+}
+function hm1KbCycle() {
+  const tr = S.tracks[R.selT]; if (R.kbMode !== 'play' || R.momentary || !tr || tr.kind !== 'synth' || percIs(tr) || tr.stimme) return false;
+  const m = S.settings.kbScale;
+  if (m !== 'lock' && m !== 'chord') HM1.kbPrev = m;
+  const nx = m === 'lock' ? 'chord' : m === 'chord' ? (HM1.kbPrev === 'off' ? 'off' : 'show') : 'lock';
+  setKbScale(nx); HM1.k.t = 0; haptic('tick');
+  toast(nx === 'lock' ? 'Tastatur: Skala gesperrt – nur Töne von ' + keyName(kbRefKey()) : nx === 'chord' ? 'Tastatur: Akkord gesperrt – nur ' + hm1KbChord().name + '-Töne' : 'Tastatur: frei – alle Töne');
+  if (UI.menuRefresh) UI.menuRefresh();
+  return true;
+}
+/* ---------- Vorschau: Noten einer oder mehrerer Spuren, 0,25 s vorausgeplant, stoppt mit dem Blatt ---------- */
+function hm1PvStart(parts, lenB) {
+  hm1PvStop(); ensureAudio(); const c = AU.ctx; if (!c) return false;
+  const sp = spb(), t0 = c.currentTime + .08, list = [];
+  for (const p of parts) for (const n of p.notes) list.push({t: p.t, n});
+  list.sort((a, b) => a.n.t - b.n.t);
+  const pv = {list, k: 0, voices: [], end: t0 + lenB * sp + .05, timer: 0};
+  const pump = () => {
+    if (HM1.pv !== pv || !AU.ctx) return;
+    const now = AU.ctx.currentTime;
+    while (pv.k < list.length && t0 + list[pv.k].n.t * sp < now + .25) {
+      const x = list[pv.k++], st = Math.max(now + .005, t0 + x.n.t * sp);
+      try { const v = spawnVoice(x.t, clamp(Math.round(x.n.n), 0, 127), x.n.v || .8, st, {src: 'audition'}); if (v) { v.release(st + Math.max(x.n.d, 1 / 32) * sp); pv.voices.push(v); } } catch (e) { logErr(e); }
+    }
+    if (pv.voices.length > 48) pv.voices = pv.voices.filter(v => !v.dead);
+    if (now > pv.end) { hm1PvStop(true); hm1PvBtn(); }
+  };
+  HM1.pv = pv; pv.timer = setInterval(pump, 50); pump();
+  return true;
+}
+function hm1PvStop(ended) {
+  const pv = HM1.pv; if (!pv) return; HM1.pv = null; clearInterval(pv.timer);
+  if (ended) return;
+  const now = AU.ctx ? AU.ctx.currentTime : 0;
+  for (const v of pv.voices) { try { if (v.dead) continue; if (v.start >= now - 1e-4 && v.cancel) v.cancel(); else v.release(now, .01); } catch (e) {} }
+}
+function hm1PvBtn() { const U = HM1.ui, b = U && U.p && U.p.querySelector('[data-a="pv"]'); if (b) { b.textContent = HM1.pv ? '■ Stopp' : '▶ Vorschau'; b.classList.toggle('on', !!HM1.pv); } }
+/* ---------- das Harmonie-Blatt im Noten-Editor (Aktionsleiste ganz rechts: [Harmonie]) ---------- */
+function hm1Acts(t, s) {
+  const tr = S.tracks[t]; if (!tr || tr.kind !== 'synth' || percIs(tr) || tr.stimme) return [];
+  return [{id: 'hm1', label: 'Harmonie', title: 'Harmonie: Glätten, Lauf verlängern, Gegenstimme, Akkorde', fn: () => hm1Open(t, s)}];
+}
+// der nächste freie Platz der Spur t nach Szene s (oder null)
+function hm1Free(t, s) { const tr = S.tracks[t]; for (let k = 1; k < NS(); k++) { const x = (s + k) % NS(); if (!tr.clips[x]) return x; } return null; }
+// Ziele der Gegenstimme: freie Plätze derselben Szene auf anderen Synth-Spuren, dann der nächste freie Platz der eigenen Spur
+function hm1Targets(t, s) {
+  const out = [];
+  for (const i of synthTracks()) { const tr = S.tracks[i]; if (i === t || percIs(tr) || tr.stimme || tr.clips[s]) continue; out.push({t: i, s, label: tr.name}); }
+  const x = hm1Free(t, s); if (x != null) out.push({t, s: x, label: S.tracks[t].name + ' · Sz. ' + (x + 1)});
+  return out;
+}
+function hm1Sel(c) { if (!ED.roll || !ED.rollAt || ED.rollAt.own || ED.rollAt.mel) return []; try { return ED.roll.selection.filter(n => c.notes.includes(n)); } catch (e) { return []; } }
+// eine Akkord-Zeile in Szene x darf geschrieben werden: die Szene hat noch keine
+const hm1RowFree = x => x != null && !!S.scenes[x] && !(S.scenes[x].chords && S.scenes[x].chords.ch.length);
+function hm1Open(t, s, tab) {
+  const tr = S.tracks[t], c = tr && tr.clips[s]; if (!c) return false;
+  hm1PvStop();
+  if (tab) HM1.tab = tab;
+  const x = hm1Free(t, s), others = x != null && S.tracks.some((o, i) => i !== t && o && o.kind === 'synth' && o.follow !== false && o.clips[x]);
+  HM1.ui = {t, s, how: 'bar', row: hm1RowFree(x) && !others && tr.follow !== false, v: 0, tg: 0, p: null};
+  openPop(null, p => {
+    p.classList.add('hm1p'); guardTouch(p); HM1.ui.p = p;
+    hm1Paint();
+    onTap(p, b => { try { hm1Act(b); } catch (e) { logErr(e); } }, 'button');
+  }, {name: 'hm1', onClose: () => { hm1PvStop(); HM1.ui = null; }});
+  popDock(UI.pop && UI.pop.el);
+  return true;
+}
+function hm1Data() {
+  const U = HM1.ui; if (!U) return null;
+  const tr = S.tracks[U.t], c = tr && tr.clips[U.s]; if (!c) return null;
+  const sel = hm1Sel(c), how = U.how === 'row' && !(S.scenes[U.s] && S.scenes[U.s].chords && S.scenes[U.s].chords.ch.length) ? 'bar' : U.how;
+  const segs = hm1Segs(U.s, c, how);
+  return {U, tr, c, sel, how, segs};
+}
+function hm1Paint() {
+  const D = hm1Data(), U = HM1.ui; if (!U || !U.p || !U.p.isConnected) return;
+  if (!D) { closePop(); return; }
+  const {tr, c, sel, segs} = D, tab = HM1.tab, N = noteNames();
+  let h = `<div class="hm1-h"><b>HARMONIE</b><span class="hm1-i">${esc(tr.name)} · Szene ${U.s + 1} · ${esc(keyName(c.key))}${sel.length ? ' · ' + sel.length + ' gewählt' : ''}</span><button class="rb hm1-x" data-a="x" aria-label="Schließen">✕</button></div>`;
+  h += '<div class="seg hm1-tabs">' + [['glatt', 'Glätten'], ['lauf', 'Lauf'], ['gegen', 'Gegenstimme'], ['akk', 'Akkorde']].map(([v, l]) => `<button data-tab="${v}" class="${tab === v ? 'on' : ''}">${l}</button>`).join('') + '</div>';
+  if (tab === 'glatt') {
+    const x = hm1Free(U.t, U.s), hasRow = !!(S.scenes[U.s] && S.scenes[U.s].chords && S.scenes[U.s].chords.ch.length), bb = clipBarB(c);
+    const chips = segs.map(g => `<span class="hm1-c"><small>${Math.floor(g.a / bb + 1e-6) + 1}${Math.abs(g.a / bb - Math.round(g.a / bb)) > 1e-6 ? '½' : ''}</small>${esc(g.tg ? prettyTarget(g.tg) : 'ORIG.')}</span>`).join('');
+    h += `<div class="hm1-r"><div class="cp-sc hm1-ch">${chips}</div><div class="seg hm1-how">` + [['bar', 'Takt'], ['half', '½'], ['row', 'Zeile']].filter(([v]) => v !== 'row' || hasRow).map(([v, l]) => `<button data-how="${v}" class="${D.how === v ? 'on' : ''}">${l}</button>`).join('') + '</div></div>';
+    h += '<canvas class="hm1-cv" aria-hidden="true"></canvas>';
+    if (tr.follow === false) h += '<div class="hm1-r"><span class="hm1-t">Diese Spur folgt nicht (fest): das Grundmuster klingt nur auf einer Spur mit ⇅ über die Akkord-Zeile.</span></div>';
+    const rowOk = hm1RowFree(x);
+    h += `<div class="hm1-r"><button class="rb" data-a="pv">▶ Vorschau</button><button class="rb${U.row && rowOk ? ' on' : ''}" data-a="row"${rowOk ? '' : ' disabled'} aria-pressed="${!!(U.row && rowOk)}">${U.row && rowOk ? '✓ ' : ''}Akkord-Zeile</button>` +
+      `<button class="rb hm1-go" data-a="glatt"${x == null ? ' disabled' : ''}>${x == null ? 'Kein freier Platz' : 'Als Clip → Sz. ' + (x + 1)}</button></div>`;
+  } else if (tab === 'lauf') {
+    h += `<div class="hm1-r"><span class="hm1-t">${sel.length ? sel.length + ' Noten gewählt – die Auswahl wird verlängert' : 'Nichts gewählt – der ganze Clip wird verlängert'} · ${c.len} ${c.len === 1 ? 'Takt' : 'Takte'}</span></div>`;
+    h += '<div class="hm1-r"><button class="rb" data-a="dbl">Doppeln</button><button class="rb" data-a="fup">Fortsetzen ▲</button><button class="rb" data-a="fdn">Fortsetzen ▼</button></div>';
+    h += `<div class="hm1-r"><button class="rb" data-a="lm"${c.len <= 1 ? ' disabled' : ''}>Takte −</button><span class="hm1-n">${c.len} ${c.len === 1 ? 'Takt' : 'Takte'}</span><button class="rb" data-a="lp"${c.len >= 64 ? ' disabled' : ''}>Takte +</button></div>`;
+  } else if (tab === 'gegen') {
+    const tgs = hm1Targets(U.t, U.s), tg = tgs.length ? tgs[U.tg % tgs.length] : null;
+    h += '<div class="seg hm1-var">' + HM1_VAR.map(([v, l], k) => `<button data-var="${k}" class="${U.v === k ? 'on' : ''}">${l}</button>`).join('') + '</div>';
+    h += '<canvas class="hm1-cv" aria-hidden="true"></canvas>';
+    h += `<div class="hm1-r"><button class="rb" data-a="pv">▶ Vorschau</button><button class="rb" data-a="tgt"${tgs.length > 1 ? '' : ' disabled'}>${tg ? 'Ziel: ' + esc(tg.label) + (tgs.length > 1 ? ' ▾' : '') : 'kein freies Ziel'}</button><button class="rb hm1-go" data-a="gegen"${tg ? '' : ' disabled'}>Übernehmen</button></div>`;
+  } else {
+    const src = 'S' + (U.s + 1), bx = hm1NextBox(src), sg = hm1Suggest(src, bx ? bx.lo : null, bx ? bx.hi : null), rw = rowOf(src);
+    h += `<div class="hm1-r"><span class="hm1-t">${bx ? 'Nächster Akkord für Szene ' + (U.s + 1) + ' · Takt ' + (bx.bar + 1) : 'Akkord-Zeile von Szene ' + (U.s + 1) + ' ist voll – Vorschläge zum Spielen'} · ${esc(keyName(rowKey(src)))}${rw && rw.ch.length ? ' · ' + esc(rowShortText(rw)) : ''}</span></div>`;
+    h += '<div class="hm1-r"><div class="cp-sc hm1-sg">' + sg.map((g, r) => `<button class="rb hm1-s" data-sg="${g.k}" title="${esc(g.why)}"><small>${r + 1} · ${esc(g.deg)}</small>${esc(chordShort(g.root, g.q))}</button>`).join('') + '</div></div>';
+    h += `<div class="hm1-r"><span class="hm1-t">${esc(sg[0] ? sg[0].why : '')}</span><button class="rb" data-a="cr">Akkord-Zeile öffnen</button></div>`;
+  }
+  U.p.innerHTML = h;
+  const cv = U.p.querySelector('.hm1-cv');
+  if (cv) {
+    const col = getComputedStyle(document.documentElement).getPropertyValue('--t' + (U.t + 1)).trim() || '#4cc9f0';
+    if (tab === 'glatt') hm1Draw(cv, clipB(c), clipBarB(c), [{ns: liveNotes(c), col: '#8a8f99', a: .35}, {ns: hm1Smooth(c, segs, sel.length ? new Set(sel) : null), col, a: 1}]);
+    else { const tgs = hm1Targets(U.t, U.s), tg = tgs.length ? tgs[U.tg % tgs.length] : null, col2 = tg ? getComputedStyle(document.documentElement).getPropertyValue('--t' + (tg.t + 1)).trim() || '#ffb22e' : '#ffb22e';
+      hm1Draw(cv, clipB(c), clipBarB(c), [{ns: sel.length ? sel : liveNotes(c), col, a: .45}, {ns: hm1Counter(c, hm1Segs(U.s, c, 'bar', hm1Ctx(U.t, U.s, c)), U.v, sel), col: col2, a: 1}]); }
+  }
+  hm1PvBtn();
+  popDock(U.p);
+}
+// das nächste leere Takt-Kästchen der Akkord-Zeile (null = alle belegt)
+function hm1NextBox(src) {
+  const rw = rowOf(src), len = rw ? rw.len : rowDefaultLen(src);
+  for (let k = 0; k < len; k++) if (!crEntries(rw, 4 * k, 4 * k + 4).length) return {bar: k, lo: 4 * k, hi: 4 * k + 4};
+  return null;
+}
+function hm1Draw(cv, L, bb, layers) {
+  const dpr = Math.min(2, window.devicePixelRatio || 1), W = cv.clientWidth || 300, H = cv.clientHeight || 56;
+  cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+  const g = cv.getContext('2d'); if (!g) return; g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
+  let lo = 127, hi = 0; for (const l of layers) for (const n of l.ns) { lo = Math.min(lo, n.n); hi = Math.max(hi, n.n); }
+  if (lo > hi) return; lo -= 1; hi += 1;
+  const rh = (H - 6) / Math.max(1, hi - lo + 1), X = b => 4 + b / Math.max(L, 1e-6) * (W - 8), Y = n => 3 + (hi - n) * rh;
+  g.fillStyle = 'rgba(255,255,255,.08)'; for (let b = bb; b < L - 1e-6; b += bb) g.fillRect(Math.round(X(b)), 0, 1, H);
+  for (const l of layers) { g.globalAlpha = l.a; g.fillStyle = l.col; for (const n of l.ns) g.fillRect(X(n.t), Y(n.n), Math.max(2, X(n.t + n.d) - X(n.t) - 1), Math.max(2, rh - 1)); }
+  g.globalAlpha = 1;
+}
+function hm1Act(b) {
+  const U = HM1.ui; if (!U) return;
+  if (b.dataset.tab) { HM1.tab = b.dataset.tab; hm1PvStop(); haptic('tick'); hm1Paint(); return; }
+  if (b.dataset.how) { U.how = b.dataset.how; hm1PvStop(); haptic('tick'); hm1Paint(); return; }
+  if (b.dataset.var != null) { U.v = +b.dataset.var; hm1PvStop(); haptic('tick'); hm1Paint(); return; }
+  if (b.dataset.sg != null) { hm1SgPut(+b.dataset.sg); return; }
+  const a = b.dataset.a;
+  if (a === 'x') { closePop(); return; }
+  if (a === 'pv') { if (HM1.pv) hm1PvStop(); else hm1Preview(); hm1PvBtn(); return; }
+  if (a === 'row') { U.row = !U.row; haptic('tick'); hm1Paint(); return; }
+  if (a === 'tgt') { U.tg++; hm1PvStop(); haptic('tick'); hm1Paint(); return; }
+  if (a === 'glatt') { hm1DoGlatt(); return; }
+  if (a === 'gegen') { hm1DoGegen(); return; }
+  if (a === 'dbl' || a === 'fup' || a === 'fdn') { hm1DoLauf(a === 'fup' ? 1 : a === 'fdn' ? -1 : 0); return; }
+  if (a === 'lm' || a === 'lp') { const c = S.tracks[U.t].clips[U.s]; if (c && ED.roll && ED.rollAt && ED.rollAt.t === U.t && ED.rollAt.s === U.s && !ED.rollAt.own && !ED.rollAt.mel) ED.roll.setLen(c.len + (a === 'lp' ? 1 : -1)); haptic('tick'); hm1Paint(); return; }
+  if (a === 'cr') { const src = 'S' + (U.s + 1); closePop(); openChordRowSheet(src); return; }
+}
+function hm1Preview() {
+  const D = hm1Data(); if (!D) return;
+  const {U, c, sel, segs} = D;
+  if (HM1.tab === 'glatt') { hm1PvStart([{t: U.t, notes: hm1Smooth(c, segs, sel.length ? new Set(sel) : null).filter(n => n.t < clipB(c))}], clipB(c)); return; }
+  if (HM1.tab === 'gegen') {
+    const tgs = hm1Targets(U.t, U.s), tg = tgs.length ? tgs[U.tg % tgs.length] : null;
+    const cn = hm1Counter(c, hm1Segs(U.s, c, 'bar', hm1Ctx(U.t, U.s, c)), U.v, sel);
+    hm1PvStart([{t: U.t, notes: sel.length ? sel : liveNotes(c)}, {t: tg ? tg.t : U.t, notes: cn}], clipB(c));
+  }
+}
+// Glätten → Grundmuster als neuer Clip (+ Akkord-Zeile der Szene); ein Undo-Schritt
+function hm1DoGlatt() {
+  const D = hm1Data(); if (!D) return null;
+  const {U, tr, c, sel, segs} = D, x = hm1Free(U.t, U.s);
+  if (x == null) { toast('Kein freier Platz in ' + tr.name); return null; }
+  hm1PvStop();
+  const nc = cleanClip(c); delete nc.take; delete nc.audio;
+  nc.notes = hm1Smooth(c, segs, sel.length ? new Set(sel) : null);
+  if (nc.pre && segs[0] && segs[0].tg) nc.pre = nc.pre.map(n => Object.assign({}, n, {n: hm1Inv(n.n, c.key, segs[0].tg)}));
+  nc.key = {root: c.key.root, scale: c.key.scale, src: 'user'}; if (c.key.ref != null) nc.key.ref = c.key.ref;   // die Abbildung wurde gegen diese Tonart gerechnet
+  const clip = normClip(nc, 'synth', S.key); if (!clip) return null;
+  const withRow = !!U.row && hm1RowFree(x) && segs.some(g => g.tg), items = [{kind: 'clip', track: U.t, scene: x, before: null, label: 'Grundmuster'}];
+  if (withRow) items.push({kind: 'part', before: partSnap()});
+  tr.clips[x] = clip;
+  if (withRow) S.scenes[x].chords = normChordRow(hm1RowOf(segs, c));
+  const label = 'Grundmuster → Szene ' + (x + 1);
+  if (withRow) undoPush({kind: 'group', label, items}); else pushUndo(U.t, x, null, label);
+  clipChanged(U.t, x); scheduleAutoKey(x); markDirty(); if (withRow) partsChanged(); UI.dirty.all = true;
+  const t = U.t; closePop();
+  toast(label + (withRow ? ' mit Akkord-Zeile' : ''), {label: 'Öffnen', fn: () => openRoll(t, x)});
+  return {t, s: x, row: withRow};
+}
+// Gegenstimme als Clip auf das gewählte Ziel; ein Undo-Schritt
+function hm1DoGegen() {
+  const D = hm1Data(); if (!D) return null;
+  const {U, c, sel} = D, tgs = hm1Targets(U.t, U.s), tg = tgs.length ? tgs[U.tg % tgs.length] : null;
+  if (!tg) { toast('Kein freies Ziel in Szene ' + (U.s + 1)); return null; }
+  hm1PvStop();
+  const notes = hm1Counter(c, hm1Segs(U.s, c, 'bar', hm1Ctx(U.t, U.s, c)), U.v, sel); if (!notes.length) { toast('Keine Melodie im Clip'); return null; }
+  const nc = {len: c.len, key: {root: c.key.root, scale: c.key.scale, src: 'user'}, notes}; if (c.ts) nc.ts = c.ts;
+  const clip = normClip(nc, 'synth', S.key); if (!clip) return null;
+  const label = 'Gegenstimme (' + HM1_VAR[U.v][1] + ') → ' + S.tracks[tg.t].name + ' · Szene ' + (tg.s + 1);
+  pushUndo(tg.t, tg.s, null, label);
+  S.tracks[tg.t].clips[tg.s] = clip;
+  clipChanged(tg.t, tg.s); scheduleAutoKey(tg.s); markDirty(); UI.dirty.all = true;
+  closePop();
+  toast(label, {label: 'Öffnen', fn: () => openRoll(tg.t, tg.s)});
+  return {t: tg.t, s: tg.s};
+}
+// Doppeln / Fortsetzen im offenen Clip; ein Undo-Schritt, die neuen Noten sind danach gewählt
+function hm1DoLauf(d) {
+  const U = HM1.ui, t = U ? U.t : ED.rollAt && ED.rollAt.t, s = U ? U.s : ED.rollAt && ED.rollAt.s;
+  const c = t != null && S.tracks[t] ? S.tracks[t].clips[s] : null; if (!c) return null;
+  const sel = hm1Sel(c), r = hm1Extend(c, sel, d);
+  if (!r) { toast('Keine Noten'); return null; }
+  if (r.err) { toast(r.err); return null; }
+  const before = cleanClip(c), L0 = clipB(c);
+  if (r.bars !== c.len) { if (r.all && c.cv && r.bars === 2 * c.len) cvSet(c, cvRepeat(c.cv, L0, 2)); c.len = r.bars; }
+  const objs = r.copies; c.notes.push(...objs); c.notes.sort((a, b) => a.t - b.t);
+  const label = d ? 'Fortsetzen ' + (d > 0 ? '▲' : '▼') : 'Doppeln';
+  pushUndo(t, s, before, label);
+  afterClipEdit(t, s);
+  if (ED.roll && ED.rollAt && ED.rollAt.t === t && ED.rollAt.s === s) { try { ED.roll.refresh(); ED.roll.select(objs); } catch (e) { logErr(e); } }
+  haptic('tick'); if (HM1.ui) hm1Paint();
+  return {n: objs.length, len: c.len};
+}
+// Reiter „Akkorde“: Vorschlag k (Index in degreeChords) in das nächste leere Kästchen der Akkord-Zeile der Szene
+function hm1SgPut(k) {
+  const U = HM1.ui; if (!U) return null;
+  const src = 'S' + (U.s + 1), d = degreeChords(rowKey(src))[k], bx = hm1NextBox(src); if (!d) return null;
+  const tg = chordTarget(d.root, d.q);
+  if (!bx) { ensureAudio(); recallCarrier(tg); haptic('tick'); hm1Paint(); return {live: true}; }   // Zeile voll: live spielen (wie die Stufen-Chips ohne Kästchen)
+  rowEdit(src, row => { row.ch = row.ch.filter(c => !(c.b >= bx.lo - 1e-6 && c.b < bx.hi - 1e-6)); row.ch.push({b: bx.lo, tg: carrierCopy(tg)}); }, 'Akkord ' + tgShort(tg) + ' · ' + rowName(src) + ' Takt ' + (bx.bar + 1));
+  haptic('tick'); hm1Paint();
+  return {bar: bx.bar};
+}
+const HM1_API = {
+  chord: (notes, a, b, key) => { const k = key || S.key, c = hm1Chord(hm1Prof(notes, a, b), k); return c ? prettyTarget(c) : null; },
+  segs: (t, s, how) => { const c = S.tracks[t].clips[s]; return hm1Segs(s, c, how || 'bar').map(g => ({a: g.a, b: g.b, name: g.tg ? prettyTarget(g.tg) : null})); },
+  smooth: (t, s, how, idx) => { const c = S.tracks[t].clips[s], sel = Array.isArray(idx) ? new Set(idx.map(i => c.notes[i])) : null; return hm1Smooth(c, hm1Segs(s, c, how || 'bar'), sel); },
+  mapUnder: (n, key, name) => { const tg = parseChord(name); return tg ? T.mapEvent(n, 0, HM1_TRK, {key}, {time: 0, target: tg, shift: Harmony.nearestShift(tg.root, S.key.root, 0)}) : null; },
+  extend: (t, s, d, idx) => { const c = S.tracks[t].clips[s]; return hm1Extend(c, Array.isArray(idx) ? idx.map(i => c.notes[i]) : null, d || 0); },
+  counter: (t, s, v, idx) => { const c = S.tracks[t].clips[s]; return hm1Counter(c, hm1Segs(s, c, 'bar', hm1Ctx(t, s, c)), v || 0, Array.isArray(idx) ? idx.map(i => c.notes[i]) : null); },
+  suggest: (src, lo, hi) => hm1Suggest(src, lo, hi).map(x => ({deg: x.deg, name: chordShort(x.root, x.q), why: x.why})),
+  open: (t, s, tab) => hm1Open(t, s, tab), act: a => { const b = HM1.ui && HM1.ui.p && HM1.ui.p.querySelector(a); if (b) hm1Act(b); return !!b; },
+  state: () => (HM1.ui ? {open: !!(HM1.ui.p && HM1.ui.p.isConnected), tab: HM1.tab, t: HM1.ui.t, s: HM1.ui.s, how: HM1.ui.how, row: HM1.ui.row, v: HM1.ui.v, tg: HM1.ui.tg, pv: !!HM1.pv} : {open: false, tab: HM1.tab, pv: !!HM1.pv}),
+  glatt: () => hm1DoGlatt(), gegen: () => hm1DoGegen(), lauf: d => hm1DoLauf(d || 0), sgPut: k => hm1SgPut(k),
+  kbCycle: () => hm1KbCycle(), kbChord: () => { const k = hm1KbChord(); return {z: k.z.slice(), name: k.name}; }, kbNote: n => kbLockNote(n),
+  glide: (id, note, old) => hm1KbGlide(id, note, old), pvStop: () => hm1PvStop(),
+};
+/* ===== HM1-END ===== */
 
 /* ---------- readout (Träger-Anzeige): the running row „SZENE 2 · Am·F·[C]·G ✎“; after a hand change [↩ TEIL] (TA1) ---------- */
 function v2cInit() {
@@ -40392,7 +40968,7 @@ function kbPaint() {
   const ks = S.settings.kbScale, drum = S.tracks[R.selT].kind === 'drum';
   const lit = trm || (ks !== 'off' && !drum);
   const ref = lit ? (trm ? sceneRefKey() : kbRefKey()) : null, SC = ref ? (Harmony.SCALES[ref.scale] || Harmony.SCALES.ionian) : null;
-  const pl = !trm && lit, lk = pl && ks === 'lock', OZ = pl ? kbOneZ() : null;
+  const pl = !trm && lit, lk = pl && (ks === 'lock' || ks === 'chord'), OZ = pl ? (ks === 'chord' ? hm1KbChord().z : kbOneZ()) : null;   /* HM1: Akkord-Sperre */
   if (UI.last.kbPl !== pl) { UI.last.kbPl = pl; EL.kb.classList.toggle('pl', pl); }
   if (UI.last.kbLk !== lk) { UI.last.kbLk = lk; EL.kb.classList.toggle('locked', lk); }
   const vk = vsLitKey();                                     // VS2: die gesungene Note leuchtet
@@ -40409,8 +40985,9 @@ function kbPaint() {
     setCls(k.el, k.st, 'sp', !trm && split != null && note < split);
     setCls(k.el, k.st, 'spl', !trm && split != null && note === split);
   }
-  const rt = ks !== 'off' && !drum ? keyName(kbRefKey()) : '';
+  const rt = ks !== 'off' && !drum ? (ks === 'chord' ? hm1KbChord().name : keyName(kbRefKey())) : '';   /* HM1 */
   if (EL.kbRef && EL.kbRef.textContent !== rt) EL.kbRef.textContent = rt;
+  if (EL.kbRef && EL.kbRef.classList.contains('hm1lk') !== lk) EL.kbRef.classList.toggle('hm1lk', lk);   /* HM1: Schloss an SPIELEN */
 }
 // a following clip that kept its own key (< 90 % fit) is audible: the readout says so (§4.1.6)
 function ownKeyAudible(bAud) {
@@ -48387,6 +48964,7 @@ function buildRoll() {
   const kAt = () => shownClipKey(s, S.tracks[t].clips[s]);              // EDIT 4.29: Tonart der Stelle (Pinsel + Magic Scale)
   ED.roll = PianoRoll.create(body, rollModel(t, s), {color: col || '#4cc9f0', grid: ROLLP.grid, fold: ROLLP.fold, rowH: 22, undoHold: sx14UndoHold, toolbarHost: host,
     extraTools: extra, center: 12 * ((tr.kbOct || 4) + 1) + 7, rowName: percIs(tr) ? percRowName : null,   // PERC: Kanal-Namen
+    extraActs: hm1Acts(t, s),   /* HM1: [Harmonie] am Ende der Aktionsleiste */
     mp: mpRollOpts(t, 'c:' + t + ':' + s, kAt),   /* MP */
     tap: (b, fn) => b.addEventListener('click', () => { try { fn(); } catch (e) { logErr(e); } }),
     reg: folReg('roll'), onHand: () => folHand('roll'),
@@ -49532,7 +50110,7 @@ function openMenu(goto) {
   s3.appendChild(el('div', 'small harm-help', 'Takt (Standard): ein neuer Akkord wirkt am nächsten Taktstrich – ein laufender Lauf bleibt bis dahin in seiner Skala. Schlag/Sofort nur, wenn du es bewusst willst.'));   // HARM
   row(s3, 'Oktave', makeSeg([['nearest', 'Nächste'], ['absolute', 'Absolut (CV)']], () => h.octaveMode, v => setHarmony({octaveMode: v}))).classList.add('harm44');   // HARM
   row(s3, 'Split', makeSeg([[null, 'Aus'], [48, 'C3'], [60, 'C4']], () => h.split, v => setHarmony({split: v})));
-  row(s3, 'Tastatur beim Spielen', makeSeg([['show', 'Tonart zeigen'], ['lock', 'Tonart sperren'], ['off', 'Aus']], () => st.kbScale, v => setKbScale(v)));
+  row(s3, 'Tastatur beim Spielen', makeSeg([['show', 'Tonart zeigen'], ['lock', 'Tonart sperren'], ['off', 'Aus'], ['chord', 'Akkord sperren']], () => st.kbScale, v => setKbScale(v)));   /* HM1: + Akkord sperren */
   s3.appendChild(el('div', 'small', 'Tonart zeigen: passende Töne leuchten. Tonart sperren: eine unpassende Taste spielt den nächsten passenden Ton darunter.'));
   // V2c′ „Eine Skala“ (E3-25; Nachtrag 2, Xander 24.10.: Akkord-Skala-Quantisierer, Brain-Schalter, Drums für Fills)
   row(s3, 'Eine Skala', makeSeg([[true, 'An'], [false, 'Aus']], () => !!h.oneScale, v => setHarmony({oneScale: v}))).classList.add('mos', 'harm44');   // HARM: ≥ 44
@@ -52458,6 +53036,7 @@ function bindUI() {
   on(EL.hist, 'click', e => { const b = e.target.closest('button[data-k]'); if (!b) return; const t = T.history[+b.dataset.k]; if (t) recallCarrier(t); });
   // mode switch
   on(EL.segPlay, 'click', () => setKbMode('play'));
+  hm1KbHold(EL.segPlay);   /* HM1: SPIELEN halten = Sperre Frei → Skala → Akkord */
   // VS1 🎤: Mikrofon an/aus (Hochformat im Segment, Querformat in der Kopfzeile); nur auf Tipp
   for (const b of [EL.segMic, EL.bMicT]) if (b) { on(b, 'click', () => { haptic('tick'); stToggle(); }); on(b, 'contextmenu', e => e.preventDefault()); }
   on(EL.segTr, 'pointerdown', e => {
@@ -52492,6 +53071,7 @@ function bindUI() {
     if (bmKbMove(e)) return;                                     // BM5: pushing up on a held key = pressure, not another key
     const note = kbHit(e.clientX - KB.rect.left, e.clientY - KB.rect.top), old = KB.ptr.get(e.pointerId);
     if (note === old) return;
+    if (hm1KbGlide(e.pointerId, note, old)) return;   /* HM1: Sperre beim Wischen – gesperrte Tasten werden übersprungen */
     if (old != null) inputUp('p' + e.pointerId);
     KB.ptr.set(e.pointerId, note);
     if (note != null) inputDown(note, 'p' + e.pointerId, kbVelAt(note, e.clientY - KB.rect.top));
@@ -73580,6 +74160,7 @@ Object.assign(SYNQUENZER, {                       // BM6 (Nachtrag 7 §5.3): Bit
   bmRoutes: t => bmRoutes(t), bmRouteClear: (t, k) => (bmLoad(), bmRouteClear(t, k)),
   bmInit: (t, kind) => { const s_ = sndOf(t); if (!s_ || s_.engine !== 'bm') throw new Error('Keine ' + BM_NAME + '-Spur: ' + t); return soundEdit(t, 'Init', () => { const snd = deep(s_); snd.p.bm = SQBM.init(kind); applySound(t, snd); return true; }); },
 });
+Object.assign(SYNQUENZER, {hm1: HM1_API});                  /* HM1: Test-API (Objekt, wird nicht umhüllt) */
 const NO_SYNC = new Set(['clipCurves', 'bmcLog', 'bmcState', 'oneScaleOf', 'harmInfo', 'kbScaleNow', 'micCheck', 'micCheckJson', 'micCheckEstimate', 'cloud', 'cloudProjects', 'cloudVersions', 'cloudHandoff', 'state', 'project', 'runtime', 'getClip', 'getParam', 'noteLog', 'voices', 'timeline', 'serialize', 'buildMidi', 'buildZip', 'crc32', 'meter', 'outPitch', 'migrate', 'tapTempo',
   'getSound', 'mods', 'library', 'factory', 'previewState', 'soundEdited', 'fmxView', 'fmxPreview', 'fmxBadge',
   'history', 'projects', 'storage', 'engineInfo', 'getBusFx', 'wake', 'gestures', 'roll', 'rollApi', 'detectKey', 'sceneKey',

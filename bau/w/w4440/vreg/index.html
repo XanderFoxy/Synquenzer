@@ -71248,7 +71248,7 @@ function vr1EdIn(g, x, y, w, h, i, t, st, src, C, pref) {
     const v = val(k), n = clamp(toNorm(d, v), 0, 1), m = mods[k];
     vv4Knob(g, cx, top, sc, n, m ? [{lo: m.lo, hi: m.hi, c: m.c}] : [], m ? m.dot : null, col, VR1_LAB[k] || d.l, fmtVal(d.fmt, v), C);
     g.textBaseline = 'middle';
-    cells.push({key: k, x: cx - cw / 2, y: top, w: cw, h: rowH, n: +n.toFixed(4), mod: !!m, mv: moving.has(k)});
+    cells.push(Object.assign({key: k, x: cx - cw / 2, y: top, w: cw, h: rowH, n: +n.toFixed(4), mod: !!m, mv: moving.has(k)}, m ? {lo: m.lo, hi: m.hi, dot: m.dot, c: m.c, src: m.src, lab: m.lab, val: m.val} : {}));
   }));
   vv4El('Regler', 'makeCtl .knob (.kt .kv .kc .kp)'); if (Object.keys(mods).length) { vv4El('Mod-Ring', '.knob .kmr / .kmx'); vv4El('Live-Punkt', '.knob .kdg .kd'); }
   // the focus: the gliding (◆) knob first, else the first modulated one – the frame of the app's highlight (.k1hl: 2 px, --sel)
