@@ -2495,6 +2495,8 @@ a.mbtn[aria-disabled=true]{opacity:.55}
 .slot .mini rect.g1g{opacity:.32}
 .pr-bar .gl1pv[hidden]{display:none}
 .sv-loop .v.gl1fit{font-size:9px;letter-spacing:-.02em}
+@media (orientation:portrait){#popLayer .pop > h4.ux1-h{min-height:32px}}   /* ✕ (36 px + Trefferrand) lag 2–7 px über der obersten Taste rechts: ein Tipp dort schloss das Blatt */
+@media (orientation:landscape){.vvsheet .vvctl .seg.vvseg{flex:0 1 auto;min-width:0;flex-wrap:nowrap}.vvsheet .vvctl .seg.vvseg button{flex:0 1 auto;min-width:0;white-space:normal;line-height:1.05;padding-left:6px;padding-right:6px}}   /* Video quer: [Ganze App] war rechts abgeschnitten */
 .sv-l.chs>span{letter-spacing:0}
 .sv-l.chs{gap:3px}
 /* GL1-CSS-END */
@@ -41781,6 +41783,7 @@ function openPop(anchor, build, opts) {
   if (opts.sheet) { const sa = pshSafe(); x = clamp(x, 8 + sa.l, Math.max(8 + sa.l, vw - pw - 8 - sa.r)); y = Math.max(y, 8 + sa.t); }   // 4.30.1
   p.style.left = Math.round(x) + 'px'; p.style.top = Math.round(Math.max(8, y)) + 'px';
   UI.pop = {el: p, onClose: opts.onClose, name: opts.name, sheet: opts.sheet || null};
+  gl1PopWatch(p);                                                 // GL1: wächst das Blatt danach (Inhalt kommt später), bleibt es im Bild
   return p;
 }
 // a popover whose content changed (e.g. [+ Modulation]: source -> destinations) stays inside the viewport
@@ -81386,6 +81389,13 @@ function gl1RollPlace() {
   const bar = ED.roll && ED.roll.el && ED.roll.el.bar, b = bar && bar.querySelector('.gl1pv'); if (!b) return;
   if (ED.laufBtn && ED.laufBtn.parentNode === bar) bar.insertBefore(b, ED.laufBtn.nextSibling);
   const c = ED.rollAt && S.tracks[ED.rollAt.t] && S.tracks[ED.rollAt.t].clips[ED.rollAt.s]; b.hidden = !(c && lf1Plan(c)); b.classList.toggle('on', ROLLP.gl1 !== 'notated');
+}
+// ein Blatt, das nach dem Öffnen wächst (Inhalt kommt später, Teile klappen auf): popFit hält es im Bild (vorher ragte z. B. das Mikro-Blatt
+// quer 22 px unten hinaus – der Hinweis und Tasten darunter waren nicht zu erreichen)
+function gl1PopWatch(p) {
+  if (!window.ResizeObserver || !p) return;
+  let q = 0; const ro = new ResizeObserver(() => { if (q) return; q = requestAnimationFrame(() => { q = 0; if (!p.isConnected) { ro.disconnect(); return; } try { popFit(p); } catch (e) {} }); });
+  ro.observe(p);
 }
 // ein Wert, der breiter ist als sein Knopf: erst ohne Leerzeichen, dann eine Spur kleiner (nie links/rechts abgeschnitten)
 function gl1FitV(v, btn) {
