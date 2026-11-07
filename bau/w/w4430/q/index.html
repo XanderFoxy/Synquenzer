@@ -43551,6 +43551,10 @@ function fxGeo(W, H, land) {
     g.fw = g.cw * 6; g.rowsVis = 4; g.top = big ? 10 : 2; g.head = 0; g.floor = 2;
     g.px = g.fw + 8; g.pw = W - g.px; g.hdr = big ? 34 : 30; g.cols = 2; g.colW = Math.floor((g.pw - 8) / 2); g.rowH = big ? 34 : 32; g.rowGap = big ? 3 : 2;
     g.rowY = j => g.hdr + 4 + j * (g.rowH + g.rowGap);
+    if (g.top + 3 * g.pitch + g.th + g.floor > H) {   // QF1: quer mit Safari-Leisten (926 × 370) – weniger Rand oben, dann Abstand/Kachel maßvoll kleiner; immer 4 Reihen
+      g.top = Math.max(2, H - 3 * g.pitch - g.th - g.floor);
+      if (g.top + 3 * g.pitch + g.th + g.floor > H) { g.pitch = Math.max(28, Math.floor((H - g.top - g.floor + 3) / 4)); g.th = Math.min(g.th, g.pitch - 3); }
+    }
     return g;
   }
   if (W >= 700 && H >= 400) {                         // W (tablet) / desktop
@@ -44107,7 +44111,7 @@ function fxPanel(V) {
     Object.assign(r.el.style, {left: x + 'px', top: g.rowY(line) + 'px', width: w + 'px', height: (tall > 1 ? g.rowY(line + tall) - g.rowY(line) - g.rowGap : g.rowH) + 'px'});
     pan.appendChild(r.el); V.rows.push(r);
   });
-  if (!g.land && rows.length && g.rowY(rows.length - 1) + g.rowH > g.H) pan.classList.add('scr'); else pan.classList.remove('scr');
+  if (rows.length && g.rowY(g.land && g.cols === 2 ? (rows.length - 1) >> 1 : rows.length - 1) + g.rowH > g.H) pan.classList.add('scr'); else pan.classList.remove('scr');   // QF1: quer wie hochkant – rollt, statt unten abzuschneiden
   fxPanelUpd(V);
 }
 function fxPanelUpd(V) {
