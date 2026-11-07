@@ -13,7 +13,7 @@ async function page(w, h) {
   return p;
 }
 // Szene 1: eigener Bass-Lauf (2 Takte, synkopiert, lange Töne) + eigene Drums (Kick neben der Zählzeit, Ghost-Snare); Song = S1 + S2
-const BASS = [[0, .75, 36, .9], [.75, .25, 36, .6], [1.5, .5, 43, .8], [2.25, .75, 41, .7], [3, 1, 39, .8], [4, 1.5, 36, .9], [5.75, .25, 48, .6], [6, .5, 46, .7], [6.75, 1.25, 43, .8]];
+const BASS = [[0, .75, 36, .9], [.77, .23, 36, .6], [1.52, .5, 43, .8], [2.25, .75, 41, .7], [3.02, 1, 39, .8], [4, 1.5, 36, .9], [5.73, .25, 48, .6], [6, .5, 46, .7], [6.71, 1.25, 43, .8]];   // eingespielt: nicht ganz im Raster
 const build = (BASS) => {
   const D = window.SYNQUENZER;
   D.setClip(0, 0, {len: 2, notes: BASS.map(([t, d, n, v]) => ({t, d, n, v}))});
@@ -45,7 +45,7 @@ const onGrid = ns => ns.every(n => Math.abs(n.t * 4 - Math.round(n.t * 4)) < 1e-
 ok('Rollen erkannt: Bass · Sequenz · Fläche · Drums', tr.roles.join() === 'bass,seq,pad,dr', tr.roles.join());
 ok('Italo 70 %: Motiv-Tonhöhen bleiben (nur eigene Töne, Reihenfolge der Tonwechsel gleich)', pcs(tr.it).every(n => pcs(tr.bass).includes(n)) && isSub(seq(tr.it.filter((n, i, a) => !i || a[i - 1].n !== n.n)), seq(tr.bass)) && pcs(tr.it).length >= pcs(tr.bass).length - 1,
   'vorher ' + seq(tr.bass).join(' ') + ' · nachher ' + seq(tr.it).join(' '));
-ok('Italo 70 %: Raster des Stils (alle Anfänge auf 16teln, gerade), lange Töne als Galopp neu angeschlagen', onGrid(tr.it) && tr.it.filter(n => n.n === 39).length >= 3 && !onGrid(tr.bass) === true,
+ok('Italo 70 %: Raster des Stils (vorher eingespielt, nachher alle Anfänge auf geraden 16teln; 2,25 → 2), lange Töne im Galopp neu angeschlagen', !onGrid(tr.bass) && onGrid(tr.it) && tr.it.some(n => n.t === 2 && n.n === 41) && tr.it.filter(n => n.n === 39).length >= 3,
   tr.it.map(n => n.t + ':' + n.n).join(' '));
 ok('Italo 70 %: Längen im Stil (kurzer Disco-Bass)', Math.max(...tr.it.map(n => n.d)) < Math.max(...tr.bass.map(n => n.d)) * .5, 'max d ' + Math.max(...tr.it.map(n => n.d)));
 const kicks = ns => ns.filter(n => n.n === 36).map(n => n.t).join(',');
@@ -86,7 +86,7 @@ const wz = await p.evaluate(() => {
 });
 ok('Walzer 70 %: beide Teile in 3/4, Song 4 Takte = 12 Schläge', wz.r.ok && wz.r.tsSet === 2 && wz.marks.every(m => m.ts === '3/4') && wz.beats === 12, JSON.stringify({r: wz.r, marks: wz.marks, beats: wz.beats}));
 ok('Walzer: alle Versionen 3/4, Noten im 3/4-Raster (nichts hinter dem Clip-Ende)', wz.wv.length >= 7 && wz.wv.every(v => v.ts === '3/4' && !v.bad), JSON.stringify(wz.wv));
-ok('Walzer: Bass behält seine Töne, Drums Kick auf der Eins', wz.wbass.every(n => [36, 39, 41, 43, 46, 48].includes(n)) && wz.wdr.some(x => x === '0:36') && wz.wdr.some(x => x === '3:36'), wz.wbass.join(',') + ' | ' + wz.wdr.join(' '));
+ok('Walzer: Bass behält seine Töne, Drums: Kick nur auf der Eins, Snare auf zwei und drei (Um-pa-pa)', wz.wbass.every(n => [36, 39, 41, 43, 46, 48].includes(n)) && wz.wdr.filter(x => x.endsWith(':36')).join() === '0:36' && wz.wdr.includes('1:38') && wz.wdr.includes('2:38'), wz.wbass.join(',') + ' | ' + wz.wdr.join(' '));
 ok('Walzer A → 4/4 (16 Schläge), B → 3/4 (12 Schläge); Teilgrenze ohne Phasen-Versatz', wz.a > 0 && wz.marksA.every(m => !m.ts) && wz.beatsA === 16 && wz.b > 0 && wz.marksB.every(m => m.ts === '3/4') && wz.beatsB === 12 && wz.lanes.flat().every(e => e.ph == null),
   JSON.stringify({a: wz.a, b: wz.b, beatsA: wz.beatsA, beatsB: wz.beatsB, lanes: wz.lanes}));
 // 5) Speichern / Laden (serialisieren → normalisieren → anwenden): gr.u und Taktart der Teile bleiben
@@ -109,8 +109,8 @@ await p.tap('.gr2s [data-g2="st:hinrg"]'); await p.waitForTimeout(150);
 await p.evaluate(() => { const i = document.querySelector('.gr2s input.gr2-k'); i.value = '60'; i.dispatchEvent(new Event('input', {bubbles: true})); i.dispatchEvent(new Event('change', {bubbles: true})); });
 await p.waitForTimeout(150);
 await p.screenshot({path: dir + '/gr2-remix-hochkant.png'});
-const st1 = await p.evaluate(() => window.SYNQUENZER.gr2.state());
-ok('Kachel + Stärke-Regler wählen (Hi-NRG, 60 %), ohne Abspielen noch kein Remix', st1.st === 'hinrg' && st1.k === 60 && window, JSON.stringify(st1));
+const st1 = await p.evaluate(() => Object.assign(window.SYNQUENZER.gr2.state(), {on: window.SYNQUENZER.gr2.info({st: 'hinrg'}).on}));
+ok('Kachel + Stärke-Regler wählen (Hi-NRG, 60 %), ohne Abspielen noch kein Remix', st1.st === 'hinrg' && st1.k === 60 && st1.on === 0, JSON.stringify(st1));
 const nv0 = await p.evaluate(() => Object.keys(window.SYNQUENZER.song().own || {}).length);
 await p.tap('.gr2s [data-g2="go"]'); await p.waitForTimeout(500);
 const pl1 = await p.evaluate(() => ({play: !!(R.songPlay && R.playing), info: window.SYNQUENZER.gr2.info({st: 'hinrg'}), n: Object.keys(window.SYNQUENZER.song().own).length, go: document.querySelector('.gr2s [data-g2="go"]').textContent}));
@@ -173,7 +173,7 @@ for (const [w, h] of [[926, 428], [926, 370]]) {
   if (h === 428) {   // Grundmuster ▾ (GR1) mit den neuen Stilen: als Raster, passt quer
     await q.evaluate(() => { closePop(); const D = window.SYNQUENZER; D.songView(false); D.clipMenuItems(4, 0); });
     await q.waitForTimeout(250);
-    const gm = await q.evaluate(() => { const b = [...document.querySelectorAll('#clipSheet button')].find(x => /Grundmuster/.test(x.textContent)); if (!b) return null; b.click(); const P = document.querySelector('.pop.gr1pat'); if (!P) return null; const r = P.getBoundingClientRect(), bs = [...P.querySelectorAll('button')]; return {n: bs.length, top: Math.round(r.top), bottom: Math.round(r.bottom), small: bs.filter(x => x.getBoundingClientRect().height < 44).length}; });
+    const gm = await q.evaluate(() => { const b = [...document.querySelectorAll('#clipSheet button')].find(x => /Grundmuster/.test(x.textContent)); if (!b) return null; b.click(); const P = document.querySelector('.pop.gr1pat'); if (!P) return null; const r = P.getBoundingClientRect(), bs = [...P.querySelectorAll('button[data-gs]')]; return {n: bs.length, top: Math.round(r.top), bottom: Math.round(r.bottom), small: bs.filter(x => x.getBoundingClientRect().height < 44).length}; });
     ok('Clip-Blatt › Grundmuster ▾ quer: 15 Stile, ganz im Bild, ≥ 44 px', gm && gm.n === 15 && gm.top >= 0 && gm.bottom <= h && !gm.small, JSON.stringify(gm));
     await q.screenshot({path: dir + '/gr2-grundmuster-quer.png'});
   }

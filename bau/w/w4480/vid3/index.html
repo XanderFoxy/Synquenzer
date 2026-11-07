@@ -75674,7 +75674,10 @@ function vd3Norm(x) {
 function vd3Load() {
   if (!VD3 || !S) return null;
   const pid = S.id || 'ohne';
-  if (VD3.pid === pid && VD3.log) return VD3.log;
+  if (VD3.pid === pid && VD3.log) {
+    if (S.vd3mo && S.vd3mo.ev !== VD3.log) { const pj = vd3Norm(S.vd3mo); if (pj && pj.ev.length > VD3.log.length) { VD3.log.length = 0; VD3.log.push(...pj.ev); } S.vd3mo.ev = VD3.log; }   // dasselbe Projekt neu geöffnet
+    return VD3.log;
+  }
   if (VD3.log) vd3Flush();
   VD3.pid = pid; let ev = [];
   try { const j = vd3Norm(JSON.parse(safeGet(VD3_KEY + pid) || 'null')); if (j) ev = j.ev; } catch (e) { ev = []; }
@@ -76064,7 +76067,7 @@ const VD3_API = {
   set: (a, b, v, t) => vd3Write([{a, b, v, t}], 'Video (Test)'),
   log: () => JSON.parse(JSON.stringify(vd3Load() || [])),
   clear: () => { const L = vd3Load(); if (L) L.length = 0; vd3Flush(); VD3.marks = new Set(((S.song && S.song.marks) || []).map(m => m.id)); VD3.parts = (S.parts || []).map(p => !!p); return true; },
-  push: e => { const x = vd3Norm({ev: [Object.assign({ms: Date.now()}, e)]}); if (!x || !x.ev.length) return false; const L = vd3Load(); L.push(x.ev[0]); return true; },
+  push: e => { const x = vd3Norm({ev: [Object.assign({ms: Date.now()}, e)]}); if (!x || !x.ev.length) return false; const L = vd3Load(); L.push(x.ev[0]); if (L.length > VD3_MAX) L.splice(0, L.length - VD3_MAX); return true; },
   touch: () => { VD3.touchT = performance.now(); return true; },
   stored: () => { try { return JSON.parse(safeGet(VD3_KEY + (S.id || 'ohne')) || 'null'); } catch (e) { return null; } },
   flush: () => { vd3Flush(); return true; },

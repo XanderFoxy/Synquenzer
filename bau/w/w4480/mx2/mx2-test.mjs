@@ -140,18 +140,24 @@ const sheet = () => p.evaluate(() => { const s = document.querySelector('.pop.mx
   return {inView: r.top >= 0 && r.bottom <= innerHeight + 1 && r.left >= 0 && r.right <= innerWidth + 1, x: xr.width >= 44 && xr.height >= 44 && xr.top >= 0 && xr.right <= innerWidth, head: ['.mx2pl', '.mx2ab'].every(q => !!s.querySelector(q)), headH: Math.round(hd.height), cols: getComputedStyle(s.querySelector('.mx2c')).gridTemplateColumns}; });
 let h1 = await hdr();
 ok('Kopfleiste hochkant 428: [MIX] sichtbar, Menü ganz im Bild', h1.vis && h1.h >= 44 && h1.menuR <= h1.vw - 4, h1);
-await p.evaluate(async () => { SYNQUENZER.mx2Sheet(); await new Promise(r => setTimeout(r, 200)); });
+await p.evaluate(async () => { SYNQUENZER.mx2Sheet(); await new Promise(r => setTimeout(r, 100)); await SYNQUENZER.mx2Way('am'); await SYNQUENZER.mx2Exact(); await new Promise(r => setTimeout(r, 300)); document.getElementById('toast').style.visibility = 'hidden'; });
 let t1 = await tapSize('.pop.mx2s button'), s1 = await sheet();
 ok('Blatt hochkant: Kopf mit ▶ A B ✕, Tasten ≥ 44 px, nichts abgeschnitten, im Bild', s1.inView && s1.x && s1.head && t1.minH >= 44 && t1.minW >= 44 && !t1.over.length, {t1, s1});
 await p.screenshot({path: out + '/mx2-p-blatt.png'});
+await p.evaluate(() => { const s = document.querySelector('.pop.mx2s'), w = [...s.querySelectorAll('.mx2sec h5')].find(h => /Warum/.test(h.textContent)); s.scrollTop = w ? w.parentElement.offsetTop - 60 : s.scrollHeight; });
+await p.waitForTimeout(150); await p.screenshot({path: out + '/mx2-p-blatt2.png'});
+const cl = await p.evaluate(async () => { const w = ms => new Promise(r => setTimeout(r, ms)); SYNQUENZER.mx2Close(); await w(300); const r = await SYNQUENZER.mx2Style('italo'); await w(100); const e = await SYNQUENZER.mx2Exact(); return {r, miss: !!MX2.fit.miss, exact: !!MX2.fit.exact, e}; });
+ok('Blatt zu = Song-Signal im Worker frei; Stil-Wechsel danach weiter sofort (Schätzung)', cl.r && cl.miss && !cl.exact, cl);
 // Kanalzug (EQ · KOMP) mit Live-Analyzer und Gain-Reduction beim Abspielen
 const kz = await p.evaluate(async () => {
   const w = ms => new Promise(r => setTimeout(r, ms));
-  closePop(); SYNQUENZER.mx1EqSet(0, 'ra', 4); SYNQUENZER.mx1EqSet(0, 'thr', -30); SYNQUENZER.mx2Play(); await w(300); SYNQUENZER.mx1EqSheet(0); await w(1500);
+  closePop(); await SYNQUENZER.mixaAnalyze(); const gi = S.tracks.findIndex((t, i) => !!mx2EqGhost(i));
+  if (gi >= 0) { SYNQUENZER.mx1EqSheet(gi); await w(200); } const ghost = gi >= 0 ? (document.querySelector('.pop.mx1eqs .mx2gh').getAttribute('d') || '').length : -1; closePop();
+  SYNQUENZER.mx1EqSet(0, 'ra', 4); SYNQUENZER.mx1EqSet(0, 'thr', -30); SYNQUENZER.mx2Play(); await w(300); SYNQUENZER.mx1EqSheet(0); await w(1500);
   const p = document.querySelector('.pop.mx1eqs'), sb = p.querySelector('.mx2sb').getAttribute('d') || '', sa = p.querySelector('.mx2sa').getAttribute('d') || '', kc = p.querySelector('.mx2kc').getAttribute('d') || '', gr = p.querySelector('.mx2grm em').textContent;
-  return {sb: sb.length, sa: sa.length, kc: kc.length, gr, kx: p.querySelector('.mx2kx').textContent, gh: p.querySelector('.mx2gh') !== null};
+  return {sb: sb.length, sa: sa.length, kc: kc.length, gr, kx: p.querySelector('.mx2kx').textContent, gi, ghost};
 });
-ok('Kanalzug: Analyzer vor/nach EQ live, Kennlinie, Gain-Reduction-Meter', kz.sb > 100 && kz.sa > 100 && kz.kc > 50 && /dB/.test(kz.gr) && /4,0 : 1/.test(kz.kx), kz);
+ok('Kanalzug: Analyzer vor/nach EQ live, Kennlinie, Gain-Reduction-Meter, Vorschlag des Assistenten als Geisterkurve', kz.sb > 100 && kz.sa > 100 && kz.kc > 50 && /dB/.test(kz.gr) && /4,0 : 1/.test(kz.kx) && kz.ghost > 50, kz);
 await p.screenshot({path: out + '/mx2-p-kanalzug.png'});
 await p.evaluate(() => { stop(); closePop(); });
 // quer

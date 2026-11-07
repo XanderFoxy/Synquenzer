@@ -80080,7 +80080,7 @@ Object.assign(SYNQUENZER, UX2_API);                         // UX2: Ziehen in de
      Detroit-Soul-Pop der 60er → „Soul-Pop 60er“ (id bleibt 'detroit': alte Remix-Versionen bleiben gültig). Je Stil GR2_X / x:
      comp (Raster der Akkorde/Stabs), seq (Raster der Sequenzen), gate (Länge je Rolle), tip (Beschreibung ohne Namen echter Leute).
    - Übersetzen (gr2Translate): Tonhöhen, Reihenfolge und Akzente bleiben. Jede Note (ein Akkord = eine Gruppe) rückt auf die Stelle
-     mit der besten Präferenz: Gewicht des Stils dort minus Abstand (λ = 0,1 + 0,5 · (1 − Stärke)), höchstens ½ Schlag weit, mit dem
+     mit der besten Präferenz: Gewicht des Stils dort minus Abstand (λ = 0,2 + 0,5 · (1 − Stärke) je 16tel), höchstens ½ Schlag weit, mit dem
      Swing des Stils (16tel; Shuffle: Achtel-Triolen). Stärke 0–100 % wie die Tonhöhen-Quantisierung: bis 50 % rückt die Note anteilig,
      darüber ganz; Noten auf schwachen Stellen (Gewicht < 0,3 · Stärke, Drums 0,35 · Stärke) fallen weg – höchstens die halbe Stärke
      an Noten, jeder halbe Takt behält einen Ton. Längen: Gate des Stils (z. B. kurzer Euro-Disco-Bass); lange Töne werden ab 50 % auf
@@ -80122,7 +80122,7 @@ const GR2_X = {
 // neue Stile im GR1-Format (16 Schritte je Takt: X Akzent · x normal · o leise; Bass [Schritt, Intervall, Länge, Pegel]) + x
 const GR2_NEW = [
   {id: 'italo', name: 'Italo-Disco', bpm: 120, sw: .5,
-    d: {kick: 'x...x...x...x...', snare: '....X.......X...', clap: '....x.......x...', hatC: 'oxoxoxoxoxoxoxox', hatO: '..x...x...x...x.'},
+    d: {kick: 'x...x...x...x...', snare: '....X.......X...', clap: '....x.......x...', hatC: 'xoxoxoxoxoxoxoxo', hatO: '..x...x...x...x.'},
     b: gr2Per4([[0, 0, 1, 1], [2, 12, 1, .85], [3, 0, 1, .6]]),
     x: {comp: 'o.X.o.X.o.X.o.X.', seq: 'XxxxXxxxXxxxXxxx', gate: {bass: .55, comp: .5, seq: .7},
       tip: 'Bassdrum auf jedem Viertel, galoppierender Oktav-Bass (Grundton – Oktave – Grundton), Sechzehntel-Sequenzen, Clap auf 2 und 4 – italienische Disco der 80er: so wird dein Lied zum Italo-Pop.'}},
@@ -80238,7 +80238,7 @@ const gr2Clean = x => { delete x.o; delete x.born; delete x.bornRun; return x; }
 // Bass, Akkorde, Flächen, Sequenzen, Melodie: Noten-Gruppen (gleicher Anfang) ins Raster der Rolle
 function gr2Melo(ns, st, s, role, N, LB, bars) {
   const kind = role === 'pad' ? 'comp' : role, W = role === 'lead' ? null : gr2W(st, kind), X = gr2X(st), L = bars * LB;
-  const gate = role === 'pad' ? 1 : (X.gate && X.gate[kind]) || 1, lam = .1 + (1 - s) * .5, pull = role === 'lead' ? s * .5 : Math.min(1, s * 2);
+  const gate = role === 'pad' ? 1 : (X.gate && X.gate[kind]) || 1, lam = .2 + (1 - s) * .5, pull = role === 'lead' ? s * .5 : Math.min(1, s * 2);
   const canDrop = !!W && role !== 'pad', th = s * .3, G = [];
   for (const n of ns.slice().sort((a, b) => a.t - b.t || a.n - b.n)) { const g = G[G.length - 1]; if (g && Math.abs(g.t - n.t) < 1e-3) g.ns.push(n); else G.push({t: n.t, ns: [n]}); }
   let lo = null;
@@ -80285,7 +80285,7 @@ function gr2Melo(ns, st, s, role, N, LB, bars) {
 }
 // Drums: jedes Pad rückt im Raster seiner Rolle; ab 50 % die Kern-Schläge des Stils dazu (Pads des eigenen Kits)
 function gr2Drums(ns, st, s, N, LB, bars) {
-  const lam = .1 + (1 - s) * .5, pull = Math.min(1, s * 2), th = s * .35, X = [];
+  const lam = .2 + (1 - s) * .5, pull = Math.min(1, s * 2), th = s * .35, X = [];
   for (const n of ns) {
     const role = GR2_PAD[mapV1Drum(Math.round(n.n))] || 'perc', W = gr2W(st, role);
     const b = Math.min(bars - 1, Math.max(0, Math.floor(n.t / LB + 1e-9))), c = gr2Best(W, st, lam, b, n.t - b * LB, N, LB, b === bars - 1, null);

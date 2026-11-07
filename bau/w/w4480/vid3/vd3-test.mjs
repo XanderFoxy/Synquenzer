@@ -104,17 +104,18 @@ await tapSel(`.vd3t .rb[data-t="${trs[0]}"]`);
 const v2 = await p.evaluate(() => JSON.parse(JSON.stringify(S.song.video)));
 ok('Gerät … → Spur → Eintrag „Gerät · Spur“ für den ganzen Chip', trs.length >= 1 && v2.some(e => e.v === 'geraet' && e.t === trs[0] && e.a === c0.a), {trs, v2});
 // Kante ziehen (Schnitt verschieben): zwischen Chip 0 und 1
-const L3 = await p.evaluate(() => SYNQUENZER.vd3.lane()), e0 = L3.chips[0], e1 = L3.chips[1];
-const ex = L3.x + e0.b * L3.cellW - L3.sx, ey = L3.y + L3.h / 2, to = e0.b + 1 < e1.b ? e0.b + 1 : e0.b - 1;
+const L3 = await p.evaluate(() => SYNQUENZER.vd3.lane()), kE = L3.chips.findIndex((c, k) => k + 1 < L3.chips.length && L3.chips[k + 1].b - c.b >= 2 && c.b - c.a >= 1), e0 = L3.chips[kE], e1 = L3.chips[kE + 1];
+const ex = L3.x + e0.b * L3.cellW - L3.sx, ey = L3.y + L3.h / 2, to = e0.b + 1;
 await p.evaluate(([x, y, x2]) => { const w = SV.wrap, ev = (t, xx) => w.dispatchEvent(new PointerEvent(t, {pointerId: 7, pointerType: 'touch', isPrimary: true, clientX: xx, clientY: y, bubbles: true, cancelable: true, buttons: t === 'pointerup' ? 0 : 1}));
   ev('pointerdown', x); for (let k = 1; k <= 6; k++) ev('pointermove', x + (x2 - x) * k / 6); ev('pointerup', x2); }, [ex, ey, ex + (to - e0.b) * L3.cellW]);
 await p.waitForTimeout(250);
 const L4 = await p.evaluate(() => SYNQUENZER.vd3.lane());
-ok('Kante ziehen verschiebt den Schnitt (beide Seiten behalten ihr Bild, ein Undo-Schritt)', L4.chips[0].b === to && L4.chips[0].v === e0.v && L4.chips[1].v === e1.v, {von: e0.b, nach: to, chips: L4.chips.slice(0, 3).map(c => [c.a, c.b, c.v, c.man])});
+const c4 = L4.chips.find(c => c.a === e0.a), d4 = L4.chips.find(c => c.a === to);
+ok('Kante ziehen verschiebt den Schnitt (beide Seiten behalten ihr Bild, ein Undo-Schritt)', c4 && c4.b === to && c4.v === e0.v && d4 && d4.v === e1.v && d4.man, {kante: kE, von: e0.b, nach: to, chips: L4.chips.slice(0, 5).map(c => [c.a, c.b, c.v, c.man])});
 const shotCut = await p.evaluate(() => { const r = VV.last; return r ? 1 : 0; });
 void shotCut;
 // aus = alles wie vorher (ohne Einträge: dieselbe Höhe und dasselbe Bild wie der Grundstand)
-await p.evaluate(() => { while (S.song.video) SYNQUENZER.undo(); SYNQUENZER.vd3.cut(false); }); await p.waitForTimeout(300);
+await p.evaluate(() => { for (let k = 0; k < 8 && S.song.video; k++) SYNQUENZER.undo(); SYNQUENZER.vd3.cut(false); if (typeof hideToast === 'function') hideToast(); }); await p.waitForTimeout(400);
 const L5 = await p.evaluate(() => ({ru: SV.rulerH, rowH: SV.rowH, vvS: SV.vvS, cuts: SYNQUENZER.vvCuts({range: {a: 0, b: 12}}).hash, lbl: SYNQUENZER.vd3.info().lbl}));
 const shotOff1 = await p.locator('#songView .sv-cw').screenshot();
 ok('Aus = unverändert: Takt-Leiste, Zeilen, Regie und Bild der Song-Fläche wie vor dem Einschalten', L5.ru === L0.ru && L5.rowH === L0.rowH && L5.vvS === 0 && !L5.lbl && L5.cuts === L0.cuts && shotOff0.equals(shotOff1), {L0, L5, gleichesBild: shotOff0.equals(shotOff1)});
@@ -143,7 +144,7 @@ const proto = await p.evaluate(async () => {
   A.setParam(0, 'cutoff', 900); const noHand = V.log().length;          // ohne Finger (Automation/API): nichts
   const down = () => document.body.dispatchEvent(new PointerEvent('pointerdown', {bubbles: true, pointerType: 'touch'}));
   down(); for (const v of [1000, 1400, 1900, 2600, 3300]) { A.setParam(0, 'cutoff', v); await wait(120); }   // eine Regler-Geste
-  down(); A.loadPreset(1, 'FM-Pluck'); await wait(20);
+  down(); A.loadPreset(1, 'Mini-Lead'); await wait(20);
   const syn = (n0, pat) => ({len: 1, notes: pat.map(([t, d, n, v]) => ({t, d, n: n0 + n, v}))});
   A.setClip(3, 1, syn(67, [[0, .5, 0, .8]])); await wait(10);                                                        // Clip angelegt
   A.setClip(3, 1, syn(67, [[0, .5, 0, .8], [1, .5, 4, .7], [2, .5, 7, .9], [3, .5, 12, .6]])); await wait(10);      // Noten eingespielt

@@ -54881,7 +54881,7 @@ function ui1Entries() {
     E('rec', 'Aufnehmen ●', 'oben ●', 'Spur wählen, leeren Platz antippen, ● – nach dem Einzählen einspielen.', 'aufnahme record einspielen', G.main, '#bRec'),
     E('bpm', 'Tempo (BPM)', 'oben BPM', 'Antippen und ziehen ändert das Tempo des Songs.', 'tempo bpm geschwindigkeit schneller langsamer', G.main, '#bBpm'),
     E('metro', 'Metronom', 'oben ♩', 'Klick an/aus; Lautstärke und Einzähler stehen im Menü › Aufnahme.', 'klick metronom click', G.main, '#bMetro'),
-    E('fang', 'FANG', 'unten rechts FANG', 'Gespielt ohne Aufnahme? FANG macht daraus einen Clip, der im Takt weiterläuft.', 'fang capture mitschnitt', G.main, () => ['#bFang', '#fangSlot'].map(q => document.querySelector(q)).find(ui1Shown)),
+    E('fang', 'FANG', 'unten rechts FANG', 'Gespielt ohne Aufnahme? FANG macht daraus einen Clip, der im Takt weiterläuft.', 'fang capture mitschnitt', G.main, () => ['#bFang', '#bFangT', '#fangSlot'].map(q => document.querySelector(q)).find(ui1Shown)),
     E('scene', 'Szene starten', 'Matrix ▶ 1–4 (Kopfzeile)', 'Startet alle Clips einer Szene am nächsten Takt.', 'szene starten launch spalte', G.mx, '.scn'),
     E('stop', 'Spur oder alles stoppen', 'Matrix ■ rechts', '■ stoppt zum nächsten Takt, zweimal = sofort. ■ einer Spur halten = Spur-Blatt.', 'stop stoppen spurblatt', G.mx, '.stp'),
     E('vol', 'Lautstärke einer Spur', 'Spurname waagrecht wischen', 'Am Spurnamen nach links/rechts schieben – mit dB-Anzeige; Doppeltipp auf den Schieber = 0 dB.', 'lautstaerke volume pegel mix fader leiser lauter', G.mx, '.th'),
