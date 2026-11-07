@@ -48,8 +48,8 @@ ok('1 Glätten mit Auswahl: nur gewählte Noten (Takt 2) rücken', selR.idx.leng
 // UI: Noten-Editor → [Harmonie] → Vorschau → Als Clip (+ Akkord-Zeile) – ein Undo-Schritt
 await E(p, () => window.SYNQUENZER.openRoll(0, 4)); await p.waitForTimeout(400);
 const hb = await E(p, () => { const b = [...document.querySelectorAll('#rollSheet .pr-bar.pra button')].find(x => x.textContent === 'Harmonie'); if (!b) return null; b.scrollIntoView({inline: 'center'}); const a = b.parentNode, r = b.getBoundingClientRect(), cx = r.left + r.width / 2;
-  let top = r.top, bot = r.bottom; while (document.elementFromPoint(cx, top - 1) === b) top--; while (document.elementFromPoint(cx, bot) === b) bot++;
-  const vis = [...a.children].filter(x => !x.hidden && x.tagName === 'BUTTON'); return {last: vis[vis.length - 1] === b, h: r.height, hit: bot - top, w: r.width}; });
+  const ar = a.getBoundingClientRect(), hitTop = document.elementFromPoint(cx, ar.top + .5) === b, hitBot = document.elementFromPoint(cx, ar.bottom - .5) === b;
+  const vis = [...a.children].filter(x => !x.hidden && x.tagName === 'BUTTON'); return {last: vis[vis.length - 1] === b, h: r.height, hit: hitTop && hitBot ? ar.height : r.height, w: r.width}; });
 ok('Noten-Editor: [Harmonie] am Ende der Aktionsleiste, Trefferfläche ≥ 44 px', hb && hb.last && hb.hit >= 44 && hb.w >= 44, hb);
 await E(p, () => { const b = [...document.querySelectorAll('#rollSheet .pr-bar.pra button')].find(x => x.textContent === 'Harmonie'); b.scrollIntoView(); b.click(); }); await p.waitForTimeout(300);
 const st0 = await E(p, () => window.SYNQUENZER.hm1.state());
@@ -91,26 +91,27 @@ ok('SPIELEN halten → Skala gesperrt (Schloss + Hinweis)', ks1.k === 'lock' && 
 const glide = async (from, to) => {
   const pts = await E(p, ({from, to}) => { const kb = document.getElementById('kb'), r = kb.getBoundingClientRect(), out = []; for (let n = from; n <= to; n++) { const k = KB.byNote.get(n); if (!k) continue; const e = k.el.getBoundingClientRect(); out.push({n, x: e.left + e.width / 2, y: r.top + r.height * (k.el.classList.contains('b') ? .3 : .85)}); } return out; }, {from, to});
   await E(p, () => window.SYNQUENZER.clearLog());
-  const y = pts[0].y > pts[1].y ? pts[0].y : pts[0].y; // Start auf der weißen Taste
   await p.mouse.move(pts[0].x, pts[0].y); await p.mouse.down();
   for (const q of pts.slice(1)) { await p.mouse.move(q.x, q.y, {steps: 3}); await p.waitForTimeout(40); }
   await p.mouse.up(); await p.waitForTimeout(100);
   return E(p, () => (window.SYNQUENZER.noteLog() || []).filter(e => e.src === 'live').map(e => e.out));
 };
-const g1 = await glide(60, 64);
-ok('Wischen C…E mit Skalen-Sperre: nur C D E, kein Doppelanschlag', g1.join(',') === '60,62,64', g1);
+const C0 = await E(p, () => KB.low);
+const rel = a => a.map(n => n - C0).join(',');
+const g1 = await glide(C0, C0 + 4);
+ok('Wischen C…E mit Skalen-Sperre: nur C D E, kein Doppelanschlag', rel(g1) === '0,2,4', g1);
 await hold();
 const ks2 = await E(p, () => ({k: window.SYNQUENZER.project().settings.kbScale, ref: document.getElementById('kbRef').textContent, ch: window.SYNQUENZER.hm1.kbChord()}));
 ok('SPIELEN nochmal halten → Akkord gesperrt (Grundakkord C)', ks2.k === 'chord' && ks2.ch.z.join(',') === '0,4,7', ks2);
-const g2 = await glide(60, 67);
-ok('Wischen C…G mit Akkord-Sperre: nur C E G', g2.join(',') === '60,64,67', g2);
-const tap1 = await E(p, () => window.SYNQUENZER.hm1.kbNote(62));
-ok('Akkord-Sperre: D (Taste) spielt C (nächster Akkordton, tiefer bei Gleichstand)', tap1 === 60, tap1);
+const g2 = await glide(C0, C0 + 7);
+ok('Wischen C…G mit Akkord-Sperre: nur C E G', rel(g2) === '0,4,7', g2);
+const tap1 = await E(p, c => window.SYNQUENZER.hm1.kbNote(c + 2), C0);
+ok('Akkord-Sperre: D (Taste) spielt C (nächster Akkordton, tiefer bei Gleichstand)', tap1 === C0, tap1);
 await p.screenshot({path: out + '/hm1-sperre-hoch.png', clip: {x: 0, y: 600, width: 428, height: 326}});
 await hold();
 const ks3 = await E(p, () => window.SYNQUENZER.project().settings.kbScale);
-const g3 = await glide(60, 62);
-ok('nochmal halten → frei: C C♯ D', ks3 === 'show' && g3.join(',') === '60,61,62', {ks3, g3});
+const g3 = await glide(C0, C0 + 2);
+ok('nochmal halten → frei: C C♯ D', ks3 === 'show' && rel(g3) === '0,1,2', {ks3, g3});
 const tapSeg = await E(p, () => { const A = window.SYNQUENZER; document.getElementById('segPlay').click(); return A.project().settings.kbScale; });
 ok('ein Tipp auf SPIELEN ändert nichts an der Sperre', tapSeg === 'show', tapSeg);
 
@@ -122,7 +123,7 @@ await E(p, () => window.SYNQUENZER.hm1.open(0, 6, 'lauf')); await p.waitForTimeo
 await E(p, () => window.SYNQUENZER.hm1.act('[data-a="fup"]'));
 await E(p, () => window.SYNQUENZER.hm1.act('[data-a="fup"]'));
 const l1 = await E(p, () => ({c: window.SYNQUENZER.getClip(0, 6), sel: window.SYNQUENZER.roll().sel, u: window.SYNQUENZER.undoInfo().top}));
-ok('Fortsetzen ▲ ×2: C D E F | D E F G | E F G A', l1.c.notes.map(n => n.n).join(',') === '60,62,64,65,62,64,65,67,64,65,67,69' && l1.c.notes[8].t === .5, l1.c.notes.map(n => [n.t, n.n]));
+ok('Fortsetzen ▲ ×2: C D E F | D E F G | E F G A', l1.c.notes.map(n => n.n).join(',') === '60,62,64,65,62,64,65,67,64,65,67,69' && l1.c.notes[4].t === 1 && l1.c.notes[8].t === 2, l1.c.notes.map(n => [n.t, n.n]));
 ok('Fortsetzen: neue Noten gewählt (weiter tippen = weiter)', l1.sel === 4, l1.sel);
 await E(p, () => window.SYNQUENZER.hm1.act('[data-a="fup"]')); await E(p, () => window.SYNQUENZER.hm1.act('[data-a="fup"]'));
 const l2 = await E(p, () => window.SYNQUENZER.getClip(0, 6));

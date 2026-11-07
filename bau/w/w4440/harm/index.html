@@ -4538,6 +4538,7 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 .hm1p .hm1-c{flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:40px;height:38px;padding:0 6px;border:1px solid var(--line);border-radius:6px;font:700 12px/1 var(--font-num)}
 .hm1p .hm1-c small,.hm1p .hm1-s small{font:600 8px/1 var(--font-ui);color:var(--text-dim)}
 .hm1p .hm1-s{flex:none;min-width:58px;height:44px;flex-direction:column;gap:3px;padding:0 8px;font:700 13px/1 var(--font-num)}
+.pr-bar button.hm1b{position:relative}.pr-bar button.hm1b::after{content:'';position:absolute;left:0;right:0;top:-8px;bottom:-8px}
 .cp-c.hm1s{position:relative;box-shadow:inset 0 -3px 0 var(--amber)}
 .cp-c .hm1r{position:absolute;top:2px;right:3px;font:700 9px/1 var(--font-num);font-style:normal;color:var(--amber);pointer-events:none}
 #kbRef.hm1lk::before{content:'';display:inline-block;width:7px;height:8px;margin-right:3px;vertical-align:-1px;background:currentColor;
@@ -38482,7 +38483,7 @@ function hm1PvBtn() { const U = HM1.ui, b = U && U.p && U.p.querySelector('[data
 /* ---------- das Harmonie-Blatt im Noten-Editor (Aktionsleiste ganz rechts: [Harmonie]) ---------- */
 function hm1Acts(t, s) {
   const tr = S.tracks[t]; if (!tr || tr.kind !== 'synth' || percIs(tr) || tr.stimme) return [];
-  return [{id: 'hm1', label: 'Harmonie', title: 'Harmonie: Glätten, Lauf verlängern, Gegenstimme, Akkorde', cls: 'mpb', fn: () => hm1Open(t, s)}];   // mpb: Trefferfläche bis an den Rand der Leiste
+  return [{id: 'hm1', label: 'Harmonie', title: 'Harmonie: Glätten, Lauf verlängern, Gegenstimme, Akkorde', cls: 'hm1b', fn: () => hm1Open(t, s)}];   // hm1b: Trefferfläche bis an den Rand der Leiste (44 px)
 }
 // der nächste freie Platz der Spur t nach Szene s (oder null)
 function hm1Free(t, s) { const tr = S.tracks[t]; for (let k = 1; k < NS(); k++) { const x = (s + k) % NS(); if (!tr.clips[x]) return x; } return null; }

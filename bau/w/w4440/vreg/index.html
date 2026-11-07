@@ -71077,6 +71077,15 @@ function vr1VvBtn(segV) {
   const row = segV && segV.parentNode; if (!row) return;
   const b = el('button', 'rb vr1rb', 'Regeln'); b.setAttribute('aria-label', 'Regie-Regeln: Ereignis → Ansicht');
   onTap(b, () => { if (!VV.busy) vr1RulesOpen(b); }); row.appendChild(b);
+  VR1.vvB = {b, rowV: row}; requestAnimationFrame(vr1VvPlace);
+  if (!VR1.onRs) { VR1.onRs = () => { if (VV.open) requestAnimationFrame(vr1VvPlace); }; window.addEventListener('resize', VR1.onRs); }
+}
+// [Regeln] stands at the end of „Bild“; where that row is too narrow (320 px) at the end of „Format“
+function vr1VvPlace() {
+  const o = VR1.vvB, u = VV.ui; if (!o || !u || !o.b.isConnected) return;
+  const rowF = u.segF && u.segF.parentNode; if (!rowF) return;
+  if (o.b.parentNode !== o.rowV) o.rowV.appendChild(o.b);
+  if (o.rowV.scrollWidth > o.rowV.clientWidth + 1) rowF.appendChild(o.b);
 }
 function vr1RulesOpen(anchor) {
   vr1Css();
