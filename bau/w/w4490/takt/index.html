@@ -32747,6 +32747,7 @@ function audBeat() { return t2b(AU.ctx.currentTime - AU.outLat); }
 const RETRO_MAX = .2;
 function nextBarFromAudible(atT) {
   const c = AU.ctx, tRef = atT != null && c ? atT : (c ? c.currentTime : 0);
+  { const q = tktNextBar(c, tRef, atT); if (q != null) return q; }   // TKT: in der Matrix die Taktstriche der klingenden Clips (z. B. 3/4)
   if (!tkPlain()) {                                               // T1: Taktstriche der Taktart (Szenen: S.ts, Song: Taktkarte)
     let bar = Math.max(0, tBarNext(t2b(tRef - AU.outLat)));
     if (R.playing && c) { const lim = atT != null ? c.currentTime - RETRO_MAX : c.currentTime + .004; while (b2t(bar) < lim) bar = tBarNext(bar); }
@@ -41962,7 +41963,7 @@ function setSongTs(ts, o) {
   UI.dirty.all = true;
   if (!o.quiet && !o.clips) {
     const cand = S.tracks.some(tr => !tr.stimme && tr.clips.some(c => c && (c.ts || null) === old));
-    if (cand || S.song) tktSongTsToast(ts); else toast('Taktart ' + (ts || '4/4'), {label: '↶ Rückgängig', fn: () => undo()});   // TKT: [Clips umwandeln] faltet (Song: Versionen)
+    if (cand || S.song) tktSongTsToast(ts, old); else toast('Taktart ' + (ts || '4/4'), {label: '↶ Rückgängig', fn: () => undo()});   // TKT: [Clips umwandeln] faltet (Song: Versionen)
   }
   return o.clips ? n : true;
 }
@@ -83097,7 +83098,7 @@ Object.assign(SYNQUENZER, {vd3: VD3_API});                  /* VD3: Test-API (Ob
    (5) Effekt-Rack (FX › [RACK]): je Spur SPUR · CHORUS · EQ · KOMP, dann HALL · ECHO · MASTER als Geräte-Fronten mit An/Aus-LED,
        Haupt-Reglern und Live-Anzeige (Pegel; Gain-Reduction bei EQ · KOMP und MASTER). Das FX-Blatt bleibt, wie es ist.
    Daten additiv (clip.tkt, hall.tktRaum, hall.tktLen); ohne sie bleibt alles byte-gleich. */
-const TKT = {mxK: '', mxT: 0, mxV: null, ci: null, ledN: -1, inner: false, hxm: new WeakMap(), irc: new Map(), ab: null, eqLast: {}, chLast: {}, busLast: {}, rk: null, mode: {k: 'g', h: true}};
+const TKT = {mxK: '', mxT: 0, mxV: null, ci: null, ledN: -1, inner: false, hxm: new WeakMap(), irc: new Map(), ab: null, eqLast: {}, chLast: {}, busLast: {}, rk: null, mode: {k: 'g', h: true}, fsrc: null};
 /* ---------- (1) Taktart der Stelle ---------- */
 function tktSlotClip(i, s) { const own = R.own && R.own[i]; if (own && S.song && S.song.own && S.song.own[own]) return S.song.own[own]; return S.tracks[i] && S.tracks[i].clips[s] || null; }
 // die Taktart, die in der Matrix bei Schlag b klingt (alle Clips dieselbe ausdrückliche Taktart, anders als S.ts) – sonst null (T1 wie bisher)
@@ -83117,7 +83118,20 @@ function tktMx(b) {
   }
   let v = null;
   if (any && !mixed && ts && ts !== (S.ts || null)) { const a0 = audCstart(anc, b); v = {ts, L: tsBeats(ts), a0: isNum(a0) ? a0 : 0, i: anc}; }   // nur eine ausdrückliche Clip-Taktart (ohne Feld = 4/4) übertönt die Song-Taktart
+  else if (any && !mixed) {                                               // Prüfung 4: Clips in der Song-Taktart, die nach einem 3/4-Teil neben dem
+    const a0 = audCstart(anc, b), L = tkPlain() ? 4 : tsBeats(S.ts);      // Raster begonnen haben: ihr Takt zählt ab ihrem Anfang (sonst wie bisher)
+    if (isNum(a0)) { const ph = ((a0 % L) + L) % L; if (ph > 1e-6 && L - ph > 1e-6) v = {ts: S.ts || '4/4', L, a0, i: anc}; }
+  }
   TKT.mxK = k; TKT.mxT = now; TKT.mxV = v; return v;
+}
+// Prüfung 4: Einhänger in nextBarFromAudible – Starten/Wechseln in der Matrix am nächsten Taktstrich der klingenden Clips (null: wie bisher)
+function tktNextBar(c, tRef, atT) {
+  if (!c || !R.playing || R.songPlay) return null;
+  const b = t2b(tRef - AU.outLat), mx = tktMx(Math.max(0, b) + 1e-6); if (!mx || !(mx.L > 0)) return null;
+  let bar = Math.max(0, mx.a0 + (Math.floor((b - mx.a0) / mx.L + 1e-9) + 1) * mx.L);
+  const lim = atT != null ? c.currentTime - RETRO_MAX : c.currentTime + .004;
+  for (let g = 0; g < 64 && b2t(bar) < lim; g++) bar += mx.L;
+  return +bar.toFixed(6);
 }
 // Einzähler: die Taktart der Clips, die bei Schlag 0 starten (vor dem Start: R.pend) – null: wie bisher
 function tktCountTs() {
@@ -83239,7 +83253,8 @@ function tktFoldRange(song, a, b) {
   for (let t = 0; t < NT(); t++) {
     const tr = S.tracks[t]; if (!tr || tr.stimme) continue;
     for (const sp of gr2Spans(song, t, a, b)) {
-      const want = tsNorm(tsAtBar(sp.a)), src = tktSrcOf(song, t, sp, 'f'); if (!src.c) continue;
+      const want = tsNorm(tsAtBar(sp.a)), s0 = tktSrcOf(song, t, sp, 'f'), o0 = s0.id == null && TKT.fsrc ? TKT.fsrc.get(t + ':' + sp.s) : null;
+      const src = o0 && s0.c && (s0.c.ts || null) !== want ? {v: 1, id: null, c: o0} : s0; if (!src.c) continue;   // gerade umgewandelte Szenen-Clips: vom Original falten (nie doppelt)
       if (src.c.audio) { res.audio++; continue; }
       if ((src.c.ts || null) === want) { if (sp.id !== src.id && gr1ClipOf(song, t, sp) && gr1ClipOf(song, t, sp).tkt && gr1ClipOf(song, t, sp).tkt.f) { sx9Set(song, t, sp.a, sp.b, src.id); res.n++; } continue; }
       const id = tktVerPut(song, t, sp.s, src.c, {f: want || '4/4', v: src.v}, tktFoldNotes(src.c, want || '4/4', isDrum(t)), want);
@@ -83271,26 +83286,32 @@ function tktFoldMarks(ids) {
   toast(tktFoldTxt(res), res.n ? songUndoAct() : null);
   return res;
 }
-// ganzer Song (Song-Taktart gewechselt): Song-Versionen; ohne Song die Szenen-Clips (an Ort und Stelle, ein ↶ wie T1)
-function tktFoldSong() {
+// ganzer Song (Song-Taktart gewechselt; from = die alte Taktart, undefined = alle anderen): die Szenen-Clips an Ort und Stelle (wie T1
+// „Clips umrechnen“ – die Matrix spielt dann auch in der neuen Taktart), danach im Song, was noch nicht passt (Teile mit eigener
+// Taktart, Versionen, eigene Clips) – ein ↶ (Art 'ts': Taktart, Clips und Song)
+function tktFoldSong(from) {
   if (rec.state !== 'off' || R.songRec) { toast('Erst Aufnahme beenden'); return null; }
-  const song = S.song; let res = null;
+  const song = S.song, want = tsNorm(S.ts), before = t1Snap(), res = {n: 0, audio: 0, full: 0, own: 0}, orig = new Map();
+  S.tracks.forEach((tr, t) => { if (tr.stimme) return; tr.clips.forEach((c, s) => {
+    if (!c) return; const x = c.ts || null; if (x === want || (from !== undefined && x !== (from || null))) return;
+    if (c.audio) { res.audio++; return; }
+    orig.set(t + ':' + s, deep(c)); c.notes = tktFoldNotes(c, want || '4/4', isDrum(t)); if (want) c.ts = want; else delete c.ts; delete c.lanes; clipChanged(t, s); res.n++; }); });
   if (song && song.bars) {
-    songEdit('Clips umwandeln', sg => { res = tktFoldRange(sg, 0, sg.bars); for (const m of sg.marks) if (m.ts) { gr2Restart(sg, m.a); gr2Restart(sg, m.a + m.len); } });
-    if (!res) res = {n: 0, audio: 0, full: 0, own: 0};
-  } else {
-    const before = t1Snap(), want = tsNorm(S.ts); res = {n: 0, audio: 0, full: 0, own: 0};
-    S.tracks.forEach((tr, t) => { if (tr.stimme) return; tr.clips.forEach((c, s) => { if (!c) return; if (c.audio) { res.audio++; return; } if ((c.ts || null) === want) return; c.notes = tktFoldNotes(c, want || '4/4', isDrum(t)); if (want) c.ts = want; else delete c.ts; delete c.lanes; clipChanged(t, s); res.n++; }); });
-    if (res.n) { undoPush({kind: 'ts', before, label: 'Clips umwandeln'}); markDirty(); UI.dirty.all = true; }
+    TKT.fsrc = orig;
+    try { const r = tktFoldRange(song, 0, song.bars); for (const k in res) res[k] += r[k]; } finally { TKT.fsrc = null; }
+    for (const m of song.marks) if (m.ts) { gr2Restart(song, m.a); gr2Restart(song, m.a + m.len); }
+    songTidy(song);
   }
+  if (t1Snap() !== before) { undoPush({kind: 'ts', before, label: 'Clips umwandeln'}); if (song) { songChanged(); songResync(); } markDirty(); UI.dirty.all = true; }
   toast(tktFoldTxt(res), res.n ? {label: 'Rückgängig', fn: () => undo()} : null);
   return res;
 }
-// was beim Song umzuwandeln wäre (Clips in einer anderen Taktart als ihre Stelle)
-function tktFoldCand() {
+// was beim Song umzuwandeln wäre (Szenen-Clips der alten Taktart; Song-Stellen in einer anderen Taktart als ihre Stelle)
+function tktFoldCand(from) {
   const song = S.song, want = tsNorm(S.ts);
-  if (song && song.bars) { for (let t = 0; t < NT(); t++) { if (S.tracks[t].stimme) continue; for (const sp of gr2Spans(song, t, 0, song.bars)) { const c = tktSrcOf(song, t, sp, 'f').c; if (c && !c.audio && (c.ts || null) !== tsNorm(tsAtBar(sp.a))) return true; } } return false; }
-  return S.tracks.some(tr => !tr.stimme && tr.clips.some(c => c && !c.audio && (c.ts || null) !== want));
+  if (S.tracks.some(tr => !tr.stimme && tr.clips.some(c => c && !c.audio && (c.ts || null) !== want && (from === undefined || (c.ts || null) === (from || null))))) return true;
+  if (song && song.bars) { for (let t = 0; t < NT(); t++) { if (S.tracks[t].stimme) continue; for (const sp of gr2Spans(song, t, 0, song.bars)) { const c = tktSrcOf(song, t, sp, 'f').c; if (c && !c.audio && (c.ts || null) !== tsNorm(tsAtBar(sp.a))) return true; } } }
+  return false;
 }
 // Meldung nach dem Taktartwechsel eines Teils (Marken-Blatt): [Clips umwandeln] [Für alle „Teil“] [↶]
 function tktMarkTsToast(id, nm, same) {
@@ -83299,12 +83320,22 @@ function tktMarkTsToast(id, nm, same) {
   const acts = [{label: 'Clips umwandeln', fn: () => tktFoldMarks(ids())}];
   if (same) acts.push({label: 'Für alle „' + nm + '“', fn: () => { if (setMarkTs(id, m.ts || null, true)) { const all = m.part ? S.song.marks.filter(x => x.part === m.part).map(x => x.id) : [id]; toast(nm + ' überall: Taktart ' + (m.ts || S.ts || '4/4'), [{label: 'Clips umwandeln', fn: () => tktFoldMarks(all)}, songUndoAct()].filter(Boolean)); } }});
   const u = songUndoAct(); if (u) acts.push(u);
-  toast(nm + ': Taktart ' + (m.ts || S.ts || '4/4'), acts);
+  toast(nm + ': Taktart ' + (m.ts || S.ts || '4/4'), acts.slice(0, 2)); tktToastMore(acts.slice(2));   // Prüfung 5: toast() zeigt 2 Tasten, die 3. (↶) kommt dazu
+}
+// weitere Tasten an die gerade gezeigte Meldung (gleiches Verhalten wie in toast(): Meldung zu, Schutz gegen Durchtippen, Aktion)
+function tktToastMore(more) {
+  const t = EL.toast, box = t && UI.toastActs ? t.querySelector('.tacts') : null; if (!box || !more.length) return;
+  for (const a of more) {
+    const b = el('button', '', '<span class="bl">' + esc(a.label) + '</span>'), ic = toastIcon(a.label);
+    if (ic) { b.dataset.ic = ic; b.setAttribute('aria-label', a.label.replace(/^\W+\s/, '')); }
+    onTap(b, () => { hideToast(); shieldTap(); a.fn(); }); box.appendChild(b);
+  }
+  toastPlace();
 }
 // Meldung nach dem Wechsel der Song-Taktart (Tempo-Blatt): [Clips umwandeln] [↶]
-function tktSongTsToast(ts) {
+function tktSongTsToast(ts, from) {
   const u = {label: '↶', fn: () => undo()};
-  toast('Taktart ' + (ts || '4/4'), tktFoldCand() ? [{label: 'Clips umwandeln', fn: () => tktFoldSong()}, u] : {label: '↶ Rückgängig', fn: () => undo()});
+  toast('Taktart ' + (ts || '4/4'), tktFoldCand(from) ? [{label: 'Clips umwandeln', fn: () => tktFoldSong(from)}, u] : {label: '↶ Rückgängig', fn: () => undo()});
 }
 // normClip / cleanClip (Laden, Kopie): clip.tkt – Funktions-Deklarationen (normalizeProject läuft schon beim Laden des Skripts)
 function tktClipNorm(c, out) {
@@ -83334,12 +83365,60 @@ function tktMapNote(P, n, raised) {
   const kb = P.src.indexOf(PCx(rel - 1));                                  // sonst wie der Nachbar darunter
   return n + (kb >= 0 ? P.tgt[kb] - P.src[kb] : 0) + P.shift;
 }
-// Leitton-Stellen einer Notenliste (Dur → Moll): Septime mit Dominant-Klang (G oder D gleichzeitig, ohne Grundton) oder Auflösung zum Grundton
-function tktRaised(P, notes) {
+// Prüfung 2/3: über den Leitton H (Dur → Moll) entscheidet die Harmonie der Stelle – über alle Spuren, nicht nur im eigenen Clip:
+// 'v' = V oder vii° (G-Dur, H-vermindert …: H bleibt, harmonisch Moll), 'b' = dort liegt ein B oder ein H ohne Dominante (iii, maj7 …:
+// es wird B wie im Akkord), null = unbekannt (Regel wie bisher: Dominant-Klang im Clip oder Auflösung zum Grundton)
+function tktHarmCls(P, root, q) {
+  const r = PCx(root - P.root); if (r === 7 || r === 11) return 'v';
+  const C = q && Harmony.BY_Q[q], T = (C ? C.iv : [0]).map(x => PCx(r + x));
+  return T.includes(10) || T.includes(11) ? 'b' : null;
+}
+const tktHw = n => Math.max(.05, Math.min(n.d || .25, .5));                // Fenster ab dem Anschlag
+function tktHAt(ns, y, w, out) { for (const x of ns || []) if (x.t < y + w - 1e-6 && x.t + x.d > y + 1e-6) out.push(x.n); }
+function tktHDet(P, ps) { if (ps.length < 2) return null; const d = Harmony.detectChord(ps); return d && d.kind === 'chord' ? tktHarmCls(P, d.root, d.quality) : null; }
+function tktRowAt(row, x) { let e = null; for (const q of row.ch) { if (q.b <= x + 1e-6) e = q; else break; } return e || row.ch[row.ch.length - 1]; }
+// für einen Clip der Szene s (Spur t; s < 0: nur der Clip selbst): Akkord-Zeile der Szene, sonst die Töne aller Spuren der Szene und
+// des Clips; ein Clip, der in der Szene mehrmals läuft, fragt jede Stelle (uneinig: Regel wie bisher)
+function tktHarmFn(P, s, t, c) {
+  const sc = s >= 0 && S.scenes ? S.scenes[s] : null, row = sc && sc.chords && sc.chords.ch && sc.chords.ch.length ? sc.chords : null, rowL = row ? row.len * 4 : 0, oth = [];
+  if (s >= 0) for (let j = 0; j < NT(); j++) { const tr = S.tracks[j]; if (j === t || !tr || tr.stimme || isDrum(j) || percIs(tr)) continue; const x = tr.clips[s]; if (x && !x.audio && x.notes && x.notes.length) oth.push({ns: x.notes, L: clipB(x)}); }
+  const Lc = c ? clipB(c) : 0, span = Math.max(Lc, rowL, ...oth.map(o => o.L));
+  return (n, own) => {
+    const w = tktHw(n), seen = new Set();
+    for (let k = 0; k < 16; k++) {
+      const y = n.t + k * Lc; if (k && (!(Lc > 0) || y >= span - 1e-9)) break;
+      const e = row ? tktRowAt(row, ((y % rowL) + rowL) % rowL) : null; let h;
+      if (e && e.tg && isNum(e.tg.root)) h = tktHarmCls(P, e.tg.root, e.tg.quality);
+      else { const ps = []; tktHAt(own, n.t, w, ps); for (const o of oth) if (o.L > 0) tktHAt(o.ns, ((y % o.L) + o.L) % o.L, w, ps); h = tktHDet(P, ps); }
+      seen.add(h);
+    }
+    return seen.has('v') && !seen.has('b') ? 'v' : seen.has('b') && !seen.has('v') ? 'b' : null;
+  };
+}
+// für die Song-Melodie (Song-Schläge): Träger an der Stelle, sonst die Töne der anderen Spuren dort (Song-Spuren)
+function tktHarmSong(P, song, t) {
+  const car = song.carrier || [];
+  return (n, own) => {
+    let e = null; for (const c of car) { if (c.beat <= n.t + 1e-6) e = c; else break; }
+    if (e && e.target && isNum(e.target.root)) return tktHarmCls(P, e.target.root, e.target.quality);
+    const w = tktHw(n), ps = [], bar = barAt(n.t); tktHAt(own, n.t, w, ps);
+    for (let j = 0; j < NT(); j++) {
+      const tr = S.tracks[j]; if (j === t || !tr || tr.stimme || isDrum(j) || percIs(tr)) continue;
+      const o = laneOriginAt(song.lanes[j], bar); if (o.slot < 0) continue;
+      const c = o.own && song.own && song.own[o.own] ? song.own[o.own] : tr.clips[o.slot], L = c ? clipB(c) : 0; if (!c || c.audio || !(L > 0)) continue;
+      tktHAt(c.notes, (((n.t - o.cs) % L) + L) % L, w, ps);
+    }
+    return tktHDet(P, ps);
+  };
+}
+// Leitton-Stellen einer Notenliste (Dur → Moll): erst die Harmonie der Stelle (hf), sonst Septime mit Dominant-Klang (G oder D gleichzeitig,
+// ohne Grundton) oder Auflösung zum Grundton
+function tktRaised(P, notes, hf) {
   const out = new Set(); if (P.minor) return out;
   const rel = n => PCx(n.n - P.root), ns = notes.slice().sort((a, b) => a.t - b.t);
   ns.forEach((n, j) => {
     if (rel(n) !== 11) return;
+    const h = hf ? hf(n, ns) : null; if (h === 'v') { out.add(n); return; } if (h === 'b') return;
     let dom = false, ton = false;
     for (const m of ns) { if (m === n || m.t >= n.t + n.d - 1e-6 || m.t + m.d <= n.t + 1e-6) continue; const r = rel(m); if (r === 7 || r === 2 || r === 5) dom = true; if (r === 0) ton = true; }
     const nx = ns.slice(j + 1).find(m => m.t > n.t + 1e-6);
@@ -83348,7 +83427,7 @@ function tktRaised(P, notes) {
   });
   return out;
 }
-function tktMapNotes(P, notes) { const up = tktRaised(P, notes); return notes.map(n => Object.assign({}, n, {n: clamp(tktMapNote(P, n.n, up.has(n)), 0, 127)})); }
+function tktMapNotes(P, notes, hf) { const up = tktRaised(P, notes, hf || tktHarmFn(P, -1, -1, null)); return notes.map(n => Object.assign({}, n, {n: clamp(tktMapNote(P, n.n, up.has(n)), 0, 127)})); }
 // ein Akkord-Ziel (Träger, Akkord-Zeile): Töne abbilden, Grundton und Art neu (die Dominante bleibt Dur)
 function tktMapTarget(P, tg) {
   if (!tg || typeof tg !== 'object' || !isNum(tg.root)) return tg;
@@ -83379,7 +83458,8 @@ function tktModeDo(kind) {
   if (rec.state !== 'off' || R.songRec) { toast('Erst Aufnahme beenden'); return null; }
   const P = tktModePlan(S.key, kind), before = tktModeSnap(), key = {root: P.toRoot, scale: P.toScale, src: 'user'};
   const res = {n: 0, dr: 0, audio: 0, full: 0, mel: 0, chords: 0, from: tktKeyTxt(P.root, P.minor), to: tktKeyTxt(P.toRoot, !P.minor)};
-  const done = new Set();
+  const done = new Set(), melTo = {};
+  for (const k of Object.keys(song.mel || {})) { const M = song.mel[k]; if (M && Array.isArray(M.notes) && M.notes.length) melTo[k] = tktMapNotes(P, M.notes, tktHarmSong(P, song, +k)); }   // vor den Clips: die Stelle klingt noch wie vorher
   for (let t = 0; t < NT(); t++) {
     const tr = S.tracks[t]; if (!tr) continue;
     if (tr.stimme) { if (tr.clips.some(Boolean)) res.audio++; continue; }
@@ -83389,7 +83469,7 @@ function tktModeDo(kind) {
       if (cur.audio) { res.audio++; continue; }
       const src = cur.tkt && cur.tkt.m === P.to && cur.tkt.k === P.kind ? tktSrcOf(song, t, sp, 'm') : {v: sp.v, id: sp.id, c: cur};   // dasselbe nochmal: von der Quelle
       if (!src.c) continue;
-      const id = tktVerPut(song, t, sp.s, src.c, {m: P.to, k: P.kind, v: src.v}, tktMapNotes(P, src.c.notes || []), undefined, key);
+      const id = tktVerPut(song, t, sp.s, src.c, {m: P.to, k: P.kind, v: src.v}, tktMapNotes(P, src.c.notes || [], tktHarmFn(P, sp.s, t, src.c)), undefined, key);
       if (!id) { res.full++; continue; }
       if (id !== sp.id) sx9Set(song, t, sp.a, sp.b, id);
       res.n++;
@@ -83397,12 +83477,12 @@ function tktModeDo(kind) {
     const lane = song.lanes[t];
     if (lane) for (let x = 0; x < song.bars; x++) {
       const o = laneOriginAt(lane, x); if (!o.own || sx9Ver(song, o.own) || done.has(o.own)) continue; done.add(o.own);
-      const c = song.own && song.own[o.own]; if (!c || c.audio) continue; c.notes = tktMapNotes(P, c.notes || []); c.key = Object.assign({}, key); res.n++;
+      const c = song.own && song.own[o.own]; if (!c || c.audio) continue; c.notes = tktMapNotes(P, c.notes || [], tktHarmFn(P, o.slot, t, c)); c.key = Object.assign({}, key); res.n++;
     }
   }
   for (const k of Object.keys(song.mel || {})) {
     const t = +k, M = song.mel[k]; if (!M || !Array.isArray(M.notes) || !M.notes.length || isDrum(t) || (S.tracks[t] && percIs(S.tracks[t]))) continue;
-    M.notes = tktMapNotes(P, M.notes); if (M.key) M.key = Object.assign({}, M.key, {root: key.root, scale: key.scale}); res.mel++;
+    M.notes = melTo[k] || tktMapNotes(P, M.notes); if (M.key) M.key = Object.assign({}, M.key, {root: key.root, scale: key.scale}); res.mel++;
   }
   for (const c of song.carrier || []) if (c.target) { c.target = tktMapTarget(P, c.target); res.chords++; }
   for (const sc of S.scenes || []) if (sc && sc.chords) { tktMapRow(P, sc.chords); res.chords += sc.chords.ch.length; }
@@ -83689,7 +83769,7 @@ function tktRackPaint(p) {
   }
   for (const k of ['hall.decay', 'hall.predelay', 'hall.ret']) { const c = busKnob(k); if (k === 'hall.decay' && h.tktRaum) c.classList.add('inert'); put('hall', c); }
   for (const k of ['echo.divL', 'echo.fb', 'echo.toHall', 'echo.ret']) put('echo', busKnob(k));
-  for (const k of ['master.thr', 'master.ratio', 'master.makeup', 'master.vol']) put('master', busKnob(k));
+  for (const k of ['master.thr', 'master.ratio', 'master.makeup', 'master.vol']) put('master', busKnob(k, k === 'master.vol' ? {label: 'Ausgang'} : undefined));   // Prüfung 7: kurz (passt)
   if (!p._tk) { p._tk = true; onTap(p, b => tktRackTap(p, b), 'button[data-rk],button[data-tkr]'); }
   K.mt = {}; for (const d of p.querySelectorAll('.tkr-dev')) K.mt[d.dataset.dev] = {bar: d.querySelector('.tkr-bar'), em: d.querySelector('.tkr-mtr em'), last: ''};
 }
@@ -83719,15 +83799,22 @@ function tktRackEnd2() { const K = TKT.rk; if (!K) return; if (K.raf) cancelAnim
 function tktRackLive() {
   const K = TKT.rk, c = AU.ctx; if (!K) return;
   const tap = (k, src) => { if (!c || !src || K.an[k]) return; try { const an = c.createAnalyser(); an.fftSize = 1024; an.smoothingTimeConstant = 0; src.connect(an); K.an[k] = {an, src, d: new Float32Array(1024)}; } catch (e) {} };
-  const A = AU.tracks && AU.tracks[K.i];
-  if (A && A.cut) tap('spur', A.cut);
-  if (A && A.trem) tap('chorus', A.trem);
-  tap('hall', AU.hallRet); if (AU.echo) tap('echo', AU.echo.output);
-  const N = A && A.mixa && A.mixa.node;
-  if (N && K.node !== N) { K.node = N; try { N.port.onmessage = e => { const m = e.data; if (m && m.mt) { K.gr = m.mt[0]; K.grT = performance.now(); } }; N.port.postMessage({mt: 1}); } catch (e) {} }
+  const reg = () => {                                                      // Prüfung 6: auch nachträglich (Kompressor erst im offenen Rack an)
+    const A = AU.tracks && AU.tracks[K.i];
+    if (A && A.cut) tap('spur', A.cut);
+    if (A && A.trem) tap('chorus', A.trem);
+    tap('hall', AU.hallRet); if (AU.echo) tap('echo', AU.echo.output);
+    const N = A && A.mixa && A.mixa.node;
+    if (N && K.node !== N) {
+      if (K.node) { try { K.node.port.postMessage({mt: 0}); K.node.port.onmessage = null; } catch (e) {} }
+      K.node = N; try { N.port.onmessage = e => { const m = e.data; if (m && m.mt) { K.gr = m.mt[0]; K.grT = performance.now(); } }; N.port.postMessage({mt: 1}); } catch (e) {}
+    }
+  };
+  reg();
   const loop = t => {
     if (TKT.rk !== K) return; K.raf = requestAnimationFrame(loop); if (t - (K.lt || 0) < 50) return; K.lt = t;
     if (!UI.pop || UI.pop.name !== 'tktrack') { tktRackEnd(); return; }
+    if (((K.rg = (K.rg | 0) + 1) & 7) === 0) reg();                         // ≈ alle 0,4 s: neuer MIX-A-Knoten?
     const lvl = k => { const a = K.an[k]; if (!a) return null; a.an.getFloatTimeDomainData(a.d); let pk = 0; for (let j = 0; j < a.d.length; j++) { const x = a.d[j] < 0 ? -a.d[j] : a.d[j]; if (x > pk) pk = x; } return pk > 1e-5 ? 20 * Math.log10(pk) : -99; };
     const show = (dev, frac, txt) => { const M = K.mt && K.mt[dev]; if (!M) return; const f = Math.max(0, Math.min(1, frac)); M.bar.style.transform = 'scaleY(' + f.toFixed(3) + ')'; if (txt !== M.last) { M.last = txt; M.em.textContent = txt; } };
     const db = v => (v == null || v < -60 ? '–' : (v < -.05 ? MINUS : '') + Math.abs(Math.round(v)) + ' dB');

@@ -80214,7 +80214,7 @@ function kl1Kon(song, a, e, tp) {
 function a2Has(c, ns) { if (c && c.lf) return true; for (const n of ns) if (n.off || n.rt || n.tp || n.pb != null) return true; return false; }
 // the range [a, e) of lane t as it sounds (ns: time from song beat A), bar by bar, and the origin playing each bar (cs); null = no LAUF in it
 function a2Sound(song, t, a, e, A) {
-  const lane = song.lanes[t], ns = [], cb = []; let pc = null, any = false;
+  const lane = song.lanes[t], ns = [], cb = [], dr = !!S.tracks[t] && S.tracks[t].kind === 'drum'; let pc = null, any = false;
   for (let b = 0; b < e; b++) {
     const ob = laneOriginAt(lane, b);
     if (ob.slot < 0 || !laneClipOk(song, t, ob)) { pc = null; continue; }
@@ -80225,23 +80225,36 @@ function a2Sound(song, t, a, e, A) {
     if (b < a) continue;
     cb[b - a] = cs;
     const ev = lf1Win(src, cs, barBeat(b), barBeat(b + 1));
-    if (!ev) { kl1Bar(ns, src, cs, L, b, A); continue; }
+    if (!ev) { if (dr && src.notes.some(n => n.p != null && n.p < 1)) { any = true; a2DrumBar(ns, src, cs, L, b, A); } else kl1Bar(ns, src, cs, L, b, A); continue; }   // Drums: Chance je Durchlauf
     any = true;
     for (const x of ev) { const y = cleanNote(x); y.t = +(cs + x.t - A).toFixed(6); ns.push(y); }
   }
   for (const y of ns) delete y.o;
   return any ? {ns, cb, A} : null;
 }
+// Drum-Chance (DrumSeq.expandStep, scheduleDrums): Schritt n schweigt im Durchlauf k (Startwert des Clips, Schritt, Pad)
+const a2Off = (c, n, k) => n.p != null && n.p < 1 && DrumSeq.rand01(c.seed | 0, k, Math.round(n.t * 96), n.n) >= n.p;
+// kl1Bar for a drum clip with chance: the steps of song bar b as decided in their Durchlauf m (from ocs), without p
+function a2DrumBar(out, src, ocs, Lb, b, A) {
+  const b0 = barBeat(b), b1 = barBeat(b + 1);
+  for (let m = Math.floor((b0 - ocs) / Lb) - 1; ocs + m * Lb < b1 - 1e-9; m++) for (const nt of src.notes) {
+    if (nt.t >= Lb - 1e-9) continue;
+    const st = ocs + m * Lb + nt.t; if (st < b0 - 1e-9 || st >= b1 - 1e-9 || a2Off(src, nt, m)) continue;
+    const x = cleanNote(nt); delete x.p; x.t = +(st - A).toFixed(6); out.push(x);
+  }
+}
 // the part without extension plays the scene clip from its Durchlauf at the range start (step counter 0 there): sounds the range different?
 function a2Diff(snd, c, scs, L, A, RB, sig) {
   if (!snd) return false;
-  const ps = A - ((((A - scs) % L) + L) % L), ev = lf1Win(c, ps, A, A + RB); if (!ev) return true;
+  const ps = A - ((((A - scs) % L) + L) % L); let ev = lf1Win(c, ps, A, A + RB);
+  if (!ev && c.notes.some(n => n.p != null && n.p < 1)) { const d = []; for (let b = Math.round(A / 4); b < Math.round((A + RB) / 4); b++) a2DrumBar(d, c, ps, L, b, A); return sig(snd.ns, 0) !== sig(d, 0); }   // Drums
+  if (!ev) return true;
   return sig(snd.ns, 0) !== sig(ev, A - ps);
 }
 // the window [a, a + B) as the clip plays it in Durchlauf k (time in the whole content)
 function a2Win(c, k) {
   const w = c.lw, B = clipB(c), P = lf1Plan(c), out = [];
-  for (const x of P ? lf1Ev(P, k * B, (k + 1) * B) : c.notes.filter(n => n.t < B - 1e-9)) { const y = cleanNote(x); y.t = +(x.t - (P ? k * B : 0) + w.a).toFixed(6); delete y.o; out.push(y); }
+  for (const x of P ? lf1Ev(P, k * B, (k + 1) * B) : c.notes.filter(n => n.t < B - 1e-9 && !a2Off(c, n, k))) { const y = cleanNote(x); y.t = +(x.t - (P ? k * B : 0) + w.a).toFixed(6); delete y.o; if (!P) delete y.p; out.push(y); }   // Drums: Chance wie im Durchlauf k
   return out;
 }
 // konDo: the sound of the range (+ the window behind it, as the clip starts), the window's Durchlauf there, the fingerprints
@@ -80254,7 +80267,7 @@ function a2Keep(c, snd, RB, L) {
 // the whole content (1) or the content outside the window (0) with the clip's LAUF and the window, as stored data (normalised
 // like kl1Norm: Laden ändert ihn nicht)
 function a2Sig(c, all) {
-  const w = c.lw, nn = n => { const x = normNoteExtras(n, {t: kl1K4(n.t), d: kl1K4(Math.min(n.d, 64)), n: clamp(Math.round(n.n), 0, 127), v: Math.round(clamp(n.v, .01, 1) * 1e3) / 1e3}, 'synth'); delete x.o; return JSON.stringify(x); };
+  const w = c.lw, nn = n => { const x = normNoteExtras(n, normNoteExtras(n, {t: kl1K4(n.t), d: kl1K4(Math.min(n.d, 64)), n: clamp(Math.round(n.n), 0, 127), v: Math.round(clamp(n.v, .01, 1) * 1e3) / 1e3}, 'synth'), 'drum'); delete x.o; return JSON.stringify(x); };   // + Drum-Felder (a p r m)
   const s = (all ? kl1Full(c) : w.notes).map(nn).sort().join('|') + '#' + JSON.stringify(lf1NormLf(c.lf)) + (all ? '' : '#' + kl1K4(w.a) + ':' + kl1K4(clipB(c)));
   let h1 = 0x811c9dc5, h2 = 0x9e3779b9;
   for (let i = 0; i < s.length; i++) { const k = s.charCodeAt(i); h1 = Math.imul(h1 ^ k, 16777619); h2 = Math.imul(h2 ^ k, 2246822507); }
@@ -80292,11 +80305,12 @@ function a2Move(c, w0, ex, B0) {
 }
 // kl1Norm (Laden): lw.sn / sg / sw / sk bleiben (Noten wie lw.notes geprüft)
 function a2Norm(w, lw, L, kind) {
-  if (!Array.isArray(w.sn) || typeof w.sg !== 'string' || kind === 'drum') return;
+  if (!Array.isArray(w.sn) || typeof w.sg !== 'string') return;
   const sn = [];
   for (const n of w.sn.slice(0, 16384)) {
     if (!n || !isNum(n.t) || !isNum(n.d) || !isNum(n.n) || !isNum(n.v) || n.t < 0 || n.t >= L || n.d <= 0) continue;
-    const x = normNoteExtras(n, {t: n.t, d: Math.min(n.d, 64), n: clamp(Math.round(n.n), 0, 127), v: Math.round(clamp(n.v, .01, 1) * 1e3) / 1e3}, kind); delete x.o; sn.push(x);
+    let nn = clamp(Math.round(n.n), 0, 127); if (kind === 'drum' && !DRUM_GMS.includes(nn)) nn = mapV1Drum(nn);   // wie kl1Norm
+    const x = normNoteExtras(n, {t: n.t, d: Math.min(n.d, 64), n: nn, v: Math.round(clamp(n.v, .01, 1) * 1e3) / 1e3}, kind); delete x.o; sn.push(x);
   }
   lw.sn = sn.sort((x, y) => x.t - y.t || x.n - y.n); lw.sg = w.sg.slice(0, 40); lw.sw = typeof w.sw === 'string' ? w.sw.slice(0, 40) : '';
   if (isNum(w.sk) && w.sk >= 1) lw.sk = Math.min(4096, Math.round(w.sk));

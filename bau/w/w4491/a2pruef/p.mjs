@@ -55,6 +55,12 @@ const CASES = {
   C10: `mk(0, 1, {dir:'rev'}); song(4, [[{bar:0,slot:0}]]); own(0, 2, 3.75, 84); return {ra:2, re:4};`,
   // 2-Takt-Clip hin-her, Bereich beginnt mitten im Durchlauf ohne eigenen Clip (nicht erweitert? muss trotzdem gleich klingen)
   C11: `mk(0, 2, {dir:'rev'}); song(6, [[{bar:0,slot:0}]]); return {ra:1, re:3};`,
+  // Drums: Chance + Wirbel + Akzent + Verschiebung, eigener Clip, Bereich mitten im Song
+  D2: `dk(1, n => { n[2].p=.5; n[3].p=.3; n[6].p=.6; n[6].r=3; n[9].a=1; n[9].p=.7; n[11].m=.2; n[14].p=.4; }); dsong(8); own(DRUM_T, 4, 2.5, 38); return {ra:3, re:7};`,
+  // Drums: nur Chance, kein eigener Clip, Bereich mitten im Song (nicht erweitert hieße: Zähler ab Teil-Anfang)
+  D3: `dk(1, n => { for (const k of [1,3,5,7,9,11,13,15]) n[k].p=.5; }); dsong(8); return {ra:2, re:4};`,
+  // Drums: 2-Takt-Clip mit Chance, Bereich ab Takt 1 (Anfang = Zähler 0: nicht erweitern, Daten wie bisher)
+  D4: `dk(2, n => { for (const k of [1,3,5,7]) n[k].p=.5; }); dsong(4); return {ra:0, re:2};`,
 };
 
 async function runCase(name) {
@@ -83,15 +89,19 @@ async function runCase(name) {
       c.notes.push(Object.assign({t: xt, d: .2, n: xn, v: .9}, ex || null)); c.notes.sort((u, v) => u.t - v.t);
       if (lf) c.lf = lf;
     };
-    const cfg = (new Function('A', 'mk', 'song', 'own', code))(A, mk, song, own);
+    const dk = (len, fx) => { const notes = []; for (let i = 0; i < len * 16; i++) notes.push({t: i * .25, d: .1, n: [36, 42, 38, 42][i % 4], v: .7 + (i % 3) * .1}); if (fx) fx(notes);
+      S.tracks[DRUM_T].clips[0] = normClip({len, notes}, 'drum', S.key); return S.tracks[DRUM_T].clips[0]; };
+    const dsong = bars => { const ls = []; ls[DRUM_T] = [{bar: 0, slot: 0}]; song(bars, ls); };
+    const cfg = (new Function('A', 'mk', 'song', 'own', 'dk', 'dsong', code))(A, mk, song, own, dk, dsong);
     restoreSong(JSON.parse(songSnapshot())); songTidy(S.song); songChanged(); UNDO.length = 0; REDO.length = 0;
     const bars = S.song.bars, {ra, re} = cfg, A0 = barBeat(ra), E0 = barBeat(re), RB = E0 - A0;
     const cap = (start, beats) => {
       if (R.playing) stop(); if (R.songPlay) songPlayEnd(true);
-      const ev = [], orig = spawnClipVoice;
+      const ev = [], orig = spawnClipVoice, od = drumHit;
       spawnClipVoice = (i, out, vel, t, dur) => { ev.push([i, out, +t2b(t).toFixed(3), +(dur / spb()).toFixed(3), +vel.toFixed(2)]); return null; };
+      drumHit = (gm, vel, t, src, ex) => { if (src === 'clip') ev.push([DRUM_T, gm, +t2b(t).toFixed(3), ex && ex.acc ? 1 : 0, +vel.toFixed(2)]); return null; };
       try { start(); for (let h = .02; h < 200 && R.playing && R.schedBeat < beats + .5; h += .02) tick(h); }
-      finally { stop(); if (R.songPlay) songPlayEnd(true); spawnClipVoice = orig; }
+      finally { stop(); if (R.songPlay) songPlayEnd(true); spawnClipVoice = orig; drumHit = od; }
       return ev.filter(e => e[2] >= -1e-6 && e[2] < beats - 1e-6).sort((x, y) => x[2] - y[2] || x[0] - y[0] || x[1] - y[1]);
     };
     const win = (ev, a, e) => ev.filter(x => x[2] >= a - 1e-6 && x[2] < e - 1e-6).map(x => [x[0], x[1], +(x[2] - a).toFixed(3), x[3], x[4]]);
@@ -102,6 +112,7 @@ async function runCase(name) {
     // Konsolidieren
     const r = A.konsolidieren(ra, re - 1, 'Kern'); out.ext = r.ext;
     out.lw = S.tracks.map((tr, t) => tr.clips[0] && tr.clips[0].lw ? t + ':' + Object.keys(tr.clips[0].lw).sort().join(',') + ' a=' + tr.clips[0].lw.a + ' sk=' + (tr.clips[0].lw.sk || 0) : null).filter(Boolean);
+    out.clipAfter = S.tracks.map(tr => tr.clips[0] ? JSON.stringify(cleanClip(tr.clips[0])) : null);
     const p1 = cap(() => launchPart(r.part), RB);
     out.part = J(p1) === J(rng0); if (!out.part) out.partD = diff(rng0, p1);
     const s1 = cap(() => songPlayStart(0), barBeat(bars));
@@ -149,12 +160,13 @@ for (const name of Object.keys(CASES)) {
   const RB = (r.re - r.ra) * 4;
   // MIDI des eingefügten Teils (alle Spuren) gegen das Gespielte im eingefügten Teil
   let mOk = true; const md = [];
-  for (let t = 0; t < 2; t++) {
+  for (const t of [0, 1, 4]) {
     const m = midiNotes(r.midi, t + 1).filter(x => x[1] >= r.endB - 1e-6 && x[1] < r.endB + RB - 1e-6).map(x => [x[0], +(x[1] - r.endB).toFixed(3)]);
     const pl = r.played.filter(x => x[0] === t && x[2] >= r.endB - 1e-6 && x[2] < r.endB + RB - 1e-6).map(x => [x[1], +(x[2] - r.endB).toFixed(3)]).sort((x, y) => x[1] - y[1] || x[0] - y[0]);
     if (JSON.stringify(m) !== JSON.stringify(pl)) { mOk = false; md.push({t, midi: m.map(x => x[0] + '@' + x[1]).join(' '), played: pl.map(x => x[0] + '@' + x[1]).join(' ')}); }
   }
   const tag = name + ' (' + r.n + ' Noten, erweitert ' + r.ext + ', ' + r.lw.join(' | ') + ')';
+  console.log('     ' + name + ' Clip-Daten danach #' + (await import('node:crypto')).createHash('md5').update(JSON.stringify(r.clipAfter)).digest('hex').slice(0, 10));
   ok(tag + ' Teil = Bereich', r.part, r.partD);
   ok(name + ' Song danach gleich', r.song1, r.song1D);
   ok(name + ' Teil eingefügt = Bereich', r.placed, r.placedD);
