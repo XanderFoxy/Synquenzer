@@ -22,7 +22,7 @@ await p.evaluate(() => {
 const render = async () => p.evaluate(async () => {
   const r = await window.SYNQUENZER.vvRender({range: {a: 0, b: 5, sel: false}});
   const L = (r.log || []).filter(e => e.track === 4 && e.beat != null);
-  const k0 = Math.min(...L.filter(e => e.src === 'clip' && e.out === 36).map(e => e.beat));
+  const k0 = Math.min(...L.map(e => e.beat));   // Song-Schlag 0 = erster Schlag (Kick oder Becken)
   return L.map(e => ({b: +(e.beat - k0).toFixed(3), n: e.out, src: e.src}));
 });
 const has = (L, b, n) => L.some(e => Math.abs(e.b - b) < .02 && e.n === n);
@@ -57,6 +57,7 @@ u = await p.evaluate(() => window.SYNQUENZER.ueList());
 ok('Altes Projekt: Tom-Wirbel → ersetzt nur Toms; Stopp bleibt ganz', u.length >= 1 && JSON.stringify(u.find(e => e.src === 'p-tom-kurz').pads) === '[45,47,50]', u.map(e => ({src: e.src, pads: e.pads || null})));
 L = await render();
 ok('Altes Projekt: Snare auf Takt 4 Schlag 4 bleibt im Überblendbereich', has(L, 15, 38) && ueCount(L, 14, 16) === 8);
+ok('Altes Projekt: Becken-Stopp schweigt weiter ganz (Schlag 1–2)', has(L, 0, 49) && !has(L, 0, 36) && !has(L, 1, 38) && !has(L, 1, 42) && has(L, 2, 36));
 
 // 5) frei per Tipp: Song-Ansicht, ◆ ÜBERGÄNGE, Kachel „Snare-Wirbel“ antippen, dann Takt 4 · Schlag 3,5 in der Drum-Zeile
 await p.evaluate(() => { const Q = window.SYNQUENZER; Q.setSong(window.__song0); Q.songView(true); Q.sx8Zoom(80); Q.fllGrid('1/8'); Q.ueBar(true); });
@@ -64,6 +65,8 @@ await p.waitForTimeout(400);
 let geo = await p.evaluate(() => { const Q = window.SYNQUENZER; if (SV.rows.indexOf(4) < 0) Q.trackBank(1); svDraw(true); const i = SV.rows.indexOf(4), c = SV.cv.getBoundingClientRect(); return {i, cx: c.left, cy: c.top, ru: SV.rulerH, rh: SV.rowH, cw: SV.cellW, sx: SV.x}; });
 const tile = await p.$('.ue-tile[data-id="fx-snare-wirbel"]');
 if (!tile) { await p.evaluate(() => { UE.tab = 'ue'; uePaintBar(); }); }
+await p.evaluate(() => { const t = document.querySelector('.ue-tile[data-id="fx-snare-wirbel"]'); t.parentNode.scrollLeft = t.offsetLeft - 80; });
+await p.waitForTimeout(100);
 const tb = await (await p.$('.ue-tile[data-id="fx-snare-wirbel"]')).boundingBox();
 await p.touchscreen.tap(tb.x + tb.width / 2, tb.y + tb.height / 2);
 await p.waitForTimeout(150);
@@ -87,7 +90,7 @@ const chip = await p.$(`.ue-chip[data-id="${free.id}"]`);
 const cb = await chip.boundingBox();
 const cl = await (await chip.$('.ue-cl')).boundingBox();
 await p.mouse.move(cl.x + cl.width / 2, cl.y + cl.height / 2); await p.mouse.down();
-for (let k = 1; k <= 8; k++) { await p.mouse.move(cl.x + cl.width / 2 + k * geo.cw / 8 * 2.25, cl.y + cl.height / 2 - k); await p.waitForTimeout(16); }
+for (let k = 1; k <= 8; k++) { await p.mouse.move(cl.x + cl.width / 2 - k * geo.cw / 8, cl.y + cl.height / 2 - k); await p.waitForTimeout(16); }
 await p.mouse.up(); await p.waitForTimeout(250);
 u = await p.evaluate(() => window.SYNQUENZER.ueList());
 let f2 = u.find(e => e.id === free.id);
@@ -133,7 +136,7 @@ await p.touchscreen.tap(cbx.x + cbx.width / 2, cbx.y + cbx.height / 2); await p.
 const n1 = (await p.evaluate(() => window.SYNQUENZER.ueList())).find(e => e.id === free.id).notes;
 ok('Noten: Tipp in Schritt 2 → Note (Snare-Pad)', n1.length === n0 - 1 || n1.length === n0 + 1, {n0, n1: n1.length});
 m = await sz();
-ok('Noten-Blatt quer: Tasten ≥ 44 px (außer Pad-Chips), ✕ sichtbar', m.inView && m.xVis, m);
+ok('Noten-Blatt quer: Tasten ≥ 44 px, ✕ sichtbar', !m.small.length && m.inView && m.xVis, m);
 await p.screenshot({path: OUT + 'fx1-quer-noten.png'});
 await p.evaluate(() => closePop());
 await p.evaluate(id => window.SYNQUENZER.ueSheet(id), free.id); await p.waitForTimeout(250);

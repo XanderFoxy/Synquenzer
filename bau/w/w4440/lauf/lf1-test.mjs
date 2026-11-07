@@ -14,7 +14,7 @@ async function page(w, h) {
   p.cdp = await ctx.newCDPSession(p);
   return p;
 }
-const center = async (p, js) => p.evaluate(js);
+const center = async (p, js, arg) => p.evaluate(js, arg);
 async function tap(p, xy) { await p.touchscreen.tap(xy.x, xy.y); await sl(120); }
 async function hold(p, xy, ms) {
   await p.cdp.send('Input.dispatchTouchEvent', {type: 'touchStart', touchPoints: [{x: xy.x, y: xy.y}]});
@@ -57,7 +57,6 @@ function midiOns(bytes) {
   let c = await p.evaluate(() => SYNQUENZER.getClip(1, 0));
   ok('Tipp: Schritt 3 aus, Note bleibt', c.notes.length === 8 && c.notes[2].off === true && c.notes[2].n === 52, JSON.stringify(c.notes[2]));
   ok('Schritt 3 gedimmt (lf1off)', await p.evaluate(() => SYNQUENZER.laufApi().se.cells[2].classList.contains('lf1off')));
-  ok('ein Undo-Schritt', await p.evaluate(() => SYNQUENZER.undoInfo ? true : true));
   // 2 langer Druck auf Schritt 5 -> Menü; Ratsche 3, Transponieren +12 auf Schritt 2, Chance 50 % auf Schritt 8
   await hold(p, await cellXY(p, 4));
   ok('langer Druck öffnet Schritt-Menü', await p.evaluate(() => !!document.querySelector('.pop.lf1pop')), await p.evaluate(() => (document.querySelector('.pop h4') || {}).textContent));
@@ -68,8 +67,7 @@ function midiOns(bytes) {
   c = await p.evaluate(() => SYNQUENZER.getClip(1, 0));
   ok('Ratsche 3 gesetzt', c.notes[4].rt === 3, JSON.stringify(c.notes[4]));
   await p.screenshot({path: out + '/lf1-p-menue.png'});
-  await p.evaluate(() => { SYNQUENZER.lf1Step(1, 0, 1, 'tp', 12); SYNQUENZER.lf1Step(1, 0, 7, 'pb', .5); SYNQUENZER.closeMenu && 0; });
-  await p.evaluate(() => { const L = document.querySelector('#popLayer, .pop'); });
+  await p.evaluate(() => { closePop(); SYNQUENZER.lf1Step(1, 0, 1, 'tp', 12); SYNQUENZER.lf1Step(1, 0, 7, 'pb', .5); });
   c = await p.evaluate(() => SYNQUENZER.getClip(1, 0));
   ok('Transponieren +12 / Chance 50 %', c.notes[1].tp === 12 && c.notes[7].pb === .5, JSON.stringify([c.notes[1], c.notes[7]]));
   // Ereignisse wie gespielt (Durchgang 0): Schritt 3 fehlt, Schritt 5 dreimal, Schritt 2 eine Oktave höher
@@ -82,7 +80,7 @@ function midiOns(bytes) {
   const pb2 = []; for (let k = 0; k < 16; k++) pb2.push((await p.evaluate(k => SYNQUENZER.lf1Events(1, 0, k), k)).some(e => e.n === 60) ? 1 : 0);
   ok('Chance 50 %: mal ja, mal nein, jedes Mal gleich', pb.includes(1) && pb.includes(0) && pb.join('') === pb2.join(''), pb.join(''));
   // 3 Wiedergabe: Noten-Log ohne den stummen Schritt, Ratsche 3 Schläge je Durchgang
-  await tap(p, {x: 214, y: 600});   // Nutzergeste (Audio frei)
+  await p.keyboard.press('F10');   // Nutzergeste (Audio frei)
   await p.evaluate(() => { const Q = SYNQUENZER; Q.clearLog(); Q.launchScene(0); });
   await sl(2600);
   const log = await p.evaluate(() => SYNQUENZER.noteLog(400).filter(e => e.track === 1 && e.src === 'clip'));
@@ -95,8 +93,8 @@ function midiOns(bytes) {
   await p.evaluate(() => { for (let k = 0; k < 3; k++) SYNQUENZER.undo(); });     // Ratsche/Transp./Chance zurück (Schritt 3 bleibt aus)
   c = await p.evaluate(() => SYNQUENZER.getClip(1, 0));
   ok('Undo je Aktion ein Schritt', c.notes[2].off === true && !c.notes[4].rt && !c.notes[1].tp && c.notes[7].pb == null, JSON.stringify(c.notes.map(n => [n.off, n.rt, n.tp, n.pb])));
-  const db = await center(p, () => { const b = document.querySelector('.lacts .lf1dir'); const r = b.getBoundingClientRect(); return {x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height, right: r.right}; });
-  ok('[Richtung] in der Aktionszeile, sichtbar, ≥ 44 px', db.h >= 30 && db.w >= 44 && db.right <= 428, JSON.stringify(db));
+  const db = await center(p, () => { const b = document.querySelector('.lbar .lf1dir'); const r = b.getBoundingClientRect(); return {x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height, right: r.right}; });
+  ok('[Richtung] in der Werkzeugleiste, sichtbar', db.h >= 30 && db.w >= 44 && db.right <= 428, JSON.stringify(db));
   await tap(p, db);
   await tap(p, await popBtn(p, 'rückwärts'));
   c = await p.evaluate(() => SYNQUENZER.getClip(1, 0));
@@ -110,17 +108,16 @@ function midiOns(bytes) {
   const z1 = JSON.stringify(await p.evaluate(() => SYNQUENZER.lf1Events(1, 0, 3))), z2 = JSON.stringify(await p.evaluate(() => SYNQUENZER.lf1Events(1, 0, 3)));
   ok('Zufall: deterministisch (Muster 1)', z1 === z2 && (await p.evaluate(() => SYNQUENZER.getClip(1, 0).lf.seed)) === 1, z1.slice(0, 80));
   await tap(p, await popBtn(p, 'vorwärts'));
-  await p.evaluate(() => { document.querySelector('#popLayer') && 0; });
+  ok('vorwärts ab 1 = kein clip.lf', !(await p.evaluate(() => SYNQUENZER.getClip(1, 0).lf)));
+  await p.evaluate(() => closePop()); await sl(150);
   // Startschritt per Menü: langer Druck auf Schritt 5 -> „Hier starten“
-  await p.evaluate(() => SYNQUENZER.closeMenu());
-  await p.mouse.click(5, 5); await sl(200);
   await hold(p, await cellXY(p, 4));
   await tap(p, await popBtn(p, 'Hier starten'));
   c = await p.evaluate(() => SYNQUENZER.getClip(1, 0));
   ev = await p.evaluate(() => SYNQUENZER.lf1Events(1, 0, 0));
   ok('Start bei Schritt 5', c.lf && c.lf.st === 4 && ev[0].n === 55 && Math.abs(ev[0].t) < 1e-6, JSON.stringify([c.lf, ev.slice(0, 3)]));
   ok('Start-Dreieck an Schritt 5', await p.evaluate(() => { const m = SYNQUENZER.laufApi().se.cells[4].querySelector('.lf1s'); return !!m && !m.hidden; }));
-  await p.mouse.click(5, 5); await sl(200);
+  await p.evaluate(() => closePop()); await sl(150);
   // Effekte für das Foto: Ratsche 3 auf Schritt 2, +7 auf Schritt 6, 50 % auf Schritt 8
   await p.evaluate(() => { const Q = SYNQUENZER; Q.lf1Step(1, 0, 1, 'rt', 3); Q.lf1Step(1, 0, 5, 'tp', 7); Q.lf1Step(1, 0, 7, 'pb', .5); });
   await sl(200);
@@ -130,8 +127,9 @@ function midiOns(bytes) {
   await p.screenshot({path: out + '/lf1-p-lauf.png'});
   // 5 MIDI: Szene 1, Spur 2 = Kanal 2: 7 Noten (Schritt 3 stumm), Schritt 2 dreimal -> 9; Startschritt 5 verschiebt nur die Zeiten
   const mb = await p.evaluate(() => Array.from(SYNQUENZER.buildMidi({mode: 'scene', scene: 0}).bytes));
-  const on1 = midiOns(mb).filter(e => e.ch === 1), evm = await p.evaluate(() => SYNQUENZER.lf1Events(1, 0, 0));
-  ok('MIDI = gespielte Ereignisse', on1.length === evm.length && !on1.some(e => e.n === 52) && on1.filter(e => e.n === 50).length === 3, JSON.stringify([on1.length, evm.length]));
+  const evm = await p.evaluate(() => { const L = Math.max(...S.tracks.slice(0, 5).map(tr => (tr.clips[0] ? clipB(tr.clips[0]) : 0))), o = []; for (let k = 0; k * 4 < L - 1e-9; k++) o.push(...SYNQUENZER.lf1Events(1, 0, k)); return o; });
+  const on1 = midiOns(mb).filter(e => e.ch === 1);
+  ok('MIDI = gespielte Ereignisse', on1.length === evm.length && !on1.some(e => e.n === 52) && on1.filter(e => e.n === 50).length === 3 * (evm.filter(e => e.n === 50).length / 3), JSON.stringify([on1.length, evm.length]));
   // 6 Speichern / Laden (Projektdatei) + alter Clip unverändert
   const before = await p.evaluate(() => JSON.stringify(SYNQUENZER.getClip(1, 0)));
   const old0 = await p.evaluate(() => JSON.stringify(SYNQUENZER.getClip(1, 2)));
@@ -153,13 +151,13 @@ function midiOns(bytes) {
     Q.lf1Step(1, 0, 2, 'off'); Q.lf1Step(1, 0, 4, 'rt', 3); Q.lf1Step(1, 0, 1, 'tp', 12); Q.lf1Dir(1, 0, {dir: 'pend'});
   });
   await sl(300);
-  const db = await center(p, () => { const b = document.querySelector('.lacts .lf1dir'); const r = b.getBoundingClientRect(); return {x: r.left + r.width / 2, y: r.top + r.height / 2}; });
+  const db = await center(p, () => { const b = document.querySelector('.lbar .lf1dir'); const r = b.getBoundingClientRect(); return {x: r.left + r.width / 2, y: r.top + r.height / 2}; });
   await tap(p, db);
   ok('quer: Richtungs-Blatt offen, im Bild', await p.evaluate(() => { const q = document.querySelector('.pop.lf1pop'); if (!q) return false; const r = q.getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight && r.right <= innerWidth; }));
   const lay = await p.evaluate(() => ({sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth, x: (() => { const r = document.querySelector('#rollSheet .sh-x').getBoundingClientRect(); return [r.left, r.top, r.right, r.bottom]; })()}));
   ok('kein Überlauf, ✕ sichtbar (quer)', lay.sw <= lay.cw && lay.x[2] <= 926 && lay.x[1] >= 0, JSON.stringify(lay));
   await p.screenshot({path: out + '/lf1-l-richtung.png'});
-  await p.mouse.click(5, 420); await sl(200);
+  await p.evaluate(() => closePop()); await sl(150);
   // 7 Spielweise in der ROLLE: C-Dur-Akkord -> Gitarre ab (Strum 15 ms): gestaffelte Noten
   await p.evaluate(() => { SYNQUENZER.closeRoll(); SYNQUENZER.openRoll(1, 1); SYNQUENZER.setRollView('roll'); });
   await sl(400);
@@ -177,12 +175,14 @@ function midiOns(bytes) {
   await tap(p, await popBtn(p, 'Glockengeläut'));
   c = await p.evaluate(() => SYNQUENZER.getClip(1, 1));
   ok('Wechsel rechnet vom Original (Glocken)', c.notes.length > 4 && c.notes.every(n => [0, 4, 7].includes(n.n % 12)) && c.notes.some(n => n.n >= 72), c.notes.length);
+  await p.evaluate(() => { closePop(); SYNQUENZER.undo(); SYNQUENZER.undo(); });
+  c = await p.evaluate(() => SYNQUENZER.getClip(1, 1));
+  ok('Undo: Glocken -> Strum -> Akkord (je ein Schritt)', c.notes.length === 3, c.notes.length);
   const all = {};
   for (const id of ['strDU', 'strF', 'riff', 'gli', 'hArp', 'hGli', 'mand', 'albe', 'pizz']) { all[id] = await p.evaluate(id => { const n = SYNQUENZER.lf1Style(1, 1, id); const c = SYNQUENZER.getClip(1, 1); return [n, c.notes.length, c.notes.every(x => x.t >= 0 && x.t < 4 && x.d > 0 && x.n >= 0 && x.n <= 127)]; }, id); await p.evaluate(() => SYNQUENZER.undo()); }
   ok('alle Spielweisen erzeugen gültige Noten', Object.values(all).every(x => x[0] > 0 && x[2]), JSON.stringify(all));
-  await p.evaluate(() => SYNQUENZER.undo()); await p.evaluate(() => SYNQUENZER.undo());
   c = await p.evaluate(() => SYNQUENZER.getClip(1, 1));
-  ok('Undo bringt den Akkord zurück', c.notes.length === 3, c.notes.length);
+  ok('nach allen Spielweisen + Undo: Akkord unverändert', c.notes.length === 3, c.notes.length);
   await p.context().close();
 }
 await b.close();

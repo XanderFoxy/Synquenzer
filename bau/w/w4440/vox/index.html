@@ -2592,6 +2592,23 @@ a.mbtn[aria-disabled=true]{opacity:.55}
 #wpSheet .qrow.g10g-rt .lbl{flex:0 0 auto}
 @media (orientation:landscape){#wpSheet.g2 .qh{height:44px}#wpSheet .qh .g10g-kc{height:44px}}
 /* G10G-CSS-END */
+/* VX1-CSS-BEGIN: Lead stumm im Mischpult (gleiche Zeilenhöhe), Auswahl-Leiste im Marken-Editor (liegt über der Welle, nichts verschiebt sich),
+   Regler „Natürlich ↔ Hart“ (Platz der Einrast-Zeit), Taste „Lead“ im Noten-Editor einer Chor-Stimme. Alle Tasten ≥ 44 px. */
+.chsmix .vx1-lrow{display:flex;align-items:center;gap:4px;min-width:0}
+.chsmix .vx1-lrow .chs-sl{flex:1 1 auto;min-width:0}
+.chsmix .vx1-lrow .vx1-lm{flex:none;width:44px;height:44px;min-width:44px;padding:0;font:800 13px/1 var(--font-ui)}
+.chsmix .vx1-lrow.muted .chs-sll{text-decoration:line-through;opacity:.6}
+#wpSheet .vx1bar{position:absolute;right:4px;bottom:16px;z-index:3;display:flex;align-items:center;gap:4px;padding:3px;border-radius:8px;background:rgba(14,16,20,.9);border:1px solid var(--line)}
+#wpSheet .vx1bar[hidden]{display:none}
+#wpSheet .vx1bar .rb{flex:none;min-width:44px;height:44px;padding:0 8px;font:700 12px/1 var(--font-ui)}
+#wpSheet .vx1bar .rb svg{display:block;margin:auto}
+#wpSheet .vx1bar .vx1cut{background:#b93a32;border-color:#b93a32;color:#fff}
+#wpSheet .vx1bar .vx1len{flex:none;padding:0 3px;font:600 10px/1 var(--font-num);color:var(--text-dim);white-space:nowrap}
+#wpSheet .qrow.vx1-nat[hidden],#wpSheet .qrow.g10g-rt[hidden]{display:none}
+#wpSheet .qrow.vx1-nat .mval{text-align:left;font:700 11px/1 var(--font-ui)}
+#wpSheet .qrow.vx1-nat .lbl{font:700 11px/1 var(--font-ui)}
+#wpSheet .vx1lead.on{color:var(--ink);background:var(--amber);border-color:var(--amber)}
+/* VX1-CSS-END */
 /* G10A-CSS-BEGIN: G10a – Einsingen fertig (Pegel der Stimme in der Aufnahme-Leiste, Hörmuschel-Hinweis im 🎤-Blatt) */
 .g10a-lvl{grid-column:1;grid-row:2;position:relative;display:block;min-width:0;min-height:0;background:var(--lcd);border-radius:4px;box-shadow:inset 0 1px 4px rgba(0,0,0,.9);overflow:hidden;pointer-events:none}
 .g10a-lvl[hidden]{display:none}
@@ -31940,7 +31957,7 @@ function scheduleTrack(i, from, to, late) {
   const s = R.slot[i]; if (s < 0) { if (BMC.act[i]) bmcSched(i, null, from, to, late); return; }
   const tr = S.tracks[i], oc = ownPlaying(i), clip = oc || tr.clips[s];
   if (BMC.act[i] || (clip && clip.cv && bmcIs(i))) bmcSched(i, tr.mute || !bmcIs(i) ? null : clip, from, to, late);   // BM8: Bend · Rad · Druck des Clips
-  if (tr.stimme) { if (clip && !tr.mute) tkSched(i, clip, from, to, late, oc ? R.own[i] : null); return; }   // VS3: STIMME = Audio
+  if (tr.stimme) { if (clip && (!tr.mute || vx1ChorOn(clip.audio))) tkSched(i, clip, from, to, late, oc ? R.own[i] : null); return; }   /* VX1-C: stumm = nur der Lead, der Chor klingt weiter */   // VS3: STIMME = Audio
   if (!clip || tr.mute || !clip.notes.length) return;
   const mu = takeMute(i);                                        // V2d′ (K2-21, 7.2): the target track's old notes are silent during the take
   const um = R.songPlay && S.song && S.song.ue ? ueMutes(i) : null;   // UE: „ersetzt“ – der Groove schweigt im Übergang
@@ -52527,7 +52544,7 @@ function setMute(t, m) {
   const tr = S.tracks[t]; if (!tr) return;
   tr.mute = !!m;
   try { mkInRoute(); } catch (e) { logErr(e); }
-  if (tr.stimme && AU.ctx && R.playing) { if (m) { tkStopTrack(t, AU.ctx.currentTime); tkVoxCut(AU.ctx.currentTime + .004); } else { tkTrackResync(t); tkVoxResync(true); } }   // VS3
+  if (tr.stimme && AU.ctx && R.playing) { if (m && !vx1AnyChor()) { tkStopTrack(t, AU.ctx.currentTime); tkVoxCut(AU.ctx.currentTime + .004); } else { tkTrackResync(t); tkVoxResync(true); } }   // VS3; VX1-C: mit Chor neu planen (Lead still)
   if (m && AU.ctx) { const now = AU.ctx.currentTime; for (const v of VOICES.slice()) if (v.track === t && v.src === 'clip') { if (v.start > now) v.cancel(); else v.release(now); } if (isDrum(t)) cancelTrackFrom(t, now); }
   UI.dirty.all = true; markDirty();
 }
@@ -53624,6 +53641,7 @@ function stProf() {
     for (const k of Object.keys(ST_ROUTES)) { const p = o.prof[k]; if (p && typeof p.ms === 'number' && isFinite(p.ms) && p.ms > 0 && p.ms < 1000)
       { out.prof[k] = {ms: p.ms, spread: +p.spread || 0, at: String(p.at || '').slice(0, 30), how: p.how === 'hand' ? 'hand' : 'gemessen', floorDb: isFinite(+p.floorDb) ? +p.floorDb : null, gainDb: isFinite(+p.gainDb) ? +p.gainDb : null, outMs: isFinite(+p.outMs) ? +p.outMs : null}; if (p.ear === true) out.prof[k].ear = true; } }   // G10a: Hörmuschel-Merker bleibt nach dem Neustart
     if (ST_ROUTES[o.route]) out.route = o.route;
+    if (o.rh === 'gewählt') out.rh = 'gewählt';   // VX1-R1: nur eine eigene Wahl zählt beim nächsten Start
     if (o.vs && typeof o.vs === 'object') out.vs = {src: o.vs.src === 'inst' ? 'inst' : 'voice', lock: !!o.vs.lock, snap: o.vs.snap !== false, grid: String(o.vs.grid || '1/16'), mel: o.vs.mel !== false};   // VS2; VS-L: mel = Melodieerkennung (fehlt = An)
     if (o.g9 && typeof o.g9 === 'object') out.g9 = {auto: o.g9.auto !== false, lang: ['auto', 'de', 'en'].includes(o.g9.lang) ? o.g9.lang : 'auto'};   // G9 (§5.4)
   }
@@ -53649,7 +53667,7 @@ function stLatFor(route) {
 function stSetRoute(route, how) {
   if (!ST_ROUTES[route]) return false;
   ST.route = route; ST.routeHow = how || 'gewählt';
-  if (how !== 'geraten') { stProf().route = route; stProfSave(); }
+  if (how !== 'geraten' && how !== 'erkannt') { stProf().route = route; stProf().rh = 'gewählt'; stProfSave(); }   // VX1-R1: ein erkannter Weg (Headset, Interface) bleibt nicht kleben
   const l = stLatFor(route); ST.latMs = l.ms; ST.latHow = l.how;
   if (ST.run && ST.ring) ST.marks.push({f: ST.ring.end, ms: l.ms, how: 'weg'});
   vsLiveCfg(); stRender(); return true;
@@ -53708,7 +53726,7 @@ function stRead(a, b, o) {
 }
 
 /* ---------- Ablauf ---------- */
-function stToggle() { if (ST.run && ST.run.stopping) return false; return ST.on ? stStop('aus') : stStart(); }
+function stToggle() { if (vx1MicGuard()) return false; /* VX1-E: entprellt */ if (ST.run && ST.run.stopping) return false; return ST.on ? stStop('aus') : stStart(); }
 // H6 (4.25.1): Sitzungsart für 🎤 – 'par' (Standard, play-and-record) | 'auto' | 'none' (nichts setzen); nur per ?stsess= gespeichert
 function stSessType() { const v = UI.stsess || 'kick'; return v === 'auto' || v === 'kick' ? 'auto' : v === 'none' ? null : 'play-and-record'; }
 // 4.26.1 (WebKit Bug 282939, iOS legt beim Öffnen des Mikros den Ton aufs iPhone): Standard 'kick' = vor getUserMedia 'auto',
@@ -53747,7 +53765,7 @@ async function stGot(run, stream, wkP) {
   stTrackBind(run, tr);
   // Weg: der Name der Spur entscheidet, sonst die letzte eigene Wahl (Kopfhörer ohne Mikrofon ändern den Namen nicht); HIF: Interface = Kopfhörer-Weg
   const g = run.opts.route || (MICIN.ext ? 'wired' : stGuessRoute(run.label)), P = stProf();
-  if (run.opts.route) stSetRoute(run.opts.route, 'gewählt'); else if (g !== 'speaker') stSetRoute(g, 'erkannt'); else stSetRoute(P.route || 'speaker', P.route ? 'gewählt' : 'geraten');
+  if (run.opts.route) stSetRoute(run.opts.route, 'gewählt'); else if (g !== 'speaker') stSetRoute(g, 'erkannt'); else { const sv = vx1SavedRoute(P); stSetRoute(sv || 'speaker', sv ? 'gewählt' : 'geraten'); }   // VX1-R1
   if (run.trackRate && run.trackRate !== sr) { ST.warn.push('rate'); toast('Mikrofon ' + micDe(run.trackRate / 1000, 1) + ' kHz, App ' + micDe(sr / 1000, 1) + ' kHz · die App misst nach und gleicht aus'); }
   const ok = await wkP.catch(() => false);
   if (ST.run !== run || run.stopped) return;
@@ -55459,7 +55477,7 @@ function tkMakeTake(aBeat, bBeat, src, done) {
     if ((G9.loaded || g9AsrFlag()) && g9Load() && typeof g9AutoQueue === 'function') g9AutoQueue(id);   // G9 (F1); Modell im Cache → Block laden
     UI.dirty.grid = UI.dirty.song = true;
     const fin = ok => { if (done) { try { done(ok, id); } catch (e) { logErr(e); } } };
-    const store = () => { TK.pend.delete(id); Promise.all([tkStore(id, pcm, chunks), clFill(id, ST.ring || g, F0 + late, F0, n, m)]).then(r => { fin(r[0]); if (m.cl && S.takes && S.takes[id] === m) clEnsure(id); }); };   // auch nach ↶ (↷ holt den Take zurück; [Aufräumen] löscht Reste); VS4: Referenz, dann säubern
+    const store = () => { TK.pend.delete(id); Promise.all([tkStore(id, pcm, chunks), clFill(id, ST.ring || g, F0 + late, F0, n, m)]).then(r => { fin(r[0]); if (m.cl && S.takes && S.takes[id] === m) clEnsure(id); else if (r[0] && !m.rf && typeof vx1Probe === 'function') vx1Probe(id, m, ST.ring || g, F0 + late, F0, n, pcm); /* VX1-R2 */ }); };   // auch nach ↶ (↷ holt den Take zurück; [Aufräumen] löscht Reste); VS4: Referenz, dann säubern
     if (R.playing) { tkVoxResync(true); const st = stimmeT(); if (st >= 0) tkTrackResync(st); }
     g3TakePost(id, m, pcm, F0, Fb, Fe, sr, store);                 /* G3: Ausklang (ein Takt später), dann speichern */
   };
@@ -55710,6 +55728,7 @@ function tkStartSrc(o) {
   // FP-DSP: liegt der Start schon in der Vergangenheit (Hauptfaden war langsam), beginnt das Stück jetzt – mit Blende und passendem Versatz
   if (!o.ctx) { const lim = c.currentTime + .006; if (o.when < lim) { o = Object.assign({}, o, {off: o.off + (lim - o.when), when: lim, fi: Math.max(o.fi || 0, .005)}); } }
   const dur = o.end - o.when; if (!(dur > .002)) return null;
+  if (vx1LeadSilent(o)) o = Object.assign({}, o, {gain: 0});     // VX1-C: Lead stumm, das Stück trägt nur den Chor
   const V = o.ctx ? null : vpGet(o.buf);                          // VS-P: Auto-Pegel und Spitzen-Schutz der klingenden Fassung (nur live)
   const s = c.createBufferSource(), g = c.createGain(), G = (isNum(o.gain) ? o.gain : 1) * (V ? V.g : 1);
   s.buffer = o.buf;
@@ -55840,10 +55859,11 @@ function tkTrackResync(i) {
 // song.vox: planen im Takt des Songs (songTickInner, je Durchgang: Song-Schläge [lo, E) ↔ Transport + off)
 function tkVoxTick(song, b0, b1, off, E, insB, lo) {
   const vx = song.vox; if (!vx || !vx.length || !tkAudioOk() || !R.playing) return;
-  const st = stimmeT(); if (st < 0 || S.tracks[st].mute) return;
+  const st = stimmeT(); if (st < 0 || (S.tracks[st].mute && !vx1VoxChor(vx))) return;   // VX1-C
   const hi = Math.min(E, insB), sp = spb(), L0 = Math.max(b0, lo);
   for (const v0 of vx) {
     const v = g3VoxSeg(v0, sp, off);                              /* G3: Anlauf / Ausklang */
+    if (S.tracks[st].mute && !vx1ChorOn(v0)) continue;            // VX1-C: Lead stumm – nur Stücke mit Chor werden (still) geplant
     const sa = barBeat(v.bar) + v.at, sb = Math.min(barBeat(v.bar + v.len) + (v.g3pb || 0), sa + (v.out - v.in) / sp, hi);
     if (sb <= sa + 1e-6) continue;
     const A = sa + off, B = sb + off;
@@ -58516,6 +58536,7 @@ function wpSetLyrics(id, text) {
 function wpLyr(id) { const m = S.takes && S.takes[id]; if (!m || !m.lyrics) return null; const mk = wpMarks(id) || []; return VSM.assignLyrics(m.lyrics, mk.length); }
 // ↶ ↷ einer 'takes'-Änderung: Wiedergabe und Editor folgen
 function wpUndone() {
+  vx1WpUndone();   // VX1-W: der Editor folgt dem Take des Stücks (Schnitt ↶ ↷)
   if (typeof g9TakesUndone === 'function') g9TakesUndone();   // G9 (§7.8)
   if (typeof g2Undone === 'function') g2Undone();   // G2
   if (WP.ed && !tkRef(WP.ed.r)) { wpClose(); return; }
@@ -58748,6 +58769,7 @@ function wpPaint() {
     }
     g.font = WP.font;
   }
+  vx1Paint(E, g, X, Wp, Hp);   // VX1-W: Auswahl mit Griffen
   if (E.g10map) { g10eAfterPaint(E, a, mk, P); if (G10E.perf) G10E.frames.push(performance.now() - g10t); if (E.g10fast) return; }   // G10e
   // Bedienung
   const md = w ? w.mode : E.mode;
@@ -58988,6 +59010,7 @@ function g10eGest(cv) {
     if (P.size === 1) {
       const r = rc(), cx = e.clientX - r.left, top = e.clientY - r.top < WP_GRIP;
       E.p = {id: e.pointerId, x0: e.clientX, y0: e.clientY, t0: performance.now(), grip: top, k: top ? wpHit(E, cx) : -1, kt: g10eTapHit(E, cx, top), mode: null, va: E.va, lx: e.clientX};
+      vx1Down(E, E.p, cx, top);                                        // VX1-W: Auswahl (Halten + Ziehen, Griffe), Nachlauf stoppen
       if (top && E.p.kt < 0 && !E.g10add) {                            // 450 ms Halten in der Griff-Leiste = neue Marke
         const p = E.p; E.g10hold = {x: cx, t0: p.t0};
         p.hold = setTimeout(() => { if (WP.ed !== E || E.p !== p || p.mode) return; p.mode = 'held'; E.g10hold = null; g10eAddAt(E, tOf(E, cx)); }, G10E_HOLD);
@@ -59002,6 +59025,7 @@ function g10eGest(cv) {
     if (E.g10pz) { if (P.size === 2 && !E.g10pz.dead) g10ePinchMove(E, P); return; }
     const p = E.p; if (!p || p.id !== e.pointerId) return;
     p.lx = e.clientX;
+    if (vx1Move(E, p, e)) return;                                      // VX1-W: Auswahl ziehen (Lupe, Einrasten)
     const dx = e.clientX - p.x0;
     if (!p.mode && Math.hypot(dx, e.clientY - p.y0) > 8) { p.mode = p.k >= 0 && p.grip && !E.g10add ? 'move' : 'pan'; g10eHoldEnd(E, p); if (p.mode === 'move') g10eRunStop(E); }
     if (p.mode === 'move') { const cx = e.clientX - rc().left; E.ghost = {k: p.k, t: tOf(E, cx)}; g10eSnapLive(E, e.clientX); g10eReq(E); }
@@ -59013,6 +59037,7 @@ function g10eGest(cv) {
     if (E.g10pz) { if (!P.size) { E.g10pz = null; E.g10fast = false; wpPaint(); } return; }
     const p = E.p; if (!p || p.id !== e.pointerId) return;
     E.p = null; E.g10fast = false; g10eHoldEnd(E, p); const gh = E.ghost; E.ghost = null; g10eLupe(E, null);
+    if (vx1End(E, p, cancel)) return;                                  // VX1-W: Auswahl fertig; Schwenken mit Schwung → Nachlauf
     if (cancel || p.mode === 'held') { E.g10snap = null; wpPaint(); return; }
     if (p.mode === 'move' && gh) { g10eDrop(E, gh); return; }
     E.g10snap = null;
@@ -59026,6 +59051,7 @@ function g10eGest(cv) {
     const q = E.g10tap, now = performance.now();
     if (q && now - q.t < G10E_DBL && Math.abs(q.x - e.clientX) < 24 && Math.abs(q.y - e.clientY) < 24) { E.g10tap = null; g10eDbl(E, tOf(E, cx)); return; }
     E.g10tap = {t: now, x: e.clientX, y: e.clientY};
+    vx1TapLater(E, tOf(E, cx));                                        // VX1-W: Einzel-Tipp = Silbe/Wort wählen
   };
   cv.addEventListener('pointerup', e => end(e, false));
   cv.addEventListener('pointercancel', e => end(e, true));
@@ -62558,6 +62584,7 @@ function analyse(x, sr, V) {
 }
 // Verschiebung (Cent) je Frame + aktive stimmhafte Strecken
 function curve(an, plan) {
+  if (plan.nat != null && plan.nat === plan.nat) return curveNat(an, plan);   // VX1-P: natürlich ↔ hart (ohne nat bitgleich)
   const n = an.n, H = an.hop, f0 = an.f0, c = new Float64Array(n), has = new Uint8Array(n), hard = plan.mode === 'hard';
   const fm = new Float64Array(n), v2 = plan.v === 2;   // G10g: Oktav-Klammer und Einrast-Zeit nur mit v = 2 (sonst bitgleich)
   for (let i = 0; i < n; i++) {   // 3-Frame-Median der Stimme (Hart)
@@ -62591,6 +62618,50 @@ function curve(an, plan) {
   for (const [i, j] of runs) for (let k = i; k < j; k++) { let s = 0, q = 0; for (let r = Math.max(i, k - R); r <= Math.min(j - 1, k + R); r++) { s += c[r]; q++; } cs[k] = s / q; }
   return {c: cs, runs};
 }
+/* VX1-BEGIN (Paket VX1, Xander: „natürlicher, wie Melodyne – nicht wie Autotune“): Kurve „natürlich ↔ hart“, plan.nat 0…1.
+   Je Note wird die Abweichung der Notenmitte korrigiert (konstante Verschiebung: Vibrato, Drift und Atem der Note bleiben);
+   Abweichungen unter 15 Cent nur teilweise (weich eingeblendet), kurze Noten (< 120 ms: Durchgänge, Verzierungen) weniger;
+   zwischen zwei Noten läuft die Verschiebung linear (statt Halten + Sprung) und gleitet über die Übergangszeit (natürlich
+   120 ms … hart 15 ms). Der harte Anteil folgt der Stimme wie 'hard' (Vibrato wird eingerastet). Ohne plan.nat: curve() bitgleich. */
+function curveNat(an, plan) {
+  const n = an.n, H = an.hop, f0 = an.f0, c = new Float64Array(n), has = new Uint8Array(n), h = Math.min(1, Math.max(0, +plan.nat || 0));
+  const fm = new Float64Array(n);
+  for (let i = 0; i < n; i++) { const v = []; for (let k = i - 1; k <= i + 1; k++) if (k >= 0 && k < n && f0[k] > 0) v.push(midi(f0[k])); fm[i] = v.length ? med(v) : NaN; }
+  const tol = 0.15 * (1 - h), SHORT = 0.12;
+  for (const nt of plan.notes || []) {
+    const a = Math.max(0, Math.floor(nt.t0 / H)), b = Math.min(n, Math.ceil(nt.t1 / H)), e = +nt.e || 0, s = +nt.s || 0, to = +nt.to, m = +nt.m;
+    let cn = 0;
+    if (s && to === to && m === m) {
+      const d = to - m, x = tol > 0 ? Math.min(1, Math.abs(d) / tol) : 1, k = x * x * (3 - 2 * x), sh = h + (1 - h) * Math.min(1, Math.max(0, nt.t1 - nt.t0) / SHORT);
+      cn = s * 100 * d * k * sh;
+    }
+    for (let i = a; i < b; i++) {
+      let v = e + (1 - h) * cn;
+      if (h > 0 && s && to === to) { let f = fm[i] === fm[i] ? fm[i] : m; if (Math.abs(f - m) > 1.5) f = m; v += h * s * 100 * (to - f); }
+      c[i] = v; has[i] = 1;
+    }
+  }
+  const runs = [];
+  for (let i = 0; i < n;) {
+    if (!(f0[i] > 0)) { i++; continue; }
+    let j = i; while (j < n && f0[j] > 0) j++;
+    let act = false; for (let k = i; k < j; k++) if (has[k] && Math.abs(c[k]) > 0.05) { act = true; break; }
+    if (act) {
+      let k = i; while (k < j && !has[k]) k++;
+      for (let q = i; q < k; q++) c[q] = c[k];
+      let last = k;
+      for (k = k + 1; k < j; k++) if (has[k]) { if (k - last > 1) { const A = c[last], B = c[k]; for (let q = last + 1; q < k; q++) c[q] = A + (B - A) * (q - last) / (k - last); } last = k; }
+      for (let q = last + 1; q < j; q++) c[q] = c[last];
+      runs.push([i, j]);
+    }
+    i = j;
+  }
+  const T = (1 - h) * 0.12 + h * 0.015, R = Math.max(1, Math.round(T / H / 2)), cs = new Float64Array(n), P = new Float64Array(n + 1);
+  for (let i = 0; i < n; i++) P[i + 1] = P[i] + c[i];
+  for (const [i, j] of runs) for (let k = i; k < j; k++) { const lo = Math.max(i, k - R), hi = Math.min(j - 1, k + R); cs[k] = (P[hi + 1] - P[lo]) / (hi - lo + 1); }
+  return {c: cs, runs};
+}
+/* VX1-END */
 // Harmonisches Modell je stimmhafter Strecke (einmal je Take, im Analyse-Ergebnis): Phase Φ(t) = ∫2π f0, alle 5 ms die
 // komplexen Teilton-Amplituden c_h (Hann über 3 Perioden, Chirp-fest über Φ), Teiltöne bis 7 kHz
 const HMAX = 64, FTOP = 7000;
@@ -62695,11 +62766,11 @@ function render(x, sr, an, plan) {
 }
 // Schlüssel für den Render-Cache (FNV-1a über den Plan)
 function planKey(plan) {
-  let h = 0x811c9dc5; const s = (plan.mode === 'hard' ? 'h' : 'w') + JSON.stringify((plan.notes || []).map(k => [k.t0, k.t1, k.m, k.to, k.s, k.e])) + (plan.v === 2 ? '|v2|' + plan.rt : '');   // G10g
+  let h = 0x811c9dc5; const s = (plan.mode === 'hard' ? 'h' : 'w') + JSON.stringify((plan.notes || []).map(k => [k.t0, k.t1, k.m, k.to, k.s, k.e])) + (plan.v === 2 ? '|v2|' + plan.rt : '') + (plan.nat != null ? '|n' + plan.nat : '');   // G10g; VX1-P
   for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
   return h.toString(16);
 }
-const active = plan => (plan.notes || []).some(k => Math.abs(+k.e || 0) > 0.05 || ((+k.s || 0) > 0 && Math.abs(+k.to - +k.m) * 100 * k.s > 0.05) || (plan.mode === 'hard' && (+k.s || 0) > 0));
+const active = plan => (plan.notes || []).some(k => Math.abs(+k.e || 0) > 0.05 || ((+k.s || 0) > 0 && Math.abs(+k.to - +k.m) * 100 * k.s > 0.05) || (plan.mode === 'hard' && (+k.s || 0) > 0) || (plan.nat > 0 && (+k.s || 0) > 0));   // VX1-P
 return {analyse, render, curve, planKey, active, midi, decim, model, VERSION: 'g2-hr-1'};
 }
 /* =====================================================================================================================
@@ -62736,6 +62807,7 @@ function g2NormPitch(p, len) {
   const out = {mode: G2_MODES.includes(p.mode) ? p.mode : 'soft', str: isNum(p.str) ? +clamp(p.str, 0, 1).toFixed(2) : 1, q: !!p.q, notes: notes.filter((n, i) => !i || n.t0 >= notes[i - 1].t1 - 1e-6)};
   if (p.key && isNum(p.key.root) && g10gScale(p.key.scale)) { out.key = {root: clamp(Math.round(p.key.root), 0, 11), scale: p.key.scale}; g10gNormKey(p.key, out.key); }   // G10g: auch eigene Leitern; src/via/alt additiv
   g10gNormPitch(p, out);   // G10g: v, rt (additiv)
+  vx1NormPitch(p, out);    // VX1-P: nat (additiv)
   return out.notes.length ? out : null;
 }
 tkExt().take.push((m, o) => { const p = g2NormPitch(m.pitch, o.len / o.sr); if (p) o.pitch = p; });
@@ -62870,7 +62942,7 @@ function g2Edit(id, label, fn, r) {
   return (m.pitch ? Promise.resolve(null) : g2Analyse(id)).then(A => {
     const mm = S.takes && S.takes[id]; if (!mm) return false;
     const before = JSON.stringify(S.takes);
-    if (!mm.pitch) { if (!A || !A.notes.length) { toast('Keine Töne erkannt'); return false; } mm.pitch = {mode: 'soft', str: 1, q: false, key: g10gNewKey(id, r), notes: A.notes.map(n => ({t0: n.t0, t1: n.t1, m: n.m})), v: 2}; }   // G10g: neue Tonhöhe = v 2, Tonart Auto
+    if (!mm.pitch) { if (!A || !A.notes.length) { toast('Keine Töne erkannt'); return false; } mm.pitch = {mode: 'soft', str: 1, q: false, key: g10gNewKey(id, r), notes: A.notes.map(n => ({t0: n.t0, t1: n.t1, m: n.m})), v: 2, nat: 0}; }   // G10g: neue Tonhöhe = v 2, Tonart Auto; VX1-P: natürlich
     if (fn(mm.pitch) === false) { S.takes = JSON.parse(before); return false; }
     const P = g2NormPitch(mm.pitch, mm.len / mm.sr);
     if (!P || (!P.q && !P.notes.some(n => n.sh) && !(P.key && P.key.src === 'user'))) delete mm.pitch; else mm.pitch = P;   // G10g: gewählte Tonart bleibt auch ohne Quantisieren
@@ -62886,6 +62958,7 @@ function g2SetQ(id, o, r) {
   return g2Edit(id, 'Tonhöhe · Audio', P => {
     if (o.q != null) P.q = !!o.q;
     if (o.mode) P.mode = o.mode === 'hard' ? 'hard' : 'soft';
+    if (o.mode) P.nat = isNum(o.nat) ? clamp(Math.round(o.nat), 0, 100) : P.mode === 'hard' ? 100 : 0;   // VX1-P: Weich = natürlich, Hart = hart
     if (isNum(o.str)) P.str = clamp(o.str, 0, 1);
     if (o.key) P.key = {root: o.key.root, scale: o.key.scale};
     if (!P.key) P.key = g2KeyAt(r);
@@ -62938,6 +63011,7 @@ function g2Open(r, o) {
   ab.addEventListener('click', () => { const E = G2.ed; if (E && E.voice != null) { g6Solo(E.voice); g2Paint(); return; } G2.ab = !G2.ab; wpResync(); g2Paint(); });   // G6: in einer Chor-Stimme = Solo
   const cl = el('button', 'sh-x rb', '✕'); cl.setAttribute('aria-label', 'Schließen'); cl.addEventListener('click', () => g2Close());
   head.append(wv, ab, cl); if (vk != null) wv.disabled = true;
+  if (vk != null) vx1VoiceHead(wv);   // VX1-C: Taste „Lead“ (stumm an/aus) im Noten-Editor einer Chor-Stimme
   const kc = vk == null ? g10gHead(head, wv) : null;   // G10g: Tonart-Chip im Kopf
   const b = el('div', 'qb wpb'), cvw = el('div', 'wpcv'), cv = el('canvas');
   cvw.append(cv);
@@ -62974,6 +63048,7 @@ function g2Open(r, o) {
   cvw.append(info);
   const sl = el('div', 'wpsl'); sl.append(row);
   const rtr = g10gRtRow(sl);   // G10g: Regler Einrast-Zeit
+  vx1NatRow(sl, rtr);          // VX1-P: Regler Natürlich ↔ Hart (gleicher Platz; Einrast-Zeit nur noch bei alten Takes)
   b.append(cvw, chips, sl);
   sh.append(head, b);
   Object.assign(G2.ed, {cv, chips, rs: row, info, ab, cvw, g10g: {kc, rtr, kp: kc ? g10gPanel(b) : null}});   // G10g
@@ -63061,6 +63136,7 @@ function g2Paint() {
   g6pgLegSync(E);
   g10gSync(E, key);   // G10g: Chip, Leiste, Einrast-Zeit
   chsEdPaint(E);   // CHS: Lineal, Loop, Laufstrich
+  vx1G2Paint(E);   // VX1: Lead-Taste, Regler Natürlich ↔ Hart
 }
 function g2Hit(E, cx, cy) {
   let best = -1, bd = 1e9;
@@ -65561,7 +65637,7 @@ function chsMixPaint(p) {
   const st = stimmeT(), L = chsTrk() || {lanes: []}; if (st < 0) { p.innerHTML = '<div class="chs-mh"><b>Background</b></div><div class="qnote">Keine STIMME-Spur.</div>'; return; }
   const cpl = L.cpl !== false, lead = chsVolDb(), so = G6.solo;
   let h = `<div class="chs-mh"><b>Background</b><button class="rb chs-cpl${cpl ? ' on' : ''}" data-a="cpl" aria-pressed="${cpl}">Gekoppelt</button><button class="rb chs-mute${L.mute ? ' on' : ''}" data-a="chor" aria-pressed="${!L.mute}">${L.mute ? 'Chor aus' : 'Chor an'}</button><button class="rb sh-x chs-x" data-a="x" aria-label="Schließen">✕</button></div>`;
-  h += '<div class="chs-mg">' + chsSl('lead', 'Lead', -40, 0, .5, lead.toFixed(1), chsFmtDb(lead)) + chsSl('bg', 'Background', -24, 12, .5, (L.db || 0).toFixed(1), chsFmtDb(L.db || 0)) + chsSl('sum', 'Gesang gesamt', -24, 12, .5, (L.sum || 0).toFixed(1), chsFmtDb(L.sum || 0)) + '</div>';
+  h += '<div class="chs-mg">' + vx1LeadSl(chsSl('lead', 'Lead', -40, 0, .5, lead.toFixed(1), chsFmtDb(lead))) + chsSl('bg', 'Background', -24, 12, .5, (L.db || 0).toFixed(1), chsFmtDb(L.db || 0)) + chsSl('sum', 'Gesang gesamt', -24, 12, .5, (L.sum || 0).toFixed(1), chsFmtDb(L.sum || 0)) + '</div>';
   h += `<div class="qnote chs-note">${cpl ? 'Gekoppelt: der Lead-Regler nimmt den Chor im gleichen Schritt mit.' : 'Getrennt: Lead und Background regeln unabhängig.'} Gesang gesamt = Lead + Background.</div>`;
   h += '<div class="chs-lanes">';
   for (const ln of L.lanes) {
@@ -65595,6 +65671,7 @@ function chsMixer(anchor, hl) {
       if (a === 'x') { closePop(); return; }
       if (a === 'cpl') { const L = chsTrk(); chsCouple(L && L.cpl === false); }
       else if (a === 'chor') { const L = chsTrk(); g6pLaneMute(null, !(L && L.mute)); }
+      else if (a === 'leadm') { vx1LeadMuteTap(); return; }   // VX1-C: Lead stumm, der Chor klingt weiter
       else if (a === 'solo') chsSolo(id);
       else if (a === 'mute') chsLaneMute(id);
       else if (a === 'notes') { const r = chsPlaceOf(id); if (r) chsOpenVoice(r, id); else toast('Diese Stimme singt noch nirgends'); return; }
@@ -65980,6 +66057,7 @@ function g10gPlan(id, P, xs) {
   const ks = g10gKeys(id, P);
   const plan = {mode: P.mode, notes: P.notes.map((n, k) => { const q = P.q && !n.nq; return {t0: n.t0, t1: n.t1, m: n.m, to: q ? g2Snap(n.m, ks ? ks[k] : P.key) : n.m, s: q ? P.str : 0, e: 100 * ((n.sh || 0) + (xs ? xs[k] || 0 : 0))}; })};
   if (P.v === 2) { plan.v = 2; plan.rt = isNum(P.rt) ? P.rt : P.mode === 'hard' ? 15 : 40; }
+  if (isNum(P.nat)) plan.nat = clamp(P.nat, 0, 100) / 100;   // VX1-P
   return plan;
 }
 function g10gMovedN(id, P) { const ks = g10gKeys(id, P); let n = 0; P.notes.forEach((x, k) => { if (Math.abs(g2Target(P, x, ks && ks[k]) - x.m) > 0.005) n++; }); return n; }
@@ -66194,6 +66272,494 @@ const G10G_API = {
   g10gPanel: open => { const E = G2.ed, kp = E && E.g10g && E.g10g.kp; if (!kp) return false; kp.hidden = open === false || (open == null && !kp.hidden); g2Paint(); return !kp.hidden; }
 };
 /* G10G-END */
+/* VX1-BEGIN */
+/* =====================================================================================================================
+   VX1 (Paket VX1, Xander 07.11.): Gesang – Chor entkoppelt, natürliche Tonhöhe, Wort löschen mit Nachrücken, Übersprechen,
+   Audio-Editor im kleinen Fenster.
+   C  Chor entkoppelt: STIMME stumm ([M] im Spurkopf, im Mischpult „Background“ neben dem Lead-Regler, im Noten-Editor einer
+      Chor-Stimme die Taste „Lead“) = nur der Lead schweigt; Chor-Stimmen klingen weiter (eigenes S/M/Pegel je Stimme, Gruppe
+      „Chor an/aus“). Technik: das Lead-Stück wird trotzdem geplant (es trägt den Chor, g6Start), aber mit Pegel 0.
+   P  Natürliche Tonhöhe: take.pitch.nat (0 = natürlich … 100 = hart, additiv; fehlt = Kurve wie bisher, bitgleich). Kern:
+      curveNat in g2PitchMake (je Note nur die Abweichung der Notenmitte, Vibrato/Drift/Übergänge bleiben). Neue Tonhöhen
+      starten mit „natürlich“; [Weich] = natürlich, [Hart] = hart; Regler „Natürlich ↔ Hart“ statt Einrast-Zeit (alte Takes
+      mit Quantisieren ohne nat zeigen weiter die Einrast-Zeit).
+   W  Wort löschen: im Marken-Editor Tipp auf die Welle = die Silbe/das Wort zwischen zwei Strichen wählen, Halten + Ziehen =
+      freie Auswahl; Griffe unten an den Rändern (44 px), Lupe ±20 ms, Einrasten auf Strich / Schlag / Nulldurchgang.
+      [Löschen] = ausgeschnitten, der Rest rückt nach (kurze Überblendung, kein Dehnen); [Lücke] = stumm, Zeit bleibt.
+      Technik: ein neuer Take (eigene Stücke, Referenz und gesäuberte Fassung mitgeschnitten), Marken/Tonhöhe/Songtext/Zeitkarte
+      und Chor-Noten rücken mit; das Stück zeigt auf den neuen Take. Ein Undo-Schritt (takes + clip bzw. song).
+   R  Übersprechen: (1) Ein erkannter Weg (Headset, Interface, AirPods) wird nicht mehr als eigene Wahl gemerkt – vorher blieb
+      z. B. „Kabel“ nach einem USB-Interface kleben, dann bekamen Lautsprecher-Takes weder Referenz noch SÄUBERN (der Rhythmus
+      blieb im Gesang). (2) Takes über einen Nicht-Lautsprecher-Weg: liegt ein klarer Echo-Weg vor (GCC-PHAT ≥ 15, dieselbe
+      Schwelle wie der Säubern-Kern), wird die Referenz nachgetragen und mit 60 % gesäubert.
+   E  Editor: Wisch-Scroll mit Nachlauf, Mikro-Taste entprellt (700 ms) und meldet „geht gerade aus“.
+   ===================================================================================================================== */
+const VX1 = {w: null, wid: 0, wq: new Map(), last: null, probes: 0, micT: 0, micBlocked: 0, cuts: 0, busy: false, pv: null};
+const VX1_XF = 0.008, VX1_PK = 15, VX1_EDGE = 22;
+
+/* ---------- C: Chor entkoppelt ---------- */
+function vx1ChorOn(a) { const c = a && a.chor; return !!(c && Array.isArray(c.voices) && c.voices.length && (c.v !== 2 || g6pcChorOn())); }
+function vx1VoxChor(vx) { return Array.isArray(vx) && vx.some(vx1ChorOn); }
+function vx1AnyChor() {
+  const st = stimmeT(); if (st < 0) return false;
+  if (S.tracks[st].clips.some(c => c && vx1ChorOn(c.audio))) return true;
+  return !!(S.song && vx1VoxChor(S.song.vox));
+}
+// ein Lead-Stück der stummen STIMME-Spur (geplant nur, weil es den Chor trägt): Pegel 0
+function vx1LeadSilent(o) { const tr = o && S.tracks[o.i]; return !!(tr && tr.stimme && tr.mute && !o.ctx); }
+function vx1LeadMuteTap() {
+  const st = stimmeT(); if (st < 0) { toast('Keine STIMME-Spur'); return null; }
+  const tr = S.tracks[st], before = tr.mute ? '1' : '0';
+  setMute(st, !tr.mute);
+  undoPush({kind: 'sx4m', track: st, before, label: tr.mute ? 'Lead stumm' : 'Lead an'});
+  haptic('tick');
+  toast(tr.mute ? (vx1AnyChor() ? 'Lead stumm – der Chor klingt weiter' : 'Lead stumm') : 'Lead wieder an');
+  if (UI.pop && UI.pop.name === 'chsmix') chsMixPaint(UI.pop.el);
+  if (G2.ed) vx1G2Paint(G2.ed);
+  UI.dirty.grid = UI.dirty.song = true;
+  return tr.mute;
+}
+// Mischpult: [M] neben dem Lead-Regler (gleiche Zeilenhöhe, nichts verschiebt sich)
+function vx1LeadSl(html) {
+  const st = stimmeT(), mu = st >= 0 && !!S.tracks[st].mute;
+  return `<div class="vx1-lrow${mu ? ' muted' : ''}">${html}<button class="rb vx1-lm${mu ? ' on' : ''}" data-a="leadm" aria-pressed="${mu}" aria-label="Lead stumm (der Chor klingt weiter)">M</button></div>`;
+}
+// Noten-Editor einer Chor-Stimme: statt [WAV] (dort gesperrt) die Taste „Lead“ = Lead stumm an/aus
+function vx1VoiceHead(wv) {
+  const b = el('button', 'rb wptx vx1lead', 'Lead');
+  b.setAttribute('aria-label', 'Lead stumm an/aus (der Chor klingt weiter)');
+  b.addEventListener('click', () => vx1LeadMuteTap());
+  wv.replaceWith(b);
+  if (G2.ed) G2.ed.vx1lb = b;
+}
+
+/* ---------- P: Natürlich ↔ Hart ---------- */
+function vx1NormPitch(p, o) { if (p && isNum(p.nat)) o.nat = clamp(Math.round(p.nat), 0, 100); }
+function vx1NatRow(sl, rtr) {
+  const E = G2.ed; if (!E || E.voice != null) return null;
+  const row = el('div', 'qrow g10g-rt vx1-nat'), inp = el('input');
+  inp.type = 'range'; inp.min = 0; inp.max = 100; inp.step = 1; inp.setAttribute('aria-label', 'Natürlich bis hart');
+  const set = (v, fin) => {
+    const Q = G2.ed; if (!Q) return; const m = S.takes[Q.id], P = m && m.pitch;
+    inp.setAttribute('aria-valuetext', v ? v + ' % hart' : 'natürlich');
+    if (!P || !P.q) { if (fin) { g2Info('Töne werden gesucht …'); g2SetQ(Q.id, {q: true, mode: v >= 50 ? 'hard' : 'soft', nat: v, str: 1}, Q.r).then(() => g2Paint()); } return; }
+    if (!Q.vx1sb) Q.vx1sb = JSON.stringify(S.takes);
+    P.nat = v; P.mode = v >= 50 ? 'hard' : 'soft';
+    clearTimeout(Q.rt); if (fin) g2After(Q.id); else { g2Paint(); const id = Q.id; Q.rt = setTimeout(() => { if (G2.ed && G2.ed.id === id) g2After(id); }, 150); }
+    if (fin) { const before = Q.vx1sb; Q.vx1sb = null; if (JSON.stringify(S.takes) !== before) { undoPush({kind: 'takes', before, label: 'Natürlich ↔ Hart · Tonhöhe'}); markDirty(); } }
+  };
+  inp.addEventListener('input', () => set(+inp.value, false)); inp.addEventListener('change', () => set(+inp.value, true));
+  row.append(el('span', 'lbl', 'Natürlich'), inp, el('span', 'mval vx1-hart', 'Hart'));
+  row._g = () => { const Q = G2.ed, P = Q && S.takes[Q.id] && S.takes[Q.id].pitch; if (Q && Q.vx1sb) return; const v = P && isNum(P.nat) ? P.nat : P && P.q && P.mode === 'hard' ? 100 : 0; inp.value = v; inp.setAttribute('aria-valuetext', v ? v + ' % hart' : 'natürlich'); };
+  if (rtr) rtr.after(row); else sl.append(row);
+  E.vx1nat = row; E.vx1rt = rtr || null;
+  return row;
+}
+// am Ende von g2Paint: Lead-Taste (Chor-Stimme), Regler „Natürlich ↔ Hart“ bzw. Einrast-Zeit (alte Takes)
+function vx1G2Paint(E) {
+  if (!E) return;
+  if (E.vx1lb) { const st = stimmeT(), mu = st >= 0 && !!S.tracks[st].mute; E.vx1lb.classList.toggle('on', mu); E.vx1lb.setAttribute('aria-pressed', String(mu)); E.vx1lb.textContent = mu ? 'Lead aus' : 'Lead'; }
+  if (E.vx1nat) {
+    const m = S.takes && S.takes[E.id], P = m && m.pitch, nat = !P || !P.q || isNum(P.nat);
+    E.vx1nat.hidden = !nat; if (E.vx1rt) E.vx1rt.hidden = nat;
+    E.vx1nat._g();
+  }
+}
+
+/* ---------- R: Übersprechen ---------- */
+function vx1SavedRoute(P) { return P && P.rh === 'gewählt' && ST_ROUTES[P.route] ? P.route : null; }
+function vx1Worker() {
+  if (VX1.w !== null) return VX1.w;
+  try {
+    const src = vsCleanMake.toString() + ';const C = vsCleanMake();onmessage = e => { const m = e.data; try { const f = a => { const y = new Float32Array(a.length); for (let i = 0; i < a.length; i++) y[i] = a[i] / 32767; return y; };' +
+      ' const info = {}, d = C.estimateDelay(f(m.mic), f(m.ref), m.sr, {info, maxSec: 15}); postMessage({id: m.id, d, pk: info.pk == null ? 0 : info.pk}); } catch (err) { postMessage({id: m.id, err: String(err && err.message || err)}); } };';
+    const u = URL.createObjectURL(new Blob([src], {type: 'application/javascript'}));
+    const w = new Worker(u); setTimeout(() => { try { URL.revokeObjectURL(u); } catch (e) {} }, 30000);
+    w.onmessage = e => { const m = e.data, q = VX1.wq.get(m.id); if (!q) return; VX1.wq.delete(m.id); q(m); };
+    w.onerror = e => { for (const q of VX1.wq.values()) q({err: 'worker'}); VX1.wq.clear(); VX1.w = false; try { e.preventDefault(); } catch (er) {} };
+    VX1.w = w;
+  } catch (e) { VX1.w = false; }
+  return VX1.w;
+}
+// Echo-Weg prüfen (Worker): {pk, d} – pk ≥ 15 = die Musik der App ist klar im Mikro (wie clean(): minPk)
+function vx1ProbeArr(mic, ref, sr) {
+  const w = vx1Worker(); if (!w) return Promise.resolve(null);
+  return new Promise(ok => {
+    const k = ++VX1.wid, a = Int16Array.from(mic), b = Int16Array.from(ref);
+    const to = setTimeout(() => { if (VX1.wq.delete(k)) ok({err: 'Zeit'}); }, 20000);
+    VX1.wq.set(k, r => { clearTimeout(to); ok(r); });
+    try { w.postMessage({id: k, mic: a, ref: b, sr}, [a.buffer, b.buffer]); } catch (e) { clearTimeout(to); VX1.wq.delete(k); ok({err: String(e)}); }
+  });
+}
+// ein neuer Take über Kopfhörer/Kabel/Bluetooth (ohne Referenz): spielte die App hörbar ins Mikro, Referenz nachtragen + SÄUBERN 60 %
+function vx1Probe(id, m, G, a, F0, n, pcm) {
+  if (!m || m.rf || m.cl || m.route === 'speaker' || m.route === 'datei' || !G || !G.ref || !pcm || !tkAudioOk() || !kv || !kv.aput) return Promise.resolve(null);
+  const sr = m.sr, D = Math.round(CL_LEAD * sr), ref = new Int16Array(n), L = G.len, lo = Math.max(G.start, G.end - L + 1);
+  let e = 0; for (let i = Math.max(0, a - F0); i < n; i++) { const F = F0 + i + D; if (F >= lo && F < G.end) { const v = G.ref[F % L]; ref[i] = v; e += v * v; } }
+  if (e < n * 4) return Promise.resolve(null);                      // die App spielte (fast) nichts: kein Übersprechen möglich
+  VX1.probes++;
+  const N = Math.min(n, Math.round(20 * sr));
+  return vx1ProbeArr(pcm.subarray(0, N), ref.subarray(0, N), sr).then(r => {
+    VX1.last = {id, pk: r && isNum(r.pk) ? +r.pk.toFixed(1) : null, d: r && r.d, err: r && r.err || null, route: m.route};
+    if (!r || r.err || !(r.pk >= VX1_PK)) return VX1.last;
+    const cur = S.takes && S.takes[id]; if (!cur || cur.rf || cur.cl) return VX1.last;
+    cur.rf = D; cur.cl = CL_DEF; if (cur !== m) { m.rf = D; m.cl = CL_DEF; }
+    return tkStore(id, ref, clKeys(id, cur, 'r')).then(ok => {
+      const c2 = S.takes && S.takes[id];
+      if (!ok) { if (c2) { delete c2.rf; delete c2.cl; } return VX1.last; }
+      VX1.last.fixed = true; markDirty(); UI.dirty.grid = UI.dirty.song = true;
+      toast('Musik im Mikro erkannt – Säubern 60 %');
+      if (c2 && c2.cl) clEnsure(id);
+      return VX1.last;
+    });
+  });
+}
+
+/* ---------- E: Mikro-Taste ---------- */
+function vx1MicGuard() {
+  const now = performance.now();
+  if (ST.run && ST.run.stopping) { VX1.micBlocked++; toast('Mikrofon geht gerade aus …'); return true; }
+  if (now - VX1.micT < 700) { VX1.micBlocked++; return true; }   // Doppeltipp: nicht an + gleich wieder aus
+  VX1.micT = now; return false;
+}
+
+/* ---------- W: Auswahl in der Welle (Marken-Editor) ---------- */
+const vx1T = (E, cx) => E.vw.a + cx / E.cv.clientWidth * E.vw.W;
+// Nulldurchgang im Roh-Take nahe t (±2,5 ms), gehörte Zeit
+function vx1Zero(E, t) {
+  const b = tkBuffer(E.id); if (!b) return t;
+  const d = b.getChannelData(0), sr = b.sampleRate, map = E.map || null, ts = map ? VSM.warpInverse(map, t) : t, c = Math.round(ts * sr), R = Math.round(.0025 * sr);
+  let best = -1, bv = Infinity;
+  for (let i = Math.max(1, c - R); i < Math.min(d.length, c + R); i++) if ((d[i - 1] <= 0 && d[i] > 0) || (d[i - 1] >= 0 && d[i] < 0)) { const q = Math.abs(i - c); if (q < bv) { bv = q; best = i; } }
+  if (best < 0) return t;
+  const t2 = best / sr; return map ? VSM.warpTime(map, t2) : t2;
+}
+// Einrasten: Strich (≤ 12 px) vor Schlag (≤ 8 px) vor Nulldurchgang
+function vx1Snap(E, t) {
+  const mk = wpMarks(E.id) || [], P = E.mpos && E.mpos.length === mk.length ? E.mpos : mk.map(k => k.t), pxs = E.cv.clientWidth / E.vw.W;
+  let best = null, bd = 12;
+  for (const v of P) { const q = Math.abs(v - t) * pxs; if (q < bd) { bd = q; best = v; } }
+  if (best != null) return {t: best, kind: 'Strich'};
+  const x = tkRef(E.r), m = S.takes && S.takes[E.id], w = m && m.warp, sp = w ? 60 / w.bpm : spb(), t0 = w ? w.t0 : wpT0(E.id, x && x.a);
+  const tb = t0 + Math.round((t - t0) / sp) * sp;
+  if (Math.abs(tb - t) * pxs <= 8) return {t: tb, kind: 'Schlag'};
+  return {t: vx1Zero(E, t), kind: 'Null'};
+}
+function vx1Down(E, p, cx, top) {
+  if (E.vx1f) { E.vx1f = null; E.g10fast = false; }                // ein neuer Finger hält den Nachlauf an
+  if (top) return;
+  const s = E.vx1s;
+  if (s && E.X) { const da = Math.abs(cx - E.X(s.a)), db = Math.abs(cx - E.X(s.b)); if (Math.min(da, db) <= VX1_EDGE) { p.vx1 = da <= db ? 'a' : 'b'; return; } }
+  p.vx1h = setTimeout(() => {
+    p.vx1h = 0; if (WP.ed !== E || E.p !== p || p.mode || E.g10pz) return;
+    const t = vx1Snap(E, vx1T(E, cx)).t;
+    p.mode = 'vx1sel'; E.vx1s = {a: t, b: t, t0: t}; vx1Bar(E, false); haptic('pop'); wpPaint();
+  }, G10E_HOLD);
+}
+// true = der Zug gehört der Auswahl (kein Schwenken)
+function vx1Move(E, p, e) {
+  const v = p.vx1v || (p.vx1v = []); v.push({t: performance.now(), x: e.clientX}); if (v.length > 6) v.shift();
+  const far = Math.hypot(e.clientX - p.x0, e.clientY - p.y0);
+  if (p.vx1h && !p.mode && far > 8) { clearTimeout(p.vx1h); p.vx1h = 0; }
+  if (p.vx1 && !p.mode && far > 4) { p.mode = 'vx1edge'; g10eRunStop(E); }
+  if (p.mode !== 'vx1edge' && p.mode !== 'vx1sel') return false;
+  const s = E.vx1s, x = tkRef(E.r); if (!s || !x) return true;
+  const cx = e.clientX - E.cv.getBoundingClientRect().left, sn = vx1Snap(E, clamp(vx1T(E, cx), x.a.in, x.a.out));
+  if (p.mode === 'vx1sel') { s.a = Math.min(s.t0, sn.t); s.b = Math.max(s.t0, sn.t); }
+  else if (p.vx1 === 'a') s.a = Math.min(sn.t, s.b - .01); else s.b = Math.max(sn.t, s.a + .01);
+  s.kind = sn.kind; s.edge = p.mode === 'vx1sel' ? (sn.t >= s.t0 ? 'b' : 'a') : p.vx1;
+  vx1Lupe(E, e.clientX, sn.t, sn.kind);
+  g10eReq(E);
+  return true;
+}
+// true = erledigt (Auswahl fertig); Schwenken mit Schwung → Nachlauf
+function vx1End(E, p, cancel) {
+  if (p.vx1h) { clearTimeout(p.vx1h); p.vx1h = 0; }
+  if (p.mode === 'vx1sel' || p.mode === 'vx1edge') {
+    vx1Lupe(E, null); const s = E.vx1s;
+    if (s) { s.edge = null; if (s.b - s.a < .015) { E.vx1s = null; vx1Bar(E, false); if (p.mode === 'vx1sel' && !cancel) { vx1SelectWord(E, s.t0); return true; } } else vx1Bar(E, true); }
+    wpPaint(); return true;
+  }
+  if (p.mode === 'pan' && !cancel) vx1Fling(E, p);
+  return false;
+}
+// Einzel-Tipp auf die Welle (nach dem Doppeltipp-Fenster): Silbe/Wort zwischen den Strichen wählen
+function vx1TapLater(E, t) {
+  const q = E.g10tap; clearTimeout(E.vx1tt);
+  E.vx1tt = setTimeout(() => { if (WP.ed !== E || E.g10tap !== q || E.p || E.g10pz || UI.pop) return; E.g10tap = null; vx1SelectWord(E, t); }, G10E_DBL + 40);
+}
+function vx1SelectWord(E, t) {
+  const x = tkRef(E.r); if (!x) return;
+  const s0 = E.vx1s; if (s0 && t >= s0.a && t <= s0.b) return;
+  const mk = wpMarks(E.id) || [], P = (E.mpos && E.mpos.length === mk.length ? E.mpos : mk.map(k => k.t)).slice().sort((u, v) => u - v);
+  let lo = x.a.in, hi = x.a.out;
+  for (const v of P) { if (v <= t) lo = Math.max(lo, v); else { hi = Math.min(hi, v); break; } }
+  if (!P.length) { const sp = spb(), t0 = wpT0(E.id, x.a); lo = Math.max(lo, t0 + Math.floor((t - t0) / sp) * sp); hi = Math.min(hi, lo + sp); }
+  if (!(hi - lo > .02)) return;
+  E.vx1s = {a: vx1Zero(E, lo), b: vx1Zero(E, hi)}; vx1Bar(E, true); haptic('tick'); wpPaint();
+}
+// Wisch-Scroll: Nachlauf mit der Geschwindigkeit der letzten ≈ 80 ms
+function vx1Fling(E, p) {
+  const v = p.vx1v || []; if (v.length < 2 || !E.vw) return;
+  const A = v[0], B = v[v.length - 1], dt = B.t - A.t; if (dt <= 0 || performance.now() - B.t > 90) return;
+  const vel = (B.x - A.x) / dt; if (Math.abs(vel) < .35) return;
+  const F = E.vx1f = {vel, n: 0}; let last = performance.now();
+  const step = () => {
+    if (WP.ed !== E || E.vx1f !== F || E.p || E.g10pz) { if (E.vx1f === F) { E.vx1f = null; E.g10fast = false; } return; }
+    const now = performance.now(), d = Math.min(48, now - last); last = now;
+    const va0 = E.va; E.va -= F.vel * d / Math.max(1, E.cv.clientWidth) * E.vw.W; E.g10fast = true; F.n++;
+    wpPaint();
+    F.vel *= Math.pow(.94, d / 16);
+    if (Math.abs(F.vel) < .03 || Math.abs(E.va - va0) < 1e-7) { E.vx1f = null; E.g10fast = false; wpPaint(); return; }
+    requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+function vx1Paint(E, g, X, Wp, Hp) {
+  const s = E.vx1s; if (!s) return;
+  const xa = X(s.a), xb = X(s.b); if (xb < -30 || xa > Wp + 30) return;
+  g.save();
+  g.fillStyle = 'rgba(255,92,92,.2)'; g.fillRect(xa, 12, Math.max(1, xb - xa), Hp - 12);
+  g.fillStyle = '#ff6b6b';
+  for (const [xx, k] of [[xa, 'a'], [xb, 'b']]) {
+    g.fillRect(Math.round(xx) - 1, 12, 2, Hp - 12);
+    g.beginPath(); g.arc(xx, Hp - 30, s.edge === k ? 12 : 10, 0, 2 * Math.PI); g.fill(); g.lineWidth = 2; g.strokeStyle = '#0e1014'; g.stroke();
+  }
+  const tx = fmtDec(s.b - s.a, 2) + ' s'; g.font = WP.font || '600 10px sans-serif';
+  const tw = g.measureText(tx).width + 6, x0 = clamp((xa + xb) / 2 - tw / 2, 2, Wp - tw - 2);
+  g.fillStyle = 'rgba(14,16,20,.85)'; g.fillRect(x0, 14, tw, 14); g.fillStyle = '#ffb3b3'; g.fillText(tx, x0 + 3, 25);
+  g.restore();
+}
+// Lupe ±20 ms über dem Finger: echte Welle, Mitte = die Kante, Einrast-Art
+function vx1Lupe(E, clientX, t, kind) {
+  const L = G10E.lupe; if (!L) return;
+  if (clientX == null || !E) { L.classList.remove('on'); return; }
+  const x = tkRef(E.r); if (!x) return;
+  const r = E.cv.getBoundingClientRect(), Wl = 144, Hl = 64, dpr = Math.min(3, window.devicePixelRatio || 1);
+  L.style.left = Math.round(clamp(clientX - Wl / 2, 4, window.innerWidth - Wl - 4)) + 'px';
+  L.style.top = Math.round(Math.max(4, r.top - Hl - 6)) + 'px';
+  L.classList.add('on');
+  if (L.width !== Wl * dpr) { L.width = Wl * dpr; L.height = Hl * dpr; }
+  const g = L.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.fillStyle = '#0e1014'; g.fillRect(0, 0, Wl, Hl); g.fillStyle = '#343c4a'; g.fillRect(0, Math.round(Hl * .5), Wl, 1);
+  const V = {a: t - .02, W: .04}, m = S.takes[E.id], w = m && m.warp, buf = g10eHeardBuf(E, x.a), live = !!(w && !WP.ab && !wpMapInfo(w.map).ident);
+  const inv = live && buf === wpBase(E.id, x.a) ? (u => VSM.warpInverse(w.map, u)) : null;
+  if (buf) { g.fillStyle = '#7fb0de'; g.strokeStyle = '#7fb0de'; g10eWaveDeep(g, buf, inv, V, Wl, Hl * .5, Hl * .42); }
+  g.fillStyle = '#ff6b6b'; g.fillRect(Wl / 2 - 1, 0, 2, Hl);
+  g.fillStyle = '#8b93a3'; g.font = WP.font || '600 10px sans-serif'; g.fillText('±20 ms · ' + (kind || ''), 4, Hl - 4);
+}
+// Leiste über der Welle: [▶] [Löschen] [Lücke] [✕] (liegt über der Welle, nichts verschiebt sich)
+function vx1Bar(E, show) {
+  let b = E.vx1bar;
+  if (!b && show && E.cvw) {
+    b = el('div', 'vx1bar');
+    b.innerHTML = `<span class="vx1len"></span><button class="rb" data-a="play" aria-label="Auswahl hören">${CHS_SVG.play}</button><button class="rb vx1cut" data-a="cut" aria-label="Auswahl löschen, der Rest rückt nach">Löschen</button><button class="rb" data-a="gap" aria-label="Auswahl stumm, die Lücke bleibt">Lücke</button><button class="rb" data-a="x" aria-label="Auswahl aufheben">✕</button>`;
+    E.cvw.append(b); E.vx1bar = b;
+    onTap(b, bt => {
+      const Q = WP.ed; if (!Q || Q !== E) return; const a = bt.dataset.a;
+      if (a === 'x') { vx1PvStop(); Q.vx1s = null; vx1Bar(Q, false); wpPaint(); return; }
+      if (a === 'play') { vx1PlaySel(Q); return; }
+      vx1PvStop(); vx1Cut(Q, a === 'gap');
+    }, 'button[data-a]');
+  }
+  if (!b) return;
+  b.hidden = !show || !E.vx1s;
+  if (!b.hidden) b.querySelector('.vx1len').textContent = fmtDec(E.vx1s.b - E.vx1s.a, 2) + ' s';
+}
+function vx1PvStop() { const p = VX1.pv; VX1.pv = null; if (p) { try { p.s.onended = null; p.s.stop(); } catch (e) {} try { p.s.disconnect(); p.g.disconnect(); } catch (e) {} } }
+function vx1PlaySel(E) {
+  const s = E.vx1s, x = tkRef(E.r); if (!s || !x) return;
+  const c = ensureAudio(); if (!c) return;
+  const buf = g10eHeardBuf(E, x.a); if (!buf) { toast('Take fehlt auf diesem Gerät'); return; }
+  vx1PvStop();
+  const V = vpGet(buf), G = V ? V.g : 1, src = c.createBufferSource(), g = c.createGain(), t = c.currentTime + .02, d = Math.max(.02, s.b - s.a);
+  src.buffer = buf; src.connect(g); g.connect(AU.masterSum || c.destination);
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(G, t + .005); g.gain.setValueAtTime(G, t + d - .005); g.gain.linearRampToValueAtTime(0, t + d);
+  try { src.start(t, Math.max(0, s.a)); src.stop(t + d + .01); } catch (e) { logErr(e); return; }
+  VX1.pv = {s: src, g}; src.onended = () => { if (VX1.pv && VX1.pv.s === src) VX1.pv = null; };
+}
+// nach ↶ ↷: der Editor folgt dem Take des Stücks (vorher / nachher), die Auswahl ist weg
+function vx1WpUndone() {
+  const E = WP.ed; if (!E) return;
+  const x = tkRef(E.r); if (x && x.a.take !== E.id && S.takes && S.takes[x.a.take]) E.id = x.a.take;
+  if (E.vx1s) { E.vx1s = null; vx1Bar(E, false); }
+}
+
+/* ---------- W: Schneiden (Kern ohne DOM) ---------- */
+// [s0, s1) heraus, Naht X Samples gleichleistungs-überblendet (das Ende des Ausgeschnittenen läuft in das Folgende) – kein Dehnen
+function vx1Splice(x, s0, s1, X) {
+  const n = x.length; s0 = clamp(Math.round(s0), 0, n); s1 = clamp(Math.round(s1), s0, n);
+  const out = new x.constructor(n - (s1 - s0)), q = x instanceof Int16Array, k = Math.max(0, Math.min(Math.round(X), s0));
+  out.set(x.subarray(0, s0 - k), 0);
+  for (let i = 0; i < k; i++) {
+    const u = (i + .5) / k, v = x[s0 - k + i] * Math.cos(Math.PI / 2 * u) + x[s1 - k + i] * Math.sin(Math.PI / 2 * u);
+    out[s0 - k + i] = q ? (v > 32767 ? 32767 : v < -32768 ? -32768 : Math.round(v)) : v;
+  }
+  out.set(x.subarray(s1), s0);
+  return out;
+}
+// [s0, s1) stumm (innen je X Samples Blende), Länge bleibt
+function vx1Gap(x, s0, s1, X) {
+  const n = x.length; s0 = clamp(Math.round(s0), 0, n); s1 = clamp(Math.round(s1), s0, n);
+  const out = x.slice(), k = Math.max(1, Math.min(Math.round(X), (s1 - s0) >> 1)), q = x instanceof Int16Array;
+  for (let i = s0; i < s1; i++) {
+    const g = i < s0 + k ? Math.cos(Math.PI / 2 * (i - s0 + .5) / k) : i >= s1 - k ? Math.sin(Math.PI / 2 * (i - (s1 - k) + .5) / k) : 0, v = x[i] * g;
+    out[i] = q ? Math.round(v) : v;
+  }
+  return out;
+}
+// eine Zeitspanne {t0, t1, …} (Take-Zeit) nach dem Schnitt [sa, sb) (L = Länge; 0 = Lücke)
+function vx1Span(n, sa, sb, L) {
+  if (!n || !isNum(n.t0) || !isNum(n.t1)) return [n];
+  const t0 = n.t0, t1 = n.t1;
+  if (t1 <= sa + 1e-9) return [n];
+  if (t0 >= sb - 1e-9) return [L ? Object.assign({}, n, {t0: tkR6(t0 - L), t1: tkR6(t1 - L)}) : n];
+  if (t0 >= sa - 1e-9 && t1 <= sb + 1e-9) return [];
+  let a = t0, b = t1;
+  if (L) { a = Math.min(t0, sa); b = t1 > sb ? t1 - L : sa; }
+  else if (t0 < sa) b = Math.min(t1, sa); else a = sb;
+  return b - a >= .03 ? [Object.assign({}, n, {t0: tkR6(a), t1: tkR6(b)})] : [];
+}
+// Zeitkarte (src = Take, dst = gehört) nach dem Schnitt: Punkte im Schnitt weg, dahinter um (Ls, Lh) früher, an der Naht (sa, ha)
+function vx1MapCut(w, sa, sb, ha, hb) {
+  const s = w.map.src, d = w.map.dst, S2 = [], D2 = [], Ls = sb - sa, Lh = hb - ha;
+  const push = (x, y) => { if (S2.length && (x <= S2[S2.length - 1] + 1e-6 || y <= D2[D2.length - 1] + 1e-6)) return; S2.push(tkR6(x)); D2.push(tkR6(y)); };
+  for (let k = 0; k < s.length; k++) if (s[k] < sa - 1e-9) push(s[k], d[k]);
+  push(sa, ha);
+  for (let k = 0; k < s.length; k++) if (s[k] >= sb - 1e-9) push(s[k] - Ls, d[k] - Lh);
+  const o = deep(w); o.map = {v: 1, src: S2, dst: D2}; if (isNum(o.t0) && o.t0 >= sb) o.t0 = tkR6(o.t0 - Ls);
+  return wpNormWarp(o);
+}
+// Take-Felder nach dem Schnitt (Marken, Tonhöhe, Songtext, Anlauf/Ausklang, Zeitkarte); oid = Take, dessen erkannte Marken gelten
+function vx1CutMeta(m, sa, sb, ha, hb, gap, oid) {
+  const o = deep(m), Ls = gap ? 0 : sb - sa, inC = t => t >= sa - 1e-9 && t < sb - 1e-9, sh = t => tkR6(t >= sb ? t - Ls : t);
+  const mk0 = m.marks || (oid ? wpMarks(oid) : null);
+  if (Array.isArray(mk0) && mk0.length) {
+    const keep = mk0.map(k => !inC(k.t));
+    o.marks = mk0.filter((k, i) => keep[i]).map(k => Object.assign({}, k, {t: sh(k.t)}));
+    if (m.lyrics && keep.some(v => !v)) { const Lb = VSM.assignLyrics(m.lyrics, mk0.length), kept = Lb.labels.filter((x, i) => keep[i] && x !== '·').concat(Lb.extra), tx = kept.join(' ').trim(); if (tx) o.lyrics = tx; else delete o.lyrics; }
+    if (!o.marks.length) delete o.marks;
+  }
+  if (o.pitch && Array.isArray(o.pitch.notes)) { o.pitch.notes = o.pitch.notes.flatMap(n => vx1Span(n, sa, sb, Ls)); if (!o.pitch.notes.length) delete o.pitch; }
+  if (o.ly && Array.isArray(o.ly.s)) { o.ly.s = o.ly.s.filter(y => !(y && isNum(y.t) && inC(y.t))).map(y => (y && isNum(y.t) ? Object.assign({}, y, {t: sh(y.t)}) : y)); if (!o.ly.s.length) delete o.ly; }
+  if (!gap) {
+    if (o.pre && isNum(o.pre.in) && o.pre.in >= sb) o.pre.in = sh(o.pre.in);
+    if (o.post && isNum(o.post.out)) { if (o.post.out >= sb) o.post.out = sh(o.post.out); else if (inC(o.post.out)) delete o.post; }
+    if (o.warp) { const w = vx1MapCut(o.warp, sa, sb, ha, hb); if (w) o.warp = w; else delete o.warp; }
+  }
+  return o;
+}
+function vx1FBuf(f, sr) {
+  let b = null; try { b = new AudioBuffer({length: Math.max(1, f.length), numberOfChannels: 1, sampleRate: sr}); } catch (e) { try { b = AU.ctx ? AU.ctx.createBuffer(1, Math.max(1, f.length), sr) : null; } catch (e2) { b = null; } }
+  if (b) b.getChannelData(0).set(f); return b;
+}
+const vx1Q16 = f => { const q = new Int16Array(f.length); for (let i = 0; i < f.length; i++) { const v = Math.round(f[i] * 32767); q[i] = v > 32767 ? 32767 : v < -32768 ? -32768 : v; } return q; };
+// Auswahl des Marken-Editors schneiden: gap = Lücke lassen. Ein Undo-Schritt; der alte Take bleibt (↶, andere Stellen)
+async function vx1Cut(E, gap) {
+  if (VX1.busy) return false;
+  const x = tkRef(E.r), s = E.vx1s; if (!x || !s) return false;
+  if (WP.ab) { toast('Erst A/B aus – geschnitten wird, was du hörst'); return false; }
+  if (!tkAudioOk()) { toast('Audio nur auf der eigenen Seite'); return false; }
+  const a = x.a, id = a.take, m = S.takes && S.takes[id]; if (!m || id !== E.id) return false;
+  const ha = Math.max(s.a, a.in), hb = Math.min(s.b, a.out);
+  if (!(hb - ha >= .01)) { toast('Die Auswahl liegt außerhalb des Stücks'); return false; }
+  if (!gap && hb - ha >= a.out - a.in - .05) { toast('Das ganze Stück – dann lieber den Take löschen'); return false; }
+  const map = E.map || null, sr = m.sr, s0 = clamp(Math.round((map ? VSM.warpInverse(map, ha) : ha) * sr), 0, m.len), s1 = clamp(Math.round((map ? VSM.warpInverse(map, hb) : hb) * sr), s0, m.len);
+  if (s1 - s0 < sr * .01) return false;
+  VX1.busy = true;
+  try {
+    const raw = await tkPcm(id); if (!raw) { toast('Take fehlt auf diesem Gerät'); return false; }
+    const ref = m.rf ? await clRead(clKeys(id, m, 'r'), m.len) : null;
+    if (WP.ed !== E || E.id !== id || !S.takes[id] || E.vx1s !== s) return false;
+    const X = Math.round(VX1_XF * sr), cut = arr => (gap ? vx1Gap(arr, s0, s1, X) : vx1Splice(arr, s0, s1, X));
+    const y = cut(raw), yr = ref ? cut(ref) : null, sa = s0 / sr, sb = s1 / sr, Ls = gap ? 0 : sb - sa, Lh = gap ? 0 : hb - ha;
+    const nid = newUid(), chunks = []; for (let k = 0, nc = Math.ceil(y.length / TK_CHUNK); k < nc; k++) chunks.push(nid + ':' + k);
+    const m2 = tkNormTake(Object.assign(vx1CutMeta(m, sa, sb, ha, hb, gap, id), {len: y.length, chunks, of: undefined})); if (!m2) return false;
+    const takesBefore = JSON.stringify(S.takes), st = stimmeT();
+    const item = E.r.vox ? {kind: 'song', before: songSnapshot()} : {kind: 'clip', track: E.r.t, scene: E.r.s, before: cleanClip(x.clip)};
+    S.takes[nid] = m2;
+    const shH = t => tkR6(t >= hb ? t - Lh : t > ha ? ha : t);
+    a.take = nid; a.in = shH(a.in); a.out = shH(a.out);
+    if (a.chor && Array.isArray(a.chor.voices)) for (const v of a.chor.voices) {
+      if (Array.isArray(v.n)) v.n = v.n.flatMap(q => vx1Span(q, sa, sb, Ls));
+      const vm = v.take && S.takes[v.take.take];
+      if (vm && (vm.src === 'chor' || vm.src === 'dup') && vm.of === id) {   // entkoppelte/duplizierte Stimme: teilt die Stücke des Leads
+        const vid = newUid(), v2 = tkNormTake(Object.assign(vx1CutMeta(vm, sa, sb, ha, hb, gap, null), {len: y.length, chunks: chunks.slice(), of: nid}));
+        if (v2) { S.takes[vid] = v2; v.take = Object.assign({}, v.take, {take: vid, in: a.in, out: a.out}); }
+      }
+    }
+    const b2 = tkToBuffer(y, sr); if (b2) TK.buf.set(nid, vpKick(b2));
+    const A = m.cl | 0, c = CL.buf.get(id); let cq = null;
+    if (A && c && c.a === A && c.b) { const f = cut(c.b.getChannelData(0)), cb = vx1FBuf(f, sr); if (cb) { CL.buf.set(nid, {a: A, b: vpKick(cb)}); CL.info[nid] = Object.assign({}, CL.info[id] || {a: A}); cq = vx1Q16(f); } }
+    TK.pend.set(nid, {vx1: 1}); tkPersist();
+    const jobs = [tkStore(nid, y, chunks)];
+    if (yr) jobs.push(tkStore(nid, yr, clKeys(nid, m2, 'r')));
+    if (cq) { const tag = 'c' + A + 'v' + clCoreVer(); jobs.push(tkStore(nid, cq, clKeys(nid, m2, tag + ':'))); try { jobs.push(kv.aput(nid + ':ci' + A + 'v' + clCoreVer(), new TextEncoder().encode(JSON.stringify(CL.info[nid])).buffer).then(() => true, () => false)); } catch (e) {} }
+    VX1.store = Promise.all(jobs).then(r => r.every(Boolean), () => false).finally(() => TK.pend.delete(nid));
+    undoPush({kind: 'group', label: gap ? 'Lücke im Gesang' : 'Gesang geschnitten', items: [{kind: 'takes', before: takesBefore}, item], tk: 1});
+    markDirty(); UI.dirty.grid = UI.dirty.song = true;
+    E.id = nid; E.vx1s = null; vx1Bar(E, false); VX1.cuts++;
+    VX1.lastCut = {from: id, to: nid, gap: !!gap, s0, s1, sec: +((s1 - s0) / sr).toFixed(4), len: y.length};
+    if (R.playing) { if (E.r.vox) tkVoxResync(true); else if (st >= 0) tkTrackResync(st); }
+    wpPaint();
+    toast(gap ? 'Stelle stumm – die Lücke bleibt' : 'Ausgeschnitten – der Rest rückt nach', {label: 'Rückgängig', fn: () => undo()});
+    return true;
+  } catch (e) { logErr(e); toast('Schneiden ging nicht'); return false; }
+  finally { VX1.busy = false; }
+}
+
+/* ---------- P: Vorher/Nachher mit einem Testsignal (Vibrato, Gleiten, verstimmte Noten) – nur Test-API ---------- */
+function vx1PitchCmp(o) {
+  o = o || {}; const sr = o.sr || 44100, notes = o.notes || [[57.3, .8], [59.8, .8], [62.15, .9], [60.1, .7]], vibC = o.vib == null ? 45 : o.vib, vibHz = o.vibHz || 5.5, glide = o.glide || .07;
+  const T = notes.reduce((s, q) => s + q[1], 0) + .3, n = Math.round(T * sr), x = new Float32Array(n), f = new Float64Array(n), bnd = [];
+  let t = .1; const seg = notes.map(([mm, d]) => { const r = {a: t, b: t + d, m: mm}; t += d; return r; });
+  for (let i = 0; i < n; i++) {
+    const tt = i / sr; let k = seg.findIndex(r => tt < r.b); if (k < 0) k = seg.length - 1; const r = seg[k];
+    let mm = r.m; if (k > 0 && tt - r.a < glide) { const u = (tt - r.a) / glide; mm = seg[k - 1].m + (r.m - seg[k - 1].m) * (.5 - .5 * Math.cos(Math.PI * u)); }
+    const on = Math.min(1, Math.max(0, (tt - r.a - .15) / .15)), vib = on * vibC / 100 * Math.sin(2 * Math.PI * vibHz * (tt - r.a));
+    f[i] = 440 * Math.pow(2, (mm + vib - 69) / 12);
+  }
+  let ph = 0, seed = 7; const env = i => { const tt = i / sr; return Math.min(1, Math.max(0, (tt - .1) / .03)) * Math.min(1, Math.max(0, (seg[seg.length - 1].b - tt) / .05)); };
+  for (let i = 0; i < n; i++) {
+    ph += 2 * Math.PI * f[i] / sr; let v = 0;
+    for (let h = 1; h <= 24; h++) { const fh = h * f[i]; if (fh > sr * .45) break; const fm = Math.exp(-Math.pow((fh - 700) / 260, 2)) + .6 * Math.exp(-Math.pow((fh - 1150) / 300, 2)) + .25 * Math.exp(-Math.pow((fh - 2600) / 500, 2)) + .02; v += fm * Math.sin(h * ph) / Math.sqrt(h); }
+    seed = (seed * 16807) % 2147483647; x[i] = .25 * env(i) * v + .0005 * (seed / 2147483647 - .5);
+  }
+  for (let k = 1; k < seg.length; k++) bnd.push(seg[k].a);
+  const an = G2P.analyse(x, sr, VSD), base = an.notes.map(q => ({t0: q.t0, t1: q.t1, m: q.m, to: Math.round(q.m), s: 1, e: 0}));
+  const plans = {weich: {mode: 'soft', v: 2, rt: 40, notes: base}, hart: {mode: 'hard', v: 2, rt: 15, notes: base}, natuerlich: {mode: 'soft', nat: 0, notes: base}, nat50: {mode: 'hard', nat: .5, notes: base}, nat100: {mode: 'hard', nat: 1, notes: base}};
+  const meas = y => {
+    const A = G2P.analyse(y, sr, VSD), H = A.hop, out = [];
+    seg.forEach((r, k) => {
+      const c = []; for (let i = Math.ceil((r.a + .3) / H); i < Math.floor((r.b - .08) / H); i++) if (A.f0[i] > 0) c.push(G2P.midi(A.f0[i]));
+      if (!c.length) { out.push(null); return; }
+      const mu = c.reduce((s, v) => s + v, 0) / c.length, sd = Math.sqrt(c.reduce((s, v) => s + (v - mu) * (v - mu), 0) / c.length);
+      out.push({center: +((mu - Math.round(r.m)) * 100).toFixed(1), vib: +(sd * 100).toFixed(1)});
+    });
+    // steilster Tonhöhen-Sprung an den Notengrenzen (Cent je 10 ms) – klein = weicher, natürlicher Übergang
+    let jump = 0; for (const b0 of bnd) for (let i = Math.round((b0 - .12) / H); i < Math.round((b0 + .12) / H); i++) if (A.f0[i] > 0 && A.f0[i + 1] > 0) jump = Math.max(jump, Math.abs(G2P.midi(A.f0[i + 1]) - G2P.midi(A.f0[i])) * 100 * (.01 / H));
+    return {notes: out, jump: +jump.toFixed(1)};
+  };
+  const res = {orig: meas(x), sung: seg.map(r => +((r.m - Math.round(r.m)) * 100).toFixed(1)), notes: an.notes.length};
+  for (const k of Object.keys(plans)) { const t0 = performance.now(), y = G2P.render(x, sr, an, plans[k]).y; res[k] = Object.assign(meas(y), {ms: Math.round(performance.now() - t0), key: G2P.planKey(plans[k])}); }
+  return res;
+}
+
+/* ---------- Test-API ---------- */
+const VX1_API = {
+  vx1Info: () => { const P = stProf(), E = WP.ed; return {route: ST.route, routeHow: ST.routeHow, saved: P.route || null, rh: P.rh || null, probe: VX1.last ? Object.assign({}, VX1.last) : null, probes: VX1.probes,
+    micBlocked: VX1.micBlocked, sel: E && E.vx1s ? {a: E.vx1s.a, b: E.vx1s.b} : null, bar: !!(E && E.vx1bar && !E.vx1bar.hidden), edId: E ? E.id : null, fling: !!(E && E.vx1f), cuts: VX1.cuts, lastCut: VX1.lastCut || null}; },
+  vx1LeadMute: on => { const st = stimmeT(); if (st < 0) return null; if (on == null || !!S.tracks[st].mute !== !!on) vx1LeadMuteTap(); return !!S.tracks[st].mute; },
+  vx1Sel: (a, b) => { const E = WP.ed; if (!E) return false; E.vx1s = {a: Math.min(a, b), b: Math.max(a, b)}; vx1Bar(E, true); wpPaint(); return true; },
+  vx1SelWord: t => { const E = WP.ed; if (!E) return null; vx1SelectWord(E, t); return E.vx1s ? {a: E.vx1s.a, b: E.vx1s.b} : null; },
+  vx1Cut: gap => { const E = WP.ed; return E ? vx1Cut(E, !!gap).then(ok => (VX1.store ? VX1.store.then(() => ok) : ok)) : Promise.resolve(false); },
+  vx1Splice: (arr, s0, s1, X, gap) => Array.from((gap ? vx1Gap : vx1Splice)(Float32Array.from(arr), s0, s1, X)),
+  vx1ProbeArr: (mic, ref, sr) => vx1ProbeArr(Int16Array.from(mic), Int16Array.from(ref), sr || 44100),
+  vx1PitchCmp: o => vx1PitchCmp(o),
+  vx1MicGuardReset: () => { VX1.micT = 0; return true; },
+  vx1Plan: r => { const id = wpId(r); return id ? g2Plan(id) : null; }
+};
+/* VX1-END */
 
 /* G6PB-BEGIN */
 /* =====================================================================================================================
@@ -66477,13 +67043,14 @@ function g6pTones(a, v, LD) {
 function g6pPlan(a, v, ct, LD) {
   if (v.take) {
     const tid = v.take.take, base = g2Plan(tid, a);
-    if (base) { const pl = {mode: base.mode, notes: base.notes.map(n => Object.assign({}, n, {e: n.e + ct}))}; return G2P.active(pl) ? pl : null; }
+    if (base) { const pl = {mode: base.mode, notes: base.notes.map(n => Object.assign({}, n, {e: n.e + ct}))}; if (base.nat != null) pl.nat = base.nat; /* VX1-P */ return G2P.active(pl) ? pl : null; }
     const m = S.takes && S.takes[tid]; if (!ct || !m) return null;
     return {mode: 'soft', notes: [{t0: 0, t1: tkR6(m.len / m.sr), m: 60, to: 60, s: 0, e: ct}]};
   }
   LD = LD || g6pLead(a); if (!LD) return undefined;              // undefined = noch nicht bereit (Analyse läuft)
   const T = g6pTones(a, v, LD);
   const pl = {mode: LD.P.mode, notes: LD.notes.map((n, k) => ({t0: n.t0, t1: n.t1, m: n.m, to: n.to, s: n.s, e: n.eL + 100 * (T[k].cp - n.Lp) + ct}))};
+  if (isNum(LD.P.nat)) pl.nat = clamp(LD.P.nat, 0, 100) / 100;   // VX1-P: der Chor folgt „natürlich ↔ hart“ des Leads
   return G2P.active(pl) ? pl : null;
 }
 const g6pCopies = v => (v.dblOff || !Array.isArray(v.dbl) || !v.dbl.length ? [{ms: 0, ct: 0, p: 0}] : v.dbl.slice(0, 4).map(d => ({ms: isNum(d.ms) ? d.ms : 0, ct: isNum(d.ct) ? d.ct : 0, p: isNum(d.p) ? d.p : 0})));
@@ -73580,6 +74147,7 @@ Object.assign(SYNQUENZER, {                       // BM6 (Nachtrag 7 §5.3): Bit
   bmRoutes: t => bmRoutes(t), bmRouteClear: (t, k) => (bmLoad(), bmRouteClear(t, k)),
   bmInit: (t, kind) => { const s_ = sndOf(t); if (!s_ || s_.engine !== 'bm') throw new Error('Keine ' + BM_NAME + '-Spur: ' + t); return soundEdit(t, 'Init', () => { const snd = deep(s_); snd.p.bm = SQBM.init(kind); applySound(t, snd); return true; }); },
 });
+Object.assign(SYNQUENZER, VX1_API);                         // VX1: Gesang (Chor entkoppelt, natürlich ↔ hart, Schneiden, Übersprechen)
 const NO_SYNC = new Set(['clipCurves', 'bmcLog', 'bmcState', 'oneScaleOf', 'harmInfo', 'kbScaleNow', 'micCheck', 'micCheckJson', 'micCheckEstimate', 'cloud', 'cloudProjects', 'cloudVersions', 'cloudHandoff', 'state', 'project', 'runtime', 'getClip', 'getParam', 'noteLog', 'voices', 'timeline', 'serialize', 'buildMidi', 'buildZip', 'crc32', 'meter', 'outPitch', 'migrate', 'tapTempo',
   'getSound', 'mods', 'library', 'factory', 'previewState', 'soundEdited', 'fmxView', 'fmxPreview', 'fmxBadge',
   'history', 'projects', 'storage', 'engineInfo', 'getBusFx', 'wake', 'gestures', 'roll', 'rollApi', 'detectKey', 'sceneKey',

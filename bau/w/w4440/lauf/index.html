@@ -2279,10 +2279,11 @@ a.mbtn[aria-disabled=true]{opacity:.55}
 .lauf .se-cell.lf1off .ln{color:var(--text-faint);text-decoration:line-through}
 .lauf .se-cell .lf1b{position:absolute;left:3px;bottom:3px;z-index:2;padding:2px 3px;border-radius:4px;background:rgba(0,0,0,.62);color:#fff;font:700 9px/1.2 var(--font-num);white-space:pre;text-align:left;pointer-events:none}
 .lauf .se-cell .lf1s{position:absolute;left:3px;top:17px;z-index:2;width:0;height:0;border-left:8px solid var(--sel);border-top:5px solid transparent;border-bottom:5px solid transparent;pointer-events:none}
-.lacts .lf1dir{flex:none;min-width:52px;padding:0 8px;gap:2px}
-.lacts .lf1dir .lf1i{flex:none}
-.lacts .lf1dir .lf1dv{font-size:11px}
-.lacts .lf1dir.lf1on{border-color:var(--sel);color:var(--sel)}
+.lbar .lf1dir{position:relative;flex:none;min-width:52px;padding:0 8px;gap:2px}
+.lbar .lf1dir::after{content:'';position:absolute;left:0;right:0;top:-6px;bottom:-6px}
+.lbar .lf1dir .lf1i{flex:none}
+.lbar .lf1dir .lf1dv{font-size:11px}
+.lbar .lf1dir.lf1on{color:var(--sel);box-shadow:inset 0 0 0 1px var(--sel)}
 .pop.lf1pop{width:min(352px,calc(100vw - 16px))}
 .pop .lf1r{display:flex;align-items:center;gap:6px;margin-top:8px}
 .pop .lf1r>.lbl{flex:0 0 50px;font:700 9px/1.15 var(--font-ui);letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim)}
@@ -48929,7 +48930,7 @@ function buildLauf() {
   acts.append(...laufNavMake(), kbtn, rnd, clr);                  /* I2f: ◀ ▶ vorn, sobald ein Schritt gewählt ist */
   body.appendChild(acts);
   ED.lauf = {se: E, t, s, per, pages, tot: laufTot(c), kbtn, ph: -2, pager, run: -2};
-  lf1LaufAttach(t, s, E, acts, per);                               // LF1: [Richtung ▾] ans Ende, langer Druck = Schritt-Menü
+  lf1LaufAttach(t, s, E, bar, per);                                // LF1: [Richtung ▾] ans Ende der Werkzeugleiste, langer Druck = Schritt-Menü
   laufPaint();
   rollKbApply(); rollHeadUpdate(); renderEdChip();
   sh.classList.add('open');
@@ -49319,7 +49320,7 @@ function lf1StepPop(t, s, k, anchor) {
     }, 'button[data-a]');
   }, {name: 'lf1step'});
 }
-// [Richtung ▾] am Ende der LAUF-Aktionszeile: Zeichen der Richtung (gezeichnet), hervorgehoben wenn nicht „vorwärts ab 1“
+// [Richtung ▾] am Ende der LAUF-Werkzeugleiste: Zeichen der Richtung (gezeichnet), hervorgehoben wenn nicht „vorwärts ab 1“
 const LF1_ICON = {
   fwd: '<path d="M3 8h15M13 3l5 5-5 5"/>', rev: '<path d="M19 8H4M9 3L4 8l5 5"/>', pend: '<path d="M4 8h14M8 4L4 8l4 4M14 4l4 4-4 4"/>',
   rnd: '<path d="M2 4h4l9 8h4M2 12h4l9-8h4M17 2l2 2-2 2M17 10l2 2-2 2"/>'};
@@ -49355,10 +49356,10 @@ function lf1DirPop(anchor, t, s) {
     onTap(p, b => { const a = b.dataset.a; if (lf1DirDo(t, s, a, a === 'dir' ? b.dataset.v : +b.dataset.v)) haptic('tick'); lf1DirRender(p, t, s); popFit(p); }, 'button[data-a]');
   }, {name: 'lf1dir', above: true});
 }
-// LAUF gebaut (buildLauf): [Richtung ▾] ans Ende der Aktionszeile, langer Druck auf die Schritte
-function lf1LaufAttach(t, s, E, acts, per) {
-  if (!ED.lauf || !acts) return;
-  const b = el('button', 'rb lf1dir'); b.setAttribute('aria-label', 'Richtung'); onTap(b, () => lf1DirPop(b, t, s)); acts.appendChild(b);
+// LAUF gebaut (buildLauf): [Richtung ▾] ans Ende der Werkzeugleiste (die Aktionszeile ist mit ◀ ▶ schon voll), langer Druck auf die Schritte
+function lf1LaufAttach(t, s, E, bar, per) {
+  if (!ED.lauf || !bar) return;
+  const b = el('button', 'rb lf1dir'); b.setAttribute('aria-label', 'Richtung'); onTap(b, () => lf1DirPop(b, t, s)); bar.appendChild(b);
   ED.lauf.lf1b = b; lf1DirUpd(S.tracks[t].clips[s]);
   lf1Hold(E, t, s, per);
 }

@@ -4791,6 +4791,18 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 .pop{overscroll-behavior:contain}
 /* quer: ↶ ↷ ✕ stehen in jedem Editor-Blatt am rechten Rand (wie in §2.3 gedacht); vorher wanderte das ✕ je nach Klangerzeugung mit der Kopfzeile (Drums, North, VA) */
 @media (orientation:landscape){.sheet.ed .sh-head .r1 > .ur:not(.ur ~ .ur){margin-left:auto}}
+/* hochkant: zu breite Kopfzeile 1 (qf1Head) – dichter, notfalls ✕ fest rechts und die Zeile davor seitlich wischbar */
+@media (orientation:portrait){
+  .sheet.ed .sh-head .r1.qf1h{gap:4px}
+  .sheet.ed .sh-head .r1.qf1h .folc{min-width:0;padding:0 4px;font-size:9.5px;letter-spacing:0}
+  .sheet.ed .sh-head .r1.qf1h .folc small{font-size:8.5px;letter-spacing:0}
+  .sheet.ed .sh-head .r1.qf1h .folc .rl{display:none}
+  .sheet.ed .sh-head .r1.qf1h .folc .rs{display:inline}
+  .sheet.ed .sh-head .r1.qf1h .folc::after{content:attr(data-ws);font-size:8.5px;letter-spacing:0}
+  .sheet.ed .sh-head .r1.qf1hx{overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;touch-action:pan-x;scrollbar-width:none}
+  .sheet.ed .sh-head .r1.qf1hx::-webkit-scrollbar{display:none}
+  .sheet.ed .sh-head .r1.qf1hx > .sh-x{position:sticky;right:0;z-index:2;box-shadow:-10px 0 8px -4px #16181d}
+}
 /* QF1-CSS-END */
 /* SX9-CSS-BEGIN */
 .plsheet .sx9-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 6px}
@@ -42153,6 +42165,17 @@ function fitBody(b, full) {
 function qf1Fit(b, full) {
   if (!b.classList.contains('qf1s') && FIT_LV.every(c => b.classList.contains(c)) && b.scrollHeight > b.clientHeight + 2) b.classList.add('qf1s', 'pan-y');   // ab 3 px (1–2 px sind nur Rand)
   if (full && b._qf1y) { const y = b._qf1y; b._qf1y = null; if (y[0]) b.scrollTop = y[0]; const q = y[1] && b.querySelector('.pg.pan-y'); if (q) q.scrollTop = y[1]; }
+  if (full) qf1Head(b.parentElement);
+}
+// hochkant: Kopfzeile 1 zu breit (Drums mit North auf SCHRITTE: Platte + FOLGT) – das ✕ lag rechts außerhalb des Schirms.
+// Erst dichter (FOLGT-Chip in der kurzen Form wie bei 320 px, 4 px Abstand); reicht das nicht, bleibt das ✕ fest rechts stehen
+// und die Zeile davor lässt sich seitlich wischen. Quer (eine Kopfzeile, display:contents) und wenn alles passt: unverändert.
+function qf1Head(sh) {
+  const r1 = sh && sh.querySelector(':scope > .sh-head > .r1'); if (!r1) return;
+  if (r1.classList.contains('qf1h')) r1.classList.remove('qf1h', 'qf1hx', 'pan-x');
+  if (getComputedStyle(r1).display === 'contents' || r1.scrollWidth <= r1.clientWidth + 1) return;
+  r1.classList.add('qf1h');
+  if (r1.scrollWidth > r1.clientWidth + 1) r1.classList.add('qf1hx', 'pan-x');
 }
 let fitRO = null;
 function fitWatch(body) {
@@ -52341,7 +52364,7 @@ function bindUI() {
   document.addEventListener('contextmenu', e => { if (!inField(e)) e.preventDefault(); });
   [EL.kb, EL.pads, EL.segTr, EL.drumSheet, EL.popLayer.querySelector('.bd')].forEach(n => { if (n) guardTouch(n); });
   // the synth sheet is guarded against the loupe too, except the label columns of its scrolling list (MOD matrix, §1.7.3)
-  EL.synthSheet.addEventListener('touchstart', e => { if (e.cancelable && !(e.target.closest && e.target.closest('.mxlist .ms, .mxlist .md, .mxlist .mempty, .pg-lfo-l1 .routes, .pg-lfo-l2 .routes, .fxv.scr, .pan-y'))) e.preventDefault(); }, {passive: false});   // QF1: + .pan-y (Seite NORTH, rollender Körper)
+  EL.synthSheet.addEventListener('touchstart', e => { if (e.cancelable && !(e.target.closest && e.target.closest('.mxlist .ms, .mxlist .md, .mxlist .mempty, .pg-lfo-l1 .routes, .pg-lfo-l2 .routes, .fxv.scr, .pan-y, .r1.qf1hx'))) e.preventDefault(); }, {passive: false});   // QF1: + .pan-y (Seite NORTH, rollender Körper), Kopfzeile seitlich
   // transport
   // keyboard activation (Enter/Space on a focused button) only: clicks that follow a pointer interaction are ignored
   const kbdClick = (elx, fn) => {

@@ -1,0 +1,20 @@
+import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
+const FILE = '/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/w4440/fx/index.html';
+const b = await chromium.launch(); const p = await b.newPage({viewport: {width: 428, height: 926}});
+await p.goto('file://' + FILE); await p.waitForTimeout(1500);
+const r = await p.evaluate(async () => {
+  const Q = window.SYNQUENZER; Q.setBpm(120);
+  const notes = [[0, 36], [1, 38], [2, 36], [3, 38]].map(([t, n]) => ({t, d: .25, n, v: .9})).concat([0, .5, 1, 1.5, 2, 2.5, 3, 3.5].map(t => ({t, d: .25, n: 42, v: .6})));
+  Q.setClip(4, 0, {len: 1, notes});
+  const nt = Q.state().project.tracks.length, lanes = Array.from({length: nt}, (_, i) => (i === 4 ? [{bar: 0, slot: 0}] : []));
+  const s = {bars: 8, lanes, marks: [{id: 'M1', a: 0, len: 4}, {id: 'M2', a: 4, len: 4}]};
+  s.ue = [{id: 'U1', m: 'M2', a: -2, len: 2, k: 'tom', t: 4, mode: 'ersetzt', dens: 1, dir: 'auto', src: 'p-tom-kurz', notes: [50, 50, 50, 47, 47, 47, 45, 45].map((n, i) => ({t: i * .25, d: .25, n, v: .7}))}, {id: 'U2', m: 'M1', a: 0, len: 2, k: 'crash', t: 4, mode: 'ersetzt', dens: 1, dir: 'auto', src: 'p-becken-stopp', notes: [{t: 0, d: .25, n: 49, v: 1}]}];
+  Q.setSong(s);
+  const rr = await Q.vvRender({range: {a: 0, b: 5, sel: false}});
+  const L = (rr.log || []).filter(e => e.track === 4 && e.beat != null);
+  return {ue: Q.ueList(), hits: Q.ueHits(), L: L.map(e => [e.beat, e.out, e.src]).slice(0, 80)};
+});
+console.log(JSON.stringify(r.ue.map(e => [e.id, e.m, e.a, e.len, e.mode, e.pads])));
+console.log(JSON.stringify(r.hits.slice(0, 12)));
+console.log(JSON.stringify(r.L));
+await b.close();
