@@ -96,7 +96,7 @@ const clipSig = (p, t, s) => p.evaluate(([t, s]) => { const c = S.tracks[t].clip
   await T.end(); await sleep(200);
   ok('Clip halten zeigt das Zieh-Symbol', liftCls);
   ok('Clip halten + loslassen öffnet das Clip-Blatt wie bisher', await p.evaluate(() => R.editor === 'clip' && EL.clipSheet.classList.contains('open')));
-  await p.evaluate(() => closeClipSheet()); await sleep(300);
+  await p.evaluate(() => closeClipSheet()); await sleep(900);
 
   // 4. Clip in derselben Spur verschieben: Synth 1 · Szene 1 → Szene 3 (leer); Song-Bezüge folgen
   const sig00 = await clipSig(p, 0, 0);
@@ -166,9 +166,10 @@ const clipSig = (p, t, s) => p.evaluate(([t, s]) => { const c = S.tracks[t].clip
   await sleep(150);
   const ri = await p.evaluate(() => SYNQUENZER.ux2Roll());
   ok('Kopieren + Einfügen: Einfüge-Modus mit Geist', ri && ri.on && ri.clip === n0, ri);
-  const m = await p.evaluate(() => { const r = ED.roll.el.main.getBoundingClientRect(); const a = ED.roll._xy(4, 60), z = ED.roll._xy(0, 60); return {x: r.left, y: r.top, w: r.width, h: r.height, x4: a.x, x0: z.x}; });
-  const fy = m.y + m.h * .55;
-  await T.start(m.x0 + 30, fy); await T.move(m.x4 + 2, fy, 1, 12, [m.x0 + 30, fy]); await sleep(80);
+  await p.evaluate(() => { ED.roll.fitView('clip'); }); await sleep(150);
+  const m = await p.evaluate(() => { const r = ED.roll.el.main.getBoundingClientRect(); const a = ED.roll._xy(5, 67), z = ED.roll._xy(.5, 67); return {x: r.left, y: r.top, w: r.width, h: r.height, x4: a.x, x0: z.x, fy: a.y}; });
+  const fy = m.fy;
+  await T.start(m.x0, fy); await T.move(m.x4, fy, 1, 12, [m.x0, fy]); await sleep(80);
   const ri2 = await p.evaluate(() => SYNQUENZER.ux2Roll());
   await p.screenshot({path: dir + '/ux2-einfuegen-lupe-hochkant.png'});
   await T.end(); await sleep(120);

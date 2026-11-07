@@ -4853,6 +4853,7 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 .ux2p-ov{position:absolute;inset:0;z-index:1;touch-action:none}
 .ux2p-lupe{position:fixed;z-index:9500;border-radius:12px;border:2px solid var(--amber);box-shadow:0 10px 24px rgba(0,0,0,.7);pointer-events:none;background:#0d0e11}
 .pr-bar .ux2p-lab{color:var(--amber)}
+#clipGrid{touch-action:none}                 /* UX2: kein Browser-Wischen in der Matrix (sonst bricht iOS das Ziehen von Szenen-Köpfen und dem Rand ab) */
 /* UX2-CSS-END */
 /* NDP-CSS-BEGIN – die North-Platte (Paket ND-P): eigenes Instrument-Gesicht der Drum-Engine MD_NAME. Rote Front, schwarze
    Beschriftungsfelder, beleuchtete Tasten, 3-stelliges Siebensegment-Display, großes Rad. Nur Formen aus CSS/SVG, keine Bilder. */
@@ -49726,10 +49727,13 @@ function ux2TopScene(x, y) {
 function ux2Down(e) {
   const d = UX2.d;
   if (d && d.id !== e.pointerId) {                                    // ein zweiter Finger: beim Clip-Ziehen = Kopie an/aus
-    if (d.kind === 'drag') { e.preventDefault(); e.stopImmediatePropagation(); if (d.sub === 'clip') { d.copy = !d.copy; ux2Paint(d, d.x, d.y); haptic('tick'); } }
-    return;
+    if (d.kind === 'drag' || d.kind === 'clift') {
+      e.preventDefault(); e.stopImmediatePropagation(); UX2.eat = {t: performance.now(), x: e.clientX, y: e.clientY};   // sein Tipp löst nichts aus
+      if (d.kind === 'clift' || d.sub === 'clip') { d.copy = !d.copy; if (d.ghost) ux2Paint(d, d.x, d.y); haptic('tick'); }
+      return;
+    }
   }
-  if (d) ux2Cancel();
+  if (d) ux2Cancel();                                                  // ein Kandidat (noch nicht abgehoben) endet mit jedem neuen Finger
   if ((e.button || 0) > 0 || !EL.grid || UI.songView) return;
   const tg = e.target; if (!tg || !tg.closest || !EL.grid.contains(tg) || ux2Busy()) return;
   const x = e.clientX, y = e.clientY;
@@ -49803,6 +49807,7 @@ function ux2Up(e) {
   if (d.kind === 'tcand') { UX2.d = null; return; }
   if (d.kind === 'ccand') { clearTimeout(d.timer); UX2.d = null; return; }
   e.stopImmediatePropagation();
+  if (UI.slotPress && UI.slotPress.id === e.pointerId) UI.slotPress = null;     // die Matrix-Geste dieses Fingers ist vorbei
   if (d.kind === 'scand') { UX2.d = null; if (up && !d.dead) launchScene(d.s); return; }
   if (d.kind === 'clift') {                                                     // gehalten, nicht gezogen = das Clip-Blatt wie bisher
     ux2Clean(d); UX2.d = null;
@@ -49814,7 +49819,7 @@ function ux2Up(e) {
 function ux2Cancel() { const d = UX2.d; if (!d) return; clearTimeout(d.timer); clearTimeout(d.spT); ux2Clean(d); UX2.d = null; }
 // abheben: Geist, Quelle gedimmt, Linie
 function ux2Start(d, sub) {
-  d.kind = 'drag'; d.sub = sub; d.copy = false; d.tg = null; d.sp = null;
+  d.kind = 'drag'; d.sub = sub; d.copy = !!d.copy; d.tg = null; d.sp = null;
   let src;
   if (sub === 'track') { src = UI.heads[d.i].el; d.srcEls = [src, ...UI.cells[d.i].map(c => c.el), UI.stops[d.i]]; }
   else if (sub === 'scene') { src = UI.scenes[d.s]; d.srcEls = [src, ...S.tracks.map((_, t) => UI.cells[t] && UI.cells[t][d.s] && UI.cells[t][d.s].el).filter(Boolean)]; }
@@ -49846,11 +49851,11 @@ function ux2Spring(d, x, y) {
   const k = d.sub !== 'track' && MX.bankS && hit(UI.szb) ? 'sz' : d.sub !== 'scene' && MX.bankT && hit(UI.tbb) ? 'tb' : null;
   if (k === d.sp) return;
   d.sp = k; clearTimeout(d.spT);
-  if (k) d.spT = setTimeout(() => {
+  if (k) d.spT = setTimeout(() => {   // [▲▼] liegt im DRUMS-Kopf: dort etwas länger verweilen (kein Umblättern aus Versehen)
     if (UX2.d !== d || d.sp !== k) return;
     if (k === 'sz') setSceneBank(1 - sceneBankOf()); else setTrackBank(MX.pages ? (trackBankOf() + 1) % MX.pages.length : 0);
     haptic('tick'); d.sp = null; ux2Paint(d, d.x, d.y);
-  }, UX2.SPRING);
+  }, k === 'tb' ? UX2.SPRING + 250 : UX2.SPRING);
 }
 // Ziel aus der Fingerlage; Geist, Linie, Zielzelle zeichnen
 function ux2Paint(d, x, y) {
@@ -49924,6 +49929,7 @@ document.addEventListener('pointerdown', e => { try { ux2Down(e); } catch (err) 
 document.addEventListener('pointermove', e => { try { ux2Move(e); } catch (err) { logErr(err); } }, {capture: true, passive: false});
 document.addEventListener('pointerup', e => { try { ux2Up(e); } catch (err) { logErr(err); } }, true);
 document.addEventListener('pointercancel', e => { try { ux2Up(e); } catch (err) { logErr(err); } }, true);
+document.addEventListener('click', e => { const q = UX2.eat; if (!q || performance.now() - q.t > 900 || Math.abs(e.clientX - q.x) > 30 || Math.abs(e.clientY - q.y) > 30) return; UX2.eat = null; e.preventDefault(); e.stopImmediatePropagation(); }, true);
 // Test-API (am Ende an SYNQUENZER gehängt)
 const UX2_API = {
   ux2Order: () => trackOrder().slice(),
