@@ -40838,7 +40838,7 @@ function buildRangeBar() {
   const side = document.getElementById('side'); if (!side || document.getElementById('rangeBar')) return;
   const rb = el('div', '', ''); rb.id = 'rangeBar'; rb.setAttribute('role', 'toolbar'); rb.setAttribute('aria-label', 'Gewählte Takte');
   const B = (a, d, t, ts, aria) => `<button class="rb rg-b" data-a="${a}" aria-label="${esc(aria)}"><span class="d">${d}</span><span class="t" data-l="${esc(t)}" data-s="${esc(ts)}">${esc(t)}</span></button>`;
-  rb.innerHTML = B('play', '▶', 'Ab hier', 'Ab hier', 'Ab hier abspielen') + B('rec', '●', 'Aufnehmen …', 'Aufn.', 'Hier aufnehmen …') + B('part', '❖', 'Zusammenfassen …', 'Zusammen …', 'Zusammenfassen …') +
+  rb.innerHTML = B('play', '▶', 'Ab hier', 'Ab hier', 'Ab hier abspielen') + B('rec', '●', 'Aufnehmen …', 'Aufn.', 'Hier aufnehmen …') + B('part', '❖', 'Zusammenfassen …', 'Zusammen…', 'Zusammenfassen …') +
     B('copy', '⧉', 'Takte kopieren →', 'Kopieren →', 'Takte kopieren – die Kopie kommt dahinter') + B('del', '✕', 'Takte löschen', 'Löschen', 'Takte löschen, der Rest rückt') + B('more', '⋯', 'Mehr', 'Mehr', 'Mehr: Leeren, Teil einsetzen, Akkorde quantisieren, Schleife');
   side.insertBefore(rb, document.getElementById('carrier'));
   guardTouch(rb);
@@ -82431,7 +82431,7 @@ function wegeCss() {
       '.pop .wg-bpm .sx1-r .ms-b.on{color:#ffcf7a;border-color:#6b4c16}',
       '.sx14 .wg-ah .sx14-r.arm{color:#ffcf7a;border-color:#6b4c16}',
       '.sv-top .sv-scr{display:none!important}',            // D11: Mithören braucht keinen Schalter mehr (▼ ziehen)
-      '#rangeBar .rg-b[data-a="part"] .t{letter-spacing:0}',  // Prüfung 5: „Zusammen …“ passt hochkant (Kurzform von „Zusammenfassen …“)
+      '#rangeBar .rg-b[data-a="part"] .t{letter-spacing:0}',  // Prüfung 5: „Zusammen…“ passt hochkant (Kurzform von „Zusammenfassen …“)
       // Prüfung 10: Tempo-Blatt quer – „Song transponieren …“ und „Ausblenden am Ende“ als zweite Spalte neben Tempo/Taktart (nichts unter dem Rand)
       '@media (orientation:landscape){.pop:has(> .wg-bpm){display:grid;grid-template-columns:auto 236px;column-gap:14px;grid-auto-flow:row dense;align-items:start}' +
       '.pop:has(> .wg-bpm) > *{grid-column:1}.pop:has(> .wg-bpm) > .ux1-hd{grid-column:1 / -1}' +

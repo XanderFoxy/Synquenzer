@@ -9,7 +9,7 @@ for (const [w, h] of [[428, 926], [926, 428]]) {
     songSelect(1); rangeBarSync(); 
     return new Promise(res => setTimeout(() => {
       const t = SV.rbar.querySelector('[data-a="part"] .t'), cw = t.clientWidth, out = {cw, btn: t.parentElement.getBoundingClientRect().width, font: getComputedStyle(t).font};
-      for (const s of ['Zusammenfassen …', 'Zusammen­fassen …', 'Zusammen …', 'Zusammenf. …', 'Teil …', 'Takte kopieren →', 'Kopieren →', 'Takte →', 'Kopie →', 'Als Teil …']) { t.textContent = s; out[s] = t.scrollWidth; }
+      for (const s of ['Zusammenfassen …', 'Zusammen­fassen …', 'Zusammen…', 'Zusammen …', 'Zusammenf. …', 'Teil …', 'Takte kopieren →', 'Kopieren →', 'Takte →', 'Kopie →', 'Als Teil …']) { t.textContent = s; out[s] = t.scrollWidth; }
       rangeBarFit(); res(out);
     }, 600));
   });

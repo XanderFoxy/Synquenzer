@@ -149,7 +149,7 @@ try {
   const rbl = await p.evaluate(() => { const b = document.querySelector('#rangeBar [data-a="part"]'); return b.getAttribute('aria-label') + ' / ' + b.textContent.trim(); });
   ok(rb && rb.h >= 44 && /^Zusammenfassen · Takt 9–10/.test(rh || ''), 'D1: Bereich-Leiste ❖ öffnet dasselbe „Zusammenfassen“', rbl);
   const rbt = await p.evaluate(() => [...document.querySelectorAll('#rangeBar .rg-b')].map(b => { const t = b.querySelector('.t'); return b.dataset.a + ':' + t.textContent + ':' + (t.scrollWidth <= t.clientWidth + .5) + ':' + b.getAttribute('aria-label'); }));
-  ok(rbt.some(x => /^part:Zusammen(fassen)? …:true/.test(x)) && rbt.some(x => /^copy:(Takte kopieren →|Kopieren →):true:Takte kopieren/.test(x)), 'Prüfung 5/9: Bereich-Leiste hochkant „❖ Zusammen …“ (statt „Teil …“) und „⧉ Kopieren →“ (Takte kopieren) – passen in die Taste', rbt.map(x => x.split(':').slice(0, 3).join(':')).join(' · '));
+  ok(rbt.some(x => /^part:(Zusammenfassen …|Zusammen…):true/.test(x)) && rbt.some(x => /^copy:(Takte kopieren →|Kopieren →):true:Takte kopieren/.test(x)), 'Prüfung 5/9: Bereich-Leiste hochkant „❖ Zusammen…“ (statt „Teil …“) und „⧉ Kopieren →“ (Takte kopieren) – passen in die Taste', rbt.map(x => x.split(':').slice(0, 3).join(':')).join(' · '));
   await tapAt(p, () => [...document.querySelectorAll('.pop.s2sum .cp-c')].find(x => x.textContent.trim() === 'Bridge'));
   const K2 = await run(p, () => { const m = S.song.marks.find(x => x.a === 8); return {kon: !!(m && konOf(m.id)), name: m ? markLabel(m) : null}; });
   ok(K2.kon, 'D1: Bereich → Teil „' + K2.name + '“ mit Ursprung (konDo)');
@@ -365,7 +365,7 @@ try {
   // Bereich-Leiste quer: ❖ Zusammenfassen …
   await run(p, () => window.SYNQUENZER.songSelect(4, 5)); await p.waitForTimeout(400);
   const rq = await p.evaluate(() => { const b = document.querySelector('#rangeBar [data-a="part"]'); const r = b.getBoundingClientRect(); return {t: b.textContent.trim(), a: b.getAttribute('aria-label'), h: r.height}; });
-  ok(/Zusammenfassen …/.test(rq.a) && rq.h >= 44 && /Zusammen/.test(rq.t), 'quer: Bereich-Leiste ❖ = „Zusammenfassen …“ (schmal: „Zusammen …“)', rq.t);
+  ok(/Zusammenfassen …/.test(rq.a) && rq.h >= 44 && /Zusammen/.test(rq.t), 'quer: Bereich-Leiste ❖ = „Zusammenfassen …“ (schmal: „Zusammen…“)', rq.t);
   await tapAt(p, () => document.querySelector('#rangeBar [data-a="part"]'));
   ok(await p.evaluate(() => !!(UI.pop && UI.pop.name === 's2sum')) && await p.evaluate(xSees), 'quer: Zusammenfassen-Blatt mit ✕');
   await run(p, () => closePop());
