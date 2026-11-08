@@ -117,7 +117,9 @@
       },
       "feeds": [],
       "remoteWoerter": ["homeoffice|home office|home-office", "remote", "online", "von zu hause|von zuhause", "freiberuflich|freelance|freie mitarbeit", "honorar", "minijob", "flexibel"],
-      "faehigkeitWoerter": ["deutsch", "daf|daz", "nachhilfe", "übersetz|uebersetz", "arabisch", "englisch", "bildbearbeitung|photoshop", "video|schnitt", "ki|ai|künstliche intelligenz|kuenstliche intelligenz", "lektorat|korrektur", "text"],
+      "faehigkeitWoerter": ["deutsch", "daf|daz", "nachhilfe", "übersetz|uebersetz", "arabisch", "englisch", "bildbearbeitung|photoshop", "video|schnitt", "ki|ai|künstliche intelligenz|kuenstliche intelligenz", "lektorat|korrektur", "texter|texterin|texten|textkorrektur|textarbeit"],
+      "_faehigkeitWoerter": "„text“ allein traf „Textil“ (Junior Mediengestalter … Textil, echter Lauf 08.11.2026).",
+      "sprachWoerter": ["arabisch|arabic|englisch|english"],
       "nichtWoerter": ["außendienst|aussendienst", "vertrieb", "callcenter|call center", "provision", "schicht", "führerschein|fuehrerschein", "lager", "fahrer", "pflege", "kommissionier", "vollzeit"]
     },
     "tests": {
@@ -213,17 +215,18 @@
       "suchen": ["Remix-Wettbewerb", "Remix Contest", "Remix Contest Stems", "Remix-Contest Synthpop OR Elektro OR 80er"],
       "suchenEnglisch": ["remix contest", "remix competition", "remix contest stems", "remix contest deadline", "remix contest synth OR synthwave OR synthpop", "remix contest 80s OR italo OR darkwave OR \"new wave\""],
       "wordpress": [
-        { "name": "EDM Identity", "basis": "https://edmidentity.com", "suchen": ["remix contest"] },
         { "name": "Attack Magazine", "basis": "https://www.attackmagazine.com", "suchen": ["remix competition"] },
         { "name": "Rekkerd", "basis": "https://rekkerd.org", "suchen": ["remix contest"] },
         { "name": "Dancing Astronaut", "basis": "https://dancingastronaut.com", "suchen": ["remix competition"] }
       ],
-      "_wordpress": "WordPress-Suche als RSS: <basis>/?s=<begriff>&feed=rss2 (Standard jeder WordPress-Seite). Weitere Magazine einfach ergänzen.",
+      "_wordpress": "WordPress-Suche als RSS: <basis>/?s=<begriff>&feed=rss2 (Standard jeder WordPress-Seite). Weitere Magazine einfach ergänzen. EDM Identity ist raus: im echten Lauf 08.11.2026 HTTP 403 (Cloudflare-Abfrage „Just a moment…“). Attack Magazine/Rekkerd/Dancing Astronaut antworten 200, ihr jüngster Contest-Artikel war aber 165 Tage (Rekkerd) bzw. über 600 Tage alt – nichts Laufendes, deshalb dort zu Recht 0 Funde.",
       "audius": { "url": "https://api.audius.co/v1/events/remix-contests?status=active&limit=50&app_name=vorteils-radar" },
       "_audius": "Audius-API (ohne Schlüssel): laufende Remix-Contests der Plattform (status=active). Route und Antwortformat aus dem Quellcode AudiusProject/api (api/v1_events_remix_contests.go, swagger remix_contests_response; geprüft 08.11.2026) – echte Antwort im Roh-Lauf ansehen.",
       "feeds": [],
+      "listen": [{ "name": "Beatportal", "url": "https://www.beatportal.com/communities/630379-remix-contests" }],
+      "_listen": "Contest-Listen ohne Datum (neueste zuerst): nur Karten über der neuesten, die Google News mit Datum kennt (scan/module/remix.mjs datiereListe).",
       "contestWoerter": ["remix contest|remix-contest|remixcontest|remix competition|remix-competition|remix comp|remix-wettbewerb|remixwettbewerb|remix wettbewerb|remix challenge|remix-challenge|remixchallenge"],
-      "genreWoerter": ["synthpop|synth-pop|synth pop|synthie-pop|synthiepop", "synth|synthesizer", "synthwave|retrowave|outrun", "80s|80er|eighties|80's", "italo", "euro disco|eurodisco|euro-disco|disco", "electro|elektro|electronic|elektronisch|electronica", "darkwave|dark wave|dark-wave|coldwave|cold wave|post-punk|postpunk", "new wave|newwave|new-wave", "depeche mode|erasure|pet shop boys|a-ha|alphaville|ultravox|kraftwerk|new order|human league|soft cell|camouflage|wolfsheim|de/vision|and one|mesh|covenant|omd|orchestral manoeuvres|yazoo|tears for fears|eurythmics|gary numan|modern talking|sandra|kim wilde|the cure|duran duran", "pop|indie pop|electropop|electro-pop"],
+      "genreWoerter": ["synthpop|synth-pop|synth pop|synthie-pop|synthiepop", "synth|synthesizer", "synthwave|retrowave|outrun", "80s|80er|eighties|80's", "italo", "euro disco|eurodisco|euro-disco|disco", "electro|elektro|electronic|elektronisch|electronica", "darkwave|dark wave|dark-wave|coldwave|cold wave|post-punk|postpunk", "new wave|newwave|new-wave", "depeche mode|erasure|pet shop boys|a-ha|alphaville|ultravox|kraftwerk|new order|human league|soft cell|camouflage|wolfsheim|de/vision|and one|mesh|covenant|omd|orchestral manoeuvres|yazoo|tears for fears|eurythmics|gary numan|modern talking|sandra|kim wilde|the cure|duran duran|cerrone|giorgio moroder|moroder|jean-michel jarre", "pop|indie pop|electropop|electro-pop"],
       "nichtWoerter": ["hip hop|hip-hop|hiphop", "rap|rapper|trap|drill|grime", "metal|metalcore|deathcore|death metal|black metal", "schlager", "country", "gospel", "k-pop|kpop"],
       "fundorte": [
         { "titel": "SKIO Music: laufende Remix-Contests mit Stems", "link": "https://skiomusic.com/contests", "ort": "online", "typ": "remix", "quelle": "SKIO Music", "zeile": "offizielle Stems, Gewinner-Remixe werden oft veröffentlicht", "soGehts": "Seite öffnen, Contest mit passendem Sound wählen, Stems laden, Remix hochladen (Titel: „Song (Xander Fox Remix)“)." },
@@ -240,16 +243,13 @@
       "maxAlterTage": 60,
       "sofortBisKm": 150,
       "suchen": ["Bands gesucht", "Bands gesucht Sachsen", "Bandcontest Anmeldung", "Bandwettbewerb Bewerbung", "Nachwuchsbands gesucht", "Newcomer Bands Bewerbung Festival", "Open Stage Leipzig OR Dresden OR Chemnitz", "Open Mic Leipzig OR Dresden", "Musiker gesucht Stadtfest", "Künstler gesucht Stadtfest Sachsen", "Fête de la Musique Anmeldung Musiker", "Döbeln Bühne Künstler gesucht"],
-      "aufrufWoerter": ["gesucht", "bewerben", "bewerbung", "open call", "ausschreibung", "bandcontest|band contest|bandwettbewerb", "wettbewerb", "newcomer", "talente", "auftrittsmöglichkeit|auftrittsmoeglichkeit", "open stage|open-stage|offene bühne|offene buehne|open mic|open-mic", "anmeldung|anmelden|anmeldeschluss|bewerbungsschluss"],
+      "aufrufWoerter": ["gesucht", "=sucht|=suchen", "bewerben", "bewerbung", "open call", "ausschreibung", "mitmachen|teilnehmen|einsenden|einreichen", "auftrittsmöglichkeit|auftrittsmoeglichkeit", "open stage|open-stage|offene bühne|offene buehne|open mic|open-mic", "anmeldung|anmelden|anmeldeschluss|bewerbungsschluss"],
+      "_aufrufWoerter": "Nur Wörter, die zum Mitmachen aufrufen. „Bandcontest“, „Wettbewerb“, „Newcomer“ allein sind kein Aufruf: im echten Lauf 08.11.2026 waren das Nachberichte („16 Bands beim Bandwettbewerb … starten“, „Band-Contest: Rivers Collide beim METAL HAMMER PARADISE!“). „=sucht|=suchen“ nur als ganzes Wort (für „Feuerwehr sucht unbekannte Bands“), sonst zählten „gut besucht“, „Tausende besuchen …“ als Aufruf.",
       "musikerWoerter": ["band", "bands", "musiker|musikerin|musikerinnen", "künstler|kuenstler|künstlerin|kuenstlerin", "act", "acts", "singer|songwriter|liedermacher", "nachwuchs", "dj", "djs"],
       "genreWoerter": ["synth", "elektro", "electro", "electronic", "elektronisch", "wave", "pop", "indie", "singer-songwriter|solokünstler|solokuenstler", "alle genres|jedes genre|genreoffen"],
-      "nichtWoerter": ["coverband|cover-band|tribute", "blaskapelle", "schlager", "fußball|fussball", "kirchenchor", "gestorben|trauer", "verhaftet|polizei", "gewinnt den|hat gewonnen|haben gewonnen|siegerband|setzte sich durch|setzten sich durch|holt den titel|sind die gewinner|ist gewinner", "abgesagt"],
-      "seiten": [
-        { "name": "gigmit Leipzig", "url": "https://gigmit.com/en/gigs/leipzig", "stadt": "Leipzig" },
-        { "name": "gigmit Dresden", "url": "https://gigmit.com/en/gigs/dresden", "stadt": "Dresden" },
-        { "name": "gigmit Chemnitz", "url": "https://gigmit.com/en/gigs/chemnitz", "stadt": "Chemnitz" }
-      ],
-      "_seiten": "Seiten mit eingebetteten Terminen (JSON-LD schema.org Event). Ohne JSON-LD liefert die Seite 0 Termine (kein Fehler); dann zählt sie nur als Fundort.",
+      "nichtWoerter": ["coverband|cover-band|tribute", "blaskapelle", "schlager", "fastnacht|karneval|fasching", "fußball|fussball", "kirchenchor", "gestorben|trauer|erschossen", "verhaftet|polizei", "gewinnt den|hat gewonnen|haben gewonnen|siegerband|setzte sich durch|setzten sich durch|holt den titel|sind die gewinner|ist gewinner", "im finale|ins finale|das finale|finalisten|stehen fest|steht fest|sind dabei|diese bands|starten mit|treten an|rückblick|rueckblick", "comedy|stand-up|standup|poetry|lesung|literatur", "abgesagt"],
+      "seiten": [],
+      "_seiten": "Seiten mit eingebetteten Terminen (JSON-LD schema.org Event): { name, url, stadt }. Ohne JSON-LD liefert die Seite 0 Termine (kein Fehler). Die gigmit-Stadtseiten (gigmit.com/en/gigs/leipzig|dresden|chemnitz) sind raus: im echten Lauf 08.11.2026 sechsmal HTTP 404.",
       "fundorte": [
         { "titel": "Döbelner Kulturnacht: Künstler für Mai", "link": "https://kulturnacht-doebeln.de/", "ort": "Döbeln", "typ": "stadtfest", "quelle": "Stadt Döbeln", "saison": { "bewerbung": [1, 2, 3], "termin": "Mai" }, "zeile": "über 30 Künstler an rund 20 Orten in der Innenstadt", "soGehts": "Seite öffnen oder beim Sachgebiet Kultur der Stadt Döbeln (Obermarkt 1) anfragen: Name, Kontakt, 3 Sätze, Hörlink, Länge, Technik." },
         { "titel": "Stadtfest Döbeln (Juni): offene Bühne für Nachwuchs", "link": "https://www.doebeln.de/tourismus-kultur-freizeit/veranstaltungen", "ort": "Döbeln", "typ": "stadtfest", "quelle": "Stadt Döbeln / Treibhaus e.V.", "saison": { "bewerbung": [2, 3, 4, 5], "termin": "Juni" }, "soGehts": "Bei der Stadt Döbeln bzw. beim Treibhaus e.V. nach der offenen Bühne fragen: Name, Kontakt, kurze Beschreibung, Länge des Auftritts, Technik." },
@@ -257,10 +257,9 @@
         { "titel": "Wave-Gotik-Treffen Leipzig: Bandbewerbung per Mail", "link": "https://www.wave-gotik-treffen.de/", "ort": "Leipzig", "typ": "festival", "quelle": "Wave-Gotik-Treffen", "bewerbung": { "art": "mail", "ziel": "bewerbung@wave-gotik-treffen.de" }, "saison": { "bewerbung": [9, 10, 11, 12, 1, 2], "termin": "Pfingsten" }, "zeile": "Dark Wave/Synth – passt zu One Day in Rome", "soGehts": "Mail an die Bewerbungsadresse: Bandname, 3 Sätze, 2 Hörlinks, Pressefoto, Live-Video wenn da. Früh schicken – das Line-up füllt sich ab Winter." },
         { "titel": "Fête de la Musique Leipzig (21. Juni): Musiker-Anmeldung", "link": "https://institutfrancais.de/leipzig", "ort": "Leipzig", "typ": "stadtfest", "quelle": "Institut français Leipzig", "saison": { "bewerbung": [1, 2, 3], "termin": "21. Juni" }, "zeile": "jede Band darf spielen – große Bühnen meist bis März", "soGehts": "Ab Jahresbeginn das Musiker-Formular des Institut français Leipzig ausfüllen (Bühne/Ort, Uhrzeit, Technik)." },
         { "titel": "SPH Music Masters (Bandcontest): Anmeldung jederzeit", "link": "https://www.sph-music-masters.de", "ort": "deutschlandweit", "typ": "bandcontest", "quelle": "SPH Music Masters", "bewerbung": { "art": "formular", "ziel": "https://www.sph-music-masters.de" }, "zeile": "Vorrunde in der nächsten Stadt, Feedback von der Jury, ohne Altersgrenze", "soGehts": "Online anmelden (2 Minuten), Vorrunden-Termin in der Nähe wählen." },
-        { "titel": "gigmit: offene Gig-Angebote in Leipzig", "link": "https://gigmit.com/en/gigs/leipzig", "ort": "Leipzig", "typ": "gig", "quelle": "gigmit", "zeile": "Veranstalter suchen Acts – kostenloses Künstlerprofil", "soGehts": "Profil anlegen (Hörlinks, Fotos, Technik), passende Angebote öffnen und direkt bewerben." },
-        { "titel": "gigmit: offene Gig-Angebote in Dresden", "link": "https://gigmit.com/en/gigs/dresden", "ort": "Dresden", "typ": "gig", "quelle": "gigmit", "soGehts": "Profil anlegen (Hörlinks, Fotos, Technik), passende Angebote öffnen und direkt bewerben." },
-        { "titel": "gigmit: offene Gig-Angebote in Chemnitz", "link": "https://gigmit.com/en/gigs/chemnitz", "ort": "Chemnitz", "typ": "gig", "quelle": "gigmit", "soGehts": "Profil anlegen (Hörlinks, Fotos, Technik), passende Angebote öffnen und direkt bewerben." }
-      ]
+        { "titel": "gigmit: Gig-Angebote von Veranstaltern (Künstlerprofil)", "link": "https://www.gigmit.com/de", "ort": "deutschlandweit", "typ": "gig", "quelle": "gigmit", "linkPruefen": true, "zeile": "Veranstalter suchen Acts – kostenloses Künstlerprofil, dann nach Leipzig, Dresden, Chemnitz filtern", "soGehts": "Startseite öffnen, kostenloses Künstlerprofil anlegen (Hörlinks, Fotos, Technik), dann bei den Gig-Angeboten nach Stadt filtern und direkt bewerben." }
+      ],
+      "_fundorte": "linkPruefen: true = Adresse nicht durch einen echten Abruf belegt -> Zeile „Link prüfen“. gigmit: die tiefen Stadt-Links gaben 404 (Lauf 08.11.2026), deshalb nur noch die Startseite."
     },
     "unterricht": {
       "aktiv": true,
@@ -272,6 +271,9 @@
         "ausweich": ["https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v4/app/jobs", "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v4/jobs"],
         "key": "jobboerse-jobsuche",
         "tageZurueck": 21,
+        "_tageZurueck": "v6 beachtet „veroeffentlichtseit“ nicht (Lauf 08.11.2026: Facette veroeffentlichtseit.alle = alle Treffer, auch von 2023). Alter prüft der Radar selbst: datum = jüngstes von aktueller Veröffentlichung/Änderung, höchstens 30 Tage (main.mjs).",
+        "nahKm": 80,
+        "sichtbarStunden": 72,
         "suchen": [
           { "was": "Deutschlehrer", "wo": "Döbeln", "umkreis": 50 },
           { "was": "Deutsch als Fremdsprache", "wo": "Döbeln", "umkreis": 80 },
@@ -282,13 +284,13 @@
         ]
       },
       "remotive": {
-        "urls": ["https://remotive.com/api/remote-jobs?search=german%20teacher&limit=50", "https://remotive.com/api/remote-jobs?search=german%20tutor&limit=50"],
+        "urls": ["https://remotive.com/api/remote-jobs?search=german%20teacher&limit=50"],
         "titelWoerter": ["teacher|tutor|lehrer|lehrerin|lehrkraft|trainer|trainerin|instructor|dozent|dozentin|coach|educator"]
       },
-      "_remotive": "Remotive-API (offen, JSON): Remote-Stellen. Bitte höchstens ein paar Abrufe am Tag (intervallStunden 12).",
+      "_remotive": "Remotive-API (offen, JSON): Remote-Stellen. Bitte höchstens ein paar Abrufe am Tag (intervallStunden 12). Echter Lauf 08.11.2026: „german teacher“ und „german tutor“ gaben dieselben 216 KB (12 neueste Stellen aller Art, keine Lehrstelle – die freie API sucht nicht wirklich); deshalb nur noch ein Abruf, Filter streng (Titel Lehrer/Tutor + German/Deutsch).",
       "suchen": ["Lehrkräfte Integrationskurs gesucht", "Deutschlehrer gesucht Sachsen", "DaZ Lehrkräfte gesucht Sachsen", "Sprachpaten gesucht Döbeln OR Mittelsachsen OR Leipzig", "Deutschkurs Ehrenamtliche gesucht Sachsen"],
       "faehigkeitWoerter": ["deutschlehr|deutschkurs|deutschunterricht|deutsch unterricht|deutsch als fremdsprache|deutsch als zweitsprache|deutschnachhilfe|nachhilfe deutsch|deutsch-nachhilfe|lehrkraft deutsch|lehrkraft für deutsch|dozent deutsch|dozentin deutsch|lehrer deutsch", "daf|daz", "integrationskurs|integrationskurse|berufssprachkurs|sprachkurs|sprachkurse|sprachlehr|sprachpate|sprachpaten|sprachcafe|sprachcafé", "german teacher|german tutor|teach german|german language"],
-      "gesuchtWoerter": ["gesucht|sucht|suchen|bewerben|bewerbung|verstärkung|verstaerkung|mitmachen|ehrenamtliche|freiwillige|lehrkräftemangel|lehrkraeftemangel|stellen"],
+      "gesuchtWoerter": ["gesucht|=sucht|=suchen|bewerben|bewerbung|verstärkung|verstaerkung|mitmachen|ehrenamtliche|freiwillige|lehrkräftemangel|lehrkraeftemangel|stellen"],
       "remoteWoerter": ["homeoffice|home office|home-office", "remote", "online", "von zu hause|von zuhause", "videounterricht|per video|zoom"],
       "_remoteWoerter": "Nur Wörter, die wirklich „von zu Hause“ heißen (Honorar/freiberuflich heißt nicht online).",
       "nichtWoerter": ["außendienst|aussendienst", "vertrieb", "callcenter|call center|kundenservice|customer support|customer service", "provision", "fahrer", "lager", "pflege", "kommissionier", "verkäufer|verkaeufer|sales"],

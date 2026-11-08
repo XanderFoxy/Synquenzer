@@ -32,6 +32,10 @@ export default async function nebenverdienst({ holeText, cfg, jetzt }) {
         if (enthaelt(text, m.nichtWoerter)) continue;
         const faehig = zaehle(text, m.faehigkeitWoerter);
         if (!faehig) continue;
+        // Nebenverdienst: keine reinen Vollzeitstellen; Übersetzen nur in Xanders Sprachen (echter Lauf 08.11.2026:
+        // „Übersetzer für Content - Schwedisch“, Vollzeit, kam über die Suche „Übersetzer Englisch Deutsch“)
+        if (st.nurVollzeit) continue;
+        if (m.sprachWoerter && enthaelt(text, ['übersetz|uebersetz|dolmetsch']) && !enthaelt(text, m.sprachWoerter)) continue;
         // v4 filtert „ho“ selbst; v6 nicht -> Homeoffice-Feld oder Wörter im Titel
         const remote = (s.arbeitszeit === 'ho' && !/\/v6\//.test(api)) || st.homeoffice || enthaelt(text, m.remoteWoerter);
         const ort = st.ort || '';

@@ -454,13 +454,45 @@ export function serienBegriffe(item) {
 // ---------------------------------------------------------------- mydealz
 
 const APPLE_WORT = /\b(itunes|apple\s?tv|tv[- ]app|apple store)\b/i;
-const FILM_WORT = /film|movie|staffel|season|serie|kino|blockbuster|klassiker|disney|pixar|marvel|star wars|star trek|leihen|kaufen|kollektion|collection|trilogie|bundle/i;
+// „HD digital“, „4K Dolby Vision digital“, „IMDb 7,5“, „Kauf-Stream“: so beschreibt mydealz einzelne Kauf-Filme (echter Feed 08.11.2026)
+const FILM_WORT = /film|movie|staffel|season|serie|kino|blockbuster|klassiker|disney|pixar|marvel|star wars|star trek|leihen|kaufen|kollektion|collection|trilogie|bundle|\b(?:u?hd|4k)\b[^|]{0,30}\bdigital\b|\bimdb\b|kauf-?stream|\bregie\b/i;
 const KEIN_FILMDEAL = /apple\s?tv\s?(\+|plus)|\babo\b|abonnement|probemonat|monate? (gratis|kostenlos)|\d+\s?gb\b|generation|\bgen\.|siri remote|fernbedienung|\bhdmi\b|geschenkkarte|guthabenkarte|gutscheinkarte|app store (&|und) itunes karte|horror/i;
 
+// Geräte statt Filme: „Apple TV 4K (2026)“ (voelkner), „Apple TV 4K (4. Generation) 2026 Version“, „Apple TV 4K 32GB HDR
+// 1. Generation A1842 (Gebraucht)“ – echte mydealz-Gruppe apple-tv vom 08.11.2026.
+const GERAET_TITEL = /^\W*apple\s?tv(?:\s?4k|\s?hd)?\s*(?:\(\s*(?:\d\.\s*gen|20\d\d)|20\d\d\b|\d+\s?gb\b|$|wi-?fi|ethernet)|\bsiri remote\b|\bapple tv\s?4k\b.*\b(?:chip|gebraucht|refurbished|generation)\b/i;
+// Händler, bei denen ein „Film“-Deal ein Film ist (sonst steht „Filme/Serien“ nur in der Produktbeschreibung eines Geräts)
+const FILM_HAENDLER = /apple|itunes|prime video|amazon video|rakuten|google play|youtube|sky store|magenta|maxdome|chili/i;
+const esc = s => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/**
+ * Beschreibung ohne den mydealz-Kopf „<Preis> - <Händler>“: Der Händler der iTunes-Deals heißt bei mydealz „Apple TV Plus“
+ * (echter Feed 08.11.2026: „3,99€ - Apple TV Plus Aktuell erhaltet ihr …“) – das traf das Abo-Muster und warf JEDEN
+ * echten Film-Deal (Flash Gordon, Bill & Teds …) raus, während das Gerät „Apple TV 4K (2026)“ durchkam.
+ */
+export function ohneHaendlerKopf(it) {
+  const b = String(it.beschreibung || '');
+  const shop = String(it.shop || '').trim();
+  const preis = '(?:[\\d.,]+\\s?€\\s*-\\s*)?';
+  return shop ? b.replace(new RegExp(`^\\s*${preis}${esc(shop)}\\s*`, 'i'), '') : b.replace(new RegExp(`^\\s*[\\d.,]+\\s?€\\s*-\\s*`), '');
+}
+
 export function istAppleFilmDeal(it) {
-  const text = `${it.titel} ${it.beschreibung || ''}`;
-  const apple = APPLE_WORT.test(`${it.titel} ${it.shop || ''}`) || /^(apple|itunes|apple tv)$/i.test(String(it.shop || '').trim());
-  return apple && FILM_WORT.test(text) && !KEIN_FILMDEAL.test(text);
+  const beschreibung = ohneHaendlerKopf(it);
+  const text = `${it.titel} ${beschreibung}`;
+  const shop = String(it.shop || '').trim();
+  const apple = APPLE_WORT.test(`${it.titel} ${shop}`) || /^(apple|itunes|apple tv)$/i.test(shop);
+  if (!apple || GERAET_TITEL.test(it.titel)) return false;
+  // fremder Händler (voelkner, eBay, MediaMarkt …): „Film“ muss im Titel stehen, nicht nur in der Gerätebeschreibung
+  const filmWort = FILM_HAENDLER.test(shop) || !shop ? FILM_WORT.test(text) : FILM_WORT.test(it.titel);
+  return filmWort && !KEIN_FILMDEAL.test(text);
+}
+
+/** Preis je Film eines Deals („Rambo Collection | 5 Filme als Set“ 13,40 € -> 2,68 €); ohne Angabe = Preis. */
+export function preisJeFilm(titel, preis) {
+  if (preis == null) return null;
+  const n = Number(String(titel || '').match(/\b(\d{1,2})[\s-]*(?:filme|film-kollektion|film collection|filme-kollektion|movie collection|movies)\b/i)?.[1]);
+  return n >= 2 ? preis / n : preis;
 }
 
 // ---------------------------------------------------------------- Ausgabe
@@ -869,7 +901,13 @@ export default async function filme(ctx) {
   if (feeds.length) {
     const { items, fehler: f } = await sammleFeeds(holeText, feeds, { jetzt, maxAlterTage: 7 });
     for (const x of f) melde('mydealz', x);
-    for (const it of items) if (istAppleFilmDeal(it)) deals.push(it);
+    // Preisregel wie bei Apple: höchstens angebotPreisAktion (4,99 €) je Film; ohne Preis (Aktion) bleibt der Deal
+    for (const it of items) {
+      if (!istAppleFilmDeal(it)) continue;
+      const jeFilm = preisJeFilm(it.titel, preisWert(it.preisText));
+      if (jeFilm != null && jeFilm > m.angebotPreisAktion) continue;
+      deals.push(it);
+    }
     status.mydealz.anzahl = deals.length;
   }
   const aktion = deals.length > 0;

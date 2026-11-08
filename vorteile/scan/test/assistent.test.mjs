@@ -57,8 +57,13 @@ test('Saison: Bewerbungsfenster (Jan–Mär) vs. jetzt', () => {
   assert.equal(saisonInfo(null, JETZT).offen, true);
 });
 
+// JSON-LD-Seiten: in der config seit dem gigmit-404 (08.11.2026) leer – der Weg bleibt, hier mit der gigmit-Fixture geprüft
+const mitSeiten = { ...cfg, module: { ...cfg.module, auftritte: { ...cfg.module.auftritte, seiten: [
+  { name: 'gigmit Leipzig', url: 'https://gigmit.com/en/gigs/leipzig', stadt: 'Leipzig' }, { name: 'gigmit Dresden', url: 'https://gigmit.com/en/gigs/dresden', stadt: 'Dresden' },
+] } } };
+
 test('Auftritte: nah + bald zuerst, Sieger-Berichte und reine Bühnen-News raus, Frist/Ort/km/Bewerbung je Eintrag', async () => {
-  const { eintraege, fehler } = await auftritte({ holeText, cfg, jetzt: JETZT });
+  const { eintraege, fehler } = await auftritte({ holeText, cfg: mitSeiten, jetzt: JETZT });
   assert.deepEqual(fehler, []);
   const f = funde(eintraege);
   const t = f.map(e => e.titel);
@@ -163,7 +168,7 @@ test('Unterricht: Jobbörse (Döbeln, Leipzig, online), Remotive (nur Lehr-Stell
   const { eintraege, fehler } = await unterricht({ holeText, cfg, jetzt: JETZT });
   assert.deepEqual(fehler, []);
   const t = funde(eintraege).map(e => e.titel);
-  for (const ja of [/Dozent Deutsch als Zweitsprache/, /Nachhilfelehrer Deutsch/, /Deutschlehrer \(m\/w\/d\) online/, /Freelance Online German Teacher/, /VHS Mittelsachsen sucht Lehrkräfte/, /Sprachpaten gesucht/]) assert.ok(t.some(x => ja.test(x)), `${ja} fehlt: ${t.join(' | ')}`);
+  for (const ja of [/Dozent Deutsch als Zweitsprache/, /Nachhilfelehrer Deutsch/, /Deutschlehrer online/, /Freelance Online German Teacher/, /VHS Mittelsachsen sucht Lehrkräfte/, /Sprachpaten gesucht/]) assert.ok(t.some(x => ja.test(x)), `${ja} fehlt: ${t.join(' | ')}`);
   for (const nein of [/Bürokraft/, /Customer Support/, /German Tutor – Y/, /Wirtschaft wächst/, /Außendienst/]) assert.ok(!t.some(x => nein.test(x)), `${nein} sollte fehlen`);
   const e = re => eintraege.find(x => re.test(x.titel));
   const doz = e(/Dozent Deutsch als Zweitsprache/);
@@ -171,7 +176,7 @@ test('Unterricht: Jobbörse (Döbeln, Leipzig, online), Remotive (nur Lehr-Stell
   assert.equal(doz.extra.ort, 'Döbeln');
   assert.equal(doz.extra.km, 0);
   assert.equal(doz.link, 'https://www.arbeitsagentur.de/jobsuche/jobdetail/10000-1200000001-S');
-  const online = e(/Deutschlehrer \(m\/w\/d\) online/);
+  const online = e(/Deutschlehrer online/);
   assert.equal(online.extra.online, true);
   assert.equal(online.extra.ort, 'online');
   const vhs = e(/VHS Mittelsachsen/);

@@ -26,13 +26,16 @@ export const round = (v, d = 2) => Math.round(v * 10 ** d) / 10 ** d;
 
 export const euro = v => (v == null ? '–' : v.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' }));
 
-// Enthält der Text eines der Wörter? Kurze Wörter (≤ 3 Zeichen) nur als ganzes Wort. "a|b" = Alternativen.
+// Enthält der Text eines der Wörter? "a|b" = Alternativen. Sonst Teilwort („bands“ trifft „Nachwuchsbands“).
+// Nur als ganzes Wort: kurze Wörter (≤ 3 Zeichen) und Wörter mit "=" davor – „=sucht|=suchen“ trifft „Feuerwehr sucht
+// Bands“, aber nicht „gut besucht“, „besuchen“, „versucht“ (echter Lauf 08.11.2026: 32 Titel mit „besuch…“).
 export function enthaelt(text, woerter = []) {
   const t = ' ' + norm(text) + ' ';
   return woerter.some(w => String(w).split('|').some(alt => {
-    const n = norm(alt);
+    const ganz = alt.trim().startsWith('=');
+    const n = norm(ganz ? alt.trim().slice(1) : alt);
     if (!n) return false;
-    return n.length <= 3 ? new RegExp(`(^|[^a-z0-9])${n.replace(/[.+]/g, '\\$&')}([^a-z0-9]|$)`).test(t) : t.includes(n);
+    return ganz || n.length <= 3 ? new RegExp(`(^|[^a-z0-9])${n.replace(/[.+]/g, '\\$&')}([^a-z0-9]|$)`).test(t) : t.includes(n);
   }));
 }
 export const zaehle = (text, woerter = []) => woerter.filter(w => enthaelt(text, [w])).length;

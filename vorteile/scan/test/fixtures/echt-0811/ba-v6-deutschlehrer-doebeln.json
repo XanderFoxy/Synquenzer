@@ -1,0 +1,221 @@
+{
+  "ergebnisliste" : [ {
+    "stellenangebotsart" : "ARBEIT",
+    "stellenangebotsTitel" : "Deutschlehrer (m/w/d) an einem Montessori-Gymnasium",
+    "quereinstiegGeeignet" : true,
+    "arbeitszeitSchichtNachtWochenende" : false,
+    "arbeitszeitTeilzeitAbend" : false,
+    "arbeitszeitTeilzeitNachmittag" : false,
+    "arbeitszeitTeilzeitVormittag" : true,
+    "arbeitszeitTeilzeitFlexibel" : false,
+    "arbeitszeitVollzeit" : false,
+    "eintrittszeitraum" : {
+      "von" : "2026-10-30"
+    },
+    "verguetungsangabe" : "STUNDENLOHN",
+    "artDerVerguetung" : "FESTGEHALT",
+    "festgehalt" : 187.49,
+    "vertragsdauer" : "BEFRISTET",
+    "befristungInMonaten" : 12,
+    "stellenlokationen" : [ {
+      "adresse" : {
+        "strasse" : "Fürstenstr.",
+        "hausnummer" : "147",
+        "plz" : "09130",
+        "ort" : "Chemnitz, Sachsen",
+        "ortsteil" : "Yorckgebiet",
+        "region" : "SACHSEN",
+        "land" : "DEUTSCHLAND"
+      },
+      "breite" : 50.833773,
+      "laenge" : 12.959226
+    } ],
+    "veroeffentlichungszeitraum" : {
+      "von" : "2026-08-28"
+    },
+    "datumErsteVeroeffentlichung" : "2026-08-28",
+    "aenderungsdatum" : "2026-10-30T12:55:52.027",
+    "hauptberuf" : "Lehrer/in - Schularten der Sekundarstufe I",
+    "firma" : "Montessori-Verein Chemnitz e.V.",
+    "arbeitgeberKundennummerHash" : "eSKeI2S6Ixzt15bnFqNoG3VTxsiHf4AqP8IE8vszSOg=",
+    "referenznummer" : "10001-1003619793-S",
+    "entfernung" : 35,
+    "alleBerufe" : [ "Lehrer/in - Schularten der Sekundarstufe I" ]
+  }, {
+    "stellenangebotsart" : "ARBEIT",
+    "stellenangebotsTitel" : "Lehrkraft (m/w/d) Deutsch Sekundarstufe I und II",
+    "arbeitszeitSchichtNachtWochenende" : false,
+    "arbeitszeitTeilzeitAbend" : false,
+    "arbeitszeitTeilzeitNachmittag" : false,
+    "arbeitszeitTeilzeitVormittag" : false,
+    "arbeitszeitTeilzeitFlexibel" : false,
+    "arbeitszeitVollzeit" : true,
+    "eintrittszeitraum" : {
+      "von" : "2026-11-06"
+    },
+    "verguetungsangabe" : "KEINE_ANGABEN",
+    "vertragsdauer" : "UNBEFRISTET",
+    "stellenlokationen" : [ {
+      "adresse" : {
+        "strasse" : "Rathausstr.",
+        "hausnummer" : "7",
+        "plz" : "09111",
+        "ort" : "Chemnitz, Sachsen",
+        "region" : "SACHSEN",
+        "land" : "DEUTSCHLAND"
+      },
+      "breite" : 50.832207,
+      "laenge" : 12.922074
+    } ],
+    "veroeffentlichungszeitraum" : {
+      "von" : "2026-10-27"
+    },
+    "datumErsteVeroeffentlichung" : "2026-10-04",
+    "aenderungsdatum" : "2026-11-06T12:05:18.384",
+    "hauptberuf" : "Lehrer/in - Gymnasien",
+    "firma" : "F+U Gemeinnützige Bildungs- einrichtung für Fortbildung u. Umschulung Sachsen GmbH",
+    "arbeitgeberKundennummerHash" : "z2Yt2D2g7Wjc5yOAgAV3G67OnWTt4iKWM8x2BqOqzOQ=",
+    "referenznummer" : "10001-1003792823-S",
+    "entfernung" : 36,
+    "alleBerufe" : [ "Lehrer/in - Gymnasien" ]
+  } ],
+  "maxErgebnisse" : 2,
+  "page" : 1,
+  "size" : 25,
+  "woOutput" : {
+    "bereinigterOrt" : "Döbeln",
+    "suchmodus" : "UMKREISSUCHE",
+    "koordinaten" : [ {
+      "lat" : 51.1206891,
+      "lon" : 13.153386
+    } ]
+  },
+  "facetten" : {
+    "verguetung" : {
+      "counts" : {
+        "stunde" : 1
+      },
+      "maxCount" : 2
+    },
+    "befristung" : {
+      "counts" : {
+        "1" : 1,
+        "2" : 1
+      },
+      "maxCount" : 2
+    },
+    "externestellenboersen" : {
+      "counts" : {
+        "false" : 2
+      },
+      "maxCount" : 2
+    },
+    "berufsfeld" : {
+      "counts" : {
+        "Lehrtätigkeit an allgemeinbildenden Schulen" : 2
+      },
+      "maxCount" : 2
+    },
+    "pav" : {
+      "counts" : {
+        "false" : 2
+      },
+      "maxCount" : 2
+    },
+    "arbeitsort" : {
+      "counts" : {
+        "Chemnitz, Sachsen" : 2
+      },
+      "maxCount" : 2
+    },
+    "veroeffentlichtseit" : {
+      "counts" : {
+        "alle" : 2
+      },
+      "maxCount" : 2
+    },
+    "schulbildung" : {
+      "counts" : {
+        "0" : 2,
+        "1" : 2,
+        "11" : 2,
+        "12" : 2,
+        "2" : 2,
+        "3" : 2,
+        "4" : 2,
+        "5" : 2,
+        "6" : 2
+      },
+      "maxCount" : 2
+    },
+    "arbeitsort_plz" : {
+      "counts" : {
+        "09111" : 1,
+        "09130" : 1
+      },
+      "maxCount" : 2
+    },
+    "arbeitgeber" : {
+      "counts" : {
+        "F+U Gemeinnützige Bildungs- einrichtung für Fortbildung u. Umschulung Sachsen GmbH" : 1,
+        "Montessori-Verein Chemnitz e.V." : 1
+      },
+      "maxCount" : 2
+    },
+    "beruf" : {
+      "counts" : {
+        "Lehrer/in - Gymnasien" : 1,
+        "Lehrer/in - Schularten der Sekundarstufe I" : 1
+      },
+      "maxCount" : 2
+    },
+    "angebotsart" : {
+      "counts" : {
+        "1" : 2
+      },
+      "maxCount" : 2
+    },
+    "branche" : {
+      "counts" : {
+        "4" : 2
+      },
+      "maxCount" : 2
+    },
+    "quereinstieg" : {
+      "counts" : {
+        "false" : 1,
+        "true" : 1
+      },
+      "maxCount" : 2
+    },
+    "arbeitszeit" : {
+      "counts" : {
+        "tz" : 1,
+        "vz" : 1
+      },
+      "maxCount" : 2
+    },
+    "eintrittsdatum" : {
+      "counts" : {
+        "10_01_01-now" : 2,
+        "26_11_01-26_12_01" : 1
+      },
+      "maxCount" : 2
+    },
+    "zeitarbeit" : {
+      "counts" : {
+        "false" : 2
+      },
+      "maxCount" : 2
+    },
+    "topberufsfeld" : {
+      "counts" : {
+        "Lehrtätigkeit an allgemeinbildenden Schulen" : 2
+      },
+      "scores" : {
+        "Lehrtätigkeit an allgemeinbildenden Schulen" : 10703218
+      },
+      "maxCount" : 2
+    }
+  }
+}

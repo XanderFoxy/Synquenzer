@@ -1,6 +1,6 @@
 // Festival-/Venue-Seiten (config.seiten): Seite höflich laden, nach Bandnamen suchen.
 // Ein Treffer = "Band im Programm erwähnt" (ohne genaues Datum) → Push mit Link zur Seite.
-import { erwaehnt, berlinIso, datumDe } from '../lib.mjs';
+import { erwaehntEcht, berlinIso, datumDe } from '../lib.mjs';
 
 export function htmlZuText(html) {
   return String(html || '')
@@ -33,7 +33,8 @@ export function terminAusSeite(text, heute) {
 export function seiteTreffer(html, seite, bands, heute = '') {
   const text = htmlZuText(html);
   const termin = heute ? terminAusSeite(text, heute) : null;
-  return bands.filter(b => erwaehnt(text, b)).map(b => ({
+  // nur echte Programm-Erwähnungen: „Remode – Tribute to Depeche Mode“ oder „Depeche Mode Party“ zählen nicht (lib.mjs)
+  return bands.filter(b => erwaehntEcht(text, b)).map(b => ({
     quelle: 'seite:' + seite.id, band: b.name, titel: seite.name, datum: termin?.von || '', zeit: '',
     bis: termin ? berlinIso(termin.bis) : null,
     ort: seite.name, stadt: seite.stadt, land: '', lat: seite.lat, lon: seite.lon,

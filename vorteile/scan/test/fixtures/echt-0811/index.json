@@ -1,0 +1,332 @@
+{
+ "projekt": "vorteile",
+ "lauf": "42435892574",
+ "erstellt": "2026-11-08T01:49:28.135Z",
+ "hinweis": "Auszug aus dem echten Roh-Lauf (URL, Status, Antwort). „gekuerzt“: WordPress-Feeds auf die ersten 6 Einträge (ohne content:encoded, Beschreibung als Text auf 1200 Zeichen), Beatportal auf die ersten 8 Karten, Remotive-Beschreibungen auf 160 Zeichen – sonst unverändert.",
+ "abrufe": [
+  {
+   "nr": 8,
+   "url": "https://www.mydealz.de/rss/gruppe/freizeitpark",
+   "status": 200,
+   "datei": "mydealz-freizeitpark.xml"
+  },
+  {
+   "nr": 16,
+   "url": "https://www.urlaubsguru.de/feed/",
+   "status": 401,
+   "datei": "urlaubsguru-401.html"
+  },
+  {
+   "nr": 20,
+   "url": "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v6/jobs?was=%C3%9Cbersetzer+Arabisch&angebotsart=1&veroeffentlichtseit=14&size=25",
+   "status": 200,
+   "datei": "ba-v6-uebersetzer-arabisch.json"
+  },
+  {
+   "nr": 21,
+   "url": "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v6/jobs?was=%C3%9Cbersetzer+Englisch+Deutsch&angebotsart=1&veroeffentlichtseit=14&size=25",
+   "status": 200,
+   "datei": "ba-v6-uebersetzer-englisch.json"
+  },
+  {
+   "nr": 22,
+   "url": "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v6/jobs?was=Bildbearbeitung&angebotsart=1&veroeffentlichtseit=14&size=25",
+   "status": 200,
+   "datei": "ba-v6-bildbearbeitung.json"
+  },
+  {
+   "nr": 23,
+   "url": "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v6/jobs?was=Videoschnitt&angebotsart=1&veroeffentlichtseit=14&size=25",
+   "status": 200,
+   "datei": "ba-v6-videoschnitt.json"
+  },
+  {
+   "nr": 24,
+   "url": "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v6/jobs?was=KI+Trainer+Deutsch&angebotsart=1&veroeffentlichtseit=14&size=25",
+   "status": 200,
+   "datei": "ba-v6-ki-trainer.json"
+  },
+  {
+   "nr": 46,
+   "url": "https://www.mydealz.de/rss/gruppe/apple-tv",
+   "status": 200,
+   "datei": "mydealz-apple-tv.xml"
+  },
+  {
+   "nr": 49,
+   "url": "https://news.google.com/rss/search?q=Remix-Wettbewerb%20when%3A30d&hl=de&gl=DE&ceid=DE:de",
+   "status": 200,
+   "datei": "news-remix-wettbewerb.xml"
+  },
+  {
+   "nr": 50,
+   "url": "https://news.google.com/rss/search?q=Remix%20Contest%20when%3A30d&hl=de&gl=DE&ceid=DE:de",
+   "status": 200,
+   "datei": "news-remix-contest-de.xml"
+  },
+  {
+   "nr": 51,
+   "url": "https://news.google.com/rss/search?q=Remix%20Contest%20Stems%20when%3A30d&hl=de&gl=DE&ceid=DE:de",
+   "status": 200,
+   "datei": "news-remix-contest-stems-de.xml"
+  },
+  {
+   "nr": 52,
+   "url": "https://news.google.com/rss/search?q=Remix-Contest%20Synthpop%20OR%20Elektro%20OR%2080er%20when%3A30d&hl=de&gl=DE&ceid=DE:de",
+   "status": 200,
+   "datei": "news-remix-contest-synthpop-de.xml"
+  },
+  {
+   "nr": 53,
+   "url": "https://news.google.com/rss/search?q=remix%20contest%20when%3A30d&hl=en-US&gl=US&ceid=US:en",
+   "status": 200,
+   "datei": "news-en-remix-contest.xml"
+  },
+  {
+   "nr": 54,
+   "url": "https://news.google.com/rss/search?q=remix%20competition%20when%3A30d&hl=en-US&gl=US&ceid=US:en",
+   "status": 200,
+   "datei": "news-en-remix-competition.xml"
+  },
+  {
+   "nr": 55,
+   "url": "https://news.google.com/rss/search?q=remix%20contest%20stems%20when%3A30d&hl=en-US&gl=US&ceid=US:en",
+   "status": 200,
+   "datei": "news-en-remix-contest-stems.xml"
+  },
+  {
+   "nr": 56,
+   "url": "https://news.google.com/rss/search?q=remix%20contest%20deadline%20when%3A30d&hl=en-US&gl=US&ceid=US:en",
+   "status": 200,
+   "datei": "news-en-remix-contest-deadline.xml"
+  },
+  {
+   "nr": 57,
+   "url": "https://news.google.com/rss/search?q=remix%20contest%20synth%20OR%20synthwave%20OR%20synthpop%20when%3A30d&hl=en-US&gl=US&ceid=US:en",
+   "status": 200,
+   "datei": "news-en-remix-contest-synth.xml"
+  },
+  {
+   "nr": 58,
+   "url": "https://news.google.com/rss/search?q=remix%20contest%2080s%20OR%20italo%20OR%20darkwave%20OR%20%22new%20wave%22%20when%3A30d&hl=en-US&gl=US&ceid=US:en",
+   "status": 200,
+   "datei": "news-en-remix-contest-80s.xml"
+  },
+  {
+   "nr": 59,
+   "url": "https://edmidentity.com/?s=remix+contest&feed=rss2",
+   "status": 403,
+   "datei": "edmidentity-403.html"
+  },
+  {
+   "nr": 60,
+   "url": "https://www.attackmagazine.com/?s=remix+competition&feed=rss2",
+   "status": 200,
+   "datei": "wp-attackmagazine-gekuerzt.xml",
+   "gekuerzt": true,
+   "bytesOriginal": 332594
+  },
+  {
+   "nr": 61,
+   "url": "https://rekkerd.org/?s=remix+contest&feed=rss2",
+   "status": 200,
+   "datei": "wp-rekkerd-gekuerzt.xml",
+   "gekuerzt": true,
+   "bytesOriginal": 210247
+  },
+  {
+   "nr": 62,
+   "url": "https://dancingastronaut.com/?s=remix+competition&feed=rss2",
+   "status": 200,
+   "datei": "wp-dancingastronaut-gekuerzt.xml",
+   "gekuerzt": true,
+   "bytesOriginal": 144792
+  },
+  {
+   "nr": 63,
+   "url": "https://api.audius.co/v1/events/remix-contests?status=active&limit=50&app_name=vorteils-radar",
+   "status": 200,
+   "datei": "audius-remix-contests.json"
+  },
+  {
+   "nr": 65,
+   "url": "https://www.beatportal.com/communities/630379-remix-contests",
+   "status": 200,
+   "datei": "beatportal-remix-contests-gekuerzt.html",
+   "gekuerzt": true,
+   "bytesOriginal": 1375679
+  },
+  {
+   "nr": 69,
+   "url": "https://news.google.com/rss/search?q=Bands%20gesucht%20when%3A60d&hl=de&gl=DE&ceid=DE:de",
+   "status": 200,
+   "datei": "news-bands-gesucht.xml"
+  },
+  {
+   "nr": 70,
+   "url": "https://news.google.com/rss/search?q=Bands%20gesucht%20Sachsen%20when%3A60d&hl=de&gl=DE&ceid=DE:de",
+   "status": 200,
+   "datei": "news-bands-gesucht-sachsen.xml"
+  },
+  {
+   "nr": 71,
+   "url": "https://news.google.com/rss/search?q=Bandcontest%20Anmeldung%20when%3A60d&hl=de&gl=DE&ceid=DE:de",
+   "status": 200,
+   "datei": "news-bandcontest-anmeldung.xml"
+  },
+  {
+   "nr": 72,
+   "url": "https://news.google.com/rss/search?q=Bandwettbewerb%20Bewerbung%20when%3A60d&hl=de&gl=DE&ceid=DE:de",
+   "status": 200,
+   "datei": "news-bandwettbewerb-bewerbung.xml"
+  },
+  {
+   "nr": 73,
+   "url": "https://news.google.com/rss/search?q=Nachwuchsbands%20gesucht%20when%3A60d&hl=de&gl=DE&ceid=DE:de",
+   "status": 200,
+   "datei": "news-nachwuchsbands-gesucht.xml"
+  },
+  {
+   "nr": 74,
+   "url": "https://news.google.com/rss/search?q=Newcomer%20Bands%20Bewerbung%20Festival%20when%3A60d&hl=de&gl=DE&ceid=DE:de",
+   "status": 200,
+   "datei": "news-newcomer-bands-festival.xml"
+  },
+  {
+   "nr": 75,
+   "url": "https://news.google.com/rss/search?q=Open%20Stage%20Leipzig%20OR%20Dresden%20OR%20Chemnitz%20when%3A60d&hl=de&gl=DE&ceid=DE:de",
+   "status": 200,
+   "datei": "news-open-stage.xml"
+  },
+  {
+   "nr": 76,
+   "url": "https://news.google.com/rss/search?q=Open%20Mic%20Leipzig%20OR%20Dresden%20when%3A60d&hl=de&gl=DE&ceid=DE:de",
+   "status": 200,
+   "datei": "news-open-mic.xml"
+  },
+  {
+   "nr": 77,
+   "url": "https://news.google.com/rss/search?q=Musiker%20gesucht%20Stadtfest%20when%3A60d&hl=de&gl=DE&ceid=DE:de",
+   "status": 200,
+   "datei": "news-musiker-stadtfest.xml"
+  },
+  {
+   "nr": 78,
+   "url": "https://news.google.com/rss/search?q=K%C3%BCnstler%20gesucht%20Stadtfest%20Sachsen%20when%3A60d&hl=de&gl=DE&ceid=DE:de",
+   "status": 200,
+   "datei": "news-kuenstler-stadtfest-sachsen.xml"
+  },
+  {
+   "nr": 79,
+   "url": "https://news.google.com/rss/search?q=F%C3%AAte%20de%20la%20Musique%20Anmeldung%20Musiker%20when%3A60d&hl=de&gl=DE&ceid=DE:de",
+   "status": 200,
+   "datei": "news-fete-de-la-musique.xml"
+  },
+  {
+   "nr": 80,
+   "url": "https://news.google.com/rss/search?q=D%C3%B6beln%20B%C3%BChne%20K%C3%BCnstler%20gesucht%20when%3A60d&hl=de&gl=DE&ceid=DE:de",
+   "status": 200,
+   "datei": "news-doebeln-buehne.xml"
+  },
+  {
+   "nr": 81,
+   "url": "https://gigmit.com/en/gigs/leipzig",
+   "status": 404,
+   "datei": "gigmit-404.html"
+  },
+  {
+   "nr": 82,
+   "url": "https://gigmit.com/en/gigs/dresden",
+   "status": 404,
+   "datei": "gigmit-404.html"
+  },
+  {
+   "nr": 83,
+   "url": "https://gigmit.com/en/gigs/chemnitz",
+   "status": 404,
+   "datei": "gigmit-404.html"
+  },
+  {
+   "nr": 93,
+   "url": "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v6/jobs?was=Deutschlehrer&wo=D%C3%B6beln&umkreis=50&angebotsart=1&veroeffentlichtseit=21&size=25",
+   "status": 200,
+   "datei": "ba-v6-deutschlehrer-doebeln.json"
+  },
+  {
+   "nr": 94,
+   "url": "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v6/jobs?was=Deutsch+als+Fremdsprache&wo=D%C3%B6beln&umkreis=80&angebotsart=1&veroeffentlichtseit=21&size=25",
+   "status": 200,
+   "datei": "ba-v6-daf-doebeln.json"
+  },
+  {
+   "nr": 95,
+   "url": "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v6/jobs?was=Lehrkraft+Integrationskurs&wo=D%C3%B6beln&umkreis=80&angebotsart=1&veroeffentlichtseit=21&size=25",
+   "status": 200,
+   "datei": "ba-v6-integrationskurs-doebeln.json"
+  },
+  {
+   "nr": 96,
+   "url": "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v6/jobs?was=Nachhilfe+Deutsch&wo=D%C3%B6beln&umkreis=30&angebotsart=1&veroeffentlichtseit=21&size=25",
+   "status": 200,
+   "datei": "ba-v6-nachhilfe-doebeln.json"
+  },
+  {
+   "nr": 97,
+   "url": "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v6/jobs?was=Deutschlehrer+online&angebotsart=1&veroeffentlichtseit=21&size=25",
+   "status": 200,
+   "datei": "ba-v6-deutschlehrer-online.json"
+  },
+  {
+   "nr": 98,
+   "url": "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v6/jobs?was=Deutsch+als+Fremdsprache&angebotsart=1&veroeffentlichtseit=21&size=25",
+   "status": 200,
+   "datei": "ba-v6-daf.json"
+  },
+  {
+   "nr": 99,
+   "url": "https://remotive.com/api/remote-jobs?search=german%20teacher&limit=50",
+   "status": 200,
+   "datei": "remotive-german-teacher-gekuerzt.json",
+   "gekuerzt": true,
+   "bytesOriginal": 216489
+  },
+  {
+   "nr": 100,
+   "url": "https://remotive.com/api/remote-jobs?search=german%20tutor&limit=50",
+   "status": 200,
+   "datei": "remotive-german-teacher-gekuerzt.json",
+   "gekuerzt": true,
+   "bytesOriginal": 216489
+  },
+  {
+   "nr": 101,
+   "url": "https://news.google.com/rss/search?q=Lehrkr%C3%A4fte%20Integrationskurs%20gesucht%20when%3A30d&hl=de&gl=DE&ceid=DE:de",
+   "status": 200,
+   "datei": "news-integrationskurs.xml"
+  },
+  {
+   "nr": 102,
+   "url": "https://news.google.com/rss/search?q=Deutschlehrer%20gesucht%20Sachsen%20when%3A30d&hl=de&gl=DE&ceid=DE:de",
+   "status": 200,
+   "datei": "news-deutschlehrer-sachsen.xml"
+  },
+  {
+   "nr": 103,
+   "url": "https://news.google.com/rss/search?q=DaZ%20Lehrkr%C3%A4fte%20gesucht%20Sachsen%20when%3A30d&hl=de&gl=DE&ceid=DE:de",
+   "status": 200,
+   "datei": "news-daz-sachsen.xml"
+  },
+  {
+   "nr": 104,
+   "url": "https://news.google.com/rss/search?q=Sprachpaten%20gesucht%20D%C3%B6beln%20OR%20Mittelsachsen%20OR%20Leipzig%20when%3A30d&hl=de&gl=DE&ceid=DE:de",
+   "status": 200,
+   "datei": "news-sprachpaten.xml"
+  },
+  {
+   "nr": 105,
+   "url": "https://news.google.com/rss/search?q=Deutschkurs%20Ehrenamtliche%20gesucht%20Sachsen%20when%3A30d&hl=de&gl=DE&ceid=DE:de",
+   "status": 200,
+   "datei": "news-deutschkurs-ehrenamt.xml"
+  }
+ ]
+}

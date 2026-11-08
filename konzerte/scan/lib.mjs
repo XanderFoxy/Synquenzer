@@ -46,6 +46,85 @@ export function erwaehnt(text, band) {
   return false;
 }
 
+// --- Echter Auftritt der Band – oder Tribute-, Cover-, Party-Show, Lesung, Gast-Auftritt eines Mitglieds? -----------------
+// Echter Eventim-Lauf 08.11.2026 (42435894704): Suche „Depeche Mode“ lieferte fast nur „Strangelove – The DEPECHE MODE
+// Experience“, „Remode – The Music of Depeche Mode“, „Depeche Mode on piano – played by Thilo“, „Depeche Mode Party …“,
+// Suche „Roxette“ nur „Rox! – Tribute to Roxette“, „Silverblue Joyriders – Songs by Roxette“ …, Suche „Alphaville“ zuerst
+// „Control Room – Gast – Marian Gold (Alphaville)“ (Gesprächsabend mit dem Sänger). Gleiche Regel für alle Quellen.
+const escRe = v => v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const bandNamen = band => [band.name, ...(band.aliase || [])].map(x => String(x || '').replace(/^the\s+/i, '').trim()).filter(Boolean);
+// direkt VOR dem Bandnamen (normalisiert): „Tribute to …“, „The Music of …“, „Songs by …“, „Lesung … über …“, „with members of …“
+const DAVOR = / (?:tributes? to|tribute an|tribute|hommage an|hommage a|homage to|homage|cover|covers|the music of|music of|musik von|songs (?:by|of|von)|hits (?:of|von)|played by|performed by|plays|spielt|a night of|a celebration of|celebrating|salute to|im stil von|in the style of|uber|about|members of|mitglieder von|singer of|sanger von|voice of|stimme von) $/;
+// direkt NACH dem Bandnamen: „… Tribute (Band)“, „… Special Tribute“, „… Experience“, „… Party“, „… on piano“, „… by Mode Machine“
+const DANACH = /^ (?:s )?(?:(?:[a-z0-9]+ )?tributes?|experience|[a-z]*party|revival|covers?|coverband|cover band|on piano|[a-z]*lounge|fans?|fanclub|fantreffen|lesung|lesetour|lesereise|by|played by|performed by) /;
+// Name ohne Künstlerangabe: zusätzlich diese Wörter irgendwo im Namen (Party/DJ/Fan-Abend/Lesung/Gast …)
+const NUR_NAME = / (?:tributes?|hommage|homage|covers?|coverband|experience|the music of|music of|musik von|songs (?:by|of|von)|hits (?:of|von)|played by|performed by|plays the music|on piano|a night of|with members of|revival|gast|dj|disco|karaoke|fans?|fanclub|fantreffen|lesung|lesetour|lesereise|musical|symphonic|klassik trifft|im stil von|salute) |party|lounge/;
+// Nur DIREKT hinter dem Bandnamen (vor dem ersten „ - “, „:“, „|“) Zeichen eines Fan-Abends: echt 08.11. (quellen/005)
+// „Depeche Mode Church Night“, „DEPECHE MODE "FESTIVAL FOR THE MASSES" - Live: BEBORN BETON, …“ – kamen nur durch die zufällige
+// Künstlerangabe („DM Fan Base“, „Party for the Masses“) nicht durch. „The Human League - Night People Tour“ bleibt echt.
+const NUR_NAME_DIREKT = / (?:[a-z]*night|nights|[a-z]*nacht|festival|for the masses) /;
+const TRENNER = /\s[-–—|]\s|:\s|\s\|/;
+// Ticket-Vorsätze ohne eigene Bedeutung („Loge / Premiumbereich - …“, „Premium Tickets - …“)
+const VORSATZ = /^\s*(?:loge\s*\/\s*premiumbereich|premium[- ]?tickets?|vip[- ]?(?:tickets?|pakete?|packages?)?|tickets?)\s*[-–—:|]\s*/i;
+
+/** Jede Stelle, an der die Band im Text steht: { vor, nach } (roh). gross = nur wie geschrieben oder KOMPLETT GROSS. */
+function stellen(text, band, { gross = false } = {}) {
+  const roh = String(text || '').normalize('NFC'), out = [];
+  for (const kern of bandNamen(band)) {
+    const varianten = gross ? [...new Set([kern, kern.toUpperCase()])] : [kern];
+    for (const v of varianten) {
+      const re = new RegExp(`(^|[^\\p{L}\\p{N}])(${escRe(v).replace(/\s+/g, '\\s+')})(?![\\p{L}\\p{N}])`, gross ? 'gu' : 'giu');
+      for (const m of roh.matchAll(re)) {
+        const a = m.index + m[1].length, e = a + m[2].length;
+        out.push({ vor: roh.slice(0, a), nach: roh.slice(e), band });
+      }
+    }
+  }
+  return out;
+}
+
+/** Steht die Band an dieser Stelle als Gegenstand einer Tribute-/Cover-/Party-Show oder als Herkunft eines Mitglieds? */
+function nachgespieltStelle({ vor, nach, band }) {
+  // „Marian Gold (Alphaville)“, „Andy McCluskey (ex-OMD)“: ein Mitglied, nicht die Band – außer vor der Klammer steht die
+  // Band selbst unter ihrem anderen Namen: „OMD (Orchestral Manoeuvres in the Dark)“, „Orchestral Manoeuvres In The Dark (OMD)“
+  const klammer = /\(\s*(?:ex[- ]?|of |von |aus |from )?(?:the\s+)?$/i.exec(vor);
+  if (klammer && /^\s*\)/.test(nach)) {
+    const davor = ' ' + ohneThe(norm(vor.slice(0, klammer.index)));
+    if (!bandNamen(band).some(x => { const k = ohneThe(norm(x)); return k && davor.endsWith(' ' + k); })) return true;
+  }
+  const v = (' ' + norm(vor.slice(-80)) + ' ').replace(/ the $/, ' ').replace(/ +$/, ' ');
+  const n = ' ' + norm(nach.slice(0, 80)) + ' ';
+  return DAVOR.test(v) || DANACH.test(n);
+}
+
+/** Sagt der Veranstaltungsname, dass hier jemand die Band nachspielt, feiert oder über sie spricht? */
+export function nachgespielt(name, band) {
+  return stellen(name, band).some(nachgespieltStelle);
+}
+
+/**
+ * Echter Auftritt der Band? Mit Künstlerangabe (Eventim „attractions“, Ticketmaster „attractions“) entscheidet allein der
+ * exakte Künstlername (normalisiert, „The“ optional, Aliase) – mehrere Künstler (Festival) zählen, wenn die Band dabei ist.
+ * Ohne Künstlerangabe nur Namen, die mit der Band beginnen und keine Tribute-/Cover-/Party-/Gast-Wörter enthalten.
+ * -> 'kuenstler' | 'name' | null (Art der Zuordnung, steht im Eintrag als „zuordnung“)
+ */
+export function auftrittZuordnung(name, attraktionen, band) {
+  if (nachgespielt(name, band)) return null;
+  const atts = (Array.isArray(attraktionen) ? attraktionen : []).map(a => String((a && typeof a === 'object' ? a.name : a) || '')).filter(Boolean);
+  if (atts.length) return atts.some(a => istBand(a, band)) ? 'kuenstler' : null;
+  const roh = String(name || '').replace(VORSATZ, ''), n = ohneThe(norm(roh));
+  // Rest hinter dem Bandnamen prüfen (ein Bandname mit „Experience“ o. Ä. sperrt sich so nicht selbst aus)
+  const b = bandNamen(band).map(x => ohneThe(norm(x))).filter(Boolean).find(x => n === x || n.startsWith(x + ' '));
+  if (!b || NUR_NAME.test(' ' + n.slice(b.length).trim() + ' ')) return null;
+  const direkt = ohneThe(norm(roh.split(TRENNER)[0]));
+  return direkt.startsWith(b) && NUR_NAME_DIREKT.test(' ' + direkt.slice(b.length).trim() + ' ') ? null : 'name';
+}
+
+/** Festival-/Hallenseite: Band irgendwo wirklich im Programm (mindestens eine Erwähnung ohne Tribute-/Party-Zusammenhang). */
+export function erwaehntEcht(text, band) {
+  return stellen(text, band, { gross: true }).some(s => !nachgespieltStelle(s));
+}
+
 const ZUSATZ = /\b(deluxe|remaster(ed)?|edition|version|expanded|anniversary|bonus|single|ep|radio edit|edit|mix|remix(es)?|live)\b/;
 /** Titel für Dedupe: Klammerzusätze wie (Deluxe) / - Single entfernen. */
 export function titelSchluessel(t) {

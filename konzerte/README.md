@@ -75,6 +75,7 @@ GitHub Actions (alle 3 h + manuell)  .github/workflows/konzerte.yml
 mein-vorteil/index.html liest raw.githubusercontent.com/xanderfoxy/synquenzer/konzerte-daten/konzerte/data/*.json
 ```
 
+- **Nur echte Auftritte der Band:** Ein Termin zählt, wenn die Band bei Eventim/Ticketmaster als Künstler eingetragen ist (exakter Name, auch auf Festivals mit mehreren Künstlern – dann „Festival“). Ohne Künstlerangabe nur, wenn der Name mit der Band beginnt und nichts nach Tribute, Cover, „Experience“, „The Music of“, „Songs by“, „on piano“, Party, Revival, Lesung oder „Gast“ klingt – und direkt hinter dem Bandnamen kein „Night“, „Nacht“ oder „Festival“ steht („Depeche Mode Church Night“). Ein Mitglied in Klammern („Marian Gold (Alphaville)“) ist nicht die Band; „OMD (Orchestral Manoeuvres in the Dark)“ schon. Gleiche Regel für MusicBrainz-Termine und Festival-Seiten.
 - Fällt eine Quelle aus, laufen die anderen weiter; ihre alten Einträge bleiben auf der Seite stehen. Fehler stehen unten auf der Seite unter „Quellen“ und in `status.json`.
 - Kann ein Push nicht zugestellt werden, wird er beim nächsten Lauf erneut versucht.
 - Städte ohne Koordinaten: eingebaute Tabelle, sonst einmalig OpenStreetMap/Nominatim, gecacht in `geo.json`.

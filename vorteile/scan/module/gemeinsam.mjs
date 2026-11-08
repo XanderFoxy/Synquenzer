@@ -1,6 +1,6 @@
 // Gemeinsame Bausteine der Scanner-Module: Feeds sammeln (fehlertolerant), Einträge bauen, Google-News-Suche.
 import { leseRss } from '../lib/rss.mjs';
-import { schluessel, alterTage, enthaelt } from '../lib/text.mjs';
+import { schluessel, alterTage, enthaelt, datumDe } from '../lib/text.mjs';
 import { endeAusFuer, abAus, bestimmeEnde, berlinTag, alterStunden, HOECHSTALTER_STUNDEN } from '../lib/ende.mjs';
 import { istMydealzDeal, altpreisAusText, preisAngaben, preisZeile, versandImPreis } from '../lib/mydealz.mjs';
 import { parsePrice, euro } from '../lib/text.mjs';
@@ -80,17 +80,27 @@ function holeFeed(holeText, url) {
   return p;
 }
 
+// Gesperrte Quelle (HTTP 401, z. B. Urlaubsguru im echten Lauf 08.11.2026: „401 Authorization Required“ von nginx):
+// kein Fehler, sondern „gesperrt“ im Status; mit zustand nur noch einmal pro GESPERRT_NEU_TAGE neu versuchen.
+export const GESPERRT_NEU_TAGE = 7;
+const istGesperrt = e => /\bHTTP 401\b/.test(String(e?.message || e));
+
 /**
  * Holt mehrere Feeds nacheinander; ein kaputter Feed landet in fehler, die anderen laufen weiter.
  * Feed mit stichwoerter: nur Einträge, deren Titel/Beschreibung eines davon enthält (Ersatz für die mydealz-Suche).
  * Jedes Item bekommt bis/ab aus dem Text (lib/ende.mjs). Steht ein Ende im Text: vorbei -> raus, noch offen -> bleibt
  * (auch wenn älter als maxAlterTage). Ohne Ende im Text gilt maxAlterTage des Feeds.
+ * HTTP 401 -> gesperrt (nicht fehler); zustand (optional): gesperrte Feeds GESPERRT_NEU_TAGE lang nicht mehr abrufen.
  */
-export async function sammleFeeds(holeText, feeds, { jetzt = new Date(), maxAlterTage = 30 } = {}) {
-  const items = [], fehler = [];
+export async function sammleFeeds(holeText, feeds, { jetzt = new Date(), maxAlterTage = 30, zustand = null } = {}) {
+  const items = [], fehler = [], gesperrt = [];
   const jetztMs = new Date(jetzt).getTime();
+  const sperre = zustand ? (zustand.gesperrt ||= {}) : null;
   for (const f0 of feeds) {
     const f = ohneMydealzSuche(f0);
+    const name = f.name || f.url;
+    const alt = sperre?.[f.url];
+    if (alt && jetztMs - Date.parse(alt.zuletzt) < GESPERRT_NEU_TAGE * 864e5) { gesperrt.push(`${name}: gesperrt seit ${datumDe(berlinTag(alt.seit))} (HTTP 401)`); continue; }
     try {
       const liste = leseRss(await holeFeed(holeText, f.url));
       for (const it of liste) {
@@ -101,25 +111,34 @@ export async function sammleFeeds(holeText, feeds, { jetzt = new Date(), maxAlte
         const { langtext, ...rest } = it;
         items.push({ ...rest, bis: ende?.bis || null, ab: abAus(text, new Date(jetztMs)), feed: f.name || f.url, feedInfo: f });
       }
-    } catch (e) { fehler.push(`${f.name || f.url}: ${e.message}`); }
+      if (sperre?.[f.url]) delete sperre[f.url];
+    } catch (e) {
+      if (istGesperrt(e)) {
+        const seit = alt?.seit || new Date(jetztMs).toISOString();
+        if (sperre) sperre[f.url] = { seit, zuletzt: new Date(jetztMs).toISOString() };
+        gesperrt.push(`${name}: gesperrt seit ${datumDe(berlinTag(seit))} (HTTP 401)`);
+      } else fehler.push(`${name}: ${e.message}`);
+    }
   }
   // gleicher Link oder gleicher Titel aus mehreren Feeds -> einmal
   const gesehen = new Set();
   return {
     items: items.filter(it => { const k = it.link || it.titel; const k2 = it.titel.toLowerCase().slice(0, 70); if (gesehen.has(k) || gesehen.has(k2)) return false; gesehen.add(k); gesehen.add(k2); return true; }),
     fehler,
+    gesperrt,
   };
 }
 
 /**
  * Einheitliches Eintragsformat für Seite und Push (Felder: README → „Datenformat“).
- * Ende: bis/bisQuelle (Feld der Quelle oder Text), ab, art (Anzeigefenster ohne bekanntes Ende), jetzt.
+ * Ende: bis/bisQuelle (Feld der Quelle oder Text), ab, art (Anzeigefenster ohne bekanntes Ende), jetzt;
+ * fensterAb/fensterStunden: Anzeigefenster ab einem anderen Zeitpunkt / mit anderer Länge (lib/ende.mjs bestimmeEnde).
  * Preise (optional): preise = { preis, preisVorher, vorherQuelle, ersparnisEuro, ersparnisProzent } (lib/mydealz.mjs preisAngaben).
  */
 export function eintrag(e) {
   if (!e.link) throw new Error('Eintrag ohne Link');
   const datum = Number.isFinite(Date.parse(e.datum || '')) ? new Date(e.datum).toISOString() : null;
-  const ende = bestimmeEnde({ bis: e.bis, bisQuelle: e.bisQuelle || (e.bis ? 'text' : null), ab: e.ab, datum, art: e.art || 'deal', jetzt: e.jetzt || new Date() });
+  const ende = bestimmeEnde({ bis: e.bis, bisQuelle: e.bisQuelle || (e.bis ? 'text' : null), ab: e.ab, datum, art: e.art || 'deal', jetzt: e.jetzt || new Date(), fensterAb: e.fensterAb ?? null, fensterStunden: e.fensterStunden ?? null });
   return {
     id: e.id || schluessel(e.kategorie, e.link, e.titel.slice(0, 60)),
     kategorie: e.kategorie,

@@ -49,3 +49,21 @@ export function macheFixtureAbruf(dir, karte) {
     return readFile(join(dir, treffer[1]), 'utf8');
   };
 }
+
+// Für Tests mit echten Läufen: Roh-Mitschnitt (lib/roh.mjs) wieder abspielen. index.json = { abrufe: [{ url, status,
+// datei, fehler }] } wie im Roh-Lauf; dieselbe URL -> dieselbe Antwort (Status ≥ 400 -> „HTTP <status> bei <host>“
+// wie macheAbruf). Nicht aufgenommene URLs: RSS leer, sonst Fehler (wie macheFixtureAbruf).
+export function macheAufnahmeAbruf(dir, index) {
+  const karte = new Map();
+  for (const a of index?.abrufe || []) if (!karte.has(a.url)) karte.set(a.url, a);
+  return async function holeText(url) {
+    const a = karte.get(url);
+    if (!a) {
+      if (/rss|feed|atom|\.xml/i.test(url)) return '<rss><channel></channel></rss>';
+      throw new Error(`keine Aufnahme für ${url}`);
+    }
+    if (a.fehler && !a.status) throw new Error(a.fehler);
+    if (a.status >= 400) throw new Error(`HTTP ${a.status} bei ${new URL(url).host}`);
+    return readFile(join(dir, a.datei), 'utf8');
+  };
+}

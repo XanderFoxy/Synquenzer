@@ -57,7 +57,8 @@ export function ortVon({ stadt = '', text = '', zuhause = DOEBELN } = {}) {
 }
 
 /**
- * Fundorte (config) als Einträge. f = { titel, link, ort?, typ, bewerbung?, saison?, zeile?, soGehts, quelle?, wert? }
+ * Fundorte (config) als Einträge. f = { titel, link, ort?, typ, bewerbung?, saison?, zeile?, soGehts, quelle?, wert?, linkPruefen? }
+ * linkPruefen: Adresse nicht durch einen echten Abruf belegt -> „Link prüfen“ in der Zeile.
  * pruefung: { [link]: { ok, tag } } aus dem Zustand (Link-Prüfung, siehe pruefeFundorte).
  */
 export function fundortEintraege(liste = [], { kategorie, jetzt = new Date(), kuenstler = {}, pruefung = {}, zuhause = DOEBELN } = {}) {
@@ -72,14 +73,14 @@ export function fundortEintraege(liste = [], { kategorie, jetzt = new Date(), ku
     const wert = f.wert ?? 45;
     out.push(eintrag({
       kategorie, titel: f.titel, link: f.link, quelle: f.quelle || 'Fundort', datum: null, jetzt, art: 'fundort',
-      zeile: [ortZeile(o || (f.ort ? { ort: f.ort } : null), online), f.zeile || '', s.text, kaputt ? 'Link gerade nicht erreichbar' : ''].filter(Boolean).join(' · '),
+      zeile: [ortZeile(o || (f.ort ? { ort: f.ort } : null), online), f.zeile || '', s.text, kaputt ? 'Link gerade nicht erreichbar' : f.linkPruefen ? 'Link prüfen' : ''].filter(Boolean).join(' · '),
       soGehts: f.soGehts || 'Seite öffnen, Bedingungen lesen, Bewerbung schicken (Vorlage unten auf der Seite).',
       wert, sofort: false, grund: 'Fundort',
       extra: {
         typ, fundort: true, ort: o?.ort || f.ort || (online ? 'online' : null), km: o?.km ?? null, online,
         frist: null, bewerbung: f.bewerbung || { art: 'seite', ziel: f.link }, quelle: f.quelle || 'Fundort',
         saison: f.saison || null, saisonOffen: s.offen, bewerbenAls: bewerbenAls(typ === 'remix' || kategorie === 'remix' ? 'remix' : kategorie === 'unterricht' ? 'unterricht' : typ, kuenstler),
-        ...(kaputt ? { linkOk: false } : {}),
+        ...(kaputt ? { linkOk: false } : {}), ...(f.linkPruefen ? { linkPruefen: true } : {}),
         sortWert: sortWert({ wert, km: o?.km ?? null, online, fundort: true, saisonOffen: s.offen }),
       },
     }));

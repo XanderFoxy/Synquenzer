@@ -60,7 +60,7 @@ export default async function reisen({ holeText, cfg, jetzt, zustand }) {
   const m = cfg.module.reisen;
   const eintraege = [];
   const jetztMs = new Date(jetzt).getTime();
-  const { items, fehler } = await sammleFeeds(holeText, m.feeds, { jetzt });
+  const { items, fehler, gesperrt } = await sammleFeeds(holeText, m.feeds, { jetzt, zustand });
   const pruefer = dealPruefer({ holeText, zustand, jetzt });
   for (const it of items) {
     const text = `${it.titel} ${it.beschreibung}`;
@@ -110,5 +110,5 @@ export default async function reisen({ holeText, cfg, jetzt, zustand }) {
       preise: preisAngaben({ preis, preisVorher: alt, vorherQuelle: altInfo?.quelle }),
     }));
   }
-  return { eintraege, fehler };
+  return { eintraege, fehler, gesperrt };
 }

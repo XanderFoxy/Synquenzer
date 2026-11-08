@@ -74,11 +74,14 @@
   }
 
   // --- Daten tolerant lesen ------------------------------------------------------------------------------------------
+  // gleiche Regel wie vorteile/scan/module/filme.mjs GERAET_TITEL und index.html FILM_GERAET
+  const GERAET = /^\W*apple\s?tv(?:\s?4k|\s?hd)?\s*(?:\(\s*(?:\d\.\s*gen|20\d\d)|20\d\d\b|\d+\s?gb\b|$|wi-?fi|ethernet)|\bsiri remote\b|\bapple tv\s?4k\b.*\b(?:chip|gebraucht|refurbished|generation)\b/i;
   const liste = x => (Array.isArray(x) ? x : x && typeof x === 'object' ? [x] : []);
   function titelNorm(t) {
     if (!t || typeof t !== 'object') return null;
     const titel = typeof t.titel === 'string' ? t.titel.trim() : '';
     if (!titel) return null; // ohne Titel nicht zeigen
+    if (GERAET.test(titel)) return null; // „Apple TV 4K (2026)“ ist ein Gerät, kein Film (mydealz-Gruppe apple-tv, 08.11.2026)
     const preisSd = preisVon(t.preisSd), preisHd = preisVon(t.preisHd);
     const j = /\b(1[89]\d\d|20\d\d)\b/.exec(String(t.jahr ?? ''));
     const tp = t.tiefst && typeof t.tiefst === 'object' ? preisVon(t.tiefst.p) : null;

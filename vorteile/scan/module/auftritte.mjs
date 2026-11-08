@@ -2,8 +2,9 @@
 // (Xander 08.11.2026: „wo Bands gesucht werden … wo ich mich als Band bewerben kann, bei einem Stadtfest … und wenn es
 // auch nicht im direkten Umkreis ist, was das Nächste ist“).
 // Quellen: (1) Google News – „Bands gesucht“, Bandcontests, Open Stage/Open Mic, Stadtfest-Bewerbungen (Sachsen zuerst,
-// sonst deutschlandweit); (2) Seiten mit maschinenlesbaren Terminen (JSON-LD, z. B. gigmit-Stadtseiten Leipzig/Dresden/
-// Chemnitz); (3) Fundorte (config) mit Ort, Entfernung, Bewerbungsweg und Saison – erscheinen IMMER.
+// sonst deutschlandweit); (2) Seiten mit maschinenlesbaren Terminen (JSON-LD, config „seiten“; die gigmit-Stadtseiten
+// sind seit dem 404 im Lauf vom 08.11.2026 raus); (3) Fundorte (config) mit Ort, Entfernung, Bewerbungsweg und Saison –
+// erscheinen IMMER.
 // Jeder Eintrag: extra { ort, km, frist, bewerbung { art, ziel }, quelle, typ, bewerbenAls }. Sortierung: nah + bald zuerst.
 import { enthaelt, zaehle, datumDe } from '../lib/text.mjs';
 import { berlinTag } from '../lib/ende.mjs';
@@ -25,6 +26,22 @@ const TYP_NAME = { openstage: 'Open Stage', bandcontest: 'Bandcontest', stadtfes
 
 export const SO_AUFTRITT = 'Ausschreibung öffnen, Bedingungen lesen. Bewerbung = 3 Sätze über euch + 1 Hörlink + 1 Foto + Technik (Vorlage unten auf der Seite).';
 
+const MONATE = { januar: 1, februar: 2, maerz: 3, märz: 3, april: 4, mai: 5, juni: 6, juli: 7, august: 8, september: 9, oktober: 10, november: 11, dezember: 12 };
+
+/**
+ * Termin im Titel schon vorbei? „Open Mic Night im Oktober 2026“ (am 08.11.), „… am 29.10.2026 in Leipzig“.
+ * Nur wenn ALLE Daten im Titel vorbei sind (ein späteres Datum kann die Frist oder der nächste Termin sein).
+ */
+export function terminVorbei(titel, jetzt = new Date()) {
+  const t = String(titel || '').toLowerCase();
+  const heute = berlinTag(new Date(jetzt).toISOString());
+  const tage = [];
+  for (const d of t.matchAll(/\b(\d{1,2})\.(\d{1,2})\.(20\d\d)\b/g)) tage.push(`${d[3]}-${d[2].padStart(2, '0')}-${d[1].padStart(2, '0')}`);
+  // Monat + Jahr: vorbei, wenn der ganze Monat vorbei ist
+  for (const d of t.matchAll(/\b(januar|februar|märz|maerz|april|mai|juni|juli|august|september|oktober|november|dezember)\s+(20\d\d)\b/g)) tage.push(`${d[2]}-${String(MONATE[d[1]]).padStart(2, '0')}-31`);
+  return tage.length > 0 && tage.every(x => x < heute);
+}
+
 /** Google-News-Eintrag bewerten -> { ok, typ, … } | { grund } */
 export function bewerteAuftritt(it, m, jetzt = new Date()) {
   const text = `${it.titel} ${it.beschreibung || ''}`;
@@ -32,6 +49,7 @@ export function bewerteAuftritt(it, m, jetzt = new Date()) {
   if (!enthaelt(text, m.aufrufWoerter)) return { grund: 'kein Aufruf' };
   if (!enthaelt(text, m.musikerWoerter)) return { grund: 'nicht für Musiker' };
   if (enthaelt(text, m.nichtWoerter)) return { grund: 'passt nicht (Cover/Schlager/Rückblick …)' };
+  if (!it.bis && terminVorbei(it.titel, jetzt)) return { grund: 'Termin vorbei' };
   const rest = restTage(it.bis, jetzt);
   return { ok: true, typ: auftrittTyp(text), genre: Math.min(2, zaehle(text, m.genreWoerter)), rest, frist: it.bis ? berlinTag(it.bis) : null };
 }
@@ -67,7 +85,9 @@ export default async function auftritte({ holeText, cfg, jetzt, zustand = {}, en
     const wert = 40 + b.genre * 10 + (b.frist ? 10 : 0) + (b.typ === 'aufruf' ? 0 : 5);
     eintraege.push(eintrag({
       kategorie: 'auftritte', titel: it.titel, quelle: it.herkunft || 'Google News', link: it.link, datum: it.datum, jetzt,
-      bis: it.bis, ab: it.ab, art: 'aufruf',
+      // ohne Frist so lange zeigen, wie gesucht wird (maxAlterTage, 60). Vorher: 30 Tage (HOECHSTALTER.aufruf) – im echten
+      // Lauf 08.11.2026 fielen so 3 von 4 Funden (45–60 Tage alt) nach dem Einsammeln stumm wieder heraus.
+      bis: it.bis, ab: it.ab, art: 'aufruf', fensterStunden: alter * 24,
       zeile: [TYP_NAME[b.typ], ortZeile(o, o.online), b.frist ? `Frist ${datumDe(b.frist)}` : 'Frist im Link'].filter(Boolean).join(' · '),
       soGehts: SO_AUFTRITT, wert,
       sofort: b.rest != null && b.rest >= 2 && b.rest <= 60 && ((o.km != null && o.km <= (m.sofortBisKm ?? 150)) || b.genre > 0),

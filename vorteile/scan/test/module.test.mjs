@@ -174,6 +174,12 @@ test('Helfer: Fristen, Mengen, Wortsuche, RSS', () => {
   assert.equal(grammAus('6 x 0,5 l'), 3000);
   assert.ok(enthaelt('Deutsche Bahn ICE', ['ice']));
   assert.ok(!enthaelt('Service', ['ice']));
+  // „=“ davor: nur ganzes Wort (sonst trifft „sucht“ auch „besucht“, „versucht“)
+  assert.ok(enthaelt('Feuerwehr sucht unbekannte Bands', ['=sucht|=suchen']));
+  assert.ok(enthaelt('Wir suchen, ihr spielt!', ['=sucht|=suchen']));
+  assert.ok(!enthaelt('Stadtfest gut besucht', ['=sucht|=suchen']));
+  assert.ok(!enthaelt('Tausende besuchen das Fest, Band versucht Comeback', ['=sucht|=suchen']));
+  assert.ok(enthaelt('Stadtfest gut besucht', ['sucht']), 'ohne „=“ weiter Teilwort');
   assert.equal(leseRss('<rss><channel><item><title>A &amp; B</title><link>https://x</link></item></channel></rss>')[0].titel, 'A & B');
   assert.throws(() => leseRss('<html>'));
 });

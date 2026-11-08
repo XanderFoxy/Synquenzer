@@ -1,5 +1,5 @@
 // Ticketmaster Discovery API v2 (kostenloser Schlüssel → Secret TM_KEY). Liefert Konzerte + Festivals mit Koordinaten.
-import { geohash, istBand, erwaehnt, berlinIso } from '../lib.mjs';
+import { geohash, auftrittZuordnung, berlinIso } from '../lib.mjs';
 
 const BASIS = 'https://app.ticketmaster.com/discovery/v2/events.json';
 
@@ -29,8 +29,9 @@ export function tmParse(json, band) {
   const out = [];
   for (const ev of json?._embedded?.events || []) {
     const atts = ev._embedded?.attractions || [];
-    const passt = atts.some(a => istBand(a.name, band)) || (!atts.length && erwaehnt(ev.name, band));
-    if (!passt) continue;
+    // gleiche Regel wie Eventim: Künstlerangabe exakt, sonst „Band …“ ohne Tribute-/Party-/Gast-Wörter (lib.mjs)
+    const zuordnung = auftrittZuordnung(ev.name, atts.map(a => a?.name), band);
+    if (!zuordnung) continue;
     const v = ev._embedded?.venues?.[0] || {};
     const status = ev.dates?.status?.code || '';
     if (status === 'cancelled') continue;
@@ -44,7 +45,7 @@ export function tmParse(json, band) {
       ort: v.name || '', stadt: v.city?.name || '', land: v.country?.countryCode || '',
       lat: v.location ? Number(v.location.latitude) : null, lon: v.location ? Number(v.location.longitude) : null,
       link: ev.url || '', festival: atts.length > 1 || /festival/i.test(ev.name + ' ' + segs),
-      status: status === 'rescheduled' ? 'verschoben' : status === 'postponed' ? 'verlegt' : '',
+      status: status === 'rescheduled' ? 'verschoben' : status === 'postponed' ? 'verlegt' : '', zuordnung,
     });
   }
   return out;

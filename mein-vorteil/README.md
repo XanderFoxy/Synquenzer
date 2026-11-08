@@ -39,16 +39,22 @@ Sprungmarken: `#start`, `#deals` (`#produkte`, `#cashback`, `#snacks` = Ziel im 
 | Bereich | Inhalt | Nie leer, weil … |
 |---|---|---|
 | **Start „Heute für dich“** | „Heute wichtig“ (höchstens 4 Zeilen) + je Bereich eine Kachel mit 1–3 besten Treffern; Tippen öffnet den Bereich | jede Kachel nennt den nächstbesten Treffer bzw. den Grund |
-| **Deals** | Meine Produkte (Jetzt/Bald/Weitere, kaufDA-Region mit „in Döbeln prüfen“), Musik-Technik, Cashback, andere Snacks | ohne Angebot steht die Liste „zuletzt gesehen 0,99 € (225 g) bei Penny, Okt. 2026“ offen |
+| **Deals** | Meine Produkte (Jetzt/Bald/Weitere, kaufDA-Region mit „in Döbeln prüfen“), Musik-Technik, Cashback, andere Snacks | ohne Angebot steht die Liste „zuletzt gesehen 0,99 € (225 g) bei Penny, Okt. 2026“ offen; beginnen alle Angebote erst später (Sonntag), nennt die Start-Kachel sie („ab morgen · 0,66 € bei Netto“, „11 Angebote starten bald“) statt „gerade kein Angebot“ |
 | **Preisfehler** | nur krasse (Regel unverändert) | sonst: wo sie zuerst auftauchen (mydealz-Gruppe Preisfehler, heiße Deals) |
 | **Filme** | Reiter aus `filme.js` (faul geladen), jetzt mit Apple-TV-Angebotsräumen („Filme für 3,99 €“) | Start-Kachel aus `aktuell.json` → `filme` |
-| **Auftritte** | frische Ausschreibungen (nah + bald zuerst) mit **Bewerben**, darunter feste Adressen (Döbeln, Leipzig, Dresden, Chemnitz, deutschlandweit) | feste Adressen immer; ältere Daten: dieselben Adressen aus der Seite (`FUNDORTE`, Test gegen `vorteile/config.json`) |
+| **Auftritte** | frische Ausschreibungen (nah + bald zuerst) mit **Bewerben**, darunter feste Adressen (Döbeln, Leipzig, Dresden, Chemnitz, deutschlandweit) | feste Adressen immer (gigmit nur noch die Startseite, Zeile „Link prüfen“); ältere Daten: dieselben Adressen aus der Seite (`FUNDORTE`, Test gegen `vorteile/config.json`) |
 | **Remix** | laufende Contests (was zuerst endet, oben) mit **Mitmachen** (Frist, Stems, Text) | Fundorte mit laufenden Contests weltweit |
 | **Unterricht** | Stellen/Anfragen (Döbeln + online zuerst) mit **Melden** als „Deutsch mit Xander“ | Jobbörse-Live-Suche, italki, Preply, Lingoda, BAMF |
 | **Konzerte** | in der Nähe (bis `pushRadiusKm`), darunter **je Band der nächste Termin, auch weit weg, mit km**; Tourdaten-Links je Band (`../konzerte/artists.json`, erst beim Öffnen) | nächster Termin bzw. Tourdaten-Links |
 | **Gewinnspiele** | nur laufende ohne Kauf/Abo | sonst mydealz-Gruppen Gewinnspiele/Gratis |
 | **Krypto** | wie bisher (nur `localStorage`) | Kurs immer |
 | **Mehr** | Erleben, Reisen, Nebenverdienst, Spar-Tipps, Vorlage Übersetzung, Quellen | – |
+
+**Echter Lauf 08.11.2026** (`test/fixtures/echt-0811/`): die Ausgaben der drei Wecker unverändert (`satz: 'echt0811'`)
+und dieselben echten Antworten neu gerechnet mit dem reparierten Radar (`echt0811neu`) – Tests „Echter Lauf 08.11.“ in
+`test/seite.test.mjs` (428 × 926 und 926 × 428). Geräte („Apple TV 4K (2026)“) zeigt die Seite nie als Film, auch aus
+älteren Daten (gleiche Regel in Seite, `filme.js` und Radar, `test/regeln.test.mjs`); lange Arbeitgeber-Namen werden in
+der Marke gekürzt statt die Karte zu verbreitern.
 
 **Bewerbungs-Assistent** (`<dialog id="blatt">`): fertiger Betreff + Text (Kurz-Bio, Genre, Links-Platzhalter,
 Besetzung, Set-Länge, Technik), Auswahl **One Day in Rome │ Xander Fox │ beides** („One Day in Rome (Xander Fox)“) mit

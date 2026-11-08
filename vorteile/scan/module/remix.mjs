@@ -4,17 +4,36 @@
 //   1. Google News deutsch + englisch (breite Suchen, Filter macht bewerteRemix)
 //   2. Audius-API: Remix-Contests der Plattform (JSON, ohne Schlüssel; /v1/events/remix-contests)
 //   3. WordPress-Suchfeeds von Musik-Magazinen (?s=remix+contest&feed=rss2: EDM Identity, Attack Magazine, Rekkerd …)
-//   4. Fundorte (config): SKIO, Beatportal-Contests, delamar, Remix64 – erscheinen IMMER (unter den Funden)
+//   4. Contest-Listen ohne Datum (config „listen“, Beatportal): nur was über einem datierten Google-News-Treffer steht
+//   5. Fundorte (config): SKIO, Beatportal-Contests, delamar, Remix64 – erscheinen IMMER (unter den Funden)
 // Genre: Synth-Pop/80er/Italo/Euro-Disco/Elektro/New Wave/Dark Wave/Pop zählt extra („passt zu deinem Stil“). Contests ohne
 // Genre-Wort bleiben drin („offen – dein Synth-Pop-Remix geht auch“), raus nur reine Hip-Hop-/Metal-/Schlager-/Trap-Contests.
 import { enthaelt, zaehle, tageBis, datumDe, alterTage, norm } from '../lib/text.mjs';
 import { berlinTag, berlinIso } from '../lib/ende.mjs';
 import { sammleFeeds, eintrag, googleNews } from './gemeinsam.mjs';
+import { entities } from '../lib/rss.mjs';
 import { bewerbungAus, bewerbenAls, fundortEintraege, pruefeFundorte, fundortePruefen, sortWert } from './assistent.mjs';
 
 export const googleNewsEn = q => `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=en-US&gl=US&ceid=US:en`;
 export const wpSucheUrl = (basis, q) => `${String(basis).replace(/\/$/, '')}/?s=${encodeURIComponent(q).replace(/%20/g, '+')}&feed=rss2`;
-export const istRemixContest = (text, r) => enthaelt(text, r.contestWoerter);
+// Aufruf ohne das Wort „Contest“: „Remix Cerrone’s “Love In C Minor” for Its 50th Anniversary“ (Beatportal, Google News
+// 08.11.2026), „Remix “Time Machine” to win …“, „Remix Zorza’s “Motion Sick” for a Chance …“ – Titel beginnt mit „Remix“ +
+// Name mit Apostroph-s oder Songtitel in Anführungszeichen.
+export const REMIX_AUFRUF = /^\s*remix\s+(?:[“"‘'«„]|[^:–—"“”]{2,60}?[’'`´]s?\s+[“"‘'«„])/i;
+export const istRemixContest = (text, r) => enthaelt(text, r.contestWoerter) || REMIX_AUFRUF.test(String(text || ''));
+
+// Gleicher Contest in mehreren Artikeln („Riot Games and SoundCloud launch remix contest for True Damage’s Worlds anthem“
+// und „SoundCloud, Riot Games Launch Remix Contest With True Damage“): Kernwörter des Titels (ohne Quelle) vergleichen.
+const ALLGEMEIN = new Set('remix remixe remixes contest contests competition challenge wettbewerb launch launches launched opens open with from your their this that into official release chance prize prizes win wins und oder fuer mit'.split(' '));
+export function kernWoerter(titel) {
+  return new Set(norm(String(titel || '').replace(/\s+[-–]\s+[^-–]{2,40}$/, '')).split(/[^a-z0-9]+/).filter(w => w.length >= 4 && !ALLGEMEIN.has(w)));
+}
+export function gleicherContest(a, b) {
+  if (!a.size || !b.size) return false;
+  let n = 0;
+  for (const w of a) if (b.has(w)) n++;
+  return n >= 2 && n / Math.min(a.size, b.size) >= 0.75;
+}
 
 const MONAT_EN = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
 // „Deadline: December 15, 2026“, „closes 15 Dec“, „submissions close on Nov 30th“, „entries due by 1st of December“
@@ -46,7 +65,7 @@ export function bewerteRemix(it, r, jetzt = new Date()) {
   const genre = zaehle(text, r.genreWoerter);
   if (!genre && r.genreNoetig) return { grund: 'Genre passt nicht' };
   if (enthaelt(text, r.nichtWoerter) && genre < 2) return { grund: 'Hip-Hop/Metal/Schlager' };
-  if (enthaelt(text, ['winners announced|winner announced|winners revealed|gewinner stehen fest|gewinner bekannt|gewinner gekuert|gewinner gekürt|results are in'])) return { grund: 'schon entschieden' };
+  if (enthaelt(text, ['winners announced|winner announced|winners revealed|winner of|winners of|meet the winner|crowned|gewinner stehen fest|gewinner bekannt|gewinner gekuert|gewinner gekürt|gewinner des|results are in|hand-pick|hand pick'])) return { grund: 'schon entschieden' };
   const jetztMs = new Date(jetzt).getTime();
   const bis = it.bis || englischeFrist(`${it.titel} ${it.langtext || it.beschreibung || ''}`, jetzt);
   if (bis && Date.parse(bis) <= jetztMs) return { grund: 'Einsendeschluss vorbei' };
@@ -100,6 +119,34 @@ async function audius(holeText, r) {
   catch (e) { return { items: [], fehler: [`Audius: ${e.message}`] }; }
 }
 
+// ---------------------------------------------------------------- Contest-Listen ohne Datum (Beatportal)
+// Echte Seite www.beatportal.com/communities/630379-remix-contests (Lauf 08.11.2026): Karten
+// <a href="https://www.beatportal.com/articles/<id>-<slug>"> … <h3>Titel</h3>, neueste zuerst (IDs fallen streng:
+// 1707024 Phantogram, 1699075 Cerrone, 1678336 …). Die Seite nennt kein Datum. Deshalb: nur Karten ÜBER der neuesten
+// Karte, die Google News mit Datum kennt (Cerrone, 10 Tage) – die sind höchstens so alt wie sie (datum = ihr Datum).
+// Ohne so einen Anker kommt aus der Liste nichts (kein Raten).
+export function leseBeatportalListe(html) {
+  const out = [];
+  for (const m of String(html || '').matchAll(/href="(https:\/\/www\.beatportal\.com\/articles\/(\d+)-[^"]+)"[^>]*>[\s\S]{0,4000}?<h3[^>]*>([^<]{3,240})<\/h3>/g)) {
+    if (out.some(x => x.link === m[1])) continue;
+    out.push({ link: m[1], id: Number(m[2]), titel: entities(m[3]).replace(/\s+/g, ' ').trim() });
+  }
+  return out;
+}
+const titelKern = t => norm(String(t || '').replace(/\s+[-–]\s+[^-–]{2,40}$/, ''));
+/** Karten einer Liste (neueste zuerst) mit Datum aus anderen Quellen: alles über dem neuesten datierten Anker. */
+export function datiereListe(karten, items, { herkunft = 'Beatportal' } = {}) {
+  const bekannt = new Map();
+  for (const it of items) if (Number.isFinite(Date.parse(it.datum || ''))) bekannt.set(titelKern(it.titel), it);
+  for (let i = 0; i < karten.length; i++) {
+    if (i > 0 && !(karten[i].id < karten[i - 1].id)) return []; // Reihenfolge nicht belegt -> nichts
+    const anker = bekannt.get(titelKern(karten[i].titel));
+    if (!anker) continue;
+    return karten.slice(0, i).map(k => ({ titel: k.titel, link: k.link, beschreibung: '', datum: anker.datum, herkunft, spaetestens: true, ankerTitel: anker.titel }));
+  }
+  return [];
+}
+
 export const SO_REMIX = 'Contest öffnen, Regeln lesen (Rechte, Format, Länge), Stems laden und den Remix vor dem Einsendeschluss hochladen. Titel: „Songname (Xander Fox Remix)“.';
 
 export default async function remix({ holeText, cfg, jetzt, zustand = {}, env = {} }) {
@@ -114,20 +161,29 @@ export default async function remix({ holeText, cfg, jetzt, zustand = {}, env = 
   const { items, fehler } = await sammleFeeds(holeText, feeds, { jetzt, maxAlterTage: alter });
   const a = await audius(holeText, r);
   fehler.push(...a.fehler);
+  for (const l of r.listen || []) {
+    if (l.aktiv === false) continue;
+    try { items.push(...datiereListe(leseBeatportalListe(await holeText(l.url, { headers: { accept: 'text/html' } })), items, { herkunft: l.name })); }
+    catch (e) { fehler.push(`${l.name}: ${e.message}`); }
+  }
   const eintraege = [];
-  const gesehen = new Set();
+  const gesehen = new Set(), kerne = [];
   for (const it of [...a.items, ...items]) {
     const b = bewerteRemix(it, r, jetzt);
     if (!b.ok) continue;
     const k = norm(it.titel).replace(/ - [^-]+$/, '').slice(0, 60);
-    if (gesehen.has(k)) continue;
+    const kern = kernWoerter(it.titel);
+    if (gesehen.has(k) || kerne.some(x => gleicherContest(x, kern))) continue;
     gesehen.add(k);
-    const wert = 45 + Math.min(3, b.genre) * 10 + (b.stems ? 10 : 0) + (b.frist ? 10 : 0) - (b.passt ? 0 : 10);
+    kerne.push(kern);
+    // Stil vorne (Xander: Synth-Pop/80er/Elektro/Darkwave/Italo): ein offener Contest mit Frist + Stems (45 + 20 − 25)
+    // bleibt unter jedem passenden (ab 45 + 10)
+    const wert = 45 + Math.min(3, b.genre) * 10 + (b.stems ? 10 : 0) + (b.frist ? 10 : 0) - (b.passt ? 0 : 25);
     const quelle = it.herkunft || it.feed;
     eintraege.push(eintrag({
       kategorie: 'remix', titel: it.titel, quelle, link: it.link, datum: it.datum, jetzt,
       bis: b.bis, bisQuelle: b.bis ? (it.herkunft === 'Audius' ? 'feld' : 'text') : null, art: 'aufruf',
-      zeile: ['Remix-Contest', b.passt ? 'passt zu deinem Stil' : 'offen – dein Synth-Pop-Remix geht auch', b.stems ? 'mit Stems' : '', b.frist ? `Einsendeschluss ${datumDe(b.frist)}` : 'Einsendeschluss im Link'].filter(Boolean).join(' · '),
+      zeile: ['Remix-Contest', b.passt ? 'passt zu deinem Stil' : 'offen – dein Synth-Pop-Remix geht auch', b.stems ? 'mit Stems' : '', b.frist ? `Einsendeschluss ${datumDe(b.frist)}` : 'Einsendeschluss im Link', it.spaetestens ? `neu auf ${quelle}` : ''].filter(Boolean).join(' · '),
       soGehts: SO_REMIX, wert, sofort: b.sofort, grund: 'Remix-Contest',
       extra: {
         art: 'remix', typ: 'remix', stems: b.stems, passt: b.passt, genreTreffer: b.genre, online: true, ort: 'online', km: null,

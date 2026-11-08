@@ -61,10 +61,13 @@ export async function lauf({ env = process.env, fetchImpl = globalThis.fetch, je
   }
   // Seiten-Quelle: nur die einzelnen kaputten Seiten aus dem Altbestand übernehmen
   const quelleKaputt = (q, x) => kaputt.has(q) || (q.startsWith('seite:') && !seitenGeprueft.includes(q.slice(6))) || bandKaputt.has(`${q}|${x?.band}`);
-  const alleK = mitAltbestand(konzerte, vorher.konzerte, quelleKaputt);
+  // Altbestand von vor der Tribute-Regel (08.11.2026, Einträge ohne „zuordnung“) nie wiederbeleben: darunter waren
+  // „Strangelove – The DEPECHE MODE Experience“ & Co. Fällt Eventim für eine Band aus, fehlen ihre alten Termine dann einmal.
+  const vorRegel = x => ['eventim', 'ticketmaster', 'mbevents'].includes(x.quelle) && !x.zuordnung;
+  const alleK = mitAltbestand(konzerte, vorher.konzerte.filter(x => !vorRegel(x)), quelleKaputt);
   const alleR = mitAltbestand(releases, vorher.releases, quelleKaputt);
 
-  for (const k of alleK) if ((k.lat == null || k.lon == null) && k.stadt) Object.assign(k, await koordinaten(k.stadt, k.land, geoCache, http) || {});
+  for (const k of alleK) if ((k.lat == null || k.lon == null) && (k.stadt || k.plz)) Object.assign(k, await koordinaten(k.stadt, k.land, geoCache, http, k.plz) || {});
 
   const erg = verarbeite({ konzerte: alleK, releases: alleR, gesehen, config, heute, jetzt: jetzt.toISOString(), seitenGeprueft });
   const ziel = { server: config.ntfy.server, topic: env.NTFY_TOPIC || config.ntfy.topic, token: env.NTFY_TOKEN };

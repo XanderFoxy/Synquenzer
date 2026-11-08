@@ -10,20 +10,29 @@ export const STAEDTE = {
   'riesa': [51.3077, 13.2939], 'meissen': [51.1634, 13.4737], 'freiberg': [50.9119, 13.3428], 'wroclaw': [51.1079, 17.0385],
   'hamburg': [53.5511, 9.9937], 'munchen': [48.1351, 11.582], 'koln': [50.9375, 6.9603], 'hannover': [52.3759, 9.732],
   'nurnberg': [49.4521, 11.0767], 'frankfurt am main': [50.1109, 8.6821], 'hildesheim': [52.1508, 9.9511],
+  // Eventim schreibt „Insel Usedom“ (Kaiserbäder Open Air, PLZ 17424 Heringsdorf) – Nominatim kennt das nicht (echter Lauf 08.11.)
+  'insel usedom': [53.9536, 14.1647],
 };
 
-export async function koordinaten(stadt, land, cache, http) {
+/** Stadt (+ Land) -> { lat, lon } | null. Findet Nominatim die Stadt nicht, hilft die Postleitzahl (Eventim liefert sie
+ *  immer mit): 5 Ziffern = DE, 4 Ziffern = AT/CH, sofern kein Land angegeben ist. Beides wird gecacht, auch „nicht gefunden“. */
+export async function koordinaten(stadt, land, cache, http, plz = '') {
   const k = norm(stadt);
-  if (!k) return null;
-  if (STAEDTE[k]) return { lat: STAEDTE[k][0], lon: STAEDTE[k][1] };
-  const ck = `${k}|${land || ''}`;
-  if (ck in cache) return cache[ck];
-  if (!http) return null;
-  try {
-    const q = new URLSearchParams({ city: stadt, format: 'json', limit: '1' });
-    if (land) q.set('countrycodes', land.toLowerCase());
-    const j = await http.get(`https://nominatim.openstreetmap.org/search?${q}`);
-    cache[ck] = j[0] ? { lat: Number(j[0].lat), lon: Number(j[0].lon) } : null;
-  } catch { return null; } // nicht cachen → nächster Lauf versucht es erneut
-  return cache[ck];
+  if (k && STAEDTE[k]) return { lat: STAEDTE[k][0], lon: STAEDTE[k][1] };
+  const p = String(plz || '').trim();
+  const versuche = [];
+  if (k) versuche.push([`${k}|${land || ''}`, { city: stadt }, land]);
+  if (/^\d{4,5}$/.test(p)) versuche.push([`plz ${p}|${land || ''}`, { postalcode: p }, land || (p.length === 5 ? 'de' : 'at,ch')]);
+  for (const [ck, frage, cc] of versuche) {
+    if (ck in cache) { if (cache[ck]) return cache[ck]; continue; }
+    if (!http) continue;
+    try {
+      const q = new URLSearchParams({ ...frage, format: 'json', limit: '1' });
+      if (cc) q.set('countrycodes', cc.toLowerCase());
+      const j = await http.get(`https://nominatim.openstreetmap.org/search?${q}`);
+      cache[ck] = j[0] ? { lat: Number(j[0].lat), lon: Number(j[0].lon) } : null;
+    } catch { continue; } // nicht cachen → nächster Lauf versucht es erneut
+    if (cache[ck]) return cache[ck];
+  }
+  return null;
 }

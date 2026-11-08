@@ -1,0 +1,53 @@
+{
+ "stand": "2026-11-08T01:49:28.032Z",
+ "quellen": {
+  "ticketmaster": {
+   "ok": true,
+   "treffer": 0,
+   "fehler": [],
+   "uebersprungen": "kein TM_KEY gesetzt",
+   "ms": 0
+  },
+  "eventim": {
+   "ok": true,
+   "treffer": 49,
+   "fehler": [],
+   "uebersprungen": null,
+   "ms": 12241
+  },
+  "seiten": {
+   "ok": false,
+   "treffer": 0,
+   "fehler": [
+    "Gothic meets Klassik: fetch failed"
+   ],
+   "uebersprungen": null,
+   "ms": 10896,
+   "geprueft": 3,
+   "gesamt": 4
+  },
+  "musicbrainz": {
+   "ok": true,
+   "treffer": 7,
+   "fehler": [],
+   "uebersprungen": null,
+   "ms": 12242
+  },
+  "mbevents": {
+   "ok": true,
+   "treffer": 0,
+   "fehler": [],
+   "uebersprungen": null,
+   "ms": 12431
+  },
+  "deezer": {
+   "ok": true,
+   "treffer": 3,
+   "fehler": [],
+   "uebersprungen": null,
+   "ms": 2364
+  }
+ },
+ "pushes": 8,
+ "erstlauf": false
+}

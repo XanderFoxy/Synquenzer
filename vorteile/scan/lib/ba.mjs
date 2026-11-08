@@ -33,26 +33,47 @@ export function baWebUrl(s) {
 }
 
 const erstes = (...xs) => xs.find(x => x != null && x !== '');
+const tagVon = x => (typeof x === 'string' && /^\d{4}-\d{2}-\d{2}/.test(x) ? x.slice(0, 10) : null);
+const spaetester = (...xs) => xs.map(tagVon).filter(Boolean).sort().at(-1) ?? null;
 
-/** Antwort (v4 oder v6) -> [{ refnr, titel, beruf, arbeitgeber, ort, plz, lat, lon, datum, homeoffice, externeUrl }] */
+/**
+ * Antwort (v4 oder v6) -> [{ refnr, titel, beruf, arbeitgeber, ort, plz, lat, lon, km, datum, seit, homeoffice,
+ * homeofficeProzent, externeUrl }]
+ * v6 (echter Lauf 08.11.2026, Roh-Lauf 42435892574): { ergebnisliste: [{ referenznummer, stellenangebotsTitel,
+ * hauptberuf, firma, stellenlokationen: [{ adresse: { ort: "Chemnitz, Sachsen", plz }, breite, laenge }], entfernung
+ * (km ab „wo“), datumErsteVeroeffentlichung, veroeffentlichungszeitraum: { von }, aenderungsdatum, homeofficemoeglich,
+ * homeofficetyp, homeofficeprozent, externeURL }], maxErgebnisse, woOutput }. Vorher las leseBa nur v4-Namen
+ * (stellenangebote/refnr/titel/arbeitsort) -> 0 Stellen, obwohl die Jobbörse 200 mit Treffern lieferte.
+ * datum = jüngstes von aktueller Veröffentlichung und letzter Änderung (v6 beachtet „veroeffentlichtseit“ nicht:
+ * Facette veroeffentlichtseit.alle = alle Treffer, auch von 2023), seit = erste Veröffentlichung.
+ */
 export function leseBa(text) {
   const j = typeof text === 'string' ? JSON.parse(text) : text;
-  const liste = j?.stellenangebote || j?.jobs || j?.ergebnisse || j?.content || j?._embedded?.jobs || [];
+  const liste = j?.stellenangebote || j?.ergebnisliste || j?.jobs || j?.ergebnisse || j?.content || j?._embedded?.jobs || [];
   return (Array.isArray(liste) ? liste : []).map(st => {
-    const o = st.arbeitsort || st.arbeitsorte?.[0] || st.ort || {};
+    const lok = st.stellenlokationen?.[0] || null;
+    const o = st.arbeitsort || st.arbeitsorte?.[0] || lok?.adresse || st.ort || {};
     const k = o.koordinaten || o.koordinate || {};
+    const ortRoh = erstes(typeof o === 'string' ? o : o.ort, o.stadt, '');
+    const km = Number(st.entfernung);
     return {
       refnr: erstes(st.refnr, st.referenznummer, st.hashId),
-      titel: erstes(st.titel, st.stellenangebotsTitel, st.stellenbezeichnung, st.beruf, ''),
+      titel: erstes(st.titel, st.stellenangebotsTitel, st.stellenbezeichnung, st.beruf, st.hauptberuf, ''),
       beruf: erstes(st.beruf, st.hauptberuf, ''),
-      arbeitgeber: erstes(st.arbeitgeber, st.arbeitgeberName, st.firma, ''),
-      ort: erstes(typeof o === 'string' ? o : o.ort, o.stadt, ''),
+      arbeitgeber: String(erstes(st.arbeitgeber, st.arbeitgeberName, st.firma, '')).replace(/\s+/g, ' ').trim(),
+      // „Chemnitz, Sachsen“ / „Neubrandenburg, Mecklenburg“ -> „Chemnitz“ (Land/Region nach dem Komma weg)
+      ort: String(ortRoh).split(',')[0].trim(),
       plz: erstes(o.plz, ''),
-      lat: k.lat ?? k.latitude ?? null,
-      lon: k.lon ?? k.longitude ?? null,
-      datum: erstes(st.aktuelleVeroeffentlichungsdatum, st.veroeffentlichungsdatum, st.datumErsteVeroeffentlichung, st.modifikationsTimestamp, null),
+      lat: k.lat ?? k.latitude ?? lok?.breite ?? null,
+      lon: k.lon ?? k.longitude ?? lok?.laenge ?? null,
+      km: Number.isFinite(km) && st.entfernung !== '' && st.entfernung != null ? Math.round(km) : null,
+      datum: erstes(st.aktuelleVeroeffentlichungsdatum, spaetester(st.veroeffentlichungszeitraum?.von, st.aenderungsdatum, st.datumErsteVeroeffentlichung), st.veroeffentlichungsdatum, st.modifikationsTimestamp, null),
+      seit: tagVon(st.datumErsteVeroeffentlichung) || tagVon(st.veroeffentlichungsdatum) || null,
       homeoffice: st.homeofficemoeglich === true || st.homeoffice === true || /homeoffice|home-office/i.test(String(st.arbeitszeitmodelle || '')),
-      externeUrl: erstes(st.externeUrl, null),
+      homeofficeProzent: Number.isFinite(Number(st.homeofficeprozent)) && st.homeofficeprozent != null ? Number(st.homeofficeprozent) : null,
+      externeUrl: erstes(st.externeUrl, st.externeURL, null),
+      // v6: nur Vollzeit angekreuzt (kein Teilzeit-/Abend-/Flexibel-Feld) – für Nebenverdienst ungeeignet
+      nurVollzeit: st.arbeitszeitVollzeit === true && !['arbeitszeitTeilzeitVormittag', 'arbeitszeitTeilzeitNachmittag', 'arbeitszeitTeilzeitAbend', 'arbeitszeitTeilzeitFlexibel', 'arbeitszeitSchichtNachtWochenende'].some(k => st[k] === true),
     };
   }).filter(x => x.refnr);
 }

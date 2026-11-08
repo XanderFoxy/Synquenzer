@@ -159,14 +159,16 @@ export function abAus(text, jetzt = new Date()) {
  * art: Schlüssel in HOECHSTALTER_STUNDEN (Anzeigefenster, wenn kein Ende bekannt ist).
  * Ergebnis: { bis, bisQuelle ('feld'|'deal-seite'|'text'|null), ab, sichtbarBis }
  *   sichtbarBis = bis, wenn bekannt; sonst Veröffentlichung + Höchstalter (Preisfehler: immer höchstens 24 h).
+ * fensterAb/fensterStunden (optional): Anzeigefenster ab einem anderen Zeitpunkt bzw. mit anderer Länge – z. B. Stellen
+ *   der Jobbörse: die Liste zeigt nur offene Stellen, also gilt das Fenster ab dem Lauf, der sie gesehen hat.
  */
-export function bestimmeEnde({ bis = null, bisQuelle = null, ab = null, text = '', datum = null, art = 'deal', jetzt = new Date() } = {}) {
+export function bestimmeEnde({ bis = null, bisQuelle = null, ab = null, text = '', datum = null, art = 'deal', jetzt = new Date(), fensterAb = null, fensterStunden = null } = {}) {
   let b = bis && Number.isFinite(Date.parse(bis)) ? new Date(bis).toISOString() : null;
   let q = b ? bisQuelle || 'feld' : null;
   if (!b && text) { const e = endeAusFuer(text, datum, jetzt); if (e) { b = e.bis; q = 'text'; } }
   const a = ab && Number.isFinite(Date.parse(ab)) ? new Date(ab).toISOString() : text ? abAus(text, jetzt) : null;
-  const pub = Date.parse(datum || '');
-  const fenster = Number.isFinite(pub) ? new Date(pub + (HOECHSTALTER_STUNDEN[art] ?? HOECHSTALTER_STUNDEN.deal) * 3600e3).toISOString() : null;
+  const basis = fensterAb != null && Number.isFinite(new Date(fensterAb).getTime()) ? new Date(fensterAb).getTime() : Date.parse(datum || '');
+  const fenster = Number.isFinite(basis) ? new Date(basis + (fensterStunden ?? HOECHSTALTER_STUNDEN[art] ?? HOECHSTALTER_STUNDEN.deal) * 3600e3).toISOString() : null;
   let sichtbarBis = b || fenster;
   // Preisfehler: nie länger als das Fenster, auch wenn der Text ein späteres Ende nennt
   if (art === 'preisfehler' && fenster && (!sichtbarBis || sichtbarBis > fenster)) sichtbarBis = fenster;

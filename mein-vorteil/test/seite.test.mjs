@@ -68,6 +68,10 @@ const SATZ = {
   vertragB: n => join(FIX, 'vertrag-b', n), // Sonderfälle der zweiten Prüfung (Versand im Preis, Ende nach 24 h, unplausibel)
   // Fassung 5 (werkzeug/baue-v5.mjs): echte Scanner-Läufe mit Remix/Auftritte/Unterricht/Apple-TV-Räumen, kaufDA, Konzerte weit weg
   v5: n => join(FIX, 'v5', n),
+  // Echter Lauf 08.11.2026 01:49 UTC: Ausgaben der drei Wecker unverändert (Roh-Läufe 42435892574/42435894704/42435896710)
+  echt0811: n => join(FIX, 'echt-0811', n),
+  // dieselben echten Antworten, neu gerechnet mit dem reparierten Radar (vorteile/scan/test/fixtures/echt-0811 + zustand)
+  echt0811neu: n => join(FIX, 'echt-0811', n === 'vorteile-aktuell.json' ? 'vorteile-aktuell-neu.json' : n),
 };
 const JETZT_V5 = '2026-11-07T16:35:00Z';
 
@@ -99,7 +103,7 @@ async function oeffne({ satz = 'vertrag', jetzt = JETZT, breite = 428, hoehe = 9
     const n = DATEI[rest];
     if (!n || zustand.fehlt.has(n)) return route.fulfill({ status: 404, headers: { 'access-control-allow-origin': '*' }, body: '' });
     let body;
-    try { body = readFileSync(n === 'filme.json' && zustand.satz !== 'v5' ? join(FIX, 'filme.json') : SATZ[zustand.satz](n)); }
+    try { body = readFileSync(n === 'filme.json' && !['v5', 'echt0811', 'echt0811neu'].includes(zustand.satz) ? join(FIX, 'filme.json') : SATZ[zustand.satz](n)); }
     catch { return route.fulfill({ status: 404, headers: { 'access-control-allow-origin': '*' }, body: '' }); }
     if (patch[n]) { const d = JSON.parse(body); body = JSON.stringify(patch[n](d) ?? d); }
     return route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body });
@@ -1262,7 +1266,8 @@ test('Remix „Mitmachen“ und Unterricht „Melden“ (v5): Frist, Stems, Name
 test('Nie leer mit älteren Daten (ohne Kategorien remix/auftritte/unterricht): feste Adressen, Preisfehler- und Gewinnspiel-Fundorte', { skip: ohnePw }, async () => {
   const patch = { 'vorteile-aktuell.json': d => { d.kategorien.tests = []; } };
   const { ctx, page, fehler } = await oeffne({ satz: 'v2', patch });
-  for (const [b, muster] of [['auftritte', /Gerade keine neue Ausschreibung[\s\S]*Hier geht immer was\s*9[\s\S]*7:77 – Die Open Stage[\s\S]*Wave-Gotik-Treffen[\s\S]*4 weitere Adressen/i], ['remix', /Hier gibt es laufend Contests\s*5/i], ['unterricht', /Hier kannst du dich immer melden\s*5[\s\S]*Jobbörse/i],
+  // feste Adressen der Seite: 7 (gigmit seit dem 404 vom 08.11.2026 nur noch die Startseite statt 3 Stadt-Links)
+  for (const [b, muster] of [['auftritte', /Gerade keine neue Ausschreibung[\s\S]*Hier geht immer was\s*7[\s\S]*7:77 – Die Open Stage[\s\S]*Wave-Gotik-Treffen[\s\S]*2 weitere Adressen/i], ['remix', /Hier gibt es laufend Contests\s*5/i], ['unterricht', /Hier kannst du dich immer melden\s*5[\s\S]*Jobbörse/i],
     ['preisfehler', /Gerade kein krasser Preisfehler[\s\S]*Hier tauchen sie zuerst auf[\s\S]*mydealz: Gruppe Preisfehler/i], ['gewinnspiele', /Gerade kein laufendes Gewinnspiel ohne Kauf[\s\S]*mydealz: Gruppe Gewinnspiele/]]) {
     await springe(page, b);
     assert.match(nbsp(await page.locator('#' + b).innerText()), muster, b);
@@ -1358,3 +1363,97 @@ for (const [breite, hoehe, lage] of [[428, 926, 'hoch'], [926, 428, 'quer']]) {
     });
   }
 }
+
+// Echter Lauf 08.11.2026 01:49 UTC (Sonntag): die Seite um 08:30 Uhr mit genau diesen Daten
+const JETZT_0811 = '2026-11-08T07:30:00Z';
+const SOLL_PRODUKTE = { 'softys-fruchtmix': /nimm2 Lachgummi Softies Fruchtmix[\s\S]*0,99 €/, 'softys-rote-fruechte': /nimm2 Lachgummi Softies Rote Früchte[\s\S]*0,99 €/, 'zetti-knusperflocken': /Zetti Knusperflocken XXL[\s\S]*2,99 €/, leckermaeulchen: /Leckermäulchen Milchquark[\s\S]*1,19 €/, 'exquisa-frischkaese': /Exquisa Frischkäse[\s\S]*1,11 €/, 'exquisa-quark': /Exquisa Quark[\s\S]*1,49 €/ };
+
+for (const [breite, hoehe, lage] of [[428, 926, 'hoch'], [926, 428, 'quer']]) {
+  test(`Echter Lauf 08.11. (Ausgaben der Wecker unverändert, ${lage}): jeder Bereich richtig und nie leer`, { skip: ohnePw }, async () => {
+    const { ctx, page, fehler } = await oeffne({ satz: 'echt0811', jetzt: JETZT_0811, breite, hoehe });
+    const kacheln = page.locator('#kacheln a.kachel');
+    for (const k of await kacheln.all()) assert.ok(await k.locator('li').count() >= 1, await k.innerText());
+    const kachel = b => page.locator(`#kacheln a[data-sprung="${b}"]`).innerText().then(nbsp);
+    // Sonntag: alle 11 Angebote beginnen erst Montag/Donnerstag – die Kachel nennt sie (vorher: „gerade kein Angebot“)
+    assert.match(await kachel('deals'), /Haribo Colorado\s*ab morgen · 0,66 € bei Netto Marken-Discount[\s\S]*11 Angebote starten bald/);
+    assert.doesNotMatch(await kachel('deals'), /gerade kein Angebot/);
+    assert.match(await kachel('filme'), /Manta Manta \(1991\) für 3,99 €/);
+    assert.doesNotMatch(await kachel('filme'), /Apple TV 4K/, 'Gerät aus alten Daten nicht als Film');
+    assert.match(await kachel('konzerte'), /Depeche Mode\s*19\.11\. · Berlin · 157 km/);
+    assert.match(await kachel('preisfehler'), /Blutorangen[\s\S]*25,12 € statt 104,66 €/);
+    const soll = {
+      deals: /Kein Top-Deal gerade, aber 11 Angebote zu deinen Produkten[\s\S]*Bald günstig\s*2[\s\S]*Weitere Angebote\s*9/i,
+      preisfehler: /1 krasser Preisfehler[\s\S]*Blutorangen[\s\S]*du sparst 79,54 € \(−76 %\)/,
+      auftritte: /Frische Ausschreibungen[\s\S]*Hier geht immer was\s*9/i,
+      remix: /5 laufende Contests[\s\S]*Amnesia von ALICIAMUSIC[\s\S]*Hier gibt es laufend Contests\s*5/i,
+      unterricht: /Hier kannst du dich immer melden\s*5[\s\S]*Jobbörse: Deutschlehrer-Stellen rund um Döbeln/i,
+      konzerte: /Depeche Mode/,
+      gewinnspiele: /mydealz: Gruppe Gewinnspiele/,
+      krypto: /Bitcoin/,
+      mehr: /Erleben[\s\S]*Reisen/,
+    };
+    for (const b of BEREICHE.slice(1)) {
+      await springe(page, b);
+      const t = nbsp(await page.locator('#' + b).innerText());
+      assert.doesNotMatch(t, /Lade …|lädt …/, b);
+      assert.match(t, soll[b], b);
+      await pruefeLayout(page, `echt0811 ${lage} ${b}`);
+      await page.screenshot({ path: join(SHOTS, `echt0811-${b}-${lage}.png`) });
+    }
+    // Deals: Lachgummi Softies, Knusperflocken XXL, Leckermäulchen, Exquisa sichtbar – mit Preis
+    await springe(page, 'deals');
+    for (const [id, re] of Object.entries(SOLL_PRODUKTE)) {
+      const karte = page.locator(`#deals [data-produkt="${id}"]`);
+      assert.equal(await karte.isVisible(), true, id);
+      assert.match(nbsp(await karte.innerText()), re, id);
+    }
+    // ohne Angebot: „zuletzt gesehen“ mit Preis, Ort und Monat
+    await aufklappen(page, '#produkte');
+    assert.match(nbsp(await page.locator('#produkte .ohne-angebot').innerText()), /Lorenz Crunchips X-Cut\s*Gerade kein Angebot[^\n]*zuletzt gesehen 1,49 € \(130 g\) bei Action, Okt\. 2026/);
+    // Filme: eigener Reiter, Angebote ohne das Gerät „Apple TV 4K (2026)“ aus der mydealz-Gruppe
+    await page.locator('.sprung a[data-reiter="filme"]').click();
+    await page.waitForFunction(() => /Wunschliste/.test(document.getElementById('i-filme').textContent));
+    await page.locator('#i-filme [data-fi-chip="angebot"]').click();
+    const f = nbsp(await page.locator('#i-filme').innerText());
+    assert.match(f, /Manta Manta[\s\S]*Flash Gordon/);
+    assert.doesNotMatch(f, /Apple TV 4K/);
+    await page.screenshot({ path: join(SHOTS, `echt0811-filme-${lage}.png`) });
+    assert.deepEqual(fehler, []);
+    await ctx.close();
+  });
+}
+
+test('Echter Lauf 08.11. neu gerechnet (repariertes Radar): 7 Stellen, Bernburg, Cerrone/Phantogram, gigmit „Link prüfen“', { skip: ohnePw }, async () => {
+  for (const [breite, hoehe, lage] of [[428, 926, 'hoch'], [926, 428, 'quer']]) {
+    const { ctx, page, fehler } = await oeffne({ satz: 'echt0811neu', jetzt: JETZT_0811, breite, hoehe });
+    assert.match(nbsp(await page.locator('#kacheln a[data-sprung="unterricht"]').innerText()), /Dozent DaF\/DaZ, Lehrkraft allg\. Integrationsk…?[\s\S]*Döbeln · hier/);
+    assert.equal(await zahlIn(page, 'unterricht').innerText(), '7');
+    await springe(page, 'unterricht');
+    const u = page.locator('#unterricht');
+    assert.match(nbsp(await text(page, '#w-unterricht')), /7 frische Funde, davon 5 bis 60 km – dazu 5 feste Adressen\./);
+    const erste = nbsp(await u.locator('article').first().innerText());
+    assert.match(erste, /^Integrationskurs\s*Döbeln · hier\s*MIQR GmbH\s*Jobbörse der Arbeitsagentur\s*Dozent DaF\/DaZ, Lehrkraft allg\. Integrationskurse\s*online seit 24\.08\.2026\s*Melden als Deutsch mit Xander/);
+    assert.equal(await u.locator('article').first().locator('a.zweit-link').getAttribute('href'), 'https://www.arbeitsagentur.de/jobsuche/jobdetail/10001-1003587012-S');
+    await pruefeLayout(page, `echt0811neu ${lage} unterricht`);
+    await page.screenshot({ path: join(SHOTS, `echt0811neu-unterricht-${lage}.png`) });
+    await springe(page, 'auftritte');
+    const a = page.locator('#auftritte');
+    assert.match(nbsp(await a.locator('article').first().innerText()), /^Bandcontest\s*Bernburg · 122 km\s*Mitteldeutsche Zeitung\s*Musiker gesucht - wer möchte bei Band-Wettbewerb zum Kulturmarkt in Bernburg mitmachen\?\s*Bewerben als One Day in Rome/);
+    assert.doesNotMatch(nbsp(await a.innerText()), /METAL HAMMER|gigmit: offene Gig-Angebote in/);
+    await a.locator('button.mehr[data-mehr="auftritte-fund"]').click();
+    assert.match(nbsp(await a.innerText()), /gigmit: Gig-Angebote von Veranstaltern \(Künstlerprofil\)\s*deutschlandweit · Veranstalter suchen Acts[^\n]*· Link prüfen/);
+    await pruefeLayout(page, `echt0811neu ${lage} auftritte`);
+    await springe(page, 'remix');
+    const r = page.locator('#remix');
+    assert.match(nbsp(await text(page, '#w-remix')), /^8 laufende Contests/);
+    await r.locator('button.mehr[data-mehr="remix"]').click();
+    const rt = nbsp(await r.innerText());
+    assert.match(rt, /Remix Cerrone’s “Love In C Minor” for Its 50th Anniversary\n/, 'Quelle „- Beatportal“ nicht doppelt im Titel');
+    assert.match(rt, /Phantogram Launch “Funeral Pyre” Remix Contest With \$1,000 Prize\s*[^\n]*neu auf Beatportal/);
+    assert.ok((rt.match(/True Damage/g) || []).length <= 1, 'derselbe Riot-Contest nie doppelt (um 08:30 ist er nach 30 Tagen schon abgelaufen)');
+    await pruefeLayout(page, `echt0811neu ${lage} remix`);
+    await page.screenshot({ path: join(SHOTS, `echt0811neu-remix-${lage}.png`) });
+    assert.deepEqual(fehler, []);
+    await ctx.close();
+  }
+});

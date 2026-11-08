@@ -66,7 +66,8 @@ export async function lauf({ cfg, wunschliste, filmListen = null, dateienVorher 
         ? true : !r.eintraege.length && r.fehler.length > 0;
       // Fundorte immer frisch aus der config (Link-Prüfung, Saison, neue/gestrichene Adressen), nur die alten Funde bleiben
       kategorien[name] = kaputt && nurFundorte ? [...alt.filter(e => !e.extra?.fundort), ...r.eintraege] : kaputt ? alt : r.eintraege;
-      status[name] = { ok: !r.fehler.length, anzahl: r.eintraege.length, fehler: r.fehler.slice(0, 10), ms: Date.now() - t0, stand: new Date(jetztMs).toISOString(), ...(r.hinweise?.length ? { hinweise: r.hinweise.slice(0, 10) } : {}) };
+      // gesperrt (HTTP 401): Quelle still aus, zählt nicht als Fehler
+      status[name] = { ok: !r.fehler.length, anzahl: r.eintraege.length, fehler: r.fehler.slice(0, 10), ms: Date.now() - t0, stand: new Date(jetztMs).toISOString(), ...(r.hinweise?.length ? { hinweise: r.hinweise.slice(0, 10) } : {}), ...(r.gesperrt?.length ? { gesperrt: r.gesperrt.slice(0, 10) } : {}) };
       if (!zustand.lauf[name] && zustand.gemeldet && !kaputt) neueModule.push(name);
       zustand.lauf[name] = new Date(jetztMs).toISOString();
     } catch (e) {
@@ -82,7 +83,8 @@ export async function lauf({ cfg, wunschliste, filmListen = null, dateienVorher 
   for (const [name, liste] of Object.entries(kategorien)) {
     kategorien[name] = liste
       .filter(e => !(e.frist && tageBis(e.frist, new Date(jetztMs)) < 0))
-      .filter(e => !e.datum || (jetztMs - Date.parse(e.datum)) / 864e5 <= (MAX_ALTER_TAGE[name] ?? 21))
+      // bekanntes Ende in der Zukunft geht vor dem Alter (Audius-Contest vom 17.09. mit Einsendeschluss 01.12., Lauf 08.11.2026)
+      .filter(e => !e.datum || (e.bis && Date.parse(e.bis) >= jetztMs) || (jetztMs - Date.parse(e.datum)) / 864e5 <= (MAX_ALTER_TAGE[name] ?? 21))
       .sort((a, b) => (b.extra?.sortWert ?? b.wert) - (a.extra?.sortWert ?? a.wert))
       .slice(0, 40);
   }

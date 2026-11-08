@@ -137,9 +137,9 @@ test('Remix-Contest mit „Bands gesucht“ steht nur unter Remix (nicht doppelt
 });
 
 test('Remix: kaputte Quelle landet im Status, die anderen laufen weiter', async () => {
-  const kaputt = async url => { if (url.includes('edmidentity') || url.includes('audius')) throw new Error('HTTP 526'); return holeText(url); };
+  const kaputt = async url => { if (url.includes('rekkerd') || url.includes('audius')) throw new Error('HTTP 526'); return holeText(url); };
   const { eintraege, fehler } = await remix({ holeText: kaputt, cfg, jetzt: JETZT });
-  assert.ok(fehler.some(f => /^EDM Identity „remix contest“: HTTP 526/.test(f)), fehler.join(' | '));
+  assert.ok(fehler.some(f => /^Rekkerd „remix contest“: HTTP 526/.test(f)), fehler.join(' | '));
   assert.ok(fehler.some(f => /^Audius: HTTP 526/.test(f)), fehler.join(' | '));
   assert.equal(funde(eintraege).length, 5, funde(eintraege).map(e => e.titel).join(" | ")); // nur noch Google News
 });

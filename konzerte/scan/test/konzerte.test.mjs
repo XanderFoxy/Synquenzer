@@ -150,7 +150,7 @@ test('Gesamtlauf: kaputte Quelle stoppt nichts, Pushes mit Link, Dedupe Ã¼ber LÃ
   assert.equal(posts.length, 1); // nur die Willkommens-Nachricht
   assert.equal(r1.status.kaputt.ok, false);
   // neues Konzert taucht auf
-  const mehr = async () => ({ konzerte: [...tmParse(fj('tm-alphaville.json'), ALPHA), { quelle: 'ticketmaster', band: 'Alphaville', titel: 'Alphaville', datum: '2027-06-06', zeit: '', ort: 'Alter Schlachthof', stadt: 'Dresden', lat: 51.07, lon: 13.73, link: 'https://tickets/dd', festival: false, status: '' }] });
+  const mehr = async () => ({ konzerte: [...tmParse(fj('tm-alphaville.json'), ALPHA), { quelle: 'ticketmaster', band: 'Alphaville', titel: 'Alphaville', datum: '2027-06-06', zeit: '', ort: 'Alter Schlachthof', stadt: 'Dresden', lat: 51.07, lon: 13.73, link: 'https://tickets/dd', festival: false, status: '', zuordnung: 'kuenstler' }] });
   await lauf({ env, fetchImpl, jetzt, quellen: [['kaputt', kaputt], ['ticketmaster', mehr]] });
   assert.equal(posts.length, 2);
   assert.equal(posts[1].topic, 'test-topic');

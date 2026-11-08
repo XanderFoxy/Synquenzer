@@ -16,10 +16,12 @@ export const FIXTURE_KARTE = [
   ['hl=en-US', 'news-remix-en.xml'],
   ['q=Remix', 'news-remix-de.xml'],
   ['remixcomps.com/feed', 'remixcomps-feed.xml'],
-  // Modul remix: Audius-API (Format laut AudiusProject/api PR #780), WordPress-Suchfeed (EDM Identity); andere WP-Feeds leer
+  // Modul remix: Audius-API (Format laut AudiusProject/api PR #780), WordPress-Suchfeed (Rekkerd; EDM Identity ist seit dem
+  // 403 vom 08.11.2026 raus); andere WP-Feeds leer; Beatportal-Liste = echte Seite vom 08.11.2026 (gekürzt)
   ['api.audius.co/v1/events/remix-contests', 'audius-remix-contests.json'],
-  ['edmidentity.com/?s=', 'wp-suche-remix.xml'],
-  // Modul auftritte: Google News (Bands gesucht, Open Stage), gigmit-Stadtseiten (JSON-LD)
+  ['rekkerd.org/?s=', 'wp-suche-remix.xml'],
+  ['beatportal.com/communities/630379-remix-contests', 'echt-0811/beatportal-remix-contests-gekuerzt.html'],
+  // Modul auftritte: Google News (Bands gesucht, Open Stage), Seiten mit JSON-LD (nur im Test über cfg.seiten: gigmit-Fixture)
   ['q=Bands%20gesucht%20Sachsen', 'news-bands-gesucht.xml'],
   ['q=Open%20Stage%20Leipzig', 'news-auftritte.xml'],
   ['gigmit.com/en/gigs/leipzig', 'gigmit-leipzig.html'],

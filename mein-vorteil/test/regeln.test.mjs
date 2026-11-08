@@ -77,3 +77,16 @@ test('Feste Adressen (Auftritte, Remix, Unterricht): stehen so in vorteile/confi
     }
   }
 });
+
+test('Geräte sind keine Filme: gleiche Regel in Seite (FILM_GERAET), filme.js (GERAET) und Radar (GERAET_TITEL)', async () => {
+  const quelle = (text, name) => { const m = text.match(new RegExp(`const ${name} = (/.+/i);`)); assert.ok(m, name); return m[1]; };
+  const radar = await readFile(join(HIER, '..', '..', 'vorteile', 'scan', 'module', 'filme.mjs'), 'utf8');
+  const filmeJs = await readFile(join(HIER, '..', 'filme.js'), 'utf8');
+  const r = quelle(radar, 'GERAET_TITEL');
+  assert.equal(quelle(SEITE, 'FILM_GERAET'), r);
+  assert.equal(quelle(filmeJs, 'GERAET'), r);
+  const re = new Function(`return ${r}`)();
+  // echte Titel der mydealz-Gruppe apple-tv vom 08.11.2026
+  for (const g of ['Apple TV 4K (2026)', 'Apple TV 4K (4. Generation) 2026 Version AMAZON', 'Apple TV 4K 32GB HDR 1. Generation A1842 MQD22FD (Gebraucht)']) assert.equal(re.test(g), true, g);
+  for (const f of ['Manta Manta (1991) für 3,99 €', 'Flash Gordon ~ 3,99€ | UHD digital | Apple TV', '[Apple TV/Prime Video] Evil Dead Burn in 4K mit Dolby Vision', 'Kingsglaive: Final Fantasy XV ~ 3,99€ | UHD digital | Apple TV']) assert.equal(re.test(f), false, f);
+});
