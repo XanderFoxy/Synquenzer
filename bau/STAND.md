@@ -1,6 +1,6 @@
 # SYNQUENZER – Arbeitsstand (08.11.2026, 15:1x UTC)
 
-Online: 4.53.0 (main). Hier liegen die unfertigen bzw. noch nicht veröffentlichten Stände, damit nichts verloren geht.
+Online: 4.54.0 (main, zum Ausprobieren; Kleinigkeiten folgen als 4.54.1). Hier liegen die unfertigen bzw. noch nicht veröffentlichten Stände, damit nichts verloren geht.
 
 | Ordner (bau/w45/…) | Inhalt | Stand |
 |---|---|---|

@@ -1,3 +1,12 @@
+## 4.54.0 — Begleiter (Band spielt live zu deinen Akkorden), Perform-Spur im Song, Chor rollbar, neue Klänge: Saite, Vokal-Filter, Rauschfarben, Ring, Körnung
+
+- **Begleiter:** AKKORD ▾ über der Tastatur › **BEGLEITER**. Du spielst einen Akkord (oder nur den Grundton) – die Band startet am Taktstrich mit deinen Spuren und Klängen und folgt jedem Wechsel. **INTRO · A · B · FILL · SCHLUSS**, Stil/Spuren/Figur unter STIL ▾. **● AUFN.** legt das Gespielte als Szene an (auf Wunsch ans Song-Ende), ein ↶; ● AUTO nimmt die Band beim neuen Song mit. ✕ = alles wie vorher.
+- **Perform-Spur:** ● SONG nimmt die Perform-Leiste (Stottern, Filter, Gruppen, Blende) als Spur **PERFORM** auf, genau im Takt; Blöcke antippen/verschieben, ein ↶. **Rückung** nimmt jetzt alles außer Drums mit, auch MELODIE.
+- **Chor rollbar:** viele Chor-Spuren sind mindestens 22 px hoch und rollen mit einem Finger in ihrer Gruppe („mehr ↓“), der Rest bleibt stehen; Halten zeigt den vollen Namen.
+- **Neue Klänge:** Welle **Saite** (gezupft, 3 Werksklänge), Filter **Vokal** a-e-i-o-u, **Rauschfarben**, **Ring**, **Körnung**, **Anschlag ±** auf den Filter, **S&H in der Tonart**, Arp **Treppe**, **Oszilloskop** im Klang-Editor-Kopf.
+- Alte Songs und Klänge klingen und speichern wie vorher.
+Tests: Regeln, acorn 0 / doppelte Schlüssel 0, Rauchtest grün; Zusammenspiel 23/23, Begleiter 53/59 (Rest: Bildvergleich + 5/4 hat jetzt einen Stil), Export-Randfälle 31/31, KF2 61/61, KF1 68/73, JAM3 63/67, CHQ 50/52, GEN4 72/72, VOX2 111/111 – offene Punkte sind Bildvergleiche mit älteren Fassungen (Farbkante) und bekannte Kleinigkeiten, die mit 4.54.1 kommen.
+
 ## 4.53.0 — Stil auf Szene/Song/alles mit Taktarten, Dur↔Moll je Szene, Mix in drei Schritten, Matrix ziehen über alle Zeilen, Einsingen ohne Chaos, Orientierung, Video mit Ton auf dem iPhone
 
 - **Remix-Blatt:** Bereich **Szene │ Teil │ Song │ Alles** (mit Matrix), Spuren mit Rolle antippbar, Regler **deine Basis ↔ Stil**. 57 Stile, alle vollständig (Grundmuster, Bass, Akkorde, Lead, Fill) – neu u. a. Wiener Walzer, Ballade 3/4, Jazz-Walzer, 6/8, 12/8, 5/4, 7/8, Marsch, Polka, Baião. Die Taktart wechselt mit. Rhythmus und Stil-Klang sind **ein** Versuch: Vorher │ Nachher schaltet beides, Übernehmen = **ein ↶**.
