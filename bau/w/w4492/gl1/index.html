@@ -20735,7 +20735,7 @@ const RecHelpers = (() => {
         if (nt.off) { x.fillStyle = C.bg; x.globalAlpha = .62; x.fillRect(r.x, r.y + 1, r.w, r.h - 2); x.globalAlpha = 1; }   // LF1: ein ausgeschalteter Schritt (note.off) gedimmt
         if (g1P) opts.gl1.ghost(x, r, C);                              // GL1
       }
-      if (g1P) opts.gl1.draw(x, g1P, {xOf, yOfRow, rowOfNote, ppb: V.ppb, rowH: V.rowH, W: V.W, H: V.H, col, C, rr});   // GL1
+      if (g1P) opts.gl1.draw(x, g1P, {xOf, yOfRow, rowOfNote, ppb: V.ppb, rowH: V.rowH, W: V.W, H: V.H, col, C, rr, sel: E.sel, noteRect});   // GL1 (GL1-P: + Auswahl obenauf)
       if (opts.syl) { const SY = opts.syl(c.notes); if (SY && SY.size) {         /* G9E: Silbe klein unter dem Noten-Anfang (links unten, nie am Griff rechts) */
         x.font = '600 10px ' + tok('--font-ui', 'sans-serif'); x.textBaseline = 'alphabetic';
         const Q = [...SY].map(([nt, tx]) => ({r: noteRect(nt), tx})).sort((p, q) => p.r.x - q.r.x);   // Breite bis zum nächsten Schild (keine Überdeckung)
@@ -36243,9 +36243,9 @@ function setTrackBank(n) { UI.trackBank = n && MX.pages && MX.pages.length > 1 ?
 function setCls(e, cache, key, val) { if (cache[key] !== val) { cache[key] = val; e.classList.toggle(key, val); } }
 function setTxt(e, cache, key, val) { if (cache[key] !== val) { cache[key] = val; e.textContent = val; } }
 function clipSig(c) { let h = c.len * 7919; for (const n of c.notes) h = (h * 31 + Math.round(n.t * 960) * 7 + n.n * 13 + Math.round(n.d * 96) + (n.off ? 5 : 0) + (n.rt | 0) * 13 + (n.tp | 0) * 17 + (n.pb != null ? Math.round(n.pb * 100) * 19 : 0)) % 1000000007; return c.notes.length + ':' + h + (c.lf ? '|' + [c.lf.dir, c.lf.st, c.lf.seed, c.lf.g].join(':') : ''); }   // GL1: + LAUF
-function miniSvg(c, drum) {
+function miniSvg(c, drum, g1p) {
   const L = clipB(c); if (!c.notes.length) return '';
-  if (!drum && (c.lf || c.notes.some(n => n.off || n.rt || n.tp || n.pb != null))) { const g = gl1MiniSvg(c); if (g != null) return g; }   // GL1: wie gespielt (LAUF)
+  if (!drum && (c.lf || c.notes.some(n => n.off || n.rt || n.tp || n.pb != null))) { const g = gl1MiniSvg(c, g1p); if (g != null) return g; }   // GL1: wie gespielt (LAUF; GL1-P: g1p = Durchlauf)
   let lo = 127, hi = 0; for (const n of c.notes) { if (n.n < lo) lo = n.n; if (n.n > hi) hi = n.n; }
   const span = Math.max(hi - lo, 6);
   let r = '';
@@ -36307,7 +36307,7 @@ function renderGrid(bAud) {
       else if (!clip && rs) { gl = '●'; glr = true; }
       setTxt(C.gl, st, 'gl', gl);
       setCls(C.gl, st, 'rd', glr);
-      setTxt(C.ln, st, 'ln', clip ? clip.len + 'T' + gl1DirTag(clip) : '');   // GL1: ◀ ⇄ ? ↑ ↓ (LAUF-Richtung)
+      // GL1: die Länge samt LAUF-Richtung (◀ ⇄ ? ↑ ↓) setzt GL1-P weiter unten, wenn das Tonart-Schild bekannt ist
       // key badge only where the clip's key differs from its scene key (§4.2)
       const skey = SK[k] || S.key;
       const kb = clip && tr.kind === 'synth' && clip.notes.length && !sameKey(clip.key, skey) ? keyShort(clip.key) : '';
@@ -36325,7 +36325,7 @@ function renderGrid(bAud) {
       else if (playing && clip && clip.len > 1 && R.playing && bAud >= 0) { const L = clipB(clip), ph = (((bAud - audCstart(i, bAud)) % L) + L) % L; tx = (Math.floor(ph / 4) + 1) + '/' + clip.len; }
       setTxt(C.tx, st, 'tx', tx);
       // live text and length label side by side only where both fit (10 px mono ≈ 6 px per character; insets as in CSS)
-      const lnS = clip ? clip.len + 'T' + gl1DirTag(clip) : '';         // GL1
+      const lnS = clip ? gl1LnS(clip, kb, sel, !!clip.st) : ''; setTxt(C.ln, st, 'ln', lnS);   // GL1 (GL1-P: nie unter dem Tonart-Schild)
       setCls(C.el, st, 'lnoff', !!tx && !!lnS && (sel ? 7 : 4) + (playing && rs !== 'rec' ? (sel ? 18 : 15) : (sel ? 7 : 4)) + 6 * (lnS.length + tx.length) + 3 > UI.cellW);
       setTxt(C.big, st, 'big', big);
       setCls(C.big, st, 'on', !!big);
@@ -36338,7 +36338,8 @@ function renderGrid(bAud) {
         if (!C.recMiniT || now - C.recMiniT > 250) { C.recMiniT = now; const RB = recBB(), L = Math.max(RB, Math.ceil((bAud - rec.startBeat + .01) / RB) * RB); sig = 'rec:' + rec.temp.length + ':' + L; if (sig !== C.sig) { C.sig = sig; C.mini.innerHTML = miniSvg({len: L / 4, notes: rec.temp.map(n => ({t: Math.min(n.t, L - .01), d: n.d, n: n.n}))}, tr.kind === 'drum'); } }
         continue;
       }
-      if (sig !== C.sig) { C.sig = sig; C.mini.innerHTML = clip ? (clip.audio ? tkMiniSvg(clip.audio) : miniSvg(clip, tr.kind === 'drum')) : ''; }
+      const g1p = clip && !clip.audio && tr.kind !== 'drum' ? gl1PassNow(i, clip, playing, bAud) : 0; if (g1p) sig += '|p' + g1p;   // GL1-P: hin und her / Zufall / Chance – der Durchlauf, der gerade klingt
+      if (sig !== C.sig) { C.sig = sig; C.mini.innerHTML = clip ? (clip.audio ? tkMiniSvg(clip.audio) : miniSvg(clip, tr.kind === 'drum', g1p)) : ''; }
     }
   }
   for (let k = 0; k < MX.scenes.length; k++) {
@@ -49828,6 +49829,7 @@ function rollFrame(bAud) {
   const vs = R.playing ? visualSlots(t, bAud) : null;
   const b = c && vs && vs.playing === s && bAud >= 0 ? ((((bAud - audCstart(t, bAud)) % (clipB(c))) + clipB(c)) % (clipB(c))) : -1;
   folRoll('roll', b); ED.roll.playhead(b);
+  if (S.tracks[t].kind === 'synth') gl1RollFrame(t, s, c, !!vs && vs.playing === s, bAud);   // GL1-P: „wie gespielt“ = der Durchlauf, der gerade klingt
 }
 /* MP-BEGIN Mithören (Melodie-Pinsel): beim Bearbeiten nur gewählte Spuren hören. Nur Abhören: ein eigener Pegel je Spur
    (hinter dem Panorama, vor Summe und Hall/Echo-Sends; erst angelegt, wenn eine Spur ausgenommen wird) geht weich auf 0.
@@ -81348,6 +81350,15 @@ function gl1RollFrame(t, s, c, on, bAud) {
   const p = ROLLP.gl1 === 'notated' ? 0 : gl1PassNow(t, c, on, bAud), o = GL1.rollP;
   if (o && o.t === t && o.s === s && o.p === p) return;
   GL1.rollP = {t, s, p}; if (ED.roll && (p || (o && o.p))) ED.roll.render();
+}
+// GL1-P: Länge + Richtung; in flachen Zellen (quer) mit Tonart-Schild oben rechts: „→28“ ohne Zahl, dann ohne Leerzeichen –
+// die Beschriftung berührt das Schild nie (6 px je Zeichen, Schild ≈ 7,5 px je Zeichen + Rand; Einsätze wie im CSS)
+function gl1LnS(clip, kb, sel, v6) {
+  const tag = gl1DirTag(clip), full = clip.len + 'T' + tag; if (!tag || !kb || !(GL1.mxRow < (sel ? 37 : 34))) return full;
+  const room = (UI.cellW || 99) - (v6 ? 15 : 3) - 6 - 7.5 * kb.length - 2 - (sel ? 7 : 4), w = x => 6 * [...x].filter(ch => ch !== '\uFE0E').length;
+  if (w(full) <= room) return full;
+  const tg = tag.replace(/\d+$/, '').trim(), a = clip.len + 'T ' + tg;
+  return w(a) <= room ? a : clip.len + 'T' + tg;
 }
 // the matrix picture: the notes of the first Durchlauf as played (lf1Pass, as the playback), the notated ones faint behind
 function gl1MiniSvg(c, p) {
