@@ -277,7 +277,7 @@ const PSET = `stop(); SYNQUENZER.loadDemo(); ensureAudio(); GL1.hint = true;
       while (performance.now() - t0 < 11000) {
         await wait(60); const bA = audBeat(), cs = audCstart(0, bA); if (!(bA >= cs)) continue;
         const k = Math.floor((bA - cs) / 4), ph = bA - cs - 4 * k; if (ph < .8 || ph > 3.2 || seen[k]) continue;
-        const I = SYNQUENZER.gl1Info(); seen[k] = {mini: mini(), roll: withRoll && I.roll ? I.roll.rects.slice().sort((a, b) => a.t - b.t).map(q => q.n - 60).join(' ') : null, want: lf1Pass(c, k).map(n => n.n - 60).join(' ')};
+        const I = SYNQUENZER.gl1Info(); seen[k] = {mini: mini(), roll: withRoll && I.roll ? I.roll.notes.map(q => q.n - 60).join(' ') : null, rp: withRoll && I.roll ? I.roll.p : null, rectsOk: !withRoll || !!I.roll && I.roll.rects.length > 0 && I.roll.rects.every(q => I.roll.notes.some(x => Math.abs(x.t - q.t) < 1e-4 && x.n === q.n)), want: lf1Pass(c, k).map(n => n.n - 60).join(' ')};
       }
       stop(); await wait(300);
       const log = SYNQUENZER.noteLog(400).filter(e => e.track === 0).sort((a, b) => a.beat - b.beat), b0 = log.length ? log[0].beat : 0;
@@ -291,7 +291,7 @@ const PSET = `stop(); SYNQUENZER.loadDemo(); ensureAudio(); GL1.hint = true;
   const P = Object.values(LV.pend.seen), Q = Object.values(LV.rnd.seen);
   ok('GL1-P 2: Matrix-Vorschau folgt beim Spielen dem Durchlauf, der klingt (hin und her, Zufall: Vorschau = lf1Pass(k) = noteLog, ≥ 4 Durchläufe); steht der Clip, wieder der erste', P.length >= 4 && Q.length >= 4 && P.concat(Q).every(x => x.mini === x.want && x.want === x.heard) && new Set(P.map(x => x.mini)).size >= 4 && LV.pend.after === LV.pend.first && LV.rnd.after === LV.rnd.first,
     {pend: LV.pend.seen, rnd: LV.rnd.seen, nachStopp: [LV.pend.after, LV.rnd.after]});
-  ok('GL1-P 2: ROLLE „wie gespielt“ folgt beim Spielen dem Durchlauf, der klingt (hin und her); herausgezoomt zeigt sie hinter dem Clip-Ende blass, wie es weitergeht', P.every(x => x.roll === x.want) && LV.pend.next && LV.pend.next.p === 0 && LV.pend.next.next.join() === '1', {seen: P.map(x => x.roll), weiter: LV.pend.next});
+  ok('GL1-P 2: ROLLE „wie gespielt“ folgt beim Spielen dem Durchlauf, der klingt (hin und her); herausgezoomt zeigt sie hinter dem Clip-Ende blass, wie es weitergeht', P.every(x => x.roll === x.want && x.rectsOk) && LV.pend.next && LV.pend.next.p === 0 && LV.pend.next.next.join() === '1', {seen: P.map(x => ({p: x.rp, roll: x.roll, gezeichnetPasst: x.rectsOk})), weiter: LV.pend.next});
   await p._ctx.close();
 }
 // P3: Glas-Ansicht weit herausgezoomt: Gesang und Background nicht über den Teil-Blöcken
