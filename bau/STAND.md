@@ -1,0 +1,15 @@
+# SYNQUENZER – Arbeitsstand (08.11.2026, 15:1x UTC)
+
+Online: 4.53.0 (main). Hier liegen die unfertigen bzw. noch nicht veröffentlichten Stände, damit nichts verloren geht.
+
+| Ordner (bau/w45/…) | Inhalt | Stand |
+|---|---|---|
+| rel-4530/m3 | 4.53.0-Quelle (= main, ohne Versionszeile) + Zusammenspiel-Tests int53c/int53d | veröffentlicht |
+| rel-4540/k | 4.54-Kandidat = 4.53 (vor INT53D) + JAM3 + CHQ + BEG1 + KF12 | Zusammenspiel-Prüfung läuft; Befunde: Chor-Fenster quer 926×370 mit Video-Regie, S&H-Tonart nach Rückung; danach INT53D-Diff nachziehen |
+| w4520/kf12 | Klang-Feinschliff KF1+KF2 vereint (Basis 4.51) | fertig, geprüft (kf2 61/61, kombi 26/26, kf1 73/73) |
+| w4530/jam3 | Perform-Spur im Song, Rückung mit festen Spuren (Basis 4.52) | fertig, geprüft (67/67) |
+| w4530/chq | Chor-Gruppe rollbar (Basis 4.52) | fertig, geprüft (43/43) |
+| w4540/beg1 | Begleiter (Live-Begleitautomatik, Basis 4.52) | fertig, geprüft (59/59) |
+| w4550/xd1 | 8 Bedien-Entscheidungen (Mikro-Blatt, Video quer, Szenen-Kopf, Mitschnitt, Klang-Editor, MIXG, Messung, Wo-bin-ich; Basis 4.53) | im Bau |
+
+Weiter mit: 4.54 = rel-4540/k fertig prüfen + INT53D nachziehen + Versionszeile → veröffentlichen; dann XD1 als 4.55; dann Liste: SUG, LF2, MIDI-Struktur, Spur-Locks, Harmonie-Profi.
