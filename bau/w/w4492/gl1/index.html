@@ -81191,7 +81191,7 @@ function a2Norm(w, lw, L, kind) {
    2. VD3: die Beschriftung „VIDEO“ der Video-Spur bekam ihr CSS erst mit dem Video-Blatt (gemerkter Schnitt-Modus, Marken-Weg) – Fix im Haken.
    3. LAUF wie gespielt: Matrix-Vorschau, Song-Kacheln und ROLLE zeigen die Noten an der gespielten Stelle (lf1Pass/lf1Ev bzw. a2Sound –
       dieselbe Rechnung wie die Wiedergabe), die notierten blass; Richtungszeichen hinter der Länge (◀ ⇄ ? ↑ ↓, →n = eigener Start).
-      ROLLE: [wie gespielt │ wie notiert] (Standard wie gespielt; bearbeitet werden die notierten Noten). Neue Richtungen
+      ROLLE: [wie gespielt │ wie notiert] (Standard wie gespielt; bearbeitet werden die notierten Noten, blass mit gestricheltem Rand; einmal je Sitzung ein kurzer Hinweis). Neue Richtungen
       „aufwärts / abwärts (Tonhöhe)“: der Rhythmus bleibt, die Töne kommen der Höhe nach (wie ein Arpeggiator über die Schritte).
    Ohne LAUF, ohne Chor-Spuren und ohne flache Zeilen: alles wie bisher (Daten, Klang, Bild).
    ===================================================================================================================== */
@@ -81376,11 +81376,9 @@ function gl1RollOpts(t, s) {
         x.globalAlpha = 1; x.strokeStyle = '#f2f4f8'; x.lineWidth = 1.25; v.rr(x, rx + 1, ry + 2.5, Math.max(2, w - 2), v.rowH - 5, 3); x.stroke();
         out.push({x: +rx.toFixed(1), y: +ry.toFixed(1), w: +w.toFixed(1), n: n.n, t: +n.t.toFixed(5)});
       }
-      const c = S.tracks[t] && S.tracks[t].clips[s], d = c && c.lf && c.lf.dir;
-      const lab = 'wie gespielt' + (d ? ' · ' + (LF1_DIRS.find(z => z[0] === d) || ['', ''])[1] : c && c.lf && c.lf.st != null ? ' · ab Schritt ' + (c.lf.st + 1) : '') + ' – blass = notiert (bearbeiten)';
-      x.font = '700 10px ' + (getComputedStyle(document.body).getPropertyValue('--font-ui') || 'sans-serif'); x.textBaseline = 'middle';
-      const tw = Math.min(v.W - 8, x.measureText(lab).width + 12);
-      x.fillStyle = 'rgba(11,12,15,.82)'; v.rr(x, v.W - tw - 4, 4, tw, 16, 4); x.fill(); x.fillStyle = v.C.amber; x.textAlign = 'right'; x.fillText(lab, v.W - 10, 12, tw - 10); x.textAlign = 'left';
+      // einmal je Sitzung kurz erklärt (kein Schild auf der Fläche: es läge über Noten)
+      if (!GL1.hint) { GL1.hint = true; const c = S.tracks[t] && S.tracks[t].clips[s], d = c && c.lf && c.lf.dir, nm = d ? (LF1_DIRS.find(z => z[0] === d) || ['', ''])[1] : 'mit Schritt-Effekten';
+        setTimeout(() => { try { toast('LAUF ' + nm + ': hell = so klingt es, blass = notiert (die bearbeitest du) · [wie gespielt] schaltet um'); } catch (e) {} }, 0); }
     }
   };
 }
