@@ -23846,7 +23846,7 @@ function formNorm(f) { return FORM.norm(f); }
   // compact notes in files: [t, d, n, v] (+ {o?, a?, p?, r?, m?, lk?} as a 5th element, §12.1) - about half the size of
   // {t,d,n,v} objects. WP3: the numbers are written exactly as they are (no rounding), so a project reopened from a file,
   // the autosave or [Projekte] is deep-equal to the saved one (§12.7 G3, PF8); values on the grid are short anyway
-  const NOTE_EXTRA = ['o', 'a', 'p', 'r', 'm', 'lk', 'off', 'rt', 'tp', 'pb'];       // WP1: extra note fields survive packing (§12.1); LF1: off, rt, tp, pb
+  const NOTE_EXTRA = ['o', 'a', 'p', 'r', 'm', 'lk', 'off', 'rt', 'tp', 'pb', 'cd'];       // WP1: extra note fields survive packing (§12.1); LF1: off, rt, tp, pb; JAM1: cd (Bedingung)
   function packNote(n) {
     const a = [n.t, n.d, n.n | 0, n.v]; let x = null;
     for (const k of NOTE_EXTRA) if (n[k] != null) { (x || (x = {}))[k] = typeof n[k] === 'number' ? n[k] : JSON.parse(JSON.stringify(n[k])); }
@@ -26967,7 +26967,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '4.51.0';
+const VERSION = '4.52.0';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -28002,6 +28002,7 @@ const newSeed = () => (Math.random() * 2147483647) | 0;
 function normNoteExtras(src, out, kind) {
   if (isNum(src.o) && src.o >= 0) out.o = +(+src.o).toFixed(4);
   if (typeof src.sy === 'string' && kind !== 'drum') { const y = src.sy.replace(/[\s\u0000-\u001f\u007f]/g, '').slice(0, 24); if (y) out.sy = y; }   // G9E: Silbe (G5 „In Melodie umwandeln“)
+  jam1NoteNorm(src, out);                                            // JAM1: Bedingung (Synth- und Drum-Noten; fehlt = immer)
   if (kind !== 'drum') lf1NoteNorm(src, out);                       // LF1: Schritt aus, Wirbel, Transponieren, Chance (Synth-Noten)
   if (kind !== 'drum') { const lk = lkNoteNorm(src.lk, null); if (lk) out.lk = lk; return out; }   // I2a: lk.v / lk.k auch an Synth-Noten
   if (src.a) out.a = 1;
@@ -28162,6 +28163,7 @@ function normClip(c, kind, pk) {
   if (kind !== 'drum' && c.lf) { const lf = lf1NormLf(c.lf); if (lf) out.lf = lf; }   // LF1: Richtung / Startschritt des Laufs (fehlt = wie bisher)
   if (c.lw) kl1Norm(c, out, kind);                                                                   // KL1: Fenster im ganzen Inhalt
   if (typeof c.vid === 'string' && /^(geraet|klav|kino|noten|aus)$/.test(c.vid)) out.vid = c.vid;   // VR1: Im Video (fehlt = Auto; läuft schon beim Start)
+  jam1ClipNorm(c, out);                                                                              // JAM1: clip.dv „Zufall festhalten“ (fehlt = wie bisher)
   return out;
 }
 function normTrack(t, def, pk, warns) {
@@ -28516,7 +28518,7 @@ function freshProjectName(d) {
 function newProject(opts) { const p = normalizeProject(newProjectRaw(!!(opts && opts.init))); p.name = freshProjectName(); if (HIST) HIST.mark.set(p, 'new'); return p; }
 const demoProject = () => normalizeProject(demoProjectRaw());
 function cleanKey(k) { const o = {root: k.root, scale: k.scale}; if (k.ref != null) o.ref = k.ref; o.src = k.src || 'auto'; return o; }
-const NOTE_X = ['o', 'a', 'p', 'r', 'm', 'sy', 'off', 'rt', 'tp', 'pb'];   // LF1: off, rt, tp, pb
+const NOTE_X = ['o', 'a', 'p', 'r', 'm', 'sy', 'off', 'rt', 'tp', 'pb', 'cd'];   // LF1: off, rt, tp, pb; JAM1: cd (Bedingung)
 function cleanNote(n) { const o = {t: n.t, d: n.d, n: n.n, v: n.v}; for (const k of NOTE_X) if (n[k] != null) o[k] = n[k]; if (n.lk) o.lk = cleanLk(n.lk); return o; }   // I2a: lk.v tief kopiert
 /* D1: Drum-Sequencer – Länge je Spur (Polymeter, 1–64 Schritte) und Richtung. clip.lanes = {gm: {len, dir, seed}}; nur Abweichungen
    vom Standard (len fehlt = Clip-Länge, dir fehlt = vorwärts). Schritt g zählt ab Clip-Start durch (nicht je Clip-Runde): eine Spur mit
@@ -28576,6 +28578,7 @@ function cleanClip(c) {
   if (c.lf) o.lf = Object.assign({}, c.lf);                          // LF1
   if (c.lw) o.lw = kl1Clean(c.lw);                                // KL1: der ganze Inhalt geht mit
   if (c.vid) o.vid = c.vid;                                       // VR1: Im Video
+  if (c.dv) o.dv = {s: c.dv.s | 0};                               // JAM1: Zufall festhalten (Saat)
   tktClipClean(c, o);                                             // TKT: clip.tkt
   return o;
 }
@@ -29631,6 +29634,7 @@ function buildTrack(i) {
   applyTrackParams(i, true);
   A.sx4.gain.value = sx4Pass(i) ? 1 : 0;                                          // SX4: Solo gilt auch für eine neu gebaute Kette
   mtrTap(i);                                                                      // VV4-F: the new chain feeds the meter
+  jam2Chain(i);                                                                   // JAM2: Perform-Leiste – Gruppen-Gain an die neue Kette (nur offen)
 }
 // the effect values of a track: its sound.fx (WP6: the drum track too, §8.2)
 function trackFx(tr) { const f = fxOfSound(tr.sound); if (R.v6aCur) { const i = S.tracks.indexOf(tr); if (i >= 0 && (R.v6aCur[i] || (R.v6aRun && R.v6aRun[i]))) v6aFxAt(i, f, nowT()); } return chsFx(tr, srFx(tr, g4Fx(tr, f))); }   // CHS: Gesang gesamt; G4: Hall/Delay der STIMME-Spur; V6A: Zustand / Fahrt; N8: Super-Regler auf den Spur-Werten
@@ -30481,6 +30485,7 @@ function v6aGo(i, st1, t0, t1, at, c) {
       } else if (key.startsWith('mk.') && eng3) { const p = key.slice(3); if (p === 'mode') continue; if (v6aMkCont(p)) { mk.push(p); mkv.push(x); } else mkd[p] = x; }
       else if ((key.startsWith('fm6.') || key.startsWith('fmx.')) && base.engine === 'fm6' && to.p.fm6) fm = wkFmOf(to.p);
     }
+    if (JAM2.bl.hold.size && (nd || Object.keys(mkd).length) && jam2DSkip(i, d, mkd)) { nd = 0; for (const q in mkd) delete mkd[q]; }   // JAM2: Blende A↔B – unveränderte Stufenwerte nicht erneut (sonst je Schritt eine Stimmen-Überblendung)
     if (k.length || nd || fm || mk.length || Object.keys(mkd).length) {
       const o = {t0, t1, at, c: c ? 1 : 0, k, v, l, h};
       if (nd) o.d = d; if (fm) o.fm = fm; if (mk.length) { o.mk = mk; o.mkv = mkv; } if (Object.keys(mkd).length) o.mkd = mkd;
@@ -30549,6 +30554,7 @@ function v6aTick(b0, b1) {
   for (let i = 0; i < NT(); i++) {
     if (V6A.ed && V6A.ed.i === i) continue;
     const p = R.pend[i], want = p ? v6aSt(i, p.slot, p.own) : v6aSt(i, R.slot[i], R.own[i]), cur = R.v6aCur[i], sig = v6aSig(want);
+    if (JAM2.bl.hold.size && (jam2Holds(i) || jam2Join(i, want, sig)) && jam2Tick(i, want, p, nb, fresh || (!p && !cur))) continue;   // JAM2: die Blende A↔B hält die Spur (auch eine, die erst jetzt von B abweicht) – A folgt dem Transport (Zeit wie v6aMode/v6aTimes)
     if (fresh && (cur || want)) { const t = c.currentTime; v6aGo(i, want, t, t, t, 1); continue; }   // ▶: the state at once (also ends a glide the ■ left)
     if (cur ? cur.sig === sig : !want) continue;
     if (!p && cur && cur.at != null && cur.at > nb - 1e-6 && !fresh) continue;              // a song edge already gliding toward its bar line
@@ -30567,11 +30573,13 @@ function v6aTick(b0, b1) {
     const mk = song.marks.find(x => x.a === bar && x.gl);
     for (let i = 0; i < NT(); i++) {
       if ((V6A.ed && V6A.ed.i === i) || R.songOverride[i] || R.pend[i]) continue;
+      if (JAM2.bl.hold.size && jam2Holds(i)) continue;                 // JAM2: die Blende hält die Spur (der Wechsel kommt über jam2Tick)
       const o = laneOriginAt(song.lanes[i], bar); if (!o) continue;
       const want = laneClipOk(song, i, o) ? v6aSt(i, o.slot, o.own) : null, cur = R.v6aCur[i];
       if (cur ? cur.sig === v6aSig(want) : !want) continue;
       const m = mk && V6A_X.includes(mk.gl.x) ? {x: mk.gl.x, n: mk.gl.n} : v6aMode(i, null, want, cur ? cur.st : null);
       if (m.x !== 'flow') continue;
+      if (JAM2.bl.hold.size && jam2Join(i, want, v6aSig(want), v6aTimes(m, B, nb))) continue;   // JAM2: weicht die Spur erst an dieser Kante von B ab, blendet sie mit (gleiche Zeit)
       const T_ = v6aTimes(m, B, nb); v6aGo(i, want, T_.t0, T_.t1, T_.at, 0); R.v6aCur[i].at = B;
     }
   }
@@ -31470,6 +31478,7 @@ const hasFxRoute = snd => (snd.mods || []).some(fxRoute);
 function liveUpdate(i, key, Pov) {                                   // N8: Pov = the effective values (native steps of the super-regler / state)
   const c = AU.ctx; if (!c) return;
   const tr = S.tracks[i]; if (!tr || tr.kind !== 'synth') return;
+  if (JAM2.bl.hold.size) jam2Hand(i, key);                              // JAM2 (KZ6): wer während der Blende A↔B einen Regler anfasst, übernimmt ihn
   if (key.startsWith('fx.')) { if (R.v6aRun && R.v6aRun[i]) v6aFxHand(i, key); applyTrackParams(i, false); return; }
   const snd = tr.sound, P = Pov || snd.p, now = c.currentTime;
   if (V6A.ed && V6A.ed.i === i && R.v6aCur && R.v6aCur[i]) v6aHand(i, key);     // V6A (KZ6): the hand takes over a gliding key
@@ -32676,6 +32685,7 @@ function scheduleTrack(i, from, to, late) {
     }
   }
   for (const e of ev.values()) {
+    if (e.t < R.j1F) continue;                                   // JAM1-P: Neu-Planung ab einer Klang-Zeit (FILL): nur, was eben gestrichen wurde
     if (tr.kind === 'drum') drumHit(e.n, e.v, e.t, 'clip');
     else {
       let mask;
@@ -32698,8 +32708,8 @@ function ownPlaying(i) {
    own beat, so a window is idempotent; a negative shift is clamped to its loop start (never before the clip starts).
    WP6 (Anhang D.10): the accent and the TUNE / DECAY locks go to the engine (drumHit ex = {acc, lk}) */
 function scheduleDrums(i, clip, from, to, late, lsrc, mu, um) {
-  const L = clipB(clip), cs = R.cstart[i], now = AU.ctx.currentTime, ev = new Map(), seed = clip.seed | 0;
-  const D1 = d1Map(clip);                                        /* D1: lanes with their own length / direction play below */
+  const L = clipB(clip), cs = R.cstart[i], now = AU.ctx.currentTime, ev = new Map(), seed = jam1Seed(clip.seed | 0, clip), dv = !!clip.dv;   // JAM1: Zufall festhalten (Saat, Durchlauf 0)
+  const D1 = jam1D1(d1Map(clip), clip);                          /* D1: lanes with their own length / direction play below · JAM1: + Clip */
   for (const nt of clip.notes) {
     if (nt.t >= L - 1e-9) continue;                              // V0a K-06
     if (D1 && D1.has(nt.n)) continue;                            /* D1 */
@@ -32709,7 +32719,8 @@ function scheduleDrums(i, clip, from, to, late, lsrc, mu, um) {
       if (mu && mutedAt(mu, B)) continue;
       if (um && ueMutedAt(um, B, nt.n)) continue;                 // UE · FX1: pad-genau
       const loopStart = cs + k * L;
-      for (const h of DrumSeq.expandStep(nt, k, seed)) {
+      if (nt.cd && !jam1DrOk(clip, nt, B, cs, L)) continue;      // JAM1: Bedingung des Schritts
+      for (const h of DrumSeq.expandStep(nt, dv ? 0 : k, seed)) {   // JAM1: Zufall festhalten = Durchlauf 0
         const hb = Math.max(B + h.beat, loopStart);
         if (hb < from - 1e-9 || hb >= to - 1e-9) continue;
         let t = b2t(hb + swingOffset(nt.t));
@@ -32727,6 +32738,7 @@ function scheduleDrums(i, clip, from, to, late, lsrc, mu, um) {
   // in time order: a pad is monophonic, so a later hit must see (and choke) every earlier one of the window
   const dt = S.settings.harmony.drums;                           // V2c′: Drums mittransponieren (TUNE wie ein Lock)
   for (const e of [...ev.values()].sort((x, y) => x.t - y.t)) {
+    if (e.t < R.j1F) continue;                                   // JAM1-P: Neu-Planung ab einer Klang-Zeit (FILL): nur, was eben gestrichen wurde
     let ex = e.ex; const tu = dt ? drumTune(e.t) : 0;
     if (DL && DL.length && e.rb != null) ex = lnDrumEx(clip, DL, e.n, e.rb, ex);
     if (tu) ex = Object.assign({}, ex, {lk: Object.assign({}, ex && ex.lk, {tune: ((ex && ex.lk && ex.lk.tune) || 0) + tu})});
@@ -32739,13 +32751,14 @@ function scheduleDrums(i, clip, from, to, late, lsrc, mu, um) {
 function d1Sched(D, cs, from, to, late, now, mu, seed, ev, um) {
   const g0 = Math.max(0, Math.floor((from - .35 - cs) / .25)), g1 = Math.ceil((to + .12 - cs) / .25);
   for (const [gm, X] of D) for (let g = g0; g < g1; g++) {
-    const ns = X.by.get(d1Pos(X.l, g, gm)); if (!ns) continue;
+    const ns = X.by.get(jam1D1Pos(D.jc, X.l, g, gm)); if (!ns) continue;   // JAM1: Zufall festhalten (Zufalls-Spur)
     for (const nt of ns) {
       const f = nt.t - Math.floor(nt.t / .25 + 1e-6) * .25, B = cs + g * .25 + f;
       if (nt.born != null && nt.bornRun === R.runId && B < nt.born + .5) continue;
       if (mu && mutedAt(mu, B)) continue;
       if (um && ueMutedAt(um, B, nt.n)) continue;                 // UE · FX1: pad-genau
-      for (const h of DrumSeq.expandStep(nt, Math.floor(g / X.l.Ls), seed)) {
+      if (nt.cd && !jam1D1Ok(D, gm, g, nt, B, cs)) continue;      // JAM1: Bedingung des Schritts
+      for (const h of DrumSeq.expandStep(nt, D.jc && D.jc.dv ? 0 : Math.floor(g / X.l.Ls), seed)) {   // JAM1: Zufall festhalten
         const hb = Math.max(B + h.beat, cs);
         if (hb < from - 1e-9 || hb >= to - 1e-9) continue;
         let t = b2t(hb + swingOffset(g * .25 + f));
@@ -36324,6 +36337,7 @@ function renderGrid(bAud) {
       else if (queued && vs.qBeat != null && R.playing) tx = 'in ' + Math.max(1, Math.ceil(vs.qBeat - bAud - 1e-6));
       else if (qstop && vs.qBeat != null && R.playing) tx = 'stopp in ' + Math.max(1, Math.ceil(vs.qBeat - bAud - 1e-6));
       else if (playing && clip && clip.len > 1 && R.playing && bAud >= 0) { const L = clipB(clip), ph = (((bAud - audCstart(i, bAud)) % L) + L) % L; tx = (Math.floor(ph / 4) + 1) + '/' + clip.len; }
+      jam1Cell(C, playing && clip && R.playing && bAud >= 0 && !rs && !queued && !qstop ? clip : null, i, bAud, kb, !!(clip && clip.st));   // JAM1(-P): Durchlauf „2:4“ als Schild oben links (Clip mit Bedingungen)
       setTxt(C.tx, st, 'tx', tx);
       // live text and length label side by side only where both fit (10 px mono ≈ 6 px per character; insets as in CSS)
       const lnS = clip ? gl1LnS(clip, kb, sel, !!clip.st) : ''; setTxt(C.ln, st, 'ln', lnS);   // GL1 (GL1-P: nie unter dem Tonart-Schild)
@@ -40047,7 +40061,7 @@ function svDrawMarks(g, song, X, W, H, ru, cur) {
   g.save(); g.textBaseline = 'middle'; g.textAlign = 'left';
   for (const m of song.marks) {
     const x0 = X(m.a) + 2, x1 = X(m.a + m.len) - 2; if (x1 < 0 || x0 > W) continue;
-    const name = markLabel(m).toUpperCase() + (devs[m.id] ? '′' : '') + (m.vr && m.vr.c === 'l' ? ' ·L' : ''), short = partShortForm(markLabel(m)).toUpperCase() + (devs[m.id] ? '′' : ''), open = svMarkOpen(m), w = x1 - x0;
+    const name = markLabel(m).toUpperCase() + (devs[m.id] ? '′' : '') + (m.vr && m.vr.c === 'l' ? ' ·L' : '') + jam2MarkTag(m), short = partShortForm(markLabel(m)).toUpperCase() + (devs[m.id] ? '′' : '') + jam2MarkTag(m), open = svMarkOpen(m), w = x1 - x0;   // JAM2: + Rückung („+1“)
     const col = m.part && m.part[0] === 'P' && S.parts && S.parts[+m.part.slice(1) - 1] ? svPartCol(S.parts[+m.part.slice(1) - 1].color) : '#8b919c';
     let label = name;
     g.beginPath(); if (g.roundRect) g.roundRect(x0, cy, w, chh, 4); else g.rect(x0, cy, w, chh);
@@ -40254,6 +40268,7 @@ function openMarkSheet(id) {
       sx126MarkSheetPaint(p, m);  // SX126: [Bei Takt …] (Klinge), beim letzten Teil „Ausblenden am Ende“
       gr1MarkSheetPaint(p, m);    // GR1: Rhythmus [Small] [Full] [Vorschlag] [Remix …]
       ch1MarkSheetPaint(p, m);    // CH1: [Refrain groß] [Refrain 2× singen] (nur Refrain-Teile mit Gesang)
+      jam2MarkSheetPaint(p, m);   // JAM2: Rückung −2 … +2 (Reiter Ablauf)
       wegeMarkSheetPaint(p, m);   // WEGE: Small │ Full (D2), Reiter Ablauf │ Teil │ Klang & Groove │ Video (Abschnitt 4)
       for (const b of p.querySelectorAll('.ms-b')) if (b.scrollWidth > b.clientWidth + 1) b.classList.add('tight');
     };
@@ -41305,8 +41320,8 @@ function renderTop() {
   EL.bRec.style.setProperty('--spb', Math.min(.9, spb()).toFixed(3) + 's');
   // TAKT block: the label reads REC (red) while a take runs (§3.1)
   // V0a K-14: the limiter shows from level 1 on: „CPU 1“ … „CPU 3“ (L / W: the chip; P: instead of the TAKT label)
-  const lv = LIM.level | 0, cpu = lv >= 1, ct = 'CPU ' + lv, rl2 = recActive() ? 'REC' : cpu && !isLand() ? ct : 'Takt';
-  if (EL.taktLbl && EL.taktLbl.textContent !== rl2) { EL.taktLbl.textContent = rl2; EL.taktLbl.classList.toggle('recl', rl2 === 'REC'); EL.taktLbl.classList.toggle('cpul', rl2.startsWith('CPU')); }
+  const lv = LIM.level | 0, cpu = lv >= 1, ct = 'CPU ' + lv, rl2 = recActive() ? 'REC' : cpu && !isLand() ? ct : jam1TaktLbl();   // JAM1: „FILL“, sobald ein Schritt die Bedingung FILL hat (TAKT = FILL-Taste)
+  if (EL.taktLbl && EL.taktLbl.textContent !== rl2) { EL.taktLbl.textContent = rl2; EL.taktLbl.classList.toggle('recl', rl2 === 'REC'); EL.taktLbl.classList.toggle('cpul', rl2.startsWith('CPU')); EL.taktLbl.classList.toggle('j1fl', rl2 === 'FILL'); }   // JAM1
   if (EL.bCpu) { if (EL.bCpu.hidden === cpu) EL.bCpu.hidden = !cpu; if (cpu && EL.bCpu.textContent !== ct) { EL.bCpu.textContent = ct; EL.bCpu.setAttribute('aria-label', 'Begrenzer Stufe ' + lv + ' (CPU-Last) – Info'); } }
   EL.bpmVal.textContent = S.bpm;
   EL.bMetro.classList.toggle('on', S.settings.metro);
@@ -42535,6 +42550,7 @@ function renderTakt(bAud) {
   else txt = (Math.floor(bAud / 4) + 1) + '.' + (Math.floor(bAud) % 4 + 1);
   if (txt.length > 4) cls += (cls ? ' ' : '') + 'long';          // bar 100+: the 76 px TAKT block keeps its width (P)
   if (txt !== UI.last.takt) { EL.taktVal.textContent = txt; UI.last.takt = txt; }
+  jam1Takt(bAud);                                                   // JAM1: FILL-Taste (gemerkt; nur Vergleiche je Bild)
   if (cls !== UI.last.taktCls) { EL.taktVal.className = cls; UI.last.taktCls = cls; }
   const led = !R.playing || !pl1Ll() ? -1 : tkPlain() && !tktMx(bAud) ? ((Math.floor(bAud) % 4) + 4) % 4 : t1Led(bAud);   // PL1: Lauflichter aus = LEDs aus · TKT: echte Taktart
   if (led !== UI.last.led) {
@@ -49618,7 +49634,7 @@ function drumEdFrame(bAud) {
   if (clip && clip.len > 1) folStep('steps', ph, B, (ED.page | 0) * B, x => drumSetPage(Math.round(x / B))); else FOL.st.steps = folState('steps');
   const run = ph >= 0 ? Math.floor(ph / B) : -1;
   if (run === ED.page) st = Math.floor((ph % B) / .25);
-  { const l = ph >= 0 && d1Lane(clip, DRUM_VOICES[ED.dVoice].gm); if (l) { const q = d1Pos(l, Math.floor((bAud - audCstart(DRUM_T, bAud)) / .25 + 1e-6), DRUM_VOICES[ED.dVoice].gm); st = Math.floor(q / N) === ED.page ? q % N : -1; } }   /* D1: the lane's own step */
+  { const l = ph >= 0 && d1Lane(clip, DRUM_VOICES[ED.dVoice].gm); if (l) { const q = jam1D1Pos(clip, l, Math.floor((bAud - audCstart(DRUM_T, bAud)) / .25 + 1e-6), DRUM_VOICES[ED.dVoice].gm);   /* JAM1: Zufall festhalten */ st = Math.floor(q / N) === ED.page ? q % N : -1; } }   /* D1: the lane's own step */
   if (run !== ED.runBar) { ED.runBar = run; if (ED.pgnav) ED.pgnav._run(run); }
   folChipPaint('steps');
   if (!pl1Ll()) st = -1;                                     // PL1: Lauflichter aus
@@ -50462,13 +50478,13 @@ function lf1NormLf(x) {
 function lf1Plan(c) {
   if (!c || !Array.isArray(c.notes) || !c.notes.length) return null;
   const ns = c.notes, lf = c.lf || null; let any = !!lf;
-  for (let k = 0; k < ns.length && !any; k++) { const n = ns[k]; if (n.off || n.rt || n.tp || n.pb != null) any = true; }
+  for (let k = 0; k < ns.length && !any; k++) { const n = ns[k]; if (n.off || n.rt || n.tp || n.pb != null || (n.cd && c.seed == null)) any = true; }   // JAM1: + Bedingung (Synth-Clip; Drum-Clips: scheduleDrums)
   if (!any) return null;
   const L = clipB(c); let sig = ns.length * 7 + Math.round(L * 96);
   for (let k = 0; k < ns.length; k++) { const n = ns[k]; sig = (sig * 31 + n.n * 1009 + Math.round(n.t * 960) * 7 + Math.round(n.d * 960) * 3 + Math.round(n.v * 1000) * 11 + (n.off ? 5 : 0) + (n.rt | 0) * 13 + (n.tp | 0) * 17 + Math.round((n.pb || 0) * 100) * 19) % 2147483647; }
-  const lsig = lf ? [lf.dir, lf.st, lf.seed, lf.g].join(':') : '', rec = LF1_C.get(c);
+  const lsig = (lf ? [lf.dir, lf.st, lf.seed, lf.g].join(':') : '') + (c.dv ? '|dv' + c.dv.s : ''), rec = LF1_C.get(c);   // JAM1: + Zufall festhalten
   if (rec && rec.ns === ns && rec.sig === sig && rec.lsig === lsig && rec.L === L) return rec.P;
-  const P = lf1Build(ns, L, lf);
+  const P = jam1PlanX(lf1Build(ns, L, lf), c);                   // JAM1: Zufall festhalten (P.dv, P.dvs)
   LF1_C.set(c, {ns, sig, lsig, L, P});
   return P;
 }
@@ -50500,8 +50516,8 @@ function lf1Build(ns, L, lf) {
 function lf1Pos(P, g) {
   const T = P.T; if (T <= 1) return 0;
   if (P.dir === 'rev') return (((P.st - g) % T) + T) % T;
-  if (P.dir === 'pend') { const M = 2 * T - 2, m = (((g + P.st) % M) + M) % M; return m < T ? m : M - m; }
-  if (P.dir === 'rnd') return g === 0 ? P.st : Math.min(T - 1, Math.floor(DrumSeq.rand01(P.seed, g, 7, 3) * T));
+  if (P.dir === 'pend') { if (P.dv) g %= T; const M = 2 * T - 2, m = (((g + P.st) % M) + M) % M; return m < T ? m : M - m; }   // JAM1-P: Zufall festhalten = jeder Durchlauf wie der erste (auch hin und her)
+  if (P.dir === 'rnd') { if (P.dv) g %= T; return g === 0 ? P.st : Math.min(T - 1, Math.floor(DrumSeq.rand01(P.dv ? P.dvs : P.seed, g, 7, 3) * T)); }   // JAM1: Zufall festhalten = jeder Durchlauf wie der erste
   if (P.perm) { const q = (((g + P.st) % T) + T) % T; return P.perm.has(q) ? P.perm.get(q) : q; }   // GL1: auf-/abwärts (Tonhöhe) – der Rhythmus bleibt, die Töne der Reihe nach
   return (g + P.st) % T;
 }
@@ -50524,18 +50540,20 @@ function lf1Ev(P, a, b) {
 }
 function lf1Emit(P, it, t0, d, g, out, a, b) {
   const n = it.n; if (n.off) return;
-  if (n.pb != null && n.pb < 1 && DrumSeq.rand01(P.seed, g, Math.round(n.t * 96), n.n) >= n.pb) return;
+  if (n.cd && !jam1LfOk(P, it, t0, g)) return;                   // JAM1: Bedingung (Durchlauf, FILL, Vorgänger)
+  if (n.pb != null && n.pb < 1 && DrumSeq.rand01(P.dv ? P.dvs : P.seed, P.dv ? (P.map ? g % P.T : 0) : g, Math.round(n.t * 96), n.n) >= n.pb) return;   // JAM1: Zufall festhalten
   const r = n.rt > 1 ? n.rt : 1, sp = P.map ? Math.min(it.dOwn, P.gs) : it.span, pitch = clamp(n.n + (n.tp | 0), 0, 127);
   for (let m = 0; m < r; m++) {
     const t = t0 + m * sp / r; if (t < -1e-9 || t < a - 1e-9 || t >= b - 1e-9) continue;
     const o = Object.assign({}, n); o.t = Math.max(0, t); o.d = Math.max(1 / 64, r > 1 && m < r - 1 ? sp / r * .8 : d - m * sp / r); o.n = pitch;
     if (m) o.v = Math.round(n.v * 800) / 1000;                 // Wirbel: die Wiederholungen mit 80 % (wie die Drums)
-    delete o.off; delete o.rt; delete o.tp; delete o.pb;
+    if (n.cd && P.j1t) P.j1t.set(o, n.cd);                     // JAM1-P: ROLLE „wie gespielt“ zeigt das Zeichen der Bedingung an der gespielten Note
+    delete o.off; delete o.rt; delete o.tp; delete o.pb; delete o.cd;   // JAM1: wie gespielt = ohne Bedingung
     out.push(o);
   }
 }
 // scheduler: the window [from, to) of a clip started at cs (t = beats from cs); null = the clip plays as before
-function lf1Win(c, cs, from, to) { const P = lf1Plan(c); return P ? lf1Ev(P, from - cs, to - cs) : null; }
+function lf1Win(c, cs, from, to, jx) { const P = lf1Plan(c); if (!P) return null; P.jx = jam1Jx(jx, cs, P.L); try { return lf1Ev(P, from - cs, to - cs); } finally { P.jx = null; } }   // JAM1: jx = Zeitbasis der Bedingungen (fehlt = Transport)
 // exports (MIDI, video score): the notes of pass p (t inside the pass); null = c.notes as before
 function lf1Pass(c, p) {
   const P = lf1Plan(c); if (!P) return null;
@@ -51837,6 +51855,7 @@ function openMenu(goto) {
   { const bPr = btn('Leistungs-Probe'); bPr.classList.add('mprobe'); on(bPr, 'click', () => { closeMenu(); mkLoad().probeSheet(); }); row(s9, null, bPr).appendChild(el('span', 'small', MK_LABEL + ': misst 10 s die Rechenzeit (ohne Netz)')); }
   ui1MenuHook(sec, colL, s6, row, btn, goto);                 // UI1: „Wo finde ich …?“ + Leucht-Look
   pl1MenuRow(s6, row);                                        // PL1: Lauflichter an/aus
+  jam2MenuRow(s6, row);                                       // JAM2: Perform-Leiste An │ Aus
   m.classList.add('open');
   if (goto === 'info') requestAnimationFrame(() => { try { s9.scrollIntoView({block: 'start'}); } catch (e) {} });
   if (goto === 'online') requestAnimationFrame(() => { try { sOn.scrollIntoView({block: 'start'}); } catch (e) {} });
@@ -54132,7 +54151,7 @@ function buildMidi(opts) {
     S.tracks.forEach((tr, i) => {
       const c = tr.clips[s]; if (!c || !c.notes.length || i >= MIDI_T) return;
       const cL = clipB(c), ch = tr.kind === 'drum' || percIs(tr) ? 9 : i, ded = new Map();   // PERC
-      for (let o = 0; o < L - 1e-9; o += cL) for (const nt of lf1Pass(c, Math.round(o / cL)) || c.notes) {   // LF1: wie gespielt
+      for (let o = 0; o < L - 1e-9; o += cL) for (const nt of jam1MxPass(c, Math.round(o / cL)) || c.notes) {   // LF1: wie gespielt · JAM1: + Bedingungen (Drums)
         if (nt.t >= cL - 1e-9) continue;                         // V0a K-06: behind the clip end = never heard, never exported
         const st = o + nt.t; if (st >= L - 1e-9) continue;
         const en = Math.min(L, st + Math.max(nt.d, 1 / 32));
@@ -54208,7 +54227,7 @@ function buildMidiSong(withC) {
     for (const bk of blocks) {
       const c = bk.own && song.own && song.own[bk.own] ? song.own[bk.own] : tr.clips[bk.slot]; if (!c || !c.notes.length) continue;   // V2d′: own clips
       const b0 = bk.start, b1 = Math.min(L, bk.end), cL = clipB(c);
-      for (let o = bk.cs + Math.floor((b0 - bk.cs) / cL + 1e-9) * cL; o < b1 - 1e-9; o += cL) for (const nt of lf1Pass(c, Math.round((o - bk.cs) / cL)) || c.notes) {   // LF1: wie gespielt
+      for (let o = bk.cs + Math.floor((b0 - bk.cs) / cL + 1e-9) * cL; o < b1 - 1e-9; o += cL) for (const nt of jam1SongPass(c, o, bk.cs) || c.notes) {   // LF1: wie gespielt · JAM1: Bedingungen wie die Song-Wiedergabe
         if (nt.t >= cL - 1e-9) continue;                         // V0a K-06
         const st = o + nt.t; if (st >= b1 - 1e-9 || st < b0 - 1e-9) continue;
         if (fxm && ueMutedAt(fxm, st, nt.n)) continue;            // FX1
@@ -64840,7 +64859,7 @@ class SynqMixaAn extends AudioWorkletProcessor {
 registerProcessor('synq-mixa-an', SynqMixaAn);
 `;
 const MIXA = {mods: new WeakMap(), w: null, wid: 0, wq: new Map(), busy: false, prog: 0, res: null, am: null, amBusy: false, amProg: 0, ab: false, done: new Map(), err: 0, run: -1, how: null, ziel: -14, last: null, cap: null};
-const mixaModSrc = () => 'const MIXA_D = (' + mixaDspMake.toString() + ')();\n' + MIXA_PROC_SRC + mx1ModSrc() + mx2ModSrc() + mx3ModSrc();   // MX1; MX2; MX3
+const mixaModSrc = () => 'const MIXA_D = (' + mixaDspMake.toString() + ')();\n' + MIXA_PROC_SRC + mx1ModSrc() + mx2ModSrc() + mx3ModSrc() + jam2ModSrc();   // MX1; MX2; MX3; JAM2: Perform-Prozessor im selben Modul
 function mixaAddModule(c) {
   let m = MIXA.mods.get(c); if (m === true) return Promise.resolve(true); if (m === false) return Promise.resolve(false); if (m) return m;
   if (!c || !c.audioWorklet || typeof AudioWorkletNode !== 'function') { MIXA.mods.set(c, false); return Promise.resolve(false); }
@@ -74204,7 +74223,7 @@ function va1MidiSong(idxs, withC) {
     for (const bk of blocks) {
       const c = bk.own && song.own && song.own[bk.own] ? song.own[bk.own] : tr.clips[bk.slot]; if (!c || !c.notes || !c.notes.length) continue;
       const b0 = bk.start, b1 = Math.min(L, bk.end), cL = clipB(c);
-      for (let o = bk.cs + Math.floor((b0 - bk.cs) / cL + 1e-9) * cL; o < b1 - 1e-9; o += cL) for (const nt of lf1Pass(c, Math.round((o - bk.cs) / cL)) || c.notes) {   // QA46: LAUF wie gespielt (LF1, wie buildMidiSong)
+      for (let o = bk.cs + Math.floor((b0 - bk.cs) / cL + 1e-9) * cL; o < b1 - 1e-9; o += cL) for (const nt of jam1SongPass(c, o, bk.cs) || c.notes) {   // QA46: LAUF wie gespielt (LF1, wie buildMidiSong) · JAM1: + Bedingungen
         if (nt.t >= cL - 1e-9) continue;
         const st = o + nt.t; if (st >= b1 - 1e-9 || st < b0 - 1e-9) continue;
         if (fxm && ueMutedAt(fxm, st, nt.n)) continue;            // QA46: FX1-Fenster schweigen auch im Export
@@ -74230,7 +74249,7 @@ function va1MidiSong(idxs, withC) {
 function va1MidiClip(i, s, withC) {
   const tr = S.tracks[i], c = tr && tr.clips[s]; if (!va1MidiOk(i) || !c || !c.notes || !c.notes.length) return null;
   const PPQ = 480, {evs, counts} = midiArrs(), cL = clipB(c), ch = tr.kind === 'drum' || percIs(tr) ? 9 : midiCh(i), ded = new Map();
-  for (const nt of lf1Pass(c, 0) || c.notes) {                    // QA46: LAUF wie gespielt (ein Durchgang)
+  for (const nt of jam1MxPass(c, 0) || c.notes) {                 // QA46: LAUF wie gespielt (ein Durchgang) · JAM1: + Bedingungen (Drums)
     if (nt.t >= cL - 1e-9) continue;
     let p = nt.n; if (tr.kind === 'synth' && withC) p = mapOut(i, c.key || S.key, nt.n, Infinity); if (percIs(tr)) p = percGm(nt.n); p = clamp(Math.round(p), 0, 127);
     const v = clamp(Math.round(nt.v * 127), 1, 127), t0 = Math.round(nt.t * PPQ), t1 = Math.max(t0 + 1, Math.round(Math.min(cL, nt.t + Math.max(nt.d, 1 / 32)) * PPQ)), k = t0 + ':' + p, x = ded.get(k);
@@ -76654,7 +76673,7 @@ function vv4DrumIn(g, x, y, w, h, st, i, C, src, t) {
   const stepOf = gm => {   // the lane's step (D1: own length / direction) and its page
     if (pos < 0) return {page: 0, st: -1};
     const l = c && d1Lane(c, gm);
-    if (l) { const tb = st.tB != null ? st.tB : st.sb, q = d1Pos(l, Math.floor((tb - (st.cs[i] || 0)) / .25 + 1e-6), gm); return {page: Math.floor(q / 16), st: q % 16}; }
+    if (l) { const tb = st.tB != null ? st.tB : st.sb, q = jam1D1Pos(c, l, Math.floor((tb - (st.cs[i] || 0)) / .25 + 1e-6), gm);   /* JAM1-P: Zufall festhalten */ return {page: Math.floor(q / 16), st: q % 16}; }
     return {page: Math.floor(pos / 4), st: Math.floor((pos % 4) / .25 + 1e-6)};
   };
   const lastHit = gm => { const L_ = (src && src.nt && src.nt[i]) || []; let lo = 0, hi = L_.length; while (lo < hi) { const m = (lo + hi) >> 1; if (L_[m].a <= t + 1e-9) lo = m + 1; else hi = m; }
@@ -76883,7 +76902,7 @@ function vvkScore(a, b) {
     for (const bk of blocks) {
       const c = bk.own && song.own && song.own[bk.own] ? song.own[bk.own] : tr.clips[bk.slot]; if (!c || !c.notes || !c.notes.length) continue;
       const b0 = Math.max(B0, bk.start), b1 = Math.min(B1, bk.end), cL = clipB(c); if (b1 <= b0 || !(cL > 0)) continue;
-      for (let o = bk.cs + Math.floor((b0 - bk.cs) / cL + 1e-9) * cL; o < b1 - 1e-9; o += cL) for (const nt of lf1Pass(c, Math.round((o - bk.cs) / cL)) || c.notes) {   // LF1: wie gespielt
+      for (let o = bk.cs + Math.floor((b0 - bk.cs) / cL + 1e-9) * cL; o < b1 - 1e-9; o += cL) for (const nt of jam1SongPass(c, o, bk.cs) || c.notes) {   // LF1: wie gespielt · JAM1: Bedingungen wie die Song-Wiedergabe
         if (nt.t >= cL - 1e-9) continue;
         const s = o + nt.t; if (s >= b1 - 1e-9 || s < b0 - 1e-9) continue;
         let p = nt.n;
@@ -81335,7 +81354,7 @@ function kl1Kon(song, a, e, tp) {
    (a2Pass). Klingt ein Bereich nur durch den Schritt-Zähler anders als die bloße Schleife ab dem Teil-Anfang (Zufall, Chance,
    hin und her mitten im Song), wird ebenfalls erweitert. Drums: die Schritt-Chance (p, DrumSeq.expandStep je Durchlauf) genauso –
    sn hält die Schritte, die dort klangen (ohne p). Ohne LAUF und ohne Drum-Chance: nichts davon (Daten und Klang wie bisher) ---------- */
-function a2Has(c, ns) { if (c && c.lf) return true; for (const n of ns) if (n.off || n.rt || n.tp || n.pb != null) return true; return false; }
+function a2Has(c, ns) { if (c && c.lf) return true; for (const n of ns) if (n.off || n.rt || n.tp || n.pb != null || n.cd) return true; return false; }   // JAM1: + Bedingung
 // the range [a, e) of lane t as it sounds (ns: time from song beat A), bar by bar, and the origin playing each bar (cs); null = no LAUF in it
 function a2Sound(song, t, a, e, A) {
   const lane = song.lanes[t], ns = [], cb = [], dr = !!S.tracks[t] && S.tracks[t].kind === 'drum'; let pc = null, any = false;
@@ -81348,8 +81367,8 @@ function a2Sound(song, t, a, e, A) {
     pc = {slot: ob.slot, own: ow, cs};
     if (b < a) continue;
     cb[b - a] = cs;
-    const ev = lf1Win(src, cs, barBeat(b), barBeat(b + 1));
-    if (!ev) { if (dr && src.notes.some(n => n.p != null && n.p < 1)) { any = true; a2DrumBar(ns, src, cs, L, b, A); } else kl1Bar(ns, src, cs, L, b, A); continue; }   // Drums: Chance je Durchlauf
+    const ev = lf1Win(src, cs, barBeat(b), barBeat(b + 1), JAM1_SONG);   // JAM1: Bedingungen in Song-Schlägen (Teil-Anfang, Fill-Takte)
+    if (!ev) { if (dr && src.notes.some(n => (n.p != null && n.p < 1) || n.cd)) { any = true; a2DrumBar(ns, src, cs, L, b, A); } else kl1Bar(ns, src, cs, L, b, A); continue; }   // JAM1: + Bedingung   // Drums: Chance je Durchlauf
     any = true;
     for (const x of ev) { const y = cleanNote(x); y.t = +(cs + x.t - A).toFixed(6); ns.push(y); }
   }
@@ -81357,28 +81376,29 @@ function a2Sound(song, t, a, e, A) {
   return any ? {ns, cb, A} : null;
 }
 // Drum-Chance (DrumSeq.expandStep, scheduleDrums): Schritt n schweigt im Durchlauf k (Startwert des Clips, Schritt, Pad)
-const a2Off = (c, n, k) => n.p != null && n.p < 1 && DrumSeq.rand01(c.seed | 0, k, Math.round(n.t * 96), n.n) >= n.p;
+const a2Off = (c, n, k) => n.p != null && n.p < 1 && DrumSeq.rand01(jam1Seed(c.seed | 0, c), c.dv ? 0 : k, Math.round(n.t * 96), n.n) >= n.p;   // JAM1: Zufall festhalten wie scheduleDrums
 // kl1Bar for a drum clip with chance: the steps of song bar b as decided in their Durchlauf m (from ocs), without p
-function a2DrumBar(out, src, ocs, Lb, b, A) {
+function a2DrumBar(out, src, ocs, Lb, b, A, jO) {
   const b0 = barBeat(b), b1 = barBeat(b + 1);
   for (let m = Math.floor((b0 - ocs) / Lb) - 1; ocs + m * Lb < b1 - 1e-9; m++) for (const nt of src.notes) {
     if (nt.t >= Lb - 1e-9) continue;
     const st = ocs + m * Lb + nt.t; if (st < b0 - 1e-9 || st >= b1 - 1e-9 || a2Off(src, nt, m)) continue;
-    const x = cleanNote(nt); delete x.p; x.t = +(st - A).toFixed(6); out.push(x);
+    if (nt.cd && !jam1SongOk(src, nt, st, ocs, jO)) continue;   // JAM1: Bedingung (Song-Schläge; jO = Teil-Anfang vorgegeben)
+    const x = cleanNote(nt); delete x.p; delete x.cd; x.t = +(st - A).toFixed(6); out.push(x);   // JAM1: wie gespielt
   }
 }
 // the part without extension plays the scene clip from its Durchlauf at the range start (step counter 0 there): sounds the range different?
 function a2Diff(snd, c, scs, L, A, RB, sig) {
   if (!snd) return false;
-  const ps = A - ((((A - scs) % L) + L) % L); let ev = lf1Win(c, ps, A, A + RB);
-  if (!ev && c.notes.some(n => n.p != null && n.p < 1)) { const d = []; for (let b = Math.round(A / 4); b < Math.round((A + RB) / 4); b++) a2DrumBar(d, c, ps, L, b, A); return sig(snd.ns, 0) !== sig(d, 0); }   // Drums
+  const ps = A - ((((A - scs) % L) + L) % L); let ev = lf1Win(c, ps, A, A + RB, {tb: 'song', O: A});   // JAM1: als Teil ab A gezählt
+  if (!ev && c.notes.some(n => (n.p != null && n.p < 1) || n.cd)) { const d = []; for (let b = Math.round(A / 4); b < Math.round((A + RB) / 4); b++) a2DrumBar(d, c, ps, L, b, A, A); return sig(snd.ns, 0) !== sig(d, 0); }   // Drums
   if (!ev) return true;
   return sig(snd.ns, 0) !== sig(ev, A - ps);
 }
 // the window [a, a + B) as the clip plays it in Durchlauf k (time in the whole content)
 function a2Win(c, k) {
   const w = c.lw, B = clipB(c), P = lf1Plan(c), out = [];
-  for (const x of P ? lf1Ev(P, k * B, (k + 1) * B) : c.notes.filter(n => n.t < B - 1e-9 && !a2Off(c, n, k))) { const y = cleanNote(x); y.t = +(x.t - (P ? k * B : 0) + w.a).toFixed(6); delete y.o; if (!P) delete y.p; out.push(y); }   // Drums: Chance wie im Durchlauf k
+  for (const x of P ? lf1Ev(P, k * B, (k + 1) * B) : c.notes.filter(n => n.t < B - 1e-9 && !a2Off(c, n, k) && !(n.cd && !jam1MxOk(c, n, k)))) { const y = cleanNote(x); y.t = +(x.t - (P ? k * B : 0) + w.a).toFixed(6); delete y.o; if (!P) { delete y.p; delete y.cd; } out.push(y); }   // JAM1: Bedingung, Zufall festhalten   // Drums: Chance wie im Durchlauf k
   return out;
 }
 // konDo: the sound of the range (+ the window behind it, as the clip starts), the window's Durchlauf there, the fingerprints
@@ -81414,7 +81434,7 @@ function a2Pass(c, ns, Lw) {
   for (let k = 0, ps = ps0; ps < Lw - 1e-9; k++, ps = ps0 + k * B) {
     const src = ns.filter(n => n.t >= ps - 1e-9 && n.t < ps + B - 1e-9).map(n => Object.assign({}, n, {t: +(n.t - ps).toFixed(6)}));
     if (!src.length) continue;
-    for (const x of lf1Ev(lf1Build(src, B, c.lf || null), k * B, (k + 1) * B)) {
+    for (const x of lf1Ev(jam1PlanX(lf1Build(src, B, c.lf || null), c), k * B, (k + 1) * B)) {   // JAM1: Zufall festhalten
       const tt = x.t - k * B + ps; if (tt < -1e-9 || tt >= Lw - 1e-9) continue;
       const y = cleanNote(x); y.t = +Math.max(0, tt).toFixed(6); delete y.o; out.push(y);
     }
@@ -81596,9 +81616,10 @@ function gl1PassDep(c) {
   const P = lf1Plan(c); if (!P) return false;
   if (P.g1n == null) {
     let n = 1;
-    if (P.items.some(it => !it.n.off && it.n.pb != null && it.n.pb < 1)) n = 0;
-    else if (P.map && P.dir === 'rnd') n = 0;
-    else if (P.map && P.dir === 'pend' && P.T > 2) { const M = 2 * P.T - 2, gcd = (a, b) => b ? gcd(b, a % b) : a; n = M / gcd(M, P.T); }
+    if (P.items.some(it => !it.n.off && ((it.n.pb != null && it.n.pb < 1 && !P.dv) || it.n.cd))) n = 0;   // JAM1: Bedingung = je Durchlauf eigen; Zufall festhalten = jeder gleich
+    else if (P.map && P.dir === 'rnd' && !P.dv) n = 0;
+    else if (P.map && P.dir === 'pend' && P.T > 2 && !P.dv) {   // JAM1-P: + festgehalten = jeder Durchlauf gleich
+      const M = 2 * P.T - 2, gcd = (a, b) => b ? gcd(b, a % b) : a; n = M / gcd(M, P.T); }
     P.g1n = n;
   }
   return P.g1n !== 1;
@@ -81628,7 +81649,7 @@ function gl1LnS(clip, kb, sel, v6) {
 // the matrix picture: the notes of the first Durchlauf as played (lf1Pass, as the playback), the notated ones faint behind
 function gl1MiniSvg(c, p) {
   const P = lf1Plan(c); if (!P) return null;
-  const L = clipB(c), pl = lf1Pass(c, p | 0) || [];                  // GL1-P: p = der Durchlauf, der gerade klingt (renderGrid)
+  const L = clipB(c), pl = jam1ShowPass(c, p | 0) || [];   /* JAM1-P: Bedingungen mit dem Zähler der Wiedergabe */                  // GL1-P: p = der Durchlauf, der gerade klingt (renderGrid)
   let lo = 127, hi = 0; for (const n of c.notes) { if (n.n < lo) lo = n.n; if (n.n > hi) hi = n.n; } for (const n of pl) { if (n.n < lo) lo = n.n; if (n.n > hi) hi = n.n; }
   const span = Math.max(hi - lo, 6), rect = (n, cls) => { const x = n.t / L * 100, w = Math.max(Math.min(n.d, L - n.t) / L * 100, 1.2), y = (1 - (n.n - lo) / span) * 86; return `<rect${cls ? ' class="' + cls + '"' : ''} x="${x.toFixed(2)}" y="${y.toFixed(1)}" width="${w.toFixed(2)}" height="10" rx="1"/>`; };
   let r = ''; for (const n of c.notes.slice(0, 160)) if (n.t < L - 1e-9) r += rect(n, 'g1g');   // „class“ zuerst: vk4MiniRects (Video) liest nur die gespielten
@@ -81664,7 +81685,7 @@ function gl1RollOpts(t, s) {
       if (b) { if (b.hidden !== !P) b.hidden = !P; const on = ROLLP.gl1 !== 'notated'; if (b.classList.contains('on') !== on) b.classList.toggle('on', on); }
       if (!P || ROLLP.gl1 === 'notated') { GL1.rollLast = null; return null; }
       const o = GL1.rollP, p = R.playing && o && o.t === t && o.s === s ? o.p : 0;   // GL1-P: der Durchlauf, der gerade klingt (steht: der erste)
-      const pl = lf1Pass(c, p) || []; GL1.rollLast = {t, s, p, dir: (c.lf && c.lf.dir) || 'fwd', notes: pl.map(n => ({t: +n.t.toFixed(5), d: +n.d.toFixed(5), n: n.n})), rects: [], next: []};
+      const pl = jam1ShowPass(c, p, t) || []; /* JAM1-P: Bedingungen mit dem Zähler der Wiedergabe (ab Szenen-/Teil-Start, FILL) */ GL1.rollLast = {t, s, p, dir: (c.lf && c.lf.dir) || 'fwd', notes: pl.map(n => ({t: +n.t.toFixed(5), d: +n.d.toFixed(5), n: n.n})), rects: [], next: []};
       return pl;
     },
     ghost(x, r, C) {   // die notierte Note blass mit gestricheltem Rand (sie bleibt das, was man bearbeitet)
@@ -81678,13 +81699,14 @@ function gl1RollOpts(t, s) {
         x.fillStyle = v.col; x.globalAlpha = .95; v.rr(x, rx + 1, ry + 2.5, Math.max(2, w - 2), v.rowH - 5, 3); x.fill();
         x.globalAlpha = 1; x.strokeStyle = 'rgba(11,12,15,.7)'; x.lineWidth = 1; v.rr(x, rx + 1.5, ry + 3, Math.max(1, w - 3), v.rowH - 6, 3); x.stroke();   // GL1-P: dunkle Kontur (der weiße Rand heißt „gewählt“)
         out.push({x: +rx.toFixed(1), y: +ry.toFixed(1), w: +w.toFixed(1), n: n.n, t: +n.t.toFixed(5)});
+        if (pl.j1t) jam1RollDeco(x, {cd: pl.j1t.get(n)}, {x: rx + 1, y: ry + 2.5, w: Math.max(2, w - 2), h: v.rowH - 5});   // JAM1-P: Zeichen der Bedingung auch an der gespielten Note
       }
       // GL1-P: hin und her / Zufall / Chance: hinter dem Clip-Ende die nächsten Durchläufe blass (wie es weitergeht)
       const c = S.tracks[t] && S.tracks[t].clips[s];
       if (c && gl1PassDep(c) && GL1.rollLast) {
         const L = clipB(c), n = lf1Plan(c).g1n, p0 = GL1.rollLast.p | 0;
         for (let k = 1; k <= 8 && v.xOf(k * L) < v.W; k++) {
-          const q = n > 1 ? (p0 + k) % n : p0 + k, nx = lf1Pass(c, q) || []; GL1.rollLast.next.push(q);
+          const q = n > 1 ? (p0 + k) % n : p0 + k, nx = jam1ShowPass(c, q, t) || []; GL1.rollLast.next.push(q);   /* JAM1-P: wie die Wiedergabe */
           x.fillStyle = v.col; x.globalAlpha = .42;
           for (const m of nx) { const rx = v.xOf(k * L + m.t), w = Math.max(3, m.d * v.ppb), ry = v.yOfRow(v.rowOfNote(m.n)); if (rx > v.W || rx + w < 0 || ry > v.H || ry + v.rowH < 0) continue; v.rr(x, rx + 1, ry + 2.5, Math.max(2, w - 2), v.rowH - 5, 3); x.fill(); }
           x.globalAlpha = 1;
@@ -81694,7 +81716,7 @@ function gl1RollOpts(t, s) {
       if (v.sel && v.sel.size && c) { x.strokeStyle = v.C.sel; x.lineWidth = 2; for (const nt of c.notes) if (v.sel.has(nt)) { const r = v.noteRect(nt); if (r.x > v.W || r.x + r.w < 0 || r.y > v.H || r.y + r.h < 0) continue; v.rr(x, r.x + 1, r.y + 2, r.w - 2, r.h - 4, 4); x.stroke(); } x.lineWidth = 1; }
       // einmal je Sitzung kurz erklärt (kein Schild auf der Fläche: es läge über Noten)
       if (!GL1.hint) { GL1.hint = true; const c = S.tracks[t] && S.tracks[t].clips[s], d = c && c.lf && c.lf.dir, nm = d ? (LF1_DIRS.find(z => z[0] === d) || ['', ''])[1] : 'mit Schritt-Effekten';
-        setTimeout(() => { try { toast('LAUF ' + nm + ': hell = so klingt es, blass = notiert (die bearbeitest du) · [wie gespielt] schaltet um'); } catch (e) {} }, 0); }
+        setTimeout(() => { try { toast(jam1Hint(c) || 'LAUF ' + nm + ': hell = so klingt es, blass = notiert (die bearbeitest du) · [wie gespielt] schaltet um'); } catch (e) {} }, 0); }
     }
   };
 }
@@ -86395,12 +86417,14 @@ function pl1Paint() {
 }
 // LAUF / SCHRITTE: Punkt rechts oben am Schritt mit Lock
 function pl1Deco(cell, n) {
+  jam1Deco(cell, n);                                               // JAM1: Zeichen der Bedingung (1:2, F, 1. …) unten rechts
   const on = pl1HasAny(n); let d = cell._pl1d;
   if (on && !d) { d = cell._pl1d = el('i', 'pl1d'); d.setAttribute('aria-hidden', 'true'); cell.appendChild(d); }
   if (d && d.hidden !== !on) d.hidden = !on;
 }
 // ROLLE (PianoRoll opts.noteDeco, je gezeichnete Note): Punkt rechts oben in der Note
 function pl1RollDeco(x, nt, r) {
+  jam1RollDeco(x, nt, r);                                          // JAM1: Zeichen der Bedingung links in der Note
   if (!pl1HasAny(nt) || r.w < 8) return;
   const S_ = pl1S(); if (!S_.amb) { try { S_.amb = getComputedStyle(document.documentElement).getPropertyValue('--amber').trim() || '#ffb22e'; } catch (e) { S_.amb = '#ffb22e'; } }
   const cx = r.x + r.w - 6, cy = r.y + 7;
@@ -86447,7 +86471,7 @@ function pl1Pop(anchor, tg) {
   openPop(anchor, p => {
     p.classList.add('pl1pop'); guardTouch(p);
     p.appendChild(el('h4', '', esc(tg.lbl)));
-    pl1Sect(p, tg);
+    jam1Sect(pl1Sect(p, tg), tg);                                   // JAM1: + Feld „Bedingung ▾“ (und „Zufall festhalten“)
   }, {name: 'pl1'});
 }
 // LAUF: am Ende des Schritt-Menüs (lf1StepRender) – nur für einen gesetzten Schritt
@@ -86456,7 +86480,7 @@ function pl1LaufSect(p, t, s, k) {
     const c = S.tracks[t] && S.tracks[t].clips[s], n = c ? laufFind(c, k) : null;
     p.classList.toggle('pl1w', !!n && !!pl1Eng(t));
     if (!n) return;
-    pl1Sect(p, pl1Tg(t, s, 'lauf', [n], 'Schritt ' + (k + 1)));
+    const tg = pl1Tg(t, s, 'lauf', [n], 'Schritt ' + (k + 1)); jam1Sect(pl1Sect(p, tg), tg);   // JAM1: + Feld „Bedingung ▾“
   } catch (e) { logErr(e); }
 }
 // Drum-SCHRITTE: einen gesetzten Schritt lang drücken (480 ms ohne Bewegung > 8 px, wie LF1) → Locks dieses Schlags; leer = wie bisher
@@ -86486,7 +86510,7 @@ function pl1DrumHold(E) {
 }
 // ROLLE: [Locks] am Ende der Aktionszeile (PianoRoll endActs)
 function pl1Acts(t, s) {
-  if (!pl1Eng(t)) return [];
+  if (!pl1Eng(t)) return jam1Acts(t, s);                        // JAM1-P: ohne Locks (Bit Mask, North, Perkussion) – [Bedingung]
   pl1Css();
   return [{id: 'pl1', label: 'Locks', title: 'Parameter-Locks: Regler nur für die gewählten Noten', cls: 'pl1rb', fn: b => pl1RollPop(b, t, s)}];
 }
@@ -86641,7 +86665,1219 @@ const PL1_API = {
   info: () => ({mode: !!(UI.pl1 && UI.pl1.mode), pend: !!(UI.pl1 && UI.pl1.pend), ll: pl1Ll(), qk: Object.keys(PL1_QK)}),
 };
 /* ===== PL1-END ===== */
+/* ===== JAM2-BEGIN (Paket JAM2, Xanders Ur-Roadmap „Jam“ – „Können wir davon noch was machen?“ → JAM zuerst) ===============================
+   1 Perform-Leiste (≡ › Bedienung › Perform-Leiste, oder „Wo finde ich …?“): liegt über der Tastatur, solange sie offen ist; ✕ schließt sie,
+     dann ist alles wie vorher (kein Knoten mehr im Audio-Weg, das Bild pixelgleich). Inhalt (jede Taste ≥ 44 px, hochkant 4 Zeilen, quer 2):
+     - STOTTERN 1/4 · 1/8 · 1/16 · 1/32 (halten): eine Schleife über das Stück im Raster dieses Werts, in dem gerade gespielt wird (die Phase
+       liegt auf dem Raster des Transports); Ein, Aus und die Naht jeder Wiederholung mit 6 ms Überblendung. Ziel ALLES · OHNE DRUMS · NUR DRUMS.
+     - FILTER-FAHRT: links Tiefpass zu, Mitte neutral (genau durch), rechts Hochpass auf; loslassen = zurück (lineare Rampe ≤ 250 ms).
+     - DRUMS │ BASS │ REST: kurz tippen = stumm bzw. zurück am nächsten Takt, halten = sofort (solange gehalten); STUMM ↔ LEISER (−12 dB).
+     - BLENDE A↔B: A = was jetzt klingt (folgt dem Transport), B = [B merken] oder ein Klangzustand ◆ einer Szene (oder der Grundklang). Der
+       Schieber fährt über den Morph-Kern V6A (v6aGo → Worklet v6aStep, Spur-Werte v6aFxRun); die Zwischenwerte im Reglerraum rechnet dieselbe
+       Formel kv1RunV (log für Frequenzen/Pegel, sonst linear) – keine zweite Interpolation. Stufenwerte (Welle, Filtertyp …) wechseln beim
+       Loslassen auf die Seite des Schiebers, klingende Noten wie im Kern (KZ3); wer einen Regler anfasst, übernimmt ihn (KZ6).
+     Reiner Spielzustand: nichts davon ändert das Projekt (kein ↶-Schritt, nichts gespeichert). Aufnahme/Song-Mitschnitt: einen Automationsweg
+     für Master-Filter, Stottern und Gruppen gibt es nicht – die Bewegungen klingen live (auch in einer Echtzeit-Audioaufnahme), sie werden
+     nicht in den Song geschrieben (offen).
+     Audio: der Prozessor 'synq-jam2' liegt im Modul von MIX-A (mixaAddModule, eine Ladestelle; geladen erst, wenn die Leiste aufgeht) und hängt
+     PARALLEL an der Master-Summe: Eingang 0 = AU.masterSum, Eingang 1 = die Drum-Spuren (Abgriff an N.cut), Ausgang = Perform − Summe in M.glue.
+     In Ruhe gibt er genau 0 aus. Gruppen: je Spur ein Gain parallel zu guide → cut (0 = nichts, stumm −1, leiser −0,75): kein Umstecken, die
+     Sends verstummen mit, der Hall klingt aus. Die Chor-Kopien einer STIMME-Spur (eigene Gruppe direkt in die Summe) folgen nur ALLES (offen).
+   2 Rückung je Teil (Marken-Blatt › Reiter Ablauf): „Rückung −2 −1 0 +1 +2“ = ab diesem Teil so viele Halbtöne gegen den Teil davor. Ein Weg:
+     song.xp (Teil-Transposition – Song-Wiedergabe, MIDI-Export und Video lesen sie schon): die Einträge ab dem Teil rücken mit, spätere Rückungen
+     behalten ihre Stufe; die Song-Melodie (song.mel klingt wie gespielt, folgt song.xp nie) rückt ab dort in den Daten mit. Drums nie. Ein ↶.
+     Spuren mit ⇅ fest (ab Werk MELODIE) lässt jede Transposition aus (Kern-Regel, wie „Song transponieren“): spielen sie ab dem Teil, nennt
+     die Meldung sie (offen, Vorschlag im Funk). Anzeige: der Name der Marke in der Taktleiste trägt „+1“.
+   Einhänge-Zeilen (alle mit „JAM2“ markiert): buildTrack (jam2Chain), v6aGo (jam2DSkip), v6aTick ×3 (jam2Holds/jam2Join/jam2Tick), liveUpdate
+   (jam2Hand), mixaModSrc (+ jam2ModSrc), svDrawMarks (jam2MarkTag), openMarkSheet (jam2MarkSheetPaint), openMenu (jam2MenuRow). ===== */
+const JAM2_U = [[1, '1/4'], [.5, '1/8'], [.25, '1/16'], [.125, '1/32']];
+const JAM2_G = ['all', 'nodr', 'dr'], JAM2_GL = {all: 'ALLES', nodr: 'OHNE<br>DRUMS', dr: 'NUR<br>DRUMS'}, JAM2_GA = {all: 'alles', nodr: 'ohne Drums', dr: 'nur Drums'};
+const JAM2_GRP = [['dr', 'DRUMS'], ['bass', 'BASS'], ['rest', 'REST']];
+const JAM2_TAU = .004, JAM2_HOLD_MS = 200, JAM2_LEISER = -.75, JAM2_GLIDE = .04;
+const JAM2 = {on: false, el: null, ctx: null, node: null, sum: null, glue: null, loading: false, noWk: false, dSum: null, taps: new Map(), ng: [], killT: 0, S: null, watchT: 0,
+  st: {held: [], g: 'all', last: null},
+  f: {x: 0, drag: false},
+  m: {dr: {on: false, pend: null, hold: false}, bass: {on: false, pend: null, hold: false}, rest: {on: false, pend: null, hold: false}, lv: 'stumm', log: []},
+  bl: {x: 0, src: null, snap: null, snapN: 0, hold: new Set(), A: [], Asig: [], B: [], side: [], drop: [], dEng: [], S: null, drag: false, tm: 0, sent: 0, ms: []}};
+
+/* ---------- Prozessor (im MIX-A-Modul): Ring 5,4 s (Summe + Drums), zwei Schleifen-Puffer, Zustandsvariable Filter ---------- */
+const JAM2_PROC_SRC = `
+class SynqJam2 extends AudioWorkletProcessor {
+  constructor(o) {
+    super();
+    const p = (o && o.processorOptions) || {}, sr = sampleRate;
+    this.N = 262144; this.M = 262143;
+    this.rA = [new Float32Array(262144), new Float32Array(262144)]; this.rD = [new Float32Array(262144), new Float32Array(262144)];
+    this.lb = [[new Float32Array(131072), new Float32Array(131072)], [new Float32Array(131072), new Float32Array(131072)]]; this.lbi = 0;
+    this.X = Math.max(64, Math.round(0.006 * sr)); this.cur = null; this.old = null; this.xk = 0; this.xp = 0; this.v0 = 0; this.v1 = 0;
+    this.fs = 0; this.ft = 0; this.fRel = false; this.dH = 1 / (0.07 * sr); this.dR = 1 / (0.25 * sr);   // the knob value follows the finger at most 1 per 70 ms, back at 1 per 250 ms (linear in log-Hz)
+    this.z = new Float64Array(4); this.fk = 1; this.fa1 = 0; this.fa2 = 0; this.fa3 = 0; this.fw = 0; this.fhp = false;
+    this.ev = []; this.alive = true; this.cn = 0; this.ct = 0; this.cmax = 0; this.hp = typeof performance !== 'undefined' && typeof performance.now === 'function';
+    this.port.onmessage = e => {
+      const m = e.data; if (!m) return;
+      if (m.t === 'cpu') { this.port.postMessage({cpu: {n: this.cn, us: this.cn ? this.ct * 1000 / this.cn : 0, max: this.cmax * 1000, perf: this.hp}, st: this.cur ? {f0: this.cur.f0, L: this.cur.L, g: this.cur.g, at: this.cur.at} : null, lastAt: this.lastAt}); this.cn = 0; this.ct = 0; this.cmax = 0; return; }
+      if (m.t === 'bye') { this.alive = false; return; }
+      this.ev.push(m);
+    };
+    if (Array.isArray(p.ev)) for (const m of p.ev) this.ev.push(m);
+  }
+  apply(m, f) {
+    if (m.t === 'st') {
+      const L = Math.max(256, Math.min(120000, m.L | 0)), X = Math.min(this.X, L >> 2);
+      let f0 = Math.round(+m.f0) || 0; if (f0 > f) f0 = f; if (f - f0 > this.N - L - X - 512) f0 = f;
+      const s = {f0, L, X, g: m.g | 0, b: this.lbi, fill: 0, at: f}; this.lbi ^= 1; this.lastAt = f;   // at: the frame it took over (tests)
+      this.xp = this.cur ? 1 : 0; this.old = this.cur; this.cur = s; this.xk = this.X;   // from live: the first pass IS live (linear); loop to loop: equal power
+    } else if (m.t === 'end') { if (!this.cur) return; this.xp = 1; this.old = this.cur; this.cur = null; this.xk = this.X; }
+    else if (m.t === 'flt') { this.ft = Math.max(-1, Math.min(1, +m.x || 0)); this.fRel = !!m.rel; }
+  }
+  gv(s, m, c) {
+    const j = m - (s.f0 - s.X);
+    if (j >= 0 && j < s.fill) return this.lb[s.b][c][j];
+    const q = m & this.M;
+    return s.g === 0 ? this.rA[c][q] : s.g === 1 ? this.rA[c][q] - this.rD[c][q] : this.rD[c][q];
+  }
+  fillLb(s, upto) {
+    const end = Math.min(upto, s.f0 + s.L), B0 = this.lb[s.b][0], B1 = this.lb[s.b][1], A0 = this.rA[0], A1 = this.rA[1], D0 = this.rD[0], D1 = this.rD[1], M = this.M, g = s.g;
+    let j = s.fill;
+    for (let m = s.f0 - s.X + j; m < end; m++, j++) {
+      const q = m & M;
+      if (g === 0) { B0[j] = A0[q]; B1[j] = A1[q]; } else if (g === 1) { B0[j] = A0[q] - D0[q]; B1[j] = A1[q] - D1[q]; } else { B0[j] = D0[q]; B1[j] = D1[q]; }
+    }
+    s.fill = j;
+  }
+  // the output of state s at frame f (q = ring index): null = live; a loop = the rest of the mix live + the group from the slice
+  out(s, f, q) {
+    const A = this.rA, D = this.rD;
+    if (!s || f < s.f0) { this.v0 = A[0][q]; this.v1 = A[1][q]; return; }
+    const L = s.L, X = s.X, p = (f - s.f0) % L, m = s.f0 + p;
+    let w0 = this.gv(s, m, 0), w1 = this.gv(s, m, 1);
+    if (p >= L - X) { const h = (p - (L - X) + 1) / (X + 1) * 1.5707963267948966, a = Math.cos(h), b = Math.sin(h); w0 = w0 * a + this.gv(s, m - L, 0) * b; w1 = w1 * a + this.gv(s, m - L, 1) * b; }   // the seam: into the frames just before the slice (they lead into its start), equal power
+    if (s.g === 0) { this.v0 = w0; this.v1 = w1; }
+    else if (s.g === 1) { this.v0 = D[0][q] + w0; this.v1 = D[1][q] + w1; }
+    else { this.v0 = A[0][q] - D[0][q] + w0; this.v1 = A[1][q] - D[1][q] + w1; }
+  }
+  coef() {
+    const u = Math.abs(this.fs); this.fw = Math.min(1, u / 0.06); if (!(this.fw > 0)) return;
+    const sr = sampleRate, hp = this.fs > 0, fc = hp ? 25 * Math.pow(240, u) : 18000 * Math.pow(110 / 18000, u), Q = 0.75 + 0.75 * u;
+    const g = Math.tan(Math.PI * Math.min(fc, 0.45 * sr) / sr), k = 1 / Q;
+    this.fhp = hp; this.fk = k; this.fa1 = 1 / (1 + g * (g + k)); this.fa2 = g * this.fa1; this.fa3 = g * this.fa2;
+  }
+  process(inputs, outputs) {
+    const o = outputs[0]; if (!o || !o.length) return this.alive;
+    const t0 = this.hp ? performance.now() : 0, n = o[0].length, F = currentFrame, M = this.M, rA = this.rA, rD = this.rD;
+    const iA = inputs[0], iD = inputs[1], a0 = iA && iA.length ? iA[0] : null, a1 = iA && iA.length > 1 ? iA[1] : a0, d0 = iD && iD.length ? iD[0] : null, d1 = iD && iD.length > 1 ? iD[1] : d0;
+    for (let j = 0; j < n; j++) { const q = (F + j) & M; rA[0][q] = a0 ? a0[j] : 0; rA[1][q] = a1 ? a1[j] : 0; rD[0][q] = d0 ? d0[j] : 0; rD[1][q] = d1 ? d1[j] : 0; }
+    const o0 = o[0], o1 = o.length > 1 ? o[1] : null;
+    if (!this.cur && !this.old && !this.xk && this.fs === 0 && this.ft === 0 && !this.ev.length) { o0.fill(0); if (o1) o1.fill(0); return this.alive; }
+    if (this.cur) this.fillLb(this.cur, F + n); if (this.old) this.fillLb(this.old, F + n);
+    const z = this.z;
+    for (let j = 0; j < n; j++) {
+      const f = F + j, q = f & M;
+      while (this.ev.length && !this.xk && (this.ev[0].at == null || this.ev[0].at <= f)) this.apply(this.ev.shift(), f);
+      this.out(this.cur, f, q); let y0 = this.v0, y1 = this.v1;
+      if (this.xk) {
+        const w = 1 - this.xk / this.X; this.out(this.old, f, q);
+        if (this.xp) { const h = w * 1.5707963267948966, a = Math.cos(h), b = Math.sin(h); y0 = this.v0 * a + y0 * b; y1 = this.v1 * a + y1 * b; } else { y0 = this.v0 + (y0 - this.v0) * w; y1 = this.v1 + (y1 - this.v1) * w; }
+        if (!--this.xk) this.old = null;
+      }
+      if (this.fs !== this.ft) {
+        const d = this.ft - this.fs, st = this.fRel ? this.dR : this.dH; this.fs = Math.abs(d) <= st ? this.ft : this.fs + (d > 0 ? st : -st);
+        this.coef();                                                  // while it moves: every sample (no zipper steps)
+        if (this.fs === 0) { this.fw = 0; z.fill(0); }
+      }
+      if (this.fw > 0) {
+        const k = this.fk, a1 = this.fa1, a2 = this.fa2, a3 = this.fa3, w = this.fw;
+        let v3 = y0 - z[1], v1 = a1 * z[0] + a2 * v3, v2 = z[1] + a2 * z[0] + a3 * v3; z[0] = 2 * v1 - z[0]; z[1] = 2 * v2 - z[1];
+        const f0 = this.fhp ? y0 - k * v1 - v2 : v2;
+        v3 = y1 - z[3]; v1 = a1 * z[2] + a2 * v3; v2 = z[3] + a2 * z[2] + a3 * v3; z[2] = 2 * v1 - z[2]; z[3] = 2 * v2 - z[3];
+        const f1 = this.fhp ? y1 - k * v1 - v2 : v2;
+        y0 += (f0 - y0) * w; y1 += (f1 - y1) * w;
+      }
+      o0[j] = y0 - rA[0][q]; if (o1) o1[j] = y1 - rA[1][q];
+    }
+    for (let k = 0; k < 4; k++) if (z[k] < 1e-20 && z[k] > -1e-20) z[k] = 0;
+    if (this.hp) { const dt = performance.now() - t0; this.cn++; this.ct += dt; if (dt > this.cmax) this.cmax = dt; }
+    return this.alive;
+  }
+}
+registerProcessor('synq-jam2', SynqJam2);
+`;
+function jam2ModSrc() { return JAM2_PROC_SRC; }                   // mixaModSrc hängt das an (eine Ladestelle für Worklet-Module der Mischung)
+
+/* ---------- Audio-Anschluss ---------- */
+const jam2Live = () => !!(AU.ctx && !UI.vvOff && AU.M && AU.masterSum);
+function jam2Attach() {
+  if (!jam2Live()) return false;
+  const c = AU.ctx;
+  clearTimeout(JAM2.killT); JAM2.killT = 0;
+  if (JAM2.ctx !== c) { JAM2.ctx = c; JAM2.node = null; JAM2.dSum = null; JAM2.taps = new Map(); JAM2.ng = []; }
+  if (!JAM2.dSum) JAM2.dSum = c.createGain();
+  JAM2.S = S;
+  for (let i = 0; i < NT(); i++) jam2Chain(i);
+  jam2Taps();
+  if (!JAM2.node && !JAM2.loading) {
+    JAM2.loading = true;
+    mixaAddModule(c).then(ok => {
+      JAM2.loading = false;
+      if (!ok) { JAM2.noWk = true; jam2Paint(); return; }
+      if (AU.ctx !== c || UI.vvOff || !JAM2.on || JAM2.node) return;
+      try {
+        const N = new AudioWorkletNode(c, 'synq-jam2', {numberOfInputs: 2, numberOfOutputs: 1, outputChannelCount: [2], channelCount: 2, channelCountMode: 'explicit', channelInterpretation: 'speakers'});
+        JAM2.sum = AU.masterSum; JAM2.glue = AU.M.glue;
+        JAM2.sum.connect(N, 0, 0); JAM2.dSum.connect(N, 0, 1); N.connect(JAM2.glue);
+        N.port.onmessage = e => { const m = e.data; if (m && m.cpu && JAM2.cpuCb) { const f = JAM2.cpuCb; JAM2.cpuCb = null; f(m); } };
+        JAM2.node = N; JAM2.noWk = false;
+      } catch (e) { logErr(e); JAM2.noWk = true; }
+      jam2Paint();
+    });
+  }
+  return true;
+}
+// alles wieder heraus (nur in Ruhe: Ausgang 0, Gruppen-Gains 0) – danach ist der Audio-Weg wie vor dem Öffnen
+function jam2Detach() {
+  const N = JAM2.node;
+  if (N) { try { JAM2.sum.disconnect(N); } catch (e) {} try { JAM2.dSum.disconnect(N); } catch (e) {} try { N.disconnect(); } catch (e) {} try { N.port.postMessage({t: 'bye'}); } catch (e) {} JAM2.node = null; }
+  for (const src of JAM2.taps.values()) { try { src.disconnect(JAM2.dSum); } catch (e) {} } JAM2.taps.clear();
+  for (const o of JAM2.ng) if (o) { try { o.A.guide.disconnect(o.n); } catch (e) {} try { o.n.disconnect(); } catch (e) {} }
+  JAM2.ng = [];
+}
+// buildTrack (Einhänge-Zeile): eine neu gebaute Spur-Kette bekommt ihren Gruppen-Gain (und den Drum-Abgriff) wieder, solange die Leiste offen ist
+function jam2Chain(i) {
+  if (!JAM2.on || !JAM2.ctx || JAM2.ctx !== AU.ctx || UI.vvOff) return;
+  const A = AU.tracks[i]; if (!A || !A.guide || !A.cut) return;
+  const o = JAM2.ng[i]; if (o && o.A === A) return;
+  if (o) { try { o.A.guide.disconnect(o.n); } catch (e) {} try { o.n.disconnect(); } catch (e) {} }
+  const n = AU.ctx.createGain(); n.gain.value = jam2Level(jam2GrpOf(i));
+  A.guide.connect(n); n.connect(A.cut);
+  JAM2.ng[i] = {A, n};
+  if (o) jam2Taps();
+}
+function jam2Taps() {
+  if (!JAM2.dSum || JAM2.ctx !== AU.ctx || UI.vvOff) return;
+  const want = new Map(); for (const i of jam2Groups().dr) { const A = AU.tracks[i]; if (A && A.cut) want.set(i, A.cut); }
+  for (const [i, src] of [...JAM2.taps]) if (want.get(i) !== src) { try { src.disconnect(JAM2.dSum); } catch (e) {} JAM2.taps.delete(i); }
+  for (const [i, src] of want) if (!JAM2.taps.has(i)) { try { src.connect(JAM2.dSum); JAM2.taps.set(i, src); } catch (e) { logErr(e); } }
+}
+
+/* ---------- Gruppen: Drums (Drum-Spur, Perkussion) │ Bass (die Rolle der Mischung, mx2Roles) │ Rest ---------- */
+function jam2Groups() {
+  const out = {dr: [], bass: [], rest: []}; let ro = null; try { ro = mx2Roles(); } catch (e) { ro = null; }
+  for (let i = 0; i < NT(); i++) { const tr = S.tracks[i]; if (!tr) continue; if (tr.kind === 'drum' || percIs(tr)) out.dr.push(i); else if (ro && ro[i] === 'bass') out.bass.push(i); else out.rest.push(i); }
+  return out;
+}
+function jam2GrpOf(i) { const G = jam2Groups(); return G.dr.includes(i) ? 'dr' : G.bass.includes(i) ? 'bass' : 'rest'; }
+const jam2Muted = g => { const s = JAM2.m[g]; return !!s && s.on !== s.hold; };
+const jam2Level = g => (jam2Muted(g) ? (JAM2.m.lv === 'leiser' ? JAM2_LEISER : -1) : 0);
+// die eine Rampe aller Gruppen-Gains (live und in der Offline-Messung): τ 4 ms ab der Zeit t
+function jam2Ramp(P, v, t) {
+  try { if (P.cancelAndHoldAtTime) P.cancelAndHoldAtTime(t); else P.cancelScheduledValues(t); P.setTargetAtTime(v, t, JAM2_TAU); } catch (e) { logErr(e); }
+}
+function jam2MuteSet(g, muted, t) {
+  const v = muted ? (JAM2.m.lv === 'leiser' ? JAM2_LEISER : -1) : 0, G = jam2Groups()[g] || [];
+  for (const i of G) { const o = JAM2.ng[i]; if (o) jam2Ramp(o.n.gain, v, t); }
+  JAM2.m.log.push({g, v, t: +t.toFixed(4), now: AU.ctx ? +AU.ctx.currentTime.toFixed(4) : 0, tracks: G.slice()}); if (JAM2.m.log.length > 60) JAM2.m.log.shift();
+}
+// kurz tippen: am nächsten Takt um (läuft nichts: sofort); ein zweiter Tipp vor dem Takt nimmt es zurück
+function jam2GrpTap(g) {
+  const s = JAM2.m[g], c = AU.ctx; if (!s || !c) return false;
+  if (s.pend) { clearTimeout(s.pend.tm); s.pend = null; jam2MuteSet(g, jam2Muted(g), c.currentTime); jam2Paint(); return 'zurück'; }
+  const to = !s.on;
+  if (!R.playing) { s.on = to; jam2MuteSet(g, jam2Muted(g), c.currentTime); jam2Paint(); return 'sofort'; }
+  const nb = nextBarFromAudible(), t = Math.max(b2t(nb), c.currentTime + .005);
+  jam2MuteSet(g, to !== s.hold, t);
+  const pend = {t, b: nb, to};
+  pend.tm = setTimeout(() => { if (s.pend === pend) { s.on = to; s.pend = null; jam2Paint(); } }, Math.max(0, (t - c.currentTime + (AU.outLat || 0)) * 1000));
+  s.pend = pend; jam2Paint();
+  return 'takt';
+}
+// halten: sofort um, solange gehalten (ein wartender Wechsel entfällt)
+function jam2GrpHold(g, down) {
+  const s = JAM2.m[g], c = AU.ctx; if (!s || !c) return false;
+  if (s.pend) { clearTimeout(s.pend.tm); s.pend = null; }
+  s.hold = !!down; jam2MuteSet(g, jam2Muted(g), c.currentTime); jam2Paint();
+  return true;
+}
+function jam2LvSet(v) {
+  JAM2.m.lv = v === 'leiser' ? 'leiser' : 'stumm';
+  const c = AU.ctx; if (c) for (const [g] of JAM2_GRP) if (jam2Muted(g) && !JAM2.m[g].pend) jam2MuteSet(g, true, c.currentTime);
+  jam2Paint(); return JAM2.m.lv;
+}
+
+/* ---------- Stottern ---------- */
+// u Schläge (1 = 1/4): das Stück [Raster ≤ jetzt, + u) im Raster des Transports (hörbare Zeit), wiederholt, solange gehalten
+function jam2StGo(u) {
+  const c = AU.ctx, N = JAM2.node; if (!c || !N) { if (JAM2.noWk) toast('Stottern und Filter brauchen das Audio-Worklet'); return false; }
+  jam2Taps();
+  const sr = c.sampleRate, L = Math.round(u * spb() * sr), g = JAM2.st.g; let f0;
+  if (R.playing) { const bA = t2b(c.currentTime - (AU.outLat || 0)), gb = Math.floor(bA / u + 1e-9) * u; f0 = Math.round(b2t(gb) * sr); }
+  else f0 = Math.round((c.currentTime - (AU.outLat || 0)) * sr);
+  N.port.postMessage({t: 'st', f0, L, g: JAM2_G.indexOf(g)});
+  JAM2.st.last = {u, f0, L, g, sr, at: +c.currentTime.toFixed(4), start: R.playing ? R.startTime : null, spb: spb(), playing: !!R.playing};
+  return true;
+}
+function jam2StDown(u) { const H = JAM2.st.held, k = H.indexOf(u); if (k >= 0) H.splice(k, 1); H.push(u); return jam2StGo(u); }
+function jam2StUp(u) {
+  const H = JAM2.st.held, k = H.indexOf(u); if (k < 0) return false;
+  const top = k === H.length - 1; H.splice(k, 1);
+  if (!H.length) { if (JAM2.node) JAM2.node.port.postMessage({t: 'end'}); }
+  else if (top) jam2StGo(H[H.length - 1]);
+  return true;
+}
+function jam2StOff() { JAM2.st.held = []; if (JAM2.node) JAM2.node.port.postMessage({t: 'end'}); }
+function jam2Flt(x, rel) { JAM2.f.x = rel ? 0 : clamp(+x || 0, -1, 1); if (JAM2.node) JAM2.node.port.postMessage({t: 'flt', x: JAM2.f.x, rel: rel ? 1 : 0}); return JAM2.f.x; }
+
+/* ---------- Blende A↔B über den Morph-Kern V6A ---------- */
+function jam2BlOk(i) { const tr = S.tracks[i]; return !!(tr && !tr.stimme && (tr.kind === 'synth' || tr.kind === 'drum') && !(V6A.ed && V6A.ed.i === i)); }
+// v6aTick / v6aGo / liveUpdate fragen: hält die Blende diese Spur? (leer = eine Zeile, die nichts tut)
+function jam2Holds(i) {
+  const B = JAM2.bl; if (!B.hold.size || UI.vvOff) return false;
+  if (B.S !== S) { B.hold.clear(); return false; }                  // ein anderes Projekt: die Blende ist vorbei
+  return B.hold.has(i) && !(V6A.ed && V6A.ed.i === i);
+}
+// B einer Spur als Zustand gegen ihren Grundklang (null = Grundklang, undefined = diese Spur blendet nicht)
+function jam2BState(i) {
+  const B = JAM2.bl, tr = S.tracks[i], src = B.src; if (!src || !tr) return undefined;
+  if (src === 'g') return null;
+  if (src[0] === 's') { const st = v6aSt(i, +src.slice(1), null); if (tr.kind === 'drum') return st && st.fx ? {p: {}, fx: Object.assign({}, st.fx)} : null; return st; }
+  const sn = B.snap && B.snap[i]; if (!sn || sn.uid !== tr.uid) return undefined;
+  const df = v6aDiff(tr.sound, sn.snd); if (!df) return null;
+  const o = {p: tr.kind === 'drum' ? {} : df.p}; if (tr.kind === 'synth') o.eng = tr.sound.engine; if (Object.keys(df.fx).length) o.fx = df.fx;
+  return Object.keys(o.p).length || o.fx ? o : null;
+}
+// [B merken]: der Klang, der jetzt klingt (Grundklang ⊕ Zustand), aller Synth- und Drum-Spuren
+function jam2BMerk() {
+  const snap = {}; let n = 0;
+  for (let i = 0; i < NT(); i++) { if (!jam2BlOk(i)) continue; const tr = S.tracks[i], st = v6aCurSt(i); snap[i] = {uid: tr.uid, snd: deep(st ? v6aApply(tr.sound, st) : tr.sound)}; n++; }
+  const B = JAM2.bl; B.snap = snap; B.snapN = n; B.src = 'merk'; B.snapS = S;
+  if (B.hold.size) jam2BlReB();
+  jam2Paint(); return n;
+}
+function jam2BSrcList() {
+  const L = [{k: 'merk', l: 'Gemerkt', dis: !JAM2.bl.snap}, {k: 'g', l: 'Grundklang'}];
+  for (let s = 0; s < NS(); s++) if (S.tracks.some((tr, i) => tr && tr.clips[s] && v6aSt(i, s, null))) L.push({k: 's' + s, l: '◆ Szene ' + (s + 1)});
+  return L;
+}
+const jam2BSrcLabel = k => (!k ? '–' : k === 'merk' ? 'gemerkt' : k === 'g' ? 'Grundklang' : '◆ Szene ' + (+k.slice(1) + 1));
+function jam2BSrcSet(k) { const B = JAM2.bl; if (k === 'merk' && !B.snap) return false; B.src = k; if (B.hold.size) jam2BlReB(); jam2Paint(); return true; }
+// die Spuren, die blenden (A ≠ B), werden gehalten: v6aTick lässt sie der Blende, A folgt dem Transport (jam2Tick)
+function jam2BlStart() {
+  const B = JAM2.bl; if (!B.src) return 0;
+  v6aRt(); B.S = S;
+  for (let i = 0; i < NT(); i++) {
+    if (B.hold.has(i) || !jam2BlOk(i)) continue;
+    const b = jam2BState(i); if (b === undefined) continue;
+    const cur = R.v6aCur[i], a = cur ? cur.st : null;
+    if (v6aSig(a) === v6aSig(b)) continue;
+    B.hold.add(i); B.A[i] = a; B.Asig[i] = v6aSig(a); B.B[i] = b; B.side[i] = 0; B.drop[i] = new Set(); B.dEng[i] = null;
+  }
+  return B.hold.size;
+}
+function jam2BlReB() { const B = JAM2.bl; for (const i of [...B.hold]) { const b = jam2BState(i); if (b === undefined) continue; B.B[i] = b; } jam2BlStart(); jam2BlSend(); }
+// Gesetz eines Schlüssels wie kv1Go (0 = stufig, 1 = linear, 2 = im Log-Raum) – dieselbe Formel kv1RunV wie die Anzeige und das Worklet
+function jam2Law(k, eng3) { if (!k.includes('.')) return !eng3 && v6aCont(k) ? (v6aLaw(k) ? 2 : 1) : 0; return eng3 && k.startsWith('mk.') && v6aMkCont(k.slice(3)) ? 1 : 0; }
+function jam2Mix(i, x, side) {
+  const B = JAM2.bl, tr = S.tracks[i], base = tr.sound, A = B.A[i], Bs = B.B[i], drop = B.drop[i] || new Set();
+  const EA = A ? v6aApply(base, A) : base, EB = Bs ? v6aApply(base, Bs) : base, eng3 = base.engine === 'mk', p = {}, fx = {};
+  for (const k of new Set(Object.keys((A && A.p) || {}).concat(Object.keys((Bs && Bs.p) || {})))) {
+    if (V6A_NO.has(k)) continue;
+    const a = v6aGet(EA, k), b = v6aGet(EB, k);
+    if (drop.has(k)) { if (A && A.p && Object.prototype.hasOwnProperty.call(A.p, k) && a !== undefined) p[k] = a; continue; }   // KZ6: die Hand – der Grundklang gilt (oder der ◆ des Clips, den sie über AK1 geändert hat)
+    const m = typeof a === 'number' && typeof b === 'number' && isFinite(a) && isFinite(b) ? jam2Law(k, eng3) : 0;
+    const v = m ? kv1RunV({a: {[k]: a}, b: {[k]: b}, m: {[k]: m}, t0: 0, t1: 1, at: 0, c: 1}, k, x) : side ? (b !== undefined ? b : a) : (a !== undefined ? a : b);
+    if (v !== undefined) p[k] = v;
+  }
+  const fa = fxOfSound(EA), fb = fxOfSound(EB);
+  for (const k of V6A_FX) { const a = fa[k], b = fb[k]; if (Math.abs(a - b) > 1e-9 || (A && A.fx && typeof A.fx[k] === 'number')) { if (!drop.has('fx.' + k)) fx[k] = a + (b - a) * x; else if (A && A.fx && typeof A.fx[k] === 'number') fx[k] = a; } }
+  const o = {p}; if (tr.kind === 'synth') o.eng = base.engine; if (Object.keys(fx).length) o.fx = fx;
+  return o;
+}
+function jam2BlSend(glide) {
+  const B = JAM2.bl, c = AU.ctx; if (!c || !B.hold.size) return;
+  const T0 = performance.now(), t = c.currentTime + .005; B.sent = T0;
+  for (const i of B.hold) { if (!jam2Holds(i)) continue; try { v6aGo(i, jam2Mix(i, B.x, B.side[i]), t, t + (glide == null ? JAM2_GLIDE : glide), t, 1); } catch (e) { logErr(e); } }
+  B.ms.push(+(performance.now() - T0).toFixed(3)); if (B.ms.length > 200) B.ms.shift();
+}
+function jam2BlSoon() { const B = JAM2.bl; if (B.tm) return; B.tm = setTimeout(() => { B.tm = 0; jam2BlSend(); }, Math.max(0, 33 - (performance.now() - B.sent))); }
+function jam2BlSet(x) {
+  const B = JAM2.bl; if (!B.src) return false;
+  B.x = clamp(+x || 0, 0, 1);
+  if (!B.hold.size && !jam2BlStart()) { B.x = 0; jam2Paint(); return false; }   // nichts zu blenden: der Schieber bleibt bei A
+  jam2BlSoon(); jam2Paint(); return true;
+}
+// loslassen: Stufenwerte auf die Seite des Schiebers (KZ3); ganz links = die Blende endet (A, wie der Transport es will)
+function jam2BlUp() {
+  const B = JAM2.bl; B.drag = false; clearTimeout(B.tm); B.tm = 0;
+  if (!B.hold.size) return;
+  if (B.x <= .001) { jam2BlEnd(.03); return; }
+  const side = B.x >= .5 ? 1 : 0; let ch = false;
+  for (const i of B.hold) if (B.side[i] !== side) { B.side[i] = side; ch = true; }
+  jam2BlSend(ch ? .03 : JAM2_GLIDE);
+}
+function jam2Want(i) { const p = R.pend[i]; if (R.playing) return p ? v6aSt(i, p.slot, p.own) : v6aSt(i, R.slot[i], R.own[i]); return JAM2.bl.A[i] || null; }
+function jam2BlEnd(glide) {
+  const B = JAM2.bl, c = AU.ctx, ids = [...B.hold]; B.hold.clear(); B.x = 0; clearTimeout(B.tm); B.tm = 0;
+  if (c && B.S === S) { const t = c.currentTime + .005, g = glide == null ? .3 : glide; for (const i of ids) { if (!S.tracks[i]) continue; try { v6aGo(i, jam2Want(i), t, t + g, t + g, 1); } catch (e) { logErr(e); } } }
+  jam2Paint();
+}
+// v6aTick (Einhänge-Zeile): die gehaltene Spur bekommt die Blende mit dem neuen A, zur Zeit, die der Kern für diesen Wechsel nähme
+function jam2Tick(i, want, p, nb, fresh) {
+  const B = JAM2.bl, sig = v6aSig(want); if (!fresh && B.Asig[i] === sig) return true;
+  const st0 = B.A[i]; B.A[i] = want; B.Asig[i] = sig; B.dEng[i] = B.dEng[i] || null;
+  const c = AU.ctx; let T_;
+  if (fresh) { const t = c.currentTime; T_ = {t0: t, t1: t, at: t, c: 1}; }
+  else T_ = v6aTimes(v6aMode(i, p, want, st0), p ? p.beat : nb, nb);
+  try { v6aGo(i, jam2Mix(i, B.x, B.side[i]), T_.t0, T_.t1, T_.at, T_.c); } catch (e) { logErr(e); }
+  return true;
+}
+// v6aTick (Einhänge-Zeilen, Prüfung P1): eine Spur, deren Zustand sich WÄHREND der Blende ändert (Szene, Clip, Song-Kante) und dann von
+// B abweicht, blendet ab jetzt mit – A = ihr neuer Zustand. Zeit: T_ = die Song-Kante einen Schlag voraus (wie der Kern), sonst jam2Tick
+// (v6aMode/v6aTimes). Klingt das neue A wie B, bleibt sie beim Kern. Stufenwerte: beim Ziehen A, sonst die Seite des Schiebers (KZ3).
+function jam2Join(i, want, sig, T_) {
+  const B = JAM2.bl, cur = R.v6aCur[i];
+  if (cur ? cur.sig === sig : !want) return false;                 // an dieser Spur ändert sich nichts
+  if (B.S !== S || UI.vvOff || !jam2BlOk(i)) return false;
+  const b = jam2BState(i); if (b === undefined || v6aSig(b) === sig) return false;
+  const a = cur ? cur.st : null;
+  B.hold.add(i); B.A[i] = a; B.Asig[i] = v6aSig(a); B.B[i] = b; B.side[i] = B.drag ? 0 : B.x >= .5 ? 1 : 0; B.drop[i] = new Set(); B.dEng[i] = null;
+  if (T_) { B.A[i] = want; B.Asig[i] = sig; try { v6aGo(i, jam2Mix(i, B.x, B.side[i]), T_.t0, T_.t1, T_.at, T_.c); } catch (e) { logErr(e); } }
+  jam2Paint();
+  return true;
+}
+// v6aGo (Einhänge-Zeile): während der Blende gehen unveränderte Stufenwerte nicht erneut hinaus (sonst je Schieber-Schritt eine Stimmen-Überblendung)
+function jam2DSkip(i, d, mkd) {
+  if (!jam2Holds(i)) return false;
+  const B = JAM2.bl, cur = {}; for (const k in d) cur[k] = d[k]; for (const k in mkd) cur['mk.' + k] = mkd[k];
+  const was = B.dEng[i]; B.dEng[i] = cur; if (!was) return false;
+  for (const k in cur) if (was[k] !== cur[k]) return false;
+  return true;
+}
+// liveUpdate (Einhänge-Zeile, KZ6): ein gedrehter Regler verlässt die Blende dieser Spur und folgt der Hand
+function jam2Hand(i, key) {
+  const B = JAM2.bl, c = AU.ctx; if (!c || !B.hold.has(i) || B.S !== S || UI.vvOff || (B.drop[i] && B.drop[i].has(key))) return;
+  const cur = R.v6aCur && R.v6aCur[i], st = cur && cur.st; if (!st) return;
+  const inP = !!(st.p && Object.prototype.hasOwnProperty.call(st.p, key)), inFx = key.startsWith('fx.') && !!(st.fx && typeof st.fx[key.slice(3)] === 'number');
+  if (!inP && !inFx) return;
+  (B.drop[i] || (B.drop[i] = new Set())).add(key);
+  if (V6A.ed && V6A.ed.i === i) return;                            // AK1: die Hand schreibt ins ◆ des Clips (das Worklet spielt die Arbeitskopie); danach A = dieser ◆
+  const t = c.currentTime + .003; try { v6aGo(i, jam2Mix(i, B.x, B.side[i]), t, t + .02, t, 1); } catch (e) { logErr(e); }
+}
+
+/* ---------- alles aus (✕, anderes Projekt) ---------- */
+function jam2AllOff() {
+  const c = AU.ctx;
+  jam2StOff(); jam2Flt(0, true);
+  for (const [g] of JAM2_GRP) { const s = JAM2.m[g]; if (s.pend) clearTimeout(s.pend.tm); const was = jam2Muted(g) || !!s.pend; s.pend = null; s.on = false; s.hold = false; if (c && was) jam2MuteSet(g, false, c.currentTime); }
+  if (JAM2.bl.hold.size) jam2BlEnd(.3);
+  JAM2.bl.x = 0;
+}
+function jam2Watch() {
+  if (!JAM2.on) return;
+  if (JAM2.S !== S) {                                             // ein anderes Projekt: Spielzustand zurück, B vergessen, Ketten neu
+    jam2AllOff(); const B = JAM2.bl; B.snap = null; B.src = null; B.hold.clear(); JAM2.S = S;
+    if (jam2Live()) jam2Attach();
+  } else if (jam2Live() && JAM2.ctx !== AU.ctx) jam2Attach();
+  else if (jam2Live()) { for (let i = 0; i < NT(); i++) jam2Chain(i); jam2Taps(); }
+  jam2Paint();                                                     // die Lage folgt der Tastatur über einen ResizeObserver (kein Layout-Lesen je Takt)
+}
+
+/* ---------- Leiste ---------- */
+function jam2Open() {
+  if (JAM2.on) { jam2Place(); jam2Paint(); return true; }
+  ensureAudio();
+  JAM2.on = true; jam2Css(); jam2Build(); jam2Attach(); jam2Place(); jam2Paint();
+  if (!JAM2.ro && window.ResizeObserver) try { JAM2.ro = new ResizeObserver(() => { if (JAM2.on) jam2Place(); }); JAM2.ro.observe(EL.kbArea); } catch (e) { logErr(e); }
+  clearInterval(JAM2.watchT); JAM2.watchT = setInterval(jam2Watch, 500);
+  return true;
+}
+function jam2Close() {
+  if (!JAM2.on) return false;
+  jam2AllOff();
+  JAM2.on = false; clearInterval(JAM2.watchT); JAM2.watchT = 0;
+  if (JAM2.el) { JAM2.el.remove(); JAM2.el = null; }
+  clearTimeout(JAM2.killT); JAM2.killT = setTimeout(() => { JAM2.killT = 0; if (!JAM2.on && jam2Live() && JAM2.ctx === AU.ctx) jam2Detach(); }, 450);   // nach den Rampen (Filter ≤ 250 ms, Gruppen τ 4 ms)
+  return true;
+}
+// über der Tastatur (gleiche Breite, unten bündig); braucht die Leiste mehr Höhe, reicht sie nach oben (Überlagerung, nichts verschiebt sich)
+function jam2Place() {
+  const E = JAM2.el; if (!E) return;
+  const r = EL.kbArea.getBoundingClientRect(), land = isLand(), need = land ? 106 : 206;
+  if (!(r.width > 0)) { E.style.display = 'none'; return; }
+  const h = Math.max(r.height, need);
+  E.style.display = ''; E.style.left = Math.round(r.left) + 'px'; E.style.top = Math.round(r.bottom - h) + 'px'; E.style.width = Math.round(r.width) + 'px'; E.style.height = Math.round(h) + 'px';
+  E.classList.toggle('j2l', land);
+}
+function jam2Build() {
+  const E = el('div', 'j2bar'); E.id = 'jam2Bar'; E.setAttribute('role', 'toolbar'); E.setAttribute('aria-label', 'Perform-Leiste');
+  E.innerHTML = `<div class="j2-st" role="group" aria-label="Stottern – halten">` +
+      JAM2_U.map(([u, l]) => `<button class="rb j2-u" data-u="${u}" aria-label="Stottern ${l} – halten">${l}</button>`).join('') +
+      `<button class="rb j2-g" data-j="g" aria-label="Stottern: Ziel"></button></div>` +
+    `<div class="j2-f j2-sl" role="slider" aria-label="Filter-Fahrt: links Tiefpass, rechts Hochpass, loslassen = zurück" aria-valuemin="-100" aria-valuemax="100" aria-valuenow="0">` +
+      `<span class="j2-l0">◁ TIEFPASS</span><span class="j2-lm">FILTER</span><span class="j2-l1">HOCHPASS ▷</span><b class="j2-mid"></b><div class="j2-rail"><i class="j2-fill"></i><i class="j2-k"></i></div></div>` +
+    `<div class="j2-m" role="group" aria-label="Gruppen: tippen = am Takt, halten = sofort">` +
+      JAM2_GRP.map(([g, l]) => `<button class="rb j2-grp" data-g="${g}" aria-label="${l} stumm – tippen am Takt, halten sofort">${l}</button>`).join('') +
+      `<button class="rb j2-lv" data-j="lv" aria-label="Stumm oder leiser"></button></div>` +
+    `<div class="j2-ab" role="group" aria-label="Blende A↔B">` +
+      `<button class="rb j2-bm" data-j="bm" aria-label="B merken: den Klang jetzt festhalten">B<br>merken</button>` +
+      `<div class="j2-x j2-sl" role="slider" aria-label="Blende von A (jetzt) nach B" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span class="j2-l0">A</span><span class="j2-lm"></span><span class="j2-l1">B</span><div class="j2-rail"><i class="j2-fill"></i><i class="j2-k"></i></div></div>` +
+      `<button class="rb j2-bs" data-j="bs" aria-label="B wählen"></button></div>` +
+    `<button class="rb j2-cl" data-j="x" aria-label="Perform-Leiste schließen">✕</button>`;
+  // Stottern: halten (mehrere Finger: der zuletzt gedrückte gilt; loslassen = der davor, keiner mehr = aus)
+  for (const b of E.querySelectorAll('.j2-u')) {
+    const u = +b.dataset.u;
+    b.addEventListener('pointerdown', e => { if (e.button > 0) return; e.preventDefault(); try { b.setPointerCapture(e.pointerId); } catch (x) {} b._pid = e.pointerId; jam2StDown(u); haptic('tick'); jam2Paint(); });
+    const up = e => { if (b._pid == null || b._pid !== e.pointerId) return; b._pid = null; jam2StUp(u); jam2Paint(); };
+    b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up); b.addEventListener('lostpointercapture', up);
+    b.addEventListener('contextmenu', e => e.preventDefault());
+  }
+  // Gruppen: kurz = am Takt, halten = ab 200 ms sofort, solange gehalten (P2: ein Finger kann vorher nicht Tipp und Halten unterscheiden;
+  // sofort beim Aufsetzen hieße: jeder Tipp schaltet kurz stumm = ein Loch – darum die kürzeste sichere Schwelle, Tipps dauern meist < 150 ms)
+  for (const b of E.querySelectorAll('.j2-grp')) {
+    const g = b.dataset.g;
+    b.addEventListener('pointerdown', e => {
+      if (e.button > 0) return; e.preventDefault(); try { b.setPointerCapture(e.pointerId); } catch (x) {}
+      const me = {id: e.pointerId, long: false}; b._st = me;
+      me.tm = setTimeout(() => { if (b._st === me) { me.long = true; haptic('pop'); jam2GrpHold(g, true); } }, JAM2_HOLD_MS);
+    });
+    const end = e => {
+      const me = b._st; if (!me || me.id !== e.pointerId) return; b._st = null; clearTimeout(me.tm);
+      if (me.long) jam2GrpHold(g, false); else if (e.type === 'pointerup') { haptic('tick'); jam2GrpTap(g); }
+    };
+    b.addEventListener('pointerup', end); b.addEventListener('pointercancel', end); b.addEventListener('lostpointercapture', end);
+    b.addEventListener('contextmenu', e => e.preventDefault());
+  }
+  // Filter-Schieber: der Finger ist die Stellung (Mitte = neutral); loslassen = zurück
+  const fs = E.querySelector('.j2-f');
+  const fx = e => { const r = fs.querySelector('.j2-rail').getBoundingClientRect(); return clamp((e.clientX - (r.left + r.width / 2)) / (r.width / 2), -1, 1); };
+  fs.addEventListener('pointerdown', e => { if (e.button > 0) return; e.preventDefault(); try { fs.setPointerCapture(e.pointerId); } catch (x) {} fs._pid = e.pointerId; JAM2.f.drag = true; fs.classList.remove('ret'); jam2Flt(fx(e)); jam2Paint(); });
+  fs.addEventListener('pointermove', e => { if (fs._pid !== e.pointerId) return; jam2Flt(fx(e)); jam2Paint(); });
+  const fUp = e => { if (fs._pid == null || fs._pid !== e.pointerId) return; fs._pid = null; JAM2.f.drag = false; if (pl1Ll()) fs.classList.add('ret'); jam2Flt(0, true); jam2Paint(); };
+  fs.addEventListener('pointerup', fUp); fs.addEventListener('pointercancel', fUp); fs.addEventListener('lostpointercapture', fUp);
+  // Blende: der Finger ist die Stellung A … B; der Schieber bleibt, wo er losgelassen wird
+  const xs = E.querySelector('.j2-x');
+  const xx = e => { const r = xs.querySelector('.j2-rail').getBoundingClientRect(); return clamp((e.clientX - r.left) / r.width, 0, 1); };
+  xs.addEventListener('pointerdown', e => {
+    if (e.button > 0) return; e.preventDefault();
+    if (!JAM2.bl.src) { toast('Erst [B merken] – oder unter B ▾ einen Klangzustand wählen'); return; }
+    try { xs.setPointerCapture(e.pointerId); } catch (x) {} xs._pid = e.pointerId; JAM2.bl.drag = true;
+    if (!jam2BlSet(xx(e))) { xs._pid = null; JAM2.bl.drag = false; toast('B klingt wie A – nichts zu blenden'); }
+  });
+  xs.addEventListener('pointermove', e => { if (xs._pid !== e.pointerId) return; jam2BlSet(xx(e)); });
+  const xUp = e => { if (xs._pid == null || xs._pid !== e.pointerId) return; xs._pid = null; jam2BlUp(); jam2Paint(); };
+  xs.addEventListener('pointerup', xUp); xs.addEventListener('pointercancel', xUp); xs.addEventListener('lostpointercapture', xUp);
+  onTap(E, b => {
+    const a = b.dataset.j;
+    if (a === 'x') { jam2Close(); return; }
+    if (a === 'g') { JAM2.st.g = JAM2_G[(JAM2_G.indexOf(JAM2.st.g) + 1) % JAM2_G.length]; haptic('tick'); jam2Paint(); return; }
+    if (a === 'lv') { jam2LvSet(JAM2.m.lv === 'stumm' ? 'leiser' : 'stumm'); haptic('tick'); return; }
+    if (a === 'bm') { const n = jam2BMerk(); haptic('tick'); toast(n ? 'B gemerkt (' + n + ' Spuren) – Schieber nach rechts = zu B' : 'Keine Spur zum Merken'); return; }
+    if (a === 'bs') { jam2BSrcPick(b); }
+  }, 'button[data-j]');
+  EL.app.appendChild(E); JAM2.el = E;
+}
+function jam2BSrcPick(anchor) {
+  openPop(anchor, p => {
+    guardTouch(p); p.classList.add('j2pick');
+    p.innerHTML = '<h4>B ist …</h4><div class="plist">' + jam2BSrcList().map(x => `<button class="rb${x.k === JAM2.bl.src ? ' on' : ''}" data-k="${x.k}"${x.dis ? ' disabled' : ''}>${esc(x.l)}</button>`).join('') + '</div>';
+    onTap(p, b => { closePop(); jam2BSrcSet(b.dataset.k); }, 'button[data-k]');
+  }, {name: 'jam2b', above: true});
+}
+function jam2Paint() {
+  const E = JAM2.el; if (!E) return;
+  E.classList.toggle('ll', pl1Ll());
+  const wk = !!JAM2.node, H = JAM2.st.held;
+  for (const b of E.querySelectorAll('.j2-u')) { const on = H.length && H[H.length - 1] === +b.dataset.u; b.classList.toggle('on', !!on); b.classList.toggle('dim', !wk); b.setAttribute('aria-pressed', String(!!on)); }
+  const gB = E.querySelector('.j2-g'); gB.innerHTML = JAM2_GL[JAM2.st.g]; gB.setAttribute('aria-label', 'Stottern: ' + JAM2_GA[JAM2.st.g] + ' – tippen wechselt');
+  const fs = E.querySelector('.j2-f'), fxv = JAM2.f.drag ? JAM2.f.x : 0;
+  fs.style.setProperty('--p', ((fxv + 1) / 2).toFixed(4)); fs.style.setProperty('--a', Math.min(.5, (fxv + 1) / 2).toFixed(4)); fs.style.setProperty('--b', Math.max(.5, (fxv + 1) / 2).toFixed(4));
+  fs.setAttribute('aria-valuenow', String(Math.round(fxv * 100))); fs.classList.toggle('dim', !wk); fs.classList.toggle('lp', fxv < 0); fs.classList.toggle('hp', fxv > 0);
+  for (const b of E.querySelectorAll('.j2-grp')) {
+    const g = b.dataset.g, s = JAM2.m[g], mu = jam2Muted(g);
+    b.classList.toggle('on', mu); b.classList.toggle('lvq', mu && JAM2.m.lv === 'leiser'); b.classList.toggle('pend', !!s.pend); b.setAttribute('aria-pressed', String(mu));
+  }
+  const lv = E.querySelector('.j2-lv'); lv.textContent = JAM2.m.lv === 'leiser' ? 'LEISER' : 'STUMM'; lv.classList.toggle('lvq', JAM2.m.lv === 'leiser');
+  const B = JAM2.bl, xs = E.querySelector('.j2-x');
+  xs.style.setProperty('--p', B.x.toFixed(4)); xs.style.setProperty('--a', '0'); xs.style.setProperty('--b', B.x.toFixed(4));
+  xs.setAttribute('aria-valuenow', String(Math.round(B.x * 100))); xs.classList.toggle('dim', !B.src); xs.classList.toggle('act', B.hold.size > 0);
+  xs.querySelector('.j2-lm').textContent = B.src ? 'BLENDE' : 'erst B merken';
+  const bs = E.querySelector('.j2-bs'); bs.innerHTML = 'B ▾<small>' + esc(B.src ? jam2BSrcLabel(B.src) : 'wählen') + '</small>';
+}
+function jam2Css() {
+  if (document.getElementById('jam2-css')) return;
+  const st = document.createElement('style'); st.id = 'jam2-css';
+  st.textContent = `
+#jam2Bar{position:fixed;z-index:19;box-sizing:border-box;padding:6px;display:grid;gap:5px;grid-template-columns:minmax(0,1fr) 48px;grid-template-areas:"st x" "f f" "m m" "ab ab";grid-template-rows:repeat(4,minmax(44px,1fr));background:linear-gradient(#0d0e12,#060708);border-top:2px solid var(--amber);box-shadow:0 -6px 18px rgba(0,0,0,.5);touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+#jam2Bar.j2l{grid-template-columns:auto minmax(0,1fr) 48px;grid-template-areas:"st f x" "m ab ab";grid-template-rows:repeat(2,minmax(44px,1fr))}
+#jam2Bar .j2-st{grid-area:st;display:flex;gap:4px;min-width:0}
+#jam2Bar .j2-f{grid-area:f}
+#jam2Bar .j2-m{grid-area:m;display:flex;gap:4px;min-width:0}
+#jam2Bar .j2-ab{grid-area:ab;display:flex;gap:4px;min-width:0}
+#jam2Bar .j2-cl{grid-area:x;font-size:17px}
+#jam2Bar .rb{min-width:44px;min-height:44px;height:auto;padding:0 3px;font:700 12px/1.05 var(--font-ui);letter-spacing:.04em;text-align:center;flex-direction:column}
+#jam2Bar .j2-u{flex:1 1 0;font:700 15px/1 var(--font-num,monospace);letter-spacing:-.02em}
+#jam2Bar .j2-g{flex:1.1 1 0;font-size:10.5px;color:#ffcf7a}
+#jam2Bar.j2l .j2-u,#jam2Bar.j2l .j2-g{flex:0 0 58px}
+#jam2Bar .j2-grp{flex:1 1 0}
+#jam2Bar .j2-lv{flex:1 1 0;font-size:11px;color:var(--text-dim)}
+#jam2Bar.j2l .j2-grp,#jam2Bar.j2l .j2-lv{flex:0 0 72px}
+#jam2Bar .j2-bm{flex:0 0 64px;font-size:11px}
+#jam2Bar .j2-bs{flex:0 0 76px;font-size:12px}
+#jam2Bar .j2-bs small{display:block;margin-top:2px;max-width:72px;font:600 9.5px/1.1 var(--font-ui);letter-spacing:0;color:#ffcf7a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#jam2Bar .rb.on{background:linear-gradient(#ffc04d,#e89a12);color:#141416;border-color:#7a4d00}
+#jam2Bar .j2-grp.on{background:linear-gradient(#ff6a5c,#c7372b);color:#fff;border-color:#5c1510}
+#jam2Bar .j2-grp.on.lvq{background:linear-gradient(#a8792a,#6b4b14);color:#fff;border-color:#3a2808}
+#jam2Bar .j2-lv.lvq{color:#ffcf7a}
+#jam2Bar .j2-grp.pend{outline:2px dashed var(--amber);outline-offset:-5px}
+#jam2Bar.ll .j2-grp.pend{animation:j2bl .5s steps(2,end) infinite}
+@keyframes j2bl{50%{outline-color:transparent}}
+#jam2Bar .dim{opacity:.45}
+#jam2Bar .j2-sl{position:relative;flex:1 1 auto;min-width:0;min-height:44px;border-radius:8px;background:var(--lcd);border:1px solid var(--line);box-shadow:inset 0 1px 5px rgba(0,0,0,.9);touch-action:none;overflow:hidden;--p:.5;--a:.5;--b:.5}
+#jam2Bar .j2-sl span{position:absolute;top:4px;font:700 9.5px/1 var(--font-ui);letter-spacing:.08em;color:var(--text-dim);pointer-events:none;white-space:nowrap}
+#jam2Bar .j2-sl .j2-l0{left:8px}#jam2Bar .j2-sl .j2-l1{right:8px}#jam2Bar .j2-sl .j2-lm{left:50%;transform:translateX(-50%);color:var(--text-faint)}
+#jam2Bar .j2-x .j2-l0,#jam2Bar .j2-x .j2-l1{font-size:11px;top:3px;color:var(--text)}
+#jam2Bar .j2-mid{position:absolute;left:50%;top:16px;bottom:5px;width:2px;margin-left:-1px;background:var(--line);pointer-events:none}
+#jam2Bar .j2-rail{position:absolute;left:14px;right:14px;top:0;bottom:0;pointer-events:none}
+#jam2Bar .j2-fill{position:absolute;top:calc(50% + 6px);height:4px;margin-top:-2px;left:calc(var(--a) * 100%);width:calc((var(--b) - var(--a)) * 100%);background:var(--amber);border-radius:2px}
+#jam2Bar .j2-k{position:absolute;top:16px;bottom:5px;width:22px;margin-left:-11px;left:calc(var(--p) * 100%);border-radius:5px;background:linear-gradient(#3d424d,#262a33);border:1px solid #000;box-shadow:inset 0 1px 0 var(--hi)}
+#jam2Bar .j2-k::after{content:"";position:absolute;left:10px;top:4px;bottom:4px;width:2px;background:var(--amber);border-radius:1px}
+#jam2Bar .j2-f.ret .j2-k,#jam2Bar .j2-f.ret .j2-fill{transition:left .25s linear,width .25s linear}
+#jam2Bar .j2-f.lp .j2-l0,#jam2Bar .j2-f.hp .j2-l1,#jam2Bar .j2-x.act .j2-l1{color:#ffcf7a}
+.pop.j2pick .plist{display:flex;flex-direction:column;gap:4px;min-width:180px}.pop.j2pick .rb{min-height:44px;justify-content:flex-start;padding:0 12px}.pop.j2pick .rb.on{border-color:#6b4c16;color:#ffcf7a}
+.msheet .j2rk{display:flex;align-items:center;gap:4px;height:44px;margin-top:4px}
+.msheet .j2rk .j2rk-l{flex:0 0 auto;display:flex;flex-direction:column;justify-content:center;min-width:58px;font:700 11px/1.1 var(--font-ui);letter-spacing:.05em;color:var(--text-dim);text-transform:uppercase}
+.msheet .j2rk .j2rk-l small{font:600 10px/1.1 var(--font-ui);letter-spacing:.01em;text-transform:none;color:var(--text-faint)}
+.msheet .j2rk .ms-b{flex:1 1 0;min-width:44px;font-size:13px}
+.msheet .j2rk .ms-b.on{background:linear-gradient(#ffc04d,#e89a12);color:#141416;border-color:#7a4d00}
+.msheet .j2rk.j2rk-in{flex:0 0 auto;margin:0 0 0 10px;height:44px}.msheet .j2rk.j2rk-in .ms-b{flex:0 0 52px}
+`;
+  document.head.appendChild(st);
+}
+// ≡ › Bedienung (Einhänge-Zeile): Perform-Leiste An │ Aus
+function jam2MenuRow(s6, row) {
+  try {
+    jam2Css();
+    const sg = makeSeg([[true, 'An'], [false, 'Aus']], () => JAM2.on, v => { if (v) { closeMenu(); jam2Open(); } else jam2Close(); });
+    row(s6, 'Perform-Leiste', sg).classList.add('j2mr');
+    s6.appendChild(el('div', 'small', 'Perform-Leiste über der Tastatur (Matrix und Song): Stottern 1/4–1/32 halten, Filter-Fahrt, Drums │ Bass │ Rest stumm oder leiser (tippen = am Takt, halten = sofort), Blende A↔B. Reiner Spielzustand – das Projekt ändert sich nicht; ✕ schließt sie.'));
+  } catch (e) { logErr(e); }
+}
+addEventListener('resize', () => { if (JAM2.on) requestAnimationFrame(jam2Place); });
+addEventListener('orientationchange', () => { if (JAM2.on) setTimeout(jam2Place, 120); });
+addEventListener('blur', () => { if (!JAM2.on) return; if (JAM2.st.held.length) jam2StOff(); for (const [g] of JAM2_GRP) if (JAM2.m[g].hold) jam2GrpHold(g, false); if (JAM2.f.drag) { JAM2.f.drag = false; jam2Flt(0, true); } if (JAM2.bl.drag) jam2BlUp(); jam2Paint(); });
+
+/* ---------- 2 Rückung je Teil (song.xp) ---------- */
+// die Rückung eines Teils: die Teil-Transposition ab seinem Anfang gegen die davor (der erste Teil: gegen 0); vvAppXpAt = die eine Abfrage von song.xp
+function jam2RkInfo(song, m) { const b = barBeat(m.a), cur = vvAppXpAt(song, b), before = m.a > 0 ? vvAppXpAt(song, b - 1e-3) : 0; return {cur, before, r: cur - before}; }
+function jam2MarkTag(m) { try { const r = S.song && m ? jam2RkInfo(S.song, m).r : 0; return r ? ' ' + gr1Semi(r) : ''; } catch (e) { return ''; } }
+const jam2RkMel = t => { const tr = S.tracks[t]; return !!(tr && tr.kind === 'synth' && !percIs(tr) && !tr.stimme); };
+// P3: die Ton-Spuren mit ⇅ fest, die ab dem Teil m im Song spielen – sie rücken nicht mit (song.xp lässt „fest“ aus); die Meldung nennt sie
+function jam2RkFest(song, m) {
+  const out = [];
+  for (let i = 0; i < NT(); i++) {
+    const tr = S.tracks[i]; if (!jam2RkMel(i) || tr.follow !== false || !song.lanes[i]) continue;
+    for (let b = m.a; b < song.bars; b++) { const o = laneOriginAt(song.lanes[i], b); if (o && laneClipOk(song, i, o)) { out.push(tr.name || trackNameOf(i)); break; } }
+  }
+  return out;
+}
+// ab diesem Teil r Halbtöne gegen den Teil davor: alle Einträge ab hier rücken um dieselbe Differenz (spätere Rückungen bleiben), die
+// Song-Melodie ab hier ebenso (eine Note bis ¼ Schlag vor dem Taktstrich gehört als Auftakt dazu, wie songShift); ein ↶ 'song'
+function jam2RkSet(id, r) {
+  const song = S.song, m = song && song.marks.find(x => x.id === id); if (!m || R.songRec) return false;
+  r = clamp(Math.round(+r || 0), -12, 12);
+  const I = jam2RkInfo(song, m), d = I.before + r - I.cur; if (!d) return null;
+  const B0 = barBeat(m.a), xs = (song.xp || []).map(x => ({beat: x.beat, semi: x.semi}));
+  if (!xs.some(x => Math.abs(x.beat - B0) < 1e-6)) xs.push({beat: B0, semi: I.cur});
+  if (xs.some(x => x.beat >= B0 - 1e-6 && Math.abs(x.semi + d) > 12)) { toast('Höchstens ±12 Halbtöne'); return false; }
+  const ok = songEdit('Rückung ' + markLabel(m) + ' ' + gr1Semi(r), sg => {
+    sg.xp = xs.map(x => (x.beat >= B0 - 1e-6 ? {beat: x.beat, semi: x.semi + d} : x)).sort((a, b) => a.beat - b.beat);
+    for (const k in sg.mel) { if (!jam2RkMel(+k)) continue; for (const n of sg.mel[k].notes) if (n.t >= B0 - .25 - 1e-9) n.n = clamp(n.n + d, 0, 127); }
+  });
+  if (ok) gr1XpLive();                                             // läuft ▶ SONG: ab dem nächsten Takt (wie Song transponieren)
+  return !!ok;
+}
+// Marken-Blatt (Einhänge-Zeile, vor WEGE): eine Zeile im Reiter Ablauf – dem Reiter, mit dem das Blatt aufgeht (P4: Marke → +1 = 2 Tipps)
+function jam2MarkSheetPaint(p, m) {
+  try {
+    jam2Css();
+    const I = jam2RkInfo(S.song, m), out = I.r < -2 || I.r > 2, busy = svRecBusy();
+    const row = el('div', 'ms-r j2rk'); row.dataset.wgr = 'a'; row.setAttribute('role', 'group'); row.setAttribute('aria-label', 'Rückung ab diesem Teil');
+    row.innerHTML = `<span class="j2rk-l">Rückung<small>${out ? 'jetzt ' + esc(gr1Semi(I.r)) : 'ab hier'}</small></span>` +
+      [-2, -1, 0, 1, 2].map(v => `<button class="rb ms-b j2rk-b${v === I.r ? ' on' : ''}" data-jrk="${v}" aria-pressed="${v === I.r}"${busy ? ' disabled' : ''} aria-label="${esc(v ? 'Ab ' + markLabel(m) + ' ' + gr1Semi(v) + ' Halbton' + (Math.abs(v) > 1 ? 'e' : '') + ' gegen davor' : 'Keine Rückung')}">${v ? gr1Semi(v) : '0'}</button>`).join('');
+    const sx1 = isLand() ? p.querySelector('.sx1-r') : null, ma = p.querySelector('.ms-a');
+    if (sx1) { row.className = 'j2rk j2rk-in'; sx1.appendChild(row); }   // quer, letzter Teil: in die Zeile „Ausblenden am Ende“ (das Blatt wird nicht höher, der Song bleibt sichtbar)
+    else if (ma) ma.after(row); else p.appendChild(row);
+    if (!p._j2rk) {
+      p._j2rk = true;
+      onTap(p, b => {
+        const mm = S.song && S.song.marks.find(x => x.id === SV.mark); if (!mm) return;
+        const v = +b.dataset.jrk, ok = jam2RkSet(mm.id, v);
+        if (ok) { const fe = v ? jam2RkFest(S.song, mm) : []; haptic('tick'); toast(v ? 'Ab ' + markLabel(mm) + ' ' + gr1Semi(v) + ' Halbton' + (Math.abs(v) > 1 ? 'e' : '') + (R.playing && R.songPlay ? ' – ab dem nächsten Takt' : '') + (fe.length ? ' · ' + fe.join(', ') + ' (⇅ fest) rückt nicht mit' : '') : markLabel(mm) + ': keine Rückung', songUndoAct()); svButtons(); UI.dirty.song = true; }
+        if (UI.pop && UI.pop.el === p && p._paint) { p._paint(); popDock(p); }
+      }, 'button[data-jrk]');
+    }
+  } catch (e) { logErr(e); }
+}
+function jam2RkGo() {
+  ui1Home(); setSongView(true);
+  const ms = S.song && S.song.marks ? S.song.marks.slice().sort((a, b) => a.a - b.a) : [];
+  if (!ms.length) { toast('Erst einen Teil in den Song setzen – dann die gelbe Teil-Marke antippen'); return true; }
+  openMarkSheet(ms[ms.length - 1].id);
+  if (UI.pop && UI.pop.el && typeof wegeMsTab === 'function') wegeMsTab(UI.pop.el, 'a');
+  return true;
+}
+
+/* ---------- „Wo finde ich …?“ (UI1): drei Einträge ans Ende der Liste ---------- */
+(function jam2Guide() {
+  try {
+    const L = ui1Entries(), E = (id, n, w, d, s, go, q) => ({id, n, w, d, s, go, q}); if (L.some(x => x.id === 'jam2pf')) return;
+    const open = () => { ui1Home(); jam2Open(); return true; };
+    L.push(E('jam2pf', 'Perform-Leiste', 'Menü › Bedienung › Perform-Leiste (liegt dann über der Tastatur)', 'Live spielen: Stottern 1/4–1/32 halten, Filter-Fahrt (loslassen = zurück), Drums │ Bass │ Rest stumm oder leiser (tippen = am Takt, halten = sofort). Ändert das Projekt nicht; ✕ schließt.', 'perform leiste live stottern wiederholen repeat filter fahrt tiefpass hochpass stumm leiser gruppen drums bass jam', open, '#jam2Bar'),
+      E('jam2ab', 'Blende A↔B', 'Perform-Leiste › unten: B merken · Schieber · B ▾', '[B merken] hält den Klang aller Spuren fest; der Schieber blendet zwischen jetzt (A) und B – B kann auch ein Klangzustand ◆ einer Szene sein (B ▾).', 'blende a b ueberblenden crossfader morph klangzustand merken szene', open, '.j2-ab'),
+      E('jam2rk', 'Rückung (ab einem Teil höher)', 'Song › Teil-Marke antippen › Ablauf › Rückung', 'Ab diesem Teil −2 … +2 Halbtöne, z. B. der letzte Refrain einen Halbton höher. Song-Melodie, Akkorde, Bass folgen; Drums und Spuren mit ⇅ fest nicht; die Marke zeigt „+1“. Ein ↶.', 'rueckung halbton hoeher tonart wechsel refrain transponieren teil modulation', jam2RkGo, '.j2rk'));
+  } catch (e) { logErr(e); }
+})();
+
+/* ---------- Messung (Tests): derselbe Prozessor bzw. dieselbe Rampe in einem OfflineAudioContext ---------- */
+async function jam2Offline(o) {
+  o = o || {}; const sr = o.sr || 48000, n = Math.round((o.sec || 2) * sr), oc = new OfflineAudioContext(2, n, sr);
+  if (!(await mixaAddModule(oc))) return null;
+  const buf = fn => { const b = oc.createBuffer(2, n, sr); for (let c = 0; c < 2; c++) { const d = b.getChannelData(c); for (let i = 0; i < n; i++) d[i] = fn ? fn(i, c) : 0; } const s = oc.createBufferSource(); s.buffer = b; return s; };
+  const A = buf(o.a), D = buf(o.d);
+  A.connect(oc.destination);
+  if (!o.bare) {
+    const N = new AudioWorkletNode(oc, 'synq-jam2', {numberOfInputs: 2, numberOfOutputs: 1, outputChannelCount: [2], channelCount: 2, channelCountMode: 'explicit', channelInterpretation: 'speakers', processorOptions: {ev: o.ev || []}});
+    A.connect(N, 0, 0); D.connect(N, 0, 1); N.connect(oc.destination);
+  }
+  A.start(0); D.start(0);
+  const T0 = performance.now(), r = await oc.startRendering();
+  return {ms: performance.now() - T0, L: r.getChannelData(0), R: r.getChannelData(1), sr, n};
+}
+async function jam2MuteOffline(o) {
+  o = o || {}; const sr = o.sr || 48000, n = Math.round((o.sec || 1) * sr), oc = new OfflineAudioContext(1, n, sr);
+  const b = oc.createBuffer(1, n, sr), d = b.getChannelData(0); for (let i = 0; i < n; i++) d[i] = o.a(i);
+  const s = oc.createBufferSource(); s.buffer = b; const guide = oc.createGain(), cut = oc.createGain(), g = oc.createGain(); g.gain.value = 0;
+  s.connect(guide); guide.connect(cut); guide.connect(g); g.connect(cut); cut.connect(oc.destination);
+  for (const e of o.ev || []) jam2Ramp(g.gain, e.v, e.t);
+  s.start(0); const r = await oc.startRendering(); return {L: r.getChannelData(0), sr, n};
+}
+SYNQUENZER.jam2 = {
+  open: () => jam2Open(), close: () => jam2Close(), isOpen: () => JAM2.on,
+  state: () => ({on: JAM2.on, node: !!JAM2.node, noWk: JAM2.noWk, st: {held: JAM2.st.held.slice(), g: JAM2.st.g, last: JAM2.st.last ? Object.assign({}, JAM2.st.last) : null}, f: Object.assign({}, JAM2.f),
+    m: Object.fromEntries(JAM2_GRP.map(([g]) => [g, {on: JAM2.m[g].on, hold: JAM2.m[g].hold, pend: JAM2.m[g].pend ? {t: JAM2.m[g].pend.t, b: JAM2.m[g].pend.b, to: JAM2.m[g].pend.to} : null, muted: jam2Muted(g)}])), lv: JAM2.m.lv,
+    bl: {x: JAM2.bl.x, src: JAM2.bl.src, hold: [...JAM2.bl.hold], side: JAM2.bl.side.slice(), snapN: JAM2.bl.snapN, drop: JAM2.bl.drop.map(s => (s ? [...s] : null))},
+    groups: jam2Groups(), taps: [...JAM2.taps.keys()], ng: JAM2.ng.map(o => (o ? +o.n.gain.value.toFixed(5) : null)), attached: JAM2.ng.filter(Boolean).length}),
+  st: u => jam2StDown(u), stUp: u => jam2StUp(u), stOff: () => jam2StOff(), target: g => { if (JAM2_G.includes(g)) JAM2.st.g = g; jam2Paint(); return JAM2.st.g; },
+  flt: x => jam2Flt(x, false), fltRel: () => jam2Flt(0, true),
+  tap: g => jam2GrpTap(g), hold: (g, down) => jam2GrpHold(g, down), lv: v => jam2LvSet(v), muteLog: () => JAM2.m.log.slice(),
+  bMerk: () => jam2BMerk(), bSrc: k => jam2BSrcSet(k), bSrcList: () => jam2BSrcList(), blend: x => jam2BlSet(x), blendNow: () => jam2BlSend(), blendUp: () => jam2BlUp(), blendEnd: g => jam2BlEnd(g),
+  blendMs: () => JAM2.bl.ms.slice(), mix: (i, x, side) => jam2Mix(i, x, side),
+  offline: o => jam2Offline(o), muteOffline: o => jam2MuteOffline(o), tau: JAM2_TAU, leiser: JAM2_LEISER,
+  cpu: () => new Promise(res => { const N = JAM2.node; if (!N) { res(null); return; } JAM2.cpuCb = res; N.port.postMessage({t: 'cpu'}); setTimeout(() => { if (JAM2.cpuCb === res) { JAM2.cpuCb = null; res(null); } }, 1000); }),
+  rk: id => { const m = S.song && S.song.marks.find(x => x.id === id); return m ? jam2RkInfo(S.song, m) : null; }, rkFest: id => { const m = S.song && S.song.marks.find(x => x.id === id); return m ? jam2RkFest(S.song, m) : null; }, rkSet: (id, r) => jam2RkSet(id, r), tag: id => { const m = S.song && S.song.marks.find(x => x.id === id); return m ? jam2MarkTag(m) : null; },
+  rect: () => { const E = JAM2.el; if (!E) return null; const r = E.getBoundingClientRect(); return {x: r.left, y: r.top, w: r.width, h: r.height}; },
+};
+/* ===== JAM2-END ===== */
 Object.assign(SYNQUENZER, {pl1: PL1_API});                  /* PL1: Test-API (Objekt, wird nicht umhüllt) */
+/* ===== JAM1-BEGIN (Paket JAM1, Xanders Ur-Roadmap „Jam“ – „Können wir davon noch was machen?“ → ja, JAM zuerst) =====
+   Trig-Bedingungen, FILL, Durchlauf-Zähler und „Zufall festhalten“: Schritte und Noten spielen nur unter Bedingungen – Loops werden
+   lebendig, ohne mehr Clips. Kein zweiter Planer: es entscheiden die Wege, die schon spielen –
+     Synth: lf1Plan / lf1Ev / lf1Emit (Live, Song-Wiedergabe, Video-Ton; Zeitbasis über lf1Win(…, jx)),
+     Drums: scheduleDrums / d1Sched (dieselben Zeilen wie Chance und Wirbel),
+     MIDI „Song“ / „Szene“ / je Spur und das Klavier-Video: jam1SongPass / jam1MxPass, Zusammenfassen: a2Sound / a2DrumBar / a2Win / a2Pass.
+   Daten (nur additiv; ohne Feld klingt und sieht alles aus wie vorher):
+     note.cd  'A:B' (B 2…8, A 1…B: spielt im A-ten von je B Durchläufen) · '1st' / '!1st' (erster Durchlauf / ab dem zweiten) ·
+              'fill' / '!fill' · 'pre' / '!pre' (wie der zuletzt geprüfte Schritt mit Bedingung derselben Spur entschieden hat;
+              Drums: dieselbe Pad-Reihe; vor dem ersten Schritt mit Bedingung = nein). Chance % (pb / p) bleibt eigene Größe und
+              wirkt zusätzlich; „Vorgänger“ sieht nur die Bedingung (so rechnen Live, Song, MIDI und Video dasselbe).
+     clip.dv  {s} „Zufall festhalten“: Chance, Zufalls-Richtung und „hin und her“ (LAUF, Drum-Spur) in jedem Durchlauf wie im ersten;
+              s = 0 beim Einschalten (der erste Durchlauf klingt wie bisher), [neu würfeln] = neue Saat (im Clip gespeichert).
+   Durchlauf: derselbe Zähler wie Chance und LAUF (ab Clip-Start cs, Clip-Länge L), gezählt ab dem Clip-Start bzw. ab dem letzten
+   Szenen-/Teil-Start (Matrix: MEM.bounds 'scene' / 'part'; Song: Anfang der Teil-Marke). Der Durchlauf, in dem dieser Anfang liegt,
+   ist das „1. Mal“. Song, MIDI-Export und Video rechnen in Song-Schlägen nur aus der Takt-Position.
+   FILL live: die TAKT-Anzeige ist die FILL-Taste, sobald ein Schritt im Projekt FILL / ohne FILL hat (sie heißt dann „FILL“):
+   halten = an, kurz tippen = bis Taktende (nur beim Abspielen; nie im Video-Render). FILL im Song: ein Takt mit Fill-Chip
+   (⇥ FILLS: Fill, Toms, Aufbau oder „FILL-Takt“ ohne Noten) = FILL wahr. Ohne FILL-Bedingung bleibt die Anzeige, wie sie war.
+   Neue Schlüssel nur mit Präfix: JAM1, JAM1_SONG, jam1*, SYNQUENZER.jam1, CSS j1*. ===== */
+const JAM1 = {fl: [], flRun: -1, press: null, fb: null, hasF: false, hasT: -1e9, lit: false, css: false, bound: false, bsel: 4, tapF: false};
+const JAM1_SONG = {tb: 'song'};
+const JAM1_OPTS = [['', 'immer'], ['1st', '1. Mal'], ['!1st', 'ab 2. Mal'], ['pre', 'Vorgänger'], ['fill', 'FILL'], ['!fill', 'ohne FILL'], ['!pre', 'nicht Vorg.']];
+
+/* ---------- Daten (normNoteExtras / normClip laufen schon beim Start: keine Konstanten dieses Blocks) ---------- */
+function jam1CdOk(x) {
+  if (typeof x !== 'string' || x.length > 5) return null;
+  if (x === '1st' || x === '!1st' || x === 'fill' || x === '!fill' || x === 'pre' || x === '!pre') return x;
+  const m = /^([1-8]):([2-8])$/.exec(x); return m && +m[1] <= +m[2] ? x : null;
+}
+function jam1NoteNorm(src, out) { const c = jam1CdOk(src.cd); if (c) out.cd = c; return out; }
+function jam1ClipNorm(c, out) { const d = c && c.dv; if (d && typeof d === 'object' && !Array.isArray(d)) out.dv = {s: isNum(d.s) ? clamp(Math.round(d.s), 0, 99999) : 0}; }
+// die Saat mit „Zufall festhalten“: s = 0 dieselbe wie ohne (der erste Durchlauf bleibt, wie er war)
+function jam1Seed(base, c) { const d = c && c.dv; return d && d.s ? ((base | 0) + Math.imul(d.s | 0, 7919)) | 0 : base | 0; }
+// lf1Plan / a2Pass: der Plan kennt „Zufall festhalten“ (P.dv) und die Saat dazu (P.dvs)
+function jam1PlanX(P, c) { if (P) { P.dv = !!(c && c.dv); P.dvs = jam1Seed(P.seed, c); } return P; }
+const jam1Any = ns => { if (ns) for (const n of ns) if (n.cd) return true; return false; };
+const jam1Anch = cd => !!cd && cd !== 'pre' && cd !== '!pre';
+
+/* ---------- Drum-Spuren mit eigener Länge / Richtung (D1) ---------- */
+function jam1D1(D, clip) { if (D) D.jc = clip; return D; }
+// d1Pos mit „Zufall festhalten“: eine Zufalls-Spur beginnt jede Runde gleich (neue Saat nach [neu würfeln]);
+// JAM1-P: „hin und her“ ebenso – jede Runde wie die erste
+function jam1D1Pos(clip, l, g, gm) {
+  if (clip && clip.dv && l && l.dir === 'rnd' && l.Ls > 1) return d1Pos({Ls: l.Ls, dir: 'rnd', seed: jam1Seed(l.seed, clip)}, ((g % l.Ls) + l.Ls) % l.Ls, gm);
+  if (clip && clip.dv && l && l.dir === 'pend' && l.Ls > 1) return d1Pos(l, ((g % l.Ls) + l.Ls) % l.Ls, gm);
+  return d1Pos(l, g, gm);
+}
+
+/* ---------- Zeitbasis, Durchlauf, FILL ---------- */
+// X = {tb, O, cs, L}: tb 'tr' = Transport-Schläge (Live, ▶ SONG, Video-Ton), 'song' = Song-Schläge (MIDI, Zusammenfassen), 'mx' = ab
+// Clip-Start ohne Fill (Szene-MIDI, Vorschau); O = Zähl-Anfang vorgegeben (Zusammenfassen: der neue Teil)
+function jam1Jx(jx, cs, L) { return {tb: jx && jx.tb ? jx.tb : 'tr', O: jx && jx.O != null ? jx.O : null, cs, L}; }
+// Anfang der Teil-Marke, in der Song-Takt b liegt (null = keine). Zusammenfassen (konDo) ändert nur die Marken und „klingt gleich“:
+// für eine dabei entstandene oder verschobene Marke zählt der Teil-Anfang von vorher (song.kons[].mk), solange er b noch enthält
+function jam1MarkStart(b) {
+  const song = S.song, ms = song && song.marks; if (!ms || !ms.length) return null;
+  let m0 = null; for (const m of ms) if (m && b >= m.a && b < m.a + m.len && (!m0 || m.a > m0.a)) m0 = m;
+  if (!m0) return null;
+  if (song.kons) for (const kn of song.kons) {
+    if (!kn || !Array.isArray(kn.mk) || !(kn.mark === m0.id || (kn.cut && kn.cut.includes(m0.id)) || kn.mk.some(x => x && x.id === m0.id))) continue;
+    for (const o of kn.mk) if (o && b >= o.a && b < o.a + o.len) return Math.min(o.a, b);
+  }
+  return m0.a;
+}
+function jam1Origin(X, B) {
+  if (X.O != null) return X.O;
+  if (X.tb === 'mx') return X.cs;
+  if (X.tb === 'song') { const m = jam1MarkStart(barAt(B)); return m == null ? X.cs : Math.max(X.cs, barBeat(m)); }
+  const sp = R.songPlay;
+  if (sp) { const off = tSongOff(B); if (off == null) return X.cs; const m = jam1MarkStart(barAt(B - off)); return m == null ? X.cs : Math.max(X.cs, barBeat(m) + off); }
+  let o = X.cs; for (const b of MEM.bounds) if ((b.kind === 'scene' || b.kind === 'part') && b.beat <= B + 1e-6 && b.beat > o) o = b.beat;   // ▶ Szene / Teil-Tipp
+  return o;
+}
+// der Durchlauf an Schlag B: gezählt in Clip-Runden ab der Runde, in der der Zähl-Anfang liegt (= 0, das „1. Mal“)
+function jam1PassOf(X, B) {
+  const L = X.L; if (!(L > 0)) return 0;
+  const O = jam1Origin(X, B), k = Math.floor((B - X.cs) / L + 1e-9), k0 = O > X.cs ? Math.floor((O - X.cs) / L + 1e-9) : 0;
+  return Math.max(0, k - k0);
+}
+// die Fill-Takte des Songs (⇥ FILLS: Fill, Toms, Aufbau – FLL_FILLK – und „FILL-Takt“), gemerkt bis sich Song oder Taktkarte ändern
+function jam1FillBars() {
+  const song = S.song, u = song && song.ue; if (!u || !u.length) return null;
+  const F = JAM1.fb, v = UI.songVer | 0;
+  if (F && F.u === u && F.v === v && F.m === song.marks && F.tk === TKGEN && F.n === u.length) return F.set;
+  const set = new Set();
+  for (const e of u) {
+    if (!e || !FLL_FILLK.has(e.k)) continue;
+    const s0 = ueStart(song, e); if (s0 == null) continue;
+    const a = Math.max(0, s0), z = Math.max(a, s0 + e.len);
+    for (let b = barAt(a), b1 = barAt(Math.max(a, z - 1e-6)); b <= b1 && b < 4096; b++) set.add(b);
+  }
+  JAM1.fb = {u, v, m: song.marks, tk: TKGEN, n: u.length, set}; return set;
+}
+// FILL von Hand (TAKT gehalten / getippt): Fenster in Transport-Schlägen dieses Abspielens; nie im Video-Render
+function jam1LiveFill(B) {
+  if (JAM1.flRun !== R.runId || (typeof VV !== 'undefined' && VV.off)) return false;
+  for (const w of JAM1.fl) if (B >= w[0] - 1e-9 && B < w[1] - 1e-9) return true;
+  return false;
+}
+function jam1FillOf(X, B) {
+  if (X.tb === 'mx') return false;
+  if (X.tb === 'song') { const s = jam1FillBars(); return !!s && s.has(barAt(B)); }
+  if (jam1LiveFill(B)) return true;
+  if (!R.songPlay) return false;
+  const off = tSongOff(B), s = off == null ? null : jam1FillBars(); return !!s && s.has(barAt(B - off));
+}
+// die Entscheidung einer Bedingung an Schlag B (preFn: der Vorgänger, nur für 'pre' / '!pre' gefragt)
+function jam1Eval(X, cd, B, preFn) {
+  if (!cd) return true;
+  if (cd === 'fill' || cd === '!fill') return (cd === 'fill') === jam1FillOf(X, B);
+  if (cd === 'pre' || cd === '!pre') { const v = !!(preFn && preFn()); return cd === 'pre' ? v : !v; }
+  const p = jam1PassOf(X, B);
+  if (cd === '1st') return p === 0;
+  if (cd === '!1st') return p > 0;
+  const i = cd.indexOf(':'); if (i < 1) return true;
+  const A = +cd.slice(0, i), N = +cd.slice(i + 1); return N > 0 && p % N === A - 1;
+}
+// Vorgänger in Noten-Reihenfolge (Clip ohne Richtung): der letzte Schritt mit Bedingung (nicht Vorgänger) vor n – im selben Durchlauf,
+// sonst der letzte des Durchlaufs davor; Drums nur dieselbe Pad-Reihe (pad); keiner seit dem Clip-Start = nein
+function jam1PrePlain(X, ns, n, B, pad) {
+  const L = X.L; if (!(L > 0) || !ns) return false;
+  const m = Math.floor((B - X.cs) / L + 1e-9), t = B - X.cs - m * L;
+  let a = null, at = -Infinity, z = null, zt = -Infinity;
+  for (const q of ns) {
+    if (q === n || q.off || !jam1Anch(q.cd) || q.t >= L - 1e-9 || (pad != null && q.n !== pad)) continue;
+    if (q.t <= t + 1e-9 && q.t > at) { a = q; at = q.t; }
+    if (q.t > zt) { z = q; zt = q.t; }
+  }
+  let Bp;
+  if (a) Bp = X.cs + m * L + a.t; else if (z) { a = z; Bp = X.cs + (m - 1) * L + z.t; } else return false;
+  if (Bp < X.cs - 1e-9) return false;
+  return jam1Eval(X, a.cd, Bp, null);
+}
+// Vorgänger im LAUF mit Richtung (lf1Pos): rückwärts in der Spielfolge
+function jam1PreMap(X, P, g, it) {
+  for (let q = g; q >= 0 && q >= g - 2 * P.T; q--) {
+    const its = P.by.get(lf1Pos(P, q)); if (!its) continue;
+    let c = null;
+    for (const x of its) { if (q === g && x === it) break; if (!x.n.off && jam1Anch(x.n.cd)) c = x; }
+    if (c) return jam1Eval(X, c.n.cd, X.cs + q * P.gs + c.f, null);
+  }
+  return false;
+}
+// Vorgänger in einer Drum-Spur mit eigener Länge / Richtung (D1): rückwärts in ihrer Spielfolge
+function jam1PreD1(X, D, gm, g, nt) {
+  const E = D.get(gm); if (!E) return false;
+  for (let q = g; q >= 0 && q >= g - 2 * E.l.Ls; q--) {
+    const ns = E.by.get(jam1D1Pos(D.jc, E.l, q, gm)); if (!ns) continue;
+    let c = null;
+    for (const a of ns) { if (q === g && a === nt) break; if (jam1Anch(a.cd)) c = a; }
+    if (c) return jam1Eval(X, c.cd, X.cs + q * .25 + (c.t - Math.floor(c.t / .25 + 1e-6) * .25), null);
+  }
+  return false;
+}
+
+/* ---------- Einstiege der Planer und Exporte ---------- */
+// lf1Emit: Synth-Note (it) am Schlag t0 ab cs; ohne Zeitbasis (lf1Pass, Vorschau) zählt der Durchlauf ab 0 ohne Fill
+function jam1LfOk(P, it, t0, g) {
+  const X = P.jx || {tb: 'mx', O: null, cs: 0, L: P.L}, B = X.cs + t0;
+  return jam1Eval(X, it.n.cd, B, () => (P.map ? jam1PreMap(X, P, g, it) : jam1PrePlain(X, P.items.map(q => q.n), it.n, B, null)));
+}
+// scheduleDrums: ein Drum-Schritt am Schlag B (Transport)
+function jam1DrOk(clip, nt, B, cs, L) { const X = {tb: 'tr', O: null, cs, L}; return jam1Eval(X, nt.cd, B, () => jam1PrePlain(X, clip.notes, nt, B, nt.n)); }
+// d1Sched: ein Schritt einer Drum-Spur mit eigener Länge / Richtung (Durchlauf = Clip-Runde, wie die Matrix zählt)
+function jam1D1Ok(D, gm, g, nt, B, cs) { const X = {tb: 'tr', O: null, cs, L: clipB(D.jc)}; return jam1Eval(X, nt.cd, B, () => jam1PreD1(X, D, gm, g, nt)); }
+// Drum-Clip in Song-Schlägen (MIDI „Song“, Zusammenfassen); O = Zähl-Anfang vorgegeben
+function jam1SongOk(c, nt, st, cs, O) { const X = {tb: 'song', O: O != null ? O : null, cs, L: clipB(c)}; return jam1Eval(X, nt.cd, st, () => jam1PrePlain(X, c.notes, nt, st, nt.n)); }
+// Drum-Clip im Durchlauf k ab 0 (Szene-MIDI, Fenster des ganzen Inhalts)
+function jam1MxOk(c, nt, k) { const L = clipB(c), X = {tb: 'mx', O: null, cs: 0, L}, B = k * L + nt.t; return jam1Eval(X, nt.cd, B, () => jam1PrePlain(X, c.notes, nt, B, nt.n)); }
+// MIDI „Song“, MIDI je Spur, Klavier-Video: die Noten des Durchlaufs ab Song-Schlag o (Clip-Anfang cs) wie gespielt; null = c.notes wie bisher
+function jam1SongPass(c, o, cs) {
+  const L = clipB(c), P = lf1Plan(c);
+  if (P) { P.jx = {tb: 'song', O: null, cs, L: P.L}; try { return lf1Pass(c, Math.round((o - cs) / L)); } finally { P.jx = null; } }
+  if (!jam1Any(c.notes)) return null;
+  return c.notes.filter(n => !n.cd || n.t >= L - 1e-9 || jam1SongOk(c, n, o + n.t, cs));
+}
+// MIDI „Szene“ / „Alle Szenen“: Durchlauf p ab 0, ohne Fill
+function jam1MxPass(c, p) {
+  if (lf1Plan(c)) return lf1Pass(c, p);
+  if (!jam1Any(c.notes)) return null;
+  return c.notes.filter(n => !n.cd || jam1MxOk(c, n, p));
+}
+// JAM1-P: ROLLE und Matrix-Bild „wie gespielt“ – Durchlauf p ab Clip-Start (wie Chance und LAUF, gl1PassNow); die Bedingungen mit
+// demselben Zähler wie die Wiedergabe (ab Szenen-/Teil-Start, FILL), solange der Clip auf seiner Spur klingt; sonst wie bisher (ab 0).
+// Das Ergebnis trägt j1t (gespielte Note → Bedingung), damit die ROLLE das Zeichen auch an der gespielten Note zeigt
+function jam1ShowPass(c, p, t) {
+  const P = lf1Plan(c); if (!P) return null;
+  const tg = new WeakMap(); let X = null;
+  if (R.playing && AU.ctx && P.items.some(it => it.n.cd)) {
+    const bA = audBeat(), on = i => { const tr = S.tracks[i], vs = tr ? visualSlots(i, bA) : null; return !!vs && vs.playing >= 0 && tr.clips[vs.playing] === c; };
+    if (t == null) { for (let i = 0; i < NT(); i++) if (on(i)) { t = i; break; } } else if (!on(t)) t = null;
+    if (t != null && bA >= 0) X = {tb: 'tr', O: null, cs: audCstart(t, bA), L: P.L};
+  }
+  P.jx = X; P.j1t = tg;
+  try { const r = lf1Pass(c, p); if (r) r.j1t = tg; return r; } finally { P.jx = null; P.j1t = null; }
+}
+// JAM1-P: der einmalige Hinweis der ROLLE „wie gespielt“ für einen Clip, der nur Bedingungen hat (kein LAUF, keine Schritt-Effekte)
+function jam1Hint(c) {
+  if (!c || c.lf || !jam1Any(c.notes) || c.notes.some(n => n.off || n.rt || n.tp || n.pb != null)) return '';
+  return 'Bedingungen: hell = klingt in diesem Durchlauf, blass = notiert (die bearbeitest du) · [wie gespielt] schaltet um';
+}
+// JAM1-P: ROLLE „wie gespielt“ zeigt FILL mit – nach Drücken / Loslassen neu zeichnen
+function jam1RollRe() { try { if (ED.roll && ED.rollAt && ROLLP.gl1 !== 'notated' && GL1.rollLast) ED.roll.render(); } catch (e) { logErr(e); } }
+
+/* ---------- FILL von Hand: die TAKT-Anzeige ---------- */
+function jam1HasFill() {
+  const hit = c => { if (c && c.notes) for (const n of c.notes) if (n.cd === 'fill' || n.cd === '!fill') return true; return false; };
+  for (const tr of S.tracks) if (tr && tr.clips) for (const c of tr.clips) if (hit(c)) return true;
+  const own = S.song && S.song.own; if (own) for (const k of Object.keys(own)) if (hit(own[k])) return true;
+  return false;
+}
+// renderTop: die Beschriftung der TAKT-Anzeige (REC / CPU gehen vor)
+function jam1TaktLbl() { return JAM1.hasF ? 'FILL' : 'Takt'; }
+// renderTakt (je Bild): alle 0,5 s prüfen, ob es FILL-Schritte gibt; leuchten, solange FILL wirkt
+function jam1Takt(bAud) {
+  const t = performance.now();
+  if (t - JAM1.hasT > 500) {
+    JAM1.hasT = t; const h = jam1HasFill();
+    if (h !== JAM1.hasF) { JAM1.hasF = h; jam1Css(); jam1TaktBind(); UI.dirty.top = true; EL.takt.classList.toggle('j1arm', h); if (h) { EL.takt.setAttribute('role', 'button'); EL.takt.setAttribute('aria-label', 'FILL – halten = Fill, kurz tippen = bis Taktende'); } else { EL.takt.removeAttribute('role'); EL.takt.removeAttribute('aria-label'); } }
+  }
+  const on = R.playing && (JAM1.hasF || JAM1.lit) && jam1LiveFill(bAud);
+  if (on !== JAM1.lit) { JAM1.lit = on; EL.takt.classList.toggle('j1on', on); }
+}
+function jam1TaktBind() {
+  if (JAM1.bound || !EL.takt) return; JAM1.bound = true;
+  const T = EL.takt;
+  // JAM1-P: FILL nur, wenn die Anzeige auch „FILL“ heißt – zeigt sie „CPU n“ (hochkant) oder „REC“, wirkt der Tipp wie bisher
+  T.addEventListener('pointerdown', e => { JAM1.tapF = false; if (!jam1Armed() || e.button > 0) return; JAM1.tapF = true; try { T.setPointerCapture(e.pointerId); } catch (x) {} jam1FillDown(); });
+  const up = e => { if (JAM1.press) jam1FillUp(e.type === 'pointercancel'); };
+  for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) T.addEventListener(ev, up);
+  // ein Tipp, der FILL ausgelöst hat, gehört FILL (sonst nichts, z. B. nicht das Info-Menü bei LIM 3); abgefangen am Kopf
+  EL.top.addEventListener('click', e => { if (JAM1.tapF && e.target && e.target.closest && e.target.closest('#takt')) e.stopPropagation(); JAM1.tapF = false; }, true);
+}
+const jam1Armed = () => JAM1.hasF && !!EL.taktLbl && EL.taktLbl.textContent === 'FILL';
+function jam1FillDown(at) {
+  if (!R.playing || !AU.ctx) { toast('FILL wirkt beim Abspielen'); return false; }
+  if (JAM1.flRun !== R.runId) { JAM1.fl = []; JAM1.flRun = R.runId; }
+  const a = at != null ? at : t2b(AU.ctx.currentTime + .006), w = [a, Infinity];   // JAM1-P: dieselbe Grenze wie jam1Resched (now + 6 ms): was davor schon klingt, steht nicht im Fenster
+  JAM1.fl.push(w); JAM1.press = {w, t: performance.now()};
+  const old = audBeat() - 64; JAM1.fl = JAM1.fl.filter(x => x === w || x[1] > old).slice(-32);
+  jam1Resched(a); haptic('tick');
+  return true;
+}
+// kurz getippt (< 0,3 s): bis zum nächsten Taktstrich; gehalten: bis zum Loslassen
+function jam1FillUp(cancel, at, tapMs) {
+  const P = JAM1.press; if (!P) return false; JAM1.press = null;
+  if (!R.playing || !AU.ctx) { P.w[1] = P.w[0]; return false; }
+  const held = tapMs != null ? tapMs : performance.now() - P.t, up = Math.max(P.w[0], at != null ? at : t2b(AU.ctx.currentTime + .006));
+  // JAM1-P: auch getippt neu planen – der Planer hat schon bis zu 100 ms über den Taktstrich hinaus mit FILL geplant. Lag der Finger noch
+  // über den Taktstrich hinaus (kurzer Tipp knapp davor), endet FILL beim Loslassen: was bis dahin klang, steht so im Fenster
+  if (!cancel && held < 300) { P.w[1] = Math.max(tBarNext(P.w[0]), up); jam1Resched(P.w[1]); return true; }
+  P.w[1] = up; jam1Resched(P.w[1]);
+  return true;
+}
+// was ab b schon geplant ist, neu planen (wie clipRestored): nur Spuren, deren Clip FILL / Vorgänger fragt.
+// JAM1-P: gestrichen wird nach Klang-Zeit (at), geplant nach Raster – mit Swing klingt ein Offbeat bis zu Swing/12 Schlag nach seinem
+// Raster-Platz. Darum ab dem Raster-Schlag „at − Swing“ neu planen, aber nur behalten, was ab at klingt (R.j1F in scheduleTrack /
+// scheduleDrums): genau das Gestrichene kommt neu – kein Schlag fällt aus, keiner doppelt
+function jam1Resched(b) {
+  if (!R.playing || !AU.ctx || !(b < R.schedBeat)) return;
+  const sw = swingOffset(.25);
+  for (let i = 0; i < NT(); i++) {
+    const s = R.slot[i], tr = S.tracks[i]; if (s < 0 || !tr || R.pend[i] || tr.mute) continue;
+    const c = ownPlaying(i) || tr.clips[s]; if (!c || !c.notes || !c.notes.some(n => n.cd === 'fill' || n.cd === '!fill' || n.cd === 'pre' || n.cd === '!pre')) continue;
+    const at = Math.max(AU.ctx.currentTime + .006, b2t(b)), bb = Math.max(R.cstart[i], t2b(at) - (sw > 0 ? sw + .01 : 0));
+    try {
+      cancelTrackFrom(i, at);
+      R.j1F = at - 1e-6;                                         // dieselbe Grenze wie cancelTrackFrom (start >= at − 1e-6)
+      const ueR = R.songPlay && S.song && S.song.ue && tr.kind === 'drum';   // UE: die eben gestrichenen Übergangs-Treffer neu (wie switchTrackAt)
+      if (ueR) ueTick(bb, R.schedBeat, i, true);
+      scheduleTrack(i, bb, R.schedBeat, true);
+      if (ueR) ueFlush();
+    } catch (e) { logErr(e); } finally { R.j1F = undefined; }
+  }
+  jam1RollRe();
+}
+
+/* ---------- Matrix: „2:4“ in der Zelle eines laufenden Clips mit Bedingungen ---------- */
+// JAM1-P: als kleines Schild oben links (wie das Tonart-Schild oben rechts). Die Zeile unten („2T“, „2/2“) bleibt wie in der Basis –
+// dort war quer kein Platz („2/2 1:4“ lief links aus der Zelle, „2T“ verschwand). Passt das Schild neben Tonart-Schild / ◆ nicht, fehlt es
+function jam1Cell(C, clip, i, bAud, kb, v6) {
+  let s = '';
+  if (clip && clip.notes && !clip.audio) {
+    let N = 0; for (const n of clip.notes) { const cd = n.cd; if (!cd) continue; const k = cd.indexOf(':'); if (k > 0) { const b = +cd.slice(k + 1); if (b > N) N = b; } }
+    if (N && !pl1Ll()) s = '–:' + N;                               // PL1: Lauflichter aus = ruhig
+    else if (N) { const cs = audCstart(i, bAud); s = (jam1PassOf({tb: 'tr', O: null, cs, L: clipB(clip)}, Math.max(cs, bAud)) % N + 1) + ':' + N; }
+    // Platz (wie gl1LnS): Schild ≈ 6 px je Zeichen + 6, Tonart-Schild ≈ 7,5 px je Zeichen + 6 (mit ◆ 12 px weiter links), ◆ allein ≈ 14 px
+    if (s && 3 + 6 * s.length + 6 + 2 + (kb ? 7.5 * kb.length + 6 + (v6 ? 15 : 3) : v6 ? 14 : 3) > (UI.cellW || 99)) s = '';
+  }
+  let d = C.j1;
+  if (!s && !d) return;
+  if (!d) { jam1Css(); d = C.j1 = el('span', 'j1m'); d.setAttribute('aria-hidden', 'true'); C.el.appendChild(d); }
+  if (d.textContent !== s) d.textContent = s;
+  if (d.hidden !== !s) d.hidden = !s;
+}
+
+/* ---------- Zeichen am Schritt / an der Note ---------- */
+function jam1Mark(cd) { if (!cd) return ''; if (cd === '1st') return '1.'; if (cd === '!1st') return '2.+'; if (cd === 'fill' || cd === '!fill') return 'F'; if (cd === 'pre' || cd === '!pre') return 'V'; return cd; }
+const jam1Neg = cd => cd === '!fill' || cd === '!pre';
+function jam1Name(cd) { if (!cd) return 'immer'; const o = JAM1_OPTS.find(x => x[0] === cd); return o ? o[1] : cd; }
+// LAUF / Drum-SCHRITTE (pl1Deco): unten rechts, durchgestrichen = „ohne“ / „nicht“
+function jam1Deco(cell, n) {
+  const cd = n && n.cd; let d = cell._j1;
+  if (!cd && !d) return;
+  if (!d) { jam1Css(); d = cell._j1 = el('i', 'j1c'); d.setAttribute('aria-hidden', 'true'); cell.appendChild(d); }
+  const tx = jam1Mark(cd); if (d.textContent !== tx) d.textContent = tx;
+  d.classList.toggle('neg', jam1Neg(cd)); if (d.hidden !== !cd) d.hidden = !cd;
+}
+// ROLLE (pl1RollDeco): links unten in der Note (zu schmal: ein Strich links)
+function jam1RollDeco(x, nt, r) {
+  const cd = nt && nt.cd; if (!cd || r.w < 4) return;
+  const tx = jam1Mark(cd);
+  x.save();
+  x.font = JAM1.rf || (JAM1.rf = '700 9px ' + ((getComputedStyle(document.documentElement).getPropertyValue('--font-num') || '').trim() || 'monospace'));
+  const tw = x.measureText(tx).width, h = Math.min(12, r.h - 2);
+  if (r.w >= tw + 8 && h >= 8) {
+    x.fillStyle = 'rgba(0,0,0,.72)'; x.fillRect(r.x + 2, r.y + r.h - h - 1, tw + 4, h);
+    x.fillStyle = '#9fe8ff'; x.textBaseline = 'middle'; x.fillText(tx, r.x + 4, r.y + r.h - 1 - h / 2 + .5);
+    if (jam1Neg(cd)) { x.fillRect(r.x + 3, r.y + r.h - 1 - h / 2, tw + 2, 1); }
+  } else { x.fillStyle = '#9fe8ff'; x.fillRect(r.x + 1, r.y + 1, 2, Math.max(2, r.h - 2)); }
+  x.restore();
+}
+
+/* ---------- Bearbeiten (je Aktion ein ↶) ---------- */
+function jam1CdOf(tg) { const ns = pl1Notes(tg); if (!ns.length) return null; const c0 = ns[0].cd || ''; return ns.every(n => (n.cd || '') === c0) ? c0 : '?'; }
+// die Bedingung der Ziel-Noten (PL1-Ziel: gehaltener Schritt, gewählte Noten) – '' = immer
+function jam1Set(tg, cd) {
+  const c = pl1Clip(tg); if (!c) return false;
+  const v = cd ? jam1CdOk(cd) : null; if (cd && !v) return false;
+  const before = cleanClip(c); let n0 = 0;
+  for (const n of pl1Notes(tg)) { if ((n.cd || null) === v) continue; if (v) n.cd = v; else delete n.cd; n0++; }
+  if (!n0) return false;
+  pushUndo(tg.t, tg.s, before, 'Bedingung · ' + jam1Name(v)); afterClipEdit(tg.t, tg.s); pl1Paint(); JAM1.hasT = -1e9;
+  return true;
+}
+// [Alle löschen]: alle Bedingungen des Clips (ein ↶)
+function jam1ClearClip(t, s) {
+  const c = S.tracks[t] && S.tracks[t].clips[s]; if (!c || !jam1Any(c.notes)) return false;
+  const before = cleanClip(c); for (const n of c.notes) delete n.cd;
+  pushUndo(t, s, before, 'Bedingungen gelöscht'); afterClipEdit(t, s); pl1Paint(); JAM1.hasT = -1e9;
+  return true;
+}
+// hat der Clip Zufall (Chance, Zufalls-Richtung) oder „hin und her“ (JAM1-P: läuft über mehrere Durchläufe weiter, z. B. 8 Schritte erst
+// nach 7 Durchläufen wieder gleich)? – nur dann gibt es „Zufall festhalten“
+function jam1Rnd(c) {
+  if (!c) return false; if (c.dv) return true;
+  if (c.lf && (c.lf.dir === 'rnd' || c.lf.dir === 'pend')) return true;
+  if (c.lanes) for (const k of Object.keys(c.lanes)) if (c.lanes[k] && (c.lanes[k].dir === 'rnd' || c.lanes[k].dir === 'pend')) return true;
+  for (const n of c.notes || []) if ((n.pb != null && n.pb < 1) || (n.p != null && n.p < 1)) return true;
+  return false;
+}
+// mode: true = festhalten, false = frei, 'roll' = neu würfeln (neue Saat)
+function jam1Dv(t, s, mode) {
+  const c = S.tracks[t] && S.tracks[t].clips[s]; if (!c) return false;
+  const before = cleanClip(c);
+  if (mode === 'roll') { const o = c.dv ? c.dv.s | 0 : 0; let v = o; while (v === o) v = 1 + Math.floor(Math.random() * 99999); c.dv = {s: v}; }
+  else if (mode) { if (c.dv) return false; c.dv = {s: 0}; }
+  else { if (!c.dv) return false; delete c.dv; }
+  pushUndo(t, s, before, mode === 'roll' ? 'Zufall neu gewürfelt' : mode ? 'Zufall festhalten' : 'Zufall frei'); afterClipEdit(t, s); pl1Paint();
+  return true;
+}
+
+/* ---------- das Feld „Bedingung ▾“ im Lock-Abschnitt (PL1: Schritt halten / Noten wählen › Locks) ---------- */
+function jam1Css() {
+  if (JAM1.css) return; JAM1.css = true;
+  const st = document.createElement('style'); st.id = 'jam1-css';
+  st.textContent = `
+.pl1s .j1r{display:grid;grid-template-columns:minmax(0,1fr);gap:6px;margin-top:6px}
+.pl1s .j1r.j1r3{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 52px}
+.pl1s .j1r button{min-height:44px;padding:0 6px;font:600 12px/1.1 var(--font-ui);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl1s .j1b,.pl1s .j1dv{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
+.pl1s .j1k{font:700 9px/1 var(--font-ui);letter-spacing:.04em;color:var(--text-dim);white-space:nowrap}
+.pl1s .j1v{font:700 12px/1.1 var(--font-ui);color:#9fe8ff;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.pl1s .j1dv .j1v{color:var(--text)}
+.pl1s .j1b.on,.pl1s .j1dv.on{border-color:#9fe8ff}
+.pl1s .j1dv.on .j1v{color:#9fe8ff}
+.pl1s .j1nw:disabled{opacity:.4}
+.pl1s .j1l{margin-top:6px}
+.pl1s .j1l[hidden]{display:none}
+.pl1s.j1o>.pl1k,.pl1s.j1o>.pl1l,.pl1s.j1o>.pl1a,.pl1s.j1o>.pl1h{display:none}
+.pl1s .j1g{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.pl1s .j1g button,.pl1s .j1s button{min-height:44px;padding:0 4px;font:600 12px/1.1 var(--font-ui);white-space:nowrap}
+.pl1s .j1g button.on,.pl1s .j1s button.on{background:#9fe8ff;color:#06222b;border-color:#9fe8ff}
+.pl1s .j1g button.j1x{font-size:10px;line-height:1.1;white-space:normal;color:var(--text-dim);padding:0 2px}
+.pl1s .j1s{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin-top:6px;touch-action:pan-x}
+.pl1s .j1s::-webkit-scrollbar{display:none}
+.pl1s .j1s.j1sb{gap:3px}
+.pl1s .j1s button{flex:none;min-width:44px}
+.se-cell .j1c{position:absolute;right:2px;bottom:2px;z-index:2;padding:1px 3px;border-radius:3px;background:rgba(0,0,0,.66);color:#9fe8ff;font:700 9px/1.15 var(--font-num);font-style:normal;pointer-events:none;white-space:nowrap}
+.se-cell .j1c.neg{text-decoration:line-through}
+.se-cell .j1c[hidden]{display:none}
+.slot .j1m{position:absolute;left:3px;top:3px;z-index:2;padding:1px 3px;border-radius:3px;background:rgba(0,0,0,.6);color:#9fe8ff;font:700 9px/1 var(--font-num);pointer-events:none;white-space:nowrap}
+.slot .j1m[hidden]{display:none}
+.takt .lbl.j1fl{color:var(--amber);font-weight:700;letter-spacing:.06em}
+.takt.j1arm{cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.takt.j1on{box-shadow:inset 0 0 0 2px var(--amber),inset 0 1px 6px rgba(0,0,0,.85),0 0 14px var(--amber-glow)}
+.takt.j1on .lbl.j1fl{color:#fff;text-shadow:0 0 6px var(--amber)}
+`;
+  document.head.appendChild(st);
+}
+function jam1Sect(w, tg) {
+  try {
+    if (!w || !tg) return; const c = pl1Clip(tg); if (!c) return;
+    jam1Css();
+    const rnd = jam1Rnd(c), r = el('div', 'j1r' + (rnd ? ' j1r3' : ''));
+    r.innerHTML = '<button class="rb j1b" data-j="open" aria-expanded="false"><span class="j1k">Bedingung ▾</span><b class="j1v"></b></button>' +
+      (rnd ? '<button class="rb j1dv" data-j="dv" aria-pressed="false"><span class="j1k">Zufall festhalten</span><b class="j1v"></b></button><button class="rb j1nw" data-j="roll" aria-label="Zufall neu würfeln">neu</button>' : '');
+    const L = el('div', 'j1l'); L.hidden = true;
+    w.append(r, L); w._j1 = {tg, r, L};
+    onTap(w, b => jam1Tap(w, b), 'button[data-j]');
+    jam1Paint(w);
+  } catch (e) { logErr(e); }
+}
+function jam1Open(w, on) {
+  const J = w._j1; if (!J) return;
+  w.classList.toggle('j1o', on); J.L.hidden = !on;
+  const b = J.r.querySelector('.j1b'); b.setAttribute('aria-expanded', String(on)); b.classList.toggle('on', on);
+  if (on) { const cd = jam1CdOf(J.tg), k = cd ? cd.indexOf(':') : -1; if (k > 0) JAM1.bsel = +cd.slice(k + 1); }
+  jam1Paint(w);
+  const P = w.closest('.pop'); if (P) popFit(P);
+}
+function jam1Tap(w, b) {
+  const J = w._j1; if (!J) return;
+  const a = b.dataset.j, v = b.dataset.v, tg = J.tg;
+  if (a === 'open') { jam1Open(w, !w.classList.contains('j1o')); return; }
+  if (a === 'dv') { if (jam1Dv(tg.t, tg.s, !(pl1Clip(tg) || {}).dv)) haptic('tick'); jam1Paint(w); return; }
+  if (a === 'roll') { if (jam1Dv(tg.t, tg.s, 'roll')) haptic('tick'); jam1Paint(w); return; }
+  if (a === 'b') { JAM1.bsel = clamp(+v | 0, 2, 8); jam1Paint(w); return; }
+  if (a === 'clr') { if (jam1ClearClip(tg.t, tg.s)) { haptic('tick'); toast('Alle Bedingungen dieses Clips gelöscht', {label: 'Rückgängig', fn: () => undo()}); } jam1Open(w, false); return; }
+  if (a === 'cd') { if (jam1Set(tg, v || '')) haptic('tick'); jam1Open(w, false); }
+}
+function jam1Paint(w) {
+  const J = w && w._j1; if (!J) return;
+  const c = pl1Clip(J.tg), cd = jam1CdOf(J.tg), open = w.classList.contains('j1o');
+  const vb = J.r.querySelector('.j1v'), tx = cd === '?' ? 'gemischt' : jam1Name(cd || '');
+  if (vb.textContent !== tx) vb.textContent = tx;
+  J.r.querySelector('.j1b').setAttribute('aria-label', 'Bedingung: ' + tx + (open ? ' – Liste zuklappen' : ' – Liste aufklappen'));   // JAM1-P: kein „schließen“ (das heißt in der App ✕, ux1IsX)
+  const dv = J.r.querySelector('.j1dv'), nw = J.r.querySelector('.j1nw');
+  if (dv) { const on = !!(c && c.dv), v = dv.querySelector('.j1v'), t2 = on ? 'an ✓' : 'aus'; dv.classList.toggle('on', on); dv.setAttribute('aria-pressed', String(on)); dv.setAttribute('aria-label', 'Zufall festhalten: ' + (on ? 'an' : 'aus')); if (v.textContent !== t2) v.textContent = t2; if (nw) nw.disabled = !on; }
+  if (!open) return;
+  const N = JAM1.bsel, cur = cd || '';
+  let h = '<div class="j1g">' + JAM1_OPTS.map(([k, l]) => `<button class="rb${cur === k ? ' on' : ''}" data-j="cd" data-v="${k}">${l}</button>`).join('') +
+    `<button class="rb j1x" data-j="clr" aria-label="Alle Bedingungen dieses Clips löschen"${c && jam1Any(c.notes) ? '' : ' disabled'}>Bedingungen löschen</button></div>`;
+  h += '<div class="j1s j1sb pan-x" role="group" aria-label="Durchlauf: von je">' + [2, 3, 4, 5, 6, 7, 8].map(n => `<button class="rb${n === N ? ' on' : ''}" data-j="b" data-v="${n}" aria-label="von je ${n} Durchläufen">:${n}</button>`).join('') + '</div>';
+  h += '<div class="j1s pan-x" role="group" aria-label="spielt im">' + Array.from({length: N}, (_, k) => `<button class="rb${cur === (k + 1) + ':' + N ? ' on' : ''}" data-j="cd" data-v="${k + 1}:${N}" aria-label="spielt im ${k + 1}. von je ${N} Durchläufen">${k + 1}:${N}</button>`).join('') + '</div>';
+  if (J.L._h !== h) { J.L._h = h; J.L.innerHTML = h; }
+}
+
+// JAM1-P: ROLLE bei Klängen ohne Locks (Bit Mask, North, Perkussion): [Bedingung] am Ende der Aktionszeile (statt [Locks], gleiche Größe
+// und Trefferfläche) – öffnet dasselbe Fenster wie [Locks] (pl1Pop: „noch keine Locks“ + Feld „Bedingung ▾“), die Liste gleich offen
+function jam1Acts(t, s) {
+  const tr = S.tracks[t]; if (!tr || tr.kind !== 'synth' || tr.stimme) return [];
+  pl1Css();
+  return [{id: 'jam1', label: 'Bedingung', title: 'Bedingung der gewählten Noten: 1:2, 1. Mal, FILL, Vorgänger …', cls: 'pl1rb', fn: b => jam1RollPop(b, t, s)}];
+}
+function jam1RollPop(b, t, s) {
+  const ns = ED.roll ? ED.roll.selection : [];
+  if (!ns.length) { toast('Erst Noten wählen (antippen oder ⬚) – dann Bedingung'); return false; }
+  pl1Pop(b, pl1Tg(t, s, 'rolle', ns, ns.length === 1 ? '1 Note' : ns.length + ' Noten'));
+  const w = UI.pop && UI.pop.el.querySelector('.pl1s'); if (w && w._j1) jam1Open(w, true);
+  return true;
+}
+
+/* ---------- Song: „FILL-Takt“ (ohne Noten) in der Fill-Bibliothek – der Takt davor zählt als FILL ---------- */
+try { ueLibAdd([{id: 'jam1-fill', tab: 'ue', name: 'FILL-Takt', short: 'FILL', k: 'fill', a: -4, len: 4, mode: 'dazu', notes: []}]); } catch (e) {}
+
+/* ---------- „Wo finde ich …?“ (UI1): drei Einträge ---------- */
+(function jam1Guide() {
+  try {
+    const L = ui1Entries(), G = ui1G, E = (id, n, w, d, s, go, q) => ({id, n, w, d, s, go, q}); if (L.some(x => x.id === 'jam1cond')) return;
+    L.push(E('jam1cond', 'Bedingung (Schritt spielt nur manchmal)', 'LAUF / SCHRITTE: Schritt lang drücken · ROLLE: Noten wählen › Locks › Bedingung ▾', '1:2, 1:4 … (im wievielten Durchlauf), 1. Mal, FILL, Vorgänger – das Zeichen steht am Schritt; die Matrix zählt mit („2:4“). Chance % wirkt zusätzlich.', 'bedingung bedingungen trig condition 1:2 jedes zweite mal manchmal abwechseln variation durchlauf zaehler pulszaehler', G.roll, 'Locks'),
+      E('jam1fill', 'FILL', 'oben die TAKT-Anzeige (heißt „FILL“, sobald ein Schritt die Bedingung FILL hat) · im Song: Fill-Chips (⇥ FILLS, auch „FILL-Takt“)', 'Halten = FILL an, kurz tippen = bis zum Taktende. Schritte mit „FILL“ spielen dann, „ohne FILL“ schweigen. Im Song gilt jeder Takt mit Fill-Chip als FILL.', 'fill fills fill taste wirbel break variation takt anzeige', G.main, '#takt'),
+      E('jam1dv', 'Zufall festhalten', 'Schritt lang drücken › Locks › Zufall festhalten (bei Chance, Zufall oder hin und her)', 'Chance, Zufall und „hin und her“ laufen in jedem Durchlauf gleich – wie beim ersten Mal; [neu] würfelt eine neue Folge.', 'zufall festhalten deja vu dejavu chance wiederholen gleich wuerfeln neu', G.roll, 'Locks'));
+  } catch (e) {}
+})();
+
+/* ---------- Test-API ---------- */
+const JAM1_API = {
+  // Bedingung setzen wie im Feld: Ziel = Noten (Indizes) des Clips; '' = immer; ein ↶
+  set: (t, s, idx, cd) => { const c = S.tracks[t] && S.tracks[t].clips[s]; if (!c) return false; return jam1Set(pl1Tg(t, s, 'api', idx.map(i => c.notes[i]).filter(Boolean), 'API'), cd || ''); },
+  clear: (t, s) => jam1ClearClip(t, s),
+  dv: (t, s, mode) => jam1Dv(t, s, mode),
+  // FILL von Hand wie die TAKT-Taste: down(), up({ms}) – ms < 300 = getippt (bis Taktende)
+  fillDown: b => jam1FillDown(b),
+  fillUp: o => { o = o || {}; return jam1FillUp(!!o.cancel, o.at, o.ms); },
+  fillWins: () => (JAM1.flRun === R.runId ? JAM1.fl.map(w => [+w[0].toFixed(4), w[1] === Infinity ? null : +w[1].toFixed(4)]) : []),
+  fillBars: () => { const s = jam1FillBars(); return s ? [...s].sort((a, b) => a - b) : []; },
+  // der Durchlauf, den die Matrix zeigt (Spur i an Transport-Schlag b, sonst der hörbare)
+  pass: (i, b) => { const s = R.slot[i], c = s >= 0 && S.tracks[i] ? S.tracks[i].clips[s] : null; if (!c) return null; const bb = b != null ? b : audBeat(); return jam1PassOf({tb: 'tr', O: null, cs: audCstart(i, bb), L: clipB(c)}, bb); },
+  cellTx: (i, s) => { const C = UI.cells[i] && UI.cells[i][s]; return C ? (C.j1 && !C.j1.hidden ? C.j1.textContent : '') : null; },   // JAM1-P: das Schild oben links
+  cellRow: (i, s) => { const C = UI.cells[i] && UI.cells[i][s]; return C ? {tx: C.tx.textContent, ln: C.ln.textContent, lnoff: C.el.classList.contains('lnoff')} : null; },
+  marks: () => [...document.querySelectorAll('.se-cell .j1c')].filter(x => !x.hidden).map(x => x.textContent + (x.classList.contains('neg') ? '~' : '')),
+  armed: () => ({hasF: JAM1.hasF, lbl: EL.taktLbl ? EL.taktLbl.textContent : null, lit: JAM1.lit, on: EL.takt.classList.contains('j1on')}),
+  check: () => { JAM1.hasT = -1e9; jam1Takt(R.playing ? audBeat() : 0); return JAM1.hasF; },
+  // Bedingungs-Feld im offenen Fenster: öffnen, Wahl tippen
+  open: () => { const w = UI.pop && UI.pop.el.querySelector('.pl1s'); if (!w || !w._j1) return false; jam1Open(w, true); return true; },
+  info: () => ({opts: JAM1_OPTS.map(x => x[0]), bsel: JAM1.bsel, css: JAM1.css}),
+};
+Object.assign(SYNQUENZER, {jam1: JAM1_API});                /* JAM1: Test-API (Objekt, wird nicht umhüllt) */
+/* ===== JAM1-END ===== */
 Object.assign(SYNQUENZER, {mix3: MIX3_API}); mx3Boot();      /* MX3/CH1: Test-API (Objekt, wird nicht umhüllt), Auto-Nachführen */
 /* ===================== TKT BEGIN (Paket TAKT; Xander 07.11. (6): „TAKT: 3/4 – Metronom/Lauflicht zeigt weiter 4 → Fehler; beim
    Taktartwechsel alle Clips im Raster automatisch umwandeln (Option). DUR→MOLL ganzer Song („traurig“, wie Moll-Versionen).
