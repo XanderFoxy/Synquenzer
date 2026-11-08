@@ -2479,6 +2479,28 @@ a.mbtn[aria-disabled=true]{opacity:.55}
 @media (orientation:landscape) and (max-height:520px){#clipGrid .chsth.chsgrp .chssb{display:none}#clipGrid .chsth{gap:0}}
 @media (orientation:portrait) and (max-height:700px){#clipGrid .chsth.chsgrp .chssb{display:none}}
 /* CHS-CSS-END */
+/* GL1-CSS-BEGIN – Background-Gruppe ohne Überschneidung (flache Zeilen), LAUF wie gespielt */
+#clipGrid.gl1flat .chsth:not(.chsgrp){flex-direction:row;align-items:center;justify-content:flex-start;gap:0;padding-top:0;padding-bottom:0}
+#clipGrid.gl1flat .chsth:not(.chsgrp) .chsnm{flex:1 1 auto;min-width:0;line-height:13px}
+#clipGrid.gl1flat .chsth:not(.chsgrp) .chssb,#clipGrid.gl1flat .chsth .gl1pre{display:none}
+#clipGrid.gl1flat .chsth .chssw{top:50%;margin-top:-8px}
+#clipGrid.gl1flat .chsth.chsgrp{flex-wrap:nowrap;column-gap:3px;padding-top:0;padding-bottom:0}
+#clipGrid.gl1flat .chsth.chsgrp .chsnm{flex:1 1 0;min-width:0;font-size:9px;letter-spacing:0}
+#clipGrid.gl1flat .chsth.chsgrp .chssb{display:none}
+#clipGrid.gl1flat2 .tbb{flex-direction:row;gap:3px}
+.sv-l.chs>span{min-width:0;overflow:hidden;text-overflow:ellipsis}
+#songView.gl1flat .sv-lm .mlt{gap:0}
+#songView.gl1flat .sv-lm .mlt b,#songView.gl1flat .sv-lm .mlt small{line-height:.95}
+#songView.gl1flat2 .sv-lm .mlt small{display:none}
+.slot .mini rect.g1g{opacity:.32}
+.pr-bar .gl1pv[hidden]{display:none}
+.pr-bar .gl1pv{position:relative}.pr-bar .gl1pv::after{content:'';position:absolute;left:0;right:0;top:-4px;bottom:-4px}   /* hochkant 44 px Treffer (die Leiste ist 44 px hoch) */
+.sv-loop .v.gl1fit{font-size:9px;letter-spacing:-.02em}
+@media (orientation:portrait){#popLayer .pop > h4.ux1-h{min-height:32px}}   /* ✕ (36 px + Trefferrand) lag 2–7 px über der obersten Taste rechts: ein Tipp dort schloss das Blatt */
+@media (orientation:landscape){.vvsheet .vvctl .seg.vvseg{flex:0 1 auto;min-width:0;flex-wrap:nowrap}.vvsheet .vvctl .seg.vvseg button{flex:0 1 auto;white-space:normal;line-height:1.05}}   /* Video quer: [Ganze App] war rechts abgeschnitten */
+.sv-l.chs>span{letter-spacing:0}
+.sv-l.chs{gap:3px}
+/* GL1-CSS-END */
 #wpSheet .g6pglq{flex:none;height:44px;padding:0 10px;font:700 12px/1 var(--font-ui)}
 #wpSheet .g6pglq.on{color:var(--ink);background:var(--sel);border-color:var(--sel)}
 #qSheet .qfol{flex:0 0 auto;height:44px;padding:0 10px;font:700 11px/1 var(--font-ui)}
@@ -20699,6 +20721,7 @@ const RecHelpers = (() => {
       if (xOf(Lb) < V.W) { x.fillStyle = '#000'; x.globalAlpha = .55; x.fillRect(xOf(Lb), 0, V.W - xOf(Lb), V.H); x.globalAlpha = 1; }
       if (E.step != null) { x.fillStyle = C.amber; x.globalAlpha = .22; x.fillRect(xOf(E.step), 0, Math.max(2, stepLen() * V.ppb), V.H); x.globalAlpha = 1; }
       VI.clear();
+      const g1P = opts.gl1 ? opts.gl1.played() : null;                  // GL1: LAUF wie gespielt (die notierten Noten blass)
       for (const nt of c.notes) {
         const r = noteRect(nt); if (r.x > V.W || r.x + r.w < 0 || r.y > V.H || r.y + r.h < 0) continue;
         const selected = E.sel.has(nt);
@@ -20710,7 +20733,9 @@ const RecHelpers = (() => {
         if (r.w >= 18) { x.fillStyle = '#0b0c0f'; x.globalAlpha = .5; x.fillRect(r.x + r.w - 5, r.y + r.h * .3, 2, r.h * .4); x.globalAlpha = 1; }
         if (opts.noteDeco) opts.noteDeco(x, nt, r);              // PL1: Punkt an der Note mit Lock
         if (nt.off) { x.fillStyle = C.bg; x.globalAlpha = .62; x.fillRect(r.x, r.y + 1, r.w, r.h - 2); x.globalAlpha = 1; }   // LF1: ein ausgeschalteter Schritt (note.off) gedimmt
+        if (g1P) opts.gl1.ghost(x, r, C);                              // GL1
       }
+      if (g1P) opts.gl1.draw(x, g1P, {xOf, yOfRow, rowOfNote, ppb: V.ppb, rowH: V.rowH, W: V.W, H: V.H, col, C, rr, sel: E.sel, noteRect});   // GL1 (GL1-P: + Auswahl obenauf)
       if (opts.syl) { const SY = opts.syl(c.notes); if (SY && SY.size) {         /* G9E: Silbe klein unter dem Noten-Anfang (links unten, nie am Griff rechts) */
         x.font = '600 10px ' + tok('--font-ui', 'sans-serif'); x.textBaseline = 'alphabetic';
         const Q = [...SY].map(([nt, tx]) => ({r: noteRect(nt), tx})).sort((p, q) => p.r.x - q.r.x);   // Breite bis zum nächsten Schild (keine Überdeckung)
@@ -26942,7 +26967,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '4.49.1';
+const VERSION = '4.50.0';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -36140,6 +36165,7 @@ function mxApply() {
   if (MX.bankT) UI.heads[DRUM_T].el.appendChild(UI.tbb);
   UI.dirty.grid = true;
   for (const i of ord) if (UI.heads[i]) { UI.heads[i].st = {}; UI.stops[i]._st = null; }
+  gl1MxFlat();                                                     // GL1: flache Zeilen (Background-Gruppe quer) ohne Überschneidung
 }
 // measured layout (resize, sheet opened, track added/removed): which banks are needed
 function mxLayout() {
@@ -36217,9 +36243,10 @@ function setSceneBank(n) { UI.sceneBank = n ? 1 : 0; if (S.ui) S.ui.sceneBank = 
 function setTrackBank(n) { UI.trackBank = n && MX.pages && MX.pages.length > 1 ? 1 : 0; if (S.ui) S.ui.trackBank = UI.trackBank; mxApply(); return UI.trackBank; }
 function setCls(e, cache, key, val) { if (cache[key] !== val) { cache[key] = val; e.classList.toggle(key, val); } }
 function setTxt(e, cache, key, val) { if (cache[key] !== val) { cache[key] = val; e.textContent = val; } }
-function clipSig(c) { let h = c.len * 7919; for (const n of c.notes) h = (h * 31 + Math.round(n.t * 960) * 7 + n.n * 13 + Math.round(n.d * 96)) % 1000000007; return c.notes.length + ':' + h; }
-function miniSvg(c, drum) {
+function clipSig(c) { let h = c.len * 7919; for (const n of c.notes) h = (h * 31 + Math.round(n.t * 960) * 7 + n.n * 13 + Math.round(n.d * 96) + (n.off ? 5 : 0) + (n.rt | 0) * 13 + (n.tp | 0) * 17 + (n.pb != null ? Math.round(n.pb * 100) * 19 : 0)) % 1000000007; return c.notes.length + ':' + h + (c.lf ? '|' + [c.lf.dir, c.lf.st, c.lf.seed, c.lf.g].join(':') : ''); }   // GL1: + LAUF
+function miniSvg(c, drum, g1p) {
   const L = clipB(c); if (!c.notes.length) return '';
+  if (!drum && (c.lf || c.notes.some(n => n.off || n.rt || n.tp || n.pb != null))) { const g = gl1MiniSvg(c, g1p); if (g != null) return g; }   // GL1: wie gespielt (LAUF; GL1-P: g1p = Durchlauf)
   let lo = 127, hi = 0; for (const n of c.notes) { if (n.n < lo) lo = n.n; if (n.n > hi) hi = n.n; }
   const span = Math.max(hi - lo, 6);
   let r = '';
@@ -36281,7 +36308,7 @@ function renderGrid(bAud) {
       else if (!clip && rs) { gl = '●'; glr = true; }
       setTxt(C.gl, st, 'gl', gl);
       setCls(C.gl, st, 'rd', glr);
-      setTxt(C.ln, st, 'ln', clip ? clip.len + 'T' : '');
+      // GL1: die Länge samt LAUF-Richtung (◀ ⇄ ? ↑ ↓) setzt GL1-P weiter unten, wenn das Tonart-Schild bekannt ist
       // key badge only where the clip's key differs from its scene key (§4.2)
       const skey = SK[k] || S.key;
       const kb = clip && tr.kind === 'synth' && clip.notes.length && !sameKey(clip.key, skey) ? keyShort(clip.key) : '';
@@ -36299,7 +36326,7 @@ function renderGrid(bAud) {
       else if (playing && clip && clip.len > 1 && R.playing && bAud >= 0) { const L = clipB(clip), ph = (((bAud - audCstart(i, bAud)) % L) + L) % L; tx = (Math.floor(ph / 4) + 1) + '/' + clip.len; }
       setTxt(C.tx, st, 'tx', tx);
       // live text and length label side by side only where both fit (10 px mono ≈ 6 px per character; insets as in CSS)
-      const lnS = clip ? clip.len + 'T' : '';
+      const lnS = clip ? gl1LnS(clip, kb, sel, !!clip.st) : ''; setTxt(C.ln, st, 'ln', lnS);   // GL1 (GL1-P: nie unter dem Tonart-Schild)
       setCls(C.el, st, 'lnoff', !!tx && !!lnS && (sel ? 7 : 4) + (playing && rs !== 'rec' ? (sel ? 18 : 15) : (sel ? 7 : 4)) + 6 * (lnS.length + tx.length) + 3 > UI.cellW);
       setTxt(C.big, st, 'big', big);
       setCls(C.big, st, 'on', !!big);
@@ -36312,7 +36339,8 @@ function renderGrid(bAud) {
         if (!C.recMiniT || now - C.recMiniT > 250) { C.recMiniT = now; const RB = recBB(), L = Math.max(RB, Math.ceil((bAud - rec.startBeat + .01) / RB) * RB); sig = 'rec:' + rec.temp.length + ':' + L; if (sig !== C.sig) { C.sig = sig; C.mini.innerHTML = miniSvg({len: L / 4, notes: rec.temp.map(n => ({t: Math.min(n.t, L - .01), d: n.d, n: n.n}))}, tr.kind === 'drum'); } }
         continue;
       }
-      if (sig !== C.sig) { C.sig = sig; C.mini.innerHTML = clip ? (clip.audio ? tkMiniSvg(clip.audio) : miniSvg(clip, tr.kind === 'drum')) : ''; }
+      const g1p = clip && !clip.audio && tr.kind !== 'drum' ? gl1PassNow(i, clip, playing, bAud) : 0; if (g1p) sig += '|p' + g1p;   // GL1-P: hin und her / Zufall / Chance – der Durchlauf, der gerade klingt
+      if (sig !== C.sig) { C.sig = sig; C.mini.innerHTML = clip ? (clip.audio ? tkMiniSvg(clip.audio) : miniSvg(clip, tr.kind === 'drum', g1p)) : ''; }
     }
   }
   for (let k = 0; k < MX.scenes.length; k++) {
@@ -36521,9 +36549,9 @@ function svLayout() {
   const ord = trackOrder(), synth = ord.filter(i => !isDrum(i)), avail = RH - SV.rulerH + SV.vvS + SV.blS;
   if (avail / (ord.length + chsSvExtra() + 2) >= 26 - .5) { SV.rows = ord.slice(); SV.pages = null; }
   else {
-    const per = Math.max(4, Math.floor(avail / 26) - 3), pages = []; for (let k = 0; k < synth.length; k += per) pages.push(synth.slice(k, k + per));
+    const per = Math.max(4, Math.floor(avail / 26) - 3), pages = gl1SvPages(synth, per);   // GL1: die STIMME zählt mit ihren Background-Zeilen (wie die Matrix)
     if (pages.length < 2) { SV.rows = ord.slice(); SV.pages = null; }
-    else { SV.pages = pages; const pg = pages[Math.min(trackBankOf(), pages.length - 1)]; SV.rows = pg.concat(new Array(pages[0].length - pg.length).fill(-1), [DRUM_T]); }
+    else { SV.pages = pages; const pg = pages[Math.min(trackBankOf(), pages.length - 1)]; SV.rows = pg.concat(new Array(gl1SvFill(pages, pg)).fill(-1), [DRUM_T]); }   // GL1
   }
   // V2e: [▲▼] stands in every viewport where 8 tracks would not fit (fixed per viewport, nothing moves when tracks come and go)
   SV.bankVp = side || (avail + ubH) / (8 + 2) < 26 - .5;          // UE-B: nach der vollen Höhe (die Leiste ändert die Knopfzeile nicht)
@@ -36533,7 +36561,7 @@ function svLayout() {
   chsSvRows();   // CHS: Background-Zeilen nach der STIMME-Zeile
   svBuildRows(); CHS.svLab = '';
   const nR = SV.rows.length + 2;                                    // a shorter page keeps its rows (empty ones): nothing moves
-  SV.rowH = Math.max(14, (RH - SV.rulerH) / nR);
+  SV.rowH = Math.max(9, (RH - SV.rulerH) / nR); gl1SvFlat();       // GL1: AKKORDE/MELODIE nie unter den Rand (vorher min. 14 px → abgeschnitten); flache Zeilen
   SV.cv.width = Math.round(r.width * dpr); SV.cv.height = Math.round(r.height * dpr);
   SV.cv.style.width = r.width + 'px'; SV.cv.style.height = r.height + 'px';
   // the label column rows line up with the canvas rows
@@ -36599,7 +36627,7 @@ function svButtons() {
   B.bHome.hidden = !B.bBack.hidden;
   EL.songView.classList.toggle('tight', !B.bBack.hidden);           // top row with ↩ SONG: the ● / ▶ / MEL. labels go two-line
   const ll = loopLabel(song), lv = B.bLoop.lastChild, lt = '⟲ ' + loopShortLabel(song, B.bLoop.clientWidth && B.bLoop.clientWidth < 80) + ' ▾';
-  if (lv.textContent !== lt) { lv.textContent = lt; B.bLoop.setAttribute('aria-label', 'Schleife: ' + ll); }
+  if (lv._gl1 !== lt + '|' + B.bLoop.clientWidth) { lv._gl1 = lt + '|' + B.bLoop.clientWidth; lv.textContent = lt; B.bLoop.setAttribute('aria-label', 'Schleife: ' + ll); gl1FitV(lv, B.bLoop); }   // GL1: zu breit → enger statt links/rechts abgeschnitten
   if (SV.tbb && !SV.tbb.hidden) { const hid = svBankHiddenPlays(); if (SV.tbb.classList.contains('dot') !== hid) SV.tbb.classList.toggle('dot', hid); }
   B.bLoop.classList.toggle('on', !!(song && song.loop.on));
   SV.empty.hidden = !!(song && (song.bars || rec)) || !!SV.pv;          // V2e′: a part on its way in shows its preview
@@ -40697,6 +40725,7 @@ function svTileNotes(song, t, run) {
   if (!SV.tileC || SV.tileC.v !== v) SV.tileC = {v, m: new Map()};
   const o = run.o, key = t + '|' + (o.own || o.slot) + '|' + (+(run.ds - run.d0 * 4).toFixed(4)) + '|' + (run.d1 - run.d0) + '|' + run.L;
   let r = SV.tileC.m.get(key); if (r) return r;
+  r = gl1TileNotes(song, t, run, key); if (r) return r;               // GL1: LAUF – die Noten wie gespielt (a2Sound)
   const clip = o.own ? song.own[o.own] : S.tracks[t].clips[o.slot], drum = isDrum(t), list = [];
   if (clip) {
     let lo = 127, hi = 0; for (const n of clip.notes) { if (n.n < lo) lo = n.n; if (n.n > hi) hi = n.n; }
@@ -41147,8 +41176,11 @@ function svDraw(force, sbIn) {
       g.fillStyle = SV.cols[song.melodyTrack] || '#fff'; bars(ns, 3);
       if (!ns.length) { g.fillStyle = '#6b7080'; g.textAlign = 'left'; g.fillText(trackTag(song.melodyTrack) + ': leer', Math.max(4, 4 - SV.x), ym + rh / 2); g.textAlign = 'center'; }
     } else { g.fillStyle = '#4a4e57'; g.textAlign = 'left'; g.fillText(R.melRec || R.songRec ? 'spielen = Melodie' : 'antippen = Melodie bearbeiten', Math.max(4, 4 - SV.x), ym + rh / 2); g.textAlign = 'center'; }
+    const gl1c = gl1SvClip(g, song, X, W, H, ru);                    // GL1: weit draußen liegen Gesang und Background nicht über den Teil-Blöcken
     try { tkSvDraw(g, song, XB, ru, rh, W); } catch (e) { logErr(e); }   // VS3: Song-Stimme als gläserne Wellen
     try { chsSvDraw(g, song, XB, ru, rh, W); } catch (e) { logErr(e); }   // CHS: Background-Zeilen
+    try { gl1ChsSvParts(g, song, XB, ru, rh, W); } catch (e) { logErr(e); }   // GL1: Background der STIMME-Clips in den Teilen
+    if (gl1c) g.restore();
     try { g3SvDraw(g, song, XB, ru, rh, W); } catch (e) { logErr(e); }   /* G3: Schwänzchen (Anlauf/Ausklang) */
     // song end
     const xe = X(bars); g.fillStyle = 'rgba(255,255,255,.25)'; g.fillRect(xe, ru, 1, H - ru);
@@ -41757,6 +41789,7 @@ function openPop(anchor, build, opts) {
   if (opts.sheet) { const sa = pshSafe(); x = clamp(x, 8 + sa.l, Math.max(8 + sa.l, vw - pw - 8 - sa.r)); y = Math.max(y, 8 + sa.t); }   // 4.30.1
   p.style.left = Math.round(x) + 'px'; p.style.top = Math.round(Math.max(8, y)) + 'px';
   UI.pop = {el: p, onClose: opts.onClose, name: opts.name, sheet: opts.sheet || null};
+  gl1PopWatch(p);                                                 // GL1: wächst das Blatt danach (Inhalt kommt später), bleibt es im Bild
   return p;
 }
 // a popover whose content changed (e.g. [+ Modulation]: source -> destinations) stays inside the viewport
@@ -42478,6 +42511,7 @@ function uiFrame() {
   else if (ED.lauf && ED.rollAt) laufFrame(bAud);
   mpTick();                                                 /* MP Mithören */
   if (UI.toastActs) toastPlace();                           // sheets opened/closed/rebuilt under an action toast
+  if (VD4 && VD4.on) vd4Frame();                            // VD4: Regie-Vorschau (aus = nur diese Prüfung)
 }
 // the count-in shows the remaining beats: 4…1 (1 bar) or 8…1 (2 bars), never the few ms of start lead
 const ciMax = () => tkPlain() && !TKT.ci ? 4 * Math.max(1, R.ciBars || 1) : Math.ceil(R.ciB || tCountBeats(Math.max(1, R.ciBars || 1)));   // T1
@@ -49689,11 +49723,12 @@ function buildRoll() {
   const extra = [];
   // [LAUF] (§3.10): the step view; disabled (with the hint) while the clip has chords
   if (tr.kind === 'synth') extra.push({id: 'lauf', label: 'LAUF', title: 'LAUF: Schrittansicht für Basslauf und Sequenz', fn: () => safeRebuild(() => setRollView('lauf'))});
+  if (tr.kind === 'synth') extra.push(gl1RollTool());               // GL1: [wie gespielt │ wie notiert] (nur mit LAUF-Richtung/Effekten sichtbar)
   if (land) extra.push({id: 'kb', label: '⌨', title: 'Tastatur zeigen / verbergen', fn: b => { ROLLP.kb = !ROLLP.kb; rollKbApply(); b.classList.toggle('on', ROLLP.kb); }});
   const kAt = () => shownClipKey(s, S.tracks[t].clips[s]);              // EDIT 4.29: Tonart der Stelle (Pinsel + Magic Scale)
   ED.roll = PianoRoll.create(body, rollModel(t, s), {color: col || '#4cc9f0', grid: ROLLP.grid, fold: ROLLP.fold, rowH: 22, undoHold: sx14UndoHold, toolbarHost: host,
     extraTools: extra, center: 12 * ((tr.kbOct || 4) + 1) + 7, rowName: percIs(tr) ? percRowName : null,   // PERC: Kanal-Namen
-    endActs: hm1Acts(t, s).concat(pl1Acts(t, s)), noteDeco: pl1RollDeco,   /* PL1: [Locks], Punkt an der Note · HM1: [Harmonie] am Ende der Aktionsleiste (Merge 4.45: endActs, damit LF1-extraActs es nicht überschreibt) */
+    endActs: hm1Acts(t, s).concat(pl1Acts(t, s)), noteDeco: pl1RollDeco, gl1: tr.kind === 'synth' ? gl1RollOpts(t, s) : null,   /* GL1: wie gespielt */   /* PL1: [Locks], Punkt an der Note · HM1: [Harmonie] am Ende der Aktionsleiste (Merge 4.45: endActs, damit LF1-extraActs es nicht überschreibt) */
     mp: mpRollOpts(t, 'c:' + t + ':' + s, kAt),   /* MP */
     tap: (b, fn) => b.addEventListener('click', () => { try { fn(); } catch (e) { logErr(e); } }),
     reg: folReg('roll'), onHand: () => folHand('roll'),
@@ -49709,6 +49744,7 @@ function buildRoll() {
   ED.laufBtn = ED.roll.el.bar ? [...ED.roll.el.bar.children].find(b => b.textContent === 'LAUF') || null : null;
   // the view switch goes first in the toolbar (in P it scrolls sideways: the tools behind it stay where the thumb expects them)
   if (ED.laufBtn) { const bar = ED.roll.el.bar; bar.insertBefore(ED.laufBtn, bar.firstChild); bar.insertBefore(el('span', 'sep'), ED.laufBtn.nextSibling); ED.laufBtn.classList.add('lgo'); }
+  gl1RollPlace();                                                    // GL1: [wie gespielt] gleich hinter LAUF (nur mit LAUF-Richtung zu sehen)
   bb1RollHook(t, s);                                                 // BB1: [Werkzeugkasten] neben [Spielweise]
   rollKbApply();
   rollHeadUpdate(); renderEdChip();
@@ -49799,6 +49835,7 @@ function rollFrame(bAud) {
   const vs = R.playing ? visualSlots(t, bAud) : null;
   const b = c && vs && vs.playing === s && bAud >= 0 ? ((((bAud - audCstart(t, bAud)) % (clipB(c))) + clipB(c)) % (clipB(c))) : -1;
   folRoll('roll', b); ED.roll.playhead(b);
+  if (S.tracks[t].kind === 'synth') gl1RollFrame(t, s, c, !!vs && vs.playing === s, bAud);   // GL1-P: „wie gespielt“ = der Durchlauf, der gerade klingt
 }
 /* MP-BEGIN Mithören (Melodie-Pinsel): beim Bearbeiten nur gewählte Spuren hören. Nur Abhören: ein eigener Pegel je Spur
    (hinter dem Panorama, vor Summe und Hall/Echo-Sends; erst angelegt, wenn eine Spur ausgenommen wird) geht weich auf 0.
@@ -50414,7 +50451,7 @@ function lf1NoteNorm(src, out) {
 function lf1NormLf(x) {
   if (!x || typeof x !== 'object' || Array.isArray(x)) return null;
   const o = {};
-  if (x.dir === 'rev' || x.dir === 'pend' || x.dir === 'rnd') o.dir = x.dir;
+  if (x.dir === 'rev' || x.dir === 'pend' || x.dir === 'rnd' || x.dir === 'up' || x.dir === 'down') o.dir = x.dir;   // GL1: + auf-/abwärts (Tonhöhe)
   if (isNum(x.st) && x.st >= 0 && (Math.round(x.st) > 0 || o.dir === 'rev')) o.st = Math.min(4095, Math.round(x.st));
   if (!o.dir && o.st == null) return null;
   if (o.dir === 'rnd') o.seed = isNum(x.seed) ? clamp(Math.round(x.seed), 1, 99) : 1;
@@ -50455,6 +50492,7 @@ function lf1Build(ns, L, lf) {
   if (map) {
     const st = lf.st != null ? lf.st : P.dir === 'rev' ? T - 1 : 0; P.st = ((st % T) + T) % T;
     P.by = new Map(); for (const it of items) { if (!P.by.has(it.k)) P.by.set(it.k, []); P.by.get(it.k).push(it); }
+    if (P.dir === 'up' || P.dir === 'down') gl1Perm(P);           // GL1: Tonhöhen-Richtung
   }
   return P;
 }
@@ -50464,6 +50502,7 @@ function lf1Pos(P, g) {
   if (P.dir === 'rev') return (((P.st - g) % T) + T) % T;
   if (P.dir === 'pend') { const M = 2 * T - 2, m = (((g + P.st) % M) + M) % M; return m < T ? m : M - m; }
   if (P.dir === 'rnd') return g === 0 ? P.st : Math.min(T - 1, Math.floor(DrumSeq.rand01(P.seed, g, 7, 3) * T));
+  if (P.perm) { const q = (((g + P.st) % T) + T) % T; return P.perm.has(q) ? P.perm.get(q) : q; }   // GL1: auf-/abwärts (Tonhöhe) – der Rhythmus bleibt, die Töne der Reihe nach
   return (g + P.st) % T;
 }
 // the events in [a, b) beats from the clip start: plain notes {t, d, n, v, lk …} (stumm weg, Chance, Wirbel, Transponieren, Richtung)
@@ -55073,6 +55112,7 @@ function ui1Entries() {
     E('imvideo', 'Im Video (je Clip)', 'Clip-Blatt › Im Video', 'Auto, Gerät, Klavier, Mäusekino, Noten oder aus.', 'im video ansicht clip klavier maeusekino', G.clip(false), 'Im Video'),
     E('vcut', 'Video-Schnitt im Song', 'Song-Ansicht › SCHLEIFE ▾ › Video-Schnitt im Song (oder Video-Blatt › Schnitt)', 'Eigene Video-Spur unter der Taktleiste: je Bereich eine Ansicht wählen, ab einem Takt teilen, Kanten ziehen.', 'video schnitt spur ansicht kamera cut regie', () => { vd3CutSet(true); return G.song(false)(); }, () => SV.wrap),   // 4.48: VD3
     E('makingof', 'Making-of im Video', 'Video-Blatt › Extras › Making-of', 'Vor dem Song ein kurzer Vorlauf, wie das Lied entstanden ist.', 'making of entstehung vorlauf video', () => { ui1Home(); vvOpen(); return true; }, () => VV.el),   // 4.48: VD3
+    E('vd4live', 'Live-Vorschau der Video-Regie', 'Video-Blatt › Extras › Live-Vorschau', 'Kleines Fenster über Matrix/Song: zeigt beim Abspielen, was das Video hier filmt; Regie ⇄ App, antippen = Ansicht wählen, ziehen = verschieben, ✕ = aus.', 'live vorschau regie bild im bild fenster pip video kamera schnitt was wird gefilmt', () => { ui1Home(); vvOpen(); return true; }, '.vd4-lv'),   // VD4
     E('export', 'Export (WAV, Einzelspuren, MIDI)', 'Menü › Export', 'Ganzer Song, Einzelspuren als ZIP, nur Gesang, MIDI, Projekt-Container.', 'export wav midi zip stems spuren', () => { ui1Home(); va1Sheet(); return true; }, '.va1-bd'),
     E('midiimp', 'MIDI importieren', 'Menü › Export › MIDI importieren', 'Eine MIDI-Datei als Clips ins Projekt.', 'midi import datei', () => { ui1Home(); va1Sheet(); return true; }, 'MIDI importieren'),
     E('savefile', 'Projekt als Datei sichern', 'Menü › Projekt', 'Eine Sicherung mit allem als .json – „Datei öffnen“ holt sie zurück.', 'sichern datei backup speichern json', G.menu, 'Als Datei sichern'),
@@ -70480,7 +70520,7 @@ function chsMxRender() {
     const ln = L.lanes.find(l => l.id === r.id); if (!ln) continue;
     const v0 = chsLaneVoice(ln.id), col = chsColor(ln, v0);
     if (r.tok !== col.tok) { r.tok = col.tok; for (const n of [r.h, r.e, ...r.cells.map(c => c.el)]) n.style.setProperty('--cc', 'var(--' + col.tok + ')'); }
-    setTxt(r.h.children[0], r, 'dig', col.dig); setTxt(r.h.children[1], r, 'nm', ln.name);
+    setTxt(r.h.children[0], r, 'dig', col.dig); gl1ChsNm(r.h.children[1], r, ln.name);   // GL1: „Chor “ flach ausgeblendet
     setTxt(r.h.children[2], r, 'sb2', (ln.mute ? 'stumm' : so === ln.id ? 'Solo' : (isNum(ln.db) && ln.db ? chsFmtDb(ln.db) : '0 dB')) + (isNum(ln.pan) && ln.pan ? ' · ' + chsPanTxt(ln.pan) : ''));
     setCls(r.h, r, 'muted', !!ln.mute || !!L.mute); setCls(r.e, r, 'on', !!ln.mute); r.e.setAttribute('aria-pressed', String(!!ln.mute)); r.e.setAttribute('aria-label', ln.name + ' stumm');
     r.h.setAttribute('aria-label', ln.name + ' – Mischpult');
@@ -70554,9 +70594,9 @@ function chsSvDraw(g, song, XB, ru, rh, W) {
 const CHS_COLC = new Map();
 function chsCol(tok) { let c = CHS_COLC.get(tok); if (!c) { c = getComputedStyle(document.documentElement).getPropertyValue('--' + tok).trim() || '#999'; CHS_COLC.set(tok, c); } return c; }
 function chsSvTap(code, bar) {
-  const v = tkVoxAt(bar); if (code === CHS_SV0) { if (v && v.chor) g6Sheet({vox: v.id}, SV.cv); else chsSetOpen(!chsIsOpen()); return; }
+  const v = tkVoxAt(bar); if (code === CHS_SV0) { if (v && v.chor) g6Sheet({vox: v.id}, SV.cv); else if (!gl1ChsSvTap(code, bar)) chsSetOpen(!chsIsOpen()); return; }   // GL1: Chor im Teil
   const ln = chsLanes()[CHS_SV0 - 1 - code]; if (!ln) return;
-  if (!v) { toast('Kein Song-Gesang in Takt ' + (bar + 1)); return; }
+  if (!v) { if (!gl1ChsSvTap(code, bar)) toast('Kein Song-Gesang in Takt ' + (bar + 1)); return; }   // GL1: Stimme des Szenen-Clips im Teil
   chsOpenVoice({vox: v.id}, ln.id);
 }
 function chsSvLabTap(d) { const c = chsSvCode(+d.dataset.t); if (c == null) return false; if (c === CHS_SV0) chsSetOpen(!chsIsOpen()); else { const ln = chsLanes()[CHS_SV0 - 1 - c]; if (ln) chsMixer(d, ln.id); } return true; }
@@ -73460,6 +73500,7 @@ function vvOpen() {
   bPrev.setAttribute('aria-label', 'Vorschau mit Ton'); acts.append(bPrev, bMake); ctl.appendChild(acts);
   const sx1 = sx1VvRow(ctl, acts);                                 // SX126: Zeile „Ausblenden“
   vd3VvRow(ctl, acts);                                              // VD3: Zeile „Extras“ (Titel, Untertitel-Rand, Making-of, Schnitt im Song)
+  vd4VvRow(VD3 && VD3.ui);                                          // VD4: Extras › Live-Vorschau beim Komponieren
   const bar = el('div', 'vvprog', '<i></i><span></span>'), bCan = el('button', 'rb vvbtn', 'Abbrechen'); bar.appendChild(bCan);
   const done = el('div', 'vvdone'), bShare = el('button', 'rb vvbtn go', 'Teilen'), bSave = el('button', 'rb vvbtn', 'Sichern');
   done.append(bShare, bSave); ctl.append(bar, done);
@@ -77761,7 +77802,7 @@ function vd3CutSet(on) {
 function vd3LblSync() {
   const lr = SV.labs && SV.labs.querySelector('.sv-lr'); if (!lr) return;
   let b = VD3.lbl; if (!b || !b.isConnected) { b = VD3.lbl = el('span', 'vd3-lbl', 'VIDEO'); lr.appendChild(b); }
-  const on = vd3CutOn() && !!SV.vvS; b.hidden = !on; if (on) b.style.height = (SV.vvS | 0) + 'px';
+  const on = vd3CutOn() && !!SV.vvS; b.hidden = !on; if (on) { vd3Css(); b.style.height = (SV.vvS | 0) + 'px'; }   // GL1: CSS auch ohne das Video-Blatt
 }
 
 /* ---------- 1. Titel und Untertitel-Rand (vvDraw-Haken) ---------- */
@@ -78481,6 +78522,282 @@ function vd3Hash(g, W, H) { const d = g.getImageData(0, 0, W, H).data; let h = 2
 // a finger on the screen (for the knob / sound log: only gestures of the hand count)
 try { const th = e => { if (VD3 && (e.type === 'pointerdown' || e.buttons || e.pointerType === 'touch')) VD3.touchT = performance.now(); }; window.addEventListener('pointerdown', th, {capture: true, passive: true}); window.addEventListener('pointermove', th, {capture: true, passive: true}); window.addEventListener('pagehide', () => { try { if (VD3 && VD3.log) vd3Flush(); } catch (e) {} }); } catch (e) {}
 /* VD3-END */
+/* VD4-BEGIN ===================== Regie-Vorschau live beim Komponieren (Paket VD4, Xander 07.11. (6)) =====================
+   „Live-Videoregisseur-Vorschau beim Entstehen“ – „zeigt, was gefilmt würde, mit Original-App-Umschaltung“.
+   1. Ein kleines Bild-im-Bild über Matrix bzw. Song (9:16: 110 × 196 pt hochkant, 88 × 156 pt quer; 16:9 gedreht). Ein/aus:
+      Video-Blatt › Extras „Live-Vorschau“, Guide, ✕ im Fenster. Nur dieses Gerät (uiPrefs vd4on, vd4m, vd4pos) – nichts im Projekt.
+   2. Das Bild kommt aus denselben Zeichnern wie das Video: vvRun (Auto-Regie mit Schnitt-Spur VD3 und Regeln VR1) + vvDraw, Format,
+      Bild und 9:16-Art aus dem Video-Blatt, Bereich = der des nächsten Videos (gelbe Auswahl, sonst ganzer Song; Takte außerhalb der
+      Auswahl: wie im Video des ganzen Songs). Beim Abspielen des Songs live (10 Bilder/s, beim Aufnehmen 5), sonst ein Standbild an der
+      Song-Position (neu gezeichnet nur, wenn sich Projekt, Regie, Bereich, Position oder Wahl ändern).
+      [Regie ⇄ App]: die Ansicht der Regie bzw. das App-Bild des Videos (die Original-App, wie sie das Video zeigt; App läuft auch
+      beim Abspielen der Matrix mit).
+   3. Tippen aufs Bild = das Menü der Video-Spur (VD3) für den Bereich an dieser Stelle. Ziehen = verschieben, loslassen = an die
+      nächste Ecke der Inhaltsfläche andocken (Matrix: zwischen Spurköpfen, Stopp-Spalte, Szenen-Kopf und Teil-Leiste; Song: unter der
+      Taktleiste, rechts der Spaltennamen) – je Lage (hochkant / quer) gemerkt. Das Fenster liegt in der Fläche der Matrix/des Songs
+      (Kopf, Tastatur und Seitenleiste bleiben frei) und unter allen Blättern, Menüs und Fenstern; ✕ und Umschalter: 44 px.
+   4. Kosten: kleine Leinwand (≤ 2 × Pixel), gedrosselt; verdeckt / Blatt offen / Video-Render = kein Bild; aus = kein Element, kein
+      Bild (uiFrame prüft nur VD4.on). Gemessen: VD4.frames, VD4.ms (Zeichenzeit). */
+const VD4_FPS = 10, VD4_REC = 5, VD4_CHK = 250, VD4_SZ = {p: [110, 196], l: [88, 156]};
+const VD4_ICO = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false"><rect x="2.5" y="4.5" width="19" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><rect x="12" y="11" width="7" height="6" rx="1" fill="currentColor"/></svg>';
+var VD4 = {on: false, m: 'regie', el: null, cv: null, g: null, cap: null, capS: '', bM: null, bX: null, w: 0, h: 0, pos: null, geo: null, lay: '', rt: null, rtAll: null, rg: null, rtKey: '',
+  sig: '', pend: false, vis: false, t: 0, tChk: 0, drag: null, frames: 0, ms: 0, msMax: 0, cur: null, css: false, lv: null, lvAt: null, snapT: 0};
+try { const p = uiPrefs(); VD4.on = p.vd4on === true; VD4.m = p.vd4m === 'app' ? 'app' : 'regie'; } catch (e) {}
+
+const vd4Land = () => window.innerWidth > window.innerHeight;
+function vd4Corner() { const p = uiPrefs().vd4pos, c = p && typeof p === 'object' ? p[vd4Land() ? 'l' : 'p'] : null; return ['tl', 'tr', 'bl', 'br'].includes(c) ? c : 'br'; }
+function vd4Set(on) {
+  on = !!on; setUiPref('vd4on', on); VD4.on = on;
+  if (!on) vd4Unmount(); else { VD4.pend = true; VD4.tChk = 0; }
+  vd4LvPaint();
+  return on;
+}
+function vd4ModeSet(m) { VD4.m = m === 'app' ? 'app' : 'regie'; setUiPref('vd4m', VD4.m); vd4Ui(); VD4.sig = ''; VD4.pend = true; return VD4.m; }
+
+/* ---------- das Fenster ---------- */
+function vd4Css() {
+  if (VD4.css) return; VD4.css = true;
+  const s = document.createElement('style'); s.id = 'vd4css';
+  s.textContent = '.vd4w{position:absolute;left:0;top:0;z-index:7;border-radius:10px;overflow:hidden;background:#000;box-shadow:0 0 0 1px rgba(255,255,255,.16),0 6px 18px rgba(0,0,0,.6);touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;will-change:transform}' +
+    '.vd4w.snap{transition:transform .18s ease-out}.vd4w.drag{box-shadow:0 0 0 1px var(--sel),0 10px 26px rgba(0,0,0,.7)}' +
+    '.vd4cv{display:block;width:100%;height:100%;pointer-events:none}' +
+    '.vd4w>button{position:absolute;top:0;height:44px;margin:0;padding:5px;border:0;border-radius:0;background:none;box-shadow:none;color:#e9ebef;display:flex;align-items:flex-start;-webkit-tap-highlight-color:transparent}' +
+    '.vd4w .vd4m{left:0;right:auto;min-width:44px;max-width:calc(100% - 44px);justify-content:flex-start}.vd4w .vd4x{right:0;width:44px;justify-content:flex-end}' +
+    '.vd4w .vd4m span,.vd4w .vd4x span{display:flex;align-items:center;justify-content:center;height:22px;border-radius:11px;background:rgba(8,9,11,.8);border:1px solid rgba(255,255,255,.28)}' +
+    '.vd4w .vd4m span{padding:0 7px;gap:4px;font:700 9px/1 var(--font-ui);letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}.vd4w .vd4m span i{font-style:normal;color:#9aa0aa}' +
+    '.vd4w.app .vd4m span{border-color:var(--sel);color:var(--sel)}.vd4w.narrow .vd4m span i{display:none}' +
+    '.vd4w .vd4x span{width:22px;font:700 11px/1 var(--font-ui)}' +
+    '.vd4w .vd4c{position:absolute;left:5px;bottom:5px;max-width:calc(100% - 10px);height:17px;padding:0 6px;box-sizing:border-box;border-radius:5px;font:700 9px/15px var(--font-ui);color:#0d0e11;background:#b8bdc7;border:1px solid transparent;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}' +
+    '.vd4w .vd4c.auto{background:rgba(13,14,17,.82);color:#d6dae1;border-style:dashed}.vd4w .vd4c[hidden]{display:none}' +
+    '.vvsheet .vd3-box .rb.vd4-lv{flex:1 1 100%;display:flex;align-items:center;gap:8px;padding:0 10px;text-align:left;font:600 12px/1.1 var(--font-ui)}' +
+    '.vvsheet .vd3-box .rb.vd4-lv span{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}.vvsheet .vd3-box .rb.vd4-lv b{flex:none;font:700 12px/1 var(--font-ui)}' +
+    '.vvsheet .vd4-vr .rb.vd4-lv{flex:1 1 auto;min-width:0;height:44px;display:flex;align-items:center;gap:8px;padding:0 10px;text-align:left;font:600 12px/1.1 var(--font-ui)}.vvsheet .vd4-vr .rb.vd4-lv span{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.vvsheet .vd4-vr .rb.vd4-lv b{flex:none;font:700 12px/1 var(--font-ui)}' +
+    '.vvsheet .rb.vd4-lv.on{border-color:var(--sel);color:var(--sel);box-shadow:inset 0 0 0 1px var(--sel)}' +
+    '@media (orientation:landscape){.vvsheet .vvb.vvlq.vd4q{grid-template-rows:minmax(0,1fr) auto auto auto}.vvb.vvlq.vd4q>.vvrow.vd4-vr{grid-column:1;grid-row:4}.vvb.vvlq.vd4q>.vvctl{grid-row:1 / span 4}}';
+  document.head.appendChild(s);
+}
+function vd4Mount() {
+  const ga = EL && EL.gridArea; if (!ga || !BOOT.done) return false;
+  vd4Css();
+  const w = el('div', 'vd4w'), cv = el('canvas', 'vd4cv'), bM = el('button', 'vd4m'), bX = el('button', 'vd4x', '<span>✕</span>'), cap = el('span', 'vd4c');
+  w.setAttribute('role', 'group'); w.setAttribute('aria-label', 'Live-Vorschau: was das Video hier zeigt (antippen = Ansicht wählen, ziehen = verschieben)');
+  bX.setAttribute('aria-label', 'Live-Vorschau schließen'); cap.hidden = true;
+  w.append(cv, bM, bX, cap); ga.appendChild(w);
+  Object.assign(VD4, {el: w, cv, g: cv.getContext('2d', {alpha: false}), cap, capS: '', bM, bX, lay: '', sig: '', pend: true, tChk: 0, vis: false, pos: null});
+  guardTouch(w);
+  onTap(bM, () => { vd4ModeSet(VD4.m === 'app' ? 'regie' : 'app'); haptic('tick'); lcdOrToast(VD4.m === 'app' ? 'Vorschau: App-Bild' : 'Vorschau: Regie'); });
+  onTap(bX, () => { vd4Set(false); haptic('tick'); lcdOrToast('Live-Vorschau aus'); });
+  w.addEventListener('pointerdown', vd4Down);
+  vd4Ui();
+  return true;
+}
+function vd4Unmount() {
+  const w = VD4.el; VD4.el = VD4.cv = VD4.g = VD4.cap = VD4.bM = VD4.bX = null; VD4.drag = null; VD4.vis = false; VD4.rt = VD4.rtAll = VD4.rg = null; VD4.rtKey = ''; VD4.cur = null; VD4.w = VD4.h = 0;
+  if (w) { const c = w.querySelector('canvas'); if (c) c.width = c.height = 0; w.remove(); }   // width 0: iOS gibt den Speicher sofort frei
+}
+function vd4Ui() {
+  const b = VD4.bM; if (!b) return;
+  const app = VD4.m === 'app';
+  b.innerHTML = '<span>' + (app ? 'App' : 'Regie') + '<i>⇄</i></span>';
+  b.setAttribute('aria-label', 'Vorschau zeigt ' + (app ? 'das App-Bild' : 'die Regie') + ' – antippen für ' + (app ? 'Regie' : 'App-Bild'));
+  b.setAttribute('aria-pressed', String(app));
+  VD4.el.classList.toggle('app', app);
+}
+// the content area in gridArea coordinates: where the window may rest (nothing important under it)
+function vd4Geo() {
+  const ga = EL.gridArea, G = ga.getBoundingClientRect(), land = vd4Land(), f9 = vvPrefs().fmt !== '16:9', B0 = VD4_SZ[land ? 'l' : 'p'];
+  const w = f9 ? B0[0] : B0[1], h = f9 ? B0[1] : B0[0];
+  const rc = e => (e && e.getClientRects().length ? e.getBoundingClientRect() : null);
+  let L = 4, T = 4, R_ = G.width - 4, B = G.height - 4;
+  if (UI.songView && SV.wrap) {
+    const r = rc(SV.wrap); if (r && r.width > 0) { L = Math.max(L, r.left - G.left + 4); T = Math.max(T, r.top - G.top + (SV.rulerH | 0) + 4); R_ = Math.min(R_, r.right - G.left - 4); B = Math.min(B, r.bottom - G.top - 4); }
+  } else if (EL.grid) {
+    const th = rc(EL.grid.querySelector('.th')), sp = rc(EL.grid.querySelector('.stp:not(.all)')), sc = rc(EL.grid.querySelector('.scn')), pb = EL.partBar && EL.partBar.parentNode === ga ? rc(EL.partBar) : null;
+    if (th) L = Math.max(L, th.right - G.left + 4); if (sp) R_ = Math.min(R_, sp.left - G.left - 4); if (sc) T = Math.max(T, sc.bottom - G.top + 4);
+    if (pb && pb.height > 0 && pb.top > G.top) B = Math.min(B, pb.top - G.top - 4);
+  }
+  // too small for the window: it may use the whole area (2 px margin), never outside the matrix/song
+  if (R_ - L < w) { L = Math.max(2, Math.min(L, G.width - 2 - w)); R_ = Math.min(G.width - 2, Math.max(R_, L + w)); }
+  if (B - T < h) { T = Math.max(2, Math.min(T, G.height - 2 - h)); B = Math.min(G.height - 2, Math.max(B, T + h)); }
+  return {W: G.width, H: G.height, L, T, R: R_, B, w, h, gx: G.left, gy: G.top};
+}
+function vd4XY(c, g) { return {x: Math.round(c[1] === 'l' ? g.L : g.R - g.w), y: Math.round(c[0] === 't' ? g.T : g.B - g.h)}; }
+function vd4Put(x, y) { VD4.pos = {x, y}; VD4.el.style.transform = 'translate3d(' + x + 'px,' + y + 'px,0)'; }
+// size + corner (after a layout change, a drag, a format change); anim = slide there
+function vd4Place(anim) {
+  if (!VD4.el) return;
+  const g = VD4.geo = vd4Geo(), el_ = VD4.el;
+  if (g.w !== VD4.w || g.h !== VD4.h) {
+    VD4.w = g.w; VD4.h = g.h; el_.style.width = g.w + 'px'; el_.style.height = g.h + 'px';
+    const d = Math.min(2, window.devicePixelRatio || 1); VD4.cv.width = Math.round(g.w * d); VD4.cv.height = Math.round(g.h * d); VD4.pend = true;
+  }
+  el_.classList.toggle('narrow', g.w < 100);
+  if (anim) { el_.classList.add('snap'); clearTimeout(VD4.snapT); VD4.snapT = setTimeout(() => { if (VD4.el) VD4.el.classList.remove('snap'); }, 220); }
+  const p = vd4XY(vd4Corner(), g); vd4Put(p.x, p.y);
+}
+// a finger on the window (not on its keys): still → the menu of this place, moved → drag, release → the nearest corner
+function vd4Down(e) {
+  const w = VD4.el; if (!w || (e.pointerType === 'mouse' && e.button !== 0) || (e.target && e.target.closest && e.target.closest('button'))) return;
+  e.preventDefault(); try { w.setPointerCapture(e.pointerId); } catch (_) {}
+  const P = VD4.pos || {x: 0, y: 0}, D = VD4.drag = {id: e.pointerId, x0: e.clientX, y0: e.clientY, px: P.x, py: P.y, t0: performance.now(), mv: false};
+  const mv = ev => {
+    if (ev.pointerId !== D.id || !VD4.el) return;
+    const dx = ev.clientX - D.x0, dy = ev.clientY - D.y0;
+    if (!D.mv && Math.hypot(dx, dy) > 8) { D.mv = true; w.classList.remove('snap'); w.classList.add('drag'); }
+    if (D.mv) { const g = VD4.geo || vd4Geo(); vd4Put(Math.round(clamp(D.px + dx, 2, g.W - VD4.w - 2)), Math.round(clamp(D.py + dy, 2, g.H - VD4.h - 2))); }
+  };
+  const up = ev => {
+    if (ev.pointerId !== D.id) return;
+    w.removeEventListener('pointermove', mv); w.removeEventListener('pointerup', up); w.removeEventListener('pointercancel', up);
+    VD4.drag = null; w.classList.remove('drag'); if (!VD4.el) return;
+    if (ev.type !== 'pointerup') { vd4Place(true); return; }
+    if (D.mv) {
+      const g = VD4.geo = vd4Geo(), cx = VD4.pos.x + VD4.w / 2, cy = VD4.pos.y + VD4.h / 2;
+      const c = (cy < (g.T + g.B) / 2 ? 't' : 'b') + (cx < (g.L + g.R) / 2 ? 'l' : 'r'), o = Object.assign({}, uiPrefs().vd4pos || {});
+      o[vd4Land() ? 'l' : 'p'] = c; setUiPref('vd4pos', o); vd4Place(true); haptic('tick');
+    } else if (performance.now() - D.t0 < 600) vd4Pick(ev.clientX, ev.clientY);
+  };
+  w.addEventListener('pointermove', mv); w.addEventListener('pointerup', up); w.addEventListener('pointercancel', up);
+}
+// tap: the VD3 menu of the chip at the bar the window shows (Ganzer Bereich | Ab Takt n, the pictures, Gerät …/Noten …)
+function vd4Pick(cx, cy) {
+  const song = S.song; if (!song || !song.bars) { lcdOrToast('Noch kein Song – die Regie filmt den Song (● SONG)'); return false; }
+  const bar = clamp(VD4.cur && isNum(VD4.cur.bar) ? VD4.cur.bar : songStartBar(), 0, song.bars - 1), c = vd3Chips(song).find(q => bar >= q.a && bar < q.b);
+  if (!c) return false;
+  haptic('tick'); vd3ChipPop(c, bar, cx, cy); return true;
+}
+
+/* ---------- Bild ---------- */
+// visible: no sheet, menu or video over it, the page in front; a hit test on its middle (toasts and small windows do not count)
+// cheap (every frame): the page in front, no video job, no sheet, tall window or menu over the app
+const vd4Free = () => !(document.hidden || VV.open || VV.busy || VV.off || UI.vvOff || R.editor || (UI.pop && UI.pop.sheet) || (EL.menu && EL.menu.classList.contains('open')));   // UI.pop.sheet: ein hohes Blatt (Mix & Master, Chor, Takes …)
+function vd4Vis() {
+  const w = VD4.el; if (!w || !w.isConnected || !vd4Free()) return false;
+  const r = w.getBoundingClientRect(); if (r.width < 4 || r.height < 4) return false;
+  const e = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+  if (!e) return false; if (w.contains(e)) return true;
+  if (e.closest && e.closest('#popLayer') && !e.closest('.pop')) return true;                   // nur der Hintergrund eines kleinen Fensters
+  return !!(e.closest && e.closest('#toast,#bub,.drg-ghost,.ue-ghost'));
+}
+// the song plays (Regie) or anything plays (App): live pictures; else one still at the song position
+const vd4Live = () => !!(R.playing && AU.ctx && (R.songPlay || VD4.m === 'app'));
+// the bars the next video films (as vvOpen + vvGo): the yellow selection – the sheet opens with [Auswahl] then – else the song
+function vd4Rg() { const u = VV.useSel; VV.useSel = true; try { return vvRange(true); } finally { VV.useSel = u; } }
+// the Regie run for bar: that of the next video; a bar outside its selection: the whole song's (it is not in that video)
+function vd4Rt(bar) {
+  const song = S.song; if (!song || !song.bars) return null;
+  const g = VD4.rg || (VD4.rg = vd4Rg()), out = !g || (g.sel && !(bar >= g.a && bar < g.b)), k = out ? 'rtAll' : 'rt';
+  if (!VD4[k]) VD4[k] = vvRun({view: vvViewOf(vvPrefs().view), range: out ? {a: 0, b: song.bars} : {a: g.a, b: g.b}});
+  return VD4[k];
+}
+const VD4_RT0 = Object.freeze({view: 'matrix', cam: 'app', A: 0, B: 0, bpm: 120, shots: [], cams: {}, off: null, log: null, ver: 0});   // App beim Matrix-Spielen: Bild 'matrix' braucht keinen Schnittplan
+// the still: the state at bar (as the sheet's still) a little into the bar – after the 300-ms blend and the 2-beat Fokus of a cut
+function vd4StillSt(bar) {
+  const song = S.song, a = barBeat(bar), bl = Math.max(1, barLen(bar)), sb = a + Math.min(bl - .05, VV4_FB + VV_BLEND * S.bpm / 60 + .05), st = {sb, tB: sb - a, slots: [], cs: [], own: []};
+  if (song) for (let i = 0; i < NT(); i++) { const o = laneOriginAt(song.lanes[i], bar), ok = laneClipOk(song, i, o); st.slots[i] = ok ? o.slot : -1; st.cs[i] = ok ? o.cs - a : 0; st.own[i] = ok ? o.own : null; }
+  return st;
+}
+// App: the app picture of the video (vvDrawApp, its song/matrix as the Regie says), with this window's own run
+function vd4App(g, W, H, st, rt) {
+  const keep = VV4B.st; VV4B.st = st; g.setTransform(1, 0, 0, 1, 0, 0);
+  try { return vvDrawApp(g, 0, {x: 0, y: 0, w: W, h: H}, rt ? {rt, view: rt.view} : {view: 'matrix', rt: VD4_RT0}); } finally { VV4B.st = keep; g.setTransform(1, 0, 0, 1, 0, 0); }
+}
+function vd4Draw(play) {
+  const g = VD4.g; if (!g) return null;
+  const T0 = performance.now(), W = VD4.cv.width, H = VD4.cv.height, song = S.song, has = !!(song && song.bars);
+  const lv = play ? vvLiveState() : null, songLive = !!(lv && lv.sb != null && has);
+  const bar = songLive ? clamp(barAt(Math.max(0, lv.sb)), 0, song.bars - 1) : songStartBar();
+  const st = songLive || (lv && VD4.m === 'app') ? lv : vd4StillSt(bar);
+  const view = vvViewOf(vvPrefs().view), rt = has ? vd4Rt(bar) : null;
+  let cur = {bar, sb: st.sb, live: !!lv, m: VD4.m, v: 'app', t: null, k: -1, man: false};
+  try {
+    if (VD4.m === 'app' || !rt) vd4App(g, W, H, st, lv && !songLive ? null : rt);   // die Matrix spielt: das App-Bild der Matrix, live
+    else {
+      const sh = view === 'auto' ? vvShotAt(rt, st.sb) : {k: 0, v: view, t: null};
+      vvDraw(g, W, H, view, st, rt);
+      const e = vvDirAt(song, bar);
+      cur = Object.assign(cur, {v: sh.v, t: sh.t != null ? sh.t : null, k: sh.k, a: sh.a, b: sh.b, f: sh.f || null, man: !!(e && e.v === sh.v && (!VV4_TRK.includes(e.v) || e.t === sh.t))});
+    }
+  } catch (e) { logErr(e); }
+  g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1;
+  VD4.cur = cur;
+  // the caption: bar + picture (full = your choice, dashed = Auto – as the chips of the Video-Spur)
+  const nm = VD4.m === 'app' ? 'App-Bild' : !has ? 'Noch kein Song' : vd3ChipName({v: cur.v, t: cur.t}, 999);
+  const cs = (has ? 'T' + (bar + 1) + ' · ' : '') + nm, auto = VD4.m !== 'app' && has && !cur.man, key = cs + '|' + auto + '|' + cur.v + '|' + cur.t;
+  if (VD4.cap && key !== VD4.capS) {
+    VD4.capS = key; VD4.cap.textContent = cs; VD4.cap.hidden = false; VD4.cap.classList.toggle('auto', auto);
+    const col = VD4.m === 'app' || !has ? '#b8bdc7' : vd3ChipCol({v: cur.v, t: cur.t}, vvCols());
+    VD4.cap.style.background = auto ? '' : col; VD4.cap.style.borderColor = auto ? col : 'transparent';
+  }
+  VD4.frames++; const d = performance.now() - T0; VD4.ms += d; if (d > VD4.msMax) VD4.msMax = d;
+  return cur;
+}
+// uiFrame (only while on): mount, the checks every 250 ms, then a picture when due
+function vd4Frame() {
+  if (!VD4.el && !vd4Mount()) return;
+  const now = performance.now();
+  if (now - VD4.tChk >= VD4_CHK) { VD4.tChk = now; vd4Check(); }
+  if (!VD4.vis || VD4.drag && VD4.drag.mv && !R.playing) return;
+  if (!vd4Free()) { VD4.vis = false; return; }                   // ein Blatt ging gerade auf: sofort kein Bild (nicht erst beim nächsten Blick)
+  if (vd4Live()) { if (now - VD4.t < 1000 / (rec.state !== 'off' || R.songRec ? VD4_REC : VD4_FPS) - 4) return; }
+  else if (!VD4.pend) return;
+  VD4.pend = false; VD4.t = now; vd4Draw(vd4Live());
+}
+function vd4Check() {
+  const ga = EL.gridArea, lk = [window.innerWidth, window.innerHeight, ga.clientWidth, ga.clientHeight, UI.songView ? 1 : 0, NT(), SV.rulerH | 0, SV.w | 0, SV.h | 0, vvPrefs().fmt, EL.partBar && EL.partBar.parentNode === ga ? 1 : 0].join('|');   // nach dem Neu-Auslegen von Matrix/Song
+  if (lk !== VD4.lay && !VD4.drag) { VD4.lay = lk; vd4Place(false); }
+  const vis = vd4Vis(); if (vis !== VD4.vis) { VD4.vis = vis; if (vis) VD4.pend = true; }
+  if (!vis) return;
+  const song = S.song, pf = vvPrefs(), g = song && song.bars ? vd4Rg() : null;   // TKGEN: jede Projekt-Änderung (markDirty: Clip „Im Video“, löschen …), KEYC.ver: Clip-Inhalt
+  const rk = g ? [S.id, UI.songVer | 0, TKGEN, KEYC.ver, NT(), song.bars, S.bpm, vd3RulesSig(), pf.view, pf.cam, pf.fmt, g.a, g.b, g.sel ? 1 : 0].join('|') : '';
+  if (rk !== VD4.rtKey) { VD4.rtKey = rk; VD4.rt = VD4.rtAll = null; VD4.rg = g; VD4.pend = true; }
+  const live = vd4Live(), sg = live ? 'live' : [rk, songStartBar(), VD4.m, R.selT | 0, UI.partsVer | 0, R.playing ? 1 : 0, VD4.w + 'x' + VD4.h].join('|');
+  if (sg !== VD4.sig) { VD4.sig = sg; if (!live) VD4.pend = true; }
+}
+
+/* ---------- Video-Blatt › Extras: [Live-Vorschau beim Komponieren · an/aus] ----------
+   hochkant: eine eigene Zeile im Extras-Kasten (unter Titel · Rand · Making-of · Schnitt); quer: eine Zeile „Extras“ unter dem
+   Vorschaubild (wie Abspann und Ausblenden) – die Bedienspalte rechts bleibt, wie sie war ([Video erstellen] ohne Rollen). */
+function vd4LvPaint() {
+  const b = VD4.lv; if (!b || !b.isConnected) return;
+  b.classList.toggle('on', VD4.on); b.setAttribute('aria-pressed', String(VD4.on)); b.setAttribute('aria-label', 'Live-Vorschau beim Komponieren: ' + (VD4.on ? 'an' : 'aus'));
+  b.innerHTML = VD4_ICO + '<span>Live-Vorschau beim Komponieren</span><b>' + (VD4.on ? 'an' : 'aus') + '</b>';
+}
+function vd4LvFit() {
+  const b = VD4.lv, L = VD4.lvAt; if (!b || !L || !L.box.isConnected) return;
+  let lq = false; try { lq = matchMedia('(orientation:landscape)').matches; } catch (e) {}
+  if (lq) { if (b.parentNode !== L.row) L.row.appendChild(b); if (L.row.parentNode !== L.body) L.body.appendChild(L.row); }
+  else { if (b.parentNode !== L.box) L.box.insertBefore(b, L.hint); if (L.row.parentNode) L.row.remove(); }
+  L.body.classList.toggle('vd4q', lq);
+}
+function vd4VvRow(u) {
+  if (!u || !u.hint || !u.hint.parentNode) return null; vd4Css();
+  const box = u.hint.parentNode, body = box.closest('.vvb'), b = VD4.lv = el('button', 'rb vd4-lv'), row = el('div', 'vvrow vd4-vr');
+  row.appendChild(el('span', 'lbl', 'Extras'));
+  VD4.lvAt = {box, hint: u.hint, body: body || box, row};
+  box.insertBefore(b, u.hint); vd4LvPaint(); vd4LvFit();
+  onTap(b, () => { if (VV.busy) return; vd4Set(!VD4.on); haptic('tick'); if (VD4.on) lcdOrToast('Live-Vorschau an – zeigt sich über Matrix/Song'); });
+  return b;
+}
+try { window.addEventListener('resize', () => { if (VD4.lv && VD4.lv.isConnected) vd4LvFit(); }); } catch (e) {}   // vor vvFit (das misst danach die Bühne)
+
+/* ---------- Test-API (Objekt, wird nicht umhüllt) ---------- */
+const VD4_API = {
+  on: v => (v != null ? vd4Set(!!v) : VD4.on),
+  mode: m => (m ? vd4ModeSet(m) : VD4.m),
+  info: () => { const w = VD4.el, r = w ? w.getBoundingClientRect() : null;
+    return {on: VD4.on, m: VD4.m, el: !!w, inDom: !!(w && w.isConnected), vis: VD4.vis, frames: VD4.frames, ms: +VD4.ms.toFixed(2), msMax: +VD4.msMax.toFixed(2), avg: VD4.frames ? +(VD4.ms / VD4.frames).toFixed(3) : 0,
+      rect: r ? {x: r.left, y: r.top, w: r.width, h: r.height} : null, px: VD4.cv ? [VD4.cv.width, VD4.cv.height] : null, corner: vd4Corner(), geo: VD4.geo, cur: VD4.cur ? Object.assign({}, VD4.cur) : null,
+      cap: VD4.cap && !VD4.cap.hidden ? VD4.cap.textContent : null, capAuto: !!(VD4.cap && VD4.cap.classList.contains('auto')), live: vd4Live(), drag: !!VD4.drag}; },
+  reset: () => { VD4.frames = 0; VD4.ms = 0; VD4.msMax = 0; return true; },
+  draw: () => { if (!VD4.el && !vd4Mount()) return null; vd4Place(false); VD4.tChk = 0; vd4Check(); const c = vd4Draw(vd4Live()); VD4.pend = false; return c; },
+  // the shot the Regie gives a song beat (the same run as the window)
+  shotAt: sb => { const rt = vd4Rt(barAt(sb)); if (!rt) return null; const s = vvShotAt(rt, sb); return {k: s.k, v: s.v, t: s.t, a: s.a, b: s.b, f: s.f || null}; },
+  png: () => (VD4.cv ? VD4.cv.toDataURL('image/png').split(',')[1] : null),
+  hash: () => (VD4.g ? vd3Hash(VD4.g, VD4.cv.width, VD4.cv.height) : null),
+  pick: () => { const r = VD4.el && VD4.el.getBoundingClientRect(); return r ? vd4Pick(r.left + r.width / 2, r.top + r.height / 2) && !!(UI.pop && UI.pop.name === 'vd3cut') : false; },
+};
+/* VD4-END */
 
 
 /* ===================== UE-A + UE-B (Konzept Schnitt/Übergänge §1): Übergänge auf der Schnittkante =====================
@@ -81122,6 +81439,295 @@ function a2Norm(w, lw, L, kind) {
   if (isNum(w.sk) && w.sk >= 1) lw.sk = Math.min(4096, Math.round(w.sk));
 }
 /* /A2 */
+/* GL1-BEGIN */
+/* =====================================================================================================================
+   GL1 (Xander: „wenn dann die Background-Teile zum Bearbeiten dazukommen … glitschen hinter den Songteilen … überschneidend …
+   achte generell auf Glitches … dass man alles gut erreichen kann … im MIDI-Clip auch so angezeigt, dass es wirklich die Reihenfolge
+   so abspielt, wie es umgedreht gemeint ist … von links nach rechts oder von oben nach unten“).
+   1. Background-Gruppe ohne Überschneidung:
+      a) Matrix: die Seite mit STIMME + Background wird quer flacher als 30 px (21–25 px); Name und Pegel der Chor-Spurköpfe lagen
+         ineinander und wurden oben/unten abgeschnitten, „▼ BACKGROUND“ brach um und ragte aus dem Kopf, [▲▼ 2/2] ebenso.
+         Gemessen (gl1MxFlat): Zeilen < 32 px → Kopf einzeilig (Name ohne „Chor “, Pegel steht im Mischpult), < 26 px → [▲▼ 2/2] nebeneinander.
+      b) Song: die Spur-Seiten zählten die Background-Zeilen nicht mit (die Matrix schon) → Zeilen bis 14 px, mit Video-Spur und
+         Block-Zeile fielen AKKORDE/MELODIE unten aus dem Bild. Jetzt dieselbe Gewichtung wie die Matrix (chsPages), nie unter den
+         Rand, flache Beschriftung (MELODIE-Kopf) ohne Überschneidung; Chor-Namen mit „…“ statt mitten im Buchstaben abgeschnitten.
+      c) Song weit draußen (Teile als Farbblöcke): Song-Gesang und Background wurden über die Blöcke gemalt → jetzt nur außerhalb.
+      d) Song: die Background-Zeilen zeigten nur Song-Gesang; der Chor eines STIMME-Clips, der in einem Teil spielt, fehlte dort
+         (die STIMME-Zeile zeigt den Clip). Jetzt in den Zeilen der Stimmen (Farbe der Stimme, Noten), Tipp öffnet die Stimme.
+   2. VD3: die Beschriftung „VIDEO“ der Video-Spur bekam ihr CSS erst mit dem Video-Blatt (gemerkter Schnitt-Modus, Marken-Weg) – Fix im Haken.
+   3. LAUF wie gespielt: Matrix-Vorschau, Song-Kacheln und ROLLE zeigen die Noten an der gespielten Stelle (lf1Pass/lf1Ev bzw. a2Sound –
+      dieselbe Rechnung wie die Wiedergabe), die notierten blass; Richtungszeichen hinter der Länge (◀ ⇄ ? ↑ ↓, →n = eigener Start).
+      ROLLE: [wie gespielt │ wie notiert] (Standard wie gespielt; bearbeitet werden die notierten Noten, blass mit gestricheltem Rand; einmal je Sitzung ein kurzer Hinweis). Neue Richtungen
+      „aufwärts / abwärts (Tonhöhe)“: der Rhythmus bleibt, die Töne kommen der Höhe nach (wie ein Arpeggiator über die Schritte).
+   Ohne LAUF, ohne Chor-Spuren und ohne flache Zeilen: alles wie bisher (Daten, Klang, Bild).
+   ===================================================================================================================== */
+const GL1 = {pv: null, rollLast: null};
+
+/* ---------- 1a. Matrix: flache Zeilen ---------- */
+function gl1MxFlat() {
+  const g = EL.grid; if (!g || !g.clientHeight) return;
+  const rows = (getComputedStyle(g).gridTemplateRows || '').split(' ').map(parseFloat).filter(x => x > 0);
+  const rh = rows.length > 1 ? rows[1] : 99; GL1.mxRow = rh;
+  if (g.classList.contains('gl1flat') !== rh < 32) g.classList.toggle('gl1flat', rh < 32);
+  if (g.classList.contains('gl1flat2') !== rh < 26) g.classList.toggle('gl1flat2', rh < 26);
+}
+// Name der Chor-Spur: „Chor “ als eigener Teil (flach ausgeblendet – die Gruppe heißt schon BACKGROUND)
+function gl1ChsNm(e, r, name) {
+  if (r.nm === name) return; r.nm = name;
+  const m = /^(Chor )(.+)$/.exec(name);
+  if (m) { e.textContent = ''; e.append(el('span', 'gl1pre', m[1]), document.createTextNode(m[2])); } else e.textContent = name;
+}
+
+/* ---------- 1b. Song: Seiten mit Background-Zeilen, flache Beschriftung ---------- */
+function gl1SvPages(synth, per) {
+  if (!chsSvExtra()) { const pg = []; for (let k = 0; k < synth.length; k += per) pg.push(synth.slice(k, k + per)); return pg; }
+  return chsPages(synth, per);
+}
+// leere Zeilen der gezeigten Seite: jede Seite hat gleich viele Zeilen (nichts springt beim Blättern)
+function gl1SvFill(pages, pg) {
+  const E = chsSvExtra(); if (!E) return pages[0].length - pg.length;
+  const st = stimmeT(), n = p => p.length + (p.includes(st) ? E : 0);
+  return Math.max(0, Math.max(...pages.map(n)) - n(pg));
+}
+function gl1SvFlat() {
+  const v = EL.songView; if (!v) return;
+  const a = SV.rowH < 21, b = SV.rowH < 17;
+  if (v.classList.contains('gl1flat') !== a) v.classList.toggle('gl1flat', a);
+  if (v.classList.contains('gl1flat2') !== b) v.classList.toggle('gl1flat2', b);
+}
+
+/* ---------- 1c. Song weit draußen: Gesang und Background nicht über den Teil-Blöcken ---------- */
+function gl1SvClip(g, song, X, W, H, ru) {
+  if (!song || !song.marks || !song.marks.length || !sx8Blocks()) return false;   // GL1-P: auch in der Glas-Ansicht (die Blöcke liegen dort genauso)
+  g.save(); g.beginPath(); g.rect(0, 0, W, H);
+  for (const m of song.marks) { const x0 = X(m.a) + .5, x1 = X(m.a + m.len) - .5; if (x1 < 0 || x0 > W || x1 - x0 < 1) continue; g.rect(x0, ru, x1 - x0, H - ru); }
+  g.clip('evenodd'); return true;
+}
+
+/* ---------- 1d. Song: Background der STIMME-Clips in den Teilen ---------- */
+// die Takte [b0, b1) in Läufen desselben STIMME-Clips mit Chor (kein Song-Gesang darüber): {s, cs, c, a, b0, b1}
+function gl1ChsRuns(song, b0, b1) {
+  const st = stimmeT(), lane = song && st >= 0 ? song.lanes[st] : null, out = []; if (!lane || !lane.length) return out;
+  let run = null;
+  for (let b = b0; b <= b1; b++) {
+    let o = null;
+    if (b < b1 && b < song.bars && !tkVoxAt(b)) {
+      const ob = laneOriginAt(lane, b);
+      if (ob.slot >= 0 && !ob.own) { const c = S.tracks[st].clips[ob.slot], a = c && c.audio; if (a && a.chor && a.chor.v === 2 && a.chor.voices && a.chor.voices.length) o = {s: ob.slot, cs: ob.cs, c, a}; }
+    }
+    if (run && o && run.s === o.s && Math.abs(run.cs - o.cs) < 1e-6) { run.b1 = b + 1; continue; }
+    if (run) out.push(run);
+    run = o ? Object.assign(o, {b0: b, b1: b + 1}) : null;
+  }
+  return out;
+}
+function gl1ChsSvParts(g, song, XB, ru, rh, W) {
+  const st = stimmeT(); if (st < 0 || !song || !SV.rows) return;
+  const L = chsLanes(); if (!L.length) return;
+  const rows = []; for (let r = 0; r < SV.rows.length; r++) { const c = chsSvCode(SV.rows[r]); if (c != null) rows.push([r, c]); }
+  if (!rows.length) return;
+  const cw = SV.cellW, runs = gl1ChsRuns(song, Math.max(0, Math.floor(SV.x / cw) - 1), Math.min(song.bars, Math.ceil((SV.x + W) / cw) + 1));
+  if (!runs.length) return;
+  const sp = spb(); GL1.svParts = [];
+  for (const q of runs) {
+    const a = q.a, Lc = clipB(q.c), t0 = wpT0(a.take, a), A = barBeat(q.b0), B = barBeat(q.b1);
+    const sA = a.at, sB = Math.min(Lc, a.at + (a.out - a.in) / sp);         // the sung part of the clip (beats in the clip)
+    for (let k = Math.floor((A - q.cs) / Lc - 1e-9); q.cs + k * Lc < B - 1e-9; k++) {
+      const ps = q.cs + k * Lc, xa = Math.max(A, ps + sA), xb = Math.min(B, ps + sB); if (xb <= xa + 1e-6) continue;
+      const x0 = XB(xa), x1 = XB(xb); if (x1 < 0 || x0 > W) continue;
+      GL1.svParts.push({s: q.s, a: +xa.toFixed(4), b: +xb.toFixed(4)});
+      for (const [r, code] of rows) {
+        const y = ru + r * rh;
+        if (code === CHS_SV0) {
+          const n = a.chor.voices.length, h = Math.max(2, Math.min(5, (rh - 8) / n));
+          a.chor.voices.forEach((vv, j) => { const ln = chsLane(vv.lane); g.fillStyle = ln ? chsCol(chsColor(ln, vv).tok) : '#888'; g.globalAlpha = .8; g.fillRect(x0 + 2, y + rh / 2 - n * h / 2 + j * h, Math.max(1, x1 - x0 - 5), Math.max(1, h - 1)); });
+          g.globalAlpha = 1; continue;
+        }
+        const ln = L[CHS_SV0 - 1 - code]; if (!ln) continue;
+        const vv = a.chor.voices.find(z => z.lane === ln.id); if (!vv) continue;
+        const col = chsCol(chsColor(ln, vv).tok);
+        g.globalAlpha = ln.mute ? .08 : .16; g.fillStyle = col; g.fillRect(x0 + 1, y + 2, Math.max(1, x1 - x0 - 3), rh - 4);
+        g.globalAlpha = ln.mute ? .3 : .6; g.strokeStyle = col; g.lineWidth = 1; g.strokeRect(x0 + 1.5, y + 2.5, Math.max(1, x1 - x0 - 4), rh - 5);
+        const ns = vv.n || [];
+        if (ns.length && rh > 10) {
+          let lo = 127, hi = 0; for (const n of ns) { const p = n.m + (n.iv || 0); if (p < lo) lo = p; if (p > hi) hi = p; }
+          const span = Math.max(6, hi - lo); g.globalAlpha = ln.mute ? .35 : .9; g.fillStyle = col;
+          for (const n of ns) {
+            const nb0 = Math.max(sA, (n.t0 - t0) / sp), nb1 = Math.min(sB, (n.t1 - t0) / sp); if (nb1 <= nb0) continue;
+            const ya = Math.max(xa, ps + nb0), yb = Math.min(xb, ps + nb1); if (yb <= ya) continue;
+            const pa = XB(ya), pb = XB(yb); g.fillRect(pa, y + 3 + (1 - (n.m + (n.iv || 0) - lo) / span) * (rh - 8), Math.max(1, pb - pa - .5), 2);
+          }
+        }
+        g.globalAlpha = 1;
+      }
+    }
+  }
+}
+// Tipp in eine Background-Zeile, wo kein Song-Gesang liegt: der Chor des STIMME-Clips, der dort spielt
+function gl1ChsSvTap(code, bar) {
+  const song = S.song, st = stimmeT(); if (!song || st < 0) return false;
+  const q = gl1ChsRuns(song, bar, bar + 1)[0]; if (!q) return false;
+  const r = {t: st, s: q.s}; R.selS = q.s;
+  if (code === CHS_SV0) return g6Sheet(r, SV.cv) !== false;
+  const ln = chsLanes()[CHS_SV0 - 1 - code]; if (!ln) return false;
+  chsOpenVoice(r, ln.id); return true;
+}
+
+/* ---------- 3. LAUF wie gespielt ---------- */
+LF1_DIRS.push(['up', 'aufwärts (Tonhöhe)'], ['down', 'abwärts (Tonhöhe)']);
+LF1_ICON.up = '<path d="M3 14l5-4 4 2 7-9M14 3h5v5"/>';
+LF1_ICON.down = '<path d="M3 2l5 4 4-2 7 9M14 13h5V8"/>';
+// Tonhöhen-Richtung: die besetzten Schritte behalten ihren Platz (Rhythmus), die Töne kommen der Höhe nach (gleich hoch: der Zeit nach)
+function gl1Perm(P) {
+  const ks = [...P.by.keys()].sort((a, b) => a - b), pit = k => Math.min(...P.by.get(k).map(it => clamp(it.n.n + (it.n.tp | 0), 0, 127)));
+  const sg = P.dir === 'down' ? -1 : 1, srt = ks.slice().sort((a, b) => (pit(a) - pit(b)) * sg || a - b);
+  P.perm = new Map(ks.map((k, j) => [k, srt[j]]));
+}
+const GL1_TAG = {rev: '◀︎', pend: '⇄', rnd: '?', up: '↑', down: '↓'};
+function gl1DirTag(c) {
+  const lf = c && c.lf; if (!lf) return '';
+  if (lf.dir && GL1_TAG[lf.dir]) return ' ' + GL1_TAG[lf.dir];
+  return lf.st != null ? ' →' + (lf.st + 1) : '';
+}
+// GL1-P: klingt jeder Durchlauf gleich? Nein bei „hin und her“ (T > 2), „Zufall“ und Chance (pb). P.g1n = Durchläufe bis zur
+// Wiederholung (hin und her: (2T−2) / ggT(2T−2, T); 0 = nie). Die Ansichten zeigen dann den Durchlauf, der gerade klingt.
+function gl1PassDep(c) {
+  const P = lf1Plan(c); if (!P) return false;
+  if (P.g1n == null) {
+    let n = 1;
+    if (P.items.some(it => !it.n.off && it.n.pb != null && it.n.pb < 1)) n = 0;
+    else if (P.map && P.dir === 'rnd') n = 0;
+    else if (P.map && P.dir === 'pend' && P.T > 2) { const M = 2 * P.T - 2, gcd = (a, b) => b ? gcd(b, a % b) : a; n = M / gcd(M, P.T); }
+    P.g1n = n;
+  }
+  return P.g1n !== 1;
+}
+// der Durchlauf des Clips, der gerade klingt (gezählt ab seinem Start wie der Scheduler: lf1Win(c, cs, …)); 0 = steht / gleich
+function gl1PassNow(t, c, on, bAud) {
+  if (!on || !R.playing || !(bAud >= 0) || !gl1PassDep(c)) return 0;
+  const cs = audCstart(t, bAud), L = clipB(c); if (!(bAud >= cs) || !(L > 0)) return 0;
+  const p = Math.floor((bAud - cs) / L + 1e-9), n = lf1Plan(c).g1n;
+  return n > 1 ? p % n : p;
+}
+// ROLLE (rollFrame): beim Wechsel des Durchlaufs neu zeichnen – „wie gespielt“ zeigt den, der gerade klingt
+function gl1RollFrame(t, s, c, on, bAud) {
+  const p = ROLLP.gl1 === 'notated' ? 0 : gl1PassNow(t, c, on, bAud), o = GL1.rollP;
+  if (o && o.t === t && o.s === s && o.p === p) return;
+  GL1.rollP = {t, s, p}; if (ED.roll && (p || (o && o.p))) ED.roll.render();
+}
+// GL1-P: Länge + Richtung; in flachen Zellen (quer) mit Tonart-Schild oben rechts: „→28“ ohne Zahl, dann ohne Leerzeichen –
+// die Beschriftung berührt das Schild nie (6 px je Zeichen, Schild ≈ 7,5 px je Zeichen + Rand; Einsätze wie im CSS)
+function gl1LnS(clip, kb, sel, v6) {
+  const tag = gl1DirTag(clip), full = clip.len + 'T' + tag; if (!tag || !kb || !(GL1.mxRow < (sel ? 37 : 34))) return full;
+  const room = (UI.cellW || 99) - (v6 ? 15 : 3) - 6 - 7.5 * kb.length - 2 - (sel ? 7 : 4), w = x => 6 * [...x].filter(ch => ch !== '\uFE0E').length;
+  if (w(full) <= room) return full;
+  const tg = tag.replace(/\d+$/, '').trim(), a = clip.len + 'T ' + tg;
+  return w(a) <= room ? a : clip.len + 'T' + tg;
+}
+// the matrix picture: the notes of the first Durchlauf as played (lf1Pass, as the playback), the notated ones faint behind
+function gl1MiniSvg(c, p) {
+  const P = lf1Plan(c); if (!P) return null;
+  const L = clipB(c), pl = lf1Pass(c, p | 0) || [];                  // GL1-P: p = der Durchlauf, der gerade klingt (renderGrid)
+  let lo = 127, hi = 0; for (const n of c.notes) { if (n.n < lo) lo = n.n; if (n.n > hi) hi = n.n; } for (const n of pl) { if (n.n < lo) lo = n.n; if (n.n > hi) hi = n.n; }
+  const span = Math.max(hi - lo, 6), rect = (n, cls) => { const x = n.t / L * 100, w = Math.max(Math.min(n.d, L - n.t) / L * 100, 1.2), y = (1 - (n.n - lo) / span) * 86; return `<rect${cls ? ' class="' + cls + '"' : ''} x="${x.toFixed(2)}" y="${y.toFixed(1)}" width="${w.toFixed(2)}" height="10" rx="1"/>`; };
+  let r = ''; for (const n of c.notes.slice(0, 160)) if (n.t < L - 1e-9) r += rect(n, 'g1g');   // „class“ zuerst: vk4MiniRects (Video) liest nur die gespielten
+  for (const n of pl.slice(0, 160)) r += rect(n, '');
+  return `<svg viewBox="0 0 100 100" preserveAspectRatio="none">${r}</svg>`;
+}
+// the glass tile of the song (◧): with LAUF the notes as they sound there (a2Sound: dieselbe Rechnung wie die Wiedergabe)
+function gl1TileNotes(song, t, run, key) {
+  const tr = S.tracks[t]; if (!tr || tr.kind === 'drum' || tr.stimme) return null;
+  const o = run.o, clip = o.own ? song.own && song.own[o.own] : tr.clips[o.slot]; if (!clip || !clip.notes || !a2Has(clip, clip.notes)) return null;
+  const k2 = 'g1|' + key + (gl1PassDep(clip) ? '|' + run.d0 + '|' + run.d1 : '') + '|' + clipSig(clip); let r = SV.tileC.m.get(k2); if (r) return r;   // GL1-P: hin und her / Zufall / Chance – jeder Durchlauf eigen
+  const A = barBeat(run.d0), snd = a2Sound(song, t, run.d0, run.d1, A); if (!snd) return null;
+  let lo = 127, hi = 0; for (const n of clip.notes) { if (n.n < lo) lo = n.n; if (n.n > hi) hi = n.n; } for (const n of snd.ns) { if (n.n < lo) lo = n.n; if (n.n > hi) hi = n.n; }
+  const span = Math.max(hi - lo, 6), off = A - run.d0 * 4, list = [], len = (run.d1 - run.d0) * 4;
+  for (const n of snd.ns.slice().sort((x, y) => x.t - y.t)) {
+    if (n.t < -1e-9 || n.t >= len - 1e-9) continue;
+    list.push(n.t + off, Math.max(.06, Math.min(n.d, len - n.t)), 1 - (n.n - lo) / span);
+    if (list.length >= 160 * 3) break;
+  }
+  r = {p: list, n: list.length / 3, gl1: true}; SV.tileC.m.set(k2, r); return r;
+}
+// ROLLE: [wie gespielt │ wie notiert] – nur zu sehen, wenn der Clip LAUF-Richtung oder Schritt-Effekte hat
+function gl1RollTool() {
+  return {id: 'gl1pv', label: ROLLP.gl1 === 'notated' ? 'wie notiert' : 'wie gespielt', cls: 'gl1pv',
+    title: 'LAUF: Noten wie gespielt (Richtung, Start, Effekte) oder wie notiert zeigen – bearbeitet werden immer die notierten',
+    fn: b => { ROLLP.gl1 = ROLLP.gl1 === 'notated' ? 'played' : 'notated'; b.textContent = ROLLP.gl1 === 'notated' ? 'wie notiert' : 'wie gespielt'; b.classList.toggle('on', ROLLP.gl1 !== 'notated'); if (ED.roll) ED.roll.render(); haptic('tick'); }};
+}
+function gl1RollOpts(t, s) {
+  return {
+    played() {
+      const c = S.tracks[t] && S.tracks[t].clips[s], P = c ? lf1Plan(c) : null;
+      const b = ED.roll && ED.roll.el && ED.roll.el.bar ? ED.roll.el.bar.querySelector('.gl1pv') : null;
+      if (b) { if (b.hidden !== !P) b.hidden = !P; const on = ROLLP.gl1 !== 'notated'; if (b.classList.contains('on') !== on) b.classList.toggle('on', on); }
+      if (!P || ROLLP.gl1 === 'notated') { GL1.rollLast = null; return null; }
+      const o = GL1.rollP, p = R.playing && o && o.t === t && o.s === s ? o.p : 0;   // GL1-P: der Durchlauf, der gerade klingt (steht: der erste)
+      const pl = lf1Pass(c, p) || []; GL1.rollLast = {t, s, p, dir: (c.lf && c.lf.dir) || 'fwd', notes: pl.map(n => ({t: +n.t.toFixed(5), d: +n.d.toFixed(5), n: n.n})), rects: [], next: []};
+      return pl;
+    },
+    ghost(x, r, C) {   // die notierte Note blass mit gestricheltem Rand (sie bleibt das, was man bearbeitet)
+      x.fillStyle = C.bg; x.globalAlpha = .62; x.fillRect(r.x, r.y + 1, r.w, r.h - 2); x.globalAlpha = .9;
+      x.setLineDash([3, 2]); x.strokeStyle = C.dim; x.lineWidth = 1; x.strokeRect(r.x + 1.5, r.y + 2.5, Math.max(1, r.w - 3), r.h - 5); x.setLineDash([]); x.globalAlpha = 1;
+    },
+    draw(x, pl, v) {
+      const out = GL1.rollLast ? GL1.rollLast.rects : [];
+      for (const n of pl) {
+        const rx = v.xOf(n.t), w = Math.max(3, n.d * v.ppb), ry = v.yOfRow(v.rowOfNote(n.n)); if (rx > v.W || rx + w < 0 || ry > v.H || ry + v.rowH < 0) continue;
+        x.fillStyle = v.col; x.globalAlpha = .95; v.rr(x, rx + 1, ry + 2.5, Math.max(2, w - 2), v.rowH - 5, 3); x.fill();
+        x.globalAlpha = 1; x.strokeStyle = 'rgba(11,12,15,.7)'; x.lineWidth = 1; v.rr(x, rx + 1.5, ry + 3, Math.max(1, w - 3), v.rowH - 6, 3); x.stroke();   // GL1-P: dunkle Kontur (der weiße Rand heißt „gewählt“)
+        out.push({x: +rx.toFixed(1), y: +ry.toFixed(1), w: +w.toFixed(1), n: n.n, t: +n.t.toFixed(5)});
+      }
+      // GL1-P: hin und her / Zufall / Chance: hinter dem Clip-Ende die nächsten Durchläufe blass (wie es weitergeht)
+      const c = S.tracks[t] && S.tracks[t].clips[s];
+      if (c && gl1PassDep(c) && GL1.rollLast) {
+        const L = clipB(c), n = lf1Plan(c).g1n, p0 = GL1.rollLast.p | 0;
+        for (let k = 1; k <= 8 && v.xOf(k * L) < v.W; k++) {
+          const q = n > 1 ? (p0 + k) % n : p0 + k, nx = lf1Pass(c, q) || []; GL1.rollLast.next.push(q);
+          x.fillStyle = v.col; x.globalAlpha = .42;
+          for (const m of nx) { const rx = v.xOf(k * L + m.t), w = Math.max(3, m.d * v.ppb), ry = v.yOfRow(v.rowOfNote(m.n)); if (rx > v.W || rx + w < 0 || ry > v.H || ry + v.rowH < 0) continue; v.rr(x, rx + 1, ry + 2.5, Math.max(2, w - 2), v.rowH - 5, 3); x.fill(); }
+          x.globalAlpha = 1;
+        }
+      }
+      // GL1-P: die gewählten (notierten) Noten behalten ihren Auswahlrand obenauf – auch unter einer gespielten Note
+      if (v.sel && v.sel.size && c) { x.strokeStyle = v.C.sel; x.lineWidth = 2; for (const nt of c.notes) if (v.sel.has(nt)) { const r = v.noteRect(nt); if (r.x > v.W || r.x + r.w < 0 || r.y > v.H || r.y + r.h < 0) continue; v.rr(x, r.x + 1, r.y + 2, r.w - 2, r.h - 4, 4); x.stroke(); } x.lineWidth = 1; }
+      // einmal je Sitzung kurz erklärt (kein Schild auf der Fläche: es läge über Noten)
+      if (!GL1.hint) { GL1.hint = true; const c = S.tracks[t] && S.tracks[t].clips[s], d = c && c.lf && c.lf.dir, nm = d ? (LF1_DIRS.find(z => z[0] === d) || ['', ''])[1] : 'mit Schritt-Effekten';
+        setTimeout(() => { try { toast('LAUF ' + nm + ': hell = so klingt es, blass = notiert (die bearbeitest du) · [wie gespielt] schaltet um'); } catch (e) {} }, 0); }
+    }
+  };
+}
+
+// ROLLE: [wie gespielt] gleich hinter [LAUF] (vor dem Trennstrich), wo der Daumen den Wechsel der Ansicht findet
+function gl1RollPlace() {
+  const bar = ED.roll && ED.roll.el && ED.roll.el.bar, b = bar && bar.querySelector('.gl1pv'); if (!b) return;
+  if (ED.laufBtn && ED.laufBtn.parentNode === bar) bar.insertBefore(b, ED.laufBtn.nextSibling);
+  const c = ED.rollAt && S.tracks[ED.rollAt.t] && S.tracks[ED.rollAt.t].clips[ED.rollAt.s]; b.hidden = !(c && lf1Plan(c)); b.classList.toggle('on', ROLLP.gl1 !== 'notated');
+}
+// ein Blatt, das nach dem Öffnen wächst (Inhalt kommt später, Teile klappen auf): popFit hält es im Bild (vorher ragte z. B. das Mikro-Blatt
+// quer 22 px unten hinaus – der Hinweis und Tasten darunter waren nicht zu erreichen)
+function gl1PopWatch(p) {
+  if (!window.ResizeObserver || !p) return;
+  let q = 0; const ro = new ResizeObserver(() => { if (q) return; q = requestAnimationFrame(() => { q = 0; if (!p.isConnected) { ro.disconnect(); return; } try { popFit(p); } catch (e) {} }); });
+  ro.observe(p);
+}
+// ein Wert, der breiter ist als sein Knopf: erst ohne Leerzeichen, dann eine Spur kleiner (nie links/rechts abgeschnitten)
+function gl1FitV(v, btn) {
+  v.classList.remove('gl1fit'); if (getComputedStyle(v).whiteSpace !== 'nowrap') return;   // quer (Seitenleiste) bricht der Wert ohnehin um
+  const cs = getComputedStyle(btn), room = btn.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0);
+  if (!(room > 0) || v.offsetWidth <= room + 4) return;                  // bis 2 px je Seite: Rand der Zeichen, sieht niemand (wie bisher)
+  v.textContent = v.textContent.replace(/ /g, ''); if (v.offsetWidth > room) v.classList.add('gl1fit');
+}
+const GL1_API = {
+  gl1Info: () => ({mxFlat: !!(EL.grid && EL.grid.classList.contains('gl1flat')), mxFlat2: !!(EL.grid && EL.grid.classList.contains('gl1flat2')), mxRow: GL1.mxRow || null,
+    svFlat: !!(EL.songView && EL.songView.classList.contains('gl1flat')), svRowH: SV.rowH || null, svParts: (GL1.svParts || []).slice(), roll: GL1.rollLast ? JSON.parse(JSON.stringify(GL1.rollLast)) : null, mode: ROLLP.gl1 || 'played'}),
+  gl1Tag: (t, s) => { const c = S.tracks[t] && S.tracks[t].clips[s]; return c ? gl1DirTag(c) : null; },
+  gl1Mini: (t, s) => { const c = S.tracks[t] && S.tracks[t].clips[s]; return c ? miniSvg(c, S.tracks[t].kind === 'drum') : null; },
+  gl1RollMode: m => { ROLLP.gl1 = m === 'notated' ? 'notated' : 'played'; if (ED.roll) { const b = ED.roll.el.bar && ED.roll.el.bar.querySelector('.gl1pv'); if (b) b.textContent = ROLLP.gl1 === 'notated' ? 'wie notiert' : 'wie gespielt'; ED.roll.render(); } return ROLLP.gl1; },
+  gl1SvTap: (code, bar) => chsSvTap(code, bar)
+};
+Object.assign(SYNQUENZER, GL1_API);
+/* GL1-END */
 // konKonsNorm: the windows a Ursprung remembers
 function kl1KonNorm(list) { return (Array.isArray(list) ? list : []).filter(x => x && isNum(x.t) && isNum(x.s) && isNum(x.a) && isNum(x.b) && x.b > x.a && x.a >= 0).slice(0, 16).map(x => ({t: Math.round(x.t), s: Math.round(x.s), a: kl1K4(x.a), b: kl1K4(x.b)})); }
 // the whole content's notes (time from its start; the window's notes at +a)
@@ -86902,6 +87508,7 @@ const TKT_API = {
 };
 Object.assign(SYNQUENZER, {tkt: TKT_API});                  /* TKT: Test-API (Objekt, wird nicht umhüllt) */
 /* TKT-END */
+Object.assign(SYNQUENZER, {vd4: VD4_API});                  /* VD4: Test-API (Objekt, wird nicht umhüllt) */
 const NO_SYNC = new Set(['clipCurves', 'bmcLog', 'bmcState', 'oneScaleOf', 'harmInfo', 'kbScaleNow', 'micCheck', 'micCheckJson', 'micCheckEstimate', 'cloud', 'cloudProjects', 'cloudVersions', 'cloudHandoff', 'state', 'project', 'runtime', 'getClip', 'getParam', 'noteLog', 'voices', 'timeline', 'serialize', 'buildMidi', 'buildZip', 'crc32', 'meter', 'outPitch', 'migrate', 'tapTempo',
   'getSound', 'mods', 'library', 'factory', 'previewState', 'soundEdited', 'fmxView', 'fmxPreview', 'fmxBadge',
   'history', 'projects', 'storage', 'engineInfo', 'getBusFx', 'wake', 'gestures', 'roll', 'rollApi', 'detectKey', 'sceneKey',
