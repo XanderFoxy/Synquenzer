@@ -12,7 +12,7 @@ export const evUrl = band => `${BASIS}?${new URLSearchParams({ webId: 'web__even
 const BASIS_V2 = 'https://public-api.eventim.com/websearch/search/api/exploration/v2/productGroups';
 export const evUrlV2 = band => `${BASIS_V2}?${new URLSearchParams({ search_term: band.name, page: '1', sort: 'DateAsc' })}`;
 
-const TRIBUTE = /tribute|coverband|cover band|performed by|the music of|plays the music|a night of|songs of|in concert:? the music|musical|symphonic|klassik trifft/i;
+const TRIBUTE = /tribute|coverband|cover band|performed by|the music of|plays the music|a night of|songs of|songs by|played by|on piano|experience|revival|party|lounge|disco|\bdj\b|meilensteine|aus \d+ jahren|\bgast\b|with members of|in concert:? the music|musical|symphonic|klassik trifft/i;
 const tief = (o, ...pfade) => { for (const p of pfade) { const v = p.split('.').reduce((x, k) => x?.[k], o); if (v != null && v !== '') return v; } return null; };
 
 export function evParse(json, band) {
@@ -23,7 +23,7 @@ export function evParse(json, band) {
   for (const p of Array.isArray(liste) ? liste : []) {
     const name = String(p.name || p.title || '');
     const atts = (p.attractions || p.artists || []).map(a => a?.name || a).filter(Boolean);
-    const passt = atts.some(a => istBand(a, band)) || erwaehnt(name, band);
+    const passt = atts.length ? atts.some(a => istBand(a, band)) : erwaehnt(name, band);   // Künstlerliste vorhanden → nur echte Zuordnung (keine Tribute-/Cover-Acts)
     if (!passt || TRIBUTE.test(name)) continue;
     const le = p.typeAttributes?.liveEntertainment || p.liveEntertainment || {};
     const start = String(tief(le, 'startDate') || tief(p, 'startDate', 'date', 'eventDate') || '');
