@@ -1,3 +1,13 @@
+## 4.52.0 — JAM: Bedingungen je Schritt, FILL-Taste, Zufall festhalten, Perform-Leiste mit Stottern/Filter/Gruppen/Blende A↔B, Rückung
+
+- **Bedingungen** je Drum-Schritt, LAUF-Schritt und Note: **1:2 … 8:8** (nur im A-ten von B Durchläufen), **1. Mal / ab 2. Mal**, **FILL / ohne FILL**, **Vorgänger / nicht Vorgänger** – Chance wirkt zusätzlich. Schritt lang drücken (wie bei den Locks) → **Bedingung ▾**; bei Bit Mask und North in der ROLLE **[Bedingung]**. Am Schritt ein kleines Zeichen („1:2“, „F“, „1.“), die Matrix-Zelle zählt mit („2:4“).
+- **FILL**: Sobald ein Schritt FILL hat, wird die TAKT-Anzeige zur **FILL-Taste** – halten = an, kurz tippen = bis Taktende. Im Song zählt jeder Takt mit Fill-Chip als FILL (neu in ⇥ FILLS: „FILL-Takt“ ohne eigene Noten).
+- **Zufall festhalten** (Chance, Zufall, hin und her): jede Runde klingt wie die erste, **[neu]** würfelt neu.
+- **Perform-Leiste** (≡ › Bedienung): **Stottern** 1/4–1/32 (alles │ ohne Drums │ nur Drums), **Filter-Fahrt** (links dumpf, rechts dünn, Loslassen = zurück), **DRUMS │ BASS │ REST** (tippen = am Takt, halten = sofort), **Blende A↔B** zwischen jetzt und gemerktem Klang oder ◆ einer Szene. Ändert dein Projekt nicht; ✕ = alles wie vorher.
+- **Rückung**: Teil-Marke antippen → **+1** (Zeile unter „Ablauf“) – ab diesem Teil einen Halbton höher (Drums und Spuren auf ⇅ fest bleiben); an der Marke steht „+1“.
+- Song-Wiedergabe, MIDI-Export und Video spielen dasselbe; ohne Bedingungen und ohne Leiste sieht und klingt alles wie vorher.
+Tests: Regeln, acorn 0 / doppelte Schlüssel 0, Rauchtest grün; JAM1 52/52, JAM2 105/105, Stil-Klang 67/67, GL1 45/45, Video-Vorschau 31/31; je Paket unabhängige Prüfung (9 + 5 Befunde, behoben).
+
 ## 4.51.0 — Stil komplett: Rhythmus, Klang und Mischung je Stil, Seitenkette automatisch
 
 - **Stil anwenden** (Remix-Blatt, auch Matrix-Remix): **Nur Rhythmus │ + Klang │ + Klang & Mischung** (empfohlen). Mit Klang baut der Stil auch Drums und Synths um – EBM/Industrial: harte, verzerrte Kick mit Klick, peitschende Snare mit Gate, Metall-Schläge statt Kuhglocke, knurrender Bass; Reggae: weiche Kick, Rimshot mit Feder-Hall, runder Bass, Dub-Echo. Jeder der 44 Stile hat so ein Profil (Drums, Bass, Lead, Pad, Effekte).
