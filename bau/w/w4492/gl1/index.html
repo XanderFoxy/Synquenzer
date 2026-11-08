@@ -81398,7 +81398,7 @@ function gl1RollOpts(t, s) {
       const b = ED.roll && ED.roll.el && ED.roll.el.bar ? ED.roll.el.bar.querySelector('.gl1pv') : null;
       if (b) { if (b.hidden !== !P) b.hidden = !P; const on = ROLLP.gl1 !== 'notated'; if (b.classList.contains('on') !== on) b.classList.toggle('on', on); }
       if (!P || ROLLP.gl1 === 'notated') { GL1.rollLast = null; return null; }
-      const o = GL1.rollP, p = o && o.t === t && o.s === s ? o.p : 0;   // GL1-P: der Durchlauf, der gerade klingt (steht: der erste)
+      const o = GL1.rollP, p = R.playing && o && o.t === t && o.s === s ? o.p : 0;   // GL1-P: der Durchlauf, der gerade klingt (steht: der erste)
       const pl = lf1Pass(c, p) || []; GL1.rollLast = {t, s, p, dir: (c.lf && c.lf.dir) || 'fwd', notes: pl.map(n => ({t: +n.t.toFixed(5), d: +n.d.toFixed(5), n: n.n})), rects: [], next: []};
       return pl;
     },
