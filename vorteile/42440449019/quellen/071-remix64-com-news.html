@@ -1,0 +1,1474 @@
+<!DOCTYPE HTML>
+<html lang="en-GB" class="frontend desktop platform_web design_remix4 scheme_remix4 Standard">
+<head>
+<style nonce="823c4406e6e6e71ce8f7918fc82ef6d3dfe0ea06">.async_loading i.material-icons, .async_loading .hide_until_onload { opacity:0; display:inline-block; width:16px; }.async_loading .display_none_until_onload { display:none; }.async_loading .fade_in_onload { opacity: 0; }.fade_in_onload { transition:opacity 500ms ease; }</style>
+<style nonce="823c4406e6e6e71ce8f7918fc82ef6d3dfe0ea06">* { font-family:Noto Sans JP, sans-serif;; }
+body, div, label, td, th, *.error, *.error a, #concardis_container small { font-family:Noto Sans JP, sans-serif;; font-size:12pt; }
+.HeadBig,.HeadBrand,h1{ color:#000000; font-family:Noto Sans JP, sans-serif;; font-size:14pt; }
+.HeadSmall, h2, h2 * { color:#191919; font-family:Noto Sans JP, sans-serif;; font-size:13pt; }
+h1 *, h2 * { font-family:inherit; font-size:inherit; font-weight:inherit; color:inherit; text-transform:inherit; text-decoration:inherit; }
+.boximagecontainer { overflow:hidden; }
+.boximagecontainer img { width:100%; display:block; }
+.clear { clear:both; }
+.centered { display:block; margin:auto; }
+.image_banner img { margin:20px 0; display:block; margin:auto; max-width:100%; width:100%; }
+.thumb_fit_0 { background-size:contain; background-position:center; background-repeat:no-repeat; }
+.thumb_fit_1 { background-size:cover; background-position:center; }
+.thumb_fit_2 { background-size:cover; background-position:left top; }
+.thumb_fit_3 { background-size:cover; background-position:right bottom; }
+.thumb_fit_4 { background-size:100% 100%; }
+.columns_block { width:100%; }
+@media only screen and (min-width:801px) {
+ .columns_block { display:flex; justify-content:space-between; align-items:stretch; flex-wrap:nowrap; }
+ .columns_block .page_column { position:relative; margin-right:2%; flex:1 1 0; }
+ .columns_block .page_column:last-child { margin-right:0; }
+ .column_inner { height:100%; }
+ .columns_2_sidebar_left .page_column_1, .columns_2_sidebar_right .page_column_2 { width:30%; flex:0 0 30%; }
+ .columns_3_sidebar_left .page_column_1, .columns_3_sidebar_right .page_column_3 { width:30%; flex:0 0 30%; }
+ .columns_4_sidebar_left .page_column_1, .columns_4_sidebar_right .page_column_4 { width:30%; flex:0 0 30%; }
+ .columns_5_sidebar_left .page_column_1, .columns_5_sidebar_right .page_column_5 { width:30%; flex:0 0 30%; }
+}
+.pagetabs { display:none; }
+.pagetabs.pagetabs_open { display:block; }
+.preload { position:fixed; display:block; width:1px; height:1px; overflow:hidden; left:-1000px; }
+
+/* content_spacer module */
+.content_spacer { display:block; width:100%; }
+.content_spacer.small { height:30px; }
+.content_spacer.medium { height:50px; }
+.content_spacer.large { height:100px; }
+
+
+#mobile-menu-wrap { position:relative; z-index:99; top:0; left:0; display:block; width:100%; min-height:40px; padding-top:0; }
+#mobile-menu-trigger { box-sizing:border-box; width:100%; padding:20px; cursor:pointer; text-align:right; color:#FFFFFF; background:#212121; display:block; min-height:80px; }
+#mobile-menu-trigger #nav-icon { cursor:pointer; height:40px; margin-right:10px; position:relative; width:40px; float:right; transform:scale(0.8); }
+#mobile-menu-trigger #nav-icon span { background:#FFFFFF; border-radius:9px; display:block; height:4px; left:0; opacity:1; position:absolute; transform:rotate(0deg); -moz-transform:rotate(0deg); -webkit-transform:rotate(0deg); -o-transform:rotate(0deg); -khtml-transform:rotate(0deg); -ms-transform:rotate(0deg);  transition:.25s ease-in-out; -moz-transition:.25s ease-in-out; -webkit-transition:.25s ease-in-out; -o-transition:.25s ease-in-out; -khtml-transition:.25s ease-in-out; -ms-transition:.25s ease-in-out;  width:100% }
+#mobile-menu ul li .btn-toggle { color:#FFF; font-size:24px; height:60px; right:0px; top:0px; line-height:60px; position:absolute; z-index:10; cursor:pointer; border-left:50px solid transparent; }
+#mobile-menu-trigger #nav-icon span:nth-child(1) { top:6px }
+#mobile-menu-trigger #nav-icon span:nth-child(2) { top:18px }
+#mobile-menu-trigger #nav-icon span:nth-child(3) { top:30px }
+#mobile-menu-trigger.open #nav-icon span:nth-child(1) { -webkit-transform:rotate(135deg); top:18px; transform:rotate(135deg) }
+#mobile-menu-trigger.open #nav-icon span:nth-child(2) { left:-60px; opacity:0 }
+#mobile-menu-trigger.open #nav-icon span:nth-child(3) { -webkit-transform:rotate(-135deg); top:18px; transform:rotate(-135deg) }
+#mobile-menu-wrap input.mobile_search { width:100%; }
+#mobile-logo { position:absolute; top:0; left:0; }
+#mobile-logo img { display:inline-block; height:64px; padding:10px; }
+#mobile-menu-wrap *, #mobile-menu-wrap h2 { color:#FFFFFF; }
+#mobile-menu-trigger span { display:inline-block; width:30px; height:30px; }
+#mobile-menu-trigger span svg { width:100%; height:100%; fill:#FFFFFF; }
+#mobile-menu-trigger .hider { display:none; }
+#mobile-menu { font-size:22px; display:none; padding:10px 0; background:#212121; }
+#mobile-menu ul li a { font-size:16px; text-decoration:none; color:#FFFFFF; }
+#mobile-menu ul { width:90%; margin:0 auto; padding:0; list-style:none; }
+#mobile-menu ul li { width:100%; margin:0; padding:10px 0; border-bottom:1px solid #7F7F7F; }
+#mobile-menu ul li:last-child { border-bottom:0; }
+#mobile-menu ul li ul li a { font-size:16px; text-decoration:none; color:#FFFFFF; }
+#mobile-menu ul li ul { width:100%; margin:0; padding:10px 0 0 0; }
+#mobile-menu ul li ul li { width:100%; margin:0; padding:5px 0 5px 20px; border-bottom:0; }
+@media all and (min-width:1060px) {
+ #mobile-menu-wrap, .small_screen_only { display:none; }
+}
+@media all and (max-width:1060px) {
+ .hide_responsive, .hide_responsive_tiny_screen, .large_screen_only { display:none; }
+}
+@media all and (max-width:400px) {
+ .hide_responsive_tiny_screen { display:none; }
+}
+.box { border-color:#777777; border:0 none; margin-bottom:20px; background-color:#E9E9E9; }
+.boxhead { font-size:13pt; font-weight:normal; color:#FFFFFF; text-align:center; padding:15px; background-color:#222222; }
+.boxhead a, .boxhead a:visited, .boxhead a:link { color:#FFFFFF; }
+.boxbody { padding:15px; position:relative; }
+h2.boxhead { margin:0; color:#FFFFFF; }
+.boxbody .box .boxhead { display:none; }
+.boxbody .box .boxbody { padding:0; }
+@media all and (min-width:950px) {
+ #content .box { width:400px; float:left; margin-right:20px; }
+ #content .columns_block .box { width:100%; float:none; margin-right:0; }
+}
+@media all and (max-width:950px) {
+ #content .box { width:100%; }
+}
+.news_chart_rank { text-align:right; width:25px; position:relative; }
+.news_chart_indicators { white-space:nowrap; transform:scale(0.8); position:absolute; bottom:0; right:0; }
+a.news_chart_title, a.news_chart_title:link, a.news_chart_title:visited,a.news_chart_composer, a.news_chart_composer:link, a.news_chart_composer:visited { display:block; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; position:relative; color:#000; }
+a.news_chart_composer, a.news_chart_composer:link, a.news_chart_composer:visited { color:#888; }
+.objectcontainer .obj_author { margin-top:1em; opacity:0.5; }
+.box .obj_author { position:absolute; bottom:0.7em; right:1em; }
+blockquote { background-color:#EEEEEE; border-left:10px solid #959595; margin:0 0 0 3%; padding:5%; }
+blockquote:before { color:#959595; content:'“'; font-size:4em; line-height:0.1em; margin-right:0.25em; vertical-align:-0.4em; font-family:serif; }
+blockquote p { display:inline; }
+.r64_partner_logo_container { padding:10px 5px; }
+.r64_partner_logo { display:block; margin:auto; height:60px; }
+body { overflow-x:hidden; margin:0; padding:0; }
+#mobile-menu-wrap { position:absolute; }
+#mobile-logo img { transform:scale(0.7); transform-origin:10%; }
+body, div, label, td, th, *.error, *.error a, #concardis_container small,  input, textarea, select, .input_style, .multifield, .image_select_preview, .image_select_preview_set, .chosen-container-single, .chosen-container-multi .chosen-choices, span.defaultSkin table.mceLayout, .form_checkbox_wrap input + label span.tick { font-family:Noto Sans JP, sans-serif;; font-size:12pt; }
+.linkstyle { font-size:12pt; }
+a { text-decoration:none; }
+#footer { padding:5%; }
+#content { padding:5% 0; }
+.new_block_wrapper, .content_page_footer, #content_header { padding:0 5%; }
+body.section_list #content .new_block_wrapper { max-width:70em; margin:auto; }
+#header, #footer { background-color:#222222; }
+@media all and (min-width:0px) and (max-width:800px) {
+ #footer, #on_background { padding:2% !important; }
+ #content { padding:2% 0; }
+ .new_block_wrapper, .content_page_footer, #content_header { padding:0 5%; }
+ ul.soc_list li { margin:15px; }
+ .soc_selected_name, #powered_by { display:none; }
+}
+#header *, #on_background *, #footer * { color:white; }
+#header { display:none; }
+#content { background-color:#FFFFFF; position:relative; }
+#on_background { background-color:#363636; margin-top:180px; padding-bottom:19px; }
+#navigation { z-index:951; }
+#logo { height:180px; left:0; overflow:hidden; position:absolute; right:80px; top:0; z-index:950; }
+#logo a { display:block; }
+#logo img, #desktopmenulogo img { display:block; position:absolute; left:2%; max-width:100%; max-height:200px; z-index:915; }
+.navigation_visible #logo { display:none; }
+#search_trigger { margin:0 0.5em; }
+#menu, .submenu { list-style-type:none; }
+#menu > li #search_trigger .icon { font-size:25px; }
+#searchbox_wrap { padding:5px; background-color:#333; display:none; z-index:5; position:relative; }
+#searchbox_wrap.active { display:block; }
+#searchbox_wrap input { width:100%; text-align:center; font-size:25px; height:40px; color:#000 !important; margin-bottom:0; }
+input, textarea, select, .input_style, .multifield, .image_select_preview, .image_select_preview_set, .chosen-container-single, .chosen-container-multi .chosen-choices, span.defaultSkin table.mceLayout, .form_checkbox_wrap input + label span.tick , .button, .button:link, .button:visited, .button:active { padding:7pt; font-size:14pt; min-height:15pt; }
+.button, .button:link, .button:visited, .button:active { font-weight:normal; }
+@media all and (max-width:1060px) {
+ #content { margin-top:85px; }
+}
+@media all and (min-width:1060px) {
+ #header { display:block; background-color:#222222; height:180px; }
+ #menu { right:0; list-style-type:none; margin:0; padding:0; position:absolute; top:0; left:40%; text-align:right; z-index:951; white-space:nowrap; left:auto; }
+ #menu * { transition:color, background-color; transition-duration:500ms; }
+ #menu > li { background-color:rgba(255, 255, 255, 0.00); box-sizing:border-box; font-size:15pt; list-style-type:none; margin:0; text-align:center; text-transform:uppercase; display:block; float:left; position:relative; }
+ #menu > li > a { display:block; height:100%; color:#FFF; padding:20px; }
+ #menu > li.selected { background-color:rgba(255, 255, 255, 0.25); }
+ #menu > li:hover { background-color:#eee; color:#000; }
+ #menu > li:hover a { color:#000; }
+ #menu > li a { font-size:14pt; height:180px; line-height:220px; padding:0 10px; }
+ #menu > li a .icon { line-height:220px; }
+ #menu .submenu { display:none; position:absolute; top:180px; background-color:#eee; right:0; margin:0; padding:10px 0 10px; }
+ #menu > li .submenu li { margin:0; padding:0; }
+ #menu > li .submenu li a { display:block; height:20px; line-height:20px; padding:10px 20px; font-size:14pt; color:black; }
+ #menu > li .submenu li a:hover { background-color:#222222; color:white; }
+ #menu > li:hover .submenu { display:block; }
+}
+
+/* objectcontainer_inline (custom) */
+.objectcontainer { position:relative; padding:1.5em 0; }
+.objectcontainer.type_9 { padding:0.5em 0; }
+.objectcontainer_separator { background-color:#C3C3C3; height:1px; }
+.objectcontainer .admin_button { position:absolute; right:5px; top:25px; }
+div.objectcontainer h2 { margin:0 0 20px; }
+div.objectlinks { margin-top:20px; }
+.objectdate { float:left; opacity:0.5; font-size:80%; line-height:25px; vertical-align:bottom; }
+.objectdate:after { content:"■"; margin:0 8px; opacity:0.4; font-size:11px; line-height:21px; vertical-align:top; }
+div.objectcontainer.object_search_result { display:block; min-height:120px; position:relative; }
+div.objectcontainer.object_search_result a .objectimage { border:0 none; float:right; margin-top:-27px; }
+@media all and (max-width:600px) {
+ .objectimage_container { margin:auto; width:50%; }
+}
+@media all and (min-width:600px) {
+ .objectcontainer { display:flex; }
+ .objectimage_container { width:300px; height:100%; overflow:hidden; min-width:300px; max-width:300px; flex-basis:auto; flex-grow:1; }
+ .objectcontainer.article .objectimage_container { width:100px; min-width:100px; max-width:100px; }
+ .objectinner { padding-left:20px; }
+}</style>
+<script nonce="823c4406e6e6e71ce8f7918fc82ef6d3dfe0ea06">function att_e_evt(el,fn,ev){if (el.addEventListener) { el.addEventListener(ev, fn, false);} else if (el.attachEvent) {el.attachEvent('on'+ev, fn);}}function add_evt(id,fn,ev){var el; if(el = document.getElementById(id)) {att_e_evt(el, fn, ev);}}function on_load(f){ att_e_evt(window, f, 'load'); }function async_js(u, c) { var d = document, t = 'script', o = d.createElement(t), s = d.getElementsByTagName(t)[0]; o.src = u; if (c) { o.addEventListener('load', function (e) { c(null, e); }, false); } s.parentNode.insertBefore(o, s); }function async_css(url) { var s = document.createElement('link'); var h = document.getElementsByTagName('script')[0]; s.rel = 'stylesheet';s.href = url; s.media = 'nsns'; h.parentNode.insertBefore(s, h); setTimeout( function() { s.media = "all"; } ); };
+window.cnstck = window.cnstck || []; function on_consent_load(ct,f){ window.cnstck.push({'ct':ct,'f':f}); };
+const page_last_modified=false; const page_loaded=Date.now();
+on_load(function() {
+cms_autostart(0);
+});</script>
+<script type="application/ld+json" nonce="823c4406e6e6e71ce8f7918fc82ef6d3dfe0ea06">{"@context":"https:\/\/schema.org","@type":"Organization","name":"Remix64","url":"https:\/\/remix64.com\/","logo":"https:\/\/remix64.com\/services\/favicon\/gb\/200\/favicon.png","address":{"@type":"PostalAddress"}}</script>
+<script src="/services/js/gb/v-896a6/lib/remix4/remix4/cms-frontend-jquery-slider.js" nonce="823c4406e6e6e71ce8f7918fc82ef6d3dfe0ea06"></script>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<meta name="description" content="News about the c64 and Amiga music remixing community" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#212121" />
+<meta property="og:site_name" content="Remix64" />
+<meta name="apple-mobile-web-app-title" content="Remix64" />
+<link rel="stylesheet" type="text/css" href="/services/styles/gb/v-896a6/lib/remix4/remix4/cms-frontend-jquery-slider.css" />
+<link rel="canonical" href="/news/" />
+<link rel="alternate" type="application/rss+xml" href="https://remix64.com/services/feed/rss/news.xml" title="News about the c64 and Amiga music remixing community" />
+<link rel="alternate" href="https://remix64.com/news/" hreflang="en" />
+<link rel="alternate" href="https://remix64.com/news/" hreflang="x-default" />
+<link rel="apple-touch-icon" sizes="180x180" href="/services/favicon/gb/180/favicon.png" />
+<link rel="icon" type="image/png" sizes="32x32" href="/services/favicon/gb/32/favicon.png" />
+<link rel="icon" type="image/png" sizes="96x96" href="/services/favicon/gb/96/favicon.png" />
+<link rel="icon" type="image/png" sizes="192x192" href="/services/favicon/gb/192/favicon.png" />
+<link rel="icon" type="image/png" sizes="512x512" href="/services/favicon/gb/512/favicon.png" />
+<link rel="manifest" href="/site.webmanifest" />
+<title>Remix64 - News</title>
+
+</head><body class="section_list sect_news Standard async_loading" id="body" lang="en-GB">
+<div id="mobile-menu-wrap">
+        <div id="mobile-menu-trigger">
+                    <div id="mobile-logo">
+                <img src="/gfx/remix4/remix4/header_mobile.png" alt="" role="presentation" />
+            </div>
+                <div class="mobile-trigger">
+            <div id="nav-icon">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </div>
+        <div id="mobile-menu">
+        <ul>
+                    <li id="mobile_search_wrap">
+                <form method="get" action="/find.php">
+    <input class="mobile_search" type="text" name="find" placeholder="Search"/>
+</form>
+            </li>
+        
+                                    
+                                    <li>
+                        <a href="/">Remix Scene</a>
+                                                    <div class="btn-toggle">+</div>
+                            <ul class="submenu">
+                                                                    <li><a href="/news/">News archive</a></li>
+                                                                    <li><a href="/submit_news.php">Submit news</a></li>
+                                                                    <li><a href="/articles/">Articles</a></li>
+                                                                    <li><a href="/interviews.html">Interviews</a></li>
+                                                                    <li><a href="/editorials/">Editorials</a></li>
+                                                            </ul>
+                                            </li>
+                                    <li>
+                        <a href="/charts/c64/auto/">Music</a>
+                                                    <div class="btn-toggle">+</div>
+                            <ul class="submenu">
+                                                                    <li><a href="/charts/c64/auto/">C64 Charts</a></li>
+                                                                    <li><a href="/charts/amiga/auto/">Amiga Charts</a></li>
+                                                                    <li><a href="/charts/scene-albums/auto/">Album Charts</a></li>
+                                                                    <li><a href="/albums/">Album list</a></li>
+                                                                    <li><a href="/remix64-cd.html">Remix64 Albums</a></li>
+                                                                    <li><a href="/reviews.html">Editor Reviews</a></li>
+                                                                    <li><a href="/track/reviews/">Listeners' reviews</a></li>
+                                                                    <li><a href="/articles/voting-system.html">The Remix64 Voting System</a></li>
+                                                                    <li><a href="/review-guidelines.html">Review Guidelines</a></li>
+                                                                    <li><a href="/upload.html">Upload a remix</a></li>
+                                                            </ul>
+                                            </li>
+                                    <li>
+                        <a href="/roty/roty-2024.html">Compos</a>
+                                                    <div class="btn-toggle">+</div>
+                            <ul class="submenu">
+                                                                    <li><a href="https://remix64.com/competitions/bit-live-2026-remix-compo-results.html">BIT Live & Remix64 25th Anniv. Compo Results</a></li>
+                                                                    <li><a href="/roty-voting/">ROTY 2026 voting</a></li>
+                                                                    <li><a href="/roty/">ROTY past results</a></li>
+                                                                    <li><a href="/competitions/">Past competitions</a></li>
+                                                            </ul>
+                                            </li>
+                                    <li>
+                        <a href="/tutorials.html">Tutorials</a>
+                                                    <div class="btn-toggle">+</div>
+                            <ul class="submenu">
+                                                                    <li><a href="/about-guide-to-the-scene.html">Scene Guide</a></li>
+                                                                    <li><a href="/articles/getting-started-as-a-remixer.html">Getting Started as a Remixer</a></li>
+                                                                    <li><a href="/tutorials.html">Various Tutorials</a></li>
+                                                            </ul>
+                                            </li>
+                                    <li>
+                        <a >Community</a>
+                                                    <div class="btn-toggle">+</div>
+                            <ul class="submenu">
+                                                                    <li><a href="/community/">Forum</a></li>
+                                                                    <li><a href="https://www.facebook.com/CommodoreRemix64" target="_blank">Facebook</a></li>
+                                                                    <li><a href="https://discord.gg/ZnxChUX6Ar" target="_blank">Discord</a></li>
+                                                            </ul>
+                                            </li>
+                                    <li>
+                        <a href="/about.html">About</a>
+                                                    <div class="btn-toggle">+</div>
+                            <ul class="submenu">
+                                                                    <li><a href="/contact.html">Contact</a></li>
+                                                                    <li><a href="/about-remix64.html">Remix64</a></li>
+                                                                    <li><a href="/about-credits.html">Credits</a></li>
+                                                                    <li><a href="/privacy-notice.html">Privacy notice</a></li>
+                                                            </ul>
+                                            </li>
+                                    <li>
+                        <a href="/signup.html">Join</a>
+                                            </li>
+                                    <li>
+                        <a href="/account/gb/">Log In</a>
+                                            </li>
+                                            </ul>
+    </div>
+</div>
+
+
+<div id="site">
+    <div id="header">
+        <div class="header_bg header_bg_variant_08"></div>
+        <div id="logo">
+            <a href="/"><img src="/gfx/remix4/remix4/header.png" alt="Remix64" /></a>
+        </div>
+
+        <div id="navigation" class="hidden">
+            <ul id="menu">
+                
+                                                                    <li class="selected">
+                    <a href="/" >Remix Scene</a>
+                                            <ul class="submenu">
+                                                    <li> <a href="/news/" >News archive</a></li>
+                                                    <li> <a href="/submit_news.php" >Submit news</a></li>
+                                                    <li> <a href="/articles/" >Articles</a></li>
+                                                    <li> <a href="/interviews.html" >Interviews</a></li>
+                                                    <li> <a href="/editorials/" >Editorials</a></li>
+                                                </ul>
+                                        </li>
+                                    <li>
+                    <a href="/charts/c64/auto/" >Music</a>
+                                            <ul class="submenu">
+                                                    <li> <a href="/charts/c64/auto/" >C64 Charts</a></li>
+                                                    <li> <a href="/charts/amiga/auto/" >Amiga Charts</a></li>
+                                                    <li> <a href="/charts/scene-albums/auto/" >Album Charts</a></li>
+                                                    <li> <a href="/albums/" >Album list</a></li>
+                                                    <li> <a href="/remix64-cd.html" >Remix64 Albums</a></li>
+                                                    <li> <a href="/reviews.html" >Editor Reviews</a></li>
+                                                    <li> <a href="/track/reviews/" >Listeners' reviews</a></li>
+                                                    <li> <a href="/articles/voting-system.html" >The Remix64 Voting System</a></li>
+                                                    <li> <a href="/review-guidelines.html" >Review Guidelines</a></li>
+                                                    <li> <a href="/upload.html" >Upload a remix</a></li>
+                                                </ul>
+                                        </li>
+                                    <li>
+                    <a href="/roty/roty-2024.html" >Compos</a>
+                                            <ul class="submenu">
+                                                    <li> <a href="https://remix64.com/competitions/bit-live-2026-remix-compo-results.html" >BIT Live & Remix64 25th Anniv. Compo Results</a></li>
+                                                    <li> <a href="/roty-voting/" >ROTY 2026 voting</a></li>
+                                                    <li> <a href="/roty/" >ROTY past results</a></li>
+                                                    <li> <a href="/competitions/" >Past competitions</a></li>
+                                                </ul>
+                                        </li>
+                                    <li>
+                    <a href="/tutorials.html" >Tutorials</a>
+                                            <ul class="submenu">
+                                                    <li> <a href="/about-guide-to-the-scene.html" >Scene Guide</a></li>
+                                                    <li> <a href="/articles/getting-started-as-a-remixer.html" >Getting Started as a Remixer</a></li>
+                                                    <li> <a href="/tutorials.html" >Various Tutorials</a></li>
+                                                </ul>
+                                        </li>
+                                    <li>
+                    <a href="" >Community</a>
+                                            <ul class="submenu">
+                                                    <li> <a href="/community/" >Forum</a></li>
+                                                    <li> <a href="https://www.facebook.com/CommodoreRemix64"  target="_blank">Facebook</a></li>
+                                                    <li> <a href="https://discord.gg/ZnxChUX6Ar"  target="_blank">Discord</a></li>
+                                                </ul>
+                                        </li>
+                                    <li>
+                    <a href="/about.html" >About</a>
+                                            <ul class="submenu">
+                                                    <li> <a href="/contact.html" >Contact</a></li>
+                                                    <li> <a href="/about-remix64.html" >Remix64</a></li>
+                                                    <li> <a href="/about-credits.html" >Credits</a></li>
+                                                    <li> <a href="/privacy-notice.html" >Privacy notice</a></li>
+                                                </ul>
+                                        </li>
+                                    <li>
+                    <a href="/signup.html" >Join</a>
+                                        </li>
+                                    <li>
+                    <a href="/account/gb/" >Log In</a>
+                                        </li>
+                                <li><a id="search_trigger"><i translate="no" class="icon material-icons" aria-label="Search">search</i></a></li>
+            </ul>
+            <div class="clear"></div>
+        </div>
+    </div>
+    <div id="searchbox_wrap" >
+        <div id="searchbox">
+    <form action="/find.php" method="get">
+        <input type="text" placeholder="&#8981; Search" value="" id="searchbox_input" name="find" class="headerinput" onchange="form_submit(this);" />
+    </form>
+</div>    </div>
+    <div id="content">
+                
+
+        <!-- MAIN CONTENT -->
+        <!-- block start -->
+    <div class="new_block_wrapper block_1">
+        <div class="new_block block_1">
+                    <div class="">
+                <div class="column_inner">
+                    <div class="section_head">
+    <div class="rss_icon">
+    <a title="RSS Feed: News about the c64 and Amiga music remixing community"  class="rss_symbol" href="https://remix64.com/services/feed/rss/news.xml">
+        <i translate="no" class="icon material-icons" aria-label="Rss Feed">rss_feed</i>RSS
+    </a>
+</div>
+
+    <h1>News</h1>
+</div><div class="section_filter section_news" id="filterbox_7">
+    <form name="objfilter" method="get" action="/news/#filterbox">
+        <div class="section_filter_inner cols_2" id="section_filter_7">
+                        <div class="section_filter_select_wrap filter_word">
+                                <label for="filter_word">Keyword search</label>
+                                
+                        <input type="text" class="object_section_filter" name="word" id="filter_word" value="" />
+                    
+            </div>
+                        <div class="section_filter_select_wrap filter_year">
+                                <label for="filter_year">year</label>
+                                
+                           <select onchange="form_submit(this);" size="1" class="object_section_filter" id="filter_year" name="year">
+                           
+<option value="">year</option>
+<option value="2026" selected="selected">2026</option>
+<option value="2025">2025</option>
+<option value="2024">2024</option>
+<option value="2023">2023</option>
+<option value="2022">2022</option>
+<option value="2021">2021</option>
+<option value="2020">2020</option>
+<option value="2019">2019</option>
+<option value="2018">2018</option>
+<option value="2017">2017</option>
+<option value="2016">2016</option>
+<option value="2015">2015</option>
+<option value="2014">2014</option>
+<option value="2013">2013</option>
+<option value="2012">2012</option>
+<option value="2011">2011</option>
+<option value="2010">2010</option>
+<option value="2009">2009</option>
+<option value="2008">2008</option>
+<option value="2007">2007</option>
+<option value="2006">2006</option>
+<option value="2005">2005</option>
+<option value="2004">2004</option>
+<option value="2003">2003</option>
+<option value="2002">2002</option>
+<option value="2001">2001</option>
+                           </select>
+                       
+            </div>
+                    </div>
+    </form>
+ </div>
+<div class="objectcontainer_separator"></div>
+
+<div class="objectcontainer clear">
+    <div class="objectimage_container">
+                    <a href="/news/the-demoscenic-route-a-c64-amiga-remix-album.html">
+                <img  class="img_thumb_fit_0 objectimage maxwidth" title="Vandahlia The Demoscenic Route A C64 Amiga Remix Album." src="/images/sizes/300x240/user-submissions/vandahlia-the-demoscenic-route-a-c64-amiga-remix-album.webp" srcset="/images/sizes/300x240/user-submissions/vandahlia-the-demoscenic-route-a-c64-amiga-remix-album.webp 1x, /images/sizes/600x480/user-submissions/vandahlia-the-demoscenic-route-a-c64-amiga-remix-album.webp 2x, /images/sizes/900x720/user-submissions/vandahlia-the-demoscenic-route-a-c64-amiga-remix-album.webp 3x" alt="Vandahlia The Demoscenic Route A C64 Amiga Remix Album." />
+            </a>
+            </div>
+    <div class="objectinner">
+        <h2>
+                            <a href="/news/the-demoscenic-route-a-c64-amiga-remix-album.html">The Demoscenic Route - A C64 & Amiga Remix Album.</a>
+                    </h2>
+        <div>
+            <span class="objectdate">02/11/2026</span><p>Oh look - it's another remix album!<br>This time, I'm happy to present ten remixes originating from both the Commodore 64 and the Amiga demoscene! Woot! 😃<br><br>However, since this remix album is dedicated to the demoscene, you won't find any game music remixes or commercial music covers in here. All the remixes are (as far as I know) based on strictly non-commercial original tunes from demos, intros, cracktros, etc.<br><br>The focus is less common and/or lesser known tunes, the music styles vary somewhat but remain in the electronic music genre, and the overall mood of this album ranges from mellow to upbeat bouncy, whereas a minimal amount of creative liberties were taken during the remixing process since I mainly wanted to upscale and extend the original music.<br><br>Also worth mentioning is that the first half of the album (tracks 1 to 5) is all C64 remixes, while the second half (tracks 6 to 10) is all Amiga remixes.<br><br>And yes, this is a totally free digital album!<br>It can easily be downloaded from the links below.<br><br>Enjoy!<br><br>- Vandahlia</p>
+        </div>
+        <div class="obj_author">
+            <em>Submitted by <a href="/member/vandahlia/">Vandahlia</a></em>
+        </div>
+        <div class="objectlinks">
+            <p class="linkstyle noprint" >
+    <a href="https://vandahlia.bandcamp.com/album/the-demoscenic-route-free-download"  target="_blank" class="linkstyle">
+        <i translate="no" class="icon material-icons" aria-label="Open In New">open_in_new</i>The Demoscenic Route [Bandcamp]
+            </a>
+</p>
+<p class="linkstyle noprint" >
+    <a href="https://drive.google.com/file/d/1hqRLL6a71JPjU_fBDM4_dZ2wghFH-Aae/view?usp=drive_link"  target="_blank" class="linkstyle">
+        <i translate="no" class="icon material-icons" aria-label="Open In New">open_in_new</i>The Demoscenic Route [Google Drive]
+            </a>
+</p>
+
+                    <div class="soc_btn noprint"
+        onmouseover="show_social_networking_list('soc_1')"
+        onmouseout="hide_social_networking_list('soc_1')">
+
+                <div class="soc_list_wrapper display_none_until_onload" id="soc_1">
+            <div class="linkstyle"><i translate="no" class="icon material-icons" aria-label="Share">share</i>Share</div>
+            <ul class="soc_list">
+                                    <li>
+                        <a  title="Facebook" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_facebook.png" alt="Facebook" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Twitter" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_twitter.png" alt="Twitter" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Pinterest" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_pinterest.png" alt="Pinterest" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="LinkedIn" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_linkedin.png" alt="LinkedIn" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Tumblr" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_tumblr.png" alt="Tumblr" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Reddit" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_reddit.png" alt="Reddit" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="E-Mail" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_mail.png" alt="E-Mail" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="QR Code" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_qr.png" alt="QR Code" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Copy to clipboard" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_clipboard.png" alt="Copy to clipboard" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Xing" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_xing.png" alt="Xing" class="icon">
+                        </a>
+                    </li>
+                            </ul>
+            <div class="soc_selected_name" id="soc_1_name">&nbsp;</div>
+        </div>
+
+                <a class="linkstyle"><i translate="no" class="icon material-icons" aria-label="Share">share</i>Share</a>
+    </div>
+                </div>
+    </div>
+</div><div class="objectcontainer_separator"></div>
+
+<div class="objectcontainer clear">
+    <div class="objectimage_container">
+                    <a href="/news/budapest-micro-vol-4-announced.html">
+                <img  class="img_thumb_fit_0 objectimage maxwidth" title="2026 Budapest Micro Vol 4" src="/images/sizes/300x240/news/2026-budapest-micro-vol-4.webp" srcset="/images/sizes/300x240/news/2026-budapest-micro-vol-4.webp 1x, /images/sizes/600x480/news/2026-budapest-micro-vol-4.webp 2x, /images/sizes/900x720/news/2026-budapest-micro-vol-4.webp 3x" alt="2026 Budapest Micro Vol 4" />
+            </a>
+            </div>
+    <div class="objectinner">
+        <h2>
+                            <a href="/news/budapest-micro-vol-4-announced.html">Budapest Micro Vol.4 Announced</a>
+                    </h2>
+        <div>
+            <span class="objectdate">22/10/2026</span><p>It was just announced that <strong>Budapest Micro Vol.4</strong>, an all-night celebration of 8-bit and video game music will take place on <strong>March 13, 2027</strong> in the heart of Budapest at the <em>Három Holló</em> (Three Ravens) coffee house and event hall. The lineup includes names that should be very familiar to Commodore remix fans: <strong>Jeroen Tel </strong>(Maniacs of Noise), <strong>Sidrip Alliance</strong> (in their first concert in many-many years!), <strong>Sidnify</strong>, and <strong>Vincenzo &amp; Visage</strong>. More info at the links below.</p>
+        </div>
+        <div class="obj_author">
+            <em>Submitted by <a href="/member/lala/">LaLa</a></em>
+        </div>
+        <div class="objectlinks">
+            <p class="linkstyle noprint" >
+    <a href="https://www.facebook.com/events/2662602750823413"  target="_blank" class="linkstyle">
+        <i translate="no" class="icon material-icons" aria-label="Open In New">open_in_new</i>Budapest Micro Vol.4 [Facebook]
+            </a>
+</p>
+<p class="linkstyle noprint" >
+    <a href="https://budapestmicro.org/"  target="_blank" class="linkstyle">
+        <i translate="no" class="icon material-icons" aria-label="Open In New">open_in_new</i>Budapest Micro [website]
+            </a>
+</p>
+
+                    <div class="soc_btn noprint"
+        onmouseover="show_social_networking_list('soc_2')"
+        onmouseout="hide_social_networking_list('soc_2')">
+
+                <div class="soc_list_wrapper display_none_until_onload" id="soc_2">
+            <div class="linkstyle"><i translate="no" class="icon material-icons" aria-label="Share">share</i>Share</div>
+            <ul class="soc_list">
+                                    <li>
+                        <a  title="Facebook" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_facebook.png" alt="Facebook" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Twitter" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_twitter.png" alt="Twitter" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Pinterest" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_pinterest.png" alt="Pinterest" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="LinkedIn" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_linkedin.png" alt="LinkedIn" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Tumblr" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_tumblr.png" alt="Tumblr" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Reddit" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_reddit.png" alt="Reddit" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="E-Mail" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_mail.png" alt="E-Mail" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="QR Code" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_qr.png" alt="QR Code" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Copy to clipboard" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_clipboard.png" alt="Copy to clipboard" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Xing" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_xing.png" alt="Xing" class="icon">
+                        </a>
+                    </li>
+                            </ul>
+            <div class="soc_selected_name" id="soc_2_name">&nbsp;</div>
+        </div>
+
+                <a class="linkstyle"><i translate="no" class="icon material-icons" aria-label="Share">share</i>Share</a>
+    </div>
+                </div>
+    </div>
+</div><div class="objectcontainer_separator"></div>
+
+<div class="objectcontainer clear">
+    <div class="objectimage_container">
+                    <a href="/news/fastloaders-concert-on-dec-5-2026.html">
+                <img  class="img_thumb_fit_0 objectimage maxwidth" title="2026 FastLoaders London Concert" src="/images/sizes/300x240/news/2026-fastloaders-london-concert.webp" srcset="/images/sizes/300x240/news/2026-fastloaders-london-concert.webp 1x, /images/sizes/600x480/news/2026-fastloaders-london-concert.webp 2x, /images/sizes/900x720/news/2026-fastloaders-london-concert.webp 3x" alt="2026 FastLoaders London Concert" />
+            </a>
+            </div>
+    <div class="objectinner">
+        <h2>
+                            <a href="/news/fastloaders-concert-on-dec-5-2026.html">FastLoaders Concert on Dec 5, 2026</a>
+                    </h2>
+        <div>
+            <span class="objectdate">22/10/2026</span><p><em>FastLoaders</em> will squeeze in yet another concert before the year is out, this time in London on <strong>December 6, 2026</strong> at the <em>Black Heart</em>, presenting <em>Amiga Rocks Harder</em>. Get your tickets at the link below!</p>
+        </div>
+        <div class="obj_author">
+            <em>Submitted by <a href="/member/lala/">LaLa</a></em>
+        </div>
+        <div class="objectlinks">
+            <p class="linkstyle noprint" >
+    <a href="https://dice.fm/event/dkyqa6-fastloaders-amiga-rocks-harder-release-show-5th-dec-the-black-heart-london-tickets"  target="_blank" class="linkstyle">
+        <i translate="no" class="icon material-icons" aria-label="Open In New">open_in_new</i>FastLoaders concert tickets [website]
+            </a>
+</p>
+
+                    <div class="soc_btn noprint"
+        onmouseover="show_social_networking_list('soc_3')"
+        onmouseout="hide_social_networking_list('soc_3')">
+
+                <div class="soc_list_wrapper display_none_until_onload" id="soc_3">
+            <div class="linkstyle"><i translate="no" class="icon material-icons" aria-label="Share">share</i>Share</div>
+            <ul class="soc_list">
+                                    <li>
+                        <a  title="Facebook" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_facebook.png" alt="Facebook" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Twitter" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_twitter.png" alt="Twitter" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Pinterest" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_pinterest.png" alt="Pinterest" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="LinkedIn" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_linkedin.png" alt="LinkedIn" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Tumblr" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_tumblr.png" alt="Tumblr" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Reddit" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_reddit.png" alt="Reddit" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="E-Mail" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_mail.png" alt="E-Mail" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="QR Code" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_qr.png" alt="QR Code" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Copy to clipboard" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_clipboard.png" alt="Copy to clipboard" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Xing" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_xing.png" alt="Xing" class="icon">
+                        </a>
+                    </li>
+                            </ul>
+            <div class="soc_selected_name" id="soc_3_name">&nbsp;</div>
+        </div>
+
+                <a class="linkstyle"><i translate="no" class="icon material-icons" aria-label="Share">share</i>Share</a>
+    </div>
+                </div>
+    </div>
+</div><div class="objectcontainer_separator"></div>
+
+<div class="objectcontainer clear">
+    <div class="objectimage_container">
+                    <a href="/news/matt-gray-ln2-r5-now-available-for-pre-order.html">
+                <img  class="img_thumb_fit_0 objectimage maxwidth" title="Matt Gray Last Ninja 2 (R5)" src="/images/sizes/300x240/news/matt-gray-last-ninja-2-r5.webp" srcset="/images/sizes/300x240/news/matt-gray-last-ninja-2-r5.webp 1x, /images/sizes/600x480/news/matt-gray-last-ninja-2-r5.webp 2x, /images/sizes/900x720/news/matt-gray-last-ninja-2-r5.webp 3x" alt="Matt Gray Last Ninja 2 (R5)" />
+            </a>
+            </div>
+    <div class="objectinner">
+        <h2>
+                            <a href="/news/matt-gray-ln2-r5-now-available-for-pre-order.html">Matt Gray: LN2 (R5) Now Available for Pre-Order</a>
+                    </h2>
+        <div>
+            <span class="objectdate">03/10/2026</span><p>In case you missed the Kickstarter, the <q><em>Last Ninja 2 (Reformation 5)</em></q> album from Matt Gray is now <a href="https://mattgray1.bandcamp.com/album/last-ninja-2-reformation-5" target="_blank">available for pre-order at Bandcamp</a>. Four tracks can be streamed today and the complete album is slated to be released on <strong>December 24, 2026</strong>.</p>
+        </div>
+        <div class="obj_author">
+            <em>Submitted by <a href="/member/lala/">LaLa</a></em>
+        </div>
+        <div class="objectlinks">
+            <p class="linkstyle noprint" >
+    <a href="https://mattgray1.bandcamp.com/album/last-ninja-2-reformation-5"  target="_blank" class="linkstyle">
+        <i translate="no" class="icon material-icons" aria-label="Open In New">open_in_new</i>Last Ninja 2 (Reformation 5) [Bandcamp]
+            </a>
+</p>
+
+                    <div class="soc_btn noprint"
+        onmouseover="show_social_networking_list('soc_4')"
+        onmouseout="hide_social_networking_list('soc_4')">
+
+                <div class="soc_list_wrapper display_none_until_onload" id="soc_4">
+            <div class="linkstyle"><i translate="no" class="icon material-icons" aria-label="Share">share</i>Share</div>
+            <ul class="soc_list">
+                                    <li>
+                        <a  title="Facebook" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_facebook.png" alt="Facebook" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Twitter" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_twitter.png" alt="Twitter" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Pinterest" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_pinterest.png" alt="Pinterest" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="LinkedIn" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_linkedin.png" alt="LinkedIn" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Tumblr" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_tumblr.png" alt="Tumblr" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Reddit" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_reddit.png" alt="Reddit" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="E-Mail" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_mail.png" alt="E-Mail" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="QR Code" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_qr.png" alt="QR Code" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Copy to clipboard" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_clipboard.png" alt="Copy to clipboard" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Xing" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_xing.png" alt="Xing" class="icon">
+                        </a>
+                    </li>
+                            </ul>
+            <div class="soc_selected_name" id="soc_4_name">&nbsp;</div>
+        </div>
+
+                <a class="linkstyle"><i translate="no" class="icon material-icons" aria-label="Share">share</i>Share</a>
+    </div>
+                </div>
+    </div>
+</div><div class="objectcontainer_separator"></div>
+
+<div class="objectcontainer clear">
+    <div class="objectimage_container">
+                    <a href="/news/markus-siebold-1969-2026.html">
+                <img  class="img_thumb_fit_0 objectimage maxwidth" title="Markus Siebold" src="/images/sizes/300x240/people/musicians-s-siebold-markus.webp" srcset="/images/sizes/300x240/people/musicians-s-siebold-markus.webp 1x, /images/sizes/600x480/people/musicians-s-siebold-markus.webp 2x, /images/sizes/900x720/people/musicians-s-siebold-markus.webp 3x" alt="Markus Siebold" />
+            </a>
+            </div>
+    <div class="objectinner">
+        <h2>
+                            <a href="/news/markus-siebold-1969-2026.html">Markus Siebold 1969-2026</a>
+                    </h2>
+        <div>
+            <span class="objectdate">26/09/2026</span><p>We have just learned that Markus Siebold — musician, SID composer, and remixer — has recently passed away at the age of 57. He is best known for creating music for the game <em data-path-to-node="2,0" data-index-in-node="171">Turrican II: The Final Fight</em> on the C64, alongside numerous other SID tunes throughout the late 80s and early 90s. Over the years, he shared his own remakes of that iconic soundtrack here on Remix64, along with several other remixes. We are deeply saddened by his loss and we extend our heartfelt sympathies to his family, to his friends, and to everyone touched by his life and his music.</p>
+        </div>
+        <div class="obj_author">
+            <em>Submitted by <a href="/member/lala/">LaLa</a></em>
+        </div>
+        <div class="objectlinks">
+            <p class="linkstyle noprint" >
+    <a href="/news/markus-siebold-1969-2026.html"  class="linkstyle">
+        <i translate="no" class="icon material-icons" aria-label="Arrow Forward">arrow_forward</i>read more
+            </a>
+</p>
+<p class="linkstyle noprint" >
+    <a href="/act/markus-siebold/"  class="linkstyle">
+        <i translate="no" class="icon material-icons" aria-label="Arrow Forward">arrow_forward</i>Markus' remixes [R64]
+            </a>
+</p>
+<p class="linkstyle noprint" >
+    <a href="/interviews/interview-markus-siebold.html"  class="linkstyle">
+        <i translate="no" class="icon material-icons" aria-label="Arrow Forward">arrow_forward</i>Neil's interview with Markus in 2001 [R64]
+            </a>
+</p>
+<p class="linkstyle noprint" >
+    <a href="https://deepsid.chordian.net/?file=/MUSICIANS/S/Siebold_Markus/"  target="_blank" class="linkstyle">
+        <i translate="no" class="icon material-icons" aria-label="Open In New">open_in_new</i>SID tunes of Markus [DeepSID]
+            </a>
+</p>
+
+                    <div class="soc_btn noprint"
+        onmouseover="show_social_networking_list('soc_5')"
+        onmouseout="hide_social_networking_list('soc_5')">
+
+                <div class="soc_list_wrapper display_none_until_onload" id="soc_5">
+            <div class="linkstyle"><i translate="no" class="icon material-icons" aria-label="Share">share</i>Share</div>
+            <ul class="soc_list">
+                                    <li>
+                        <a  title="Facebook" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_facebook.png" alt="Facebook" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Twitter" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_twitter.png" alt="Twitter" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Pinterest" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_pinterest.png" alt="Pinterest" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="LinkedIn" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_linkedin.png" alt="LinkedIn" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Tumblr" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_tumblr.png" alt="Tumblr" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Reddit" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_reddit.png" alt="Reddit" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="E-Mail" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_mail.png" alt="E-Mail" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="QR Code" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_qr.png" alt="QR Code" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Copy to clipboard" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_clipboard.png" alt="Copy to clipboard" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Xing" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_xing.png" alt="Xing" class="icon">
+                        </a>
+                    </li>
+                            </ul>
+            <div class="soc_selected_name" id="soc_5_name">&nbsp;</div>
+        </div>
+
+                <a class="linkstyle"><i translate="no" class="icon material-icons" aria-label="Share">share</i>Share</a>
+    </div>
+                </div>
+    </div>
+</div><div class="objectcontainer_separator"></div>
+
+<div class="objectcontainer clear">
+    <div class="objectimage_container">
+                    <a href="/news/matt-gray-green-beret-main-theme-r5-version.html">
+                <img  class="img_thumb_fit_0 objectimage maxwidth" title="Matt Gray Green Beret Main Theme (R5 Version)" src="/images/sizes/300x240/news/matt-gray-green-beret-main-theme-r5-version.webp" srcset="/images/sizes/300x240/news/matt-gray-green-beret-main-theme-r5-version.webp 1x, /images/sizes/600x480/news/matt-gray-green-beret-main-theme-r5-version.webp 2x, /images/sizes/900x720/news/matt-gray-green-beret-main-theme-r5-version.webp 3x" alt="Matt Gray Green Beret Main Theme (R5 Version)" />
+            </a>
+            </div>
+    <div class="objectinner">
+        <h2>
+                            <a href="/news/matt-gray-green-beret-main-theme-r5-version.html">Matt Gray: Green Beret Main Theme (R5 Version)</a>
+                    </h2>
+        <div>
+            <span class="objectdate">19/09/2026</span><p>Another track from Matt Gray's <em>Reformation 5</em> dropped today:<br><br><strong>Matt Gray:</strong> <q>This time it's one of the remakes for the main R5 album and an all time favourite C64 tune <em>Green Beret Title/Main Theme</em> by the maestro Martin Galway. I must have re started on this track half a dozen times over the last couple of years and I finally found a blend of SID elements and new parts that I really like.</q></p>
+<p >I can still remember the Saturday afternoon in the summer of 1986 that I bought this game and rushed home to load it up and check out what Mr G had conjured up. The loading music was excellent but this title theme blew me away at the time.</p>
+<p >Hopefully you all feel much the same when you hear this new version.</p>
+        </div>
+        <div class="obj_author">
+            <em>Submitted by <a href="/member/lala/">LaLa</a></em>
+        </div>
+        <div class="objectlinks">
+            <p class="linkstyle noprint" >
+    <a href="https://mattgray1.bandcamp.com/track/green-beret-main-theme-r5-version"  target="_blank" class="linkstyle">
+        <i translate="no" class="icon material-icons" aria-label="Open In New">open_in_new</i>Matt Gray: Green Beret Main Theme (R5 Version) [Bandcamp]
+            </a>
+</p>
+
+                    <div class="soc_btn noprint"
+        onmouseover="show_social_networking_list('soc_6')"
+        onmouseout="hide_social_networking_list('soc_6')">
+
+                <div class="soc_list_wrapper display_none_until_onload" id="soc_6">
+            <div class="linkstyle"><i translate="no" class="icon material-icons" aria-label="Share">share</i>Share</div>
+            <ul class="soc_list">
+                                    <li>
+                        <a  title="Facebook" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_facebook.png" alt="Facebook" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Twitter" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_twitter.png" alt="Twitter" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Pinterest" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_pinterest.png" alt="Pinterest" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="LinkedIn" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_linkedin.png" alt="LinkedIn" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Tumblr" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_tumblr.png" alt="Tumblr" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Reddit" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_reddit.png" alt="Reddit" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="E-Mail" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_mail.png" alt="E-Mail" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="QR Code" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_qr.png" alt="QR Code" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Copy to clipboard" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_clipboard.png" alt="Copy to clipboard" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Xing" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_xing.png" alt="Xing" class="icon">
+                        </a>
+                    </li>
+                            </ul>
+            <div class="soc_selected_name" id="soc_6_name">&nbsp;</div>
+        </div>
+
+                <a class="linkstyle"><i translate="no" class="icon material-icons" aria-label="Share">share</i>Share</a>
+    </div>
+                </div>
+    </div>
+</div><div class="objectcontainer_separator"></div>
+
+<div class="objectcontainer clear">
+    <div class="objectimage_container">
+                    <a href="/news/retrogamingmusic-linus-lft-aakesson-premiere.html">
+                <img  class="img_thumb_fit_0 objectimage maxwidth" title="Fluke73 Retrogamingmusic Linus Lft Aakesson Premiere" src="/images/sizes/300x240/user-submissions/fluke73-retrogamingmusic-linus-lft-aakesson-premiere.webp" srcset="/images/sizes/300x240/user-submissions/fluke73-retrogamingmusic-linus-lft-aakesson-premiere.webp 1x, /images/sizes/600x480/user-submissions/fluke73-retrogamingmusic-linus-lft-aakesson-premiere.webp 2x, /images/sizes/900x720/user-submissions/fluke73-retrogamingmusic-linus-lft-aakesson-premiere.webp 3x" alt="Fluke73 Retrogamingmusic Linus Lft Aakesson Premiere" />
+            </a>
+            </div>
+    <div class="objectinner">
+        <h2>
+                            <a href="/news/retrogamingmusic-linus-lft-aakesson-premiere.html">RetroGamingMusic + Linus LFT Åkesson Premiere!</a>
+                    </h2>
+        <div>
+            <span class="objectdate">18/09/2026</span><p>Don't miss out the premiere on <strong>Friday, September 18 at 21:00 CET</strong> of one of the best C64 AMIGA NES Retro Concerts of 2026! This is the full mastered concert from the <em>Video Game Festival</em> in Stockholm! Better sound, camera angles, applause, and more!!! </p>
+
+<p>&nbsp;</p>
+
+<p>(Please remove the previous news regarding the VideospelFestival)</p>
+        </div>
+        <div class="obj_author">
+            <em>Submitted by <a href="/member/fluke73/">fluke73</a></em>
+        </div>
+        <div class="objectlinks">
+            <p class="linkstyle noprint" >
+    <a href="https://www.youtube.com/watch?v=VncDlXs0MiQ"  target="_blank" class="linkstyle">
+        <i translate="no" class="icon material-icons" aria-label="Open In New">open_in_new</i>VGF Concert [YouTube]
+            </a>
+</p>
+
+                    <div class="soc_btn noprint"
+        onmouseover="show_social_networking_list('soc_7')"
+        onmouseout="hide_social_networking_list('soc_7')">
+
+                <div class="soc_list_wrapper display_none_until_onload" id="soc_7">
+            <div class="linkstyle"><i translate="no" class="icon material-icons" aria-label="Share">share</i>Share</div>
+            <ul class="soc_list">
+                                    <li>
+                        <a  title="Facebook" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_facebook.png" alt="Facebook" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Twitter" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_twitter.png" alt="Twitter" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Pinterest" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_pinterest.png" alt="Pinterest" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="LinkedIn" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_linkedin.png" alt="LinkedIn" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Tumblr" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_tumblr.png" alt="Tumblr" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Reddit" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_reddit.png" alt="Reddit" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="E-Mail" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_mail.png" alt="E-Mail" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="QR Code" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_qr.png" alt="QR Code" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Copy to clipboard" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_clipboard.png" alt="Copy to clipboard" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Xing" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_xing.png" alt="Xing" class="icon">
+                        </a>
+                    </li>
+                            </ul>
+            <div class="soc_selected_name" id="soc_7_name">&nbsp;</div>
+        </div>
+
+                <a class="linkstyle"><i translate="no" class="icon material-icons" aria-label="Share">share</i>Share</a>
+    </div>
+                </div>
+    </div>
+</div><div class="objectcontainer_separator"></div>
+
+<div class="objectcontainer clear">
+    <div class="objectimage_container">
+                    <a href="/news/video-game-music-live-in-aakersberga-stockholm-sep.html">
+                <img  class="img_thumb_fit_0 objectimage maxwidth" title="Fluke73 Video Game Music Live In Aakersberga Stockholm September 12 13" src="/images/sizes/300x240/user-submissions/fluke73-video-game-music-live-in-aakersberga-stockholm-sep.webp" srcset="/images/sizes/300x240/user-submissions/fluke73-video-game-music-live-in-aakersberga-stockholm-sep.webp 1x, /images/sizes/600x480/user-submissions/fluke73-video-game-music-live-in-aakersberga-stockholm-sep.webp 2x, /images/sizes/900x720/user-submissions/fluke73-video-game-music-live-in-aakersberga-stockholm-sep.webp 3x" alt="Fluke73 Video Game Music Live In Aakersberga Stockholm September 12 13" />
+            </a>
+            </div>
+    <div class="objectinner">
+        <h2>
+                            <a href="/news/video-game-music-live-in-aakersberga-stockholm-sep.html">Video Game Music Live In Åkersberga, Stockholm, September 12-13</a>
+                    </h2>
+        <div>
+            <span class="objectdate">09/09/2026</span><p>Tony <q>Fluke</q> Wiren (Retrogamingmusic) will perform live on stage (<em>Saturday 16:00 CET</em>) at the <strong>Videospel Festival</strong> in Stockholm. The full event will also be live streamed at <a href="https://www.youtube.com/live/KyCT57AthG0" target="_blank">RetroGamingMusics YouTube page</a>.</p>
+
+<p>&nbsp;</p>
+
+<p>Some of the other famous acts at this event will be the creator of the C64 Fairlight game Bo Jangeborn, Linus Åkesson (LFT), Christer Rindeblad (DatorMagazin), Jimmy Wilhelmsson AKA Spelpappan (Generation64, Fandrake), David Westerlund.</p>
+
+<p>&nbsp;</p>
+
+<p>Full program (in Swedish) can be found here: <a href="https://videospelfestival.se/" target="_blank">videospelfestival.se</a></p>
+        </div>
+        <div class="obj_author">
+            <em>Submitted by <a href="/member/fluke73/">fluke73</a></em>
+        </div>
+        <div class="objectlinks">
+            <p class="linkstyle noprint" >
+    <a href="/news/video-game-music-live-in-aakersberga-stockholm-sep.html"  class="linkstyle">
+        <i translate="no" class="icon material-icons" aria-label="Arrow Forward">arrow_forward</i>read more
+            </a>
+</p>
+<p class="linkstyle noprint" >
+    <a href="https://www.youtube.com/live/KyCT57AthG0"  target="_blank" class="linkstyle">
+        <i translate="no" class="icon material-icons" aria-label="Open In New">open_in_new</i>RetroGamingMusic at Videspel Festival [YT]
+            </a>
+</p>
+<p class="linkstyle noprint" >
+    <a href="https://videospelfestival.se/"  target="_blank" class="linkstyle">
+        <i translate="no" class="icon material-icons" aria-label="Open In New">open_in_new</i>Videospel Festival [Webpage]
+            </a>
+</p>
+
+                    <div class="soc_btn noprint"
+        onmouseover="show_social_networking_list('soc_8')"
+        onmouseout="hide_social_networking_list('soc_8')">
+
+                <div class="soc_list_wrapper display_none_until_onload" id="soc_8">
+            <div class="linkstyle"><i translate="no" class="icon material-icons" aria-label="Share">share</i>Share</div>
+            <ul class="soc_list">
+                                    <li>
+                        <a  title="Facebook" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_facebook.png" alt="Facebook" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Twitter" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_twitter.png" alt="Twitter" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Pinterest" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_pinterest.png" alt="Pinterest" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="LinkedIn" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_linkedin.png" alt="LinkedIn" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Tumblr" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_tumblr.png" alt="Tumblr" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Reddit" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_reddit.png" alt="Reddit" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="E-Mail" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_mail.png" alt="E-Mail" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="QR Code" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_qr.png" alt="QR Code" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Copy to clipboard" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_clipboard.png" alt="Copy to clipboard" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Xing" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_xing.png" alt="Xing" class="icon">
+                        </a>
+                    </li>
+                            </ul>
+            <div class="soc_selected_name" id="soc_8_name">&nbsp;</div>
+        </div>
+
+                <a class="linkstyle"><i translate="no" class="icon material-icons" aria-label="Share">share</i>Share</a>
+    </div>
+                </div>
+    </div>
+</div><div class="objectcontainer_separator"></div>
+
+<div class="objectcontainer clear">
+    <div class="objectimage_container">
+                    <a href="/news/matt-gray-central-park-loading-theme-r5-version.html">
+                <img  class="img_thumb_fit_0 objectimage maxwidth" title="Matt Gray Central Park Main Theme From Last Ninja 2 (R5 Version)" src="/images/sizes/300x240/news/matt-gray-central-park-main-theme-from-last-ninja-2-r5.webp" srcset="/images/sizes/300x240/news/matt-gray-central-park-main-theme-from-last-ninja-2-r5.webp 1x, /images/sizes/600x480/news/matt-gray-central-park-main-theme-from-last-ninja-2-r5.webp 2x, /images/sizes/900x720/news/matt-gray-central-park-main-theme-from-last-ninja-2-r5.webp 3x" alt="Matt Gray Central Park Main Theme From Last Ninja 2 (R5 Version)" />
+            </a>
+            </div>
+    <div class="objectinner">
+        <h2>
+                            <a href="/news/matt-gray-central-park-loading-theme-r5-version.html">Matt Gray: Central Park Loading Theme (R5 Version)</a>
+                    </h2>
+        <div>
+            <span class="objectdate">05/09/2026</span><p>Posted by Matt Gray today for his Kickstarter backers:</p>
+
+<p ><em><q>Some good news in this update as I have another finished Last Ninja 2 R5 track for you to hear and it's my new version of Central Park Loading Theme.</q></em></p>
+
+<p ><em>I've put it up on Bandcamp where you can listen or download and hopefully the rest of the LN2 R5 album won't be too far away.</em></p>
+        </div>
+        <div class="obj_author">
+            <em>Submitted by <a href="/member/lala/">LaLa</a></em>
+        </div>
+        <div class="objectlinks">
+            <p class="linkstyle noprint" >
+    <a href="https://emails.kickstarter.com/ss/c/u001.6VrNeeC9KmZefGrHQgOCPd2KUTi5ukOVe6WEVRORgVks5RyujoJviWR77hRw6WrY7zqNqJrXn4cLePB1ZaVBaHzykkV5iO9VetuGW9kg_7CqgwQcWA0vX44ZlqmhrD1BH2K4cW2sbka8Q1fjs6IKJg/4ts/UApXxgJ-RgaMg-3JtJhb8A/h4/h001.oeyGoVQR1ZbNE7-GisaoPihFTI46iIxGtA_RJw2BUgI"  target="_blank" class="linkstyle">
+        <i translate="no" class="icon material-icons" aria-label="Open In New">open_in_new</i>Central Park Loading Theme From LN2 (R5 Version) [Bandcamp]
+            </a>
+</p>
+
+                    <div class="soc_btn noprint"
+        onmouseover="show_social_networking_list('soc_9')"
+        onmouseout="hide_social_networking_list('soc_9')">
+
+                <div class="soc_list_wrapper display_none_until_onload" id="soc_9">
+            <div class="linkstyle"><i translate="no" class="icon material-icons" aria-label="Share">share</i>Share</div>
+            <ul class="soc_list">
+                                    <li>
+                        <a  title="Facebook" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_facebook.png" alt="Facebook" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Twitter" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_twitter.png" alt="Twitter" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Pinterest" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_pinterest.png" alt="Pinterest" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="LinkedIn" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_linkedin.png" alt="LinkedIn" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Tumblr" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_tumblr.png" alt="Tumblr" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Reddit" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_reddit.png" alt="Reddit" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="E-Mail" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_mail.png" alt="E-Mail" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="QR Code" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_qr.png" alt="QR Code" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Copy to clipboard" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_clipboard.png" alt="Copy to clipboard" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Xing" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_xing.png" alt="Xing" class="icon">
+                        </a>
+                    </li>
+                            </ul>
+            <div class="soc_selected_name" id="soc_9_name">&nbsp;</div>
+        </div>
+
+                <a class="linkstyle"><i translate="no" class="icon material-icons" aria-label="Share">share</i>Share</a>
+    </div>
+                </div>
+    </div>
+</div><div class="objectcontainer_separator"></div>
+
+<div class="objectcontainer clear">
+    <div class="objectimage_container">
+                    <a href="/news/fastloaders-news.html">
+                <img  class="img_thumb_fit_0 objectimage maxwidth" title="2026 FastLoaders On SLAY Radio" src="/images/sizes/300x240/news/2026-fastloaders-on-slay-radio.webp" srcset="/images/sizes/300x240/news/2026-fastloaders-on-slay-radio.webp 1x, /images/sizes/600x480/news/2026-fastloaders-on-slay-radio.webp 2x, /images/sizes/900x720/news/2026-fastloaders-on-slay-radio.webp 3x" alt="2026 FastLoaders On SLAY Radio" />
+            </a>
+            </div>
+    <div class="objectinner">
+        <h2>
+                            <a href="/news/fastloaders-news.html">FastLoaders News</a>
+                    </h2>
+        <div>
+            <span class="objectdate">20/08/2026</span><p>- Jarle &amp; Co. will be a guest on tonight's <strong>SLAY Radio show (8/20/2026 @ 20:00 CEST)</strong>.</p>
+
+<p>- The FastLoaders have announced an upcoming concert in <strong>Prague on Sept 26</strong>. For more details and for tickets <a href="https://www.facebook.com/events/1064703179421643/" target="_blank">check out the event's page on Facebook</a>.</p>
+        </div>
+        <div class="obj_author">
+            <em>Submitted by <a href="/member/lala/">LaLa</a></em>
+        </div>
+        <div class="objectlinks">
+            <p class="linkstyle noprint" >
+    <a href="https://www.youtube.com/watch?v=sR2zmTjJPzw"  target="_blank" class="linkstyle">
+        <i translate="no" class="icon material-icons" aria-label="Open In New">open_in_new</i>SLAY Radio Chit-Chat with FastLoaders [YouTube]
+            </a>
+</p>
+<p class="linkstyle noprint" >
+    <a href="https://www.facebook.com/events/1064703179421643/"  target="_blank" class="linkstyle">
+        <i translate="no" class="icon material-icons" aria-label="Open In New">open_in_new</i>FastLoaders Concert in Prague [Facebook]
+            </a>
+</p>
+
+                    <div class="soc_btn noprint"
+        onmouseover="show_social_networking_list('soc_10')"
+        onmouseout="hide_social_networking_list('soc_10')">
+
+                <div class="soc_list_wrapper display_none_until_onload" id="soc_10">
+            <div class="linkstyle"><i translate="no" class="icon material-icons" aria-label="Share">share</i>Share</div>
+            <ul class="soc_list">
+                                    <li>
+                        <a  title="Facebook" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_facebook.png" alt="Facebook" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Twitter" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_twitter.png" alt="Twitter" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Pinterest" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_pinterest.png" alt="Pinterest" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="LinkedIn" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_linkedin.png" alt="LinkedIn" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Tumblr" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_tumblr.png" alt="Tumblr" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Reddit" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_reddit.png" alt="Reddit" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="E-Mail" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_mail.png" alt="E-Mail" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="QR Code" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_qr.png" alt="QR Code" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Copy to clipboard" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_clipboard.png" alt="Copy to clipboard" class="icon">
+                        </a>
+                    </li>
+                                    <li>
+                        <a  title="Xing" rel="nofollow">
+                            <img src="/gfx/remix4/remix4/sizes-24x24/soc_xing.png" alt="Xing" class="icon">
+                        </a>
+                    </li>
+                            </ul>
+            <div class="soc_selected_name" id="soc_10_name">&nbsp;</div>
+        </div>
+
+                <a class="linkstyle"><i translate="no" class="icon material-icons" aria-label="Share">share</i>Share</a>
+    </div>
+                </div>
+    </div>
+</div><div class="clear">
+            <div class="pagination noprint">
+            <span class="fancy_pagination"><a  href="/news/?year=2026" class="pagination_link selected">1</a></span>&nbsp;<span class="fancy_pagination"><a  href="/news/index-2.html?year=2026" class="pagination_link">2</a></span>&nbsp;<span class="fancy_pagination"><a  href="/news/index-3.html?year=2026" class="pagination_link">3</a></span>&nbsp;<span class="fancy_pagination"><a  href="/news/index-4.html?year=2026" class="pagination_link">4</a></span>&nbsp;<span class="fancy_pagination"><a  href="/news/index-5.html?year=2026" class="pagination_link">5</a></span> <div class="rss_icon">
+    <a title="RSS Feed: News about the c64 and Amiga music remixing community"  class="rss_symbol" href="https://remix64.com/services/feed/rss/news.xml">
+        <i translate="no" class="icon material-icons" aria-label="Rss Feed">rss_feed</i>RSS
+    </a>
+</div>
+
+        </div>
+    </div>
+                </div>
+            </div>
+                </div>
+    </diV>
+    <!-- block end -->
+
+        <div class="clear"></div>
+    </div>
+</div>
+<div id="footer">
+    <a class="to_top" onclick="window.scrollTo(0,0);"><i translate="no" class="icon material-icons" aria-label="Keyboard Arrow Up">keyboard_arrow_up</i> to top</a>
+</div>
+
+<div id="cookie_warning" class="cookie-overlay hide_until_onload cookie_selection_closed">
+    <div class="cookie">
+        <div class="cookie_intro">
+                    <p>Our website uses technically essential cookies, to provide, protect and to improve our services.</p>
+                </div>
+
+        <div class="selection">
+            <div class="row">
+                <input type="checkbox" class="checkbox" id="consent_required" checked="checked" disabled="disabled">
+                <label for="consent_required">Technically essential</label>
+                <div class="info">
+                    <span>i</span>
+                    <div class="tooltip">
+                        These cookies are required for error-free operation of the website.
+                    </div>
+                </div>
+            </div>
+
+            
+        </div>
+        <div class="submit">
+                    <div class="submit_all">
+                <a onclick="var h=new cms_consent_manager(); h.accept_selected()" class="button white">All right!</a>
+            </div>
+        
+        </div>
+        <div class="more">
+                    <a class="cookie_more_link" href="/imprint.html" title="Imprint">Imprint</a>
+                    <a class="cookie_more_link" href="/privacy-notice.html" title="Privacy notice">Privacy notice</a>
+                </div>
+    </div>
+</div>
+
+<script nonce="823c4406e6e6e71ce8f7918fc82ef6d3dfe0ea06">
+</script><script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"e871e779f93c47fc97791a7bef5b8ef8","r":1,"spa":2}' crossorigin="anonymous"></script>
+</body><!-- Intersolute CMS - https://intersolute.de/ -->
+
+</html>
