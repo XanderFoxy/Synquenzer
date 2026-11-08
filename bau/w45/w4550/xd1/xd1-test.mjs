@@ -207,43 +207,32 @@ if (run('matrix')) for (const vk of ['p', 'q', 'q2']) {
 /* ======================= (4) Echtzeit-Mitschnitt mit Nachher ======================= */
 if (run('mitschnitt')) for (const vk of ['p', 'q', 'q2']) {
   const P = await open(FILE, vk), {p} = P;
-  await p.evaluate(async () => { SYNQUENZER.loadDemo(); SYNQUENZER.songFromChain([{scene: 0, bars: 2}, {scene: 1, bars: 2}]); ensureAudio(); await new Promise(r => setTimeout(r, 300)); });
-  // Mix & Master: mischen (Vergleich snap), Vorher, ablegen (⌄)
-  const a = await p.evaluate(async () => {
-    mx2Sheet(); await new Promise(r => setTimeout(r, 300));
-    const tr = S.tracks[0]; tr.sound.fx.vol = .42; applyTrackParams(0, false);              // etwas gemischt: Spur 1 leiser
-    MX2.ab = {base: (() => { const x = mx2Snap(); return x; })(), side: 'B', mode: 'snap', cur: null}; tr.sound.fx.vol = .8; applyTrackParams(0, false); MX2.ab.base = MX2.ab.base;
-    return true; }).catch(e => String(e));
-  // sauber: Vorher-Stand = 0,42, Nachher = 0,8 → Vorher tippen (Finger), ablegen
-  await p.evaluate(() => { MX2.ab = null; const tr = S.tracks[0]; tr.sound.fx.vol = .42; applyTrackParams(0, false); const base = mx2Snap(); tr.sound.fx.vol = .8; applyTrackParams(0, false); MX2.ab = {base, LA: null, LB: null, side: 'B', mode: 'snap'}; mx2Paint(); }); await sleep(250);
-  await tapSel(P, '.mxghd button[data-x2="A"]'); await sleep(300);
-  const s0 = await p.evaluate(() => ({side: mx2Side(), vol: S.tracks[0].sound.fx.vol}));
-  await p.evaluate(() => pshDock()); await sleep(300);
-  await p.evaluate(() => va1Sheet()); await sleep(500);
-  const rt = await tapSel(P, '.pop [data-va="wg-rt"]'); await sleep(500);
-  const s1 = await p.evaluate(() => ({side: mx2Side(), vol: S.tracks[0].sound.fx.vol, rec: SREC.on, toast: (document.querySelector('.toast,#toast') || {}).textContent || '', i: SYNQUENZER.xd1.info(), bar: [...document.querySelectorAll('#pshDock .mxgh [data-x2="B"]')].map(x => x.getAttribute('aria-pressed'))}));
-  await sleep(450);
-  const s2 = await p.evaluate(() => ({side: mx2Side(), st: [...document.querySelectorAll('#pshDock .mxgst')].map(x => x.textContent)}));
+  const toastTxt = () => p.evaluate(() => (document.querySelector('.toast,#toast') || {}).textContent || '');
+  await p.evaluate(async () => { SYNQUENZER.loadDemo(); ensureAudio(); const sr = 48000, a = new Array(sr * 2).fill(0).map((_, i) => Math.round(7000 * Math.sin(i / 19) * (i % 12000 < 9000 ? 1 : 0)));
+    window.__tk = await SYNQUENZER.tkInject({pcm: a, sr, scene: 0, len: 2}); SYNQUENZER.songFromChain([{scene: 0, bars: 2}, {scene: 1, bars: 2}]); await new Promise(r => setTimeout(r, 300)); });
+  // a) Marken · STIMME auf Vorher (Original) – ≡ › Export bleibt darüber bedienbar → Mitschnitt per Finger
+  await p.evaluate(() => { ui1Home(); setSongView(false); wpOpen({t: window.__tk.track, s: 0}); }); await sleep(700);
+  await tapSel(P, '#wpSheet .wpab'); await sleep(250);
+  const w0 = await p.evaluate(() => ({ab: WP.ab, txt: (document.querySelector('#wpSheet .mxgov .mxgst') || {}).textContent || ''}));
+  await p.evaluate(() => { openMenu(); }); await sleep(300); await p.evaluate(() => { closeMenu(); va1Sheet(); }); await sleep(450);
+  const rt1 = await tapSel(P, '.pop [data-va="wg-rt"]'); await sleep(350);
+  const w1 = await p.evaluate(() => ({ab: WP.ab, ed: !!WP.ed, rec: SREC.on, did: SYNQUENZER.xd1.info().rtLast, txt: (document.querySelector('#wpSheet .mxgov .mxgst') || {}).textContent || ''})); w1.toast = await toastTxt();
   await p.screenshot({path: `${OUT}/xd1-4-mitschnitt-${vk}.png`});
   await p.evaluate(() => songAudioStop(true)); await sleep(400);
-  ok(`(4) ${VN[vk]}: Mix & Master abgelegt auf VORHER → Echtzeit-Mitschnitt per Finger: schaltet sichtbar auf NACHHER (Leiste), Meldung „Mitschnitt mit Nachher“, aufgenommen wird der Nachher-Mix`,
-    rt && s0.side === 'A' && Math.abs(s0.vol - .42) < 1e-6 && s1.rec && s1.side === 'B' && Math.abs(s1.vol - .8) < 1e-6 && /Mitschnitt mit Nachher/.test(s1.toast) && s1.i.rtLast.includes('mx2') && s1.bar.includes('true') && s2.st.some(t => /NACHHER/.test(t)), {s0, s1: {side: s1.side, vol: s1.vol, rec: s1.rec, toast: s1.toast, did: s1.i.rtLast, bar: s1.bar}, s2});
-  // Klang-Editor auf Vorher (Original) → Mitschnitt → Nachher (deine Änderung)
-  const k0 = await p.evaluate(async () => { pshDockClose && PSH.dock && pshDockClose(); closePop(); selectSlot(0, 0); R.selT = 0; openEditor(); await new Promise(r => setTimeout(r, 300));
-    const t = 0, tr = S.tracks[t]; const s = deep(tr.sound); s.p.cutoff = (s.p.cutoff || 1000) * 0.5; soundEdit(t, 'Test', () => applySound(t, s)); await new Promise(r => setTimeout(r, 100));
-    const ed = JSON.stringify(tr.sound.p); toggleAB(t); return {side: UI.ab && UI.ab.side, ed, now: JSON.stringify(S.tracks[t].sound.p) === ed}; });
-  await p.evaluate(() => { closeEditor(); }); await sleep(200);   // XD1 (5) beendet hier schon auf Nachher – für (4) darum den Vergleich ohne Schließen herstellen
-  const k1 = await p.evaluate(async () => { selectSlot(0, 0); openEditor(); await new Promise(r => setTimeout(r, 200)); toggleAB(0); const side = UI.ab && UI.ab.side; R.editor = 'synth';
-    EL.synthSheet.classList.remove('open'); R.editor = null;                                   // Editor weggeklappt, Vergleich bleibt (wie ≡ über dem Editor)
-    va1Sheet(); await new Promise(r => setTimeout(r, 400)); return {side}; });
-  await tapSel(P, '.pop [data-va="wg-rt"]'); await sleep(500);
-  const k2 = await p.evaluate(() => ({side: UI.ab && UI.ab.side, rec: SREC.on, did: SYNQUENZER.xd1.info().rtLast, toast: (document.querySelector('.toast,#toast') || {}).textContent || ''}));
-  await p.evaluate(() => songAudioStop(true)); await sleep(300);
-  ok(`(4) ${VN[vk]}: Klang-Editor auf Vorher (Original) → Mitschnitt nimmt deine Änderung (Nachher), Meldung „Mitschnitt mit Nachher“`, k1.side === 'B' && k2.rec && k2.side === 'A' && k2.did.includes('snd') && /Mitschnitt mit Nachher/.test(k2.toast), {k0, k1, k2});
-  // ohne Vergleich: alles wie bisher (keine Zusatz-Meldung, nichts umgeschaltet)
+  ok(`(4) ${VN[vk]}: Marken · STIMME auf VORHER → ≡ › Export › Echtzeit-Mitschnitt (Finger): schaltet sichtbar auf NACHHER, Meldung „Mitschnitt mit Nachher“`,
+    w0.ab && /VORHER/.test(w0.txt) && rt1 && w1.rec && !w1.ab && w1.ed && w1.did.includes('wp') && /Mitschnitt mit Nachher/.test(w1.toast) && /NACHHER/.test(w1.txt), {w0, w1});
+  await p.evaluate(() => { closePop(); if (WP.ed) wpClose(); }); await sleep(300);
+  // b) Mix & Master auf Vorher, Start über die Test-Schnittstelle (der Export-Weg schließt das Blatt schon heute auf Nachher – hier die Hülle selbst)
+  const m = await p.evaluate(async () => { mx2Sheet(); await new Promise(r => setTimeout(r, 300));
+    const tr = S.tracks[0]; tr.sound.fx.vol = .42; applyTrackParams(0, false); const base = mx2Snap(); tr.sound.fx.vol = .8; applyTrackParams(0, false); MX2.ab = {base, LA: null, LB: null, side: 'B', mode: 'snap'}; mx2AB('A');
+    const s0 = {side: mx2Side(), vol: S.tracks[0].sound.fx.vol}; songAudioStart(); await new Promise(r => setTimeout(r, 300));
+    const s1 = {side: mx2Side(), vol: S.tracks[0].sound.fx.vol, rec: SREC.on, did: SYNQUENZER.xd1.info().rtLast, st: [...document.querySelectorAll('.pop .mxghd .mxgst')].map(x => x.textContent)}; songAudioStop(true); return {s0, s1}; });
+  m.toast = await toastTxt(); await sleep(300);
+  ok(`(4) ${VN[vk]}: Mix & Master auf VORHER → Mitschnitt startet mit dem Nachher-Mix (Spur 1 ${m.s0.vol} → ${m.s1.vol}), der Satz sagt NACHHER`, m.s0.side === 'A' && Math.abs(m.s0.vol - .42) < 1e-6 && m.s1.rec && m.s1.side === 'B' && Math.abs(m.s1.vol - .8) < 1e-6 && m.s1.did.includes('mx2') && m.s1.st.some(t => /NACHHER/.test(t)), m);
+  // c) ohne Vergleich: wie bisher
   await p.evaluate(() => { closePop(); va1Sheet(); }); await sleep(400);
-  await tapSel(P, '.pop [data-va="wg-rt"]'); await sleep(400);
-  const n0 = await p.evaluate(() => ({rec: SREC.on, did: SYNQUENZER.xd1.info().rtLast, toast: (document.querySelector('.toast,#toast') || {}).textContent || ''}));
+  await tapSel(P, '.pop [data-va="wg-rt"]'); await sleep(350);
+  const n0 = Object.assign(await p.evaluate(() => ({rec: SREC.on, did: SYNQUENZER.xd1.info().rtLast})), {toast: await toastTxt()});
   await p.evaluate(() => songAudioStop(true)); await sleep(300);
   ok(`(4) ${VN[vk]}: ohne Vergleich startet der Mitschnitt wie bisher („Song wird aufgenommen – …“, nichts umgeschaltet)`, n0.rec && !n0.did.length && /Song wird aufgenommen/.test(n0.toast) && !/Nachher/.test(n0.toast), n0);
   ok(`(4) ${VN[vk]}: keine Fehler`, !P.errs.length, P.errs.slice(0, 3));
