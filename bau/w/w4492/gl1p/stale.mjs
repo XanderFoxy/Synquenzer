@@ -1,0 +1,14 @@
+import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
+const b = await chromium.launch(); const ctx = await b.newContext({viewport: {width: 926, height: 428}}); const p = await ctx.newPage();
+const errs = []; p.on('pageerror', e => errs.push(String(e)));
+await p.goto('file://' + process.argv[2]); await p.waitForTimeout(1500);
+const r = await p.evaluate(async () => { stop(); SYNQUENZER.loadDemo();
+  for (let t = 0; t < NT(); t++) if (S.tracks[t]) for (let s = 0; s < NS(); s++) S.tracks[t].clips[s] = null;
+  S.tracks[0].clips[0] = {len: 1, key: {root: 0, scale: 'ionian', src: 'user'}, notes: [0, 2, 4, 5, 7, 9, 11, 12].map((d, k) => ({t: k * .5, d: .4, n: 60 + d, v: .8}))};
+  for (let t = 0; t < NT(); t++) clipChanged(t, 0); SYNQUENZER.songFromChain([{scene: 0, bars: 4}]);
+  setSongView(true); UI.svGlass = true; svLayout(); SV.cellW = 90; SV.x = 0; UI.dirty.song = true; svDraw(true);
+  const v0 = KEYC.ver, a = svTileNotes(S.song, 0, ownRun(S.song, 0, 1)).gl1;
+  SYNQUENZER.lf1Dir(0, 0, {dir: 'pend', g: '1/8'}); await new Promise(r => setTimeout(r, 300)); svDraw(true);
+  const v1 = KEYC.ver, bb = svTileNotes(S.song, 0, ownRun(S.song, 0, 1));
+  return {v0, v1, before: !!a, after: !!bb.gl1, n: bb.n}; });
+console.log(JSON.stringify(r), errs); await b.close();

@@ -12,8 +12,9 @@ Basis: Stand 4.49 ohne Paket WEGE (`../basis.html`). VERSION/CHANGES unveränder
 - **Glitch-Suche:** 19 Ansichten und Blätter, jeweils hochkant und quer (428×926, 926×428, 926×370), alle gemessen: vorher 42 Befunde, jetzt 0.
   Außerdem behoben: Schleifen-Knopf abgeschnitten, Mikro-Blatt quer unten aus dem Bild, ✕ lag auf der obersten Taste, „Ganze App“ im
   Video-Blatt abgeschnitten, „VIDEO“-Beschriftung zu groß.
-- **LAUF:** Matrix-Clip, Song-Kachel und ROLLE zeigen jetzt die Noten in der Reihenfolge, in der sie wirklich gespielt werden. Die
-  notierten Noten sind blass dahinter zu sehen. Am Clip steht ein Zeichen für die Richtung (◀ ⇄ ? ↑ ↓). In der ROLLE schaltet
+- **LAUF:** Matrix-Clip, Song-Kachel und ROLLE zeigen jetzt die Noten in der Reihenfolge, in der sie wirklich gespielt werden. Bei
+  „hin und her“ und „Zufall“ ist jeder Durchlauf anders: Beim Spielen wechselt das Bild mit jedem Durchlauf mit, im Song hat jeder Takt
+  seine eigene Kachel. Die notierten Noten sind blass dahinter zu sehen. Am Clip steht ein Zeichen für die Richtung (◀ ⇄ ? ↑ ↓). In der ROLLE schaltet
   [wie gespielt │ wie notiert] um. Neu sind die Richtungen „aufwärts/abwärts (Tonhöhe)“: Der Rhythmus bleibt, die Töne kommen der
   Höhe nach. Die Wiedergabe spielt genau die gezeigte Folge (geprüft).
 
@@ -72,6 +73,51 @@ Basis: Stand 4.49 ohne Paket WEGE (`../basis.html`). VERSION/CHANGES unveränder
   - Speichern/Laden ist geprüft.
   - Ohne Chor und ohne LAUF sind Matrix und Song pixelgleich zur Basis (6 Bilder).
 
+## Prüfung
+
+Fünf Befunde des unabhängigen Prüfers, alle nachgeprüft (Prüfer-Skripte in `pruef/` erneut gelaufen) und behoben:
+
+1. **Song-Kachel (◧) bei „hin und her“/„Zufall“ zeigte in jedem Takt den 1. Durchlauf.** Bestätigt (Kachel 4× aufsteigend, `a2Sound`
+   Takt 2–4 anders). Ursache: Der Cache-Schlüssel von `gl1TileNotes` war für jeden Durchlauf desselben Clips gleich.
+   Behoben: Klingt der Clip je Durchlauf anders (`gl1PassDep`: hin und her mit T > 2, Zufall, Chance), enthält der Schlüssel die Lage
+   (`run.d0`, `run.d1`). Sonst bleibt er wie bisher geteilt. Jetzt Kachel = `a2Sound` in allen 4 Takten
+   (0 2 4 5 7 9 11 12 · 11 9 7 5 4 2 0 2 · 4 5 7 9 11 12 11 9 · 7 5 4 2 0 2 4 5). Foto `test/gl1p-kachel-hin-und-her.png`.
+2. **Matrix-Vorschau und ROLLE „wie gespielt“ zeigten bei „hin und her“ nur den 1. Durchlauf.** Bestätigt. Der 1. Durchlauf von
+   „hin und her“ ist tatsächlich vorwärts, die Abweichung kommt erst ab Durchlauf 2.
+   - Behoben: `gl1PassNow` zählt den Durchlauf, der gerade klingt, ab dem Clip-Start wie der Scheduler (`audCstart`). Bei
+     „hin und her“ wird er auf die Periode (2T−2)/ggT(2T−2, T) gekürzt.
+   - Matrix: `renderGrid` hängt ihn an die Signatur an und gibt ihn an `miniSvg(c, drum, g1p)` → `gl1MiniSvg(c, p)`. Neu gezeichnet wird
+     nur beim Wechsel des Durchlaufs und nur für spielende Clips mit wechselndem Durchlauf.
+   - ROLLE: Ein Haken in `rollFrame` (`gl1RollFrame`) zeichnet beim Wechsel neu, und `played()` nimmt diesen Durchlauf.
+   - Steht der Clip, zeigen beide den 1. Durchlauf.
+   - Herausgezoomt zeigt die ROLLE hinter dem Clip-Ende blass die nächsten Durchläufe (bis 8). So sieht man auch im Stand, wie es
+     weitergeht.
+   - Gemessen über 5 Durchläufe (hin und her) und 5 Durchläufe (Zufall): Vorschau = ROLLE = `lf1Pass(c, k)` = noteLog. Nach dem Stopp ist
+     wieder der 1. Durchlauf zu sehen.
+3. **Glas-Ansicht weit herausgezoomt: Gesang/Background über den Teil-Blöcken.** Bestätigt (12 bzw. 9 von 18 fremd). Ursache:
+   `gl1SvClip` brach bei `UI.svGlass` ab. Die Blöcke (`sx8DrawBlocks`) liegen in beiden Ansichten gleich, darum gilt der Ausschnitt
+   jetzt auch in der Glas-Ansicht. Er gilt auch für `gl1ChsSvParts`, also den Chor im ersten „S“-Teil. Jetzt 0 von 18 fremd in beiden
+   Ansichten und beiden Bildgrößen. In jedem Block (5 Teile, 90 Messpunkte in den STIMME- und Background-Zeilen) ist die Farbe gleich der
+   Block-Farbe. Fotos `test/gl1p-glas-weit-*.png`.
+4. **ROLLE „wie gespielt“: Auswahl nicht zu sehen, gespielte Noten mit weißem Rand.** Bestätigt (Helligkeit gewählt 154,
+   ungewählt 151, gespielt 244).
+   - Behoben: `draw()` legt den Auswahlrand der gewählten (notierten) Noten zuletzt obenauf, auch unter einer gespielten Note an
+     derselben Stelle. Der Haken bekommt dafür `sel` und `noteRect`.
+   - Die gespielten Noten haben eine dunkle Kontur statt `#f2f4f8`.
+   - Jetzt: gewählt 241 (wie „wie notiert“ 241), ungewählt 151, gespielt 171. Foto `test/gl1p-rolle-auswahl-wie-gespielt.png`.
+5. **Matrix 926×370: „2T →28“ berührte das Tonart-Schild.** Bestätigt (6,3 × 1,6 px, gewählt mehr).
+   - Behoben: `gl1LnS` prüft in flachen Zellen mit Tonart-Schild (Zeile unter 34 px, gewählt unter 37 px) mit derselben Rechnung wie
+     `lnoff` (6 px je Zeichen), ob die Beschriftung neben das Schild passt. Wenn nicht, fällt erst die Startzahl weg („2T →“), dann das
+     Leerzeichen („2T→“).
+   - Die Beschriftung wird jetzt nach dem Schild gesetzt (eine Zeile in `renderGrid` verschoben).
+   - Hochkant und ohne Schild bleibt alles wie bisher, z. B. „2T →28“.
+   - Gemessen 926×370, 926×428, 428×926 × (rückwärts, →28, →4, hin und her, abwärts) × (gewählt, nicht gewählt): 0 Überlappung mit dem
+     Schild-Kasten. Foto `test/gl1p-zelle-926x370.png`.
+
+Tests danach: `gl1-test.mjs` mit neuem Abschnitt 6 („GL1-P 1–5“, 6 Prüfungen) — Ergebnis unten bei „Tests“. Dazu die Prüfer-Skripte
+`p1-lauf`, `p5-glass`, `p7-selpx`, `p9-cell`, `p12b-tile` erneut: alle wie oben. Außerdem `topdefs` 0/0, `dupkeys` 0, `smoke` errors [],
+keine verbotenen Wörter, „MS 2000“ 1×, „  live: true,“ 1×.
+
 ## Offen
 
 - Viele Chor-Spuren (bis 8) quer 926×370: Die Zeilen werden sehr flach (etwa 12 px). Sie sind lesbar und überschneiden sich nicht, sind
@@ -87,6 +133,10 @@ Basis: Stand 4.49 ohne Paket WEGE (`../basis.html`). VERSION/CHANGES unveränder
   - Das LAUF-Richtungsmenü hat quer kein ✕ (UIX1: Tipp außerhalb schließt).
 - Eigene Clips im Song (`song.own`) mit Chor erscheinen in den Background-Zeilen noch nicht, nur Szenen-Clips und Song-Gesang.
 - Bei Chor-Spuren, die neu dazukommen, legt der Song die Zeilen einen Frame später neu an (rAF in `chsSvDraw`); das bleibt wie bisher.
+- Das Song-Video zeichnet die Matrix-Vorschau eines LAUF-Clips mit „hin und her“/„Zufall“ weiter mit dem 1. Durchlauf
+  (`vk4MiniRects`). Der Klang im Video stimmt.
+- Steht die Wiedergabe, zeigt „hin und her“ den 1. Durchlauf, und der ist vorwärts. Das Hin und Her sieht man beim Spielen oder
+  herausgezoomt in der ROLLE hinter dem Clip-Ende. Ein Durchlauf-Wähler in der ROLLE wäre ein Vorschlag für den Funk.
 - Auf dem iPhone noch prüfen:
   - ob ◀︎ als Zeichen erscheint und nicht als Emoji;
   - ob der Hinweis in der ROLLE (einmal je Sitzung) gut lesbar ist.
