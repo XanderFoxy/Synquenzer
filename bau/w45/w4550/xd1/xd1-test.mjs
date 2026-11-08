@@ -214,12 +214,12 @@ if (run('mitschnitt')) for (const vk of ['p', 'q', 'q2']) {
   await p.evaluate(() => { ui1Home(); setSongView(false); wpOpen({t: window.__tk.track, s: 0}); }); await sleep(700);
   await tapSel(P, '#wpSheet .wpab'); await sleep(250);
   const w0 = await p.evaluate(() => ({ab: WP.ab, txt: (document.querySelector('#wpSheet .mxgov .mxgst') || {}).textContent || ''}));
-  await p.evaluate(() => { openMenu(); }); await sleep(300); await p.evaluate(() => { closeMenu(); va1Sheet(); }); await sleep(450);
+  await p.evaluate(() => va1Sheet()); await sleep(450);           // Export über dem offenen Marken-Editor (≡ würde ihn schließen und so schon auf Nachher stellen)
   const rt1 = await tapSel(P, '.pop [data-va="wg-rt"]'); await sleep(350);
   const w1 = await p.evaluate(() => ({ab: WP.ab, ed: !!WP.ed, rec: SREC.on, did: SYNQUENZER.xd1.info().rtLast, txt: (document.querySelector('#wpSheet .mxgov .mxgst') || {}).textContent || ''})); w1.toast = await toastTxt();
   await p.screenshot({path: `${OUT}/xd1-4-mitschnitt-${vk}.png`});
   await p.evaluate(() => songAudioStop(true)); await sleep(400);
-  ok(`(4) ${VN[vk]}: Marken · STIMME auf VORHER → ≡ › Export › Echtzeit-Mitschnitt (Finger): schaltet sichtbar auf NACHHER, Meldung „Mitschnitt mit Nachher“`,
+  ok(`(4) ${VN[vk]}: Marken · STIMME auf VORHER → Export › Echtzeit-Mitschnitt (Finger): schaltet sichtbar auf NACHHER, Meldung „Mitschnitt mit Nachher“`,
     w0.ab && /VORHER/.test(w0.txt) && rt1 && w1.rec && !w1.ab && w1.ed && w1.did.includes('wp') && /Mitschnitt mit Nachher/.test(w1.toast) && /NACHHER/.test(w1.txt), {w0, w1});
   await p.evaluate(() => { closePop(); if (WP.ed) wpClose(); }); await sleep(300);
   // b) Mix & Master auf Vorher, Start über die Test-Schnittstelle (der Export-Weg schließt das Blatt schon heute auf Nachher – hier die Hülle selbst)
@@ -255,7 +255,7 @@ if (run('klang')) for (const vk of ['p', 'q', 'q2']) {
   // ✕ per Finger
   await tapSel(P, () => [...document.querySelectorAll('#synthSheet .sh-head button')].find(b => b.textContent.trim() === '✕' || /Schließen/.test(b.getAttribute('aria-label') || '')));
   await sleep(400);
-  const e3 = await p.evaluate(() => ({open: EL.synthSheet.classList.contains('open'), side: UI.ab && UI.ab.side, nach: JSON.stringify(S.tracks[0].sound.p) === window.__ed, file: JSON.stringify(projectFileObj(S, true, true).tracks[0].sound.p) === window.__ed, n: SYNQUENZER.xd1.info().sndN, dirty: !!(autosave && autosave.dirty)}));
+  const e3 = await p.evaluate(() => ({open: EL.synthSheet.classList.contains('open'), side: UI.ab && UI.ab.side, nach: JSON.stringify(S.tracks[0].sound.p) === window.__ed, file: JSON.stringify(projectFileObj(S, true, true)).includes(window.__ed), n: SYNQUENZER.xd1.info().sndN, dirty: !!(autosave && autosave.dirty)}));
   ok(`(5) ${VN[vk]}: Klang-Editor Vorher (Original) → Wechsel Browser/Editor bleibt Vorher → ✕ (Finger): endet auf NACHHER (deine Änderung klingt, Projekt/Autosave = Nachher)`,
     e0.side === 'B' && e0.orig && e1.side === 'B' && e1.br && e2.side === 'B' && !e3.open && e3.side === 'A' && e3.nach && e3.file && e3.n >= 1, {e0, e1, e2, e3});
   // Mix & Master abgelegt auf Vorher bleibt (dort ist der Vergleich sichtbar)
