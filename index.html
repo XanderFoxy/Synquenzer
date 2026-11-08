@@ -26967,7 +26967,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '4.50.0';
+const VERSION = '4.51.0';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -55129,6 +55129,7 @@ function ui1Entries() {
     E('help', 'Alle Hilfetexte', 'Menü › Hilfe', 'Ausführliche Erklärungen zu jeder Funktion.', 'hilfe help erklaerung', G.menu, () => [...EL.menu.querySelectorAll('.msec h3')].find(h => h.textContent.trim() === 'Hilfe')),
     E('locks', 'Parameter-Locks (Regler je Schritt)', 'LAUF / SCHRITTE: Schritt lang drücken · ROLLE: Noten wählen › Locks', 'Regler drehen, während du den Schritt hältst – der Wert gilt nur für diesen Schritt (Punkt am Schritt). „Alle Regler ›“ = Klang-Editor im Lock-Modus. ◆ gilt dagegen für den ganzen Clip.', 'lock locks parameter plock p-lock schritt note regler wert filter je schritt groovebox', G.roll, 'Locks'),   // PL1
     E('lauflicht', 'Lauflichter an/aus', 'Menü › Bedienung › Lauflichter', 'Aus = Matrix, Song, LAUF, Schritte und Geräte-LEDs laufen nicht mit – ruhiger, spart Akku.', 'lauflicht lauflichter abspielmarke playhead animation led akku ruhig strom', G.menu, 'Lauflichter'),   // PL1
+    E('stilklang', 'Stil-Klang: Sounddesign & Mischung', 'Song-Leiste › ⇋ REMIX › Stil anwenden', 'Nur Rhythmus │ + Klang │ + Klang & Mischung: Kick, Snare, Bass, Flächen, Hall/Echo, Seitenkette und EQ im Stil; Vorher │ Nachher, Übernehmen, ↶ ein Schritt, Spuren einzeln abwählbar.', 'sounddesign klang stil sound drums kick snare bassdrum industrial ebm dreckig hart sidechain seitenkette ducking pumpen mischung abmischung effekte hall echo', () => { UI1.alt = null; if (S.song && S.song.bars) { ui1Home(); try { gr2RemixOpen(null); } catch (e) { logErr(e); } if (UI.pop && UI.pop.name === 'gr2remix') return true; } return ui1SongMenu(); }, () => (UI1.alt ? UI1.alt() : UI.pop && UI.pop.name === 'gr2remix' ? UI.pop.el.querySelector('.snd1-row') : ui1Find('Remix …'))),   // SND1
   ];
   wegeGuide(UI1.ents);   // WEGE: verschobene / umbenannte Wege + neue Einträge
   return UI1.ents;
@@ -85035,6 +85036,7 @@ function gr2Paint(p) {
   p.innerHTML = h;
   const sc2 = p.querySelector('.gr2-grid'); if (sc2) sc2.scrollTop = y;
   gen3RxPaint(p);                                                       // GEN3: Tempo-Version, Bereich Matrix
+  snd1RxPaint(p);                                                       // SND1: Stil anwenden (Klang, Mischung)
   popDock(p);
 }
 function gr2Go(play) {
@@ -86096,6 +86098,7 @@ function gen3MxPaint(p) {
   const sc = p.querySelector('.gr2-grid'), y = sc ? sc.scrollTop : 0;
   p.innerHTML = h;
   const sc2 = p.querySelector('.gr2-grid'); if (sc2) sc2.scrollTop = y;
+  snd1RxPaint(p, 'g3m');                                                // SND1: Stil anwenden (Klang, Mischung)
   popDock(p);
 }
 function gen3MxGo(play) {
@@ -87509,6 +87512,745 @@ const TKT_API = {
 Object.assign(SYNQUENZER, {tkt: TKT_API});                  /* TKT: Test-API (Objekt, wird nicht umhüllt) */
 /* TKT-END */
 Object.assign(SYNQUENZER, {vd4: VD4_API});                  /* VD4: Test-API (Objekt, wird nicht umhüllt) */
+/* ===== SND1-BEGIN (Paket SND1, Xander 08.11. (16): „manche Stile klingen nicht nach ihren Stilen … Industrial klingt dreckiger, EBM härter …
+   die Aggressivität in der Snare, das Peitschen, der Druck in der Bassdrum und im Verhältnis den Synthesizer vom Grundgefühl so eingestellt,
+   dass alles zusammenarbeitet … wie ist das mit Sidechain? … sofort das Gefühl, im Stil drin zu sein: Effekte, Abmischung, Durchsetzungskraft
+   … nicht nur das MIDI-Ding aus dem Groove … Färbung, Sounddesign, Zusammenspiel Bassdrum ↔ Bass-Synth“)
+   Stil komplett = Rhythmus (GR1/GR2/GEN3, unverändert) + Klang + Mischung – eine Klang-Ebene über der einen Stil-Bibliothek, kein zweiter Remix.
+   - Klang-Profil je Stil: SND1_MAP (Stil → Familie SND1_FAM, ggf. mit Abweichungen); Stile ohne Eintrag (z. B. neue Taktart-Stile) bekommen
+     ihre Familie über snd1Guess (Name, Taktart, Tempo). Ein Profil hat:
+     · Drums: Pad-Rezepte der Drum-Stimme (SND1_KICK/SNARE/CLAP/HAT/PERC/RIM/TOM: Kick Tonhöhe, Pitch-Hüllkurve, Länge, Klick, Drive;
+       Snare Körper, Rauschen, Peitsche = Filter-Hüllkurve des Rauschens, Verzerrung, Gate-Hall; Hats; Perc – bei Industrial/EBM metallische
+       Schläge statt der Kuhglocke). Pads mit Quelle North bekommen dieselbe Färbung über ihre m-Werte (Verzerrung, Abklingen, Klick, Hall);
+       Kit-Bus (Gate-Länge/-Rückweg, Raum), Sättigung und Hall-/Echo-Anteil der Drum-Spur.
+     · Synth-Spuren je Rolle (Bass, Fläche, Lead, Sequenz, Akkorde; Rolle wie MX2: mx2Roles, sonst Klang-Kategorie): Analog-Klänge Filter,
+       Resonanz, Drive, Hüllkurven (feste Werte oder Bereiche [von, bis] – nochmal anwenden ändert nichts mehr), FM6 Feedback; jede Engine
+       Sättigung, Chorus, Hall- und Echo-Anteil.
+     · Effekt-Bus: Hall-Raum (TKT), Nachhall, Vorverzögerung, Dämpfung; Echo-Teilung, Rückkopplung, Höhen, Schmutz.
+     · Mischung: Seitenkette Kick → Bass (MX2-Weg: fx.pump + fxBus.pumpSrc 'kick') AN wo typisch (House, Eurodance, Synthwave, Hi-NRG,
+       Techno …; Stärke je Stil, bei manchen auch die Fläche), AUS wo untypisch (Reggae, Country, Walzer, Jazz, Akustik …); EQ-Färbung und
+       Kompressor je Rolle (track.mix wie MIX-A); Lautheits-Ziel (Master-Dichte; mit Auto-Master dessen Ziel −9 / −14 LUFS).
+   - Remix-Blatt und Matrix-Remix-Blatt (Einhänge-Zeilen am Ende von gr2Paint / gen3MxPaint): Zeile „Stil anwenden: Nur Rhythmus │ + Klang │ + Klang & Mischung“ (Standard + Klang
+     & Mischung, beim ersten Mal „empfohlen“; Wahl je Gerät uiPrefs().snd1lv), daneben/darunter Vorher │ Nachher · Übernehmen · ↶ · Spuren
+     (jede Spur und die Effekte einzeln abwählbar). ▶ Hören, B und ein Stil-Tipp beim Abspielen bringen den Stil-Klang mit (Nachher), A das
+     Original (Vorher). Vorher │ Nachher schaltet nur den Klang (spielt nichts, startet der Song ab dem Bereich). Übernehmen – oder das Blatt
+     schließen, während Nachher klingt – = EIN ↶-Schritt (Gruppe: Klänge, Mischung, Effekt-Bus); danach schalten Vorher │ Nachher über ↶ / ↷
+     genau dieses Schritts. Der Klang gilt für die ganzen Spuren (auch bei Bereich Teil).
+   - Messbar (SYNQUENZER.snd1.measure, für Sonden/Tests): Render nur Drums / nur Bass (mit und ohne Seitenkette) / alles: Kick-Grundton,
+     Tiefe, Klick, Länge · Snare Rauheit (spektrale Flachheit am Render), Crest, Höhen, dazu Drive-Stärke (Sinus 200 Hz durch Pad- und
+     Spur-Drive) · Perc Höhen- und unharmonischer Anteil · Ducking dB am Bass · Spektrum tief/mitte/hoch, Crest, Pegel.
+   - Prüfung: Stil nach übernommenem Stil rechnet vom Klang vor dem ersten Stil (snd1Org); ↶ / Vorher │ Nachher finden den übernommenen
+     Schritt auch unter späteren Remix-Schritten (snd1Swap); Pump-Quelle nur auf KICK, wenn keine andere Spur im Takt pumpt.
+   Daten: keine neuen Projekt-Felder (nur vorhandene Klang-, Mix- und Effekt-Werte) – alte Projekte laden gleich. Neue Schlüssel: SND1,
+   SND1_*, snd1*, uiPrefs().snd1lv, SYNQUENZER.snd1. Einhänge-Zeilen: gr2Paint und gen3MxPaint (snd1RxPaint), ui1Entries (Eintrag 'stilklang'). ===== */
+const SND1 = {lv: null, ses: null, tag: 0, done: null, trk: false, off: new Set()};
+const SND1_LV = [['rh', 'Nur Rhythmus'], ['klang', '+ Klang'], ['mix', '+ Klang & Mischung']];
+const SND1_ROLE = {dr: 'Drums', bass: 'Bass', pad: 'Fläche', lead: 'Lead', arp: 'Sequenz', comp: 'Akkorde', perc: 'Perkussion'};
+// ---------- Pad-Rezepte der Drum-Stimme (DrumSynth-Werte; gesetzt werden nur diese Schlüssel, Modell und Choke bleiben) ----------
+const snd1K = o => Object.assign({tLvl: 1, wav: 'sine', o2r: 2, o2d: .5, fmI: 0, tAtk: 0, tCrv: 0, nTyp: 'highpass', nFrq: 4000, nDec: .01, nCol: 0, cTon: .5, mLvl: 0, sGate: 0}, o);
+const SND1_KICK = {
+  hart: snd1K({lvl: 1, frq: 47, pAmt: 38, pDec: .03, o2: .35, o2d: .4, tHld: .03, tDec: .32, tCrv: .2, nLvl: .35, nFrq: 3500, nDec: .014, cLvl: .95, cTyp: 0, cTon: .7, drv: .62, dyn: .3, sRoom: 0}),
+  klick: snd1K({frq: 54, pAmt: 30, pDec: .035, o2: .2, tHld: .02, tDec: .32, nLvl: .18, nFrq: 5000, cLvl: .75, cTyp: 0, cTon: .6, drv: .35, dyn: .35, sRoom: 0}),
+  rund: snd1K({lvl: 1, frq: 50, pAmt: 24, pDec: .05, o2: .15, tHld: .05, tDec: .6, nLvl: .08, cLvl: .45, cTyp: 3, drv: .22, dyn: .4, sRoom: 0}),
+  techno: snd1K({frq: 46, pAmt: 30, pDec: .04, o2: .2, tHld: .03, tDec: .5, nLvl: .12, cLvl: .55, cTyp: 0, cTon: .55, drv: .45, dyn: .35, sRoom: 0}),
+  boom: snd1K({frq: 43, pAmt: 14, pDec: .07, o2: 0, tHld: .08, tDec: 1.4, tCrv: .4, nLvl: 0, cLvl: .25, cTyp: 0, drv: .25, dyn: .3, sRoom: 0}),
+  dumpf: snd1K({frq: 56, pAmt: 16, pDec: .05, o2: .25, tHld: .02, tDec: .34, nLvl: .25, nTyp: 'lowpass', nFrq: 1200, nDec: .03, cLvl: .3, cTyp: 3, cTon: .4, drv: .4, dyn: .5, sRoom: .05}),
+  weich: snd1K({frq: 58, pAmt: 10, pDec: .06, o2: .1, tHld: .02, tDec: .42, nLvl: .05, cLvl: .12, cTyp: 3, cTon: .4, drv: 0, dyn: .6, sRoom: 0}),
+  pop: snd1K({frq: 52, pAmt: 28, pDec: .04, o2: .3, tHld: .03, tDec: .4, nLvl: .12, cLvl: .55, cTyp: 0, cTon: .55, drv: .25, dyn: .4, sRoom: 0}),
+  trocken: snd1K({frq: 50, pAmt: 22, pDec: .05, o2: .2, tHld: .02, tDec: .28, nLvl: .1, cLvl: .35, cTyp: 3, drv: .3, dyn: .4, sRoom: 0}),
+  disco: snd1K({frq: 56, pAmt: 16, pDec: .05, o2: .2, tHld: .02, tDec: .3, nLvl: .15, nTyp: 'lowpass', nFrq: 2500, nDec: .02, cLvl: .3, cTyp: 3, cTon: .45, drv: .1, dyn: .55, sRoom: .05}),
+  akustik: snd1K({frq: 62, pAmt: 8, pDec: .05, o2: .3, o2r: 1.5, tHld: .01, tDec: .26, nLvl: .3, nTyp: 'lowpass', nFrq: 2000, nDec: .02, cLvl: .25, cTyp: 3, cTon: .35, drv: 0, dyn: .7, sRoom: .12}),
+  dnb: snd1K({frq: 57, pAmt: 32, pDec: .028, o2: .25, tHld: .015, tDec: .24, nLvl: .2, nFrq: 5000, cLvl: .7, cTyp: 0, cTon: .65, drv: .4, dyn: .4, sRoom: 0}),
+};
+const snd1S = o => Object.assign({tLvl: 1, wav: 'triangle', o2r: 1.59, o2d: 1, fmI: 0, tAtk: 0, tHld: 0, tCrv: 0, tSpk: .3, nTyp: 'bandpass', nQ: .5, nEnv: 0, nEnvDec: .05, nAtk: 0, nHld: 0, nBur: 1, nCrv: .3, cLvl: 0, mLvl: 0}, o);
+const SND1_SNARE = {
+  peitsche: snd1S({frq: 215, pAmt: 9, pDec: .02, o2: .4, tDec: .12, tSpk: .4, nLvl: 1.35, nCol: 0, nFrq: 4200, nQ: .55, nHp: 900, nEnv: 1, nEnvDec: .03, nDec: .19, nCrv: .25, drv: .75, sGate: .55, sRoom: .05, dyn: .3}),
+  gated: snd1S({frq: 205, pAmt: 7, pDec: .03, o2: .45, tDec: .15, nLvl: 1.1, nCol: 1, nFrq: 4500, nHp: 1000, nDec: .2, drv: .25, sGate: .6, sRoom: .12, dyn: .4}),
+  gross: snd1S({frq: 190, pAmt: 8, pDec: .035, o2: .45, tDec: .2, nLvl: 1.1, nCol: 1, nFrq: 4000, nHp: 900, nDec: .26, drv: .25, sGate: .85, sRoom: .3, dyn: .4}),
+  hall: snd1S({frq: 200, pAmt: 6, pDec: .03, o2: .4, tDec: .17, nLvl: 1, nCol: 1, nFrq: 4200, nHp: 1000, nDec: .24, drv: .2, sGate: .3, sRoom: .6, dyn: .4}),
+  knackig: snd1S({frq: 245, pAmt: 10, pDec: .02, o2: .35, tDec: .1, tSpk: .4, nLvl: 1.2, nCol: 0, nFrq: 5500, nQ: .6, nHp: 1500, nDec: .15, drv: .3, sGate: 0, sRoom: .15, dyn: .35}),
+  staubig: snd1S({frq: 180, pAmt: 6, pDec: .03, o2: .5, tDec: .22, nLvl: .95, nCol: 1, nFrq: 3200, nHp: 700, nDec: .24, drv: .5, sGate: 0, sRoom: .3, dyn: .5}),
+  house: snd1S({frq: 200, pAmt: 6, pDec: .03, o2: .4, tDec: .12, nLvl: .9, nCol: 1, nFrq: 4800, nHp: 1200, nDec: .17, drv: .12, sGate: .1, sRoom: .25, dyn: .45}),
+  reggae: snd1S({frq: 280, pAmt: 5, pDec: .02, o2: .3, tDec: .09, nLvl: .65, nCol: 1, nFrq: 5000, nHp: 1500, nDec: .12, drv: 0, sGate: 0, sRoom: .45, dyn: .55}),
+  akustik: snd1S({frq: 190, pAmt: 4, pDec: .03, o2: .5, tDec: .2, nLvl: .85, nCol: 1, nFrq: 3800, nHp: 600, nDec: .22, nCrv: .4, drv: 0, sGate: 0, sRoom: .4, dyn: .65}),
+  besen: snd1S({frq: 200, pAmt: 3, pDec: .03, o2: .3, tDec: .1, tSpk: 0, nLvl: .7, nCol: 1, nFrq: 3500, nHp: 500, nAtk: .012, nDec: .16, nCrv: .5, drv: 0, sGate: 0, sRoom: .35, dyn: .7}),
+  disco: snd1S({frq: 200, pAmt: 5, pDec: .03, o2: .45, tDec: .17, nLvl: .85, nCol: 1, nFrq: 4200, nHp: 900, nDec: .18, drv: .05, sGate: .1, sRoom: .3, dyn: .5}),
+};
+const snd1C = o => Object.assign({tLvl: 0, mLvl: 0, cLvl: 0, nTyp: 'bandpass', nCol: 0, nEnv: 0}, o);
+const SND1_CLAP = {
+  hart: snd1C({nLvl: 1.3, nFrq: 1700, nQ: 1.2, nHp: 800, nDec: .16, nBur: 4, nGap: .008, drv: .6, sRoom: .1, sGate: .45}),
+  raum: snd1C({nLvl: 1.2, nFrq: 1400, nQ: 1, nHp: 600, nDec: .3, nBur: 4, nGap: .011, drv: .1, sRoom: .4, sGate: .1}),
+  hell: snd1C({nLvl: 1.25, nFrq: 1900, nQ: 1.1, nHp: 900, nDec: .24, nBur: 4, nGap: .009, drv: .2, sRoom: .3, sGate: .3}),
+  trap: snd1C({nLvl: 1.2, nFrq: 1500, nQ: 1, nHp: 700, nDec: .22, nBur: 3, nGap: .012, drv: .2, sRoom: .3, sGate: 0}),
+  weich: snd1C({nLvl: 1, nFrq: 1200, nQ: .9, nHp: 500, nDec: .26, nBur: 4, nGap: .012, drv: 0, sRoom: .35, sGate: 0}),
+};
+const snd1H = (c, o) => ({c: Object.assign({tLvl: 0, cLvl: 0, nTyp: 'highpass', mHi: 1, mLo: 0, mQ: 1.5}, c), o: Object.assign({tLvl: 0, cLvl: 0, nTyp: 'highpass', mHi: 1, mLo: 0, mQ: 1.5}, c, o)});
+const SND1_HAT = {
+  metall: snd1H({mLvl: .8, mTun: 1.15, mQ: 1.6, mHp: 6500, mDec: .03, nLvl: .55, nFrq: 6500, nDec: .025, drv: .35}, {mDec: .22, nDec: .2}),
+  hell: snd1H({mLvl: .6, mTun: 1.4, mHp: 7500, mDec: .04, nLvl: .45, nFrq: 7000, nDec: .03, drv: 0}, {mDec: .32, nDec: .3}),
+  eng: snd1H({mLvl: .55, mTun: 1.6, mHp: 9000, mDec: .022, nLvl: .5, nFrq: 9000, nDec: .018, drv: 0}, {mDec: .18, nDec: .16}),
+  staub: snd1H({mLvl: .35, mTun: 1.1, mHp: 5500, mDec: .04, nLvl: .55, nFrq: 5500, nDec: .035, drv: .25}, {mDec: .25, nDec: .22}),
+  akustik: snd1H({mLvl: .45, mTun: 1.2, mHp: 6000, mDec: .05, nLvl: .6, nFrq: 6500, nDec: .045, drv: 0}, {mDec: .4, nDec: .35}),
+};
+const SND1_PERC = {
+  // Metall-Schlag (Prüfung Befund 3): leise Ton-Schicht mit langer, unharmonischer FM (2,76), laute Metall- und Rausch-Schicht über 2,5 kHz
+  metall: {tLvl: .2, wav: 'sine', frq: 560, o2: 0, o2r: 2.76, fmI: 3.5, fmDec: .25, tDec: .2, tCrv: .2, mLvl: 1.3, mTun: .9, mHi: 1.2, mLo: .9, mQ: 1.6, mHp: 2500, mDec: .2,
+    nLvl: .5, nTyp: 'bandpass', nFrq: 4500, nQ: 1.2, nDec: .06, cLvl: .3, cTyp: 0, drv: .6, sRoom: .15},
+  agogo: {tLvl: .7, wav: 'sine', frq: 820, o2: .3, o2r: 1.5, fmI: 1.2, fmDec: .04, tDec: .12, tCrv: 0, mLvl: 0, nLvl: 0, cLvl: 0, drv: 0, sRoom: .25},
+};
+const SND1_RIM = {hart: {frq: 400, tDec: .025, drv: .7, cLvl: .6, sRoom: .05}, reggae: {frq: 480, tDec: .03, o2: .8, o2r: 4.1, cLvl: .5, drv: .15, sRoom: .4}, klick: {frq: 520, tDec: .02, cLvl: .6, drv: .3, sRoom: .2}};
+const SND1_TOM = {hart: {drv: .5, sGate: .5, sRoom: 0}, gross: {drv: .15, sGate: .7, sRoom: .2}, akustik: {drv: 0, sGate: 0, sRoom: .35}};
+// ---------- Familien: Drums, Synth je Rolle, Effekt-Bus (Klang) · Seitenkette, EQ, Kompressor, Lautheit (Mischung) ----------
+const SND1_LAUT = {
+  laut: {z: -9, m: {thr: -18, ratio: 3, attack: .01, release: .12, makeup: 6, drive: .12}, t: 'dicht und laut'},
+  mittel: {z: -14, m: {thr: -16, ratio: 2.2, attack: .015, release: .2, makeup: 2.5, drive: .04}, t: 'mittlere Dichte'},
+  offen: {z: -14, m: {thr: -14, ratio: 1.6, attack: .025, release: .25, makeup: .5, drive: 0}, t: 'offen, mit Dynamik'},
+};
+const SND1_FAM = {
+  ind: {d: {kick: 'hart', snare: 'peitsche', clap: 'hart', hat: 'metall', perc: 'metall', rim: 'hart', tom: 'hart'}, kit: {gate: .26, gateLvl: 5, room: .8}, dfx: {drive: .3, rev: .06},
+    syn: {bass: {cut: [220, 650], res: [.4, .55], drive: [.7, 1], fenv: .6, fD: .14, fS: .1, aD: .22, aS: .55, aR: .05, glide: 0, fx: {drive: .35, ch: 'off'}},
+      pad: {cut: [300, 1400], res: .3, drive: [.45, 1], fx: {drive: .15, ch: 'off', rev: .3}}, lead: {res: [.35, .6], drive: [.6, 1], fx: {drive: .25, dly: .2}},
+      arp: {cut: [600, 2500], res: [.4, .6], drive: [.5, 1], aR: .06, fx: {drive: .2, dly: .25}}, comp: {drive: [.5, 1], aR: .08, fx: {drive: .2}}}, fm: {fb: 2, bite: [6, 20], bright: [3, 20]},
+    bus: {raum: 'kammer', h: {decay: 1.3, predelay: '1/64', damp: 5000}, e: {divL: '1/16', divR: '1/8', fb: .32, mode: 'pp', drive: .45, highcut: 5000}},
+    sc: {b: .25, rel: '1/16'}, eq: {dr: {ls: 1.5, hs: 2, pf: 3500, pg: 1.5, pq: 1}, bass: {hp: 35, ls: 1, pf: 900, pg: 2.5, pq: 1.2, hs: 1}, pad: {hp: 220, hs: -1.5}, lead: {pf: 2500, pg: 2, pq: 1}, arp: {hp: 150}},
+    cp: {dr: {thr: -12, ra: 5, at: 2, rl: 70, mk: 4}, bass: {thr: -14, ra: 3, at: 5, rl: 80, mk: 2.5}}, laut: 'laut',
+    t: 'harte, verzerrte Kick mit Klick · peitschende Snare mit Gate · Metall-Schläge statt Kuhglocke · knurrender, gesättigter Bass · enge Kammer, schmutziges Echo'},
+  darkwave: {d: {kick: 'trocken', snare: 'hall', clap: 'raum', hat: 'hell', rim: 'klick', tom: 'gross'}, kit: {gate: .4, gateLvl: 3, room: 2.2}, dfx: {drive: .1, rev: .15},
+    syn: {bass: {cut: [350, 1200], res: .3, drive: [.3, .6], fenv: .4, fD: .3, aR: .1, fx: {ch: 'I:.5', drive: .08}}, pad: {cut: [400, 2000], aA: [.35, 3], aR: [2.5, 8], fx: {ch: 'ENS:.6', rev: .55}},
+      lead: {fx: {ch: 'I:.3', rev: .4, dly: .25}}, arp: {fx: {rev: .3, dly: .3}}, comp: {fx: {ch: 'I:.4', rev: .35}}},
+    bus: {raum: 'kirche', h: {predelay: '1/32', damp: 4500}, e: {divL: '1/8.', divR: '1/4', fb: .4, mode: 'pp', highcut: 3500, drive: .2}},
+    sc: null, eq: {dr: {hs: -.5}, bass: {hp: 35, ls: 1, pf: 1200, pg: 1.5, pq: 1}, pad: {hp: 180, hs: -2}}, cp: {dr: {thr: -10, ra: 2.5, at: 8, rl: 120, mk: 1.5}}, laut: 'mittel',
+    t: 'trockene Kick · Snare mit viel dunklem Hall · Chorus auf dem Bass · weite, dunkle Flächen · Kirchen-Hall'},
+  synthpop: {d: {kick: 'pop', snare: 'gated', clap: 'hell', hat: 'hell', rim: 'klick', tom: 'gross'}, kit: {gate: .34, gateLvl: 4.5, room: 1.2}, dfx: {drive: .08, rev: .1},
+    syn: {bass: {cut: [500, 1800], res: .3, drive: [.25, .5], fenv: .45, fD: .2, aR: .08, fx: {ch: 'off'}}, pad: {fx: {ch: 'II:.6', rev: .45}}, lead: {fx: {rev: .3, dly: .25}},
+      arp: {cut: [900, 4000], fx: {dly: .3}}, comp: {fx: {ch: 'I:.4'}}},
+    bus: {raum: 'kammer', h: {decay: 2, predelay: '1/64'}, e: {divL: '1/8.', divR: '1/8', fb: .35, mode: 'pp', highcut: 5000, drive: .1}},
+    sc: null, eq: {dr: {hs: 1.5}, bass: {hp: 30, pf: 1000, pg: 1, pq: 1}, lead: {pf: 3000, pg: 2, pq: 1}, pad: {hp: 150}}, cp: {dr: {thr: -10, ra: 3, at: 6, rl: 100, mk: 2}}, laut: 'mittel',
+    t: 'klare Drum-Machine · Snare mit Gate-Hall · runder Synth-Bass ohne Pumpen · Chorus-Flächen · Echo im punktierten Achtel'},
+  synthwave: {d: {kick: ['pop', {tDec: .45}], snare: 'gross', clap: 'hell', hat: 'hell', tom: 'gross'}, kit: {gate: .5, gateLvl: 6, room: 1.4}, dfx: {drive: .1, rev: .12},
+    syn: {bass: {cut: [400, 1500], res: .35, drive: [.3, .6], fenv: .5, fD: .18, aR: .08}, pad: {aR: [2, 8], fx: {ch: 'ENS:.7', rev: .5}}, lead: {fx: {ch: 'I:.4', rev: .35, dly: .3}},
+      arp: {fx: {dly: .35}}, comp: {fx: {ch: 'II:.5'}}},
+    bus: {raum: 'saal', h: {decay: 3.2, predelay: '1/32'}, e: {divL: '1/8.', divR: '1/4', fb: .42, mode: 'pp', highcut: 4000, drive: .15}},
+    sc: {b: .4, rel: '1/8', p: .3}, eq: {dr: {ls: 1, hs: 1}, bass: {hp: 30, ls: 1}, pad: {hp: 200}}, cp: {dr: {thr: -10, ra: 3, at: 10, rl: 120, mk: 2}}, laut: 'mittel',
+    t: 'große Gate-Hall-Snare · pulsierender Bass, der vor der Kick weicht · breite Chorus-Flächen · Saal-Hall'},
+  euro: {d: {kick: 'klick', snare: 'gated', clap: 'hell', hat: 'hell', tom: 'gross'}, kit: {gate: .32, gateLvl: 4, room: 1.4}, dfx: {drive: .1, rev: .12},
+    syn: {bass: {cut: [600, 2200], res: .35, drive: [.3, .6], fenv: .5, fD: .15, aD: .2, aS: .45, aR: .05}, pad: {fx: {ch: 'ENS:.6', rev: .45}}, lead: {fx: {ch: 'I:.3', rev: .3, dly: .25}},
+      arp: {cut: [900, 4000], aR: .06, fx: {dly: .25}}, comp: {fx: {ch: 'II:.4'}}},
+    bus: {raum: 'saal', h: {decay: 2.4}, e: {divL: '1/8', divR: '1/8.', fb: .35, mode: 'pp', highcut: 5000, drive: .1}},
+    sc: {b: .25, rel: '1/16'}, eq: {dr: {hs: 1.5}, bass: {hp: 35, pf: 1200, pg: 2, pq: 1}, lead: {pf: 3000, pg: 2, pq: 1}, pad: {hp: 180}}, cp: {dr: {thr: -10, ra: 3, at: 6, rl: 100, mk: 2}}, laut: 'mittel',
+    t: 'klickende Kick, helle Claps · kurzer, knackiger Oktav-Bass · glänzende Chorus-Streicher · Saal-Hall, Achtel-Echo'},
+  hinrg: {d: {kick: ['klick', {drv: .45, cLvl: .85}], snare: 'gated', clap: 'hell', hat: 'hell', tom: 'gross'}, kit: {gate: .3, gateLvl: 4.5, room: 1.2}, dfx: {drive: .15, rev: .1},
+    syn: {bass: {cut: [700, 2500], res: .4, drive: [.4, .7], fenv: .55, fD: .12, aD: .15, aS: .4, aR: .04}, pad: {fx: {ch: 'ENS:.6', rev: .4}}, lead: {fx: {ch: 'I:.3', dly: .2}},
+      arp: {cut: [900, 4000], aR: .05, fx: {dly: .2}}, comp: {aR: .06, fx: {ch: 'II:.4'}}},
+    bus: {raum: 'saal', h: {decay: 2}, e: {divL: '1/16', divR: '1/8', fb: .3, mode: 'pp', highcut: 5500}},
+    sc: {b: .35, rel: '1/16'}, eq: {dr: {ls: 1, hs: 2}, bass: {hp: 35, pf: 1500, pg: 2, pq: 1}, pad: {hp: 200}}, cp: {dr: {thr: -11, ra: 4, at: 4, rl: 80, mk: 3}}, laut: 'laut',
+    t: 'treibende, klickende Kick · Sechzehntel-Bass kurz und hell · Gate-Snare · weicht der Kick (Seitenkette)'},
+  eurodance: {d: {kick: ['klick', {tDec: .38, drv: .45}], snare: 'gated', clap: 'hell', hat: 'hell', tom: 'gross'}, kit: {gate: .3, gateLvl: 4, room: 1.3}, dfx: {drive: .15, rev: .1},
+    syn: {bass: {cut: [500, 2000], res: .35, drive: [.35, .7], fenv: .45, fD: .15, aR: .05}, pad: {fx: {ch: 'ENS:.6', rev: .45}}, lead: {uniDet: [.35, .6], fx: {ch: 'II:.4', rev: .35, dly: .25}},
+      arp: {fx: {dly: .3}}, comp: {fx: {ch: 'II:.4'}}},
+    bus: {raum: 'saal', h: {decay: 2.6}, e: {divL: '1/8.', divR: '1/4', fb: .4, mode: 'pp', highcut: 5000}},
+    sc: {b: .5, rel: '1/8', p: .35}, eq: {dr: {ls: 1.5, hs: 1.5}, bass: {hp: 40, pf: 900, pg: 1.5, pq: 1}, pad: {hp: 220}, lead: {pf: 3000, pg: 2, pq: 1}}, cp: {dr: {thr: -11, ra: 4, at: 5, rl: 90, mk: 3}}, laut: 'laut',
+    t: 'druckvolle Kick mit Klick · Bass und Flächen pumpen mit der Kick · breite Leads mit Chorus · großer Saal'},
+  disco: {d: {kick: 'disco', snare: 'disco', clap: 'weich', hat: 'hell', tom: 'akustik'}, kit: {gate: .3, gateLvl: 1.5, room: 1.8}, dfx: {drive: 0, rev: .15},
+    syn: {bass: {cut: [500, 2000], res: .2, drive: [.15, .4], fenv: .35, aR: .08}, pad: {fx: {ch: 'ENS:.5', rev: .45}}, lead: {fx: {rev: .3}}, comp: {fx: {ch: 'I:.3'}}},
+    bus: {raum: 'kammer', h: {decay: 1.8}, e: {divL: '1/8.', divR: '1/4', fb: .3, mode: 'pp'}},
+    sc: null, eq: {dr: {hs: 1}, bass: {hp: 30, ls: 1.5, hs: -1}}, cp: {dr: {thr: -8, ra: 2, at: 10, rl: 150, mk: 1}}, laut: 'mittel',
+    t: 'natürliche, warme Drums · runder Bass ohne Pumpen · Streicher mit Chorus · Hallkammer'},
+  house: {d: {kick: 'rund', snare: 'house', clap: 'raum', hat: 'hell', rim: 'klick', tom: 'akustik'}, kit: {gate: .3, gateLvl: 2, room: 1.6}, dfx: {drive: .1, rev: .1},
+    syn: {bass: {cut: [300, 1100], res: .25, drive: [.2, .5], fenv: .35, fD: .3, aR: .1}, pad: {fx: {rev: .35}}, comp: {aR: .2, fx: {rev: .3}}, lead: {fx: {dly: .25}}, arp: {fx: {dly: .3}}},
+    bus: {raum: 'studio', h: {decay: 1.6}, e: {divL: '1/8.', divR: '1/4', fb: .35, mode: 'pp', highcut: 4500}},
+    sc: {b: .5, rel: '1/8', p: .4}, eq: {dr: {ls: 2, hs: 1}, bass: {hp: 35, ls: 2, hs: -2}, pad: {hp: 250}, comp: {hp: 200}}, cp: {dr: {thr: -10, ra: 3, at: 10, rl: 120, mk: 2.5}}, laut: 'laut',
+    t: 'runde Kick mit langem Bauch · Clap mit Raum · warmer Bass und Flächen, die mit der Kick pumpen · trockenes Studio'},
+  techno: {d: {kick: 'techno', snare: 'house', clap: 'raum', hat: 'eng', rim: 'klick', perc: 'metall', tom: 'hart'}, kit: {gate: .3, gateLvl: 3, room: 1.8}, dfx: {drive: .2, rev: .1, dly: .05},
+    syn: {bass: {cut: [250, 900], res: [.45, .6], drive: [.4, .8], fenv: .55, fD: .12, aS: .4, aR: .05}, pad: {cut: [300, 1800], fx: {rev: .4}}, arp: {res: [.45, .65], fx: {dly: .35}}, lead: {fx: {dly: .3}}},
+    bus: {raum: 'kammer', h: {decay: 2.2}, e: {divL: '1/8.', divR: '1/8.', fb: .45, mode: 'pp', highcut: 3500, drive: .2}},
+    sc: {b: .45, rel: '1/8', p: .35}, eq: {dr: {ls: 1.5}, bass: {hp: 40, pf: 600, pg: 1.5, pq: 1}, pad: {hp: 250, hs: -1.5}}, cp: {dr: {thr: -11, ra: 4, at: 8, rl: 100, mk: 3}}, laut: 'laut',
+    t: 'tiefe, lange Kick · Klick-Rimshots · dunkler, bissiger Bass mit Seitenkette · Echo im punktierten Achtel'},
+  electro: {d: {kick: ['boom', {tDec: .9}], snare: 'knackig', clap: 'hell', hat: 'eng', tom: 'gross'}, kit: {gate: .3, gateLvl: 3, room: 1}, dfx: {drive: .15, rev: .08},
+    syn: {bass: {cut: [400, 1500], res: .3, drive: [.35, .7], fenv: .4, glide: .03}, lead: {fx: {dly: .2}}, comp: {fx: {ch: 'I:.3'}}, arp: {fx: {dly: .25}}},
+    bus: {raum: 'studio', h: {decay: 1.4}, e: {divL: '1/16', divR: '1/8', fb: .3, mode: 'pp'}},
+    sc: null, eq: {dr: {ls: 2, hs: 1}, bass: {hp: 30}}, cp: {dr: {thr: -10, ra: 3, at: 5, rl: 90, mk: 2.5}}, laut: 'laut',
+    t: 'tiefe Drum-Machine-Kick mit langem Ausklang · knackige Snare · Kuhglocke bleibt (gehört dazu) · gleitender Synth-Bass'},
+  trap: {d: {kick: 'boom', snare: 'knackig', clap: 'trap', hat: 'eng', tom: 'gross'}, kit: {gate: .3, gateLvl: 2, room: 1.2}, dfx: {drive: .1, rev: .1},
+    syn: {bass: {cut: [150, 600], res: .1, drive: [.4, .7], fenv: .1, aD: 1.5, aS: .8, aR: .3, glide: .08}, pad: {fx: {rev: .5}}, lead: {fx: {rev: .35, dly: .3}}, arp: {fx: {dly: .3}}},
+    bus: {raum: 'studio', h: {decay: 1.8}, e: {divL: '1/8', divR: '1/4', fb: .3, mode: 'pp'}},
+    sc: null, eq: {dr: {ls: 1, hs: 2}, bass: {hp: 25, ls: 2, hs: -2}, pad: {hp: 300}}, cp: {dr: {thr: -11, ra: 4, at: 3, rl: 80, mk: 3}}, laut: 'laut',
+    t: 'tiefe Kick mit langem Ausklang · knackige Snare und Clap · enge Hi-Hats · tiefer, gleitender Sub-Bass ohne Seitenkette'},
+  boombap: {d: {kick: 'dumpf', snare: 'staubig', clap: 'weich', hat: 'staub', tom: 'akustik'}, kit: {gate: .3, gateLvl: 1, room: 1.6}, dfx: {drive: .3, rev: .12},
+    syn: {bass: {cut: [250, 900], res: .15, drive: [.3, .6], fenv: .2, aR: .12, fx: {drive: .15}}, pad: {cut: [300, 1600], fx: {rev: .4}}, lead: {fx: {rev: .3}}, comp: {cut: [400, 2500]}},
+    bus: {raum: 'kammer', h: {decay: 1.3}, e: {divL: '1/8', divR: '1/4', fb: .25, mode: 'pp', highcut: 3000, drive: .3}},
+    sc: null, eq: {dr: {ls: 2, hs: -3}, bass: {hp: 30, ls: 1.5, hs: -3}, pad: {hs: -2}, comp: {hs: -2}}, cp: {dr: {thr: -11, ra: 4, at: 15, rl: 120, mk: 3}}, laut: 'mittel',
+    t: 'dumpfe, satte Kick · staubige, angezerrte Snare mit Raum · Höhen gedämpft wie von Platte · warmer Bass'},
+  dnb: {d: {kick: 'dnb', snare: ['knackig', {frq: 260}], clap: 'hell', hat: 'eng', tom: 'gross'}, kit: {gate: .3, gateLvl: 3, room: 1.2}, dfx: {drive: .2, rev: .08},
+    syn: {bass: {cut: [300, 1200], res: .3, drive: [.5, .8], fenv: .3, uniDet: [.4, .6]}, pad: {fx: {rev: .5}}, lead: {fx: {dly: .3}}},
+    bus: {raum: 'kammer', h: {decay: 2}, e: {divL: '1/8.', divR: '1/4', fb: .35, mode: 'pp'}},
+    sc: {b: .3, rel: '1/16'}, eq: {dr: {hs: 2, pf: 200, pg: 1.5, pq: 1}, bass: {hp: 30, pf: 500, pg: 1.5, pq: 1}}, cp: {dr: {thr: -12, ra: 5, at: 2, rl: 60, mk: 4}}, laut: 'laut',
+    t: 'kurze, harte Kick · hohe, knallende Snare · breiter, angezerrter Bass · enge Kompression'},
+  bigbeat: {d: {kick: ['hart', {drv: .6, tDec: .35}], snare: ['staubig', {drv: .7}], clap: 'hart', hat: 'staub', tom: 'hart'}, kit: {gate: .3, gateLvl: 2, room: 1.4}, dfx: {drive: .45, rev: .1},
+    syn: {bass: {drive: [.6, 1], res: [.3, .5], fx: {drive: .3}}, lead: {drive: [.5, 1], fx: {drive: .25, dly: .2}}, comp: {fx: {drive: .2}}},
+    bus: {raum: 'kammer', h: {decay: 1.6}, e: {divL: '1/8', divR: '1/8.', fb: .35, mode: 'pp', drive: .5}},
+    sc: null, eq: {dr: {ls: 2, hs: 1}, bass: {hp: 35, pf: 800, pg: 2, pq: 1}}, cp: {dr: {thr: -13, ra: 6, at: 3, rl: 80, mk: 5}}, laut: 'laut',
+    t: 'verzerrte, laute Breaks · zerrender Bass · schmutziges Echo · Drums stark komprimiert'},
+  reggae: {d: {kick: 'weich', snare: 'reggae', clap: 'weich', hat: 'akustik', rim: 'reggae', tom: 'akustik'}, kit: {gate: .3, gateLvl: 1, room: 2}, dfx: {drive: 0, rev: .12, dly: .08},
+    syn: {bass: {cut: [120, 450], res: .1, drive: [0, .15], fenv: .15, fD: .3, aR: .12}, comp: {aD: .12, aS: .2, aR: .06, fx: {rev: .3, dly: .3}}, pad: {fx: {rev: .3}}, lead: {fx: {rev: .35, dly: .35}}, arp: {fx: {dly: .35}}},
+    bus: {raum: 'kammer', h: {decay: 1.8, predelay: '1/32'}, e: {divL: '1/4.', divR: '1/4', fb: .55, mode: 'pp', highcut: 2800, lowcut: 300, drive: .3, wow: .35}},
+    sc: null, eq: {dr: {hs: -1}, bass: {hp: 30, ls: 3, pf: 800, pg: -2, pq: 1, hs: -4}, comp: {hp: 300, pf: 2500, pg: 2, pq: 1}}, cp: {}, laut: 'offen',
+    t: 'runde, weiche Kick · trockener Rimshot mit Feder-Hall · tiefer, runder Bass weit vorn · Dub-Echo im punktierten Viertel'},
+  dancehall: {d: {kick: ['boom', {tDec: .6}], snare: 'knackig', clap: 'trap', hat: 'eng', rim: 'reggae', tom: 'gross'}, kit: {gate: .3, gateLvl: 2, room: 1.2}, dfx: {drive: .1, rev: .08},
+    syn: {bass: {cut: [200, 800], res: .15, drive: [.2, .5], aR: .1}, lead: {fx: {dly: .25}}, comp: {aR: .08, fx: {dly: .25}}},
+    bus: {raum: 'studio', h: {decay: 1.4}, e: {divL: '1/8', divR: '1/4.', fb: .35, mode: 'pp'}},
+    sc: null, eq: {dr: {ls: 1.5, hs: 1}, bass: {hp: 30, ls: 2}}, cp: {dr: {thr: -10, ra: 3, at: 5, rl: 90, mk: 2.5}}, laut: 'laut',
+    t: 'tiefe Drum-Machine-Kick · knackige Snare, Rimshot · runder Bass · kurze, trockene Akkorde mit Echo'},
+  rock: {d: {kick: ['akustik', {pAmt: 14, cLvl: .4, drv: .2}], snare: ['gross', {sGate: .5}], clap: 'weich', hat: 'akustik', tom: 'gross'}, kit: {gate: .4, gateLvl: 4, room: 2}, dfx: {drive: .15, rev: .15},
+    syn: {bass: {cut: [400, 1800], drive: [.4, .7], fx: {drive: .2}}, lead: {drive: [.5, 1], fx: {drive: .3, dly: .2}}, comp: {drive: [.5, 1], fx: {drive: .3}}},
+    bus: {raum: 'saal', h: {decay: 1.8}, e: {divL: '1/8', divR: '1/4', fb: .25, mode: 'pp'}},
+    sc: null, eq: {dr: {ls: 1, hs: 1.5}, bass: {hp: 40, pf: 800, pg: 2, pq: 1}}, cp: {dr: {thr: -11, ra: 4, at: 8, rl: 100, mk: 3}}, laut: 'mittel',
+    t: 'Schlagzeug mit Punch und großem Raum · angezerrter Bass und Akkorde · Saal-Hall'},
+  akustik: {d: {kick: 'akustik', snare: 'akustik', clap: 'weich', hat: 'akustik', rim: 'reggae', tom: 'akustik'}, kit: {gate: .3, gateLvl: 1, room: 2.2}, dfx: {drive: 0, rev: .18},
+    syn: {bass: {cut: [200, 800], res: .1, drive: [0, .1], fenv: .2, aR: .15}, pad: {fx: {rev: .4}}, comp: {fx: {rev: .3}}, lead: {fx: {rev: .3}}},
+    bus: {raum: 'saal', h: {decay: 2}, e: {divL: '1/8', divR: '1/4', fb: .25, mode: 'pp'}},
+    sc: null, eq: {dr: {hs: .5}, bass: {hp: 30, ls: 1, hs: -2}}, cp: {dr: {thr: -8, ra: 2, at: 15, rl: 150, mk: 1}}, laut: 'offen',
+    t: 'natürliches Schlagzeug mit Raum · weicher, runder Bass · keine Seitenkette · Saal-Hall'},
+  latin: {d: {kick: 'akustik', snare: 'akustik', clap: 'weich', hat: 'akustik', perc: 'agogo', rim: 'reggae', tom: 'akustik'}, kit: {gate: .3, gateLvl: 1, room: 2}, dfx: {drive: 0, rev: .16},
+    syn: {bass: {cut: [200, 900], res: .1, drive: [0, .1], fenv: .2, aR: .12}, pad: {fx: {rev: .35}}, comp: {aR: .12, fx: {rev: .3}}, lead: {fx: {rev: .3}}},
+    bus: {raum: 'saal', h: {decay: 1.8}, e: {divL: '1/8', divR: '1/4', fb: .25, mode: 'pp'}},
+    sc: null, eq: {dr: {hs: 1}, bass: {hp: 30, ls: 1, hs: -2}}, cp: {dr: {thr: -8, ra: 2, at: 15, rl: 150, mk: 1}}, laut: 'offen',
+    t: 'helles, natürliches Schlagzeug · Holz- und Glocken-Perkussion · runder Bass · keine Seitenkette'},
+  country: {d: {kick: 'akustik', snare: ['besen', {nLvl: .8}], clap: 'weich', hat: 'akustik', rim: 'reggae', tom: 'akustik'}, kit: {gate: .3, gateLvl: 1, room: 1.6}, dfx: {drive: 0, rev: .12},
+    syn: {bass: {cut: [200, 800], res: .1, drive: [0, .1], fenv: .2, aR: .1}, comp: {fx: {rev: .25}}, lead: {fx: {rev: .25, dly: .15}}},
+    bus: {raum: 'kammer', h: {decay: 1.4}, e: {divL: '1/8', divR: '1/8', fb: .15, mode: 'st'}},
+    sc: null, eq: {dr: {hs: .5}, bass: {hp: 35, ls: 1, hs: -2}}, cp: {dr: {thr: -8, ra: 2, at: 15, rl: 150, mk: 1}}, laut: 'offen',
+    t: 'leises, natürliches Schlagzeug (Besen-Snare) · runder Bass · kurzes Slapback-Echo · keine Seitenkette'},
+  walzer: {d: {kick: 'akustik', snare: 'besen', clap: 'weich', hat: 'akustik', tom: 'akustik'}, kit: {gate: .3, gateLvl: 1, room: 2.4}, dfx: {drive: 0, rev: .2},
+    syn: {bass: {cut: [200, 800], res: .1, drive: [0, .08], fenv: .15, aR: .15}, pad: {fx: {rev: .45}}, comp: {fx: {rev: .35}}, lead: {fx: {rev: .35}}},
+    bus: {raum: 'saal', h: {decay: 2.4}, e: {divL: '1/4', divR: '1/4.', fb: .2, mode: 'pp'}},
+    sc: null, eq: {dr: {hs: 0}, bass: {hp: 30, ls: 1, hs: -2}}, cp: {dr: {thr: -8, ra: 1.8, at: 20, rl: 200, mk: .5}}, laut: 'offen',
+    t: 'sanftes, natürliches Schlagzeug · Bass auf der Eins rund und weich · großer, warmer Saal · keine Seitenkette'},
+  jazz: {d: {kick: ['akustik', {tDec: .22, cLvl: .15}], snare: 'besen', clap: 'weich', hat: 'akustik', tom: 'akustik'}, kit: {gate: .3, gateLvl: 1, room: 2}, dfx: {drive: 0, rev: .16},
+    syn: {bass: {cut: [200, 900], res: .05, drive: [0, .08], fenv: .15, aR: .2}, comp: {fx: {rev: .3}}, lead: {fx: {rev: .3}}, pad: {fx: {rev: .35}}},
+    bus: {raum: 'kammer', h: {decay: 1.6}, e: {divL: '1/4', divR: '1/4.', fb: .15, mode: 'pp'}},
+    sc: null, eq: {dr: {hs: 0}, bass: {hp: 30, ls: 1.5, hs: -3}}, cp: {dr: {thr: -8, ra: 1.5, at: 20, rl: 200, mk: .5}}, laut: 'offen',
+    t: 'Besen-Snare, leise Kick · warmer, holziger Bass · Hallkammer · keine Seitenkette'},
+};
+// Stil → Familie (oder [Familie, Abweichungen]); fehlt ein Stil hier, rät snd1Guess
+const SND1_MAP = {
+  ebm: 'ind', darkwave: 'darkwave', synthpop: 'synthpop', motown80: ['synthpop', {sc: null}], synthwave: 'synthwave', seqtrack: ['synthwave', {sc: null}],
+  euro: 'euro', italo: 'euro', hinrg: 'hinrg', italodance: 'eurodance', eurodance: 'eurodance', disco: 'disco',
+  house: 'house', funk: 'house', garage: ['house', {sc: {b: .3, rel: '1/16'}}], ukfunky: ['house', {sc: {b: .35, rel: '1/8'}}], jersey: ['trap', {sc: {b: .3, rel: '1/16'}}],
+  minimal: 'techno', electro: 'electro', freestyle: 'electro', njs: ['electro', {d: {kick: ['boom', {tDec: .6}], snare: 'gated', clap: 'hart', hat: 'eng'}}],
+  trap: 'trap', boombap: 'boombap', gfunk: ['boombap', {syn: {bass: {cut: [250, 900], res: .2, drive: [.2, .5], glide: .06}, lead: {fx: {ch: 'I:.3', dly: .2}}, pad: {fx: {rev: .4}}}}],
+  triphop: ['boombap', {bus: {raum: 'kirche', h: {damp: 4000}, e: {divL: '1/4.', divR: '1/4', fb: .45, mode: 'pp', highcut: 2500, drive: .3}}}],
+  bigbeat: 'bigbeat', dnb: 'dnb', reggae: 'reggae', steppers: 'reggae', rockers: 'reggae', dancehall: 'dancehall', dembow: 'dancehall',
+  powerpop: 'rock', rockhalf: 'rock', hshuffle: ['rock', {laut: 'offen'}], detroit: 'akustik', gogo: ['akustik', {d: {kick: 'dumpf', snare: 'akustik', clap: 'weich', hat: 'akustik', perc: 'agogo'}}],
+  ska: ['akustik', {syn: {comp: {aD: .1, aS: .15, aR: .05}}}], afrobeat: 'latin', bossa: 'latin', samba: 'latin', train: 'country', shuffle: 'country', walzer: 'walzer',
+};
+function snd1Guess(st) {
+  const n = String((st && (st.name || st.id)) || '').toLowerCase(), ts = (st && st.ts) || '';
+  if (/walzer|waltz/.test(n)) return /jazz/.test(n) ? 'jazz' : 'walzer';
+  if (/jazz|swing/.test(n)) return 'jazz';
+  if (/trance/.test(n)) return 'eurodance'; if (/techno/.test(n)) return 'techno'; if (/house/.test(n)) return 'house';
+  if (/industrial|ebm/.test(n)) return 'ind'; if (/trap|drill/.test(n)) return 'trap'; if (/hip.?hop|rap|boom/.test(n)) return 'boombap';
+  if (/reggae|dub|ska/.test(n)) return 'reggae'; if (/country|folk|irish|bluegrass|polka/.test(n)) return 'country';
+  if (/afro|samba|bossa|latin|salsa|cumbia/.test(n)) return 'latin'; if (/blues|doo|gospel|soul|ballade|ballad/.test(n)) return 'akustik';
+  if (ts === '3/4') return 'walzer'; if (ts || (st && st.sw8)) return 'akustik';
+  if (st && st.bpm >= 160) return 'dnb';
+  return 'synthpop';
+}
+// das Klang-Profil eines Stils (null: kein Stil oder Tempo-Version – die hat keinen eigenen Klang)
+function snd1Prof(id) {
+  const st = gr2Style(id); if (!st || st.tv) return null;
+  const m = SND1_MAP[st.id], fk = m ? (Array.isArray(m) ? m[0] : m) : snd1Guess(st), F0 = SND1_FAM[fk] || SND1_FAM.synthpop;
+  return Object.assign({}, F0, Array.isArray(m) ? m[1] : null, {id: st.id, name: st.name, fam: fk, guess: !m});
+}
+// Rolle je Spur: eigene Wahl (tr.mxRole) und MX2-Klassen (Messung / Noten); ein Bass- oder Flächen-Klang zählt vor der Noten-Schätzung
+function snd1Roles() {
+  let mx = null; try { mx = mx2Roles(); } catch (e) { mx = null; }
+  return S.tracks.map((tr, i) => {
+    if (!tr) return null;
+    if (isDrum(i)) return 'dr';
+    if (tr.stimme) return null;                                         // Gesang: kein Stil-Klang
+    if (percIs(tr)) return 'perc';
+    const cat = tr.sound && tr.sound.cat;
+    if (!tr.mxRole && (cat === 'bass' || cat === 'flaeche')) return cat === 'bass' ? 'bass' : 'pad';   // ein Bass- / Flächen-Klang ist klar
+    const r = mx && mx[i];
+    if (r === 'bass' || r === 'pad' || r === 'lead' || r === 'arp') return r;
+    if (r === 'drums') return 'perc'; if (r === 'voc') return null;
+    return {bass: 'bass', flaeche: 'pad', lead: 'lead', sequenz: 'arp', pluck: 'comp', poly: 'comp', fm: 'arp', glocke: 'arp'}[cat] || 'lead';
+  });
+}
+// ---------- Anwenden (immer auf den jetzigen Stand; der Aufrufer stellt vorher den Vorher-Stand her) ----------
+const snd1Val = (v, x) => (Array.isArray(x) ? clamp(isNum(v) ? v : x[0], x[0], x[1]) : x);   // fester Wert oder Bereich [von, bis]
+function snd1PadRec(id, D) {
+  const pick = (L, k) => { const e = D[k]; if (!e) return null; const [n, o] = Array.isArray(e) ? e : [e, null], b = L[n]; return b ? Object.assign({}, b, o || null) : null; };
+  if (id === 'kick') return pick(SND1_KICK, 'kick'); if (id === 'snare') return pick(SND1_SNARE, 'snare'); if (id === 'clap') return pick(SND1_CLAP, 'clap');
+  if (id === 'hatC' || id === 'hatO') { const e = D.hat; if (!e) return null; const [n, o] = Array.isArray(e) ? e : [e, null], h = SND1_HAT[n]; return h ? Object.assign({}, h[id === 'hatC' ? 'c' : 'o'], o || null) : null; }
+  if (id === 'perc') return pick(SND1_PERC, 'perc'); if (id === 'rim') return pick(SND1_RIM, 'rim');
+  if (id === 'tomL' || id === 'tomM' || id === 'tomH') return pick(SND1_TOM, 'tom');
+  return null;                                                         // Becken und Shaker bleiben
+}
+// ein North-Pad: dieselbe Färbung über seine m-Werte (Verzerrung 0–50, Abklingen über die Zeit-Skala, Klick, Hall-Anteil)
+const snd1T2m = s => Math.round(clamp(50 * Math.log(Math.max(s, .004) / .004) / Math.log(2500), 0, 50));
+function snd1Md(md, rec, id) {
+  const o = Object.assign({}, md);
+  if (isNum(rec.drv)) o.mDst = Math.round(clamp(rec.drv * 45, 0, 50));
+  const dec = /^hat|^cym/.test(id) ? rec.mDec : id === 'snare' || id === 'clap' ? rec.nDec : rec.tDec;
+  if (isNum(dec)) o.mDec = snd1T2m(dec);
+  if (isNum(rec.cLvl) && (id === 'kick' || id === 'rim')) o.mClv = Math.round(clamp(rec.cLvl * 40, 0, 50));
+  if (isNum(rec.sRoom) || isNum(rec.sGate)) o.mRvb = Math.round(clamp(((rec.sRoom || 0) + (rec.sGate || 0) * .6) * 35, 0, 50));
+  try { return Object.assign(MDX.norm(o), {src: 'md'}); } catch (e) { return o; }
+}
+function snd1Drums(snd, F) {
+  if (!snd || snd.engine !== 'drum' || !snd.p) return;
+  if (!snd.p.slots || typeof snd.p.slots !== 'object') snd.p.slots = {};
+  const D = F.d || {};
+  for (const v of DRUM_VOICES) {
+    const rec = snd1PadRec(v.id, D); if (!rec) continue;
+    const st = snd.p.slots[v.id] || {}, P = Object.assign({}, DrumSynth.DEFAULTS, {model: v.model, choke: v.choke || 0}, st, rec);
+    const nd = slotDiff(P);
+    if (st.md && typeof st.md === 'object') nd.md = st.md.src === 'md' ? snd1Md(st.md, rec, v.id) : st.md;   // North-Pad: die m-Werte; die Drum-Stimme dahinter bekommt das Rezept auch
+    snd.p.slots[v.id] = nd;
+  }
+  snd.p.kit = Object.assign(KIT_DEF(), snd.p.kit || {}, F.kit || {});
+  snd.fx = Object.assign({}, snd.fx || {}); const X = F.dfx || {};
+  for (const k of ['drive', 'rev', 'dly']) if (isNum(X[k])) snd.fx[k] = X[k];
+}
+const SND1_AK = {res: [0, 1], drive: [0, 1], fenv: [-1, 1], fD: [.001, 10], fS: [0, 1], aA: [.001, 10], aD: [.001, 10], aS: [0, 1], aR: [.001, 10], glide: [0, 2], uniDet: [0, 1]};
+function snd1Fx(f, X) {
+  if (!X) return;
+  for (const k of ['drive', 'rev', 'dly']) if (X[k] != null) f[k] = clamp(snd1Val(f[k], X[k]), 0, 1);
+  if (X.ch) { const [m, x] = String(X.ch).split(':'); f.chorus = m === 'off' ? Object.assign({}, f.chorus || {mix: 1, rate: 1, depth: 1}, {mode: 'off'}) : Object.assign({mix: 1, rate: 1, depth: 1}, f.chorus || {}, {mode: m}, x ? {mix: +x} : null); }
+}
+// die Platte (Prüfung Befund 6): dieselben Regeln über die Werte ihrer Knöpfe je Klangfarbe – CUTOFF (Hz über die W-Kurve, nur Tiefpass),
+// RESONANZ, EG-Menge, EG1 (Filter) und EG2 (Lautstärke; nicht bei Gate-Hüllkurve); Werte 0–127 über die Umkehrung der W-Kurven
+const snd1Inv = (fn, y) => { let a = 0, b = 127; for (let k = 0; k < 20; k++) { const m = (a + b) / 2; if (fn(m) < y) a = m; else b = m; } return Math.round((a + b) / 2); };
+function snd1Mk(p, R) {
+  let W = null; try { W = SQMK.W(); } catch (e) { W = null; } if (!W) return;
+  const pm = deep(p.mk), v = (cur, x, lo, hi) => clamp(snd1Val(cur, x), lo, hi);
+  for (const T of pm.t || []) {
+    if (!T || !T.f) continue;
+    if (R.cut != null && T.f.type <= 1) T.f.cut = snd1Inv(W.cutHz, v(W.cutHz(T.f.cut), R.cut, 20, 20000));
+    if (R.res != null) T.f.res = Math.round(clamp(v(1.1 * T.f.res / 127, R.res, 0, 1) * 127 / 1.1, 0, 127));
+    if (R.fenv != null) T.f.eg = Math.round(clamp(v(T.f.eg / 63 * 60 / 72, R.fenv, -1, 1) * 72 / 60 * 63, -63, 63));
+    if (T.e1) { if (R.fD != null) T.e1.d = snd1Inv(W.dec, v(W.dec(T.e1.d), R.fD, .001, 10)); if (R.fS != null) T.e1.s = Math.round(v(T.e1.s / 127, R.fS, 0, 1) * 127); }
+    if (T.e2 && !(T.a && T.a.gate)) {
+      if (R.aA != null) T.e2.a = snd1Inv(W.atk, v(W.atk(T.e2.a), R.aA, .001, 10));
+      if (R.aD != null) T.e2.d = snd1Inv(W.dec, v(W.dec(T.e2.d), R.aD, .001, 10));
+      if (R.aS != null) T.e2.s = Math.round(v(T.e2.s / 127, R.aS, 0, 1) * 127);
+      if (R.aR != null) T.e2.r = snd1Inv(W.dec, v(W.dec(T.e2.r), R.aR, .001, 10));
+    }
+  }
+  p.mk = SQMK.normMk(pm);
+}
+function snd1Syn(snd, F, r) {
+  if (!snd || !snd.p) return;
+  snd.fx = Object.assign({}, snd.fx || {});
+  if (r === 'perc') { const X = F.dfx || {}; if (isNum(X.drive)) snd.fx.drive = X.drive; if (isNum(X.rev)) snd.fx.rev = X.rev; return; }
+  const R = (F.syn || {})[r]; if (!R) return;
+  const p = snd.p;
+  if (snd.engine === 'analog' || snd.engine === 'wt') {                // Tabelle: dieselbe Filter- und Hüllkurven-Stufe wie Analog (Prüfung Befund 6)
+    if (R.cut != null && isNum(p.cutoff) && (p.ftype | 0) <= 1) p.cutoff = Math.round(clamp(snd1Val(p.cutoff, R.cut), 20, 20000));   // nur beim Tiefpass
+    for (const k of Object.keys(SND1_AK)) if (R[k] != null && isNum(p[k])) p[k] = +clamp(snd1Val(p[k], R[k]), SND1_AK[k][0], SND1_AK[k][1]).toFixed(4);
+  } else if (snd.engine === 'mk' && p.mk) snd1Mk(p, R);
+  else if (snd.engine === 'fm6' && F.fm) {                           // FM: Feedback (Rauheit), Biss und Helligkeit (Makros ±20)
+    if (F.fm.fb && p.fm6 && isNum(p.fm6.fb)) p.fm6 = Object.assign({}, p.fm6, {fb: clamp(Math.max(p.fm6.fb, F.fm.fb), 0, 7)});
+    if (F.fm.bite != null) p.fmBite = +clamp(snd1Val(isNum(p.fmBite) ? p.fmBite : 0, F.fm.bite), -20, 20).toFixed(1);
+    if (F.fm.bright != null) p.fmBright = +clamp(snd1Val(isNum(p.fmBright) ? p.fmBright : 0, F.fm.bright), -20, 20).toFixed(1);
+  }
+  snd1Fx(snd.fx, R.fx);
+}
+function snd1Mix(tr, F, r, scOk) {
+  const k = r === 'perc' ? 'dr' : r, eq = (F.eq || {})[k], cp = (F.cp || {})[k], f = tr.sound.fx || (tr.sound.fx = {}), m = Object.assign({}, tr.mix || {});
+  if (eq) for (const x of ['hp', 'ls', 'pf', 'pg', 'pq', 'hs']) if (eq[x] != null) m[x] = eq[x];
+  if (cp) for (const x of ['thr', 'ra', 'at', 'rl', 'mk']) if (cp[x] != null) m[x] = cp[x];
+  const sc = F.sc;                                                     // Seitenkette Kick → Bass (und Fläche): AN mit Stärke des Stils, sonst AUS;
+  if (r === 'bass') { if (sc && scOk) { f.pump = sc.b; f.pumpRel = sc.rel; S.fxBus.pumpSrc = 'kick'; } else if (!sc) f.pump = 0; }   // !scOk: ausgelassen (Pump-Quelle bleibt)
+  else if (r === 'pad') { if (sc && sc.p && scOk) { f.pump = sc.p; f.pumpRel = sc.rel; S.fxBus.pumpSrc = 'kick'; } else if (!sc) f.pump = 0; }
+  const mm = mixaNormMix(m); if (mm) tr.mix = mm; else delete tr.mix;
+}
+function snd1Bus(b, F, lv) {
+  const B = F.bus || {};
+  if (B.raum != null) { if (B.raum) b.hall.tktRaum = B.raum; else delete b.hall.tktRaum; delete b.hall.tktLen; }
+  Object.assign(b.hall, B.h || null); Object.assign(b.echo, B.e || null);
+  const L = lv === 'mix' ? SND1_LAUT[F.laut] : null;
+  if (L) { Object.assign(b.master, L.m); if (b.am && typeof b.am === 'object') b.am.ziel = L.z; }
+}
+// der Stil-Klang auf den jetzigen Stand: lv 'klang' │ 'mix', off = abgewählte Spuren (Index) und 'fx' (Effekt-Bus und Master)
+function snd1Build(F, lv, off) {
+  const ro = snd1Roles(), mixIdx = [], on = i => S.tracks[i] && S.tracks[i].sound && ro[i] && !off.has(i);
+  // Prüfung Befund 5: die Pump-Quelle kommt nur auf KICK, wenn keine andere Spur (abgewählt oder ohne Seitenkette im Stil) im 1/4- / 1/8-Takt pumpt
+  // – sonst bleibt sie, und die Seitenkette wird ausgelassen (Hinweis in der Zeile)
+  const tgt = new Set(); if (lv === 'mix' && F.sc) ro.forEach((r, i) => { if (on(i) && (r === 'bass' || (r === 'pad' && F.sc.p))) tgt.add(i); });
+  const scOk = !tgt.size || S.fxBus.pumpSrc === 'kick' || !S.tracks.some((tr, i) => !tgt.has(i) && tr && tr.sound && tr.sound.fx && tr.sound.fx.pump > 0);
+  for (let i = 0; i < NT(); i++) {
+    const tr = S.tracks[i], r = ro[i]; if (!on(i)) continue;
+    const snd = deep(tr.sound);
+    if (r === 'dr') { snd1Drums(snd, F); applyDrumSound(snd); } else { snd1Syn(snd, F, r); applySound(i, snd); }
+    if (lv === 'mix') { snd1Mix(S.tracks[i], F, r, scOk); mixIdx.push(i); }
+  }
+  if (mixIdx.length) mixaAfter(mixIdx, true);
+  if (!off.has('fx')) { const b = deep(S.fxBus); snd1Bus(b, F, lv); S.fxBus = normFxBus(b); applyFxBus(); applyTempoDependents(); }
+  return {skip: !scOk};
+}
+// ---------- Vorher │ Nachher · Übernehmen (ein ↶-Schritt) ----------
+function snd1Snap() { return {snd: S.tracks.map((tr, i) => (tr ? soundSnapshot(i) : null)), mixa: mixaSnap(), fx: fxSnapshot(), tr: S.tracks}; }
+function snd1Put(Z) {                                                  // einen gemerkten Stand hörbar machen (nur was sich unterscheidet)
+  if (!Z || Z.tr !== S.tracks) return false;
+  Z.snd.forEach((v, i) => { if (v != null && S.tracks[i] && soundSnapshot(i) !== v) restoreSoundSnapshot(i, JSON.parse(v)); });
+  if (mixaSnap() !== Z.mixa) mixaRestore(Z.mixa);
+  if (fxSnapshot() !== Z.fx) restoreFx(JSON.parse(Z.fx));
+  UI.dirty.all = true; return true;
+}
+const snd1Eq = (a, b) => !!a && !!b && a.fx === b.fx && a.mixa === b.mixa && a.snd.length === b.snd.length && a.snd.every((v, i) => v === b.snd[i]);
+// Prüfung Befund 2: ein Stil nach einem übernommenen Stil rechnet vom Klang VOR dem ersten Stil aus – je Spur (Klang + Mischung) und für den
+// Effekt-Bus, solange dieser Teil seitdem noch genau der übernommene (oder zurückgenommene) Stand ist; sonst vom jetzigen Stand
+function snd1Org(pre) {
+  const D = SND1.done; if (!D || D.tr !== S.tracks) return pre;
+  const J = JSON.stringify, mP = JSON.parse(pre.mixa), mA = JSON.parse(D.post.mixa), mB = JSON.parse(D.pre.mixa), mO = JSON.parse(D.base.mixa), snd = pre.snd.slice();
+  const same = (v, i, Z, m) => v === Z.snd[i] && J(mP.t[i]) === J(m.t[i]);
+  pre.snd.forEach((v, i) => { if (v != null && D.base.snd[i] != null && (same(v, i, D.post, mA) || same(v, i, D.pre, mB))) { snd[i] = D.base.snd[i]; mP.t[i] = mO.t[i]; } });
+  let fx = pre.fx; const fs = (Z, m) => pre.fx === Z.fx && mP.ps === m.ps && J(mP.am) === J(m.am);
+  if (fs(D.post, mA) || fs(D.pre, mB)) { fx = D.base.fx; mP.am = mO.am; mP.ps = mO.ps; }
+  return {snd, mixa: J(mP), fx, tr: pre.tr};
+}
+// woraus gerechnet wird: der Ursprung, abgewählte Spuren / Effekte aber, wie sie jetzt sind
+function snd1Src(Z, off) {
+  if (Z.org === Z.pre) return Z.pre;
+  const mO = JSON.parse(Z.org.mixa), mP = JSON.parse(Z.pre.mixa);
+  const snd = Z.org.snd.map((v, i) => (off.has(i) ? Z.pre.snd[i] : v)); for (const i of off) if (typeof i === 'number') mO.t[i] = mP.t[i];
+  let fx = Z.org.fx; if (off.has('fx')) { fx = Z.pre.fx; mO.am = mP.am; mO.ps = mP.ps; }
+  return {snd, mixa: JSON.stringify(mO), fx, tr: Z.pre.tr};
+}
+const snd1Busy = () => rec.state !== 'off' || !!R.songRec || !!(VV && VV.off);
+function snd1Lv() { if (!SND1.lv) { let v = null; try { v = uiPrefs().snd1lv; } catch (e) { v = null; } SND1.lv = SND1_LV.some(x => x[0] === v) ? v : 'mix'; } return SND1.lv; }
+function snd1LvSet(v) { if (!SND1_LV.some(x => x[0] === v)) return false; SND1.lv = v; try { setUiPref('snd1lv', v); } catch (e) {} return true; }
+const snd1Fresh = () => { try { return !uiPrefs().snd1lv; } catch (e) { return false; } };
+// Zustand: 'nach' / 'vor' (Sitzung offen) · 'done' (übernommen, klingt) · 'undone' (zurückgenommen) · 'none'
+// Prüfung Befund 1: liegt der übernommene Schritt nicht mehr oben (z. B. kam danach ein Remix-Schritt), zählt der Klang selbst
+function snd1State() {
+  const Z = SND1.ses; if (Z && Z.pre.tr === S.tracks) return Z.on ? 'nach' : 'vor';
+  const D = SND1.done; if (!D || D.tr !== S.tracks) return 'none';
+  const u = UNDO[UNDO.length - 1], r = REDO[REDO.length - 1];
+  if (u && u.snd1 === D.tag) return 'done'; if (r && r.snd1 === D.tag) return 'undone';
+  if (u && u.snd1r === D.tag) return 'undone'; if (r && r.snd1r === D.tag) return 'done';
+  const c = snd1Snap(); return snd1Eq(c, D.post) ? 'done' : snd1Eq(c, D.pre) ? 'undone' : 'none';
+}
+// den übernommenen Stil-Klang aus- ('pre') bzw. wieder einschalten ('post'): liegt sein Schritt oben, über ↶ / ↷ genau dieses Schritts,
+// sonst gezielt seine Werte als eigener ↶-Schritt (Remix-Schritte darüber bleiben)
+function snd1Swap(to) {
+  const D = SND1.done; if (!D || D.tr !== S.tracks) return false;
+  const u = UNDO[UNDO.length - 1], r = REDO[REDO.length - 1];
+  if (to === 'pre') { if (u && u.snd1 === D.tag) return undo(); if (r && r.snd1r === D.tag) return redo(); }
+  else { if (r && r.snd1 === D.tag) return redo(); if (u && u.snd1r === D.tag) return undo(); }
+  const Z = to === 'pre' ? D.pre : D.post, c = snd1Snap(), label = snd1Label(D.st, D.lv) + (to === 'pre' ? ' – alter Klang' : ''), items = [];
+  c.snd.forEach((v, i) => { if (v != null && Z.snd[i] != null && Z.snd[i] !== v) items.push({kind: 'sound', track: i, before: v, label}); });
+  if (c.mixa !== Z.mixa) items.push({kind: 'mixa', before: c.mixa, label});
+  if (c.fx !== Z.fx) items.push({kind: 'fx', before: c.fx, label});
+  if (!items.length) return false;
+  snd1Put(Z);
+  const e = items.length === 1 ? Object.assign({label}, items[0]) : {kind: 'group', label, items};
+  e[to === 'pre' ? 'snd1r' : 'snd1'] = D.tag; undoPush(e); markDirty();
+  toast(to === 'pre' ? 'Alter Klang zurück' : label + ' wieder an', {label: '↶ Rückgängig', fn: () => { undo(); snd1Repaint(); }});
+  return true;
+}
+// Nachher: der Klang des Stils st (aus dem Vorher-Stand gerechnet; je Stil, Stufe und Abwahl gemerkt → Umschalten ohne Neurechnen)
+function snd1On(stId) {
+  const F = snd1Prof(stId), lv = snd1Lv(); if (!F || lv === 'rh') return null;
+  if (snd1Busy()) { toast('Erst Aufnahme beenden'); return null; }
+  let Z = SND1.ses; if (Z && Z.pre.tr !== S.tracks) Z = SND1.ses = null;
+  if (!Z) { const pre = snd1Snap(); Z = SND1.ses = {pre, org: snd1Org(pre), post: new Map(), st: stId, lv, on: false}; }
+  const key = stId + '|' + lv + '|' + [...SND1.off].sort().join(',');
+  let P = Z.post.get(key);
+  if (P) snd1Put(P); else { snd1Put(snd1Src(Z, SND1.off)); const b = snd1Build(F, lv, SND1.off); P = Object.assign(snd1Snap(), {skip: b.skip}); Z.post.set(key, P); }
+  Object.assign(Z, {st: stId, lv, on: true, cur: P});
+  return Z;
+}
+function snd1Off() { const Z = SND1.ses; if (!Z) return false; snd1Put(Z.pre); Z.on = false; return true; }
+function snd1End() { const Z = SND1.ses; if (Z && !Z.on) snd1Put(Z.pre); SND1.ses = null; }
+function snd1Label(st, lv) { const F = snd1Prof(st); return 'Stil-Klang ' + (F ? F.name : st) + (lv === 'mix' ? ' (Klang & Mischung)' : ' (Klang)'); }
+function snd1Commit(quiet) {
+  const Z = SND1.ses; if (!Z || !Z.on) return null;
+  SND1.ses = null; if (Z.pre.tr !== S.tracks) return null;
+  const P = snd1Snap(), label = snd1Label(Z.st, Z.lv), items = [];
+  Z.pre.snd.forEach((v, i) => { if (v != null && P.snd[i] !== v) items.push({kind: 'sound', track: i, before: v, label}); });
+  if (P.mixa !== Z.pre.mixa) items.push({kind: 'mixa', before: Z.pre.mixa, label});
+  if (P.fx !== Z.pre.fx) items.push({kind: 'fx', before: Z.pre.fx, label});
+  if (!items.length) { if (!quiet) toast(label + ': klingt schon so'); return null; }
+  const tag = ++SND1.tag;
+  undoPush(items.length === 1 ? Object.assign({label, snd1: tag}, items[0]) : {kind: 'group', label, items, snd1: tag});
+  SND1.done = {tag, st: Z.st, lv: Z.lv, tr: S.tracks, pre: Z.pre, base: Z.org || Z.pre, post: Object.assign(P, {skip: !!(Z.cur && Z.cur.skip)})}; markDirty();
+  if (!quiet) toast(label + ' übernommen', {label: '↶ Rückgängig', fn: () => { snd1Back(); snd1Repaint(); }});
+  return tag;
+}
+// ↶: offene Sitzung → Vorher und Ende; übernommen → genau dieser eine Schritt zurück
+function snd1Back() {
+  const s = snd1State();
+  if (s === 'nach' || s === 'vor') { snd1Off(); SND1.ses = null; toast('Alter Klang zurück'); return true; }
+  if (s === 'done') return snd1Swap('pre');
+  return false;
+}
+function snd1Close() { const s = snd1State(); if (s === 'nach') snd1Commit(false); else if (s === 'vor') snd1End(); }
+function snd1Play() {                                                 // hörbar machen: Song ab dem Bereich bzw. (Matrix-Remix) die Remix- oder Quell-Szene
+  if (snd1Busy()) return;
+  try {
+    const M = UI.pop && UI.pop.name === 'gen3mx' ? GEN3.mx : null;
+    if (M) { if (!R.playing) launchScene(M.dst != null && gen3MxOwn(M.dst, M.src) ? M.dst : M.src); return; }
+    if (R.songPlay && R.playing) return; const sg = S.song; if (!sg || !sg.bars) return; const [a] = gr2Rng(); songPlayStart(a);
+  } catch (e) { logErr(e); }
+}
+function snd1AB(w) {
+  const s = snd1State(), st = GR2.st, D = SND1.done;
+  if (w === 'v') {
+    if (s === 'nach') snd1Off(); else if (s === 'done') snd1Swap('pre'); else { snd1Play(); toast('Du hörst schon VORHER'); return false; }
+  } else {
+    if (s === 'undone' && D && D.st === st && D.lv === snd1Lv()) snd1Swap('post');
+    else if (s === 'done' && D && D.st === st && D.lv === snd1Lv()) { snd1Play(); toast('Du hörst schon NACHHER'); return false; }
+    else if (!snd1On(st)) return false;
+  }
+  snd1Play(); haptic('snap');
+  const F = snd1Prof(st);
+  toast('Du hörst ' + (w === 'v' ? 'VORHER – den Klang ohne Stil' : 'NACHHER – ' + (F ? F.name : '') + (snd1Lv() === 'mix' ? ' (Klang & Mischung)' : ' (Klang)')));
+  return true;
+}
+// Tasten des Blatts (nach gr2Act bzw. gen3MxAct): ▶ Hören / B / Stil-Tipp beim Abspielen bringen den Stil-Klang mit, A das Original
+function snd1G2(btn, at) {
+  const a = btn && btn.dataset ? btn.dataset[at] || '' : ''; if (!a || a === 'x' || snd1Lv() === 'rh') return;
+  const s = snd1State(), mx = at === 'g3m', playing = mx ? !!R.playing : !!(R.songPlay && R.playing), F = snd1Prof(GR2.st);
+  const live = mx ? !!(GEN3.mx && GEN3.mx.dst != null && gen3MxPlaying(GEN3.mx.dst)) : playing && gr2Live();
+  const D = SND1.done, kept = s === 'done' && !!D && D.st === GR2.st && D.lv === snd1Lv();   // Prüfung Befund 1: schon übernommen → keine neue Sitzung darauf
+  if (a === 'a') { if (s === 'nach') snd1Off(); }
+  else if (a === 'b' || (a === 'go' && playing)) { if (F && !kept) snd1On(GR2.st); }
+  else if (a.startsWith('st:') && F && !kept && (s === 'nach' || live)) snd1On(GR2.st);
+}
+// ---------- die Zeile im Remix-Blatt (Einhänge-Zeilen am Ende von gr2Paint und gen3MxPaint; at = Tasten-Attribut des Blatts) ----------
+function snd1RxPaint(p, at) {
+  if (!p || !p.isConnected) return;
+  at = at === 'g3m' ? 'g3m' : 'g2';
+  if (!p._sn1) {
+    p._sn1 = true; SND1.off = new Set(); SND1.trk = false;
+    onTap(p, b => { try { snd1G2(b, at); snd1Row(p); } catch (e) { logErr(e); } }, 'button[data-' + at + ']');
+    onTap(p, b => { try { snd1Act(p, b); } catch (e) { logErr(e); } }, 'button[data-sn1]');
+    const P = UI.pop; if (P && P.el === p) { const f = P.onClose; P.onClose = () => { try { snd1Close(); } catch (e) { logErr(e); } if (f) f(); }; }
+  }
+  snd1Row(p);
+}
+function snd1Repaint() { if (UI.pop && UI.pop.el && UI.pop.el._sn1) snd1Row(UI.pop.el); }
+function snd1Tracks() { const ro = snd1Roles(); return S.tracks.map((tr, i) => ({i, r: ro[i], tr})).filter(x => x.tr && x.r); }
+function snd1Row(p) {
+  if (!p || !p.isConnected) return;
+  const foot = p.querySelector('.gr2-foot'); if (!foot) return;
+  let row = p.querySelector('.snd1-row'); if (!row) { row = el('div', 'snd1-row'); foot.before(row); }
+  const lv = snd1Lv(), st = gr2Style(GR2.st), F = st ? snd1Prof(st.id) : null, s = snd1State(), rh = lv === 'rh', can = !!F && !rh, fresh = snd1Fresh();
+  const B = (k, html, on, aria, dis, cls) => `<button class="rb${cls ? ' ' + cls : ''}${on ? ' on' : ''}" data-sn1="${k}" aria-pressed="${!!on}" aria-label="${esc(aria)}"${dis ? ' disabled' : ''}>${html}</button>`;
+  // Prüfung Befunde 4/5: die Seitenkette (Xanders Frage) steht als eigene kurze Angabe unter „+ Klang & Mischung“ – nie im abgeschnittenen Tipp
+  const skip = s === 'nach' ? !!(SND1.ses.cur && SND1.ses.cur.skip) : s === 'done' ? !!SND1.done.post.skip : false;
+  const scS = !F ? '' : skip ? 'Seitenkette ausgelassen' : F.sc ? 'Seitenkette ' + Math.round(F.sc.b * 100) + ' %' : 'ohne Seitenkette';
+  let h = `<div class="snd1-a" role="group" aria-label="Stil anwenden"><span class="lbl">Stil<br>anwenden</span>` +
+    SND1_LV.map(([k, n]) => B('lv:' + k, esc(n) + (k === 'mix' && fresh ? '<small>empfohlen</small>' : '') + (k === 'mix' && scS ? '<small class="snd1-sc">' + esc(scS) + '</small>' : ''), lv === k,
+      'Stil anwenden: ' + n + (k === 'mix' ? ' (empfohlen)' + (scS ? ', ' + scS : '') : ''))).join('') + `</div>`;
+  const T = snd1Tracks(), nOn = T.filter(x => !SND1.off.has(x.i)).length + (SND1.off.has('fx') ? 0 : 1);
+  if (SND1.trk && can) {
+    h += `<div class="snd1-b snd1-trk pan-x" role="group" aria-label="Spuren für den Stil-Klang">` + B('trk', '‹', false, 'Zurück zu Vorher │ Nachher', false, 'snd1-bk') +
+      T.map(x => B('t:' + x.i, esc(x.tr.name) + '<small>' + esc(SND1_ROLE[x.r] || '') + '</small>', !SND1.off.has(x.i), x.tr.name + ' (' + (SND1_ROLE[x.r] || '') + '): Stil-Klang ' + (SND1.off.has(x.i) ? 'aus' : 'an'))).join('') +
+      B('t:fx', 'Effekte<small>Hall · Echo · Master</small>', !SND1.off.has('fx'), 'Effekt-Bus (Hall, Echo, Master): Stil-Klang ' + (SND1.off.has('fx') ? 'aus' : 'an')) + `</div>`;
+  } else {
+    const nach = s === 'nach' || s === 'done';
+    h += `<div class="snd1-b" role="group" aria-label="Vorher │ Nachher">` +
+      B('ab:v', 'Vorher', can && !nach, 'Vorher: der Klang ohne Stil', !can) +
+      B('ab:n', 'Nachher', can && nach, 'Nachher: ' + (lv === 'mix' ? 'Klang und Mischung' : 'Klang') + ' im Stil ' + (st ? st.name : ''), !can) +
+      B('ok', s === 'done' ? '✓<small>übernommen</small>' : 'Übernehmen', false, s === 'done' ? 'Stil-Klang übernommen' : 'Stil-Klang übernehmen (ein Schritt ↶)', s !== 'nach', 'snd1-ok') +
+      B('back', '↶', false, 'Alten Klang zurück (ein Schritt)', !(s === 'nach' || s === 'done'), 'snd1-bk') +
+      B('trk', 'Spuren<small>' + nOn + '/' + (T.length + 1) + '</small>', false, 'Spuren wählen, die den Stil-Klang bekommen (' + nOn + ' von ' + (T.length + 1) + ')', !can) + `</div>`;
+  }
+  let tip;
+  if (rh) tip = '<b>Nur Rhythmus:</b> Klänge, Effekte und Mischung bleiben, wie sie sind.';
+  else if (!F) tip = '<b>Tempo-Version:</b> der Klang bleibt – erst einen Stil wählen.';
+  else {
+    const L = SND1_LAUT[F.laut] || SND1_LAUT.mittel, sc = F.sc ? 'Seitenkette Kick → Bass ' + Math.round(F.sc.b * 100) + ' %' + (F.sc.p ? ', Fläche ' + Math.round(F.sc.p * 100) + ' %' : '') : 'keine Seitenkette (hier untypisch)';
+    const now = s === 'nach' ? 'Du hörst NACHHER (noch nicht übernommen). ' : s === 'vor' ? 'Du hörst VORHER. ' : s === 'done' ? 'Übernommen – ↶ holt den alten Klang zurück. ' : '';
+    const sk = skip && lv === 'mix' ? '<b>Seitenkette ausgelassen:</b> eine andere Spur pumpt im ' + esc(S.fxBus.pumpSrc) + '-Takt, die Pump-Quelle bleibt. ' : '';
+    tip = esc(now) + sk + '<b>Klang ' + esc(F.name) + ':</b> ' + esc(F.t) + (lv === 'mix' ? ' · <b>Mischung:</b> ' + esc(skip ? 'Seitenkette ausgelassen' : sc) + ', EQ je Rolle, ' + esc(L.t) : '') + '. Gilt für die ganzen Spuren.';
+  }
+  h += `<p class="snd1-tip">${tip}</p>`;
+  row.innerHTML = h;
+  popDock(p);
+}
+function snd1Act(p, btn) {
+  const a = btn.dataset.sn1 || ''; if (!a) return;
+  if (a.startsWith('lv:')) {
+    const v = a.slice(3), s = snd1State(); snd1LvSet(v); haptic('tick');
+    if (v === 'rh') { if (s === 'nach' || s === 'vor') { snd1Off(); SND1.ses = null; } }
+    else if (s === 'nach') snd1On(SND1.ses.st);
+  }
+  else if (a === 'ab:v') snd1AB('v');
+  else if (a === 'ab:n') snd1AB('n');
+  else if (a === 'ok') { haptic('snap'); snd1Commit(false); }
+  else if (a === 'back') { haptic('tick'); snd1Back(); }
+  else if (a === 'trk') { SND1.trk = !SND1.trk; haptic('tick'); }
+  else if (a.startsWith('t:')) {
+    const k = a.slice(2), key = k === 'fx' ? 'fx' : +k; if (SND1.off.has(key)) SND1.off.delete(key); else SND1.off.add(key); haptic('tick');
+    if (snd1State() === 'nach') snd1On(SND1.ses.st);
+  }
+  if (p.isConnected) snd1Row(p);
+}
+(function snd1Css() {
+  try {
+    if (document.getElementById('snd1-css')) return;
+    const s = document.createElement('style'); s.id = 'snd1-css';
+    s.textContent = [
+      '.gr2s .snd1-row{flex:0 0 auto;display:flex;flex-direction:column;gap:4px;margin-top:4px;min-width:0}',
+      '.gr2s .snd1-a,.gr2s .snd1-b{display:flex;gap:4px;min-width:0;align-items:center}',
+      '.gr2s .snd1-a .lbl{flex:0 0 44px;font:700 10px/1.1 var(--font-ui);color:var(--text-dim);text-align:center}',
+      '.gr2s .snd1-row .rb{flex:1 1 0;min-width:44px;height:44px;padding:0 4px;font:700 12px/1.1 var(--font-ui);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      '.gr2s .snd1-row .rb small{display:block;max-width:100%;font:600 9.5px/1.1 var(--font-ui);color:var(--text-dim);overflow:hidden;text-overflow:ellipsis}',
+      '.gr2s .snd1-row .snd1-bk{flex:0 0 48px;font-size:17px}',
+      '.gr2s .snd1-a .rb{flex:1 1 auto;padding:0 6px}',   /* die drei Stufen so breit wie ihr Text (+ Klang & Mischung ganz lesbar) */
+      '.gr2s .snd1-row .snd1-ok:not(:disabled){border-color:#6b4c16;color:#ffcf7a}',
+      '.gr2s .snd1-trk{overflow-x:auto;touch-action:pan-x;scrollbar-width:none}',
+      '.gr2s .snd1-trk .rb:not(.snd1-bk){flex:0 0 auto;min-width:72px;padding:0 8px}',
+      '.gr2s .snd1-trk .rb:not(.on):not(.snd1-bk){color:var(--text-dim);text-decoration:line-through}',
+      '.gr2s .snd1-tip{flex:0 0 auto;margin:1px 2px 0;font:600 10px/1.3 var(--font-ui);color:var(--text-dim);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}',
+      '.gr2s .snd1-tip b{color:var(--text)}',
+      '.gr2s .snd1-row .rb small.snd1-sc{color:var(--text)}',
+      /* quer: eine Zeile (44 px), der Tipp fällt weg – Seitenkette steht unter „+ Klang & Mischung“, der Zustand an den Tasten (Prüfung Befund 7) */
+      '@media (orientation:landscape){.gr2s .snd1-row{flex-direction:row;flex-wrap:nowrap}.gr2s .snd1-a,.gr2s .snd1-b{flex:1 1 0}.gr2s .snd1-tip{display:none}}',
+    ].join('\n');
+    document.head.appendChild(s);
+  } catch (e) {}
+})();
+// ---------- Messen (Sonde): Render nur Drums / nur Bass (mit und ohne Seitenkette) / alles ----------
+function snd1Bq(x, type, f, sr, q) {                                   // RBJ-Biquad, einmal über das Signal
+  const w = 2 * Math.PI * f / sr, cs = Math.cos(w), al = Math.sin(w) / (2 * (q || Math.SQRT1_2)), y = new Float32Array(x.length);
+  let b0, b1, b2; const a0 = 1 + al, a1 = -2 * cs, a2 = 1 - al;
+  if (type === 'lp') { b1 = 1 - cs; b0 = b2 = b1 / 2; } else { b1 = -(1 + cs); b0 = b2 = (1 + cs) / 2; }
+  let x1 = 0, x2 = 0, y1 = 0, y2 = 0;
+  for (let i = 0; i < x.length; i++) { const v = x[i], o = (b0 * v + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2) / a0; x2 = x1; x1 = v; y2 = y1; y1 = o; y[i] = o; }
+  return y;
+}
+const snd1Db = v => +(10 * Math.log10(Math.max(v, 1e-12))).toFixed(1);
+function snd1Env(x, H) { const n = Math.floor(x.length / H), e = new Float32Array(n); for (let k = 0; k < n; k++) { let s = 0; for (let j = k * H; j < (k + 1) * H; j++) s += x[j] * x[j]; e[k] = s / H; } return e; }
+function snd1Peaks(e0, thr, gap) {                                      // Anschläge: Spitzen der (9 ms geglätteten) Hüllkurve über thr · Maximum, Abstand ≥ gap Rahmen,
+  const n = e0.length, e = new Float32Array(n);                         // mit echtem Anstieg davor (Beginn < 5 % der Spitze, höchstens 40 ms vorher)
+  for (let k = 0, s = 0; k < n; k++) { s += e0[k] - (k >= 9 ? e0[k - 9] : 0); e[k] = s / 9; }
+  let mx = 0; for (const v of e) if (v > mx) mx = v; const out = [], T = mx * thr;
+  for (let k = 1; k < n - 1; k++) {
+    if (e[k] < T || e[k] < e[k - 1] || e[k] < e[k + 1]) continue;
+    let a = k; while (a > 0 && k - a < 40 && e[a - 1] > e[k] * .05) a--;
+    if (a > 0 && e[a - 1] > e[k] * .05) continue;                        // kein Anstieg aus der Stille (oder dem Anfang): Welligkeit im Ausklang
+    if (out.length && k - out[out.length - 1].pk < gap) { if (e[k] > e[out[out.length - 1].pk]) Object.assign(out[out.length - 1], {pk: k, on: Math.max(0, a - 4)}); continue; }
+    out.push({pk: k, on: Math.max(0, a - 4)});
+  }
+  return out;
+}
+const snd1Med = a => { if (!a.length) return null; const b = a.slice().sort((x, y) => x - y); return +b[Math.floor(b.length / 2)].toFixed(2); };
+function snd1Spec(x, on, N) {                                          // Leistungsspektrum ab on (Hann-Fenster, N Punkte, fxFft)
+  const re = new Float64Array(N), im = new Float64Array(N);
+  for (let i = 0; i < N && on + i < x.length; i++) re[i] = x[on + i] * (.5 - .5 * Math.cos(2 * Math.PI * i / N));
+  fxFft(re, im); const P = new Float64Array(N / 2); for (let k = 0; k < N / 2; k++) P[k] = re[k] * re[k] + im[k] * im[k];
+  return P;
+}
+// Drive-Stärke (kein Render, nur die Parameter): Klirrfaktor eines Sinus 200 Hz (0,3 ≈ −10 dBFS) durch Pad-Drive und Spur-Drive
+async function snd1Thd(drvPad, drvTrk) {
+  const sr = 48000, N = 14400, oc = new OfflineAudioContext(1, N, sr), o = oc.createOscillator(), g = oc.createGain(); o.frequency.value = 200; g.gain.value = .3; o.connect(g);
+  let last = g;
+  if (drvPad > .01) { const ws = oc.createWaveShaper(), mk = oc.createGain(); ws.curve = DrumSynth.driveCurve(drvPad); mk.gain.value = 1 / (1 + drvPad * 1.2); last.connect(ws); ws.connect(mk); last = mk; }
+  if (drvTrk > .005) { const ws = oc.createWaveShaper(); ws.curve = driveCurve(drvTrk); last.connect(ws); last = ws; }
+  last.connect(oc.destination); o.start(0);
+  const x = (await oc.startRendering()).getChannelData(0);
+  const amp = f => { let re = 0, im = 0; for (let i = 2400; i < N; i++) { const a = 2 * Math.PI * f * i / sr; re += x[i] * Math.cos(a); im -= x[i] * Math.sin(a); } return Math.hypot(re, im); };
+  const a1 = amp(200); let h = 0; for (let k = 2; k <= 12; k++) h += amp(200 * k) ** 2;
+  return +(100 * Math.sqrt(h) / Math.max(a1, 1e-9)).toFixed(2);
+}
+async function snd1Measure(o) {
+  o = o || {};
+  const song = S.song; if (!song || !song.bars) throw new Error('Noch kein Song');
+  if (va1Busy()) throw new Error('Läuft schon');
+  const ro = snd1Roles(), bi = o.bass != null ? o.bass : ro.indexOf('bass'), out = {roles: ro, bass: bi};
+  const mono = r => { const n = r.n, L = r.ch[0], Rr = r.ch[1], m = new Float32Array(n); for (let i = 0; i < n; i++) m[i] = (L[i] + Rr[i]) * .5; return m; };
+  const pass = async tr => mono(await va1Pass(tr ? {tracks: new Set(tr), vox: 'none'} : null, true));
+  // ein Pad allein (die übrigen Pads stumm; danach genau der alte Klang zurück)
+  const solo = async keep => {
+    const snap = soundSnapshot(DRUM_T), snd = deep(S.tracks[DRUM_T].sound);
+    for (const v of DRUM_VOICES) { if (keep === v.id) continue; const st = snd.p.slots[v.id] || (snd.p.slots[v.id] = {}); st.lvl = 0; if (st.md && st.md.src === 'md') st.md = Object.assign({}, st.md, {mLvl: 0}); }
+    applyDrumSound(snd); try { return await pass([DRUM_T]); } finally { restoreSoundSnapshot(DRUM_T, JSON.parse(snap)); }
+  };
+  const sr = AU.ctx ? AU.ctx.sampleRate : 48000, H = Math.max(1, Math.round(sr / 1000));   // Rahmen 1 ms
+  const E = (x, a, b) => { let s = 0; for (let i = Math.max(0, a); i < Math.min(x.length, b); i++) s += x[i] * x[i]; return s; };
+  const lenMs = (e, k) => { let n = 0; const p0 = e[k]; for (let j = k; j < e.length && j - k < 2000; j++) { if (e[j] < p0 * 1e-3) break; n = j - k; } return n; };   // bis −30 dB
+  // 1 Kick allein: Grundton (Nulldurchgänge unter 100 Hz), Tiefe (Anteil unter 80 Hz), Klick (über 1,5 kHz in den ersten 12 ms), Druck, Länge
+  const dk = await solo('kick'), lo = snd1Bq(snd1Bq(dk, 'lp', 100, sr), 'lp', 100, sr), eK = snd1Env(snd1Bq(dk, 'hp', 25, sr), H), kicks = snd1Peaks(eK, .2, 150);
+  const lo80 = snd1Bq(snd1Bq(dk, 'lp', 80, sr), 'lp', 80, sr), hpc = snd1Bq(snd1Bq(dk, 'hp', 1500, sr), 'hp', 1500, sr), K = [];
+  for (const k of kicks.slice(0, 32)) {
+    const t = k.on * H, w = Math.round(.15 * sr), all = Math.max(E(dk, t, t + w), 1e-12);
+    let zc = 0; for (let i = t + Math.round(.03 * sr); i < t + Math.round(.13 * sr) && i < lo.length - 1; i++) if ((lo[i] <= 0) !== (lo[i + 1] <= 0)) zc++;
+    K.push({f0: zc / 2 / .1, deep: 10 * Math.log10(Math.max(E(lo80, t, t + w), 1e-12) / all), click: 10 * Math.log10(Math.max(E(hpc, t, t + Math.round(.012 * sr)), 1e-12) / all), druck: 10 * Math.log10(all / w), len: lenMs(eK, k.pk)});
+  }
+  out.kick = {n: K.length, f0: snd1Med(K.map(x => x.f0)), tiefe: snd1Med(K.map(x => x.deep)), klick: snd1Med(K.map(x => x.click)), druck: snd1Med(K.map(x => x.druck)), lang: snd1Med(K.map(x => x.len))};
+  // 2 Snare allein: Crest, Höhen (über 4 kHz gegen über 150 Hz), Länge, Rauheit (Prüfung Befund 8: am Render – spektrale Flachheit der ersten
+  // 43 ms, 200 Hz–12 kHz, dB; Verzerrung und Rauschen machen sie flacher); dazu die Drive-Stärke (Sinus durch Pad- und Spur-Drive, nur Parameter)
+  const ds = await solo('snare'), hp150 = snd1Bq(ds, 'hp', 150, sr), hp4k = snd1Bq(snd1Bq(ds, 'hp', 4000, sr), 'hp', 4000, sr), eS = snd1Env(hp150, H), SN = [];
+  const fk0 = Math.round(200 / sr * 2048), fk1 = Math.round(12000 / sr * 2048);
+  for (const s of snd1Peaks(eS, .2, 120).slice(0, 32)) {
+    const t = s.on * H, w = Math.round(.12 * sr); let pk = 0, ss = 0; for (let i = t; i < t + w && i < hp150.length; i++) { const v = Math.abs(hp150[i]); if (v > pk) pk = v; ss += v * v; }
+    const P = snd1Spec(ds, t, 2048); let lg = 0, sm = 0; for (let k = fk0; k < fk1; k++) { lg += Math.log(P[k] + 1e-20); sm += P[k]; }
+    SN.push({crest: 20 * Math.log10(pk / Math.sqrt(Math.max(ss / w, 1e-12))), hf: 10 * Math.log10(Math.max(E(hp4k, t, t + w), 1e-12) / Math.max(E(hp150, t, t + w), 1e-12)), len: lenMs(eS, s.pk),
+      rau: 10 * Math.log10(Math.max(Math.exp(lg / (fk1 - fk0)) / Math.max(sm / (fk1 - fk0), 1e-30), 1e-12))});
+  }
+  const sl = (drumSnd() && drumSnd().p && drumSnd().p.slots && drumSnd().p.slots.snare) || {}, dfx = S.tracks[DRUM_T].sound.fx || {};
+  out.snare = {n: SN.length, crest: snd1Med(SN.map(x => x.crest)), hoehen: snd1Med(SN.map(x => x.hf)), lang: snd1Med(SN.map(x => x.len)), rau: snd1Med(SN.map(x => x.rau)),
+    drive: await snd1Thd(isNum(sl.drv) ? sl.drv : 0, dfx.drive || 0), north: !!(sl.md && sl.md.src === 'md')};
+  // 2b Perc allein (Prüfung Befund 3): lautester Schlag – Anteil über 2 kHz (170 ms und erste 40 ms), unharmonischer Anteil (weiter als 3 Bins
+  // von den Vielfachen des stärksten Teiltons), Spitze
+  if (o.perc !== false) {
+    const dp = await solo('perc'); let pk = 0, at = 0; for (let i = 0; i < dp.length; i++) { const v = Math.abs(dp[i]); if (v > pk) { pk = v; at = i; } }
+    if (pk > 1e-5) {
+      let on = at; while (on > 0 && Math.abs(dp[on]) > pk * .02 && at - on < sr * .05) on--;
+      const share = (P, N, f) => { const a = Math.round(150 / sr * N), b = Math.round(12000 / sr * N); let s = 0, h = 0; for (let k = a; k < b; k++) { s += P[k]; if (k * sr / N > f) h += P[k]; } return [s, h, a, b]; };
+      const P = snd1Spec(dp, on, 8192), [s, h, a, b] = share(P, 8192, 2000); let f0 = a; for (let k = a; k < b; k++) if (P[k] > P[f0]) f0 = k;
+      let inh = 0; for (let k = a; k < b; k++) { const d = Math.abs(k / f0 - Math.round(k / f0)) * f0; if (d > 3) inh += P[k]; }
+      const P4 = snd1Spec(dp, on, 2048), [s4, h4] = share(P4, 2048, 2000);
+      out.perc = {hoch: snd1Db(h / s), hoch40: snd1Db(h4 / s4), unharm: snd1Db(inh / s), hz: Math.round(f0 * sr / 8192), spitze: +(20 * Math.log10(pk)).toFixed(1)};
+    } else out.perc = null;
+  }
+  // 3 Bass allein, mit und ohne Seitenkette: dieselbe Stelle beider Renders verglichen (nur wo der Bass klingt) = der Einbruch durch die Kick
+  if (bi >= 0 && o.bass !== false) {
+    const f = S.tracks[bi].sound.fx || {}, keep = f.pump || 0, F5 = Math.round(sr / 200), e1 = snd1Env(await pass([bi]), F5);
+    let e0 = e1; if (keep > 0) { f.pump = 0; try { e0 = snd1Env(await pass([bi]), F5); } finally { f.pump = keep; } }
+    const mx = e0.reduce((m, v) => Math.max(m, v), 0), v = [];
+    for (const k of kicks) { const a = Math.round(k.on / 5); let mn = Infinity; for (let j = a; j < a + 30 && j < e0.length; j++) if (e0[j] > mx * .01) mn = Math.min(mn, 10 * Math.log10(Math.max(e1[j], 1e-12) / e0[j])); if (isFinite(mn)) v.push(mn); }
+    const md = snd1Med(v);
+    out.duck = {pump: keep, rel: f.pumpRel || null, n: v.length, db: md == null ? null : +Math.max(0, -md).toFixed(1)};
+  }
+  // 4 alles: Spektrum (tief < 150 Hz, Mitte, hoch > 3 kHz), Crest, Pegel
+  if (o.mix !== false) {
+    const m = await pass(null), a = Math.max(E(m, 0, m.length), 1e-12), l = E(snd1Bq(snd1Bq(m, 'lp', 150, sr), 'lp', 150, sr), 0, m.length), h = E(snd1Bq(snd1Bq(m, 'hp', 3000, sr), 'hp', 3000, sr), 0, m.length);
+    let pk = 0, act = 0, ss = 0; for (let i = 0; i < m.length; i++) { const v = Math.abs(m[i]); if (v > pk) pk = v; if (v > 1e-4) { act++; ss += v * v; } }
+    const rms = Math.sqrt(ss / Math.max(1, act));
+    out.mix = {tief: snd1Db(l / a), mitte: snd1Db(Math.max(a - l - h, 1e-12) / a), hoch: snd1Db(h / a), crest: +(20 * Math.log10(pk / Math.max(rms, 1e-9))).toFixed(1), rms: +(20 * Math.log10(Math.max(rms, 1e-9))).toFixed(1), peak: +(20 * Math.log10(Math.max(pk, 1e-9))).toFixed(1)};
+  }
+  return out;
+}
+const SND1_API = {
+  // Profil eines Stils: Familie, Seitenkette, Lautheit, Text (guess: aus Name/Taktart geraten)
+  profile: id => { const F = snd1Prof(id); return F ? {id: F.id, name: F.name, fam: F.fam, guess: F.guess, sc: F.sc ? Object.assign({}, F.sc) : null, laut: F.laut, ziel: (SND1_LAUT[F.laut] || {}).z, t: F.t, d: Object.assign({}, F.d)} : null; },
+  profiles: () => gr2Order().filter(x => !x.tv).map(x => SND1_API.profile(x.id)),
+  guess: st => snd1Guess(st || {}),
+  roles: () => snd1Roles(),
+  level: v => { if (v) snd1LvSet(v); snd1Repaint(); return snd1Lv(); },
+  // Nachher (Sitzung, noch kein ↶-Schritt); opts.off = abgewählte Spuren (Index | 'fx'); opts.commit = gleich übernehmen
+  apply: (id, lv, opts) => { opts = opts || {}; if (lv) snd1LvSet(lv); if (opts.off) SND1.off = new Set(opts.off); const Z = snd1On(id || GR2.st); if (Z && opts.commit) snd1Commit(true); snd1Repaint(); return !!Z; },
+  ab: w => { const r = snd1AB(w === 'v' || w === 'vorher' ? 'v' : 'n'); snd1Repaint(); return r; },
+  vorher: () => { const r = snd1Off(); snd1Repaint(); return r; },
+  commit: () => { const r = snd1Commit(true); snd1Repaint(); return r; },
+  back: () => { const r = snd1Back(); snd1Repaint(); return r; },
+  close: () => { snd1Close(); return snd1State(); },
+  state: () => ({lv: snd1Lv(), s: snd1State(), st: SND1.ses ? SND1.ses.st : SND1.done ? SND1.done.st : null, off: [...SND1.off], cached: SND1.ses ? SND1.ses.post.size : 0,
+    skip: SND1.ses ? !!(SND1.ses.cur && SND1.ses.cur.skip) : !!(SND1.done && SND1.done.post.skip)}),
+  snap: () => { const Z = snd1Snap(); return {snd: Z.snd, mixa: Z.mixa, fx: Z.fx}; },
+  measure: o => snd1Measure(o),
+  thd: (a, b) => snd1Thd(a || 0, b || 0),
+};
+Object.assign(SYNQUENZER, {snd1: SND1_API});                  /* SND1: Test-API (Objekt, wird nicht umhüllt) */
+/* SND1-END */
 const NO_SYNC = new Set(['clipCurves', 'bmcLog', 'bmcState', 'oneScaleOf', 'harmInfo', 'kbScaleNow', 'micCheck', 'micCheckJson', 'micCheckEstimate', 'cloud', 'cloudProjects', 'cloudVersions', 'cloudHandoff', 'state', 'project', 'runtime', 'getClip', 'getParam', 'noteLog', 'voices', 'timeline', 'serialize', 'buildMidi', 'buildZip', 'crc32', 'meter', 'outPitch', 'migrate', 'tapTempo',
   'getSound', 'mods', 'library', 'factory', 'previewState', 'soundEdited', 'fmxView', 'fmxPreview', 'fmxBadge',
   'history', 'projects', 'storage', 'engineInfo', 'getBusFx', 'wake', 'gestures', 'roll', 'rollApi', 'detectKey', 'sceneKey',
