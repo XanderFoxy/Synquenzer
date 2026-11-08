@@ -35,7 +35,7 @@ for x in $L; do case $x in
  jam3-53) run jam3-53 node $S/w4530/jam3/jam3-test.mjs $K/t-53/x/index.html $O/jam3-53;;
  chq-53) run chq-53 node $S/w4530/chq/chq-test.mjs $K/t-53/x/index.html $O/chq-53;;
  beg1-53) run beg1-53 node $S/w4540/beg1/beg1-test.mjs $K/t-53/x/index.html $O/beg1-53;;
- int54) run int54 node $K/int54-test.mjs $F $O/int54 $K/merge/step4.html;;
+ int54) run int54 node $K/int54-test.mjs $F $O/int54 $K/merge/step4.html $K/probe/vor-int54p.html;;   # INT54-P: 4. Argument = Stand vor INT54-P (Gegenläufe P1–P8)
  kf2) run kf2 node $S/w4520/kf2/kf2-test.mjs $F $O/kf2;;
  kf1) run kf1 node $S/w4520/kf12/kf1-test-kf12.mjs $K/t-kf/kf12/index.html $O/kf1;;
  kf1-53) run kf1-53 node $S/w4520/kf12/kf1-test-kf12.mjs $K/t-kf/kf12/index.html $O/b53/kf1;;

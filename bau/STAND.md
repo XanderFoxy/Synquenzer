@@ -13,3 +13,8 @@ Online: 4.54.0 (main, zum Ausprobieren; Kleinigkeiten folgen als 4.54.1). Hier l
 | w4550/xd1 | 8 Bedien-Entscheidungen (Mikro-Blatt, Video quer, Szenen-Kopf, Mitschnitt, Klang-Editor, MIXG, Messung, Wo-bin-ich; Basis 4.53) | im Bau |
 
 Weiter mit: 4.54 = rel-4540/k fertig prüfen + INT53D nachziehen + Versionszeile → veröffentlichen; dann XD1 als 4.55; dann Liste: SUG, LF2, MIDI-Struktur, Spur-Locks, Harmonie-Profi.
+
+## Falls das Limit unterbricht (Wiederaufnahme)
+- 4.54.1: Fix-Workflow wf_48addb94-86c (Skript workflows/scripts/synq-int454-wf_48addb94-86c.js) → per Resume fortsetzen; sein Stand liegt in rel-4540/k/index.html. Danach INT53D nachziehen (rel-4530/m3/int53d), Version 4.54.1, Rauchtest, hochladen.
+- 4.55 (XD1): Workflow wf_d87f8eed-964 (synq-xd1-…js) → Resume; Stand in w4550/xd1/index.html. Danach auf 4.54.1 mergen, hochladen.
+- Regel Xander: nicht endlos prüfen, Fertiges sofort zum Ausprobieren hochladen.
