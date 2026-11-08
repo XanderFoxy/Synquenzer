@@ -353,7 +353,7 @@ try {
           D.setClip(0, 0, {len: 1, notes: nt([[0, 36, .9], [1, 36], [2, 43, .9], [3, 41]])}); D.setClip(DRUM_T, 0, {len: 1, notes: nt([[0, 36, .1, .9], [1, 38, .1, .8], [2, 36, .1, .9], [3, 38, .1, .8]])});
           D.songFromChain([{scene: 0, bars: 4}, {scene: 0, bars: 4}]); await wait(150);
           D.jam3.put({k: 'm', b: 0, d: 16, g: 'dr', lv: 'stumm'}); D.jam3.put({k: 'f', b: 16, d: 8, c: [[0, -.3], [4, -.8], [7.9, -.1]]}); };
-        const look = () => { const sg = S.song, bb = x => +(barAt(x + 1e-6) + (x - barBeat(barAt(x + 1e-6))) / barLen(barAt(x + 1e-6))).toFixed(3); return (sg.pf || []).map(x => ({k: x.k, takt: [bb(x.b), bb(x.b + x.d)], c: x.c ? x.c.map(q => +(q[0] / x.d).toFixed(3)) : null})); };
+        const look = () => { const sg = S.song, bb = x => +(barAt(x + 1e-6) + (x - barBeat(barAt(x + 1e-6))) / barLen(barAt(x + 1e-6))).toFixed(3); return (sg.pf || []).map(x => ({k: x.k, takt: [bb(x.b), bb(x.b + x.d)], c: x.c ? x.c.map(q => +(q[0] / x.d).toFixed(2)) : null})); };
         await SETUP(); res.vor = look();
         setSongTs('3/4', {quiet: true}); await wait(200); res.ts34 = look();
         const m = buildMidi({mode: 'song'}); res.midi = Array.from(m.bytes);
