@@ -114,7 +114,7 @@ Fünf Befunde des unabhängigen Prüfers, alle nachgeprüft (Prüfer-Skripte in 
    - Gemessen 926×370, 926×428, 428×926 × (rückwärts, →28, →4, hin und her, abwärts) × (gewählt, nicht gewählt): 0 Überlappung mit dem
      Schild-Kasten. Foto `test/gl1p-zelle-926x370.png`.
 
-Tests danach: `gl1-test.mjs` mit neuem Abschnitt 6 („GL1-P 1–5“, 6 Prüfungen) — Ergebnis unten bei „Tests“. Dazu die Prüfer-Skripte
+Tests danach: `gl1-test.mjs` mit neuem Abschnitt 6 („GL1-P 1–5“, 6 Prüfungen): **45/45 bestanden**, Konsole ohne Fehler. Dazu die Prüfer-Skripte
 `p1-lauf`, `p5-glass`, `p7-selpx`, `p9-cell`, `p12b-tile` erneut: alle wie oben. Außerdem `topdefs` 0/0, `dupkeys` 0, `smoke` errors [],
 keine verbotenen Wörter, „MS 2000“ 1×, „  live: true,“ 1×.
 
