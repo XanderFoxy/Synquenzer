@@ -13,8 +13,15 @@ import { scan, main } from '../main.mjs';
 const HIER = dirname(fileURLToPath(import.meta.url));
 const ECHT = join(HIER, 'fixtures', 'echt-2026-10-31');
 const BASIS = join(HIER, '..', '..');
-const cfg = JSON.parse(await readFile(join(BASIS, 'config.json'), 'utf8'));
-const watchlist = JSON.parse(await readFile(join(BASIS, 'watchlist.json'), 'utf8'));
+const cfgDatei = JSON.parse(await readFile(join(BASIS, 'config.json'), 'utf8'));
+const watchlistDatei = JSON.parse(await readFile(join(BASIS, 'watchlist.json'), 'utf8'));
+// Der Mitschnitt vom 31.10. kennt nur die damaligen Suchwörter und noch kein kaufDA: für die Wiedergabe dieselben
+// Zuordnungsregeln (muss/sorte/nicht von heute), aber die Suchwörter von damals und nur die damaligen Produkte.
+const SUCHE_31_10 = { 'softys-fruchtmix': ['Lachgummi Softys'], 'softys-rote-fruechte': ['Lachgummi Softys'], 'crunchips-xcut': ['Crunchips X-Cut'],
+  'knoppers-nussriegel': ['Knoppers NussRiegel'], 'haribo-colorado': ['Haribo Colorado'], 'haribo-tropi-frutti': ['Haribo Tropi Frutti'] };
+const NEU_08_11 = new Set(['zetti-knusperflocken', 'leckermaeulchen', 'exquisa-quark', 'exquisa-frischkaese']);
+const watchlist = { ...watchlistDatei, produkte: watchlistDatei.produkte.filter(p => !NEU_08_11.has(p.id)).map(p => (SUCHE_31_10[p.id] ? { ...p, suche: SUCHE_31_10[p.id] } : p)) };
+const cfg = { ...cfgDatei, quellen: { ...cfgDatei.quellen, kaufda: { ...cfgDatei.quellen.kaufda, aktiv: false } } };
 // Die marktguru-Startseite (mit den öffentlichen Web-Schlüsseln) ist absichtlich nicht im Repo -> Schlüssel per env
 const env = { MARKTGURU_API_KEY: 'x', MARKTGURU_CLIENT_KEY: 'y' };
 const JETZT = '2026-10-31T16:35:00Z';
@@ -184,7 +191,9 @@ test('Echt: nach Ende des Kaufland-Angebots (18:01 UTC) ist es sofort weg', asyn
   const k = r.karte('knoppers-schnitte');
   assert.equal(k.bestes, null);
   assert.equal(k.deal, false);
-  assert.equal(k.tiefst.text, 'Gerade kein Angebot · zuletzt 0,19 € pro Stück am 31.10.');
+  // zuletzt gesehen (eigener Verlauf): Packungspreis, Packung, Laden, Tag – nicht nur „gibt es nicht“
+  assert.equal(k.tiefst.text, 'Gerade kein Angebot · zuletzt 2,79 € (15 Stück) bei Kaufland am 31.10.');
+  assert.deepEqual([k.zuletzt.pack, k.zuletzt.shop, k.zuletzt.tag, k.zuletzt.eigen], [2.79, 'Kaufland', '2026-10-31', true]);
   assert.equal(r.msgs.filter(m => m.title.includes('Knoppers')).length, 0);
 });
 
@@ -255,7 +264,7 @@ test('Echt: CLI --wiedergabe rechnet einen Roh-Mitschnitt offline nach, ohne zu 
     const r = await main(['--wiedergabe', ECHT, '--data', dir, '--jetzt', JETZT], env);
     assert.equal(r.msgs.length, 1);
     assert.equal(gesendet, 0, 'Wiedergabe ist immer ein Probelauf');
-    assert.deepEqual((await readdir(dir)).sort(), ['current.json', 'dealseiten.json', 'history.json', 'sent.json']);
+    assert.deepEqual((await readdir(dir)).sort(), ['current.json', 'dealseiten.json', 'history.json', 'merkliste.json', 'sent.json']);
     const c = JSON.parse(await readFile(join(dir, 'current.json'), 'utf8'));
     assert.equal(c.produkte.find(p => p.id === 'knoppers-schnitte').bestes.packung, '15 × 25 g');
   } finally { console.log = log; globalThis.fetch = echtesFetch; await rm(dir, { recursive: true, force: true }); }

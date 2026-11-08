@@ -10,18 +10,34 @@
   "seite": "https://xanderfoxy.github.io/Synquenzer/mein-vorteil/#angebote",
   "maerkte": {
     "_hinweis": "Nur Prospekt-Angebote dieser Ketten zählen (Namen wie bei marktguru, Kleinschreibung egal, Teilwort reicht). 'ausgeschlossen' schlägt 'erlaubt' (Großhandel wie „EDEKA Foodservice“ mit „NUR FÜR GROSSHÄNDLER“).",
-    "erlaubt": ["Kaufland", "Lidl", "Aldi Nord", "Netto Marken-Discount", "Penny", "Rewe", "Edeka", "Norma", "Globus", "Marktkauf"],
-    "ausgeschlossen": ["Foodservice", "Großhandel", "Metro", "Selgros"]
+    "erlaubt": [
+      "Kaufland",
+      "Lidl",
+      "Aldi Nord",
+      "Netto Marken-Discount",
+      "Penny",
+      "Rewe",
+      "Edeka",
+      "Norma",
+      "Globus",
+      "Marktkauf"
+    ],
+    "ausgeschlossen": [
+      "Foodservice",
+      "Großhandel",
+      "Metro",
+      "Selgros"
+    ]
   },
   "deal": {
     "_hinweis": "Ein Angebot ist ein Deal (Push), wenn der Preis jetzt ≤ dem üblichen Angebotspreis (Median der Angebote der letzten 12 Monate, gleiche Packung) UND höchstens 'nahTiefst' über dem Tiefstpreis der letzten 12 Monate liegt. Prozent nur gegen den recherchierten regulären Preis (referenzpreise.json). 'ueblichMinAngebote': so viele Angebote braucht der Median, sonst gilt der recherchierte Wert. Referenzwerte älter als 'referenzAltTage' bekommen ein „Stand …“.",
-    "nahTiefst": 0.10,
+    "nahTiefst": 0.1,
     "ueblichMinAngebote": 3,
     "referenzAltTage": 90,
     "historieMinTage": 5,
     "normalpreisFensterTage": 56,
     "historieBehaltenTage": 400,
-    "technikRabattMin": 0.60
+    "technikRabattMin": 0.6
   },
   "versand": {
     "_hinweis": "Versandkosten, wenn ein Deal nichts dazu sagt. Amazon: kostenlos ab 'kostenlosAb' (ohne Prime).",
@@ -51,15 +67,39 @@
       "aktiv": true,
       "startseite": "https://www.marktguru.de/",
       "api": "https://api.marktguru.de/api/v1/offers/search",
-      "limit": 48
+      "limit": 48,
+      "seiten": 3,
+      "_seiten": "Breite Suchwörter (Marke wie „Haribo“) können mehr als 48 Treffer haben: dann bis zu so viele Seiten (offset)."
+    },
+    "kaufda": {
+      "aktiv": true,
+      "_hinweis": "Zweite Prospekt-Quelle (kaufDA/Bonial): Stadtseite https://www.kaufda.de/<stadt>/Angebote/<Stichwort>, ohne Treffer/Seite bundesweit https://www.kaufda.de/Angebote/<Stichwort> (Standort Berlin). Daten aus dem Next.js-Block __NEXT_DATA__. Stichwörter je Produkt in watchlist.json → kaufda. Angebote von hier gelten nicht als für Döbeln bestätigt: Hinweis „Prospekt <Stadt> – in Döbeln prüfen“, nie Push, nicht im Preisverlauf. robots.txt: /Angebote/ erlaubt, crawl-delay 2 (siehe abruf.pauseProHost). Für Döbeln gibt es keine kaufDA-Stadtseite (HTTP 404, geprüft 31.10.2026); Chemnitz (≈ 45 km, gleiche Prospekt-Region Sachsen) hat eine.",
+      "basis": "https://www.kaufda.de",
+      "stadt": "Chemnitz",
+      "intervallStunden": 3,
+      "_intervallStunden": "Prospekte wechseln wöchentlich: kaufDA nur alle 3 Stunden neu abrufen, dazwischen (und bei Ausfall bis 24 h) der letzte Stand aus quellen-cache.json auf dem Daten-Zweig. Neue Stichwörter in watchlist.json = sofort neu.",
+      "userAgent": "Mozilla/5.0 (compatible; Schnaeppchen-Wecker/1.0; privater Preisalarm, 1x pro Stunde; +https://github.com/XanderFoxy/Synquenzer/tree/main/schnaeppchen)"
     },
     "mydealz": {
       "aktiv": true,
       "feeds": [
-        { "name": "mydealz neu", "url": "https://www.mydealz.de/rss/new" },
-        { "name": "mydealz heiß", "url": "https://www.mydealz.de/rss/hot" },
-        { "name": "mydealz Preisfehler", "url": "https://www.mydealz.de/rss/gruppe/preisfehler", "preisfehler": true },
-        { "name": "mydealz Lebensmittel", "url": "https://www.mydealz.de/rss/gruppe/lebensmittel" }
+        {
+          "name": "mydealz neu",
+          "url": "https://www.mydealz.de/rss/new"
+        },
+        {
+          "name": "mydealz heiß",
+          "url": "https://www.mydealz.de/rss/hot"
+        },
+        {
+          "name": "mydealz Preisfehler",
+          "url": "https://www.mydealz.de/rss/gruppe/preisfehler",
+          "preisfehler": true
+        },
+        {
+          "name": "mydealz Lebensmittel",
+          "url": "https://www.mydealz.de/rss/gruppe/lebensmittel"
+        }
       ],
       "_suche": "Die mydealz-Suche als RSS (/rss/search?q=…) antwortet seit Okt. 2026 nur noch mit HTTP 404 – deshalb aus. Wieder an mit \"suchFeed\": \"<url mit {q}>\"."
     },
@@ -72,6 +112,10 @@
   "abruf": {
     "userAgent": "Schnaeppchen-Wecker/1.0 (privater Preisalarm, 1x pro Stunde; +https://github.com/XanderFoxy/Synquenzer/tree/main/schnaeppchen)",
     "timeoutMs": 20000,
-    "pauseMs": 1500
+    "pauseMs": 1500,
+    "pauseProHost": {
+      "www.kaufda.de": 2100
+    },
+    "_pauseProHost": "Eigene Pause (ms) je Server, wo robots.txt eine verlangt (kaufDA: crawl-delay 2)."
   }
 }

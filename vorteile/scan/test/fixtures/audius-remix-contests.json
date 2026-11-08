@@ -1,0 +1,18 @@
+{"data":[
+ {"event_id":"e1","event_type":"remix_contest","entity_type":"track","entity_id":"T1","user_id":"U1","end_date":"2026-11-30T23:59:00Z","is_deleted":false,"created_at":"2026-11-01T10:00:00Z","updated_at":"2026-11-01T10:00:00Z","permalink":"/nightdrive/contest/neon-hearts-remix","event_data":{"description":"Remix my new single – full stems pack, winner gets an official release.","prize_info":"Official release + 500 USD","winners":[]}},
+ {"event_id":"e2","event_type":"remix_contest","entity_type":"track","entity_id":"T2","user_id":"U2","end_date":"2026-11-01T23:59:00Z","is_deleted":false,"created_at":"2026-10-01T10:00:00Z","updated_at":"2026-10-01T10:00:00Z","permalink":null,"event_data":{"description":"Old contest","prize_info":"","winners":[]}},
+ {"event_id":"e3","event_type":"remix_contest","entity_type":"track","entity_id":"T3","user_id":"U3","end_date":"2026-12-12T23:59:00Z","is_deleted":false,"created_at":"2026-11-05T10:00:00Z","updated_at":"2026-11-05T10:00:00Z","permalink":null,"event_data":{"description":"Drill beat remix contest","prize_info":"","winners":[]}},
+ {"event_id":"e4","event_type":"remix_contest","entity_type":"track","entity_id":"T4","user_id":"U4","end_date":"2026-12-20T23:59:00Z","is_deleted":false,"created_at":"2026-11-06T10:00:00Z","updated_at":"2026-11-06T10:00:00Z","permalink":null,"event_data":{"description":"Flip this indie track any way you like.","prize_info":"","winners":[]}},
+ {"event_id":"e5","event_type":"remix_contest","entity_type":"track","entity_id":"T5","user_id":"U5","end_date":null,"is_deleted":false,"created_at":"2026-08-01T10:00:00Z","updated_at":"2026-08-01T10:00:00Z","permalink":"/coldwave/contest/glass-city","event_data":{"title":"Glass City – open remix contest","description":"Open-ended contest, best synth remix gets featured.","prize_info":"Feature on our playlist","winners":[]}}
+],
+"related":{
+ "tracks":[
+  {"id":"T1","title":"Neon Hearts","genre":"Synthwave","permalink":"/nightdrive/neon-hearts","user":{"id":"U1","handle":"nightdrive","name":"Nightdrive"}},
+  {"id":"T2","title":"Old Song","genre":"Electronic","permalink":"/someone/old-song","user":{"id":"U2","handle":"someone","name":"Someone"}},
+  {"id":"T3","title":"Block","genre":"Hip-Hop/Rap","permalink":"/mc/block","user":{"id":"U3","handle":"mc","name":"MC"}},
+  {"id":"T4","title":"Paper Boats","genre":"Alternative","permalink":"/paperband/paper-boats","user":{"id":"U4","handle":"paperband","name":"Paper Band"}},
+  {"id":"T5","title":"Glass City","genre":"Electronic","permalink":"/coldwave/glass-city","user":{"id":"U5","handle":"coldwave","name":"Coldwave"}}
+ ],
+ "users":[{"id":"U1","name":"Nightdrive","handle":"nightdrive"},{"id":"U2","name":"Someone","handle":"someone"},{"id":"U3","name":"MC","handle":"mc"},{"id":"U4","name":"Paper Band","handle":"paperband"},{"id":"U5","name":"Coldwave","handle":"coldwave"}],
+ "entry_counts":{"T1":12,"T2":3,"T3":0,"T4":1,"T5":7}
+}}

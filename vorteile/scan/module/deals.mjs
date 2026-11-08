@@ -1,5 +1,7 @@
 // Modul "deals": rechnet alle Deals neu durch (Mehrkauf, Aktionspackung, Coupons, Cashback, Limits, Versand).
 // Quellen: Daten des Schnäppchen-Weckers (schnaeppchen-daten) + mydealz-Feeds (Lebensmittel, Preisfehler ohne Technik).
+// Schnäppchen-Angebote mit regional = true (kaufDA, Prospekt Chemnitz/bundesweit) nur, wenn Döbeln nichts Lohnendes hat;
+// dann mit „(Prospekt <Region>)“ im Titel, „in Döbeln prüfen“ in der Zeile und nie sofort.
 // Dazu Geld-zurück-/Cashback-Aktionen (grund 'cashback', extra.art gzg|cashback) für den Abschnitt Cashback der Seite.
 // Enden: Schnäppchen-Angebote bis gueltigBis (mit Uhrzeit), mydealz bis Textende / Deal-Seite, sonst Höchstalter (lib/ende.mjs).
 import { rechne, bestesAngebot, parseAktion, couponImPreis } from '../rechnen.mjs';
@@ -84,24 +86,30 @@ export default async function deals({ holeText, cfg, jetzt, zustand }) {
     technikLinks = new Set((cur.technik || []).map(t => t.link));
     for (const p of cur.produkte || []) {
       const angebote = [p.bestes, ...(p.weitere || [])].filter(o => angebotOk(o, jetztMs));
-      const best = bestesAngebot(angebote.map(o => rechneSchnaeppchen(o, p, m)));
-      if (!best || !(best.ersparnis >= m.minErsparnis)) continue;
+      // Döbeln (marktguru, mydealz) vor Region (kaufDA, „Prospekt Chemnitz – in Döbeln prüfen“): die Region nur, wenn
+      // es in Döbeln nichts Lohnendes gibt (Xander 08.11.2026: „was am nächsten dran liegt“)
+      const lohnt = b => b && b.ersparnis >= m.minErsparnis;
+      let best = bestesAngebot(angebote.filter(o => !o.regional).map(o => rechneSchnaeppchen(o, p, m)));
+      if (!lohnt(best)) best = bestesAngebot(angebote.filter(o => o.regional).map(o => rechneSchnaeppchen(o, p, m)));
+      if (!lohnt(best)) continue;
       const o = best.angebot;
+      const region = o.regional ? o.region || 'Region' : null;
       const mitAktion = !!(best.aktion.art || best.aktion.coupons.length || best.aktion.extraMenge || best.aktion.extraProzent);
       const ab = o.gueltigAb && Date.parse(o.gueltigAb) > jetztMs ? o.gueltigAb : null;
       eintraege.push(eintrag({
-        kategorie: 'deals', titel: `${p.name} bei ${o.shop}`, soGehts: best.soGehts,
-        zeile: zeileAus(best, p.basis, { geschaetzt: p.normalQuelle === 'schaetzung', packung: o.packung || null, ab }),
+        kategorie: 'deals', titel: `${p.name} bei ${o.shop}${region ? ` (Prospekt ${region})` : ''}`, soGehts: best.soGehts,
+        zeile: zeileAus(best, p.basis, { geschaetzt: p.normalQuelle === 'schaetzung', packung: o.packung || null, ab }) + (region ? ' · in Döbeln prüfen' : ''),
         link: o.link || cfg.seite, quelle: 'Schnäppchen-Wecker', datum: jetzt, jetzt,
         bis: o.gueltigBis || null, bisQuelle: 'feld', ab, art: 'schnaeppchen',
         wert: Math.min(100, 40 + best.ersparnis * 70),
         // Der Schnäppchen-Wecker pusht selbst; hier nur sofort, wenn die Deal-Mathe einen deutlich besseren Preis findet.
-        sofort: mitAktion && best.ersparnis >= m.sofortAbErsparnis && !p.deal,
+        sofort: mitAktion && best.ersparnis >= m.sofortAbErsparnis && !p.deal && !region,
         grund: mitAktion ? 'Aktion durchgerechnet' : 'Schnäppchen',
         preise: preisAngaben({ preis: o.preis, preisVorher: o.preisVorher, vorherQuelle: 'Streichpreis im Prospekt' }),
         extra: {
           schritte: best.schritte, pro100: best.pro100, ersparnis: best.ersparnis, shop: o.shop, produkt: p.id,
           angebotTitel: o.titel || null, packung: o.packung || null, normalQuelle: p.normalQuelle || null,
+          regional: !!region, region, hinweis: o.hinweis || null,
         },
       }));
     }

@@ -2371,6 +2371,436 @@
     }
    ],
    "hinweise": "PRÜFLAUF 31.10.2026 (skeptische Gegenprüfung). Eigene neue Suchen waren nicht möglich. 3 WebSearch-Anfragen (prospektangebote-Preisverlauf, mydealz 465 ml 2026, '2,99 €') wurden abgelehnt, weil das gemeinsame Kontingent von 200 Suchen pro Turn verbraucht war. WebFetch auf www.supermarktcheck.de, www.mydealz.de und prices.openfoodfacts.org endete mit ENOTFOUND. Diese drei Hosts müssen in den Netzwerk-Einstellungen der Sitzung erlaubt werden; danach wurden keine weiteren Seiten versucht. Auf dem Zweig roh-daten gibt es nur den einen Sonden-Lauf 41227676320. Geprüft wurde deshalb jede Zahl gegen die Rohdaten und gegen den wörtlichen Text der Such-Auszüge im Sitzungsprotokoll: (1) supermarktcheck-Produktseite 78546, Rohkopie Datei 018: Globus 6,99, REWE 6,99, EDEKA 8,39 (je 465 ml, alle mit dem Hinweis 'schon etwas länger her'), 108 Preismeldungen. Abgelaufene 465-ml-Aktionen: Kaufland 3,99 statt 6,99, Penny 4,49 statt 6,99, REWE 4,79, Aldi Süd 4,44 statt 6,99, EDEKA 4,44 statt 6,49, Marktkauf 4,44 statt 5,99. Die 500-ml-Werte stehen getrennt. Alles bestätigt. (2) marktguru PLZ 04720, Datei 006: Lidl 3,99 €, '465/4x100ml', 8,58 €/l, 01.11. 23:00Z bis 07.11. 22:59Z, oldPrice null. Bestätigt. (3) mydealz-Lebensmittel-RSS, Eintrag vom 30.10.2026 10:33: '3,49 Euro mit App bzw. 3,99 Euro ohne App. Der reguläre Preis sind inzwischen 6,99 Euro', 'Ab Montag den 2.11.', keine Packungsgröße. Bestätigt. In allen gespeicherten mydealz-Feeds gibt es keinen weiteren Ben-&-Jerry's-Deal. (4) Open Prices, Dateien 052–054: Für Deutschland gibt es nur 1 Wert (Half Baked 7,99 €, 19.05.2022, Waschstraße Frankfurt). Bestätigt. (5) Zwei Such-Auszüge vom 31.10.2026 17:53/17:54 UTC (supermarktcheck, prospektangebote): Lidl 6,99/3,99 (-42 %), Wasgau 3,49, Netto MD 4,44, Globus 4,99, EDEKA 3,99 und 3,79 (08/2026), Netto 3,99 (2021), Kaufland 6,99, Marktkauf 6,49. Alle Zahlen stehen wörtlich darin. Die Auszüge sind Zusammenfassungen der Suchmaschine, die Seiten selbst wurden nie gesehen. Nachgerechnet: 6,99/4,65 = 1,503 €/100 ml; 3,99/4,65 = 0,858; 3,79/4,65 = 0,815; alle drei Mediane (3,99 / 4,22 / 4,44); 3,79 × 1,05 = 3,98. Der Lidl-Zeitraum ist richtig, weil die Sommerzeit am 25.10.2026 endete und ab dann MEZ = UTC+1 gilt. GEÄNDERT: (a) Kaufland regulär: 'Streichpreis der letzten Kaufland-Aktion' ersetzt durch 'einer abgelaufenen, undatierten Aktion', denn die Reihenfolge ist nicht belegt. Außerdem steht jetzt dabei, dass 6,99 € nur aus dem Such-Auszug der Herstellerseite stammt; die Produktseite hat keine Kaufland-Regalzeile. Dasselbe gilt für Marktkauf 6,49 €, jeweils mit wörtlichem Zitat. Die Aussage im Such-Auszug 'Penny 6,99 laut Seite' ist durch die Produktseite nicht gedeckt; Penny bleibt durch mydealz belegt. (b) Bei Globus und EDEKA ist der Seitenhinweis 'schon etwas länger her' ergänzt. (c) Neu sind Regalpreis-Schätzungen für Netto MD und Aldi Nord (je 6,99 €, deutlich als Schätzung markiert, mit Begründung), damit dort nicht 'unbekannt' steht. (d) Tiefst 12 Monate und Allzeit: 'niedriger lagen nur' ist abgeschwächt zu 'in den gefundenen Daten'. Ergänzt sind die beiden möglichen EDEKA-Einzelseiten und der Grundpreis für den Fall eines 438-ml-Bechers (0,865 €/100 ml). Neu ist auch der Hinweis, dass 3,79 € kein belegter Allzeit-Tiefstpreis ist: Vor 2026 gibt es nur einen Wert, und für 11/2025 bis 07/2026 wurde nichts Datiertes gefunden. (e) Datumsangaben: Der 25.10. (Netto MD, Globus) und der 18.10.2026 (EDEKA) sind Sonntage. Die Daten der Quelle bleiben unverändert, der Verkauf begann vermutlich am Montag. (f) Lidl: Die Quelle nennt -42 %, rechnerisch sind 3,99 statt 6,99 € -42,9 %. Unverändert bestätigt: Regalpreis bundesweit 6,99 € (= 1,503 €/100 ml) bei Lidl, Kaufland, Penny, REWE und Globus; Marktkauf 6,49 €; EDEKA 6,49 bis 8,39 € je nach Händler. Üblich 3,99 € (Spanne 3,99 bis 4,44 €). Tiefst 3,79 € (EDEKA, 08/2026). OFFENE LÜCKE: Gezielt nach günstigeren Angeboten der letzten 12 Monate zu suchen (mydealz-Archiv, Prospekt-Einzelseiten, discounto-Archiv) war in diesem Lauf unmöglich. Mit neuem Suchkontingent prüfen: die EDEKA-Seiten 69242181 und 64975128 (welche Packung und welche Region zu 3,79 €), die Penny-Seiten 612871 und 15895246, die Kaufland-Seiten 67118766 und 42312432 sowie mydealz-Deals zu 'Ben & Jerry's' 2025/2026. Bewusst nicht verwendet: die synthetische Test-Fixture 'EDEKA 4,99 € statt 7,49 €' (marktguru-ben-jerry-s.json, id 3001); Penny 1,82 €/100 ml aus history.json v1 (Lesefehler: die Kartoffel-Menge aus dem Sammeldeal); alte 500-ml-Werte (Kaufland 3,33, Marktkauf 4,90, Aldi Nord, Globus und REWE je 4,99); METRO (Großhandel). Die Streichpreise in Prospekten sind nach § 11 PAngV 30-Tage-Preise und keine Tiefstpreise. Einordnung der laufenden Angebote: Penny 3,49 € mit App liegt unter dem bisher gefundenen Tiefst von 3,79 €. Lidl 3,99 € entspricht dem üblichen Angebotspreis und liegt knapp über der Grenze Tiefst × 1,05 = 3,98 €."
+  },
+  {
+   "id": "zetti-knusperflocken",
+   "produkt": "Zetti Knusperflocken Vollmilch (Goldeck Süßwaren, Zeitz) – Tüten 130 g „klassik“, 270 g und 500 g („XXL“)",
+   "packungen": [
+    "500 g: die große Tüte („XXL“). Belege: Penny 15.–20.06.2026 „Zetti Knusperflocken 500 g“ 5,29 € (10,58 €/kg); REWE-Onlineshop „Zetti Knusperflocken 500g“; Norma „Fan Edition“ 500 g.",
+    "270 g: REWE-Prospekt 26.01.–01.02.2026 „je 270-g-Btl“ 2,99 € (1 kg = 11,07 €); Netto MD „Zetti Knusperflocken“ 4,49 € (16,63 €/kg = 270 g).",
+    "130 g „klassik“: REWE-Prospekt 16.–22.03.2026 1,89 € (14,54 €/kg)."
+   ],
+   "basis": "100g",
+   "regulaer": [
+    {
+     "p": 4.49,
+     "packung": "270 g",
+     "shop": "Netto Marken-Discount",
+     "stand": "KW 4/2026 (Prospektzeile ohne Streichpreis; derselbe Preis steht im Aug. 2026 als Vergleichspreis bei 3,49 €)",
+     "quelle": "Netto-Prospekt, Prospektabzug im öffentlichen GitHub-Repo TPfuderer/MVP_Preisvergleich_clean, data/Archive/netto_2026_KW04.csv: „Zetti Knusperflocken, € 4,49, 16.63 / kg“ (4,49 € ÷ 16,63 €/kg = 270 g). Gegenprobe prospektangebote.de (Websuche-Auszug vom 08.11.2026 (die Seite selbst ist aus GitHub Actions gesperrt)): Netto 270 g „3,49 € (regulär 4,49 €)“, 10.–15.08.2026.",
+     "url": "https://github.com/TPfuderer/MVP_Preisvergleich_clean/blob/HEAD/data/Archive/netto_2026_KW04.csv"
+    },
+    {
+     "p": 8.22,
+     "packung": "500 g",
+     "shop": "Norma",
+     "stand": "KW 32, Jahr im Auszug nicht genannt: „Originalpreis“ 8,22 € beim Angebot 6,66 € (Fan Edition)",
+     "quelle": "prospektangebote.de, Norma „Zetti Knusperflocken Fan Edition“ (Websuche-Auszug vom 08.11.2026 (die Seite selbst ist aus GitHub Actions gesperrt)).",
+     "url": "https://www.prospektangebote.de/geschaefte/norma/angebote/zetti-knusperflocken-fan-edition-angebot-64565133/"
+    }
+   ],
+   "ueblich": {
+    "p": 5.29,
+    "packung": "500 g",
+    "einheitspreis": 1.058,
+    "begruendung": "WENIG BELEGT. Einziger datierter Aktionspreis einer Kette in Döbeln für die 500-g-Tüte: Penny 5,29 € (15.–20.06.2026). Dazu Norma „Fan Edition“ 6,66 € (KW 32, ohne Jahr) und pro 100 g ähnlich REWE 270 g 2,99 € = 1,11 €/100 g (Region Neubrandenburg). Sobald der eigene Verlauf 3 Angebote hat, gilt dessen Median.",
+    "quellen": [
+     "https://www.prospektangebote.de/angebote/knusperflocken",
+     "https://www.prospektangebote.de/angebote/zetti-knusperflocken"
+    ]
+   },
+   "tiefst12": {
+    "p": 5.29,
+    "packung": "500 g",
+    "einheitspreis": 1.058,
+    "shop": "Penny",
+    "datum": "2026-06-15 bis 2026-06-20",
+    "quelle": "prospektangebote.de und marktguru (Penny Potsdam 14.–20.06.), Websuche-Auszug vom 08.11.2026 (die Seite selbst ist aus GitHub Actions gesperrt): „Zetti Knusperflocken 500 g 5,29 €“, 10,58 €/kg.",
+    "url": "https://www.prospektangebote.de/angebote/knusperflocken"
+   },
+   "angebote": [
+    {
+     "p": 5.29,
+     "packung": "500 g",
+     "shop": "Penny",
+     "datum": "2026-06-15 bis 2026-06-20",
+     "quelle": "prospektangebote.de/marktguru, Websuche-Auszug vom 08.11.2026 (die Seite selbst ist aus GitHub Actions gesperrt).",
+     "url": "https://www.prospektangebote.de/angebote/knusperflocken"
+    },
+    {
+     "p": 3.49,
+     "packung": "270 g",
+     "shop": "Netto (Marken-Discount oder „mit dem Scottie“ – im Auszug widersprüchlich)",
+     "datum": "2026-08-10 bis 2026-08-15",
+     "quelle": "prospektangebote.de, Websuche-Auszug vom 08.11.2026 (die Seite selbst ist aus GitHub Actions gesperrt): „Zetti Knusperflocken 270 g 3,49 € (4,49 €)“. Weil unklar ist, welcher Netto, zählt der Wert nicht.",
+     "url": "https://www.prospektangebote.de/angebote/zetti-knusperflocken"
+    },
+    {
+     "p": 2.99,
+     "packung": "270 g",
+     "shop": "REWE (Region Neubrandenburg, nicht in Döbeln)",
+     "datum": "2026-01-26 bis 2026-02-01",
+     "quelle": "REWE-Prospekt, Prospektabzug im öffentlichen GitHub-Repo TPfuderer/MVP_Preisvergleich_clean, data/Archive/rewe_2026_KW04.csv: „Zetti Knusperflocken, € 2,99, 1 kg = 11,07, je 270-g-Btl“.",
+     "url": "https://github.com/TPfuderer/MVP_Preisvergleich_clean/blob/HEAD/data/Archive/rewe_2026_KW04.csv"
+    },
+    {
+     "p": 1.89,
+     "packung": "130 g",
+     "shop": "REWE (Region Bamberg, nicht in Döbeln)",
+     "datum": "2026-03-16 bis 2026-03-22",
+     "quelle": "REWE-Prospekt, Prospektabzug im öffentlichen GitHub-Repo TPfuderer/MVP_Preisvergleich_clean, data/Archive/rewe_2026_KW12.csv: „Zetti Knusperflocken, € 1,89, 1 kg = 14,54 €, klassik, je 130-g-Btl.“.",
+     "url": "https://github.com/TPfuderer/MVP_Preisvergleich_clean/blob/HEAD/data/Archive/rewe_2026_KW12.csv"
+    },
+    {
+     "p": 6.66,
+     "packung": "500 g",
+     "shop": "Norma",
+     "datum": "KW 32, Jahr offen",
+     "quelle": "prospektangebote.de, Norma Fan Edition, Websuche-Auszug vom 08.11.2026 (die Seite selbst ist aus GitHub Actions gesperrt). Ohne Jahr: zählt nicht für 12 Monate.",
+     "url": "https://www.prospektangebote.de/geschaefte/norma/angebote/zetti-knusperflocken-fan-edition-angebot-64565133/"
+    }
+   ],
+   "hinweise": [
+    "RECHERCHE 08.11.2026 (neues Produkt, Xander 08.11.2026). Quellen: (a) Prospektabzüge Kaufland/Netto MD/Lidl/EDEKA/REWE KW 1–12/2026 im Repo TPfuderer/MVP_Preisvergleich_clean (wörtlich zitiert, Packung aus Preis ÷ Grundpreis nachgerechnet); (b) Websuche-Auszüge von prospektangebote.de/supermarktcheck.de (nur wörtliche Angaben mit Datum übernommen). REWE-Abzüge stammen aus Bamberg bzw. Neubrandenburg und zählen deshalb nicht (nicht Döbeln). Lücke: April–Oktober 2026 nur aus Suchauszügen; der eigene Verlauf füllt das ab jetzt stündlich."
+   ]
+  },
+  {
+   "id": "leckermaeulchen",
+   "produkt": "Frischli Leckermäulchen Milchquark / Milchquark-Mahlzeit – Becher 150 g (auch 6 × 50 g)",
+   "packungen": [
+    "150 g Becher: REWE-Onlineshop „Leckermäulchen Milchquark-Mahlzeit … 150g“ (Vanilla, Erdbeer, Stracciatella, Käsekuchen, Melone …); Kaufland „Leckermäulchen Milch Quark 0.15 kg“.",
+    "6 × 50 g (300 g): REWE-Prospekt 09.–15.02.2026 „Vanille, je 6 x 50-g-Pckg“ 1,49 € (1 kg = 4,97 €)."
+   ],
+   "basis": "100g",
+   "regulaer": [
+    {
+     "p": 0.99,
+     "packung": "150 g",
+     "shop": "Kaufland",
+     "stand": "Meldedatum unbekannt (Streichpreis bei der Aktion 0,49 €, −50 %)",
+     "quelle": "prospektangebote.de, Kaufland „Leckermäulchen Milch-Quark“: „€0,99 → €0,49 (−50 %)“ (Websuche-Auszug vom 08.11.2026 (die Seite selbst ist aus GitHub Actions gesperrt); Datum im Auszug nicht genannt).",
+     "url": "https://www.prospektangebote.de/geschaefte/kaufland/angebote/leckermaulchen-milch-quark-angebot-64913713/"
+    },
+    {
+     "p": 0.99,
+     "packung": "150 g",
+     "shop": "Lidl",
+     "stand": "Meldedatum unbekannt (Vergleichspreis bei der Aktion 0,65 €)",
+     "quelle": "prospektangebote.de, Lidl „LECKER- MÄULCHEN Milch-Quark“: regulär 0,99 €, Aktion 0,65 € (Websuche-Auszug vom 08.11.2026 (die Seite selbst ist aus GitHub Actions gesperrt)).",
+     "url": "https://www.prospektangebote.de/angebote/leckermaulchen"
+    },
+    {
+     "p": 0.99,
+     "packung": "150 g",
+     "shop": "REWE",
+     "stand": "Meldedatum unbekannt (Nutzermeldung)",
+     "quelle": "supermarktcheck.de, Nutzermeldung „Rewe Becher 150 Gramm 0,99 €“ (Websuche-Auszug vom 08.11.2026 (die Seite selbst ist aus GitHub Actions gesperrt)).",
+     "url": "https://www.supermarktcheck.de/product/7317-frischli-leckermaeulchen-milchquark-mahlzeit-"
+    }
+   ],
+   "ueblich": {
+    "p": 0.59,
+    "packung": "150 g",
+    "einheitspreis": 0.393,
+    "begruendung": "WENIG BELEGT. Aktionspreise bei Ketten in Döbeln für den 150-g-Becher: Kaufland 0,59 € (21.–28.05.2026), Kaufland 0,49 € und Lidl 0,65 € (beide ohne Datum). Mittlerer Wert 0,59 € (−40 % gegen 0,99 €). Sobald der eigene Verlauf 3 Angebote hat, gilt dessen Median.",
+    "quellen": [
+     "https://www.prospektangebote.de/geschaefte/kaufland/angebote/leckermaulchen-milch-quark-angebot-64913713/",
+     "https://www.prospektangebote.de/angebote/leckermaulchen"
+    ]
+   },
+   "tiefst12": {
+    "p": 0.59,
+    "packung": "150 g",
+    "einheitspreis": 0.393,
+    "shop": "Kaufland",
+    "datum": "2026-05-21 bis 2026-05-28",
+    "quelle": "prospektangebote.de, Kaufland: „Leckermäulchen Milch Quark 0.15 kg, Kaufland, €0,59, 21. Mai 2026 bis 28. Mai 2026“ (Websuche-Auszug vom 08.11.2026 (die Seite selbst ist aus GitHub Actions gesperrt)). Günstiger (0,49 € bei Kaufland) nur ohne Datum.",
+    "url": "https://www.prospektangebote.de/geschaefte/kaufland/angebote/leckermaulchen-milch-quark-angebot-64913713/"
+   },
+   "angebote": [
+    {
+     "p": 0.59,
+     "packung": "150 g",
+     "shop": "Kaufland",
+     "datum": "2026-05-21 bis 2026-05-28",
+     "quelle": "prospektangebote.de, Websuche-Auszug vom 08.11.2026 (die Seite selbst ist aus GitHub Actions gesperrt).",
+     "url": "https://www.prospektangebote.de/geschaefte/kaufland/angebote/leckermaulchen-milch-quark-angebot-64913713/"
+    },
+    {
+     "p": 1.49,
+     "packung": "6 x 50 g",
+     "shop": "REWE (Region Neubrandenburg, nicht in Döbeln)",
+     "datum": "2026-02-09 bis 2026-02-15",
+     "quelle": "REWE-Prospekt, Prospektabzug im öffentlichen GitHub-Repo TPfuderer/MVP_Preisvergleich_clean, data/Archive/rewe_2026_KW07.csv: „Frischli Leckermäulchen, € 1,49, 1 kg = 4,97, Vanille, je 6 x 50-g-Pckg“.",
+     "url": "https://github.com/TPfuderer/MVP_Preisvergleich_clean/blob/HEAD/data/Archive/rewe_2026_KW07.csv"
+    }
+   ],
+   "hinweise": [
+    "RECHERCHE 08.11.2026 (neues Produkt, Xander 08.11.2026). Quellen: (a) Prospektabzüge Kaufland/Netto MD/Lidl/EDEKA/REWE KW 1–12/2026 im Repo TPfuderer/MVP_Preisvergleich_clean (wörtlich zitiert, Packung aus Preis ÷ Grundpreis nachgerechnet); (b) Websuche-Auszüge von prospektangebote.de/supermarktcheck.de (nur wörtliche Angaben mit Datum übernommen). REWE-Abzüge stammen aus Bamberg bzw. Neubrandenburg und zählen deshalb nicht (nicht Döbeln). Lücke: April–Oktober 2026 nur aus Suchauszügen; der eigene Verlauf füllt das ab jetzt stündlich.",
+    "Weitere Aktionspreise ohne Datum: Kaufland 0,49 € (statt 0,99 €), Lidl 0,65 € (statt 0,99 €), Combi 0,66 €, WEZ 0,79 € – nicht gezählt."
+   ]
+  },
+  {
+   "id": "exquisa-quark",
+   "produkt": "Exquisa Quark-Genuss (500 g, versch. Sorten, 0,2 % Fett) bzw. Exquisa Quark Creme (400–500 g)",
+   "packungen": [
+    "500 g Becher: Kaufland „EXQUISA Quark-Genuss“ 1,49 € bei 1 kg = 2,98 € (= 500 g), Lidl „Quark-Genuss Erdbeere“ 1 kg = 2,98 €, REWE „je 500-g-Becher“.",
+    "Quark Creme 400/500 g: Netto MD 09.–14.02.2026 „2.98 - 3.73 / kg“ bei 1,49 € (= 500 bzw. 400 g)."
+   ],
+   "basis": "100g",
+   "regulaer": [
+    {
+     "p": 2.49,
+     "packung": "500 g",
+     "shop": "Kaufland",
+     "stand": "05.–11.02.2026: Streichpreis 2,49 € beim Angebot 1,49 €",
+     "quelle": "Kaufland-Prospekt KW 7/2026, Prospektabzug im öffentlichen GitHub-Repo TPfuderer/MVP_Preisvergleich_clean, data/Archive/kaufland_2026_KW07.csv: „EXQUISA, Quark-Genuss, € 1,49, 2.49, 1 kg = 2.98“.",
+     "url": "https://github.com/TPfuderer/MVP_Preisvergleich_clean/blob/HEAD/data/Archive/kaufland_2026_KW07.csv"
+    },
+    {
+     "p": 2.39,
+     "packung": "500 g",
+     "shop": "Netto Marken-Discount",
+     "stand": "19.–21.03.2026: „statt 2,39 €“ beim Angebot 1,49 €",
+     "quelle": "Netto-Prospekt KW 12/2026, Prospektabzug im öffentlichen GitHub-Repo TPfuderer/MVP_Preisvergleich_clean, data/Archive/netto_2026_KW12.csv: „Exquisa Quark-Genuss, € 1,49, € 2,39, 2.98 - 3.97 / kg, gekühlt, versch. Sorten“.",
+     "url": "https://github.com/TPfuderer/MVP_Preisvergleich_clean/blob/HEAD/data/Archive/netto_2026_KW12.csv"
+    },
+    {
+     "p": 2.39,
+     "packung": "500 g",
+     "shop": "Lidl",
+     "stand": "Aug. 2026 (Aktion bis 22.08.2026): Vergleichspreis 2,39 € bei 1,49 €",
+     "quelle": "prospektangebote.de: „Lidl EXQUISA Quark-Genuss 500 g €2,39 €1,49 −37 %“ (Websuche-Auszug vom 08.11.2026 (die Seite selbst ist aus GitHub Actions gesperrt)).",
+     "url": "https://www.prospektangebote.de/angebote/exquisa-quark-genuss"
+    },
+    {
+     "p": 2.39,
+     "packung": "500 g",
+     "shop": "Marktkauf",
+     "stand": "22.–27.06.2026: Vorher-Preis 2,39 € bei 1,49 €",
+     "quelle": "prospektangebote.de (Websuche-Auszug vom 08.11.2026 (die Seite selbst ist aus GitHub Actions gesperrt)).",
+     "url": "https://www.prospektangebote.de/angebote/exquisa-quark-genuss"
+    }
+   ],
+   "ueblich": {
+    "p": 1.49,
+    "packung": "500 g",
+    "einheitspreis": 0.298,
+    "begruendung": "Median der datierten Aktionen 01/2026–08/2026 bei Ketten in Döbeln (Kaufland, Lidl, Netto MD, Marktkauf, REWE, Globus): 1,49 € (8×), 1,99 € (1×, Netto MD 03.–08.08.2026). Üblich ist 1,49 € (−38 % gegen 2,39 €).",
+    "quellen": [
+     "https://github.com/TPfuderer/MVP_Preisvergleich_clean/blob/HEAD/data/Archive/",
+     "https://www.prospektangebote.de/angebote/exquisa-quark-genuss"
+    ]
+   },
+   "tiefst12": {
+    "p": 1.49,
+    "packung": "500 g",
+    "einheitspreis": 0.298,
+    "shop": "Lidl",
+    "datum": "bis 2026-08-22",
+    "quelle": "prospektangebote.de (Websuche-Auszug vom 08.11.2026 (die Seite selbst ist aus GitHub Actions gesperrt)); derselbe Tiefstpreis 1,49 € auch bei Kaufland (05.–11.02.2026), Netto MD (19.–21.03.2026), Marktkauf, REWE, Globus. Weniger nur im Großhandel (Selgros 1,39 €, zählt nicht).",
+    "url": "https://www.prospektangebote.de/angebote/exquisa-quark-genuss"
+   },
+   "angebote": [
+    {
+     "p": 1.49,
+     "packung": "500 g",
+     "shop": "Lidl",
+     "datum": "2026-01-12 bis 2026-01-18",
+     "quelle": "Lidl-Prospekt, Prospektabzug im öffentlichen GitHub-Repo TPfuderer/MVP_Preisvergleich_clean, data/Archive/lidl_2026_KW02.csv: „Quark-Genuss Erdbeere, Exquisa, € 1,49, 1 kg = 2.98“.",
+     "url": "https://github.com/TPfuderer/MVP_Preisvergleich_clean/blob/HEAD/data/Archive/lidl_2026_KW02.csv"
+    },
+    {
+     "p": 1.49,
+     "packung": "500 g",
+     "shop": "Kaufland",
+     "datum": "2026-02-05 bis 2026-02-11",
+     "quelle": "Prospektabzug im öffentlichen GitHub-Repo TPfuderer/MVP_Preisvergleich_clean, data/Archive/kaufland_2026_KW07.csv.",
+     "url": "https://github.com/TPfuderer/MVP_Preisvergleich_clean/blob/HEAD/data/Archive/kaufland_2026_KW07.csv"
+    },
+    {
+     "p": 1.49,
+     "packung": "400/500 g (Quark Creme)",
+     "shop": "Netto Marken-Discount",
+     "datum": "2026-02-09 bis 2026-02-14",
+     "quelle": "Prospektabzug im öffentlichen GitHub-Repo TPfuderer/MVP_Preisvergleich_clean, data/Archive/netto_2026_KW07.csv: „Exquisa Quark Creme, € 1,49, € 2,09, 2.98 - 3.73 / kg“.",
+     "url": "https://github.com/TPfuderer/MVP_Preisvergleich_clean/blob/HEAD/data/Archive/netto_2026_KW07.csv"
+    },
+    {
+     "p": 1.49,
+     "packung": "500 g",
+     "shop": "Netto Marken-Discount",
+     "datum": "2026-03-19 bis 2026-03-21",
+     "quelle": "Prospektabzug im öffentlichen GitHub-Repo TPfuderer/MVP_Preisvergleich_clean, data/Archive/netto_2026_KW12.csv.",
+     "url": "https://github.com/TPfuderer/MVP_Preisvergleich_clean/blob/HEAD/data/Archive/netto_2026_KW12.csv"
+    },
+    {
+     "p": 1.49,
+     "packung": "500 g",
+     "shop": "REWE (Region Bamberg, nicht in Döbeln)",
+     "datum": "2026-01-26 bis 2026-02-01",
+     "quelle": "Prospektabzug im öffentlichen GitHub-Repo TPfuderer/MVP_Preisvergleich_clean, data/Archive/rewe_2026_KW04.csv: „Exquisa Quark Genuss, € 1,49, 1 kg = 2,98, Erdbeere, 0,2% Fett, je 500-g-Becher“.",
+     "url": "https://github.com/TPfuderer/MVP_Preisvergleich_clean/blob/HEAD/data/Archive/rewe_2026_KW04.csv"
+    },
+    {
+     "p": 1.49,
+     "packung": "500 g",
+     "shop": "Marktkauf",
+     "datum": "2026-06-22 bis 2026-06-27",
+     "quelle": "prospektangebote.de (Websuche-Auszug vom 08.11.2026 (die Seite selbst ist aus GitHub Actions gesperrt)).",
+     "url": "https://www.prospektangebote.de/angebote/exquisa-quark-genuss"
+    },
+    {
+     "p": 1.49,
+     "packung": "500 g",
+     "shop": "Globus",
+     "datum": "2026-06-29 bis 2026-07-04",
+     "quelle": "prospektangebote.de (Websuche-Auszug vom 08.11.2026 (die Seite selbst ist aus GitHub Actions gesperrt)).",
+     "url": "https://www.prospektangebote.de/angebote/exquisa-quark-genuss"
+    },
+    {
+     "p": 1.49,
+     "packung": "500 g",
+     "shop": "REWE",
+     "datum": "2026-07-06 bis 2026-07-12",
+     "quelle": "prospektangebote.de (Websuche-Auszug vom 08.11.2026 (die Seite selbst ist aus GitHub Actions gesperrt)); Region im Auszug nicht genannt.",
+     "url": "https://www.prospektangebote.de/angebote/exquisa-quark-genuss"
+    },
+    {
+     "p": 1.99,
+     "packung": "500 g",
+     "shop": "Netto Marken-Discount",
+     "datum": "2026-08-03 bis 2026-08-08",
+     "quelle": "prospektangebote.de: „Netto Exquisa Quark Genuss 500 g, €2,39, €1,99“ (Websuche-Auszug vom 08.11.2026 (die Seite selbst ist aus GitHub Actions gesperrt)).",
+     "url": "https://www.prospektangebote.de/angebote/exquisa-quark-genuss"
+    },
+    {
+     "p": 1.49,
+     "packung": "500 g",
+     "shop": "Lidl",
+     "datum": "bis 2026-08-22",
+     "quelle": "prospektangebote.de (Websuche-Auszug vom 08.11.2026 (die Seite selbst ist aus GitHub Actions gesperrt)).",
+     "url": "https://www.prospektangebote.de/angebote/exquisa-quark-genuss"
+    }
+   ],
+   "hinweise": [
+    "RECHERCHE 08.11.2026 (neues Produkt, Xander 08.11.2026). Quellen: (a) Prospektabzüge Kaufland/Netto MD/Lidl/EDEKA/REWE KW 1–12/2026 im Repo TPfuderer/MVP_Preisvergleich_clean (wörtlich zitiert, Packung aus Preis ÷ Grundpreis nachgerechnet); (b) Websuche-Auszüge von prospektangebote.de/supermarktcheck.de (nur wörtliche Angaben mit Datum übernommen). REWE-Abzüge stammen aus Bamberg bzw. Neubrandenburg und zählen deshalb nicht (nicht Döbeln). Lücke: April–Oktober 2026 nur aus Suchauszügen; der eigene Verlauf füllt das ab jetzt stündlich."
+   ]
+  },
+  {
+   "id": "exquisa-frischkaese",
+   "produkt": "Exquisa Frischkäse / Frischkäsezubereitung (Natur, Kräuter …; „Der Sahnige“) – Becher 200 g, Lidl „XXL“ 300 g",
+   "packungen": [
+    "200 g: Kaufland „EXQUISA Frischkäsezubereitung“ 0,99 € bei 1 kg = 4,95 € (= 200 g), Netto MD 1,29 € bei 6,45 €/kg (= 200 g), REWE „Der Sahnige … je 200-g-Becher“.",
+    "300 g „XXL“: Lidl „Frischkäse XXL Der Sahnige“ 1,45 € bei 1 kg = 4,83 € (= 300 g)."
+   ],
+   "basis": "100g",
+   "regulaer": [
+    {
+     "p": 1.89,
+     "packung": "200 g",
+     "shop": "Kaufland",
+     "stand": "26.02.–04.03.2026: Streichpreis 1,89 € beim Angebot 0,99 €",
+     "quelle": "Kaufland-Prospekt KW 9/2026, Prospektabzug im öffentlichen GitHub-Repo TPfuderer/MVP_Preisvergleich_clean, data/Archive/kaufland_2026_KW09.csv: „EXQUISA, Frischkäsezubereitung, € 0,99, 1.89, 1 kg = 4.95, versch. Sorten, Magerstufe - Doppelrahmstufe“.",
+     "url": "https://github.com/TPfuderer/MVP_Preisvergleich_clean/blob/HEAD/data/Archive/kaufland_2026_KW09.csv"
+    },
+    {
+     "p": 1.89,
+     "packung": "200 g",
+     "shop": "Netto Marken-Discount",
+     "stand": "16.–21.02.2026: „statt 1,89 €“ beim Angebot 1,29 €",
+     "quelle": "Netto-Prospekt KW 8/2026, Prospektabzug im öffentlichen GitHub-Repo TPfuderer/MVP_Preisvergleich_clean, data/Archive/netto_2026_KW08.csv: „Exquisa Frischkäse -zubereitung, € 1,29, € 1,89, 6.45 / kg, gekühlt, versch. Sorten“.",
+     "url": "https://github.com/TPfuderer/MVP_Preisvergleich_clean/blob/HEAD/data/Archive/netto_2026_KW08.csv"
+    }
+   ],
+   "ueblich": {
+    "p": 1.11,
+    "packung": "200 g",
+    "einheitspreis": 0.555,
+    "begruendung": "Median der datierten Aktionen 01–03/2026 bei Ketten in Döbeln: Kaufland 1,11 / 0,99, EDEKA 1,11 / 0,99, Netto MD 1,29 → 1,11 €. Lidl-XXL (300 g) und REWE Bamberg nicht gezählt.",
+    "quellen": [
+     "https://github.com/TPfuderer/MVP_Preisvergleich_clean/blob/HEAD/data/Archive/"
+    ]
+   },
+   "tiefst12": {
+    "p": 0.99,
+    "packung": "200 g",
+    "einheitspreis": 0.495,
+    "shop": "Kaufland",
+    "datum": "2026-02-26 bis 2026-03-04",
+    "quelle": "Prospektabzug im öffentlichen GitHub-Repo TPfuderer/MVP_Preisvergleich_clean, data/Archive/kaufland_2026_KW09.csv (0,99 € statt 1,89 €); ebenso EDEKA 16.–21.03.2026 (0,99 €).",
+    "url": "https://github.com/TPfuderer/MVP_Preisvergleich_clean/blob/HEAD/data/Archive/kaufland_2026_KW09.csv"
+   },
+   "angebote": [
+    {
+     "p": 1.11,
+     "packung": "200 g",
+     "shop": "Kaufland",
+     "datum": "2026-01-15 bis 2026-01-21",
+     "quelle": "Prospektabzug im öffentlichen GitHub-Repo TPfuderer/MVP_Preisvergleich_clean, data/Archive/kaufland_2026_KW03.csv: „EXQUISA, Frischkäsezubereitung, € 1,11, 1 kg = 5.55“ (= 200 g).",
+     "url": "https://github.com/TPfuderer/MVP_Preisvergleich_clean/blob/HEAD/data/Archive/kaufland_2026_KW03.csv"
+    },
+    {
+     "p": 1.11,
+     "packung": "200 g (Becher üblich; Prospekt ohne Mengenangabe)",
+     "shop": "EDEKA",
+     "datum": "2026-01-19 bis 2026-01-24",
+     "quelle": "Prospektabzug im öffentlichen GitHub-Repo TPfuderer/MVP_Preisvergleich_clean, data/Archive/edeka_2026_KW03.csv: „Exquisa Frischkäse oder -zubereitung, € 1,11, Kein Mengenpreis, verschiedene Sorten und Fettstufen“.",
+     "url": "https://github.com/TPfuderer/MVP_Preisvergleich_clean/blob/HEAD/data/Archive/edeka_2026_KW03.csv"
+    },
+    {
+     "p": 1.29,
+     "packung": "200 g",
+     "shop": "Netto Marken-Discount",
+     "datum": "2026-02-16 bis 2026-02-21",
+     "quelle": "Prospektabzug im öffentlichen GitHub-Repo TPfuderer/MVP_Preisvergleich_clean, data/Archive/netto_2026_KW08.csv.",
+     "url": "https://github.com/TPfuderer/MVP_Preisvergleich_clean/blob/HEAD/data/Archive/netto_2026_KW08.csv"
+    },
+    {
+     "p": 0.99,
+     "packung": "200 g",
+     "shop": "Kaufland",
+     "datum": "2026-02-26 bis 2026-03-04",
+     "quelle": "Prospektabzug im öffentlichen GitHub-Repo TPfuderer/MVP_Preisvergleich_clean, data/Archive/kaufland_2026_KW09.csv.",
+     "url": "https://github.com/TPfuderer/MVP_Preisvergleich_clean/blob/HEAD/data/Archive/kaufland_2026_KW09.csv"
+    },
+    {
+     "p": 0.99,
+     "packung": "200 g (Becher üblich; Prospekt ohne Mengenangabe)",
+     "shop": "EDEKA",
+     "datum": "2026-03-16 bis 2026-03-21",
+     "quelle": "Prospektabzug im öffentlichen GitHub-Repo TPfuderer/MVP_Preisvergleich_clean, data/Archive/edeka_2026_KW12.csv: „Exquisa Frischkäse oder -zubereitung, € 0,99, Kein Mengenpreis“.",
+     "url": "https://github.com/TPfuderer/MVP_Preisvergleich_clean/blob/HEAD/data/Archive/edeka_2026_KW12.csv"
+    },
+    {
+     "p": 1.45,
+     "packung": "300 g",
+     "shop": "Lidl",
+     "datum": "2026-01-12 bis 2026-01-18",
+     "quelle": "Prospektabzug im öffentlichen GitHub-Repo TPfuderer/MVP_Preisvergleich_clean, data/Archive/lidl_2026_KW02.csv: „Frischkäse XXL Der Sahnige, Exquisa, € 1,45, 1 kg = 4.83“ (= 300 g).",
+     "url": "https://github.com/TPfuderer/MVP_Preisvergleich_clean/blob/HEAD/data/Archive/lidl_2026_KW02.csv"
+    },
+    {
+     "p": 1.59,
+     "packung": "300 g",
+     "shop": "Lidl",
+     "datum": "2026-03-09 bis 2026-03-14",
+     "quelle": "Prospektabzug im öffentlichen GitHub-Repo TPfuderer/MVP_Preisvergleich_clean, data/Archive/lidl_2026_KW11.csv: „Frischkäse XXL, Exquisa, € 1,59, 1 kg = 5.30“ (= 300 g).",
+     "url": "https://github.com/TPfuderer/MVP_Preisvergleich_clean/blob/HEAD/data/Archive/lidl_2026_KW11.csv"
+    },
+    {
+     "p": 1.11,
+     "packung": "200 g",
+     "shop": "REWE (Region Bamberg, nicht in Döbeln)",
+     "datum": "2026-03-16 bis 2026-03-22",
+     "quelle": "Prospektabzug im öffentlichen GitHub-Repo TPfuderer/MVP_Preisvergleich_clean, data/Archive/rewe_2026_KW12.csv: „Exquisa Der Sahnige, € 1,11, 1 kg = 5,55 €, 65% Fett i.Tr., je 200-g-Becher“.",
+     "url": "https://github.com/TPfuderer/MVP_Preisvergleich_clean/blob/HEAD/data/Archive/rewe_2026_KW12.csv"
+    }
+   ],
+   "hinweise": [
+    "RECHERCHE 08.11.2026 (neues Produkt, Xander 08.11.2026). Quellen: (a) Prospektabzüge Kaufland/Netto MD/Lidl/EDEKA/REWE KW 1–12/2026 im Repo TPfuderer/MVP_Preisvergleich_clean (wörtlich zitiert, Packung aus Preis ÷ Grundpreis nachgerechnet); (b) Websuche-Auszüge von prospektangebote.de/supermarktcheck.de (nur wörtliche Angaben mit Datum übernommen). REWE-Abzüge stammen aus Bamberg bzw. Neubrandenburg und zählen deshalb nicht (nicht Döbeln). Lücke: April–Oktober 2026 nur aus Suchauszügen; der eigene Verlauf füllt das ab jetzt stündlich.",
+    "Kaufland 09.07.–12.08.2026 „EXQUISA oder MIREE Frischkäsezubereitung 0,99 € (nur in der Filiale)“ laut Suchauszug – ohne Packungsgröße, nicht gezählt."
+   ]
   }
  ]
 }

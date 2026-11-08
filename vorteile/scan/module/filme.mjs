@@ -4,7 +4,8 @@
 // Listen: vorteile/filme.json (frei änderbar). Ergebnis: Einträge nur für echte Treffer + eigene Datei filme.json
 // (Rückgabefeld „datei“; main.mjs schreibt sie nach <data>/filme.json). Horror kommt nie auf die Seite (außer Wunschliste).
 // Quellen, alle über holeText (Roh-Mitschnitt): iTunes Search API (DE + US), iTunes Lookup, Legacy-Charts (RSS als JSON),
-// Wikidata (P6398 = iTunes movie ID), mydealz-Gruppen (apple-tv, filme-serien).
+// Wikidata (P6398 = iTunes movie ID), mydealz-Gruppen (apple-tv, filme-serien), Apple-TV-Angebotsräume (tv.apple.com/de/room,
+// z. B. „Filme für 3,99 €“; filme.json „appleTv“) – Abgleich mit Wunsch-, 80er- und Disney-Liste (Xander 08.11.2026).
 // Apple-Nummern ohne die kaputte Film-Suche: siehe Schritt 3 (Wege de → us → wikidata → charts) und QUELLEN-FIX.md.
 // Höflich: höchstens maxAppleAbrufe pro Lauf, höchstens maxSuchen Suchen, maxNeueTitel neue Titel, Zeitbudget; Pause pro
 // Host in lib/http.mjs; nach 3 Apple-Fehlern in Folge kein weiterer Apple-Abruf in diesem Lauf.
@@ -15,6 +16,7 @@ import { parsePrice, euro, round, schluessel } from '../lib/text.mjs';
 import { berlinTag } from '../lib/ende.mjs';
 import { preisAngaben, threadId } from '../lib/mydealz.mjs';
 import { sammleFeeds, eintrag, mydealzFeeds } from './gemeinsam.mjs';
+import { raumLinks, raumFilme, raumName, raumPreis, passtZuListe } from '../lib/appletv.mjs';
 
 const HIER = dirname(fileURLToPath(import.meta.url));
 export const LISTEN_PFAD = join(HIER, '..', '..', 'filme.json');
@@ -872,6 +874,43 @@ export default async function filme(ctx) {
   }
   const aktion = deals.length > 0;
 
+  // 4b) Apple-TV-Angebotsräume: Raum-Links von der Filmseite des Stores (Name/Slug klingt nach Angebot) + feste Räume aus
+  //     filme.json; die Filme im Raum werden mit Wunsch-/80er-/Disney-Liste abgeglichen (gleicher Slug wie der Listen-Name).
+  const at = listen.appleTv || {};
+  status['apple-tv-raeume'] = { ok: true, anzahl: 0, fehler: [], raeume: [] };
+  const raumTreffer = [];
+  if (at.aktiv !== false && (liste(at.start).length || liste(at.raeume).length)) {
+    const max = at.maxAbrufe ?? 4;
+    let abrufe = 0;
+    const raeume = new Map(); // url -> Name
+    for (const r of liste(at.raeume)) { const u = typeof r === 'string' ? r : r?.url; if (u) raeume.set(u, typeof r === 'string' ? '' : r.name || ''); }
+    for (const start of liste(at.start)) {
+      if (abrufe >= max) break;
+      try {
+        abrufe++;
+        for (const l of raumLinks(await holeText(start, { headers: { accept: 'text/html' } }))) if (l.angebot && !raeume.has(l.url)) raeume.set(l.url, l.name);
+      } catch (e) { melde('apple-tv-raeume', `Apple TV Filmseite: ${e.message}`); }
+    }
+    const filmPosten = posten.filter(p => !p.serie);
+    for (const [url, name0] of raeume) {
+      if (abrufe >= max) break;
+      try {
+        abrufe++;
+        const html = await holeText(url, { headers: { accept: 'text/html' } });
+        const name = raumName(html) || name0 || 'Angebote';
+        const preis = raumPreis(html);
+        const filmeImRaum = raumFilme(html);
+        status['apple-tv-raeume'].raeume.push({ name, url, filme: filmeImRaum.length, preis });
+        status['apple-tv-raeume'].anzahl += filmeImRaum.length;
+        for (const f of filmeImRaum) {
+          const p = filmPosten.find(x => passtZuListe(f, x.item));
+          if (p && !raumTreffer.some(t => t.p.key === p.key)) raumTreffer.push({ f, p, raum: name, raumUrl: url, preis });
+        }
+      } catch (e) { melde('apple-tv-raeume', `Apple TV Raum: ${e.message}`); }
+    }
+    status['apple-tv-raeume'].abrufe = abrufe;
+  }
+
   // 5) Titel bauen + Preis-Historie
   const titel = new Map(); // id -> Titel-Objekt
   const neueTiefst = new Set();
@@ -961,6 +1000,12 @@ export default async function filme(ctx) {
       || (t.preis <= m.angebotPreisAktion && ((t.istTiefst && t.tage >= 7 && (t._hoechst ?? 0) > t.preis) || (aktion && t._gesenkt)))))
     .sort((a, b) => rang(a) - rang(b) || ((a.chart ?? 999) - (b.chart ?? 999)) || (a.preis - b.preis))
     .slice(0, m.maxAngebot);
+  for (const t of raumTreffer) {
+    gruppen.angebot.push({
+      id: `appletv:${t.f.umc}`, typ: 'film', titel: t.p.item.titel, jahr: t.p.item.jahr ?? null,
+      ...NULL_TITEL, preis: t.preis, seit: tag, tage: 1, angebot: true, link: t.f.link, quelle: 'Apple', raum: t.raum, raumUrl: t.raumUrl, liste: t.p.gruppe,
+    });
+  }
   for (const it of deals) {
     gruppen.angebot.push({
       id: `mydealz:${threadId(it.link) || schluessel(it.link)}`, typ: /staffel|season|serie/i.test(it.titel) ? 'staffel' : 'film',
@@ -1011,6 +1056,23 @@ export default async function filme(ctx) {
     if (t.quelle !== 'Apple' || !mitPreis(t) || gemeldet.has(t.id) || !t._gesenkt) continue;
     gemeldet.add(t.id);
     neuerEintrag(t, { grund: 'Film im Angebot', wert: 50, sofort: false, gruppe: 'angebot', zusatz: t.chart ? [`Platz ${t.chart} der Charts`] : [] });
+  }
+  // Apple-TV-Angebotsraum: Film von deiner Liste steht drin (Wunsch = sofort; 80er/Disney sofort bei ≤ 3,99 €)
+  const schonTitel = new Set(eintraege.map(e => normTitel(String(e.extra?.filmTitel || e.titel).replace(/\s+für\s+[\d.,]+\s*€.*$/, '').replace(/\s*\(\d{4}\)$/, ''))));
+  for (const t of raumTreffer) {
+    const it = t.p.item, g = t.p.gruppe;
+    if (schonTitel.has(normTitel(it.titel))) continue;
+    const wunsch = g === 'wunsch';
+    const billig = t.preis != null && t.preis <= m.angebotPreis;
+    const p = preisAngaben({ preis: t.preis });
+    eintraege.push(eintrag({
+      id: `film-raum-${schluessel(t.f.umc, String(t.preis))}`, kategorie: 'filme',
+      titel: `${it.titel}${it.jahr ? ` (${it.jahr})` : ''}${t.preis != null ? ` für ${euro(t.preis)}` : ' im Angebot'}`,
+      link: t.f.link, quelle: 'Apple TV', datum: jetzt, jetzt, art: 'deal', preise: p,
+      zeile: [`im Apple-TV-Raum „${t.raum}“`, wunsch ? 'auf deiner Wunschliste' : g === 'disney' ? 'Disney' : '80er/Kult'].join(' · '),
+      soGehts: SO_FILM, wert: wunsch ? 92 : billig ? 80 : 65, sofort: wunsch || billig, grund: wunsch ? 'Wunschfilm im Apple-TV-Angebot' : 'Film von deiner Liste im Apple-TV-Angebot',
+      extra: { filmId: `appletv:${t.f.umc}`, typ: 'film', jahr: it.jahr ?? null, gruppe: 'angebot', liste: g, raum: t.raum, raumUrl: t.raumUrl, filmTitel: it.titel },
+    }));
   }
   const wunschNamen = posten.filter(x => x.gruppe === 'wunsch').flatMap(p => namen(p.item).filter(x => x.faktor === 1).map(x => normTitel(x.n)));
   for (const it of deals) {

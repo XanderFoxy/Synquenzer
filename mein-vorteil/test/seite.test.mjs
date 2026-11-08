@@ -1,5 +1,6 @@
 // Browser-Tests der Seite „Mein Vorteil“ (Playwright, Chromium) mit echten Daten vom 31.10.2026 und Vertrags-Fixtures.
-// MV2 (07.11.2026): eine Seite mit Abschnitten (#krypto … #mehr) statt Reitern; Kurs-Quellen sind gemockt (kein echtes Netz).
+// MV5 (08.11.2026): Bereiche mit Leiste oben (immer nur einer zu sehen), Start „Heute für dich“, dunkles Design,
+// Bewerbungs-Assistent; Kurs-Quellen sind gemockt (kein echtes Netz).
 // Aufruf: cd mein-vorteil && node --test   (Bildschirmfotos nach $MV_SHOTS, sonst ins Temp-Verzeichnis)
 // Ohne installiertes Playwright werden die Tests übersprungen.
 import { test, before, after } from 'node:test';
@@ -56,6 +57,7 @@ const DATEI = {
   'konzerte-daten/konzerte/data/konzerte.json': 'konzerte-konzerte.json',
   'konzerte-daten/konzerte/data/releases.json': 'konzerte-releases.json',
   'konzerte-daten/konzerte/data/status.json': 'konzerte-status.json',
+  'vorteile-daten/vorteile/data/filme.json': 'filme.json',
 };
 const SATZ = {
   v1: n => join(FIX, 'echt-2026-10-31', 'v1', n), // Produktionsformat vom 31.10.2026 (alte Scanner)
@@ -64,7 +66,10 @@ const SATZ = {
   v3: n => join(FIX, 'echt-2026-10-31', /^(schnaeppchen|vorteile)/.test(n) ? 'v3' : 'v1', n),
   vertrag: n => join(FIX, 'vertrag', n),
   vertragB: n => join(FIX, 'vertrag-b', n), // Sonderfälle der zweiten Prüfung (Versand im Preis, Ende nach 24 h, unplausibel)
+  // Fassung 5 (werkzeug/baue-v5.mjs): echte Scanner-Läufe mit Remix/Auftritte/Unterricht/Apple-TV-Räumen, kaufDA, Konzerte weit weg
+  v5: n => join(FIX, 'v5', n),
 };
+const JETZT_V5 = '2026-11-07T16:35:00Z';
 
 // Kurs-Quellen gemockt (Stand 07.11.2026 ~17:36 UTC): kurs = 'ok' | 'kaputt' (alle Quellen gestört) | 'cryptocom' (nur Crypto.com geht)
 const KURS = { btc: 67971.07, eth: 2004.49, btc24: 0.25, eth24: -1.2 };
@@ -93,7 +98,9 @@ async function oeffne({ satz = 'vertrag', jetzt = JETZT, breite = 428, hoehe = 9
     const rest = u.pathname.replace(/^\/XanderFoxy\/Synquenzer\//, '');
     const n = DATEI[rest];
     if (!n || zustand.fehlt.has(n)) return route.fulfill({ status: 404, headers: { 'access-control-allow-origin': '*' }, body: '' });
-    let body = readFileSync(SATZ[zustand.satz](n));
+    let body;
+    try { body = readFileSync(n === 'filme.json' && zustand.satz !== 'v5' ? join(FIX, 'filme.json') : SATZ[zustand.satz](n)); }
+    catch { return route.fulfill({ status: 404, headers: { 'access-control-allow-origin': '*' }, body: '' }); }
     if (patch[n]) { const d = JSON.parse(body); body = JSON.stringify(patch[n](d) ?? d); }
     return route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body });
   });
@@ -117,12 +124,12 @@ const geladen = page => page.waitForFunction(() => !/lädt|Lade/.test(document.g
 const text = (page, sel) => page.locator(sel).innerText();
 const nbsp = s => s.replace(/ /g, ' ');
 
-// Abschnitt über die Sprung-Leiste anspringen (früher: Reiter)
+// Bereich über die Leiste oben öffnen
 async function springe(page, name) {
   await page.locator(`.sprung a[data-ziel="${name}"]`).click();
   await page.waitForFunction(n => location.hash === '#' + n, name);
 }
-const zahlIn = (page, ab) => page.locator(`.sprung a[data-ziel="${ab}"] .n`);
+const zahlIn = (page, ab) => page.locator(`.sprung a[data-ziel="${ab}"] .n, .sprung a[data-reiter="${ab}"] .n`);
 // alles in geschlossenen Kästen eines Bereichs aufklappen (innerText zeigt sonst nur die Überschrift)
 const aufklappen = (page, sel) => page.evaluate(s => document.querySelectorAll(`${s} details`).forEach(d => (d.open = true)), sel);
 
@@ -146,6 +153,7 @@ async function waitFor(fn, ms = 5000) { const t0 = Date.now(); while (!fn()) { i
 const alarmOffen = page => page.evaluate(() => document.getElementById('krypto-alarm').open);
 
 // Kein seitliches Scrollen, alles Tippbare mindestens 44 × 44 px (auch in aufgeklappten Kästen)
+const BEREICHE = ['start', 'deals', 'preisfehler', 'auftritte', 'remix', 'unterricht', 'konzerte', 'gewinnspiele', 'krypto', 'mehr'];
 async function pruefeLayout(page, wo) {
   await page.evaluate(() => document.querySelectorAll('details').forEach(d => (d.open = true)));
   const r = await page.evaluate(() => {
@@ -167,6 +175,11 @@ async function pruefeLayout(page, wo) {
 
 test('echte Daten (neue Scanner, 31.10. 16:35): Knoppers-Karte ist eindeutig', { skip: ohnePw }, async () => {
   const { ctx, page, fehler } = await oeffne({ satz: 'v2' });
+  // Start: Heute wichtig nennt den laufenden Deal, Zähler in der Leiste
+  assert.match(nbsp(await text(page, '#wichtig')), /Deal: Knoppers Schnitte 2,79 € bei Kaufland/);
+  assert.equal(await zahlIn(page, 'deals').innerText(), '1', 'nur Knoppers läuft jetzt; Ben & Jerry\'s erst ab Montag');
+  assert.equal(await zahlIn(page, 'konzerte').isHidden(), true, 'leerer Zähler bei 0 Konzerten');
+  await springe(page, 'deals');
   const karte = page.locator('[data-produkt="knoppers-schnitte"]');
   const t = nbsp(await karte.innerText());
   assert.match(await karte.locator('h3').innerText(), /^Knoppers Schnitte$/);
@@ -202,16 +215,12 @@ test('echte Daten (neue Scanner, 31.10. 16:35): Knoppers-Karte ist eindeutig', {
   const jetztBlock = await page.evaluate(() => { const h = [...document.querySelectorAll('#produkte h3.unter')]; const a = h.findIndex(x => /Jetzt günstig/i.test(x.textContent)); const b = h.findIndex(x => /Bald günstig/i.test(x.textContent)); return { a, b }; });
   assert.ok(jetztBlock.a >= 0 && jetztBlock.b > jetztBlock.a, 'Bald günstig steht unter Jetzt günstig');
   assert.match(nbsp(await text(page, '#stand')), /^Stand: Angebote gerade eben · Vorteile gerade eben · Konzerte vor 5 Min\./);
-  assert.equal(await zahlIn(page, 'produkte').innerText(), '1', 'nur Knoppers läuft jetzt; Ben & Jerry\'s erst ab Montag');
-  assert.equal(await zahlIn(page, 'auftritte').isHidden(), true, 'leerer Zähler bei 0 Konzerten');
-  // Heute wichtig nennt den laufenden Deal
-  assert.match(nbsp(await text(page, '#wichtig')), /Deal: Knoppers Schnitte 2,79 € bei Kaufland/);
   assert.deepEqual(fehler, []);
   await ctx.close();
 });
 
 test('Preis-Kontext (v3): Jetzt · Regulär · Üblich im Angebot · Tiefst 12 Mon. mit Laden, Monat und Quelle', { skip: ohnePw }, async () => {
-  const { ctx, page, fehler } = await oeffne({ satz: 'v3' });
+  const { ctx, page, fehler } = await oeffne({ satz: 'v3', pfad: '/mein-vorteil/#produkte' });
   const karte = page.locator('[data-produkt="knoppers-schnitte"]');
   const t = nbsp(await karte.innerText());
   const zellen = (await karte.locator('.kx > div').allInnerTexts()).map(z => nbsp(z).replace(/\s+/g, ' ').trim());
@@ -251,7 +260,7 @@ test('Preis-Kontext (v3): Jetzt · Regulär · Üblich im Angebot · Tiefst 12 M
 });
 
 test('Preis-Kontext (v3): nach Kaufland-Ende steht Knoppers mit Üblich/Tiefst in der Liste', { skip: ohnePw }, async () => {
-  const { ctx, page, fehler } = await oeffne({ satz: 'v3', jetzt: '2026-10-31T18:00:30Z' });
+  const { ctx, page, fehler } = await oeffne({ satz: 'v3', jetzt: '2026-10-31T18:00:30Z', pfad: '/mein-vorteil/#produkte' });
   assert.equal(await page.locator('[data-produkt="knoppers-schnitte"]').count(), 0);
   await aufklappen(page, '#produkte');
   assert.match(nbsp(await text(page, '#produkte')), /Knoppers Schnitte\s*Gerade kein Angebot · Üblich 2,79 € · Tiefst 2,49 € \(Kaufland mit Card, Okt\. 2026\) · je 15 Stück/);
@@ -261,7 +270,7 @@ test('Preis-Kontext (v3): nach Kaufland-Ende steht Knoppers mit Üblich/Tiefst i
 
 test('echte Daten: nach Kaufland-Ende (18:00 UTC) verschwindet das Angebot von selbst', { skip: ohnePw }, async () => {
   // Seite ist kurz vor Ende offen …
-  const { ctx, page, fehler } = await oeffne({ satz: 'v2', jetzt: '2026-10-31T17:59:00Z' });
+  const { ctx, page, fehler } = await oeffne({ satz: 'v2', jetzt: '2026-10-31T17:59:00Z', pfad: '/mein-vorteil/#produkte' });
   assert.match(nbsp(await page.locator('[data-produkt="knoppers-schnitte"]').innerText()), /endet heute, 19:00 Uhr/);
   // … und kommt nach dem Ende wieder in den Vordergrund (ohne neue Daten)
   await page.clock.setFixedTime(new Date('2026-10-31T18:00:30Z'));
@@ -294,7 +303,7 @@ test('altes Produktionsformat (31.10.): keine falsche Packung, keine erfundenen 
 });
 
 test('Preisfehler: nur krasse – Lumaland (−75 %, 73 € gespart) ja; Samsung (−60 %) und RTX (165 €, Vorher-Preis unbekannt) nein; Abgelaufenes fehlt', { skip: ohnePw }, async () => {
-  const { ctx, page, fehler } = await oeffne({ satz: 'vertrag' });
+  const { ctx, page, fehler } = await oeffne({ satz: 'vertrag', pfad: '/mein-vorteil/#preisfehler' });
   const karten = page.locator('#preisfehler [data-preisfehler]');
   assert.equal(await karten.count(), 1, 'Lumaland (doppelt in beiden Quellen) einmal; Samsung und RTX sind keine No-Brainer');
   const luma = nbsp(await karten.filter({ hasText: 'Lumaland' }).innerText());
@@ -308,12 +317,13 @@ test('Preisfehler: nur krasse – Lumaland (−75 %, 73 € gespart) ja; Samsung
   assert.match(luma, /storniert/);
   const pf = await page.locator('#preisfehler').textContent();
   assert.doesNotMatch(pf, /Samsung|RTX 5070|ABGELAUFEN/);
-  for (const ab of ['produkte', 'preisfehler', 'gewinnspiele', 'cashback', 'snacks', 'auftritte', 'mehr']) {
+  for (const ab of ['produkte', 'preisfehler', 'gewinnspiele', 'cashback', 'snacks', 'auftritte', 'konzerte', 'mehr']) {
     assert.doesNotMatch(await page.locator('#' + ab).textContent(), /ABGELAUFEN/, `${ab}: Abgelaufenes sichtbar`);
   }
-  assert.equal(await zahlIn(page, 'produkte').innerText(), '1', 'Zähler: 1 laufender Deal (Ben & Jerry\'s beginnt erst Montag)');
+  assert.equal(await zahlIn(page, 'deals').innerText(), '1', 'Zähler: 1 laufender Deal (Ben & Jerry\'s beginnt erst Montag)');
   assert.equal(await zahlIn(page, 'preisfehler').innerText(), '1');
   assert.match(nbsp(await text(page, '#wichtig')), /Preisfehler: Lumaland Outdoor Pop-Up Pavillon/);
+  await springe(page, 'deals');
   // Crunchips: das beste Angebot ist abgelaufen -> die Karte zeigt das teurere REWE-Angebot, ohne Prozent und ohne den alten Satz
   const chips = nbsp(await page.locator('[data-produkt="crunchips"]').innerText());
   assert.match(chips, /Lorenz Crunchips · 150 g/);
@@ -328,7 +338,7 @@ test('Preisfehler: nur krasse – Lumaland (−75 %, 73 € gespart) ja; Samsung
 test('Preisfehler verschwinden von selbst: Technik-Deal am Deal-Ende, Preisfehler ohne Ende 24 h nach dem Melden', { skip: ohnePw }, async () => {
   // Samsung krass gemacht (29 € statt 499 €), damit sein Deal-Ende (heute 21:00 Uhr) geprüft wird
   const patch = { 'schnaeppchen-current.json': d => { const t = d.technik.find(x => /Samsung/.test(x.titel)); t.preis = 29; t.ersparnisEuro = 470; t.ersparnisProzent = 94; } };
-  const { ctx, page, fehler } = await oeffne({ satz: 'vertrag', jetzt: '2026-10-31T19:59:00Z', patch });
+  const { ctx, page, fehler } = await oeffne({ satz: 'vertrag', jetzt: '2026-10-31T19:59:00Z', patch, pfad: '/mein-vorteil/#preisfehler' });
   const karten = page.locator('#preisfehler [data-preisfehler]');
   assert.deepEqual((await karten.allInnerTexts()).map(t => /Lumaland/.test(t) ? 'Lumaland' : /Samsung/.test(t) ? 'Samsung' : t.slice(0, 30)), ['Lumaland', 'Samsung']);
   await page.clock.setFixedTime(new Date('2026-10-31T20:00:30Z'));
@@ -370,17 +380,18 @@ test('Mehr: übrige Bereiche eingeklappt; Prämien & Freunde werben und „komis
   await ctx.close();
 });
 
-test('Konzerte: Vergangenes fehlt, Umkreis-Schalter, Vorverkauf, Neuerscheinungen', { skip: ohnePw }, async () => {
+test('Konzerte: Vergangenes fehlt, Umkreis-Schalter, Vorverkauf, Neuerscheinungen, nächster Termin je Band auch weit weg', { skip: ohnePw }, async () => {
   const { ctx, page, fehler } = await oeffne({ satz: 'vertrag', pfad: '/mein-vorteil/#konzerte' });
-  const p = page.locator('#auftritte');
-  assert.equal(new URL(page.url()).hash, '#auftritte', 'alte Marke #konzerte zeigt auf Auftritte & Konzerte');
+  const p = page.locator('#konzerte');
+  assert.equal(new URL(page.url()).hash, '#konzerte', 'Push-Link #konzerte öffnet den eigenen Bereich');
   let t = nbsp(await p.innerText());
-  assert.match(t, /Depeche Mode/);
-  assert.match(t, /Magenta-Vorverkauf ab Mo 2\.11\., 10:00 Uhr/);
-  assert.match(t, /OMD/);
-  assert.doesNotMatch(t, /Camouflage|ABGELAUFEN/);
+  assert.match(t, /In deiner Nähe\s*2\s*[\s\S]*Depeche Mode[\s\S]*Magenta-Vorverkauf ab Mo 2\.11\., 10:00 Uhr[\s\S]*OMD/i);
+  // Xander 08.11.: „was das Nächste ist“ – Camouflage (372 km) steht als nächster Termin der Band darunter, mit km
+  assert.match(t, /Weiter weg – nächster Termin je Band\s*1\s*[\s\S]*Camouflage\s*weit[\s\S]*372 km/i);
+  assert.doesNotMatch(t, /ABGELAUFEN/);
+  assert.match(nbsp(await text(page, '#w-konzerte')), /2 Termine bis 200 km – dazu der nächste Termin von 1 weiteren Band, auch weit weg\./);
   await p.getByRole('button', { name: 'Alle' }).click();
-  await aufklappen(page, '#auftritte');
+  await aufklappen(page, '#konzerte');
   t = nbsp(await p.innerText());
   assert.match(t, /Camouflage\s*weit/);
   assert.doesNotMatch(t, /ABGELAUFEN/);
@@ -391,7 +402,7 @@ test('Konzerte: Vergangenes fehlt, Umkreis-Schalter, Vorverkauf, Neuerscheinunge
   // echte Daten (31.10., Lauf 41230376427): TM_KEY fehlt, nur 1 von 4 Festival-Seiten gestört (Gothic meets Klassik).
   // Die anderen drei wurden geprüft (HTTP 200) und melden neue Erwähnungen per Push -> nicht „Konzertsuche aus“.
   const echt = await oeffne({ satz: 'v2', pfad: '/mein-vorteil/#konzerte' });
-  const kt = nbsp(await echt.page.locator('#auftritte').innerText());
+  const kt = nbsp(await echt.page.locator('#konzerte').innerText());
   assert.doesNotMatch(kt, /Konzertsuche gerade aus|kein Push|README/);
   assert.match(kt, /Gerade nichts im Umkreis von 200 km\. Sobald etwas angekündigt wird, kommt ein Push\./);
   assert.match(kt, /Bis dahin kommen Termine nur von den Festival-Seiten \(Gothic meets Klassik gerade nicht erreichbar\)\./);
@@ -412,8 +423,8 @@ test('Konzerte: Festival-Seiten einzeln gezählt (status.seiten.geprueft/gesamt)
     await o.ctx.route(/^https:\/\/raw\.githubusercontent\.com\/.*\/konzerte\/data\/status\.json/, r => r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: mit(seiten) }));
     await o.page.reload();
     await geladen(o.page);
-    await o.page.evaluate(() => document.querySelectorAll('#auftritte details').forEach(d => (d.open = true)));
-    const kt = nbsp(await o.page.locator('#auftritte').innerText());
+    await o.page.evaluate(() => document.querySelectorAll('#konzerte details').forEach(d => (d.open = true)));
+    const kt = nbsp(await o.page.locator('#konzerte').innerText());
     assert.match(kt, erwartet);
     assert.doesNotMatch(kt, nicht);
     assert.deepEqual(o.fehler, []);
@@ -421,19 +432,25 @@ test('Konzerte: Festival-Seiten einzeln gezählt (status.seiten.geprueft/gesamt)
   }
 });
 
-test('Sprungmarken: alte #angebote/#vorteile/#konzerte zeigen auf Abschnitte, Leiste markiert den Abschnitt; Push-Hilfe', { skip: ohnePw }, async () => {
+test('Sprungmarken: alte #angebote/#vorteile/#konzerte zeigen auf Bereiche, Leiste markiert den Bereich, „Du bist in“; Push-Hilfe', { skip: ohnePw }, async () => {
   const { ctx, page, fehler } = await oeffne({ satz: 'v2', pfad: '/mein-vorteil/#konzerte' });
-  await page.waitForFunction(() => location.hash === '#auftritte');
-  await page.waitForFunction(() => document.querySelector('.sprung a[data-ziel="auftritte"]').getAttribute('aria-current') === 'true');
+  await page.waitForFunction(() => location.hash === '#konzerte');
+  await page.waitForFunction(() => document.querySelector('.sprung a[data-ziel="konzerte"]').getAttribute('aria-current') === 'true');
+  assert.equal(await page.locator('#ort-name').innerText(), 'Konzerte');
   await springe(page, 'gewinnspiele');
   await page.waitForFunction(() => document.querySelector('.sprung a[data-ziel="gewinnspiele"]').getAttribute('aria-current') === 'true');
-  for (const [alt, neu] of [['#angebote', '#produkte'], ['#vorteile', '#gewinnspiele'], ['#remix', '#remix']]) {
+  assert.equal(await page.locator('#ort-name').innerText(), 'Gewinnspiele');
+  assert.equal(await page.locator('#gewinnspiele').isVisible(), true);
+  assert.equal(await page.locator('#konzerte').isHidden(), true, 'immer nur ein Bereich zu sehen');
+  for (const [alt, neu, bereich] of [['#angebote', '#produkte', 'deals'], ['#vorteile', '#start', 'start'], ['#remix', '#remix', 'remix']]) {
     await page.evaluate(h => { location.hash = h; }, alt);
     await page.waitForFunction(h => location.hash === h, neu);
+    await page.waitForFunction(b => document.querySelector(`.sprung a[data-ziel="${b}"]`).getAttribute('aria-current') === 'true', bereich);
   }
-  // Leiste: alle Abschnitte in Xanders Reihenfolge, danach der eigene Reiter „Filme“; wischbar ohne seitliches Scrollen der Seite
-  assert.deepEqual(await page.locator('.sprung a').evaluateAll(as => as.map(a => a.firstChild.textContent.trim())), ['Krypto', 'Meine Produkte', 'Preisfehler', 'Gewinnspiele', 'Cashback', 'Snacks', 'Auftritte', 'Remix', 'Mehr', 'Filme']);
+  // Leiste: Start + alle Bereiche in Xanders Reihenfolge (Filme ist ein eigener Reiter); wischbar ohne seitliches Scrollen der Seite
+  assert.deepEqual(await page.locator('.sprung a .t').allInnerTexts(), ['Start', 'Deals', 'Preisfehler', 'Filme', 'Auftritte', 'Remix', 'Unterricht', 'Konzerte', 'Gewinnspiele', 'Krypto', 'Mehr']);
   assert.equal(await page.locator('.sprung a[data-reiter="filme"]').count(), 1);
+  assert.equal(await page.locator('.sprung a svg.ic').count(), 11, 'jeder Bereich mit gezeichnetem Symbol');
   // Push-Hilfe
   await page.locator('#push').click();
   assert.match(await page.locator('#push-hilfe').innerText(), /xander-schnaeppchen-b5cbf4442aaa9734f3/);
@@ -460,7 +477,7 @@ test('Einhängepunkt für weitere Reiter (wie „Filme“): Link mit data-reiter
   assert.match(await page.locator('#p-probe').innerText(), /Probe\s*3,99 €/i);
   assert.equal(await page.locator('.sprung a[data-reiter="probe"]').getAttribute('aria-current'), 'true');
   await pruefeLayout(page, 'Reiter Probe');
-  await springe(page, 'cashback');
+  await springe(page, 'deals');
   assert.equal(await page.locator('main').isVisible(), true);
   assert.equal(await page.locator('#p-probe').isHidden(), true);
   // ↻ holt auch geöffnete Reiter frisch, wenn sie gerade nicht zu sehen sind
@@ -489,12 +506,12 @@ test('alte Adressen leiten sofort auf die neue Seite (mit passendem Abschnitt)',
   const ctx = await browser.newContext({ serviceWorkers: 'block' });
   await ctx.route('https://**', r => r.fulfill({ status: 404, body: '' }));
   const page = await ctx.newPage();
-  for (const [von, nach] of [['/schnaeppchen/', '#produkte'], ['/vorteile/', '#gewinnspiele'], ['/vorteile/#schnaeppchen', '#produkte'], ['/konzerte/', '#auftritte']]) {
+  for (const [von, nach, bereich] of [['/schnaeppchen/', '#produkte', 'deals'], ['/vorteile/', '#start', 'start'], ['/vorteile/#schnaeppchen', '#produkte', 'deals'], ['/konzerte/', '#konzerte', 'konzerte']]) {
     await page.goto(basis + von);
     await page.waitForURL(u => u.pathname === '/mein-vorteil/');
     await page.waitForFunction(h => location.hash === h, nach);
     assert.equal(new URL(page.url()).search, '', 'Marker ?von= wird aus der Adresse entfernt');
-    await page.waitForFunction(z => document.querySelector(`.sprung a[data-ziel="${z}"]`).getAttribute('aria-current') === 'true', nach.slice(1));
+    await page.waitForFunction(z => document.querySelector(`.sprung a[data-ziel="${z}"]`).getAttribute('aria-current') === 'true', bereich);
     // einmaliger Hinweis aufs neue Symbol (bis „Verstanden“)
     if (von === '/schnaeppchen/') {
       assert.equal(await page.locator('#umzug').isVisible(), true);
@@ -518,7 +535,7 @@ test('Preisfehler/Technik (vertrag-b): nicht krasse fehlen; krasse mit „inkl. 
     const c = d.technik.find(t => /CAMELBAK/.test(t.titel)); Object.assign(c, { preisVorher: 39.99, ersparnisEuro: 33.01, ersparnisProzent: 83 });
     const so = d.technik.find(t => /Sony/.test(t.titel)); Object.assign(so, { preis: 29, ersparnisEuro: 370, ersparnisProzent: 93 });
   } };
-  o = await oeffne({ satz: 'vertragB', patch });
+  o = await oeffne({ satz: 'vertragB', patch, pfad: '/mein-vorteil/#preisfehler' });
   const { page, fehler } = o;
   const karten = page.locator('#preisfehler [data-preisfehler]');
   const camel = nbsp(await karten.filter({ hasText: 'CAMELBAK' }).innerText());
@@ -539,7 +556,7 @@ test('Preisfehler/Technik (vertrag-b): nicht krasse fehlen; krasse mit „inkl. 
 });
 
 test('Tiefstpreis auf der Seite: nie „Einziges Angebot“, wenn auf derselben Karte ein billigeres steht (ältere Daten)', { skip: ohnePw }, async () => {
-  const { ctx, page, fehler } = await oeffne({ satz: 'vertragB' });
+  const { ctx, page, fehler } = await oeffne({ satz: 'vertragB', pfad: '/mein-vorteil/#produkte' });
   const bj = nbsp(await page.locator('[data-produkt="ben-jerrys"]').innerText());
   assert.match(bj, /Tiefstpreis\?\s*unklar\s*PENNY hat 3,49 € \(mit App, ab Mo 2\.11\.\) – Packungsgröße dort nicht sicher/);
   assert.doesNotMatch(bj, /Einziges Angebot/);
@@ -548,7 +565,7 @@ test('Tiefstpreis auf der Seite: nie „Einziges Angebot“, wenn auf derselben 
 });
 
 test('Unplausibles Angebot (eher anderes Produkt) wird nie zur Hauptkarte, auch wenn das beste abgelaufen ist', { skip: ohnePw }, async () => {
-  const { ctx, page, fehler } = await oeffne({ satz: 'vertragB', jetzt: '2026-10-31T18:30:00Z' });
+  const { ctx, page, fehler } = await oeffne({ satz: 'vertragB', jetzt: '2026-10-31T18:30:00Z', pfad: '/mein-vorteil/#produkte' });
   assert.equal(await page.locator('[data-produkt="knoppers-schnitte"]').count(), 0);
   await aufklappen(page, '#produkte');
   const t = nbsp(await page.locator('#produkte').innerText());
@@ -560,10 +577,10 @@ test('Unplausibles Angebot (eher anderes Produkt) wird nie zur Hauptkarte, auch 
 
 test('Vorverkauf: Beginn und Ende werden gemerkt – die Zeile wechselt von selbst, während die Seite offen ist', { skip: ohnePw }, async () => {
   const { ctx, page, fehler } = await oeffne({ satz: 'vertrag', pfad: '/mein-vorteil/#konzerte', jetzt: '2026-11-02T08:58:00Z', uhr: 'laeuft' });
-  const dm = page.locator('#auftritte .liste > li', { hasText: 'Depeche Mode' }).first();
+  const dm = page.locator('#konzerte .liste > li', { hasText: 'Depeche Mode' }).first();
   assert.match(nbsp(await dm.innerText()), /Magenta-Vorverkauf ab heute, 10:00 Uhr/);
   await page.clock.fastForward('03:00');
-  await page.waitForFunction(() => /läuft bis/.test(document.getElementById('auftritte').textContent));
+  await page.waitForFunction(() => /läuft bis/.test(document.getElementById('konzerte').textContent));
   assert.match(nbsp(await dm.innerText()), /Magenta-Vorverkauf läuft bis Mi 4\.11\., 10:00 Uhr/);
   assert.deepEqual(fehler, []);
   await ctx.close();
@@ -571,15 +588,15 @@ test('Vorverkauf: Beginn und Ende werden gemerkt – die Zeile wechselt von selb
 
 test('Neuerscheinungen gestört ≠ keine; Konzerttermine gestört -> Neuerscheinungen trotzdem da', { skip: ohnePw }, async () => {
   let o = await oeffne({ satz: 'vertrag', pfad: '/mein-vorteil/#konzerte', fehlt: ['konzerte-releases.json'] });
-  await aufklappen(o.page, '#auftritte');
-  let t = nbsp(await o.page.locator('#auftritte').innerText());
+  await aufklappen(o.page, '#konzerte');
+  let t = nbsp(await o.page.locator('#konzerte').innerText());
   assert.match(t, /Neuerscheinungen gerade nicht erreichbar/);
   assert.doesNotMatch(t, /Keine neuen Veröffentlichungen/);
   assert.match(t, /Depeche Mode/);
   await o.ctx.close();
   o = await oeffne({ satz: 'vertrag', pfad: '/mein-vorteil/#konzerte', fehlt: ['konzerte-konzerte.json'] });
-  await aufklappen(o.page, '#auftritte');
-  t = nbsp(await o.page.locator('#auftritte').innerText());
+  await aufklappen(o.page, '#konzerte');
+  t = nbsp(await o.page.locator('#konzerte').innerText());
   assert.match(t, /Konzerttermine gerade nicht erreichbar/);
   assert.match(t, /Plastic Autumn/);
   assert.deepEqual(o.fehler.filter(f => !/Failed to load resource/.test(f)), []);
@@ -587,7 +604,7 @@ test('Neuerscheinungen gestört ≠ keine; Konzerttermine gestört -> Neuerschei
 });
 
 test('Eine Quelle gestört (Telefon online): nicht „offline“, sondern „letzter Stand von … – Quelle gerade gestört“', { skip: ohnePw }, async () => {
-  const { ctx, page, fehler, zustand } = await oeffne({ satz: 'v2' });
+  const { ctx, page, fehler, zustand } = await oeffne({ satz: 'v2', pfad: '/mein-vorteil/#produkte' });
   zustand.fehlt.add('schnaeppchen-current.json');
   await page.reload();
   await page.waitForFunction(() => /gestört/.test(document.getElementById('stand').textContent));
@@ -604,7 +621,7 @@ test('Eine Quelle gestört (Telefon online): nicht „offline“, sondern „let
 const ALT_SEITE = '<!doctype html><meta charset="utf-8"><title>alt</title><p>alte Seite</p>';
 for (const [ordner, nach, cache, altSeite] of [
   ['schnaeppchen', '#produkte', 'schnaeppchen-1', readFileSync(join(FIX, 'alt', 'schnaeppchen-index.html'))],
-  ['vorteile', '#gewinnspiele', 'vorteile-v1', ALT_SEITE],
+  ['vorteile', '#start', 'vorteile-v1', ALT_SEITE],
 ]) {
   test(`alter Service Worker (${ordner}) wird ersetzt: Zwischenspeicher weg, kleiner Worker bleibt, Seite landet auf Mein Vorteil`, { skip: ohnePw }, async () => {
     const ctx = await browser.newContext({ serviceWorkers: 'allow' });
@@ -727,7 +744,7 @@ test('Weiterleitungsseite an falscher Stelle (als /Synquenzer/ aus einem fremden
 test('als Home-Bildschirm-App: startet ohne Netz aus dem eigenen Service Worker', { skip: ohnePw }, async () => {
   const { ctx, page, fehler, zustand } = await oeffne({ satz: 'v2', sw: 'allow' });
   await page.waitForFunction(async () => (await navigator.serviceWorker.ready).active?.state === 'activated');
-  await page.waitForFunction(async () => !!(await caches.open('mein-vorteil-1').then(c => c.match('./'))));
+  await page.waitForFunction(async () => !!(await caches.open('mein-vorteil-2').then(c => c.match('./'))));
   await ctx.setOffline(true);
   zustand.offline = true;
   await page.reload();
@@ -742,19 +759,19 @@ test('als Home-Bildschirm-App: startet ohne Netz aus dem eigenen Service Worker'
 test('Tiefstpreis-Satz nennt nie ein abgelaufenes Angebot (PENNY-Fenster vorbei) und kein vergangenes „ab“', { skip: ohnePw }, async () => {
   const bjText = async page => nbsp(await page.locator('[data-produkt="ben-jerrys"]').innerText());
   // Di 3.11.: PENNY läuft (seit Mo) -> genannt, aber ohne „ab Mo 2.11.“
-  let o = await oeffne({ satz: 'v2', jetzt: '2026-11-03T10:00:00Z' });
+  let o = await oeffne({ satz: 'v2', jetzt: '2026-11-03T10:00:00Z', pfad: '/mein-vorteil/#produkte' });
   let bj = await bjText(o.page);
   assert.match(bj, /Tiefstpreis\?\s*unklar\s*PENNY hat 3,49 € \(mit App\) – Packungsgröße dort nicht sicher/);
   assert.doesNotMatch(bj, /ab Mo 0?2\.11\./);
   await o.ctx.close();
   // PENNY sichtbarBis (2026-11-04T23:00Z) + 1 min, Daten noch vom letzten Lauf: Zeile weg und Satz neu
-  o = await oeffne({ satz: 'v2', jetzt: '2026-11-04T23:01:00Z' });
+  o = await oeffne({ satz: 'v2', jetzt: '2026-11-04T23:01:00Z', pfad: '/mein-vorteil/#produkte' });
   bj = await bjText(o.page);
   assert.doesNotMatch(bj, /PENNY|weiteres Angebot/);
   assert.match(bj, /Tiefstpreis\?\s*unklar\s*Einziges gefundenes Angebot in deiner Nähe · noch kein Preisverlauf/);
   // die Seite bleibt offen: genau beim Ende wechselt der Satz von selbst
   await o.ctx.close();
-  o = await oeffne({ satz: 'v2', jetzt: '2026-11-04T22:59:00Z', uhr: 'laeuft' });
+  o = await oeffne({ satz: 'v2', jetzt: '2026-11-04T22:59:00Z', uhr: 'laeuft', pfad: '/mein-vorteil/#produkte' });
   assert.match(await bjText(o.page), /PENNY hat 3,49 €/);
   await o.page.clock.fastForward('03:00');
   await o.page.waitForFunction(() => !/PENNY/.test(document.querySelector('[data-produkt="ben-jerrys"]').textContent));
@@ -768,7 +785,7 @@ test('Grundpreis bei „465 ml oder 4 × 100 ml“: die Karte sagt, für welche 
     const b = d.produkte.find(p => p.id === 'ben-jerrys').bestes;
     b.einheitspreisVarianten = [{ packung: '4 × 100 ml', einheitspreis: 0.9975 }, { packung: '465 ml', einheitspreis: 0.858 }];
   } };
-  const { ctx, page, fehler } = await oeffne({ satz: 'v2', patch });
+  const { ctx, page, fehler } = await oeffne({ satz: 'v2', patch, pfad: '/mein-vorteil/#produkte' });
   const bj = nbsp(await page.locator('[data-produkt="ben-jerrys"] .einheit').innerText());
   assert.equal(bj, '1,00 € pro 100 ml (bei 4 × 100 ml; 465 ml: 0,86 €)', 'Prospekt: 8,58 €/l = 0,86 € pro 100 ml');
   assert.deepEqual(fehler, []);
@@ -777,7 +794,7 @@ test('Grundpreis bei „465 ml oder 4 × 100 ml“: die Karte sagt, für welche 
 
 test('Preisfehler ohne bekannten Preis: nie „jetzt ?“ – ohne Preis ist er nicht als krass prüfbar und fehlt', { skip: ohnePw }, async () => {
   const patch = { 'schnaeppchen-current.json': d => { d.technik.find(t => /RTX/.test(t.titel)).preis = null; } };
-  const { ctx, page, fehler } = await oeffne({ satz: 'vertrag', patch });
+  const { ctx, page, fehler } = await oeffne({ satz: 'vertrag', patch, pfad: '/mein-vorteil/#preisfehler' });
   const pf = nbsp(await page.locator('#preisfehler').innerText());
   assert.doesNotMatch(pf, /RTX 5070|jetzt \?/);
   assert.deepEqual(fehler, []);
@@ -785,7 +802,7 @@ test('Preisfehler ohne bekannten Preis: nie „jetzt ?“ – ohne Preis ist er 
 });
 
 test('Aufgeklappte Kästen bleiben offen, wenn die Seite neu zeichnet (Rückkehr aus dem Prospekt, neue Daten)', { skip: ohnePw }, async () => {
-  const { ctx, page, fehler } = await oeffne({ satz: 'v2' });
+  const { ctx, page, fehler } = await oeffne({ satz: 'v2', pfad: '/mein-vorteil/#produkte' });
   const weitere = page.locator('[data-produkt="ben-jerrys"] details.weitere');
   await weitere.locator('summary').click();
   await page.locator('#produkte details.kasten:not(.ohne-angebot) summary').click();
@@ -859,7 +876,7 @@ test('Alte Vorteils-Adresse baut die alte Seite nicht mehr auf (keine Datenabruf
   page.on('response', async r => { if (new URL(r.url()).pathname === '/vorteile/') html.push(r.url()); });
   await page.goto(`${basis}/vorteile/#konzerte`, { waitUntil: 'commit' });
   await page.waitForURL(u => u.pathname === '/mein-vorteil/');
-  await page.waitForFunction(() => location.hash === '#auftritte');
+  await page.waitForFunction(() => location.hash === '#konzerte');
   assert.equal(html.length, 1);
   // vor dem Weiterleiten: nur Mein Vorteils eigene fünf Datenabrufe, nicht die drei der alten Seite
   await geladen(page);
@@ -884,7 +901,7 @@ test('Push-Hilfe quer (926 × 428): „In ntfy öffnen“ und „Schließen“ s
 });
 
 test('Krypto: Käufe -> Kurs, Wert, Gewinn/Verlust in € und %, Ø-Kaufkurs, Gewinnschwelle; aktuelle Menge zählt', { skip: ohnePw }, async () => {
-  const { ctx, page, fehler } = await oeffne({ satz: 'vertrag', krypto: KRYPTO_TEST });
+  const { ctx, page, fehler } = await oeffne({ satz: 'vertrag', krypto: KRYPTO_TEST, pfad: '/mein-vorteil/#krypto' });
   await kursGeladen(page);
   const btc = nbsp(await page.locator('#i-krypto [data-coin="btc"]').innerText());
   assert.match(btc, /Bitcoin\s*BTC\s*67\.971 €/);
@@ -1017,7 +1034,7 @@ test('Krypto: Kurs beim Öffnen und alle 60 s; Quellen gestört -> klare Meldung
   assert.match(nbsp(await o.page.locator('#i-krypto .kurs-stand').innerText()), /Kurs gerade nicht abrufbar \(Quellen gestört\)\. Neuer Versuch in einer Minute\./);
   assert.deepEqual(o.fehler.filter(f => !/Failed to load resource/.test(f)), []);
   await o.ctx.close();
-  o = await oeffne({ satz: 'vertrag', krypto: KRYPTO_TEST, kurs: 'cryptocom', uhr: 'laeuft' });
+  o = await oeffne({ satz: 'vertrag', krypto: KRYPTO_TEST, kurs: 'cryptocom', uhr: 'laeuft', pfad: '/mein-vorteil/#krypto' });
   await kursGeladen(o.page);
   assert.match(await o.page.locator('#i-krypto .kurs-stand').innerText(), /Crypto\.com/);
   const n = o.zustand.kursAbrufe.length;
@@ -1041,12 +1058,13 @@ test('Krypto: Kurs beim Öffnen und alle 60 s; Quellen gestört -> klare Meldung
 
 test('Cashback nur passend und laufend; Prämien & Freunde werben nie; Remix-Contests eigener Abschnitt (laufend, nach Frist)', { skip: ohnePw }, async () => {
   const patch = { 'vorteile-aktuell.json': d => { d.kategorien.deals.push(...CASHBACK_TEST()); d.kategorien.musik.push(...REMIX_TEST()); } };
-  const { ctx, page, fehler } = await oeffne({ satz: 'vertrag', patch });
+  const { ctx, page, fehler } = await oeffne({ satz: 'vertrag', patch, pfad: '/mein-vorteil/#cashback' });
   const cb = nbsp(await page.locator('#cashback').innerText());
   assert.match(cb, /Haribo Goldbären gratis testen/);
   assert.match(cb, /Cashback 5 € auf Kopfhörer/);
   assert.doesNotMatch(cb, /Ariel|Girokonto|Freunde werben/);
-  assert.equal(await zahlIn(page, 'cashback').innerText(), '2');
+  assert.equal(await page.locator('#h-cashback .zahl').innerText(), '2');
+  await springe(page, 'remix');
   // Remix-Contests: laufende, was zuerst endet oben, Abgelaufenes fehlt; nicht unter Auftritte
   const karten = page.locator('#remix article');
   assert.equal(await karten.count(), 2);
@@ -1055,6 +1073,8 @@ test('Cashback nur passend und laufend; Prämien & Freunde werben nie; Remix-Con
   assert.match(t[1], /Italo disco/);
   assert.doesNotMatch(await page.locator('#remix').textContent(), /abgelaufen/);
   assert.doesNotMatch(await page.locator('#auftritte').textContent(), /Synthpop duo|Italo disco label/);
+  // ältere Daten ohne Kategorie „remix“: darunter die festen Adressen der Seite (nie „da gibt's nichts“)
+  assert.match(nbsp(await page.locator('#remix').innerText()), /Hier gibt es laufend Contests\s*5[\s\S]*SKIO Music/i);
   assert.equal(await zahlIn(page, 'remix').innerText(), '2');
   // Prämien nirgends (auch nicht in alten Daten)
   assert.doesNotMatch(await page.locator('main').textContent(), /Prämien & Freunde|Startprämie|Freunde werben/);
@@ -1066,45 +1086,267 @@ test('Cashback nur passend und laufend; Prämien & Freunde werben nie; Remix-Con
   await o.ctx.close();
 });
 
-test('Fotos: Krypto mit Pop-up, Import-Hinweis, Remix-Contests, Cashback (428 × 926 hoch, 926 × 428 quer, dunkel)', { skip: ohnePw }, async () => {
-  const patch = { 'vorteile-aktuell.json': d => { d.kategorien.deals.push(...CASHBACK_TEST()); d.kategorien.musik.push(...REMIX_TEST()); } };
-  for (const [breite, hoehe, lage] of [[428, 926, 'hoch'], [926, 428, 'quer']]) {
-    const { ctx, page, fehler, zustand } = await oeffne({ satz: 'v3', breite, hoehe, dunkel: true, krypto: KRYPTO_TEST, uhr: 'laeuft', patch });
-    await kursGeladen(page);
-    await page.screenshot({ path: join(SHOTS, `mv2-start-${lage}.png`) });
-    await page.locator('#krypto').scrollIntoViewIfNeeded();
-    await page.screenshot({ path: join(SHOTS, `mv2-krypto-${lage}.png`) });
-    zustand.kurse.btc = 75000;
-    const n = zustand.kursAbrufe.length;
-    await page.clock.fastForward('01:00');
-    await waitFor(() => zustand.kursAbrufe.length > n);
-    await page.waitForFunction(() => document.getElementById('krypto-alarm').open);
-    await page.screenshot({ path: join(SHOTS, `mv2-krypto-popup-${lage}.png`) });
-    await page.locator('#alarm-zu').click();
-    await page.locator('#krypto-form > summary').click();
-    await page.locator('#krypto-form').scrollIntoViewIfNeeded();
-    await page.screenshot({ path: join(SHOTS, `mv2-krypto-kaeufe-${lage}.png`) });
-    await page.evaluate(z => springe(z, { sanft: false }), 'remix');
-    await page.waitForTimeout(300);
-    await page.screenshot({ path: join(SHOTS, `mv2-remix-${lage}.png`) });
-    await page.evaluate(z => springe(z, { sanft: false }), 'cashback');
-    await page.waitForTimeout(300);
-    await page.screenshot({ path: join(SHOTS, `mv2-cashback-${lage}.png`) });
+// ===== Fassung 5 (08.11.2026): Design, Start „Heute für dich“, nie leer, Bewerbungs-Assistent ===================================
+const hell = farbe => { const m = farbe.match(/\d+(\.\d+)?/g).map(Number); return (0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2]) / 255; };
+
+test('Design: dunkel und warm, auch wenn das iPhone hell eingestellt ist; Bereichsfarben', { skip: ohnePw }, async () => {
+  for (const dunkel of [false, true]) {
+    const { ctx, page, fehler } = await oeffne({ satz: 'v5', jetzt: JETZT_V5, dunkel });
+    const f = await page.evaluate(() => ({
+      body: getComputedStyle(document.body).backgroundColor, text: getComputedStyle(document.body).color,
+      karte: getComputedStyle(document.querySelector('.kachel')).backgroundColor,
+      deals: getComputedStyle(document.querySelector('.sprung a[data-ziel="deals"] svg')).color,
+      remix: getComputedStyle(document.querySelector('.sprung a[data-ziel="remix"] svg')).color,
+      schema: getComputedStyle(document.documentElement).colorScheme,
+    }));
+    assert.ok(hell(f.body) < 0.1, `Hintergrund dunkel (${f.body}, iPhone ${dunkel ? 'dunkel' : 'hell'})`);
+    assert.ok(hell(f.text) > 0.85, `Schrift hell (${f.text})`);
+    assert.notEqual(f.deals, f.remix, 'jeder Bereich hat seine Farbe');
+    assert.equal(f.schema, 'dark');
     assert.deepEqual(fehler, []);
     await ctx.close();
-    const imp = await oeffne({ satz: 'v3', breite, hoehe, dunkel: true, pfad: '/mein-vorteil/#krypto=btc:0.02:1000,eth:0.5:1000' });
-    await kursGeladen(imp.page);
-    await imp.page.screenshot({ path: join(SHOTS, `mv2-import-${lage}.png`) });
-    await imp.ctx.close();
   }
+});
+
+test('Start „Heute für dich“ (v5): je Bereich eine Kachel mit den besten Treffern, Tippen führt hinein, „Du bist in“', { skip: ohnePw }, async () => {
+  const { ctx, page, fehler } = await oeffne({ satz: 'v5', jetzt: JETZT_V5 });
+  assert.equal(await page.locator('#ort-name').innerText(), 'Heute für dich');
+  assert.equal(await page.locator('.sprung a[data-ziel="start"]').getAttribute('aria-current'), 'true');
+  const kacheln = page.locator('#kacheln a.kachel');
+  assert.deepEqual(await kacheln.evaluateAll(as => as.map(a => a.dataset.sprung)), ['deals', 'preisfehler', 'filme', 'auftritte', 'remix', 'unterricht', 'konzerte', 'gewinnspiele', 'krypto', 'mehr']);
+  // nie leer: jede Kachel hat mindestens eine Zeile
+  for (const k of await kacheln.all()) assert.ok(await k.locator('li').count() >= 1, await k.innerText());
+  const t = b => page.locator(`#kacheln a[data-sprung="${b}"]`).innerText().then(nbsp);
+  assert.match(await t('deals'), /Lorenz Crunchips X-Cut\s*1,49 € bei REWE/);
+  assert.match(await t('auftritte'), /Stadtfest Leipzig sucht Synthpop[\s\S]*Leipzig · 57 km · bis Fr 20\.11\./);
+  assert.match(await t('remix'), /bis So 15\.11\. · passt zu dir/);
+  assert.match(await t('unterricht'), /VHS Mittelsachsen[\s\S]*Döbeln · hier · bis Mo 30\.11\./);
+  assert.match(await t('konzerte'), /Alphaville\s*5\.12\. · Hamburg · 344 km[\s\S]*nächster Termin – weiter als 200 km/);
+  assert.match(await t('filme'), /Go Trabi Go \(1991\) für 3,99 €|Manta Manta/);
+  // Zähler gleich in Leiste und Kachel
+  for (const b of ['deals', 'preisfehler', 'filme', 'auftritte', 'remix', 'unterricht']) {
+    assert.equal(await page.locator(`#kacheln a[data-sprung="${b}"] .kn`).innerText(), await zahlIn(page, b).innerText(), b);
+  }
+  // Tippen auf eine Kachel öffnet den Bereich, die Leiste markiert ihn
+  await page.locator('#kacheln a[data-sprung="remix"]').click();
+  await page.waitForFunction(() => location.hash === '#remix');
+  assert.equal(await page.locator('#remix').isVisible(), true);
+  assert.equal(await page.locator('#start').isHidden(), true);
+  assert.equal(await page.locator('#ort-name').innerText(), 'Remix-Contests');
+  assert.equal(await page.locator('.sprung a[data-ziel="remix"]').getAttribute('aria-current'), 'true');
+  await page.locator('#kacheln').count();
+  await springe(page, 'start');
+  await page.locator('#kacheln a[data-sprung="filme"]').click();
+  await page.waitForFunction(() => location.hash === '#filme');
+  assert.equal(await page.locator('main').isHidden(), true);
+  assert.equal(await page.locator('#ort-name').innerText(), 'Filme & Serien');
+  await page.waitForFunction(() => /Wunschliste/.test(document.getElementById('i-filme').textContent));
+  // Apple-TV-Angebotsräume: abgeglichen und verlinkt
+  await page.locator('#i-filme [data-fi-chip="angebot"]').click();
+  assert.match(nbsp(await page.locator('#i-filme').innerText()), /Zurück in die Zukunft[\s\S]*Apple TV: Filme für 3,99 €/);
+  assert.match(nbsp(await page.locator('#i-filme').innerText()), /Abgeglichen mit den Apple-TV-Angeboten: Filme für 3,99 € \(5 Filme\)/);
+  assert.deepEqual(fehler, []);
+  await ctx.close();
+});
+
+test('Auftritte (v5): frische Funde nah + bald zuerst, feste Adressen immer, Name-Tipp; Zähler nur frische', { skip: ohnePw }, async () => {
+  const { ctx, page, fehler } = await oeffne({ satz: 'v5', jetzt: JETZT_V5, pfad: '/mein-vorteil/#auftritte' });
+  const a = page.locator('#auftritte');
+  const karten = await a.locator('article').allInnerTexts();
+  assert.match(nbsp(karten[0]), /^Stadtfest\s*Leipzig · 57 km\s*bis Fr 20\.11\.[\s\S]*Bands gesucht: Stadtfest Leipzig sucht Synthpop- und Elektro-Acts\n[\s\S]*Bewerben als One Day in Rome/);
+  assert.doesNotMatch(karten[0], / - LVZ/, 'Quelle steht oben, nicht doppelt im Titel');
+  assert.match(nbsp(karten[1]), /^Bandcontest\s*Dresden · 44 km[\s\S]*Bewerben als One Day in Rome · per Mail/);
+  assert.equal(await a.locator('article').count(), 4, 'Top-Liste (4), Rest unter „weitere zeigen“');
+  assert.match(await a.locator('button.mehr').first().innerText(), /^1 weitere zeigen$/);
+  const t = nbsp(await a.innerText());
+  assert.match(t, /Hier geht immer was\s*9[\s\S]*7:77 – Die Open Stage[\s\S]*Wave-Gotik-Treffen Leipzig: Bandbewerbung per Mail/i);
+  assert.match(nbsp(await text(page, '#w-auftritte')), /5 frische Funde, davon 4 bis 60 km – dazu 9 feste Adressen\./);
+  assert.equal(await zahlIn(page, 'auftritte').innerText(), '5');
+  await a.locator('details.name-tipp summary').click();
+  assert.match(nbsp(await a.locator('details.name-tipp').innerText()), /Band-Auftritt \(Stadtfest, Festival, Bandcontest, Club\) → One Day in Rome[\s\S]*Solo, DJ- oder Live-Set, Open Stage → Xander Fox[\s\S]*„One Day in Rome \(Xander Fox\)“/);
+  await pruefeLayout(page, 'Auftritte v5');
+  assert.deepEqual(fehler, []);
+  await ctx.close();
+});
+
+test('Bewerben-Blatt (v5): fertiger Text, Name wählen, per Mail mit Betreff, Formular öffnen, Text und Links gemerkt', { skip: ohnePw }, async () => {
+  const { ctx, page, fehler } = await oeffne({ satz: 'v5', jetzt: JETZT_V5, pfad: '/mein-vorteil/#auftritte' });
+  await ctx.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: basis });
+  const blatt = page.locator('#blatt');
+  // Bandcontest Dresden: Bewerbung per Mail an die Adresse aus der Ausschreibung
+  await page.locator('#auftritte article', { hasText: 'Bandcontest in Dresden' }).getByRole('button', { name: 'Bewerben' }).click();
+  assert.equal(await blatt.evaluate(d => d.open), true);
+  assert.equal(await page.locator('#blatt-titel').innerText(), 'Bewerben');
+  assert.equal(await blatt.locator('[data-als="band"]').getAttribute('aria-checked'), 'true', 'Bandcontest: als One Day in Rome');
+  let text = await page.locator('#b-text').inputValue();
+  assert.match(text, /wir sind One Day in Rome aus Döbeln \(Sachsen\)/);
+  assert.match(text, /Hörprobe: \[Link zur Hörprobe\][\s\S]*Set: 30–45 Minuten[\s\S]*Technik: Synths \+ Laptop/);
+  assert.match(text, /Kontakt: Xander Fox/);
+  assert.match(await page.locator('#b-betreff').inputValue(), /^Bewerbung: One Day in Rome \(Synth-Pop\) – Bandcontest in Dresden/);
+  let mail = await page.locator('#b-mail').getAttribute('href');
+  assert.match(mail, /^mailto:info@bandcontest-dresden\.de\?subject=Bewerbung%3A%20One%20Day%20in%20Rome/);
+  assert.match(decodeURIComponent(mail.split('&body=')[1]), /wir sind One Day in Rome/);
+  assert.match(await page.locator('#b-mail').innerText(), /Per Mail öffnen \(an info@bandcontest-dresden\.de\)/);
+  // als Xander Fox: anderer Vorschlag (solo)
+  await blatt.locator('[data-als="solo"]').click();
+  text = await page.locator('#b-text').inputValue();
+  assert.match(text, /ich bin Xander Fox aus Döbeln/);
+  assert.match(await page.locator('#b-betreff').inputValue(), /^Anmeldung: Xander Fox/);
+  // beides: „One Day in Rome (Xander Fox)“
+  await blatt.locator('[data-als="beide"]').click();
+  assert.match(await page.locator('#b-betreff').inputValue(), /^Bewerbung: One Day in Rome \(Xander Fox\)/);
+  // eigener Link füllt den Platzhalter in allen Vorschlägen; eigener Text wird gemerkt
+  await blatt.locator('details.angaben summary').click();
+  await blatt.locator('input[data-profil="hoerprobe"]').fill('https://example.org/odir');
+  assert.match(await page.locator('#b-text').inputValue(), /Hörprobe: https:\/\/example\.org\/odir/);
+  await page.locator('#b-text').fill('Mein eigener Text für Dresden');
+  assert.match(await page.locator('#b-stand').innerText(), /Deine Fassung \(gemerkt\)/);
+  assert.match(decodeURIComponent((await page.locator('#b-mail').getAttribute('href')).split('&body=')[1]), /^Mein eigener Text für Dresden$/);
+  await blatt.locator('#b-kopie').click();
+  assert.equal(await page.evaluate(() => navigator.clipboard.readText()), 'Mein eigener Text für Dresden');
+  await pruefeLayout(page, 'Bewerben-Blatt');
+  await page.locator('#blatt-zu').click();
+  assert.equal(await blatt.evaluate(d => d.open), false);
+  // nach dem Neuladen: Text, gewählter Name und Link sind noch da (nur localStorage)
+  await page.reload();
+  await geladen(page);
+  await page.locator('#auftritte article', { hasText: 'Bandcontest in Dresden' }).getByRole('button', { name: 'Bewerben' }).click();
+  assert.equal(await page.locator('#b-text').inputValue(), 'Mein eigener Text für Dresden');
+  assert.equal(await blatt.locator('[data-als="beide"]').getAttribute('aria-checked'), 'true');
+  await blatt.locator('#b-neu').click();
+  assert.match(await page.locator('#b-text').inputValue(), /Hörprobe: https:\/\/example\.org\/odir/);
+  await page.locator('#blatt-zu').click();
+  // 7:77 Open Stage (feste Adresse): Formular öffnen, als Xander Fox
+  await page.locator('#auftritte .fundorte li', { hasText: '7:77' }).getByRole('button', { name: 'Bewerben' }).click();
+  assert.equal(await blatt.locator('[data-als="solo"]').getAttribute('aria-checked'), 'true', 'Open Stage: als Xander Fox');
+  assert.equal(await page.locator('#b-ziel').innerText(), 'Formular öffnen');
+  assert.equal(await page.locator('#b-ziel').getAttribute('href'), 'https://www.openstage777.com/anmeldung');
+  assert.match(await page.locator('#b-mail').getAttribute('href'), /^mailto:\?subject=Anmeldung/);
+  await page.locator('#blatt-zu').click();
+  // Wave-Gotik-Treffen: per Mail an bewerbung@…
+  await page.locator('#auftritte .fundorte li', { hasText: 'Wave-Gotik' }).getByRole('button', { name: 'Bewerben' }).click();
+  assert.match(await page.locator('#b-mail').getAttribute('href'), /^mailto:bewerbung@wave-gotik-treffen\.de\?subject=/);
+  // nichts davon geht ans Netz
+  const daten = await page.evaluate(() => localStorage.getItem('mein-vorteil-bewerbung'));
+  assert.match(daten, /example\.org\/odir/);
+  assert.deepEqual(fehler, []);
+  await ctx.close();
+});
+
+test('Remix „Mitmachen“ und Unterricht „Melden“ (v5): Frist, Stems, Name, Text', { skip: ohnePw }, async () => {
+  const { ctx, page, fehler } = await oeffne({ satz: 'v5', jetzt: JETZT_V5, pfad: '/mein-vorteil/#remix' });
+  const r = page.locator('#remix');
+  const erste = nbsp(await r.locator('article').first().innerText());
+  assert.match(erste, /^Remix-Contest\s*bis So 15\.11\.\s*passt zu deinem Stil/, 'was zuerst endet, steht oben');
+  assert.match(nbsp(await r.innerText()), /Hier gibt es laufend Contests\s*5[\s\S]*SKIO Music/i);
+  await r.locator('article').first().getByRole('button', { name: 'Mitmachen' }).click();
+  const b = nbsp(await page.locator('#blatt').innerText());
+  assert.match(b, /Mitmachen[\s\S]*Frist So 15\.11\. · noch 9 Tage[\s\S]*Stems verfügbar/);
+  assert.match(b, /Remix bauen – Titel „Songname \(Xander Fox Remix\)“/);
+  assert.match(await page.locator('#b-text').inputValue(), /Titel: \[Songname\] \(Xander Fox Remix\)\nArtist: Xander Fox/);
+  assert.match(await page.locator('#b-ziel').innerText(), /Zum Contest & den Stems/);
+  await pruefeLayout(page, 'Remix-Blatt');
+  await page.locator('#blatt-zu').click();
+  // Unterricht: Melden als „Deutsch mit Xander“
+  await springe(page, 'unterricht');
+  const u = page.locator('#unterricht');
+  assert.match(nbsp(await u.locator('article').first().innerText()), /^Integrationskurs\s*Döbeln · hier\s*bis Mo 30\.11\.[\s\S]*Melden als Deutsch mit Xander/);
+  assert.match(nbsp(await u.innerText()), /Hier kannst du dich immer melden\s*5[\s\S]*italki/i);
+  await u.locator('article').first().getByRole('button', { name: 'Melden' }).click();
+  assert.match(await page.locator('#b-text').inputValue(), /Ich bin Xander \(„Deutsch mit Xander“\) und unterrichte Deutsch als Fremd- und Zweitsprache/);
+  assert.match(nbsp(await page.locator('#blatt .tipp').innerText()), /Als Deutsch mit Xander\. Anzeige öffnen\. Für Integrationskurse braucht es die BAMF-Zulassung/);
+  assert.deepEqual(fehler, []);
+  await ctx.close();
+});
+
+test('Nie leer mit älteren Daten (ohne Kategorien remix/auftritte/unterricht): feste Adressen, Preisfehler- und Gewinnspiel-Fundorte', { skip: ohnePw }, async () => {
+  const patch = { 'vorteile-aktuell.json': d => { d.kategorien.tests = []; } };
+  const { ctx, page, fehler } = await oeffne({ satz: 'v2', patch });
+  for (const [b, muster] of [['auftritte', /Gerade keine neue Ausschreibung[\s\S]*Hier geht immer was\s*9[\s\S]*7:77 – Die Open Stage[\s\S]*Wave-Gotik-Treffen[\s\S]*4 weitere Adressen/i], ['remix', /Hier gibt es laufend Contests\s*5/i], ['unterricht', /Hier kannst du dich immer melden\s*5[\s\S]*Jobbörse/i],
+    ['preisfehler', /Gerade kein krasser Preisfehler[\s\S]*Hier tauchen sie zuerst auf[\s\S]*mydealz: Gruppe Preisfehler/i], ['gewinnspiele', /Gerade kein laufendes Gewinnspiel ohne Kauf[\s\S]*mydealz: Gruppe Gewinnspiele/]]) {
+    await springe(page, b);
+    assert.match(nbsp(await page.locator('#' + b).innerText()), muster, b);
+    assert.equal(await zahlIn(page, b).isHidden(), true, `${b}: feste Adressen zählen nicht`);
+  }
+  // Kacheln: auch hier steht in jedem Bereich etwas
+  await springe(page, 'start');
+  for (const k of await page.locator('#kacheln a.kachel').all()) assert.ok(await k.locator('li').count() >= 1, await k.innerText());
+  assert.match(nbsp(await page.locator('#kacheln a[data-sprung="auftritte"]').innerText()), /feste Adressen – immer offen/);
+  assert.deepEqual(fehler, []);
+  await ctx.close();
+});
+
+test('Deals (v5): kaufDA-Region mit Hinweis; ohne Angebot steht „zuletzt gesehen“ (Lachgummi, Knusperflocken, Leckermäulchen, Exquisa)', { skip: ohnePw }, async () => {
+  let o = await oeffne({ satz: 'v5', jetzt: JETZT_V5, pfad: '/mein-vorteil/#deals' });
+  const haribo = nbsp(await o.page.locator('[data-produkt="haribo-colorado"]').innerText());
+  assert.match(haribo, /Region · bundesweit \(Berlin\)/);
+  assert.match(haribo, /Prospekt bundesweit \(Berlin\) – in Döbeln prüfen · Sorte nicht genannt/);
+  assert.match(haribo, /Prospekt bei kaufDA ansehen \(Lidl\)/);
+  assert.equal(await o.page.locator('[data-produkt="haribo-colorado"].deal').count(), 0, 'Region ist nie ein Deal');
+  assert.match(nbsp(await o.page.locator('#produkte .kasten:not(.ohne-angebot) .klein').last().textContent()), /kaufDA für die Region/);
+  await o.ctx.close();
+  // Sonntagnacht ohne ein einziges Angebot (wie der Lauf am 08.11.): die Liste steht offen und sagt, wann es sie zuletzt günstig gab
+  const leer = { 'schnaeppchen-current.json': d => { for (const p of d.produkte) { p.bestes = null; p.weitere = []; p.deal = false; } d.technik = []; } };
+  o = await oeffne({ satz: 'v5', jetzt: JETZT_V5, pfad: '/mein-vorteil/#deals', patch: leer });
+  assert.equal(await o.page.locator('#produkte details.ohne-angebot').evaluate(d => d.open), true);
+  const l = nbsp(await o.page.locator('#produkte .ohne-angebot').innerText());
+  for (const n of ['nimm2 Lachgummi Softies Fruchtmix', 'Zetti Knusperflocken XXL', 'Leckermäulchen Milchquark', 'Exquisa Quark', 'Exquisa Frischkäse']) assert.match(l, new RegExp(n.replace(/[()]/g, '\\$&')), n);
+  assert.match(l, /Zetti Knusperflocken XXL\s*Gerade kein Angebot[^\n]*zuletzt gesehen 5,29 € \(500 g\) bei Penny, Juni 2026/);
+  assert.match(nbsp(await text(o.page, '#w-deals')), /wo und wann es sie zuletzt günstig gab/);
+  assert.match(nbsp(await o.page.locator('#kacheln a[data-sprung="deals"]').textContent()), /gerade kein Angebot – zuletzt gesehen/);
+  assert.deepEqual(o.fehler, []);
+  await o.ctx.close();
+});
+
+test('Konzerte (v5): nichts in der Nähe – je Band der nächste Termin mit km, Tourdaten-Links je Band', { skip: ohnePw }, async () => {
+  const { ctx, page, fehler } = await oeffne({ satz: 'v5', jetzt: JETZT_V5, pfad: '/mein-vorteil/#konzerte' });
+  await page.waitForFunction(() => /Tourdaten deiner Bands/.test(document.getElementById('konzerte').textContent));
+  const t = nbsp(await page.locator('#konzerte').innerText());
+  assert.match(t, /Gerade nichts im Umkreis von 200 km/);
+  assert.match(t, /Weiter weg – nächster Termin je Band\s*4\s*[\s\S]*Alphaville\s*weit\s*Große Freiheit 36, Hamburg · 20:00 Uhr\s*344 km[\s\S]*Camouflage[\s\S]*The Human League[\s\S]*Erasure/i);
+  assert.match(nbsp(await text(page, '#w-konzerte')), /hier der nächste Termin je Band, mit Entfernung ab Döbeln/);
+  await page.locator('#konzerte details.bands summary').click();
+  const alpha = page.locator('#konzerte details.bands a', { hasText: 'Alphaville' });
+  assert.equal(await alpha.getAttribute('href'), 'https://www.eventim.de/search/?searchterm=Alphaville');
+  assert.deepEqual(fehler, []);
+  await ctx.close();
+});
+
+test('Fotos: alle Bereiche und das Bewerben-Blatt (428 × 926 hoch, 926 × 428 quer; iPhone hell und dunkel)', { skip: ohnePw }, async () => {
+  for (const [breite, hoehe, lage] of [[428, 926, 'hoch'], [926, 428, 'quer']]) {
+    for (const dunkel of [false, true]) {
+      const { ctx, page, fehler } = await oeffne({ satz: 'v5', jetzt: JETZT_V5, breite, hoehe, dunkel, krypto: KRYPTO_TEST });
+      const name = n => join(SHOTS, `mv5-${n}-${lage}-${dunkel ? 'dunkel' : 'hell'}.png`);
+      await kursGeladen(page);
+      await page.screenshot({ path: name('start') });
+      for (const b of BEREICHE.slice(1)) { await springe(page, b); await page.screenshot({ path: name(b) }); }
+      await springe(page, 'auftritte');
+      await page.locator('#auftritte [data-blatt]').first().click();
+      await page.screenshot({ path: name('bewerben') });
+      await page.locator('#blatt-zu').click();
+      await page.locator('.sprung a[data-reiter="filme"]').click();
+      await page.waitForFunction(() => /Wunschliste/.test(document.getElementById('i-filme').textContent));
+      await page.screenshot({ path: name('filme') });
+      assert.deepEqual(fehler, []);
+      await ctx.close();
+    }
+  }
+  const imp = await oeffne({ satz: 'v5', jetzt: JETZT_V5, dunkel: true, pfad: '/mein-vorteil/#krypto=btc:0.02:1000,eth:0.5:1000' });
+  await kursGeladen(imp.page);
+  await imp.page.screenshot({ path: join(SHOTS, 'mv5-krypto-import-hoch.png') });
+  await imp.ctx.close();
 });
 
 for (const [breite, hoehe, lage] of [[428, 926, 'hoch'], [926, 428, 'quer']]) {
   for (const dunkel of [false, true]) {
-    test(`Layout ${breite}×${hoehe} (${lage}, ${dunkel ? 'dunkel' : 'hell'}): kein seitliches Scrollen, Tippflächen ≥ 44 px, Bildschirmfotos`, { skip: ohnePw }, async () => {
-      for (const satz of dunkel ? ['vertrag', 'v3'] : ['vertrag', 'v2', 'v3']) {
-        const { ctx, page, fehler } = await oeffne({ satz, breite, hoehe, dunkel, krypto: KRYPTO_TEST, patch: { 'vorteile-aktuell.json': d => { d.kategorien.musik.push(...REMIX_TEST()); } } });
-        await pruefeLayout(page, `${satz} ${lage}`);
+    test(`Layout ${breite}×${hoehe} (${lage}, ${dunkel ? 'dunkel' : 'hell'}): jeder Bereich ohne seitliches Scrollen, Tippflächen ≥ 44 px`, { skip: ohnePw }, async () => {
+      for (const satz of dunkel ? ['vertrag', 'v5'] : ['vertrag', 'v2', 'v3', 'v5']) {
+        const { ctx, page, fehler } = await oeffne({ satz, jetzt: satz === 'v5' ? JETZT_V5 : JETZT, breite, hoehe, dunkel, krypto: KRYPTO_TEST, patch: satz === 'v5' ? {} : { 'vorteile-aktuell.json': d => { d.kategorien.musik.push(...REMIX_TEST()); } } });
+        for (const b of BEREICHE) {
+          await springe(page, b);
+          await pruefeLayout(page, `${satz} ${lage} ${b}`);
+        }
+        await springe(page, 'start');
         await page.screenshot({ path: join(SHOTS, `${satz}-${lage}${dunkel ? '-dunkel' : ''}.png`), fullPage: !dunkel && lage === 'hoch' });
         if (!dunkel && lage === 'hoch') {
           await page.locator('#push').click();

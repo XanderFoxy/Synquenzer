@@ -9,8 +9,10 @@ export function macheAbruf(abruf, fetchImpl) {
   const warte = ms => new Promise(r => setTimeout(r, ms));
   return async function holeText(url, { headers = {}, method = 'GET', body } = {}) {
     const host = new URL(url).host;
+    // eigene Pause je Server, wo robots.txt sie verlangt (kaufDA: crawl-delay 2 -> abruf.pauseProHost)
+    const pause = abruf.pauseProHost?.[host] ?? abruf.pauseMs;
     const seit = Date.now() - (letzter.get(host) || 0);
-    if (seit < abruf.pauseMs) await warte(abruf.pauseMs - seit);
+    if (seit < pause) await warte(pause - seit);
     letzter.set(host, Date.now());
     const ctl = new AbortController();
     const t = setTimeout(() => ctl.abort(), abruf.timeoutMs);
@@ -45,10 +47,16 @@ export function macheFixtureAbruf(dir) {
         : u.pathname.includes('search') ? 'mydealz-leer.xml'
         : u.pathname.includes('lebensmittel') ? 'mydealz-kaputt.txt' : 'mydealz-hot.xml';
     } else if (u.host === 'api.keepa.com') datei = 'keepa-product.json';
-    else throw new Error(`keine Fixture für ${url}`);
+    else if (u.host === 'www.kaufda.de') {
+      // /Chemnitz/Angebote/Haribo -> kaufda-chemnitz-haribo.html, /Angebote/Haribo -> kaufda-haribo.html
+      const teile = u.pathname.split('/').filter(Boolean).map(t => t.toLowerCase());
+      datei = `kaufda-${teile.filter(t => t !== 'angebote').join('-')}.html`;
+    } else throw new Error(`keine Fixture für ${url}`);
     try { return await readFile(join(dir, datei), 'utf8'); }
     catch {
       if (datei.startsWith('marktguru-') && datei.endsWith('.json')) return '{"totalResults":0,"results":[]}';
+      // kaufDA ohne Fixture: wie eine Seite ohne Treffer (Stadt) bzw. ein unbekanntes Stichwort (bundesweit)
+      if (datei.startsWith('kaufda-')) throw new Error('HTTP 404 bei www.kaufda.de');
       throw new Error(`Fixture fehlt: ${datei}`);
     }
   };

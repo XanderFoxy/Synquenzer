@@ -26,6 +26,19 @@ bleiben, ein eigenes Thema als Actions-Secret `NTFY_TOPIC` hinterlegen und in de
   marktguru liefert nur Märkte, die es rund um die PLZ wirklich gibt – eine Kette ohne Filiale in Döbeln
   taucht einfach nicht auf. Großhandel zählt nie (`maerkte.ausgeschlossen`, z. B. „EDEKA Foodservice“ mit
   „NUR FÜR GROSSHÄNDLER“).
+- **Region / bundesweit (kaufDA, seit 08.11.2026):** Gibt es in Döbeln gerade nichts, steht trotzdem etwas da – was
+  am nächsten dran ist. Zweite Prospekt-Quelle ist kaufDA: zuerst die Seite für Chemnitz (≈ 45 km, gleiche Prospekt-Region;
+  für Döbeln selbst hat kaufDA keine Seite), ohne Treffer die bundesweite Seite. Solche Angebote tragen den Hinweis
+  „Prospekt Chemnitz – in Döbeln prüfen“, stehen **unter** einem Döbeln-Angebot, schicken **nie** einen Push und kommen
+  nicht in den eigenen Preisverlauf. Hat marktguru dasselbe Angebot (Kette, Preis, Ende) für Döbeln, zählt nur das.
+  kaufDA wird nur alle 3 Stunden abgefragt (`config.json` → `quellen.kaufda.intervallStunden`, Zwischenspeicher
+  `quellen-cache.json`); fällt kaufDA aus, gilt bis 24 h der letzte Stand (mit Hinweis).
+- **„Gerade kein Angebot“ ist nie leer:** dann steht das zuletzt gesehene Angebot da – aus dem eigenen Verlauf
+  („zuletzt 2,79 € (15 Stück) bei Kaufland am 31.10.“) oder aus der Recherche („zuletzt gesehen 1,49 € (500 g) bei Lidl,
+  Aug. 2026“); im Feld `zuletzt` je Produkt.
+- **mydealz-Merkliste:** Ein Laden-Deal für ein Produkt der Merkliste („[Penny] Exquisa … ab Montag“) bleibt sichtbar,
+  auch wenn er aus dem Feed gerutscht ist (die Feeds zeigen nur die neuesten Deals) – bis zu seinem Ende bzw.
+  Anzeigefenster, höchstens 10 Tage (`merkliste.json` auf dem Daten-Zweig).
 - **Abgelaufen = weg:** ein Prospekt-Angebot verschwindet in dem Moment, in dem es endet (z. B. Kaufland Sa 19:00),
   nicht erst Stunden später. Angebote, die erst später beginnen, stehen mit „ab …“ da.
 - **Online:** mydealz-Feeds (neu, heiß, Gruppe „Preisfehler“, Lebensmittel), darin auch Amazon. (Die mydealz-Suche als
@@ -93,7 +106,8 @@ In `watchlist.json` einen Block kopieren und anpassen, z. B.:
 {
   "id": "milka-alpenmilch",
   "name": "Milka Alpenmilch",
-  "suche": ["Milka Alpenmilch"],
+  "suche": ["Milka"],
+  "kaufda": ["Milka"],
   "muss": ["milka", "alpenmilch"],
   "nicht": ["riegel"],
   "basis": "100g",
@@ -108,9 +122,12 @@ je mit `quelle`/`url` und Datum). Ohne diesen Block zählen nur der eigene Verla
 |---|---|
 | `id` | kurzer eindeutiger Name (klein, ohne Leerzeichen) |
 | `name` | so steht es auf der Seite und in der Nachricht – ohne Packungsgröße, die steht beim Angebot |
-| `suche` | Suchwörter für die Prospekte (marktguru, mydealz-Suche) |
+| `suche` | Suchwörter für die Prospekte (marktguru). **Breit halten** (Marke: „Haribo“, „Lachgummi“, „Exquisa“): Prospekte schreiben „HARIBO versch. Sorten“ oder „Nimm2 Lachgummi 200-325 g“ – ein genaues Suchwort wie „Lachgummi Softys“ findet nie etwas. Zugeordnet wird über `muss`/`sorte`/`nicht` |
 | `muss` | diese Wörter müssen im Angebot stehen; `"a\|b"` = eins von beiden. Kurze Wörter (bis 4 Buchstaben) zählen nur am Wortanfang („eis“ trifft „Eiscreme“, nicht „Preis“) |
-| `sorte` | Sorte (z. B. „rote fruechte“); Angebote mit „versch. Sorten“ zählen trotzdem |
+| `sorte` | Sorte (z. B. „rote fruechte“); Angebote mit „versch. Sorten“/„je …“ zählen trotzdem – die Karte sagt dann „Sorte nicht genannt“ |
+| `andereSorten` | andere Sorten derselben Marke: steht eine davon da und die eigene nicht, zählt auch „je …“ nicht („HARIBO Goldbären je 175 g“ ist kein Colorado) |
+| `sorteOffen` | `true`: ein Angebot ganz ohne Sortenangabe zählt auch („nimm2 Lachgummi Softies“) |
+| `kaufda` | Stichwörter für kaufDA (`https://www.kaufda.de/<Stadt>/Angebote/<Stichwort>`), Umlaute als ae/oe/ue, Leerzeichen als `-` („Choco-Crossies“, „Ben-Jerrys“). Unbekannt = Hinweis „ohne kaufDA-Seite“ bei den Quellen |
 | `nicht` | Angebote mit diesen Wörtern werden ignoriert – für andere Sorten/Formen desselben Namens (z. B. Knoppers `mini`, `riegel`) |
 | `basis` | `stueck`, `100g` oder `100ml` – womit verglichen wird |
 | `stueckGramm` | Gewicht eines Stücks (rechnet Gramm ↔ Stück um) |
@@ -132,11 +149,11 @@ geprüft. Dazu im Repo unter **Settings → Secrets and variables → Actions �
 ## Technik (für Entwickler)
 
 - `scan/main.mjs` – ein Lauf: Quellen abfragen → zuordnen → Grundpreise → Verlauf → Deals → `current.json` → ntfy
-- `scan/sources/` – marktguru, mydealz, Keepa. Jede Quelle für sich: fällt eine aus, laufen die anderen weiter,
+- `scan/sources/` – marktguru (mit Folgeseiten bei > 48 Treffern), kaufDA (Region/bundesweit), mydealz, Keepa. Jede Quelle für sich: fällt eine aus, laufen die anderen weiter,
   der Fehler steht in `current.json` (`fehler`, `quellen`) und unten auf der Seite.
 - Workflow `.github/workflows/schnaeppchen.yml` – stündlich um :17, manuell (mit „dry run“) und bei Änderungen
   an `watchlist.json`/`config.json`/`scan/` auf `main`. Zeitpläne laufen bei GitHub nur vom Standardzweig (`main`).
-- Daten (`current.json`, `history.json`, `sent.json`, `dealseiten.json`) liegen auf dem Zweig **`schnaeppchen-daten`**
+- Daten (`current.json`, `history.json`, `sent.json`, `dealseiten.json`, `merkliste.json`, `quellen-cache.json`) liegen auf dem Zweig **`schnaeppchen-daten`**
   (ein einziger Commit, wird jede Stunde ersetzt), damit GitHub Pages nicht stündlich neu baut.
   Die Seite liest sie von `raw.githubusercontent.com`.
 - Tests: `cd schnaeppchen && npm test` (Node ≥ 20, keine Abhängigkeiten).
@@ -144,7 +161,9 @@ geprüft. Dazu im Repo unter **Settings → Secrets and variables → Actions �
   Einen echten Roh-Mitschnitt offline nachrechnen: `node scan/main.mjs --wiedergabe <roh-ordner> --data /tmp/probe --jetzt 2026-10-31T16:35:00Z`
   (ein Auszug vom 31.10.2026 liegt in `scan/test/fixtures/echt-2026-10-31/`, ohne marktguru-Startseite → dafür
   `MARKTGURU_API_KEY=x MARKTGURU_CLIENT_KEY=y` setzen; `scan/test/echt.test.mjs` prüft damit Knoppers & Co.).
-- `current.json` **Version 3**: pro Produkt und pro Angebot `preise` = `{ menge, packung, jetzt: { pack, shop },
+- `current.json` **Version 3** (Fassung 5 ergänzt, abwärtskompatibel: je Angebot `regional`, `region`, `sorteUnklar`,
+  `quelle: 'kaufda'`, `hinweis` mit Region/Sorte/Bedingungen; je Produkt `zuletzt` { pack, packung, shop, tag, monat, quelle,
+  eigen } und `anzahlRegion`): pro Produkt und pro Angebot `preise` = `{ menge, packung, jetzt: { pack, shop },
   regulaer|ueblich|tiefst12: { pack, shop, monat, stand, quelle, url, umgerechnet, … }, ersparnis, deal, stufe
   (tiefst/gut/ueblich/normal/kein-angebot), zeile }`; `normalpreis` = regulärer Preis pro Basis (`normalQuelle: "recherche"`).
 - Ältere Felder (Version 2) pro Angebot: `titel`, `packung` („15 × 25 g“), `menge`, `mengeSicher`, `mengeQuelle`

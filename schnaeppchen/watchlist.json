@@ -1,48 +1,207 @@
 {
-  "_hinweis": "Lieblingsprodukte. Neues Produkt = einen Block kopieren und anpassen. Felder siehe README.md. Preise (Regulär, Üblich, Tiefst) stehen recherchiert in referenzpreise.json – keine Schätzungen mehr hier.",
+  "_hinweis": "Lieblingsprodukte. Neues Produkt = einen Block kopieren und anpassen. Felder siehe README.md. Preise (Regulär, Üblich, Tiefst) stehen recherchiert in referenzpreise.json – keine Schätzungen mehr hier. Suchwörter breit (Marke), zugeordnet wird über muss/sorte/nicht: Prospekte schreiben oft nur „HARIBO versch. Sorten“ oder „Nimm2 Lachgummi 200-325 g“ (Prüfung 08.11.2026).",
   "produkte": [
     {
       "id": "softys-fruchtmix",
-      "name": "Lachgummi Softys Fruchtmix (gelbe Tüte)",
-      "suche": ["Lachgummi Softys"],
-      "muss": ["lachgummi", "softys"],
-      "sorte": ["fruchtmix|frucht mix|fruchtig"],
-      "nicht": ["rote fruechte", "sauer"],
+      "name": "nimm2 Lachgummi Softies Fruchtmix (gelbe Tüte)",
+      "_hinweis": "Früher „Lachgummi Softys“ gesucht und verlangt – das steht so in keinem Prospekt (dort: „Storck Nimm2 Lachgummi versch. Sorten 200-325 g“, „nimm2 Lachgummi Softies“), deshalb fand der Wecker nie etwas. Jetzt: Suche „Lachgummi“, muss „lachgummi“; „versch. Sorten“ zählt (Sorte nicht genannt).",
+      "suche": [
+        "Lachgummi"
+      ],
+      "kaufda": [
+        "Nimm-2"
+      ],
+      "muss": [
+        "lachgummi"
+      ],
+      "sorte": [
+        "fruchtmix|frucht mix|fruchtig"
+      ],
+      "andereSorten": [
+        "rote fruechte|rote frucht",
+        "milchgeister",
+        "funfari",
+        "brause",
+        "sauer"
+      ],
+      "sorteOffen": true,
+      "nicht": [
+        "mini"
+      ],
       "basis": "100g",
       "standardGramm": 225
     },
     {
       "id": "softys-rote-fruechte",
-      "name": "Lachgummi Softys Rote Früchte (rote Tüte)",
-      "suche": ["Lachgummi Softys"],
-      "muss": ["lachgummi", "softys"],
-      "sorte": ["rote fruechte|rote frucht"],
-      "nicht": ["sauer"],
+      "name": "nimm2 Lachgummi Softies Rote Früchte (rote Tüte)",
+      "_hinweis": "Wie Fruchtmix: Suche „Lachgummi“, „versch. Sorten“ zählt.",
+      "suche": [
+        "Lachgummi"
+      ],
+      "kaufda": [
+        "Nimm-2"
+      ],
+      "muss": [
+        "lachgummi"
+      ],
+      "sorte": [
+        "rote fruechte|rote frucht"
+      ],
+      "andereSorten": [
+        "fruchtmix|frucht mix",
+        "milchgeister",
+        "funfari",
+        "brause",
+        "sauer"
+      ],
+      "sorteOffen": true,
+      "nicht": [
+        "mini"
+      ],
       "basis": "100g",
       "standardGramm": 225
     },
     {
+      "id": "zetti-knusperflocken",
+      "name": "Zetti Knusperflocken XXL",
+      "_hinweis": "Xander 08.11.2026: „Knusperflocken XXL“. Die große Tüte ist 500 g (Penny 06/2026, REWE-Shop „Zetti Knusperflocken 500g“, Norma „Fan Edition“ 500 g); es gibt auch 130/200/270 g. Verglichen pro 100 g, jede Tütengröße zählt, die Größe steht beim Angebot.",
+      "suche": [
+        "Zetti",
+        "Knusperflocken"
+      ],
+      "kaufda": [
+        "Zetti",
+        "Knusperflocken"
+      ],
+      "muss": [
+        "zetti",
+        "knusper"
+      ],
+      "nicht": [
+        "happz",
+        "muesli",
+        "bambina",
+        "kekse"
+      ],
+      "basis": "100g",
+      "standardGramm": 500
+    },
+    {
+      "id": "leckermaeulchen",
+      "name": "Leckermäulchen Milchquark (Frischli)",
+      "_hinweis": "Xander 08.11.2026. Becher 150 g (auch 6 × 50 g „Minis“). Prospekte: „Leckermäulchen Milch-Quark“, „Frischli Leckermäulchen“, Lidl „LECKER- MÄULCHEN“. Verglichen pro 100 g.",
+      "suche": [
+        "Leckermäulchen",
+        "Frischli"
+      ],
+      "kaufda": [
+        "Leckermaeulchen"
+      ],
+      "muss": [
+        "leckermaeulchen|leckermaulchen"
+      ],
+      "basis": "100g",
+      "standardGramm": 150
+    },
+    {
+      "id": "exquisa-quark",
+      "name": "Exquisa Quark (Quark-Genuss / Quark Creme)",
+      "_hinweis": "Xander 08.11.2026: „der Exquisa-Quark“. Becher 500 g (Quark Creme 400–500 g). Prospekte: „EXQUISA Quark-Genuss“, „Exquisa Quark oder Skyr“. Nicht: Quark-Joghurt-Creme (Zero), Käsekuchen-Snack, Frischkäse.",
+      "suche": [
+        "Exquisa"
+      ],
+      "kaufda": [
+        "Exquisa"
+      ],
+      "muss": [
+        "exquisa",
+        "quark"
+      ],
+      "nicht": [
+        "joghurt",
+        "kaesekuchen",
+        "frischkaese",
+        "drink"
+      ],
+      "basis": "100g",
+      "standardGramm": 500
+    },
+    {
+      "id": "exquisa-frischkaese",
+      "name": "Exquisa Frischkäse",
+      "_hinweis": "Becher 200 g (Lidl „XXL“ 300 g). Prospekte: „EXQUISA Frischkäsezubereitung“, „Exquisa Frischkäse oder -zubereitung“, „Exquisa Der Sahnige“. Nicht: körniger Frischkäse (anderes Produkt), Skyr, Quark, Käsekuchen.",
+      "suche": [
+        "Exquisa"
+      ],
+      "kaufda": [
+        "Exquisa"
+      ],
+      "muss": [
+        "exquisa",
+        "frischkaese|frischkase|sahnige"
+      ],
+      "nicht": [
+        "koerniger|koernig",
+        "skyr",
+        "quark",
+        "kaesekuchen"
+      ],
+      "basis": "100g",
+      "standardGramm": 200
+    },
+    {
       "id": "crunchips",
       "name": "Lorenz Crunchips (klassische Sorten)",
-      "suche": ["Crunchips"],
-      "muss": ["crunchips"],
-      "nicht": ["x cut", "xcut", "roasted", "stapel"],
+      "suche": [
+        "Crunchips"
+      ],
+      "kaufda": [
+        "Crunchips"
+      ],
+      "muss": [
+        "crunchips"
+      ],
+      "nicht": [
+        "x cut",
+        "xcut",
+        "roasted",
+        "stapel"
+      ],
       "basis": "100g",
       "standardGramm": 150
     },
     {
       "id": "crunchips-xcut",
       "name": "Lorenz Crunchips X-Cut",
-      "suche": ["Crunchips X-Cut"],
-      "muss": ["crunchips", "x cut|xcut"],
+      "suche": [
+        "Crunchips"
+      ],
+      "kaufda": [
+        "Crunchips"
+      ],
+      "muss": [
+        "crunchips",
+        "x cut|xcut"
+      ],
       "basis": "100g",
       "standardGramm": 130
     },
     {
       "id": "choco-crossies",
       "name": "Nestlé Choco Crossies",
-      "suche": ["Choco Crossies"],
-      "muss": ["crossies"],
+      "suche": [
+        "Choco Crossies"
+      ],
+      "kaufda": [
+        "Choco-Crossies"
+      ],
+      "muss": [
+        "crossies"
+      ],
+      "nicht": [
+        "snack vibes",
+        "choviva"
+      ],
       "basis": "100g",
       "standardGramm": 150
     },
@@ -51,9 +210,25 @@
       "name": "Knoppers Schnitte",
       "_hinweis": "Früher zwei Einträge (24er- und 5er-Pack). Verglichen wird pro Stück, deshalb zählt jede Packungsgröße; welche Packung es ist, steht beim Angebot.",
       "gruppe": "knoppers-schnitte",
-      "suche": ["Knoppers"],
-      "muss": ["knoppers"],
-      "nicht": ["nussriegel", "nuss riegel", "riegel", "kakaocreme riegel", "mini", "eis", "bites", "keks"],
+      "suche": [
+        "Knoppers"
+      ],
+      "kaufda": [
+        "Knoppers"
+      ],
+      "muss": [
+        "knoppers"
+      ],
+      "nicht": [
+        "nussriegel",
+        "nuss riegel",
+        "riegel",
+        "kakaocreme riegel",
+        "mini",
+        "eis",
+        "bites",
+        "keks"
+      ],
       "basis": "stueck",
       "stueckGramm": 25,
       "standardStueck": 5
@@ -61,9 +236,19 @@
     {
       "id": "knoppers-nussriegel",
       "name": "Knoppers NussRiegel",
-      "suche": ["Knoppers NussRiegel"],
-      "muss": ["knoppers", "nussriegel|nuss riegel"],
-      "nicht": ["mini"],
+      "suche": [
+        "Knoppers"
+      ],
+      "kaufda": [
+        "Knoppers"
+      ],
+      "muss": [
+        "knoppers",
+        "nussriegel|nuss riegel"
+      ],
+      "nicht": [
+        "mini"
+      ],
       "basis": "stueck",
       "stueckGramm": 40,
       "standardStueck": 5
@@ -71,27 +256,108 @@
     {
       "id": "haribo-colorado",
       "name": "Haribo Colorado",
-      "_hinweis": "Früher „Haribo XXL Colorado“. Verglichen wird pro 100 g, jede Tütengröße zählt; die Größe steht beim Angebot.",
-      "suche": ["Haribo Colorado"],
-      "muss": ["haribo", "colorado"],
+      "_hinweis": "Früher Suche „Haribo Colorado“ + muss „colorado“: Prospekte schreiben meist „HARIBO Fruchtgummi/XXL versch. Sorten“ – das fand der Wecker nie. Jetzt Suche „Haribo“, Colorado als Sorte („versch. Sorten“ zählt, Karte sagt „Sorte nicht genannt“). Verglichen pro 100 g, jede Tütengröße.",
+      "suche": [
+        "Haribo"
+      ],
+      "kaufda": [
+        "Haribo"
+      ],
+      "muss": [
+        "haribo"
+      ],
+      "sorte": [
+        "colorado|color rado"
+      ],
+      "andereSorten": [
+        "goldbaeren",
+        "phantasia",
+        "starmix",
+        "happy cola",
+        "primavera",
+        "pico balla",
+        "tangfastics",
+        "rotella",
+        "kirschen",
+        "saft",
+        "schlecker",
+        "maoam",
+        "tropi"
+      ],
+      "nicht": [
+        "mini",
+        "chamallows",
+        "party",
+        "dose",
+        "weihnacht",
+        "halloween",
+        "adventskalender"
+      ],
       "basis": "100g",
       "standardGramm": 175
     },
     {
       "id": "haribo-tropi-frutti",
       "name": "Haribo Tropi Frutti",
-      "_hinweis": "Früher „Haribo XXL Tropi Frutti“. Verglichen wird pro 100 g, jede Tütengröße zählt.",
-      "suche": ["Haribo Tropi Frutti"],
-      "muss": ["haribo", "tropi"],
+      "_hinweis": "Wie Colorado: Suche „Haribo“, Tropifrutti als Sorte („Tropifrutti“ und „Tropi Frutti“), „versch. Sorten“ zählt.",
+      "suche": [
+        "Haribo"
+      ],
+      "kaufda": [
+        "Haribo"
+      ],
+      "muss": [
+        "haribo"
+      ],
+      "sorte": [
+        "tropi"
+      ],
+      "andereSorten": [
+        "goldbaeren",
+        "phantasia",
+        "starmix",
+        "happy cola",
+        "primavera",
+        "pico balla",
+        "tangfastics",
+        "rotella",
+        "kirschen",
+        "saft",
+        "schlecker",
+        "maoam",
+        "colorado|color rado"
+      ],
+      "nicht": [
+        "mini",
+        "chamallows",
+        "party",
+        "dose",
+        "weihnacht",
+        "halloween",
+        "adventskalender"
+      ],
       "basis": "100g",
       "standardGramm": 175
     },
     {
       "id": "ben-jerrys",
       "name": "Ben & Jerry's Eis (alle Sorten)",
-      "suche": ["Ben & Jerry's"],
-      "muss": ["ben", "jerry"],
-      "nicht": ["shirt", "tasse", "stick", "sandwich"],
+      "suche": [
+        "Ben & Jerry's"
+      ],
+      "kaufda": [
+        "Ben-Jerrys"
+      ],
+      "muss": [
+        "ben",
+        "jerry"
+      ],
+      "nicht": [
+        "shirt",
+        "tasse",
+        "stick",
+        "sandwich"
+      ],
       "basis": "100ml",
       "standardMl": 465
     }
@@ -99,6 +365,39 @@
   "technik": {
     "id": "technik-preisfehler",
     "name": "Technik-Preisfehler",
-    "woerter": ["tv", "fernseher", "oled", "qled", "smart tv", "playstation", "ps5", "xbox", "nintendo switch", "switch 2", "kopfhoerer", "kopfhörer", "airpods", "headphones", "earbuds", "soundbar", "konsole", "ipad", "tablet", "macbook", "laptop", "notebook", "monitor", "iphone", "smartphone", "galaxy", "smartwatch", "apple watch", "beamer", "lautsprecher", "grafikkarte", "ssd"]
+    "woerter": [
+      "tv",
+      "fernseher",
+      "oled",
+      "qled",
+      "smart tv",
+      "playstation",
+      "ps5",
+      "xbox",
+      "nintendo switch",
+      "switch 2",
+      "kopfhoerer",
+      "kopfhörer",
+      "airpods",
+      "headphones",
+      "earbuds",
+      "soundbar",
+      "konsole",
+      "ipad",
+      "tablet",
+      "macbook",
+      "laptop",
+      "notebook",
+      "monitor",
+      "iphone",
+      "smartphone",
+      "galaxy",
+      "smartwatch",
+      "apple watch",
+      "beamer",
+      "lautsprecher",
+      "grafikkarte",
+      "ssd"
+    ]
   }
 }

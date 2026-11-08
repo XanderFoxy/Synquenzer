@@ -13,14 +13,17 @@ import ticketmaster from './sources/ticketmaster.mjs';
 import musicbrainz from './sources/musicbrainz.mjs';
 import deezer from './sources/deezer.mjs';
 import seiten from './sources/seiten.mjs';
+import eventim from './sources/eventim.mjs';
+import mbevents from './sources/mbevents.mjs';
 
 const HIER = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HIER, '..');
 const lies = (f, d) => { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch { return d; } };
 const schreib = (f, o) => { fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, JSON.stringify(o, null, 1) + '\n'); };
 
-// Reihenfolge wichtig: MusicBrainz vor Deezer (liefert alte Titel zur Neuauflagen-Erkennung).
-export const QUELLEN = [['ticketmaster', ticketmaster], ['seiten', seiten], ['musicbrainz', musicbrainz], ['deezer', deezer]];
+// Reihenfolge wichtig: MusicBrainz vor Deezer (liefert alte Titel zur Neuauflagen-Erkennung) und vor den MusicBrainz-
+// Terminen (nutzen die Künstler-IDs). Ticketmaster vor Eventim: gleicher Termin (Band, Tag, Stadt) zählt einmal.
+export const QUELLEN = [['ticketmaster', ticketmaster], ['eventim', eventim], ['seiten', seiten], ['musicbrainz', musicbrainz], ['mbevents', mbevents], ['deezer', deezer]];
 
 export async function lauf({ env = process.env, fetchImpl = globalThis.fetch, jetzt = new Date(), quellen = QUELLEN, http } = {}) {
   const config = lies(path.join(ROOT, 'config.json'));
@@ -34,7 +37,7 @@ export async function lauf({ env = process.env, fetchImpl = globalThis.fetch, je
   const gesehen = lies(f('gesehen.json'), null);
   const rohDir = rohOrdner([], env);
   const roh = rohDir ? macheMitschnitt(rohDir, { projekt: 'konzerte', env }) : null;
-  http = http || macheHttp({ fetchImpl: roh ? roh.fetch(fetchImpl) : fetchImpl, abstandMs: { 'musicbrainz.org': 1100, 'nominatim.openstreetmap.org': 1100, 'app.ticketmaster.com': 250 } });
+  http = http || macheHttp({ fetchImpl: roh ? roh.fetch(fetchImpl) : fetchImpl, abstandMs: { 'musicbrainz.org': 1100, 'nominatim.openstreetmap.org': 1100, 'app.ticketmaster.com': 250, 'public-api.eventim.com': 1500 } });
 
   const ctx = { http, bands, config, env, heute, ids, log: console.log };
   const status = {}, konzerte = [], releases = [], kaputt = new Set(), bandKaputt = new Set();

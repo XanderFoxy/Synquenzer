@@ -297,3 +297,21 @@ export function pushZeile(k) {
     k.regulaer ? `statt regulär ${euroKurz(k.regulaer.pack)}${k.ersparnis > 0 ? ` (−${Math.round(k.ersparnis * 100)} %)` : ''}` : '',
   ].filter(Boolean).join(' · ');
 }
+
+/**
+ * Zuletzt gesehenes Angebot eines Produkts – für „Gerade kein Angebot“, damit dort immer etwas steht
+ * (Xander 08.11.2026: „nicht, dass da immer drin steht, da gibt's nichts“).
+ * Zuerst der eigene Verlauf (letzter Tag mit Packung, Döbeln/online), sonst das jüngste recherchierte Angebot einer
+ * Kette in Döbeln bzw. eines erlaubten Ladens (referenzpreise.json). -> { pack, einheit, packung, shop, tag, monat, quelle, url, eigen } | null
+ */
+export function zuletztGesehen(gruppeHist, ref, basis) {
+  const eigen = verlaufEintraege(gruppeHist, basis).filter(e => e.rang !== 9 && e.tag)
+    .sort((a, b) => b.tag.localeCompare(a.tag) || a.p - b.p)[0];
+  const aus = (e, istEigen) => ({ pack: round(e.p, 2), einheit: round(e.einheit, 4), packung: packungKurz(e.menge, basis), shop: kurzLaden(e),
+    tag: e.tag, monat: e.tag ? monatText(e.tag) : null, quelle: istEigen ? 'eigener Verlauf' : e.quelle, url: e.url || null, eigen: istEigen });
+  if (eigen) return aus(eigen, true);
+  // erst Ketten in Döbeln/erlaubte Läden, sonst andere Läden in Deutschland (z. B. Action) – nie „nicht hier“
+  const neueste = f => (ref?.angebote || []).filter(e => e.tag && f(e)).sort((a, b) => b.tag.localeCompare(a.tag) || a.p - b.p)[0];
+  const rech = neueste(e => e.rang <= 2) || neueste(e => e.rang <= 3);
+  return rech ? aus(rech, false) : null;
+}

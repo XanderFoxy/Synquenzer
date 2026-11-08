@@ -1,19 +1,11 @@
-// Modul "nebenverdienst": Deutschunterricht/Nachhilfe, Übersetzung (Deutsch↔Arabisch/Englisch), KI-Bild/Video, kleine kreative Jobs.
-// Quelle: Jobsuche-API der Bundesagentur für Arbeit (offen, fester öffentlicher Schlüssel) + optionale RSS-Feeds.
+// Modul "nebenverdienst": Übersetzung (Deutsch↔Arabisch/Englisch), KI-Bild/Video, kleine kreative Jobs von zu Hause.
+// Deutschunterricht hat seit 08.11.2026 ein eigenes Modul (module/unterricht.mjs, Kategorie „unterricht“).
+// Quelle: Jobsuche-API der Bundesagentur für Arbeit (lib/ba.mjs: /pc/v6/jobs + Ausweich-Adressen) + optionale RSS-Feeds.
 import { enthaelt, zaehle } from '../lib/text.mjs';
+import { macheBaSuche, baJobLink } from '../lib/ba.mjs';
 import { sammleFeeds, eintrag } from './gemeinsam.mjs';
 
-export function baUrl(ba, s) {
-  const u = new URL(ba.api);
-  u.searchParams.set('was', s.was);
-  if (s.wo) u.searchParams.set('wo', s.wo);
-  if (s.umkreis) u.searchParams.set('umkreis', String(s.umkreis));
-  if (s.arbeitszeit) u.searchParams.set('arbeitszeit', s.arbeitszeit);
-  u.searchParams.set('angebotsart', '1');
-  u.searchParams.set('veroeffentlichtseit', String(ba.tageZurueck ?? 14));
-  u.searchParams.set('size', '25');
-  return u.toString();
-}
+export { baUrl } from '../lib/ba.mjs';
 
 const NAECHSTER_SCHRITT = {
   deutsch: 'Anzeige öffnen, kurze Nachricht schicken: wer du bist, dass du Deutsch unterrichtest (auch online), wann du Zeit hast. Vorlage unten.',
@@ -29,24 +21,26 @@ export default async function nebenverdienst({ holeText, cfg, jetzt }) {
   const m = cfg.module.nebenverdienst;
   const eintraege = [], fehler = [];
   const gesehen = new Set();
+  const suche = macheBaSuche(holeText, m.ba);
   for (const s of m.ba.suchen) {
     try {
-      const j = JSON.parse(await holeText(baUrl(m.ba, s), { headers: { 'X-API-Key': m.ba.key, accept: 'application/json' } }));
-      for (const st of j.stellenangebote || []) {
-        if (!st.refnr || gesehen.has(st.refnr)) continue;
+      const { stellen, api } = await suche(s);
+      for (const st of stellen) {
+        if (gesehen.has(st.refnr)) continue;
         gesehen.add(st.refnr);
         const text = `${st.titel || ''} ${st.beruf || ''} ${st.arbeitgeber || ''}`;
         if (enthaelt(text, m.nichtWoerter)) continue;
         const faehig = zaehle(text, m.faehigkeitWoerter);
         if (!faehig) continue;
-        const remote = s.arbeitszeit === 'ho' || enthaelt(text, m.remoteWoerter);
-        const ort = st.arbeitsort?.ort || '';
+        // v4 filtert „ho“ selbst; v6 nicht -> Homeoffice-Feld oder Wörter im Titel
+        const remote = (s.arbeitszeit === 'ho' && !/\/v6\//.test(api)) || st.homeoffice || enthaelt(text, m.remoteWoerter);
+        const ort = st.ort || '';
         const nah = !remote && cfg.region.some(r => ort.includes(r));
         if (!remote && !nah) continue;
         const a = art(text);
         eintraege.push(eintrag({
           kategorie: 'nebenverdienst', titel: st.titel || st.beruf, quelle: 'Jobbörse der Arbeitsagentur',
-          link: `https://www.arbeitsagentur.de/jobsuche/jobdetail/${encodeURIComponent(st.refnr)}`, datum: st.aktuelleVeroeffentlichungsdatum,
+          link: baJobLink(st.refnr), datum: st.datum,
           jetzt, art: 'job', // die Jobbörse liefert kein Ende -> 21 Tage ab Veröffentlichung
           zeile: [st.arbeitgeber, remote ? 'von zu Hause möglich' : ort, s.arbeitszeit === 'mj' ? 'Minijob' : ''].filter(Boolean).join(' · '),
           soGehts: NAECHSTER_SCHRITT[a], wert: 35 + faehig * 10 + (remote ? 15 : 0), grund: a,

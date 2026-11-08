@@ -5,13 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <title>Mein Vorteil</title>
-<meta name="description" content="Krypto, deine Produkte im Angebot, krasse Preisfehler, Gewinnspiele, Cashback, Snacks und Auftritte – alles auf einer Seite">
-<meta name="theme-color" content="#f4f2ee" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#141317" media="(prefers-color-scheme: dark)">
+<meta name="description" content="Dein Assistent: Deals, Preisfehler, Filme, Auftritte, Remix-Contests, Deutschunterricht, Konzerte, Gewinnspiele und Krypto – kompakt auf einer Seite">
+<meta name="theme-color" content="#14100d">
+<meta name="color-scheme" content="dark">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Mein Vorteil">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="format-detection" content="telephone=no">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -19,43 +19,57 @@
 <link rel="preconnect" href="https://raw.githubusercontent.com" crossorigin>
 <link rel="preconnect" href="https://api.coingecko.com" crossorigin>
 <style>
+  /* MV5 (08.11.2026): dunkles, warmes Design – immer, auch wenn das iPhone hell eingestellt ist (Xander: „nicht so in einem
+     Weiß“). Jeder Bereich hat seine Farbe (--f, --f-hell); --akzent folgt dem Bereich, so passen alle Karten von selbst. */
   :root {
-    color-scheme: light dark;
-    --bg: #f4f2ee; --karte: #ffffff; --flaeche: #f1ede6; --text: #1f1d1a; --leise: #69645c; --linie: #e2dcd2;
-    --akzent: #2f6f5e; --akzent-hell: #e2efe9; --akzent-text: #ffffff;
-    --warm: #94551a; --warm-hell: #f7ecdd; --rot: #b3261e; --rot-hell: #fbe9e6;
+    color-scheme: dark;
+    --bg: #14100d; --bg-hoch: #1b1612; --karte: #221b16; --karte-hoch: #2a221c; --flaeche: #30271f; --linie: #3e3329;
+    --text: #f8f0e6; --leise: #c9b9a8; --schwach: #a3927f; --dunkel: #1a120b;
+    --warm: #ffb35c; --warm-hell: #45301b; --rot: #ff8a7f; --rot-hell: #44231e;
+    --f: #f3c58e; --f-hell: #46382a; --f-hell2: #5d4b38;
+    --akzent: var(--f); --akzent-hell: var(--f-hell); --akzent-text: var(--dunkel);
+    --nav-h: 96px;
   }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #141317; --karte: #1e1d22; --flaeche: #26252b; --text: #ecebef; --leise: #a6a3ad; --linie: #33313a;
-      --akzent: #7fcdb3; --akzent-hell: #1c3530; --akzent-text: #10201b;
-      --warm: #e9b47c; --warm-hell: #3a2c1e; --rot: #ff8f86; --rot-hell: #3b1f1d;
-    }
-  }
+  .f-start { --f: #f3c58e; --f-hell: #46382a; --f-hell2: #5d4b38; }
+  .f-deals { --f: #ffc94a; --f-hell: #48391f; --f-hell2: #604c25; }
+  .f-preisfehler { --f: #ff6e60; --f-hell: #482923; --f-hell2: #60322b; }
+  .f-filme { --f: #9ea8ff; --f-hell: #37333e; --f-hell2: #454257; }
+  .f-auftritte { --f: #3edab2; --f-hell: #273b31; --f-hell2: #2a5042; }
+  .f-remix { --f: #ff7bc9; --f-hell: #482b34; --f-hell2: #603648; }
+  .f-unterricht { --f: #64baff; --f-hell: #2d363e; --f-hell2: #344857; }
+  .f-konzerte { --f: #cc98ff; --f-hell: #3f303e; --f-hell2: #523e57; }
+  .f-gewinnspiele { --f: #ade34f; --f-hell: #3a3d20; --f-hell2: #495326; }
+  .f-krypto { --f: #ff9f45; --f-hell: #48311e; --f-hell2: #604023; }
+  .f-mehr { --f: #c2b2a1; --f-hell: #3d352e; --f-hell2: #4f453d; }
+  [class*="f-"] { --akzent: var(--f); --akzent-hell: var(--f-hell); }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
   html { -webkit-text-size-adjust: 100%; background: var(--bg); }
   body {
-    margin: 0; background: var(--bg); color: var(--text); min-height: 100vh;
+    margin: 0; color: var(--text); min-height: 100vh;
+    background: radial-gradient(140% 520px at 50% -140px, #3b2716 0%, rgba(59, 39, 22, 0) 70%) no-repeat, var(--bg);
     font: 16px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
     padding-bottom: calc(28px + env(safe-area-inset-bottom));
     -webkit-tap-highlight-color: transparent;
   }
   .breite {
-    max-width: 640px; margin: 0 auto;
+    max-width: 680px; margin: 0 auto;
     padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right));
   }
-  button, a { font: inherit; color: inherit; }
+  button, a, input, textarea { font: inherit; color: inherit; }
   button { cursor: pointer; }
-  :focus-visible { outline: 3px solid var(--akzent); outline-offset: 2px; }
+  :focus-visible { outline: 3px solid var(--f); outline-offset: 2px; }
+  svg.ic { width: 24px; height: 24px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
-  /* Kopf */
-  .kopf { padding-top: max(10px, env(safe-area-inset-top)); }
+  /* Kopf (scrollt weg) */
+  .kopf { padding-top: max(8px, env(safe-area-inset-top)); }
   .kopf-zeile { display: flex; align-items: center; gap: 8px; min-height: 52px; }
-  h1 { font-size: 26px; line-height: 1.15; margin: 0; letter-spacing: -0.02em; flex: 1; min-width: 0; }
+  .marke-logo { width: 34px; height: 34px; border-radius: 10px; flex: none; display: grid; place-items: center; background: linear-gradient(145deg, #ffc94a, #ff7bc9); color: var(--dunkel); }
+  .marke-logo svg { width: 20px; height: 20px; stroke-width: 2.4; }
+  h1 { font-size: 24px; line-height: 1.15; margin: 0; letter-spacing: -0.02em; flex: 1; min-width: 0; font-weight: 800; }
   .kopf-knopf {
     flex: none; min-height: 44px; min-width: 44px; padding: 0 14px; border-radius: 999px;
-    border: 1px solid var(--linie); background: var(--karte); color: var(--leise); font-size: 15px; font-weight: 600;
+    border: 1px solid var(--linie); background: var(--karte); color: var(--text); font-size: 15px; font-weight: 650;
     display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   }
   .kopf-knopf.rund { padding: 0; width: 44px; }
@@ -63,82 +77,146 @@
   .kopf-knopf[aria-busy="true"] svg { animation: drehen 0.9s linear infinite; }
   @keyframes drehen { to { transform: rotate(360deg); } }
   @media (prefers-reduced-motion: reduce) { .kopf-knopf[aria-busy="true"] svg { animation: none; } }
-  .stand { margin: 2px 0 0; font-size: 13px; color: var(--leise); }
+  .stand { margin: 2px 0 6px; font-size: 12.5px; color: var(--schwach); }
   .stand .alt { color: var(--rot); }
-  .umzug { display: flex; gap: 10px; align-items: center; margin: 10px 0 0; padding: 10px 12px; border-radius: 12px; background: var(--akzent-hell); color: var(--text); font-size: 14px; }
+  .umzug { display: flex; gap: 10px; align-items: center; margin: 8px 0 6px; padding: 10px 12px; border-radius: 14px; background: var(--f-hell); color: var(--text); font-size: 14px; }
   .umzug p { margin: 0; flex: 1; min-width: 0; }
-  .umzug button { flex: none; min-height: 44px; min-width: 44px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--linie); background: var(--karte); color: var(--text); font-size: 14px; font-weight: 600; }
+  .umzug button { flex: none; min-height: 44px; min-width: 44px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--linie); background: var(--karte); color: var(--text); font-size: 14px; font-weight: 650; }
   .umzug.spalte { flex-wrap: wrap; }
   .umzug.spalte p { flex-basis: 100%; }
   .umzug.spalte button { flex: 1; }
-  .gestoert { color: var(--warm); font-size: 14px; margin: 10px 4px 0; }
+  .gestoert { color: var(--warm); font-size: 14px; margin: 4px 4px 10px; }
 
-  /* Reiter */
-  .reiter {
-    position: sticky; top: 0; z-index: 5; background: var(--bg);
-    border-bottom: 1px solid var(--linie); margin-top: 8px;
-  }
+  /* Bereichs-Leiste: bleibt oben, Icons + Zähler, seitlich wischbar; „Start“ bleibt links stehen */
+  .sprung { position: sticky; top: 0; z-index: 10; background: rgba(20, 16, 13, .96); border-bottom: 1px solid var(--linie); }
   @supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
-    .reiter { background: color-mix(in srgb, var(--bg) 86%, transparent); -webkit-backdrop-filter: saturate(1.4) blur(14px); backdrop-filter: saturate(1.4) blur(14px); }
+    .sprung { background: rgba(20, 16, 13, .95); -webkit-backdrop-filter: saturate(1.3) blur(16px); backdrop-filter: saturate(1.3) blur(16px); }
   }
-  .segment { display: flex; gap: 6px; padding-top: 8px; padding-bottom: 8px; }
-  .segment button {
-    flex: 1 1 0; min-width: 0; min-height: 44px; border-radius: 12px; border: 1px solid var(--linie);
-    background: var(--karte); color: var(--text); font-size: 15px; font-weight: 600;
-    display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 6px;
+  .sprung-zeile { display: flex; gap: 4px; padding-top: 6px; padding-bottom: 2px; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
+  .sprung-zeile::-webkit-scrollbar { display: none; }
+  .sprung a {
+    flex: none; position: relative; min-width: 60px; min-height: 54px; padding: 4px 7px 3px; border-radius: 14px;
+    display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    color: var(--leise); text-decoration: none; font-size: 11.5px; font-weight: 700; letter-spacing: .01em; white-space: nowrap;
   }
-  .segment button[aria-selected="true"] { background: var(--akzent); border-color: var(--akzent); color: var(--akzent-text); }
-  .segment .n {
-    font-size: 12px; font-weight: 700; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px;
-    background: var(--akzent-hell); color: var(--akzent); display: inline-flex; align-items: center; justify-content: center;
-    font-variant-numeric: tabular-nums;
+  .sprung a > svg.ic { color: var(--f); width: 24px; height: 24px; }
+  .sprung a[aria-current="true"] { background: var(--f); color: var(--dunkel); }
+  .sprung a[aria-current="true"] > svg.ic { color: var(--dunkel); }
+  .sprung a[data-ziel="start"] { position: sticky; left: 0; z-index: 1; background: var(--bg); box-shadow: 8px 0 10px -6px rgba(0, 0, 0, .7); }
+  .sprung a[data-ziel="start"][aria-current="true"] { background: var(--f); }
+  .sprung a[data-ziel="start"]::before { content: ""; position: absolute; top: -6px; bottom: -4px; right: 100%; width: 64px; background: var(--bg); } /* deckt auch den Rand neben der Notch (quer) ab */
+  .sprung .n {
+    position: absolute; top: 1px; right: 3px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px;
+    font-size: 11px; font-weight: 800; line-height: 18px; text-align: center; font-variant-numeric: tabular-nums;
+    background: var(--f); color: var(--dunkel);
   }
-  .segment button[aria-selected="true"] .n { background: var(--akzent-text); color: var(--akzent); }
+  .sprung a[aria-current="true"] .n { background: var(--dunkel); color: var(--f); }
+  .sprung .n:empty { display: none; }
+  .ort { display: flex; align-items: center; gap: 8px; min-height: 30px; margin: 0; padding-bottom: 6px; font-size: 13.5px; color: var(--leise); }
+  .ort .strich { width: 16px; height: 4px; border-radius: 2px; background: var(--f); flex: none; }
+  .ort b { color: var(--f); font-weight: 750; }
+  .ort .ort-zusatz { margin-left: auto; color: var(--schwach); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  @media (max-height: 500px) {
+    :root { --nav-h: 84px; }
+    .sprung a { min-height: 46px; padding: 2px 7px; }
+    .sprung a > svg.ic { width: 20px; height: 20px; }
+    .ort { min-height: 26px; padding-bottom: 4px; }
+  }
 
-  /* Abschnitte */
-  main { padding-top: 6px; }
-  h2 {
-    font-size: 13px; text-transform: uppercase; letter-spacing: .07em; color: var(--leise); font-weight: 650;
-    margin: 22px 4px 10px; display: flex; justify-content: space-between; gap: 8px; align-items: baseline;
-  }
-  h2 small { text-transform: none; letter-spacing: 0; font-weight: 400; font-size: 13px; text-align: right; }
-  .leer { color: var(--leise); font-size: 15px; padding: 14px 16px; border: 1px dashed var(--linie); border-radius: 16px; margin: 0 0 12px; }
+  /* Bereiche: immer nur einer sichtbar (kein ewiges Scrollen) */
+  main { padding-top: 4px; }
+  .bereich, .reiter-seite { scroll-margin-top: var(--nav-h); }
+  .reiter-seite { min-height: 100vh; padding-top: 4px; }
+  .bereich-kopf { display: flex; align-items: center; gap: 12px; margin: 14px 0 8px; }
+  .bereich-kopf .gross { width: 46px; height: 46px; border-radius: 15px; flex: none; display: grid; place-items: center; background: var(--f-hell2); color: var(--f); }
+  .bereich-kopf .gross svg.ic { width: 26px; height: 26px; }
+  .bereich-kopf h2, .reiter-seite > h2 { font-size: 24px; line-height: 1.15; margin: 0; letter-spacing: -0.015em; font-weight: 800; color: var(--text); flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .reiter-seite > h2 { margin: 16px 2px 10px; }
+  .bereich-kopf button { flex: none; }
+  .warum { margin: 0 0 12px; padding: 10px 12px; border-radius: 14px; background: var(--f-hell); border-left: 4px solid var(--f); color: var(--text); font-size: 14.5px; }
+  .warum:empty { display: none; }
+  .warum b { color: var(--f); }
+  h2 .zahl, h3 .zahl { font-size: 13px; font-weight: 800; color: var(--dunkel); background: var(--f); border-radius: 999px; padding: 1px 9px; letter-spacing: 0; line-height: 1.5; }
+  h2 .zahl:empty, h3 .zahl:empty { display: none; }
+  .abschnitt { scroll-margin-top: calc(var(--nav-h) + 8px); }
+  h3.unter, .unter-kopf { font-size: 13px; text-transform: uppercase; letter-spacing: .07em; color: var(--leise); font-weight: 750; margin: 18px 4px 8px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  h3.unter small { text-transform: none; letter-spacing: 0; font-weight: 600; font-size: 13px; color: var(--f); }
+  .unter-kopf { text-transform: none; letter-spacing: 0; margin: 22px 2px 8px; }
+  .unter-kopf h3 { flex: 1; min-width: 0; font-size: 18px; letter-spacing: -0.01em; color: var(--text); font-weight: 800; display: flex; align-items: center; gap: 8px; }
+  .regel { color: var(--leise); font-size: 13.5px; margin: -2px 4px 12px; }
+  .leer { color: var(--leise); font-size: 15px; padding: 14px 16px; border: 1px dashed var(--linie); border-radius: 16px; margin: 0 0 12px; background: var(--bg-hoch); }
   .hinweis { color: var(--leise); font-size: 13px; margin: 6px 4px 12px; }
   .klein { font-size: 13px; color: var(--leise); }
 
+  /* Start: Heute für dich */
+  .start-kopf { margin: 14px 0 10px; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .start-kopf h2 { margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -0.02em; }
+  .start-kopf p { margin: 0; color: var(--leise); font-size: 14px; }
+  .wichtig { margin: 0 0 12px; padding: 4px 14px; border-radius: 18px; background: var(--karte); border: 1px solid var(--linie); }
+  .wichtig > b { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--warm); margin: 8px 0 0; }
+  .wichtig ul { list-style: none; margin: 0; padding: 0; }
+  .wichtig li + li { border-top: 1px solid var(--linie); }
+  .wichtig a, .wichtig p { display: flex; align-items: center; gap: 10px; min-height: 46px; margin: 0; text-decoration: none; color: var(--text); font-size: 15px; }
+  .wichtig a::after { content: "›"; margin-left: auto; color: var(--schwach); font-size: 22px; }
+  .wichtig .ruhig { color: var(--leise); }
+  .wichtig .punkt { flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--f); }
+  .kacheln { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 0 0 12px; }
+  @media (min-width: 700px) { .kacheln { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  a.kachel {
+    display: flex; flex-direction: column; min-width: 0; min-height: 132px; padding: 11px 12px 10px; border-radius: 18px;
+    background: linear-gradient(165deg, var(--f-hell2) 0%, var(--karte) 62%); border: 1px solid var(--linie);
+    color: var(--text); text-decoration: none; position: relative; overflow: hidden;
+  }
+  a.kachel::before { content: ""; position: absolute; left: 0; top: 0; right: 0; height: 3px; background: var(--f); }
+  .kachel-kopf { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .kachel-kopf .rund { width: 30px; height: 30px; border-radius: 10px; flex: none; display: grid; place-items: center; background: var(--f); color: var(--dunkel); }
+  .kachel-kopf .rund svg.ic { width: 18px; height: 18px; stroke-width: 2.3; }
+  .kachel-kopf b { font-size: 15.5px; font-weight: 800; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .kachel-kopf .kn { font-size: 12px; font-weight: 800; color: var(--dunkel); background: var(--f); border-radius: 999px; padding: 0 8px; line-height: 20px; }
+  .kachel-kopf .kn:empty { display: none; }
+  .kachel ul { list-style: none; margin: 8px 0 0; padding: 0; }
+  .kachel li { padding: 5px 0 4px; border-top: 1px solid rgba(255, 255, 255, .07); min-width: 0; }
+  .kachel li b, .kachel li span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .kachel li b { font-size: 13.5px; font-weight: 650; }
+  .kachel li span { font-size: 12px; color: var(--leise); }
+  .kachel li span.gut { color: var(--f); font-weight: 650; }
+  @media (max-width: 699px) { .kachel li:nth-child(3) { display: none; } }
+  .kachel .kw { margin-top: auto; padding-top: 6px; font-size: 12px; color: var(--f); font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
   /* Karten */
   .karte {
-    background: var(--karte); border: 1px solid var(--linie); border-radius: 16px; padding: 14px 16px; margin-bottom: 12px;
-    overflow-wrap: anywhere;
+    background: var(--karte); border: 1px solid var(--linie); border-radius: 18px; padding: 14px 16px; margin-bottom: 10px;
+    overflow-wrap: anywhere; box-shadow: 0 8px 22px rgba(0, 0, 0, .22);
   }
-  .karte.deal { border: 2px solid var(--akzent); }
-  .karte.fehler { border: 2px solid var(--warm); }
-  .karte.sofort { border-color: var(--akzent); box-shadow: inset 4px 0 0 var(--akzent); }
+  .karte.deal { border: 2px solid var(--f); }
+  .karte.fehler { border: 2px solid var(--f); }
+  .karte.sofort { box-shadow: inset 4px 0 0 var(--f), 0 8px 22px rgba(0, 0, 0, .22); }
   .karte-kopf { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
-  h3 { font-size: 17px; line-height: 1.3; margin: 0; font-weight: 650; }
-  .oben { display: flex; gap: 6px 8px; align-items: center; flex-wrap: wrap; font-size: 12px; color: var(--leise); margin-bottom: 6px; }
-  .marke { border-radius: 6px; padding: 2px 7px; background: var(--akzent-hell); color: var(--akzent); font-weight: 650; font-size: 12px; white-space: nowrap; }
+  h3 { font-size: 17px; line-height: 1.3; margin: 0; font-weight: 700; }
+  .oben { display: flex; gap: 6px 8px; align-items: center; flex-wrap: wrap; font-size: 12.5px; color: var(--leise); margin-bottom: 7px; }
+  .marke { border-radius: 7px; padding: 2px 8px; background: var(--f-hell2); color: var(--f); font-weight: 750; font-size: 12px; white-space: nowrap; }
   .marke.warm { background: var(--warm-hell); color: var(--warm); }
   .marke.rot { background: var(--rot-hell); color: var(--rot); }
-  .prozent { flex: none; font-weight: 750; font-size: 15px; padding: 3px 10px; border-radius: 999px; background: var(--akzent); color: var(--akzent-text); }
+  .marke.grau { background: var(--flaeche); color: var(--leise); }
+  .prozent { flex: none; font-weight: 800; font-size: 15px; padding: 3px 10px; border-radius: 999px; background: var(--f); color: var(--dunkel); }
+  .prozent.leise { background: var(--flaeche); color: var(--leise); }
 
   .angebot-titel { margin: 4px 0 0; font-size: 15px; color: var(--leise); }
   .angebot-titel b { color: var(--text); font-weight: 650; white-space: nowrap; }
   .preiszeile { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; margin: 10px 0 0; }
-  .preis { font-size: 30px; font-weight: 750; letter-spacing: -0.02em; line-height: 1.1; white-space: nowrap; }
-  .shop { font-weight: 600; }
-  .einheit { margin: 2px 0 0; font-weight: 650; color: var(--akzent); }
+  .preis { font-size: 30px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .shop { font-weight: 650; }
+  .einheit { margin: 2px 0 0; font-weight: 700; color: var(--f); }
   .einheit.unsicher { color: var(--warm); font-weight: 600; font-size: 15px; }
   .fakten { margin: 12px 0 14px; padding: 2px 12px; background: var(--flaeche); border-radius: 12px; }
   .fakt { padding: 8px 0; border-top: 1px solid var(--linie); }
   .fakt:first-child { border-top: 0; }
-  .fakt dt { font-size: 12px; color: var(--leise); font-weight: 600; margin: 0 0 1px; }
+  .fakt dt { font-size: 12px; color: var(--leise); font-weight: 650; margin: 0 0 1px; }
   .fakt dd { margin: 0; font-size: 15px; }
-  .pill { display: inline-block; font-size: 12px; font-weight: 700; border-radius: 999px; padding: 1px 8px; margin-right: 4px; vertical-align: 1px; }
-  .pill.ja { background: var(--akzent); color: var(--akzent-text); }
+  .pill { display: inline-block; font-size: 12px; font-weight: 800; border-radius: 999px; padding: 1px 8px; margin-right: 4px; vertical-align: 1px; }
+  .pill.ja { background: var(--f); color: var(--dunkel); }
   .pill.nein { background: var(--rot-hell); color: var(--rot); }
   .pill.unbekannt { background: var(--warm-hell); color: var(--warm); }
-  .prozent.leise { background: var(--flaeche); color: var(--leise); }
   .statt { color: var(--leise); font-size: 15px; }
   .statt s { white-space: nowrap; }
 
@@ -146,10 +224,10 @@
   .kx { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 12px; margin: 12px 0 0; padding: 4px 12px; background: var(--flaeche); border-radius: 12px; }
   @media (min-width: 600px) { .kx { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
   .kx > div { padding: 8px 0; min-width: 0; }
-  .kx dt { font-size: 12px; color: var(--leise); font-weight: 600; margin: 0; }
+  .kx dt { font-size: 12px; color: var(--leise); font-weight: 650; margin: 0; }
   .kx dd { margin: 0; }
-  .kx .wert { display: block; font-size: 17px; font-weight: 700; white-space: nowrap; }
-  .kx .jetzt .wert { color: var(--akzent); }
+  .kx .wert { display: block; font-size: 17px; font-weight: 750; white-space: nowrap; }
+  .kx .jetzt .wert { color: var(--f); }
   .kx .wo { display: block; font-size: 12px; line-height: 1.35; color: var(--leise); }
   .kx-urteil { margin: 8px 0 0; font-size: 14px; }
   details.kx-quellen > summary { font-size: 14px; }
@@ -161,27 +239,30 @@
   /* Preisfehler */
   .vj { margin: 10px 0 0; font-size: 18px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
   .vj s { color: var(--leise); }
-  .vj .jetzt { font-size: 28px; font-weight: 750; letter-spacing: -0.02em; white-space: nowrap; }
+  .vj .jetzt { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; white-space: nowrap; }
   .vj .pfeil { color: var(--leise); }
-  .spart { margin: 4px 0 0; font-weight: 700; color: var(--akzent); font-size: 17px; }
-  .unbekannt-vorher { margin: 4px 0 0; font-weight: 600; color: var(--warm); }
+  .spart { margin: 4px 0 0; font-weight: 750; color: var(--f); font-size: 17px; }
+  .unbekannt-vorher { margin: 4px 0 0; font-weight: 650; color: var(--warm); }
 
   a.los, button.los {
-    display: flex; align-items: center; justify-content: center; min-height: 46px; border-radius: 12px; border: 0;
-    background: var(--akzent); color: var(--akzent-text); text-decoration: none; font-weight: 650; padding: 0 14px; text-align: center;
+    display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 46px; border-radius: 13px; border: 0;
+    background: var(--f); color: var(--dunkel); text-decoration: none; font-weight: 750; padding: 0 14px; text-align: center;
   }
-  .aktionen { display: flex; gap: 8px; margin-top: 12px; }
-  .aktionen .los { flex: 1; }
-  button.zweit {
-    min-height: 46px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--linie); background: transparent;
-    color: var(--leise); font-size: 15px;
+  .aktionen { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .aktionen > * { flex: 1 1 0; min-width: 0; }
+  .aktionen > .x-weg { flex: none; }
+  button.zweit, a.zweit-link {
+    display: inline-flex; align-items: center; justify-content: center; min-height: 46px; padding: 0 14px; border-radius: 13px;
+    border: 1px solid var(--linie); background: var(--karte-hoch); color: var(--text); font-size: 15px; font-weight: 650; text-decoration: none; text-align: center;
   }
+  button.x-weg { width: 46px; padding: 0; color: var(--leise); }
+  button.x-weg svg.ic { width: 20px; height: 20px; }
   details.weitere { margin-top: 10px; }
   details > summary {
     min-height: 44px; display: flex; align-items: center; cursor: pointer; color: var(--leise); font-size: 15px; list-style: none;
   }
   details > summary::-webkit-details-marker { display: none; }
-  details > summary::before { content: "›"; display: inline-block; width: 18px; font-size: 20px; line-height: 1; transition: transform .15s; }
+  details > summary::before { content: "›"; display: inline-block; width: 18px; font-size: 20px; line-height: 1; transition: transform .15s; color: var(--f); }
   details[open] > summary::before { transform: rotate(90deg); }
   .weitere ul { list-style: none; padding: 0; margin: 0; }
   .weitere li a {
@@ -196,47 +277,54 @@
   .liste > li { margin-bottom: 8px; }
   .liste .reihe {
     display: flex; gap: 12px; align-items: center; text-decoration: none; color: inherit; background: var(--karte);
-    border: 1px solid var(--linie); border-radius: 14px; padding: 10px 14px; min-height: 56px;
+    border: 1px solid var(--linie); border-radius: 15px; padding: 10px 14px; min-height: 58px;
   }
-  .liste .haupt { flex: 1; min-width: 0; overflow-wrap: anywhere; }
-  .liste .haupt b { display: block; font-weight: 600; }
+  .liste .haupt { flex: 1; min-width: 0; overflow-wrap: anywhere; text-decoration: none; color: inherit; }
+  .liste .haupt b { display: block; font-weight: 650; }
   .liste .haupt > span { display: block; color: var(--leise); font-size: 14px; }
-  .liste .haupt > span.zeile { color: var(--akzent); font-weight: 600; margin: 0; }
+  .liste .haupt > span.zeile { color: var(--f); font-weight: 650; margin: 0; }
   .liste .rechts { flex: none; color: var(--leise); font-size: 14px; white-space: nowrap; text-align: right; }
-  .datum { min-width: 50px; text-align: center; line-height: 1.1; flex: none; }
-  .datum b { display: block; font-size: 21px; }
-  .datum small { color: var(--leise); font-size: 11px; text-transform: uppercase; }
+  .liste .rechts.warm { color: var(--warm); font-weight: 650; }
+  .liste .rechts.gut { color: var(--f); font-weight: 750; }
+  .datum { min-width: 50px; text-align: center; line-height: 1.1; flex: none; padding: 4px 0; border-radius: 10px; background: var(--f-hell); }
+  .datum b { display: block; font-size: 21px; color: var(--text); }
+  .datum small { color: var(--f); font-size: 11px; text-transform: uppercase; font-weight: 700; }
   img.cover { width: 50px; height: 50px; border-radius: 8px; object-fit: cover; background: var(--linie); flex: none; }
-  .tag { display: inline-block; font-size: 11px; font-weight: 650; padding: 0 6px; border-radius: 6px; margin-left: 6px; vertical-align: 1px; border: 1px solid currentColor; }
-  .tag.neu { color: var(--akzent); } .tag.weit { color: var(--warm); } .tag.fest { color: var(--leise); }
+  .tag { display: inline-block; font-size: 11px; font-weight: 700; padding: 0 6px; border-radius: 6px; margin-left: 6px; vertical-align: 1px; border: 1px solid currentColor; }
+  .tag.neu { color: var(--f); } .tag.weit { color: var(--warm); } .tag.fest { color: var(--leise); }
+  button.klein-los { flex: none; min-height: 44px; min-width: 44px; padding: 0 12px; border-radius: 12px; border: 0; background: var(--f); color: var(--dunkel); font-size: 14px; font-weight: 750; }
 
   .sogehts { margin: 8px 0 0; font-size: 15px; }
-  .sogehts b, .haken b { color: var(--leise); font-weight: 600; }
+  .sogehts b, .haken b { color: var(--leise); font-weight: 650; }
   .haken { margin: 6px 0 0; font-size: 14px; }
   .schritte { margin: 6px 0 0; padding-left: 18px; font-size: 14px; color: var(--leise); }
-  .zeile { margin: 6px 0 0; font-weight: 600; color: var(--akzent); }
-  .mehr { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 44px; border: 1px solid var(--linie); border-radius: 12px; background: transparent; color: var(--leise); font-size: 15px; margin-bottom: 12px; }
-  .filter { display: flex; gap: 8px; margin-top: 14px; }
-  .filter button { flex: 1; min-height: 44px; border-radius: 12px; border: 1px solid var(--linie); background: var(--karte); color: var(--text); font-size: 15px; }
-  .filter button[aria-pressed="true"] { border: 2px solid var(--akzent); color: var(--akzent); font-weight: 650; }
+  .zeile { margin: 6px 0 0; font-weight: 650; color: var(--f); }
+  .als { margin: 8px 0 0; font-size: 14px; color: var(--leise); }
+  .als b { color: var(--text); }
+  .mehr { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 46px; border: 1px solid var(--linie); border-radius: 13px; background: var(--bg-hoch); color: var(--f); font-size: 15px; font-weight: 700; margin-bottom: 12px; }
+  .filter { display: flex; gap: 8px; margin-top: 10px; margin-bottom: 10px; }
+  .filter button { flex: 1; min-height: 44px; border-radius: 12px; border: 1px solid var(--linie); background: var(--karte); color: var(--text); font-size: 15px; font-weight: 600; }
+  .filter button[aria-pressed="true"] { border: 2px solid var(--f); color: var(--f); font-weight: 750; background: var(--f-hell); }
 
-  details.kasten { background: var(--karte); border: 1px solid var(--linie); border-radius: 16px; padding: 0 16px; margin-bottom: 12px; }
-  details.kasten > summary { color: var(--text); font-weight: 600; }
+  details.kasten { background: var(--karte); border: 1px solid var(--linie); border-radius: 16px; padding: 0 16px; margin-bottom: 10px; }
+  details.kasten > summary { color: var(--text); font-weight: 650; }
   details.kasten[open] { padding-bottom: 12px; }
   details.kasten p, details.kasten li { font-size: 14px; }
   .quellen { margin: 0; padding-left: 18px; }
   .quellen .stoerung { color: var(--warm); }
   pre { white-space: pre-wrap; font: inherit; font-size: 15px; background: var(--flaeche); border-radius: 10px; padding: 12px; margin: 0 0 10px; }
-  a.block { display: flex; align-items: center; min-height: 44px; color: var(--akzent); font-weight: 600; text-decoration: none; }
+  a.block { display: flex; align-items: center; min-height: 44px; color: var(--f); font-weight: 650; text-decoration: none; }
+  .fundorte .reihe { background: var(--bg-hoch); }
+  .liste .reihe > a.haupt { min-height: 46px; display: flex; flex-direction: column; justify-content: center; }
 
-  /* Push-Hilfe */
+  /* Dialoge (Push-Hilfe, Krypto, Bewerben-Blatt) */
   dialog {
-    border: 0; border-radius: 20px; padding: 20px; background: var(--karte); color: var(--text);
-    width: min(520px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); overflow: auto;
-    box-shadow: 0 18px 60px rgba(0, 0, 0, .35);
+    border: 1px solid var(--linie); border-radius: 22px; padding: 20px; background: var(--karte); color: var(--text);
+    width: min(540px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); overflow: auto;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, .6);
   }
-  dialog::backdrop { background: rgba(0, 0, 0, .45); }
-  dialog h2 { margin: 0 0 10px; font-size: 20px; text-transform: none; letter-spacing: -0.01em; color: var(--text); }
+  dialog::backdrop { background: rgba(8, 5, 3, .7); }
+  dialog h2 { margin: 0 0 10px; font-size: 20px; letter-spacing: -0.01em; color: var(--text); }
   dialog ol { padding-left: 20px; margin: 0 0 10px; }
   dialog li { margin-bottom: 6px; }
   /* Knöpfe bleiben unten sichtbar, auch wenn der Inhalt scrollt (iPhone quer: 428 px hoch) */
@@ -245,74 +333,48 @@
   .thema { display: flex; gap: 8px; align-items: center; margin: 0 0 12px; }
   .thema code { flex: 1; min-width: 0; overflow-wrap: anywhere; background: var(--flaeche); border-radius: 10px; padding: 10px 12px; font-size: 14px; }
 
-  /* ===== MV2 (07.11.2026): eine Seite mit Abschnitten statt Reitern ===== */
-  html { scroll-behavior: smooth; }
-  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
-  .abschnitt { scroll-margin-top: 70px; padding-top: 4px; }
-  .abschnitt > h2, .abschnitt-kopf h2, .reiter-seite > h2 {
-    font-size: 21px; line-height: 1.2; text-transform: none; letter-spacing: -0.01em; color: var(--text); font-weight: 750;
-    margin: 26px 2px 10px; justify-content: flex-start; align-items: center;
-  }
-  .abschnitt-kopf { display: flex; align-items: center; gap: 8px; }
-  .abschnitt-kopf h2 { flex: 1; min-width: 0; }
-  .abschnitt-kopf button { margin-top: 14px; }
-  h2 .zahl { font-size: 13px; font-weight: 700; color: var(--akzent); background: var(--akzent-hell); border-radius: 999px; padding: 1px 9px; letter-spacing: 0; }
-  h2 .zahl:empty { display: none; }
-  h3.unter { font-size: 13px; text-transform: uppercase; letter-spacing: .07em; color: var(--leise); font-weight: 650; margin: 16px 4px 8px; display: flex; justify-content: space-between; gap: 8px; }
-  h3.unter small { text-transform: none; letter-spacing: 0; font-weight: 400; font-size: 13px; }
-  .regel { color: var(--leise); font-size: 13px; margin: -4px 4px 12px; }
-
-  /* Heute wichtig */
-  .wichtig { margin: 10px 0 0; padding: 4px 14px; border-radius: 16px; background: var(--karte); border: 1px solid var(--linie); }
-  .wichtig > b { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: .07em; color: var(--leise); margin: 8px 0 0; }
-  .wichtig ul { list-style: none; margin: 0; padding: 0; }
-  .wichtig li + li { border-top: 1px solid var(--linie); }
-  .wichtig a, .wichtig p { display: flex; align-items: center; gap: 10px; min-height: 44px; margin: 0; text-decoration: none; color: var(--text); font-size: 15px; }
-  .wichtig a::after { content: "›"; margin-left: auto; color: var(--leise); font-size: 20px; }
-  .wichtig .ruhig { color: var(--leise); }
-  .wichtig .punkt { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--akzent); }
-  .wichtig .punkt.warm { background: var(--warm); }
-
-  /* Sprung-Leiste (bleibt oben, seitlich wischbar – die Seite selbst scrollt nie seitlich) */
-  .sprung { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--linie); margin-top: 10px; }
-  @supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
-    .sprung { background: color-mix(in srgb, var(--bg) 86%, transparent); -webkit-backdrop-filter: saturate(1.4) blur(14px); backdrop-filter: saturate(1.4) blur(14px); }
-  }
-  .sprung-zeile { display: flex; gap: 6px; padding-top: 8px; padding-bottom: 8px; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
-  .sprung-zeile::-webkit-scrollbar { display: none; }
-  .sprung a {
-    flex: none; min-height: 44px; min-width: 44px; padding: 0 13px; border-radius: 999px; border: 1px solid var(--linie);
-    background: var(--karte); color: var(--text); font-size: 15px; font-weight: 600; text-decoration: none;
-    display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
-  }
-  .sprung a[aria-current="true"] { background: var(--akzent); border-color: var(--akzent); color: var(--akzent-text); }
-  .sprung .n { font-size: 12px; font-weight: 700; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--akzent-hell); color: var(--akzent); display: inline-flex; align-items: center; justify-content: center; font-variant-numeric: tabular-nums; }
-  .sprung a[aria-current="true"] .n { background: var(--akzent-text); color: var(--akzent); }
-  .sprung .n:empty { display: none; }
+  /* Bewerben-Blatt */
+  #blatt { padding-bottom: 0; }
+  .blatt-kopf { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .blatt-kopf h2 { flex: 1; min-width: 0; margin: 0; }
+  .blatt-was { margin: 0 0 10px; font-size: 15px; }
+  .blatt-was span { color: var(--leise); font-size: 14px; }
+  .wahl { display: flex; gap: 6px; margin: 4px 0 6px; flex-wrap: wrap; }
+  .wahl button { flex: 1 1 0; min-width: 0; min-height: 44px; padding: 4px 10px; border-radius: 12px; border: 1px solid var(--linie); background: var(--karte-hoch); color: var(--text); font-size: 14.5px; font-weight: 650; }
+  .wahl button[aria-checked="true"] { border: 2px solid var(--f); background: var(--f-hell); color: var(--f); font-weight: 800; }
+  .tipp { margin: 0 0 10px; font-size: 13.5px; color: var(--leise); }
+  .tipp b { color: var(--text); }
+  .blatt label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--leise); font-weight: 650; margin: 0 0 8px; }
+  .blatt label input, .blatt label textarea { font-weight: 400; }
+  .blatt textarea { min-height: 220px; resize: vertical; width: 100%; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--linie); background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.45; }
+  @media (max-height: 500px) { .blatt textarea { min-height: 150px; } }
+  .blatt .fakten-mini { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
+  .blatt .schritte-blatt { margin: 0 0 10px; padding-left: 20px; font-size: 14px; }
+  .blatt .gespeichert { font-size: 12.5px; color: var(--schwach); margin: -2px 0 8px; }
+  .blatt .aktionen { flex-wrap: wrap; }
+  .blatt .aktionen .breit { flex-basis: 100%; }
+  .blatt .aktionen .zweit, .blatt .aktionen .zweit-link { font-size: 14px; padding: 0 8px; white-space: nowrap; }
+  .wahl-titel { margin: 2px 0 0; font-size: 13px; color: var(--leise); font-weight: 650; }
+  .angaben { margin: 0 0 8px; border-top: 1px solid var(--linie); }
+  .angaben > summary { color: var(--text); font-weight: 650; }
+  .angaben .feld-gitter { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 10px; }
 
   /* Krypto */
   .krypto { padding: 4px 16px; }
   .coin { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 12px 0; border-top: 1px solid var(--linie); align-items: baseline; }
   .coin:first-child { border-top: 0; }
-  .coin .name { font-size: 17px; font-weight: 650; }
+  .coin .name { font-size: 17px; font-weight: 700; }
   .coin .name span { color: var(--leise); font-weight: 500; font-size: 14px; margin-left: 4px; }
-  .coin .kurs { font-size: 22px; font-weight: 750; letter-spacing: -0.02em; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .coin .kurs { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
   .coin .tag24 { font-size: 14px; color: var(--leise); }
-  .coin .tag24 .plus { color: var(--akzent); font-weight: 650; }
-  .coin .tag24 .minus { color: var(--rot); font-weight: 650; }
+  .coin .tag24 .plus { color: #7fe0a8; font-weight: 700; }
+  .coin .tag24 .minus { color: var(--rot); font-weight: 700; }
   .coin .ergebnis { grid-column: 1 / -1; margin-top: 8px; padding: 10px 12px; border-radius: 12px; background: var(--flaeche); font-size: 15px; }
-  .coin .ergebnis.gewinn { background: var(--akzent-hell); color: var(--text); }
-  .coin .ergebnis.gewinn b { color: var(--akzent); }
-  .coin .ergebnis.verlust b { color: var(--rot); }
+  .coin .ergebnis.gewinn { background: #1f3a2b; color: var(--text); }
   .coin .ergebnis small { display: block; color: var(--leise); font-size: 13px; margin-top: 2px; }
   .kurs-stand { font-size: 13px; color: var(--leise); margin: 0 0 10px; }
   .kurs-stand.alt { color: var(--warm); }
-  .formular { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; margin: 4px 0 8px; }
-  .formular fieldset { grid-column: 1 / -1; border: 0; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 12px; }
-  .formular legend { font-weight: 650; font-size: 15px; padding: 0; margin: 4px 0 2px; }
-  .formular label { display: flex; flex-direction: column; gap: 3px; font-size: 13px; color: var(--leise); font-weight: 600; min-width: 0; }
-  .formular label.breit { grid-column: 1 / -1; }
-  input[type="text"], input[type="search"] {
+  input[type="text"], input[type="search"], input[type="url"], input[type="email"] {
     font: inherit; font-size: 16px; min-height: 44px; width: 100%; min-width: 0; padding: 0 12px; border-radius: 10px;
     border: 1px solid var(--linie); background: var(--bg); color: var(--text);
   }
@@ -322,7 +384,7 @@
   .schritte-gh code { background: var(--flaeche); border-radius: 6px; padding: 1px 5px; font-size: 13px; }
 
   /* Meine Produkte: Liste bearbeiten */
-  .zweit.klein-knopf { min-height: 44px; padding: 0 12px; font-size: 14px; border-radius: 999px; background: var(--karte); }
+  .zweit.klein-knopf { min-height: 44px; padding: 0 12px; font-size: 14px; border-radius: 999px; }
   .editor { background: var(--karte); border: 1px solid var(--linie); border-radius: 16px; padding: 6px 16px 14px; margin-bottom: 12px; }
   .editor ul { list-style: none; margin: 0; padding: 0; }
   .editor li { display: flex; align-items: center; gap: 10px; min-height: 48px; border-top: 1px solid var(--linie); }
@@ -334,41 +396,38 @@
   .editor .aktionen { margin-top: 10px; }
   .mini { font-size: 12px; color: var(--leise); }
 
-  /* Kompakte Zeilen (Snacks, Neuerscheinungen) */
-  .liste .rechts.warm { color: var(--warm); font-weight: 600; }
-  .gewinnspiel .oben .marke.heute { background: var(--warm); color: var(--bg); }
+  .gewinnspiel .oben .marke.heute { background: var(--warm); color: var(--dunkel); }
   details.kasten-innen { border-top: 1px solid var(--linie); }
-  details.kasten-innen > summary { color: var(--text); font-weight: 600; }
+  details.kasten-innen > summary { color: var(--text); font-weight: 650; }
   details.kasten-innen[open] { padding-bottom: 12px; }
   .krypto > div:first-child { padding-top: 4px; }
 
-  /* Krypto (07.11. abends): Ergebnis je Coin, Käufe bearbeiten, Pop-up bei Zonenwechsel, Hinweis nach Import */
+  /* Krypto: Ergebnis je Coin, Käufe bearbeiten, Pop-up bei Zonenwechsel, Hinweis nach Import */
   .coin .gv-zeile { margin: 0; font-size: 16px; }
-  .coin .gv-zeile b { font-size: 19px; font-weight: 750; white-space: nowrap; font-variant-numeric: tabular-nums; }
-  .coin .ergebnis.gewinn .gv-zeile b { color: var(--akzent); }
+  .coin .gv-zeile b { font-size: 19px; font-weight: 800; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .coin .ergebnis.gewinn .gv-zeile b { color: #7fe0a8; }
   .coin .ergebnis.verlust .gv-zeile b { color: var(--rot); }
   .coin .ergebnis.verlust { background: var(--rot-hell); }
   .kz { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 12px; margin: 8px 0 4px; }
   @media (min-width: 600px) { .kz { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
   .kz div { min-width: 0; }
-  .kz dt { font-size: 12px; color: var(--leise); font-weight: 600; }
-  .kz dd { margin: 0; font-size: 16px; font-weight: 650; font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--text); }
+  .kz dt { font-size: 12px; color: var(--leise); font-weight: 650; }
+  .kz dd { margin: 0; font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--text); }
   .coin-edit { border: 0; margin: 0 0 6px; padding: 8px 0 12px; border-bottom: 1px solid var(--linie); min-width: 0; }
-  .coin-edit legend { font-weight: 700; font-size: 16px; padding: 0; }
-  .coin-edit label { display: flex; flex-direction: column; gap: 3px; font-size: 13px; color: var(--leise); font-weight: 600; min-width: 0; }
+  .coin-edit legend { font-weight: 750; font-size: 16px; padding: 0; }
+  .coin-edit label { display: flex; flex-direction: column; gap: 3px; font-size: 13px; color: var(--leise); font-weight: 650; min-width: 0; }
   .coin-edit label.aktuell { margin-top: 12px; }
   .kaeufe { list-style: none; margin: 6px 0 0; padding: 0; }
   .kaeufe li { display: flex; align-items: center; gap: 10px; min-height: 48px; border-top: 1px solid var(--linie); font-size: 14px; }
   .kaeufe li:first-child { border-top: 0; }
   .kaeufe li span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
-  .summe { font-size: 14px; margin: 6px 0 2px; font-weight: 600; }
+  .summe { font-size: 14px; margin: 6px 0 2px; font-weight: 650; }
   .kauf-neu { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 12px; margin-top: 10px; }
   .kauf-neu .breit { grid-column: 1 / -1; }
-  .formfehler { margin: 0; color: var(--rot); font-size: 14px; font-weight: 600; }
+  .formfehler { margin: 0; color: var(--rot); font-size: 14px; font-weight: 650; }
   .secret-zeile { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-top: 6px; }
   .secret-zeile code { overflow-wrap: anywhere; }
   button.klein-knopf:disabled { opacity: .55; }
-  a.zweit-link { display: flex; align-items: center; justify-content: center; min-height: 46px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--linie); color: var(--text); text-decoration: none; font-weight: 600; }
   button.x { flex: none; width: 44px; height: 44px; border-radius: 999px; border: 1px solid var(--linie); background: var(--flaeche); color: var(--text); font-size: 18px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; padding: 0; }
   #krypto-alarm { width: min(460px, calc(100vw - 24px)); }
   .alarm-kopf { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
@@ -376,21 +435,20 @@
   .alarm { padding: 12px 0; border-top: 1px solid var(--linie); }
   .alarm:first-child { border-top: 0; }
   .alarm p { margin: 4px 0 0; font-size: 16px; color: var(--leise); }
-  .alarm .was { color: var(--text); font-size: 20px; font-weight: 700; margin: 0; }
+  .alarm .was { color: var(--text); font-size: 20px; font-weight: 750; margin: 0; }
   .alarm .gv { color: var(--text); font-size: 32px; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
   .alarm .gv span { font-size: 22px; }
-  .alarm.gewinn .gv { color: var(--akzent); }
+  .alarm.gewinn .gv { color: #7fe0a8; }
   .alarm.verlust .gv { color: var(--rot); }
   .toast {
-    position: fixed; z-index: 20; left: max(12px, env(safe-area-inset-left)); right: max(12px, env(safe-area-inset-right));
+    position: fixed; z-index: 30; left: max(12px, env(safe-area-inset-left)); right: max(12px, env(safe-area-inset-right));
     bottom: calc(12px + env(safe-area-inset-bottom)); max-width: 616px; margin: 0 auto; display: flex; align-items: center; gap: 10px;
-    padding: 8px 8px 8px 14px; border-radius: 14px; background: var(--akzent); color: var(--akzent-text); box-shadow: 0 10px 30px rgba(0, 0, 0, .3); font-weight: 600;
+    padding: 8px 8px 8px 14px; border-radius: 14px; background: #3edab2; color: var(--dunkel); box-shadow: 0 10px 30px rgba(0, 0, 0, .5); font-weight: 650;
   }
-  .toast.warm { background: var(--warm); color: var(--bg); }
+  .toast.warm { background: var(--warm); color: var(--dunkel); }
   .toast p { margin: 0; flex: 1; min-width: 0; font-size: 15px; }
   .toast button.x { background: transparent; border-color: currentColor; color: inherit; }
-  /* eigene Seite eines Reiters (Filme): springt wie ein Abschnitt unter die Leiste, auch solange sie noch kurz ist */
-  .reiter-seite { scroll-margin-top: 70px; padding-top: 4px; min-height: 100vh; }
+  dialog .toast { position: sticky; }
 </style>
 <script>
 'use strict';
@@ -519,40 +577,125 @@ const KRYPTO_IMPORT = (() => {
 </script>
 </head>
 <body>
-<header class="kopf">
+<!-- Symbole (gezeichnet, keine Emojis): <svg class="ic"><use href="#ic-…"/></svg> -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="ic-logo" viewBox="0 0 24 24"><path d="M12 3l2.2 6.8L21 12l-6.8 2.2L12 21l-2.2-6.8L3 12l6.8-2.2z"/></symbol>
+  <symbol id="ic-start" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"/></symbol>
+  <symbol id="ic-deals" viewBox="0 0 24 24"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.6"/></symbol>
+  <symbol id="ic-preisfehler" viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></symbol>
+  <symbol id="ic-filme" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 4v16M17 4v16M3 9h4M3 15h4M17 9h4M17 15h4"/></symbol>
+  <symbol id="ic-auftritte" viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4M8 22h8"/></symbol>
+  <symbol id="ic-remix" viewBox="0 0 24 24"><path d="M2 12h3l2.5-6 3.5 13 3.5-15 3 11 1.5-3H22"/></symbol>
+  <symbol id="ic-unterricht" viewBox="0 0 24 24"><path d="M2 4h7a3 3 0 0 1 3 3v14a2.5 2.5 0 0 0-2.5-2.5H2z"/><path d="M22 4h-7a3 3 0 0 0-3 3v14a2.5 2.5 0 0 1 2.5-2.5H22z"/></symbol>
+  <symbol id="ic-konzerte" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a3 3 0 0 0 0 6v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a3 3 0 0 0 0-6z"/><path d="M14 5v2M14 11v2M14 17v2"/></symbol>
+  <symbol id="ic-gewinnspiele" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v8a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-8"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/></symbol>
+  <symbol id="ic-krypto" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 7.5h3.8a2 2 0 0 1 0 4H9.5zM9.5 11.5h4.3a2 2 0 0 1 0 4H9.5zM9.5 7.5v8M11 6v1.5M11 15.5V17"/></symbol>
+  <symbol id="ic-mehr" viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/></symbol>
+  <symbol id="ic-weg" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="ic-neu" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></symbol>
+</svg>
+<header class="kopf" id="kopf">
   <div class="breite">
     <div class="kopf-zeile">
+      <span class="marke-logo" aria-hidden="true"><svg class="ic"><use href="#ic-logo"/></svg></span>
       <h1>Mein Vorteil</h1>
       <button id="push" class="kopf-knopf" type="button" aria-haspopup="dialog">Push einrichten</button>
-      <button id="neu" class="kopf-knopf rund" type="button" aria-label="Neu laden" title="Neu laden">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></svg>
-      </button>
+      <button id="neu" class="kopf-knopf rund" type="button" aria-label="Neu laden" title="Neu laden"><svg class="ic" aria-hidden="true"><use href="#ic-neu"/></svg></button>
     </div>
     <p id="stand" class="stand" aria-live="polite">Lade …</p>
-    <div id="umzug" class="umzug" hidden><p>Neu: alles auf einer Seite. Für das neue Symbol in Safari <b>Teilen → Zum Home-Bildschirm</b>, das alte Symbol kannst du löschen.</p><button id="umzug-zu" type="button">Verstanden</button></div>
-    <section id="wichtig" class="wichtig" aria-label="Heute wichtig" aria-live="polite"><b>Heute wichtig</b><ul><li><p class="ruhig">Lade …</p></li></ul></section>
+    <div id="umzug" class="umzug f-auftritte" hidden><p>Neu: alles auf einer Seite. Für das neue Symbol in Safari <b>Teilen → Zum Home-Bildschirm</b>, das alte Symbol kannst du löschen.</p><button id="umzug-zu" type="button">Verstanden</button></div>
   </div>
 </header>
 
-<nav class="sprung" aria-label="Abschnitte">
-  <div class="breite sprung-zeile">
-    <a href="#krypto" data-ziel="krypto">Krypto<span class="n"></span></a>
-    <a href="#produkte" data-ziel="produkte">Meine Produkte<span class="n"></span></a>
-    <a href="#preisfehler" data-ziel="preisfehler">Preisfehler<span class="n"></span></a>
-    <a href="#gewinnspiele" data-ziel="gewinnspiele">Gewinnspiele<span class="n"></span></a>
-    <a href="#cashback" data-ziel="cashback">Cashback<span class="n"></span></a>
-    <a href="#snacks" data-ziel="snacks">Snacks<span class="n"></span></a>
-    <a href="#auftritte" data-ziel="auftritte">Auftritte<span class="n"></span></a>
-    <a href="#remix" data-ziel="remix">Remix<span class="n"></span></a>
-    <a href="#mehr" data-ziel="mehr">Mehr<span class="n"></span></a>
-    <!-- Weitere Reiter: <a data-reiter="name"> + <section id="p-name" class="reiter-seite"> nach </main> + REITER_START.name (siehe „Weitere Reiter“ im Skript) -->
-    <a href="#filme" data-reiter="filme">Filme<span class="n"></span></a>
+<!-- Bereichs-Leiste: ein Bereich zur Zeit (kein ewiges Scrollen). Weitere Reiter: <a data-reiter="name"> + <section id="p-name" class="reiter-seite"> + REITER_START.name -->
+<nav class="sprung" aria-label="Bereiche">
+  <div class="breite sprung-zeile" id="leiste">
+    <a href="#start" data-ziel="start" class="f-start"><svg class="ic" aria-hidden="true"><use href="#ic-start"/></svg><span class="t">Start</span><span class="n"></span></a>
+    <a href="#deals" data-ziel="deals" class="f-deals"><svg class="ic" aria-hidden="true"><use href="#ic-deals"/></svg><span class="t">Deals</span><span class="n"></span></a>
+    <a href="#preisfehler" data-ziel="preisfehler" class="f-preisfehler"><svg class="ic" aria-hidden="true"><use href="#ic-preisfehler"/></svg><span class="t">Preisfehler</span><span class="n"></span></a>
+    <a href="#filme" data-reiter="filme" class="f-filme"><svg class="ic" aria-hidden="true"><use href="#ic-filme"/></svg><span class="t">Filme</span><span class="n"></span></a>
+    <a href="#auftritte" data-ziel="auftritte" class="f-auftritte"><svg class="ic" aria-hidden="true"><use href="#ic-auftritte"/></svg><span class="t">Auftritte</span><span class="n"></span></a>
+    <a href="#remix" data-ziel="remix" class="f-remix"><svg class="ic" aria-hidden="true"><use href="#ic-remix"/></svg><span class="t">Remix</span><span class="n"></span></a>
+    <a href="#unterricht" data-ziel="unterricht" class="f-unterricht"><svg class="ic" aria-hidden="true"><use href="#ic-unterricht"/></svg><span class="t">Unterricht</span><span class="n"></span></a>
+    <a href="#konzerte" data-ziel="konzerte" class="f-konzerte"><svg class="ic" aria-hidden="true"><use href="#ic-konzerte"/></svg><span class="t">Konzerte</span><span class="n"></span></a>
+    <a href="#gewinnspiele" data-ziel="gewinnspiele" class="f-gewinnspiele"><svg class="ic" aria-hidden="true"><use href="#ic-gewinnspiele"/></svg><span class="t">Gewinnspiele</span><span class="n"></span></a>
+    <a href="#krypto" data-ziel="krypto" class="f-krypto"><svg class="ic" aria-hidden="true"><use href="#ic-krypto"/></svg><span class="t">Krypto</span><span class="n"></span></a>
+    <a href="#mehr" data-ziel="mehr" class="f-mehr"><svg class="ic" aria-hidden="true"><use href="#ic-mehr"/></svg><span class="t">Mehr</span><span class="n"></span></a>
   </div>
+  <div class="breite"><p class="ort f-start" id="ort"><span class="strich" aria-hidden="true"></span><span>Du bist in: <b id="ort-name">Heute für dich</b></span><span class="ort-zusatz" id="ort-zusatz"></span></p></div>
 </nav>
 
-<main class="breite">
-  <section id="krypto" class="abschnitt" aria-labelledby="h-krypto">
-    <h2 id="h-krypto">Krypto</h2>
+<main class="breite" id="haupt">
+  <section id="start" class="bereich f-start" aria-labelledby="h-start">
+    <div class="start-kopf"><h2 id="h-start">Heute für dich</h2><p id="start-datum"></p></div>
+    <section id="wichtig" class="wichtig" aria-label="Heute wichtig" aria-live="polite"><b>Heute wichtig</b><ul><li><p class="ruhig">Lade …</p></li></ul></section>
+    <div id="kacheln" class="kacheln" aria-label="Deine Bereiche"></div>
+  </section>
+
+  <section id="deals" class="bereich f-deals" aria-labelledby="h-deals" hidden>
+    <div class="bereich-kopf"><span class="gross" aria-hidden="true"><svg class="ic"><use href="#ic-deals"/></svg></span><h2 id="h-deals">Deals <span class="zahl"></span></h2></div>
+    <p class="warum" id="w-deals"></p>
+    <div id="produkte" class="abschnitt">
+      <div class="unter-kopf"><h3 id="h-produkte">Meine Produkte <span class="zahl"></span></h3><button id="liste-bearbeiten" class="zweit klein-knopf" type="button" aria-expanded="false" aria-controls="editor">Liste bearbeiten</button></div>
+      <div id="editor" class="editor" hidden></div>
+      <div id="i-produkte"><p class="leer">Lade Angebote …</p></div>
+    </div>
+    <div id="technik" class="abschnitt" hidden>
+      <div class="unter-kopf"><h3 id="h-technik">Musik-Technik <span class="zahl"></span></h3></div>
+      <div id="i-technik"></div>
+    </div>
+    <div id="cashback" class="abschnitt">
+      <div class="unter-kopf"><h3 id="h-cashback">Cashback <span class="zahl"></span></h3></div>
+      <p class="regel">Geld zurück für Sachen, die dich interessieren (deine Produkte, Snacks, Musik-Technik) – nur laufende.</p>
+      <div id="i-cashback"><p class="leer">Lade …</p></div>
+    </div>
+    <div id="snacks" class="abschnitt">
+      <div class="unter-kopf"><h3 id="h-snacks">Andere Snacks <span class="zahl"></span></h3></div>
+      <p class="regel">Snack-Angebote, die nicht auf deiner Liste stehen.</p>
+      <div id="i-snacks"><p class="leer">Lade …</p></div>
+    </div>
+  </section>
+
+  <section id="preisfehler" class="bereich f-preisfehler" aria-labelledby="h-preisfehler" hidden>
+    <div class="bereich-kopf"><span class="gross" aria-hidden="true"><svg class="ic"><use href="#ic-preisfehler"/></svg></span><h2 id="h-preisfehler">Preisfehler <span class="zahl"></span></h2></div>
+    <p class="regel">Nur No-Brainer, die gerade laufen: mind. 75 % unter dem Vorher-Preis und mind. 20 € gespart (oder ein teures Gerät fast geschenkt, z. B. 4K-Fernseher für 35 €). Spiele nur für ≈ 1 €.</p>
+    <p class="warum" id="w-preisfehler"></p>
+    <div id="i-preisfehler"><p class="leer">Lade …</p></div>
+  </section>
+
+  <section id="auftritte" class="bereich f-auftritte" aria-labelledby="h-auftritte" hidden>
+    <div class="bereich-kopf"><span class="gross" aria-hidden="true"><svg class="ic"><use href="#ic-auftritte"/></svg></span><h2 id="h-auftritte">Auftritte <span class="zahl"></span></h2></div>
+    <p class="warum" id="w-auftritte"></p>
+    <div id="i-auftritte"><p class="leer">Lade …</p></div>
+  </section>
+
+  <section id="remix" class="bereich f-remix" aria-labelledby="h-remix" hidden>
+    <div class="bereich-kopf"><span class="gross" aria-hidden="true"><svg class="ic"><use href="#ic-remix"/></svg></span><h2 id="h-remix">Remix-Contests <span class="zahl"></span></h2></div>
+    <p class="warum" id="w-remix"></p>
+    <div id="i-remix"><p class="leer">Lade …</p></div>
+  </section>
+
+  <section id="unterricht" class="bereich f-unterricht" aria-labelledby="h-unterricht" hidden>
+    <div class="bereich-kopf"><span class="gross" aria-hidden="true"><svg class="ic"><use href="#ic-unterricht"/></svg></span><h2 id="h-unterricht">Deutschunterricht <span class="zahl"></span></h2></div>
+    <p class="warum" id="w-unterricht"></p>
+    <div id="i-unterricht"><p class="leer">Lade …</p></div>
+  </section>
+
+  <section id="konzerte" class="bereich f-konzerte" aria-labelledby="h-konzerte" hidden>
+    <div class="bereich-kopf"><span class="gross" aria-hidden="true"><svg class="ic"><use href="#ic-konzerte"/></svg></span><h2 id="h-konzerte">Konzerte <span class="zahl"></span></h2></div>
+    <p class="warum" id="w-konzerte"></p>
+    <div id="i-konzerte"><p class="leer">Lade Konzerte …</p></div>
+  </section>
+
+  <section id="gewinnspiele" class="bereich f-gewinnspiele" aria-labelledby="h-gewinnspiele" hidden>
+    <div class="bereich-kopf"><span class="gross" aria-hidden="true"><svg class="ic"><use href="#ic-gewinnspiele"/></svg></span><h2 id="h-gewinnspiele">Gewinnspiele <span class="zahl"></span></h2></div>
+    <p class="regel">Nur laufende, ohne Kauf und ohne Abo – was zuerst endet, steht oben.</p>
+    <p class="warum" id="w-gewinnspiele"></p>
+    <div id="i-gewinnspiele"><p class="leer">Lade …</p></div>
+  </section>
+
+  <section id="krypto" class="bereich f-krypto" aria-labelledby="h-krypto" hidden>
+    <div class="bereich-kopf"><span class="gross" aria-hidden="true"><svg class="ic"><use href="#ic-krypto"/></svg></span><h2 id="h-krypto">Krypto <span class="zahl"></span></h2></div>
     <div class="karte krypto"><div id="i-krypto"><p class="leer">Lade Kurse …</p></div>
       <details class="kasten-innen" id="krypto-form">
         <summary>Käufe &amp; Menge</summary>
@@ -573,75 +716,41 @@ const KRYPTO_IMPORT = (() => {
     </div>
   </section>
 
-  <section id="produkte" class="abschnitt" aria-labelledby="h-produkte">
-    <div class="abschnitt-kopf"><h2 id="h-produkte">Meine Produkte <span class="zahl"></span></h2><button id="liste-bearbeiten" class="zweit klein-knopf" type="button" aria-expanded="false" aria-controls="editor">Liste bearbeiten</button></div>
-    <div id="editor" class="editor" hidden></div>
-    <div id="i-produkte"><p class="leer">Lade Angebote …</p></div>
-  </section>
-
-  <section id="preisfehler" class="abschnitt" aria-labelledby="h-preisfehler">
-    <h2 id="h-preisfehler">Preisfehler <span class="zahl"></span></h2>
-    <p class="regel">Nur No-Brainer, die gerade laufen: mind. 75 % unter dem Vorher-Preis und mind. 20 € gespart (oder ein teures Gerät fast geschenkt, z. B. 4K-Fernseher für 35 €). Spiele nur für ≈ 1 €.</p>
-    <div id="i-preisfehler"><p class="leer">Lade …</p></div>
-  </section>
-
-  <section id="gewinnspiele" class="abschnitt" aria-labelledby="h-gewinnspiele">
-    <h2 id="h-gewinnspiele">Gewinnspiele <span class="zahl"></span></h2>
-    <p class="regel">Nur laufende, ohne Kauf und ohne Abo – was zuerst endet, steht oben.</p>
-    <div id="i-gewinnspiele"><p class="leer">Lade …</p></div>
-  </section>
-
-  <section id="cashback" class="abschnitt" aria-labelledby="h-cashback">
-    <h2 id="h-cashback">Cashback <span class="zahl"></span></h2>
-    <p class="regel">Geld zurück für Sachen, die dich interessieren (deine Produkte, Snacks, Musik-Technik) – nur laufende.</p>
-    <div id="i-cashback"><p class="leer">Lade …</p></div>
-  </section>
-
-  <section id="snacks" class="abschnitt" aria-labelledby="h-snacks">
-    <h2 id="h-snacks">Snacks <span class="zahl"></span></h2>
-    <p class="regel">Andere Snack-Angebote, die nicht auf deiner Liste stehen.</p>
-    <div id="i-snacks"><p class="leer">Lade …</p></div>
-  </section>
-
-  <section id="auftritte" class="abschnitt" aria-labelledby="h-auftritte">
-    <h2 id="h-auftritte">Auftritte &amp; Konzerte <span class="zahl"></span></h2>
-    <div id="i-auftritte"><p class="leer">Lade Konzerte …</p></div>
-  </section>
-
-  <section id="remix" class="abschnitt" aria-labelledby="h-remix">
-    <h2 id="h-remix">Remix-Contests <span class="zahl"></span></h2>
-    <p class="regel">Laufende Remix-Wettbewerbe mit Stems: Synth-Pop, 80er, Italo, Euro-Disco, Elektro, Dark Wave, New Wave – was zuerst endet, steht oben.</p>
-    <div id="i-remix"><p class="leer">Lade …</p></div>
-  </section>
-
-  <section id="mehr" class="abschnitt" aria-labelledby="h-mehr">
-    <h2 id="h-mehr">Mehr <span class="zahl"></span></h2>
-    <p class="regel">Erleben, Reisen, Nebenverdienst und Vorlagen – eingeklappt.</p>
+  <section id="mehr" class="bereich f-mehr" aria-labelledby="h-mehr" hidden>
+    <div class="bereich-kopf"><span class="gross" aria-hidden="true"><svg class="ic"><use href="#ic-mehr"/></svg></span><h2 id="h-mehr">Mehr <span class="zahl"></span></h2></div>
+    <p class="regel">Erleben, Reisen, Nebenverdienst, Spar-Tipps und Vorlagen – eingeklappt.</p>
     <div id="i-mehr"><p class="leer">Lade …</p></div>
   </section>
 </main>
 <!-- Filme: Inhalt kommt aus filme.js (Skript, CSS und Daten erst beim ersten Öffnen) -->
-<section id="p-filme" class="reiter-seite breite" aria-labelledby="h-filme" hidden>
-  <h2 id="h-filme">Filme &amp; Serien</h2>
+<section id="p-filme" class="reiter-seite breite f-filme" aria-labelledby="h-filme" hidden>
+  <div class="bereich-kopf"><span class="gross" aria-hidden="true"><svg class="ic"><use href="#ic-filme"/></svg></span><h2 id="h-filme">Filme &amp; Serien</h2></div>
+  <p class="warum" id="w-filme">Apple TV, abgeglichen mit deinen Listen: Wunschfilme, Angebote (auch die Angebots-Räume der TV-App wie „Filme für 3,99 €“), Neu, 80er &amp; Kult, Serien, Disney.</p>
   <div id="i-filme"><p class="leer">Lade Filme …</p></div>
 </section>
 
-<dialog id="krypto-alarm" aria-labelledby="alarm-titel">
+<dialog id="krypto-alarm" class="f-krypto" aria-labelledby="alarm-titel">
   <div class="alarm-kopf"><h2 id="alarm-titel">Krypto</h2><button id="alarm-zu" class="x" type="button" aria-label="Schließen">✕</button></div>
   <div id="alarm-inhalt"></div>
 </dialog>
 <div id="hinweis" class="toast" role="status" hidden><p></p><button class="x" type="button" aria-label="Hinweis schließen">✕</button></div>
 
-<dialog id="push-hilfe" aria-labelledby="push-titel">
+<dialog id="push-hilfe" class="f-start" aria-labelledby="push-titel">
   <h2 id="push-titel">Push aufs iPhone</h2>
   <ol>
     <li>Im App Store die kostenlose App <b>ntfy</b> laden und Mitteilungen erlauben.</li>
     <li>In ntfy auf <b>+</b> tippen und dieses Thema eintragen (Server bleibt ntfy.sh):</li>
   </ol>
   <div class="thema"><code id="topic"></code><button id="kopieren" class="zweit" type="button">Kopieren</button></div>
-  <p>Angebote, Preisfehler, Vorteile, Konzerte und der Krypto-Wecker kommen alle über dieses eine Thema. Tippst du auf eine Nachricht, öffnet sich direkt das Angebot.</p>
+  <p>Angebote, Preisfehler, Vorteile, Auftritte, Remix-Contests, Konzerte und der Krypto-Wecker kommen alle über dieses eine Thema. Tippst du auf eine Nachricht, öffnet sich direkt das Angebot.</p>
   <p class="klein">Als App auf den Home-Bildschirm: in Safari „Teilen“ → „Zum Home-Bildschirm“.</p>
   <div class="aktionen"><a id="abo" class="los" href="#" target="_blank" rel="noopener">In ntfy öffnen</a><button id="zu" class="zweit" type="button">Schließen</button></div>
+</dialog>
+
+<!-- Bewerbungs-Assistent: ein Blatt für Auftritte (Bewerben), Remix (Mitmachen) und Unterricht (Melden) -->
+<dialog id="blatt" class="blatt f-auftritte" aria-labelledby="blatt-titel">
+  <div class="blatt-kopf"><h2 id="blatt-titel">Bewerben</h2><button id="blatt-zu" class="x" type="button" aria-label="Schließen">✕</button></div>
+  <div id="blatt-inhalt"></div>
 </dialog>
 <script>
 'use strict';
@@ -654,18 +763,16 @@ const URLS = {
   releases: RAW + 'konzerte-daten/konzerte/data/releases.json',
   kstatus: RAW + 'konzerte-daten/konzerte/data/status.json',
 };
-// Datenquellen (je ein Wecker); die Seite zeigt sie in Abschnitten, nicht mehr als Reiter
+// Datenquellen (je ein Wecker); die Seite verteilt sie auf Bereiche (Leiste oben, immer nur einer zu sehen)
 const REITER = ['angebote', 'vorteile', 'konzerte'];
 const NAMEN = { angebote: 'Angebote', vorteile: 'Vorteile', konzerte: 'Konzerte' };
-// Abschnitte in Reihenfolge; alte Sprungmarken (Push-Links, alte Seiten) zeigen auf den passenden Abschnitt
-const ABSCHNITTE = ['krypto', 'produkte', 'preisfehler', 'gewinnspiele', 'cashback', 'snacks', 'auftritte', 'remix', 'mehr'];
-const ALTE_MARKEN = { angebote: 'produkte', vorteile: 'gewinnspiele', konzerte: 'auftritte', schnaeppchen: 'produkte' };
 // Daten-Stand gilt als alt (rot), wenn der letzte Lauf so lange her ist (Schnäppchen/Vorteile stündlich, Konzerte alle 3 h)
 const ALT_STUNDEN = { angebote: 3, vorteile: 3, konzerte: 7 };
 // Vorteile: Anzeigenamen, falls die Daten keine liefern (neue Bereiche kommen mit ihrem Namen aus den Daten)
 const BEREICH = {
   deals: ['Andere Deals', 'echt durchgerechnet'], erleben: ['Erleben', 'Therme, Kino, Feste'], reisen: ['Reisen', 'ab Leipzig, Dresden, Berlin'],
-  musik: ['Musik', 'Geräte & Auftritte'], nebenverdienst: ['Nebenverdienst', 'von zu Hause'], tests: ['Tests & Gewinnspiele', 'ohne Fallen'],
+  musik: ['Musik-Technik', 'Wunsch-Geräte'], nebenverdienst: ['Nebenverdienst', 'von zu Hause'], tests: ['Tests & Gewinnspiele', 'ohne Fallen'],
+  remix: ['Remix-Contests', 'mit Stems'], auftritte: ['Auftritte', 'Bands gesucht'], unterricht: ['Deutschunterricht', 'Stellen & Anfragen'],
 };
 // Nie zeigen (Xander 07.11.2026: „Prämien & Freunde werben“ – Strom, Bank, Konto, Freunde werben – komplett raus),
 // auch nicht aus älteren Daten
@@ -783,7 +890,7 @@ function lade() {
       if (S[q]) { S[q].gestoert = true; S[q].fehler = String(e?.message || e); } else S[q] = { d: null, gestoert: true, fehler: String(e?.message || e) };
     }).then(() => {
       zeichne(q);
-      if (--laeuft === 0) { $('neu').removeAttribute('aria-busy'); geladenUm = Date.now(); sprungOffen = false; }
+      if (--laeuft === 0) { $('neu').removeAttribute('aria-busy'); geladenUm = Date.now(); wartetAufZiel = null; }
     });
   }
 }
@@ -901,18 +1008,23 @@ const hatWort = (t, w) => String(w).split('|').some(a => { const n = normText(a)
 const alleWoerter = (text, woerter) => { const t = normText(text); return woerter.length > 0 && woerter.every(w => hatWort(t, w)); };
 const einWort = (text, woerter) => { const t = normText(text); return woerter.some(w => hatWort(t, w)); };
 
-// Xanders Produkte (wie schnaeppchen/watchlist.json „muss“; test/regeln.test.mjs prüft, dass beide gleich sind)
+// Xanders Produkte – Wort für Wort wie schnaeppchen/watchlist.json (id, name, muss, nicht, sorte, andereSorten, sorteOffen;
+// test/regeln.test.mjs prüft, dass beide gleich sind). Damit erkennt die Seite Radar-Deals zu deinen Produkten.
 const STANDARD_PRODUKTE = [
-  { id: 'softys-fruchtmix', name: 'Lachgummi Softys Fruchtmix', muss: ['lachgummi', 'softys'] },
-  { id: 'softys-rote-fruechte', name: 'Lachgummi Softys Rote Früchte', muss: ['lachgummi', 'softys'] },
-  { id: 'crunchips', name: 'Lorenz Crunchips', muss: ['crunchips'] },
+  { id: 'softys-fruchtmix', name: 'nimm2 Lachgummi Softies Fruchtmix (gelbe Tüte)', muss: ['lachgummi'], nicht: ['mini'], sorte: ['fruchtmix|frucht mix|fruchtig'], andereSorten: ['rote fruechte|rote frucht', 'milchgeister', 'funfari', 'brause', 'sauer'], sorteOffen: true },
+  { id: 'softys-rote-fruechte', name: 'nimm2 Lachgummi Softies Rote Früchte (rote Tüte)', muss: ['lachgummi'], nicht: ['mini'], sorte: ['rote fruechte|rote frucht'], andereSorten: ['fruchtmix|frucht mix', 'milchgeister', 'funfari', 'brause', 'sauer'], sorteOffen: true },
+  { id: 'zetti-knusperflocken', name: 'Zetti Knusperflocken XXL', muss: ['zetti', 'knusper'], nicht: ['happz', 'muesli', 'bambina', 'kekse'] },
+  { id: 'leckermaeulchen', name: 'Leckermäulchen Milchquark (Frischli)', muss: ['leckermaeulchen|leckermaulchen'] },
+  { id: 'exquisa-quark', name: 'Exquisa Quark (Quark-Genuss / Quark Creme)', muss: ['exquisa', 'quark'], nicht: ['joghurt', 'kaesekuchen', 'frischkaese', 'drink'] },
+  { id: 'exquisa-frischkaese', name: 'Exquisa Frischkäse', muss: ['exquisa', 'frischkaese|frischkase|sahnige'], nicht: ['koerniger|koernig', 'skyr', 'quark', 'kaesekuchen'] },
+  { id: 'crunchips', name: 'Lorenz Crunchips (klassische Sorten)', muss: ['crunchips'], nicht: ['x cut', 'xcut', 'roasted', 'stapel'] },
   { id: 'crunchips-xcut', name: 'Lorenz Crunchips X-Cut', muss: ['crunchips', 'x cut|xcut'] },
-  { id: 'choco-crossies', name: 'Nestlé Choco Crossies', muss: ['crossies'] },
-  { id: 'knoppers-schnitte', name: 'Knoppers Schnitte', muss: ['knoppers'] },
-  { id: 'knoppers-nussriegel', name: 'Knoppers NussRiegel', muss: ['knoppers', 'nussriegel|nuss riegel'] },
-  { id: 'haribo-colorado', name: 'Haribo Colorado', muss: ['haribo', 'colorado'] },
-  { id: 'haribo-tropi-frutti', name: 'Haribo Tropi Frutti', muss: ['haribo', 'tropi'] },
-  { id: 'ben-jerrys', name: "Ben & Jerry's Eis", muss: ['ben', 'jerry'] },
+  { id: 'choco-crossies', name: 'Nestlé Choco Crossies', muss: ['crossies'], nicht: ['snack vibes', 'choviva'] },
+  { id: 'knoppers-schnitte', name: 'Knoppers Schnitte', muss: ['knoppers'], nicht: ['nussriegel', 'nuss riegel', 'riegel', 'kakaocreme riegel', 'mini', 'eis', 'bites', 'keks'] },
+  { id: 'knoppers-nussriegel', name: 'Knoppers NussRiegel', muss: ['knoppers', 'nussriegel|nuss riegel'], nicht: ['mini'] },
+  { id: 'haribo-colorado', name: 'Haribo Colorado', muss: ['haribo'], nicht: ['mini', 'chamallows', 'party', 'dose', 'weihnacht', 'halloween', 'adventskalender'], sorte: ['colorado|color rado'], andereSorten: ['goldbaeren', 'phantasia', 'starmix', 'happy cola', 'primavera', 'pico balla', 'tangfastics', 'rotella', 'kirschen', 'saft', 'schlecker', 'maoam', 'tropi'] },
+  { id: 'haribo-tropi-frutti', name: 'Haribo Tropi Frutti', muss: ['haribo'], nicht: ['mini', 'chamallows', 'party', 'dose', 'weihnacht', 'halloween', 'adventskalender'], sorte: ['tropi'], andereSorten: ['goldbaeren', 'phantasia', 'starmix', 'happy cola', 'primavera', 'pico balla', 'tangfastics', 'rotella', 'kirschen', 'saft', 'schlecker', 'maoam', 'colorado|color rado'] },
+  { id: 'ben-jerrys', name: "Ben & Jerry's Eis (alle Sorten)", muss: ['ben', 'jerry'], nicht: ['shirt', 'tasse', 'stick', 'sandwich'] },
 ];
 const SNACK_WOERTER = ['chips', 'crisps', 'gummi', 'fruchtgummi', 'weingummi', 'lakritz', 'schoko', 'schokolade', 'riegel', 'keks', 'kekse', 'cookie',
   'eis', 'eiscreme', 'bonbon', 'suessigkeit', 'snack', 'nuesse', 'erdnuss', 'popcorn', 'haribo', 'katjes', 'trolli', 'milka', 'ritter sport', 'kinder riegel', 'kinder bueno', 'kinderschokolade',
@@ -932,8 +1044,21 @@ const merkMeine = () => merk(MEINE, meine);
 const ausgeblendet = id => meine.aus.includes(id);
 const eigeneWoerter = name => normText(name).trim().split(' ').filter(w => w.length >= 3 && !/^(und|der|die|das|mit|fuer|von|pack|packung|stueck|gramm)$/.test(w));
 // Welches meiner Produkte meint dieser Text? -> { id, name } oder null
+// Wie passt() im Schnäppchen-Wecker: alle „muss“, kein „nicht“; mit Sorte: Sorte genannt – oder „versch. Sorten“ (bzw.
+// sorteOffen) und keine ausdrücklich andere Sorte („Haribo Goldbären“ ist kein Colorado, „Haribo XXL versch. Sorten“ kann es sein)
+const GENERISCH = /\b(versch|verschiedene|sorten|auswahl)\b/;
+function passtProdukt(text, p) {
+  if (!alleWoerter(text, p.muss)) return false;
+  const t = normText(text);
+  if ((p.nicht || []).some(w => hatWort(t, w))) return false;
+  if (p.sorte?.length && !p.sorte.every(w => hatWort(t, w))) {
+    if (!p.sorteOffen && !GENERISCH.test(t)) return false;
+    if ((p.andereSorten || []).some(w => hatWort(t, w))) return false;
+  }
+  return true;
+}
 function meinProdukt(text) {
-  for (const p of STANDARD_PRODUKTE) if (!ausgeblendet(p.id) && alleWoerter(text, p.muss)) return { id: p.id, name: p.name };
+  for (const p of STANDARD_PRODUKTE) if (!ausgeblendet(p.id) && passtProdukt(text, p)) return { id: p.id, name: p.name };
   for (const n of meine.eigene) { const w = eigeneWoerter(n); if (w.length && alleWoerter(text, w)) return { id: 'eigen:' + n, name: n }; }
   return null;
 }
@@ -960,6 +1085,7 @@ function gueltigText(o) {
 const startetSpaeter = o => { const ab = zeit(o.ab ?? o.gueltigAb); if (ab != null && ab > Date.now()) { merkeEnde(ab); return true; } return false; };
 function knopfText(o) {
   if (o.quelle === 'marktguru') return `Im Prospekt ansehen (${o.shop})`;
+  if (o.quelle === 'kaufda') return `Prospekt bei kaufDA ansehen (${o.shop})`;
   if (o.quelle === 'mydealz') return 'Zum Deal';
   return `Zum Angebot bei ${o.shop}`;
 }
@@ -1101,6 +1227,7 @@ function produktKarte(p, o, rest) {
     return `<li><a href="${esc(sicher(w.link))}" target="_blank" rel="noopener"><span><b>${esc(w.shop)}</b> · ${esc(w.titel)}${pk ? ' · ' + esc(pk) : ''}<br><span class="klein">${esc(bedingung)}</span></span><span><b>${esc(euro(w.preis))}</b><br><span class="klein">${esc(ep)}</span></span></a></li>`;
   }).join('')}</ul></details>` : '';
   const oben = [];
+  if (o.regional) oben.push(`<span class="marke grau">Region${o.region ? ' · ' + esc(o.region) : ''}</span>`); // kaufDA: Prospekt außerhalb Döbelns
   if (startetSpaeter(o)) oben.push(`<span class="marke warm">${esc(abText(o.ab ?? o.gueltigAb))}</span>`);
   else { const b = zeit(o.bis ?? o.gueltigBis); if (b != null && tag(b) === 'heute') oben.push(`<span class="marke warm">endet ${esc(bisText(o.bis ?? o.gueltigBis).replace(/^bis /, ''))}</span>`); }
   return `<article class="karte angebot${deal ? ' deal' : ''}" data-produkt="${esc(p.id)}">
@@ -1141,7 +1268,8 @@ function produktZeile(p) {
     const quellen = alle.length > 3 ? [...alle.slice(0, 3), 'u. a.'] : alle;
     const reg = k.regulaer ? `Regulär ${euro(k.regulaer.pack)} (${woZeile({ ...k.regulaer, quelle: '' }, false)})` : '';
     const b = p.bestes; // lief beim letzten Lauf noch, ist inzwischen vorbei
-    const zuletzt = b && zahl(b.preis) != null ? ` · zuletzt ${euro(b.preis)} bei ${b.shop}` : '';
+    const gesehen = String(p.tiefst?.text || '').match(/^Gerade kein Angebot · (zuletzt .+)$/); // Scanner ab Fassung 5: „zuletzt gesehen 0,99 € (225 g) bei Penny, Okt. 2026“
+    const zuletzt = b && zahl(b.preis) != null ? ` · zuletzt ${euro(b.preis)} bei ${b.shop}` : gesehen ? ` · ${gesehen[1]}` : '';
     return `<li><div class="reihe"><div class="haupt"><b>${esc(produktName(p, null))}</b><span class="kx-zeile">${esc(keinAngebotKontext(k) + zuletzt)}</span>`
       + `<span>${esc([reg, quellen.length ? `Quellen: ${quellen.join(', ').replace(', u. a.', ' u. a.')}` : ''].filter(Boolean).join(' · '))}</span></div></div></li>`;
   }
@@ -1242,7 +1370,7 @@ function quellenKasten(titel, zeilen, zusatz = '') {
   return `<details class="kasten"><summary>${esc(titel)}</summary>${zeilen.length ? `<ul class="quellen">${zeilen.join('')}</ul>` : ''}${zusatz}</details>`;
 }
 
-// --- Vorteils-Karte (Deals, Gewinnspiele, Cashback, Auftritte, Mehr) ---------------------------------------------
+// --- Vorteils-Karte (Gewinnspiele, Cashback, Musik-Technik, Mehr) ---------------------------------------------------
 function vorteilKarte(e, namen) {
   const oben = [`<span class="marke">${esc(namen[e.kategorie] || BEREICH[e.kategorie]?.[0] || e.kategorie || '')}</span>`];
   if (startetSpaeter(e)) oben.push(`<span class="marke warm">${esc(abText(e.ab))}</span>`);
@@ -1263,25 +1391,8 @@ function vorteilKarte(e, namen) {
   </article>`;
 }
 
+// Vorlagen unter „Mehr“ (Bewerbung, Remix und Unterricht macht jetzt der Assistent mit fertigem Text je Eintrag)
 const VORLAGEN = [
-  ['v-band', 'Vorlage: Bewerbung als Band / Act', `Hallo,
-
-ich bin Xander und mache Synthpop – elektronisch, melodisch, mit deutschen und englischen Texten. Ich würde sehr gern bei euch spielen.
-
-Hörprobe: [Link]
-Foto: [Link]
-Technik: Ich bringe Synths und Laptop mit, brauche nur 2 Kanäle (Stereo-DI) und Strom.
-
-Viele Grüße
-Xander`],
-  ['v-deutsch', 'Vorlage: Antwort auf Deutschunterricht / Nachhilfe', `Hallo,
-
-ich habe Ihre Anzeige gesehen. Ich unterrichte Deutsch (auch als Fremdsprache) – online per Video oder in Döbeln. Ich habe Erfahrung mit Lernenden mit Arabisch und Englisch als Erstsprache.
-
-Ich hätte z. B. [Wochentag] oder [Wochentag] Zeit. Eine kurze kostenlose Kennenlernstunde (20 Minuten) ist möglich.
-
-Viele Grüße
-Xander`],
   ['v-uebersetzung', 'Vorlage: Angebot Übersetzung', `Hallo,
 
 ich übersetze Deutsch ↔ Englisch und Deutsch ↔ Arabisch (Arabisch mit muttersprachlicher Korrektur). Gern mache ich Ihnen zuerst einen kurzen Probeabsatz kostenlos.
@@ -1292,12 +1403,86 @@ Viele Grüße
 Xander`],
 ];
 
+// --- Assistent: Auftritte, Remix-Contests, Deutschunterricht ----------------------------------------------------------
+// Daten ab Radar-Fassung 5: Kategorien „auftritte“, „remix“, „unterricht“ mit extra { ort, km, frist, bewerbung { art, ziel },
+// typ, bewerbenAls, sortWert, fundort? }. Ältere Daten: Remix/Aufrufe stehen unter „musik“, Deutschunterricht unter
+// „nebenverdienst“ – und feste Fundorte fehlen, deshalb hat die Seite dieselben Adressen wie vorteile/config.json dabei
+// (test/regeln.test.mjs prüft das). So steht in keinem Bereich je „da gibt's nichts“.
+const ASSISTENT = ['auftritte', 'remix', 'unterricht'];
+const KUENSTLER = Object.freeze({ name: 'Xander Fox', band: 'One Day in Rome', lehrer: 'Deutsch mit Xander' });
+const FUNDORTE = {
+  auftritte: [
+    { titel: 'Döbelner Kulturnacht: Künstler für Mai', link: 'https://kulturnacht-doebeln.de/', ort: 'Döbeln', km: 0, typ: 'stadtfest', quelle: 'Stadt Döbeln', saison: { bewerbung: [1, 2, 3], termin: 'Mai' } },
+    { titel: 'Stadtfest Döbeln (Juni): offene Bühne für Nachwuchs', link: 'https://www.doebeln.de/tourismus-kultur-freizeit/veranstaltungen', ort: 'Döbeln', km: 0, typ: 'stadtfest', quelle: 'Stadt Döbeln / Treibhaus e.V.', saison: { bewerbung: [2, 3, 4, 5], termin: 'Juni' } },
+    { titel: '7:77 – Die Open Stage (Neues Schauspiel Leipzig)', link: 'https://www.openstage777.com/anmeldung', ort: 'Leipzig', km: 57, typ: 'openstage', quelle: '7:77 Open Stage', bewerbung: { art: 'formular', ziel: 'https://www.openstage777.com/anmeldung' } },
+    { titel: 'Wave-Gotik-Treffen Leipzig: Bandbewerbung per Mail', link: 'https://www.wave-gotik-treffen.de/', ort: 'Leipzig', km: 57, typ: 'festival', quelle: 'Wave-Gotik-Treffen', bewerbung: { art: 'mail', ziel: 'bewerbung@wave-gotik-treffen.de' }, saison: { bewerbung: [9, 10, 11, 12, 1, 2], termin: 'Pfingsten' } },
+    { titel: 'Fête de la Musique Leipzig (21. Juni): Musiker-Anmeldung', link: 'https://institutfrancais.de/leipzig', ort: 'Leipzig', km: 57, typ: 'stadtfest', quelle: 'Institut français Leipzig', saison: { bewerbung: [1, 2, 3], termin: '21. Juni' } },
+    { titel: 'SPH Music Masters (Bandcontest): Anmeldung jederzeit', link: 'https://www.sph-music-masters.de', ort: 'deutschlandweit', km: null, typ: 'bandcontest', quelle: 'SPH Music Masters', bewerbung: { art: 'formular', ziel: 'https://www.sph-music-masters.de' } },
+    { titel: 'gigmit: offene Gig-Angebote in Leipzig', link: 'https://gigmit.com/en/gigs/leipzig', ort: 'Leipzig', km: 57, typ: 'gig', quelle: 'gigmit' },
+    { titel: 'gigmit: offene Gig-Angebote in Dresden', link: 'https://gigmit.com/en/gigs/dresden', ort: 'Dresden', km: 44, typ: 'gig', quelle: 'gigmit' },
+    { titel: 'gigmit: offene Gig-Angebote in Chemnitz', link: 'https://gigmit.com/en/gigs/chemnitz', ort: 'Chemnitz', km: 35, typ: 'gig', quelle: 'gigmit' },
+  ],
+  remix: [
+    { titel: 'SKIO Music: laufende Remix-Contests mit Stems', link: 'https://skiomusic.com/contests', ort: 'online', typ: 'remix', quelle: 'SKIO Music' },
+    { titel: 'Beatportal: Remix-Contests (Beatport/LabelRadar)', link: 'https://www.beatportal.com/communities/630379-remix-contests', ort: 'online', typ: 'remix', quelle: 'Beatportal' },
+    { titel: 'Beatport Greenroom: Remix-Contests auf LabelRadar', link: 'https://greenroom.beatport.com/labels/labelradar/remix', ort: 'online', typ: 'remix', quelle: 'Beatport Greenroom' },
+    { titel: 'delamar: Remix- und Band-Contests (deutsch)', link: 'https://www.delamar.de/contests/', ort: 'online', typ: 'remix', quelle: 'delamar' },
+    { titel: 'Remix64: Remix-Compos zu C64-/Amiga-Klassikern (Retro-Synth)', link: 'https://remix64.com/news/', ort: 'online', typ: 'remix', quelle: 'Remix64' },
+  ],
+  unterricht: [
+    { titel: 'Jobbörse: Deutschlehrer-Stellen rund um Döbeln (Live-Suche)', link: 'https://www.arbeitsagentur.de/jobsuche/suche?angebotsart=1&was=Deutschlehrer&wo=D%C3%B6beln&umkreis=50', ort: 'Döbeln', km: 0, typ: 'kurs', quelle: 'Arbeitsagentur' },
+    { titel: 'italki: als Deutschlehrer (Community Tutor) bewerben', link: 'https://teach.italki.com', ort: 'online', typ: 'online', quelle: 'italki', bewerbung: { art: 'formular', ziel: 'https://teach.italki.com' } },
+    { titel: 'Preply: Deutsch online unterrichten', link: 'https://preply.com/en/job/21798', ort: 'online', typ: 'online', quelle: 'Preply' },
+    { titel: 'Lingoda: Lehrkraft im Online-Team (freiberuflich)', link: 'https://www.lingoda.com/english/jobs', ort: 'online', typ: 'online', quelle: 'Lingoda' },
+    { titel: 'BAMF: Zulassung als Lehrkraft für Integrationskurse', link: 'https://www.bamf.de/Zulassung-ZQ-DaF-DaZ', ort: 'deutschlandweit', km: null, typ: 'integrationskurs', quelle: 'BAMF' },
+  ],
+};
+// Wo Preisfehler und Gewinnspiele zuerst auftauchen (die Wecker lesen dort; Gruppen-Seiten von mydealz)
+const FUNDORTE_LINKS = {
+  preisfehler: [['mydealz: Gruppe Preisfehler', 'https://www.mydealz.de/gruppe/preisfehler', 'hier tauchen sie zuerst auf'], ['mydealz: heiße Deals', 'https://www.mydealz.de/hot', 'was gerade viele kaufen']],
+  gewinnspiele: [['mydealz: Gruppe Gewinnspiele', 'https://www.mydealz.de/gruppe/gewinnspiele', 'neue Gewinnspiele, von der Community geprüft'], ['mydealz: Gratis-Aktionen', 'https://www.mydealz.de/gruppe/freebies', 'Proben und Gratis-Aktionen']],
+};
+const TYP_NAME = { openstage: 'Open Stage', bandcontest: 'Bandcontest', stadtfest: 'Stadtfest', festival: 'Festival', gig: 'Gig', aufruf: 'Bands gesucht', remix: 'Remix-Contest', integrationskurs: 'Integrationskurs', ehrenamt: 'Ehrenamt', nachhilfe: 'Nachhilfe', schule: 'Schule', kurs: 'Kurs', online: 'Online' };
+const MONAT_KURZ = ['', 'Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+// Wie im Radar (assistent.mjs saisonInfo): in der Bewerbungszeit „jetzt bewerben“, sonst „Bewerbung meist Jan–Mär“
+function saisonInfo(saison) {
+  if (!saison?.bewerbung?.length) return { offen: true, text: saison?.termin ? `Termin: ${saison.termin}` : '' };
+  const monat = Number(heuteBerlin().slice(5, 7));
+  const offen = saison.bewerbung.includes(monat);
+  const von = MONAT_KURZ[saison.bewerbung[0]], bis = MONAT_KURZ[saison.bewerbung.at(-1)];
+  return { offen, text: [offen ? 'jetzt bewerben' : `Bewerbung meist ${von === bis ? von : `${von}–${bis}`}`, saison.termin ? `Termin: ${saison.termin}` : ''].filter(Boolean).join(' · ') };
+}
+const istOnlineOrt = x => x?.online === true || /^online$/i.test(x?.ort || '');
+function ortText(x = {}) { // „Leipzig · 57 km“, „Döbeln · hier“, „online“, „deutschlandweit“
+  if (istOnlineOrt(x)) return 'online';
+  if (!x.ort) return '';
+  const km = zahl(x.km);
+  return km == null ? x.ort : km <= 3 ? `${x.ort} · hier` : `${x.ort} · ${km} km`;
+}
+// Mit welchem Namen? (wie vorteile/scan/module/assistent.mjs bewerbenAls)
+function bewerbenAls(typ, bereich) {
+  if (bereich === 'remix' || typ === 'remix') return { name: KUENSTLER.name, warum: `Remixe laufen unter dem Produzentennamen: „Titel (${KUENSTLER.name} Remix)“.` };
+  if (bereich === 'unterricht') return { name: KUENSTLER.lehrer, warum: 'Unterricht unter deinem Lehrer-Namen; im Profil echter Vorname + Erfahrung.' };
+  if (typ === 'openstage') return { name: KUENSTLER.name, warum: `Solo auf der offenen Bühne: ${KUENSTLER.name}. Kommt die ganze Band mit: ${KUENSTLER.band}.` };
+  return { name: KUENSTLER.band, warum: `Gebucht wird die Band: ${KUENSTLER.band} – im Text „Kontakt: ${KUENSTLER.name} (Gesang, Synths)“.` };
+}
+function fundortEintrag(f, bereich) {
+  const s = saisonInfo(f.saison);
+  const x = { typ: f.typ, fundort: true, ort: f.ort, km: f.km ?? null, online: /online/i.test(f.ort || ''), frist: null, bewerbung: f.bewerbung || { art: 'seite', ziel: f.link }, quelle: f.quelle, saison: f.saison || null, saisonOffen: s.offen, bewerbenAls: bewerbenAls(f.typ, bereich) };
+  x.sortWert = 45 + nahWert(x) + (s.offen ? -2 : -12);
+  return { id: 'fund:' + f.link, kategorie: bereich, titel: f.titel, link: f.link, quelle: f.quelle, zeile: [ortText(x), s.text].filter(Boolean).join(' · '), datum: null, bis: null, sichtbarBis: null, grund: 'Fundort', extra: x };
+}
+// Nähe wie lib/orte.mjs nahPunkte (grob): Döbeln/online vorn, bis 60 km gut, weiter weg weniger
+function nahWert(x) { const km = zahl(x?.km); if (istOnlineOrt(x)) return 8; if (km == null) return 0; return km <= 15 ? 16 : km <= 60 ? 14 : km <= 120 ? 8 : km <= 250 ? 2 : -6; }
+const sortWertVon = e => zahl(e.extra?.sortWert) ?? (zahl(e.wert) ?? 50) + nahWert(e.extra);
+const nachSortWert = (a, b) => sortWertVon(b) - sortWertVon(a) || (zeit(a.bis) ?? Infinity) - (zeit(b.bis) ?? Infinity);
+const istUnterricht = e => /deutsch\s?(unterricht|lehrer|lehrkraft|kurs|nachhilfe)|daf\b|daz\b|integrationskurs|sprachkurs|sprachpate|german teacher|nachhilfe\s+deutsch/i.test(`${e.titel} ${e.zeile || ''} ${e.grund || ''}`);
 
-// --- Vorteile auf die Abschnitte verteilen -------------------------------------------------------------------------
+// --- Vorteile auf die Bereiche verteilen -----------------------------------------------------------------------------
 let weg = new Set([...lies('mein-vorteil-weg', []), ...lies('vorteile-weg', [])]);
 const offen = new Set();
 const istGewinnspielArt = e => e.kategorie === 'tests';
-const istRemix = e => e.kategorie === 'musik' && (e.extra?.art === 'remix' || e.grund === 'Remix-Contest');
+const istRemix = e => e.kategorie === 'remix' || (e.kategorie === 'musik' && (e.extra?.art === 'remix' || e.grund === 'Remix-Contest'));
 const istAufruf = e => e.kategorie === 'musik' && !istRemix(e) && (e.grund === 'Aufruf' || e.grund === 'Bewerbung mit Frist' || /bands gesucht|aufruf|bewerb/i.test(`${e.zeile || ''} ${e.grund || ''}`));
 // Geld zurück / Cashback: vom Radar markiert (grund 'cashback', extra.art gzg|cashback) oder am Text erkennbar
 const istCashback = e => !NIE_ZEIGEN.has(e.kategorie) && (['gzg', 'cashback'].includes(e.extra?.art) || e.grund === 'cashback' || CASHBACK.test(`${e.titel} ${e.zeile || ''}`));
@@ -1308,38 +1493,51 @@ function gewinnspielEinfach(e) {
   return true;
 }
 const nachEnde = (a, b) => (zeit(a.bis) ?? Infinity) - (zeit(b.bis) ?? Infinity) || (zeit(b.datum) || 0) - (zeit(a.datum) || 0);
+const EINTRAEGE = new Map(); // id -> { e, bereich } (für das Bewerben-Blatt)
 
 function einteilen() {
   const d = S.vorteile?.d;
-  const r = { da: !!d, produkt: [], gewinnspiele: [], cashback: [], snacks: [], auftritte: [], remix: [], synths: [], mehr: {} };
-  if (!d) return r;
+  const r = { da: !!d, produkt: [], gewinnspiele: [], cashback: [], snacks: [], synths: [], filme: [], mehr: {}, ausDaten: {} };
+  for (const b of ASSISTENT) { r[b] = []; r[b + 'Fund'] = []; r.ausDaten[b] = Array.isArray(d?.kategorien?.[b]); }
+  EINTRAEGE.clear();
   const links = new Set();
-  for (const [k, liste] of Object.entries(d.kategorien || {})) {
+  for (const [k, liste] of Object.entries(d?.kategorien || {})) {
     for (const roh of liste || []) {
       if (!roh || weg.has(roh.id)) continue;
       const e = roh.kategorie ? roh : { ...roh, kategorie: k };
-      if (NIE_ZEIGEN.has(e.kategorie) || EIGENE_SEITE.has(e.kategorie)) continue;
+      if (NIE_ZEIGEN.has(e.kategorie)) continue;
+      if (EIGENE_SEITE.has(e.kategorie)) { if (!vorbei(e)) r.filme.push(e); continue; } // Filme: eigener Reiter, hier nur für Start + Zähler
       if (e.quelle === 'Schnäppchen-Wecker' || e.extra?.produkt) continue; // steht schon als Produkt-Karte da
       const pf = istPreisfehler(e);
-      if (pf && e.kategorie !== 'reisen') continue; // Abschnitt Preisfehler (nur krasse)
+      if (pf && e.kategorie !== 'reisen') continue; // Bereich Preisfehler (nur krasse)
       if (vorbei(e, pf ? PREISFEHLER_STUNDEN : 0)) continue;
-      if (links.has(e.link)) continue;
-      links.add(e.link);
+      const fund = e.extra?.fundort === true;
+      if (!fund) { if (links.has(e.link)) continue; links.add(e.link); }
       const text = `${e.titel} ${e.zeile || ''}`;
+      if (ASSISTENT.includes(e.kategorie)) { (fund ? r[e.kategorie + 'Fund'] : r[e.kategorie]).push(e); continue; }
       if (istCashback(e)) { if (interessant(text)) r.cashback.push(e); continue; } // Cashback für anderes: weg
       if (istGewinnspielArt(e)) { if (gewinnspielEinfach(e)) r.gewinnspiele.push(e); continue; } // mit Kaufpflicht: weg
       if (e.kategorie === 'musik') { (istRemix(e) ? r.remix : istAufruf(e) ? r.auftritte : r.synths).push(e); continue; }
+      if (e.kategorie === 'nebenverdienst' && istUnterricht(e)) { r.unterricht.push(e); continue; }
       if (e.kategorie === 'deals') {
         const p = meinProdukt(text);
         if (p) { r.produkt.push({ ...e, meins: p }); continue; }
         if (istSnack(text)) { r.snacks.push(e); continue; }
         // „komische Angebote“ raus: andere Deals nur, wenn sie zu Musik-Technik passen (weniger ist mehr)
-        if (!einWort(text, MUSIK_WOERTER)) continue;
+        if (einWort(text, MUSIK_WOERTER)) r.synths.push(e);
+        continue;
       }
       (r.mehr[e.kategorie] ||= []).push(e);
     }
   }
-  r.gewinnspiele.sort(nachEnde); r.cashback.sort(nachEnde); r.auftritte.sort(nachEnde); r.remix.sort(nachEnde);
+  // Ältere Daten (oder Radar nicht erreichbar): feste Adressen der Seite, damit kein Bereich leer ist
+  for (const b of ASSISTENT) if (!r.ausDaten[b]) r[b + 'Fund'] = FUNDORTE[b].map(f => fundortEintrag(f, b)).filter(e => !weg.has(e.id));
+  r.gewinnspiele.sort(nachEnde); r.cashback.sort(nachEnde); r.remix.sort(nachEnde);
+  r.auftritte.sort(nachSortWert); r.unterricht.sort(nachSortWert);
+  for (const b of ASSISTENT) {
+    r[b + 'Fund'].sort(nachSortWert);
+    for (const e of [...r[b], ...r[b + 'Fund']]) EINTRAEGE.set(e.id, { e, bereich: b });
+  }
   return r;
 }
 
@@ -1348,17 +1546,26 @@ function namenVorteile() {
   const d = S.vorteile?.d || {};
   return { ...Object.fromEntries(Object.entries(BEREICH).map(([k, v]) => [k, v[0]])), ...(d.namen || {}), deals: 'Deal' };
 }
-function vorteilsKarten(liste, namen, schluessel) {
-  const zeigen = offen.has(schluessel) ? liste : liste.slice(0, SICHTBAR);
+function vorteilsKarten(liste, namen, schluessel, sichtbar = SICHTBAR) {
+  const zeigen = offen.has(schluessel) ? liste : liste.slice(0, sichtbar);
   return zeigen.map(e => vorteilKarte(e, namen)).join('')
     + (liste.length > zeigen.length ? `<button class="mehr" type="button" data-mehr="${esc(schluessel)}">${liste.length - zeigen.length} weitere zeigen</button>` : '');
 }
 const vorteileFehlen = () => `<p class="leer">${S.vorteile ? 'Vorteils-Daten gerade nicht erreichbar. Später noch einmal auf ↻ tippen.' : 'Lade …'}</p>`;
+const fundortListe = (titel, liste) => liste.length ? `<h3 class="unter">${esc(titel)}</h3><ul class="liste fundorte">${liste.map(([n, u, z]) =>
+  `<li><a class="reihe" href="${esc(sicher(u))}" target="_blank" rel="noopener"><div class="haupt"><b>${esc(n)}</b><span>${esc(z)}</span></div><div class="rechts">›</div></a></li>`).join('')}</ul>` : '';
 
-// --- Abschnitt: Meine Produkte -------------------------------------------------------------------------------------
+// --- Bereich Deals: Meine Produkte -------------------------------------------------------------------------------------
+// „zuletzt gesehen 0,99 € (225 g) bei Penny, Okt. 2026“ – damit ein Produkt ohne Angebot nie nur „gibt es nicht“ sagt
+function zuletztKurz(p) {
+  const t = String(p.tiefst?.text || '');
+  if (/^Gerade kein Angebot · /.test(t)) return t.replace(/^Gerade kein Angebot · /, '');
+  if (p.preise && typeof p.preise === 'object') return keinAngebotKontext(p.preise).replace(/^Gerade kein Angebot · ?/, '') || '';
+  return '';
+}
 function zeichneProdukte(t) {
   const s = S.angebote, d = s?.d;
-  if (!d && !t.produkt.length) return { html: `<p class="leer">${s ? 'Angebots-Daten gerade nicht erreichbar. Später noch einmal auf ↻ tippen.' : 'Lade Angebote …'}</p>`, n: 0 };
+  if (!d && !t.produkt.length) return { html: `<p class="leer">${s ? 'Angebots-Daten gerade nicht erreichbar. Später noch einmal auf ↻ tippen.' : 'Lade Angebote …'}</p>`, n: 0, warum: '' };
   const deals = [], bald = [], liste = [], ohne = [];
   for (const p of d?.produkte || []) {
     if (ausgeblendet(p.id)) continue;
@@ -1378,16 +1585,23 @@ function zeichneProdukte(t) {
     : '<p class="leer">Gerade kein echtes Schnäppchen bei deinen Produkten. Du bekommst eine Push-Nachricht, sobald etwas richtig günstig ist.</p>');
   if (bald.length) teile.push(`<h3 class="unter">Bald günstig <small>${bald.length}</small></h3>${bald.join('')}`);
   if (liste.length) teile.push(`<h3 class="unter">Weitere Angebote <small>${liste.length}</small></h3>${liste.join('')}`);
-  if (ohne.length) teile.push(`<details class="kasten ohne-angebot"><summary>Gerade ohne Angebot (${ohne.length})</summary><ul class="liste">${ohne.map(produktZeile).join('')}</ul></details>`);
+  // Nie leer: läuft gerade gar nichts, steht die Liste „zuletzt gesehen“ gleich offen
+  const nichts = !deals.length && !radar.length && !bald.length && !liste.length;
+  if (ohne.length) teile.push(`<details class="kasten ohne-angebot"${nichts ? ' open' : ''}><summary>Gerade ohne Angebot (${ohne.length})</summary><ul class="liste">${ohne.map(produktZeile).join('')}</ul></details>`);
   if (d) {
     const quellen = (d.quellen || []).map(q => {
       const f = (q.fehler || []).length;
       return `<li class="${q.ok && !f ? '' : 'stoerung'}">${esc(q.name)}: ${q.ok ? `${esc(q.anzahl)} Einträge` : 'nicht erreichbar'}${q.hinweis ? ' – ' + esc(q.hinweis) : ''}${f ? ' – ' + esc(q.fehler.slice(0, 3).join('; ')) : ''}</li>`;
     });
+    const mitKaufda = (d.quellen || []).some(q => q.name === 'kaufda');
     teile.push(quellenKasten('Quellen & Hinweise (Angebote)', quellen,
-      `<p class="klein">Prüft stündlich die Prospekte der Märkte in ${esc(d.ort || 'Döbeln')} (${esc(d.plz || '')}, über marktguru) und mydealz. Preise ohne Gewähr – im Laden zählt das Preisschild.</p>`));
+      `<p class="klein">Prüft stündlich die Prospekte der Märkte in ${esc(d.ort || 'Döbeln')} (${esc(d.plz || '')}, über marktguru)${mitKaufda ? ', kaufDA für die Region (Chemnitz/bundesweit – „in Döbeln prüfen“)' : ''} und mydealz. Preise ohne Gewähr – im Laden zählt das Preisschild.</p>`));
   }
-  return { html: teile.join(''), n: jetzt };
+  const nAngebote = liste.length + bald.length;
+  const warum = jetzt ? `<b>${jetzt} ${jetzt === 1 ? 'Deal' : 'Deals'}</b> für deine Produkte – laufen gerade.`
+    : nAngebote ? `Kein Top-Deal gerade, aber <b>${nAngebote} ${nAngebote === 1 ? 'Angebot' : 'Angebote'}</b> zu deinen Produkten. Darunter: wann es sie zuletzt günstig gab.`
+    : d ? `Gerade kein Angebot zu deinen Produkten – darunter steht, <b>wo und wann es sie zuletzt günstig gab</b>. Neue Prospekte kommen Mo und Do.` : '';
+  return { html: teile.join(''), n: jetzt, warum };
 }
 
 // Liste bearbeiten: Watchlist-Produkte aus- und einblenden, eigene Produkte (nur Deals/Cashback) dazu
@@ -1409,12 +1623,14 @@ function zeichneEditor() {
     <div class="aktionen"><button class="zweit" type="button" id="editor-fertig">Fertig</button></div>`;
 }
 
-// --- Abschnitte: Preisfehler, Gewinnspiele, Cashback, Snacks ------------------------------------------------------
+// --- Preisfehler, Gewinnspiele, Cashback, Snacks, Musik-Technik --------------------------------------------------------
 function zeichnePreisfehler() {
   const fehler = preisfehlerListe();
-  if (!S.angebote?.d && !S.vorteile?.d && !fehler.length) return { html: `<p class="leer">${S.angebote || S.vorteile ? 'Daten gerade nicht erreichbar.' : 'Lade …'}</p>`, n: 0 };
-  return { html: fehler.length ? fehler.map(preisfehlerKarte).join('')
-    : '<p class="leer">Gerade kein krasser Preisfehler. Hier erscheinen nur No-Brainer, die gerade laufen – abgelaufene nie.</p>', n: fehler.length };
+  if (!S.angebote?.d && !S.vorteile?.d && !fehler.length) return { html: `<p class="leer">${S.angebote || S.vorteile ? 'Daten gerade nicht erreichbar.' : 'Lade …'}</p>`, n: 0, warum: '' };
+  if (fehler.length) return { html: fehler.map(preisfehlerKarte).join(''), n: fehler.length, warum: `<b>${fehler.length === 1 ? '1 krasser Preisfehler' : fehler.length + ' krasse Preisfehler'}</b> laufen gerade – schnell sein, oft nach Minuten storniert.` };
+  return { html: '<p class="leer">Gerade kein krasser Preisfehler. Hier erscheinen nur No-Brainer, die gerade laufen – abgelaufene nie.</p>'
+    + fundortListe('Hier tauchen sie zuerst auf', FUNDORTE_LINKS.preisfehler), n: 0,
+  warum: 'Gerade keiner, der die Regel schafft. Beide Wecker prüfen <b>stündlich</b> – ein krasser Preisfehler kommt <b>sofort per Push</b>.' };
 }
 function gewinnspielKarte(e, namen) {
   const k = vorteilKarte(e, { ...namen, tests: e.grund === 'test' ? 'Produkttest' : 'Gewinnspiel' });
@@ -1423,18 +1639,20 @@ function gewinnspielKarte(e, namen) {
   return k.replace('<article class="karte', '<article class="karte gewinnspiel').replace('<div class="oben">', `<div class="oben">${heute}`);
 }
 function zeichneGewinnspiele(t) {
-  if (!t.da) return { html: vorteileFehlen(), n: 0 };
+  if (!t.da) return { html: vorteileFehlen() + fundortListe('Hier gibt es laufend welche', FUNDORTE_LINKS.gewinnspiele), n: 0, warum: '' };
   const namen = namenVorteile();
   const l = t.gewinnspiele;
   const zeigen = offen.has('gewinnspiele') ? l : l.slice(0, 6);
+  const n = l.filter(laeuftSchon).length;
   return { html: [stoerHinweis('vorteile'), l.length ? zeigen.map(e => gewinnspielKarte(e, namen)).join('')
     + (l.length > zeigen.length ? `<button class="mehr" type="button" data-mehr="gewinnspiele">${l.length - zeigen.length} weitere zeigen</button>` : '')
-    : '<p class="leer">Gerade kein laufendes Gewinnspiel ohne Kauf. Neue kommen mit der Zusammenfassung am Abend.</p>'].join(''), n: l.filter(laeuftSchon).length };
+    : '<p class="leer">Gerade kein laufendes Gewinnspiel ohne Kauf. Neue kommen mit der Zusammenfassung am Abend.</p>' + fundortListe('Hier gibt es laufend welche', FUNDORTE_LINKS.gewinnspiele)].join(''),
+  n, warum: l.length ? `<b>${l.length}</b> laufende ohne Kauf – was zuerst endet, steht oben.` : '' };
 }
 function zeichneCashback(t) {
   if (!t.da) return { html: vorteileFehlen(), n: 0 };
   const namen = { ...namenVorteile(), deals: 'Cashback', erleben: 'Cashback', tests: 'Cashback' };
-  return { html: t.cashback.length ? vorteilsKarten(t.cashback, namen, 'cashback')
+  return { html: t.cashback.length ? vorteilsKarten(t.cashback, namen, 'cashback', 3)
     : '<p class="leer">Gerade keine Cashback-Aktion zu deinen Sachen.</p>', n: t.cashback.filter(laeuftSchon).length };
 }
 function snackZeile(e) {
@@ -1445,13 +1663,17 @@ function snackZeile(e) {
 function zeichneSnacks(t) {
   if (!t.da) return { html: vorteileFehlen(), n: 0 };
   const l = t.snacks;
-  const zeigen = offen.has('snacks') ? l : l.slice(0, 5);
+  const zeigen = offen.has('snacks') ? l : l.slice(0, 4);
   return { html: l.length ? `<ul class="liste">${zeigen.map(snackZeile).join('')}</ul>`
     + (l.length > zeigen.length ? `<button class="mehr" type="button" data-mehr="snacks">${l.length - zeigen.length} weitere zeigen</button>` : '')
     : '<p class="leer">Gerade keine anderen Snack-Deals.</p>', n: l.filter(laeuftSchon).length };
 }
+function zeichneTechnik(t) {
+  const namen = { ...namenVorteile(), musik: 'Musik-Technik', deals: 'Musik-Technik' };
+  return { html: t.synths.length ? vorteilsKarten(t.synths, namen, 'synths', 3) : '', n: t.synths.filter(laeuftSchon).length };
+}
 
-// --- Abschnitt: Mehr (alles andere, eingeklappt) -------------------------------------------------------------------
+// --- Mehr (alles andere, eingeklappt) ------------------------------------------------------------------------------------
 function zeichneMehr(t) {
   const d = S.vorteile?.d;
   const teile = [];
@@ -1468,7 +1690,7 @@ function zeichneMehr(t) {
     if (!teile.length) teile.push('<p class="leer">Sonst gerade nichts Besonderes.</p>');
   }
   teile.push(`<details class="kasten"><summary>Spar-Tipps</summary><p>Coupons stapeln, Mehrkauf richtig nutzen, Apps, Cashback, gebrauchte Synths verhandeln.</p><a class="block" href="../vorteile/spartipps.html">Spar-Tipps öffnen ›</a></details>`);
-  for (const [id, titel, text] of VORLAGEN.filter(v => v[0] !== 'v-band')) {
+  for (const [id, titel, text] of VORLAGEN) {
     teile.push(`<details class="kasten"><summary>${esc(titel)}</summary><pre id="${id}">${esc(text)}</pre><button class="zweit kopie" type="button" data-ziel="${id}">Kopieren</button></details>`);
   }
   if (d) {
@@ -1479,6 +1701,83 @@ function zeichneMehr(t) {
   }
   return { html: teile.join(''), n };
 }
+
+// --- Auftritte, Remix-Contests, Deutschunterricht (Assistent) --------------------------------------------------------------
+const KNOPF = { auftritte: 'Bewerben', remix: 'Mitmachen', unterricht: 'Melden' };
+function fristMarke(e) {
+  const b = zeit(e.bis);
+  if (b == null) return '';
+  return `<span class="marke warm">${tag(b) === 'heute' ? 'endet heute' : esc(bisText(e.bis))}</span>`;
+}
+function assistentKarte(e, bereich) {
+  const x = e.extra || {};
+  const oben = [`<span class="marke">${esc(TYP_NAME[x.typ] || (bereich === 'remix' ? 'Remix-Contest' : bereich === 'unterricht' ? 'Unterricht' : 'Auftritt'))}</span>`];
+  const ort = ortText(x);
+  if (ort && bereich !== 'remix') oben.push(`<span class="marke grau">${esc(ort)}</span>`);
+  if (startetSpaeter(e)) oben.push(`<span class="marke warm">${esc(abText(e.ab))}</span>`);
+  oben.push(fristMarke(e));
+  if (x.passt) oben.push('<span class="marke">passt zu deinem Stil</span>');
+  if (x.arbeitgeber) oben.push(`<span class="marke grau">${esc(x.arbeitgeber)}</span>`);
+  if (e.quelle) oben.push(`<span>${esc(e.quelle)}</span>`);
+  const als = x.bewerbenAls?.name || bewerbenAls(x.typ, bereich).name;
+  return `<article class="karte assistent${e.sofort ? ' sofort' : ''}" data-id="${esc(e.id)}">
+    <div class="oben">${oben.filter(Boolean).join('')}</div>
+    <h3>${esc(ohneQuelle(e))}</h3>
+    ${restZeile(e) ? `<p class="zeile">${esc(restZeile(e))}</p>` : ''}
+    <p class="als">${bereich === 'remix' ? 'Einreichen als' : bereich === 'unterricht' ? 'Melden als' : 'Bewerben als'} <b>${esc(als)}</b>${x.bewerbung?.art === 'mail' ? ' · per Mail' : x.bewerbung?.art === 'formular' ? ' · Formular' : ''}</p>
+    <div class="aktionen"><button class="los" type="button" data-blatt="${esc(e.id)}">${KNOPF[bereich]}</button><a class="zweit-link" href="${esc(sicher(e.link))}" target="_blank" rel="noopener">Ansehen</a><button class="zweit weg x-weg" type="button" data-id="${esc(e.id)}" aria-label="Ausblenden" title="Ausblenden"><svg class="ic" aria-hidden="true"><use href="#ic-weg"/></svg></button></div>
+  </article>`;
+}
+// Google-News-Titel enden auf „ - Quelle“ – die steht schon oben auf der Karte
+const ohneQuelle = e => /news\.google\./.test(e.link || '') ? String(e.titel || '').replace(/\s+[-–]\s+[^-–]{2,40}$/, '') : String(e.titel || '');
+function restZeile(e) { // Neue Daten: „Stadtfest/Fest · Leipzig · 57 km · Frist 20.11.2026“ steht schon in den Marken
+  const x = e.extra || {};
+  if (!x.typ || !e.zeile) return e.zeile || '';
+  return e.zeile.split(' · ').slice(1).filter(t => t !== x.ort && t !== x.arbeitgeber && !/^\d+ km$|^Frist\b|^passt zu deinem Stil$|^online$|^deutschlandweit$/.test(t)).join(' · ');
+}
+function fundZeile(e, bereich) {
+  return `<li><div class="reihe"><a class="haupt" href="${esc(sicher(e.link))}" target="_blank" rel="noopener"><b>${esc(e.titel)}</b><span>${esc(e.zeile || ortText(e.extra))}</span></a><button class="klein-los" type="button" data-blatt="${esc(e.id)}">${KNOPF[bereich]}</button></div></li>`;
+}
+const ASSISTENT_TEXT = {
+  auftritte: {
+    frisch: 'Frische Ausschreibungen', fund: 'Hier geht immer was', nichts: 'Gerade keine neue Ausschreibung',
+    regel: 'Nah und bald zuerst. Tippe auf „Bewerben“: fertiger Text, Name wählen, per Mail oder Formular abschicken.',
+  },
+  remix: {
+    frisch: 'Laufende Contests', fund: 'Hier gibt es laufend Contests', nichts: 'Gerade kein neuer Contest in den Nachrichten',
+    regel: 'Was zuerst endet, steht oben. „Mitmachen“: Frist, Stems und Text für die Einreichung.',
+  },
+  unterricht: {
+    frisch: 'Neue Stellen & Anfragen', fund: 'Hier kannst du dich immer melden', nichts: 'Gerade keine neue Anzeige',
+    regel: 'Döbeln und online zuerst. „Melden“: fertiger Text als „Deutsch mit Xander“.',
+  },
+};
+function zeichneAssistent(t, bereich) {
+  const tx = ASSISTENT_TEXT[bereich];
+  const frisch = t[bereich], fund = t[bereich + 'Fund'];
+  const zeigen = offen.has(bereich) ? frisch : frisch.slice(0, SICHTBAR);
+  const fundZeigen = offen.has(bereich + '-fund') ? fund : fund.slice(0, 5);
+  const teile = [t.da ? stoerHinweis('vorteile') : ''];
+  teile.push(`<p class="regel">${esc(tx.regel)}</p>`);
+  if (bereich === 'auftritte') teile.push(`<details class="kasten name-tipp"><summary>Als Xander Fox oder als One Day in Rome?</summary><p>Bewirb dich mit dem Namen, unter dem ihr auftretet: <b>Band-Auftritt</b> (Stadtfest, Festival, Bandcontest, Club) → <b>One Day in Rome</b>, im Text „Kontakt: Xander Fox (Gesang, Synths)“. <b>Solo, DJ- oder Live-Set</b>, Open Stage → <b>Xander Fox</b>. Einheitlich geht auch „One Day in Rome (Xander Fox)“ – dann überall gleich schreiben (Mail, Plakat, Social Media).</p></details>`);
+  teile.push(`<h3 class="unter">${esc(tx.frisch)} <small>${frisch.length || ''}</small></h3>`);
+  teile.push(frisch.length ? zeigen.map(e => assistentKarte(e, bereich)).join('')
+    + (frisch.length > zeigen.length ? `<button class="mehr" type="button" data-mehr="${bereich}">${frisch.length - zeigen.length} weitere zeigen</button>` : '')
+    : `<p class="leer">${esc(tx.nichts)}${t.da ? ' – neue kommen per Push.' : '.'} Darunter die festen Adressen, die immer gehen.</p>`);
+  if (fund.length) {
+    teile.push(`<h3 class="unter">${esc(tx.fund)} <small>${fund.length}</small></h3><ul class="liste fundorte">${fundZeigen.map(e => fundZeile(e, bereich)).join('')}</ul>`);
+    if (fund.length > fundZeigen.length) teile.push(`<button class="mehr" type="button" data-mehr="${bereich}-fund">${fund.length - fundZeigen.length} weitere Adressen</button>`);
+  }
+  const n = frisch.filter(laeuftSchon).length;
+  const nah = frisch.filter(e => zahl(e.extra?.km) != null && e.extra.km <= 60).length;
+  const warum = frisch.length
+    ? `<b>${frisch.length} ${bereich === 'remix' ? (frisch.length === 1 ? 'laufender Contest' : 'laufende Contests') : frisch.length === 1 ? 'frischer Fund' : 'frische Funde'}</b>${nah ? `, davon ${nah} bis 60 km` : ''} – dazu ${fund.length} feste Adressen.`
+    : `${esc(tx.nichts)} – hier die <b>${fund.length} festen Adressen</b>${bereich === 'remix' ? ' mit laufenden Contests weltweit' : bereich === 'auftritte' ? ', nah zuerst' : ''}.${t.da ? '' : ' (Radar gerade nicht erreichbar.)'}`;
+  return { html: teile.join(''), n, warum };
+}
+const zeichneAuftritte = t => zeichneAssistent(t, 'auftritte');
+const zeichneRemix = t => zeichneAssistent(t, 'remix');
+const zeichneUnterricht = t => zeichneAssistent(t, 'unterricht');
 
 // --- Konzerte & Neuerscheinungen -------------------------------------------------------------------------------------
 const konzAlle = lies('konz-alle', 0);
@@ -1537,60 +1836,88 @@ function konzertSuche(st) {
 }
 const KONZERT_QUELLE = { ticketmaster: 'Ticketmaster', seiten: 'Festival-Seiten', musicbrainz: 'MusicBrainz', deezer: 'Deezer' };
 
-// --- Abschnitt: Auftritte & Konzerte -------------------------------------------------------------------------------
-function zeichneAuftritte(t) {
-  const teile = [];
-  const namen = namenVorteile();
-  // 1. Auftrittsmöglichkeiten („Bands gesucht“, Open Calls) aus dem Radar
-  teile.push(`<h3 class="unter">Auftrittsmöglichkeiten <small>${t.auftritte.length || ''}</small></h3>`);
-  teile.push(!t.da ? vorteileFehlen() : t.auftritte.length ? vorteilsKarten(t.auftritte, namen, 'auftritte')
-    : '<p class="leer">Gerade keine offene Ausschreibung für Bands. Neue kommen per Push, wenn eine Frist dabei ist.</p>');
-  const band = VORLAGEN.find(v => v[0] === 'v-band');
-  teile.push(`<details class="kasten"><summary>${esc(band[1])}</summary><pre id="${band[0]}">${esc(band[2])}</pre><button class="zweit kopie" type="button" data-ziel="${band[0]}">Kopieren</button></details>`);
-  if (t.synths.length) teile.push(`<h3 class="unter">Synths im Angebot <small>${t.synths.length}</small></h3>${vorteilsKarten(t.synths, namen, 'synths')}`);
-  // 2. Konzerte & Festivals
-  const s = S.konzerte, d = s?.d;
-  let nKonzerte = 0;
-  teile.push(stoerHinweis('konzerte'));
-  if (!d) {
-    teile.push(`<h3 class="unter">Konzerte &amp; Festivals</h3><p class="leer">${s ? 'Konzert-Daten gerade nicht erreichbar. Später noch einmal auf ↻ tippen.' : 'Lade Konzerte …'}</p>`);
-    return { html: teile.join(''), n: t.auftritte.filter(laeuftSchon).length };
-  }
-  const radius = d.k?.pushRadiusKm || 200;
-  const alle = (d.k?.konzerte || []).filter(k => !konzertVorbei(k));
-  const liste = alle.filter(k => !nurNah || k.km == null || k.km <= radius);
-  nKonzerte = liste.length;
-  const tm = d.s?.quellen?.ticketmaster;
-  const suche = konzertSuche(d.s);
-  teile.push(`<h3 class="unter">Konzerte &amp; Festivals <small>${liste.length || ''}</small></h3>`);
-  if (d.k) teile.push(`<div class="filter" role="group" aria-label="Umkreis"><button type="button" data-nah="1" aria-pressed="${nurNah}">Bis ${radius} km</button><button type="button" data-nah="0" aria-pressed="${!nurNah}">Alle</button></div>`);
-  if (!d.k) {
-    teile.push('<p class="leer">Konzerttermine gerade nicht erreichbar. Später noch einmal auf ↻ tippen.</p>');
-  } else if (liste.length) {
-    teile.push(`<ul class="liste konzerte">${liste.map(k => {
-      const vv = vorverkaufText(k);
-      return `<li><a class="reihe" href="${esc(sicher(k.link))}" target="_blank" rel="noopener">
+// --- Bereich Konzerte --------------------------------------------------------------------------------------------------
+// Nie leer (Xander 08.11.2026: „Bands wie Alphaville treten irgendwo auf … was das Nächste ist“): erst die Termine in der
+// Nähe, darunter je Band der nächste Termin auch weit weg (Daten: weit/naechster, mit km), dazu Tourdaten-Links je Band.
+let bands = (() => { const b = lies('mein-vorteil-bands', null); return Array.isArray(b) ? b.filter(x => typeof x === 'string') : null; })();
+let bandsGeholt = false;
+function ladeBands() { // Lieblingsbands aus konzerte/artists.json (gleiche Seite, klein) – erst, wenn der Bereich offen ist
+  if (bandsGeholt) return;
+  bandsGeholt = true;
+  fetch('../konzerte/artists.json', { cache: 'no-cache' }).then(r => (r.ok ? r.json() : null)).then(d => {
+    const l = (Array.isArray(d?.bands) ? d.bands : []).filter(b => b && typeof b.name === 'string' && b.aktiv !== false).map(b => b.name.trim()).filter(Boolean);
+    if (!l.length || JSON.stringify(l) === JSON.stringify(bands)) return;
+    bands = l;
+    merk('mein-vorteil-bands', l);
+    zeichne();
+  }).catch(() => { bandsGeholt = false; });
+}
+const tourLink = name => `https://www.eventim.de/search/?searchterm=${encodeURIComponent(name)}`;
+function konzertZeile(k, radius) {
+  const vv = vorverkaufText(k);
+  return `<li><a class="reihe" href="${esc(sicher(k.link))}" target="_blank" rel="noopener">
         ${datumBox(k.datum)}
-        <div class="haupt"><b>${esc(k.band)}${k.neu ? '<span class="tag neu">neu</span>' : ''}${k.festival ? '<span class="tag fest">Festival</span>' : ''}${k.km > radius ? '<span class="tag weit">weit</span>' : ''}</b>
+        <div class="haupt"><b>${esc(k.band)}${k.neu ? '<span class="tag neu">neu</span>' : ''}${k.festival ? '<span class="tag fest">Festival</span>' : ''}${k.weit === true || k.km > radius ? '<span class="tag weit">weit</span>' : ''}</b>
           <span>${esc([k.ort, k.stadt].filter(Boolean).join(', '))}${k.zeit ? ' · ' + esc(k.zeit) + ' Uhr' : ''}</span>
           ${k.titel && k.titel !== k.band ? `<span>${esc(k.titel)}</span>` : ''}
           ${vv ? `<span class="zeile">${esc(vv)}</span>` : ''}
           ${k.status ? `<span>${esc(k.status)}</span>` : ''}</div>
         <div class="rechts">${k.km != null ? esc(k.km) + ' km' : ''}</div></a></li>`;
-    }).join('')}</ul>`);
+}
+function konzertTeile() { // -> { radius, alle, nah, naechste } (gezeigt, nicht vorbei)
+  const d = S.konzerte?.d;
+  const radius = d?.k?.pushRadiusKm || 200;
+  const alle = (d?.k?.konzerte || []).filter(k => !konzertVorbei(k));
+  const istWeit = k => k.weit === true || (k.km != null && k.km > radius);
+  const nah = alle.filter(k => !istWeit(k));
+  // je Band ohne Termin in der Nähe: ihr nächster Termin, egal wie weit (frühester zuerst, bei gleichem Tag der nähere)
+  const hatNah = new Set(nah.map(k => normText(k.band))), schon = new Set(), naechste = [];
+  for (const k of alle.filter(istWeit).sort((a, b) => (a.datum || '9999').localeCompare(b.datum || '9999') || (a.km ?? 9e9) - (b.km ?? 9e9))) {
+    const n = normText(k.band);
+    if (hatNah.has(n) || schon.has(n)) continue;
+    schon.add(n);
+    naechste.push(k);
+  }
+  return { radius, alle, nah, naechste };
+}
+function bandsKasten(offenAuf) {
+  if (!bands?.length) return '';
+  return `<details class="kasten bands"${offenAuf ? ' open' : ''}><summary>Tourdaten deiner Bands direkt (${bands.length})</summary><ul class="liste">${bands.map(n =>
+    `<li><a class="reihe" href="${esc(tourLink(n))}" target="_blank" rel="noopener"><div class="haupt"><b>${esc(n)}</b><span>Termine bei Eventim suchen</span></div><div class="rechts">›</div></a></li>`).join('')}</ul></details>`;
+}
+function zeichneKonzerte() {
+  const teile = [];
+  const s = S.konzerte, d = s?.d;
+  teile.push(stoerHinweis('konzerte'));
+  if (!d) {
+    teile.push(`<p class="leer">${s ? 'Konzert-Daten gerade nicht erreichbar. Später noch einmal auf ↻ tippen.' : 'Lade Konzerte …'}</p>`, bandsKasten(!!s));
+    return { html: teile.join(''), n: 0, warum: '' };
+  }
+  const { radius, alle, nah, naechste } = konzertTeile();
+  const liste = nurNah ? nah : alle;
+  const tm = d.s?.quellen?.ticketmaster;
+  const suche = konzertSuche(d.s);
+  if (d.k) teile.push(`<div class="filter" role="group" aria-label="Umkreis"><button type="button" data-nah="1" aria-pressed="${nurNah}">Bis ${radius} km</button><button type="button" data-nah="0" aria-pressed="${!nurNah}">Alle</button></div>`);
+  teile.push(`<h3 class="unter">${nurNah ? `In deiner Nähe` : 'Alle Termine'} <small>${liste.length || ''}</small></h3>`);
+  if (!d.k) {
+    teile.push('<p class="leer">Konzerttermine gerade nicht erreichbar. Später noch einmal auf ↻ tippen.</p>');
+  } else if (liste.length) {
+    teile.push(`<ul class="liste konzerte">${liste.map(k => konzertZeile(k, radius)).join('')}</ul>`);
   } else if (!suche.an) {
     // kein Versprechen, das nicht gehalten werden kann: ohne laufende Quelle kommt auch kein Push
     teile.push(`<p class="leer">Konzertsuche gerade aus – ${esc(suche.text)}. Bis das behoben ist, kommt hier kein Push.</p>`);
   } else {
     teile.push(`<p class="leer">Gerade nichts${nurNah ? ` im Umkreis von ${radius} km` : ''}. Sobald etwas angekündigt wird, kommt ein Push.</p>`);
   }
+  if (nurNah && naechste.length) teile.push(`<h3 class="unter">Weiter weg – nächster Termin je Band <small>${naechste.length}</small></h3><ul class="liste konzerte">${naechste.map(k => konzertZeile(k, radius)).join('')}</ul>`);
   const seiten = suche.seiten && seitenText(suche.seiten);
   if (suche.an && tm?.uebersprungen && /TM_KEY/i.test(tm.uebersprungen)) {
     teile.push(`<p class="hinweis">Konzerttermine von Ticketmaster fehlen noch: der kostenlose Ticketmaster-Schlüssel ist nicht eingerichtet. Bis dahin kommen Termine nur von den Festival-Seiten${seiten ? ` (${esc(seiten)})` : ''}.</p>`);
   } else if (suche.an && suche.seiten?.gestoert.length) {
     teile.push(`<p class="hinweis">Festival-Seiten: ${esc(seiten)}.</p>`);
   }
-  // 3. Neuerscheinungen (eingeklappt)
+  teile.push(bandsKasten(!alle.length));
+  // Neuerscheinungen (eingeklappt)
   const rel = d.r?.releases || [];
   teile.push(!d.r ? '<p class="leer">Neuerscheinungen gerade nicht erreichbar. Später noch einmal auf ↻ tippen.</p>'
     : `<details class="kasten neuerscheinungen"><summary>Neue Veröffentlichungen (${rel.length})</summary>${rel.length ? `<ul class="liste">${rel.map(x => `<li><a class="reihe" href="${esc(sicher(x.link))}" target="_blank" rel="noopener">
@@ -1606,22 +1933,242 @@ function zeichneAuftritte(t) {
     return `<li class="${q.ok || q.uebersprungen ? '' : 'stoerung'}">${esc(name)}: ${q.uebersprungen ? esc(q.uebersprungen) : q.ok ? `${esc(q.treffer ?? 0)} Treffer` : 'gestört – ' + esc((q.fehler || [])[0] || '')}</li>`;
   });
   teile.push(quellenKasten('Quellen (Konzerte)', quellen));
-  return { html: teile.join(''), n: t.auftritte.filter(laeuftSchon).length + nKonzerte };
+  const warum = nah.length ? `<b>${nah.length} ${nah.length === 1 ? 'Termin' : 'Termine'} bis ${radius} km</b>${naechste.length ? ` – dazu der nächste Termin von ${naechste.length} weiteren ${naechste.length === 1 ? 'Band' : 'Bands'}, auch weit weg` : ''}.`
+    : naechste.length ? `Gerade nichts bis ${radius} km – hier der <b>nächste Termin je Band</b>, mit Entfernung ab Döbeln.`
+    : alle.length ? `Gerade nichts bis ${radius} km – unter „Alle“ stehen ${alle.length} weitere Termine.`
+    : `Gerade keine Termine in den Daten – unten: <b>Tourdaten deiner Bands</b> direkt nachsehen.`;
+  return { html: teile.join(''), n: nah.length, warum };
 }
 
-// --- Abschnitt: Remix-Contests (Radar, Modul musik) ----------------------------------------------------------------
-function zeichneRemix(t) {
-  if (!t.da) return { html: vorteileFehlen(), n: 0 };
-  const namen = { ...namenVorteile(), musik: 'Remix-Contest' };
-  const l = t.remix;
-  const karten = (offen.has('remix') ? l : l.slice(0, SICHTBAR)).map(e => {
-    const b = zeit(e.bis);
-    const heute = b != null && tag(b) === 'heute' ? '<span class="marke heute">endet heute</span>' : '';
-    return vorteilKarte(e, namen).replace('<article class="karte', '<article class="karte remix gewinnspiel').replace('<div class="oben">', `<div class="oben">${heute}`);
-  }).join('');
-  return { html: [stoerHinweis('vorteile'), l.length ? karten + (l.length > SICHTBAR && !offen.has('remix') ? `<button class="mehr" type="button" data-mehr="remix">${l.length - SICHTBAR} weitere zeigen</button>` : '')
-    : '<p class="leer">Gerade kein laufender Remix-Contest in deinen Genres. Neue kommen mit der Zusammenfassung – endet einer in ≤ 14 Tagen, sofort per Push.</p>'].join(''), n: l.filter(laeuftSchon).length };
+// --- Start: „Heute für dich“ – je Bereich 1–3 beste Treffer als Kachel, Tippen führt in den Bereich ------------------------
+const KACHEL_REIHE = ['deals', 'preisfehler', 'filme', 'auftritte', 'remix', 'unterricht', 'konzerte', 'gewinnspiele', 'krypto', 'mehr'];
+const KACHEL_NAME = { deals: 'Deals', preisfehler: 'Preisfehler', filme: 'Filme', auftritte: 'Auftritte', remix: 'Remix', unterricht: 'Unterricht', konzerte: 'Konzerte', gewinnspiele: 'Gewinnspiele', krypto: 'Krypto', mehr: 'Mehr' };
+const ohnePrefix = s => String(s || '').replace(/^[\[(]?\s*(möglicher\s+)?preisfehler\s*[\])]?\s*[:!–-]?\s*/i, '');
+function fristKurz(e) { const b = zeit(e.bis); return b == null ? '' : `bis ${tag(b)}`; }
+function kachelInhalt(b, t) { // -> { z: [[Titel, Zeile, gut?]], w: Satz }
+  if (b === 'deals') {
+    const d = S.angebote?.d;
+    const jetzt = [], weitere = [], ohne = [];
+    for (const p of d?.produkte || []) {
+      if (ausgeblendet(p.id)) continue;
+      const { o } = angebotWahl(p);
+      if (!o) { ohne.push(p); continue; }
+      if (startetSpaeter(o)) continue;
+      (o === p.bestes && p.deal && mengeSicher(o) ? jetzt : weitere).push([p, o]);
+    }
+    const z = [...jetzt.map(([p, o]) => [produktName(p, o), `${euro(o.preis)} bei ${o.shop}`, true]),
+      ...t.produkt.filter(laeuftSchon).map(e => [kurzTitel(e.titel, 44), e.zeile || e.quelle || '', true]),
+      ...weitere.map(([p, o]) => [produktName(p, o), `${euro(o.preis)} bei ${o.shop}${o.regional ? ' · Region' : ''}`])];
+    if (z.length < 2) z.push(...t.cashback.filter(laeuftSchon).slice(0, 2).map(e => [kurzTitel(e.titel, 44), `Cashback ${fristKurz(e)}`.trim()]));
+    if (!z.length) z.push(...ohne.map(p => [produktName(p, null), zuletztKurz(p)]).filter(x => x[1]));
+    if (!z.length && !d) return { z: [], w: S.angebote ? 'Daten gerade nicht erreichbar' : 'lädt …' };
+    return { z, w: jetzt.length ? '' : weitere.length ? 'kein Top-Deal – aber Angebote' : ohne.length ? 'gerade kein Angebot – zuletzt gesehen' : '' };
+  }
+  if (b === 'preisfehler') {
+    const z = letztePreisfehler.slice(0, 3).map(x => [kurzTitel(ohnePrefix(x.titel), 44), x.preisVorher ? `${euro(x.preis)} statt ${euro(x.preisVorher)}` : euro(x.preis), true]);
+    return z.length ? { z, w: '' } : { z: [['Gerade kein krasser', 'nur No-Brainer, die laufen']], w: 'Push kommt sofort, wenn einer da ist' };
+  }
+  if (b === 'filme') {
+    const z = [...t.filme].sort((a, c) => (c.wert ?? 0) - (a.wert ?? 0)).map(e => [kurzTitel(e.titel, 44), e.zeile || e.quelle || '', /wunsch/i.test(`${e.zeile} ${e.grund}`)]);
+    if (!z.length) {
+      const f = lies('mein-vorteil-daten-filme', null)?.d?.gruppen?.angebot;
+      for (const x of Array.isArray(f) ? f.slice(0, 3) : []) if (x?.titel) z.push([String(x.titel), zahl(x.preis) > 0 ? `${euro(x.preis)} · Apple TV` : 'Apple TV']);
+    }
+    return z.length ? { z, w: '' } : { z: [['Wunschliste & Angebote', 'Apple TV, mit deinen Listen abgeglichen']], w: 'tippen zum Öffnen' };
+  }
+  if (ASSISTENT.includes(b)) {
+    const frisch = t[b], fund = t[b + 'Fund'];
+    const z = frisch.map(e => [kurzTitel(anlassVon(e), 48), [b === 'remix' ? '' : ortText(e.extra), fristKurz(e), e.extra?.passt ? 'passt zu dir' : ''].filter(Boolean).join(' · '), true]);
+    if (z.length < 3) z.push(...fund.slice(0, 3 - z.length).map(e => [kurzTitel(e.titel, 48), e.zeile || ortText(e.extra)]));
+    return { z, w: frisch.length ? '' : b === 'remix' ? 'feste Adressen – laufende Contests weltweit' : 'feste Adressen – immer offen' };
+  }
+  if (b === 'konzerte') {
+    const d = S.konzerte?.d;
+    const { nah, naechste, radius } = konzertTeile();
+    const zeile = k => [k.datum ? tagBerlinAusDatum(k.datum).replace(/\.\d{4}$/, '.') : '', k.stadt || k.ort || '', k.km != null ? `${k.km} km` : ''].filter(Boolean).join(' · ');
+    if (nah.length) return { z: nah.map(k => [k.band, zeile(k), true]), w: '' };
+    if (naechste.length) return { z: naechste.map(k => [k.band, zeile(k)]), w: `nächster Termin – weiter als ${radius} km` };
+    if (!d) return { z: [], w: S.konzerte ? 'Daten gerade nicht erreichbar' : 'lädt …' };
+    if (!bands?.length) ladeBands(); // klein, gleiche Seite – dann stehen die Bands auf der Kachel
+    const z = (bands || []).slice(0, 3).map(n => [n, 'Tourdaten direkt ansehen']);
+    return { z: z.length ? z : [['Tourdaten deiner Bands', 'im Bereich direkt nachsehen']], w: 'gerade keine Termine in den Daten' };
+  }
+  if (b === 'gewinnspiele') {
+    const z = t.gewinnspiele.filter(laeuftSchon).map(e => [kurzTitel(e.titel, 48), fristKurz(e) || 'Ende unbekannt']);
+    return z.length ? { z, w: '' } : { z: [['Gerade keins ohne Kauf', 'neue kommen abends']], w: t.da ? 'feste Adressen im Bereich' : '' };
+  }
+  if (b === 'krypto') {
+    const z = [];
+    for (const { c, e } of kryptoStand()) {
+      const m = KRYPTO_COINS[c];
+      if (e) z.push([`${m.zeichen} ${m.name}`, `${pzText(e.prozent)} · ${euroVz(e.gv)}`, e.gv > 0.004]);
+      else if (kurs.kurse?.[c]?.kurs > 0) z.push([`${m.zeichen} ${m.name}`, kursEuro(kurs.kurse[c].kurs)]);
+    }
+    return z.length ? { z, w: '' } : { z: [['Kurse', 'werden geladen …']], w: '' };
+  }
+  // mehr
+  const namen = namenVorteile();
+  const z = Object.entries(t.mehr).filter(([, l]) => l.length).map(([k, l]) => [namen[k] || k, `${l.length} ${l.length === 1 ? 'Eintrag' : 'Einträge'}`]);
+  z.push(['Spar-Tipps & Vorlagen', 'Coupons, Apps, Übersetzung']);
+  return { z, w: '' };
 }
+function zeichneKacheln(t, zahlen) {
+  $('kacheln').innerHTML = KACHEL_REIHE.map(b => {
+    const { z, w } = kachelInhalt(b, t);
+    const n = zahlen[b];
+    return `<a class="kachel f-${b}" href="#${b}" data-sprung="${b}"><div class="kachel-kopf"><span class="rund" aria-hidden="true"><svg class="ic"><use href="#ic-${b}"/></svg></span><b>${esc(KACHEL_NAME[b])}</b><span class="kn">${n ? esc(n) : ''}</span></div>`
+      + `<ul>${z.slice(0, 3).map(([a, m, gut]) => `<li><b>${esc(a)}</b>${m ? `<span${gut ? ' class="gut"' : ''}>${esc(m)}</span>` : ''}</li>`).join('')}</ul>${w ? `<p class="kw">${esc(w)}</p>` : ''}</a>`;
+  }).join('');
+  const p = teile(Date.now());
+  $('start-datum').textContent = `${p.weekday.replace('.', '')} ${p.day}.${p.month}. · Döbeln`;
+}
+
+// --- Bewerbungs-Assistent: Blatt mit fertigem Text (Auftritte: Bewerben, Remix: Mitmachen, Unterricht: Melden) ----------
+// Xander 08.11.2026: „direkt aus einem Anmeldeformular irgendwo was hinschicken, mich vorstellen … bewirbt man sich mit
+// Xander Fox oder mit One Day in Rome?“ Texte und Links nur auf diesem Gerät (localStorage), nie gesendet.
+const BEWERBUNG = 'mein-vorteil-bewerbung'; // { v: 1, profil: { hoerprobe, video, fotos, kontakt }, texte: { 'id|als': { betreff, text, t } } }
+let bew = (() => {
+  const b = lies(BEWERBUNG, null);
+  const obj = x => (x && typeof x === 'object' && !Array.isArray(x) ? x : {});
+  return { profil: obj(b?.profil), texte: obj(b?.texte) };
+})();
+function bewMerken() {
+  bew.texte = Object.fromEntries(Object.entries(bew.texte).filter(([, v]) => v && typeof v.text === 'string').sort((a, b) => (b[1].t || 0) - (a[1].t || 0)).slice(0, 40));
+  merk(BEWERBUNG, { v: 1, profil: bew.profil, texte: bew.texte });
+}
+const ALS = { band: KUENSTLER.band, solo: KUENSTLER.name, beide: `${KUENSTLER.band} (${KUENSTLER.name})`, lehrer: KUENSTLER.lehrer };
+function alsVorschlag(e, bereich) {
+  if (bereich === 'remix') return 'solo';
+  if (bereich === 'unterricht') return 'lehrer';
+  const n = e.extra?.bewerbenAls?.name;
+  if (n === KUENSTLER.name) return 'solo';
+  if (n === KUENSTLER.band) return 'band';
+  return bewerbenAls(e.extra?.typ, bereich).name === KUENSTLER.name ? 'solo' : 'band';
+}
+const PROFIL_FELDER = [['hoerprobe', 'Hörprobe (Link)', 'url'], ['video', 'Live-Video (Link)', 'url'], ['fotos', 'Fotos & Presse (Link)', 'url'], ['kontakt', 'Kontakt (Telefon / E-Mail)', 'text']];
+const platz = (k, ersatz) => String(bew.profil[k] || '').trim() || ersatz;
+function anlassVon(e) { // „Bands gesucht: Stadtfest Leipzig sucht … - LVZ“ -> „Stadtfest Leipzig sucht …“
+  let s = String(e.titel || '').replace(/\s+[-–|]\s+[^-–|]{2,40}$/, '').trim();
+  s = s.replace(/^(bands gesucht|aufruf|gesucht|remix-contest|remix-wettbewerb|remix contest)\s*:\s*/i, '');
+  return s.length > 90 ? s.slice(0, 89) + '…' : s;
+}
+/** Vorschlag für Betreff und Text. als: band | solo | beide | lehrer */
+function vorlage(e, bereich, als) {
+  const a = anlassVon(e);
+  const kontakt = platz('kontakt', '[Telefon] · [E-Mail]');
+  const links = [`Hörprobe: ${platz('hoerprobe', '[Link zur Hörprobe]')}`, `Live-Video: ${platz('video', '[Link zum Live-Video]')}`, `Fotos & Infos: ${platz('fotos', '[Link zu Fotos/Presse]')}`].join('\n');
+  if (bereich === 'remix') {
+    return { betreff: `Remix-Einreichung: [Songname] (${KUENSTLER.name} Remix)`, text: `Hallo,\n\nhier ist mein Remix für „${a}“.\n\nTitel: [Songname] (${KUENSTLER.name} Remix)\nArtist: ${KUENSTLER.name}\n\n${KUENSTLER.name} ist Synth-Pop-/80er-Producer aus Döbeln (Sachsen), Projekt ${KUENSTLER.band}. Der Remix bringt den Song in Richtung 80er-Synth-Pop: analoge Bässe, Arpeggios, Gated-Reverb-Drums.\n\nMehr Musik: ${platz('hoerprobe', '[Link zu deiner Musik]')}\nKontakt: ${kontakt}\n\nViele Grüße\n${KUENSTLER.name}` };
+  }
+  if (bereich === 'unterricht') {
+    return { betreff: `Deutschunterricht – ${a}`, text: `Guten Tag,\n\nich habe „${a}“ gesehen und melde mich gern. Ich bin Xander („${KUENSTLER.lehrer}“) und unterrichte Deutsch als Fremd- und Zweitsprache – online per Video oder vor Ort in Döbeln und Umgebung (Leipzig, Dresden, Chemnitz).\n\nErfahrung: [z. B. Einzel- und Gruppenunterricht, Niveau A1–B2, Prüfungsvorbereitung]\nZeit: [z. B. Mo und Mi nachmittags, Sa vormittags]\n\nEine kurze Kennenlernstunde (20 Minuten) ist kostenlos.\n\nViele Grüße\nXander\n${KUENSTLER.lehrer} · ${kontakt}` };
+  }
+  if (als === 'solo') {
+    return { betreff: `Anmeldung: ${KUENSTLER.name} (Synth-Pop) – ${a}`, text: `Hallo,\n\nich bin ${KUENSTLER.name} aus Döbeln (Sachsen) und mache Synth-Pop mit 80er-Sound – live mit Synths, Gesang und Laptop. Ich habe „${a}“ gesehen und würde gern bei euch spielen.\n\n${links}\n\nSet: 15–30 Minuten eigene Songs, auf Wunsch kürzer\nTechnik: 1–2 DI-Kanäle (Stereo), 1 Gesangsmikro, Strom – Aufbau in 10 Minuten\n\nKontakt: ${kontakt}\n\nViele Grüße\n${KUENSTLER.name}` };
+  }
+  const beide = als === 'beide';
+  const name = beide ? ALS.beide : KUENSTLER.band;
+  return { betreff: `Bewerbung: ${name} (Synth-Pop) – ${a}`, text: `Hallo,\n\n${beide ? `wir sind ${KUENSTLER.band} – das Synth-Pop-Projekt von ${KUENSTLER.name} aus Döbeln (Sachsen)` : `wir sind ${KUENSTLER.band} aus Döbeln (Sachsen)`}: Synth-Pop mit 80er-Seele – analoge Synths, große Melodien, deutsche und englische Texte. Wir haben „${a}“ gesehen und würden sehr gern bei euch spielen.\n\n${links}\n\nBesetzung: ${KUENSTLER.name} (Gesang, Synths)\nSet: 30–45 Minuten eigene Songs, auf Wunsch kürzer\nTechnik: Synths + Laptop, 2 DI-Kanäle (Stereo), 1 Gesangsmikro, 2 Monitore, Strom – Aufbau in 15 Minuten\n\nKontakt: ${KUENSTLER.name} · ${kontakt}\n\nViele Grüße\n${KUENSTLER.name}\n${beide ? ALS.beide : `für ${KUENSTLER.band}`}` };
+}
+
+const blatt = $('blatt');
+let bz = null; // { e, bereich, als }
+const blattKey = () => `${bz.e.id}|${bz.als}`;
+function blattText() {
+  const g = bew.texte[blattKey()];
+  const v = vorlage(bz.e, bz.bereich, bz.als);
+  return { betreff: typeof g?.betreff === 'string' ? g.betreff : v.betreff, text: typeof g?.text === 'string' ? g.text : v.text, eigen: !!g };
+}
+function blattZiel() {
+  const b = bz.e.extra?.bewerbung;
+  if (b?.art === 'mail' && /^[^\s@?&]+@[^\s@?&]+\.[a-z]{2,}$/i.test(b.ziel || '')) return b;
+  if (b && /^https:\/\//i.test(b.ziel || '')) return b;
+  return { art: 'seite', ziel: bz.e.link };
+}
+function jetzigerText() { const b = $('b-betreff'), t = $('b-text'); return b && t ? { betreff: b.value, text: t.value } : blattText(); }
+function mailHref(an, t = jetzigerText()) { const { betreff, text } = t; return `mailto:${an || ''}?subject=${encodeURIComponent(betreff)}&body=${encodeURIComponent(text)}`; }
+function oeffneBlatt(id) {
+  const x = EINTRAEGE.get(id);
+  if (!x) return;
+  const gemerkt = Object.keys(bew.texte).filter(k => k.startsWith(id + '|')).sort((a, b) => (bew.texte[b].t || 0) - (bew.texte[a].t || 0))[0];
+  bz = { e: x.e, bereich: x.bereich, als: gemerkt ? gemerkt.slice(id.length + 1) : alsVorschlag(x.e, x.bereich) };
+  blatt.className = `blatt f-${x.bereich}`;
+  zeichneBlatt();
+  if (!blatt.open) { if (blatt.showModal) blatt.showModal(); else blatt.setAttribute('open', ''); }
+  blatt.scrollTop = 0;
+}
+function zeichneBlatt() {
+  const { e, bereich, als } = bz;
+  const x = e.extra || {};
+  const { betreff, text, eigen } = blattText();
+  const z = blattZiel();
+  $('blatt-titel').textContent = bereich === 'remix' ? 'Mitmachen' : bereich === 'unterricht' ? 'Melden' : 'Bewerben';
+  const info = [ortText(x), zeit(e.bis) != null ? bisText(e.bis) : x.saison ? saisonInfo(x.saison).text : '', e.quelle].filter(Boolean).join(' · ');
+  const teile = [`<p class="blatt-was"><b>${esc(ohneQuelle(e))}</b>${info ? `<br><span>${esc(info)}</span>` : ''}</p>`];
+  if (bereich === 'remix') {
+    const b = zeit(e.bis);
+    const rest = b != null ? Math.ceil((b - Date.now()) / 864e5) : null;
+    teile.push(`<div class="fakten-mini">${[
+      b != null ? `<span class="marke warm">Frist ${esc(tag(b))}${rest > 1 ? ` · noch ${rest} Tage` : ''}</span>` : '<span class="marke grau">Frist auf der Contest-Seite</span>',
+      x.stems ? '<span class="marke">Stems verfügbar</span>' : '<span class="marke grau">Stems auf der Contest-Seite</span>',
+      zahl(x.eingereicht) != null ? `<span class="marke grau">${esc(x.eingereicht)} Remixe eingereicht</span>` : '',
+      x.passt ? '<span class="marke">passt zu deinem Stil</span>' : ''].filter(Boolean).join('')}</div>`);
+    teile.push(`<ol class="schritte-blatt"><li>Contest öffnen, Regeln lesen (Rechte, Format, Länge).</li><li>Stems laden, Tempo und Tonart notieren.</li><li>Remix bauen – Titel „Songname (${esc(KUENSTLER.name)} Remix)“.</li><li>${b != null ? `Bis ${esc(bisText(e.bis).replace(/^bis /, ''))}` : 'Vor der Frist'} hochladen, Text unten als Beschreibung.</li></ol>`);
+  } else if (bereich === 'auftritte') {
+    const w = x.bewerbenAls?.warum || bewerbenAls(x.typ, bereich).warum;
+    teile.push(`<p class="wahl-titel" id="wahl-titel">Bewerben als</p><div class="wahl" role="radiogroup" aria-labelledby="wahl-titel">${[['band', KUENSTLER.band], ['solo', KUENSTLER.name], ['beide', 'beides']].map(([k, n]) =>
+      `<button type="button" role="radio" aria-checked="${k === als}" data-als="${k}">${esc(n)}</button>`).join('')}</div>`);
+    teile.push(`<p class="tipp"><b>Band-Auftritt → ${esc(KUENSTLER.band)}</b> · <b>solo, DJ- oder Live-Set → ${esc(KUENSTLER.name)}</b> · „beides“ = „${esc(ALS.beide)}“ – dann überall gleich schreiben. Hier: ${esc(w)}</p>`);
+  } else {
+    teile.push(`<p class="tipp">Als <b>${esc(KUENSTLER.lehrer)}</b>.${e.soGehts ? ' ' + esc(e.soGehts) : ''}</p>`);
+  }
+  teile.push(`<label>Betreff<input type="text" id="b-betreff" value="${esc(betreff)}" autocomplete="off"></label>`);
+  teile.push(`<label>Text – du kannst ihn ändern, die Seite merkt ihn sich<textarea id="b-text" rows="12" spellcheck="true">${esc(text)}</textarea></label>`);
+  teile.push(`<p class="gespeichert" id="b-stand" aria-live="polite">${eigen ? 'Deine Fassung (gemerkt).' : 'Vorschlag – Änderungen merkt die Seite sich.'}</p>`);
+  teile.push(`<details class="angaben"><summary>Deine Links &amp; Kontakt (für alle Texte)</summary><div class="feld-gitter">${PROFIL_FELDER.map(([k, n, typ]) =>
+    `<label>${esc(n)}<input type="${typ}" data-profil="${k}" value="${esc(bew.profil[k] || '')}" autocomplete="off"></label>`).join('')}</div><p class="privat">Nur auf diesem iPhone gespeichert – füllt die [Platzhalter] in allen Vorschlägen.</p></details>`);
+  const haupt = z.art === 'mail'
+    ? `<a class="los breit" id="b-mail" href="${esc(mailHref(z.ziel, { betreff, text }))}">Per Mail öffnen (an ${esc(z.ziel)})</a>`
+    : `<a class="los breit" id="b-ziel" href="${esc(sicher(z.ziel))}" target="_blank" rel="noopener" data-kopie-vorher="1">${bereich === 'remix' ? 'Zum Contest &amp; den Stems' : z.art === 'formular' ? 'Formular öffnen' : 'Seite öffnen'}</a>`;
+  const mail = z.art === 'mail' ? '' : `<a class="zweit-link" id="b-mail" href="${esc(mailHref('', { betreff, text }))}">Per Mail öffnen</a>`;
+  teile.push(`<div class="aktionen">${haupt}<button class="zweit" type="button" id="b-kopie">Text kopieren</button>${mail}<button class="zweit" type="button" id="b-neu">Vorschlag neu</button></div>`);
+  $('blatt-inhalt').innerHTML = teile.join('');
+}
+function blattMailAktualisieren() {
+  const m = $('b-mail');
+  if (m) m.href = mailHref(blattZiel().art === 'mail' ? blattZiel().ziel : '');
+}
+let blattTimer = 0;
+blatt.addEventListener('input', ev => {
+  if (!bz) return;
+  const f = ev.target;
+  if (f.dataset.profil) {
+    bew.profil[f.dataset.profil] = f.value.trim().slice(0, 300);
+    bewMerken();
+    if (!bew.texte[blattKey()]) { const v = vorlage(bz.e, bz.bereich, bz.als); $('b-betreff').value = v.betreff; $('b-text').value = v.text; }
+    blattMailAktualisieren();
+    return;
+  }
+  if (f.id !== 'b-text' && f.id !== 'b-betreff') return;
+  bew.texte[blattKey()] = { betreff: $('b-betreff').value, text: $('b-text').value, t: Date.now() };
+  $('b-stand').textContent = 'Deine Fassung (gemerkt).';
+  blattMailAktualisieren();
+  clearTimeout(blattTimer);
+  blattTimer = setTimeout(bewMerken, 300);
+});
+blatt.addEventListener('click', ev => {
+  if (ev.target === blatt) { blattZu(); return; }
+  const k = ev.target.closest('[data-als]');
+  if (k && bz) { bz.als = k.dataset.als; zeichneBlatt(); return; }
+  const b = ev.target.closest('button, a');
+  if (!b || !bz) return;
+  if (b.id === 'b-kopie') { kopiere(jetzigerText().text, b); $('b-stand').textContent = 'Text kopiert ✓ – jetzt einfügen.'; }
+  else if (b.id === 'b-neu') { delete bew.texte[blattKey()]; bewMerken(); zeichneBlatt(); }
+  else if (b.dataset.kopieVorher) { kopiere(jetzigerText().text, null); $('b-stand').textContent = 'Text kopiert ✓ – im Formular einfügen.'; }
+  else if (b.id === 'b-mail') { clearTimeout(blattTimer); bewMerken(); }
+});
+const blattZu = () => { clearTimeout(blattTimer); bewMerken(); if (blatt.close) blatt.close(); else blatt.removeAttribute('open'); };
+$('blatt-zu').addEventListener('click', blattZu);
 
 // --- Krypto: Kurs live im Browser (öffentliche Quellen) + Käufe nur auf diesem Gerät + Pop-up bei Zonenwechsel ---------
 // Rechnung, Zonen und Import-Format: Block <krypto-zonen> im <head> (Wort für Wort wie krypto/zonen.mjs).
@@ -1926,7 +2473,7 @@ function wichtigZeilen() {
     const m = KRYPTO_COINS[c];
     z.push({ ziel: 'krypto', warm: zone === 'tief', text: `${m.zeichen} ${m.name} ${pzText(e.prozent)} (${euroVz(e.gv)})` });
   }
-  for (const x of letztePreisfehler.slice(0, 1)) z.push({ ziel: 'preisfehler', warm: true, text: `Preisfehler: ${kurzTitel(String(x.titel).replace(/^[\[(]?\s*(möglicher\s+)?preisfehler\s*[\])]?\s*[:!–-]?\s*/i, ''), 40)} für ${euro(x.preis)}` });
+  for (const x of letztePreisfehler.slice(0, 1)) z.push({ ziel: 'preisfehler', warm: true, text: `Preisfehler: ${kurzTitel(String(x.titel).replace(/^[\[(]?\s*(möglicher\s+)?preisfehler\s*[\])]?\s*[:!–-]?\s*/i, '').replace(/\s+(für|ab|nur)\s+[\d.,]+\s*€.*$/i, ''), 40)} für ${euro(x.preis)}` });
   // Deals für meine Produkte (laufend), sonst Angebote, die heute enden
   const d = S.angebote?.d;
   const deals = [], heute = [];
@@ -1960,52 +2507,116 @@ function zeichneWichtig() {
 }
 
 // --- Zeichnen ---------------------------------------------------------------------------------------------------------
+// Zähler in der Leiste ([data-ziel] bzw. [data-reiter]), in der Überschrift (#h-… .zahl) und auf der Start-Kachel
 function setzeZahl(ab, n) {
-  const a = document.querySelector(`.sprung [data-ziel="${ab}"] .n`);
-  if (a) a.textContent = n ? String(n) : '';
-  const h = document.querySelector(`#h-${ab} .zahl`);
-  if (h) h.textContent = n ? String(n) : '';
+  const t = n ? String(n) : '';
+  for (const a of document.querySelectorAll(`.sprung [data-ziel="${ab}"] .n, .sprung [data-reiter="${ab}"] .n, #h-${ab} .zahl, .kachel[data-sprung="${ab}"] .kn`)) a.textContent = t;
 }
 // Neuzeichnen (Rückkehr zur Seite, neue Daten) schließt sonst jeden aufgeklappten Kasten („1 weiteres Angebot“, Quellen,
 // Vorlagen) – vorher merken, danach wieder öffnen
 function kastenSchluessel(d) {
   const k = d.closest('[data-produkt]');
-  const ab = d.closest('.abschnitt')?.id || '';
-  return k ? `p:${k.dataset.produkt}:${d.className}` : `s:${ab}:${d.querySelector('summary')?.textContent.trim().replace(/\d+/g, '#')}`;
+  const ab = d.closest('[id^="i-"]')?.id || '';
+  return k ? `p:${k.dataset.produkt}:${d.className}` : `s:${ab}:${d.className}:${d.querySelector('summary')?.textContent.trim().replace(/\d+/g, '#')}`;
 }
-const ZEICHNER = { produkte: zeichneProdukte, preisfehler: zeichnePreisfehler, gewinnspiele: zeichneGewinnspiele, cashback: zeichneCashback, snacks: zeichneSnacks, auftritte: zeichneAuftritte, remix: zeichneRemix, mehr: zeichneMehr };
+const ZEICHNER = { produkte: zeichneProdukte, technik: zeichneTechnik, cashback: zeichneCashback, snacks: zeichneSnacks, preisfehler: zeichnePreisfehler, auftritte: zeichneAuftritte, remix: zeichneRemix, unterricht: zeichneUnterricht, konzerte: zeichneKonzerte, gewinnspiele: zeichneGewinnspiele, mehr: zeichneMehr };
+const ZUSATZ = {}; // kurze Zeile rechts in „Du bist in“
+let erstesZeichnen = true;
 function zeichne() {
   naechstesEnde = Infinity;
-  const main = document.querySelector('main');
-  const offenVorher = new Set([...main.querySelectorAll('[id^="i-"] details[open]')].map(kastenSchluessel));
+  const main = $('haupt');
+  // „Gerade ohne Angebot“ öffnet die Seite selbst, wenn nichts läuft – das nicht als „vom Nutzer offen“ merken
+  const offenVorher = erstesZeichnen ? new Set() : new Set([...main.querySelectorAll('[id^="i-"] details[open]')].map(kastenSchluessel));
+  const zuVorher = erstesZeichnen ? new Set() : new Set([...main.querySelectorAll('[id^="i-"] details:not([open])')].map(kastenSchluessel));
   letzteEinteilung = einteilen();
   letztePreisfehler = preisfehlerListe();
+  const r = {};
   for (const [ab, fn] of Object.entries(ZEICHNER)) {
-    const { html, n } = fn(letzteEinteilung);
-    $('i-' + ab).innerHTML = html;
-    setzeZahl(ab, n);
+    r[ab] = fn(letzteEinteilung);
+    $('i-' + ab).innerHTML = r[ab].html;
+    setzeZahl(ab, r[ab].n);
+    if ($('w-' + ab)) $('w-' + ab).innerHTML = r[ab].warum || '';
   }
-  if (offenVorher.size) for (const d of main.querySelectorAll('[id^="i-"] details')) if (offenVorher.has(kastenSchluessel(d))) d.open = true;
+  for (const d of main.querySelectorAll('[id^="i-"] details')) { const k = kastenSchluessel(d); if (offenVorher.has(k)) d.open = true; else if (zuVorher.has(k)) d.open = false; }
+  erstesZeichnen = false;
+  $('technik').hidden = !letzteEinteilung.synths.length;
+  // Deals = Meine Produkte (+ Cashback, Snacks, Musik-Technik darunter)
+  $('w-deals').innerHTML = r.produkte.warum || '';
+  const filme = letzteEinteilung.filme.filter(laeuftSchon).length;
+  const zahlen = { deals: r.produkte.n, preisfehler: r.preisfehler.n, filme, auftritte: r.auftritte.n, remix: r.remix.n, unterricht: r.unterricht.n, konzerte: r.konzerte.n, gewinnspiele: r.gewinnspiele.n, krypto: kryptoStand().filter(x => x.e && x.e.gv > 0.004).length, mehr: r.mehr.n };
+  const t = letzteEinteilung;
+  Object.assign(ZUSATZ, {
+    start: '', deals: `${(S.angebote?.d?.produkte || []).filter(p => !ausgeblendet(p.id)).length || ''} Produkte im Blick`.replace(/^ Produkte im Blick$/, ''),
+    preisfehler: 'nur krasse', auftritte: `${t.auftritte.length} frisch · ${t.auftritteFund.length} feste Adressen`, remix: `${t.remix.length} laufend · ${t.remixFund.length} Fundorte`,
+    unterricht: `${t.unterricht.length} neu · ${t.unterrichtFund.length} feste Adressen`, konzerte: nurNah ? `bis ${konzertTeile().radius} km` : 'alle Termine',
+    gewinnspiele: 'ohne Kauf', krypto: 'nur auf diesem iPhone', mehr: '', filme: 'Apple TV',
+  });
+  for (const [ab, n] of Object.entries(zahlen)) if (ab !== 'krypto') setzeZahl(ab, n);
+  zeichneKacheln(t, zahlen);
+  for (const [ab, n] of Object.entries(zahlen)) setzeZahl(ab, n); // auch auf den gerade gebauten Kacheln
   if (!$('editor').hidden) zeichneEditor();
   zeichneKrypto();
   zeichneWichtig();
   zeigeStand();
+  zeigeOrt();
   springNachLaden();
 }
 const zeichneAlles = () => zeichne();
 
-// --- Sprungmarken: #krypto … #mehr; alte #angebote/#vorteile/#konzerte zeigen auf den passenden Abschnitt -------------
-function zielAusHash() {
+// --- Bereiche: immer nur einer zu sehen; Leiste markiert ihn, „Du bist in: …“ sagt es ----------------------------------------
+const BEREICHE = ['start', 'deals', 'preisfehler', 'filme', 'auftritte', 'remix', 'unterricht', 'konzerte', 'gewinnspiele', 'krypto', 'mehr'];
+const IN_MAIN = BEREICHE.filter(b => b !== 'filme');
+const BEREICH_NAME = { start: 'Heute für dich', deals: 'Deals', preisfehler: 'Preisfehler', filme: 'Filme & Serien', auftritte: 'Auftritte', remix: 'Remix-Contests', unterricht: 'Deutschunterricht', konzerte: 'Konzerte', gewinnspiele: 'Gewinnspiele', krypto: 'Krypto', mehr: 'Mehr' };
+// Ziele innerhalb eines Bereichs (Deals) und alte Sprungmarken (Push-Links, alte Seiten)
+const UNTERZIEL = { produkte: 'deals', cashback: 'deals', snacks: 'deals', technik: 'deals' };
+const ALTE_MARKEN = { angebote: 'produkte', schnaeppchen: 'produkte', vorteile: 'start' };
+let aktiv = 'start', reiterOffen = null;
+function zielAusHash() { // -> { bereich, ziel } | null
   let h = '';
   try { h = decodeURIComponent(location.hash.replace('#', '')).toLowerCase(); } catch {}
-  return ABSCHNITTE.includes(h) ? h : ALTE_MARKEN[h] || null;
+  h = ALTE_MARKEN[h] || h;
+  if (IN_MAIN.includes(h)) return { bereich: h, ziel: h };
+  if (UNTERZIEL[h]) return { bereich: UNTERZIEL[h], ziel: h };
+  return null;
+}
+function zeigeOrt() {
+  const b = reiterOffen || aktiv;
+  const ort = $('ort');
+  ort.className = `ort f-${BEREICH_NAME[b] ? b : 'start'}`;
+  $('ort-name').textContent = BEREICH_NAME[b] || document.querySelector(`.sprung a[data-reiter="${b}"] .t`)?.textContent || b;
+  $('ort-zusatz').textContent = ZUSATZ[b] || '';
+}
+function markiere(b) {
+  for (const a of document.querySelectorAll('.sprung a')) {
+    const an = (a.dataset.ziel || a.dataset.reiter) === b;
+    if (an) a.setAttribute('aria-current', 'true'); else a.removeAttribute('aria-current');
+    if (an && b !== 'start') { // ins Bild holen (Start bleibt links stehen)
+      const z = a.parentElement, links = (z.querySelector('[data-ziel="start"]')?.offsetWidth || 0) + 24;
+      if (a.offsetLeft - links < z.scrollLeft || a.offsetLeft + a.offsetWidth > z.scrollLeft + z.clientWidth) z.scrollTo({ left: Math.max(0, a.offsetLeft - links), behavior: 'smooth' });
+    }
+  }
+  zeigeOrt();
+}
+function nachOben() { // Bereich beginnt direkt unter der Leiste (der Kopf darf sichtbar bleiben, wenn man oben ist)
+  const y = $('kopf').offsetHeight;
+  if (scrollY > y) scrollTo({ top: y, behavior: 'instant' });
+}
+function zeigeBereich(b, { ziel = b, scroll = true } = {}) {
+  if (!IN_MAIN.includes(b)) return;
+  if (reiterOffen) { reiterOffen = null; for (const sk of document.querySelectorAll('.reiter-seite')) sk.hidden = true; }
+  $('haupt').hidden = false;
+  aktiv = b;
+  for (const s of document.querySelectorAll('#haupt > .bereich')) s.hidden = s.id !== b;
+  markiere(b);
+  if (b === 'konzerte') ladeBands();
+  if (!scroll) return;
+  if (ziel !== b && $(ziel)) $(ziel).scrollIntoView({ behavior: 'instant', block: 'start' }); else nachOben();
 }
 
-// --- Weitere Reiter (Platz für „Filme“ vom Kollegen) -------------------------------------------------------------------
-// Ein weiterer Reiter = Link <a href="#name" data-reiter="name">Name<span class="n"></span></a> in der Leiste und
-// <section id="p-name" class="reiter-seite" hidden> nach </main>. Antippen zeigt nur diese Seite (die Abschnitte sind
-// dann ausgeblendet), jeder Abschnitts-Link führt zurück. REITER_START[name](element) läuft beim ersten Öffnen (z. B.
-// Skript und Daten erst dann laden), REITER_NEU[name]() bei ↻.
+// --- Weitere Reiter (eigene Seite außerhalb von <main>, z. B. „Filme“) ------------------------------------------------------
+// Ein weiterer Reiter = Link <a href="#name" data-reiter="name">…<span class="n"></span></a> in der Leiste und
+// <section id="p-name" class="reiter-seite" hidden> nach </main>. Antippen zeigt nur diese Seite, jeder Bereichs-Link führt
+// zurück. REITER_START[name](element) läuft beim ersten Öffnen (z. B. Skript und Daten erst dann laden), REITER_NEU[name]() bei ↻.
 const REITER_START = {}, REITER_NEU = {};
 // ↻ und Rückkehr zur Seite (nach > 5 min): jeder schon geöffnete Reiter holt frisch (nicht bei jedem Wechsel)
 function reiterNeu() { for (const [n, f] of Object.entries(REITER_NEU)) if ($('p-' + n)?.dataset.gestartet) try { f(); } catch (e) { console.warn(e); } }
@@ -2025,84 +2636,66 @@ function starteFilme() {
 }
 REITER_START.filme = starteFilme;
 REITER_NEU.filme = () => { if (window.MeinVorteilFilme?.gestartet) MeinVorteilFilme.lade(); else if (reiterOffen === 'filme') starteFilme(); };
-let reiterOffen = null;
 const reiterAusHash = () => { const h = location.hash.replace('#', '').toLowerCase(); return /^[a-z0-9-]+$/.test(h) && document.querySelector(`.sprung a[data-reiter="${h}"]`) && $('p-' + h) ? h : null; };
 function zeigeReiter(name) {
-  reiterOffen = name || null;
-  document.querySelector('main').hidden = !!name;
+  if (!name) { zeigeBereich(aktiv); return; }
+  reiterOffen = name;
+  $('haupt').hidden = true;
   for (const sk of document.querySelectorAll('.reiter-seite')) sk.hidden = sk.id !== 'p-' + name;
-  for (const a of document.querySelectorAll('.sprung a')) {
-    if (name && a.dataset.reiter === name) a.setAttribute('aria-current', 'true'); else if (name || a.dataset.reiter) a.removeAttribute('aria-current');
-  }
-  const seite = name ? $('p-' + name) : null;
+  markiere(name);
+  const seite = $('p-' + name);
   if (seite && !seite.dataset.gestartet) { seite.dataset.gestartet = '1'; try { REITER_START[name]?.(seite); } catch (e) { console.warn(e); } }
-  if (seite) seite.scrollIntoView({ behavior: 'instant', block: 'start' }); // wie ein Abschnitt: Überschrift direkt unter der Leiste
+  nachOben();
 }
-let gesprungen = false, nutzerScrollt = false, sprungOffen = true;
-function springe(ziel, { sanft = true } = {}) {
-  const el = $(ziel);
-  if (!el) return;
-  el.scrollIntoView({ behavior: sanft ? 'smooth' : 'instant', block: 'start' }); // 'auto' wäre wegen scroll-behavior: smooth doch sanft
-  markiereSprung(ziel);
+/** Irgendein Ziel öffnen: Bereich, Ziel in einem Bereich (#cashback), Reiter (#filme) oder alte Marke */
+function geheZu(ziel, { scroll = true } = {}) {
+  ziel = ALTE_MARKEN[ziel] || ziel;
+  if (document.querySelector(`.sprung a[data-reiter="${ziel}"]`) && $('p-' + ziel)) { history.replaceState(null, '', '#' + ziel); zeigeReiter(ziel); return; }
+  const b = IN_MAIN.includes(ziel) ? ziel : UNTERZIEL[ziel];
+  if (!b) return;
+  history.replaceState(null, '', '#' + ziel);
+  zeigeBereich(b, { ziel, scroll });
 }
-// Push-Link mit Sprungmarke: nach dem ersten Zeichnen (und nach frischen Daten, solange niemand selbst scrollt) dorthin
+const springe = (ziel, o) => geheZu(ziel, o); // für Fotos/Tests: springe('remix')
+// Push-Link auf ein Ziel in einem Bereich (#cashback): nach dem ersten Zeichnen dorthin, solange niemand selbst scrollt
+let wartetAufZiel = null, nutzerScrollt = false;
 function springNachLaden() {
-  const z = zielAusHash();
-  if (!z || nutzerScrollt || !sprungOffen) return;
-  if ('#' + z !== location.hash) history.replaceState(null, '', '#' + z);
-  springe(z, { sanft: false });
-  gesprungen = true;
+  if (!wartetAufZiel || nutzerScrollt) return;
+  const el = $(wartetAufZiel);
+  if (el && !el.hidden && el.offsetParent) el.scrollIntoView({ behavior: 'instant', block: 'start' });
 }
-addEventListener('touchstart', () => { if (gesprungen) nutzerScrollt = true; }, { passive: true });
-addEventListener('wheel', () => { if (gesprungen) nutzerScrollt = true; }, { passive: true });
+addEventListener('touchstart', () => { if (wartetAufZiel) nutzerScrollt = true; }, { passive: true });
+addEventListener('wheel', () => { if (wartetAufZiel) nutzerScrollt = true; }, { passive: true });
 addEventListener('hashchange', () => {
   const r = reiterAusHash();
   if (r) { zeigeReiter(r); return; }
   const z = zielAusHash();
-  if (z) { if (reiterOffen) zeigeReiter(null); if ('#' + z !== location.hash) history.replaceState(null, '', '#' + z); springe(z); }
+  if (!z) return;
+  if ('#' + z.ziel !== location.hash) history.replaceState(null, '', '#' + z.ziel);
+  zeigeBereich(z.bereich, { ziel: z.ziel });
 });
-function markiereSprung(ziel) {
-  for (const a of document.querySelectorAll('.sprung a')) {
-    const an = a.dataset.ziel === ziel;
-    if (an) a.setAttribute('aria-current', 'true'); else a.removeAttribute('aria-current');
-    if (an) { const z = a.parentElement; const l = a.offsetLeft - 16; if (l < z.scrollLeft || a.offsetLeft + a.offsetWidth > z.scrollLeft + z.clientWidth) z.scrollTo({ left: Math.max(0, l), behavior: 'smooth' }); }
-  }
-}
-// aktiver Abschnitt beim Scrollen (oben unter der Leiste)
-if ('IntersectionObserver' in window) {
-  const sichtbar = new Map();
-  const io = new IntersectionObserver(eintraege => {
-    for (const e of eintraege) sichtbar.set(e.target.id, e.isIntersecting);
-    const erster = ABSCHNITTE.find(a => sichtbar.get(a));
-    if (erster) markiereSprung(erster);
-  }, { rootMargin: '-70px 0px -55% 0px' });
-  for (const a of ABSCHNITTE) io.observe($(a));
-}
 document.querySelector('.sprung').addEventListener('click', ev => {
-  const r = ev.target.closest('a[data-reiter]');
-  if (r) { ev.preventDefault(); history.replaceState(null, '', '#' + r.dataset.reiter); zeigeReiter(r.dataset.reiter); markiereReiterLink(r); return; }
-  const a = ev.target.closest('a[data-ziel]');
+  const a = ev.target.closest('a[data-reiter], a[data-ziel]');
   if (!a) return;
   ev.preventDefault();
-  if (reiterOffen) zeigeReiter(null);
-  history.replaceState(null, '', '#' + a.dataset.ziel);
-  springe(a.dataset.ziel);
+  wartetAufZiel = null;
+  geheZu(a.dataset.reiter || a.dataset.ziel);
 });
-function markiereReiterLink(a) { const z = a.parentElement; if (a.offsetLeft + a.offsetWidth > z.scrollLeft + z.clientWidth || a.offsetLeft < z.scrollLeft) z.scrollTo({ left: Math.max(0, a.offsetLeft - 16), behavior: 'smooth' }); }
-$('wichtig').addEventListener('click', ev => {
+// Start-Kacheln und „Heute wichtig“: Tippen führt in den Bereich
+document.querySelector('main').addEventListener('click', ev => {
   const a = ev.target.closest('a[data-sprung]');
   if (!a) return;
   ev.preventDefault();
-  if (reiterOffen) zeigeReiter(null);
-  history.replaceState(null, '', '#' + a.dataset.sprung);
-  springe(a.dataset.sprung);
+  wartetAufZiel = null;
+  geheZu(a.dataset.sprung);
 });
 
 // --- Klicks ------------------------------------------------------------------------------------------------------------
 document.addEventListener('click', ev => {
   const b = ev.target.closest('button');
-  if (!b) return;
+  if (!b || b.closest('#blatt')) return;
   if (b.classList.contains('weg')) { weg.add(b.dataset.id); merk('mein-vorteil-weg', [...weg].slice(-300)); zeichne(); }
+  else if (b.dataset.blatt) oeffneBlatt(b.dataset.blatt);
   else if (b.dataset.mehr) { offen.add(b.dataset.mehr); zeichne(); }
   else if (b.id === 'zeigen') { weg = new Set(); merk('mein-vorteil-weg', []); merk('vorteile-weg', []); zeichne(); }
   else if (b.dataset.nah) { nurNah = b.dataset.nah === '1'; merk('konz-alle', nurNah ? 0 : 1); zeichne(); }
@@ -2128,7 +2721,7 @@ document.addEventListener('submit', ev => {
 });
 
 function kopiere(text, knopf) {
-  const fertig = () => { const alt = knopf.textContent; knopf.textContent = 'Kopiert ✓'; setTimeout(() => (knopf.textContent = alt), 1500); };
+  const fertig = () => { if (!knopf) return; const alt = knopf.textContent; knopf.textContent = 'Kopiert ✓'; setTimeout(() => (knopf.textContent = alt), 1500); };
   if (navigator.clipboard?.writeText) navigator.clipboard.writeText(text).then(fertig, () => {});
 }
 
@@ -2165,13 +2758,21 @@ zeichneKryptoEditor();
 zeichneKryptoPush();
 // noch keine Käufe -> Eingabe offen (so findet man sie)
 if (!kryptoStand().some(x => x.pos)) $('krypto-form').open = true;
+// Bereich aus der Adresse (Push-Link, altes Symbol) schon vor dem ersten Zeichnen – kein Aufblitzen der Startseite
+(() => {
+  if (KRYPTO_IMPORT) { history.replaceState(null, '', location.pathname + location.search); zeigeBereich('krypto', { scroll: false }); return; }
+  const r = reiterAusHash();
+  if (r) { zeigeReiter(r); return; }
+  const z = zielAusHash();
+  if (z && '#' + z.ziel !== location.hash) history.replaceState(null, '', location.pathname + location.search + '#' + z.ziel);
+  zeigeBereich(z?.bereich || 'start', { scroll: false });
+  if (z && z.ziel !== z.bereich) wartetAufZiel = z.ziel;
+})();
 zeichneAlles();
 if (KRYPTO_IMPORT) {
   zeigeHinweis(KRYPTO_IMPORT.ok ? `Krypto-Daten übernommen ✓ (${KRYPTO_IMPORT.coins.map(c => KRYPTO_COINS[c].name).join(', ')}) – nur auf diesem iPhone gespeichert.`
     : KRYPTO_IMPORT.speicher ? 'Krypto-Daten konnten nicht gespeichert werden (privates Surfen?).' : 'Krypto-Link ungültig – nichts geändert.', !KRYPTO_IMPORT.ok);
-  springe('krypto', { sanft: false });
 }
-if (reiterAusHash()) zeigeReiter(reiterAusHash());
 lade();
 ladeKurs();
 // Abgelaufenes verschwindet auch, wenn die Seite offen bleibt; Stand-Zeile und Kurs laufen mit
@@ -2189,7 +2790,7 @@ document.addEventListener('visibilitychange', () => {
   if (Date.now() - (kurs.zeit || 0) >= KURS_ALLE_MS) ladeKurs();
 });
 // Nur lesen, für die Tests (test/regeln.test.mjs): dieselben Regeln wie die Wecker
-window.meinVorteil = Object.freeze({ krass, istSpiel, geraetAb, KRASS_STANDARD, naechsteZone, rohZone, kryptoPosition, kryptoErgebnis, leseKryptoText, zahlAus, meinProdukt, istSnack, interessant, gewinnspielEinfach, istCashback, istRemix, STANDARD_PRODUKTE });
+window.meinVorteil = Object.freeze({ krass, istSpiel, geraetAb, KRASS_STANDARD, naechsteZone, rohZone, kryptoPosition, kryptoErgebnis, leseKryptoText, zahlAus, meinProdukt, istSnack, interessant, gewinnspielEinfach, istCashback, istRemix, STANDARD_PRODUKTE, FUNDORTE, vorlage, bewerbenAls, passtProdukt });
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
   navigator.serviceWorker.register('sw.js', { scope: './' }).catch(() => {});
   // Kam diese Seite (oder vorher eine alte Weiterleitung) über den SYNQUENZER-Worker der Wurzel, hat er sie als Offline-Kopie
@@ -2228,4 +2829,3 @@ async function synthKopiePruefen() {
 </script>
 </body>
 </html>
-

@@ -113,7 +113,7 @@ test('filme.json entspricht dem Vertrag (Gruppen, Felder, Typen, Sortierung)', a
   for (const [q, s] of Object.entries(d.status)) assert.ok(typeof s.ok === 'boolean' && Number.isInteger(s.anzahl) && Array.isArray(s.fehler), q);
   const zahlOderNull = v => v === null || (typeof v === 'number' && v > 0);
   for (const t of alleTitel(d)) {
-    assert.match(t.id, /^(itunes:\d+|wunsch:[a-z0-9-]+|mydealz:.+)$/, t.titel);
+    assert.match(t.id, /^(itunes:\d+|wunsch:[a-z0-9-]+|mydealz:.+|appletv:umc\.cmc\.[a-z0-9]+)$/, t.titel);
     assert.ok(['film', 'staffel'].includes(t.typ));
     assert.ok(typeof t.titel === 'string' && t.titel);
     for (const k of ['preis', 'preisSd', 'preisHd', 'leihe', 'vorher']) assert.ok(zahlOderNull(t[k]), `${t.titel} ${k}=${t[k]}`);
@@ -247,7 +247,7 @@ test('Tote Quelle: Status meldet, alter Stand bleibt; Lookup-Ausfall zeigt die a
   assert.equal(r1.datei.status['apple-charts'].ok, false, 'Kinder-&-Familie-Feed ist in der Fixture tot');
   assert.ok(r1.datei.status['apple-charts'].fehler.some(f => /Kinder/.test(f)));
   // nächster Lauf: Apple komplett tot -> Wunschfilme, Staffeln und Neues aus der alten Datei
-  const tot = abruf([['itunes.apple.com', '!fehler']]);
+  const tot = abruf([['itunes.apple.com', '!fehler'], ['tv.apple.com', '!fehler']]);
   const r2 = await filme(ctx(tot.holeText, zustand, tagPlus(1), { vorherDatei: r1.datei }));
   assert.equal(r2.datei.status['apple-preise'].ok, false);
   assert.equal(r2.datei.gruppen.wunsch.find(t => /Mallrats/.test(t.titel)).preis, 7.99);
@@ -262,7 +262,7 @@ test('Einträge: höchstens 25, Apple-Link, Kategorie „Filme & Serien“; myde
   assert.ok(r.eintraege.length <= 25);
   for (const e of r.eintraege) {
     assert.equal(e.kategorie, 'filme');
-    assert.match(e.link, /^https:\/\/(itunes\.apple\.com|www\.mydealz\.de)\//);
+    assert.match(e.link, /^https:\/\/(itunes\.apple\.com|tv\.apple\.com|www\.mydealz\.de)\//);
     assert.ok(e.soGehts.length > 20);
   }
   const kult = r.eintraege.find(e => /Kultfilme/.test(e.titel));
@@ -526,4 +526,44 @@ test('Wikidata: Abfrage (Name deutsch/englisch, P6398, Jahr), Aufteilung nach Ad
   const ohne = postenListe(listen).filter(p => !p.serie && !p.item.en).map(p => p.item.titel);
   assert.deepEqual(ohne.sort(), ['Ballermann 6', 'Bang Boom Bang – Ein todsicheres Ding', 'Erkan & Stefan', 'Go Trabi Go', 'Manta Manta', 'Otto – Der Außerfriesische', 'Otto – Der Film', 'Schtonk!', 'Werner – Beinhart!', 'Werner – Das muss kesseln!!!']);
   assert.ok(postenListe(listen).filter(p => p.serie).every(p => p.item.en), 'jede Serie mit englischem Namen');
+});
+
+test('Apple-TV-Angebotsraum (Xander 08.11.2026): Raum-Links finden, Filme abgleichen (Wunsch/80er/Disney), Fortsetzung ≠ Teil 1', async () => {
+  const { raumLinks, raumFilme, raumPreis, raumName, passtZuListe, slugVon } = await import('../lib/appletv.mjs');
+  const start = await fix('appletv-filme.html');
+  const l = raumLinks(start);
+  assert.deepEqual(l.map(x => [x.slug, x.angebot]), [['filme-fur-3-99-eur', true], ['neu-im-kino', false], ['filme-der-woche', true]]);
+  assert.equal(l[0].url, 'https://tv.apple.com/de/room/filme-fur-3-99-eur/edt.item.11111111-2222-3333-4444-555555555555');
+  const raum = await fix('appletv-raum-399.html');
+  assert.equal(raumName(raum), 'Filme für 3,99 €');
+  assert.equal(raumPreis(raum), 3.99);
+  const f = raumFilme(raum);
+  assert.deepEqual(f.map(x => x.slug), ['zuruck-in-die-zukunft', 'zuruck-in-die-zukunft-ii', 'go-trabi-go', 'die-fabelhafte-welt-der-amelie', 'manta-manta', 'der-konig-der-lowen']);
+  assert.equal(f[4].link, 'https://tv.apple.com/de/movie//umc.cmc.eee111', 'Link ohne Slug bleibt wie bei Apple (Titel aus dem Link-Text)');
+  assert.equal(slugVon('Der König der Löwen'), 'der-konig-der-lowen');
+  assert.equal(passtZuListe(f[0], { titel: 'Zurück in die Zukunft' }), true);
+  assert.equal(passtZuListe(f[1], { titel: 'Zurück in die Zukunft' }), false, 'Teil II ist ein anderer Film');
+  assert.equal(passtZuListe({ slug: 'back-to-the-future' }, { titel: 'Zurück in die Zukunft', en: 'Back to the Future' }), true);
+  const z = abruf();
+  const r = await filme(ctx(z.holeText));
+  const st = r.datei.status['apple-tv-raeume'];
+  assert.equal(st.ok, true);
+  assert.ok(st.raeume.length >= 1 && st.raeume[0].preis === 3.99, JSON.stringify(st));
+  assert.ok(st.abrufe <= 4);
+  const ang = r.datei.gruppen.angebot.filter(t => t.id.startsWith('appletv:'));
+  assert.ok(ang.some(t => t.titel === 'Go Trabi Go' && t.liste === 'wunsch' && t.preis === 3.99 && /tv\.apple\.com\/de\/movie\/go-trabi-go/.test(t.link)));
+  assert.ok(ang.some(t => t.titel === 'Der König der Löwen' && t.liste === 'disney'));
+  const trabi = r.eintraege.find(e => /Go Trabi Go/.test(e.titel) && e.extra?.raum);
+  assert.ok(trabi, r.eintraege.map(e => e.titel).join(' | '));
+  assert.equal(trabi.sofort, true, 'Wunschfilm im Angebotsraum = sofort');
+  assert.match(trabi.zeile, /im Apple-TV-Raum „Filme für 3,99 €“ · auf deiner Wunschliste/);
+  // jeder Raum-Film landet beim richtigen Listen-Eintrag (Teil II bei Teil II, nicht bei Teil I)
+  for (const t of ang) assert.equal(slugVon(t.titel), t.link.split('/')[5] || slugVon(t.titel === 'Manta Manta' ? 'Manta Manta' : '?'), t.titel);
+  assert.ok(ang.some(t => t.titel === 'Manta Manta' && t.link.endsWith('/movie//umc.cmc.eee111')), 'Film ohne Slug im Link über den Link-Text erkannt');
+  assert.ok(!ang.some(t => /Amélie/.test(t.titel)), 'nicht auf deiner Liste -> kein Treffer');
+  // Raum kaputt -> Status, Rest läuft
+  const kaputt = abruf([['tv.apple.com', '!fehler']]);
+  const r2 = await filme(ctx(kaputt.holeText));
+  assert.equal(r2.datei.status['apple-tv-raeume'].ok, false);
+  assert.ok(r2.datei.gruppen.wunsch.length === 4);
 });

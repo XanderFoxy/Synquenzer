@@ -3,7 +3,7 @@
    (Start ohne Netz). So passen Seite und filme.js nach einer neuen Fassung immer zusammen.
    Symbole/Manifest: aus dem Zwischenspeicher. Daten (raw.githubusercontent.com) gehen nie durch diesen Worker –
    die Seite merkt sich den letzten Stand selbst. */
-const CACHE = 'mein-vorteil-1';
+const CACHE = 'mein-vorteil-2'; // Fassung 5 (08.11.2026): neues Design – alte Kopie wird beim Aktivieren gelöscht
 const SEITE = new URL('./', self.registration.scope).href;
 const FILME = new URL('filme.js', self.registration.scope).href;
 const LANGSAM = 3000;

@@ -31,6 +31,7 @@ export function verarbeite({ konzerte, releases, gesehen, config, heute, jetzt =
 
   // Konzerte: Distanz, Radius, Zukunft, Dedupe (gleiches Datum+Stadt+Band aus mehreren Quellen = eins)
   const km = new Map();
+  const fern = []; // weiter als listenRadiusKm
   const nochErwaehnt = new Set(); // Seite erwähnt die Band noch, das Anzeigefenster ist aber vorbei (kein neuer Push)
   for (const k of konzerte) {
     if (k.datum && k.datum < heute) continue;
@@ -48,9 +49,18 @@ export function verarbeite({ konzerte, releases, gesehen, config, heute, jetzt =
     // beendete Vorverkäufe raus
     if (k.vorverkauf) k.vorverkauf = k.vorverkauf.filter(v => !v.bis || v.bis >= jetzt);
     const dist = k.lat != null && k.lon != null ? distanzKm(z, { lat: k.lat, lon: k.lon }) : null;
-    if (dist != null && dist > config.listenRadiusKm) continue;
     const e = { ...k, km: dist, key: konzertKey(k) };
+    // weiter als listenRadiusKm: nur als „nächster Termin“ der Band (unten), sonst nicht in der Liste
+    if (dist != null && dist > config.listenRadiusKm) { if (e.datum) fern.push(e); continue; }
     if (!km.has(e.key)) km.set(e.key, e);
+  }
+  // Xander 08.11.2026: „Bands wie Alphaville treten irgendwo auf … wenn es auch nicht im direkten Umkreis ist, was das
+  // Nächste ist“ -> je Band IMMER der nächste Termin, auch weit weg (weit: true, naechster: true; kein Push, nur Liste).
+  for (const e of fern.sort((a, b) => a.datum.localeCompare(b.datum) || (a.km ?? 9e9) - (b.km ?? 9e9))) {
+    const band = norm(e.band);
+    const frueher = [...km.values()].some(x => norm(x.band) === band && x.datum && x.datum <= e.datum);
+    if (frueher || km.has(e.key)) continue;
+    km.set(e.key, { ...e, weit: true, naechster: true });
   }
   const liste = [...km.values()].sort((a, b) => (a.datum || '9999').localeCompare(b.datum || '9999') || (a.km ?? 9e9) - (b.km ?? 9e9));
 

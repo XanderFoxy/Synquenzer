@@ -2,6 +2,7 @@
   "_hinweis": "Einstellungen für den Vorteils-Radar. Wörter-Listen darfst du frei ändern; 'a|b' heißt: a oder b. Wunsch-Geräte stehen in wunschliste.json.",
   "ort": "Döbeln",
   "plz": "04720",
+  "kuenstler": { "name": "Xander Fox", "band": "One Day in Rome", "unterricht": "Deutsch mit Xander", "_hinweis": "Mit welchem Namen bewerben: Band-Slots (Stadtfest, Festival, Bandcontest, Club) als Band, Xander Fox als Kontakt; Solo/Open Stage und Remixe als Xander Fox; Unterricht als „Deutsch mit Xander“." },
   "region": ["Döbeln", "Mittelsachsen", "Sachsen", "Leipzig", "Dresden", "Chemnitz", "Riesa", "Meißen", "Freiberg", "Mittweida", "Grimma", "Oschatz", "Waldheim", "Hartha", "Leisnig", "Roßwein", "Rochlitz", "Wurzen", "Torgau", "Borna", "Zwickau", "Halle"],
   "seite": "https://xanderfoxy.github.io/Synquenzer/mein-vorteil/#vorteile",
   "ntfy": {
@@ -95,44 +96,18 @@
       "geraeteSuche": true,
       "geraeteMydealz": ["alles", "trending"],
       "_geraeteMydealz": "Wunsch-Geräte: neue (/rss/alles) und heiße (/rss/trending) mydealz-Deals, je Gerät nach seinem Suchwort gefiltert (die mydealz-Suche als RSS gibt es nicht mehr). Eine passende mydealz-Gruppe kann hier ergänzt werden.",
-      "aufrufe": [
-        "\"Bands gesucht\" Festival",
-        "\"Bands gesucht\" Stadtfest Sachsen",
-        "Bewerbung Bands Stadtfest Leipzig OR Dresden OR Chemnitz",
-        "Newcomer Bands gesucht Sachsen",
-        "\"Musiker gesucht\" Festival elektronisch",
-        "Synthpop Festival Bewerbung",
-        "\"open call\" electronic music festival Germany"
-      ],
-      "aufrufWoerter": ["gesucht", "bewerben", "bewerbung", "open call", "ausschreibung", "bandcontest|band contest", "wettbewerb", "newcomer", "talente", "line-up|lineup", "auftrittsmöglichkeit|auftrittsmoeglichkeit"],
-      "genreWoerter": ["synth", "elektro", "electro", "electronic", "elektronisch", "wave", "pop", "indie", "singer-songwriter|solokünstler|solokuenstler", "alle genres|jedes genre|genreoffen"],
-      "nichtWoerter": ["coverband|cover-band", "blaskapelle", "schlager", "fußball|fussball", "kirchenchor", "gestorben|trauer", "verhaftet|polizei"],
-      "remix": {
-        "_hinweis": "Remix-Contests mit Stems (Xander 07.11.2026): nur Synth-Pop, 80er, Italo, Euro-Disco, Elektro, Dark Wave, New Wave – keine reinen Hip-Hop-/Metal-/Schlager-Contests. Nur laufende: Einsendeschluss in der Zukunft, ohne Einsendeschluss höchstens maxAlterTage alt. Push: Zusammenfassung, sofort nur bei Frist ≤ sofortBisTage. Seite: Abschnitt Remix-Contests. Sammelseiten-RSS (feeds) ist ungeprüft (Container ohne Netz): fällt er dauerhaft aus, steht das im Status – dann hier entfernen.",
-        "maxAlterTage": 30,
-        "sofortBisTage": 14,
-        "suchen": ["Remix-Wettbewerb", "Remix Contest Stems elektronisch", "remix contest synthpop"],
-        "suchenEnglisch": ["remix contest synthpop", "remix contest synthwave", "remix contest 80s", "remix contest italo disco", "remix contest darkwave", "remix competition stems"],
-        "feeds": [
-          { "name": "RemixComps", "url": "https://www.remixcomps.com/feed/", "maxAlterTage": 30 }
-        ],
-        "contestWoerter": ["remix contest|remix-contest|remixcontest|remix competition|remix-competition|remix comp|remix-wettbewerb|remixwettbewerb|remix wettbewerb|remix challenge|remix-challenge|remixchallenge"],
-        "genreWoerter": ["synthpop|synth-pop|synth pop|synthie-pop|synthiepop", "synth|synthesizer", "synthwave|retrowave|outrun", "80s|80er|eighties|80's", "italo", "euro disco|eurodisco|euro-disco|disco", "electro|elektro|electronic|elektronisch|electronica", "darkwave|dark wave|dark-wave|coldwave|cold wave|post-punk|postpunk", "new wave|newwave|new-wave", "depeche mode|erasure|pet shop boys|a-ha|alphaville|ultravox|kraftwerk|new order|human league|soft cell|camouflage|wolfsheim|de/vision|and one|mesh|covenant|omd|orchestral manoeuvres|yazoo|tears for fears|eurythmics|gary numan|modern talking|sandra|kim wilde|the cure|duran duran"],
-        "nichtWoerter": ["hip hop|hip-hop|hiphop", "rap|rapper|trap|drill|grime", "metal|metalcore|deathcore|death metal|black metal", "schlager", "country", "gospel", "k-pop|kpop"]
-      }
+      "_umgezogen": "Seit 08.11.2026: „Bands gesucht“ -> module.auftritte (Kategorie auftritte), Remix-Contests -> module.remix (Kategorie remix)."
     },
     "nebenverdienst": {
       "aktiv": true,
       "intervallStunden": 12,
       "ba": {
-        "api": "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v4/jobs",
+        "api": "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v6/jobs",
+        "ausweich": ["https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v4/app/jobs", "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v4/jobs"],
+        "_api": "Echter Lauf 07.11.2026: /pc/v4/jobs -> HTTP 403 (alle Suchen). Laut bundesAPI läuft die Suche über /pc/v6/jobs; danach die Ausweich-Adressen (scan/lib/ba.mjs). Deutschunterricht steht seit 08.11.2026 in module.unterricht.",
         "key": "jobboerse-jobsuche",
         "tageZurueck": 14,
         "suchen": [
-          { "was": "Deutschlehrer", "wo": "Döbeln", "umkreis": 50 },
-          { "was": "Deutsch als Fremdsprache", "arbeitszeit": "ho" },
-          { "was": "Deutschlehrer online", "arbeitszeit": "ho" },
-          { "was": "Nachhilfe Deutsch", "wo": "Döbeln", "umkreis": 30 },
           { "was": "Übersetzer Arabisch", "arbeitszeit": "ho" },
           { "was": "Übersetzer Englisch Deutsch", "arbeitszeit": "ho" },
           { "was": "Bildbearbeitung", "arbeitszeit": "ho" },
@@ -226,6 +201,103 @@
         { "id": "markt-apps", "name": "Lidl Plus / Kaufland Card: Coupons in der App", "art": "punkte", "praemie": 20, "kosten": 0, "aufwandMin": 5, "richtwert": true, "einheit": "pro Jahr", "link": "https://www.lidl.de/", "haken": ["nur bei Einkäufen, die du sowieso machst"] },
         { "id": "cashback-lebensmittel", "name": "Cashback auf Lebensmittel (Scondoo/Marktguru): Kassenbon hochladen", "art": "cashback", "praemie": 15, "kosten": 0, "aufwandMin": 10, "richtwert": true, "einheit": "pro Jahr", "link": "https://www.scondoo.de/", "haken": ["Kassenbon fotografieren", "Auszahlung erst ab Mindestguthaben", "lohnt nur bei Produkten, die du sowieso kaufst"] },
         { "id": "cashback-portal", "name": "Cashback-Portal (z. B. Shoop) vor Online-Einkäufen", "art": "cashback", "praemie": 20, "kosten": 0, "aufwandMin": 5, "richtwert": true, "einheit": "pro Jahr", "link": "https://www.shoop.de/", "haken": ["Cashback kommt erst nach Wochen", "Werbeblocker/Cookies können die Gutschrift verhindern", "lohnt nur, wenn du das sowieso kaufst"] }
+      ]
+    },
+    "remix": {
+      "aktiv": true,
+      "intervallStunden": 6,
+      "_hinweis": "Remix-Contests mit Stems (Xander 07./08.11.2026: „lieber 10 passende als 0“). Genre-Treffer (Synth-Pop, 80er, Italo, Euro-Disco, Elektro, Dark/New Wave, Pop) zählen extra; Contests ohne Genre-Wort bleiben drin, raus nur reine Hip-Hop-/Metal-/Schlager-/Trap-Contests (genreNoetig: true = nur passende). Nur laufende: Einsendeschluss in der Zukunft, ohne Einsendeschluss höchstens maxAlterTage alt. Quellen: Google News DE/EN, Audius-API, WordPress-Suchfeeds von Magazinen; dazu Fundorte (immer sichtbar). RemixComps (www.remixcomps.com/feed/) ist raus: im echten Lauf 07.11.2026 zweimal HTTP 526 (Cloudflare: ungültiges Zertifikat der Seite).",
+      "maxAlterTage": 30,
+      "sofortBisTage": 14,
+      "genreNoetig": false,
+      "suchen": ["Remix-Wettbewerb", "Remix Contest", "Remix Contest Stems", "Remix-Contest Synthpop OR Elektro OR 80er"],
+      "suchenEnglisch": ["remix contest", "remix competition", "remix contest stems", "remix contest deadline", "remix contest synth OR synthwave OR synthpop", "remix contest 80s OR italo OR darkwave OR \"new wave\""],
+      "wordpress": [
+        { "name": "EDM Identity", "basis": "https://edmidentity.com", "suchen": ["remix contest"] },
+        { "name": "Attack Magazine", "basis": "https://www.attackmagazine.com", "suchen": ["remix competition"] },
+        { "name": "Rekkerd", "basis": "https://rekkerd.org", "suchen": ["remix contest"] },
+        { "name": "Dancing Astronaut", "basis": "https://dancingastronaut.com", "suchen": ["remix competition"] }
+      ],
+      "_wordpress": "WordPress-Suche als RSS: <basis>/?s=<begriff>&feed=rss2 (Standard jeder WordPress-Seite). Weitere Magazine einfach ergänzen.",
+      "audius": { "url": "https://api.audius.co/v1/events/remix-contests?status=active&limit=50&app_name=vorteils-radar" },
+      "_audius": "Audius-API (ohne Schlüssel): laufende Remix-Contests der Plattform (status=active). Route und Antwortformat aus dem Quellcode AudiusProject/api (api/v1_events_remix_contests.go, swagger remix_contests_response; geprüft 08.11.2026) – echte Antwort im Roh-Lauf ansehen.",
+      "feeds": [],
+      "contestWoerter": ["remix contest|remix-contest|remixcontest|remix competition|remix-competition|remix comp|remix-wettbewerb|remixwettbewerb|remix wettbewerb|remix challenge|remix-challenge|remixchallenge"],
+      "genreWoerter": ["synthpop|synth-pop|synth pop|synthie-pop|synthiepop", "synth|synthesizer", "synthwave|retrowave|outrun", "80s|80er|eighties|80's", "italo", "euro disco|eurodisco|euro-disco|disco", "electro|elektro|electronic|elektronisch|electronica", "darkwave|dark wave|dark-wave|coldwave|cold wave|post-punk|postpunk", "new wave|newwave|new-wave", "depeche mode|erasure|pet shop boys|a-ha|alphaville|ultravox|kraftwerk|new order|human league|soft cell|camouflage|wolfsheim|de/vision|and one|mesh|covenant|omd|orchestral manoeuvres|yazoo|tears for fears|eurythmics|gary numan|modern talking|sandra|kim wilde|the cure|duran duran", "pop|indie pop|electropop|electro-pop"],
+      "nichtWoerter": ["hip hop|hip-hop|hiphop", "rap|rapper|trap|drill|grime", "metal|metalcore|deathcore|death metal|black metal", "schlager", "country", "gospel", "k-pop|kpop"],
+      "fundorte": [
+        { "titel": "SKIO Music: laufende Remix-Contests mit Stems", "link": "https://skiomusic.com/contests", "ort": "online", "typ": "remix", "quelle": "SKIO Music", "zeile": "offizielle Stems, Gewinner-Remixe werden oft veröffentlicht", "soGehts": "Seite öffnen, Contest mit passendem Sound wählen, Stems laden, Remix hochladen (Titel: „Song (Xander Fox Remix)“)." },
+        { "titel": "Beatportal: Remix-Contests (Beatport/LabelRadar)", "link": "https://www.beatportal.com/communities/630379-remix-contests", "ort": "online", "typ": "remix", "quelle": "Beatportal", "zeile": "Contests großer Labels, meist Elektro/Pop" },
+        { "titel": "Beatport Greenroom: Remix-Contests auf LabelRadar", "link": "https://greenroom.beatport.com/labels/labelradar/remix", "ort": "online", "typ": "remix", "quelle": "Beatport Greenroom" },
+        { "titel": "delamar: Remix- und Band-Contests (deutsch)", "link": "https://www.delamar.de/contests/", "ort": "online", "typ": "remix", "quelle": "delamar", "zeile": "deutsche Übersicht, auch Song- und Band-Contests" },
+        { "titel": "Remix64: Remix-Compos zu C64-/Amiga-Klassikern (Retro-Synth)", "link": "https://remix64.com/news/", "ort": "online", "typ": "remix", "quelle": "Remix64", "zeile": "Retro-Synth, 80er-Sound – Compos z. B. zur BIT Live" }
+      ]
+    },
+    "auftritte": {
+      "aktiv": true,
+      "intervallStunden": 6,
+      "_hinweis": "Auftrittsmöglichkeiten (Xander 08.11.2026): Bands gesucht, Bandcontests, Open Stage/Open Mic, Stadtfest-/Festival-Bewerbungen – Sachsen zuerst, sonst deutschlandweit. Sortiert: nah + bald zuerst. Fundorte erscheinen IMMER (mit Ort, km, Bewerbungsweg, Saison). Name: Band-Slots als „One Day in Rome“, Solo/Open Stage als „Xander Fox“ (siehe kuenstler).",
+      "maxAlterTage": 60,
+      "sofortBisKm": 150,
+      "suchen": ["Bands gesucht", "Bands gesucht Sachsen", "Bandcontest Anmeldung", "Bandwettbewerb Bewerbung", "Nachwuchsbands gesucht", "Newcomer Bands Bewerbung Festival", "Open Stage Leipzig OR Dresden OR Chemnitz", "Open Mic Leipzig OR Dresden", "Musiker gesucht Stadtfest", "Künstler gesucht Stadtfest Sachsen", "Fête de la Musique Anmeldung Musiker", "Döbeln Bühne Künstler gesucht"],
+      "aufrufWoerter": ["gesucht", "bewerben", "bewerbung", "open call", "ausschreibung", "bandcontest|band contest|bandwettbewerb", "wettbewerb", "newcomer", "talente", "auftrittsmöglichkeit|auftrittsmoeglichkeit", "open stage|open-stage|offene bühne|offene buehne|open mic|open-mic", "anmeldung|anmelden|anmeldeschluss|bewerbungsschluss"],
+      "musikerWoerter": ["band", "bands", "musiker|musikerin|musikerinnen", "künstler|kuenstler|künstlerin|kuenstlerin", "act", "acts", "singer|songwriter|liedermacher", "nachwuchs", "dj", "djs"],
+      "genreWoerter": ["synth", "elektro", "electro", "electronic", "elektronisch", "wave", "pop", "indie", "singer-songwriter|solokünstler|solokuenstler", "alle genres|jedes genre|genreoffen"],
+      "nichtWoerter": ["coverband|cover-band|tribute", "blaskapelle", "schlager", "fußball|fussball", "kirchenchor", "gestorben|trauer", "verhaftet|polizei", "gewinnt den|hat gewonnen|haben gewonnen|siegerband|setzte sich durch|setzten sich durch|holt den titel|sind die gewinner|ist gewinner", "abgesagt"],
+      "seiten": [
+        { "name": "gigmit Leipzig", "url": "https://gigmit.com/en/gigs/leipzig", "stadt": "Leipzig" },
+        { "name": "gigmit Dresden", "url": "https://gigmit.com/en/gigs/dresden", "stadt": "Dresden" },
+        { "name": "gigmit Chemnitz", "url": "https://gigmit.com/en/gigs/chemnitz", "stadt": "Chemnitz" }
+      ],
+      "_seiten": "Seiten mit eingebetteten Terminen (JSON-LD schema.org Event). Ohne JSON-LD liefert die Seite 0 Termine (kein Fehler); dann zählt sie nur als Fundort.",
+      "fundorte": [
+        { "titel": "Döbelner Kulturnacht: Künstler für Mai", "link": "https://kulturnacht-doebeln.de/", "ort": "Döbeln", "typ": "stadtfest", "quelle": "Stadt Döbeln", "saison": { "bewerbung": [1, 2, 3], "termin": "Mai" }, "zeile": "über 30 Künstler an rund 20 Orten in der Innenstadt", "soGehts": "Seite öffnen oder beim Sachgebiet Kultur der Stadt Döbeln (Obermarkt 1) anfragen: Name, Kontakt, 3 Sätze, Hörlink, Länge, Technik." },
+        { "titel": "Stadtfest Döbeln (Juni): offene Bühne für Nachwuchs", "link": "https://www.doebeln.de/tourismus-kultur-freizeit/veranstaltungen", "ort": "Döbeln", "typ": "stadtfest", "quelle": "Stadt Döbeln / Treibhaus e.V.", "saison": { "bewerbung": [2, 3, 4, 5], "termin": "Juni" }, "soGehts": "Bei der Stadt Döbeln bzw. beim Treibhaus e.V. nach der offenen Bühne fragen: Name, Kontakt, kurze Beschreibung, Länge des Auftritts, Technik." },
+        { "titel": "7:77 – Die Open Stage (Neues Schauspiel Leipzig)", "link": "https://www.openstage777.com/anmeldung", "ort": "Leipzig", "typ": "openstage", "quelle": "7:77 Open Stage", "bewerbung": { "art": "formular", "ziel": "https://www.openstage777.com/anmeldung" }, "zeile": "offene Bühne für alle Sparten, regelmäßig", "soGehts": "Anmeldeformular ausfüllen (Name, Act, Länge). Gut zum Testen neuer Songs vor Publikum." },
+        { "titel": "Wave-Gotik-Treffen Leipzig: Bandbewerbung per Mail", "link": "https://www.wave-gotik-treffen.de/", "ort": "Leipzig", "typ": "festival", "quelle": "Wave-Gotik-Treffen", "bewerbung": { "art": "mail", "ziel": "bewerbung@wave-gotik-treffen.de" }, "saison": { "bewerbung": [9, 10, 11, 12, 1, 2], "termin": "Pfingsten" }, "zeile": "Dark Wave/Synth – passt zu One Day in Rome", "soGehts": "Mail an die Bewerbungsadresse: Bandname, 3 Sätze, 2 Hörlinks, Pressefoto, Live-Video wenn da. Früh schicken – das Line-up füllt sich ab Winter." },
+        { "titel": "Fête de la Musique Leipzig (21. Juni): Musiker-Anmeldung", "link": "https://institutfrancais.de/leipzig", "ort": "Leipzig", "typ": "stadtfest", "quelle": "Institut français Leipzig", "saison": { "bewerbung": [1, 2, 3], "termin": "21. Juni" }, "zeile": "jede Band darf spielen – große Bühnen meist bis März", "soGehts": "Ab Jahresbeginn das Musiker-Formular des Institut français Leipzig ausfüllen (Bühne/Ort, Uhrzeit, Technik)." },
+        { "titel": "SPH Music Masters (Bandcontest): Anmeldung jederzeit", "link": "https://www.sph-music-masters.de", "ort": "deutschlandweit", "typ": "bandcontest", "quelle": "SPH Music Masters", "bewerbung": { "art": "formular", "ziel": "https://www.sph-music-masters.de" }, "zeile": "Vorrunde in der nächsten Stadt, Feedback von der Jury, ohne Altersgrenze", "soGehts": "Online anmelden (2 Minuten), Vorrunden-Termin in der Nähe wählen." },
+        { "titel": "gigmit: offene Gig-Angebote in Leipzig", "link": "https://gigmit.com/en/gigs/leipzig", "ort": "Leipzig", "typ": "gig", "quelle": "gigmit", "zeile": "Veranstalter suchen Acts – kostenloses Künstlerprofil", "soGehts": "Profil anlegen (Hörlinks, Fotos, Technik), passende Angebote öffnen und direkt bewerben." },
+        { "titel": "gigmit: offene Gig-Angebote in Dresden", "link": "https://gigmit.com/en/gigs/dresden", "ort": "Dresden", "typ": "gig", "quelle": "gigmit", "soGehts": "Profil anlegen (Hörlinks, Fotos, Technik), passende Angebote öffnen und direkt bewerben." },
+        { "titel": "gigmit: offene Gig-Angebote in Chemnitz", "link": "https://gigmit.com/en/gigs/chemnitz", "ort": "Chemnitz", "typ": "gig", "quelle": "gigmit", "soGehts": "Profil anlegen (Hörlinks, Fotos, Technik), passende Angebote öffnen und direkt bewerben." }
+      ]
+    },
+    "unterricht": {
+      "aktiv": true,
+      "intervallStunden": 12,
+      "_hinweis": "Deutschunterricht (Xander 08.11.2026): Gesuche und Stellen – Privat/Nachhilfe, Integrationskurse, DaF/DaZ, online. Döbeln + Umkreis und von zu Hause. Fundorte (Plattformen, BAMF-Zulassung, Jobbörse-Website) erscheinen IMMER.",
+      "maxAlterTage": 30,
+      "ba": {
+        "api": "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v6/jobs",
+        "ausweich": ["https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v4/app/jobs", "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v4/jobs"],
+        "key": "jobboerse-jobsuche",
+        "tageZurueck": 21,
+        "suchen": [
+          { "was": "Deutschlehrer", "wo": "Döbeln", "umkreis": 50 },
+          { "was": "Deutsch als Fremdsprache", "wo": "Döbeln", "umkreis": 80 },
+          { "was": "Lehrkraft Integrationskurs", "wo": "Döbeln", "umkreis": 80 },
+          { "was": "Nachhilfe Deutsch", "wo": "Döbeln", "umkreis": 30 },
+          { "was": "Deutschlehrer online", "arbeitszeit": "ho" },
+          { "was": "Deutsch als Fremdsprache", "arbeitszeit": "ho" }
+        ]
+      },
+      "remotive": {
+        "urls": ["https://remotive.com/api/remote-jobs?search=german%20teacher&limit=50", "https://remotive.com/api/remote-jobs?search=german%20tutor&limit=50"],
+        "titelWoerter": ["teacher|tutor|lehrer|lehrerin|lehrkraft|trainer|trainerin|instructor|dozent|dozentin|coach|educator"]
+      },
+      "_remotive": "Remotive-API (offen, JSON): Remote-Stellen. Bitte höchstens ein paar Abrufe am Tag (intervallStunden 12).",
+      "suchen": ["Lehrkräfte Integrationskurs gesucht", "Deutschlehrer gesucht Sachsen", "DaZ Lehrkräfte gesucht Sachsen", "Sprachpaten gesucht Döbeln OR Mittelsachsen OR Leipzig", "Deutschkurs Ehrenamtliche gesucht Sachsen"],
+      "faehigkeitWoerter": ["deutschlehr|deutschkurs|deutschunterricht|deutsch unterricht|deutsch als fremdsprache|deutsch als zweitsprache|deutschnachhilfe|nachhilfe deutsch|deutsch-nachhilfe|lehrkraft deutsch|lehrkraft für deutsch|dozent deutsch|dozentin deutsch|lehrer deutsch", "daf|daz", "integrationskurs|integrationskurse|berufssprachkurs|sprachkurs|sprachkurse|sprachlehr|sprachpate|sprachpaten|sprachcafe|sprachcafé", "german teacher|german tutor|teach german|german language"],
+      "gesuchtWoerter": ["gesucht|sucht|suchen|bewerben|bewerbung|verstärkung|verstaerkung|mitmachen|ehrenamtliche|freiwillige|lehrkräftemangel|lehrkraeftemangel|stellen"],
+      "remoteWoerter": ["homeoffice|home office|home-office", "remote", "online", "von zu hause|von zuhause", "videounterricht|per video|zoom"],
+      "_remoteWoerter": "Nur Wörter, die wirklich „von zu Hause“ heißen (Honorar/freiberuflich heißt nicht online).",
+      "nichtWoerter": ["außendienst|aussendienst", "vertrieb", "callcenter|call center|kundenservice|customer support|customer service", "provision", "fahrer", "lager", "pflege", "kommissionier", "verkäufer|verkaeufer|sales"],
+      "fundorte": [
+        { "titel": "Jobbörse: Deutschlehrer-Stellen rund um Döbeln (Live-Suche)", "link": "https://www.arbeitsagentur.de/jobsuche/suche?angebotsart=1&was=Deutschlehrer&wo=D%C3%B6beln&umkreis=50", "ort": "Döbeln", "typ": "kurs", "quelle": "Arbeitsagentur", "zeile": "immer aktuell, 50 km Umkreis", "soGehts": "Suche öffnen, Anzeige wählen, kurz bewerben (Vorlage unten)." },
+        { "titel": "italki: als Deutschlehrer (Community Tutor) bewerben", "link": "https://teach.italki.com", "ort": "online", "typ": "online", "quelle": "italki", "bewerbung": { "art": "formular", "ziel": "https://teach.italki.com" }, "zeile": "Community Tutor ohne Zertifikat möglich, Antwort in ca. 10 Werktagen", "soGehts": "Am Computer bewerben (nicht am Handy): Profil, Vorstellungsvideo, Ausweis. Preis selbst festlegen." },
+        { "titel": "Preply: Deutsch online unterrichten", "link": "https://preply.com/en/job/21798", "ort": "online", "typ": "online", "quelle": "Preply", "zeile": "keine formalen Voraussetzungen, Freischaltung in ca. 3 Werktagen", "soGehts": "Profil + Vorstellungsvideo hochladen, Kalender eintragen, Preis festlegen." },
+        { "titel": "Lingoda: Lehrkraft im Online-Team (freiberuflich)", "link": "https://www.lingoda.com/english/jobs", "ort": "online", "typ": "online", "quelle": "Lingoda", "zeile": "Gruppenkurse über Zoom, ca. 5–20 Std./Woche", "soGehts": "Online-Formular ausfüllen; Lebenslauf und Unterrichtserfahrung bereithalten." },
+        { "titel": "BAMF: Zulassung als Lehrkraft für Integrationskurse", "link": "https://www.bamf.de/Zulassung-ZQ-DaF-DaZ", "ort": "deutschlandweit", "typ": "integrationskurs", "quelle": "BAMF", "zeile": "Voraussetzung u. a. Deutsch C1 und DaF/DaZ-Qualifikation", "soGehts": "Antrag beim BAMF stellen, mit dem Bescheid bei Kursträgern in Döbeln/Leipzig bewerben (VHS, Bildungsträger)." }
       ]
     },
     "filme": {

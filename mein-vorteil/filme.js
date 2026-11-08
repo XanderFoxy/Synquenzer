@@ -29,7 +29,7 @@
     serien: 'Gerade keine Staffeln von Rick and Morty oder Star Trek gefunden.',
     disney: 'Gerade keine Disney-Filme gefunden.',
   };
-  const QUELLE = { 'apple-suche': 'Apple-Store', apple: 'Apple-Store', itunes: 'Apple-Store', 'apple-charts': 'Apple-Charts', charts: 'Apple-Charts', mydealz: 'mydealz' };
+  const QUELLE = { 'apple-suche': 'Apple-Store', apple: 'Apple-Store', itunes: 'Apple-Store', 'apple-charts': 'Apple-Charts', charts: 'Apple-Charts', mydealz: 'mydealz', 'apple-preise': 'Apple-Preise', 'apple-tv-raeume': 'Apple-TV-Angebote (Räume der TV-App)' };
 
   // --- kleine Helfer ---------------------------------------------------------------------------------------------------
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -91,6 +91,8 @@
       fehlt: t.fehlt === true, bild: bildUrl(t.bild), link: sicher(t.link),
       chart: zahl(t.chart) > 0 ? Math.round(zahl(t.chart)) : null, quelle: typeof t.quelle === 'string' ? t.quelle : '',
       serie: typeof t.serie === 'string' && t.serie.trim() ? t.serie.trim() : null,
+      // Apple-TV-Angebotsraum („Filme für 3,99 €“), in dem der Film gerade steht (Vorteils-Radar ab Fassung 5)
+      raum: typeof t.raum === 'string' && t.raum.trim() ? t.raum.trim().slice(0, 60) : null,
     };
   }
   const zuerst = (arr, f) => [...arr.filter(f), ...arr.filter(x => !f(x))]; // stabil
@@ -127,6 +129,7 @@
     if (zeigeTiefst(t)) marken.push('<span class="fi-marke fi-stark">Tiefstpreis</span>');
     if (t.angebot && !t.fehlt) marken.push('<span class="fi-marke">Angebot</span>');
     if (t.unterZiel && !t.fehlt) marken.push('<span class="fi-marke fi-warm">unter deinem Ziel</span>');
+    if (t.raum && !t.fehlt) marken.push(`<span class="fi-marke">Apple TV: ${esc(t.raum)}</span>`);
     const preis = t.fehlt ? ''
       : t.preis != null ? `<span class="fi-preis">${esc(euro(t.preis))}</span>`
       : `<span class="fi-preis fi-ohnepreis">${t.leihe != null ? `nur leihen: ${esc(euro(t.leihe))}` : 'gerade nicht zu kaufen'}</span>`;
@@ -203,7 +206,10 @@
       const text = q.ok === false ? `gestört${f.length ? ' – ' + f.slice(0, 2).join('; ') : ''}` : `${zahl(q.anzahl) ?? 0} gefunden`;
       return `<li${q.ok === false ? ' class="fi-stoerung"' : ''}>${esc(QUELLE[k] || k)}: ${esc(text)}</li>`;
     });
-    return `<p class="fi-fuss">Tiefstpreis = niedrigster Preis seit Beobachtung${seit ? ` (seit ${esc(tm(seit))})` : ''}. Tippen öffnet die TV-App.</p>`
+    // Angebots-Räume der TV-App, mit denen die Listen abgeglichen wurden (Link öffnet den Raum in der TV-App)
+    const raeume = Array.isArray(S.n.status['apple-tv-raeume']?.raeume) ? S.n.status['apple-tv-raeume'].raeume.filter(r => r && sicher(r.url)) : [];
+    const raumHtml = raeume.length ? `<p class="fi-fuss">Abgeglichen mit den Apple-TV-Angeboten: ${raeume.slice(0, 4).map(r => `<a href="${esc(sicher(r.url))}" target="_blank" rel="noopener" class="fi-raum">${esc(String(r.name || 'Angebote').slice(0, 40))}${zahl(r.filme) ? ` (${zahl(r.filme)} Filme)` : ''}</a>`).join(', ')}</p>` : '';
+    return raumHtml + `<p class="fi-fuss">Tiefstpreis = niedrigster Preis seit Beobachtung${seit ? ` (seit ${esc(tm(seit))})` : ''}. Tippen öffnet die TV-App.</p>`
       + (quellen.length ? `<details class="fi-quellen"><summary>Quellen</summary><ul>${quellen.join('')}</ul></details>` : '');
   }
   function chipHtml([k, name]) {
@@ -390,6 +396,7 @@ a.fi-karte:active { background: var(--flaeche); }
 .fi-leer { color: var(--leise); font-size: 15px; padding: 14px 16px; border: 1px dashed var(--linie); border-radius: 16px; margin: 0 0 12px; }
 .fi-erst { margin-top: 16px; }
 .fi-fuss { margin: 14px 4px 4px; font-size: 13px; color: var(--leise); }
+.fi-raum { display: inline-flex; align-items: center; min-height: 44px; color: var(--akzent); font-weight: 650; }
 .fi-quellen { margin: 0 4px 8px; }
 .fi-quellen > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; color: var(--leise); font-size: 14px; }
 .fi-quellen ul { margin: 0 0 8px; padding-left: 18px; font-size: 14px; color: var(--leise); }

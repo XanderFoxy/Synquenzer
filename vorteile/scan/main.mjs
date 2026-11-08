@@ -18,11 +18,15 @@ import nebenverdienst from './module/nebenverdienst.mjs';
 import tests from './module/tests.mjs';
 import praemien from './module/praemien.mjs';
 import filme from './module/filme.mjs';
+import remix from './module/remix.mjs';
+import auftritte from './module/auftritte.mjs';
+import unterricht from './module/unterricht.mjs';
 import { FIXTURE_KARTE } from './test/fixtures/karte.mjs';
 
 const HIER = dirname(fileURLToPath(import.meta.url));
-export const MODULE = { deals, erleben, reisen, musik, nebenverdienst, tests, praemien, filme };
-const MAX_ALTER_TAGE = { deals: 7, erleben: 21, reisen: 5, musik: 30, nebenverdienst: 21, tests: 21, praemien: 14, filme: 3 };
+export const MODULE = { deals, erleben, reisen, musik, nebenverdienst, tests, praemien, filme, remix, auftritte, unterricht };
+// Fundorte (Remix/Auftritte/Unterricht) haben kein Datum und bleiben immer stehen
+const MAX_ALTER_TAGE = { deals: 7, erleben: 21, reisen: 5, musik: 30, nebenverdienst: 21, tests: 21, praemien: 14, filme: 3, remix: 45, auftritte: 60, unterricht: 30 };
 
 const mitZeitlimit = (p, ms, name) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error(`${name}: Zeitlimit`)), ms).unref())]);
 
@@ -55,10 +59,14 @@ export async function lauf({ cfg, wunschliste, filmListen = null, dateienVorher 
     try {
       const r = await mitZeitlimit(fn({ holeText, cfg, wunschliste, zustand, env, jetzt, filmListen, vorherDatei: dateienVorher?.[name] ?? null }), 240000, name);
       if (r.datei) dateien[name] = r.datei;
-      // komplett kaputte Quelle -> alte Einträge behalten statt leere Liste
-      const kaputt = !r.eintraege.length && r.fehler.length > 0;
-      kategorien[name] = kaputt ? alt : r.eintraege;
-      status[name] = { ok: !r.fehler.length, anzahl: r.eintraege.length, fehler: r.fehler.slice(0, 10), ms: Date.now() - t0, stand: new Date(jetztMs).toISOString() };
+      // komplett kaputte Quelle -> alte Einträge behalten statt leere Liste (Remix/Auftritte/Unterricht: nur Fundorte
+      // übrig und Fehler da = alle frischen Quellen tot -> alter Stand bleibt, statt nur die Fundorte zu zeigen)
+      const nurFundorte = r.eintraege.length > 0 && r.eintraege.every(e => e.extra?.fundort);
+      const kaputt = (!r.eintraege.length || nurFundorte) && r.fehler.length > 0 && alt.length > 0
+        ? true : !r.eintraege.length && r.fehler.length > 0;
+      // Fundorte immer frisch aus der config (Link-Prüfung, Saison, neue/gestrichene Adressen), nur die alten Funde bleiben
+      kategorien[name] = kaputt && nurFundorte ? [...alt.filter(e => !e.extra?.fundort), ...r.eintraege] : kaputt ? alt : r.eintraege;
+      status[name] = { ok: !r.fehler.length, anzahl: r.eintraege.length, fehler: r.fehler.slice(0, 10), ms: Date.now() - t0, stand: new Date(jetztMs).toISOString(), ...(r.hinweise?.length ? { hinweise: r.hinweise.slice(0, 10) } : {}) };
       if (!zustand.lauf[name] && zustand.gemeldet && !kaputt) neueModule.push(name);
       zustand.lauf[name] = new Date(jetztMs).toISOString();
     } catch (e) {

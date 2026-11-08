@@ -66,11 +66,24 @@ export async function marktguru({ holeText, cfg, watchlist, env }) {
   const keys = await marktguruKeys(holeText, cfg, env);
   const suchen = [...new Set(watchlist.produkte.flatMap(p => p.suche || []))];
   const angebote = [], fehler = [];
+  // Breite Suchwörter (Marke: „Haribo“, „Exquisa“) können mehr als eine Seite Treffer haben -> weitere Seiten
+  // (offset), höchstens q.seiten (Standard 3). Gleiche Angebote (id) aus mehreren Suchen zählen einmal.
+  const maxSeiten = Math.max(1, q.seiten ?? 3);
+  const gesehen = new Set();
   for (const s of suchen) {
-    const url = `${q.api}?as=web&limit=${q.limit}&offset=0&q=${encodeURIComponent(s)}&zipCode=${cfg.plz}`;
     try {
-      const json = JSON.parse(await holeText(url, { headers: { 'x-apikey': keys.apiKey, 'x-clientkey': keys.clientKey, accept: 'application/json' } }));
-      for (const r of json.results || []) angebote.push(marktguruAngebot(r));
+      for (let seite = 0, offset = 0; seite < maxSeiten; seite++) {
+        const url = `${q.api}?as=web&limit=${q.limit}&offset=${offset}&q=${encodeURIComponent(s)}&zipCode=${cfg.plz}`;
+        const json = JSON.parse(await holeText(url, { headers: { 'x-apikey': keys.apiKey, 'x-clientkey': keys.clientKey, accept: 'application/json' } }));
+        const res = json.results || [];
+        for (const r of res) {
+          if (r.id != null && gesehen.has(r.id)) continue;
+          if (r.id != null) gesehen.add(r.id);
+          angebote.push(marktguruAngebot(r));
+        }
+        offset += res.length;
+        if (!res.length || res.length < q.limit || !(json.totalResults > offset)) break;
+      }
     } catch (e) { fehler.push(`Suche „${s}“: ${e.message}`); }
   }
   if (fehler.length === suchen.length && suchen.length) throw new Error(fehler[0]);

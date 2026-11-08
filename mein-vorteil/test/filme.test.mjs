@@ -143,9 +143,10 @@ test('Start-Chip: Wunschliste bei neuem Wunsch-Angebot, sonst der gemerkte, sons
 
 test('Haken: index.html (Link in der Sprung-Leiste, eigene Seite, Skript erst beim Öffnen), sw.js (filme.js im Zwischenspeicher)', () => {
   const html = readFileSync(join(MV, 'index.html'), 'utf8');
-  const leiste = html.match(/<div class="breite sprung-zeile">([\s\S]*?)<\/div>/)[1];
-  assert.match(leiste, /<a href="#filme" data-reiter="filme">Filme<span class="n"><\/span><\/a>/);
-  assert.match(html, /<\/main>\s*(<!--[^>]*-->\s*)?<section id="p-filme" class="reiter-seite breite" aria-labelledby="h-filme" hidden>/);
+  const leiste = html.match(/<div class="breite sprung-zeile"[^>]*>([\s\S]*?)<\/div>/)[1];
+  // MV5: Bereichs-Leiste mit gezeichnetem Symbol, Name und Zähler
+  assert.match(leiste, /<a href="#filme" data-reiter="filme"[^>]*><svg class="ic"[^>]*><use href="#ic-filme"\/><\/svg><span class="t">Filme<\/span><span class="n"><\/span><\/a>/);
+  assert.match(html, /<\/main>\s*(<!--[^>]*-->\s*)?<section id="p-filme" class="reiter-seite breite[^"]*" aria-labelledby="h-filme" hidden>/);
   assert.match(html, /<div id="i-filme"><p class="leer">Lade Filme …<\/p><\/div>/);
   assert.doesNotMatch(html, /<script[^>]+src="filme\.js"/, 'kein festes Skript-Tag: filme.js erst beim ersten Öffnen');
   assert.match(html, /filmeSkript\.src = 'filme\.js'/);
@@ -277,7 +278,7 @@ test('Lazy: filme.js und filme.json erst beim Öffnen des Reiters, danach nicht 
   assert.equal(new URL(page.url()).hash, '#filme');
   assert.equal(await page.locator('main').isHidden(), true, 'Abschnitte ausgeblendet');
   assert.equal(await filmeLink(page).getAttribute('aria-current'), 'true');
-  for (const ab of ['produkte', 'remix', 'mehr']) {
+  for (const ab of ['deals', 'remix', 'mehr']) {
     await zuAbschnitt(page, ab);
     await filmeLink(page).click();
     await page.waitForFunction(() => !document.getElementById('p-filme').hidden && document.querySelector('main').hidden);
@@ -290,7 +291,7 @@ test('Lazy: filme.js und filme.json erst beim Öffnen des Reiters, danach nicht 
   await page.waitForTimeout(200);
   assert.equal(zustand.abrufe.filter(a => a === FILME_PFAD).length, 2);
   // ↻ auf einem Abschnitt: Filme waren schon offen -> holen trotzdem frisch (wie die anderen Daten), aber nichts doppelt
-  await zuAbschnitt(page, 'produkte');
+  await zuAbschnitt(page, 'deals');
   await page.locator('#neu').click();
   await page.waitForFunction(() => !document.getElementById('neu').hasAttribute('aria-busy'));
   await page.waitForTimeout(200);
@@ -433,7 +434,7 @@ test('Offline-Kopie: letzter Stand sofort; Quelle gestört bzw. offline steht in
 test('Ohne Daten: freundliche Hinweise (Liste noch nicht erstellt, leerer Bereich), Einträge ohne Titel fallen weg', { skip: ohnePw }, async () => {
   let o = await oeffne({ fehlt: true });
   assert.equal(nbsp(await o.page.locator('#i-filme').innerText()), 'Die Filmliste wird gerade zum ersten Mal erstellt – schau später noch einmal rein.');
-  for (const ab of ['produkte', 'auftritte']) { await zuAbschnitt(o.page, ab); assert.ok(await o.page.locator(`#${ab} h2`).isVisible(), ab); }
+  for (const ab of ['deals', 'auftritte']) { await zuAbschnitt(o.page, ab); assert.ok(await o.page.locator(`#${ab} h2`).isVisible(), ab); }
   assert.deepEqual(o.fehler.filter(f => !/Failed to load resource/.test(f)), []);
   await o.ctx.close();
   const patch = d => {
@@ -472,7 +473,10 @@ test('Film-Einträge des Radars (aktuell.json → filme) stehen nur auf der Film
   await page.waitForFunction(() => /Kino-Probe/.test(document.getElementById('i-mehr').textContent), null, { timeout: 10000 });
   const mehr = await page.locator('#i-mehr').textContent();
   assert.doesNotMatch(mehr, /Filme & Serien|film-x/);
-  assert.doesNotMatch(await page.locator('main').textContent(), /film-x/, 'nirgends in den Abschnitten');
+  // MV5: nur die Start-Kachel „Filme“ nennt den besten Treffer (Tippen öffnet den Reiter) – sonst in keinem Bereich
+  assert.doesNotMatch(await page.evaluate(() => [...document.querySelectorAll('main > .bereich:not(#start)')].map(s => s.textContent).join(' ')), /film-x/, 'nirgends in den Bereichen');
+  assert.match(await page.locator('#kacheln a[data-sprung="filme"]').textContent(), /film-x/);
+  assert.equal(await page.locator('#kacheln a[data-sprung="filme"]').getAttribute('href'), '#filme');
   assert.ok(!zustand.abrufe.includes('filme.js') && !zustand.abrufe.includes(FILME_PFAD), 'Filme bleiben faul');
   assert.deepEqual(fehler, []);
   await ctx.close();
@@ -524,7 +528,7 @@ for (const [breite, hoehe, lage] of [[428, 926, 'hoch'], [926, 428, 'quer']]) {
     const cls = await page.evaluate(s => window.__cls.filter(e => e.t >= s).reduce((a, e) => a + e.v, 0), start);
     assert.ok(cls < 0.01, `Layout-Sprünge (CLS) ${cls}`);
     // zurück zu den Abschnitten: die Seite läuft wie vorher
-    for (const ab of ['krypto', 'produkte', 'remix']) {
+    for (const ab of ['krypto', 'deals', 'remix']) {
       await zuAbschnitt(page, ab);
       assert.ok(await page.locator(`#${ab} h2`).isVisible(), ab);
       await pruefeLayout(page, `${lage} ${ab}`);

@@ -48,3 +48,32 @@ test('Spiele nur ≈ 1 €, 4K-TV für 35 € drin (Xander 07.11.2026)', () => {
   assert.equal(krass({ titel: 'Mario Kart World (Switch 2)', preis: 9.99, preisVorher: 79.99 }).ok, false);
   assert.equal(krass({ titel: 'Mario Kart World (Switch 2)', preis: 0.99, preisVorher: 79.99 }).ok, true);
 });
+
+// Fassung 5: Produkte und feste Adressen der Seite = Wecker-Einstellungen (sonst erkennt die Seite andere Dinge als der Wecker)
+const seiteKonst = (name, ende) => {
+  const i = SEITE.indexOf(`const ${name} = `), j = SEITE.indexOf(ende, i);
+  assert.ok(i >= 0 && j > i, `${name} fehlt`);
+  return new Function(`${SEITE.slice(i, j + ende.length)}\nreturn ${name};`)();
+};
+test('Meine Produkte: STANDARD_PRODUKTE der Seite = schnaeppchen/watchlist.json (id, name, muss, nicht, sorte, andereSorten, sorteOffen)', async () => {
+  const w = JSON.parse(await readFile(join(HIER, '..', '..', 'schnaeppchen', 'watchlist.json'), 'utf8'));
+  const seite = seiteKonst('STANDARD_PRODUKTE', '\n];');
+  const felder = p => Object.fromEntries(['id', 'name', 'muss', 'nicht', 'sorte', 'andereSorten', 'sorteOffen'].filter(k => p[k] != null).map(k => [k, p[k]]));
+  assert.deepEqual(seite.map(felder), w.produkte.map(felder));
+});
+test('Feste Adressen (Auftritte, Remix, Unterricht): stehen so in vorteile/config.json (Titel, Link, Bewerbungsweg)', async () => {
+  const cfg = JSON.parse(await readFile(join(HIER, '..', '..', 'vorteile', 'config.json'), 'utf8'));
+  const seite = seiteKonst('FUNDORTE', '\n};');
+  for (const b of ['auftritte', 'remix', 'unterricht']) {
+    const conf = cfg.module[b].fundorte;
+    assert.equal(seite[b].length, conf.length, b);
+    for (const f of seite[b]) {
+      const c = conf.find(x => x.link === f.link);
+      assert.ok(c, `${b}: ${f.link} fehlt in der config`);
+      assert.equal(f.titel, c.titel);
+      assert.deepEqual(f.bewerbung ?? null, c.bewerbung ?? null, f.titel);
+      assert.equal(f.typ, c.typ);
+      assert.deepEqual(f.saison ?? null, c.saison ?? null, f.titel);
+    }
+  }
+});

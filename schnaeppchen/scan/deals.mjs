@@ -4,8 +4,10 @@ import { vorherAusText, vorherJetzt } from './preisfehler.mjs';
 
 const tagKurz = tag => { const [, m, d] = String(tag).split('-'); return `${d}.${m}.`; };
 function wo(angebote) {
-  const laden = angebote.some(a => !a.online), online = angebote.some(a => a.online);
-  return laden && online ? 'in deiner Nähe und online' : online ? 'online' : 'in deiner Nähe';
+  const laden = angebote.some(a => !a.online && !a.regional), online = angebote.some(a => a.online);
+  const region = angebote.some(a => a.regional);
+  const teile = [laden ? 'in deiner Nähe' : '', online ? 'online' : '', region && !laden ? 'in der Region' : ''].filter(Boolean);
+  return teile.length > 1 ? `${teile.slice(0, -1).join(', ')} und ${teile.at(-1)}` : teile[0] || 'in deiner Nähe';
 }
 
 /** „PENNY hat 3,49 € (mit App, ab Mo 2.11.)“ – ein anderes Angebot mit seinen Bedingungen, kurz */
@@ -21,14 +23,19 @@ export function angebotKurz(a, jetztMs = Date.now()) {
  * „Einziges Angebot“, sondern nennt dieses Angebot.
  * -> { status: 'ja'|'nein'|'unbekannt', text, heuteGuenstigstes, tage, tiefst30, anzahl, anzahlSicher }
  */
-export function tiefstInfo({ bestes, sichere, angebote = sichere, stats, tiefst30, basis, cfg, jetztMs = Date.now() }) {
+export function tiefstInfo({ bestes, sichere, angebote = sichere, stats, tiefst30, zuletzt = null, basis, cfg, jetztMs = Date.now() }) {
   const tage = stats.tage || 0;
   const label = BASIS_LABEL[basis] || '';
   // unplausible Treffer (eher ein anderes Produkt) zählen nicht mit
   const glaubhaft = angebote.filter(a => !a.unsicher);
   const res = { status: 'unbekannt', text: '', heuteGuenstigstes: false, tage, tiefst30: tiefst30?.p ?? null, anzahl: glaubhaft.length, anzahlSicher: sichere.length };
   if (!bestes) {
-    res.text = tiefst30 ? `Gerade kein Angebot · zuletzt ${euroKurz(tiefst30.p)} ${label} am ${tagKurz(tiefst30.tag)}` : 'Gerade kein Angebot';
+    // „Gerade kein Angebot · zuletzt 2,79 € (15 Stück) bei Kaufland am 31.10.“ (eigener Verlauf) bzw.
+    // „… · zuletzt gesehen 1,49 € (500 g) bei Kaufland, Feb. 2026“ (Recherche) – nie nur „gibt es nicht“
+    const pk = z => (z.packung ? ` (${z.packung})` : '');
+    res.text = zuletzt?.eigen ? `Gerade kein Angebot · zuletzt ${euroKurz(zuletzt.pack)}${pk(zuletzt)} bei ${zuletzt.shop} am ${tagKurz(zuletzt.tag)}`
+      : zuletzt ? `Gerade kein Angebot · zuletzt gesehen ${euroKurz(zuletzt.pack)}${pk(zuletzt)} bei ${zuletzt.shop}, ${zuletzt.monat}`
+      : tiefst30 ? `Gerade kein Angebot · zuletzt ${euroKurz(tiefst30.p)} ${label} am ${tagKurz(tiefst30.tag)}` : 'Gerade kein Angebot';
     return res;
   }
   if (bestes.unsicher || bestes.mengeSicher === false) {
@@ -38,7 +45,7 @@ export function tiefstInfo({ bestes, sichere, angebote = sichere, stats, tiefst3
   const unklar = glaubhaft.filter(a => a !== bestes && a.mengeSicher !== true);
   const billigerUnklar = unklar.filter(a => a.preis < bestes.preis - 0.005).sort((x, y) => x.preis - y.preis);
   res.heuteGuenstigstes = sichere[0] === bestes && !billigerUnklar.length;
-  // „gefunden“: geprüft sind nur die Prospekte bei marktguru und mydealz, nicht jedes Angebot überall
+  // „gefunden“: geprüft sind die Prospekte bei marktguru (Döbeln) und kaufDA (Region) sowie mydealz, nicht jedes Angebot überall
   const vergleich = glaubhaft.length <= 1 ? `Einziges gefundenes Angebot ${wo(glaubhaft)}`
     : !unklar.length ? `Günstigstes von ${glaubhaft.length} gefundenen Angeboten ${wo(glaubhaft)}`
     : sichere.length <= 1 ? `Einziges gefundenes Angebot mit bekannter Packungsgröße ${wo(sichere)}`

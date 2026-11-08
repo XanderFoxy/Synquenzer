@@ -65,8 +65,10 @@ Festivalseiten (alle 3 h höflich ein Abruf): Wave-Gotik-Treffen (Leipzig), Dark
 GitHub Actions (alle 3 h + manuell)  .github/workflows/konzerte.yml
   └─ node konzerte/scan/run.mjs
        ├─ Ticketmaster Discovery API   Konzerte + Festivals im Umkreis (Koordinaten → km)
+       ├─ Eventim (ohne Schlüssel)     öffentliche Such-Schnittstelle von eventim.de, alle Termine (auch weit weg)
        ├─ Festival-/Hallenseiten       Bandname im Programm?
        ├─ MusicBrainz                  Release-Groups (Album/EP/Single, ohne Compilations), 1 Anfrage/s
+       ├─ MusicBrainz-Termine          „event“ der Band + Ort („held at“ mit Koordinaten), höchstens 2 Details je Band
        └─ Deezer                       neue Alben/Singles + Hör-Link, Neuauflagen per MusicBrainz-Abgleich raus
   ├─ Dedupe gegen gesehen.json → ntfy-Push (max. 8 pro Lauf, Rest als Sammelmeldung)
   └─ JSON → Branch konzerte-daten (nicht main → die App-Seite wird nicht neu gebaut)
@@ -76,7 +78,8 @@ mein-vorteil/index.html liest raw.githubusercontent.com/xanderfoxy/synquenzer/ko
 - Fällt eine Quelle aus, laufen die anderen weiter; ihre alten Einträge bleiben auf der Seite stehen. Fehler stehen unten auf der Seite unter „Quellen“ und in `status.json`.
 - Kann ein Push nicht zugestellt werden, wird er beim nächsten Lauf erneut versucht.
 - Städte ohne Koordinaten: eingebaute Tabelle, sonst einmalig OpenStreetMap/Nominatim, gecacht in `geo.json`.
-- Nicht genutzt: **Bandsintown** und **Songkick** – deren APIs sind nur für Künstler/Partner mit eigenem Schlüssel freigegeben; Scrapen wäre gegen die Nutzungsbedingungen. Eventim hat keine offene API.
+- **Immer der nächste Termin** (Xander 08.11.2026): je Band steht der nächste Termin in der Liste, auch weiter als `listenRadiusKm` – dann mit `weit: true, naechster: true` und km, ohne Push.
+- Nicht genutzt: **Bandsintown** und **Songkick** – deren APIs sind nur für Künstler/Partner mit eigenem Schlüssel freigegeben; Scrapen wäre gegen die Nutzungsbedingungen. **Eventim** hat keine dokumentierte API; genutzt wird nur die öffentliche Such-Schnittstelle, die eventim.de selbst aufruft (ein Abruf je Band alle 3 h, `config.eventim: false` schaltet sie ab).
 
 ## Starten
 
@@ -117,14 +120,15 @@ Dark Storm liefert nur ein JavaScript-Gerüst (Line-up nicht lesbar), Gothic mee
 ```text
 konzerte.json { stand: ISO, zuhause: { name, plz, lat, lon }, pushRadiusKm, konzerte: [Konzert …] }   // nach Datum sortiert
 releases.json { stand: ISO, releases: [Release …] }                                                  // neueste zuerst
-status.json   { stand: ISO, quellen: { ticketmaster|seiten|musicbrainz|deezer: { ok, treffer, fehler: [Text], uebersprungen, ms } }, pushes, erstlauf }
+status.json   { stand: ISO, quellen: { ticketmaster|eventim|seiten|musicbrainz|mbevents|deezer: { ok, treffer, fehler: [Text], uebersprungen, ms } }, pushes, erstlauf }
               seiten zusätzlich { geprueft, gesamt }: ok: false heißt nur „nicht alle Seiten erreichbar“; die Seite sagt
               „3 von 4 geprüft – Gothic meets Klassik gerade nicht erreichbar“ und „Konzertsuche aus“ erst bei 0 geprüften.
 ```
 
 | Feld (Konzert) | Typ | Bedeutung |
 |---|---|---|
-| `quelle` | Text | `ticketmaster` oder `seite:<id>` (Festivalseite) |
+| `quelle` | Text | `ticketmaster`, `eventim`, `mbevents` (MusicBrainz-Termin) oder `seite:<id>` (Festivalseite) |
+| `weit`, `naechster` | bool (optional) | nächster Termin der Band, aber weiter als `listenRadiusKm` (nur Liste, kein Push) |
 | `band`, `titel` | Text | Band aus `artists.json`, Name der Veranstaltung |
 | `datum`, `zeit` | `JJJJ-MM-TT` / `HH:MM` oder `""` | Beginn (Festivalseite ohne Termin: leer) |
 | `bis` | ISO \| null | Ende (UTC), siehe oben |

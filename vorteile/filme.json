@@ -244,5 +244,12 @@
   "mydealz": {
     "_hinweis": "Apple-Film-Aktionen aus diesen mydealz-Gruppen (Feed /rss/gruppe/<name>, Name = Adresse der Gruppenseite mydealz.de/gruppe/<name>). Die mydealz-Suche als RSS gibt es nicht mehr (HTTP 404).",
     "gruppen": [{"gruppe": "apple-tv", "name": "Apple TV"}, {"gruppe": "filme-serien", "name": "Filme & Serien"}]
+  },
+  "appleTv": {
+    "_hinweis": "Apple-TV-Angebotsräume (Xander 08.11.2026): Die Filmseite des Stores (start) verlinkt Räume wie „Filme für 3,99 €“; Räume, deren Name nach Angebot klingt (3,99/4,99/Angebot/Deal/Sale/reduziert …), werden geöffnet und ihre Filme mit Wunsch-, 80er- und Disney-Liste abgeglichen. Feste Räume (Link aus der TV-App: Teilen → Link kopieren) unter „raeume“ eintragen. Höchstens maxAbrufe Seiten pro Lauf. Format der Seiten ist ungeprüft (Container ohne Netz) – im Roh-Lauf ansehen.",
+    "aktiv": true,
+    "start": ["https://tv.apple.com/de/room/movies/edt.item.6454f7d8-98d5-4c09-95a6-b4606de32cc2"],
+    "raeume": [],
+    "maxAbrufe": 4
   }
 }

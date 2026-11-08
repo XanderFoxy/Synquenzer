@@ -273,3 +273,24 @@ test('Preisfehler „vielleicht abgelaufen“ (isMaybeExpired) wird nicht gezeig
   assert.equal(r.eintrag, undefined);
   assert.match(r.grund, /vielleicht abgelaufen/);
 });
+
+test('Schnäppchen-Daten Fassung 5: Region (kaufDA) nur ohne lohnendes Döbeln-Angebot, mit Hinweis und nie sofort', async () => {
+  const region = {
+    shop: 'Lidl', titel: 'HARIBO XXL', beschreibung: 'Versch. Sorten. Je 340/300 g', packung: '300 g', preis: 0.99, preisVorher: 1.49,
+    menge: { gramm: 300 }, mengeSicher: true, mengeQuelle: 'text', gueltigBis: '2026-11-07T22:00:00Z', link: 'https://www.kaufda.de/Angebote/Haribo',
+    quelle: 'kaufda', regional: true, region: 'Chemnitz', hinweis: 'Prospekt Chemnitz – in Döbeln prüfen · Sorte nicht genannt („versch. Sorten“)',
+  };
+  const produkt = weitere => ({ produkte: [{ id: 'haribo-colorado', name: 'Haribo Colorado', basis: '100g', normalpreis: 0.6, normalQuelle: 'recherche', bestes: weitere[0], weitere: weitere.slice(1) }], technik: [] });
+  const lauf = async cur => (await deals({ holeText: async url => (url.includes('schnaeppchen-daten') ? JSON.stringify(cur) : '<rss><channel></channel></rss>'), cfg, zustand: {}, jetzt: JETZT })).eintraege;
+  const [e] = await lauf(produkt([region]));
+  assert.equal(e.titel, 'Haribo Colorado bei Lidl (Prospekt Chemnitz)');
+  assert.match(e.zeile, / · in Döbeln prüfen$/);
+  assert.equal(e.sofort, false);
+  assert.deepEqual([e.extra.regional, e.extra.region], [true, 'Chemnitz']);
+  // Ein lohnendes Döbeln-Angebot (Kaufland 1,29 € für 340 g = 0,38 €/100 g, −37 %) schlägt die billigere Region
+  const doebeln = { shop: 'Kaufland', titel: 'HARIBO Fruchtgummi', packung: '340 g', preis: 1.29, menge: { gramm: 340 }, mengeSicher: true,
+    gueltigBis: '2026-11-07T22:00:00Z', link: 'https://www.marktguru.de/offers/1', quelle: 'marktguru' };
+  const [d] = await lauf(produkt([doebeln, region]));
+  assert.equal(d.titel, 'Haribo Colorado bei Kaufland');
+  assert.doesNotMatch(d.zeile, /in Döbeln prüfen/);
+});

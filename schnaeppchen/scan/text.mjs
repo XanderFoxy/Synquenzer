@@ -263,11 +263,24 @@ const GENERISCH = ['versch', 'verschiedene', 'sorten', 'je ', 'auswahl'];
 export function passt(text, item) {
   if (!(item.muss || []).every(term => termTrifft(text, term))) return false;
   if ((item.nicht || []).some(term => termTrifft(text, term))) return false;
-  if (item.sorte?.length) {
-    const generisch = GENERISCH.some(g => (' ' + norm(text) + ' ').includes(g));
-    if (!generisch && !item.sorte.every(term => termTrifft(text, term))) return false;
+  if (item.sorte?.length && !item.sorte.every(term => termTrifft(text, term))) {
+    // Sorte nicht genannt: zählt nur bei „versch. Sorten“/„je …“ – und nicht, wenn eine ANDERE Sorte ausdrücklich
+    // genannt ist („HARIBO Goldbären je 175 g“ ist kein Colorado; „HARIBO XXL versch. Sorten“ kann es sein)
+    // sorteOffen: ein Angebot ganz ohne Sortenangabe zählt auch („nimm2 Lachgummi Softies“ = irgendeine Softies-Sorte)
+    const generisch = !!item.sorteOffen || GENERISCH.some(g => (' ' + norm(text) + ' ').includes(g));
+    if (!generisch) return false;
+    if ((item.andereSorten || []).some(term => termTrifft(text, term))) return false;
   }
   return true;
+}
+
+/**
+ * Passt das Angebot nur, weil es „versch. Sorten“ sagt (die gesuchte Sorte steht nicht im Text)?
+ * Dann steht auf der Karte „Sorte nicht genannt“ – z. B. „HARIBO XXL versch. Sorten 340 g“ für Haribo Colorado.
+ */
+export function sorteNurGenerisch(text, item) {
+  if (!item.sorte?.length) return false;
+  return !item.sorte.every(term => termTrifft(text, term));
 }
 
 export function stueckPasst(menge, item) {

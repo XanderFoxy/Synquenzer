@@ -2,10 +2,13 @@
   "name": "mein-vorteil",
   "private": true,
   "type": "module",
-  "description": "Eine Seite für Angebote, Preisfehler, Vorteile und Konzerte (liest die Daten-Zweige der drei Wecker)",
-  "engines": { "node": ">=20" },
+  "description": "Mein Vorteil: Assistent für Deals, Preisfehler, Filme, Auftritte, Remix, Unterricht, Konzerte, Gewinnspiele, Krypto (liest die Daten-Zweige der Wecker)",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "test": "node --test test/*.test.mjs",
-    "fixtures": "node werkzeug/baue-vertrag.mjs"
+    "fixtures": "node werkzeug/baue-vertrag.mjs",
+    "fixtures:v5": "node werkzeug/baue-v5.mjs"
   }
 }

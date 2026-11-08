@@ -1,10 +1,10 @@
 # Mein Vorteil
 
-**Eine Seite für alles:** Krypto, deine Produkte, krasse Preisfehler, Gewinnspiele, Cashback, Snacks, Auftritte, Remix-Contests.
+**Dein Assistent auf einer Seite:** Deals, Preisfehler, Filme, Auftritte (mit Bewerbung), Remix-Contests, Deutschunterricht, Konzerte, Gewinnspiele, Krypto.
 <https://xanderfoxy.github.io/Synquenzer/mein-vorteil/> (Safari → Teilen → „Zum Home-Bildschirm“, dann wie eine App)
 
 Die alten Seiten `schnaeppchen/`, `vorteile/` und `konzerte/` leiten sofort hierher weiter (`#angebote`,
-`#vorteile`, `#konzerte`, absolut auf `/Synquenzer/mein-vorteil/?von=…`). In jedem alten Ordner bleibt ein kleiner
+`#vorteile`, `#konzerte`, absolut auf `/Synquenzer/mein-vorteil/?von=…`; die Seite macht daraus `#produkte`, `#start`, `#konzerte`). In jedem alten Ordner bleibt ein kleiner
 Service Worker angemeldet: er löscht den alten Zwischenspeicher, lädt alte offene Seiten neu und gibt Seitenaufrufe
 ans Netz weiter (ohne Netz antwortet er selbst mit der Weiterleitung). So sieht der SYNQUENZER-Worker im
 Wurzelordner diese Adressen nie und speichert keine Weiterleitung als Offline-Kopie des Synthesizers. Wer über eine
@@ -23,23 +23,38 @@ alte Adresse kommt, sieht einmal den Hinweis „Teilen → Zum Home-Bildschirm�
 - Im alten Home-Bildschirm-Symbol (eigenes Fenster ohne Safari-Leiste) nennt der Umzug-Hinweis die Adresse mit
   „Adresse kopieren“, weil es dort kein „Teilen“ gibt.
 
-## Abschnitte (seit 07.11.2026: eine Seite statt Reitern)
+## Bereiche (seit 08.11.2026, Fassung 5: Leiste oben, immer nur ein Bereich)
 
-Oben „Heute wichtig“ (höchstens 4 Zeilen), darunter eine Sprung-Leiste (bleibt oben, seitlich wischbar):
-**Krypto · Meine Produkte · Preisfehler · Gewinnspiele · Cashback · Snacks · Auftritte · Remix · Mehr**.
-Alte Marken zeigen auf den passenden Abschnitt: `#angebote` → Meine Produkte, `#vorteile` → Gewinnspiele,
-`#konzerte` → Auftritte.
+Dunkles, warmes Design – immer, auch wenn das iPhone hell eingestellt ist (`color-scheme: dark`). Jeder Bereich hat seine
+Farbe (`.f-<bereich>` setzt `--f`/`--f-hell`; `--akzent` folgt, so passen alle Karten von selbst).
 
-| Abschnitt | Inhalt | Daten |
+Oben bleibt eine Leiste mit gezeichneten Symbolen (SVG, keine Emojis) und Zähler stehen:
+**Start · Deals · Preisfehler · Filme · Auftritte · Remix · Unterricht · Konzerte · Gewinnspiele · Krypto · Mehr**
+(„Start“ bleibt links stehen, der Rest ist seitlich wischbar). Darunter „Du bist in: …“ mit einer kurzen Zeile.
+Es ist immer nur **ein** Bereich zu sehen (kein ewiges Scrollen); je Bereich eine Top-Liste + „weitere zeigen“.
+Sprungmarken: `#start`, `#deals` (`#produkte`, `#cashback`, `#snacks` = Ziel im Bereich Deals), `#preisfehler`, `#filme`,
+`#auftritte`, `#remix`, `#unterricht`, `#konzerte`, `#gewinnspiele`, `#krypto`, `#mehr`. Alte Marken: `#angebote` →
+`#produkte`, `#vorteile` → `#start`, `#konzerte` bleibt.
+
+| Bereich | Inhalt | Nie leer, weil … |
 |---|---|---|
-| **Krypto** | Kurs BTC/ETH live (CoinGecko → Crypto.com → Coinbase, beim Öffnen und alle 60 s), je Coin Käufe (Betrag € inkl. Gebühren + Kurs oder Menge), „aktuelle Menge“ (Auto Earn), Wert, Gewinn/Verlust € und %, Ø-Kaufkurs, Gewinnschwelle; Pop-up bei Gewinn ↔ Verlust, +5 %, +10 %, −10 % | nur `localStorage` (`mein-vorteil-krypto`, Zone in `mein-vorteil-krypto-zone`) |
-| **Meine Produkte** | Angebote zu Xanders Produkten (Liste bearbeitbar, nur auf dem Gerät) | `schnaeppchen-daten` + Radar-Deals |
-| **Preisfehler** | nur krasse (≥ 75 % und ≥ 20 € unter Vorher-Preis, teures Gerät fast geschenkt, Spiele nur ≈ 1 €) | beide Wecker, Regeln `krass.mjs` |
-| **Gewinnspiele** | nur laufende, ohne Kauf/Abo | `vorteile-daten` (tests) |
-| **Cashback** | Geld zurück/Cashback nur zu Produkten, Snacks, Musik-Technik | Radar-Modul deals (`grund: 'cashback'`) |
-| **Snacks**, **Auftritte** | andere Snack-Deals; Bands gesucht, Konzerte, Neuerscheinungen | Radar, `konzerte-daten` |
-| **Remix** | laufende Remix-Contests (Synth-Pop, 80er, Italo, Euro-Disco, Elektro, Dark/New Wave), nach Einsendeschluss | Radar-Modul musik (`extra.art: 'remix'`) |
-| **Mehr** | Erleben, Reisen, Nebenverdienst, Spar-Tipps, Vorlagen – eingeklappt | Radar |
+| **Start „Heute für dich“** | „Heute wichtig“ (höchstens 4 Zeilen) + je Bereich eine Kachel mit 1–3 besten Treffern; Tippen öffnet den Bereich | jede Kachel nennt den nächstbesten Treffer bzw. den Grund |
+| **Deals** | Meine Produkte (Jetzt/Bald/Weitere, kaufDA-Region mit „in Döbeln prüfen“), Musik-Technik, Cashback, andere Snacks | ohne Angebot steht die Liste „zuletzt gesehen 0,99 € (225 g) bei Penny, Okt. 2026“ offen |
+| **Preisfehler** | nur krasse (Regel unverändert) | sonst: wo sie zuerst auftauchen (mydealz-Gruppe Preisfehler, heiße Deals) |
+| **Filme** | Reiter aus `filme.js` (faul geladen), jetzt mit Apple-TV-Angebotsräumen („Filme für 3,99 €“) | Start-Kachel aus `aktuell.json` → `filme` |
+| **Auftritte** | frische Ausschreibungen (nah + bald zuerst) mit **Bewerben**, darunter feste Adressen (Döbeln, Leipzig, Dresden, Chemnitz, deutschlandweit) | feste Adressen immer; ältere Daten: dieselben Adressen aus der Seite (`FUNDORTE`, Test gegen `vorteile/config.json`) |
+| **Remix** | laufende Contests (was zuerst endet, oben) mit **Mitmachen** (Frist, Stems, Text) | Fundorte mit laufenden Contests weltweit |
+| **Unterricht** | Stellen/Anfragen (Döbeln + online zuerst) mit **Melden** als „Deutsch mit Xander“ | Jobbörse-Live-Suche, italki, Preply, Lingoda, BAMF |
+| **Konzerte** | in der Nähe (bis `pushRadiusKm`), darunter **je Band der nächste Termin, auch weit weg, mit km**; Tourdaten-Links je Band (`../konzerte/artists.json`, erst beim Öffnen) | nächster Termin bzw. Tourdaten-Links |
+| **Gewinnspiele** | nur laufende ohne Kauf/Abo | sonst mydealz-Gruppen Gewinnspiele/Gratis |
+| **Krypto** | wie bisher (nur `localStorage`) | Kurs immer |
+| **Mehr** | Erleben, Reisen, Nebenverdienst, Spar-Tipps, Vorlage Übersetzung, Quellen | – |
+
+**Bewerbungs-Assistent** (`<dialog id="blatt">`): fertiger Betreff + Text (Kurz-Bio, Genre, Links-Platzhalter,
+Besetzung, Set-Länge, Technik), Auswahl **One Day in Rome │ Xander Fox │ beides** („One Day in Rome (Xander Fox)“) mit
+Hinweis (Band-Auftritt → Bandname, solo/DJ/Live-Set → Künstlername), **Text kopieren**, **Per Mail öffnen** (`mailto:` mit
+Betreff und Text, an die Adresse aus der Ausschreibung) bzw. **Formular öffnen** (kopiert den Text vorher). Text je
+Eintrag und Name, Links und Kontakt („Deine Links & Kontakt“) nur im `localStorage` (`mein-vorteil-bewerbung`).
 
 „Prämien & Freunde werben“ (Strom, Bank, Konto, Freunde werben) zeigt die Seite nie, auch nicht aus alten Daten;
 Deals ohne Bezug zu Produkten/Snacks/Musik-Technik fallen weg.
@@ -52,7 +67,7 @@ nimmt das Fragment sofort per `history.replaceState` aus der Adresse, speichert 
 **Weitere Reiter:** `<a href="#name" data-reiter="name">Name<span class="n"></span></a>` in die Leiste,
 `<section id="p-name" class="reiter-seite breite" hidden>` nach `</main>`, `REITER_START.name = el => …` (läuft beim
 ersten Öffnen), optional `REITER_NEU.name` (↻ und Rückkehr zur Seite nach > 5 min, für jeden schon geöffneten Reiter).
-Antippen blendet die Abschnitte aus und springt wie ein Abschnitt unter die Leiste; Abschnitts-Links führen zurück.
+Antippen blendet die Bereiche aus (main hidden) und springt unter die Leiste; jeder Bereichs-Link führt zurück.
 
 **Reiter „Filme“ (Film-Radar, `filme.js`):** letzter Link der Leiste, `#filme` öffnet ihn direkt. Skript, CSS (`.fi-…`) und
 Daten (`vorteile-daten/vorteile/data/filme.json`) kommen erst beim ersten Öffnen; vorher lädt die Seite nichts davon.
@@ -102,7 +117,7 @@ Die Daten kommen nur stündlich (Konzerte alle 3 h). Deshalb blendet die Seite s
 - Liest ältere Datenformate mit (ohne `packung`/`mengeSicher`/`tiefst`/`bis`): dann ohne Prozent und Packung,
   Tiefstpreis „unklar“.
 - Tests: `cd mein-vorteil && npm test` (Node ≥ 20, Playwright mit Chromium; ohne Playwright werden sie übersprungen).
-  Echte Daten vom 31.10.2026 in `test/fixtures/echt-2026-10-31/` (`v1` = damaliges Produktionsformat,
+  Fassung 5 in `test/fixtures/v5/` (`npm run fixtures:v5` = `werkzeug/baue-v5.mjs`: echte Scanner-Läufe mit ihren Fixtures). Echte Daten vom 31.10.2026 in `test/fixtures/echt-2026-10-31/` (`v1` = damaliges Produktionsformat,
   `v2` = dieselben Rohdaten durch die neuen Scanner), Sonderfälle in `test/fixtures/vertrag/`
   und `test/fixtures/vertrag-b/` (neu bauen: `npm run fixtures` = `werkzeug/baue-vertrag.mjs`; liegt absichtlich
   nicht unter `test/`, sonst führt `node --test` es aus). Bildschirmfotos: `MV_SHOTS=<ordner> npm test`.

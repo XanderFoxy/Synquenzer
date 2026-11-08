@@ -57,7 +57,7 @@ test('Gesamtlauf mit Fixtures: Erstlauf still, zweiter Lauf meldet nur Neues', a
     assert.equal(r1.plan.sofort.length, 0);
     assert.ok(r1.alleEintraege.length >= 10);
     const a = JSON.parse(await readFile(join(dir, 'aktuell.json'), 'utf8'));
-    assert.deepEqual(Object.keys(a.kategorien), ['deals', 'erleben', 'reisen', 'musik', 'nebenverdienst', 'tests', 'praemien', 'filme']);
+    assert.deepEqual(Object.keys(a.kategorien), ['deals', 'erleben', 'reisen', 'musik', 'nebenverdienst', 'tests', 'praemien', 'filme', 'remix', 'auftritte', 'unterricht']);
     assert.ok(a.sofort.length > 0);
     assert.equal(a.status.reisen.ok, false);
     const r2 = await main(['--fixtures', '--data', dir, '--jetzt', '2026-10-31T20:00:00Z']);
@@ -67,8 +67,18 @@ test('Gesamtlauf mit Fixtures: Erstlauf still, zweiter Lauf meldet nur Neues', a
     assert.equal(a.status.praemien.aus, true);
     assert.deepEqual(a.kategorien.praemien, []);
     assert.ok(a.kategorien.deals.some(e => e.grund === 'cashback' && ['gzg', 'cashback'].includes(e.extra?.art)));
-    // Remix-Contests stehen bei Musik
-    assert.ok(a.kategorien.musik.some(e => e.extra?.art === 'remix'));
+    // Remix-Contests, Auftritte und Unterricht haben eigene Kategorien (Xander 08.11.2026); Musik = nur Geräte
+    assert.ok(a.kategorien.remix.some(e => e.extra?.art === 'remix' && !e.extra.fundort));
+    assert.ok(!a.kategorien.musik.some(e => e.extra?.art === 'remix'));
+    for (const k of ['remix', 'auftritte', 'unterricht']) {
+      assert.ok(a.kategorien[k].length >= 3, `${k}: nie leer`);
+      assert.equal(a.namen[k] && typeof a.namen[k], 'string');
+      for (const e of a.kategorien[k]) {
+        assert.ok(['formular', 'mail', 'seite'].includes(e.extra.bewerbung.art), e.titel);
+        assert.ok(e.extra.bewerbung.ziel, e.titel);
+        assert.ok('ort' in e.extra && 'km' in e.extra && 'frist' in e.extra && e.extra.quelle, e.titel);
+      }
+    }
   } finally { console.log = log; }
 });
 

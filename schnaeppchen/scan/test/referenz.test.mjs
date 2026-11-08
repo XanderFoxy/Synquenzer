@@ -55,7 +55,7 @@ test('Läden: Döbelner Ketten zählen; Aldi Süd, Wasgau, Netto mit dem Scottie
   assert.equal(ladenAus('Aldi Nord (Döbeln): SCHÄTZUNG').schaetzung, true);
 });
 
-test('Alle 10 Produkte: ohne Angebot immer Üblich + Tiefst + Regulär mit Quelle – nie „unbekannt“', () => {
+test('Alle Produkte (auch die neuen vom 08.11.): ohne Angebot immer Üblich + Tiefst + Regulär mit Quelle – nie „unbekannt“', () => {
   assert.equal(Object.keys(refs).length, watchlist.produkte.length);
   for (const item of watchlist.produkte) {
     const k = kontext(item.id);

@@ -45,10 +45,10 @@ test('Normaler Lauf schreibt keine Rohdateien', async () => {
   const echtesFetch = globalThis.fetch;
   globalThis.fetch = n.fetch;
   try {
-    await stumm(() => main(['--data', join(dir, 'daten'), '--jetzt', JETZT], { DRY_RUN: '1' }, { fetchImpl: n.fetch, abruf: { pauseMs: 0 } }));
+    await stumm(() => main(['--data', join(dir, 'daten'), '--jetzt', JETZT], { DRY_RUN: '1' }, { fetchImpl: n.fetch, abruf: { pauseMs: 0, pauseProHost: {} } }));
     assert.ok(n.abrufe > 5, 'Quellen wurden abgefragt');
     assert.deepEqual(await readdir(dir), ['daten']);
-    assert.deepEqual((await readdir(join(dir, 'daten'))).sort(), ['current.json', 'dealseiten.json', 'history.json', 'sent.json']);
+    assert.deepEqual((await readdir(join(dir, 'daten'))).sort(), ['current.json', 'dealseiten.json', 'history.json', 'merkliste.json', 'quellen-cache.json', 'sent.json']);
   } finally { globalThis.fetch = echtesFetch; await rm(dir, { recursive: true, force: true }); }
 });
 
@@ -60,7 +60,7 @@ test('Roh-Modus: jede Antwort + Ergebnis gespeichert, kein Push', async () => {
   globalThis.fetch = n.fetch;
   try {
     // ohne DRY_RUN: der Roh-Modus muss selbst dafür sorgen, dass nichts gesendet wird
-    const r = await stumm(() => main(['--data', join(dir, 'daten'), '--jetzt', JETZT], { ROH_DIR: rohDir }, { fetchImpl: n.fetch, abruf: { pauseMs: 0 } }));
+    const r = await stumm(() => main(['--data', join(dir, 'daten'), '--jetzt', JETZT], { ROH_DIR: rohDir }, { fetchImpl: n.fetch, abruf: { pauseMs: 0, pauseProHost: {} } }));
     assert.ok(r.msgs.length > 0, 'es gäbe Pushes');
     assert.equal(n.pushes, 0, 'aber keiner wird gesendet');
     const index = JSON.parse(await readFile(join(rohDir, 'index.json'), 'utf8'));
@@ -71,7 +71,7 @@ test('Roh-Modus: jede Antwort + Ergebnis gespeichert, kein Push', async () => {
     assert.ok(index.abrufe.some(a => a.url.includes('mydealz.de/rss/gruppe/preisfehler') && a.datei.endsWith('.xml')));
     assert.ok(index.abrufe.some(a => a.url.startsWith('https://www.mydealz.de/deals/')), 'Deal-Seiten der Preisfehler mitgeschnitten');
     const aus = (await readdir(join(rohDir, 'ausgabe'))).sort();
-    assert.deepEqual(aus, ['current.json', 'dealseiten.json', 'history.json', 'pushes.json', 'sent.json']);
+    assert.deepEqual(aus, ['current.json', 'dealseiten.json', 'history.json', 'merkliste.json', 'pushes.json', 'sent.json']);
     assert.equal(await readFile(join(rohDir, 'ausgabe', 'current.json'), 'utf8'), await readFile(join(dir, 'daten', 'current.json'), 'utf8'));
     assert.equal(JSON.parse(await readFile(join(rohDir, 'ausgabe', 'pushes.json'), 'utf8')).length, r.msgs.length);
   } finally { globalThis.fetch = echtesFetch; await rm(dir, { recursive: true, force: true }); }

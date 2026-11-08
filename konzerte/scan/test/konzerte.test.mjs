@@ -178,3 +178,66 @@ test('Festival-Seiten: eine von vier gestört -> status.seiten sagt „3 von 4 g
   const datei = JSON.parse(fs.readFileSync(path.join(dir, 'konzerte/data/status.json'), 'utf8'));
   assert.deepEqual([datei.quellen.seiten.geprueft, datei.quellen.seiten.gesamt], [3, 4]);
 });
+
+// --- 08.11.2026: Xander „Bands wie Alphaville treten irgendwo auf … was das Nächste ist“ ---------------------------
+import eventim, { evParse, evUrl } from '../sources/eventim.mjs';
+import mbevents, { mbEvents, mbOrt } from '../sources/mbevents.mjs';
+
+test('Eventim (ohne Schlüssel): Termine mit Ort/Koordinaten, keine Tribute/Abgesagten/Gutscheine', () => {
+  const ALPHA2 = { name: 'Alphaville', land: 'DE' };
+  const k = evParse(fj('ev-alphaville.json'), ALPHA2);
+  assert.deepEqual(k.map(x => [x.datum, x.stadt]), [['2027-03-14', 'Leipzig'], ['2026-12-04', 'London']]);
+  assert.equal(k[0].zeit, '20:00');
+  assert.equal(k[0].ort, 'Haus Auensee');
+  assert.ok(Math.abs(k[0].lat - 51.3667) < 1e-6);
+  assert.equal(k[0].quelle, 'eventim');
+  assert.match(evUrl(ALPHA2), /^https:\/\/public-api\.eventim\.com\/websearch\/search\/api\/exploration\/v1\/products\?webId=web__eventim-de&language=de&search_term=Alphaville&/);
+  assert.deepEqual(evParse({}, ALPHA2), []);
+  // v2/productGroups (Format laut pyventim): Termine stecken in productGroups[].products[]
+  const v2 = { productGroups: [{ productGroupId: '1', name: 'ALPHAVILLE', startDate: '2027-03-14T20:00:00+01:00', link: 'https://www.eventim.de/artist/alphaville/', products: fj('ev-alphaville.json').products.slice(0, 2) }], totalPages: 1, _links: {} };
+  assert.deepEqual(evParse(v2, ALPHA2).map(x => [x.datum, x.stadt]), [['2027-03-14', 'Leipzig'], ['2026-12-04', 'London']]);
+});
+
+test('Eventim: v1/products mit 4xx -> v2/productGroups (einmal je Lauf umschalten)', async () => {
+  const urls = [];
+  const http = { get: async url => { urls.push(url); if (url.includes('/v1/products')) throw new Error('HTTP 404 public-api.eventim.com'); return { productGroups: [{ products: fj('ev-alphaville.json').products }] }; } };
+  const r = await eventim({ http, bands: [{ name: 'Alphaville' }, { name: 'Camouflage' }], config: {} });
+  assert.deepEqual(r.fehler, []);
+  assert.equal(urls.filter(u => u.includes('/v1/products')).length, 1, 'v1 nur einmal versucht');
+  assert.equal(urls.filter(u => u.includes('/v2/productGroups')).length, 2);
+  assert.ok(r.konzerte.some(k => k.stadt === 'Leipzig'));
+});
+
+test('MusicBrainz-Termine: nur kommende, nicht abgesagte; Ort über „held at“ mit Koordinaten', async () => {
+  const e = mbEvents(fj('mb-events-alphaville.json'), '2026-11-08');
+  assert.deepEqual(e.map(x => x.id), ['ev-1']);
+  const o = mbOrt(fj('mb-event-detail.json'));
+  assert.deepEqual([o.ort, o.stadt, o.land], ['Burg Selb', 'Selb', 'DE']);
+  assert.ok(Math.abs(o.lat - 50.1706) < 1e-6);
+  const urls = [];
+  const http = { get: async url => { urls.push(url); return url.includes('/event?artist=') ? fj('mb-events-alphaville.json') : fj('mb-event-detail.json'); } };
+  const r = await mbevents({ http, bands: [{ name: 'Alphaville' }], config: {}, heute: '2026-11-08', ids: { mb: { Alphaville: 'mbid-a' } } });
+  assert.equal(r.konzerte.length, 1);
+  assert.equal(r.konzerte[0].quelle, 'mbevents');
+  assert.equal(r.konzerte[0].link, 'https://musicbrainz.org/event/ev-1');
+  assert.equal(r.konzerte[0].festival, true);
+  assert.match(r.konzerte[0].bis, /^2027-09-05T/);
+  assert.equal(urls.length, 2, 'Browse + 1 Detail');
+  const ohneId = await mbevents({ http, bands: [{ name: 'X' }], config: {}, heute: '2026-11-08', ids: { mb: {} } });
+  assert.deepEqual(ohneId, { konzerte: [], fehler: [] });
+});
+
+test('Immer der nächste Termin je Band – auch weit weg (weit/naechster, kein Push); weitere ferne Termine nicht', () => {
+  const k = (datum, stadt, lat, lon, band = 'Alphaville') => ({ quelle: 'eventim', band, titel: band, datum, zeit: '', ort: 'Halle', stadt, lat, lon, link: `https://x/${stadt}-${datum}`, festival: false, status: '' });
+  const konzerte = [k('2026-12-04', 'London', 51.50, -0.22), k('2027-01-20', 'Paris', 48.86, 2.35), k('2027-03-14', 'Leipzig', 51.37, 12.31),
+    k('2027-02-01', 'Stockholm', 59.33, 18.07, 'Roxette'), k('2027-05-01', 'Oslo', 59.91, 10.75, 'Roxette')];
+  const e = verarbeite({ konzerte, releases: [], gesehen: { konzerte: {}, releases: {} }, config: CONFIG, heute: '2026-11-08' });
+  const l = e.konzerte.map(x => `${x.band}:${x.stadt}${x.weit ? ':weit' : ''}`);
+  assert.deepEqual(l, ['Alphaville:London:weit', 'Roxette:Stockholm:weit', 'Alphaville:Leipzig']);
+  assert.ok(e.konzerte[0].km > 900 && e.konzerte[0].naechster === true);
+  assert.ok(!e.pushes.some(p => /London|Stockholm/.test(p.text)), 'weit weg: nur Liste, kein Push');
+  assert.ok(e.pushes.some(p => /Leipzig/.test(p.text)));
+  // nahes Konzert zuerst -> kein zusätzlicher ferner Termin
+  const e2 = verarbeite({ konzerte: [k('2026-12-20', 'Dresden', 51.05, 13.74), k('2027-01-20', 'Paris', 48.86, 2.35)], releases: [], gesehen: { konzerte: {}, releases: {} }, config: CONFIG, heute: '2026-11-08' });
+  assert.deepEqual(e2.konzerte.map(x => x.stadt), ['Dresden']);
+});

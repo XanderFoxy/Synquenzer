@@ -28,7 +28,7 @@ test('config und filme.json: keine mydealz-Such-Adresse mehr (sonst stünde wied
     const suchen = [];
     (function geh(o, pfad) {
       if (Array.isArray(o)) o.forEach((x, i) => geh(x, `${pfad}[${i}]`));
-      else if (o && typeof o === 'object') for (const [k, v] of Object.entries(o)) { if (k === 'suchen' && !/nebenverdienst|musik/.test(pfad)) suchen.push(`${pfad}.${k}`); geh(v, `${pfad}.${k}`); }
+      else if (o && typeof o === 'object') for (const [k, v] of Object.entries(o)) { if (k === 'suchen' && !/nebenverdienst|musik|remix|auftritte|unterricht/.test(pfad)) suchen.push(`${pfad}.${k}`); geh(v, `${pfad}.${k}`); }
     })(j, n);
     assert.deepEqual(suchen, [], 'keine mydealz-„suchen“ mehr (Google-News-/Remix-Suchen sind etwas anderes)');
   }

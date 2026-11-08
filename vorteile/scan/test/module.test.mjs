@@ -12,6 +12,7 @@ import erleben from '../module/erleben.mjs';
 import reisen, { abflugArt } from '../module/reisen.mjs';
 import musik, { geizhalsPreis, merkePreis } from '../module/musik.mjs';
 import nebenverdienst, { baUrl } from '../module/nebenverdienst.mjs';
+import auftritte from '../module/auftritte.mjs';
 import tests, { bewerteTest } from '../module/tests.mjs';
 import praemien, { bewertePraemie, praemieAus, hakenAus, ausschlussGrund } from '../module/praemien.mjs';
 
@@ -24,7 +25,7 @@ const ctx = () => ({ holeText, cfg, wunschliste, zustand: {}, jetzt });
 const titel = r => r.eintraege.map(e => e.titel);
 
 test('jeder Eintrag hat Link und „So geht’s“', async () => {
-  for (const fn of [deals, erleben, reisen, musik, nebenverdienst, tests, praemien]) {
+  for (const fn of [deals, erleben, reisen, musik, nebenverdienst, tests, praemien, auftritte]) {
     const r = await fn(ctx());
     assert.ok(r.eintraege.length > 0, fn.name);
     for (const e of r.eintraege) {
@@ -69,18 +70,26 @@ test('reisen: ab Leipzig ja, ab Frankfurt nein, Preisfehler sofort, Atom-Feed ge
   assert.equal(abflugArt('Flüge ab München nach Rom', cfg.module.reisen), 'fremd');
 });
 
-test('musik: MicroFreak unter Zielpreis sofort, Tasche aussortiert, Band-Aufruf mit Frist, Coverband/abgelaufen raus', async () => {
+test('musik: MicroFreak unter Zielpreis sofort, Tasche aussortiert; auftritte: Band-Aufruf mit Frist, Coverband/abgelaufen raus', async () => {
   const z = ctx();
   const r = await musik(z);
   const mf = r.eintraege.find(e => /MicroFreak/.test(e.titel));
   assert.equal(mf.extra.preis, 229);
   assert.equal(mf.sofort, true);
   assert.ok(!titel(r).some(t => /Tasche/.test(t)));
-  const b = r.eintraege.find(e => /Stadtfest Leipzig/.test(e.titel));
+  assert.ok(!titel(r).some(t => /Stadtfest|Remix/.test(t)), 'Musik = nur Geräte');
+  assert.equal(z.zustand.musik['Arturia MicroFreak'].tiefst.p, 229);
+});
+
+test('auftritte: „Bands gesucht“ Stadtfest Leipzig mit Frist + Ort/km, Coverband/abgelaufen/Remix raus', async () => {
+  const r = await auftritte(ctx());
+  const b = r.eintraege.find(e => /Stadtfest Leipzig sucht/.test(e.titel));
   assert.equal(b.frist, '2026-11-20');
   assert.equal(b.sofort, true);
-  assert.ok(!titel(r).some(t => /Coverband|Köln/.test(t)));
-  assert.equal(z.zustand.musik['Arturia MicroFreak'].tiefst.p, 229);
+  assert.equal(b.kategorie, 'auftritte');
+  assert.equal(b.extra.ort, 'Leipzig');
+  assert.ok(b.extra.km > 40 && b.extra.km < 70, String(b.extra.km));
+  assert.ok(!titel(r).some(t => /Coverband|Köln|Remix-Wettbewerb/.test(t)));
 });
 
 test('musik: Tiefstpreis erst mit genug Historie, Geizhals-Preis lesen', () => {
@@ -94,12 +103,13 @@ test('musik: Tiefstpreis erst mit genug Historie, Geizhals-Preis lesen', () => {
 
 test('nebenverdienst: Homeoffice-Jobs ja, Außendienst nein, Duplikate einmal, Link zur Arbeitsagentur', async () => {
   const r = await nebenverdienst(ctx());
-  assert.equal(r.eintraege.length, 2);
+  assert.equal(r.eintraege.length, 2, titel(r).join(' | '));
   assert.ok(r.eintraege.every(e => e.link.startsWith('https://www.arbeitsagentur.de/jobsuche/jobdetail/')));
   assert.match(r.eintraege.find(e => /Arabisch/.test(e.titel)).soGehts, /Arabisch/);
   const u = new URL(baUrl(cfg.module.nebenverdienst.ba, { was: 'Deutschlehrer', wo: 'Döbeln', umkreis: 50 }));
   assert.equal(u.searchParams.get('wo'), 'Döbeln');
   assert.equal(u.searchParams.get('angebotsart'), '1');
+  assert.match(u.pathname, /\/pc\/v6\/jobs$/, 'Suche über v6 (v4 = HTTP 403 seit 11/2026)');
 });
 
 test('tests: Fallen und unattraktive Gewinnspiele raus', async () => {

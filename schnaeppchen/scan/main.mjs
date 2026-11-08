@@ -5,10 +5,10 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { bestimmeMenge, einheitspreis, packungText, passt, stueckPasst, istSammeldeal, sammelTeil, norm, round, euroKurz, BASIS_LABEL } from './text.mjs';
+import { bestimmeMenge, einheitspreis, packungText, passt, sorteNurGenerisch, stueckPasst, istSammeldeal, sammelTeil, norm, round, euroKurz, BASIS_LABEL } from './text.mjs';
 import { pruefeHistorie, eintragen, aufraeumen, statistik, tiefstSeit } from './history.mjs';
 import { versandkosten, technikBewertung, tiefstInfo } from './deals.mjs';
-import { ladeReferenz, preisKontext, verlaufEintraege, pushZeile } from './referenz.mjs';
+import { ladeReferenz, preisKontext, verlaufEintraege, pushZeile, zuletztGesehen } from './referenz.mjs';
 import { median } from './history.mjs';
 import { pruefeDealSeiten, leereDealseiten, versandImPreis } from './preisfehler.mjs';
 import { krass } from './krass.mjs';
@@ -17,6 +17,7 @@ import { macheAbruf, macheFixtureAbruf, macheWiedergabe } from './http.mjs';
 import { rohOrdner, macheMitschnitt } from './roh.mjs';
 import { leseRss } from './rss.mjs';
 import { marktguru } from './sources/marktguru.mjs';
+import { kaufda } from './sources/kaufda.mjs';
 import { mydealz, mydealzZeit } from './sources/mydealz.mjs';
 import { keepa } from './sources/keepa.mjs';
 
@@ -24,7 +25,7 @@ const HIER = dirname(fileURLToPath(import.meta.url));
 const REFERENZ_DATEI = join(HIER, '..', 'referenzpreise.json');
 // Menge eines Angebots in Basis-Einheiten (Stück, g, ml) – damit nur gleiche Packungen verglichen werden
 export const mengeInBasis = (m, basis) => (basis === 'stueck' ? m?.stueck : basis === '100ml' ? m?.ml : m?.gramm) || null;
-export const QUELLEN = { marktguru, mydealz, keepa };
+export const QUELLEN = { marktguru, kaufda, mydealz, keepa };
 
 const mitZeitlimit = (p, ms, name) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error(`${name}: Zeitlimit`)), ms).unref())]);
 
@@ -36,6 +37,17 @@ export function shopErlaubt(shop, cfg, text = '') {
   if ((cfg.maerkte.ausgeschlossen || []).some(x => s.includes(norm(x)))) return false;
   if (/nur fuer (?:gross ?haendler|gewerbe)|nur gewerbe|gewerbekunden/.test(norm(text))) return false;
   return cfg.maerkte.erlaubt.some(m => { const n = norm(m); return s.includes(n) || n.includes(s) && s.length > 3; });
+}
+
+// mydealz-Merkliste: höchstens so viele Deals, höchstens so alt (Sicherheitsnetz, falls ein Ende fehlt)
+const MERK_MAX = 60;
+const MERK_MAX_TAGE = 10;
+
+/** Was eine Quelle abfragt (Konfiguration + Such-/Stichwörter): ändert es sich, gilt ihr Zwischenspeicher nicht mehr */
+export function quellenSignatur(n, cfg, watchlist) {
+  const q = { ...(cfg.quellen[n] || {}) };
+  for (const k of Object.keys(q)) if (k.startsWith('_')) delete q[k];
+  return JSON.stringify([q, cfg.plz, (watchlist.produkte || []).map(p => [p.suche || [], p.kaufda || []])]);
 }
 
 const kurz = (s, n) => (s && s.length > n ? s.slice(0, n - 1) + '…' : s || '');
@@ -58,6 +70,10 @@ function ansicht(a, item) {
     // unplausibel (eher ein anderes Produkt): die Seite nimmt so ein Angebot nie als Hauptkarte
     unsicher: !!a.unsicher,
     hinweis: a.hinweis || '', nurMitApp: !!a.nurMitApp, preisOhneApp: a.preisOhneApp ?? null,
+    // kaufDA: Prospekt der Region (z. B. Chemnitz) bzw. bundesweit – nicht für Döbeln bestätigt (kein Push)
+    regional: !!a.regional, region: a.regional ? a.region || null : null,
+    // Angebot zählt nur, weil es „versch. Sorten“ sagt (gesuchte Sorte nicht genannt)
+    sorteUnklar: !!a.sorteUnklar,
     zeile: [a.titel, a.packung, euroKurz(a.preis), a.mengeSicher ? `${euroKurz(a.einheitspreis)} ${label}` : 'Menge unklar'].filter(Boolean).join(' · '),
     link: a.link, bild: a.bild || '',
     quelle: a.quelle, online: !!a.online, deal: !!a.deal, grund: a.grund || '', ersparnis: a.ersparnis ?? null,
@@ -68,7 +84,7 @@ function ansicht(a, item) {
 
 const GRUND = { tiefst: 'so günstig wie das 12-Monats-Tief', gut: 'unter dem üblichen Angebotspreis und nah am 12-Monats-Tief' };
 
-export async function scan({ cfg, watchlist, history, sent, dealseiten, holeText, referenz, env = {}, jetzt = new Date(), log = () => {} }) {
+export async function scan({ cfg, watchlist, history, sent, dealseiten, merkliste, quellenCache = null, holeText, referenz, env = {}, jetzt = new Date(), log = () => {} }) {
   // recherchierte Referenzpreise (Regulär, Angebote, Tiefstpreise mit Quelle); ohne Angabe die Datei im Repo
   referenz ??= JSON.parse(await readFile(REFERENZ_DATEI, 'utf8'));
   const refs = ladeReferenz(referenz, watchlist);
@@ -83,7 +99,31 @@ export async function scan({ cfg, watchlist, history, sent, dealseiten, holeText
   const quellen = [];
   const alle = [];
   const namen = Object.keys(QUELLEN).filter(n => cfg.quellen[n]?.aktiv !== false);
-  const res = await Promise.allSettled(namen.map(n => mitZeitlimit(QUELLEN[n]({ holeText, cfg, watchlist, env }), 240000, n)));
+  // Quellen mit „intervallStunden“ (kaufDA: Prospekte wechseln wöchentlich) nur alle paar Stunden neu abrufen; dazwischen
+  // und wenn sie ausfallen (bis 24 h) gilt der letzte Stand aus quellen-cache.json – höflich und stabil.
+  const cacheAlt = quellenCache?.version === 1 ? quellenCache.quellen || {} : {};
+  const cacheNeu = {};
+  const vor = iso => { const min = Math.max(0, Math.round((jetztMs - Date.parse(iso)) / 60000)); return min < 120 ? `vor ${min} Min.` : `vor ${Math.round(min / 60)} Std.`; };
+  const holen = n => {
+    const lauf = () => mitZeitlimit(QUELLEN[n]({ holeText, cfg, watchlist, env }), 240000, n);
+    const iv = cfg.quellen[n]?.intervallStunden;
+    if (!(iv > 0) || !quellenCache) return lauf();
+    const sig = quellenSignatur(n, cfg, watchlist);
+    const c = cacheAlt[n]?.sig === sig ? cacheAlt[n] : null;
+    const alter = c ? jetztMs - Date.parse(c.zeit) : Infinity;
+    if (c && alter >= 0 && alter < iv * 36e5 - 5 * 60e3) {
+      cacheNeu[n] = c;
+      return Promise.resolve({ ...c.ergebnis, hinweis: [c.ergebnis.hinweis, `Stand ${vor(c.zeit)}, neu alle ${iv} Std.`].filter(Boolean).join(' · ') });
+    }
+    return lauf().then(r => { cacheNeu[n] = { sig, zeit: new Date(jetztMs).toISOString(), ergebnis: r }; return r; }, e => {
+      if (c && alter < 24 * 36e5) {
+        cacheNeu[n] = c;
+        return { ...c.ergebnis, fehler: [`${String(e?.message || e)} – letzter Stand ${vor(c.zeit)} gezeigt`], hinweis: c.ergebnis.hinweis || '' };
+      }
+      throw e;
+    });
+  };
+  const res = await Promise.allSettled(namen.map(holen));
   res.forEach((r, i) => {
     const name = namen[i];
     if (r.status === 'fulfilled') {
@@ -95,6 +135,21 @@ export async function scan({ cfg, watchlist, history, sent, dealseiten, holeText
     }
     log(`${name}: ${quellen.at(-1).ok ? `${quellen.at(-1).anzahl} Einträge` : 'FEHLER ' + quellen.at(-1).fehler[0]}`);
   });
+
+  // 1b. mydealz-Merkliste: Laden-Deals für die Merkliste, die schon aus den Feeds gerutscht sind (die Feeds zeigen nur
+  // die neuesten Einträge), bleiben bis zu ihrem Ende bzw. Anzeigefenster sichtbar (merkliste.json auf dem Daten-Zweig).
+  const imFeed = new Set(alle.filter(a => a.quelle === 'mydealz').map(a => a.link));
+  const gemerkt = (merkliste?.version === 1 ? merkliste.items || [] : [])
+    .filter(x => x && x.quelle === 'mydealz' && x.link && !imFeed.has(x.link))
+    .filter(x => !(Date.parse(x.merkBis || '') <= jetztMs) && jetztMs - Date.parse(x.datum || '') <= MERK_MAX_TAGE * 864e5)
+    .map(x => ({ ...x, gemerkt: true }));
+  if (gemerkt.length) log(`mydealz-Merkliste: ${gemerkt.length} gemerkte Deals`);
+  alle.push(...gemerkt);
+  const merkNeu = new Map();
+
+  // kaufDA (Region/bundesweit) nur, wenn marktguru dasselbe Angebot für Döbeln nicht schon hat (Kette, Preis, Ende)
+  const angebotKey = a => `${norm(a.shop)}|${a.preis}|${String(a.gueltigBis || '').slice(0, 10)}`;
+  const doebeln = new Set(alle.filter(a => a.quelle === 'marktguru').map(angebotKey));
 
   // 2. watch items
   const produkte = [];
@@ -122,6 +177,7 @@ export async function scan({ cfg, watchlist, history, sent, dealseiten, holeText
       }
       const text = `${o.titel} ${o.beschreibung || ''}`;
       if (!o.online && !shopErlaubt(o.shop, cfg, text)) continue;
+      if (o.regional && doebeln.has(angebotKey(o))) continue;
       // mydealz: Beginn/Ende/„mit App“ aus dem Text, ohne Ende höchstens 72 h (wie der Vorteils-Radar)
       if (o.quelle === 'mydealz') {
         if (!Number.isFinite(Date.parse(o.datum || ''))) continue;
@@ -129,6 +185,10 @@ export async function scan({ cfg, watchlist, history, sent, dealseiten, holeText
         o = { ...o, gueltigAb: z.ab, gueltigBis: z.bis, sichtbarBis: z.sichtbarBis, nurMitApp: z.nurMitApp, preisOhneApp: z.preisOhneApp, hinweis: z.hinweis,
           preisAlt: o.preisAlt ?? z.preisVorher };
         if (o.sichtbarBis && Date.parse(o.sichtbarBis) <= jetztMs) continue;
+        // merken (Rohdaten des Feeds), bis das Angebot endet bzw. das Anzeigefenster zu ist
+        const merkBis = o.gueltigBis || o.sichtbarBis || null;
+        const vorher = merkNeu.get(roh.link);
+        if (!vorher || (merkBis && (!vorher.merkBis || merkBis > vorher.merkBis))) merkNeu.set(roh.link, { ...roh, gemerkt: undefined, merkBis });
       }
       // abgelaufen = weg (kein Nachlauf; die Seite blendet zusätzlich beim Anzeigen aus)
       if (o.gueltigBis && Date.parse(o.gueltigBis) <= jetztMs) continue;
@@ -152,12 +212,20 @@ export async function scan({ cfg, watchlist, history, sent, dealseiten, holeText
         }
       }
       const a = { ...o, versand, preis: gesamt, einheitspreis: up, einheitspreisVarianten: varianten, ...mg };
+      // Hinweise auf der Karte: Bedingungen (kaufDA), Region, Sorte nicht genannt
+      a.sorteUnklar = sorteNurGenerisch(text, item);
+      const hinweise = [o.hinweis, o.quelle === 'kaufda' ? o.kaufdaHinweis : '',
+        o.quelle === 'kaufda' && o.nurMitApp && !/app|card/i.test(o.kaufdaHinweis || '') ? 'nur mit App/Karte' : '',
+        o.regional ? `Prospekt ${o.region || 'bundesweit'} – in Döbeln prüfen` : '',
+        a.sorteUnklar ? 'Sorte nicht genannt („versch. Sorten“)' : ''].filter(Boolean);
+      a.hinweis = [...new Set(hinweise)].join(' · ');
       // implausible (probably a different product or a parsing error): show, but never alert
       a.unsicher = refEinheit > 0 && (up < refEinheit * 0.15 || up > refEinheit * 6);
       a.laeuft = !a.gueltigAb || Date.parse(a.gueltigAb) <= jetztMs;
       angebote.push(a);
     }
-    angebote.sort((x, y) => (verlaesslich(y) - verlaesslich(x)) || (x.unsicher - y.unsicher) || (x.einheitspreis - y.einheitspreis));
+    // Döbeln/online vor Region (kaufDA): ein bestätigtes Angebot bleibt die Hauptkarte, die Region steht darunter
+    angebote.sort((x, y) => (!!x.regional - !!y.regional) || (verlaesslich(y) - verlaesslich(x)) || (x.unsicher - y.unsicher) || (x.einheitspreis - y.einheitspreis));
     const sichere = angebote.filter(verlaesslich);
     // Preis-Kontext je Angebot (gleiche Packung): Deal nur, wenn ≤ üblicher Angebotspreis UND nah am 12-Monats-Tief;
     // Prozent nur gegen den recherchierten regulären Preis. Unsichere Menge/unplausibel: Kontext ja, Bewertung nein.
@@ -167,11 +235,12 @@ export async function scan({ cfg, watchlist, history, sent, dealseiten, holeText
       const ok = sicher && !a.unsicher;
       a.preise = preisKontext({ ref, basis: item.basis, verlauf, angebot: sicher ? { preis: a.preis, menge: m, shop: a.shop } : null, jetztMs, cfg });
       if (!ok) { a.preise.deal = false; a.preise.ersparnis = null; }
-      a.deal = ok && a.preise.deal;
+      // Region (kaufDA): Kontext und Prozent ja, aber nie Push – nicht für Döbeln bestätigt
+      a.deal = ok && !a.regional && a.preise.deal;
       a.ersparnis = ok ? a.preise.ersparnis : null;
       a.grund = a.deal ? GRUND[a.preise.stufe] || '' : '';
     }
-    for (const a of sichere) if (a.laeuft) punkte.push({ gruppe, basis: item.basis, p: a.einheitspreis, shop: a.shop, m: mengeInBasis(a.menge, item.basis), pp: a.preis });
+    for (const a of sichere) if (a.laeuft && !a.regional) punkte.push({ gruppe, basis: item.basis, p: a.einheitspreis, shop: a.shop, m: mengeInBasis(a.menge, item.basis), pp: a.preis });
     const bestes = angebote.find(a => !a.unsicher) || null;
     const ohneAngebot = preisKontext({ ref, basis: item.basis, verlauf, angebot: null, jetztMs, cfg });
     produkte.push({ item, gruppe, angebote, sichere, bestes, ohneAngebot });
@@ -182,7 +251,9 @@ export async function scan({ cfg, watchlist, history, sent, dealseiten, holeText
 
   const karten = produkte.map(({ item, gruppe, angebote, sichere, bestes, ohneAngebot }) => {
     const s = statistik(history, gruppe, cfg.deal.normalpreisFensterTage, jetztMs);
-    const tiefst = tiefstInfo({ bestes, sichere, angebote, stats: s, tiefst30: tiefstSeit(history, gruppe, 30, jetztMs), basis: item.basis, cfg, jetztMs });
+    // zuletzt gesehenes Angebot (eigener Verlauf, sonst recherchierte Angebote) – damit „Gerade kein Angebot“ nie leer ist
+    const zuletzt = zuletztGesehen(history.gruppen[gruppe], refs[item.id], item.basis);
+    const tiefst = tiefstInfo({ bestes, sichere, angebote, stats: s, tiefst30: tiefstSeit(history, gruppe, 30, jetztMs), zuletzt, basis: item.basis, cfg, jetztMs });
     const preise = bestes?.preise?.jetzt ? bestes.preise : ohneAngebot;
     const reg = preise.regulaer;
     const p = {
@@ -196,6 +267,8 @@ export async function scan({ cfg, watchlist, history, sent, dealseiten, holeText
       // ältere Felder (bisherige Seite)
       tiefstpreis: s.tiefst?.p ?? null, tiefstTag: s.tiefst?.tag ?? null, tiefstShop: s.tiefst?.shop ?? null, historieTage: s.tage,
       anzahlAngebote: angebote.length,
+      anzahlRegion: angebote.filter(a => a.regional).length,
+      zuletzt,
       bestes: bestes ? ansicht(bestes, item) : null,
       weitere: angebote.filter(a => a !== bestes).slice(0, 5).map(a => ansicht(a, item)),
     };
@@ -220,7 +293,7 @@ export async function scan({ cfg, watchlist, history, sent, dealseiten, holeText
   const technikFehler = [];
   if (watchlist.technik) {
     const vorauswahl = alle
-      .filter(o => o.quelle === 'mydealz' && o.preis > 0 && technikBewertung(o, watchlist.technik, cfg))
+      .filter(o => o.quelle === 'mydealz' && !o.gemerkt && o.preis > 0 && technikBewertung(o, watchlist.technik, cfg))
       .filter(o => { const t = Date.parse(o.datum); return Number.isFinite(t) && jetztMs - t <= maxAlterMs && t <= jetztMs + 36e5; })
       .sort((a, b) => Date.parse(b.datum) - Date.parse(a.datum));
     const { ergebnisse } = await pruefeDealSeiten(vorauswahl.map(o => o.link), {
@@ -282,7 +355,8 @@ export async function scan({ cfg, watchlist, history, sent, dealseiten, holeText
     quellen,
     fehler,
   };
-  return { current, history, sent, dealseiten, msgs, zuSenden };
+  const merk = { version: 1, items: [...merkNeu.values()].filter(x => !(Date.parse(x.merkBis || '') <= jetztMs)).slice(0, MERK_MAX) };
+  return { current, history, sent, dealseiten, merkliste: merk, quellenCache: { version: 1, quellen: cacheNeu }, msgs, zuSenden };
 }
 
 // Nur im Roh-Modus: ein paar Deal-Seiten der Preisfehler-Gruppe mitschneiden (neueste + älteste), weil der Feed
@@ -317,13 +391,17 @@ export async function main(args = process.argv.slice(2), env = process.env, test
   const history = await leseJson(join(datenDir, 'history.json'), null);
   const sent = await leseJson(join(datenDir, 'sent.json'), {});
   const dealseiten = await leseJson(join(datenDir, 'dealseiten.json'), null);
+  const merkliste = await leseJson(join(datenDir, 'merkliste.json'), null);
+  // Zwischenspeicher nur im echten Lauf: Roh-Mitschnitt, Wiedergabe und Fixtures holen immer alles frisch
+  const mitCache = !fixtures && !wiedergabe && !rohDir;
+  const quellenCache = mitCache ? await leseJson(join(datenDir, 'quellen-cache.json'), { version: 1, quellen: {} }) : null;
   const fetchImpl = roh ? roh.fetch(test.fetchImpl) : test.fetchImpl;
   const holeText = wiedergabe ? macheWiedergabe(wiedergabe)
     : fixtures ? macheFixtureAbruf(join(HIER, 'test', 'fixtures')) : macheAbruf({ ...cfg.abruf, ...test.abruf }, fetchImpl);
   const jetzt = argWert(args, '--jetzt') ? new Date(argWert(args, '--jetzt')) : new Date();
 
   let r;
-  try { r = await scan({ cfg, watchlist, history, sent, dealseiten, holeText, env, jetzt, log: console.log }); }
+  try { r = await scan({ cfg, watchlist, history, sent, dealseiten, merkliste, quellenCache, holeText, env, jetzt, log: console.log }); }
   catch (e) { roh?.abschluss({ absturz: String(e?.message || e) }); throw e; }
   const ok = await senden(r.msgs, cfg, { dryRun });
   r.zuSenden.forEach((k, i) => { if (ok[i]) r.sent[dedupeKey(k)] = r.current.aktualisiert; });
@@ -335,12 +413,15 @@ export async function main(args = process.argv.slice(2), env = process.env, test
   await writeFile(join(datenDir, 'history.json'), JSON.stringify(r.history) + '\n');
   await writeFile(join(datenDir, 'sent.json'), JSON.stringify(r.sent, null, 1) + '\n');
   await writeFile(join(datenDir, 'dealseiten.json'), JSON.stringify(r.dealseiten) + '\n');
+  await writeFile(join(datenDir, 'merkliste.json'), JSON.stringify(r.merkliste) + '\n');
+  if (mitCache) await writeFile(join(datenDir, 'quellen-cache.json'), JSON.stringify(r.quellenCache) + '\n');
   if (roh) {
     if (!fixtures) await rohDealSeiten(holeText, cfg);
     roh.ausgabe('current.json', JSON.stringify(r.current, null, 1) + '\n');
     roh.ausgabe('history.json', JSON.stringify(r.history) + '\n');
     roh.ausgabe('sent.json', JSON.stringify(r.sent, null, 1) + '\n');
     roh.ausgabe('dealseiten.json', JSON.stringify(r.dealseiten) + '\n');
+    roh.ausgabe('merkliste.json', JSON.stringify(r.merkliste) + '\n');
     roh.ausgabe('pushes.json', r.msgs);
     roh.abschluss({ dryRun: true, deals: r.current.deals, pushes: r.msgs.length });
     console.log(`Roh-Mitschnitt: ${roh.abrufe.length} Abrufe → ${roh.dir}`);

@@ -188,7 +188,7 @@ export function alterStunden(datum, jetzt = new Date()) {
 }
 
 // Welche Kategorie behält einen Eintrag, der (gleicher Link) in mehreren Kategorien steht: die speziellere.
-const VORRANG = ['reisen', 'musik', 'erleben', 'tests', 'nebenverdienst'];
+const VORRANG = ['reisen', 'remix', 'auftritte', 'unterricht', 'musik', 'erleben', 'tests', 'nebenverdienst'];
 
 /**
  * Vor dem Speichern: Einträge, die vorbei sind (bis oder sichtbarBis < jetzt), entfernen – auch übernommene aus

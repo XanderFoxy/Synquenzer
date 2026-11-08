@@ -16,9 +16,22 @@ export const FIXTURE_KARTE = [
   ['hl=en-US', 'news-remix-en.xml'],
   ['q=Remix', 'news-remix-de.xml'],
   ['remixcomps.com/feed', 'remixcomps-feed.xml'],
-  ['q=%22Bands%20gesucht%22%20Stadtfest', 'news-bands-gesucht.xml'],
-  ['arbeitsagentur.de/jobboerse/jobsuche-service/pc/v4/jobs?was=Deutschlehrer+online', 'ba-deutschlehrer.json'],
-  ['arbeitsagentur.de/jobboerse/jobsuche-service/pc/v4/jobs?was=%C3%9Cbersetzer+Arabisch', 'ba-arabisch.json'],
+  // Modul remix: Audius-API (Format laut AudiusProject/api PR #780), WordPress-Suchfeed (EDM Identity); andere WP-Feeds leer
+  ['api.audius.co/v1/events/remix-contests', 'audius-remix-contests.json'],
+  ['edmidentity.com/?s=', 'wp-suche-remix.xml'],
+  // Modul auftritte: Google News (Bands gesucht, Open Stage), gigmit-Stadtseiten (JSON-LD)
+  ['q=Bands%20gesucht%20Sachsen', 'news-bands-gesucht.xml'],
+  ['q=Open%20Stage%20Leipzig', 'news-auftritte.xml'],
+  ['gigmit.com/en/gigs/leipzig', 'gigmit-leipzig.html'],
+  ['gigmit.com/en/gigs/', 'gigmit-leer.html'],
+  // Jobbörse: Suche über /pc/v6/jobs (v4 antwortet seit 11/2026 mit 403); v6-Antwort + alte v4-Form (tolerant gelesen)
+  ['jobsuche-service/pc/v6/jobs?was=Deutschlehrer&wo=D%C3%B6beln', 'ba-v6-deutschlehrer.json'],
+  ['jobsuche-service/pc/v6/jobs?was=Deutschlehrer+online', 'ba-deutschlehrer.json'],
+  ['jobsuche-service/pc/v6/jobs?was=%C3%9Cbersetzer+Arabisch', 'ba-arabisch.json'],
+  // Modul unterricht: Remotive-API, Google News
+  ['remotive.com/api/remote-jobs?search=german%20teacher', 'remotive-german-teacher.json'],
+  ['remotive.com/api/', 'remotive-leer.json'],
+  ['q=Lehrkr%C3%A4fte%20Integrationskurs', 'news-unterricht.xml'],
   ['rss/gruppe/freebies', 'mydealz-freebies.xml'],
   ['rss/gruppe/gewinnspiele', 'mydealz-gewinnspiele.xml'],
   ['rss/gruppe/vertraege-finanzen', 'mydealz-praemien-konto.xml'],
@@ -49,4 +62,7 @@ export const FIXTURE_KARTE = [
   ['genre=4410/json', '!fehler'],
   ['/rss/topmovies/', 'itunes-rss-leer.json'], // weitere Genres (z. B. Such-Charts Drama, Independent): leer
   ['rss/gruppe/apple-tv', 'mydealz-itunes.xml'],
+  // Apple-TV-Angebotsräume (tv.apple.com): Filmseite des Stores mit Raum-Links, Raum „Filme für 3,99 €“
+  ['tv.apple.com/de/room/movies/', 'appletv-filme.html'],
+  ['tv.apple.com/de/room/', 'appletv-raum-399.html'],
 ];
