@@ -1,3 +1,10 @@
+## 4.51.0 — Stil komplett: Rhythmus, Klang und Mischung je Stil, Seitenkette automatisch
+
+- **Stil anwenden** (Remix-Blatt, auch Matrix-Remix): **Nur Rhythmus │ + Klang │ + Klang & Mischung** (empfohlen). Mit Klang baut der Stil auch Drums und Synths um – EBM/Industrial: harte, verzerrte Kick mit Klick, peitschende Snare mit Gate, Metall-Schläge statt Kuhglocke, knurrender Bass; Reggae: weiche Kick, Rimshot mit Feder-Hall, runder Bass, Dub-Echo. Jeder der 44 Stile hat so ein Profil (Drums, Bass, Lead, Pad, Effekte).
+- **Seitenkette automatisch, wo sie typisch ist:** House, Eurodance, Synthwave, Hi-NRG, Techno (Bass weicht der Kick), leicht bei EBM; aus bei Reggae, Country, Walzer, Jazz, Synth-Pop, Trap. Die Zeile sagt, was passiert („Seitenkette 50 %“ / „ohne Seitenkette“).
+- **Vorher │ Nachher** schaltet nur den Klang (spielt gleich weiter), **Übernehmen** = ein ↶; über „Spuren“ einzelne Spuren oder Hall/Echo abwählen. Ein zweiter Stil rechnet vom Original – nichts vom ersten bleibt hängen; von Hand geänderte Spuren bleiben, wie du sie gemacht hast.
+Tests: Regeln, acorn 0 / doppelte Schlüssel 0, Rauchtest grün; Stil-Klang 67/67 (gemessen: Snare-Rauheit, Kick-Klick, Ducking am Bass, Spektrum je Stil), GL1 45/45, Video-Vorschau 31/31; unabhängige Prüfung mit 8 behobenen Befunden.
+
 ## 4.50.0 — Live-Video-Vorschau beim Komponieren, Chor-Zeilen sauber, 42 Glitches weg, LAUF zeigt, was klingt
 
 - **Live-Vorschau beim Komponieren:** kleines Bild-im-Bild-Fenster über Matrix bzw. Song – zeigt beim Abspielen live, was dein Video an dieser Stelle filmt (Auto-Regie, Video-Spur, „Im Video“, gelbe Auswahl). Pille **Regie │ App** umschalten, **antippen** = Ansicht dieser Stelle wählen (Klavier, Gerät, Noten …), **ziehen** = an eine Ecke docken (hochkant und quer getrennt gemerkt). Einschalten: Video-Blatt › Extras › „Live-Vorschau beim Komponieren“, aus mit ✕. Aus kostet nichts, an höchstens 10 Bilder/s und nur sichtbar.
