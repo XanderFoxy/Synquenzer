@@ -81232,7 +81232,7 @@ function gl1SvFlat() {
 
 /* ---------- 1c. Song weit draußen: Gesang und Background nicht über den Teil-Blöcken ---------- */
 function gl1SvClip(g, song, X, W, H, ru) {
-  if (!song || !song.marks || !song.marks.length || !sx8Blocks() || UI.svGlass) return false;
+  if (!song || !song.marks || !song.marks.length || !sx8Blocks()) return false;   // GL1-P: auch in der Glas-Ansicht (die Blöcke liegen dort genauso)
   g.save(); g.beginPath(); g.rect(0, 0, W, H);
   for (const m of song.marks) { const x0 = X(m.a) + .5, x1 = X(m.a + m.len) - .5; if (x1 < 0 || x0 > W || x1 - x0 < 1) continue; g.rect(x0, ru, x1 - x0, H - ru); }
   g.clip('evenodd'); return true;
@@ -81323,10 +81323,36 @@ function gl1DirTag(c) {
   if (lf.dir && GL1_TAG[lf.dir]) return ' ' + GL1_TAG[lf.dir];
   return lf.st != null ? ' →' + (lf.st + 1) : '';
 }
+// GL1-P: klingt jeder Durchlauf gleich? Nein bei „hin und her“ (T > 2), „Zufall“ und Chance (pb). P.g1n = Durchläufe bis zur
+// Wiederholung (hin und her: (2T−2) / ggT(2T−2, T); 0 = nie). Die Ansichten zeigen dann den Durchlauf, der gerade klingt.
+function gl1PassDep(c) {
+  const P = lf1Plan(c); if (!P) return false;
+  if (P.g1n == null) {
+    let n = 1;
+    if (P.items.some(it => !it.n.off && it.n.pb != null && it.n.pb < 1)) n = 0;
+    else if (P.map && P.dir === 'rnd') n = 0;
+    else if (P.map && P.dir === 'pend' && P.T > 2) { const M = 2 * P.T - 2, gcd = (a, b) => b ? gcd(b, a % b) : a; n = M / gcd(M, P.T); }
+    P.g1n = n;
+  }
+  return P.g1n !== 1;
+}
+// der Durchlauf des Clips, der gerade klingt (gezählt ab seinem Start wie der Scheduler: lf1Win(c, cs, …)); 0 = steht / gleich
+function gl1PassNow(t, c, on, bAud) {
+  if (!on || !R.playing || !(bAud >= 0) || !gl1PassDep(c)) return 0;
+  const cs = audCstart(t, bAud), L = clipB(c); if (!(bAud >= cs) || !(L > 0)) return 0;
+  const p = Math.floor((bAud - cs) / L + 1e-9), n = lf1Plan(c).g1n;
+  return n > 1 ? p % n : p;
+}
+// ROLLE (rollFrame): beim Wechsel des Durchlaufs neu zeichnen – „wie gespielt“ zeigt den, der gerade klingt
+function gl1RollFrame(t, s, c, on, bAud) {
+  const p = ROLLP.gl1 === 'notated' ? 0 : gl1PassNow(t, c, on, bAud), o = GL1.rollP;
+  if (o && o.t === t && o.s === s && o.p === p) return;
+  GL1.rollP = {t, s, p}; if (ED.roll && (p || (o && o.p))) ED.roll.render();
+}
 // the matrix picture: the notes of the first Durchlauf as played (lf1Pass, as the playback), the notated ones faint behind
-function gl1MiniSvg(c) {
+function gl1MiniSvg(c, p) {
   const P = lf1Plan(c); if (!P) return null;
-  const L = clipB(c), pl = lf1Pass(c, 0) || [];
+  const L = clipB(c), pl = lf1Pass(c, p | 0) || [];                  // GL1-P: p = der Durchlauf, der gerade klingt (renderGrid)
   let lo = 127, hi = 0; for (const n of c.notes) { if (n.n < lo) lo = n.n; if (n.n > hi) hi = n.n; } for (const n of pl) { if (n.n < lo) lo = n.n; if (n.n > hi) hi = n.n; }
   const span = Math.max(hi - lo, 6), rect = (n, cls) => { const x = n.t / L * 100, w = Math.max(Math.min(n.d, L - n.t) / L * 100, 1.2), y = (1 - (n.n - lo) / span) * 86; return `<rect${cls ? ' class="' + cls + '"' : ''} x="${x.toFixed(2)}" y="${y.toFixed(1)}" width="${w.toFixed(2)}" height="10" rx="1"/>`; };
   let r = ''; for (const n of c.notes.slice(0, 160)) if (n.t < L - 1e-9) r += rect(n, 'g1g');   // „class“ zuerst: vk4MiniRects (Video) liest nur die gespielten
@@ -81337,7 +81363,7 @@ function gl1MiniSvg(c) {
 function gl1TileNotes(song, t, run, key) {
   const tr = S.tracks[t]; if (!tr || tr.kind === 'drum' || tr.stimme) return null;
   const o = run.o, clip = o.own ? song.own && song.own[o.own] : tr.clips[o.slot]; if (!clip || !clip.notes || !a2Has(clip, clip.notes)) return null;
-  const k2 = 'g1|' + key + '|' + clipSig(clip); let r = SV.tileC.m.get(k2); if (r) return r;
+  const k2 = 'g1|' + key + (gl1PassDep(clip) ? '|' + run.d0 + '|' + run.d1 : '') + '|' + clipSig(clip); let r = SV.tileC.m.get(k2); if (r) return r;   // GL1-P: hin und her / Zufall / Chance – jeder Durchlauf eigen
   const A = barBeat(run.d0), snd = a2Sound(song, t, run.d0, run.d1, A); if (!snd) return null;
   let lo = 127, hi = 0; for (const n of clip.notes) { if (n.n < lo) lo = n.n; if (n.n > hi) hi = n.n; } for (const n of snd.ns) { if (n.n < lo) lo = n.n; if (n.n > hi) hi = n.n; }
   const span = Math.max(hi - lo, 6), off = A - run.d0 * 4, list = [], len = (run.d1 - run.d0) * 4;
@@ -81361,7 +81387,8 @@ function gl1RollOpts(t, s) {
       const b = ED.roll && ED.roll.el && ED.roll.el.bar ? ED.roll.el.bar.querySelector('.gl1pv') : null;
       if (b) { if (b.hidden !== !P) b.hidden = !P; const on = ROLLP.gl1 !== 'notated'; if (b.classList.contains('on') !== on) b.classList.toggle('on', on); }
       if (!P || ROLLP.gl1 === 'notated') { GL1.rollLast = null; return null; }
-      const pl = lf1Pass(c, 0) || []; GL1.rollLast = {t, s, dir: (c.lf && c.lf.dir) || 'fwd', notes: pl.map(n => ({t: +n.t.toFixed(5), d: +n.d.toFixed(5), n: n.n})), rects: []};
+      const o = GL1.rollP, p = o && o.t === t && o.s === s ? o.p : 0;   // GL1-P: der Durchlauf, der gerade klingt (steht: der erste)
+      const pl = lf1Pass(c, p) || []; GL1.rollLast = {t, s, p, dir: (c.lf && c.lf.dir) || 'fwd', notes: pl.map(n => ({t: +n.t.toFixed(5), d: +n.d.toFixed(5), n: n.n})), rects: [], next: []};
       return pl;
     },
     ghost(x, r, C) {   // die notierte Note blass mit gestricheltem Rand (sie bleibt das, was man bearbeitet)
@@ -81373,9 +81400,22 @@ function gl1RollOpts(t, s) {
       for (const n of pl) {
         const rx = v.xOf(n.t), w = Math.max(3, n.d * v.ppb), ry = v.yOfRow(v.rowOfNote(n.n)); if (rx > v.W || rx + w < 0 || ry > v.H || ry + v.rowH < 0) continue;
         x.fillStyle = v.col; x.globalAlpha = .95; v.rr(x, rx + 1, ry + 2.5, Math.max(2, w - 2), v.rowH - 5, 3); x.fill();
-        x.globalAlpha = 1; x.strokeStyle = '#f2f4f8'; x.lineWidth = 1.25; v.rr(x, rx + 1, ry + 2.5, Math.max(2, w - 2), v.rowH - 5, 3); x.stroke();
+        x.globalAlpha = 1; x.strokeStyle = 'rgba(11,12,15,.7)'; x.lineWidth = 1; v.rr(x, rx + 1.5, ry + 3, Math.max(1, w - 3), v.rowH - 6, 3); x.stroke();   // GL1-P: dunkle Kontur (der weiße Rand heißt „gewählt“)
         out.push({x: +rx.toFixed(1), y: +ry.toFixed(1), w: +w.toFixed(1), n: n.n, t: +n.t.toFixed(5)});
       }
+      // GL1-P: hin und her / Zufall / Chance: hinter dem Clip-Ende die nächsten Durchläufe blass (wie es weitergeht)
+      const c = S.tracks[t] && S.tracks[t].clips[s];
+      if (c && gl1PassDep(c) && GL1.rollLast) {
+        const L = clipB(c), n = lf1Plan(c).g1n, p0 = GL1.rollLast.p | 0;
+        for (let k = 1; k <= 8 && v.xOf(k * L) < v.W; k++) {
+          const q = n > 1 ? (p0 + k) % n : p0 + k, nx = lf1Pass(c, q) || []; GL1.rollLast.next.push(q);
+          x.fillStyle = v.col; x.globalAlpha = .42;
+          for (const m of nx) { const rx = v.xOf(k * L + m.t), w = Math.max(3, m.d * v.ppb), ry = v.yOfRow(v.rowOfNote(m.n)); if (rx > v.W || rx + w < 0 || ry > v.H || ry + v.rowH < 0) continue; v.rr(x, rx + 1, ry + 2.5, Math.max(2, w - 2), v.rowH - 5, 3); x.fill(); }
+          x.globalAlpha = 1;
+        }
+      }
+      // GL1-P: die gewählten (notierten) Noten behalten ihren Auswahlrand obenauf – auch unter einer gespielten Note
+      if (v.sel && v.sel.size && c) { x.strokeStyle = v.C.sel; x.lineWidth = 2; for (const nt of c.notes) if (v.sel.has(nt)) { const r = v.noteRect(nt); if (r.x > v.W || r.x + r.w < 0 || r.y > v.H || r.y + r.h < 0) continue; v.rr(x, r.x + 1, r.y + 2, r.w - 2, r.h - 4, 4); x.stroke(); } x.lineWidth = 1; }
       // einmal je Sitzung kurz erklärt (kein Schild auf der Fläche: es läge über Noten)
       if (!GL1.hint) { GL1.hint = true; const c = S.tracks[t] && S.tracks[t].clips[s], d = c && c.lf && c.lf.dir, nm = d ? (LF1_DIRS.find(z => z[0] === d) || ['', ''])[1] : 'mit Schritt-Effekten';
         setTimeout(() => { try { toast('LAUF ' + nm + ': hell = so klingt es, blass = notiert (die bearbeitest du) · [wie gespielt] schaltet um'); } catch (e) {} }, 0); }
