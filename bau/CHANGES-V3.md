@@ -1,3 +1,11 @@
+## 4.50.0 — Live-Video-Vorschau beim Komponieren, Chor-Zeilen sauber, 42 Glitches weg, LAUF zeigt, was klingt
+
+- **Live-Vorschau beim Komponieren:** kleines Bild-im-Bild-Fenster über Matrix bzw. Song – zeigt beim Abspielen live, was dein Video an dieser Stelle filmt (Auto-Regie, Video-Spur, „Im Video“, gelbe Auswahl). Pille **Regie │ App** umschalten, **antippen** = Ansicht dieser Stelle wählen (Klavier, Gerät, Noten …), **ziehen** = an eine Ecke docken (hochkant und quer getrennt gemerkt). Einschalten: Video-Blatt › Extras › „Live-Vorschau beim Komponieren“, aus mit ✕. Aus kostet nichts, an höchstens 10 Bilder/s und nur sichtbar.
+- **Chor-/Background-Zeilen:** liegen nicht mehr ineinander (Matrix quer) und nicht mehr über den Teil-Blöcken (weit herausgezoomt, auch Glas-Ansicht); mit Video-Spur passen AKKORDE und MELODIE wieder ins Bild. Die Zeilen zeigen jetzt auch den Chor aus deinen Teilen – antippen öffnet die Stimme.
+- **Glitch-Suche:** 19 Ansichten und Blätter hochkant und quer, 42 Befunde → 0 (u. a. abgeschnittener Schleifen-Knopf, Mikro-Blatt quer, ✕ auf der obersten Taste, „Ganze App“ im Video-Blatt, zu große „VIDEO“-Schrift).
+- **LAUF zeigt, was klingt:** Matrix-Clip, Song-Kachel und ROLLE zeigen die Noten in der gespielten Reihenfolge (auch rückwärts, hin und her, Zufall – je Durchlauf), die notierten blass dahinter; Zeichen am Clip ◀ ⇄ ? ↑ ↓. In der ROLLE [wie gespielt │ wie notiert], bearbeitet wird weiter das Notierte. Neu: **aufwärts/abwärts (Tonhöhe)** – Rhythmus bleibt, Töne kommen der Höhe nach.
+Tests: Regeln, acorn 0 / doppelte Schlüssel 0, Rauchtest grün; GL1 44/45 (die eine: Zufall-Messung unter Volllast 1× 7 statt 8 gehörte Noten, Anzeige stimmte; Einzelprüfung danach 6/6 grün), Video-Vorschau 31/31; je Paket unabhängige Prüfung mit behobenen Befunden.
+
 ## 4.49.1 — Aufgeräumte Wege: Marken-Blatt in Reitern, ein Export-Blatt, Small │ Full, klarere Namen
 
 - **Aufgeräumte Wege** (deine Freigabe zum Inventar): Marken-Blatt in Reitern (Ablauf │ Teil │ Klang & Groove │ Video, viel flacher), ein „Zusammenfassen …“, **Small │ Full** statt Leicht/Voll (alte Songs klingen gleich), „Im Video ▸“ öffnet die Video-Spur an der Stelle, **ein Blatt Export**, „Öffnen …“ für .json und .zip, Mithören durch Ziehen der ▼-Marke (ohne Lautsprecher-Knopf), ◆ nur noch Klang, ⇥ FILLS, klarere Namen.
