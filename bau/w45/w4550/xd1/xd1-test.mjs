@@ -373,7 +373,8 @@ if (run('ori')) {
       const b = getComputedStyle(x, '::before'); cv.font = [b.fontStyle, b.fontWeight, b.fontSize, b.fontFamily].join(' '); const ls = parseFloat(b.letterSpacing) || 0, t = x.dataset.oriwo;
       const need = cv.measureText(t).width + ls * t.length + 13, r = x.getBoundingClientRect(), hs = getComputedStyle(x), avail = b.position === 'absolute' ? r.width : r.width - parseFloat(hs.paddingLeft) - parseFloat(hs.paddingRight);
       return {t, fit: need <= avail + .5, need: Math.round(need), avail: Math.round(avail)}; });
-    const rr = e => { const r = e.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top), Math.round(r.width), Math.round(r.height)]; };
+    const h0 = H ? H.getBoundingClientRect() : {left: 0, top: 0};   // im Kopf gemessen (das Mikrofon-Blatt ist durch (1) höher und sitzt darum anders im Bild)
+    const rr = e => { const r = e.getBoundingClientRect(); return [Math.round(r.left - h0.left), Math.round(r.top - h0.top), Math.round(r.width), Math.round(r.height)]; };
     const head = H ? [H, ...H.querySelectorAll('button,.sh-title,.psh-t,b')].filter(e => e.getBoundingClientRect().width > 0).map(rr) : null;
     return {wo, head};
   }, hd);
@@ -390,7 +391,7 @@ if (run('ori')) {
       for (const P of [PX, PB]) { await P.p.evaluate(close).catch(() => {}); await sleep(250); }
     }
     ok(`(8) ${VN[vk]}: jede Wo-bin-ich-Zeile in allen Blatt-Köpfen ganz lesbar (gemessen mit der echten Schrift)`, !bad.length && seen.length >= 9, {bad, seen});
-    ok(`(8) ${VN[vk]}: kein Kopf höher, keine Taste verschoben (alle Kopf-Elemente wie in der Basis)`, !moved.length, moved);
+    ok(`(8) ${VN[vk]}: kein Kopf höher, keine Taste im Kopf verschoben (alle Kopf-Elemente wie in der Basis, gemessen im Kopf)`, !moved.length, moved);
     if (vk === 'p') ok('(8) hochkant Drum-Blatt (Schritte): statt „● Sze…“ steht „● Sz 1“; im Song „Ref. 2“ statt abgeschnitten', seen.includes('drum-schritte:Sz 1') && seen.some(s => /^drum-song:(Refrain 2|Ref\. 2)$/.test(s)), seen.filter(s => /^drum/.test(s)));
     ok(`(8) ${VN[vk]}: keine Fehler`, !PX.errs.length, PX.errs.slice(0, 3));
     await PX.close(); await PB.close();
