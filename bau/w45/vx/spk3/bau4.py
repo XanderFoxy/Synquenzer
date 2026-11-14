@@ -37,6 +37,9 @@ R.append(("function spk1PlayPos() { const P = SPK1.pl, c = AU.ctx; return P && c
 R.append(("function spk1PlayFrom(U, t) {\n", "function spk1PlayFrom(U, t) {\n  if (SPK1.pl && SPK1.pl.lp && typeof spk3LpPlay === 'function' && spk2Lp(U) && spk3LpPlay(U, t)) return;   // SPK3: Loop läuft → im Loop weiter\n"))
 R.append(("  const L = U.meta.layers, R = U.meta.rest || {}, row = (id, name, col, o) => {", "  if (typeof spk3LpFromMeta === 'function') spk3LpFromMeta(U);   // SPK3: Loop aus dem Dokument\n  const L = U.meta.layers, R = U.meta.rest || {}, row = (id, name, col, o) => {"))
 R.append(("  U.bMin.classList.toggle('on', !!U.opt.minus); U.bMin.setAttribute('aria-pressed', String(!!U.opt.minus));\n}", "  U.bMin.classList.toggle('on', !!U.opt.minus); U.bMin.setAttribute('aria-pressed', String(!!U.opt.minus));\n  if (typeof spk3LpBtn === 'function') spk3LpBtn(U);   // SPK3: ▶/■ in der Loop-Zeile\n}"))
+# SPK3-R: Nachbau nie schlechter als der alte Weg (zwei Ketten) + Bewegung nur wo gebraucht
+R.append(("  o = o || {}; const n = o.n || 50, lam = 6, rnd = spk2Rng(o.seed || 7)", "  if (typeof spk3KlOpt === 'function' && !(o && o.in3)) return spk3KlOpt(src, o);   // SPK3-R: SPK2-Weg + SPK3-Weg, kleinerer Abstand\n  o = o || {}; const n = o.n || 50, lam = 6, rnd = spk2Rng(o.seed || 7)"))
+R.append(("const r = await spk1Call('klangFeat', {pcs, sr: src.sr, f, on: src.on, off: src.off});", "const r = await spk1Call('klangFeat', {pcs, sr: src.sr, f, on: src.on, off: src.off, x3: src.x3on ? 1 : 0});   /* SPK3-R: Bewegung nur, wenn der Abstand sie braucht */"))
 for a, b in R:
     assert s.count(a) == 1, a[:80]
     s = s.replace(a, b)

@@ -24,7 +24,7 @@ const runOpt = (p, C) => p.evaluate(async C => {
   const sr = 48000, on = 0.03, off = on + C.dur, len = off + 0.5, m = C.m, f = 440 * Math.pow(2, (m - 69) / 12);
   const [x] = await spk2KlRender([SQStore.normalizeSound(snd)], m, on, off, len, sr); const r = await spk1Call('klangFeat', {pcs: [x], sr, f, on, off, est: true});
   const src = {x, sr, m, on, off, len, feat: r.fs[0], est: r.est}, t0 = performance.now(), R = await spk2KlOpt(src, {n: 50, seed: 7});
-  return {tm: {r: Math.round(__tm.r), f: Math.round(__tm.f)}, truth: snd, best: spk2KlSnd(R.best), txt: spk2KlTxt(R.best), dist: R.best.dist, d0: R.d0, ms: Math.round(performance.now() - t0), x3: r.fs[0].x3 || null, P: spk2KlP(R.best)};
+  return {k: R.ketten, tm: {r: Math.round(__tm.r), f: Math.round(__tm.f)}, truth: snd, best: spk2KlSnd(R.best), txt: spk2KlTxt(R.best), dist: R.best.dist, d0: R.d0, ms: Math.round(performance.now() - t0), x3: r.fs[0].x3 || null, P: spk2KlP(R.best)};
 }, C);
 const res = {};
 const pa = await page('a.html'), RA = {}; for (const k of keys) RA[k] = await runOpt(pa, CASES[k]); await pa.context().close();

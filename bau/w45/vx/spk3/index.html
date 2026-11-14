@@ -99756,12 +99756,13 @@ function spk2KlDist(A, B) {
 function spk2Rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 // Optimierer: Runde 0 = Startwerte VA/FM + Varianten (6), dann (1+6) mit Schrittweite nach Erfolg, bis n Versuche
 async function spk2KlOpt(src, o) {
+  if (typeof spk3KlOpt === 'function' && !(o && o.in3)) return spk3KlOpt(src, o);   // SPK3-R: SPK2-Weg + SPK3-Weg, kleinerer Abstand
   o = o || {}; const n = o.n || 50, lam = 6, rnd = spk2Rng(o.seed || 7), f = 440 * Math.pow(2, (src.m - 69) / 12);
   const gauss = () => Math.sqrt(-2 * Math.log(rnd() + 1e-12)) * Math.cos(2 * Math.PI * rnd());
   let done = 0, best = o.from || null, d0 = null;
   const evalB = async L => {
     const pcs = await spk2KlRender(L.map(c => spk2KlSnd(c)), src.m, src.on, src.off, src.len, src.sr);
-    const r = await spk1Call('klangFeat', {pcs, sr: src.sr, f, on: src.on, off: src.off});
+    const r = await spk1Call('klangFeat', {pcs, sr: src.sr, f, on: src.on, off: src.off, x3: src.x3on ? 1 : 0});   /* SPK3-R: Bewegung nur, wenn der Abstand sie braucht */
     L.forEach((c, i) => { c.F = r.fs[i]; c.dist = (src.x3on && typeof spk3KlDist === 'function' ? spk3KlDist : spk2KlDist)(src.feat, c.F);   /* SPK3: + Bewegung (nicht bei reinem FM) */ c.pcm = pcs[i]; }); done += L.length;
     for (const c of L) if (!best || c.dist < best.dist) best = c;
     for (const c of L) if (c !== best) c.pcm = null;
@@ -100141,7 +100142,7 @@ function spk3DspMake(Z2) {
   }
   const klang0 = Z2.ops.klang, klangFeat0 = Z2.ops.klangFeat;
   Z2.ops.klang = (d, m) => { const r = klang0(d, m); r.feat.x3 = bewegung(r.x, r.sr, r.feat.f0, r.on, r.off); return r; };
-  Z2.ops.klangFeat = (d, m) => { const r = klangFeat0(d, m); (r.fs || []).forEach((F, i) => { F.x3 = bewegung(m.pcs[i], m.sr, F.f0, m.on, m.off); }); return r; };
+  Z2.ops.klangFeat = (d, m) => { const r = klangFeat0(d, m); (r.fs || []).forEach((F, i) => { if (m.x3 === 0 || (Array.isArray(m.x3) && !m.x3[i])) return; F.x3 = bewegung(m.pcs[i], m.sr, F.f0, m.on, m.off); }); return r; };   // SPK3-R: x3 0/Maske = Bewegung nur wo gebraucht
   // ---- Auftrag 3: Loop-Klammern im Dokument (teil2.loops = [{a, b}] in Takten); ein ↶ je Änderung
   Z2.ops.loopSet = (d, m, emit, info) => {
     const t2 = H2.t2Of(d), L = Array.isArray(m.L) && m.L.length === 2 ? [Math.max(0, Math.round(+m.L[0] || 0)), Math.max(1, Math.round(+m.L[1] || 0))] : null;
@@ -100155,7 +100156,7 @@ function spk3DspMake(Z2) {
    (Stimmen fix.uni 1/5), u[13] LFO-Rate 0,2…10 Hz, u[14] Vibrato 0…60 ct, u[15] Wah (Cutoff ±0…18 Halbtöne). Startwerte aus der Bewegung
    (Worker: Schwebung je Oberton, Tonhöhe, Schwerpunkt); was die Analyse nicht sieht, bleibt fest (fz) – der Optimierer verändert nur den Rest.
    Abstand = SPK2-Abstand + Bewegung (Schwankung je Oberton, Schwebungs-Rate, Vibrato, Wah). Rauschen nur, wenn die Analyse > 10 % misst. ---- */
-const SPK3_KL = {x3: true, w: 0.2};
+const SPK3_KL = {x3: true, w: 0.2, dual: true};
 function spk3KlP(c, P) {
   const u = c.u; if (c.eng !== 'va' || !u || u.length < 16) return P;
   return Object.assign(P, {det: (u[11] * 2 - 1) * 25, uni: (c.fix && c.fix.uni) || 1, udet: u[12], lr: spk2Lg(u[13], 0.2, 10), vib: u[14] * 60, wah: u[15] * 0.15});
@@ -100168,7 +100169,7 @@ function spk3KlSnd(c, P, p, mods) {
   if (P.wah > 0.002) mods.push({src: 'lfo1', dst: 'cutoff', amt: P.wah});
 }
 function spk3KlStart(c, est, src, alt) {
-  if (c.eng !== 'va' || !SPK3_KL.x3) return c;
+  if (c.eng !== 'va' || !SPK3_KL.x3 || (src && src.k2)) return c;   // SPK3-R: k2 = SPK2-Startwert ohne Bewegung (Kette A)
   const x = (src.feat && src.feat.x3) || null, u = c.u, cvm = x && x.cv.length ? x.cv.reduce((a, v) => a + v, 0) / x.cv.length : 0;
   const det = x ? Math.min(25, x.det) : 0, vib = x && x.vib.d >= 3 && (cvm < 0.15 || x.vib.d > 12) ? Math.min(60, x.vib.d) : 0, wah = x && x.wah.d >= 0.06 && cvm < 0.12 ? x.wah.d : 0,   // Schwebung täuscht Vibrato/Wah vor
     lr = vib ? x.vib.r : wah ? x.wah.r : 4;
@@ -100179,7 +100180,7 @@ function spk3KlStart(c, est, src, alt) {
   c.fz = fz; return c;
 }
 function spk3KlMore(L, S, e, src) {   // zusätzliche Startwerte: zwei verstimmte Oszillatoren, Unison – nur wenn die Analyse Schwebung sieht
-  const x = src.feat && src.feat.x3; if (!SPK3_KL.x3 || !x || !x.cv.length) return L;
+  const x = src.feat && src.feat.x3; if (!SPK3_KL.x3 || src.k2 || !x || !x.cv.length) return L;
   const cvm = x.cv.reduce((a, v) => a + v, 0) / x.cv.length;
   if (cvm > 0.06 || x.det > 0.5) { L.push(S('va', 'det')); L.push(S('va', 'uni')); }
   return L;
@@ -100190,6 +100191,52 @@ function spk3KlDist(A, B) {
   for (let h = 0; h < n; h++) { s += Math.abs(db(a.cv[h]) - db(b.cv[h])); if (a.cv[h] > 0.08 && b.cv[h] > 0.08 && a.b[h] > 0 && b.b[h] > 0) { r += Math.min(3, Math.abs(Math.log2(a.b[h] / b.b[h]))); rc++; } }
   const mv = s / n + (rc ? 2 * r / rc : 0) + Math.abs(a.vib.d - b.vib.d) / 4 + (a.vib.d > 3 && b.vib.d > 3 ? Math.min(3, 2 * Math.abs(Math.log2(Math.max(0.1, a.vib.r) / Math.max(0.1, b.vib.r)))) : 0) + 20 * Math.abs(a.wah.d - b.wah.d);
   return d0 + SPK3_KL.w * mv;
+}
+/* SPK3-R: Nachbau nie schlechter als der alte Weg. Zwei Ketten in denselben Render-Durchgängen: A = SPK2-Weg genau wie vorher (Startwerte ohne
+   Bewegung, SPK2-Abstand, gleiche Zufallsfolge → dasselbe Ergebnis), B = SPK3-Weg (Startwerte mit Bewegung, verstimmt/Unison, Abstand + Bewegung).
+   Ergebnis = Kette mit dem kleineren SPK2-Abstand (gleich → B). Gleiche Klänge werden einmal gerendert, Bewegung nur für B gerechnet.
+   Reines FM und „Weiter“ (from) = eine Kette wie bisher; „Weiter“ gibt den Ausgangsklang zurück, wenn die Kette im SPK2-Abstand nicht besser wird.
+   c.dist ist immer der SPK2-Abstand (Anzeige), dA/dB die Maße der Ketten. */
+async function spk3KlOpt(src, o) {
+  o = o || {}; const e = src.est, eng = o.eng || (e.fm.e < 0.5 * e.va.e ? 'fm' : null), x = src.feat && src.feat.x3;
+  const one = o2 => spk2KlOpt(src, Object.assign({}, o, o2, {in3: 1}));
+  if (o.from) {
+    const f0 = o.from, b3 = f0.eng === 'va' && f0.u.length >= 16 && !!x; src.x3on = b3;
+    if (f0.F) { if (f0.dA == null) f0.dA = spk2KlDist(src.feat, f0.F); f0.dist = b3 ? spk3KlDist(src.feat, f0.F) : f0.dA; }
+    const R = await one({}), b = R.best; b.dA = b.F ? spk2KlDist(src.feat, b.F) : b.dist;
+    const P = f0.dA != null && b.dA > f0.dA ? f0 : b; P.dist = P.dA; return Object.assign(R, {best: P});
+  }
+  if (eng === 'fm' || !x || !x.cv.length) { src.x3on = false; src.k2 = true; try { return one({}); } finally { src.k2 = false; } }   // reines FM / keine Bewegungs-Analyse: SPK2-Weg (Startwerte entstehen beim Aufruf)
+  if (!SPK3_KL.x3 || !SPK3_KL.dual) return one({});   // Mess-Schalter: nur SPK3-Weg
+  const n = o.n || 50, lam = 6, f = 440 * Math.pow(2, (src.m - 69) / 12);
+  const mk = key => { const rnd = spk2Rng(o.seed || 7); return {key, rnd, gauss: () => Math.sqrt(-2 * Math.log(rnd() + 1e-12)) * Math.cos(2 * Math.PI * rnd()), best: null, sig: o.sig || 0.12, done: 0, d0: null}; };
+  const A = mk('dA'), B = mk('dB');
+  const S = (x3, g, a) => { src.k2 = !x3; try { return spk2KlStart(g, e, src, a); } finally { src.k2 = false; } }, ix = (c, d) => { c.u[0] = Math.max(0, Math.min(1, c.u[0] + d)); return c; };
+  const st = x3 => eng === 'va' ? [S(x3, 'va'), S(x3, 'va', 'eins'), S(x3, 'va', 'flach')] : [S(x3, 'va'), S(x3, 'fm'), S(x3, 'va', 'eins'), S(x3, 'va', 'flach'), S(x3, 'fm', 'r2'), ix(S(x3, 'fm'), 0.1)];
+  const LA = st(false), LB = spk3KlMore(st(true), (g, a) => S(true, g, a), e, src);
+  let done = 0;
+  const evalD = async (la, lb) => {
+    const all = la.map(c => [c, A]).concat(lb.map(c => [c, B])), keys = all.map(([c]) => JSON.stringify([c.eng, c.fix, c.u])), uq = [...new Set(keys)];
+    const pcs = await spk2KlRender(uq.map(k => spk2KlSnd(all[keys.indexOf(k)][0])), src.m, src.on, src.off, src.len, src.sr);
+    const r = await spk1Call('klangFeat', {pcs, sr: src.sr, f, on: src.on, off: src.off, x3: uq.map(k => all.some(([, X], i) => X === B && keys[i] === k) ? 1 : 0)});
+    all.forEach(([c, X], i) => { const j = uq.indexOf(keys[i]); c.F = r.fs[j]; c.pcm = pcs[j]; c.dA = spk2KlDist(src.feat, c.F); if (X === B) c.dB = spk3KlDist(src.feat, c.F); c.dist = c.dA; });
+    for (const [X, L] of [[A, la], [B, lb]]) { X.done += L.length; for (const c of L) if (!X.best || c[X.key] < X.best[X.key]) X.best = c; }
+    for (const [c] of all) if (c !== A.best && c !== B.best) c.pcm = null;
+    done = A.done;
+    if (o.prog) o.prog(Math.min(done, n), n, B.best && B.best.dA <= A.best.dA ? B.best : A.best);
+  };
+  await evalD(LA, LB); A.d0 = Math.min(...LA.map(c => c.dA));
+  const gen = X => {
+    const L = []; for (let i = 0; i < Math.min(lam, n - X.done); i++) { const best = X.best, D = best.u.length, fr = [...Array(D).keys()].filter(j => !(best.fz || []).includes(j)), k = i === lam - 1 ? fr.length : Math.min(fr.length, 1 + Math.floor(X.rnd() * 3)), pick = new Set(); while (pick.size < k) pick.add(fr[Math.floor(X.rnd() * fr.length)]); L.push({eng: best.eng, fix: best.fix, fz: best.fz, u: best.u.map((v, j) => (pick.has(j) ? Math.max(0, Math.min(1, v + X.sig * 1.6 * X.gauss())) : v))}); }
+    return L;
+  };
+  while (A.done < n || B.done < n) {
+    if (o.stop && o.stop()) break;
+    const a0 = A.best, b0 = B.best; await evalD(gen(A), gen(B));
+    for (const [X, x0] of [[A, a0], [B, b0]]) X.sig = X.best !== x0 ? Math.min(0.3, X.sig * 1.25) : Math.max(0.02, X.sig * 0.7);
+  }
+  const P = B.best && B.best.dA <= A.best.dA ? B.best : A.best; P.dist = P.dA;
+  return {best: P, d0: A.d0, n: done, sig: (P === A.best ? A : B).sig, ketten: {A: +A.best.dA.toFixed(3), B: +B.best.dA.toFixed(3), B_bew: +B.best.dB.toFixed(3)}};
 }
 function spk3KlTxt(c, L) {
   const P = spk2KlP(c); if (c.eng !== 'va' || P.det == null) return L;
