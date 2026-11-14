@@ -1,6 +1,6 @@
 // Modul "unterricht": Leute/Stellen, die Deutschunterricht suchen (Privat, Integrationskurse, DaF/DaZ, online) –
 // Kategorie „unterricht“ (Xander 08.11.2026: „Leute, die Deutschunterricht suchen … da fehlen Recherchen“).
-// Quellen: (1) Jobbörse der Arbeitsagentur (lib/ba.mjs: /pc/v6/jobs, Ausweich-Adressen), Döbeln + 50 km und von zu Hause;
+// Quellen: (1) Jobbörse der Arbeitsagentur – seit 14.11.2026 raus (Xander: keine Arbeitsamt-Stellen, sondern Gesuche im Netz);
 // (2) Remotive-API (Remote-Stellen „German teacher/tutor“, JSON); (3) Google News (Integrationskurse, Sprachpaten,
 // DaZ-Lehrkräfte Sachsen); (4) Fundorte (config): Lehr-Plattformen (italki, Preply, Lingoda), BAMF-Zulassung,
 // Jobbörse-Website – erscheinen IMMER; (5) Gesuche aus dem Netz (gesuche.mjs, Xander 14.11.2026): Leute, die auf Reddit,
@@ -8,7 +8,6 @@
 import { enthaelt, zaehle, datumDe } from '../lib/text.mjs';
 import { berlinTag } from '../lib/ende.mjs';
 import { ortNach, ortZeile, istOnline, distanzKm, DOEBELN } from '../lib/orte.mjs';
-import { macheBaSuche, baJobLink } from '../lib/ba.mjs';
 import { sammleFeeds, eintrag, googleNews } from './gemeinsam.mjs';
 import { bewerbungAus, bewerbenAls, fundortEintraege, pruefeFundorte, fundortePruefen, sortWert, ortVon, restTage } from './assistent.mjs';
 import { gesucheAusNetz } from './gesuche.mjs';
@@ -47,46 +46,9 @@ export default async function unterricht({ holeText, cfg, jetzt, zustand = {}, e
   const gesehen = new Set();
   const passt = text => zaehle(text, m.faehigkeitWoerter) > 0 && !enthaelt(text, m.nichtWoerter);
 
-  // 1) Jobbörse
-  if (m.ba?.suchen?.length) {
-    const suche = macheBaSuche(holeText, m.ba);
-    for (const s of m.ba.suchen) {
-      try {
-        const { stellen } = await suche(s);
-        for (const st of stellen) {
-          if (gesehen.has(st.refnr)) continue;
-          gesehen.add(st.refnr);
-          const text = `${ohneGender(st.titel)} ${st.beruf} ${st.arbeitgeber}`;
-          if (!passt(text)) continue;
-          // Homeoffice „zu 20 %“ ist kein Unterricht von zu Hause
-          const remote = (st.homeoffice && !(st.homeofficeProzent != null && st.homeofficeProzent < 50)) || enthaelt(text, m.remoteWoerter);
-          const km = stelleKm(st, s);
-          const nah = !!s.wo || (km != null && km <= (m.ba.nahKm ?? 80)) || cfg.region.some(r => st.ort.includes(r));
-          if (!remote && !nah) continue;
-          const typ0 = unterrichtTyp(text);
-          const typ = typ0 === 'kurs' && remote ? 'online' : typ0;
-          // echte Stellen vor den festen Fundorten (Fundort höchstens 45 + 25 − 2 = 68, Stelle bis 80 km ab 60 + 10)
-          const wert = 60 + (remote ? 10 : 0) + (typ === 'nachhilfe' || typ === 'kurs' ? 5 : 0);
-          const ortName = st.ort || null;
-          eintraege.push(eintrag({
-            kategorie: 'unterricht', titel: ohneGender(st.titel || st.beruf), quelle: 'Jobbörse der Arbeitsagentur', link: baJobLink(st.refnr), datum: st.datum,
-            jetzt, art: 'job',
-            // die Jobbörse zeigt nur offene Stellen: Anzeigefenster ab diesem Lauf, nicht ab der Veröffentlichung
-            fensterAb: jetzt, fensterStunden: m.ba.sichtbarStunden ?? 72,
-            zeile: [TYP_NAME[typ], st.arbeitgeber, remote ? 'von zu Hause möglich' : ortZeile(ortName ? { ort: ortName, km } : null),
-              st.seit ? `online seit ${datumDe(st.seit)}` : st.datum ? `vom ${datumDe(st.datum)}` : ''].filter(Boolean).join(' · '),
-            soGehts: SO[typ], wert, grund: typ,
-            extra: {
-              typ, ort: remote ? 'online' : ortName, km: remote ? null : km, online: remote, frist: null,
-              bewerbung: { art: 'seite', ziel: st.externeUrl || baJobLink(st.refnr) }, quelle: 'Jobbörse der Arbeitsagentur',
-              arbeitgeber: st.arbeitgeber || null, refnr: st.refnr, seit: st.seit || null, bewerbenAls: bewerbenAls('unterricht', cfg.kuenstler),
-              sortWert: sortWert({ wert, km: remote ? null : km, online: remote }),
-            },
-          }));
-        }
-      } catch (e) { fehler.push(`Jobsuche „${s.was}“: ${e.message}`); }
-    }
-  }
+  // 1) Jobbörse der Arbeitsagentur: seit 14.11.2026 NICHT mehr in diesem Bereich (Xander: „nicht so normale Stellen, die übers
+  // Arbeitsamt ausgeschrieben sind, sondern wirklich im Internet … Fiverr, Upwork, Foren, Reddit“). Lehrkraft-Stellen für
+  // Integrationskurse usw. gehören nicht zu „Leute suchen Hilfe mit Deutsch“.
 
   // 2) Remotive (Remote-Stellen)
   for (const url of [].concat(m.remotive?.urls || [])) {

@@ -264,25 +264,9 @@
     "unterricht": {
       "aktiv": true,
       "intervallStunden": 12,
-      "_hinweis": "Deutschunterricht (Xander 08.11.2026): Gesuche und Stellen – Privat/Nachhilfe, Integrationskurse, DaF/DaZ, online. Döbeln + Umkreis und von zu Hause. Fundorte (Plattformen, BAMF-Zulassung, Jobbörse-Website) erscheinen IMMER.",
+      "_hinweis": "Deutsch-Hilfe (Xander 14.11.2026): Leute im Internet, die Hilfe mit Deutsch suchen (Freelancer, Lemmy, Reddit …) – KEINE Stellen der Arbeitsagentur mehr („nicht so normale Stellen, die übers Arbeitsamt ausgeschrieben sind, sondern wirklich im Internet“). Dazu Remotive (online), Sprachpaten-Aufrufe und die festen Plattformen (italki, Preply, Lingoda, BAMF).",
       "maxAlterTage": 30,
-      "ba": {
-        "api": "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v6/jobs",
-        "ausweich": ["https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v4/app/jobs", "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v4/jobs"],
-        "key": "jobboerse-jobsuche",
-        "tageZurueck": 21,
-        "_tageZurueck": "v6 beachtet „veroeffentlichtseit“ nicht (Lauf 08.11.2026: Facette veroeffentlichtseit.alle = alle Treffer, auch von 2023). Alter prüft der Radar selbst: datum = jüngstes von aktueller Veröffentlichung/Änderung, höchstens 30 Tage (main.mjs).",
-        "nahKm": 80,
-        "sichtbarStunden": 72,
-        "suchen": [
-          { "was": "Deutschlehrer", "wo": "Döbeln", "umkreis": 50 },
-          { "was": "Deutsch als Fremdsprache", "wo": "Döbeln", "umkreis": 80 },
-          { "was": "Lehrkraft Integrationskurs", "wo": "Döbeln", "umkreis": 80 },
-          { "was": "Nachhilfe Deutsch", "wo": "Döbeln", "umkreis": 30 },
-          { "was": "Deutschlehrer online", "arbeitszeit": "ho" },
-          { "was": "Deutsch als Fremdsprache", "arbeitszeit": "ho" }
-        ]
-      },
+      "_ba": "Jobbörse der Arbeitsagentur (Lehrkraft Integrationskurse usw.) seit 14.11.2026 raus aus diesem Bereich (Xander).",
       "remotive": {
         "urls": ["https://remotive.com/api/remote-jobs?search=german%20teacher&limit=50"],
         "titelWoerter": ["teacher|tutor|lehrer|lehrerin|lehrkraft|trainer|trainerin|instructor|dozent|dozentin|coach|educator"]
@@ -291,26 +275,29 @@
       "gesuche": {
         "_hinweis": "Gesuche aus dem Netz (Xander 14.11.2026): Leute, die auf Reddit, Freelancer & Co. Hilfe mit Deutsch suchen (Nachhilfe, Korrektur, Übersetzen, Konversation, Prüfung, Behördenbrief, Bewerbung) – keine Stellen der Arbeitsagentur. Gesuch = suchWoerter + deutschWoerter (außer Forum mit thema „deutsch“) + hilfeWoerter; Angebote von Lehrern selbst raus; höchstens maxAlterTage alt. Ausfälle (Reddit sperrt Rechenzentrums-IPs gern mit 403/429) sind nur Hinweise im Status. Fundorte (Upwork, Fiverr, Kleinanzeigen …) erscheinen IMMER.",
         "aktiv": true,
-        "maxAlterTage": 14,
-        "maxEintraege": 12,
+        "maxAlterTage": 21,
+        "maxEintraege": 20,
         "reddit": [
-          { "sub": "German", "q": "tutor OR teacher OR lessons OR proofread OR exam", "thema": "deutsch" },
-          { "sub": "LearnGerman", "q": "tutor OR teacher OR lessons OR proofread OR exam", "thema": "deutsch" },
-          { "sub": "germany", "q": "german tutor OR german teacher OR german lessons OR proofread", "thema": null },
-          { "sub": "Austria", "q": "Deutschlehrer OR Nachhilfe OR german tutor OR german lessons", "thema": null },
-          { "sub": "askswitzerland", "q": "german tutor OR german teacher OR german lessons", "thema": null },
-          { "sub": "forhire", "q": "german", "thema": null },
-          { "sub": "slavelabour", "q": "german", "thema": null }
+          { "sub": "German+LearnGerman", "q": "tutor OR teacher OR lessons OR proofread OR exam", "thema": "deutsch" },
+          { "sub": "germany+Austria+askswitzerland+forhire+slavelabour", "q": "german tutor OR german teacher OR german lessons OR proofread OR german translation", "thema": null }
         ],
-        "_reddit": "Atom-Feed der Reddit-Suche (search.rss, sort=new), ohne Login. Nicht im Standard: r/language_exchange (Tandem „Offering/Seeking“, unbezahlt) und r/translator (kostenlose Einzel-Übersetzungen).",
-        "freelancer": ["german tutor", "german proofreading", "german translation"],
+        "_reddit": "Atom-Feed der Reddit-Suche (search.rss, sort=new), ohne Login; mehrere Subreddits mit „+“ in EINER Abfrage (sieben einzelne gaben aus GitHub-Läufen 403/429). Gesperrt = ein kurzer Hinweis, die Reddit-Suche unter „Hier selbst schauen“ steht immer da. Nicht im Standard: r/language_exchange (Tandem, unbezahlt) und r/translator (kostenlose Einzel-Übersetzungen).",
+        "freelancer": ["german tutor", "german teacher", "german lessons", "german language", "german proofreading", "german translation", "translate german", "german editing", "deutsch"],
+        "lemmy": [
+          { "instanz": "feddit.org", "q": "Nachhilfe Deutsch", "thema": null },
+          { "instanz": "feddit.org", "q": "Deutschlehrer", "thema": null },
+          { "instanz": "lemmy.world", "q": "german tutor", "thema": null },
+          { "instanz": "lemmy.world", "q": "german teacher", "thema": null }
+        ],
+        "_lemmy": "Lemmy-Such-API (Fediverse-Foren, JSON, ohne Konto) – sucht auch Beiträge anderer Instanzen.",
+        "_probe": ["https://old.reddit.com/r/German/search.rss?q=tutor&restrict_sr=1&sort=new&t=month", "https://www.reddit.com/r/German/new/.rss", "https://www.peopleperhour.com/freelance-jobs?search=german", "https://www.peopleperhour.com/robots.txt", "https://www.guru.com/d/jobs/q/german/", "https://www.guru.com/robots.txt", "https://www.truelancer.com/freelance-projects?searchterm=german", "https://www.truelancer.com/robots.txt", "https://www.workana.com/jobs?language=en&query=german", "https://www.workana.com/robots.txt", "https://www.kleinanzeigen.de/robots.txt", "https://mastodon.social/api/v1/timelines/tag/deutschlernen?limit=40", "https://mastodon.social/api/v1/timelines/tag/germantutor?limit=40", "https://feddit.org/api/v3/community/list?type_=All&sort=TopAll&limit=50", "https://www.proz.com/translation-jobs", "https://www.proz.com/robots.txt", "https://www.translatorscafe.com/cafe/SearchJobs.asp", "https://api.stackexchange.com/2.3/search/advanced?order=desc&sort=creation&q=tutor&site=german"],
         "_freelancer": "Öffentliche Projekt-API von Freelancer.com (JSON, ohne Schlüssel). Jedes Projekt ist ein Auftrag – „sucht“ muss nicht im Text stehen.",
         "suchWoerter": ["=suche|=suchen|=sucht|gesucht|brauche|=benötige|benötigen|wer kann|kann mir jemand|hilfe gesucht", "looking for|=need|=needs|=needed|=wanted|=seeking|=hiring|=task|=request|can someone|can anyone|anyone who can|recommend a tutor|recommendations for a tutor|=paid"],
         "deutschWoerter": ["deutsch|german|=daf|=daz|goethe|telc|testdaf|=dsh|=ösd"],
         "hilfeWoerter": ["tutor|teacher|lehrer|lehrerin|lehrkraft|nachhilfe|unterricht|=lesson|=lessons|=classes|deutschkurs|privatstunde", "proofread|korrektur|korrigier|lektor|correct my|correcting|correction|=edit|editing", "übersetz|translat", "konversation|conversation|speaking partner|practice|=üben|sprechen", "prüfung|=exam|=exams|examen|goethe|telc|testdaf|=dsh|=ösd", "bewerbung|lebenslauf|anschreiben|cover letter|=cv|motivationsschreiben", "behörde|jobcenter|=brief|=letter|formular|=antrag"],
         "angebotTitelWoerter": ["for hire|=offer|=offering|=biete|=bieten|=angebot|=tutoring available|=lessons available"],
         "angebotWoerter": ["ich biete|biete nachhilfe|biete deutsch|i offer|my services|my rates|book a trial|book a free|looking for students|new students|suche schüler|neue schüler|i am a native german teacher|i'm a native german teacher|certified german teacher here"],
-        "nichtWoerter": ["customer support|customer service|kundenservice|call center|callcenter", "=sales|vertrieb|telesales|cold call", "data entry|voice over|voiceover|=seo|marketing|moderator|chatter", "developer|entwickler|programmier|wordpress"],
+        "nichtWoerter": ["customer support|customer service|kundenservice|call center|callcenter", "=sales|vertrieb|telesales|cold call", "data entry|voice over|voiceover|=seo|marketing|moderator|chatter", "developer|entwickler|programmier|wordpress", "email template|e-mail template|follow-up system|lead generation|social media"],
         "fundorte": [
           { "titel": "Upwork: neue Aufträge „German tutor“", "link": "https://www.upwork.com/nx/search/jobs/?q=german%20tutor&sort=recency", "ort": "online", "quelle": "Upwork", "zeile": "fertige Suche, neueste zuerst (Upwork hat keinen Feed mehr)", "soGehts": "Suche öffnen, Auftrag wählen, mit kurzem Text bewerben (kostenloses Profil, Bewerbungen kosten „Connects“)." },
           { "titel": "Upwork: Korrektur/Übersetzung Deutsch", "link": "https://www.upwork.com/nx/search/jobs/?q=german%20proofreading&sort=recency", "ort": "online", "quelle": "Upwork", "zeile": "fertige Suche: Korrekturlesen, Übersetzen", "soGehts": "Auftrag wählen, Probe-Absatz anbieten, Preis pro Wort oder pro Seite nennen." },
@@ -320,14 +307,13 @@
           { "titel": "Reddit r/German: neueste Fragen nach Tutor/Korrektur", "link": "https://www.reddit.com/r/German/search/?q=tutor%20OR%20proofread&restrict_sr=1&sort=new", "ort": "online", "quelle": "Reddit", "zeile": "falls der Radar Reddit gerade nicht lesen darf", "soGehts": "Beitrag öffnen, freundlich antworten: wer du bist, online per Video, Kennenlernstunde." }
         ]
       },
-      "suchen": ["Lehrkräfte Integrationskurs gesucht", "Deutschlehrer gesucht Sachsen", "DaZ Lehrkräfte gesucht Sachsen", "Sprachpaten gesucht Döbeln OR Mittelsachsen OR Leipzig", "Deutschkurs Ehrenamtliche gesucht Sachsen"],
+      "suchen": ["Sprachpaten gesucht Döbeln OR Mittelsachsen OR Leipzig", "Deutschkurs Ehrenamtliche gesucht Sachsen"],
       "faehigkeitWoerter": ["deutschlehr|deutschkurs|deutschunterricht|deutsch unterricht|deutsch als fremdsprache|deutsch als zweitsprache|deutschnachhilfe|nachhilfe deutsch|deutsch-nachhilfe|lehrkraft deutsch|lehrkraft für deutsch|dozent deutsch|dozentin deutsch|lehrer deutsch", "daf|daz", "integrationskurs|integrationskurse|berufssprachkurs|sprachkurs|sprachkurse|sprachlehr|sprachpate|sprachpaten|sprachcafe|sprachcafé", "german teacher|german tutor|teach german|german language"],
       "gesuchtWoerter": ["gesucht|=sucht|=suchen|bewerben|bewerbung|verstärkung|verstaerkung|mitmachen|ehrenamtliche|freiwillige|lehrkräftemangel|lehrkraeftemangel|stellen"],
       "remoteWoerter": ["homeoffice|home office|home-office", "remote", "online", "von zu hause|von zuhause", "videounterricht|per video|zoom"],
       "_remoteWoerter": "Nur Wörter, die wirklich „von zu Hause“ heißen (Honorar/freiberuflich heißt nicht online).",
       "nichtWoerter": ["außendienst|aussendienst", "vertrieb", "callcenter|call center|kundenservice|customer support|customer service", "provision", "fahrer", "lager", "pflege", "kommissionier", "verkäufer|verkaeufer|sales"],
       "fundorte": [
-        { "titel": "Jobbörse: Deutschlehrer-Stellen rund um Döbeln (Live-Suche)", "link": "https://www.arbeitsagentur.de/jobsuche/suche?angebotsart=1&was=Deutschlehrer&wo=D%C3%B6beln&umkreis=50", "ort": "Döbeln", "typ": "kurs", "quelle": "Arbeitsagentur", "zeile": "immer aktuell, 50 km Umkreis", "soGehts": "Suche öffnen, Anzeige wählen, kurz bewerben (Vorlage unten)." },
         { "titel": "italki: als Deutschlehrer (Community Tutor) bewerben", "link": "https://teach.italki.com", "ort": "online", "typ": "online", "quelle": "italki", "bewerbung": { "art": "formular", "ziel": "https://teach.italki.com" }, "zeile": "Community Tutor ohne Zertifikat möglich, Antwort in ca. 10 Werktagen", "soGehts": "Am Computer bewerben (nicht am Handy): Profil, Vorstellungsvideo, Ausweis. Preis selbst festlegen." },
         { "titel": "Preply: Deutsch online unterrichten", "link": "https://preply.com/en/job/21798", "ort": "online", "typ": "online", "quelle": "Preply", "zeile": "keine formalen Voraussetzungen, Freischaltung in ca. 3 Werktagen", "soGehts": "Profil + Vorstellungsvideo hochladen, Kalender eintragen, Preis festlegen." },
         { "titel": "Lingoda: Lehrkraft im Online-Team (freiberuflich)", "link": "https://www.lingoda.com/english/jobs", "ort": "online", "typ": "online", "quelle": "Lingoda", "zeile": "Gruppenkurse über Zoom, ca. 5–20 Std./Woche", "soGehts": "Online-Formular ausfüllen; Lebenslauf und Unterrichtserfahrung bereithalten." },

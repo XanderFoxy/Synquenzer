@@ -8,7 +8,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { macheFixtureAbruf } from '../lib/http.mjs';
 import { FIXTURE_KARTE } from './fixtures/karte.mjs';
-import { gesucheAusNetz, pruefeGesuch, hilfeArt, redditSuche, freelancerSuche, freelancerLink, freelancerPasst, auszugAus } from '../module/gesuche.mjs';
+import { gesucheAusNetz, pruefeGesuch, hilfeArt, redditSuche, freelancerSuche, freelancerLink, freelancerPasst, auszugAus, lemmySuche } from '../module/gesuche.mjs';
 import unterricht from '../module/unterricht.mjs';
 
 const HIER = dirname(fileURLToPath(import.meta.url));
@@ -19,13 +19,13 @@ const JETZT = new Date('2026-11-14T12:00:00Z');
 const holeText = macheFixtureAbruf(FX, FIXTURE_KARTE);
 const funde = l => l.filter(e => !e.extra?.fundort);
 
-test('Gesuche: Reddit + Freelancer – Gesuch ja, Angebot nein, zu alt nein, Duplikat einmal, neueste zuerst', async () => {
+test('Gesuche: Reddit + Freelancer + Lemmy – Gesuch ja, Angebot nein, zu alt nein, Duplikat einmal, neueste zuerst', async () => {
   const { eintraege, hinweise } = await gesucheAusNetz({ holeText, m, jetzt: JETZT, zustand: {}, kuenstler: cfg.kuenstler });
   assert.deepEqual(hinweise, []);
   const f = funde(eintraege);
   const t = f.map(e => e.titel);
-  for (const ja of [/Goethe B2/, /proofread my Anschreiben/, /Ausländerbehörde/, /German tutor for my daughter/, /conversation practice/, /Translate website/]) assert.ok(t.some(x => ja.test(x)), `${ja} fehlt: ${t.join(' | ')}`);
-  for (const nein of [/\[Offer\]/, /looking for students/, /For Hire/, /customer support/, /sales representative/, /doch and aber/, /\(A2\)/, /master thesis/]) assert.ok(!t.some(x => nein.test(x)), `${nein} sollte fehlen`);
+  for (const ja of [/Goethe B2/, /proofread my Anschreiben/, /Ausländerbehörde/, /German tutor for my daughter/, /conversation practice/, /Translate website/, /Nachhilfe in Deutsch für meine Frau/, /Anschreiben auf Deutsch korrigiert/]) assert.ok(t.some(x => ja.test(x)), `${ja} fehlt: ${t.join(' | ')}`);
+  for (const nein of [/\[Offer\]/, /looking for students/, /For Hire/, /customer support/, /sales representative/, /doch and aber/, /\(A2\)/, /master thesis/, /Biete Deutsch-Nachhilfe/, /Klasse 5/, /für Sohn/]) assert.ok(!t.some(x => nein.test(x)), `${nein} sollte fehlen`);
   assert.equal(t.filter(x => /Goethe B2/.test(x)).length, 1, 'Crosspost mit gleichem Link nur einmal');
   const d = f.map(e => Date.parse(e.datum));
   assert.deepEqual(d, [...d].sort((a, b) => b - a), 'neueste zuerst');
@@ -34,12 +34,12 @@ test('Gesuche: Reddit + Freelancer – Gesuch ja, Angebot nein, zu alt nein, Dup
     assert.equal(e.extra.typ, 'gesuch');
     assert.equal(e.extra.gesuch, true);
     assert.equal(e.extra.online, true);
-    assert.match(e.link, /^https:\/\/www\.(reddit|freelancer)\.com\//);
+    assert.match(e.link, /^https:\/\/(www\.(reddit|freelancer)\.com|feddit\.org)\//);
     assert.ok(e.datum && e.quelle && e.soGehts.length > 20);
-    assert.ok(JETZT - Date.parse(e.datum) <= 14 * 864e5, 'höchstens 14 Tage alt');
+    assert.ok(JETZT - Date.parse(e.datum) <= 21 * 864e5, 'höchstens 21 Tage alt');
     assert.equal(e.sofort, false, 'keine Push-Flut');
     assert.equal(e.extra.bewerbenAls.name, 'Deutsch mit Xander');
-    assert.ok(Date.parse(e.sichtbarBis) - Date.parse(e.datum) === 14 * 864e5, 'Anzeigefenster 14 Tage');
+    assert.ok(Date.parse(e.sichtbarBis) - Date.parse(e.datum) === 21 * 864e5, 'Anzeigefenster 21 Tage');
   }
   const b2 = f.find(e => /Goethe B2/.test(e.titel));
   assert.equal(b2.quelle, 'Reddit r/German');
@@ -50,7 +50,12 @@ test('Gesuche: Reddit + Freelancer – Gesuch ja, Angebot nein, zu alt nein, Dup
   assert.ok(b2.extra.auszug.length <= 180);
   assert.equal(f.find(e => /Anschreiben/.test(e.titel)).extra.was, 'bewerbung');
   assert.equal(f.find(e => /Ausländerbehörde/.test(e.titel)).extra.was, 'behoerde');
-  assert.equal(f.find(e => /daughter/.test(e.titel)).quelle, 'Reddit r/forhire');
+  assert.equal(f.find(e => /daughter/.test(e.titel)).quelle, 'Reddit r/forhire', 'Quelle = Subreddit des Beitrags, nicht die Sammel-Abfrage');
+  const lf = f.find(e => /meine Frau/.test(e.titel));
+  assert.equal(lf.quelle, 'Lemmy fragen@feddit.org');
+  assert.equal(lf.link, 'https://feddit.org/post/beispiel901');
+  assert.equal(lf.extra.was, 'pruefung');
+  assert.equal(f.find(e => /Anschreiben auf Deutsch/.test(e.titel)).datum, '2026-11-13T18:00:00.000Z', 'Lemmy 0.18 ohne Zone = UTC');
   const fl = f.find(e => /Translate website/.test(e.titel));
   assert.equal(fl.quelle, 'Freelancer');
   assert.equal(fl.link, 'https://www.freelancer.com/projects/translation/beispiel-translate-website-english-german');
@@ -72,26 +77,30 @@ test('Gesuche: Fundorte (Upwork, Fiverr, Kleinanzeigen …) erscheinen immer –
   for (const q of ['Upwork', 'Fiverr', 'Kleinanzeigen', 'Freelancer', 'Reddit']) assert.ok(fund.some(e => e.quelle === q), q);
   assert.ok(fund.every(e => e.extra.typ === 'gesuch' && e.extra.gesuch === true && e.link.startsWith('https://')));
   assert.ok(fund.find(e => e.quelle === 'Kleinanzeigen').zeile.includes('Link prüfen'), 'nicht live belegte Adresse markiert');
-  assert.equal(hinweise.length, m.reddit.length + m.freelancer.length, hinweise.join(' | '));
+  // Reddit ganz gesperrt = EIN kurzer Hinweis (vorher eine Zeile je Subreddit)
+  assert.equal(hinweise.length, 1 + m.freelancer.length + m.lemmy.length, hinweise.join(' | '));
+  assert.equal(hinweise.filter(h => /Reddit/.test(h)).length, 1);
+  assert.match(hinweise[0], /^Gesuche: Reddit gesperrt \(403\) – Suche unter „Hier selbst schauen“$/);
   assert.ok(hinweise.every(h => /^Gesuche: /.test(h) && /403/.test(h)));
 });
 
 test('Gesuche: Ausfall ist nur ein Hinweis – der Bereich Unterricht bleibt ohne Störung', async () => {
-  const nurGesucheKaputt = async (url, o) => (/reddit|freelancer/.test(url) ? Promise.reject(new Error('HTTP 429 bei www.reddit.com')) : holeText(url, o));
+  const nurGesucheKaputt = async (url, o) => (/reddit|freelancer|api\/v3/.test(url) ? Promise.reject(new Error('HTTP 429 bei www.reddit.com')) : holeText(url, o));
   const r = await unterricht({ holeText: nurGesucheKaputt, cfg, jetzt: JETZT, zustand: {} });
   assert.deepEqual(r.fehler, []);
-  assert.ok(r.hinweise.some(h => /Gesuche: Reddit r\/German/.test(h)));
+  assert.ok(r.hinweise.some(h => /^Gesuche: Reddit gesperrt \(429\)/.test(h)), r.hinweise.join(' | '));
   assert.ok(r.eintraege.some(e => e.extra.gesuch && e.extra.fundort));
 });
 
-test('Gesuche im Bereich Unterricht: neben Jobbörse/News, gleicher Link nur einmal', async () => {
+test('Gesuche im Bereich Unterricht: keine Jobbörse mehr, gleicher Link nur einmal', async () => {
   const r = await unterricht({ holeText, cfg, jetzt: JETZT, zustand: {} });
   assert.deepEqual(r.fehler, []);
   const g = r.eintraege.filter(e => e.extra.gesuch && !e.extra.fundort);
-  assert.equal(g.length, 6, g.map(e => e.titel).join(' | '));
+  assert.equal(g.length, 8, g.map(e => e.titel).join(' | '));
+  assert.ok(!r.eintraege.some(e => /arbeitsagentur|jobbörse/i.test(`${e.quelle} ${e.link}`)), 'Xander 14.11.2026: keine Arbeitsamt-Stellen in diesem Bereich');
   const links = r.eintraege.filter(e => !e.extra.fundort).map(e => e.link);
   assert.equal(new Set(links).size, links.length);
-  assert.ok(r.eintraege.filter(e => e.extra.fundort && !e.extra.gesuch).length >= 5, 'alte Fundorte bleiben');
+  assert.ok(r.eintraege.filter(e => e.extra.fundort && !e.extra.gesuch).length >= 4, 'Plattformen (italki, Preply, Lingoda, BAMF) bleiben');
 });
 
 test('Gesuche-Filter: Wörter, Angebote, Thema, Art der Hilfe', () => {
@@ -124,7 +133,10 @@ test('Gesuche-Filter: Wörter, Angebote, Thema, Art der Hilfe', () => {
 
 test('Gesuche: Adressen der Quellen', () => {
   assert.equal(redditSuche({ sub: 'German', q: 'tutor OR teacher' }), 'https://www.reddit.com/r/German/search.rss?q=tutor%20OR%20teacher&restrict_sr=1&sort=new&t=month');
-  assert.equal(freelancerSuche('german tutor'), 'https://www.freelancer.com/api/projects/0.1/projects/active/?query=german%20tutor&limit=30&job_details=true');
+  assert.equal(redditSuche({ sub: 'German+LearnGerman', q: 'tutor' }), 'https://www.reddit.com/r/German+LearnGerman/search.rss?q=tutor&restrict_sr=1&sort=new&t=month', '„+“ bleibt (eine Abfrage für mehrere Subreddits)');
+  assert.ok(m.reddit.length <= 2, 'höchstens 2 Reddit-Abfragen je Lauf');
+  assert.equal(freelancerSuche('german tutor'), 'https://www.freelancer.com/api/projects/0.1/projects/active/?query=german%20tutor&limit=50&job_details=true');
+  assert.equal(lemmySuche({ instanz: 'feddit.org', q: 'Nachhilfe Deutsch' }), 'https://feddit.org/api/v3/search?q=Nachhilfe%20Deutsch&type_=Posts&sort=New&listing_type=All&limit=50');
   assert.equal(freelancerLink('/translation/x-1'), 'https://www.freelancer.com/projects/translation/x-1');
   assert.equal(auszugAus('Text hier submitted by /u/abc [link] [comments]'), 'Text hier');
   assert.ok(auszugAus('wort '.repeat(80)).endsWith(' …'));
