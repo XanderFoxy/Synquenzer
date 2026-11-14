@@ -22,3 +22,8 @@
 - (6) Langer Take 56,6 s (src/lang.mjs): 3 Stimmen 3,1 → 4,3 s, 4 Stimmen 4,5 → 5,9 s, Heap 7 → 17–19 MB (linear, Fenster-Summen mit zwei Zeigern) → fertig.
 - (7) Stimmführung: Zuordnung hoch → tief / Kreuzen nur mit Grund unverändert; gemessen 0 falsch zugeordnete Rahmen in allen 12 Fällen (src/diag.mjs) → fertig. NOTES.md → fertig. Ende Auftrag 1/3.
 - 14.11. Start Auftrag 2/3 (Formanten bei großen Verschiebungen): Ziel Formant ≤ 4 %, Übergang ≤ 4 dB, Anlauf ≤ 20 ms.
+- (1) Befund (src/fdiag*.mjs, Basis-Messung src/tm2-vorher.json): Rest x − Modell im Vokal −28 dB (Teiltöne −40 dB, Hauptteil > 7 kHz + Hauch) – kein großer
+  „Tonhöhen-Geist“ im ruhigen Teil. Formant-Fehler hat zwei Ursachen: (a) Hülle zwischen den Teiltönen: Formant liegt zwischen zwei Teiltönen (z. B. „e“ 433 Hz:
+  F1 530 Hz zwischen T1/T2), die lineare Log-Interpolation verfehlt die Spitze um bis 12 dB; Orakel mit wahrer Hülle: +400 9,3 → 5,8 %, −500 6,0 → 4,1 %;
+  (b) Ränder/Übergänge: Strecken-Rand (Schutzzone 15 ms + Rampe 10 ms = Original-Tonhöhe, LSD 15–19 dB) und Legato-Vokalwechsel (Rest-Spitze −8 dB, LSD 9–12).
+  Anlauf −500 = 50 ms kommt NICHT vom Anlauf: in Note 8 („e“ 247 Hz) springt YIN im IDEAL auf 2·f0 (T2 = F1), die Ausgabe nicht (T2 zu schwach = Ursache a).
