@@ -449,6 +449,21 @@ if (TEIL.includes('l')) {   // „▶ Auswahl“ (Auswahl abspielen) mit umgeset
   log('l1-auswahl-abspielen', r);
   await P.ctx.close();
 }
+if (TEIL.includes('m')) {   // Zerlegen erneut, nachdem die Gesang-Ebene kopiert wurde
+  const P = await page(428, 926), {p} = P;
+  const r = await p.evaluate(async () => { const sr = 48000, n = sr * 6, L = new Float32Array(n);
+    for (let i = 0; i < n; i++) { const t = i / sr; L[i] = 0.15 * Math.sin(2 * Math.PI * 55 * t) + (t > 1 && t < 5 ? 0.1 * (Math.sin(2 * Math.PI * 330 * t) + 0.5 * Math.sin(2 * Math.PI * 660 * t) + 0.3 * Math.sin(2 * Math.PI * 990 * t)) : 0) + ((i % 24000) < 400 ? 0.4 * (Math.random() * 2 - 1) : 0); }
+    const d = await __spk.load({name: 'Zerl', sr, ch: [L, L.slice()]}); await __spk.page.open({id: d.meta.id}); await new Promise(z => setTimeout(z, 500));
+    let z = await __spk.zerlegen({}); spk1Got(SPK1.ui, z);
+    const g = SPK1.ui.meta.layers.find(l => l.z === 'gesang'), E = async id => { const r = await __spk.render(id); return +r.ch[0].reduce((s, v) => s + v * v, 0).toFixed(2); };
+    const o = {layers1: SPK1.ui.meta.layers.map(l => l.id + ':' + l.name), gesang1: await E(g.id), mix1: await E(null)};
+    const c = await __spk6.dup(g.id); spk1Got(SPK1.ui, c); o.kopie = await E(c.lid);
+    z = await __spk.zerlegen({weiter: false}); spk1Got(SPK1.ui, z);
+    o.layers2 = SPK1.ui.meta.layers.map(l => l.id + ':' + l.name); o.gesang2 = await E(g.id); o.kopie2 = await E(c.lid); o.mix2 = await E(null);
+    return o; });
+  log('m1-zerlegen-nach-kopie', r);
+  await P.ctx.close();
+}
 log('konsole-fehler', errs.slice(0, 10));
 fs.writeFileSync(path.join(dir, 'pruef6-' + TEIL.join('') + '.json'), JSON.stringify({ms: Date.now() - T0, res}, null, 1));
 await b.close(); srv.close();

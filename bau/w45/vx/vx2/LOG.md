@@ -1,7 +1,26 @@
 # VX2 – LOG (Gesang-Editor an echtem Gesang: Stücke = Noten/Silben)
 
-19:09 Start. vx2/index.html == basis6.html (4.62.0, cmp gleich). NOTES von RV1 gelesen (Übersegmentierung #1 150 Stücke / 59 Noten, 37 % an einer Note).
-19:20 VX2-Block eingebaut (nach NX1-END) + Haken in vx1rAnalyse. Node (dbg/eval.cjs, 33-s-Aufnahme): roh 213 Marken → 60 Stücke / 59 Noten, Präz 26 % → 85 %, Anfang 35 → 43, Vokal 46 → 50; Anker/Anlauf Hauptfaden = Op 'vxa' (max Δ 0). topdefs 0/0, dupkeys 0.
-19:33 rv1-test #1 (Lauf 1, run1.txt): 60 Stücke (vorher 150), an Note 52/60 = 87 % (37 %), Einsätze Anfang 45/59 (39), Vokal 49/59 (48), Raster 58/60 (94/150); NEU 2 Knack-/1 Sprung-Befund (Schnitte 34/38). Diagnose (Puffer-Dump, dbg/q-1.json): Ausgang 5 ms vor Schnitt 34 = Quelle 36 ms vor dem Stück (r 0,99, 2. Abl. Quelle 0,126 ≥ Ausgang 0,115) – Konsonant-Ausklang des Vorgängers, gedehnt bis an den Schnitt; Bezugsfenster des Tests (±20 ms um si/sp) erfasst ihn nicht. Schnitt 38 ebenso (Quelle letzte 60 ms 0,076 ≥ Ausgang 0,020). Test-Kopie vx2/rv1-test.mjs meldet zusätzlich INFO mit diesem Bezug.
-19:45 Lauf 2 (alle 3, run2.txt, rv1-nachher.json): 48/53 OK. #1 60 Stücke 52/60 an Note, Anfang 45 / Vokal 49 von 59, Raster 58/60; #10 28 Stücke, Raster 20/28; #14 32 Stücke, Raster 28/32. Knack/Sprung nach Test-Bezug: #1 2/1, #10 0/1 – mit Ausklang-Bezug (INFO VX2-Bezug) 0/0 überall. #14 rechts einmal FEHLER (d2 0,0114 vs Bezug 0,0055): Dump zeigt Ausgang 5,5 ms vor der Naht = Quelle 30,8 ms vor dem Stück (r 1,000, Quelle 0,027) → gleicher Bezugs-Fehler; im Einzellauf #14 OK. #14 allein: Chor σ/Formant FEHLER auch in der Basis 4.62.0 (σ 11,1 / Formant −0,96 %) – nicht VX2.
-19:49 Basis 4.62.0 (run0-basis.txt, rv1-vorher.json): 48/53 – FEHLER #1 Einsätze (38/47 von 59, Vokal 79,7 %), #1 Präzision 51/150, Raster #1 94/150, #10 31/56, #14 45/69; Knack/Sprung 0.
+19:09 Start. vx2/index.html == basis.html == vx/basis6.html (4.62.0, cmp gleich). NOTES/LOG von RV1 gelesen (Übersegmentierung: #1 150 Stücke / 59 Noten, 37 % an einer Note; Raster #1 94/150, #10 31/56, #14 45/69).
+19:12 Node-Diagnose (dbg/feat-node.cjs: Erkennung, Op 'vxa', G2-Tonhöhe aus index.html; dbg/eval0.cjs): #1 roh 213 Marken, Noten getroffen 41/59, Präzision 20 %;
+  Tonhöhen-Noten (G2) 59 Noten, getroffen 50/59, Präzision 85 %. Erkennungs-Marken, die nicht an einer G2-Note liegen: 140, davon nur 3 an einer annotierten Note.
+  Pegel-Tal mit 1-ms-Hülle unbrauchbar (Perioden-Welligkeit 7–13 dB auch im Vokal) → 30-ms-Pegel: fast alle < 6 dB (2 Fehlalarme, 1 echte Note 5,7 dB).
+19:16 Kern dbg/vx2-core.js (vx2Pick, vx2AnLead) + dbg/eval.cjs (Stücke wie vx1rPieces): roh 213 → 60 Stücke, Präz 26 % → 85 %, Anfang 35 → 43, Vokal 46 → 50 (von 59);
+  Einrasten an Erkennungs-Marken: ±20 ms besser als 60/30 ms (Anfang 39) und als gar nicht (42). Anker/Anlauf auf dem Hauptfaden = Op 'vxa' bitgenau (max Δ 0, alle 3 Aufnahmen), 12–16 ms.
+19:17 VX2-Block nach NX1-END eingebaut + Haken (1 Zeile) in vx1rAnalyse. topdefs 0/0, dupkeys 0.
+19:19 rv1-test #1 (run1.txt): 60 Stücke (vorher 150), an Note 52/60 = 87 % (vorher 51/150 = 34 %), Einsätze Anfang 45 / Vokal 49 von 59 (vorher 38 / 47), Raster 58/60 (94/150).
+  NEU: 2 Knack- und 1 Sprung-Befund (Schnitte 34, 38).
+19:21 Diagnose mit Puffer-Dump (Test-Kopie vx2/rv1-test.mjs, RV1_DUMP; dbg/q-1.json): Ausgang 5,4 ms vor Schnitt 34 = Quelle 36 ms vor dem Stück (Korrelation 0,99,
+  2. Ableitung Quelle 0,126 ≥ Ausgang 0,115) – Konsonant im Ausklang des Vorgängers, der (gedehnt) bis an den Schnitt spielt. Bezugsfenster des Tests (±20 ms um
+  Stück-Anfang und um die ungedehnte Vorgänger-Stelle) erfasst ihn nicht. Schnitt 38 ebenso (Quelle letzte 60 ms 0,076 ≥ Ausgang 0,020). Kein neuer Knackser.
+  Versuch „Stimm-Beginn“ (Marke auf den Beginn des gesungenen Laufs ≤ 60 ms vor der Note, damit der Konsonant als Anlauf zum Stück gehört): Node Anfang 43 → 41,
+  Vokal 50 → 50 – nicht messbar besser, nicht eingebaut (Weg in NOTES).
+19:25 Lauf 2, alle 3 Aufnahmen (run2.txt, rv1-nachher.json): 48/53 OK. #1 60 Stücke, Raster 58/60 OK; #10 28 Stücke, Raster 20/28 (FEHLER, vorher 31/56); #14 32 Stücke, Raster 28/32 OK.
+  Knack/Sprung nach Test-Bezug #1 2/1, #10 0/1, #14 0/0 – mit Bezug inkl. Ausklang des Vorgängers (INFO „VX2-Bezug“) überall 0/0.
+  #14 Stück 23 rechts FEHLER (d2 0,0114 gegen Bezug 0,0055): Dump (Einzellauf #14) – Ausgang 5,5 ms vor der Naht = Quelle 30,8 ms vor dem Stück (Korrelation 1,000,
+  Quelle 0,027 ≥ Ausgang) → derselbe Bezugs-Fehler; im Einzellauf #14 war die Prüfung OK. #14 allein: Chor σ 11,2 / Formant −1,0 % FEHLER – Basis 4.62.0 gleich (σ 11,1 / −0,96 %), nicht VX2.
+19:27 Basis 4.62.0 (run0-basis.txt, rv1-vorher.json): 48/53 – FEHLER #1 Einsätze (Anfang 38, Vokal 47 = 79,7 %), #1 Präzision 51/150, Raster #1 94/150, #10 31/56, #14 45/69; Knack/Sprung 0.
+19:29 vx1-test (rolle/vx1-test.mjs, reg/vx1.txt): ERGEBNIS 61/61 – alles OK.
+19:31 imp1-test (imp/imp1-test.mjs, reg/imp1.txt): ALLE OK (48), 119 s.
+19:33 Pflicht: topdefs Skripte 26, doppelt 0, Syntaxfehler 0 · dupkeys 0 · smoke errors [] (smoke.png) · „MS 2000“ 1× (= Basis) · „^  live: true,“ 1× (= Basis) · VERSION 4.62.0 ·
+  Markenwörter: keine im Block (Zählung = Basis) · keine Datensatz-/Produktnamen in App, Tests, Notizen unter vx2 · basis.html unverändert · Diff zur Basis 95 Zeilen (Block + 1 Haken-Zeile).
+  Tests nacheinander, nie parallel. Puffer-Dumps (*.f32) gelöscht.

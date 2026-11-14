@@ -101475,9 +101475,9 @@ SPK1_API.spk4 = {restAuf: () => spk4RestAuf(SPK1.ui), uni: spk4KlUni, UNI: SPK4_
 function spk8DspMake(Z2) {
   if (!Z2 || !Z2.h || !Z2.ops || !Z2.I || !Z2.h.segNotes || !Z2.h.magsX) return Z2;
   const {I} = Z2, H2 = Z2.h;
-  // src: Verfolgung auf 'mix' (Original wie im Zerlegen) oder 'lay' (Ebene); kick: Kick-Vorlage abziehen (Anteil); eDb: Rahmen ≥ 98-%-Quantil − eDb;
+  // dec: Ebene unterabgetastet (SPK3 magsLo) statt FFT 16384 · src: Verfolgung auf 'mix' (Original wie im Zerlegen) oder 'lay' (Ebene); kick: Kick-Vorlage abziehen (Anteil); eDb: Rahmen ≥ 98-%-Quantil − eDb;
   // gS/gL: Leck-Schutz je Note (cL + cR ≥ −gS und cL ≥ −gL, dB); sub 0: keine Unter-Oktave; pf/phi/P wie SPK4 o6
-  const o8 = {an: 1, N: 16384, fTop: 2400, onMin: 0.3, kick: 1, src: 'mix', eDb: 40, gS: 26, gL: 24, sub: 0, pf: 3, phi: 0.8, P: 1.2, dbg: null, dbg2: null};
+  const o8 = {an: 1, dec: 1, N: 16384, fTop: 2400, onMin: 0.3, kick: 1, src: 'mix', eDb: 40, gS: 26, gL: 24, sub: 0, pf: 3, phi: 0.8, P: 1.2, dbg: null, dbg2: null};
   function track8(Y, n, K, df, hopS, trust) {   // Kopie SPK4 bassTrack4 (Zerlegen), Schalter aus o8 (sub: Unter-Oktave)
     const C = []; for (let c = 12 * Math.log2(27 / 440); ; c += 0.25) { const f = 440 * Math.pow(2, c / 12); if (f > 290) break; C.push(f); }
     const S = C.length, NH = 8, E = new Float32Array(n * S), q = new Float32Array(n), Z = new Float32Array(K);
@@ -101542,11 +101542,12 @@ function spk8DspMake(Z2) {
     const ch = I.render(d, I.mixOf(d, lid), a0, b0), x = new Float32Array(n), g = 1 / ch.length; for (const c of ch) for (let i = 0; i < c.length; i++) x[a0 + i] += c[i] * g;
     emit({qid: m.qid, prog: 0.4});
     const N = o8.N, df = sr / N, K = Math.min(N / 2 + 1, Math.ceil(o8.fTop / df) + 2), i0 = Math.floor(R.ta * sr / hop), i1 = Math.ceil(R.tb * sr / hop) + 1, F = i1 - i0;
-    const Y = H2.magsX(x, N, hop, K, i0, i1), O = H2.onsetsOf(x, sr, R.ta - 0.1, R.tb + 0.1, R.fa, R.fb);
+    const cen = new Int32Array(F); for (let i = 0; i < F; i++) cen[i] = (i0 + i) * hop;
+    // Ebene: Tiefband über das Unterabtasten aus SPK3 (magsLo auf der Ebene statt auf dem Original: FFT 4096 statt 16384, gleiche Auflösung)
+    const lo = o8.dec && typeof Z2.magsLo === 'function', Y = lo ? Z2.magsLo({mid: x, meta: d.meta}, N, cen, K, (K + 1) * df) : H2.magsX(x, N, hop, K, i0, i1), O = H2.onsetsOf(x, sr, R.ta - 0.1, R.tb + 0.1, R.fa, R.fb);
     let YT = Y;   // Verfolgung: Ebene (lay) oder Original wie im Zerlegen (mix); Kick-Vorlage abziehen (kick)
     const mix = o8.src === 'mix' && typeof Z2.magsLo === 'function';
     if (mix || o8.kick) {
-      const cen = new Int32Array(F); for (let i = 0; i < F; i++) cen[i] = (i0 + i) * hop;
       YT = mix ? Z2.magsLo(d, N, cen, K, (K + 1) * df) : Y.slice();
       const K1 = o8.kick && Z2.kickTpl && Z2.kickAt ? Z2.kickAt(Z2.kickTpl(d, N, K), cen, null, K) : null;
       if (K1) { const kg = mix ? 1 : o8.kick; for (let i = 0; i < YT.length; i++) YT[i] = Math.sqrt(Math.max(0, YT[i] * YT[i] - kg * K1[i])); }
