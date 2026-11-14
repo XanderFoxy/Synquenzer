@@ -49,7 +49,7 @@ function mixWav() {
   return b;
 }
 const T0 = Date.now();
-const S2 = 'SYNQUENZER.spk1.spk2';
+const ddBtn = (p, zu) => p.evaluate(z => { const e = document.querySelector('#spk1Sheet .spk1-dd [data-zu="' + z + '"]'); if (!e) return null; const r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }, zu);
 {
   const {p, ctx, drag, tap} = await page(428, 926);
   await p.evaluate(() => SYNQUENZER.loadDemo()); await p.waitForTimeout(400);
@@ -85,7 +85,7 @@ const S2 = 'SYNQUENZER.spk1.spk2';
   ok('tipp-gehoert-zu', dd, dd && dd.zu.join('|').startsWith('Bass|Gesang|Lead|Pads|Neue Ebene') && dd.small === 0);
   await p.screenshot({path: path.join(fotos, '31-gehoert-zu.png')});
   const nu0 = await p.evaluate(() => __spk.page.info().layers.length);
-  await tap(await btn(p, 'Bass')); await p.waitForFunction(() => /→ Bass/.test(__spk.page.info().stat), null, {timeout: 30000});
+  await tap(await ddBtn(p, 'bass')); await p.waitForFunction(() => /→ Bass/.test(__spk.page.info().stat), null, {timeout: 30000});
   const z1 = await p.evaluate(id => { const U = __spk.page.ui(), L = U.meta.layers.find(l => l.art === 'bass'), N = L ? (U.meta.teil2.notes[L.id] || []) : []; return {ebenen: U.meta.layers.map(l => l.name), inBass: N.filter(q => q.st === 'zu').map(q => q.id), noch: (U.meta.teil2.notes.orig || []).some(q => q.id === id), undo: U.bU.getAttribute('aria-label')}; }, id1);
   ok('zuordnen-tipp', z1, z1.ebenen.includes('Bass') && z1.inBass.includes(id1) && !z1.noch && /Note zuordnen/.test(z1.undo));
   // 4) Rahmen über Takt 1 (Bass-Band) → mehrere Noten → Bass (ein ↶)
@@ -93,9 +93,9 @@ const S2 = 'SYNQUENZER.spk1.spk2';
   const nuA = await p.evaluate(() => SYNQUENZER.spk1.state().doc && __spk.page.ui().bU.getAttribute('aria-label'));
   await drag([T.x0, T.y0], [T.x1, T.y1]); await p.waitForTimeout(250);
   const sel2 = await p.evaluate(() => SYNQUENZER.spk1.spk2.page.sel().length);
-  await tap(await btn(p, 'Bass')); await p.waitForFunction(() => /Noten → Bass|Note → Bass/.test(__spk.page.info().stat) && !/^Zuordnen/.test(__spk.page.info().stat), null, {timeout: 30000}); await p.waitForTimeout(200);
+  await tap(await ddBtn(p, 'bass')); await p.waitForFunction(n => (n > 1 ? /Noten → Bass/ : /Note → Bass/).test(__spk.page.info().stat) && /Noten? zuordnen/.test(__spk.page.ui().bU.getAttribute('aria-label')) && __spk.page.ui().bU.getAttribute('aria-label') !== 'Rückgängig: Note zuordnen' || n === 1, sel2, {timeout: 30000}); await p.waitForTimeout(300);
   const z2 = await p.evaluate(() => { const U = __spk.page.ui(), L = U.meta.layers.find(l => l.art === 'bass'); return {ebenen: U.meta.layers.length, zu: (U.meta.teil2.notes[L.id] || []).filter(q => q.st === 'zu').length, undo: U.bU.getAttribute('aria-label'), stat: __spk.page.info().stat}; });
-  ok('zuordnen-rahmen', {gewaehlt: sel2, z2}, sel2 >= 2 && z2.ebenen === 1 && z2.zu >= 1 + sel2 - 1 && /Noten zuordnen/.test(z2.undo));
+  ok('zuordnen-rahmen', {gewaehlt: sel2, z2}, sel2 >= 2 && z2.ebenen === 1 && z2.zu >= 1 + sel2 - 1 && /\d+ Noten zuordnen/.test(z2.undo));
   // 5) Bass-Ebene wählen → Überall finden (Vorlage aus den bestätigten Noten), Treffer mit Sicherheit
   const bl = await p.evaluate(() => { const e = [...document.querySelectorAll('#spk1Sheet .spk1-lr .spk1-nm')].find(x => x.textContent === 'Bass'); const r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; });
   await tap(bl);

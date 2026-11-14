@@ -98200,7 +98200,7 @@ function spk2DspMake(I) {
   }
   // Anschläge (N 2048, Hop 512): positiver Fluss der Log-Beträge im Band + Hüllkurve (dB) für Ende und Anstieg
   function onsetsOf(x, sr, ta, tb, fa, fb) {
-    const N = 2048, hop = 512, K = Math.min(N / 2 + 1, Math.ceil(Math.min(sr / 2 - 1, Math.max(1500, 8 * fb)) * N / sr)), ka = Math.max(1, Math.floor(fa * 0.7 * N / sr));
+    const N = 2048, hop = 512, K = Math.min(N / 2 + 1, Math.ceil(Math.min(sr / 2 - 1, Math.max(+opt.obw || 800, (+opt.obh || 4) * fb)) * N / sr)), ka = Math.max(1, Math.floor(fa * 0.7 * N / sr));
     const i0 = Math.max(0, Math.floor(ta * sr / hop)), i1 = Math.min(Math.floor(x.length / hop) + 1, Math.ceil(tb * sr / hop) + 1), F = Math.max(0, i1 - i0), Y = magsX(x, N, hop, K, i0, i1);
     let gm = 1e-9; for (let i = 0; i < Y.length; i++) if (Y[i] > gm) gm = Y[i];
     const fl = new Float32Array(F), en = new Float32Array(F), pr = new Float32Array(K), fl0 = gm * 1e-3;
@@ -98255,7 +98255,7 @@ function spk2DspMake(I) {
     const {f0, sc, ok, i0, F, hopS, O, G, Y, K, df, fb} = o, T = i => (i0 + i) * hopS, bnd = [];
     const near = t => O.ons.some(u => Math.abs(u - t) < 0.07);
     const rise = t => O.envAt(t + 0.035) - Math.min(O.envAt(t - 0.03), O.envAt(t - 0.06));
-    for (const t of O.ons) if (rise(t) >= 2.5) bnd.push(t);
+    for (const t of O.ons) if (rise(t) >= (+opt.rise || 3)) bnd.push(t);
     let run = 0, pm = -1;
     for (let i = 0; i < F; i++) {
       const m = ok[i] ? Math.round(midiOf(f0[i])) : -1;

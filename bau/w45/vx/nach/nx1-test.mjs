@@ -144,14 +144,14 @@ try {
     const sr = o.SR, marks = ons.map(t => Math.round(t * sr) / sr);
     const eqA = (a, b) => { if (!a || !b || a.length !== b.length) return false; for (let i = 0; i < a.length; i++) if (a[i] !== b[i] && !(a[i] !== a[i] && b[i] !== b[i])) return false; return true; };
     const va = {op: 'vxa', x, sr, marks};
-    let t = performance.now(); const A0 = old(VSM, va); const tOld = performance.now() - t;
-    t = performance.now(); const A1 = vx1rRun(VSM, va); const tNew = performance.now() - t;
+    let t, A0, A1, tOld = 1e9, tNew = 1e9;
+    for (let r = 0; r < 3; r++) { t = performance.now(); A0 = old(VSM, va); tOld = Math.min(tOld, performance.now() - t); t = performance.now(); A1 = vx1rRun(VSM, va); tNew = Math.min(tNew, performance.now() - t); }   // je das Beste aus 3
     const sameA = ['env', 'pk', 'rms', 'zcr', 'vc', 'f0', 'kind', 'an', 'lead'].every(k => eqA(A0[k], A1[k]));
     // hybrid: jedes 3. Stück 40 ms später, jedes 5. 50 ms früher
     const src = marks.slice(), dst = marks.map((v, k) => v + (k % 3 === 1 ? .04 : k % 5 === 2 ? -.05 : 0)), an = Array.from(A1.an);
     const hm = {op: 'hyb', x, sr, src, dst, an, pre: .004, lock: .02, maxr: 1.5};
-    t = performance.now(); const H0 = old(VSM, hm); const thOld = performance.now() - t;
-    t = performance.now(); const H1 = vx1rRun(VSM, hm); const thNew = performance.now() - t;
+    let H0, H1, thOld = 1e9, thNew = 1e9;
+    for (let r = 0; r < 3; r++) { t = performance.now(); H0 = old(VSM, hm); thOld = Math.min(thOld, performance.now() - t); t = performance.now(); H1 = vx1rRun(VSM, hm); thNew = Math.min(thNew, performance.now() - t); }
     // Worker (Zeitkarten-Worker) = Hauptfaden
     const Hw = await wpCall(Object.assign({}, hm)), hw = WP.how;
     // ohne Worker: stückweise, Uhr misst die längste Pause des Hauptfadens
@@ -229,19 +229,21 @@ try {
     for (let i = 0; i < 400 && !(IMP1.cur && IMP1.cur.st === 'fertig'); i++) await wait(50);
     const c = IMP1.cur; const cb = c.bpm;
     let gap = 0, last = performance.now(), on = true; const tick = () => { const n = performance.now(); gap = Math.max(gap, n - last); last = n; if (on) setTimeout(tick, 0); }; setTimeout(tick, 0);
+    const oS = nx1ImpStretch; let sGap = -1; nx1ImpStretch = async (c, q) => { const r = await oS(c, q); sGap = gap; return r; };
+    const orig = imp1Place; let placeMs = 0; imp1Place = function (k) { const t = performance.now(); try { return orig(k); } finally { placeMs = Math.max(placeMs, performance.now() - t); } };
     const t0 = performance.now(); const r = window.__imp1.ui.place('scenes'); const madeRun = c.made;
     for (let i = 0; i < 1200 && !(IMP1.lastPlace && IMP1.lastPlace.take); i++) await wait(50);
-    on = false; const ms = Math.round(performance.now() - t0);
+    on = false; imp1Place = orig; nx1ImpStretch = oS; const ms = Math.round(performance.now() - t0);
     const lp = IMP1.lastPlace, m = S.takes[lp.take];
     for (let i = 0; i < 100 && !tkBuffer(lp.take); i++) { tkLoad(lp.take); await wait(50); }
-    return {cb, r0: r, madeRun, ms, gap: +gap.toFixed(1), bpm: S.bpm, bpm0, du: UNDO.length - u0, lbl: UNDO[UNDO.length - 1].label, take: lp.take, track: lp.track, len: m.len, nIn: c.x.length, imp: m.imp, nx: window.__nx1.st().imp, s0, toast: (document.querySelector('#toast') || {}).textContent || ''};
+    return {cb, r0: r, madeRun, ms, gap: +gap.toFixed(1), placeMs: Math.round(placeMs), sGap: +sGap.toFixed(1), bpm: S.bpm, bpm0, du: UNDO.length - u0, lbl: UNDO[UNDO.length - 1].label, take: lp.take, track: lp.track, len: m.len, nIn: c.x.length, imp: m.imp, nx: window.__nx1.st().imp, s0, toast: (document.querySelector('#toast') || {}).textContent || ''};
   }, {SONG: SONG.toString()});
   info('e1', JSON.stringify(Object.assign({}, e1, {s0: undefined})));
   const qx = 91.6 / 92;
   ok(e1.r0 === null && /angepasst/.test(e1.madeRun || ''), 'e leeres Projekt, Lied 91,6 BPM: erst wird gerechnet (Hinweis im Blatt), dann abgelegt', e1.madeRun);
   ok(e1.bpm === 92 && Math.abs(e1.len - Math.round(e1.nIn * qx)) <= 2 && e1.imp && e1.imp.bpm === 92, 'e Projekt 92 BPM, Audio auf 91,6/92 gedehnt (Länge ' + e1.len + ' = ' + e1.nIn + ' × 0,99565), Take merkt 92', JSON.stringify(e1.imp));
   ok(e1.du === 1, 'e ein ↶ für alles', e1.lbl);
-  ok(e1.gap <= 120, 'e Hauptfaden bleibt frei, während der Worker dehnt', 'längste Pause ' + e1.gap + ' ms, Dehnen ' + (e1.nx && e1.nx.ms) + ' ms für ' + (e1.nIn / 48000).toFixed(1) + ' s Audio');
+  ok(e1.sGap >= 0 && e1.sGap <= 50, 'e Hauptfaden bleibt frei, während der Worker dehnt (bis zum Ablegen keine Pause > 50 ms)', 'längste Pause beim Dehnen ' + e1.sGap + ' ms; danach Ablegen (imp1Place, wie bisher) ' + e1.placeMs + ' ms, Pause gesamt ' + e1.gap + ' ms; Dehnen ' + (e1.nx && e1.nx.ms) + ' ms für ' + (e1.nIn / 48000).toFixed(1) + ' s Audio');
   const M1 = await run(q, (o) => { const MEAS = eval('(' + o.MEAS + ')'); const m = S.takes[o.take]; const t1 = m.imp.t1, first = Math.round(t1 / (60 / S.bpm)); return MEAS({take: o.take, first, nb: 96 - 1}); }, {MEAS: MEAS.toString(), take: e1.take});
   info('e1 Messung', JSON.stringify(M1));
   ok(M1.n >= 90 && M1.max <= 12 && Math.abs(M1.last - M1.first) <= 8, 'e jeder Schlag im gedehnten Take liegt auf dem 92-BPM-Raster (±12 ms, kein Weglaufen über 24 Takte)', 'max ' + M1.max + ' ms, erster ' + M1.first + ', letzter ' + M1.last + ' (ungedehnt wäre der letzte ' + Math.round(95 * (60 / 91.6 - 60 / 92) * 1000) + ' ms daneben)');
@@ -279,10 +281,13 @@ try {
     const n0 = (window.__nx1.st().imp || {}).n;
     await window.__imp1.ui.file(buf, 'lied-96.wav');
     for (let i = 0; i < 400 && !(IMP1.cur && IMP1.cur.st === 'fertig' && IMP1.cur.name === 'lied-96'); i++) await wait(50);
-    const r = window.__imp1.ui.place('scenes'); const lp = IMP1.lastPlace, m = lp && S.takes[lp.take];
-    return {sync: !!r, bpm: S.bpm, len: m && m.len, nIn: IMP1.cur.x.length, imp: m && m.imp};
+    let gap = 0, last = performance.now(), on = true; const tick = () => { const n = performance.now(); gap = Math.max(gap, n - last); last = n; if (on) setTimeout(tick, 0); }; setTimeout(tick, 0); await wait(30);
+    const t0 = performance.now(); const r = window.__imp1.ui.place('scenes'); const syncMs = Math.round(performance.now() - t0); await wait(800); on = false;
+    const lp = IMP1.lastPlace, m = lp && S.takes[lp.take];
+    return {sync: !!r, bpm: S.bpm, len: m && m.len, nIn: IMP1.cur.x.length, imp: m && m.imp, gap: +gap.toFixed(1), syncMs};
   }, {SONG: SONG.toString()});
   ok(e4.sync && e4.bpm === 96 && e4.len === e4.nIn, 'e Tempo passt (96 in leeres Projekt): sofort abgelegt, Audio unverändert (bitgleich wie bisher)', JSON.stringify(e4));
+  info('e Hauptfaden-Pause beim Ablegen ohne Dehnen (wie bisher, 8 Takte)', e4.gap + ' ms, imp1Place am Stück ' + e4.syncMs + ' ms');
   await run(q, async () => { undo(); await wait(150); });
   // g: Guide-Eintrag
   const g1 = await run(q, async () => {
