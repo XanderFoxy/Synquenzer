@@ -83,8 +83,9 @@ Vorher-Stand: `fix/index.v1.html` (VX2 wie geprüft), `dbg/vx2-core.v1.js`. Werk
 - **Nur Sicht des Gesang-Editors** (Befund 2): Songtext hängt per Reihenfolge an den erkannten Marken, deshalb gilt VX2 nicht, sobald Text da ist; ohne Text
   verschiebt nichts mehr Text oder Zeitkarte. Festgeschrieben wird erst beim Bearbeiten im Gesang-Editor (wie bisher) – dann gelten die Stücke überall, auch nach Laden.
 - **SPK5-R** (Befund 3): `vx2Marks` prüft nach der Rechnung `vx1rSrc(id) !== b` und misst an der neuen Quelle neu (≤ 2×); der Haken in `vx1rAnalyse` übernimmt
-  die gemessene Quelle (`b = v2.b`). In allen 3 Aufnahmen wechselte die Quelle während der ersten Analyse (`VX2.last.quelle` 1). Analysezeit #1 4,5 s (v1 3,4–3,5 s,
-  Basis 3,8–3,9 s im Prüfer-Lauf) – die Basis misst in diesem Fall ebenfalls zweimal; kalt 1,4 s (v1 1,2–1,3 s, Basis 1,2 s), #10/#14 0,3–0,5 s wie vorher.
+  die gemessene Quelle (`b = v2.b`). In allen 3 Aufnahmen wechselte die Quelle während der ersten Analyse (`VX2.last.quelle` 1) – die Basis misst dann ebenfalls zweimal.
+  Analysezeit direkt hintereinander gemessen (`fix/probe-basis2.txt`, `fix/probe-fix2.txt`): erste Analyse #1 3488 ms gegen Basis 3344 ms, #10 1456 / 1281, #14 1423 / 1363;
+  kalt #1 1101/1160 gegen 1100/1224, #10 423/372 gegen 365/336, #14 378/370 gegen 612/553 – im Rahmen der Last-Schwankung (ein Einzellauf unter Last: 4465 ms).
 
 ### Offen
 - **Konsonant-Zuordnung auf der Quelle, die die App rendert** (Prüfer-Maß aus analyze.mjs, alle Stücke an derselben Analyse gemessen): #1 Basis 16/31 · v1 10/31 ·

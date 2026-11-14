@@ -62,3 +62,9 @@ Weiter mit: 4.54 = rel-4540/k fertig prüfen + INT53D nachziehen + Versionszeile
 - Merge rel-4630: cur R-4620 + basis5 + spk6 (2 Konflikte: Z2-Zeilen beide, Worker-src kombiniert) + spk7 (0). Zusatz-Haken: SPK5-Profi-Auswahl filtert k6-Kopien.
 - Pflicht grün (topdefs 0/0, dupkeys 0, smoke [], MS2000 1, live 1, Marken nicht gestiegen, Krypto 0). Regression vx/r4630/run.sh läuft (A: vx1 imp1 chr rv1 spk7k spk7 spk7p · B: spk4 spk5 spk5f spk5p spk1 ki1 spk6k spk6 spk6p spk6u).
 - wrt4c6j4v (VX2/SPK8) in Nachbesserung.
+
+## 20:45 — 4.63.0 online (main be6f987, Pages ok, In-App v19)
+- Regression r4630: alles wie 4.62 + SPK6/SPK7 alle OK; Klang-Probe einzeln 4.62 = 4.63.
+- Neu gestartet: wpii0ntvp (SPK9 Legato-Noten, CHR5 Formanten Rand-Gewicht, IMP2 Tempo/Abtastrate) auf basis7 = R-4630 in vx/spk9, vx/chr5, vx/imp2.
+- Läuft noch: wrt4c6j4v (VX2/SPK8, Basis basis6) → danach merge auf R-4630 → 4.64.
+- Vorschläge an Xander offen: 3. Aktionszeile „Als Klangkorn“ (SPK7_ROW=false), eigene Klangkorn-Seite im Klang-Editor.

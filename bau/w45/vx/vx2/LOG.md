@@ -48,3 +48,12 @@
 20:31 rv1-test offiziell (Kopie fix/rv1-official.mjs, fix/run-fix.txt): 48/53 – FEHLER #1 Knacken (2), #1 Sprung (1), #10 Sprung (1), #10 Raster 24/32, #14 Stück 25 rechts (d2 0,0115 gegen 0,0063). #1 Einsätze 45 · 50/59, an Note 50/69, Tonhöhe 62/63, Raster #1 67/69, #14 30/35.
 20:33 Befund 5: Vorschlag fix/rv1-bezug.diff (Bezug der Knack-/Sprung-Prüfung auch am Ausklang des Vorgängers si − 40 ms ± 20 ms, bei Quantisieren UND Verschieben); Lauf fix/rv1-bezug.mjs → 52/53, nur #10 Raster bleibt (fix/run-fix-bezug.txt). vx/real/rv1-test.mjs selbst nicht geändert (fremder Ordner).
 20:33 VX2.last zählt die Quellen der Wahl inkl. „stimmhaft“ (aus pick). topdefs 0/0.
+20:34 vx1-test (../rolle/vx1-test.mjs, Fotos fix/reg/fotos-vx1): ERGEBNIS 61/61 (fix/reg/vx1.txt).
+20:36 imp1-test (Kopie fix/reg/imp1-test.mjs, Fotos im eigenen Ordner): ALLE OK (48), 126 s (fix/reg/imp1.txt). vx2-test erneut 14/14 (fix/vx2-test.txt).
+20:37 Prüfer-Sonde Quelle (fix/stale2.mjs, fix/stale-fix.txt): Analyse auf aktueller Quelle 3/3 (v1 0/3), Anker gegen Neu-Messung > 5 ms 0 · 0 · 0 (v1 42 · 13 · 22), Anlauf 0.
+20:38 Konsonant-Maß des Prüfers an derselben Analyse (neue Quelle): #1 Basis 16 · v1 10 · fix 12 von 31; #10 8 · 6 · 9 von 13; #14 12 · 4 · 7 von 18 → besser als v1, offen gegen Basis (NOTES).
+20:39 Block-Kopf (Kommentar) nachgeführt; NOTES: Entscheidung 3, Zahlen-Tabelle (Anfang 76 % nicht erreicht) und Offen 3 korrigiert, Abschnitt „Prüfung“.
+20:40 Analysezeit direkt hintereinander (fix/probe-basis2.txt, fix/probe-fix2.txt): erste Analyse #1 3488 / Basis 3344 ms, #10 1456 / 1281, #14 1423 / 1363; kalt gleichauf. VX2.last #1 {Tonhöhe 29, Einsatz 30, stimmhaft 10}.
+20:41 Pflicht (Endstand index.html): topdefs Skripte 26, doppelt 0, Syntaxfehler 0 · dupkeys 0 · smoke errors [] (fix/smoke-fix.png) · „MS 2000“ 1× (= Basis) · „^  live: true,“ 1× (= Basis) ·
+  VERSION 4.62.0 · Markenwörter je Wort ≤ Basis (0 neue) · keine Datensatz-/Produktnamen unter vx2 (App, Tests, fix/, Notizen) · basis.html = vx/basis6.html unverändert ·
+  Diff zur Basis: 117 Zeilen (3 Haken-Zeilen + Block). Puffer-Dumps (*.f32) gelöscht. Alle Läufe einzeln nacheinander.
