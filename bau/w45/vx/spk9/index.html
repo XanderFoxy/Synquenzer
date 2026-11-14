@@ -105298,11 +105298,11 @@ function spk7Tgts(U) {
    deren 150-ms-Median ≥ 60 ct neben der Mitte liegt. Vibrato (Halbwelle < 160 ms, schwingt zurück), Gleiten (steht nie ruhig, die Grenze
    kommt erst am Ziel – auf halbem Weg), Ausklingen (neuer Teil ≥ 12 dB leiser) zerhacken nicht. Grenze = wo die Tonhöhe die Mitte zwischen
    alter und neuer Höhe kreuzt. Alles andere (Anschläge, Einsatz nach Pause, Ende −24 dB, Tonhöhe = Median, Oktav-Prüfung) wie SPK2.
-   Schalter Z2.o9.an (aus = genau SPK2). ===== */
+   Nur oberhalb des Bass-Bands (Ebene Bass bzw. Auswahl oben ≤ 400 Hz bleiben bei SPK2). Schalter Z2.o9.an (aus = genau SPK2). ===== */
 function spk9DspMake(Z2) {
   if (!Z2 || !Z2.h || !Z2.opt || !Z2.h.segNotes || !Z2.h.midiOf) return Z2;
   const H2 = Z2.h, seg0 = H2.segNotes, opt = Z2.opt;
-  const o9 = {an: 1, hys: 0.6, hold: 0.07, stab: 0.06, span: 0.25, bandv: 0.6, vmin: 0.3, tr: 0.25, trN: 1.5, look: 0.5, nl: 0.15, vib: 0.16, gegen: 0.3, lvl: 12, minS: 0.08, near: 0.07, win: 0.6, dbg: null};
+  const o9 = {an: 1, hys: 0.6, hold: 0.07, stab: 0.06, span: 0.25, bandv: 0.6, vmin: 0.3, tr: 0.25, trN: 1.5, look: 0.5, nl: 0.15, vib: 0.16, gegen: 0.3, lvl: 12, minS: 0.08, near: 0.07, win: 0.6, fbMin: 400, dbg: null};
   const med = v => { if (!v.length) return NaN; v.sort((p, q) => p - q); return v[v.length >> 1]; };
   // Tonhöhen-Stufen (Zeit der Grenze in s) aus der Grundton-Spur f0 (Rahmen i ↔ (i0 + i)·hopS), nur stimmhafte Rahmen (ok)
   function steps(o) {
@@ -105383,7 +105383,8 @@ function spk9DspMake(Z2) {
     }
     return out;
   }
-  opt.seg9 = o => o9.an ? segNotes9(o) : seg0(o);
+  // Bass-Band (Ebene Bass oder Auswahl oben ≤ 400 Hz) bleibt bei SPK2: dort misst die Stufen-Regel schlechter (spk2-test Bass-Noten 14 → 12 Treffer)
+  opt.seg9 = o => o9.an && o.fb > o9.fbMin ? segNotes9(o) : seg0(o);
   Z2.o9 = o9; H2.steps9 = steps;
   return Z2;
 }

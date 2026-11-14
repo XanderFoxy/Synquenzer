@@ -9,3 +9,4 @@
   G Gleiten 16 getrennt 71,9 % → 96,9 %, Zusatz 96,9 % → 12,5 % · A Ausklang 8 Zusatz 25 % → 0 % · B Befund 17: 0/12 → 12/12.
   Schritte: a1 (Hysterese + ruhig 50 ct) G-Zusatz 97 % · a2 (ruhig 25 ct/60 ms, Vibrato-Band) 56 % · a3 (Übergang < 0,17 s) 50 % (alte G-Wahrheit) ·
   a4 (Übergang < 0,25 s, ≤ 1,5 HT zum Ziel, G-Wahrheit = Mitte des Gleitens) 12,5 %.
+- 21:00 spk4-test: 6 FEHLER/23; neu gegenüber basis7: reg-spk2-test noten-erkannt (Bass-Band Original 14 → 12 Treffer, Präz. 0,275 → 0,214) → Regel nur für fb > 400 Hz (Bass-Band bleibt SPK2). Rest wie basis7 (gemisch/unison-besser identisch zu basis7, verfeinern +1 dB, ki1 quer).
