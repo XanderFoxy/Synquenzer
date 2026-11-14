@@ -13,6 +13,7 @@
   const CHIP_SPEICHER = 'mein-vorteil-filme-chip';
   const GESEHEN = 'mein-vorteil-filme-wunsch-gesehen'; // welche Wunsch-Angebote schon einmal gezeigt wurden
   const ALT_STUNDEN = 36; // Stand älter -> rot
+  const HINWEIS_STUNDEN = 6; // Stand älter -> kleiner Hinweis (kein Alarm)
   const CHIPS = [
     ['wunsch', 'Wunschliste', 'Deine Filme – sobald einer günstig ist, kommt eine Nachricht.'],
     ['angebot', 'Angebote', 'Filme zum Kaufen für 3,99 € oder stark gesenkt.'],
@@ -199,7 +200,9 @@
     const st = standText(S.n.aktualisiert);
     const t = Date.parse(S.n.aktualisiert || '');
     const alt = !Number.isFinite(t) || Date.now() - t > ALT_STUNDEN * 36e5;
-    const zusatz = !S.gestoert ? '' : navigator.onLine === false ? ' · offline' : ' · Quelle gerade gestört – du siehst den letzten Stand';
+    // älter als 6 h (GitHub startet den Radar oft erst nach Stunden): ruhiger Hinweis, rot erst ab ALT_STUNDEN
+    const spaet = !alt && Number.isFinite(t) && Date.now() - t > HINWEIS_STUNDEN * 36e5;
+    const zusatz = !S.gestoert ? (spaet ? ' · wird automatisch aufgefrischt' : '') : navigator.onLine === false ? ' · offline' : ' · Quelle gerade gestört – du siehst den letzten Stand';
     return `<p class="fi-stand${alt || S.gestoert ? ' fi-alt' : ''}">Stand: ${esc((st || 'unbekannt') + zusatz)}</p>`;
   }
   function fussHtml() {

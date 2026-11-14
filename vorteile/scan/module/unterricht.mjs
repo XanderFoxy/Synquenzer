@@ -88,10 +88,18 @@ export default async function unterricht({ holeText, cfg, jetzt, zustand = {}, e
     }
   }
 
-  // 2) Remotive (Remote-Stellen)
+  // 2) Remotive (Remote-Stellen). Die freie API bittet um wenige Abrufe am Tag: eigener Abstand (remotive.intervallStunden,
+  // Standard 6 h) – läuft der Bereich öfter (alle 3 h), kommt dazwischen die gemerkte Antwort aus zustand.quellen.remotive.
+  const rz = ((zustand.quellen ||= {}).remotive ||= {});
+  const rAbstand = (m.remotive?.intervallStunden ?? 6) * 3600e3 - 5 * 60e3;
   for (const url of [].concat(m.remotive?.urls || [])) {
     try {
-      const j = JSON.parse(await holeText(url, { headers: { accept: 'application/json' } }));
+      const gemerkt = rz[url];
+      const frisch = !env.ROH_DIR && gemerkt?.zeit && new Date(jetzt).getTime() - Date.parse(gemerkt.zeit) < rAbstand; // Roh-Mitschnitt: immer echt abrufen
+      const j = frisch ? { jobs: gemerkt.jobs || [] } : JSON.parse(await holeText(url, { headers: { accept: 'application/json' } }));
+      // nur die passenden Stellen merken (klein halten: zustand.json liegt auf dem Daten-Zweig)
+      if (!frisch) rz[url] = { zeit: new Date(jetzt).toISOString(), jobs: (j.jobs || []).filter(job => enthaelt(`${job.title || ''} ${job.category || ''}`, ['german|deutsch'])).slice(0, 20)
+        .map(({ url: u, title, category, company_name, candidate_required_location, publication_date, job_type, salary }) => ({ url: u, title, category, company_name, candidate_required_location, publication_date, job_type, salary })) };
       for (const job of j.jobs || []) {
         const text = `${job.title || ''} ${job.category || ''}`;
         if (!job.url || gesehen.has(job.url) || !enthaelt(text, m.remotive.titelWoerter) || !enthaelt(text, ['german|deutsch'])) continue;

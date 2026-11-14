@@ -207,7 +207,7 @@
     },
     "remix": {
       "aktiv": true,
-      "intervallStunden": 6,
+      "intervallStunden": 3,
       "_hinweis": "Remix-Contests mit Stems (Xander 07./08.11.2026: „lieber 10 passende als 0“). Genre-Treffer (Synth-Pop, 80er, Italo, Euro-Disco, Elektro, Dark/New Wave, Pop) zählen extra; Contests ohne Genre-Wort bleiben drin, raus nur reine Hip-Hop-/Metal-/Schlager-/Trap-Contests (genreNoetig: true = nur passende). Nur laufende: Einsendeschluss in der Zukunft, ohne Einsendeschluss höchstens maxAlterTage alt. Quellen: Google News DE/EN, Audius-API, WordPress-Suchfeeds von Magazinen; dazu Fundorte (immer sichtbar). RemixComps (www.remixcomps.com/feed/) ist raus: im echten Lauf 07.11.2026 zweimal HTTP 526 (Cloudflare: ungültiges Zertifikat der Seite).",
       "maxAlterTage": 30,
       "sofortBisTage": 14,
@@ -238,7 +238,7 @@
     },
     "auftritte": {
       "aktiv": true,
-      "intervallStunden": 6,
+      "intervallStunden": 3,
       "_hinweis": "Auftrittsmöglichkeiten (Xander 08.11.2026): Bands gesucht, Bandcontests, Open Stage/Open Mic, Stadtfest-/Festival-Bewerbungen – Sachsen zuerst, sonst deutschlandweit. Sortiert: nah + bald zuerst. Fundorte erscheinen IMMER (mit Ort, km, Bewerbungsweg, Saison). Name: Band-Slots als „One Day in Rome“, Solo/Open Stage als „Xander Fox“ (siehe kuenstler).",
       "maxAlterTage": 60,
       "sofortBisKm": 150,
@@ -263,7 +263,7 @@
     },
     "unterricht": {
       "aktiv": true,
-      "intervallStunden": 12,
+      "intervallStunden": 3,
       "_hinweis": "Deutschunterricht (Xander 08.11.2026): Gesuche und Stellen – Privat/Nachhilfe, Integrationskurse, DaF/DaZ, online. Döbeln + Umkreis und von zu Hause. Fundorte (Plattformen, BAMF-Zulassung, Jobbörse-Website) erscheinen IMMER.",
       "maxAlterTage": 30,
       "ba": {
@@ -284,10 +284,11 @@
         ]
       },
       "remotive": {
+        "intervallStunden": 6,
         "urls": ["https://remotive.com/api/remote-jobs?search=german%20teacher&limit=50"],
         "titelWoerter": ["teacher|tutor|lehrer|lehrerin|lehrkraft|trainer|trainerin|instructor|dozent|dozentin|coach|educator"]
       },
-      "_remotive": "Remotive-API (offen, JSON): Remote-Stellen. Bitte höchstens ein paar Abrufe am Tag (intervallStunden 12). Echter Lauf 08.11.2026: „german teacher“ und „german tutor“ gaben dieselben 216 KB (12 neueste Stellen aller Art, keine Lehrstelle – die freie API sucht nicht wirklich); deshalb nur noch ein Abruf, Filter streng (Titel Lehrer/Tutor + German/Deutsch).",
+      "_remotive": "Remotive-API (offen, JSON): Remote-Stellen. Bitte höchstens ein paar Abrufe am Tag: eigener Abstand remotive.intervallStunden (6 h, dazwischen die gemerkten Treffer), auch wenn der Bereich alle 3 h läuft. Echter Lauf 08.11.2026: „german teacher“ und „german tutor“ gaben dieselben 216 KB (12 neueste Stellen aller Art, keine Lehrstelle – die freie API sucht nicht wirklich); deshalb nur noch ein Abruf, Filter streng (Titel Lehrer/Tutor + German/Deutsch).",
       "gesuche": {
         "_hinweis": "Gesuche aus dem Netz (Xander 14.11.2026): Leute, die auf Reddit, Freelancer & Co. Hilfe mit Deutsch suchen (Nachhilfe, Korrektur, Übersetzen, Konversation, Prüfung, Behördenbrief, Bewerbung) – keine Stellen der Arbeitsagentur. Gesuch = suchWoerter + deutschWoerter (außer Forum mit thema „deutsch“) + hilfeWoerter; Angebote von Lehrern selbst raus; höchstens maxAlterTage alt. Ausfälle (Reddit sperrt Rechenzentrums-IPs gern mit 403/429) sind nur Hinweise im Status. Fundorte (Upwork, Fiverr, Kleinanzeigen …) erscheinen IMMER.",
         "aktiv": true,

@@ -1,10 +1,28 @@
 # Vorteils-Radar: sucht stündlich Vorteile für Xander (Deals, Erleben, Reisen, Musik, Nebenverdienst, Tests)
 # und meldet Seltenes sofort per ntfy, den Rest einmal am Tag (ab 18 Uhr). Code: vorteile/. Daten: Zweig "vorteile-daten".
+#
+# Pünktlichkeit (MV7, 14.11.2026): GitHub startet geplante Läufe hier nur etwa alle 7 Stunden – gemessen 31.10.–14.11.2026:
+# Vorteils-Radar 53 von 335 stündlichen Läufen (16 %), Schnäppchen-Wecker 53 von 337 (16 %), Konzerte 44 von 112 (39 %).
+# Wecker mit derselben Zeitplan-Minute starten gemeinsam, andere Minuten zu ganz anderen Zeiten. Darum:
+#  - viele Zeitpläne zu krummen Minuten (jede Minute ist eine eigene Chance),
+#  - zusätzlich ein Start, sobald Schnäppchen-Wecker oder Konzert-Alarm fertig sind (die kommen zu anderen Zeiten),
+#  - jeder Start fragt zuerst vorteile/scan/faellig.mjs: ist nichts dran, endet er nach Sekunden (kein Abruf, kein Commit),
+#  - am Ende stößt er Schnäppchen-Wecker / Konzert-Alarm an, wenn deren letzter Lauf zu lange her ist (nur GITHUB_TOKEN).
 name: Vorteils-Radar
 
 on:
-  schedule:
-    - cron: '41 * * * *'   # jede Stunde um :41 (Zeitpläne laufen nur vom Standardzweig aus)
+  schedule:   # Zeitpläne laufen nur vom Standardzweig aus; nie :00/:30 (dort ist GitHub am vollsten)
+    - cron: '4 * * * *'
+    - cron: '11 * * * *'
+    - cron: '19 * * * *'
+    - cron: '26 * * * *'
+    - cron: '34 * * * *'
+    - cron: '41 * * * *'
+    - cron: '49 * * * *'
+    - cron: '56 * * * *'
+  workflow_run:
+    workflows: ['Schnäppchen-Wecker', 'konzerte']
+    types: [completed]
   workflow_dispatch:
     inputs:
       modus:
@@ -23,6 +41,7 @@ on:
 
 permissions:
   contents: write
+  actions: write   # nur zum Anstoßen von Schnäppchen-Wecker/Konzert-Alarm (workflow_dispatch mit dem eingebauten Token)
 
 concurrency:
   group: ${{ inputs.roh && 'vorteile-roh' || 'vorteile' }}   # Roh-Läufe stören die stündlichen Läufe nicht
@@ -42,10 +61,6 @@ jobs:
         with:
           node-version: 22
 
-      - name: Tests
-        working-directory: vorteile
-        run: npm test
-
       - name: Daten-Zweig holen (oder neu anlegen)
         env:
           GH_TOKEN: ${{ github.token }}
@@ -57,7 +72,19 @@ jobs:
             mkdir daten && git -C daten init --quiet -b vorteile-daten && git -C daten remote add origin "$URL"
           fi
 
+      # Nur automatische Starts fragen nach; ein Start von Hand läuft immer.
+      - name: Fällig?
+        id: faellig
+        if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_run' }}
+        run: node vorteile/scan/faellig.mjs --data daten/vorteile/data
+
+      - name: Tests
+        if: ${{ steps.faellig.outputs.faellig != 'false' }}
+        working-directory: vorteile
+        run: npm test
+
       - name: Suchen und benachrichtigen
+        if: ${{ steps.faellig.outputs.faellig != 'false' }}
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
           NTFY_TOKEN: ${{ secrets.NTFY_TOKEN }}
@@ -66,7 +93,7 @@ jobs:
         run: node vorteile/scan/main.mjs --data daten/vorteile/data ${{ inputs.alle && '--alle' || '' }}
 
       - name: Daten speichern
-        if: ${{ !inputs.roh }}
+        if: ${{ !inputs.roh && steps.faellig.outputs.faellig != 'false' }}
         working-directory: daten
         run: |
           git config user.name "vorteile-bot"
@@ -106,3 +133,29 @@ jobs:
             git pull --quiet --rebase origin roh-daten || true
           done
           exit 1
+
+      # Schnäppchen-Wecker (stündlich) und Konzert-Alarm (alle 3 h) haben dasselbe Problem mit den Zeitplänen. Ist ihr
+      # letzter Lauf zu lange her und läuft gerade keiner, startet der Radar sie (wie „Run workflow“ von Hand, normaler Lauf).
+      # Kein neues Geheimnis: workflow_dispatch mit dem eingebauten Token ist von GitHub ausdrücklich erlaubt.
+      - name: Andere Wecker anstoßen
+        if: ${{ always() && !inputs.roh && github.ref == 'refs/heads/main' }}
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          anstossen() {   # $1 = Workflow-Datei, $2 = höchstes Alter des letzten Laufs in Minuten
+            local zeile status erstellt alter
+            zeile=$(gh run list -R "$GITHUB_REPOSITORY" --workflow "$1" --limit 1 --json status,createdAt --jq '.[0] | "\(.status) \(.createdAt)"' 2>/dev/null) || { echo "$1: Liste nicht lesbar"; return 0; }
+            read -r status erstellt <<< "$zeile"
+            [ -z "$erstellt" ] || [ "$erstellt" = null ] && erstellt=1970-01-01T00:00:00Z   # noch nie gelaufen
+            case "$status" in queued|in_progress|waiting|pending|requested) echo "$1: läuft schon ($status)"; return 0;; esac
+            alter=$(( ( $(date -u +%s) - $(date -u -d "${erstellt:-1970-01-01T00:00:00Z}" +%s) ) / 60 ))
+            if [ "$alter" -ge "$2" ]; then
+              echo "$1: letzter Lauf vor $alter Min. (Grenze $2) -> anstoßen"
+              gh workflow run "$1" -R "$GITHUB_REPOSITORY" --ref main || echo "$1: Anstoßen abgelehnt"
+            else
+              echo "$1: letzter Lauf vor $alter Min. – ok"
+            fi
+          }
+          anstossen schnaeppchen.yml 70
+          anstossen konzerte.yml 190

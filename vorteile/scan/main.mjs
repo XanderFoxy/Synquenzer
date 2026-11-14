@@ -9,6 +9,7 @@ import { aufraeumen } from './lib/ende.mjs';
 import { macheAbruf, macheFixtureAbruf } from './lib/http.mjs';
 import { rohOrdner, macheMitschnitt } from './lib/roh.mjs';
 import { tageBis } from './lib/text.mjs';
+import { modulFaellig } from './faellig.mjs';
 import { plane, verbuche, sende, KATEGORIEN, alsGemeldet } from './benachrichtigen.mjs';
 import deals from './module/deals.mjs';
 import erleben from './module/erleben.mjs';
@@ -48,8 +49,7 @@ export async function lauf({ cfg, wunschliste, filmListen = null, dateienVorher 
     const m = cfg.module[name];
     const alt = vorher?.kategorien?.[name] || [];
     if (!m || m.aktiv === false) { kategorien[name] = []; status[name] = { ok: true, aus: true }; continue; }
-    const zuletzt = zustand.lauf[name] ? Date.parse(zustand.lauf[name]) : 0;
-    const faellig = alle || jetztMs - zuletzt >= (m.intervallStunden ?? 1) * 3600e3 - 5 * 60e3;
+    const faellig = alle || modulFaellig(m, zustand.lauf[name], jetztMs); // gleiche Regel wie die Vorprüfung im Workflow
     if (!faellig) {
       kategorien[name] = alt;
       status[name] = { ...(vorher?.status?.[name] || {}), uebersprungen: true };

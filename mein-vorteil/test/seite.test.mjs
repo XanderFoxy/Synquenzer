@@ -1573,3 +1573,30 @@ test('Echter Lauf 08.11. neu gerechnet (repariertes Radar): 7 Stellen, Bernburg,
     await ctx.close();
   }
 });
+
+// MV7 (14.11.2026): GitHub startet die Wecker oft erst nach Stunden. Älter als 6 h = ruhiger Hinweis (kein Rot);
+// jeder Bereich der Vorteile zeigt, wann zuletzt gesucht wurde; ein übersprungener Bereich (nicht fällig) ist nicht „aus“.
+test('Stand: nach 8 Std. kein Alarm, kleiner Hinweis; „Zuletzt gesucht“ je Bereich; übersprungen ≠ aus', { skip: ohnePw }, async () => {
+  const patch = { 'vorteile-aktuell.json': d => { d.status.remix = { ...d.status.remix, uebersprungen: true }; } };
+  const spaet = await oeffne({ satz: 'v5', jetzt: '2026-11-08T00:35:00Z', patch, pfad: '/mein-vorteil/#remix' });
+  const stand = nbsp(await text(spaet.page, '#stand'));
+  assert.match(stand, /Vorteile vor 8 Std\./);
+  assert.match(stand, / · wird automatisch aufgefrischt$/);
+  assert.equal(await spaet.page.locator('#stand .alt').count(), 0, 'nicht rot, nur weil es spät ist');
+  const remix = nbsp(await spaet.page.evaluate(() => document.getElementById('remix').textContent));
+  assert.match(remix, /Zuletzt gesucht vor 8 Std\. – die nächste Suche läuft von selbst\./);
+  const quellen = await spaet.page.evaluate(() => [...document.querySelectorAll('details.kasten')].find(d => /Quellen & Hinweise \(Vorteile\)/.test(d.textContent))?.textContent || '');
+  assert.match(nbsp(quellen), /Remix-Contests: \d+ gefunden · vor 8 Std\./);
+  assert.doesNotMatch(quellen, /Remix-Contests: aus/);
+  await spaet.page.screenshot({ path: join(SHOTS, 'mv7-stand-8h.png') });
+  assert.deepEqual(spaet.fehler, []);
+  await spaet.ctx.close();
+
+  const frisch = await oeffne({ satz: 'v5', jetzt: JETZT_V5, pfad: '/mein-vorteil/#remix' });
+  assert.doesNotMatch(nbsp(await text(frisch.page, '#stand')), /aufgefrischt/);
+  const r2 = nbsp(await frisch.page.evaluate(() => document.getElementById('remix').textContent));
+  assert.match(r2, /Zuletzt gesucht gerade eben\./);
+  assert.doesNotMatch(r2, /läuft von selbst/);
+  assert.deepEqual(frisch.fehler, []);
+  await frisch.ctx.close();
+});
