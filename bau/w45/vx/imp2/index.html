@@ -103721,38 +103721,45 @@ function imp1Core() {
     return {y, fs, rms};
   }
   /* IMP2-BEGIN · Tempo unabhängig von der Abtastrate (Echttest: Gesang 120,7 BPM bei 44,1 kHz gegen 132,6 bei 48 kHz – vorher 11 025 bzw. 12 000 Hz
-     über Kastenfilter, dadurch andere Silben-Spitzen). Jetzt immer genau 11 025 Hz: gefensterter Sinc-Tiefpass (Kaiser, flach bis 5 kHz, Sperre ab
-     6 kHz, −50 dB), in Sekunden entworfen → bei jeder Eingangsrate dieselbe Kennlinie; Ausgabe-Zeitpunkte j / 11 025 s ab der ersten Probe (wie vorher).
-     Phasen-Tabelle (ganzzahliges Verhältnis: 1 Phase, 48 kHz: 147, sonst höchstens 2048). Über 64 kHz vorab halbieren ([1 2 1]/4, bei 5 kHz −0,2 dB).
-     Pegel auf RMS 0,1 wie vorher. Läuft im Worker mit (steht in imp1Core). */
-  function imp2Down(x, sr) {
-    const FS = 11025, FC = 5512.5, DF = 1025, AT = 50, BETA = .1102 * (AT - 8.7), TW = (AT - 8) / (2.285 * 2 * Math.PI * DF);
-    while (sr > 64000) {   // vorab halbieren (96 / 88,2 / 192 kHz)
-      const n = x.length >> 1, h = new Float32Array(n);
-      for (let i = 0; i < n; i++) { const c = 2 * i; h[i] = ((c > 0 ? x[c - 1] : 0) + 2 * x[c] + (c + 1 < x.length ? x[c + 1] : 0)) * .25; }
-      x = h; sr /= 2;
-    }
-    const L = x.length, n = Math.floor(L * FS / sr), y = new Float32Array(n);
-    const i0 = v => { let s = 1, t = 1; for (let k = 1; k < 40; k++) { t *= (v / (2 * k)) * (v / (2 * k)); s += t; if (t < 1e-12 * s) break; } return s; }, ib = i0(BETA);
-    const K = Math.ceil(TW / 2 * sr) + 1, T = 2 * K, srI = Math.round(sr), gcd = (a, b) => { while (b) { const r = a % b; a = b; b = r; } return a; };
-    const exact = Math.abs(sr - srI) < 1e-6, g = exact ? gcd(srI, FS) : 1, P0 = exact ? FS / g : 2048, P = Math.min(2048, P0), tab = new Float32Array(P * T);
-    for (let p = 0; p < P; p++) {   // Phase f = p / P: Probe n0 − K + 1 + m liegt (m − K + 1 − f) Proben neben dem Ausgabe-Zeitpunkt
-      const f = p / P; let s = 0;
-      for (let m = 0; m < T; m++) {
-        const tau = (m - K + 1 - f) / sr, u = 2 * tau / TW; let v = 0;
-        if (Math.abs(u) < 1) { const a = 2 * FC * tau; v = (a === 0 ? 1 : Math.sin(Math.PI * a) / (Math.PI * a)) * i0(BETA * Math.sqrt(1 - u * u)) / ib; }
-        tab[p * T + m] = v; s += v;
-      }
+     über Kastenfilter, dadurch andere Silben-Spitzen). Jetzt immer genau 11 025 Hz mit sauberem Tiefpass, in Sekunden entworfen (Kaiser-Sinc) →
+     bei jeder Eingangsrate dieselbe Kennlinie, Ausgabe-Zeitpunkte j / 11 025 s ab der ersten Probe (wie vorher). Zwei Stufen (schnell):
+     1. Eingang → 22 050 Hz, breiter Übergang (flach bis 5 kHz, Sperre ab 17 kHz: nichts faltet unter 5 kHz), Phasen-Tabelle (44,1 kHz: 1, 48/96 kHz: 147);
+     2. Halbband 22 050 → 11 025 Hz (flach bis 5 kHz, Sperre ab 6 kHz, −50 dB; jede zweite Zahl 0). Pegel auf RMS 0,1 wie vorher. Läuft im Worker mit. */
+  function imp2Kai(fc, df, at, sr) {   // Kaiser-Sinc in Sekunden: Grenze fc (−6 dB), Übergang df, Sperre at dB → Proben bei sr (ohne 1/sr)
+    const beta = .1102 * (at - 8.7), tw = (at - 8) / (2.285 * 2 * Math.PI * df), K = Math.ceil(tw / 2 * sr) + 1;
+    const i0 = v => { let s = 1, t = 1; for (let k = 1; k < 50; k++) { t *= (v / (2 * k)) * (v / (2 * k)); s += t; if (t < 1e-12 * s) break; } return s; }, ib = i0(beta);
+    return {K, h: tau => { const u = 2 * tau / tw; if (Math.abs(u) >= 1) return 0; const a = 2 * fc * tau; return (a === 0 ? 1 : Math.sin(Math.PI * a) / (Math.PI * a)) * i0(beta * Math.sqrt(1 - u * u)) / ib; }};
+  }
+  function imp2Rs(x, sr, fo, fc, df) {   // Stufe 1: x (sr) → fo, Ausgabe j bei j / fo s
+    const L = x.length, n = Math.floor(L * fo / sr), y = new Float32Array(n), F = imp2Kai(fc, df, 50, sr), K = F.K, T = 2 * K;
+    const srI = Math.round(sr), gcd = (a, b) => { while (b) { const r = a % b; a = b; b = r; } return a; };
+    const exact = Math.abs(sr - srI) < 1e-6, g = exact ? gcd(srI, fo) : 1, P0 = exact ? fo / g : 4096, P = Math.min(4096, P0), num = exact ? srI / g : 0, tab = new Float32Array(P * T);
+    for (let p = 0; p < P; p++) {   // Phase p / P: Probe n0 − K + 1 + m liegt (m − K + 1 − p/P) Proben neben dem Ausgabe-Zeitpunkt
+      let s = 0; for (let m = 0; m < T; m++) { const v = F.h((m - K + 1 - p / P) / sr); tab[p * T + m] = v; s += v; }
       if (s > 0) for (let m = 0; m < T; m++) tab[p * T + m] /= s;   // Gleichanteil 1 in jeder Phase
     }
-    const num = exact ? srI / g : 0;
     for (let j = 0; j < n; j++) {
       let n0, p;
-      if (exact && P === P0) { const q = j * num; n0 = Math.floor(q / P); p = q - n0 * P; }   // genau: j·sr/FS = n0 + p/P
-      else { const c = j * sr / FS; n0 = Math.floor(c); p = Math.round((c - n0) * P); if (p === P) { p = 0; n0++; } }
+      if (P === P0) { const q = j * num; n0 = Math.floor(q / P); p = q - n0 * P; }   // genau: j·sr/fo = n0 + p/P
+      else { const c = j * sr / fo; n0 = Math.floor(c); p = Math.round((c - n0) * P); if (p === P) { p = 0; n0++; } }
       const a = n0 - K + 1, o = p * T; let s = 0;
       if (a >= 0 && a + T <= L) for (let m = 0; m < T; m++) s += x[a + m] * tab[o + m];
       else for (let m = 0; m < T; m++) { const q = a + m; if (q >= 0 && q < L) s += x[q] * tab[o + m]; }
+      y[j] = s;
+    }
+    return y;
+  }
+  function imp2Down(x, sr) {
+    const F2 = 22050, FS = 11025;
+    if (Math.abs(sr - F2) > 1e-6) x = sr > F2 ? imp2Rs(x, sr, F2, 11025, 12050) : imp2Rs(x, sr, F2, Math.min(11025, sr / 2), Math.min(12050, .2 * sr));
+    const F = imp2Kai(5512.5, 1025, 50, F2), K = F.K, c = [], L = x.length, n = Math.floor(L / 2), y = new Float32Array(n);   // Stufe 2: Halbband
+    let s0 = F.h(0); for (let m = 1; m < K; m += 2) { const v = F.h(m / F2); c.push(v); s0 += 2 * v; }
+    const h0 = F.h(0) / s0, NC = c.length; for (let i = 0; i < NC; i++) c[i] /= s0;
+    const cf = Float64Array.from(c), R = 2 * NC - 1;
+    for (let j = 0; j < n; j++) {
+      const q = 2 * j; let s = h0 * x[q];
+      if (q - R >= 0 && q + R < L) for (let i = 0, m = 1; i < NC; i++, m += 2) s += cf[i] * (x[q - m] + x[q + m]);
+      else for (let i = 0, m = 1; i < NC; i++, m += 2) s += cf[i] * ((q - m >= 0 ? x[q - m] : 0) + (q + m < L ? x[q + m] : 0));
       y[j] = s;
     }
     let e = 0; for (let i = 0; i < n; i++) e += y[i] * y[i];
