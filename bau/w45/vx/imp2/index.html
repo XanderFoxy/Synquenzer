@@ -103738,14 +103738,14 @@ function imp1Core() {
       let s = 0; for (let m = 0; m < T; m++) { const v = F.h((m - K + 1 - p / P) / sr); tab[p * T + m] = v; s += v; }
       if (s > 0) for (let m = 0; m < T; m++) tab[p * T + m] /= s;   // Gleichanteil 1 in jeder Phase
     }
-    for (let j = 0; j < n; j++) {
-      let n0, p;
-      if (P === P0) { const q = j * num; n0 = Math.floor(q / P); p = q - n0 * P; }   // genau: j·sr/fo = n0 + p/P
-      else { const c = j * sr / fo; n0 = Math.floor(c); p = Math.round((c - n0) * P); if (p === P) { p = 0; n0++; } }
-      const a = n0 - K + 1, o = p * T; let s = 0;
-      if (a >= 0 && a + T <= L) for (let m = 0; m < T; m++) s += x[a + m] * tab[o + m];
+    const di = P === P0 ? Math.floor(num / P) : 0, dp = num - di * P;   // genau: j·sr/fo = n0 + p/P, schrittweise
+    for (let j = 0, n0 = 0, p = 0; j < n; j++) {
+      if (P !== P0) { const c = j * sr / fo; n0 = Math.floor(c); p = Math.round((c - n0) * P); if (p === P) { p = 0; n0++; } }
+      let a = n0 - K + 1, o = p * T, s = 0;
+      if (a >= 0 && a + T <= L) for (const e = o + T; o < e; o += 2, a += 2) s += x[a] * tab[o] + x[a + 1] * tab[o + 1];
       else for (let m = 0; m < T; m++) { const q = a + m; if (q >= 0 && q < L) s += x[q] * tab[o + m]; }
       y[j] = s;
+      if (P === P0) { n0 += di; p += dp; if (p >= P) { p -= P; n0++; } }
     }
     return y;
   }

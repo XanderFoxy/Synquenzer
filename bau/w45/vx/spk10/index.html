@@ -101623,7 +101623,7 @@ function spk8WUrl(src, u) {
    ist f nur die Unter-Oktave (Sub-Oszillator / Kick-Rest) einer Note auf 2f → eine Oktave höher. Haken „SPK10“ in SPK8 bassNoten und spk8WUrl
    (Text wird in den Spektral-Worker mitgeschickt). Schalter o10.an (aus = genau SPK8). ===== */
 function spk10Okt(Z2, d, found, c) {
-  const o10 = Z2.o10 = Object.assign({an: 1, N: 4096, thr: -18, w: 3, fTop: 290, a0: 0.05, st: 0.025, b0: 0.04, kick: 1, dbg: null}, Z2.o10);
+  const o10 = Z2.o10 = Object.assign({an: 1, N: 4096, thr: -19, w: 3, fTop: 290, a0: 0.05, st: 0.025, b0: 0.04, kick: 0, dbg: null}, Z2.o10);
   if (!o10.an || !found.length || typeof Z2.magsLo !== 'function') return found;
   const sr = d.meta.sr, N = o10.N, df = sr / N, fMax = c.R.fb;
   const cen = [], own = []; found.forEach((q, k) => { const t1 = Math.max(q.a + o10.a0, q.b - o10.b0); for (let t = q.a + o10.a0; t <= t1 + 1e-6; t += o10.st) { cen.push(Math.round(t * sr)); own.push(k); } });

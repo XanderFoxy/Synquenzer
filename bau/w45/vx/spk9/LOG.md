@@ -11,3 +11,4 @@
   a4 (Übergang < 0,25 s, ≤ 1,5 HT zum Ziel, G-Wahrheit = Mitte des Gleitens) 12,5 %.
 - 21:00 spk4-test: 6 FEHLER/23; neu gegenüber basis7: reg-spk2-test noten-erkannt (Bass-Band Original 14 → 12 Treffer, Präz. 0,275 → 0,214) → Regel nur für fb > 400 Hz (Bass-Band bleibt SPK2). Rest wie basis7 (gemisch/unison-besser identisch zu basis7, verfeinern +1 dB, ki1 quer).
 - 21:02 Probe-Merge (git merge-file, Basis basis7): SPK9 + SPK8 (auf 4.63 gehoben) 0 Konflikte; SPK9 + VX2 (auf 4.63 gehoben) 0 zusätzliche Konflikte. Seiten-Test spk9-ui.mjs geschrieben (Befund 17 per Touch 428×926).
+- 21:06 spk4-test (nach Bass-Band-Regel): 5 FEHLER von 23 = genau die Liste des SPK8-Pakets (gemisch-besser, verfeinern +1 dB, unison-besser, reg-spk3 [verfeinern/abstaende-besser/spk2 bekannt], reg-ki1 quer). reg-spk2-test 28/30 OK (noten-erkannt wieder 14/51). Pflicht im Lauf: topdefs 0/0, dupkeys 0, smoke [], MS 2000 1×, live 1×, VERSION 4.63.0. vx1-test 61/61.
