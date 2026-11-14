@@ -1,10 +1,11 @@
 # IMP2 – Tempo unabhängig von der Abtastrate · NOTES
 
-Datei: `vx/imp2/index.html` = basis.html (4.63.0) + IMP2. Diff: 1 Haken-Zeile + 1 Block (≈ 52 Zeilen), beides IN `imp1Core` (damit es über
+Datei: `vx/imp2/index.html` = basis.html (4.63.0) + IMP2. Diff: 2 Haken-Zeilen + 1 Block (≈ 67 Zeilen), alles IN `imp1Core` (damit es über
 `imp1Core.toString()` automatisch im Worker läuft – kein Haken am Worker nötig):
 - Haken, 1. Zeile in `down(x, sr)`: `if (typeof imp2Down === 'function') return imp2Down(x, sr);   /* IMP2 … */`
+- Haken, 1. Zeile in `spec(x, i0, p, out)` (seit Prüfung, Befund 4): `if (typeof imp2Spec === 'function') return imp2Spec(x, i0, p, out);   /* IMP2 … */`
 - Block `/* IMP2-BEGIN … */ … /* IMP2-END */` direkt nach `down()` (vor `const med`): `imp2Kai` (Kaiser-Sinc in Sekunden), `imp2Rs` (Stufe 1,
-  Phasen-Tabelle), `imp2Down` (Stufe 2 Halbband + Pegel RMS 0,1). Quelle: `block.js`, eingesetzt mit `apply.mjs` (basis.html → index.html).
+  Phasen-Tabelle), `imp2Down` (Stufe 2 Halbband + Pegel RMS 0,1), `imp2Spec` (reelle FFT, seit Prüfung). Quelle: `block.js`, eingesetzt mit `apply.mjs` (basis.html → index.html).
 Nichts Sichtbares, keine neuen Knöpfe, VERSION unverändert. VX2/SPK8-Stellen nicht berührt.
 
 ## Befund (vorher)
@@ -15,8 +16,10 @@ immer der 12-kHz-Weg; 44,1 kHz kommt über Takes (`m.sr`) und SPK1-Quellen.
 
 ## Verfahren (nachher)
 Immer genau 11 025 Hz, Ausgabe-Zeitpunkte j/11 025 s ab der ersten Probe (wie vorher). Filter in Sekunden entworfen → bei jeder Rate dieselbe Kennlinie.
-1. Eingang → 22 050 Hz: Kaiser-Sinc, Grenze 11 025 Hz, Übergang 12 050 Hz, 50 dB (flach bis 5 kHz, Sperre ab 17 kHz – nichts faltet unter 5 kHz);
-   Phasen-Tabelle exakt (44,1/88,2 kHz: 1 Phase, 48/96 kHz: 147, 32 kHz: 441; krumme Raten: 4096 Phasen gerundet); 22 050 Hz: Stufe entfällt;
+1. Eingang → 22 050 Hz: Kaiser-Sinc, Grenze 10 512,5 Hz, Übergang 11 025 Hz (5 000 … 16 025 Hz), 50 dB (flach bis 5 kHz; alles im Übergang faltet nach
+   ≥ 6 025 Hz = Sperre von Stufe 2) – seit Prüfung (Befund 5), vorher Grenze 11 025 / Übergang 12 050 (Sperre ab 17 kHz);
+   Phasen-Tabelle exakt (44,1/88,2 kHz: 1 Phase, 48/96 kHz: 147, 32 kHz: 441); ganzzahlige Raten mit > 4096 Phasen und krumme Raten (z. B. 48 000,5):
+   4096 Phasen, je Ausgabe-Probe gerundet (krumme Raten erst seit Prüfung, Befund 1 – vorher Unsinn); 22 050 Hz: Stufe entfällt;
    unter 22 050 Hz (16/8 kHz) Grenze = sr/2.
 2. Halbband 22 050 → 11 025 Hz: Grenze 5 512,5 Hz, Übergang 1 025 Hz, 50 dB (flach bis 5 kHz, Sperre ab 6 kHz), 16 Paare (jede 2. Zahl 0).
 Kennlinie (resp.mjs, Sinus-Pegel nach dem Umrechnen, dB, alt/neu):
@@ -28,7 +31,7 @@ Kennlinie (resp.mjs, Sinus-Pegel nach dem Umrechnen, dB, alt/neu):
 Verworfen: 1 Stufe (140 Abgriffe bei 48k, 515 ms/180 s); 40 bzw. 35 dB (kaum schneller, Kennlinie je Rate bis 0,3 dB verschieden); Halbieren vorab
 bei 96k ([1 2 1]/4, −0,2 dB bei 5 kHz – mit 2 Stufen unnötig).
 
-## Zahlen vorher → nachher (Node, imp2-node.mjs: dieselben Stücke mit soxr auf 22,05/44,1/48/96 kHz; node-vorher.txt / node-nachher.txt)
+## Zahlen vorher → nachher (Node, imp2-node.mjs: dieselben Stücke mit einem hochwertigen Umrechner auf 22,05/44,1/48/96 kHz; node-vorher.txt / node-nachher.txt)
 | Stück | vorher 22,05 / 44,1 / 48 / 96 kHz | nachher (alle Raten) | Spanne vorher → nachher |
 |---|---|---|---|
 | App-Render 92 4/4 (WAV + MP3) | 92 · 4/4 · 8 Teile überall | 92 · 4/4 · 8 Teile | 0,00 → 0,00 |

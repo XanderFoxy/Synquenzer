@@ -105303,12 +105303,12 @@ function spk7Tgts(U) {
    Vibrato nur bis ±85 ct Hub, Durchgangston mit flacher Mitte bleibt, Ausklang nur wenn der leise Teil weiter fällt/endet, Tonhöhe = Median
    der dichtesten Halbton-Breite, Oktav-Prüfung strenger (ungerade Obertöne < 12 % statt 30 %), Pegel-Schwankung im gehaltenen Ton (gleiche
    Tonhöhe, stimmhaft) ist erst ab 6 dB ein Anschlag, „Überall finden“ (SPK3) nutzt dieselben Stufen, Mehrstimmig (SPK4) erkennt EINE Stimme
-   und trennt sie wie einstimmig (nur ohne Schalter, Haken „SPK9“ in SPK2 noten/finden). ===== */
+   und trennt sie wie einstimmig (Akkorde bleiben mehrstimmig; Haken „SPK9“ in SPK2 noten/finden). ===== */
 function spk9DspMake(Z2) {
   if (!Z2 || !Z2.h || !Z2.opt || !Z2.h.segNotes || !Z2.h.midiOf) return Z2;
   const H2 = Z2.h, seg0 = H2.segNotes, opt = Z2.opt;
   const o9 = {an: 1, hys: 0.6, hold: 0.07, stab: 0.06, span: 0.25, bandv: 0.6, vmin: 0.3, tr: 0.5, trN: 3, look: 0.5, nl: 0.15, vib: 0.16, gegen: 0.3, lvl: 12, minS: 0.08, near: 0.07, win: 0.6, fbMin: 400,
-    adv: 0.25, cst: 1, nlP: 1, vibMax: 0.875, stair: 0.3, stairN: 0.035, trFlat: 1, fall: 4, fallT: 0.45, dicht: 1, okt: 0.12, rise2: 6, mono: 1, qMono: 0.5, pMono: 0.85, dbg: null};   // Prüfung: adv … pMono (0 = aus)
+    adv: 0.25, cst: 1, nlP: 1, vibMax: 0.875, stair: 0.3, stairN: 0.035, trFlat: 1, fall: 4, fallT: 0.45, dicht: 1, okt: 0.12, rise2: 6, mono: 1, qMono: 0.85, pMono: 0.7, dbg: null};   // Prüfung: adv … pMono (0 = aus)
   const med = v => { if (!v.length) return NaN; v.sort((p, q) => p - q); return v[v.length >> 1]; };
   // Tonhöhen-Stufen (Zeit der Grenze in s) aus der Grundton-Spur f0 (Rahmen i ↔ (i0 + i)·hopS), nur stimmhafte Rahmen (ok)
   function steps(o) {
@@ -105411,7 +105411,7 @@ function spk9DspMake(Z2) {
   // 14 → 12 Treffer). Gesang/Lead/… behalten die Stufen auch mit tiefer Auswahl (Prüfung Nr. 8). Ohne art (alter Haken): wie bisher nach fb.
   const bassBand = o => o.art ? o.art === 'bass' || (o.art === 'orig' && o.fb <= o9.fbMin) : o.fb <= o9.fbMin;
   opt.seg9 = o => o9.an && !bassBand(o) ? segNotes9(o) : seg0(o);
-  // Mehrstimmig (SPK4) ohne Schalter: klingt in der Auswahl nur EINE Stimme (Obertonkamm eines Grundtons trägt in ≥ pMono der lauten Rahmen
+  // Mehrstimmig (SPK4, automatisch oder per Schalter): klingt in der Auswahl nur EINE Stimme (Obertonkamm eines Grundtons trägt in ≥ pMono der lauten Rahmen
   // ≥ qMono der Energie), trennt der einstimmige Weg (SPK2 + Stufen) – die mehrstimmige Rechnung fand dort Geister-Oktaven und frühe Einsätze.
   const noten4 = Z2.ops && Z2.ops.noten, I9 = Z2.I;
   function eineStimme(d, m) {
@@ -105421,12 +105421,17 @@ function spk9DspMake(Z2) {
     const N = R.fa < 70 ? 8192 : 4096, df = sr / N, K = Math.min(N / 2 + 1, Math.ceil(Math.min(sr / 2 - 1, R.fb * 12) / df)), st = 3 * hop;   // jeder 3. Rahmen reicht
     const i0 = Math.floor(R.ta * sr / st), i1 = Math.ceil(R.tb * sr / st) + 1, F = i1 - i0; if (F < 8) return false;
     const Y = H2.magsX(x, N, st, K, i0, i1), Tr = H2.trackF(Y, F, K, df, R.fa, R.fb, 10), es = Array.from(Tr.e).sort((p, q) => p - q), emx = es[Math.floor(es.length * 0.98)];
-    let nl = 0, nq = 0; for (let i = 0; i < F; i++) if (Tr.e[i] >= emx - 20) { nl++; if (Tr.q[i] >= o9.qMono) nq++; }
+    // je lauter Rahmen: Spektral-Spitzen bis 2,5 kHz (≥ −20 dB unter der stärksten); fremd = nicht auf einem Oberton des Grundtons (Akkord-Töne,
+    // zweite Stimme). Eine Stimme: fremde Spitzen tragen ≤ qMono der Spitzen-Energie, und der Grundton selbst ist da (kein Unter-Grundton eines Akkords)
+    const kT = Math.min(K - 2, Math.ceil(2500 / df)), kA = Math.max(2, Math.floor(R.fa * 0.8 / df));
+    let nl = 0, nq = 0; for (let i = 0; i < F; i++) { if (!(Tr.e[i] >= emx - 20)) continue; nl++; const o = i * K, f = Tr.f0[i]; let mx = 0; for (let k = kA; k <= kT; k++) mx = Math.max(mx, Y[o + k]);
+      let all = 0, fr2 = 0, fund = 0; for (let k = kA; k <= kT; k++) { const v = Y[o + k]; if (v < 0.01 * mx || v < Y[o + k - 1] || v < Y[o + k + 1]) continue; const fp = k * df, h = Math.round(fp / f); all += v; if (h < 1 || Math.abs(fp - h * f) > Math.max(2 * df, 0.035 * fp)) fr2 += v; else if (h === 1) fund = Math.max(fund, v); }
+      if (all > 0 && fr2 <= (1 - o9.qMono) * all && fund >= 0.01 * mx) nq++; }
     if (o9.dbg) o9.dbg({eineStimme: nq / Math.max(1, nl), nl});
     return nl >= 8 && nq >= o9.pMono * nl;
   }
   if (noten4) Z2.ops.noten = async (d, m, emit, info) => {
-    if (o9.an && o9.mono && m.poly == null && m.lid !== 'bass' && H2.artOf(d, m.lid || 'orig') !== 'bass' && H2.artOf(d, m.lid || 'orig') !== 'drums' && eineStimme(d, m)) {
+    if (o9.an && o9.mono && m.poly !== false && m.lid !== 'bass' && H2.artOf(d, m.lid || 'orig') !== 'bass' && H2.artOf(d, m.lid || 'orig') !== 'drums' && eineStimme(d, m)) {
       const r = await noten4(d, Object.assign({}, m, {poly: false}), emit, info); return Object.assign(r, {mehrstimmig: true, stimmen9: 1}); }   // Modus bleibt „mehrstimmig“: es klang nur eine Stimme
     return noten4(d, m, emit, info);
   };
