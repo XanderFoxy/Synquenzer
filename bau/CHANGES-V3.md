@@ -1,3 +1,18 @@
+## 4.63.0 — Spektral: Ebenen-Werkstatt (echte Kopie, Noten umsetzen, Chor, Effekte je Ebene) · Klangkorn (Auswahl als Instrument)
+
+- **Ebene duplizieren** (⋯ einer Ebene → Werkstatt): eine echte Kopie, die zusätzlich klingt und dem Rest nichts wegnimmt. Wird die Quelle gelöscht, rückt die Kopie an ihren Platz; ein ↶ macht alles rückgängig.
+- **Noten bearbeiten**: Die Noten einer Ebene liegen als Balken auf dem Takt-Raster über dem Spektrum. Man kann sie in Tonhöhe und Zeit ziehen, mit −1/+1, Oktave ± oder „Fein“ (±10 ct) verschieben, auch die ganze Ebene. Der Klang wird aus der Grundlage neu gerechnet, ohne dass sich Fehler anhäufen; nur der geänderte Bereich wird neu gerechnet, der Rest bleibt bitgleich. Mit ▶ Vorhören und A/B.
+- **Chor erzeugen**: aus einer Gesangsebene 2–6 Stimmen (Satz, Terzen, Quinten, Oktave, Unisono), passend zur Tonart, mit Formant-Erhalt, Versatz und Breite. Jede Stimme ist eine eigene Ebene.
+- **Effekte je Ebene**: Pan, Tiefen/Mitten/Höhen, Hoch- und Tiefpass (logarithmisch), Hall, Echo, Sättigung. Sie wirken beim Abspielen, im Export und bei „In Matrix“.
+- Zerlegen und Profi-Trennung nehmen Kopien und Chorstimmen nichts weg. Aktionen während einer Rechnung warten in einer Reihe, und das Abspielen läuft ohne Lücke weiter.
+- **Klangkorn** (Werkzeugleiste „Klangkorn ▾“): Man malt eine Auswahl im Spektrum und spielt genau diesen Ausschnitt als Instrument.
+  - Modus Körnchen (Position, Bewegung, Korngröße, Dichte, Streuung) oder Schleife (eingefrorenes Spektrum).
+  - Dazu Filter, Breite und Hüllkurve.
+  - Die Tastatur links schaltet um auf KORN (Halten = Ton hält, Ziehen = rollen wie bisher).
+  - „Als Instrument“ legt eine neue Synth-Spur an, die das Klangkorn in Song und Matrix spielt, mit einem ↶.
+- Die Tastatur links (Probeton) deckt den ganzen Bereich ab (MIDI 12–120) und ist unabhängig vom Lied.
+Tests: Ebenen-Werkstatt alle OK (Kern 24/24, Bedienung, Prüfung 0 Fehler, Touch 3-min-Lied), Klangkorn alle OK (12+13+12), Gesang-Editor 61/61, Import alle OK, Chor alle OK, Zerlegen/Überblendung/Profi alle OK, Klang nachbauen gleich wie 4.62. Offen wie vorher: Verfeinern +1 dB, zu feine Stücke bei echtem Gesang.
+
 ## 4.62.0 — Spektral: mehrstimmige Noten, Bass sauberer, Unison im Nachbau, Rest aufteilen · Import erkennt echten Gesang
 
 - **Noten mehrstimmig**: Pads und Original zeigen jetzt Akkorde (bis 5 Töne gleichzeitig; Pad-Spur 24 von 28 Akkord-Tönen statt 0). Bass und Drums bleiben einstimmig. Schalter in Noten ▾ „Mehrstimmig: an/aus“.
