@@ -15,3 +15,4 @@
 - A2 e) Mehrstimmig (Pads): nicht gebaut (Zeit). Messwerkzeug steht (`TEIL=pad messk/noten3.mjs`): vorher Pad-Spur allein 0/28, Gemisch→Verfeinern Pads 1/28 (Präz. 4 %). Seite sagt weiter ehrlich „einstimmig“.
 - A2 f) Pflicht: topdefs doppelt 0/Syntax 0 · dupkeys 0 · smoke errors [] (smoke-a2.png) · MS 2000 1× · live: true 1× · VERSION 4.59.0. spk2-test 29/30 (nur zerlegen-bass-ziel 3,01 < 4, wie A1); Überall finden im Browser 45,8 % / 23 % → 58,3 % / 58,3 %, Verfeinern nach Noten 3,01 → 3,29.
 - A3 Start: Sicherung index.a2.html / spk3-block.a2.js; Bau neu: python3 bau4.py (bau3 + Haken A3).
+- A3 a) spk3-block.js: Worker bewegung() (Schwebung je Oberton, Tonhöhe/Vibrato, Schwerpunkt/Wah) an klang/klangFeat, op loopSet; Hauptfaden spk3Kl* (5 Werte mehr, feste Werte fz, Abstand + Bewegung), Loop im Dokument + ▶ im Kreis; 20 Haken „SPK3“ (bau4.py).

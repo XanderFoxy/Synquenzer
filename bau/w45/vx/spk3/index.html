@@ -98084,7 +98084,7 @@ function spk1Stop() {
   const P = SPK1.pl; if (!P) return; SPK1.pl = null; clearTimeout(P.timer);
   try { const c = AU.ctx, t = c.currentTime; P.out.gain.cancelScheduledValues(t); P.out.gain.setValueAtTime(P.out.gain.value, t); P.out.gain.linearRampToValueAtTime(0, t + 0.005); for (const s of P.src) s.stop(t + 0.01); setTimeout(() => { try { P.out.disconnect(); } catch (e) {} }, 60); } catch (e) {}
 }
-function spk1PlayPos() { const P = SPK1.pl, c = AU.ctx; return P && c ? P.from + Math.max(0, c.currentTime - P.t0) : null; }
+function spk1PlayPos() { const P = SPK1.pl, c = AU.ctx; return P && c ? (P.pos ? P.pos(c.currentTime) /* SPK3: Loop im Kreis */ : P.from + Math.max(0, c.currentTime - P.t0)) : null; }
 /* ---------- Seite „Spektral“ (Schritt 3): Vollbild wie das Video-Blatt, Raster wie der Noten-Editor ----------
    Anzeige: WebGL2 (je Stück eine R8-Textur 1024 × 984 mit Mipmaps, Farbtabelle + dB-Bereich als Uniforms, Ebenen-Tönung als 2 RGBA-Bilder),
    ohne WebGL2 Canvas2D in halber Auflösung aus denselben Daten. Zoom/Schieben = nur Zahlen + ein Neuzeichnen je Bild, kein DOM-Umbau.
@@ -98573,6 +98573,7 @@ function spk1BtnState(U) {
   U.b_zerl.textContent = U.busy === 'zerlegen' || U.busy === 'profi' /* KI1 */ ? '■ Abbrechen' : 'Zerlegen'; if (U.b_ki1) ki1Busy(U);   /* KI1 */ U.b_zerl.disabled = U.busy === 'verfeinern'; U.b_verf.disabled = !has || !!U.busy;
   if (U.busy) U.bU.disabled = U.bR.disabled = true; else if (SPK1.last) spk1UndoBtns(U, SPK1.last);
   U.bMin.classList.toggle('on', !!U.opt.minus); U.bMin.setAttribute('aria-pressed', String(!!U.opt.minus));
+  if (typeof spk3LpBtn === 'function') spk3LpBtn(U);   // SPK3: ▶/■ in der Loop-Zeile
 }
 function spk1UndoBtns(U, r) {
   if (!r) return; U.bU.disabled = !r.nu; U.bR.disabled = !r.nr;
@@ -98581,6 +98582,7 @@ function spk1UndoBtns(U, r) {
 function spk1Got(U, r) { if (!r || !r.meta) return; SPK1.last = r; U.meta = r.meta; spk1UndoBtns(U, r); spk1Layers(U); if (typeof spk2OvDraw === 'function') spk1Dirty(U, 'ov'); }   // SPK2: Noten neu zeichnen
 /* ---- Ebenen-Liste ---- */
 function spk1Layers(U) {
+  if (typeof spk3LpFromMeta === 'function') spk3LpFromMeta(U);   // SPK3: Loop aus dem Dokument
   const L = U.meta.layers, R = U.meta.rest || {}, row = (id, name, col, o) => {
     const act = U.act === id ? ' act' : '';
     let h = `<div class="spk1-lr${act}" data-l="${esc(id)}"><button class="spk1-dot" data-a="lcol" style="--c:${col}" aria-label="Farbe ${esc(name)}"></button><button class="rb spk1-nm" data-a="lact" aria-label="Quelle für In Ebene: ${esc(name)}">${esc(name)}</button>`;
@@ -98693,7 +98695,7 @@ function spk1Tap(U, b) {
     case 'solo': case 'mute': { const o = lid === 'rest' ? U.meta.rest : U.meta.layers.find(x => x.id === lid); if (o) spk1Layer(U, a, lid, !o[a]); return; }
     case 'ab': U.ab = !U.ab; spk1Layers(U); if (SPK1.pl && !U.playSel) spk1PlayFrom(U, spk1PlayPos() || U.cur); return;
     case 'lmore': spk1MoreDd(U, b, lid); return;
-    case 'mxdd': case 'mxweg': spk2Tap(U, b, a); return;   // SPK2: Loop → Matrix
+    case 'mxdd': case 'mxweg': case 'lpplay' /* SPK3 */: spk2Tap(U, b, a); return;   // SPK2: Loop → Matrix
     case 'file': spk1Pick(U); return;
     case 'take': spk1FromTake(U, {take: b.dataset.id}); return;
     case 'open': spk1OpenId(U, b.dataset.id); return;
@@ -98762,6 +98764,7 @@ const SPK1_T2 = {notes: 'Noten je Ebene', learn: 'Vorlage lernen', find: 'Übera
 function spk1Teil2(was) { return {teil2: true, was, text: (SPK1_T2[was] || String(was)) + ' kommt in Teil 2'}; }
 /* ---- Wiedergabe ---- */
 function spk1PlayFrom(U, t) {
+  if (SPK1.pl && SPK1.pl.lp && typeof spk3LpPlay === 'function' && spk2Lp(U) && spk3LpPlay(U, t)) return;   // SPK3: Loop läuft → im Loop weiter
   U.playSel = false; spk1Play(t >= U.dur - 0.05 ? 0 : t, U.ab ? 'orig' : null); spk1BtnState(U); spk1Dirty(U, 'ov');
 }
 function spk1PlaySel(U) {
@@ -99542,7 +99545,7 @@ function spk2LpMove(U, s, e) {
 function spk2LpEnd(U, q) {
   if (q.lpT) { clearTimeout(q.lpT); q.lpT = 0; return false; }
   if (!q.lp) return false;
-  spk1Layers(U); spk1Stat(U, 'Loop ' + spk2LpTxt(U.loop) + ' · „In die Matrix ▾“ in der Ebenen-Liste'); return true;
+  spk1Layers(U); spk1Stat(U, 'Loop ' + spk2LpTxt(U.loop) + ' · „In die Matrix ▾“ in der Ebenen-Liste'); if (typeof spk3LpSave === 'function') spk3LpSave(U); /* SPK3: im Dokument */ return true;
 }
 // Zeile oben in der Ebenen-Liste (nur mit Loop): Loop Takt a–b │ In die Matrix ▾ │ ✕
 function spk2Css() {
@@ -99556,18 +99559,19 @@ function spk2Css() {
 function spk2LpRow(U) {
   const L = spk2Lp(U); if (!L) return ''; spk2Css();
   return '<div class="spk2-lp"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M7 3H3v14h4M13 3h4v14h-4"/></svg>' +
-    '<span class="spk2-lpt">Loop ' + esc(spk2LpTxt(L)) + '</span><button class="rb spk2-mx" data-a="mxdd" aria-label="Loop in die Matrix: als Audio oder als MIDI">In die Matrix ▾</button>' +
+    '<span class="spk2-lpt">Loop ' + esc(spk2LpTxt(L)) + '</span>' + (typeof spk3LpBtnH === 'function' ? spk3LpBtnH() : '') /* SPK3: ▶ Loop im Kreis */ + '<button class="rb spk2-mx" data-a="mxdd" aria-label="Loop in die Matrix: als Audio oder als MIDI">In die Matrix ▾</button>' +
     '<button class="rb spk2-lx" data-a="mxweg" aria-label="Loop entfernen">✕</button></div>';
 }
 function spk2Tap(U, b, a) {
-  if (a === 'mxweg') { U.loop = null; spk1Dd(U, null); spk1Layers(U); spk1Dirty(U, 'r'); spk1Dirty(U, 'ov'); spk1Stat(U, 'Loop entfernt'); return; }
+  if (a === 'lpplay') { if (typeof spk3LpTap === 'function') spk3LpTap(U); return; }   // SPK3: ▶ Loop im Kreis
+  if (a === 'mxweg') { U.loop = null; spk1Dd(U, null); spk1Layers(U); spk1Dirty(U, 'r'); spk1Dirty(U, 'ov'); spk1Stat(U, 'Loop entfernt'); if (typeof spk3LpSave === 'function') spk3LpSave(U); /* SPK3: im Dokument */ return; }
   if (a === 'mxdd') spk2MxDd(U, b);
 }
 // Ansicht ▾: Loop ohne Geste (4 Takte ab der Abspielposition)
 function spk2ViewLp(U, dd) {
   dd.appendChild(el('h5', '', 'Loop'));
   const x = el('button', 'mbtn rb spk1-ck', 'Loop setzen · 4 Takte ab Position'); x.dataset.mx = 'set';
-  on(x, 'click', () => { spk1Dd(U, null); const g = spk1Grid0(U), a = Math.max(0, Math.floor((U.cur - g.off) / g.bar + 1e-6)); spk2LpSet(U, a, a + 4); spk1Layers(U); spk1Stat(U, 'Loop ' + spk2LpTxt(U.loop) + ' · Klammern im Lineal ziehen'); });
+  on(x, 'click', () => { spk1Dd(U, null); const g = spk1Grid0(U), a = Math.max(0, Math.floor((U.cur - g.off) / g.bar + 1e-6)); spk2LpSet(U, a, a + 4); spk1Layers(U); spk1Stat(U, 'Loop ' + spk2LpTxt(U.loop) + ' · Klammern im Lineal ziehen'); if (typeof spk3LpSave === 'function') spk3LpSave(U); /* SPK3 */ });
   dd.appendChild(x); dd.appendChild(el('p', '', 'Oder: Lineal halten und ziehen.'));
 }
 /* ---- In die Matrix ---- */
@@ -99713,7 +99717,7 @@ const SPK2_WV = ['Säge', 'Rechteck', 'Dreieck', 'Sinus'];
 // Versuch c = {eng: 'va'|'fm', fix: {...}, u: [0…1]} → vollständiger Klang der App (alles Übrige neutral: keine LFO-Wege, kein Hall)
 function spk2KlP(c) {
   const u = c.u, f = c.fix;
-  if (c.eng === 'va') return {cut: spk2Lg(u[0], 30, 18000), res: u[1], fenv: u[2] * 2 - 1, fD: spk2Lg(u[3], 0.005, 4), aA: spk2Lg(u[4], 0.001, 2), aD: spk2Lg(u[5], 0.005, 4), aS: u[6], aR: spk2Lg(u[7], 0.005, 4), mix: u[8], noise: u[9] * 0.6, pw: 0.05 + 0.9 * u[10], o1: f.o1, o2: f.o2};
+  if (c.eng === 'va') return (typeof spk3KlP === 'function' ? spk3KlP : (c, P) => P)(c, {cut: spk2Lg(u[0], 30, 18000), res: u[1], fenv: u[2] * 2 - 1, fD: spk2Lg(u[3], 0.005, 4), aA: spk2Lg(u[4], 0.001, 2), aD: spk2Lg(u[5], 0.005, 4), aS: u[6], aR: spk2Lg(u[7], 0.005, 4), mix: u[8], noise: u[9] * 0.6, pw: 0.05 + 0.9 * u[10], o1: f.o1, o2: f.o2});   // SPK3: + Verstimmung, Unison, LFO
   return {ol: Math.round(u[0] * 99), mD: Math.round(u[1] * 99), mS: Math.round(u[2] * 99), aA: spk2Lg(u[3], 0.001, 2), aD: spk2Lg(u[4], 0.005, 4), aS: u[5], aR: spk2Lg(u[6], 0.005, 4), cut: spk2Lg(u[7], 200, 20000), r: f.r};
 }
 function spk2KlSnd(c, nm) {
@@ -99722,7 +99726,8 @@ function spk2KlSnd(c, nm) {
     const p = {o1w: P.o1, o1oct: 0, o1semi: 0, o1fine: 0, o1pw: P.pw, o1lvl: 1, o1uni: 1, o2w: P.o2, o2oct: 0, o2semi: 0, o2fine: 0, o2pw: P.pw, o2lvl: P.mix, o2uni: 1, o2sync: 0, o3lvl: 0,
       subLvl: 0, noise: P.noise, analog: 0, reset: 1, uniDet: 0, ftype: 0, cutoff: P.cut, res: P.res, drive: 0, kt: 0.5, fenv: P.fenv, fvel: 0, bass: 0,
       aA: P.aA, aD: P.aD, aS: P.aS, aR: P.aR, ampVel: 0, fA: 0.001, fD: P.fD, fS: 0, fR: P.aR, glide: 0, mode: 0, poly: 6, mw: 0, lq: 0};
-    return SQStore.normalizeSound({engine: 'analog', name: nm || 'Nachbau', cat: 'eigene', p, mods: [], fx});
+    const mods = []; if (typeof spk3KlSnd === 'function') spk3KlSnd(c, P, p, mods);   // SPK3: Osz 2 verstimmt, Unison, Vibrato/Wah
+    return SQStore.normalizeSound({engine: 'analog', name: nm || 'Nachbau', cat: 'eigene', p, mods, fx});
   }
   const op = (coarse, ol, r, l) => ({on: 1, coarse, fine: 0, det: 0, ol, r, l});
   const p = {ftype: 1, cutoff: P.cut, res: 0, drive: 0, kt: 0, fenv: 0, fvel: 0, bass: 0, lq: 0, aA: P.aA, aD: P.aD, aS: P.aS, aR: P.aR, ampVel: 0, fmAmp: 1, analog: 0, spread: 0, level: 1, glide: 0, mode: 0, poly: 6,
@@ -99736,7 +99741,7 @@ function spk2KlStart(eng, est, src, alt) {
     const v = est.va, w = v.w || [1, 0, 0, 0], ord = [0, 1, 2, 3].sort((p, q) => w[q] - w[p]), o1 = ord[0], o2 = w[ord[1]] > 0.08 * w[o1] ? ord[1] : o1 === 0 ? 1 : 0;
     const fc = (v.hc || 8) * src.feat.f0 / Math.pow(2, 0.5 * (src.m - 60) / 12), mix = w[o2] > 0 ? Math.min(1, w[o2] / Math.max(1e-6, w[o1])) : 0;
     const u = [spk2Ul(fc, 30, 18000), v.res || 0, alt === 'flach' ? 0.5 : (est.fenv + 1) / 2, spk2Ul(fD, 0.005, 4), spk2Ul(A.a, 0.001, 2), spk2Ul(A.d, 0.005, 4), A.s, spk2Ul(A.r, 0.005, 4), alt === 'eins' ? 0 : mix, est.noise > 0.12 ? Math.min(1, est.noise) : 0, ((v.d || 0.5) - 0.05) / 0.9];
-    return {eng, fix: {o1, o2}, u};
+    return typeof spk3KlStart === 'function' ? spk3KlStart({eng, fix: {o1, o2}, u}, est, src, alt) : {eng, fix: {o1, o2}, u};   // SPK3: Bewegung aus der Analyse
   }
   const r = alt === 'r2' ? (est.fm.r === 1 ? 2 : 1) : est.fm.r, I = Math.max(0.1, est.fm.I), ol = Math.max(0, Math.min(99, 99 + 8 * Math.log2(I / 13)));
   return {eng, fix: {r}, u: [ol / 99, 0.6, 0.85, spk2Ul(A.a, 0.001, 2), spk2Ul(A.d, 0.005, 4), A.s, spk2Ul(A.r, 0.005, 4), 1]};
@@ -99757,7 +99762,7 @@ async function spk2KlOpt(src, o) {
   const evalB = async L => {
     const pcs = await spk2KlRender(L.map(c => spk2KlSnd(c)), src.m, src.on, src.off, src.len, src.sr);
     const r = await spk1Call('klangFeat', {pcs, sr: src.sr, f, on: src.on, off: src.off});
-    L.forEach((c, i) => { c.F = r.fs[i]; c.dist = spk2KlDist(src.feat, c.F); c.pcm = pcs[i]; }); done += L.length;
+    L.forEach((c, i) => { c.F = r.fs[i]; c.dist = (typeof spk3KlDist === 'function' ? spk3KlDist : spk2KlDist)(src.feat, c.F);   /* SPK3: + Bewegung */ c.pcm = pcs[i]; }); done += L.length;
     for (const c of L) if (!best || c.dist < best.dist) best = c;
     for (const c of L) if (c !== best) c.pcm = null;
     if (o.prog) o.prog(done, n, best);
@@ -99765,12 +99770,13 @@ async function spk2KlOpt(src, o) {
   if (!best) {
     const e = src.est, eng = o.eng || (e.fm.e < 0.5 * e.va.e ? 'fm' : null), S = (g, a) => spk2KlStart(g, e, src, a), ix = (c, d) => { c.u[0] = Math.max(0, Math.min(1, c.u[0] + d)); return c; };   // FM klar besser erklärt → Familie FM
     const L = eng === 'fm' ? [S('fm'), ix(S('fm'), -0.1), ix(S('fm'), 0.1), S('fm', 'r2'), ix(S('fm'), 0.2)] : eng === 'va' ? [S('va'), S('va', 'eins'), S('va', 'flach')] : [S('va'), S('fm'), S('va', 'eins'), S('va', 'flach'), S('fm', 'r2'), ix(S('fm'), 0.1)];
+    if (eng !== 'fm' && typeof spk3KlMore === 'function') spk3KlMore(L, S, e, src);   // SPK3: verstimmt / Unison als Start
     await evalB(L); d0 = Math.min(...L.map(c => c.dist));
   } else d0 = best.dist;
   let sig = o.sig || 0.12;
   while (done < n) {
     if (o.stop && o.stop()) break;
-    const L = []; for (let i = 0; i < Math.min(lam, n - done); i++) { const D = best.u.length, k = i === lam - 1 ? D : 1 + Math.floor(rnd() * 3), pick = new Set(); while (pick.size < k) pick.add(Math.floor(rnd() * D)); L.push({eng: best.eng, fix: best.fix, u: best.u.map((v, j) => (pick.has(j) ? Math.max(0, Math.min(1, v + sig * 1.6 * gauss())) : v))}); }   // dünn: 1–3 Werte je Versuch, einer ändert alle
+    const L = []; for (let i = 0; i < Math.min(lam, n - done); i++) { const D = best.u.length, fr = [...Array(D).keys()].filter(j => !(best.fz || []).includes(j)), k = i === lam - 1 ? fr.length : Math.min(fr.length, 1 + Math.floor(rnd() * 3)), pick = new Set(); while (pick.size < k) pick.add(fr[Math.floor(rnd() * fr.length)]); L.push({eng: best.eng, fix: best.fix, fz: best.fz /* SPK3: feste Werte */, u: best.u.map((v, j) => (pick.has(j) ? Math.max(0, Math.min(1, v + sig * 1.6 * gauss())) : v))}); }   // dünn: 1–3 Werte je Versuch, einer ändert alle
     const b0 = best; await evalB(L);
     sig = best !== b0 ? Math.min(0.3, sig * 1.25) : Math.max(0.02, sig * 0.7);
   }
@@ -99779,8 +99785,8 @@ async function spk2KlOpt(src, o) {
 function spk2KlTxt(c) {   // lesbare Werte eines Versuchs
   const P = spk2KlP(c), ms = v => (v < 0.1 ? Math.round(v * 1000) + ' ms' : v.toFixed(2).replace('.', ',') + ' s'), hz = v => (v >= 1000 ? (v / 1000).toFixed(1).replace('.', ',') + ' kHz' : Math.round(v) + ' Hz'), k2 = v => v.toFixed(2).replace('.', ',');
   const adsr = 'ADSR ' + ms(P.aA) + ' · ' + ms(P.aD) + ' · ' + Math.round(P.aS * 100) + ' % · ' + ms(P.aR);
-  if (c.eng === 'va') return ['VA · ' + SPK2_WV[P.o1] + (P.o1 === 1 && Math.abs(P.pw - 0.5) > 0.04 ? ' (Puls ' + Math.round(P.pw * 100) + ' %)' : '') + (P.mix > 0.04 ? ' + ' + SPK2_WV[P.o2] + ' ' + Math.round(P.mix * 100) + ' %' : '') + (P.noise > 0.02 ? ' · Rauschen ' + Math.round(P.noise * 100) + ' %' : ''),
-    'Filter ' + hz(P.cut) + ' · Res ' + k2(P.res) + ' · Hüllkurve ' + (P.fenv >= 0 ? '+' : '') + k2(P.fenv) + ' / ' + ms(P.fD), adsr];
+  if (c.eng === 'va') return (typeof spk3KlTxt === 'function' ? spk3KlTxt : (c, L) => L)(c, ['VA · ' + SPK2_WV[P.o1] + (P.o1 === 1 && Math.abs(P.pw - 0.5) > 0.04 ? ' (Puls ' + Math.round(P.pw * 100) + ' %)' : '') + (P.mix > 0.04 ? ' + ' + SPK2_WV[P.o2] + ' ' + Math.round(P.mix * 100) + ' %' : '') + (P.noise > 0.02 ? ' · Rauschen ' + Math.round(P.noise * 100) + ' %' : ''),
+    'Filter ' + hz(P.cut) + ' · Res ' + k2(P.res) + ' · Hüllkurve ' + (P.fenv >= 0 ? '+' : '') + k2(P.fenv) + ' / ' + ms(P.fD), adsr]);   // SPK3: Verstimmung, Unison, Vibrato/Wah
   return ['FM · Verhältnis 1:' + P.r + ' · Index-Pegel ' + P.ol + ' → ' + P.mS, 'Index-Abfall ' + P.mD + (P.cut < 15000 ? ' · Filter ' + hz(P.cut) : ''), adsr];
 }
 function spk2KlEstTxt(e) {
@@ -99908,7 +99914,7 @@ SPK1_API.spk2.klang = {
   snd: (eng, fix, u) => spk2KlSnd({eng, fix, u}), dist: spk2KlDist, render: spk2KlRender, P: c => spk2KlP(c)
 };
 /* SPK2-END */
-/* ===== SPK3-BEGIN (Spektral-Seite Teil 3 · Bass ohne Download) ===== */
+/* ===== SPK3-BEGIN (Spektral-Seite Teil 3 · Bass ohne Download, Noten sicherer, Nachbau genauer, Loop im Dokument) ===== */
 // Kern-Ergänzung im selben Worker (Text wird mitgeschickt). Z2 = SPK2-Kern; ersetzt dessen Tiefband (Z2.lowSplit) und schaltet es ein.
 // Kick als Vorlage: der Kick klingt auf jedem Schlag gleich → je Phase im Schlag (Schritt 512 Proben) und Bin das untere Drittel der
 // Leistung über bis zu 32 Schläge des ganzen Stücks (einmal je Analyse). Diese Leistung wird vor der Bass-Suche abgezogen;
@@ -100074,9 +100080,166 @@ function spk3DspMake(Z2) {
   }
   const zuordnen0 = Z2.ops.zuordnen; Z2.ops.zuordnen = zuordnen3;
   const finden0 = Z2.ops.finden; Z2.ops.finden = finden3;
+  // ---- Auftrag 3: Klang-Nachbau genauer – Bewegung im gehaltenen Teil der Note (läuft hier im Worker)
+  // je Rahmen (Schritt 5 ms, Fenster 4 Perioden, Hann) Betrag und Phasen-Zuwachs der Obertöne 1–12 genau an h·f0:
+  // Schwebung je Oberton (Schwankung, Rate) → Verstimmung des 2. Oszillators (Δf = Rate / h) bzw. Unison; Tonhöhe → Vibrato; Schwerpunkt → Wah.
+  function bewegung(x, sr, f0, on, off) {
+    const P = sr / Math.max(20, f0), W = Math.max(512, Math.min(8192, Math.round(4 * P))), hop = Math.max(64, Math.round(sr * 0.005)), D = Math.max(8, Math.round(P / 8));
+    const ia = Math.max(0, Math.round((on + Math.min(0.12, (off - on) * 0.25)) * sr)), ib = Math.min(x.length, Math.round(off * sr)) - W - D, H = Math.max(1, Math.min(12, Math.floor(sr * 0.45 / f0)));
+    const out = {cv: [], b: [], det: 0, vib: {d: 0, r: 0}, wah: {d: 0, r: 0}, n: 0, H};
+    if (ib - ia < hop * 12) return out;
+    const w = new Float64Array(W); for (let i = 0; i < W; i++) w[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / W);
+    const C = [], Sn = []; for (let h = 1; h <= H; h++) { const th = 2 * Math.PI * h * f0 / sr, c = new Float64Array(W), s = new Float64Array(W); for (let i = 0; i < W; i++) { c[i] = Math.cos(th * i) * w[i]; s[i] = -Math.sin(th * i) * w[i]; } C.push(c); Sn.push(s); }
+    const A = Array.from({length: H}, () => []), ct = [], cn = [];
+    for (let s0 = ia; s0 <= ib; s0 += hop) {
+      let fw = 0, fs = 0, e = 0, eh = 0;
+      for (let h = 0; h < H; h++) {
+        const c = C[h], s = Sn[h]; let r0 = 0, i0 = 0, r1 = 0, i1 = 0;
+        for (let i = 0; i < W; i++) { const a = x[s0 + i], b = x[s0 + D + i]; r0 += a * c[i]; i0 += a * s[i]; r1 += b * c[i]; i1 += b * s[i]; }
+        const p = r0 * r0 + i0 * i0; A[h].push(Math.sqrt(p)); e += p; eh += p * (h + 1);
+        if (h < 3 && p > 0) { const th = 2 * Math.PI * (h + 1) * f0 / sr * D; let dv = Math.atan2(i1 * r0 - r1 * i0, r1 * r0 + i1 * i0) - th; dv = Math.atan2(Math.sin(dv), Math.cos(dv)); fs += p * (f0 + dv * sr / (2 * Math.PI * D) / (h + 1)); fw += p; }
+      }
+      ct.push(fw > 0 ? 1200 * Math.log2(fs / fw / f0) : 0); cn.push(e > 0 ? Math.log2(eh / e) : 0);
+    }
+    const n = ct.length, dur = n * hop / sr; out.n = n;
+    const det = v => { const m = v.length, xm = (m - 1) / 2; let sy = 0, sxy = 0, sxx = 0; for (let i = 0; i < m; i++) { sy += v[i]; } const ym = sy / m; for (let i = 0; i < m; i++) { sxy += (i - xm) * (v[i] - ym); sxx += (i - xm) * (i - xm); } const k = sxx ? sxy / sxx : 0; return v.map((y, i) => y - ym - k * (i - xm)); };
+    const rate = r => { let z = 0; for (let i = 1; i < r.length; i++) if ((r[i - 1] < 0) !== (r[i] < 0)) z++; return z / 2 / dur; };
+    const sd = r => Math.sqrt(r.reduce((a, v) => a + v * v, 0) / r.length);
+    for (let h = 0; h < H; h++) { const v = A[h], m = v.reduce((a, q) => a + q, 0) / n, r = det(v); out.cv.push(+(m > 0 ? Math.min(1, sd(r) / m) : 0).toFixed(3)); out.b.push(+rate(r).toFixed(2)); }
+    { const q = []; for (let h = 0; h < H; h++) if (out.cv[h] > 0.08 && out.b[h] > 0.6 / dur) q.push(out.b[h] / (h + 1)); q.sort((p, r) => p - r); const df = q.length >= 2 ? q[q.length >> 1] : 0; out.det = +(1200 * Math.log2(1 + df / f0)).toFixed(2); }
+    { const r = det(ct); out.vib = {d: +(Math.SQRT2 * sd(r)).toFixed(2), r: +rate(r).toFixed(2)}; }
+    { const r = det(cn); out.wah = {d: +(Math.SQRT2 * sd(r)).toFixed(3), r: +rate(r).toFixed(2)}; }
+    return out;
+  }
+  const klang0 = Z2.ops.klang, klangFeat0 = Z2.ops.klangFeat;
+  Z2.ops.klang = (d, m) => { const r = klang0(d, m); r.feat.x3 = bewegung(r.x, r.sr, r.feat.f0, r.on, r.off); return r; };
+  Z2.ops.klangFeat = (d, m) => { const r = klangFeat0(d, m); (r.fs || []).forEach((F, i) => { F.x3 = bewegung(m.pcs[i], m.sr, F.f0, m.on, m.off); }); return r; };
+  // ---- Auftrag 3: Loop-Klammern im Dokument (teil2.loops = [{a, b}] in Takten); ein ↶ je Änderung
+  Z2.ops.loopSet = (d, m, emit, info) => {
+    const t2 = H2.t2Of(d), L = Array.isArray(m.L) && m.L.length === 2 ? [Math.max(0, Math.round(+m.L[0] || 0)), Math.max(1, Math.round(+m.L[1] || 0))] : null;
+    const cur = (t2.loops || [])[0] || null; if (L && cur && cur.a === L[0] && cur.b === L[1]) return info(d); if (!L && !cur) return info(d);
+    I.uBegin(d, L ? 'Loop' : 'Loop entfernt'); t2.loops = L && L[1] > L[0] ? [{a: L[0], b: L[1]}] : []; I.uEnd(d); return info(d);
+  };
   Z2.o4 = o4;
   return Z2;
 }
+/* ---- Auftrag 3: Klang nachbauen genauer (Hauptfaden). VA-Versuch hat 5 Werte mehr: u[11] Verstimmung Osz 2 (±25 ct), u[12] Unison-Verstimmung
+   (Stimmen fix.uni 1/5), u[13] LFO-Rate 0,2…10 Hz, u[14] Vibrato 0…60 ct, u[15] Wah (Cutoff ±0…18 Halbtöne). Startwerte aus der Bewegung
+   (Worker: Schwebung je Oberton, Tonhöhe, Schwerpunkt); was die Analyse nicht sieht, bleibt fest (fz) – der Optimierer verändert nur den Rest.
+   Abstand = SPK2-Abstand + Bewegung (Schwankung je Oberton, Schwebungs-Rate, Vibrato, Wah). Rauschen nur, wenn die Analyse > 10 % misst. ---- */
+const SPK3_KL = {x3: true, w: 0.35};
+function spk3KlP(c, P) {
+  const u = c.u; if (c.eng !== 'va' || !u || u.length < 16) return P;
+  return Object.assign(P, {det: (u[11] * 2 - 1) * 25, uni: (c.fix && c.fix.uni) || 1, udet: u[12], lr: spk2Lg(u[13], 0.2, 10), vib: u[14] * 60, wah: u[15] * 0.15});
+}
+function spk3KlSnd(c, P, p, mods) {
+  if (c.eng !== 'va' || P.det == null) return;
+  p.o2fine = Math.round(P.det * 10) / 10; if (P.uni > 1) { p.o1uni = P.uni; p.o2uni = P.uni; p.uniDet = P.udet; p.uniMix = 0.6; p.uniWidth = 0; }
+  if (P.vib > 0.5 || P.wah > 0.002) { p.l1shape = 0; p.l1rate = P.lr; p.l1sync = 0; p.l1retrig = 1; p.l1fade = 0; }
+  if (P.vib > 0.5) mods.push({src: 'lfo1', dst: 'pitch', amt: P.vib / 2400});
+  if (P.wah > 0.002) mods.push({src: 'lfo1', dst: 'cutoff', amt: P.wah});
+}
+function spk3KlStart(c, est, src, alt) {
+  if (c.eng !== 'va' || !SPK3_KL.x3) return c;
+  const x = (src.feat && src.feat.x3) || null, u = c.u, cvm = x && x.cv.length ? x.cv.reduce((a, v) => a + v, 0) / x.cv.length : 0;
+  const det = x ? Math.min(25, x.det) : 0, vib = x && x.vib.d >= 3 ? Math.min(60, x.vib.d) : 0, wah = x && x.wah.d >= 0.06 ? x.wah.d : 0, lr = vib ? x.vib.r : wah ? x.wah.r : 4;
+  c.fix = Object.assign({}, c.fix, {uni: alt === 'uni' ? 5 : 1});
+  if (alt === 'det') { c.fix.o2 = c.fix.o1; u[8] = 0.9; }
+  u.push((Math.max(-25, Math.min(25, alt === 'det' || alt === 'uni' ? det || 8 : det)) / 25 + 1) / 2, alt === 'uni' ? Math.min(1, 0.15 + cvm) : 0, spk2Ul(Math.max(0.2, Math.min(10, lr)), 0.2, 10), vib / 60, Math.min(1, wah));
+  const fz = []; if (!(est.noise > 0.1)) { fz.push(9); u[9] = 0; } if (c.fix.uni === 1) fz.push(12); if (!vib) fz.push(14); if (!wah) fz.push(15); if (!vib && !wah) fz.push(13);
+  c.fz = fz; return c;
+}
+function spk3KlMore(L, S, e, src) {   // zusätzliche Startwerte: zwei verstimmte Oszillatoren, Unison – nur wenn die Analyse Schwebung sieht
+  const x = src.feat && src.feat.x3; if (!SPK3_KL.x3 || !x || !x.cv.length) return L;
+  const cvm = x.cv.reduce((a, v) => a + v, 0) / x.cv.length;
+  if (cvm > 0.06 || x.det > 0.5) { L.push(S('va', 'det')); L.push(S('va', 'uni')); }
+  return L;
+}
+function spk3KlDist(A, B) {
+  const d0 = spk2KlDist(A, B), a = A.x3, b = B.x3; if (!SPK3_KL.x3 || !a || !b || !a.cv.length || !b.cv.length) return d0;
+  const db = v => 20 * Math.log10(1 + v); let s = 0, n = Math.min(a.cv.length, b.cv.length), r = 0, rc = 0;
+  for (let h = 0; h < n; h++) { s += Math.abs(db(a.cv[h]) - db(b.cv[h])); if (a.cv[h] > 0.08 && b.cv[h] > 0.08 && a.b[h] > 0 && b.b[h] > 0) { r += Math.min(3, Math.abs(Math.log2(a.b[h] / b.b[h]))); rc++; } }
+  const mv = s / n + (rc ? 2 * r / rc : 0) + Math.abs(a.vib.d - b.vib.d) / 4 + (a.vib.d > 3 && b.vib.d > 3 ? Math.min(3, 2 * Math.abs(Math.log2(Math.max(0.1, a.vib.r) / Math.max(0.1, b.vib.r)))) : 0) + 20 * Math.abs(a.wah.d - b.wah.d);
+  return d0 + SPK3_KL.w * mv;
+}
+function spk3KlTxt(c, L) {
+  const P = spk2KlP(c); if (c.eng !== 'va' || P.det == null) return L;
+  if (P.mix > 0.04 && Math.abs(P.det) >= 1) L[0] += ' ' + (P.det > 0 ? '+' : '−') + Math.round(Math.abs(P.det)) + ' ct';
+  if (P.uni > 1) L[0] += ' · Unison ' + P.uni;
+  if (P.wah > 0.002) L[1] += ' · Wah ' + Math.round(P.wah * 120) + ' HT';
+  if (P.vib > 0.5) L[2] += ' · Vibrato ' + P.lr.toFixed(1).replace('.', ',') + ' Hz ' + Math.round(P.vib) + ' ct';
+  return L;
+}
+/* ---- Auftrag 3: Loop im Dokument (teil2.loops = [{a, b}] in Takten, Kern-op loopSet, ein ↶ je Änderung) und ▶ in der Loop-Zeile:
+   spielt den Loop im Kreis. Blöcke vom Kern wie spk1Play (im Loop gemerkt), je Durchgang ein eigener Pegel mit 3 ms Blende über die Naht:
+   Durchgang p klingt mit Proben hinter dem Loop-Ende aus, p+1 setzt mit Proben davor ein – kein Knacken, kein Loch, taktgenau. ---- */
+function spk3LpFromMeta(U) {   // Loop aus dem Dokument (Öffnen, ↶/↷); während des Ziehens bleibt U.loop, bis gespeichert ist
+  const t = U.meta && U.meta.teil2, L = t && Array.isArray(t.loops) ? t.loops[0] : null, k = SPK1.doc + ':' + (L ? L.a + '-' + L.b : '');
+  if (U.lpK === k) return; U.lpK = k; U.loop = L && L.b > L.a ? [L.a, L.b] : null; U.lpDoc = SPK1.doc;
+  const P = SPK1.pl; if (P && P.lp) { const pos = spk1PlayPos(); setTimeout(() => { if (SPK1.pl === P) { if (spk2Lp(U)) spk3LpPlay(U, pos); else spk1Stop(); spk1BtnState(U); spk1Dirty(U, 'ov'); } }, 0); }
+}
+function spk3LpSave(U) {
+  const L = spk2Lp(U), doc = SPK1.doc; if (!doc || !U.meta) return Promise.resolve(null);
+  U.lpK = doc + ':' + (L ? L[0] + '-' + L[1] : '');   // eigener Stand: kein zweiter Neustart
+  const P = SPK1.pl; if (P && P.lp) { const pos = spk1PlayPos(); if (L) spk3LpPlay(U, pos); else { spk1Stop(); spk1BtnState(U); } }
+  return spk1Call('loopSet', {doc, L: L ? [L[0], L[1]] : null}).then(r => { if (SPK1.doc === doc && SPK1.ui === U) spk1Got(U, r); return r; }, e => { logErr(e); return null; });
+}
+function spk3LpPlay(U, from) {
+  const L = spk2Lp(U); if (!L) return false;
+  spk1Stop(); const c = ensureAudio(); if (!c || !SPK1.doc || !SPK1.last) return false;
+  const meta = SPK1.last.meta, sr = meta.sr, B = SPK1_BLK, [ta, tb] = spk2LpSec(U, L), aS = Math.max(0, Math.round(ta * sr)), bS = Math.min(meta.n, Math.round(tb * sr)), len = bS - aS;
+  if (len < sr * 0.05) return false;
+  const X = Math.max(1, Math.round(sr * 0.003)), mix = U.ab ? 'orig' : null, st = from != null && from >= ta && from < tb - 0.02 ? Math.round(from * sr) - aS : 0;
+  const out = c.createGain(), t0 = c.currentTime + 0.15; out.connect(AU.masterSum || c.destination);
+  const P = SPK1.pl = {seq: ++SPK1.plSeq, out, t0, from: ta, src: [], timer: 0, lp: [ta, tb], pend: 0, cp: 0, ck: 0, mix, sel: null, sv: 0, te: 0};
+  P.pos = now => (aS + (Math.max(0, (now - t0) * sr) + st) % len) / sr;
+  const keep = Math.ceil((len + 2 * X) / B) + 2 <= 200, cache = new Map(), gains = [];
+  const blk = k => { let p = cache.get(k); if (!p) { p = spk1Call('block', {doc: SPK1.doc, k, mix}).then(r => { const b = c.createBuffer(r.ch.length, B, sr); r.ch.forEach((x, i) => b.copyToChannel(x, i)); return b; }); if (keep) cache.set(k, p); } return p; };
+  const T = p => t0 + (p * len - st) / sr, r0 = p => (p === 0 && st > 0 ? aS + st : Math.max(0, aS - X)), r1 = Math.min(meta.n, bS + X);
+  const gOf = p => {
+    if (gains[p]) return gains[p]; const g = c.createGain(), a = T(p), e = a + len / sr; g.connect(out);
+    if (p === 0 && st > 0) { g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(1, t0 + 0.005); } else { g.gain.setValueAtTime(0, Math.max(0, a - X / sr)); g.gain.linearRampToValueAtTime(1, a + X / sr); }
+    g.gain.setValueAtTime(1, e - X / sr); g.gain.linearRampToValueAtTime(0, e + X / sr); return (gains[p] = g);
+  };
+  P.ck = Math.floor(r0(0) / B);
+  const pump = () => {
+    if (SPK1.pl !== P) return;
+    while (P.pend < 3) {
+      const p = P.cp, k = P.ck, s0 = Math.max(k * B, r0(p)), s1 = Math.min((k + 1) * B, r1), when = T(p) + (s0 - aS) / sr;
+      if (when > c.currentTime + 1.5) break;
+      if ((k + 1) * B >= r1) { P.cp = p + 1; P.ck = Math.floor(r0(p + 1) / B); } else P.ck = k + 1;
+      if (s1 <= s0) continue;
+      P.pend++; const g = gOf(p);
+      blk(k).then(b => {
+        P.pend--; if (SPK1.pl !== P) return;
+        let w = when, off = (s0 - k * B) / sr, du = (s1 - s0) / sr; const late = c.currentTime + 0.02 - w;
+        if (late > 0) { if (late >= du) { pump(); return; } w += late; off += late; du -= late; }
+        const s = c.createBufferSource(); s.buffer = b; s.connect(g); s.start(w, off, du); P.src.push(s);
+        s.onended = () => { const i = P.src.indexOf(s); if (i >= 0) P.src.splice(i, 1); try { s.disconnect(); } catch (e) {} };
+        pump();
+      }, e => { P.pend--; logErr(e); });
+    }
+    for (let i = 0; i < gains.length; i++) if (gains[i] && i < P.cp - 1 && c.currentTime > T(i) + len / sr + 0.2) { try { gains[i].disconnect(); } catch (e) {} gains[i] = null; }
+    clearTimeout(P.timer); P.timer = setTimeout(pump, 120);
+  };
+  U.playSel = false; pump(); spk1BtnState(U); spk1Dirty(U, 'ov');
+  spk1Stat(U, 'Loop ' + spk2LpTxt(L) + ' · spielt im Kreis'); return true;
+}
+function spk3LpTap(U) {
+  if (SPK1.pl && SPK1.pl.lp) { spk1Stop(); spk1BtnState(U); spk1Dirty(U, 'ov'); return; }
+  spk3LpPlay(U, U.cur);
+}
+const spk3LpBtnH = () => '<button class="rb spk3-lpp" data-a="lpplay" aria-label="Loop im Kreis abspielen">' + (SPK1.pl && SPK1.pl.lp ? '■' : '▶') + '</button>';
+function spk3LpBtn(U) {
+  const b = U.ly && U.ly.querySelector('.spk3-lpp'); if (!b) return; const on = !!(SPK1.pl && SPK1.pl.lp);
+  const t = on ? '■' : '▶'; if (b.textContent !== t) b.textContent = t; b.setAttribute('aria-label', on ? 'Loop stoppen' : 'Loop im Kreis abspielen'); b.setAttribute('aria-pressed', String(on));
+}
+SPK1_API.spk3 = {
+  loop: {set: async (a, b) => { const U = SPK1.ui; spk2LpSet(U, a, b); spk1Layers(U); return spk3LpSave(U); }, weg: async () => { const U = SPK1.ui; U.loop = null; spk1Layers(U); return spk3LpSave(U); },
+    doc: () => { const t = SPK1.last && SPK1.last.meta && SPK1.last.meta.teil2; return t ? t.loops || [] : null; }, get: () => spk2Lp(SPK1.ui),
+    play: () => spk3LpPlay(SPK1.ui, SPK1.ui.cur), stop: () => spk1Stop(), pos: () => spk1PlayPos(), lauf: () => !!(SPK1.pl && SPK1.pl.lp), sec: () => { const L = spk2Lp(SPK1.ui); return L ? spk2LpSec(SPK1.ui, L) : null; }},
+  kl: SPK3_KL
+};
 /* SPK3-END */
 /* ===== KF1-BEGIN (Paket KF1, Klang-Feinschliff Teil 1 aus der Ur-Roadmap §18 „Klang“; Xander: „Können wir davon noch was machen?“ → ja) =====
    Sechs Wünsche, jeder mit neutralem Standard (= genau der Klang von vorher, alte Projekte bitgleich):
