@@ -33,3 +33,4 @@ Weiter mit: 4.54 = rel-4540/k fertig prüfen + INT53D nachziehen + Versionszeile
   SPK Teil 2: erst IMP1+VX1 in S/vx/spk mergen (Basis vx/basis.html), dann Noten/Matrix/Nachbau.
 - 14:00: 4.55.1 RELEASED = R-4550 + INT54-Fix-Diff (t/k.html→k/index.html). Tests int54 46/46, imp1 48/48. Nächste Basis: synq-snapshots/R-4551.html
 - 14:04: 4.56.0 RELEASED = R-4551 + VX1 (Konflikt openRoll: beide Zeilen). Tests vx1 61/61, imp1 48/48. Nächste Basis: synq-snapshots/R-4560.html
+- 14:12: 4.57.0 RELEASED = R-4560 + SPK1 Teil 1 + 2 Anschluss-Fixes (spk1Grid→imp1Analyse mono; g10cGcPlan 'spk' kein Take). Nächste Basis R-4570.

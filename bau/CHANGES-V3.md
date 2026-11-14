@@ -1,3 +1,13 @@
+## 4.57.0 — Spektral-Seite (erste Fassung zum Ausprobieren)
+
+- **≡ → Analyse › Spektral …** (auch „Im Spektrum öffnen“ im Takes-Blatt und am Gesang-Clip): eigene Seite, lädt erst beim Öffnen. Datei laden (MP3/WAV/M4A) oder Take wählen.
+- **Spektrum** mit Tastatur links (wie im Noten-Editor) und Takt-Lineal (Tempo aus der Import-Erkennung), Pegel- und Auflösungs-Regler, zwei Finger zoomen, Doppeltipp = alles.
+- **Auswahl**: Rechteck, Zeit, Frequenz, Pinsel (weich, Radierer), **Harmonische** (Ton antippen → Grundton + Obertöne folgen der Tonhöhe), **Ähnliche** (Beispiel ziehen → gleiche Stellen im ganzen Stück).
+- **Ebenen**: Original + eigene Ebenen mit Solo/Stumm/Lautstärke; Auswahl in eine Ebene verschieben/kopieren; Summe bleibt immer das Original. Ein ↶ je Aktion. Analysen sind im Container mit drin.
+- **Zerlegen**: Drums, Bass, Gesang, Rest (ohne KI, im Hintergrund, abbrechbar). Drums trennen sich deutlich, Bass noch schwach.
+- **Verfeinern** (Auswahl + „Was steckt hier?“) ist da, bringt aber noch keine messbare Verbesserung – kommt mit Teil 2 (Noten je Ebene, „das ist Bass → überall finden“, Loop → Matrix als Audio/MIDI, Klang-Nachbau mit VA/FM).
+Tests: Spektral 17/18 (offen: Verfeinern), Gesang-Editor 61/61, Import 48/48, Regeln, doppelte Schlüssel 0, Rauchtest grün.
+
 ## 4.56.0 — Gesang bearbeiten wie Noten (Notenrolle mit Silben, Anker auf dem Taktstrich, Schneiden statt Stauchen)
 
 - **Gesang-Editor = dieselbe Notenrolle wie bei Instrumenten**: Tastatur links, Raster, Zoom. Jede Silbe ist ein Stück auf ihrer Tonhöhe, mit Welle, Tonhöhenkurve und **Silben-Text** (aus der Spracherkennung oder dem Songtext).
