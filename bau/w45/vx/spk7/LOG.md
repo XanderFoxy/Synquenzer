@@ -14,3 +14,6 @@
 - 19:38 Kern umgebaut (Quelle je Stimme, Blenden Modus/Filter, Position live, Raub mit Blende, Vorfüllen, Halten √s, NaN-Schutz); Hauptfaden: Rechen-Worker, Tastatur 70 ms, Spur-Engine aus dem Klang + Aufräumen, Ecke gibt weiter, Aktionsfeld wie Basis (SPK7_ROW=false), Hilfe-Eintrag.
 - 19:40 Kern-Test erweitert (+5: Quellwechsel ohne NaN, Umschalten ohne Knacks, Position live, Überlast/Akkord, Einsatz/Halten): neu ALLES OK (12); alte Fassung (Prüfer-Nachbau) fällt in allen 5 durch (NaN 230400, Sprung 43,6/33,5/26,4, Position 0, Sprung 3,04/Spitze 1,0, Einsatz 26 ms/Halten 0,64). Dazu: gleiche Taste neu = alter Ausklang 30 ms Blende; Pegel-Ausgleich √(2/Σenv²).
 - 19:42 spk7-test (Weg über „Klangkorn ▾“, Ebenenliste 180/284 px wie Basis): ALLES OK (13).
+- 19:46 spk7-pruef-test.mjs neu (12 Prüfungen, Befunde 1–6, 8, 11–15 im Browser per Touch): ALLES OK (12). Aufnahme erkennt Lücken des ScriptProcessor (ein Lauf hatte sonst 19,4 an einer Puffer-Naht).
+- 19:46 Pflicht: topdefs Skripte 26, doppelt 0, Syntaxfehler 0 · dupkeys 0 · smoke errors [] (smoke-p.png) · MS 2000 1× (Basis 1×) · live 1× · vwStart 3× · Krypto 0 · Markenwörter alle 21 = Basis, 0 in Quellen/Tests/NOTES/LOG/KARTE/einbau.py.
+- 19:47 spk1-test: ALLE OK (spk1-regr3.out). spk3-test läuft (allein).

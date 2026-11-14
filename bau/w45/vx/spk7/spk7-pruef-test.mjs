@@ -10,11 +10,12 @@ try {
   await p.evaluate(() => {
     const c = ensureAudio(), z = c.createGain(); z.gain.value = 0; z.connect(c.destination);
     const sp = c.createScriptProcessor(4096, 1, 1); window.__S = {on: false, n: 0, nan: 0}; sp.onaudioprocess = e => { const S = window.__S; if (!S.on) return; for (const v of e.inputBuffer.getChannelData(0)) { S.n++; if (!(v === v)) S.nan++; } }; AU.M.ceil.connect(sp); sp.connect(z);
-    const sr = c.createScriptProcessor(4096, 2, 2); window.__R = {on: false, L: []}; sr.onaudioprocess = e => { if (window.__R.on) window.__R.L.push(new Float32Array(e.inputBuffer.getChannelData(0))); }; AU.masterSum.connect(sr); sr.connect(z);
-    window.__recOn = () => { window.__R.L = []; window.__R.on = true; };
+    const sr = c.createScriptProcessor(4096, 2, 2); window.__R = {on: false, L: [], T: []}; sr.onaudioprocess = e => { if (window.__R.on) { window.__R.L.push(new Float32Array(e.inputBuffer.getChannelData(0))); window.__R.T.push(e.playbackTime); } }; AU.masterSum.connect(sr); sr.connect(z);
+    window.__recOn = () => { window.__R.L = []; window.__R.T = []; window.__R.on = true; };
     window.__recOff = f => { window.__R.on = false; const n = window.__R.L.reduce((a, b) => a + b.length, 0), x = new Float32Array(n); let o = 0; for (const b of window.__R.L) { x.set(b, o); o += b.length; }
-      let nan = 0, pk = 0, mj = 0; for (let i = 0; i < n; i++) { const v = x[i]; if (!(v === v)) { nan++; continue; } pk = Math.max(pk, Math.abs(v)); if (i) mj = Math.max(mj, Math.abs(v - x[i - 1])); }
-      const bound = pk * 2 * Math.PI * (f || 220) / c.sampleRate; return {n, nan, pk: +pk.toFixed(4), ratio: bound > 0 ? +(mj / bound).toFixed(2) : null}; };
+      const T = window.__R.T, gap = new Set(); let luecken = 0; for (let k = 1; k < T.length; k++) if (Math.abs(T[k] - T[k - 1] - 4096 / c.sampleRate) > 1e-4) { gap.add(k * 4096); luecken++; }
+      let nan = 0, pk = 0, mj = 0; for (let i = 0; i < n; i++) { const v = x[i]; if (!(v === v)) { nan++; continue; } pk = Math.max(pk, Math.abs(v)); if (i && !gap.has(i)) mj = Math.max(mj, Math.abs(v - x[i - 1])); }
+      const bound = pk * 2 * Math.PI * (f || 220) / c.sampleRate; return {n, nan, pk: +pk.toFixed(4), ratio: bound > 0 ? +(mj / bound).toFixed(2) : null, luecken}; };
     window.__sine = (f, sec, sr) => { const x = new Float32Array(Math.round(sec * sr)); for (let i = 0; i < x.length; i++) x[i] = 0.8 * Math.sin(2 * Math.PI * f * i / sr); return x; };
     window.__lt = []; try { new PerformanceObserver(l => { for (const e of l.getEntries()) window.__lt.push(Math.round(e.duration)); }).observe({entryTypes: ['longtask']}); } catch (e) {}
   });
@@ -90,7 +91,7 @@ try {
   // B14: Spur-Engine wird nach Klangwechsel abgebaut; ein Listener je Seite
   const b14 = await p.evaluate(async () => {
     const i = S.tracks.findIndex(t => t.sound && t.sound.p && t.sound.p.wt && t.sound.p.wt.h), vor = SYNQUENZER.spk7.trAll();
-    applySound(i, deep(S.tracks[0].sound));   // ein normaler Klang (Synth 1) SYNQUENZER.spk7.jan(); await new Promise(r => setTimeout(r, 4600)); return {vor, nach: SYNQUENZER.spk7.trAll(), vis: SPK7.vis, klang: S.tracks[i].sound.engine + ' ' + S.tracks[i].sound.name};
+    applySound(i, deep(S.tracks[0].sound)); /* ein normaler Klang (Synth 1) */ SYNQUENZER.spk7.jan(); await new Promise(r => setTimeout(r, 4600)); return {vor, nach: SYNQUENZER.spk7.trAll(), vis: SPK7.vis, klang: S.tracks[i].sound.engine + ' ' + S.tracks[i].sound.name};
   });
   ok('b14-aufraeumen', b14, b14.vor >= 1 && b14.nach === 0 && b14.vis === 1);
   // B11 + B12: alle Spuren belegt – Knopf sagt es, kein verwaister Take; Statuszeile ohne „↶“-Versprechen
