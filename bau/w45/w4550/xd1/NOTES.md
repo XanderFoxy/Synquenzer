@@ -53,7 +53,8 @@ ersten Lauf im Block (nicht angefasst, nicht nachgeprüft) – siehe „Offen f�
 - Eigene Touch-Sonden: `s1/p1.mjs` (Mikrofon-Blatt Maße/Tipps p/q/q2, Basis vs XD1), `s1/p2.mjs` (Video-Blatt Spalten), `s1/p4.mjs`
   (Klang-Editor auf Vorher → Mitschnitt). Fotos in `s1/out/`.
 - Pflicht: topdefs 0/0 (Skripte 26, Namen 6681, doppelt 0, Syntaxfehler 0), dupkeys 0, Rauchtest errors [] – `out/s1run/`.
-- Paket-Tests (angepasste Kopien in `tests/`): siehe `out/s1run/summary.txt` (Ergebnis unten).
+- Paket-Tests (angepasste Kopien in `tests/`, `out/s1run/`): vox2 111/111, mtx 92/92, vd4 30/31 (nur VD4-02 – fällt genauso auf der
+  Basis, r3b), ori 87/88 (nur „Menü: kürzer“ – Basis hat ORI schon, 2801 = 2801; alle ORI-P-1-Prüfungen zum Mikrofon-Blatt quer grün).
 
 ## Offen für Schritt 2 (Punkte 5–8 liegen aus Lauf 1 im Block)
 - (5) Klang-Editor endet beim Schließen auf NACHHER: in Lauf 1 (r4) fielen dadurch INT53C 5 und INT53D 9 Prüfungen, die genau
