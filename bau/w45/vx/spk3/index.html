@@ -100157,7 +100157,7 @@ function spk3DspMake(Z2) {
    (Stimmen fix.uni 1/5), u[13] LFO-Rate 0,2…10 Hz, u[14] Vibrato 0…60 ct, u[15] Wah (Cutoff ±0…18 Halbtöne). Startwerte aus der Bewegung
    (Worker: Schwebung je Oberton, Tonhöhe, Schwerpunkt); was die Analyse nicht sieht, bleibt fest (fz) – der Optimierer verändert nur den Rest.
    Abstand = SPK2-Abstand + Bewegung (Schwankung je Oberton, Schwebungs-Rate, Vibrato, Wah). Rauschen nur, wenn die Analyse > 10 % misst. ---- */
-const SPK3_KL = {x3: true, w: 0.2, dual: true, ab: 99, ra: 0.1};
+const SPK3_KL = {x3: true, w: 0.2, dual: true, ab: 0, ra: 0.05};   // SPK3-R: ab = Runden mit beiden Ketten (99 = beide ganz), ra = Spielraum für B
 function spk3KlP(c, P) {
   const u = c.u; if (c.eng !== 'va' || !u || u.length < 16) return P;
   return Object.assign(P, {det: (u[11] * 2 - 1) * 25, uni: (c.fix && c.fix.uni) || 1, udet: u[12], lr: spk2Lg(u[13], 0.2, 10), vib: u[14] * 60, wah: u[15] * 0.15});
@@ -100220,7 +100220,8 @@ async function spk3KlOpt(src, o) {
     return L;
   };
   // beide Ketten in denselben Render-Durchgängen (ein OfflineAudioContext je Runde – nebeneinander gerendert wäre der Klang nicht mehr bitgleich);
-  // gleiche Klänge (FM-Startwerte) einmal. Eine Kette, die nach `ab` Runden im SPK2-Abstand um mehr als `ra` zurückliegt, hört auf (Zeit).
+  // gleiche Klänge (FM-Startwerte) einmal. Nach `ab` Runden (Standard: nach den Startwerten) läuft nur die Kette mit dem kleineren SPK2-Abstand
+  // weiter (B schon bei ≤ A·(1 + ra)) – so kostet es kaum mehr Zeit als ein Weg; beide ganz: SPK3_KL.ab = 99.
   let done = 0; const tr = [];
   const evalD = async (la, lb) => {
     const all = la.map(c => [c, A]).concat(lb.map(c => [c, B])), keys = all.map(([c]) => JSON.stringify([c.eng, c.fix, c.u])), uq = [...new Set(keys)];
@@ -100236,7 +100237,7 @@ async function spk3KlOpt(src, o) {
   let rd = 0;
   while ((A.done < n && !A.aus) || (B.done < n && !B.aus)) {
     if (o.stop && o.stop()) break;
-    if (++rd > SPK3_KL.ab && !A.aus && !B.aus) { const a = A.best.dA, b = B.best.dA; if (b > a * (1 + SPK3_KL.ra)) B.aus = 1; else if (a > b * (1 + SPK3_KL.ra)) A.aus = 1; }
+    if (++rd > SPK3_KL.ab && !A.aus && !B.aus) { if (B.best.dA <= A.best.dA * (1 + SPK3_KL.ra)) A.aus = 1; else B.aus = 1; }   // weiter mit der besseren Kette (gleich gut → B, mit Bewegung)
     const a0 = A.best, b0 = B.best; await evalD(A.aus ? [] : gen(A), B.aus ? [] : gen(B));
     for (const [X, x0] of [[A, a0], [B, b0]]) X.sig = X.best !== x0 ? Math.min(0.3, X.sig * 1.25) : Math.max(0.02, X.sig * 0.7);
   }

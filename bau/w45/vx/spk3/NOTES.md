@@ -175,3 +175,28 @@ spk2-test 29/30 (nur zerlegen-bass-ziel) · spk1-test ALLE OK · vx1-test 61/61 
 Profi Bass 4,59 / Drums 9,71 / tonal 11,81 gegen klassisch jetzt 3,01 / 7,47 / 9,77 – die Prüfung verlangt Bass +2 dB, es sind +1,58, weil
 „Zerlegen“ durch SPK3 von 0,77 auf 3,01 dB besser wurde (kein Rückschritt; Schwelle in ki1-test auf SPK1 geeicht, nicht angefasst).
 Nebenbefund: mit Profi-Trennung erreicht der Bass 4,59 dB ≥ Ziel 4. Protokoll `regression-a4.log`, Ergebnisse `spk1-test.json`, `ki1-test.json`.
+
+---------------------------------------------------------------------------------------------------------------------------
+## Rückschritte vor 4.60 (SPK3-R) – Nachbau nie schlechter, Zerlegen wieder schnell
+Bau unverändert `python3 bau4.py` (+ 2 Haken „SPK3-R“ in spk2KlOpt). Sicherungen `index.a4.html`, `spk3-block.a4.js`. Mess-Hilfen: `messk/zz.mjs`
+(nur Zerlegen + SDR, auch mit `node --cpu-prof`), `klt.mjs <vorher> <nachher>` (= spk3-klang-probe mit Zeitaufteilung Rendern/Merkmale + Ketten-Verlauf).
+
+### Zerlegen (Worker, spk3DspMake)
+- Profil vorher (Node, 20-s-Demo): zerlegen 4,0 s, davon Kick-Vorlage 1,6 s (1472 FFT 16384 + 1472 FFT 8192), Tiefband-FFTs 1,2 s.
+- Neu `magsLo`: Tiefband-Beträge auf dem herabgesetzten Signal `loSig` (Blackman-Sinc-Tiefpass, nur jede R-te Probe, einmal je Analyse in
+  `d.spk3lo`): R 16 bis 560 Hz (Kick-Vorlage, Tiefband N 8192), R 4 bis 2450 Hz (Bass-Suche N 16384, Verfeinern fmax 2000), sonst `magsAt`.
+  Gleiche Bins (win(N/R) = win(N) an jeder R-ten Stelle, Spiegelungen < −74 dB), FFT R-mal kürzer. Schalter `Z2.o3.dec` (0 = alter Weg). Speicher +31 % von d.mid.
+- Ergebnis: Node 4,29–4,72 → 2,10–2,48 s; Browser (spk2-test) 4034 → 2375 ms. SDR bitgleich auf 2 Stellen: Drums 7,47 / Bass 3,01 / Tonal 9,77,
+  Verfeinern Bass 3,01 → 3,53 (Laufzeit 1,94 → 0,91 s), Drums 7,41, Lead 0,52, Pads 2,46.
+
+### Klang nachbauen (Hauptfaden, spk3KlOpt)
+- Zwei Ketten: A = SPK2-Weg genau (Startwerte ohne Bewegung `src.k2`, SPK2-Abstand, eigene Zufallsfolge), B = SPK3-Weg (Bewegung, verstimmt/Unison).
+  Startwerte beider in einem Render-Durchgang (FM-Startwerte einmal), danach läuft nur die Kette mit dem kleineren SPK2-Abstand weiter
+  (B schon bei ≤ A·1,05). Ergebnis = kleinerer SPK2-Abstand der beiden Bestwerte (nie schlechter als der SPK2-Start; `c.dist` = SPK2-Abstand).
+  `SPK3_KL.ab = 99` = beide Ketten ganz (in allen 4 Proben dieselben Werte, aber 1,5–1,6× Zeit). Reines FM / keine Bewegung messbar = SPK2-Weg.
+  „Weiter“ (from) = eine Kette im Maß des Ausgangsklangs, gibt den Ausgangsklang zurück, wenn es im SPK2-Abstand nicht besser wird.
+- Bewegung nur für B-Klänge (`klangFeat` x3-Maske; reines FM ohne), Phasen-Summen nur für Obertöne 1–3 (bitgleich, halbe Arbeit).
+- Verworfen: zwei OfflineAudioContexts gleichzeitig rendern (schneller, aber der Klang ist dann nicht mehr bitgleich → andere Ergebnisse).
+- Messung (klt.mjs, vorher basis4 → nachher): Lead 1,69 → 0,95 · FM 2,06 → 2,06 · VA 3,91 → 3,89 · Pad 1,62 → **1,62** (A4: 2,36);
+  Zeit 50 Versuche 1,17/1,09/1,17/1,21× (A4: 1,39/1,16/1,19/1,27×). Pad: Kette B (Unison/2 Sägen) liegt schon beim Start 49 % hinter A → A.
+- Offen: Unison-Erkennung (Streuung der Schwebungs-Raten) – B findet Unison 5 noch nicht; das Ergebnis ist jetzt aber wieder der SPK2-Klang.
