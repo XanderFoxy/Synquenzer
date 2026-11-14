@@ -68,3 +68,24 @@
   krumm ist (S.bpm ist ganzzahlig: 91,6 → 92, je Teil setzt der Clip am Taktstrich neu an, Abweichung bleibt im Teil); Wiedergabe nur mono
   (Takes sind mono); Matrix-Zelle der Spur „Original“ zeigt (noch) keine eigene Welle; echte MP3s nicht geprüft; Guide-Eintrag fehlt.
 - Test-Dateien: synth-test.mjs (Node, synthetisch), app-test.mjs (Browser, App-Render; DUMP=1 schreibt dump-*.json für dump-test.mjs / known-test.mjs), sync.py (core.js + block-head/-tail → index.html).
+
+## Schritt 3/3 (Test) – Ergebnis
+- `imp1-test.mjs <index.html>` (Touch, echter Datei-Wähler, 3 Browser-Seiten nacheinander, ~125 s): **ALLE OK (48 OK)**. Regression `imp-test.mjs`: ALLE OK.
+  Fotos: `fotos/imp1t-*` (erkannt, Szenen, Loop, Gesang-Frage; Blatt Song / Gesang-Frage je 428×926, 926×428, 926×370).
+- Geprüft: die App rendert 3 Songs (92 4/4 148,7 s, 120 3/4, 120 6/8; Intro S R S R Bridge R Outro) + Melodie allein (96) → WAV;
+  MP3 (ffmpeg libmp3lame 192k), M4A (aac) und AIFF per ffmpeg. WAV 3/4, 6/8, 4/4 und MP3: Tempo, Taktart, alle 8 Grenzen 0 ms, Namen richtig.
+  M4A im Test-Chromium lesbar (96 4/4). AIFF kann das Test-Chromium nicht dekodieren (Safari kann es) → klare Meldung geprüft.
+- In Szenen zerschneiden: Spur „Original“, Szene 1–8 in Reihenfolge, Ausschnitt-Start = Teil-Anfang 0 ms (Grenze ±10 ms), Länge = Takte,
+  Proben bitgleich zur Datei, Song-Ablauf 0:0 4:1 … 52:7 57:Ende, Marken mit Namen, Projekt 92/4/4, ein ↶. Song ab Teil 3 spielt sofort den Ausschnitt.
+- ↶ nach dem Zerschneiden: ganzer Stand gleich wie vorher (sx14State identisch, Tempo zurück); ↷ bringt alles. MIDI: ↶ nimmt Tempo/Taktart/Clips zurück.
+- Loop-Klammern per Finger Takt 13–14 → Loop-Clip; Matrix: Start auf dem Taktstrich (Phase 0,00 ms), Wiederholung 5217,4 ms = 2 Takte, immer ab Takt 13; ein ↶.
+- Speichern/Laden (Projektdatei) und Container (ZIP Projekt + Audio) in frischem Speicher: Audio bitgleich, Spur/Clips/Raster da, Szene spielt im Takt
+  (nach frischem Laden steigt der Take ~34 ms später an der laufenden Stelle ein – vorhandenes Verhalten der Take-Wiedergabe, bleibt synchron).
+- Gesang allein: „Aus Gesang geschätzt – 96 oder 48 / 192?“ mit 3 Knöpfen; Antippen setzt das Raster. Tempo vorweg (96 getippt) wird genommen,
+  „Erkennen“ mit 46 nimmt 46. Maße: ✕ sichtbar, Tasten ≥ 44, nichts außerhalb, keine Überlappung (Knöpfe, Felder, Welle, Zeilen) in allen 3 Größen.
+- Behoben in Schritt 3: (1) Tempo vorweg eingetragen → keine Rückfrage mehr (`frage` nur ohne Vorgabe; Blatt fragt nur bei `r.frage`).
+  (2) „Als Loop in die Matrix“ bei 8 Teilen (alle 8 Szenen der Spur belegt) meldete „Keine freie Szene“ → jetzt kommt der Loop in die Szene seines Teils,
+  der Song behält den ganzen Teil als eigenen Song-Clip (ein ↶ für alles).
+- Hinweis: die App schließt Blätter beim Drehen (globales resize → closePop, vorhandenes Verhalten); das Import-Blatt behält seinen Stand und öffnet gleich wieder.
+- Pflicht (Endstand): topdefs doppelt 0 / Syntax 0, dupkeys 0, smoke errors [], MS 2000 1×, „  live: true,“ 1×, Markenwörter = Basis, VERSION 4.54.1 unverändert.
+- Offen (unverändert aus Schritt 2): Dehnen bei abweichendem Projekt-Tempo, Wiedergabe mono, eigene Welle in der Matrix-Zelle, echte MP3s mit Live-Tempo, Guide-Eintrag.

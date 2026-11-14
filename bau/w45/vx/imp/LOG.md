@@ -16,3 +16,4 @@
 - 13:36 imp1-test.mjs Lauf 3: 4 Fehler waren Test-Annahmen (Grundtempo 112 statt 120, Song-Zeitbezug, Spät-Einstieg nach Laden); Test angepasst (Takt-Sync statt fester Zeit).
 - 13:38 Pflicht: topdefs doppelt 0/Syntax 0, dupkeys 0, smoke errors [], MS 2000 1×, live: true 1×, Marken = Basis, VERSION unverändert.
 - 13:40 imp1-test.mjs ALLE OK (48 OK, 124 s; Fotos fotos/imp1t-*).
+- 13:41 Regression imp-test.mjs ALLE OK; NOTES.md Schritt-3-Ergebnis geschrieben. Schritt 3/3 fertig.

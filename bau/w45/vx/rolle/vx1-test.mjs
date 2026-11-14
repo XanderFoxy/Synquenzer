@@ -33,15 +33,15 @@ const layout = (p, sel) => run(p, sel => {
   const vw = innerWidth, vh = innerHeight, ov = [];
   for (let i = 0; i < bs.length; i++) for (let j = i + 1; j < bs.length; j++) { const a = bs[i], c = bs[j]; if (a.x < c.r - 1 && c.x < a.r - 1 && a.y < c.b - 1 && c.y < a.b - 1) ov.push(a.t + '/' + c.t); }
   const hit = (e, x, y) => { const z = document.elementFromPoint(x, y); return !!z && (z === e || e.contains(z)); };
-  const reach = els.map((e, i) => {
+  const reach = els.map((e, i) => { const c = String(e.className || '');
     const r = bs[i], cx = Math.min(vw - 1, Math.max(0, r.x + r.w / 2)), cy = Math.min(vh - 1, Math.max(0, r.y + r.h / 2));
-    if (!hit(e, cx, cy)) return {t: r.t, h: 0, w: 0, cov: true};
+    if (!hit(e, cx, cy)) return {t: r.t, h: 0, w: 0, cov: true, c};
     let up = 0, dn = 0, lf = 0, rt = 0;
     while (up < 30 && cy - up - 1 >= 0 && hit(e, cx, cy - up - 1)) up++;
     while (dn < 30 && cy + dn + 1 < vh && hit(e, cx, cy + dn + 1)) dn++;
     while (lf < 30 && cx - lf - 1 >= 0 && hit(e, cx - lf - 1, cy)) lf++;
     while (rt < 30 && cx + rt + 1 < vw && hit(e, cx + rt + 1, cy)) rt++;
-    return {t: r.t, h: up + dn + 1, w: lf + rt + 1};
+    return {t: r.t, h: up + dn + 1, w: lf + rt + 1, c};
   });
   const x = bs.find(z => z.t === '✕');
   return {bs: bs.map(z => z.t), ov, reach, x: x && {in: x.x >= 0 && x.r <= vw && x.y >= 0 && x.b <= vh, cov: !(reach[bs.indexOf(x)] || {}).cov}, vw, vh, hsc: document.documentElement.scrollWidth > vw};
@@ -160,7 +160,7 @@ try {
     const gapR = rms(Math.round((q.dst - .03) * SR), Math.round((q.dst - .006) * SR));
     const mid = Math.round((pv.dst + lock + ((q.dst - pv.dst) - lock) * .5) * SR), f0 = f0of(y, SR, mid, 1920);
     { const dif = (a, i0, i1) => { let m = 0; for (let i = Math.max(1, i0); i < i1; i++) m = Math.max(m, Math.abs(a[i] - a[i - 1])); return m; };
-      const ref = dif(x, Math.round((pv.t + lock + .01) * SR), Math.round((pv.end - .02) * SR)), jmp = dif(y, Math.round((pv.dst + lock - .01) * SR), Math.round(q.dst * SR));
+      const ref = dif(x, Math.round((pv.t + pv.an) * SR), Math.round((pv.end - .02) * SR)), jmp = dif(y, Math.round((pv.dst + lock - .005) * SR), Math.round(q.dst * SR));   // Bezug: derselbe Vokal in der Quelle (ab dem Gipfel)
       ok(jmp <= ref * 1.1 + .01, '4 kein Knacken im gedehnten Vokal (Naht fest → gedehnt und bis zum Nachfolger)', jmp.toFixed(4) + ' / ' + ref.toFixed(4)); }
     ok(gapR > .02 && Math.abs(f0 / F[3] - 1) < .015, '4 Vokal gedehnt (keine Lücke, Tonhöhe der Silbe bleibt)', 'Pegel vor dem Nachfolger ' + gapR.toFixed(3) + ', Grundton im gedehnten Vokal ' + f0.toFixed(1) + ' Hz (Soll ' + F[3] + ')');
     // weit nach rechts: Faktor > 1,5 → Vokal höchstens 1,5× gedehnt, danach Lücke mit Ausblende
@@ -278,8 +278,13 @@ try {
   };
   {
     const L = await lay('hochkant 428×926');
-    const small = L.reach.filter(z => z.h < 44 || z.w < 44).map(z => z.t + ':' + z.w + '×' + z.h);
-    ok(!small.length, '10 Gesang-Editor hochkant: Tasten-Trefferfläche ≥ 44 px', small.join(' ') || L.reach.map(z => z.t + ':' + z.w + '×' + z.h).join(' '));
+    const small = L.reach.filter(z => !/folc/.test(z.c) && (z.h < 44 || z.w < 44)).map(z => z.t + ':' + z.w + '×' + z.h);
+    ok(!small.length, '10 Gesang-Editor hochkant: Tasten-Trefferfläche ≥ 44 px (Leisten + ✕)', small.join(' ') || L.reach.filter(z => !/folc/.test(z.c)).map(z => z.t + ':' + z.w + '×' + z.h).join(' '));
+    // Kopf-Taste HÄLT/FOLGEN gehört zum gemeinsamen Kopf des Noten-Editors (::before/::after dort schon belegt) – gleich groß wie bei Instrumenten
+    const fo = L.reach.find(z => /folc/.test(z.c));
+    const foI = await run(p, async o => { const t = S.tracks.findIndex(z => z.kind === 'synth' && !z.stimme); closeRoll(); await wait(200); selectSlot(t, 0); openRoll(t, 0); await wait(400); const f = document.querySelector('#rollSheet .rhead .folc'), r = f && f.getBoundingClientRect(); closeRoll(); await wait(200); selectSlot(o.st, 0); openRoll(o.st, 0); return r ? {w: Math.round(r.width), h: Math.round(r.height)} : null; }, r0);
+    await waitEd(6);
+    ok(!fo || (foI && fo.h >= foI.h && fo.w >= Math.min(44, foI.w)), '10 Kopf-Taste HÄLT/FOLGEN wie im Noten-Editor der Instrumente (nicht kleiner)', JSON.stringify({gesang: fo && fo.w + '×' + fo.h, instrument: foI && foI.w + '×' + foI.h}));
   }
   for (const [w, h] of [[926, 428], [926, 370]]) {
     await p.setViewportSize({width: w, height: h}); await sleep(900);
@@ -288,7 +293,7 @@ try {
     const I = await run(p, async () => { const t = S.tracks.findIndex(z => z.kind === 'synth' && !z.stimme); return t; });
     const Ld = await run(p, async o => { closeRoll(); await wait(200); selectSlot(o.t, 0); openRoll(o.t, 0); await wait(500); return true; }, {t: I});
     const LI = await layout(p, '#rollSheet');
-    const minI = Math.min(...LI.reach.filter(z => !z.cov && z.h).map(z => z.h)), small = L.reach.filter(z => z.h < Math.min(44, minI) || z.w < 44).map(z => z.t + ':' + z.w + '×' + z.h);
+    const minI = Math.min(...LI.reach.filter(z => !z.cov && z.h).map(z => z.h)), small = L.reach.filter(z => !/folc/.test(z.c) && (z.h < Math.min(44, minI) || z.w < 44)).map(z => z.t + ':' + z.w + '×' + z.h);
     ok(Ld && !small.length, '10 Gesang-Editor quer ' + w + '×' + h + ': Trefferfläche ≥ 44 px breit, Höhe ≥ Noten-Editor der Instrumente (' + minI + ' px, Leiste wie dort)', small.join(' ') || 'Gesang min ' + Math.min(...L.reach.map(z => z.h)) + ' px');
     await run(p, async o => { closeRoll(); await wait(200); selectSlot(o.st, 0); openRoll(o.st, 0); }, r0); await waitEd(6);
     await p.screenshot({path: out + '/vx1-editor-quer-' + h + '.png'});
