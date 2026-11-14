@@ -51,8 +51,8 @@ try {
   // B3: Position wirkt bei „▶ Vorhören“ (Körnchen): Marker im Quellbild ziehen
   const cent = () => p.evaluate(() => { const a = window.__an2 || (window.__an2 = (() => { const a = AU.ctx.createAnalyser(); a.fftSize = 8192; AU.masterSum.connect(a); return a; })()), d = new Float32Array(a.frequencyBinCount); a.getFloatFrequencyData(d); let s = 0, w = 0; for (let k = 2; k < d.length; k++) { const m = Math.pow(10, d[k] / 20); s += m * k; w += m; } return Math.round(s / w * AU.ctx.sampleRate / a.fftSize); });
   await p.evaluate(() => { const sr = AU.ctx.sampleRate, x = new Float32Array(sr * 2); for (let i = 0; i < x.length; i++) x[i] = 0.8 * Math.sin(2 * Math.PI * (i < sr ? 300 : 1200) * i / sr); SYNQUENZER.spk7.make(x, sr, 300); SYNQUENZER.spk7.p({art: 'korn', pos: 0.1, bew: 0, spo: 0, spt: 0, fc: 1, a: 0.02, r: 0.3}); });
-  await tap(await btn(p, 'Klangkorn ▾')); await p.waitForFunction(() => SYNQUENZER.spk7.dd(), null, {timeout: 10000}); await W(300);
-  await p.evaluate(() => { SYNQUENZER.spk7.dd().querySelector('.spk7-cv').scrollIntoView({block: 'nearest'}); });
+  await tap(await btn(p, 'Klangkorn ▾')); await p.waitForFunction(() => SYNQUENZER.spk7.dd() && !SPK7.busy, null, {timeout: 10000}); await W(300);
+  await p.evaluate(() => { const sr = AU.ctx.sampleRate, x = new Float32Array(sr * 2); for (let i = 0; i < x.length; i++) x[i] = 0.8 * Math.sin(2 * Math.PI * (i < sr ? 300 : 1200) * i / sr); SYNQUENZER.spk7.make(x, sr, 300); SYNQUENZER.spk7.p({art: 'korn', pos: 0.1, bew: 0, spo: 0, spt: 0, fc: 1, a: 0.02, r: 0.3}); spk7DdSync(SPK1.ui); SYNQUENZER.spk7.dd().querySelector('.spk7-cv').scrollIntoView({block: 'nearest'}); });
   await cent(); await tap(await btn(p, '▶ Vorhören')); await W(900); const c1 = await cent();
   const cvb = await box(p, '#spk1Sheet .spk7-cv'); await drag([cvb.x + cvb.w * 0.1, cvb.y + cvb.h / 2], [cvb.x + cvb.w * 0.9, cvb.y + cvb.h / 2], 10); await W(800);
   const c2 = await cent(), pos = await p.evaluate(() => SYNQUENZER.spk7.p().pos); await tap(await btn(p, '■ Stopp')); await W(300);
@@ -90,7 +90,7 @@ try {
   // B14: Spur-Engine wird nach Klangwechsel abgebaut; ein Listener je Seite
   const b14 = await p.evaluate(async () => {
     const i = S.tracks.findIndex(t => t.sound && t.sound.p && t.sound.p.wt && t.sound.p.wt.h), vor = SYNQUENZER.spk7.trAll();
-    applySound(i, SQStore.normalizeSound(deep(DEFAULT_SOUNDS[2]))); SYNQUENZER.spk7.jan(); await new Promise(r => setTimeout(r, 4600)); return {vor, nach: SYNQUENZER.spk7.trAll(), vis: SPK7.vis};
+    applySound(i, deep(S.tracks[0].sound));   // ein normaler Klang (Synth 1) SYNQUENZER.spk7.jan(); await new Promise(r => setTimeout(r, 4600)); return {vor, nach: SYNQUENZER.spk7.trAll(), vis: SPK7.vis, klang: S.tracks[i].sound.engine + ' ' + S.tracks[i].sound.name};
   });
   ok('b14-aufraeumen', b14, b14.vor >= 1 && b14.nach === 0 && b14.vis === 1);
   // B11 + B12: alle Spuren belegt – Knopf sagt es, kein verwaister Take; Statuszeile ohne „↶“-Versprechen
