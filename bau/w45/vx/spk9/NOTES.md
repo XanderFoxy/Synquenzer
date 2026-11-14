@@ -1,10 +1,12 @@
 # SPK9 – Legato-Noten der Spektral-Seite (Befund 17 der SPK6-Prüfung)
 
-Bau: `python3 einbau.py` = `basis.html` (4.63.0, = basis7) + `spk9-block.js` direkt nach `/* SPK7-END */` + 3 Haken „SPK9“ (je Anker 1×):
+Bau: `python3 einbau.py` = `basis.html` (4.63.0, = basis7) + `spk9-block.js` direkt nach `/* SPK7-END */` + 4 Haken „SPK9“ (je Anker 1×):
 1. `spk1DspMake`: `if (Z2 && typeof spk9DspMake === 'function') spk9DspMake(Z2);` – eigene Zeile direkt **vor** der SPK6-Zeile (zwei Zeilen
    Abstand zur SPK8-Zeile nach SPK4 → `git merge-file` ohne Konflikt).
 2. `spk1Worker`: Text `spk9DspMake.toString()` nach SPK5 mitschicken (Zeile `const src`; SPK8 ändert die Zeile `const w` zwei Zeilen tiefer).
-3. SPK2 `noten` (Noten finden, einstimmig): `(typeof opt.seg9 === 'function' ? opt.seg9 : segNotes)(…)`.
+3. SPK2 `noten` (Noten finden, einstimmig): `(typeof opt.seg9 === 'function' ? opt.seg9 : segNotes)({…, art: artOf(d, lid)})` (art seit der Prüfung).
+4. SPK2 `finden` („Überall finden“, von SPK3 für alles außer Bass benutzt): derselbe Ein-Zeiler mit `art` (seit der Prüfung, Befund 5).
+Mehrstimmig (SPK4): kein Haken nötig – `spk9DspMake` läuft nach SPK4 und legt sich um `Z2.ops.noten` (eine Stimme → einstimmiger Weg).
 VERSION/CHANGES unberührt, keine Bedienung, kein Aussehen geändert, kein neuer Knopf.
 
 ## Ursache

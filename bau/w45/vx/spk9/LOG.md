@@ -30,3 +30,5 @@
 - Befunde (9, davon 5 mittel, 4 leicht) mit Messwerten in PRUEFUNG.md.
 - 22:14 Prüfer-Befunde (9) bearbeiten: Stand vor der Prüfung gesichert (fix/spk9-block.vor-pruef.js, fix/index.vor-pruef.html).
 - 22:34 Block überarbeitet (Befunde 1–8), Schnellmessungen: SG/SZ/SM/SD/ST/M1/M3/M7, leg.mjs, poly9, finden9, bassband. Vollmessung fix/mess-alle.sh gestartet.
+- 22:38 Probe vdr (Vibrato-Weg: Höhe läuft danach weiter → kein Ton) gegen Gleiten mit Vibrato: M8/M3 unverändert (34,4 % / 10,6 % Zusatz) → nicht eingebaut. Ursache bleibt: Vibrato auf dem Gleiten macht Stufen (Plateau je Halbwelle).
+- 22:38 Vorher-Werte für legx/sweep/sz/mx/legx-44k = Prüfer-Läufe auf derselben Datei (pruef/*-index.json, bitgleich zu fix/index.vor-pruef.html, Zufall mit Samen).
