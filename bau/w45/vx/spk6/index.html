@@ -102164,7 +102164,7 @@ function spk6DspMake(I) {
     const sc = Math.max(1e-6, pk), x16 = new Int16Array(n), k = 32767 / sc; for (let i = 0; i < n; i++) x16[i] = Math.max(-32767, Math.min(32767, Math.round(y[i] * k)));
     d.meta.a6c = (d.meta.a6c | 0) + 1; const id = 'A' + d.meta.a6c; A6(d).set(id, x16);
     l.a6 = Object.assign({}, a, {id, o: o0 + Math.round(dts * sr), n, sc: +sc.toPrecision(9)}); I.verUp(d, l.id);
-    return {regs: regs.length, n, moved: mv.length};
+    return {regs: regs.length, len: n, moved: mv.length};
   }
   function toAudio(d, l) {   // Masken-Ebene wird Audio-Ebene (Grundlage = ihre eigene Maske); Noten bekommen ihre Lage in der Grundlage
     if (!l.a6) l.a6 = {id: '', b: l.id, o: 0, n: 0, sc: 1, tr: 0, fv: 1, dt: 0};
@@ -102286,7 +102286,7 @@ function spk6FxDd(U, b, lid) {
   spk1Dd(U, b, dd => {
     dd.appendChild(el('h5', '', 'Effekte · ' + esc(l.name)));
     for (const [k, lab, mn, mx, stp] of SPK6_FX) {
-      const r = el('input'), v = el('span', 'spk1-v', String(+f[k] || 0)), w = el('label', '', esc(lab)); r.type = 'range'; r.min = mn; r.max = mx; r.step = stp; r.value = +f[k] || 0; r.setAttribute('aria-label', lab); r.dataset.s6 = k;
+      const r = el('input'), v = el('span', 'spk1-v', String(+f[k] || 0)), w = el('label', '', esc(lab)); r.type = 'range'; r.min = mn; r.max = mx; r.step = stp; r.value = +f[k] || 0; r.style.minHeight = '40px'; r.setAttribute('aria-label', lab); r.dataset.s6 = k;
       on(r, 'input', () => { v.textContent = r.value; });
       on(r, 'change', () => { const o = {}; o[k] = +r.value; spk6Run(U, 's6fx', {lid, fx: o}, 'Effekte', () => lab + ' ' + r.value + ' · ↶ macht es rückgängig'); });
       w.append(r, v); dd.appendChild(w);

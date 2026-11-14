@@ -27,3 +27,4 @@
 - 18:35 A3 spk3-test (Basis basis5): 15 OK / 2 FEHLER (A2: 14/3) – nachbau-abstaende-besser jetzt OK (Pad 1,62 → 0,96, Mittel 2,13 → 1,97, schlechter []); FEHLER nur bekannt aus A2: verfeinern-plus-1db (−0,01), spk2-test 28/30 (verfeinern-verbessert, verfeinern-nach-noten); 178 s.
 - 18:36 A3 spk1-test 17 OK / 1 FEHLER (verfeinern-verbessert-ziel 4,37 → 4,36, gleich mit index.a2.html → aus A2). NOTES.md A3 geschrieben. AUFTRAG 3 FERTIG: Pad 1,62 → 0,96, Rest aufteilen gebaut (Pads 2,29 → 2,94, Lead 0,18 → 0,96).
 - 18:38 A4 Start: LOG/NOTES gelesen; Plan spk4-test.mjs = Kern (noten3 pad/bass, x4, rest4) + Seite (spk4-ui, spk4-rest) + Regression (spk3-test inkl. spk2/loop/klang, spk1, ki1 mit Solo-Gesang, vx1), je mit Zeitgrenze nacheinander.
+- 18:40 A4 spk4-test.mjs geschrieben (Pflicht, Kern x4 vorher/nachher + rest4, Seite spk4-ui/spk4-rest, Regression spk3/spk2/spk1/ki1/vx1; ALT=1 wertet nur vorhandene Dateien). Erster Gesamtlauf gestartet.

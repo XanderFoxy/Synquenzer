@@ -58,10 +58,11 @@ ok('note-plus-1', nm, nm.m === 58 && nm.o6 === 57 && nm.a6);
 m = await btn(p, '#spk1Sheet .spk1-lr[data-l="L2"] [data-a="lmore"]'); await tap(m); m = await btn(p, '#spk1Sheet .spk1-dd [data-s6="fx"]'); await tap(m); await p.waitForTimeout(250);
 dd = await ddInfo(p); await p.screenshot({path: path.join(fotos, 'spk6-03-effekte.png')});
 const regler = await p.evaluate(() => [...document.querySelectorAll('#spk1Sheet .spk1-dd input[type=range]')].map(e => e.dataset.s6 + ' ' + Math.round(e.getBoundingClientRect().height)));
-ok('effekte-regler', {regler, inView: dd && dd.inView, scroll: dd && dd.scroll}, regler.length === 9);
+ok('effekte-regler', {regler, inView: dd && dd.inView, scroll: dd && dd.scroll}, regler.length === 9 && regler.every(x => +x.split(' ')[1] >= 36));
 await p.evaluate(() => { const e = document.querySelector('#spk1Sheet .spk1-dd input[data-s6="hall"]'); e.value = 0.6; e.dispatchEvent(new Event('input')); e.dispatchEvent(new Event('change')); }); await idle(p);
 const fxv = await p.evaluate(() => SPK1.ui.meta.layers.find(l => l.id === 'L2').fx); ok('effekt-hall-gesetzt', fxv, fxv && fxv.hall === 0.6);
 // ---- Chor … (aus L1): 4 Stimmen
+await p.evaluate(() => spk1Dd(SPK1.ui, null));
 m = await btn(p, '#spk1Sheet .spk1-lr[data-l="L1"] [data-a="lmore"]'); await tap(m); m = await btn(p, '#spk1Sheet .spk1-dd [data-s6="chor"]'); await tap(m); await p.waitForTimeout(250);
 await p.evaluate(() => { const s = [...document.querySelectorAll('#spk1Sheet .spk1-dd button')].find(e => e.textContent.trim() === '4 Stimmen'); if (s) s.click(); });
 dd = await ddInfo(p); await p.screenshot({path: path.join(fotos, 'spk6-04-chor.png')});
