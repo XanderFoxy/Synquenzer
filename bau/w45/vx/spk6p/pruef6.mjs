@@ -422,6 +422,33 @@ if (TEIL.includes('j')) {   // hochkant: sichtbare Knoepfe im Notenmodus ohne Wi
   await foto(p, 'p6-09-geloescht-im-notenmodus.png');
   await P.ctx.close();
 }
+if (TEIL.includes('k')) {   // 3-min: Fortschritt beim Anwenden ueber die Bedienung (Zeitverlauf der Anzeige)
+  const P = await page(428, 926), {p, tap} = P;
+  const L3 = {name: 'Lang', sek: 180, gap: 1, noten: []}; const sc = [220, 246.942, 277.183, 293.665, 329.628, 369.994, 415.305, 440];
+  for (let t = 2, k = 0; t < 176; t += 0.5, k++) L3.noten.push([t, t + 0.42, sc[(k * 3) % 8]]);
+  await p.evaluate(SRC, L3); await idle(p);
+  let m = await btn(p, '#spk1Sheet .spk1-lr[data-l="L1"] [data-a="lmore"]'); await tap(m); m = await btn(p, '#spk1Sheet .spk1-dd [data-s6="ed"]'); await tap(m); await idle(p); await p.waitForTimeout(300);
+  const q0 = await p.evaluate(() => { const N = spk6EdNotes(SPK1.ui); return N[0].id; }); const bx = await p.evaluate(i => __spk6.edBox(i), q0); await tap([bx.x, bx.y]);
+  m = await btn(p, '#spk1Sheet .spk1-o.on [data-s6="edM1"]'); await tap(m);
+  await p.evaluate(() => { window.__tl = []; const t0 = performance.now(); const o = new MutationObserver(() => { __tl.push(Math.round(performance.now() - t0) + 'ms ' + SPK1.ui.st.textContent + ' | ' + (SPK1.ui.s6go ? SPK1.ui.s6go.textContent : '')); }); o.observe(SPK1.ui.st, {childList: true, characterData: true, subtree: true}); o.observe(SPK1.ui.s6go, {childList: true, characterData: true, subtree: true}); window.__ob = o; window.__t0 = t0; });
+  m = await btn(p, '#spk1Sheet .spk1-o.on [data-s6="edGo"]'); await tap(m); await idle(p); await p.waitForTimeout(200);
+  const tl = await p.evaluate(() => { __ob.disconnect(); return __tl; });
+  // erste Fortschrittsangabe > 0 %
+  log('k1-fortschritt-zeitverlauf', {n: tl.length, erste: tl.slice(0, 6), letzte: tl.slice(-3)});
+  await P.ctx.close();
+}
+if (TEIL.includes('l')) {   // „▶ Auswahl“ (Auswahl abspielen) mit umgesetzter Ebene / Chorstimme
+  const P = await page(428, 926), {p, tap, drag} = P;
+  await p.evaluate(SRC, Object.assign({}, LEG, {pad: 0})); await idle(p);
+  const r = await p.evaluate(async () => { const sel = [{art: 'rect', t0: 0.5, t1: 4.5, f0: 100, f1: 9000}], E = async (mix) => { let e = 0; for (const k of [3, 4, 5, 6, 7, 8, 9, 10, 11]) { const b = await spk1Call('block', {doc: SPK1.doc, k, mix, sel, sv: 77}); for (const c of b.ch) for (let i = 0; i < c.length; i++) e += c[i] * c[i]; } return +e.toFixed(2); };
+    const o = {}; o.vorher_L1 = await E('L1'); o.vorher_mix = await E(null);
+    const N = SPK1.ui.meta.teil2.notes.L1; let a = await __spk6.plan('L1', [{id: N[1].id, dm: 2, dt: 0}]); spk1Got(SPK1.ui, a);
+    o.nachUmsetzen_L1 = await E('L1'); o.nachUmsetzen_mix = await E(null);
+    const ohneSel = async (mix) => { let e = 0; for (const k of [3, 4, 5, 6, 7, 8, 9, 10, 11]) { const b = await spk1Call('block', {doc: SPK1.doc, k, mix}); for (const c of b.ch) for (let i = 0; i < c.length; i++) e += c[i] * c[i]; } return +e.toFixed(2); };
+    o.nachUmsetzen_L1_ohneAuswahl = await ohneSel('L1'); return o; });
+  log('l1-auswahl-abspielen', r);
+  await P.ctx.close();
+}
 log('konsole-fehler', errs.slice(0, 10));
 fs.writeFileSync(path.join(dir, 'pruef6-' + TEIL.join('') + '.json'), JSON.stringify({ms: Date.now() - T0, res}, null, 1));
 await b.close(); srv.close();

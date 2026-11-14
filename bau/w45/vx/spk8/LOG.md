@@ -5,3 +5,4 @@
 - 19:23 Pflicht A1: topdefs 0/0 · dupkeys 0 · smoke errors [] (smoke-a1.png) · MS 2000 1× · live: true 1× · VERSION 4.62.0. A2 Verfeinern Bass: Mittel Zerlegen/Verfeinern-Anteil (0,5 / 0,7 / geometrisch) 4,37 → 4,37 (±0, beide Schätzungen fast gleich) → nicht eingebaut.
 - 19:24 noten3 (SPK3-Wertung, Kopie messb/noten8.mjs mit spk8DspMake): bass_ebene 0/32 Präz 0 (69) → 29/32 Präz 0,806 (36); orig_bassband 14/32 = 14/32; Überall finden fair 0,821/0,793 = gleich; SDR zerlegt 4,37 = 4,37. Start spk4-test (Basis basis6).
 - 19:26 NOTES.md geschrieben; Seiten-Prüfung spk8-seite.mjs vorbereitet (läuft nach spk4-test, nicht parallel).
+- 19:32 spk4-test (Basis basis6): 17 OK / 6 FEHLER, alle erwartet (s. NOTES); Klang-Probe allein basis→SPK8 gleich (va2 3,89/4,76 · fm 2,06/3,09 · pad 0,96/1,08 · lead 0,95/1,02 = vorher).
