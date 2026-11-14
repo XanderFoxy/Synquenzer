@@ -73,3 +73,9 @@ Weiter mit: 4.54 = rel-4540/k fertig prüfen + INT53D nachziehen + Versionszeile
 - VX2 (Gesang-Stücke 150→69, Raster 67/69) + SPK8 (Bass-Ebene Noten 0→29/32). Regression r4640 alle wie 4.63; rv1 52/53 mit korrigiertem Bezug (real/rv1-test.mjs gepatcht nach vx2/fix/rv1-bezug.diff; alt: real/rv1-test.vor-vx2.mjs); spk5-fade-test Suche 40→400 Noten (alt: spk5/spk5-fade-test.vor-spk8.mjs).
 - basis8 = R-4640. Pakete vx/vx3 (Konsonant-Anlauf) + vx/spk10 (Bass-Oktave mit Trommeln) vorbereitet.
 - wpii0ntvp (SPK9/CHR5/IMP2, Basis basis7) läuft → merge auf R-4640 → 4.65.
+
+## ~23:30 — 4.65.0 online (main e4c51f4, In-App v21)
+- VX3 Konsonant-Anlauf (12·9·7 → 24·10·18) + SPK10 Bass-Oktave (+39 Treffer, 0 schlechter). Regression r4650 wie 4.64; Bass-Fälle 13/13 + 11/11 (spk10/messb, FALL-Liste nötig!).
+- basis9 = R-4650. wpii0ntvp (SPK9/CHR5/IMP2, Basis basis7) → merge auf R-4650 → 4.66.
+- wa4xvs94h (Mein Vorteil MV7: Gesuche ohne Arbeitsamt, Filme-Übersicht, Aktualität) läuft, pusht direkt auf main (nur vorteile/, mein-vorteil/, vorteile.yml).
+- VX3 Befund 1 entschieden: „Anfang ≥ 80 %“ wird gegen den Vokal-Beginn gemessen (rv1 max(Anfang, Vokal) = 85 %), Konsonant bleibt beim Stück.
