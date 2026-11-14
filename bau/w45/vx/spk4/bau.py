@@ -21,5 +21,9 @@ rep("""    dd.appendChild(g);
     dd.appendChild(p4);""")
 rep("""  noten: (lid, sel) => spk1Call('noten', {doc: SPK1.doc, lid, sel}).then(r => { SPK1.last = r; return r; }),""",
     """  noten: (lid, sel, poly) => spk1Call('noten', {doc: SPK1.doc, lid, sel, poly}).then(r => { SPK1.last = r; return r; }),   // SPK4: poly (true/false, sonst nach Ebene)""")
+rep("Z2.lowSplit = lowSplit; Z2.o3 = o3; Z2.kickTpl = kickTpl; Z2.kickAt = kickAt; opt.an = true;",
+    "Z2.lowSplit = lowSplit; Z2.o3 = o3; Z2.kickTpl = kickTpl; Z2.kickAt = kickAt; Z2.magsLo = magsLo; /* SPK4 */ opt.an = true;")
+rep("              const vd = Math.round(free * sm(ED, i, k)), vb = Math.min(free - vd, Math.round(free * sm(EB, i, k))), vv = Math.min(free - vd - vb, Math.round(free * sm(EV, i, k)));",
+    "              const lo4 = k < KL && Z2 && Z2.o6 && Z2.o6.nosm;   // SPK4: Tiefband ungeglättet (Kick ↔ Bass: Glätten kostete 0,6 dB Bass)\n              const vd = Math.round(free * (lo4 ? ED[i * NB + k] : sm(ED, i, k))), vb = Math.min(free - vd, Math.round(free * (lo4 ? EB[i * NB + k] : sm(EB, i, k)))), vv = Math.min(free - vd - vb, Math.round(free * sm(EV, i, k)));")
 open(B+'spk4/index.html','w').write(s)
 print('ok', len(s))

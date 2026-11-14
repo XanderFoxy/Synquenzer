@@ -19,7 +19,8 @@
 17:51 Lauf 3 Endstand (run3.txt): 42/53 OK; Rest = Befunde (Übersegmentierung 150/59, Chor st+2 Versatz/σ/5 Knack-Stellen, Links-Naht 1e-4/0,004, #10 Rechts-Fenster leer).
   Pflicht: topdefs 0/0, dupkeys 0, smoke errors [], MS 2000 1×, live: true 1×, Markenwörter = Basis, VERSION gleich. Regression imp1-test ALLE OK (48). NOTES.md geschrieben.
 17:59 Auftrag 2/2 NACHPRÜFEN Start: rv1-test, vx1-test, imp1-test, chr2-test nacheinander.
-18:02 rv1-test Lauf 4 (run4.txt, 96 s): 42/53 OK = Lauf 3 (reproduzierbar, gleiche Zahlen).
-18:05 vx1-test (rolle/vx1-test.mjs, reg/vx1.txt): 61/61 OK.
-18:08 imp1-test (Kopie reg/imp1-test.mjs, reg/imp1.txt): ALLE OK (48), 119 s.
-18:11 chr2-test (Kopie real/chr2-test.mjs + src/synth.mjs, src/tune-meas.mjs aus chr3; Basis vx/basis2.html; src/run-chr2.txt): ALLE OK (82), 115 s.
+18:01 rv1-test Lauf 4 (run4.txt, 96 s): 42/53 OK = Lauf 3 (reproduzierbar, gleiche Zahlen).
+18:02 vx1-test (rolle/vx1-test.mjs, reg/vx1.txt): 61/61 OK.
+18:05 imp1-test (Kopie reg/imp1-test.mjs, reg/imp1.txt): ALLE OK (48), 119 s.
+18:07 chr2-test (Kopie real/chr2-test.mjs + src/synth.mjs, src/tune-meas.mjs aus chr3; Basis vx/basis2.html; src/run-chr2.txt): ALLE OK (82), 115 s.
+18:10 rv1-test: Stück-Wahl fürs Verschieben verlangt jetzt Platz für den Vokal des Vorgängers (Anker ≥ 0,2 s vor dem Stück; #10 Stück 6 hatte leeres Dehn-Fenster → 15,8× Schein-Wert). Info-Zeile „andere Stücke verändert“: bei #10 [] (Ursache der Links-Abweichung liegt im Render, nicht in den Zielen).

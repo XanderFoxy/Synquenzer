@@ -162,7 +162,9 @@ for (const nr of ONLY) {
     { const LK = Q.lock, off = L.map((q, i) => ({i, e: qe[i], push: i > 0 && Math.abs(q.dst - (L[i - 1].dst + L[i - 1].an + LK + .01)) < .002, col: (() => { const st = 60 / Q.warp.bpm / 2, g = Math.round((q.at - Q.warp.t0) / st); return [i - 1, i + 1].some(j => L[j] && Math.abs(L[j].da - (Q.warp.t0 + g * st)) < .002); })()})).filter(z => z.e > 2); R.quant.rasterOk = L.length - off.length; R.quant.gesperrt = off.filter(z => z.push).length; R.quant.kollision = off.filter(z => !z.push && z.col).length;
       ok(off.every(z => z.push || z.col), `#${nr} Anker-Ziele auf dem 1/8-Raster (sonst Vorgänger-Sperre oder Nachbar auf derselben Linie)`, `${L.length - off.length}/${L.length} auf dem Raster, ${off.filter(z => z.push).length} gesperrt, ${off.filter(z => !z.push && z.col).length} Linie besetzt, frei daneben ${off.filter(z => !z.push && !z.col).length}`); }
     /* ---------- Verschieben links/rechts ---------- */
-    let kk = -1; for (let i = Math.floor(L.length / 2); i < L.length - 1; i++) if (L[i].dst - L[i - 1].dst > .35 && L[i + 1].dst - L[i].dst > .3) { kk = i; break; }
+    // Stück mit Platz davor UND messbarem Vokal des Vorgängers (Anker des Vorgängers ≥ 0,2 s vor dem Stück, sonst ist das Dehn-Fenster leer)
+    const ord = []; for (let i = Math.floor(L.length / 2); i < L.length - 1; i++) ord.push(i); for (let i = 1; i < Math.floor(L.length / 2); i++) ord.push(i);
+    let kk = ord.find(i => L[i].dst - L[i - 1].dst > .35 && L[i + 1].dst - L[i].dst > .3 && L[i].t - L[i - 1].at > .2); if (kk == null) kk = ord.find(i => L[i].dst - L[i - 1].dst > .35 && L[i + 1].dst - L[i].dst > .3); if (kk == null) kk = -1;
     if (kk < 0) for (let i = 1; i < L.length - 1; i++) if (L[i].dst - L[i - 1].dst > .3) { kk = i; break; }
     for (const dir of [-1, 1]) {
       const D = dir < 0 ? -.06 : Math.max(.06, L[kk].t - L[kk].dst + .06);   // rechts: mehr Platz als in der Quelle → Vorgänger wird gedehnt
@@ -175,6 +177,7 @@ for (const nr of ONLY) {
         return {du, L1, y: y && b64(y), undone: w0 !== w1 && w0 === o.w0};
       }, {take: v.take, k: kk, D, w0: JSON.stringify(Q.warp)});
       const ya = f32(M.y), a = L[kk - 1], q0 = L[kk], q1 = M.L1[kk], seamN = Math.round(q1.dst * sr), seamO = Math.round(q0.dst * sr);
+      { const mv = M.L1.map((z, i) => ({i, d: Math.round((z.dst - L[i].dst) * 1e6) / 1e3, an: Math.round(((z.an || 0) - (L[i].an || 0)) * 1e6) / 1e3})).filter(z => z.i !== kk && (z.d || z.an)); info(`#${nr} Stück ${kk} ${dir < 0 ? 'links' : 'rechts'}: andere Stücke verändert`, mv.slice(0, 8)); }
       const kO = d2m(ya, sr, seamN - Math.round(.002 * sr), 4), kS = Math.max(d2m(x, sr, Math.round(q0.t * sr), 20), d2m(x, sr, Math.round((q1.dst - (a.dst - a.t)) * sr), 20));
       const r = {k: kk, D: Math.round(D * 1000), du: M.du, undo: M.undone, d2: +kO.toFixed(4), d2Q: +kS.toFixed(4), sprung: +jump(ya, sr, seamN, 4).toFixed(4), sprungQ: +jump(x, sr, Math.round(q0.t * sr), 20).toFixed(4)};
       if (dir < 0) {   // Vorgänger bitgleich bis 31 ms vor dem neuen Schnitt (nicht gestaucht)

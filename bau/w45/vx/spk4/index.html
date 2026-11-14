@@ -97904,7 +97904,8 @@ function spk1DspMake(V) {
               const k = tr * BT + b; if (k >= NB) break;
               let used = 0; for (const t of OW) used += t === 255 ? 255 : t ? t[c + b] : 0;
               const free = Math.max(0, 255 - used); if (!free) continue;
-              const vd = Math.round(free * sm(ED, i, k)), vb = Math.min(free - vd, Math.round(free * sm(EB, i, k))), vv = Math.min(free - vd - vb, Math.round(free * sm(EV, i, k)));
+              const lo4 = k < KL && Z2 && Z2.o6 && Z2.o6.nosm;   // SPK4: Tiefband ungeglättet (Kick ↔ Bass: Glätten kostete 0,6 dB Bass)
+              const vd = Math.round(free * (lo4 ? ED[i * NB + k] : sm(ED, i, k))), vb = Math.min(free - vd, Math.round(free * (lo4 ? EB[i * NB + k] : sm(EB, i, k)))), vv = Math.min(free - vd - vb, Math.round(free * sm(EV, i, k)));
               T[0][c + b] = vd; T[1][c + b] = vb < 0 ? 0 : vb; T[2][c + b] = vv < 0 ? 0 : vv;
             }
           }
@@ -100214,7 +100215,7 @@ function spk3DspMake(Z2) {
     if (opt.diag) opt.diag(d, cen, Nf, Kf, X, SB, SD, mh);
     return {X, SB, SD, Kf, Nf, f0: T, gate: G};
   }
-  Z2.lowSplit = lowSplit; Z2.o3 = o3; Z2.kickTpl = kickTpl; Z2.kickAt = kickAt; opt.an = true;   // misst besser als SPK1 → an
+  Z2.lowSplit = lowSplit; Z2.o3 = o3; Z2.kickTpl = kickTpl; Z2.kickAt = kickAt; Z2.magsLo = magsLo; /* SPK4 */ opt.an = true;   // misst besser als SPK1 → an
   /* ---- Auftrag 2/4: Noten sicherer (Bass) + mehrstimmig (Pads). Z2.h = Helfer aus SPK2 (Haken „SPK3“ im return von spk2DspMake). ---- */
   const H2 = Z2.h; if (!H2 || !Z2.ops) return Z2;
   const o4 = {up: 12, rf: 230, kk: 1, fbB: 260, gate: 0.1, gq: 0.05, orth: 1, ref: 1, thr: 0.35, sure: 0.7, zK: 300, zg: 0, poly: 1, pv: 5, pr: 0.5, dbg: null};
@@ -100525,7 +100526,7 @@ SPK1_API.spk3 = {
   kl: SPK3_KL
 };
 /* SPK3-END */
-/* ===== SPK4-BEGIN (Spektral-Seite Teil 4 · mehrstimmige Noten) ===== */
+/* ===== SPK4-BEGIN (Spektral-Seite Teil 4 · mehrstimmige Noten · Bass ≥ 4 dB) ===== */
 // Kern-Ergänzung im selben Worker (Text wird mitgeschickt, Haken „SPK4“ in spk1DspMake/spk1Worker). Z2 = SPK2-Kern (nach SPK3).
 // Mehrstimmig (Pads, Rest, Original – oder Schalter in Noten ▾): je Rahmen iterative Obertonsumme – Ton mit der größten Salienz,
 // seine Obertöne abziehen (glatte Hüllkurve: ein Oberton, der mit einem anderen Ton zusammenfällt, wird nur so weit abgezogen,
@@ -100535,6 +100536,119 @@ SPK1_API.spk3 = {
 function spk4DspMake(Z2) {
   if (!Z2 || !Z2.I || !Z2.h || !Z2.ops) return Z2;
   const {I} = Z2, H2 = Z2.h;
+  /* ---- Auftrag 2/4: Bass ≥ 4 dB. Eigene Verfolgung (Kopie SPK2 bassTrack + Grundton-Pflicht), Teiltöne breiter (bw: der Bass ändert Pegel/Ton
+     im 186-ms-Fenster, die Spitze ist breiter als die Fensterantwort), Verfeinern Bass mit Profi-Bass als Startwert. Ersetzt Z2.lowSplit (SPK3);
+     o6.nosm: Zerlegen glättet im Tiefband (< 520 Hz) nicht mehr 3×3 (Haken „SPK4“ in zerlegen). ---- */
+  if (Z2.magsLo && Z2.o3 && Z2.kickTpl) {
+    const {w2, opt, o3, magsLo, kickTpl, kickAt} = Z2, {hpss, ramp} = I;
+    const o6 = {bw: 1.5, pf: 3, phi: 0.8, P: 1.2, pri: 1, be: 0.5, nosm: 1};
+    function bassTrack4(Y, n, K, df, hopS, trust) {
+      const C = []; for (let c = 12 * Math.log2(27 / 440); ; c += 0.25) { const f = 440 * Math.pow(2, c / 12); if (f > 290) break; C.push(f); }
+      const S = C.length, NH = 8, E = new Float32Array(n * S), q = new Float32Array(n), Z = new Float32Array(K);
+      for (let i = 0; i < n; i++) {
+        const o = i * K; for (let k = 0; k < K; k++) Z[k] = Math.sqrt(Y[o + k]);
+        const pk = kf => { const k = Math.round(kf); if (k < 1 || k >= K - 1) return 0; return Math.max(Z[k - 1], Z[k], Z[k + 1]); };
+        const ka = Math.floor(30 / df);
+        let best = 0;
+        for (let j = 0; j < S; j++) {
+          const f = C[j]; let s = 0, g = 1;
+          for (let h = 1; h <= NH; h++, g *= 0.86) { const kf = h * f / df; if (kf >= K - 2) break; s += g * pk(kf); }
+          // SPK4: Grundton-Pflicht – der Grundton muss als Spitze da sein (≥ φ × stärkster 2./3. Oberton), sonst Abschlag (Pads: C2/C3 aus C3+G3+C4)
+          if (o6.pf) { const v1 = pk(f / df), u = Math.max(pk(2 * f / df), pk(3 * f / df)); if (v1 < o6.phi * u) s *= Math.pow(v1 / (o6.phi * u) + 1e-6, o6.pf); }
+          E[i * S + j] = s; if (s > best) best = s;
+        }
+        let jb = 0; for (let j = 1; j < S; j++) if (E[i * S + j] > E[i * S + jb]) jb = j;
+        // Anwesenheit: Leistung auf dem Kamm (Spitzen ±1 Bin) / Leistung im Band 30 Hz … 8·f0
+        let pc = 0, pt = 0; const fb0 = C[jb], kt = Math.min(K - 1, Math.ceil(Math.min(1200, 8.5 * fb0) / df));
+        for (let k = ka; k <= kt; k++) pt += Y[o + k] * Y[o + k];
+        for (let h = 1; h <= NH && h * fb0 / df < kt; h++) { const kc = Math.round(h * fb0 / df); for (let k = kc - 1; k <= kc + 1; k++) pc += Y[o + k] * Y[o + k]; }
+        q[i] = pt > 0 ? pc / pt : 0;
+        for (let j = 0; j < S; j++) E[i * S + j] = Math.log((E[i * S + j] + 1e-9) / (best + 1e-9));
+      }
+      // Viterbi: Nachbar ±1 Viertelton frei, größerer Sprung kostet P
+      const P = o6.P, D = new Float32Array(S), D2 = new Float32Array(S), bp = new Int16Array(n * S);
+      for (let j = 0; j < S; j++) D[j] = E[j];
+      for (let i = 1; i < n; i++) {
+        let gb = -1e9, gj = 0; for (let j = 0; j < S; j++) if (D[j] > gb) { gb = D[j]; gj = j; }
+        for (let j = 0; j < S; j++) {
+          let b = gb - P, bj = gj;
+          for (let t = Math.max(0, j - 1); t <= Math.min(S - 1, j + 1); t++) if (D[t] > b) { b = D[t]; bj = t; }
+          D2[j] = b + E[i * S + j]; bp[i * S + j] = bj;
+        }
+        let mx = -1e9; for (let j = 0; j < S; j++) if (D2[j] > mx) mx = D2[j];
+        for (let j = 0; j < S; j++) D[j] = D2[j] - mx;
+      }
+      const st = new Int16Array(n); let bj = 0; for (let j = 1; j < S; j++) if (D[j] > D[bj]) bj = j; st[n - 1] = bj;
+      for (let i = n - 1; i > 0; i--) st[i - 1] = bp[i * S + st[i]];
+      // Noten: zusammenhängende Stücke (Schritt ≤ 1 Viertelton); prüfen
+      const f0 = new Float32Array(n), on = new Float32Array(n), sg = new Int32Array(n), minF = Math.max(2, Math.round(0.1 / hopS));
+      // deutliche Obertöne: Spitze (±1 Bin) ≥ 4× Umgebung (±4…8 Bins); Kick-Ausklang = Sinus ohne Obertöne, Rauschen ohne Spitzen
+      const subR = (i, f) => { const o = i * K, kc = Math.round(f / df); if (kc < 9) return 0; const pk = Math.max(Y[o + kc - 1], Y[o + kc], Y[o + kc + 1]) ** 2; let e = 0; for (let t = 4; t <= 8; t++) e += Y[o + kc - t] ** 2 + Y[o + kc + t] ** 2; return pk / (e / 10 + 1e-20); };
+      const prom = (i, f) => { const o = i * K; let c = 0; for (let h = 2; h <= 6; h++) { const kc = Math.round(h * f / df); if (kc + 9 >= K) break; const pk = Math.max(Y[o + kc - 1], Y[o + kc], Y[o + kc + 1]) ** 2; let e = 0; for (let t = 4; t <= 8; t++) e += Y[o + kc - t] ** 2 + Y[o + kc + t] ** 2; if (pk > 4 * e / 10) c++; } return c; };
+      for (let a = 0; a < n;) {
+        let b = a; while (b + 1 < n && Math.abs(st[b + 1] - st[b]) <= 1) b++;
+        const len = b - a + 1; let qm = 0, hm = 0; for (let i = a; i <= b; i++) { qm += q[i]; hm += prom(i, C[st[i]]); } qm /= len; hm /= len;
+        const fall = st[a] - st[b];   // Viertelton-Schritte nach unten über das Stück
+        let ok = (len >= minF || trust) ? 1 : 0;
+        ok *= Math.min(1, Math.max(0, (qm - (trust ? 0.04 : 0.08)) / 0.12));
+        ok *= Math.min(1, Math.max(0, (hm - (trust ? 0.4 : 0.9)) / 0.6));   // im Mittel ≥ 1,5 deutliche Obertöne (2.–6.) je Rahmen
+        if (!trust && fall >= 6 && len * hopS < 0.6) ok *= 0.2;   // fällt ≥ 1,5 Halbtöne in kurzer Zeit → Kick-Ausklang
+        // Unter-Oktave (Sub-Oszillator): Spitze bei f0/2 deutlich und über die Note stetig (unteres Drittel der Rahmen) → Kamm ab f0/2
+        let sub = 1; if (ok > 0 && C[st[a]] / 2 >= 27) { const rr = []; for (let i = a; i <= b; i++) rr.push(subR(i, C[st[i]] / 2)); rr.sort((x, y) => x - y); if (rr[Math.floor((rr.length - 1) / 3)] > 4) sub = 0.5; }
+        for (let i = a; i <= b; i++) { f0[i] = C[st[i]] * sub; on[i] = ok; sg[i] = a; }
+        a = b + 1;
+      }
+      return {f0, on, q, sg};
+    }
+    // Schlag-Modell im Tiefband: der Kick kommt auf jedem Schlag wieder, der Bass wechselt die Töne → je Rahmen/Bin das zweitkleinste von
+
+    // Vorwissen für Verfeinern Bass (trust): Profi-Bass als Startwert (Profi-Lauf fertig); pri 2 = auch die zerlegte Bass-Ebene (gemessen schlechter, aus)
+    function priorOf(d) { const j = d.meta.jobs && d.meta.jobs.profi, P = j && j.fertig ? d.meta.layers.find(l => l.z === 'bass') : null; return P || (o6.pri === 2 ? d.meta.layers.find(l => l.z === 'bass') : null) || null; }
+    function priorMags(d, l, Nf, cen, Kf) {
+      const n = d.meta.n, ch = I.render(d, I.mixOf(d, l.id), 0, n), x = new Float32Array(n), g = 1 / ch.length; for (const c of ch) for (let i = 0; i < c.length && i < n; i++) x[i] += c[i] * g;
+      return I.magsAt({mid: x, meta: d.meta}, Nf, cen, Kf);
+    }
+    function lowSplit4(d, cen, Nf, fmax, r, trust) {
+      const sr = d.meta.sr, n = cen.length, N16 = 16384, df16 = sr / N16, K16 = Math.min(N16 / 2 + 1, Math.ceil(2400 / df16) + 2), hopS = (n > 1 ? cen[1] - cen[0] : d.meta.base.hop) / sr;
+      const Y = magsLo(d, N16, cen, K16, (K16 + 1) * df16), K1 = kickAt(kickTpl(d, N16, K16), cen, null, K16);
+      if (K1) for (let i = 0; i < Y.length; i++) Y[i] = Math.sqrt(Math.max(0, Y[i] * Y[i] - K1[i]));
+      const T = bassTrack4(Y, n, K16, df16, hopS, trust); if (o3.dbg) o3.dbg(d, cen, T, N16, K16, hopS, trust);
+      const dff = sr / Nf, Kf = Math.min(Nf / 2 + 1, Math.ceil(fmax / dff) + 2), X = magsLo(d, Nf, cen, Kf, (Kf + 1) * dff), {mh} = hpss(X, n, Kf, 17, 17);
+      const SB = new Float32Array(n * Kf), SD = new Float32Array(n * Kf), B = new Float32Array(Kf), G = new Float32Array(n), KQ = kickAt(kickTpl(d, Nf, Kf), cen, null, Kf);
+      const hmax = trust ? 40 : 16, HM = hmax + 1, LA = new Float32Array(n * HM), LC = new Float32Array(n * HM), WR = Math.max(4, Math.round(0.25 / hopS)), bw = o6.bw, ext = 4 * bw;
+      for (let i = 0; i < n; i++) {
+        const o = i * Kf, f0 = T.f0[i]; if (!(T.on[i] > 0 && f0 > 0)) continue;
+        const top = Math.min(fmax, trust ? fmax : Math.max(500, 8.5 * f0));
+        for (let h = o3.sub && f0 / 2 >= 25 ? 0 : 1; h <= hmax && h * f0 < top; h++) {
+          const c = (h || 0.5) * f0 / dff, k0 = Math.round(c); if (k0 < 1 || k0 >= Kf - 1) break;
+          let km = k0; for (let t = k0 - 1; t <= k0 + 1; t++) if (X[o + t] > X[o + km]) km = t;
+          const xa = X[o + km - 1], xb = X[o + km], xc = X[o + km + 1], dn = xa - 2 * xb + xc, cc = km + (dn < 0 ? Math.max(-0.5, Math.min(0.5, 0.5 * (xa - xc) / dn)) : 0);
+          const cx = Math.abs(cc - c) <= 1.2 ? cc : c; LA[i * HM + h] = Math.max(0, xb * xb - (KQ ? KQ[o + km] : 0)) / Math.max(0.3, w2(km - cx)); LC[i * HM + h] = cx;
+        }
+      }
+      const PL = trust && o6.pri ? priorOf(d) : null, PX = PL ? priorMags(d, PL, Nf, cen, Kf) : null;
+      const tmp = [];
+      for (let i = 0; i < n; i++) {
+        const o = i * Kf, g = G[i] = T.on[i]; B.fill(0);
+        const a = Math.max(T.sg[i], i - WR); let b = i; while (b + 1 < n && b + 1 <= i + WR && T.sg[b + 1] === T.sg[i]) b++;
+        for (let h = 0; g > 0 && h <= hmax; h++) {
+          const A2 = LA[i * HM + h]; if (!A2) continue; let L = A2;
+          if (opt.rob && b - a >= 3) { tmp.length = 0; for (let j = a; j <= b; j++) tmp.push(LA[j * HM + h]); tmp.sort((x, y) => x - y); L = Math.min(A2, opt.rob * tmp[Math.floor((tmp.length - 1) * opt.robq)]); }
+          const cx = LC[i * HM + h]; for (let k = Math.max(0, Math.floor(cx - ext)); k <= Math.min(Kf - 1, Math.ceil(cx + ext)); k++) B[k] += L * w2((k - cx) / bw);
+        }
+        for (let k = 0; k < Kf; k++) {
+          const f = k * dff, x2 = X[o + k] * X[o + k], b = g * B[k], kq = KQ ? KQ[o + k] : 0, sb0 = x2 > 0 ? Math.min(1, b / Math.max(x2, b + kq, 1e-20)) : 0, h = mh[o + k], kick = 1 - ramp(f, 90, 160);
+          const sb = o3.hB > o3.hA ? sb0 * (1 - ramp(f, o3.hA, o3.hB)) : sb0;
+          let sf = sb; if (PX) {   // Startwert Profi-Anteil, auf dem Kamm des verfolgten Grundtons zur Hälfte klassisch nachgeschärft
+             const pp = x2 > 0 ? Math.min(1, PX[o + k] * PX[o + k] / x2) : 0; sf = g > 0 ? (1 - o6.be) * pp + o6.be * sb : pp; }
+          SB[o + k] = sf; SD[o + k] = (1 - sf) * ((1 - h) + h * kick);
+        }
+      }
+      if (opt.diag) opt.diag(d, cen, Nf, Kf, X, SB, SD, mh);
+      return {X, SB, SD, Kf, Nf, f0: T, gate: G};
+    }
+      Z2.lowSplit = lowSplit4; Z2.o6 = o6;
+  }
   const o5 = {N: 8192, H: 10, pv: 5, pr: 0.3, fund: 0.12, sub: 0.5, oe: 0.3, cent: 30, bw: 3, sm: 3, on: 0.3, off: 0.15, minD: 0.14, gap: 10, dip: 5, rise: 3, snap: 0.35, cmin: 0.3, bd: 2, vd: 1, jump: 6, back: 1.5, pre: 0.08, dbg: null};
   const AUTO = {pads: 1, rest: 1, orig: 1};
   const mf = m => 440 * Math.pow(2, (m - 69) / 12);

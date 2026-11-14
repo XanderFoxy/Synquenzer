@@ -9,3 +9,10 @@ In der App selber kommt oben immer eine Benachrichtigung, dass Sie eine neue Ver
 - Farbgebung: Profi-Programme nutzen Gelb→Orange→Rot; gebräuchliche Farbstufungen anbieten.
 - Trennung noch nicht sauber: Auswahl + Zerlegen → es wird keine Ebene angelegt / kein optisches Feedback, was zerlegt wurde. Klares Feedback nötig.
 - An professionellem Spektral-Editor orientieren; Hybrid aus heutiger KI-Trennung als Basis + klassische Werkzeuge zum Herausarbeiten, diese verbessern.
+
+## 14.11. ~18:15 – Ebenen wie Bildbearbeitung für Musik + Spektral-Pinsel-Synth
+- Ebenen echt kopieren (unabhängige Kopie), Noten einer Ebene als MIDI-Noten in der Tonhöhe umsetzen, eigenen Chor aus Gesang erzeugen, Effekte je Ebene – „als wenn es ein Musikprogramm ist, auf Basis des Frequenzspektrums mit dem importierten Song“.
+- Frage: Was spielen die Tasten links? (Antwort: Probeton, unabhängig vom Song.)
+- Synth auf Spektrum-Basis: Sample laden, mit Pinsel Auswahl im Spektrum malen, nur diese Auswahl als Klangkörnchen (Grain/Wavetable) weiterformen.
+- Handbuch des Spektral-Editors: Xander schickt PDF (nur privat in vx-privat auswerten).
+→ Pakete SPK6 (Ebenen-Werkstatt) + SPK7 (Klangkorn), Workflow w49ddgrbx.

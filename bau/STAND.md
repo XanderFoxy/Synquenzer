@@ -50,3 +50,4 @@ Weiter mit: 4.54 = rel-4540/k fertig prüfen + INT53D nachziehen + Versionszeile
 - Edge Function krypto-wecker v2 (Schlüssel x-wecker aus privat.krypto_wecker.schluessel), pg_cron 'krypto-wecker' '23 * * * *'.
 - Erster Lauf ok (CoinGecko), Start-Nachricht gesendet. Thema im Chat genannt (nicht ins Repo!).
 - Workflow w84fbywig: Gesuche „Deutsch helfen“ + Amazon-Link für Markt-Angebote + Krypto-Abschnitt ohne GitHub-Secret → push main.
+- 18:15 Workflow w49ddgrbx: SPK6 Ebenen-Werkstatt + SPK7 Klangkorn (Basis R-4600), Merge nach Teil4/SPK5 → 4.61/4.62
