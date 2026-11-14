@@ -161,15 +161,15 @@ try {
     await window.__vx1.quant(id, {grid: '1/8', strength: 1}); await window.__vx1.move(id, 1, window.__vx1.list(id)[1].da + .02, {grid: 'off'});
     const m = S.takes[id], n = tkNormTake(JSON.parse(JSON.stringify(m)));
     const same = JSON.stringify([n.marks, n.warp]) === JSON.stringify([m.marks, m.warp]);
-    const z = await SYNQUENZER.tkZipRoundtrip(), j = z.json ? JSON.parse(z.json) : null, tj = j && ((j.project && j.project.takes) || j.takes || {})[id];
+    const zi = await SYNQUENZER.tkZipInfo(), wav = zi.files.some(f => f.name === 'takes/' + id + '.wav' && f.n > 1000), z = await SYNQUENZER.tkZipRoundtrip(), j = z.json ? JSON.parse(z.json) : null, tj = j && ((j.project && j.project.takes) || j.takes || {})[id];
     // alt: ein Take ohne VX1-Felder (Scheiben-Karte) bleibt Byte für Byte
     const old = {sr: m.sr, len: m.len, chunks: m.chunks, route: m.route, latMs: m.latMs, created: m.created, src: m.src, marks: [{t: .4, conf: 1}, {t: .9, conf: .5}], warp: {mode: 'slice', grid: 'auto', res: '1/16', strength: 1, swing: .5, bpm: 120, t0: 0, map: {v: 1, src: [0, .4, .9, 3.6], dst: [0, .42, .9, 3.6]}}};
     const on = tkNormTake(JSON.parse(JSON.stringify(old)));
-    return {same, dbg: {zk: j && Object.keys(j).slice(0, 30), tk: tj && Object.keys(tj), diff: same ? null : [JSON.stringify([n.marks, n.warp]).slice(0, 400), JSON.stringify([m.marks, m.warp]).slice(0, 400)]}, zip: z.ok, hy: !!(tj && tj.warp && tj.warp.mode === 'hybrid' && tj.warp.an), vd: !!(tj && tj.marks && tj.marks.some(k => k.vd != null)), an: !!(tj && tj.marks && tj.marks.every(k => k.an != null)),
+    return {same, wav, dbg: {zk: j && Object.keys(j).slice(0, 30), tk: tj && Object.keys(tj), diff: same ? null : [JSON.stringify([n.marks, n.warp]).slice(0, 400), JSON.stringify([m.marks, m.warp]).slice(0, 400)]}, zip: z.ok, hy: !!(tj && tj.warp && tj.warp.mode === 'hybrid' && tj.warp.an), vd: !!(tj && tj.marks && tj.marks.some(k => k.vd != null)), an: !!(tj && tj.marks && tj.marks.every(k => k.an != null)),
       oldOk: on && !on.warp.an && on.warp.mode === 'slice' && on.marks.every(k => k.an == null && k.vd == null), oldKeys: on && Object.keys(on.marks[0]).join(',')};
   }, id);
   ok(SV.same, 'Speichern/Laden: Take mit Stücken normalisiert deep-equal', SV.same ? '' : JSON.stringify(SV.dbg.diff));
-  ok(SV.zip && SV.hy && SV.vd && SV.an, 'Container (mit Audio): Anker, eigene Ziele und Modus enthalten', JSON.stringify(SV.dbg));
+  ok(SV.zip && SV.wav && SV.hy && SV.vd && SV.an, 'Container (mit Audio): WAV des Takes, Anker, eigene Ziele und Modus enthalten', JSON.stringify(SV.dbg));
   ok(SV.oldOk, 'alte Takes (Scheiben-Karte, Marken ohne Anker) bleiben unverändert', SV.oldKeys);
 
   /* 6 Tonhöhe eines Stücks (G2, formanterhaltend) */

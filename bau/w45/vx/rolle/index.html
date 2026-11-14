@@ -96381,9 +96381,9 @@ Object.assign(SYNQUENZER, {kf1: KF1_API});                  /* KF1: Test-API (Ob
 /* KF1-END */
 /* ===== VX1-BEGIN (Paket VX1 Gesang-Notenrolle – Schritt 2: Kern ohne Oberfläche; Präfix vx1r/VX1R, weil „vx1“ schon belegt ist)
    Ein „Stück“ = Abschnitt eines Takes zwischen Marke k und Marke k+1 (Marken der Zeitkarte VS5, wpMarks/wpDetect).
-   Anker = die Stelle, an der sich der Einsatz am stärksten aufbaut: erster Gipfel der Hüllkurve (2,5 ms) in den ersten 120 ms nach
-   der Marke, der ≥ 90 % des Höchstwerts dort erreicht. Einrasten/Quantisieren setzt den ANKER auf die Rasterlinie – der Anschwung
-   (Konsonant/Atem) liegt dann vor dem Taktstrich.
+   Anker = die Stelle, an der sich der Einsatz am stärksten aufbaut: das lauteste Sample im ersten Gipfel der Spitzen-Hüllkurve
+   (±2,5 ms, Rahmen ≥ 90 % des Höchstwerts) in den ersten 120 ms nach der Marke – an der Quelle, die die Zeitkarte rendert.
+   Einrasten/Quantisieren setzt den ANKER auf die Rasterlinie – der Anschwung (Konsonant/Atem) liegt dann vor dem Taktstrich.
    Gespeichert (additiv; alte Projekte unverändert):
      Marke: an = Anker-Abstand (s, 0…0,2; beim ersten Bearbeiten für alle Marken festgeschrieben), vd = eigenes Ziel des ANKERS
             (s, Take-Zeit nach der Zeitkarte; nur bei Hand verschobenen / einzeln quantisierten Stücken)
