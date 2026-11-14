@@ -97022,7 +97022,7 @@ function imp1Core() {
     prog(1);
     const alt = []; if (appBpm / 2 >= 40) alt.push(r2(appBpm / 2)); if (appBpm * 2 <= 300) alt.push(r2(appBpm * 2));
     return {ok: true, dauer: r3(dur), bpm: appBpm, bpmRoh: r3(how === 'gesang' ? bpmRaw : bpmRaw * appBpm / bpm), puls: r2(bpm), ts, alt,
-      quelle: how, frage: how === 'gesang' || stab < .5, stabil: r2(stab), t1: r3(t1), takt: r3(barSec), schlag: r3(60 / appBpm),
+      quelle: how, frage: !(o.bpm > 0) && (how === 'gesang' || stab < .5), vorgabe: o.bpm > 0, stabil: r2(stab), t1: r3(t1), takt: r3(barSec), schlag: r3(60 / appBpm),
       start: r3(tStart), ende: r3(tEnd), takte: bars.map(r3), teile,
       diag: {sub3, grp, A: {A2: r3(A2), A3: r3(A3), A4: r3(A4), A6: r3(A6), A8: r3(A8), A9: r3(A9)}, bloecke: nv.slice(), lowRatio: r3(lowRatio), pulse: r3(pulse)}, ms: Date.now() - T0};
   }
@@ -97231,7 +97231,7 @@ function imp1Html() {
     B('pick', 'Datei wählen', null, !(c && (c.st === 'lesen' || c.st === 'analyse')), 'go') + (c && c.x && c.st !== 'analyse' ? B('again', 'Erkennen') : '') + '</div>';
   if (!c || c.st !== 'fertig') return h;
   const G = imp1Geo(c), P = imp1Parts(c), r = c.r;
-  if (r.quelle === 'gesang' || r.frage) {
+  if (r.frage) {   // Tempo vorweg eingetragen: keine Rückfrage
     const al = (r.alt || []).filter(v => v >= 40 && v <= 240);
     h += `<div class="imp1st warn">${esc((r.quelle === 'gesang' ? 'Aus Gesang geschätzt' : 'Tempo schwankt') + ' – ' + Math.round(c.bpm) + (al.length ? ' oder ' + al.map(Math.round).join(' / ') : '') + '?')}</div>` +
       '<div class="imp1r">' + [c.bpm].concat(al).map(v => B('setbpm', Math.round(v) + ' BPM', null, true, Math.abs(v - c.bpm) < .01 ? 'on' : '', ` data-v="${v}"`)).join('') + '</div>';

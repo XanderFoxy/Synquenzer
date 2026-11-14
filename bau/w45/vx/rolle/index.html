@@ -2715,6 +2715,7 @@ a.mbtn[aria-disabled=true]{opacity:.55}
 /* VX1-CSS-END */
 /* VX1R-CSS-BEGIN: Gesang-Editor (PianoRoll mit opts.audio): keine Anschlag-Zeile, nur die Werkzeuge für Gesang */
 #rollSheet .pr.vx1r,.pr.vx1r{--pr-vh:0px}.pr.vx1r .pr-vlab,.pr.vx1r .pr-vel{display:none}.vx1rx{display:none!important}
+.tksheet .tk-vx1r{width:100%;min-height:44px;margin:0 0 6px}   /* Takes-Blatt: [✎ Bearbeiten] wie [✎ Marken & Timing …] */
 /* VX1R-CSS-END */
 /* G10A-CSS-BEGIN: G10a – Einsingen fertig (Pegel der Stimme in der Aufnahme-Leiste, Hörmuschel-Hinweis im 🎤-Blatt) */
 .g10a-lvl{grid-column:1;grid-row:2;position:relative;display:block;min-width:0;min-height:0;background:var(--lcd);border-radius:4px;box-shadow:inset 0 1px 4px rgba(0,0,0,.9);overflow:hidden;pointer-events:none}
@@ -40655,7 +40656,7 @@ function svTap(x, y) {
   // SX8: weit draußen sind Zellen zu schmal zum Tippen: ein Tipp in die Spuren/AKKORDE zoomt dorthin (36 px je Takt)
   if (SV.cellW < SX8_EDIT && row >= 0 && row <= svChordRow()) { sx8ZoomTo(SX8_DEF, x); folHand('song'); haptic('tick'); return; }      // V0c N7-R7 + V2e marks: the ruler selects (yellow) and sets the Positionsmarke, never jumps
   if (!song) { toast('Noch kein Song – erst ● SONG'); return; }
-  if (row < svChordRow()) { const t = SV.rows[row]; if (chsSvCode(t) != null) { chsSvTap(t, bar); return; } if (t < 0 || bar > song.bars) return; if (isStimmeT(t) && tkVoxAt(bar)) { tkSheet({vox: tkVoxAt(bar).id}); return; }   // VS3: Song-Stimme → Takes-Blatt
+  if (row < svChordRow()) { const t = SV.rows[row]; if (chsSvCode(t) != null) { chsSvTap(t, bar); return; } if (t < 0 || bar > song.bars) return; if (isStimmeT(t) && tkVoxAt(bar)) { vx1rAt(tkVoxAt(bar).id, bar); tkSheet({vox: tkVoxAt(bar).id}); return; }   // VS3: Song-Stimme → Takes-Blatt · VX1R: die getippte Stelle für [✎ Bearbeiten]
     if (bar < song.bars && svCellOwnAt(t, bar)) { openOwnRoll(t, bar); return; }   // V2e′ (9.2): a tap on an own clip = ROLLE on it
     const r = songCycle(t, bar); folEdit('song'); lcdOrToast(S.tracks[t].name + ' · Takt ' + (bar + 1) + ': ' + (r >= 0 ? 'Clip ' + (r + 1) : 'stopp')); return; }
   if (row === svChordRow()) { if (!song.bars || bar >= song.bars) return; const k = svChipAt(x, y); openChordPick(k != null ? {k} : {bar}); return; }   // N7-R10
@@ -50342,7 +50343,7 @@ function afterClipEdit(t, s, noKey) {
 function openRoll(t, s) {
   t = clamp(t | 0, 0, NT() - 1); s = clamp(s | 0, 0, NS() - 1);
   const tr = S.tracks[t];
-  if (tr.stimme) { selectSlot(t, s); tkSheet({t, s}); return; }        // VS3: die STIMME-Spur hat Takes statt Noten
+  if (tr.stimme) { selectSlot(t, s); if (vx1rCan({t, s}) && vx1rOpen({t, s})) return; tkSheet({t, s}); return; }        // VS3: die STIMME-Spur hat Takes statt Noten · VX1R: Gesang-Clip → derselbe Editor wie bei Instrumenten
   selectSlot(t, s);
   if (tr.kind === 'drum') { cancelTapStop(t, s); ED.dTab = 'steps'; openEditor(); return; }
   cancelTapStop(t, s);                                                 // selecting to edit never stops by accident (§3.2)
@@ -53048,6 +53049,7 @@ async function saveFile() {
   if (how === 'claude' || how === 'share' || how === 'download') {
     setUiPref('lastExport', Date.now());
     if (autosave) await autosave.markSaved();               // history snapshot of every explicit save
+    vx1rJsonHint();                                          // VX1R: Gesang-Audio liegt nur im Container
     if (!UI.persistAsked) { UI.persistAsked = true; SQStore.requestPersist().then(r => { UI.persist = r; renderMenuInfo(); }); }
     if (UI.menuStatus) UI.menuStatus.innerHTML = esc(storageStatus()) + '<br><span class="small">' + esc(fileStatus()) + '</span>';
   }
@@ -59683,6 +59685,7 @@ function tkSheet(r, anchor) {
       if (d.a === 'ab') { tkPick(rr, 1, false); return; }
       if (d.a === 'wav') { const x = tkRef(rr); if (x) tkExportWav(x.a.take, x.a.name || (S.takes[x.a.take] && S.takes[x.a.take].name)); return; }   // G10c: Name im Dateinamen
       if (d.a === 'zip') { tkExportZip(); return; }
+      if (d.a === 'vx1r') { closePop(); vx1rOpen(rr); return; }   // VX1R: Gesang-Editor (Noten-Rolle)
       if (d.a === 'wp') { closePop(); wpOpen(rr); return; }      // VS5a: Marken-Editor
       if (d.a === 'g5') { closePop(); g5Convert(rr); return; }   // G5: Gesang → Melodie
       if (d.a === 'g7') { g7Toggle(rr); if (UI.pop && UI.pop.name === 'takes') tkSheetPaint(UI.pop.el); return; }   // G-GES: G7 je Take
@@ -59716,6 +59719,7 @@ function tkSheetPaint(p) {
     `<div class="tklist pan-y">${rows}${g6pfSheetRows(x.a)}</div>` +   /* G6+f: Herkunft der Chor-Stimmen-Takes */
     g10cFoot(x, segs, ok) +
     `<div class="small">${esc(est + per)}</div>` +
+    (ok ? vx1rTkBtn(x) : '') +   // VX1R: Gesang-Editor (Noten-Rolle) = Standard
     (ok ? '<button class="mbtn rb tk-wp" data-a="wp">✎ Marken & Timing …</button>' : '') +
     (ok ? `<div class="tkg57"><button class="mbtn rb tk-g5" data-a="g5"${G5.busy || TK.missing.has(x.a.take) ? ' disabled' : ''}>Noten-Clip aus Gesang</button>` +   // G5 (WEGE D14)
       `<button class="mbtn rb tk-g7${g7Follows(x.a.take) ? ' on' : ''}" data-a="g7" aria-pressed="${g7Follows(x.a.take)}">${g7Follows(x.a.take) ? '✓ ' : ''}folgt Transponieren</button></div>` : '') +   // G-GES: G7 je Take
@@ -94582,7 +94586,7 @@ function oriTkOrder(p, bar) {
   const sec = (k, n, i) => { const d = el('div', 'orisec', `<i class="oril"></i>${i} · ${esc(n)}`); d.dataset.sec = k; return d; };
   const mem = [...bd.children].find(x => x.matches('.small') && /^Speicher\b/.test(x.textContent.trim())) || null;   // ORI-P (7): Speicher-Zeile unter Aufräumen
   const pick = [sec('pick', 'Auswählen', 2), q('.g10c-sum'), q('.small.warn'), q('.tklist'), q('.vox2tk'), q('.savrow'), q('.g10c-foot'), mem];
-  const edit = [sec('edit', 'Bearbeiten', 3), q('.clbox'), q('.tk-wp'), ed && !ed.querySelector('.tkdup') ? ed : null, q('.tkg57')];
+  const edit = [sec('edit', 'Bearbeiten', 3), q('.tk-vx1r'), q('.clbox'), q('.tk-wp'), ed && !ed.querySelector('.tkdup') ? ed : null, q('.tkg57')];   // VX1R: [✎ Bearbeiten] zuerst
   const cr = el('div', 'orichor'); if (dup) cr.appendChild(dup); else if (ed && ed.querySelector('.tkdup')) cr.appendChild(ed);
   const chor = cr.firstChild ? [sec('chor', 'Chor', 4), cr] : [];
   const known = new Set([...pick, ...edit, ...chor].filter(Boolean)), rest = [...bd.children].filter(x => !known.has(x));
@@ -96758,6 +96762,8 @@ function vx1rOpen(r) {
   if (UI.toastActs) hideToast();
   buildRoll();
   setSheetOpen(true); UI.dirty.all = true;
+  const at = r.vox && VX1E.at && VX1E.at.vox === r.vox ? VX1E.at.bar : null; VX1E.at = null;
+  if (at != null) vx1rShowBar(r.vox, at);                            // Song: an der getippten Stelle
   return true;
 }
 function vx1rBuild() {
@@ -97046,7 +97052,41 @@ function vx1rQSheet(sel) {
 function vx1rQClose() { if (!VX1E.q) return; VX1E.q = null; EL.qSheet.classList.remove('open'); EL.qSheet.innerHTML = ''; }
 // beim Schließen aller Blätter (closeSheets): Vorhören und Quantisier-Blatt enden
 function vx1rClosed() { vx1rPvStop(); vx1rQClose(); VX1E.glow = null; }
+/* ---------- Schritt 4: Zugänge, Speichern, Guide ----------
+   Matrix: openRoll (✎, Clip-Blatt „✎ Bearbeiten“, Toasts, Guide) öffnet für einen STIMME-Clip mit Audio den Gesang-Editor – wie bei Instrumenten.
+   Ohne Audio auf dem Gerät (Claude-App, Take fehlt) bleibt es beim Takes-Blatt. Song: Gesang-Block antippen → Takes-Blatt → [✎ Bearbeiten]
+   (erster Knopf im Abschnitt Bearbeiten) öffnet den Editor an der getippten Stelle. Wiedergabe: jede Änderung läuft über wpAfter → wpSwitch
+   (Fassungswechsel mit Überblendung während ▶) bzw. g2After – Matrix und Song hören dieselbe Fassung. Speichern: alle Gesang-Daten sind Felder
+   in S.takes (an, vd, warp 'hybrid', pitch) → .json und Container; das Audio liegt nur im Container (ZIP), darum nach „Als Datei sichern“ mit
+   Gesang ein Hinweis mit [Mit Audio sichern]. */
+function vx1rCan(r) { if (!tkAudioOk()) return false; const x = tkRef(vx1rRef(r)); return !!(x && x.a && S.takes && S.takes[x.a.take] && !TK.missing.has(x.a.take)); }
+function vx1rAt(vox, bar) { VX1E.at = {vox, bar}; }
+function vx1rTkBtn(x) {
+  const off = !x || !x.a || TK.missing.has(x.a.take);
+  return '<button class="mbtn rb tk-vx1r" data-a="vx1r" title="Gesang wie Noten bearbeiten" aria-label="Gesang wie Noten bearbeiten"' + (off ? ' disabled' : '') + '>✎ Bearbeiten</button>';
+}
+// Song: der Editor zeigt den getippten Takt (sobald die Fläche gemessen ist)
+function vx1rShowBar(vox, bar) {
+  const v = S.song && S.song.vox && S.song.vox.find(z => z.id === vox); if (!v) return;
+  const b = Math.max(0, barBeat(bar) - barBeat(v.bar)); let k = 0;
+  const go = () => { if (!vx1rOpenNow() || !ED.rollAt.vox) return; const f = ED.roll.fol(); if (f.W > 0 && f.ppb > 0) { ED.roll.showPage(b); VX1E.shown = b; return; } if (++k < 40) requestAnimationFrame(go); };
+  requestAnimationFrame(go);
+}
+// „Als Datei sichern“ (.json) mit Gesang: das Audio liegt nur im Container
+function vx1rJsonHint() {
+  try { if (!tkAudioOk() || !tkUsedIds().length) return; VX1E.hint = Date.now(); setTimeout(() => toast('Gesang-Audio ist nicht in der .json', {label: 'Mit Audio sichern', fn: () => va1BoxSave()}), 1600); } catch (e) { logErr(e); }
+}
+(function vx1rGuide() {
+  try {
+    const L = ui1Entries(); if (L.some(x => x.id === 'vx1rroll')) return;
+    const go = () => { ui1Home(); setSongView(false); const st = stimmeT(); if (st < 0) { toast('Erst eine STIMME-Spur: ■ einer Spur halten › ＋ STIMME-Spur'); return false; } const s = S.tracks[st].clips.findIndex(c => c && c.audio); if (s < 0) { toast('Erst Gesang aufnehmen – dann den STIMME-Clip ✎'); return false; } if (!vx1rCan({t: st, s})) { selectSlot(st, s); return tkSheet({t: st, s}) !== false; } return vx1rOpen({t: st, s}); };
+    L.push({id: 'vx1rroll', n: 'Gesang bearbeiten wie Noten', w: 'STIMME-Clip › ✎ · Song: Gesang antippen › ✎ Bearbeiten',
+      d: 'Jede Silbe ist ein Stück auf ihrer Tonhöhe. Ziehen = verschieben (die Anker-Linie rastet am Raster, der Anschwung liegt davor), hoch/runter = Tonhöhe, Quant. mit Stärke.',
+      s: 'gesang vocal stimme bearbeiten noten rolle transient anker einsatz quantisieren silbe tonhoehe verschieben schneiden dehnen konsonant', go, q: () => (vx1rOpenNow() ? ED.roll.el.main : null)});
+  } catch (e) {}
+})();
 Object.assign(window.__vx1, {
+  can: r => vx1rCan(r), at: () => (VX1E.shown == null ? null : VX1E.shown), hint: () => VX1E.hint || 0,
   open: r => vx1rOpen(r),
   ed: () => (vx1rOpenNow() ? {n: VX1E.clip ? VX1E.clip.notes.length : 0, notes: (VX1E.clip ? VX1E.clip.notes : []).map(n => ({t: n.t, d: n.d, n: n.n, a: n._a, k: n._k, tx: n._p && n._p.tx})), sel: ED.roll.selection.map(n => n._k), grid: ED.roll.state.grid, tool: ED.roll.state.tool, q: !!VX1E.q, pv: !!VX1E.pv} : null),
   xy: (i, f) => { const n = VX1E.clip && VX1E.clip.notes[i]; if (!n || !ED.roll) return null; return ED.roll._xy(n.t + (f == null ? n.d / 2 : f), n.n); },
