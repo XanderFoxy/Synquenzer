@@ -130,7 +130,28 @@ Ein Block `XD1-BEGIN … XD1-END` direkt nach `INT53D-END`, dazu drei Einhänge-
 
 ## Tests (nacheinander, je mit timeout; Ausgaben `out/s2run/<test>.log`, Zusammenfassung `out/s2run/summary.txt`)
 
-TESTTABELLE
+Endlauf `out/s2final` auf der fertigen Datei (md5 vor und nach dem Lauf gleich):
+
+| Test | Ergebnis | Bemerkung |
+|---|---|---|
+| Pflicht `topdefs.cjs` | Skripte 26, Namen 6683, **doppelt 0, Syntaxfehler 0** | |
+| Pflicht `dupkeys.cjs` | **0 doppelte Schlüssel** | |
+| Rauchtest `dirigent-test/smoke.mjs` | Titel SYNQUENZER, **errors []** | `out/s2final/smoke.png` |
+| `xd1-test.mjs` (alle 8 Punkte, p/q/q2, Basis-Gegenproben) | **143/143** | siehe Aufschlüsselung unten |
+| vox2 (Kopie `tests/vox2-test.mjs`) | **111/111** | |
+| vd4 (Kopie `tests/vd4-test.mjs`) | 30/31 | nur VD4-02 (Matrix-Bild pixelgleich zu 4.48.1); fällt genauso auf der Basis (`out/r3b`), kein XD1-Befund |
+| vid5 (Basis `w4500/basis.html`) | **56/56** | |
+| mtx (Kopie `tests/mtx-test.mjs`) | **92/92** | |
+| mixg (`rel-4530/fix/tests/mixg-test.mjs`, unverändert) | **48/48** | MIX-A-Messung mit Quittung, alte Zahlen gelten |
+| ori (Kopie `tests/ori-test.mjs`, Basis `w4550/basis.html`) | 87/88 | nur „Menü: kürzer“: vergleicht Basis (hat ORI schon) mit ORI, 2801 = 2801; kein XD1-Befund |
+| int53c (Kopie `tests/int53c-test.mjs`, Editor offen) | **56/56** | Original-Skript: 51/56 (`out/r4`), nur die Fälle „Editor zu auf Vorher“ |
+| int53d (Kopie `tests/int53d-test.mjs`, Editor offen) | **31/31** | Original-Skript: 22/31 (`out/r4`), Grund wie int53c |
+| Datei-Pflicht | „MS 2000“ 1×, „  live: true,“ 1×, Markenwörter nicht mehr als Basis, VERSION 4.53.0/CHANGES unverändert | in xd1-test „Pflicht“ |
+
+xd1-test je Punkt: Pflicht/Block 3 · (1) Gesang 34 · (2) Video 9 · (3) Matrix 15 · (4) Mitschnitt 12 · (5) Klang-Editor 16 · (6) MIXG 31 ·
+(7) Messung 5 · (8) Wo bin ich 12 · Regression (pixelgleich zur Basis: Matrix, Song, Klang-Editor, Menü, Remix) 6.
+Zwischenläufe: `out/s1run` (Schritt 1), `out/s2a` (int53c/d), `out/s2run` (erster Endlauf; deckte in ori den Messfehler beim ersten Bild auf und
+in xd1-test (7) eine zu strenge Gleichheit 0,490/0,489 – beides behoben, siehe BAU-LOG), `out/s2/x567.log` (Punkte 5–7).
 
 Eigene Sonden Schritt 2:
 - `s2/p6.mjs`: MIXG-Gleichheit mit dem alten Weg, Basis-Gegenlauf.

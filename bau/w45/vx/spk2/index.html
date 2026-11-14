@@ -96773,7 +96773,7 @@ function spk1DspMake(V) {
   }
   // Tiefband mit langer FFT (Nf): Bass = harmonisch UND auf dem Kamm des verfolgten Grundtons; Drums = perkussiv + tiefe Reste neben dem Kamm (Kick)
   function lowSplit(d, cen, Nf, fmax, r, trust) {   // trust: der Nutzer sagt „hier ist Bass“ → Kamm ohne Zweifel-Schranke
-    if (Z2 && !Z2.aus) return Z2.lowSplit(d, cen, Nf, fmax, r, trust);   // SPK2
+    if (Z2 && Z2.opt.an) return Z2.lowSplit(d, cen, Nf, fmax, r, trust);   // SPK2
     const sr = d.meta.sr, dff = sr / Nf, Kf = Math.min(Nf / 2 + 1, Math.ceil(fmax / dff) + 2), n = cen.length, X = magsAt(d, Nf, cen, Kf), {H, mh} = hpss(X, n, Kf, 17, 17);
     const fz = f0Sum(H, n, Kf, dff, 30, 260, 6, true), SB = new Float32Array(n * Kf), SD = new Float32Array(n * Kf), cb = new Float32Array(Kf), G = new Float32Array(n);
     for (let i = 0; i < n; i++) {
@@ -96785,7 +96785,7 @@ function spk1DspMake(V) {
   }
   // feine Schätzung S (Anteil 0…1 je feinem Bin) → Basis-Bin k (Leistung gewichtet), Zeile i
   function projRow(X, S, o, Kf, r, k) {
-    if (Z2 && !Z2.aus) return Z2.projLk(X, S, o, Kf, r, k);   // SPK2: Leckage der Basis-FFT beachten
+    if (Z2 && Z2.opt.an) return Z2.projLk(X, S, o, Kf, r, k);   // SPK2: Leckage der Basis-FFT beachten
     const c = k * r, hw = r / 2; let num = 0, den = 0;
     for (let kk = Math.max(0, Math.ceil(c - hw)); kk <= Math.min(Kf - 1, Math.floor(c + hw)); kk++) { const w = Math.abs(kk - c) === hw ? 0.5 : 1, p = X[o + kk] * X[o + kk] * w; num += p * S[o + kk]; den += p; }
     return den > 0 ? num / den : -1;
@@ -98049,6 +98049,8 @@ try { window.__spk = SPK1_API; } catch (e) {}
 // Kern-Ergänzung: läuft im selben Worker wie spk1DspMake (der Text wird mitgeschickt). I = Innereien des SPK1-Kerns.
 function spk2DspMake(I) {
   const {magsAt, hpss, ramp} = I;
+  // Schalter (an = SPK2-Tiefband statt SPK1; bis die Messung besser ist, aus) und Mess-Haken diag
+  const opt = {an: false, rob: 4, robq: 0.5, kick: true, diag: null};
   // Hann-Leistungsantwort |W(δ)|² (δ in Bins der Ziel-FFT): Leckage beim Umrechnen lange FFT → Basis-FFT
   const W2T = new Float32Array(4 * 256 + 2);
   for (let i = 0; i < W2T.length; i++) { const x = i / 256; W2T[i] = x < 1e-9 ? 1 : Math.abs(x - 1) < 1e-9 ? 0.25 : x >= 4 ? 0 : (v => v * v)(Math.sin(Math.PI * x) / (Math.PI * x) / (1 - x * x)); }
@@ -98102,6 +98104,7 @@ function spk2DspMake(I) {
     // Noten: zusammenhängende Stücke (Schritt ≤ 1 Viertelton); prüfen
     const f0 = new Float32Array(n), on = new Float32Array(n), sg = new Int32Array(n), minF = Math.max(2, Math.round(0.1 / hopS));
     // deutliche Obertöne: Spitze (±1 Bin) ≥ 4× Umgebung (±4…8 Bins); Kick-Ausklang = Sinus ohne Obertöne, Rauschen ohne Spitzen
+    const subR = (i, f) => { const o = i * K, kc = Math.round(f / df); if (kc < 9) return 0; const pk = Math.max(Y[o + kc - 1], Y[o + kc], Y[o + kc + 1]) ** 2; let e = 0; for (let t = 4; t <= 8; t++) e += Y[o + kc - t] ** 2 + Y[o + kc + t] ** 2; return pk / (e / 10 + 1e-20); };
     const prom = (i, f) => { const o = i * K; let c = 0; for (let h = 2; h <= 6; h++) { const kc = Math.round(h * f / df); if (kc + 9 >= K) break; const pk = Math.max(Y[o + kc - 1], Y[o + kc], Y[o + kc + 1]) ** 2; let e = 0; for (let t = 4; t <= 8; t++) e += Y[o + kc - t] ** 2 + Y[o + kc + t] ** 2; if (pk > 4 * e / 10) c++; } return c; };
     for (let a = 0; a < n;) {
       let b = a; while (b + 1 < n && Math.abs(st[b + 1] - st[b]) <= 1) b++;
@@ -98111,7 +98114,9 @@ function spk2DspMake(I) {
       ok *= Math.min(1, Math.max(0, (qm - (trust ? 0.04 : 0.08)) / 0.12));
       ok *= Math.min(1, Math.max(0, (hm - (trust ? 0.4 : 0.9)) / 0.6));   // im Mittel ≥ 1,5 deutliche Obertöne (2.–6.) je Rahmen
       if (!trust && fall >= 6 && len * hopS < 0.6) ok *= 0.2;   // fällt ≥ 1,5 Halbtöne in kurzer Zeit → Kick-Ausklang
-      for (let i = a; i <= b; i++) { f0[i] = C[st[i]]; on[i] = ok; sg[i] = a; }
+      // Unter-Oktave (Sub-Oszillator): Spitze bei f0/2 deutlich und über die Note stetig (unteres Drittel der Rahmen) → Kamm ab f0/2
+      let sub = 1; if (ok > 0 && C[st[a]] / 2 >= 27) { const rr = []; for (let i = a; i <= b; i++) rr.push(subR(i, C[st[i]] / 2)); rr.sort((x, y) => x - y); if (rr[Math.floor((rr.length - 1) / 3)] > 4) sub = 0.5; }
+      for (let i = a; i <= b; i++) { f0[i] = C[st[i]] * sub; on[i] = ok; sg[i] = a; }
       a = b + 1;
     }
     return {f0, on, q, sg};
@@ -98120,7 +98125,7 @@ function spk2DspMake(I) {
   // 7 Werten im Schlag-Abstand (Tempo aus dem Takt-Raster) = Leistung, die sicher nicht zum Bass gehört. Nur bis 200 Hz.
   function kickModel(d, cen, Nf, Kf) {
     const g = d.meta.grid || {}, bpm = +g.bpm, sr = d.meta.sr, n = cen.length, st = n > 1 ? cen[1] - cen[0] : d.meta.base.hop;
-    if (globalThis.NOKICK || !(bpm >= 50 && bpm <= 220) || !(st > 0)) return null;
+    if (!opt.kick || !(bpm >= 50 && bpm <= 220) || !(st > 0)) return null;
     const P = 60 / bpm * sr / st, J = 3, ext = Math.ceil(J * P) + 1, n2 = n + 2 * ext, c2 = new Int32Array(n2), KK = Math.min(Kf, Math.ceil(200 * Nf / sr) + 1);
     for (let i = 0; i < n2; i++) c2[i] = cen[0] + (i - ext) * st;
     const X2 = magsAt(d, Nf, c2, KK), KQ = new Float32Array(n * Kf), v = [], len = d.mid.length;
@@ -98137,11 +98142,11 @@ function spk2DspMake(I) {
     const Y = magsAt(d, N16, cen, K16), T = bassTrack(Y, n, K16, df16, (cen.length > 1 ? cen[1] - cen[0] : d.meta.base.hop) / sr, trust);
     const dff = sr / Nf, Kf = Math.min(Nf / 2 + 1, Math.ceil(fmax / dff) + 2), X = magsAt(d, Nf, cen, Kf), {mh} = hpss(X, n, Kf, 17, 17);
     const SB = new Float32Array(n * Kf), SD = new Float32Array(n * Kf), B = new Float32Array(Kf), G = new Float32Array(n), KQ = kickModel(d, cen, Nf, Kf);
-    const hmax = trust ? 40 : 12, HM = hmax + 1, LA = new Float32Array(n * HM), LC = new Float32Array(n * HM), WR = Math.max(4, Math.round(0.25 * sr / Math.max(1, cen.length > 1 ? cen[1] - cen[0] : 1024)));
+    const hmax = trust ? 40 : 16, HM = hmax + 1, LA = new Float32Array(n * HM), LC = new Float32Array(n * HM), WR = Math.max(4, Math.round(0.25 * sr / Math.max(1, cen.length > 1 ? cen[1] - cen[0] : 1024)));
     // je Rahmen und Oberton: Spitze (±1 Bin, parabolisch) → Amplitude² A2 und Lage
     for (let i = 0; i < n; i++) {
       const o = i * Kf, f0 = T.f0[i]; if (!(T.on[i] > 0 && f0 > 0)) continue;
-      const top = Math.min(fmax, trust ? fmax : Math.max(300, 6.5 * f0));
+      const top = Math.min(fmax, trust ? fmax : Math.max(500, 8.5 * f0));
       for (let h = 1; h <= hmax && h * f0 < top; h++) {
         const c = h * f0 / dff, k0 = Math.round(c); if (k0 < 1 || k0 >= Kf - 1) break;
         let km = k0; for (let t = k0 - 1; t <= k0 + 1; t++) if (X[o + t] > X[o + km]) km = t;   // Spitze darf ±1 Bin liegen
@@ -98150,14 +98155,14 @@ function spk2DspMake(I) {
       }
     }
     // Stetigkeit: ein Ton hält seinen Pegel; kurze Spitzen darüber (Kick-Schlag auf demselben Bin) zählen nicht zum Bass →
-    // Pegel ≤ 2 × unteres Fünftel im Fenster ±0,25 s innerhalb derselben Note
+    // Pegel ≤ 4 × Median im Fenster ±0,25 s innerhalb derselben Note
     const tmp = [];
     for (let i = 0; i < n; i++) {
       const o = i * Kf, g = G[i] = T.on[i]; B.fill(0);
       const a = Math.max(T.sg[i], i - WR); let b = i; while (b + 1 < n && b + 1 <= i + WR && T.sg[b + 1] === T.sg[i]) b++;
       for (let h = 1; g > 0 && h <= hmax; h++) {
         const A2 = LA[i * HM + h]; if (!A2) continue; let L = A2;
-        if (!globalThis.NOROB && b - a >= 3) { tmp.length = 0; for (let j = a; j <= b; j++) tmp.push(LA[j * HM + h]); tmp.sort((x, y) => x - y); L = Math.min(A2, 2 * tmp[Math.floor((tmp.length - 1) * 0.2)]); }
+        if (opt.rob && b - a >= 3) { tmp.length = 0; for (let j = a; j <= b; j++) tmp.push(LA[j * HM + h]); tmp.sort((x, y) => x - y); L = Math.min(A2, opt.rob * tmp[Math.floor((tmp.length - 1) * opt.robq)]); }
         const cx = LC[i * HM + h]; for (let k = Math.max(0, Math.floor(cx - 4)); k <= Math.min(Kf - 1, Math.ceil(cx + 4)); k++) B[k] += L * w2(k - cx);
       }
       for (let k = 0; k < Kf; k++) {
@@ -98165,10 +98170,10 @@ function spk2DspMake(I) {
         SB[o + k] = sb; SD[o + k] = (1 - sb) * ((1 - h) + h * kick);
       }
     }
-    if (globalThis.ORSB) globalThis.ORSB(d, cen, Nf, Kf, X, SB, SD, mh);
+    if (opt.diag) opt.diag(d, cen, Nf, Kf, X, SB, SD, mh);
     return {X, SB, SD, Kf, Nf, f0: T, gate: G};
   }
-  return {lowSplit, projLk, bassTrack, w2, I, aus: false};
+  return {lowSplit, projLk, bassTrack, kickModel, w2, I, opt};
 }
 /* SPK2-END */
 /* ===== KF1-BEGIN (Paket KF1, Klang-Feinschliff Teil 1 aus der Ur-Roadmap §18 „Klang“; Xander: „Können wir davon noch was machen?“ → ja) =====

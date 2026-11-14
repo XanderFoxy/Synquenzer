@@ -10,10 +10,10 @@ H = [
    "  const Z2 = typeof spk2DspMake === 'function' ? spk2DspMake({V, magsAt, hpss, f0Sum, comb, ramp, medLine, win, stft, istft, selFn, Fn, NBn}) : null;   // SPK2\n  return {on, stft, istft, specInfo, docs, lowSplit, Z2};   // SPK2: Z2 für Messungen\n}\n/* ---------- Hauptfaden: Worker"),
   # Tiefband: Grundton-Verfolgung über die Note + Obertonkamm-Modell
   ("  function lowSplit(d, cen, Nf, fmax, r, trust) {   // trust: der Nutzer sagt „hier ist Bass“ → Kamm ohne Zweifel-Schranke\n",
-   "  function lowSplit(d, cen, Nf, fmax, r, trust) {   // trust: der Nutzer sagt „hier ist Bass“ → Kamm ohne Zweifel-Schranke\n    if (Z2 && !Z2.aus) return Z2.lowSplit(d, cen, Nf, fmax, r, trust);   // SPK2\n"),
+   "  function lowSplit(d, cen, Nf, fmax, r, trust) {   // trust: der Nutzer sagt „hier ist Bass“ → Kamm ohne Zweifel-Schranke\n    if (Z2 && Z2.opt.an) return Z2.lowSplit(d, cen, Nf, fmax, r, trust);   // SPK2\n"),
   # Projektion fein → Basis mit Fensterantwort
   ("  function projRow(X, S, o, Kf, r, k) {\n",
-   "  function projRow(X, S, o, Kf, r, k) {\n    if (Z2 && !Z2.aus) return Z2.projLk(X, S, o, Kf, r, k);   // SPK2: Leckage der Basis-FFT beachten\n"),
+   "  function projRow(X, S, o, Kf, r, k) {\n    if (Z2 && Z2.opt.an) return Z2.projLk(X, S, o, Kf, r, k);   // SPK2: Leckage der Basis-FFT beachten\n"),
   # Worker-Text: SPK2-Kern mitschicken
   ("    const src = vsDspMake.toString() + ';' + spk1DspMake.toString() + ';const K = spk1DspMake(vsDspMake());onmessage = e => K.on(e.data, (m, tr) => postMessage(m, tr || []));';\n",
    "    const src = vsDspMake.toString() + ';' + spk1DspMake.toString() + ';' + (typeof spk2DspMake === 'function' ? spk2DspMake.toString() : '') + ';const K = spk1DspMake(vsDspMake());onmessage = e => K.on(e.data, (m, tr) => postMessage(m, tr || []));';   // SPK2: Kern-Ergänzung mitschicken\n"),
