@@ -39,7 +39,9 @@ Weg (Kern `spk8DspMake`, umhüllt `Z2.ops.noten` nur für Ebenen mit `art === 'b
 SPK3-Wertung (`messb/noten8.mjs` = Kopie `spk3/messk/noten3.mjs` + spk8DspMake, TEIL=bass, eins-zu-eins):
 bass_ebene 0/32 · 0 → **29/32 · 0,806**; orig_bassband 14/32 → 14/32 (Noten bitgleich, `messb/orig-alt.json` = `orig-neu.json`);
 Überall finden fair 0,821/0,793 → gleich; SDR zerlegt 4,37 → 4,37. Pads (mehrstimmig) laufen nicht durch SPK8 (art ≠ bass).
-Zeit Noten finden Bass-Ebene (Node): 1,13–1,38 s → 1,35–1,58 s (+20 %; N 16384 für Ebene + Original-Tiefband, Kick-Vorlage aus dem Zwischenspeicher).
+Zeit Noten finden Bass-Ebene: erst 1,13–1,38 → 1,54–1,62 s (Node, Ebene mit FFT 16384) bzw. Seite 1393 → 1858–1924 ms; dann Ebene über
+das SPK3-Unterabtasten (`Z2.magsLo` auf der Ebene, FFT 4096 bei gleicher Auflösung, `o8.dec`) → gleiche Noten, **Node 0,98–1,19 s, Seite 1393 → 1408 ms**
+(Original-Tiefband und Kick-Vorlage kommen aus dem Zwischenspeicher des Zerlegens).
 Verworfen: Verfolgung auf der Ebene (max 25/32 · 0,57); Oktav-Verdopplung aus SPK2 (C3 → C4); Gesamtpegel der Ebene als Schwelle
 (eDb 15: 29/32 · 0,81, aber 15 dB unter dem lautesten Ton schneidet leise Bass-Stellen in anderen Stücken ab – Kamm-Leck-Schutz misst Anteil statt nur Pegel).
 
@@ -53,6 +55,18 @@ Verworfen: Verfolgung auf der Ebene (max 25/32 · 0,57); Oktav-Verdopplung aus S
   (kickTpl) und Pad-Teiltöne aus der mehrstimmigen Pad-Verfolgung (SPK4 polyNoten, jetzt verfügbar) – mit Glättung über die Note.
   Erwartung realistisch +0,2 … +0,4 (Hälfte des Oracle-Abstands); erst messen, dann bauen.
 
-## Pflicht / Regression
-siehe LOG.md (Uhrzeiten, Zahlen). Seite: `spk8-seite.mjs <abs index.html>` (Zerlegen im Worker → Bass-Ebene → Noten ▾ → Noten finden,
+## Pflicht / Regression (Endstand, Ergebnisse auch in LOG.md)
+topdefs doppelt 0 / Syntaxfehler 0 · dupkeys 0 · smoke errors [] (`smoke-a2.png`) · „MS 2000“ 1× · „  live: true,“ 1× · VERSION 4.62.0 unverändert ·
+keine neuen Namen/Markenwörter (Block nur Fachtext).
+- `spk4-test.mjs index.html basis6.html` (Stand vor `o8.dec`; dec ändert nur den Bass-Ebenen-Weg, den spk4-test nicht lädt): 17 OK / 6 FEHLER, alle erwartet:
+  a1-mehrstimmig-gemisch-besser und a3-unison-pad-besser (Vergleich gegen basis6, die SPK4 schon enthält: 8/28 = 8/28, 0,96 = 0,96),
+  a2-verfeinern-plus-1db (bekannt, −0,01), a3-nachbau-zeit/„abstaendeGleich“ (FM im Basis-Lauf 2,7 statt 2,06 – Last; Klang-Probe allein
+  basis → SPK8: alle Abstände und Texte gleich, `spk3-klang-probe.json`), reg-spk3-test 14/17 (verfeinern-plus-1db, regression-spk2-test
+  bekannt; nachbau-abstaende-besser = gleicher Code wie Basis), reg-ki1-test quer-428/quer-370 (erwartet) + besser-als-klassisch-demo (vorbestehend).
+  OK u. a.: Pflicht, Pads allein 24/28 = 24/28, Original + Bass-Band 14/32 = 14/32, Zerlegen Bass 4,37, Drums/Tonal gleich, Überall finden 0,793,
+  Rest aufteilen, spk4-ui 8/8, spk2-test 28/30 (bekannt), spk1 17/18 (bekannt), vx1 61/61.
+- `spk5-test.mjs` (Endstand): ALLES OK · 24 Prüfungen.
+- `spk1-test.mjs` (Endstand, mess/ als Verweis neben der Datei): 17 OK / 1 FEHLER verfeinern-verbessert-ziel 4,37 → 4,36 (bekannt seit SPK4 A2).
+- `spk8-seite.mjs` (Endstand, Worker): 4/4 – Zerlegen im Worker, Noten finden auf der Bass-Ebene 29/32 · Präz 0,806, Text „36 Noten in Bass ·
+  einstimmig“, ein ↶ (danach 0 Noten), Konsole []; Foto `fotos/90-noten-bass-ebene.png` (vorher: `…basis.png`, 69 Noten, 0 Treffer). Seite: `spk8-seite.mjs <abs index.html>` (Zerlegen im Worker → Bass-Ebene → Noten ▾ → Noten finden,
 Treffer/Präzision, Text „einstimmig“, ein ↶, Konsole).
