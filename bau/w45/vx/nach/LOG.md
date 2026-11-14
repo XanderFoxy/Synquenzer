@@ -20,3 +20,5 @@
 - (g) fertig – Beleg: Suche „mp3 importieren“ → midiimp „Audio/MIDI importieren“, Sprung ringt den Knopf im Export-Blatt.
 - (h) offen (ehrlich): Takes sind mono gespeichert (Int16-Stücke in IDB, tkPcm/tkLoad bauen 1-Kanal-AudioBuffer, Container schreibt takes/<id>.wav mono, Rundlauf/Normalisieren darauf gebaut). Die Wiedergabe-Quelle könnte Stereo spielen, aber Speichern/Laden/Container müssten einen zweiten Kanal bekommen = Umbau → nicht gemacht.
 - Ende Auftrag 1: Pflicht final topdefs 0/0, dupkeys 0, smoke errors [] (smoke-end.png), Markenwörter 282 = Basis, VERSION unberührt; Regression vx1-test 61/61, imp1-test ALLE OK; NOTES.md geschrieben. Offen: (h).
+- 15:03 Start Auftrag 2/2 (Test): nx1-test a–g war schon 33/33 (test5.log); jetzt h, Regression spk1, Nachprüfung.
+- 15:04 Regression spk1-test (mess/ verlinkt): 17 OK, 1 FEHLER verfeinern-verbessert-ziel (Bass 0,77 → −0,46 dB) – IDENTISCH zur Basis 4.57.0 (reg-spk/spk1-basis.log, gleiche Zahlen) = bekannter offener Punkt aus SPK1, nicht durch NX1. Log reg-spk/spk1.log, Fotos reg-spk/.
