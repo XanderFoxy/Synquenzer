@@ -27,3 +27,8 @@
   F1 530 Hz zwischen T1/T2), die lineare Log-Interpolation verfehlt die Spitze um bis 12 dB; Orakel mit wahrer Hülle: +400 9,3 → 5,8 %, −500 6,0 → 4,1 %;
   (b) Ränder/Übergänge: Strecken-Rand (Schutzzone 15 ms + Rampe 10 ms = Original-Tonhöhe, LSD 15–19 dB) und Legato-Vokalwechsel (Rest-Spitze −8 dB, LSD 9–12).
   Anlauf −500 = 50 ms kommt NICHT vom Anlauf: in Note 8 („e“ 247 Hz) springt YIN im IDEAL auf 2·f0 (T2 = F1), die Ausgabe nicht (T2 zu schwach = Ursache a).
+- (2) Versuche (src/fexp.mjs, Bausteine src/hull.mjs): Schutzzone G 15 → 0 ms: Übergang 7,08 → 5,99 / 5,90 → 4,98 dB, Korrektur weich 3,15 → 2,68, Knackser 0
+  (max 0,2 dB); Glätte weich 1,11 → 1,34 (prüfen). Hülle kubisch (Hermite) mit Steigung je Teilton aus dem Vibrato (Ridge, nur Kern derselben Note):
+  Hüllen-Fehler an den neuen Teiltönen etwa halbiert (z. B. „e“ T1 −10,2 → −5,8 dB, „i“ −500 −12 → −8,4), Formant in ruhigen Rahmen 27 → 5–17 %,
+  ABER Ausreißer: Lautstärke-Verlauf (Ausklingen) korreliert mit dem Vibrato → alle Steigungen +5 → Spitze +12 dB. Nächster Schritt: Zeit-Trend
+  (1, t, t²) aus der Regression herausrechnen + leise Rahmen (−6 dB) auslassen.

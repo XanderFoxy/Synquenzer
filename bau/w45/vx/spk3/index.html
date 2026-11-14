@@ -100127,7 +100127,7 @@ function spk3DspMake(Z2) {
    (Stimmen fix.uni 1/5), u[13] LFO-Rate 0,2…10 Hz, u[14] Vibrato 0…60 ct, u[15] Wah (Cutoff ±0…18 Halbtöne). Startwerte aus der Bewegung
    (Worker: Schwebung je Oberton, Tonhöhe, Schwerpunkt); was die Analyse nicht sieht, bleibt fest (fz) – der Optimierer verändert nur den Rest.
    Abstand = SPK2-Abstand + Bewegung (Schwankung je Oberton, Schwebungs-Rate, Vibrato, Wah). Rauschen nur, wenn die Analyse > 10 % misst. ---- */
-const SPK3_KL = {x3: true, w: 0.35};
+const SPK3_KL = {x3: true, w: 0.2};
 function spk3KlP(c, P) {
   const u = c.u; if (c.eng !== 'va' || !u || u.length < 16) return P;
   return Object.assign(P, {det: (u[11] * 2 - 1) * 25, uni: (c.fix && c.fix.uni) || 1, udet: u[12], lr: spk2Lg(u[13], 0.2, 10), vib: u[14] * 60, wah: u[15] * 0.15});
@@ -100142,7 +100142,8 @@ function spk3KlSnd(c, P, p, mods) {
 function spk3KlStart(c, est, src, alt) {
   if (c.eng !== 'va' || !SPK3_KL.x3) return c;
   const x = (src.feat && src.feat.x3) || null, u = c.u, cvm = x && x.cv.length ? x.cv.reduce((a, v) => a + v, 0) / x.cv.length : 0;
-  const det = x ? Math.min(25, x.det) : 0, vib = x && x.vib.d >= 3 ? Math.min(60, x.vib.d) : 0, wah = x && x.wah.d >= 0.06 ? x.wah.d : 0, lr = vib ? x.vib.r : wah ? x.wah.r : 4;
+  const det = x ? Math.min(25, x.det) : 0, vib = x && x.vib.d >= 3 && (cvm < 0.15 || x.vib.d > 12) ? Math.min(60, x.vib.d) : 0, wah = x && x.wah.d >= 0.06 && cvm < 0.12 ? x.wah.d : 0,   // Schwebung täuscht Vibrato/Wah vor
+    lr = vib ? x.vib.r : wah ? x.wah.r : 4;
   c.fix = Object.assign({}, c.fix, {uni: alt === 'uni' ? 5 : 1});
   if (alt === 'det') { c.fix.o2 = c.fix.o1; u[8] = 0.9; }
   u.push((Math.max(-25, Math.min(25, alt === 'det' || alt === 'uni' ? det || 8 : det)) / 25 + 1) / 2, alt === 'uni' ? Math.min(1, 0.15 + cvm) : 0, spk2Ul(Math.max(0.2, Math.min(10, lr)), 0.2, 10), vib / 60, Math.min(1, wah));
