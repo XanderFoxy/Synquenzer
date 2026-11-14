@@ -35,7 +35,7 @@
 - `spk7-kern-test.mjs <abs index.html>` (Node, Kern aus der fertigen Datei): ALLES OK (7) – Grundton, Tonhöhe Körnchen (±0,1 ct),
   Schwerpunkt Sägezahn (Quelle 436 Hz, Taste A3 435, A4 870 = ×2,00), Spektral-Schleife (±0,1 ct), keine Klicks (Sprung ≤ 0,94 × ω·Spitze,
   Grenze 1,5; 6 Läufe inkl. Abgabe/Schnell-Aus/Regler), CPU 8 Stimmen × 5 s = 96 ms / 311 ms (schwer) / 96 ms (Schleife), Polyfonie 8.
-- `spk7-test.mjs <abs index.html>` (Playwright, Touch): ALLES OK (10) – Pinsel → Quelle, Tastatur halten (Worklet, RMS), Regler +
+- (Teil 1, Test inzwischen durch die Abnahme unten ersetzt) `spk7-test.mjs` (Playwright, Touch): ALLES OK (10) – Pinsel → Quelle, Tastatur halten (Worklet, RMS), Regler +
   Spektral-Schleife, Probeton-Modus, Als Instrument + ↶/↷, Spur-Stimme, Worklet/Rückfall offline (220,02 / 440,02 Hz), CPU im Browser
   (Worklet offline 8 × 5 s = 114 ms), Speichern/Laden (JSON gleich, ZIP mit takes/<id>.wav, Audio aus dem Gerätespeicher), quer 926×428.
 
@@ -74,3 +74,34 @@
   = gleicher Take (kein doppeltes Audio). So lassen sich Regler einer Klangkorn-Spur nachträglich ändern: Spur-Chip wählen, übernehmen.
 
 ## Abnahme (Teil 2)
+Lauf 19:05 auf der fertigen `index.html` (nach `python3 einbau.py`), alles nacheinander (kein Parallel-Lauf):
+- **`spk7-test.mjs`** (Playwright, Touch, 428×926 + 926×428): **ALLES OK (13)** – `spk7-test.json`, Ausgabe `spk7-test.out`
+  1. als-klangkorn-knopf-blatt: vor der Auswahl gesperrt, nach Pinsel frei (416×44, im Aktionsfeld); Quelle 5,7 s, Grundton D#5 (638 Hz);
+     Tastatur links → KORN; Blatt im Bild (48…388 × 8…864); Quellbild Kontrast 691; 24 Tasten. Spektrum 464 px (wie vorher), Ebenenliste 129 px.
+  2. marker-ziehen-position: Ziehen 30 % → 72 % ⇒ pos 0,72, Regler 0,72, Anzeige „72 %“.
+  3. mini-tastatur-spielen-gleiten: C4 halten RMS 0 → 0,0115, leuchtet im Blatt UND links; Gleiten bis C5 → leuchtet nur C5, RMS 0,019;
+     loslassen → 0, nichts leuchtet. Tasten 23 × 76 px.
+  4. tastatur-links-halten-leuchtet: Halten RMS 0,0103 (Worklet), Bernstein-Balken genau über dem gehaltenen Ton (m 68, y 350 in 347…352); los → 0.
+  5. ecke-umschalter: 40 × 44 px; TON → Tipp auf Taste spielt kein Klangkorn; wieder KORN.
+  6. regler-schleife-vorhoeren: gs 0,25, Dichte 6, Filter 0,7, Breite 0,9, Anschlag, Ausklang 0,8 in der Engine; Schleife + Vorhören RMS 0,025,
+     Knopf „■ Stopp“, danach 0.
+  7. als-instrument-neue-spur: 6 → 7 Spuren (Klang wt, p.wt.h mit gs 0,25/fc 0,7, Take im Projekt + tkUsedIds), ↶ 6, ↷ 7, Chip „✓ Korn Original · Korn“.
+  8. als-instrument-vorhandene-spur: Synth 1 (analog „Moog-Bass“) → Klangkorn, gleiche Spurenzahl, GLEICHER Take; ↶ = wieder analog „Moog-Bass“, ↷ Klangkorn.
+  9. im-song-abspielen: Clip mit 4 Noten auf der Klangkorn-Spur, launchClip + Wiedergabe: RMS max 0,0122, bis 2 Stimmen (Quelle „clip“), Spur-Engine
+     Worklet; Stopp → RMS 0,00005, 0 Stimmen.
+  10. messwerte-teil1-tonhoehe-cpu (erneut): Körnchen Worklet 220,03 / 440,03 Hz (+0,24 / +0,12 ct), Rückfall 220,02 / 440,02 (+0,16 / +0,08 ct),
+      Schleife 219,6 / 440,03 (−3,2 / +0,1 ct; Grenze ±10 ct), CPU Worklet offline 8 Stimmen × 5 s = 174 ms (Grenze 1250).
+  11. speichern-laden: p.wt.h nach serialize → importJSON gleich, ZIP mit takes/<id>.wav, Audio 249986 Proben aus dem Gerätespeicher, Spur klingt (RMS 0,0076).
+  12. quer-bedienbar 926×428: Knopf 255×44 im Feld, Ecke 40×44, Spektrum 310 px (wie vorher), Ebenenliste 236 px; Blatt im Bild, 15 Knöpfe, 0 unter 36 px;
+      Mini-Tastatur quer spielt (RMS 0,0119, leuchtet), los → 0.
+  13. keine-fehler: Konsole leer.
+- **`spk7-kern-test.mjs`** (Node, Kern aus index.html): **ALLES OK (7)** – Grundton 440,02/220/110/0; Körnchen 220,01/439,99/659,26/880,00 Hz
+  (≤ 0,05 ct); Schwerpunkt Säge 436 → A3 435 / A4 870 (×2,00); Schleife 439,99/880,00; Klicks max 0,94 (Grenze 1,5); CPU 84/156/65 ms; Polyfonie 8.
+- Fotos: `fotos/spk7-10-als-klangkorn-hochkant.png`, `-11-mini-tastatur`, `-12-tasten-links-leuchten`, `-13-spurwahl`, `-14-quer-blatt`,
+  `-15-quer-spielen`, `-16-quer-gesamt`, `-17-hochkant-gesamt` (Fotos 01–03 von Teil 1 entfernt: altes Klappfenster).
+- **Pflicht**: topdefs Skripte 26, doppelt 0, Syntaxfehler 0 · dupkeys 0 · smoke errors [] (`smoke-a2.png`) · „MS 2000“ 1× (Basis 1×) ·
+  „  live: true,“ 1× · vwStart 3× · Krypto-grep 0 · Markenwörter alle 21 = Basis, 0 im Paket (Quellen, Tests, NOTES, LOG, KARTE).
+- **Regression**: spk1-test ALLE OK. spk3-test 13 OK / 4 FEHLER = die drei offenen SPK3-Ziele mit denselben Zahlen wie auf basis5
+  (bass 3,01/4 · verfeinern +0,52 · mehrstimmig 0/28) + nachbau-abstaende-besser „2,13 → 2,13, schlechter []“ (gleich gut; im Lauf davor OK –
+  Zufall des Optimierers, SPK7 berührt den Nachbau nicht). layout-3-groessen OK, regression-spk2-test 29/30 (bekannt: zerlegen-bass-ziel).
+  Der erste Lauf fand den 38-px-Eckknopf (SPK2-Regel ≥ 44 px) → behoben.
