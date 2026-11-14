@@ -52,3 +52,24 @@ Fotos: `fotos/chr2-*.png`.
 - Bearbeitungen des Originals (pitch/marks/warp/cl) auf Rest/Stimmen übertragen (ganze Take-Länge statt Fenster, dann gleiche Zeitachse).
 - Wiedergabe-Pegel im echten Klangweg messen (Rest + Stimmen gegen Original, gA = √2 prüfen), Container/Speichern-Rundlauf, Song-Stimme {vox}.
 - Echte Aufnahmen (Hall, Atem, Live-Chor) prüfen; Guide-Eintrag.
+
+## Auftrag 2/3 (echte Chöre + Tuning ohne Knackser)
+Bau zusätzlich: `python3 src/apply2.py <datei>` (Quelle `src/real.js`). Messung: `node src/tune-meas.mjs index.html "" out.json`
+(Prüfstimme mit Vokalen/Vibrato/Gleiten/verstimmten Noten/„s“/„t“; Ideal = gleiche Stimme synthetisch an der Ziel-Tonhöhe).
+- Chor-Weg G6 v2 war schon für jedes Audio-Stück offen (auch IMP1 „Als Gesang“ = Song-Stimme) – nichts freizuschalten.
+- Knackser-Ursache: pYIN überbrückt kurze Konsonanten → Plosiv/Stille mitten in einer stimmhaften Strecke wurde mitverschoben
+  (Modell klingt im Loch nach, +45 dB Hochton). Fix `apGate` (YIN-Rest ap ≤ 0,25 → verschieben, ≥ 0,5 → Original) in G2 `render` und
+  G6+b `renderMulti` (gleich, bitgleich zueinander). Knackser 5 → 0 in allen Fällen; übrige Zahlen unverändert.
+- Echte Chöre: `grp.echt = 1` (neue Chöre aus Stil/Background-Duplikat; alte Projekte ohne Feld unverändert). Plan je Kopie trägt
+  `chr2 {ms, f, d, s, r, c}`: Versatz gesamt 10–40 ms, Formant-Faktor 0,955–1,05, Schwanken ± 5 ct (0,2/0,5/3 Hz), Rest im Vokal × 0,3,
+  außerhalb × 0,12. Gemessen: Konsonanten der Kopie −18,4 dB gegen den Lead, Schwanken σ 2,6 ct, Formant +2,0 % (Faktor 1,035).
+| Fall | LSD ruhig/Übergang dB | Knackser (max dB) | Formant % | Ton ct | Glätte | Anlauf ms |
+|---|---|---|---|---|---|---|
+| weich vorher → nachher | 2,18/3,15 → 2,18/3,15 | 5 (45,8) → 0 (1,8) | 2,4 → 2,4 | 1,9 | 1,11 | 0 |
+| hart | 2,37/4,01 → 2,37/4,02 | 5 (44,1) → 0 (2,5) | 2,5 → 2,6 | 2,1 | 1,21→1,19 | 0 |
+| natürlich (nat 0,3) | 2,33/3,30 → gleich | 5 (44,2) → 0 (1,6) | 2,7 | 1,5 | 1,00 | 0 |
+| Chor +400 ct | 4,06/7,09 → 4,06/7,08 | 5 (44,0) → 0 (2,2) | 9,3 | 2,3 | 1,34 | 0 |
+| Chor −500 ct | 4,00/5,89 → 4,00/5,90 | 5 (45,8) → 0 (2,4) | 6,0 | 0,9 | 0,45 | 50 |
+Offen: Formant-Abweichung bei großen Verschiebungen (6–9 %) und LSD an Übergängen (Geist der Original-Tonhöhe im Rest x − Modell,
+Hülle an der 7-kHz-Kante); Anlauf −500 ct 50 ms (Schutzzone 15 ms + ap-Rand); Schalter „echt“ im Chor-Blatt; Browser-Hörtest
+eines echten Chors (Worker-Weg) und echte MP3/WAV-Aufnahmen; zeitlich schwankender Versatz je Silbe.

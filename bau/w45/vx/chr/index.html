@@ -69080,6 +69080,15 @@ function coef(R, q, h, out) {
   let d = pb - pa; d -= 2 * Math.PI * Math.round(d / (2 * Math.PI));
   out[0] = la + (lb - la) * fr; out[1] = pa + d * fr; return out;
 }
+// CHR2: Periodizitäts-Tor je Sample einer Strecke (YIN-Rest ap): ein Plosiv, Zischlaut oder eine Stille MITTEN in einer stimmhaften
+// Strecke (pYIN überbrückt kurze Konsonanten) bleibt Original statt mitverschoben zu werden (sonst klingt das Modell im Loch nach = Knackser).
+// Rest ≤ 0,25 → 1, ≥ 0,5 → 0, linear zwischen den 10-ms-Rahmen; ohne ap (ältere Analyse) null = wie bisher
+function apGate(an, sr, A, L) {
+  const ap = an.ap; if (!ap || !ap.length) return null;
+  const Hs = an.hop * sr, g = new Float32Array(L); let any = false;
+  for (let q = 0; q < L; q++) { const p = (A + q) / Hs, k = Math.min(an.n - 1, Math.max(0, Math.floor(p))), fr = Math.min(1, Math.max(0, p - k)), a0 = ap[k], a1 = ap[Math.min(an.n - 1, k + 1)], v = a0 + (a1 - a0) * fr, w = Math.min(1, Math.max(0, (0.5 - v) / 0.25)); g[q] = w; if (w < 1) any = true; }
+  return any ? g : null;
+}
 function render(x, sr, an, plan) {
   const y = Float32Array.from(x), n = x.length, H = an.hop;
   const {c, runs} = curve(an, plan);
@@ -69090,6 +69099,7 @@ function render(x, sr, an, plan) {
     const R = an.mdl.find(z => z.i0 === i0 && z.i1 === i1); if (!R) continue;
     const L = R.B - R.A; if (L < 2 * RMP + 8) continue;
     segs++;
+    const AG = apGate(an, sr, R.A, L);   // CHR2: Konsonant/Stille in der Strecke bleibt Original
     // Ziel-Phase Φ'(t) = ∫2π f0(t)·r(t), am Anfang der Strecke = Φ (gleiche Lage → die Blende löscht nichts aus)
     const ps = new Float64Array(L), rr = new Float32Array(L);
     { let P = R.ph[0]; for (let q = 0; q < L; q++) { const p = (R.A + q) / (H * sr), k = Math.min(an.n - 1, Math.max(0, Math.floor(p))), fr = Math.min(1, Math.max(0, p - k)), k2 = Math.min(an.n - 1, k + 1);
@@ -69126,6 +69136,7 @@ function render(x, sr, an, plan) {
           if (!(ar || ai || br || bi) && h > 2) break;
         }
         let w = 1; if (q < RMP) w = 0.5 - 0.5 * Math.cos(Math.PI * (q + 0.5) / RMP); else if (L - q <= RMP) w = 0.5 - 0.5 * Math.cos(Math.PI * (L - q - 0.5) / RMP);
+        if (AG) w *= AG[q];   // CHR2
         y[R.A + q] = x[R.A + q] + w * (ms - mo);
       }
       Cm.set(Cm2); Cs.set(Cs2);
@@ -70418,6 +70429,7 @@ function g6pNormGrp(g) {
     rev: g6pNum(g.rev, 0, 1, D.rev, 2), pre: G6P_PRE.includes(pre) ? pre : D.pre, dly: g6pNum(g.dly, 0, 1, D.dly, 2)};
   if (g.cpl === false) { o.cpl = false; o.ref = g6pNum(g.ref, -120, 24, 0, 2); }
   { const q = ch1NormGrp(g.ch1); if (q) o.ch1 = q; }               // CH1: Refrain groß / Ausrichten
+  if (g.echt === 1) o.echt = 1;                                     // CHR2: echte Stimmen (neue Chöre)
   return o;
 }
 // Halbtöne aus Stufen (nur Rückfall, wenn iv fehlt: Dur-Leiter ab dem Ton)
@@ -70960,7 +70972,7 @@ async function g6pApplyStyle(r, id) {
     const o = v.v1, l = g6pLaneFor(TR.chor, 'free', taken, others, String(o.name || '').slice(0, 24) || null); if (!l) return fail(); taken.add(l.id);
     voices.push({lane: l.id, rule: 'free', n: (o.n || []).map(n => ({t0: n.t0, t1: n.t1, m: n.m, d: 0, iv: n.iv})), db: isNum(o.db) ? clamp(o.db, -24, 6) : 0, pan: isNum(o.pan) ? o.pan : 0, w: 0, dbl: [{ms: 0, ct: 0, p: 0}], take: deep(o.take), dblOff: true});
   }
-  const chor = g6pFallback({v: 2, style: id && id.voices ? id.style : id, grp: deep(S0.grp), voices, _st: st});
+  const chor = g6pFallback({v: 2, style: id && id.voices ? id.style : id, grp: Object.assign(deep(S0.grp), {echt: 1}), voices, _st: st});   // CHR2: neuer Chor = echt
   const it = g6pEditPlace(r, au => { au.chor = chor; });
   if (!it) { g6pLanesRestore(st, lanesBefore); return false; }
   g6pCommit('Chor · ' + S0.label, [it, {kind: 'chorlanes', track: st, before: lanesBefore}].filter(z => z.kind !== 'none'));
@@ -71464,7 +71476,7 @@ function g6pfDupAt(r, L, ln, ids) {
   const id = g6pfNewId(); S.takes[id] = g6pfCloneTake(m, lead, 'dup'); ids.push(id);
   // eine Kopie ohne Versatz/Verstimmung, Pan Mitte, 0 dB (§1.5); neue Gruppe = Background-Werte (G6+d) → 9 LU unter dem Lead
   const v = {lane: ln.id, rule: 'free', n: [], db: 0, pan: 0, w: 0, dbl: [{ms: 0, ct: 0, p: 0}], take: {take: id, in: x.a.in, out: x.a.out, at: x.a.at}, name: ln.name};
-  if (!c) x.a.chor = {v: 2, style: null, grp: deep(G6P_BG.grp), voices: [v]}; else c.voices.push(v);
+  if (!c) x.a.chor = {v: 2, style: null, grp: Object.assign(deep(G6P_BG.grp), {echt: 1}), voices: [v]}; else c.voices.push(v);   // CHR2: neuer Chor = echt
   g6pfNormStelle(r);
   return 'ok';
 }
@@ -73210,8 +73222,21 @@ function modelRuns(x, sr, an, w0, w1, have) {
 }
 /* Mehrere Kopien in einem Gang, nur Fenster [w0, w1) (Samples). Je Kopie dieselbe Rechnung wie G2 render (bitgleich im Fenster):
    gemeinsam sind Modell, Original-Koeffizienten (Cm) und der Original-Oszillator; je Kopie eigene Ziel-Phase und Koeffizienten (Cs). */
+// CHR2: Periodizitäts-Tor je Sample einer Strecke (YIN-Rest ap): ein Plosiv, Zischlaut oder eine Stille MITTEN in einer stimmhaften
+// Strecke (pYIN überbrückt kurze Konsonanten) bleibt Original statt mitverschoben zu werden (sonst klingt das Modell im Loch nach = Knackser).
+// Rest ≤ 0,25 → 1, ≥ 0,5 → 0, linear zwischen den 10-ms-Rahmen; ohne ap (ältere Analyse) null = wie bisher
+function apGate(an, sr, A, L) {
+  const ap = an.ap; if (!ap || !ap.length) return null;
+  const Hs = an.hop * sr, g = new Float32Array(L); let any = false;
+  for (let q = 0; q < L; q++) { const p = (A + q) / Hs, k = Math.min(an.n - 1, Math.max(0, Math.floor(p))), fr = Math.min(1, Math.max(0, p - k)), a0 = ap[k], a1 = ap[Math.min(an.n - 1, k + 1)], v = a0 + (a1 - a0) * fr, w = Math.min(1, Math.max(0, (0.5 - v) / 0.25)); g[q] = w; if (w < 1) any = true; }
+  return any ? g : null;
+}
+// CHR2: eigene Tonhöhen-Schwankung einer Chor-Kopie (Cent): langsames Schweben + langsames Vibrato, fest aus dem Samen s (gleich bei
+// jedem Rechnen, gleich in jedem Fenster: Zeit = absolute Take-Zeit)
+function chr2Drift(X, i, sr) { const t = i / sr, s = X.s || 0; return X.d * (0.5 * Math.sin(2 * Math.PI * (0.19 + 0.05 * (s % 3)) * t + s) + 0.3 * Math.sin(2 * Math.PI * (0.53 + 0.04 * (s % 5)) * t + 2.1 * s) + 0.2 * Math.sin(2 * Math.PI * (3.1 + 0.35 * (s % 4)) * t + 0.7 * s)); }
 function renderMulti(x, sr, an, getRun, cvs, w0, w1) {
   const K = cvs.length, H = an.hop, ys = cvs.map(() => x.slice(w0, w1));
+  cvs.forEach((cv, j) => { const X = cv.x; if (X && X.c !== 1) { const y = ys[j]; for (let i = 0; i < y.length; i++) y[i] *= X.c; } });   // CHR2: Atem/Konsonanten der Kopie leise (kommen vom Lead)
   const RMP = Math.round(0.010 * sr), BLK = 64, o2 = [0, 0];
   const runSet = new Map();
   cvs.forEach((cv, j) => { for (const [i0, i1] of cv.runs) { const k = i0 + ':' + i1; let e = runSet.get(k); if (!e) runSet.set(k, (e = {i0, i1, js: []})); e.js.push(j); } });
@@ -73222,14 +73247,15 @@ function renderMulti(x, sr, an, getRun, cvs, w0, w1) {
     const L = R.B - R.A; if (L < 2 * RMP + 8) continue;
     if (R.B <= w0 || R.A >= w1) continue;
     segs++;
+    const AG = apGate(an, sr, R.A, L), XS = E.js.map(j => cvs[j].x || null);   // CHR2: Tor + echte Kopien
     const qa = Math.max(0, w0 - R.A), qb = Math.min(L, w1 - R.A), J = E.js.length;
     const qEnd = Math.min(L, Math.ceil(qb / BLK) * BLK), need = Math.min(L, qEnd + 1);
     const RR = [], PS = [];
     for (const j of E.js) {
-      const c = cvs[j].c, ps = new Float64Array(need), rr = new Float32Array(L);
+      const c = cvs[j].c, ps = new Float64Array(need), rr = new Float32Array(L), XD = cvs[j].x;   // CHR2
       let P = R.ph[0];
       for (let q = 0; q < need; q++) { const p = (R.A + q) / (H * sr), k = Math.min(an.n - 1, Math.max(0, Math.floor(p))), fr = Math.min(1, Math.max(0, p - k)), k2 = Math.min(an.n - 1, k + 1);
-        const cc = c[k] + (c[k2] - c[k]) * fr, r = Math.pow(2, cc / 1200); rr[q] = r; ps[q] = P; P += 2 * Math.PI * R.fs[q] * r / sr; }
+        const cc = c[k] + (c[k2] - c[k]) * fr + (XD ? chr2Drift(XD, R.A + q, sr) : 0), r = Math.pow(2, cc / 1200); rr[q] = r; ps[q] = P; P += 2 * Math.PI * R.fs[q] * r / sr; }
       RR.push(rr); PS.push(ps);
     }
     let Cm = new Float64Array(2 * HMAX), Cm2 = new Float64Array(2 * HMAX);
@@ -73241,24 +73267,26 @@ function renderMulti(x, sr, an, getRun, cvs, w0, w1) {
       for (let h = Hk + 1; h <= HMAX; h++) { M[2 * h - 2] = 0; M[2 * h - 1] = 0; }
       LM[0] = LM[1]; LM[Hk + 1] = LM[Hk] - 3; HK = Hk;
     };
-    const setS = (q, S, rr) => {
+    const setS = (q, S, rr, fm) => {   // CHR2: fm = Formant-Faktor der Kopie (Hülle bei F/fm gelesen → Formanten × fm); 0 = wie bisher
       const Hk = HK, f = R.fs[Math.min(L - 1, q)], r = rr[Math.min(L - 1, q)];
       for (let h = 1; h <= HMAX; h++) {
         const kk = h * r, F = kk * f; if (F >= FTOP || kk > Hk + 0.5 || F >= 0.45 * sr) { S[2 * h - 2] = 0; S[2 * h - 1] = 0; continue; }
-        const lo = Math.min(Hk, Math.max(1, Math.floor(kk))), t = Math.min(1, Math.max(0, kk - lo));
+        const ke = fm ? Math.min(Hk + 0.5, kk / fm) : kk;
+        const lo = Math.min(Hk, Math.max(1, Math.floor(ke))), t = Math.min(1, Math.max(0, ke - lo));
         const lm = LM[lo] + (LM[Math.min(Hk + 1, lo + 1)] - LM[lo]) * t;
         const m = Math.exp(lm), p = PH[t < 0.5 ? lo : Math.min(Hk, lo + 1)];
         S[2 * h - 2] = m * Math.cos(p); S[2 * h - 1] = m * Math.sin(p);
       }
     };
     const b0s = Math.floor(qa / BLK) * BLK;
-    setM(b0s, Cm); for (let jj = 0; jj < J; jj++) setS(b0s, Cs[jj], RR[jj]);
+    const FM = XS.map(X => (X && X.f ? X.f : 0));   // CHR2
+    setM(b0s, Cm); for (let jj = 0; jj < J; jj++) setS(b0s, Cs[jj], RR[jj], FM[jj]);
     // je Block: Differenzen (dieselben Werte wie (b − a) in G2 render) und letzter belegter Teilton (danach nur Nullen – G2 bricht dort ab)
     const dM = new Float64Array(2 * HMAX), dS = RR.map(() => new Float64Array(2 * HMAX)), nS = new Int32Array(J), Y = E.js.map(j => ys[j]);
     const last = (A1, A2) => { for (let h = HMAX; h >= 1; h--) if (A1[2 * h - 2] || A1[2 * h - 1] || A2[2 * h - 2] || A2[2 * h - 1]) return h; return 0; };
     for (let b0 = b0s; b0 < qb; b0 += BLK) {
       const b1 = Math.min(L, b0 + BLK), qq = Math.min(L - 1, b1);
-      setM(qq, Cm2); for (let jj = 0; jj < J; jj++) setS(qq, Cs2[jj], RR[jj]);
+      setM(qq, Cm2); for (let jj = 0; jj < J; jj++) setS(qq, Cs2[jj], RR[jj], FM[jj]);
       for (let h = 0; h < 2 * HMAX; h++) dM[h] = Cm2[h] - Cm[h];
       const nO = last(Cm, Cm2);
       for (let jj = 0; jj < J; jj++) { const A1 = Cs[jj], A2 = Cs2[jj], d = dS[jj]; for (let h = 0; h < 2 * HMAX; h++) d[h] = A2[h] - A1[h]; nS[jj] = last(A1, A2); }
@@ -73272,6 +73300,7 @@ function renderMulti(x, sr, an, getRun, cvs, w0, w1) {
           mo += ar * pr - ai * pi;
         }
         let w = 1; if (q < RMP) w = 0.5 - 0.5 * Math.cos(Math.PI * (q + 0.5) / RMP); else if (L - q <= RMP) w = 0.5 - 0.5 * Math.cos(Math.PI * (L - q - 0.5) / RMP);
+        if (AG) w *= AG[q];   // CHR2
         const xi = x[R.A + q], oi = R.A + q - w0;
         for (let jj = 0; jj < J; jj++) {
           const Q = PS[jj][q], wr = Math.cos(Q), wi = Math.sin(Q), A1 = Cs[jj], d = dS[jj], nh = nS[jj];
@@ -73281,7 +73310,7 @@ function renderMulti(x, sr, an, getRun, cvs, w0, w1) {
             const br = A1[k2] + d[k2] * u, bi = A1[k2 + 1] + d[k2 + 1] * u;
             ms += br * sr_ - bi * si_;
           }
-          Y[jj][oi] = xi + w * (ms - mo);
+          const XC = XS[jj]; Y[jj][oi] = XC ? XC.c * (1 - w) * xi + w * (XC.r * (xi - mo) + ms) : xi + w * (ms - mo);   // CHR2: echte Kopie – Rest (Atem/Hauch) nur zu r, außerhalb des Vokals nur zu c
         }
       }
       const tm = Cm; Cm = Cm2; Cm2 = tm; const ts = Cs; Cs = Cs2; Cs2 = ts;
@@ -73354,9 +73383,10 @@ function g6pRun(V, P, C, D, m) {
     else { D.modelRuns(x, m.sr, a, m.w0, m.w1, e.runs); getRun = i0 => e.runs.get(i0); }
   } else { if (!a.mdl) a.mdl = P.model(x, m.sr, a); getRun = (i0, i1) => a.mdl.find(z => z.i0 === i0 && z.i1 === i1); }
   const w0 = Math.max(0, m.w0 | 0), w1 = Math.min(x.length, m.w1 | 0);
-  const cvs = m.plans.map(pl => (pl ? P.curve(a, pl) : {c: null, runs: []}));
+  const cvs = m.plans.map(pl => { const cv = pl ? P.curve(a, pl) : {c: null, runs: []}; if (pl && pl.chr2) cv.x = pl.chr2; return cv; });   // CHR2
   const r = D.renderMulti(x, m.sr, a, getRun, cvs, w0, w1), g = D.sibGain(a, m.sr, w0, w1, m.sib);
   if (g) for (const y of r.ys) for (let i = 0; i < y.length; i++) y[i] *= g[i];
+  m.plans.forEach((pl, j) => { const d = pl && pl.chr2 ? Math.round((pl.chr2.ms || 0) * m.sr / 1000) : 0, y = r.ys[j]; if (d > 0 && d < y.length) { y.copyWithin(d, 0, y.length - d); y.fill(0, 0, d); } });   // CHR2: eigener Zeit-Versatz der Kopie
   return {ys: r.ys, segs: r.segs, an: D.anN, w0, w1};
 }
 
@@ -73460,9 +73490,11 @@ function g6pSpec(a, v, LD) {
   let w0 = hw0, w1 = hw1;
   if (warp) { w0 = Math.max(0, Math.floor((g6pInv(warp, W.h0) - .25) * sr)); w1 = Math.min(snd.length, Math.ceil((g6pInv(warp, W.h1) + .25) * sr)); }
   const cps = g6pCopies(v), plans = [], keys = [], idx = [], base = '|' + wpBid(snd) + '|' + wpBid(src) + '|' + hw0 + ':' + hw1 + '|' + sib + '|' + (warp ? wpKey(warp, snd) : '');
+  let ci = -1;
   for (const C of cps) {
-    const pl = g6pPlan(a, v, C.ct, LD); if (pl === undefined) return null;
-    const k = (pl ? G2P.planKey(pl) + (pl.mode === 'hard' ? 'h' : '') : 'id') + base;
+    ci++; let pl = g6pPlan(a, v, C.ct, LD); if (pl === undefined) return null;
+    pl = chr2RealPlan(pl, a, v, ci, C);   // CHR2: echte Stimme (Zeit, Schwanken, Formant, Atem)
+    const k = (pl ? G2P.planKey(pl) + (pl.mode === 'hard' ? 'h' : '') + (pl.chr2 ? '|r' + JSON.stringify(pl.chr2) : '') : 'id') + base;
     let j = keys.indexOf(k); if (j < 0) { j = keys.length; keys.push(k); plans.push(pl); } idx.push(j);
   }
   return {W, snd, src, sr, warp, sib, hw0, hw1, w0, w1, plans, keys, idx, jk: keys.join('&')};
@@ -94145,6 +94177,20 @@ const CHR2_API = {
   core: (x, sr, o) => chr2Core().sep(x, sr, o), unity: r => { const z = tkRef(r || {t: stimmeT(), s: R.selS}); return z ? chr2Unity(z.a.chor) : null; }
 };
 Object.assign(SYNQUENZER, {chr2: CHR2_API});              /* CHR2: Test-API (Objekt, wird nicht umhüllt) */
+/* CHR2R (Auftrag 2/3, Xander: „realistische Chöre … ohne Artefakte“): ein errechneter Chor einer Gruppe mit grp.echt = 1 (neue Chöre;
+   ältere Projekte ohne das Feld klingen unverändert) singt wie echte Sänger statt wie Kopien des Leads – je Stimme und Kopie:
+   eigener Zeit-Versatz 10–40 ms (zusammen mit dem Versatz der Kopie), eigene Tonhöhen-Schwankung (± 5 Cent, langsames Schweben und
+   langsames Vibrato), eigene Formant-Lage (± 2–5 %: Stimme ≠ Kopie), Atem/Hauch im Vokal nur zu 30 % und Konsonanten/Zischlaute nur
+   zu 12 % (−18 dB) – die kommen vom Lead. Gerechnet im Chor-Worker (renderMulti), der Plan trägt die Felder (plan.chr2). Selbst
+   gesungene, getrennte (CHR2) und duplizierte Stimmen (eigener Take) bleiben, wie sie sind. */
+const CHR2R = {ms: [14, 27, 19, 35, 23, 31, 12, 38, 17, 29, 25, 33], f: [1.035, 0.97, 1.05, 0.955, 1.02, 0.975, 1.045, 0.96, 1.025, 0.965, 1.04, 0.98], d: 5, r: 0.3, c: 0.12};
+const chr2RealOn = c => !!(c && c.v === 2 && c.grp && c.grp.echt === 1);
+function chr2RealPlan(pl, a, v, ci, C) {
+  const c = a && a.chor; if (!chr2RealOn(c) || !v || v.take || chr2Unity(c)) return pl;
+  const vi = Math.max(0, c.voices.indexOf(v)), k = (vi * 2 + ci) % CHR2R.ms.length;
+  const base = pl || {mode: 'soft', notes: [{t0: 0, t1: 1e6, m: 60, to: 60, s: 0, e: 0.06}]};   // Unisono ohne Verschiebung: trotzdem eine eigene Stimme
+  return Object.assign({}, base, {chr2: {ms: Math.max(0, CHR2R.ms[k] - (C && isNum(C.ms) ? C.ms : 0)), f: CHR2R.f[k], d: CHR2R.d, s: 1 + vi * 7 + ci * 3, r: CHR2R.r, c: CHR2R.c}});
+}
 /* CHR2-END */
 /* MTX-BEGIN ===================== Matrix: Ziehen über alle Zeilen, Wahl beim Ablegen, Szene / Spur duplizieren (Paket MTX, Xander 07.11. (13) FL-D)
    Xander: „wenn ich einen Clip von der unteren Hälfte nach oben ziehen will, komme ich nicht hoch … wenn ich einen Clip halte und in einen

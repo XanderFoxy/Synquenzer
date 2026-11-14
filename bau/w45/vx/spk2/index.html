@@ -97523,6 +97523,7 @@ function spk1RulerDraw(U) {
     if (b % step === 0) { x.strokeStyle = '#9aa0aa'; x.beginPath(); x.moveTo(bx, 3); x.lineTo(bx, H); x.stroke(); x.fillStyle = '#ece8df'; x.font = '600 10px ' + font; x.fillText(String(b + 1), bx + 3, 12); }
     if (showBeat) { x.strokeStyle = '#3a3f4a'; for (let q = 1; q < g.num; q++) { const qx = Math.round(spk1X(U, g.off + b * g.bar + q * g.beat)) + 0.5; x.beginPath(); x.moveTo(qx, H - 7); x.lineTo(qx, H); x.stroke(); } }
   }
+  if (typeof spk2RuDraw === 'function') spk2RuDraw(U, x, W, H);   // SPK2: Loop-Klammern
   const p = U.pos != null ? U.pos : U.cur, px = spk1X(U, p);
   if (px >= -6 && px <= W + 6) { x.fillStyle = U.pos != null ? spk1Var('--play') : '#f4f1ea'; x.beginPath(); x.moveTo(px - 5, H - 9); x.lineTo(px + 5, H - 9); x.lineTo(px, H - 1); x.fill(); }
 }
@@ -97604,13 +97605,13 @@ function spk1Gest(U) {
 function spk1SideGest(U) {   // Tasten: Ziehen = senkrecht rollen, Tipp = Ton · Lineal: Ziehen = waagrecht rollen, Tipp = Abspielposition
   const drag = (node, axis) => {
     let s = null;
-    node.addEventListener('pointerdown', e => { if (!U.meta) return; try { node.setPointerCapture(e.pointerId); } catch (er) {} const r = node.getBoundingClientRect(); s = {id: e.pointerId, x: e.clientX, y: e.clientY, r, v: Object.assign({}, U.v), mv: false}; });
+    node.addEventListener('pointerdown', e => { if (!U.meta) return; try { node.setPointerCapture(e.pointerId); } catch (er) {} const r = node.getBoundingClientRect(); s = {id: e.pointerId, x: e.clientX, y: e.clientY, r, v: Object.assign({}, U.v), mv: false}; if (axis === 'x' && typeof spk2LpDown === 'function') spk2LpDown(U, s, e.clientX - r.left); });   // SPK2: Loop-Klammern
     node.addEventListener('pointermove', e => {
-      if (!s || s.id !== e.pointerId) return; const dx = e.clientX - s.x, dy = e.clientY - s.y; if (!s.mv && Math.hypot(dx, dy) < 8) return; s.mv = true;
+      if (!s || s.id !== e.pointerId) return; if ((s.lp || s.lpT) && spk2LpMove(U, s, e)) return; /* SPK2 */ const dx = e.clientX - s.x, dy = e.clientY - s.y; if (!s.mv && Math.hypot(dx, dy) < 8) return; s.mv = true;
       if (axis === 'y') U.v.mTop = s.v.mTop + dy / U.v.rowH; else U.v.t0 = s.v.t0 - dx / U.v.pps; spk1Clamp(U); spk1Dirty(U, 'all');
     });
     const end = e => {
-      if (!s || s.id !== e.pointerId) return; const q = s; s = null; if (q.mv || e.type === 'pointercancel') return;
+      if (!s || s.id !== e.pointerId) return; const q = s; s = null; if ((q.lp || q.lpT) && spk2LpEnd(U, q, e)) return; /* SPK2 */ if (q.mv || e.type === 'pointercancel') return;
       if (axis === 'y') spk1Tone(Math.round(U.v.mTop - (e.clientY - q.r.top) / U.v.rowH));
       else { U.cur = Math.max(0, Math.min(U.dur, spk1T(U, e.clientX - q.r.left))); if (SPK1.pl && !U.playSel) spk1PlayFrom(U, U.cur); spk1Dirty(U, 'ov'); spk1Dirty(U, 'r'); }
     };
@@ -97728,6 +97729,7 @@ function spk1Layers(U) {
   for (const l of L) h += row(l.id, l.name, 'var(' + l.col + ')', {solo: l.solo, mute: l.mute, vol: l.vol, more: true});
   if (L.length) h += row('rest', 'Rest', 'var(--text-dim)', {solo: R.solo, mute: R.mute, vol: R.vol});
   else h += '<div class="spk1-lr"><span></span><span class="spk1-db" style="grid-column:2/-1;text-align:left;font-family:var(--font-ui);font-size:12px">Noch keine Ebene – Auswahl treffen, dann „In Ebene ▾“</span></div>';
+  if (typeof spk2LpRow === 'function') h = spk2LpRow(U) + h;   // SPK2: Loop → In die Matrix
   const sc = U.ly.scrollTop; U.ly.innerHTML = h; U.ly.scrollTop = sc;
   for (const r of U.ly.querySelectorAll('input[type=range]')) {
     let tm = 0; const lab = r.nextElementSibling, send = () => { tm = 0; spk1Call('layer', {doc: SPK1.doc, was: 'vol', lid: r.dataset.l, v: +r.value}).then(x => { SPK1.last = x; U.meta = x.meta; }, logErr); };
@@ -97775,6 +97777,7 @@ function spk1ViewDd(U, b) {
     on(bf, 'click', () => { spk1Dd(U, null); spk1FitAll(U); });
     on(bq, 'click', () => { spk1Dd(U, null); spk1Leave(U); spk1StartPaint(U); });
     g.append(bt, bf, bq); dd.appendChild(g);
+    if (typeof spk2ViewLp === 'function') spk2ViewLp(U, dd);   // SPK2: Loop setzen
   });
 }
 function spk1IntoDd(U, b) {
@@ -97825,6 +97828,7 @@ function spk1Tap(U, b) {
     case 'solo': case 'mute': { const o = lid === 'rest' ? U.meta.rest : U.meta.layers.find(x => x.id === lid); if (o) spk1Layer(U, a, lid, !o[a]); return; }
     case 'ab': U.ab = !U.ab; spk1Layers(U); if (SPK1.pl && !U.playSel) spk1PlayFrom(U, spk1PlayPos() || U.cur); return;
     case 'lmore': spk1MoreDd(U, b, lid); return;
+    case 'mxdd': case 'mxweg': spk2Tap(U, b, a); return;   // SPK2: Loop → Matrix
     case 'file': spk1Pick(U); return;
     case 'take': spk1FromTake(U, {take: b.dataset.id}); return;
     case 'open': spk1OpenId(U, b.dataset.id); return;
@@ -98406,6 +98410,7 @@ function spk2Each(U, fn) {   // sichtbare Noten: Original + vorhandene Ebenen; V
 }
 const spk2Box = (U, q) => ({xa: spk1X(U, q.t0), xb: spk1X(U, q.t1), ya: (U.v.mTop - q.m - 0.5) * U.v.rowH, h: Math.max(3, U.v.rowH)});
 function spk2OvDraw(U, x) {
+  spk2LpOv(U, x);   // Auftrag 3: Loop-Kanten über dem Spektrum
   if (!U.meta || !U.meta.teil2) return;
   const on = U.tool === 'noten', sel = new Set((U.n2sel || []).map(r => r.lid + '|' + r.id)), W = U.W, H = U.H, rgbOf = {}, fnt = spk1Var('--font-num');
   spk2Each(U, (q, lid, l) => {
@@ -98503,6 +98508,197 @@ SPK1_API.spk2 = {
   page: {finden: () => spk2Finden(SPK1.ui), ueberall: () => spk2Ueberall(SPK1.ui), alle: () => spk2Alle(SPK1.ui), verf: () => spk2VerfNoten(SPK1.ui), zu: (art, refs) => spk2Zu(SPK1.ui, art, refs),
     sel: () => (SPK1.ui && SPK1.ui.n2sel) || [], box: (lid, id) => { const U = SPK1.ui, q = spk2Notes(U, lid).find(x => x.id === id); if (!q) return null; const b = spk2Box(U, q), r = U.mn.getBoundingClientRect(); return {x: r.left + (b.xa + b.xb) / 2, y: r.top + b.ya + b.h / 2, w: b.xb - b.xa, h: b.h}; }}
 };
+/* ---- Auftrag 3: Loop-Klammern auf dem Takt-Lineal → „In die Matrix“ als Audio (Take auf der Spur „Original“, IMP1-Weg) oder als MIDI
+   (Noten der Ebene im Loop → Clip auf einer Synth-Spur, auf das 1/16-Raster). Lineal halten + ziehen = neuer Loop, Klammer ziehen = ändern,
+   Tipp bleibt Abspielposition, Ziehen ohne Halten rollt wie bisher. Ziehen zeichnet nur Lineal + Overlay neu. Ein ↶ für alles (imp1Step). ---- */
+const SPK2_ROLE = {bass: 'bass', pads: 'pad', gesang: 'mel', lead: 'phr'}, SPK2_SND = {bass: 'f-moog-bass', pad: 'f-rom-flaeche', mel: 'f-mini-lead', phr: 'f-mini-lead'};
+const spk2Lp = U => (U && U.loop && U.meta && U.lpDoc === SPK1.doc ? U.loop : null);
+function spk2Nb(U) { const g = spk1Grid0(U); return Math.max(1, Math.ceil((U.dur - g.off) / g.bar - 0.02)); }
+function spk2LpSec(U, L) { const g = spk1Grid0(U); return [g.off + L[0] * g.bar, g.off + L[1] * g.bar]; }
+function spk2LpSet(U, a, b) {
+  const nb = spk2Nb(U); a = Math.max(0, Math.min(nb - 1, Math.round(a))); b = Math.max(a + 1, Math.min(nb, Math.round(b)));
+  U.loop = [a, b]; U.lpDoc = SPK1.doc; spk1Dirty(U, 'r'); spk1Dirty(U, 'ov'); return U.loop;
+}
+const spk2LpTxt = L => 'Takt ' + (L[0] + 1) + (L[1] - L[0] > 1 ? '–' + L[1] : '') + ' · ' + (L[1] - L[0]) + (L[1] - L[0] > 1 ? ' Takte' : ' Takt');
+function spk2RuDraw(U, x, W, H) {   // gleiches Aussehen wie die Import-Klammern: Bernstein-Fläche .18, Klammern 2 px mit 7-px-Haken
+  const L = spk2Lp(U); if (!L) return;
+  const [ta, tb] = spk2LpSec(U, L), x0 = spk1X(U, ta), x1 = spk1X(U, tb); if (x1 < -8 || x0 > W + 8) return;
+  const amb = spk1Var('--amber'); x.save(); x.globalAlpha = 0.18; x.fillStyle = amb; x.fillRect(x0, 0, x1 - x0, H);
+  x.globalAlpha = 1; x.strokeStyle = amb; x.lineWidth = 2;
+  for (const [px, d] of [[x0, 1], [x1, -1]]) { x.beginPath(); x.moveTo(px + 7 * d, H - 2); x.lineTo(px, H - 2); x.lineTo(px, 2); x.lineTo(px + 7 * d, 2); x.stroke(); }
+  x.restore();
+}
+function spk2LpOv(U, x) {
+  const L = spk2Lp(U); if (!L) return; const [ta, tb] = spk2LpSec(U, L), amb = spk1Var('--amber');
+  x.save(); x.strokeStyle = amb; x.globalAlpha = 0.6; x.lineWidth = 1;
+  for (const t of [ta, tb]) { const px = Math.round(spk1X(U, t)) + 0.5; if (px < 0 || px > U.W) continue; x.beginPath(); x.moveTo(px, 0); x.lineTo(px, U.H); x.stroke(); }
+  x.restore();
+}
+// Lineal: Kante ±18 px = Klammer ziehen; sonst nach 380 ms Halten neuer Loop ab dem Takt unter dem Finger
+function spk2LpDown(U, s, px) {
+  const L = spk2Lp(U), g = spk1Grid0(U);
+  if (L) {
+    const da = Math.abs(px - spk1X(U, g.off + L[0] * g.bar)), db = Math.abs(px - spk1X(U, g.off + L[1] * g.bar));
+    if (Math.min(da, db) <= 18) { s.lp = {an: da <= db ? L[1] : L[0]}; s.mv = true; return; }
+  }
+  if (spk1T(U, px) < g.off) return;
+  s.lpT = setTimeout(() => {
+    s.lpT = 0; if (s.mv) return;
+    const an = Math.floor((spk1T(U, px) - g.off) / g.bar); s.lp = {an}; s.mv = true; spk2LpSet(U, an, an + 1);
+    try { haptic('tick'); } catch (e) {} spk1Stat(U, 'Loop ' + spk2LpTxt(U.loop) + ' · weiter ziehen');
+  }, 380);
+}
+function spk2LpMove(U, s, e) {
+  if (s.lpT) { if (Math.hypot(e.clientX - s.x, e.clientY - s.y) >= 8) { clearTimeout(s.lpT); s.lpT = 0; } return false; }
+  if (!s.lp) return false;
+  const g = spk1Grid0(U), b = Math.round((spk1T(U, e.clientX - s.r.left) - g.off) / g.bar), an = s.lp.an;
+  const L = b > an ? spk2LpSet(U, an, b) : b < an ? spk2LpSet(U, b, an) : spk2LpSet(U, an, an + 1);
+  spk1Stat(U, 'Loop ' + spk2LpTxt(L)); return true;
+}
+function spk2LpEnd(U, q) {
+  if (q.lpT) { clearTimeout(q.lpT); q.lpT = 0; return false; }
+  if (!q.lp) return false;
+  spk1Layers(U); spk1Stat(U, 'Loop ' + spk2LpTxt(U.loop) + ' · „In die Matrix ▾“ in der Ebenen-Liste'); return true;
+}
+// Zeile oben in der Ebenen-Liste (nur mit Loop): Loop Takt a–b │ In die Matrix ▾ │ ✕
+function spk2Css() {
+  if (document.getElementById('spk2Css')) return; const s = document.createElement('style'); s.id = 'spk2Css';
+  s.textContent = '.spk2-lp{display:flex;align-items:center;gap:6px;height:46px;padding:0 6px 0 8px;border-bottom:1px solid var(--line);background:linear-gradient(90deg,rgba(255,178,46,.12),transparent)}' +
+    '.spk2-lp>svg{flex:none;color:var(--amber)}.spk2-lpt{flex:1 1 auto;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font:600 13px/1 var(--font-ui);color:var(--amber)}' +
+    '.spk2-lp>button{flex:none;height:44px;min-width:44px;margin:0;padding:0 10px;border-radius:6px;font:700 13px/1 var(--font-ui)}.spk2-lp>.spk2-lx{width:44px;padding:0;font-size:18px}';
+  document.head.appendChild(s);
+}
+function spk2LpRow(U) {
+  const L = spk2Lp(U); if (!L) return ''; spk2Css();
+  return '<div class="spk2-lp"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M7 3H3v14h4M13 3h4v14h-4"/></svg>' +
+    '<span class="spk2-lpt">Loop ' + esc(spk2LpTxt(L)) + '</span><button class="rb spk2-mx" data-a="mxdd" aria-label="Loop in die Matrix: als Audio oder als MIDI">In die Matrix ▾</button>' +
+    '<button class="rb spk2-lx" data-a="mxweg" aria-label="Loop entfernen">✕</button></div>';
+}
+function spk2Tap(U, b, a) {
+  if (a === 'mxweg') { U.loop = null; spk1Dd(U, null); spk1Layers(U); spk1Dirty(U, 'r'); spk1Dirty(U, 'ov'); spk1Stat(U, 'Loop entfernt'); return; }
+  if (a === 'mxdd') spk2MxDd(U, b);
+}
+// Ansicht ▾: Loop ohne Geste (4 Takte ab der Abspielposition)
+function spk2ViewLp(U, dd) {
+  dd.appendChild(el('h5', '', 'Loop'));
+  const x = el('button', 'mbtn rb spk1-ck', 'Loop setzen · 4 Takte ab Position'); x.dataset.mx = 'set';
+  on(x, 'click', () => { spk1Dd(U, null); const g = spk1Grid0(U), a = Math.max(0, Math.floor((U.cur - g.off) / g.bar + 1e-6)); spk2LpSet(U, a, a + 4); spk1Layers(U); spk1Stat(U, 'Loop ' + spk2LpTxt(U.loop) + ' · Klammern im Lineal ziehen'); });
+  dd.appendChild(x); dd.appendChild(el('p', '', 'Oder: Lineal halten und ziehen.'));
+}
+/* ---- In die Matrix ---- */
+function spk2LpNotes(U, lid) {   // sichtbare Noten der Ebene mit Anfang im Loop (wie die Kästchen: Vorschläge erst ab „Sicher ab“)
+  const L = spk2Lp(U); if (!L) return []; const [ta, tb] = spk2LpSec(U, L);
+  return spk2Notes(U, lid).filter(q => (q.st !== 'neu' || q.conf >= U.opt.n2thr) && (q.t0 != null ? q.t0 : q.a) >= ta - 1e-4 && (q.t0 != null ? q.t0 : q.a) < tb - 1e-4);
+}
+function spk2MxOk(i) { const tr = S.tracks[i]; return !!tr && tr.kind === 'synth' && !tr.stimme && !tr.orig && !percIs(tr); }
+function spk2Free(t) { const tr = S.tracks[t]; if (!tr) return -1; for (let k = 0; k < NS(); k++) { const s = (R.selS + k) % NS(); if (!tr.clips[s]) return s; } return -1; }
+function spk2Want(U, lid, qs) {   // passende Rolle: Art der Ebene, sonst nach Tonlage der Noten
+  const l = U.meta.layers.find(x => x.id === lid), w = l && SPK2_ROLE[l.art]; if (w) return w;
+  const m = qs.length ? qs.reduce((a, q) => a + q.m, 0) / qs.length : 60; return m < 48 ? 'bass' : 'phr';
+}
+function spk2MxDef(U, want) {   // Standard-Ziel: Spur mit passender Rolle und freier Szene, sonst neue Spur, sonst irgendeine mit Platz
+  const roleOf = i => { try { return sx11Role(i, S.tracks[i].clips.find(Boolean) || null); } catch (e) { return 'phr'; } };
+  const ok = [], alt = want === 'mel' ? 'phr' : want === 'phr' ? 'mel' : null;
+  for (let i = 0; i < NT(); i++) if (spk2MxOk(i) && spk2Free(i) >= 0) ok.push(i);
+  const hit = ok.find(i => roleOf(i) === want); if (hit != null) return hit;
+  const h2 = alt && ok.find(i => roleOf(i) === alt); if (h2 != null) return h2;
+  if (canAddTrack()) return 'neu';
+  return ok.length ? ok[0] : -1;
+}
+function spk2MxDd(U, b) {
+  const L = spk2Lp(U); if (!L || U.busy) return;
+  const lid = U.act || 'orig', l = U.meta.layers.find(x => x.id === lid), drums = !!(l && l.art === 'drums'), qs = spk2LpNotes(U, lid), want = spk2Want(U, lid, qs);
+  if (U.mxFor !== lid + '|' + L.join('-')) { U.mxFor = lid + '|' + L.join('-'); U.mxT = spk2MxDef(U, want); }
+  if (U.mxT !== 'neu' && !spk2MxOk(U.mxT)) U.mxT = spk2MxDef(U, want);
+  spk1Dd(U, b, dd => {
+    dd.appendChild(el('h5', '', 'Loop ' + esc(spk2LpTxt(L)) + ' · ' + esc(spk2LName(U, lid))));
+    const B = (g, t, k, fn, dis) => { const x = el('button', 'mbtn rb spk1-ck', esc(t)); x.dataset.mx = k; x.disabled = !!dis; on(x, 'click', fn); g.appendChild(x); return x; };
+    const ga = el('div', 'spk1-g'); B(ga, 'Als Audio → Spur „Original“', 'audio', () => { spk1Dd(U, null); spk2MxAudio(U); }); dd.appendChild(el('h5', '', 'Als Audio')); dd.appendChild(ga);
+    dd.appendChild(el('h5', '', 'Als MIDI · Spur'));
+    const gt = el('div', 'spk1-g'), pick = v => { U.mxT = v; spk2MxDd(U, b); };
+    for (let i = 0; i < NT(); i++) if (spk2MxOk(i)) B(gt, (U.mxT === i ? '✓ ' : '') + S.tracks[i].name + (spk2Free(i) < 0 ? ' (voll)' : ''), 't' + i, () => pick(i), spk2Free(i) < 0);
+    if (canAddTrack()) B(gt, (U.mxT === 'neu' ? '✓ ' : '') + '+ Neue Spur', 'tneu', () => pick('neu'));
+    dd.appendChild(gt);
+    const gm = el('div', 'spk1-g'); B(gm, drums ? 'Drums: keine Tonhöhe' : qs.length ? 'Als MIDI (' + qs.length + (qs.length > 1 ? ' Noten)' : ' Note)') : 'Als MIDI (Noten erst finden)', 'midi', () => { spk1Dd(U, null); spk2MxMidi(U); }, drums || U.mxT === -1);
+    dd.appendChild(gm);
+    dd.appendChild(el('p', '', 'Quelle = gewählte Ebene in der Liste. MIDI liegt auf dem 1/16-Raster, den Klang danach frei wählen.'));
+  });
+}
+function spk2MxGrid(U) { const g = U.meta.grid || {}; return {bpm: +g.bpm || S.bpm, ts: g.ts || '4/4'}; }
+function spk2MxDone(res, msg) {
+  try { if (UI.heads && EL.grid) buildGrid(); if (UI.songView) svLayout(); } catch (e) { logErr(e); }
+  try { haptic('pop'); } catch (e) {}
+  toast(msg, {label: '↶ Rückgängig', fn: () => undo()}); SPK1.mx = res; return res;
+}
+async function spk2MxAudio(U) {
+  const L = spk2Lp(U); if (!L || U.busy) return null;
+  if (!tkAudioOk()) { spk1Stat(U, 'Audio nur auf der eigenen Seite'); return null; }
+  const lid = U.act || 'orig', sr = U.meta.sr, [ta, tb] = spk2LpSec(U, L), a = Math.round(ta * sr), n = Math.round(tb * sr) - a, G = spk2MxGrid(U), nb = L[1] - L[0];
+  U.busy = 'matrix'; spk1BtnState(U); spk1Stat(U, 'Loop → Matrix · rechne Audio …');
+  let r; try { r = await spk1Call('render', {doc: SPK1.doc, mix: lid, a: Math.max(0, a), b: Math.min(U.meta.n, a + n)}); }
+  catch (e) { logErr(e); spk1Stat(U, 'Loop → Matrix: ' + (e.message || e)); return null; }
+  finally { U.busy = null; spk1BtnState(U); }
+  const x = new Float32Array(n), o = Math.max(0, -a), k = 1 / r.ch.length;   // mono (Takes sind mono); vor dem Anfang / nach dem Ende = Stille
+  for (const c of r.ch) for (let i = 0; i < c.length && o + i < n; i++) x[o + i] += c[i] * k;
+  const pcm = new Int16Array(n); for (let i = 0; i < n; i++) { const v = x[i] * 32767; pcm[i] = v > 32767 ? 32767 : v < -32767 ? -32767 : Math.round(v); }
+  const nm = (spk2LName(U, lid) + ' · Takt ' + (L[0] + 1) + '–' + L[1]).slice(0, 60);
+  if (R.songPlay) songPlayEnd(true);
+  const res = imp1Step('Loop in die Matrix (Audio)', () => {
+    const st = imp1OrigT(); if (st < 0) { toast('Kein Platz für die Spur „Original“ – eine Zusatzspur leeren'); return null; }
+    const s = spk2Free(st); if (s < 0) { toast('Keine freie Szene auf „Original“'); return null; }
+    imp1Prep({bpm: G.bpm, ts: G.ts});   // Projekt-Tempo wie beim Import (nur solange noch kein Audio im Projekt liegt)
+    const tk = tkAddPcmTake(pcm, sr, 'import'), m = S.takes[tk.id]; m.route = 'datei'; m.name = nm; m.imp = {bpm: G.bpm, ts: G.ts, t1: 0};
+    S.tracks[st].clips[s] = imp1Clip(tk.id, 0, nb, {takt: (tb - ta) / nb}, G.ts, s); clipChanged(st, s);
+    return {kind: 'audio', track: st, scene: s, take: tk.id, a: L[0], b: L[1], lid};
+  });
+  if (!res) { spk1Stat(U, 'Loop → Matrix: nicht möglich'); return null; }
+  try { tkTrackResync(res.track); } catch (e) { logErr(e); }
+  spk1Stat(U, 'Loop ' + spk2LpTxt(L) + ' → Szene ' + (res.scene + 1) + ' · ' + S.tracks[res.track].name + ' (Audio)');
+  return spk2MxDone(res, 'Loop ' + (L[0] + 1) + '–' + L[1] + ' → Szene ' + (res.scene + 1) + ' · ' + S.tracks[res.track].name + ' · ' + S.bpm + ' BPM');
+}
+async function spk2MxMidi(U) {
+  const L = spk2Lp(U); if (!L || U.busy) return null;
+  const lid = U.act || 'orig', l = U.meta.layers.find(x => x.id === lid); if (l && l.art === 'drums') return null;
+  let qs = spk2LpNotes(U, lid); const [ta, tb] = spk2LpSec(U, L);
+  if (!qs.length) {   // noch nichts erkannt: erst Noten im Loop-Bereich finden (eigener ↶ der Spektral-Seite), dann was da ist
+    const r = await spk2Run(U, 'noten', {lid, sel: [{art: 'zeit', t0: ta, t1: tb, kt: 0}]}, 'Noten im Loop', x => x.neu + ' Noten im Loop gefunden');
+    if (!r) return null; qs = spk2LpNotes(U, lid);
+    if (!qs.length) { spk1Stat(U, 'Keine Noten im Loop – Ebene oder Bereich wählen'); return null; }
+  }
+  const G = spk2MxGrid(U), g = spk1Grid0(U), nb = L[1] - L[0], spQ = 60 / G.bpm, stepS = g.beat / 4, stepQ = stepS / spQ, LQ = nb * tsBeats(tsNorm(G.ts));
+  const want = spk2Want(U, lid, qs), key = lid + '|' + L.join('-'), sel = U.mxFor === key && U.mxT != null ? U.mxT : spk2MxDef(U, want);
+  const notes = [];
+  for (const q of qs) {
+    const s0 = q.t0 != null ? q.t0 : q.a, s1 = q.t1 != null && q.t1 > s0 ? q.t1 : Math.max(q.b, s0 + stepS);
+    const t = Math.max(0, Math.round((s0 - ta) / stepS)) * stepQ; if (t >= LQ - 1e-9) continue;
+    const d = Math.min(LQ - t, Math.max(1, Math.round((s1 - s0) / stepS)) * stepQ);
+    notes.push({t: +t.toFixed(6), d: +d.toFixed(6), n: Math.max(0, Math.min(127, Math.round(q.m))), v: Math.max(0.35, Math.min(1, +q.v || 0.8))});
+  }
+  if (!notes.length) { spk1Stat(U, 'Keine Noten im Loop'); return null; }
+  if (R.songPlay) songPlayEnd(true);
+  const res = imp1Step('Loop in die Matrix (MIDI)', () => {
+    let t = sel;
+    if (t === 'neu' || t == null || t < 0) {
+      if (!canAddTrack()) { toast('Keine Spur frei – eine Spur wählen'); return null; }
+      const i = NT(), nt = newSynthTrack(i, SPK2_SND[want] || 'f-mini-lead'); nt.name = (l ? l.name : want === 'bass' ? 'Bass' : 'Lead').slice(0, 20); restoreTrack(i, JSON.stringify(nt)); t = i;
+      if (!S.tracks[t]) return null;
+    }
+    if (!spk2MxOk(t)) { toast('Spur passt nicht'); return null; }
+    const s = spk2Free(t); if (s < 0) { toast('Keine freie Szene auf ' + S.tracks[t].name); return null; }
+    imp1Prep({bpm: G.bpm, ts: G.ts});
+    const ky = Object.assign({}, sceneKeyOf(s) || S.key, {src: 'auto'}), c = normClip({len: Math.max(1, Math.min(64, nb)), key: ky, notes, ts: tsNorm(G.ts) || undefined}, 'synth', S.key);
+    if (!c || !c.notes.length) return null;
+    S.tracks[t].clips[s] = c; clipChanged(t, s);
+    return {kind: 'midi', track: t, scene: s, notes: c.notes.length, neu: sel === 'neu', a: L[0], b: L[1], lid};
+  });
+  if (!res) { spk1Stat(U, 'Loop → Matrix: nicht möglich'); return null; }
+  U.mxFor = null;
+  spk1Stat(U, 'Loop ' + spk2LpTxt(L) + ' → Szene ' + (res.scene + 1) + ' · ' + S.tracks[res.track].name + ' (' + res.notes + ' Noten)');
+  return spk2MxDone(res, res.notes + ' Noten → Szene ' + (res.scene + 1) + ' · ' + S.tracks[res.track].name + ' · Klang frei wählbar');
+}
+SPK1_API.spk2.loop = {set: (a, b) => { const U = SPK1.ui; const r = spk2LpSet(U, a, b); spk1Layers(U); return r; }, get: () => spk2Lp(SPK1.ui), weg: () => spk2Tap(SPK1.ui, null, 'mxweg'),
+  sec: () => { const L = spk2Lp(SPK1.ui); return L && spk2LpSec(SPK1.ui, L); }, audio: () => spk2MxAudio(SPK1.ui), midi: t => { const U = SPK1.ui, L = spk2Lp(U); if (t !== undefined && L) { U.mxT = t; U.mxFor = (U.act || 'orig') + '|' + L.join('-'); } return spk2MxMidi(U); },
+  notes: lid => spk2LpNotes(SPK1.ui, lid || SPK1.ui.act || 'orig'), last: () => SPK1.mx || null, ziel: () => SPK1.ui.mxT};
 /* SPK2-END */
 /* ===== KF1-BEGIN (Paket KF1, Klang-Feinschliff Teil 1 aus der Ur-Roadmap §18 „Klang“; Xander: „Können wir davon noch was machen?“ → ja) =====
    Sechs Wünsche, jeder mit neutralem Standard (= genau der Klang von vorher, alte Projekte bitgleich):

@@ -41,6 +41,23 @@ H += [
   ("aehn: 'Beispiel ziehen oder antippen'}[k];\n",
    "aehn: 'Beispiel ziehen oder antippen', noten: 'Note antippen oder Kästchen ziehen'}[k];   // SPK2: Noten\n"),
 ]
+H += [
+  # Auftrag 3: Loop-Klammern auf dem Takt-Lineal (Zeichnen, Halten+Ziehen, Kante ziehen), Zeile „In die Matrix“ in der Ebenen-Liste, Ansicht ▾ Loop
+  ("  const p = U.pos != null ? U.pos : U.cur, px = spk1X(U, p);\n",
+   "  if (typeof spk2RuDraw === 'function') spk2RuDraw(U, x, W, H);   // SPK2: Loop-Klammern\n  const p = U.pos != null ? U.pos : U.cur, px = spk1X(U, p);\n"),
+  ("s = {id: e.pointerId, x: e.clientX, y: e.clientY, r, v: Object.assign({}, U.v), mv: false}; });",
+   "s = {id: e.pointerId, x: e.clientX, y: e.clientY, r, v: Object.assign({}, U.v), mv: false}; if (axis === 'x' && typeof spk2LpDown === 'function') spk2LpDown(U, s, e.clientX - r.left); });   // SPK2: Loop-Klammern"),
+  ("if (!s || s.id !== e.pointerId) return; const dx = e.clientX - s.x, dy = e.clientY - s.y;",
+   "if (!s || s.id !== e.pointerId) return; if ((s.lp || s.lpT) && spk2LpMove(U, s, e)) return; /* SPK2 */ const dx = e.clientX - s.x, dy = e.clientY - s.y;"),
+  ("if (!s || s.id !== e.pointerId) return; const q = s; s = null;",
+   "if (!s || s.id !== e.pointerId) return; const q = s; s = null; if ((q.lp || q.lpT) && spk2LpEnd(U, q, e)) return; /* SPK2 */"),
+  ("  const sc = U.ly.scrollTop; U.ly.innerHTML = h; U.ly.scrollTop = sc;\n",
+   "  if (typeof spk2LpRow === 'function') h = spk2LpRow(U) + h;   // SPK2: Loop → In die Matrix\n  const sc = U.ly.scrollTop; U.ly.innerHTML = h; U.ly.scrollTop = sc;\n"),
+  ("    case 'lmore': spk1MoreDd(U, b, lid); return;\n",
+   "    case 'lmore': spk1MoreDd(U, b, lid); return;\n    case 'mxdd': case 'mxweg': spk2Tap(U, b, a); return;   // SPK2: Loop → Matrix\n"),
+  ("    g.append(bt, bf, bq); dd.appendChild(g);\n",
+   "    g.append(bt, bf, bq); dd.appendChild(g);\n    if (typeof spk2ViewLp === 'function') spk2ViewLp(U, dd);   // SPK2: Loop setzen\n"),
+]
 extra = os.path.join(D, 'haken2.py')
 if os.path.exists(extra):
   exec(open(extra, encoding='utf-8').read())
