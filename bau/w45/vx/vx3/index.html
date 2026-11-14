@@ -103946,6 +103946,7 @@ function vx3Lead(mk, F, an, sr, H, FH, TH, lead) {
       let b = s0 - 2; while (b - 1 >= 0 && kind[b - 1] === 1 && s0 - 1 - b < 3) b--;    // die Behauchung: ≤ 3 stimmlose Rahmen nach Stille gehören dazu
       if (b > 0 && kind[b - 1] === 0) s0 = b;
     }
+    if (k && s0 * fs <= mk[k - 1] && P.own !== false) { lead[k] = old(k); continue; }   // P6: die Marke davor liegt im selben Konsonanten (dessen Stück) → wie 4.64
     const pre = s0 > 0 ? kind[s0 - 1] : 0;                                              // davor: 2 = gesungen, 0 = still
     if (gp && pre === 2 && P.gap !== false) continue;                                   // P3: Lücke nach Gesang = Ausklang des Vorgängers, kein Anlauf
     if (!gp && pre === 2 && rms && zcr) {                                               // zwischen zwei gesungenen Läufen ohne Lücke:
