@@ -246,20 +246,84 @@ if (TEIL.includes('b')) {   // quer 926x428: Erreichbarkeit der Blaetter, Kennun
   await P.ctx.close();
 }
 
-if (TEIL.includes('c')) {   // Leistung: 3-min-Lied
+if (TEIL.includes('c')) {   // Leistung + Speicher: 3-min-Lied
   const P = await page(428, 926), {p} = P;
   const L3 = {name: 'Lang', sek: 180, gap: 1, noten: []}; const sc = [220, 246.942, 277.183, 293.665, 329.628, 369.994, 415.305, 440];
-  for (let t = 2, k = 0; t < 176; t += 0.5, k++) L3.noten.push([t, t + 0.45, sc[(k * 3) % 8]]);
+  for (let t = 2, k = 0; t < 176; t += 0.5, k++) L3.noten.push([t, t + 0.42, sc[(k * 3) % 8]]);
   const tl = Date.now(); const s0 = await p.evaluate(SRC, L3); await idle(p); log('c0-laden-noten', {ms: Date.now() - tl, n: s0.notes.length});
-  const r = await p.evaluate(async () => { const N = SPK1.ui.meta.teil2.notes.L1, q = N[Math.floor(N.length / 2)], o = {};
-    let t = performance.now(); const a = await __spk6.plan('L1', [{id: q.id, dm: 2, dt: 0}]); spk1Got(SPK1.ui, a); o.anwenden1Note = Math.round(performance.now() - t);
-    t = performance.now(); await __spk6.plan('L1', [{id: N[5].id, dm: 1, dt: 0}], 1, [N[5].a - 0.4, N[5].a + 7.6]); o.vorhoeren = Math.round(performance.now() - t);
-    t = performance.now(); const c = await __spk6.chor('L1', 3, 'terz'); spk1Got(SPK1.ui, c); o.chor3 = Math.round(performance.now() - t);
-    t = performance.now(); const f = await __spk6.fx('L1', {hall: 0.5, echo: 0.4}); spk1Got(SPK1.ui, f); o.fx = Math.round(performance.now() - t);
-    const tb = []; for (const k of [100, 101, 102, 103]) { const a = performance.now(); await spk1Call('block', {doc: SPK1.doc, k, mix: null}); tb.push(Math.round(performance.now() - a)); } o.blockMs = tb; o.blockDauerMs = 341;
-    t = performance.now(); __spk.play(90); while (!(SPK1.pl && SPK1.pl.src.length) && performance.now() - t < 30000) await new Promise(z => setTimeout(z, 10)); o.startMitFxMs = Math.round(performance.now() - t); await new Promise(z => setTimeout(z, 3000)); o.posNach3s = +(__spk.pos() || 0).toFixed(2); __spk.stop();
+  const wk = () => p.workers().find(w => true);
+  const mem = async () => { const w = p.workers()[0]; if (!w) return null; return w.evaluate(id => { const d = K.docs.get(id); if (!d) return null; let by = 0; for (const x of (d.a6 || new Map()).values()) by += x.byteLength; return {a6: d.a6 ? d.a6.size : 0, mb: +(by / 1e6).toFixed(1), undo: d.undo.length, undoMbStreifen: +(d.undo.reduce((a, u) => a + u.bytes, 0) / 1e6).toFixed(1)}; }, s0.id); };
+  const r = await p.evaluate(async () => { const N = SPK1.ui.meta.teil2.notes.L1, o = {anwenden: []};
+    for (let k = 0; k < 12; k++) { const q = N[20 + k * 7]; const t = performance.now(); const a = await __spk6.plan('L1', [{id: q.id, dm: 1, dt: 0}]); spk1Got(SPK1.ui, a); o.anwenden.push(Math.round(performance.now() - t)); }
+    let t = performance.now(); await __spk6.plan('L1', [{id: N[5].id, dm: 1, dt: 0}], 1, [N[5].a - 0.4, N[5].a + 7.6]); o.vorhoeren = Math.round(performance.now() - t);
     return o; });
-  log('c1-leistung-3min', r);
+  log('c1-anwenden-12x', Object.assign(r, {speicher: await mem()}));
+  const r2 = await p.evaluate(async () => { const o = {}; let t = performance.now(); const c = await __spk6.chor('L1', 4, 'satz'); spk1Got(SPK1.ui, c); o.chor4 = Math.round(performance.now() - t);
+    t = performance.now(); const f = await __spk6.fx('L1', {hall: 0.5, echo: 0.4, lp: 6000}); spk1Got(SPK1.ui, f); o.fx = Math.round(performance.now() - t);
+    for (const l of SPK1.ui.meta.layers.filter(x => x.r6 === 'chor')) { const g = await __spk6.fx(l.id, {hall: 0.3}); spk1Got(SPK1.ui, g); }
+    const tb = []; for (let k = 100; k < 108; k++) { const a = performance.now(); await spk1Call('block', {doc: SPK1.doc, k, mix: null}); tb.push(Math.round(performance.now() - a)); } o.bloeckeMs = tb; o.blockDauerMs = 341;
+    t = performance.now(); __spk.play(60); while (!(SPK1.pl && SPK1.pl.src.length) && performance.now() - t < 30000) await new Promise(z => setTimeout(z, 10)); o.startMs = Math.round(performance.now() - t);
+    const P0 = SPK1.pl; let gaps = 0; const t1 = performance.now(); while (performance.now() - t1 < 6000) { await new Promise(z => setTimeout(z, 50)); if (SPK1.pl === P0 && P0.pend >= 1 && P0.src.length === 0) gaps++; } o.posNach6s = +(__spk.pos() || 0).toFixed(2); o.leerlaufProben = gaps; __spk.stop();
+    return o; });
+  log('c2-chor-fx-abspielen', Object.assign(r2, {speicher: await mem()}));
+  await P.ctx.close();
+}
+
+if (TEIL.includes('e')) {   // Zusatz: Chor-Intervalle sauber gemessen, Tiefpass, Kopie einer Audio-Ebene, Transponieren + Note, Chor ohne Noten, Fertig mit Entwurf
+  const P = await page(428, 926), {p, tap, drag} = P;
+  const s0 = await p.evaluate(SRC, Object.assign({}, LEG, {pad: 0})); await idle(p); log('e0-quelle', s0.notes);
+  const ci = await p.evaluate(async () => { const sr = 48000, out = {}; const exp = {57: 220, 62: 293.665, 59: 246.942};
+    const meas = async (lid, segs) => { const r = await __spk.render(lid), x = __q.mono(r); return segs.map(([a, b, f]) => +__q.ct(__q.pitch(__q.win(x, sr, a, b), sr, f * 0.84, f * 1.19), f).toFixed(1)); };
+    for (const art of ['terz', 'quinte', 'oktave', 'dopplung']) { const c = await __spk6.chor('L1', 2, art); const v = c.voices; out[art] = [];
+      for (const z of v) { const iv = {'t+': null, 't-': null, 'q+': null, 'q-': null, 'o+': 12, 'o-': -12, u: 0}[z.iv];
+        // Soll aus Tonart D-Dur: A3→Cis4/Fis3 (Terz), E4/D3 (Quinte); D4→Fis4/H3, A4/G3; B3→D4/G3, Fis4/E3
+        const T = {'t+': [4, 4, 3], 't-': [-3, -3, -4], 'q+': [7, 7, 7], 'q-': [-7, -7, -7], 'o+': [12, 12, 12], 'o-': [-12, -12, -12], u: [0, 0, 0]}[z.iv];
+        const segs = [[1.3, 1.7, 220 * Math.pow(2, T[0] / 12)], [2.3, 2.7, 293.665 * Math.pow(2, T[1] / 12)], [3.3, 3.7, 246.942 * Math.pow(2, T[2] / 12)]];
+        const m = await meas(z.lid, segs); out[art].push({iv: z.iv, streuCt: z.ct, gemessenCt: m, abwVomZiel: m.map(c => +(c - z.ct).toFixed(1))}); }
+      const u = await __spk.undo(); spk1Got(SPK1.ui, u); }
+    // Klicks in einer Chorstimme an den Notengrenzen
+    const c = await __spk6.chor('L1', 2, 'terz'); const r = await __spk.render(c.voices[0].lid), x = __q.mono(r);
+    out.klickChor = [__q.click(x, sr, 1.96, 1.3, 1.7), __q.click(x, sr, 2.96, 1.3, 1.7)];
+    const u = await __spk.undo(); spk1Got(SPK1.ui, u);
+    return out; });
+  log('e1-chor-intervalle', ci);
+  const lp = await p.evaluate(async () => { const sr = 48000, r0 = await __spk.render('L1'); const o = {};
+    for (const v of [200, 1000, 3000, 10000, 20000]) { const f = await __spk6.fx('L1', {lp: v}); const r = await __spk.render('L1'), w = y => __q.win(__q.mono(y), sr, 1.2, 1.9); o['lp' + v] = +__q.db(__q.band(w(r), sr, 2500, 6000), __q.band(w(r0), sr, 2500, 6000)).toFixed(1); }
+    const f = await __spk6.fx('L1', {lp: 0}); spk1Got(SPK1.ui, f); return o; });
+  log('e2-tiefpass-wirkung-dB-ueber-2500Hz', lp);
+  // Regler-Abbildung Tiefpass: welcher Bruchteil des Reglerwegs liegt im Bereich 200 Hz…5 kHz?
+  log('e2b-tiefpass-regler', {min: 0, max: 20000, step: 100, anteilWeg200bis5000: +((5000 - 200) / 20000).toFixed(3), hinweis: '0 = aus, 100 → 200 Hz (stärkste Wirkung), 20000 ≈ aus'});
+  // Kopie einer schon umgesetzten Ebene (Audio-Ebene)
+  const da = await p.evaluate(async () => { const N = SPK1.ui.meta.teil2.notes.L1, q = N.find(z => z.m === 62); let a = await __spk6.plan('L1', [{id: q.id, dm: 2, dt: 0}]); spk1Got(SPK1.ui, a);
+    const r1 = await __spk.render('L1'); const d = await __spk6.dup('L1'); spk1Got(SPK1.ui, d); const r2 = await __spk.render(d.lid);
+    const N2 = SPK1.ui.meta.teil2.notes[d.lid], q2 = N2.find(z => z.m === 59); a = await __spk6.plan(d.lid, [{id: q2.id, dm: -2, dt: 0}]); spk1Got(SPK1.ui, a);
+    const r1b = await __spk.render('L1'), r2b = await __spk.render(d.lid), sr = 48000, x = __q.mono(r2b);
+    return {kopieGleich: __q.maxdiff(r1, r2), quelleUnberuehrt: __q.maxdiff(r1, r1b), kopieB3nachA3ct: +__q.ct(__q.pitch(__q.win(x, sr, 3.3, 3.7), sr, 180, 260), 220).toFixed(1), kopieD4nachE4ct: +__q.ct(__q.pitch(__q.win(x, sr, 2.3, 2.7), sr, 280, 390), 329.628).toFixed(1), a6b: SPK1.ui.meta.layers.find(l => l.id === d.lid).a6.b}; });
+  log('e3-kopie-audio-ebene', da);
+  // Ganze Ebene +1 per Touch, danach eine Note +2 im Editor → 3 Halbtöne
+  let m = await btn(p, '#spk1Sheet .spk1-lr[data-l="L1"] [data-a="lmore"]'); await tap(m); m = await btn(p, '#spk1Sheet .spk1-dd [data-s6="tr1"]'); await tap(m); await idle(p);
+  const tr = await p.evaluate(async () => { const sr = 48000, r = await __spk.render('L1'), x = __q.mono(r); return {A3: +__q.ct(__q.pitch(__q.win(x, sr, 1.3, 1.7), sr, 190, 290), 233.082).toFixed(1), stat: __spk.page.info().stat, noten: SPK1.ui.meta.teil2.notes.L1.map(q => q.m)}; });
+  const tr2 = await p.evaluate(async () => { const sr = 48000, N = SPK1.ui.meta.teil2.notes.L1, q = N.find(z => Math.abs(z.a - 1.0) < 0.1); const a = await __spk6.plan('L1', [{id: q.id, dm: 2, dt: 0}]); spk1Got(SPK1.ui, a); const r = await __spk.render('L1'), x = __q.mono(r);
+    return {A3plus3ct: +__q.ct(__q.pitch(__q.win(x, sr, 1.3, 1.7), sr, 220, 310), 261.626).toFixed(1), B3plus1ct: +__q.ct(__q.pitch(__q.win(x, sr, 3.3, 3.7), sr, 220, 310), 261.626).toFixed(1)}; });
+  log('e4-transponieren-dann-note', {tr, tr2});
+  // Chor auf einer Ebene ohne Noten (Blatt per Touch)
+  await p.evaluate(async () => { const m = await __spk.mask({von: 'orig', nach: {art: 'lead', name: 'Ohne Noten'}, sel: {art: 'rect', t0: 0.5, t1: 4.5, f0: 40, f1: 120}}); spk1Got(SPK1.ui, m); });
+  const lidN = await p.evaluate(() => SPK1.ui.meta.layers.find(l => l.name === 'Ohne Noten').id);
+  m = await btn(p, '#spk1Sheet .spk1-lr[data-l="' + lidN + '"] [data-a="lmore"]'); await tap(m); m = await btn(p, '#spk1Sheet .spk1-dd [data-s6="chor"]'); await tap(m); await p.waitForTimeout(200);
+  m = await btn(p, '#spk1Sheet .spk1-dd [data-s6="chorGo"]'); await tap(m); await idle(p); await p.waitForTimeout(200);
+  log('e5-chor-ohne-noten', {stat: await stat(p)});
+  // Fertig mit offenem Entwurf: fragt einmal, zweiter Tipp schliesst
+  m = await btn(p, '#spk1Sheet .spk1-lr[data-l="L1"] [data-a="lmore"]'); await tap(m); m = await btn(p, '#spk1Sheet .spk1-dd [data-s6="ed"]'); await tap(m); await idle(p); await p.waitForTimeout(250);
+  m = await btn(p, '#spk1Sheet .spk1-o.on [data-s6="edM1"]'); await tap(m);
+  m = await btn(p, '#spk1Sheet .spk1-o.on [data-s6="edEnd"]'); await tap(m); const t1 = await p.evaluate(() => ({txt: document.querySelector('#spk1Sheet .spk1-o.on [data-s6="edEnd"]').textContent, ed: !!__spk6.ed()}));
+  m = await btn(p, '#spk1Sheet .spk1-o.on [data-s6="edEnd"]'); await tap(m); const t2 = await p.evaluate(() => ({ed: !!__spk6.ed(), tool: SPK1.ui.tool}));
+  log('e6-fertig-mit-entwurf', {t1, t2});
+  // Enter-Taste, waehrend ein Knopf im Notenmodus den Fokus hat
+  m = await btn(p, '#spk1Sheet .spk1-lr[data-l="L1"] [data-a="lmore"]'); await tap(m); m = await btn(p, '#spk1Sheet .spk1-dd [data-s6="ed"]'); await tap(m); await idle(p); await p.waitForTimeout(250);
+  const before = await p.evaluate(() => SPK1.last.nu);
+  await p.evaluate(() => { const b = document.querySelector('#spk1Sheet .spk1-o.on [data-s6="edM1"]'); b.focus(); });
+  await p.keyboard.press('Enter'); await idle(p); await p.waitForTimeout(400);
+  log('e7-enter-auf-knopf', {fokus: '+1', undoVorher: before, undoNachher: await p.evaluate(() => SPK1.last.nu), entwurf: await p.evaluate(() => __spk6.ed() && __spk6.ed().mv), stat: await stat(p)});
   await P.ctx.close();
 }
 
