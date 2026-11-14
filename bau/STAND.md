@@ -23,3 +23,6 @@ Weiter mit: 4.54 = rel-4540/k fertig prüfen + INT53D nachziehen + Versionszeile
 - 4.54.1 RELEASED (main 25dd0ed) = R-4540 + rel-4541/novw.py (kein „Neue Version“-Streifen/Toast; VW lädt still). In-App neu.
 - WICHTIG: Fix-Release aus rel-4540/k wird 4.54.2 und braucht vorher `python3 rel-4541/novw.py <datei>` (+ INT53D-Merge). XD1 → 4.55.0 auch mit novw.
 - NEU von Xander (14.11.): Gesang-Editor wie Notenrolle (Transienten, Peak auf Taktstrich, Silben-Beschriftung, Schnitt+Dehnen mit Blende), Audio/MP3-Import mit Tempo/Takt/Teile-Erkennung → Szenen, Spektral-Seite (Trennen, Verfeinern, Noten einer Spur zuordnen, Klang-Analyse → Nachbau VA/FM), Chor-Stimmen extrahieren, Container mit Gesang. Plan: S/vx/PLAN.md
+- 12:5x: Workflow wsgwlr6uw (wf_60a0853d-7c7, Skript synq-vx1-imp1-wf_60a0853d-7c7.js): VX1 Gesang-Notenrolle (S/vx/rolle, 5 Schritte) ∥ IMP1 Import Tempo/Takt/Teile (S/vx/imp, 3 Schritte). Je LOG.md. Basis S/vx/basis.html = R-4541.
+- Recherche Spektral (Hintergrund-Agent) → S/vx-privat/SPEKTRAL-RECHERCHE.md (privat, nicht ins Repo). Danach Workflow SPK (Spektral-Seite, Trennen, Verfeinern, Noten→Spur, Klang-Nachbau) + CHR (Chorstimmen extrahieren).
+- Läuft weiter: wsf4zpvpt (4.54-Fixes, wird 4.54.2 + novw.py), wwu4y7736 (XD1 → 4.55.0 + novw.py).
