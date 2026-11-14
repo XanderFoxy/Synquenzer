@@ -3,13 +3,13 @@
 //  Regression: spk3-test (darin noten3, spk2-test, Loop, Klang-Probe), spk1-test, ki1-test (mit Solo-Gesang), vx1-test · Pflicht-Prüfungen
 // Läuft nacheinander, jeder Teil mit Zeitgrenze (4 Kerne, andere Agenten parallel).
 // Aufruf: node spk4-test.mjs <abs. index.html> [<abs. vorher.html> = ../basis5.html]    (mess/ neben der Datei, basis2.html eine Ebene höher)
-//   NUR=pflicht,kern,ui,rest,spk3,spk1,ki1,vx1 wählt Teile; ALT=1 wertet nur vorhandene Ergebnis-Dateien neben der Datei aus (nichts neu laufen).
+//   NUR=pflicht,kern,ui,rest,spk3,zeit,spk1,ki1,vx1 wählt Teile; ALT=1 wertet nur vorhandene Ergebnis-Dateien neben der Datei aus (nichts neu laufen).
 // Ergebnis: spk4-test.json neben der Datei; Ausgabe je Prüfung „OK“/„FEHLER“, am Ende Summe.
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs'; import path from 'node:path';
 const here = path.dirname(new URL(import.meta.url).pathname), VX = path.resolve(here, '..'), SP = path.resolve(VX, '..');
 const file = path.resolve(process.argv[2] || path.join(here, 'index.html')), dir = path.dirname(file), vorher = path.resolve(process.argv[3] || path.join(VX, 'basis5.html'));
-const NUR = (process.env.NUR || 'pflicht,kern,ui,rest,spk3,spk1,ki1,vx1').split(','), ALT = !!process.env.ALT, T0 = Date.now(), sek = () => Math.round((Date.now() - T0) / 1000);
+const NUR = (process.env.NUR || 'pflicht,kern,ui,rest,spk3,zeit,spk1,ki1,vx1').split(','), ALT = !!process.env.ALT, T0 = Date.now(), sek = () => Math.round((Date.now() - T0) / 1000);
 const env = Object.assign({}, process.env, {NODE_PATH: process.env.NODE_PATH || '/opt/node-tools/node_modules'});
 delete env.NUR; delete env.ALT;
 const run = (args, extra, ms, name) => { const t = Date.now(), r = spawnSync('node', args, {env: Object.assign({}, env, extra || {}), encoding: 'utf8', timeout: ms, maxBuffer: 64 << 20});
@@ -54,14 +54,29 @@ if (!ALT && NUR.includes('rest')) { run([path.join(here, 'spk4-rest.mjs'), file]
 // ---------- 3 Regression spk3-test (darin: noten3 Datei+vorher, spk2-test, spk3-loop-test, spk3-klang-probe vorher→Datei)
 let S3 = ALT ? rd('spk3-test.json') : null;
 if (!ALT && NUR.includes('spk3')) { run([path.join(VX, 'spk3', 'spk3-test.mjs'), file, vorher], {}, 1500000, 'spk3-test'); S3 = rd('spk3-test.json'); }
-const S2 = rd('spk2-test.json'), KL = rd('spk3-klang-probe.json'), K = S3 && S3.info && S3.info.kern, KV = S3 && S3.info && S3.info.kernVorher;
+const S2 = rd('spk2-test.json'), K = S3 && S3.info && S3.info.kern, KV = S3 && S3.info && S3.info.kernVorher;
+// ---------- 3b Zeit „Noten finden“ (Pads, Node): vorher/nachher abwechselnd ×2, je das Minimum (Last anderer Agenten verfälscht Einzelläufe)
+let ZT = ALT ? rd('spk4-zeit.json') : null;
+if (!ALT && NUR.includes('zeit') && fs.existsSync(vorher)) {
+  const n3 = path.join(VX, 'spk3', 'messk', 'noten3.mjs'), z = {vorher: [], nachher: []};
+  for (let i = 0; i < 2; i++) for (const [k, h] of [['vorher', vorher], ['nachher', file]]) { const j = lastJson(run([n3], {HTML: h, TEIL: 'pad'}, 300000).out); if (j) z[k].push([j.pad_allein.ms, j.pad_gemisch.ms]); }
+  const mn = (L, i) => L.length ? Math.min(...L.map(r => r[i])) : null;
+  // Klang nachbauen: Klang-Probe ein zweites Mal, je Klang das Minimum der Zeiten aus beiden Läufen (Abstände müssen gleich bleiben)
+  let klang = null; const K1 = rd('spk3-klang-probe.json');
+  if (K1) { fs.writeFileSync(path.join(dir, 'spk3-klang-probe.lauf1.json'), JSON.stringify(K1, null, 1)); run([path.join(VX, 'spk3', 'spk3-klang-probe.mjs'), vorher, file], {}, 600000);
+    const K2 = rd('spk3-klang-probe.json'); klang = {};
+    for (const k of Object.keys(K1).filter(k => K1[k] && K1[k].abstandAlt)) { const b2 = K2 && K2[k] && K2[k].abstandAlt ? K2[k] : K1[k];
+      klang[k] = {ms: [Math.min(K1[k].vorher.ms, b2.vorher.ms), Math.min(K1[k].nachher.ms, b2.nachher.ms)], gleich: JSON.stringify(K1[k].abstandAlt) === JSON.stringify(b2.abstandAlt)}; } }
+  ZT = save('spk4-zeit.json', {padAllein: [mn(z.vorher, 0), mn(z.nachher, 0)], gemisch: [mn(z.vorher, 1), mn(z.nachher, 1)], laeufe: z, klang});
+}
 // ---------- 4 Regression spk1-test, ki1-test (Modell + Laufzeit lokal gespiegelt, Solo-Gesang), vx1-test
 let S1 = ALT ? rd('spk1-test.json') : null, KI = ALT ? rd('ki1-test.json') : null, VX1 = ALT ? rdt('vx1-test.out') : '';
 if (!ALT && NUR.includes('spk1')) { run([path.join(VX, 'spk', 'spk1-test.mjs'), file], {}, 600000, 'spk1-test'); S1 = rd('spk1-test.json'); }
-const VOX = path.join(SP, 'realvox', 'dl', 'vocadito_1.wav'), haveVox = fs.existsSync(VOX);
+const VD = path.join(SP, 'realvox', 'dl'), VOX = process.env.VOX || (fs.existsSync(VD) ? path.join(VD, fs.readdirSync(VD).filter(f => /_1\.wav$/.test(f)).sort()[0] || '-') : '-'), haveVox = fs.existsSync(VOX) && VOX.endsWith('.wav');   // Solo-Gesang (freier Datensatz, Stück 1) wie in den ki1-NOTES
 if (!ALT && NUR.includes('ki1')) { run([path.join(VX, 'ki', 'ki1-test.mjs'), file, path.join(VX, 'ki', 'modell'), path.join(SP, 'ki-ort', 'web')].concat(haveVox ? [VOX] : []), {}, 600000, 'ki1-test'); KI = rd('ki1-test.json'); }
 if (!ALT && NUR.includes('vx1')) VX1 = run([path.join(VX, 'rolle', 'vx1-test.mjs'), file, path.join(dir, 'fotos', 'vx1')], {}, 900000, 'vx1-test').out;
 
+const KL = rd('spk3-klang-probe.json');   // Klang-Probe (aus spk3-test, ggf. zweiter Lauf aus Teil „zeit“)
 // ================= Wertung =================
 const R = (J, k) => J && J[k] || {v: null, ok: false}, R2 = k => R(S2 && S2.res, k), R3 = k => R(S3 && S3.res, k);
 if (PF) ok('pflicht', PF, PF.topdefs && PF.topdefs[0] === 0 && PF.topdefs[1] === 0 && PF.dupkeys === 0 && PF.smoke && !PF.smoke.length && PF.ms2000 === 1 && PF.live === 1 &&
@@ -76,8 +91,9 @@ if (K) {
     PG.treffer > (VG.treffer || 0) && PG.praez >= (VG.praez || 0));
   const strip = o => o && Object.fromEntries(Object.entries(o).filter(([k]) => k !== 'ms'));
   ok('a1-bassband-einstimmig-unveraendert', {nachher: strip(K.orig_bassband), vorher: strip(KV && KV.orig_bassband)}, KV && JSON.stringify(strip(K.orig_bassband)) === JSON.stringify(strip(KV.orig_bassband)));
-  ok('a1-noten-zeit', {padAllein: [VA.ms, PA.ms], gemisch: [VG.ms, PG.ms], seite: UI && R(UI, 'finden-mehrstimmig').v && R(UI, 'finden-mehrstimmig').v.ms, regel: '≤ 1,3× vorher + 0,3 s'},
-    zeitOk(PA.ms, VA.ms) && zeitOk(PG.ms, VG.ms));
+  const za = ZT ? ZT.padAllein : [VA.ms, PA.ms], zg = ZT ? ZT.gemisch : [VG.ms, PG.ms];   // bevorzugt die Minimum-Messung (Teil „zeit“)
+  ok('a1-noten-zeit', {padAllein: za, gemisch: zg, imSpk3Lauf: [[VA.ms, PA.ms], [VG.ms, PG.ms]], seite: UI && R(UI, 'finden-mehrstimmig').v && R(UI, 'finden-mehrstimmig').v.ms, regel: '≤ 1,3× vorher + 0,3 s (Minimum aus 2 Läufen)'},
+    zeitOk(za[1], za[0]) && zeitOk(zg[1], zg[0]));
 }
 if (UI) ok('a1-seite', {ok: nChk(UI) - bads(UI).length, von: nChk(UI), fehler: bads(UI), finden: R(UI, 'finden-mehrstimmig').v, schalter: R(UI, 'schalter').v}, allOk(UI));
 
@@ -102,7 +118,9 @@ if (KL) {
   ok('a3-unison-pad-besser', P, P && P.nachher < P.vorher - 0.3 && /Unison/.test(P.txt || ''));
   const andere = ks.filter(k => k !== 'pad').map(k => Object.assign({k}, row(k)));
   ok('a3-andere-klaenge-nicht-schlechter', andere.map(r => r.k + ' ' + r.vorher + ' → ' + r.nachher + (/Unison/.test(r.txt) ? ' (Unison!)' : '')), andere.length && andere.every(r => r.nachher <= r.vorher + 0.1 && !/Unison/.test(r.txt)));
-  ok('a3-nachbau-zeit', ks.map(k => k + ' ' + KL[k].vorher.ms + ' → ' + KL[k].nachher.ms + ' ms'), ks.every(k => zeitOk(KL[k].nachher.ms, KL[k].vorher.ms)));
+  const kz = k => ZT && ZT.klang && ZT.klang[k] ? ZT.klang[k].ms : [KL[k].vorher.ms, KL[k].nachher.ms];   // bevorzugt Minimum aus 2 Läufen
+  ok('a3-nachbau-zeit', {je: ks.map(k => k + ' ' + kz(k)[0] + ' → ' + kz(k)[1] + ' ms'), abstaendeGleich: ZT && ZT.klang ? Object.values(ZT.klang).every(x => x.gleich) : null, regel: '≤ 1,3× vorher + 0,3 s'},
+    ks.every(k => zeitOk(kz(k)[1], kz(k)[0])) && !(ZT && ZT.klang && !Object.values(ZT.klang).every(x => x.gleich)));
 }
 if (RA) {
   const v = RA.vorher || {}, n = RA.nachher || {};
