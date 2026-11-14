@@ -50340,6 +50340,7 @@ function openRoll(t, s) {
   t = clamp(t | 0, 0, NT() - 1); s = clamp(s | 0, 0, NS() - 1);
   const tr = S.tracks[t];
   if (tr.stimme) { selectSlot(t, s); tkSheet({t, s}); return; }        // VS3: die STIMME-Spur hat Takes statt Noten
+  if (tr.orig) { selectSlot(t, s); imp1OpenTake(t, s); return; }       // IMP1: Spur „Original“ = Audio → Import-Blatt mit Loop-Klammern
   selectSlot(t, s);
   if (tr.kind === 'drum') { cancelTapStop(t, s); ED.dTab = 'steps'; openEditor(); return; }
   cancelTapStop(t, s);                                                 // selecting to edit never stops by accident (§3.2)
@@ -97466,12 +97467,31 @@ function imp1Place(kind) {
   IMP1.lastPlace = res;
   return res;
 }
+// Clip der Spur „Original“ antippen → dasselbe Blatt mit dem Take: Raster vom Import, Teile aus den Song-Marken, Loop = der Clip
+async function imp1OpenTake(t, s) {
+  const cl = S.tracks[t] && S.tracks[t].clips[s], a = cl && cl.audio, m = a && S.takes && S.takes[a.take];
+  if (!m) { imp1Sheet(); return null; }
+  const im = m.imp || {bpm: S.bpm, ts: S.ts || '4/4', t1: 0};
+  const c = IMP1.cur = {name: m.name || S.tracks[t].name, st: 'lesen', p: 0, sel: 0, loop: null, made: null, take: a.take};
+  imp1Sheet();
+  const pcm = await tkPcm(a.take); if (IMP1.cur !== c) return null;
+  if (!pcm) { c.st = 'fehler'; c.err = 'Audio fehlt auf diesem Gerät – Container öffnen'; imp1Paint(); return null; }
+  c.sr = m.sr; c.dur = pcm.length / m.sr; c.pcm = pcm; c.x = new Float32Array(pcm.length);
+  for (let i = 0; i < pcm.length; i += 262144) { const e = Math.min(pcm.length, i + 262144); for (let j = i; j < e; j++) c.x[j] = pcm[j] / 32768; if (e < pcm.length) await vvYield(); }
+  if (IMP1.cur !== c) return null;
+  c.peaks = imp1Peaks(c.x, 1200); c.r = {quelle: 'mix', frage: false, alt: []}; c.bpm = im.bpm; c.ts = im.ts; c.t1 = im.t1;
+  const G = imp1Geo(c), mk = (S.song && S.song.marks || []).filter(x => x.name);
+  c.parts = mk.length ? mk.map((x, i) => ({name: x.name, ta: G.org + x.a * G.takt, grp: i})) : [{name: c.name.slice(0, 12), ta: 0, grp: 0}];
+  const A = clamp(Math.round((a.in - G.org) / G.takt), 0, G.nb - 1); c.loop = [A, clamp(Math.max(A + 1, Math.round((a.out - G.org) / G.takt)), A + 1, G.nb)];
+  c.st = 'fertig'; imp1Paint();
+  return c;
+}
 // Teil-Namen als Marken im Song (wie das Marken-Blatt)
 function imp1Marks(song, P) {
   const old = (song.marks || []).filter(m => m.a >= P[P.length - 1].B);
   song.marks = marksNorm(P.map(p => ({a: p.A, len: p.B - p.A, name: p.name.slice(0, 12)})).concat(old), song.bars);
 }
-window.__imp1.ui = {last: () => IMP1.lastPlace, pick: imp1Pick, file: (ab, name, hint) => imp1File(ab, name, hint), sheet: () => imp1Sheet(), place: k => imp1Place(k), cur: () => IMP1.cur, geo: () => IMP1.cur && imp1Geo(IMP1.cur), parts: () => IMP1.cur && imp1Parts(IMP1.cur), regrid: (b, t) => { imp1Regrid(IMP1.cur, b, t); imp1Paint(); }, loop: (a, b) => { IMP1.cur.loop = [a, b]; imp1Paint(); }, midiMeta: u8 => imp1MidiMeta(u8)};   // IMP1: Test-Zugang
+window.__imp1.ui = {last: () => IMP1.lastPlace, open: (t, s) => imp1OpenTake(t, s), pick: imp1Pick, file: (ab, name, hint) => imp1File(ab, name, hint), sheet: () => imp1Sheet(), place: k => imp1Place(k), cur: () => IMP1.cur, geo: () => IMP1.cur && imp1Geo(IMP1.cur), parts: () => IMP1.cur && imp1Parts(IMP1.cur), regrid: (b, t) => { imp1Regrid(IMP1.cur, b, t); imp1Paint(); }, loop: (a, b) => { IMP1.cur.loop = [a, b]; imp1Paint(); }, midiMeta: u8 => imp1MidiMeta(u8)};   // IMP1: Test-Zugang
 /* ===== IMP1-END ===== */
 /* INT53D-BEGIN ===== Schlussprüfung zu INT53C: vier Randfälle. Hörbar und sichtbar bleibt VORHER, danach ist alles exakt wie vorher.
    1  Aufnahme-Weg (vvEncodeMR, Bild in Echtzeit): wirft das Zeichnen eines Bildes, endet die Aufnahme jetzt mit dieser Meldung

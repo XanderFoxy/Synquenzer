@@ -112,9 +112,14 @@ ok(!u.a.orig && u.b.orig, '↶ nimmt den ganzen Import zurück, ↷ bringt ihn w
 // Speichern/Laden: Spur-Flag + Audio-Clips bleiben
 const rt = await p.evaluate(() => { const fo = SQStore.buildProjectFile(S, null, VERSION); const q = normalizeProject(projFromFile(JSON.parse(JSON.stringify(fo)))); const o = q.tracks.findIndex(t => t.orig); return {o, clips: o >= 0 ? q.tracks[o].clips.filter(c => c && c.audio).length : 0, takes: Object.keys(q.takes || {}).length, imp: o >= 0 && q.takes ? Object.values(q.takes).some(t => t.imp) : false}; });
 ok(rt.o >= 0 && rt.clips === c.parts.length && rt.takes >= 1 && rt.imp, 'Speichern/Laden: Original-Spur, Clips, Take', JSON.stringify(rt));
+// 4b Clip der Spur „Original“ öffnen (wie ein Tipp auf den Clip) → Blatt mit Take, Loop = Clip-Bereich
+{ const o = await p.evaluate(() => { closePop(); const o = S.tracks.findIndex(t => t.orig); openRoll(o, 1); return o; });
+  let c4 = null; for (let k = 0; k < 40; k++) { await p.waitForTimeout(150); c4 = await cur(p); if (c4 && c4.st === 'fertig') break; }
+  const tk = await p.evaluate(() => ({take: window.__imp1.ui.cur().take, clip: S.tracks[S.tracks.findIndex(t => t.orig)].clips[1].audio.take, pop: UI.pop && UI.pop.name}));
+  ok(c4 && c4.st === 'fertig' && c4.loop && c4.loop[0] === 4 && c4.loop[1] === 12 && tk.take === tk.clip && tk.pop === 'imp1', 'Clip der Spur „Original“ öffnet das Blatt (Loop = Clip, gleicher Take)', JSON.stringify(c4 && {loop: c4.loop, parts: c4.parts, bpm: c4.bpm}));
+  await p.screenshot({path: path.join(fotos, 'imp1-5-clip-original-hochkant.png')});
+  await p.evaluate(() => window.__imp1.ui.loop(12, 20)); }
 // 5 Loop in die Matrix (Blatt neu öffnen, Stand bleibt)
-await p.evaluate(() => { closePop(); window.__imp1.ui.sheet(); });
-await p.waitForTimeout(300);
 await tapSel(p, '.imp1 button[data-i="loop"]');
 const lp = await p.evaluate(() => window.__imp1.ui.last());
 ok(lp && lp.kind === 'loop' && lp.a === 12 && lp.b === 20, 'Als Loop in die Matrix', JSON.stringify(lp));

@@ -41,3 +41,31 @@ Leistung (Hauptfaden, Testrechner, 60-s-Take, 120 Stücke): Analyse 330 ms, Hybr
 Offen für Schritt 3/4: Editor (PianoRoll + opts.audio, noteDeco), Zugänge (openRoll/buildRoll/rollFrame/tkSheet/svTap), wpUndone-Haken
 für den offenen Editor, Marken-Editor zeigt 'hybrid' (wpSetMode macht daraus 'slice'), G10e-Feinregeln (Q-Bereich, Nur Wortanfänge)
 gelten im Modus 'hybrid' nicht, .json-Hinweis (Gesang nur im Container), Hauptfaden-Rückfall stückweise.
+
+## Schritt 3 (Editor-Oberfläche) – Stand 14.11.2026
+Gesang-Editor = dieselbe `PianoRoll.create` im Blatt des Noten-Editors (EL.rollSheet, R.editor 'roll', `ED.rollAt = {t, s, vx: 1}` bzw.
+`{t: stimmeT(), s: -1, vox, vx: 1}`). Öffnen heute nur per `vx1rOpen(r)` / Test `__vx1.open(r)` (Zugänge = Schritt 4).
+Die Stücke sind virtuelle Noten `{t, d, n, v: 1, _k (Marke), _a (Anker in Schlägen), _p (Stück), _sh}` eines Modells `vx1rModel()`;
+Schlag ↔ gehörte Take-Zeit: T = a.in + (b − a.at)·spb (Raster-Ursprung = wpT0). Gezeigt erst nach der Analyse (Kopf „Analyse …“) – nichts springt.
+Neue Einhänge-Zeilen (Kommentar „VX1R“, ohne `opts.audio` bitgleich):
+- PianoRoll: `hitNote` (keine Längen-Zone), `case 'move'` (q = opts.audio.snap → Anker rastet ABSOLUT am Raster; Untergrenze −4 Schläge,
+  damit der Anschwung vor Schlag 0 liegen darf), Lineal-Längengriff aus, `tap()` meldet die getippte Stelle (opts.audio.tap).
+- `buildRoll` → `vx1rBuild`, `rollHeadUpdate` → `vx1rHead`, `rollFrame` → `vx1rFrame` (Szene wie Instrumente, Song-Stimme im Song-Takt,
+  Vorhören), `closeSheets` → `vx1rClosed` (Vorhören + QUANT.-Blatt enden), `wpUndone` → `vx1rUndone` (Editor folgt ↶ ↷).
+- CSS `/* VX1R-CSS-BEGIN … END */`: `.pr.vx1r` ohne Anschlag-Zeile (--pr-vh 0), `.vx1rx{display:none!important}`.
+Bedienung: Werkzeug fest ⬚ (Tipp = wählen/Mehrfachwahl, leer ziehen = Rahmen, Stück ziehen = verschieben mit Achsen-Sperre der PianoRoll).
+Sichtbar: Raster (1/4 … 1/32, aus – der Raster-Knopf der PianoRoll), ⤢, ▶ (ab Auswahl, ■ stoppt; Tipp auf ein Stück spielt es allein),
+↶ ↷, Teilen (an der getippten Stelle, sonst wo die PianoRoll teilt; neues Stück behält seinen Platz: vd = gehörter Anker), Verbinden
+(alles zwischen erstem und letztem gewählten Stück), Quant. (Blatt im Stil des Quantisier-Blatts: 1/4 1/8 1/8T 1/16 1/16T Aus, Stärke
+0–100 %, Auswahl oder alle → vx1rQuantize), Text erkennen (nur ohne Silben; G9 `g9RecJob`, sonst Marken-Editor), Takes … (altes Blatt), ✕.
+Gesten → Daten beim Loslassen (vx1rApply): waagrecht = vd (Anker auf Raster), senkrecht = `vx1rPitchMany` (G2, ein g2Edit), beides =
+EIN Undo (zweiter Eintrag wird zusammengelegt). Während des Ziehens nur Neuzeichnen (keine Analyse/Render je Bewegung).
+Zeichnen (`vx1rDeco`, Canvas der PianoRoll): Körper Spurfarbe, stimmlos grau getönt + schraffiert, Welle (Hüllkurve, √-Skala), Tonhöhenkurve
+(G2-f0, ±1 Zeile), Anker = 4-px-Linie (hell mit dunklem Rand), Silbe dunkles Schild/Bernstein rechts unten vom Anker, Raster-Linie leuchtet
+beim Einrasten 0,5 s (Bernstein).
+Test `vx1r-ed-test.mjs` (Touch über CDP): 36/36; Fotos fotos/vx1r-hochkant.png, -ziehen.png, -quant.png, -quer-428.png, -quer-370.png.
+Knopfhöhe wie im Noten-Editor (36 px hochkant, 30 px quer; Trefferfläche = Leistenhöhe, unverändert übernommen).
+
+Offen für Schritt 4: Zugänge (openRoll-Weiche STIMME-Clip → vx1rOpen; Takes-Blatt „✎ Bearbeiten“; Song-Stimme svTap), Ecke „1 Note“ der
+Aktionsleiste heißt bei Gesang noch „Note“, Hinweis .json ohne Audio, Projekt laden/Clip gelöscht mit offenem Editor, Song-Stimme mit
+Taktart-Karte (opts.tk), Marken-Editor zeigt 'hybrid', Hauptfaden-Rückfall stückweise.
