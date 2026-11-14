@@ -102312,7 +102312,12 @@ function spk6Rows(U) {
   for (const r of U.ly.querySelectorAll('.spk1-lr[data-l]')) {
     const l = U.meta.layers.find(x => x.id === r.dataset.l), nm = r.querySelector('.spk1-nm'); if (!l || !nm) continue;
     const tg = [l.r6 === 'chor' ? 'Chor' : l.r6 === 'kopie' || l.k6 ? 'Kopie' : '', l.a6 && l.a6.id && l.r6 !== 'chor' ? 'neu' : '', l.fx && Object.keys(l.fx).some(k => +l.fx[k] && !(k === 'pan' && l.r6 === 'chor')) ? 'FX' : ''].filter(Boolean);
-    if (tg.length) { const s = el('span', 'spk6-tg', esc(tg.join(' · '))); s.style.cssText = 'margin-left:6px;padding:2px 4px;border:1px solid var(--line);border-radius:4px;font:600 10px/1 var(--font-num);color:var(--text-dim);vertical-align:middle'; nm.appendChild(s); }
+    if (tg.length) {   // Name oben, Kennung darunter (hochkant ist die Namensspalte schmal – so bleibt die Kennung sichtbar)
+      const t = nm.textContent, a = el('span', '', esc(t)), s = el('span', 'spk6-tg', esc(tg.join(' · '))); nm.textContent = '';
+      a.style.cssText = 'max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+      s.style.cssText = 'padding:2px 4px;border:1px solid var(--line);border-radius:4px;font:600 10px/1 var(--font-num);color:var(--text-dim);white-space:nowrap';
+      nm.style.display = 'flex'; nm.style.flexDirection = 'column'; nm.style.alignItems = 'flex-start'; nm.style.justifyContent = 'center'; nm.style.gap = '3px'; nm.append(a, s);
+    }
     if (F && F.includes(l.id)) r.style.animation = 'stepFl .55s ease-out 3';
   }
 }

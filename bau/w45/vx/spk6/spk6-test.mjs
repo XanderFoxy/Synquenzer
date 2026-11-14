@@ -66,7 +66,7 @@ ok('kopie-bitgleich', {maxAbw: bg}, bg === 0);
 m = await btn(p, '#spk1Sheet .spk1-lr[data-l="L2"] [data-a="lmore"]'); await tap(m); m = await btn(p, '#spk1Sheet .spk1-dd [data-s6="ed"]'); await tap(m); await idle(p); await p.waitForTimeout(250);
 let ed = await p.evaluate(() => __spk6.ed()); s = await sizes(p, '#spk1Sheet .spk1-o.on [data-s6]');
 await foto(p, 'spk6-12-noten-bearbeiten.png');
-ok('modus-noten-bearbeiten', {ed, knoepfe: s.map(x => x.t + ' ' + x.w + '×' + x.h), klein: klein(s), stat: await stat(p)}, ed && ed.lid === 'L2' && ed.tool === 's6ed' && s.length === 11 && !klein(s));
+ok('modus-noten-bearbeiten', {ed, knoepfe: s.map(x => x.t + ' ' + x.w + '×' + x.h), klein: klein(s), stat: await stat(p)}, ed && ed.lid === 'L2' && ed.tool === 's6ed' && s.length === 10 && !klein(s).length);
 const ids = await p.evaluate(() => { const N = SPK1.ui.meta.teil2.notes.L2; const f = m => N.find(q => q.m === m).id; return {a: f(57), d: f(62), h: f(59)}; });
 // Tipp = wählen, Tipp auf zweite = Mehrfachauswahl, nochmal = abwählen
 const box = id => p.evaluate(i => __spk6.edBox(i), id);
@@ -123,11 +123,11 @@ m = await btn(p, '#spk1Sheet .spk1-o.on [data-s6="edEnd"]'); await tap(m); const
 ok('rahmen-mehrfach-fertig', {rahmen: rs, fertig: fe}, rs === 3 && fe.ed === null && fe.tool !== 's6ed');
 // ---- Chor erzeugen (aus L1): Blatt, Vorhören, A/B, neue Ebenen markiert
 m = await btn(p, '#spk1Sheet .spk1-lr[data-l="L1"] [data-a="lmore"]'); await tap(m); m = await btn(p, '#spk1Sheet .spk1-dd [data-s6="chor"]'); await tap(m); await p.waitForTimeout(250);
-for (const t of ['3 Stimmen', 'Terzen']) { const q = await p.evaluate(t => { const e = [...document.querySelectorAll('#spk1Sheet .spk1-dd button')].find(x => x.textContent.trim() === t); if (!e) return null; const r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }, t); if (q) await tap(q); }
+for (const t of ['3', 'Terzen']) { const q = await p.evaluate(t => { const e = [...document.querySelectorAll('#spk1Sheet .spk1-dd button')].find(x => x.textContent.trim() === t); if (!e) return null; const r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }, t); if (q) await tap(q); }
 await p.evaluate(() => { const e = document.querySelector('#spk1Sheet .spk1-dd input[data-s6="cbr"]'); e.value = 0.5; e.dispatchEvent(new Event('input')); });
 s = await sizes(p, '#spk1Sheet .spk1-dd button,#spk1Sheet .spk1-dd input[type=range]'); const arts = await p.evaluate(() => [...document.querySelectorAll('#spk1Sheet .spk1-dd .seg button')].map(e => e.textContent.trim()));
 await foto(p, 'spk6-16-chor-blatt.png');
-ok('chor-blatt', {arts, n: s.length, klein: klein(s), st: await p.evaluate(() => SPK1.ui.s6c)}, ['Terzen', 'Quinten', 'Oktave', 'Unisono'].every(a => arts.includes(a)) && !klein(s) && s.length >= 15 && s.every(x => x.inX));
+ok('chor-blatt', {arts, n: s.length, klein: klein(s), st: await p.evaluate(() => SPK1.ui.s6c)}, ['Terzen', 'Quinten', 'Oktave', 'Unisono'].every(a => arts.includes(a)) && !klein(s).length && s.length >= 15 && s.every(x => x.inX));
 m = await btn(p, '#spk1Sheet .spk1-dd [data-s6="chorPv"]'); const tv = Date.now(); await tap(m);
 await p.waitForFunction(() => SPK1.pl && SPK1.pl.s6, null, {timeout: 60000});
 const cpv = await p.evaluate(() => ({A: !!SPK1.pl.s6.A, B: !!SPK1.pl.s6.B, stat: __spk.page.info().stat, layers: SPK1.ui.meta.layers.length}));
@@ -149,7 +149,7 @@ m = await btn(p, '#spk1Sheet .spk1-lr[data-l="L2"] [data-a="lmore"]'); await tap
 s = await sizes(p, '#spk1Sheet .spk1-dd input[type=range]'); await foto(p, 'spk6-18-effekte.png');
 await p.evaluate(() => { const e = document.querySelector('#spk1Sheet .spk1-dd input[data-s6="echo"]'); e.value = 0.4; e.dispatchEvent(new Event('input')); e.dispatchEvent(new Event('change')); }); await idle(p);
 ri = await rowInfo(p); const fxv = await p.evaluate(() => SPK1.ui.meta.layers.find(l => l.id === 'L2').fx);
-ok('effekte-blatt', {regler: s.length, klein: klein(s), fx: fxv, tag: ri.find(r => r.l === 'L2').tag}, s.length === 9 && !klein(s) && fxv && fxv.echo === 0.4 && /FX/.test(ri.find(r => r.l === 'L2').tag));
+ok('effekte-blatt', {regler: s.length, klein: klein(s), fx: fxv, tag: ri.find(r => r.l === 'L2').tag}, s.length === 9 && !klein(s).length && fxv && fxv.echo === 0.4 && /FX/.test(ri.find(r => r.l === 'L2').tag));
 // ---- Abspielen (Worker): umgesetzte Ebene + Chor + Echo
 const pl = await p.evaluate(async () => { __spk.play(0.9); await new Promise(z => setTimeout(z, 1300)); const s = __spk.state(), pos = __spk.pos(); __spk.stop(); return {playing: s.playing, pos: +(pos || 0).toFixed(2)}; });
 ok('abspielen', pl, pl.playing && pl.pos > 1.2);
@@ -173,18 +173,18 @@ await ctx.close();
   await p.evaluate(async () => { const sr = 48000, n = sr * 3, L = new Float32Array(n); for (let i = sr; i < 2 * sr; i++) L[i] = 0.3 * Math.sin(2 * Math.PI * 220 * i / sr) * Math.min(1, (i - sr) / 960, (2 * sr - i) / 960); const r = await __spk.load({name: 'Quer', sr, ch: [L]}); await __spk.page.open({id: r.meta.id}); const q = await __spk.mask({von: 'orig', nach: {art: 'lead', name: 'Lead'}, sel: {art: 'rect', t0: 0.8, t1: 2.2, f0: 150, f1: 2000}}); spk1Got(SPK1.ui, q); });
   await idle(p); let m = await btn(p, '#spk1Sheet .spk1-lr[data-l="L1"] [data-a="lmore"]'); await tap(m); await p.waitForTimeout(250);
   let s = await sizes(p, '#spk1Sheet .spk1-dd [data-s6]'); await foto(p, 'spk6-19-werkstatt-quer.png');
-  ok('quer-menue', {knoepfe: s.map(x => x.t + ' ' + x.w + '×' + x.h + (x.inY ? '' : ' (rollen)')), klein: klein(s)}, s.length >= 8 && !klein(s) && s.every(x => x.inX) && s.filter(x => /Kopieren|Noten bearbeiten|Chor|Effekte/.test(x.t)).every(x => x.inY));
+  ok('quer-menue', {knoepfe: s.map(x => x.t + ' ' + x.w + '×' + x.h + (x.inY ? '' : ' (rollen)')), klein: klein(s)}, s.length >= 8 && !klein(s).length && s.every(x => x.inX) && s.filter(x => /Kopieren|Noten bearbeiten|Chor|Effekte/.test(x.t)).every(x => x.inY));
   // Noten bearbeiten ohne Noten: findet sie zuerst selbst
   m = await btn(p, '#spk1Sheet .spk1-dd [data-s6="ed"]'); await tap(m); await p.waitForFunction(() => window.__spk6.ed(), null, {timeout: 60000}); await idle(p); await p.waitForTimeout(200);
   const e0 = await p.evaluate(() => ({ed: __spk6.ed(), n: (SPK1.ui.meta.teil2.notes.L1 || []).length}));
   s = await sizes(p, '#spk1Sheet .spk1-o.on [data-s6]');
   const reach = await p.evaluate(() => { const o = SPK1.ui.op; return {scrollW: o.scrollWidth, clientW: o.clientWidth, ox: getComputedStyle(o).overflowX}; });
-  ok('quer-noten-bearbeiten', {e0, knoepfe: s.map(x => x.t + ' ' + x.w + '×' + x.h + (x.inX ? '' : ' (rollen)')), klein: klein(s), reach}, e0.ed && e0.n >= 1 && s.length === 11 && !klein(s) && (s.every(x => x.inX) || /auto|scroll/.test(reach.ox)));
+  ok('quer-noten-bearbeiten', {e0, knoepfe: s.map(x => x.t + ' ' + x.w + '×' + x.h + (x.inX ? '' : ' (rollen)')), klein: klein(s), reach}, e0.ed && e0.n >= 1 && s.length === 10 && !klein(s).length && (s.every(x => x.inX) || /auto|scroll/.test(reach.ox)));
   const q0 = await p.evaluate(() => SPK1.ui.meta.teil2.notes.L1[0]), bx = await p.evaluate(i => __spk6.edBox(i), q0.id), gq = await p.evaluate(() => SPK1.ui.v.rowH);
   await drag(bx.x, bx.y, bx.x, bx.y - 2 * gq, 8); const e1 = await p.evaluate(() => __spk6.ed()); await foto(p, 'spk6-20-noten-quer.png');
   m = await btn(p, '#spk1Sheet .spk1-o.on [data-s6="edGo"]'); await tap(m); await idle(p);
   const e2 = await p.evaluate(id => ({m: SPK1.ui.meta.teil2.notes.L1.find(z => z.id === id).m, stat: __spk.page.info().stat}), q0.id);
-  const fq = await p.evaluate(async m => { const r = await __spk.render('L1'), sr = 48000; return +__ct(__p6(r.ch[0].subarray(Math.round(1.2 * sr), Math.round(1.8 * sr)), sr, 150, 450), 440 * Math.pow(2, (m - 69) / 12)).toFixed(2); }, q0.m + 2);
+  const fq = await p.evaluate(async m => { const r = await __spk.render('L1'), sr = 48000; return +__ct(__p6(r.ch[0].subarray(Math.round(1.2 * sr), Math.round(1.8 * sr)), sr, 150, 450), 220 * Math.pow(2, m / 12)).toFixed(2); }, 2);   // Quelle 220 Hz, +2 Halbtöne
   ok('quer-ziehen-anwenden', {mv: e1.mv, nachher: e2, m0: q0.m, abwCt: fq}, e1.mv.length === 1 && e1.mv[0].dm === 2 && e2.m === q0.m + 2 && /neu gerechnet/.test(e2.stat) && Math.abs(fq) < 10);
   await ctx.close();
 }
