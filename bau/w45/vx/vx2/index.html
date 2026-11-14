@@ -102857,13 +102857,17 @@ window.__nx1 = {
    Jetzt (nur Gesang-Editor, nur erkannte Marken – gespeicherte/eigene Marken alter Takes bleiben unverändert):
      1. jede Tonhöhen-Note (G2, VS2-Segmente) beginnt ein Stück – auch ein Legato-Tonwechsel; ein Einsatz der Erkennung ±20 ms
         davon gibt die probengenaue Stelle, sonst der Noten-Beginn;
-     2. Erkennungs-Marken ohne Note bleiben nur mit Einsatz-Merkmal: stimmloser Konsonant davor, Pegel-Tal > 6 dB (30 ms) oder Wort-
-        Beginn nach Ruhe – und danach wird gesungen (≥ 50 ms stimmhaft); Atem/Geräusch/Pausen werden kein eigenes Stück;
+     2. Erkennungs-Marken ohne Note bleiben nur mit Einsatz-Merkmal: stimmloser Konsonant davor, Pegel-Tal > 6 dB (30 ms), Wort-
+        Beginn nach Ruhe oder stimmhafter Konsonant (l, m, n: sicherer Einsatz, Tal ≥ 2 dB, weniger Nulldurchgänge als im Vokal) –
+        und danach wird gesungen (≥ 50 ms stimmhaft); Atem/Geräusch/Pausen werden kein eigenes Stück;
      3. Konsonant vor dem Vokal gehört wie bisher zum Stück (Anlauf), Anker wie bisher (lautester Spitzenwert im Einschwingbereich) –
         Anker und Anlauf auf dem Hauptfaden aus derselben Analyse (gleich wie Op 'vxa', ohne zweiten Lauf).
    Gemessen (33-s-Aufnahme mit Noten-Annotation, Kern ohne Browser): 213 erkannte Marken → 60 Stücke für 59 Noten, an einer Note 26 % → 85 %,
-   Einsätze ±40 ms Anfang 35 → 43, Vokal-Beginn 46 → 50 von 59.
-   Einhänge-Zeile (Kommentar „VX2“): vx1rAnalyse (Marken vor der Analyse). Test-API: window.__vx2. */
+   Einsätze ±40 ms Anfang 35 → 43, Vokal-Beginn 46 → 50 von 59; mit stimmhaften Konsonanten (Prüfung): 66 Stücke, gegen die 2. Annotation
+   (64 Noten, trennt wieder angesungene Silben) Vokal-Beginn 52 → 57, Noten ohne Grenze 8 → 2.
+   Die VX2-Marken sind nur die Sicht des Gesang-Editors (WP.det, Marken-Editor, Zeitkarte und Songtext bleiben); mit Songtext oder
+   gespeicherten Marken gilt wie bisher die Erkennung. Beim ersten Bearbeiten werden die Stücke wie bisher festgeschrieben (m.marks).
+   Einhänge-Zeilen (Kommentar „VX2“): vx1rAnalyse (Marken + Quelle vor der Analyse), vx1rPieces, vx1rCommit (vx2Mk). Test-API: window.__vx2. */
 const VX2 = {on: true, res: new Map(), q: new Map(), last: null};
 // Stücke = Noten/Silben: Marken aus den Tonhöhen-Noten (G2), am Einsatz der Erkennung eingerastet; Erkennungs-Marken ohne Note
 // nur mit Einsatz-Merkmal (stimmloser Konsonant davor oder Pegel-Tal > 6 dB, danach gesungen); Atem/Pausen werden kein eigenes Stück
