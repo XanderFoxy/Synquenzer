@@ -581,7 +581,7 @@ test('Qualität: Apple-Titel säubern, Wikidata-Antwort lesen, passenden Film w�
   assert.equal(jahrImTitel('Meteor (1979)'), 1979);
   assert.equal(jahrImTitel('Dirty Harry'), null);
   const q = qualiAbfrage([{ nr: '123', name: 'Charade "X"' }]);
-  assert.match(q, /wdt:P6398/); assert.match(q, /"@de\) \("123"/); assert.doesNotMatch(q, /mwapi|hint:/, "keine mwapi-Suche (HTTP 500 im echten Lauf)"); assert.match(q, /Q200092/); assert.match(q, /Q105584/);
+  assert.match(q, /wdt:P6398/); assert.match(q, /"@de\) \("123"/); assert.doesNotMatch(q, /mwapi/, "keine mwapi-Suche (HTTP 500 im echten Lauf)"); assert.match(q, /hint:optimizer "None"/); assert.match(q, /Q200092/); assert.match(q, /Q105584/);
   assert.match(q, /"Charade \\"X\\""/, 'Anführungszeichen sicher');
   const zeilen = leseQuali(JSON.stringify({ results: { bindings: [
     { key: { value: '1234567' }, weg: { value: 'name' }, item: { value: 'http://www.wikidata.org/entity/Q1' }, l: { value: '45' }, jahr: { value: '1971' }, rt: { value: '91%|8.1/10' }, lab: { value: 'Dirty Harry' } },

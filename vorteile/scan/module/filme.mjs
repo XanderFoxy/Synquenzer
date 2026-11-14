@@ -176,13 +176,15 @@ export function qualiAbfrage(titel) {
   // (Die mwapi-Namenssuche brach im echten Lauf 14.11.2026 mit HTTP 500 ab: „Could not find binding for parameter search“.)
   const namen = titel.flatMap(t => ['de', 'en'].map(l => `(${sparqlText(t.nr)} ${sparqlText(t.name)}@${l})`)).join(' ');
   return 'SELECT ?key ?weg ?item ?l (MIN(?j) AS ?jahr) (MAX(?h0) AS ?h) (GROUP_CONCAT(DISTINCT ?rt0; separator="|") AS ?rt) '
-    + '(GROUP_CONCAT(DISTINCT ?lab0; separator="|") AS ?lab) WHERE { '
+    // feste Reihenfolge: erst die paar Filme (Nummer/Name), dann je Film Genre/Kritik – sonst rechnet Wikidata erst alle
+    // Horrorfilme der Welt aus (2. echter Lauf 14.11.2026: Zeitüberschreitung nach 20 s)
+    + '(GROUP_CONCAT(DISTINCT ?lab0; separator="|") AS ?lab) WHERE { hint:Query hint:optimizer "None" . '
     + `{ VALUES ?key { ${ids} } ?item wdt:P6398 ?key . BIND("id" AS ?weg) } UNION `
     + `{ VALUES (?key ?suche) { ${namen} } ?item rdfs:label|skos:altLabel ?suche . `
     + `?item wdt:P31 ?typ . VALUES ?typ { ${FILM_TYPEN} } BIND("name" AS ?weg) } `
     + '?item wikibase:sitelinks ?l . '
     + 'OPTIONAL { ?item wdt:P577 ?d . BIND(YEAR(?d) AS ?j) } '
-    + 'OPTIONAL { ?item wdt:P136/wdt:P279* wd:Q200092 . BIND(1 AS ?h0) } '
+    + 'OPTIONAL { ?item wdt:P136 ?gen . ?gen wdt:P279* wd:Q200092 . BIND(1 AS ?h0) } '
     + 'OPTIONAL { ?item p:P444 ?st . ?st pq:P447 wd:Q105584 ; ps:P444 ?rt0 . } '
     + 'OPTIONAL { ?item rdfs:label ?lab0 . FILTER(LANG(?lab0) = "de" || LANG(?lab0) = "en") } '
     + '} GROUP BY ?key ?weg ?item ?l LIMIT 2000';
