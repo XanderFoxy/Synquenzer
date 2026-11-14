@@ -164,7 +164,7 @@ for (const nr of ONLY) {
     /* ---------- Verschieben links/rechts ---------- */
     // Stück mit Platz davor UND messbarem Vokal des Vorgängers (Anker des Vorgängers ≥ 0,2 s vor dem Stück, sonst ist das Dehn-Fenster leer)
     const ord = []; for (let i = Math.floor(L.length / 2); i < L.length - 1; i++) ord.push(i); for (let i = 1; i < Math.floor(L.length / 2); i++) ord.push(i);
-    let kk = ord.find(i => L[i].dst - L[i - 1].dst > .35 && L[i + 1].dst - L[i].dst > .3 && L[i].t - L[i - 1].at > .2); if (kk == null) kk = ord.find(i => L[i].dst - L[i - 1].dst > .35 && L[i + 1].dst - L[i].dst > .3); if (kk == null) kk = -1; if (process.env.RV1_K) kk = +process.env.RV1_K;
+    let kk = ord.find(i => L[i].dst - L[i - 1].dst > .35 && L[i + 1].dst - L[i].dst > .3 && L[i].t - L[i - 1].at > .2); if (kk == null) kk = ord.find(i => L[i].dst - L[i - 1].dst > .2 && L[i + 1].dst - L[i].dst > .2 && L[i].t - L[i - 1].at > .2); if (kk == null) kk = ord.find(i => L[i].dst - L[i - 1].dst > .35 && L[i + 1].dst - L[i].dst > .3); if (kk == null) kk = -1; if (process.env.RV1_K) kk = +process.env.RV1_K;
     if (kk < 0) for (let i = 1; i < L.length - 1; i++) if (L[i].dst - L[i - 1].dst > .3) { kk = i; break; }
     for (const dir of [-1, 1]) {
       const D = dir < 0 ? -.06 : Math.max(.06, L[kk].t - L[kk].dst + .06);   // rechts: mehr Platz als in der Quelle → Vorgänger wird gedehnt

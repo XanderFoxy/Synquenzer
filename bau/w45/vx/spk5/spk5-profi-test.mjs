@@ -49,20 +49,22 @@ const hy = await p.evaluate(async () => {
   U.act = 'orig'; U.sel = [{art: 'rect', t0: 5, t1: 7, f0: 1000, f1: 3000, kt: 0, kf: 0}]; U.selVer++; spk1BtnState(U);
   await spk1Into(U, ges); out.inEbene = {nach: gl.name, undo: SPK1.last.undo, ebenenGleich: L().join() === L0.join()};
   // Noten finden im Original, eine Note „Gehört zu → Bass“ → landet in der Profi-Ebene Bass
-  await __spk.noten('orig', [{art: 'rect', t0: 4.3, t1: 8.6, f0: 40, f1: 400, kt: 0, kf: 0}]); spk1Got(U, SPK1.last);
+  await __spk.spk2.noten('orig', [{art: 'rect', t0: 4.3, t1: 8.6, f0: 40, f1: 400, kt: 0, kf: 0}]); spk1Got(U, SPK1.last);
   const no = ((U.meta.teil2 || {}).notes || {}).orig || [], q = no[0];
   if (q) { await spk2Zu(U, 'bass', [{lid: 'orig', id: q.id}]); await wait(300); }
   const inBass = q ? (((U.meta.teil2 || {}).notes || {})[bass] || []).some(x => x.id === q.id && x.st === 'zu') : false;
   out.gehoertZu = {noten: no.length, undo: SPK1.last.undo, inProfiBass: inBass, ebenenGleich: L().join() === L0.join()};
-  // ↶ dreimal = zurück auf die Profi-Trennung
-  for (let i = 0; i < 3; i++) await spk1UndoRedo(U, 'undo');
-  out.zurueck = SPK1.last.undo;
+  // ↶ je Aktion (Verfeinern, In Ebene, Noten finden, Gehört zu) = zurück auf die Profi-Trennung
+  let n = 0; while (n < 6 && SPK1.last.undo !== 'Profi-Trennung (Auswahl)') { await spk1UndoRedo(U, 'undo'); n++; }
+  out.zurueck = {schritte: n, undo: SPK1.last.undo, ebenen: U.meta.layers.map(l => l.name)};
   return out;
 });
-await p.screenshot({path: path.join(fotos, 'spk5-08-hybrid.png')});
+await p.evaluate(() => { const U = __spk.page.ui(); ki1Dd(U, U.b_ki1); }); await p.waitForTimeout(600);
+await p.screenshot({path: path.join(fotos, 'spk5-08-hybrid-klappfenster.png')});
+await p.evaluate(() => spk1Dd(__spk.page.ui(), null));
 ok('hybrid-vor-dem-laden-zerlegen-zuerst', ord0, /^Zerlegen \(schnell/.test(ord0.erst) && !ord0.da);
 ok('hybrid-profi-zuerst', hy.klapp, /^Profi-Trennung \(genauer/.test(hy.klapp.vorher[0]) && /^Zerlegen \(schnell/.test(hy.klapp.vorher[1]) && hy.klapp.hervor && hy.klapp.nachCache[0] === hy.klapp.vorher[0] && /Verfeinern/.test(hy.klapp.tx || ''));
-ok('hybrid-werkzeuge-auf-profi-ebenen', {verfeinern: hy.verfeinern, inEbene: hy.inEbene, gehoertZu: hy.gehoertZu, zurueck: hy.zurueck}, hy.verfeinern.lid === hy.verfeinern.profiBass && hy.verfeinern.ebenenGleich && /Verfeinern/.test(hy.verfeinern.undo || '') && hy.inEbene.ebenenGleich && hy.inEbene.undo && hy.gehoertZu.inProfiBass && hy.gehoertZu.ebenenGleich && /zuordnen/.test(hy.gehoertZu.undo || '') && hy.zurueck === 'Profi-Trennung (Auswahl)');
+ok('hybrid-werkzeuge-auf-profi-ebenen', {verfeinern: hy.verfeinern, inEbene: hy.inEbene, gehoertZu: hy.gehoertZu, zurueck: hy.zurueck}, hy.verfeinern.lid === hy.verfeinern.profiBass && hy.verfeinern.ebenenGleich && /Verfeinern/.test(hy.verfeinern.undo || '') && hy.inEbene.ebenenGleich && hy.inEbene.undo && hy.gehoertZu.inProfiBass && hy.gehoertZu.ebenenGleich && /zuordnen/.test(hy.gehoertZu.undo || '') && hy.zurueck.undo === 'Profi-Trennung (Auswahl)' && hy.zurueck.schritte <= 4);
 ok('keine-fehler', errs, !errs.length);
 fs.writeFileSync(path.join(path.dirname(file), 'spk5-profi-test.json'), JSON.stringify(res, null, 1));
 await E.b.close(); E.srv.close();
