@@ -14,7 +14,7 @@ import filme, {
   namensWert, waehleTreffer, ausItunes, leseErgebnisse, leseCharts, staffelnAus, staffelInfo,
   merkeFilmPreis, preisLage, preisWert, istAppleFilmDeal, postenListe, sucheUrl,
   chartIndex, chartFilm, serienBegriffe, wikidataAbfrage, wikidataTeile, leseWikidata, wikidataKandidaten, englisch,
-  suchName, jahrImTitel, qualiAbfrage, leseQuali, qualiWahl, qualiOk, genreGruppe, STANDARD as FILM_STANDARD,
+  suchName, jahrImTitel, qualiAbfrage, leseQuali, qualiWahl, qualiOk, genreGruppe, STANDARD as FILM_STANDARD, horrorText,
 } from '../module/filme.mjs';
 
 const HIER = dirname(fileURLToPath(import.meta.url));
@@ -655,6 +655,41 @@ test('Übersicht: Für 3,99 € · Action & Thriller · Comedy · 80er & Klassik
   assert.equal(r3.datei.status.qualitaet.ok, false);
   assert.ok(!r3.fehler.some(f => /Qualität/.test(f)));
   assert.ok(r3.datei.gruppen.fuer399.length >= 4);
+});
+
+test('Horror aus der Apple-Beschreibung (echte Texte 14.11.2026): klare Wörter, zwei schwache Zeichen, bildliche Dämonen nicht', () => {
+  // echte Apple-Texte (Auszüge): Apple führt sie als „Thriller“ bzw. „Science-Fiction und Fantasy“
+  const mids = 'Doch der anfänglich idyllische Eindruck der abgelegenen Gemeinschaft trügt … Sie bereiten sich auf ein besonderes Mittsommer-Ritual vor … nimmt eine unheimliche Wendung, die das sonnengeflutete Paradies bis in die Eingeweide erschüttert.';
+  assert.equal(horrorText(mids, 'Thriller'), 2, 'Midsommar: Ritual + unheimlich + Eingeweide');
+  assert.equal(horrorText('Mit Evil Dead Burn beginnt ein neues Kapitel dämonischen Chaos bei einem Familientreffen.', 'Science-Fiction und Fantasy'), 3);
+  assert.equal(horrorText('Die junge FBI-Agentin Lee Harker entdeckt eine Reihe okkulter Hinweise in einem Serienmörder-Fall.', 'Thriller'), 3, 'Longlegs');
+  assert.equal(horrorText('… durch Narben entstellt, verschmort und verstümmelt … die grauenvollen Entdeckungen … entfacht sich eine unnatürliche, bösartige Kraft.', 'Thriller'), 2, 'The Autopsy of Jane Doe');
+  // kein Horror
+  assert.equal(horrorText('Jane kämpft dabei auch gegen ihre inneren Dämonen, während Paul alles dafür tut, sie zu retten.', 'Action'), 0, 'Survive');
+  assert.equal(horrorText('… muss er sich den Dämonen seiner Vergangenheit stellen …', 'Thriller'), 0, 'Shelter');
+  assert.equal(horrorText('Die Geisterjäger kämpfen gegen Dämonen in New York.', 'Komödien'), 0, 'Komödie: Geister sind Spaß');
+  assert.equal(horrorText('Horror! Während Tess sich nun mit fiesen Lehrern herumschlägt …', 'Science-Fiction und Fantasy'), 0, 'Ausruf');
+  assert.equal(horrorText('Captain Barbossa und seine Crew von Untoten …', 'Action'), 1, 'Fluch der Karibik bleibt');
+  assert.equal(horrorText('Eine Geschichte über Besessenheit – tödliche Obsession.', 'Thriller'), 1, 'Besessenheit = Obsession, ein Zeichen');
+  assert.equal(horrorText(null), 0);
+});
+
+test('Ohne Wikidata (gestört): Horror-Verdacht aus der Beschreibung fliegt trotzdem raus, auch auf Platz 1 der Charts', async () => {
+  const z = abruf([['wikibase%3Amwapi', '!fehler']]);
+  const r = await filme(ctx(async (url, o) => {
+    const t = await z.holeText(url, o);
+    if (!/rss\/topmovies/.test(url)) return t;
+    // Platz 1 jeder Chart-Liste bekommt einen Midsommar-Text
+    const j = JSON.parse(t); const e = j?.feed?.entry;
+    const erst = Array.isArray(e) ? e[0] : e; // Apple liefert bei einem Eintrag ein Einzelobjekt
+    if (erst) erst.summary = { label: 'Ein Mittsommer-Ritual nimmt eine unheimliche Wendung.' };
+    return JSON.stringify(j);
+  }, {}));
+  assert.equal(r.datei.status.qualitaet.ok, false);
+  const alle = alleTitel(r.datei).filter(t => t.quelle === 'Apple');
+  assert.ok(r.datei.gruppen.fuer399.length >= 1, 'Chart-Spitze ohne Verdacht bleibt');
+  const platz1 = alle.filter(t => t.chart === 1 && !/kom(?:ö|oe)die/i.test(t.genre)); // Komödien prüft die Beschreibung nicht
+  assert.deepEqual(platz1.map(t => `${t.titel} ${t.genre}`), [], 'Platz 1 mit Horror-Verdacht ist raus');
 });
 
 test('main: Kachel-Zusammenfassung der Filme landet in aktuell.json (status.filme.kurz)', async () => {

@@ -49,7 +49,7 @@ export const STANDARD = {
   maxGruppe: 40, // Titel je Genre-Gruppe auf der Seite
   // Qualität (nur Chart-Titel; deine Listen gelten immer): Wikidata – Bekanntheit (Wikipedia-Sprachen), Rotten Tomatoes, Horror
   qualitaet: true,
-  qualiMaxAbrufe: 8, // Wikidata-Abfragen pro Lauf (Rest im nächsten Lauf; das Ergebnis bleibt qualiTage im Zustand)
+  qualiMaxAbrufe: 12, // Wikidata-Abfragen pro Lauf (12 × 15 = 180 ≥ Chart-Titel eines Laufs) (Rest im nächsten Lauf; das Ergebnis bleibt qualiTage im Zustand)
   qualiJeAbfrage: 15, // Titel je Abfrage (Namenssuche kostet Wikidata Zeit)
   qualiTage: 30,
   qualiFehltTage: 7, // nicht bei Wikidata gefunden -> so lange nicht neu fragen
@@ -136,7 +136,22 @@ export function wikidataKandidaten(zeilen, item) {
 // Tomatoes (P444 „review score“ mit P447 = Q105584), Horror = Genre (P136) ist Horrorfilm Q200092 oder eine Unterart davon.
 // Gefunden wird der Film über die Apple-Nummer (P6398, oft die US-Nummer) ODER die Namenssuche (wbsearchentities über
 // mwapi, nur Filme); bei der Namenssuche müssen Name und Jahr passen (Jahr ±1, sonst ein älterer Film = Wiederveröffentlichung).
-export const HORROR_TEXT = /horror|grusel|schocker|slasher|zombie|exorzis|besessenheit|kannibal/i;
+export const HORROR_TEXT = /horror(?!\s*!)|grusel|schocker|slasher|zombie|exorzis|okkult|satanis|paranormal|poltergeist|d(?:ä|ae)mon(?:en|isch\w*)?\b/i;
+// schwache Zeichen: einzeln harmlos („unheimlich“, „Albtraum“); zwei verschiedene = Horror-Verdacht. Der zählt, wenn Wikidata
+// den Film nicht kennt oder gestört ist (Apple führt Horror oft als „Thriller“: Midsommar, The Autopsy of Jane Doe); kennt
+// Wikidata ihn, entscheidet dort das Genre (Serenity: „grauenhaft“ + „Kannibalen“, aber Science-Fiction).
+export const HORROR_SCHWACH = /unheimlich|grauenvoll|grauenhaft|verstümmel|eingeweide|bösartige?n? (?:kraft|macht|wesen|präsenz)|übernatürlich|al[bp]tr(?:a|ä)um|heimgesucht|besessen|ritual|vampir|folter|kannibal|untote/gi;
+// bildlich gemeint, kein Horror: „kämpft mit seinen inneren Dämonen“, „Dämonen seiner Vergangenheit“, Rollennamen („Dämon“)
+const HORROR_BILDLICH = /(?:inneren|eigenen|persönlichen|seine[nmr]?|ihre[nmr]?)\s+d(?:ä|ae)monen|d(?:ä|ae)monen\s+(?:seiner|ihrer|der)\s+vergangenheit|\(\W*d(?:ä|ae)mon\W*\)/gi;
+/** Horror aus der Apple-Beschreibung: 0 = nein, 1 = ein schwaches Zeichen, 2 = zwei schwache (Verdacht), 3 = klares Wort. Komödien und Kinderfilme
+ *  (Ghostbusters, Hotel Transsilvanien, Harry Potter) prüft das nicht – dort sind Geister und Dämonen Spaß. */
+export function horrorText(text, genre = '') {
+  if (/kom(?:ö|oe)die|comedy|kinder|familie|musical|animation/i.test(String(genre ?? ''))) return 0;
+  const t = String(text ?? '').replace(HORROR_BILDLICH, ' ');
+  if (HORROR_TEXT.test(t)) return 3;
+  const schwach = new Set((t.match(HORROR_SCHWACH) || []).map(x => x.toLowerCase().slice(0, 5))).size;
+  return schwach >= 2 ? 2 : schwach;
+}
 const FILM_TYPEN = 'wd:Q11424 wd:Q29168811 wd:Q24869 wd:Q506240 wd:Q202866 wd:Q226730';
 
 /** Apple-Titel für die Namenssuche: „Charade (1963)“ -> „Charade“, „Jungs Von Spinal Tap, Die“ -> „Die Jungs Von Spinal Tap“,
@@ -430,7 +445,8 @@ export function ausItunes(r) {
       id: `itunes:${r.trackId}`, typ: 'film', titel: String(r.trackName).trim(), jahr: jahrAus(r.releaseDate), release: r.releaseDate || null,
       genre: r.primaryGenreName || null, preisSd, preisHd, leihe: preisWert(r.trackHdRentalPrice) ?? preisWert(r.trackRentalPrice),
       bild: bildUrl(r.artworkUrl100 || r.artworkUrl60), link: appleLink(r.trackViewUrl),
-      text: typeof r.longDescription === 'string' ? r.longDescription.slice(0, 600) : null,
+      // Beschreibung nur, wenn da (sonst bliebe beim Zusammenführen die Chart-Beschreibung nicht erhalten)
+      ...(typeof r.longDescription === 'string' && r.longDescription.trim() ? { text: r.longDescription.slice(0, 600) } : {}),
     };
   }
   if (staffel && r.collectionId && r.collectionName) {
@@ -1129,7 +1145,8 @@ export default async function filme(ctx) {
       if (preis != null && tiefstVorher && !ersteBeobachtung && preis < tiefstVorher.p) neueTiefst.add(id);
       t = titelObjekt({ ...d, chart: chartTreffer.get(id)?.pos ?? null }, lage);
       t._hoechst = lage.hoechst; t._gesenkt = lage.gesenkt; t._horror = istHorror(d, horrorIds);
-      t._horrorText = HORROR_TEXT.test(String(d.text || '')); // nur für Chart-Titel (deine Listen gelten immer)
+      const ct = chartTreffer.get(id)?.d; // Lookup ohne Beschreibung -> die aus den Charts
+      t._horrorText = Math.max(horrorText(d.text, d.genre), horrorText(ct?.text, ct?.genre ?? d.genre)); // nur Chart-Titel zählen: 0–3
     } else {
       const a = altDaten.get(id) || chartTreffer.get(id)?.altTitel;
       if (a) { t = { ...a }; t._horror = istHorror(a, horrorIds); t._alt = true; }
@@ -1198,7 +1215,13 @@ export default async function filme(ctx) {
   for (const id of chartTreffer.keys()) { const t = baue(id); if (t) kandidaten.set(id, t); }
   const rang = t => (wunschIds.has(t.id) ? 0 : kuratiert.has(t.id) ? 1 : 2);
   // Qualität: deine Listen immer; Chart-Titel nur, wenn bekannt/gut bewertet und kein Horror (Genre, Wikidata, Beschreibung)
-  const gut = t => rang(t) < 2 || (!t._horrorText && qualiOk(qualiVon(t.id), { chart: t.chart, neu: !!chartTreffer.get(t.id)?.neu }, m));
+  // Beschreibung: klares Horror-Wort immer raus; zwei schwache Zeichen raus, wenn Wikidata den Film nicht kennt oder gestört ist
+  const gut = t => {
+    if (rang(t) < 2) return true;
+    const q = qualiVon(t.id), ht = t._horrorText || 0;
+    if (ht >= 3 || (ht >= 2 && !(q && q.l >= 0))) return false;
+    return qualiOk(q, { chart: t.chart, neu: !!chartTreffer.get(t.id)?.neu }, m);
+  };
   let qualiRaus = 0;
   for (const t of [...kandidaten.values()]) {
     const q = qualiVon(t.id);
@@ -1206,7 +1229,7 @@ export default async function filme(ctx) {
     if (!gut(t)) { kandidaten.delete(t.id); qualiRaus++; }
   }
   qs.raus = qualiRaus;
-  gruppen.neu = gruppen.neu.filter(t => !t._horrorText && gut(t));
+  gruppen.neu = gruppen.neu.filter(gut);
   gruppen.angebot = [...kandidaten.values()]
     .filter(t => t.typ === 'film' && !t._horror && t.preis != null && (t.preis <= m.angebotPreis
       || (t.preis <= m.angebotPreisAktion && ((t.istTiefst && t.tage >= 7 && (t._hoechst ?? 0) > t.preis) || (aktion && t._gesenkt)))))
