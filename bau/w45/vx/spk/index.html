@@ -96186,7 +96186,7 @@ function spk1DspMake(V) {
     });
     return dbp;
   }
-  const tx = (st, m, fn) => db().then(d => d ? new Promise((ok, no) => { try { const t = d.transaction(st, m), r = fn(t.objectStore(st)); t.oncomplete = () => ok(r && r.result); t.onerror = t.onabort = () => no(t.error || new Error('idb')); } catch (e) { no(e); } }) : fn(null));
+  const tx = (st, m, fn) => db().then(d => d ? new Promise((ok, no) => { try { const t = d.transaction(st, m), r = fn(t.objectStore(st)); t.oncomplete = () => ok(r && r.result); t.onerror = t.onabort = () => no(t.error || new Error('idb')); } catch (e) { no(e); } }) : (r => r && typeof r === 'object' && 'result' in r ? r.result : undefined)(fn(null)));   // ohne IDB: Speicher
   const put = (st, k, v) => tx(st, 'readwrite', s => s ? s.put(v, k) : mem[st].set(k, v));
   const get = (st, k) => tx(st, 'readonly', s => s ? s.get(k) : {result: mem[st].get(k)});
   const del = (st, k) => tx(st, 'readwrite', s => s ? s.delete(k) : mem[st].delete(k));
@@ -96609,6 +96609,283 @@ function spk1DspMake(V) {
     });
     return {W, H, fst, hop: d.meta.base.hop, sr, ids: L.map(l => l.id), img0: out[0], img1: out[1]};
   }
+  /* ---- Zerlegen / Verfeinern (ohne KI, Recherche §3): HPSS + Grundton-Kamm + REPET-SIM, Wiener-artig, Summe = Original ---- */
+  const tick = () => new Promise(r => setTimeout(r, 0));
+  const ZNAME = {bass: 'Bass', gesang: 'Gesang', drums: 'Drums', lead: 'Lead', pads: 'Pads', rest: 'Rest'};
+  // Beträge (mono) der Rahmen mit Mitte cen[i] (Sample), FFT N, Bins 0…K−1 → Float32Array(n·K), zwei Rahmen je FFT
+  function magsAt(d, N, cen, K) {
+    const x = d.mid, w = win(N), NB = N / 2 + 1, n = cen.length, out = new Float32Array(n * K), re = new Float64Array(N), im = new Float64Array(N), a = new Float64Array(NB), b = new Float64Array(NB);
+    for (let i = 0; i < n; i += 2) {
+      const sA = cen[i] - N / 2, two = i + 1 < n, sB = two ? cen[i + 1] - N / 2 : 0;
+      for (let j = 0; j < N; j++) { const p = sA + j, q = sB + j; re[j] = (p >= 0 && p < x.length ? x[p] : 0) * w[j]; im[j] = two && q >= 0 && q < x.length ? x[q] * w[j] : 0; }
+      V.fft(re, im); magPair(re, im, N, a, b);
+      for (let k = 0; k < K; k++) out[i * K + k] = a[k];
+      if (two) for (let k = 0; k < K; k++) out[(i + 1) * K + k] = b[k];
+    }
+    return out;
+  }
+  // gleitender Median (Länge L ungerade, außen 0): n Werte src[o + i·st] → dst[o + i·st]; buf = sortiertes Fenster
+  function medLine(src, o, st, n, L, dst, buf) {
+    const h = L >> 1; let c = 0;
+    const at = i => i >= 0 && i < n ? src[o + i * st] : 0;
+    const ins = v => { let lo = 0, hi = c; while (lo < hi) { const m = (lo + hi) >> 1; if (buf[m] < v) lo = m + 1; else hi = m; } for (let j = c; j > lo; j--) buf[j] = buf[j - 1]; buf[lo] = v; c++; };
+    const rem = v => { let lo = 0, hi = c - 1; while (lo < hi) { const m = (lo + hi) >> 1; if (buf[m] < v) lo = m + 1; else hi = m; } for (let j = lo; j < c - 1; j++) buf[j] = buf[j + 1]; c--; };
+    for (let i = -h; i <= h; i++) ins(Math.fround(at(i)));
+    for (let i = 0; i < n; i++) { dst[o + i * st] = buf[h]; rem(Math.fround(at(i - h))); ins(Math.fround(at(i + h + 1))); }
+  }
+  // HPSS (Median zeitlich Lt Rahmen / spektral Lf Bins) → harmonischer Anteil mh = H²/(H²+P²) je Zelle; H bleibt für den Grundton
+  function hpss(X, n, K, Lt, Lf) {
+    const H = new Float32Array(n * K), P = new Float32Array(n * K), buf = new Float32Array(Math.max(Lt, Lf) + 2), mh = new Float32Array(n * K);
+    for (let k = 0; k < K; k++) medLine(X, k, K, n, Lt, H, buf);
+    for (let i = 0; i < n; i++) medLine(X, i * K, 1, K, Lf, P, buf);
+    for (let i = 0; i < n * K; i++) { const h = H[i] * H[i], p = P[i] * P[i]; mh[i] = h + p > 0 ? h / (h + p) : 0.5; }
+    return {H, mh};
+  }
+  // Grundton je Rahmen per Obertonsumme (fa…fb Hz, 1/8 Halbton); df = Hz je Bin; zug = Stetigkeit (Sprünge > 3 Halbtöne kosten)
+  function f0Sum(Y, n, K, df, fa, fb, nh, zug) {
+    const f0 = new Float32Array(n), q = new Float32Array(n), hr = new Float32Array(n), C = []; for (let f = fa; f <= fb; f *= Math.pow(2, 1 / 96)) C.push(f);
+    let prev = 0;
+    for (let i = 0; i < n; i++) {
+      const o = i * K, at = kf => { const k = Math.floor(kf), u = kf - k; return k + 1 < K ? Y[o + k] * (1 - u) + Y[o + k + 1] * u : 0; };
+      let tot = 0; const ka = Math.max(1, Math.floor(fa * 0.9 / df)), kb = Math.min(K, Math.ceil(Math.min(fb * nh, fb < 400 ? 400 : 4000) / df)); for (let k = ka; k < kb; k++) tot += Y[o + k];
+      let best = 0, bf = 0;
+      for (const f of C) {
+        let s = 0, g = 1; for (let h = 1; h <= nh; h++, g *= 0.85) { const kf = h * f / df; if (kf >= K - 1) break; s += g * at(kf); }
+        if (zug && prev) { const j = Math.abs(12 * Math.log2(f / prev)); if (j > 3) s *= 0.8; }
+        if (s > best) { best = s; bf = f; }
+      }
+      f0[i] = bf; const r = tot > 0 ? best / tot : 0; q[i] = Math.max(0, Math.min(1, (r - 0.08) / 0.22)); prev = q[i] > 0.3 ? bf : 0;
+      let a2 = 0; for (let h = 2; h <= nh && h * bf / df < K - 1; h++) a2 += at(h * bf / df); hr[i] = bf ? a2 / (at(bf / df) + 1e-12) : 0;   // Obertöne / Grundton (Kick-Ausklang ≈ Sinus → klein)
+    }
+    return {f0, q, hr};
+  }
+  // Kamm: Gewicht 0…1 je Bin für k·f0 (r = halbe Breite in Bins), bis fmax
+  function comb(out, K, df, f0, fmax, r, h0) {
+    out.fill(0); if (!(f0 > 0)) return out;
+    for (let h = h0 || 1; h * f0 < fmax; h++) { const kc = h * f0 / df; for (let k = Math.max(0, Math.floor(kc - r)); k <= Math.min(K - 1, Math.ceil(kc + r)); k++) { const w = 1 - Math.abs(k - kc) / (r + 0.5); if (w > out[k]) out[k] = w; } }
+    return out;
+  }
+  const ramp = (f, a, b) => f <= a ? 0 : f >= b ? 1 : 0.5 - 0.5 * Math.cos(Math.PI * (f - a) / (b - a));
+  // Stufe 1 (ganzes Stück): Beträge bis 10 kHz als dB-Bytes + je 4 Rahmen die 10 ähnlichsten Stellen (REPET-SIM, Abstand ≥ 1 s)
+  async function zPrep(d, emit, qid) {
+    if (d.zA) return d.zA;
+    const sr = d.meta.sr, N = d.meta.base.N, hop = d.meta.base.hop, NB = N / 2 + 1, F = Fn(d), KV = Math.min(NB, Math.ceil(10000 * N / sr)), KN = 10;
+    const kq = 'spk:' + d.meta.id + ':zq', kn = 'spk:' + d.meta.id + ':zn';
+    const oq = await get('audio', kq), on2 = await get('audio', kn);
+    const LUT = new Float32Array(256); for (let i = 0; i < 256; i++) LUT[i] = i ? Math.pow(10, (i / 1.6 - 90) / 20) : 0;
+    if (oq && on2 && oq.byteLength === F * KV) return (d.zA = {Q: new Uint8Array(oq), nb: new Int32Array(on2), KV, KN, LUT});
+    const Q = new Uint8Array(F * KV), step = 256;
+    for (let m0 = 0; m0 < F; m0 += step) {
+      if (d.zStop) throw new Error('abgebrochen');
+      const n = Math.min(step, F - m0), cen = new Int32Array(n); for (let i = 0; i < n; i++) cen[i] = (m0 + i - 1) * hop;
+      const X = magsAt(d, N, cen, KV);
+      for (let i = 0; i < n * KV; i++) { const v = X[i] > 0 ? Math.round((20 * Math.log10(X[i]) + 90) * 1.6) : 0; Q[m0 * KV + i] = v < 1 ? (X[i] > 0 ? 1 : 0) : v > 255 ? 255 : v; }
+      emit({qid, prog: 0.25 * (m0 + n) / F, stufe: 'Ähnlichkeit'}); await tick();
+    }
+    // Merkmale je 4 Rahmen: 48 log-Bänder 60 Hz…10 kHz (dB), mittelwertfrei + normiert → Kosinus
+    const G = Math.ceil(F / 4), B = 48, fe = new Float32Array(G * B), bk = new Int32Array(B + 1);
+    for (let b = 0; b <= B; b++) bk[b] = Math.min(KV, Math.max(1, Math.round(60 * Math.pow(10000 / 60, b / B) * N / sr)));
+    for (let g = 0; g < G; g++) {
+      for (let b = 0; b < B; b++) { let s = 0, c = 0; for (let m = g * 4; m < Math.min(F, g * 4 + 4); m++) for (let k = bk[b]; k < Math.max(bk[b] + 1, bk[b + 1]); k++) { s += Q[m * KV + k]; c++; } fe[g * B + b] = c ? s / c : 0; }
+      let mu = 0; for (let b = 0; b < B; b++) mu += fe[g * B + b]; mu /= B; let nn = 0; for (let b = 0; b < B; b++) { fe[g * B + b] -= mu; nn += fe[g * B + b] ** 2; } nn = Math.sqrt(nn) || 1; for (let b = 0; b < B; b++) fe[g * B + b] /= nn;
+    }
+    const nb = new Int32Array(G * KN).fill(-1), minD = Math.max(2, Math.round(sr / (4 * hop))), bv = new Float32Array(KN);
+    for (let g = 0; g < G; g++) {
+      bv.fill(-2); const o = g * KN;
+      for (let h = 0; h < G; h++) {
+        if (Math.abs(h - g) < minD) continue; let s = 0; for (let b = 0; b < B; b++) s += fe[g * B + b] * fe[h * B + b];
+        if (s <= bv[KN - 1]) continue; let j = KN - 1; while (j > 0 && bv[j - 1] < s) { bv[j] = bv[j - 1]; nb[o + j] = nb[o + j - 1]; j--; } bv[j] = s; nb[o + j] = h;
+      }
+      if ((g & 63) === 63) { emit({qid, prog: 0.25 + 0.05 * g / G, stufe: 'Ähnlichkeit'}); await tick(); if (d.zStop) throw new Error('abgebrochen'); }
+    }
+    await put('audio', kq, Q.buffer.slice(0)); await put('audio', kn, nb.buffer.slice(0));   // Zwischenstand: nach Neuladen nicht noch einmal
+    return (d.zA = {Q, nb, KV, KN, LUT});
+  }
+  function uAbort(d) {
+    const u = d.u; d.u = null; if (!u) return;
+    for (const [k, prev] of u.st) { const [lid, s] = k.split('|'); if (prev) masksOf(d, lid).set(+s, prev); else masksOf(d, lid).delete(+s); d.dirty.add(k); }
+    d.meta.layers = JSON.parse(u.meta); d.meta.rest = JSON.parse(u.rest); for (const lid of [...d.masks.keys()]) if (!lay(d, lid)) d.masks.delete(lid);
+    for (const l of d.meta.layers) l.ver = ++d.vc; d.cache.clear(); d.metaDirty = true; soon(d);
+  }
+  // Tiefband mit langer FFT (Nf): Bass = harmonisch UND auf dem Kamm des verfolgten Grundtons; Drums = perkussiv + tiefe Reste neben dem Kamm (Kick)
+  function lowSplit(d, cen, Nf, fmax, r, trust) {   // trust: der Nutzer sagt „hier ist Bass“ → Kamm ohne Zweifel-Schranke
+    const sr = d.meta.sr, dff = sr / Nf, Kf = Math.min(Nf / 2 + 1, Math.ceil(fmax / dff) + 2), n = cen.length, X = magsAt(d, Nf, cen, Kf), {H, mh} = hpss(X, n, Kf, 17, 17);
+    const fz = f0Sum(H, n, Kf, dff, 30, 260, 6, true), SB = new Float32Array(n * Kf), SD = new Float32Array(n * Kf), cb = new Float32Array(Kf), G = new Float32Array(n);
+    for (let i = 0; i < n; i++) {
+      const o = i * Kf; comb(cb, Kf, dff, fz.f0[i], Math.min(fmax, Math.max(260, 4.5 * fz.f0[i])), r, 1);   // nur die unteren Obertöne: darüber liegen Akkorde/Melodie dicht
+      const gate = G[i] = trust ? Math.min(1, fz.q[i] / 0.1) : Math.min(1, Math.max(0, (fz.q[i] - 0.05) / 0.25)) * Math.min(1, Math.max(0, (fz.hr[i] - 0.3) / 0.6));
+      for (let k = 0; k < Kf; k++) { const f = k * dff, h = mh[o + k], on = cb[k] * gate, kick = 1 - ramp(f, 90, 160); SB[o + k] = on; SD[o + k] = (1 - on) * ((1 - h) + h * kick); }   // Bass-Anschlag bleibt Bass (auf dem Kamm)
+    }
+    return {X, SB, SD, Kf, Nf, f0: fz, gate: G};
+  }
+  // feine Schätzung S (Anteil 0…1 je feinem Bin) → Basis-Bin k (Leistung gewichtet), Zeile i
+  function projRow(X, S, o, Kf, r, k) {
+    const c = k * r, hw = r / 2; let num = 0, den = 0;
+    for (let kk = Math.max(0, Math.ceil(c - hw)); kk <= Math.min(Kf - 1, Math.floor(c + hw)); kk++) { const w = Math.abs(kk - c) === hw ? 0.5 : 1, p = X[o + kk] * X[o + kk] * w; num += p * S[o + kk]; den += p; }
+    return den > 0 ? num / den : -1;
+  }
+  // Zerlegen: ganzes Stück → Drums (perkussiv), Bass (Tiefband + Grundton-Kamm), Gesang (Vordergrund, stimmhaft), Rest. Ein Undo-Schritt.
+  // Eigene Ebenen bleiben: verteilt wird nur, was frei ist (255 − Σ eigene); frühere Zerlegen-Ebenen (l.z) werden neu gefüllt.
+  async function zerlegen(d, o, emit, qid) {
+    if (d.busy) throw new Error('Rechnung läuft');
+    const sr = d.meta.sr, N = d.meta.base.N, hop = d.meta.base.hop, NB = N / 2 + 1, F = Fn(d), NS = NSn(d), TR = TRn(d), df = sr / N, t0 = Date.now();
+    d.busy = 'zerlegen'; d.zStop = false;
+    try {
+      uBegin(d, 'Zerlegen');
+      const lids = {};
+      for (const art of ['drums', 'bass', 'gesang']) { let l = d.meta.layers.find(x => x.z === art); if (!l) { l = newLayer(d, {art}); l.z = art; } lids[art] = l.id; }
+      const zl = [lids.drums, lids.bass, lids.gesang], own = d.meta.layers.filter(l => !zl.includes(l.id)).map(l => l.id);
+      const A = await zPrep(d, emit, qid), KV = A.KV, KN = A.KN, LUT = A.LUT;
+      const job = d.meta.jobs.zerlegen; let s0 = 0;
+      if (job && !job.fertig && job.lids && job.lids.join() === zl.join() && o.weiter !== false) s0 = Math.min(NS, job.k | 0);   // Weiterrechnen nach Unterbrechung
+      d.meta.jobs.zerlegen = {k: s0, n: NS, lids: zl, fertig: false};
+      const Lt = 17, Lf = 17, MG = (Lt >> 1) + 1, low = new Float32Array(NB), voc = new Float32Array(NB), cb = new Float32Array(NB), med = new Float32Array(KN + 1);
+      for (let k = 0; k < NB; k++) { const f = k * df; low[k] = 1 - ramp(f, 110, 260); voc[k] = ramp(f, 100, 180) * (1 - ramp(f, 7000, 10000)); }
+      for (let s = s0; s < NS; s++) {
+        if (d.zStop) throw new Error('abgebrochen');
+        const mA = s * BT, mB = Math.min(F - 1, mA + BT - 1), a0 = mA - MG, n = mB + MG - a0 + 1, cen = new Int32Array(n);
+        for (let i = 0; i < n; i++) cen[i] = (a0 + i - 1) * hop;
+        const X = magsAt(d, N, cen, NB), {H, mh} = hpss(X, n, NB, Lt, Lf);
+        const LS = lowSplit(d, cen, 8192, 520, 1.5), rL = 8192 / N, KL = Math.ceil(520 / df);   // Tiefband feiner (Kick ↔ Bass)
+        const ED = new Float32Array(n * NB), EB = new Float32Array(n * NB), EV = new Float32Array(n * NB);
+        for (let i = MG - 1; i <= n - MG; i++) {
+          const m = a0 + i, o = i * NB; if (m < 0 || m >= F) continue;
+          const gt = 0;
+          const g = m >> 2, nbo = g * KN, ph = m & 3;
+          for (let k = 0; k < NB; k++) {
+            const h = mh[o + k], lb = 0;
+            let fg = 0;
+            if (k < KV && voc[k] > 0) {
+              let c = 0; for (let j = 0; j < KN; j++) { const gg = A.nb[nbo + j]; if (gg < 0) continue; const mm = Math.min(F - 1, gg * 4 + ph), v = LUT[A.Q[mm * KV + k]]; let p = c++; while (p > 0 && med[p - 1] > v) { med[p] = med[p - 1]; p--; } med[p] = v; }
+              if (c) { const x = X[o + k], R = Math.min(x, c & 1 ? med[c >> 1] : 0.5 * (med[(c >> 1) - 1] + med[c >> 1])), v = x - R; fg = v * v + R * R > 0 ? v * v / (v * v + R * R) : 0; }
+            }
+            ED[o + k] = (1 - lb) * (1 - h); EB[o + k] = lb; EV[o + k] = (1 - lb) * h * fg * voc[k];
+            if (k < KL) {
+              const x = 1 - ramp(k * df, 320, 500), eb = projRow(LS.X, LS.SB, i * LS.Kf, LS.Kf, rL, k), ed = projRow(LS.X, LS.SD, i * LS.Kf, LS.Kf, rL, k);
+              if (eb >= 0) { ED[o + k] = x * ed + (1 - x) * ED[o + k]; EB[o + k] = x * eb + (1 - x) * EB[o + k]; EV[o + k] *= 1 - x; }
+            }
+          }
+        }
+        // 3×3 glätten (Wiener-artig, keine harten Kanten) und in die Kacheln schreiben
+        const sm = (E, i, k) => { let a = 0, c = 0; for (let di = -1; di <= 1; di++) for (let dk = -1; dk <= 1; dk++) { const kk = k + dk; if (kk < 0 || kk >= NB) continue; a += E[(i + di) * NB + kk]; c++; } return a / c; };
+        for (const id of zl) uTouch(d, id, s);
+        for (let tr = 0; tr < TR; tr++) {
+          const T = zl.map(id => tileArr(stripe(d, id, s, true), tr)), OW = own.map(id => { const st = stripe(d, id, s, false); return st && st.h[tr] ? (st.h[tr] === 255 ? 255 : st.t[tr]) : 0; });
+          for (const t of T) t.fill(0);
+          for (let m = mA; m <= mB; m++) {
+            const i = m - a0, c = (m & 127) * BT;
+            for (let b = 0; b < BT; b++) {
+              const k = tr * BT + b; if (k >= NB) break;
+              let used = 0; for (const t of OW) used += t === 255 ? 255 : t ? t[c + b] : 0;
+              const free = Math.max(0, 255 - used); if (!free) continue;
+              const vd = Math.round(free * sm(ED, i, k)), vb = Math.min(free - vd, Math.round(free * sm(EB, i, k))), vv = Math.min(free - vd - vb, Math.round(free * sm(EV, i, k)));
+              T[0][c + b] = vd; T[1][c + b] = vb < 0 ? 0 : vb; T[2][c + b] = vv < 0 ? 0 : vv;
+            }
+          }
+          for (const id of zl) tidy(stripe(d, id, s, true), tr);
+        }
+        for (const id of zl) d.dirty.add(id + '|' + s);
+        d.meta.jobs.zerlegen.k = s + 1;
+        emit({qid, prog: 0.3 + 0.7 * (s + 1) / NS, stufe: 'Trennen'}); await tick();
+      }
+      for (const id of zl) verUp(d, id);
+      d.meta.jobs.zerlegen = {fertig: true, n: NS, lids: zl, ms: Date.now() - t0};
+      uEnd(d);
+      return {lids, ms: Date.now() - t0, weiter: s0};
+    } catch (e) { uAbort(d); delete d.meta.jobs.zerlegen; throw e; }
+    finally { d.busy = null; d.zStop = false; }
+  }
+  // Verfeinern: in der Auswahl mit passender FFT neu schätzen, welcher Anteil zum Ziel gehört → Ziel-Ebene (andere Ebenen geben anteilig ab)
+  const ZN = {bass: 8192, pads: 8192, gesang: 4096, lead: 4096, drums: 1024, rest: 4096};
+  function refineEst(d, ziel, m0, m1, k1) {
+    const sr = d.meta.sr, N = d.meta.base.N, hop = d.meta.base.hop, NB = N / 2 + 1, nF = m1 - m0 + 1, E = new Float32Array(nF * NB), Nf = ZN[ziel];
+    if (ziel === 'rest') { E.fill(1); return {E, Nf}; }
+    if (ziel === 'drums') {   // kurze Rahmen (1024, Hop 256): perkussiver Anteil, je Basis-Rahmen 4 Unter-Rahmen
+      const sub = 4, sh = hop / sub, Kf = Nf / 2 + 1, MG = 9, n = (nF + 2 * MG) * sub, cen = new Int32Array(n);
+      for (let i = 0; i < n; i++) cen[i] = (m0 - MG - 1) * hop + Math.round((i - (sub - 1) / 2) * sh);
+      const X = magsAt(d, Nf, cen, Kf), {mh} = hpss(X, n, Kf, 17, 9), r = N / Nf;
+      for (let m = 0; m < nF; m++) for (let k = 0; k <= Math.min(k1, NB - 1); k++) {
+        const kf = k / r, a = Math.floor(kf), u = kf - a; let num = 0, den = 0;
+        for (let j = 0; j < sub; j++) { const o = ((m + MG) * sub + j) * Kf; for (const [kk, w] of [[a, 1 - u], [a + 1, u]]) { if (kk >= Kf || !w) continue; const p = X[o + kk] * X[o + kk] * w; num += p * (1 - mh[o + kk]); den += p; } }
+        E[m * NB + k] = den > 0 ? num / den : 0;
+      }
+      const cl = new Int32Array(nF); for (let i = 0; i < nF; i++) cl[i] = (m0 + i - 1) * hop;   // tief: Kick ↔ Bass mit langer FFT (wie Zerlegen)
+      const LS = lowSplit(d, cl, 8192, 520, 1.5), rL = 8192 / N, df = sr / N;
+      for (let m = 0; m < nF; m++) for (let k = 0; k * df < 500; k++) { const x = 1 - ramp(k * df, 320, 500), e = projRow(LS.X, LS.SD, m * LS.Kf, LS.Kf, rL, k); if (e >= 0) E[m * NB + k] = x * e + (1 - x) * E[m * NB + k]; }
+      return {E, Nf};
+    }
+    if (ziel === 'bass') {   // lange FFT (16384): Bass nur auf dem Kamm des verfolgten Grundtons, Kick daneben fällt heraus
+      const MG = 9, n = nF + 2 * MG, cen = new Int32Array(n); for (let i = 0; i < n; i++) cen[i] = (m0 - MG + i - 1) * hop;
+      const LS = lowSplit(d, cen, Nf, 2000, 1.5, true), r = Nf / N;
+      for (let m = 0; m < nF; m++) for (let k = 0; k <= Math.min(k1, NB - 1); k++) { const e = projRow(LS.X, LS.SB, (m + MG) * LS.Kf, LS.Kf, r, k); if (e < 0) break; E[m * NB + k] = e; }
+      return {E, Nf};
+    }
+    const fmax = {bass: 2000, pads: 12000, gesang: 9000, lead: 10000}[ziel], dff = sr / Nf, Kf = Math.min(Nf / 2 + 1, Math.ceil(fmax / dff) + 2), MG = ziel === 'pads' ? 16 : 9, n = nF + 2 * MG, cen = new Int32Array(n);
+    for (let i = 0; i < n; i++) cen[i] = (m0 - MG + i - 1) * hop;
+    const X = magsAt(d, Nf, cen, Kf), {H, mh} = hpss(X, n, Kf, ziel === 'pads' ? 31 : 17, 17), S = new Float32Array(n * Kf), cb = new Float32Array(Kf);
+    const fz = ziel === 'bass' ? f0Sum(H, n, Kf, dff, 30, 300, 8, true) : ziel === 'gesang' ? f0Sum(H, n, Kf, dff, 80, 1000, 8, true) : ziel === 'lead' ? f0Sum(X, n, Kf, dff, 100, 2000, 8, false) : null;
+    for (let i = MG; i < MG + nF; i++) {
+      const o = i * Kf;
+      if (fz) comb(cb, Kf, dff, fz.f0[i], fmax, ziel === 'bass' ? 2.5 : 1.5, 1);
+      for (let k = 0; k < Kf; k++) {
+        const f = k * dff;
+        if (ziel === 'bass') S[o + k] = mh[o + k] * Math.max(cb[k] * fz.q[i], 1 - ramp(f, 55, 90));
+        else if (ziel === 'pads') S[o + k] = mh[o + k] * mh[o + k] * ramp(f, 120, 220);
+        else S[o + k] = mh[o + k] * cb[k] * fz.q[i] * ramp(f, 70, 110);
+      }
+    }
+    const r = Nf / N, hw = r / 2;   // Basis-Bin k ↔ feine Bins k·r ± r/2 (Leistung gewichtet)
+    for (let m = 0; m < nF; m++) {
+      const o = (m + MG) * Kf;
+      for (let k = 0; k <= Math.min(k1, NB - 1); k++) {
+        const c = k * r; if (c - hw >= Kf - 1) break; let num = 0, den = 0;
+        for (let kk = Math.max(0, Math.ceil(c - hw)); kk <= Math.min(Kf - 1, Math.floor(c + hw)); kk++) { const w = Math.abs(kk - c) === hw ? 0.5 : 1, p = X[o + kk] * X[o + kk] * w; num += p * S[o + kk]; den += p; }
+        E[m * NB + k] = den > 0 ? num / den : 0;
+      }
+    }
+    return {E, Nf};
+  }
+  async function verfeinern(d, o, emit, qid) {
+    if (d.busy) throw new Error('Rechnung läuft');
+    const ziel = ZN[o.ziel] ? o.ziel : 'rest', {fnc, box} = selFn(d, o.sel || {}), TR = TRn(d), NB = NBn(d);
+    if (box.m1 < box.m0 || box.k1 < box.k0) throw new Error('Keine Auswahl');
+    d.busy = 'verfeinern';
+    try {
+      uBegin(d, 'Verfeinern: ' + ZNAME[ziel]);
+      let tl = 'rest';
+      if (ziel !== 'rest') { let l = d.meta.layers.find(x => x.z === ziel) || d.meta.layers.find(x => x.art === ziel); if (!l) l = newLayer(d, {art: ziel}); tl = l.id; }
+      emit({qid, prog: 0.1, stufe: 'Verfeinern'}); await tick();
+      const {E, Nf} = refineEst(d, ziel, box.m0, box.m1, box.k1);
+      emit({qid, prog: 0.7, stufe: 'Verfeinern'}); await tick();
+      const all = d.meta.layers.map(l => l.id); let vor = 0, nach = 0, wsum = 0;
+      for (let s = box.m0 >> 7; s <= box.m1 >> 7; s++) {
+        for (let tr = box.k0 >> 7; tr <= Math.min(TR - 1, box.k1 >> 7); tr++) {
+          const kA = Math.max(box.k0, tr * BT), kB = Math.min(box.k1, tr * BT + BT - 1, NB - 1), mA = Math.max(box.m0, s * BT), mB = Math.min(box.m1, s * BT + BT - 1);
+          const wts = new Float32Array(BT * BT); let any = false;
+          for (let m = mA; m <= mB; m++) for (let k = kA; k <= kB; k++) { const v = fnc(m, k); if (v > 0) { wts[(m & 127) * BT + (k & 127)] = v; any = true; } }
+          if (!any) continue;
+          const ids = all.filter(id => { const st = stripe(d, id, s, false); return st && st.h[tr]; }); if (tl !== 'rest' && !ids.includes(tl)) ids.push(tl);
+          for (const id of all) uTouch(d, id, s);
+          const T = {}; for (const id of ids) T[id] = tileArr(stripe(d, id, s, true), tr);
+          for (let m = mA; m <= mB; m++) for (let k = kA; k <= kB; k++) {
+            const i = (m & 127) * BT + (k & 127), w = wts[i]; if (!w) continue;
+            let sum = 0; for (const id of ids) sum += T[id][i];
+            const rest = Math.max(0, 255 - sum), told = tl === 'rest' ? rest : T[tl][i], e = E[(m - box.m0) * NB + k];
+            const tnew = Math.max(0, Math.min(255, Math.round(w * 255 * e + (1 - w) * told))), sc = 255 - told > 0 ? (255 - tnew) / (255 - told) : 0;
+            for (const id of ids) if (id !== tl) T[id][i] = Math.floor(T[id][i] * sc);
+            if (tl !== 'rest') T[tl][i] = tnew;
+            vor += w * told; nach += w * tnew; wsum += w * 255;
+          }
+          for (const id of ids) { tidy(stripe(d, id, s, true), tr); d.dirty.add(id + '|' + s); }
+        }
+      }
+      for (const id of all) verUp(d, id);
+      d.meta.patches = (d.meta.patches || []).concat([{id: 'P' + (d.meta.patches || []).length, lid: tl, ziel, N: Nf, m0: box.m0, m1: box.m1, k0: box.k0, k1: box.k1}]).slice(-50);
+      uEnd(d);
+      return {lid: tl, ziel, N: Nf, frames: box.m1 - box.m0 + 1, vorher: wsum ? +(vor / wsum).toFixed(4) : 0, nachher: wsum ? +(nach / wsum).toFixed(4) : 0};
+    } catch (e) { uAbort(d); throw e; }
+    finally { d.busy = null; }
+  }
   /* ---- Laden / Anlegen ---- */
   async function loadPcm(d) {
     d.pcm = [];
@@ -96696,9 +96973,13 @@ function spk1DspMake(V) {
         if (d.metaDirty) soon(d);
         return I;
       }
-      case 'transfer': { const r = transfer(d, m); return Object.assign(r, info(d)); }
+      case 'transfer': { if (d.busy) throw new Error('Rechnung läuft'); const r = transfer(d, m); return Object.assign(r, info(d)); }
+      case 'zerlegen': return Object.assign(await zerlegen(d, m, emit, m.qid), info(d));
+      case 'verfeinern': return Object.assign(await verfeinern(d, m, emit, m.qid), info(d));
+      case 'zstop': if (d) d.zStop = true; return true;
       case 'layer': {
         const step = ['neu', 'weg', 'name', 'farbe'].includes(m.was);
+        if (step && d.busy) throw new Error('Rechnung läuft');
         if (step && m.lid === 'rest' && m.was !== 'neu') throw new Error('Rest bleibt');
         if (step) uBegin(d, {neu: 'Neue Ebene', weg: 'Ebene löschen', name: 'Ebene umbenennen', farbe: 'Ebenen-Farbe'}[m.was]);
         let l = m.lid === 'rest' ? d.meta.rest : lay(d, m.lid);
@@ -96712,8 +96993,8 @@ function spk1DspMake(V) {
         if (step) uEnd(d); else { d.metaDirty = true; soon(d); }
         return Object.assign({lid: l.id || 'rest'}, info(d));
       }
-      case 'undo': return Object.assign({label: uSwap(d, d.undo, d.redo)}, info(d));
-      case 'redo': return Object.assign({label: uSwap(d, d.redo, d.undo)}, info(d));
+      case 'undo': if (d.busy) throw new Error('Rechnung läuft'); return Object.assign({label: uSwap(d, d.undo, d.redo)}, info(d));
+      case 'redo': if (d.busy) throw new Error('Rechnung läuft'); return Object.assign({label: uSwap(d, d.redo, d.undo)}, info(d));
       case 'render': { const outs = render(d, mixOf(d, m.mix), m.a, m.b); return {ch: outs, sr: d.meta.sr}; }
       case 'block': { const outs = block(d, m.k, mixOf(d, m.mix), m.sel || null, m.sv || 0).map(x => x.slice()); return {k: m.k, ch: outs, sr: d.meta.sr}; }
       case 'harm': return harmTrack(d, +m.t || 0, +m.f || 220, m.max || 6);
@@ -96744,7 +97025,7 @@ function spk1DspMake(V) {
       emit({qid: m.qid, ok: r}, tr);
     }, e => emit({qid: m.qid, err: String(e && e.message || e)}));
   }
-  return {on, stft, istft, specInfo, docs};
+  return {on, stft, istft, specInfo, docs, lowSplit};
 }
 /* ---------- Hauptfaden: Worker (Blob aus Text), Rückfall = derselbe Kern hier ---------- */
 function spk1Worker() {
@@ -96761,7 +97042,7 @@ function spk1Worker() {
 }
 function spk1Reply(m) {
   const q = SPK1.wq.get(m.qid); if (!q) return;
-  if (m.prog != null) { if (q.prog) q.prog(m.prog); return; }
+  if (m.prog != null) { if (q.prog) q.prog(m.prog, m.stufe || ''); return; }
   if (m.chunk) { if (q.chunk) q.chunk(m.chunk); return; }
   SPK1.wq.delete(m.qid); if (m.err) q.no(new Error(m.err)); else q.ok(m.ok);
 }
@@ -96995,7 +97276,6 @@ function spk1Build() {
   const A = (a, t, lab) => { const b = el('button', 'mbtn rb', t); b.dataset.a = a; if (lab) b.setAttribute('aria-label', lab); ac.appendChild(b); U['b_' + a] = b; return b; };
   A('play', '▶ Abspielen', 'Abspielen ab der Position'); A('psel', '▶ Auswahl', 'Nur die Auswahl hören'); A('into', 'In Ebene ▾', 'Auswahl in eine Ebene verschieben oder kopieren');
   A('drop', 'Verwerfen', 'Auswahl verwerfen'); A('zerl', 'Zerlegen', 'Ganzes Stück in Ebenen zerlegen'); A('verf', 'Verfeinern …', 'Auswahl genauer trennen');
-  U.b_zerl.disabled = U.b_verf.disabled = true;   // Schritt 4
   sh.append(hd, tl, co, ru, ky, mn, op, st, ac, ly, sp);
   document.body.appendChild(sh);
   onTap(sh, (b, e) => spk1Tap(U, b, e), 'button:not(.spk1-ck)');   // .spk1-ck = Knöpfe mit eigenem click (Klappfenster, Zwei-Schritt): kein Geister-Klick-Schutz davor
@@ -97345,7 +97625,9 @@ function spk1Stat(U, t) { if (U.st.textContent !== t) U.st.textContent = t; }
 function spk1BtnState(U) {
   const has = U.sel.length > 0, pl = !!SPK1.pl;
   U.b_play.textContent = pl && !U.playSel ? '■ Stopp' : '▶ Abspielen'; U.b_psel.textContent = pl && U.playSel ? '■ Stopp' : '▶ Auswahl';
-  U.b_psel.disabled = !has && !(pl && U.playSel); U.b_into.disabled = !has; U.b_drop.disabled = !has;
+  U.b_psel.disabled = !has && !(pl && U.playSel); U.b_into.disabled = !has || !!U.busy; U.b_drop.disabled = !has;
+  U.b_zerl.textContent = U.busy === 'zerlegen' ? '■ Abbrechen' : 'Zerlegen'; U.b_zerl.disabled = U.busy === 'verfeinern'; U.b_verf.disabled = !has || !!U.busy;
+  if (U.busy) U.bU.disabled = U.bR.disabled = true; else if (SPK1.last) spk1UndoBtns(U, SPK1.last);
   U.bMin.classList.toggle('on', !!U.opt.minus); U.bMin.setAttribute('aria-pressed', String(!!U.opt.minus));
 }
 function spk1UndoBtns(U, r) {
@@ -97389,6 +97671,7 @@ async function spk1Into(U, nach, art) {
   } catch (e) { logErr(e); spk1Stat(U, 'Nicht möglich: ' + (e.message || e)); }
 }
 async function spk1UndoRedo(U, which) {
+  if (U.busy) return; U.vf = null;
   try { const r = await spk1Call(which, {doc: SPK1.doc}); spk1Got(U, r); spk1TintLoad(U); spk1Stat(U, r.label ? (which === 'undo' ? 'Rückgängig: ' : 'Wiederholt: ') + r.label : ''); } catch (e) { logErr(e); }
 }
 /* ---- Klappfenster (Ansicht, In Ebene, Ebene ⋯) ---- */
@@ -97456,6 +97739,8 @@ function spk1Tap(U, b) {
     case 'play': if (SPK1.pl && !U.playSel) { spk1Stop(); spk1BtnState(U); spk1Dirty(U, 'ov'); } else spk1PlayFrom(U, U.cur); return;
     case 'psel': spk1PlaySel(U); return;
     case 'into': spk1IntoDd(U, b); return;
+    case 'zerl': spk1Zerl(U); return;
+    case 'verf': spk1VerfDd(U, b); return;
     case 'drop': U.sel = []; U.hits = U.ex = null; U.hitLab.textContent = ''; if (SPK1.pl && U.playSel) spk1Stop(); spk1SelDone(U, 'Auswahl verworfen'); return;
     case 'lact': if (lid && U.act !== lid) { U.act = lid; spk1Layers(U); } return;
     case 'lcol': if (lid && lid !== 'orig' && lid !== 'rest') { const l = U.meta.layers.find(x => x.id === lid), i = SPK1_PAL.indexOf(l.col); spk1Layer(U, 'farbe', lid, SPK1_PAL[(i + 1) % SPK1_PAL.length]); } return;
@@ -97467,6 +97752,65 @@ function spk1Tap(U, b) {
     case 'open': spk1OpenId(U, b.dataset.id); return;
   }
 }
+/* ---- Zerlegen / Verfeinern (Schritt 4): Rechnung im Worker, Fortschritt in der Statuszeile, Abbrechen = nichts geändert ---- */
+async function spk1Zerl(U) {
+  if (U.busy === 'zerlegen') { spk1Call('zstop', {doc: SPK1.doc}).catch(() => {}); spk1Stat(U, 'Breche ab …'); return; }
+  if (U.busy) return;
+  U.busy = 'zerlegen'; U.vf = null; spk1Dd(U, null); spk1BtnState(U); spk1Stat(U, 'Zerlegen …');
+  try {
+    const r = await spk1Call('zerlegen', {doc: SPK1.doc}, null, {prog: (p, st) => { if (U.busy === 'zerlegen') spk1Stat(U, 'Zerlegen · ' + (st || 'Rechne') + ' ' + Math.round(p * 100) + ' %'); }});
+    U.busy = null; spk1Got(U, r); spk1TintLoad(U);
+    spk1Stat(U, 'Zerlegt: Drums, Bass, Gesang, Rest · ' + (r.ms / 1000).toFixed(1).replace('.', ',') + ' s · ↶ macht es rückgängig');
+  } catch (e) { const ab = /abgebrochen/.test(e.message || ''); if (!ab) logErr(e); spk1Stat(U, ab ? 'Zerlegen abgebrochen – nichts geändert' : 'Zerlegen: ' + (e.message || e)); }
+  finally { U.busy = null; spk1BtnState(U); }
+}
+const SPK1_ZIEL = [['bass', 'Bass'], ['gesang', 'Gesang'], ['drums', 'Drums'], ['lead', 'Lead'], ['pads', 'Pads'], ['rest', 'Rest']];
+function spk1VerfDd(U, b) {
+  if (!U.sel.length || U.busy) return;
+  spk1Dd(U, b, dd => {
+    dd.appendChild(el('h5', '', 'Was steckt hier?'));
+    const g = el('div', 'spk1-g');
+    for (const [z, nm] of SPK1_ZIEL) { const x = el('button', 'mbtn rb spk1-ck', nm); x.dataset.z = z; on(x, 'click', () => { spk1Dd(U, null); spk1Verf(U, z); }); g.appendChild(x); }
+    dd.appendChild(g); dd.appendChild(el('p', '', 'Die Auswahl wird genauer neu gerechnet; das Ergebnis kommt in diese Ebene.'));
+  });
+}
+async function spk1Verf(U, ziel) {
+  if (!U.sel.length || U.busy) return;
+  U.busy = 'verfeinern'; spk1Stop(); spk1BtnState(U);
+  const nm = (SPK1_ZIEL.find(x => x[0] === ziel) || [0, ziel])[1], pc = v => Math.round(v * 100) + ' %';
+  try {
+    const r = await spk1Call('verfeinern', {doc: SPK1.doc, ziel, sel: U.sel}, null, {prog: p => spk1Stat(U, 'Verfeinern · ' + nm + ' · ' + Math.round(p * 100) + ' %')});
+    U.busy = null; spk1Got(U, r); spk1TintLoad(U);
+    U.vf = {lid: r.lid, nm, nach: true, sel: U.sel.slice(), sv: U.selVer, r};
+    spk1Stat(U, 'Verfeinert: ' + nm + ' · FFT ' + r.N + ' · Anteil ' + pc(r.vorher) + ' → ' + pc(r.nachher));
+    spk1VfDd(U);
+    return r;
+  } catch (e) { logErr(e); spk1Stat(U, 'Verfeinern: ' + (e.message || e)); return null; }
+  finally { U.busy = null; spk1BtnState(U); }
+}
+function spk1VfDd(U) {   // Vorher/Nachher sehen (Ebenen-Farben) und hören (Ziel-Ebene in der Auswahl); Übernehmen / Verwerfen
+  const V = U.vf; if (!V || !SPK1.open) return;
+  spk1Dd(U, U.b_verf, dd => {
+    dd.appendChild(el('h5', '', 'Verfeinert: ' + esc(V.nm)));
+    dd.appendChild(makeSeg([['vor', 'Vorher'], ['nach', 'Nachher']], () => (V.nach ? 'nach' : 'vor'), v => { spk1VfAb(U, v === 'nach'); }, 'spk1-vf'));
+    const g = el('div', 'spk1-g'), bp = el('button', 'mbtn rb spk1-ck', '▶ Hören'), bo = el('button', 'mbtn rb spk1-ck', 'Übernehmen'), bx = el('button', 'mbtn rb spk1-ck', 'Verwerfen');
+    on(bp, 'click', () => spk1VfPlay(U));
+    on(bo, 'click', async () => { spk1Dd(U, null); spk1Stop(); if (!V.nach) await spk1VfAb(U, true); U.vf = null; spk1Stat(U, 'Übernommen: ' + V.nm + ' · ↶ macht es rückgängig'); });
+    on(bx, 'click', async () => { spk1Dd(U, null); spk1Stop(); if (V.nach) await spk1VfAb(U, false); U.vf = null; spk1Stat(U, 'Verworfen – Ebene wie vorher'); });
+    g.append(bp, bo, bx); dd.appendChild(g);
+  });
+}
+async function spk1VfAb(U, nach) {
+  const V = U.vf; if (!V || V.nach === nach || U.busy) return;
+  try { const r = await spk1Call(nach ? 'redo' : 'undo', {doc: SPK1.doc}); V.nach = nach; spk1Got(U, r); spk1TintLoad(U); if (SPK1.pl && U.playSel) spk1VfPlay(U); } catch (e) { logErr(e); }
+}
+function spk1VfPlay(U) {
+  const V = U.vf; if (!V) return; const sb = spk1SelSpan(U); if (!sb) return;
+  U.playSel = true; spk1Play(sb[0], V.lid, {sel: V.sel, sv: V.sv, bis: sb[1]}); spk1BtnState(U); spk1Dirty(U, 'ov');
+}
+/* ---- Teil 2: nur Schnittstellen (Daten liegen im Dokument: teil2.notes / tmpl / loops, patches; Takt aus spk1Grid, IMP1-Haken dort) ---- */
+const SPK1_T2 = {notes: 'Noten je Ebene', learn: 'Vorlage lernen', find: 'Überall suchen', matrix: 'Loop in die Clip-Matrix', recipe: 'Klang-Nachbau', ki: 'KI-Trennung (Zusatz-Download)'};
+function spk1Teil2(was) { return {teil2: true, was, text: (SPK1_T2[was] || String(was)) + ' kommt in Teil 2'}; }
 /* ---- Wiedergabe ---- */
 function spk1PlayFrom(U, t) {
   U.playSel = false; spk1Play(t >= U.dur - 0.05 ? 0 : t, U.ab ? 'orig' : null); spk1BtnState(U); spk1Dirty(U, 'ov');
@@ -97547,7 +97891,7 @@ async function spk1FromTake(U, o) {
 function spk1OpenId(U, id) { return spk1Busy(U, spk1Call('open', {doc: id}), 'Öffne …'); }
 function spk1Show(U, r) {
   SPK1.doc = r.meta.id; SPK1.last = r; U.meta = r.meta; U.dur = r.meta.n / r.meta.sr;
-  U.sel = []; U.hits = U.ex = U.tmp = null; U.cur = 0; U.act = 'orig'; U.ab = false; U.tint = null; U.playSel = false;
+  U.sel = []; U.hits = U.ex = U.tmp = null; U.cur = 0; U.act = 'orig'; U.ab = false; U.tint = null; U.playSel = false;  U.vf = null;
   U.sh.classList.remove('nodoc'); U.ttl.lastChild.textContent = r.meta.name;
   spk1Size(U); spk1FitAll(U); spk1Layers(U); spk1UndoBtns(U, r); spk1BtnState(U); spk1SpecLoad(U); spk1TintLoad(U);
   spk1ToolSet(U, U.tool); spk1Dirty(U, 'all');
@@ -97587,8 +97931,8 @@ function spk1Guide(ents) {
   try {
     const E = (id, n, w, d, s, go, q) => ({id, n, w, d, s, go, q});
     ents.push(E('spk1', 'Spektral (Frequenzspektrum)', '≡ Menü › Analyse › Spektral … · Takes-Blatt › Im Spektrum öffnen',
-      'Ein Stück als Frequenzbild: links die Tasten, oben die Takte. Rechteck, Zeit, Frequenz, Pinsel, Harmonische (Ton antippen) und Ähnliche wählen Teile aus; „In Ebene“ legt sie als Ebene ab (Bass, Gesang, Drums …) – nichts am Original geht verloren.',
-      'spektrum spektral frequenz analyse trennen ebenen stems bass gesang drums auswahl pinsel harmonische obertöne',
+      'Ein Stück als Frequenzbild: links die Tasten, oben die Takte. Rechteck, Zeit, Frequenz, Pinsel, Harmonische (Ton antippen) und Ähnliche wählen Teile aus; „In Ebene“ legt sie als Ebene ab (Bass, Gesang, Drums …) – nichts am Original geht verloren. „Zerlegen“ trennt das ganze Stück in Drums, Bass, Gesang und Rest; „Verfeinern“ rechnet eine Auswahl genauer nach („Was steckt hier?“).',
+      'spektrum spektral frequenz analyse trennen zerlegen verfeinern ebenen stems bass gesang drums auswahl pinsel harmonische obertöne',
       () => { spk1Open({back: {menu: true}}); }, () => (SPK1.open && SPK1.ui ? SPK1.ui.tl : null)));
   } catch (e) { logErr(e); }
 }
@@ -97613,9 +97957,14 @@ const SPK1_API = {
   link: () => SPK1.last ? spk1Link(SPK1.last.meta.id, SPK1.last.meta.name) : false,
   zipAdd: async () => { const f = []; await spk1ZipAdd(f); return f.map(x => ({name: x.name, bytes: x.data.length})); },
   play: (t, mix, o) => spk1Play(t, mix, o), stop: () => spk1Stop(), pos: () => spk1PlayPos(),
+  zerlegen: (o, cb) => spk1Call('zerlegen', Object.assign({doc: SPK1.doc}, o || {}), null, cb).then(r => { SPK1.last = r; return r; }),
+  zstop: () => spk1Call('zstop', {doc: SPK1.doc}),
+  verfeinern: (ziel, sel) => spk1Call('verfeinern', {doc: SPK1.doc, ziel, sel}).then(r => { SPK1.last = r; return r; }),
+  teil2: was => spk1Teil2(was),
   page: {open: o => spk1Open(o), close: () => spk1Close(), noGl: b => { SPK1.noGl = !!b; }, ui: () => SPK1.ui, tool: k => SPK1.ui && spk1ToolSet(SPK1.ui, k),
+    zerl: () => spk1Zerl(SPK1.ui), verf: z => spk1Verf(SPK1.ui, z), vfAb: nach => spk1VfAb(SPK1.ui, nach), vfDd: () => spk1VfDd(SPK1.ui),
     harm: (t, f) => spk1Harm(SPK1.ui, t, f), aehn: ex => spk1Aehn(SPK1.ui, ex), into: (nach, art) => spk1Into(SPK1.ui, nach, art), playSel: () => spk1PlaySel(SPK1.ui),
-    info: () => { const U = SPK1.ui; return U ? {open: SPK1.open, doc: SPK1.doc, gl: !!U.gl, cpu: !U.gl && !!U.c2, tool: U.tool, sel: U.sel.length, selArts: U.sel.map(x => x.art), hits: U.hits ? U.hits.length : null, chunks: U.spec ? U.spec.chunks.filter(Boolean).length : 0, tint: U.tint ? U.tint.ids.length : 0, layers: U.meta ? U.meta.layers.map(l => l.name) : [], v: Object.assign({}, U.v), W: U.W, H: U.H, stat: U.st.textContent, playing: !!SPK1.pl, playSel: !!U.playSel, nodoc: U.sh.classList.contains('nodoc')} : null; }},
+    info: () => { const U = SPK1.ui; return U ? {open: SPK1.open, doc: SPK1.doc, gl: !!U.gl, cpu: !U.gl && !!U.c2, tool: U.tool, sel: U.sel.length, selArts: U.sel.map(x => x.art), hits: U.hits ? U.hits.length : null, chunks: U.spec ? U.spec.chunks.filter(Boolean).length : 0, tint: U.tint ? U.tint.ids.length : 0, layers: U.meta ? U.meta.layers.map(l => l.name) : [], v: Object.assign({}, U.v), W: U.W, H: U.H, stat: U.st.textContent, busy: U.busy || null, vf: U.vf ? {lid: U.vf.lid, nach: U.vf.nach} : null, playing: !!SPK1.pl, playSel: !!U.playSel, nodoc: U.sh.classList.contains('nodoc')} : null; }},
   grid: () => spk1Grid(null),
   state: () => ({how: SPK1.how, worker: !!SPK1.w, doc: SPK1.doc, playing: !!SPK1.pl, q: SPK1.wq.size}),
 };
