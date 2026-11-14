@@ -35,7 +35,11 @@ Schwelle −19 dB liegt zwischen −16,6 (richtig, alle Fälle) und −20,6 (fal
 | demo | 29/32 · 0,806 (36) | 29/32 · 0,806 (36) |
 | walk | 8/32 · 0,216 (37) | 8/32 · 0,216 (37) |
 | sech | 29/64 · 0,617 (47) | 29/64 · 0,617 (47) |
-| okt, lang, leise, hoch, laut, basspads, ohneraster, sr48, ohnebass | – | gleich (s. LOG / reg/faelle8.out) |
+| okt 24/32 · 0,686 · lang 4/4 · 0,333 · leise 16/32 · 0,50 · hoch 13/32 · 0,448 · laut 30/32 · 0,789 · basspads 32/32 · 0,97 · ohneraster 24/32 · 0,727 · sr48 28/32 · 0,718 · ohnebass 0 (28) | – | alle gleich (`reg/faelle8.out`) |
+
+`faelle8 SOLL=1` (13 Fälle): 13 OK / 0 FEHLER; Untergrenze bassdrums in `messb/faelle8-soll.json` (Kopie) auf 22 · 0,739 gehoben.
+Zeit „Noten finden“ Bass-Ebene gepaart (o10.an 0/1, Last ~4,8): demo 1489/1369, 1411/1322, 1284/1252 ms; walk 1657/1408, 1328/1307,
+1080/1085 ms → ≈ 1,0× (zusätzlich nur wenige kurze FFTs 4096→1024 je Note; Kick-Vorlage für N 4096 bewusst aus).
 
 ## Verworfen (gemessen, nicht eingebaut)
 - Schwelle −15 dB: demo 29 → 28, okt 24 → 23 (richtige G2 mit Pad G3 kippen).
@@ -57,5 +61,9 @@ Pad-Ebene (SPK4 polyNoten) als Vorlage abziehen statt Trommel-Ebene; Oktave übe
 Kick-Rest je Schlag (kleinste Quadrate) bringt für die Oktave nichts mehr, seit das Merkmal den Grundton-Bereich nicht benutzt
 (Kick-Abzug an/aus gab gleiche Noten).
 
-## Pflicht / Regression
-siehe LOG.md (Endstand).
+## Pflicht / Regression (Endstand, einzeln nacheinander, `reg.sh` → `reg/*.out`)
+- Pflicht: topdefs Skripte 26 / doppelt 0 / Syntaxfehler 0 · dupkeys 0 · smoke `errors []` (`smoke.png`) · „MS 2000“ 1× · „  live: true,“ 1× ·
+  VERSION 4.64.0 unverändert · eingefügter Text ohne Marken-/Datensatz-/Produktnamen (Markenwörter je Wort = Basis).
+- faelle8 (Kopie spk10/messb) 13/13 · spk8-seite 14/14 (Worker, hochkant + quer, Demo 29/32 · 0,806, ↶/↷, Konsole []) ·
+  spk5-test ALLES OK 24 · spk5-fade-test ALLES OK · spk1-test 17 OK / 1 FEHLER verfeinern-verbessert-ziel 4,37 → 4,36 (bekannt seit SPK4).
+- spk4-test: siehe LOG.md.

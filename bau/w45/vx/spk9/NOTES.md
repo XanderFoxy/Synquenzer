@@ -41,16 +41,30 @@ Treffer = gleiche Tonhöhe, Einsatz ±0,12 s; Zusatz = gefundene Noten ohne Wahr
 | G Gleiten getrennt / Zusatz | 71,9 % / 96,9 % | 96,9 % / **12,5 %** | ≤ 5 % (nicht ganz) |
 | A Ausklang Zusatz | 25 % | **0 %** | |
 | B Befund 17 | 0/12 (je eine Note m 59) | **12/12**, 0 Zusatz | 3 Noten |
-| Laufzeit (76 Fälle, Node) | 25,7 s | 27,3 s | |
+| R schnelle Legato-Läufe (12×6 Töne 0,15–0,24 s) | 1,4 % (1/72) | **100 %** (72/72), 0 Zusatz | |
+| Laufzeit (76 Fälle, Node) | 25,7 s | 27,3–28,6 s | |
+
+44,1 kHz (Hop 23 ms): L 98,3 % / 1,7 % · V 0 % · G 96,9 % / 9,4 % · A 0 % · B 12/12. Zweite Stichprobe (ONLY=R,G): G 3,1 % Zusatz,
+R 94,4 % getrennt. G-Zusatz schwankt mit der Stichprobe (16 Fälle) zwischen 3 und 12,5 %, zusammen 7,8 %.
+Probe „Übergang bis 2,5 HT vor dem Ziel“ (`O9='{"trN":2.5}'`, nicht eingebaut): G 3,1 %, aber schnelle Läufe 91,7 % → verworfen.
 
 Schritte (G-Zusatz): Hysterese + ruhig ≤ 50 ct 97 % → ruhig ≤ 25 ct/60 ms + Vibrato-Band 56 % → Übergangs-Regel 0,17 s 50 % →
 0,25 s/≤ 1,5 HT 12,5 % (L, V, A, B unverändert gut).
 
-## Regression / Pflicht
-siehe LOG.md (Ergebnisse je Lauf).
+## Seite (Befund 17 per Touch, `spk9-ui.mjs`, 428×926, Ergebnis `spk9-ui.json`, Fotos `fotos/spk9-0*.png`)
+Gesang-Ebene aus Legato A3 → D4 → H3 (je 1 s, ohne Lücke): vorher eine Note 59 (0,99–4,08 s), D4 nicht wählbar →
+nachher 57 (0,99–2,00) · 62 (2,00–3,00) · 59 (3,00–4,09) (+ kurzer Vorlauf 0,90–0,99 s durch den Hintergrundton, wie in der SPK6-Prüfung).
+„Noten bearbeiten“: D4 per Touch 2 Zeilen hoch → Anwenden 513–580 ms → E4 +1,8 ct, A3 −0,1 ct, H3 −1,6 ct, ↶ „Noten bearbeiten“.
+
+## Regression / Pflicht (Einzelheiten LOG.md)
+- spk4-test: 5 FEHLER von 23 = dieselben wie im SPK8-Paket (gemisch-besser, verfeinern +1 dB, unison-besser, reg-spk3 bekannt, reg-ki1 quer);
+  reg-spk2-test 28/30 (noten-erkannt 14/51 wie Basis), vx1-test 61/61, Pflicht im Lauf OK.
+- spk5-test 24/24 · spk5-fade-test ALLES OK · spk6-test ALLES OK · spk6-pruef-test fails 0 · spk1-test 17/18 (nur verfeinern-verbessert-ziel, Basis).
+- topdefs 0/0 · dupkeys 0 · smoke errors [] · MS 2000 1× · live 1× · VERSION 4.63.0 · Markenwörter 25 = Basis, 0 in Block/Tests/Notizen.
+- Probe-Merge (git merge-file): mit SPK8 0 Konflikte, mit VX2 0 zusätzliche Konflikte.
 
 ## Offen
-1. Gleiten: 12,5 % Zusatz (Ziel ≤ 5 %). Rest = Anfahrt, die 0,25 s überschreitet, oder Spur-Ausreißer mitten im schnellen Gleiten
+1. Gleiten: 3–12,5 % Zusatz je Stichprobe (zusammen 7,8 %, Ziel ≤ 5 %). Rest = Anfahrt, die 0,25 s überschreitet, oder Spur-Ausreißer mitten im schnellen Gleiten
    (z. B. 57 → 52 ergibt kurz „65“). Weg: Grundton-Spur feiner als das Viertelton-Raster (parabolische Spitze) statt Treppe; dann
    „ruhig“ und „unterwegs“ sicherer.
 2. Oktav-Fehler bei Vokal „i“ (Formanten 300/2200/2900 Hz: ungerade Teiltöne schwach → SPK2-Oktav-Prüfung verdoppelt) – vorbestehend,

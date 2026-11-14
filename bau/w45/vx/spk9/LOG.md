@@ -14,3 +14,9 @@
 - 21:06 spk4-test (nach Bass-Band-Regel): 5 FEHLER von 23 = genau die Liste des SPK8-Pakets (gemisch-besser, verfeinern +1 dB, unison-besser, reg-spk3 [verfeinern/abstaende-besser/spk2 bekannt], reg-ki1 quer). reg-spk2-test 28/30 OK (noten-erkannt wieder 14/51). Pflicht im Lauf: topdefs 0/0, dupkeys 0, smoke [], MS 2000 1×, live 1×, VERSION 4.63.0. vx1-test 61/61.
 - 21:07 spk9-ui.mjs (Playwright, Touch 428×926): nachher Legato → 57 0,992–1,995 · 62 1,995–2,997 · 59 2,997–4,087 (+ kurzer Vorlauf 57 0,90–0,99 wie in der SPK6-Prüfung); D4 per Touch 2 Zeilen hoch → Anwenden 513 ms: E4 +1,77 ct, A3 −0,1 ct, H3 −1,58 ct → ok. vorher (basis): eine Note 59 0,992–4,082, D4 nicht wählbar.
 - 21:09 spk5-test ALLES OK 24/24 (53 s) · spk5-fade-test ALLES OK (35 s) · spk9-ui erneut ok (Anwenden 580 ms). Markenwörter-Zähler basis 25 = index 25, 0 in Block/Tests/Notizen; MS 2000 1×, live 1×, VERSION 4.63.0.
+- 21:14 spk6-test ALLES OK (36 s, kern 24/24) · spk6-pruef-test ALLES OK fails 0 (139 s) · spk1-test 17/18, FEHLER nur verfeinern-verbessert-ziel (wie in spk4-test reg-spk1, Basis 4.63).
+  Pflicht direkt: topdefs doppelt 0 / Syntaxfehler 0 · dupkeys 0 · smoke errors [] (smoke-spk9.png) · einbau.py baut bitgleich.
+  Endmessung leg.mjs (nachher-mono.json): wie a4. 44,1 kHz (nachher-mono-44k.json): L 98,3 % / 1,7 % · V 0 % · G 96,9 % / 9,4 % · A 0 % · B 12/12.
+  Neue Kategorie R (schnelle Legato-Läufe, Töne 0,15–0,24 s, 1–2 HT): vorher 1,4 % (1/72) → nachher 100 % (72/72), 0 Zusatz.
+  Probe trN (Übergangs-Regel bis 2,5 HT vor dem Ziel, nur Node per O9, nicht eingebaut): G-Zusatz 3,1 %, aber R 91,7 % → verworfen;
+  zweite Stichprobe (ONLY=R,G) mit eingebautem trN 1,5: G 3,1 % Zusatz, R 94,4 %. G-Zusatz je nach Stichprobe 3–12,5 % (beide zusammen 7,8 %).
