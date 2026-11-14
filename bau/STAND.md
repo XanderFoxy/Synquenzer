@@ -56,3 +56,9 @@ Weiter mit: 4.54 = rel-4540/k fertig prüfen + INT53D nachziehen + Versionszeile
 - 19:10 4.61.0 ONLINE (main 900e1b8, In-App v17). SPK5 + VX1-Rennen-Fix (vx1rAnalyse wartet auf G4). Nächste Merges: Teil4 und SPK6/7 per merge-file <R-4610> <basis5> <paket>.
 - 19:25 Teil 4 fertig: spk4 (mehrstimmig, Bass 4,37, Unison, Rest aufteilen), chr4 = keine Änderung (Ziele offen, Weg in NOTES), real = RV1-Import-Fix. Merge → rel-4620 (2 Konflikte, beide behalten), Regression vx/r4620 läuft.
 - 19:55 4.62.0 ONLINE (main 952ad6f, In-App v18). basis6 = R-4620. Nächste Pakete: VX2 (Silben-Segmentierung echter Gesang), SPK8 (Bass-Noten + Verfeinern) auf basis6.
+
+## 20:25 — 4.63 im Bau
+- w49ddgrbx fertig: SPK6 Ebenen-Werkstatt (17 Prüfer-Befunde, 16 behoben, Nr. 17 „Teilen“ = Vorschlag an Xander) + SPK7 Klangkorn (15 Befunde behoben; 3. Aktionszeile „Als Klangkorn“ aus, Weg über „Klangkorn ▾“ in Werkzeugleiste).
+- Merge rel-4630: cur R-4620 + basis5 + spk6 (2 Konflikte: Z2-Zeilen beide, Worker-src kombiniert) + spk7 (0). Zusatz-Haken: SPK5-Profi-Auswahl filtert k6-Kopien.
+- Pflicht grün (topdefs 0/0, dupkeys 0, smoke [], MS2000 1, live 1, Marken nicht gestiegen, Krypto 0). Regression vx/r4630/run.sh läuft (A: vx1 imp1 chr rv1 spk7k spk7 spk7p · B: spk4 spk5 spk5f spk5p spk1 ki1 spk6k spk6 spk6p spk6u).
+- wrt4c6j4v (VX2/SPK8) in Nachbesserung.
