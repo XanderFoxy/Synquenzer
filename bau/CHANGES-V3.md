@@ -1,3 +1,14 @@
+## 4.59.0 — Spektral: Noten je Ebene, Loop → Matrix, Klang nachbauen, Profi-Trennung · Chorstimmen trennen, echte Chöre · Nachzüge
+
+- **Profi-Trennung** (Spektral-Seite, „Zerlegen ▾“): KI-Trennung in Drums, Bass, Gesang, Rest. Lädt auf Knopfdruck einmal ~86 MB, danach offline; rechnet in Stücken, Abbrechen/Fortsetzen (auch nach Neuladen). Deutlich sauberer als „Zerlegen“: im Test Drums 9,7 dB, Bass 4,6 dB (vorher 6,0 / 0,8). Quer heißt der Knopf „Zerlegen ▾“ (öffnet beide Wege).
+- **Noten je Ebene**: Werkzeug „Noten“ zeigt die Töne einer Ebene als Kästchen auf dem Raster; Note antippen → „Gehört zu: Bass │ Gesang │ Lead │ Pads │ Neue Ebene“; **Überall finden** sucht denselben Klang im ganzen Stück. Einstimmig; im Gemisch noch unsicher – mit Profi-Trennung besser.
+- **Loop → Matrix**: Lineal halten und ziehen = Loop-Klammern → „In die Matrix“ **als Audio** (Spur „Original“, taktgenau) oder **als MIDI** (Noten auf eine Synth-Spur, Klang frei wählbar). Ein ↶.
+- **Klang nachbauen**: Note antippen → Analyse (Periode wie Oszilloskop, Obertöne) → Nachbau mit deinem VA oder FM, A/B gleich laut, „Als Klang übernehmen“.
+- **Chor**: **Stimmen trennen** (Takes-Blatt) – bis 3–4 Stimmen eines Chors auf eigene Chor-Spuren; **echte Chöre** aus jedem Gesang (auch importiert): jede Stimme mit eigenem Versatz, eigener kleiner Tonhöhen-Schwankung und Klangfarbe, Konsonanten nicht verdoppelt. **Tuning ohne Knacken** an Konsonanten.
+- **Gesang-Editor**: Lineal zählt Song-Takte, „1 Stück / n Stücke“, Schneiden/Dehnen bleibt im Marken-Editor erhalten.
+- **Import**: Audio wird ans Projekt-Tempo angepasst (Tonhöhe bleibt), Spur „Original“ zeigt die Welle in der Matrix, Hilfe-Eintrag.
+Tests: Nachzüge 35/35, Gesang-Editor 61/61, Import alle OK, Spektral 2 28/30 (offen: Bass-Ziel ohne Download), Profi-Trennung OK, Chor 72/82 (offen: enge 4-stimmige Akkorde), Regeln, doppelte Schlüssel 0, Rauchtest grün.
+
 ## 4.58.1 — Video-Blatt quer: alle Tasten ganz sichtbar
 
 - Quer (926×428 und 926×370) stehen [Vorschau]/[Video erstellen], Fortschritt und [Teilen]/[Sichern] als feste Fußzeile der rechten Spalte – immer ganz sichtbar, 44 px. Die Einstellungen darüber rollen mit dem Finger (vorher rollte die Spalte gar nicht). Bühne und Video bleiben so groß wie in 4.58.0, hochkant unverändert.
