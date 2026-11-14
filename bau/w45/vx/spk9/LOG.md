@@ -32,3 +32,5 @@
 - 22:34 Block überarbeitet (Befunde 1–8), Schnellmessungen: SG/SZ/SM/SD/ST/M1/M3/M7, leg.mjs, poly9, finden9, bassband. Vollmessung fix/mess-alle.sh gestartet.
 - 22:38 Probe vdr (Vibrato-Weg: Höhe läuft danach weiter → kein Ton) gegen Gleiten mit Vibrato: M8/M3 unverändert (34,4 % / 10,6 % Zusatz) → nicht eingebaut. Ursache bleibt: Vibrato auf dem Gleiten macht Stufen (Plateau je Halbwelle).
 - 22:38 Vorher-Werte für legx/sweep/sz/mx/legx-44k = Prüfer-Läufe auf derselben Datei (pruef/*-index.json, bitgleich zu fix/index.vor-pruef.html, Zufall mit Samen).
+- 22:48 Prüfer-Ergebnis mx-index.json lässt sich mit dem heutigen legx.mjs nicht nachstellen (frisch: MX-12 86,4 %/47,7 %, MX-6 56,3 %/60,4 % statt 88,6/40,9 und 60,4/58,3) → alle Vorher-Werte frisch gemessen, nicht übernommen. Oktav-Regel ergänzt: ungerade < 12 % ODER (ungerade < 30 % UND Grundton schwach < 0,3 × gerader Mittelwert) – mit Begleitung im selben Layer (MX) war die reine 12-%-Regel schlechter.
+- 22:49 Probe-Merge (git merge-file): mit IMP2, CHR5 (Basis 4.63) 0 Konflikte; SPK9 auf 4.64 (basis8, enthält VX2+SPK8) 0 Konflikte, darauf SPK10 und VX3 je 0 Konflikte (fix/merge/spk9-auf-4.64.html).
