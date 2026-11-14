@@ -30,3 +30,6 @@
 - (B1) chr2-test (Kopie chr4/chr2-test.mjs, Basis basis2): ALLE OK (82) in 107 s, src/run-chr2.txt.
 - (B2) chr3-pruef auf index.html: ALLE OK (27), offen 8, Zahlen = pruef-vorher (src/pruef-nachher.json, src/pruef-eval.txt).
 - (B3) vx1-test: 61/61 OK (reg/vx1.txt).
+- (B4) imp1-test: ALLE OK (48) in 116 s (reg/imp1.txt).
+- (B5) Pflicht: topdefs 26 Skripte doppelt 0/Syntax 0, dupkeys 0, smoke errors [] (smoke-2.png), MS 2000 1×, „  live: true,“ 1×, VERSION 4.60.0, cmp = basis5. Varianten-HTML in tmp/ gelöscht (nur pruef-*.json bleiben).
+- Ende Auftrag 2/2: NOTES ergänzt (Tabelle Rand-Varianten, Tests). Datei = basis5; alle Tests grün; nächster Schritt 2b: kleines G nur mit Rand-Gewicht der Hülle.
