@@ -1,3 +1,15 @@
+## 4.60.0 — Chorstimmen sauber getrennt, Spektral genauer, Loop im Kreis, Guide-Rahmen
+
+- **Chor › Stimmen trennen**: Terz + Quinte und enge 4-stimmige Akkorde werden jetzt sauber getrennt (Tonhöhe je Stimme 98–100 %, vorher 63–68 %; Abstand 17–29 dB). Geteilte Obertöne gehen an die richtige Stimme.
+- **Spektral › Zerlegen** (ohne Download): Bass deutlich sauberer (3,0 dB statt 0,8), Drums und Rest ebenfalls besser; Kick wird vorher herausgerechnet. Gleich schnell wie vorher.
+- **Noten / Überall finden**: viel weniger Fehlalarme (84 % treffen statt 23 %); „Alle übernehmen“ verschlechtert die Bass-Ebene nicht mehr – der Klang wird über „Verfeinern nach Noten“ besser.
+- **Loop**: bleibt im Dokument gespeichert, neuer ▶ in der Loop-Zeile spielt ihn im Kreis (nahtlos).
+- **Klang nachbauen**: erkennt Vibrato (Lead deutlich näher dran), nie schlechter als vorher.
+- **„Wo finde ich …?“**: Arp Treppe und Perform-Spur zeigen jetzt die Stelle mit gelbem Rahmen, auch wenn die Voraussetzung noch fehlt.
+- **Menü quer**: An │ Aus-Tasten sind leichter zu treffen (44 px), Aussehen unverändert.
+- **Oszilloskop** stört den Video-/Audio-Export nicht mehr.
+Tests: Chor 82/82, Gesang-Editor 61/61, Import alle OK, Spektral 14/17 (offen: Bass 4 dB, Verfeinern +1 dB, mehrstimmige Noten), Guide/Menü OK, Regeln, doppelte Schlüssel 0, Rauchtest grün.
+
 ## 4.59.0 — Spektral: Noten je Ebene, Loop → Matrix, Klang nachbauen, Profi-Trennung · Chorstimmen trennen, echte Chöre · Nachzüge
 
 - **Profi-Trennung** (Spektral-Seite, „Zerlegen ▾“): KI-Trennung in Drums, Bass, Gesang, Rest. Lädt auf Knopfdruck einmal ~86 MB, danach offline; rechnet in Stücken, Abbrechen/Fortsetzen (auch nach Neuladen). Deutlich sauberer als „Zerlegen“: im Test Drums 9,7 dB, Bass 4,6 dB (vorher 6,0 / 0,8). Quer heißt der Knopf „Zerlegen ▾“ (öffnet beide Wege).

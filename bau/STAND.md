@@ -42,3 +42,5 @@ Weiter mit: 4.54 = rel-4540/k fertig prüfen + INT53D nachziehen + Versionszeile
 - 15:54: 4.59.0 RELEASED (main). Nächste Basis R-4590 (= vx/basis4.html).
 - 16:41: GD1 (wctuc7fu6, vx/gd1, Basis vx/basis4.html): Guide-Rahmen kf1trp/jam3pf, Menü-Trefferflächen quer 44 px unsichtbar, Oszilloskop beim Export. Teil 3 läuft (w5rbdca4l).
 - 16:56: Teil 3 fertig: CHR3 (vx/chr3) Stimmen 98–100 %, Formanten unverändert; SPK3 (vx/spk3) Bass 3,0 dB, Noten 84 %, Loop im Dok, Nachbau Pad-Rückschritt → Fix wfvfhsmcl läuft (Pad + Zerlegen-Tempo). GD1 läuft. Danach 4.60.0 = R-4590 + SPK3 + CHR3 + GD1 (alle Basis vx/basis4.html).
+- 17:25: 4.60.0 RELEASED = R-4590 + GD1 + CHR3 + SPK3(+R-Fix). Nächste Basis R-4600 = vx/basis5.html.
+- 17:26: Teil 4 Workflow w73yg3osg (wf_31aa59af-af6): SPK4 (vx/spk4: mehrstimmig, Bass 4 dB, Unison, Rest→Lead/Pads) ∥ CHR4 (vx/chr4: Formanten) ∥ RV1 (vx/real: Echttest echter Gesang aus realvox/dl, nicht ins Repo). Basis vx/basis5.html = R-4600.
