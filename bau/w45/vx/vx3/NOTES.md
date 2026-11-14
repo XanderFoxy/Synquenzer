@@ -37,6 +37,7 @@ Test-API `window.__vx3`: `on(v)` (Schalter, leert VX1R.ana/VX2.res), `lead(...)`
 | #1 Stück-Anfang ±40 ms (A1 · A2) | 45/59 · 51/64 | **39/59 · 46/64** | ≥ 80 % ✘ (s. u.) |
 | #1 Noten ohne Grenze (A1 · A2) | 4 · 1 | 4 · 1 | gleich |
 | rv1-test | 52/53 (nur #10 Raster) | 52/53 (nur #10 Raster) | – |
+| Konsonant am Vokal nach Quantisieren 1/8 (#1 · #10 · #14) | 8/9 · 2/2 · 1/3 | **9/9 · 2/2 · 2/2** | – |
 
 **„Anfang ≥ 80 %“ ist mit dem Anlauf nicht erreichbar, es sinkt zwangsläufig.** Die Annotation A1 markiert den Vokal-Einsatz (Tonhöhe): die schon in 4.64
 verfehlten „Konsonant-Anläufe“ liegen −115…−177 ms vor der Note bei Vokal-Beginn ±40 ms. Jeder Konsonant > 40 ms, der jetzt richtig zum Stück kommt, schiebt
@@ -53,8 +54,8 @@ der Festlegung (Konsonant gehört zum Stück) – wie schon in der VX2-Prüfung 
 - Pflicht s. LOG.md.
 
 ## Offen / Weg
-1. Konsonant nach dem Quantisieren hörbar am Vokal? (Prüfer-Sonde `pruef/kons.mjs`: Kreuzkorrelation Quelle → Ausgang) – nicht nachgemessen (Zeit).
-   Sonde: `QUANT=1 node dbg/probe3.mjs …` schreibt die Puffer, kons.mjs mit eigenen Tags.
+1. ~~Konsonant nach dem Quantisieren~~ nachgemessen (Prüfer-Maß kons.mjs, Kreuzkorrelation Quelle → gerenderter Ausgang nach 1/8, reg/kons-quant.txt):
+   #1 vorher 8/9 am Vokal, 1 um 28 ms getrennt → **9/9**; #10 2/2 → 2/2; #14 vorher 1/3 (3,15 s weggeschnitten, 6,12 s 52 ms getrennt) → **2/2** am Vokal.
 2. Rest-Fehlgriffe Konsonant: #1 7, #10 3 – meist Grenzfälle des Maßes (Konsonant-Beginn unter der halben Pegel-Schwelle, 1–2 ms nach dem Rahmen-Beginn;
    Konsonant 160 ms > 150 ms; Vorgänger + 40 ms).
 3. Längere Anläufe machen die Vorgänger-Sperre beim Quantisieren häufiger (#10 ein Stück „gesperrt“ statt „Linie besetzt“, Raster-Zahl gleich). Bei sehr
