@@ -68,3 +68,8 @@ Weiter mit: 4.54 = rel-4540/k fertig prüfen + INT53D nachziehen + Versionszeile
 - Neu gestartet: wpii0ntvp (SPK9 Legato-Noten, CHR5 Formanten Rand-Gewicht, IMP2 Tempo/Abtastrate) auf basis7 = R-4630 in vx/spk9, vx/chr5, vx/imp2.
 - Läuft noch: wrt4c6j4v (VX2/SPK8, Basis basis6) → danach merge auf R-4630 → 4.64.
 - Vorschläge an Xander offen: 3. Aktionszeile „Als Klangkorn“ (SPK7_ROW=false), eigene Klangkorn-Seite im Klang-Editor.
+
+## 21:00 — 4.64.0 online (main c4ed0dd, In-App v20)
+- VX2 (Gesang-Stücke 150→69, Raster 67/69) + SPK8 (Bass-Ebene Noten 0→29/32). Regression r4640 alle wie 4.63; rv1 52/53 mit korrigiertem Bezug (real/rv1-test.mjs gepatcht nach vx2/fix/rv1-bezug.diff; alt: real/rv1-test.vor-vx2.mjs); spk5-fade-test Suche 40→400 Noten (alt: spk5/spk5-fade-test.vor-spk8.mjs).
+- basis8 = R-4640. Pakete vx/vx3 (Konsonant-Anlauf) + vx/spk10 (Bass-Oktave mit Trommeln) vorbereitet.
+- wpii0ntvp (SPK9/CHR5/IMP2, Basis basis7) läuft → merge auf R-4640 → 4.65.
