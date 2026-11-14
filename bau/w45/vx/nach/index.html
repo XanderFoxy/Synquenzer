@@ -61816,7 +61816,7 @@ function wpRun(M, m) {
 function wpWorker() {
   if (WP.w !== null) return WP.w;
   try {
-    const src = vsMarksMake.toString() + '\n' + vsStretchMake.toString() + '\n' + wpRun.toString() + '\n' + vx1rRun.toString() + '\n' +   /* VX1R */ g9Make.toString() + '\n' + g9Run.toString() + '\nconst K9 = g9Make();const M = vsMarksMake();M.X = vsStretchMake();onmessage = e => { const m = e.data; if (m.id === -1) { try { g9Run(K9, m); } catch (er) {} return; } try { const r = m.op === "g9f" || m.op === "g9a" || m.op === "g9s" ? g9Run(K9, m) : wpRun(M, m); postMessage({id: m.id, r}, r instanceof Float32Array ? [r.buffer] : r && r.y instanceof Float32Array ? [r.y.buffer] : []); } catch (err) { postMessage({id: m.id, err: String(err && err.message || err)}); } };';
+    const src = vsMarksMake.toString() + '\n' + vsStretchMake.toString() + '\n' + wpRun.toString() + '\n' + vx1rRun.toString() + '\n' + nx1RunG.toString() + '\n' +   /* VX1R, NX1 */ g9Make.toString() + '\n' + g9Run.toString() + '\nconst K9 = g9Make();const M = vsMarksMake();M.X = vsStretchMake();onmessage = e => { const m = e.data; if (m.id === -1) { try { g9Run(K9, m); } catch (er) {} return; } try { const r = m.op === "g9f" || m.op === "g9a" || m.op === "g9s" ? g9Run(K9, m) : wpRun(M, m); postMessage({id: m.id, r}, r instanceof Float32Array ? [r.buffer] : r && r.y instanceof Float32Array ? [r.y.buffer] : []); } catch (err) { postMessage({id: m.id, err: String(err && err.message || err)}); } };';
     const u = URL.createObjectURL(new Blob([src], {type: 'application/javascript'}));
     const w = new Worker(u); setTimeout(() => { try { URL.revokeObjectURL(u); } catch (e) {} }, 30000);
     w.onmessage = e => { const m = e.data, q = WP.wq.get(m.id); if (!q) return; WP.wq.delete(m.id); clearTimeout(q.to); if (m.err) q.no(new Error(m.err)); else q.ok(m.r); };
@@ -61827,7 +61827,7 @@ function wpWorker() {
 }
 // m.x = Kanal des Takes (bleibt); der Worker bekommt eine Kopie. Rückfall: Hauptfaden (Claude-App ohne Worker, Fehler)
 function wpCall(m) {
-  const w = wpWorker(), local = () => { WP.how = 'hauptfaden'; return wpRun(VSM, m); };
+  const w = wpWorker(), local = () => { WP.how = 'hauptfaden'; return m.op === 'hyb' || m.op === 'vxa' ? nx1Local(m) : wpRun(VSM, m); };   // NX1: Gesang-Kern stückweise
   if (!w) return Promise.resolve().then(local);
   return new Promise((ok, no) => {
     const id = ++WP.wid, x = new Float32Array(m.x);
@@ -62105,7 +62105,7 @@ async function wpSetQ(id, o, a, label) {
 // G1 (Nachtrag 5): Standard 100 % auch in „Dehnen“ (vorher 70 %: ein Einsatz 60 ms daneben blieb 18 ms daneben – „höre keinen Unterschied“)
 const wpDefStr = mode => 1;
 function wpSetMode(id, mode) {
-  mode = mode === 'stretch' ? 'stretch' : 'slice';
+  mode = mode === 'stretch' ? 'stretch' : mode === 'hybrid' && nx1HyOk(id) ? 'hybrid' : 'slice';   // NX1: Schneiden/Dehnen bleibt (nicht 'slice')
   const E = WP.ed && WP.ed.id === id ? WP.ed : null;
   if (E) { if (Math.abs(E.str - wpDefStr(E.mode)) < 1e-9) E.str = wpDefStr(mode); E.mode = mode; }
   const m = S.takes && S.takes[id], w = m && m.warp;
@@ -62114,7 +62114,7 @@ function wpSetMode(id, mode) {
   if (Math.abs(w.strength - wpDefStr(w.mode)) < 1e-9) w.strength = wpDefStr(mode);
   w.mode = mode; wpRequant(id, w);
   if (JSON.stringify(S.takes) === before) return false;
-  undoPush({kind: 'takes', before, label: 'Modus · ' + (mode === 'stretch' ? 'Dehnen' : 'Scheiben')});
+  undoPush({kind: 'takes', before, label: 'Modus · ' + (mode === 'stretch' ? 'Dehnen' : mode === 'hybrid' ? NX1_HY : 'Scheiben')});   // NX1
   wpAfter(id); return true;
 }
 // Songtext setzen/löschen (ein Undo); der Text hängt an den Marken, nicht an der Zeit
@@ -62226,7 +62226,7 @@ function wpOpen(r) {
   };
   const rs = slider('Stärke', 0, 100, () => { const w = wpCurW(); return Math.round((w ? w.strength : WP.ed.str) * 100); }, (v, f) => qset('strength', v, f));
   const rw = slider('Swing', 50, 75, () => { const w = wpCurW(); return Math.round((w ? w.swing : WP.ed.sw) * 100); }, (v, f) => qset('swing', v, f));
-  const foot = el('div', 'wpf'), seg = el('div', 'seg wpmode', '<button data-m="stretch">Dehnen</button><button data-m="slice">Scheiben</button>');
+  const foot = el('div', 'wpf'), seg = el('div', 'seg wpmode', '<button data-m="stretch">Dehnen</button><button data-m="slice">Scheiben</button>' + nx1SegBtn());   // NX1: + Schneiden/Dehnen (nur bei Gesang mit Ankern)
   seg.addEventListener('click', e => { const bt = e.target.closest('button[data-m]'), E = WP.ed; if (bt && E) wpSetMode(E.id, bt.dataset.m); });
   const zb = el('button', 'rb wpz', ''), info = el('span', 'qnote wpinfo', '');
   zb.addEventListener('click', () => { const E = WP.ed; if (!E) return; g10eZoomBtn(E); });   // G10e: + Stufe „Wort“, aus dem freien Zoom zur nächsten Stufe
@@ -62369,6 +62369,7 @@ function wpPaint() {
   // Bedienung
   const md = w ? w.mode : E.mode;
   E.seg.querySelectorAll('button').forEach(bt => { const on = bt.dataset.m === md; bt.classList.toggle('on', on); bt.setAttribute('aria-pressed', String(on)); });
+  nx1SegPaint(E, id);                                               // NX1: Schneiden/Dehnen zeigen, wenn der Take Anker hat
   E.tx.classList.toggle('on', !!(E.g9 || (m && (m.lyrics || m.ly))));
   const cur = w ? w.grid : 'off';
   E.chips.querySelectorAll('button').forEach(bt => { const on = bt.dataset.v === cur; bt.classList.toggle('on', on); bt.setAttribute('aria-pressed', String(on)); });
@@ -98332,22 +98333,24 @@ function vx1rKeyX(w) {
 }
 
 /* ---------- DSP (läuft im Zeitkarten-Worker: Quelltext per toString, deshalb ganz in sich geschlossen) ---------- */
-function vx1rRun(M, m) {
+function vx1rRun(M, m) { const g = nx1RunG(M, m); for (;;) { const r = g.next(); if (r.done) return r.value; } }   // NX1: in einem Zug (Worker, Tests) – gleiche Rechnung wie stückweise
+function* nx1RunG(M, m) {   // NX1: der Kern als Generator – nach kleinen Stücken ein yield; der Hauptfaden-Rückfall (nx1Local) rechnet so nie > 25 ms am Stück
   'use strict';
   const x = m.x, sr = m.sr, n = x.length, cl = (v, a, b) => (v < a ? a : v > b ? b : v);
   if (m.op === 'vxa') {
     // Hüllkurve: RMS über 2,5 ms, Schritt 1 ms
     const H = Math.max(1, Math.round(sr / 1000)), Wn = Math.max(2, Math.round(.0025 * sr)), ne = Math.ceil(n / H), env = new Float32Array(ne);
-    for (let f = 0; f < ne; f++) { const c = f * H, a = Math.max(0, c - (Wn >> 1)), b = Math.min(n, a + Wn); let e = 0; for (let i = a; i < b; i++) e += x[i] * x[i]; env[f] = Math.sqrt(e / Math.max(1, b - a)); }
+    for (let f = 0; f < ne; f++) { const c = f * H, a = Math.max(0, c - (Wn >> 1)), b = Math.min(n, a + Wn); let e = 0; for (let i = a; i < b; i++) e += x[i] * x[i]; env[f] = Math.sqrt(e / Math.max(1, b - a)); if ((f & 4095) === 4095) yield; }
     // Rahmen 10 ms: Pegel, Nulldurchgänge, Stimmhaftigkeit (Autokorrelation auf ~8 kHz, 80–400 Hz), f0
     const FH = Math.round(.01 * sr), nf = Math.ceil(n / FH), dc = Math.max(1, Math.round(sr / 8000)), sr2 = sr / dc;
     const n2 = Math.floor(n / dc), x2 = new Float32Array(n2);
-    for (let i = 0; i < n2; i++) { let s = 0; for (let j = 0; j < dc; j++) s += x[i * dc + j]; x2[i] = s / dc; }
+    for (let i = 0; i < n2; i++) { let s = 0; for (let j = 0; j < dc; j++) s += x[i * dc + j]; x2[i] = s / dc; if ((i & 262143) === 262143) yield; }
     const W2 = Math.round(.03 * sr2), l0 = Math.max(2, Math.floor(sr2 / 400)), l1 = Math.ceil(sr2 / 80);
     const rms = new Float32Array(nf), zcr = new Float32Array(nf), vc = new Float32Array(nf), f0 = new Float32Array(nf), kind = new Uint8Array(nf);
-    let pk = 0; for (let i = 0; i < n; i++) { const v = x[i] < 0 ? -x[i] : x[i]; if (v > pk) pk = v; }
+    let pk = 0; for (let i = 0; i < n; i++) { const v = x[i] < 0 ? -x[i] : x[i]; if (v > pk) pk = v; if ((i & 1048575) === 1048575) yield; }
     const TH = Math.max(.002, pk * .02);
     for (let f = 0; f < nf; f++) {
+      if ((f & 31) === 31) yield;                         // NX1
       const a = f * FH, b = Math.min(n, a + FH); let e = 0, z = 0;
       for (let i = a; i < b; i++) { e += x[i] * x[i]; if (i > a && ((x[i - 1] < 0) !== (x[i] < 0))) z++; }
       rms[f] = Math.sqrt(e / Math.max(1, b - a)); zcr[f] = z / Math.max(1, b - a - 1);
@@ -98364,11 +98367,12 @@ function vx1rRun(M, m) {
     }
     // Spitzen-Hüllkurve: größter Betrag in ±2,5 ms (eine Schwingung tiefer Stimmen), Schritt 1 ms
     const R5 = Math.max(1, Math.round(.0025 * sr)), pe = new Float32Array(ne);
-    for (let f = 0; f < ne; f++) { const c = f * H; let v = 0; for (let i = Math.max(0, c - R5); i < Math.min(n, c + R5); i++) { const a = x[i] < 0 ? -x[i] : x[i]; if (a > v) v = a; } pe[f] = v; }
+    for (let f = 0; f < ne; f++) { const c = f * H; let v = 0; for (let i = Math.max(0, c - R5); i < Math.min(n, c + R5); i++) { const a = x[i] < 0 ? -x[i] : x[i]; if (a > v) v = a; } pe[f] = v; if ((f & 4095) === 4095) yield; }
     // Anker je Marke: der erste Gipfel der Spitzen-Hüllkurve, der ≥ 90 % des Höchstwerts in [Marke, Marke + 120 ms) erreicht
     // (nicht über die nächste Marke), genau: das lauteste Sample dort
     const mk = m.marks || [], an = new Float32Array(mk.length);
     for (let k = 0; k < mk.length; k++) {
+      if ((k & 63) === 63) yield;                         // NX1
       const f0i = Math.max(0, Math.round(mk[k] * sr / H)), lim = k + 1 < mk.length ? Math.round(mk[k + 1] * sr / H) - 5 : ne - 1;
       const f1i = Math.min(ne - 1, Math.round((mk[k] + .12) * sr / H), Math.max(f0i, lim));
       let mx = 0; for (let f = f0i; f <= f1i; f++) if (pe[f] > mx) mx = pe[f];
@@ -98397,6 +98401,7 @@ function vx1rRun(M, m) {
   const XF = Math.max(1, Math.round(.006 * sr)), FMIN = Math.round(.01 * sr), FMAX = Math.round(.03 * sr), RMAX = m.maxr || 1.5;
   const on = new Int32Array(K + 2), S = new Int32Array(K + 2), D = new Int32Array(K + 2), A = new Int32Array(K + 2);
   for (let k = 0; k < K; k++) {
+    if ((k & 255) === 255) yield;                         // NX1
     const o = Math.round(src[k] * sr), c = cl(o - PRE, 0, n - 1); let best = c, bd = 1e9, bz = false;
     for (let i = Math.max(1, c - ZC); i <= Math.min(n - 1, c + ZC, o); i++) {
       const z = (x[i - 1] <= 0 && x[i] > 0) || (x[i - 1] >= 0 && x[i] < 0) || x[i] === 0, d = Math.abs(i - c);
@@ -98412,6 +98417,7 @@ function vx1rRun(M, m) {
   const st = {cut: 0, stretch: 0, gap: 0, fades: []};
   const X = M.X || (typeof VSX !== 'undefined' ? VSX : null);
   for (let j = 0; j <= K; j++) {
+    if (j) yield;                                         // NX1: ein Stück je Schritt
     const len = S[j + 1] - S[j], d0 = D[j];
     const shJ = D[j] - S[j], shN = D[j + 1] - S[j + 1], last = j === K;
     // Überblendung am Anfang: liegt die Grenze davor nicht nahtlos, blendet das Stück in seinem Vorlauf (vor der Marke) ein
