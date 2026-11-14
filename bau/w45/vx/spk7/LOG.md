@@ -1,0 +1,1 @@
+- 18:24 Start: index.html = basis5 (cmp gleich). KARTE gelesen; Code gelesen: spk1Call/block, spk1SideGest/spk1Tone, spk1Dd, spawnVoice/WkVoiceProto, normWt, tkAddPcmTake/tkUsedIds, imp1Step, spk2KlTake. Plan: Kern spk7CoreMake (Körnchen + Spektral-Schleife, Worklet + Rückfall), Quelle über op block (sel), Tastatur-Modus, Als Instrument (Klang 'wt' + p.wt.h, Audio als Take).

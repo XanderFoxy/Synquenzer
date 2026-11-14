@@ -7,8 +7,9 @@ const E = await start(file), errs = [], res = {}, net = [];
 const ok = (k, v, c) => { res[k] = {v, ok: !!c}; console.log((c ? 'OK  ' : 'FEHL') + ' ' + k + ' ' + JSON.stringify(v)); };
 const ty = f => f.endsWith('.wasm') ? 'application/wasm' : /m?js$/.test(f) ? 'text/javascript' : 'application/octet-stream';
 const P = await page(E, 428, 926, errs, null), {p} = P;
-await P.ctx.route(/^https:\/\/(huggingface\.co|cdn\.jsdelivr\.net)\//, async rt => {
-  const u = rt.request().url(), f = u.split('?')[0].split('/').pop(), src = u.includes('huggingface.co') ? path.join(MOD, f) : path.join(ORTD, f); net.push(f);
+await P.ctx.route(/^https:\/\/(?!127\.0\.0\.1)/,   // Modell-Ablage + Laufzeit-Ablage: Dateiname entscheidet (Modell-Ordner zuerst)
+  async rt => {
+  const u = rt.request().url(), f = u.split('?')[0].split('/').pop(), src = fs.existsSync(path.join(MOD, f)) ? path.join(MOD, f) : path.join(ORTD, f); net.push(f);
   if (!fs.existsSync(src)) return rt.fulfill({status: 404, body: ''});
   return rt.fulfill({status: 200, headers: {'content-type': ty(f), 'access-control-allow-origin': '*'}, body: fs.readFileSync(src)});
 });

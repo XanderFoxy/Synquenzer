@@ -167,7 +167,8 @@ for (const nr of ONLY) {
     let kk = ord.find(i => L[i].dst - L[i - 1].dst > .35 && L[i + 1].dst - L[i].dst > .3 && L[i].t - L[i - 1].at > .2); if (kk == null) kk = ord.find(i => L[i].dst - L[i - 1].dst > .2 && L[i + 1].dst - L[i].dst > .2 && L[i].t - L[i - 1].at > .2); if (kk == null) kk = ord.find(i => L[i].dst - L[i - 1].dst > .35 && L[i + 1].dst - L[i].dst > .3); if (kk == null) kk = -1; if (process.env.RV1_K) kk = +process.env.RV1_K;
     if (kk < 0) for (let i = 1; i < L.length - 1; i++) if (L[i].dst - L[i - 1].dst > .3) { kk = i; break; }
     for (const dir of [-1, 1]) {
-      const D = dir < 0 ? -.06 : Math.max(.06, L[kk].t - L[kk].dst + .06);   // rechts: mehr Platz als in der Quelle → Vorgänger wird gedehnt
+      // rechts: mehr Platz als in der Quelle → Vorgänger wird gedehnt (Platz = Abstand zum Anker des Vorgängers, dessen eigene Verschiebung zählt mit)
+      const D = dir < 0 ? -.06 : Math.max(.06, (L[kk].t - L[kk - 1].at) - (L[kk].dst - L[kk - 1].da) + .06);
       const M = await run(p, async o => {
         const u0 = UNDO.length, L0 = window.__vx1.list(o.take), q = L0[o.k]; await window.__vx1.move(o.take, o.k, q.da + o.D);
         for (let i = 0; i < 1200 && !window.__vx1.ready(o.take); i++) { wpPlay(o.take); await wait(25); }

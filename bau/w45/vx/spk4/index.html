@@ -98155,7 +98155,7 @@ function spk1DspMake(V) {
       emit({qid: m.qid, ok: r}, tr);
     }, e => emit({qid: m.qid, err: String(e && e.message || e)}));
   }
-  const Z2 = typeof spk2DspMake === 'function' ? spk2DspMake({V, magsAt, hpss, f0Sum, comb, ramp, medLine, win, stft, istft, selFn, Fn, NBn, magPair, render, mixOf, transfer, uBegin, uEnd, lay, tick}) : null;   // SPK2 (Auftrag 2: Noten brauchen render/transfer/Undo)
+  const Z2 = typeof spk2DspMake === 'function' ? spk2DspMake({V, magsAt, hpss, f0Sum, comb, ramp, medLine, win, stft, istft, selFn, Fn, NBn, magPair, render, mixOf, transfer, uBegin, uEnd, lay, tick, x4: {refineEst, stripe, tileArr, tidy, verUp, uTouch, newLayer, uAbort, TRn, BT, Fn} /* SPK4: Rest aufteilen */}) : null;   // SPK2 (Auftrag 2: Noten brauchen render/transfer/Undo)
   if (Z2 && typeof spk3DspMake === 'function') spk3DspMake(Z2);   // SPK3: Tiefband mit Kick-Vorlage (ersetzt Z2.lowSplit, schaltet es ein)
   if (Z2 && typeof spk4DspMake === 'function') spk4DspMake(Z2);   // SPK4: mehrstimmige Noten (Pads, Rest, Original)
   return {on, stft, istft, specInfo, docs, lowSplit, Z2};   // SPK2: Z2 für Messungen
@@ -98796,7 +98796,7 @@ function spk1Layers(U) {
   };
   let h = row('orig', 'Original', 'linear-gradient(135deg,var(--t2),var(--t1),var(--amber))', {ab: true});
   for (const l of L) h += row(l.id, l.name, 'var(' + l.col + ')', {solo: l.solo, mute: l.mute, vol: l.vol, more: true});
-  if (L.length) h += row('rest', 'Rest', 'var(--text-dim)', {solo: R.solo, mute: R.mute, vol: R.vol});
+  if (L.length) h += row('rest', 'Rest', 'var(--text-dim)', {solo: R.solo, mute: R.mute, vol: R.vol, more: typeof spk4RestDd === 'function' /* SPK4: ⋯ Rest aufteilen */});
   else h += '<div class="spk1-lr"><span></span><span class="spk1-db" style="grid-column:2/-1;text-align:left;font-family:var(--font-ui);font-size:12px">Noch keine Ebene – Auswahl treffen, dann „In Ebene ▾“</span></div>';
   if (typeof spk2LpRow === 'function') h = spk2LpRow(U) + h;   // SPK2: Loop → In die Matrix
   const sc = U.ly.scrollTop; U.ly.innerHTML = h; U.ly.scrollTop = sc;
@@ -98864,6 +98864,7 @@ function spk1IntoDd(U, b) {
   });
 }
 function spk1MoreDd(U, b, lid) {
+  if (lid === 'rest' && typeof spk4RestDd === 'function') return spk4RestDd(U, b);   // SPK4: Ebenen-Menü der Rest-Ebene
   const l = U.meta.layers.find(x => x.id === lid); if (!l) return;
   spk1Dd(U, b, dd => {
     dd.appendChild(el('h5', '', 'Name'));
@@ -100377,9 +100378,11 @@ function spk3KlStart(c, est, src, alt) {
   const x = (src.feat && src.feat.x3) || null, u = c.u, cvm = x && x.cv.length ? x.cv.reduce((a, v) => a + v, 0) / x.cv.length : 0;
   const det = x ? Math.min(25, x.det) : 0, vib = x && x.vib.d >= 3 && (cvm < 0.15 || x.vib.d > 12) ? Math.min(60, x.vib.d) : 0, wah = x && x.wah.d >= 0.06 && cvm < 0.12 ? x.wah.d : 0,   // Schwebung täuscht Vibrato/Wah vor
     lr = vib ? x.vib.r : wah ? x.wah.r : 4;
-  c.fix = Object.assign({}, c.fix, {uni: alt === 'uni' ? 5 : 1});
+  const u4 = alt === 'uni' || alt === 'uni0', U4 = u4 && typeof spk4KlUni === 'function' ? spk4KlUni(x) : null;   // SPK4: Unison erkannt → Verstimmung aus der Schwebung
+  c.fix = Object.assign({}, c.fix, {uni: u4 ? 5 : 1});
   if (alt === 'det') { c.fix.o2 = c.fix.o1; u[8] = 0.9; }
-  u.push((Math.max(-25, Math.min(25, alt === 'det' || alt === 'uni' ? det || 8 : det)) / 25 + 1) / 2, alt === 'uni' ? Math.min(1, 0.15 + cvm) : 0, spk2Ul(Math.max(0.2, Math.min(10, lr)), 0.2, 10), vib / 60, Math.min(1, wah));
+  if (alt === 'uni0') u[8] = 0;   // SPK4: eine Welle mit Unison
+  u.push((Math.max(-25, Math.min(25, alt === 'det' || alt === 'uni' ? det || 8 : det)) / 25 + 1) / 2, u4 ? (U4 ? U4.udet : Math.min(1, 0.15 + cvm)) /* SPK4 */ : 0, spk2Ul(Math.max(0.2, Math.min(10, lr)), 0.2, 10), vib / 60, Math.min(1, wah));
   const fz = []; if (!(est.noise > 0.1)) { fz.push(9); u[9] = 0; } if (c.fix.uni === 1) fz.push(12); if (!vib) fz.push(14); if (!wah) fz.push(15); if (!vib && !wah) fz.push(13);
   c.fz = fz; return c;
 }
@@ -100387,6 +100390,7 @@ function spk3KlMore(L, S, e, src) {   // zusätzliche Startwerte: zwei verstimmt
   const x = src.feat && src.feat.x3; if (!SPK3_KL.x3 || src.k2 || !x || !x.cv.length) return L;
   const cvm = x.cv.reduce((a, v) => a + v, 0) / x.cv.length;
   if (cvm > 0.06 || x.det > 0.5) { L.push(S('va', 'det')); L.push(S('va', 'uni')); }
+  if (typeof spk4KlUni === 'function' && spk4KlUni(x)) L.push(S('va', 'uni0'));   // SPK4: Unison erkannt → auch eine Welle allein
   return L;
 }
 function spk3KlDist(A, B) {
@@ -100775,6 +100779,52 @@ function spk4DspMake(Z2) {
   const noten0 = Z2.ops.noten;
   Z2.ops.noten = async (d, m, emit, info) => polyOf(d, m) ? Object.assign(await polyNoten(d, m, emit), info(d)) : Object.assign(await noten0(d, m, emit, info), {mehrstimmig: false});
   Z2.o5 = o5;
+  /* ---- Auftrag 3/4: „Rest aufteilen“ – nur der Rest (255 − Summe der Ebenen) gibt ab: Anteil Lead wie Verfeinern Lead (Grundton-Kamm × tonal),
+     vom Übrigen Anteil Pads wie Verfeinern Pads (tonal², über 120–220 Hz); was keins von beiden ist (Rauschen, Tiefes), bleibt Rest. Ganzes Stück
+     in Blöcken von 4 Streifen (Speicher), andere Ebenen unverändert, Summe = Original, ein ↶ „Rest aufteilen“. o7.voll 1 = der ganze Rest. ---- */
+  const X4 = I.x4, o7 = {voll: 0, S4: 4};
+  if (X4) Z2.ops.restAuf = async (d, m, emit, info) => {
+    if (d.busy) throw new Error('Rechnung läuft');
+    if (!d.meta.layers.length) throw new Error('Erst zerlegen');
+    const {refineEst, stripe, tileArr, tidy, verUp, uTouch, newLayer, uAbort, TRn, BT, Fn} = X4, TR = TRn(d), NB = I.NBn(d), F = Fn(d), nS = Math.ceil(F / BT);
+    d.busy = 'verfeinern';
+    try {
+      I.uBegin(d, 'Rest aufteilen');
+      const Z = {}; for (const z of ['lead', 'pads']) { let l = d.meta.layers.find(x => x.z === z) || d.meta.layers.find(x => x.art === z); if (!l) l = newLayer(d, {art: z}); Z[z] = l.id; }
+      const all = d.meta.layers.map(l => l.id), sumT = new Uint16Array(BT * BT);
+      let rS = 0, gL = 0, gP = 0;
+      for (let s0 = 0; s0 < nS; s0 += o7.S4) {
+        emit({qid: m.qid, prog: 0.05 + 0.9 * s0 / nS, stufe: 'Rest aufteilen'}); await I.tick();
+        const m0 = s0 * BT, m1 = Math.min(F - 1, (s0 + o7.S4) * BT - 1), EL = refineEst(d, 'lead', m0, m1, NB - 1).E, EP = refineEst(d, 'pads', m0, m1, NB - 1).E;
+        for (let s = s0; s < Math.min(nS, s0 + o7.S4); s++) {
+          let touched = false;
+          for (let tr = 0; tr < TR; tr++) {
+            sumT.fill(0); let full = false;
+            for (const id of all) { const st = stripe(d, id, s, false); if (!st || !st.h[tr]) continue; if (st.h[tr] === 255) { full = true; break; } const t = st.t[tr]; for (let i = 0; i < t.length; i++) sumT[i] += t[i]; }
+            if (full) continue;
+            if (!touched) { for (const id of all) uTouch(d, id, s); touched = true; }
+            const TL = tileArr(stripe(d, Z.lead, s, true), tr), TP = tileArr(stripe(d, Z.pads, s, true), tr), kB = Math.min(NB - 1, tr * BT + BT - 1);
+            for (let mm = Math.max(m0, s * BT); mm <= Math.min(m1, s * BT + BT - 1); mm++) {
+              const o = (mm - m0) * NB;
+              for (let k = tr * BT; k <= kB; k++) {
+                const i = (mm & 127) * BT + (k & 127), r = 255 - sumT[i]; if (r <= 0) continue;
+                const aL = Math.max(0, Math.min(1, EL[o + k])), aP = Math.max(0, Math.min(1, EP[o + k])), rl = o7.voll ? (aL + aP > 0 ? aL / (aL + aP * (1 - aL)) : 0) : aL;
+                const dl = Math.round(r * rl), dp = o7.voll ? (aL + aP > 0 ? r - dl : 0) : Math.round((r - dl) * aP);
+                TL[i] += dl; TP[i] += dp; rS += r; gL += dl; gP += dp;
+              }
+            }
+            tidy(stripe(d, Z.lead, s, true), tr); tidy(stripe(d, Z.pads, s, true), tr);
+          }
+          if (touched) for (const id of [Z.lead, Z.pads]) d.dirty.add(id + '|' + s);
+        }
+      }
+      verUp(d, Z.lead); verUp(d, Z.pads);
+      I.uEnd(d);
+      return Object.assign({lead: Z.lead, pads: Z.pads, lid: Z.lead, anteil: {lead: rS ? +(gL / rS).toFixed(3) : 0, pads: rS ? +(gP / rS).toFixed(3) : 0}}, info(d));
+    } catch (e) { uAbort(d); throw e; }
+    finally { d.busy = null; }
+  };
+  Z2.o7 = o7;
   return Z2;
 }
 /* ---- Seite: Hinweis „einstimmig“/„mehrstimmig“ in der Noten-Leiste, Schalter je Ebene in Noten ▾ (nur für diese Sitzung) ---- */
@@ -100794,6 +100844,39 @@ function spk4Btn(U, g, lid, p, pre) {   // Schalter in Noten ▾: Mehrstimmig an
   on(x, 'click', () => { (U.n4p || (U.n4p = {}))[lid] = !spk4Poly(U, lid); upd(); spk4Lab(U); });
   upd(); g.appendChild(x);
 }
+/* ---- Auftrag 3/4: Seite – Ebenen-Menü ⋯ der Rest-Ebene mit „Rest aufteilen“ (Lead + Pads, ein ↶) ---- */
+function spk4RestDd(U, b) {
+  spk1Dd(U, b, dd => {
+    dd.appendChild(el('h5', '', 'Rest'));
+    const g = el('div', 'spk1-g'), x = el('button', 'mbtn rb spk1-ck', 'Rest aufteilen'); x.dataset.a4 = 'restauf'; x.disabled = !!U.busy || !U.meta.layers.length;
+    on(x, 'click', () => { spk1Dd(U, null); spk4RestAuf(U); }); g.appendChild(x); dd.appendChild(g);
+    dd.appendChild(el('p', '', 'Teilt den Rest in Lead und Pads. Andere Ebenen bleiben, die Summe bleibt das Original.'));
+  });
+}
+async function spk4RestAuf(U) {
+  if (!U || U.busy || !U.meta || !U.meta.layers.length) return null;
+  U.busy = 'verfeinern'; U.vf = null; spk1Stop(); spk1BtnState(U); const pc = v => Math.round(v * 100) + ' %';
+  try {
+    const r = await spk1Call('restAuf', {doc: SPK1.doc}, null, {prog: p => spk1Stat(U, 'Rest aufteilen · ' + Math.round(p * 100) + ' %')});
+    U.busy = null; spk1Got(U, r); spk1TintLoad(U);
+    spk1Stat(U, 'Rest aufgeteilt: Lead ' + pc(r.anteil.lead) + ' · Pads ' + pc(r.anteil.pads) + ' · ↶ macht es rückgängig');
+    return r;
+  } catch (e) { logErr(e); spk1Stat(U, 'Rest aufteilen: ' + (e.message || e)); return null; }
+  finally { U.busy = null; spk1BtnState(U); }
+}
+/* ---- Auftrag 3/4: Unison erkennen (Klang nachbauen). Unison = viele leicht verstimmte Kopien: jeder Oberton schwebt, auch der Grundton –
+   anders als zwei verstimmte Oszillatoren (dort schweben nur die Obertöne, die beide Wellen haben) oder FM (Grundton ruhig). Die Verstimmung
+   kommt aus der Schwebung: x3.det (Raten je Oberton, in ct) ≈ Abstand der äußeren Stimme → uniDet über die Kurve der Engine
+   (äußere Stimme = (0,25·d + 0,75·d⁴)·1,8 Halbtöne). Startwerte „uni“ (wie Analyse) und „uni0“ (eine Welle) – der Optimierer stimmt nach. ---- */
+const SPK4_UNI = {an: 1, cv: 0.2, n: 5, min: 0.15};
+function spk4KlUni(x) {
+  if (!SPK4_UNI.an || !x || !x.cv || x.cv.length < 6 || !(x.det > 0.5)) return null;
+  const c = x.cv.slice(0, 6); if (c.filter(v => v > SPK4_UNI.cv).length < SPK4_UNI.n || Math.min(...c.slice(0, 4)) < SPK4_UNI.min) return null;
+  const s = Math.min(1.8, x.det / 100); let lo = 0, hi = 1;
+  for (let i = 0; i < 30; i++) { const d = (lo + hi) / 2; if ((0.25 * d + 0.75 * d * d * d * d) * 1.8 < s) lo = d; else hi = d; }
+  return {udet: (lo + hi) / 2};
+}
+SPK1_API.spk4 = {restAuf: () => spk4RestAuf(SPK1.ui), uni: spk4KlUni, UNI: SPK4_UNI};
 /* ===== SPK4-END ===== */
 /* ===== KF1-BEGIN (Paket KF1, Klang-Feinschliff Teil 1 aus der Ur-Roadmap §18 „Klang“; Xander: „Können wir davon noch was machen?“ → ja) =====
    Sechs Wünsche, jeder mit neutralem Standard (= genau der Klang von vorher, alte Projekte bitgleich):
