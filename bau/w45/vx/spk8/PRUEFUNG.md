@@ -69,7 +69,7 @@ Zeitvergleich gepaart (Demo, 3× abwechselnd): Basis 1043/1017/1023 ms, SPK8 114
 | Menü-Knöpfe | alle 44 px hoch, im Bild | gleich |
 | Konsole | leer | leer |
 
-- **Profi-Bass-Ebene** (Modell lokal, `pr-ki.mjs`): 0/32 · 0 (32 Noten, alle 1–2 Oktaven zu tief) → **28/32 · 0,90 (31)**, 1152 → 1219 ms.
+- **Profi-Bass-Ebene** (Modell lokal, `pr-ki.mjs`): 0/32 · 0 (32 Noten, alle zu tief: m 21–35 statt 36–48) → **28/32 · 0,90 (31)**, 1152 → 1219 ms.
 - **Ohne Worker** (Hauptfaden-Rückfall, `pr-fallback.mjs`): SPK8 29/32 (36), 1406 → 976 ms, Konsole leer. Der Haken in spk1DspMake greift auch dort.
 - Fotos: `pruef-spk8/fotos-ui/spk8-428x926-noten.png`, `spk8-926x428-noten.png`, `ki-spk8-noten.png` (Basis-Fotos daneben).
 
@@ -80,12 +80,12 @@ Auf der Demo ist das Ziel erreicht. Mit demselben Bass-Synth, denselben Pads und
 
 | Basslinie | Treffer | Präzision | Hauptfehler |
 |---|---|---|---|
-| Laufender Bass E1…A2 | 8/32 (25 %) | 0,22 | 8× eine Oktave zu tief (−12), D2/E2/G2/A2 0 Treffer |
+| Laufender Bass E1…A2 | 8/32 (25 %) | 0,22 | 8× eine Oktave zu tief (−12); H1, D2, G2, A2 je 0 Treffer, E2 1/4 |
 | Oktav-Bass A1/A2 | 24/32 (75 %) | 0,67 | A1 nur 2/8 |
-| Liegende Noten | 4/4 | 0,24 | 4 Noten zerfallen in 17 (Schnitt auf jedem Trommelschlag), F2 später als F1 (−12) |
+| Liegende Noten | 4/4 | 0,24 | 4 Noten zerfallen in 17 (Schnitte auf den Trommelschlägen); im Ausklang von F2 kippen Teilstücke auf F1 (−12) |
 | 16tel mit Oktavsprüngen | 29/64 (45 %) | 0,62 | C3/D3-Sprünge 0/12, alles klebt an C2 |
 | Bass −10 dB | 16/32 (50 %) | 0,50 | C4 der Pads als Bass-Note (m 60) |
-| Bass + Trommeln ohne Pads | 19/32 (59 %) | 0,66 | G2/E2 als G#1/G1 (Kick-Bereich 46–55 Hz) |
+| Bass + Trommeln ohne Pads | 19/32 (59 %) | 0,66 | G2/E2 als G#1 bzw. F#1 (52/46 Hz, Kick-Bereich) |
 
 - Ohne Pads wird es schlechter (19/32) als mit Pads (29/32).
 - Die Schwellen gS/gL und die Verfolgung sind an einem einzigen 4-Takt-Muster gemessen. Die Oktavfehler kommen aus der Verfolgung: Unter-Oktave des Synths und Kick-Rest unter 60 Hz, nicht aus den Schwellen. Der Bericht nennt als offenen Punkt nur die Schwellen.
