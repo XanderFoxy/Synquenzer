@@ -32,6 +32,7 @@ async function open(file, vk, o = {}) {
   const T = {
     down: (x, y) => cdp.send('Input.dispatchTouchEvent', {type: 'touchStart', touchPoints: [{x, y, id: 1}]}),
     up: () => cdp.send('Input.dispatchTouchEvent', {type: 'touchEnd', touchPoints: []}),
+    move: (x, y) => cdp.send('Input.dispatchTouchEvent', {type: 'touchMove', touchPoints: [{x, y, id: 1}]}),
     async tap(x, y) { await this.down(x, y); await sleep(60); await this.up(); await sleep(180); },
   };
   return {ctx, p, errs, T, vk, close: () => ctx.close()};
@@ -71,11 +72,12 @@ if (run('gesang')) for (const vk of ['p', 'q', 'q2']) {
   await p.evaluate(async () => { SYNQUENZER.loadDemo(); ensureAudio(); const sr = 48000, a = new Array(sr).fill(0).map((_, i) => Math.round(6000 * Math.sin(i / 17)));
     await SYNQUENZER.tkInject({pcm: a, sr, scene: 0, len: 1}); ui1Home(); setSongView(false); await new Promise(r => setTimeout(r, 200)); });
   await p.evaluate(() => stSheet()); await sleep(500);
-  const L0 = await p.evaluate(() => { const P = UI.pop && UI.pop.name === 'stimme' ? UI.pop.el : null; if (!P) return null; const m = P.querySelector('.xd1mic');
-    const lb = m ? [...m.querySelectorAll('.st-lbl')].map(x => x.textContent) : [], sm = m ? [...m.querySelectorAll('[data-xd1^="vox2s:"]')].map(x => [x.firstChild.textContent, x.classList.contains('on')]) : [], mo = m ? [...m.querySelectorAll('[data-xd1^="mon:"]')].map(x => [x.textContent, x.classList.contains('on')]) : [];
-    return {lb, sm, mo, step: (P.querySelector('.origs .on span') || {}).textContent || '', inC2: !!(m && m.closest('.st-c2'))}; });
-  ok(`(1) ${VN[vk]}: Mikrofon-Blatt (Schritt „${L0 && L0.step}“) hat „Beim Singen hören“ [Begleitung │ + Melodie │ nur Klick] und „Mich selbst hören“ [an │ aus] – Standard Begleitung, aus`,
-    L0 && L0.lb.join('|') === 'Beim Singen hören|Mich selbst hören' && L0.sm.map(x => x[0]).join('|') === 'Begleitung|+ Melodie|nur Klick' && L0.sm[0][1] && L0.mo.map(x => x[0]).join('|') === 'an|aus' && L0.mo[1][1] && L0.step === 'Aufnehmen', L0);
+  const L0 = await p.evaluate(() => { const P = UI.pop && UI.pop.name === 'stimme' ? UI.pop.el : null; if (!P) return null; const a = P.querySelector('.xd1sing'), m = P.querySelector('.xd1mon');
+    const lb = [(a && a.querySelector('.st-lbl') || {}).textContent, m ? m.querySelector('span').firstChild.textContent : null], sm = a ? [...a.querySelectorAll('[data-xd1^="vox2s:"]')].map(x => [x.firstChild.textContent, x.classList.contains('on')]) : [], mo = m ? [...m.querySelectorAll('[data-xd1^="mon:"]')].map(x => [x.textContent, x.classList.contains('on')]) : [];
+    const c2 = P.querySelector('.st-c2'), nx = m && m.nextElementSibling;   // beide oben in der Spalte „Stimme → Noten“, gleich danach deren Titel
+    return {lb, sm, mo, step: (P.querySelector('.origs .on span') || {}).textContent || '', inC2: !!(a && m && c2.firstElementChild === a && a.nextElementSibling === m), next: nx && nx.textContent, row: m && m.classList.contains('st-mel')}; });
+  ok(`(1) ${VN[vk]}: Mikrofon-Blatt (Schritt „${L0 && L0.step}“) hat oben in „Stimme → Noten“ „Beim Singen hören“ [Begleitung │ + Melodie │ nur Klick] und „Mich selbst hören“ [An │ Aus] (Zeile wie „Melodieerkennung“) – Standard Begleitung, Aus`,
+    L0 && L0.lb.join('|') === 'Beim Singen hören|Mich selbst hören' && L0.sm.map(x => x[0]).join('|') === 'Begleitung|+ Melodie|nur Klick' && L0.sm[0][1] && L0.mo.map(x => x[0]).join('|') === 'An|Aus' && L0.mo[1][1] && L0.step === 'Aufnehmen' && L0.inC2 && L0.row && /Stimme → Noten/i.test(L0.next || ''), L0);
   const C0 = await sheetCheck(p, popEl);
   await p.screenshot({path: `${OUT}/xd1-1-mikro-${vk}.png`});
   ok(`(1) ${VN[vk]}: Mikrofon-Blatt im Bild, ✕ sichtbar und antippbar, alle Tasten ≥ 44 px`, C0 && C0.x && C0.inView && !C0.small.length, C0);
@@ -187,7 +189,12 @@ if (run('matrix')) for (const vk of ['p', 'q', 'q2']) {
   await p.screenshot({path: `${OUT}/xd1-3-szene-${vk}.png`});
   ok(`(3) ${VN[vk]}: STOPP – ▶ Szene 3 halten öffnet nur „Szene 3“ (Szene duplizieren …), nichts läuft – auch nicht nach dem Loslassen`, h0.pop === 'mtxscn' && !h0.playing && h1.pop === 'mtxscn' && !h1.playing, {h0, h1});
   await p.evaluate(() => closePop()); await sleep(200);
-  // Wischen vom Kopf weg (> 8 px, wie die übrigen Halte-Gesten): kein Blatt; Start beim Loslassen wie ein Tipp (MTX-Verhalten)
+  // Wegziehen (> 12 px, wie jeder Tipp der App): kein Blatt, nichts startet
+  sc = await scn(1);
+  await T.down(sc.cx, sc.cy + 4); await sleep(40); await T.move(sc.cx, sc.cy + 24); await sleep(40); await T.move(sc.cx, sc.cy + 44); await sleep(60); await T.up(); await sleep(350);
+  const g1 = await p.evaluate(() => ({pop: UI.pop ? UI.pop.name : null, playing: R.playing}));
+  ok(`(3) ${VN[vk]}: STOPP – vom Kopf weggezogen (40 px): nichts startet, kein Blatt`, !g1.playing && g1.pop !== 'mtxscn', g1);
+  await p.evaluate(() => { stop(); closePop(); }); await sleep(200);
   // Wiedergabe: wie MTX – Tipp = am Taktstrich (Start beim Loslassen, gleicher Taktstrich)
   await p.evaluate(() => launchScene(0)); await sleep(600);
   const waitBar = (lo, hi) => p.evaluate(([lo, hi]) => new Promise(res => { const t0 = performance.now(); (function f() { const d = b2t(nextBarFromAudible()) - AU.ctx.currentTime; if ((d >= lo && d <= hi) || performance.now() - t0 > 8000) res(+d.toFixed(3)); else setTimeout(f, 4); })(); }), [lo, hi]);
