@@ -32,3 +32,12 @@
   Hüllen-Fehler an den neuen Teiltönen etwa halbiert (z. B. „e“ T1 −10,2 → −5,8 dB, „i“ −500 −12 → −8,4), Formant in ruhigen Rahmen 27 → 5–17 %,
   ABER Ausreißer: Lautstärke-Verlauf (Ausklingen) korreliert mit dem Vibrato → alle Steigungen +5 → Spitze +12 dB. Nächster Schritt: Zeit-Trend
   (1, t, t²) aus der Regression herausrechnen + leise Rahmen (−6 dB) auslassen.
+- (3) Regression mit Zeit-Trend (1, t, t²) + Pegel-Maske −1,7 dB + Noten-Ende −60 ms (src/hull.mjs SLOPE lv 0,2 e1 0,06): Steigungen in ruhigen Noten
+  richtig (T1–T8 „e“/„i“ ±0,3 der wahren), Ausreißer weg. Messung (tune-meas-Maß, nur G2): +400 Formant 9,25 → 8,18 %, LSD ruhig 4,06 → 3,79;
+  −500 Formant 5,99 → 7,28 (ohne Fortsetzung unter T1: 6,77) = RÜCKSCHRITT: F1-Band „e“ (433 → 324 Hz) +3…6 dB zu laut (Hermite-Spitze zu breit,
+  ρ ≈ 0,5 an T1 = halbe Steigung beim Fortsetzen). Korrektur weich 2,43 → 2,48 % (gleich). → NICHT eingebaut.
+- (4) Anlauf −500 = 50 ms ist ein Mess-Fehler von tune-meas: Note 8 („e“ 247 Hz) – YIN im IDEAL springt auf 494 Hz (T2 = F1), die Ausgabe liegt ab
+  Notenbeginn auf 246,9–247,0 Hz = Ziel (src/fdiag5.mjs) → gegen die bekannte Ziel-Kurve gemessen 0 ms in allen 4 Noten.
+- Stand Ende Auftrag 2/3 (Zeit aus, ~60 min): Datei index.html UNVERÄNDERT (Stand 1/3, Pflicht-Prüfungen von 1/3 gelten). Offen → Auftrag 2b:
+  Ränder G 0 ms (Glätte weich 1,11 → 1,34 klären) und Hülle −500 (F1-Spitze zu breit) – Messung direkt an den Teiltönen statt Cepstrum-Schwerpunkt.
+- 14.11. Start Auftrag 3/3 (Test): LOG/NOTES gelesen; Datei index.html seit 1/3 unverändert (cmp folgt).

@@ -38,3 +38,20 @@ Pflicht: topdefs doppelt 0/Syntax 0, dupkeys 0, smoke errors [] (`smoke-1.png`),
 - 4 enge Stimmen tief (andere Melodie, F3/C4 mit Vokal „a“: Grundton schwach) Unterstimme 82 % / 11 dB – Grenze: Teiltöne 1/2 fast leer, Rest geteilt.
 - Echte Kreuzung zweier Stimmen (eine läuft durch die andere) nicht geprüft; Oktav-Verdopplung bleibt Grenze.
 - Ohne Vibrato (sehr gerade Stimmen) fällt der Anteil auf die Hülle zurück (hohe Stimmen schwächer) – mit echten Aufnahmen prüfen.
+
+## Auftrag 2/3 – Formanten bei großen Verschiebungen (Stand: Befund + Versuche, Datei unverändert)
+Werkzeuge: `src/tmlib.mjs` (tune-meas als Modul, `TMFILE=../index.html`), `src/fdiag*.mjs` (Zerlegung), `src/fexp.mjs '<JSON-Varianten>'`
+(Varianten: `G`, `rmp`, `step`, `per`, `or` = Orakel-Hülle, `hull: {lam, w, mask, cap, e0, e1, lv, up, dn, ex}`, `fr` = je Rahmen), `src/hull.mjs`
+(Text-Bausteine Steigung im Modell + `chr3Hull` Hermite; gleiche Bausteine später für G2 model/render und G6 modelRuns/setS). Basis `src/tm2-vorher.json`.
+Befund:
+1. Rest x − Modell im Vokal −28 dB (Teiltöne −40 dB; Hauptteil > 7 kHz + Hauch) – kein großer Geist der Original-Tonhöhe im ruhigen Teil.
+2. Hülle zwischen den Teiltönen ist der größte Einzelposten: liegt ein Formant zwischen zwei Teiltönen (hohe Stimme), verfehlt die lineare
+   Log-Interpolation die Spitze um bis 12 dB. Orakel (wahre Hülle): +400 9,3 → 5,8 %, −500 6,0 → 4,1 %, Anlauf −500 50 → 0.
+3. Ränder/Übergänge: Schutzzone 15 ms + Rampe 10 ms = Original-Tonhöhe am Strecken-Rand (LSD 15–19 dB); Legato mit Vokalwechsel: Rest-Spitze −8 dB.
+   G 15 → 0 ms: Übergang +400 7,08 → 5,99, −500 5,90 → 4,98, weich 3,15 → 2,68 dB, Knackser 0; aber Glätte weich 1,11 → 1,34 (offen).
+   Modell-Schritt 5 ms: Übergang besser, Formant schlechter.
+4. Hermite-Hülle mit Steigungen aus dem Vibrato (Ridge, Kern der Note, Zeit-Trend 1/t/t² heraus, Pegel-Maske): Hüllen-Fehler an den neuen
+   Teiltönen etwa halbiert; +400 9,25 → 8,18 %, aber −500 5,99 → 6,8–7,3 % (F1-Band zu laut) → nicht eingebaut.
+5. Anlauf −500 50 ms = Mess-Fehler (YIN des Ideals springt in Note 8 auf 2·f0); gegen die Ziel-Kurve 0 ms.
+Das Formant-Maß (Schwerpunkt der Cepstrum-Hülle 300–3500 Hz) schwankt schon mit Orakel-Hülle je Rahmen ±5–12 % – für 2b zusätzlich direkt
+an den Teiltönen messen (dB-Fehler je neuem Teilton, `src/fhull.mjs`).
