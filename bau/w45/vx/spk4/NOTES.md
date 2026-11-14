@@ -94,3 +94,50 @@ CHANGES unberührt · keine Markenwörter. spk3-test (`spk3-test.out`): 14 OK / 
 regression-spk2-test (28/30: verfeinern-verbessert, verfeinern-nach-noten) und nachbau (Last, s. o.). Mehrstimmig, Loop, Layout, Konsole, Undo OK.
 Werkzeuge: `messb/x4.mjs` (Zerlegen/Verfeinern Bass; `FULL=1` Drums/Tonal, `PROFI=1` Profi simuliert, `O_*` = Z2.o6, `P_*` = Z2.o3),
 `messb/orc4.mjs` (`MODE=on|f0|onf0`, `LVL=1`), `messb/hist.mjs` (Ton-Fehler je Intervall), `messb/bass4.js` (Versuchsstand).
+
+---------------------------------------------------------------------------------------------------------------------------
+## Auftrag 3/4 – Unison im Nachbau (erreicht) · „Rest aufteilen“ → Lead/Pads (gebaut)
+Bau: `python3 bau.py` = basis5 + `spk4-block.js` + 15 Haken „SPK4“ (neu A3: `x4`-Innereien an spk2DspMake, ⋯ an der Rest-Zeile, `spk1MoreDd` → `spk4RestDd`,
+spk3KlStart (Unison-Start), spk3KlMore (Start „uni0“), spk3KlOpt (Spielraum Kette B)). Sicherungen Stand A2: `index.a2.html`, `spk4-block.a2.js`, `bau.a2.py`.
+
+### (1) Unison erkennen + nachbauen (`spk4KlUni`, `spk4KlAdsr`, `SPK4_UNI`)
+- Erkennen aus der Bewegung (x3): ≥ 5 der Obertöne 1–6 schwanken > 0,2 und Obertöne 1–4 ≥ 0,15 (jeder Oberton schwebt, auch der Grundton).
+  Zwei verstimmte Oszillatoren (VA-Probe: cv 0,05/0,007/0,38/0,007/0,48) und FM (Grundton 0,017) fallen nicht darunter → dort bitgleich wie vorher.
+- Verstimmung: äußere Stimme = kd 0,92 × x3.det (gemessen an 3 Unison-Klängen: det / äußere Stimme 1,077 · 1,087 · 1,094), uniDet über die Kurve
+  der Engine ((0,25·d + 0,75·d⁴)·1,8 HT) zurückgerechnet → 0,300 / 0,448 / 0,201 (Wahrheit 0,30 / 0,45 / 0,20).
+- Hüllkurve: die Schwebung verfälscht die ADSR-Schätzung (Stimmen laufen auseinander = scheinbares Abklingen, Anstieg wirkt langsamer). Befund:
+  Wahrheit + Analyse-ADSR 2,59, + Analyse-udet 0,32 statt 0,30 → 1,43, + Analyse-Filter 0,88. Unison-Start: Anstieg × 0,5, Halten ÷ 0,7 (Start 2,96 → 2,03).
+- Startwerte Kette B: „uni“ (Wellen wie Analyse) und neu „uni0“ (eine Welle), beide mit Unison 5 + geschätzter Verstimmung. Bei erkanntem Unison
+  bekommt Kette B 15 % Spielraum beim Wechsel (sonst 5 %) – es läuft weiter nur eine Kette (keine Mehrzeit außer einem Start-Klang).
+- Text im Nachbau: „VA · Säge · Unison 5“.
+
+| Klang (Wahrheit) – `spk3-klang-probe.mjs basis5 → Datei` | vorher (4.60) | nachher | Zeit vorher → nachher |
+|---|---|---|---|
+| VA Säge + Rechteck 50 % +9 ct | 3,89 | 3,89 | 2534 → 2537 ms |
+| FM 1:2 | 2,06 | 2,06 | 1819 → 1985 ms |
+| **Pad Säge Unison 5 · 0,3** | **1,62** | **0,96** (Unison 5 erkannt) | 2511 → 2891 ms |
+| Lead Säge Vibrato 5,5 Hz 25 ct | 0,95 | 0,95 | 2310 → 2382 ms |
+Zusatz (`messu/uni.mjs`, `UD`/`MM`): Unison 0,45 auf D3: Kette A 2,47 → Unison 1,51 · Unison 0,20 auf D4: 2,43 → 1,64.
+
+### (2) „Rest aufteilen“ (Kern-op `restAuf` in spk4DspMake, Seite `spk4RestDd`/`spk4RestAuf`)
+- Ebenen-Menü ⋯ jetzt auch an der Rest-Zeile (gleiche Spalte/Größe wie bei den Ebenen, Zeile bleibt 46 px), darin „Rest aufteilen“ + ein Satz.
+- Kern: nur der Rest (255 − Summe der Ebenen) gibt ab: Lead-Anteil wie Verfeinern Lead (Grundton-Kamm × tonal) × lg 3, vom Übrigen Pads-Anteil wie
+  Verfeinern Pads (tonal², ab 120–220 Hz); Rauschen/Tiefes bleibt Rest. Ganzes Stück in Blöcken von 4 Streifen (Speicher ~4 MB je Schätzung),
+  Lead/Pads-Ebene wird angelegt, falls sie fehlt; andere Ebenen unverändert; Summe = Original; ein ↶ „Rest aufteilen“. Läuft im Worker.
+- Messung (`messb/rest4.mjs`, Node, Demo 20 s, nach Zerlegen; Stems mess/ spur1 = Lead, spur2 = Pad):
+
+| | vorher | nachher |
+|---|---|---|
+| Pads (SDR gegen Pad-Stem) | Rest als Pad 2,29 · Verfeinern Pads ganzes Stück 2,46 | **Pads-Ebene 2,94** |
+| Lead | Rest als Lead 0,18 · Gesang-Ebene 0,72 · Verfeinern Lead 0,52 | **Lead-Ebene 0,96** · Lead + Gesang 1,45 |
+| Summe aller Ebenen + Rest = Original | – | 144 dB (nur Rundung) · ↶ Rest bitgleich (159 dB) |
+| Laufzeit | – | Node 1,35 s · Browser 2,16 s |
+  Varianten (verworfen): ganzer Rest verteilt (voll 1) Lead 0,50 / Pads 2,66 · lg 1: 0,40 / 2,85 · lg 6: 1,22 / 2,58 · lg 12: 1,24 / 2,12 · Pads-Exponent 0,5/2 ohne Gewinn.
+  Grund für den kleinen Lead-Anteil (2 %): Zerlegen legt den Lead schon fast ganz in die Gesang-Ebene; im Rest steckt v. a. das Pad.
+- Seite (`spk4-rest.mjs <abs index.html>`: 7 OK / 0 FEHLER, `spk4-rest.json`, Fotos `fotos/82-*`, `83-*`): ⋯ an der Rest-Zeile 44×44 an derselben Stelle
+  wie bei den Ebenen; Menü in 428×926, 926×428, 926×370 im Bild, Taste ≥ 44; Zerlegen → Rest aufteilen: Ebenen Lead + Pads da, Text „Rest aufgeteilt:
+  Lead 2 % · Pads 22 % · ↶ macht es rückgängig“, Summe = Original (144 dB), ein ↶ (Ebenen wie vorher); Konsole [].
+
+### Offen (A3)
+1. Lead aus dem Rest bleibt klein, solange die Gesang-Ebene den Lead-Synth hält – „Gesang → Lead“ wäre ein eigener Schritt (Gesang-Ebene ohne Stimme).
+2. Unison-Breite (uniWidth) und Unison-Pegel (uniMix) werden nicht geschätzt (fest 0 / 0,6); Stimmenzahl fest 5.

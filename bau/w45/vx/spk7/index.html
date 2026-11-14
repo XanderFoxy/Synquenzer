@@ -102783,13 +102783,13 @@ Object.assign(SYNQUENZER, {int53d: {info: () => ({files: INT53D.files, waits: IN
 function spk7CoreMake(SR) {
   const NV = 16, NG = 12, WN = 1024, TW = 2 * Math.PI;
   const P = {art: 'korn', pos: 0.3, bew: 0, gs: 0.08, dc: 4, spo: 0.1, spt: 0, form: 0.3, a: 0.02, d: 0.3, s: 0.8, r: 0.4, fc: 1, q: 0.1, br: 0.5, vol: 0.7, poly: 8};
-  let X = null, XL = 0, XR = 1, F0 = 261.63, FZ = null, FL = 0, NF = 0, fr = 0, seed = 12345, wPow = 0.375, wForm = -1, wLen = 0;
+  let X = null, XL = 0, XR = 1, F0 = 261.63, FZ = null, FL = 0, NF = 0, fr = 0, seed = 12345, wMean = 0.5, wForm = -1, wLen = 0, FK = 1;
   const W = new Float32Array(WN + 2), Q = [], tL = new Float32Array(4096), tR = new Float32Array(4096);
   const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
   const mkW = gsN => {   // Kornform: Tukey-Fenster, Flanken mindestens 2 ms (auch bei „hart“ kein Knacken)
-    const a = Math.min(1, Math.max(0.1, 1 - 0.9 * P.form, 2 * 0.002 * SR / gsN)); let s2 = 0;
-    for (let i = 0; i <= WN; i++) { const x = i / WN; let w = 1; if (x < a / 2) w = 0.5 - 0.5 * Math.cos(TW * x / a); else if (x > 1 - a / 2) w = 0.5 - 0.5 * Math.cos(TW * (1 - x) / a); W[i] = w; s2 += w * w; }
-    W[WN + 1] = 0; wPow = s2 / (WN + 1); wForm = P.form; wLen = gsN;
+    const a = Math.min(1, Math.max(0.1, 1 - 0.9 * P.form, 2 * 0.002 * SR / gsN)); let s1 = 0;
+    for (let i = 0; i <= WN; i++) { const x = i / WN; let w = 1; if (x < a / 2) w = 0.5 - 0.5 * Math.cos(TW * x / a); else if (x > 1 - a / 2) w = 0.5 - 0.5 * Math.cos(TW * (1 - x) / a); W[i] = w; s1 += w; }
+    W[WN + 1] = 0; wMean = s1 / (WN + 1); wForm = P.form; wLen = gsN;
   };
   const V = [];
   for (let k = 0; k < NV; k++) { const g = []; for (let j = 0; j < NG; j++) g.push({on: 0, p: 0, inc: 1, i: 0, n: 1, gl: 0, gr: 0, o: 0}); V.push({st: 0, id: 0, m: 60, r: 1, vel: 1, env: 0, rate: 0, age: 0, pos: 0, nx: 0, g, a1: 0, b1: 0, a2: 0, b2: 0, ph: 0, fp: 0, drift: 0, t: 0}); }
@@ -102803,7 +102803,7 @@ function spk7CoreMake(SR) {
     if (!v) { for (const x of V) if (!v || x.env < v.env) v = x; }               // nur bei Überlast: leiseste Stimme
     for (const x of V) if (x.st) x.age++;
     v.st = 1; v.id = id; v.m = m; v.r = ratio(m); v.vel = Math.max(0, Math.min(1, vel)); v.env = 0; v.age = 0;
-    v.rate = 1 / Math.max(0.003, P.a) / SR; v.pos = P.pos * XL; v.nx = 0; v.a1 = v.b1 = v.a2 = v.b2 = 0; v.ph = rnd() * FL; v.fp = P.pos * Math.max(0, NF - 1); v.drift = 0; v.t = 0; v.brS = P.br; v.gn = (0.25 + 0.75 * v.vel) * Math.max(0, Math.min(1.5, P.vol));
+    v.rate = 1 / Math.max(0.003, P.a) / SR; v.pos = P.pos * XL; v.nx = 0; v.a1 = v.b1 = v.a2 = v.b2 = 0; v.ph = rnd() * FL; v.fp = P.pos * Math.max(0, NF - 1); v.drift = 0; v.t = 0; v.brS = P.br; v.gn = (0.25 + 0.75 * v.vel) * Math.max(0, Math.min(1.5, P.vol)) * 0.4;   // 0,4 = Reserve für Akkorde
     for (const g of v.g) g.on = 0;
   };
   const apply = e => {
@@ -102814,7 +102814,7 @@ function spk7CoreMake(SR) {
   };
   const msg = e => {
     if (!e) return;
-    if (e.t === 'src') { X = e.x || null; XL = X ? X.length : 0; XR = (e.sr || SR) / SR; F0 = e.f0 > 20 ? e.f0 : 261.63; FZ = e.frz || null; FL = e.FL | 0; NF = FZ && FL ? Math.floor(FZ.length / FL) : 0; return; }
+    if (e.t === 'src') { X = e.x || null; XL = X ? X.length : 0; XR = (e.sr || SR) / SR; F0 = e.f0 > 20 ? e.f0 : 261.63; FZ = e.frz || null; FL = e.FL | 0; FK = e.fk > 0 ? +e.fk : 1; NF = FZ && FL ? Math.floor(FZ.length / FL) : 0; return; }
     if (e.t === 'p') { for (const k in e.p) if (k in P) P[k] = typeof P[k] === 'string' ? String(e.p[k]) : +e.p[k]; return; }
     if (e.t === 'kill') { for (let k = Q.length - 1; k >= 0; k--) if (Q[k].id === e.id) Q.splice(k, 1); const v = find(e.id); if (v) rel(v, 0.004); return; }
     if (e.t === 'all') { Q.length = 0; for (const v of V) if (v.st) rel(v, 0.008); return; }
@@ -102825,7 +102825,7 @@ function spk7CoreMake(SR) {
   const seg = (L, R, o, n) => {
     const gsN = Math.max(16, Math.round(Math.max(0.01, Math.min(0.5, P.gs)) * SR)), dc = Math.max(1, Math.min(8, P.dc)), step = gsN / dc;
     if (wForm !== P.form || wLen !== gsN) mkW(gsN);
-    const nrm = 1 / Math.sqrt(Math.max(1, dc * wPow) ), br = Math.max(0, Math.min(1, P.br)), frz = P.art === 'frz' && NF > 0;
+    const nrm = 1 / Math.max(1, dc * wMean), P0s = XR * SR / F0, br = Math.max(0, Math.min(1, P.br)), frz = P.art === 'frz' && NF > 0;
     const fc = 40 * Math.pow(2, Math.max(0, Math.min(1, P.fc)) * 9), filt = P.fc < 0.995;
     const gq = Math.tan(Math.PI * Math.min(fc, SR * 0.45) / SR), kq = 1 / (0.5 + P.q * P.q * 15), c1 = 1 / (1 + gq * (gq + kq)), c2 = gq * c1, c3 = gq * c2;
     const sus = Math.max(0, Math.min(1, P.s)), dRate = (1 - sus) / Math.max(1, P.d * SR), vol = Math.max(0, Math.min(1.5, P.vol));
@@ -102839,7 +102839,9 @@ function spk7CoreMake(SR) {
           let g = null; for (const x of v.g) if (!x.on) { g = x; break; }
           if (g) {
             const rr = v.r * (P.spt > 0 ? Math.pow(2, (rnd() * 2 - 1) * P.spt / 12) : 1), inc = rr * XR;
-            let p = v.pos + (rnd() * 2 - 1) * P.spo * 0.5 * XL - 0.5 * gsN * inc; p %= XL; if (p < 0) p += XL;
+            let p = v.pos + (rnd() * 2 - 1) * P.spo * 0.5 * XL - 0.5 * gsN * inc;
+            const T = fr + o + Math.max(0, Math.floor(v.nx)), dph = (p - T * inc) % P0s; p -= dph < 0 ? dph + P0s : dph;   // tonsynchron: alle Körner in Phase zum Grundton (kein Kamm im Korn-Takt)
+            p %= XL; if (p < 0) p += XL;
             const pan = (rnd() * 2 - 1) * br, th = (pan + 1) * Math.PI / 4;
             g.on = 1; g.p = p; g.inc = inc; g.i = 0; g.n = gsN; g.gl = Math.cos(th) * Math.SQRT2 * nrm; g.gr = Math.sin(th) * Math.SQRT2 * nrm; g.o = Math.max(0, Math.floor(v.nx));
           }
@@ -102861,7 +102863,7 @@ function spk7CoreMake(SR) {
         v.t += n / SR; v.drift += P.bew * 0.25 * n / SR;
         let fp = P.pos * (NF - 1) + v.drift * (NF - 1) + Math.sin(TW * 0.13 * v.t) * P.spo * 0.5 * (NF - 1), M = 2 * (NF - 1);
         if (M > 0) { fp %= M; if (fp < 0) fp += M; if (fp > NF - 1) fp = M - fp; } else fp = 0;
-        const fpA = v.fp, mv = 3 * n / SR, fpB = Math.abs(fp - fpA) > mv ? fpA + Math.sign(fp - fpA) * mv : fp, brA = v.brS, h = FL >> 1, inc = v.r * XR;   // höchstens 3 Bilder/s
+        const fpA = v.fp, mv = 3 * n / SR, fpB = Math.abs(fp - fpA) > mv ? fpA + Math.sign(fp - fpA) * mv : fp, brA = v.brS, h = FL >> 1, inc = v.r * XR * FK;   // höchstens 3 Bilder/s
         let ph = v.ph; const gL = 1;
         for (let j = 0; j < n; j++) {
           const u = (j + 1) / n, fq = fpA + (fpB - fpA) * u, k0 = Math.min(NF - 1, fq | 0), k1 = Math.min(NF - 1, k0 + 1), fw = fq - k0, A0 = k0 * FL, A1 = k1 * FL, mixR = brA + (br - brA) * u;
@@ -102873,7 +102875,7 @@ function spk7CoreMake(SR) {
         v.ph = ph; v.fp = fpB; v.brS = br;
       }
       // Hüllkurve + Filter + Summe
-      const gT = (0.25 + 0.75 * v.vel) * vol, gk = 1 - Math.exp(-1 / (0.01 * SR)); let gn = v.gn, env = v.env, st = v.st, rate = v.rate, a1 = v.a1, b1 = v.b1, a2 = v.a2, b2 = v.b2;
+      const gT = (0.25 + 0.75 * v.vel) * vol * 0.4, gk = 1 - Math.exp(-1 / (0.01 * SR)); let gn = v.gn, env = v.env, st = v.st, rate = v.rate, a1 = v.a1, b1 = v.b1, a2 = v.a2, b2 = v.b2;
       for (let j = 0; j < n; j++) {
         if (st === 1) { env += rate; if (env >= 1) { env = 1; st = 2; } }
         else if (st === 2) { env -= dRate; if (env <= sus) { env = sus; st = 3; } }
@@ -102936,11 +102938,14 @@ function spk7Fft(re, im, inv) {   // radix 2, an Ort und Stelle
   }
 }
 // eingefrorene Spektren: NF Bilder, je ein Betragsspektrum (3 Fenster gemittelt) mit Zufallsphase → nahtlose Schleife der Länge FL
-function spk7Frz(x, NF) {
-  NF = NF || 8; const FL = 16384, n = x.length, out = new Float32Array(NF * FL); if (n < 256) return {frz: out, FL, NF};
+function spk7Frz(x, NF, f0, sr) {
+  NF = NF || 8; const FL = 16384, n = x.length, out = new Float32Array(NF * FL); if (n < 256) return {frz: out, FL, NF, fk: 1};
+  // Grundton genau auf eine Frequenzzeile legen (Achse dehnen), beim Abspielen mit fk zurück: Teiltöne bleiben exakt (sonst ±1,5 Hz Raster)
+  const b0 = f0 > 20 && sr > 0 ? f0 * FL / sr : 0, fk = b0 >= 4 ? b0 / Math.round(b0) : 1;
   const re = new Float64Array(FL), im = new Float64Array(FL), M = new Float64Array(FL / 2 + 1), win = new Float64Array(FL);
   for (let i = 0; i < FL; i++) win[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / FL);
   let seed = 424242, mx = 0; const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+  const PH = new Float64Array(FL / 2); for (let b = 1; b < FL / 2; b++) PH[b] = rnd() * 2 * Math.PI;   // eine Phase je Zeile für alle Bilder: Überblenden ohne Auslöschung
   for (let k = 0; k < NF; k++) {
     const c = Math.round((k + 0.5) / NF * n); M.fill(0);
     for (const dw of [-FL / 4, 0, FL / 4]) {
@@ -102949,13 +102954,13 @@ function spk7Frz(x, NF) {
       spk7Fft(re, im, false); for (let b = 0; b <= FL / 2; b++) M[b] += Math.hypot(re[b], im[b]);
     }
     re.fill(0); im.fill(0);
-    for (let b = 1; b < FL / 2; b++) { const ph = rnd() * 2 * Math.PI; re[b] = M[b] * Math.cos(ph); im[b] = M[b] * Math.sin(ph); re[FL - b] = re[b]; im[FL - b] = -im[b]; }
+    for (let b = 1; b < FL / 2; b++) { const q = b * fk, q0 = q | 0, m = q0 + 1 <= FL / 2 ? M[q0] + (M[q0 + 1] - M[q0]) * (q - q0) : 0, ph = PH[b]; re[b] = m * Math.cos(ph); im[b] = m * Math.sin(ph); re[FL - b] = re[b]; im[FL - b] = -im[b]; }
     spk7Fft(re, im, true); let e = 0;
     for (let i = 0; i < FL; i++) { out[k * FL + i] = re[i]; e += re[i] * re[i]; }
     mx = Math.max(mx, Math.sqrt(e / FL));
   }
   if (mx > 0) { const g = 0.3 / mx; for (let i = 0; i < out.length; i++) out[i] *= g; }
-  return {frz: out, FL, NF};
+  return {frz: out, FL, NF, fk};
 }
 // Grundton (YIN, 16 Fenster in den lauten Stellen) → Hz oder 0
 function spk7F0(x, sr) {
@@ -102989,8 +102994,8 @@ function spk7Make(x, sr, o) {
   if (b - a < sr * 0.05) { a = 0; b = n; }
   const y = new Float32Array(b - a), g = 0.9 / pk, fd = Math.min(Math.round(sr * 0.005), (b - a) >> 2);
   for (let i = 0; i < y.length; i++) { let w = g; if (i < fd) w *= i / fd; else if (i >= y.length - fd) w *= (y.length - 1 - i) / fd; y[i] = x[a + i] * w; }
-  const f0 = o.f0 > 20 ? o.f0 : spk7F0(y, sr), F = spk7Frz(y);
-  return Object.assign({x: y, sr, f0: f0 || 261.63, f0ok: !!f0, frz: F.frz, FL: F.FL, NF: F.NF}, o.info || {});
+  const f0 = o.f0 > 20 ? o.f0 : spk7F0(y, sr), F = spk7Frz(y, 8, f0, sr);
+  return Object.assign({x: y, sr, f0: f0 || 261.63, f0ok: !!f0, frz: F.frz, FL: F.FL, NF: F.NF, fk: F.fk}, o.info || {});
 }
 // Auswahl (oder ohne Auswahl: gewählte Ebene im sichtbaren Bereich) → Quelle; Rechnung wie „▶ Auswahl“ (op block mit sel)
 async function spk7Grab(U) {
@@ -103056,7 +103061,7 @@ function spk7Engine(c, dest, o) {
   } else { sp(); E.ready = Promise.resolve(); }
   return E;
 }
-function spk7Feed(E, S7) { if (E && S7) E.post({t: 'src', x: S7.x, sr: S7.sr, f0: S7.f0, frz: S7.frz, FL: S7.FL}); }
+function spk7Feed(E, S7) { if (E && S7) E.post({t: 'src', x: S7.x, sr: S7.sr, f0: S7.f0, frz: S7.frz, FL: S7.FL, fk: S7.fk}); }
 function spk7Prev() {   // Vorhören auf der Spektral-Seite (an die Summe)
   const c = ensureAudio(); if (!c) return null;
   if (!SPK7.eng || SPK7.eng.ctx !== c) { SPK7.eng = spk7Engine(c, AU.masterSum || c.destination); SPK7.eng.set(spk7P()); if (SPK7.src) spk7Feed(SPK7.eng, SPK7.src); }
@@ -103151,7 +103156,7 @@ function spk7Take(U) {
     if (!S.tracks[i]) return null; applySound(i, spk7Snd(tk.id, S7, spk7P(), nm)); return {track: i, take: tk.id};
   });
   if (!res) { if (U) spk1Stat(U, 'Klangkorn: keine Spur angelegt'); return null; }
-  SPK7.pcm.set(res.take, {x: S7.x, sr: S7.sr, frz: S7.frz, FL: S7.FL, NF: S7.NF});
+  SPK7.pcm.set(res.take, {x: S7.x, sr: S7.sr, frz: S7.frz, FL: S7.FL, NF: S7.NF, fk: S7.fk, f0: S7.f0});
   try { if (UI.heads && EL.grid) buildGrid(); } catch (e) { logErr(e); }
   if (U) spk1Stat(U, 'Klangkorn → Spur ' + S.tracks[res.track].name + ' · ↶ macht es rückgängig');
   toast('Klangkorn → ' + S.tracks[res.track].name, {label: '↶ Rückgängig', fn: () => undo()});
@@ -103166,7 +103171,7 @@ function spk7Src(take, f0) {
   const pr = tkPcm(take).then(pcm => {
     SPK7.pend.delete(take); if (!pcm) return null;
     const x = new Float32Array(pcm.length); for (let i = 0; i < pcm.length; i++) x[i] = pcm[i] / 32767;
-    const F = spk7Frz(x), o = {x, sr: m.sr, frz: F.frz, FL: F.FL, NF: F.NF}; SPK7.pcm.set(take, o); return o;
+    const F = spk7Frz(x, 8, f0, m.sr), o = {x, sr: m.sr, frz: F.frz, FL: F.FL, NF: F.NF, fk: F.fk, f0}; SPK7.pcm.set(take, o); return o;
   }).catch(e => { SPK7.pend.delete(take); logErr(e); return null; });
   SPK7.pend.set(take, pr); return pr;
 }
@@ -103175,7 +103180,7 @@ function spk7TrE(dest, h) {
   if (!E || E.ctx !== c || E.dead) { E = spk7Engine(c, dest); SPK7.tr.set(dest, E); }
   if (E.take !== h.take || E.f0 !== h.f0) {
     E.take = h.take; E.f0 = h.f0; const c0 = SPK7.pcm.get(h.take);
-    if (c0) spk7Feed(E, Object.assign({f0: h.f0}, c0)); else spk7Src(h.take).then(o => { if (o && E.take === h.take) spk7Feed(E, Object.assign({f0: h.f0}, o)); });
+    if (c0 && c0.f0 === h.f0) spk7Feed(E, c0); else { if (c0) SPK7.pcm.delete(h.take); spk7Src(h.take, h.f0).then(o => { if (o && E.take === h.take) spk7Feed(E, o); }); }
   }
   const pk = JSON.stringify(h); if (E.pk !== pk) { E.pk = pk; E.set(spk7Norm(h)); }
   return E;

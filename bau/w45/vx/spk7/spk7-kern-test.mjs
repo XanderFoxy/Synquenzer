@@ -9,7 +9,7 @@ const K = new Function(code)();
 const SR = 48000, res = [], ok = (name, d, pass) => { res.push({name, pass: !!pass, d}); console.log((pass ? 'OK  ' : 'FEHL') + ' ' + name + ' ' + JSON.stringify(d)); };
 const sine = (f, sec, sr = SR) => { const x = new Float32Array(Math.round(sec * sr)); for (let i = 0; i < x.length; i++) x[i] = 0.9 * Math.sin(2 * Math.PI * f * i / sr); return x; };
 const saw = (f, sec, sr = SR, H = 12) => { const x = new Float32Array(Math.round(sec * sr)); for (let h = 1; h <= H; h++) for (let i = 0; i < x.length; i++) x[i] += 0.5 / h * Math.sin(2 * Math.PI * f * h * i / sr); return x; };
-function src(x, f0) { const F = K.spk7Frz(x); return {t: 'src', x, sr: SR, f0, frz: F.frz, FL: F.FL}; }
+function src(x, f0) { const F = K.spk7Frz(x, 8, f0, SR); return {t: 'src', x, sr: SR, f0, frz: F.frz, FL: F.FL, fk: F.fk}; }
 function render(S, p, notes, dur) {
   const C = K.spk7CoreMake(SR); C.msg(S); C.msg({t: 'p', p}); const n = Math.round(dur * SR), L = new Float32Array(n), R = new Float32Array(n);
   for (const e of notes) C.msg(e);

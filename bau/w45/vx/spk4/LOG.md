@@ -22,3 +22,5 @@
 - 18:29 A3 Unison: Befund Pad – Analyse-Hüllkurve durch Schwebung verfälscht (Wahrheit + Analyse-ADSR 2,59, + Analyse-udet 0,32 statt 0,30: 1,43, + Analyse-Filter 0,88). Unison-Start mit Anstieg ×0,5 / Halten ÷0,7: Start 2,96 → 2,03; beide Ketten ganz: B 1,60 < A 1,62.
 - 18:30 A3 Unison: Kette B bei erkanntem Unison mit Spielraum 15 % (statt 5 %) → Pad 1,62 → 1,60; kd 0,92 (det/äußere Stimme 1,077–1,094 an 3 Klängen) → Pad 0,96; Probe udet 0,45/m50: A 2,47 → B 1,51; udet 0,2/m62: 2,43 → 1,64.
 - 18:31 A3 Klang-Probe (spk3-klang-probe basis5 → Datei): VA 3,89 → 3,89 · FM 2,06 → 2,06 · Pad 1,62 → 0,96 (Unison 5) · Lead 0,95 → 0,95; Zeit Pad 2511 → 2891 ms, sonst gleich; Fehler [].
+- 18:32 A3 Seite spk4-rest.mjs: 7 OK / 0 FEHLER (⋯ an der Rest-Zeile gleiche Spalte/Größe wie Ebenen 44×44, Zeile 46 px wie vorher; Menü in 3 Größen im Bild; Rest aufteilen 2156 ms, Lead 2 % · Pads 22 %, Summe = Original 144 dB, ein ↶; Konsole []).
+- 18:32 A3 Pflicht: topdefs 0/0 · dupkeys 0 · smoke errors [] (smoke-a3.png) · MS 2000 1× · live: true 1× · VERSION wie basis5 · keine neuen Markenwörter. Starte spk3-test (Regression).
