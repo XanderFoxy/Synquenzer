@@ -170,6 +170,10 @@ const gs = await p.evaluate(async () => {
 });
 res.gesangMix = gs;
 ok('gesang-besser-als-klassisch', gs, !gs.fehlt && gs.profi.gesang > gs.klassisch.gesang + 2 && gs.profi.bass > gs.klassisch.bass + 2 && gs.summeP > 60);
+// 14) Guide: Suche „profi“ / „gesang trennen“ findet den Eintrag (ohne Namen); Startzeit-Schätzung im Klappfenster passt zur Länge
+const gd = await p.evaluate(() => { const a = ui1Search('profi'), b = ui1Search('gesang trennen'), e = a.find(x => (x.E || x).id === 'ki1') || a[0]; const E = e && (e.E || e); return {a: a.slice(0, 3).map(x => (x.E || x).id), b: b.slice(0, 5).map(x => (x.E || x).id), n: E && E.n, d: E && E.d}; });
+const sps = await p.evaluate(() => localStorage.getItem('synq-ki1-sps'));
+ok('guide-eintrag', {gd, sps}, gd.a[0] === 'ki1' && gd.b.includes('ki1') && !/umx|open-?unmix|onnx|hugging|sony|deezer|spleeter|demucs/i.test(gd.n + gd.d) && +sps > 0);
 ok('keine-fehler', errs.slice(0, 5), !errs.length);
 res.ms = Date.now() - T0; res.net = net;
 fs.writeFileSync(path.join(dir, 'ki1-test.json'), JSON.stringify(res, null, 1));
