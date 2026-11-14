@@ -1,0 +1,11 @@
+import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
+const [A, B] = process.argv.slice(2);
+const b = await chromium.launch();
+const shot = async f => { const ctx = await b.newContext({viewport: {width: 926, height: 428}, deviceScaleFactor: 1, hasTouch: true, isMobile: true}); const p = await ctx.newPage(); await p.goto('file://' + f); await p.waitForTimeout(1500);
+  await p.evaluate(() => { SYNQUENZER.loadDemo(); SYNQUENZER.songFromChain([{scene: 0, bars: 4}, {scene: 1, bars: 4}]); setSongView(false); UI.dirty.all = true; }); await p.waitForTimeout(900);
+  await p.evaluate(() => { document.querySelectorAll('#toast,.toast').forEach(e => e.style.visibility = 'hidden'); });
+  const s = await p.screenshot(); await ctx.close(); return s; };
+const sa = await shot(A), sb = await shot(B);
+const ctx = await b.newContext(); const p = await ctx.newPage();
+const n = await p.evaluate(async ([a, c]) => { const ld = s => new Promise(r => { const i = new Image(); i.onload = () => r(i); i.src = 'data:image/png;base64,' + s; }); const X = await ld(a), Y = await ld(c); const cv = document.createElement('canvas'); cv.width = X.width; cv.height = X.height; const g = cv.getContext('2d'); g.drawImage(X, 0, 0); const da = g.getImageData(0, 0, cv.width, cv.height).data; g.drawImage(Y, 0, 0); const db = g.getImageData(0, 0, cv.width, cv.height).data; let n = 0, pts = []; for (let i = 0; i < da.length; i += 4) if (da[i] !== db[i] || da[i + 1] !== db[i + 1] || da[i + 2] !== db[i + 2]) { n++; if (pts.length < 6) pts.push([(i / 4) % cv.width, Math.floor(i / 4 / cv.width)]); } return {n, pts}; }, [sa.toString('base64'), sb.toString('base64')]);
+console.log(JSON.stringify(n)); await b.close();

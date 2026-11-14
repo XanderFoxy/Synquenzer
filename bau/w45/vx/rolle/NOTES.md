@@ -94,3 +94,28 @@ Andere Tests: nur ggb/pruef-ausrichtung/a10 ruft openRoll auf der STIMME-Spur �
 Offen für Schritt 5: Lineal der Song-Stimme zählt Takte ab dem Block (Kopf „Song · Takt 3–5“ stimmt; Lineal „1, 2 …“) – Taktart-Karte (opts.tk)
 wie die Song-Melodie; Ecke „1 Note“ der Aktionsleiste heißt bei Gesang „Note“; Marken-Editor zeigt Modus 'hybrid' nicht eigens; Hauptfaden-Rückfall
 (ohne Worker) stückweise; Chor-Spuren (G6) mit eigenem Clip öffnen ebenfalls den Editor (tkRef) – nicht eigens getestet.
+
+## Schritt 5 (Gesamt-Test) – Stand 14.11.2026
+`vx1-test.mjs <index.html> <fotos>` (Touch über CDP, ~35 s): **61/61 OK**. Prüft am gerenderten Signal: Anker = lautestes Sample im Einschwingbereich
+(±0,00 ms), Quantisieren 1/8 → Anker-Ziel und gehörter Spitzenwert auf dem Taktstrich (≤ 0,04 ms), Anschwung klingt 66–69 ms davor;
+links: Vorgänger bitgleich (nicht gestaucht) bis 30 ms Ausblende, Verstärkung fällt stetig, kein Knacken; rechts: 1,23× nur im Vokal (Einsätze
+bitgleich, Grundton im gedehnten Vokal 294,1 Hz = Quelle), weit rechts (1,71×) Vokal ≤ 1,5× + natürliche Lücke mit Ausblende; Tonhöhe +1/−2 gehört
+(277,6 / 247,3 Hz), ↶ je Schritt; Silben per fillText gezeichnet, unten im Stück, 7 px rechts vom Anker; Matrix-✎ und Song-Takes-Blatt → derselbe
+Editor (Blatt, Leiste, Take, Tastatur 40 px wie Instrumente), Song am getippten Takt; ↶ je Aktion per Touch (Ziehen, Quant.-Blatt, Teilen,
+Verbinden); .json und Container laden → Daten gleich, klingt bitgleich, Container mit takes/<id>.wav + manifest; alte Takes unverändert;
+hochkant/quer ohne Überlappung, ✕ sichtbar, Trefferflächen.
+Befunde (im Test gefunden, behoben, Kommentar VX1R):
+1. Knacken 5 ms nach der Naht fest → gedehnt (Sprung 0,14): VSX.stretch klemmt den ersten WSOLA-Rahmen bei Anfang < halbes Fenster an 0.
+   vx1rRun gibt jetzt 20 ms Vorlauf aus dem festen Teil mit (Segment 'copy'), Ausgang ab dem Vorlauf → nahtlos (0,053 ≤ 0,078 Quelle).
+2. Schmale Silben („li“, „a“) wurden nie gezeichnet (Schwelle 12 px auf die Textbreite). Jetzt Schild mindestens 12 px, wenn Platz ist.
+3. Trefferfläche Gesang-Leisten hochkant 36 → 44 px (::after bis an den Leistenrand; Trennlinie als Schatten wie #top, sieht gleich aus), quer
+   ≥ 44 px breit und so hoch wie die Leiste (32 px, Instrumente 30); ✕ quer 40 → 44 px breit. Alles nur bei offenem Gesang-Editor (:has(.pr.vx1r)).
+Bewusst gelassen: Kopf-Taste HÄLT/FOLGEN (gemeinsamer Kopf des Noten-Editors) 40 px hoch wie bei Instrumenten – ::before/::after dort schon für die
+Breiten-Reserve belegt; der Test prüft „nicht kleiner als bei Instrumenten“.
+Regression: vx1r-kern 34/34, -ed 36/36, -zug 24/24, -blatt 13/13; vox2-test ALLE OK 111 (eigene Basis 4.49.1; mit 4.54.1 als Basis 1 erwarteter
+Vergleichs-Unterschied, weil der Test eine Basis vor VOX2 voraussetzt); gl1-test 44/45 – „Matrix quer 926×428 pixelgleich“ 2 Pixel; im Einzelvergleich
+Basis↔vor Schritt 5↔jetzt je 0 Pixel → Zeit-Rauschen, nicht dieses Paket. Pflicht: topdefs doppelt 0/Syntax 0, dupkeys 0, smoke errors []
+(smoke-test5.png), MS 2000 1×, live: true 1×, Markenwörter wie Basis, VERSION/CHANGES unberührt.
+Fotos: fotos/vx1-editor-hochkant.png, vx1-editor-quer-428.png, vx1-editor-quer-370.png, vx1-quant-hochkant.png, vx1-song-editor.png.
+Offen (aus Schritt 4, nicht Teil des Tests): Lineal der Song-Stimme zählt ab dem Block; Ecke „Note“ der Aktionsleiste; Marken-Editor zeigt 'hybrid'
+nicht eigens; Hauptfaden-Rückfall stückweise; Chor-Spuren (G6) mit eigenem Clip nicht eigens getestet.

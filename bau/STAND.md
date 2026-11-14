@@ -31,3 +31,4 @@ Weiter mit: 4.54 = rel-4540/k fertig prüfen + INT53D nachziehen + Versionszeile
   NÄCHSTE MERGES immer auf R-4550: VX1 → `git merge-file -p R-4550.html vx/basis.html vx/rolle/index.html` (+resolve) → 4.56.0;
   INT54-Fixes (k, Basis R-4530!) + XD1 (Basis R-4530) → jeweils Diff gegen R-4530 auf aktuelle Linie mergen, novw ist in R-4550 schon drin.
   SPK Teil 2: erst IMP1+VX1 in S/vx/spk mergen (Basis vx/basis.html), dann Noten/Matrix/Nachbau.
+- 14:00: 4.55.1 RELEASED = R-4550 + INT54-Fix-Diff (t/k.html→k/index.html). Tests int54 46/46, imp1 48/48. Nächste Basis: synq-snapshots/R-4551.html

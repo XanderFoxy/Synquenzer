@@ -26,3 +26,4 @@
 - 13:45 vx1-test.mjs Lauf 5: ERGEBNIS 61/61 – alles OK
 - 13:46 Pflicht: topdefs doppelt 0/Syntax 0, dupkeys 0, smoke errors [] (smoke-test5.png); MS 2000 1×, live: true 1×, Markenwörter 16 = Basis; VERSION unberührt. Regression Paket: kern 34/34, ed 36/36, zug 24/24, blatt 13/13. Weiter: vox2/gl1
 - 13:52 Regression vox2-test (eigene Basis 4.49.1): ALLE OK 111 (mit Basis 4.54.1 als Vergleich 1 erwarteter Unterschied: Basis-Vergleich setzt Vor-VOX2-Basis voraus)
+- 14:00 Schritt 5 FERTIG: vx1-test.mjs 61/61; Befunde 1–3 behoben; Regression kern/ed/zug/blatt grün, vox2 111 OK, gl1 44/45 (2 Pixel Zeit-Rauschen, Einzelvergleich 0); Pflicht grün; NOTES Schritt 5 geschrieben
