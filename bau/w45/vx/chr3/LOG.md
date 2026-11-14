@@ -21,3 +21,4 @@
 - (5) Test chr3-test.mjs (Kopie chr2-test, Tuning-Vergleich auf Basis 4.59 angepasst: Knackser „nicht mehr“, Basis hat den Fix schon) → ALLE OK (82) (src/run2.txt; run1: 77/82, die 5 = Vergleich gegen Basis mit schon 0 Knacksern). App-Weg (Worker, Takes-Blatt › Trennen 3): Welle 100/100/100 %, 29/28/29 dB, Summe = Original −78 dB.
 - (6) Langer Take 56,6 s (src/lang.mjs): 3 Stimmen 3,1 → 4,3 s, 4 Stimmen 4,5 → 5,9 s, Heap 7 → 17–19 MB (linear, Fenster-Summen mit zwei Zeigern) → fertig.
 - (7) Stimmführung: Zuordnung hoch → tief / Kreuzen nur mit Grund unverändert; gemessen 0 falsch zugeordnete Rahmen in allen 12 Fällen (src/diag.mjs) → fertig. NOTES.md → fertig. Ende Auftrag 1/3.
+- 14.11. Start Auftrag 2/3 (Formanten bei großen Verschiebungen): Ziel Formant ≤ 4 %, Übergang ≤ 4 dB, Anlauf ≤ 20 ms.

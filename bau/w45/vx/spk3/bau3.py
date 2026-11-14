@@ -10,6 +10,6 @@ assert s.count(old) == 1
 s = s.replace(old, "  return {lowSplit, projLk, bassTrack, kickModel, w2, I, opt, ops, noten, finden, zuordnen, klangFeat, klangSchaetz,\n    h: {magsX, onsetsOf, viterbi, segNotes, gridOf, snapT, t2Of, nid, artOf, rangeOf, N2R, midiOf, trackF, noteSel, findN}};   // SPK3: Helfer für Auftrag 2/4 (Noten sicherer, mehrstimmig)")
 old = "for (let k = Math.max(1, Math.floor(kc - hw)); k <= Math.min(NB - 1, Math.ceil(kc + hw)); k++) { const w = Math.min(1, 1.6 * (1 - Math.abs(k - kc) / (hw + 0.5))); put(pos, m, k, w); put(pos, m + 1, k, w * 0.999); }"
 assert s.count(old) == 1
-s = s.replace(old, old.replace("const w = Math.min(1, 1.6 * (1 - Math.abs(k - kc) / (hw + 0.5)));", "const w = Math.min(1, 1.6 * (1 - Math.abs(k - kc) / (hw + 0.5))) * (s.g > 0 && s.g < 1 ? +s.g : 1);   /* SPK3: Anteil g (Zuordnen in Bass) */"))
+s = s.replace(old, old.replace("const w = Math.min(1, 1.6 * (1 - Math.abs(k - kc) / (hw + 0.5)));", "const w = Math.min(1, 1.6 * (1 - Math.abs(k - kc) / (hw + 0.5))) * (s.g != null ? Math.max(0, Math.min(1, +s.g || 0)) : 1);   /* SPK3: Anteil g (Zuordnen in Bass) */"))
 open(os.path.join(d, 'index.html'), 'w', encoding='utf-8').write(s)
 print('ok', len(s))
