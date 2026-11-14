@@ -3,3 +3,5 @@
 - 14:43 Sonde probe.mjs gebaut, Basis gemessen (out-basis): q2 [Video erstellen] sichtbar 26/44, [Teilen] 0; q [Teilen] 36/44
 - 14:49 4.53.0 gemessen (out-453): q2 Teilen schon damals nur 28/44. Entscheidung: feste Fußzeile per CSS sticky (Optionen im Rollbereich), quer 428 so verdichten, dass alles ohne Rollen passt
 - 14:50 VQ1-CSS in xd1Css eingebaut (sticky Fußzeile + Bereich-Textzeile 24 px bis 440 px Höhe)
+- 14:51 Sonde nach VQ1 (out-vq1): q alles ganz sichtbar ohne Rollen; q2 Haupttasten fest, Extras rollen unter die Fußzeile
+- 14:53 Befund: Spalte quer rollt per Finger gar nicht (guardTouch verhindert touchstart, .vvctl hat kein .pan-y) – auch in 4.58.0/4.53.0; Wisch-Sonde scrollTop 0

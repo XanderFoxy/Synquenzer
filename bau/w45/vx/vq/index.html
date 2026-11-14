@@ -74962,6 +74962,7 @@ function vvFit() {
     if (lq && u.rowL.parentNode !== u.body) u.body.appendChild(u.rowL); else if (!lq && u.rowL.parentNode !== u.ctl) u.ctl.insertBefore(u.rowL, u.acts);
     u.body.classList.toggle('vvlq', lq);
     sx1VvFit(u, lq);                                                // SX126
+    u.ctl.classList.toggle('pan-y', lq);                            // VQ1: quer rollt die Spalte mit dem Finger (guardTouch lässt .pan-y durch); die Haupttasten stehen fest darunter
   }
   const [W, H] = VV_SIZE[vvPrefs().fmt], bw = Math.floor(u.stage.clientWidth), bh = Math.floor(u.stage.clientHeight), k = Math.min(bw / W, bh / H) || .1;
   const cw = Math.max(10, Math.min(bw, Math.round(W * k))), ch = Math.max(10, Math.min(bh, Math.round(H * k)));

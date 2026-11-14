@@ -1,4 +1,4 @@
-# SPK2 – NOTES (Stand Auftrag 1/5, halb)
+# SPK2 – NOTES (Stand Auftrag 2/5, halb)
 
 Datei `vx/spk2/index.html` = basis2.html (4.57.0) + Block `SPK2-BEGIN … SPK2-END` direkt nach `/* SPK1-END */` + 4 Haken mit „SPK2“
 im SPK1-Block. Quelle des Blocks: `spk2-block.js`, Einbau: `python3 bau.py` (baut immer neu aus basis2.html). VERSION/CHANGES unberührt.
@@ -47,3 +47,50 @@ jedem Schlag), 7–13 dB lauter als der Bass im Band 40–60 Hz. Sub 48,5 Hz und
 ## Pflicht (Stand)
 topdefs doppelt 0 / Syntaxfehler 0 · dupkeys 0 · smoke errors [] (`smoke-a1.png`) · „MS 2000“ 1× · „  live: true,“ 1× · Markenwörter
 wie Basis · VERSION gleich · spk1-test 17 OK / 1 FEHLER (wie SPK1, verfeinern-verbessert-ziel).
+
+---------------------------------------------------------------------------------------------------------------------------
+## Auftrag 2/5 – Noten je Ebene · Zuordnen · Überall finden (halb: Bedienung fertig, Güte im Gemisch offen)
+
+### Kern (spk2-block.js, im Worker; `Z2.ops` hängt an der op-Weiche `default:` des SPK1-Kerns)
+- `noten {lid, sel}`: Ebene (render mono) oder Original (`d.mid`); Bereich = Art der Ebene (Bass 28–400 Hz, Gesang 75–1100, Lead 90–2100,
+  Pads 55–1500, eigene 40–2000, Original 40–1000), eingeschränkt durch Rechteck/Zeit/Frequenz-Auswahl. Grundton: Obertonsumme auf √|X|
+  (N 8192 unter 70 Hz, sonst 4096, Hop = Basis-Hop), Viterbi (Viertelton, Sprung kostet 1,2), Anwesenheit q = Kamm/Band.
+  Anschläge: Fluss N 2048/Hop 512 im Band bis 4·f, Grenze nur bei Anstieg ≥ 3 dB; dazu Tonwechsel und weicher Einsatz. Ende = nächste
+  Grenze oder Hüllkurve −24 dB. Oktav-Prüfung (ungerade 3/5/7 gegen gerade 2/4/6 < 0,3 → Oktave höher; Sub-Oszillator).
+  Raster: Anfang/Ende auf 1/16 (Takt aus `meta.grid`), Rohzeiten a/b bleiben. Bestätigte Noten bleiben, alte Funde im Bereich ersetzt.
+- `zuordnen {notes:[{lid,id}], nach, art}`: Kamm je Note (Harmonische entlang `fz`, 16 Obertöne, 45 ct) → SPK1-`transfer` von „Original“
+  (verschiebt aus allen Ebenen) in die Ziel-Ebene; gibt es keine der Art → neue Ebene. Noten wandern mit, st = 'zu'. Ein Undo-Schritt.
+- `finden {lid}`: Vorlage = mittleres Obertonprofil (√-Beträge, 12/16 Obertöne, normiert) der bestätigten Noten aus dem Original,
+  über die Tonhöhe verschoben (Viertelton-Raster, Bereich der Vorlage ±7 Halbtöne); Wert = cos² × Anteil; Viterbi; Vorschläge st = 'neu'
+  mit `conf`; was schon bestätigt ist (gleiche Zeit, gleiche Tonklasse) fällt weg. `teil2.tmpl[lid]` = Vorlage. Ein Undo-Schritt.
+- `notenWeg`: Vorschläge verwerfen (ein Undo-Schritt). Undo: `uBegin/uSwap` sichern jetzt auch `meta.teil2` (Haken „SPK2“).
+
+### Seite
+- Werkzeug „Noten“ (letzte Taste der Leiste); Optionszeile: [Noten ▾] · „Sicher ab“ (Filter für Vorschläge) · „einstimmig“.
+- Kästchen über dem Spektrum in der Farbe der Ebene (Original = hell): bestätigt voll, gefunden halb, Vorschlag gestrichelt + %;
+  bei anderem Werkzeug blasser. Tipp auf Kästchen / Rahmen ziehen → Klappfenster „Gehört zu: Bass │ Gesang │ Lead │ Pads │ Neue Ebene“
+  (+ Verwerfen). Tipp ins Leere = Abspielposition wie bisher.
+- Noten ▾ (Quelle = gewählte Ebene der Liste): Noten finden (Auswahl) · Überall finden · Alle übernehmen (n) · Verfeinern nach Noten
+  (Auswahl = Kämme der bestätigten Noten → SPK1-Verfeinern mit Ziel = Art der Ebene, Vorher/Nachher wie gewohnt).
+- Test-API `SYNQUENZER.spk1.spk2` (noten, zuordnen, finden, weg, page.*). Nichts lädt beim App-Start (nur 1 Eintrag in SPK1_TOOLS).
+
+### Messung (messk/noten.mjs; Wahrheit = Bass-Noten aus `demoProjectRaw`, 32 Noten in Takt 1–4; Treffer = Anschlag ±70 ms + richtiger Ton)
+| Quelle | Quote | Präzision | Oktave | falscher Ton | Fehlalarm |
+|---|---|---|---|---|---|
+| Bass-Stem allein (Tracker-Obergrenze) | 87,5 % | 87,5 % | 0 | 1 | 3 |
+| Original, Auswahl 28–400 Hz | 44 % | 28 % | 5 | 8 | 24 |
+| Bass-Ebene nach Zerlegen (SPK1-Bass 0,77 dB) | 0 % | 0 % | 0 | 29 | 27 |
+| Überall finden (Vorlage aus 5 bestätigten Noten Takt 1 → Takte 2–4) | 46 % | 23 % | 3 | 6 | 27 |
+Anschlag-Lage gut (Mittel −4…+9 ms). Fehlalarme v. a. in Takt 5–8 (kein Bass; Pads/Lead C4…E4 liegen im Band bis 400 Hz) und
+Kick-Ausklang (≈ 48–51 Hz). „Sicherheit“ trennt noch schlecht (Vorschläge 0,84–0,95).
+
+### Nächster Schritt Auftrag 2 (offen)
+1. Sicherheit schärfen: Vorlage + Gegen-Vorlage (was im Takt 5–8 ohne Bass klingt) → Wert = Abstand; Mindestpegel relativ zur Vorlage.
+2. Bass-Band oben enger (bis ~260 Hz bzw. Vorlage +7) und Kick-Modell (Auftrag 1, `kickModel`) vor dem Grundton abziehen.
+3. Mehrstimmig nur „einfach“: Harmonie-Summe iterativ (beste Note abziehen, nächste ≥ 50 %) für Pads; bis dahin ehrlich „einstimmig“.
+4. Bass-Ebene selbst verbessern (Auftrag 1 offen) – dann trägt auch „Noten finden“ auf der Ebene.
+
+### Dateien
+`spk2-block.js` (Kern + Seite), `bau.py` (Haken), `messk/noten.mjs` (Trefferquote; `STEM=1` = Bass-Stem allein), `spk2-noten-test.mjs`
+(+ `spk2-noten-test.json`), Fotos `fotos/30-noten-hochkant.png`, `31-gehoert-zu.png`, `32-ueberall-finden.png`,
+`33-verfeinern-nach-noten.png`, `34-noten-quer-428.png`, Rauchtest `smoke-a2.png`.

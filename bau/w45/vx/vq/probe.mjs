@@ -33,7 +33,9 @@ for (const vk of (which || 'p,q,q2').split(',')) {
       if (ctl.contains(x)) { t = Math.max(t, cr.top); bt = Math.min(bt, cr.bottom); }
       const vh = Math.max(0, Math.round(bt - t)), vw = Math.max(0, Math.round(rr - l));
       const e = vh > 0 ? document.elementFromPoint((l + rr) / 2, (t + bt) / 2) : null;
-      return {n: (x.textContent || x.getAttribute('aria-label') || '').trim().replace(/\s+/g, ' ').slice(0, 22), t: Math.round(r.top), b: Math.round(r.bottom), l: Math.round(r.left), w: Math.round(r.width), h: Math.round(r.height), vh, vw, hit: !!(e && (e === x || x.contains(e)))};
+      // wirklich sichtbar (Treffer je Pixelzeile in der Mitte): deckt auch die feste Fußzeile ab
+      let seen = 0; for (let y = Math.floor(r.top) + .5; y < r.bottom; y++) { if (y < 0 || y >= innerHeight) continue; const q = document.elementFromPoint(r.left + r.width / 2, y); if (q && (q === x || x.contains(q))) seen++; }
+      return {n: (x.textContent || x.getAttribute('aria-label') || '').trim().replace(/\s+/g, ' ').slice(0, 22), t: Math.round(r.top), b: Math.round(r.bottom), l: Math.round(r.left), w: Math.round(r.width), h: Math.round(r.height), vh: seen, vw, hit: !!(e && (e === x || x.contains(e)))};
     });
     // Überlappung sichtbarer Tasten untereinander
     const ov = []; for (let i = 0; i < bs.length; i++) for (let j = i + 1; j < bs.length; j++) { const a = bs[i], c = bs[j]; if (a.l < c.l + c.w - .5 && a.l + a.w > c.l + .5 && a.t < c.b - .5 && a.b > c.t + .5 && a.vh && c.vh) ov.push(a.n + '×' + c.n); }
@@ -50,7 +52,25 @@ for (const vk of (which || 'p,q,q2').split(',')) {
   await sleep(900);
   const Z = await M();
   await p.screenshot({path: `${OUT}/vq-${vk}-nach.png`});
-  all[vk] = {A, Z, errs: errs.slice(0, 3), menu: !!mv, res: await p.evaluate(() => !!(VV.res && VV.res.blob))};
+  // Wischen auf der Spalte (Finger) und Live-Vorschau per scrollIntoView: ganz sichtbar über der Fußzeile?
+  const sw = {};
+  if (vk !== 'p') {
+    const c = A.ctl; const x = c.l + 40, y0 = c.t + 150;
+    await cdp.send('Input.dispatchTouchEvent', {type: 'touchStart', touchPoints: [{x, y: y0, id: 1}]});
+    for (let k = 1; k <= 8; k++) { await cdp.send('Input.dispatchTouchEvent', {type: 'touchMove', touchPoints: [{x, y: y0 - k * 15, id: 1}]}); await sleep(16); }
+    await cdp.send('Input.dispatchTouchEvent', {type: 'touchEnd', touchPoints: []}); await sleep(600);
+    sw.wisch = await p.evaluate(() => document.querySelector('#vvSheet .vvctl').scrollTop);
+    const W = await M(); sw.nachWisch = W.bs.filter(q => /Live-Vorschau|Titel|Vorschau|erstellen|aktuell|Teilen|Sichern/.test(q.n)).map(q => q.n.slice(0, 12) + ':' + q.vh);
+    await p.evaluate(() => { document.querySelector('#vvSheet .vvctl').scrollTop = 0; document.querySelector('.vd4-lv').scrollIntoView({block: 'nearest'}); }); await sleep(300);
+    const V = await M(); sw.lvNearest = V.bs.filter(q => /Live-Vorschau|Teilen|Video ist|Vorschau/.test(q.n)).map(q => q.n.slice(0, 12) + ':' + q.vh);
+    await p.evaluate(() => { document.querySelector('#vvSheet .vvctl').scrollTop = 0; }); await sleep(200);
+    // gelbe Auswahl: Zeile „Bereich“ mit [Ganzer Song][Auswahl] (44 px)
+    await p.evaluate(() => { SYNQUENZER.songSelect(0, 1); vvSync(); }); await sleep(700);
+    const Y = await M(); sw.sel = {sel: await p.evaluate(() => document.querySelector('#vvSheet').classList.contains('sel')), bs: Y.bs.filter(q => /Ganzer|Auswahl|Titel|Live|Vorschau|erstellen|aktuell|Teilen|Sichern/.test(q.n)).map(q => q.n.slice(0, 12) + ':' + q.t + '-' + q.b + ':' + q.vh)};
+    await p.screenshot({path: `${OUT}/vq-${vk}-auswahl.png`});
+  }
+  all[vk] = {A, Z, sw, errs: errs.slice(0, 3), menu: !!mv, res: await p.evaluate(() => !!(VV.res && VV.res.blob))};
+  if (vk !== 'p') console.log('  extra', JSON.stringify(sw));
   const S = x => x.bs.map(q => `${q.n}[${q.t}-${q.b} h${q.h} sicht${q.vh}${q.hit ? '' : ' VERDECKT'}]`).join(' ');
   console.log(`== ${vk} menü=${!!mv} video=${all[vk].res} errs=${JSON.stringify(errs.slice(0, 2))}`);
   for (const [k, x] of [['vor', A], ['nach', Z]]) console.log(`  ${k}: Bühne h${x.stage && x.stage.h} Bild h${x.cv && x.cv.h} Video ${x.video ? 'h' + x.video.h : '-'} Spalte ${x.ctl && x.ctl.t}-${x.ctl && x.ctl.b} scroll ${x.sH}/${x.cH} ov=${JSON.stringify(x.ov)}\n    ${S(x)}`);
