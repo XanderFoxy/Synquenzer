@@ -38,9 +38,33 @@
   → Unterteilung nicht erkannt (Schwelle 25 % → 6 % der Schlag-Energie); (3) Hall-Ausklang als eigener Teil („Bridge 2“); (4) Phase der
   Takt-Akzente bezog sich auf die alte Raster-Phase (12/8 kippte zu 3/4).
 
+## Schritt 2/3 (Blatt + Zerschneiden + Loop) – Stand
+- Quelle: `ui.js` (sync.py hängt sie vor `IMP1-END` an). Einhänge-Zeilen (alle mit „IMP1“): normTrack (`track.orig` bleibt), scheduleTrack
+  (`tr.orig` → `tkSched`, also die vorhandene Take-Wiedergabe), tkPlace (Original schweigt nicht unter der Song-Stimme), openRoll (Clip der Spur
+  „Original“ → Blatt), va1Html/va1Tap (Export-Blatt: „Audio/MIDI importieren“ statt „MIDI importieren“), ggbPick (→ derselbe Wähler).
+- Ein Wähler `imp1Pick(hint)` (`<input id="imp1In">` ohne accept): MIDI (MThd) → `va1MidiImport` + Tempo (FF 51) / Taktart (FF 58) aus der
+  Datei, wenn das Projekt leer ist; Audio mit hint 'gesang' → `ggbImportBuf` wie bisher; sonst → Blatt. Dekodieren `ggbDecode`, Mono `ggbMono`
+  (Take) + `imp1Mono` (Analyse), Analyse im Worker (`imp1Analyse`).
+- Blatt `imp1Sheet()` (openPop mit Kopf ✕/Ablegen, Stil wie Export-Blatt): Tempo bekannt (Feld, vorweg) · Datei wählen · Erkennen;
+  Canvas-Welle (Spitzen 1200 Spalten) mit Takt-/Schlag-Raster, farbigen Teilen (Gruppen-Farben --amber/--t1…), „1“-Marke (fein ziehen),
+  Loop-Klammern (unten ziehen, Takt-Raster); Tempo − / + / ½× / 2× / Tippen; Taktart 2/4 3/4 4/4 6/8 12/8; Gesang/schwankend: Vorschlag
+  „92 oder 46 / 184?“ als Knöpfe; Teile: Chips (umbrechend), Name, Zusammen ▸, Teilen (4er-Raster); Ziele; Loop. Ziehen zeichnet nur den
+  Canvas neu (rAF), das Blatt wird erst beim Loslassen neu geschrieben.
+- Daten: Teile `{name, ta (s im Audio), grp}` → in Song-Takten über `imp1Parts` (Anfang auf den nächsten Taktstrich; erster Teil ab Takt 0 inkl.
+  Auftakt, letzter bis zum Ende). Song-Takt 0 = org = „1“ − k Takte (Auftakt). Take = ganzes Audio, Probe 0 = Song-Takt 0, `take.imp
+  {bpm, ts, t1}` (tkExt().take hält es beim Normalisieren).
+- Ziele (je ein ↶ über den ganzen Stand 'sx14'; eigene Undo-Einträge der benutzten Wege fallen weg):
+  In Szenen zerschneiden → Spur „Original“ (neue Zusatzspur, sonst leere Zusatzspur), Teil i = Szene i (Clip mit `audio {take, in, out}`,
+  len = Takte, ts), Song-Bahn der Spur in Reihenfolge + Ende, Song-Marken mit den Teil-Namen; mehr als 8 Teile oder Teile > 64 Takte →
+  eigene Song-Clips (song.own). Als eine Spur → nur eigene Song-Clips (Szenen bleiben frei). Als Gesang → `ggbPlace` (STIMME-Spur, Song-Stück,
+  ohne Export-Daten an Takt 0), Song so lang wie das Audio. Loop → freier Szenen-Platz der Spur „Original“, Clip = Loop-Bereich (spielt im Loop).
+  Projekt-Tempo/-Taktart = erkannt (gerundet), wenn noch kein Audio im Projekt liegt; sonst bleibt das Tempo (Hinweis).
+- Test `imp-test.mjs <index.html>` (Touch, Demo-Song 92 4/4 als WAV über den echten Datei-Wähler): ALLE OK.
+
 ## Offen / Grenzen
 - Nur festes Tempo (Live-Aufnahmen mit Schwankung: `stabil` < 0,5 → `frage`); Teile nur auf dem 4-Takt-Raster ab der „1“ (Teile mit 2 Takten Versatz
   werden um 2 Takte verschoben gemeldet); 5/4, 7/8 nicht erkannt (nicht verlangt). Echte MP3s (Gesang mit Hall, Live-Schlagzeug) noch nicht geprüft.
-- Schritt 2: ein Import-Weg (Audio + MIDI inkl. Tempo/Taktart aus der MIDI-Datei), Import-Blatt (Wellenform, Raster, Teile, BPM ±/Tippen/½×/2×,
-  Taktart, „1“ ziehen), Ziele (Szenen / eine Spur / Gesang), Projekt-Tempo bzw. Dehnen. Schritt 3: Loop-Klammern, Tests, Fotos.
+- Offen aus Schritt 2: Audio passend dehnen (vsStretchMake), wenn das Projekt schon Audio hat und das Tempo abweicht bzw. das erkannte Tempo
+  krumm ist (S.bpm ist ganzzahlig: 91,6 → 92, je Teil setzt der Clip am Taktstrich neu an, Abweichung bleibt im Teil); Wiedergabe nur mono
+  (Takes sind mono); Matrix-Zelle der Spur „Original“ zeigt (noch) keine eigene Welle; echte MP3s nicht geprüft; Guide-Eintrag fehlt.
 - Test-Dateien: synth-test.mjs (Node, synthetisch), app-test.mjs (Browser, App-Render; DUMP=1 schreibt dump-*.json für dump-test.mjs / known-test.mjs), sync.py (core.js + block-head/-tail → index.html).
