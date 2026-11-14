@@ -1,4 +1,4 @@
-# SPK3 – NOTES (Stand Auftrag 2/4: Bass-Noten Präzision 23 → 58 % (fair 71 %), Bass-Ebene bleibt 3,01 dB; mehrstimmig + Profi-Messung offen)
+# SPK3 – NOTES (Stand Auftrag 3/4: Loop im Dokument + im Kreis fertig; Nachbau halb – Vibrato gut, Osz-2-Verstimmung erkannt aber nicht gehalten, Unison offen)
 
 `index.html` = basis4.html (4.59.0) + Block `SPK3-BEGIN … SPK3-END` direkt nach `/* SPK2-END */` (Quelle `spk3-block.js`, bitgleich)
 + 2 Haken „SPK3“ im SPK1-Kern: `spk3DspMake(Z2)` nach der Z2-Anlage, Worker-Text schickt `spk3DspMake.toString()` mit. VERSION/CHANGES unberührt.
@@ -85,3 +85,44 @@ Restfehler: C2 auf Zählzeit 3 (Kick) wird G2/C3 (3×), ±1 Halbton (2×), Oktav
 ### Pflicht / Regression (A2)
 topdefs doppelt 0 / Syntaxfehler 0 · dupkeys 0 · smoke errors [] (`smoke-a2.png`) · „MS 2000“ 1× · „  live: true,“ 1× · VERSION 4.59.0 ·
 spk2-test 29/30 (nur zerlegen-bass-ziel 3,01 < 4, wie A1; `spk2-test.json/log`). spk1-test nicht neu gelaufen (Zerlegen unverändert seit A1).
+
+---------------------------------------------------------------------------------------------------------------------------
+## Auftrag 3/4 – Nachbau genauer (halb) + Loop im Dokument (fertig)
+
+Bau: `python3 bau4.py` = `index.a1.html` + `spk3-block.js` + Haken A2 + 20 Haken „SPK3“ (SPK2: spk2KlP/Snd/Start/Opt/Txt, spk2LpRow/Tap/LpEnd/ViewLp;
+SPK1: spk1PlayPos, spk1PlayFrom, spk1Layers, spk1BtnState, Tipp-Weiche `lpplay`). Sicherungen `index.a2.html`, `spk3-block.a2.js`, `spk2-test.a2.json`.
+Teile des Blocks liegen auch einzeln in `a3-worker.js`, `a3-main.js`, `a3-loop.js` (nur Quelle, in spk3-block.js eingefügt).
+
+### Loop (fertig)
+- Dokument: `meta.teil2.loops = [{a, b}]` (Takte), Kern-op `loopSet` (ein ↶ „Loop“ / „Loop entfernt“, Speichern über uEnd → saveMeta). Gespeichert nach
+  Ziehen-Ende, „Loop setzen“ (Ansicht ▾), ✕. `spk3LpFromMeta` (in spk1Layers) holt den Loop beim Öffnen und nach ↶/↷; während des Ziehens bleibt U.loop.
+- ▶ in der Loop-Zeile (44×44, zwischen Text und „In die Matrix ▾“): spielt den Loop im Kreis (`spk3LpPlay`): Blöcke vom Kern wie spk1Play (im Loop
+  gemerkt, ≤ 200 Blöcke), je Durchgang ein Pegel mit 3 ms Blende über die Naht (Proben hinter dem Ende / vor dem Anfang) → lückenlos, taktgenau.
+  ■ stoppt; Haupt-▶ „■ Stopp“ stoppt auch. Tipp ins Lineal während des Loops = weiter im Loop ab da. Loop ändern/↶ während er läuft → läuft mit den neuen Grenzen weiter.
+- Test `spk3-loop-test.mjs <abs index.html>`: ALLE OK (10, 29 s) – Dokument, ↶/↷, nach Neu-Laden, ✕, im Kreis (2 Nähte in 11 s, Lücke 0 ms, Blende 2,99 ms),
+  Stopp, Layout hochkant + quer 370 (3 Tasten ≥ 44). Fotos `fotos/70-loop-im-kreis-hochkant.png`, `71-loop-quer-370.png`. Test-API `__spk.spk3.loop`.
+
+### Nachbau (halb)
+- Worker `bewegung()` (an op klang/klangFeat → `feat.x3`): je 5 ms, Fenster 4 Perioden, Obertöne 1–12 genau an h·f0: Schwankung (cv) + Rate je Oberton
+  → Verstimmung Osz 2 (Δf = Rate/h, Median), Tonhöhe aus dem Phasen-Zuwachs → Vibrato (Tiefe ct, Rate), Schwerpunkt → Wah.
+- VA-Versuch +5 Werte (u[11] Osz-2-Verstimmung ±25 ct, u[12] Unison-Verstimmung bei fix.uni 5, u[13] LFO 0,2–10 Hz, u[14] Vibrato 0–60 ct, u[15] Wah);
+  Startwerte aus x3, Varianten „det“ (2 gleiche Wellen verstimmt) und „uni“ (Unison 5) nur bei Schwebung; was die Analyse nicht sieht bleibt fest (`fz`),
+  Rauschen nur bei Analyse > 10 %. Abstand = SPK2-Abstand + 0,2 × Bewegung (nur wenn nicht reines FM). Text: „+9 ct“, „Unison 5“, „Wah n HT“, „Vibrato x Hz y ct“.
+- Messung `spk3-klang-probe.mjs <vorher.html> <nachher.html>` (beide Ergebnisse mit demselben Maß; „alt“ = SPK2-Abstand):
+| Klang (Wahrheit) | vorher | nachher | erkannt |
+|---|---|---|---|
+| Lead: Säge, Vibrato 5,5 Hz 25 ct | 1,69 | **0,95** | Vibrato 5,2 Hz 25 ct |
+| FM 1:2 | 2,06 | 2,06 | gleich (reines FM rechnet wie vorher) |
+| VA Säge + Rechteck 50 % +9 ct | 3,91 | 3,89 | Verstimmung 9,5 ct erkannt, Osz 2 nicht gehalten (Mix 0,03) |
+| Pad: Säge Unison 5 · 0,3 | 1,62 | 2,36 (Bewegung 5,32 → 2,85) | wählt 2 verstimmte Sägen +16 ct statt Unison |
+  Laufzeit 50 Versuche 2,3–3,6 s (vorher 2,0–2,9 s, Prüf-Chrome). Hall nicht gebaut (optional).
+
+### Offen (Auftrag 3)
+1. VA 2 Osz: Optimierer verliert Osz 2 – Mix und Verstimmung gemeinsam mutieren, Variante „det“ mit der Welle der Analyse (hier Rechteck) statt gleicher Welle; Periode (Phase) in den Abstand.
+2. Pad Unison: Unison-Variante verliert gegen 2 Sägen – Schwebung von Unison ist unregelmäßig (viele Raten): Maß „Streuung der Raten“ statt Median; Pegel uniMix mitschätzen.
+3. Bewegungs-Maß nur 0,2 gewichtet; Wah-Erkennung bei Schwebung abgeschaltet (Fehlalarm). Hall-Anteil (Ausklang nach dem Loslassen) fehlt.
+4. Ergebnisse je Lauf streuen (50 Versuche, ein Startwert) – für Vergleiche mehrere Läufe mitteln.
+
+### Pflicht / Regression (A3)
+topdefs doppelt 0 / Syntaxfehler 0 · dupkeys 0 · smoke errors [] (`smoke-a3.png`) · „MS 2000“ 1× · „  live: true,“ 1× · VERSION 4.59.0 · Markenwörter = Basis ·
+spk2-test 29/30 (nur zerlegen-bass-ziel 3,01 < 4, wie A1/A2; klang-abstand-bekannt 3,16; gelaufen vor der letzten FM-Weiche, VA-Weg unverändert) · spk3-loop-test ALLE OK.
