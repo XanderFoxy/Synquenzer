@@ -105341,8 +105341,8 @@ function spk9DspMake(Z2) {
         // Vibrato auf dem neuen Ton (steht nie 60 ms flach): 200 ms im Band ±bandv um eine Höhe ≥ 60 ct neben der Mitte, mit Auf und Ab
         if (js < 0 && o9.bandv) for (let a = k; a + VB <= j && a - k <= look; a++) { const mu = ruhig(a, VB, 2 * o9.bandv); if (isNaN(mu) || Math.abs(mu - c) < o9.hys) continue; let up = 0, dn = 0; for (let r = a + 1; r < a + VB; r++) { const dd = s3[r] - s3[r - 1]; if (dd > 0) up += dd; else dn -= dd; } if (Math.min(up, dn) >= o9.vmin) { js = a; break; } }
         if (js < 0) { k = o9.adv ? Math.min(q, k + fr(o9.adv)) + 1 : q + 1; continue; }   // nichts Ruhiges in look: weiter suchen (langes Gleiten), nicht ans Ende der Abweichung springen
-        let ne = Math.min(j, js + NL); if (o9.nlP && !isNaN(jmu)) { let pe = js; while (pe < ne && !isNaN(s3[pe]) && Math.abs(s3[pe] - jmu) <= 0.3) pe++; ne = Math.max(Math.min(j, js + W), pe); }   // kurzer Ton: nur sein Plateau, nicht schon der nächste Ton
-        const nv = []; for (let r = js; r < ne; r++) if (!isNaN(s3[r])) nv.push(s3[r]); const nl = med(nv);
+        const nv = []; for (let r = js; r < Math.min(j, js + NL); r++) if (!isNaN(s3[r])) nv.push(s3[r]); let nl = med(nv);
+        if (o9.nlP && !isNaN(jmu) && !(Math.abs(nl - c) >= o9.hys)) { let pe = js; while (pe < Math.min(j, js + NL) && !isNaN(s3[pe]) && Math.abs(s3[pe] - jmu) <= 0.3) pe++; const pv = []; for (let r = js; r < Math.max(Math.min(j, js + W), pe); r++) if (!isNaN(s3[r])) pv.push(s3[r]); nl = med(pv); }   // kurzer Ton (Wechselnote): nur sein Plateau, nicht schon der Ton danach
         if (isNaN(nl) || Math.abs(nl - c) < o9.hys) { k = q + 1; continue; }
         const md = (c + nl) / 2, s2 = Math.sign(nl - c); let bd = Math.max(s0 + 1, k - back); while (bd < js && !((s3[bd] - md) * s2 > 0)) bd++;
         if ((bd - s0) * hopS < o9.minS || (j - bd) * hopS < o9.minS) { k = q + 1; continue; }
