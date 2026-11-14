@@ -75,3 +75,66 @@ nachher 57 (0,99–2,00) · 62 (2,00–3,00) · 59 (3,00–4,09) (+ kurzer Vorla
    Pads gebaut, Gesang läuft automatisch einstimmig. Nicht angefasst (eigener Auftrag: Einsatz-Rückgriff nicht vor das Ende des Vorläufers
    eines **anderen** Tons, Oberton-Oktaven gegen den Grundton prüfen).
 4. Bass-Band bleibt SPK2 (mit Stufen-Regel 14 → 12 Treffer im spk2-test); SPK8 bringt dort eine eigene Verfolgung.
+
+## Prüfung (9 Befunde aus PRUEFUNG.md, nachgestellt und bearbeitet 14.11. 22:08–23:2x)
+
+Vorher = Stand vor der Prüfung (`fix/index.vor-pruef.html`, `fix/spk9-block.vor-pruef.js`), nachher = `index.html`. Alle Zahlen frisch
+gemessen mit den Prüfer-Skripten (`pruef/legx.mjs`, `pruef/rescore.cjs`, `pruef/bassband.mjs`) und `leg/leg.mjs`, Läufe in `fix/mess-alle.sh`,
+Ergebnisse `fix/mess/*-vor.json` / `*-nach.json`, Tabelle `fix/tabelle.py` → `fix/tabelle.txt`. Getrennt / Zusatz, Oktav-Fehler = Treffer nur mit
+gleicher Tonklasse. Neue Tests: `fix/poly9.mjs` (Mehrstimmig ohne Schalter: eine Stimme / Akkorde), `fix/finden9.mjs` („Überall finden“ auf Gesang).
+
+| Befund | Stand | Was geändert (alles im Block, Schalter in `Z2.o9`, 0 = aus) |
+|---|---|---|
+| 1 mittel, langes Gleiten = 1 falsche Note | **behoben** | nichts Ruhiges in `look` → 0,25 s weiter suchen statt ans Laufende springen (`adv`); Mitte der neuen Note erst ab der ruhigen Stelle (`cst`); Tonhöhe = Median der dichtesten Halbton-Breite, nur nahe am Median (`dicht`, `dichtA`, `dichtW`) |
+| 2 mittel, Gleiten-Zusatz | **behoben bis 1,4 s**, Rest offen | Viertelton-Treppe eines Gleitens ist kein ruhiger Ton (`stair`); Übergangs-Regel bis 0,5 s / 3 HT, aber geschützt: flache Mitte ≥ ¾ HT vor dem Ziel = Ton, langes Stück nur bei gleichmäßigem Lauf (`tr`, `trN`, `trFlat`) |
+| 3 mittel, kurze Verzierungen | **behoben ab 0,1 s** | Vibrato-Regel nur bis 0,875 HT Hub (`vibMax`); Durchgangston mit flacher Mitte bleibt (`trFlat`); kurzer Ton: Höhe nur aus seinem Plateau, wenn die 150-ms-Höhe schon den nächsten Ton enthält (`nlP`) |
+| 4 mittel, Oktav-Fehler | **behoben** | Oktave höher nur, wenn ungerade Obertöne < 12 % der geraden (`okt`) oder < 30 % UND der Grundton selbst schwach (< 0,3 × gerader Mittelwert, `oktG`) – reine 12-%-Regel war mit Begleitung im selben Layer (MX) schlechter |
+| 5 mittel, SPK3/SPK4 | **behoben** (eine Stimme) | Haken 4 in SPK2 `finden` („Überall finden“); `Z2.ops.noten` umhüllt: Mehrstimmig (automatisch oder Schalter) prüft, ob nur EINE Stimme klingt (Spektral-Spitzen bis 2,5 kHz, fremde Spitzen ≤ 15 %, Grundton da, in ≥ 70 % der lauten Rahmen, jeder 3. Rahmen) → einstimmiger Weg, Ergebnis bleibt „mehrstimmig“ (`mono`, `qMono`, `pMono`). Akkorde: Anteil 0 → unverändert SPK4 |
+| 6 leicht, Pegelsprung ≥ 11 dB | **behoben** | Ausklang nur, wenn der leise Teil weiter fällt (≥ 4 dB in 0,25 s) oder bald endet (< 0,45 s); Bezug = lautester Teil der laufenden Note (`fall`, `fallT`) |
+| 7 leicht, Tremolo-Zusatz | **teilweise** | Anschlag mitten im gehaltenen Ton (stimmhaft ±0,1 s, gleiche Höhe ±0,5 HT) erst ab 6 dB statt 3 dB (`rise2`); 9 dB probiert: kaum besser → 6 |
+| 8 leicht, Auswahl ≤ 400 Hz | **behoben** | Bass-Band nach Ebene: nur Ebene Bass bzw. Original mit Auswahl oben ≤ 400 Hz bleiben SPK2 (`art` im Haken) |
+| 9 leicht, Stichprobe | **behoben** | zwei Stichproben je Satz (legx Samen 987654321 und 13579; leg mit/ohne R), 44,1 kHz, Gleiten nur nach Tonhöhe bewertet (Prüfer-Maß SG) |
+
+### Zahlen vorher → nachher (getrennt / Zusatz, Oktav-Fehler)
+| Satz | vorher | nachher |
+|---|---|---|
+| SG Gleiten 0,6 / 0,8 / 1,0 / 1,4 / 2,0 s (Start+Ziel) | 88 / 75 / 50 / 75 / 75 % | **100 / 100 / 100 / 100 / 94 %** |
+| SG Zusatz 0,45 / 0,6 / 1,0 / 1,4 / 2,0 s | 12,5 / 25 / 44 / 56 / 94 % | **0 / 0 / 0 / 12,5 / 25 %** |
+| M8 Glissandi (2 Stichproben) | 87,5 / 87,5 % · 84,4 / 65,6 % | 100 / 43,8 % · 100 / 28,1 % |
+| SZ Wechselnote 0,15 s · SS Lauf 0,15 s | 63,3 / 16,7 % · 83,3 / 10 % | **100 / 0 % · 100 / 0 %** |
+| SM Melisma 0,08 / 0,10 / 0,12 / 0,14 / 0,17 / 0,20 s | 42 / 73 / 81 / 75 / 83 / 98 % | 46 / **96** / 81 / 85 / 96 / 100 % |
+| M5 Melisma 0,09–0,14 s (2 Stichproben) | 63,2 % · 64,8 % | 75,5 % · 80,0 % |
+| SD Pegelsprung −9 / −11 / −13 / −16 / +10 dB | 89 / 72 / 39 / 11 / 94 % | **100 / 100 / 100 / 100 / 100 %**, Zusatz 0 |
+| ST Tremolo 0 / 10 / 20 / 30 % (Zusatz) | 25 / 25 / 150 / 375 % | 0 / 0 / 37,5 / 112,5 % |
+| M7 gehaltene Töne (2 Stichproben, Zusatz) | 129 % · 112,5 % | 79 % · 29 % (Rest = Tremolo-Fälle) |
+| Oktav-Fehler M1–M10 (Stichprobe 1 · 2) · M1 M2 M3 M7 M10 bei 44,1 kHz | 20 · 38 · 18 | **0 · 0 · 1** |
+| M1 tief / M2 hoch / M3 kleine Schritte+Vibrato (Stichprobe 1) | 89,3/17,6 · 93,3/20,0 · 88,4/13,7 % | 89,9/11,9 · 97,3/9,3 · 93,7/10,5 % |
+| dieselben, Stichprobe 2 | 89,1/20,5 · 90,3/13,8 · 85,2/18,2 % | 95,5/8,3 · 96,6/4,1 · **98,9/4,5 %** |
+| dieselben, 44,1 kHz | 90,6/16,4 · 91,3/18,7 · 84,2/16,8 % | 91,8/6,9 · 95,3/8,7 · 95,8/6,3 % |
+| M4 Pegel −14…+10 dB / M6 Konsonanten / M9 Anschleifen+Fall | 67,1 / 83,8 / 90,9 % | 93,7 / 92,6 / 95,5 % |
+| MX Begleitung −12 dB / −6 dB im selben Layer | 86,4/47,7 · 56,3/60,4 % | 88,6/40,9 · 54,2/56,3 % (−6 dB: 1 Ton weniger von 48, s. Offen) |
+| leg.mjs L / V / G / R / A / B (mit R) | 98,8/1,2 · 0 · 93,8/15,6 · 97,2/1,4 · 0/12,5 · 12/12 | **100/0 · 0 · 100/0 · 98,6/0 · 0/0 · 12/12** |
+| leg.mjs ohne R (Stichprobe des Bauers) | L 98,8/1,2 · G 96,9/12,5 | L 100/0 · G 100/0 |
+| Mehrstimmig (Gesang-Ebene, Schalter an): L / Befund 17 | 17,4 % / 147 % · 0/12 | **97,7 % / 4,7 % · 12/12** |
+| Mehrstimmig ohne Schalter auf dem Original (poly9): Befund 17 · Legato+Vibrato · Lauf · Pad-Akkorde | 0/3 · 1/5 · 2/5 · 5/9 | **3/3 · 5/5 · 5/5** · 5/9 (unverändert SPK4, Anteil eine Stimme 0,00) |
+| „Überall finden“ Gesang (finden9): 2. Phrase A3 D4 H3 | 0/3 (eine Note 59) | **3/3** |
+| Befund 17, Auswahl 150–380 Hz (bassband) | eine Note 59 | **57 · 62 · 59** |
+| Laufzeit legx 88 Fälle / leg 88 Fälle (Node) | 71,8 s / 23,9 s | 75,1 s / 25,9 s |
+
+Probiert und nicht eingebaut: Vibrato-Weg mit Drift-Prüfung (Höhe läuft 0,1 s danach ≥ 0,45 HT weiter → kein Ton) gegen Gleiten mit Vibrato –
+M8/M3 unverändert; Anschlag im gehaltenen Ton erst ab 9 dB – M7 nur 87,5 → 83,3 %. Prüfer-Ergebnis `pruef/mx-index.json` ließ sich mit dem
+heutigen `legx.mjs` nicht nachstellen → alle Vorher-Werte frisch gemessen.
+
+### Offen nach der Prüfung
+1. Gleiten MIT Vibrato (~3 HT/s): das Vibrato macht aus dem Gleiten Stufen (Plateau je Halbwelle) → in Halbtönen zerhackt (M8 Zusatz 28–44 %,
+   Beispiel 55 → 47 in 2,5 s mit ±30 ct = 8 Noten). Weg: Tonhöhen-Spur vor der Stufen-Suche über eine Vibrato-Periode glätten (gleitendes Mittel
+   ~0,2 s) und nur für „läuft weiter?“ benutzen.
+2. Sehr langsames Gleiten (1 HT/s über 2 HT): die Mitte (Median 0,6 s) folgt mit → eine Note (Zielton), Start fehlt (SG2 ±2, 2 von 8).
+3. Tremolo ≥ 20 %: noch Zusatz-Noten (ST 37,5 / 112,5 %), Ursache nicht mehr die Anschlag-Regel allein.
+4. Melisma < 0,1 s (SM 0,08 s 46 %): unter den 70/80-ms-Regeln, bewusst so (Vorgabe ab ~0,1 s).
+5. Überschwingen ≥ 1 HT für ~0,1 s bleibt eine kurze eigene Note (M1/M9 Zusatz 8–14 %, die Höhe wurde gesungen).
+6. Begleitung −6 dB im selben Layer (MX-6): Spur folgt oft dem Pad (Unter-Oktave), 54 % – Sache der Ebenen-Trennung, nicht der Stufen.
+7. Mehrstimmig mit Akkorden UND Stimme: weiter die SPK4-Rechnung (Geister-Oktaven, frühe Einsätze); nur reine Ein-Stimm-Stellen gehen den
+   einstimmigen Weg.
+8. Vorschlag (sichtbar, daher nicht gebaut): Statuszeile nach „Noten finden“ im Modus Mehrstimmig mit erkannter einer Stimme:
+   „… · mehrstimmig (eine Stimme erkannt)“ statt nur „· mehrstimmig“.
