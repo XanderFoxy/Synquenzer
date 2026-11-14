@@ -1,3 +1,15 @@
+## 4.58.0 — Deine 8 Bedien-Entscheidungen
+
+- **Mikrofon-Blatt**: „Beim Singen hören“ (Begleitung │ + Melodie │ nur Klick) und neu **„Mich selbst hören“ An │ Aus** (Mithören wie in einer DAW; über Lautsprecher bleibt es stumm, damit nichts pfeift) – dort, wo man aufnimmt.
+- **Video quer**: die Zeile „Extras · Live-Vorschau“ liegt rechts in der Bedienspalte, Bühne und fertiges Video bekommen 50 px mehr Höhe.
+- **Matrix im STOPP**: Szenen-Kopf startet erst beim Loslassen; Halten öffnet nur das Szenen-Menü, Wegziehen startet nichts.
+- **Echtzeit-Mitschnitt**: steht ein Vergleich auf VORHER, schaltet der Start sichtbar auf NACHHER („Mitschnitt mit Nachher“).
+- **Klang-Editor schließen** beendet den Vergleich auf NACHHER (auch über ✕ im Klang-Browser).
+- **Mix-Schritte** zeichnen bei ▶/■ das Blatt nicht mehr neu – kein verlorener Tipp.
+- **Mix-Messung** startet erst mit vollständigem Ton – die Vorschläge sind fest und stimmig.
+- **„Wo bin ich“** ist in allen Blatt-Köpfen ganz lesbar (z. B. „Sz 1“ im Drum-Blatt).
+Tests: XD1 139/143 (Rest: VERSION-Prüfung und Menü-Bildvergleich wegen neuer Versionsnummer), Gesang-Editor 61/61, Import 48/48, Spektral 17/18, Regeln, doppelte Schlüssel 0, Rauchtest grün.
+
 ## 4.57.0 — Spektral-Seite (erste Fassung zum Ausprobieren)
 
 - **≡ → Analyse › Spektral …** (auch „Im Spektrum öffnen“ im Takes-Blatt und am Gesang-Clip): eigene Seite, lädt erst beim Öffnen. Datei laden (MP3/WAV/M4A) oder Take wählen.

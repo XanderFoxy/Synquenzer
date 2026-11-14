@@ -27568,7 +27568,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '4.57.0';
+const VERSION = '4.58.0';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -57738,6 +57738,7 @@ function stSheetFill(p) {
   html += '</div><div class="st-c2"><div class="st-lbl">Stimme → Noten</div>' + vsMelRowHTML(vc) + g10cPassRow() +   /* G10c */ segHTML('vsSrc', [['voice', '🎤 Stimme'], ['inst', '🎸 Instrument']], vc.src) +
     `<div class="st-vs"><button class="rb${vc.snap ? ' on' : ''}" data-vs="snap" aria-pressed="${vc.snap}">${vc.snap ? '✓ In Tonart einrasten' : 'Frei (nicht einrasten)'}</button>` +
     (vc.src === 'inst' ? `<button class="rb${vc.lock ? ' on' : ''}" data-vs="lock" aria-pressed="${vc.lock}">${vc.lock ? '✓ ' : ''}Oktave sperren</button>` : '') + '</div></div>';
+  if (typeof xd1MicHtml === 'function') html = xd1MicHtml(html);   // XD1 (1): „Beim Singen hören“ + „Mich selbst hören“ vor „Stimme → Noten“ (Schritt 1 Aufnehmen)
   html += `<div class="st-c3"><div class="st-btns"><button class="rb st-cal"${!ST.on || cal || ST.phase !== 'live' ? ' disabled' : ''}>Einmessen</button><button class="rb st-go ${ST.on ? 'off' : ''}">${ST.on ? '✕ Mikro aus' : '🎤 Mikro an'}</button></div>`;
   html += `<p class="small st-hint">${MICIN.ext && ST.on ? 'Interface: Kopfhörer-Weg, kein Einmessen nötig.' : rt === 'speaker' ? 'Mit Kopfhörer klingt die Musik normal und dein Gesang bleibt sauber.' : 'Zum Einmessen mit Kopfhörern einen Ohrhörer direkt ans Mikrofon halten.'}</p></div>`;
   if (p._h !== html) { p._h = html; p.innerHTML = html; }
@@ -57750,6 +57751,7 @@ const stDate = s => { const d = new Date(s); if (!isFinite(d)) return ''; const 
 function bindStSheet(p) {
   p.addEventListener('change', e => { const t = e.target; if (t && t.id === 'stIn') { haptic('tick'); micInSet(t.value); } });   // HIF
   onTap(p, b => {
+    if (b.dataset.xd1 != null && typeof xd1MicTap === 'function' && xd1MicTap(b, p)) return;   // XD1 (1)
     if (b.closest('#stRoute')) { haptic('tick'); stSetRoute(b.dataset.v, 'gewählt'); return; }
     if (b.closest('#vsSrc')) { haptic('tick'); vsCfgSet({src: b.dataset.v}); return; }      // VS2
     if (b.closest('#vsMel')) { haptic('tick'); vsCfgSet({mel: b.dataset.v === '1'}); popFit(p); return; }   // VS-L
@@ -73856,6 +73858,7 @@ async function vvSwapIn(oc, wk, off) {
   await percVvBoot(oc);                                            // PERC: je Perkussionsspur ein Knoten im Offline-Kontext
   if (sv.bmx) bmVvSync(oc);                                        // BM6-06: Bit Mask quittiert vor jedem Weiterrechnen
   if (!(off && off.mixa)) int53WkSync(oc);                         // INT53: die Synth-Engines quittieren vor dem Start (sonst fehlen die ersten Noten); der MIX-A-Messlauf bleibt wie bisher (seine Vorschläge sind darauf eingestellt – Vorschlag im Funk)
+  if (off && off.mixa && typeof XD1 !== 'undefined' && XD1.ack) int53WkSync(oc);   // XD1 (7): auch der MIX-A-Messlauf rechnet erst nach der Quittung (vollständiger Ton ab Schlag 1)
   // AM: the stored waves at once (as mkRender), the wheels as they stand live
   for (const i of synthTracks()) {
     const tr = S.tracks[i], E = AU.synth[i]; if (!E || tr.sound.engine !== 'mk') continue;
@@ -100161,6 +100164,284 @@ function int53dCh1Data() {
   catch (e) { if (job && job.rP && INT53C.n > 0 && !INT53C.hold && (VV.cancel || /abgebrochen/.test(String(e && e.message)))) { VV.cancel = true; INT53D.waits++; try { await job.rP; } catch (x) {} } throw e; } }; }
 Object.assign(SYNQUENZER, {int53d: {info: () => ({files: INT53D.files, waits: INT53D.waits, last: INT53D.last ? {kinds: INT53D.last.kinds.slice(), ok: INT53D.last.ok} : null})}});   /* INT53D: Test-API (Objekt, wird nicht umhüllt) */
 /* INT53D-END */
+/* XD1-BEGIN ===== Paket XD1 (Xander 08.11.: „Du sollst eigenmächtig entscheiden, was logischer ist … logisch entscheiden, was praktikabel
+   ist, den Workflow nicht sperrt, alles intuitiv und leicht. Optik nichts hinzuerfinden, Sachen richtig darstellen.“) – acht Punkte:
+   (1) Gesang: „Beim Singen hören“ [Begleitung │ + Melodie │ nur Klick] steht jetzt im Mikrofon-Blatt (Schritt 1 Aufnehmen) – dort, wo man
+       aufnimmt (oben in der Spalte „Stimme → Noten“; quer bleibt die linke Spalte mit [Mikro an] unverändert). Darunter, wie in jeder DAW:
+       „Mich selbst hören“ [An │ Aus] (Eingangs-Mithören, Zeile wie „Melodieerkennung“, Zustand klein darunter; Standard aus; über den
+       Lautsprecher bleibt es stumm, sonst pfeift es).
+       An = die eigene Stimme direkt auf den Kopfhörer (am Master vorbei: kein Kompressor-Vorlauf, kleinste Verzögerung), Pegel wie die
+       STIMME-Spur (auch stumm/Solo wie dort), mit deren Hall (Send in den Hall der App). Still beim Einmessen und im Offline-Render; im
+       Echtzeit-Mitschnitt ohne Hall-Send (die Aufnahme selbst ist immer das trockene Mikro). Gemerkt im Gerät (uiPrefs xd1Mon), nie im Projekt.
+       Takes-Blatt: nur noch „Hören: Gesang │ Melodie │ beides“, dazu ein Verweis-Satz. Blatt von ● halten: Zeile „Beim Singen“ bleibt
+       (dieselbe Einstellung vox2Sm, ein Zustand – ein Tipp dort zeichnet ein offenes Mikrofon-Blatt nach).
+   (2) Video quer: [Live-Vorschau beim Komponieren] liegt wie hochkant im Extras-Kasten der rechten Spalte (unter Titel · Rand · Making-of ·
+       Schnitt); die Zeile unter der Bühne entfällt, Bühne und fertiges Video bekommen die Höhe zurück.
+   (3) Matrix: Szenen-Kopf ▶ im STOPP startet erst beim Loslassen (Tipp: losgelassen ≤ 12 px vom Aufsetzen, wie jeder Tipp der App);
+       Halten (450 ms, ≤ 8 px wie die übrigen Halte-Gesten) öffnet nur das Blatt „Szene n“, nichts startet; weggezogen startet nichts.
+       Während der Wiedergabe bleibt es wie MTX (Tipp = am Taktstrich, knapp davor beim Aufsetzen).
+   (4) Echtzeit-Mitschnitt: steht ein Vergleich auf VORHER (Mix & Master, Klang-Editor, Marken · STIMME, Tonhöhe, Refrain groß / Chor
+       sauber), schaltet der Start sichtbar auf NACHHER und sagt „Mitschnitt mit Nachher“ – die Datei hat den Nachher-Stand wie jeder Export.
+   (5) Klang-Editor/-Browser: wird der Editor geschlossen (✕, Wischen, ≡-Menü, Noten-/Clip-Editor öffnen, Klang-Browser ✕), während der
+       Vergleich auf VORHER steht, endet er auf NACHHER (wie Mix & Master beim Schließen) – Autosave und Projekt bleiben nie im Vorher.
+       Wechsel Editor ↔ Browser (auch auf eine andere Spur) lässt ihn stehen; leiht ein Export gerade den Nachher-Stand (INT53C), endet er
+       erst nach der Rückgabe. Abgelegtes Mix & Master (⌄) bleibt wie es ist.
+   (6) MIXG: bei ▶/■ wird kein offenes Blatt mehr neu aufgebaut (das kostete einen Tipp, der genau dann fiel); geändert werden nur die
+       Teile, die vom Transport abhängen (▶-Taste, Satz, „Messen aus: Live – …“, Kompressor-Balken bei ■ wieder im Schnitt) – dieselben
+       Elemente bleiben im Bild, das Blatt sieht aus wie neu gezeichnet.
+   (7) Mix & Master ① Messen: der MIX-A-Messlauf startet wie Video/Audio erst nach der Quittung der Engines (Schlag 1 vollständig: Spitze der
+       ersten 40 ms 0,49 statt 0,29). Nachgemessen (Demo): die Vorschläge bleiben dieselben und stimmen musikalisch (Bass −3 dB bei 50 Hz für
+       den Kick-Grundton, Fläche −2,5 dB bei 890 Hz gegen die Sequenz, keine Höhen-Absenkung bei Höhenanteil −30 dB) – ohne Quittung
+       schwankten sie (z. B. 910 statt 890 Hz). Die MIXG-Schwellen müssen darum nicht verschoben werden.
+   (8) ORI „Wo bin ich“: die Zeile wird mit der echten Schrift gemessen (Schrift/Abstände je Kopf zwischengespeichert); passt sie nicht,
+       kommt erst die kürzere Form („Szene 1“, dann „Sz 1“) – nie mehr „Sze…“. Kein Kopf wird höher, keine Taste rückt.
+   Einhänge-Zeilen (je mit „XD1“ markiert): stSheetFill (1: die Zeilen vor „Stimme → Noten“), bindStSheet (1), vvSwapIn (7). Alles andere hier als Hülle (vox2Tap, vox2TkHtml,
+   stRender, vd4LvFit, mtxScnDown, mtxHoldEnd, songAudioStart, openEditor, openBrowser, applyProject, closeSheets, closeBrowser, mxgSync, oriFit) und Guide-Eintrag. */
+var XD1 = {mon: null, monIv: 0, ack: true, sw: 0, sndT: 0, mtxN: 0, rtN: 0, rtLast: null, sndN: 0, plN: 0, plLast: null, oriN: 0};
+
+/* ---------- (1) Mikrofon-Blatt: „Beim Singen hören“ + „Mich selbst hören“ ---------- */
+const xd1MonPref = () => { try { return uiPrefs().xd1Mon === true; } catch (e) { return false; } };
+// Zustand des Mithörens als kurzer Satz unter „Mich selbst hören“ (wie „geschätzt“ unter der Verzögerung); warn = gelb
+function xd1MonState() {
+  const rt = ST.route, mic = !!(ST.run && !ST.run.stopped);
+  if (!xd1MonPref()) return ['Standard · nur mit Kopfhörer sinnvoll', false];
+  if (rt === 'speaker') return ['Lautsprecher: bleibt stumm, sonst pfeift es', true];
+  if (ST.cal) return ['beim Einmessen stumm', false];
+  if (rt === 'bt') return ['Bluetooth: kommt hörbar verzögert', true];
+  return [mic ? 'mit dem Hall der STIMME auf dem Kopfhörer' : 'sobald das Mikro an ist', false];
+}
+// html des Blatts → oben in der Spalte „Stimme → Noten“ (hochkant direkt unter Weg/Verzögerung, quer rechts oben; die linke Spalte mit
+// [Mikro an] bleibt wie sie war): „Beim Singen hören“ (wie im Blatt von ● halten) und „Mich selbst hören“ (Zeile wie „Melodieerkennung“)
+function xd1MicHtml(html) {
+  const sm = vox2Sm(), mon = xd1MonPref(), [st, warn] = xd1MonState();
+  const B = (k, v, l, s, on) => `<button data-v="${v}" data-xd1="${k}:${v}" class="${on ? 'on' : ''}" aria-pressed="${on}">${esc(l)}${s ? '<small>' + esc(s) + '</small>' : ''}</button>`;
+  const sing = `<div class="xd1mic xd1sing"><div class="st-lbl">Beim Singen hören</div><div class="seg xd1seg" role="group" aria-label="Beim Singen hören">` +
+    VOX2_SM.map(([v, l, s]) => B('vox2s', v, l, s, v === sm)).join('') + '</div></div>';
+  const row = `<div class="st-mel xd1mic xd1mon"><span>Mich selbst hören<small class="xd1hp${warn ? ' st-warn' : ''}">${esc(st)}</small></span>` +
+    `<div class="seg" role="group" aria-label="Mich selbst hören">${B('mon', '1', 'An', '', mon)}${B('mon', '0', 'Aus', '', !mon)}</div></div>`;
+  return html.replace('<div class="st-c2">', '<div class="st-c2">' + sing + row);
+}
+function xd1MicTap(b, p) {
+  const v = String(b.dataset.xd1 || '');
+  if (v.startsWith('vox2s:')) vox2Tap(v);                              // dieselbe Einstellung wie im Blatt von ● halten (vox2Sm, VOX2.lr = 's')
+  else if (v === 'mon:1' || v === 'mon:0') { setUiPref('xd1Mon', v === 'mon:1'); haptic('tick'); xd1MonSync(); }
+  else return false;
+  stSheetFill(p); return true;
+}
+// ein offenes (oder abgelegtes) Mikrofon-Blatt nachzeichnen
+function xd1MicRepaint() { for (const p of document.querySelectorAll('.pop.stpop')) { try { stSheetFill(p); } catch (e) { logErr(e); } } }
+{ const xd1Tap0 = vox2Tap; vox2Tap = function (v) { const r = xd1Tap0(v); if (r) xd1MicRepaint(); return r; }; }   // ● halten ↔ Mikrofon-Blatt: ein Zustand
+// Takes-Blatt: nur „Hören“ (Abhören), „Beim Singen“ als Verweis-Satz
+vox2TkHtml = function () {
+  const n = vox2MelNames(), sg = vox2Singing(g10jTake()), sm = VOX2_SM.find(o => o[0] === vox2Sm()) || VOX2_SM[0];
+  return `<div class="g10j vox2 vox2tk">${vox2HearRow('data-a', !sg)}<p class="g10j-hp vox2hp">${n.length ? 'Gemeint ist die Spur „' + esc(n.join('“, „')) + '“ – die Noten aus deinem Gesang.' : 'Noten aus deinem Gesang gibt es hier noch nicht.'} ` +
+    `Beim Singen hörst du „${esc(sm[1])}“ – einstellen unter 1 Aufnehmen (Mikrofon). Nur fürs Hören: Export und Video bleiben, wie gemischt.</p></div>`;
+};
+// Mithören: Mikro → Pegel (wie die STIMME) → direkt an den Ausgang; Hall-Send der STIMME → Hall der App. Nur live, nie im Render/Projekt.
+function xd1MonDrop() {
+  const M = XD1.mon; XD1.mon = null; if (!M) return;
+  for (const [a, b] of [[M.src, M.g], [M.src, M.rs], [M.g, null], [M.rs, null]]) { try { if (b) a.disconnect(b); else a.disconnect(); } catch (e) {} }
+}
+function xd1MonSync() {
+  try {
+    const run = ST.run, src = run && !run.stopped && run.nodes ? run.nodes[0] : null, want = xd1MonPref() && !!src;
+    if (want && !XD1.monIv) XD1.monIv = setInterval(xd1MonSync, 400);   // folgt Weg, Einmessen, Render, Mitschnitt, Regler der STIMME – nur solange Mikro und Mithören an sind
+    if (!want && XD1.monIv) { clearInterval(XD1.monIv); XD1.monIv = 0; }   // Mikro aus: kein Takt (stRender startet ihn beim nächsten Mikro-Start wieder)
+    let M = XD1.mon;
+    if (M && (!want || M.src !== src)) { xd1MonDrop(); M = null; }
+    if (!want) return;
+    const c = src.context;
+    if (!M) { M = XD1.mon = {src, c, g: c.createGain(), rs: c.createGain(), hall: null, gv: 0, rv: 0}; M.g.gain.value = 0; M.rs.gain.value = 0; src.connect(M.g); M.g.connect(c.destination); src.connect(M.rs); }
+    if (AU.ctx === c && AU.hallIn && M.hall !== AU.hallIn) { try { if (M.hall) M.rs.disconnect(M.hall); } catch (e) {} try { M.rs.connect(AU.hallIn); M.hall = AU.hallIn; } catch (e) { logErr(e); } }
+    const st = stimmeT(), tr = st >= 0 ? S.tracks[st] : null; let fx = null; try { fx = tr && tr.sound ? trackFx(tr) : null; } catch (e) {}
+    const mute = ST.route === 'speaker' || !!ST.cal || ST.phase !== 'live' || !!UI.vvOff || !!(typeof VV !== 'undefined' && VV.off) || !!(tr && (tr.mute || !sx4Pass(st)));   // STIMME stumm/Solo woanders: wie in jeder DAW still
+    const g = mute ? 0 : fx ? clamp(fx.vol * fx.vol, 0, 1) : 0.64, r = mute || SREC.on ? 0 : g * (fx ? clamp(fx.rev || 0, 0, 1) : 0);
+    const t = c.currentTime; if (Math.abs(M.gv - g) > 1e-4) M.g.gain.setTargetAtTime(g, t, .02); if (Math.abs(M.rv - r) > 1e-4) M.rs.gain.setTargetAtTime(r, t, .02);
+    M.gv = g; M.rv = r;
+  } catch (e) { logErr(e); }
+}
+{ const xd1StR0 = stRender; stRender = function () { xd1StR0(); xd1MonSync(); }; }   // Mikro an/aus, Weg, Einmessen
+(function xd1Css() {
+  try {
+    const s = document.createElement('style'); s.id = 'xd1-css';
+    s.textContent = '.stpop .xd1seg button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;line-height:1.1}' +
+      '.stpop .xd1seg button small{font-size:9px;opacity:.75;white-space:nowrap}.stpop .xd1mon{margin:2px 0 6px}.stpop .st-c2>.xd1sing:first-child>.st-lbl{margin-top:0}' +
+      '.stpop .xd1mon>span small{display:block;color:var(--text-dim);font-size:10px;margin-top:2px}.stpop .xd1mon>span small.st-warn{color:var(--amber);margin:2px 0 0;font-size:10px;line-height:normal}' +
+      // (2) quer: die Taste im Extras-Kasten bricht ihren Text um (statt „…“) – Höhe bleibt 44 px
+      '@media (orientation:landscape){.vvsheet .vd3-box .rb.vd4-lv span{white-space:normal;line-height:1.15}.vvsheet .vvctl>.vvrow.vd3-vr{flex-shrink:0}}';   // der Kasten behält seine zwei Reihen (sonst läge die Taste über [Vorschau]); die Spalte rollt, wie sie es quer 370 schon tat
+    document.head.appendChild(s);
+  } catch (e) {}
+})();
+// Guide „Wo finde ich …?“: Beim Singen hören → Mikrofon-Blatt; neu: Mich selbst hören
+(function xd1Guide() {
+  try {
+    const L = ui1Entries(); if (L.some(x => x.id === 'xd1mon')) return;
+    const go = () => { ui1Home(); setSongView(false); if (!micAvail()) { toast('Hier gibt es kein Mikrofon'); return false; } return stSheet() !== false; };
+    const q = c => () => (UI.pop && UI.pop.el ? UI.pop.el.querySelector(c) || UI.pop.el : EL.top);
+    const e = L.find(x => x.id === 'vox2sing'); if (e) { e.w = 'Mikrofon-Blatt (1 Aufnehmen) › Beim Singen hören · ● halten › Beim Singen'; e.go = go; e.q = q('.xd1sing'); }
+    L.push({id: 'xd1mon', n: 'Mich selbst hören (Mithören)', w: 'Mikrofon-Blatt (1 Aufnehmen) › Mich selbst hören', d: 'Deine Stimme mit dem Hall der STIMME direkt auf den Kopfhörer – Standard aus, über den Lautsprecher bleibt es stumm.',
+      s: 'mithoeren monitor monitoring selbst hoeren eigene stimme kopfhoerer direkt hall singen aufnehmen', go, q: q('.xd1mon')});
+  } catch (e) {}
+})();
+
+/* ---------- (2) Video quer: Live-Vorschau im Extras-Kasten der rechten Spalte ---------- */
+vd4LvFit = function () {
+  const b = VD4.lv, L = VD4.lvAt; if (!b || !L || !L.box.isConnected) return;
+  if (b.parentNode !== L.box || (L.hint && b.nextSibling !== L.hint)) L.box.insertBefore(b, L.hint && L.hint.parentNode === L.box ? L.hint : null);
+  if (L.row.parentNode) L.row.remove();
+  L.body.classList.remove('vd4q');
+};
+
+/* ---------- (3) Matrix: Szenen-Kopf im STOPP – Start beim Loslassen, Halten = nur das Blatt ---------- */
+{ const xd1ScnDown0 = mtxScnDown; mtxScnDown = function (e, scn) {
+  const r = xd1ScnDown0(e, scn), h = MTX.hold;
+  if (!r && h && h.el === scn && !R.playing) { h.defer = true; h.xd1 = true; return true; }   // gestoppt: nichts beim Aufsetzen
+  return r;
+}; }
+{ const xd1HoldEnd0 = mtxHoldEnd; mtxHoldEnd = function (e) {
+  const h = MTX.hold, go = !!(h && h.xd1 && e && e.type === 'pointerup' && e.pointerId === h.id && !h.long && Math.abs(e.clientX - h.x) <= 12 && Math.abs(e.clientY - h.y) <= 12);   // Tipp = losgelassen, wo aufgesetzt (12 px wie jeder Tipp)
+  xd1HoldEnd0(e);
+  if (go && !R.playing) { XD1.mtxN++; try { launchScene(h.s); } catch (err) { logErr(err); } }   // Tipp = Start beim Loslassen (läuft es inzwischen, startete MTX schon am Taktstrich)
+}; }
+
+/* ---------- (4) Echtzeit-Mitschnitt mit dem Nachher-Stand ---------- */
+function xd1ToNach() {
+  const did = [];
+  try {
+    if (typeof MX2 !== 'undefined' && MX2.ab && mx2Side() === 'A') { mx2AbEnd(); did.push('mx2'); }
+    const B = int53cSnd(); if (B) { toggleAB(B.t); did.push('snd'); }
+    if (typeof WP !== 'undefined' && WP.ab) { WP.ab = false; wpResync(); if (WP.ed) wpPaint(); did.push('wp'); }
+    if (typeof G2 !== 'undefined' && G2.ab) { G2.ab = false; wpResync(); if (G2.ed) g2Paint(); did.push('g2'); }
+    if (int53cCh1()) { ch1AB('B'); did.push('ch1'); }
+  } catch (e) { logErr(e); }
+  return did;
+}
+{ const xd1Rec0 = songAudioStart; songAudioStart = function () {
+  if (SREC.on || !S.song || !S.song.bars) return xd1Rec0();
+  const did = xd1ToNach(); XD1.rtN++; XD1.rtLast = did;
+  const r = xd1Rec0();
+  if (r && did.length) toast('Song wird aufgenommen – ' + S.song.bars + (S.song.bars === 1 ? ' Takt' : ' Takte') + ' · Mitschnitt mit Nachher');
+  return r;
+}; }
+
+/* ---------- (5) Klang-Editor: Schließen beendet den Vergleich auf NACHHER ---------- */
+// wie toggleAB (Seite B → A = deine Änderung), ohne Meldung/Neuaufbau – das Blatt geht ja gerade zu. Hat ein Export den Nachher-Stand
+// gerade geliehen (INT53C), erst danach (sonst gäbe er das Original zurück, während die Seite schon „Nachher“ sagt).
+function xd1SndEnd() {
+  try {
+    const B = int53cSnd(); if (!B) return false;
+    if (typeof INT53C !== 'undefined' && (INT53C.n > 0 || INT53C.hold)) {
+      if (!XD1.sndT) XD1.sndT = setInterval(() => { if (INT53C.n > 0 || INT53C.hold) return; clearInterval(XD1.sndT); XD1.sndT = 0; if (!xd1SndOpen()) xd1SndEnd(); }, 250);
+      return false;
+    }
+    if (V6A.ed && V6A.ed.ak1 && V6A.ed.i === B.t) ak1End();          // wie toggleAB: A = der Grundklang, nie die Arbeitskopie eines offenen ◆
+    const a = B.a; B.side = 'A'; applySound(B.t, deep(a)); XD1.sndN++; return true;
+  } catch (e) { logErr(e); return false; }
+}
+const xd1SndOpen = () => [EL.synthSheet, EL.drumSheet, EL.sndSheet].some(e => e && e.classList.contains('open'));
+// Wechsel Editor ↔ Klang-Browser (auch auf eine andere Spur) schließt nur das eine Blatt, um das andere zu öffnen – der Vergleich bleibt
+// (ein Zustand, die Kopfzeile zeigt ihn). Ein Projektwechsel verwirft ihn wie bisher (über ≡ war der Editor da längst zu).
+{ const xd1Ed0 = openEditor; openEditor = function () { XD1.sw++; try { return xd1Ed0.apply(this, arguments); } finally { XD1.sw--; } }; }
+{ const xd1Br0 = openBrowser; openBrowser = function () { XD1.sw++; try { return xd1Br0.apply(this, arguments); } finally { XD1.sw--; } }; }
+{ const xd1Ap0 = applyProject; applyProject = function () { XD1.sw++; try { return xd1Ap0.apply(this, arguments); } finally { XD1.sw--; } }; }
+// jedes Zumachen: ✕, Wischen, ≡-Menü, Noten-/Clip-Editor öffnen (alle über closeSheets) – und der Klang-Browser per ✕ (closeBrowser(false))
+{ const xd1Close0 = closeSheets; closeSheets = function () { if (!XD1.sw) xd1SndEnd(); return xd1Close0.apply(this, arguments); }; }
+{ const xd1BrX0 = closeBrowser; closeBrowser = function (back) { if (!back && !XD1.sw) xd1SndEnd(); return xd1BrX0.apply(this, arguments); }; }
+
+/* ---------- (6) MIXG: bei ▶/■ nur Beschriftung und Satz, kein Neuaufbau ---------- */
+function xd1PlUpd(ids) {
+  const pl = !!R.playing, did = [];
+  const set = (b, html, on, al) => { if (!b) return; if (b.innerHTML !== html) b.innerHTML = html; if (on != null) { b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); } if (al != null && b.getAttribute('aria-label') !== al) b.setAttribute('aria-label', al); };
+  for (const p of document.querySelectorAll('.pop')) {
+    // Remix (Song/Matrix, GEN4-Fuß): [▶ Vorhören] ⇄ [■ Stopp], Vorher │ Nachher bei „Neue Szene“, Satz „Stil antippen = …“
+    if ((ids.has('gr2') || ids.has('tkt')) && p.querySelector('.gen4-ok')) {
+      const go = p.querySelector('button.gr2-go');
+      if (go) { set(go, pl ? '■ Stopp<small>anhalten</small>' : '▶ Vorhören<small>sofort hören</small>', pl, pl ? 'Anhalten' : 'Anwenden und sofort hören'); did.push('go'); }
+      const M = typeof GEN3 !== 'undefined' ? GEN3.mx : null;
+      if (typeof GEN4 !== 'undefined' && GEN4.sc === 'sz' && GEN4.ziel === 'neu') {
+        const a = p.querySelector('.gr2-act [data-g2="a"],.gr2-act [data-g3m="a"]'), b = p.querySelector('.gr2-act [data-g2="b"],.gr2-act [data-g3m="b"]');
+        const aOn = !!(M && gen3MxPlaying(M.src)), bOn = !!(M && M.dst != null && gen3MxPlaying(M.dst));
+        if (a) { a.classList.toggle('on', aOn); a.setAttribute('aria-pressed', String(aOn)); } if (b) { b.classList.toggle('on', bOn); b.setAttribute('aria-pressed', String(bOn)); }
+      }
+      const tb = p.querySelector('.gr2-tip > b'); if (tb && /^Stil antippen = /.test(tb.textContent)) { const t = 'Stil antippen = ' + (pl ? 'sofort hören' : 'wählen, dann ▶ Vorhören') + '.'; if (tb.textContent !== t) tb.textContent = t; }
+    }
+    // Dur ↔ Moll: [▶ Hören] ⇄ [■ Stopp] (Bereich Song: nur wenn der Song spielt – wie das Blatt selbst)
+    if (ids.has('tkt') && p.classList.contains('tktmode')) {
+      const b = p.querySelector('[data-tk="play"]'), g4 = typeof GEN4 !== 'undefined' && GEN4.tk && GEN4.tk.sc !== 'song';
+      if (b) { set(b, (g4 ? pl : pl && R.songPlay) ? '■ Stopp' : '▶ Hören', null, pl ? 'Stopp' : 'Song hören'); did.push('tk'); }
+    }
+  }
+  // Mix & Master: Kompression „live/im Schnitt“, „Messen aus: Live – was gerade läuft (…)“
+  const m = ids.has('mx2') || ids.has('ch1') ? mx2El() : null;
+  if (m) {
+    for (const c of m.querySelectorAll('.mx2cap')) { const t = c.textContent.replace(/\b(live|im Schnitt)$/, pl ? 'live' : 'im Schnitt'); if (/^Kompression/.test(t) && t !== c.textContent) c.textContent = t; }
+    // ■: die Balken zeigen wieder den Schnitt (wie mx2Paint) – live setzt sie mx2Loop beim Abspielen selbst
+    const F = MX2.fit && S.fxBus.am && S.fxBus.am.on ? MX2.fit : null, I = F && F.info;
+    if (!pl && I) {
+      const G = I.mbGr || [], V = [G[0] && G[0].avg, G[1] && G[1].avg, G[2] && G[2].avg, I.compAvg, I.limAvg];
+      for (const r of m.querySelectorAll('.mx2mr')) {
+        const v = V[+r.dataset.k] || 0, b = r.querySelector('b'), e = r.querySelector('em'), w = 'width:' + Math.min(100, Math.max(0, v / 6 * 100)).toFixed(1) + '%', t = mx2F(v) + ' dB';
+        if (b && b.getAttribute('style') !== w) b.setAttribute('style', w); if (e && e.textContent !== t) e.textContent = t; r.classList.remove('live');
+      }
+    }
+    for (const sb of m.querySelectorAll('.mxgsrc > b, .mx3st > b')) if (/^Live – was gerade läuft \(/.test(sb.textContent)) { const t = sb.textContent.replace(/\((Matrix|Song|startet die Szene),/, '(' + (R.playing && !R.songPlay ? 'Matrix' : R.playing ? 'Song' : 'startet die Szene') + ','); if (t !== sb.textContent) sb.textContent = t; }   // MIXG stellt die Zeile als .mxgsrc in Schritt ①
+    did.push('mx2');
+  }
+  XD1.plN++; XD1.plLast = did; return did;
+}
+{ const xd1Sync0 = mxgSync; mxgSync = function (quiet) {
+  const pl = !!R.playing, was = MXG.pl, lent = typeof INT53C !== 'undefined' && INT53C && INT53C.n > 0;
+  const ch = !quiet && !lent && was !== null && was !== pl;
+  if (ch) MXG.pl = pl;                                               // der alte Weg (Blätter neu zeichnen) sieht keinen Wechsel
+  xd1Sync0(quiet);
+  if (ch && MXG.pl === pl) { const ids = new Set([...document.querySelectorAll('.mxgh')].map(e => e.dataset.mxgh)); try { xd1PlUpd(ids); } catch (e) { logErr(e); } }
+}; }
+
+/* ---------- (8) ORI „Wo bin ich“: richtig messen, kürzere Form statt „…“ ---------- */
+const XD1_TW = {cv: null, m: new Map()};
+function xd1TxtW(font, ls, s) {
+  const k = font + '|' + ls + '|' + s; let w = XD1_TW.m.get(k); if (w != null) return w;
+  if (!XD1_TW.cv) XD1_TW.cv = document.createElement('canvas').getContext('2d');
+  XD1_TW.cv.font = font; w = XD1_TW.cv.measureText(s).width + ls * s.length;
+  if (XD1_TW.m.size > 300) XD1_TW.m.clear(); XD1_TW.m.set(k, w); return w;
+}
+// kurze Form eines Teils: „Szene 1“ → „Sz 1“, „Refrain 2“ → „Ref. 2“, „Intro“ → „Intr.“
+function xd1Short(s) {
+  s = String(s || ''); const m = s.match(/^(.*?)\s*(\d+)$/), w = (m ? m[1] : s).trim(), n = m ? m[2] : '';
+  if (/^Szene$/i.test(w)) return 'Sz ' + n;
+  const a = w.length > 4 ? w.slice(0, w.length > 5 && n ? 3 : 4) + '.' : w;
+  return (a + (n ? ' ' + n : '')).trim();
+}
+// Schrift und Innenabstände der Zeile (::before) je Kopf – nur neu gelesen, wenn sich Fenstergröße oder Klasse ändern (oriFrame läuft alle 100 ms).
+// Die Regel [data-oriwo]::before greift erst mit dem Attribut: beim ersten Mal wird es leer vorgesetzt (oriApply setzt gleich danach den Text)
+function xd1WoStyle(h) {
+  const k = innerWidth + 'x' + innerHeight + '|' + h.className, C = h._xd1Wo; if (C && C.k === k && h.hasAttribute('data-oriwo')) return C;
+  if (!h.hasAttribute('data-oriwo')) h.setAttribute('data-oriwo', '');
+  let font = '600 10px sans-serif', ls = 0, cut = 13;
+  try { const b = getComputedStyle(h, '::before'), hs = getComputedStyle(h); font = [b.fontStyle, b.fontWeight, b.fontSize, b.fontFamily].join(' '); ls = parseFloat(b.letterSpacing) || 0;
+    cut = (b.position === 'absolute' ? 0 : (parseFloat(hs.paddingLeft) || 0) + (parseFloat(hs.paddingRight) || 0)) + (parseFloat(b.paddingLeft) || 0); } catch (e) {}
+  return (h._xd1Wo = {k, font, ls, cut});
+}
+oriFit = function (c, h) {
+  const P = c.path; if (!P.length) return '';
+  const w = h.getBoundingClientRect().width; if (w < 1) return P.join(' › ');
+  const st = xd1WoStyle(h), avail = w - st.cut, fits = s => xd1TxtW(st.font, st.ls, s) <= avail + .5;   // mit der echten Schrift gemessen (vorher grob 5,2 px je Zeichen)
+  const Q = c.part && P[0] !== c.part ? P.slice(1) : P, part = c.part || Q[Q.length - 1] || P[0];
+  for (const s of [P.join(' › '), Q.join(' › '), part]) if (fits(s)) return s;
+  XD1.oriN++;
+  return xd1Short(part);                                             // kürzer geht es nicht – lieber „Sz 1“ (die Nummer bleibt) als „Sze…“
+};
+
+/* ---------- Test-Schnittstelle ---------- */
+Object.assign(SYNQUENZER, {xd1: {
+  info: () => ({mon: xd1MonPref(), node: XD1.mon ? {g: +XD1.mon.gv.toFixed(4), r: +XD1.mon.rv.toFixed(4), hall: !!XD1.mon.hall, live: XD1.mon.c === AU.ctx} : null, iv: !!XD1.monIv, sm: vox2Sm(), lr: VOX2.lr,
+    ack: XD1.ack, mtxN: XD1.mtxN, rtN: XD1.rtN, rtLast: XD1.rtLast ? XD1.rtLast.slice() : null, sndN: XD1.sndN, plN: XD1.plN, plLast: XD1.plLast ? XD1.plLast.slice() : null, oriN: XD1.oriN}),
+  monSync: () => { xd1MonSync(); return SYNQUENZER.xd1.info().node; },
+  ack: v => { if (v != null) XD1.ack = !!v; return XD1.ack; },
+  short: s => xd1Short(s),
+  plUpd: () => xd1PlUpd(new Set(['gr2', 'tkt', 'mx2', 'ch1']))
+}});   /* XD1: Test-API (Objekt, wird nicht umhüllt) */
+/* XD1-END */
 const NO_SYNC = new Set(['clipCurves', 'bmcLog', 'bmcState', 'oneScaleOf', 'harmInfo', 'kbScaleNow', 'micCheck', 'micCheckJson', 'micCheckEstimate', 'cloud', 'cloudProjects', 'cloudVersions', 'cloudHandoff', 'state', 'project', 'runtime', 'getClip', 'getParam', 'noteLog', 'voices', 'timeline', 'serialize', 'buildMidi', 'buildZip', 'crc32', 'meter', 'outPitch', 'migrate', 'tapTempo',
   'getSound', 'mods', 'library', 'factory', 'previewState', 'soundEdited', 'fmxView', 'fmxPreview', 'fmxBadge',
   'history', 'projects', 'storage', 'engineInfo', 'getBusFx', 'wake', 'gestures', 'roll', 'rollApi', 'detectKey', 'sceneKey',
