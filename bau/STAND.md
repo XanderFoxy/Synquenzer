@@ -41,3 +41,4 @@ Weiter mit: 4.54 = rel-4540/k fertig prüfen + INT53D nachziehen + Versionszeile
 - 15:52: Kandidat 4.59.0 = S/rel-4590/R-4590.html (R-4581 + NX1 + CHR2 + SPK2 + KI1; Konflikt Worker-src gelöst). Tests laufen (b9v0c55rv). Teil 3 Workflow w5rbdca4l (wf_ca1833fe-b4e): SPK3 (vx/spk3) + CHR3 (vx/chr3), Basis vx/basis4.html = Kandidat 4.59.0.
 - 15:54: 4.59.0 RELEASED (main). Nächste Basis R-4590 (= vx/basis4.html).
 - 16:41: GD1 (wctuc7fu6, vx/gd1, Basis vx/basis4.html): Guide-Rahmen kf1trp/jam3pf, Menü-Trefferflächen quer 44 px unsichtbar, Oszilloskop beim Export. Teil 3 läuft (w5rbdca4l).
+- 16:56: Teil 3 fertig: CHR3 (vx/chr3) Stimmen 98–100 %, Formanten unverändert; SPK3 (vx/spk3) Bass 3,0 dB, Noten 84 %, Loop im Dok, Nachbau Pad-Rückschritt → Fix wfvfhsmcl läuft (Pad + Zerlegen-Tempo). GD1 läuft. Danach 4.60.0 = R-4590 + SPK3 + CHR3 + GD1 (alle Basis vx/basis4.html).

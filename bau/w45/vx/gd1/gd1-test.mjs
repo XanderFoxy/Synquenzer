@@ -29,7 +29,7 @@ for (const [w, h, n] of SIZES) {
   ok(`A1 kf1trp ${n}: Klang-Editor, Rahmen um Klangerzeugung, Hinweis am Rahmen (ganz lesbar, nichts verdeckt)`, a.ok && a.target && a.ring && a.ed === 'synth' && a.isEng && a.around && a.inView && /^Arp Treppe: erst MS 2000 \/ Bit Mask$/.test(a.label) && a.labelFits && !a.covered, a);
   await p.screenshot({path: `${OUT}/A1-kf1trp-${n}.png`});
   const b = await jump(p, 'jam3pf');
-  ok(`A2 jam3pf ${n}: Song-Ansicht, Rahmen um ● SONG, Hinweis (Toast verdeckt ● SONG nicht)`, b.ok && b.target && b.ring && b.songView && b.isRec && b.around && b.inView && /● SONG/.test(b.toast) && !b.covered && b.label === 'Perform-Spur im Song', b);
+  ok(`A2 jam3pf ${n}: Song-Ansicht, Rahmen um ● SONG, Hinweis am Rahmen (ganz lesbar, nichts verdeckt)`, b.ok && b.target && b.ring && b.songView && b.isRec && b.around && b.inView && b.label === 'Perform-Spur: ● SONG + Perform-Leiste' && b.labelFits && !b.covered, b);
   await p.screenshot({path: `${OUT}/A2-jam3pf-${n}.png`});
   // mit Voraussetzung: der alte Weg (Rahmen am Ziel selbst)
   if (n === 'hoch') {
@@ -38,7 +38,7 @@ for (const [w, h, n] of SIZES) {
     await p.waitForTimeout(300);
     const put = await p.evaluate(() => (SYNQUENZER.jam3.put({k: 'm', b: 0, d: 4, g: 'dr', lv: 'stumm'}), SYNQUENZER.jam3.has()));
     const d = await jump(p, 'jam3pf');
-    ok('A3 jam3pf mit Perform-Spur: Rahmen an der Zeile PERFORM (alter Weg)', put && d.target && d.ring && !d.isRec && /^Perform-Spur/.test(d.tgt), {put, d});
+    ok('A3 jam3pf mit Perform-Spur: Rahmen an der Zeile PERFORM (alter Weg)', put && d.target && d.ring && !d.isRec && /^Perform-Spur/.test(d.tgt) && d.label === 'Perform-Spur im Song', {put, d});
     void c;
   }
   if (n === 'quer') { await jump(p, 'kf1trp'); const x = await jump(p, 'xp'); ok('A4 nach Arp Treppe: anderer Sprung mit Ersatz-Ziel behält sein Etikett', x.ring && x.label === 'Song transponieren', x); }
@@ -63,7 +63,9 @@ for (const [w, h, n] of SIZES) {
   }
   ok(`B1 Menü ${n} pixelgleich zur Basis`, diff === 0, {diffPx: diff, bytesEqual: a.shot.equals(b.shot)});
   // C: Trefferflächen je Taste in Zeilen mit 2–3 Tasten (gemessen per elementFromPoint), Überlappung
-  const m = await b.p.evaluate(() => {
+  const m = await b.p.evaluate(async () => {
+    for (const x of [...EL.menu.querySelectorAll('button.orimb')].filter(x => /^Mehr/.test(x.textContent.trim()))) x.click();   // alle „Mehr ▾“ auf
+    await new Promise(r => setTimeout(r, 300));
     const rows = [...EL.menu.querySelectorAll('.mrow')].filter(r => { const s = r.querySelector(':scope>.seg'); return s && s.children.length <= 3 && ui1Shown(s); });
     const out = [], rects = [];
     for (const r of rows) {
@@ -87,7 +89,7 @@ for (const [w, h, n] of SIZES) {
   });
   const quer = n !== 'hoch';
   const small = m.out.filter(x => x.hit[0] < 44 || x.hit[1] < 44), over = m.out.filter(x => x.over.length);
-  if (quer) ok(`C1 Menü ${n}: Trefferfläche ≥ 44 × 44 (${m.out.length} Tasten), keine Überlappung`, m.out.length >= 10 && !small.length && !over.length && !m.ov, {small, over, ov: m.ov, sample: m.out.filter(x => /Lauf|Perform|Begleit/.test(x.row))});
+  if (quer) ok(`C1 Menü ${n}: Trefferfläche ≥ 44 × 44 (${m.out.length} Tasten), keine Überlappung`, m.out.length >= 50 && !small.length && !over.length && !m.ov, {small, over, ov: m.ov, sample: m.out.filter(x => /Lauf|Perform|Begleit/.test(x.row))});
   else { const bad = m.out.filter(x => Math.abs(x.hit[0] - x.vis[0]) > 1 || Math.abs(x.hit[1] - x.vis[1]) > 1); ok(`C1 Menü ${n}: hochkant unverändert (Trefferfläche = Taste, ${m.out.length} Tasten)`, !bad.length && !m.ov, {bad, ov: m.ov, sample: m.out.slice(0, 3)}); }
   if (quer) {   // echtes Tippen (Touch) 4 px über „Aus“ und 4 px links neben „An“ der Zeile Lauflichter
     const pt = await b.p.evaluate(() => { const r = EL.menu.querySelector('.mrow.pl1llr'); r.scrollIntoView({block: 'center'}); const [an, aus] = r.querySelectorAll('.seg>button'); const A = an.getBoundingClientRect(), U = aus.getBoundingClientRect();

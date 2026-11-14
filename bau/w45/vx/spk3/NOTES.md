@@ -167,3 +167,11 @@ Kern `messk/noten3.mjs TEIL=alle PROFI=1` (Datei und Basis) · `../spk2/spk2-tes
 4. Befund: „Noten finden“ auf der zerlegten Bass-Ebene selbst (nicht Überall finden) trifft 0/32 (26 falscher Ton, Anschläge richtig) – Ursache prüfen
    (vermutlich Sub-Oberton f0/2 bzw. Kick-Vorlage im SPK2-noten-Weg); Überall finden und Original-Bassband (43,8 %) sind nicht betroffen.
 5. Profi-Bass mit echtem Modell messen (ki1-Ablauf + finden im selben Prüf-Chrome).
+
+### Pflicht / Regression (A4, Datei nach dem Fix)
+topdefs doppelt 0 / Syntaxfehler 0 · dupkeys 0 · smoke errors [] (`smoke-a4.png`) · „MS 2000“ 1× · „  live: true,“ 1× · VERSION 4.59.0 · CHANGES wie Basis.
+spk2-test 29/30 (nur zerlegen-bass-ziel) · spk1-test ALLE OK · vx1-test 61/61 · spk3-loop-test ALLE OK (10) · ki1-test (mit Solo-Gesang
+`realvox/dl/vocadito_1.wav` als 4. Argument; ohne ihn fehlen gesang-besser + sps im guide-eintrag): alles OK bis auf **besser-als-klassisch-demo**:
+Profi Bass 4,59 / Drums 9,71 / tonal 11,81 gegen klassisch jetzt 3,01 / 7,47 / 9,77 – die Prüfung verlangt Bass +2 dB, es sind +1,58, weil
+„Zerlegen“ durch SPK3 von 0,77 auf 3,01 dB besser wurde (kein Rückschritt; Schwelle in ki1-test auf SPK1 geeicht, nicht angefasst).
+Nebenbefund: mit Profi-Trennung erreicht der Bass 4,59 dB ≥ Ziel 4. Protokoll `regression-a4.log`, Ergebnisse `spk1-test.json`, `ki1-test.json`.

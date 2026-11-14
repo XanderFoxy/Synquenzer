@@ -5,3 +5,4 @@
 - 16:56 gd1-test.mjs (Touch, 428×926 / 926×428 / 926×370): 25/25 OK – Guide-Rahmen, Menü pixelgleich zur Basis, quer 20 Tasten ≥ 44×44 ohne Überlappung + Touch-Tipp daneben trifft, hochkant Trefferfläche = Taste; Oszilloskop: Basis 57× Analyser im Offline-Kontext, GD1 0×, danach wieder live
 - 16:53 A3 ergänzt (mit Perform-Spur: Rahmen an der Zeile PERFORM, alter Weg bleibt): gd1-test 25/25 OK
 - 16:56 Rauchtest smoke.mjs: errors [] (out/smoke/smoke.png); xd1-Regression läuft
+- 16:57 Fotos zeigten: der Toast (oben, top 58 px) liegt hochkant genau über der Klangerzeugung bzw. teils über ● SONG → Hinweis jetzt im Etikett am Rahmen (vorhandenes .ui1rl, ui1Ring umhüllt, nur für diesen Sprung + dieses Ziel): „Arp Treppe: erst MS 2000 / Bit Mask“, „Perform-Spur: ● SONG + Perform-Leiste“; kein Toast über dem Ziel. gd1-test 26/26 OK (neu A4: danach behält „Song transponieren“ sein Etikett). topdefs 0/0, dupkeys 0.
