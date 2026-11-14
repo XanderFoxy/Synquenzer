@@ -69,3 +69,54 @@
 - Vorhören rechnet 8 s ab der ersten gewählten Note; bei langen Chor-Teilen hört man nur den Anfang.
 - SPK2-Notenfinder gab für einen reinen 220-Hz-Ton m = 56 statt 57 (quer-Test); das Umsetzen rechnet relativ und stimmt (0,0 ct), nur der Name am Balken ist dort einen Halbton daneben.
 - Audio-Ebenen mono (Pan stellt sie in den Raum).
+
+# Prüfung (Befunde aus PRUEFUNG.md, 17) – Korrekturen
+Nachgestellt: Kern-Befunde 1, 4a, 4b, 5, 6 mit `spk6-pruef-test.mjs` auf dem Stand vor der Korrektur (`alt/index.html` = index.t2.html):
+12× Anwenden 4,1–5,5 s, erster Fortschritt nach 4,2 s (1 Meldung); Quelle nach „In Ebene → Kopie“ RMS 0,0735 → 0; Gesang nach erneutem Zerlegen 0,066 → 0,004;
+nach Löschen der Quelle 0,208 statt 0,161; „▶ Auswahl“ Energie 0. Seiten-Befunde 7–16 nach den Messwerten/Fotos der Prüfung (spk6p/).
+Sicherung vorher: spk6-block.t2.js, einbau.t2.py, index.t2.html, spk6-test.t2.mjs.
+
+## Entscheidungen
+- **Audio der Ebenen in geteilten Stücken** (64k Proben, Int16, unveränderlich): eine neue Fassung teilt alle Stücke, die gleich bleiben; ↶/↷ teilen sich das Audio.
+  Speichern/ZIP/IDB unverändert (beim Schreiben wird zusammengesetzt) → alte Projekte laden wie bisher.
+- **Nur der geänderte Bereich** (Befund 1): Noten, die sich geändert haben (alte + neue Lage, Quelle + Ziel) + 0,2 s; verschobene Noten, die hineinragen, ganz dazu;
+  die Ränder an die leiseste Stelle im Umkreis von 0,5 s, dort 10 ms Überblendung; Grundlage nur dort (+0,25 s Vorlauf). Rest bitgleich (gemessen 0).
+  Voraussetzung: gleiche Grundlage/Ebenen-Werte und gleicher Masken-Abdruck `hs` (sonst – z. B. nach „In Ebene“ auf die Grundlage – wird einmal alles gerechnet;
+  damit ist auch „Audio passt nicht mehr zur Maske“ aus „Offen nach Teil 2“ für Anwenden gelöst). Mehr als 60 % der Noten geändert → ganz.
+  Wird die neue Stelle lauter als die alte Skalierung, wird einmal neu skaliert (Abweichung außerhalb ≤ 1 Stufe). Neue Fassungen haben 12 % Luft.
+- **Rechnen ohne das Dokument anzufassen**: Kopien von Ebene + Noten → Audio; erst am Ende EIN ↶-Schritt. Lange Rechnungen geben alle 25 ms ab (MessageChannel im
+  Worker, in Node setTimeout) → Abspiel-Blöcke kommen dazwischen (Befund 2). `d.busy = 's6'` sperrt ↶/In Ebene/Löschen/Zerlegen währenddessen (Kern-Meldung „Rechnung läuft“).
+  Fortschritt auch beim Grundlage-Rendern (blockweise) → kein „0 %“-Stehen mehr.
+- **↶-Audio-Grenze** (Befund 3): Audio, das nur noch ↶/↷ braucht, höchstens 64 MB – sonst fallen die ältesten ↶-Schritte weg (wie die 48-MB-Grenze der Masken).
+- **Kopie unabhängig** (Befund 4): Haken in transfer (`tAll`): „aus Original“ in eine Kopie nimmt den anderen nichts weg; in eine normale Ebene nimmt der Kopie nichts weg;
+  zwischen zwei Ebenen (von = Ebene) wie gewohnt. Zerlegen und Profi-Trennung zählen Kopien/Chorstimmen nicht als belegt (je 1 Zeile, Daten-Filter `k6`).
+  Für das Zusammenführen mit SPK5: dessen „Zerlegen in der Auswahl“ (eigene `own`-Liste) sollte Kopien ebenso auslassen.
+- **Quelle löschen** (Befund 5): Haken im Kern-Löschen (`gone`): die erste Kopie (`q6` = Quelle) übernimmt den Platz (k6/r6 weg → keine Kennung „Kopie“ mehr), Stimmen mit
+  Grundlage = Quelle bauen auf der Kopie auf; die Noten der gelöschten Ebene werden mit gelöscht (sonst erbte eine neue Ebene mit derselben id sie – gefunden beim Test). ↶ stellt alles her.
+- **▶ Auswahl mit Audio-Ebenen** (Befund 6): eigenes Audio im STFT-Raster des Kerns mit denselben Auswahl-Gewichten (je Rahmen/Bin), dann Effekte wie sonst.
+- **Notenmodus endet** (Befund 7), wenn seine Ebene oder sein Dokument weg ist (Prüfung am Ende von spk1Layers, Haken vorhanden) – Werkzeug zurück auf Rechteck, Statuszeile sagt warum.
+- **Warteschlange** (Befund 8): Werkstatt-Aktionen während einer Rechnung warten (FIFO) und laufen danach; Statuszeile „… wartet“, im Fortschritt „· 1 wartet“.
+  Vorhören während einer Rechnung: Meldung „gleich noch einmal tippen“ (kein verspätetes Abspielen).
+- **Kennung** (Befund 9): zuerst das Unterscheidende (Chorstimme „Terz↑“, „Quint↓“, „Okt↓“, „Uni 2“ bzw. „Kopie“), dann „FX“, „neu“; Name und Kennung bleiben in der
+  Namensspalte (… am Ende), voller Text im Hinweis/aria-label. Gleiche Stimmen werden nummeriert („Gesang Unisono 1/2“), Namen sind eindeutig.
+- **Fein** (Befund 10): Knopf „Fein“ in der Optionszeile: −1/+1 werden −10 ct/+10 ct, Ziehen = 10 ct je Zeile (je Zug höchstens ±50 ct, keine Zeitverschiebung),
+  ↑/↓ = 10 ct (auch Alt+↑/↓). Balken stehen auf der Cent-Lage, Beschriftung „A3+20“.
+- **Filter-Regler logarithmisch** (Befund 11): Hochpass links = aus, 20 Hz…2 kHz; Tiefpass rechts = aus, 20 kHz…200 Hz (Mitte = 2 kHz). Gespeichert wird weiter Hz.
+- **Chor ohne Noten** (Befund 12): sucht erst die Noten (wie „Noten bearbeiten“); erwartete Meldungen („Keine Noten …“, „Rechnung läuft“) gehen nicht mehr in die Konsole.
+- **Leicht**: Optionszeile Anwenden, −1, +1, Fertig, ▶ Vorhören zuerst (hochkant ohne Wischen), Beschriftung nur „Noten“; „Verwerfen“ dort heißt jetzt „Entwurf weg“ (13).
+  Trefferfläche der Balken 36 px hoch (Balken selbst 8 px, bei Überschneidung zählt der nächste) (14). Erfolgsmeldung bleibt 4 s stehen, auch wenn der
+  Spektrum-Fortschritt kommt (15). ⋯-Menü: gewohnte Reihenfolge Name, Farbe, Ebene löschen – die Werkstatt steht darunter (16; Vorschlag an Xander, ob sie nach oben soll).
+- **Befund 17** (gebundener Gesang = eine Note) liegt in der Notenerkennung (SPK2/SPK3), nicht in SPK6 → nicht geändert. Vorschlag: Knopf „Teilen“ im Notenmodus
+  (Note an der Abspiel-Linie teilen) – sichtbare Änderung, daher erst im Funk vorschlagen.
+
+## Abnahme (Prüfung)
+- spk6-pruef-test.mjs (Node, Kern): ALLES OK (lang + kurz). 3-min-Lied: erstes Anwenden 5,1 s (wandelt die Ebene, 546 Fortschritts-Meldungen, erste nach 57 ms,
+  größte Lücke 99 ms), danach 12× je eine Note 105–205 ms (vorher 5,1–6,2 s), außerhalb bitgleich, Ziel ±0,1 ct, Nachbarn ±0,3 ct, Naht-Knack ≤ 0,73 × Note;
+  ↶-Audio nach 12 Schritten 3,3 MB (vorher 201 MB), ↶/↷ bitgleich; während „Ganze Ebene +1“ (24,9 s mit 703 parallelen Block-Anfragen) jeder Block ≤ 54 ms;
+  nach 6 ganzen Rechnungen ↶-Audio 50,4 MB (≤ 64). Kurz: Kopie unabhängig (In Ebene beide Richtungen, Zerlegen 0,0665 = ohne Kopie), Quelle löschen 0,1607 = Original,
+  Auswahl mit Audio-Ebene/Chorstimme = ohne Auswahl, kleine Auswahl nur innen; Bereichs-Rechnung auf Kopie (geteiltes Audio) und Chorstimme (Schritt 100,0 ct).
+- spk6-pruef-ui.mjs (Playwright, Touch): ALLES OK. Fein (+70 ct → 0,0 ct Abweichung), Trefferfläche (Tipp 14 px daneben trifft), Löschen/Dokumentwechsel beenden den
+  Notenmodus (Rechteck wählt wieder), Chor ohne Noten (findet 1 Note, 2 Stimmen, Konsole leer), Hall-Regler + Kopieren während Chor (wartet, danach hall 0,55, Kopie da),
+  Kennungen hochkant/quer in der Namensspalte (Abstand zum S-Knopf ≤ −9 px), Namen eindeutig, Tiefpass-Zug zur Mitte = 2193 Hz, Meldung bleibt; 3-min-Lied im Browser:
+  Anwenden während der Wiedergabe 6,9 s (erstes, wandelt) bzw. 187 ms – Stille 0 ms, Wiedergabe lief weiter; 12 Schritte 123–200 ms, ↶-Audio 3,7 MB.
+- spk6-test.mjs (Abnahme Teil 2, angepasst: Menü-Reihenfolge, 11 Knöpfe, Chor-Kennung): ALLES OK (27). spk6-ui-test.mjs 17/17, spk6-kern-test.mjs 24/24.
