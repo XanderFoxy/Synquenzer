@@ -98383,13 +98383,125 @@ function spk2DspMake(I) {
     t2.notes[lid] = prev.concat(neu).sort((p, q) => p.a - q.a); I.uEnd(d);
     return {lid, neu: neu.length, vorlage: t2.tmpl[lid]};
   }
+  // ---- Auftrag 4: Klang nachbauen – Merkmale einer Note (Obertöne, Rauschen, Pegel-Hüllkurve, Bänder je Abschnitt, Schwerpunkt,
+  // eine Periode) und eine erste Schätzung (Wellen-Mischung + Filter per Rastersuche, ADSR, Filter-Hüllkurve, FM-Verhältnis/Index)
+  const KH = 24, KB = 36, KE = 64, KC = 16;
+  function magsC(x, N, cs) {   // Beträge an beliebigen Mitten (Proben), Hann
+    const w = I.win(N), NB = N / 2 + 1, out = [], re = new Float64Array(N), im = new Float64Array(N), a = new Float64Array(NB), b = new Float64Array(NB);
+    for (let i = 0; i < cs.length; i += 2) {
+      const sA = Math.round(cs[i]) - N / 2, two = i + 1 < cs.length, sB = two ? Math.round(cs[i + 1]) - N / 2 : 0;
+      for (let j = 0; j < N; j++) { const p = sA + j, q = sB + j; re[j] = (p >= 0 && p < x.length ? x[p] : 0) * w[j]; im[j] = two && q >= 0 && q < x.length ? x[q] * w[j] : 0; }
+      I.V.fft(re, im); I.magPair(re, im, N, a, b); out.push(Float32Array.from(a)); if (two) out.push(Float32Array.from(b));
+    }
+    return out;
+  }
+  const lin = (M, k) => { const i = Math.floor(k), u = k - i; return i >= 0 && i + 1 < M.length ? M[i] * (1 - u) + M[i + 1] * u : 0; };
+  function klangFeat(x, sr, f0, on, off) {
+    const n = x.length, ia = Math.max(0, Math.min(n - 1, Math.round(on * sr))), ib = Math.max(ia + 1, Math.min(n, Math.round(off * sr)));
+    // Pegel: Schritt 5 ms, Fenster ≥ 2 Perioden (sonst Welligkeit bei tiefen Tönen)
+    const fr = Math.max(1, Math.round(sr * 0.005)), wl = Math.max(fr, Math.round(2 * sr / Math.max(20, f0))), nf = Math.max(1, Math.floor(n / fr)), lv = new Float32Array(nf), cq = new Float64Array(n + 1);
+    for (let i = 0; i < n; i++) cq[i + 1] = cq[i] + x[i] * x[i];
+    let pk = 1e-9; for (let i = 0; i < nf; i++) { const a = Math.max(0, Math.min(n, Math.round(i * fr + fr / 2 - wl / 2))), b = Math.max(a + 1, Math.min(n, a + wl)); lv[i] = Math.sqrt(Math.max(0, cq[b] - cq[a]) / (b - a)); if (lv[i] > pk) pk = lv[i]; }
+    const fa = Math.floor(ia / fr), fo = Math.min(nf - 1, Math.floor(ib / fr)), env = new Float32Array(KE), span = Math.max(1, nf - fa);
+    for (let i = 0; i < KE; i++) { const p0 = fa + Math.floor(i * span / KE), p1 = Math.max(p0 + 1, fa + Math.floor((i + 1) * span / KE)); let s = 0, c = 0; for (let p = p0; p < p1 && p < nf; p++) { s += lv[p] * lv[p]; c++; } env[i] = Math.max(-60, 10 * Math.log10((c ? s / c : 0) / (pk * pk) + 1e-12)); }
+    // ADSR (Zeiten in s, Sustain als Amplitude relativ zur Spitze)
+    let ip = fa; for (let i = fa; i <= fo; i++) if (lv[i] > lv[ip]) ip = i;
+    const P = lv[ip] || 1e-9; let i10 = fa; while (i10 < ip && lv[i10] < 0.1 * P) i10++; let i90 = i10; while (i90 < ip && lv[i90] < 0.9 * P) i90++;
+    const s0 = Math.floor(ip + 0.6 * (fo - ip)), s1 = Math.max(s0 + 1, fo); const ss = Array.from(lv.subarray(s0, s1)).sort((p, q) => p - q);
+    const sus = Math.min(1, (ss.length ? ss[ss.length >> 1] : lv[fo]) / P);
+    const thD = P * (sus + (1 - sus) * 0.368); let id = ip; while (id < fo && lv[id] > thD) id++;
+    const Lo = Math.max(1e-9, lv[fo]); let ir = fo; while (ir < nf - 1 && lv[ir] > Lo * 0.368) ir++;
+    const adsr = {a: Math.max(0.001, (i90 - i10) * fr / sr / 0.8), d: Math.max(0.005, (id - ip) * fr / sr), s: sus, r: Math.max(0.005, (ir - fo) * fr / sr), cut: ir >= nf - 1};
+    // Obertöne aus dem gehaltenen Teil: lange FFT (≥ 4 Bins je Grundton-Abstand)
+    let N = 2048; while (N < 16384 && sr / N > f0 / 5) N *= 2;
+    const dur = ib - ia, J = Math.max(1, Math.min(8, Math.floor(dur / (N / 4)))), cs = []; for (let j = 0; j < J; j++) cs.push(ia + dur * (J === 1 ? 0.5 : 0.15 + 0.7 * j / (J - 1)));
+    const Ms = magsC(x, N, cs), K = N / 2 + 1, df = sr / N, Mp = new Float64Array(K); for (const M of Ms) for (let k = 0; k < K; k++) Mp[k] += M[k] * M[k] / Ms.length;
+    const Mm = Float64Array.from(Mp, v => Math.sqrt(v));
+    let fb = f0, bs = -1; for (let c = -70; c <= 70; c += 5) { const f = f0 * Math.pow(2, c / 1200); let s = 0; for (let h = 1; h <= 8 && h * f < sr * 0.45; h++) s += Math.sqrt(lin(Mm, h * f / df)) / Math.sqrt(h); if (s > bs) { bs = s; fb = f; } }
+    { let bs2 = -1, f2 = fb; for (let c = -5; c <= 5; c += 0.5) { const f = fb * Math.pow(2, c / 1200); let s = 0; for (let h = 1; h <= 16 && h * f < sr * 0.45; h++) s += lin(Mm, h * f / df); if (s > bs2) { bs2 = s; f2 = f; } } fb = f2; }
+    const hA = new Float32Array(KH), hw = Math.max(1, Math.floor(0.2 * fb / df)); let Hp = 0, ha = 0;
+    for (let h = 1; h <= KH; h++) { const kc = Math.round(h * fb / df); if (h * fb >= sr * 0.45 || kc + hw >= K) break; let m = 0, km = kc; for (let k = kc - hw; k <= kc + hw; k++) if (Mm[k] > m) { m = Mm[k]; km = k; } hA[h - 1] = m; if (m > ha) ha = m; for (let k = km - 2; k <= km + 2; k++) Hp += Mp[k]; }
+    let Tp = 0; for (let k = Math.max(1, Math.floor(0.5 * fb / df)); k < Math.min(K, Math.floor(sr * 0.45 / df)); k++) Tp += Mp[k];
+    const hdb = Float32Array.from(hA, v => Math.max(-80, 20 * Math.log10(v / (ha || 1) + 1e-9)));
+    // Bänder je Abschnitt (Anschlag 0–60 ms, früh 60–250 ms, gehalten, Ausklang 0–250 ms nach dem Loslassen), N 2048
+    const N2 = 2048, d2 = sr / N2, hi = Math.min(16000, sr * 0.45), E = []; for (let i = 0; i <= KB; i++) E.push(40 * Math.pow(hi / 40, i / KB));
+    const segs = [[on, on + 0.06], [on + 0.06, Math.max(on + 0.07, Math.min(off, on + 0.25))], [Math.min(off - 0.02, on + 0.25), off], [off, off + 0.25]];
+    const bands = [], cen = new Float32Array(KC); let bmx = 1e-20;
+    for (const [t0, t1] of segs) {
+      const c = [], step = 512 / sr; for (let t = t0 + Math.min(step, (t1 - t0)) / 2; t < t1; t += step) c.push(t * sr); if (!c.length) c.push((t0 + t1) / 2 * sr);
+      const Q = magsC(x, N2, c), b = new Float64Array(KB);
+      for (const M of Q) for (let i = 0; i < KB; i++) { const k0 = Math.max(1, Math.floor(E[i] / d2)), k1 = Math.max(k0 + 1, Math.ceil(E[i + 1] / d2)); let s = 0; for (let k = k0; k < k1 && k < M.length; k++) s += M[k] * M[k]; b[i] += s / (k1 - k0) / Q.length; }
+      for (let i = 0; i < KB; i++) if (b[i] > bmx) bmx = b[i];
+      bands.push(b);
+    }
+    const bdb = bands.map(b => Array.from(b, v => +Math.max(-70, 10 * Math.log10(v / bmx + 1e-12)).toFixed(2)));
+    { const t1 = off + 0.25, c = []; for (let i = 0; i < KC; i++) c.push((on + (i + 0.5) * (t1 - on) / KC) * sr); const Q = magsC(x, N2, c);
+      Q.forEach((M, i) => { let s = 0, w = 0; for (let k = Math.max(1, Math.floor(0.5 * fb / d2)); k < M.length; k++) { const p = M[k] * M[k]; s += p * k * d2; w += p; } cen[i] = w > 1e-14 ? s / w / fb : 0; }); }
+    // eine Periode (Mittel über bis zu 8 Perioden ab dem Nulldurchgang nach dem Minimum), 128 Punkte
+    const Pd = sr / fb, per = new Float32Array(128); let mid = Math.round(ia + Math.min(dur * 0.5, 0.3 * sr)), mn = mid;
+    for (let i = mid; i < mid + Pd && i < n; i++) if (x[i] < x[mn]) mn = i;
+    let z = mn; while (z < n - 1 && z < mn + Pd && !(x[z] < 0 && x[z + 1] >= 0)) z++;
+    const z0 = x[z + 1] !== x[z] ? z + x[z] / (x[z] - x[z + 1]) : z, np = Math.max(1, Math.min(8, Math.floor((ib - z0) / Pd)));
+    for (let j = 0; j < np; j++) for (let i = 0; i < 128; i++) { const p = z0 + j * Pd + i * Pd / 128, q = Math.floor(p), u = p - q; per[i] += q + 1 < n ? x[q] * (1 - u) + x[q + 1] * u : 0; }
+    { let m = 1e-9; for (let i = 0; i < 128; i++) m = Math.max(m, Math.abs(per[i])); for (let i = 0; i < 128; i++) per[i] /= m; }
+    let rs = 0; for (let i = ia; i < ib; i++) rs += x[i] * x[i];
+    return {f0: fb, hdb: Array.from(hdb, v => +v.toFixed(2)), noise: Tp > 0 ? Math.max(0, Math.min(1, 1 - Hp / Tp)) : 0, bands: bdb, env: Array.from(env, v => +v.toFixed(2)),
+      cen: Array.from(cen, v => +v.toFixed(3)), per: Array.from(per, v => +v.toFixed(4)), rms: Math.sqrt(rs / Math.max(1, ib - ia)), adsr, N};
+  }
+  // Wellen-Mischung (Säge / Puls d / Dreieck / Sinus, nicht negativ) × Tiefpass (Grenze in Obertönen, Resonanz) – Rastersuche
+  const KPW = [0.5, 0.4, 1 / 3, 0.25, 0.2, 0.125], KHC = []; for (let i = 0; i <= 30; i++) KHC.push(Math.pow(2, i * 5.5 / 30));
+  function lsq(A, y, wt, cols) {   // kleinste Quadrate auf den Spalten cols (≤ 4), Normalgleichungen
+    const m = cols.length, G = [], r = []; for (let i = 0; i < m; i++) { G.push(new Float64Array(m)); let s = 0; for (let h = 0; h < y.length; h++) s += wt[h] * A[cols[i]][h] * y[h]; r.push(s); for (let j = 0; j < m; j++) { let t = 0; for (let h = 0; h < y.length; h++) t += wt[h] * A[cols[i]][h] * A[cols[j]][h]; G[i][j] = t; } }
+    for (let i = 0; i < m; i++) { let p = i; for (let k = i + 1; k < m; k++) if (Math.abs(G[k][i]) > Math.abs(G[p][i])) p = k; [G[i], G[p]] = [G[p], G[i]]; [r[i], r[p]] = [r[p], r[i]]; if (Math.abs(G[i][i]) < 1e-12) return null;
+      for (let k = 0; k < m; k++) if (k !== i) { const f = G[k][i] / G[i][i]; for (let j = i; j < m; j++) G[k][j] -= f * G[i][j]; r[k] -= f * r[i]; } }
+    return r.map((v, i) => v / G[i][i]);
+  }
+  const dbErr = (mod, a, w) => { let mx = 1e-12; for (const v of mod) mx = Math.max(mx, v); let s = 0, c = 0; for (let h = 0; h < a.length; h++) { const p = Math.max(-60, 20 * Math.log10(mod[h] / mx + 1e-9)), q = Math.max(-60, 20 * Math.log10(a[h] + 1e-9)); if (p > -60 || q > -60) { s += w[h] * Math.abs(p - q); c += w[h]; } } return c ? s / c : 99; };
+  let JT = null;
+  function bessel() {   // J_n(I) für n 0…40, I 0…12 (Schritt 0,25)
+    if (JT) return JT; JT = []; for (let ii = 0; ii <= 48; ii++) { const x = ii * 0.25, row = new Float64Array(41); for (let nn = 0; nn <= 40; nn++) { let s = 0; const M = 200; for (let j = 0; j <= M; j++) { const t = Math.PI * j / M, w = j === 0 || j === M ? 0.5 : 1; s += w * Math.cos(nn * t - x * Math.sin(t)); } row[nn] = s / M; } JT.push(row); } return JT;
+  }
+  function klangSchaetz(F, sr) {
+    const Hm = F.hdb.length, a = F.hdb.map(v => Math.pow(10, v / 20)), wt = a.map((v, h) => (F.hdb[h] > -60 ? 1 : 0.2)), ys = a;
+    const B = d => { const out = [new Float64Array(Hm), new Float64Array(Hm), new Float64Array(Hm), new Float64Array(Hm)]; for (let h = 1; h <= Hm; h++) { out[0][h - 1] = 1 / h; out[1][h - 1] = Math.abs(Math.sin(Math.PI * h * d)) / (h * Math.sin(Math.PI * d)); out[2][h - 1] = h % 2 ? 1 / (h * h) : 0; out[3][h - 1] = h === 1 ? 1 : 0; } return out; };
+    const SUBS = []; for (let s = 1; s < 16; s++) SUBS.push([0, 1, 2, 3].filter(i => s & (1 << i)));
+    let best = {e: 1e9};
+    for (const d of KPW) { const Bd = B(d);
+      for (const hc of KHC) for (const res of [0, 0.25, 0.5, 0.75]) {
+        const Q = 0.5 + 3 * res * res, Hf = new Float64Array(Hm); for (let h = 1; h <= Hm; h++) { const u = h / hc, g = 1 / Math.sqrt((1 - u * u) * (1 - u * u) + (u / Q) * (u / Q)); Hf[h - 1] = Math.min(8, g * g); }
+        const A = Bd.map(c => c.map((v, h) => v * Hf[h]));
+        for (const cols of SUBS) { const w = lsq(A, ys, wt, cols); if (!w || w.some(v => v < 0)) continue; const mod = new Float64Array(Hm); cols.forEach((c, i) => { for (let h = 0; h < Hm; h++) mod[h] += w[i] * A[c][h]; });
+          const e = dbErr(mod, a, wt) + 0.15 * cols.length; if (e < best.e) { const ww = [0, 0, 0, 0]; cols.forEach((c, i) => { ww[c] = w[i] * Bd[c][0]; }); best = {e, d, hc, res, w: ww}; } }
+      }
+    }
+    // FM: Träger = Grundton, Modulator × r, Index I
+    const T = bessel(); let fm = {e: 1e9};
+    for (const r of [1, 2, 3, 4, 5, 6, 7, 8]) for (let ii = 0; ii <= 48; ii++) {
+      const mod = new Float64Array(Hm); for (let nn = -40; nn <= 40; nn++) { const fq = 1 + nn * r, j = (nn < 0 && (-nn) % 2 ? -1 : 1) * T[ii][Math.abs(nn)]; if (fq >= 1 && fq <= Hm) mod[fq - 1] += j; else if (fq <= -1 && -fq <= Hm) mod[-fq - 1] -= j; }
+      for (let h = 0; h < Hm; h++) mod[h] = Math.abs(mod[h]);
+      const e = dbErr(mod, a, wt); if (e < fm.e) fm = {e, r, I: ii * 0.25};
+    }
+    // Filter-Hüllkurve aus dem Schwerpunkt
+    const cn = F.cen.filter(v => v > 0), c0 = Math.max(...F.cen.slice(0, 3), 1e-3), cs = cn.length ? cn.slice(Math.floor(cn.length * 0.4), Math.ceil(cn.length * 0.7)).sort((p, q) => p - q) : [c0], cm = cs[cs.length >> 1] || c0;
+    let fd = 0; { const th = cm + (c0 - cm) * 0.368; let i = 0; while (i < F.cen.length && F.cen[i] > th) i++; fd = i; }
+    return {va: best, fm, noise: F.noise, adsr: F.adsr, fenv: Math.max(-1, Math.min(1, Math.log2(c0 / cm) / 3)), fdI: fd, cen0: c0, cenS: cm};
+  }
   const ops = {
     noten: async (d, m, emit, info) => Object.assign(await noten(d, m, emit), info(d)),
     zuordnen: (d, m, emit, info) => { if (d.busy) throw new Error('Rechnung läuft'); return Object.assign(zuordnen(d, m), info(d)); },
     notenWeg: (d, m, emit, info) => Object.assign(wegNoten(d, m), info(d)),
     finden: async (d, m, emit, info) => Object.assign(await finden(d, m, emit), info(d)),
+    // Auftrag 4: Note einer Ebene (oder des Originals) → Merkmale + Schätzung + Proben für A/B; Proben (Versuche) → Merkmale
+    klang: (d, m) => {
+      const sr = d.meta.sr, n = d.meta.n, pre = 0.03, a0 = Math.max(0, Math.round((m.a - pre) * sr)), b0 = Math.min(n, Math.round((m.b + Math.max(0.05, m.tail || 0.4)) * sr));
+      if (b0 - a0 < sr * 0.05) throw new Error('Note zu kurz');
+      let x; if (m.lid === 'orig' || !m.lid) x = d.mid.slice(a0, b0); else { const ch = I.render(d, I.mixOf(d, m.lid), a0, b0); x = new Float32Array(b0 - a0); const g = 1 / ch.length; for (const c of ch) for (let i = 0; i < c.length && i < x.length; i++) x[i] += c[i] * g; }
+      const on = (Math.round(m.a * sr) - a0) / sr, off = on + (m.b - m.a), feat = klangFeat(x, sr, m.f, on, off);
+      return {feat, est: klangSchaetz(feat, sr), x, sr, on, off, len: x.length / sr};
+    },
+    klangFeat: (d, m) => ({fs: (m.pcs || []).map(x => klangFeat(x, m.sr, m.f, m.on, m.off)), est: m.est && m.pcs && m.pcs[0] ? klangSchaetz(klangFeat(m.pcs[0], m.sr, m.f, m.on, m.off), m.sr) : null}),
   };
-  return {lowSplit, projLk, bassTrack, kickModel, w2, I, opt, ops, noten, finden, zuordnen};
+  return {lowSplit, projLk, bassTrack, kickModel, w2, I, opt, ops, noten, finden, zuordnen, klangFeat, klangSchaetz};
 }
 /* ---- Seite (Auftrag 2): Werkzeug „Noten“ – Kästchen in der Farbe der Ebene über dem Spektrum, Tipp/Ziehen → „Gehört zu“,
    Noten ▾ (finden, überall finden, alle übernehmen, verfeinern nach Noten). Alles rechnet im Worker; ein ↶ je Aktion. ---- */
@@ -98453,6 +98565,8 @@ function spk2NoteDd(U, anchor, qs) {
     for (const [a, nm] of SPK2_ZU) { const x = el('button', 'mbtn rb spk1-ck', esc(nm)); x.dataset.zu = a; on(x, 'click', () => { spk1Dd(U, null); spk2Zu(U, a); }); g.appendChild(x); }
     dd.appendChild(g);
     if (neu) { const x = el('button', 'mbtn rb spk1-ck', neu > 1 ? neu + ' verwerfen' : 'Verwerfen'); x.dataset.zu = 'weg'; on(x, 'click', () => { spk1Dd(U, null); spk2Weg(U); }); dd.appendChild(x); }
+    const r0 = (U.n2sel || [])[0], lk = r0 && U.meta.layers.find(z => z.id === r0.lid);   // Auftrag 4: Klang dieser Note nachbauen
+    if (qs.length === 1 && r0 && !(lk && lk.art === 'drums')) { const x = el('button', 'mbtn rb spk1-ck', 'Klang nachbauen'); x.dataset.zu = 'klang'; on(x, 'click', () => spk2KlOpen(U, r0.lid, q, anchor)); dd.appendChild(x); }
     dd.appendChild(el('p', '', 'Die Obertöne der Note wandern in die Ebene.'));
   });
 }
@@ -98496,6 +98610,7 @@ function spk2NotenDd(U, b) {
     B('Überall finden', () => spk2Ueberall(U), !l || !zu, 'ueberall');
     B('Alle übernehmen' + (kand ? ' (' + kand + ')' : ''), () => spk2Alle(U), !l || !kand, 'alle');
     B('Verfeinern nach Noten', () => spk2VerfNoten(U), !l || !zu, 'verf');
+    B('Klang nachbauen', () => spk2KlOpen(U, lid, spk2KlPick(U, lid), b), (l && l.art === 'drums') || !spk2KlPick(U, lid), 'klang');   // Auftrag 4
     dd.appendChild(g);
     dd.appendChild(el('p', '', (l ? zu + ' bestätigt · ' : '') + 'Einstimmig: je Ebene ein Ton zur Zeit, Akkorde werden nicht getrennt. Quelle = gewählte Ebene in der Liste.'));
   });
@@ -98565,7 +98680,8 @@ function spk2Css() {
   if (document.getElementById('spk2Css')) return; const s = document.createElement('style'); s.id = 'spk2Css';
   s.textContent = '.spk2-lp{display:flex;align-items:center;gap:6px;height:46px;padding:0 6px 0 8px;border-bottom:1px solid var(--line);background:linear-gradient(90deg,rgba(255,178,46,.12),transparent)}' +
     '.spk2-lp>svg{flex:none;color:var(--amber)}.spk2-lpt{flex:1 1 auto;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font:600 13px/1 var(--font-ui);color:var(--amber)}' +
-    '.spk2-lp>button{flex:none;height:44px;min-width:44px;margin:0;padding:0 10px;border-radius:6px;font:700 13px/1 var(--font-ui)}.spk2-lp>.spk2-lx{width:44px;padding:0;font-size:18px}';
+    '.spk2-lp>button{flex:none;height:44px;min-width:44px;margin:0;padding:0 10px;border-radius:6px;font:700 13px/1 var(--font-ui)}.spk2-lp>.spk2-lx{width:44px;padding:0;font-size:18px}' +
+    '.spk2-klc{display:block;width:300px;max-width:100%;height:128px;border-radius:6px}.spk2-klt{margin:0;height:3.9em;overflow:hidden;font:500 12px/1.3em var(--font-ui);color:var(--text)}.spk2-klt+.spk2-klt{height:2.6em;color:var(--text-dim)}';   // SPK2 Auftrag 4: Klang nachbauen
   document.head.appendChild(s);
 }
 function spk2LpRow(U) {
@@ -98701,6 +98817,224 @@ async function spk2MxMidi(U) {
 SPK1_API.spk2.loop = {set: (a, b) => { const U = SPK1.ui; const r = spk2LpSet(U, a, b); spk1Layers(U); return r; }, get: () => spk2Lp(SPK1.ui), weg: () => spk2Tap(SPK1.ui, null, 'mxweg'),
   sec: () => { const L = spk2Lp(SPK1.ui); return L && spk2LpSec(SPK1.ui, L); }, audio: () => spk2MxAudio(SPK1.ui), midi: t => { const U = SPK1.ui, L = spk2Lp(U); if (t !== undefined && L) { U.mxT = t; U.mxFor = (U.act || 'orig') + '|' + L.join('-'); } return spk2MxMidi(U); },
   notes: lid => spk2LpNotes(SPK1.ui, lid || SPK1.ui.act || 'orig'), last: () => SPK1.mx || null, ziel: () => SPK1.ui.mxT};
+/* ---- Auftrag 4: Klang nachbauen – eine Note der Ebene analysieren (Obertöne → Wellen-Mischung, Pegel → ADSR, Schwerpunkt → Filter
+   und Filter-Hüllkurve, Seitenbänder → FM-Verhältnis/Index) und mit dem eigenen VA bzw. FM der App nachbauen: jeder Versuch läuft offline
+   durch dieselbe Klangerzeugung wie live (SynthHost.track wie mkRender, 6 Versuche je Kontext über einen Kanal-Mischer), die Merkmale
+   rechnet der Worker, ein kleiner Optimierer (1+6, Schrittweite nach Erfolg) sucht ~50 Versuche. A/B gleich laut, „Als Klang übernehmen“
+   = ein ↶. Nichts lädt beim App-Start (Worklet-Text erst beim ersten Nachbau). ---- */
+const SPK2_KL = {src: null};
+function spk2KlSrc() { return SPK2_KL.src || (SPK2_KL.src = 'data:application/javascript;base64,' + btoa(document.getElementById('sq-worklet-src').textContent)); }
+async function spk2KlRender(snds, m, on, off, len, sr) {
+  const n = snds.length, oc = new OfflineAudioContext(n, Math.max(256, Math.round(len * sr)), sr);
+  await oc.audioWorklet.addModule(spk2KlSrc());
+  const mg = oc.createChannelMerger(n); mg.connect(oc.destination);
+  snds.forEach((snd, i) => {
+    const g = oc.createGain(); g.connect(mg, 0, i);
+    const E = SynthHost.track(oc, g, wkFlat(snd), wkMods(snd), snd.engine === 'fm6' && snd.p.fm6 ? wkFmOf(snd.p) : null, null);
+    E.node.port.postMessage({mkSeed: 1}); E.tempo(120, null); E.on(1, m, 0.8, on, null, 0); E.off(1, off); E.flush();
+  });
+  await new Promise(r => setTimeout(r, 20));
+  const b = await oc.startRendering(), out = []; for (let i = 0; i < n; i++) out.push(b.getChannelData(i).slice()); return out;
+}
+const spk2Lg = (u, a, b) => a * Math.pow(b / a, Math.max(0, Math.min(1, u)));
+const spk2Ul = (v, a, b) => Math.max(0, Math.min(1, Math.log(Math.max(a, v) / a) / Math.log(b / a)));
+const SPK2_WV = ['Säge', 'Rechteck', 'Dreieck', 'Sinus'];
+// Versuch c = {eng: 'va'|'fm', fix: {...}, u: [0…1]} → vollständiger Klang der App (alles Übrige neutral: keine LFO-Wege, kein Hall)
+function spk2KlP(c) {
+  const u = c.u, f = c.fix;
+  if (c.eng === 'va') return {cut: spk2Lg(u[0], 30, 18000), res: u[1], fenv: u[2] * 2 - 1, fD: spk2Lg(u[3], 0.005, 4), aA: spk2Lg(u[4], 0.001, 2), aD: spk2Lg(u[5], 0.005, 4), aS: u[6], aR: spk2Lg(u[7], 0.005, 4), mix: u[8], noise: u[9] * 0.6, pw: 0.05 + 0.9 * u[10], o1: f.o1, o2: f.o2};
+  return {ol: Math.round(u[0] * 99), mD: Math.round(u[1] * 99), mS: Math.round(u[2] * 99), aA: spk2Lg(u[3], 0.001, 2), aD: spk2Lg(u[4], 0.005, 4), aS: u[5], aR: spk2Lg(u[6], 0.005, 4), cut: spk2Lg(u[7], 200, 20000), r: f.r};
+}
+function spk2KlSnd(c, nm) {
+  const P = spk2KlP(c), fx = {drive: 0, chorus: {mode: 'off'}, rev: 0, dly: 0, vol: 0.8, pan: 0};
+  if (c.eng === 'va') {
+    const p = {o1w: P.o1, o1oct: 0, o1semi: 0, o1fine: 0, o1pw: P.pw, o1lvl: 1, o1uni: 1, o2w: P.o2, o2oct: 0, o2semi: 0, o2fine: 0, o2pw: P.pw, o2lvl: P.mix, o2uni: 1, o2sync: 0, o3lvl: 0,
+      subLvl: 0, noise: P.noise, analog: 0, reset: 1, uniDet: 0, ftype: 0, cutoff: P.cut, res: P.res, drive: 0, kt: 0.5, fenv: P.fenv, fvel: 0, bass: 0,
+      aA: P.aA, aD: P.aD, aS: P.aS, aR: P.aR, ampVel: 0, fA: 0.001, fD: P.fD, fS: 0, fR: P.aR, glide: 0, mode: 0, poly: 6, mw: 0, lq: 0};
+    return SQStore.normalizeSound({engine: 'analog', name: nm || 'Nachbau', cat: 'eigene', p, mods: [], fx});
+  }
+  const op = (coarse, ol, r, l) => ({on: 1, coarse, fine: 0, det: 0, ol, r, l});
+  const p = {ftype: 1, cutoff: P.cut, res: 0, drive: 0, kt: 0, fenv: 0, fvel: 0, bass: 0, lq: 0, aA: P.aA, aD: P.aD, aS: P.aS, aR: P.aR, ampVel: 0, fmAmp: 1, analog: 0, spread: 0, level: 1, glide: 0, mode: 0, poly: 6,
+    fm6: {alg: 1, fb: 0, trans: 0, ops: [op(1, 99, [99, 99, 99, 25], [99, 99, 99, 0]), op(P.r, P.ol, [99, P.mD, 99, 25], [99, P.mS, P.mS, 0]), op(1, 0, [99, 99, 99, 99], [99, 99, 99, 0]), op(1, 0, [99, 99, 99, 99], [99, 99, 99, 0]), op(1, 0, [99, 99, 99, 99], [99, 99, 99, 0]), op(1, 0, [99, 99, 99, 99], [99, 99, 99, 0])]}};
+  return SQStore.normalizeSound({engine: 'fm6', name: nm || 'Nachbau', cat: 'eigene', p, mods: [], fx});
+}
+// Startwerte aus der Analyse (Worker-Schätzung)
+function spk2KlStart(eng, est, src, alt) {
+  const A0 = est.adsr, A = {a: A0.a, d: Math.min(4, A0.d * 6.9), s: A0.s, r: Math.min(4, A0.r * 6.9)}, span = src.off + 0.25 - src.on, fD = Math.max(0.01, est.fdI * span / 16 * 6.9);   // 1/e-Zeit → Zeit bis −60 dB (Engine)
+  if (eng === 'va') {
+    const v = est.va, w = v.w || [1, 0, 0, 0], ord = [0, 1, 2, 3].sort((p, q) => w[q] - w[p]), o1 = ord[0], o2 = w[ord[1]] > 0.08 * w[o1] ? ord[1] : o1 === 0 ? 1 : 0;
+    const fc = (v.hc || 8) * src.feat.f0 / Math.pow(2, 0.5 * (src.m - 60) / 12), mix = w[o2] > 0 ? Math.min(1, w[o2] / Math.max(1e-6, w[o1])) : 0;
+    const u = [spk2Ul(fc, 30, 18000), v.res || 0, alt === 'flach' ? 0.5 : (est.fenv + 1) / 2, spk2Ul(fD, 0.005, 4), spk2Ul(A.a, 0.001, 2), spk2Ul(A.d, 0.005, 4), A.s, spk2Ul(A.r, 0.005, 4), alt === 'eins' ? 0 : mix, est.noise > 0.12 ? Math.min(1, est.noise) : 0, ((v.d || 0.5) - 0.05) / 0.9];
+    return {eng, fix: {o1, o2}, u};
+  }
+  const r = alt === 'r2' ? (est.fm.r === 1 ? 2 : 1) : est.fm.r, I = Math.max(0.1, est.fm.I), ol = Math.max(0, Math.min(99, 99 + 8 * Math.log2(I / 13)));
+  return {eng, fix: {r}, u: [ol / 99, 0.6, 0.85, spk2Ul(A.a, 0.001, 2), spk2Ul(A.d, 0.005, 4), A.s, spk2Ul(A.r, 0.005, 4), 1]};
+}
+// Abstand (dB): spektrale Hüllkurve je Abschnitt (Bänder) + Obertöne + Pegel-Hüllkurve
+function spk2KlDist(A, B) {
+  let s = 0, c = 0; for (let j = 0; j < A.bands.length; j++) for (let i = 0; i < A.bands[j].length; i++) { const a = A.bands[j][i], b = B.bands[j][i]; if (a > -60 || b > -60) { s += Math.abs(Math.max(-60, a) - Math.max(-60, b)); c++; } }
+  let h = 0, hc = 0; for (let i = 0; i < 16; i++) { const a = A.hdb[i], b = B.hdb[i]; if (a > -60 || b > -60) { h += Math.abs(Math.max(-60, a) - Math.max(-60, b)); hc++; } }
+  let e = 0; for (let i = 0; i < A.env.length; i++) e += Math.abs(A.env[i] - B.env[i]);
+  return 0.45 * (c ? s / c : 0) + 0.3 * (hc ? h / hc : 0) + 0.25 * e / A.env.length;
+}
+function spk2Rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+// Optimierer: Runde 0 = Startwerte VA/FM + Varianten (6), dann (1+6) mit Schrittweite nach Erfolg, bis n Versuche
+async function spk2KlOpt(src, o) {
+  o = o || {}; const n = o.n || 50, lam = 6, rnd = spk2Rng(o.seed || 7), f = 440 * Math.pow(2, (src.m - 69) / 12);
+  const gauss = () => Math.sqrt(-2 * Math.log(rnd() + 1e-12)) * Math.cos(2 * Math.PI * rnd());
+  let done = 0, best = o.from || null, d0 = null;
+  const evalB = async L => {
+    const pcs = await spk2KlRender(L.map(c => spk2KlSnd(c)), src.m, src.on, src.off, src.len, src.sr);
+    const r = await spk1Call('klangFeat', {pcs, sr: src.sr, f, on: src.on, off: src.off});
+    L.forEach((c, i) => { c.F = r.fs[i]; c.dist = spk2KlDist(src.feat, c.F); c.pcm = pcs[i]; }); done += L.length;
+    for (const c of L) if (!best || c.dist < best.dist) best = c;
+    for (const c of L) if (c !== best) c.pcm = null;
+    if (o.prog) o.prog(done, n, best);
+  };
+  if (!best) {
+    const L = o.eng ? [spk2KlStart(o.eng, src.est, src), spk2KlStart(o.eng, src.est, src, o.eng === 'va' ? 'eins' : 'r2')] : [spk2KlStart('va', src.est, src), spk2KlStart('fm', src.est, src), spk2KlStart('va', src.est, src, 'eins'), spk2KlStart('va', src.est, src, 'flach'), spk2KlStart('fm', src.est, src, 'r2')];
+    await evalB(L); d0 = Math.min(...L.map(c => c.dist));
+  } else d0 = best.dist;
+  let sig = o.sig || 0.12;
+  while (done < n) {
+    if (o.stop && o.stop()) break;
+    const L = []; for (let i = 0; i < Math.min(lam, n - done); i++) { const D = best.u.length, k = i === lam - 1 ? D : 1 + Math.floor(rnd() * 3), pick = new Set(); while (pick.size < k) pick.add(Math.floor(rnd() * D)); L.push({eng: best.eng, fix: best.fix, u: best.u.map((v, j) => (pick.has(j) ? Math.max(0, Math.min(1, v + sig * 1.6 * gauss())) : v))}); }   // dünn: 1–3 Werte je Versuch, einer ändert alle
+    const b0 = best; await evalB(L);
+    sig = best !== b0 ? Math.min(0.3, sig * 1.25) : Math.max(0.02, sig * 0.7);
+  }
+  return {best, d0, n: done, sig};
+}
+function spk2KlTxt(c) {   // lesbare Werte eines Versuchs
+  const P = spk2KlP(c), ms = v => (v < 0.1 ? Math.round(v * 1000) + ' ms' : v.toFixed(2).replace('.', ',') + ' s'), hz = v => (v >= 1000 ? (v / 1000).toFixed(1).replace('.', ',') + ' kHz' : Math.round(v) + ' Hz'), k2 = v => v.toFixed(2).replace('.', ',');
+  const adsr = 'ADSR ' + ms(P.aA) + ' · ' + ms(P.aD) + ' · ' + Math.round(P.aS * 100) + ' % · ' + ms(P.aR);
+  if (c.eng === 'va') return ['VA · ' + SPK2_WV[P.o1] + (P.o1 === 1 && Math.abs(P.pw - 0.5) > 0.04 ? ' (Puls ' + Math.round(P.pw * 100) + ' %)' : '') + (P.mix > 0.04 ? ' + ' + SPK2_WV[P.o2] + ' ' + Math.round(P.mix * 100) + ' %' : '') + (P.noise > 0.02 ? ' · Rauschen ' + Math.round(P.noise * 100) + ' %' : ''),
+    'Filter ' + hz(P.cut) + ' · Res ' + k2(P.res) + ' · Hüllkurve ' + (P.fenv >= 0 ? '+' : '') + k2(P.fenv) + ' / ' + ms(P.fD), adsr];
+  return ['FM · Verhältnis 1:' + P.r + ' · Index-Pegel ' + P.ol + ' → ' + P.mS, 'Index-Abfall ' + P.mD + (P.cut < 15000 ? ' · Filter ' + hz(P.cut) : ''), adsr];
+}
+function spk2KlEstTxt(e) {
+  const w = e.va.w || [0, 0, 0, 0], s = w.reduce((a, b) => a + b, 0) || 1, parts = [];
+  w.forEach((v, i) => { if (v / s >= 0.05) parts.push(SPK2_WV[i] + (i === 1 && Math.abs(e.va.d - 0.5) > 0.02 ? ' (Puls ' + Math.round(e.va.d * 100) + ' %)' : '') + ' ' + Math.round(v / s * 100) + ' %'); });
+  return 'Analyse: ' + (parts.join(' + ') || 'Sinus') + ' · Rauschen ' + Math.round(e.noise * 100) + ' % · FM 1:' + e.fm.r + ' Index ' + e.fm.I.toFixed(1).replace('.', ',') + (e.fm.e < e.va.e ? ' (passt besser)' : '');
+}
+/* ---- Seite: Klappfenster „Klang nachbauen“ (Periode + Obertöne wie ein Oszilloskop, A/B, Spur, Übernehmen) ---- */
+function spk2KlPick(U, lid) {   // die beste Note der Ebene: lang, mit Luft danach, bestätigt bevorzugt
+  const N = spk2Notes(U, lid).filter(q => q.st !== 'neu' || q.conf >= U.opt.n2thr).sort((p, q) => p.a - q.a); let best = null, bs = -1;
+  N.forEach((q, i) => { const gap = i + 1 < N.length ? N[i + 1].a - q.b : 1, s = Math.min(1.5, q.b - q.a) + 0.5 * Math.min(0.5, Math.max(0, gap)) + (q.st === 'zu' ? 0.2 : 0); if (s > bs) { bs = s; best = q; } });
+  return best;
+}
+async function spk2KlOpen(U, lid, q, anchor) {
+  if (U.busy || !q) return null;
+  const N = spk2Notes(U, lid), nx = N.reduce((m, p) => (p.a > q.a + 0.01 ? Math.min(m, p.a) : m), Infinity), tail = Math.max(0.05, Math.min(0.6, nx - q.b, U.dur - q.b));
+  const K = U.kl = {lid, q, nm: spk2Name(Math.round(q.m)) + ' · ' + spk2LName(U, lid), src: null, res: null, w: 'a', t: undefined, seq: (U.kl ? U.kl.seq : 0) + 1};
+  spk2KlDd(U, anchor); U.busy = 'klang'; spk1BtnState(U); spk2KlStat(U, 'Analyse der Note …', '');
+  try {
+    const r = await spk1Call('klang', {doc: SPK1.doc, lid, a: q.a, b: q.b, f: q.f || 440 * Math.pow(2, (q.m - 69) / 12), tail});
+    K.src = {x: r.x, sr: r.sr, m: Math.round(q.m), on: r.on, off: r.off, len: r.len, feat: r.feat, est: r.est, a0: q.a - 0.03};
+  } catch (e) { logErr(e); U.busy = null; spk1BtnState(U); spk2KlStat(U, 'Analyse: ' + (e.message || e), ''); return null; }
+  U.busy = null; spk1BtnState(U); spk2KlStat(U, spk2KlEstTxt(K.src.est), ''); spk2KlDraw(U);
+  return spk2KlRun(U);
+}
+async function spk2KlRun(U, more) {
+  const K = U.kl; if (!K || !K.src || U.busy) return null;
+  U.busy = 'klang'; spk1BtnState(U); spk2KlBtns(U); const seq = K.seq;
+  try {
+    const r = await spk2KlOpt(K.src, {n: 50, from: more && K.res ? K.res.best : null, sig: more ? 0.06 : 0.12, seed: 7 + (K.runs = (K.runs || 0) + 1), stop: () => U.kl !== K || K.seq !== seq || !SPK1.open,
+      prog: (n, N, b) => { if (U.kl === K) { K.res = Object.assign(K.res || {}, {best: b}); spk2KlStat(U, null, 'Versuch ' + n + '/' + N + ' · Abstand ' + b.dist.toFixed(1).replace('.', ',') + ' dB'); spk2KlDraw(U); } }});
+    if (U.kl !== K) return null;
+    K.res = {best: r.best, d0: more && K.res && K.res.d0 != null ? K.res.d0 : r.d0, n: r.n};
+    if (K.t === undefined) K.t = spk2MxDef(U, spk2Want(U, K.lid, [K.q]));
+    spk2KlStat(U, spk2KlTxt(r.best).join(' · '), (r.best.eng === 'va' ? 'VA' : 'FM') + ' · Abstand ' + r.best.dist.toFixed(1).replace('.', ',') + ' dB (Start ' + K.res.d0.toFixed(1).replace('.', ',') + ') · A/B gleich laut');
+    return K.res;
+  } catch (e) { logErr(e); spk2KlStat(U, null, 'Nachbau: ' + (e.message || e)); return null; }
+  finally { U.busy = null; spk1BtnState(U); if (U.kl === K) { spk2KlBtns(U); spk2KlDraw(U); } }
+}
+function spk2KlStat(U, a, b) { const K = U.kl; if (!K) return; if (a != null) K.ta = a; if (b != null) K.tb = b; if (K.pA && K.dd === U.dd) { K.pA.textContent = K.ta || ''; K.pB.textContent = K.tb || ''; } }
+function spk2KlDd(U, anchor) {
+  const K = U.kl; if (!K) return;
+  spk1Dd(U, anchor, dd => {
+    K.dd = dd; dd.classList.add('spk2-kld'); spk2Css();
+    dd.appendChild(el('h5', '', 'Klang nachbauen · ' + esc(K.nm)));
+    const cv = K.cv = el('canvas', 'spk2-klc'); cv.setAttribute('aria-label', 'Eine Periode und Obertöne: hell = Original, Farbe = Nachbau'); dd.appendChild(cv);
+    dd.appendChild(K.pA = el('p', 'spk2-klt', '')); dd.appendChild(K.pB = el('p', 'spk2-klt', ''));
+    const g = el('div', 'spk1-g'), B = (t, k, fn) => { const x = el('button', 'mbtn rb spk1-ck', esc(t)); x.dataset.kl = k; on(x, 'click', fn); g.appendChild(x); return x; };
+    K.bAB = makeSeg([['a', 'A Original'], ['b', 'B Nachbau']], () => K.w, v => { K.w = v; spk2KlPlay(U, v); }, 'spk2-klab'); dd.appendChild(K.bAB);
+    K.bHear = B('▶ Hören', 'hoeren', () => spk2KlPlay(U, K.w)); K.bMore = B('Weiter verbessern', 'mehr', () => spk2KlRun(U, true));
+    dd.appendChild(g);
+    dd.appendChild(el('h5', '', 'Als Klang · Spur'));
+    K.gT = el('div', 'spk1-g'); dd.appendChild(K.gT);
+    const g2 = el('div', 'spk1-g'); K.bTake = el('button', 'mbtn rb spk1-ck', 'Als Klang übernehmen'); K.bTake.dataset.kl = 'nehmen'; on(K.bTake, 'click', () => spk2KlTake(U)); g2.appendChild(K.bTake); dd.appendChild(g2);
+    spk2KlBtns(U); spk2KlStat(U, null, null);
+  });
+  spk2KlDraw(U);
+}
+function spk2KlBtns(U) {
+  const K = U.kl; if (!K || K.dd !== U.dd || !K.gT) return; const run = U.busy === 'klang', ok = !!(K.res && K.res.best && K.res.best.pcm) && !run;
+  K.bMore.disabled = !ok; K.bTake.disabled = !ok || K.t === -1; for (const b of K.bAB.querySelectorAll('button')) b.disabled = !K.src || run || (b._v === 'b' && !ok); K.bHear.disabled = !K.src || run || (K.w === 'b' && !ok);
+  K.gT.innerHTML = ''; const B = (t, v, dis) => { const x = el('button', 'mbtn rb spk1-ck', esc(t)); x.dataset.kl = 't' + v; x.disabled = !!dis || run; on(x, 'click', () => { K.t = v; spk2KlBtns(U); }); K.gT.appendChild(x); };
+  for (let i = 0; i < NT(); i++) if (spk2MxOk(i)) B((K.t === i ? '✓ ' : '') + S.tracks[i].name, i);
+  if (canAddTrack()) B((K.t === 'neu' ? '✓ ' : '') + '+ Neue Spur', 'neu');
+}
+function spk2KlDraw(U) {
+  const K = U.kl, cv = K && K.cv; if (!cv || !cv.isConnected) return;
+  const dpr = Math.min(2, window.devicePixelRatio || 1), W = Math.max(200, Math.min(320, (K.dd.clientWidth || 300) - 20)), H = 128;
+  if (cv.width !== Math.round(W * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); cv.style.width = W + 'px'; cv.style.height = H + 'px'; }
+  const x = cv.getContext('2d'); x.setTransform(dpr, 0, 0, dpr, 0, 0); x.fillStyle = spk1Var('--lcd') || '#111'; x.fillRect(0, 0, W, H);
+  const l = U.meta && U.meta.layers.find(z => z.id === K.lid), cA = '#f4f1ea', cB = spk1Var('--sel') || (l ? spk1Var(l.col) : '#e8a33d'), dim = spk1Var('--text-dim') || '#888', fnt = '600 9px ' + (spk1Var('--font-ui') || 'sans-serif');
+  x.font = fnt; x.fillStyle = dim; x.fillText('PERIODE', 4, 10); x.fillText('OBERTÖNE', 4, 72);
+  x.strokeStyle = 'rgba(255,255,255,.12)'; x.lineWidth = 1; x.beginPath(); x.moveTo(0, 36.5); x.lineTo(W, 36.5); x.stroke();
+  const wave = (p, col) => { if (!p) return; x.strokeStyle = col; x.lineWidth = 1.5; x.beginPath(); p.forEach((v, i) => { const px = i / (p.length - 1) * (W - 8) + 4, py = 36 - v * 22; i ? x.lineTo(px, py) : x.moveTo(px, py); }); x.stroke(); };
+  const A = K.src && K.src.feat, Bf = K.res && K.res.best && K.res.best.F;
+  wave(A && A.per, cA); wave(Bf && Bf.per, cB);
+  const nb = 16, bw = (W - 8) / nb, y0 = H - 4, hh = 50;
+  for (let i = 0; i < nb; i++) {
+    const a = A ? Math.max(0, (A.hdb[i] + 60) / 60) : 0, b = Bf ? Math.max(0, (Bf.hdb[i] + 60) / 60) : 0, x0 = 4 + i * bw;
+    x.fillStyle = cA; x.fillRect(x0 + 1, y0 - a * hh, Math.max(1, bw / 2 - 1.5), a * hh);
+    x.fillStyle = cB; x.fillRect(x0 + bw / 2, y0 - b * hh, Math.max(1, bw / 2 - 1.5), b * hh);
+  }
+}
+function spk2KlPlay(U, w) {
+  const K = U.kl; if (!K || !K.src) return false; const c = ensureAudio(); if (!c) return false;
+  const best = K.res && K.res.best, xa = K.src.x, xb = best && best.pcm, x = w === 'b' ? xb : xa; if (!x) return false;
+  spk1Stop(); const sr = K.src.sr, pk = v => { let m = 1e-9; for (let i = 0; i < v.length; i++) m = Math.max(m, Math.abs(v[i])); return m; };
+  const rA = K.src.feat.rms, rB = best ? best.F.rms : rA, gB = rA / Math.max(1e-6, rB), s = Math.min(1, 0.9 / Math.max(pk(xa), xb ? pk(xb) * gB : 0)), g = (w === 'b' ? gB : 1) * s;   // gleich laut (RMS der Note), ohne Übersteuern
+  const b = c.createBuffer(1, x.length, sr); b.copyToChannel(x, 0);
+  const out = c.createGain(), t0 = c.currentTime + 0.05; out.gain.setValueAtTime(0, t0); out.gain.linearRampToValueAtTime(g, t0 + 0.005); out.connect(AU.masterSum || c.destination);
+  const src = c.createBufferSource(); src.buffer = b; src.connect(out); src.start(t0);
+  const P = SPK1.pl = {seq: ++SPK1.plSeq, out, t0, from: Math.max(0, K.src.a0), src: [src], timer: 0, kl: w, g};
+  P.timer = setTimeout(() => { if (SPK1.pl === P) spk1Stop(); }, (x.length / sr + 0.2) * 1000);
+  return {w, g: +g.toFixed(4)};
+}
+function spk2KlTake(U) {
+  const K = U.kl, best = K && K.res && K.res.best; if (!best || U.busy) return null;
+  const l = U.meta.layers.find(z => z.id === K.lid), nm = ((l ? l.name : 'Klang') + ' Nachbau').slice(0, 24), snd = spk2KlSnd(best, nm), want = spk2Want(U, K.lid, [K.q]);
+  let t = K.t === undefined ? spk2MxDef(U, want) : K.t, res = null;
+  if (t !== 'neu' && t != null && t >= 0 && spk2MxOk(t)) { soundEdit(t, 'Klang nachbauen', () => applySound(t, snd)); res = {track: t, neu: false}; }
+  else res = imp1Step('Klang nachbauen', () => {
+    if (!canAddTrack()) { toast('Keine Spur frei – eine Spur wählen'); return null; }
+    const i = NT(), nt = newSynthTrack(i, DEFAULT_SOUNDS[SPK2_SND[want] != null ? SPK2_SND[want] : 3]); nt.name = (l ? l.name : 'Nachbau').slice(0, 20); restoreTrack(i, JSON.stringify(nt));
+    if (!S.tracks[i]) return null; applySound(i, snd); return {track: i, neu: true};
+  });
+  if (!res) { spk1Stat(U, 'Klang: nicht möglich'); return null; }
+  K.t = res.track; spk2KlBtns(U);
+  try { if (UI.heads && EL.grid) buildGrid(); } catch (e) { logErr(e); }
+  spk1Stat(U, 'Klang → ' + S.tracks[res.track].name + ' · ↶ macht es rückgängig');
+  toast('Nachbau → ' + S.tracks[res.track].name + ' (' + (best.eng === 'va' ? 'VA' : 'FM') + ')', {label: '↶ Rückgängig', fn: () => undo()});
+  SPK1.kl = Object.assign({}, res, {eng: best.eng}); return SPK1.kl;
+}
+SPK1_API.spk2.klang = {
+  open: (lid, id) => { const U = SPK1.ui, q = id ? spk2Notes(U, lid).find(z => z.id === id) : spk2KlPick(U, lid); return spk2KlOpen(U, lid, q, U.n2b); },
+  mehr: () => spk2KlRun(SPK1.ui, true), play: w => spk2KlPlay(SPK1.ui, w), take: t => { const U = SPK1.ui; if (t !== undefined && U.kl) U.kl.t = t; return spk2KlTake(U); },
+  stand: () => { const K = SPK1.ui && SPK1.ui.kl; if (!K) return null; const b = K.res && K.res.best; return {nm: K.nm, est: K.src && K.src.est, feat: K.src && K.src.feat, best: b && {eng: b.eng, fix: b.fix, u: b.u, P: spk2KlP(b), dist: b.dist, txt: spk2KlTxt(b)}, d0: K.res && K.res.d0, t: K.t, ta: K.ta, tb: K.tb}; },
+  // Prüfung mit bekannten App-Klängen: Klang rendern → analysieren → nachbauen (ohne Seite)
+  probe: async (sound, m, dur, o) => {
+    o = o || {}; const sr = o.sr || 48000, on = 0.03, off = on + dur, len = off + (o.tail || 0.5), snd = SQStore.normalizeSound(sound);
+    const [x] = await spk2KlRender([snd], m, on, off, len, sr), f = 440 * Math.pow(2, (m - 69) / 12);
+    const r = await spk1Call('klangFeat', {pcs: [x], sr, f, on, off, est: true}), src = {x, sr, m, on, off, len, feat: r.fs[0], est: r.est};
+    const t0 = performance.now(), R = await spk2KlOpt(src, {n: o.n || 50, eng: o.eng, seed: o.seed}), b = R.best;
+    return {est: r.est, feat0: {noise: src.feat.noise, adsr: src.feat.adsr, hdb: src.feat.hdb.slice(0, 12)}, best: {eng: b.eng, fix: b.fix, P: spk2KlP(b), dist: b.dist, txt: spk2KlTxt(b)}, d0: R.d0, n: R.n, ms: Math.round(performance.now() - t0)};
+  },
+  snd: (eng, fix, u) => spk2KlSnd({eng, fix, u}), dist: spk2KlDist, render: spk2KlRender, P: c => spk2KlP(c)
+};
 /* SPK2-END */
 /* ===== KF1-BEGIN (Paket KF1, Klang-Feinschliff Teil 1 aus der Ur-Roadmap §18 „Klang“; Xander: „Können wir davon noch was machen?“ → ja) =====
    Sechs Wünsche, jeder mit neutralem Standard (= genau der Klang von vorher, alte Projekte bitgleich):
