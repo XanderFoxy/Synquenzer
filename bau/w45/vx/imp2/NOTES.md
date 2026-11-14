@@ -81,3 +81,23 @@ Rang 10,4 %, 126 auf 61 %, am besten 167,5 ≈ 1,5 × 112. Das Urteil über #10 
 `imp2-node.mjs` (Raten-Prüfung), `resp.mjs` (Kennlinie + Zeit), `prof.mjs` (Zeitanteile), `pitchons.mjs` + `fitcurve.mjs` (unabhängige Tempo-Prüfung),
 `block.js` + `apply.mjs` (Bau). Seit Prüfung in `fix/`: `krumm-test.mjs` (Befund 1), `fft-test.mjs` (Befund 4), `sweep.mjs` + `kennlinie.mjs` (Befund 5),
 `zeit.mjs`, `rv1t-test.mjs` + `rv1t-lauf.sh` (Befund 2, Silbe nach Datei-Zeit). Audio liegt außerhalb von vx (realvox/imp2rs, realvox/npz). Läufe: node-*.txt/json, run-*.txt, rv1-*.json.
+
+## Prüfung (Befunde aus PRUEFUNG.md, behoben im eigenen Ordner; Bau weiter `block.js` → `apply.mjs` → index.html)
+Diff zu basis.html jetzt: 2 Haken-Zeilen (`spec`, `down`) + 1 Block IMP2-BEGIN … IMP2-END (67 Zeilen), alles in `imp1Core`. VX2/SPK8 nicht berührt
+(kein anderes Paket ändert `imp1Core`). Nichts Sichtbares, keine neuen Knöpfe, VERSION 4.63.0.
+
+| Befund | Stand | vorher → nachher |
+|---|---|---|
+| 1 MITTEL krumme Abtastrate | **behoben** – `imp2Rs`: schrittweise nur bei `st = exact && P === P0`, sonst je Probe gerundet | `fix/krumm-test.mjs` (down-Pegel 1 kHz + Klick-Lage bei 22,05/32/44,1/48/96 kHz + 0,5 / −0,3 / 0,001 / 0,0048 / 3·10⁻⁶ Hz; Analyse #1/#10/#14/92 4/4 bei sr + δ): FEHLER 37/37 → **ALLE OK (37)**; z. B. #14 bei 48 000,5: 88,6 Mix → 120,7 Gesang (2 Teile), #1 bei 44 100,001: Fehler „still“ → 118,6 |
+| 2 MITTEL rv1-test 45/53 | **nachgestellt, nicht in IMP2 behebbar** (Gesang-Editor-Verschieben, VX2/VX3-Stelle) | Silbe nach Datei-Zeit (`fix/rv1t-test.mjs`, `RV1_T`): #14 9,742 s Basis OK/OK (Stück 55) – IMP2 FEHLER/FEHLER (Stück 52, 1,609×) = dieselbe Silbe, Ursache Tempo-Raster 121; #10 4,985 s IMP2 OK/OK (Stück 32), 7,068 s IMP2 FEHLER/FEHLER (1,422×, −27 ct) = Basis-Zahlen. NOTES oben korrigiert, Übergabe Offen 4/5 |
+| 3 LEICHT Chor #10 | **nachgestellt, nicht behoben** | 4 FEHLER wie beim Prüfer (st+2/2: 26 statt 17 ms, gegen Lead 44 ms, σ 15,3 ct). Die Basis rechnet für 22,05/44,1-kHz-Eingang dasselbe t1 0,388 (node-vorher.txt) – der Chor reagiert auf 5 ms Take-Lage; Chor-Code, nicht IMP2. Zu CHR |
+| 4 LEICHT Laufzeit | **behoben** – reelle FFT `imp2Spec` (komplexe FFT halber Länge + Aufteilung), Haken in `spec()` | `fix/fft-test.mjs`: Betrag gleich bis 1,1·10⁻¹⁴ (n 512) / 1,5·10⁻¹³ (n 4096), Ränder eingeschlossen; Analyse von 7 Stücken **zeichengleich** (alle Felder außer ms). Node (min aus 3, Last 7–9 auf 4 Kernen): 148 s 92 4/4 Basis 846 · IMP2 alt 818–940 · **jetzt 637 ms**; #14 77 · 101 · **49**; #1 219 · 175 · **164**. Browser-Worker (min aus 2, `fix/browser*.txt`): 92 4/4 Basis 909 → **721 ms**, 120 6/8 488 → 356, #1 205 → 160, #14@48k 72 → 69, #10 53 → 41 (Prüfer, IMP2 alt: 920 / 555 / 225 / 97 / 61). Speicher +84 kB je s Audio (Zwischenpuffer 22 050 Hz) bleibt, kurzlebig im Worker |
+| 5 LEICHT Sperre bei 32 kHz | **behoben** – Stufe 1 Übergang 5 000 … 16 025 Hz (alles faltet in die Sperre von Stufe 2) | `fix/sweep.mjs` (Sinus alle 100 Hz ab 7 kHz, 16–192 kHz): schlechteste Sperre −42,2 dB (24 kHz/7,3 kHz; auch 44,1/48/96 kHz bei 16,7 kHz −42,5…−44) → **−51,7 dB** (32 kHz/14,8 kHz); Durchlass 1–5 kHz ±0,08 dB; `fix/kennlinie.txt`: 32k 15 kHz −47,1 → −52,3, 44,1k 16,7 kHz −42,5 → −61,9. Tempo-Läufe (imp2-node.mjs, `fix/node-fix.txt`) ALLE OK, bis auf zwei Rundungen gleich: 92 4/4 stabil 0,95 → 0,96 bei 48k (jetzt bei allen Raten gleich), Melodie 96 roh 95,99 → 96 bei 48k |
+| 6 LEICHT Bericht/Notizen | **behoben** | Bibliotheksname aus NOTES Z. 31 und LOG Z. 4 entfernt; #10-Aussage „125–130“ zurückgenommen, #14-Stütze nur schwach, rv1-Begründung für #14 korrigiert, „+1 bei #1“ als knapp markiert |
+| Nebenbefund „60 oder 60?“ | nicht gebaut (Basis, sichtbar) | Vorschlag Offen 6 |
+
+Prüfungen nach dem Einbau (nacheinander, `fix/`): Pflicht `pflicht.txt`/`smoke.txt` · imp1-test ALLE OK (48), 118 s (`reg-imp1.txt`) · rv1-test 45/53
+(`reg-rv1.txt`, genau dieselben 8 FEHLER-Zeilen wie vor dem Einbau und beim Prüfer – die Änderungen verschieben kein Tempo/t1 von #1/#10/#14) ·
+vx1-test 61/61 (`reg-vx1.txt`) · Browser: Worker rechnet den neuen Code (worker true, gleiche Tempi wie Node), Touch-Import #14 bei 428×926 und
+926×428: „121 oder 60?“, Knöpfe 44 px, nichts seitlich abgeschnitten, ½× → 60,3, Konsole leer (`browser.txt`, Fotos `fix/fotos/`).
+Nebenwirkung wie bisher: imp1-/rv1-test überschreiben Fotos in vx/imp/fotos, vx/imp/tmp-audio und vx/real/fotos.

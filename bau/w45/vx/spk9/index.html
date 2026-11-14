@@ -105308,7 +105308,7 @@ function spk9DspMake(Z2) {
   if (!Z2 || !Z2.h || !Z2.opt || !Z2.h.segNotes || !Z2.h.midiOf) return Z2;
   const H2 = Z2.h, seg0 = H2.segNotes, opt = Z2.opt;
   const o9 = {an: 1, hys: 0.6, hold: 0.07, stab: 0.06, span: 0.25, bandv: 0.6, vmin: 0.3, tr: 0.5, trN: 3, look: 0.5, nl: 0.15, vib: 0.16, gegen: 0.3, lvl: 12, minS: 0.08, near: 0.07, win: 0.6, fbMin: 400,
-    adv: 0.25, cst: 1, nlP: 1, vibMax: 0.875, stair: 0.3, stairN: 0.035, trFlat: 1, fall: 4, fallT: 0.45, dicht: 1, dichtA: 0.3, dichtW: 4, okt: 0.12, rise2: 6, mono: 1, qMono: 0.85, pMono: 0.7, dbg: null};   // Prüfung: adv … pMono (0 = aus)
+    adv: 0.25, cst: 1, nlP: 1, vibMax: 0.875, stair: 0.3, stairN: 0.035, trFlat: 1, fall: 4, fallT: 0.45, dicht: 1, dichtA: 0.3, dichtW: 4, okt: 0.12, oktG: 0.3, rise2: 6, mono: 1, qMono: 0.85, pMono: 0.7, dbg: null};   // Prüfung: adv … pMono (0 = aus)
   const med = v => { if (!v.length) return NaN; v.sort((p, q) => p - q); return v[v.length >> 1]; };
   // Tonhöhen-Stufen (Zeit der Grenze in s) aus der Grundton-Spur f0 (Rahmen i ↔ (i0 + i)·hopS), nur stimmhafte Rahmen (ok)
   function steps(o) {
@@ -105399,7 +105399,8 @@ function spk9DspMake(Z2) {
       const srt = fs.slice().sort((p, q) => p - q); let f = srt[srt.length >> 1];
       if (o9.dicht) { const ms = srt.map(midiOf); let bi = 0, bn = 0, bj = 0; for (let i = 0, e = 0; i < ms.length; i++) { while (e < ms.length && ms[e] - ms[i] <= 1) e++; if (e - i > bn) { bn = e - i; bi = i; bj = e; } }
         if (bn >= 2 && bn < ms.length && bn >= o9.dichtA * ms.length && Math.abs(ms[(bi + bj) >> 1] - ms[ms.length >> 1]) <= o9.dichtW) f = srt[(bi + bj) >> 1]; }   // Tonhöhe = Median der dichtesten Halbton-Breite (ein Gleiten am Rand zieht sie nicht weg); nur nahe am Median (kein Begleit-Ton daneben)
-      if (Y && 2 * f <= fb) { let od = 0, ev = 0; const ia = Math.max(0, Math.ceil((a + 0.035) / hopS) - i0); for (let i = ia; i < F && T(i) < b; i++) { const ox = i * K, pkk = h => { const kc = Math.round(h * f / df); return kc + 1 < K ? Math.max(Y[ox + kc - 1], Y[ox + kc], Y[ox + kc + 1]) : 0; }; od += pkk(3) + pkk(5) + pkk(7); ev += pkk(2) + pkk(4) + pkk(6); } if (ev > 0 && od / ev < (o9.okt || 0.3)) f *= 2; }   // strenger als SPK2 (0,3): bei Gesang sind ungerade Obertöne oft nur formant-schwach
+      if (Y && 2 * f <= fb) { let od = 0, ev = 0, g1 = 0; const ia = Math.max(0, Math.ceil((a + 0.035) / hopS) - i0); for (let i = ia; i < F && T(i) < b; i++) { const ox = i * K, pkk = h => { const kc = Math.round(h * f / df); return kc + 1 < K ? Math.max(Y[ox + kc - 1], Y[ox + kc], Y[ox + kc + 1]) : 0; }; od += pkk(3) + pkk(5) + pkk(7); ev += pkk(2) + pkk(4) + pkk(6); g1 += pkk(1); }
+        if (ev > 0 && (o9.okt ? od / ev < o9.okt || (od / ev < 0.3 && g1 < o9.oktG * ev / 3) : od / ev < 0.3)) f *= 2; }   // SPK2: ungerade < 30 % der geraden → Oktave höher; jetzt nur, wenn sie fast ganz fehlen (< okt) oder auch der Grundton selbst schwach ist (Gesang: ungerade Obertöne oft nur formant-schwach, der Grundton aber da)
       const m = Math.round(midiOf(f)), conf = ss.reduce((p, q) => p + q, 0) / ss.length * Math.min(1, fs.length / Math.max(1, all) + 0.2);
       const fz = []; for (let i = Math.max(0, Math.floor(a / hopS) - i0); i < F && T(i) <= b + 0.05; i++) { const g = ok[i] && Math.abs(midiOf(f0[i]) - midiOf(f)) < 1 ? f0[i] : f; fz.push(+g.toFixed(1)); }
       const t0 = H2.snapT(G, a), t1 = Math.max(t0 + G.step, H2.snapT(G, b));
