@@ -16,8 +16,14 @@ H = [
   "if (typeof spk5ZerlLab === 'function') spk5ZerlLab(U); /* SPK5: Zerlegen · Auswahl/alles */ else U.b_zerl.textContent = U.busy === 'zerlegen' || U.busy === 'profi' /* KI1 */ ? '■ Abbrechen' : 'Zerlegen';"),
  # Überlagerung
  ("  if (typeof spk2OvDraw === 'function') spk2OvDraw(U, x);   // SPK2: Noten-Kästchen\n",
-  "  if (typeof spk2OvDraw === 'function') spk2OvDraw(U, x);   // SPK2: Noten-Kästchen\n"
-  "  if (typeof spk5OvDraw === 'function') spk5OvDraw(U, x);   // SPK5: Fortschritt über dem Bereich\n"),
+  "  if (typeof spk5Fd === 'function' && spk5Fd(U) > SPK5_FD_SKIP) { if (typeof spk2LpOv === 'function') spk2LpOv(U, x); } else if (typeof spk2OvDraw === 'function') spk2OvDraw(U, x);   // SPK2: Noten-Kästchen · SPK5: in der Noten-Ansicht zeichnet die Notenrolle die Kästchen\n"
+  "  if (typeof spk5OvDraw === 'function') spk5OvDraw(U, x);   // SPK5: Fortschritt über dem Bereich, Notenrolle\n"),
+ # SPK5 Auftrag 2: Regler Spektrum ↔ Noten in der Werkzeugleiste
+ ("  sh.append(hd, tl, co, ru, ky, mn, op, st, ac, ly, sp);\n",
+  "  sh.append(hd, tl, co, ru, ky, mn, op, st, ac, ly, sp);\n  if (typeof spk5UiAdd === 'function') spk5UiAdd(U);   // SPK5: Überblenden Spektrum ↔ Noten\n"),
+ # SPK5 Auftrag 2: Noten-Ansicht – Tipp auf eine Note
+ ("  if (G.tool === 'noten' && typeof spk2NoteUp === 'function') return spk2NoteUp(U, G);   // SPK2: Noten wählen\n",
+  "  if (typeof spk5Tap === 'function' && spk5Tap(U, G)) return;   // SPK5: Noten-Ansicht – Note antippen = Gehört zu …\n  if (G.tool === 'noten' && typeof spk2NoteUp === 'function') return spk2NoteUp(U, G);   // SPK2: Noten wählen\n"),
  # Zerlegen-Tipp
  ("async function spk1Zerl(U) {\n",
   "async function spk1Zerl(U) {\n"

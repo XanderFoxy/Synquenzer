@@ -96304,7 +96304,7 @@ ${f}~button:last-child::before{right:-4px}
   };
 }
 /* GD1-END */
-/* ===== SPK5-BEGIN (Spektral-Seite Teil 5 · Zerlegen sichtbar: nur Auswahl oder alles, Fortschritt über dem Bereich, neue Ebenen hervorgehoben, Farbstufen; Xander 14.11. abends) ===== */
+/* ===== SPK5-BEGIN (Spektral-Seite Teil 5 · Zerlegen sichtbar: nur Auswahl oder alles, Fortschritt über dem Bereich, neue Ebenen hervorgehoben, Farbstufen; Überblenden Spektrum ↔ Noten; Xander 14.11. abends) ===== */
 /* Kern-Teil: läuft im Spektral-Worker (Text wird mit spk1DspMake mitgeschickt). X = Innenteile des SPK1-Kerns (+ Z2, KI1K).
    Mit Auswahl wirken Zerlegen und Profi-Trennung nur in der Auswahl (weiche Kante wie die Auswahl selbst): neu·w + alt·(1 − w).
    Danach Energie-Anteile je Ebene im Bereich → ehrliche Meldung; neu angelegte, leere Ebenen fallen weg (ihr Anteil bleibt im Rest). */
@@ -96449,7 +96449,24 @@ function spk5DspMake(X) {
     } catch (e) { if (d.u) X.uAbort(d); throw e; }
     finally { d.busy = null; d.zStop = false; }
   }
-  const ops = {spk5Zerl: zerl, spk5Profi: profi, spk5Anteil: async (d, m) => ({sh: shares(d, m.lids || {}, m.sel && m.sel.length ? X.selFn(d, m.sel) : null)})};
+  // Auftrag 2/3: Noten aller Ebenen (bzw. Original) im Hintergrund für die Noten-Ansicht. Kein eigener ↶-Schritt: das ist Ansicht, keine
+  // Aktion – die Noten hängen am Zustand davor (↶ Zerlegen nimmt sie mit weg, ↷ bringt sie wieder). Gespeichert wird wie sonst.
+  async function notenAlle(d, m, emit, info) {
+    const Z = X.Z2, I = Z && Z.I, f = Z && Z.ops && Z.ops.noten; if (!f || !I) throw new Error('Noten nicht verfügbar');
+    const lids = (m.lids || []).filter(l => l === 'orig' || d.meta.layers.some(x => x.id === l)), n = {};
+    const uB = I.uBegin, uE = I.uEnd; I.uBegin = () => {}; I.uEnd = () => {};
+    try {
+      for (let i = 0; i < lids.length; i++) {
+        const lid = lids[i], nm = lid === 'orig' ? 'Original' : (d.meta.layers.find(x => x.id === lid) || {}).name || '';
+        emit({qid: m.qid, prog: i / lids.length, stufe: nm});
+        const r = await f(d, {qid: m.qid, lid, sel: null}, o => emit(Object.assign({}, o, {prog: (i + Math.min(1, o.prog || 0)) / lids.length, stufe: nm})), () => ({}));
+        n[lid] = (r && r.neu) || 0; await X.tick();
+      }
+    } finally { I.uBegin = uB; I.uEnd = uE; }
+    d.metaDirty = true; X.soon(d);
+    return Object.assign({n, auto: true}, info(d));
+  }
+  const ops = {spk5Noten: notenAlle, spk5Zerl: zerl, spk5Profi: profi, spk5Anteil: async (d, m) => ({sh: shares(d, m.lids || {}, m.sel && m.sel.length ? X.selFn(d, m.sel) : null)})};
   if (X.Z2) { X.Z2.ops = X.Z2.ops || {}; Object.assign(X.Z2.ops, ops); }
   return ops;
 }
@@ -96541,6 +96558,7 @@ function spk5Area(U, sel) {
 }
 // Während der Rechnung: Bereich leicht schraffiert + Balken (nur Leinwand, kein DOM)
 function spk5OvDraw(U, x) {
+  if (U.s5f > 0) spk5Roll(U);   // Auftrag 2/3: Notenrolle folgt der Ansicht (zeichnet nur bei Änderung)
   const B = U.s5; if (!B) return;
   const W = U.W, H = U.H, A = B.area; let xa = 0, xb = W, ya = 0, yb = H;
   if (A) { xa = Math.max(0, spk1X(U, A.t0)); xb = Math.min(W, spk1X(U, A.t1)); ya = Math.max(0, spk1Y(U, A.f1)); yb = Math.min(H, spk1Y(U, A.f0)); }
@@ -96639,7 +96657,188 @@ function spk5Solo(U, lid) {
   if (L.sel && L.span) { U.playSel = true; spk1Play(L.span[0], null, {sel: L.sel, sv: L.sv, bis: L.span[1]}); spk1BtnState(U); spk1Dirty(U, 'ov'); }
   else spk1PlayFrom(U, U.cur);
 }
-SYNQUENZER.spk5 = {farbe: k => (k ? spk5FarbeSet(SPK1.ui, k) : spk5Farbe()), lut: () => spk1Lut(), area: () => SPK1.ui && spk5Area(SPK1.ui, SPK1.ui.sel), last: () => SPK1.ui && SPK1.ui.s5last, msg: () => { const m = SPK1.ui && SPK1.ui.s5m; return m && m.classList.contains('on') ? m.firstChild.textContent : null; }, run: how => SPK1.ui && spk5Run(SPK1.ui, how || 'zerlegen')};
+/* ---- Auftrag 2/3: Überblenden Spektrum ↔ Noten (Regler fest rechts in der Werkzeugleiste). 0 % = nur Spektrum, 100 % = Notenrolle wie im
+   Noten-Editor der Instrumente (Tastatur bleibt, Zeilen, Takt-/Schlag-Linien, Noten in der Farbe ihrer Ebene, Sicherheit = Deckkraft).
+   Zwei Leinwände über dem Spektrum: Raster (deckend, Deckkraft f) und Noten + Takt-Linien (Deckkraft 1,8·f) – Überblenden ändert nur
+   die Deckkraft, gezeichnet wird nur bei neuer Ansicht/neuen Noten. Ziehen = stufenlos, Doppeltipp = halb, Tipp links/rechts = 0/100 %. ---- */
+const SPK5_FD_W = 156, SPK5_FD_SKIP = 0.2;   // Breite des Reglers; ab hier zeichnet die Notenrolle die Kästchen (statt SPK2 auf dem Spektrum)
+const spk5Fd = U => (U && U.s5f) || 0;
+const SPK5_SVG_SP = '<svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><path d="M3 17V10M6.5 17V4M10 17V12M13.5 17V6M17 17V11" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg>';
+const SPK5_SVG_NO = '<svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><g fill="currentColor"><rect x="2" y="3" width="8" height="3.4" rx="1"/><rect x="8" y="8.4" width="10" height="3.4" rx="1"/><rect x="4" y="13.8" width="7" height="3.4" rx="1"/></g></svg>';
+function spk5Css2() {
+  if (document.getElementById('spk5Css2')) return;
+  const s = document.createElement('style'); s.id = 'spk5Css2';
+  s.textContent = [
+    '.spk1>.spk5-fd{grid-area:tl;justify-self:end;align-self:center;z-index:2;display:flex;align-items:center;box-sizing:border-box;width:' + SPK5_FD_W + 'px;height:44px;padding:0 4px 0 12px;background:linear-gradient(90deg,rgba(21,23,27,0),var(--chassis) 10px);touch-action:none;color:var(--text-dim);outline:none}',
+    '.spk5-fd .spk5-fi{flex:none;display:flex;align-items:center;justify-content:center;width:22px;height:44px}.spk5-fd .spk5-fi.on{color:var(--text)}',
+    '.spk5-fd .spk5-ft{position:relative;flex:1 1 auto;height:44px;margin:0 13px}',
+    '.spk5-ft::before{content:"";position:absolute;left:0;right:0;top:20px;height:4px;border-radius:2px;background:var(--line)}',
+    '.spk5-fq{position:absolute;left:0;right:0;top:20px;height:4px;border-radius:2px;background:var(--sel);transform-origin:0 50%;transform:scaleX(0)}',
+    '.spk5-fk{position:absolute;left:0;top:9px;width:26px;height:26px;margin-left:-13px;border-radius:50%;box-sizing:border-box;background:var(--chassis-2);border:2px solid var(--sel);box-shadow:0 2px 6px rgba(0,0,0,.6);will-change:transform}',
+    '.spk5-fd:focus-visible .spk5-fk{box-shadow:0 0 0 3px rgba(244,241,234,.35)}',
+    '.spk1-tl .spk5-fsp{flex:none;width:' + SPK5_FD_W + 'px;height:1px}',
+    '.spk1-mn canvas.spk5-rb,.spk1-mn canvas.spk5-rn{opacity:0;pointer-events:none}'
+  ].join('\n');
+  document.head.appendChild(s);
+}
+// Haken am Ende von spk1Build: Regler + Platzhalter am Ende der Werkzeugleiste (die letzte Taste lässt sich unter dem Regler hervor rollen)
+function spk5UiAdd(U) {
+  spk5Css(); spk5Css2();
+  U.tl.appendChild(el('span', 'spk5-fsp'));
+  const fd = U.s5fd = el('div', 'spk5-fd', '<span class="spk5-fi a">' + SPK5_SVG_SP + '</span><span class="spk5-ft"><span class="spk5-fq"></span><span class="spk5-fk"></span></span><span class="spk5-fi b">' + SPK5_SVG_NO + '</span>');
+  fd.tabIndex = 0; fd.setAttribute('role', 'slider'); fd.setAttribute('aria-label', 'Überblenden: Spektrum ↔ Noten'); fd.setAttribute('aria-valuemin', '0'); fd.setAttribute('aria-valuemax', '100');
+  U.sh.appendChild(fd); U.s5f = 0; spk5FdSet(U, 0, false);
+  const tr = fd.querySelector('.spk5-ft'); let G = null;
+  fd.addEventListener('touchstart', e => { if (e.cancelable) e.preventDefault(); }, {passive: false});
+  fd.addEventListener('pointerdown', e => {
+    if (e.button > 0) return; try { fd.setPointerCapture(e.pointerId); } catch (er) {}
+    const r = fd.getBoundingClientRect(), t = tr.getBoundingClientRect();
+    G = {id: e.pointerId, x: e.clientX, v0: U.s5f, w: Math.max(40, t.width), tl: t.left - r.left, rx: e.clientX - r.left, rw: r.width, mv: false};
+  });
+  fd.addEventListener('pointermove', e => {
+    if (!G || G.id !== e.pointerId) return; const dx = e.clientX - G.x; if (!G.mv && Math.abs(dx) < 6) return;
+    if (!G.mv) { G.mv = true; clearTimeout(U.s5tt); U.s5tt = 0; }
+    spk5FdSet(U, G.v0 + dx / G.w, false);
+  });
+  const end = e => {
+    if (!G || G.id !== e.pointerId) return; const g = G; G = null;
+    if (e.type === 'pointercancel') return;
+    if (g.mv) { spk5FdSet(U, U.s5f, true); return; }
+    const now = performance.now();
+    if (U.s5tt && now - (U.s5tq || 0) < 330) { clearTimeout(U.s5tt); U.s5tt = 0; spk5FdSet(U, 0.5, true); return; }   // Doppeltipp = halb
+    U.s5tq = now; clearTimeout(U.s5tt);
+    const v = g.rx < g.tl + 4 ? 0 : g.rx > g.tl + g.w - 4 ? 1 : (g.rx - g.tl) / g.w;
+    U.s5tt = setTimeout(() => { U.s5tt = 0; spk5FdSet(U, v, true); }, 300);
+  };
+  fd.addEventListener('pointerup', end); fd.addEventListener('pointercancel', end);
+  fd.addEventListener('keydown', e => { const k = e.key, d = k === 'ArrowRight' || k === 'ArrowUp' ? 0.1 : k === 'ArrowLeft' || k === 'ArrowDown' ? -0.1 : 0; if (d || k === 'Home' || k === 'End') { e.preventDefault(); spk5FdSet(U, k === 'Home' ? 0 : k === 'End' ? 1 : U.s5f + d, true); } });
+}
+// Wert setzen: nur Deckkraft (Leinwände) und transform (Daumen) – kein DOM-Umbau; done = Finger los (Statuszeile)
+function spk5FdSet(U, v, done) {
+  v = Math.max(0, Math.min(1, +v || 0)); if (v < 0.02) v = 0; if (v > 0.98) v = 1;
+  const old = U.s5f || 0; U.s5f = v;
+  const fd = U.s5fd; if (fd) {
+    const w = U.s5fw || (U.s5fw = Math.max(40, fd.querySelector('.spk5-ft').getBoundingClientRect().width || SPK5_FD_W - 86));
+    fd.querySelector('.spk5-fk').style.transform = 'translateX(' + (v * w).toFixed(1) + 'px)'; fd.querySelector('.spk5-fq').style.transform = 'scaleX(' + v.toFixed(3) + ')';
+    const p = Math.round(v * 100); if (fd.getAttribute('aria-valuenow') !== String(p)) { fd.setAttribute('aria-valuenow', String(p)); fd.setAttribute('aria-valuetext', v === 0 ? 'Spektrum' : v === 1 ? 'Noten' : 'Noten ' + p + ' %'); }
+    const a = fd.firstChild, b = fd.lastChild; a.classList.toggle('on', v < 0.5); b.classList.toggle('on', v >= 0.5);
+  }
+  if (v > 0 && U.meta) spk5Roll(U);
+  if (U.s5rb) { U.s5rb.style.opacity = String(+v.toFixed(3)); U.s5rn.style.opacity = String(+Math.min(1, v * 1.8).toFixed(3)); }
+  if ((old > SPK5_FD_SKIP) !== (v > SPK5_FD_SKIP)) spk1Dirty(U, 'ov');   // SPK2-Kästchen auf dem Spektrum an/aus (einmal beim Überschreiten)
+  if (done && U.meta) {
+    if (v > 0) spk5Auto(U);
+    const n = U.s5vis || 0;
+    spk1Stat(U, v === 0 ? 'Spektrum · Regler rechts oben = Noten einblenden' : (v >= 0.5 ? 'Noten-Ansicht · Note antippen = Gehört zu …' : 'Spektrum + Noten') + (U.s5srch ? ' · suche Noten …' : ' · ' + n + ' Noten') + ' · Doppeltipp auf den Regler = halb');
+  }
+}
+// Leinwände anlegen (beim ersten Überblenden) und zeichnen, wenn sich Ansicht, Größe, Noten oder Wahl geändert haben
+function spk5Roll(U) {
+  if (!U.meta || !(U.s5f > 0)) return;
+  if (!U.s5rb || !U.s5rb.isConnected) {
+    spk5Css2(); const rb = U.s5rb = el('canvas', 'spk5-rb'), rn = U.s5rn = el('canvas', 'spk5-rn');
+    U.gcv.after(rb, rn); U.s5k = '';
+  }
+  const v = U.v, sel = (U.n2sel || []).map(r => r.lid + '|' + r.id).join(','), sr = U.s5srch;
+  const k = [v.t0, v.pps, v.mTop, v.rowH, U.cw, U.ch, U.dpr, sel, U.opt.n2thr, sr ? sr.lab + Math.round(sr.p * 20) : ''].join(';');
+  if (k === U.s5k && U.s5km === U.meta) return;
+  U.s5k = k; U.s5km = U.meta; U.s5n = (U.s5n || 0) + 1;
+  try { spk5RollDraw(U); } catch (e) { logErr(e); }
+  if (!sr) spk5Auto(U);
+}
+// Quelle der Noten: tonale Ebenen (nicht Drums); ohne solche das Original. Solo/Stumm der Ebenen gilt auch hier.
+function spk5Src(U) {
+  const L = U.meta.layers.filter(l => l.art !== 'drums' && l.z !== 'drums');
+  return L.length ? L.map(l => l.id) : ['orig'];
+}
+function spk5Vis(U) {
+  const L = U.meta.layers, R = U.meta.rest || {}, solo = L.some(l => l.solo) || !!R.solo, src = spk5Src(U), out = [];
+  for (const lid of src) {
+    const l = L.find(x => x.id === lid); if (l && (solo ? !l.solo : l.mute)) continue; if (!l && solo) continue;
+    for (const q of spk2Notes(U, lid)) if (q.st !== 'neu' || q.conf >= U.opt.n2thr) out.push({q, lid, l});
+  }
+  return out;
+}
+function spk5RollDraw(U) {
+  const d = U.dpr, W = U.W, H = U.H, v = U.v, set = cv => { if (cv.width !== U.cw) cv.width = U.cw; if (cv.height !== U.ch) cv.height = U.ch; const x = cv.getContext('2d'); x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, cv.width, cv.height); x.setTransform(d, 0, 0, d, 0, 0); return x; };
+  const C = {bg: spk1Var('--bg'), wr: spk1Var('--chassis-2'), br: spk1Var('--chassis'), txt: spk1Var('--text'), dim: spk1Var('--text-dim'), sel: spk1Var('--sel')};
+  // 1) Raster (deckend): Zeilen wie die Tasten links (weiß = hell, schwarz = dunkel), Fuge 1 px
+  let x = set(U.s5rb); x.fillStyle = C.bg; x.fillRect(0, 0, W, H);
+  const mLo = Math.max(12, Math.floor(v.mTop - H / v.rowH) - 1), mHi = Math.min(135, Math.ceil(v.mTop) + 1), gap = v.rowH >= 6 ? 1 : 0;
+  for (let m = mLo; m <= mHi; m++) { const y = (v.mTop - m - 0.5) * v.rowH, bl = [1, 3, 6, 8, 10].includes(m % 12); x.fillStyle = bl ? C.br : C.wr; x.fillRect(0, y, W, v.rowH - gap); }
+  // 2) Noten + Takt-Raster (kräftiger beim Überblenden)
+  x = set(U.s5rn);
+  const g = spk1Grid0(U), t0 = v.t0, t1 = t0 + W / v.pps, sub = g.beat / 4, showS = sub * v.pps >= 9, showB = g.beat * v.pps >= 6;
+  if (v.rowH * 12 >= 18) { x.fillStyle = 'rgba(244,241,234,.10)'; for (let m = Math.ceil(mLo / 12) * 12; m <= mHi; m += 12) x.fillRect(0, Math.round((v.mTop - m + 0.5) * v.rowH), W, 1); }
+  const step = showS ? sub : showB ? g.beat : g.bar;
+  for (let i = Math.max(0, Math.floor((t0 - g.off) / step)), n = 0; n < 4000; i++, n++) {
+    const t = g.off + i * step; if (t > t1) break; const px = Math.round(spk1X(U, t)) + 0.5;
+    const bar = Math.abs((t - g.off) / g.bar - Math.round((t - g.off) / g.bar)) < 1e-6, beat = Math.abs((t - g.off) / g.beat - Math.round((t - g.off) / g.beat)) < 1e-6;
+    x.fillStyle = bar ? 'rgba(236,232,223,.62)' : beat ? 'rgba(154,160,170,.36)' : 'rgba(154,160,170,.14)'; x.fillRect(px - 0.5, 0, bar ? 1.5 : 1, H);
+  }
+  const vis = spk5Vis(U), sel = new Set((U.n2sel || []).map(r => r.lid + '|' + r.id)), rgbOf = {}, hit = [], fnt = spk1Var('--font-num');
+  for (const o of vis) {
+    const q = o.q, xa = spk1X(U, q.t0), xb = spk1X(U, q.t1), ya = (v.mTop - q.m - 0.5) * v.rowH, h = Math.max(3, v.rowH - gap);
+    if (xb < 0 || xa > W || ya > H || ya + h < 0) continue;
+    const w = Math.max(3, xb - xa), rgb = rgbOf[o.lid] || (rgbOf[o.lid] = spk1Rgb(o.l ? spk1Var(o.l.col) : '#f4f1ea').map(c => Math.round(c * 255)).join(','));
+    const a = q.st === 'zu' ? 1 : 0.28 + 0.72 * Math.max(0, Math.min(1, q.conf == null ? 0.6 : q.conf)), s = sel.has(o.lid + '|' + q.id);
+    hit.push({lid: o.lid, q, xa, xb: xa + w, ya, h});
+    x.fillStyle = 'rgba(' + rgb + ',' + (0.88 * a).toFixed(3) + ')'; spk5RR(x, xa + 0.5, ya + 0.5, w - 1, h - 1, Math.min(3, h / 3)); x.fill();
+    x.lineWidth = s ? 2 : 1; x.strokeStyle = s ? C.sel : 'rgba(' + rgb + ',' + Math.min(1, a + 0.15).toFixed(3) + ')'; x.setLineDash(q.st === 'neu' ? [4, 3] : []); x.stroke(); x.setLineDash([]);
+    if (w > 30 && h >= 12) { x.font = '700 10px ' + (fnt.startsWith('#') ? 'monospace' : fnt); x.fillStyle = a > 0.55 ? 'rgba(11,12,15,.9)' : 'rgba(244,241,234,.9)'; x.fillText(spk2Name(q.m), xa + 4, ya + h / 2 + 3.5, w - 6); }
+  }
+  U.s5hit = hit; U.s5vis = vis.length;
+  const sr = U.s5srch, msg = sr ? sr.lab + ' ' + Math.round(sr.p * 100) + ' %' : !vis.length ? (U.meta.layers.length ? 'Keine Noten in den sichtbaren Ebenen' : 'Noch keine Noten erkannt') : '';
+  if (msg) { x.font = '600 12px ' + (spk1Var('--font-ui') || 'sans-serif'); const tw = Math.min(W - 24, x.measureText(msg).width + 16); x.fillStyle = 'rgba(8,9,11,.85)'; x.fillRect(8, 8, tw, 24); x.fillStyle = sr ? '#ffb22e' : C.txt; x.fillText(msg, 16, 24, tw - 14); }
+}
+function spk5RR(x, a, b, w, h, r) { x.beginPath(); x.moveTo(a + r, b); x.lineTo(a + w - r, b); x.quadraticCurveTo(a + w, b, a + w, b + r); x.lineTo(a + w, b + h - r); x.quadraticCurveTo(a + w, b + h, a + w - r, b + h); x.lineTo(a + r, b + h); x.quadraticCurveTo(a, b + h, a, b + h - r); x.lineTo(a, b + r); x.quadraticCurveTo(a, b, a + r, b); x.closePath(); }
+// Noten im Hintergrund suchen, sobald der Regler das erste Mal Richtung Noten geht (je Dokument und Ebene einmal; danach Noten ▾)
+function spk5Auto(U) {
+  if (!SPK1.doc || !U.meta || U.s5srch || !(U.s5f > 0) || U.busy === 'zerlegen' || U.busy === 'profi') return;
+  const done = U.s5auto || (U.s5auto = new Set()), doc = SPK1.doc;
+  const lids = spk5Src(U).filter(l => !done.has(doc + '|' + l) && !spk2Notes(U, l).length);
+  if (!lids.length) return;
+  for (const l of lids) done.add(doc + '|' + l);
+  const S = U.s5srch = {lab: 'Suche Noten', p: 0};
+  const drw = () => { if (U.s5srch === S) { U.s5k = ''; spk5Roll(U); } };
+  spk1Call('spk5Noten', {doc, lids}, null, {prog: (p, st) => { S.p = p; S.lab = 'Suche Noten' + (st ? ' · ' + st : ''); drw(); }}).then(r => {
+    if (U.s5srch === S) U.s5srch = null;
+    if (SPK1.doc !== doc || !r || !r.meta) return;
+    spk1Got(U, r); spk1BtnState(U); U.s5k = ''; spk5Roll(U);
+    const n = Object.values(r.n || {}).reduce((a, b) => a + b, 0);
+    if (U.s5f > 0) spk1Stat(U, n + ' Noten erkannt · einstimmig je Ebene · Note antippen = Gehört zu …');
+  }, e => { if (U.s5srch === S) U.s5srch = null; logErr(e); spk1Stat(U, 'Noten suchen: ' + (e.message || e)); U.s5k = ''; spk5Roll(U); });
+  drw();
+}
+// Haken in spk1ToolUp: in der Noten-Ansicht (≥ 50 %) öffnet ein Tipp auf eine Note dasselbe Klappfenster wie das Werkzeug „Noten“
+function spk5Tap(U, G) {
+  if (!(U.s5f >= 0.5) || G.moved || !U.s5hit || !U.s5hit.length) return false;
+  const px = G.x0, py = G.y0; let best = null, bd = 1e9;
+  for (const b of U.s5hit) { const pad = Math.max(0, (16 - b.h) / 2); if (px < b.xa - 6 || px > b.xb + 6 || py < b.ya - pad || py > b.ya + b.h + pad) continue; const dd = Math.abs(py - (b.ya + b.h / 2)) * 2 + (px < b.xa ? b.xa - px : px > b.xb ? px - b.xb : 0); if (dd < bd) { bd = dd; best = b; } }
+  if (!best) return false;
+  if (G.tool === 'pinsel') spk1ToolCancel(U, G);
+  U.n2sel = [{lid: best.lid, id: best.q.id}]; spk5Roll(U); spk1Dirty(U, 'ov');
+  const r = U.mn.getBoundingClientRect(), L = r.left + Math.max(0, best.xa), T = r.top + Math.max(0, best.ya), Rr = r.left + Math.min(U.W, best.xb), B = r.top + Math.min(U.H, best.ya + best.h);
+  const anchor = {getBoundingClientRect: () => ({left: L, top: T, right: Rr, bottom: B, width: Rr - L, height: B - T})};
+  spk2NoteDd(U, anchor, [best.q]);
+  const dd = U.dd; if (!dd) return true;
+  const l = U.meta.layers.find(z => z.id === best.lid), zu = spk2Notes(U, best.lid).filter(q => q.st === 'zu').length;
+  if (l && l.art !== 'drums') {   // Überall finden (Vorlage = bestätigte Noten dieser Ebene) – wie Noten ▾
+    const x = el('button', 'mbtn rb spk1-ck', 'Überall finden'); x.dataset.zu = 'ueberall'; x.disabled = !zu;
+    on(x, 'click', () => { spk1Dd(U, null); U.act = best.lid; spk1Layers(U); spk2Ueberall(U); });
+    const p = dd.querySelector('p'); dd.insertBefore(x, p);
+    if (p) p.textContent = zu ? 'Die Obertöne der Note wandern in die Ebene. „Überall finden“ sucht Töne wie die bestätigten Noten von ' + l.name + '.' : 'Die Obertöne der Note wandern in die Ebene. „Überall finden“ geht, sobald eine Note von ' + l.name + ' bestätigt ist (Gehört zu).';
+    const R = U.sh.getBoundingClientRect(), w = dd.offsetWidth, h = dd.offsetHeight;   // Platz neu prüfen (Fenster ist gewachsen)
+    let top = B - R.top + 4; if (top + h > R.height - 8) top = Math.max(8, T - R.top - h - 4);
+    dd.style.left = Math.max(8, Math.min(R.width - w - 8, L - R.left)) + 'px'; dd.style.top = top + 'px';
+  }
+  return true;
+}
+SYNQUENZER.spk5 = {farbe: k => (k ? spk5FarbeSet(SPK1.ui, k) : spk5Farbe()), lut: () => spk1Lut(), area: () => SPK1.ui && spk5Area(SPK1.ui, SPK1.ui.sel), last: () => SPK1.ui && SPK1.ui.s5last, msg: () => { const m = SPK1.ui && SPK1.ui.s5m; return m && m.classList.contains('on') ? m.firstChild.textContent : null; }, run: how => SPK1.ui && spk5Run(SPK1.ui, how || 'zerlegen'),
+  // Auftrag 2/3: Überblenden
+  fade: v => { const U = SPK1.ui; if (!U) return null; if (v != null) spk5FdSet(U, v, true); return U.s5f || 0; },
+  roll: () => { const U = SPK1.ui; if (!U) return null; return {f: U.s5f || 0, n: U.s5n || 0, vis: U.s5vis || 0, search: U.s5srch ? Object.assign({}, U.s5srch) : null, lids: U.s5hit ? [...new Set(U.s5hit.map(b => b.lid))] : [], op: U.s5rb ? [U.s5rb.style.opacity, U.s5rn.style.opacity] : null, auto: U.s5auto ? [...U.s5auto] : []}; },
+  hit: i => { const U = SPK1.ui, b = U && U.s5hit && U.s5hit[i || 0]; if (!b) return null; const r = U.mn.getBoundingClientRect(); return {lid: b.lid, id: b.q.id, m: b.q.m, x: r.left + Math.max(0, b.xa) + Math.min(U.W, b.xb - Math.max(0, b.xa)) / 2, y: r.top + b.ya + b.h / 2, w: b.xb - b.xa, h: b.h}; }};
 /* SPK5-END */
 /* INT53C-BEGIN ===== Prüfung INT53C (Zusammenspiel ORI · VID5 · MIXG), Befund A: ein Export enthält immer den Nachher-Stand.
    Befund: Mix & Master im Vergleich auf „Vorher“, das Blatt abgelegt (⌄), dann Video erstellen → im Video klang der Vorher-Mix, und das
@@ -98758,6 +98957,7 @@ function spk1Build() {
   A('drop', 'Verwerfen', 'Auswahl verwerfen'); A('zerl', 'Zerlegen', 'Ganzes Stück in Ebenen zerlegen'); A('verf', 'Verfeinern …', 'Auswahl genauer trennen');
   if (typeof ki1UiAdd === 'function') ki1UiAdd(U);   // KI1: „▾“ am Knopf Zerlegen (Profi-Trennung)
   sh.append(hd, tl, co, ru, ky, mn, op, st, ac, ly, sp);
+  if (typeof spk5UiAdd === 'function') spk5UiAdd(U);   // SPK5: Überblenden Spektrum ↔ Noten
   document.body.appendChild(sh);
   onTap(sh, (b, e) => spk1Tap(U, b, e), 'button:not(.spk1-ck)');   // .spk1-ck = Knöpfe mit eigenem click (Klappfenster, Zwei-Schritt): kein Geister-Klick-Schutz davor
   sh.addEventListener('pointerdown', e => { if (U.dd && !U.dd.contains(e.target) && e.target !== U.ddA) spk1Dd(U, null); }, true);
@@ -98976,8 +99176,8 @@ function spk1OvDraw(U) {
     x.strokeStyle = hit ? '#ffb22e' : '#f4f1ea'; x.strokeRect(Math.round(xa) + 0.5, Math.round(ya) + 0.5, Math.round(xb - xa), Math.round(yb - ya));
   }
   x.setLineDash([]);
-  if (typeof spk2OvDraw === 'function') spk2OvDraw(U, x);   // SPK2: Noten-Kästchen
-  if (typeof spk5OvDraw === 'function') spk5OvDraw(U, x);   // SPK5: Fortschritt über dem Bereich
+  if (typeof spk5Fd === 'function' && spk5Fd(U) > SPK5_FD_SKIP) { if (typeof spk2LpOv === 'function') spk2LpOv(U, x); } else if (typeof spk2OvDraw === 'function') spk2OvDraw(U, x);   // SPK2: Noten-Kästchen · SPK5: in der Noten-Ansicht zeichnet die Notenrolle die Kästchen
+  if (typeof spk5OvDraw === 'function') spk5OvDraw(U, x);   // SPK5: Fortschritt über dem Bereich, Notenrolle
   const p = U.pos != null ? U.pos : U.cur, px = Math.round(spk1X(U, p)) + 0.5;
   if (px >= 0 && px <= W) { x.strokeStyle = U.pos != null ? spk1Var('--play') : 'rgba(244,241,234,.55)'; x.lineWidth = U.pos != null ? 2 : 1; x.beginPath(); x.moveTo(px, 0); x.lineTo(px, H); x.stroke(); }
 }
@@ -99052,6 +99252,7 @@ function spk1ToolMove(U, G, p) {
 function spk1ToolCancel(U, G) { U.tmp = null; if (G && G.tool === 'pinsel') { const i = U.sel.indexOf(G.shape); if (i >= 0) U.sel.splice(i, 1); } spk1Dirty(U, 'ov'); }
 function spk1ToolUp(U, G) {
   U.tmp = null;
+  if (typeof spk5Tap === 'function' && spk5Tap(U, G)) return;   // SPK5: Noten-Ansicht – Note antippen = Gehört zu …
   if (G.tool === 'noten' && typeof spk2NoteUp === 'function') return spk2NoteUp(U, G);   // SPK2: Noten wählen
   if (!G.moved) {
     if (G.tool === 'harm') return spk1Harm(U, G.t0, G.f0);
