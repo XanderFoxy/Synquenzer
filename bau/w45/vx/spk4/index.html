@@ -100541,7 +100541,7 @@ function spk4DspMake(Z2) {
      o6.nosm: Zerlegen glättet im Tiefband (< 520 Hz) nicht mehr 3×3 (Haken „SPK4“ in zerlegen). ---- */
   if (Z2.magsLo && Z2.o3 && Z2.kickTpl) {
     const {w2, opt, o3, magsLo, kickTpl, kickAt} = Z2, {hpss, ramp} = I;
-    const o6 = {bw: 1.5, pf: 3, phi: 0.8, P: 1.2, pri: 1, be: 0.5, nosm: 1};
+    const o6 = {bw: 1.5, pf: 3, phi: 0.8, P: 1.2, pri: 1, be: 0.5, nosm: 1, robT: 0, robqT: -1, bwT: 0};
     function bassTrack4(Y, n, K, df, hopS, trust) {
       const C = []; for (let c = 12 * Math.log2(27 / 440); ; c += 0.25) { const f = 440 * Math.pow(2, c / 12); if (f > 290) break; C.push(f); }
       const S = C.length, NH = 8, E = new Float32Array(n * S), q = new Float32Array(n), Z = new Float32Array(K);
@@ -100615,7 +100615,7 @@ function spk4DspMake(Z2) {
       const T = bassTrack4(Y, n, K16, df16, hopS, trust); if (o3.dbg) o3.dbg(d, cen, T, N16, K16, hopS, trust);
       const dff = sr / Nf, Kf = Math.min(Nf / 2 + 1, Math.ceil(fmax / dff) + 2), X = magsLo(d, Nf, cen, Kf, (Kf + 1) * dff), {mh} = hpss(X, n, Kf, 17, 17);
       const SB = new Float32Array(n * Kf), SD = new Float32Array(n * Kf), B = new Float32Array(Kf), G = new Float32Array(n), KQ = kickAt(kickTpl(d, Nf, Kf), cen, null, Kf);
-      const hmax = trust ? 40 : 16, HM = hmax + 1, LA = new Float32Array(n * HM), LC = new Float32Array(n * HM), WR = Math.max(4, Math.round(0.25 / hopS)), bw = o6.bw, ext = 4 * bw;
+      const hmax = trust ? 40 : 16, HM = hmax + 1, LA = new Float32Array(n * HM), LC = new Float32Array(n * HM), WR = Math.max(4, Math.round(0.25 / hopS)), bw = trust && o6.bwT ? o6.bwT : o6.bw, ext = 4 * bw, rob = trust && o6.robT ? o6.robT : opt.rob, robq = trust && o6.robqT >= 0 ? o6.robqT : opt.robq;
       for (let i = 0; i < n; i++) {
         const o = i * Kf, f0 = T.f0[i]; if (!(T.on[i] > 0 && f0 > 0)) continue;
         const top = Math.min(fmax, trust ? fmax : Math.max(500, 8.5 * f0));
@@ -100633,7 +100633,7 @@ function spk4DspMake(Z2) {
         const a = Math.max(T.sg[i], i - WR); let b = i; while (b + 1 < n && b + 1 <= i + WR && T.sg[b + 1] === T.sg[i]) b++;
         for (let h = 0; g > 0 && h <= hmax; h++) {
           const A2 = LA[i * HM + h]; if (!A2) continue; let L = A2;
-          if (opt.rob && b - a >= 3) { tmp.length = 0; for (let j = a; j <= b; j++) tmp.push(LA[j * HM + h]); tmp.sort((x, y) => x - y); L = Math.min(A2, opt.rob * tmp[Math.floor((tmp.length - 1) * opt.robq)]); }
+          if (rob && b - a >= 3) { tmp.length = 0; for (let j = a; j <= b; j++) tmp.push(LA[j * HM + h]); tmp.sort((x, y) => x - y); L = Math.min(A2, rob * tmp[Math.floor((tmp.length - 1) * robq)]); }
           const cx = LC[i * HM + h]; for (let k = Math.max(0, Math.floor(cx - ext)); k <= Math.min(Kf - 1, Math.ceil(cx + ext)); k++) B[k] += L * w2((k - cx) / bw);
         }
         for (let k = 0; k < Kf; k++) {

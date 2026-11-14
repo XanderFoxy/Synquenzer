@@ -62,11 +62,14 @@ H = [
  ("    dd.appendChild(el('h5', '', 'Ganzes Stück trennen'));",
   "    dd.appendChild(el('h5', '', U.sel.length ? 'Nur die Auswahl trennen' : 'Ganzes Stück trennen'));   // SPK5"),
 
+ # SPK5 Auftrag 3: Zerlegen ▾ → Profi-Trennung zuerst, wenn sie auf dem Gerät ist
+ ("    dd.append(z, p, tx, x);\n",
+  "    dd.append(z, p, tx, x);\n    if (typeof spk5KiOrder === 'function') spk5KiOrder(U, dd, z, p, tx);   // SPK5: Profi-Trennung geladen → erster Weg\n"),
  # Guide-Texte: Zerlegen/Profi wirken auf die Auswahl; Farbstufen
  ("„Zerlegen“ trennt das ganze Stück in Drums, Bass, Gesang und Rest; „Verfeinern“ rechnet eine Auswahl genauer nach („Was steckt hier?“).',\n",
-  "„Zerlegen“ trennt die Auswahl (ohne Auswahl das ganze Stück) in Drums, Bass, Gesang und Rest; „Verfeinern“ rechnet eine Auswahl genauer nach („Was steckt hier?“). „Ansicht ▾ → Farben“ wählt die Farbstufe (Glut, Magma, Grün-Blau, Graustufen, Blau).',   // SPK5\n"),
+  "„Zerlegen“ trennt die Auswahl (ohne Auswahl das ganze Stück) in Drums, Bass, Gesang und Rest; „Verfeinern“ rechnet eine Auswahl genauer nach („Was steckt hier?“). „Ansicht ▾ → Farben“ wählt die Farbstufe (Glut, Magma, Grün-Blau, Graustufen, Blau). Ist die Profi-Trennung geladen, steht sie unter „Zerlegen ▾“ an erster Stelle und liefert die genaue Grundlage. Ihre Ebenen sind ganz normale Ebenen: Verfeinern, Harmonische, Pinsel, In Ebene und Noten zuordnen („Gehört zu“) arbeiten danach darauf weiter. So holen die Werkzeuge heraus, was die Profi-Trennung noch übersehen hat.',   // SPK5\n"),
  ("verfeinern ebenen stems bass gesang drums auswahl pinsel harmonische obertöne',\n",
-  "verfeinern ebenen stems bass gesang drums auswahl pinsel harmonische obertöne farben farbstufe glut magma graustufen',   // SPK5\n"),
+  "verfeinern ebenen stems bass gesang drums auswahl pinsel harmonische obertöne farben farbstufe glut magma graustufen profi hybrid genauer',   // SPK5\n"),
  ("d: 'Trennt das ganze Stück genauer als „Zerlegen“",
   "d: /* SPK5 */ 'Trennt die Auswahl (ohne Auswahl das ganze Stück) genauer als „Zerlegen“"),
  # Block

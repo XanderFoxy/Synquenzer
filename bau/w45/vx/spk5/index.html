@@ -95119,6 +95119,7 @@ function ki1Dd(U, b) {
     on(p, 'click', () => { spk1Dd(U, null); ki1Start(U); });
     on(x, 'click', () => { spk1Dd(U, null); ki1Remove().then(() => spk1Stat(U, 'Profi-Trennung vom Gerät gelöscht'), () => {}); });
     dd.append(z, p, tx, x);
+    if (typeof spk5KiOrder === 'function') spk5KiOrder(U, dd, z, p, tx);   // SPK5: Profi-Trennung geladen → erster Weg
     ki1Stand().then(s => {
       if (!p.isConnected) return;
       const j = s.job && !s.job.fertig && s.job.have > 0 ? s.job : null;
@@ -96532,6 +96533,7 @@ function spk5Css() {
     '.spk5-msg{position:absolute;z-index:5;display:none;align-items:center;gap:6px;box-sizing:border-box;min-height:52px;padding:4px 4px 4px 12px;background:rgba(18,20,24,.95);border:1px solid var(--line);border-radius:var(--r);box-shadow:0 8px 24px rgba(0,0,0,.6);font:600 13px/1.3 var(--font-ui);color:var(--text);pointer-events:auto}',
     '.spk5-msg.on{display:flex}.spk5-msg .spk5-mt{flex:1 1 auto;min-width:0}',
     '.spk5-msg .mbtn{flex:none;width:44px;height:44px;min-height:44px;margin:0;padding:0;font-size:18px;justify-content:center}',
+    '.spk1-dd .mbtn.spk5-erst{box-shadow:inset 3px 0 0 var(--amber)}',   // Auftrag 3: Profi-Trennung als erster Weg
     '.spk5-fb .mbtn{gap:8px}.spk5-fb .mbtn.on{outline:2px solid var(--sel);outline-offset:-2px}.spk5-sw{display:inline-block;flex:none;width:30px;height:14px;border-radius:3px;box-shadow:0 0 0 1px rgba(255,255,255,.2)}'
   ].join('\n');
   document.head.appendChild(s);
@@ -96834,8 +96836,26 @@ function spk5Tap(U, G) {
   }
   return true;
 }
+/* ---- Auftrag 3/3: Hybrid sichtbar. Ist die Profi-Trennung auf dem Gerät, steht sie im Klappfenster „Zerlegen ▾“ zuerst; „Zerlegen (schnell)“
+   folgt. Ihre Ebenen sind dieselben Ebenen (z = drums/bass/gesang) wie beim Zerlegen – Verfeinern, Harmonische, Pinsel, In Ebene und Gehört zu
+   arbeiten darauf weiter. Reihenfolge ohne Warten entschieden (kein Springen, wenn der Cache-Blick später antwortet). ---- */
+function spk5KiDa() {
+  try {
+    if (typeof KI1 === 'undefined') return false;
+    if (KI1.st && (KI1.st.state === 'ready' || KI1.st.state === 'cached')) return true;
+    if (KI1.scan) return !!KI1.scan.full[KI1.how || 'wasm'];
+    return localStorage.getItem('synq-ki1') === '1';   // Merker aus ki1Scan (letzter Cache-Blick)
+  } catch (e) { return false; }
+}
+function spk5KiOrder(U, dd, z, p, tx) {
+  if (!spk5KiDa()) return;
+  dd.insertBefore(p, z); p.classList.add('spk5-erst');
+  p.textContent = 'Profi-Trennung (genauer, ' + ki1Dauer() + ')';
+  tx.textContent = 'Genauer, vor allem Gesang und Bass. Danach arbeiten Verfeinern, Harmonische, Pinsel, In Ebene und Gehört zu auf diesen Ebenen weiter.';
+}
 SYNQUENZER.spk5 = {farbe: k => (k ? spk5FarbeSet(SPK1.ui, k) : spk5Farbe()), lut: () => spk1Lut(), area: () => SPK1.ui && spk5Area(SPK1.ui, SPK1.ui.sel), last: () => SPK1.ui && SPK1.ui.s5last, msg: () => { const m = SPK1.ui && SPK1.ui.s5m; return m && m.classList.contains('on') ? m.firstChild.textContent : null; }, run: how => SPK1.ui && spk5Run(SPK1.ui, how || 'zerlegen'),
   // Auftrag 2/3: Überblenden
+  kiDa: () => spk5KiDa(),   // Auftrag 3
   fade: v => { const U = SPK1.ui; if (!U) return null; if (v != null) spk5FdSet(U, v, true); return U.s5f || 0; },
   roll: () => { const U = SPK1.ui; if (!U) return null; return {f: U.s5f || 0, n: U.s5n || 0, vis: U.s5vis || 0, search: U.s5srch ? Object.assign({}, U.s5srch) : null, lids: U.s5hit ? [...new Set(U.s5hit.map(b => b.lid))] : [], op: U.s5rb ? [U.s5rb.style.opacity, U.s5rn.style.opacity] : null, auto: U.s5auto ? [...U.s5auto] : []}; },
   hit: i => { const U = SPK1.ui, b = U && U.s5hit && U.s5hit[i || 0]; if (!b) return null; const r = U.mn.getBoundingClientRect(); return {lid: b.lid, id: b.q.id, m: b.q.m, x: r.left + Math.max(0, b.xa) + Math.min(U.W, b.xb - Math.max(0, b.xa)) / 2, y: r.top + b.ya + b.h / 2, w: b.xb - b.xa, h: b.h}; }};
@@ -99628,8 +99648,8 @@ function spk1Guide(ents) {
   try {
     const E = (id, n, w, d, s, go, q) => ({id, n, w, d, s, go, q});
     ents.push(E('spk1', 'Spektral (Frequenzspektrum)', '≡ Menü › Analyse › Spektral … · Takes-Blatt › Im Spektrum öffnen',
-      'Ein Stück als Frequenzbild: links die Tasten, oben die Takte. Rechteck, Zeit, Frequenz, Pinsel, Harmonische (Ton antippen) und Ähnliche wählen Teile aus; „In Ebene“ legt sie als Ebene ab (Bass, Gesang, Drums …) – nichts am Original geht verloren. „Zerlegen“ trennt die Auswahl (ohne Auswahl das ganze Stück) in Drums, Bass, Gesang und Rest; „Verfeinern“ rechnet eine Auswahl genauer nach („Was steckt hier?“). „Ansicht ▾ → Farben“ wählt die Farbstufe (Glut, Magma, Grün-Blau, Graustufen, Blau).',   // SPK5
-      'spektrum spektral frequenz analyse trennen zerlegen verfeinern ebenen stems bass gesang drums auswahl pinsel harmonische obertöne farben farbstufe glut magma graustufen',   // SPK5
+      'Ein Stück als Frequenzbild: links die Tasten, oben die Takte. Rechteck, Zeit, Frequenz, Pinsel, Harmonische (Ton antippen) und Ähnliche wählen Teile aus; „In Ebene“ legt sie als Ebene ab (Bass, Gesang, Drums …) – nichts am Original geht verloren. „Zerlegen“ trennt die Auswahl (ohne Auswahl das ganze Stück) in Drums, Bass, Gesang und Rest; „Verfeinern“ rechnet eine Auswahl genauer nach („Was steckt hier?“). „Ansicht ▾ → Farben“ wählt die Farbstufe (Glut, Magma, Grün-Blau, Graustufen, Blau). Ist die Profi-Trennung geladen, steht sie unter „Zerlegen ▾“ an erster Stelle und liefert die genaue Grundlage. Ihre Ebenen sind ganz normale Ebenen: Verfeinern, Harmonische, Pinsel, In Ebene und Noten zuordnen („Gehört zu“) arbeiten danach darauf weiter. So holen die Werkzeuge heraus, was die Profi-Trennung noch übersehen hat.',   // SPK5
+      'spektrum spektral frequenz analyse trennen zerlegen verfeinern ebenen stems bass gesang drums auswahl pinsel harmonische obertöne farben farbstufe glut magma graustufen profi hybrid genauer',   // SPK5
       () => { spk1Open({back: {menu: true}}); }, () => (SPK1.open && SPK1.ui ? SPK1.ui.tl : null)));
   } catch (e) { logErr(e); }
 }

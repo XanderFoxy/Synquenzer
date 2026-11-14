@@ -164,7 +164,7 @@ for (const nr of ONLY) {
     /* ---------- Verschieben links/rechts ---------- */
     // Stück mit Platz davor UND messbarem Vokal des Vorgängers (Anker des Vorgängers ≥ 0,2 s vor dem Stück, sonst ist das Dehn-Fenster leer)
     const ord = []; for (let i = Math.floor(L.length / 2); i < L.length - 1; i++) ord.push(i); for (let i = 1; i < Math.floor(L.length / 2); i++) ord.push(i);
-    let kk = ord.find(i => L[i].dst - L[i - 1].dst > .35 && L[i + 1].dst - L[i].dst > .3 && L[i].t - L[i - 1].at > .2); if (kk == null) kk = ord.find(i => L[i].dst - L[i - 1].dst > .35 && L[i + 1].dst - L[i].dst > .3); if (kk == null) kk = -1;
+    let kk = ord.find(i => L[i].dst - L[i - 1].dst > .35 && L[i + 1].dst - L[i].dst > .3 && L[i].t - L[i - 1].at > .2); if (kk == null) kk = ord.find(i => L[i].dst - L[i - 1].dst > .35 && L[i + 1].dst - L[i].dst > .3); if (kk == null) kk = -1; if (process.env.RV1_K) kk = +process.env.RV1_K;
     if (kk < 0) for (let i = 1; i < L.length - 1; i++) if (L[i].dst - L[i - 1].dst > .3) { kk = i; break; }
     for (const dir of [-1, 1]) {
       const D = dir < 0 ? -.06 : Math.max(.06, L[kk].t - L[kk].dst + .06);   // rechts: mehr Platz als in der Quelle → Vorgänger wird gedehnt
@@ -174,8 +174,9 @@ for (const nr of ONLY) {
         const c = WP.cache.get(o.take), y = c && c.buf.getChannelData(0), L1 = window.__vx1.list(o.take), du = UNDO.length - u0;
         const w1 = JSON.stringify(window.__vx1.warp(o.take)); undo(); const w0 = JSON.stringify(window.__vx1.warp(o.take));
         for (let i = 0; i < 1200 && !window.__vx1.ready(o.take); i++) { wpPlay(o.take); await wait(25); }
-        return {du, L1, y: y && b64(y), undone: w0 !== w1 && w0 === o.w0};
+        return {du, L1, y: y && b64(y), undone: w0 !== w1 && w0 === o.w0, w1};
       }, {take: v.take, k: kk, D, w0: JSON.stringify(Q.warp)});
+      if (process.env.RV1_DUMP) { fs.writeFileSync(path.join(here, 'dbg', `move-${nr}-${dir < 0 ? 'l' : 'r'}.json`), JSON.stringify({sr, k: kk, w0: Q.warp, w1: JSON.parse(M.w1), L, L1: M.L1})); fs.writeFileSync(path.join(here, 'dbg', `x-${nr}.f32`), Buffer.from(x.buffer, x.byteOffset, x.byteLength)); fs.writeFileSync(path.join(here, 'dbg', `y-${nr}-${dir < 0 ? 'l' : 'r'}.f32`), Buffer.from(f32(M.y).buffer)); fs.writeFileSync(path.join(here, 'dbg', `y-${nr}-q.f32`), Buffer.from(y.buffer, y.byteOffset, y.byteLength)); }
       const ya = f32(M.y), a = L[kk - 1], q0 = L[kk], q1 = M.L1[kk], seamN = Math.round(q1.dst * sr), seamO = Math.round(q0.dst * sr);
       { const mv = M.L1.map((z, i) => ({i, d: Math.round((z.dst - L[i].dst) * 1e6) / 1e3, an: Math.round(((z.an || 0) - (L[i].an || 0)) * 1e6) / 1e3})).filter(z => z.i !== kk && (z.d || z.an)); info(`#${nr} Stück ${kk} ${dir < 0 ? 'links' : 'rechts'}: andere Stücke verändert`, mv.slice(0, 8)); }
       const kO = d2m(ya, sr, seamN - Math.round(.002 * sr), 4), kS = Math.max(d2m(x, sr, Math.round(q0.t * sr), 20), d2m(x, sr, Math.round((q1.dst - (a.dst - a.t)) * sr), 20));
