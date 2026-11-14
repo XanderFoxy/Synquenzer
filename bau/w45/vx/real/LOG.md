@@ -28,3 +28,7 @@
   vor/nach dem Verschieben im Vorgänger 0 Abweichung, nur Stück k selbst ändert sich (2,8817–3,1316 s). Ursache: die Quelle (wpBase) wechselt zwischen
   Quantisieren und Verschieben (Tonhöhen-Fassung wird fertig, wpBid anders) → Test verglich zwei Quellen. Test vergleicht jetzt mit der Fassung nach ↶
   (gleiche Quelle) und meldet „quelle gleich/gewechselt“. #10 rechts: Stück 30 (Platz für den Vokal) → 1,30× gedehnt, −4 ct. Lauf 5: 44/53, #10 allein: links+rechts OK.
+18:23 Befund 2 (Chor st+2 Versatz 32/40 statt 9/17, σ 16,7 ct, 5 Knackser) = MESS-Fehler: Rechnung stabil (echt vor/nach „ohne“ bitgleich);
+  Versatz je 1-s-Fenster (dbg/chor-lag.mjs) = Plan in 17 von 31 Fenstern (9 ms), einzelne Fenster 25–49 ms (Hülle ändert sich mit „echt“ an
+  Noten-Übergängen der Terz) ziehen die Gesamt-Korrelation weg; mit falschem Versatz steigen σ und „Knackser“ (Vergleich an falscher Stelle).
+  Test: Versatz = Median der Fenster-Versätze (gesamt bleibt als Info). #1 allein: Chor 6/6 12/12 9/9 17/17 15/15 16/16, σ 4,6–5,4 ct, Knackser 0.

@@ -222,18 +222,24 @@ for (const nr of ONLY) {
       if (process.env.RV1_DUMP) E.out.forEach((z, i) => { if (z.y && N.out[i].y) { fs.writeFileSync(path.join(here, 'dbg', `chor-${nr}-${z.rule}-${z.k + 1}-E.f32`), Buffer.from(z.y, 'base64')); fs.writeFileSync(path.join(here, 'dbg', `chor-${nr}-${z.rule}-${z.k + 1}-N.f32`), Buffer.from(N.out[i].y, 'base64')); } });
       const envOf = y => { const D = 11, n = Math.floor(y.length / D), e = new Float32Array(n), a = new Float32Array(n); let acc = 0; const W = 20; for (let i = 0; i < n; i++) { let s = 0; for (let j = 0; j < D; j++) s += Math.abs(y[i * D + j]); a[i] = s / D; } for (let i = 0; i < n; i++) { acc += a[i]; if (i >= W) acc -= a[i - W]; e[i] = acc / W; } return e; };
       const lagMs = (yE, yN) => { const a = envOf(yN), bq = envOf(yE), D = 11, maxL = Math.round(.06 * SR / D); let best = 0, bv = -1; for (let L = 0; L <= maxL; L++) { let s = 0, sa = 0, sb = 0; for (let i = 0; i + L < bq.length && i < a.length; i += 2) { s += a[i] * bq[i + L]; sa += a[i] * a[i]; sb += bq[i + L] * bq[i + L]; } const v2 = s / Math.sqrt(sa * sb + 1e-20); if (v2 > bv) { bv = v2; best = L; } } return best * D / SR * 1000; };
+      // Versatz robust: Median der Versätze je 1-s-Fenster (nur hörbare Fenster) – ein paar Fenster, in denen sich die Hülle mit „echt“ ändert
+      // (Tonhöhen-Schwanken an Noten-Übergängen der Terz), ziehen die Gesamt-Korrelation sonst um 20–30 ms weg (Diagnose dbg/chor-lag.mjs)
+      const lagMed = (yE, yN) => { const D = 48 * SR / 48000 | 0, W = SR, L1 = Math.round(.06 * SR / D), env = (y, a) => { const n = Math.floor(W / D), e = new Float64Array(n); for (let i = 0; i < n; i++) { let s = 0; for (let j = 0; j < D; j++) s += Math.abs(y[a + i * D + j] || 0); e[i] = s; } return e; }, ls = [];
+        for (let a = 0; a + W * 1.2 < Math.min(yE.length, yN.length); a += W) { let rms = 0; for (let i = a; i < a + W; i++) rms += yN[i] * yN[i]; if (Math.sqrt(rms / W) < .005) continue; const en = env(yN, a); let best = 0, bv = -1;
+          for (let L = 0; L <= L1; L++) { const ee = env(yE, a + L * D); let q = 0, sa = 0, sb = 0; for (let i = 0; i < en.length; i++) { q += en[i] * ee[i]; sa += en[i] ** 2; sb += ee[i] ** 2; } const v = q / Math.sqrt(sa * sb + 1e-20); if (v > bv) { bv = v; best = L; } } ls.push(best * D / SR * 1000); }
+        return ls.length ? med(ls) : lagMs(yE, yN); };
       const fftR = (re, im) => { const n = re.length; for (let i = 1, j = 0; i < n; i++) { let bb = n >> 1; for (; j & bb; bb >>= 1) j ^= bb; j ^= bb; if (i < j) { [re[i], re[j]] = [re[j], re[i]]; [im[i], im[j]] = [im[j], im[i]]; } } for (let len = 2; len <= n; len <<= 1) { const an = -2 * Math.PI / len, wr = Math.cos(an), wi = Math.sin(an); for (let i = 0; i < n; i += len) { let cr = 1, ci = 0; for (let k2 = 0; k2 < len / 2; k2++) { const ur = re[i + k2], ui = im[i + k2], vr = re[i + k2 + len / 2] * cr - im[i + k2 + len / 2] * ci, vi = re[i + k2 + len / 2] * ci + im[i + k2 + len / 2] * cr; re[i + k2] = ur + vr; im[i + k2] = ui + vi; re[i + k2 + len / 2] = ur - vr; im[i + k2 + len / 2] = ui - vi; const t = cr * wr - ci * wi; ci = cr * wi + ci * wr; cr = t; } } } };
       const centroid = (y, c2) => { const Nf = 2048, re = new Float64Array(Nf), im = new Float64Array(Nf); for (let j = 0; j < Nf; j++) { const q2 = c2 - Nf / 2 + j; re[j] = (q2 >= 0 && q2 < y.length ? y[q2] : 0) * (0.5 - 0.5 * Math.cos(2 * Math.PI * (j + .5) / Nf)); } fftR(re, im); const bin = SR / Nf; let s = 0, w = 0; for (let k2 = Math.round(300 / bin); k2 < Math.round(3500 / bin); k2++) { const a2 = Math.hypot(re[k2], im[k2]); s += a2 * k2; w += a2; } return s / Math.max(1e-12, w); };
       // Knackser in der Kopie: Knack-Index > 8 und > 3× an derselben Stelle der Kopie ohne „echt“ (gleiche Tonhöhen-Kette, nur echt anders)
       const scan = (y, ref, lagS) => { const W = Math.round(SR / 1000), hits = []; for (let c2 = 30 * W; c2 < y.length - 30 * W; c2 += 3 * W) { const k2 = d2m(y, SR, c2, 1.5); if (k2 > .004) { const kr = d2m(ref, SR, Math.max(30 * W, c2 - lagS), 8); if (k2 > 2 * kr + .003) hits.push({t: +(c2 / SR).toFixed(3), d2: +k2.toFixed(4), ref: +kr.toFixed(4)}); } } return hits; };
       const Rr = [], AL = [];
       for (let i = 0; i < E.out.length; i++) {
-        const e = E.out[i], n = N.out[i]; if (!e.y || !n.y) continue; const yE = f32(e.y), yN = f32(n.y), lag = lagMs(yE, yN), d = Math.round(lag * SR / 1000);
+        const e = E.out[i], n = N.out[i]; if (!e.y || !n.y) continue; const yE = f32(e.y), yN = f32(n.y), lagG = lagMs(yE, yN), lag = lagMed(yE, yN), d = Math.round(lag * SR / 1000);
         const yA = yE.subarray(d), PE = yin(yA, SR).f, PN = yin(yN, SR).f, dc = []; for (let k2 = 0; k2 < Math.min(PE.length, PN.length); k2++) if (PE[k2] > 0 && PN[k2] > 0) { const c2 = cents(PE[k2], PN[k2]); if (Math.abs(c2) < 60) dc.push(c2); }
         const mu = dc.reduce((s, z) => s + z, 0) / Math.max(1, dc.length), sd = Math.sqrt(dc.reduce((s, z) => s + (z - mu) ** 2, 0) / Math.max(1, dc.length));
         const kn = scan(yE, yN, d);
         AL.push({vi: e.vi, k: e.k, yA, yN, PN});
-        Rr.push({v: e.vi + 1, k: e.k + 1, rule: e.rule, plan: e.x, cms: e.cms, lag: +lag.toFixed(1), total: +(lag + e.cms).toFixed(1), sd: +sd.toFixed(1), knack: kn.length, knackBsp: kn.slice(0, 3)});
+        Rr.push({v: e.vi + 1, k: e.k + 1, rule: e.rule, plan: e.x, cms: e.cms, lag: +lag.toFixed(1), lagGesamt: +lagG.toFixed(1), total: +(lag + e.cms).toFixed(1), sd: +sd.toFixed(1), knack: kn.length, knackBsp: kn.slice(0, 3)});
       }
       const FD = [];
       for (const vi of [...new Set(AL.map(z => z.vi))]) { const [a2, c2] = AL.filter(z => z.vi === vi); if (!a2 || !c2) continue; const fe = [], fn = [];
@@ -242,7 +248,7 @@ for (const nr of ONLY) {
         const m = q2 => q2.reduce((s, z) => s + z, 0) / Math.max(1, q2.length), r1 = Rr.find(z => z.v === vi + 1 && z.k === 1), r2 = Rr.find(z => z.v === vi + 1 && z.k === 2);
         if (r1 && r2) FD.push({v: vi + 1, rule: r1.rule, f: [r1.plan && r1.plan.f, r2.plan && r2.plan.f], echt: +m(fe).toFixed(2), ohne: +m(fn).toFixed(2), n: fe.length}); }
       R.chor = {ms: CH.ms, kopien: Rr, formant: FD};
-      for (const z of Rr) info(`#${nr} Chor Stimme ${z.v}/Kopie ${z.k} (${z.rule})`, `Plan ${JSON.stringify(z.plan)} · Versatz ${z.lag} ms (+${z.cms} = ${z.total} ms) · σ ${z.sd} ct · Knackser ${z.knack} ${JSON.stringify(z.knackBsp)}`);
+      for (const z of Rr) info(`#${nr} Chor Stimme ${z.v}/Kopie ${z.k} (${z.rule})`, `Plan ${JSON.stringify(z.plan)} · Versatz ${z.lag} ms (gesamt ${z.lagGesamt}) (+${z.cms} = ${z.total} ms) · σ ${z.sd} ct · Knackser ${z.knack} ${JSON.stringify(z.knackBsp)}`);
       for (const z of FD) info(`#${nr} Chor Stimme ${z.v} (${z.rule}) Formant Kopie 1 gegen 2`, `Faktor ${z.f.join('/')} · echt ${z.echt} % · ohne echt ${z.ohne} % (${z.n} Rahmen)`);
       ok(Rr.length && Rr.every(z => z.plan && Math.abs(z.lag - z.plan.ms) <= 4), `#${nr} Chor: Versatz gemessen = Plan (±4 ms)`, Rr.map(z => z.lag + '/' + (z.plan && z.plan.ms)).join(' '));
       ok(Rr.every(z => z.total >= 9.5 && z.total <= 40.5), `#${nr} Chor: Versatz gegen den Lead 10–40 ms`, Rr.map(z => z.total).join(' '));
