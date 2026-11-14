@@ -262,7 +262,7 @@ try {
   for (const l of ['Korrektur weich', 'Korrektur hart', 'Korrektur natürlich', 'Chor Terz +400 (Chor-Weg)', 'Chor Quinte -500 (Chor-Weg)']) {
     const a = by(A, l), z = by(Bm, l); if (!a || !z) { ok(false, 'Tuning ' + l + ': gemessen'); continue; }
     const notWorse = z.lsdRuhig <= a.lsdRuhig + .05 && z.lsdUebergang <= a.lsdUebergang + .05 && z.formantPct <= a.formantPct + .2 && z.tonRmsCt <= a.tonRmsCt + .3 && z.glaette <= a.glaette + .05;
-    ok(z.knack < a.knack && z.knackMaxDb < a.knackMaxDb - 20 && notWorse, `Tuning ${l}: Knackser weniger, sonst nicht schlechter`, `Knackser ${a.knack} (${a.knackMaxDb} dB) → ${z.knack} (${z.knackMaxDb} dB) · LSD ${a.lsdRuhig}/${a.lsdUebergang} → ${z.lsdRuhig}/${z.lsdUebergang} dB · Formant ${a.formantPct} → ${z.formantPct} % · Ton ${a.tonRmsCt} → ${z.tonRmsCt} ct`);
+    ok(z.knack <= a.knack && (a.knack === 0 || z.knackMaxDb < a.knackMaxDb - 20) && notWorse, `Tuning ${l}: Knackser nicht mehr (Basis ab 4.59 schon ohne), sonst nicht schlechter`, `Knackser ${a.knack} (${a.knackMaxDb} dB) → ${z.knack} (${z.knackMaxDb} dB) · LSD ${a.lsdRuhig}/${a.lsdUebergang} → ${z.lsdRuhig}/${z.lsdUebergang} dB · Formant ${a.formantPct} → ${z.formantPct} % · Ton ${a.tonRmsCt} → ${z.tonRmsCt} ct`);
   }
   const e = by(Bm, 'Chor +400 echt');
   ok(e && e.konsonantDb <= -12 && e.schwankCt >= 1 && e.formantGegenKopiePct >= 1, 'Echte Chor-Kopie (Kern): Konsonanten leise, eigene Schwankung, eigene Formant-Lage', e && {konsonantDb: e.konsonantDb, schwankCt: e.schwankCt, formantGegenKopiePct: e.formantGegenKopiePct});

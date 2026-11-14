@@ -99982,24 +99982,24 @@ function spk3DspMake(Z2) {
   Z2.lowSplit = lowSplit; Z2.o3 = o3; Z2.kickTpl = kickTpl; Z2.kickAt = kickAt; opt.an = true;   // misst besser als SPK1 → an
   /* ---- Auftrag 2/4: Noten sicherer (Bass) + mehrstimmig (Pads). Z2.h = Helfer aus SPK2 (Haken „SPK3“ im return von spk2DspMake). ---- */
   const H2 = Z2.h; if (!H2 || !Z2.ops) return Z2;
-  const o4 = {up: 5, fbB: 260, gate: 0.1, gq: 0.05, orth: 1, thr: 0.35, sure: 0.7, zK: 300, zg: 1, poly: 1, pv: 5, pr: 0.5, dbg: null};
+  const o4 = {up: 12, rf: 230, kk: 2, fbB: 260, gate: 0.1, gq: 0.05, orth: 1, ref: 1, thr: 0.35, sure: 0.7, zK: 300, zg: 1, poly: 1, pv: 5, pr: 0.5, dbg: null};
   const mf = m => 440 * Math.pow(2, (m - 69) / 12);
   // Profi-Ebenen vorhanden (Profi-Trennung fertig) → Bass-Noten auf der Profi-Bass-Ebene suchen (sauberer als das Gemisch)
   function profiBass(d) { const j = d.meta.jobs && d.meta.jobs.profi; return j && j.fertig ? d.meta.layers.find(l => l.z === 'bass') || null : null; }
   function monoOf(d, lid) { const n = d.meta.n, ch = I.render(d, I.mixOf(d, lid), 0, n), x = new Float32Array(n), g = 1 / ch.length; for (const c of ch) for (let i = 0; i < c.length && i < n; i++) x[i] += c[i] * g; return x; }
-  // Beträge des ganzen Stücks (Rahmen i ↔ Mitte i·hop), Kick-Vorlage abgezogen (nur Original; Profi-Bass hat keinen Kick mehr)
+  // Beträge des ganzen Stücks (Rahmen i ↔ Mitte i·hop), Kick-Vorlage doppelt abgezogen (60-%-Quantil, Anschläge streuen) (nur Original; Profi-Bass hat keinen Kick mehr)
   async function magsAll(d, x, N, K, kick, emit, qid, p0, p1) {
     const hop = d.meta.base.hop, F = Math.floor(d.meta.n / hop) + 1, Y = new Float32Array(F * K), KT = kick ? kickTpl(d, N, K) : null, cen = new Int32Array(512), KB = new Float32Array(512 * K);
     for (let c0 = 0; c0 < F; c0 += 512) {
       const c1 = Math.min(F, c0 + 512), Yc = H2.magsX(x, N, hop, K, c0, c1); Y.set(Yc, c0 * K);
       if (KT) { const nn = c1 - c0; for (let i = 0; i < nn; i++) cen[i] = (c0 + i) * hop; kickAt(KT, cen.subarray(0, nn), KB, K); const KM = Math.min(K, KT.K);
-        for (let i = 0; i < nn; i++) for (let k = 0; k < KM; k++) { const o = (c0 + i) * K + k, kq = KB[i * K + k]; if (kq > 0) Y[o] = Math.sqrt(Math.max(0, Y[o] * Y[o] - kq)); } }
+        for (let i = 0; i < nn; i++) for (let k = 0; k < KM; k++) { const o = (c0 + i) * K + k, kq = KB[i * K + k]; if (kq > 0) Y[o] = Math.sqrt(Math.max(0, Y[o] * Y[o] - o4.kk * kq)); } }
       if (emit) emit({qid, prog: p0 + (p1 - p0) * c1 / F}); if (I.tick) await I.tick();
     }
     return {Y, F};
   }
   // Überall finden (Bass): Vorlage aus den bestätigten Noten, Gegen-Vorlage aus Stellen ohne Bass (tiefe Obertöne leise) wird aus der Vorlage
-  // herausgerechnet; Mindestpegel der Obertöne 1–3 relativ zur Vorlage; Band oben enger (Vorlage +5 Halbtöne, ≤ 260 Hz); Kick-Vorlage abgezogen.
+  // herausgerechnet; Mindestpegel der Obertöne 1–3 relativ zur Vorlage; Band oben enger (≤ 260 Hz; Vorlage +12); Kick-Vorlage abgezogen.
   async function finden3(d, m, emit, info) {
     const lid = m.lid, t2 = H2.t2Of(d), L = (t2.notes[lid] || []).filter(q => q.st === 'zu');
     if (H2.artOf(d, lid) !== 'bass' || !L.length) return finden0(d, m, emit, info);
@@ -100039,6 +100039,15 @@ function spk3DspMake(Z2) {
     const ok = new Uint8Array(F), sc = new Float32Array(F); for (let i = 0; i < F; i++) { sc[i] = Math.min(1, best[i]); ok[i] = best[i] >= o4.thr ? 1 : 0; }
     const O = H2.onsetsOf(x, sr, 0, d.meta.n / sr, fa, fb);
     const found = H2.segNotes({f0, sc, ok, i0: 0, F, hopS: hop / sr, O, G: H2.gridOf(d), Y: null, K, df, fb});
+    // Tonhöhe je Note nachschärfen: Halbtöne im Band, Obertöne 1–6 bis 230 Hz (darüber liegen Akkord-Teiltöne, C-E-G = Obertöne 4-5-6 von C)
+    // log der Beträge relativ zur Vorlage: Mittel je Oberton (mind. 2), ein fehlender Oberton kostet viel (Kick-Rest tief unten macht keine falsche Unter-Oktave)
+    if (o4.ref) for (const q of found) {
+      const ia = Math.max(0, Math.ceil((q.a + 0.03) * sr / hop)), ib = Math.min(F, Math.max(ia + 1, Math.floor(q.b * sr / hop) + 1)); let bm = q.m, bv = -1e9;
+      for (let mm = Math.ceil(H2.midiOf(fa)); mf(mm) <= fb; mm++) { const f = mf(mm); let s = 0;
+        for (let i = ia; i < ib; i++) { const o = i * K; let a = 0, w = 0; for (let h = 1; h <= 6 && (h <= 2 || h * f <= o4.rf); h++) { const g = Math.pow(0.85, h - 1); a += g * Math.log(0.05 + Math.sqrt(pk(o, f, h) / lowMed)); w += g; } s += a / w; }
+        if (s > bv) { bv = s; bm = mm; } }
+      if (bm !== q.m) { const r = mf(bm) / q.f; q.m = bm; q.f = +mf(bm).toFixed(2); q.fz = q.fz.map(z => +(z * r).toFixed(1)); }
+    }
     if (o4.dbg) o4.dbg({found, best, f0, C, lowMed, p0, T, G, Tq, nG});
     I.uBegin(d, 'Überall finden');
     const all = Object.entries(t2.notes), hit = (q, p) => Math.min(p.b, q.b) - Math.max(p.a, q.a) > 0.5 * Math.min(q.b - q.a, p.b - p.a);
