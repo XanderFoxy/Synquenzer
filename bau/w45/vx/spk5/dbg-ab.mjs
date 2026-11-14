@@ -1,0 +1,12 @@
+import path from 'node:path';
+import {start, page, btn, info, mixWav, openSpk} from './lib.mjs';
+const file = path.resolve(process.argv[2]); const E = await start(file), errs = [];
+const P = await page(E, 428, 926, errs), {p, tap} = P;
+await openSpk(P, mixWav(E.dir));
+const t0 = Date.now(); await tap(await btn(p, 'Zerlegen'));
+await p.waitForFunction(() => /Zerlegen ·/.test(__spk.page.info().stat), null, {timeout: 30000});
+const t1 = Date.now(); const ab = await btn(p, '■ Abbrechen'); console.log('ab', ab, t1 - t0, await p.evaluate(() => [__spk.page.info().stat, Date.now() - __spk.page.ui().s5t]));
+await tap(ab); console.log('nach tap', await p.evaluate(() => [__spk.page.info().stat, __spk.page.info().busy]));
+await p.waitForFunction(() => !__spk.page.info().busy, null, {timeout: 60000});
+console.log((await info(p)).stat, errs);
+await E.b.close(); E.srv.close();

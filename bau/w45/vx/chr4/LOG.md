@@ -22,3 +22,4 @@
   (a) warum Band 300–1000 Hz an Noten-Rändern +4…12 dB (Modell-Rand, apGate, Legato-Vokalwechsel?) mit fdiag an 2,87 s / 3,15 s klären;
   (b) dann G 2,5 ms + Rampe 20 ms (G2 model/render + G6 modelRuns/renderMulti gleich) einbauen; (c) Hülle: Hermite nur mit verlässlicher
   Steigung (ρ ≥ 0,5), unter T1 fortsetzen – bringt +400 bis −2,5 %-Punkte, −500 erst nach den Rändern prüfen.
+- 14.11. 17:47 Start Auftrag 2/2 (Test): index.html = basis5 (cmp gleich). Entscheidung: Rand-Kandidat G 2,5 ms + Rampe 20 ms erst als Variante (tmp/) über alle 5 Fälle + Nachbarwerte prüfen; nur übernehmen, wenn nirgends schlechter (Knackser 0, Glätte ≤ Basis + 0,05).

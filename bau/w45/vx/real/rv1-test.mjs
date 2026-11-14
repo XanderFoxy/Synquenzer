@@ -3,7 +3,7 @@
 //     Quantisieren ohne Knacken (Sprung/Knack-Index an jedem Schnitt gegen die Quelle), Verschieben links (Ausklang bitgleich) / rechts (Dehnung, Ton gleich)
 // (b) Import Gesang allein: Tempo-Vorschlag plausibel (Raster-Treue der annotierten Einsätze) + Frage
 // (c) Chor aus echtem Gesang: Versatz/Schwankung/Formant wie geplant, keine neuen Knackser
-// Aufruf: node rv1-test.mjs <abs index.html> <abs ordner mit vocadito_*.wav/csv> [out.json]
+// Aufruf: node rv1-test.mjs <abs index.html> <abs ordner mit <name>_<nr>.wav und <name>_<nr>_notesA1.csv> [out.json]
 import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
 import path from 'node:path';
 import fs from 'node:fs';
@@ -11,6 +11,8 @@ import { yin } from '/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5
 const file = path.resolve(process.argv[2]), dl = path.resolve(process.argv[3]), outJ = process.argv[4] ? path.resolve(process.argv[4]) : null;
 const here = path.dirname(new URL(import.meta.url).pathname), fotos = path.join(here, 'fotos'); fs.mkdirSync(fotos, {recursive: true});
 const ONLY = (process.env.RV1_ONLY || '1,10,14').split(',');
+// Dateien im Ordner: <name>_<nr>.wav, Noten <name>_<nr>_notesA1.csv
+const PFX = (fs.readdirSync(dl).find(f => /_1\.wav$/.test(f)) || '_1.wav').replace(/1\.wav$/, '');
 let bad = 0, all = 0; const RES = {};
 const ok = (c, m, d) => { all++; if (!c) bad++; console.log((c ? 'OK ' : 'FEHLER ') + m + (d != null && d !== '' ? ' – ' + (typeof d === 'string' ? d : JSON.stringify(d)) : '')); };
 const info = (m, d) => console.log('INFO ' + m + (d != null ? ' – ' + (typeof d === 'string' ? d : JSON.stringify(d)) : ''));
@@ -50,7 +52,7 @@ async function tapSel(p, sel) { const c = await ctr(p, sel); if (!c) return fals
 const fit = (ons, bpm) => { const z = P => { let re = 0, im = 0; for (const t of ons) { re += Math.cos(2 * Math.PI * t / P); im += Math.sin(2 * Math.PI * t / P); } return Math.hypot(re, im) / ons.length; }; return z(60 / bpm) + .5 * z(30 / bpm); };
 
 async function importVox(p, nr) {
-  const wav = fs.readFileSync(path.join(dl, 'vocadito_' + nr + '.wav'));
+  const wav = fs.readFileSync(path.join(dl, PFX + nr + '.wav'));
   await run(p, () => { closePop(); va1Sheet(); }); await sleep(300);
   ok(await tapSel(p, 'button[data-va="midiin"]'), `#${nr} Export-Blatt › „Audio/MIDI importieren“`); await sleep(300);
   await run(p, () => { window.__pc = window.__imp1.ui.cur(); });
@@ -83,7 +85,7 @@ for (const nr of ONLY) {
   info(`#${nr} Import`, R.imp);
   ok(c.r.quelle === 'gesang' && c.r.frage && q && q.w.some(t => /^Aus Gesang geschätzt – \d+/.test(t)) && q.bt.length >= 2, `#${nr} Gesang allein erkannt, Blatt fragt mit Vorschlag`, {quelle: c.r.quelle, frage: c.r.frage, warn: q && q.w, bt: q && q.bt});
   ok(c.bpm >= 60 && c.bpm <= 180, `#${nr} Tempo-Vorschlag im Bereich 60–180`, c.bpm);
-  const ann = fs.existsSync(path.join(dl, 'vocadito_' + nr + '_notesA1.csv')) ? fs.readFileSync(path.join(dl, 'vocadito_' + nr + '_notesA1.csv'), 'utf8').trim().split('\n').map(l => l.split(',').map(Number)).filter(a => a.length >= 3 && isFinite(a[0])) : null;
+  const ann = fs.existsSync(path.join(dl, PFX + nr + '_notesA1.csv')) ? fs.readFileSync(path.join(dl, PFX + nr + '_notesA1.csv'), 'utf8').trim().split('\n').map(l => l.split(',').map(Number)).filter(a => a.length >= 3 && isFinite(a[0])) : null;
   if (ann) {
     const ons = ann.map(a => a[0]), sc = []; for (let t = 60; t <= 180; t += .5) sc.push([t, fit(ons, t)]);
     const mine = Math.max(...[c.bpm].concat(c.r.alt || []).filter(v => v >= 60 && v <= 180).map(v => fit(ons, v))), rank = sc.filter(z => z[1] > mine).length / sc.length;
@@ -157,13 +159,13 @@ for (const nr of ONLY) {
     if (badK.length || badJ.length) info(`#${nr} auffällige Schnitte`, badK.concat(badJ).slice(0, 8));
     ok(!badK.length, `#${nr} Quantisieren: kein Knacken an den Schnitten (2. Ableitung ≤ 1,5× Quelle an beiden Nahtseiten)`, `${Ks.length} Schnitte, max ${R.quant.d2Max} (Quelle ${R.quant.d2QuelleMax}), Verhältnis max ${R.quant.d2Ratio}, auffällig ${badK.length}`);
     ok(!badJ.length, `#${nr} Quantisieren: max. Sprung an den Schnitten ≤ 1,5× Sprung der Quelle`, `max ${R.quant.sprungMax}, auffällig ${badJ.length}`);
-    { const LK = Q.lock, off = L.map((q, i) => ({i, e: qe[i], push: i > 0 && Math.abs(q.dst - (L[i - 1].dst + L[i - 1].an + LK + .01)) < .002})).filter(z => z.e > 2); R.quant.rasterOk = L.length - off.length; R.quant.gesperrt = off.filter(z => z.push).length;
-      ok(off.every(z => z.push), `#${nr} Anker-Ziele auf dem 1/8-Raster (sonst nur durch die Vorgänger-Sperre verschoben)`, `${L.length - off.length}/${L.length} auf dem Raster, ${off.filter(z => z.push).length} gesperrt, frei daneben ${off.filter(z => !z.push).length}`); }
+    { const LK = Q.lock, off = L.map((q, i) => ({i, e: qe[i], push: i > 0 && Math.abs(q.dst - (L[i - 1].dst + L[i - 1].an + LK + .01)) < .002, col: (() => { const st = 60 / Q.warp.bpm / 2, g = Math.round((q.at - Q.warp.t0) / st); return [i - 1, i + 1].some(j => L[j] && Math.abs(L[j].da - (Q.warp.t0 + g * st)) < .002); })()})).filter(z => z.e > 2); R.quant.rasterOk = L.length - off.length; R.quant.gesperrt = off.filter(z => z.push).length; R.quant.kollision = off.filter(z => !z.push && z.col).length;
+      ok(off.every(z => z.push || z.col), `#${nr} Anker-Ziele auf dem 1/8-Raster (sonst Vorgänger-Sperre oder Nachbar auf derselben Linie)`, `${L.length - off.length}/${L.length} auf dem Raster, ${off.filter(z => z.push).length} gesperrt, ${off.filter(z => !z.push && z.col).length} Linie besetzt, frei daneben ${off.filter(z => !z.push && !z.col).length}`); }
     /* ---------- Verschieben links/rechts ---------- */
     let kk = -1; for (let i = Math.floor(L.length / 2); i < L.length - 1; i++) if (L[i].dst - L[i - 1].dst > .35 && L[i + 1].dst - L[i].dst > .3) { kk = i; break; }
     if (kk < 0) for (let i = 1; i < L.length - 1; i++) if (L[i].dst - L[i - 1].dst > .3) { kk = i; break; }
     for (const dir of [-1, 1]) {
-      const D = dir * .06;
+      const D = dir < 0 ? -.06 : Math.max(.06, L[kk].t - L[kk].dst + .06);   // rechts: mehr Platz als in der Quelle → Vorgänger wird gedehnt
       const M = await run(p, async o => {
         const u0 = UNDO.length, L0 = window.__vx1.list(o.take), q = L0[o.k]; await window.__vx1.move(o.take, o.k, q.da + o.D);
         for (let i = 0; i < 1200 && !window.__vx1.ready(o.take); i++) { wpPlay(o.take); await wait(25); }

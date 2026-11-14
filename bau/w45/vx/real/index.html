@@ -102106,7 +102106,7 @@ function imp1Core() {
     const ons = peaks(on, fps);
     let qn = 0; for (let t = start; t <= end; t++) if (fe[t] < loud * 1e-3) qn++;   // RV1: Anteil leiser Rahmen (unter −30 dB) zwischen Anfang und Ende
     const quiet = qn / Math.max(1, end - start + 1);
-    // RV1: tiefe Männerstimme (Grundton 100–130 Hz) streut ins Bass-Band; bei 48 kHz (Safari) lag echter Gesang bei 5 % → „Mix“ ohne Frage.
+    // RV1: tiefe Männerstimme (Grundton 100–130 Hz) streut ins Bass-Band; bei 48 kHz (Telefon-Browser) lag echter Gesang bei 5 % → „Mix“ ohne Frage.
     // Gesang allein auch bei wenig Bass (< 15 %) mit Atem-/Phrasen-Pausen (≥ 1,5 % der Rahmen leise; Mischungen mit Band ~0 %).
     const vocal = o.gesang === true || (o.gesang !== false && (lowRatio < .03 || (lowRatio < .15 && quiet >= .015)));
     let b0 = cand.length ? cand[0].b : 120, how = 'mix';

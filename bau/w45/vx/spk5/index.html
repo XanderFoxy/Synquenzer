@@ -96581,7 +96581,7 @@ function spk5Msg(U, txt, undo) {
 // Tipp auf Zerlegen (Hook am Anfang von spk1Zerl): true = erledigt
 function spk5Zerl(U) {
   if (U.busy === 'zerlegen' || U.busy === 'profi') {
-    if (Date.now() - (U.s5t || 0) < 900) return true;   // Doppeltipp bricht nicht sofort ab
+    if (Date.now() - (U.s5t || 0) < 120) return true;   // Prellen (< 0,12 s) bricht nicht ab; ein echter zweiter Tipp schon – die Meldung sagt dann „abgebrochen – nichts geändert“
     if (U.busy === 'zerlegen') { spk1Call('zstop', {doc: SPK1.doc}).catch(() => {}); spk1Stat(U, 'Breche ab …'); } else { ki1Stop(); spk1Stat(U, 'Halte an …'); }
     if (U.s5) { U.s5.lab = 'Breche ab'; spk1Dirty(U, 'ov'); }
     return true;
@@ -96596,7 +96596,7 @@ async function spk5Run(U, how) {
   const sel = U.sel.length ? U.sel.map(s => Object.assign({}, s)) : null, area = spk5Area(U, sel), sv = U.selVer, span = sel ? spk1SelSpan(U) : null;
   const nm = how === 'profi' ? 'Profi-Trennung' : 'Zerlegen', wo = sel ? 'Auswahl' : 'ganzes Stück';
   U.busy = how === 'profi' ? 'profi' : 'zerlegen'; U.vf = null; U.s5t = Date.now(); U.s5 = {area, p: 0, lab: nm + ' · ' + wo, ph: 0};
-  spk1Dd(U, null); spk5Msg(U, null); spk1BtnState(U); spk1Stat(U, nm + ' · ' + wo + ' …'); spk1Dirty(U, 'ov');
+  spk1Dd(U, null); spk5Msg(U, null); spk1BtnState(U); spk1Stat(U, nm + ' (' + wo + ') …'); spk1Dirty(U, 'ov');
   const prog = (p, st) => { const B = U.s5; if (!B) return; B.p = p; B.ph = (B.ph || 0) + 2; B.lab = nm + ' · ' + wo + (st ? ' · ' + st : ''); spk1Stat(U, nm + ' · ' + (st || 'Rechne') + ' ' + Math.round(p * 100) + ' %'); spk1Dirty(U, 'ov'); };
   try {
     let r;
