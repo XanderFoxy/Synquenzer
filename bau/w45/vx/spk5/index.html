@@ -95168,7 +95168,7 @@ function ki1Dauer() {
 function ki1Guide(ents) {
   try {
     ents.push({id: 'ki1', n: 'Profi-Trennung (Drums, Bass, Gesang, Rest)', w: 'Spektral › ▾ neben „Zerlegen“ (quer: „Zerlegen ▾“) › Profi-Trennung',
-      d: 'Trennt das ganze Stück genauer als „Zerlegen“ – vor allem Gesang und Bass – mit einem gelernten Modell. Lädt einmal ≈ 70–86 MB aus dem Netz, danach offline. Rechnet in Stücken: ■ Abbrechen oder ✕ hält an, später „fortsetzen“ (auch nach Neuladen). Ergebnis sind die Ebenen Drums, Bass, Gesang + Rest; zusammen = Original, ein ↶ nimmt alles zurück. Im selben Klappfenster: „vom Gerät löschen“.',
+      d: /* SPK5 */ 'Trennt die Auswahl (ohne Auswahl das ganze Stück) genauer als „Zerlegen“ – vor allem Gesang und Bass – mit einem gelernten Modell. Lädt einmal ≈ 70–86 MB aus dem Netz, danach offline. Rechnet in Stücken: ■ Abbrechen oder ✕ hält an, später „fortsetzen“ (auch nach Neuladen). Ergebnis sind die Ebenen Drums, Bass, Gesang + Rest; zusammen = Original, ein ↶ nimmt alles zurück. Im selben Klappfenster: „vom Gerät löschen“.',
       s: 'profi trennung genauer trennen ki modell stems gesang vocals stimme bass drums rest download offline fortsetzen zerlegen spektral',
       go: () => { spk1Open({back: {menu: true}}); }, q: () => (SPK1.open && SPK1.ui ? (SPK1.ui.b_ki1 && SPK1.ui.b_ki1.offsetParent ? SPK1.ui.b_ki1 : SPK1.ui.b_zerl) : null)});
   } catch (e) { logErr(e); }
@@ -99427,8 +99427,8 @@ function spk1Guide(ents) {
   try {
     const E = (id, n, w, d, s, go, q) => ({id, n, w, d, s, go, q});
     ents.push(E('spk1', 'Spektral (Frequenzspektrum)', '≡ Menü › Analyse › Spektral … · Takes-Blatt › Im Spektrum öffnen',
-      'Ein Stück als Frequenzbild: links die Tasten, oben die Takte. Rechteck, Zeit, Frequenz, Pinsel, Harmonische (Ton antippen) und Ähnliche wählen Teile aus; „In Ebene“ legt sie als Ebene ab (Bass, Gesang, Drums …) – nichts am Original geht verloren. „Zerlegen“ trennt das ganze Stück in Drums, Bass, Gesang und Rest; „Verfeinern“ rechnet eine Auswahl genauer nach („Was steckt hier?“).',
-      'spektrum spektral frequenz analyse trennen zerlegen verfeinern ebenen stems bass gesang drums auswahl pinsel harmonische obertöne',
+      'Ein Stück als Frequenzbild: links die Tasten, oben die Takte. Rechteck, Zeit, Frequenz, Pinsel, Harmonische (Ton antippen) und Ähnliche wählen Teile aus; „In Ebene“ legt sie als Ebene ab (Bass, Gesang, Drums …) – nichts am Original geht verloren. „Zerlegen“ trennt die Auswahl (ohne Auswahl das ganze Stück) in Drums, Bass, Gesang und Rest; „Verfeinern“ rechnet eine Auswahl genauer nach („Was steckt hier?“). „Ansicht ▾ → Farben“ wählt die Farbstufe (Glut, Magma, Grün-Blau, Graustufen, Blau).',   // SPK5
+      'spektrum spektral frequenz analyse trennen zerlegen verfeinern ebenen stems bass gesang drums auswahl pinsel harmonische obertöne farben farbstufe glut magma graustufen',   // SPK5
       () => { spk1Open({back: {menu: true}}); }, () => (SPK1.open && SPK1.ui ? SPK1.ui.tl : null)));
   } catch (e) { logErr(e); }
 }

@@ -16,3 +16,5 @@
   Raster: Abweichungen = Kollisionen (quantizeMarks: zwei Stücke auf derselben Linie → eines bleibt) + Vorgänger-Sperre; Folge der Übersegmentierung.
   Links: #14 bitgleich (216 ms), #1 1,1e-4 an 25 ms nach Vorgänger-Anfang, #10 0,004 an 1 ms (vordere Naht des Vorgängers) – Befund.
   Rechts-Test: Ziel lag teils unter Quellen-Abstand (#14 0,94×, #10 Messfenster leer) → Test korrigiert (rechts = mehr Platz als Quelle).
+17:51 Lauf 3 Endstand (run3.txt): 42/53 OK; Rest = Befunde (Übersegmentierung 150/59, Chor st+2 Versatz/σ/5 Knack-Stellen, Links-Naht 1e-4/0,004, #10 Rechts-Fenster leer).
+  Pflicht: topdefs 0/0, dupkeys 0, smoke errors [], MS 2000 1×, live: true 1×, Markenwörter = Basis, VERSION gleich. Regression imp1-test ALLE OK (48). NOTES.md geschrieben.

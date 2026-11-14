@@ -55,6 +55,14 @@ H = [
   "async function ki1Start(U) {\n  if (typeof spk5Run === 'function') return spk5Run(U, 'profi');   // SPK5: Auswahl oder alles, Fortschritt über dem Bereich\n  if (U.busy || !SPK1.doc) return;"),
  ("    dd.appendChild(el('h5', '', 'Ganzes Stück trennen'));",
   "    dd.appendChild(el('h5', '', U.sel.length ? 'Nur die Auswahl trennen' : 'Ganzes Stück trennen'));   // SPK5"),
+
+ # Guide-Texte: Zerlegen/Profi wirken auf die Auswahl; Farbstufen
+ ("„Zerlegen“ trennt das ganze Stück in Drums, Bass, Gesang und Rest; „Verfeinern“ rechnet eine Auswahl genauer nach („Was steckt hier?“).',\n",
+  "„Zerlegen“ trennt die Auswahl (ohne Auswahl das ganze Stück) in Drums, Bass, Gesang und Rest; „Verfeinern“ rechnet eine Auswahl genauer nach („Was steckt hier?“). „Ansicht ▾ → Farben“ wählt die Farbstufe (Glut, Magma, Grün-Blau, Graustufen, Blau).',   // SPK5\n"),
+ ("verfeinern ebenen stems bass gesang drums auswahl pinsel harmonische obertöne',\n",
+  "verfeinern ebenen stems bass gesang drums auswahl pinsel harmonische obertöne farben farbstufe glut magma graustufen',   // SPK5\n"),
+ ("d: 'Trennt das ganze Stück genauer als „Zerlegen“",
+  "d: /* SPK5 */ 'Trennt die Auswahl (ohne Auswahl das ganze Stück) genauer als „Zerlegen“"),
  # Block
  ("/* GD1-END */\n", "/* GD1-END */\n" + blk),
 ]
