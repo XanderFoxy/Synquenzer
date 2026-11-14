@@ -93684,8 +93684,9 @@ Object.assign(SYNQUENZER, {int53d: {info: () => ({files: INT53D.files, waits: IN
        (dieselbe Einstellung vox2Sm, ein Zustand – ein Tipp dort zeichnet ein offenes Mikrofon-Blatt nach).
    (2) Video quer: [Live-Vorschau beim Komponieren] liegt wie hochkant im Extras-Kasten der rechten Spalte (unter Titel · Rand · Making-of ·
        Schnitt); die Zeile unter der Bühne entfällt, Bühne und fertiges Video bekommen die Höhe zurück.
-   (3) Matrix: Szenen-Kopf ▶ im STOPP startet erst beim Loslassen (Tipp); Halten (450 ms, ≤ 8 px wie die übrigen Halte-Gesten) öffnet nur
-       das Blatt „Szene n“, nichts startet. Während der Wiedergabe bleibt es wie MTX (Tipp = am Taktstrich, knapp davor beim Aufsetzen).
+   (3) Matrix: Szenen-Kopf ▶ im STOPP startet erst beim Loslassen (Tipp: losgelassen ≤ 12 px vom Aufsetzen, wie jeder Tipp der App);
+       Halten (450 ms, ≤ 8 px wie die übrigen Halte-Gesten) öffnet nur das Blatt „Szene n“, nichts startet; weggezogen startet nichts.
+       Während der Wiedergabe bleibt es wie MTX (Tipp = am Taktstrich, knapp davor beim Aufsetzen).
    (4) Echtzeit-Mitschnitt: steht ein Vergleich auf VORHER (Mix & Master, Klang-Editor, Marken · STIMME, Tonhöhe, Refrain groß / Chor
        sauber), schaltet der Start sichtbar auf NACHHER und sagt „Mitschnitt mit Nachher“ – die Datei hat den Nachher-Stand wie jeder Export.
    (5) Klang-Editor/-Browser: wird der Editor geschlossen, während der Vergleich auf VORHER steht, endet er auf NACHHER (wie Mix & Master
@@ -93802,7 +93803,7 @@ vd4LvFit = function () {
   return r;
 }; }
 { const xd1HoldEnd0 = mtxHoldEnd; mtxHoldEnd = function (e) {
-  const h = MTX.hold, go = !!(h && h.xd1 && e && e.type === 'pointerup' && e.pointerId === h.id && !h.long);
+  const h = MTX.hold, go = !!(h && h.xd1 && e && e.type === 'pointerup' && e.pointerId === h.id && !h.long && Math.abs(e.clientX - h.x) <= 12 && Math.abs(e.clientY - h.y) <= 12);   // Tipp = losgelassen, wo aufgesetzt (12 px wie jeder Tipp)
   xd1HoldEnd0(e);
   if (go && !R.playing) { XD1.mtxN++; try { launchScene(h.s); } catch (err) { logErr(err); } }   // Tipp = Start beim Loslassen (läuft es inzwischen, startete MTX schon am Taktstrich)
 }; }
