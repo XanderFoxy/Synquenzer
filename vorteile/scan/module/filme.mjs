@@ -43,12 +43,30 @@ export const STANDARD = {
   maxAngebot: 60,
   maxNeu: 40,
   maxStaffelnJeSerie: 20,
+  // Übersicht (Xander 14.11.2026): Angebote in seinen Genres = Kauf ≤ 7,99 € oder deutlich unter dem bisherigen Preis
+  angebotMax: 7.99,
+  deutlichFaktor: 0.7, // ≤ 70 % des zuletzt/höchsten gesehenen Preises = „deutlich unter Normalpreis“
+  maxGruppe: 40, // Titel je Genre-Gruppe auf der Seite
+  // Qualität (nur Chart-Titel; deine Listen gelten immer): Wikidata – Bekanntheit (Wikipedia-Sprachen), Rotten Tomatoes, Horror
+  qualitaet: true,
+  qualiMaxAbrufe: 8, // Wikidata-Abfragen pro Lauf (Rest im nächsten Lauf; das Ergebnis bleibt qualiTage im Zustand)
+  qualiJeAbfrage: 15, // Titel je Abfrage (Namenssuche kostet Wikidata Zeit)
+  qualiTage: 30,
+  qualiFehltTage: 7, // nicht bei Wikidata gefunden -> so lange nicht neu fragen
+  qualiRt: 60, // Rotten Tomatoes ab 60 % = guter Film
+  qualiBekannt: 30, // ohne Bewertung: in so vielen Wikipedia-Sprachen = bekannter Film
+  qualiBekanntNeu: 12, // neue Filme (≤ neuMonate) haben noch weniger Artikel
+  qualiBlockbuster: 55, // so bekannt, dass er trotz schwacher Kritik bleibt (Popcorn-Kino)
+  qualiOhneDatenPlatz: 15, // ohne Wikidata-Daten nur, wer so weit oben in den Apple-Charts steht
 };
 
 export const sucheUrl = (term, staffel = false, limit = STANDARD.sucheLimit, land = 'de') =>
   `${APPLE}/search?term=${encodeURIComponent(term)}&country=${land}&media=${staffel ? 'tvShow' : 'movie'}&entity=${staffel ? 'tvSeason' : 'movie'}&limit=${staffel ? 50 : limit}`;
 export const lookupUrl = (ids, land = 'de') => `${APPLE}/lookup?id=${ids.map(i => String(i).replace(/^itunes:/, '')).join(',')}&country=${land}`;
 export const chartUrl = genre => `${APPLE}/de/rss/topmovies/limit=100/genre=${genre}/json`;
+// Reihenfolge der Gruppen in filme.json (die Seite zeigt: Wunschliste · Für 3,99 € · Action & Thriller · Comedy · 80er & Klassiker
+// · Disney · Serien; „angebot“ und „neu“ bleiben für ältere Fassungen der Seite)
+export const GRUPPEN_REIHE = ['wunsch', 'fuer399', 'action', 'comedy', 'achtziger', 'disney', 'serien', 'angebot', 'neu'];
 export const MYDEALZ_GRUPPEN = [{ gruppe: 'apple-tv', name: 'Apple TV' }, { gruppe: 'filme-serien', name: 'Filme & Serien' }];
 
 // ---------------------------------------------------------------- Wikidata (Weg „wikidata“)
@@ -111,6 +129,105 @@ export function wikidataKandidaten(zeilen, item) {
     out.push({ id: z.id, jahr: z.jahr, w: z.jahr == null ? 1 : z.jahr === item.jahr ? 3 : 2 });
   }
   return out.sort((a, b) => b.w - a.w);
+}
+
+// ---------------------------------------------------------------- Qualität (Wikidata) – „richtig geile Filme, nicht irgendein Quatsch“
+// Für Chart-Titel (nicht für deine Listen): Bekanntheit = Zahl der Wikipedia-Sprachen (wikibase:sitelinks), Kritik = Rotten
+// Tomatoes (P444 „review score“ mit P447 = Q105584), Horror = Genre (P136) ist Horrorfilm Q200092 oder eine Unterart davon.
+// Gefunden wird der Film über die Apple-Nummer (P6398, oft die US-Nummer) ODER die Namenssuche (wbsearchentities über
+// mwapi, nur Filme); bei der Namenssuche müssen Name und Jahr passen (Jahr ±1, sonst ein älterer Film = Wiederveröffentlichung).
+export const HORROR_TEXT = /horror|grusel|schocker|slasher|zombie|exorzis|besessenheit|kannibal/i;
+const FILM_TYPEN = 'wd:Q11424 wd:Q29168811 wd:Q24869 wd:Q506240 wd:Q202866 wd:Q226730';
+
+/** Apple-Titel für die Namenssuche: „Charade (1963)“ -> „Charade“, „Jungs Von Spinal Tap, Die“ -> „Die Jungs Von Spinal Tap“,
+ *  „THX 1138 (Director's Cut)“ -> „THX 1138“, „The Outfit -- Verbrechen nach Maß“ -> „The Outfit“. */
+export function suchName(titel) {
+  let s = String(titel ?? '').replace(/\s+/g, ' ').trim();
+  s = s.replace(/\s*\((?:19|20)\d\d\)\s*/g, ' ').trim();
+  s = s.replace(/\s*[(\[]\s*(?:extended|director'?s|uncut|remastered|kinofassung|special|ungek|omu|ov\b|4k|uhd)[^)\]]*[)\]]\s*$/i, '');
+  s = s.replace(/\s+(?:-\s*)?(?:extended|uncut|director'?s)\s+(?:cut|edition|version|fassung)\s*$/i, '');
+  s = s.replace(/\s+--\s+.*$/, '');
+  const m = s.match(/^(.*?),\s*(Der|Die|Das|The)$/i);
+  if (m) s = `${m[2]} ${m[1]}`;
+  return s.trim();
+}
+/** Jahr aus dem Titel („Meteor (1979)“), sonst null – Apples Datum ist bei alten Filmen oft die Wiederveröffentlichung. */
+export const jahrImTitel = t => { const x = String(t ?? '').match(/\((19\d\d|20\d\d)\)/); return x ? Number(x[1]) : null; };
+
+/** SPARQL für bis zu qualiJeAbfrage Titel: [{ nr: '123', name: 'Charade' }] -> eine Zeile je (Titel, Wikidata-Film). */
+export function qualiAbfrage(titel) {
+  const ids = titel.map(t => sparqlText(t.nr)).join(' ');
+  const namen = titel.map(t => `(${sparqlText(t.nr)} ${sparqlText(t.name)})`).join(' ');
+  return 'SELECT ?key ?weg ?item ?l (MIN(?j) AS ?jahr) (MAX(?h0) AS ?h) (GROUP_CONCAT(DISTINCT ?rt0; separator="|") AS ?rt) '
+    + '(GROUP_CONCAT(DISTINCT ?lab0; separator="|") AS ?lab) WHERE { hint:Query hint:optimizer "None" . '
+    + `{ VALUES ?key { ${ids} } ?item wdt:P6398 ?key . BIND("id" AS ?weg) } UNION `
+    + `{ VALUES (?key ?suche) { ${namen} } SERVICE wikibase:mwapi { bd:serviceParam wikibase:endpoint "www.wikidata.org" ; `
+    + 'wikibase:api "EntitySearch" ; mwapi:search ?suche ; mwapi:language "de" ; mwapi:limit "5" . ?item wikibase:apiOutputItem mwapi:item . } '
+    + `?item wdt:P31 ?typ . VALUES ?typ { ${FILM_TYPEN} } BIND("name" AS ?weg) } `
+    + '?item wikibase:sitelinks ?l . '
+    + 'OPTIONAL { ?item wdt:P577 ?d . BIND(YEAR(?d) AS ?j) } '
+    + 'OPTIONAL { ?item wdt:P136/wdt:P279* wd:Q200092 . BIND(1 AS ?h0) } '
+    + 'OPTIONAL { ?item p:P444 ?st . ?st pq:P447 wd:Q105584 ; ps:P444 ?rt0 . } '
+    + 'OPTIONAL { ?item rdfs:label ?lab0 . FILTER(LANG(?lab0) = "de" || LANG(?lab0) = "en") } '
+    + '} GROUP BY ?key ?weg ?item ?l LIMIT 2000';
+}
+
+/** Antwort -> [{ key, weg, item, l, jahr, horror, rt, namen }] (Zeilen ohne Schlüssel fallen weg). */
+export function leseQuali(text) {
+  let j;
+  try { j = JSON.parse(String(text ?? '').trim()); } catch { throw new Error('keine gültige Wikidata-Antwort'); }
+  const b = j?.results?.bindings;
+  if (!Array.isArray(b)) throw new Error('Wikidata-Antwort ohne results.bindings');
+  const out = [];
+  for (const r of b) {
+    const key = String(r?.key?.value ?? '').trim();
+    const l = Number(r?.l?.value);
+    if (!/^\d{5,12}$/.test(key) || !Number.isFinite(l)) continue;
+    const jahr = Number(r?.jahr?.value);
+    const rts = String(r?.rt?.value ?? '').split('|').map(x => x.trim().match(/^(\d{1,3})\s*%$/)).filter(Boolean).map(x => Number(x[1])).filter(x => x <= 100);
+    out.push({
+      key, weg: r?.weg?.value === 'id' ? 'id' : 'name', item: String(r?.item?.value ?? '').replace(/^.*\//, '') || null, l,
+      jahr: Number.isInteger(jahr) && jahr > 1880 && jahr < 2100 ? jahr : null, horror: Number(r?.h?.value) === 1,
+      rt: rts.length ? Math.max(...rts) : null, namen: String(r?.lab?.value ?? '').split('|').map(x => x.trim()).filter(Boolean),
+    });
+  }
+  return out;
+}
+
+/** Passender Wikidata-Film für einen Apple-Titel ({ nr, name, jahr }) -> { l, horror, rt, item } | null. */
+export function qualiWahl(zeilen, t) {
+  const eigene = zeilen.filter(z => z.key === t.nr);
+  const best = l => l.sort((a, b) => b.l - a.l)[0] || null;
+  const perId = best(eigene.filter(z => z.weg === 'id'));
+  if (perId) return { l: perId.l, horror: perId.horror, rt: perId.rt, item: perId.item };
+  const passName = z => z.namen.some(n => namensWert(n, t.name) >= 85 || namensWert(t.name, n) >= 85);
+  const kand = eigene.filter(z => z.weg === 'name' && passName(z));
+  if (!kand.length) return null;
+  let w = null;
+  if (t.jahr) {
+    w = best(kand.filter(z => z.jahr != null && Math.abs(z.jahr - t.jahr) <= 1))
+      || best(kand.filter(z => z.jahr != null && z.jahr < t.jahr)); // Apple-Datum = Wiederveröffentlichung („Dirty Harry“ 2014)
+  } else w = best(kand);
+  return w ? { l: w.l, horror: w.horror, rt: w.rt, item: w.item } : null;
+}
+
+/** Urteil für einen Chart-Titel: true = gut genug für die Seite. q = Zustand (null = keine Daten, l < 0 = nicht gefunden). */
+export function qualiOk(q, { chart = null, neu = false } = {}, m = STANDARD) {
+  const oben = chart != null && chart <= m.qualiOhneDatenPlatz;
+  if (!q || !(q.l >= 0)) return oben;
+  if (q.horror) return false;
+  if (q.rt != null) return q.rt >= m.qualiRt || q.l >= m.qualiBlockbuster;
+  return q.l >= (neu ? m.qualiBekanntNeu : m.qualiBekannt) || (neu && oben);
+}
+/** Sortierwert (höher = besser): Kritik und Bekanntheit. */
+export const qualiWert = q => (q && q.l >= 0 ? (q.rt ?? 55) + Math.min(q.l, 120) / 2 : 0);
+
+/** Apple-Genre -> Gruppe der Seite: 'action' (Action, Abenteuer, Thriller, Krimi, Sci-Fi, Western, Krieg) | 'comedy' | null */
+export function genreGruppe(genre) {
+  const g = String(genre ?? '');
+  if (/kom(?:ö|oe)die|comedy/i.test(g)) return 'comedy';
+  if (/action|abenteuer|thriller|krimi|science|sci-?fi|fantasy|western|krieg|spionage/i.test(g)) return 'action';
+  return null;
 }
 
 // ---------------------------------------------------------------- Titel vergleichen
@@ -313,6 +430,7 @@ export function ausItunes(r) {
       id: `itunes:${r.trackId}`, typ: 'film', titel: String(r.trackName).trim(), jahr: jahrAus(r.releaseDate), release: r.releaseDate || null,
       genre: r.primaryGenreName || null, preisSd, preisHd, leihe: preisWert(r.trackHdRentalPrice) ?? preisWert(r.trackRentalPrice),
       bild: bildUrl(r.artworkUrl100 || r.artworkUrl60), link: appleLink(r.trackViewUrl),
+      text: typeof r.longDescription === 'string' ? r.longDescription.slice(0, 600) : null,
     };
   }
   if (staffel && r.collectionId && r.collectionName) {
@@ -359,6 +477,7 @@ export function leseCharts(text) {
       bild: bildUrl(bilder[0]?.label), link: appleLink(href),
       genreId: Number(kat['im:id']) || null, genre: kat.label || null,
       release: e['im:releaseDate']?.label || null, jahr: jahrAus(e['im:releaseDate']?.label),
+      text: typeof e.summary?.label === 'string' ? e.summary.label.slice(0, 600) : null,
     });
   });
   return out;
@@ -633,8 +752,11 @@ export default async function filme(ctx) {
     for (const e of eintraege) {
       if (istHorror(e, horrorIds) || horrorIds.has(Number(g.id))) continue;
       const neu = g.neu && e.pos <= neuProGenre && e.release && Date.parse(e.release) >= neuGrenze.getTime();
-      const billig = e.preis != null && e.preis <= m.angebotPreisAktion;
-      if (!neu && !billig) continue;
+      const billig = e.preis != null && e.preis <= m.angebotMax;
+      const ph = zf.preise[e.id]?.h;
+      const hoch = ph?.length ? ph.reduce((x, y) => Math.max(x, y[1]), 0) : 0; // schon beobachtet und jetzt deutlich billiger
+      const gesenkt = e.preis != null && hoch > 0 && e.preis <= hoch * m.deutlichFaktor;
+      if (!neu && !billig && !gesenkt) continue;
       const vor = chartTreffer.get(e.id);
       if (!vor || e.pos < vor.pos || (neu && !vor.neu)) chartTreffer.set(e.id, { pos: Math.min(e.pos, vor?.pos ?? Infinity), genreId: g.id, neu: neu || !!vor?.neu, d: e });
       merk.push([e.id, e.pos, neu ? 1 : 0]);
@@ -949,6 +1071,47 @@ export default async function filme(ctx) {
     status['apple-tv-raeume'].abrufe = abrufe;
   }
 
+  // 4c) Qualität der Chart-Titel (Wikidata, im Zustand gemerkt): Horror und Ramsch raus, Bekanntes und gut Bewertetes bleibt
+  zf.quali ||= {};
+  const qs = { ok: true, anzahl: 0, fehler: [], abfragen: 0, offen: 0, raus: 0, gefunden: 0 };
+  status.qualitaet = qs;
+  const listenIds = new Set(posten.filter(p => !p.serie).map(p => zf.ids[p.key]?.id).filter(Boolean));
+  const qualiFrisch = q => q && q.tag && tageZwischen(q.tag, tag) < (q.l >= 0 ? m.qualiTage : m.qualiFehltTage);
+  const nr = id => String(id).replace(/^itunes:/, '');
+  if (m.qualitaet !== false) {
+    const kandidat = [...chartTreffer.entries()]
+      .filter(([id]) => !listenIds.has(id) && !qualiFrisch(zf.quali[nr(id)]))
+      .map(([id, c]) => {
+        const d = daten.get(id) || c.d || c.altTitel || {};
+        const preis = d.preisHd ?? d.preisSd ?? d.preis ?? null;
+        return { id, nr: nr(id), name: suchName(d.titel), jahr: jahrImTitel(d.titel) ?? d.jahr ?? null, preis, pos: c.pos };
+      })
+      .filter(t => t.name && /^\d+$/.test(t.nr))
+      .sort((a, b) => (a.preis ?? 99) - (b.preis ?? 99) || a.pos - b.pos); // Billiges zuerst (das kommt auf die Seite)
+    qs.offen = kandidat.length;
+    const zeitQuali = () => Date.now() - start > (m.zeitBudgetSek + 40) * 1000;
+    for (let i = 0; i < kandidat.length && qs.abfragen < m.qualiMaxAbrufe && !zeitQuali(); i += m.qualiJeAbfrage) {
+      const teil = kandidat.slice(i, i + m.qualiJeAbfrage);
+      qs.abfragen++;
+      try {
+        const zeilen = leseQuali(await holeText(wikidataUrl(qualiAbfrage(teil)), { headers: { accept: 'application/sparql-results+json' } }));
+        for (const t of teil) {
+          const q = qualiWahl(zeilen, t);
+          zf.quali[t.nr] = q ? { l: q.l, h: q.horror ? 1 : 0, rt: q.rt, tag } : { l: -1, tag };
+          if (q) qs.gefunden++;
+        }
+        qs.anzahl += teil.length;
+        qs.offen -= teil.length;
+      } catch (e) {
+        qs.ok = false; qs.fehler.push(`Wikidata (Qualität): ${e.message}`); // kein „fehler“ des Moduls: die Seite zeigt dann die Charts-Regel
+        break;
+      }
+    }
+    // alte Einträge (Titel lange nicht mehr in den Charts) vergessen
+    for (const [k, q] of Object.entries(zf.quali)) if (!q?.tag || tageZwischen(q.tag, tag) > m.qualiTage * 2) delete zf.quali[k];
+  }
+  const qualiVon = id => { const q = zf.quali[nr(id)]; return q ? { l: q.l, horror: q.h === 1, rt: q.rt ?? null } : null; };
+
   // 5) Titel bauen + Preis-Historie
   const titel = new Map(); // id -> Titel-Objekt
   const neueTiefst = new Set();
@@ -966,6 +1129,7 @@ export default async function filme(ctx) {
       if (preis != null && tiefstVorher && !ersteBeobachtung && preis < tiefstVorher.p) neueTiefst.add(id);
       t = titelObjekt({ ...d, chart: chartTreffer.get(id)?.pos ?? null }, lage);
       t._hoechst = lage.hoechst; t._gesenkt = lage.gesenkt; t._horror = istHorror(d, horrorIds);
+      t._horrorText = HORROR_TEXT.test(String(d.text || '')); // nur für Chart-Titel (deine Listen gelten immer)
     } else {
       const a = altDaten.get(id) || chartTreffer.get(id)?.altTitel;
       if (a) { t = { ...a }; t._horror = istHorror(a, horrorIds); t._alt = true; }
@@ -1033,6 +1197,16 @@ export default async function filme(ctx) {
   for (const t of [...gruppen.wunsch, ...gruppen.achtziger, ...gruppen.disney]) if (t.id?.startsWith('itunes:')) kandidaten.set(t.id, t);
   for (const id of chartTreffer.keys()) { const t = baue(id); if (t) kandidaten.set(id, t); }
   const rang = t => (wunschIds.has(t.id) ? 0 : kuratiert.has(t.id) ? 1 : 2);
+  // Qualität: deine Listen immer; Chart-Titel nur, wenn bekannt/gut bewertet und kein Horror (Genre, Wikidata, Beschreibung)
+  const gut = t => rang(t) < 2 || (!t._horrorText && qualiOk(qualiVon(t.id), { chart: t.chart, neu: !!chartTreffer.get(t.id)?.neu }, m));
+  let qualiRaus = 0;
+  for (const t of [...kandidaten.values()]) {
+    const q = qualiVon(t.id);
+    if (q && q.l >= 0) { t.rt = q.rt; t.bekannt = q.l; } // Zusatzfelder: Rotten Tomatoes (%) und Wikipedia-Sprachen
+    if (!gut(t)) { kandidaten.delete(t.id); qualiRaus++; }
+  }
+  qs.raus = qualiRaus;
+  gruppen.neu = gruppen.neu.filter(t => !t._horrorText && gut(t));
   gruppen.angebot = [...kandidaten.values()]
     .filter(t => t.typ === 'film' && !t._horror && t.preis != null && (t.preis <= m.angebotPreis
       || (t.preis <= m.angebotPreisAktion && ((t.istTiefst && t.tage >= 7 && (t._hoechst ?? 0) > t.preis) || (aktion && t._gesenkt)))))
@@ -1051,6 +1225,37 @@ export default async function filme(ctx) {
       ...NULL_TITEL, preis: preisWert(it.preisText), seit: tag, tage: 1, angebot: true, bild: it.bild || null, link: it.link, quelle: 'mydealz',
     });
   }
+
+  // 5c) Übersicht nach Xanders Wunsch (14.11.2026): Für 3,99 € · Action & Thriller · Comedy · 80er & Klassiker
+  //     Angebot = Kauf ≤ angebotMax (7,99 €) oder ≤ 70 % des zuletzt/höchsten gesehenen Preises; Wunschliste zuerst, dann
+  //     Kuratiertes, dann nach Preis und Qualität. mydealz-Aktionen: ≤ 3,99 € je Film -> „Für 3,99 €“, sonst nach Titel.
+  const deutlich = t => t.preis != null && ((t.vorher != null && t.preis <= t.vorher * m.deutlichFaktor) || ((t._hoechst ?? 0) > 0 && t.preis <= t._hoechst * m.deutlichFaktor));
+  const istAngebotGenre = t => t.preis != null && (t.preis <= m.angebotMax || deutlich(t));
+  const pool = [...kandidaten.values()].filter(t => t.typ === 'film' && !t._horror && t.preis != null && t.id?.startsWith('itunes:'));
+  for (const t of pool) { if (chartTreffer.get(t.id)?.neu) t.neu = true; if (deutlich(t) && !t.angebot) t.angebot = true; }
+  const nachWert = (a, b) => rang(a) - rang(b) || (a.preis - b.preis) || (qualiWert(qualiVon(b.id)) - qualiWert(qualiVon(a.id))) || ((a.chart ?? 999) - (b.chart ?? 999));
+  const mdDeals = gruppen.angebot.filter(t => t.quelle === 'mydealz');
+  const raumTitel = gruppen.angebot.filter(t => String(t.id).startsWith('appletv:'));
+  const mdJeFilm = t => preisJeFilm(t.titel, t.preis);
+  gruppen.fuer399 = [
+    ...pool.filter(t => t.preis <= m.angebotPreis).sort(nachWert),
+    ...raumTitel.filter(t => t.preis == null || t.preis <= m.angebotPreis),
+    ...mdDeals.filter(t => mdJeFilm(t) != null && mdJeFilm(t) <= m.angebotPreis),
+  ].slice(0, m.maxGruppe);
+  const mdRest = mdDeals.filter(t => !(mdJeFilm(t) != null && mdJeFilm(t) <= m.angebotPreis));
+  const mdComedy = t => /kom(?:ö|oe)die|comedy/i.test(t.titel);
+  gruppen.action = [...pool.filter(t => genreGruppe(t.genre) === 'action' && istAngebotGenre(t)).sort(nachWert), ...mdRest.filter(t => !mdComedy(t))].slice(0, m.maxGruppe);
+  gruppen.comedy = [...pool.filter(t => genreGruppe(t.genre) === 'comedy' && istAngebotGenre(t)).sort(nachWert), ...mdRest.filter(mdComedy)].slice(0, m.maxGruppe);
+  // 80er & Klassiker: deine 80er-Liste (alle, Angebote zuerst) + gute Klassiker aus den Charts im Angebot (bis 1999)
+  const in80 = new Set(gruppen.achtziger.map(t => t.id));
+  const klassiker = pool.filter(t => !in80.has(t.id) && !kuratiert.has(t.id) && !wunschIds.has(t.id) && t.jahr != null && (jahrImTitel(t.titel) ?? t.jahr) <= 1999 && istAngebotGenre(t));
+  gruppen.achtziger = [...gruppen.achtziger, ...klassiker].sort(nachPreis);
+  const angebotsZahl = new Set([...gruppen.fuer399, ...gruppen.action, ...gruppen.comedy, ...gruppen.achtziger.filter(t => t.angebot), ...gruppen.disney.filter(t => t.angebot), ...gruppen.serien.filter(t => t.angebot), ...gruppen.wunsch.filter(t => t.angebot || t.unterZiel)].map(t => t.id)).size;
+  const kurz = {
+    angebote: angebotsZahl,
+    top: [...gruppen.wunsch.filter(t => t.preis != null && (t.angebot || t.unterZiel)), ...gruppen.fuer399, ...gruppen.action, ...gruppen.comedy]
+      .filter((t, i, a) => a.findIndex(x => x.id === t.id) === i).slice(0, 3).map(t => ({ titel: t.titel, preis: t.preis ?? null })),
+  };
 
   // 6) Einträge für Seite und Push: nur echte Treffer
   const eintraege = [];
@@ -1084,7 +1289,7 @@ export default async function filme(ctx) {
   }
   for (const g of ['achtziger', 'disney']) {
     for (const t of gruppen[g]) {
-      if (!mitPreis(t) || gemeldet.has(t.id) || !t._gesenkt) continue;
+      if (!mitPreis(t) || gemeldet.has(t.id) || !t._gesenkt || !kuratiert.has(t.id)) continue; // Chart-Klassiker: unten als Angebot
       gemeldet.add(t.id);
       if (t.preis <= m.angebotPreis) neuerEintrag(t, { grund: g === 'disney' ? 'Disney-Film für 3,99 €' : 'Kultfilm für 3,99 €', wert: 80, sofort: true, gruppe: g });
       else if (t.preis <= t.vorher * 0.7 || neueTiefst.has(t.id)) neuerEintrag(t, { grund: 'Preis gesenkt', wert: 60, sofort: false, gruppe: g, zusatz: neueTiefst.has(t.id) ? ['neuer Tiefstpreis'] : [] });
@@ -1142,9 +1347,10 @@ export default async function filme(ctx) {
   const datei = {
     version: 1,
     aktualisiert: new Date(jetzt).toISOString(),
-    gruppen: Object.fromEntries(Object.entries(gruppen).map(([k, v]) => [k, v.map(sauber)])),
+    gruppen: Object.fromEntries(GRUPPEN_REIHE.filter(k => gruppen[k]).map(k => [k, gruppen[k].map(sauber)])),
+    kurz,
     status,
     hinweis: "Tiefstpreis = niedrigster Preis seit Beobachtungsbeginn (Datum in 'seit').",
   };
-  return { eintraege: eintraege.slice(0, m.maxEintraege), fehler, datei };
+  return { eintraege: eintraege.slice(0, m.maxEintraege), fehler, datei, kurz };
 }

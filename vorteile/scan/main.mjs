@@ -67,7 +67,7 @@ export async function lauf({ cfg, wunschliste, filmListen = null, dateienVorher 
       // Fundorte immer frisch aus der config (Link-Prüfung, Saison, neue/gestrichene Adressen), nur die alten Funde bleiben
       kategorien[name] = kaputt && nurFundorte ? [...alt.filter(e => !e.extra?.fundort), ...r.eintraege] : kaputt ? alt : r.eintraege;
       // gesperrt (HTTP 401): Quelle still aus, zählt nicht als Fehler
-      status[name] = { ok: !r.fehler.length, anzahl: r.eintraege.length, fehler: r.fehler.slice(0, 10), ms: Date.now() - t0, stand: new Date(jetztMs).toISOString(), ...(r.hinweise?.length ? { hinweise: r.hinweise.slice(0, 10) } : {}), ...(r.gesperrt?.length ? { gesperrt: r.gesperrt.slice(0, 10) } : {}) };
+      status[name] = { ok: !r.fehler.length, anzahl: r.eintraege.length, fehler: r.fehler.slice(0, 10), ms: Date.now() - t0, stand: new Date(jetztMs).toISOString(), ...(r.hinweise?.length ? { hinweise: r.hinweise.slice(0, 10) } : {}), ...(r.gesperrt?.length ? { gesperrt: r.gesperrt.slice(0, 10) } : {}), ...(r.kurz ? { kurz: r.kurz } : {}) };
       if (!zustand.lauf[name] && zustand.gemeldet && !kaputt) neueModule.push(name);
       zustand.lauf[name] = new Date(jetztMs).toISOString();
     } catch (e) {

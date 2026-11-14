@@ -14,6 +14,7 @@ import filme, {
   namensWert, waehleTreffer, ausItunes, leseErgebnisse, leseCharts, staffelnAus, staffelInfo,
   merkeFilmPreis, preisLage, preisWert, istAppleFilmDeal, postenListe, sucheUrl,
   chartIndex, chartFilm, serienBegriffe, wikidataAbfrage, wikidataTeile, leseWikidata, wikidataKandidaten, englisch,
+  suchName, jahrImTitel, qualiAbfrage, leseQuali, qualiWahl, qualiOk, genreGruppe, STANDARD as FILM_STANDARD,
 } from '../module/filme.mjs';
 
 const HIER = dirname(fileURLToPath(import.meta.url));
@@ -108,7 +109,7 @@ test('filme.json entspricht dem Vertrag (Gruppen, Felder, Typen, Sortierung)', a
   const d = r.datei;
   assert.equal(d.version, 1);
   assert.ok(Number.isFinite(Date.parse(d.aktualisiert)));
-  assert.deepEqual(Object.keys(d.gruppen), ['wunsch', 'angebot', 'neu', 'achtziger', 'serien', 'disney']);
+  assert.deepEqual(Object.keys(d.gruppen), ['wunsch', 'fuer399', 'action', 'comedy', 'achtziger', 'disney', 'serien', 'angebot', 'neu']);
   assert.match(d.hinweis, /Tiefstpreis/);
   for (const [q, s] of Object.entries(d.status)) assert.ok(typeof s.ok === 'boolean' && Number.isInteger(s.anzahl) && Array.isArray(s.fehler), q);
   const zahlOderNull = v => v === null || (typeof v === 'number' && v > 0);
@@ -391,7 +392,7 @@ test('Weg „charts“ mit echten Antworten (07.11.2026): Manta Manta 1991 für 
   assert.deepEqual([manta.titel, manta.jahr, manta.preis, manta.preisHd, manta.unterZiel], ['Manta Manta', 1991, 3.99, 3.99, true]);
   assert.ok(!alleTitel(r.datei).some(t => t.id === 'itunes:1684919227' && r.datei.gruppen.wunsch.includes(t)), 'nicht die Fortsetzung');
   assert.equal(ids[postenListe({ achtziger: [zukunft[0]] })[0].key].id, 'itunes:592361446');
-  assert.equal(r.datei.gruppen.achtziger[0].preis, 9.99, 'Preis aus dem Chart-Feed (nicht im Lookup)');
+  assert.equal(r.datei.gruppen.achtziger.find(t => t.id === 'itunes:592361446').preis, 9.99, 'Preis aus dem Chart-Feed (nicht im Lookup)');
   assert.deepEqual(r.datei.status['apple-suche'].wege, { de: 0, us: 0, wikidata: 0, charts: 2 });
   const e = r.eintraege.find(x => /^Manta Manta \(1991\) für 3,99/.test(x.titel));
   assert.ok(e?.sofort, 'Wunschfilm zum Zielpreis -> sofort');
@@ -566,4 +567,99 @@ test('Apple-TV-Angebotsraum (Xander 08.11.2026): Raum-Links finden, Filme abglei
   const r2 = await filme(ctx(kaputt.holeText));
   assert.equal(r2.datei.status['apple-tv-raeume'].ok, false);
   assert.ok(r2.datei.gruppen.wunsch.length === 4);
+});
+
+// ---------------------------------------------------------------- MV7 (14.11.2026): Übersicht nach Genres + Qualität
+const QUALI = [['wikibase%3Amwapi', 'wikidata-qualitaet.json']];
+
+test('Qualität: Apple-Titel säubern, Wikidata-Antwort lesen, passenden Film wählen (Name + Jahr, Wiederveröffentlichung)', () => {
+  assert.equal(suchName('Charade (1963)'), 'Charade');
+  assert.equal(suchName('Jungs Von Spinal Tap, Die'), 'Die Jungs Von Spinal Tap');
+  assert.equal(suchName("THX 1138 (Director's Cut)"), 'THX 1138');
+  assert.equal(suchName('The Outfit -- Verbrechen nach Maß'), 'The Outfit');
+  assert.equal(suchName('Scary Movie (2026) Extended Cut'), 'Scary Movie');
+  assert.equal(jahrImTitel('Meteor (1979)'), 1979);
+  assert.equal(jahrImTitel('Dirty Harry'), null);
+  const q = qualiAbfrage([{ nr: '123', name: 'Charade "X"' }]);
+  assert.match(q, /wdt:P6398/); assert.match(q, /EntitySearch/); assert.match(q, /Q200092/); assert.match(q, /Q105584/);
+  assert.match(q, /"Charade \\"X\\""/, 'Anführungszeichen sicher');
+  const zeilen = leseQuali(JSON.stringify({ results: { bindings: [
+    { key: { value: '1234567' }, weg: { value: 'name' }, item: { value: 'http://www.wikidata.org/entity/Q1' }, l: { value: '45' }, jahr: { value: '1971' }, rt: { value: '91%|8.1/10' }, lab: { value: 'Dirty Harry' } },
+    { key: { value: '1234567' }, weg: { value: 'name' }, item: { value: 'http://www.wikidata.org/entity/Q2' }, l: { value: '2' }, jahr: { value: '2015' }, rt: { value: '' }, lab: { value: 'Dirty Harry (Band)' } },
+    { key: { value: 'kaputt' }, l: { value: '9' } },
+  ] } }));
+  assert.equal(zeilen.length, 2);
+  assert.deepEqual([zeilen[0].rt, zeilen[0].jahr, zeilen[0].item, zeilen[0].horror], [91, 1971, 'Q1', false]);
+  // Apple-Datum 2014 = Wiederveröffentlichung -> älterer Film mit gleichem Namen
+  assert.equal(qualiWahl(zeilen, { nr: '1234567', name: 'Dirty Harry', jahr: 2014 }).item, 'Q1');
+  assert.equal(qualiWahl(zeilen, { nr: '1234567', name: 'Dirty Harry', jahr: 1960 }), null, 'kein Film vor 1960 mit dem Namen');
+  assert.equal(qualiWahl(zeilen, { nr: '1234567', name: 'Ganz anderer Film', jahr: 1971 }), null, 'Name muss passen');
+  assert.throws(() => leseQuali('<html>'), /Wikidata/);
+});
+
+test('Qualität: Urteil – Horror raus, gute Kritik oder bekannt bleibt, Ramsch raus, ohne Daten nur die Chart-Spitze', () => {
+  const m = FILM_STANDARD;
+  assert.equal(qualiOk({ l: 80, horror: true, rt: 95 }, {}, m), false, 'Horror nie');
+  assert.equal(qualiOk({ l: 10, horror: false, rt: 92 }, {}, m), true, 'gute Kritik');
+  assert.equal(qualiOk({ l: 20, horror: false, rt: 30 }, {}, m), false, 'schlechte Kritik, wenig bekannt');
+  assert.equal(qualiOk({ l: 60, horror: false, rt: 23 }, {}, m), true, 'Blockbuster (Popcorn-Kino) bleibt');
+  assert.equal(qualiOk({ l: 35, horror: false, rt: null }, {}, m), true, 'bekannt ohne Kritik');
+  assert.equal(qualiOk({ l: 8, horror: false, rt: null }, { chart: 2 }, m), false, 'unbekannt -> raus, auch weit oben in den Charts');
+  assert.equal(qualiOk({ l: 14, horror: false, rt: null }, { neu: true }, m), true, 'neuer Film: weniger Artikel reichen');
+  assert.equal(qualiOk(null, { chart: 3 }, m), true, 'keine Daten: Chart-Spitze bleibt');
+  assert.equal(qualiOk({ l: -1 }, { chart: 40 }, m), false, 'nicht gefunden, weit unten -> raus');
+  assert.equal(genreGruppe('Action & Abenteuer'), 'action');
+  assert.equal(genreGruppe('Science-Fiction und Fantasy'), 'action');
+  assert.equal(genreGruppe('Thriller'), 'action');
+  assert.equal(genreGruppe('Komödien'), 'comedy');
+  assert.equal(genreGruppe('Kinder und Familie'), null);
+});
+
+test('Übersicht: Für 3,99 € · Action & Thriller · Comedy · 80er & Klassiker – Qualitätsfilter, Wunschliste oben, Kachel-Zusammenfassung', async () => {
+  const zustand = {};
+  const z = abruf(QUALI);
+  const r = await filme(ctx(z.holeText, zustand));
+  const g = r.datei.gruppen;
+  const ids = k => g[k].map(t => t.id);
+  const alle = alleTitel(r.datei);
+  // Horror (Wikidata-Genre) und Unbekanntes (8 Wikipedia-Sprachen, keine Kritik) sind nirgends
+  assert.ok(!alle.some(t => t.id === 'itunes:1800000001'), 'Horror laut Wikidata');
+  assert.ok(!alle.some(t => t.id === 'itunes:1678901234'), 'Manta Manta – Zwoter Teil: zu unbekannt');
+  assert.equal(r.datei.status.qualitaet.raus, 2);
+  assert.equal(r.datei.status.qualitaet.gefunden, 4);
+  // Für 3,99 €: nur ≤ 3,99 € (Apple) bzw. je Film (mydealz); gut Bewertetes mit Rotten Tomatoes
+  const pate = g.fuer399.find(t => t.id === 'itunes:1000000601');
+  assert.equal(pate.rt, 97); assert.equal(pate.bekannt, 120);
+  assert.ok(g.fuer399.filter(t => t.quelle === 'Apple' && !String(t.id).startsWith('appletv:')).every(t => t.preis <= 3.99));
+  // Action & Thriller / Comedy: Kauf ≤ 7,99 €, passendes Genre; Wunschliste vor dem Rest
+  assert.ok(ids('action').includes('itunes:1800000014'), 'Top Gun: Maverick 4,99 €');
+  assert.equal(g.action.find(t => t.id === 'itunes:1800000014').rt, 96);
+  for (const k of ['action', 'comedy']) for (const t of g[k].filter(x => x.quelle === 'Apple')) assert.ok(t.preis <= 7.99 || (t.vorher && t.preis <= t.vorher * 0.7), `${k}: ${t.titel}`);
+  assert.ok(g.comedy.every(t => t.quelle !== 'Apple' || /kom/i.test(t.genre)));
+  assert.deepEqual(g.comedy.slice(0, 2).map(t => t.titel), ['Manta Manta', 'Mallrats'], 'Wunschfilme oben');
+  // 80er & Klassiker: Liste + gute Klassiker aus den Charts, Angebote zuerst
+  assert.ok(ids('achtziger').includes('itunes:1000000601'), 'Der Pate (1972) aus den Klassiker-Charts');
+  const a = g.achtziger.map(t => t.angebot);
+  assert.deepEqual(a, [...a].sort((x, y) => y - x));
+  // Kachel: Zahl der Angebote + die drei besten (Wunsch zuerst)
+  assert.ok(r.kurz.angebote >= 10, String(r.kurz.angebote));
+  assert.equal(r.kurz.top.length, 3); assert.equal(r.kurz.top[0].titel, 'Manta Manta');
+  assert.deepEqual(r.datei.kurz, r.kurz);
+  // Qualität bleibt im Zustand: zweiter Lauf fragt Wikidata nicht noch einmal
+  const z2 = abruf(QUALI);
+  await filme(ctx(z2.holeText, zustand, tagPlus(1)));
+  assert.equal(z2.urls.filter(u => u.includes('mwapi')).length, 0, 'gemerkt');
+  // Wikidata gestört: Chart-Spitze bleibt, Modul meldet keinen Fehler (nur Status)
+  const z3 = abruf([['wikibase%3Amwapi', '!fehler']]);
+  const r3 = await filme(ctx(z3.holeText, {}));
+  assert.equal(r3.datei.status.qualitaet.ok, false);
+  assert.ok(!r3.fehler.some(f => /Qualität/.test(f)));
+  assert.ok(r3.datei.gruppen.fuer399.length >= 4);
+});
+
+test('main: Kachel-Zusammenfassung der Filme landet in aktuell.json (status.filme.kurz)', async () => {
+  const z = abruf(QUALI);
+  const r = await lauf({ cfg, wunschliste: {}, filmListen: listen, vorher: null, zustand: {}, holeText: z.holeText, jetzt: JETZT, alle: true });
+  assert.ok(r.aktuell.status.filme.kurz.angebote >= 10);
+  assert.ok(Array.isArray(r.aktuell.status.filme.kurz.top));
 });
