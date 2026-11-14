@@ -1,0 +1,12 @@
+import { createRequire } from 'node:module';
+const { chromium } = createRequire(import.meta.url)('/opt/node-tools/node_modules/playwright/index.js');
+import http from 'node:http'; import fs from 'node:fs'; import path from 'node:path';
+const file = path.resolve(process.argv[2]);
+const srv = http.createServer((q, r) => { const p = path.join(path.dirname(file), decodeURIComponent(q.url.split('?')[0])); if (!fs.existsSync(p) || fs.statSync(p).isDirectory()) { r.writeHead(404); r.end(); return; } r.writeHead(200, {'content-type': 'text/html; charset=utf-8'}); fs.createReadStream(p).pipe(r); });
+await new Promise(ok => srv.listen(0, ok));
+const b = await chromium.launch(); const p = await b.newPage({viewport: {width: 428, height: 926}});
+await p.goto('http://127.0.0.1:' + srv.address().port + '/' + path.basename(file));
+await p.waitForFunction(() => window.SYNQUENZER && window.__spk, null, {timeout: 60000}); await p.waitForTimeout(1000);
+const r = await p.evaluate(() => { SYNQUENZER.loadDemo(); const t = S.tracks[0]; const o = {}; for (const k in t) { if (k === 'clips') continue; const v = t[k]; o[k] = typeof v === 'object' ? JSON.stringify(v).slice(0, 600) : v; } return o; });
+console.log(JSON.stringify(r, null, 1));
+await b.close(); srv.close();

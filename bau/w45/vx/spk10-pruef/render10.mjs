@@ -21,7 +21,7 @@ const res = {};
 for (const [name, P] of Object.entries(PAT)) {
   const r = await p.evaluate(async (P) => {
     SYNQUENZER.loadDemo(); SYNQUENZER.songFromChain([{scene: 0, bars: 4}, {scene: 1, bars: 4}]); ensureAudio(); await new Promise(r => setTimeout(r, 300));
-    S.tracks[0].clips[0] = {len: P.len, key: {root: 0, scale: 'ionian', src: 'auto'}, notes: P.notes.map(a => ({t: a[0], n: a[1], d: a[2], v: a[3]}))};
+    if (P.snd) Object.assign(S.tracks[0].sound.p, P.snd); S.tracks[0].clips[0] = {len: P.len, key: {root: 0, scale: 'ionian', src: 'auto'}, notes: P.notes.map(a => ({t: a[0], n: a[1], d: a[2], v: a[3]}))};
     const r = await va1Pass({tracks: new Set([0]), vox: 'none'}, true, () => {});
     const n = r.n, o = new Float32Array(n * 2); for (let i = 0; i < n; i++) { o[2 * i] = r.ch[0][i]; o[2 * i + 1] = r.ch[1][i]; }
     window.__last = o; return {n, sr: r.sr, bpm: S.bpm};

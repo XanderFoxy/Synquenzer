@@ -90,10 +90,10 @@ Alle Läufe liefen einzeln nacheinander, nie parallel.
   |---|---|---|---|---|
   | Basis (G 15 ms) | 2,58 % | 2,1 ct | 4,02 dB | 1,19 |
   | G 3 ms | 2,80 % | 3,0 ct | 3,61 dB | 1,14 |
-  | G 3 ms, K 1 | 2,81 % | 2,8 ct | – | – |
+  | G 3 ms, K 1 | 2,81 % | 2,8 ct | 3,61 dB | 1,14 |
   | G 3 ms, K 2 | 2,72 % | 2,7 ct | 3,48 dB | 1,16 |
   | G 3 ms, K 3 | 2,68 % | 2,4 ct | 3,46 dB | 1,12 |
-  | G 15 ms, K 2 (ohne kleines G) | 2,57 % | 2,0 ct | 3,84 dB | – |
+  | G 15 ms, K 2 (ohne kleines G) | 2,57 % | 2,0 ct | 3,84 dB | 1,20 |
 
   - Die Kurve erklärt etwa 0,12 der 0,22 Prozentpunkte. Der Rest bleibt ungeklärt.
   - Die Voraussetzung von Vorschlag 2 („wenn hart bei 2,58 % bleibt“) ist damit nicht belegt.

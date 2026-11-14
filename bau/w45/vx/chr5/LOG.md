@@ -15,3 +15,8 @@
 - (R2) 21:12 vx1-test: 61/61 OK (reg/vx1.txt).
 - (R3) 21:13 spk6-test: ALLES OK, 26 OK-Zeilen, kern-messwerte fails 0 (reg/spk6.txt).
 - Ende 21:14: kein Einbau (Ziel nicht erreichbar mit Rand-Maßnahmen; Kern-Hülle braucht neue Information) – NOTES.md mit Zahlen und nächstem Weg.
+- Prüfung (unabhängiger Prüfer) 21:15–21:35, alles einzeln nacheinander:
+  - Pflicht auf index.html: topdefs 26 Skripte / doppelt 0 / Syntaxfehler 0 · dupkeys 0 · smoke errors [] (pruef/smoke-pruef.png) · „MS 2000“ 1× · „^  live: true,“ 1× · VERSION 4.63.0 · cmp = basis.html = vx/basis7.html · Markenwörter gleich der Basis · keine Datensatz- oder Produktnamen in NOTES, LOG, src, tmp, pruef.
+  - Regression: chr2-test ALLE OK (82, 114 s) · vx1-test 61/61 · spk6-test ALLES OK (26) · chr3-pruef = pruef-vorher.json (cmp).
+  - Zahlen des Bauers exakt nachgemessen (pruef/).
+  - Befunde in PRUEFUNG.md: 0 schwer, 3 mittel, 5 leicht.
