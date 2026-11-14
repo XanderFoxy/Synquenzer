@@ -13,3 +13,4 @@
 - 19:29 Prüfer-Runde Start: PRUEFUNG.md (1 schwer, 6 mittel, 8 leicht) gelesen.
 - 19:38 Kern umgebaut (Quelle je Stimme, Blenden Modus/Filter, Position live, Raub mit Blende, Vorfüllen, Halten √s, NaN-Schutz); Hauptfaden: Rechen-Worker, Tastatur 70 ms, Spur-Engine aus dem Klang + Aufräumen, Ecke gibt weiter, Aktionsfeld wie Basis (SPK7_ROW=false), Hilfe-Eintrag.
 - 19:40 Kern-Test erweitert (+5: Quellwechsel ohne NaN, Umschalten ohne Knacks, Position live, Überlast/Akkord, Einsatz/Halten): neu ALLES OK (12); alte Fassung (Prüfer-Nachbau) fällt in allen 5 durch (NaN 230400, Sprung 43,6/33,5/26,4, Position 0, Sprung 3,04/Spitze 1,0, Einsatz 26 ms/Halten 0,64). Dazu: gleiche Taste neu = alter Ausklang 30 ms Blende; Pegel-Ausgleich √(2/Σenv²).
+- 19:42 spk7-test (Weg über „Klangkorn ▾“, Ebenenliste 180/284 px wie Basis): ALLES OK (13).
