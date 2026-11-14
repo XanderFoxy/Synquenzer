@@ -102,3 +102,15 @@ Befund 1 genauer (gemessen, `messb/dbg10.mjs`, `dbg12.mjs`):
   Ziel: Lauf ≥ 20/32 ohne Demo-Verlust. Die Prüf-Fälle liegen dafür fest in `faelle8.mjs`.
 - Ehrliche Aussage: 70 %/70 % gilt für die Demo-Basslinie (und laut/ohne Trommeln/48 kHz); bei anderen Linien mit Trommeln 25–75 % Treffer.
   Gegenüber der Basis (0–3 %) überall besser, nirgends schlechter.
+
+### Prüfung – Endstand (einzeln nacheinander, gebaute `index.html`)
+- Pflicht: topdefs doppelt 0 / Syntaxfehler 0 · dupkeys 0 · smoke `errors []` (`smoke-p1.png`) · „MS 2000“ 1× · „  live: true,“ 1× · VERSION 4.62.0 unverändert ·
+  Markenwörter je Wort = Basis; im Paket (Block, bau.py, Tests, messb/, NOTES, LOG) 0 Marken-/Datensatz-/Produktnamen (in PRUEFUNG.md ein Gerätename → „Telefon“).
+- `messb/faelle8.mjs` mit `SOLL=1` (Untergrenzen `messb/faelle8-soll.json`, 12 Fälle): **12 OK / 0 FEHLER** (`messb/faelle8-soll.out`).
+- `spk8-seite.mjs` (Touch, 428×926 + 926×428): **14 OK / 0 FEHLER**; Fotos `fotos/90-noten-bass-ebene.png`, `fotos/90-noten-bass-ebene-quer.png`.
+- `spk5-test.mjs`: ALLES OK · 24 · `spk1-test.mjs`: 17 OK / 1 FEHLER (verfeinern-verbessert-ziel 4,37 → 4,36, bekannt seit SPK4).
+- `spk4-test.mjs index.html basis6.html` (398 s): **18 OK / 5 FEHLER**, alle bekannt/erwartet und gleich wie in der Prüfung: a1-gemisch und a3-unison gleiche Werte wie
+  Basis (8/28, 0,96), a2-verfeinern-plus-1db (−0,01), reg-spk3 14/17 (verfeinern-plus-1db, regression-spk2 bekannt; nachbau-abstaende-besser schwankt
+  zwischen Läufen, Prüfer 15/17), reg-ki1 quer-428/quer-370 + vorbestehend besser-als-klassisch. a3-nachbau-zeit diesmal OK. Original + Bass-Band 14/32 gleich,
+  Pads allein 24/28, Überall fair 0,793, Zerlegen Bass 4,37, vx1 61/61.
+- Haken und `bau.py`-Stellen unverändert → Misch-Probe mit SPK6/SPK7 wie geprüft (0 Konflikte); neuer Code nur innerhalb SPK8-BEGIN/END.
