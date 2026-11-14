@@ -1,10 +1,32 @@
 # Vorteils-Radar: sucht stündlich Vorteile für Xander (Deals, Erleben, Reisen, Musik, Nebenverdienst, Tests)
 # und meldet Seltenes sofort per ntfy, den Rest einmal am Tag (ab 18 Uhr). Code: vorteile/. Daten: Zweig "vorteile-daten".
+#
+# Pünktlichkeit (MV7, 14.11.2026): GitHub startet geplante Läufe hier nur etwa alle 7 Stunden – gemessen 31.10.–14.11.2026:
+# Vorteils-Radar 53 von 335 stündlichen Läufen (16 %), Schnäppchen-Wecker 53 von 337 (16 %), Konzerte 44 von 112 (39 %).
+# Die Starts kommen zu beliebigen Minuten (Median 29–33 Min. nach der Zeitplan-Minute). Darum:
+#  - viele Zeitpläne zu krummen Minuten – billig dank Vorprüfung; ob sie mehr Starts bringen, ist NICHT belegt,
+#  - der wichtigere Weg: ein Start, sobald Schnäppchen-Wecker oder Konzert-Alarm (auf main) fertig sind. Alle geplanten
+#    Starts der drei Wecker zusammen lagen im Messzeitraum im Median 2,1 h auseinander (p90 4,7 h, max 7,8 h) statt 6,8 h,
+#  - jeder Start fragt zuerst vorteile/scan/faellig.mjs: ist nichts dran, endet er nach Sekunden (kein Abruf, kein Commit),
+#  - am Ende stößt er Schnäppchen-Wecker / Konzert-Alarm an, wenn deren DATEN zu alt sind (nur GITHUB_TOKEN).
+# Messen nach der Übernahme: „cancelled“-Läufe (concurrency: ein wartender Start wird durch den nächsten ersetzt) und
+# workflow_run-Starts getrennt zählen; entscheidend ist das Alter von aktuell.json, nicht die Zahl der Läufe.
 name: Vorteils-Radar
 
 on:
-  schedule:
-    - cron: '41 * * * *'   # jede Stunde um :41 (Zeitpläne laufen nur vom Standardzweig aus)
+  schedule:   # Zeitpläne laufen nur vom Standardzweig aus; nie :00/:30 (dort ist GitHub am vollsten)
+    - cron: '4 * * * *'
+    - cron: '11 * * * *'
+    - cron: '19 * * * *'
+    - cron: '26 * * * *'
+    - cron: '34 * * * *'
+    - cron: '41 * * * *'
+    - cron: '49 * * * *'
+    - cron: '56 * * * *'
+  workflow_run:
+    workflows: ['Schnäppchen-Wecker', 'konzerte']
+    types: [completed]
+    branches: [main]   # nur echte Läufe der anderen Wecker, keine Test-Zweige
   workflow_dispatch:
     inputs:
       modus:
@@ -23,6 +45,7 @@ on:
 
 permissions:
   contents: write
+  actions: write   # nur zum Anstoßen von Schnäppchen-Wecker/Konzert-Alarm (workflow_dispatch mit dem eingebauten Token)
 
 concurrency:
   group: ${{ inputs.roh && 'vorteile-roh' || 'vorteile' }}   # Roh-Läufe stören die stündlichen Läufe nicht
@@ -36,15 +59,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
-          sparse-checkout: vorteile
+          sparse-checkout: |
+            vorteile
+            .github/workflows
 
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-
-      - name: Tests
-        working-directory: vorteile
-        run: npm test
 
       - name: Daten-Zweig holen (oder neu anlegen)
         env:
@@ -57,7 +78,19 @@ jobs:
             mkdir daten && git -C daten init --quiet -b vorteile-daten && git -C daten remote add origin "$URL"
           fi
 
+      # Nur automatische Starts fragen nach; ein Start von Hand läuft immer.
+      - name: Fällig?
+        id: faellig
+        if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_run' }}
+        run: node vorteile/scan/faellig.mjs --data daten/vorteile/data
+
+      - name: Tests
+        if: ${{ steps.faellig.outputs.faellig != 'false' }}
+        working-directory: vorteile
+        run: npm test
+
       - name: Suchen und benachrichtigen
+        if: ${{ steps.faellig.outputs.faellig != 'false' }}
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
           NTFY_TOKEN: ${{ secrets.NTFY_TOKEN }}
@@ -66,7 +99,7 @@ jobs:
         run: node vorteile/scan/main.mjs --data daten/vorteile/data ${{ inputs.alle && '--alle' || '' }}
 
       - name: Daten speichern
-        if: ${{ !inputs.roh }}
+        if: ${{ !inputs.roh && steps.faellig.outputs.faellig != 'false' }}
         working-directory: daten
         run: |
           git config user.name "vorteile-bot"
@@ -106,3 +139,33 @@ jobs:
             git pull --quiet --rebase origin roh-daten || true
           done
           exit 1
+
+      # Schnäppchen-Wecker (stündlich) und Konzert-Alarm (alle 3 h) haben dasselbe Problem mit den Zeitplänen. Sind ihre
+      # Daten zu alt (letzter Commit auf dem Daten-Zweig) und läuft gerade keiner, startet der Radar sie (wie „Run workflow“
+      # von Hand, normaler Lauf). Roh-/Test-/fehlgeschlagene Läufe zählen so nicht als „frisch“. Damit ein kaputter Wecker
+      # nicht ständig neu startet: nach einem Lauf auf main (egal welcher Art) mindestens PAUSE Minuten warten.
+      # Kein neues Geheimnis: workflow_dispatch mit dem eingebauten Token ist von GitHub ausdrücklich erlaubt.
+      - name: Andere Wecker anstoßen
+        if: ${{ always() && !inputs.roh && github.ref == 'refs/heads/main' }}
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PAUSE: 30
+        run: |
+          minuten() { echo $(( ( $(date -u +%s) - $(date -u -d "${1:-1970-01-01T00:00:00Z}" +%s 2>/dev/null || echo 0) ) / 60 )); }
+          anstossen() {   # $1 = Workflow-Datei, $2 = Daten-Zweig, $3 = höchstes Alter der Daten in Minuten
+            local laeufe aktiv letzter daten
+            laeufe=$(gh run list -R "$GITHUB_REPOSITORY" --workflow "$1" --branch main --limit 10 --json status,createdAt 2>/dev/null) || { echo "$1: Liste nicht lesbar"; return 0; }
+            aktiv=$(jq -r '[.[] | select(.status != "completed")] | length' <<< "$laeufe" 2>/dev/null || echo 0)
+            if [ "${aktiv:-0}" != 0 ]; then echo "$1: läuft schon"; return 0; fi
+            letzter=$(jq -r '.[0].createdAt // empty' <<< "$laeufe" 2>/dev/null || true)
+            daten=$(gh api "repos/$GITHUB_REPOSITORY/commits/$2" --jq '.commit.committer.date' 2>/dev/null || true)
+            local alter_d alter_l
+            alter_d=$(minuten "$daten"); alter_l=$(minuten "$letzter")
+            if [ "$alter_d" -lt "$3" ]; then echo "$1: Daten vor $alter_d Min. – ok"; return 0; fi
+            if [ -n "$letzter" ] && [ "$alter_l" -lt "$PAUSE" ]; then echo "$1: Daten vor $alter_d Min., aber Lauf vor $alter_l Min. – warten"; return 0; fi
+            echo "$1: Daten vor $alter_d Min. (Grenze $3) -> anstoßen"
+            gh workflow run "$1" -R "$GITHUB_REPOSITORY" --ref main || echo "$1: Anstoßen abgelehnt"
+          }
+          anstossen schnaeppchen.yml schnaeppchen-daten 70
+          anstossen konzerte.yml konzerte-daten 190

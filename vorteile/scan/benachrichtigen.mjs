@@ -83,7 +83,8 @@ export function verbuche(zustand, plan, ok, jetzt) {
     zustand.sofortTage[plan.tag] = (zustand.sofortTage[plan.tag] || 0) + 1;
   });
   if (plan.digest && ok.digest) for (const e of plan.digest.liste) { zustand.gemeldet[e.id] = iso; zustand.gemeldet[titelKey(e)] = iso; }
-  if (plan.digestFaellig && (ok.digest || !plan.digest)) zustand.digestTag = plan.tag;
+  if (plan.digestFaellig && (ok.digest || !plan.digest)) { zustand.digestTag = plan.tag; delete zustand.digestVersuch; }
+  else if (plan.digestFaellig && plan.digest) zustand.digestVersuch = iso; // gescheitert: faellig.mjs wartet eine Stunde
   // aufräumen: 60 Tage merken
   const grenze = new Date(new Date(jetzt).getTime() - 60 * 864e5).toISOString();
   for (const [k, v] of Object.entries(zustand.gemeldet)) if (v < grenze) delete zustand.gemeldet[k];

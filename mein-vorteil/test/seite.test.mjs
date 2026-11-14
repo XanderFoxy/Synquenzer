@@ -1577,3 +1577,63 @@ test('Echter Lauf 08.11. neu gerechnet (repariertes Radar): Jobbörse-Stellen ra
     await ctx.close();
   }
 });
+
+// MV7 (14.11.2026): GitHub startet die Wecker oft erst nach Stunden. Älter als 6 h = ruhiger Hinweis (kein Rot);
+// jeder Bereich der Vorteile zeigt, wann zuletzt gesucht wurde; ein übersprungener Bereich (nicht fällig) ist nicht „aus“.
+test('Stand: nach 8 Std. kein Alarm, kleiner Hinweis; „Zuletzt gesucht“ je Bereich; übersprungen ≠ aus', { skip: ohnePw }, async () => {
+  const patch = { 'vorteile-aktuell.json': d => { d.status.remix = { ...d.status.remix, uebersprungen: true }; } };
+  const spaet = await oeffne({ satz: 'v5', jetzt: '2026-11-08T00:35:00Z', patch, pfad: '/mein-vorteil/#remix' });
+  const stand = nbsp(await text(spaet.page, '#stand'));
+  assert.match(stand, /Vorteile vor 8 Std\./);
+  assert.match(stand, / · wird automatisch aufgefrischt$/);
+  assert.equal(await spaet.page.locator('#stand .alt').count(), 0, 'nicht rot, nur weil es spät ist');
+  const remix = nbsp(await spaet.page.evaluate(() => document.getElementById('remix').textContent));
+  assert.match(remix, /Zuletzt gesucht vor 8 Std\. – die nächste Suche läuft von selbst\./);
+  const quellen = await spaet.page.evaluate(() => [...document.querySelectorAll('details.kasten')].find(d => /Quellen & Hinweise \(Vorteile\)/.test(d.textContent))?.textContent || '');
+  assert.match(nbsp(quellen), /Remix-Contests: \d+ gefunden · vor 8 Std\./);
+  assert.doesNotMatch(quellen, /Remix-Contests: aus/);
+  await spaet.page.screenshot({ path: join(SHOTS, 'mv7-stand-8h.png') });
+  assert.deepEqual(spaet.fehler, []);
+  await spaet.ctx.close();
+
+  const frisch = await oeffne({ satz: 'v5', jetzt: JETZT_V5, pfad: '/mein-vorteil/#remix' });
+  assert.doesNotMatch(nbsp(await text(frisch.page, '#stand')), /aufgefrischt/);
+  const r2 = nbsp(await frisch.page.evaluate(() => document.getElementById('remix').textContent));
+  assert.match(r2, /Zuletzt gesucht gerade eben\./);
+  assert.doesNotMatch(r2, /läuft von selbst/);
+  assert.deepEqual(frisch.fehler, []);
+  await frisch.ctx.close();
+});
+
+// MV7-Prüfung (15.11.2026): kein doppelter Punkt („vor 22 Min..“), nach 36 h wieder rot und ohne Versprechen (wie der
+// Filme-Reiter), Frist um Mitternacht Berlin = Ende des Vortags, „Heute wichtig“ ohne doppeltes „Remix-Contest:“.
+test('Stand: „vor 22 Min.“ ohne doppelten Punkt; nach 3 Tagen rot ohne „läuft von selbst“; Frist 00:00 = Vortag', { skip: ohnePw }, async () => {
+  const kurz = await oeffne({ satz: 'v5', jetzt: '2026-11-07T16:57:00Z', pfad: '/mein-vorteil/#remix' });
+  const r = nbsp(await kurz.page.evaluate(() => document.getElementById('remix').textContent));
+  assert.match(r, /Zuletzt gesucht vor \d+ Min\./);
+  assert.doesNotMatch(r, /Zuletzt gesucht[^.]*Min\.\./, 'kein doppelter Punkt');
+  const bis = await kurz.page.evaluate(() => [bisText('2026-11-17T23:00:00Z'), bisText('2026-11-17T21:30:00Z'), fristKurz({ bis: '2026-11-17T23:00:00Z' })]);
+  assert.match(bis[0], /^bis \S+ 17\.11\.$/, `Mitternacht = Ende 17.11.: ${bis[0]}`);
+  assert.match(bis[1], /^bis \S+ 17\.11\., 22:30 Uhr$/, bis[1]);
+  assert.match(bis[2], /17\.11\./);
+  assert.deepEqual(kurz.fehler, []);
+  await kurz.ctx.close();
+
+  const tot = await oeffne({ satz: 'v5', jetzt: '2026-11-10T16:35:00Z', pfad: '/mein-vorteil/#remix' });
+  const stand = nbsp(await text(tot.page, '#stand'));
+  assert.doesNotMatch(stand, /aufgefrischt/, 'nach 3 Tagen kein Versprechen');
+  assert.ok(await tot.page.locator('#stand .alt').count() >= 1, 'nach 3 Tagen wieder rot');
+  const r3 = nbsp(await tot.page.evaluate(() => document.getElementById('remix').textContent));
+  assert.match(r3, /Zuletzt gesucht am \S+ \d+\.\d+\. – seit über einem Tag keine neue Suche\./);
+  assert.doesNotMatch(r3, /läuft von selbst/);
+  await tot.page.screenshot({ path: join(SHOTS, 'mv7-stand-3tage.png') });
+  assert.deepEqual(tot.fehler, []);
+  await tot.ctx.close();
+
+  const doppelt = { 'vorteile-aktuell.json': d => { d.kategorien.musik.push(...REMIX_TEST().map(e => e.id === 'rx-synthpop' ? { ...e, titel: 'Remix-Contest: Synthpop duo launches remix contest' } : e)); } };
+  const w = await oeffne({ satz: 'vertrag', patch: doppelt, jetzt: '2026-11-15T10:00:00Z' });
+  const wichtig = nbsp(await text(w.page, '#wichtig'));
+  assert.match(wichtig, /Remix-Contest bis Fr 20\.11\.: Synthpop duo/);
+  assert.doesNotMatch(wichtig, /Remix-Contest: Remix-Contest/);
+  await w.ctx.close();
+});

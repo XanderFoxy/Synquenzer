@@ -89,13 +89,26 @@ Wer mehr will, trägt bei einem Gerät die Geizhals-Adresse ein (wird höchstens
 
 ## Technik
 
-- `scan/main.mjs` ruft die fälligen Module auf (Intervalle in `config.json`, z. B. Deals stündlich, Jobs alle 12 Stunden).
+- `scan/main.mjs` ruft die fälligen Module auf (Intervalle in `config.json`: Deals stündlich, Reisen 2 h, Filme/Remix/Auftritte/
+  Deutschunterricht mit Gesuchen 3 h, Erleben/Musik/Tests 6 h, Nebenverdienst 12 h; Remotive darin höchstens alle 6 h).
+  Die Regel steht in `scan/faellig.mjs` und gilt für die Vorprüfung im Workflow und den Lauf gleich.
   Fällt eine Quelle aus, laufen die anderen weiter; die alten Einträge bleiben stehen.
 - `scan/rechnen.mjs` – die Deal-Mathe. `scan/benachrichtigen.mjs` – Sofort/Zusammenfassung, Dedupe, Tageslimit.
 - `scan/module/*.mjs` – ein Modul pro Bereich. `scan/lib/` – Abruf (höflich: eigener User-Agent, Pause pro Server), RSS, Text.
   Gleiches Muster und gleiches Datenformat wie `schnaeppchen/scan/` und `konzerte/scan/`.
-- Workflow `.github/workflows/vorteile.yml`: stündlich um :41, plus manuell (*Actions → Vorteils-Radar → Run workflow*,
+- Workflow `.github/workflows/vorteile.yml`: acht Zeitpläne je Stunde (:04 :11 :19 :26 :34 :41 :49 :56), dazu ein Start nach
+  jedem Lauf von Schnäppchen-Wecker und Konzert-Alarm, plus manuell (*Actions → Vorteils-Radar → Run workflow*,
   mit „digest“ für eine Zusammenfassung sofort oder „alle“, um alles neu abzufragen).
+  **Warum so viele?** GitHub startet geplante Läufe hier nur etwa alle 7 Stunden (gemessen 31.10.–14.11.2026: 53 von 335
+  stündlichen Läufen = 16 %, zu beliebigen Minuten). Ob mehr Zeitpläne mehr Starts bringen, ist nicht belegt; sie kosten
+  dank Vorprüfung fast nichts. Wichtiger ist der Start nach den anderen Weckern (`workflow_run`, nur Läufe auf `main`):
+  alle geplanten Starts der drei Wecker zusammen lagen im Median 2,1 h auseinander (p90 4,7 h) – erwartet also etwa alle
+  1–2 Stunden frische Daten; gemessen wird nach der Übernahme (Alter von `aktuell.json`; „cancelled“-Läufe getrennt zählen).
+  Jeder Start fragt zuerst `node scan/faellig.mjs --data …`: ist kein Bereich und keine Zusammenfassung dran, endet er
+  nach Sekunden – ohne Abruf, ohne Tests, ohne Commit (eine gescheiterte Zusammenfassung erst nach 1 h wieder). Am Ende
+  stößt er Schnäppchen-Wecker (Daten > 70 Min. alt) und Konzert-Alarm (> 190 Min.) per `gh workflow run` an, frühestens
+  30 Min. nach deren letztem Lauf – nur mit dem eingebauten Token (`permissions: actions: write`), kein Geheimnis.
+  Folge: Schnäppchen fragt mydealz/kaufDA/Keepa dann etwa stündlich statt alle ~7 h (so war es ursprünglich geplant).
   Die Daten landen auf dem Zweig **`vorteile-daten`** (`vorteile/data/aktuell.json`, `zustand.json`), nicht auf `main`.
 - Roh-Mitschnitt für die Fehlersuche: *Run workflow* mit Haken **roh** → alle Module, kein Push, nichts auf den Daten-Zweig; alle Quell-Antworten (je max. 2 MB, Schlüssel geschwärzt) und das berechnete Ergebnis landen auf dem Zweig **`roh-daten`** unter `vorteile/<Lauf-Nr.>/` (`index.json`, `quellen/`, `ausgabe/`). Lokal: `ROH_DIR=/tmp/roh node scan/main.mjs`.
 - Die Seite liest ihre Daten von `raw.githubusercontent.com` (Zweige `vorteile-daten`, `schnaeppchen-daten`, `konzerte-daten`).

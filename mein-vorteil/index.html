@@ -779,8 +779,14 @@ const URLS = {
 // Datenquellen (je ein Wecker); die Seite verteilt sie auf Bereiche (Leiste oben, immer nur einer zu sehen)
 const REITER = ['angebote', 'vorteile', 'konzerte'];
 const NAMEN = { angebote: 'Angebote', vorteile: 'Vorteile', konzerte: 'Konzerte' };
-// Daten-Stand gilt als alt (rot), wenn der letzte Lauf so lange her ist (Schnäppchen/Vorteile stündlich, Konzerte alle 3 h)
-const ALT_STUNDEN = { angebote: 3, vorteile: 3, konzerte: 7 };
+// Daten-Stand älter als so viele Stunden: kleiner Hinweis, kein Alarm (MV7, 14.11.2026: GitHub startet die Wecker oft
+// erst nach Stunden; die Wecker holen das von selbst nach). Älter als TOT_STUNDEN (wie der Filme-Reiter: 36 h) holt sich
+// nichts mehr von selbst – dann wieder rot und ohne Versprechen. Rot sonst nur bei gestörter Quelle oder ohne Verbindung.
+const ALT_STUNDEN = { angebote: 6, vorteile: 6, konzerte: 6 };
+const TOT_STUNDEN = 36;
+const alterStd = iso => { const t = zeit(iso); return t == null ? null : (Date.now() - t) / 36e5; };
+const istAlt = (iso, q = 'vorteile') => { const a = alterStd(iso); return a != null && a > ALT_STUNDEN[q] && a <= TOT_STUNDEN; };
+const istTot = iso => { const a = alterStd(iso); return a != null && a > TOT_STUNDEN; };
 // Vorteile: Anzeigenamen, falls die Daten keine liefern (neue Bereiche kommen mit ihrem Namen aus den Daten)
 const BEREICH = {
   deals: ['Andere Deals', 'echt durchgerechnet'], erleben: ['Erleben', 'Therme, Kino, Feste'], reisen: ['Reisen', 'ab Leipzig, Dresden, Berlin'],
@@ -827,7 +833,9 @@ function tag(t) {
   return `${p.weekday.replace('.', '')} ${p.day}.${p.month}.`;
 }
 function uhr(t) { const p = teile(t); const hm = `${p.hour}:${p.minute}`; return hm === '23:59' || hm === '00:00' ? '' : `${hm} Uhr`; }
-function bisText(iso) { const t = zeit(iso); if (t == null) return ''; const u = uhr(t); return `bis ${tag(t)}${u ? ', ' + u : ''}`; }
+// Frist genau um Mitternacht (Berlin) = Ende des Vortags: „bis 17.11. 23:00Z“ heißt „bis Di 17.11.“, nicht „bis Mi 18.11.“
+function bisZeit(t) { if (t == null) return t; const p = teile(t); return `${p.hour}:${p.minute}` === '00:00' ? t - 6e4 : t; }
+function bisText(iso) { const t = bisZeit(zeit(iso)); if (t == null) return ''; const u = uhr(t); return `bis ${tag(t)}${u ? ', ' + u : ''}`; }
 function abText(iso) { const t = zeit(iso); if (t == null) return ''; const u = uhr(t); return `ab ${tag(t)}${u ? ', ' + u : ''}`; }
 function vor(iso) {
   const t = zeit(iso);
@@ -923,17 +931,27 @@ const alleGestoert = () => REITER.every(q => S[q]?.gestoert);
 const offline = () => navigator.onLine === false || alleGestoert();
 function uhrzeit(iso) { const t = zeit(iso); if (t == null) return '?'; const p = teile(t); return `${tag(t) === 'heute' ? '' : tag(t) + ', '}${p.hour}:${p.minute} Uhr`; }
 function zeigeStand() {
+  let alt = false;
   const teil = REITER.map(q => {
     const s = S[q];
     if (!s) return `${NAMEN[q]} lädt …`;
     if (!s.d) return `<span class="alt">${NAMEN[q]}: ${offline() ? 'keine Verbindung' : 'gerade gestört'}</span>`;
     const iso = standZeit(q);
-    const alt = iso && Date.now() - zeit(iso) > ALT_STUNDEN[q] * 36e5;
     const txt = !s.gestoert ? `${NAMEN[q]} ${iso ? vor(iso) : '?'}`
       : offline() ? `${NAMEN[q]} ${iso ? vor(iso) : '?'} (offline)` : `${NAMEN[q]}: letzter Stand von ${uhrzeit(iso)} – Quelle gerade gestört`;
-    return alt || s.gestoert ? `<span class="alt">${esc(txt)}</span>` : esc(txt);
+    if (!s.gestoert && istAlt(iso, q)) alt = true;
+    return s.gestoert || istTot(iso) ? `<span class="alt">${esc(txt)}</span>` : esc(txt);
   });
-  $('stand').innerHTML = 'Stand: ' + teil.join(' · ');
+  // älter als 6 h: nur ein ruhiger Satz am Ende (die Wecker holen das von selbst nach)
+  $('stand').innerHTML = 'Stand: ' + teil.join(' · ') + (alt && !offline() ? ' · wird automatisch aufgefrischt' : '');
+}
+// Stand eines Bereichs der Vorteile (status[name].stand = letzter echter Abruf; übersprungene Läufe behalten ihn)
+function bereichStand(name) {
+  const st = S.vorteile?.d?.status?.[name]?.stand;
+  if (!st || zeit(st) == null) return '';
+  const zusatz = offline() ? '' : istTot(st) ? ' – seit über einem Tag keine neue Suche' : istAlt(st) ? ' – die nächste Suche läuft von selbst' : '';
+  const satz = `Zuletzt gesucht ${vor(st)}${zusatz}`;
+  return `<p class="stand">${esc(satz.endsWith('.') ? satz : satz + '.')}</p>`; // „vor 22 Min.“ ohne zweiten Punkt
 }
 // Hinweis oben im Reiter, wenn seine Karten aus einem älteren Lauf stammen (Quelle gestört, Telefon aber online)
 function stoerHinweis(q) {
@@ -1809,7 +1827,7 @@ function zeichneMehr(t) {
   if (d) {
     const namen = namenVorteile();
     const quellen = Object.entries(d.status || {}).filter(([k, q]) => !NIE_ZEIGEN.has(k) && !q.aus).map(([k, q]) =>
-      `<li class="${q.ok ? '' : 'stoerung'}">${esc(namen[k] || k)}: ${q.aus || q.uebersprungen ? 'aus' : q.ok ? `${esc(q.anzahl ?? 0)} gefunden` : 'gestört – ' + esc((q.fehler || [])[0] || '')}</li>`);
+      `<li class="${q.ok ? '' : 'stoerung'}">${esc(namen[k] || k)}: ${q.aus ? 'aus' : q.ok ? `${esc(q.anzahl ?? 0)} gefunden` : 'gestört – ' + esc((q.fehler || [])[0] || '')}${q.stand && zeit(q.stand) != null ? ` · ${esc(vor(q.stand))}` : ''}</li>`);
     teile.push(quellenKasten('Quellen & Hinweise (Vorteile)', quellen, weg.size ? '<button class="mehr" type="button" id="zeigen">Ausgeblendete wieder zeigen</button>' : ''));
   }
   return { html: teile.join(''), n };
@@ -1872,7 +1890,7 @@ function zeichneAssistent(t, bereich) {
   const zeigen = offen.has(bereich) ? frisch : frisch.slice(0, SICHTBAR);
   const fundZeigen = offen.has(bereich + '-fund') ? fund : fund.slice(0, 5);
   const teile = [t.da ? stoerHinweis('vorteile') : ''];
-  teile.push(`<p class="regel">${esc(tx.regel)}</p>`);
+  teile.push(`<p class="regel">${esc(tx.regel)}</p>`, bereichStand(bereich));
   if (bereich === 'auftritte') teile.push(`<details class="kasten name-tipp"><summary>Als Xander Fox oder als One Day in Rome?</summary><p>Bewirb dich mit dem Namen, unter dem ihr auftretet: <b>Band-Auftritt</b> (Stadtfest, Festival, Bandcontest, Club) → <b>One Day in Rome</b>, im Text „Kontakt: Xander Fox (Gesang, Synths)“. <b>Solo, DJ- oder Live-Set</b>, Open Stage → <b>Xander Fox</b>. Einheitlich geht auch „One Day in Rome (Xander Fox)“ – dann überall gleich schreiben (Mail, Plakat, Social Media).</p></details>`);
   if (bereich === 'unterricht') teile.push(gesucheGruppe(t));
   teile.push(`<h3 class="unter">${esc(tx.frisch)} <small>${frisch.length || ''}</small></h3>`);
@@ -2072,7 +2090,7 @@ function zeichneKonzerte() {
 const KACHEL_REIHE = ['deals', 'preisfehler', 'filme', 'auftritte', 'remix', 'unterricht', 'konzerte', 'gewinnspiele', 'krypto', 'mehr'];
 const KACHEL_NAME = { deals: 'Deals', preisfehler: 'Preisfehler', filme: 'Filme', auftritte: 'Auftritte', remix: 'Remix', unterricht: 'Unterricht', konzerte: 'Konzerte', gewinnspiele: 'Gewinnspiele', krypto: 'Krypto', mehr: 'Mehr' };
 const ohnePrefix = s => String(s || '').replace(/^[\[(]?\s*(möglicher\s+)?preisfehler\s*[\])]?\s*[:!–-]?\s*/i, '');
-function fristKurz(e) { const b = zeit(e.bis); return b == null ? '' : `bis ${tag(b)}`; }
+function fristKurz(e) { const b = bisZeit(zeit(e.bis)); return b == null ? '' : `bis ${tag(b)}`; }
 function kachelInhalt(b, t) { // -> { z: [[Titel, Zeile, gut?]], w: Satz }
   if (b === 'deals') {
     const d = S.angebote?.d;
@@ -2251,7 +2269,7 @@ function zeichneBlatt() {
     const b = zeit(e.bis);
     const rest = b != null ? Math.ceil((b - Date.now()) / 864e5) : null;
     teile.push(`<div class="fakten-mini">${[
-      b != null ? `<span class="marke warm">Frist ${esc(tag(b))}${rest > 1 ? ` · noch ${rest} Tage` : ''}</span>` : '<span class="marke grau">Frist auf der Contest-Seite</span>',
+      b != null ? `<span class="marke warm">Frist ${esc(tag(bisZeit(b)))}${rest > 1 ? ` · noch ${rest} Tage` : ''}</span>` : '<span class="marke grau">Frist auf der Contest-Seite</span>',
       x.stems ? '<span class="marke">Stems verfügbar</span>' : '<span class="marke grau">Stems auf der Contest-Seite</span>',
       zahl(x.eingereicht) != null ? `<span class="marke grau">${esc(x.eingereicht)} Remixe eingereicht</span>` : '',
       x.passt ? '<span class="marke">passt zu deinem Stil</span>' : ''].filter(Boolean).join('')}</div>`);
@@ -2630,9 +2648,9 @@ function wichtigZeilen() {
   const c = bald(letzteEinteilung?.cashback || [], 72);
   if (c.length) z.push({ ziel: 'cashback', text: `Cashback endet ${tag(zeit(c[0].bis))}: ${kurzTitel(c[0].titel, 40)}` });
   const a = bald(letzteEinteilung?.auftritte || [], 7 * 24);
-  if (a.length) z.push({ ziel: 'auftritte', warm: true, text: `Bewerbung bis ${tag(zeit(a[0].bis))}: ${kurzTitel(a[0].titel, 40)}` });
+  if (a.length) z.push({ ziel: 'auftritte', warm: true, text: `Bewerbung bis ${tag(bisZeit(zeit(a[0].bis)))}: ${kurzTitel(a[0].titel, 40)}` });
   const rx = bald(letzteEinteilung?.remix || [], 7 * 24);
-  if (rx.length) z.push({ ziel: 'remix', warm: true, text: `Remix-Contest bis ${tag(zeit(rx[0].bis))}: ${kurzTitel(rx[0].titel, 40)}` });
+  if (rx.length) z.push({ ziel: 'remix', warm: true, text: `Remix-Contest bis ${tag(bisZeit(zeit(rx[0].bis)))}: ${kurzTitel(String(rx[0].titel || '').replace(/^\s*remix[- ]?(contest|wettbewerb)\s*[:–-]\s*/i, ''), 40)}` });
   return z.slice(0, 4);
 }
 function zeichneWichtig() {
