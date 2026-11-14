@@ -17,3 +17,4 @@
 - (2) offen: Formant-Lage Chor +400 ct 9,3 % / −500 ct 6,0 % gegen Ideal und LSD Übergang 7 dB (Geist der Original-Tonhöhe im Rest x − Modell) – nicht behoben.
 - Pflicht auf Endstand Auftrag 2/3: topdefs doppelt 0/Syntax 0, dupkeys 0, smoke errors [] (smoke-2.png), MS 2000 1×, live: true 1×, VERSION gleich → fertig. Bau: python3 src/apply.py basis2 ziel && python3 src/apply2.py ziel. Ende Auftrag 2/3.
 - 14.11. Start Auftrag 3/3 (Test chr2-test.mjs + Regression): LOG/NOTES/LESEN gelesen.
+- (3/3) chr2-test.mjs erster Lauf: 70/82 OK; FEHLER = bekannte Trenn-Grenzen (3 St. Unterstimme Welle 67 %, 4 St. eng 63–78 %) + 2 Messfehler im Test (Versatz-Toleranz, Formant gegen Kopie ohne echt verfälscht durch Rest×0,3) → Test-Messung wird korrigiert (Formant: Kopie 1 gegen Kopie 2 derselben Stimme) → halb

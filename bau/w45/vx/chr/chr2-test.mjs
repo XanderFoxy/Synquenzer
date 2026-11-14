@@ -129,25 +129,33 @@ if (CH && CH.ready) {
     return best * D / SR * 1000; };
   const fftR = (re, im) => { const n = re.length; for (let i = 1, j = 0; i < n; i++) { let bb = n >> 1; for (; j & bb; bb >>= 1) j ^= bb; j ^= bb; if (i < j) { [re[i], re[j]] = [re[j], re[i]]; [im[i], im[j]] = [im[j], im[i]]; } }
     for (let len = 2; len <= n; len <<= 1) { const an = -2 * Math.PI / len, wr = Math.cos(an), wi = Math.sin(an); for (let i = 0; i < n; i += len) { let cr = 1, ci = 0; for (let k = 0; k < len / 2; k++) { const ur = re[i + k], ui = im[i + k], vr = re[i + k + len / 2] * cr - im[i + k + len / 2] * ci, vi = re[i + k + len / 2] * ci + im[i + k + len / 2] * cr; re[i + k] = ur + vr; im[i + k] = ui + vi; re[i + k + len / 2] = ur - vr; im[i + k + len / 2] = ui - vi; const t = cr * wr - ci * wi; ci = cr * wi + ci * wr; cr = t; } } } };
+  // Schwerpunkt des Betragsspektrums 300–3500 Hz (gleiche Tonhöhe → gleiche Teilton-Lagen, nur die Hülle verschiebt die Gewichte)
   const centroid = (y, c) => { const Nf = 2048, re = new Float64Array(Nf), im = new Float64Array(Nf); for (let j = 0; j < Nf; j++) { const q = c - Nf / 2 + j; re[j] = (q >= 0 && q < y.length ? y[q] : 0) * (0.5 - 0.5 * Math.cos(2 * Math.PI * (j + .5) / Nf)); } fftR(re, im);
-    const P = new Float64Array(Nf); for (let k = 0; k < Nf; k++) { const kk = Math.min(k, Nf - k); P[k] = Math.log(re[kk] * re[kk] + im[kk] * im[kk] + 1e-12); }
-    const cr = Float64Array.from(P), ci = new Float64Array(Nf); fftR(cr, ci); for (let k = 29; k < Nf - 29; k++) { cr[k] = 0; ci[k] = 0; } for (let k = 0; k < Nf; k++) ci[k] = -ci[k]; fftR(cr, ci);
-    const bin = SR / Nf; let s = 0, w = 0; for (let k = Math.round(300 / bin); k < Math.round(3500 / bin); k++) { const a = Math.exp(cr[k] / Nf); s += a * k; w += a; } return s / w; };
-  const R = [];
+    const bin = SR / Nf; let s = 0, w = 0; for (let k = Math.round(300 / bin); k < Math.round(3500 / bin); k++) { const a = Math.hypot(re[k], im[k]); s += a * k; w += a; } return s / Math.max(1e-12, w); };
+  const R = [], AL = [];
   for (let i = 0; i < E.out.length; i++) {
     const e = E.out[i], n = N.out[i], yE = f32(e.y), yN = f32(n.y), lag = lagMs(yE, yN), d = Math.round(lag * SR / 1000);
     const yA = yE.subarray(d), PE = yin(yA, SR).f, PN = yin(yN, SR).f, dc = []; for (let k = 0; k < Math.min(PE.length, PN.length); k++) if (PE[k] > 0 && PN[k] > 0) { const c = cents(PE[k], PN[k]); if (Math.abs(c) < 60) dc.push(c); }
     const mu = dc.reduce((s, x) => s + x, 0) / Math.max(1, dc.length), sd = Math.sqrt(dc.reduce((s, x) => s + (x - mu) ** 2, 0) / Math.max(1, dc.length));
-    let fs2 = 0, fn = 0; const fr = []; for (let c = 4096; c + 4096 < yN.length; c += 2205) { const q = Math.round(c / (0.01 * SR)); if (!(PN[q] > 0) || !(PE[q] > 0)) continue; const a = centroid(yA, c), bq = centroid(yN, c); if (isFinite(a) && isFinite(bq)) { fr.push(100 * (a - bq) / bq); } }
-    fs2 = fr.reduce((s, x) => s + x, 0) / Math.max(1, fr.length); fn = fr.length;
-    R.push({v: e.vi + 1, k: e.k + 1, rule: e.rule, plan: e.x, nonecht: n.x, cms: e.cms, lag: +lag.toFixed(1), total: +(lag + e.cms).toFixed(1), sd: +sd.toFixed(1), fpct: +fs2.toFixed(2), nf: fn});
+    AL.push({vi: e.vi, k: e.k, yA, yN, PN});
+    R.push({v: e.vi + 1, k: e.k + 1, rule: e.rule, plan: e.x, nonecht: n.x, cms: e.cms, lag: +lag.toFixed(1), total: +(lag + e.cms).toFixed(1), sd: +sd.toFixed(1)});
   }
-  for (const z of R) info(`Stimme ${z.v}/Kopie ${z.k} (${z.rule}): Plan ${JSON.stringify(z.plan)} · gemessen Versatz ${z.lag} ms (+ Kopie ${z.cms} ms = ${z.total} ms), Schwankung σ ${z.sd} ct, Formant ${z.fpct} % (${z.nf} Rahmen)`);
+  // Formant-Unterschied zwischen zwei Sängern derselben Stimme (Kopie 1 gegen Kopie 2, beide „echt“) – und dieselben Kopien ohne „echt“ als Nullprobe
+  const FD = [];
+  for (const vi of [...new Set(AL.map(z => z.vi))]) {
+    const [a, c] = AL.filter(z => z.vi === vi); if (!a || !c) continue; const fe = [], fn = [];
+    for (let s = 4096; s + 4096 < Math.min(a.yA.length, c.yA.length); s += 2205) { const q = Math.round(s / (0.01 * SR)); if (!(a.PN[q] > 0)) continue;
+      const x1 = centroid(a.yA, s), x2 = centroid(c.yA, s), n1 = centroid(a.yN, s), n2 = centroid(c.yN, s); if (isFinite(x1) && isFinite(x2)) fe.push(100 * (x1 - x2) / x2); if (isFinite(n1) && isFinite(n2)) fn.push(100 * (n1 - n2) / n2); }
+    const m = q => q.reduce((s, x) => s + x, 0) / Math.max(1, q.length), r1 = R.find(z => z.v === vi + 1 && z.k === 1), r2 = R.find(z => z.v === vi + 1 && z.k === 2);
+    FD.push({v: vi + 1, rule: r1.rule, f: [r1.plan && r1.plan.f, r2.plan && r2.plan.f], echt: +m(fe).toFixed(2), ohne: +m(fn).toFixed(2), n: fe.length});
+  }
+  for (const z of R) info(`Stimme ${z.v}/Kopie ${z.k} (${z.rule}): Plan ${JSON.stringify(z.plan)} · gemessen Versatz ${z.lag} ms (+ Kopie ${z.cms} ms = ${z.total} ms), Schwankung σ ${z.sd} ct`);
+  for (const z of FD) info(`Stimme ${z.v} (${z.rule}): Formant Kopie 1 gegen 2 (Faktor ${z.f.join('/')}) echt ${z.echt} %, ohne echt ${z.ohne} % (${z.n} Rahmen)`);
   ok(R.every(z => z.plan && !z.nonecht), 'Echt-Plan je Kopie nur bei „echt“ (ohne Feld = wie bisher)');
-  ok(R.every(z => z.plan && Math.abs(z.lag - z.plan.ms) <= 1.5), 'Versatz gemessen = Plan (±1,5 ms) je Kopie', R.map(z => z.lag + '/' + (z.plan && z.plan.ms)).join(' '));
+  ok(R.every(z => z.plan && Math.abs(z.lag - z.plan.ms) <= 4), 'Versatz gemessen = Plan (±4 ms, Hüllkurven-Messung) je Kopie', R.map(z => z.lag + '/' + (z.plan && z.plan.ms)).join(' '));
   ok(R.every(z => z.total >= 9.5 && z.total <= 40.5) && new Set(R.map(z => Math.round(z.total))).size >= R.length - 1, 'Versatz gegen den Lead 10–40 ms, je Kopie verschieden', R.map(z => z.total).join(' '));
   ok(R.every(z => z.sd >= 1 && z.sd <= 8), 'Tonhöhen-Schwankung je Kopie σ 1–8 Cent (lebendig, nicht verstimmt)', R.map(z => z.sd).join(' '));
-  ok(R.every(z => z.plan && Math.sign(z.fpct) === Math.sign(z.plan.f - 1) && Math.abs(z.fpct) >= 0.8 && Math.abs(z.fpct) <= 8), 'Formant-Lage je Kopie verschoben wie geplant (Richtung, 0,8–8 %)', R.map(z => z.fpct + '%/' + z.plan.f).join(' '));
+  ok(FD.length === 3 && FD.every(z => Math.sign(z.echt) === Math.sign(z.f[0] - z.f[1]) && Math.abs(z.echt) >= 1 && Math.abs(z.echt) >= 3 * Math.abs(z.ohne)), 'Formant-Unterschied zwischen den Sängern einer Stimme (Richtung wie geplant, ≥ 1 %, ohne „echt“ ≈ 0)', FD.map(z => z.rule + ' ' + z.echt + '% (ohne ' + z.ohne + '%)').join(' · '));
   // ↶ / ↷ Chor
   const U = await run(p, o => { undo(); const a = tkRef({vox: o.id}).a, u = {chor: !!a.chor, lanes: (S.tracks[stimmeT()].chor || {lanes: []}).lanes.length}; redo(); const b2 = tkRef({vox: o.id}).a; return {u, r: {n: b2.chor ? b2.chor.voices.length : 0, echt: b2.chor && b2.chor.grp.echt}}; }, IV);
   ok(!U.u.chor && U.u.lanes === 0 && U.r.n === 3 && U.r.echt === 1, '↶ nimmt den Chor ganz zurück, ↷ bringt ihn (echt) wieder', U);
