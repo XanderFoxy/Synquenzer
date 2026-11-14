@@ -2713,6 +2713,14 @@ a.mbtn[aria-disabled=true]{opacity:.55}
 #wpSheet .qrow.vx1-nat .lbl{font:700 11px/1 var(--font-ui)}
 #wpSheet .vx1lead.on{color:var(--ink);background:var(--amber);border-color:var(--amber)}
 /* VX1-CSS-END */
+/* VX1R-CSS-BEGIN: Gesang-Editor (PianoRoll mit opts.audio): keine Anschlag-Zeile, nur die Werkzeuge für Gesang */
+#rollSheet .pr.vx1r,.pr.vx1r{--pr-vh:0px}.pr.vx1r .pr-vlab,.pr.vx1r .pr-vel{display:none}.vx1rx{display:none!important}
+.tksheet .tk-vx1r{width:100%;min-height:44px;margin:0 0 6px}   /* Takes-Blatt: [✎ Bearbeiten] wie [✎ Marken & Timing …] */
+/* Trefferfläche: die Knöpfe der Gesang-Leisten greifen bis an den Leistenrand (hochkant 44 px); die Trennlinie als Schatten statt Rand (sieht gleich aus) */
+#rollSheet:has(.pr.vx1r) .pr-bar button{position:relative}#rollSheet:has(.pr.vx1r) .pr-bar button::after{content:'';position:absolute;left:-2px;right:-2px;top:-6px;bottom:-6px}
+#rollSheet .pr.vx1r>.pr-bar.prt{border-bottom:0;box-shadow:inset 0 -1px 0 var(--panel-edge)}#rollSheet .pr.vx1r>.pr-bar.pra{border-top:0;box-shadow:inset 0 1px 0 var(--panel-edge)}
+@media (orientation:landscape){#rollSheet:has(.pr.vx1r) .rhead .sh-x{position:relative}#rollSheet:has(.pr.vx1r) .rhead .sh-x::after{content:'';position:absolute;left:-4px;right:-2px;top:-2px;bottom:-2px}}   /* quer: ✕ 44 px breit */
+/* VX1R-CSS-END */
 /* G10A-CSS-BEGIN: G10a – Einsingen fertig (Pegel der Stimme in der Aufnahme-Leiste, Hörmuschel-Hinweis im 🎤-Blatt) */
 .g10a-lvl{grid-column:1;grid-row:2;position:relative;display:block;min-width:0;min-height:0;background:var(--lcd);border-radius:4px;box-shadow:inset 0 1px 4px rgba(0,0,0,.9);overflow:hidden;pointer-events:none}
 .g10a-lvl[hidden]{display:none}
@@ -21198,7 +21206,7 @@ const RecHelpers = (() => {
       }
       if (!best) return null;
       const r = noteRect(best), edge = Math.max(10, Math.min(22, r.w * .35));
-      return {note: best, zone: x >= r.x + r.w - edge ? 'end' : 'body'};
+      return {note: best, zone: !opts.audio && x >= r.x + r.w - edge ? 'end' : 'body'};   // VX1R: Gesang-Stücke haben keine Länge
     }
     const scope = () => { const ns = clip().notes; return E.sel.size ? ns.filter(n => E.sel.has(n)) : ns.slice(); };
 
@@ -21649,9 +21657,9 @@ const RecHelpers = (() => {
             if (gst.mFz && gst.mFz.s * (p.y - gst.mFz.y) < 0) gst.mFz = null;
             if (!gst.mFz) gst.mDR = dR;
           }
-          const q = onMap ? dB : g ? Math.round(dB / g) * g : dB;
+          const q = onMap ? dB : opts.audio ? opts.audio.snap(gst, ai, dB, g) : g ? Math.round(dB / g) * g : dB;   // VX1R: Gesang rastet absolut am Anker ein
           const minT = Math.min(...gst.t0), maxT = Math.max(...gst.t0);
-          const dt = clamp(q, -minT, L() - 1e-6 - maxT);
+          const dt = opts.audio ? clamp(q, -minT - 4, L() - maxT) : clamp(q, -minT, L() - 1e-6 - maxT);   // VX1R: der Anschwung darf vor Schlag 0 liegen
           gst.set.forEach((nt, i) => { nt.t = +(gst.t0[i] + dt).toFixed(6); if (dt) delete nt.o; nt.n = clamp(V.rows[clamp(rowOfNote(gst.n0[i]) + dR, 0, V.rows.length - 1)], 0, 127); });
           if (gst.anchor.n !== gst.lastN) { gst.lastN = gst.anchor.n; model.audition && model.audition(gst.anchor.n, gst.anchor.v); }
           gst.changed = true; say(nm(gst.anchor.n) + ' · ' + fmtPos(gst.anchor.t)); break;
@@ -21707,6 +21715,7 @@ const RecHelpers = (() => {
     }
     function tap() {
       const h = gst.hit, tool = E.tool;
+      if (opts.audio && opts.audio.tap) opts.audio.tap(h && h.note, gst.beat0);   // VX1R: getippte Stelle (Teilen, Vorhören)
       if (MS && MS.owns(tool)) { MS.tap(gst); return; }           /* MAGIC */
       if (tool === 'mpBrush' && mp2On()) return;   // PINSEL2: kurz getippt = nicht eingerastet = nichts geändert
       if (tool === 'mpBrush') { model.begin(); mpStart(); mpTo(gst.p0); const ch = !!MB.changed; MB = null; model.end(ch, 'Pinsel'); return; }   /* MP: ein Pinselpunkt */
@@ -21782,7 +21791,7 @@ const RecHelpers = (() => {
       if (s.rip == null) s.rip = !!(MS && MS.ripStart(s)); if (s.rip) { MS.ripDrag(s, p); return; }   /* MAGIC: Takt-Leiste halten + ziehen */
       if (s.vx2 == null) s.vx2 = vx2GripAt(s.p0.x, true); if (s.vx2) { vx2GripDrag(s, p); return; }   /* VOX2: Rand des gelben Bereichs ziehen (am Clip-Ende: Länge zuerst) */
       if (s.len == null) {                                           // decide once: length handle or scroll
-        s.len = Math.abs(s.p0.x - xOf(L())) < 22;
+        s.len = !opts.audio && Math.abs(s.p0.x - xOf(L())) < 22;   // VX1R: Gesang ohne Längen-Griff
         if (s.len) {
           model.begin(); s.len0 = clip().len; s.ppb0 = V.ppb; s.x00 = V.x0; V.freeze = true;
           s.end = cancel => {
@@ -27559,7 +27568,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '4.55.1';
+const VERSION = '4.56.0';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -40657,7 +40666,7 @@ function svTap(x, y) {
   // SX8: weit draußen sind Zellen zu schmal zum Tippen: ein Tipp in die Spuren/AKKORDE zoomt dorthin (36 px je Takt)
   if (SV.cellW < SX8_EDIT && row >= 0 && row <= svChordRow()) { sx8ZoomTo(SX8_DEF, x); folHand('song'); haptic('tick'); return; }      // V0c N7-R7 + V2e marks: the ruler selects (yellow) and sets the Positionsmarke, never jumps
   if (!song) { toast('Noch kein Song – erst ● SONG'); return; }
-  if (row < svChordRow()) { const t = SV.rows[row]; if (chsSvCode(t) != null) { chsSvTap(t, bar); return; } if (t < 0 || bar > song.bars) return; if (isStimmeT(t) && tkVoxAt(bar)) { tkSheet({vox: tkVoxAt(bar).id}); return; }   // VS3: Song-Stimme → Takes-Blatt
+  if (row < svChordRow()) { const t = SV.rows[row]; if (chsSvCode(t) != null) { chsSvTap(t, bar); return; } if (t < 0 || bar > song.bars) return; if (isStimmeT(t) && tkVoxAt(bar)) { vx1rAt(tkVoxAt(bar).id, bar); tkSheet({vox: tkVoxAt(bar).id}); return; }   // VS3: Song-Stimme → Takes-Blatt · VX1R: die getippte Stelle für [✎ Bearbeiten]
     if (bar < song.bars && svCellOwnAt(t, bar)) { openOwnRoll(t, bar); return; }   // V2e′ (9.2): a tap on an own clip = ROLLE on it
     const r = songCycle(t, bar); folEdit('song'); lcdOrToast(S.tracks[t].name + ' · Takt ' + (bar + 1) + ': ' + (r >= 0 ? 'Clip ' + (r + 1) : 'stopp')); return; }
   if (row === svChordRow()) { if (!song.bars || bar >= song.bars) return; const k = svChipAt(x, y); openChordPick(k != null ? {k} : {bar}); return; }   // N7-R10
@@ -44037,6 +44046,7 @@ function closeSheets() {
   previewStop();
   ED.lfoPrev = null; ED.env = null; ED.hdr = null;
   if (QS.open) closeQuantSheet(false, true);
+  if (typeof vx1rClosed === 'function') vx1rClosed();   // VX1R: Vorhören + Quantisier-Blatt des Gesang-Editors enden
   if (WP.ed) wpClose();                                        // VS5a
   // the clip editor: destroyed on close, so it opens with the Zeichnen tool next time (never a "deleting" editor)
   if (ED.roll) { try { ED.roll.destroy(); } catch (e) { logErr(e); } ED.roll = null; }
@@ -50347,7 +50357,7 @@ function afterClipEdit(t, s, noKey) {
 function openRoll(t, s) {
   t = clamp(t | 0, 0, NT() - 1); s = clamp(s | 0, 0, NS() - 1);
   const tr = S.tracks[t];
-  if (tr.stimme) { selectSlot(t, s); tkSheet({t, s}); return; }        // VS3: die STIMME-Spur hat Takes statt Noten
+  if (tr.stimme) { selectSlot(t, s); if (vx1rCan({t, s}) && vx1rOpen({t, s})) return; tkSheet({t, s}); return; }        // VS3: die STIMME-Spur hat Takes statt Noten · VX1R: Gesang-Clip → derselbe Editor wie bei Instrumenten
   if (tr.orig) { selectSlot(t, s); imp1OpenTake(t, s); return; }       // IMP1: Spur „Original“ = Audio → Import-Blatt mit Loop-Klammern
   selectSlot(t, s);
   if (tr.kind === 'drum') { cancelTapStop(t, s); ED.dTab = 'steps'; openEditor(); return; }
@@ -50374,6 +50384,7 @@ const ROLLP = {grid: '1/16', fold: false, kb: false, view: 'roll'};   // editor 
 function buildRoll() {
   if (ED.rollAt && ED.rollAt.mel) return buildMelodyRoll();
   if (ED.rollAt && ED.rollAt.own) return buildOwnRoll();             // V2e′: ROLLE on an own clip of the song
+  if (ED.rollAt && ED.rollAt.vx) return vx1rBuild();                 // VX1R: Gesang-Editor (dieselbe PianoRoll)
   const {t, s} = ED.rollAt, tr = S.tracks[t], sh = EL.rollSheet;
   // WP5: LAUF (§3.10) when chosen and the clip is one note per step; otherwise the piano roll
   if (ROLLP.view === 'lauf') { const chk = tr.kind === 'synth' ? laufCheck(tr.clips[s]) : {ok: false}; if (chk.ok) { LAUF.grid = chk.grid; return buildLauf(); } ROLLP.view = 'roll'; }
@@ -50431,6 +50442,7 @@ function rollKbApply() {
 }
 function rollHeadUpdate() {
   if (!ED.rollInfo || !ED.rollAt) return;
+  if (ED.rollAt.vx) { vx1rHead(); return; }   // VX1R
   if (ED.rollAt.own) { const c = S.song && S.song.own && S.song.own[ED.rollAt.own]; if (!c) return; const txt = (c.ver >= 2 ? 'Version v' + c.ver : 'eigener Clip') /* SX9 */ + ' · ' + c.notes.length + (c.notes.length === 1 ? ' Note' : ' Noten') + ' · ' + c.len + (c.len === 1 ? ' Takt' : ' Takte'); if (ED.rollInfo._t !== txt) { ED.rollInfo._t = txt; ED.rollInfo.textContent = txt; } return; }
   if (ED.rollAt.mel) { const m = S.song && curMel(S.song); if (!m) return; const txt = m.notes.length + (m.notes.length === 1 ? ' Note' : ' Noten') + ' · ' + m.len + (m.len === 1 ? ' Takt' : ' Takte'); if (ED.rollInfo._t !== txt) { ED.rollInfo._t = txt; ED.rollInfo.textContent = txt; ED.rollInfo.title = txt + ' · wie gespielt (nie umgerechnet)'; } return; }
   const c = S.tracks[ED.rollAt.t].clips[ED.rollAt.s]; if (!c) return;
@@ -50492,6 +50504,7 @@ function closeRoll() {
 }
 // the playhead follows in clip coordinates while the clip plays (transform only)
 function rollFrame(bAud) {
+  if (ED.rollAt.vx) { vx1rFrame(bAud); return; }   // VX1R: Gesang-Editor
   if (ED.rollAt.own) {                                                   // V2e′: the playhead while this own clip plays
     const t = ED.rollAt.t, c = S.song && S.song.own && S.song.own[ED.rollAt.own]; if (!c) { closeRoll(); return; }
     const L = clipB(c), b = R.playing && R.own[t] === ED.rollAt.own && bAud >= 0 ? ((((bAud - audCstart(t, bAud)) % L) + L) % L) : -1;
@@ -53051,6 +53064,7 @@ async function saveFile() {
   if (how === 'claude' || how === 'share' || how === 'download') {
     setUiPref('lastExport', Date.now());
     if (autosave) await autosave.markSaved();               // history snapshot of every explicit save
+    vx1rJsonHint();                                          // VX1R: Gesang-Audio liegt nur im Container
     if (!UI.persistAsked) { UI.persistAsked = true; SQStore.requestPersist().then(r => { UI.persist = r; renderMenuInfo(); }); }
     if (UI.menuStatus) UI.menuStatus.innerHTML = esc(storageStatus()) + '<br><span class="small">' + esc(fileStatus()) + '</span>';
   }
@@ -59702,6 +59716,7 @@ function tkSheet(r, anchor) {
       if (d.a === 'ab') { tkPick(rr, 1, false); return; }
       if (d.a === 'wav') { const x = tkRef(rr); if (x) tkExportWav(x.a.take, x.a.name || (S.takes[x.a.take] && S.takes[x.a.take].name)); return; }   // G10c: Name im Dateinamen
       if (d.a === 'zip') { tkExportZip(); return; }
+      if (d.a === 'vx1r') { closePop(); vx1rOpen(rr); return; }   // VX1R: Gesang-Editor (Noten-Rolle)
       if (d.a === 'wp') { closePop(); wpOpen(rr); return; }      // VS5a: Marken-Editor
       if (d.a === 'g5') { closePop(); g5Convert(rr); return; }   // G5: Gesang → Melodie
       if (d.a === 'g7') { g7Toggle(rr); if (UI.pop && UI.pop.name === 'takes') tkSheetPaint(UI.pop.el); return; }   // G-GES: G7 je Take
@@ -59735,6 +59750,7 @@ function tkSheetPaint(p) {
     `<div class="tklist pan-y">${rows}${g6pfSheetRows(x.a)}</div>` +   /* G6+f: Herkunft der Chor-Stimmen-Takes */
     g10cFoot(x, segs, ok) +
     `<div class="small">${esc(est + per)}</div>` +
+    (ok ? vx1rTkBtn(x) : '') +   // VX1R: Gesang-Editor (Noten-Rolle) = Standard
     (ok ? '<button class="mbtn rb tk-wp" data-a="wp">✎ Marken & Timing …</button>' : '') +
     (ok ? `<div class="tkg57"><button class="mbtn rb tk-g5" data-a="g5"${G5.busy || TK.missing.has(x.a.take) ? ' disabled' : ''}>Noten-Clip aus Gesang</button>` +   // G5 (WEGE D14)
       `<button class="mbtn rb tk-g7${g7Follows(x.a.take) ? ' on' : ''}" data-a="g7" aria-pressed="${g7Follows(x.a.take)}">${g7Follows(x.a.take) ? '✓ ' : ''}folgt Transponieren</button></div>` : '') +   // G-GES: G7 je Take
@@ -61715,6 +61731,7 @@ function wpNormMarks(a, len) {
     if (k.word) o.word = true;
     if (k.user) o.user = true;
     if (k.src === 'pitch') o.src = 'pitch'; else if (k.src === 'on' || k.src === 'onset' || k.src === 'start') o.src = 'on';   // G10e: Herkunft (neue Erkennungen)
+    vx1rNormMark(k, o, len);   // VX1R: Anker-Abstand an, eigenes Anker-Ziel vd (Gesang-Notenrolle)
     out.push(o);
   }
   out.sort((x, y) => x.t - y.t);
@@ -61724,9 +61741,9 @@ function wpNormWarp(w) {
   const mp = w && typeof w === 'object' && w.map, s = mp && mp.src, d = mp && mp.dst;
   if (!Array.isArray(s) || !Array.isArray(d) || s.length < 2 || s.length !== d.length || s.length > 4002 || s[0] !== 0 || d[0] !== 0) return null;
   for (let k = 0; k < s.length; k++) if (!isNum(s[k]) || !isNum(d[k]) || (k && (s[k] <= s[k - 1] || d[k] <= d[k - 1]))) return null;
-  return g10eNormFine({mode: w.mode === 'stretch' ? 'stretch' : 'slice', grid: WP_GRIDS.includes(w.grid) && w.grid !== 'off' ? w.grid : 'auto', res: WP_FIX.has(w.res) ? w.res : '1/16',
+  return vx1rNormWarp(g10eNormFine({mode: w.mode === 'stretch' ? 'stretch' : w.mode === 'hybrid' ? 'hybrid' : 'slice', grid: WP_GRIDS.includes(w.grid) && w.grid !== 'off' ? w.grid : 'auto', res: WP_FIX.has(w.res) ? w.res : '1/16',
     strength: isNum(w.strength) ? +clamp(w.strength, 0, 1).toFixed(2) : 1, swing: isNum(w.swing) ? +clamp(w.swing, .5, .75).toFixed(2) : .5,
-    bpm: isNum(w.bpm) ? +clamp(w.bpm, 20, 400).toFixed(3) : 120, t0: isNum(w.t0) ? tkR6(w.t0) : 0, map: {v: 1, src: s.map(tkR6), dst: d.map(tkR6)}}, w);   // G10e: wo/qr additiv
+    bpm: isNum(w.bpm) ? +clamp(w.bpm, 20, 400).toFixed(3) : 120, t0: isNum(w.t0) ? tkR6(w.t0) : 0, map: {v: 1, src: s.map(tkR6), dst: d.map(tkR6)}}, w), w);   // G10e: wo/qr additiv; VX1R: Modus 'hybrid' + Anker je Kartenpunkt
 }
 tkExt().take.push((m, o) => {
   const mk = wpNormMarks(m.marks, o.len / o.sr); if (mk) o.marks = mk;
@@ -61749,7 +61766,7 @@ function wpMapInfo(mp) {
   r = {key: h.toString(16) + ':' + s.length, ident: id}; WP.mi.set(mp, r); return r;
 }
 // Render-Schlüssel: Karte + Modus + Quell-Puffer (VS5b: Dehnen und Scheiben derselben Karte sind zwei Fassungen)
-const wpKey = (w, b) => wpMapInfo(w.map).key + (w.mode === 'stretch' ? '|x' : '') + '@' + wpBid(b);
+const wpKey = (w, b) => wpMapInfo(w.map).key + (w.mode === 'stretch' ? '|x' : '') + vx1rKeyX(w) + '@' + wpBid(b);   // VX1R: 'hybrid' + Anker = eigene Fassung
 const wpWarp = id => { const m = S.takes && S.takes[id], w = m && m.warp; return w && !wpMapInfo(w.map).ident ? w : null; };
 function wpPlay(id, a) {
   if (WP.ab) return null;
@@ -61779,6 +61796,7 @@ function wpSameMap(a, b) {
   const ka = kk(a); return !!ka && ka === kk(b);
 }
 function wpRun(M, m) {
+  if (m.op === 'hyb' || m.op === 'vxa') return vx1rRun(M, m);   // VX1R: Gesang-Notenrolle (Schneiden/Dehnen, Analyse)
   if (m.op === 'det') return M.detectMarks(m.x, m.sr).map(k => ({t: k.t, conf: k.conf, word: !!k.word, src: k.src}));   // G10e: Herkunft mitgeben
   if (m.op === 'stretch') { const r = M.X.stretch(m.x, m.sr, {src: m.src, dst: m.dst}, {lock: m.lock}); return {y: r.y, warn: r.warnings, segs: r.segs.length, wsola: r.segs.filter(g => g.mode === 'wsola').length}; }
   return M.renderSlices(m.x, m.sr, m.on, m.to);
@@ -61786,7 +61804,7 @@ function wpRun(M, m) {
 function wpWorker() {
   if (WP.w !== null) return WP.w;
   try {
-    const src = vsMarksMake.toString() + '\n' + vsStretchMake.toString() + '\n' + wpRun.toString() + '\n' + g9Make.toString() + '\n' + g9Run.toString() + '\nconst K9 = g9Make();const M = vsMarksMake();M.X = vsStretchMake();onmessage = e => { const m = e.data; if (m.id === -1) { try { g9Run(K9, m); } catch (er) {} return; } try { const r = m.op === "g9f" || m.op === "g9a" || m.op === "g9s" ? g9Run(K9, m) : wpRun(M, m); postMessage({id: m.id, r}, r instanceof Float32Array ? [r.buffer] : r && r.y instanceof Float32Array ? [r.y.buffer] : []); } catch (err) { postMessage({id: m.id, err: String(err && err.message || err)}); } };';
+    const src = vsMarksMake.toString() + '\n' + vsStretchMake.toString() + '\n' + wpRun.toString() + '\n' + vx1rRun.toString() + '\n' +   /* VX1R */ g9Make.toString() + '\n' + g9Run.toString() + '\nconst K9 = g9Make();const M = vsMarksMake();M.X = vsStretchMake();onmessage = e => { const m = e.data; if (m.id === -1) { try { g9Run(K9, m); } catch (er) {} return; } try { const r = m.op === "g9f" || m.op === "g9a" || m.op === "g9s" ? g9Run(K9, m) : wpRun(M, m); postMessage({id: m.id, r}, r instanceof Float32Array ? [r.buffer] : r && r.y instanceof Float32Array ? [r.y.buffer] : []); } catch (err) { postMessage({id: m.id, err: String(err && err.message || err)}); } };';
     const u = URL.createObjectURL(new Blob([src], {type: 'application/javascript'}));
     const w = new Worker(u); setTimeout(() => { try { URL.revokeObjectURL(u); } catch (e) {} }, 30000);
     w.onmessage = e => { const m = e.data, q = WP.wq.get(m.id); if (!q) return; WP.wq.delete(m.id); clearTimeout(q.to); if (m.err) q.no(new Error(m.err)); else q.ok(m.r); };
@@ -61838,7 +61856,8 @@ function wpRender(id, key, b, w, alt) {
     if (S2[0] > 1e-6 && D2[0] > 1e-6) { if (h >= 0) { S2.unshift(0); D2.unshift(h); } else { S2.unshift(-h); D2.unshift(0); } }
     if (end > S2[S2.length - 1] + 1e-6 && end + e > D2[D2.length - 1] + 1e-6) { S2.push(end); D2.push(end + e); }
     msg = {op: 'stretch', x: b.getChannelData(0), sr, src: S2, dst: D2, lock: .02 + L};
-  } else msg = {op: 'slice', x: b.getChannelData(0), sr, on: s.slice(1, -1).map(v => v - L), to: d.slice(1, -1).map(v => v - L)};
+  } else if (w.mode === 'hybrid') msg = vx1rMsg(b, w);   // VX1R: Schneiden/Dehnen am Anker
+  else msg = {op: 'slice', x: b.getChannelData(0), sr, on: s.slice(1, -1).map(v => v - L), to: d.slice(1, -1).map(v => v - L)};
   wpCall(msg).then(r => {
     WP.job.delete(jk);
     const y = r && r.y ? r.y : r, warn = r && r.warn ? r.warn : [];
@@ -62006,6 +62025,7 @@ function wpT0(id, a) {
 const WP_CATCH = 0.5;
 function wpQuant(id, o) {
   const m = S.takes && S.takes[id]; if (!m) return null;
+  if (o.mode === 'hybrid') return vx1rQuant(id, m, o);   // VX1R: Anker auf das Raster, eigene Ziele (vd) bleiben
   if (o.grid === 'off') { delete m.warp; return 'off'; }
   const mk = wpMarks(id); if (!mk) return null;
   const bpm = o.bpm || S.bpm, t0 = isNum(o.t0) ? o.t0 : wpT0(id), times = mk.map(k => k.t), str = clamp(o.strength == null ? 1 : +o.strength, 0, 1);
@@ -62098,7 +62118,8 @@ function wpSetLyrics(id, text) {
 function wpLyr(id) { const m = S.takes && S.takes[id]; if (!m || !m.lyrics) return null; const mk = wpMarks(id) || []; return VSM.assignLyrics(m.lyrics, mk.length); }
 // ↶ ↷ einer 'takes'-Änderung: Wiedergabe und Editor folgen
 function wpUndone() {
-  vx1WpUndone();   // VX1-W: der Editor folgt dem Take des Stücks (Schnitt ↶ ↷)
+  vx1WpUndone();
+  if (typeof vx1rUndone === 'function') vx1rUndone();   // VX1R: Gesang-Editor folgt ↶ ↷   // VX1-W: der Editor folgt dem Take des Stücks (Schnitt ↶ ↷)
   if (typeof g9TakesUndone === 'function') g9TakesUndone();   // G9 (§7.8)
   if (typeof g2Undone === 'function') g2Undone();   // G2
   if (WP.ed && !tkRef(WP.ed.r)) { wpClose(); return; }
@@ -94599,7 +94620,7 @@ function oriTkOrder(p, bar) {
   const sec = (k, n, i) => { const d = el('div', 'orisec', `<i class="oril"></i>${i} · ${esc(n)}`); d.dataset.sec = k; return d; };
   const mem = [...bd.children].find(x => x.matches('.small') && /^Speicher\b/.test(x.textContent.trim())) || null;   // ORI-P (7): Speicher-Zeile unter Aufräumen
   const pick = [sec('pick', 'Auswählen', 2), q('.g10c-sum'), q('.small.warn'), q('.tklist'), q('.vox2tk'), q('.savrow'), q('.g10c-foot'), mem];
-  const edit = [sec('edit', 'Bearbeiten', 3), q('.clbox'), q('.tk-wp'), ed && !ed.querySelector('.tkdup') ? ed : null, q('.tkg57')];
+  const edit = [sec('edit', 'Bearbeiten', 3), q('.tk-vx1r'), q('.clbox'), q('.tk-wp'), ed && !ed.querySelector('.tkdup') ? ed : null, q('.tkg57')];   // VX1R: [✎ Bearbeiten] zuerst
   const cr = el('div', 'orichor'); if (dup) cr.appendChild(dup); else if (ed && ed.querySelector('.tkdup')) cr.appendChild(ed);
   const chor = cr.firstChild ? [sec('chor', 'Chor', 4), cr] : [];
   const known = new Set([...pick, ...edit, ...chor].filter(Boolean)), rest = [...bd.children].filter(x => !known.has(x));
@@ -96432,6 +96453,709 @@ const KF1_API = {
 };
 Object.assign(SYNQUENZER, {kf1: KF1_API});                  /* KF1: Test-API (Objekt, wird nicht umhüllt) */
 /* KF1-END */
+/* ===== VX1-BEGIN (Paket VX1 Gesang-Notenrolle – Schritt 2: Kern ohne Oberfläche; Präfix vx1r/VX1R, weil „vx1“ schon belegt ist)
+   Ein „Stück“ = Abschnitt eines Takes zwischen Marke k und Marke k+1 (Marken der Zeitkarte VS5, wpMarks/wpDetect).
+   Anker = die Stelle, an der sich der Einsatz am stärksten aufbaut: das lauteste Sample im ersten Gipfel der Spitzen-Hüllkurve
+   (±2,5 ms, Rahmen ≥ 90 % des Höchstwerts) in den ersten 120 ms nach der Marke – an der Quelle, die die Zeitkarte rendert.
+   Einrasten/Quantisieren setzt den ANKER auf die Rasterlinie – der Anschwung (Konsonant/Atem) liegt dann vor dem Taktstrich.
+   Gespeichert (additiv; alte Projekte unverändert):
+     Marke: an = Anker-Abstand (s, 0…0,2; beim ersten Bearbeiten für alle Marken festgeschrieben), vd = eigenes Ziel des ANKERS
+            (s, Take-Zeit nach der Zeitkarte; nur bei Hand verschobenen / einzeln quantisierten Stücken)
+     m.warp.mode = 'hybrid' (Schneiden/Dehnen), m.warp.an = Anker-Abstände je Kartenpunkt (alte Fassungen spielen 'slice')
+     Tonhöhe: m.pitch.notes[].sh (G2; Noten werden an den Stück-Grenzen geteilt)
+   Wiedergabe: wpQuant (Weiche 'hybrid' → vx1rQuant) → m.warp → wpAfter → wpRender (Op 'hyb' im Zeitkarten-Worker, Rückfall
+   Hauptfaden) → WP.cache → wpSwitch/vpDefer. Analyse (Op 'vxa': Hüllkurve, Nulldurchgänge, Stimmhaftigkeit) im selben Worker.
+   Hybrid (Op 'hyb'): je Stück Quelle [Schnitt_j, Schnitt_j+1) an Ziel; Schnitt ≤ 4 ms vor der Marke am Nulldurchgang.
+     Platz kleiner (Nachfolger früher): Ausklang NICHT gestaucht, an der Schnittstelle abgeschnitten, Ausblende 10–30 ms
+     (gleiche Leistung), Überblendung in den Vorlauf des Nachfolgers (≤ 6 ms). Platz größer (Lücke): nur der Vokal-Teil
+     (ab Anker + 20 ms) wird bis 1,5× gedehnt (WSOLA des VS5b-Kerns), darüber natürliche Lücke mit Ausblende.
+     Einsätze (Schnitt … Anker + 20 ms) bleiben bitgleich; unveränderte Nachbarn laufen nahtlos durch.
+   Einhänge-Zeilen (Kommentar „VX1R“): wpNormMarks, wpNormWarp, wpKey, wpRun, wpWorker, wpRender, wpQuant. Test-API: window.__vx1. */
+const VX1R = {ana: new Map(), aq: new Map(), LOCK: .02, ATK: .12, PRE: .004, MAXR: 1.5, last: null, renders: 0};
+const VX1R_GRIDS = ['1/4', '1/8', '1/8T', '1/16', '1/16T', 'off'];
+// Normalisieren (Laden/Speichern deep-equal): Marke an/vd, Karte an
+function vx1rNormMark(k, o, len) {
+  if (isNum(k.an)) o.an = +clamp(k.an, 0, .2).toFixed(4);
+  if (isNum(k.vd)) o.vd = tkR6(clamp(k.vd, -1, len + 60));
+}
+function vx1rNormWarp(o, w) {
+  if (!o || !w || w.mode !== 'hybrid') return o;
+  const n = o.map.src.length, a = Array.isArray(w.an) && w.an.length === n ? w.an : null;
+  o.an = Array.from({length: n}, (_, i) => (a && isNum(a[i]) ? +clamp(a[i], 0, .2).toFixed(4) : 0));
+  return o;
+}
+// Render-Schlüssel: die Anker gehören zur Fassung
+function vx1rKeyX(w) {
+  if (!w || w.mode !== 'hybrid') return '';
+  let h = 0x811c9dc5; const z = (w.an || []).join(',');
+  for (let j = 0; j < z.length; j++) { h ^= z.charCodeAt(j); h = Math.imul(h, 0x01000193) >>> 0; }
+  return '|h' + h.toString(16);
+}
+
+/* ---------- DSP (läuft im Zeitkarten-Worker: Quelltext per toString, deshalb ganz in sich geschlossen) ---------- */
+function vx1rRun(M, m) {
+  'use strict';
+  const x = m.x, sr = m.sr, n = x.length, cl = (v, a, b) => (v < a ? a : v > b ? b : v);
+  if (m.op === 'vxa') {
+    // Hüllkurve: RMS über 2,5 ms, Schritt 1 ms
+    const H = Math.max(1, Math.round(sr / 1000)), Wn = Math.max(2, Math.round(.0025 * sr)), ne = Math.ceil(n / H), env = new Float32Array(ne);
+    for (let f = 0; f < ne; f++) { const c = f * H, a = Math.max(0, c - (Wn >> 1)), b = Math.min(n, a + Wn); let e = 0; for (let i = a; i < b; i++) e += x[i] * x[i]; env[f] = Math.sqrt(e / Math.max(1, b - a)); }
+    // Rahmen 10 ms: Pegel, Nulldurchgänge, Stimmhaftigkeit (Autokorrelation auf ~8 kHz, 80–400 Hz), f0
+    const FH = Math.round(.01 * sr), nf = Math.ceil(n / FH), dc = Math.max(1, Math.round(sr / 8000)), sr2 = sr / dc;
+    const n2 = Math.floor(n / dc), x2 = new Float32Array(n2);
+    for (let i = 0; i < n2; i++) { let s = 0; for (let j = 0; j < dc; j++) s += x[i * dc + j]; x2[i] = s / dc; }
+    const W2 = Math.round(.03 * sr2), l0 = Math.max(2, Math.floor(sr2 / 400)), l1 = Math.ceil(sr2 / 80);
+    const rms = new Float32Array(nf), zcr = new Float32Array(nf), vc = new Float32Array(nf), f0 = new Float32Array(nf), kind = new Uint8Array(nf);
+    let pk = 0; for (let i = 0; i < n; i++) { const v = x[i] < 0 ? -x[i] : x[i]; if (v > pk) pk = v; }
+    const TH = Math.max(.002, pk * .02);
+    for (let f = 0; f < nf; f++) {
+      const a = f * FH, b = Math.min(n, a + FH); let e = 0, z = 0;
+      for (let i = a; i < b; i++) { e += x[i] * x[i]; if (i > a && ((x[i - 1] < 0) !== (x[i] < 0))) z++; }
+      rms[f] = Math.sqrt(e / Math.max(1, b - a)); zcr[f] = z / Math.max(1, b - a - 1);
+      if (rms[f] < TH) continue;
+      const c2 = Math.floor((a + FH / 2) / dc) - (W2 >> 1);
+      if (c2 < 0 || c2 + W2 + l1 >= n2) { kind[f] = zcr[f] > .15 ? 1 : 2; continue; }
+      let e0 = 0; for (let i = 0; i < W2; i++) e0 += x2[c2 + i] * x2[c2 + i];
+      let best = 0, bl = 0;
+      const rr = new Float32Array(l1 + 2);
+      for (let L = l0; L <= l1; L++) { let ab = 0, bb = 0; for (let i = 0; i < W2; i++) { const v = x2[c2 + i + L]; ab += x2[c2 + i] * v; bb += v * v; } const r = ab / Math.sqrt(e0 * bb + 1e-20); rr[L] = r; if (r > best) { best = r; bl = L; } }
+      for (let L = l0 + 1; L < l1; L++) if (rr[L] >= .9 * best && rr[L] >= rr[L - 1] && rr[L] >= rr[L + 1]) { bl = L; break; }   // kleinste Periode nahe am Bestwert (keine Oktavfehler)
+      vc[f] = best; f0[f] = best > .5 && bl ? sr2 / bl : 0;
+      kind[f] = best > .6 && zcr[f] < .2 ? 2 : 1;          // 2 = gesungen (Vokal), 1 = stimmlos (Konsonant/Atem)
+    }
+    // Spitzen-Hüllkurve: größter Betrag in ±2,5 ms (eine Schwingung tiefer Stimmen), Schritt 1 ms
+    const R5 = Math.max(1, Math.round(.0025 * sr)), pe = new Float32Array(ne);
+    for (let f = 0; f < ne; f++) { const c = f * H; let v = 0; for (let i = Math.max(0, c - R5); i < Math.min(n, c + R5); i++) { const a = x[i] < 0 ? -x[i] : x[i]; if (a > v) v = a; } pe[f] = v; }
+    // Anker je Marke: der erste Gipfel der Spitzen-Hüllkurve, der ≥ 90 % des Höchstwerts in [Marke, Marke + 120 ms) erreicht
+    // (nicht über die nächste Marke), genau: das lauteste Sample dort
+    const mk = m.marks || [], an = new Float32Array(mk.length);
+    for (let k = 0; k < mk.length; k++) {
+      const f0i = Math.max(0, Math.round(mk[k] * sr / H)), lim = k + 1 < mk.length ? Math.round(mk[k + 1] * sr / H) - 5 : ne - 1;
+      const f1i = Math.min(ne - 1, Math.round((mk[k] + .12) * sr / H), Math.max(f0i, lim));
+      let mx = 0; for (let f = f0i; f <= f1i; f++) if (pe[f] > mx) mx = pe[f];
+      let at = f0i, ag = f0i;                             // der erste Gipfel = zusammenhängende Rahmen ≥ 90 % (spätere Crescendi zählen nicht)
+      for (let f = f0i; f <= f1i; f++) if (pe[f] >= .9 * mx) { at = ag = f; while (ag < f1i && pe[ag + 1] >= .9 * mx) ag++; break; }
+      const o = Math.round(mk[k] * sr);
+      let bi = at * H, bv = -1; for (let i = Math.max(o, at * H - R5); i < Math.min(n, ag * H + R5, Math.round((mk[k] + .12) * sr)); i++) { const v = x[i] < 0 ? -x[i] : x[i]; if (v > bv) { bv = v; bi = i; } }
+      an[k] = cl(bi / sr - mk[k], 0, .2);
+    }
+    // Anlauf je Marke: liegt die Marke am Vokal-Beginn, gehört der stimmlose Lauf direkt davor (Konsonant/Atem, ≤ 150 ms,
+    // nicht vor Vorgänger + 40 ms) zum Stück – lead = so viele Sekunden beginnt das Stück früher (erste Millisekunde über der Schwelle)
+    const lead = new Float32Array(mk.length);
+    for (let k = 0; k < mk.length; k++) {
+      const fm = Math.floor(mk[k] * sr / FH), lo = k ? mk[k - 1] + .04 : 0; let f = fm - 1;
+      if (f < 0 || kind[f] !== 1) continue;
+      while (f - 1 >= 0 && kind[f - 1] === 1 && (f - 1) * FH / sr > lo && mk[k] - (f - 1) * FH / sr <= .15) f--;
+      let e = Math.max(0, Math.round(Math.max(lo, f * FH / sr) * sr / H)); const em = Math.round(mk[k] * sr / H);   // ab dem stimmlosen Rahmen (im Legato nicht in den Ausklang davor)
+      while (e < em && env[e] < TH * .5) e++;
+      const L = mk[k] - e * H / sr; if (L > .005) lead[k] = Math.min(.15, L);
+    }
+    return {hop: H / sr, env, pk: pe, fh: FH / sr, rms, zcr, vc, f0, kind, an, lead};
+  }
+  // ---- 'hyb': Schneiden/Dehnen ----
+  const src = m.src, dst = m.dst, anc = m.an || [], K = src.length, y = new Float32Array(n);
+  const PRE = Math.round((m.pre == null ? .004 : m.pre) * sr), ZC = Math.round(.002 * sr), LK = Math.round((m.lock == null ? .02 : m.lock) * sr);
+  const XF = Math.max(1, Math.round(.006 * sr)), FMIN = Math.round(.01 * sr), FMAX = Math.round(.03 * sr), RMAX = m.maxr || 1.5;
+  const on = new Int32Array(K + 2), S = new Int32Array(K + 2), D = new Int32Array(K + 2), A = new Int32Array(K + 2);
+  for (let k = 0; k < K; k++) {
+    const o = Math.round(src[k] * sr), c = cl(o - PRE, 0, n - 1); let best = c, bd = 1e9, bz = false;
+    for (let i = Math.max(1, c - ZC); i <= Math.min(n - 1, c + ZC, o); i++) {
+      const z = (x[i - 1] <= 0 && x[i] > 0) || (x[i - 1] >= 0 && x[i] < 0) || x[i] === 0, d = Math.abs(i - c);
+      if (z && (!bz || d < bd)) { best = i; bd = d; bz = true; } else if (!bz && Math.abs(x[i]) < Math.abs(x[best])) best = i;
+    }
+    on[k + 1] = o; S[k + 1] = Math.max(Math.min(best, o), S[k] + 1); D[k + 1] = S[k + 1] + (Math.round(dst[k] * sr) - o);
+    A[k + 1] = o + Math.round((+anc[k] || 0) * sr);
+  }
+  S[K + 1] = n; D[K + 1] = n + (K ? D[K] - S[K] : 0); on[0] = 0; A[0] = 0;
+  let same = true; for (let j = 1; j <= K; j++) if (D[j] !== S[j]) { same = false; break; }
+  if (same) { y.set(x); return {y, cut: 0, stretch: 0, gap: 0}; }
+  const put = (i, v) => { if (i >= 0 && i < n) y[i] += v; };
+  const st = {cut: 0, stretch: 0, gap: 0, fades: []};
+  const X = M.X || (typeof VSX !== 'undefined' ? VSX : null);
+  for (let j = 0; j <= K; j++) {
+    const len = S[j + 1] - S[j], d0 = D[j];
+    const shJ = D[j] - S[j], shN = D[j + 1] - S[j + 1], last = j === K;
+    // Überblendung am Anfang: liegt die Grenze davor nicht nahtlos, blendet das Stück in seinem Vorlauf (vor der Marke) ein
+    const seamIn = j === 0 || (D[j - 1] - S[j - 1]) === shJ;
+    const fi = seamIn ? 0 : Math.max(1, Math.min(XF, on[j] - S[j]));
+    const gIn = i => (i < fi ? Math.sin(.5 * Math.PI * (i + .5) / fi) : 1);
+    if (last || shN === shJ) { for (let i = 0; i < len; i++) put(d0 + i, x[S[j] + i] * gIn(i)); continue; }
+    const slot = D[j + 1] - d0;                                          // Platz bis zum (verschobenen) Nachfolger
+    const fiN = Math.max(1, Math.min(XF, on[j + 1] - S[j + 1]));         // dessen Einblende (sein Vorlauf)
+    const fix = Math.min(len, Math.max(0, A[j] - S[j] + LK));            // fest: Vorlauf, Einsatz, Anker + 20 ms
+    if (slot <= len) {
+      // Nachfolger früher: Ausklang abschneiden (nicht stauchen), Ausblende gleiche Leistung, endet im Vorlauf des Nachfolgers
+      const end = Math.min(len, slot + fiN), F = Math.max(1, Math.min(FMAX, Math.max(Math.min(FMIN, end), end - fix)));
+      for (let i = 0; i < end; i++) { const u = (i - (end - F) + .5) / F; put(d0 + i, x[S[j] + i] * gIn(i) * (u > 0 ? Math.cos(.5 * Math.PI * Math.min(1, u)) : 1)); }
+      st.cut++; st.fades.push(F / sr);
+      continue;
+    }
+    // Lücke: Vokal-Teil dehnen (≤ RMAX), Einsatz fest
+    const V = len - fix, need = slot + fiN - fix;
+    let r = V > Math.round(.03 * sr) ? Math.min(RMAX, need / V) : 1, tail = null;
+    if (r > 1.002 && X) {
+      // Vorlauf (≥ halbes WSOLA-Fenster) aus dem festen Teil mitgeben: der erste Rahmen liegt dann genau an der Naht (sonst Sprung nach 5 ms)
+      const PD = Math.min(S[j] + fix, Math.round(.02 * sr));
+      try { const q = X.stretch(x.subarray(S[j] + fix - PD, S[j + 1]), sr, {src: [0, PD / sr, (PD + V) / sr], dst: [0, PD / sr, (PD + V * r) / sr]}, {lock: .005, maxRatio: 2}); tail = q && q.y && q.y.length > PD ? q.y.subarray(PD) : null; } catch (e) { tail = null; }
+    }
+    if (!tail) { r = 1; tail = x.subarray(S[j] + fix, S[j + 1]); } else st.stretch++;
+    const tot = fix + tail.length, full = tot >= slot + fiN - 1;
+    const F = full ? fiN : Math.max(1, Math.min(FMAX, Math.max(FMIN, Math.round(tail.length * .25))));   // voll: Überblendung im Vorlauf des Nachfolgers
+    for (let i = 0; i < tot; i++) {
+      const v = i < fix ? x[S[j] + i] : tail[i - fix], u = F ? (i - (tot - F) + .5) / F : 0;
+      put(d0 + i, v * gIn(i) * (u > 0 ? Math.cos(.5 * Math.PI * Math.min(1, u)) : 1));
+    }
+    if (!full) { st.gap++; st.fades.push(F / sr); }
+  }
+  return {y, cut: st.cut, stretch: st.stretch, gap: st.gap, fades: st.fades};
+}
+
+/* ---------- Analyse (Worker, je Take + Quelle gecacht) ---------- */
+function vx1rSrc(id) { try { return wpBase(id); } catch (e) { return tkBuffer(id); } }   // die Quelle, die die Zeitkarte rendert (gehörter Spitzenwert)
+function vx1rAnalyse(id) {
+  const m = S.takes && S.takes[id]; if (!m) return Promise.resolve(null);
+  return (wpMarks(id) ? Promise.resolve(wpMarks(id)) : wpDetect(id)).then(async mk0 => {
+    let b = vx1rSrc(id); if (!b) { tkLoad(id); const w = TK.wait.get(id); if (w) await w; b = vx1rSrc(id); }
+    const mk = wpMarks(id) || mk0 || []; if (!b) return null;
+    const ts = mk.map(k => k.t), key = id + '@' + wpBid(b) + ':' + ts.join(','), c = VX1R.ana.get(id);
+    if (c && c.key === key) return c;
+    if (VX1R.aq.has(key)) return VX1R.aq.get(key);
+    const t0 = performance.now(), g2 = typeof g2Analyse === 'function' ? g2Analyse(id).catch(() => null) : null;   // Tonhöhe: VS2/G2 (eigener Worker, gleichzeitig)
+    const p = Promise.all([wpCall({op: 'vxa', x: b.getChannelData(0), sr: b.sampleRate, marks: ts}), g2]).then(([r]) => {
+      const A = Object.assign({key, id, sr: b.sampleRate, len: b.length / b.sampleRate, t: ts}, r);
+      VX1R.ana.set(id, A); while (VX1R.ana.size > 6) VX1R.ana.delete(VX1R.ana.keys().next().value);
+      VX1R.lastAn = {id, n: ts.length, ms: Math.round(performance.now() - t0), how: WP.how};
+      return A;
+    });
+    VX1R.aq.set(key, p); p.then(() => VX1R.aq.delete(key), () => VX1R.aq.delete(key));
+    return p;
+  });
+}
+// Anker-Abstand einer Marke (aus der Analyse; neue Marke beim Teilen: hier gesucht)
+function vx1rAnOf(A, t, tn) {
+  if (!A) return 0;
+  const i = A.t.indexOf(t); if (i >= 0) return +A.an[i];
+  const H = A.hop, f0i = Math.max(0, Math.round(t / H)), f1i = Math.min(A.env.length - 1, Math.round(Math.min(t + VX1R.ATK, tn == null ? 1e9 : tn - .005) / H));
+  const E = A.pk || A.env; let mx = 0; for (let f = f0i; f <= f1i; f++) if (E[f] > mx) mx = E[f];
+  for (let f = f0i; f <= f1i; f++) if (E[f] >= .9 * mx) { let g = f, b = f; while (g < f1i && E[g + 1] >= .9 * mx) { g++; if (E[g] > E[b]) b = g; } return clamp(b * H - t, 0, .2); }
+  return 0;
+}
+// Anlauf (Konsonant vor einer Marke am Vokal-Beginn) aus der Analyse
+function vx1rLead(A, t) { if (!A || !A.lead) return 0; const i = A.t.indexOf(t); return i >= 0 ? +A.lead[i] : 0; }
+// die Stücke eines Takes (abgeleitet; nur aus Caches – synchron)
+function vx1rPieces(id) {
+  const m = S.takes && S.takes[id], mk = m && wpMarks(id); if (!mk) return null;
+  const A = VX1R.ana.get(id), w = m.warp, len = m.len / m.sr, G = typeof G2 !== 'undefined' && G2.an.get(id);
+  const lab = (typeof g9LabelsOf === 'function' && m.ly ? g9LabelsOf(id, mk) : null) || wpLyr(id);
+  const dstOf = t => (w && w.map ? VSM.warpTime({src: w.map.src, dst: w.map.dst}, t) : t);
+  const out = [], st = mk.map((z, k) => { const ld = isNum(z.an) ? 0 : vx1rLead(A, z.t); return ld && (!k || z.t - ld > mk[k - 1].t + .04) ? tkR6(z.t - ld) : z.t; });   // noch nicht bearbeitet: Anlauf wie beim ersten Bearbeiten
+  for (let k = 0; k < mk.length; k++) {
+    const t1 = mk[k].t, t = st[k], te = k + 1 < mk.length ? st[k + 1] : len, fix = isNum(mk[k].an);
+    const an = fix ? mk[k].an : vx1rAnOf(A, t1, k + 1 < mk.length ? mk[k + 1].t : null) + (t1 - t);
+    let vb = null, uv = [], med = null;
+    if (A) {
+      const f0i = Math.floor(t / A.fh), f1i = Math.min(A.kind.length, Math.ceil(te / A.fh)), mids = []; let r0 = -1;
+      for (let f = f0i; f <= f1i; f++) {
+        const kd = f < f1i ? A.kind[f] : 0;
+        if (kd === 2 && vb == null) vb = Math.max(t, f * A.fh);
+        if (kd === 1) { if (r0 < 0) r0 = f; } else if (r0 >= 0) { uv.push([+Math.max(t, r0 * A.fh).toFixed(4), +Math.min(te, f * A.fh).toFixed(4)]); r0 = -1; }
+        if (kd === 2 && A.f0[f] > 0) mids.push(69 + 12 * Math.log2(A.f0[f] / 440));
+      }
+      if (mids.length) med = VSD.median(mids);
+    }
+    if (G && G.f0) {                                      // Tonhöhe: Median der VS2/G2-Analyse, wenn sie vorliegt
+      const v = []; for (let i = Math.ceil(t / G.hop); i < Math.min(G.n, te / G.hop); i++) if (G.f0[i] > 0) v.push(G2P.midi(G.f0[i]));
+      if (v.length) med = VSD.median(v);
+    }
+    if (A) {                                              // Vokal-Beginn: der gesungene Lauf, in dem der Anker liegt (sonst der erste danach)
+      const fa = Math.floor((t + an) / A.fh), f0i = Math.floor(t / A.fh), f1i = Math.min(A.kind.length - 1, Math.ceil(te / A.fh) - 1); let f = fa;
+      if (A.kind[f] === 2) { while (f > f0i && A.kind[f - 1] === 2) f--; vb = Math.max(t, f * A.fh); } else { while (f <= f1i && A.kind[f] !== 2) f++; vb = f <= f1i ? f * A.fh : vb; }
+    }
+    const tx = lab && lab.labels && lab.labels[k] && !/^[·–]$/.test(lab.labels[k]) ? lab.labels[k] : '';
+    out.push({k, t, end: te, an: +(+an).toFixed(4), at: tkR6(t + an), vb: vb == null ? null : +vb.toFixed(4), uv, m: med == null ? null : +med.toFixed(2),
+      tx, vd: isNum(mk[k].vd) ? mk[k].vd : null, dst: tkR6(dstOf(t)), da: tkR6(dstOf(t) + an)});
+  }
+  return out;
+}
+
+/* ---------- Quantisieren im Modus 'hybrid' (Weiche aus wpQuant): Anker auf das Raster, vd überschreibt ---------- */
+function vx1rQuant(id, m, o) {
+  const mk = wpMarks(id); if (!mk) return null;
+  const len = m.len / m.sr, bpm = o.bpm || S.bpm, t0 = isNum(o.t0) ? o.t0 : wpT0(id), str = o.grid === 'off' ? 0 : clamp(o.strength == null ? 1 : +o.strength, 0, 1);   // „aus“ = nur eigene Ziele
+  const an = mk.map(k => (isNum(k.an) ? k.an : 0)), at = mk.map((k, i) => k.t + an[i]);
+  let grid = o.grid === 'off' ? '1/16' : o.grid, q = null;
+  if (str > 0) q = VSM.quantizeMarks(at, {bpm, t0, grid, strength: str, swing: o.swing, detectGrid: KeyDetect.detectGrid, swingAuto: o.swingAuto, catch: WP_CATCH});
+  if (q && q.grid !== 'off') grid = q.grid; else if (!WP_FIX.has(grid)) grid = '1/16';
+  if (!m.marks) m.marks = mk.map(k => Object.assign({}, k));
+  const dst = [];
+  for (let k = 0; k < mk.length; k++) {
+    let d = (isNum(mk[k].vd) ? mk[k].vd : q ? q.times[k] : at[k]) - an[k];
+    if (k) d = Math.max(d, dst[k - 1] + an[k - 1] + VX1R.LOCK + .01);   // nie in den Einsatz des Vorgängers
+    dst.push(Math.max(0, d));
+  }
+  const w = VSM.makeWarp(mk.map(k => k.t), dst.map(t => wpSmp(m, t)), len), byT = new Map(mk.map((k, i) => [tkR6(k.t), an[i]]));
+  m.warp = {mode: 'hybrid', grid: o.keep && o.keep !== 'off' ? o.keep : grid, res: grid, strength: +str.toFixed(2), swing: q ? +q.swing.toFixed(2) : .5, bpm: +(+bpm).toFixed(3), t0: tkR6(t0),
+    map: {v: 1, src: Array.from(w.src, tkR6), dst: Array.from(w.dst, tkR6)}};
+  m.warp.an = m.warp.map.src.map(t => +(byT.get(t) || 0).toFixed(4));
+  return grid;
+}
+// 'hyb'-Nachricht für wpRender (Weiche aus wpRender)
+function vx1rMsg(b, w) {
+  const s = w.map.src, d = w.map.dst, a = w.an || [];
+  return {op: 'hyb', x: b.getChannelData(0), sr: b.sampleRate, src: s.slice(1, -1), dst: d.slice(1, -1), an: a.slice(1, -1), pre: WP_LEAD, lock: VX1R.LOCK, maxr: VX1R.MAXR};
+}
+
+/* ---------- Ändern: eine Aktion = ein Undo (Art 'takes') ---------- */
+// fn(marks, m) ändert die Marken (an ist dann für alle gesetzt); danach Karte im Modus 'hybrid' neu, neu rendern
+function vx1rCommit(id, label, fn, o) {
+  o = o || {};
+  return vx1rAnalyse(id).then(A => {
+    const m = S.takes && S.takes[id], mk = wpMarks(id); if (!m || !mk) return false;
+    const before = JSON.stringify(S.takes), had = m.marks, w0 = m.warp;
+    m.marks = mk.map(k => Object.assign({}, k));
+    m.marks.forEach((k, i) => {
+      if (isNum(k.an)) return;
+      const a0 = vx1rAnOf(A, k.t, i + 1 < m.marks.length ? m.marks[i + 1].t : null), L = vx1rLead(A, k.t);
+      if (L && (!i || k.t - L > m.marks[i - 1].t + .04)) { const nt = wpSmp(m, k.t - L); k.an = +clamp(a0 + (k.t - nt), 0, .2).toFixed(4); k.t = nt; }   // Konsonant gehört zum Stück
+      else k.an = +a0.toFixed(4);
+    });
+    if (fn(m.marks, m, A) === false) { if (had) m.marks = had; else delete m.marks; return false; }
+    m.marks = wpNormMarks(m.marks, m.len / m.sr) || [];   // sortiert, Schlüssel wie beim Laden (deep-equal)
+    if (m.ly && typeof g9MarkHook === 'function') g9MarkHook(id, mk, m.marks);   // G9: Silben folgen ihrer Marke
+    const hy = w0 && w0.mode === 'hybrid';
+    wpQuant(id, {mode: 'hybrid', grid: o.grid || (hy || w0 ? w0.res : '1/16'), strength: o.strength != null ? o.strength : hy || w0 ? w0.strength : 0,
+      swing: w0 ? w0.swing : .5, bpm: w0 ? w0.bpm : S.bpm, t0: wpT0(id, o.a), swingAuto: false});
+    if (JSON.stringify(S.takes) === before) return false;
+    undoPush({kind: 'takes', before, label});
+    VX1R.last = {id, label, at: Date.now()};
+    wpAfter(id); haptic('tick');
+    return true;
+  });
+}
+// Raster-Schritt in Schlägen
+const vx1rStep = g => ({'1/4': 1, '1/8': .5, '1/8T': 1 / 3, '1/16': .25, '1/16T': 1 / 6, '1/32': .125})[g] || 0;
+// Anker-Ziel auf das Raster (absolut am Takt; 'off' = frei)
+function vx1rSnap(id, t, grid, a) { const st = vx1rStep(grid); if (!st) return tkR6(t); const sp = spb() * st, t0 = wpT0(id, a); return tkR6(t0 + Math.round((t - t0) / sp) * sp); }
+// Stück k waagrecht: Anker-Ziel ta (Take-Zeit, gehörte Fassung); o.grid rastet am Anker ein
+function vx1rMove(id, k, ta, o) {
+  o = o || {};
+  return vx1rCommit(id, 'Stück verschoben', mk => {
+    const p = mk[k]; if (!p) return false;
+    p.vd = o.grid && o.grid !== 'off' ? vx1rSnap(id, ta, o.grid, o.a) : tkR6(ta); p.user = true;
+  }, {a: o.a});                                        // die Karte (Raster/Stärke der anderen Stücke) bleibt
+}
+// Quantisieren: sel = [k …] (nur diese Stücke, vd) oder alle (Karte: Raster + Stärke, vd gelöscht)
+function vx1rQuantize(id, o) {
+  o = o || {}; const grid = VX1R_GRIDS.includes(o.grid) ? o.grid : '1/16', str = clamp(o.strength == null ? 1 : +o.strength, 0, 1);
+  if (Array.isArray(o.sel) && o.sel.length) {
+    return vx1rCommit(id, 'Quantisieren · Stücke', mk => {
+      const m = S.takes[id], w = m.warp; let ch = false;
+      for (const k of o.sel) {
+        const p = mk[k]; if (!p) continue;
+        const cur = w && w.map ? VSM.warpTime({src: w.map.src, dst: w.map.dst}, p.t) + (p.an || 0) : p.t + (p.an || 0);
+        const tg = grid === 'off' ? cur : vx1rSnap(id, cur, grid, o.a), v = tkR6(cur + (tg - cur) * str);
+        if (p.vd !== v) { p.vd = v; ch = true; }
+      }
+      return ch;
+    }, {a: o.a});
+  }
+  return vx1rCommit(id, 'Quantisieren · Gesang', mk => { for (const p of mk) delete p.vd; },
+    Object.assign({}, o, {grid: grid === 'off' ? '1/16' : grid, strength: grid === 'off' ? 0 : str}));
+}
+// Teilen an Take-Zeit t (neue Marke mit eigenem Anker), Verbinden = Marke k+1 weg (Stück k schluckt k+1)
+function vx1rSplit(id, t, o) {
+  return vx1rCommit(id, 'Stück geteilt', (mk, m, A) => {
+    t = clamp(t, 0, m.len / m.sr); if (mk.some(k => Math.abs(k.t - t) < WP_GAP)) return false;
+    const nx = mk.find(k => k.t > t); mk.push({t: wpSmp(m, t), conf: 1, user: true, an: +vx1rAnOf(A, t, nx ? nx.t : null).toFixed(4)});
+  }, o);
+}
+const vx1rJoin = (id, k, o) => vx1rCommit(id, 'Stücke verbunden', mk => { if (!mk[k] || !mk[k + 1]) return false; mk.splice(k + 1, 1); }, o);
+// Tonhöhe eines Stücks um d Halbtöne (G2: Noten an den Stück-Grenzen teilen, dann verschieben; formanterhaltend wie dort)
+function vx1rPitch(id, k, d, r) {
+  const ps = vx1rPieces(id), p = ps && ps[k]; d = Math.round(d); if (!p || !d) return Promise.resolve(false);
+  const a = p.t, b = p.end;
+  return g2Edit(id, 'Tonhöhe · Stück', P => {
+    for (const t of [a, b]) {
+      const i = P.notes.findIndex(n => n.t0 < t - .01 && n.t1 > t + .01); if (i < 0) continue;
+      const n = P.notes[i]; P.notes.splice(i, 1, Object.assign({}, n, {t1: tkR6(t)}), Object.assign({}, n, {t0: tkR6(t)}));
+    }
+    let hit = false;
+    for (const n of P.notes) { const c = (n.t0 + n.t1) / 2; if (c >= a && c < b) { n.sh = (n.sh || 0) + d; hit = true; } }
+    return hit;
+  }, r);
+}
+// fertig gerendert? (Fassung der aktuellen Karte liegt im Cache) – für Tests und den Editor
+function vx1rReady(id) { return wpReady(id) && (typeof g2Ready !== 'function' || g2Ready(id)); }
+
+/* ---------- Test-API ---------- */
+window.__vx1 = {
+  analyse: id => vx1rAnalyse(id).then(A => A && {n: A.t.length, an: Array.from(A.an), hop: A.hop, fh: A.fh, kind: Array.from(A.kind), ms: VX1R.lastAn && VX1R.lastAn.ms, how: VX1R.lastAn && VX1R.lastAn.how}),
+  list: id => vx1rPieces(id),
+  move: (id, k, ta, o) => vx1rMove(id, k, ta, o),
+  quant: (id, o) => vx1rQuantize(id, o),
+  split: (id, t) => vx1rSplit(id, t),
+  join: (id, k) => vx1rJoin(id, k),
+  pitch: (id, k, d) => vx1rPitch(id, k, d),
+  ready: id => vx1rReady(id),
+  warp: id => { const m = S.takes && S.takes[id]; return m && m.warp ? JSON.parse(JSON.stringify(m.warp)) : null; },
+  marks: id => { const m = S.takes && S.takes[id]; return m && m.marks ? JSON.parse(JSON.stringify(m.marks)) : null; },
+  // die gehörte Fassung (Zeitkarte gerendert): Ausschnitt [a, b) in Samples
+  render: async (id, a, b) => { for (let i = 0; i < 400 && !vx1rReady(id); i++) { wpPlay(id); await new Promise(r => setTimeout(r, 25)); } const c = WP.cache.get(id), x = c && vx1rReady(id) ? c.buf : wpWarp(id) ? null : tkBuffer(id); return x ? {sr: x.sampleRate, n: x.length, y: Array.from(x.getChannelData(0).subarray(a || 0, b == null ? x.length : b)), last: WP.last} : null; },
+  // Kern direkt (ohne Take): Analyse / Hybrid auf PCM
+  dsp: (x, sr, o) => vx1rRun(VSM, Object.assign({x: Float32Array.from(x), sr}, o)),
+  norm: id => { const m = S.takes && S.takes[id]; if (!m) return null; const o = tkNormTake ? tkNormTake(JSON.parse(JSON.stringify(m))) : null; return o; },
+  state: () => ({ana: [...VX1R.ana.keys()], last: VX1R.last, lastAn: VX1R.lastAn, wp: WP.last}),
+};
+/* ---------- Schritt 3: Gesang-Editor = dieselbe PianoRoll wie bei den Instrumenten (opts.audio); die Stücke sind virtuelle Noten.
+   Tastatur, Lineal, Raster, Zoom/Scroll, ⬚-Wahl, Teilen/Verbinden, ↶ ↷ kommen 1:1 aus der PianoRoll. Ziehen ändert nur die virtuellen
+   Noten (Zeichnen per Canvas, kein Neuaufbau je Bewegung); beim Loslassen EIN Commit: waagrecht = vd (Anker rastet absolut am Raster),
+   senkrecht = G2-Verschiebung (formanterhaltend), beides = ein Undo. Gezeichnet über opts.noteDeco: Welle (Hüllkurve), stimmlose Teile
+   schraffiert, Tonhöhenkurve, Anker-Linie, Silbe rechts unten vom Anker. ---------- */
+const VX1E = {clip: null, id: null, a: null, ps: null, tapN: null, tapB: null, tapAt: 0, glow: null, graf: 0, q: null, pv: null, pb: null, centered: false, envMax: new Map()};
+const vx1rRef = r => (r ? (r.vox ? {vox: r.vox} : {t: r.t, s: r.s}) : null);
+const vx1rOpenNow = () => !!(ED.roll && ED.rollAt && ED.rollAt.vx);
+// öffnen: r = {t, s} (Szene-Clip der STIMME-Spur) oder {vox} (Song-Stimme)
+function vx1rOpen(r) {
+  const x = r && tkRef(vx1rRef(r)); if (!x || !S.takes || !S.takes[x.a.take]) { toast('Kein Gesang an dieser Stelle'); return false; }
+  if (!r.vox) selectSlot(r.t, r.s);
+  if (!EL.rollSheet.classList.contains('open')) UI.shield = null;
+  closeSheets(); R.editor = 'roll';
+  ED.rollAt = r.vox ? {t: Math.max(0, stimmeT()), s: -1, vox: r.vox, vx: 1} : {t: r.t, s: r.s, vx: 1};
+  VX1E.clip = null; VX1E.centered = false; VX1E.tapN = null; VX1E.glow = null;
+  if (UI.toastActs) hideToast();
+  buildRoll();
+  setSheetOpen(true); UI.dirty.all = true;
+  const at = r.vox && VX1E.at && VX1E.at.vox === r.vox ? VX1E.at.bar : null; VX1E.at = null;
+  if (at != null) vx1rShowBar(r.vox, at);                            // Song: an der getippten Stelle
+  return true;
+}
+function vx1rBuild() {
+  const r = ED.rollAt, x = tkRef(vx1rRef(r)), sh = EL.rollSheet; if (!x) { closeRoll(); return; }
+  const t = r.t, tr = S.tracks[t] || {name: 'STIMME'};
+  ED.lauf = null; ED.laufBtn = null;
+  if (ED.roll) { try { ED.roll.destroy(); } catch (e) {} ED.roll = null; }
+  vx1rPvStop(); vx1rQClose();
+  sh.innerHTML = ''; sh.style.setProperty('--tc', `var(--t${t + 1})`);
+  const land = window.matchMedia('(orientation: landscape)').matches; ED.rollLand = land;
+  const head = el('div', 'rhead'), ht = el('div', 'rht');
+  ht.appendChild(el('div', 'sh-title', `<span class="dot"></span><b>${esc(tr.name)} · ${esc(x.label)}</b>`));
+  const info = el('span', 'rinfo'); ht.appendChild(info); ED.rollInfo = info;
+  const chip = el('span', 'trchip'); chip.hidden = true; ht.appendChild(chip); ED.trChip = chip;
+  head.appendChild(ht); ED.rollHT = ht;
+  const xb = el('button', 'sh-x rb', '✕'); xb.setAttribute('aria-label', 'Editor schließen'); onTap(xb, closeRoll);
+  const body = el('div', 'rbody');
+  sh.append(head, body); sh.classList.add('open');
+  VX1E.col = getComputedStyle(document.documentElement).getPropertyValue('--t' + (t + 1)).trim() || '#4cc9f0';
+  vx1rSync();
+  const P_T = 'Abspielen ab dem gewählten Stück (sonst ab dem Anfang)', id = x.a.take;
+  ED.roll = PianoRoll.create(body, vx1rModel(), {color: VX1E.col, grid: ROLLP.grid, fold: false, rowH: 22, undoHold: sx14UndoHold, toolbarHost: land ? head : null,
+    extraTools: [{id: 'vx1rp', label: '▶', title: P_T, fn: () => vx1rPlay()}],
+    extraActs: [{id: 'vx1rtx', label: 'Text erkennen', title: 'Silben aus der Spracherkennung', fn: () => vx1rText()},
+      {id: 'vx1rtk', label: 'Takes …', title: 'Takes, Marken & Timing, Tonhöhe, Chor', fn: () => { const rr = vx1rRef(ED.rollAt); closeRoll(); tkSheet(rr); }}],
+    center: 60, noteDeco: vx1rDeco,
+    audio: {snap: vx1rSnapB, tap: (nt, b) => { VX1E.tapN = VX1E.tapNt = nt; VX1E.tapB = b; VX1E.tapAt = performance.now(); }},
+    tap: (b, fn) => b.addEventListener('click', () => { try { fn(); } catch (e) { logErr(e); } }),
+    reg: folReg('roll'), onHand: () => folHand('roll'),
+    onPrefs: p => { ROLLP.grid = p.grid; },
+    onQuant: sel => vx1rQSheet(sel),
+    onTick: () => haptic('tick')});
+  head.append(folChip('roll'), xb);
+  vx1rTrim(ED.roll, P_T);
+  ED.roll.setTool('select');                                         // Tipp = wählen (Mehrfachwahl), Ziehen = verschieben, leer ziehen = Rahmen
+  rollKbApply(); rollHeadUpdate(); renderEdChip();
+  sh.classList.add('open');
+  vx1rAnalyse(id).then(() => { if (vx1rOpenNow()) vx1rSync(); }).catch(logErr);
+}
+// nur die Werkzeuge, die für Gesang gelten (Rest per Klasse aus – draw() setzt hidden sonst zurück)
+function vx1rTrim(api, pT) {
+  const pr = api.el.main.closest('.pr'); if (pr) pr.classList.add('vx1r');
+  const keep = new Set(['Raster', 'Ganzer Clip / 1 Takt', 'Rückgängig', 'Wiederholen', pT, 'Quantisieren', 'Silben aus der Spracherkennung', 'Takes, Marken & Timing, Tonhöhe, Chor']);
+  for (const b of [...api.el.bar.querySelectorAll('button'), ...api.el.acts.querySelectorAll('button')]) {
+    const tt = b.title || '';
+    if (/teilen \(am Raster\)$/.test(tt)) { b.title = 'Stück teilen (an der getippten Stelle, sonst in der Mitte)'; b.setAttribute('aria-label', b.title); continue; }
+    if (/zu einer Note verbinden$/.test(tt)) { b.title = 'Gewählte Stücke verbinden'; b.setAttribute('aria-label', b.title); continue; }
+    if (!keep.has(tt)) b.classList.add('vx1rx');
+  }
+  for (const s of [...api.el.bar.querySelectorAll('.sep'), ...api.el.acts.querySelectorAll('.sep')]) s.classList.add('vx1rx');
+  VX1E.pb = [...api.el.bar.querySelectorAll('button')].find(b => b.title === pT) || null;
+  vx1rTxBtn();
+}
+// „Text erkennen“ nur, wenn am Take noch keine Silben liegen
+function vx1rTxBtn() {
+  if (!ED.roll) return; const b = [...ED.roll.el.acts.querySelectorAll('button')].find(z => z.title === 'Silben aus der Spracherkennung'); if (!b) return;
+  const has = (VX1E.ps || []).some(p => p.tx); b.classList.toggle('vx1rx', has);
+}
+// das Modell der PianoRoll: virtueller Clip; begin/end vergleichen die Stücke, end schreibt EINE Aktion
+function vx1rModel() {
+  let snap = null;
+  return {
+    getClip: () => VX1E.clip,
+    begin() { const c = VX1E.clip; snap = c ? {ns: c.notes.slice(), v: c.notes.map(n => ({t: n.t, n: n.n, d: n.d}))} : null; },
+    end(changed, label) { const s = snap; snap = null; if (changed && s) vx1rApply(s, label).catch(logErr); else vx1rSync(); },
+    revert() { const s = snap, c = VX1E.clip; snap = null; if (!s || !c) return; c.notes = s.ns; s.ns.forEach((n, i) => Object.assign(n, s.v[i])); },
+    undo: () => { undo(); }, redo: () => { redo(); },
+    canUndo: () => UNDO.length > 0, canRedo: () => REDO.length > 0,
+    audition(n) {                                                       // Tipp auf ein Stück = das Stück hören (gehörte Fassung); Tastatur = Ton
+      if (VX1E.tapN && performance.now() - VX1E.tapAt < 80) { const nt = VX1E.tapN; VX1E.tapN = null; vx1rPlay(nt, true); return; }
+      vx1rTone(n);
+    }
+  };
+}
+// Bezugs-Ton (Tastatur links, senkrechtes Ziehen): kurz und leise
+function vx1rTone(n) {
+  const c = ensureAudio(); if (!c) return;
+  const o = c.createOscillator(), g = c.createGain(), t = c.currentTime + .005;
+  o.type = 'triangle'; o.frequency.value = 440 * Math.pow(2, (n - 69) / 12);
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.12, t + .01); g.gain.exponentialRampToValueAtTime(.001, t + .25);
+  o.connect(g); g.connect(AU.masterSum || c.destination); o.start(t); o.stop(t + .27);
+}
+// Schlag (Clip) ↔ gehörte Take-Zeit
+const vx1rHeard = (a, b) => a.in + (b - a.at) * spb();
+const vx1rSrcT = (id, T) => { const w = S.takes[id] && S.takes[id].warp; return w && w.map ? VSM.warpTime({src: w.map.dst, dst: w.map.src}, T) : T; };
+// die Stücke → virtuelle Noten (gleiche Objekte je Stück, damit die Wahl bleibt)
+function vx1rSync() {
+  const r = ED.rollAt; if (!r || !r.vx) return;
+  if (ED.roll) { const g = ED.roll.state.gesture; if (g && g !== 'pending' && g !== 'pinch') return; }   // eine laufende Geste nie überschreiben (end() holt nach)
+  const x = tkRef(vx1rRef(r)); if (!x || !S.takes || !S.takes[x.a.take]) { if (ED.roll) closeRoll(); return; }
+  const a = x.a, id = a.take, m = S.takes[id], sp = spb(), bt = T => a.at + (T - a.in) / sp;
+  const ps = (VX1R.ana.get(id) && vx1rPieces(id)) || [], w = m.warp, hd = t => (w && w.map ? VSM.warpTime({src: w.map.src, dst: w.map.dst}, t) : t);   // erst mit Analyse (Anker, Tonhöhe) – nichts springt
+  const c = VX1E.clip || (VX1E.clip = {len: 1, notes: []}), vc = x.clip;
+  c.len = vc ? vc.len : Math.max(1, a.len | 0); c.key = vc && vc.key ? vc.key : S.key; if (vc && vc.ts) c.ts = vc.ts; else delete c.ts;
+  const P = m.pitch && m.pitch.notes, shAt = (t0, t1) => { if (!P) return 0; const cc = (t0 + t1) / 2, n = P.find(z => z.t0 <= cc && z.t1 > cc); return n && n.sh ? n.sh : 0; };
+  const byK = new Map(c.notes.map(n => [n._k, n])), out = [], ms = ps.map(p => p.m);
+  for (let i = 0; i < ms.length; i++) if (ms[i] == null) ms[i] = ms.slice(0, i).reverse().find(v => v != null) ?? ms.slice(i + 1).find(v => v != null) ?? null;   // ohne Ton: Nachbar
+  for (let i = 0; i < ps.length; i++) {
+    const p = ps[i], hs = p.dst, he = i + 1 < ps.length ? ps[i + 1].dst : hd(p.end);
+    if (he < a.in - .01 || (isNum(a.out) && hs > a.out + .01)) continue;   // nur der Ausschnitt des Clips
+    const nt = byK.get(p.k) || {v: 1};
+    Object.assign(nt, {t: +bt(hs).toFixed(6), d: +Math.max(1 / 64, (he - hs) / sp).toFixed(6), n: clamp(Math.round((ms[i] == null ? 60 : ms[i]) + shAt(p.t, p.end)), 0, 127), v: 1, _k: p.k, _a: p.an / sp, _p: p, _sh: shAt(p.t, p.end)});
+    out.push(nt);
+  }
+  c.notes = out; VX1E.id = id; VX1E.a = a; VX1E.ps = ps;
+  if (ED.roll) {
+    ED.roll.refresh();
+    if (!VX1E.centered && ms.some(v => v != null)) { VX1E.centered = true; ED.roll.centerOn(Math.round(VSD.median(ms.filter(v => v != null)))); }
+    vx1rTxBtn();
+  }
+  rollHeadUpdate();
+}
+// Kopf: Stücke · Takte
+function vx1rHead() {
+  const c = VX1E.clip; if (!c || !ED.rollInfo) return;
+  const txt = !(VX1E.id && VX1R.ana.get(VX1E.id)) ? 'Analyse …' : c.notes.length + (c.notes.length === 1 ? ' Stück' : ' Stücke') + ' · ' + c.len + (c.len === 1 ? ' Takt' : ' Takte');
+  if (ED.rollInfo._t !== txt) { ED.rollInfo._t = txt; ED.rollInfo.textContent = txt; }
+}
+// Einrasten am Anker (absolut am Takt): Verschiebung so, dass der Anker auf die Rasterlinie fällt; die Linie leuchtet kurz
+function vx1rSnapB(gs, ai, dB, g) {
+  if (gs.ax === 'v') return 0;                                       // senkrecht = nur Tonhöhe
+  const nt = gs.anchor, a0 = gs.t0[ai] + (nt._a || 0);
+  if (!g) { VX1E.glow = null; return dB; }
+  const tb = Math.round((a0 + dB) / g) * g;
+  if (!VX1E.glow || VX1E.glow.nt !== nt || Math.abs(VX1E.glow.b - tb) > 1e-9) { VX1E.glow = {nt, b: tb, at: performance.now()}; vx1rGlowRun(); }
+  return tb - a0;
+}
+function vx1rGlowRun() {
+  if (VX1E.graf) return;
+  const step = () => { VX1E.graf = 0; if (!VX1E.glow || !ED.roll || !vx1rOpenNow()) return; ED.roll.render(); if (performance.now() - VX1E.glow.at < 520) VX1E.graf = requestAnimationFrame(step); };
+  VX1E.graf = requestAnimationFrame(step);
+}
+// Zeichnen eines Stücks (in der Note der PianoRoll; Auswahl-Rahmen bleibt sichtbar)
+function vx1rDeco(g, nt, r) {
+  const p = nt._p, id = VX1E.id; if (!p || !id) return;
+  const A = VX1R.ana.get(id), sp = spb(), ppb = nt.d > 0 ? r.w / nt.d : 0; if (!ppb) return;
+  const X = ts => r.x + (ts - p.t) / sp * ppb, x0 = r.x + 2, y0 = r.y + 3, w = r.w - 4, h = r.h - 6; if (w < 2 || h < 2) return;
+  g.save(); g.beginPath(); g.rect(x0, y0, w, h); g.clip();
+  g.fillStyle = VX1E.col; g.fillRect(x0, y0, w, h);
+  for (const [u0, u1] of p.uv || []) {                               // stimmlos (Konsonant/Atem): grau getönt + schraffiert
+    const a = Math.max(x0, X(u0)), b = Math.min(x0 + w, X(u1)); if (b <= a) continue;
+    g.fillStyle = 'rgba(21,23,27,.62)'; g.fillRect(a, y0, b - a, h);
+    g.strokeStyle = 'rgba(236,232,223,.38)'; g.lineWidth = 1; g.beginPath();
+    for (let s = Math.floor(a / 6) * 6 - h; s < b; s += 6) { g.moveTo(s, y0 + h); g.lineTo(s + h, y0); }
+    g.stroke();
+  }
+  if (A && A.env) {                                                  // Welle: Hüllkurve, gespiegelt um die Mitte
+    let mx = VX1E.envMax.get(A); if (mx == null) { mx = 1e-6; for (let i = 0; i < A.env.length; i++) if (A.env[i] > mx) mx = A.env[i]; VX1E.envMax.set(A, mx); }
+    const H = A.hop, cy = y0 + h / 2, hh = h / 2 - .5, e = A.env, px0 = Math.max(x0, X(p.t)), px1 = Math.min(x0 + w, X(p.end));
+    if (px1 > px0) {
+      g.fillStyle = 'rgba(11,12,15,.55)'; g.beginPath(); const top = [];
+      for (let px = px0; px <= px1; px += 1) {
+        const ta = p.t + (px - r.x) / ppb * sp, tb = ta + sp / ppb, i0 = Math.max(0, Math.floor(ta / H)), i1 = Math.min(e.length - 1, Math.max(i0, Math.ceil(tb / H)));
+        let v = 0; for (let i = i0; i <= i1; i++) if (e[i] > v) v = e[i];
+        top.push([px, Math.sqrt(v / mx) * hh]);
+      }
+      g.moveTo(top[0][0], cy - top[0][1]); for (const [px, v] of top) g.lineTo(px, cy - v);
+      for (let i = top.length - 1; i >= 0; i--) g.lineTo(top[i][0], cy + top[i][1]);
+      g.closePath(); g.fill();
+    }
+  }
+  g.restore();
+  const Gp = typeof G2 !== 'undefined' && G2.an.get(id);             // Tonhöhenkurve (VS2/G2), relativ zur Zeile des Stücks
+  if (Gp && Gp.f0) {
+    const i0 = Math.max(0, Math.ceil(p.t / Gp.hop)), i1 = Math.min(Gp.n, Math.floor(p.end / Gp.hop)), cy = r.y + r.h / 2, sh = nt._sh || 0;
+    g.save(); g.beginPath(); g.rect(x0, r.y - r.h, w, r.h * 3); g.clip(); g.beginPath(); let on = false;   // ±1 Zeile: Gleiten in den Nachbarn nur angedeutet
+    for (let i = i0; i < i1; i++) {
+      const f = Gp.f0[i]; if (!(f > 0)) { on = false; continue; }
+      const px = X(i * Gp.hop), py = cy - (G2P.midi(f) + sh - nt.n) * r.h;
+      if (on) g.lineTo(px, py); else g.moveTo(px, py); on = true;
+    }
+    g.lineJoin = 'round'; g.strokeStyle = 'rgba(11,12,15,.8)'; g.lineWidth = 3; g.stroke(); g.strokeStyle = '#ece8df'; g.lineWidth = 1.4; g.stroke(); g.restore();
+  }
+  const ax = r.x + (p.an / sp) * ppb;                                // Anker: kräftige senkrechte Linie
+  if (ax >= r.x && ax <= r.x + r.w) { g.fillStyle = '#0b0c0f'; g.fillRect(ax - 2, r.y + 1, 4, r.h - 2); g.fillStyle = '#f4f1ea'; g.fillRect(ax - 1, r.y + 1, 2, r.h - 2); }
+  if (p.tx) {                                                        // Silbe: klein, unten, rechts vom Anker (nie darüber)
+    g.font = '600 10px ' + (getComputedStyle(document.documentElement).getPropertyValue('--font-ui').trim() || 'sans-serif');
+    const lx = Math.max(ax + 4, r.x + 4), room = r.x + r.w - 3 - lx, tw = Math.min(room, Math.max(12, g.measureText(p.tx).width + 6));   // schmale Silben („li“, „a“) auch
+    if (tw >= 11 && r.h >= 16) { const yy = r.y + r.h - 13; g.fillStyle = 'rgba(11,12,15,.85)'; g.beginPath(); g.rect(lx, yy, tw, 11); g.fill(); g.fillStyle = '#ffb22e'; g.fillText(p.tx, lx + 3, yy + 9, tw - 5); }
+  }
+  const G = VX1E.glow;                                                // Einrasten: die Rasterlinie leuchtet kurz
+  if (G && G.nt === nt && ED.roll) {
+    const k = 1 - (performance.now() - G.at) / 520;
+    if (k > 0) { const gx = r.x + (G.b - nt.t) * ppb; g.save(); g.fillStyle = '#ffb22e'; g.globalAlpha = .25 + .6 * k; g.fillRect(gx - 1.5, -4000, 3, 9000); g.globalAlpha = .18 * k; g.fillRect(gx - 5, -4000, 10, 9000); g.restore(); }
+  }
+}
+// beim Loslassen: was hat sich geändert → EINE Aktion (ein Undo)
+async function vx1rApply(s, label) {
+  const id = VX1E.id, a = VX1E.a, c = VX1E.clip; if (!id || !a || !c) { vx1rSync(); return; }
+  const old = new Set(s.ns), now = c.notes, gr = ED.roll ? ED.roll.state.grid : 'aus', grid = gr === 'aus' ? 'off' : gr;
+  const added = now.filter(n => !old.has(n)), gone = s.ns.filter(n => !now.includes(n));
+  if (added.length && !gone.length) {                                 // Teilen: an der getippten Stelle (im Stück), sonst wo die PianoRoll teilt
+    const ts = added.map(n2 => { const i = s.ns.findIndex(o => o._k === n2._k), o = s.v[i]; let b = n2.t;
+      if (i >= 0 && VX1E.tapB != null && s.ns[i] === VX1E.tapNt && VX1E.tapB > o.t + .02 && VX1E.tapB < o.t + o.d - .02) b = VX1E.tapB;
+      const T = vx1rHeard(a, b); return {t: vx1rSrcT(id, T), T}; });
+    if (ED.roll) ED.roll.select([]);
+    await vx1rCommit(id, 'Stück geteilt', (mk, m, A) => {
+      let ch = false;
+      for (const z of ts) { const t = clamp(z.t, 0, m.len / m.sr); if (mk.some(k => Math.abs(k.t - t) < WP_GAP)) continue; const nx = mk.find(k => k.t > t), an = +vx1rAnOf(A, t, nx ? nx.t : null).toFixed(4); mk.push({t: wpSmp(m, t), conf: 1, user: true, an, vd: tkR6(z.T + an)}); mk.sort((p, q) => p.t - q.t); ch = true; }   // das neue Stück bleibt, wo es klingt
+      return ch;
+    }, {a});
+  } else if (gone.length) {                                           // Verbinden: alles zwischen dem ersten und dem letzten gewählten Stück wird eins
+    const ks = gone.map(n => n._k).filter(isNum), k0 = Math.min(...ks), k1 = Math.max(...ks);
+    if (ED.roll) ED.roll.select([]);
+    if (ks.length >= 2) await vx1rCommit(id, 'Stücke verbunden', mk => { if (!mk[k1]) return false; mk.splice(k0 + 1, k1 - k0); }, {a});
+  } else {                                                            // Verschieben (waagrecht → vd am Anker) / Tonhöhe (senkrecht → G2) – ein Undo
+    const mv = [], pt = [];
+    s.ns.forEach((n, i) => { const o = s.v[i]; if (Math.abs(n.t - o.t) > 1e-6) mv.push({k: n._k, ta: vx1rHeard(a, n.t + (n._a || 0))}); if (n.n !== o.n) pt.push({k: n._k, d: n.n - o.n}); });
+    const u0 = UNDO.length;
+    if (mv.length) await vx1rCommit(id, 'Stück verschoben', mk => { let ch = false; for (const z of mv) { const p = mk[z.k]; if (!p) continue; p.vd = grid !== 'off' ? vx1rSnap(id, z.ta, grid, a) : tkR6(z.ta); p.user = true; ch = true; } return ch; }, {a});
+    if (pt.length) await vx1rPitchMany(id, pt, vx1rRef(ED.rollAt));
+    if (UNDO.length > u0 + 1) { UNDO.splice(u0 + 1); UNDO[u0].label = mv.length ? 'Stück verschoben' : 'Tonhöhe · Stück'; UI.dirty.strip = true; if (typeof edUndoBtns === 'function') edUndoBtns(); }
+  }
+  vx1rSync();
+}
+// Tonhöhe mehrerer Stücke in EINEM G2-Schritt: Noten an den Stück-Grenzen teilen, dann verschieben (formanterhaltend wie dort)
+function vx1rPitchMany(id, list, r) {
+  const ps = vx1rPieces(id) || [], seg = list.map(z => { const p = ps.find(q => q.k === z.k); return p && z.d ? {a: p.t, b: p.end, d: Math.round(z.d)} : null; }).filter(Boolean);
+  if (!seg.length) return Promise.resolve(false);
+  return g2Edit(id, 'Tonhöhe · Stück', P => {
+    for (const z of seg) for (const t of [z.a, z.b]) {
+      const i = P.notes.findIndex(n => n.t0 < t - .01 && n.t1 > t + .01); if (i < 0) continue;
+      const n = P.notes[i]; P.notes.splice(i, 1, Object.assign({}, n, {t1: tkR6(t)}), Object.assign({}, n, {t0: tkR6(t)}));
+    }
+    let hit = false;
+    for (const n of P.notes) { const cc = (n.t0 + n.t1) / 2, z = seg.find(q => cc >= q.a && cc < q.b); if (z) { n.sh = (n.sh || 0) + z.d; hit = true; } }
+    return hit;
+  }, r);
+}
+// ↶ ↷ (Art 'takes'): der Editor folgt
+function vx1rUndone() { if (vx1rOpenNow()) queueMicrotask(() => { if (vx1rOpenNow()) { ED.roll.select([]); vx1rSync(); } }); }
+// Laufstrich: Szene wie bei den Instrumenten, Song-Stimme im Song-Takt, Vorhören des Editors
+function vx1rFrame(bAud) {
+  const r = ED.rollAt, c = VX1E.clip; if (!c || !ED.roll) return;
+  if (VX1E.pv && AU.ctx) { const b = VX1E.pv.b0 + (AU.ctx.currentTime - VX1E.pv.t) / spb(); ED.roll.playhead(b < VX1E.pv.b1 ? b : -1); return; }
+  let b = -1;
+  if (r.vox) { const v = S.song && S.song.vox && S.song.vox.find(z => z.id === r.vox); if (!v) { closeRoll(); return; } const sb = svSongBeat(bAud); if (sb != null && sb >= 0) { const q = sb - barBeat(v.bar); if (q >= 0 && q < barBeat(v.bar + v.len) - barBeat(v.bar)) b = q; } }
+  else { const cc = S.tracks[r.t] && S.tracks[r.t].clips[r.s]; if (!cc) { closeRoll(); return; } const vs = R.playing ? visualSlots(r.t, bAud) : null; if (vs && vs.playing === r.s && bAud >= 0) b = (((bAud - audCstart(r.t, bAud)) % clipB(cc)) + clipB(cc)) % clipB(cc); }
+  folRoll('roll', b); ED.roll.playhead(b);
+}
+// ▶ ab der Auswahl (gehörte Fassung); nt = ein Stück allein (Tipp)
+function vx1rPlay(nt, one) {
+  if (VX1E.pv && !one) { vx1rPvStop(); return; }
+  const id = VX1E.id, a = VX1E.a, c = VX1E.clip; if (!id || !a || !c) return;
+  const ctx = ensureAudio(); if (!ctx) return;
+  const buf = g10eHeardBuf({id}, a); if (!buf) { toast('Take fehlt auf diesem Gerät'); return; }
+  const sel = nt ? [nt] : ED.roll ? ED.roll.selection : [];
+  const b0 = sel.length ? Math.min(...sel.map(n => n.t)) : 0, b1 = one && nt ? nt.t + nt.d : clipB(c);
+  const T0 = Math.max(0, vx1rHeard(a, b0)), T1 = Math.min(buf.duration, isNum(a.out) ? Math.min(a.out, vx1rHeard(a, b1)) : vx1rHeard(a, b1)), d = T1 - T0; if (d <= .02) return;
+  vx1rPvStop();
+  const V = vpGet(buf), G = (V ? V.g : 1) * (isNum(a.gain) ? a.gain : 1), src = ctx.createBufferSource(), g = ctx.createGain(), t = ctx.currentTime + .02;
+  src.buffer = buf; src.connect(g); g.connect(AU.masterSum || ctx.destination);
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(G, t + .005); g.gain.setValueAtTime(G, t + d - .006); g.gain.linearRampToValueAtTime(0, t + d);
+  try { src.start(t, T0); src.stop(t + d + .01); } catch (e) { logErr(e); return; }
+  VX1E.pv = {s: src, g, t, b0: b0, b1: b1}; if (VX1E.pb && !one) VX1E.pb.textContent = '■';
+  src.onended = () => { if (VX1E.pv && VX1E.pv.s === src) { VX1E.pv = null; if (VX1E.pb) VX1E.pb.textContent = '▶'; if (ED.roll && !R.playing) ED.roll.playhead(-1); } };
+}
+function vx1rPvStop() { const p = VX1E.pv; VX1E.pv = null; if (VX1E.pb) VX1E.pb.textContent = '▶'; if (p) { try { p.s.onended = null; p.s.stop(); } catch (e) {} try { p.s.disconnect(); p.g.disconnect(); } catch (e) {} } }
+// „Text erkennen“: vorhandener G9-Weg (Spracherkennung des Takes)
+function vx1rText() {
+  const id = VX1E.id; if (!id) return;
+  if ((VX1E.ps || []).some(p => p.tx)) { toast('Silben sind schon da'); return; }
+  if (typeof g9RecJob === 'function' && G9.rec) { const pf = (typeof stProf === 'function' && stProf()) || {}; const pr = g9RecJob(id, {lang: (pf.g9 && pf.g9.lang) || 'auto', mode: 'all'}); toast('Text wird erkannt …'); if (pr && pr.then) pr.then(() => { if (vx1rOpenNow()) vx1rSync(); }, () => {}); return; }
+  const rr = vx1rRef(ED.rollAt); closeRoll(); wpOpen(rr); toast('Text: im Marken-Editor „Text“ wählen');
+}
+// QUANT.: Blatt im Stil des Quantisier-Blatts (Raster-Chips, Stärke, Abbrechen/Anwenden); Auswahl oder alle Stücke
+function vx1rQSheet(sel) {
+  const id = VX1E.id, a = VX1E.a; if (!id || !a) return;
+  vx1rQClose();
+  const ks = sel ? sel.map(n => n._k).filter(isNum) : null, w = S.takes[id] && S.takes[id].warp;
+  const Q = VX1E.q = {grid: w && w.mode === 'hybrid' && VX1R_GRIDS.includes(w.res) ? w.res : (ROLLP.grid !== 'aus' && VX1R_GRIDS.includes(ROLLP.grid) ? ROLLP.grid : '1/16'), str: 1};
+  const sh = EL.qSheet; sh.innerHTML = '';
+  const head = el('div', 'qh', `<b>Quantisieren · Gesang${ks ? ' · ' + ks.length + (ks.length === 1 ? ' Stück' : ' Stücke') : ''}</b>`);
+  const x = el('button', 'sh-x rb', '✕'); x.setAttribute('aria-label', 'Abbrechen'); x.addEventListener('click', () => vx1rQClose()); head.appendChild(x);
+  const b = el('div', 'qb'), chips = el('div', 'qchips');
+  [['1/4', '1/4'], ['1/8', '1/8'], ['1/8T', '1/8T'], ['1/16', '1/16'], ['1/16T', '1/16T'], ['off', 'Aus']].forEach(([v, l]) => { const bt = el('button', 'rb' + (Q.grid === v ? ' on' : ''), l); bt.dataset.v = v; chips.appendChild(bt); });
+  chips.addEventListener('click', e => { const bt = e.target.closest('button[data-v]'); if (!bt) return; Q.grid = bt.dataset.v; chips.querySelectorAll('button').forEach(z => z.classList.toggle('on', z === bt)); });
+  const r = el('div', 'qrow'); r.appendChild(el('span', 'lbl', 'Stärke'));
+  const inp = el('input'); inp.type = 'range'; inp.min = 0; inp.max = 100; inp.step = 1; inp.value = 100; inp.setAttribute('aria-label', 'Stärke');
+  const v = el('span', 'mval', '100 %'); inp.addEventListener('input', () => { Q.str = +inp.value / 100; v.textContent = inp.value + ' %'; }); r.append(inp, v);
+  const act = el('div', 'qact'), note = el('div', 'qnote', 'Der Anker jedes Stücks rastet ein – der Anschwung liegt davor.'), cancel = el('button', 'rb', 'Abbrechen'), apply = el('button', 'rb go', 'Anwenden');
+  cancel.addEventListener('click', () => vx1rQClose());
+  apply.addEventListener('click', () => { const o = {grid: Q.grid, strength: Q.str, a, sel: ks}; vx1rQClose(); vx1rQuantize(id, o).then(() => vx1rSync()).catch(logErr); });
+  act.append(note, cancel, apply); b.append(chips, r, act); sh.append(head, b); sh.classList.add('open');
+}
+function vx1rQClose() { if (!VX1E.q) return; VX1E.q = null; EL.qSheet.classList.remove('open'); EL.qSheet.innerHTML = ''; }
+// beim Schließen aller Blätter (closeSheets): Vorhören und Quantisier-Blatt enden
+function vx1rClosed() { vx1rPvStop(); vx1rQClose(); VX1E.glow = null; }
+/* ---------- Schritt 4: Zugänge, Speichern, Guide ----------
+   Matrix: openRoll (✎, Clip-Blatt „✎ Bearbeiten“, Toasts, Guide) öffnet für einen STIMME-Clip mit Audio den Gesang-Editor – wie bei Instrumenten.
+   Ohne Audio auf dem Gerät (Claude-App, Take fehlt) bleibt es beim Takes-Blatt. Song: Gesang-Block antippen → Takes-Blatt → [✎ Bearbeiten]
+   (erster Knopf im Abschnitt Bearbeiten) öffnet den Editor an der getippten Stelle. Wiedergabe: jede Änderung läuft über wpAfter → wpSwitch
+   (Fassungswechsel mit Überblendung während ▶) bzw. g2After – Matrix und Song hören dieselbe Fassung. Speichern: alle Gesang-Daten sind Felder
+   in S.takes (an, vd, warp 'hybrid', pitch) → .json und Container; das Audio liegt nur im Container (ZIP), darum nach „Als Datei sichern“ mit
+   Gesang ein Hinweis mit [Mit Audio sichern]. */
+function vx1rCan(r) { if (!tkAudioOk()) return false; const x = tkRef(vx1rRef(r)); return !!(x && x.a && S.takes && S.takes[x.a.take] && !TK.missing.has(x.a.take)); }
+function vx1rAt(vox, bar) { VX1E.at = {vox, bar}; }
+function vx1rTkBtn(x) {
+  const off = !x || !x.a || TK.missing.has(x.a.take);
+  return '<button class="mbtn rb tk-vx1r" data-a="vx1r" title="Gesang wie Noten bearbeiten" aria-label="Gesang wie Noten bearbeiten"' + (off ? ' disabled' : '') + '>✎ Bearbeiten</button>';
+}
+// Song: der Editor zeigt den getippten Takt (sobald die Fläche gemessen ist)
+function vx1rShowBar(vox, bar) {
+  const v = S.song && S.song.vox && S.song.vox.find(z => z.id === vox); if (!v) return;
+  const b = Math.max(0, barBeat(bar) - barBeat(v.bar)); let k = 0;
+  const go = () => { if (!vx1rOpenNow() || !ED.rollAt.vox) return; const f = ED.roll.fol(); if (f.W > 0 && f.ppb > 0) { ED.roll.showPage(b); VX1E.shown = b; return; } if (++k < 40) requestAnimationFrame(go); };
+  requestAnimationFrame(go);
+}
+// „Als Datei sichern“ (.json) mit Gesang: das Audio liegt nur im Container
+function vx1rJsonHint() {
+  try { if (!tkAudioOk() || !tkUsedIds().length) return; VX1E.hint = Date.now(); setTimeout(() => toast('Gesang-Audio ist nicht in der .json', {label: 'Mit Audio sichern', fn: () => va1BoxSave()}), 1600); } catch (e) { logErr(e); }
+}
+(function vx1rGuide() {
+  try {
+    const L = ui1Entries(); if (L.some(x => x.id === 'vx1rroll')) return;
+    const go = () => { ui1Home(); setSongView(false); const st = stimmeT(); if (st < 0) { toast('Erst eine STIMME-Spur: ■ einer Spur halten › ＋ STIMME-Spur'); return false; } const s = S.tracks[st].clips.findIndex(c => c && c.audio); if (s < 0) { toast('Erst Gesang aufnehmen – dann den STIMME-Clip ✎'); return false; } if (!vx1rCan({t: st, s})) { selectSlot(st, s); return tkSheet({t: st, s}) !== false; } return vx1rOpen({t: st, s}); };
+    L.push({id: 'vx1rroll', n: 'Gesang bearbeiten wie Noten', w: 'STIMME-Clip › ✎ · Song: Gesang antippen › ✎ Bearbeiten',
+      d: 'Jede Silbe ist ein Stück auf ihrer Tonhöhe. Ziehen = verschieben (die Anker-Linie rastet am Raster, der Anschwung liegt davor), hoch/runter = Tonhöhe, Quant. mit Stärke.',
+      s: 'gesang vocal stimme bearbeiten noten rolle transient anker einsatz quantisieren silbe tonhoehe verschieben schneiden dehnen konsonant', go, q: () => (vx1rOpenNow() ? ED.roll.el.main : null)});
+  } catch (e) {}
+})();
+Object.assign(window.__vx1, {
+  can: r => vx1rCan(r), at: () => (VX1E.shown == null ? null : VX1E.shown), hint: () => VX1E.hint || 0,
+  open: r => vx1rOpen(r),
+  ed: () => (vx1rOpenNow() ? {n: VX1E.clip ? VX1E.clip.notes.length : 0, notes: (VX1E.clip ? VX1E.clip.notes : []).map(n => ({t: n.t, d: n.d, n: n.n, a: n._a, k: n._k, tx: n._p && n._p.tx})), sel: ED.roll.selection.map(n => n._k), grid: ED.roll.state.grid, tool: ED.roll.state.tool, q: !!VX1E.q, pv: !!VX1E.pv} : null),
+  xy: (i, f) => { const n = VX1E.clip && VX1E.clip.notes[i]; if (!n || !ED.roll) return null; return ED.roll._xy(n.t + (f == null ? n.d / 2 : f), n.n); },
+  beatXY: (b, n) => (ED.roll ? ED.roll._xy(b, n) : null),
+});
+/* VX1-END */
 /* ===== KF2-BEGIN (Paket KF2, Klang-Feinschliff Teil 2 – aus Xanders Ur-Roadmap §18 „Klang“; Xander: „Können wir davon noch was machen?“ → ja)
    Inventar zuerst (NOTES.md): eine gezupfte Saite, einen Vokal-Filter mit a–e–i–o–u und ein Oszilloskop gab es in keinem Klangerzeuger.
    Die Platte (MS-Nachbau) hat eine Vokal-Quelle für den Vocoder (mkVowel: Formant-Tabelle MKW.VOW / vowB / vowG, TPT-Abschnitte in
