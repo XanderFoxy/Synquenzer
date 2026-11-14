@@ -98165,9 +98165,10 @@ function spk2DspMake(I) {
         SB[o + k] = sb; SD[o + k] = (1 - sb) * ((1 - h) + h * kick);
       }
     }
+    if (globalThis.ORSB) globalThis.ORSB(d, cen, Nf, Kf, X, SB, SD, mh);
     return {X, SB, SD, Kf, Nf, f0: T, gate: G};
   }
-  return {lowSplit, projLk, bassTrack, w2, aus: false};
+  return {lowSplit, projLk, bassTrack, w2, I, aus: false};
 }
 /* SPK2-END */
 /* ===== KF1-BEGIN (Paket KF1, Klang-Feinschliff Teil 1 aus der Ur-Roadmap §18 „Klang“; Xander: „Können wir davon noch was machen?“ → ja) =====
