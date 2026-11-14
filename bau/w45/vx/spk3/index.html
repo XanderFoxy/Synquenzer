@@ -97956,13 +97956,14 @@ function spk1DspMake(V) {
     }, e => emit({qid: m.qid, err: String(e && e.message || e)}));
   }
   const Z2 = typeof spk2DspMake === 'function' ? spk2DspMake({V, magsAt, hpss, f0Sum, comb, ramp, medLine, win, stft, istft, selFn, Fn, NBn, magPair, render, mixOf, transfer, uBegin, uEnd, lay, tick}) : null;   // SPK2 (Auftrag 2: Noten brauchen render/transfer/Undo)
+  if (Z2 && typeof spk3DspMake === 'function') spk3DspMake(Z2);   // SPK3: Tiefband mit Kick-Vorlage (ersetzt Z2.lowSplit, schaltet es ein)
   return {on, stft, istft, specInfo, docs, lowSplit, Z2};   // SPK2: Z2 für Messungen
 }
 /* ---------- Hauptfaden: Worker (Blob aus Text), Rückfall = derselbe Kern hier ---------- */
 function spk1Worker() {
   if (SPK1.w !== null) return SPK1.w;
   try {
-    const src = vsDspMake.toString() + ';' + spk1DspMake.toString() + ';' + (typeof spk2DspMake === 'function' ? spk2DspMake.toString() : '') + ';' + (typeof ki1KernMake === 'function' ? ki1KernMake.toString() + ';' : '') /* KI1 */ + 'const K = spk1DspMake(vsDspMake());onmessage = e => K.on(e.data, (m, tr) => postMessage(m, tr || []));';   // SPK2: Kern-Ergänzung mitschicken · KI1
+    const src = vsDspMake.toString() + ';' + spk1DspMake.toString() + ';' + (typeof spk2DspMake === 'function' ? spk2DspMake.toString() : '') + ';' + (typeof spk3DspMake === 'function' ? spk3DspMake.toString() + ';' : '') /* SPK3 */ + (typeof ki1KernMake === 'function' ? ki1KernMake.toString() + ';' : '') /* KI1 */ + 'const K = spk1DspMake(vsDspMake());onmessage = e => K.on(e.data, (m, tr) => postMessage(m, tr || []));';   // SPK2: Kern-Ergänzung mitschicken · KI1
     const u = URL.createObjectURL(new Blob([src], {type: 'application/javascript'}));
     const w = new Worker(u); setTimeout(() => { try { URL.revokeObjectURL(u); } catch (e) {} }, 30000);
     w.onmessage = e => spk1Reply(e.data);
@@ -99906,6 +99907,81 @@ SPK1_API.spk2.klang = {
   snd: (eng, fix, u) => spk2KlSnd({eng, fix, u}), dist: spk2KlDist, render: spk2KlRender, P: c => spk2KlP(c)
 };
 /* SPK2-END */
+/* ===== SPK3-BEGIN (Spektral-Seite Teil 3 · Bass ohne Download) ===== */
+// Kern-Ergänzung im selben Worker (Text wird mitgeschickt). Z2 = SPK2-Kern; ersetzt dessen Tiefband (Z2.lowSplit) und schaltet es ein.
+// Kick als Vorlage: der Kick klingt auf jedem Schlag gleich → je Phase im Schlag (Schritt 512 Proben) und Bin das untere Drittel der
+// Leistung über bis zu 32 Schläge des ganzen Stücks (einmal je Analyse). Diese Leistung wird vor der Bass-Suche abgezogen;
+// Sub-Oszillator: Teilton bei f0/2 wird immer mitgeschätzt (Kick-Vorlage abgezogen, Wiener-Anteil entscheidet).
+function spk3DspMake(Z2) {
+  if (!Z2 || !Z2.I) return null;
+  const {I, w2, bassTrack, opt} = Z2, {magsAt, hpss, ramp} = I;
+  // q: Anteil (60 %) über die Schläge – Snare/Becken auf 2 und 4 zählen mit; hA…hB: darüber gibt der Bass nichts ab (dort liegen Akkord-Teiltöne
+  // auf denselben Bins, gemessen: Fehlalarm kostet mehr als fehlender Bass). trk/dbg = Mess-Haken (aus).
+  const o3 = {tpl: true, q: 0.6, nb: 32, fk: 160, per: 1, stp: 512, sub: 1, hA: 180, hB: 300, trk: null, dbg: null};
+  function kickTpl(d, N, K) {
+    const c = d.spk3kt || (d.spk3kt = {}), key = N + ':' + K; if (c[key] !== undefined) return c[key];
+    const g = d.meta.grid || {}, bpm = +g.bpm, sr = d.meta.sr, len = d.mid.length;
+    if (!o3.tpl || !(bpm >= 50 && bpm <= 220)) return (c[key] = null);
+    const L = 60 / bpm * sr * o3.per, off = (+g.off || 0) * sr, Q = Math.max(8, Math.round(L / o3.stp)), stp = L / Q;
+    const j0 = Math.ceil(-off / L), j1 = Math.floor((len - off - L) / L), nB = j1 - j0 + 1; if (nB < 4) return (c[key] = null);
+    const nb = Math.min(o3.nb, nB), js = []; for (let t = 0; t < nb; t++) js.push(j0 + Math.round(t * (nB - 1) / Math.max(1, nb - 1)));
+    const cen = new Int32Array(nb * Q); for (let t = 0; t < nb; t++) for (let q = 0; q < Q; q++) cen[t * Q + q] = Math.round(off + js[t] * L + q * stp);
+    const KK = Math.min(K, Math.ceil((o3.fk + 40) * N / sr) + 2), M = magsAt(d, N, cen, KK), T = new Float32Array(Q * K), v = new Float32Array(nb), qi = Math.floor((nb - 1) * o3.q);
+    for (let q = 0; q < Q; q++) for (let k = 0; k < KK; k++) {
+      for (let t = 0; t < nb; t++) { const x = M[(t * Q + q) * KK + k]; v[t] = x * x; }
+      v.sort(); T[q * K + k] = v[qi] * (1 - ramp(k * sr / N, o3.fk, o3.fk + 40));
+    }
+    return (c[key] = {T, Q, stp, L, off, K});
+  }
+  // Kick-Leistung je Rahmen (Mitte c) und Bin: Vorlage an der Phase im Schlag (linear zwischen zwei Phasen)
+  function kickAt(KT, cen, out, Kf) {
+    const n = cen.length; if (!KT) return null; const o = out || new Float32Array(n * Kf), K = Math.min(Kf, KT.K);
+    for (let i = 0; i < n; i++) {
+      let p = ((cen[i] - KT.off) % KT.L + KT.L) % KT.L / KT.stp; const a = Math.floor(p) % KT.Q, b = (a + 1) % KT.Q, u = p - Math.floor(p);
+      for (let k = 0; k < K; k++) o[i * Kf + k] = KT.T[a * KT.K + k] * (1 - u) + KT.T[b * KT.K + k] * u;
+    }
+    return o;
+  }
+  function lowSplit(d, cen, Nf, fmax, r, trust) {
+    const sr = d.meta.sr, n = cen.length, N16 = 16384, df16 = sr / N16, K16 = Math.min(N16 / 2 + 1, Math.ceil(2400 / df16) + 2), hopS = (n > 1 ? cen[1] - cen[0] : d.meta.base.hop) / sr;
+    const Y = o3.trk ? o3.trk(d, N16, cen, K16) : magsAt(d, N16, cen, K16), K1 = kickAt(kickTpl(d, N16, K16), cen, null, K16);
+    if (K1 && !o3.trk) for (let i = 0; i < Y.length; i++) Y[i] = Math.sqrt(Math.max(0, Y[i] * Y[i] - K1[i]));
+    const T = bassTrack(Y, n, K16, df16, hopS, trust); if (o3.dbg) o3.dbg(d, cen, T, N16, K16, hopS, trust);
+    const dff = sr / Nf, Kf = Math.min(Nf / 2 + 1, Math.ceil(fmax / dff) + 2), X = magsAt(d, Nf, cen, Kf), {mh} = hpss(X, n, Kf, 17, 17);
+    const SB = new Float32Array(n * Kf), SD = new Float32Array(n * Kf), B = new Float32Array(Kf), G = new Float32Array(n), KQ = kickAt(kickTpl(d, Nf, Kf), cen, null, Kf);
+    const hmax = trust ? 40 : 16, HM = hmax + 1, LA = new Float32Array(n * HM), LC = new Float32Array(n * HM), WR = Math.max(4, Math.round(0.25 / hopS));
+    for (let i = 0; i < n; i++) {
+      const o = i * Kf, f0 = T.f0[i]; if (!(T.on[i] > 0 && f0 > 0)) continue;
+      const top = Math.min(fmax, trust ? fmax : Math.max(500, 8.5 * f0));
+      for (let h = o3.sub && f0 / 2 >= 25 ? 0 : 1; h <= hmax && h * f0 < top; h++) {
+        const c = (h || 0.5) * f0 / dff, k0 = Math.round(c); if (k0 < 1 || k0 >= Kf - 1) break;
+        let km = k0; for (let t = k0 - 1; t <= k0 + 1; t++) if (X[o + t] > X[o + km]) km = t;
+        const xa = X[o + km - 1], xb = X[o + km], xc = X[o + km + 1], dn = xa - 2 * xb + xc, cc = km + (dn < 0 ? Math.max(-0.5, Math.min(0.5, 0.5 * (xa - xc) / dn)) : 0);
+        const cx = Math.abs(cc - c) <= 1.2 ? cc : c; LA[i * HM + h] = Math.max(0, xb * xb - (KQ ? KQ[o + km] : 0)) / Math.max(0.3, w2(km - cx)); LC[i * HM + h] = cx;
+      }
+    }
+    const tmp = [];
+    for (let i = 0; i < n; i++) {
+      const o = i * Kf, g = G[i] = T.on[i]; B.fill(0);
+      const a = Math.max(T.sg[i], i - WR); let b = i; while (b + 1 < n && b + 1 <= i + WR && T.sg[b + 1] === T.sg[i]) b++;
+      for (let h = 0; g > 0 && h <= hmax; h++) {
+        const A2 = LA[i * HM + h]; if (!A2) continue; let L = A2;
+        if (opt.rob && b - a >= 3) { tmp.length = 0; for (let j = a; j <= b; j++) tmp.push(LA[j * HM + h]); tmp.sort((x, y) => x - y); L = Math.min(A2, opt.rob * tmp[Math.floor((tmp.length - 1) * opt.robq)]); }
+        const cx = LC[i * HM + h]; for (let k = Math.max(0, Math.floor(cx - 4)); k <= Math.min(Kf - 1, Math.ceil(cx + 4)); k++) B[k] += L * w2(k - cx);
+      }
+      for (let k = 0; k < Kf; k++) {
+        const f = k * dff, x2 = X[o + k] * X[o + k], b = g * B[k], kq = KQ ? KQ[o + k] : 0, sb0 = x2 > 0 ? Math.min(1, b / Math.max(x2, b + kq, 1e-20)) : 0, h = mh[o + k], kick = 1 - ramp(f, 90, 160);
+        const sb = o3.hB > o3.hA ? sb0 * (1 - ramp(f, o3.hA, o3.hB)) : sb0;
+        SB[o + k] = sb; SD[o + k] = (1 - sb) * ((1 - h) + h * kick);
+      }
+    }
+    if (opt.diag) opt.diag(d, cen, Nf, Kf, X, SB, SD, mh);
+    return {X, SB, SD, Kf, Nf, f0: T, gate: G};
+  }
+  Z2.lowSplit = lowSplit; Z2.o3 = o3; Z2.kickTpl = kickTpl; Z2.kickAt = kickAt; opt.an = true;   // misst besser als SPK1 → an
+  return Z2;
+}
+/* SPK3-END */
 /* ===== KF1-BEGIN (Paket KF1, Klang-Feinschliff Teil 1 aus der Ur-Roadmap §18 „Klang“; Xander: „Können wir davon noch was machen?“ → ja) =====
    Sechs Wünsche, jeder mit neutralem Standard (= genau der Klang von vorher, alte Projekte bitgleich):
    1 RAUSCHFARBE  VA › OSZ › MIX: Regler „Rauschfarbe“ weiß │ rosa │ braun │ blau (p.kfNc 0…3) für den Rausch-Fader; jede Farbe auf den
