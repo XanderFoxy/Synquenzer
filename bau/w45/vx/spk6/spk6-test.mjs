@@ -50,11 +50,11 @@ const SRC = async () => {
 const {p, ctx, tap, drag} = await page(428, 926);
 await p.addScriptTag({content: PITCH});
 const st0 = await p.evaluate(SRC); await idle(p); ok('quelle-ebene-noten', st0, st0.notes.length === 3);
-// ---- ⋯ → Werkstatt oben im Menü
+// ---- ⋯ → Werkstatt (Prüfung 16: gewohnte Reihenfolge Name, Farbe, Ebene löschen – die Werkstatt darunter)
 let m = await btn(p, '#spk1Sheet .spk1-lr[data-l="L1"] [data-a="lmore"]'); await tap(m); await p.waitForTimeout(250);
-let s = await sizes(p, '#spk1Sheet .spk1-dd [data-s6]'), first = await p.evaluate(() => (document.querySelector('#spk1Sheet .spk1-dd h5') || {}).textContent);
+let s = await sizes(p, '#spk1Sheet .spk1-dd [data-s6]'), first = await p.evaluate(() => [...document.querySelectorAll('#spk1Sheet .spk1-dd h5, #spk1Sheet .spk1-dd button')].map(e => e.tagName === 'H5' ? 'h5:' + e.textContent : e.textContent.trim()).filter(t => /^h5:|^Ebene löschen$/.test(t)).join(' | '));
 await foto(p, 'spk6-10-werkstatt-hochkant.png');
-ok('menue-werkstatt', {erstes: first, knoepfe: s.map(x => x.t + ' ' + x.w + '×' + x.h), klein: klein(s)}, first === 'Werkstatt' && ['Kopieren', 'Noten bearbeiten', 'Chor erzeugen …', 'Effekte …', 'Oktave −', 'Oktave +'].every(t => s.some(x => x.t === t)) && !klein(s).length && s.every(x => x.inX));
+ok('menue-werkstatt', {erstes: first, knoepfe: s.map(x => x.t + ' ' + x.w + '×' + x.h), klein: klein(s)}, first === 'h5:Name | h5:Farbe | Ebene löschen | h5:Werkstatt | h5:Ganze Ebene' && ['Kopieren', 'Noten bearbeiten', 'Chor erzeugen …', 'Effekte …', 'Oktave −', 'Oktave +'].every(t => s.some(x => x.t === t)) && !klein(s).length && s.every(x => x.inX));
 // ---- Kopieren
 m = await btn(p, '#spk1Sheet .spk1-dd [data-s6="dup"]'); await tap(m); await idle(p); await p.waitForTimeout(150);
 let ri = await rowInfo(p), sx = await stat(p);
@@ -66,7 +66,7 @@ ok('kopie-bitgleich', {maxAbw: bg}, bg === 0);
 m = await btn(p, '#spk1Sheet .spk1-lr[data-l="L2"] [data-a="lmore"]'); await tap(m); m = await btn(p, '#spk1Sheet .spk1-dd [data-s6="ed"]'); await tap(m); await idle(p); await p.waitForTimeout(250);
 let ed = await p.evaluate(() => __spk6.ed()); s = await sizes(p, '#spk1Sheet .spk1-o.on [data-s6]');
 await foto(p, 'spk6-12-noten-bearbeiten.png');
-ok('modus-noten-bearbeiten', {ed, knoepfe: s.map(x => x.t + ' ' + x.w + '×' + x.h), klein: klein(s), stat: await stat(p)}, ed && ed.lid === 'L2' && ed.tool === 's6ed' && s.length === 10 && !klein(s).length);
+ok('modus-noten-bearbeiten', {ed, knoepfe: s.map(x => x.t + ' ' + x.w + '×' + x.h + (x.inX ? '' : ' (wischen)')), klein: klein(s), stat: await stat(p)}, ed && ed.lid === 'L2' && ed.tool === 's6ed' && s.length === 11 && !klein(s).length && ['Anwenden', '−1', '+1', 'Fertig', '▶ Vorhören'].every(t => (s.find(x => x.t === t) || {}).inX));   // Prüfung 13: das Wichtigste ohne Wischen
 const ids = await p.evaluate(() => { const N = SPK1.ui.meta.teil2.notes.L2; const f = m => N.find(q => q.m === m).id; return {a: f(57), d: f(62), h: f(59)}; });
 // Tipp = wählen, Tipp auf zweite = Mehrfachauswahl, nochmal = abwählen
 const box = id => p.evaluate(i => __spk6.edBox(i), id);
@@ -138,7 +138,7 @@ m = await btn(p, '#spk1Sheet .spk1-dd [data-s6="chorGo"]'); const tc = Date.now(
 ri = await rowInfo(p); const vs = await p.evaluate(() => SPK1.ui.meta.layers.filter(l => l.r6 === 'chor').map(l => ({id: l.id, nm: l.name, pan: l.fx && l.fx.pan, dt: l.a6.dt})));
 await foto(p, 'spk6-17-chor-ebenen.png');
 const chorRows = ri.filter(r => vs.some(v => v.id === r.l));
-ok('chor-neue-ebenen-markiert', {ms: Date.now() - tc, vs, rows: chorRows, stat: await stat(p)}, vs.length === 3 && chorRows.every(r => r.tag === 'Chor' && r.blink) && Math.abs(vs[0].pan + 0.275) < 1e-3 && Math.abs(vs[1].pan - 0.275) < 1e-3 && vs[0].dt === 11);
+ok('chor-neue-ebenen-markiert', {ms: Date.now() - tc, vs, rows: chorRows, stat: await stat(p)}, vs.length === 3 && chorRows.every(r => /^(Terz|Quint|Okt|Uni)/.test(r.tag) && r.blink) && new Set(chorRows.map(r => r.tag)).size === 3 && Math.abs(vs[0].pan + 0.275) < 1e-3 && Math.abs(vs[1].pan - 0.275) < 1e-3 && vs[0].dt === 11);
 // Chor-Messung: Terz ↑ über A3 (D-Dur → Cis4) + 6 ct Streuung, Versatz 11 ms
 const cm = await p.evaluate(async lid => { const r = await __spk.render(lid), sr = SPK1.ui.meta.sr, x = r.ch[0].map((v, i) => v + (r.ch[1] ? r.ch[1][i] : 0)), f = __p6(x.subarray(Math.round(1.3 * sr), Math.round(1.8 * sr)), sr, 150, 450);
   return {f: +f.toFixed(2), abstandCt: +__ct(f, 277.183).toFixed(2), key: await __spk6.key('L1')}; }, vs[0].id);
@@ -179,7 +179,7 @@ await ctx.close();
   const e0 = await p.evaluate(() => ({ed: __spk6.ed(), n: (SPK1.ui.meta.teil2.notes.L1 || []).length}));
   s = await sizes(p, '#spk1Sheet .spk1-o.on [data-s6]');
   const reach = await p.evaluate(() => { const o = SPK1.ui.op; return {scrollW: o.scrollWidth, clientW: o.clientWidth, ox: getComputedStyle(o).overflowX}; });
-  ok('quer-noten-bearbeiten', {e0, knoepfe: s.map(x => x.t + ' ' + x.w + '×' + x.h + (x.inX ? '' : ' (rollen)')), klein: klein(s), reach}, e0.ed && e0.n >= 1 && s.length === 10 && !klein(s).length && (s.every(x => x.inX) || /auto|scroll/.test(reach.ox)));
+  ok('quer-noten-bearbeiten', {e0, knoepfe: s.map(x => x.t + ' ' + x.w + '×' + x.h + (x.inX ? '' : ' (rollen)')), klein: klein(s), reach}, e0.ed && e0.n >= 1 && s.length === 11 && !klein(s).length && (s.every(x => x.inX) || /auto|scroll/.test(reach.ox)));
   const q0 = await p.evaluate(() => SPK1.ui.meta.teil2.notes.L1[0]), bx = await p.evaluate(i => __spk6.edBox(i), q0.id), gq = await p.evaluate(() => SPK1.ui.v.rowH);
   await drag(bx.x, bx.y, bx.x, bx.y - 2 * gq, 8); const e1 = await p.evaluate(() => __spk6.ed()); await foto(p, 'spk6-20-noten-quer.png');
   m = await btn(p, '#spk1Sheet .spk1-o.on [data-s6="edGo"]'); await tap(m); await idle(p);
