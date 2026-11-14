@@ -200,3 +200,5 @@ Bau unverändert `python3 bau4.py` (+ 2 Haken „SPK3-R“ in spk2KlOpt). Sicher
 - Messung (klt.mjs, vorher basis4 → nachher): Lead 1,69 → 0,95 · FM 2,06 → 2,06 · VA 3,91 → 3,89 · Pad 1,62 → **1,62** (A4: 2,36);
   Zeit 50 Versuche 1,17/1,09/1,17/1,21× (A4: 1,39/1,16/1,19/1,27×). Pad: Kette B (Unison/2 Sägen) liegt schon beim Start 49 % hinter A → A.
 - Offen: Unison-Erkennung (Streuung der Schwebungs-Raten) – B findet Unison 5 noch nicht; das Ergebnis ist jetzt aber wieder der SPK2-Klang.
+- Pflicht/Regression (SPK3-R): spk3-test 14 OK / 3 FEHLER (nur bekannte offene Ziele Bass 4 dB, Verfeinern +1 dB, mehrstimmig) · spk2-test 29/30 (bekannt),
+  Zerlegen Browser 1770 ms · topdefs 0/0 · dupkeys 0 · smoke errors [] (`smoke-r.png`) · MS 2000 1× · live: true 1× · VERSION 4.59.0, CHANGES unberührt.
