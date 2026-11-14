@@ -157,3 +157,9 @@ Meldung: `rolle/vx1-test.mjs` mit SPK5 (r4610) 58/61 – FEHL „Anker = lautest
 ### Messwerte
 - Diagnose Teil 1 mit Fix: Drosselung 1×/3×/6× → Anker 0.00 0.00 0.00 0.00 0.00 0.00, uv 0,96/2,95, Analyse-Schlüssel = aktuelle G4-Fassung (`@3`/`@2`/`@2`).
 - `rolle/vx1-test.mjs` (Fix, parallel zu spk5-test): **61/61 OK** (`spk5r/vx1-fix.log`).
+- Last nachgestellt (`spk5r/vx1-test-thr.mjs` = vx1-test + CPU-Drosselung 4× über `VX1_THR`): **alt (index.vor-r) 58/61** mit genau den 3 gemeldeten
+  FEHL (`spk5r/vx1-thr4-alt.log`) · **Fix 61/61 OK** (`spk5r/vx1-thr4-fix.log`).
+- SPK5-Tests mit Fix: `spk5-test.mjs` ALLES OK (24, 65 s) · `spk5-fade-test.mjs` ALLES OK (16, 39 s) · `spk5-profi-test.mjs` ALLES OK (6) ·
+  `spk/spk1-test.mjs` (r4610, mess/) ALLE OK.
+- Pflicht: topdefs doppelt 0 / Syntaxfehler 0 · dupkeys 0 · smoke errors [] (`smoke-r.png`) · „MS 2000“ 1× · „  live: true,“ 1× · VERSION 4.60.0, CHANGES unberührt.
+- Hinweis für die Zukunft: VX1-Werte in Lastläufen (mehrere Tests parallel) waren vorher Glückssache; mit dem Fix stabil.

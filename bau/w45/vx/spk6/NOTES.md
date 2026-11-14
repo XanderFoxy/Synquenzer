@@ -26,3 +26,4 @@
 - Anzeige: Spektrum zeigt das Original (Maske), nicht das umgesetzte Audio; Kennzeichen „Audio/Effekte“ in der Ebenen-Zeile fehlt noch.
 - Stereo der Audio-Ebenen: mono (Pan stellt sie in den Raum).
 - Leistung: 6 s Test-Lied: Umsetzen ≈ 0,3 s, Chor 4 Stimmen 1,7 s im Worker; bei 3-min-Liedern Fortschritt in der Statuszeile, Rechnung nur in Noten-Bereichen.
+- „In Matrix“ (spk2MxAudio) rendert die Ebene allein (mix = lid) → läuft über denselben block-Haken: Audio-Ebenen und Effekte (inkl. Pan) gehen mit, wie beim Abspielen.

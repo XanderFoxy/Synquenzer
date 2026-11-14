@@ -1,3 +1,12 @@
+## 4.61.0 — Spektral: Noten-Überblendung, Farbstufen, Zerlegen nur in der Auswahl
+
+- **Spektrum ↔ Noten**: neuer Regler rechts in der Werkzeugleiste blendet stufenlos vom Frequenzbild zur Notenrolle (Takt-Raster, Noten-Kästchen in Ebenen-Farbe). Ziehen, Doppeltipp = 50 %. Noten werden im Hintergrund gesucht; Note antippen ab 50 % → Gehört zu / Verwerfen / Klang nachbauen / Überall finden.
+- **Farben** (Ansicht ▾ → Farben): Glut (Gelb → Orange → Rot, neuer Standard), Magma, Grün-Blau, Graustufen, Blau. Wechsel sofort, wird gemerkt.
+- **Zerlegen sichtbar**: mit Auswahl wirkt Zerlegen bzw. Profi-Trennung nur dort (weiche Kante), ohne Auswahl wie bisher auf das ganze Stück. Bereich schraffiert mit Fortschritt in %, danach werden neue Ebenen hervorgehoben und in die Liste gerollt, Meldung mit ↶. Leere Ebenen fallen weg.
+- **Hybrid**: Ist die Profi-Trennung geladen, steht sie im Zerlegen-Menü zuerst; Verfeinern, Pinsel, Harmonische, In Ebene und Gehört zu arbeiten auf denselben Ebenen weiter.
+- **Gesang-Editor**: Anker und Konsonanten sitzen jetzt auch bei langsamer Rechnung exakt (die Analyse wartet auf die Gesang-Effekte, statt eine halbfertige Fassung zu messen).
+Tests: Spektral-Überblendung 16/16, Zerlegen sichtbar 24/24, Profi-Hybrid 6/6, Gesang-Editor 61/61 (auch bei 4-fach gedrosselter CPU), Chor alle wie vorher, Import 48/48, Spektral wie 4.60 (offen: Bass 4 dB, Verfeinern +1 dB, mehrstimmige Noten), doppelte Schlüssel 0, Rauchtest grün.
+
 ## 4.60.0 — Chorstimmen sauber getrennt, Spektral genauer, Loop im Kreis, Guide-Rahmen
 
 - **Chor › Stimmen trennen**: Terz + Quinte und enge 4-stimmige Akkorde werden jetzt sauber getrennt (Tonhöhe je Stimme 98–100 %, vorher 63–68 %; Abstand 17–29 dB). Geteilte Obertöne gehen an die richtige Stimme.

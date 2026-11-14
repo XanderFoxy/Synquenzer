@@ -20,7 +20,9 @@ const rd = n => { try { return JSON.parse(fs.readFileSync(path.join(dir, n), 'ut
 const rdt = n => { try { return fs.readFileSync(path.join(dir, n), 'utf8'); } catch (e) { return ''; } };
 const save = (n, o) => { fs.writeFileSync(path.join(dir, n), JSON.stringify(o, null, 1)); return o; };
 const res = {}, ok = (k, v, cond) => { res[k] = {v, ok: !!cond}; console.log((cond ? 'OK     ' : 'FEHLER ') + k + ' ' + JSON.stringify(v)); };
-const f2 = x => x == null || isNaN(x) ? null : +(+x).toFixed(2), allOk = j => j && Object.values(j).every(v => v && v.ok), bads = j => j ? Object.entries(j).filter(([, v]) => !v || !v.ok).map(([k]) => k) : ['fehlt'];
+// Prüfungen = Einträge mit „ok“ (spk1/ki1 legen daneben Mess-Einträge ohne „ok“ ab, z. B. messung, sek, sdrProfi, net)
+const chk = j => j ? Object.entries(j).filter(([, v]) => v && typeof v === 'object' && 'ok' in v) : [], nChk = j => chk(j).length;
+const f2 = x => x == null || isNaN(x) ? null : +(+x).toFixed(2), allOk = j => !!j && nChk(j) > 0 && chk(j).every(([, v]) => v.ok), bads = j => j ? chk(j).filter(([, v]) => !v.ok).map(([k]) => k) : ['fehlt'];
 const zeitOk = (n, v, f = 1.3, plus = 300) => n != null && v != null && n <= v * f + plus;   // „nie langsamer ohne Grund“: ≤ 1,3× + 0,3 s Rauschen (Last anderer Agenten)
 
 // ================= Läufe =================
@@ -77,7 +79,7 @@ if (K) {
   ok('a1-noten-zeit', {padAllein: [VA.ms, PA.ms], gemisch: [VG.ms, PG.ms], seite: UI && R(UI, 'finden-mehrstimmig').v && R(UI, 'finden-mehrstimmig').v.ms, regel: '≤ 1,3× vorher + 0,3 s'},
     zeitOk(PA.ms, VA.ms) && zeitOk(PG.ms, VG.ms));
 }
-if (UI) ok('a1-seite', {ok: Object.keys(UI).length - bads(UI).length, von: Object.keys(UI).length, fehler: bads(UI), finden: R(UI, 'finden-mehrstimmig').v, schalter: R(UI, 'schalter').v}, allOk(UI));
+if (UI) ok('a1-seite', {ok: nChk(UI) - bads(UI).length, von: nChk(UI), fehler: bads(UI), finden: R(UI, 'finden-mehrstimmig').v, schalter: R(UI, 'schalter').v}, allOk(UI));
 
 // ---- Auftrag 2: Bass-Trennung
 if (X || S2) {
@@ -108,7 +110,7 @@ if (RA) {
     n.pads > Math.max(v.restAlsPad, RA.verfPads == null ? -99 : RA.verfPads) && n.lead > Math.max(v.restAlsLead, RA.verfLead == null ? -99 : RA.verfLead));
   ok('a3-rest-summe-und-undo', {summeDb: RA.summeSdr, undo: RA.undo}, RA.summeSdr >= 100 && RA.undo && RA.undo.restGleich >= 100 && JSON.stringify(RA.undo.layers) === JSON.stringify(RA.layers));
 }
-if (RS) ok('a3-rest-seite', {ok: Object.keys(RS).length - bads(RS).length, von: Object.keys(RS).length, fehler: bads(RS), aufteilen: R(RS, 'rest-aufteilen').v && {stat: R(RS, 'rest-aufteilen').v.stat, ms: R(RS, 'rest-aufteilen').v.ms}}, allOk(RS));
+if (RS) ok('a3-rest-seite', {ok: nChk(RS) - bads(RS).length, von: nChk(RS), fehler: bads(RS), aufteilen: R(RS, 'rest-aufteilen').v && {stat: R(RS, 'rest-aufteilen').v.stat, ms: R(RS, 'rest-aufteilen').v.ms}}, allOk(RS));
 
 // ---- Regression
 // Bekannt seit A2 (gleiche Ursache, kein Rückschritt im Ergebnis): Zerlegen schreibt jetzt das Tiefband ungeglättet – genau das war der Gewinn von
@@ -116,15 +118,15 @@ if (RS) ok('a3-rest-seite', {ok: Object.keys(RS).length - bads(RS).length, von: 
 // ist absolut besser als vorher (Prüfung a2-verfeinern-nicht-schlechter). Der Rest muss grün sein.
 const VERF_REL = {spk3: ['verfeinern-plus-1db', 'regression-spk2-test'], spk2: ['verfeinern-verbessert', 'verfeinern-nach-noten'], spk1: ['verfeinern-verbessert-ziel']};
 if (S3) { const b = bads(S3.res), v2 = R2('verfeinern-nach-noten').v || {};
-  ok('reg-spk3-test', {ok: Object.keys(S3.res).length - b.length, von: Object.keys(S3.res).length, fehler: b, bekanntVerfeinern: VERF_REL.spk3, sek: S3.info && S3.info.sek}, b.every(k => VERF_REL.spk3.includes(k))); }
+  ok('reg-spk3-test', {ok: nChk(S3.res) - b.length, von: nChk(S3.res), fehler: b, bekanntVerfeinern: VERF_REL.spk3, sek: S3.info && S3.info.sek}, b.every(k => VERF_REL.spk3.includes(k))); }
 if (S2) { const b = bads(S2.res), vn = R2('verfeinern-nach-noten').v || {};
-  ok('reg-spk2-test', {ok: Object.keys(S2.res).length - b.length, von: Object.keys(S2.res).length, fehler: b, verfeinernNachNoten: [vn.vor, vn.nach], basisNachNoten: 3.39, sek: S2.sek},
+  ok('reg-spk2-test', {ok: nChk(S2.res) - b.length, von: nChk(S2.res), fehler: b, verfeinernNachNoten: [vn.vor, vn.nach], basisNachNoten: 3.39, sek: S2.sek},
     b.every(k => VERF_REL.spk2.includes(k)) && (!b.includes('verfeinern-nach-noten') || vn.nach >= 3.39)); }
 if (S1) { const b = bads(S1), vz = R(S1, 'verfeinern-verbessert-ziel').v || {};
-  ok('reg-spk1-test', {ok: Object.keys(S1).length - b.length, von: Object.keys(S1).length, fehler: b, verfeinern: [vz.vor, vz.nach], zerlegen: R(S1, 'zerlegen-drums-bass-getrennt').v && R(S1, 'zerlegen-drums-bass-getrennt').v.sdr},
+  ok('reg-spk1-test', {ok: nChk(S1) - b.length, von: nChk(S1), fehler: b, verfeinern: [vz.vor, vz.nach], zerlegen: R(S1, 'zerlegen-drums-bass-getrennt').v && R(S1, 'zerlegen-drums-bass-getrennt').v.sdr},
     b.every(k => VERF_REL.spk1.includes(k)) && (!b.length || vz.nach >= 3.53)); }
 if (KI) { const b = bads(KI), alt = ['besser-als-klassisch-demo'].concat(haveVox ? [] : ['gesang-besser-als-klassisch', 'guide-eintrag']);   // vorbestehend auf basis5
-  ok('reg-ki1-test', {ok: Object.keys(KI).length - b.length, von: Object.keys(KI).length, fehler: b, vorbestehend: alt, profiGegenKlassisch: R(KI, 'besser-als-klassisch-demo').v, gesang: R(KI, 'gesang-besser-als-klassisch').v}, b.every(k => alt.includes(k))); }
+  ok('reg-ki1-test', {ok: nChk(KI) - b.length, von: nChk(KI), fehler: b, vorbestehend: alt, profiGegenKlassisch: R(KI, 'besser-als-klassisch-demo').v, gesang: R(KI, 'gesang-besser-als-klassisch').v}, b.every(k => alt.includes(k))); }
 if (VX1) { const m = /ERGEBNIS (\d+)\/(\d+)/.exec(VX1), f = (VX1.match(/^FEHLER .*/mg) || []).slice(0, 5);
   ok('reg-vx1-test', {ergebnis: m ? m[1] + '/' + m[2] : null, fehler: f}, m && m[1] === m[2]); }
 

@@ -53,3 +53,4 @@ Weiter mit: 4.54 = rel-4540/k fertig prüfen + INT53D nachziehen + Versionszeile
 - 18:15 Workflow w49ddgrbx: SPK6 Ebenen-Werkstatt + SPK7 Klangkorn (Basis R-4600), Merge nach Teil4/SPK5 → 4.61/4.62
 - 18:50 Vorteils-App online (main f3c0bb4 + 0dd9d70 Freelancer-Filter). Reddit sperrt GitHub- und Supabase-Server (403) → nur feste Suchen.
 - 18:50 SPK5 fertig → rel-4610 / vx/r4610: spk3 (nur erwartete Basis-Artefakte), chr (nur „besser als Basis“-Artefakte, Basis = gleiche Version), imp1 48/0 OK; vx1 58/3 ECHTE Regression durch SPK5 (Anker/Konsonant/Stück verschieben) → Agent SPK5-R repariert in vx/spk5 + vx/r4610. Danach Release 4.61.0.
+- 19:10 4.61.0 ONLINE (main 900e1b8, In-App v17). SPK5 + VX1-Rennen-Fix (vx1rAnalyse wartet auf G4). Nächste Merges: Teil4 und SPK6/7 per merge-file <R-4610> <basis5> <paket>.
