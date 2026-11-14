@@ -47,7 +47,7 @@ Sprungmarken: `#start`, `#deals` (`#produkte`, `#cashback`, `#snacks` = Ziel im 
 | **Unterricht** | oben **Gesuche im Netz** (Reddit, Freelancer …, neueste zuerst, mit Auszug), darunter Stellen (Döbeln + online zuerst) – alles mit **Melden** als „Deutsch mit Xander“ | Jobbörse-Live-Suche, italki, Preply, Lingoda, BAMF; Gesuche: Upwork, Fiverr, Kleinanzeigen, Freelancer, Reddit |
 | **Konzerte** | in der Nähe (bis `pushRadiusKm`), darunter **je Band der nächste Termin, auch weit weg, mit km**; Tourdaten-Links je Band (`../konzerte/artists.json`, erst beim Öffnen) | nächster Termin bzw. Tourdaten-Links |
 | **Gewinnspiele** | nur laufende ohne Kauf/Abo | sonst mydealz-Gruppen Gewinnspiele/Gratis |
-| **Krypto** | wie bisher (nur `localStorage`) | Kurs immer |
+| **Krypto** | wie bisher (nur `localStorage`); Push-Kasten mit Feld „ntfy-Thema“ (nur auf dem Gerät) | Kurs immer |
 | **Mehr** | Erleben, Reisen, Nebenverdienst, Spar-Tipps, Vorlage Übersetzung, Quellen | – |
 
 **Echter Lauf 08.11.2026** (`test/fixtures/echt-0811/`): die Ausgaben der drei Wecker unverändert (`satz: 'echt0811'`)
@@ -67,8 +67,23 @@ Deals ohne Bezug zu Produkten/Snacks/Musik-Technik fallen weg.
 
 **Krypto-Import per Link:** `…/mein-vorteil/#krypto=btc:<menge>:<einsatz>,eth:<menge>:<einsatz>` – das Skript im `<head>`
 nimmt das Fragment sofort per `history.replaceState` aus der Adresse, speichert nur in `localStorage` und zeigt
-„übernommen“. Nichts davon geht ans Netz (Test: keine Anfrage enthält die Zahlen). Push bei geschlossener Seite: siehe
-`krypto/` und `.github/workflows/krypto.yml` (Secrets `KRYPTO`, `KRYPTO_NTFY_TOPIC`).
+„übernommen“. Nichts davon geht ans Netz (Test: keine Anfrage enthält die Zahlen).
+
+**Push bei geschlossener Seite (Krypto):** Der Wecker läuft auf einem privaten Server (stündlich, mit Xanders Werten)
+und schreibt in sein privates ntfy-Thema – den Namen bekommt er im Chat. Die Seite hat dafür nur noch das Feld
+„ntfy-Thema“ (`localStorage` `mein-vorteil-krypto-thema`, nie im Repo), das den Link „In ntfy öffnen“
+(`https://ntfy.sh/<thema>`) füllt; ein eingefügter ntfy-Link wird auf den Namen gekürzt. Per Link geht es auch:
+`…/mein-vorteil/#ntfy=<thema>` – das Skript im `<head>` nimmt das Fragment sofort aus der Adresse, merkt das Thema nur
+auf dem Gerät, öffnet Krypto mit dem Push-Kasten und zeigt „übernommen“. Die alte Anleitung mit GitHub-Secrets ist weg.
+
+**Auf Amazon ansehen (Deals):** Unter jedem Markt-Angebot (Meine Produkte, Deals zu deinen Produkten im Laden, andere
+Snacks) steht dezent „Auf Amazon ansehen“ – eine fertige Suche `https://www.amazon.de/s?k=<Produktname>` ohne Mengen
+(„200 g“, „6x“, „24er-Pack“), Preise, Shopnamen und Klammern, ohne Partner-Tag. Ist das Angebot schon bei Amazon, fehlt
+der Link. Einen Amazon-Preis zeigt die Seite nur, wenn ein laufendes Amazon-Angebot schon in den Daten steht (mydealz/
+Keepa im Schnäppchen-Wecker): „Amazon: 10,48 € (24 × 25 g) · 0,44 € pro Stück – Markt günstiger“ (je Einheit, sonst nur
+bei gleicher Packung). Amazon selbst wird nie abgefragt (Bedingungen verbieten das Auslesen, siehe
+`schnaeppchen/PREISQUELLEN-BEFUND.md`; aus dieser Umgebung ist amazon.de ohnehin gesperrt). Regel:
+`vorteile/scan/lib/amazon.mjs`, Wort für Wort auch in der Seite (`test/regeln.test.mjs`).
 
 **Weitere Reiter:** `<a href="#name" data-reiter="name">Name<span class="n"></span></a>` in die Leiste,
 `<section id="p-name" class="reiter-seite breite" hidden>` nach `</main>`, `REITER_START.name = el => …` (läuft beim

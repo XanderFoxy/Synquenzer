@@ -7,6 +7,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as krassSchn from '../../schnaeppchen/scan/krass.mjs';
 import * as krassVort from '../../vorteile/scan/lib/krass.mjs';
+import * as amazonModul from '../../vorteile/scan/lib/amazon.mjs';
 
 const HIER = dirname(fileURLToPath(import.meta.url));
 const SEITE = await readFile(join(HIER, '..', 'index.html'), 'utf8');
@@ -17,6 +18,23 @@ test('Krypto-Zonen: Block in der Seite = krypto/zonen.mjs (ohne „export “)',
   const m = block(modul, '// <krypto-zonen>', '// </krypto-zonen>').replace(/^export /gm, '');
   const s = block(SEITE, '// <krypto-zonen>', '// </krypto-zonen>');
   assert.equal(s, m);
+});
+
+test('Amazon-Suche: Block in der Seite = vorteile/scan/lib/amazon.mjs (ohne „export “), gleiche Ergebnisse', async () => {
+  const modul = await readFile(join(HIER, '..', '..', 'vorteile', 'scan', 'lib', 'amazon.mjs'), 'utf8');
+  const m = block(modul, '// <amazon-suche>', '// </amazon-suche>').replace(/^export /gm, '');
+  const s = block(SEITE, '// <amazon-suche>', '// </amazon-suche>');
+  assert.equal(s, m);
+  const seite = new Function(`${s}\nreturn { amazonSuchwort, amazonLink, amazonVergleich, istAmazon };`)();
+  for (const t of ['Haribo Goldbären 200 g', '[Kaufland] Coca-Cola Zero 6x 1,5 l für 5,99 €', 'Knoppers 24er Pack (24 x 25 g)', "Ben & Jerry's Eis (alle Sorten)", '200 g']) {
+    assert.equal(seite.amazonSuchwort(t), amazonModul.amazonSuchwort(t), t);
+    assert.equal(seite.amazonLink(t), amazonModul.amazonLink(t), t);
+  }
+  // Produktnamen der Watchlist: jede Suche ohne Klammern/Mengen, nie leer
+  for (const p of seiteKonst('STANDARD_PRODUKTE', '\n];')) {
+    const w = seite.amazonSuchwort(p.name);
+    assert.ok(w && !/[()]|\d+\s*(g|ml)\b/.test(w), `${p.name} -> ${w}`);
+  }
 });
 
 test('Preisfehler-Regeln: Seite entscheidet wie beide Wecker (krass.mjs), Grenzen gleich', async () => {
