@@ -103,6 +103,19 @@ if (TEIL.includes('kurz')) {
     ok('b6-auswahl-audio-ebene', {gesang: r2(eL), gesangAuswahl: r2(eLs), chor: r2(eV), chorAuswahl: r2(eVs), kleineAuswahlInnen: +inP.toFixed(4), aussen: +outP.toFixed(6)}, eLs > 0.8 * eL && eLs < 1.2 * eL && eVs > 0.8 * eV && inP > 0.02 && outP < 1e-3);
   }
 }
+if (TEIL.includes('kurz')) {
+  // Bereichs-Rechnung auch auf einer Chorstimme (Versatz, Pegel zwischen den Noten) und auf der Kopie einer umgesetzten Ebene (geteiltes Audio)
+  const S = song(6, [[1.0, 2.0, 220], [2.2, 3.2, 293.665], [3.4, 4.4, 246.942]]), sr = S.sr, doc = (await call('create', {name: 'chor', sr, ch: [S.L, S.R], grid: {bpm: 120, off: 0, ts: '4/4'}})).meta.id, C = (op, a) => call(op, Object.assign({doc}, a));
+  await C('transfer', {von: 'orig', nach: {art: 'gesang', name: 'Gesang'}, sel: {art: 'rect', t0: 0.8, t1: 4.7, f0: 150, f1: 9500}}); await C('noten', {lid: 'L1'});
+  const N1 = (await C('open', {})).meta.teil2.notes.L1, qa = N1.find(q => q.m === 57); await C('s6plan', {lid: 'L1', mv: [{id: qa.id, dm: 2, dt: 0}]});
+  const cp = (await C('s6dup', {lid: 'L1'})).lid, Nc = (await C('open', {})).meta.teil2.notes[cp], qd = Nc.find(q => q.m === 62), r1 = await C('s6plan', {lid: cp, mv: [{id: qd.id, dm: -2, dt: 0}]});
+  const y = mono((await C('render', {mix: cp})).ch), fD = f0At(y, sr, 2.45, 2.95), fA = f0At(y, sr, 1.25, 1.75);
+  const ch = await C('s6chor', {lid: 'L1', n: 2, art: 'terz'}), v = ch.voices[0], Nv = (await C('open', {})).meta.teil2.notes[v.lid], qb = Nv.find(q => Math.abs(q.a - 3.4 - v.dt / 1000) < 0.05);
+  const y0 = mono((await C('render', {mix: v.lid})).ch), r2v = await C('s6plan', {lid: v.lid, mv: [{id: qb.id, dm: 1, dt: 0}]}), y1 = mono((await C('render', {mix: v.lid})).ch);
+  const fv0 = f0At(y0, sr, 3.6, 4.2), fv1 = f0At(y1, sr, 3.6, 4.2); let out = 0; for (let i = 0; i < y0.length; i++) if (i < r2v.part[0] * sr - 2 || i > r2v.part[1] * sr + 2) out = Math.max(out, Math.abs(y0[i] - y1[i]));
+  ok('b1-bereich-kopie-und-chorstimme', {kopieTeil: r1.part, kopieD4minus2ct: r2(cents(fD, 261.626)), kopieA3plus2ct: r2(cents(fA, 246.942)), stimmeTeil: r2v.part, stimmeVorher: r2(fv0), stimmeNachher: r2(fv1), schrittCt: r2(cents(fv1, fv0)), aussenMaxAbw: out},
+    r1.part && Math.abs(cents(fD, 261.626)) < 5 && Math.abs(cents(fA, 246.942)) < 5 && r2v.part && Math.abs(cents(fv1, fv0) - 100) < 5 && out < 1e-4);   // außerhalb gleich (höchstens 1 Stufe, wenn die neue Note lauter ist und einmal neu skaliert wird)
+}
 console.log(JSON.stringify({ms: Date.now() - T0, fails}));
 fs.writeFileSync(path.join(path.dirname(file), 'spk6-pruef-test.json'), JSON.stringify({ms: Date.now() - T0, fails, res}, null, 1));
 console.log(fails ? 'FEHLER: ' + fails : 'ALLES OK');

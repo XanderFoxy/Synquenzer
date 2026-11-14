@@ -148,9 +148,9 @@ if (TEIL.includes('lang')) {
     const U = SPK1.ui, N = U.meta.teil2.notes.L1, q = N[60 + k * 9]; U.s6e.mv.set(q.id, {dm: 1, dt: 0}); spk6EdStat(U);
     __spk.play(q.a - 1.5); const tA = performance.now(); while (!(SPK1.pl && SPK1.pl.src.length) && performance.now() - tA < 20000) await new Promise(z => setTimeout(z, 10));
     await new Promise(z => setTimeout(z, 800)); const P0 = SPK1.pl; let leer = 0, maxLeer = 0, cur = 0, done = false; const t1 = performance.now();
-    U.s6go.click(); const pr = (async () => { while (!U.busy && performance.now() - t1 < 500) await new Promise(z => setTimeout(z, 5)); while (U.busy) await new Promise(z => setTimeout(z, 10)); done = true; })();
+    U.s6go.click(); const pr = (async () => { while (!U.busy && performance.now() - t1 < 500) await new Promise(z => setTimeout(z, 5)); while (U.busy) await new Promise(z => setTimeout(z, 10)); done = true; tD = performance.now(); })(); let tD = 0;
     while (!done || performance.now() - t1 < 1500) { await new Promise(z => setTimeout(z, 20)); if (SPK1.pl === P0 && P0.src.length === 0) { cur += 20; leer += 20; maxLeer = Math.max(maxLeer, cur); } else cur = 0; if (performance.now() - t1 > 60000) break; }
-    await pr; const ms = Math.round(performance.now() - t1), laeuft = SPK1.pl === P0; __spk.stop(); await new Promise(z => setTimeout(z, 200));
+    await pr; const ms = Math.round(tD - t1), laeuft = SPK1.pl === P0; __spk.stop(); await new Promise(z => setTimeout(z, 200));
     return {ms, stilleMs: leer, laengsteStilleMs: maxLeer, wiedergabeLief: laeuft, stat: U.st.textContent, m: U.meta.teil2.notes.L1.find(z => z.id === q.id).m - q.m}; }, k);
   const a1 = await runApply(0), a2 = await runApply(1);
   ok('b2-anwenden-waehrend-wiedergabe', {erstes: a1, zweites: a2}, a1.laengsteStilleMs <= 60 && a2.laengsteStilleMs <= 60 && a1.wiedergabeLief && a2.wiedergabeLief && a2.ms < 1500 && a1.m === 1 && a2.m === 1);

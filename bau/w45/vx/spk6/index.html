@@ -101931,12 +101931,14 @@ window.__nx1 = {
    Chor aus einer Ebene (2–6 eigene Ebenen), Effekte je Ebene. Kern im Spektral-Worker (spk6DspMake → Z2.s6, Ops über Z2.ops), wenige Knöpfe
    im Ebenen-Menü (⋯) und im Noten-Klappfenster; die Bedienung verfeinert Teil 2.
    Datenmodell je Ebene (alles in meta.layers, also im Kern-Undo und im Speicher):
-     l.k6 = 1  Zusatz-Ebene (Kopie/Chorstimme): ihre Maske zieht nichts vom Rest ab → klingt wirklich zusätzlich.
-     l.a6 = {id, b, o, n, sc, tr, fv, dt, bg}  Ebene klingt aus eigenem Audio (Int16 mono, d.a6.get(id), unveränderlich je id):
+     l.k6 = 1  Zusatz-Ebene (Kopie/Chorstimme): ihre Maske zieht nichts vom Rest ab → klingt wirklich zusätzlich; In Ebene/Zerlegen/Profi nehmen ihr nichts
+       weg und rechnen sie nicht als belegt (unabhängig). l.r6 'kopie'|'chor', l.q6 = Quelle, l.v6 = Stimme kurz („Terz↑“). Quelle gelöscht → erste Kopie übernimmt.
+     l.a6 = {id, b, o, n, sc, tr, fv, dt, bg, hs}  Ebene klingt aus eigenem Audio (Int16 mono in geteilten 64k-Stücken, d.a6.get(id), unveränderlich je id; hs = Masken-Abdruck):
        gerechnet aus der Maske der Ebene b (Grundlage) nach dem Plan: Noten mit o6 (Lage in der Grundlage) → a/b/m/c6 (Ziel),
        tr = ganze Ebene in Halbtönen, fv = Formant-Faktor, dt = Versatz in ms, bg = Pegel zwischen den Noten.
      l.fx = {pan, lo, mi, hi, hp, lp, hall, echo, sat}  Effekte im Block → Abspielen, render, Export und In Matrix gleich, deterministisch.
-   Tonhöhe: eigener Phasen-Vocoder (wahre Frequenz je Bin, Verhältnis je Rahmen, Hüllkurve für Formant-Erhalt), nur wo r ≠ 1; Blenden 20 ms. ===== */
+   Tonhöhe: eigener Phasen-Vocoder (wahre Frequenz je Bin, Verhältnis je Rahmen, Hüllkurve für Formant-Erhalt), nur wo r ≠ 1; Blenden 20 ms.
+   Prüfung: Anwenden rechnet nur den geänderten Bereich (Rest bitgleich, geteilte Stücke), lange Rechnungen in 25-ms-Häppchen (Abspielen läuft weiter), ↶-Audio ≤ 64 MB. ===== */
 function spk6DspMake(I) {
   const BT = I.BT, BLK = I.BLK, V = I.V, CH = 524288, TAU = 2 * Math.PI, CS = 65536, AMAX = 64e6, HR = 1.12;
   const PAL = ['--t1', '--t6', '--t5', '--t4', '--t3', '--t8', '--p2', '--p9', '--p3', '--p6'];
