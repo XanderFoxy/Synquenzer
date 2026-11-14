@@ -24,3 +24,8 @@
 19:33 Pflicht: topdefs Skripte 26, doppelt 0, Syntaxfehler 0 · dupkeys 0 · smoke errors [] (smoke.png) · „MS 2000“ 1× (= Basis) · „^  live: true,“ 1× (= Basis) · VERSION 4.62.0 ·
   Markenwörter: keine im Block (Zählung = Basis) · keine Datensatz-/Produktnamen in App, Tests, Notizen unter vx2 · basis.html unverändert · Diff zur Basis 95 Zeilen (Block + 1 Haken-Zeile).
   Tests nacheinander, nie parallel. Puffer-Dumps (*.f32) gelöscht.
+
+## Prüfung (unabhängiger Prüfer, 20:20) – Pflicht und Läufe, einzeln nacheinander
+- Pflicht index.html: topdefs Skripte 26, doppelt 0, Syntaxfehler 0 · dupkeys 0 · smoke errors [] (pruef/smoke-pruef.png) · „MS 2000“ 1× (= Basis) · „^  live: true,“ 1× (= Basis) · VERSION 4.62.0 · Markenwörter je Wort = Basis, 0 im Block · keine Datensatz-/Produktnamen unter vx2 (auch nicht in pruef/).
+- Regression: vx1-test 61/61 (pruef/reg-vx1.txt) · imp1-test ALLE OK (48) (pruef/reg-imp1.txt) · rv1-test offiziell VX2 49/53, Basis 48/53 (pruef/run-vx2-a.txt, run-basis-a.txt).
+- Befunde: PRUEFUNG.md (2 schwer, 2 mittel, 4 leicht).
