@@ -65,8 +65,8 @@
   „· Korn“) + „Als Instrument (neue Spur)“ / „Als Instrument in <Spur>“.
 - Mini-Tastatur: Tasten 21–24 px breit, 76 px hoch (2 Oktaven in 300–340 px; Tasten sind keine Knöpfe – Gleiten macht sie spielbar).
   Alle Knöpfe im Blatt ≥ 36 px (Test zählt 0 kleinere, hoch und quer).
-- **Ecke über den Tasten** = Umschalter: „TON“ (Probeton) | „KORN“ (Bernstein, Strich darunter). Trefferfläche 40 × 38 px (reicht 12 px
-  über die obersten Tasten). Ohne Quelle und ohne Auswahl: Hinweis in der Statuszeile statt Umschalten. Modus wird nicht mehr gemerkt
+- **Ecke über den Tasten** = Umschalter: „TON“ (Probeton) | „KORN“ (Bernstein, Strich darunter). Trefferfläche 40 × 44 px (wie alle Knöpfe der Seite, SPK2-Layoutregel ≥ 44 px; reicht 18 px
+  über die obersten Tasten, C10-Bereich). Ohne Quelle und ohne Auswahl: Hinweis in der Statuszeile statt Umschalten. Modus wird nicht mehr gemerkt
   (ohne Quelle hätte „KORN“ nach dem Neuladen nur den Probeton gespielt).
 - **Leuchtende Tasten**: jede Klangkorn-Note (Tastatur links, Mini-Tastatur, Vorhören) leuchtet auf der Mini-Tastatur (Klasse `on`) und
   links als Bernstein-Balken (Überlage `.spk7-lt` im Tasten-Streifen, folgt dem Rollen per rAF solange etwas leuchtet).

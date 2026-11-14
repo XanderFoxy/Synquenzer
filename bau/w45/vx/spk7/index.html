@@ -103021,6 +103021,7 @@ async function spk7Grab(U) {
     const S7 = spk7Make(x, sr, {info: {t0, t1, mix, wo, name: lname}});
     if (!S7) { spk1Stat(U, 'Klangkorn: die Auswahl ist still'); return null; }
     SPK7.src = S7; spk7Feed(spk7Prev(), S7);
+    SPK7.kb = Math.max(24, Math.min(96, 12 * Math.floor(Math.round(69 + 12 * Math.log2(S7.f0 / 440)) / 12) - 12)); if (SPK7.dd && SPK7.dd.kb) spk7KbBuild(SPK7.dd);   // Mini-Tastatur: Grundton der Quelle in der oberen Oktave
     spk1Stat(U, 'Klangkorn: ' + spk7SrcTxt()); return S7;
   } catch (e) { logErr(e); spk1Stat(U, 'Klangkorn: ' + (e.message || e)); return null; }
   finally { SPK7.busy = false; spk7DdSync(U); spk7Btn(U); }
@@ -103123,7 +103124,7 @@ function spk7Css() {
     '.spk7-kb{position:relative;flex:none;width:100%;height:76px;border-radius:6px;overflow:hidden;background:#0d0e11;touch-action:none}',
     '.spk7-kb>i{position:absolute;top:0;bottom:0;box-sizing:border-box;background:#ece6d8;border-right:1px solid #0d0e11;font:700 9px/1 var(--font-num);font-style:normal;color:#222;display:flex;align-items:flex-end;justify-content:center;padding-bottom:4px}',
     '.spk7-kb>i.b{bottom:42%;z-index:1;background:#1a1b1f;border:0;border-radius:0 0 3px 3px}.spk7-kb>i.on{background:var(--amber);box-shadow:0 0 10px var(--amber)}',
-    '.spk1>.spk1-co{position:relative}.spk7-cob{position:absolute;left:0;top:0;width:100%;height:38px;z-index:3;margin:0;padding:0 0 12px;border:0;border-radius:0;background:transparent;color:var(--text-dim);font:700 9px/1 var(--font-ui);letter-spacing:.08em;box-shadow:none}',
+    '.spk1>.spk1-co{position:relative}.spk7-cob{position:absolute;left:0;top:0;width:100%;height:44px;z-index:3;margin:0;padding:0 0 18px;border:0;border-radius:0;background:transparent;color:var(--text-dim);font:700 9px/1 var(--font-ui);letter-spacing:.08em;box-shadow:none}',
     '.spk7-cob::after{content:"";position:absolute;left:9px;right:9px;top:21px;height:2px;border-radius:1px;background:currentColor;opacity:.45}.spk7-cob.on{color:var(--amber)}.spk7-cob.on::after{opacity:1}',
     '.spk7-lt{position:absolute;inset:0;pointer-events:none;z-index:1}.spk7-lt>i{position:absolute;left:0;right:1px;background:var(--amber);box-shadow:0 0 8px var(--amber);opacity:.9}',
     '.spk1-ac .spk7-ab{grid-column:1/-1}',
@@ -103348,7 +103349,7 @@ function spk7LitDraw() {
   ms.forEach((m, i) => { const e = lt.children[i], y = (U.v.mTop - m - 0.5) * U.v.rowH; e.dataset.m = m; e.style.top = y.toFixed(1) + 'px'; e.style.height = Math.max(3, U.v.rowH - (U.v.rowH >= 5 ? 1 : 0)) + 'px'; });
   if (ms.length && !SPK7.litRaf) SPK7.litRaf = requestAnimationFrame(() => { SPK7.litRaf = 0; if (SPK7.lit.size) spk7LitDraw(); });
 }
-/* Ecke über den Tasten = Umschalter Probeton | Klangkorn (Trefferfläche 38 px, reicht 12 px über die Tasten) */
+/* Ecke über den Tasten = Umschalter Probeton | Klangkorn (Trefferfläche 40 × 44 px wie die anderen Knöpfe, reicht 18 px über die obersten Tasten) */
 function spk7CoSync(U) {
   const b = U && U.co7; if (!b) return; const k = SPK7.mode === 'korn';
   b.textContent = k ? 'KORN' : 'TON'; b.classList.toggle('on', k); b.setAttribute('aria-pressed', String(k));
