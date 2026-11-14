@@ -86,8 +86,9 @@ const LEG = {name: 'Legato', sek: 5, gap: 0, pad: 0.02, noten: [[1.0, 2.0, 220],
     return {e4ct: +__q.ct(f(2.3, 2.7), 329.628).toFixed(2), a3ct: +__q.ct(f(1.3, 1.7), 220).toFixed(2), b3ct: +__q.ct(f(3.3, 3.7), 246.942).toFixed(2), undo: SPK1.last.undo, stat: __spk.page.info().stat}; });
   log('u3-anwenden-einzeln', Object.assign(me, {ms: Date.now() - tg}));
   await foto(p, 'spk9-02-d4-umgesetzt.png');
-  const ok = ids.length === 3 && ids.map(q => q.m).join() === '57,62,59' && Math.abs(me.e4ct) < 15 && Math.abs(me.a3ct) < 15 && Math.abs(me.b3ct) < 15;
-  log('ergebnis', {ok, fehler: errs});
+  const lang = ids.filter(q => q.b - q.a >= 0.15);   // ohne den kurzen Vorlauf 0,9–1,0 s (Hintergrundton E5 setzt 0,1 s vorher ein; wie in der SPK6-Prüfung)
+  const ok = lang.length === 3 && lang.map(q => q.m).join() === '57,62,59' && Math.abs(me.e4ct) < 15 && Math.abs(me.a3ct) < 15 && Math.abs(me.b3ct) < 15;
+  log('ergebnis', {ok, legato: lang.map(q => [q.m, q.a, q.b]), fehler: errs});
   await P.ctx.close();
 }
 fs.writeFileSync(path.join(dir, 'spk9-ui.json'), JSON.stringify({ms: Date.now() - T0, res}, null, 1));
