@@ -45,3 +45,8 @@ Weiter mit: 4.54 = rel-4540/k fertig prüfen + INT53D nachziehen + Versionszeile
 - 17:25: 4.60.0 RELEASED = R-4590 + GD1 + CHR3 + SPK3(+R-Fix). Nächste Basis R-4600 = vx/basis5.html.
 - 17:26: Teil 4 Workflow w73yg3osg (wf_31aa59af-af6): SPK4 (vx/spk4: mehrstimmig, Bass 4 dB, Unison, Rest→Lead/Pads) ∥ CHR4 (vx/chr4: Formanten) ∥ RV1 (vx/real: Echttest echter Gesang aus realvox/dl, nicht ins Repo). Basis vx/basis5.html = R-4600.
 - 17:28: Xander-Wunsch Spektral (Noten-Überblendung, Farbstufen, Zerlegen-Feedback, Hybrid) → Workflow wudm148ro (wf_ecc30d9b-9bf) SPK5 in vx/spk5 (Basis basis5). Anleitungs-Seite des Profi-Spektral-Editors vom Container gesperrt (403) → Xander um PDF gebeten (privat in vx-privat, nie ins Repo).
+
+## 14.11. ~18:05 UTC – Krypto-Wecker auf Supabase (synquenzer-Projekt)
+- Edge Function krypto-wecker v2 (Schlüssel x-wecker aus privat.krypto_wecker.schluessel), pg_cron 'krypto-wecker' '23 * * * *'.
+- Erster Lauf ok (CoinGecko), Start-Nachricht gesendet. Thema im Chat genannt (nicht ins Repo!).
+- Workflow w84fbywig: Gesuche „Deutsch helfen“ + Amazon-Link für Markt-Angebote + Krypto-Abschnitt ohne GitHub-Secret → push main.

@@ -22,3 +22,4 @@
 18:02 rv1-test Lauf 4 (run4.txt, 96 s): 42/53 OK = Lauf 3 (reproduzierbar, gleiche Zahlen).
 18:05 vx1-test (rolle/vx1-test.mjs, reg/vx1.txt): 61/61 OK.
 18:08 imp1-test (Kopie reg/imp1-test.mjs, reg/imp1.txt): ALLE OK (48), 119 s.
+18:11 chr2-test (Kopie real/chr2-test.mjs + src/synth.mjs, src/tune-meas.mjs aus chr3; Basis vx/basis2.html; src/run-chr2.txt): ALLE OK (82), 115 s.
