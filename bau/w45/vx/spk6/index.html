@@ -102021,7 +102021,8 @@ function spk6DspMake(I) {
   /* Haken „Ebene löschen“: hatte die gelöschte Ebene eine Kopie, übernimmt die erste deren Platz (klingt nicht mehr zusätzlich → kein doppelter Gesang).
      Stimmen, die auf der gelöschten Ebene aufbauten, bauen jetzt auf der Kopie auf (gleiche Maske). */
   function gone(d, l) {
-    if (!l || l.k6 === 1) return;
+    if (!l) return; const T = d.meta.teil2; if (T && T.notes && T.notes[l.id]) delete T.notes[l.id];   // Noten gehören zur Ebene (sonst erbt eine neue Ebene mit derselben id sie); ↶ bringt sie zurück
+    if (l.k6 === 1) return;
     const c = d.meta.layers.find(x => x.k6 === 1 && x.r6 === 'kopie' && (x.q6 ? x.q6 === l.id : x.name === (l.name + ' Kopie').slice(0, 40))); if (!c) return;
     delete c.k6; delete c.r6; delete c.q6;
     for (const x of d.meta.layers) { if (x.a6 && x.a6.b === l.id) x.a6 = Object.assign({}, x.a6, {b: c.id}); if (x.q6 === l.id) x.q6 = c.id; }
@@ -102427,12 +102428,12 @@ function spk6Keep(U, t) {   // Ergebnis 4 s stehen lassen (der Spektrum-Fortschr
   U.s6mo.observe(U.st, {childList: true, characterData: true, subtree: true}); spk1Stat(U, t);
 }
 async function spk6Run(U, op, a, txt, done, pg) {
-  if (U.busy) spk1Stat(U, txt + ' wartet – Rechnung läuft');
-  const T = await spk6Turn(U); let mine = false;
+  const wait = !!U.busy || !!U.s6w; if (wait) { U.s6w = (U.s6w || 0) + 1; spk1Stat(U, txt + ' wartet – Rechnung läuft'); }
+  const T = await spk6Turn(U); let mine = false; if (wait) U.s6w--;
   try {
     if (!T.ok) { spk1Stat(U, txt + ': Rechnung läuft noch – bitte später'); return null; }
     U.busy = 's6'; mine = true; spk1BtnState(U); spk1Stat(U, txt + ' …'); if (pg) pg(0);
-    const r = await spk1Call(op, Object.assign({doc: SPK1.doc}, a), null, {prog: p => { spk1Stat(U, txt + ' · ' + Math.round(p * 100) + ' %'); if (pg) pg(p); }});
+    const r = await spk1Call(op, Object.assign({doc: SPK1.doc}, a), null, {prog: p => { spk1Stat(U, txt + ' · ' + Math.round(p * 100) + ' %' + (U.s6w ? ' · ' + U.s6w + ' wartet' : '')); if (pg) pg(p); }});
     U.busy = null; mine = false; spk1Got(U, r); spk1TintLoad(U); spk1Dirty(U, 'ov'); spk6Keep(U, done(r)); return r;
   } catch (e) { if (!SPK6_SOFT.test(String(e && e.message || e))) logErr(e); spk1Stat(U, txt + ': ' + (e.message || e)); return null; }
   finally { if (mine && U.busy === 's6') U.busy = null; spk1BtnState(U); if (pg) pg(null); T.rel(); }

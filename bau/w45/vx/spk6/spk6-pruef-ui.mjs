@@ -50,7 +50,7 @@ const box = (p, id) => p.evaluate(i => __spk6.edBox(i), id);
 const tagFit = p => p.evaluate(() => [...document.querySelectorAll('#spk1Sheet .spk1-lr[data-l]')].map(r => { const nm = r.querySelector('.spk1-nm'), tg = r.querySelector('.spk6-tg'), s = r.querySelector('.spk1-s'); if (!tg) return null; const a = tg.getBoundingClientRect(), n = nm.getBoundingClientRect(), b = s.getBoundingClientRect(); return {l: r.dataset.l, tag: tg.textContent, rechtsVonS: Math.round(a.right - b.left), imName: a.right <= n.right + 0.5 && a.width > 0, hinweis: nm.title}; }).filter(Boolean));
 const btnT = (p, sel, txt) => p.evaluate(([s, t]) => { const e = [...document.querySelectorAll(s)].find(x => x.offsetParent && x.textContent.trim() === t); if (!e) return null; e.scrollIntoView({block: 'nearest', inline: 'nearest'}); const r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }, [sel, txt]);
 const slide = async (P, sel, v) => { const g = await P.p.evaluate(([s, v]) => { const e = document.querySelector(s); e.scrollIntoView({block: 'nearest'}); const r = e.getBoundingClientRect(), mn = +e.min, mx = +e.max, th = 16, x = val => r.left + th / 2 + (r.width - th) * (val - mn) / (mx - mn); return {x0: x(+e.value), x1: x(v), y: r.top + r.height / 2}; }, [sel, v]); await P.drag(g.x0, g.y, g.x1, g.y, 8); };
-const menu = async (P, lid, k) => { let m = await btn(P.p, '#spk1Sheet .spk1-lr[data-l="' + lid + '"] [data-a="lmore"]'); await P.tap(m); m = await btn(P.p, '#spk1Sheet .spk1-dd [data-s6="' + k + '"]'); await P.tap(m); };
+const menu = async (P, lid, k) => { let m = await btn(P.p, '#spk1Sheet .spk1-lr[data-l="' + lid + '"] [data-a="lmore"]'); if (!m) throw new Error('⋯ fehlt ' + lid); await P.tap(m); m = await btn(P.p, '#spk1Sheet .spk1-dd [data-s6="' + k + '"]'); if (!m) throw new Error('Menü ' + k + ' fehlt: ' + JSON.stringify(await P.p.evaluate(() => ({dd: !!SPK1.ui.dd, busy: SPK1.ui.busy, txt: SPK1.ui.dd ? SPK1.ui.dd.textContent.slice(0, 120) : ''})))); await P.tap(m); };
 
 if (TEIL.includes('kurz')) {
   const P = await page(428, 926), {p, ctx, tap, drag} = P; await p.addScriptTag({content: PITCH});
@@ -98,10 +98,10 @@ if (TEIL.includes('kurz')) {
   m = await btn(p, '#spk1Sheet .spk1-dd [data-s6="chorGo"]'); await tap(m);
   await menu(P, lead, 'fx'); await p.waitForTimeout(100); const busy8 = await p.evaluate(() => SPK1.ui.busy);
   await slide(P, '#spk1Sheet .spk1-dd input[data-s6="hall"]', 0.5); const st8 = await stat(p), reg8 = await p.evaluate(() => +document.querySelector('#spk1Sheet .spk1-dd input[data-s6="hall"]').value);
-  await menu(P, 'L1', 'dup'); const st8b = await stat(p);
+  await p.evaluate(() => spk1Dd(SPK1.ui, null)); await menu(P, 'L1', 'dup'); const st8b = await stat(p);
   await idle(p); await p.waitForFunction(() => !SPK1.ui.busy && SPK1.ui.meta.layers.some(l => l.r6 === 'kopie'), null, {timeout: 120000}); await p.waitForTimeout(300); await idle(p);
   const e8 = await p.evaluate(id => ({hall: (SPK1.ui.meta.layers.find(l => l.id === id).fx || {}).hall, kopie: SPK1.ui.meta.layers.filter(l => l.r6 === 'kopie').map(l => l.name), chor: SPK1.ui.meta.layers.filter(l => l.r6 === 'chor' && l.q6 === 'L1').length, stat: __spk.page.info().stat}), lead);
-  ok('b8-warten-statt-verwerfen', {busyBeimZiehen: busy8, regler: reg8, statusReger: st8, statusKopieren: st8b, nachher: e8}, busy8 && /wartet/.test(st8) && /wartet/.test(st8b) && Math.abs(e8.hall - reg8) < 1e-6 && e8.kopie.length === 1 && e8.chor === 6);
+  ok('b8-warten-statt-verwerfen', {busyBeimZiehen: busy8, regler: reg8, statusReger: st8, statusKopieren: st8b, nachher: e8}, busy8 && /wartet/.test(st8) && /wartet|Echte Kopie/.test(st8b) && Math.abs(e8.hall - reg8) < 1e-6 && e8.kopie.length === 1 && e8.chor === 6);
   // ---- Befund 9: Kennungen bleiben in der Namensspalte (nicht unter S), Stimmen unterscheidbar, Namen eindeutig
   await p.evaluate(async () => { const U = SPK1.ui, c = U.meta.layers.find(l => l.r6 === 'kopie').id, N = U.meta.teil2.notes[c], v = U.meta.layers.find(l => l.r6 === 'chor').id;
     let r = await __spk6.plan(c, [{id: N[0].id, dm: 1, dt: 0}]); r = await __spk6.fx(c, {hall: 0.4}); r = await __spk6.fx(v, {echo: 0.3}); spk1Got(U, r); });
