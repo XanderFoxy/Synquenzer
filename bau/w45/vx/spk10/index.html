@@ -101584,6 +101584,7 @@ function spk8DspMake(Z2) {
     const ok = new Uint8Array(F), sc = new Float32Array(F); if (o8.dbg) o8.dbg({T, e, emx, F, i0, hopS, Y, YT, K, df, x, sr});
     for (let i = 0; i < F; i++) { const f = T.f0[i]; sc[i] = Math.min(1, T.on[i]); ok[i] = T.on[i] >= o8.onMin && f >= R.fa && f <= R.fb && e[i] >= emx - o8.eDb ? 1 : 0; }
     const found = H2.segNotes({f0: T.f0, sc, ok, i0, F, hopS, O, G: H2.gridOf(d), Y: null /* keine Oktav-Verdopplung: die Bass-Ebene ist fast ein Sinus */, K, df, fb: R.fb}).filter(q => q.a >= R.ta - 0.05 && q.a < R.tb);
+    if (typeof spk10Okt === 'function') spk10Okt(Z2, d, found, {R, hopS});   /* SPK10: Oktave je Note mit kurzem Fenster */
     // Leck-Schutz je Note (Median über die Note): Pegel der Ebene auf dem Kamm (cL, rel. 95-%-Quantil) + Anteil der Ebene am Original auf
     // demselben Kamm (cR); Noten, die die Ebene nur als Rest von Kick/Pads enthält, fallen (gemessen: echte Noten cL+cR ≥ −25, Leck ≤ −23 … −36)
     const pkc = (A, i, f) => { let s = 0; for (let h = 1; h <= 4; h++) { const k = Math.round(h * f / df); if (k < 1 || k >= K - 1) break; s += Math.max(A[i * K + k - 1], A[i * K + k], A[i * K + k + 1]) ** 2; } return s; };
@@ -101612,9 +101613,40 @@ function spk8DspMake(Z2) {
 }
 // Worker-Text: spk8DspMake wird an den Kern-Text angehängt (Funktions-Deklaration → im Worker schon beim Aufbau des Kerns da)
 function spk8WUrl(src, u) {
-  try { const v = URL.createObjectURL(new Blob([src, ';' + spk8DspMake.toString() + ';'], {type: 'application/javascript'})); try { URL.revokeObjectURL(u); } catch (e) {} setTimeout(() => { try { URL.revokeObjectURL(v); } catch (e) {} }, 30000); return v; } catch (e) { return u; }
+  try { const v = URL.createObjectURL(new Blob([src, ';' + spk8DspMake.toString() + ';' + (typeof spk10Okt === 'function' ? spk10Okt.toString() + ';' : '') /* SPK10 */], {type: 'application/javascript'})); try { URL.revokeObjectURL(u); } catch (e) {} setTimeout(() => { try { URL.revokeObjectURL(v); } catch (e) {} }, 30000); return v; } catch (e) { return u; }
 }
 /* SPK8-END */
+/* SPK10-BEGIN */
+/* ===== SPK10 (Spektral-Seite · Bass-Oktave): „Noten finden“ auf der Bass-Ebene (SPK8) entscheidet die Oktave je Note neu, mit kurzem
+   Fenster (4096, ≈ 93 ms statt 16384 ≈ 370 ms) auf dem Original mit abgezogener Kick-Vorlage und nur den Obertönen 2–6 (der Grundton-Bereich
+   ist vom Kick-Rest und der Unter-Oktave des Bass-Klangs überdeckt). Fehlen die ungeraden Obertöne (3f, 5f) gegenüber den geraden (2f, 4f),
+   ist f nur die Unter-Oktave (Sub-Oszillator / Kick-Rest) einer Note auf 2f → eine Oktave höher. Haken „SPK10“ in SPK8 bassNoten und spk8WUrl
+   (Text wird in den Spektral-Worker mitgeschickt). Schalter o10.an (aus = genau SPK8). ===== */
+function spk10Okt(Z2, d, found, c) {
+  const o10 = Z2.o10 = Object.assign({an: 1, N: 4096, thr: -18, w: 3, fTop: 290, a0: 0.05, st: 0.025, b0: 0.04, kick: 1, dbg: null}, Z2.o10);
+  if (!o10.an || !found.length || typeof Z2.magsLo !== 'function') return found;
+  const sr = d.meta.sr, N = o10.N, df = sr / N, fMax = c.R.fb;
+  const cen = [], own = []; found.forEach((q, k) => { const t1 = Math.max(q.a + o10.a0, q.b - o10.b0); for (let t = q.a + o10.a0; t <= t1 + 1e-6; t += o10.st) { cen.push(Math.round(t * sr)); own.push(k); } });
+  const K = Math.min(N / 2 + 1, Math.ceil(Math.min(2450, 6.5 * Math.max(...found.map(q => q.f))) / df) + 2), C = Int32Array.from(cen), Y = Z2.magsLo(d, N, C, K, (K + 1) * df);
+  for (let i = 0; i < Y.length; i++) Y[i] *= Y[i];
+  if (o10.kick && Z2.kickTpl && Z2.kickAt) { const KT = Z2.kickTpl(d, N, K), K1 = KT ? Z2.kickAt(KT, C, null, K) : null; if (K1) for (let i = 0; i < Y.length; i++) Y[i] = Math.max(0, Y[i] - K1[i]); }
+  const pk = (i, f) => { const k = Math.round(f / df); if (k < 1 || k >= K - 1) return 0; return Math.max(Y[i * K + k - 1], Y[i * K + k], Y[i * K + k + 1]); };
+  const feat = found.map(() => ({od: 0, ev: 0, n: 0}));
+  for (let i = 0; i < C.length; i++) { const q = found[own[i]], f = q.f, F = feat[own[i]]; F.od += pk(i, 3 * f) + pk(i, 5 * f); F.ev += pk(i, 2 * f) + pk(i, 4 * f); F.n++; }
+  const r = feat.map(F => 10 * Math.log10((F.od + 1e-12) / (F.ev + 1e-12)));
+  if (o10.dbg) o10.dbg(found.map((q, k) => ({a: q.a, m: q.m, r: +r[k].toFixed(1)})));
+  // Oktave höher, wenn die ungeraden Obertöne deutlich fehlen (r < thr); Ton um 2f neu bestimmen (Viertelton-Schritte ±1,5 Halbtöne, Kamm 1–6
+  // auf dem kurzen Fenster – der neue Grundton liegt über dem Kick-Bereich)
+  found.forEach((q, k) => {
+    if (!(r[k] < o10.thr) || 2 * q.f > Math.min(fMax, o10.fTop)) return;
+    let bf = 2 * q.f, bs = -1;
+    for (let j = -o10.w; j <= o10.w; j++) { const g = 2 * q.f * Math.pow(2, j / 24); let s = 0; for (let i = 0; i < C.length; i++) if (own[i] === k) for (let h = 1, w = 1; h <= 6; h++, w *= 0.86) s += w * Math.sqrt(pk(i, h * g)); if (s > bs) { bs = s; bf = g; } }
+    const m = Math.round(69 + 12 * Math.log2(bf / 440)), mf = 440 * Math.pow(2, (m - 69) / 12), u = mf / q.f;
+    q.m = m; q.f = +mf.toFixed(2); if (q.fz) q.fz = q.fz.map(v => +(v * u).toFixed(1)); q.o10 = 1;
+  });
+  return found;
+}
+/* SPK10-END */
 /* ===== KF1-BEGIN (Paket KF1, Klang-Feinschliff Teil 1 aus der Ur-Roadmap §18 „Klang“; Xander: „Können wir davon noch was machen?“ → ja) =====
    Sechs Wünsche, jeder mit neutralem Standard (= genau der Klang von vorher, alte Projekte bitgleich):
    1 RAUSCHFARBE  VA › OSZ › MIX: Regler „Rauschfarbe“ weiß │ rosa │ braun │ blau (p.kfNc 0…3) für den Rausch-Fader; jede Farbe auf den
