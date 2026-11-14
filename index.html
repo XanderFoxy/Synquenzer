@@ -27559,7 +27559,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '4.54.0';
+const VERSION = '4.54.1';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -52611,13 +52611,12 @@ const NV = {lock: null, lib: null, libNewer: null, raw: null, store: null}, NV_M
 const nvOld = w => w > 0 && w <= SQStore.verCode(VERSION);
 function nvLockOf(p) { const N = p && p._newer; return N && (N.f > SQStore.PROJECT_FORMAT_READ || (N.e.length && !nvOld(N.w)) || (N.n && N.n.length)) ? N : null; }   // N8 A.4: + unknown S.need
 const nvNewer = (pj, w) => !!pj && (+pj.format > SQStore.PROJECT_FORMAT_READ || (!nvOld(w) && (pj.tracks || []).some(t => t && SQStore.isForeign(t.sound))));
+/* NOVW (Xander 14.11.: „Diese Benachrichtigung soll da raus“): kein Hinweis-Streifen mehr – die App holt die neuere Fassung still selbst (vwCheck). */
 function nvBanner() {
-  let b = document.getElementById('nvBan'); if (b) b.remove(); if (!NV.lock) return;
-  b = el('div', '', `<span class="cb-t">${NV_MSG}: Damit nichts verloren geht, speichert diese Version das Projekt nicht.</span><button class="mbtn rb go">Neu laden</button><button class="mbtn rb" aria-label="Schließen">✕</button>`);
-  b.id = 'nvBan'; onTap(b, x => (x.classList.contains('go') ? cloudReload() : b.remove()), 'button'); document.body.appendChild(b);
-  try { b.style.top = Math.round(EL.top.getBoundingClientRect().bottom) + 'px'; } catch (e) {}
+  const b = document.getElementById('nvBan'); if (b) b.remove(); if (!NV.lock) return;
+  try { vwCheck(true); } catch (e) {}
 }
-const nvRefuse = () => { if (!NV.lock) return false; toast(NV_MSG + ' – erst neu laden'); return true; };
+const nvRefuse = () => { if (!NV.lock) return false; try { vwCheck(true); } catch (e) {} return true; };
 /* MK0-fix: NV.raw = the locked open project as it was delivered (file, cloud body, autosave entry, parked copy). Every write
    path of this version (autosave slot, Projekte, Als Datei sichern, Alles sichern, Kopie) passes it on unchanged instead of
    re-serializing the lossy format-4 view; only id and name may change (the sum follows). */
@@ -52699,12 +52698,9 @@ function vwTries(v) {
 function vwGo() {
   const v = VW.want; if (!v) return;
   const o = vwTries(v);
-  if (o.n >= 2) { if (!VW.told) { VW.told = true; toast('Neue Version ' + v + ' liegt bereit – App einmal ganz schließen und neu öffnen'); } return; }
-  if (!vwIdle()) {
-    if (!VW.told) { VW.told = true; toast('Neue Version ' + v + ' – lädt nach dem Stopp', {label: 'Jetzt', fn: () => vwReload()}); }
-    clearTimeout(VW.timer); VW.timer = setTimeout(vwGo, 3000); return;
-  }
-  toast('Neue Version ' + v + ' wird geladen …'); vwReload();
+  if (o.n >= 2) return;                                                  // NOVW: keine Meldung – beim nächsten Öffnen kommt sie von selbst
+  if (!vwIdle()) { clearTimeout(VW.timer); VW.timer = setTimeout(vwGo, 3000); return; }
+  vwReload();
 }
 async function vwReload() {
   const v = VW.want || ''; const o = vwTries(v); o.n++; o.t = Date.now();
@@ -53622,7 +53618,7 @@ async function cloudPush(lid, o) {
         if (lid === S.id) toast((who ? who + ' hat' : 'Ein anderes Gerät hat') + ' „' + (f.title || 'Projekt') + '“ geändert', [{label: 'Übernehmen', fn: () => cloudResolve('take')}, {label: 'Beide behalten', fn: () => cloudResolve('both')}]);
         else toast((who ? who + ' hat' : 'Ein anderes Gerät hat') + ' „' + (f.title || 'Projekt') + '“ geändert – deine Änderungen sind gesichert', {label: 'Ansehen', fn: () => cloudOpenSheet()}); }
     } else if (st === 'outdated') {
-      c.outdated = Date.now(); SYNC.outdated = {lid, title: f.title, by: ''}; cloudBanner(true);
+      c.outdated = Date.now(); SYNC.outdated = {lid, title: f.title, by: ''}; try { vwCheck(true); } catch (e) {}   // NOVW: still, kein Streifen
     } else if (st === 'readonly') { if (!c.readonly || Date.now() - c.readonly > 600000) { c.readonly = Date.now(); toast('Nur lesen – die Zusammenarbeit ist beendet. Deine Version ist aufgehoben.'); } }
     await metaSet(lid, c);
   });

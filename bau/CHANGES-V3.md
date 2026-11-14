@@ -1,3 +1,8 @@
+## 4.54.1 — Kein Hinweis-Streifen „Neue Version“ mehr
+
+- Kein Hinweis-Streifen „Neue Version“ mehr oben. Die App holt eine neuere Fassung weiter selbst (beim Öffnen, nach dem Stopp), aber ohne Meldung.
+- Gilt auch für „Aus einer neueren Version gespeichert“: statt Streifen lädt die App still die neuere Fassung nach.
+
 ## 4.54.0 — Begleiter (Band spielt live zu deinen Akkorden), Perform-Spur im Song, Chor rollbar, neue Klänge: Saite, Vokal-Filter, Rauschfarben, Ring, Körnung
 
 - **Begleiter:** AKKORD ▾ über der Tastatur › **BEGLEITER**. Du spielst einen Akkord (oder nur den Grundton) – die Band startet am Taktstrich mit deinen Spuren und Klängen und folgt jedem Wechsel. **INTRO · A · B · FILL · SCHLUSS**, Stil/Spuren/Figur unter STIL ▾. **● AUFN.** legt das Gespielte als Szene an (auf Wunsch ans Song-Ende), ein ↶; ● AUTO nimmt die Band beim neuen Song mit. ✕ = alles wie vorher.
