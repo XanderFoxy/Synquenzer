@@ -21160,6 +21160,7 @@ const RecHelpers = (() => {
     const tkB = k => (opts.tk ? opts.tk.beat(k) : k * clipBarB(clip()));
     const tkAt = b => (opts.tk ? opts.tk.at(b) : Math.floor(b / clipBarB(clip()) + 1e-9));
     const isBarL = b => Math.abs(tkB(tkAt(b + 1e-6)) - b) < 1e-6;
+    const tkLab = k => (opts.tk && opts.tk.lab ? opts.tk.lab(k) : k + 1);   // NX1: Takt-Nummer (Gesang im Song: der Song-Takt, nicht ab dem Block)
     const gridStep = () => GRID[E.grid] || 1 / 96;
     const noteLen = () => E.noteLen || GRID[E.grid] || .25;
     // step input: the step is the grid (§3.3); with Raster „frei“ the ♪ length, else 1/16 (never the 1/96 drawing fallback)
@@ -21302,7 +21303,7 @@ const RecHelpers = (() => {
         x.strokeStyle = C.dim; x.beginPath(); x.moveTo(bx, 4); x.lineTo(bx, V.RH); x.stroke();
         const inLoop = E.loop && k >= E.loop.a && k <= E.loop.b;
         x.fillStyle = inLoop ? C.amber : C.inRow; rr(x, bx + 1, 3, NUMW - 4, V.RH - 6, 4); x.fill();
-        x.fillStyle = inLoop ? '#111' : C.text; x.font = '700 11px ' + tok('--font-num', 'monospace'); x.fillText(String(k + 1), bx + 6, V.RH / 2 + 4);
+        x.fillStyle = inLoop ? '#111' : C.text; x.font = '700 11px ' + tok('--font-num', 'monospace'); x.fillText(String(tkLab(k)), bx + 6, V.RH / 2 + 4);   // NX1
       }
       const lx = xOf(Lb); x.fillStyle = C.sel; x.fillRect(lx - 3, 0, 6, V.RH); x.fillStyle = C.bg; x.fillRect(lx - 1, 5, 2, V.RH - 10);    // length handle
       vx2Grips(x, C);                                               /* VOX2: Griffe an den Rändern des gelben Bereichs (+ Laschen, Knopf-Text) */
@@ -21320,7 +21321,7 @@ const RecHelpers = (() => {
       // toolbar + action bar state
       for (const k of ['draw', 'select', 'vel', 'erase']) tb[k].classList.toggle('on', E.tool === k);
       tb.grid.textContent = E.grid === 'aus' ? 'frei' : E.grid; tb.len.textContent = '♪ ' + (E.noteLen ? fmtLen(E.noteLen) : '=Raster'); tb.fold.classList.toggle('on', E.fold); tb.step.classList.toggle('on', E.step != null);
-      tb.scope.textContent = E.sel.size ? E.sel.size + (E.sel.size === 1 ? ' Note' : ' Noten') : 'ALLE';
+      tb.scope.textContent = E.sel.size ? E.sel.size + (opts.audio && opts.audio.unit ? opts.audio.unit[E.sel.size === 1 ? 0 : 1] : E.sel.size === 1 ? ' Note' : ' Noten') : 'ALLE';   // NX1: Gesang zählt Stücke
       const stepOn = E.step != null;
       A.rest.hidden = A.tie.hidden = A.back.hidden = A.sep0.hidden = !stepOn || E.ask;
       A.loop.hidden = !E.loop || E.ask;
@@ -21819,7 +21820,7 @@ const RecHelpers = (() => {
     function lpA() { return E.loop.fa != null ? E.loop.fa : tkB(E.loop.a); }
     function lpB() { return E.loop.fb != null ? E.loop.fb : tkB(E.loop.b + 1); }
     function vx2Fine() { return !!E.loop && (Math.abs(lpA() - tkB(E.loop.a)) > 1e-6 || Math.abs(lpB() - tkB(E.loop.b + 1)) > 1e-6); }
-    function vx2Pos(b) { const k = tkAt(b + 1e-6), w = b - tkB(k), be = Math.floor(w + 1e-6), q = (w - be) * 4, s = Math.round(q); return (k + 1) + '.' + (be + 1) + (Math.abs(q - s) > .02 ? '+' : s > 0 && s < 4 ? '.' + (s + 1) : ''); }
+    function vx2Pos(b) { const k = tkAt(b + 1e-6), w = b - tkB(k), be = Math.floor(w + 1e-6), q = (w - be) * 4, s = Math.round(q); return tkLab(k) + '.' + (be + 1) + (Math.abs(q - s) > .02 ? '+' : s > 0 && s < 4 ? '.' + (s + 1) : ''); }
     function vx2Txt() { return E.loop ? 'ab ' + vx2Pos(lpA()) + ' bis ' + vx2Pos(lpB()) : ''; }
     function vx2GripAt(px, lenFirst) {   // lenFirst: der Längen-Griff gewinnt, wenn er dem Finger mindestens so nah ist (Rand am Clip-Ende)
       if (!E.loop) return false; const da = Math.abs(px - xOf(lpA())), db = Math.abs(px - xOf(lpB())), d = Math.min(da, db);
@@ -22197,7 +22198,7 @@ const RecHelpers = (() => {
       E.tool = t; if (t !== 'select' && t !== 'vel' && E.sel.size > 1) E.sel.clear(); if (t === 'erase') E.sel.clear(); render(); }   /* I2f: ⇕ behält die Auswahl */
     function setGrid(g) { if (g in GRID) { E.grid = g; E.noteLen = null; render(); if (opts.onPrefs) opts.onPrefs({grid: E.grid, fold: E.fold}); } }
     const fmtLen = d => { const map = {4: '1/1', 2: '1/2', 1: '1/4', .5: '1/8', .25: '1/16', .125: '1/32'}; const k = Object.keys(map).find(x => Math.abs(+x - d) < 1e-6); return k ? map[k] : (d * 4).toFixed(2).replace(/\.?0+$/, '') + '/16'; };
-    const fmtPos = t => { const k = tkAt(t), w = t - tkB(k); return (k + 1) + '.' + (Math.floor(w + 1e-9) + 1) + '.' + (Math.floor((t % 1) / .25 + 1e-6) + 1); };   // T1
+    const fmtPos = t => { const k = tkAt(t), w = t - tkB(k); return tkLab(k) + '.' + (Math.floor(w + 1e-9) + 1) + '.' + (Math.floor((t % 1) / .25 + 1e-6) + 1); };   // T1
     // app rAF loop; -1 hides it. V0b: no scrolling here (FOLGEN: app → showPage)
     // run dot (§5.1) on the running bar's chip: steady with the playhead in view, else blinking; chip outside: „◂ 3“ / „3 ▸“
     let rdSig = '';
@@ -98687,11 +98688,12 @@ function vx1rBuild() {
   vx1rSync();
   const P_T = 'Abspielen ab dem gewählten Stück (sonst ab dem Anfang)', id = x.a.take;
   ED.roll = PianoRoll.create(body, vx1rModel(), {color: VX1E.col, grid: ROLLP.grid, fold: false, rowH: 22, undoHold: sx14UndoHold, toolbarHost: land ? head : null,
+    tk: r.vox ? nx1VoxTk(r.vox) : null,                                // NX1: Song-Stimme – Lineal zählt die Song-Takte (Taktart-Karte wie die Song-Melodie)
     extraTools: [{id: 'vx1rp', label: '▶', title: P_T, fn: () => vx1rPlay()}],
     extraActs: [{id: 'vx1rtx', label: 'Text erkennen', title: 'Silben aus der Spracherkennung', fn: () => vx1rText()},
       {id: 'vx1rtk', label: 'Takes …', title: 'Takes, Marken & Timing, Tonhöhe, Chor', fn: () => { const rr = vx1rRef(ED.rollAt); closeRoll(); tkSheet(rr); }}],
     center: 60, noteDeco: vx1rDeco,
-    audio: {snap: vx1rSnapB, tap: (nt, b) => { VX1E.tapN = VX1E.tapNt = nt; VX1E.tapB = b; VX1E.tapAt = performance.now(); }},
+    audio: {unit: [' Stück', ' Stücke'], snap: vx1rSnapB, tap: (nt, b) => { VX1E.tapN = VX1E.tapNt = nt; VX1E.tapB = b; VX1E.tapAt = performance.now(); }},   // NX1: unit = Ecke der Aktionsleiste
     tap: (b, fn) => b.addEventListener('click', () => { try { fn(); } catch (e) { logErr(e); } }),
     reg: folReg('roll'), onHand: () => folHand('roll'),
     onPrefs: p => { ROLLP.grid = p.grid; },
