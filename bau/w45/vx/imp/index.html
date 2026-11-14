@@ -97157,8 +97157,8 @@ async function imp1Run(c) {
   if (IMP1.cur !== c) return null;
   if (!r || !r.ok) { c.st = 'fehler'; c.err = r && r.err === 'still' ? 'In der Datei ist nichts zu hören' : r && r.err === 'zu kurz' ? 'Die Datei ist zu kurz' : 'Analyse fehlgeschlagen'; imp1Paint(); return null; }
   c.r = r; c.bpm = r.bpm; c.ts = IMP1_TS.includes(r.ts) ? r.ts : '4/4'; c.t1 = r.t1;
-  c.parts = r.teile.map(p => ({name: p.name, a: p.a, b: p.b, grp: p.grp}));
-  if (!c.parts.length) c.parts = [{name: 'Teil 1', a: 0, b: Math.max(1, imp1Geo(c).nb), grp: 0}];
+  c.parts = r.teile.map(p => ({name: p.name, ta: r.t1 + p.a * r.takt, grp: p.grp}));   // Teile hängen an der Zeit im Audio (Tempo/„1“ ändern verschiebt sie nicht)
+  if (!c.parts.length) c.parts = [{name: 'Teil 1', ta: 0, grp: 0}];
   c.st = 'fertig'; c.sel = 0; imp1Paint();
   return r;
 }
@@ -97173,22 +97173,19 @@ function imp1Geo(c) {
   const k = c.t1 > .03 ? Math.ceil((c.t1 - .03) / takt) : 0, org = c.t1 - k * takt;
   return {tb, sp, takt, k, org, nb: Math.max(1, Math.ceil((c.dur - org) / takt - .02))};
 }
-// Teile in Song-Takten [A, B): der erste ab 0 (Auftakt), der letzte bis zum Ende
+// Teile in Song-Takten [A, B) (i = Index in c.parts): Anfang auf den nächsten Taktstrich, der erste ab 0 (Auftakt), der letzte bis zum Ende
 function imp1Parts(c) {
   const G = imp1Geo(c), out = [];
-  for (const p of c.parts) { const A = clamp(p.a + G.k, 0, G.nb), B = clamp(p.b + G.k, 0, G.nb); if (B > A) out.push({name: p.name, A, B, grp: p.grp}); }
-  if (!out.length) out.push({name: 'Teil 1', A: 0, B: G.nb, grp: 0});
-  out[0].A = 0; out[out.length - 1].B = G.nb;
-  for (let i = 1; i < out.length; i++) if (out[i].A !== out[i - 1].B) out[i].A = out[i - 1].B;
+  c.parts.forEach((p, i) => { const A = i ? clamp(Math.round((p.ta - G.org) / G.takt), 0, G.nb) : 0; if (out.length && A <= out[out.length - 1].A) return; out.push({name: p.name, A, grp: p.grp, i}); });
+  out.forEach((p, j) => { p.B = j + 1 < out.length ? out[j + 1].A : G.nb; });
   return out.filter(p => p.B > p.A);
 }
-// Tempo/Taktart geändert: Teile auf das neue Raster (gleiche Zeit)
+// Tempo/Taktart geändert: die Teile bleiben an ihrer Zeit, die Loop-Klammern auch
 function imp1Regrid(c, bpm, ts) {
-  const g0 = imp1Geo(c); c.bpm = clamp(+(+bpm).toFixed(2), 40, 240); if (ts) c.ts = ts;
-  const g1 = imp1Geo(c), f = g0.takt / g1.takt;
-  for (const p of c.parts) { p.a = Math.round(p.a * f); p.b = Math.round(p.b * f); }
-  c.parts = c.parts.filter(p => p.b > p.a);
-  if (c.loop) { c.loop = [Math.round(c.loop[0] * f), Math.max(Math.round(c.loop[0] * f) + 1, Math.round(c.loop[1] * f))]; }
+  const g0 = imp1Geo(c), lt = c.loop && c.loop.map(b => g0.org + b * g0.takt);
+  c.bpm = clamp(+(+bpm).toFixed(2), 40, 240); if (ts) c.ts = ts;
+  const g1 = imp1Geo(c);
+  if (lt) { const a = clamp(Math.round((lt[0] - g1.org) / g1.takt), 0, g1.nb - 1); c.loop = [a, clamp(Math.max(a + 1, Math.round((lt[1] - g1.org) / g1.takt)), a + 1, g1.nb)]; }
 }
 const imp1Col = (() => { const m = {}; return k => m[k] || (m[k] = (getComputedStyle(document.documentElement).getPropertyValue('--' + k) || '').trim() || '#ffb22e'); })();
 const imp1PCol = c => p => imp1Col(IMP1_PC[(p.grp | 0) % IMP1_PC.length]);
@@ -97298,20 +97295,18 @@ function imp1TapTempo(c) {
 function imp1Rename(v) {
   const c = IMP1.cur; if (!c || !c.parts) return; const P = imp1Parts(c), sp = P[c.sel]; if (!sp) return;
   const n = String(v || '').trim().slice(0, 12); if (!n || !PART_NAME_RE.test(n)) { toast('Name: Buchstaben, Ziffern, bis 12 Zeichen'); imp1Paint(); return; }
-  c.parts[imp1PartAt(c, sp.A)].name = n; imp1Paint();
+  c.parts[sp.i].name = n; imp1Paint();
 }
-function imp1PartAt(c, A) { const k = imp1Geo(c).k; let best = 0; c.parts.forEach((p, i) => { if (p.a + k <= A) best = i; }); return best; }
 function imp1Merge(c) {
   const P = imp1Parts(c); if (c.sel >= P.length - 1) return;
-  const i = imp1PartAt(c, P[c.sel].A), j = imp1PartAt(c, P[c.sel + 1].A); if (j <= i) return;
-  c.parts[i].b = c.parts[j].b; c.parts.splice(j, 1); imp1Paint();
+  c.parts.splice(P[c.sel + 1].i, 1); imp1Paint();
 }
 function imp1Split(c) {
   const P = imp1Parts(c), sp = P[c.sel]; if (!sp || sp.B - sp.A < 2) return;
-  const L = sp.B - sp.A, m = sp.A + (L >= 8 ? Math.round(L / 2 / 4) * 4 || 4 : Math.floor(L / 2)), k = imp1Geo(c).k, i = imp1PartAt(c, sp.A), p = c.parts[i];
-  const q = {name: p.name.replace(/\s*[a-z]$/, '') + ' b', a: m - k, b: p.b, grp: p.grp}; p.b = m - k;
-  if (!/ a$/.test(p.name) && (p.name + ' a').length <= 12) p.name = p.name + ' a';
-  q.name = q.name.slice(0, 12); c.parts.splice(i + 1, 0, q); imp1Paint();
+  const L = sp.B - sp.A, m = sp.A + (L >= 8 ? Math.round(L / 2 / 4) * 4 || 4 : Math.floor(L / 2)), G = imp1Geo(c), p = c.parts[sp.i];
+  const base = p.name.replace(/ [ab]$/, ''), q = {name: (base + ' b').slice(0, 12), ta: G.org + m * G.takt, grp: p.grp};
+  if ((base + ' a').length <= 12) p.name = base + ' a';
+  c.parts.splice(sp.i + 1, 0, q); imp1Paint();
 }
 /* ---------- Wellenform (Canvas): Raster, Teile, „1“, Loop-Klammern; Ziehen zeichnet nur neu ---------- */
 function imp1Draw() {
@@ -97371,10 +97366,10 @@ function imp1Down(e) {
   else if (y > r.height * .45) { mode = 'loop'; anchor = Math.floor((tOf(e.clientX) - G.org) / G.takt); anchor = clamp(anchor, 0, G.nb - 1); c.loop = [anchor, anchor + 1]; }
   if (!mode) return;
   try { cv.setPointerCapture(e.pointerId); } catch (x) {}
-  let raf = 0; const id = e.pointerId, t10 = c.t1;
+  let raf = 0; const id = e.pointerId, t10 = c.t1, x0 = e.clientX;
   const mv = ev => {
     if (ev.pointerId !== id) return;
-    if (mode === 'eins') c.t1 = +clamp(tOf(ev.clientX), 0, Math.min(c.dur - .1, t10 + 4 * G.takt)).toFixed(3);
+    if (mode === 'eins') c.t1 = +clamp(t10 + (ev.clientX - x0) / r.width * c.dur / 8, 0, Math.min(c.dur - .1, t10 + 4 * G.takt)).toFixed(3);   // fein: ⅛ der Wellenform – nichts springt beim Anfassen
     else { const b = bar(tOf(ev.clientX)); c.loop = b > anchor ? [anchor, b] : b < anchor ? [b, anchor] : [anchor, Math.min(G.nb, anchor + 1)]; }
     if (!raf) raf = requestAnimationFrame(() => { raf = 0; imp1Draw(); });
   };

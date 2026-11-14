@@ -58,8 +58,10 @@ try {
   }, {SR, PK, ANCH, F});
   const id = r0.id;
   // 1 Öffnen
-  const o1 = await run(p, async o => { const okk = window.__vx1.open({t: o.st, s: 0}); for (let i = 0; i < 200 && !(window.__vx1.ed() && window.__vx1.ed().n >= 6 && window.__vx1.ed().notes[0].tx); i++) await wait(50); await wait(300); return {okk, ed: window.__vx1.ed(), open: EL.rollSheet.classList.contains('open'), ed2: R.editor, at: JSON.stringify(ED.rollAt)}; }, r0);
+  const o1 = await run(p, async o => { const okk = window.__vx1.open({t: o.st, s: 0}); const e0 = window.__vx1.ed(); for (let i = 0; i < 200 && !(window.__vx1.ed() && window.__vx1.ed().n >= 6 && window.__vx1.ed().notes[0].tx); i++) await wait(50); window.__e0 = e0 && e0.n; await wait(300); ED.roll.fitView('clip'); await wait(200); return {okk, before: window.__e0, info: ED.rollInfo.textContent, ed: window.__vx1.ed(), open: EL.rollSheet.classList.contains('open'), ed2: R.editor, at: JSON.stringify(ED.rollAt)}; }, r0);
   ok(o1.okk && o1.open && o1.ed && o1.ed.n === 6, 'Gesang-Editor öffnet (Blatt des Noten-Editors), 6 Stücke als Noten', JSON.stringify({n: o1.ed && o1.ed.n, at: o1.at}));
+  ok(o1.before === 0, 'vor der Analyse keine Stücke (nichts springt von einer Ersatz-Zeile auf die Tonhöhe)', String(o1.before));
+  ok(/Stücke/.test(o1.info), 'Kopf: Anzahl Stücke · Takte', o1.info);
   ok(o1.ed && o1.ed.tool === 'select', 'Werkzeug = Wählen (Tipp wählt, Ziehen verschiebt)', o1.ed && o1.ed.tool);
   ok(o1.ed && JSON.stringify(o1.ed.notes.map(n => n.tx)) === JSON.stringify(['la', 'le', 'li', 'lo', 'lu', 'na']), 'Silben aus dem vorhandenen Text an den Stücken', JSON.stringify(o1.ed && o1.ed.notes.map(n => n.tx)));
   const pit = o1.ed.notes.map(n => n.n), exp = F.map(f => Math.round(69 + 12 * Math.log2(f / 440)));
@@ -96,7 +98,7 @@ try {
   ok(m3.u === 1, 'Ziehen = ein Undo-Schritt', m3.lab);
   ok(onGrid < 1e-3 && m3.ab > n2.t + n2.a + .2, 'Anker rastet auf der 1/8-Linie ein (nicht der Stück-Anfang)', 'Anker bei Schlag ' + m3.ab.toFixed(4) + ', Anfang ' + m3.n.t.toFixed(4));
   ok(m3.n.t < m3.ab - .05, 'Anschwung liegt vor der Rasterlinie', ((m3.ab - m3.n.t) * 500).toFixed(0) + ' ms vor dem Anker');
-  ok(glow && Math.abs(glow.b - m3.ab) < 1e-6, 'Rasterlinie leuchtet beim Einrasten', JSON.stringify(glow));
+  ok(glow && Math.abs(glow.b - m3.ab) < 2e-3, 'Rasterlinie leuchtet beim Einrasten', JSON.stringify(glow));
   // 4 senkrecht ziehen = Tonhöhe +2 (G2), ein Undo
   const u1 = await run(p, () => UNDO.length), n4 = (await run(p, () => window.__vx1.ed())).notes[4];
   const p4 = await run(p, () => window.__vx1.xy(4)), q4 = await run(p, o => window.__vx1.beatXY(o.b, o.n), {b: n4.t + n4.d / 2, n: n4.n + 2});

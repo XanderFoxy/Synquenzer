@@ -96849,7 +96849,7 @@ function vx1rSync() {
   if (ED.roll) { const g = ED.roll.state.gesture; if (g && g !== 'pending' && g !== 'pinch') return; }   // eine laufende Geste nie überschreiben (end() holt nach)
   const x = tkRef(vx1rRef(r)); if (!x || !S.takes || !S.takes[x.a.take]) { if (ED.roll) closeRoll(); return; }
   const a = x.a, id = a.take, m = S.takes[id], sp = spb(), bt = T => a.at + (T - a.in) / sp;
-  const ps = vx1rPieces(id) || [], w = m.warp, hd = t => (w && w.map ? VSM.warpTime({src: w.map.src, dst: w.map.dst}, t) : t);
+  const ps = (VX1R.ana.get(id) && vx1rPieces(id)) || [], w = m.warp, hd = t => (w && w.map ? VSM.warpTime({src: w.map.src, dst: w.map.dst}, t) : t);   // erst mit Analyse (Anker, Tonhöhe) – nichts springt
   const c = VX1E.clip || (VX1E.clip = {len: 1, notes: []}), vc = x.clip;
   c.len = vc ? vc.len : Math.max(1, a.len | 0); c.key = vc && vc.key ? vc.key : S.key; if (vc && vc.ts) c.ts = vc.ts; else delete c.ts;
   const P = m.pitch && m.pitch.notes, shAt = (t0, t1) => { if (!P) return 0; const cc = (t0 + t1) / 2, n = P.find(z => z.t0 <= cc && z.t1 > cc); return n && n.sh ? n.sh : 0; };
@@ -96873,7 +96873,7 @@ function vx1rSync() {
 // Kopf: Stücke · Takte
 function vx1rHead() {
   const c = VX1E.clip; if (!c || !ED.rollInfo) return;
-  const txt = c.notes.length + (c.notes.length === 1 ? ' Stück' : ' Stücke') + ' · ' + c.len + (c.len === 1 ? ' Takt' : ' Takte');
+  const txt = !(VX1E.id && VX1R.ana.get(VX1E.id)) ? 'Analyse …' : c.notes.length + (c.notes.length === 1 ? ' Stück' : ' Stücke') + ' · ' + c.len + (c.len === 1 ? ' Takt' : ' Takte');
   if (ED.rollInfo._t !== txt) { ED.rollInfo._t = txt; ED.rollInfo.textContent = txt; }
 }
 // Einrasten am Anker (absolut am Takt): Verschiebung so, dass der Anker auf die Rasterlinie fällt; die Linie leuchtet kurz
@@ -96923,7 +96923,7 @@ function vx1rDeco(g, nt, r) {
   const Gp = typeof G2 !== 'undefined' && G2.an.get(id);             // Tonhöhenkurve (VS2/G2), relativ zur Zeile des Stücks
   if (Gp && Gp.f0) {
     const i0 = Math.max(0, Math.ceil(p.t / Gp.hop)), i1 = Math.min(Gp.n, Math.floor(p.end / Gp.hop)), cy = r.y + r.h / 2, sh = nt._sh || 0;
-    g.save(); g.beginPath(); g.rect(x0, r.y - r.h * 2, w, r.h * 5); g.clip(); g.beginPath(); let on = false;
+    g.save(); g.beginPath(); g.rect(x0, r.y - r.h, w, r.h * 3); g.clip();   // ±1 Zeile: Gleiten in den Nachbarn nur angedeutet g.beginPath(); let on = false;
     for (let i = i0; i < i1; i++) {
       const f = Gp.f0[i]; if (!(f > 0)) { on = false; continue; }
       const px = X(i * Gp.hop), py = cy - (G2P.midi(f) + sh - nt.n) * r.h;
@@ -96952,11 +96952,11 @@ async function vx1rApply(s, label) {
   if (added.length && !gone.length) {                                 // Teilen: an der getippten Stelle (im Stück), sonst wo die PianoRoll teilt
     const ts = added.map(n2 => { const i = s.ns.findIndex(o => o._k === n2._k), o = s.v[i]; let b = n2.t;
       if (i >= 0 && VX1E.tapB != null && s.ns[i] === VX1E.tapNt && VX1E.tapB > o.t + .02 && VX1E.tapB < o.t + o.d - .02) b = VX1E.tapB;
-      return vx1rSrcT(id, vx1rHeard(a, b)); });
+      const T = vx1rHeard(a, b); return {t: vx1rSrcT(id, T), T}; });
     if (ED.roll) ED.roll.select([]);
     await vx1rCommit(id, 'Stück geteilt', (mk, m, A) => {
       let ch = false;
-      for (let t of ts) { t = clamp(t, 0, m.len / m.sr); if (mk.some(k => Math.abs(k.t - t) < WP_GAP)) continue; const nx = mk.find(k => k.t > t); mk.push({t: wpSmp(m, t), conf: 1, user: true, an: +vx1rAnOf(A, t, nx ? nx.t : null).toFixed(4)}); mk.sort((p, q) => p.t - q.t); ch = true; }
+      for (const z of ts) { const t = clamp(z.t, 0, m.len / m.sr); if (mk.some(k => Math.abs(k.t - t) < WP_GAP)) continue; const nx = mk.find(k => k.t > t), an = +vx1rAnOf(A, t, nx ? nx.t : null).toFixed(4); mk.push({t: wpSmp(m, t), conf: 1, user: true, an, vd: tkR6(z.T + an)}); mk.sort((p, q) => p.t - q.t); ch = true; }   // das neue Stück bleibt, wo es klingt
       return ch;
     }, {a});
   } else if (gone.length) {                                           // Verbinden: alles zwischen dem ersten und dem letzten gewählten Stück wird eins

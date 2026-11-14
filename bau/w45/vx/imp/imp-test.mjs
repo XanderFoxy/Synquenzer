@@ -21,7 +21,7 @@ const tch = (p, type, x, y) => p.cdp.send('Input.dispatchTouchEvent', {type, tou
 async function tap(p, x, y) { await tch(p, 'touchStart', x, y); await p.waitForTimeout(50); await tch(p, 'touchEnd'); await p.waitForTimeout(220); }
 const ctr = (p, sel) => p.evaluate(s => { const e = document.querySelector(s); if (!e) return null; e.scrollIntoView({block: 'center'}); const r = e.getBoundingClientRect(); return {x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height}; }, sel);
 async function tapSel(p, sel) { const c = await ctr(p, sel); if (!c) return false; await tap(p, c.x, c.y); return true; }
-const cur = p => p.evaluate(() => { const c = window.__imp1.ui.cur(); return c ? {st: c.st, bpm: c.bpm, ts: c.ts, t1: c.t1, loop: c.loop, parts: (c.parts ? window.__imp1.ui.parts() : []).map(x => x.name + '@' + x.A + '-' + x.B), quelle: c.r && c.r.quelle} : null; });
+const cur = p => p.evaluate(() => { const c = window.__imp1.ui.cur(); return c ? {st: c.st, bpm: c.bpm, ts: c.ts, t1: c.t1, loop: c.loop, pt: (c.parts || []).map(x => x.ta.toFixed(2)).join(), parts: (c.parts ? window.__imp1.ui.parts() : []).map(x => x.name + '@' + x.A + '-' + x.B), quelle: c.r && c.r.quelle} : null; });
 // 1 Demo-Song rendern → WAV (mono 24 kHz)
 const p = await page(428, 926);
 const wav = await p.evaluate(async () => {
@@ -88,12 +88,13 @@ const xb = bar => cv.x - cv.w / 2 + (g.org + bar * g.takt) / wav.dur * cv.w;
 { const y = cv.y + cv.h / 2 - 10, x0 = xb(12.5), x1 = xb(20.2); await tch(p, 'touchStart', x0, y); for (let k = 1; k <= 8; k++) { await tch(p, 'touchMove', x0 + (x1 - x0) * k / 8, y); await p.waitForTimeout(16); } await tch(p, 'touchEnd'); await p.waitForTimeout(250); }
 c = await cur(p); ok(c.loop && c.loop[0] === 12 && c.loop[1] === 20, 'Loop-Klammern auf Takt-Raster gezogen', JSON.stringify(c.loop));
 await p.screenshot({path: path.join(fotos, 'imp1-3-loop-hochkant.png')});
-{ const cv2 = await ctr(p, '.imp1 canvas.imp1cv'), x0 = cv2.x - cv2.w / 2 + c.t1 / wav.dur * cv2.w + 1, y = cv2.y - cv2.h / 2 + 26, dx = 0.5 * 60 / 92 / wav.dur * cv2.w;
+{ const cv2 = await ctr(p, '.imp1 canvas.imp1cv'), x0 = cv2.x - cv2.w / 2 + c.t1 / wav.dur * cv2.w + 1, y = cv2.y - cv2.h / 2 + 26, dx = 8 * 0.5 * 60 / 92 / wav.dur * cv2.w;
   await tch(p, 'touchStart', x0, y); for (let k = 1; k <= 6; k++) { await tch(p, 'touchMove', x0 + dx * k / 6, y); await p.waitForTimeout(16); } await tch(p, 'touchEnd'); await p.waitForTimeout(250);
-  const c2 = await cur(p); ok(c2.t1 > c.t1 + .2 && c2.t1 < c.t1 + .45 && c2.parts.join() === c.parts.join(), '„1“-Marke gezogen (Teile bleiben)', c.t1 + ' → ' + c2.t1);
+  const c2 = await cur(p); ok(Math.abs(c2.t1 - c.t1 - .326) < .03 && c2.pt === c.pt, '„1“-Marke fein gezogen (½ Schlag, Teile bleiben an ihrer Zeit)', c.t1 + ' → ' + c2.t1);
   await p.evaluate(t => { window.__imp1.ui.cur().t1 = t; }, c.t1); }
-{ for (let k = 0; k < 5; k++) { await tapSel(p, '.imp1 button[data-i="tap"]'); await p.waitForTimeout(600 - 270); }
-  const c3 = await cur(p); ok(Math.abs(c3.bpm - 100) <= 6, 'Tippen-Tempo ≈ 100', c3.bpm); await p.evaluate(() => window.__imp1.ui.regrid(92)); c = await cur(p); ok(c.bpm === 92 && c.parts.join() === (await cur(p)).parts.join(), 'Tempo zurück 92', c.parts.join(' ')); }
+{ const tb = await ctr(p, '.imp1 button[data-i="tap"]'), T0 = Date.now(); for (let k = 0; k < 5; k++) { while (Date.now() < T0 + k * 600) await new Promise(r => setTimeout(r, 5)); await tch(p, 'touchStart', tb.x, tb.y); await p.waitForTimeout(40); await tch(p, 'touchEnd'); }
+  await p.waitForTimeout(250);
+  const c3 = await cur(p); ok(Math.abs(c3.bpm - 100) <= 6, 'Tippen-Tempo ≈ 100', c3.bpm); await p.evaluate(() => window.__imp1.ui.regrid(92)); c = await cur(p); ok(c.bpm === 92 && c.parts[2] === 'Strophe 1 b@12-20' && c.pt === c3.pt, 'Tempo zurück 92, Teile unverändert', c.parts.join(' ')); }
 // 4 In Szenen zerschneiden
 const n0 = await p.evaluate(() => UNDO.length);
 await tapSel(p, '.imp1 button[data-i="scenes"]');
