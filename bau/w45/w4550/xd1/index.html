@@ -93689,18 +93689,21 @@ Object.assign(SYNQUENZER, {int53d: {info: () => ({files: INT53D.files, waits: IN
        Während der Wiedergabe bleibt es wie MTX (Tipp = am Taktstrich, knapp davor beim Aufsetzen).
    (4) Echtzeit-Mitschnitt: steht ein Vergleich auf VORHER (Mix & Master, Klang-Editor, Marken · STIMME, Tonhöhe, Refrain groß / Chor
        sauber), schaltet der Start sichtbar auf NACHHER und sagt „Mitschnitt mit Nachher“ – die Datei hat den Nachher-Stand wie jeder Export.
-   (5) Klang-Editor/-Browser: wird der Editor geschlossen, während der Vergleich auf VORHER steht, endet er auf NACHHER (wie Mix & Master
-       beim Schließen) – Autosave und Projekt bleiben nie im Vorher. Abgelegtes Mix & Master (⌄) bleibt wie es ist.
+   (5) Klang-Editor/-Browser: wird der Editor geschlossen (✕, Wischen, ≡-Menü, Noten-/Clip-Editor öffnen, Klang-Browser ✕), während der
+       Vergleich auf VORHER steht, endet er auf NACHHER (wie Mix & Master beim Schließen) – Autosave und Projekt bleiben nie im Vorher.
+       Wechsel Editor ↔ Browser (auch auf eine andere Spur) lässt ihn stehen; leiht ein Export gerade den Nachher-Stand (INT53C), endet er
+       erst nach der Rückgabe. Abgelegtes Mix & Master (⌄) bleibt wie es ist.
    (6) MIXG: bei ▶/■ wird kein offenes Blatt mehr neu aufgebaut (das kostete einen Tipp, der genau dann fiel); geändert werden nur die
-       Beschriftung/der Zustand der ▶-Taste und der Satz – dieselben Elemente bleiben im Bild.
-   (7) Mix & Master ① Messen: der MIX-A-Messlauf startet wie Video/Audio erst nach der Quittung der Engines (vollständiger Ton ab Schlag 1,
-       unter Last gleich). Nachgemessen (Demo, ruhig und unter Last): die Vorschläge bleiben dieselben und stimmen musikalisch (Bass −3 dB bei
-       50 Hz für den Kick-Grundton, Fläche −2,5 dB bei 890 Hz gegen die Sequenz, keine Höhen-Absenkung bei Höhenanteil −30 dB) – ohne
-       Quittung schwankten sie unter Last (z. B. 910 statt 890 Hz). Die MIXG-Schwellen müssen darum nicht verschoben werden.
-   (8) ORI „Wo bin ich“: die Zeile wird mit der echten Schrift gemessen; passt sie nicht, kommt erst die kürzere Form („Szene 1“, dann
-       „Sz 1“) – nie mehr „Sze…“. Kein Kopf wird höher, keine Taste rückt.
-   Einhänge-Zeilen (je mit „XD1“ markiert): stSheetFill (1: die Zeilen vor „Stimme → Noten“), bindStSheet (1), vvSwapIn (1). Alles andere hier als Hülle (vox2Tap, vox2TkHtml,
-   stRender, vd4LvFit, mtxScnDown, mtxHoldEnd, songAudioStart, openEditor, openBrowser, closeSheets, mxgSync, oriFit) und Guide-Eintrag. */
+       Teile, die vom Transport abhängen (▶-Taste, Satz, „Messen aus: Live – …“, Kompressor-Balken bei ■ wieder im Schnitt) – dieselben
+       Elemente bleiben im Bild, das Blatt sieht aus wie neu gezeichnet.
+   (7) Mix & Master ① Messen: der MIX-A-Messlauf startet wie Video/Audio erst nach der Quittung der Engines (Schlag 1 vollständig: Spitze der
+       ersten 40 ms 0,49 statt 0,29). Nachgemessen (Demo): die Vorschläge bleiben dieselben und stimmen musikalisch (Bass −3 dB bei 50 Hz für
+       den Kick-Grundton, Fläche −2,5 dB bei 890 Hz gegen die Sequenz, keine Höhen-Absenkung bei Höhenanteil −30 dB) – ohne Quittung
+       schwankten sie (z. B. 910 statt 890 Hz). Die MIXG-Schwellen müssen darum nicht verschoben werden.
+   (8) ORI „Wo bin ich“: die Zeile wird mit der echten Schrift gemessen (Schrift/Abstände je Kopf zwischengespeichert); passt sie nicht,
+       kommt erst die kürzere Form („Szene 1“, dann „Sz 1“) – nie mehr „Sze…“. Kein Kopf wird höher, keine Taste rückt.
+   Einhänge-Zeilen (je mit „XD1“ markiert): stSheetFill (1: die Zeilen vor „Stimme → Noten“), bindStSheet (1), vvSwapIn (7). Alles andere hier als Hülle (vox2Tap, vox2TkHtml,
+   stRender, vd4LvFit, mtxScnDown, mtxHoldEnd, songAudioStart, openEditor, openBrowser, applyProject, closeSheets, closeBrowser, mxgSync, oriFit) und Guide-Eintrag. */
 var XD1 = {mon: null, monIv: 0, ack: true, sw: 0, sndT: 0, mtxN: 0, rtN: 0, rtLast: null, sndN: 0, plN: 0, plLast: null, oriN: 0};
 
 /* ---------- (1) Mikrofon-Blatt: „Beim Singen hören“ + „Mich selbst hören“ ---------- */
@@ -93916,9 +93919,11 @@ function xd1Short(s) {
   const a = w.length > 4 ? w.slice(0, w.length > 5 && n ? 3 : 4) + '.' : w;
   return (a + (n ? ' ' + n : '')).trim();
 }
-// Schrift und Innenabstände der Zeile (::before) je Kopf – nur neu gelesen, wenn sich Fenstergröße oder Klasse ändern (oriFrame läuft alle 100 ms)
+// Schrift und Innenabstände der Zeile (::before) je Kopf – nur neu gelesen, wenn sich Fenstergröße oder Klasse ändern (oriFrame läuft alle 100 ms).
+// Die Regel [data-oriwo]::before greift erst mit dem Attribut: beim ersten Mal wird es leer vorgesetzt (oriApply setzt gleich danach den Text)
 function xd1WoStyle(h) {
-  const k = innerWidth + 'x' + innerHeight + '|' + h.className, C = h._xd1Wo; if (C && C.k === k) return C;
+  const k = innerWidth + 'x' + innerHeight + '|' + h.className, C = h._xd1Wo; if (C && C.k === k && h.hasAttribute('data-oriwo')) return C;
+  if (!h.hasAttribute('data-oriwo')) h.setAttribute('data-oriwo', '');
   let font = '600 10px sans-serif', ls = 0, cut = 13;
   try { const b = getComputedStyle(h, '::before'), hs = getComputedStyle(h); font = [b.fontStyle, b.fontWeight, b.fontSize, b.fontFamily].join(' '); ls = parseFloat(b.letterSpacing) || 0;
     cut = (b.position === 'absolute' ? 0 : (parseFloat(hs.paddingLeft) || 0) + (parseFloat(hs.paddingRight) || 0)) + (parseFloat(b.paddingLeft) || 0); } catch (e) {}
