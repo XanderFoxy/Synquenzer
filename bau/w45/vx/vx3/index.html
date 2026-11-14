@@ -103949,7 +103949,7 @@ function vx3Lead(mk, F, an, sr, H, FH, TH, lead) {
     }
     const mx = .15 + Math.max(0, mk[k] - fv * fs); let s = g;                          // Konsonant ≤ 150 ms vor dem Vokal-Einsatz
     while (s - 1 >= s0 && (s - 1) * fs > lo && mk[k] - (s - 1) * fs <= mx) s--;
-    if (s > s0 && (s - 1) * fs <= lo && Math.max(lo, s * fs) - (k ? mk[k - 1] : 0) < (P.min == null ? .08 : P.min)) continue;   // P4: nur ein Rest bliebe beim Vorgänger
+    if (s > s0 && (s - 1) * fs <= lo && Math.max(lo, s * fs) - (k ? mk[k - 1] - lead[k - 1] : 0) < (P.min == null ? .08 : P.min)) continue;   // P4: vom Vorgänger bliebe nur ein Rest (< 80 ms)
     let e = Math.max(0, Math.round(Math.max(lo, s * fs) * sr / H)); const em = Math.round(mk[k] * sr / H);
     while (e < em && env[e] < TH * .5) e++;
     const L = Math.min(mk[k] - e * H / sr, mx, .199 - (an ? +an[k] || 0 : 0));

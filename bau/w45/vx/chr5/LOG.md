@@ -20,3 +20,5 @@
   - Regression: chr2-test ALLE OK (82, 114 s) · vx1-test 61/61 · spk6-test ALLES OK (26) · chr3-pruef = pruef-vorher.json (cmp).
   - Zahlen des Bauers exakt nachgemessen (pruef/).
   - Befunde in PRUEFUNG.md: 0 schwer, 3 mittel, 5 leicht.
+- Nacharbeit Prüfer-Befunde (Bauer) – ab hier jede Uhrzeit mit `date` genommen:
+  - 22:07 Start: 0 schwer / 3 mittel / 5 leicht aus PRUEFUNG.md. index.html bleibt = basis.html (cmp), Arbeit nur an Mess-Skripten, NOTES, LOG.

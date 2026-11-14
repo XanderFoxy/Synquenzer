@@ -21,3 +21,8 @@
 - vx1-test (rolle): 61/61 (run-vx1.txt).
 - 21:19 Pflicht (Endstand): topdefs Skripte 26, doppelt 0, Syntax 0 · dupkeys 0 · smoke errors [] (smoke.png) · „MS 2000" 1× · „^  live: true," 1× ·
   VERSION 4.63.0 · keine Markenwörter im Unterschied zu basis.html · keine Datensatz-/Produktnamen unter vx/imp2.
+- 22:10 PRÜFUNG (unabhängig, nichts repariert; Befunde in PRUEFUNG.md, Skripte/Läufe in pruef/). Pflicht an index.html: topdefs Skripte 26, Namen 7459, doppelt 0,
+  Syntaxfehler 0 · dupkeys 0 doppelte Schlüssel · smoke errors [] (pruef/smoke.png) · „MS 2000" 1× (Basis 1×) · „^  live: true," 1× · VERSION 4.63.0 (= Basis) ·
+  Markenwörter: Zählung je Wort = Basis bis auf „Kaiser" 4 → 6 (Fenster-Name „Kaiser-Sinc", Basis hat schon „Kaiser-Fenster"; keine Marke) · keine Datensatz-Namen
+  unter vx/imp2 (Prüf-Skripte finden Dateien per Muster); Name der Umrechner-Bibliothek in NOTES.md Z. 31 und LOG.md Z. 4 (Befund 6). Regression einzeln nacheinander: imp1-test ALLE OK (48, 135 s,
+  pruef/reg-imp1.txt) · rv1-test Basis 48/53, IMP2 45/53 (pruef/rv1-basis-1.txt, rv1-imp2-1.txt; = Bauer) · vx1-test 61/61 (pruef/reg-vx1.txt).
