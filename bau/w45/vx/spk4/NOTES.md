@@ -152,7 +152,7 @@ Werkzeuge A3: `messb/rest4.mjs` (Rest aufteilen, `R_voll`/`R_lg`/`R_pw` = Z2.o7,
 `MODE='{"ab":99,"kd":…}'`, `UD`/`MM` = anderer Unison-Klang), `messu/uni2.mjs` (Startwert-Raster, Wahrheit mit einzelnen Analyse-Werten).
 
 ---------------------------------------------------------------------------------------------------------------------------
-## Auftrag 4/4 – Gesamt-Test `spk4-test.mjs` (22 OK / 1 FEHLER – nur Verfeinern +1 dB, offen aus A2)
+## Auftrag 4/4 – Gesamt-Test `spk4-test.mjs` (22 OK / 1 FEHLER – nur Verfeinern +1 dB, offen aus A2; Lauf 2 in einem Zug 356 s)
 Aufruf: `node spk4-test.mjs <abs index.html> [<abs vorher.html> = ../basis5.html]` (mess/ neben der Datei, basis2.html eine Ebene höher).
 Läuft nacheinander, jeder Teil mit Zeitgrenze, `NUR=pflicht,kern,ui,rest,spk3,zeit,spk1,ki1,vx1` wählt Teile, `ALT=1` wertet nur die Ergebnis-Dateien
 neben der Datei aus (nichts neu). Ergebnis `spk4-test.json`, Ausgabe `spk4-test.out`, Teil-Ausgaben `kern-*.out`, `spk3-test.out`, `spk1-test.out`, `ki1-test.out`,
@@ -168,17 +168,17 @@ Zeit (Noten finden Pads vorher/nachher abwechselnd ×2, Klang-Probe 2. Lauf; je 
 | a1-mehrstimmig-pad-allein | 0/28 (Präz 0) → **24/28 (Präz 75 %)**, mehrstimmig |
 | a1-mehrstimmig-gemisch-besser | 1/28 (4 %) → 8/28 (11 %) – offen: Pads-Ebene im Gemisch enthält Bass/Lead/Trommeln |
 | a1-bassband-einstimmig-unveraendert | Original + Bass-Band: 14/32 → 14/32, gleiche Noten (bitgleich bis auf Zeit) |
-| a1-noten-zeit | Pads allein 986 → 1189 ms · Gemisch 947 → 1177 ms (Minimum aus 2; +20–24 % für mehrstimmig) · Seite 98 Noten 1044 ms |
+| a1-noten-zeit | Pads allein 986 → 1189 / 1045 → 1178 ms · Gemisch 947 → 1177 / 1010 → 1140 ms (Lauf 1 / 2, je Minimum aus 2; +13–24 % für mehrstimmig) · Seite 98 Noten 865–1044 ms |
 | a1-seite | spk4-ui 8/8 (Hinweis, Schalter 44 px in 3 Größen, Menü springt nicht, ein ↶) |
 | a2-bass-zerlegen-4db | 3,01 → **4,37 dB** (Browser = Node) |
 | a2-drums-tonal-nicht-schlechter | Drums 7,47 → 8,55 · Tonal 9,77 → 9,95 · Verfeinern Drums 7,41 → 7,90 |
 | **a2-verfeinern-plus-1db** | **FEHLER** 4,37 → 4,36 (−0,01; vorher +0,52) – offen aus A2 (Kamm-Modell selbst mit idealem Pegel 5,00) |
 | a2-verfeinern-nicht-schlechter | Verfeinern-Ergebnis 3,53 → 4,36 dB (absolut besser), gegen Zerlegen −0,01 |
-| a2-zerlegen-zeit | Zerlegen Node 1984 → 2134 ms (+8 %), Verfeinern 826 → 846 ms |
+| a2-zerlegen-zeit | Zerlegen Node 1984 → 2134 / 2002 → 2052 ms (+3–8 %), Verfeinern 826 → 846 / 787 → 820 ms |
 | a2-bass-noten-praezision | Überall finden fair 84 → 79 % (Ziel 70), Quote 75 → 82 % |
 | a3-unison-pad-besser | Pad 1,62 → **0,96** („VA · Säge · Unison 5“) |
 | a3-andere-klaenge-nicht-schlechter | VA 3,89 → 3,89 · FM 2,06 → 2,06 · Lead 0,95 → 0,95 (kein Unison erkannt) |
-| a3-nachbau-zeit | ruhig: VA 2746 → 2350 · FM 1941 → 1680 · Pad 2536 → 2586 · Lead 2268 → 2066 ms |
+| a3-nachbau-zeit | Minimum aus 2: VA 2243 → 2364 · FM 1704 → 1795 · Pad 2427 → 2513 · Lead 2072 → 2211 ms (≤ +7 %; Abstände in beiden Läufen gleich) |
 | a3-rest-aufteilen-kern | Pads 2,29 (Rest) / 2,46 (Verfeinern) → **2,94** · Lead 0,18 / 0,52 → **0,96** · Lead + Gesang 1,45 · 1,4 s |
 | a3-rest-summe-und-undo | Summe = Original 144,5 dB · ↶ Rest gleich 158,8 dB, Ebenen wie vorher |
 | a3-rest-seite | spk4-rest 7/7 (⋯ 44×44, Menü in 3 Größen, Rest aufteilen 1,8 s, ein ↶) |

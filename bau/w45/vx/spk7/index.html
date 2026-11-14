@@ -98778,6 +98778,7 @@ function spk1BtnState(U) {
   if (U.busy) U.bU.disabled = U.bR.disabled = true; else if (SPK1.last) spk1UndoBtns(U, SPK1.last);
   U.bMin.classList.toggle('on', !!U.opt.minus); U.bMin.setAttribute('aria-pressed', String(!!U.opt.minus));
   if (typeof spk3LpBtn === 'function') spk3LpBtn(U);   // SPK3: ▶/■ in der Loop-Zeile
+  if (typeof spk7Btn === 'function') spk7Btn(U);   /* SPK7: Als Klangkorn */
 }
 function spk1UndoBtns(U, r) {
   if (!r) return; U.bU.disabled = !r.nu; U.bR.disabled = !r.nr;
@@ -102774,8 +102775,9 @@ function int53dCh1Data() {
   catch (e) { if (job && job.rP && INT53C.n > 0 && !INT53C.hold && (VV.cancel || /abgebrochen/.test(String(e && e.message)))) { VV.cancel = true; INT53D.waits++; try { await job.rP; } catch (x) {} } throw e; } }; }
 Object.assign(SYNQUENZER, {int53d: {info: () => ({files: INT53D.files, waits: INT53D.waits, last: INT53D.last ? {kinds: INT53D.last.kinds.slice(), ok: INT53D.last.ok} : null})}});   /* INT53D: Test-API (Objekt, wird nicht umhüllt) */
 /* INT53D-END */
-/* SPK7-BEGIN ===== Klangkorn (Spektral-Pinsel-Synth), Teil 1 Kern: eine Auswahl (Pinsel/Rechteck/Harmonische) oder Ebene als Klangquelle,
-   gespielt als Körnchen-Synthese oder eingefrorene Spektral-Schleife; Tastatur links „Probeton | Klangkorn“; „Als Instrument“ = neue Spur (Audio als Take). */
+/* SPK7-BEGIN ===== Klangkorn (Spektral-Pinsel-Synth), Teil 1 Kern + Teil 2 Bedienung: eine Auswahl (Pinsel/Rechteck/Harmonische) oder Ebene als Klangquelle,
+   gespielt als Körnchen-Synthese oder eingefrorene Spektral-Schleife; Tastatur links „Probeton | Klangkorn“; „Als Instrument“ = neue Spur (Audio als Take);
+   Teil 2: Knopf „Als Klangkorn“, Klangkorn-Blatt (Quellbild + Marker, Mini-Tastatur, Regler, Spurwahl), Ecke TON|KORN, leuchtende Tasten. */
 /* Klangkorn-Kern: läuft im AudioWorklet (Text über toString), im Rückfall (ScriptProcessor) und offline im Test.
    Körnchen: je Stimme bis 12 Körner aus der Quelle (Fenster-Tabelle je Kornform), Ort = Position + Bewegung + Streuung,
    Tonhöhe = Taste / Grundton. Spektral-Schleife: eingefrorene Spektren (je Bild eine nahtlose Schleife), langsam überblendet.
@@ -102916,7 +102918,7 @@ function spk7CoreMake(SR) {
   return C;
 }
 /* ---- Hauptfaden: Quelle aus der Auswahl, Grundton, eingefrorene Spektren ---- */
-const SPK7 = {mode: 'ton', art: 'korn', p: null, src: null, eng: null, tr: new WeakMap(), mods: new WeakMap(), url: null, held: new Map(), pcm: new Map(), seq: 0, busy: false, noWk: false, last: null};
+const SPK7 = {mode: 'ton', art: 'korn', p: null, src: null, eng: null, tr: new WeakMap(), mods: new WeakMap(), url: null, held: new Map(), ids: new Map(), lit: new Map(), pcm: new Map(), seq: 0, busy: false, noWk: false, last: null};
 const SPK7_DEF = {art: 'korn', pos: 0.3, bew: 0, gs: 0.08, dc: 4, spo: 0.1, spt: 0, form: 0.3, a: 0.02, d: 0.3, s: 0.8, r: 0.4, fc: 1, q: 0.1, br: 0.5, vol: 0.7, poly: 8};
 const SPK7_RG = {pos: [0, 1], bew: [-2, 2], gs: [0.01, 0.5], dc: [1, 8], spo: [0, 1], spt: [0, 12], form: [0, 1], a: [0.002, 4], d: [0.01, 4], s: [0, 1], r: [0.01, 6], fc: [0, 1], q: [0, 1], br: [0, 1], vol: [0, 1], poly: [1, 16]};
 function spk7Norm(p) {
@@ -102925,7 +102927,7 @@ function spk7Norm(p) {
   o.poly = Math.round(o.poly); return o;
 }
 function spk7P() {
-  if (!SPK7.p) { let s = null; try { s = JSON.parse(localStorage.getItem('synq-spk7') || 'null'); } catch (e) {} SPK7.p = spk7Norm(s && s.p); if (s && s.mode === 'korn') SPK7.mode = 'korn'; }
+  if (!SPK7.p) { let s = null; try { s = JSON.parse(localStorage.getItem('synq-spk7') || 'null'); } catch (e) {} SPK7.p = spk7Norm(s && s.p); }
   return SPK7.p;
 }
 function spk7Keep() { clearTimeout(SPK7.kt); SPK7.kt = setTimeout(() => { try { localStorage.setItem('synq-spk7', JSON.stringify({p: SPK7.p, mode: SPK7.mode})); } catch (e) {} }, 300); }
@@ -103007,7 +103009,7 @@ async function spk7Grab(U) {
     else { spk1Stat(U, 'Klangkorn: erst eine Auswahl malen (Pinsel, Rechteck, Harmonische)'); return null; }
   }
   const t0 = Math.max(0, sb[0]), t1 = Math.min(U.dur, sb[1], t0 + 10); if (!(t1 - t0 > 0.03)) { spk1Stat(U, 'Klangkorn: Auswahl zu kurz'); return null; }
-  SPK7.busy = true; spk1Stat(U, 'Klangkorn: Auswahl wird geholt …');
+  SPK7.busy = true; spk7Btn(U); spk1Stat(U, 'Klangkorn: Auswahl wird geholt …');
   try {
     const s0 = Math.floor(t0 * sr), s1 = Math.ceil(t1 * sr), k0 = Math.floor(s0 / B), k1 = Math.floor((s1 - 1) / B), x = new Float32Array(s1 - s0);
     for (let k = k0; k <= k1; k += 4) {
@@ -103021,7 +103023,7 @@ async function spk7Grab(U) {
     SPK7.src = S7; spk7Feed(spk7Prev(), S7);
     spk1Stat(U, 'Klangkorn: ' + spk7SrcTxt()); return S7;
   } catch (e) { logErr(e); spk1Stat(U, 'Klangkorn: ' + (e.message || e)); return null; }
-  finally { SPK7.busy = false; spk7DdSync(U); }
+  finally { SPK7.busy = false; spk7DdSync(U); spk7Btn(U); }
 }
 function spk7SrcTxt() {
   const S7 = SPK7.src; if (!S7) return 'Noch keine Quelle – Auswahl malen, dann „Aus Auswahl holen“';
@@ -103071,8 +103073,8 @@ function spk7Prev() {   // Vorhören auf der Spektral-Seite (an die Summe)
 function spk7Push(k) { const E = SPK7.eng; if (E) E.set(k ? {[k]: SPK7.p[k]} : SPK7.p); spk7Keep(); }
 /* ---- Tastatur links: Probeton | Klangkorn (Tipp = kurzer Ton, Halten = Ton hält, Ziehen = rollen wie bisher) ---- */
 function spk7Tone() { return SPK7.mode === 'korn' && !!SPK7.src; }
-function spk7NoteOn(m, vel) { const E = spk7Prev(); if (!E || !SPK7.src) return 0; const id = ++SPK7.seq; E.on(id, m, vel == null ? 0.85 : vel, E.ctx.currentTime + 0.005); return id; }
-function spk7NoteOff(id) { const E = SPK7.eng; if (E && id) E.off(id, E.ctx.currentTime + 0.005); }
+function spk7NoteOn(m, vel) { const E = spk7Prev(); if (!E || !SPK7.src) return 0; const id = ++SPK7.seq; E.on(id, m, vel == null ? 0.85 : vel, E.ctx.currentTime + 0.005); SPK7.ids.set(id, m); spk7Lit(m, 1); return id; }
+function spk7NoteOff(id) { const E = SPK7.eng; if (E && id) E.off(id, E.ctx.currentTime + 0.005); const m = SPK7.ids.get(id); if (m != null) { SPK7.ids.delete(id); spk7Lit(m, -1); } }
 function spk7Ky(U) {
   const ky = U.ky; if (!ky || ky.dataset.spk7) return; ky.dataset.spk7 = '1';
   ky.addEventListener('pointerdown', e => {
@@ -103082,12 +103084,12 @@ function spk7Ky(U) {
   ky.addEventListener('pointermove', e => { const h = SPK7.held.get(e.pointerId); if (h && Math.abs(e.clientY - h.y) >= 8) { spk7NoteOff(h.id); SPK7.held.delete(e.pointerId); } });   // Ziehen = rollen: Ton aus
   const up = e => { const h = SPK7.held.get(e.pointerId); if (h) { spk7NoteOff(h.id); SPK7.held.delete(e.pointerId); } };
   ky.addEventListener('pointerup', up); ky.addEventListener('pointercancel', up);
-  document.addEventListener('visibilitychange', () => { if (document.hidden && SPK7.eng) { SPK7.eng.all(); SPK7.held.clear(); } });
+  document.addEventListener('visibilitychange', () => { if (document.hidden && SPK7.eng) spk7AllOff(); });
 }
 function spk7Mode(U, v) {
   SPK7.mode = v === 'korn' ? 'korn' : 'ton'; spk7Keep();
-  const co = U && U.sh && U.sh.querySelector('.spk1-co'); if (co) { co.textContent = SPK7.mode === 'korn' ? 'KORN' : 'TAKT'; co.classList.toggle('spk7-on', SPK7.mode === 'korn'); }
-  if (SPK7.mode === 'korn') { spk7Prev(); if (!SPK7.src && U && U.sel && U.sel.length) spk7Grab(U); }
+  if (SPK7.mode !== 'korn') spk7AllOff(); spk7CoSync(U); if (SPK7.dd && SPK7.dd.bL) spk7DdSync(U);
+  if (SPK7.mode === 'korn') { spk7Prev(); if (!SPK7.src && U && U.sel && (U.sel.length || U.act !== 'orig')) spk7Grab(U); }
 }
 /* ---- Klappfenster „Klangkorn ▾“ (Bausteine wie Ansicht ▾) ---- */
 const SPK7_SL = [
@@ -103098,45 +103100,35 @@ const SPK7_SL = [
   ['s', 'Halten', 0.01, v => Math.round(v * 100) + ' %'], ['r', 'Ausklang', 0.01, v => v.toFixed(2).replace('.', ',') + ' s'],
   ['fc', 'Filter', 0.01, v => (v >= 0.995 ? 'offen' : (x => (x >= 1000 ? (x / 1000).toFixed(1).replace('.', ',') + ' kHz' : Math.round(x) + ' Hz'))(40 * Math.pow(2, v * 9)))], ['q', 'Resonanz', 0.01, v => Math.round(v * 100) + ' %'],
   ['br', 'Breite', 0.01, v => Math.round(v * 100) + ' %'], ['vol', 'Lautstärke', 0.01, v => Math.round(v * 100) + ' %']];
-function spk7DdSync(U) {
-  const D = SPK7.dd; if (!D || !U || D.dd !== U.dd) return;
-  D.tx.textContent = spk7SrcTxt(); D.bG.textContent = SPK7.busy ? 'Wird geholt …' : (U.sel.length ? 'Aus Auswahl holen' : U.act !== 'orig' ? 'Aus Ebene holen' : 'Aus Auswahl holen');
-  D.bG.disabled = SPK7.busy || (!U.sel.length && U.act === 'orig'); D.bT.disabled = D.bH.disabled = !SPK7.src;
-}
-function spk7Dd(U, b) {
-  if (U.dd && U.ddA === b) { spk1Dd(U, null); return; }
-  const p = spk7P();
-  spk1Dd(U, b, dd => {
-    const D = SPK7.dd = {dd};
-    dd.classList.add('spk7-dd'); dd.appendChild(el('h5', '', 'Klangkorn · Quelle'));
-    D.tx = el('p', 'spk7-tx', ''); dd.appendChild(D.tx);
-    const g = el('div', 'spk1-g'); D.bG = el('button', 'mbtn rb spk1-ck', 'Aus Auswahl holen'); D.bH = el('button', 'mbtn rb spk1-ck', '▶ Grundton');
-    on(D.bG, 'click', () => spk7Grab(U)); on(D.bH, 'click', () => { const S7 = SPK7.src; if (!S7) return; const m = Math.round(69 + 12 * Math.log2(S7.f0 / 440)), id = spk7NoteOn(m); setTimeout(() => spk7NoteOff(id), 900); });
-    g.append(D.bG, D.bH); dd.appendChild(g);
-    dd.appendChild(el('h5', '', 'Tastatur links'));
-    dd.appendChild(makeSeg([['ton', 'Probeton'], ['korn', 'Klangkorn']], () => SPK7.mode, v => spk7Mode(U, v), 'spk7-md'));
-    dd.appendChild(el('h5', '', 'Art'));
-    dd.appendChild(makeSeg([['korn', 'Körnchen'], ['frz', 'Spektral-Schleife']], () => p.art, v => { p.art = v; spk7Push('art'); }, 'spk7-art'));
-    D.sl = {};
-    for (const [k, lab, st, fmt] of SPK7_SL) {
-      if (k === 'a') dd.appendChild(el('h5', '', 'Hüllkurve · Filter · Raum'));
-      const l = el('label', '', esc(lab)), r = el('input'), v = el('span', 'spk1-v', fmt(p[k])); r.type = 'range'; r.min = SPK7_RG[k][0]; r.max = SPK7_RG[k][1]; r.step = st; r.value = p[k]; r.setAttribute('aria-label', lab); r.dataset.k = k;
-      on(r, 'input', () => { p[k] = +r.value; v.textContent = fmt(p[k]); spk7Push(k); }); l.append(r, v); dd.appendChild(l); D.sl[k] = r;
-    }
-    const g2 = el('div', 'spk1-g'); D.bT = el('button', 'mbtn rb spk1-ck', 'Als Instrument (neue Spur)'); on(D.bT, 'click', () => spk7Take(U)); g2.appendChild(D.bT); dd.appendChild(g2);
-    spk7DdSync(U);
-  });
-  if (!SPK7.src && U.sel.length) spk7Grab(U);
-}
 function spk7Ui(U, tl) {
-  spk7P(); spk7Css();
-  const b = el('button', 'n1b spk1-ck', 'Klangkorn ▾'); b.setAttribute('aria-label', 'Klangkorn: Auswahl als Instrument'); U.b7 = b; tl.appendChild(b);
+  spk7P(); spk7Css(); if (SPK7.kb == null) SPK7.kb = 48;
+  const b = el('button', 'n1b spk1-ck', 'Klangkorn ▾'); b.setAttribute('aria-label', 'Klangkorn-Blatt öffnen'); U.b7 = b; tl.appendChild(b);
   on(b, 'click', () => spk7Dd(U, b));
-  queueMicrotask(() => { try { spk7Ky(U); if (SPK7.mode === 'korn') spk7Mode(U, 'korn'); } catch (e) { logErr(e); } });
+  queueMicrotask(() => {
+    try {
+      spk7Ky(U);
+      const co = U.sh.querySelector('.spk1-co'); if (co && !U.co7) { co.textContent = ''; const c = U.co7 = el('button', 'spk1-ck spk7-cob', 'TON'); on(c, 'click', () => spk7CoTap(U)); co.appendChild(c); }
+      if (U.ac && !U.b7a) { const a = U.b7a = el('button', 'mbtn rb spk1-ck spk7-ab', 'Als Klangkorn'); a.setAttribute('aria-label', 'Auswahl als Klangkorn spielen'); on(a, 'click', () => spk7Als(U)); U.ac.appendChild(a); U.sh.classList.add('spk7g'); }
+      spk7Btn(U); spk7CoSync(U); if (SPK7.mode === 'korn') spk7Mode(U, 'korn');
+    } catch (e) { logErr(e); }
+  });
 }
 function spk7Css() {
   if (document.getElementById('spk7Css')) return; const s = document.createElement('style'); s.id = 'spk7Css';
-  s.textContent = '.spk1-dd .spk7-tx{margin:0;font-size:12px;line-height:1.35;color:var(--text-dim);max-width:300px}.spk1>.spk1-co.spk7-on{color:var(--amber)}.spk1-dd.spk7-dd .spk1-v{min-width:64px;text-align:right;font:600 11px/1 var(--font-num);color:var(--text);text-transform:none;letter-spacing:0}';
+  s.textContent = ['.spk1-dd .spk7-tx{margin:0;font-size:12px;line-height:1.35;color:var(--text-dim);max-width:300px}',
+    '.spk1-dd.spk7-dd .spk1-v{min-width:64px;text-align:right;font:600 11px/1 var(--font-num);color:var(--text);text-transform:none;letter-spacing:0}',
+    '.spk1-dd .spk7-cv{display:block;width:300px;max-width:100%;height:84px;border-radius:6px;touch-action:none;cursor:ew-resize}',
+    '.spk1-dd .spk7-oc{align-items:center}.spk1-dd .spk7-oc .mbtn{min-width:64px;justify-content:center}.spk1-dd .spk7-oc .spk1-v{min-width:0;flex:1 1 auto;text-align:center}',
+    '.spk1-dd .mbtn.on{background:var(--sel);color:#111}',
+    '.spk7-kb{position:relative;flex:none;width:300px;max-width:100%;height:76px;border-radius:6px;overflow:hidden;background:#0d0e11;touch-action:none}',
+    '.spk7-kb>i{position:absolute;top:0;bottom:0;box-sizing:border-box;background:#ece6d8;border-right:1px solid #0d0e11;font:700 9px/1 var(--font-num);font-style:normal;color:#222;display:flex;align-items:flex-end;justify-content:center;padding-bottom:4px}',
+    '.spk7-kb>i.b{bottom:42%;z-index:1;background:#1a1b1f;border:0;border-radius:0 0 3px 3px}.spk7-kb>i.on{background:var(--amber);box-shadow:0 0 10px var(--amber)}',
+    '.spk1>.spk1-co{position:relative}.spk7-cob{position:absolute;left:0;top:0;width:100%;height:38px;z-index:3;margin:0;padding:0 0 12px;border:0;border-radius:0;background:transparent;color:var(--text-dim);font:700 9px/1 var(--font-ui);letter-spacing:.08em;box-shadow:none}',
+    '.spk7-cob::after{content:"";position:absolute;left:9px;right:9px;top:21px;height:2px;border-radius:1px;background:currentColor;opacity:.45}.spk7-cob.on{color:var(--amber)}.spk7-cob.on::after{opacity:1}',
+    '.spk7-lt{position:absolute;inset:0;pointer-events:none;z-index:1}.spk7-lt>i{position:absolute;left:0;right:1px;background:var(--amber);box-shadow:0 0 8px var(--amber);opacity:.9}',
+    '.spk1-ac .spk7-ab{grid-column:1/-1}',
+    '.spk1.spk7g{grid-template-rows:48px 44px 26px minmax(0,1fr) 44px 24px 147px 129px}',
+    '@media (orientation:landscape){.spk1.spk7g{grid-template-rows:46px 26px minmax(0,1fr) 48px 52px 46px;grid-template-areas:"tl tl tl hd" "co ru ru ly" "ky mn mn ly" "ky mn mn ac" "ky mn mn ac" "op op st ac"}}'].join('\n');
   document.head.appendChild(s);
 }
 /* ---- Als Instrument: Audio als Take im Projekt, Klang 'wt' mit p.wt.h (Klangkorn), neue Spur, ein ↶ ---- */
@@ -103147,19 +103139,22 @@ function spk7Snd(take, S7, p, nm) {
     wt: {table: 'vocal', pos: P.pos, scan: 0, scanTime: 0.8, h}};
   return SQStore.normalizeSound({engine: 'wt', name: (nm || 'Klangkorn').slice(0, 24), cat: 'eigene', p: pp, mods: [], fx: {drive: 0, chorus: {mode: 'off'}, rev: 0.15, dly: 0, vol: 0.8, pan: 0}});
 }
-function spk7Take(U) {
+function spk7Take(U, t) {
   const S7 = SPK7.src; if (!S7 || (U && U.busy)) return null;
+  const ex = t !== 'neu' && t != null && t >= 0 && S.tracks[t] && (typeof spk2MxOk === 'function' ? spk2MxOk(t) : S.tracks[t].kind === 'synth');
   const nm = ('Korn ' + (S7.name || '')).trim().slice(0, 20), pcm = spk7I16(S7.x);
-  const res = imp1Step('Klangkorn als Instrument', () => {
-    if (!canAddTrack()) { toast('Keine Spur frei'); return null; }
-    const tk = tkAddPcmTake(pcm, S7.sr, 'import');
+  const res = imp1Step(ex ? 'Klangkorn → Spur' : 'Klangkorn als Instrument', () => {
+    const tk = S7.take && S.takes && S.takes[S7.take] ? {id: S7.take} : tkAddPcmTake(pcm, S7.sr, 'import');
+    if (ex) { applySound(t, spk7Snd(tk.id, S7, spk7P(), nm)); return {track: t, take: tk.id, neu: false}; }
+    if (!canAddTrack()) { toast('Keine Spur frei – eine Spur wählen'); return null; }
     const i = NT(), nt = newSynthTrack(i, DEFAULT_SOUNDS[2]); nt.name = nm; restoreTrack(i, JSON.stringify(nt));
-    if (!S.tracks[i]) return null; applySound(i, spk7Snd(tk.id, S7, spk7P(), nm)); return {track: i, take: tk.id};
+    if (!S.tracks[i]) return null; applySound(i, spk7Snd(tk.id, S7, spk7P(), nm)); return {track: i, take: tk.id, neu: true};
   });
   if (!res) { if (U) spk1Stat(U, 'Klangkorn: keine Spur angelegt'); return null; }
+  S7.take = res.take; SPK7.tgt = res.track;
   SPK7.pcm.set(res.take, {x: S7.x, sr: S7.sr, frz: S7.frz, FL: S7.FL, NF: S7.NF, fk: S7.fk, f0: S7.f0});
   try { if (UI.heads && EL.grid) buildGrid(); } catch (e) { logErr(e); }
-  if (U) spk1Stat(U, 'Klangkorn → Spur ' + S.tracks[res.track].name + ' · ↶ macht es rückgängig');
+  if (U) { spk1Stat(U, 'Klangkorn → Spur ' + S.tracks[res.track].name + ' · ↶ macht es rückgängig'); spk7DdSync(U); }
   toast('Klangkorn → ' + S.tracks[res.track].name, {label: '↶ Rückgängig', fn: () => undo()});
   SPK7.last = res; return res;
 }
@@ -103217,11 +103212,165 @@ SYNQUENZER.spk7 = {
   make: (x, sr, f0) => { SPK7.src = spk7Make(x instanceof Float32Array ? x : new Float32Array(x), sr || 48000, {f0, info: {wo: 'Test', name: 'Test'}}); if (SPK7.eng) spk7Feed(SPK7.eng, SPK7.src); return SPK7.src ? {f0: SPK7.src.f0, n: SPK7.src.x.length} : null; },
   f0: (x, sr) => spk7F0(x instanceof Float32Array ? x : new Float32Array(x), sr || 48000),
   on: (m, v) => spk7NoteOn(m, v), off: id => spk7NoteOff(id), eng: () => { const E = SPK7.eng; return E ? {kind: E.kind, q: E.q.length} : null; },
-  take: () => spk7Take(SPK1.ui), last: () => SPK7.last, render: o => spk7Render(o), core: () => spk7CoreMake, dd: () => SPK7.dd && SPK7.dd.dd && SPK7.dd.dd.isConnected ? SPK7.dd.dd : null,
+  take: t => spk7Take(SPK1.ui, t == null ? 'neu' : t), als: () => spk7Als(SPK1.ui), lit: () => [...SPK7.lit.keys()], tgt: () => SPK7.tgt, kb: () => SPK7.kb, last: () => SPK7.last, render: o => spk7Render(o), core: () => spk7CoreMake, dd: () => SPK7.dd && SPK7.dd.dd && SPK7.dd.dd.isConnected ? SPK7.dd.dd : null,
   voices: () => VOICES.filter(v => v.korn && !v.dead).length, cache: t => { const c = SPK7.pcm.get(t); return c ? {n: c.x.length, sr: c.sr} : null; }, forget: t => SPK7.pcm.delete(t),
   load: (t, f0) => spk7Src(t, f0).then(o => (o ? {n: o.x.length, sr: o.sr, nf: o.NF, fk: o.fk} : null)),
   trEng: i => { const A = AU.tracks[i], E = A && SPK7.tr.get(A.trackIn); return E ? {kind: E.kind, take: E.take, q: E.q.length, voices: E.proxies.size} : null; }
 };
+/* ---- Teil 2: Klangkorn-Blatt (Bausteine wie „Klang nachbauen“): Quellbild mit Positions-Marker, Mini-Tastatur, Regler, Spurwahl ---- */
+const SPK7_ORD = ['pos', 'bew', 'gs', 'dc', 'spo', 'spt', 'form', 'a', 'd', 's', 'r', 'fc', 'q', 'br', 'vol'];
+function spk7DdSync(U) {
+  const D = SPK7.dd; if (!D || !U || D.dd !== U.dd) return;
+  D.tx.textContent = spk7SrcTxt(); D.h.textContent = 'Klangkorn' + (SPK7.src ? ' · ' + (SPK7.src.name || '') : '');
+  D.bG.textContent = SPK7.busy ? 'Wird geholt …' : (U.sel.length ? 'Aus Auswahl holen' : U.act !== 'orig' ? 'Aus Ebene holen' : 'Aus Auswahl holen');
+  D.bG.disabled = SPK7.busy || (!U.sel.length && U.act === 'orig'); D.bV.disabled = D.bT.disabled = !SPK7.src;
+  D.bV.textContent = SPK7.pv ? '■ Stopp' : '▶ Vorhören'; D.bV.classList.toggle('on', !!SPK7.pv);
+  D.bL.textContent = (SPK7.mode === 'korn' ? '✓ ' : '') + 'Auf Tastatur links'; D.bL.classList.toggle('on', SPK7.mode === 'korn'); D.bL.disabled = !SPK7.src;
+  D.ok.textContent = 'C' + (Math.floor(SPK7.kb / 12) - 1) + ' – H' + (Math.floor(SPK7.kb / 12) + 0);
+  spk7Tgts(U); spk7PicDraw();
+}
+function spk7Dd(U, b) {
+  if (U.dd && U.ddA === b) { spk1Dd(U, null); return; }
+  const p = spk7P();
+  spk1Dd(U, b, dd => {
+    const D = SPK7.dd = {dd, U};
+    dd.classList.add('spk7-dd'); dd.appendChild(D.h = el('h5', '', 'Klangkorn'));
+    D.cv = el('canvas', 'spk7-cv'); D.cv.setAttribute('aria-label', 'Quelle: Spektrum der Auswahl, Marker = Position (ziehen)'); dd.appendChild(D.cv); spk7PicGest(D);
+    D.tx = el('p', 'spk7-tx', ''); dd.appendChild(D.tx);
+    const g = el('div', 'spk1-g'); D.bG = el('button', 'mbtn rb spk1-ck', 'Aus Auswahl holen'); D.bV = el('button', 'mbtn rb spk1-ck', '▶ Vorhören'); D.bV.dataset.k = 'vor';
+    on(D.bG, 'click', () => spk7Grab(U)); on(D.bV, 'click', () => spk7Vor(U)); g.append(D.bG, D.bV); dd.appendChild(g);
+    dd.appendChild(el('h5', '', 'Spielen'));
+    const go = el('div', 'spk1-g spk7-oc'), bo = el('button', 'mbtn rb spk1-ck', 'Okt −'), bp = el('button', 'mbtn rb spk1-ck', 'Okt +'); D.ok = el('span', 'spk1-v', '');
+    on(bo, 'click', () => { SPK7.kb = Math.max(24, SPK7.kb - 12); spk7KbBuild(D); spk7DdSync(U); }); on(bp, 'click', () => { SPK7.kb = Math.min(96, SPK7.kb + 12); spk7KbBuild(D); spk7DdSync(U); });
+    go.append(bo, D.ok, bp); dd.appendChild(go);
+    D.kb = el('div', 'spk7-kb'); D.kb.setAttribute('aria-label', 'Klangkorn-Tastatur, zwei Oktaven'); dd.appendChild(D.kb); spk7KbBuild(D); spk7KbGest(D);
+    const gl = el('div', 'spk1-g'); D.bL = el('button', 'mbtn rb spk1-ck', 'Auf Tastatur links'); D.bL.dataset.k = 'links'; on(D.bL, 'click', () => spk7Mode(U, SPK7.mode === 'korn' ? 'ton' : 'korn')); gl.appendChild(D.bL); dd.appendChild(gl);
+    dd.appendChild(el('h5', '', 'Modus'));
+    dd.appendChild(makeSeg([['korn', 'Körnchen'], ['frz', 'Schleife']], () => p.art, v => { p.art = v; spk7Push('art'); }, 'spk7-art'));
+    D.sl = {}; D.vl = {};
+    for (const k of SPK7_ORD) {
+      const [, lab, st, fmt] = SPK7_SL.find(q => q[0] === k);
+      if (k === 'pos') dd.appendChild(el('h5', '', 'Körnchen'));
+      if (k === 'a') dd.appendChild(el('h5', '', 'Hüllkurve · Filter · Breite'));
+      const l = el('label', '', esc(lab)), r = el('input'), v = el('span', 'spk1-v', fmt(p[k])); r.type = 'range'; r.min = SPK7_RG[k][0]; r.max = SPK7_RG[k][1]; r.step = st; r.value = p[k]; r.setAttribute('aria-label', lab); r.dataset.k = k;
+      on(r, 'input', () => { p[k] = +r.value; v.textContent = fmt(p[k]); spk7Push(k); if (k === 'pos' || k === 'spo') spk7PicDraw(); }); l.append(r, v); dd.appendChild(l); D.sl[k] = r; D.vl[k] = v;
+    }
+    dd.appendChild(el('h5', '', 'Als Instrument in Spur …'));
+    D.gT = el('div', 'spk1-g'); dd.appendChild(D.gT);
+    const g2 = el('div', 'spk1-g'); D.bT = el('button', 'mbtn rb spk1-ck', 'Als Instrument übernehmen'); D.bT.dataset.k = 'take'; on(D.bT, 'click', () => spk7Take(U, SPK7.tgt)); g2.appendChild(D.bT); dd.appendChild(g2);
+    spk7DdSync(U);
+  });
+  if (!SPK7.src && (U.sel.length || U.act !== 'orig')) spk7Grab(U);
+}
+function spk7SetP(k, v) {   // Wert setzen + Regler/Anzeige im Blatt nachziehen
+  const p = spk7P(), r = SPK7_RG[k]; p[k] = Math.max(r[0], Math.min(r[1], v)); spk7Push(k);
+  const D = SPK7.dd; if (D && D.sl && D.sl[k]) { D.sl[k].value = p[k]; D.vl[k].textContent = SPK7_SL.find(q => q[0] === k)[3](p[k]); }
+}
+/* Vorhören: Grundton hält, bis „■ Stopp“ (oder das Blatt zugeht) */
+function spk7Vor(U) {
+  if (SPK7.pv) { spk7NoteOff(SPK7.pv); SPK7.pv = 0; clearInterval(SPK7.pvT); spk7DdSync(U); return; }
+  const S7 = SPK7.src; if (!S7) return; const m = Math.round(69 + 12 * Math.log2(S7.f0 / 440));
+  SPK7.pv = spk7NoteOn(Math.max(12, Math.min(120, m)), 0.8); const t0 = Date.now();
+  SPK7.pvT = setInterval(() => { const D = SPK7.dd; if (!SPK7.pv || !D || !D.dd.isConnected || Date.now() - t0 > 30000) { if (SPK7.pv) spk7NoteOff(SPK7.pv); SPK7.pv = 0; clearInterval(SPK7.pvT); if (D && D.dd.isConnected) spk7DdSync(U); } }, 250);
+  spk7DdSync(U);
+}
+/* Quellbild: kleines Spektrogramm der Quelle (Farben wie die Spektral-Seite), Marker = Position, Band = Streuung Ort */
+function spk7Pic(S7, W, H) {
+  if (S7.pic && S7.pic.W === W && S7.pic.H === H) return S7.pic;
+  const N = 1024, x = S7.x, n = x.length, sr = S7.sr, re = new Float64Array(N), im = new Float64Array(N), lut = spk1Lut(), img = new ImageData(W, H), db = new Float32Array(W * H);
+  const fl = 50, fh = Math.min(12000, sr / 2 - 100), rowB = new Float64Array(H); for (let r = 0; r < H; r++) rowB[r] = fl * Math.pow(fh / fl, (H - 1 - r) / (H - 1)) * N / sr;
+  let mx = -200;
+  for (let c = 0; c < W; c++) {
+    const s0 = Math.round((c + 0.5) / W * n) - N / 2;
+    for (let i = 0; i < N; i++) { const j = s0 + i; re[i] = j >= 0 && j < n ? x[j] * (0.5 - 0.5 * Math.cos(2 * Math.PI * i / N)) : 0; im[i] = 0; }
+    spk7Fft(re, im, false);
+    for (let r = 0; r < H; r++) { const b = rowB[r], b0 = Math.min(N / 2 - 1, b | 0), u = b - b0, m = Math.hypot(re[b0], im[b0]) * (1 - u) + Math.hypot(re[b0 + 1], im[b0 + 1]) * u, v = 20 * Math.log10(m + 1e-9); db[r * W + c] = v; if (v > mx) mx = v; }
+  }
+  for (let i = 0; i < W * H; i++) { const q = Math.max(0, Math.min(255, Math.round((db[i] - mx + 70) / 66 * 255))) * 4; img.data[i * 4] = lut[q]; img.data[i * 4 + 1] = lut[q + 1]; img.data[i * 4 + 2] = lut[q + 2]; img.data[i * 4 + 3] = 255; }
+  return (S7.pic = {W, H, img});
+}
+function spk7PicDraw() {
+  const D = SPK7.dd, cv = D && D.cv; if (!cv || !cv.isConnected) return;
+  const dpr = Math.min(2, window.devicePixelRatio || 1), W = Math.max(200, Math.min(320, (D.dd.clientWidth || 300) - 20)), H = 84;
+  if (cv.width !== Math.round(W * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); cv.style.width = W + 'px'; cv.style.height = H + 'px'; }
+  const x = cv.getContext('2d'), S7 = SPK7.src, p = spk7P(); x.setTransform(1, 0, 0, 1, 0, 0);
+  if (S7) { const P = spk7Pic(S7, cv.width, cv.height); x.putImageData(P.img, 0, 0); } else { x.fillStyle = spk1Var('--lcd') || '#111'; x.fillRect(0, 0, cv.width, cv.height); }
+  x.setTransform(dpr, 0, 0, dpr, 0, 0);
+  if (!S7) { x.fillStyle = spk1Var('--text-dim') || '#888'; x.font = '500 12px ' + (spk1Var('--font-ui') || 'sans-serif'); x.fillText('Noch keine Quelle – Auswahl malen', 10, H / 2 + 4); return; }
+  const px = p.pos * W, bw = p.spo * W;
+  x.fillStyle = 'rgba(255,178,46,.20)'; x.fillRect(Math.max(0, px - bw / 2), 0, Math.min(W, px + bw / 2) - Math.max(0, px - bw / 2), H);
+  const c = spk1Var('--sel') || '#ffb22e'; x.fillStyle = c; x.fillRect(Math.round(px) - 1, 0, 2, H);
+  x.beginPath(); x.moveTo(px - 7, 0); x.lineTo(px + 7, 0); x.lineTo(px, 9); x.fill(); x.beginPath(); x.moveTo(px - 7, H); x.lineTo(px + 7, H); x.lineTo(px, H - 9); x.fill();
+  if (Math.abs(p.bew) >= 0.01) { x.font = '700 11px ' + (spk1Var('--font-num') || 'monospace'); x.fillText(p.bew < 0 ? '◀' : '▶', Math.max(2, Math.min(W - 12, px + (p.bew < 0 ? -18 : 8))), 22); }
+}
+function spk7PicGest(D) {
+  const cv = D.cv; let pid = null;
+  const set = e => { const r = cv.getBoundingClientRect(); if (r.width > 0) spk7SetP('pos', Math.round((e.clientX - r.left) / r.width * 100) / 100); spk7PicDraw(); };
+  cv.addEventListener('pointerdown', e => { if (!SPK7.src) return; pid = e.pointerId; try { cv.setPointerCapture(pid); } catch (er) {} e.preventDefault(); set(e); });
+  cv.addEventListener('pointermove', e => { if (pid === e.pointerId) set(e); });
+  const up = e => { if (pid === e.pointerId) pid = null; }; cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+  requestAnimationFrame(() => spk7PicDraw());
+}
+/* Mini-Tastatur: 2 Oktaven ab SPK7.kb, Gleiten über die Tasten wechselt den Ton, mehrere Finger = Akkord */
+function spk7KbBuild(D) {
+  const kb = D.kb, b = SPK7.kb; kb.innerHTML = ''; D.keys = new Map(); const wh = [0, 2, 4, 5, 7, 9, 11], W = 14;
+  for (let o = 0; o < 2; o++) wh.forEach((pc, i) => { const m = b + o * 12 + pc, k = el('i', 'w'); k.dataset.m = m; k.style.left = ((o * 7 + i) / W * 100) + '%'; k.style.width = (100 / W) + '%'; if (pc === 0) k.textContent = 'C' + (Math.floor(m / 12) - 1); kb.appendChild(k); D.keys.set(m, k); });
+  for (let o = 0; o < 2; o++) [[1, 1], [3, 2], [6, 4], [8, 5], [10, 6]].forEach(([pc, wi]) => { const m = b + o * 12 + pc, k = el('i', 'b'); k.dataset.m = m; k.style.left = ((o * 7 + wi) / W * 100 - 100 / W * 0.31) + '%'; k.style.width = (100 / W * 0.62) + '%'; kb.appendChild(k); D.keys.set(m, k); });
+  for (const [m, k] of D.keys) k.classList.toggle('on', (SPK7.lit.get(m) || 0) > 0);
+}
+function spk7KbGest(D) {
+  const kb = D.kb, P = new Map();
+  const hit = e => { const t = document.elementFromPoint(e.clientX, e.clientY), k = t && t.closest && t.closest('.spk7-kb>i'); return k && kb.contains(k) ? +k.dataset.m : null; };
+  kb.addEventListener('pointerdown', e => { e.preventDefault(); const m = hit(e); if (m == null || !SPK7.src) return; try { kb.setPointerCapture(e.pointerId); } catch (er) {} P.set(e.pointerId, {m, id: spk7NoteOn(m, 0.85)}); });
+  kb.addEventListener('pointermove', e => { const q = P.get(e.pointerId); if (!q) return; const m = hit(e); if (m == null || m === q.m) return; spk7NoteOff(q.id); q.m = m; q.id = spk7NoteOn(m, 0.85); });
+  const up = e => { const q = P.get(e.pointerId); if (q) { spk7NoteOff(q.id); P.delete(e.pointerId); } }; kb.addEventListener('pointerup', up); kb.addEventListener('pointercancel', up);
+}
+/* Leuchtende Tasten: Mini-Tastatur (Klasse) + Tastatur links (Überlage im Tasten-Streifen, folgt dem Rollen) */
+function spk7Lit(m, d) {
+  const n = Math.max(0, (SPK7.lit.get(m) || 0) + d); if (n) SPK7.lit.set(m, n); else SPK7.lit.delete(m);
+  const D = SPK7.dd, k = D && D.keys && D.keys.get(m); if (k) k.classList.toggle('on', n > 0);
+  spk7LitDraw();
+}
+function spk7AllOff() {
+  if (SPK7.eng) SPK7.eng.all(); SPK7.held.clear(); SPK7.ids.clear(); SPK7.pv = 0; clearInterval(SPK7.pvT);
+  SPK7.lit.clear(); const D = SPK7.dd; if (D && D.keys) for (const k of D.keys.values()) k.classList.remove('on'); spk7LitDraw();
+}
+function spk7LitDraw() {
+  const U = SPK1.ui; if (!U || !U.ky) return;
+  let lt = U.lt7; if (!lt) { lt = U.lt7 = el('div', 'spk7-lt'); lt.setAttribute('aria-hidden', 'true'); U.ky.appendChild(lt); }
+  const ms = [...SPK7.lit.keys()]; while (lt.children.length > ms.length) lt.lastChild.remove(); while (lt.children.length < ms.length) lt.appendChild(el('i'));
+  ms.forEach((m, i) => { const e = lt.children[i], y = (U.v.mTop - m - 0.5) * U.v.rowH; e.dataset.m = m; e.style.top = y.toFixed(1) + 'px'; e.style.height = Math.max(3, U.v.rowH - (U.v.rowH >= 5 ? 1 : 0)) + 'px'; });
+  if (ms.length && !SPK7.litRaf) SPK7.litRaf = requestAnimationFrame(() => { SPK7.litRaf = 0; if (SPK7.lit.size) spk7LitDraw(); });
+}
+/* Ecke über den Tasten = Umschalter Probeton | Klangkorn (Trefferfläche 38 px, reicht 12 px über die Tasten) */
+function spk7CoSync(U) {
+  const b = U && U.co7; if (!b) return; const k = SPK7.mode === 'korn';
+  b.textContent = k ? 'KORN' : 'TON'; b.classList.toggle('on', k); b.setAttribute('aria-pressed', String(k));
+  b.setAttribute('aria-label', k ? 'Tastatur links spielt das Klangkorn – tippen für Probeton' : 'Tastatur links spielt den Probeton – tippen für Klangkorn');
+}
+function spk7CoTap(U) {
+  if (SPK7.mode === 'korn') { spk7Mode(U, 'ton'); return; }
+  if (!SPK7.src && !U.sel.length && U.act === 'orig') { spk1Stat(U, 'Klangkorn: erst eine Auswahl malen, dann „Als Klangkorn“'); return; }
+  spk7Mode(U, 'korn');
+}
+/* „Als Klangkorn“ im Aktionsfeld: Auswahl holen, Tastatur links auf Klangkorn, Blatt auf */
+async function spk7Als(U) {
+  if (!U.meta || SPK7.busy) return; const b = U.b7a;
+  const S7 = await spk7Grab(U); if (!S7) return;
+  SPK7.mode = 'korn'; spk7Keep(); spk7Prev(); spk7CoSync(U);
+  if (!(U.dd && SPK7.dd && SPK7.dd.dd === U.dd)) spk7Dd(U, b); else spk7DdSync(U);
+}
+function spk7Btn(U) { const b = U && U.b7a; if (b) b.disabled = !U.meta || !!U.busy || SPK7.busy || (!U.sel.length && U.act === 'orig'); }
+/* Spurwahl wie beim Nachbau: Synth-Spuren + „+ Neue Spur“ */
+function spk7Tgts(U) {
+  const D = SPK7.dd; if (!D || !D.gT) return; D.gT.innerHTML = '';
+  const ok = i => typeof spk2MxOk === 'function' ? spk2MxOk(i) : !!(S.tracks[i] && S.tracks[i].kind === 'synth');
+  if (SPK7.tgt !== 'neu' && !(SPK7.tgt >= 0 && ok(SPK7.tgt))) SPK7.tgt = 'neu';
+  const B = (t, v) => { const x = el('button', 'mbtn rb spk1-ck', esc((SPK7.tgt === v ? '✓ ' : '') + t)); x.dataset.t = v; on(x, 'click', () => { SPK7.tgt = v; spk7Tgts(U); }); D.gT.appendChild(x); };
+  if (canAddTrack()) B('+ Neue Spur', 'neu');
+  for (let i = 0; i < NT(); i++) if (ok(i)) B(S.tracks[i].name + (S.tracks[i].sound && S.tracks[i].sound.p && S.tracks[i].sound.p.wt && S.tracks[i].sound.p.wt.h ? ' · Korn' : ''), i);
+  D.bT.textContent = SPK7.tgt === 'neu' ? 'Als Instrument (neue Spur)' : 'Als Instrument in ' + (S.tracks[SPK7.tgt] ? S.tracks[SPK7.tgt].name : 'Spur');
+}
 /* SPK7-END */
 /* XD1-BEGIN ===== Paket XD1 (Xander 08.11.: „Du sollst eigenmächtig entscheiden, was logischer ist … logisch entscheiden, was praktikabel
    ist, den Workflow nicht sperrt, alles intuitiv und leicht. Optik nichts hinzuerfinden, Sachen richtig darstellen.“) – acht Punkte:
