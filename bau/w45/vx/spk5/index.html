@@ -96669,22 +96669,21 @@ function spk5Css2() {
   if (document.getElementById('spk5Css2')) return;
   const s = document.createElement('style'); s.id = 'spk5Css2';
   s.textContent = [
-    '.spk1>.spk5-fd{grid-area:tl;justify-self:end;align-self:center;z-index:2;display:flex;align-items:center;box-sizing:border-box;width:' + SPK5_FD_W + 'px;height:44px;padding:0 4px 0 12px;background:linear-gradient(90deg,rgba(21,23,27,0),var(--chassis) 10px);touch-action:none;color:var(--text-dim);outline:none}',
-    '.spk5-fd .spk5-fi{flex:none;display:flex;align-items:center;justify-content:center;width:22px;height:44px}.spk5-fd .spk5-fi.on{color:var(--text)}',
-    '.spk5-fd .spk5-ft{position:relative;flex:1 1 auto;height:44px;margin:0 13px}',
-    '.spk5-ft::before{content:"";position:absolute;left:0;right:0;top:20px;height:4px;border-radius:2px;background:var(--line)}',
-    '.spk5-fq{position:absolute;left:0;right:0;top:20px;height:4px;border-radius:2px;background:var(--sel);transform-origin:0 50%;transform:scaleX(0)}',
-    '.spk5-fk{position:absolute;left:0;top:10px;width:24px;height:24px;margin-left:-12px;border-radius:50%;box-sizing:border-box;background:var(--chassis-2);border:2px solid var(--sel);box-shadow:0 2px 6px rgba(0,0,0,.6);will-change:transform}',
+    '.spk1>.spk1-tl{margin-right:' + SPK5_FD_W + 'px}',   // Leiste endet vor dem Regler: jede Taste bleibt ganz sichtbar erreichbar
+    '.spk1>.spk5-fd{grid-area:tl;justify-self:end;align-self:stretch;z-index:2;display:flex;align-items:center;box-sizing:border-box;width:' + SPK5_FD_W + 'px;padding:0 4px 0 12px;background:var(--chassis);border-bottom:1px solid var(--panel-edge);border-left:1px solid var(--panel-edge);touch-action:none;color:var(--text-dim);outline:none}',
+    '.spk5-fd .spk5-fi{flex:none;display:flex;align-items:center;justify-content:center;width:22px;height:100%}.spk5-fd .spk5-fi.on{color:var(--text)}',
+    '.spk5-fd .spk5-ft{position:relative;flex:1 1 auto;height:100%;margin:0 13px}',
+    '.spk5-ft::before{content:"";position:absolute;left:0;right:0;top:calc(50% - 2px);height:4px;border-radius:2px;background:var(--line)}',
+    '.spk5-fq{position:absolute;left:0;right:0;top:calc(50% - 2px);height:4px;border-radius:2px;background:var(--sel);transform-origin:0 50%;transform:scaleX(0)}',
+    '.spk5-fk{position:absolute;left:0;top:calc(50% - 12px);width:24px;height:24px;margin-left:-12px;border-radius:50%;box-sizing:border-box;background:var(--chassis-2);border:2px solid var(--sel);box-shadow:0 2px 6px rgba(0,0,0,.6);will-change:transform}',
     '.spk5-fd:focus-visible .spk5-fk{box-shadow:0 0 0 3px rgba(244,241,234,.35)}',
-    '.spk1-tl .spk5-fsp{flex:none;width:' + SPK5_FD_W + 'px;height:1px}',
     '.spk1-mn canvas.spk5-rb,.spk1-mn canvas.spk5-rn{opacity:0;pointer-events:none}'
   ].join('\n');
   document.head.appendChild(s);
 }
-// Haken am Ende von spk1Build: Regler + Platzhalter am Ende der Werkzeugleiste (die letzte Taste lässt sich unter dem Regler hervor rollen)
+// Haken am Ende von spk1Build: Regler rechts neben der Werkzeugleiste (die Leiste wird um seine Breite schmaler, rollt wie bisher)
 function spk5UiAdd(U) {
   spk5Css(); spk5Css2();
-  U.tl.appendChild(el('span', 'spk5-fsp'));
   const fd = U.s5fd = el('div', 'spk5-fd', '<span class="spk5-fi a">' + SPK5_SVG_SP + '</span><span class="spk5-ft"><span class="spk5-fq"></span><span class="spk5-fk"></span></span><span class="spk5-fi b">' + SPK5_SVG_NO + '</span>');
   fd.tabIndex = 0; fd.setAttribute('role', 'slider'); fd.setAttribute('aria-label', 'Überblenden: Spektrum ↔ Noten'); fd.setAttribute('aria-valuemin', '0'); fd.setAttribute('aria-valuemax', '100');
   U.sh.appendChild(fd); U.s5f = 0; spk5FdSet(U, 0, false);
@@ -96718,7 +96717,7 @@ function spk5FdSet(U, v, done) {
   v = Math.max(0, Math.min(1, +v || 0)); if (v < 0.02) v = 0; if (v > 0.98) v = 1;
   const old = U.s5f || 0; U.s5f = v;
   const fd = U.s5fd; if (fd) {
-    const w = U.s5fw || (U.s5fw = Math.max(40, fd.querySelector('.spk5-ft').getBoundingClientRect().width || SPK5_FD_W - 86));
+    const w = U.s5fw || (U.s5fw = Math.max(40, fd.querySelector('.spk5-ft').getBoundingClientRect().width || SPK5_FD_W - 87));
     fd.querySelector('.spk5-fk').style.transform = 'translateX(' + (v * w).toFixed(1) + 'px)'; fd.querySelector('.spk5-fq').style.transform = 'scaleX(' + v.toFixed(3) + ')';
     const p = Math.round(v * 100); if (fd.getAttribute('aria-valuenow') !== String(p)) { fd.setAttribute('aria-valuenow', String(p)); fd.setAttribute('aria-valuetext', v === 0 ? 'Spektrum' : v === 1 ? 'Noten' : 'Noten ' + p + ' %'); }
     const a = fd.firstChild, b = fd.lastChild; a.classList.toggle('on', v < 0.5); b.classList.toggle('on', v >= 0.5);

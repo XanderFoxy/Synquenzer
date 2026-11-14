@@ -21,7 +21,7 @@ const fdLay = p => p.evaluate(() => {
 });
 const shot = (p, n) => p.screenshot({path: path.join(fotos, n)});
 async function thumbDrag(P, from, to) {   // Finger auf dem Daumen von Wert „from“ nach „to“ ziehen
-  const fd = await box(P.p, '#spk1Sheet .spk5-fd'), x0 = fd.x + 12 + 22 + 13, w = fd.w - 86, y = fd.y + fd.h / 2;
+  const fd = await box(P.p, '#spk1Sheet .spk5-fd'), x0 = fd.x + 1 + 12 + 22 + 13, w = fd.w - 87, y = fd.y + fd.h / 2;
   await P.drag([x0 + from * w, y], [x0 + to * w, y], 12);
 }
 

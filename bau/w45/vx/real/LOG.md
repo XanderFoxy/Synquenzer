@@ -21,3 +21,4 @@
 17:59 Auftrag 2/2 NACHPRÜFEN Start: rv1-test, vx1-test, imp1-test, chr2-test nacheinander.
 18:02 rv1-test Lauf 4 (run4.txt, 96 s): 42/53 OK = Lauf 3 (reproduzierbar, gleiche Zahlen).
 18:05 vx1-test (rolle/vx1-test.mjs, reg/vx1.txt): 61/61 OK.
+18:08 imp1-test (Kopie reg/imp1-test.mjs, reg/imp1.txt): ALLE OK (48), 119 s.
