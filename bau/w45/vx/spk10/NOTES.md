@@ -34,13 +34,14 @@ Schwelle −19 dB liegt zwischen −16,6 (richtig, alle Fälle) und −20,6 (fal
 
 | Fall | vorher (4.64) | nachher (SPK10) |
 |---|---|---|
-| bassdrums (ohne Pads) | 19/32 · 0,655 (29) | **22/32 · 0,759 (29)** |
+| bassdrums (ohne Pads) | 19/32 · 0,655 (29) | 22/32 · 0,759 (29) → Nachbesserung **23/32 · 0,793 (29)** |
 | demo | 29/32 · 0,806 (36) | 29/32 · 0,806 (36) |
 | walk | 8/32 · 0,216 (37) | 8/32 · 0,216 (37) |
 | sech | 29/64 · 0,617 (47) | 29/64 · 0,617 (47) |
 | okt 24/32 · 0,686 · lang 4/4 · 0,333 · leise 16/32 · 0,50 · hoch 13/32 · 0,448 · laut 30/32 · 0,789 · basspads 32/32 · 0,97 · ohneraster 24/32 · 0,727 · sr48 28/32 · 0,718 · ohnebass 0 (28) | – | alle gleich (`reg/faelle8.out`) |
 
-`faelle8 SOLL=1` (13 Fälle): 13 OK / 0 FEHLER; Untergrenze bassdrums in `messb/faelle8-soll.json` (Kopie) auf 22 · 0,739 gehoben.
+`faelle8 SOLL=1` (13 Fälle): 13 OK / 0 FEHLER; Untergrenze bassdrums in `messb/faelle8-soll.json` (Kopie) auf 22 · 0,739 gehoben (Nachbesserung: 23 · 0,773 + 11 Prüfer-Mischungen).
+Hinweis: Merkmal-Tabelle und Schwelle −19 oben = erste Fassung; Stand nach der Prüfung s. Abschnitt „Prüfung“.
 Zeit „Noten finden“ Bass-Ebene gepaart (o10.an 0/1, Last ~4,8): demo 1489/1369, 1411/1322, 1284/1252 ms; walk 1657/1408, 1328/1307,
 1080/1085 ms → ≈ 1,0× (zusätzlich nur wenige kurze FFTs 4096→1024 je Note; Kick-Vorlage für N 4096 bewusst aus).
 
@@ -53,7 +54,7 @@ Zeit „Noten finden“ Bass-Ebene gepaart (o10.an 0/1, Last ~4,8): demo 1489/13
   Pad-Teiltöne und Unter-Oktave ziehen).
 
 ## Ziel – NICHT erreicht (ehrlich)
-Ziel Lauf ≥ 20/32 und 16tel ≥ 45/64 und ohne Pads ≥ 24/32: erreicht nur ohne Pads 22/32 (+3, Präzision +0,10). Ursachen gemessen:
+Ziel Lauf ≥ 20/32 und 16tel ≥ 45/64 und ohne Pads ≥ 24/32: erreicht nur ohne Pads 22/32 (+3, Präzision +0,10); nach der Nachbesserung 23/32 · 0,793 (+4), Ziel ≥ 24 weiter offen. Ursachen gemessen:
 - Lauf: nur ~9 der 24 Fehler sind Oktavfehler; der Rest sind Halbton-Verschmierung (Fenster 370 ms über zwei 268-ms-Noten: 32 statt 33,
   36 statt 38) und Notengrenzen 80–150 ms daneben. Das Oktav-Merkmal ist mit Pads und Nachbartönen nicht trennscharf (s. Tabelle).
 - 16tel: 21 Noten fehlen ganz – die Verfolgung (N 16384) bleibt bei C2, kurze C3/G2/E2-Einwürfe (96 ms) erscheinen gar nicht als
@@ -75,3 +76,54 @@ Kick-Rest je Schlag (kleinste Quadrate) bringt für die Oktave nichts mehr, seit
 - Worker-Probe `messb/worker10.mjs`: `spk10Okt` im Worker-Text und im Worker als Funktion vorhanden, Seitenfehler [].
 - Misch-Lage: Block nach SPK8-END (SPK9 liegt nach SPK7-END), Haken nur im SPK8-Block; keine SPK9-Stelle (spk1DspMake-Haken, `const src`,
   SPK2 segNotes) berührt.
+
+## Prüfung (Nachbesserung nach PRUEFUNG.md, 22:05–22:4x)
+Werkzeuge (alle im Paket): `messb/faelle8p.mjs` (Prüfer-Fassung: `FALL=name@Bass,Pad1,Pad2,Trommeln`, Fälle mit „;“ getrennt; 5. Listenfeld =
+nächste Wahrheit; `SOLL=1` auch je Mischung), Prüfer-Linien in `messb/faelle/` (adur, chrom, chromab, chromdunkel, dunkel120, dunkel200, fdemo,
+gdemo, hell, sinus), `messb/faelle-alle.txt` (54 Prüfer-Läufe + 13 Prüf-Satz = 67), `messb/cmp10.mjs` (Vergleich an/aus je Note:
+falsch→richtig, richtig→falsch, neue Tonklassen-Fehler), Debug-Lauf `messb/nb/spk10-dbg.js` + Auswertung `messb/nb/eval.mjs` (alle Varianten
+aus EINEM Lauf), Basis `messb/nb/basis.jsonl` (an 0), Ergebnis `messb/nb/v2.jsonl`.
+
+Gesamtbild 67 Läufe (an 0 → an 1):
+| Stand | Treffer | falsch→richtig | richtig→falsch | anders falsch | neue Tonklassen-Fehler | Läufe mit Änderung |
+|---|---|---|---|---|---|---|
+| SPK10 vorher (thr −19, Viertelton ±1,5, ±1-Bin-Max) | 1164 → 1174 (+10) | 13 | **3** | 8 | **6** | – |
+| SPK10 nachher (unter C2, thr −15, Halbton ±1, Betrag zwischen Bins) | 1168 → **1207 (+39)** | **39** | **0** | 5 | **0** | 17 / 67 |
+(„vorher“ aus der Offline-Auswertung desselben Debug-Laufs, „nachher“ echter Lauf `nb/v2.jsonl`; die 1164/1168 unterscheiden sich nur in der
+Zählweise der Auswahl-Fälle.)
+
+Je Befund:
+1. [schwer] Richtige G2 → G3 – **behoben.** Nachgestellt: `demo@1,0,1,0` 32 → 31 (1,38 s 43 → 55), `gdemo@1,1.4,1.4,0` 17 → 16, `gdemo@1,1.6,1.6,1`
+   8 → 7. Ursache bestätigt: r richtiger G2 bis −20,3 dB, wenn ein Pad G3 trägt. Lösung: nur Töne unter C2 (f < 63,5 Hz) prüfen – dort liegen
+   alle Unter-Oktaven/Kick-Reste der Prüfer- und Prüf-Fälle (Wahrheit G2 = 98 Hz → verfolgt 49–52 Hz). Die tiefsten r richtiger Noten unter
+   C2 über die 54 Prüfer-Läufe: −10,2 dB (97 Noten) → Abstand zur Schwelle −15: 4,8 dB. Jetzt: `demo@1,0,1,0` 32/32 · 0,97, `gdemo@1,1.4,1.4,0`
+   17/32, `gdemo@1,1.6,1.6,1` 8/32 = 4.64. Gemessen verworfen: Grenze 70 Hz (C♯2 noch drin) kippt `sech@1,0,0,1` 4,47 s richtiges C2 (f 65,15) → C3;
+   Grenze 65 Hz hängt an der Verfolgungs-Streuung innerhalb von C2 (64,22 Hz falsch / 65,15 Hz richtig) → 63,5 Hz = Mitte B1–C2.
+2. [mittel] Gewinn nur Rundungsglück am Fensterrand – **behoben.** Ursache bestätigt (±1-Bin-Maximum macht Viertelton-Nachbarn gleich, `s > bs`
+   nimmt den tiefsten). Lösung: Kandidaten genau auf dem MIDI-Raster (m(2f) − 1 … + 1, kein Runden mehr), Betrag linear zwischen den Bins
+   (verglichen: ±1-Bin-Max auf Halbtönen +36, linear kurz +39, Fenster 8192 bzw. 16384 je +39 … +41 mit Zusatz-FFT → kurz genügt),
+   Gleichstand → näher an 2f. Jetzt Gewinne auch außerhalb von G2: `gdemo@1,0,0,1` 17 → 20 (30/31 → 43 = G2 der G-Linie), `fdemo@1,0,0,1`
+   24 → 25 (29 → 41), `chrom` / `chrom@1,0,0,1` / `chrom@1,2,2,1` / `chromdunkel` je +1 (34 → 45), `chromab@1,0,0,1` +1 (25 → 37), `okt@1,0,0,1`
+   22 → 26 (auch 32 → 45). Linien ohne Unter-C2-Fehler (adur, walk, hoch, lang, sech) bleiben gleich. Ziel-Fälle: Lauf 8/32 · 0,216 und 16tel
+   29/64 · 0,617 unverändert, ohne Pads **23/32 · 0,793** (vorher 22 · 0,759; Ziel ≥ 24 weiter nicht erreicht – die übrigen 9 Fehler sind keine
+   Unter-C2-Oktaven).
+3. [mittel] Oktavfehler → Tonklassen-Fehler – **behoben.** Nachgestellt (alle 6 + bassdrums 5,68 s). Jetzt: `demo@1,1,0,1` 5,62/7,77 s → 43 ✓
+   (26 → 28), `demo@1,1.6,0,1` → 43 ✓ (27 → 29), `dunkel200@1,0,0,1` 5,62 s → 43 ✓ (13 → 17), `demo@1,0,0,2` 1,34/7,77 s → 43 ✓ (10 → 16),
+   bassdrums 5,68 s → 43 ✓. Neue Tonklassen-Fehler über 67 Läufe: 0. Rest „falsch → anders falsch“ (5): `chrom` 0,01 s 27 → 38 (w 28),
+   `chromdunkel` 1,34 s 24 → 36 (w 33), `dunkel120@1,0,0,1` 1,88 s 33 → 44 (w 43), dazu zwei Noten ohne Wahrheit in der Nähe
+   (`dunkel200@1,0,0,1` 8,42 s, `walk@1,0,0,1` 3,84 s) – alle vorher schon falsch, keine davon vorher nur in der Oktave falsch.
+4. [leicht] Seite übt SPK10 nicht – **behoben (Test ergänzt).** Neu `spk10-seite.mjs` (aus dem Prüfer-Lauf `seite-p.mjs`): Bass + Trommeln als WAV
+   (`SPUREN=spur0,spur4`), Touch, Worker, 428×926 und 926×428, zusätzliche Prüfung „spk10-soll“ Treffer ≥ 26. Ergebnis: **27/32 · 0,90** (30 Noten) hochkant und quer, 16/16 OK
+   (Prüfer-Lauf mit demselben Aufbau: 4.64 23/32 · 0,767, SPK10 erste Fassung 24/32 · 0,800) – der Test fällt ohne SPK10 durch.
+5. [leicht] Soll nur in der Kopie / Prüfer-Fälle fehlen – **behoben im Paket**: `messb/faelle8-soll.json` bassdrums 23 · 0,773 (max 32) und
+   11 Prüfer-Mischungen (Befund 1: `demo@1,0,1,0`, `gdemo@1,1.4,1.4,0`, `gdemo@1,1.6,1.6,1`; Befund 3: `demo@1,1,0,1`, `demo@1,1.6,0,1`,
+   `demo@1,0,0,2`, `dunkel200@1,0,0,1`; Gewinne: `okt@1,0,0,1`, `dunkel120@1,0,0,1`, `gdemo@1,0,0,1`, `chrom@1,0,0,1`), Aufruf über `faelle8p.mjs`
+   (`reg2.sh`). **Für das Mischen:** `spk8/messb/faelle8.mjs` lädt `spk10Okt` nicht – nach dem Mischen `spk10/messb/faelle8.mjs` bzw.
+   `faelle8p.mjs` samt `faelle8-soll.json` übernehmen (spk8-Ordner bewusst nicht angefasst).
+6. [leicht] Kommentar / Sicherheit / `q.o10` – **behoben.** Kopf-Kommentar sagt jetzt „Original (nichts abgezogen)“, Kick-Code entfernt;
+   Sicherheit umgestellter Noten `0,5 + 0,5 · min(1, (−15 − r)/8)` (bassdrums: Sicherheit richtig 0,97 / falsch 0,75); Feld `q.o10` entfernt.
+7. [leicht] Läuft vor dem Leck-Schutz – **behoben.** Haken nach dem Leck-Schutz (nur `found2`), zusätzlich nur Noten unter C2: Demo 67 → 1 Note,
+   Lauf 24, bassdrums 6 (Median 4, höchstens 31 je Lauf). Zeit „Noten finden“ Summe über 67 Läufe 78,6 s → 77,8 s (Rauschen, ≈ 1,0×),
+   Speicher +0,0 … 0,1 MB.
+
+Misch-Probe: `git merge-file` SPK9 (basis7 → spk9) auf das neue SPK10: 0 Konflikte (`merge/spk10+spk9.html`).

@@ -1,5 +1,5 @@
 // SPK10-Seite (Nachbesserung, Befund 4): wie spk8-seite, aber mit Bass + Trommeln ohne Pads (SPUREN=spur0,spur4) – dort wirkt SPK10
-// im Worker. Zusatz-Prüfung „spk10-soll“: Treffer ≥ SOLL10 (Standard 24; 4.64 hat 23). Aufruf: node spk10-seite.mjs <abs. index.html>
+// im Worker. Zusatz-Prüfung „spk10-soll“: Treffer ≥ SOLL10 (Standard 26; 4.64 hat 23, Nachbesserung 27). Aufruf: node spk10-seite.mjs <abs. index.html>
 // SPK8 – Seite per Touch, hochkant 428×926 und quer 926×428: Datei laden → Zerlegen (Knopf + Klappfenster) → Bass-Ebene antippen → Noten ▾ →
 // Noten finden (im Worker): Treffer/Präzision wie im Kern, Text „einstimmig“, Sicherheit gestuft (nicht alle 100 %); ↶ per Touch nimmt nur
 // „Noten finden“ zurück (Text „Rückgängig: Noten finden“, Ebenen bleiben), ↷ bringt die Noten wieder; keine Konsolen-Fehler.
@@ -10,7 +10,7 @@ import http from 'node:http'; import fs from 'node:fs'; import path from 'node:p
 const file = path.resolve(process.argv[2]), dir = path.dirname(file), fotos = path.join('/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/vx/spk10', 'fotos-seite', process.env.TAG || 'bassdrums'); fs.mkdirSync(fotos, {recursive: true});
 const srv = http.createServer((q, r) => { const p = path.join(dir, decodeURIComponent(q.url.split('?')[0])); if (!fs.existsSync(p) || fs.statSync(p).isDirectory()) { r.writeHead(404); r.end(); return; } r.writeHead(200, {'content-type': p.endsWith('.html') ? 'text/html' : 'application/octet-stream'}); fs.createReadStream(p).pipe(r); });
 await new Promise(ok => srv.listen(0, ok)); const url = 'http://127.0.0.1:' + srv.address().port + '/' + path.basename(file);
-const res = {}; let nOk = 0, nF = 0; const SOLL10 = +(process.env.SOLL10 ?? 24);   // SPK10: Treffer-Untergrenze Bass+Trommeln (4.64: 23)
+const res = {}; let nOk = 0, nF = 0; const SOLL10 = +(process.env.SOLL10 ?? 26);   // SPK10: Treffer-Untergrenze Bass+Trommeln (4.64: 23, SPK10 erste Fassung 24, Nachbesserung 27)
 const ok = (k, v, c) => { res[k] = {v, ok: !!c}; c ? nOk++ : nF++; console.log((c ? 'OK     ' : 'FEHLER ') + k + ' ' + JSON.stringify(v)); };
 const b = await chromium.launch();
 const rd = n => new Float32Array(fs.readFileSync(path.join(dir, 'mess', n + '.f32')).buffer.slice(0)), ST = (process.env.SPUREN || 'spur0,spur4').split(',').map(rd), NN = Math.max(...ST.map(x => x.length / 2));

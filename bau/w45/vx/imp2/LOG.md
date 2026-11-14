@@ -26,3 +26,4 @@
   Markenwörter: Zählung je Wort = Basis bis auf „Kaiser" 4 → 6 (Fenster-Name „Kaiser-Sinc", Basis hat schon „Kaiser-Fenster"; keine Marke) · keine Datensatz-Namen
   unter vx/imp2 (Prüf-Skripte finden Dateien per Muster); Name der Umrechner-Bibliothek in NOTES.md Z. 31 und LOG.md Z. 4 (Befund 6). Regression einzeln nacheinander: imp1-test ALLE OK (48, 135 s,
   pruef/reg-imp1.txt) · rv1-test Basis 48/53, IMP2 45/53 (pruef/rv1-basis-1.txt, rv1-imp2-1.txt; = Bauer) · vx1-test 61/61 (pruef/reg-vx1.txt).
+- 22:26 FIX-Auftrag (Prüfer-Befunde 1–6) Start: Befunde gelesen (PRUEFUNG.md), Plan: 1 Bedingung in imp2Rs, 5 Übergang Stufe 1, 4 Laufzeit, 2/3/6 Notizen + Test.
