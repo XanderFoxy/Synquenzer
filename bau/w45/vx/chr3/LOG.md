@@ -14,3 +14,6 @@
   Nächster Weg: „gemeinsames Schicksal“ – die Spitze eines geteilten Teiltons folgt im Vibrato der Stimme, die ihn trägt (Schwerpunkt ≈ leistungsgewichtet) → Anteil über ±6 Rahmen schätzen.
 - (2b) Gemeinsames Schicksal (Spitze des geteilten Teiltons gegen die Vibrato-Bahnen beider Stimmen, ±6 Rahmen, f0 je Rahmen aus ungeteilten Spitzen) → Anteil; sonst Hülle → halb:
   3TQ S3 Welle 67,2 → 98,3 %, 4eng S3/S4 67/93 → 99,4/95,5 %, 3TQ-M2 S3 89 → 92; Rückgang 4eng-M2 S4 87 → 77, 4eng-Vok S4 91 → 83 (prüfen).
+- (2c) Versuche: Schwerpunkt nur bei naher Lage (< 0,7 σ) schätzen, Anteil aber für alle Rahmen des Paars; Entmischen im Rahmen (2×2) brachte nichts → verworfen. Schwerpunkt mit Hülle verrechnet (Gewicht sd : k=1).
+- (3) Oktav-Schutz (Welle muss auf ihrer Tonhöhe klingen): tragen Nicht-Vielfache von 2 bzw. 3 unter Teilton 1–12 < 15 % der Leistung, holt die Stimme mehr von ihren geteilten Nicht-Vielfachen aus dem Anteil der Partner-Stimme (Summe bleibt), tief → hoch → fertig.
+  Messung (src/meas.mjs, Kern core3.js): 3TQ Welle 100/100/100 %, 29/28/29 dB · 4eng 100/100/100/98,9 %, 25/25/27/17 dB · 2T/2Q/3Sin/3TSext 100 % · 3TQ-Pegel 100/100/99,7 · 4eng-Vok 100/100/100/97,4 · 3TQ-M2 100/93/93 · 4eng-M2 100/100/93/82 (11 dB) · Verfolgung überall 100 % · Auto 3/2 richtig · Zeit 0,6–1,3 s (vorher 0,5–0,9).

@@ -93871,7 +93871,8 @@ Object.assign(SYNQUENZER, {vox2: VOX2_API});              /* VOX2: Test-API (Obj
    extrahieren … realistische Chöre“). Takes-Blatt › „Stimmen trennen …“: der Kern (Worker) verfolgt bis zu 4 Grundtöne zugleich
    (Harmonischen-Summe, Schätzen und Abziehen, Oktav-Prüfung) und bildet daraus Stimmen (geordnet hoch → tief, kreuzen nur mit klarem
    Grund, stetig: Median, Lücken füllen, Inseln weg). Je Stimme eine Obertonmaske (Modell-Wiener: Teiltöne mit geschätzter Stärke,
-   geteilte Teiltöne nach den Nachbarn geteilt) → eigener Take; Rest = Original − Summe. Ablage: jede Stimme = selbst gesungene
+   geteilte Teiltöne nach den Nachbarn geteilt; CHR3: nach Vibrato-Schwerpunkt + Formant-Hülle je Stimme, Oktav-Schutz) → eigener Take;
+   Rest = Original − Summe. Ablage: jede Stimme = selbst gesungene
    Chor-Stimme (eigenes Fenster) auf einer neuen freien Chor-Spur (G6+a/CHS), Gruppe neutral, Pegel fest (chr2Unity statt Auto-Abstand);
    der Rest wird das hörbare Stück, das Original liegt stumm in alt (A/B). Ein ↶ (takes + Stück + chorlanes). Nichts beim App-Start. */
 // CHR2: Kern ohne DOM (läuft im Worker aus chr2Core.toString(); Hauptfaden-Rückfall). sep(x Int16Array|Float32Array, sr, o, prog) →
@@ -93911,7 +93912,7 @@ function chr2Core() {
     for (let j = 0; j < NL; j++) lf[j] = L0 * Math.pow(2, j * LS / 1200);
     const ci0 = Math.ceil(C1 * Math.log(lo / L0) / LS), ci1 = Math.min(NL - 1, Math.floor(C1 * Math.log(hi / L0) / LS));
     const HM = 20, hOff = new Int32Array(HM + 1); for (let h = 1; h <= HM; h++) hOff[h] = Math.round(1200 * Math.log2(h) / LS);
-    const MAXC = 5, cand = new Float32Array(F * MAXC * 2), ncand = new Uint8Array(F), lspec = new Float64Array(NL), lmax = new Float64Array(NL), R = new Float64Array(B5);
+    const MAXC = 5, weak = new Uint8Array(F * MAXC), cand = new Float32Array(F * MAXC * 2), ncand = new Uint8Array(F), lspec = new Float64Array(NL), lmax = new Float64Array(NL), R = new Float64Array(B5);
     const toLog = () => {
       for (let j = 0; j < NL; j++) {
         const c = lf[j] / df, a = Math.floor(c), fr = c - a; let v = a + 1 < B5 ? R[a] * (1 - fr) + R[a + 1] * fr : 0;
@@ -93952,23 +93953,37 @@ function chr2Core() {
             for (let h = 1; h <= 9; h++) { const q = i2 + hOff[h]; if (q >= NL) break; const w = lmax[q] * (g + 20) / (h * g + 320); if (h & 1) so += w; else se += w; }
             if (lmax[i2] > 0.05 * rmax && so > 0.15 * se) { best = i2; bv = Math.max(bv, sal[i2]); }
           }
+          // CHR3: Teilton 3…5 einer tieferen Stimme mit schwachem Grundton (Vokal „a“ tief: Teilton 3 am stärksten) – Grundton und mindestens
+          // zwei weitere Teiltöne, die keine Vielfachen des Kandidaten sind, müssen da sein (geprüft wird danach noch beim Verfeinern)
+          if (best !== i2) for (let d = 3; d <= 5; d++) {
+            const i3 = best - hOff[d]; if (i3 < ci0 || ban[i3]) continue;
+            let sn = 0, sm = 0, ok3 = 0; const g = lf[i3];
+            for (let h = 1; h <= 2 * d; h++) { const q = i3 + hOff[h]; if (q >= NL) break; const w = lmax[q] * (g + 20) / (h * g + 320); if (h % d) { sn += w; if (h < d + 2 && lmax[q] > 0.04 * rmax) ok3++; } else sm += w; }
+            if (lmax[i3] > 0.04 * rmax && ok3 >= 3 && sn > 0.4 * sm) { best = i3; bv = Math.max(bv, sal[i3]); break; }
+          }
         }
-        if (it === 0) first = bv; else if (bv < 0.2 * first) break;
+        if (it === 0) first = bv; else if (bv < 0.1 * first) break;   // CHR3: schwache Kandidaten (0,1…0,2) nur als Lückenfüller (weak)
         // verfeinern: Harmonische 1…6 parabolisch, nach Betrag gewichtet
-        let f0 = lf[best], sw = 0, sf = 0, hit = 0, p12 = 0;
-        for (let h = 1; h <= 6; h++) { if (h * f0 > fH) break; const [pf, pa] = peakAt(h * f0, 0.025); if (pa > 0.05 * rmax) { sw += pa; sf += pa * pf / h; hit++; if ((h === 1 || (h === 2 && f0 < 150)) && pa > 0.02 * rmax) p12++; } }
-        if (sw > 0) { const g = sf / sw; if (Math.abs(C1 * Math.log(g / f0)) < 50) f0 = g; }
+        // CHR3: verfeinern robust – gewichteter Median der Teilton-Schätzungen, dann nur Teiltöne, die zu ihm passen (sonst baut ein Geist
+        // aus Teiltönen verschiedener Stimmen eine Unter-Oktave, z. B. 337 Hz aus F4-Grundton + E5-Teiltönen)
+        let f0 = lf[best], sw = 0, sf = 0, hit = 0, p12 = 0; const est = [];
+        for (let h = 1; h <= 6; h++) { if (h * f0 > fH) break; const [pf, pa] = peakAt(h * f0, 0.025); if (pa > 0.05 * rmax) est.push([pf / h, pa, h, pf]); }
+        if (est.length) {
+          const so = est.slice().sort((a, b) => a[0] - b[0]); let tot = 0, acc2 = 0, g = so[0][0]; for (const e of so) tot += e[1]; for (const e of so) { acc2 += e[1]; if (acc2 >= tot / 2) { g = e[0]; break; } }
+          if (Math.abs(C1 * Math.log(g / f0)) < 50) for (const [, pa, h, pf] of est) if (Math.abs(pf - h * g) < Math.max(0.012 * h * g, 0.35 * df)) { sw += pa; sf += pa * pf / h; hit++; if ((h === 1 || (h === 2 && f0 < 150)) && pa > 0.02 * rmax) p12++; }
+          if (sw > 0) { const g2 = sf / sw; if (Math.abs(C1 * Math.log(g2 / f0)) < 50) f0 = g2; }
+        }
         if (hit < 1 || !p12) { for (let i = Math.max(0, best - 3); i <= Math.min(NL - 1, best + 3); i++) ban[i] = 1; it--; if (++guard > 8) break; continue; }   // nur Reste: keine echte Stimme
         const bi = Math.round(C1 * Math.log(f0 / L0) / LS); for (let i = Math.max(0, Math.min(best, bi) - 4); i <= Math.min(NL - 1, Math.max(best, bi) + 4); i++) ban[i] = 1;
         if (cf0.some(z => Math.abs(C1 * Math.log(z / f0)) < 90) || cf0.some((z, k) => (Math.abs(C1 * Math.log(f0 / (2 * z))) < 40 || Math.abs(C1 * Math.log(f0 / (3 * z))) < 40) && bv < 1.2 * cs0[k])) { it--; if (++guard > 8) break; continue; }   // Rest-Oktave einer gefundenen Stimme
-        cand[(f * MAXC + nc) * 2] = f0; cand[(f * MAXC + nc) * 2 + 1] = bv; nc++; cf0.push(f0); cs0.push(bv); guard = 0;
+        weak[f * MAXC + nc] = it > 0 && bv < 0.2 * first ? 1 : 0; cand[(f * MAXC + nc) * 2] = f0; cand[(f * MAXC + nc) * 2 + 1] = bv; nc++; cf0.push(f0); cs0.push(bv); guard = 0;
         // abziehen (Amplituden über die Nachbar-Harmonischen geglättet: geteilte Teiltöne bleiben für die andere Stimme)
         const A = [];
         for (let h = 1; h * f0 < fH; h++) A.push(peakAt(h * f0, 0.015));
         for (let h = 0; h < A.length; h++) {
           const [pf, pa] = A[h]; if (!(pa > 0)) continue;
           let m = 0, k = 0; for (let d = -1; d <= 1; d += 2) { const q = A[h + d]; if (q) { m += q[1]; k++; } }
-          const amp = k ? Math.min(pa, 1.6 * m / k) : pa, c = pf / df, sc = 1 + 0.006 * c;
+          const amp = k && h ? Math.min(pa, 1.6 * m / k) : pa, c = pf / df, sc = 1 + 0.006 * c;   // CHR3: Grundton ganz abziehen (sonst Geist darunter)
           for (let b = Math.max(0, Math.ceil(c - 2 * sc)); b <= Math.floor(c + 2 * sc) && b < B5; b++) { R[b] -= amp * kern((b - c) / sc); if (R[b] < 0) R[b] = 0; }
         }
       }
@@ -93976,12 +93991,12 @@ function chr2Core() {
       const q = Math.floor(f / F * 50); if (q > pk) { pk = q; prog(q / 100); }
     }
     // Schritt 2: Stimmen bilden – Zahl, Schwelle, Stimmführung (geordnet, kreuzen nur bei klar besserer Stetigkeit)
-    const firsts = []; for (let f = 0; f < F; f++) if (ncand[f]) firsts.push(cand[f * MAXC * 2 + 1]);
+    const firsts = []; for (let f = 0; f < F; f++) if (ncand[f]) firsts.push(cand[f * MAXC * 2 + 1]);   // (Kandidat 0 ist nie weak)
     firsts.sort((a, b) => a - b);
     const ref = firsts.length ? firsts[Math.floor(firsts.length * 0.95)] : 0, thr = 0.04 * ref;
     const cnt = new Uint8Array(F), cf = [];
     for (let f = 0; f < F; f++) {
-      const l = []; for (let k = 0; k < ncand[f]; k++) { const fq = cand[(f * MAXC + k) * 2], s = cand[(f * MAXC + k) * 2 + 1]; if (s >= thr && !l.some(z => Math.abs(C1 * Math.log(z.f / fq)) < 60)) l.push({f: fq, s}); }
+      const l = []; for (let k = 0; k < ncand[f]; k++) { const fq = cand[(f * MAXC + k) * 2], s = cand[(f * MAXC + k) * 2 + 1]; if (!weak[f * MAXC + k] && s >= thr && !l.some(z => Math.abs(C1 * Math.log(z.f / fq)) < 60)) l.push({f: fq, s}); }
       cf.push(l); cnt[f] = l.length;
     }
     let V = o.n | 0;
@@ -93989,6 +94004,8 @@ function chr2Core() {
       const vo = []; for (let f = 0; f < F; f++) if (cnt[f]) vo.push(cnt[f]);
       V = 1; for (let v = 4; v >= 1; v--) { const c = vo.filter(z => z >= v).length; if (vo.length && c >= 0.4 * vo.length) { V = v; break; } }
     }
+    // CHR3: fehlt einem Rahmen eine Stimme, füllen schwache Kandidaten auf (die Stimme wurde beim Abziehen der anderen geschwächt)
+    for (let f = 0; f < F; f++) { const l = cf[f]; for (let k = 0; k < ncand[f] && l.length < V; k++) { if (!weak[f * MAXC + k]) continue; const fq = cand[(f * MAXC + k) * 2], s = cand[(f * MAXC + k) * 2 + 1]; if (s >= thr && !l.some(z => Math.abs(C1 * Math.log(z.f / fq)) < 60)) l.push({f: fq, s}); } }
     const f0 = []; for (let v = 0; v < V; v++) f0.push(new Float32Array(F));
     const last = new Float64Array(V).fill(0), lastT = new Int32Array(V).fill(-999);
     const perms = (arr) => { if (arr.length <= 1) return [arr]; const out = []; arr.forEach((a, i) => { for (const p of perms(arr.slice(0, i).concat(arr.slice(i + 1)))) out.push([a].concat(p)); }); return out; };
@@ -94028,21 +94045,119 @@ function chr2Core() {
     const acc = [], y = []; for (let v = 0; v < V; v++) { acc.push(new Float64Array(N)); y.push(new Int16Array(n)); }
     const yre = new Float64Array(N), yim = new Float64Array(N), MX = new Float64Array(half + 1), q16 = s => { const v = Math.round(s * 32767); return v > 32767 ? 32767 : v < -32768 ? -32768 : v; };
     const yf = []; for (let v = 0; v < V; v++) yf.push(new Float32Array(n));
-    let pk2 = 55;
+    const hsOf = f => { const hs = []; for (let v = 0; v < V; v++) { const g = f0[v][f], L = []; if (g > 0) for (let h = 1; h * g < fM; h++) L.push(h * g / df); hs.push(L); } return hs; };
+    const ampAt = c => { const b = Math.round(c); let m = 0; for (let d = -1; d <= 1; d++) { const q = b + d; if (q > 0 && q <= half && MX[q] > m) m = MX[q]; } return m; };
+    const cols = (f, v, c) => { const out = []; for (let u = 0; u < V; u++) { if (u === v || !(f0[u][f] > 0)) continue; const su = f0[u][f] / df, k = Math.round(c / su); if (k >= 1 && k * su < BM && Math.abs(k * su - c) < 2.5) out.push([u, k * su]); } return out; };
+    // CHR3: Hüllkurven-Modell je Stimme (Formant-Hülle aus den eigenen UNgeteilten Teiltönen: Log-Pegel über Log-Frequenz in NE Bändern,
+    // linear verbunden, außen flach; über ±2 Rahmen derselben Note geglättet). Geteilte Teiltöne (Teilton einer anderen Stimme < 2,5 Bins)
+    // werden nach dem erwarteten Pegel der Hüllen geteilt (Leistung: Anteil E_v² / ΣE²) statt nach dem Nachbar-Mittel je Rahmen.
+    const NE = 48, eL0 = Math.log(50), eSt = (Math.log(fM) - eL0) / (NE - 1), envS = [], share = new Map();
+    const envAt = (v, f, hz) => { const x = (Math.log(hz) - eL0) / eSt; if (!(x >= 0)) return NaN; const j = Math.min(NE - 2, Math.floor(x)), t = Math.min(1, x - j), e = envS[v], a = e[f * NE + j], b = e[f * NE + j + 1]; return Math.exp(a + t * (b - a)); };
+    {
+      const env = []; for (let v = 0; v < V; v++) env.push(new Float32Array(F * NE).fill(NaN));
+      const recs = [];
+      for (let f = 0; f < F; f++) {
+        let any = false; for (let v = 0; v < V; v++) if (f0[v][f] > 0) any = true; if (!any) continue;
+        frame(f); for (let b = 0; b <= half; b++) MX[b] = Math.hypot(re[b], im[b]);
+        const hs = hsOf(f), gr = [];
+        for (let v = 0; v < V; v++) {                                                       // f0 je Rahmen genau (ungeteilte Spitzen, Vibrato bleibt)
+          const L = hs[v]; let sw = 0, sg = 0, mx = 0; gr.push(f0[v][f]); if (!L.length) continue;
+          for (const c of L) mx = Math.max(mx, ampAt(c));
+          for (let h = 0; h < L.length && h < 12; h++) { const c = L[h], b = Math.round(c); if (b < 2 || b >= half - 1 || cols(f, v, c).length) continue; let bm = b; for (const d of [-1, 1]) if (MX[b + d] > MX[bm]) bm = b + d; const a0 = MX[bm - 1], a1 = MX[bm], a2 = MX[bm + 1]; if (a1 < 0.1 * mx || a1 < a0 || a1 < a2) continue; const den = a0 - 2 * a1 + a2, pp = den < 0 ? 0.5 * (a0 - a2) / den : 0; sw += a1; sg += a1 * (bm + pp) * df / (h + 1); }
+          if (sw > 0 && Math.abs(C1 * Math.log(sg / sw / f0[v][f])) < 40) gr[v] = sg / sw;
+        }
+        for (let v = 0; v < V; v++) for (let h = 0; h < hs[v].length && h < 255; h++) {      // CHR3: geteilte Paare – wohin zieht die Spitze?
+          const cl = cols(f, v, hs[v][h]); if (cl.length !== 1) continue; const u = cl[0][0]; if (u < v) continue;
+          const k = Math.round(cl[0][1] * df / f0[u][f]); if (k > 255) continue;
+          const cv = (h + 1) * gr[v] / df, cu = k * gr[u] / df, okR = Math.abs(cv - cu) < 0.7 * (1 + 0.008 * cv);   // weiter auseinander: Spitze = die stärkere, kein Schwerpunkt
+          const b0 = Math.max(2, Math.round(Math.min(cv, cu)) - 1), b1 = Math.min(half - 2, Math.round(Math.max(cv, cu)) + 1);
+          let bm = b0; for (let b = b0; b <= b1; b++) if (MX[b] > MX[bm]) bm = b;
+          const a0 = MX[bm - 1], a1 = MX[bm], a2 = MX[bm + 1], den = a0 - 2 * a1 + a2, p = bm + (den < 0 ? 0.5 * (a0 - a2) / den : 0);
+          recs.push(f, ((v * 4 + u) * 256 + h + 1) * 256 + k, okR ? (p - cu) * (cv - cu) : 0, okR ? (cv - cu) * (cv - cu) : 0);
+        }
+        for (let v = 0; v < V; v++) {
+          const L = hs[v], xs = [], ys = []; if (!L.length) continue;
+          for (const c of L) if (!cols(f, v, c).length) { xs.push(Math.log(c * df)); ys.push(Math.log(ampAt(c) + 1e-9)); }
+          if (!xs.length) continue;
+          const e = env[v], o = f * NE, m = xs.length - 1;
+          for (let j = 0, k = 0; j < NE; j++) {
+            const x = eL0 + j * eSt; while (k < m - 1 && xs[k + 1] <= x) k++;
+            e[o + j] = x <= xs[0] ? ys[0] : x >= xs[m] ? ys[m] : ys[k] + (x - xs[k]) / (xs[k + 1] - xs[k]) * (ys[k + 1] - ys[k]);
+          }
+        }
+        const q = 55 + Math.floor(f / F * 10); if (q > pk) { pk = q; prog(q / 100); }
+      }
+      for (let v = 0; v < V; v++) {
+        const e = env[v], sm = new Float32Array(F * NE).fill(NaN), a = f0[v];
+        for (let f = 0; f < F; f++) {
+          const g = a[f]; if (!(g > 0)) continue;
+          for (let j = 0; j < NE; j++) {
+            let sw = 0, sv = 0;
+            for (let d = -2; d <= 2; d++) { const q = f + d; if (q < 0 || q >= F || !(a[q] > 0) || Math.abs(C1 * Math.log(a[q] / g)) > 80) continue; const z = e[q * NE + j]; if (z !== z) continue; const w = 3 - Math.abs(d); sw += w; sv += w * z; }
+            if (sw) sm[f * NE + j] = sv / sw;
+          }
+        }
+        envS.push(sm);
+      }
+      // Anteil je Paar über ±6 Rahmen (kleinste Quadrate: Spitze ≈ w·cv + (1−w)·cu), nur wenn das Vibrato die beiden genug trennt
+      const byKey = new Map();
+      for (let i = 0; i < recs.length; i += 4) { const key = recs[i + 1]; let l = byKey.get(key); if (!l) byKey.set(key, l = []); l.push(recs[i], recs[i + 2], recs[i + 3]); }
+      for (const [key, l] of byKey) {                                                     // l: [Rahmen, Zähler, Nenner]…, nach Rahmen sortiert
+        const k = key % 256, h = (key >> 8) % 256, v = (key >> 16) >> 2, u = (key >> 16) & 3, m = l.length / 3;
+        let a = 0, b = 0, sn = 0, sd = 0;
+        for (let i = 0; i < m; i++) {
+          const f = l[3 * i];
+          while (b < m && l[3 * b] <= f + 6) { sn += l[3 * b + 1]; sd += l[3 * b + 2]; b++; }
+          while (l[3 * a] < f - 6) { sn -= l[3 * a + 1]; sd -= l[3 * a + 2]; a++; }
+          if (sd < 0.5) continue;
+          // mit der Hüllen-Erwartung verrechnet (Gewicht = Vibrato-Trennung sd in Bin²): wenig Bewegung → eher Hülle
+          const g = f0[v][f], gu = f0[u][f], ev = g > 0 ? envAt(v, f, h * g) : NaN, eu = gu > 0 ? envAt(u, f, k * gu) : NaN;
+          const wc = Math.max(0, Math.min(1, sn / sd)), w = Math.max(0.02, Math.min(0.98, ev > 0 && eu > 0 ? (sd * wc + ev * ev / (ev * ev + eu * eu)) / (sd + 1) : wc));
+          share.set(f * 1048576 + ((v * 4 + u) * 256 + h) * 256 + k, w); share.set(f * 1048576 + ((u * 4 + v) * 256 + k) * 256 + h, 1 - w);
+        }
+      }
+    }
+    let pk2 = 65;
     for (let f = 0; f < F; f++) {
       frame(f);
       for (let b = 0; b <= half; b++) { MX[b] = Math.hypot(re[b], im[b]); }
-      const hs = [];                                                                        // Harmonische aller Stimmen (für Kollisionen)
-      for (let v = 0; v < V; v++) { const g = f0[v][f], L = []; if (g > 0) for (let h = 1; h * g < fM; h++) L.push(h * g / df); hs.push(L); }
+      const hs = hsOf(f), AM = [], SH = [];                                                 // Harmonische aller Stimmen (für Kollisionen)
       for (let v = 0; v < V; v++) {
-        const Pv = P[v]; Pv.fill(0); const L = hs[v]; if (!L.length) continue;
-        const A = L.map(c => { const b = Math.round(c); let m = 0; for (let d = -1; d <= 1; d++) { const q = b + d; if (q > 0 && q <= half && MX[q] > m) m = MX[q]; } return m; });
+        const L = hs[v], am = new Float64Array(L.length), sh = []; AM.push(am); SH.push(sh); if (!L.length) continue;
+        const A = L.map(ampAt);
         for (let h = 0; h < L.length; h++) {
-          const c = L[h]; let col = false;
-          for (let u = 0; u < V && !col; u++) if (u !== v) for (const c2 of hs[u]) if (Math.abs(c2 - c) < 2.5) { col = true; break; }
+          const c = L[h], cl = cols(f, v, c);
           let amp = A[h];
-          if (col) { let m = 0, k = 0; for (const d of [-2, -1, 1, 2]) { const q = h + d; if (q >= 0 && q < A.length) { m += A[q]; k++; } } if (k) amp = Math.min(amp, m / k); }
-          const sg = 1.0 + 0.008 * c, r0 = Math.max(1, Math.ceil(c - 3 * sg)), r1 = Math.min(BM, Math.floor(c + 3 * sg)), a2 = amp * amp;
+          const ku = cl.length === 1 ? Math.round(cl[0][1] * df / f0[cl[0][0]][f]) : 0, sk = ku ? share.get(f * 1048576 + ((v * 4 + cl[0][0]) * 256 + h + 1) * 256 + ku) : undefined;
+          if (ku) sh[h] = [cl[0][0], ku - 1];
+          if (sk !== undefined) amp = A[h] * Math.sqrt(sk);                                  // CHR3: Anteil aus dem Vibrato (mit Hülle verrechnet)
+          else if (cl.length) {                                                             // CHR3: Anteil aus den Hüllen
+            const ev = envAt(v, f, c * df); let se = ev * ev, okE = ev > 0;
+            for (const [u, c2] of cl) { const eu = envAt(u, f, c2 * df); if (!(eu > 0)) { okE = false; break; } se += eu * eu; }
+            if (okE) amp = A[h] * ev / Math.sqrt(se);
+            else { let m = 0, k = 0; for (const d of [-2, -1, 1, 2]) { const q = h + d; if (q >= 0 && q < A.length) { m += A[q]; k++; } } if (k) amp = Math.min(amp, m / k); }
+          }
+          am[h] = amp;
+        }
+      }
+      // CHR3: Oktav-Schutz – die getrennte Welle muss auf ihrer Tonhöhe klingen: tragen die Nicht-Vielfachen von 2 (bzw. 3) unter den ersten
+      // 12 Teiltönen < 15 % der Leistung, liest jede Tonhöhen-Messung 2·f0 (3·f0). Dann holt die Stimme sich mehr von ihren GETEILTEN
+      // Nicht-Vielfachen (aus dem Anteil der Partner-Stimme, Summe bleibt). Tief → hoch, weil tiefe Stimmen ihre ungeraden Teiltöne verlieren.
+      for (let v = V - 1; v >= 0; v--) {
+        const am = AM[v], sh = SH[v], H = Math.min(12, am.length); if (!H) continue;
+        for (const d of [2, 3]) {
+          let ok = 0, bad = 0, gain = 0;
+          for (let h = 0; h < H; h++) { const e = am[h] * am[h]; if ((h + 1) % d) { ok += e; const z = sh[h]; if (z && AM[z[0]][z[1]] > 0) gain += AM[z[0]][z[1]] * AM[z[0]][z[1]]; } else bad += e; }
+          const tau = 0.15, need = tau / (1 - tau) * bad - ok;
+          if (need <= 0 || gain <= 0) continue;
+          const lam = Math.min(1, need / gain);
+          for (let h = 0; h < H; h++) { const z = sh[h]; if (!((h + 1) % d) || !z) continue; const au = AM[z[0]], q = au[z[1]]; if (!(q > 0)) continue; const dl = lam * q * q; am[h] = Math.sqrt(am[h] * am[h] + dl); au[z[1]] = Math.sqrt(Math.max(0, q * q - dl)); }
+        }
+      }
+      for (let v = 0; v < V; v++) {
+        const Pv = P[v], L = hs[v], am = AM[v]; Pv.fill(0);
+        for (let h = 0; h < L.length; h++) {
+          const c = L[h], sg = 1.0 + 0.008 * c, r0 = Math.max(1, Math.ceil(c - 3 * sg)), r1 = Math.min(BM, Math.floor(c + 3 * sg)), a2 = am[h] * am[h];
           for (let b = r0; b <= r1; b++) { const d = (b - c) / sg; Pv[b] += a2 * Math.exp(-0.5 * d * d); }
         }
       }
@@ -94060,7 +94175,7 @@ function chr2Core() {
         const o0 = c0; for (let i = 0; i < hop; i++) { const j = o0 + i; if (j >= 0 && j < n) yf[v][j] = ac[i]; }
         ac.copyWithin(0, hop); ac.fill(0, N - hop);
       }
-      const q = 55 + Math.floor(f / F * 44); if (q > pk2) { pk2 = q; prog(q / 100); }
+      const q = 65 + Math.floor(f / F * 34); if (q > pk2) { pk2 = q; prog(q / 100); }
     }
     // Rest dazu: was keine Stimme bekam; ausgeben als PCM16 (Summe = Original bis auf Rundung)
     const rest = new Int16Array(n), st = {e: new Float64Array(V), er: 0, ex: 0};
@@ -94073,7 +94188,7 @@ function chr2Core() {
     const act = a => { let c = 0; for (const z of a) if (z > 0) c++; return +(c / Math.max(1, a.length)).toFixed(3); };
     prog(1);
     return {ok: V >= 1 && firsts.length > 0, V, sr, hop, N, f0, y, rest,
-      info: {V, frames: F, voiced: firsts.length, vdb: Array.from(st.e).map(db), rdb: db(st.er), med: f0.map(med), act: f0.map(act)}};
+      dbg: o.dbg ? {cand, ncand, MAXC, cf} : undefined, info: {V, frames: F, voiced: firsts.length, vdb: Array.from(st.e).map(db), rdb: db(st.er), med: f0.map(med), act: f0.map(act)}};
   }
   return {sep};
 }
@@ -94199,6 +94314,13 @@ function chr2RealPlan(pl, a, v, ci, C) {
   return Object.assign({}, base, {chr2: {ms: Math.max(0, CHR2R.ms[k] - (C && isNum(C.ms) ? C.ms : 0)), f: CHR2R.f[k], d: CHR2R.d, s: 1 + vi * 7 + ci * 3, r: CHR2R.r, c: CHR2R.c}});
 }
 /* CHR2-END */
+/* CHR3-BEGIN ===================== Stimmen trennen genauer (Paket CHR3, Xander 14.11.: „einzelne Chor-Stimmen im Nachhinein extrahieren“).
+   Alles im Kern chr2Core (Worker aus toString, deshalb dort, Stellen mit „CHR3“ markiert): Verfolgung robust (Median der Teilton-Schätzungen,
+   Grundton ganz abziehen, schwache Kandidaten als Lückenfüller, Teilton 3…5 einer tieferen Stimme mit schwachem Grundton); geteilte Teiltöne
+   nach dem gemeinsamen Schicksal (die Spitze folgt im Vibrato der Stimme, die sie trägt) und der Formant-Hülle je Stimme aus den ungeteilten
+   Teiltönen; Oktav-Schutz (Nicht-Vielfache von 2/3 tragen ≥ 15 % der Leistung, sonst klingt die Welle eine Oktave/Duodezime zu hoch).
+   Bedienung und Ablage unverändert. */
+/* CHR3-END */
 /* MTX-BEGIN ===================== Matrix: Ziehen über alle Zeilen, Wahl beim Ablegen, Szene / Spur duplizieren (Paket MTX, Xander 07.11. (13) FL-D)
    Xander: „wenn ich einen Clip von der unteren Hälfte nach oben ziehen will, komme ich nicht hoch … wenn ich einen Clip halte und in einen
    anderen Slot ziehe, fragt er nicht, ob kopieren oder loslassen … Clip duplizieren … Szene duplizieren … Instrumentenspur duplizieren
