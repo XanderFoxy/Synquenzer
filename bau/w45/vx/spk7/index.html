@@ -102781,11 +102781,13 @@ Object.assign(SYNQUENZER, {int53d: {info: () => ({files: INT53D.files, waits: IN
 /* Klangkorn-Kern: läuft im AudioWorklet (Text über toString), im Rückfall (ScriptProcessor) und offline im Test.
    Körnchen: je Stimme bis 12 Körner aus der Quelle (Fenster-Tabelle je Kornform), Ort = Position + Bewegung + Streuung,
    Tonhöhe = Taste / Grundton. Spektral-Schleife: eingefrorene Spektren (je Bild eine nahtlose Schleife), langsam überblendet.
-   Je Stimme: ADSR (linear, Mindest-Flanken gegen Klicks), Tiefpass (TPT-SVF) mit Resonanz, Stereo-Breite. Ereignisse auf die Probe genau. */
+   Je Stimme: ADSR (linear, Mindest-Flanken gegen Klicks), Tiefpass (TPT-SVF) mit Resonanz, Stereo-Breite. Ereignisse auf die Probe genau.
+   Prüfung: jede Stimme behält ihre Quelle bis zum Ende (Quellwechsel ohne NaN); Modus-/Filter-Wechsel blenden; Position wirkt live;
+   Stimmen-Raub mit 4-ms-Blende; Körner beim Anschlag vorgefüllt (voller Pegel sofort, „Anschlag“ wirkt); Halten = Pegel. */
 function spk7CoreMake(SR) {
   const NV = 16, NG = 12, WN = 1024, TW = 2 * Math.PI;
   const P = {art: 'korn', pos: 0.3, bew: 0, gs: 0.08, dc: 4, spo: 0.1, spt: 0, form: 0.3, a: 0.02, d: 0.3, s: 0.8, r: 0.4, fc: 1, q: 0.1, br: 0.5, vol: 0.7, poly: 8};
-  let X = null, XL = 0, XR = 1, F0 = 261.63, FZ = null, FL = 0, NF = 0, fr = 0, seed = 12345, wMean = 0.5, wForm = -1, wLen = 0, FK = 1;
+  let CS = null, fr = 0, seed = 12345, wMean = 0.5, wForm = -1, wLen = 0;
   const W = new Float32Array(WN + 2), Q = [], tL = new Float32Array(4096), tR = new Float32Array(4096);
   const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
   const mkW = gsN => {   // Kornform: Tukey-Fenster, Flanken mindestens 2 ms (auch bei „hart“ kein Knacken)
@@ -102794,59 +102796,89 @@ function spk7CoreMake(SR) {
     W[WN + 1] = 0; wMean = s1 / (WN + 1); wForm = P.form; wLen = gsN;
   };
   const V = [];
-  for (let k = 0; k < NV; k++) { const g = []; for (let j = 0; j < NG; j++) g.push({on: 0, p: 0, inc: 1, i: 0, n: 1, gl: 0, gr: 0, o: 0}); V.push({st: 0, id: 0, m: 60, r: 1, vel: 1, env: 0, rate: 0, age: 0, pos: 0, nx: 0, g, a1: 0, b1: 0, a2: 0, b2: 0, ph: 0, fp: 0, drift: 0, t: 0}); }
-  const ratio = m => 440 * Math.pow(2, (m - 69) / 12) / F0;
+  for (let k = 0; k < NV; k++) { const g = []; for (let j = 0; j < NG; j++) g.push({on: 0, p: 0, inc: 1, i: 0, n: 1, gl: 0, gr: 0, o: 0}); V.push({st: 0, id: 0, m: 60, r: 1, vel: 1, env: 0, rate: 0, age: 0, pos: 0, pp: 0, nx: 0, g, a1: 0, b1: 0, a2: 0, b2: 0, ph: 0, fp: 0, drift: 0, t: 0, S: null, art: 'korn', xg: 1, fcS: 1, qS: 0.1, wet: 0, prime: 0, pend: null, fpI: 0}); }
+  const ratio = (m, S) => 440 * Math.pow(2, (m - 69) / 12) / (S ? S.F0 : 261.63);
   const find = id => { for (const v of V) if (v.st && v.id === id) return v; return null; };
+  const findP = id => { for (const v of V) if (v.pend && v.pend.id === id) return v; return null; };
   const rel = (v, sec) => { if (!v.st) return; v.st = 4; v.rate = Math.max(v.env, 1e-4) / Math.max(8, sec * SR); };
+  const fcN = x => Math.max(0, Math.min(1, x));
+  const start = (v, id, m, vel) => {
+    for (const x of V) if (x.st) x.age++;
+    const S = CS;
+    v.st = 1; v.id = id; v.m = m; v.S = S; v.r = ratio(m, S); v.vel = Math.max(0, Math.min(1, vel)); v.env = 0; v.age = 0;
+    v.rate = 1 / Math.max(0.003, P.a) / SR; v.pos = S ? P.pos * S.XL : 0; v.pp = P.pos; v.nx = 0; v.a1 = v.b1 = v.a2 = v.b2 = 0; v.ph = S ? rnd() * S.FL : 0; v.fp = S ? P.pos * Math.max(0, S.NF - 1) : 0; v.drift = 0; v.t = 0; v.brS = P.br;
+    v.gn = (0.25 + 0.75 * v.vel) * Math.max(0, Math.min(1.5, P.vol)) * 0.4;   // 0,4 = Reserve für Akkorde
+    v.art = P.art === 'frz' && S && S.NF > 0 ? 'frz' : 'korn'; v.xg = 1; v.fcS = fcN(P.fc); v.qS = P.q; v.wet = P.fc < 0.995 ? 1 : 0; v.prime = 1; v.fpI = 0;
+    for (const g of v.g) g.on = 0;
+  };
   const on = (id, m, vel) => {
     let held = 0, old = null; for (const v of V) if (v.st && v.st < 4) { held++; if (!old || v.age > old.age) old = v; }
     if (held >= Math.max(1, P.poly | 0) && old) rel(old, 0.006);                 // Stimme abgeben: 6 ms Blende statt Schnitt
-    let v = null; for (const x of V) if (!x.st) { v = x; break; }
-    if (!v) { for (const x of V) if (!v || x.env < v.env) v = x; }               // nur bei Überlast: leiseste Stimme
-    for (const x of V) if (x.st) x.age++;
-    v.st = 1; v.id = id; v.m = m; v.r = ratio(m); v.vel = Math.max(0, Math.min(1, vel)); v.env = 0; v.age = 0;
-    v.rate = 1 / Math.max(0.003, P.a) / SR; v.pos = P.pos * XL; v.nx = 0; v.a1 = v.b1 = v.a2 = v.b2 = 0; v.ph = rnd() * FL; v.fp = P.pos * Math.max(0, NF - 1); v.drift = 0; v.t = 0; v.brS = P.br; v.gn = (0.25 + 0.75 * v.vel) * Math.max(0, Math.min(1.5, P.vol)) * 0.4;   // 0,4 = Reserve für Akkorde
-    for (const g of v.g) g.on = 0;
+    let v = null; for (const x of V) if (!x.st && !x.pend) { v = x; break; }
+    if (!v) {                                                                     // Überlast: leiseste Stimme blendet 4 ms aus, dann startet die neue Note dort
+      let q = null; for (const x of V) if (!x.pend && (!q || x.env < q.env)) q = x;
+      if (!q) { done(id); return; }
+      rel(q, 0.004); q.pend = {id, m, vel, off: 0}; return;
+    }
+    start(v, id, m, vel);
+  };
+  const fin = v => {   // Stimme zu Ende: melden, wartende Note starten
+    v.st = 0; for (const g of v.g) g.on = 0; done(v.id);
+    if (v.pend) { const p = v.pend; v.pend = null; start(v, p.id, p.m, p.vel); if (p.off) rel(v, Math.max(0.01, P.r)); }
   };
   const apply = e => {
     if (e.t === 'on') on(e.id, e.m, e.v == null ? 0.8 : e.v);
-    else if (e.t === 'off') { const v = find(e.id); if (v && v.st < 4) rel(v, Math.max(0.01, P.r)); }
-    else if (e.t === 'fast') { const v = find(e.id); if (v) rel(v, Math.max(0.003, e.tau || 0.01)); }
-    else if (e.t === 'tune') { const v = find(e.id); if (v) { v.m = e.m; v.r = ratio(e.m); } }
+    else if (e.t === 'off') { const v = find(e.id); if (v && v.st < 4) rel(v, Math.max(0.01, P.r)); else if (!v) { const w = findP(e.id); if (w) w.pend.off = 1; } }
+    else if (e.t === 'fast') { const v = find(e.id); if (v) rel(v, Math.max(0.003, e.tau || 0.01)); else { const w = findP(e.id); if (w) { w.pend = null; done(e.id); } } }
+    else if (e.t === 'tune') { const v = find(e.id); if (v) { v.m = e.m; v.r = ratio(e.m, v.S); } }
   };
   const msg = e => {
     if (!e) return;
-    if (e.t === 'src') { X = e.x || null; XL = X ? X.length : 0; XR = (e.sr || SR) / SR; F0 = e.f0 > 20 ? e.f0 : 261.63; FZ = e.frz || null; FL = e.FL | 0; FK = e.fk > 0 ? +e.fk : 1; NF = FZ && FL ? Math.floor(FZ.length / FL) : 0; return; }
+    if (e.t === 'src') {   // neue Quelle nur für neue Noten; klingende Stimmen behalten ihre (sonst Lesen hinter dem Ende → NaN)
+      const X = e.x || null, FZ = e.frz || null, FL = e.FL | 0;
+      CS = X && X.length ? {X, XL: X.length, XR: (e.sr || SR) / SR, F0: e.f0 > 20 ? e.f0 : 261.63, FZ, FL, FK: e.fk > 0 ? +e.fk : 1, NF: FZ && FL ? Math.floor(FZ.length / FL) : 0} : null; return;
+    }
     if (e.t === 'p') { for (const k in e.p) if (k in P) P[k] = typeof P[k] === 'string' ? String(e.p[k]) : +e.p[k]; return; }
-    if (e.t === 'kill') { for (let k = Q.length - 1; k >= 0; k--) if (Q[k].id === e.id) Q.splice(k, 1); const v = find(e.id); if (v) rel(v, 0.004); return; }
-    if (e.t === 'all') { Q.length = 0; for (const v of V) if (v.st) rel(v, 0.008); return; }
+    if (e.t === 'kill') { for (let k = Q.length - 1; k >= 0; k--) if (Q[k].id === e.id) Q.splice(k, 1); const v = find(e.id); if (v) rel(v, 0.004); else { const w = findP(e.id); if (w) { w.pend = null; done(e.id); } } return; }
+    if (e.t === 'all') { Q.length = 0; for (const v of V) { if (v.pend) { done(v.pend.id); v.pend = null; } if (v.st) rel(v, 0.008); } return; }
     const f = e.at == null ? fr : Math.round(e.at * SR); const ev = Object.assign({}, e, {f});
     let k = Q.length; while (k > 0 && Q[k - 1].f > f) k--; Q.splice(k, 0, ev);
   };
+  const gOf = x => Math.tan(Math.PI * Math.min(40 * Math.pow(2, fcN(x) * 9), SR * 0.45) / SR), kOf = q => 1 / (0.5 + q * q * 15);
   // ein Abschnitt ohne Ereignisse: o..o+n in die Ausgänge L/R (addierend)
   const seg = (L, R, o, n) => {
     const gsN = Math.max(16, Math.round(Math.max(0.01, Math.min(0.5, P.gs)) * SR)), dc = Math.max(1, Math.min(8, P.dc)), step = gsN / dc;
     if (wForm !== P.form || wLen !== gsN) mkW(gsN);
-    const nrm = 1 / Math.max(1, dc * wMean), P0s = XR * SR / F0, br = Math.max(0, Math.min(1, P.br)), frz = P.art === 'frz' && NF > 0;
-    const fc = 40 * Math.pow(2, Math.max(0, Math.min(1, P.fc)) * 9), filt = P.fc < 0.995;
-    const gq = Math.tan(Math.PI * Math.min(fc, SR * 0.45) / SR), kq = 1 / (0.5 + P.q * P.q * 15), c1 = 1 / (1 + gq * (gq + kq)), c2 = gq * c1, c3 = gq * c2;
-    const sus = Math.max(0, Math.min(1, P.s)), dRate = (1 - sus) / Math.max(1, P.d * SR), vol = Math.max(0, Math.min(1.5, P.vol));
+    const nrm = 1 / Math.max(1, dc * wMean), br = Math.max(0, Math.min(1, P.br));
+    const fcT = fcN(P.fc), qT = Math.max(0, Math.min(1, P.q)), wetT = P.fc < 0.995 ? 1 : 0, ks = 1 - Math.exp(-n / (0.012 * SR)), wS = 1 / (0.01 * SR), xS = 1 / (0.006 * SR);
+    const susE = Math.sqrt(Math.max(0, Math.min(1, P.s))), dRate = (1 - susE) / Math.max(1, P.d * SR), vol = Math.max(0, Math.min(1.5, P.vol));   // Hüllkurve wirkt quadratisch → Halten-Ziel √s (80 % = 80 % Pegel)
+    let nH = 0; for (const v of V) if (v.st && v.st < 4) nH++;
+    const pc = nH > 3 ? Math.sqrt(3 / nH) : 1;   // volle Akkorde: Pegel-Ausgleich statt weicher Grenze
     for (const v of V) {
       if (!v.st) continue;
-      if (!X || !XL) { if (v.st === 4) { v.st = 0; done(v.id); } continue; }
+      if (!v.S && CS) { v.S = CS; v.r = ratio(v.m, CS); v.pos = P.pos * CS.XL; v.pp = P.pos; v.ph = rnd() * CS.FL; v.fp = P.pos * Math.max(0, CS.NF - 1); v.art = P.art === 'frz' && CS.NF > 0 ? 'frz' : 'korn'; }
+      const S = v.S;
+      if (!S) { if (v.st === 4) fin(v); continue; }
+      const X = S.X, XL = S.XL, XR = S.XR, P0s = XR * SR / S.F0, want = P.art === 'frz' && S.NF > 0 ? 'frz' : 'korn';
       for (let i = 0; i < n; i++) { tL[i] = 0; tR[i] = 0; }
-      if (!frz) {
+      if (v.art === 'korn') {
+        if (v.pp !== P.pos) { v.pos += (P.pos - v.pp) * XL; v.pp = P.pos; v.pos %= XL; if (v.pos < 0) v.pos += XL; }   // Position wirkt live (Bewegung bleibt)
+        const mkG = (g, back) => {   // Korn anlegen; back > 0: schon so viele Proben gelaufen (Vorfüllen beim Anschlag)
+          const rr = v.r * (P.spt > 0 ? Math.pow(2, (rnd() * 2 - 1) * P.spt / 12) : 1), inc = rr * XR;
+          let p = v.pos + (rnd() * 2 - 1) * P.spo * 0.5 * XL - 0.5 * gsN * inc;
+          const T = fr + o + Math.max(0, Math.floor(v.nx)) - back, dph = (p - T * inc) % P0s; p -= dph < 0 ? dph + P0s : dph;   // tonsynchron: alle Körner in Phase zum Grundton (kein Kamm im Korn-Takt)
+          p += back * inc; p %= XL; if (p < 0) p += XL;
+          const pan = (rnd() * 2 - 1) * br, th = (pan + 1) * Math.PI / 4;
+          g.on = 1; g.p = p; g.inc = inc; g.i = back; g.n = gsN; g.gl = Math.cos(th) * Math.SQRT2 * nrm; g.gr = Math.sin(th) * Math.SQRT2 * nrm; g.o = back ? 0 : Math.max(0, Math.floor(v.nx));
+        };
+        if (v.prime) {   // wie eingeschwungen: Körner, die vor 1…dc-1 Schritten begonnen hätten
+          v.prime = 0; v.nx = 0;
+          for (let k = 1; k * step < gsN - 1; k++) { let g = null; for (const x of v.g) if (!x.on) { g = x; break; } if (!g) break; mkG(g, Math.round(k * step)); }
+        }
         // neue Körner im Abschnitt anlegen (Versatz g.o), dann jedes Korn am Stück rechnen
         while (v.nx < n) {
           let g = null; for (const x of v.g) if (!x.on) { g = x; break; }
-          if (g) {
-            const rr = v.r * (P.spt > 0 ? Math.pow(2, (rnd() * 2 - 1) * P.spt / 12) : 1), inc = rr * XR;
-            let p = v.pos + (rnd() * 2 - 1) * P.spo * 0.5 * XL - 0.5 * gsN * inc;
-            const T = fr + o + Math.max(0, Math.floor(v.nx)), dph = (p - T * inc) % P0s; p -= dph < 0 ? dph + P0s : dph;   // tonsynchron: alle Körner in Phase zum Grundton (kein Kamm im Korn-Takt)
-            p %= XL; if (p < 0) p += XL;
-            const pan = (rnd() * 2 - 1) * br, th = (pan + 1) * Math.PI / 4;
-            g.on = 1; g.p = p; g.inc = inc; g.i = 0; g.n = gsN; g.gl = Math.cos(th) * Math.SQRT2 * nrm; g.gr = Math.sin(th) * Math.SQRT2 * nrm; g.o = Math.max(0, Math.floor(v.nx));
-          }
+          if (g) mkG(g, 0);
           v.nx += step * (0.9 + 0.2 * rnd());
         }
         v.nx -= n;
@@ -102855,43 +102887,53 @@ function spk7CoreMake(SR) {
           const wk = WN / g.n; let p = g.p, i = g.i; const inc = g.inc, gl = g.gl, gr = g.gr, m = Math.min(n, g.o + g.n - i);
           for (let j = g.o; j < m; j++, i++) {
             const i0 = p | 0, f = p - i0, a = X[i0], b = X[i0 + 1 < XL ? i0 + 1 : 0], s = (a + (b - a) * f) * W[(i * wk) | 0];
-            tL[j] += s * gl; tR[j] += s * gr; p += inc; if (p >= XL) p -= XL;
+            tL[j] += s * gl; tR[j] += s * gr; p += inc; if (p >= XL) p %= XL;
           }
           g.p = p; g.i = i; g.o = 0; if (i >= g.n) g.on = 0;
         }
         v.pos += P.bew * n * XR; v.pos %= XL; if (v.pos < 0) v.pos += XL;
       } else {
         // Spektral-Schleife: Bild-Ort = Position + langsame Bewegung (hin und her) + Schwanken (Streuung)
+        const FZ = S.FZ, FL = S.FL, NF = S.NF;
         v.t += n / SR; v.drift += P.bew * 0.25 * n / SR;
         let fp = P.pos * (NF - 1) + v.drift * (NF - 1) + Math.sin(TW * 0.13 * v.t) * P.spo * 0.5 * (NF - 1), M = 2 * (NF - 1);
         if (M > 0) { fp %= M; if (fp < 0) fp += M; if (fp > NF - 1) fp = M - fp; } else fp = 0;
-        const fpA = v.fp, mv = 3 * n / SR, fpB = Math.abs(fp - fpA) > mv ? fpA + Math.sign(fp - fpA) * mv : fp, brA = v.brS, h = FL >> 1, inc = v.r * XR * FK;   // höchstens 3 Bilder/s
-        let ph = v.ph; const gL = 1;
+        if (v.fpI) { v.fpI = 0; v.fp = fp; v.brS = br; }
+        const fpA = v.fp, mv = 3 * n / SR, fpB = Math.abs(fp - fpA) > mv ? fpA + Math.sign(fp - fpA) * mv : fp, brA = v.brS, h = FL >> 1, inc = v.r * XR * S.FK;   // höchstens 3 Bilder/s
+        let ph = v.ph;
         for (let j = 0; j < n; j++) {
           const u = (j + 1) / n, fq = fpA + (fpB - fpA) * u, k0 = Math.min(NF - 1, fq | 0), k1 = Math.min(NF - 1, k0 + 1), fw = fq - k0, A0 = k0 * FL, A1 = k1 * FL, mixR = brA + (br - brA) * u;
           const i0 = ph | 0, f = ph - i0, i1 = i0 + 1 < FL ? i0 + 1 : 0, j0 = i0 + h < FL ? i0 + h : i0 + h - FL, j1 = j0 + 1 < FL ? j0 + 1 : 0;
           const a = FZ[A0 + i0] + (FZ[A0 + i1] - FZ[A0 + i0]) * f, b = FZ[A1 + i0] + (FZ[A1 + i1] - FZ[A1 + i0]) * f, sL = a + (b - a) * fw;
           const c = FZ[A0 + j0] + (FZ[A0 + j1] - FZ[A0 + j0]) * f, d = FZ[A1 + j0] + (FZ[A1 + j1] - FZ[A1 + j0]) * f, sR = c + (d - c) * fw;
-          tL[j] = sL * gL; tR[j] = (sL + (sR - sL) * mixR) * gL; ph += inc; if (ph >= FL) ph -= FL;
+          tL[j] = sL; tR[j] = sL + (sR - sL) * mixR; ph += inc; if (ph >= FL) ph %= FL;
         }
         v.ph = ph; v.fp = fpB; v.brS = br;
       }
-      // Hüllkurve + Filter + Summe
-      const gT = (0.25 + 0.75 * v.vel) * vol * 0.4, gk = 1 - Math.exp(-1 / (0.01 * SR)); let gn = v.gn, env = v.env, st = v.st, rate = v.rate, a1 = v.a1, b1 = v.b1, a2 = v.a2, b2 = v.b2;
+      // Hüllkurve + Filter (läuft immer, Grenzfrequenz/Resonanz gleiten, „offen“ blendet auf trocken) + Modus-Blende + Summe
+      const gT = (0.25 + 0.75 * v.vel) * vol * 0.4 * pc, gk = 1 - Math.exp(-1 / (0.01 * SR)), xT = v.art === want ? 1 : 0;
+      const fcE = v.fcS + (fcT - v.fcS) * ks, qE = v.qS + (qT - v.qS) * ks, gA = gOf(v.fcS), gB = gOf(fcE), kA = kOf(v.qS), kB = kOf(qE);
+      let gn = v.gn, env = v.env, st = v.st, rate = v.rate, a1 = v.a1, b1 = v.b1, a2 = v.a2, b2 = v.b2, wet = v.wet, xg = v.xg;
       for (let j = 0; j < n; j++) {
         if (st === 1) { env += rate; if (env >= 1) { env = 1; st = 2; } }
-        else if (st === 2) { env -= dRate; if (env <= sus) { env = sus; st = 3; } }
+        else if (st === 2) { env -= dRate; if (env <= susE) { env = susE; st = 3; } }
         else if (st === 4) { env -= rate; if (env <= 0) { env = 0; st = 0; } }
+        const u = (j + 1) / n, gq = gA + (gB - gA) * u, kq = kA + (kB - kA) * u, c1 = 1 / (1 + gq * (gq + kq)), c2 = gq * c1, c3 = gq * c2;
         let xl = tL[j], xr = tR[j];
-        if (filt) {
-          let v3 = xl - b1, v1 = c1 * a1 + c2 * v3, v2 = b1 + c2 * a1 + c3 * v3; a1 = 2 * v1 - a1; b1 = 2 * v2 - b1; xl = v2;
-          v3 = xr - b2; v1 = c1 * a2 + c2 * v3; v2 = b2 + c2 * a2 + c3 * v3; a2 = 2 * v1 - a2; b2 = 2 * v2 - b2; xr = v2;
-        }
-        gn += (gT - gn) * gk; const e = env * env * gn; L[o + j] += xl * e; R[o + j] += xr * e;
+        let v3 = xl - b1, v1 = c1 * a1 + c2 * v3, v2 = b1 + c2 * a1 + c3 * v3; a1 = 2 * v1 - a1; b1 = 2 * v2 - b1; const yl = v2;
+        v3 = xr - b2; v1 = c1 * a2 + c2 * v3; v2 = b2 + c2 * a2 + c3 * v3; a2 = 2 * v1 - a2; b2 = 2 * v2 - b2; const yr = v2;
+        if (wet !== wetT) wet = wet < wetT ? Math.min(wetT, wet + wS) : Math.max(wetT, wet - wS);
+        if (xg !== xT) xg = xg < xT ? Math.min(xT, xg + xS) : Math.max(xT, xg - xS);
+        xl += (yl - xl) * wet; xr += (yr - xr) * wet;
+        gn += (gT - gn) * gk; const e = env * env * gn * xg; L[o + j] += xl * e; R[o + j] += xr * e;
         if (!st) { break; }
       }
-      v.env = env; v.gn = gn; v.rate = rate; v.a1 = a1; v.b1 = b1; v.a2 = a2; v.b2 = b2;
-      if (!st) { v.st = 0; for (const g of v.g) g.on = 0; done(v.id); } else v.st = st;
+      if (!(a1 === a1 && b1 === b1 && a2 === a2 && b2 === b2) || Math.abs(a1) + Math.abs(b1) + Math.abs(a2) + Math.abs(b2) > 1e6) a1 = b1 = a2 = b2 = 0;   // Schutz: nie NaN im Filter halten
+      v.env = env; v.gn = gn; v.rate = rate; v.a1 = a1; v.b1 = b1; v.a2 = a2; v.b2 = b2; v.wet = wet; v.xg = xg; v.fcS = fcE; v.qS = qE;
+      if (xg <= 0 && v.art !== want) {   // Modus-Wechsel bei klingender Note: erst aus-, dann im neuen Modus wieder einblenden
+        v.art = want; for (const g of v.g) g.on = 0; v.nx = 0; v.prime = 1; v.fpI = 1;
+      }
+      if (!st) fin(v); else v.st = st;
     }
   };
   const ended = [];
@@ -102907,14 +102949,14 @@ function spk7CoreMake(SR) {
       for (let k = o; k < e; k += 4096) seg(L, R, k, Math.min(4096, e - k));
       o = e;
     }
-    for (let i = 0; i < n; i++) {   // weiche Grenze erst über 0,8 (darunter bitgleich)
-      let x = L[i]; if (x > 0.8) x = 0.8 + 0.2 * Math.tanh((x - 0.8) * 5); else if (x < -0.8) x = -0.8 - 0.2 * Math.tanh((-x - 0.8) * 5); L[i] = x;
-      x = R[i]; if (x > 0.8) x = 0.8 + 0.2 * Math.tanh((x - 0.8) * 5); else if (x < -0.8) x = -0.8 - 0.2 * Math.tanh((-x - 0.8) * 5); R[i] = x;
+    for (let i = 0; i < n; i++) {   // weiche Grenze erst über 0,8 (darunter bitgleich); NaN nie in die Summe
+      let x = L[i]; if (x !== x) x = 0; else if (x > 0.8) x = 0.8 + 0.2 * Math.tanh((x - 0.8) * 5); else if (x < -0.8) x = -0.8 - 0.2 * Math.tanh((-x - 0.8) * 5); L[i] = x;
+      x = R[i]; if (x !== x) x = 0; else if (x > 0.8) x = 0.8 + 0.2 * Math.tanh((x - 0.8) * 5); else if (x < -0.8) x = -0.8 - 0.2 * Math.tanh((-x - 0.8) * 5); R[i] = x;
     }
     fr += n;
     if (ended.length && C.onEnd) { for (const id of ended) C.onEnd(id); } ended.length = 0;
   };
-  const C = {msg, render, P, onEnd: null, info: () => ({voices: V.filter(v => v.st).length, held: V.filter(v => v.st && v.st < 4).length, f0: F0, len: XL, nf: NF, q: Q.length})};
+  const C = {msg, render, P, onEnd: null, info: () => ({voices: V.filter(v => v.st).length, held: V.filter(v => v.st && v.st < 4).length, f0: CS ? CS.F0 : 261.63, len: CS ? CS.XL : 0, nf: CS ? CS.NF : 0, q: Q.length})};
   return C;
 }
 /* ---- Hauptfaden: Quelle aus der Auswahl, Grundton, eingefrorene Spektren ---- */
@@ -102988,7 +103030,19 @@ function spk7F0(x, sr) {
 const spk7Name = f => { const m = Math.round(69 + 12 * Math.log2(f / 440)); return (typeof spk2Name === 'function' ? spk2Name(m) : ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'H'][((m % 12) + 12) % 12] + (Math.floor(m / 12) - 1)); };
 // Mono-Klang → Quelle {x, sr, f0, frz, FL, NF}: höchstens 10 s, leise Ränder weg, Spitze 0,9, 5 ms Blende an den Enden
 function spk7Make(x, sr, o) {
-  o = o || {}; let n = x.length; if (n > sr * 10) { x = x.subarray(0, Math.round(sr * 10)); n = x.length; }
+  o = o || {}; const y = spk7Trim(x, sr); if (!y) return null;
+  const f0 = o.f0 > 20 ? o.f0 : spk7F0(y, sr), F = spk7Frz(y, 8, f0, sr);
+  return Object.assign({x: y, sr, f0: f0 || 261.63, f0ok: !!f0, frz: F.frz, FL: F.FL, NF: F.NF, fk: F.fk}, o.info || {});
+}
+// dasselbe ohne Stillstand: Grundton + Spektren im eigenen Worker (Rückfall: im Hauptfaden)
+async function spk7MakeA(x, sr, o) {
+  o = o || {}; const y = spk7Trim(x, sr); if (!y) return null;
+  const r = await spk7Job('make', {x: y, sr, f0: o.f0 || 0});
+  if (!r) return spk7Make(y, sr, o);
+  return Object.assign({x: y, sr, f0: r.f0 || 261.63, f0ok: r.f0 > 20, frz: r.frz, FL: r.FL, NF: r.NF, fk: r.fk}, o.info || {});
+}
+function spk7Trim(x, sr) {
+  let n = x.length; if (n > sr * 10) { x = x.subarray(0, Math.round(sr * 10)); n = x.length; }
   let pk = 0; for (let i = 0; i < n; i++) pk = Math.max(pk, Math.abs(x[i])); if (!(pk > 1e-5)) return null;
   const B = Math.max(1, Math.round(sr * 0.01)), thr = pk * 0.03; let a = 0, b = n;
   while (a + B < n) { let m = 0; for (let i = a; i < a + B; i++) m = Math.max(m, Math.abs(x[i])); if (m >= thr) break; a += B; }
@@ -102996,8 +103050,23 @@ function spk7Make(x, sr, o) {
   if (b - a < sr * 0.05) { a = 0; b = n; }
   const y = new Float32Array(b - a), g = 0.9 / pk, fd = Math.min(Math.round(sr * 0.005), (b - a) >> 2);
   for (let i = 0; i < y.length; i++) { let w = g; if (i < fd) w *= i / fd; else if (i >= y.length - fd) w *= (y.length - 1 - i) / fd; y[i] = x[a + i] * w; }
-  const f0 = o.f0 > 20 ? o.f0 : spk7F0(y, sr), F = spk7Frz(y, 8, f0, sr);
-  return Object.assign({x: y, sr, f0: f0 || 261.63, f0ok: !!f0, frz: F.frz, FL: F.FL, NF: F.NF, fk: F.fk}, o.info || {});
+  return y;
+}
+/* Rechen-Worker (Grundton, Spektren, Quellbild): der Hauptfaden bleibt frei für Chat und Verbindung */
+function spk7Job(op, o) {
+  if (SPK7.wk == null) {
+    try {
+      const code = [spk7Fft, spk7Frz, spk7F0, spk7PicCalc].map(f => f.toString()).join('\n') +
+        ";onmessage = e => { const d = e.data; try { if (d.op === 'make' || d.op === 'frz') { const f0 = d.op === 'make' && !(d.f0 > 20) ? spk7F0(d.x, d.sr) : d.f0, F = spk7Frz(d.x, 8, f0, d.sr); postMessage({id: d.id, f0, frz: F.frz, FL: F.FL, NF: F.NF, fk: F.fk}, [F.frz.buffer]); }" +
+        " else if (d.op === 'pic') { const P = spk7PicCalc(d.x, d.sr, d.W, d.H, d.lut); postMessage({id: d.id, pic: P}, [P.data.buffer]); } } catch (er) { postMessage({id: d.id, err: String(er && er.message || er)}); } };";
+      const w = new Worker(URL.createObjectURL(new Blob([code], {type: 'text/javascript'}))); SPK7.jobs = new Map(); SPK7.jid = 0;
+      w.onmessage = e => { const d = e.data, j = SPK7.jobs.get(d.id); if (!j) return; SPK7.jobs.delete(d.id); j(d.err ? null : d); };
+      w.onerror = e => { if (e && e.preventDefault) e.preventDefault(); SPK7.wk = false; for (const j of SPK7.jobs.values()) j(null); SPK7.jobs.clear(); };
+      SPK7.wk = w;
+    } catch (e) { SPK7.wk = false; }
+  }
+  if (!SPK7.wk) return Promise.resolve(null);
+  const id = ++SPK7.jid; return new Promise(ok => { SPK7.jobs.set(id, ok); SPK7.wk.postMessage(Object.assign({op, id}, o)); });
 }
 // Auswahl (oder ohne Auswahl: gewählte Ebene im sichtbaren Bereich) → Quelle; Rechnung wie „▶ Auswahl“ (op block mit sel)
 async function spk7Grab(U) {
@@ -103018,9 +103087,10 @@ async function spk7Grab(U) {
       rs.forEach((r, i) => { const j = ks[i], nc = r.ch.length, g = 1 / nc; for (let q = 0; q < B; q++) { const t = j * B + q - s0; if (t < 0 || t >= x.length) continue; let v = 0; for (const c of r.ch) v += c[q]; x[t] = v * g; } });
     }
     const lname = mix === 'orig' ? 'Original' : ((U.meta.layers.find(l => l.id === mix) || {}).name || 'Ebene');
-    const S7 = spk7Make(x, sr, {info: {t0, t1, mix, wo, name: lname}});
+    const S7 = await spk7MakeA(x, sr, {info: {t0, t1, mix, wo, name: lname, sv: U.selVer}});
     if (!S7) { spk1Stat(U, 'Klangkorn: die Auswahl ist still'); return null; }
     SPK7.src = S7; spk7Feed(spk7Prev(), S7);
+    if (SPK7.pv) { spk7NoteOff(SPK7.pv); SPK7.pv = spk7NoteOn(Math.max(12, Math.min(120, Math.round(69 + 12 * Math.log2(S7.f0 / 440)))), 0.8); }   // Vorhören läuft weiter, jetzt mit der neuen Quelle
     SPK7.kb = Math.max(24, Math.min(96, 12 * Math.floor(Math.round(69 + 12 * Math.log2(S7.f0 / 440)) / 12) - 12)); if (SPK7.dd && SPK7.dd.kb) spk7KbBuild(SPK7.dd);   // Mini-Tastatur: Grundton der Quelle in der oberen Oktave
     spk1Stat(U, 'Klangkorn: ' + spk7SrcTxt()); return S7;
   } catch (e) { logErr(e); spk1Stat(U, 'Klangkorn: ' + (e.message || e)); return null; }
@@ -103033,7 +103103,7 @@ function spk7SrcTxt() {
 /* ---- Engine: AudioWorklet (Modul aus spk7CoreMake), Rückfall ScriptProcessor (auch für Offline-Kontexte) ---- */
 function spk7Mod(c) {
   let pr = SPK7.mods.get(c); if (pr) return pr;
-  if (!SPK7.url) SPK7.url = URL.createObjectURL(new Blob([spk7CoreMake.toString() + ";registerProcessor('spk7-korn', class extends AudioWorkletProcessor { constructor(o) { super(); this.c = spk7CoreMake(sampleRate); for (const m of (o && o.processorOptions && o.processorOptions.q) || []) this.c.msg(m); this.port.onmessage = e => this.c.msg(e.data); this.c.onEnd = id => this.port.postMessage({end: id}); } process(i, o) { const L = o[0][0], R = o[0][1] || o[0][0]; this.c.render(L, R, L.length, currentFrame); return true; } });"], {type: 'text/javascript'}));
+  if (!SPK7.url) SPK7.url = URL.createObjectURL(new Blob([spk7CoreMake.toString() + ";registerProcessor('spk7-korn', class extends AudioWorkletProcessor { constructor(o) { super(); this.c = spk7CoreMake(sampleRate); for (const m of (o && o.processorOptions && o.processorOptions.q) || []) this.c.msg(m); this.port.onmessage = e => { if (e.data && e.data.t === 'end') this.x = 1; else this.c.msg(e.data); }; this.c.onEnd = id => this.port.postMessage({end: id}); } process(i, o) { if (this.x) return false; const L = o[0][0], R = o[0][1] || o[0][0]; this.c.render(L, R, L.length, currentFrame); return true; } });"], {type: 'text/javascript'}));
   pr = c.audioWorklet.addModule(SPK7.url); SPK7.mods.set(c, pr); return pr;
 }
 function spk7Engine(c, dest, o) {
@@ -103055,6 +103125,7 @@ function spk7Engine(c, dest, o) {
   E.retune = (id, m, t) => post({t: 'tune', id, m, at: t});
   E.set = p => post({t: 'p', p});
   E.all = () => post({t: 'all'});
+  E.stop = () => { E.dead = true; try { if (E.kind === 'worklet' && E.port) E.port.postMessage({t: 'end'}); } catch (e) {} try { if (E.node) { if (E.kind === 'script') E.node.onaudioprocess = null; E.node.disconnect(); } } catch (e) {} };
   const off = typeof OfflineAudioContext === 'function' && c instanceof OfflineAudioContext;
   if (!o.script && !SPK7.noWk && c.audioWorklet && typeof AudioWorkletNode === 'function' && (!off || o.wk)) {
     E.ready = spk7Mod(c).then(() => {
@@ -103080,12 +103151,31 @@ function spk7Ky(U) {
   const ky = U.ky; if (!ky || ky.dataset.spk7) return; ky.dataset.spk7 = '1';
   ky.addEventListener('pointerdown', e => {
     if (!spk7Tone() || !U.meta) return; const r = ky.getBoundingClientRect(), m = Math.round(U.v.mTop - (e.clientY - r.top) / U.v.rowH);
-    if (!(m >= 12 && m <= 120)) return; SPK7.held.set(e.pointerId, {id: spk7NoteOn(m), y: e.clientY, m}); SPK7.lastKey = m;
+    if (!(m >= 12 && m <= 120)) return; const pid = e.pointerId, h = {id: 0, y: e.clientY, m};
+    h.t = setTimeout(() => { if (SPK7.held.get(pid) === h && !h.id) h.id = spk7NoteOn(m); }, 70);   // Halten: Ton nach 70 ms ohne Bewegung
+    SPK7.held.set(pid, h); SPK7.lastKey = m;
   });
-  ky.addEventListener('pointermove', e => { const h = SPK7.held.get(e.pointerId); if (h && Math.abs(e.clientY - h.y) >= 8) { spk7NoteOff(h.id); SPK7.held.delete(e.pointerId); } });   // Ziehen = rollen: Ton aus
-  const up = e => { const h = SPK7.held.get(e.pointerId); if (h) { spk7NoteOff(h.id); SPK7.held.delete(e.pointerId); } };
+  ky.addEventListener('pointermove', e => { const h = SPK7.held.get(e.pointerId); if (h && Math.abs(e.clientY - h.y) >= 8) { clearTimeout(h.t); if (h.id) spk7NoteOff(h.id); SPK7.held.delete(e.pointerId); } });   // Ziehen = rollen: still
+  const up = e => {
+    const h = SPK7.held.get(e.pointerId); if (!h) return; clearTimeout(h.t); SPK7.held.delete(e.pointerId);
+    if (h.id) spk7NoteOff(h.id); else if (e.type === 'pointerup') { const id = spk7NoteOn(h.m); setTimeout(() => spk7NoteOff(id), 140); }   // Tipp = kurzer Ton
+  };
   ky.addEventListener('pointerup', up); ky.addEventListener('pointercancel', up);
-  document.addEventListener('visibilitychange', () => { if (document.hidden && SPK7.eng) spk7AllOff(); });
+  if (!SPK7.vis) { SPK7.vis = 1; document.addEventListener('visibilitychange', () => { if (document.hidden && SPK7.eng) spk7AllOff(); }); }
+}
+const SPK7_ROW = false;   // Knopf „Als Klangkorn“ als 3. Zeile im Aktionsfeld (Ebenenliste wird kleiner) – erst nach Xanders Freigabe
+// Ecke TON|KORN: die unteren 18 px liegen über den Tasten – ein Druck dort geht an die Tasten (Ton/Rollen), nicht an den Umschalter
+function spk7CoFw(U, c) {
+  c.addEventListener('pointerdown', e => {
+    const k = U.ky && U.ky.getBoundingClientRect(); c.fw = !!(k && e.clientY >= k.top); if (!c.fw) return;
+    try { if (c.hasPointerCapture && c.hasPointerCapture(e.pointerId)) c.releasePointerCapture(e.pointerId); } catch (er) {}
+    const o = {bubbles: true, cancelable: true, composed: true, pointerId: e.pointerId, pointerType: e.pointerType, isPrimary: e.isPrimary, clientX: e.clientX, clientY: e.clientY, screenX: e.screenX, screenY: e.screenY, button: e.button, buttons: e.buttons, width: e.width, height: e.height, pressure: e.pressure};
+    U.ky.dispatchEvent(new PointerEvent('pointerdown', o));
+  });
+  for (const t of ['pointermove', 'pointerup', 'pointercancel']) c.addEventListener(t, e => {   // falls die Weitergabe des Fangs nicht greift: Ereignisse selbst nachreichen
+    if (!c.fw || (c.hasPointerCapture && !c.hasPointerCapture(e.pointerId) && e.target !== c)) return;
+    U.ky.dispatchEvent(new PointerEvent(t, {bubbles: true, cancelable: true, composed: true, pointerId: e.pointerId, pointerType: e.pointerType, isPrimary: e.isPrimary, clientX: e.clientX, clientY: e.clientY, screenX: e.screenX, screenY: e.screenY, button: e.button, buttons: e.buttons}));
+  });
 }
 function spk7Mode(U, v) {
   SPK7.mode = v === 'korn' ? 'korn' : 'ton'; spk7Keep();
@@ -103103,13 +103193,13 @@ const SPK7_SL = [
   ['br', 'Breite', 0.01, v => Math.round(v * 100) + ' %'], ['vol', 'Lautstärke', 0.01, v => Math.round(v * 100) + ' %']];
 function spk7Ui(U, tl) {
   spk7P(); spk7Css(); if (SPK7.kb == null) SPK7.kb = 48;
-  const b = el('button', 'n1b spk1-ck', 'Klangkorn ▾'); b.setAttribute('aria-label', 'Klangkorn-Blatt öffnen'); U.b7 = b; tl.appendChild(b);
-  on(b, 'click', () => spk7Dd(U, b));
+  const b = el('button', 'n1b spk1-ck', 'Klangkorn ▾'); b.setAttribute('aria-label', 'Auswahl als Klangkorn – Blatt öffnen'); U.b7 = b; tl.appendChild(b);
+  on(b, 'click', () => spk7Open(U, b));
   queueMicrotask(() => {
     try {
       spk7Ky(U);
-      const co = U.sh.querySelector('.spk1-co'); if (co && !U.co7) { co.textContent = ''; const c = U.co7 = el('button', 'spk1-ck spk7-cob', 'TON'); on(c, 'click', () => spk7CoTap(U)); co.appendChild(c); }
-      if (U.ac && !U.b7a) { const a = U.b7a = el('button', 'mbtn rb spk1-ck spk7-ab', 'Als Klangkorn'); a.setAttribute('aria-label', 'Auswahl als Klangkorn spielen'); on(a, 'click', () => spk7Als(U)); U.ac.appendChild(a); U.sh.classList.add('spk7g'); }
+      const co = U.sh.querySelector('.spk1-co'); if (co && !U.co7) { co.textContent = ''; const c = U.co7 = el('button', 'spk1-ck spk7-cob', 'TON'); spk7CoFw(U, c); on(c, 'click', () => { if (c.fw) { c.fw = false; return; } spk7CoTap(U); }); co.appendChild(c); }
+      if (SPK7_ROW && U.ac && !U.b7a) { const a = U.b7a = el('button', 'mbtn rb spk1-ck spk7-ab', 'Als Klangkorn'); a.setAttribute('aria-label', 'Auswahl als Klangkorn spielen'); on(a, 'click', () => spk7Als(U)); U.ac.appendChild(a); U.sh.classList.add('spk7g'); }
       spk7Btn(U); spk7CoSync(U); if (SPK7.mode === 'korn') spk7Mode(U, 'korn');
     } catch (e) { logErr(e); }
   });
@@ -103124,7 +103214,7 @@ function spk7Css() {
     '.spk7-kb{position:relative;flex:none;width:100%;height:76px;border-radius:6px;overflow:hidden;background:#0d0e11;touch-action:none}',
     '.spk7-kb>i{position:absolute;top:0;bottom:0;box-sizing:border-box;background:#ece6d8;border-right:1px solid #0d0e11;font:700 9px/1 var(--font-num);font-style:normal;color:#222;display:flex;align-items:flex-end;justify-content:center;padding-bottom:4px}',
     '.spk7-kb>i.b{bottom:42%;z-index:1;background:#1a1b1f;border:0;border-radius:0 0 3px 3px}.spk7-kb>i.on{background:var(--amber);box-shadow:0 0 10px var(--amber)}',
-    '.spk1>.spk1-co{position:relative}.spk7-cob{position:absolute;left:0;top:0;width:100%;height:44px;z-index:3;margin:0;padding:0 0 18px;border:0;border-radius:0;background:transparent;color:var(--text-dim);font:700 9px/1 var(--font-ui);letter-spacing:.08em;box-shadow:none}',
+    '.spk1>.spk1-co{position:relative}.spk7-cob{position:absolute;left:0;top:0;width:100%;height:44px;z-index:3;margin:0;padding:0 0 18px;border:0;border-radius:0;background:transparent;color:var(--text-dim);font:700 9px/1 var(--font-ui);letter-spacing:.08em;box-shadow:none;touch-action:none}',
     '.spk7-cob::after{content:"";position:absolute;left:9px;right:9px;top:21px;height:2px;border-radius:1px;background:currentColor;opacity:.45}.spk7-cob.on{color:var(--amber)}.spk7-cob.on::after{opacity:1}',
     '.spk7-lt{position:absolute;inset:0;pointer-events:none;z-index:1}.spk7-lt>i{position:absolute;left:0;right:1px;background:var(--amber);box-shadow:0 0 8px var(--amber);opacity:.9}',
     '.spk1-ac .spk7-ab{grid-column:1/-1}',
@@ -103136,13 +103226,23 @@ function spk7Css() {
 function spk7I16(x) { const o = new Int16Array(x.length); for (let i = 0; i < x.length; i++) o[i] = Math.max(-32767, Math.min(32767, Math.round(x[i] * 32767))); return o; }
 function spk7Snd(take, S7, p, nm) {
   const P = spk7Norm(p), h = Object.assign({take, f0: +S7.f0.toFixed(3)}, P);
-  const pp = {o1w: 0, o1oct: 0, o1semi: 0, o1fine: 0, o1lvl: 1, o2lvl: 0, o3lvl: 0, subLvl: 0, noise: 0, cutoff: 1, res: 0, aA: P.a, aD: P.d, aS: P.s, aR: P.r, glide: 0, mode: 0, poly: P.poly,
+  const pp = {o1w: 0, o1oct: 0, o1semi: 0, o1fine: 0, o1lvl: 1, o2lvl: 0, o3lvl: 0, subLvl: 0, noise: 0, cutoff: spk7FcHz(P.fc), res: P.q, aA: P.a, aD: P.d, aS: P.s, aR: P.r, glide: 0, mode: 0, poly: P.poly,
     wt: {table: 'vocal', pos: P.pos, scan: 0, scanTime: 0.8, h}};
   return SQStore.normalizeSound({engine: 'wt', name: (nm || 'Klangkorn').slice(0, 24), cat: 'eigene', p: pp, mods: [], fx: {drive: 0, chorus: {mode: 'off'}, rev: 0.15, dly: 0, vol: 0.8, pan: 0}});
+}
+const spk7FcHz = fc => (fc >= 0.995 ? 20000 : Math.round(40 * Math.pow(2, fc * 9)));
+// Klang-Editor (Seite Wavetable) wirkt auf die Klangkorn-Spur: Position, Filter, Resonanz, Hüllkurve, Stimmen kommen aus dem Klang
+function spk7Eff(snd) {
+  const p = snd.p, h = p.wt.h, o = Object.assign({}, h), n = v => typeof v === 'number' && isFinite(v);
+  if (n(p.wt.pos)) o.pos = p.wt.pos; if (n(p.aA)) o.a = p.aA; if (n(p.aD)) o.d = p.aD; if (n(p.aS)) o.s = p.aS; if (n(p.aR)) o.r = p.aR;
+  if (n(p.cutoff)) o.fc = p.cutoff >= 19900 ? 1 : Math.max(0, Math.min(0.99, Math.log2(Math.max(40, p.cutoff) / 40) / 9));
+  if (n(p.res)) o.q = Math.min(1, p.res); if (n(p.poly) && p.poly >= 1) o.poly = p.poly;
+  return spk7Norm(o);
 }
 function spk7Take(U, t) {
   const S7 = SPK7.src; if (!S7 || (U && U.busy)) return null;
   const ex = t !== 'neu' && t != null && t >= 0 && S.tracks[t] && (typeof spk2MxOk === 'function' ? spk2MxOk(t) : S.tracks[t].kind === 'synth');
+  if (!ex && !canAddTrack()) { if (U) spk1Stat(U, 'Klangkorn: keine Spur frei – oben eine Spur wählen'); toast('Keine Spur frei – eine Spur wählen'); return null; }   // vor dem Take: kein verwaistes Audio
   const nm = ('Korn ' + (S7.name || '')).trim().slice(0, 20), pcm = spk7I16(S7.x);
   const res = imp1Step(ex ? 'Klangkorn → Spur' : 'Klangkorn als Instrument', () => {
     const tk = S7.take && S.takes && S.takes[S7.take] ? {id: S7.take} : tkAddPcmTake(pcm, S7.sr, 'import');
@@ -103155,7 +103255,7 @@ function spk7Take(U, t) {
   S7.take = res.take; SPK7.tgt = res.track;
   SPK7.pcm.set(res.take, {x: S7.x, sr: S7.sr, frz: S7.frz, FL: S7.FL, NF: S7.NF, fk: S7.fk, f0: S7.f0});
   try { if (UI.heads && EL.grid) buildGrid(); } catch (e) { logErr(e); }
-  if (U) { spk1Stat(U, 'Klangkorn → Spur ' + S.tracks[res.track].name + ' · ↶ macht es rückgängig'); spk7DdSync(U); }
+  if (U) { spk1Stat(U, 'Klangkorn → Spur ' + S.tracks[res.track].name + ' · Rückgängig im Hinweis unten'); spk7DdSync(U); }
   toast('Klangkorn → ' + S.tracks[res.track].name, {label: '↶ Rückgängig', fn: () => undo()});
   SPK7.last = res; return res;
 }
@@ -103168,27 +103268,41 @@ function spk7Src(take, f0) {
   const pr = tkPcm(take).then(pcm => {
     SPK7.pend.delete(take); if (!pcm) return null;
     const x = new Float32Array(pcm.length); for (let i = 0; i < pcm.length; i++) x[i] = pcm[i] / 32767;
-    const F = spk7Frz(x, 8, f0, m.sr), o = {x, sr: m.sr, frz: F.frz, FL: F.FL, NF: F.NF, fk: F.fk, f0}; SPK7.pcm.set(take, o); return o;
+    return spk7Job('frz', {x, sr: m.sr, f0}).then(r => { const F = r || spk7Frz(x, 8, f0, m.sr), o = {x, sr: m.sr, frz: F.frz, FL: F.FL, NF: F.NF, fk: F.fk, f0}; SPK7.pcm.set(take, o); return o; });
   }).catch(e => { SPK7.pend.delete(take); logErr(e); return null; });
   SPK7.pend.set(take, pr); return pr;
 }
-function spk7TrE(dest, h) {
+function spk7TrE(dest, h, snd) {
   const c = AU.ctx; let E = SPK7.tr.get(dest);
-  if (!E || E.ctx !== c || E.dead) { E = spk7Engine(c, dest); SPK7.tr.set(dest, E); }
+  if (!E || E.ctx !== c || E.dead) { E = spk7Engine(c, dest); SPK7.tr.set(dest, E); if (!SPK7.trS) SPK7.trS = new Set(); SPK7.trS.add(E); spk7Jan(); }
   if (E.take !== h.take || E.f0 !== h.f0) {
     E.take = h.take; E.f0 = h.f0; const c0 = SPK7.pcm.get(h.take);
     if (c0 && c0.f0 === h.f0) spk7Feed(E, c0); else { if (c0) SPK7.pcm.delete(h.take); spk7Src(h.take, h.f0).then(o => { if (o && E.take === h.take) spk7Feed(E, o); }); }
   }
-  const pk = JSON.stringify(h); if (E.pk !== pk) { E.pk = pk; E.set(spk7Norm(h)); }
-  return E;
+  const ef = snd ? spk7Eff(snd) : spk7Norm(h), pk = JSON.stringify(ef); if (E.pk !== pk) { E.pk = pk; E.set(ef); }
+  E.lastOn = performance.now(); return E;
+}
+// Spur-Engines ohne Klangkorn-Spur (Klang gewechselt, Spur gelöscht) und ohne klingende Stimme werden abgebaut
+function spk7Jan() {
+  if (SPK7.janT) return;
+  SPK7.janT = setInterval(() => {
+    try {
+      for (const E of [...SPK7.trS]) {
+        if (E.dead || E.ctx !== AU.ctx) { SPK7.trS.delete(E); continue; }
+        let use = false; for (let i = 0; i < NT() && !use; i++) { const A = AU.tracks[i], s = S.tracks[i] && S.tracks[i].sound; use = !!(A && A.trackIn === E.dest && s && s.engine === 'wt' && s.p && s.p.wt && s.p.wt.h); }
+        if (!use && !E.proxies.size && performance.now() - (E.lastOn || 0) > 3000) { E.stop(); SPK7.trS.delete(E); if (SPK7.tr.get(E.dest) === E) SPK7.tr.delete(E.dest); }
+      }
+      if (!SPK7.trS.size) { clearInterval(SPK7.janT); SPK7.janT = 0; }
+    } catch (e) { logErr(e); }
+  }, 4000);
 }
 function spk7Voice(i, out, vel, t0, o, snd) {
-  const h = snd.p.wt.h, A = AU.tracks[i], c = AU.ctx; if (!c || !A || !h || !h.take) return null;
+  const h = snd.p.wt.h, A = AU.tracks[i], c = AU.ctx; if (!c || !A || !h || !h.take || snd.engine !== 'wt') return null;   // Engine im Editor gewechselt: normaler Klang
   const dest = o.chain ? o.chain.trackIn : A.trackIn; if (!dest) return null;
-  const E = spk7TrE(dest, h), v = Object.create(WkVoiceProto);
+  const E = spk7TrE(dest, h, snd), ef = spk7Eff(snd), v = Object.create(WkVoiceProto);
   out = Math.max(0, Math.min(127, Math.round(out)));
   Object.assign(v, {id: ++VSEQ, track: i, src: o.src, clipNote: o.clipNote == null ? null : o.clipNote, clipKey: o.clipKey || null, out, baseOut: out, vel, start: t0, end: Infinity, relT: Infinity, stopAt: Infinity,
-    dead: false, stolen: false, E, wk: true, fm: false, P: snd.p, perf: null, perfAll: [], log: null, mkRel: Math.max(0.02, +h.r || 0.4) + 0.05, korn: true});
+    dead: false, stolen: false, E, wk: true, fm: false, P: snd.p, perf: null, perfAll: [], log: null, mkRel: Math.max(0.02, ef.r) + 0.05, korn: true});
   if (o.chain) v.chain = o.chain;
   E.on(v.id, out, vel, t0); VOICES.push(v); E.proxies.set(v.id, v);
   if (o.src !== 'preview' && typeof perfAdd === 'function') { v.perf = perfAdd(i, out, t0, null, vel); if (v.perf) v.perfAll.push(v.perf); }
@@ -103216,8 +103330,20 @@ SYNQUENZER.spk7 = {
   take: t => spk7Take(SPK1.ui, t == null ? 'neu' : t), als: () => spk7Als(SPK1.ui), lit: () => [...SPK7.lit.keys()], tgt: () => SPK7.tgt, kb: () => SPK7.kb, last: () => SPK7.last, render: o => spk7Render(o), core: () => spk7CoreMake, dd: () => SPK7.dd && SPK7.dd.dd && SPK7.dd.dd.isConnected ? SPK7.dd.dd : null,
   voices: () => VOICES.filter(v => v.korn && !v.dead).length, cache: t => { const c = SPK7.pcm.get(t); return c ? {n: c.x.length, sr: c.sr} : null; }, forget: t => SPK7.pcm.delete(t),
   load: (t, f0) => spk7Src(t, f0).then(o => (o ? {n: o.x.length, sr: o.sr, nf: o.NF, fk: o.fk} : null)),
-  trEng: i => { const A = AU.tracks[i], E = A && SPK7.tr.get(A.trackIn); return E ? {kind: E.kind, take: E.take, q: E.q.length, voices: E.proxies.size} : null; }
+  trEng: i => { const A = AU.tracks[i], E = A && SPK7.tr.get(A.trackIn); return E ? {kind: E.kind, take: E.take, q: E.q.length, voices: E.proxies.size, p: Object.assign({}, JSON.parse(E.pk || 'null'))} : null; },
+  trAll: () => (SPK7.trS ? [...SPK7.trS].filter(E => !E.dead).length : 0), jan: () => { if (SPK7.janT) { clearInterval(SPK7.janT); SPK7.janT = 0; } spk7Jan(); }, wk: () => (SPK7.wk ? 'worker' : SPK7.wk === false ? 'aus' : 'noch nicht'),
+  makeA: (x, sr, f0) => spk7MakeA(x instanceof Float32Array ? x : new Float32Array(x), sr || 48000, {f0, info: {wo: 'Test', name: 'Test'}})
 };
+/* „Wo finde ich …?“: Klangkorn */
+(function spk7Guide() {
+  try {
+    if (typeof ui1Entries !== 'function') return; const L = ui1Entries(); if (L.some(x => x.id === 'spk7')) return;
+    L.push({id: 'spk7', n: 'Klangkorn (Auswahl als Instrument)', w: 'Spektral › Werkzeugleiste › Klangkorn ▾',
+      d: 'Mit dem Pinsel einen Teil des Spektrums wählen, dann „Klangkorn ▾“: die Auswahl klingt als Körnchen oder als Schleife auf der Tastatur links und auf der kleinen Tastatur im Blatt. „Als Instrument“ legt sie als Spur an.',
+      s: 'klangkorn korn koernchen granular grain schleife spektrum pinsel auswahl instrument synthesizer sampler tastatur',
+      go: () => { spk1Open({back: {menu: true}}); }, q: () => (SPK1.open && SPK1.ui ? SPK1.ui.b7 || SPK1.ui.tl : null)});
+  } catch (e) {}
+})();
 /* ---- Teil 2: Klangkorn-Blatt (Bausteine wie „Klang nachbauen“): Quellbild mit Positions-Marker, Mini-Tastatur, Regler, Spurwahl ---- */
 const SPK7_ORD = ['pos', 'bew', 'gs', 'dc', 'spo', 'spt', 'form', 'a', 'd', 's', 'r', 'fc', 'q', 'br', 'vol'];
 function spk7DdSync(U) {
@@ -103247,23 +103373,33 @@ function spk7Dd(U, b) {
     D.kb = el('div', 'spk7-kb'); D.kb.setAttribute('aria-label', 'Klangkorn-Tastatur, zwei Oktaven'); dd.appendChild(D.kb); spk7KbBuild(D); spk7KbGest(D);
     const gl = el('div', 'spk1-g'); D.bL = el('button', 'mbtn rb spk1-ck', 'Auf Tastatur links'); D.bL.dataset.k = 'links'; on(D.bL, 'click', () => spk7Mode(U, SPK7.mode === 'korn' ? 'ton' : 'korn')); gl.appendChild(D.bL); dd.appendChild(gl);
     dd.appendChild(el('h5', '', 'Modus'));
-    dd.appendChild(makeSeg([['korn', 'Körnchen'], ['frz', 'Schleife']], () => p.art, v => { p.art = v; spk7Push('art'); }, 'spk7-art'));
-    D.sl = {}; D.vl = {};
+    dd.appendChild(makeSeg([['korn', 'Körnchen'], ['frz', 'Schleife']], () => p.art, v => { p.art = v; spk7Push('art'); spk7ArtVis(D); }, 'spk7-art'));
+    D.sl = {}; D.vl = {}; D.lb = {};
     for (const k of SPK7_ORD) {
       const [, lab, st, fmt] = SPK7_SL.find(q => q[0] === k);
       if (k === 'pos') dd.appendChild(el('h5', '', 'Körnchen'));
       if (k === 'a') dd.appendChild(el('h5', '', 'Hüllkurve · Filter · Breite'));
       const l = el('label', '', esc(lab)), r = el('input'), v = el('span', 'spk1-v', fmt(p[k])); r.type = 'range'; r.min = SPK7_RG[k][0]; r.max = SPK7_RG[k][1]; r.step = st; r.value = p[k]; r.setAttribute('aria-label', lab); r.dataset.k = k;
-      on(r, 'input', () => { p[k] = +r.value; v.textContent = fmt(p[k]); spk7Push(k); if (k === 'pos' || k === 'spo') spk7PicDraw(); }); l.append(r, v); dd.appendChild(l); D.sl[k] = r; D.vl[k] = v;
+      on(r, 'input', () => { p[k] = +r.value; v.textContent = fmt(p[k]); spk7Push(k); if (k === 'pos' || k === 'spo') spk7PicDraw(); }); l.append(r, v); dd.appendChild(l); D.sl[k] = r; D.vl[k] = v; D.lb[k] = l;
     }
+    spk7ArtVis(D);
     dd.appendChild(el('h5', '', 'Als Instrument in Spur …'));
     D.gT = el('div', 'spk1-g'); dd.appendChild(D.gT);
     const g2 = el('div', 'spk1-g'); D.bT = el('button', 'mbtn rb spk1-ck', 'Als Instrument übernehmen'); D.bT.dataset.k = 'take'; on(D.bT, 'click', () => spk7Take(U, SPK7.tgt)); g2.appendChild(D.bT); dd.appendChild(g2);
     spk7DdSync(U);
   });
   const dd = U.dd; if (dd && SPK7.dd && SPK7.dd.dd === dd) { const R = U.sh.getBoundingClientRect(), l = parseFloat(dd.style.left) || 0, w = dd.offsetWidth; if (l < 48 && R.width - w - 8 >= 48) dd.style.left = '48px'; }
-  if (!SPK7.src && (U.sel.length || U.act !== 'orig')) spk7Grab(U);
 }
+/* „Klangkorn ▾“ (Werkzeugleiste): Blatt auf; eine neue Auswahl wird gleich geholt und die Tastatur links spielt sie (wie „Als Klangkorn“) */
+async function spk7Open(U, b) {
+  if (U.dd && U.ddA === b) { spk1Dd(U, null); return; }
+  spk7Dd(U, b);
+  const mix = U.act === 'orig' ? 'orig' : U.act, S7 = SPK7.src, neu = (U.sel.length || mix !== 'orig') && (!S7 || S7.sv !== U.selVer || S7.mix !== mix);
+  if (!neu || SPK7.busy) return;
+  const r = await spk7Grab(U); if (!r) return;
+  SPK7.mode = 'korn'; spk7Keep(); spk7Prev(); spk7CoSync(U); spk7DdSync(U);
+}
+function spk7ArtVis(D) { const f = spk7P().art === 'frz'; for (const k of ['gs', 'dc', 'spt', 'form']) if (D && D.lb && D.lb[k]) D.lb[k].style.display = f ? 'none' : ''; }   // Körnchen-Regler nur im Körnchen-Modus
 function spk7SetP(k, v) {   // Wert setzen + Regler/Anzeige im Blatt nachziehen
   const p = spk7P(), r = SPK7_RG[k]; p[k] = Math.max(r[0], Math.min(r[1], v)); spk7Push(k);
   const D = SPK7.dd; if (D && D.sl && D.sl[k]) { D.sl[k].value = p[k]; D.vl[k].textContent = SPK7_SL.find(q => q[0] === k)[3](p[k]); }
@@ -103277,9 +103413,23 @@ function spk7Vor(U) {
   spk7DdSync(U);
 }
 /* Quellbild: kleines Spektrogramm der Quelle (Farben wie die Spektral-Seite), Marker = Position, Band = Streuung Ort */
-function spk7Pic(S7, W, H) {   // Zeit waagrecht, Frequenz logarithmisch – auf den Bereich gezoomt, in dem die Auswahl Energie hat
+function spk7Pic(S7, W, H) {   // im Hauptfaden (Rückfall ohne Worker)
   if (S7.pic && S7.pic.W === W && S7.pic.H === H) return S7.pic;
-  const N = 1024, h = N / 2, x = S7.x, n = x.length, sr = S7.sr, re = new Float64Array(N), im = new Float64Array(N), lut = spk1Lut(), img = new ImageData(W, H), M = new Float32Array(W * h), avg = new Float64Array(h);
+  const P = spk7PicCalc(S7.x, S7.sr, W, H, spk1Lut()); return (S7.pic = {W, H, img: new ImageData(P.data, W, H), fl: P.fl, fh: P.fh});
+}
+function spk7PicGet(S7, W, H) {   // fertiges Bild oder null (wird im Worker gerechnet, danach neu gezeichnet)
+  if (S7.pic && S7.pic.W === W && S7.pic.H === H) return S7.pic;
+  if (SPK7.wk === false) return spk7Pic(S7, W, H);
+  const key = W + 'x' + H; if (S7.picK === key) return null; S7.picK = key;
+  spk7Job('pic', {x: S7.x, sr: S7.sr, W, H, lut: spk1Lut()}).then(r => {
+    if (S7.picK !== key) return; S7.picK = null;
+    if (r && r.pic) S7.pic = {W, H, img: new ImageData(r.pic.data, W, H), fl: r.pic.fl, fh: r.pic.fh}; else spk7Pic(S7, W, H);
+    if (SPK7.src === S7) spk7PicDraw();
+  });
+  return null;
+}
+function spk7PicCalc(x, sr, W, H, lut) {   // Zeit waagrecht, Frequenz logarithmisch – auf den Bereich gezoomt, in dem die Auswahl Energie hat
+  const N = 1024, h = N / 2, n = x.length, re = new Float64Array(N), im = new Float64Array(N), img = {data: new Uint8ClampedArray(W * H * 4)}, M = new Float32Array(W * h), avg = new Float64Array(h);
   for (let c = 0; c < W; c++) {
     const s0 = Math.round((c + 0.5) / W * n) - h;
     for (let i = 0; i < N; i++) { const j = s0 + i; re[i] = j >= 0 && j < n ? x[j] * (0.5 - 0.5 * Math.cos(2 * Math.PI * i / N)) : 0; im[i] = 0; }
@@ -103292,17 +103442,18 @@ function spk7Pic(S7, W, H) {   // Zeit waagrecht, Frequenz logarithmisch – auf
   let mx = -200;
   for (let c = 0; c < W; c++) for (let r = 0; r < H; r++) { const q = rowB[r], q0 = Math.min(h - 2, q | 0), u = q - q0, v = 20 * Math.log10(M[c * h + q0] * (1 - u) + M[c * h + q0 + 1] * u + 1e-9); db[r * W + c] = v; if (v > mx) mx = v; }
   for (let i = 0; i < W * H; i++) { const q = Math.max(0, Math.min(255, Math.round((db[i] - mx + 66) / 62 * 255))) * 4; img.data[i * 4] = lut[q]; img.data[i * 4 + 1] = lut[q + 1]; img.data[i * 4 + 2] = lut[q + 2]; img.data[i * 4 + 3] = 255; }
-  return (S7.pic = {W, H, img, fl, fh});
+  return {W, H, data: img.data, fl, fh};
 }
 function spk7PicDraw() {
   const D = SPK7.dd, cv = D && D.cv; if (!cv || !cv.isConnected) return;
   const dpr = Math.min(2, window.devicePixelRatio || 1), W = Math.max(200, Math.min(320, (D.dd.clientWidth || 300) - 20)), H = 84;
   if (cv.width !== Math.round(W * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); cv.style.width = W + 'px'; cv.style.height = H + 'px'; }
   const x = cv.getContext('2d'), S7 = SPK7.src, p = spk7P(); x.setTransform(1, 0, 0, 1, 0, 0);
-  if (S7) { const P = spk7Pic(S7, cv.width, cv.height); x.putImageData(P.img, 0, 0); } else { x.fillStyle = spk1Var('--lcd') || '#111'; x.fillRect(0, 0, cv.width, cv.height); }
+  const PI = S7 ? spk7PicGet(S7, cv.width, cv.height) : null;
+  if (PI) x.putImageData(PI.img, 0, 0); else { x.fillStyle = spk1Var('--lcd') || '#111'; x.fillRect(0, 0, cv.width, cv.height); }
   x.setTransform(dpr, 0, 0, dpr, 0, 0);
   if (!S7) { x.fillStyle = spk1Var('--text-dim') || '#888'; x.font = '500 12px ' + (spk1Var('--font-ui') || 'sans-serif'); x.fillText('Noch keine Quelle – Auswahl malen', 10, H / 2 + 4); return; }
-  const P = S7.pic, hz = f => (f >= 1000 ? (f / 1000).toFixed(1).replace('.', ',') + ' kHz' : Math.round(f) + ' Hz');
+  const P = PI, hz = f => (f >= 1000 ? (f / 1000).toFixed(1).replace('.', ',') + ' kHz' : Math.round(f) + ' Hz');
   x.font = '600 9px ' + (spk1Var('--font-num') || 'monospace'); x.fillStyle = 'rgba(244,241,234,.75)'; if (P && P.fh) { x.fillText(hz(P.fh), 4, 11); x.fillText(hz(P.fl), 4, H - 4); }
   const px = p.pos * W, bw = p.spo * W;
   x.fillStyle = 'rgba(255,178,46,.20)'; x.fillRect(Math.max(0, px - bw / 2), 0, Math.min(W, px + bw / 2) - Math.max(0, px - bw / 2), H);
@@ -103322,7 +103473,7 @@ function spk7PicGest(D) {
 function spk7KbBuild(D) {
   const kb = D.kb, b = SPK7.kb; kb.innerHTML = ''; D.keys = new Map(); const wh = [0, 2, 4, 5, 7, 9, 11], W = 14;
   for (let o = 0; o < 2; o++) wh.forEach((pc, i) => { const m = b + o * 12 + pc, k = el('i', 'w'); k.dataset.m = m; k.style.left = ((o * 7 + i) / W * 100) + '%'; k.style.width = (100 / W) + '%'; if (pc === 0) k.textContent = 'C' + (Math.floor(m / 12) - 1); kb.appendChild(k); D.keys.set(m, k); });
-  for (let o = 0; o < 2; o++) [[1, 1], [3, 2], [6, 4], [8, 5], [10, 6]].forEach(([pc, wi]) => { const m = b + o * 12 + pc, k = el('i', 'b'); k.dataset.m = m; k.style.left = ((o * 7 + wi) / W * 100 - 100 / W * 0.31) + '%'; k.style.width = (100 / W * 0.62) + '%'; kb.appendChild(k); D.keys.set(m, k); });
+  for (let o = 0; o < 2; o++) [[1, 1], [3, 2], [6, 4], [8, 5], [10, 6]].forEach(([pc, wi]) => { const m = b + o * 12 + pc, k = el('i', 'b'); k.dataset.m = m; k.style.left = ((o * 7 + wi) / W * 100 - 100 / W * 0.36) + '%'; k.style.width = (100 / W * 0.72) + '%'; kb.appendChild(k); D.keys.set(m, k); });
   for (const [m, k] of D.keys) k.classList.toggle('on', (SPK7.lit.get(m) || 0) > 0);
 }
 function spk7KbGest(D) {
@@ -103376,7 +103527,8 @@ function spk7Tgts(U) {
   const B = (t, v) => { const x = el('button', 'mbtn rb spk1-ck', esc((SPK7.tgt === v ? '✓ ' : '') + t)); x.dataset.t = v; on(x, 'click', () => { SPK7.tgt = v; spk7Tgts(U); }); D.gT.appendChild(x); };
   if (canAddTrack()) B('+ Neue Spur', 'neu');
   for (let i = 0; i < NT(); i++) if (ok(i)) B(S.tracks[i].name + (S.tracks[i].sound && S.tracks[i].sound.p && S.tracks[i].sound.p.wt && S.tracks[i].sound.p.wt.h ? ' · Korn' : ''), i);
-  D.bT.textContent = SPK7.tgt === 'neu' ? 'Als Instrument (neue Spur)' : 'Als Instrument in ' + (S.tracks[SPK7.tgt] ? S.tracks[SPK7.tgt].name : 'Spur');
+  D.bT.textContent = SPK7.tgt === 'neu' ? (canAddTrack() ? 'Als Instrument (neue Spur)' : 'Keine Spur frei – oben wählen') : 'Als Instrument in ' + (S.tracks[SPK7.tgt] ? S.tracks[SPK7.tgt].name : 'Spur');
+  if (SPK7.tgt === 'neu' && !canAddTrack()) D.bT.disabled = true;
 }
 /* SPK7-END */
 /* XD1-BEGIN ===== Paket XD1 (Xander 08.11.: „Du sollst eigenmächtig entscheiden, was logischer ist … logisch entscheiden, was praktikabel

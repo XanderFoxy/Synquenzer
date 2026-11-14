@@ -90,6 +90,63 @@ const P0 = {art: 'korn', pos: 0.3, bew: 0, gs: 0.08, dc: 4, spo: 0.1, spt: 0, fo
   let pk = 0; for (const v of L) pk = Math.max(pk, Math.abs(v));
   ok('polyfonie-8', {gehalten: held, beendet: ends.length, still: pk === 0, aktiv: C.info().voices}, held === 8 && ends.length === 10 && pk === 0 && C.info().voices === 0);
 }
+// ---- Prüfer-Runde: Befunde 1, 2, 3, 9, 10, 13 (Kern) ----
+const jumpQ = (ys, fmax, from = 0) => { const w = 2 * Math.PI * fmax / SR, H = Math.round(0.003 * SR); let maxQ = 0, nan = 0, at = 0;
+  for (const y of ys) for (let i = Math.max(1, from); i < y.length; i++) { if (!(y[i] === y[i])) { nan++; continue; } const j = Math.abs(y[i] - y[i - 1]); if (j < 1e-4) continue; let loc = 0; for (let q = Math.max(0, i - H); q < Math.min(y.length, i + H); q++) loc = Math.max(loc, Math.abs(y[q])); const qq = j / (w * Math.max(loc, 1e-3)); if (qq > maxQ) { maxQ = qq; at = i; } }
+  return {maxQ: +maxQ.toFixed(3), nan, at: +(at / SR).toFixed(3)}; };
+function run(S, p, ev, dur, at) {   // at: [[sek, fn(C)]] mitten im Lauf
+  const C = K.spk7CoreMake(SR); C.msg(S); C.msg({t: 'p', p}); for (const e of ev) C.msg(e);
+  const n = Math.round(dur * SR), L = new Float32Array(n), R = new Float32Array(n), A = (at || []).map(([t, fn]) => [Math.round(t * SR / 128) * 128, fn]);
+  for (let o = 0; o < n; o += 128) { for (const [f, fn] of A) if (f === o) fn(C); C.render(L.subarray(o, o + 128), R.subarray(o, o + 128), Math.min(128, n - o), o); }
+  return {L, R, C};
+}
+// 8) Quelle wechselt bei klingender Note (lange Quelle, Position 90 %, Filter zu, Ausklang 6 s) → kurze Quelle: kein NaN, kein Knacks
+{
+  const out = [];
+  for (const fc of [1, 0.7]) {
+    const S1 = src(sine(220, 4), 220), S2 = src(sine(330, 0.3), 330), P = Object.assign({}, P0, {pos: 0.9, spo: 0, fc, r: 6});
+    const r = run(S1, P, [{t: 'on', id: 1, m: 57, v: 0.9, at: 0.02}, {t: 'off', id: 1, at: 0.4}], 3, [[0.6, C => C.msg(S2)], [1.0, C => C.msg({t: 'on', id: 2, m: 60, v: 0.9, at: 1.0})], [1.4, C => C.msg({t: 'off', id: 2, at: 1.4})]]);
+    out.push(Object.assign({fc}, jumpQ([r.L, r.R], 330)));
+  }
+  ok('quelle-wechsel-ohne-nan', {laeufe: out}, out.every(o => o.nan === 0 && o.maxQ <= 1.5));
+}
+// 9) Umschalten bei gehaltener Note: Körnchen ↔ Schleife, Filter offen → 0,45 → offen, Resonanz-Sprung: Sprung ≤ 1,5
+{
+  const S = src(sine(220, 2), 220), cases = {
+    'koernchen-schleife': [[0.5, C => C.msg({t: 'p', p: {art: 'frz'}})], [1.0, C => C.msg({t: 'p', p: {art: 'korn'}})]],
+    'filter-zu': [[0.5, C => C.msg({t: 'p', p: {fc: 0.45}})]],
+    'filter-auf': [[0.05, C => C.msg({t: 'p', p: {fc: 0.45}})], [0.5, C => C.msg({t: 'p', p: {fc: 1}})]],
+    'resonanz': [[0.05, C => C.msg({t: 'p', p: {fc: 0.6}})], [0.5, C => C.msg({t: 'p', p: {q: 0.9}})], [0.9, C => C.msg({t: 'p', p: {q: 0}})]]}, out = {};
+  for (const [k, at] of Object.entries(cases)) { const r = run(S, P0, [{t: 'on', id: 1, m: 57, v: 0.9, at: 0.02}, {t: 'off', id: 1, at: 1.3}], 1.8, at); out[k] = jumpQ([r.L, r.R], 220); }
+  ok('umschalten-ohne-knacks', out, Object.values(out).every(o => o.maxQ <= 1.5 && !o.nan));
+}
+// 10) Position wirkt bei gehaltener Note (Körnchen): Quelle 1 s 300 Hz + 1 s 1200 Hz, Position 0,1 → 0,9
+{
+  const x = new Float32Array(SR * 2); for (let i = 0; i < x.length; i++) x[i] = 0.8 * Math.sin(2 * Math.PI * (i < SR ? 300 : 1200) * i / SR);
+  const S = src(x, 300), P = Object.assign({}, P0, {pos: 0.1, spo: 0, bew: 0});
+  const r = run(S, P, [{t: 'on', id: 1, m: Math.round(69 + 12 * Math.log2(300 / 440)), v: 0.9, at: 0.02}], 2.6, [[1.0, C => C.msg({t: 'p', p: {pos: 0.9}})]]);
+  const band = (a, f) => { const M = spec(r.L, Math.round(a * SR), 16384 * 2); const b = Math.round(f * 32768 / SR); let m = 0; for (let k = b - 3; k <= b + 3; k++) m = Math.max(m, M[k]); return m; };
+  const vor = band(0.2, 1200) / band(0.2, 300), nach = band(1.6, 1200) / (band(1.6, 300) + 1e-9);
+  ok('position-live', {vorher_1200zu300: +vor.toFixed(4), nachher_1200zu300: +nach.toFixed(2)}, vor < 0.05 && nach > 5);
+}
+// 11) Überlast: 20 schnelle Noten mit Ausklang 6 s (16 Plätze) → Stimmen-Raub mit Blende, Sprung ≤ 1,5; 8-Stimmen-Akkord unter der weichen Grenze
+{
+  const S = src(sine(220, 2), 220), P = Object.assign({}, P0, {r: 6}), ev = [];
+  for (let k = 0; k < 20; k++) ev.push({t: 'on', id: k + 1, m: 57 + (k % 5) * 2, v: 0.85, at: 0.02 + k * 0.06}, {t: 'off', id: k + 1, at: 0.05 + k * 0.06});
+  const r = run(S, P, ev, 2.2), j = jumpQ([r.L, r.R], 220 * Math.pow(2, 8 / 12));
+  const x = saw(110, 3), Sx = src(x, 110), ch = []; [48, 52, 55, 59, 62, 64, 67, 71].forEach((m, k) => ch.push({t: 'on', id: k + 1, m, v: 0.8, at: 0}));
+  const r2 = run(Sx, P0, ch, 2.5); let pk = 0; for (const v of r2.L) pk = Math.max(pk, Math.abs(v));
+  ok('ueberlast-und-akkord', {sprung: j, akkordSpitze: +pk.toFixed(3)}, j.maxQ <= 1.5 && !j.nan && pk < 0.8);
+}
+// 12) Einsatz: Note bei 100 ms, Standard-Korn 80 ms – 50 % Pegel nach ≤ 12 ms (Anschlag 2 ms); Anschlag 0,3 s deutlich später; Halten 80 % = 80 % Pegel
+{
+  const S = src(sine(220, 2), 220), env = y => { const o = []; for (let i = 0; i + 96 <= y.length; i += 48) { let m = 0; for (let q = i; q < i + 96; q++) m = Math.max(m, Math.abs(y[q])); o.push(m); } return o; };
+  const t50 = a => { const r = run(S, Object.assign({}, P0, {a}), [{t: 'on', id: 1, m: 57, v: 0.9, at: 0.1}], 1.0), e = env(r.L), top = Math.max(...e.slice(Math.round(0.6 * SR / 48), Math.round(0.9 * SR / 48))); const k = e.findIndex(v => v >= top * 0.5); return +((k * 48 + 48) / SR * 1000 - 100).toFixed(1); };
+  const k2 = t50(0.002), k300 = t50(0.3);
+  const lvl = s => { const r = run(S, Object.assign({}, P0, {s, d: 0.05, a: 0.005}), [{t: 'on', id: 1, m: 57, v: 0.9, at: 0.02}], 1.2); let e = 0; const a = Math.round(0.6 * SR), b = Math.round(1.1 * SR); for (let i = a; i < b; i++) e += r.L[i] * r.L[i]; return Math.sqrt(e / (b - a)); };
+  const h = lvl(0.8) / lvl(1);
+  ok('einsatz-und-halten', {t50_anschlag2ms: k2, t50_anschlag300ms: k300, halten80: +h.toFixed(3)}, k2 <= 12 && k300 > 150 && Math.abs(h - 0.8) < 0.04);
+}
 const pass = res.every(r => r.pass); console.log(pass ? 'ALLES OK (' + res.length + ')' : 'FEHLER');
 if (outF) fs.writeFileSync(outF, JSON.stringify(res, null, 1));
 process.exit(pass ? 0 : 1);
