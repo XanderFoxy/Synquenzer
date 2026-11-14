@@ -100541,7 +100541,7 @@ function spk4DspMake(Z2) {
      o6.nosm: Zerlegen glättet im Tiefband (< 520 Hz) nicht mehr 3×3 (Haken „SPK4“ in zerlegen). ---- */
   if (Z2.magsLo && Z2.o3 && Z2.kickTpl) {
     const {w2, opt, o3, magsLo, kickTpl, kickAt} = Z2, {hpss, ramp} = I;
-    const o6 = {bw: 1.5, pf: 3, phi: 0.8, P: 1.2, pri: 1, be: 0.5, nosm: 1, robT: 0, robqT: -1, bwT: 0};
+    const o6 = {bw: 1.5, pf: 3, phi: 0.8, P: 1.2, pri: 1, nosm: 1, robT: 0, robqT: -1, bwT: 0};   // robT/robqT/bwT: nur Verfeinern (0/−1 = wie Zerlegen)
     function bassTrack4(Y, n, K, df, hopS, trust) {
       const C = []; for (let c = 12 * Math.log2(27 / 440); ; c += 0.25) { const f = 440 * Math.pow(2, c / 12); if (f > 290) break; C.push(f); }
       const S = C.length, NH = 8, E = new Float32Array(n * S), q = new Float32Array(n), Z = new Float32Array(K);
@@ -100602,7 +100602,7 @@ function spk4DspMake(Z2) {
     }
     // Schlag-Modell im Tiefband: der Kick kommt auf jedem Schlag wieder, der Bass wechselt die Töne → je Rahmen/Bin das zweitkleinste von
 
-    // Vorwissen für Verfeinern Bass (trust): Profi-Bass als Startwert (Profi-Lauf fertig); pri 2 = auch die zerlegte Bass-Ebene (gemessen schlechter, aus)
+    // Vorwissen für Verfeinern Bass (trust): Profi-Bass als Startwert (Profi-Lauf fertig); pri 2 = auch die zerlegte Bass-Ebene (+0,03 dB für +0,7 s, aus)
     function priorOf(d) { const j = d.meta.jobs && d.meta.jobs.profi, P = j && j.fertig ? d.meta.layers.find(l => l.z === 'bass') : null; return P || (o6.pri === 2 ? d.meta.layers.find(l => l.z === 'bass') : null) || null; }
     function priorMags(d, l, Nf, cen, Kf) {
       const n = d.meta.n, ch = I.render(d, I.mixOf(d, l.id), 0, n), x = new Float32Array(n), g = 1 / ch.length; for (const c of ch) for (let i = 0; i < c.length && i < n; i++) x[i] += c[i] * g;
@@ -100639,8 +100639,8 @@ function spk4DspMake(Z2) {
         for (let k = 0; k < Kf; k++) {
           const f = k * dff, x2 = X[o + k] * X[o + k], b = g * B[k], kq = KQ ? KQ[o + k] : 0, sb0 = x2 > 0 ? Math.min(1, b / Math.max(x2, b + kq, 1e-20)) : 0, h = mh[o + k], kick = 1 - ramp(f, 90, 160);
           const sb = o3.hB > o3.hA ? sb0 * (1 - ramp(f, o3.hA, o3.hB)) : sb0;
-          let sf = sb; if (PX) {   // Startwert Profi-Anteil, auf dem Kamm des verfolgten Grundtons zur Hälfte klassisch nachgeschärft
-             const pp = x2 > 0 ? Math.min(1, PX[o + k] * PX[o + k] / x2) : 0; sf = g > 0 ? (1 - o6.be) * pp + o6.be * sb : pp; }
+          let sf = sb; if (PX) {   // Startwert Profi-Anteil; wo der Grundton verfolgt wird, ergänzt der Kamm fehlende Teiltöne (Maximum)
+             const pp = x2 > 0 ? Math.min(1, PX[o + k] * PX[o + k] / x2) : 0; sf = g > 0 ? Math.max(pp, sb) : pp; }
           SB[o + k] = sf; SD[o + k] = (1 - sf) * ((1 - h) + h * kick);
         }
       }

@@ -144,7 +144,7 @@ for (const nr of ONLY) {
     const u0 = UNDO.length, t0 = performance.now(); await window.__vx1.quant(o.take, {grid: '1/8', strength: 1});
     for (let i = 0; i < 1200 && !window.__vx1.ready(o.take); i++) { wpPlay(o.take); await wait(25); }
     const ms = Math.round(performance.now() - t0), c = WP.cache.get(o.take), y = c && c.buf.getChannelData(0), x = wpBase(o.take).getChannelData(0);
-    return {du: UNDO.length - u0, ms, L: window.__vx1.list(o.take), y: y && b64(y), x: b64(x), sr: wpBase(o.take).sampleRate, last: WP.last, warp: window.__vx1.warp(o.take), lock: VX1R.LOCK};
+    return {du: UNDO.length - u0, ms, L: window.__vx1.list(o.take), y: y && b64(y), x: b64(x), bid: wpBid(wpBase(o.take)), sr: wpBase(o.take).sampleRate, last: WP.last, warp: window.__vx1.warp(o.take), lock: VX1R.LOCK};
   }, v);
   ok(Q.du === 1 && Q.y, `#${nr} Quantisieren 1/8 (alle): ein ↶, gerendert`, {du: Q.du, ms: Q.ms});
   if (Q.y) {
@@ -171,18 +171,20 @@ for (const nr of ONLY) {
       const M = await run(p, async o => {
         const u0 = UNDO.length, L0 = window.__vx1.list(o.take), q = L0[o.k]; await window.__vx1.move(o.take, o.k, q.da + o.D);
         for (let i = 0; i < 1200 && !window.__vx1.ready(o.take); i++) { wpPlay(o.take); await wait(25); }
-        const c = WP.cache.get(o.take), y = c && c.buf.getChannelData(0), L1 = window.__vx1.list(o.take), du = UNDO.length - u0;
-        const w1 = JSON.stringify(window.__vx1.warp(o.take)); undo(); const w0 = JSON.stringify(window.__vx1.warp(o.take));
+        const c = WP.cache.get(o.take), y = c && c.buf.getChannelData(0), L1 = window.__vx1.list(o.take), du = UNDO.length - u0, yb = y && b64(y);   // Puffer JETZT festhalten (vor ↶)
+        const w1 = JSON.stringify(window.__vx1.warp(o.take)), bid1 = wpBid(wpBase(o.take)); undo(); const w0 = JSON.stringify(window.__vx1.warp(o.take));
         for (let i = 0; i < 1200 && !window.__vx1.ready(o.take); i++) { wpPlay(o.take); await wait(25); }
-        return {du, L1, y: y && b64(y), undone: w0 !== w1 && w0 === o.w0, w1};
-      }, {take: v.take, k: kk, D, w0: JSON.stringify(Q.warp)});
+        const cu = WP.cache.get(o.take), yu = cu && cu.buf.getChannelData(0);   // nach ↶: dieselbe Quelle wie beim Verschieben = Vergleich
+        return {du, L1, y: yb, yU: yu && b64(yu), undone: w0 !== w1 && w0 === o.w0, w1, bidQ: o.bidQ, bid1, bidU: wpBid(wpBase(o.take))};
+      }, {take: v.take, k: kk, D, w0: JSON.stringify(Q.warp), bidQ: Q.bid});
       if (process.env.RV1_DUMP) { fs.writeFileSync(path.join(here, 'dbg', `move-${nr}-${dir < 0 ? 'l' : 'r'}.json`), JSON.stringify({sr, k: kk, w0: Q.warp, w1: JSON.parse(M.w1), L, L1: M.L1})); fs.writeFileSync(path.join(here, 'dbg', `x-${nr}.f32`), Buffer.from(x.buffer, x.byteOffset, x.byteLength)); fs.writeFileSync(path.join(here, 'dbg', `y-${nr}-${dir < 0 ? 'l' : 'r'}.f32`), Buffer.from(f32(M.y).buffer)); fs.writeFileSync(path.join(here, 'dbg', `y-${nr}-q.f32`), Buffer.from(y.buffer, y.byteOffset, y.byteLength)); }
       const ya = f32(M.y), a = L[kk - 1], q0 = L[kk], q1 = M.L1[kk], seamN = Math.round(q1.dst * sr), seamO = Math.round(q0.dst * sr);
       { const mv = M.L1.map((z, i) => ({i, d: Math.round((z.dst - L[i].dst) * 1e6) / 1e3, an: Math.round(((z.an || 0) - (L[i].an || 0)) * 1e6) / 1e3})).filter(z => z.i !== kk && (z.d || z.an)); info(`#${nr} Stück ${kk} ${dir < 0 ? 'links' : 'rechts'}: andere Stücke verändert`, mv.slice(0, 8)); }
       const kO = d2m(ya, sr, seamN - Math.round(.002 * sr), 4), kS = Math.max(d2m(x, sr, Math.round(q0.t * sr), 20), d2m(x, sr, Math.round((q1.dst - (a.dst - a.t)) * sr), 20));
-      const r = {k: kk, D: Math.round(D * 1000), du: M.du, undo: M.undone, d2: +kO.toFixed(4), d2Q: +kS.toFixed(4), sprung: +jump(ya, sr, seamN, 4).toFixed(4), sprungQ: +jump(x, sr, Math.round(q0.t * sr), 20).toFixed(4)};
+      const yRef = M.yU ? f32(M.yU) : y;   // Bezug: Fassung nach ↶ (gleiche Quelle; die Quelle kann seit dem Quantisieren gewechselt haben, z. B. Tonhöhen-Fassung fertig)
+      const r = {k: kk, D: Math.round(D * 1000), du: M.du, undo: M.undone, quelle: M.bidQ === M.bid1 ? 'gleich' : 'gewechselt', undoBitgleich: M.bidQ === M.bidU && M.yU ? M.yU === Q.y : null, d2: +kO.toFixed(4), d2Q: +kS.toFixed(4), sprung: +jump(ya, sr, seamN, 4).toFixed(4), sprungQ: +jump(x, sr, Math.round(q0.t * sr), 20).toFixed(4)};
       if (dir < 0) {   // Vorgänger bitgleich bis 31 ms vor dem neuen Schnitt (nicht gestaucht)
-        const A0 = Math.round(a.dst * sr), B0 = seamN - Math.round(.031 * sr); let md = 0, mi = A0; for (let i = A0; i < B0; i++) { const dd = Math.abs(ya[i] - y[i]); if (dd > md) { md = dd; mi = i; } } r.diffBeiMs = Math.round((mi - A0) / sr * 1000); r.diffVorSchnittMs = Math.round((seamN - mi) / sr * 1000); r.prevSh = Math.round((a.dst - a.t) * 1000);
+        const A0 = Math.round(a.dst * sr), B0 = seamN - Math.round(.031 * sr); let md = 0, mi = A0; for (let i = A0; i < B0; i++) { const dd = Math.abs(ya[i] - yRef[i]); if (dd > md) { md = dd; mi = i; } } r.diffBeiMs = Math.round((mi - A0) / sr * 1000); r.diffVorSchnittMs = Math.round((seamN - mi) / sr * 1000); r.prevSh = Math.round((a.dst - a.t) * 1000);
         r.ausklangBitgleichMs = Math.round((B0 - A0) / sr * 1000); r.ausklangMaxDiff = md;
         // Ausklang-Pegel kurz vor der Ausblende gegen die Quelle: nicht gestaucht = gleiche Hülle
         ok(M.du === 1 && md < 1e-6 && kO <= 1.5 * kS + .002 && M.undone, `#${nr} Stück ${kk} 60 ms nach links: Ausklang des Vorgängers bitgleich (${r.ausklangBitgleichMs} ms), kein Knacken, ein ↶`, r);

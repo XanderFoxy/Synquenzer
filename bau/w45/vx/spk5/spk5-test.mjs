@@ -1,6 +1,8 @@
 // SPK5 Auftrag 1/3 – Test (OK/FEHL): Zerlegen nur in der Auswahl / alles (Knopf sagt es vorher), Fortschritt über dem Bereich,
 // neue Ebenen hervorgehoben + Tönung an + Meldung mit ↶, ehrliche Meldung bei „nichts gefunden“, Solo = sofort hören,
 // Farbstufen (Ansicht ▾ → Farben, nur Farbtabelle, im Gerät gemerkt), hochkant + quer (926×428, 926×370), Touch, keine Fehler.
+// Auftrag 3/3: + Überblenden 0/50/100 % (Spektrum / beides / Noten), Note antippen → Gehört zu → ↶, Klappfenster ohne Profi = Zerlegen zuerst,
+// Regler im Bild in allen 3 Größen. Hybrid mit geladenem Modell: spk5-profi-test.mjs.
 // Aufruf: node spk5-test.mjs <abs index.html>
 import path from 'node:path';
 import fs from 'node:fs';
@@ -20,7 +22,8 @@ const layout = p => p.evaluate(() => {
   const small = [...document.querySelectorAll('#spk1Sheet button')].filter(e => e.offsetParent && !e.closest('.spk1-tl,.spk1-op')).map(e => [e.textContent.trim().slice(0, 14), e.getBoundingClientRect()]).filter(([, r]) => r.height < 43.5 || r.width < 35.5).map(q => q[0]);
   const m = document.querySelector('#spk1Sheet .spk5-msg'), mr = m && m.classList.contains('on') ? m.getBoundingClientRect() : null, mn = document.querySelector('#spk1Sheet .spk1-mn').getBoundingClientRect();
   const zl = document.querySelector('#spk1Sheet .spk1-ac [data-a=zerl]'), zr = zl.getBoundingClientRect(), zclip = zl.scrollWidth > zl.clientWidth + 1 || zl.scrollHeight > zl.clientHeight + 1;
-  return {over, out, x: {w: x.width, h: x.height, vis: x.left >= 0 && x.right <= W && x.top >= 0 && x.bottom <= H}, small, msg: mr ? {inMn: mr.left >= mn.left - 0.5 && mr.right <= mn.right + 0.5 && mr.top >= mn.top - 0.5 && mr.bottom <= mn.bottom + 0.5, h: Math.round(mr.height)} : null, zerl: {w: Math.round(zr.width), h: Math.round(zr.height), abgeschnitten: zclip}};
+  const fe = document.querySelector('#spk1Sheet .spk5-fd'), fr = fe && fe.getBoundingClientRect(), fd = fr ? {h: Math.round(fr.height), imBild: fr.left >= 0 && fr.right <= W + 0.5 && fr.top >= 0 && fr.bottom <= H + 0.5} : null;
+  return {fd, over, out, x: {w: x.width, h: x.height, vis: x.left >= 0 && x.right <= W && x.top >= 0 && x.bottom <= H}, small, msg: mr ? {inMn: mr.left >= mn.left - 0.5 && mr.right <= mn.right + 0.5 && mr.top >= mn.top - 0.5 && mr.bottom <= mn.bottom + 0.5, h: Math.round(mr.height)} : null, zerl: {w: Math.round(zr.width), h: Math.round(zr.height), abgeschnitten: zclip}};
 });
 // Masken außerhalb/innerhalb eines Bereichs (Rahmen m, Bins k) für eine Ebene: Summe der Werte über ein Raster
 const maskGrid = (p, lid, m0, m1, k0, k1) => p.evaluate(async ([lid, m0, m1, k0, k1]) => { let s = 0, n = 0, mx = 0; for (let m = m0; m <= m1; m += Math.max(1, (m1 - m0) >> 3)) for (let k = k0; k <= k1; k += Math.max(1, (k1 - k0) >> 4)) { const v = await __spk.maskAt(lid, m, k); s += v; n++; if (v > mx) mx = v; } return {mittel: +(s / n).toFixed(1), max: mx}; }, [lid, m0, m1, k0, k1]);
@@ -108,7 +111,41 @@ const maskGrid = (p, lid, m0, m1, k0, k1) => p.evaluate(async ([lid, m0, m1, k0,
   await p.screenshot({path: path.join(fotos, 'spk5-04-zerlegt-alles-hochkant.png')});
   ok('zerlegen-alles', {knopf: l3, meldung: m3, ebenen: r3.layers, undo: r3.undo}, l3.aria === 'Zerlegen: alles' && /^Zerlegt: Drums · Bass/.test(m3 || '') && !/Auswahl/.test(m3 || '') && r3.layers.length >= 2 && r3.undo === 'Zerlegen');
   const lay1 = await layout(p);
-  ok('layout-hochkant', lay1, !lay1.over.length && !lay1.out.length && lay1.x.vis && lay1.x.w >= 44 && !lay1.small.length && lay1.msg && lay1.msg.inMn && !lay1.zerl.abgeschnitten);
+  ok('layout-hochkant', lay1, lay1.fd && lay1.fd.h >= 44 && lay1.fd.imBild && !lay1.over.length && !lay1.out.length && lay1.x.vis && lay1.x.w >= 44 && !lay1.small.length && lay1.msg && lay1.msg.inMn && !lay1.zerl.abgeschnitten);
+  // ---- Auftrag 3/3 ----
+  // Hybrid: ohne Profi-Trennung auf dem Gerät bleibt „Zerlegen (schnell)“ der erste Weg (mit Modell: spk5-profi-test.mjs)
+  const kd = await p.evaluate(async () => { const U = __spk.page.ui(); ki1Dd(U, U.b_ki1); const d = U.dd, bs = [...d.querySelectorAll('button')].filter(b => b.offsetParent).map(b => b.textContent.trim()); await new Promise(r => setTimeout(r, 400)); const r = {erst: bs[0], hervor: !!d.querySelector('.spk5-erst'), da: SYNQUENZER.spk5.kiDa()}; spk1Dd(U, null); return r; });
+  ok('klappfenster-ohne-profi-zerlegen-zuerst', kd, /^Zerlegen \(schnell/.test(kd.erst || '') && !kd.hervor && !kd.da);
+  // Überblenden 50 → 100 → 0 %: beides / Noten / Spektrum (nur Deckkraft zweier Leinwände)
+  await p.evaluate(() => spk5Msg(__spk.page.ui(), null));
+  const mnb = await box(p, '#spk1Sheet .spk1-mn'), clip = {x: mnb.x, y: mnb.y, width: mnb.w, height: mnb.h}, fdv = {}, bild = {};
+  for (const v of [0.5, 1, 0]) {
+    await p.evaluate(v => SYNQUENZER.spk5.fade(v), v);
+    if (v === 0.5) await p.waitForFunction(() => { const r = SYNQUENZER.spk5.roll(); return r && !r.search && r.auto.length > 0; }, null, {timeout: 240000});
+    await p.waitForTimeout(350);
+    const r = await p.evaluate(() => SYNQUENZER.spk5.roll());
+    bild[v] = await p.screenshot({clip, path: path.join(fotos, 'spk5-3' + Math.round(v * 2) + '-fade-' + Math.round(v * 100) + '.png')});
+    fdv[Math.round(v * 100)] = {op: r.op, noten: r.vis, ebenen: r.lids};
+  }
+  const verschieden = !bild[0].equals(bild[0.5]) && !bild[0.5].equals(bild[1]) && !bild[0].equals(bild[1]);
+  ok('ueberblendung-0-50-100', {fdv, bilderVerschieden: verschieden}, fdv[0].op[0] === '0' && fdv[0].op[1] === '0' && fdv[50].op[0] === '0.5' && fdv[50].op[1] === '0.9' && fdv[100].op[0] === '1' && fdv[100].op[1] === '1' && fdv[100].noten > 0 && verschieden && !fdv[100].ebenen.includes('orig'));
+  // Note antippen (100 %) → Gehört zu → ein ↶
+  await p.evaluate(() => SYNQUENZER.spk5.fade(1)); await p.waitForTimeout(300);
+  let hb = null; for (let i = 0; i < 60 && !hb; i++) { const h = await p.evaluate(i => SYNQUENZER.spk5.hit(i), i); if (h && h.w >= 10 && h.h >= 4) { const q = await box(p, '#spk1Sheet .spk1-mn'); if (h.x > q.x + 4 && h.x < q.x + q.w - 4 && h.y > q.y + 4 && h.y < q.y + q.h - 4) hb = h; } }
+  if (hb) await tap([hb.x, hb.y]); await p.waitForTimeout(400);
+  const nd = await p.evaluate(() => { const d = document.querySelector('#spk1Sheet .spk1-dd'); if (!d) return null; return {h5: [...d.querySelectorAll('h5')].map(h => h.textContent), zu: [...d.querySelectorAll('button[data-zu]')].filter(b => !b.disabled && b.dataset.zu !== 'ueberall').map(b => [b.dataset.zu, b.textContent.trim()]), klein: [...d.querySelectorAll('button')].filter(b => b.getBoundingClientRect().height < 43.5).length}; });
+  await p.screenshot({path: path.join(fotos, 'spk5-33-note-antippen.png')});
+  const lnm = hb && await p.evaluate(lid => { const l = __spk.page.ui().meta.layers.find(x => x.id === lid); return l ? l.art : 'orig'; }, hb.lid);
+  const ziel = nd && (nd.zu.find(z => z[0] !== lnm && z[0] !== 'neu') || [])[0];
+  const zb = ziel && await p.evaluate(z => { const b = document.querySelector('#spk1Sheet .spk1-dd button[data-zu="' + z + '"]'); b.scrollIntoView({block: 'nearest'}); const q = b.getBoundingClientRect(); return [q.left + q.width / 2, q.top + q.height / 2]; }, ziel);
+  const nL0 = (await info(p)).layers.length;
+  if (zb) await tap(zb); await waitIdle(p); await p.waitForTimeout(500);
+  const z1 = await p.evaluate(() => ({undo: SPK1.last.undo, layers: __spk.page.info().layers.length}));
+  const ubx = await p.evaluate(() => { const b = __spk.page.ui().bU; const q = b.getBoundingClientRect(); return [q.left + q.width / 2, q.top + q.height / 2, q.width, q.height]; });
+  await tap(ubx.slice(0, 2)); await waitIdle(p); await p.waitForTimeout(500);
+  const z2 = await p.evaluate(() => ({undo: SPK1.last.undo, redo: SPK1.last.redo}));
+  ok('note-antippen-gehoert-zu-undo', {note: hb && {lid: hb.lid, art: lnm}, klappfenster: nd, ziel, nach: z1, ebenenVorher: nL0, undoTaste: ubx.slice(2), nachUndo: z2}, hb && nd && nd.h5.includes('Gehört zu') && nd.klein === 0 && /zuordnen/.test(z1.undo || '') && z1.layers === nL0 && /zuordnen/.test(z2.redo || '') && ubx[2] >= 44 && ubx[3] >= 44);
+  await p.evaluate(() => { const U = __spk.page.ui(); if (U.dd) spk1Dd(U, null); SYNQUENZER.spk5.fade(0); });
   // gemerkt nach Neuladen
   await p.evaluate(() => SYNQUENZER.spk5.farbe('magma'));
   await p.reload(); await p.waitForFunction(() => window.SYNQUENZER && window.SYNQUENZER.spk5, null, {timeout: 60000});
@@ -132,7 +169,12 @@ for (const [w, h] of [[926, 428], [926, 370]]) {
   const m = await msg(p), L = await p.evaluate(() => ({layers: __spk.page.info().layers, neu: [...document.querySelectorAll('#spk1Sheet .spk5-neu')].length}));
   await p.screenshot({path: path.join(fotos, 'spk5-06-quer-' + h + '-zerlegt.png')});
   const lay = await layout(p);
-  ok('quer-' + w + 'x' + h, {knopf: l, klappfenster: hd, meldung: m, ebenen: L, layout: lay}, l.aria === 'Zerlegen: Auswahl' && hd === 'Nur die Auswahl trennen' && /\(Auswahl\)/.test(m || '') && L.layers.length >= 2 && L.neu >= 2 && !lay.over.length && !lay.out.length && lay.x.vis && !lay.small.length && lay.msg && lay.msg.inMn && !lay.zerl.abgeschnitten);
+  ok('quer-' + w + 'x' + h, {knopf: l, klappfenster: hd, meldung: m, ebenen: L, layout: lay}, lay.fd && lay.fd.h >= 44 && lay.fd.imBild && l.aria === 'Zerlegen: Auswahl' && hd === 'Nur die Auswahl trennen' && /\(Auswahl\)/.test(m || '') && L.layers.length >= 2 && L.neu >= 2 && !lay.over.length && !lay.out.length && lay.x.vis && !lay.small.length && lay.msg && lay.msg.inMn && !lay.zerl.abgeschnitten);
+  await p.evaluate(() => { spk5Msg(__spk.page.ui(), null); SYNQUENZER.spk5.fade(0.5); }); await p.waitForFunction(() => { const r = SYNQUENZER.spk5.roll(); return r && !r.search && r.auto.length > 0; }, null, {timeout: 240000}); await p.waitForTimeout(300);
+  const fq = await p.evaluate(() => SYNQUENZER.spk5.roll());
+  await p.screenshot({path: path.join(fotos, 'spk5-3' + (h === 428 ? 4 : 5) + '-quer-' + h + '-fade-50.png')});
+  ok('quer-' + h + '-ueberblendung-50', {op: fq.op, noten: fq.vis, ebenen: fq.lids}, fq.op && fq.op[0] === '0.5' && fq.vis > 0);
+  await p.evaluate(() => SYNQUENZER.spk5.fade(0)); await p.waitForTimeout(200);
   await P.ctx.close();
 }
 ok('keine-fehler', errs, !errs.length);
