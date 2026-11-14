@@ -27571,7 +27571,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '4.64.0';
+const VERSION = '4.65.0';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -61825,7 +61825,7 @@ function wpRun(M, m) {
 function wpWorker() {
   if (WP.w !== null) return WP.w;
   try {
-    const src = vsMarksMake.toString() + '\n' + vsStretchMake.toString() + '\n' + wpRun.toString() + '\n' + vx1rRun.toString() + '\n' + nx1RunG.toString() + '\n' +   /* VX1R, NX1 */ g9Make.toString() + '\n' + g9Run.toString() + '\nconst K9 = g9Make();const M = vsMarksMake();M.X = vsStretchMake();onmessage = e => { const m = e.data; if (m.id === -1) { try { g9Run(K9, m); } catch (er) {} return; } try { const r = m.op === "g9f" || m.op === "g9a" || m.op === "g9s" ? g9Run(K9, m) : wpRun(M, m); postMessage({id: m.id, r}, r instanceof Float32Array ? [r.buffer] : r && r.y instanceof Float32Array ? [r.y.buffer] : []); } catch (err) { postMessage({id: m.id, err: String(err && err.message || err)}); } };';
+    const src = vsMarksMake.toString() + '\n' + vsStretchMake.toString() + '\n' + wpRun.toString() + '\n' + vx1rRun.toString() + '\n' + nx1RunG.toString() + '\n' + (typeof vx3Lead === 'function' ? vx3Lead.toString() + '\n' : '') /* VX3 */ +   /* VX1R, NX1 */ g9Make.toString() + '\n' + g9Run.toString() + '\nconst K9 = g9Make();const M = vsMarksMake();M.X = vsStretchMake();onmessage = e => { const m = e.data; if (m.id === -1) { try { g9Run(K9, m); } catch (er) {} return; } try { const r = m.op === "g9f" || m.op === "g9a" || m.op === "g9s" ? g9Run(K9, m) : wpRun(M, m); postMessage({id: m.id, r}, r instanceof Float32Array ? [r.buffer] : r && r.y instanceof Float32Array ? [r.y.buffer] : []); } catch (err) { postMessage({id: m.id, err: String(err && err.message || err)}); } };';
     const u = URL.createObjectURL(new Blob([src], {type: 'application/javascript'}));
     const w = new Worker(u); setTimeout(() => { try { URL.revokeObjectURL(u); } catch (e) {} }, 30000);
     w.onmessage = e => { const m = e.data, q = WP.wq.get(m.id); if (!q) return; WP.wq.delete(m.id); clearTimeout(q.to); if (m.err) q.no(new Error(m.err)); else q.ok(m.r); };
@@ -61836,6 +61836,7 @@ function wpWorker() {
 }
 // m.x = Kanal des Takes (bleibt); der Worker bekommt eine Kopie. Rückfall: Hauptfaden (Claude-App ohne Worker, Fehler)
 function wpCall(m) {
+  if (m && m.op === 'vxa' && typeof VX3 !== 'undefined' && !VX3.on) m = Object.assign({}, m, {vx3: false});   /* VX3: Schalter aus → Anlauf wie 4.64 */
   const w = wpWorker(), local = () => { WP.how = 'hauptfaden'; return m.op === 'hyb' || m.op === 'vxa' ? nx1Local(m) : wpRun(VSM, m); };   // NX1: Gesang-Kern stückweise
   if (!w) return Promise.resolve().then(local);
   return new Promise((ok, no) => {
@@ -101594,6 +101595,7 @@ function spk8DspMake(Z2) {
     let found2 = o8.gS ? found.filter((q, k) => st[k].cL + st[k].cR >= -o8.gS && st[k].cL >= -o8.gL) : found;
     // Sicherheit: Abstand zum Leck-Schutz (dB über der Schwelle) statt fast immer 1 – knapp behaltene Noten (oft Kick-/Pad-Rest) wirken blasser
     if (o8.cf && o8.gS) found.forEach((q, k) => { const g = Math.min(st[k].cL + st[k].cR + o8.gS, st[k].cL + o8.gL); q.conf = +Math.min(q.conf, Math.max(0.3, Math.min(1, 0.3 + 0.7 * g / o8.cf))).toFixed(2); });
+    if (typeof spk10Okt === 'function') spk10Okt(Z2, d, found2, {R, hopS});   /* SPK10: Oktave je Note unter C2 (nach dem Leck-Schutz) */
     // Liegende Töne: Teilstücke gleicher Höhe ohne Lücke und ohne Einbruch der Ebene vor dem Schnitt (Schnitt nur durch einen Trommelschlag) → eine Note
     if (o8.mrg) { const mean = (u, v) => { let s = 0, c = 0; for (let t = u; t < v; t += 0.01) { s += O.envAt(t); c++; } return c ? s / c : -200; }, mn = (u, v) => { let m = 1e9; for (let t = u; t <= v; t += 0.01) m = Math.min(m, O.envAt(t)); return m; }, o = [];
       for (const q of found2) { const p = o[o.length - 1]; if (p && p.m === q.m && q.a - p.b < 0.03 && q.a - p.a >= 0.2 && mean(q.a - 0.2, q.a - 0.08) - mn(q.a - 0.06, q.a) < o8.mrg) { const nP = Math.max(0, Math.floor(q.a / hopS) - Math.floor(p.a / hopS)); p.fz = p.fz.slice(0, nP).concat(q.fz); p.b = q.b; p.t1 = q.t1; p.v = Math.max(p.v, q.v); p.conf = Math.min(p.conf, q.conf); } else o.push(q); }
@@ -101612,9 +101614,47 @@ function spk8DspMake(Z2) {
 }
 // Worker-Text: spk8DspMake wird an den Kern-Text angehängt (Funktions-Deklaration → im Worker schon beim Aufbau des Kerns da)
 function spk8WUrl(src, u) {
-  try { const v = URL.createObjectURL(new Blob([src, ';' + spk8DspMake.toString() + ';'], {type: 'application/javascript'})); try { URL.revokeObjectURL(u); } catch (e) {} setTimeout(() => { try { URL.revokeObjectURL(v); } catch (e) {} }, 30000); return v; } catch (e) { return u; }
+  try { const v = URL.createObjectURL(new Blob([src, ';' + spk8DspMake.toString() + ';' + (typeof spk10Okt === 'function' ? spk10Okt.toString() + ';' : '') /* SPK10 */], {type: 'application/javascript'})); try { URL.revokeObjectURL(u); } catch (e) {} setTimeout(() => { try { URL.revokeObjectURL(v); } catch (e) {} }, 30000); return v; } catch (e) { return u; }
 }
 /* SPK8-END */
+/* SPK10-BEGIN */
+/* ===== SPK10 (Spektral-Seite · Bass-Oktave): „Noten finden“ auf der Bass-Ebene (SPK8) prüft nach dem Leck-Schutz jede behaltene Note,
+   deren Ton im Kick-/Unter-Oktaven-Bereich unter C2 liegt (f < 63,5 Hz): Ist f nur die Unter-Oktave (Sub-Oszillator, Kick-Rest) einer Note um 2f?
+   Merkmal mit kurzem Fenster (4096, ≈ 93 ms statt 16384 ≈ 370 ms) auf dem Original (nichts abgezogen), nur Obertöne 2–5 (der
+   Grundton-Bereich ist vom Kick-Rest überdeckt): fehlen die ungeraden (3f, 5f) gegenüber den geraden (2f, 4f) um mehr als 15 dB, wird der
+   Ton neu bestimmt – Halbton-Kandidaten im MIDI-Raster um 2f (± 1), Kamm 1–6 auf dem zwischen den Bins gelesenen Betrag (kein
+   ±1-Bin-Maximum, das Nachbarn gleich macht; Gleichstand → näher an 2f). Sicherheit der umgestellten Note nach dem Abstand des
+   Merkmals zur Schwelle. Töne ab C2 (z. B. G2, dessen Oktave G3 ein Pad trägt) bleiben unberührt. Haken „SPK10“ in SPK8 bassNoten
+   (nach dem Leck-Schutz) und spk8WUrl (Text wird in den Spektral-Worker mitgeschickt). Schalter o10.an (aus = genau SPK8). ===== */
+function spk10Okt(Z2, d, found, c) {
+  const o10 = Z2.o10 = Object.assign({an: 1, N: 4096, thr: -15, fK: 63.5, w: 1, fTop: 290, a0: 0.05, st: 0.025, b0: 0.04, cr: 8, dbg: null}, Z2.o10);
+  if (!o10.an || !found.length || typeof Z2.magsLo !== 'function') return found;
+  const sr = d.meta.sr, N = o10.N, df = sr / N, fMax = Math.min(c.R.fb, o10.fTop);
+  const sel = []; found.forEach((q, k) => { if (q.f > 0 && q.f < o10.fK && 2 * q.f <= fMax) sel.push(k); });   // nur Kick-/Unter-Oktaven-Bereich
+  if (!sel.length) { if (o10.dbg) o10.dbg([]); return found; }
+  const cen = [], own = []; sel.forEach((k, s) => { const q = found[k], t1 = Math.max(q.a + o10.a0, q.b - o10.b0); for (let t = q.a + o10.a0; t <= t1 + 1e-6; t += o10.st) { cen.push(Math.round(t * sr)); own.push(s); } });
+  const K = Math.min(N / 2 + 1, Math.ceil(Math.min(2450, 13.5 * Math.max(...sel.map(k => found[k].f))) / df) + 2), C = Int32Array.from(cen), Y = Z2.magsLo(d, N, C, K, (K + 1) * df);
+  for (let i = 0; i < Y.length; i++) Y[i] *= Y[i];
+  const pk = (i, f) => { const k = Math.round(f / df); if (k < 1 || k >= K - 1) return 0; return Math.max(Y[i * K + k - 1], Y[i * K + k], Y[i * K + k + 1]); };
+  const ip = (i, f) => { const x = f / df, k = Math.floor(x), u = x - k; if (k < 1 || k >= K - 1) return 0; return (1 - u) * Math.sqrt(Y[i * K + k]) + u * Math.sqrt(Y[i * K + k + 1]); };
+  const od = new Float64Array(sel.length), ev = new Float64Array(sel.length);
+  for (let i = 0; i < C.length; i++) { const s = own[i], f = found[sel[s]].f; od[s] += pk(i, 3 * f) + pk(i, 5 * f); ev[s] += pk(i, 2 * f) + pk(i, 4 * f); }
+  const r = sel.map((k, s) => 10 * Math.log10((od[s] + 1e-12) / (ev[s] + 1e-12)));
+  if (o10.dbg) o10.dbg(sel.map((k, s) => ({a: found[k].a, m: found[k].m, r: +r[s].toFixed(1)})));
+  sel.forEach((k, s) => {
+    if (!(r[s] < o10.thr)) return;
+    const q = found[k], m2 = Math.round(69 + 12 * Math.log2(2 * q.f / 440));
+    let bm = m2, bs = -1;
+    for (let j = 0; j <= 2 * o10.w; j++) { const mm = m2 + (j & 1 ? -(j + 1) / 2 : j / 2), g = 440 * Math.pow(2, (mm - 69) / 12); let sc = 0;   // Reihenfolge m2, −1, +1 …: Gleichstand → nächster an 2f
+      for (let i = 0; i < C.length; i++) if (own[i] === s) for (let h = 1, w = 1; h <= 6; h++, w *= 0.86) sc += w * ip(i, h * g);
+      if (sc > bs) { bs = sc; bm = mm; } }
+    const mf = 440 * Math.pow(2, (bm - 69) / 12), u = mf / q.f;
+    q.m = bm; q.f = +mf.toFixed(2); if (q.fz) q.fz = q.fz.map(v => +(v * u).toFixed(1));
+    q.conf = +Math.min(q.conf ?? 1, 0.5 + 0.5 * Math.min(1, (o10.thr - r[s]) / o10.cr)).toFixed(2);   // knapp unter der Schwelle → blasser (0,5 … 1)
+  });
+  return found;
+}
+/* SPK10-END */
 /* ===== KF1-BEGIN (Paket KF1, Klang-Feinschliff Teil 1 aus der Ur-Roadmap §18 „Klang“; Xander: „Können wir davon noch was machen?“ → ja) =====
    Sechs Wünsche, jeder mit neutralem Standard (= genau der Klang von vorher, alte Projekte bitgleich):
    1 RAUSCHFARBE  VA › OSZ › MIX: Regler „Rauschfarbe“ weiß │ rosa │ braun │ blau (p.kfNc 0…3) für den Rausch-Fader; jede Farbe auf den
@@ -101964,6 +102004,7 @@ function* nx1RunG(M, m) {   // NX1: der Kern als Generator – nach kleinen Stü
       while (e < em && env[e] < TH * .5) e++;
       const L = mk[k] - e * H / sr; if (L > .005) lead[k] = Math.min(.15, L);
     }
+    if (m.vx3 !== false && typeof vx3Lead === 'function') vx3Lead(mk, {kind, env, rms, zcr}, an, sr, H, FH, TH, lead);   /* VX3: Anlauf über den Vokal-Einsatz bis zum Konsonanten */
     return {hop: H / sr, env, pk: pe, fh: FH / sr, rms, zcr, vc, f0, kind, an, lead};
   }
   // ---- 'hyb': Schneiden/Dehnen ----
@@ -102108,6 +102149,7 @@ function vx1rQuant(id, m, o) {
   const dst = [];
   for (let k = 0; k < mk.length; k++) {
     let d = (isNum(mk[k].vd) ? mk[k].vd : q ? q.times[k] : at[k]) - an[k];
+    if (k && typeof vx3Cut === 'function') d = vx3Cut(id, m, mk, an, k, d, dst[k - 1] + an[k - 1] + VX1R.LOCK + .01);   /* VX3: Sperre → erst gibt der Anlauf nach, Anker bleibt auf dem Raster */
     if (k) d = Math.max(d, dst[k - 1] + an[k - 1] + VX1R.LOCK + .01);   // nie in den Einsatz des Vorgängers
     dst.push(Math.max(0, d));
   }
@@ -103869,6 +103911,7 @@ function vx2AnLead(x, sr, A, mk) {
     while (e < em && env[e] < TH * .5) e++;
     const L = mk[k] - e * H / sr; if (L > .005) lead[k] = Math.min(.15, L);
   }
+  if (typeof vx3Lead === 'function' && VX3.on) vx3Lead(mk, A, an, sr, H, FH, TH, lead);   /* VX3: Anlauf wie im Kern (über den Vokal-Einsatz) */
   return {an, lead};
 }
 // Prüfung 2: die VX2-Marken sind die Sicht des Gesang-Editors – WP.det (Marken-Editor, Zeitkarte, Songtext) bleibt unverändert.
@@ -103904,6 +103947,98 @@ function vx2Marks(id, b, rn) {
 }
 window.__vx2 = {last: () => VX2.last, on: v => { if (v != null) VX2.on = !!v; return VX2.on; }, pick: (raw, A, G, len, o) => vx2Pick(raw, A, G, len, o), marks: id => vx2Mk(id), anLead: (x, sr, A, ts) => vx2AnLead(x, sr, A, ts)};
 /* ===== VX2-END ===== */
+/* ===== VX3-BEGIN (Paket VX3 – Gesang-Editor an echtem Gesang: Konsonant-Anlauf über den Vokal-Einsatz; Präfix vx3/VX3)
+   Befund (VX2-Prüfung, Echttest): die Stücke beginnen an Tonhöhen-Noten, und die beginnen 10–30 ms IM Vokal (die Tonhöhe ist erst dann
+   stabil). Der Anlauf (Konsonant vor dem Vokal gehört zum Stück) suchte nur stimmlose Rahmen direkt vor der Marke – dort liegt dann der
+   Vokal-Einsatz, der Konsonant blieb im Ausklang des Vorgängers (wurde beim Quantisieren mit ihm verschoben/gedehnt).
+   Jetzt (gleiche Rechnung im Analyse-Kern Op 'vxa' und in vx2AnLead): von der Marke über ≤ 3 gesungene Rahmen zurück zum Vokal-Einsatz
+   (mehr gesungen davor = Legato, kein Anlauf), über ≤ 3 stille Rahmen (leise Behauchung nach dem Knall), dann der stimmlose Lauf (Konsonant/Atem)
+   bis 150 ms vor dem Vokal-Einsatz; liegt die Marke selbst im stimmlosen Rahmen, zählt er mit. Liegt der Lauf ohne Verschluss zwischen
+   zwei gesungenen Läufen, muss er rauschen (Nulldurchgänge ≥ 0,15) oder ≥ 3 dB leiser als der Vokal sein – ein Tonwechsel im Legato
+   (dort ist die Periodik kurz gestört) wird kein Anlauf. Wie bisher: nie vor Vorgänger + 40 ms,
+   Beginn = erste Millisekunde über der halben Pegel-Schwelle; neu: Anker-Abstand des Stücks bleibt ≤ 0,2 s (Grenze beim Festschreiben).
+   Gemessen (App-Quelle der 3 Echt-Aufnahmen, Prüfer-Maß „Konsonant beim Stück“): #1 12 → 24 von 31, #10 9 → 10 von 13, #14 7 → 18 von 18;
+   Vokal-Beginn, Stückzahl, Anker unverändert. Stück-Anfang gegen die Noten-Annotation (die den Vokal-Einsatz markiert) sinkt dabei
+   gewollt dort, wo der Konsonant länger als 40 ms ist (#1 45 → 39 von 59) – der Konsonant gehört zum Stück (Festlegung VX1/VX2).
+   Prüfung (Nachbesserung): P1 Grenze auch Anker des Vorgängers + 30 ms (dessen Einsatz bleibt, wie die Sperre beim Quantisieren); P2 Knall,
+   ein stiller Rahmen, Behauchung = ein Konsonant; P3 Lücke nur nach Stille (Knall nach Verschluss) – nach Gesang ist es der Ausklang des
+   Vorgängers, kein Anlauf; P4 bliebe vom Vorgänger nur ein Rest < 80 ms, gilt der Anlauf wie 4.64; P6 liegt die Marke davor im selben
+   Konsonanten (Stück am Konsonanten), wie 4.64; P5 (vx3Cut) beim Quantisieren gibt bei der Vorgänger-Sperre zuerst der Anlauf nach.
+   Grenze Anker-Abstand 0,2 s: bei spätem Anker (weicher Einsatz) beginnt das Stück dafür im Konsonanten (sonst spränge der Anker).
+   Einhänge-Zeilen (Kommentar „VX3“): nx1RunG (Op 'vxa'), wpWorker (vx3Lead in den Worker), wpCall (Schalter), vx2AnLead, vx1rQuant (vx3Cut).
+   Test-API: window.__vx3. */
+const VX3 = {on: true, cut: 0};
+// Anlauf je Marke – ersetzt den Anlauf-Lauf in Op 'vxa' (Worker, Quelltext per toString: ganz in sich geschlossen) und in vx2AnLead
+function vx3Lead(mk, F, an, sr, H, FH, TH, lead) {
+  const kind = F.kind, env = F.env, rms = F.rms, zcr = F.zcr, nf = kind.length, fs = FH / sr, P = F.p || {};
+  const old = k => {                                                                    // Anlauf nach 4.64 (stimmlose Rahmen direkt vor der Marke)
+    const lo = k ? mk[k - 1] + .04 : 0; let f = Math.floor(mk[k] * sr / FH) - 1; if (f < 0 || kind[f] !== 1) return 0;
+    while (f - 1 >= 0 && kind[f - 1] === 1 && (f - 1) * fs > lo && mk[k] - (f - 1) * fs <= .15) f--;
+    let e = Math.max(0, Math.round(Math.max(lo, f * fs) * sr / H)); const em = Math.round(mk[k] * sr / H); while (e < em && env[e] < TH * .5) e++;
+    const L = mk[k] - e * H / sr; return L > .005 ? Math.min(.15, L) : 0;
+  };
+  if (P.old) { for (let k = 0; k < mk.length; k++) lead[k] = old(k); return lead; }   // nur die Regel 4.64 (für vx3Cut)
+  for (let k = 0; k < mk.length; k++) {
+    lead[k] = 0;
+    // Grenze: Vorgänger + 40 ms und (P1) nicht in dessen Einsatz – Anker des Vorgängers + 30 ms (wie die Vorgänger-Sperre beim Quantisieren)
+    const lo = k ? Math.max(mk[k - 1] + .04, P.anc === false ? 0 : mk[k - 1] + (an ? +an[k - 1] || 0 : 0) + .03) : 0, fm = Math.floor(mk[k] * sr / FH); let f = fm - 1;
+    if (fm < nf && kind[fm] === 1 && mk[k] - fm * fs > .001) f = fm;                 // die Marke liegt im stimmlosen Rahmen
+    let v = 0; while (f >= 0 && kind[f] === 2 && v < 4) { f--; v++; }                 // gesungene Rahmen vor der Marke = Vokal-Einsatz
+    if (f < 0 || v > 3) continue;                                                       // länger gesungen → Legato, kein Anlauf
+    const fv = f + 1; let g = f, gp = 0; while (g >= 0 && kind[g] === 0 && gp < 3) { g--; gp++; }   // leise Behauchung (unter der Schwelle) nach dem Knall
+    if (g < 0 || kind[g] !== 1 || g * fs <= lo) continue;
+    let s0 = g; while (s0 - 1 >= 0 && kind[s0 - 1] === 1) s0--;                       // der ganze stimmlose Lauf (ohne Grenzen)
+    if (P.burst !== false && s0 >= 3 && kind[s0 - 1] === 0 && kind[s0 - 2] === 1) {    // P2: Knall nach dem Verschluss, ein stiller Rahmen, dann
+      let b = s0 - 2; while (b - 1 >= 0 && kind[b - 1] === 1 && s0 - 1 - b < 3) b--;    // die Behauchung: ≤ 3 stimmlose Rahmen nach Stille gehören dazu
+      if (b > 0 && kind[b - 1] === 0) s0 = b;
+    }
+    if (k && s0 * fs <= mk[k - 1] && P.own !== false) { lead[k] = old(k); continue; }   // P6: die Marke davor liegt im selben Konsonanten (dessen Stück) → wie 4.64
+    const pre = s0 > 0 ? kind[s0 - 1] : 0;                                              // davor: 2 = gesungen, 0 = still
+    if (gp && pre === 2 && P.gap !== false) continue;                                   // P3: Lücke nach Gesang = Ausklang des Vorgängers, kein Anlauf
+    if (!gp && pre === 2 && rms && zcr) {                                               // zwischen zwei gesungenen Läufen ohne Lücke:
+      let zm = 0, rc = 0, rv = 0; for (let h = s0; h <= g; h++) { if (zcr[h] > zm) zm = zcr[h]; if (rms[h] > rc) rc = rms[h]; }   // nur ein echter Konsonant
+      for (let h = fv; h < Math.min(nf, fv + 8); h++) if (kind[h] === 2 && rms[h] > rv) rv = rms[h];                     // (Rauschen oder leiser als
+      if (zm < .15 && rc > .7079 * rv) continue;                                      // der Vokal −3 dB), kein Tonwechsel im Legato
+    }
+    const mx = .15 + Math.max(0, mk[k] - fv * fs); let s = g;                          // Konsonant ≤ 150 ms vor dem Vokal-Einsatz
+    while (s - 1 >= s0 && (s - 1) * fs > lo && mk[k] - (s - 1) * fs <= mx) s--;
+    if (s > s0 && (s - 1) * fs <= lo && Math.max(lo, s * fs) - (k ? mk[k - 1] - lead[k - 1] : 0) < (P.min == null ? .08 : P.min)) { lead[k] = old(k); continue; }   // P4: vom Vorgänger bliebe nur ein Rest (< 80 ms) → wie 4.64
+    let e = Math.max(0, Math.round(Math.max(lo, s * fs) * sr / H)); const em = Math.round(mk[k] * sr / H);
+    while (e < em && env[e] < TH * .5) e++;
+    const L = Math.min(mk[k] - e * H / sr, mx, .199 - (an ? +an[k] || 0 : 0));
+    if (L > .005) lead[k] = L;
+  }
+  return lead;
+}
+// Quantisieren (Haken in vx1rQuant, P5): greift die Vorgänger-Sperre (Stück k begänne vor Anker des Vorgängers + 30 ms, schnelle Silben),
+// gibt zuerst der neue Teil des Anlaufs nach: das Stück beginnt später im Konsonanten, höchstens bis zum Stück-Anfang nach 4.64 (dort hatte
+// 4.64 den Konsonanten beim Vorgänger), der Anker bleibt auf dem Raster. Ändert die festgeschriebene Marke (t später, an kleiner, Anker gleich).
+function vx3Cut(id, m, mk, an, k, d, L) {
+  if (!VX3.on || !(d < L - 1e-6) || !m || mk !== m.marks || !mk[k] || !isNum(mk[k].an)) return d;
+  const A = VX1R.ana.get(id), t = mk[k].t; if (!A || !A.lead || !A.t) return d;
+  let lim = 0, i = 0; for (; i < A.t.length; i++) { const ld = +A.lead[i]; if (ld > 0 && Math.abs(A.t[i] - ld - t) < 2 / (A.sr || 48000) + 2e-6) break; }
+  if (i < A.t.length) { const o = vx3LeadOf(A, true); lim = A.t[i] - (o ? +o[i] : 0) - t; }   // höchstens bis zum Stück-Anfang nach 4.64 (Konsonant ≥ 4.64)
+  const dl = Math.min(L - d, lim, an[k]); if (!(dl > 1e-4)) return d;
+  const nt = tkR6(wpSmp(m, t + dl)), na = +Math.max(0, an[k] - (nt - t)).toFixed(4);
+  if (!(nt > t) || (k + 1 < mk.length && nt >= mk[k + 1].t)) return d;
+  const d2 = d + (an[k] - na); mk[k].t = nt; mk[k].an = na; an[k] = na; VX3.cut = (VX3.cut | 0) + 1;
+  return d2;
+}
+// Schalter (Tests/Vergleich): aus = Anlauf wie 4.64 (stimmlose Rahmen direkt vor der Marke); Analysen werden neu gerechnet
+function vx3On(v) {
+  if (v != null && !!v !== VX3.on) { VX3.on = !!v; VX1R.ana.clear(); if (typeof VX2 !== 'undefined') VX2.res.clear(); }
+  return VX3.on;
+}
+// Anlauf aus einer fertigen Analyse nachrechnen (Test: App-Analyse = vx3Lead)
+function vx3LeadOf(A, alt) {
+  if (!A || !A.kind || !A.env || !A.t) return null;
+  if (alt && A.vx3alt) return A.vx3alt;                                                // Regel 4.64 (vx3Cut), je Analyse einmal
+  const sr = A.sr, H = Math.max(1, Math.round(sr / 1000)), FH = Math.round(.01 * sr); let pk = 0; for (const v of A.pk || []) if (v > pk) pk = v;
+  const r = vx3Lead(Array.from(A.t), alt ? {kind: A.kind, env: A.env, p: {old: true}} : A, A.an, sr, H, FH, Math.max(.002, pk * .02), new Float32Array(A.t.length));
+  if (alt) A.vx3alt = r; return r;
+}
+window.__vx3 = {on: v => vx3On(v), lead: (mk, F, an, sr, H, FH, TH) => vx3Lead(mk, F, an, sr, H, FH, TH, new Float32Array(mk.length)), leadOf: id => vx3LeadOf(VX1R.ana.get(id))};
+/* ===== VX3-END ===== */
 /* ===== IMP1-BEGIN (Paket IMP1, Audio-/MIDI-Import mit Tempo, Taktart und Teilen – Xander 14.11.: „MP3 … BPM erkennen und die Taktart …
    in Szenen als zerschnittene Audios … Strophe eins, Refrain eins …“). Schritt 1: die Erkennung.
    imp1Core: Kern ohne DOM, läuft als Worker (Blob, sonst data:-URL; ohne Worker stückweise im Hauptfaden). Ablauf: herunterteilen auf ~11 kHz →

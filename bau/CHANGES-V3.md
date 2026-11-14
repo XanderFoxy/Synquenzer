@@ -1,3 +1,11 @@
+## 4.65.0 — Gesang-Editor: Konsonanten gehören wieder zum Stück · Spektral: Bass-Noten in der richtigen Oktave
+
+- **Gesang-Editor bei echtem Gesang:** Das Stück beginnt jetzt mit dem Konsonanten davor, nicht erst mitten im Vokal. In drei Echtaufnahmen sind es 24, 10 und 18 statt 12, 9 und 7 Konsonanten beim richtigen Stück. Beim Quantisieren rutscht der Konsonant mit an die Taktlinie.
+  - Schnelle Silben stoßen nicht mehr an den Vorgänger. Atem und Ausklang des vorherigen Tons werden nicht mehr als Konsonant mitgenommen.
+  - Stückzahl und Raster bleiben wie in 4.64.
+- **Spektral › Noten auf der Bass-Ebene:** Tiefe Töne, die durch die Bassdrum eine Oktave zu tief erkannt wurden, landen jetzt in der richtigen Oktave. Über 67 Testläufe sind 39 Noten mehr richtig, und keine richtige Note wird falsch. Bass mit Trommeln, Seiten-Test: 27 statt 23 von 32.
+Tests: Gesang-Editor 61/61, Gesang-Stücke 14/14, Konsonanten 15/15, Echttest 52/53 (wie 4.64), Import, Chor 82/82, Bass-Noten-Seiten 14/14 + 16/16, Bass-Prüffälle 13/13 + 11/11, Spektral, Zerlegen, Profi, Ebenen-Werkstatt und Klangkorn wie 4.64. Offen: Verfeinern +1 dB; Oktavfehler bei laufendem Bass mit Pads.
+
 ## 4.64.0 — Gesang-Editor: echter Gesang ergibt Noten statt Schnipsel · Spektral: Noten auf der Bass-Ebene
 
 - **Gesang-Editor** bei echtem Gesang: Jedes Stück ist jetzt eine Note bzw. Silbe statt vieler kleiner Schnipsel. In einer 33-s-Aufnahme sind es 69 Stücke statt 150, und 67 davon sitzen beim Quantisieren auf dem 1/8-Raster.
