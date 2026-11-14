@@ -33,6 +33,12 @@ export const FIXTURE_KARTE = [
   // Modul unterricht: Remotive-API, Google News
   ['remotive.com/api/remote-jobs?search=german%20teacher', 'remotive-german-teacher.json'],
   ['remotive.com/api/', 'remotive-leer.json'],
+  // Gesuche aus dem Netz (module/gesuche.mjs): Reddit-Suche (Atom) und Freelancer-API – NACHGEBAUT nach dem Format der
+  // Quellen (Bau-Sitzung 14.11.2026 ohne Netz), andere Subreddits: leerer Feed
+  ['reddit.com/r/German/search.rss', 'gesuche/reddit-german.xml'],
+  ['reddit.com/r/forhire/search.rss', 'gesuche/reddit-forhire.xml'],
+  ['freelancer.com/api/projects/0.1/projects/active/?query=german%20tutor', 'gesuche/freelancer-german.json'],
+  ['freelancer.com/api/', 'gesuche/freelancer-leer.json'],
   ['q=Lehrkr%C3%A4fte%20Integrationskurs', 'news-unterricht.xml'],
   ['rss/gruppe/freebies', 'mydealz-freebies.xml'],
   ['rss/gruppe/gewinnspiele', 'mydealz-gewinnspiele.xml'],

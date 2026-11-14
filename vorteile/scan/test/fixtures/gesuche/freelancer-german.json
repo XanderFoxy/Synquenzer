@@ -1,0 +1,106 @@
+{
+ "_fixture": "NACHGEBAUT, keine echte Antwort: Form der öffentlichen Freelancer-API (projects/0.1/projects/active). Bau-Sitzung 14.11.2026 ohne Netz zu freelancer.com (Proxy 403); beim nächsten Roh-Lauf durch die echte, gekürzte Antwort ersetzen. seo_url mit „beispiel“ = Platzhalter.",
+ "status": "success",
+ "result": {
+  "projects": [
+   {
+    "id": 40000001,
+    "owner_id": 1,
+    "title": "German tutor for conversation practice (B1)",
+    "seo_url": "german-tutoring/beispiel-german-tutor-conversation",
+    "status": "active",
+    "currency": {
+     "id": 1,
+     "code": "USD",
+     "sign": "$"
+    },
+    "preview_description": "I need a native German speaker for weekly conversation practice via Zoom, 1 hour per week, B1 level.",
+    "type": "hourly",
+    "time_submitted": 1794607800,
+    "time_updated": 1794607800,
+    "budget": {
+     "minimum": 10,
+     "maximum": 20
+    },
+    "bid_stats": {
+     "bid_count": 7,
+     "bid_avg": 15
+    }
+   },
+   {
+    "id": 40000002,
+    "owner_id": 2,
+    "title": "Translate website from English to German (5 pages)",
+    "seo_url": "translation/beispiel-translate-website-english-german",
+    "status": "active",
+    "currency": {
+     "id": 3,
+     "code": "EUR",
+     "sign": "€"
+    },
+    "preview_description": "Five short pages, about 2,500 words. Please send a sample of previous translations.",
+    "type": "fixed",
+    "time_submitted": 1794470400,
+    "time_updated": 1794470400,
+    "budget": {
+     "minimum": 30,
+     "maximum": 250
+    },
+    "bid_stats": {
+     "bid_count": 23,
+     "bid_avg": 120
+    }
+   },
+   {
+    "id": 40000003,
+    "owner_id": 3,
+    "title": "German speaking sales representative",
+    "seo_url": "sales/beispiel-german-speaking-sales",
+    "status": "active",
+    "currency": {
+     "id": 1,
+     "code": "USD",
+     "sign": "$"
+    },
+    "preview_description": "Cold calling B2B customers in Germany, commission based.",
+    "type": "hourly",
+    "time_submitted": 1794564000,
+    "time_updated": 1794564000,
+    "budget": {
+     "minimum": 8,
+     "maximum": 15
+    },
+    "bid_stats": {
+     "bid_count": 4,
+     "bid_avg": 10
+    }
+   },
+   {
+    "id": 40000004,
+    "owner_id": 4,
+    "title": "Proofread German master thesis (60 pages)",
+    "seo_url": "proofreading/beispiel-proofread-german-thesis",
+    "status": "active",
+    "currency": {
+     "id": 3,
+     "code": "EUR",
+     "sign": "€"
+    },
+    "preview_description": "Grammar and style check, deadline in 3 weeks.",
+    "type": "fixed",
+    "time_submitted": 1792490400,
+    "time_updated": 1792490400,
+    "budget": {
+     "minimum": 250,
+     "maximum": 750
+    },
+    "bid_stats": {
+     "bid_count": 31,
+     "bid_avg": 400
+    }
+   }
+  ],
+  "total_count": 4
+ },
+ "request_id": "beispiel"
+}

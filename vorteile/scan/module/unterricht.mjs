@@ -3,13 +3,15 @@
 // Quellen: (1) Jobbörse der Arbeitsagentur (lib/ba.mjs: /pc/v6/jobs, Ausweich-Adressen), Döbeln + 50 km und von zu Hause;
 // (2) Remotive-API (Remote-Stellen „German teacher/tutor“, JSON); (3) Google News (Integrationskurse, Sprachpaten,
 // DaZ-Lehrkräfte Sachsen); (4) Fundorte (config): Lehr-Plattformen (italki, Preply, Lingoda), BAMF-Zulassung,
-// Jobbörse-Website – erscheinen IMMER.
+// Jobbörse-Website – erscheinen IMMER; (5) Gesuche aus dem Netz (gesuche.mjs, Xander 14.11.2026): Leute, die auf Reddit,
+// Freelancer & Co. Hilfe mit Deutsch suchen – Einträge mit extra.typ 'gesuch', auf der Seite eine eigene Gruppe oben.
 import { enthaelt, zaehle, datumDe } from '../lib/text.mjs';
 import { berlinTag } from '../lib/ende.mjs';
 import { ortNach, ortZeile, istOnline, distanzKm, DOEBELN } from '../lib/orte.mjs';
 import { macheBaSuche, baJobLink } from '../lib/ba.mjs';
 import { sammleFeeds, eintrag, googleNews } from './gemeinsam.mjs';
 import { bewerbungAus, bewerbenAls, fundortEintraege, pruefeFundorte, fundortePruefen, sortWert, ortVon, restTage } from './assistent.mjs';
+import { gesucheAusNetz } from './gesuche.mjs';
 
 export function unterrichtTyp(text) {
   if (enthaelt(text, ['integrationskurs|integrationskurse|berufssprachkurs|bsk|alphabetisierung|bamf'])) return 'integrationskurs';
@@ -133,7 +135,12 @@ export default async function unterricht({ holeText, cfg, jetzt, zustand = {}, e
     }));
   }
 
+  // 5) Gesuche aus dem Netz: Ausfälle sind Hinweise (Reddit sperrt Rechenzentrums-IPs gern), die Fundorte stehen immer da
+  const g = await gesucheAusNetz({ holeText, m: m.gesuche, jetzt, zustand, kuenstler: cfg.kuenstler });
+  const gLinks = new Set(eintraege.map(e => e.link));
+  eintraege.push(...g.eintraege.filter(e => !gLinks.has(e.link)));
+
   const p = await pruefeFundorte(m.fundorte || [], { holeText, zustand, name: 'unterricht', jetzt, an: fundortePruefen(m, env) });
   eintraege.push(...fundortEintraege(m.fundorte, { kategorie: 'unterricht', jetzt, kuenstler: cfg.kuenstler, pruefung: p.pruefung }));
-  return { eintraege, fehler, hinweise: p.hinweise };
+  return { eintraege, fehler, hinweise: [...g.hinweise, ...p.hinweise] };
 }

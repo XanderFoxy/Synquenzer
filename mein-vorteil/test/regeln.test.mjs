@@ -78,6 +78,14 @@ test('Feste Adressen (Auftritte, Remix, Unterricht): stehen so in vorteile/confi
   }
 });
 
+test('Gesuche im Netz: feste Suchen der Seite (FUNDORTE_GESUCHE) = vorteile/config.json module.unterricht.gesuche.fundorte', async () => {
+  const cfg = JSON.parse(await readFile(join(HIER, '..', '..', 'vorteile', 'config.json'), 'utf8'));
+  const conf = cfg.module.unterricht.gesuche.fundorte;
+  const seite = seiteKonst('FUNDORTE_GESUCHE', '\n];');
+  assert.deepEqual(seite.map(f => [f.titel, f.link, f.quelle, !!f.linkPruefen]), conf.map(f => [f.titel, f.link, f.quelle, !!f.linkPruefen]));
+  assert.ok(seite.every(f => f.typ === 'gesuch' && f.ort === 'online'));
+});
+
 test('Geräte sind keine Filme: gleiche Regel in Seite (FILM_GERAET), filme.js (GERAET) und Radar (GERAET_TITEL)', async () => {
   const quelle = (text, name) => { const m = text.match(new RegExp(`const ${name} = (/.+/i);`)); assert.ok(m, name); return m[1]; };
   const radar = await readFile(join(HIER, '..', '..', 'vorteile', 'scan', 'module', 'filme.mjs'), 'utf8');

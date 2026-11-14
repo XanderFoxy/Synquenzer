@@ -1439,12 +1439,22 @@ const FUNDORTE = {
     { titel: 'BAMF: Zulassung als Lehrkraft für Integrationskurse', link: 'https://www.bamf.de/Zulassung-ZQ-DaF-DaZ', ort: 'deutschlandweit', km: null, typ: 'integrationskurs', quelle: 'BAMF' },
   ],
 };
+// Gesuche im Netz (Xander 14.11.2026): Plattformen ohne offenen Zugang als fertige Suchen – stehen so in
+// vorteile/config.json (module.unterricht.gesuche.fundorte, test/regeln.test.mjs prüft das). Ältere Daten ohne Gesuche: diese.
+const FUNDORTE_GESUCHE = [
+  { titel: 'Upwork: neue Aufträge „German tutor“', link: 'https://www.upwork.com/nx/search/jobs/?q=german%20tutor&sort=recency', ort: 'online', typ: 'gesuch', quelle: 'Upwork' },
+  { titel: 'Upwork: Korrektur/Übersetzung Deutsch', link: 'https://www.upwork.com/nx/search/jobs/?q=german%20proofreading&sort=recency', ort: 'online', typ: 'gesuch', quelle: 'Upwork' },
+  { titel: 'Freelancer.com: Aufträge „German“ (Website)', link: 'https://www.freelancer.com/jobs/?keyword=german', ort: 'online', typ: 'gesuch', quelle: 'Freelancer', linkPruefen: true },
+  { titel: 'Fiverr: Angebot „Deutsch-Nachhilfe/Korrektur“ anlegen', link: 'https://www.fiverr.com/search/gigs?query=german%20tutor', ort: 'online', typ: 'gesuch', quelle: 'Fiverr' },
+  { titel: 'Kleinanzeigen: Gesuche „Deutsch Nachhilfe“', link: 'https://www.kleinanzeigen.de/s-anzeige:gesuche/deutsch-nachhilfe/k0', ort: 'online', typ: 'gesuch', quelle: 'Kleinanzeigen', linkPruefen: true },
+  { titel: 'Reddit r/German: neueste Fragen nach Tutor/Korrektur', link: 'https://www.reddit.com/r/German/search/?q=tutor%20OR%20proofread&restrict_sr=1&sort=new', ort: 'online', typ: 'gesuch', quelle: 'Reddit' },
+];
 // Wo Preisfehler und Gewinnspiele zuerst auftauchen (die Wecker lesen dort; Gruppen-Seiten von mydealz)
 const FUNDORTE_LINKS = {
   preisfehler: [['mydealz: Gruppe Preisfehler', 'https://www.mydealz.de/gruppe/preisfehler', 'hier tauchen sie zuerst auf'], ['mydealz: heiße Deals', 'https://www.mydealz.de/hot', 'was gerade viele kaufen']],
   gewinnspiele: [['mydealz: Gruppe Gewinnspiele', 'https://www.mydealz.de/gruppe/gewinnspiele', 'neue Gewinnspiele, von der Community geprüft'], ['mydealz: Gratis-Aktionen', 'https://www.mydealz.de/gruppe/freebies', 'Proben und Gratis-Aktionen']],
 };
-const TYP_NAME = { openstage: 'Open Stage', bandcontest: 'Bandcontest', stadtfest: 'Stadtfest', festival: 'Festival', gig: 'Gig', aufruf: 'Bands gesucht', remix: 'Remix-Contest', integrationskurs: 'Integrationskurs', ehrenamt: 'Ehrenamt', nachhilfe: 'Nachhilfe', schule: 'Schule', kurs: 'Kurs', online: 'Online' };
+const TYP_NAME = { openstage: 'Open Stage', bandcontest: 'Bandcontest', stadtfest: 'Stadtfest', festival: 'Festival', gig: 'Gig', aufruf: 'Bands gesucht', remix: 'Remix-Contest', integrationskurs: 'Integrationskurs', ehrenamt: 'Ehrenamt', nachhilfe: 'Nachhilfe', schule: 'Schule', kurs: 'Kurs', online: 'Online', gesuch: 'Gesuch' };
 const MONAT_KURZ = ['', 'Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
 // Wie im Radar (assistent.mjs saisonInfo): in der Bewerbungszeit „jetzt bewerben“, sonst „Bewerbung meist Jan–Mär“
 function saisonInfo(saison) {
@@ -1501,6 +1511,7 @@ function einteilen() {
   const d = S.vorteile?.d;
   const r = { da: !!d, produkt: [], gewinnspiele: [], cashback: [], snacks: [], synths: [], filme: [], mehr: {}, ausDaten: {} };
   for (const b of ASSISTENT) { r[b] = []; r[b + 'Fund'] = []; r.ausDaten[b] = Array.isArray(d?.kategorien?.[b]); }
+  r.gesuche = []; r.gesucheFund = []; // Bereich Unterricht: „Gesuche im Netz“ (Radar ab 14.11.2026, extra.typ 'gesuch')
   EINTRAEGE.clear();
   const links = new Set();
   for (const [k, liste] of Object.entries(d?.kategorien || {})) {
@@ -1516,6 +1527,7 @@ function einteilen() {
       const fund = e.extra?.fundort === true;
       if (!fund) { if (links.has(e.link)) continue; links.add(e.link); }
       const text = `${e.titel} ${e.zeile || ''}`;
+      if (e.kategorie === 'unterricht' && e.extra?.typ === 'gesuch') { (fund ? r.gesucheFund : r.gesuche).push(e); continue; }
       if (ASSISTENT.includes(e.kategorie)) { (fund ? r[e.kategorie + 'Fund'] : r[e.kategorie]).push(e); continue; }
       if (istCashback(e)) { if (interessant(text)) r.cashback.push(e); continue; } // Cashback für anderes: weg
       if (istGewinnspielArt(e)) { if (gewinnspielEinfach(e)) r.gewinnspiele.push(e); continue; } // mit Kaufpflicht: weg
@@ -1534,12 +1546,16 @@ function einteilen() {
   }
   // Ältere Daten (oder Radar nicht erreichbar): feste Adressen der Seite, damit kein Bereich leer ist
   for (const b of ASSISTENT) if (!r.ausDaten[b]) r[b + 'Fund'] = FUNDORTE[b].map(f => fundortEintrag(f, b)).filter(e => !weg.has(e.id));
+  // Daten ohne Gesuche-Fundorte (Radar vor dem 14.11.2026 oder nicht erreichbar): die Suchen der Seite
+  if (!r.gesucheFund.length) r.gesucheFund = FUNDORTE_GESUCHE.map(f => fundortEintrag(f, 'unterricht')).filter(e => !weg.has(e.id));
+  r.gesuche.sort((a, b) => (zeit(b.datum) || 0) - (zeit(a.datum) || 0)); // neueste zuerst
   r.gewinnspiele.sort(nachEnde); r.cashback.sort(nachEnde); r.remix.sort(nachEnde);
   r.auftritte.sort(nachSortWert); r.unterricht.sort(nachSortWert);
   for (const b of ASSISTENT) {
     r[b + 'Fund'].sort(nachSortWert);
     for (const e of [...r[b], ...r[b + 'Fund']]) EINTRAEGE.set(e.id, { e, bereich: b });
   }
+  for (const e of [...r.gesuche, ...r.gesucheFund]) EINTRAEGE.set(e.id, { e, bereich: 'unterricht' });
   return r;
 }
 
@@ -1726,6 +1742,7 @@ function assistentKarte(e, bereich) {
     <div class="oben">${oben.filter(Boolean).join('')}</div>
     <h3>${esc(ohneQuelle(e))}</h3>
     ${restZeile(e) ? `<p class="zeile">${esc(restZeile(e))}</p>` : ''}
+    ${x.auszug ? `<p class="klein">„${esc(x.auszug)}“</p>` : ''}
     <p class="als">${bereich === 'remix' ? 'Einreichen als' : bereich === 'unterricht' ? 'Melden als' : 'Bewerben als'} <b>${esc(als)}</b>${x.bewerbung?.art === 'mail' ? ' · per Mail' : x.bewerbung?.art === 'formular' ? ' · Formular' : ''}</p>
     <div class="aktionen"><button class="los" type="button" data-blatt="${esc(e.id)}">${KNOPF[bereich]}</button><a class="zweit-link" href="${esc(sicher(e.link))}" target="_blank" rel="noopener">Ansehen</a><button class="zweit weg x-weg" type="button" data-id="${esc(e.id)}" aria-label="Ausblenden" title="Ausblenden"><svg class="ic" aria-hidden="true"><use href="#ic-weg"/></svg></button></div>
   </article>`;
@@ -1751,7 +1768,7 @@ const ASSISTENT_TEXT = {
   },
   unterricht: {
     frisch: 'Neue Stellen & Anfragen', fund: 'Hier kannst du dich immer melden', nichts: 'Gerade keine neue Anzeige',
-    regel: 'Döbeln und online zuerst. „Melden“: fertiger Text als „Deutsch mit Xander“.',
+    regel: 'Oben Gesuche aus dem Netz (neueste zuerst), darunter Stellen – Döbeln und online zuerst. „Melden“: fertiger Text als „Deutsch mit Xander“.',
   },
 };
 function zeichneAssistent(t, bereich) {
@@ -1762,6 +1779,7 @@ function zeichneAssistent(t, bereich) {
   const teile = [t.da ? stoerHinweis('vorteile') : ''];
   teile.push(`<p class="regel">${esc(tx.regel)}</p>`);
   if (bereich === 'auftritte') teile.push(`<details class="kasten name-tipp"><summary>Als Xander Fox oder als One Day in Rome?</summary><p>Bewirb dich mit dem Namen, unter dem ihr auftretet: <b>Band-Auftritt</b> (Stadtfest, Festival, Bandcontest, Club) → <b>One Day in Rome</b>, im Text „Kontakt: Xander Fox (Gesang, Synths)“. <b>Solo, DJ- oder Live-Set</b>, Open Stage → <b>Xander Fox</b>. Einheitlich geht auch „One Day in Rome (Xander Fox)“ – dann überall gleich schreiben (Mail, Plakat, Social Media).</p></details>`);
+  if (bereich === 'unterricht') teile.push(gesucheGruppe(t));
   teile.push(`<h3 class="unter">${esc(tx.frisch)} <small>${frisch.length || ''}</small></h3>`);
   teile.push(frisch.length ? zeigen.map(e => assistentKarte(e, bereich)).join('')
     + (frisch.length > zeigen.length ? `<button class="mehr" type="button" data-mehr="${bereich}">${frisch.length - zeigen.length} weitere zeigen</button>` : '')
@@ -1770,12 +1788,25 @@ function zeichneAssistent(t, bereich) {
     teile.push(`<h3 class="unter">${esc(tx.fund)} <small>${fund.length}</small></h3><ul class="liste fundorte">${fundZeigen.map(e => fundZeile(e, bereich)).join('')}</ul>`);
     if (fund.length > fundZeigen.length) teile.push(`<button class="mehr" type="button" data-mehr="${bereich}-fund">${fund.length - fundZeigen.length} weitere Adressen</button>`);
   }
-  const n = frisch.filter(laeuftSchon).length;
+  const n = frisch.filter(laeuftSchon).length + (bereich === 'unterricht' ? t.gesuche.filter(laeuftSchon).length : 0);
   const nah = frisch.filter(e => zahl(e.extra?.km) != null && e.extra.km <= 60).length;
+  const gs = bereich === 'unterricht' ? t.gesuche.length : 0;
   const warum = frisch.length
     ? `<b>${frisch.length} ${bereich === 'remix' ? (frisch.length === 1 ? 'laufender Contest' : 'laufende Contests') : frisch.length === 1 ? 'frischer Fund' : 'frische Funde'}</b>${nah ? `, davon ${nah} bis 60 km` : ''} – dazu ${fund.length} feste Adressen.`
     : `${esc(tx.nichts)} – hier die <b>${fund.length} festen Adressen</b>${bereich === 'remix' ? ' mit laufenden Contests weltweit' : bereich === 'auftritte' ? ', nah zuerst' : ''}.${t.da ? '' : ' (Radar gerade nicht erreichbar.)'}`;
-  return { html: teile.join(''), n, warum };
+  return { html: teile.join(''), n, warum: gs ? `<b>${gs} ${gs === 1 ? 'Gesuch' : 'Gesuche'} im Netz</b> · ${warum}` : warum };
+}
+// Gesuche im Netz: Leute, die Hilfe mit Deutsch suchen (Reddit, Freelancer …), neueste zuerst; darunter die fertigen Suchen
+function gesucheGruppe(t) {
+  const g = t.gesuche, f = t.gesucheFund;
+  const zeigen = offen.has('gesuche') ? g : g.slice(0, SICHTBAR);
+  const fZeigen = offen.has('gesuche-fund') ? f : f.slice(0, 3);
+  return `<h3 class="unter">Gesuche im Netz <small>${g.length || ''}</small></h3>`
+    + (g.length ? zeigen.map(e => assistentKarte(e, 'unterricht')).join('')
+      + (g.length > zeigen.length ? `<button class="mehr" type="button" data-mehr="gesuche">${g.length - zeigen.length} weitere zeigen</button>` : '')
+      : `<p class="leer">Gerade kein neues Gesuch${t.da ? '' : ' (Radar gerade nicht erreichbar)'} – selbst nachsehen:</p>`)
+    + (f.length ? `<ul class="liste fundorte">${fZeigen.map(e => fundZeile(e, 'unterricht')).join('')}</ul>`
+      + (f.length > fZeigen.length ? `<button class="mehr" type="button" data-mehr="gesuche-fund">${f.length - fZeigen.length} weitere Suchen</button>` : '') : '');
 }
 const zeichneAuftritte = t => zeichneAssistent(t, 'auftritte');
 const zeichneRemix = t => zeichneAssistent(t, 'remix');
@@ -1983,7 +2014,7 @@ function kachelInhalt(b, t) { // -> { z: [[Titel, Zeile, gut?]], w: Satz }
     return z.length ? { z, w: '' } : { z: [['Wunschliste & Angebote', 'Apple TV, mit deinen Listen abgeglichen']], w: 'tippen zum Öffnen' };
   }
   if (ASSISTENT.includes(b)) {
-    const frisch = t[b], fund = t[b + 'Fund'];
+    const frisch = b === 'unterricht' ? [...t.gesuche, ...t[b]] : t[b], fund = t[b + 'Fund'];
     const z = frisch.map(e => [kurzTitel(anlassVon(e), 48), [b === 'remix' ? '' : ortText(e.extra), fristKurz(e), e.extra?.passt ? 'passt zu dir' : ''].filter(Boolean).join(' · '), true]);
     if (z.length < 3) z.push(...fund.slice(0, 3 - z.length).map(e => [kurzTitel(e.titel, 48), e.zeile || ortText(e.extra)]));
     return { z, w: frisch.length ? '' : b === 'remix' ? 'feste Adressen – laufende Contests weltweit' : 'feste Adressen – immer offen' };
@@ -2554,7 +2585,7 @@ function zeichne() {
   Object.assign(ZUSATZ, {
     start: '', deals: `${(S.angebote?.d?.produkte || []).filter(p => !ausgeblendet(p.id)).length || ''} Produkte im Blick`.replace(/^ Produkte im Blick$/, ''),
     preisfehler: 'nur krasse', auftritte: `${t.auftritte.length} frisch · ${t.auftritteFund.length} feste Adressen`, remix: `${t.remix.length} laufend · ${t.remixFund.length} Fundorte`,
-    unterricht: `${t.unterricht.length} neu · ${t.unterrichtFund.length} feste Adressen`, konzerte: nurNah ? `bis ${konzertTeile().radius} km` : 'alle Termine',
+    unterricht: t.gesuche.length ? `${t.gesuche.length} ${t.gesuche.length === 1 ? 'Gesuch' : 'Gesuche'} · ${t.unterricht.length} Stellen` : `${t.unterricht.length} neu · ${t.unterrichtFund.length} feste Adressen`, konzerte: nurNah ? `bis ${konzertTeile().radius} km` : 'alle Termine',
     gewinnspiele: 'ohne Kauf', krypto: 'nur auf diesem iPhone', mehr: '', filme: 'Apple TV',
   });
   for (const [ab, n] of Object.entries(zahlen)) if (ab !== 'krypto') setzeZahl(ab, n);
