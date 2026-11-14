@@ -98178,7 +98178,7 @@ function spk2DspMake(I) {
     return {X, SB, SD, Kf, Nf, f0: T, gate: G};
   }
   /* ---- Auftrag 2: Noten je Ebene · Zuordnen · Überall finden. Daten: d.meta.teil2.notes[lid] = [{id, t0, t1 (Raster), a, b (Sekunden),
-     m (MIDI), f (Hz), v, conf, st: 'ok' (gefunden) | 'neu' (Vorschlag aus „Überall finden“) | 'zu' (zugeordnet = bestätigt), fz (Hz je Basis-Rahmen)}]
+     m (Tonnummer), f (Hz), v, conf, st: 'ok' (gefunden) | 'neu' (Vorschlag aus „Überall finden“) | 'zu' (zugeordnet = bestätigt), fz (Hz je Basis-Rahmen)}]
      Einstimmig: je Ebene ein Ton zur Zeit (Obertonsumme + Viterbi); ehrlich so angezeigt. Ein Undo-Schritt je Aktion (teil2 im Undo). ---- */
   const N2R = {bass: [28, 400], gesang: [75, 1100], lead: [90, 2100], pads: [55, 1500], drums: null, eigene: [40, 2000], orig: [40, 1000], rest: [40, 1000]};
   const midiOf = f => 69 + 12 * Math.log2(f / 440);
