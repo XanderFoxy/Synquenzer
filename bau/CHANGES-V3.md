@@ -1,3 +1,13 @@
+## 4.56.0 — Gesang bearbeiten wie Noten (Notenrolle mit Silben, Anker auf dem Taktstrich, Schneiden statt Stauchen)
+
+- **Gesang-Editor = dieselbe Notenrolle wie bei Instrumenten**: Tastatur links, Raster, Zoom. Jede Silbe ist ein Stück auf ihrer Tonhöhe, mit Welle, Tonhöhenkurve und **Silben-Text** (aus der Spracherkennung oder dem Songtext).
+- **Anker**: die kräftige Linie im Stück = wo sich der Einsatz am stärksten aufbaut. Einrasten und **QUANT.** (mit Stärke) setzen den Anker genau auf den Taktstrich – der Anschwung liegt sichtbar davor.
+- **Konsonanten** sind anders getönt als der gesungene Vokal.
+- **Verschieben = Schneiden statt Stauchen**: nach links wird der Ausklang davor sauber abgeschnitten mit kurzer Ausblende (kein Knacken, nichts gequetscht); nach rechts wird nur der Vokal maßvoll gedehnt (bis 1,5×), Einsätze bleiben unberührt. Senkrecht = Tonhöhe.
+- **Öffnen**: Matrix – Gesang-Clip ✎ / „✎ Bearbeiten“; Song – Gesang-Block antippen → **✎ Bearbeiten** (öffnet am Takt). Marken & Timing, Tonhöhe, Chor bleiben erreichbar.
+- Änderungen hört man sofort, auch während ▶. Ein ↶ je Aktion. Im Container (Projekt + Audio) ist alles drin; beim Sichern als .json mit Gesang kommt der Hinweis „Mit Audio sichern“.
+Tests: Gesang-Editor 61/61, Import 48/48, Regeln, doppelte Schlüssel 0, Rauchtest grün.
+
 ## 4.55.1 — Korrekturen zu 4.54 (Begleiter, Klänge, Chor, Export)
 
 - **S&H in der Tonart** folgt jetzt Rückung und „Song transponieren“ (auch feste Spuren).
