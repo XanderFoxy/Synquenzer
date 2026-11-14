@@ -1,4 +1,4 @@
-# NX1 – Nachzüge Gesang-Editor + Import (Auftrag 1/2) – Stand 14.11.2026
+# NX1 – Nachzüge Gesang-Editor + Import (Auftrag 1/2 + 2/2 Test) – Stand 14.11.2026
 
 Arbeitskopie index.html (Basis 4.57.0 = vx/basis2.html). Block `/* ===== NX1-BEGIN … NX1-END ===== */` direkt nach `KF2-END` (vor IMP1-BEGIN),
 Präfix nx1. Quelle des Blocks auch als nx1-block.js. Einhänge-Zeilen (Kommentar „NX1“):
@@ -33,3 +33,13 @@ Regression: rolle/vx1-test.mjs 61/61 (reg/vx1.log), imp/imp1-test.mjs ALLE OK (K
 Pflicht: topdefs doppelt 0 / Syntax 0, dupkeys 0, smoke errors [] (smoke-end.png), MS 2000 1×, „  live: true,“ 1×, Markenwörter 282 = Basis,
 VERSION 4.57.0 / CHANGES unberührt. Fotos: fotos/nx1-*.png.
 Offen: (h) Stereo; echte MP3s mit schwankendem Tempo (Dehnen setzt festes Raster voraus); Import-Dehnen ohne Worker (Claude-App) bleibt beim eigenen Tempo.
+
+Auftrag 2/2 (Test):
+- nx1-test.mjs um (h) ergänzt: Stereo-WAV (links 440 Hz, rechts 660 Hz, 91,6 BPM) → Take mono (wie bisher, imp1Mono = Mittel der Kanäle),
+  beide Seiten gleich laut, auf 92 gedehnt, Tonhöhe 440,2 / 659,9 Hz, ein ↶. ALLE OK 35/35 (test6.log, 32 s).
+- Regression: spk1-test 17 OK / 1 FEHLER „verfeinern-verbessert-ziel“ (Bass 0,77 → −0,46 dB) – exakt gleich auf der Basis 4.57.0
+  (reg-spk/spk1-basis.log) = bekannter offener SPK1-Punkt, nicht NX1. vx1-test 61/61, imp1-test ALLE OK (auf derselben index.html).
+- Messung Hauptfaden (probe/probe-d.mjs): ohne Last längster Generator-Schritt vxa 12 ms, hyb 27 ms (erstes Stück, kalter WSOLA-Kern);
+  unter Parallel-Last im Test bis 37 ms Schritt / 46 ms Pause – unter 50 ms, aber knapp. Feiner ginge nur innerhalb des VS5b-Kerns (X.stretch).
+- Hinweis für später (nicht NX1, Basis-Verhalten): Import-Ablegen hält den Hauptfaden ~55–60 ms am Stück (probe/probe-place.mjs):
+  buildGrid 32 ms (gl1MxFlat 18 ms: getComputedStyle erzwingt das Layout des frisch gebauten Rasters), Spur „Original“ anlegen 15 ms, Take 7 ms.

@@ -98511,7 +98511,7 @@ SPK1_API.spk2 = {
 /* ---- Auftrag 3: Loop-Klammern auf dem Takt-Lineal → „In die Matrix“ als Audio (Take auf der Spur „Original“, IMP1-Weg) oder als MIDI
    (Noten der Ebene im Loop → Clip auf einer Synth-Spur, auf das 1/16-Raster). Lineal halten + ziehen = neuer Loop, Klammer ziehen = ändern,
    Tipp bleibt Abspielposition, Ziehen ohne Halten rollt wie bisher. Ziehen zeichnet nur Lineal + Overlay neu. Ein ↶ für alles (imp1Step). ---- */
-const SPK2_ROLE = {bass: 'bass', pads: 'pad', gesang: 'mel', lead: 'phr'}, SPK2_SND = {bass: 'f-moog-bass', pad: 'f-rom-flaeche', mel: 'f-mini-lead', phr: 'f-mini-lead'};
+const SPK2_ROLE = {bass: 'bass', pads: 'pad', gesang: 'mel', lead: 'phr'}, SPK2_SND = {bass: 0, pad: 2, mel: 3, phr: 3};   // Klang der neuen Spur = Grundklang der Spur mit dieser Rolle (DEFAULT_SOUNDS)
 const spk2Lp = U => (U && U.loop && U.meta && U.lpDoc === SPK1.doc ? U.loop : null);
 function spk2Nb(U) { const g = spk1Grid0(U); return Math.max(1, Math.ceil((U.dur - g.off) / g.bar - 0.02)); }
 function spk2LpSec(U, L) { const g = spk1Grid0(U); return [g.off + L[0] * g.bar, g.off + L[1] * g.bar]; }
@@ -98682,7 +98682,7 @@ async function spk2MxMidi(U) {
     let t = sel;
     if (t === 'neu' || t == null || t < 0) {
       if (!canAddTrack()) { toast('Keine Spur frei – eine Spur wählen'); return null; }
-      const i = NT(), nt = newSynthTrack(i, SPK2_SND[want] || 'f-mini-lead'); nt.name = (l ? l.name : want === 'bass' ? 'Bass' : 'Lead').slice(0, 20); restoreTrack(i, JSON.stringify(nt)); t = i;
+      const i = NT(), nt = newSynthTrack(i, DEFAULT_SOUNDS[SPK2_SND[want] != null ? SPK2_SND[want] : 3]); nt.name = (l ? l.name : want === 'bass' ? 'Bass' : 'Lead').slice(0, 20); restoreTrack(i, JSON.stringify(nt)); t = i;
       if (!S.tracks[t]) return null;
     }
     if (!spk2MxOk(t)) { toast('Spur passt nicht'); return null; }

@@ -11,3 +11,4 @@
 - 14:55 smoke errors [] – starte xd1-test gegen w4550/basis.html (4.53.0)
 - 15:04 xd1-test: 137 OK, 6 FEHLER (s. out-test/xd1.log) – prüfe, welche schon 4.58.0 hat
 - 15:06 Gegenprobe 4.58.0 unverändert: Pflicht-Markenwörter, VERSION, klang/menu-Pixel schlagen dort genauso fehl → nicht von VQ1. Neu nur: (2) quer-370 Rechteck-Prüfung LV×Fußzeile
+- 15:07 hochkant pixelgleich (0 px vor/nach; Basis gegen Basis rauscht selbst 23 px). Fertig.

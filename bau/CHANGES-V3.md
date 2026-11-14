@@ -1,3 +1,8 @@
+## 4.58.1 — Video-Blatt quer: alle Tasten ganz sichtbar
+
+- Quer (926×428 und 926×370) stehen [Vorschau]/[Video erstellen], Fortschritt und [Teilen]/[Sichern] als feste Fußzeile der rechten Spalte – immer ganz sichtbar, 44 px. Die Einstellungen darüber rollen mit dem Finger (vorher rollte die Spalte gar nicht). Bühne und Video bleiben so groß wie in 4.58.0, hochkant unverändert.
+Tests: Regeln, doppelte Schlüssel 0, Rauchtest grün, Video-Maße in allen drei Größen.
+
 ## 4.58.0 — Deine 8 Bedien-Entscheidungen
 
 - **Mikrofon-Blatt**: „Beim Singen hören“ (Begleitung │ + Melodie │ nur Klick) und neu **„Mich selbst hören“ An │ Aus** (Mithören wie in einer DAW; über Lautsprecher bleibt es stumm, damit nichts pfeift) – dort, wo man aufnimmt.
