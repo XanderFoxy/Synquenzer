@@ -97437,7 +97437,11 @@ function imp1Place(kind) {
     const take = c.take && S.takes && S.takes[c.take] ? c.take : (c.take = imp1Take(c)), tr = S.tracks[st];
     if (kind === 'loop') {
       const [a, b] = c.loop; let s = -1; for (let k = 0; k < NS(); k++) { const q = (R.selS + k) % NS(); if (!tr.clips[q]) { s = q; break; } }
-      if (s < 0) { toast('Keine freie Szene auf ' + tr.name); return null; }
+      if (s < 0) {   // alle Szenen belegt (z. B. 8 Teile): der Loop kommt in die Szene seines Teils, der Song behält den ganzen Teil (eigener Song-Clip)
+        const pi = P.findIndex(p => a >= p.A && a < p.B); s = clamp(pi < 0 ? R.selS : pi, 0, NS() - 1);
+        const old = tr.clips[s];
+        if (old) { song.own = song.own || {}; for (const e of song.lanes[st] || []) if (e.slot === s && !e.own) { const id = ownNewId(song), cl = deep(cleanClip(old)); cl.from = {t: st, s, bar: e.bar, e: null}; song.own[id] = cl; e.own = id; } }
+      }
       tr.clips[s] = imp1Clip(take, a, b, G, c.ts, s); clipChanged(st, s);
       return {kind, track: st, scene: s, take, a, b};
     }

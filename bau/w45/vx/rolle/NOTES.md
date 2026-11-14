@@ -69,3 +69,28 @@ Knopfhöhe wie im Noten-Editor (36 px hochkant, 30 px quer; Trefferfläche = Lei
 Offen für Schritt 4: Zugänge (openRoll-Weiche STIMME-Clip → vx1rOpen; Takes-Blatt „✎ Bearbeiten“; Song-Stimme svTap), Ecke „1 Note“ der
 Aktionsleiste heißt bei Gesang noch „Note“, Hinweis .json ohne Audio, Projekt laden/Clip gelöscht mit offenem Editor, Song-Stimme mit
 Taktart-Karte (opts.tk), Marken-Editor zeigt 'hybrid', Hauptfaden-Rückfall stückweise.
+
+## Schritt 4 (Zugänge + Speichern) – Stand 14.11.2026
+Neue Einhänge-Zeilen (Kommentar „VX1R“):
+- `openRoll`: STIMME-Clip mit Audio (`vx1rCan`: Audio auf der eigenen Seite, Take da, nicht in TK.missing) → `vx1rOpen({t,s})`; sonst wie bisher
+  `tkSheet` (leerer Platz → G-GB-Blatt, Claude-App, Take fehlt). Damit öffnen ✎ (EL.bEdit), Clip-Blatt „✎ Bearbeiten“, Toasts „Bearbeiten“, Guide
+  denselben Editor wie bei Instrumenten. Ein Tipp in der Matrix startet/stoppt weiter (wie bei Instrumenten).
+- `svTap`: Gesang-Block → `vx1rAt(vox, bar)` merkt die Stelle, dann Takes-Blatt wie bisher.
+- `tkSheet`: `d.a === 'vx1r'` → `closePop(); vx1rOpen(rr)`. `tkSheetPaint`: `vx1rTkBtn(x)` = `[✎ Bearbeiten]` (`.tk-vx1r`, 44 px, grau ohne Audio)
+  vor „✎ Marken & Timing …“. `oriTkOrder`: `.tk-vx1r` ist der erste Knopf im Abschnitt „3 · Bearbeiten“.
+- `vx1rOpen`: Song-Stimme → `vx1rShowBar` (showPage auf den getippten Takt, sobald die Fläche gemessen ist).
+- `saveFile`: `vx1rJsonHint()` – nach „Als Datei sichern“ mit Gesang 1,6 s später Toast „Gesang-Audio ist nicht in der .json“ [Mit Audio sichern]
+  (= `va1BoxSave`, der vorhandene Container). Ohne Gesang / Claude-App: nichts.
+- CSS: `.tksheet .tk-vx1r` = Maße von `.tk-wp`. Guide-Eintrag `vx1rroll` „Gesang bearbeiten wie Noten“ (ui1Entries, Sprung öffnet den Editor).
+Wiedergabe: keine eigene Kette – `vx1rCommit` → `wpAfter` → `wpPlay`/Render im Worker → `wpSwitch` (Überblendung im Lauf). Ein Take = eine Zeitkarte:
+Matrix-Clip und Song-Stimme mit demselben Take hören dieselbe Fassung. Container: alles sind Felder in `S.takes` (marks an/vd, warp 'hybrid', pitch sh)
++ `takes/<id>.wav` + manifest → nichts zu ergänzen. Rundlauf geprüft (Zip → parseAny → importProject): Daten gleich, Render bitgleich.
+Befund behoben (Schritt 3): in `vx1rDeco` stand `g.beginPath(); let on = false;` hinter einem `//` – die Tonhöhenkurve überschrieb damit die globale
+Hilfsfunktion `on()` (danach TypeError z. B. im Clip-Blatt). Jetzt eigene Variable.
+Tests: `vx1r-zug-test.mjs` 24/24, `vx1r-blatt-test.mjs` 13/13 (Takes-Blatt 428×926, 926×428, 926×370; Überlappung ohne klebenden Kopf, Basis gleich),
+`vx1r-ed-test.mjs` 36/36, `vx1r-kern-test.mjs` 34/34. Fotos: fotos/vx1r-takes-blatt.png, vx1r-takes-*.png, vx1r-song-editor.png.
+Andere Tests: nur ggb/pruef-ausrichtung/a10 ruft openRoll auf der STIMME-Spur – leerer Platz, bleibt beim G-GB-Blatt.
+
+Offen für Schritt 5: Lineal der Song-Stimme zählt Takte ab dem Block (Kopf „Song · Takt 3–5“ stimmt; Lineal „1, 2 …“) – Taktart-Karte (opts.tk)
+wie die Song-Melodie; Ecke „1 Note“ der Aktionsleiste heißt bei Gesang „Note“; Marken-Editor zeigt Modus 'hybrid' nicht eigens; Hauptfaden-Rückfall
+(ohne Worker) stückweise; Chor-Spuren (G6) mit eigenem Clip öffnen ebenfalls den Editor (tkRef) – nicht eigens getestet.
