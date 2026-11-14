@@ -27,3 +27,6 @@
 - (A2) Eingebaut in index.html: G 3 ms (G2 model + G6 modelRuns), RMP 20 ms (G2 render + G6 renderMulti), 2 Kommentare „CHR4“. Grund: Nachbarn G 2…4 ms stabil (Übergang −0,2…−0,7 dB, Knackser 0), G 3 ms bester Ausgleich.
 - (A3) chr2-Grenzen gegen basis2 (F ≤ +0,2 %, Glätte ≤ +0,05, LSD ≤ +0,05): v30 hart F 2,77 > 2,74 und natürlich Gl 1,06 > 1,05 → würde FEHLER geben; G 3/R 10: Chor Ü −0,9/−0,8 dB, Gl ok, aber hart F 2,80. Prüfe G 3,5/4 mit R 10; sonst zurück auf basis5.
 - (A4) Kein Rand-Wert hält alle chr2-Grenzen (G 3,5/R 10: hart F 2,78; G 4/R 10: natürlich Gl 1,14, +400 LSD ruhig): hart-Formant steigt bei kleinem G stets (2,74…2,93 statt 2,58). Entscheidung: index.html zurück auf basis5 (cmp gleich), Zahlen in NOTES für 2b. Weiter mit Tests.
+- (B1) chr2-test (Kopie chr4/chr2-test.mjs, Basis basis2): ALLE OK (82) in 107 s, src/run-chr2.txt.
+- (B2) chr3-pruef auf index.html: ALLE OK (27), offen 8, Zahlen = pruef-vorher (src/pruef-nachher.json, src/pruef-eval.txt).
+- (B3) vx1-test: 61/61 OK (reg/vx1.txt).

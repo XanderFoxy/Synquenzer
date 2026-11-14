@@ -8,3 +8,4 @@
 - 17:42 A1 Messung noten3 TEIL=pad (Node): allein 0/28 → 24/28 (Quote 85,7 %, Präz 75 %), Gemisch 1/28 (4 %) → 8/28 (Präz 11 %), Laufzeit 1,0–1,2 s wie vorher. noten3.mjs grabbt jetzt auch spk4DspMake (Sicherung noten3.spk3.mjs).
 - 17:45 A1 Regression spk3-test (Basis basis5): 14 OK / 3 FEHLER – mehrstimmig-akkord-toene jetzt OK (24/28, 75 %); FEHLER nur bekannte Ziele Bass 4 dB, Verfeinern +1 dB und nachbau-besser (gleich wie Basis 4.60, kein Rückschritt); spk2-test 29/30 (bekannt), Layout 3 Größen OK, Konsole [].
 - 17:46 A1 Seite: spk4-ui.mjs 8 OK / 0 FEHLER (Hinweis, Schalter in 3 Größen ≥ 44 px, Noten finden mehrstimmig 98 Noten 883 ms, ein ↶). smoke errors []. NOTES.md geschrieben. AUFTRAG 1 FERTIG.
+- 17:56 A2 Start: Basis Node (messb/x4.mjs, Kern aus index.html): Zerlegen Bass 3,01 dB, Verfeinern 3,53 (+0,52), Zerlegen 1,99 s. Oracle-Verfolgung (on+f0 vom Stem): 3,61 / 4,31 → Verfolgung allein reicht nicht, Pegel/Maske entscheidend (Recall 60–100 Hz 0,68).
