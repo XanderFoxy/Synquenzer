@@ -19,3 +19,5 @@
 17:51 Lauf 3 Endstand (run3.txt): 42/53 OK; Rest = Befunde (Übersegmentierung 150/59, Chor st+2 Versatz/σ/5 Knack-Stellen, Links-Naht 1e-4/0,004, #10 Rechts-Fenster leer).
   Pflicht: topdefs 0/0, dupkeys 0, smoke errors [], MS 2000 1×, live: true 1×, Markenwörter = Basis, VERSION gleich. Regression imp1-test ALLE OK (48). NOTES.md geschrieben.
 17:59 Auftrag 2/2 NACHPRÜFEN Start: rv1-test, vx1-test, imp1-test, chr2-test nacheinander.
+18:02 rv1-test Lauf 4 (run4.txt, 96 s): 42/53 OK = Lauf 3 (reproduzierbar, gleiche Zahlen).
+18:05 vx1-test (rolle/vx1-test.mjs, reg/vx1.txt): 61/61 OK.

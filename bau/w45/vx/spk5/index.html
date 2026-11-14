@@ -96674,7 +96674,7 @@ function spk5Css2() {
     '.spk5-fd .spk5-ft{position:relative;flex:1 1 auto;height:44px;margin:0 13px}',
     '.spk5-ft::before{content:"";position:absolute;left:0;right:0;top:20px;height:4px;border-radius:2px;background:var(--line)}',
     '.spk5-fq{position:absolute;left:0;right:0;top:20px;height:4px;border-radius:2px;background:var(--sel);transform-origin:0 50%;transform:scaleX(0)}',
-    '.spk5-fk{position:absolute;left:0;top:9px;width:26px;height:26px;margin-left:-13px;border-radius:50%;box-sizing:border-box;background:var(--chassis-2);border:2px solid var(--sel);box-shadow:0 2px 6px rgba(0,0,0,.6);will-change:transform}',
+    '.spk5-fk{position:absolute;left:0;top:10px;width:24px;height:24px;margin-left:-12px;border-radius:50%;box-sizing:border-box;background:var(--chassis-2);border:2px solid var(--sel);box-shadow:0 2px 6px rgba(0,0,0,.6);will-change:transform}',
     '.spk5-fd:focus-visible .spk5-fk{box-shadow:0 0 0 3px rgba(244,241,234,.35)}',
     '.spk1-tl .spk5-fsp{flex:none;width:' + SPK5_FD_W + 'px;height:1px}',
     '.spk1-mn canvas.spk5-rb,.spk1-mn canvas.spk5-rn{opacity:0;pointer-events:none}'
@@ -96763,9 +96763,9 @@ function spk5RollDraw(U) {
   const d = U.dpr, W = U.W, H = U.H, v = U.v, set = cv => { if (cv.width !== U.cw) cv.width = U.cw; if (cv.height !== U.ch) cv.height = U.ch; const x = cv.getContext('2d'); x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, cv.width, cv.height); x.setTransform(d, 0, 0, d, 0, 0); return x; };
   const C = {bg: spk1Var('--bg'), wr: spk1Var('--chassis-2'), br: spk1Var('--chassis'), txt: spk1Var('--text'), dim: spk1Var('--text-dim'), sel: spk1Var('--sel')};
   // 1) Raster (deckend): Zeilen wie die Tasten links (weiß = hell, schwarz = dunkel), Fuge 1 px
-  let x = set(U.s5rb); x.fillStyle = C.bg; x.fillRect(0, 0, W, H);
+  let x = set(U.s5rb); x.fillStyle = '#08090b'; x.fillRect(0, 0, W, H);
   const mLo = Math.max(12, Math.floor(v.mTop - H / v.rowH) - 1), mHi = Math.min(135, Math.ceil(v.mTop) + 1), gap = v.rowH >= 6 ? 1 : 0;
-  for (let m = mLo; m <= mHi; m++) { const y = (v.mTop - m - 0.5) * v.rowH, bl = [1, 3, 6, 8, 10].includes(m % 12); x.fillStyle = bl ? C.br : C.wr; x.fillRect(0, y, W, v.rowH - gap); }
+  for (let m = mLo; m <= mHi; m++) { const y = (v.mTop - m - 0.5) * v.rowH, bl = [1, 3, 6, 8, 10].includes(m % 12); x.fillStyle = bl ? C.bg : C.wr; x.fillRect(0, y, W, v.rowH - gap); }   // schwarze Tasten = dunkle Zeile
   // 2) Noten + Takt-Raster (kräftiger beim Überblenden)
   x = set(U.s5rn);
   const g = spk1Grid0(U), t0 = v.t0, t1 = t0 + W / v.pps, sub = g.beat / 4, showS = sub * v.pps >= 9, showB = g.beat * v.pps >= 6;
@@ -96822,6 +96822,7 @@ function spk5Tap(U, G) {
   const anchor = {getBoundingClientRect: () => ({left: L, top: T, right: Rr, bottom: B, width: Rr - L, height: B - T})};
   spk2NoteDd(U, anchor, [best.q]);
   const dd = U.dd; if (!dd) return true;
+  { const h = dd.querySelector('h5'); if (h) h.textContent = spk2LName(U, best.lid) + ' · ' + h.textContent; }   // woher die Note kommt
   const l = U.meta.layers.find(z => z.id === best.lid), zu = spk2Notes(U, best.lid).filter(q => q.st === 'zu').length;
   if (l && l.art !== 'drums') {   // Überall finden (Vorlage = bestätigte Noten dieser Ebene) – wie Noten ▾
     const x = el('button', 'mbtn rb spk1-ck', 'Überall finden'); x.dataset.zu = 'ueberall'; x.disabled = !zu;
