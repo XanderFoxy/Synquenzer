@@ -39,3 +39,4 @@ Weiter mit: 4.54 = rel-4540/k fertig prüfen + INT53D nachziehen + Versionszeile
 - 15:08: 4.58.1 RELEASED = R-4580 + VQ1 (vx/vq). Nächste Basis R-4581. Teil-2-Pakete (Basis R-4570) per Diff gegen vx/basis2.html auf R-4581 mergen.
 - 15:09: Workflow wgkqkmvyg (wf_4b631b4b-b2c, synq-ki1-wf_4b631b4b-b2c.js): KI1 Profi-Trennung (MIT 4-Spur-Modell, Download auf Knopfdruck) in S/vx/ki, Basis vx/basis3.html = R-4581. Modell-Dateien in vx/ki/modell/ (nicht sichern/nicht ins Repo).
 - 15:52: Kandidat 4.59.0 = S/rel-4590/R-4590.html (R-4581 + NX1 + CHR2 + SPK2 + KI1; Konflikt Worker-src gelöst). Tests laufen (b9v0c55rv). Teil 3 Workflow w5rbdca4l (wf_ca1833fe-b4e): SPK3 (vx/spk3) + CHR3 (vx/chr3), Basis vx/basis4.html = Kandidat 4.59.0.
+- 15:54: 4.59.0 RELEASED (main). Nächste Basis R-4590 (= vx/basis4.html).
