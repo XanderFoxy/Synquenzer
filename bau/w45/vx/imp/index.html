@@ -97215,7 +97215,8 @@ function imp1Css() {
     '.imp1 .mbtn small{display:block;font:500 11px/1.2 var(--font-ui);letter-spacing:0;color:var(--text-dim);text-transform:none}',
     '.imp1 .imp1pt{display:flex;flex-wrap:wrap;gap:6px;padding:2px 0}',
     '.imp1 .imp1pt .mbtn{flex:none;min-height:44px;margin:0;padding:0 10px;border-left-width:4px}',
-    '.imp1 .imp1pt .mbtn.on{background:var(--line)}'
+    '.imp1 .imp1pt .mbtn.on{background:var(--line)}',
+    '@media (orientation:landscape) and (max-height:500px){.pop.imp1{width:min(640px,calc(100vw - 16px))}.imp1 canvas.imp1cv{height:112px}}'
   ].join('\n');
   document.head.appendChild(s);
 }

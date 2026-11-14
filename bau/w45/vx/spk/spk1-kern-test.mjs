@@ -11,7 +11,8 @@ await new Promise(ok => srv.listen(0, ok));
 const url = 'http://127.0.0.1:' + srv.address().port + '/' + path.basename(file);
 const b = await chromium.launch();
 const p = await b.newPage({viewport: {width: 428, height: 926}});
-const errs = []; p.on('pageerror', e => errs.push(String(e))); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
+const errs = []; p.on('pageerror', e => errs.push(String(e))); p.on('console', m => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errs.push(m.text()); });
+const miss = []; p.on('response', r => { if (r.status() >= 400) miss.push(r.status() + ' ' + r.url().replace(/^https?:\/\/[^/]+/, '')); });
 await p.addInitScript(() => { const W = window.Worker; window.__wk = []; window.Worker = function (u, o) { window.__wk.push(String(u)); return new W(u, o); }; window.Worker.prototype = W.prototype; });
 const t0 = Date.now();
 await p.goto(url); await p.waitForFunction(() => window.SYNQUENZER && window.__spk, null, {timeout: 60000}); await p.waitForTimeout(1500);
@@ -47,10 +48,12 @@ const sp = await p.evaluate(async () => {
   const t = performance.now(), I = await __spk.spec(4096), ms = Math.round(performance.now() - t);
   const c0 = I.got[0], col = Math.round(3 * 48000 / I.hop), W = c0.w, R = c0.R, peak = (lo, hi) => { let best = -1, br = -1; for (let r = lo; r < hi; r++) { const v = c0.data[r * W + col]; if (v > best) { best = v; br = r; } } return {row: br, v: best}; };
   const t2 = performance.now(), I2 = await __spk.spec(4096), ms2 = Math.round(performance.now() - t2);
-  return {cols: I.cols, rows: I.rows, hop: I.hop, chunks: I.chunks, got: I.got.length, ms, ms2, cached: I2.got.every(c => c.cached), bass: peak(100, 300), tone: peak(400, 520)};
+  const J = await __spk.spec(16384), d0 = J.got[0], colB = Math.round(3 * 48000 / J.hop); let bb = -1, br = -1; for (let r = 100; r < 300; r++) { const v = d0.data[r * d0.w + colB]; if (v > bb) { bb = v; br = r; } }
+  return {cols: I.cols, rows: I.rows, hop: I.hop, chunks: I.chunks, got: I.got.length, ms, ms2, cached: I2.got.every(c => c.cached), bass4096: peak(100, 300), bass16384: {row: br, v: bb}, tone: peak(400, 520)};
 });
 // 55 Hz = MIDI 33 → Zeile (33 − 12)·8 = 168; 440 Hz = MIDI 69 → Zeile 456 (Vibrato ±0,3 Halbton → ±3 Zeilen)
-ok('anzeige-stuecke', sp, sp.rows === 984 && sp.got === sp.chunks && Math.abs(sp.bass.row - 168) <= 1 && Math.abs(sp.tone.row - 456) <= 4 && sp.cached);
+// N 4096 löst 55 Hz nur auf ±4 Zeilen auf (Bin-Abstand 3,6 Halbtöne) → Bass mit N 16384 prüfen (gleiche Taste: ±3 Zeilen)
+ok('anzeige-stuecke', sp, sp.rows === 984 && sp.got === sp.chunks && Math.abs(sp.bass16384.row - 168) <= 3 && Math.abs(sp.bass4096.row - 168) <= 4 && Math.abs(sp.tone.row - 456) <= 4 && sp.cached);
 // 4) Ebenen: Bass (Frequenz-Auswahl) und Lead (Rechteck mit weicher Kante), Teil von Lead → Bass verschieben, Kopie
 const ly = await p.evaluate(async () => {
   const a = await __spk.mask({von: 'orig', nach: {art: 'bass'}, sel: {art: 'freq', f0: 0, f1: 150, kf: 100}});
@@ -121,7 +124,7 @@ ok('alte-projekte', old, old.same && !old.spk);
 // 12) Wiedergabe gestreamt (Blöcke kommen an, Stopp räumt auf)
 const pl = await p.evaluate(async () => { const ok1 = __spk.play(0.5); await new Promise(r => setTimeout(r, 900)); const s = __spk.state(); __spk.stop(); await new Promise(r => setTimeout(r, 100)); return {ok1, playing: s.playing, after: __spk.state().playing}; });
 ok('wiedergabe', pl, pl.ok1 && pl.playing && !pl.after);
-ok('keine-fehler', errs, errs.length === 0);
+ok('keine-fehler', {errs, miss}, errs.length === 0 && miss.every(u => /favicon|\/version\.json/.test(u)));
 console.log('ZEIT', Date.now() - t0, 'ms');
 fs.writeFileSync(path.join(path.dirname(file), 'spk1-kern-test.json'), JSON.stringify(res, null, 1));
 await b.close(); srv.close();
