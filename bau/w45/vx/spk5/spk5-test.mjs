@@ -175,6 +175,9 @@ for (const [w, h] of [[926, 428], [926, 370]]) {
   await p.screenshot({path: path.join(fotos, 'spk5-3' + (h === 428 ? 4 : 5) + '-quer-' + h + '-fade-50.png')});
   ok('quer-' + h + '-ueberblendung-50', {op: fq.op, noten: fq.vis, ebenen: fq.lids}, fq.op && fq.op[0] === '0.5' && fq.vis > 0);
   await p.evaluate(() => SYNQUENZER.spk5.fade(0)); await p.waitForTimeout(200);
+  // Klappfenster „Zerlegen ▾“ bleibt im Bild, auch wenn es nach dem Öffnen breiter wird (Cache-Blick, andere Schrift)
+  const kf = await p.evaluate(async () => { const U = __spk.page.ui(); ki1Dd(U, U.b_zerl); await new Promise(r => setTimeout(r, 500)); const d = U.dd, r1 = d.getBoundingClientRect(); d.querySelector('button').textContent = 'Profi-Trennung vom Gerät löschen (86 MB) · sehr langer Text'; await new Promise(r => setTimeout(r, 200)); const r2 = d.getBoundingClientRect(); spk1Dd(U, null); return {W: innerWidth, rechts: Math.round(r1.right), rechtsBreit: Math.round(r2.right), breiter: Math.round(r2.width - r1.width)}; });
+  ok('quer-' + h + '-klappfenster-im-bild', kf, kf.rechts <= kf.W - 7.5 && kf.rechtsBreit <= kf.W - 7.5 && kf.breiter > 0);
   await P.ctx.close();
 }
 ok('keine-fehler', errs, !errs.length);

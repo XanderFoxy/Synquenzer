@@ -19,3 +19,4 @@
 - 18:24 A3 gebaut: Kern-op restAuf (spk4DspMake, Innereien über Haken x4), ⋯ an der Rest-Zeile + spk4RestDd, Unison spk4KlUni (+3 Haken in spk3KlStart/More).
 - 18:25 A3 Rest aufteilen Node (rest4.mjs): vorher Rest als Pad 2,29 / Gesang als Lead 0,72; Variante voll=0: Lead 0,40 Pads 2,85; voll=1: 0,50/2,66; Verfeinern ganzes Stück Lead 0,52 Pads 2,46; Lead-Anteil ×3: 0,96/2,94. Summe = Original (144 dB), ↶ bitgleich.
 - 18:26 A3 Rest aufteilen: o7.lg 3 gewählt (Lead 0,96 · Pads 2,94 · Lead+Gesang 1,45; lg 6: 1,22/2,58; lg 12: 1,24/2,12; pw 0,5/2 ohne Gewinn).
+- 18:29 A3 Unison: Befund Pad – Analyse-Hüllkurve durch Schwebung verfälscht (Wahrheit + Analyse-ADSR 2,59, + Analyse-udet 0,32 statt 0,30: 1,43, + Analyse-Filter 0,88). Unison-Start mit Anstieg ×0,5 / Halten ÷0,7: Start 2,96 → 2,03; beide Ketten ganz: B 1,60 < A 1,62.

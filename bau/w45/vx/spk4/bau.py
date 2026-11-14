@@ -33,9 +33,11 @@ rep("  if (L.length) h += row('rest', 'Rest', 'var(--text-dim)', {solo: R.solo, 
 rep("function spk1MoreDd(U, b, lid) {\n  const l = U.meta.layers.find(x => x.id === lid); if (!l) return;",
     "function spk1MoreDd(U, b, lid) {\n  if (lid === 'rest' && typeof spk4RestDd === 'function') return spk4RestDd(U, b);   // SPK4: Ebenen-Menü der Rest-Ebene\n  const l = U.meta.layers.find(x => x.id === lid); if (!l) return;")
 rep("  c.fix = Object.assign({}, c.fix, {uni: alt === 'uni' ? 5 : 1});\n  if (alt === 'det') { c.fix.o2 = c.fix.o1; u[8] = 0.9; }",
-    "  const u4 = alt === 'uni' || alt === 'uni0', U4 = u4 && typeof spk4KlUni === 'function' ? spk4KlUni(x) : null;   // SPK4: Unison erkannt → Verstimmung aus der Schwebung\n  c.fix = Object.assign({}, c.fix, {uni: u4 ? 5 : 1});\n  if (alt === 'det') { c.fix.o2 = c.fix.o1; u[8] = 0.9; }\n  if (alt === 'uni0') u[8] = 0;   // SPK4: eine Welle mit Unison")
+    "  const u4 = alt === 'uni' || alt === 'uni0', U4 = u4 && typeof spk4KlUni === 'function' ? spk4KlUni(x) : null;   // SPK4: Unison erkannt → Verstimmung aus der Schwebung\n  c.fix = Object.assign({}, c.fix, {uni: u4 ? 5 : 1});\n  if (alt === 'det') { c.fix.o2 = c.fix.o1; u[8] = 0.9; }\n  if (alt === 'uni0') u[8] = 0;   // SPK4: eine Welle mit Unison\n  if (U4) spk4KlAdsr(u);   // SPK4: Hüllkurve ohne die Schwebung")
 rep("alt === 'uni' ? Math.min(1, 0.15 + cvm) : 0, spk2Ul(",
     "u4 ? (U4 ? U4.udet : Math.min(1, 0.15 + cvm)) /* SPK4 */ : 0, spk2Ul(")
+rep("if (++rd > SPK3_KL.ab && !A.aus && !B.aus) { if (B.best.dA <= A.best.dA * (1 + SPK3_KL.ra)) A.aus = 1; else B.aus = 1; }",
+    "if (++rd > SPK3_KL.ab && !A.aus && !B.aus) { if (B.best.dA <= A.best.dA * (1 + (typeof spk4KlUni === 'function' && spk4KlUni(x) ? SPK4_UNI.ra : SPK3_KL.ra) /* SPK4: Unison erkannt → mehr Spielraum für B */)) A.aus = 1; else B.aus = 1; }")
 rep("  if (cvm > 0.06 || x.det > 0.5) { L.push(S('va', 'det')); L.push(S('va', 'uni')); }\n",
     "  if (cvm > 0.06 || x.det > 0.5) { L.push(S('va', 'det')); L.push(S('va', 'uni')); }\n  if (typeof spk4KlUni === 'function' && spk4KlUni(x)) L.push(S('va', 'uni0'));   // SPK4: Unison erkannt → auch eine Welle allein\n")
 open(B+'spk4/index.html','w').write(s)
