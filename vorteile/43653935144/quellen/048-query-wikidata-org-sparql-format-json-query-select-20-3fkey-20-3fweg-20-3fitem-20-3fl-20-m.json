@@ -1,0 +1,907 @@
+{
+  "head" : {
+    "vars" : [ "key", "weg", "item", "l", "jahr", "h", "rt", "lab" ]
+  },
+  "results" : {
+    "bindings" : [ {
+      "key" : {
+        "type" : "literal",
+        "value" : "1289928100"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q27458304"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "23"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "2016"
+      },
+      "h" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : "7/10|86%"
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "The Autopsy of Jane Doe|The Autopsy of Jane Doe"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "606826521"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q45346391"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1998"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : ""
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Bella Block: Auf der Jagd"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "1618176896"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "id"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q105962799"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "21"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "2022"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : "85%"
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "The Outfit|The Outfit"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "1618176896"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q105962799"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "21"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "2022"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : "85%"
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "The Outfit|The Outfit"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "1337333136"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q106720375"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "0"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : ""
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Der gestiefelte Kater"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "1849959825"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q127602909"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "7"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "2025"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : ""
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Dog 51|Zone 3"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "545009394"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q226773"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "44"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "2012"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : "26%|4.5/10"
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Zorn der Titanen|Wrath of the Titans"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "1337333136"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q324262"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "55"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "2011"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : "85%|6.8/10"
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Der gestiefelte Kater"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "573919621"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q385798"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "39"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1992"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : "83%|6.3/10"
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Under Siege|Alarmstufe: Rot"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "1338535637"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q485983"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "71"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "2004"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : "7.9/10|89%"
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Shrek 2 – Der tollkühne Held kehrt zurück"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "606826521"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "id"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q499535"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "36"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1998"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : "31%|4.9/10"
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Auf der Jagd|U.S. Marshals"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "606826521"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q499535"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "36"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1998"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : "31%|4.9/10"
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Auf der Jagd|U.S. Marshals"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "487311339"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q783365"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "34"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1971"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : "85%|6.9/10"
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "THX 1138|THX 1138"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "553384480"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "id"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1066714"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "39"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1940"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : "9.1/10|99%"
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Sein Mädchen für besondere Fälle|His Girl Friday"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "1337333136"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1198707"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "2"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "2009"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : ""
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Der gestiefelte Kater"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "1337333136"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1198705"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "3"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1955"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : ""
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Puss 'n Boots|Der gestiefelte Kater"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "299575336"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "id"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1545950"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "17"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1966"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : "60%|5.5/10"
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Dieses Mädchen ist für alle|This Property Is Condemned"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "299575336"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1545950"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "17"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1966"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : "60%|5.5/10"
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Dieses Mädchen ist für alle|This Property Is Condemned"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "732298226"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1849955"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "18"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1981"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : ""
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "La Soupe aux choux|Louis und seine außerirdischen Kohlköpfe"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "317245134"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "id"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q2805199"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "7"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1965"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : ""
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Arizona Raiders|Goldtransport durch Arizona"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "317245134"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q2805199"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "7"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1965"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : ""
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Arizona Raiders|Goldtransport durch Arizona"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "1105316350"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q2819650"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "6"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1974"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : "8.5/10|100%"
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "A Bigger Splash|A Bigger Splash"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "1618176896"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q3066226"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "12"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1973"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : ""
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Revolte in der Unterwelt|The Outfit"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "573919621"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q3212139"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "3"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1980"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : ""
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Tage des Wahnsinns|Under Siege"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "718801162"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "id"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q5611721"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "36"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "2013"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : "3/10|8%"
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Kindsköpfe 2|Grown Ups 2"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "718801162"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q5611721"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "36"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "2013"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : "3/10|8%"
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Kindsköpfe 2|Grown Ups 2"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "317245134"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q7714244"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "4"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1936"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : ""
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "The Arizona Raiders"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "1105316350"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q18202448"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "28"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "2015"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : "89%|7.4/10"
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "A Bigger Splash|A Bigger Splash"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "1618176896"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q18511290"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "2"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1993"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : ""
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "The Outfit|The Outfit"
+      }
+    } ]
+  }
+}
