@@ -27570,7 +27570,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '4.59.0';
+const VERSION = '4.60.0';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -93871,7 +93871,8 @@ Object.assign(SYNQUENZER, {vox2: VOX2_API});              /* VOX2: Test-API (Obj
    extrahieren … realistische Chöre“). Takes-Blatt › „Stimmen trennen …“: der Kern (Worker) verfolgt bis zu 4 Grundtöne zugleich
    (Harmonischen-Summe, Schätzen und Abziehen, Oktav-Prüfung) und bildet daraus Stimmen (geordnet hoch → tief, kreuzen nur mit klarem
    Grund, stetig: Median, Lücken füllen, Inseln weg). Je Stimme eine Obertonmaske (Modell-Wiener: Teiltöne mit geschätzter Stärke,
-   geteilte Teiltöne nach den Nachbarn geteilt) → eigener Take; Rest = Original − Summe. Ablage: jede Stimme = selbst gesungene
+   geteilte Teiltöne nach den Nachbarn geteilt; CHR3: nach Vibrato-Schwerpunkt + Formant-Hülle je Stimme, Oktav-Schutz) → eigener Take;
+   Rest = Original − Summe. Ablage: jede Stimme = selbst gesungene
    Chor-Stimme (eigenes Fenster) auf einer neuen freien Chor-Spur (G6+a/CHS), Gruppe neutral, Pegel fest (chr2Unity statt Auto-Abstand);
    der Rest wird das hörbare Stück, das Original liegt stumm in alt (A/B). Ein ↶ (takes + Stück + chorlanes). Nichts beim App-Start. */
 // CHR2: Kern ohne DOM (läuft im Worker aus chr2Core.toString(); Hauptfaden-Rückfall). sep(x Int16Array|Float32Array, sr, o, prog) →
@@ -93911,7 +93912,7 @@ function chr2Core() {
     for (let j = 0; j < NL; j++) lf[j] = L0 * Math.pow(2, j * LS / 1200);
     const ci0 = Math.ceil(C1 * Math.log(lo / L0) / LS), ci1 = Math.min(NL - 1, Math.floor(C1 * Math.log(hi / L0) / LS));
     const HM = 20, hOff = new Int32Array(HM + 1); for (let h = 1; h <= HM; h++) hOff[h] = Math.round(1200 * Math.log2(h) / LS);
-    const MAXC = 5, cand = new Float32Array(F * MAXC * 2), ncand = new Uint8Array(F), lspec = new Float64Array(NL), lmax = new Float64Array(NL), R = new Float64Array(B5);
+    const MAXC = 5, weak = new Uint8Array(F * MAXC), cand = new Float32Array(F * MAXC * 2), ncand = new Uint8Array(F), lspec = new Float64Array(NL), lmax = new Float64Array(NL), R = new Float64Array(B5);
     const toLog = () => {
       for (let j = 0; j < NL; j++) {
         const c = lf[j] / df, a = Math.floor(c), fr = c - a; let v = a + 1 < B5 ? R[a] * (1 - fr) + R[a + 1] * fr : 0;
@@ -93952,23 +93953,37 @@ function chr2Core() {
             for (let h = 1; h <= 9; h++) { const q = i2 + hOff[h]; if (q >= NL) break; const w = lmax[q] * (g + 20) / (h * g + 320); if (h & 1) so += w; else se += w; }
             if (lmax[i2] > 0.05 * rmax && so > 0.15 * se) { best = i2; bv = Math.max(bv, sal[i2]); }
           }
+          // CHR3: Teilton 3…5 einer tieferen Stimme mit schwachem Grundton (Vokal „a“ tief: Teilton 3 am stärksten) – Grundton und mindestens
+          // zwei weitere Teiltöne, die keine Vielfachen des Kandidaten sind, müssen da sein (geprüft wird danach noch beim Verfeinern)
+          if (best !== i2) for (let d = 3; d <= 5; d++) {
+            const i3 = best - hOff[d]; if (i3 < ci0 || ban[i3]) continue;
+            let sn = 0, sm = 0, ok3 = 0; const g = lf[i3];
+            for (let h = 1; h <= 2 * d; h++) { const q = i3 + hOff[h]; if (q >= NL) break; const w = lmax[q] * (g + 20) / (h * g + 320); if (h % d) { sn += w; if (h < d + 2 && lmax[q] > 0.04 * rmax) ok3++; } else sm += w; }
+            if (lmax[i3] > 0.04 * rmax && ok3 >= 3 && sn > 0.4 * sm) { best = i3; bv = Math.max(bv, sal[i3]); break; }
+          }
         }
-        if (it === 0) first = bv; else if (bv < 0.2 * first) break;
+        if (it === 0) first = bv; else if (bv < 0.1 * first) break;   // CHR3: schwache Kandidaten (0,1…0,2) nur als Lückenfüller (weak)
         // verfeinern: Harmonische 1…6 parabolisch, nach Betrag gewichtet
-        let f0 = lf[best], sw = 0, sf = 0, hit = 0, p12 = 0;
-        for (let h = 1; h <= 6; h++) { if (h * f0 > fH) break; const [pf, pa] = peakAt(h * f0, 0.025); if (pa > 0.05 * rmax) { sw += pa; sf += pa * pf / h; hit++; if ((h === 1 || (h === 2 && f0 < 150)) && pa > 0.02 * rmax) p12++; } }
-        if (sw > 0) { const g = sf / sw; if (Math.abs(C1 * Math.log(g / f0)) < 50) f0 = g; }
+        // CHR3: verfeinern robust – gewichteter Median der Teilton-Schätzungen, dann nur Teiltöne, die zu ihm passen (sonst baut ein Geist
+        // aus Teiltönen verschiedener Stimmen eine Unter-Oktave, z. B. 337 Hz aus F4-Grundton + E5-Teiltönen)
+        let f0 = lf[best], sw = 0, sf = 0, hit = 0, p12 = 0; const est = [];
+        for (let h = 1; h <= 6; h++) { if (h * f0 > fH) break; const [pf, pa] = peakAt(h * f0, 0.025); if (pa > 0.05 * rmax) est.push([pf / h, pa, h, pf]); }
+        if (est.length) {
+          const so = est.slice().sort((a, b) => a[0] - b[0]); let tot = 0, acc2 = 0, g = so[0][0]; for (const e of so) tot += e[1]; for (const e of so) { acc2 += e[1]; if (acc2 >= tot / 2) { g = e[0]; break; } }
+          if (Math.abs(C1 * Math.log(g / f0)) < 50) for (const [, pa, h, pf] of est) if (Math.abs(pf - h * g) < Math.max(0.012 * h * g, 0.35 * df)) { sw += pa; sf += pa * pf / h; hit++; if ((h === 1 || (h === 2 && f0 < 150)) && pa > 0.02 * rmax) p12++; }
+          if (sw > 0) { const g2 = sf / sw; if (Math.abs(C1 * Math.log(g2 / f0)) < 50) f0 = g2; }
+        }
         if (hit < 1 || !p12) { for (let i = Math.max(0, best - 3); i <= Math.min(NL - 1, best + 3); i++) ban[i] = 1; it--; if (++guard > 8) break; continue; }   // nur Reste: keine echte Stimme
         const bi = Math.round(C1 * Math.log(f0 / L0) / LS); for (let i = Math.max(0, Math.min(best, bi) - 4); i <= Math.min(NL - 1, Math.max(best, bi) + 4); i++) ban[i] = 1;
         if (cf0.some(z => Math.abs(C1 * Math.log(z / f0)) < 90) || cf0.some((z, k) => (Math.abs(C1 * Math.log(f0 / (2 * z))) < 40 || Math.abs(C1 * Math.log(f0 / (3 * z))) < 40) && bv < 1.2 * cs0[k])) { it--; if (++guard > 8) break; continue; }   // Rest-Oktave einer gefundenen Stimme
-        cand[(f * MAXC + nc) * 2] = f0; cand[(f * MAXC + nc) * 2 + 1] = bv; nc++; cf0.push(f0); cs0.push(bv); guard = 0;
+        weak[f * MAXC + nc] = it > 0 && bv < 0.2 * first ? 1 : 0; cand[(f * MAXC + nc) * 2] = f0; cand[(f * MAXC + nc) * 2 + 1] = bv; nc++; cf0.push(f0); cs0.push(bv); guard = 0;
         // abziehen (Amplituden über die Nachbar-Harmonischen geglättet: geteilte Teiltöne bleiben für die andere Stimme)
         const A = [];
         for (let h = 1; h * f0 < fH; h++) A.push(peakAt(h * f0, 0.015));
         for (let h = 0; h < A.length; h++) {
           const [pf, pa] = A[h]; if (!(pa > 0)) continue;
           let m = 0, k = 0; for (let d = -1; d <= 1; d += 2) { const q = A[h + d]; if (q) { m += q[1]; k++; } }
-          const amp = k ? Math.min(pa, 1.6 * m / k) : pa, c = pf / df, sc = 1 + 0.006 * c;
+          const amp = k && h ? Math.min(pa, 1.6 * m / k) : pa, c = pf / df, sc = 1 + 0.006 * c;   // CHR3: Grundton ganz abziehen (sonst Geist darunter)
           for (let b = Math.max(0, Math.ceil(c - 2 * sc)); b <= Math.floor(c + 2 * sc) && b < B5; b++) { R[b] -= amp * kern((b - c) / sc); if (R[b] < 0) R[b] = 0; }
         }
       }
@@ -93976,12 +93991,12 @@ function chr2Core() {
       const q = Math.floor(f / F * 50); if (q > pk) { pk = q; prog(q / 100); }
     }
     // Schritt 2: Stimmen bilden – Zahl, Schwelle, Stimmführung (geordnet, kreuzen nur bei klar besserer Stetigkeit)
-    const firsts = []; for (let f = 0; f < F; f++) if (ncand[f]) firsts.push(cand[f * MAXC * 2 + 1]);
+    const firsts = []; for (let f = 0; f < F; f++) if (ncand[f]) firsts.push(cand[f * MAXC * 2 + 1]);   // (Kandidat 0 ist nie weak)
     firsts.sort((a, b) => a - b);
     const ref = firsts.length ? firsts[Math.floor(firsts.length * 0.95)] : 0, thr = 0.04 * ref;
     const cnt = new Uint8Array(F), cf = [];
     for (let f = 0; f < F; f++) {
-      const l = []; for (let k = 0; k < ncand[f]; k++) { const fq = cand[(f * MAXC + k) * 2], s = cand[(f * MAXC + k) * 2 + 1]; if (s >= thr && !l.some(z => Math.abs(C1 * Math.log(z.f / fq)) < 60)) l.push({f: fq, s}); }
+      const l = []; for (let k = 0; k < ncand[f]; k++) { const fq = cand[(f * MAXC + k) * 2], s = cand[(f * MAXC + k) * 2 + 1]; if (!weak[f * MAXC + k] && s >= thr && !l.some(z => Math.abs(C1 * Math.log(z.f / fq)) < 60)) l.push({f: fq, s}); }
       cf.push(l); cnt[f] = l.length;
     }
     let V = o.n | 0;
@@ -93989,6 +94004,8 @@ function chr2Core() {
       const vo = []; for (let f = 0; f < F; f++) if (cnt[f]) vo.push(cnt[f]);
       V = 1; for (let v = 4; v >= 1; v--) { const c = vo.filter(z => z >= v).length; if (vo.length && c >= 0.4 * vo.length) { V = v; break; } }
     }
+    // CHR3: fehlt einem Rahmen eine Stimme, füllen schwache Kandidaten auf (die Stimme wurde beim Abziehen der anderen geschwächt)
+    for (let f = 0; f < F; f++) { const l = cf[f]; for (let k = 0; k < ncand[f] && l.length < V; k++) { if (!weak[f * MAXC + k]) continue; const fq = cand[(f * MAXC + k) * 2], s = cand[(f * MAXC + k) * 2 + 1]; if (s >= thr && !l.some(z => Math.abs(C1 * Math.log(z.f / fq)) < 60)) l.push({f: fq, s}); } }
     const f0 = []; for (let v = 0; v < V; v++) f0.push(new Float32Array(F));
     const last = new Float64Array(V).fill(0), lastT = new Int32Array(V).fill(-999);
     const perms = (arr) => { if (arr.length <= 1) return [arr]; const out = []; arr.forEach((a, i) => { for (const p of perms(arr.slice(0, i).concat(arr.slice(i + 1)))) out.push([a].concat(p)); }); return out; };
@@ -94028,21 +94045,119 @@ function chr2Core() {
     const acc = [], y = []; for (let v = 0; v < V; v++) { acc.push(new Float64Array(N)); y.push(new Int16Array(n)); }
     const yre = new Float64Array(N), yim = new Float64Array(N), MX = new Float64Array(half + 1), q16 = s => { const v = Math.round(s * 32767); return v > 32767 ? 32767 : v < -32768 ? -32768 : v; };
     const yf = []; for (let v = 0; v < V; v++) yf.push(new Float32Array(n));
-    let pk2 = 55;
+    const hsOf = f => { const hs = []; for (let v = 0; v < V; v++) { const g = f0[v][f], L = []; if (g > 0) for (let h = 1; h * g < fM; h++) L.push(h * g / df); hs.push(L); } return hs; };
+    const ampAt = c => { const b = Math.round(c); let m = 0; for (let d = -1; d <= 1; d++) { const q = b + d; if (q > 0 && q <= half && MX[q] > m) m = MX[q]; } return m; };
+    const cols = (f, v, c) => { const out = []; for (let u = 0; u < V; u++) { if (u === v || !(f0[u][f] > 0)) continue; const su = f0[u][f] / df, k = Math.round(c / su); if (k >= 1 && k * su < BM && Math.abs(k * su - c) < 2.5) out.push([u, k * su]); } return out; };
+    // CHR3: Hüllkurven-Modell je Stimme (Formant-Hülle aus den eigenen UNgeteilten Teiltönen: Log-Pegel über Log-Frequenz in NE Bändern,
+    // linear verbunden, außen flach; über ±2 Rahmen derselben Note geglättet). Geteilte Teiltöne (Teilton einer anderen Stimme < 2,5 Bins)
+    // werden nach dem erwarteten Pegel der Hüllen geteilt (Leistung: Anteil E_v² / ΣE²) statt nach dem Nachbar-Mittel je Rahmen.
+    const NE = 48, eL0 = Math.log(50), eSt = (Math.log(fM) - eL0) / (NE - 1), envS = [], share = new Map();
+    const envAt = (v, f, hz) => { const x = (Math.log(hz) - eL0) / eSt; if (!(x >= 0)) return NaN; const j = Math.min(NE - 2, Math.floor(x)), t = Math.min(1, x - j), e = envS[v], a = e[f * NE + j], b = e[f * NE + j + 1]; return Math.exp(a + t * (b - a)); };
+    {
+      const env = []; for (let v = 0; v < V; v++) env.push(new Float32Array(F * NE).fill(NaN));
+      const recs = [];
+      for (let f = 0; f < F; f++) {
+        let any = false; for (let v = 0; v < V; v++) if (f0[v][f] > 0) any = true; if (!any) continue;
+        frame(f); for (let b = 0; b <= half; b++) MX[b] = Math.hypot(re[b], im[b]);
+        const hs = hsOf(f), gr = [];
+        for (let v = 0; v < V; v++) {                                                       // f0 je Rahmen genau (ungeteilte Spitzen, Vibrato bleibt)
+          const L = hs[v]; let sw = 0, sg = 0, mx = 0; gr.push(f0[v][f]); if (!L.length) continue;
+          for (const c of L) mx = Math.max(mx, ampAt(c));
+          for (let h = 0; h < L.length && h < 12; h++) { const c = L[h], b = Math.round(c); if (b < 2 || b >= half - 1 || cols(f, v, c).length) continue; let bm = b; for (const d of [-1, 1]) if (MX[b + d] > MX[bm]) bm = b + d; const a0 = MX[bm - 1], a1 = MX[bm], a2 = MX[bm + 1]; if (a1 < 0.1 * mx || a1 < a0 || a1 < a2) continue; const den = a0 - 2 * a1 + a2, pp = den < 0 ? 0.5 * (a0 - a2) / den : 0; sw += a1; sg += a1 * (bm + pp) * df / (h + 1); }
+          if (sw > 0 && Math.abs(C1 * Math.log(sg / sw / f0[v][f])) < 40) gr[v] = sg / sw;
+        }
+        for (let v = 0; v < V; v++) for (let h = 0; h < hs[v].length && h < 255; h++) {      // CHR3: geteilte Paare – wohin zieht die Spitze?
+          const cl = cols(f, v, hs[v][h]); if (cl.length !== 1) continue; const u = cl[0][0]; if (u < v) continue;
+          const k = Math.round(cl[0][1] * df / f0[u][f]); if (k > 255) continue;
+          const cv = (h + 1) * gr[v] / df, cu = k * gr[u] / df, okR = Math.abs(cv - cu) < 0.7 * (1 + 0.008 * cv);   // weiter auseinander: Spitze = die stärkere, kein Schwerpunkt
+          const b0 = Math.max(2, Math.round(Math.min(cv, cu)) - 1), b1 = Math.min(half - 2, Math.round(Math.max(cv, cu)) + 1);
+          let bm = b0; for (let b = b0; b <= b1; b++) if (MX[b] > MX[bm]) bm = b;
+          const a0 = MX[bm - 1], a1 = MX[bm], a2 = MX[bm + 1], den = a0 - 2 * a1 + a2, p = bm + (den < 0 ? 0.5 * (a0 - a2) / den : 0);
+          recs.push(f, ((v * 4 + u) * 256 + h + 1) * 256 + k, okR ? (p - cu) * (cv - cu) : 0, okR ? (cv - cu) * (cv - cu) : 0);
+        }
+        for (let v = 0; v < V; v++) {
+          const L = hs[v], xs = [], ys = []; if (!L.length) continue;
+          for (const c of L) if (!cols(f, v, c).length) { xs.push(Math.log(c * df)); ys.push(Math.log(ampAt(c) + 1e-9)); }
+          if (!xs.length) continue;
+          const e = env[v], o = f * NE, m = xs.length - 1;
+          for (let j = 0, k = 0; j < NE; j++) {
+            const x = eL0 + j * eSt; while (k < m - 1 && xs[k + 1] <= x) k++;
+            e[o + j] = x <= xs[0] ? ys[0] : x >= xs[m] ? ys[m] : ys[k] + (x - xs[k]) / (xs[k + 1] - xs[k]) * (ys[k + 1] - ys[k]);
+          }
+        }
+        const q = 55 + Math.floor(f / F * 10); if (q > pk) { pk = q; prog(q / 100); }
+      }
+      for (let v = 0; v < V; v++) {
+        const e = env[v], sm = new Float32Array(F * NE).fill(NaN), a = f0[v];
+        for (let f = 0; f < F; f++) {
+          const g = a[f]; if (!(g > 0)) continue;
+          for (let j = 0; j < NE; j++) {
+            let sw = 0, sv = 0;
+            for (let d = -2; d <= 2; d++) { const q = f + d; if (q < 0 || q >= F || !(a[q] > 0) || Math.abs(C1 * Math.log(a[q] / g)) > 80) continue; const z = e[q * NE + j]; if (z !== z) continue; const w = 3 - Math.abs(d); sw += w; sv += w * z; }
+            if (sw) sm[f * NE + j] = sv / sw;
+          }
+        }
+        envS.push(sm);
+      }
+      // Anteil je Paar über ±6 Rahmen (kleinste Quadrate: Spitze ≈ w·cv + (1−w)·cu), nur wenn das Vibrato die beiden genug trennt
+      const byKey = new Map();
+      for (let i = 0; i < recs.length; i += 4) { const key = recs[i + 1]; let l = byKey.get(key); if (!l) byKey.set(key, l = []); l.push(recs[i], recs[i + 2], recs[i + 3]); }
+      for (const [key, l] of byKey) {                                                     // l: [Rahmen, Zähler, Nenner]…, nach Rahmen sortiert
+        const k = key % 256, h = (key >> 8) % 256, v = (key >> 16) >> 2, u = (key >> 16) & 3, m = l.length / 3;
+        let a = 0, b = 0, sn = 0, sd = 0;
+        for (let i = 0; i < m; i++) {
+          const f = l[3 * i];
+          while (b < m && l[3 * b] <= f + 6) { sn += l[3 * b + 1]; sd += l[3 * b + 2]; b++; }
+          while (l[3 * a] < f - 6) { sn -= l[3 * a + 1]; sd -= l[3 * a + 2]; a++; }
+          if (sd < 0.5) continue;
+          // mit der Hüllen-Erwartung verrechnet (Gewicht = Vibrato-Trennung sd in Bin²): wenig Bewegung → eher Hülle
+          const g = f0[v][f], gu = f0[u][f], ev = g > 0 ? envAt(v, f, h * g) : NaN, eu = gu > 0 ? envAt(u, f, k * gu) : NaN;
+          const wc = Math.max(0, Math.min(1, sn / sd)), w = Math.max(0.02, Math.min(0.98, ev > 0 && eu > 0 ? (sd * wc + ev * ev / (ev * ev + eu * eu)) / (sd + 1) : wc));
+          share.set(f * 1048576 + ((v * 4 + u) * 256 + h) * 256 + k, w); share.set(f * 1048576 + ((u * 4 + v) * 256 + k) * 256 + h, 1 - w);
+        }
+      }
+    }
+    let pk2 = 65;
     for (let f = 0; f < F; f++) {
       frame(f);
       for (let b = 0; b <= half; b++) { MX[b] = Math.hypot(re[b], im[b]); }
-      const hs = [];                                                                        // Harmonische aller Stimmen (für Kollisionen)
-      for (let v = 0; v < V; v++) { const g = f0[v][f], L = []; if (g > 0) for (let h = 1; h * g < fM; h++) L.push(h * g / df); hs.push(L); }
+      const hs = hsOf(f), AM = [], SH = [];                                                 // Harmonische aller Stimmen (für Kollisionen)
       for (let v = 0; v < V; v++) {
-        const Pv = P[v]; Pv.fill(0); const L = hs[v]; if (!L.length) continue;
-        const A = L.map(c => { const b = Math.round(c); let m = 0; for (let d = -1; d <= 1; d++) { const q = b + d; if (q > 0 && q <= half && MX[q] > m) m = MX[q]; } return m; });
+        const L = hs[v], am = new Float64Array(L.length), sh = []; AM.push(am); SH.push(sh); if (!L.length) continue;
+        const A = L.map(ampAt);
         for (let h = 0; h < L.length; h++) {
-          const c = L[h]; let col = false;
-          for (let u = 0; u < V && !col; u++) if (u !== v) for (const c2 of hs[u]) if (Math.abs(c2 - c) < 2.5) { col = true; break; }
+          const c = L[h], cl = cols(f, v, c);
           let amp = A[h];
-          if (col) { let m = 0, k = 0; for (const d of [-2, -1, 1, 2]) { const q = h + d; if (q >= 0 && q < A.length) { m += A[q]; k++; } } if (k) amp = Math.min(amp, m / k); }
-          const sg = 1.0 + 0.008 * c, r0 = Math.max(1, Math.ceil(c - 3 * sg)), r1 = Math.min(BM, Math.floor(c + 3 * sg)), a2 = amp * amp;
+          const ku = cl.length === 1 ? Math.round(cl[0][1] * df / f0[cl[0][0]][f]) : 0, sk = ku ? share.get(f * 1048576 + ((v * 4 + cl[0][0]) * 256 + h + 1) * 256 + ku) : undefined;
+          if (ku) sh[h] = [cl[0][0], ku - 1];
+          if (sk !== undefined) amp = A[h] * Math.sqrt(sk);                                  // CHR3: Anteil aus dem Vibrato (mit Hülle verrechnet)
+          else if (cl.length) {                                                             // CHR3: Anteil aus den Hüllen
+            const ev = envAt(v, f, c * df); let se = ev * ev, okE = ev > 0;
+            for (const [u, c2] of cl) { const eu = envAt(u, f, c2 * df); if (!(eu > 0)) { okE = false; break; } se += eu * eu; }
+            if (okE) amp = A[h] * ev / Math.sqrt(se);
+            else { let m = 0, k = 0; for (const d of [-2, -1, 1, 2]) { const q = h + d; if (q >= 0 && q < A.length) { m += A[q]; k++; } } if (k) amp = Math.min(amp, m / k); }
+          }
+          am[h] = amp;
+        }
+      }
+      // CHR3: Oktav-Schutz – die getrennte Welle muss auf ihrer Tonhöhe klingen: tragen die Nicht-Vielfachen von 2 (bzw. 3) unter den ersten
+      // 12 Teiltönen < 15 % der Leistung, liest jede Tonhöhen-Messung 2·f0 (3·f0). Dann holt die Stimme sich mehr von ihren GETEILTEN
+      // Nicht-Vielfachen (aus dem Anteil der Partner-Stimme, Summe bleibt). Tief → hoch, weil tiefe Stimmen ihre ungeraden Teiltöne verlieren.
+      for (let v = V - 1; v >= 0; v--) {
+        const am = AM[v], sh = SH[v], H = Math.min(12, am.length); if (!H) continue;
+        for (const d of [2, 3]) {
+          let ok = 0, bad = 0, gain = 0;
+          for (let h = 0; h < H; h++) { const e = am[h] * am[h]; if ((h + 1) % d) { ok += e; const z = sh[h]; if (z && AM[z[0]][z[1]] > 0) gain += AM[z[0]][z[1]] * AM[z[0]][z[1]]; } else bad += e; }
+          const tau = 0.15, need = tau / (1 - tau) * bad - ok;
+          if (need <= 0 || gain <= 0) continue;
+          const lam = Math.min(1, need / gain);
+          for (let h = 0; h < H; h++) { const z = sh[h]; if (!((h + 1) % d) || !z) continue; const au = AM[z[0]], q = au[z[1]]; if (!(q > 0)) continue; const dl = lam * q * q; am[h] = Math.sqrt(am[h] * am[h] + dl); au[z[1]] = Math.sqrt(Math.max(0, q * q - dl)); }
+        }
+      }
+      for (let v = 0; v < V; v++) {
+        const Pv = P[v], L = hs[v], am = AM[v]; Pv.fill(0);
+        for (let h = 0; h < L.length; h++) {
+          const c = L[h], sg = 1.0 + 0.008 * c, r0 = Math.max(1, Math.ceil(c - 3 * sg)), r1 = Math.min(BM, Math.floor(c + 3 * sg)), a2 = am[h] * am[h];
           for (let b = r0; b <= r1; b++) { const d = (b - c) / sg; Pv[b] += a2 * Math.exp(-0.5 * d * d); }
         }
       }
@@ -94060,7 +94175,7 @@ function chr2Core() {
         const o0 = c0; for (let i = 0; i < hop; i++) { const j = o0 + i; if (j >= 0 && j < n) yf[v][j] = ac[i]; }
         ac.copyWithin(0, hop); ac.fill(0, N - hop);
       }
-      const q = 55 + Math.floor(f / F * 44); if (q > pk2) { pk2 = q; prog(q / 100); }
+      const q = 65 + Math.floor(f / F * 34); if (q > pk2) { pk2 = q; prog(q / 100); }
     }
     // Rest dazu: was keine Stimme bekam; ausgeben als PCM16 (Summe = Original bis auf Rundung)
     const rest = new Int16Array(n), st = {e: new Float64Array(V), er: 0, ex: 0};
@@ -94073,7 +94188,7 @@ function chr2Core() {
     const act = a => { let c = 0; for (const z of a) if (z > 0) c++; return +(c / Math.max(1, a.length)).toFixed(3); };
     prog(1);
     return {ok: V >= 1 && firsts.length > 0, V, sr, hop, N, f0, y, rest,
-      info: {V, frames: F, voiced: firsts.length, vdb: Array.from(st.e).map(db), rdb: db(st.er), med: f0.map(med), act: f0.map(act)}};
+      dbg: o.dbg ? {cand, ncand, MAXC, cf} : undefined, info: {V, frames: F, voiced: firsts.length, vdb: Array.from(st.e).map(db), rdb: db(st.er), med: f0.map(med), act: f0.map(act)}};
   }
   return {sep};
 }
@@ -94199,6 +94314,13 @@ function chr2RealPlan(pl, a, v, ci, C) {
   return Object.assign({}, base, {chr2: {ms: Math.max(0, CHR2R.ms[k] - (C && isNum(C.ms) ? C.ms : 0)), f: CHR2R.f[k], d: CHR2R.d, s: 1 + vi * 7 + ci * 3, r: CHR2R.r, c: CHR2R.c}});
 }
 /* CHR2-END */
+/* CHR3-BEGIN ===================== Stimmen trennen genauer (Paket CHR3, Xander 14.11.: „einzelne Chor-Stimmen im Nachhinein extrahieren“).
+   Alles im Kern chr2Core (Worker aus toString, deshalb dort, Stellen mit „CHR3“ markiert): Verfolgung robust (Median der Teilton-Schätzungen,
+   Grundton ganz abziehen, schwache Kandidaten als Lückenfüller, Teilton 3…5 einer tieferen Stimme mit schwachem Grundton); geteilte Teiltöne
+   nach dem gemeinsamen Schicksal (die Spitze folgt im Vibrato der Stimme, die sie trägt) und der Formant-Hülle je Stimme aus den ungeteilten
+   Teiltönen; Oktav-Schutz (Nicht-Vielfache von 2/3 tragen ≥ 15 % der Leistung, sonst klingt die Welle eine Oktave/Duodezime zu hoch).
+   Bedienung und Ablage unverändert. */
+/* CHR3-END */
 /* MTX-BEGIN ===================== Matrix: Ziehen über alle Zeilen, Wahl beim Ablegen, Szene / Spur duplizieren (Paket MTX, Xander 07.11. (13) FL-D)
    Xander: „wenn ich einen Clip von der unteren Hälfte nach oben ziehen will, komme ich nicht hoch … wenn ich einen Clip halte und in einen
    anderen Slot ziehe, fragt er nicht, ob kopieren oder loslassen … Clip duplizieren … Szene duplizieren … Instrumentenspur duplizieren
@@ -96104,6 +96226,83 @@ const VID5_API = {
 };
 Object.assign(SYNQUENZER, {vid5: VID5_API});                  /* VID5: Test-API (Objekt, wird nicht umhüllt) */
 /* VID5-END */
+/* GD1-BEGIN ===== Drei offene Punkte aus der Zusammenführung 4.54 (NOTES „Offen / Vorschläge“), ohne sichtbare Änderung an Bestehendem.
+   (1) Guide-Sprung ohne Voraussetzung: „Arp Treppe“ (kf1trp) ohne Spur auf MS-Platte / Bit Mask und „Perform-Spur im Song“ (jam3pf)
+       ohne Perform-Spur zeigten nur einen Hinweis und keinen Rahmen. Jetzt wie die anderen Sprünge (UI1.alt, vgl. „Song transponieren“):
+       Rahmen dort, wo es entsteht – Klang-Editor › Klangerzeugung bzw. Song › ● SONG (sonst die Zeile MELODIE) – plus der kurze Hinweis
+       Der Hinweis steht im Etikett am Rahmen statt im Toast: der läge oben über der Klangerzeugung bzw. hochkant über ● SONG.
+   (2) Menü quer: die Zeilen mit 2–3 Tasten (An │ Aus: Lauflichter, Perform-Leiste, Begleiter; Dur │ Moll, Modus, Einzähler, Rest unter
+       Mehr ▾) sind 38 px hoch, die Tasten 32 px (≥ 40 breit). Trefferfläche ≥ 44 × 44 über ein unsichtbares ::before (44 px hoch mittig, erste
+       Taste 4 px nach links, letzte 4 px nach rechts, eine mittlere unter 44 px mittig auf 44 px, d. h. höchstens in die 2-px-Fugen) – das Bild bleibt pixelgleich, zwischen zwei Zeilen
+       bleiben 2 px frei (8 px Abstand − 2 × 3).
+       Zeilen mit mehr Tasten (Tonart, Quantisieren) brechen um – dort hätte eine Erweiterung die nächste Tastenreihe überdeckt. Hochkant unverändert.
+   (3) KF2-Oszilloskop während eines Video-/Audio-Exports: vvRenderAudio0 tauscht AU.ctx gegen den Offline-Kontext (UI.vvOff); bei offenem
+       Klang-Editor hängte sich das Oszilloskop dann mit einem eigenen Analyser an die Offline-Spur. Jetzt: abgekoppelt (kein Analyser im
+       Render, das Bild steht), alle 250 ms nachsehen, danach wieder am Live-Kontext.
+   Einhänge-Zeilen: keine (Einträge kf1trp/jam3pf werden hier ergänzt; ui1Ring und kf2ScFrame werden umhüllt). */
+function gd1Off() { try { return !!(UI.vvOff || (AU.ctx && typeof OfflineAudioContext !== 'undefined' && AU.ctx instanceof OfflineAudioContext)); } catch (e) { return false; } }   // GD1 (3)
+(function gd1Guide() {                                                                             // GD1 (1)
+  try {
+    const L = ui1Entries(), by = id => L.find(x => x.id === id);
+    const t = by('kf1trp');
+    if (t && !t.gd1) {
+      const go0 = t.go, q0 = t.q;
+      t.gd1 = true;
+      t.go = () => {
+        UI1.alt = null; UI1.gd1N = null;
+        if (S.tracks.some(x => x && x.kind === 'synth' && x.sound && (x.sound.engine === 'mk' || x.sound.engine === 'bm'))) return go0();
+        ui1Home(); const i = ui1SynthT(true); if (i < 0) return go0();
+        selectTrack(i); FXF.big = null; openEditor();
+        // der Hinweis steht am Rahmen (Etikett), nicht als Toast: der läge oben genau über der Klangerzeugung
+        UI1.alt = () => (EL.synthSheet ? EL.synthSheet.querySelector('.sh-head .seg.eng') : null);
+        UI1.gd1N = {id: 'kf1trp', n: 'Arp Treppe: erst ' + MK_LABEL + ' / ' + BM_NAME};
+        return true;
+      };
+      t.q = () => (UI1.alt ? UI1.alt() : q0());
+    }
+    const j = by('jam3pf');
+    if (j && !j.gd1) {
+      j.gd1 = true;
+      j.go = () => {
+        UI1.alt = null; UI1.gd1N = null; ui1Home(); setSongView(true);
+        if (!jam3Has()) {   // hochkant läge der Toast über ● SONG: der Hinweis steht am Rahmen
+          UI1.alt = () => { const b = SV.btn && SV.btn.bRec; return b && ui1Shown(b) ? b : (EL.songView || document).querySelector('.sv-l.sv-lm'); };
+          UI1.gd1N = {id: 'jam3pf', n: 'Perform-Spur: ● SONG + Perform-Leiste'};
+        }
+        return true;
+      };
+      j.q = () => (UI1.alt ? UI1.alt() : (EL.songView || document).querySelector('.sv-l.j3-pl'));
+    }
+  } catch (e) { logErr(e); }
+})();
+// Etikett des Rahmens: beim Ersatz-Ziel des letzten Sprungs der Hinweis statt des Namens (nur dieser Sprung, nur dieses Ziel)
+{ const r0 = ui1Ring;
+  ui1Ring = function (t, label, ms) {
+    const N = UI1.gd1N;
+    if (label && N && UI1.alt && UI1.lastJump && UI1.lastJump.id === N.id) { try { if (t === UI1.alt()) { label = N.n; UI1.gd1N = null; } } catch (e) {} }   // einmal
+    return r0(t, label, ms);
+  };
+}
+{ const st = document.createElement('style'); st.id = 'gd1-css';                                   // GD1 (2)
+  const f = '#menu .mrow>.seg>button:first-child:nth-last-child(-n+3)';
+  st.textContent = `
+@media (orientation:landscape){
+${f}::before,${f}~button::before{content:"";position:absolute;left:0;right:0;top:50%;height:44px;margin-top:-22px}
+${f}::before{left:-4px}
+${f}~button:not(:last-child)::before{left:min(0px,calc(50% - 22px));right:min(0px,calc(50% - 22px))}
+${f}~button:last-child::before{right:-4px}
+}`;
+  document.head.appendChild(st);
+}
+{ const f0 = kf2ScFrame;                                                                           // GD1 (3)
+  kf2ScFrame = function (ts) {
+    if (!gd1Off()) return f0(ts);
+    const S_ = KF2SC; S_.raf = 0; kf2ScStop('export');
+    const w = () => { S_.poll = 0; if (!S_.el || !S_.el.isConnected || !kf2ScOn()) return; if (gd1Off()) { S_.poll = setTimeout(w, 250); return; } kf2ScArm(); };
+    clearTimeout(S_.poll); S_.poll = setTimeout(w, 250);
+  };
+}
+/* GD1-END */
 /* INT53C-BEGIN ===== Prüfung INT53C (Zusammenspiel ORI · VID5 · MIXG), Befund A: ein Export enthält immer den Nachher-Stand.
    Befund: Mix & Master im Vergleich auf „Vorher“, das Blatt abgelegt (⌄), dann Video erstellen → im Video klang der Vorher-Mix, und das
    Video-Blatt sagte „Video ist aktuell“ (die abgelegte Leiste liegt unter dem Video-Blatt, VORHER sieht man nicht). Ursache: „Vorher“
@@ -97265,7 +97464,7 @@ function spk1DspMake(V) {
           for (let h = 1; h <= K; h++) {
             const fh = h * f0; if (fh >= sr / 2) break;
             const kc = fh * N / sr, hw = Math.max(1.5, fh * q * N / sr);
-            for (let k = Math.max(1, Math.floor(kc - hw)); k <= Math.min(NB - 1, Math.ceil(kc + hw)); k++) { const w = Math.min(1, 1.6 * (1 - Math.abs(k - kc) / (hw + 0.5))); put(pos, m, k, w); put(pos, m + 1, k, w * 0.999); }
+            for (let k = Math.max(1, Math.floor(kc - hw)); k <= Math.min(NB - 1, Math.ceil(kc + hw)); k++) { const w = Math.min(1, 1.6 * (1 - Math.abs(k - kc) / (hw + 0.5))) * (s.g != null ? Math.max(0, Math.min(1, +s.g || 0)) : 1);   /* SPK3: Anteil g (Zuordnen in Bass) */ put(pos, m, k, w); put(pos, m + 1, k, w * 0.999); }
           }
         }
       }
@@ -97956,13 +98155,14 @@ function spk1DspMake(V) {
     }, e => emit({qid: m.qid, err: String(e && e.message || e)}));
   }
   const Z2 = typeof spk2DspMake === 'function' ? spk2DspMake({V, magsAt, hpss, f0Sum, comb, ramp, medLine, win, stft, istft, selFn, Fn, NBn, magPair, render, mixOf, transfer, uBegin, uEnd, lay, tick}) : null;   // SPK2 (Auftrag 2: Noten brauchen render/transfer/Undo)
+  if (Z2 && typeof spk3DspMake === 'function') spk3DspMake(Z2);   // SPK3: Tiefband mit Kick-Vorlage (ersetzt Z2.lowSplit, schaltet es ein)
   return {on, stft, istft, specInfo, docs, lowSplit, Z2};   // SPK2: Z2 für Messungen
 }
 /* ---------- Hauptfaden: Worker (Blob aus Text), Rückfall = derselbe Kern hier ---------- */
 function spk1Worker() {
   if (SPK1.w !== null) return SPK1.w;
   try {
-    const src = vsDspMake.toString() + ';' + spk1DspMake.toString() + ';' + (typeof spk2DspMake === 'function' ? spk2DspMake.toString() : '') + ';' + (typeof ki1KernMake === 'function' ? ki1KernMake.toString() + ';' : '') /* KI1 */ + 'const K = spk1DspMake(vsDspMake());onmessage = e => K.on(e.data, (m, tr) => postMessage(m, tr || []));';   // SPK2: Kern-Ergänzung mitschicken · KI1
+    const src = vsDspMake.toString() + ';' + spk1DspMake.toString() + ';' + (typeof spk2DspMake === 'function' ? spk2DspMake.toString() : '') + ';' + (typeof spk3DspMake === 'function' ? spk3DspMake.toString() + ';' : '') /* SPK3 */ + (typeof ki1KernMake === 'function' ? ki1KernMake.toString() + ';' : '') /* KI1 */ + 'const K = spk1DspMake(vsDspMake());onmessage = e => K.on(e.data, (m, tr) => postMessage(m, tr || []));';   // SPK2: Kern-Ergänzung mitschicken · KI1
     const u = URL.createObjectURL(new Blob([src], {type: 'application/javascript'}));
     const w = new Worker(u); setTimeout(() => { try { URL.revokeObjectURL(u); } catch (e) {} }, 30000);
     w.onmessage = e => spk1Reply(e.data);
@@ -98083,7 +98283,7 @@ function spk1Stop() {
   const P = SPK1.pl; if (!P) return; SPK1.pl = null; clearTimeout(P.timer);
   try { const c = AU.ctx, t = c.currentTime; P.out.gain.cancelScheduledValues(t); P.out.gain.setValueAtTime(P.out.gain.value, t); P.out.gain.linearRampToValueAtTime(0, t + 0.005); for (const s of P.src) s.stop(t + 0.01); setTimeout(() => { try { P.out.disconnect(); } catch (e) {} }, 60); } catch (e) {}
 }
-function spk1PlayPos() { const P = SPK1.pl, c = AU.ctx; return P && c ? P.from + Math.max(0, c.currentTime - P.t0) : null; }
+function spk1PlayPos() { const P = SPK1.pl, c = AU.ctx; return P && c ? (P.pos ? P.pos(c.currentTime) /* SPK3: Loop im Kreis */ : P.from + Math.max(0, c.currentTime - P.t0)) : null; }
 /* ---------- Seite „Spektral“ (Schritt 3): Vollbild wie das Video-Blatt, Raster wie der Noten-Editor ----------
    Anzeige: WebGL2 (je Stück eine R8-Textur 1024 × 984 mit Mipmaps, Farbtabelle + dB-Bereich als Uniforms, Ebenen-Tönung als 2 RGBA-Bilder),
    ohne WebGL2 Canvas2D in halber Auflösung aus denselben Daten. Zoom/Schieben = nur Zahlen + ein Neuzeichnen je Bild, kein DOM-Umbau.
@@ -98572,6 +98772,7 @@ function spk1BtnState(U) {
   U.b_zerl.textContent = U.busy === 'zerlegen' || U.busy === 'profi' /* KI1 */ ? '■ Abbrechen' : 'Zerlegen'; if (U.b_ki1) ki1Busy(U);   /* KI1 */ U.b_zerl.disabled = U.busy === 'verfeinern'; U.b_verf.disabled = !has || !!U.busy;
   if (U.busy) U.bU.disabled = U.bR.disabled = true; else if (SPK1.last) spk1UndoBtns(U, SPK1.last);
   U.bMin.classList.toggle('on', !!U.opt.minus); U.bMin.setAttribute('aria-pressed', String(!!U.opt.minus));
+  if (typeof spk3LpBtn === 'function') spk3LpBtn(U);   // SPK3: ▶/■ in der Loop-Zeile
 }
 function spk1UndoBtns(U, r) {
   if (!r) return; U.bU.disabled = !r.nu; U.bR.disabled = !r.nr;
@@ -98580,6 +98781,7 @@ function spk1UndoBtns(U, r) {
 function spk1Got(U, r) { if (!r || !r.meta) return; SPK1.last = r; U.meta = r.meta; spk1UndoBtns(U, r); spk1Layers(U); if (typeof spk2OvDraw === 'function') spk1Dirty(U, 'ov'); }   // SPK2: Noten neu zeichnen
 /* ---- Ebenen-Liste ---- */
 function spk1Layers(U) {
+  if (typeof spk3LpFromMeta === 'function') spk3LpFromMeta(U);   // SPK3: Loop aus dem Dokument
   const L = U.meta.layers, R = U.meta.rest || {}, row = (id, name, col, o) => {
     const act = U.act === id ? ' act' : '';
     let h = `<div class="spk1-lr${act}" data-l="${esc(id)}"><button class="spk1-dot" data-a="lcol" style="--c:${col}" aria-label="Farbe ${esc(name)}"></button><button class="rb spk1-nm" data-a="lact" aria-label="Quelle für In Ebene: ${esc(name)}">${esc(name)}</button>`;
@@ -98692,7 +98894,7 @@ function spk1Tap(U, b) {
     case 'solo': case 'mute': { const o = lid === 'rest' ? U.meta.rest : U.meta.layers.find(x => x.id === lid); if (o) spk1Layer(U, a, lid, !o[a]); return; }
     case 'ab': U.ab = !U.ab; spk1Layers(U); if (SPK1.pl && !U.playSel) spk1PlayFrom(U, spk1PlayPos() || U.cur); return;
     case 'lmore': spk1MoreDd(U, b, lid); return;
-    case 'mxdd': case 'mxweg': spk2Tap(U, b, a); return;   // SPK2: Loop → Matrix
+    case 'mxdd': case 'mxweg': case 'lpplay' /* SPK3 */: spk2Tap(U, b, a); return;   // SPK2: Loop → Matrix
     case 'file': spk1Pick(U); return;
     case 'take': spk1FromTake(U, {take: b.dataset.id}); return;
     case 'open': spk1OpenId(U, b.dataset.id); return;
@@ -98761,6 +98963,7 @@ const SPK1_T2 = {notes: 'Noten je Ebene', learn: 'Vorlage lernen', find: 'Übera
 function spk1Teil2(was) { return {teil2: true, was, text: (SPK1_T2[was] || String(was)) + ' kommt in Teil 2'}; }
 /* ---- Wiedergabe ---- */
 function spk1PlayFrom(U, t) {
+  if (SPK1.pl && SPK1.pl.lp && typeof spk3LpPlay === 'function' && spk2Lp(U) && spk3LpPlay(U, t)) return;   // SPK3: Loop läuft → im Loop weiter
   U.playSel = false; spk1Play(t >= U.dur - 0.05 ? 0 : t, U.ab ? 'orig' : null); spk1BtnState(U); spk1Dirty(U, 'ov');
 }
 function spk1PlaySel(U) {
@@ -99368,7 +99571,8 @@ function spk2DspMake(I) {
     },
     klangFeat: (d, m) => ({fs: (m.pcs || []).map(x => klangFeat(x, m.sr, m.f, m.on, m.off)), est: m.est && m.pcs && m.pcs[0] ? klangSchaetz(klangFeat(m.pcs[0], m.sr, m.f, m.on, m.off), m.sr) : null}),
   };
-  return {lowSplit, projLk, bassTrack, kickModel, w2, I, opt, ops, noten, finden, zuordnen, klangFeat, klangSchaetz};
+  return {lowSplit, projLk, bassTrack, kickModel, w2, I, opt, ops, noten, finden, zuordnen, klangFeat, klangSchaetz,
+    h: {magsX, onsetsOf, viterbi, segNotes, gridOf, snapT, t2Of, nid, artOf, rangeOf, N2R, midiOf, trackF, noteSel, findN}};   // SPK3: Helfer für Auftrag 2/4 (Noten sicherer, mehrstimmig)
 }
 /* ---- Seite (Auftrag 2): Werkzeug „Noten“ – Kästchen in der Farbe der Ebene über dem Spektrum, Tipp/Ziehen → „Gehört zu“,
    Noten ▾ (finden, überall finden, alle übernehmen, verfeinern nach Noten). Alles rechnet im Worker; ein ↶ je Aktion. ---- */
@@ -99540,7 +99744,7 @@ function spk2LpMove(U, s, e) {
 function spk2LpEnd(U, q) {
   if (q.lpT) { clearTimeout(q.lpT); q.lpT = 0; return false; }
   if (!q.lp) return false;
-  spk1Layers(U); spk1Stat(U, 'Loop ' + spk2LpTxt(U.loop) + ' · „In die Matrix ▾“ in der Ebenen-Liste'); return true;
+  spk1Layers(U); spk1Stat(U, 'Loop ' + spk2LpTxt(U.loop) + ' · „In die Matrix ▾“ in der Ebenen-Liste'); if (typeof spk3LpSave === 'function') spk3LpSave(U); /* SPK3: im Dokument */ return true;
 }
 // Zeile oben in der Ebenen-Liste (nur mit Loop): Loop Takt a–b │ In die Matrix ▾ │ ✕
 function spk2Css() {
@@ -99554,18 +99758,19 @@ function spk2Css() {
 function spk2LpRow(U) {
   const L = spk2Lp(U); if (!L) return ''; spk2Css();
   return '<div class="spk2-lp"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M7 3H3v14h4M13 3h4v14h-4"/></svg>' +
-    '<span class="spk2-lpt">Loop ' + esc(spk2LpTxt(L)) + '</span><button class="rb spk2-mx" data-a="mxdd" aria-label="Loop in die Matrix: als Audio oder als MIDI">In die Matrix ▾</button>' +
+    '<span class="spk2-lpt">Loop ' + esc(spk2LpTxt(L)) + '</span>' + (typeof spk3LpBtnH === 'function' ? spk3LpBtnH() : '') /* SPK3: ▶ Loop im Kreis */ + '<button class="rb spk2-mx" data-a="mxdd" aria-label="Loop in die Matrix: als Audio oder als MIDI">In die Matrix ▾</button>' +
     '<button class="rb spk2-lx" data-a="mxweg" aria-label="Loop entfernen">✕</button></div>';
 }
 function spk2Tap(U, b, a) {
-  if (a === 'mxweg') { U.loop = null; spk1Dd(U, null); spk1Layers(U); spk1Dirty(U, 'r'); spk1Dirty(U, 'ov'); spk1Stat(U, 'Loop entfernt'); return; }
+  if (a === 'lpplay') { if (typeof spk3LpTap === 'function') spk3LpTap(U); return; }   // SPK3: ▶ Loop im Kreis
+  if (a === 'mxweg') { U.loop = null; spk1Dd(U, null); spk1Layers(U); spk1Dirty(U, 'r'); spk1Dirty(U, 'ov'); spk1Stat(U, 'Loop entfernt'); if (typeof spk3LpSave === 'function') spk3LpSave(U); /* SPK3: im Dokument */ return; }
   if (a === 'mxdd') spk2MxDd(U, b);
 }
 // Ansicht ▾: Loop ohne Geste (4 Takte ab der Abspielposition)
 function spk2ViewLp(U, dd) {
   dd.appendChild(el('h5', '', 'Loop'));
   const x = el('button', 'mbtn rb spk1-ck', 'Loop setzen · 4 Takte ab Position'); x.dataset.mx = 'set';
-  on(x, 'click', () => { spk1Dd(U, null); const g = spk1Grid0(U), a = Math.max(0, Math.floor((U.cur - g.off) / g.bar + 1e-6)); spk2LpSet(U, a, a + 4); spk1Layers(U); spk1Stat(U, 'Loop ' + spk2LpTxt(U.loop) + ' · Klammern im Lineal ziehen'); });
+  on(x, 'click', () => { spk1Dd(U, null); const g = spk1Grid0(U), a = Math.max(0, Math.floor((U.cur - g.off) / g.bar + 1e-6)); spk2LpSet(U, a, a + 4); spk1Layers(U); spk1Stat(U, 'Loop ' + spk2LpTxt(U.loop) + ' · Klammern im Lineal ziehen'); if (typeof spk3LpSave === 'function') spk3LpSave(U); /* SPK3 */ });
   dd.appendChild(x); dd.appendChild(el('p', '', 'Oder: Lineal halten und ziehen.'));
 }
 /* ---- In die Matrix ---- */
@@ -99711,7 +99916,7 @@ const SPK2_WV = ['Säge', 'Rechteck', 'Dreieck', 'Sinus'];
 // Versuch c = {eng: 'va'|'fm', fix: {...}, u: [0…1]} → vollständiger Klang der App (alles Übrige neutral: keine LFO-Wege, kein Hall)
 function spk2KlP(c) {
   const u = c.u, f = c.fix;
-  if (c.eng === 'va') return {cut: spk2Lg(u[0], 30, 18000), res: u[1], fenv: u[2] * 2 - 1, fD: spk2Lg(u[3], 0.005, 4), aA: spk2Lg(u[4], 0.001, 2), aD: spk2Lg(u[5], 0.005, 4), aS: u[6], aR: spk2Lg(u[7], 0.005, 4), mix: u[8], noise: u[9] * 0.6, pw: 0.05 + 0.9 * u[10], o1: f.o1, o2: f.o2};
+  if (c.eng === 'va') return (typeof spk3KlP === 'function' ? spk3KlP : (c, P) => P)(c, {cut: spk2Lg(u[0], 30, 18000), res: u[1], fenv: u[2] * 2 - 1, fD: spk2Lg(u[3], 0.005, 4), aA: spk2Lg(u[4], 0.001, 2), aD: spk2Lg(u[5], 0.005, 4), aS: u[6], aR: spk2Lg(u[7], 0.005, 4), mix: u[8], noise: u[9] * 0.6, pw: 0.05 + 0.9 * u[10], o1: f.o1, o2: f.o2});   // SPK3: + Verstimmung, Unison, LFO
   return {ol: Math.round(u[0] * 99), mD: Math.round(u[1] * 99), mS: Math.round(u[2] * 99), aA: spk2Lg(u[3], 0.001, 2), aD: spk2Lg(u[4], 0.005, 4), aS: u[5], aR: spk2Lg(u[6], 0.005, 4), cut: spk2Lg(u[7], 200, 20000), r: f.r};
 }
 function spk2KlSnd(c, nm) {
@@ -99720,7 +99925,8 @@ function spk2KlSnd(c, nm) {
     const p = {o1w: P.o1, o1oct: 0, o1semi: 0, o1fine: 0, o1pw: P.pw, o1lvl: 1, o1uni: 1, o2w: P.o2, o2oct: 0, o2semi: 0, o2fine: 0, o2pw: P.pw, o2lvl: P.mix, o2uni: 1, o2sync: 0, o3lvl: 0,
       subLvl: 0, noise: P.noise, analog: 0, reset: 1, uniDet: 0, ftype: 0, cutoff: P.cut, res: P.res, drive: 0, kt: 0.5, fenv: P.fenv, fvel: 0, bass: 0,
       aA: P.aA, aD: P.aD, aS: P.aS, aR: P.aR, ampVel: 0, fA: 0.001, fD: P.fD, fS: 0, fR: P.aR, glide: 0, mode: 0, poly: 6, mw: 0, lq: 0};
-    return SQStore.normalizeSound({engine: 'analog', name: nm || 'Nachbau', cat: 'eigene', p, mods: [], fx});
+    const mods = []; if (typeof spk3KlSnd === 'function') spk3KlSnd(c, P, p, mods);   // SPK3: Osz 2 verstimmt, Unison, Vibrato/Wah
+    return SQStore.normalizeSound({engine: 'analog', name: nm || 'Nachbau', cat: 'eigene', p, mods, fx});
   }
   const op = (coarse, ol, r, l) => ({on: 1, coarse, fine: 0, det: 0, ol, r, l});
   const p = {ftype: 1, cutoff: P.cut, res: 0, drive: 0, kt: 0, fenv: 0, fvel: 0, bass: 0, lq: 0, aA: P.aA, aD: P.aD, aS: P.aS, aR: P.aR, ampVel: 0, fmAmp: 1, analog: 0, spread: 0, level: 1, glide: 0, mode: 0, poly: 6,
@@ -99734,7 +99940,7 @@ function spk2KlStart(eng, est, src, alt) {
     const v = est.va, w = v.w || [1, 0, 0, 0], ord = [0, 1, 2, 3].sort((p, q) => w[q] - w[p]), o1 = ord[0], o2 = w[ord[1]] > 0.08 * w[o1] ? ord[1] : o1 === 0 ? 1 : 0;
     const fc = (v.hc || 8) * src.feat.f0 / Math.pow(2, 0.5 * (src.m - 60) / 12), mix = w[o2] > 0 ? Math.min(1, w[o2] / Math.max(1e-6, w[o1])) : 0;
     const u = [spk2Ul(fc, 30, 18000), v.res || 0, alt === 'flach' ? 0.5 : (est.fenv + 1) / 2, spk2Ul(fD, 0.005, 4), spk2Ul(A.a, 0.001, 2), spk2Ul(A.d, 0.005, 4), A.s, spk2Ul(A.r, 0.005, 4), alt === 'eins' ? 0 : mix, est.noise > 0.12 ? Math.min(1, est.noise) : 0, ((v.d || 0.5) - 0.05) / 0.9];
-    return {eng, fix: {o1, o2}, u};
+    return typeof spk3KlStart === 'function' ? spk3KlStart({eng, fix: {o1, o2}, u}, est, src, alt) : {eng, fix: {o1, o2}, u};   // SPK3: Bewegung aus der Analyse
   }
   const r = alt === 'r2' ? (est.fm.r === 1 ? 2 : 1) : est.fm.r, I = Math.max(0.1, est.fm.I), ol = Math.max(0, Math.min(99, 99 + 8 * Math.log2(I / 13)));
   return {eng, fix: {r}, u: [ol / 99, 0.6, 0.85, spk2Ul(A.a, 0.001, 2), spk2Ul(A.d, 0.005, 4), A.s, spk2Ul(A.r, 0.005, 4), 1]};
@@ -99749,13 +99955,14 @@ function spk2KlDist(A, B) {
 function spk2Rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 // Optimierer: Runde 0 = Startwerte VA/FM + Varianten (6), dann (1+6) mit Schrittweite nach Erfolg, bis n Versuche
 async function spk2KlOpt(src, o) {
+  if (typeof spk3KlOpt === 'function' && !(o && o.in3)) return spk3KlOpt(src, o);   // SPK3-R: SPK2-Weg + SPK3-Weg, kleinerer Abstand
   o = o || {}; const n = o.n || 50, lam = 6, rnd = spk2Rng(o.seed || 7), f = 440 * Math.pow(2, (src.m - 69) / 12);
   const gauss = () => Math.sqrt(-2 * Math.log(rnd() + 1e-12)) * Math.cos(2 * Math.PI * rnd());
   let done = 0, best = o.from || null, d0 = null;
   const evalB = async L => {
     const pcs = await spk2KlRender(L.map(c => spk2KlSnd(c)), src.m, src.on, src.off, src.len, src.sr);
-    const r = await spk1Call('klangFeat', {pcs, sr: src.sr, f, on: src.on, off: src.off});
-    L.forEach((c, i) => { c.F = r.fs[i]; c.dist = spk2KlDist(src.feat, c.F); c.pcm = pcs[i]; }); done += L.length;
+    const r = await spk1Call('klangFeat', {pcs, sr: src.sr, f, on: src.on, off: src.off, x3: src.x3on ? 1 : 0});   /* SPK3-R: Bewegung nur, wenn der Abstand sie braucht */
+    L.forEach((c, i) => { c.F = r.fs[i]; c.dist = (src.x3on && typeof spk3KlDist === 'function' ? spk3KlDist : spk2KlDist)(src.feat, c.F);   /* SPK3: + Bewegung (nicht bei reinem FM) */ c.pcm = pcs[i]; }); done += L.length;
     for (const c of L) if (!best || c.dist < best.dist) best = c;
     for (const c of L) if (c !== best) c.pcm = null;
     if (o.prog) o.prog(done, n, best);
@@ -99763,12 +99970,13 @@ async function spk2KlOpt(src, o) {
   if (!best) {
     const e = src.est, eng = o.eng || (e.fm.e < 0.5 * e.va.e ? 'fm' : null), S = (g, a) => spk2KlStart(g, e, src, a), ix = (c, d) => { c.u[0] = Math.max(0, Math.min(1, c.u[0] + d)); return c; };   // FM klar besser erklärt → Familie FM
     const L = eng === 'fm' ? [S('fm'), ix(S('fm'), -0.1), ix(S('fm'), 0.1), S('fm', 'r2'), ix(S('fm'), 0.2)] : eng === 'va' ? [S('va'), S('va', 'eins'), S('va', 'flach')] : [S('va'), S('fm'), S('va', 'eins'), S('va', 'flach'), S('fm', 'r2'), ix(S('fm'), 0.1)];
+    if (eng !== 'fm' && typeof spk3KlMore === 'function') { src.x3on = true; spk3KlMore(L, S, e, src); }   // SPK3: verstimmt / Unison als Start, Abstand mit Bewegung
     await evalB(L); d0 = Math.min(...L.map(c => c.dist));
   } else d0 = best.dist;
   let sig = o.sig || 0.12;
   while (done < n) {
     if (o.stop && o.stop()) break;
-    const L = []; for (let i = 0; i < Math.min(lam, n - done); i++) { const D = best.u.length, k = i === lam - 1 ? D : 1 + Math.floor(rnd() * 3), pick = new Set(); while (pick.size < k) pick.add(Math.floor(rnd() * D)); L.push({eng: best.eng, fix: best.fix, u: best.u.map((v, j) => (pick.has(j) ? Math.max(0, Math.min(1, v + sig * 1.6 * gauss())) : v))}); }   // dünn: 1–3 Werte je Versuch, einer ändert alle
+    const L = []; for (let i = 0; i < Math.min(lam, n - done); i++) { const D = best.u.length, fr = [...Array(D).keys()].filter(j => !(best.fz || []).includes(j)), k = i === lam - 1 ? fr.length : Math.min(fr.length, 1 + Math.floor(rnd() * 3)), pick = new Set(); while (pick.size < k) pick.add(fr[Math.floor(rnd() * fr.length)]); L.push({eng: best.eng, fix: best.fix, fz: best.fz /* SPK3: feste Werte */, u: best.u.map((v, j) => (pick.has(j) ? Math.max(0, Math.min(1, v + sig * 1.6 * gauss())) : v))}); }   // dünn: 1–3 Werte je Versuch, einer ändert alle
     const b0 = best; await evalB(L);
     sig = best !== b0 ? Math.min(0.3, sig * 1.25) : Math.max(0.02, sig * 0.7);
   }
@@ -99777,8 +99985,8 @@ async function spk2KlOpt(src, o) {
 function spk2KlTxt(c) {   // lesbare Werte eines Versuchs
   const P = spk2KlP(c), ms = v => (v < 0.1 ? Math.round(v * 1000) + ' ms' : v.toFixed(2).replace('.', ',') + ' s'), hz = v => (v >= 1000 ? (v / 1000).toFixed(1).replace('.', ',') + ' kHz' : Math.round(v) + ' Hz'), k2 = v => v.toFixed(2).replace('.', ',');
   const adsr = 'ADSR ' + ms(P.aA) + ' · ' + ms(P.aD) + ' · ' + Math.round(P.aS * 100) + ' % · ' + ms(P.aR);
-  if (c.eng === 'va') return ['VA · ' + SPK2_WV[P.o1] + (P.o1 === 1 && Math.abs(P.pw - 0.5) > 0.04 ? ' (Puls ' + Math.round(P.pw * 100) + ' %)' : '') + (P.mix > 0.04 ? ' + ' + SPK2_WV[P.o2] + ' ' + Math.round(P.mix * 100) + ' %' : '') + (P.noise > 0.02 ? ' · Rauschen ' + Math.round(P.noise * 100) + ' %' : ''),
-    'Filter ' + hz(P.cut) + ' · Res ' + k2(P.res) + ' · Hüllkurve ' + (P.fenv >= 0 ? '+' : '') + k2(P.fenv) + ' / ' + ms(P.fD), adsr];
+  if (c.eng === 'va') return (typeof spk3KlTxt === 'function' ? spk3KlTxt : (c, L) => L)(c, ['VA · ' + SPK2_WV[P.o1] + (P.o1 === 1 && Math.abs(P.pw - 0.5) > 0.04 ? ' (Puls ' + Math.round(P.pw * 100) + ' %)' : '') + (P.mix > 0.04 ? ' + ' + SPK2_WV[P.o2] + ' ' + Math.round(P.mix * 100) + ' %' : '') + (P.noise > 0.02 ? ' · Rauschen ' + Math.round(P.noise * 100) + ' %' : ''),
+    'Filter ' + hz(P.cut) + ' · Res ' + k2(P.res) + ' · Hüllkurve ' + (P.fenv >= 0 ? '+' : '') + k2(P.fenv) + ' / ' + ms(P.fD), adsr]);   // SPK3: Verstimmung, Unison, Vibrato/Wah
   return ['FM · Verhältnis 1:' + P.r + ' · Index-Pegel ' + P.ol + ' → ' + P.mS, 'Index-Abfall ' + P.mD + (P.cut < 15000 ? ' · Filter ' + hz(P.cut) : ''), adsr];
 }
 function spk2KlEstTxt(e) {
@@ -99906,6 +100114,414 @@ SPK1_API.spk2.klang = {
   snd: (eng, fix, u) => spk2KlSnd({eng, fix, u}), dist: spk2KlDist, render: spk2KlRender, P: c => spk2KlP(c)
 };
 /* SPK2-END */
+/* ===== SPK3-BEGIN (Spektral-Seite Teil 3 · Bass ohne Download, Noten sicherer, Nachbau genauer, Loop im Dokument) ===== */
+// Kern-Ergänzung im selben Worker (Text wird mitgeschickt). Z2 = SPK2-Kern; ersetzt dessen Tiefband (Z2.lowSplit) und schaltet es ein.
+// Kick als Vorlage: der Kick klingt auf jedem Schlag gleich → je Phase im Schlag (Schritt 512 Proben) und Bin das untere Drittel der
+// Leistung über bis zu 32 Schläge des ganzen Stücks (einmal je Analyse). Diese Leistung wird vor der Bass-Suche abgezogen;
+// Sub-Oszillator: Teilton bei f0/2 wird immer mitgeschätzt (Kick-Vorlage abgezogen, Wiener-Anteil entscheidet).
+function spk3DspMake(Z2) {
+  if (!Z2 || !Z2.I) return null;
+  const {I, w2, bassTrack, opt} = Z2, {magsAt, hpss, ramp} = I;
+  // q: Anteil (60 %) über die Schläge – Snare/Becken auf 2 und 4 zählen mit; hA…hB: darüber gibt der Bass nichts ab (dort liegen Akkord-Teiltöne
+  // auf denselben Bins, gemessen: Fehlalarm kostet mehr als fehlender Bass). trk/dbg = Mess-Haken (aus).
+  const o3 = {tpl: true, q: 0.6, nb: 32, fk: 160, per: 1, stp: 512, sub: 1, hA: 180, hB: 300, trk: null, dbg: null, dec: 1};
+  // SPK3-R (Tempo): Tiefband-Beträge auf dem herabgesetzten Signal – Tiefpass (Blackman-Sinc) und nur jede R-te Probe (einmal je Analyse);
+  // die Bins unterhalb fmax sind dieselben (Fenster win(N/R) = win(N) an jeder R-ten Stelle, Spiegelungen < −74 dB), die FFT ist R-mal kürzer.
+  // R 16 bis 560 Hz (Kick-Vorlage, Tiefband 8192), R 4 bis 2450 Hz (Bass-Suche 16384, Verfeinern), sonst wie vorher (magsAt).
+  const {V, win, magPair} = I, LO = {16: {M: 161, fc: 1400}, 4: {M: 65, fc: 5500}};
+  function loSig(d, R) {
+    const c = d.spk3lo || (d.spk3lo = {}); if (c[R]) return c[R];
+    const x = d.mid, len = x.length, P = LO[R], M = P.M, mid = (M - 1) >> 1, wc = 2 * Math.PI * P.fc / d.meta.sr, h = new Float64Array(M); let s = 0;
+    for (let t = 0; t < M; t++) { const u = t - mid; h[t] = (u ? Math.sin(wc * u) / (Math.PI * u) : wc / Math.PI) * (0.42 - 0.5 * Math.cos(2 * Math.PI * t / (M - 1)) + 0.08 * Math.cos(4 * Math.PI * t / (M - 1))); s += h[t]; }
+    for (let t = 0; t < M; t++) h[t] /= s;
+    const n = Math.ceil(len / R), y = new Float32Array(n);
+    for (let j = 0; j < n; j++) { const c0 = j * R + mid, t0 = Math.max(0, c0 - len + 1), t1 = Math.min(M - 1, c0); let a = 0; for (let t = t0; t <= t1; t++) a += h[t] * x[c0 - t]; y[j] = a; }
+    return (c[R] = y);
+  }
+  function magsLo(d, N, cen, K, fmax) {
+    const R = !o3.dec || d.meta.sr < 44100 ? 1 : fmax <= 560 && N >= 4096 ? 16 : fmax <= 2450 && N >= 2048 ? 4 : 1, Nd = N / R, NB = Nd / 2 + 1;
+    if (R === 1 || K > NB) return magsAt(d, N, cen, K);
+    const y = loSig(d, R), w = win(Nd), n = cen.length, out = new Float32Array(n * K), re = new Float64Array(Nd), im = new Float64Array(Nd), a = new Float64Array(NB), b = new Float64Array(NB), ny = y.length;
+    for (let i = 0; i < n; i += 2) {
+      const sA = Math.round((cen[i] - N / 2) / R), two = i + 1 < n, sB = two ? Math.round((cen[i + 1] - N / 2) / R) : 0;
+      for (let j = 0; j < Nd; j++) { const p = sA + j, q = sB + j; re[j] = (p >= 0 && p < ny ? y[p] : 0) * w[j] * R; im[j] = two && q >= 0 && q < ny ? y[q] * w[j] * R : 0; }
+      V.fft(re, im); magPair(re, im, Nd, a, b);
+      for (let k = 0; k < K; k++) out[i * K + k] = a[k];
+      if (two) for (let k = 0; k < K; k++) out[(i + 1) * K + k] = b[k];
+    }
+    return out;
+  }
+  function kickTpl(d, N, K) {
+    const c = d.spk3kt || (d.spk3kt = {}), key = N + ':' + K; if (c[key] !== undefined) return c[key];
+    const g = d.meta.grid || {}, bpm = +g.bpm, sr = d.meta.sr, len = d.mid.length;
+    if (!o3.tpl || !(bpm >= 50 && bpm <= 220)) return (c[key] = null);
+    const L = 60 / bpm * sr * o3.per, off = (+g.off || 0) * sr, Q = Math.max(8, Math.round(L / o3.stp)), stp = L / Q;
+    const j0 = Math.ceil(-off / L), j1 = Math.floor((len - off - L) / L), nB = j1 - j0 + 1; if (nB < 4) return (c[key] = null);
+    const nb = Math.min(o3.nb, nB), js = []; for (let t = 0; t < nb; t++) js.push(j0 + Math.round(t * (nB - 1) / Math.max(1, nb - 1)));
+    const cen = new Int32Array(nb * Q); for (let t = 0; t < nb; t++) for (let q = 0; q < Q; q++) cen[t * Q + q] = Math.round(off + js[t] * L + q * stp);
+    const KK = Math.min(K, Math.ceil((o3.fk + 40) * N / sr) + 2), M = magsLo(d, N, cen, KK, (KK + 1) * sr / N), T = new Float32Array(Q * K), v = new Float32Array(nb), qi = Math.floor((nb - 1) * o3.q);
+    for (let q = 0; q < Q; q++) for (let k = 0; k < KK; k++) {
+      for (let t = 0; t < nb; t++) { const x = M[(t * Q + q) * KK + k]; v[t] = x * x; }
+      v.sort(); T[q * K + k] = v[qi] * (1 - ramp(k * sr / N, o3.fk, o3.fk + 40));
+    }
+    return (c[key] = {T, Q, stp, L, off, K});
+  }
+  // Kick-Leistung je Rahmen (Mitte c) und Bin: Vorlage an der Phase im Schlag (linear zwischen zwei Phasen)
+  function kickAt(KT, cen, out, Kf) {
+    const n = cen.length; if (!KT) return null; const o = out || new Float32Array(n * Kf), K = Math.min(Kf, KT.K);
+    for (let i = 0; i < n; i++) {
+      let p = ((cen[i] - KT.off) % KT.L + KT.L) % KT.L / KT.stp; const a = Math.floor(p) % KT.Q, b = (a + 1) % KT.Q, u = p - Math.floor(p);
+      for (let k = 0; k < K; k++) o[i * Kf + k] = KT.T[a * KT.K + k] * (1 - u) + KT.T[b * KT.K + k] * u;
+    }
+    return o;
+  }
+  function lowSplit(d, cen, Nf, fmax, r, trust) {
+    const sr = d.meta.sr, n = cen.length, N16 = 16384, df16 = sr / N16, K16 = Math.min(N16 / 2 + 1, Math.ceil(2400 / df16) + 2), hopS = (n > 1 ? cen[1] - cen[0] : d.meta.base.hop) / sr;
+    const Y = o3.trk ? o3.trk(d, N16, cen, K16) : magsLo(d, N16, cen, K16, (K16 + 1) * df16), K1 = kickAt(kickTpl(d, N16, K16), cen, null, K16);
+    if (K1 && !o3.trk) for (let i = 0; i < Y.length; i++) Y[i] = Math.sqrt(Math.max(0, Y[i] * Y[i] - K1[i]));
+    const T = bassTrack(Y, n, K16, df16, hopS, trust); if (o3.dbg) o3.dbg(d, cen, T, N16, K16, hopS, trust);
+    const dff = sr / Nf, Kf = Math.min(Nf / 2 + 1, Math.ceil(fmax / dff) + 2), X = magsLo(d, Nf, cen, Kf, (Kf + 1) * dff), {mh} = hpss(X, n, Kf, 17, 17);
+    const SB = new Float32Array(n * Kf), SD = new Float32Array(n * Kf), B = new Float32Array(Kf), G = new Float32Array(n), KQ = kickAt(kickTpl(d, Nf, Kf), cen, null, Kf);
+    const hmax = trust ? 40 : 16, HM = hmax + 1, LA = new Float32Array(n * HM), LC = new Float32Array(n * HM), WR = Math.max(4, Math.round(0.25 / hopS));
+    for (let i = 0; i < n; i++) {
+      const o = i * Kf, f0 = T.f0[i]; if (!(T.on[i] > 0 && f0 > 0)) continue;
+      const top = Math.min(fmax, trust ? fmax : Math.max(500, 8.5 * f0));
+      for (let h = o3.sub && f0 / 2 >= 25 ? 0 : 1; h <= hmax && h * f0 < top; h++) {
+        const c = (h || 0.5) * f0 / dff, k0 = Math.round(c); if (k0 < 1 || k0 >= Kf - 1) break;
+        let km = k0; for (let t = k0 - 1; t <= k0 + 1; t++) if (X[o + t] > X[o + km]) km = t;
+        const xa = X[o + km - 1], xb = X[o + km], xc = X[o + km + 1], dn = xa - 2 * xb + xc, cc = km + (dn < 0 ? Math.max(-0.5, Math.min(0.5, 0.5 * (xa - xc) / dn)) : 0);
+        const cx = Math.abs(cc - c) <= 1.2 ? cc : c; LA[i * HM + h] = Math.max(0, xb * xb - (KQ ? KQ[o + km] : 0)) / Math.max(0.3, w2(km - cx)); LC[i * HM + h] = cx;
+      }
+    }
+    const tmp = [];
+    for (let i = 0; i < n; i++) {
+      const o = i * Kf, g = G[i] = T.on[i]; B.fill(0);
+      const a = Math.max(T.sg[i], i - WR); let b = i; while (b + 1 < n && b + 1 <= i + WR && T.sg[b + 1] === T.sg[i]) b++;
+      for (let h = 0; g > 0 && h <= hmax; h++) {
+        const A2 = LA[i * HM + h]; if (!A2) continue; let L = A2;
+        if (opt.rob && b - a >= 3) { tmp.length = 0; for (let j = a; j <= b; j++) tmp.push(LA[j * HM + h]); tmp.sort((x, y) => x - y); L = Math.min(A2, opt.rob * tmp[Math.floor((tmp.length - 1) * opt.robq)]); }
+        const cx = LC[i * HM + h]; for (let k = Math.max(0, Math.floor(cx - 4)); k <= Math.min(Kf - 1, Math.ceil(cx + 4)); k++) B[k] += L * w2(k - cx);
+      }
+      for (let k = 0; k < Kf; k++) {
+        const f = k * dff, x2 = X[o + k] * X[o + k], b = g * B[k], kq = KQ ? KQ[o + k] : 0, sb0 = x2 > 0 ? Math.min(1, b / Math.max(x2, b + kq, 1e-20)) : 0, h = mh[o + k], kick = 1 - ramp(f, 90, 160);
+        const sb = o3.hB > o3.hA ? sb0 * (1 - ramp(f, o3.hA, o3.hB)) : sb0;
+        SB[o + k] = sb; SD[o + k] = (1 - sb) * ((1 - h) + h * kick);
+      }
+    }
+    if (opt.diag) opt.diag(d, cen, Nf, Kf, X, SB, SD, mh);
+    return {X, SB, SD, Kf, Nf, f0: T, gate: G};
+  }
+  Z2.lowSplit = lowSplit; Z2.o3 = o3; Z2.kickTpl = kickTpl; Z2.kickAt = kickAt; opt.an = true;   // misst besser als SPK1 → an
+  /* ---- Auftrag 2/4: Noten sicherer (Bass) + mehrstimmig (Pads). Z2.h = Helfer aus SPK2 (Haken „SPK3“ im return von spk2DspMake). ---- */
+  const H2 = Z2.h; if (!H2 || !Z2.ops) return Z2;
+  const o4 = {up: 12, rf: 230, kk: 1, fbB: 260, gate: 0.1, gq: 0.05, orth: 1, ref: 1, thr: 0.35, sure: 0.7, zK: 300, zg: 0, poly: 1, pv: 5, pr: 0.5, dbg: null};
+  const mf = m => 440 * Math.pow(2, (m - 69) / 12);
+  // Profi-Ebenen vorhanden (Profi-Trennung fertig) → Bass-Noten auf der Profi-Bass-Ebene suchen (sauberer als das Gemisch)
+  function profiBass(d) { const j = d.meta.jobs && d.meta.jobs.profi; return j && j.fertig ? d.meta.layers.find(l => l.z === 'bass') || null : null; }
+  // SPK3 A4: ohne Profi-Lauf ist die zerlegte Bass-Ebene (z 'bass', Kick schon heraus) die bessere Quelle als das Gemisch (Demo: Präzision 71 → 84 %)
+  function quelleBass(d) { return profiBass(d) || d.meta.layers.find(l => l.z === 'bass') || null; }
+  function monoOf(d, lid) { const n = d.meta.n, ch = I.render(d, I.mixOf(d, lid), 0, n), x = new Float32Array(n), g = 1 / ch.length; for (const c of ch) for (let i = 0; i < c.length && i < n; i++) x[i] += c[i] * g; return x; }
+  // Beträge des ganzen Stücks (Rahmen i ↔ Mitte i·hop), Kick-Vorlage doppelt abgezogen (60-%-Quantil, Anschläge streuen) (nur Original; Profi-Bass hat keinen Kick mehr)
+  async function magsAll(d, x, N, K, kick, emit, qid, p0, p1) {
+    const hop = d.meta.base.hop, F = Math.floor(d.meta.n / hop) + 1, Y = new Float32Array(F * K), KT = kick ? kickTpl(d, N, K) : null, cen = new Int32Array(512), KB = new Float32Array(512 * K);
+    for (let c0 = 0; c0 < F; c0 += 512) {
+      const c1 = Math.min(F, c0 + 512), Yc = H2.magsX(x, N, hop, K, c0, c1); Y.set(Yc, c0 * K);
+      if (KT) { const nn = c1 - c0; for (let i = 0; i < nn; i++) cen[i] = (c0 + i) * hop; kickAt(KT, cen.subarray(0, nn), KB, K); const KM = Math.min(K, KT.K);
+        for (let i = 0; i < nn; i++) for (let k = 0; k < KM; k++) { const o = (c0 + i) * K + k, kq = KB[i * K + k]; if (kq > 0) Y[o] = Math.sqrt(Math.max(0, Y[o] * Y[o] - o4.kk * kq)); } }
+      if (emit) emit({qid, prog: p0 + (p1 - p0) * c1 / F}); if (I.tick) await I.tick();
+    }
+    return {Y, F};
+  }
+  // Überall finden (Bass): Vorlage aus den bestätigten Noten, Gegen-Vorlage aus Stellen ohne Bass (tiefe Obertöne leise) wird aus der Vorlage
+  // herausgerechnet; Mindestpegel der Obertöne 1–3 relativ zur Vorlage; Band oben enger (≤ 260 Hz; Vorlage +12); Kick-Vorlage abgezogen.
+  async function finden3(d, m, emit, info) {
+    const lid = m.lid, t2 = H2.t2Of(d), L = (t2.notes[lid] || []).filter(q => q.st === 'zu');
+    if (H2.artOf(d, lid) !== 'bass' || !L.length) return finden0(d, m, emit, info);
+    const PB = quelleBass(d) /* SPK3 A4 */, x = PB ? monoOf(d, PB.id) : d.mid, sr = d.meta.sr, hop = d.meta.base.hop, N = 8192, df = sr / N, H = 12;
+    let mlo = 127, mhi = 0; for (const q of L) { mlo = Math.min(mlo, q.m); mhi = Math.max(mhi, q.m); }
+    const fa = Math.max(H2.N2R.bass[0], mf(mlo - 7)), fb = Math.min(o4.fbB, Math.max(mf(mhi + o4.up), fa * 1.5)), K = Math.min(N / 2 + 1, Math.ceil(Math.min(sr / 2 - 1, fb * (H + 1)) / df));
+    const {Y, F} = await magsAll(d, x, N, K, !PB, emit, m.qid, 0.05, 0.5);
+    const pk = (o, f, h) => { const k = Math.round(h * f / df); return k >= 1 && k + 1 < K ? Math.max(Y[o + k - 1], Y[o + k], Y[o + k + 1]) : 0; };
+    const vec = (o, f, out) => { let s = 0; for (let h = 1; h <= H; h++) { const v = Math.sqrt(pk(o, f, h)); out[h - 1] = v; s += v * v; } s = Math.sqrt(s) || 1; for (let h = 0; h < H; h++) out[h] /= s; return s; };
+    const pkL = (o, f, h) => { const kc = h * f / df, k = Math.floor(kc), u = kc - k; return k >= 1 && k + 1 < K ? Y[o + k] * (1 - u) + Y[o + k + 1] * u : 0; };   // genau an der Frequenz (Halbton < 1 Bin)
+    const low = (o, f) => { let e = 0; for (let h = 1; h <= 3; h++) { const v = pk(o, f, h); e += v * v; } return e; };
+    const band = o => { let bt = 0; for (let k = Math.max(1, Math.floor(fa * 0.8 / df)); k < K; k++) bt += Y[o + k]; return bt; };
+    // Vorlage + Pegel der bestätigten Noten
+    const T = new Float64Array(H), v = new Float32Array(H), lows = [], pres = [], fs = new Set(); let nT = 0;
+    for (const q of L) { fs.add(q.f); const ia = Math.ceil((q.a + 0.04) * sr / hop), ib = Math.min(F, Math.floor(q.b * sr / hop) + 1);
+      for (let i = ia; i < ib; i++) { const o = i * K, s = vec(o, q.f, v); for (let h = 0; h < H; h++) T[h] += v[h]; nT++; lows.push(low(o, q.f)); pres.push(s * s / (band(o) + 1e-12)); } }
+    if (!nT) throw new Error('Noten zu kurz');
+    const nrm = A => { let s = 0; for (const z of A) s += z * z; s = Math.sqrt(s) || 1; for (let h = 0; h < A.length; h++) A[h] /= s; return A; };
+    nrm(T); lows.sort((p, q) => p - q); pres.sort((p, q) => p - q);
+    const lowMed = Math.max(1e-12, lows[lows.length >> 1]), p0 = Math.max(1e-6, pres[pres.length >> 1]);
+    // Gegen-Vorlage: gleiche Tonhöhen, aber Rahmen ohne Bass (Obertöne 1–3 < 5 % der Vorlage, Band trotzdem belegt)
+    const G = new Float64Array(H); let nG = 0;
+    for (const f of fs) for (let i = 0; i < F; i++) { const o = i * K; if (low(o, f) >= o4.gq * lowMed) continue; const s = vec(o, f, v); if (s * s < 1e-3 * lowMed) continue; for (let h = 0; h < H; h++) G[h] += v[h]; nG++; }
+    let Tq = Float64Array.from(T);
+    if (nG >= 8 && o4.orth) { nrm(G); let c = 0; for (let h = 0; h < H; h++) c += T[h] * G[h]; for (let h = 0; h < H; h++) Tq[h] = T[h] - o4.orth * c * G[h]; nrm(Tq); }
+    t2.tmpl[lid] = {H, T: Array.from(T, z => +z.toFixed(4)), G: nG ? Array.from(nrm(G), z => +z.toFixed(4)) : null, mlo, mhi, n: L.length, p0: +p0.toExponential(3), low: +lowMed.toExponential(3), profi: !!profiBass(d), quelle: PB ? PB.id : 'orig'};
+    // Suche (Viertelton-Raster)
+    const C = []; for (let c = 12 * Math.log2(fa / 440); ; c += 0.25) { const f = 440 * Math.pow(2, c / 12); if (f > fb) break; C.push(f); }
+    const S = C.length, E = new Float32Array(F * S), best = new Float32Array(F), f0 = new Float32Array(F);
+    for (let i = 0; i < F; i++) {
+      const o = i * K, bt = band(o); let bs = 0;
+      for (let j = 0; j < S; j++) { const s = vec(o, C[j], v); let cs = 0; for (let h = 0; h < H; h++) cs += v[h] * Tq[h]; cs = Math.max(0, cs);
+        const p = Math.min(1, s * s / (bt + 1e-12) / (0.5 * p0)), g = Math.min(1, low(o, C[j]) / (o4.gate * lowMed)), val = cs * cs * p * g; E[i * S + j] = val; if (val > bs) bs = val; }
+      best[i] = bs; for (let j = 0; j < S; j++) E[i * S + j] = Math.log((E[i * S + j] + 1e-6) / (bs + 1e-6));
+      if ((i & 255) === 255) { emit({qid: m.qid, prog: 0.5 + 0.35 * i / F}); if (I.tick) await I.tick(); }
+    }
+    const st = H2.viterbi(E, F, S, 1.2); for (let i = 0; i < F; i++) f0[i] = C[st[i]];
+    const ok = new Uint8Array(F), sc = new Float32Array(F); for (let i = 0; i < F; i++) { sc[i] = Math.min(1, best[i]); ok[i] = best[i] >= o4.thr ? 1 : 0; }
+    const O = H2.onsetsOf(x, sr, 0, d.meta.n / sr, fa, fb);
+    const found = H2.segNotes({f0, sc, ok, i0: 0, F, hopS: hop / sr, O, G: H2.gridOf(d), Y: null, K, df, fb});
+    // Tonhöhe je Note nachschärfen: Halbtöne im Band, Obertöne 1–6 bis 230 Hz (darüber liegen Akkord-Teiltöne, C-E-G = Obertöne 4-5-6 von C)
+    // log der Beträge relativ zur Vorlage: Mittel je Oberton (mind. 2), ein fehlender Oberton kostet viel (Kick-Rest tief unten macht keine falsche Unter-Oktave)
+    if (o4.ref) for (const q of found) {
+      const ia = Math.max(0, Math.ceil((q.a + 0.03) * sr / hop)), ib = Math.min(F, Math.max(ia + 1, Math.floor(q.b * sr / hop) + 1)); let bm = q.m, bv = -1e9;
+      for (let mm = Math.ceil(H2.midiOf(fa)); mf(mm) <= fb; mm++) { const f = mf(mm); let s = 0;
+        for (let i = ia; i < ib; i++) { const o = i * K; let a = 0, w = 0; for (let h = 1; h <= 6 && (h <= 2 || h * f <= o4.rf); h++) { const g = Math.pow(0.85, h - 1); a += g * Math.log(0.05 + Math.sqrt(pkL(o, f, h) / lowMed)); w += g; } s += a / w; }
+        if (s > bv) { bv = s; bm = mm; } }
+      if (bm !== q.m) { const r = mf(bm) / q.f; q.m = bm; q.f = +mf(bm).toFixed(2); q.fz = q.fz.map(z => +(z * r).toFixed(1)); }
+    }
+    if (o4.dbg) o4.dbg({found, best, f0, C, lowMed, p0, T, G, Tq, nG});
+    I.uBegin(d, 'Überall finden');
+    const all = Object.entries(t2.notes), hit = (q, p) => Math.min(p.b, q.b) - Math.max(p.a, q.a) > 0.5 * Math.min(q.b - q.a, p.b - p.a);
+    const prev = (t2.notes[lid] || []).filter(q => q.st !== 'neu'), neu = [];
+    for (const q of found) { if (all.some(([k, A]) => A.some(p => p.st === 'zu' && hit(q, p) && (k === lid || Math.abs(p.m - q.m) % 12 === 0)))) continue; q.id = H2.nid(d); q.st = 'neu'; neu.push(q); }
+    t2.notes[lid] = prev.concat(neu).sort((p, q) => p.a - q.a); I.uEnd(d);
+    return Object.assign({lid, neu: neu.length, vorlage: t2.tmpl[lid], profi: !!profiBass(d), quelle: PB ? PB.id : 'orig'}, info(d));
+  }
+  // Zuordnen in eine Bass-Ebene: Kamm nur bis 300 Hz (darüber Akkord-Teiltöne). Zerlegte/Profi-Bass-Ebene (l.z) hält den Bass schon:
+  // dort nur Noten bestätigen (Anteil zg = 0, Haken „SPK3“ in selRaster: s.g) – gemessen: jeder Kamm-Anteil machte sie schlechter
+  // (3,01 dB → 4 richtige Noten: voll 0,73 · g 1 1,48 · g 0,5 2,55 · g 0,25 2,87); den Klang verbessert dann „Verfeinern nach Noten“.
+  function zuordnen3(d, m, emit, info) {
+    if (d.busy) throw new Error('Rechnung läuft');
+    let nach = m.nach; if (nach !== 'neu' && !I.lay(d, nach)) { const l = d.meta.layers.find(x => x.art === m.art); nach = l ? l.id : 'neu'; }
+    const tl = nach !== 'neu' ? I.lay(d, nach) : null; if (!(tl ? tl.art === 'bass' : m.art === 'bass')) return zuordnen0(d, m, emit, info);
+    const refs = (m.notes || []).map(r => ({r, q: H2.findN(d, r)})).filter(x => x.q); if (!refs.length) throw new Error('Keine Note');
+    const g = tl && tl.z ? o4.zg : 1, sel = refs.map(x => Object.assign(H2.noteSel(d, x.q, Math.max(2, Math.floor(o4.zK / Math.max(20, x.q.f))), m.bw), {g}));
+    const r = I.transfer(d, {von: 'orig', nach: nach === 'neu' ? {art: 'bass', name: m.name} : nach, modus: 'verschieben', sel, label: refs.length > 1 ? refs.length + ' Noten zuordnen' : 'Note zuordnen'});
+    const t2 = H2.t2Of(d), dst = t2.notes[r.nach] || (t2.notes[r.nach] = []);
+    for (const {r: ref, q} of refs) { const L = t2.notes[ref.lid], i = L.indexOf(q); if (i >= 0) L.splice(i, 1); q.st = 'zu'; delete q.ref; dst.push(q); }
+    dst.sort((p, q) => p.a - q.a); d.metaDirty = true;
+    return Object.assign({nach: r.nach, n: refs.length, anteil: r.anteil}, info(d));
+  }
+  const zuordnen0 = Z2.ops.zuordnen; Z2.ops.zuordnen = zuordnen3;
+  const finden0 = Z2.ops.finden; Z2.ops.finden = finden3;
+  // ---- Auftrag 3: Klang-Nachbau genauer – Bewegung im gehaltenen Teil der Note (läuft hier im Worker)
+  // je Rahmen (Schritt 5 ms, Fenster 4 Perioden, Hann) Betrag und Phasen-Zuwachs der Obertöne 1–12 genau an h·f0:
+  // Schwebung je Oberton (Schwankung, Rate) → Verstimmung des 2. Oszillators (Δf = Rate / h) bzw. Unison; Tonhöhe → Vibrato; Schwerpunkt → Wah.
+  function bewegung(x, sr, f0, on, off) {
+    const P = sr / Math.max(20, f0), W = Math.max(512, Math.min(8192, Math.round(4 * P))), hop = Math.max(64, Math.round(sr * 0.005)), D = Math.max(8, Math.round(P / 8));
+    const ia = Math.max(0, Math.round((on + Math.min(0.12, (off - on) * 0.25)) * sr)), ib = Math.min(x.length, Math.round(off * sr)) - W - D, H = Math.max(1, Math.min(12, Math.floor(sr * 0.45 / f0)));
+    const out = {cv: [], b: [], det: 0, vib: {d: 0, r: 0}, wah: {d: 0, r: 0}, n: 0, H};
+    if (ib - ia < hop * 12) return out;
+    const w = new Float64Array(W); for (let i = 0; i < W; i++) w[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / W);
+    const C = [], Sn = []; for (let h = 1; h <= H; h++) { const th = 2 * Math.PI * h * f0 / sr, c = new Float64Array(W), s = new Float64Array(W); for (let i = 0; i < W; i++) { c[i] = Math.cos(th * i) * w[i]; s[i] = -Math.sin(th * i) * w[i]; } C.push(c); Sn.push(s); }
+    const A = Array.from({length: H}, () => []), ct = [], cn = [];
+    for (let s0 = ia; s0 <= ib; s0 += hop) {
+      let fw = 0, fs = 0, e = 0, eh = 0;
+      for (let h = 0; h < H; h++) {
+        const c = C[h], s = Sn[h]; let r0 = 0, i0 = 0, r1 = 0, i1 = 0;
+        if (h < 3) { for (let i = 0; i < W; i++) { const a = x[s0 + i], b = x[s0 + D + i]; r0 += a * c[i]; i0 += a * s[i]; r1 += b * c[i]; i1 += b * s[i]; } }
+        else for (let i = 0; i < W; i++) { const a = x[s0 + i]; r0 += a * c[i]; i0 += a * s[i]; }   // SPK3-R: Phase nur für Obertöne 1–3 (bitgleich, halbe Arbeit)
+        const p = r0 * r0 + i0 * i0; A[h].push(Math.sqrt(p)); e += p; eh += p * (h + 1);
+        if (h < 3 && p > 0) { const th = 2 * Math.PI * (h + 1) * f0 / sr * D; let dv = Math.atan2(i1 * r0 - r1 * i0, r1 * r0 + i1 * i0) - th; dv = Math.atan2(Math.sin(dv), Math.cos(dv)); fs += p * (f0 + dv * sr / (2 * Math.PI * D) / (h + 1)); fw += p; }
+      }
+      ct.push(fw > 0 ? 1200 * Math.log2(fs / fw / f0) : 0); cn.push(e > 0 ? Math.log2(eh / e) : 0);
+    }
+    const n = ct.length, dur = n * hop / sr; out.n = n;
+    const det = v => { const m = v.length, xm = (m - 1) / 2; let sy = 0, sxy = 0, sxx = 0; for (let i = 0; i < m; i++) { sy += v[i]; } const ym = sy / m; for (let i = 0; i < m; i++) { sxy += (i - xm) * (v[i] - ym); sxx += (i - xm) * (i - xm); } const k = sxx ? sxy / sxx : 0; return v.map((y, i) => y - ym - k * (i - xm)); };
+    const rate = r => { let z = 0; for (let i = 1; i < r.length; i++) if ((r[i - 1] < 0) !== (r[i] < 0)) z++; return z / 2 / dur; };
+    const sd = r => Math.sqrt(r.reduce((a, v) => a + v * v, 0) / r.length);
+    for (let h = 0; h < H; h++) { const v = A[h], m = v.reduce((a, q) => a + q, 0) / n, r = det(v); out.cv.push(+(m > 0 ? Math.min(1, sd(r) / m) : 0).toFixed(3)); out.b.push(+rate(r).toFixed(2)); }
+    { const q = []; for (let h = 0; h < H; h++) if (out.cv[h] > 0.08 && out.b[h] > 0.6 / dur) q.push(out.b[h] / (h + 1)); q.sort((p, r) => p - r); const df = q.length >= 2 ? q[q.length >> 1] : 0; out.det = +(1200 * Math.log2(1 + df / f0)).toFixed(2); }
+    { const r = det(ct); out.vib = {d: +(Math.SQRT2 * sd(r)).toFixed(2), r: +rate(r).toFixed(2)}; }
+    { const r = det(cn); out.wah = {d: +(Math.SQRT2 * sd(r)).toFixed(3), r: +rate(r).toFixed(2)}; }
+    return out;
+  }
+  const klang0 = Z2.ops.klang, klangFeat0 = Z2.ops.klangFeat;
+  Z2.ops.klang = (d, m) => { const r = klang0(d, m); r.feat.x3 = bewegung(r.x, r.sr, r.feat.f0, r.on, r.off); return r; };
+  Z2.ops.klangFeat = (d, m) => { const r = klangFeat0(d, m); (r.fs || []).forEach((F, i) => { if (m.x3 === 0 || (Array.isArray(m.x3) && !m.x3[i])) return; F.x3 = bewegung(m.pcs[i], m.sr, F.f0, m.on, m.off); }); return r; };   // SPK3-R: x3 0/Maske = Bewegung nur wo gebraucht
+  // ---- Auftrag 3: Loop-Klammern im Dokument (teil2.loops = [{a, b}] in Takten); ein ↶ je Änderung
+  Z2.ops.loopSet = (d, m, emit, info) => {
+    const t2 = H2.t2Of(d), L = Array.isArray(m.L) && m.L.length === 2 ? [Math.max(0, Math.round(+m.L[0] || 0)), Math.max(1, Math.round(+m.L[1] || 0))] : null;
+    const cur = (t2.loops || [])[0] || null; if (L && cur && cur.a === L[0] && cur.b === L[1]) return info(d); if (!L && !cur) return info(d);
+    I.uBegin(d, L ? 'Loop' : 'Loop entfernt'); t2.loops = L && L[1] > L[0] ? [{a: L[0], b: L[1]}] : []; I.uEnd(d); return info(d);
+  };
+  Z2.o4 = o4;
+  return Z2;
+}
+/* ---- Auftrag 3: Klang nachbauen genauer (Hauptfaden). VA-Versuch hat 5 Werte mehr: u[11] Verstimmung Osz 2 (±25 ct), u[12] Unison-Verstimmung
+   (Stimmen fix.uni 1/5), u[13] LFO-Rate 0,2…10 Hz, u[14] Vibrato 0…60 ct, u[15] Wah (Cutoff ±0…18 Halbtöne). Startwerte aus der Bewegung
+   (Worker: Schwebung je Oberton, Tonhöhe, Schwerpunkt); was die Analyse nicht sieht, bleibt fest (fz) – der Optimierer verändert nur den Rest.
+   Abstand = SPK2-Abstand + Bewegung (Schwankung je Oberton, Schwebungs-Rate, Vibrato, Wah). Rauschen nur, wenn die Analyse > 10 % misst. ---- */
+const SPK3_KL = {x3: true, w: 0.2, dual: true, ab: 0, ra: 0.05};   // SPK3-R: ab = Runden mit beiden Ketten (99 = beide ganz), ra = Spielraum für B
+function spk3KlP(c, P) {
+  const u = c.u; if (c.eng !== 'va' || !u || u.length < 16) return P;
+  return Object.assign(P, {det: (u[11] * 2 - 1) * 25, uni: (c.fix && c.fix.uni) || 1, udet: u[12], lr: spk2Lg(u[13], 0.2, 10), vib: u[14] * 60, wah: u[15] * 0.15});
+}
+function spk3KlSnd(c, P, p, mods) {
+  if (c.eng !== 'va' || P.det == null) return;
+  p.o2fine = Math.round(P.det * 10) / 10; if (P.uni > 1) { p.o1uni = P.uni; p.o2uni = P.uni; p.uniDet = P.udet; p.uniMix = 0.6; p.uniWidth = 0; }
+  if (P.vib > 0.5 || P.wah > 0.002) { p.l1shape = 0; p.l1rate = P.lr; p.l1sync = 0; p.l1retrig = 1; p.l1fade = 0; }
+  if (P.vib > 0.5) mods.push({src: 'lfo1', dst: 'pitch', amt: P.vib / 2400});
+  if (P.wah > 0.002) mods.push({src: 'lfo1', dst: 'cutoff', amt: P.wah});
+}
+function spk3KlStart(c, est, src, alt) {
+  if (c.eng !== 'va' || !SPK3_KL.x3 || (src && src.k2)) return c;   // SPK3-R: k2 = SPK2-Startwert ohne Bewegung (Kette A)
+  const x = (src.feat && src.feat.x3) || null, u = c.u, cvm = x && x.cv.length ? x.cv.reduce((a, v) => a + v, 0) / x.cv.length : 0;
+  const det = x ? Math.min(25, x.det) : 0, vib = x && x.vib.d >= 3 && (cvm < 0.15 || x.vib.d > 12) ? Math.min(60, x.vib.d) : 0, wah = x && x.wah.d >= 0.06 && cvm < 0.12 ? x.wah.d : 0,   // Schwebung täuscht Vibrato/Wah vor
+    lr = vib ? x.vib.r : wah ? x.wah.r : 4;
+  c.fix = Object.assign({}, c.fix, {uni: alt === 'uni' ? 5 : 1});
+  if (alt === 'det') { c.fix.o2 = c.fix.o1; u[8] = 0.9; }
+  u.push((Math.max(-25, Math.min(25, alt === 'det' || alt === 'uni' ? det || 8 : det)) / 25 + 1) / 2, alt === 'uni' ? Math.min(1, 0.15 + cvm) : 0, spk2Ul(Math.max(0.2, Math.min(10, lr)), 0.2, 10), vib / 60, Math.min(1, wah));
+  const fz = []; if (!(est.noise > 0.1)) { fz.push(9); u[9] = 0; } if (c.fix.uni === 1) fz.push(12); if (!vib) fz.push(14); if (!wah) fz.push(15); if (!vib && !wah) fz.push(13);
+  c.fz = fz; return c;
+}
+function spk3KlMore(L, S, e, src) {   // zusätzliche Startwerte: zwei verstimmte Oszillatoren, Unison – nur wenn die Analyse Schwebung sieht
+  const x = src.feat && src.feat.x3; if (!SPK3_KL.x3 || src.k2 || !x || !x.cv.length) return L;
+  const cvm = x.cv.reduce((a, v) => a + v, 0) / x.cv.length;
+  if (cvm > 0.06 || x.det > 0.5) { L.push(S('va', 'det')); L.push(S('va', 'uni')); }
+  return L;
+}
+function spk3KlDist(A, B) {
+  const d0 = spk2KlDist(A, B), a = A.x3, b = B.x3; if (!SPK3_KL.x3 || !a || !b || !a.cv.length || !b.cv.length) return d0;
+  const db = v => 20 * Math.log10(1 + v); let s = 0, n = Math.min(a.cv.length, b.cv.length), r = 0, rc = 0;
+  for (let h = 0; h < n; h++) { s += Math.abs(db(a.cv[h]) - db(b.cv[h])); if (a.cv[h] > 0.08 && b.cv[h] > 0.08 && a.b[h] > 0 && b.b[h] > 0) { r += Math.min(3, Math.abs(Math.log2(a.b[h] / b.b[h]))); rc++; } }
+  const mv = s / n + (rc ? 2 * r / rc : 0) + Math.abs(a.vib.d - b.vib.d) / 4 + (a.vib.d > 3 && b.vib.d > 3 ? Math.min(3, 2 * Math.abs(Math.log2(Math.max(0.1, a.vib.r) / Math.max(0.1, b.vib.r)))) : 0) + 20 * Math.abs(a.wah.d - b.wah.d);
+  return d0 + SPK3_KL.w * mv;
+}
+/* SPK3-R: Nachbau nie schlechter als der alte Weg. Zwei Ketten in denselben Render-Durchgängen: A = SPK2-Weg genau wie vorher (Startwerte ohne
+   Bewegung, SPK2-Abstand, gleiche Zufallsfolge → dasselbe Ergebnis), B = SPK3-Weg (Startwerte mit Bewegung, verstimmt/Unison, Abstand + Bewegung).
+   Ergebnis = Kette mit dem kleineren SPK2-Abstand (gleich → B). Gleiche Klänge werden einmal gerendert, Bewegung nur für B gerechnet.
+   Reines FM und „Weiter“ (from) = eine Kette wie bisher; „Weiter“ gibt den Ausgangsklang zurück, wenn die Kette im SPK2-Abstand nicht besser wird.
+   c.dist ist immer der SPK2-Abstand (Anzeige), dA/dB die Maße der Ketten. */
+async function spk3KlOpt(src, o) {
+  o = o || {}; const e = src.est, eng = o.eng || (e.fm.e < 0.5 * e.va.e ? 'fm' : null), x = src.feat && src.feat.x3;
+  const one = o2 => spk2KlOpt(src, Object.assign({}, o, o2, {in3: 1}));
+  if (o.from) {
+    const f0 = o.from, b3 = f0.eng === 'va' && f0.u.length >= 16 && !!x; src.x3on = b3;
+    if (f0.F) { if (f0.dA == null) f0.dA = spk2KlDist(src.feat, f0.F); f0.dist = b3 ? spk3KlDist(src.feat, f0.F) : f0.dA; }
+    const R = await one({}), b = R.best; b.dA = b.F ? spk2KlDist(src.feat, b.F) : b.dist;
+    const P = f0.dA != null && b.dA > f0.dA ? f0 : b; P.dist = P.dA; return Object.assign(R, {best: P});
+  }
+  if (eng === 'fm' || !x || !x.cv.length) { src.x3on = false; src.k2 = true; try { return one({}); } finally { src.k2 = false; } }   // reines FM / keine Bewegungs-Analyse: SPK2-Weg (Startwerte entstehen beim Aufruf)
+  if (!SPK3_KL.x3 || !SPK3_KL.dual) return one({});   // Mess-Schalter: nur SPK3-Weg
+  const n = o.n || 50, lam = 6, f = 440 * Math.pow(2, (src.m - 69) / 12);
+  const mk = key => { const rnd = spk2Rng(o.seed || 7); return {key, rnd, gauss: () => Math.sqrt(-2 * Math.log(rnd() + 1e-12)) * Math.cos(2 * Math.PI * rnd()), best: null, sig: o.sig || 0.12, done: 0, d0: null}; };
+  const A = mk('dA'), B = mk('dB'), pick = () => !A.best ? B.best : !B.best ? A.best : B.best.dA <= A.best.dA ? B.best : A.best;
+  const S = (x3, g, a) => { src.k2 = !x3; try { return spk2KlStart(g, e, src, a); } finally { src.k2 = false; } }, ix = (c, d) => { c.u[0] = Math.max(0, Math.min(1, c.u[0] + d)); return c; };
+  const st = x3 => eng === 'va' ? [S(x3, 'va'), S(x3, 'va', 'eins'), S(x3, 'va', 'flach')] : [S(x3, 'va'), S(x3, 'fm'), S(x3, 'va', 'eins'), S(x3, 'va', 'flach'), S(x3, 'fm', 'r2'), ix(S(x3, 'fm'), 0.1)];
+  const LA = st(false), LB = spk3KlMore(st(true), (g, a) => S(true, g, a), e, src);
+  const gen = X => {   // wie SPK2: dünn 1–3 Werte je Versuch, einer ändert alle (feste Werte fz bleiben)
+    const L = []; for (let i = 0; i < Math.min(lam, n - X.done); i++) { const best = X.best, D = best.u.length, fr = [...Array(D).keys()].filter(j => !(best.fz || []).includes(j)), k = i === lam - 1 ? fr.length : Math.min(fr.length, 1 + Math.floor(X.rnd() * 3)), pick = new Set(); while (pick.size < k) pick.add(fr[Math.floor(X.rnd() * fr.length)]); L.push({eng: best.eng, fix: best.fix, fz: best.fz, u: best.u.map((v, j) => (pick.has(j) ? Math.max(0, Math.min(1, v + X.sig * 1.6 * X.gauss())) : v))}); }
+    return L;
+  };
+  // beide Ketten in denselben Render-Durchgängen (ein OfflineAudioContext je Runde – nebeneinander gerendert wäre der Klang nicht mehr bitgleich);
+  // gleiche Klänge (FM-Startwerte) einmal. Nach `ab` Runden (Standard: nach den Startwerten) läuft nur die Kette mit dem kleineren SPK2-Abstand
+  // weiter (B schon bei ≤ A·(1 + ra)) – so kostet es kaum mehr Zeit als ein Weg; beide ganz: SPK3_KL.ab = 99.
+  let done = 0; const tr = [];
+  const evalD = async (la, lb) => {
+    const all = la.map(c => [c, A]).concat(lb.map(c => [c, B])), keys = all.map(([c]) => JSON.stringify([c.eng, c.fix, c.u])), uq = [...new Set(keys)];
+    const pcs = await spk2KlRender(uq.map(k => spk2KlSnd(all[keys.indexOf(k)][0])), src.m, src.on, src.off, src.len, src.sr);
+    const r = await spk1Call('klangFeat', {pcs, sr: src.sr, f, on: src.on, off: src.off, x3: uq.map(k => all.some(([, X], i) => X === B && keys[i] === k) ? 1 : 0)});
+    all.forEach(([c, X], i) => { const j = uq.indexOf(keys[i]); c.F = r.fs[j]; c.pcm = pcs[j]; c.dA = spk2KlDist(src.feat, c.F); if (X === B) c.dB = spk3KlDist(src.feat, c.F); c.dist = c.dA; });
+    for (const [X, L] of [[A, la], [B, lb]]) { X.done += L.length; for (const c of L) if (!X.best || c[X.key] < X.best[X.key]) X.best = c; }
+    for (const [c] of all) if (c !== A.best && c !== B.best) c.pcm = null;
+    done = Math.max(A.done, B.done); tr.push([+A.best.dA.toFixed(2), +B.best.dA.toFixed(2)]);
+    if (o.prog) o.prog(Math.min(done, n), n, pick());
+  };
+  await evalD(LA, LB); A.d0 = Math.min(...LA.map(c => c.dA));
+  let rd = 0;
+  while ((A.done < n && !A.aus) || (B.done < n && !B.aus)) {
+    if (o.stop && o.stop()) break;
+    if (++rd > SPK3_KL.ab && !A.aus && !B.aus) { if (B.best.dA <= A.best.dA * (1 + SPK3_KL.ra)) A.aus = 1; else B.aus = 1; }   // weiter mit der besseren Kette (gleich gut → B, mit Bewegung)
+    const a0 = A.best, b0 = B.best; await evalD(A.aus ? [] : gen(A), B.aus ? [] : gen(B));
+    for (const [X, x0] of [[A, a0], [B, b0]]) X.sig = X.best !== x0 ? Math.min(0.3, X.sig * 1.25) : Math.max(0.02, X.sig * 0.7);
+  }
+  const P = pick(); P.dist = P.dA;
+  return {best: P, d0: A.d0, n: done, sig: (P === A.best ? A : B).sig, ketten: {A: +A.best.dA.toFixed(3), B: +B.best.dA.toFixed(3), aus: A.aus ? 'A' : B.aus ? 'B' : '', tr: tr.map(t => t.join('/')).join(' ')}};
+}
+function spk3KlTxt(c, L) {
+  const P = spk2KlP(c); if (c.eng !== 'va' || P.det == null) return L;
+  if (P.mix > 0.04 && Math.abs(P.det) >= 1) L[0] += ' ' + (P.det > 0 ? '+' : '−') + Math.round(Math.abs(P.det)) + ' ct';
+  if (P.uni > 1) L[0] += ' · Unison ' + P.uni;
+  if (P.wah > 0.002) L[1] += ' · Wah ' + Math.round(P.wah * 120) + ' HT';
+  if (P.vib > 0.5) L[2] += ' · Vibrato ' + P.lr.toFixed(1).replace('.', ',') + ' Hz ' + Math.round(P.vib) + ' ct';
+  return L;
+}
+/* ---- Auftrag 3: Loop im Dokument (teil2.loops = [{a, b}] in Takten, Kern-op loopSet, ein ↶ je Änderung) und ▶ in der Loop-Zeile:
+   spielt den Loop im Kreis. Blöcke vom Kern wie spk1Play (im Loop gemerkt), je Durchgang ein eigener Pegel mit 3 ms Blende über die Naht:
+   Durchgang p klingt mit Proben hinter dem Loop-Ende aus, p+1 setzt mit Proben davor ein – kein Knacken, kein Loch, taktgenau. ---- */
+function spk3LpFromMeta(U) {   // Loop aus dem Dokument (Öffnen, ↶/↷); während des Ziehens bleibt U.loop, bis gespeichert ist
+  const t = U.meta && U.meta.teil2, L = t && Array.isArray(t.loops) ? t.loops[0] : null, k = SPK1.doc + ':' + (L ? L.a + '-' + L.b : '');
+  if (U.lpK === k) return; U.lpK = k; U.loop = L && L.b > L.a ? [L.a, L.b] : null; U.lpDoc = SPK1.doc;
+  const P = SPK1.pl; if (P && P.lp) { const pos = spk1PlayPos(); setTimeout(() => { if (SPK1.pl === P) { if (spk2Lp(U)) spk3LpPlay(U, pos); else spk1Stop(); spk1BtnState(U); spk1Dirty(U, 'ov'); } }, 0); }
+}
+function spk3LpSave(U) {
+  const L = spk2Lp(U), doc = SPK1.doc; if (!doc || !U.meta) return Promise.resolve(null);
+  U.lpK = doc + ':' + (L ? L[0] + '-' + L[1] : '');   // eigener Stand: kein zweiter Neustart
+  const P = SPK1.pl; if (P && P.lp) { const pos = spk1PlayPos(); if (L) spk3LpPlay(U, pos); else { spk1Stop(); spk1BtnState(U); } }
+  return spk1Call('loopSet', {doc, L: L ? [L[0], L[1]] : null}).then(r => { if (SPK1.doc === doc && SPK1.ui === U) spk1Got(U, r); return r; }, e => { logErr(e); return null; });
+}
+function spk3LpPlay(U, from) {
+  const L = spk2Lp(U); if (!L) return false;
+  spk1Stop(); const c = ensureAudio(); if (!c || !SPK1.doc || !SPK1.last) return false;
+  const meta = SPK1.last.meta, sr = meta.sr, B = SPK1_BLK, [ta, tb] = spk2LpSec(U, L), aS = Math.max(0, Math.round(ta * sr)), bS = Math.min(meta.n, Math.round(tb * sr)), len = bS - aS;
+  if (len < sr * 0.05) return false;
+  const X = Math.max(1, Math.round(sr * 0.003)), mix = U.ab ? 'orig' : null, st = from != null && from >= ta && from < tb - 0.02 ? Math.round(from * sr) - aS : 0;
+  const out = c.createGain(), t0 = c.currentTime + 0.15; out.connect(AU.masterSum || c.destination);
+  const P = SPK1.pl = {seq: ++SPK1.plSeq, out, t0, from: ta, src: [], timer: 0, lp: [ta, tb], pend: 0, cp: 0, ck: 0, mix, sel: null, sv: 0, te: 0};
+  P.pos = now => (aS + (Math.max(0, (now - t0) * sr) + st) % len) / sr;
+  const keep = Math.ceil((len + 2 * X) / B) + 2 <= 200, cache = new Map(), gains = [];
+  const blk = k => { let p = cache.get(k); if (!p) { p = spk1Call('block', {doc: SPK1.doc, k, mix}).then(r => { const b = c.createBuffer(r.ch.length, B, sr); r.ch.forEach((x, i) => b.copyToChannel(x, i)); return b; }); if (keep) cache.set(k, p); } return p; };
+  const T = p => t0 + (p * len - st) / sr, r0 = p => (p === 0 && st > 0 ? aS + st : Math.max(0, aS - X)), r1 = Math.min(meta.n, bS + X);
+  const gOf = p => {
+    if (gains[p]) return gains[p]; const g = c.createGain(), a = T(p), e = a + len / sr; g.connect(out);
+    if (p === 0 && st > 0) { g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(1, t0 + 0.005); } else { g.gain.setValueAtTime(0, Math.max(0, a - X / sr)); g.gain.linearRampToValueAtTime(1, a + X / sr); }
+    g.gain.setValueAtTime(1, e - X / sr); g.gain.linearRampToValueAtTime(0, e + X / sr); return (gains[p] = g);
+  };
+  P.ck = Math.floor(r0(0) / B);
+  const pump = () => {
+    if (SPK1.pl !== P) return;
+    while (P.pend < 3) {
+      const p = P.cp, k = P.ck, s0 = Math.max(k * B, r0(p)), s1 = Math.min((k + 1) * B, r1), when = T(p) + (s0 - aS) / sr;
+      if (when > c.currentTime + 1.5) break;
+      if ((k + 1) * B >= r1) { P.cp = p + 1; P.ck = Math.floor(r0(p + 1) / B); } else P.ck = k + 1;
+      if (s1 <= s0) continue;
+      P.pend++; const g = gOf(p);
+      blk(k).then(b => {
+        P.pend--; if (SPK1.pl !== P) return;
+        let w = when, off = (s0 - k * B) / sr, du = (s1 - s0) / sr; const late = c.currentTime + 0.02 - w;
+        if (late > 0) { if (late >= du) { pump(); return; } w += late; off += late; du -= late; }
+        const s = c.createBufferSource(); s.buffer = b; s.connect(g); s.start(w, off, du); P.src.push(s);
+        s.onended = () => { const i = P.src.indexOf(s); if (i >= 0) P.src.splice(i, 1); try { s.disconnect(); } catch (e) {} };
+        pump();
+      }, e => { P.pend--; logErr(e); });
+    }
+    for (let i = 0; i < gains.length; i++) if (gains[i] && i < P.cp - 1 && c.currentTime > T(i) + len / sr + 0.2) { try { gains[i].disconnect(); } catch (e) {} gains[i] = null; }
+    clearTimeout(P.timer); P.timer = setTimeout(pump, 120);
+  };
+  U.playSel = false; pump(); spk1BtnState(U); spk1Dirty(U, 'ov');
+  spk1Stat(U, 'Loop ' + spk2LpTxt(L) + ' · spielt im Kreis'); return true;
+}
+function spk3LpTap(U) {
+  if (SPK1.pl && SPK1.pl.lp) { spk1Stop(); spk1BtnState(U); spk1Dirty(U, 'ov'); return; }
+  spk3LpPlay(U, U.cur);
+}
+const spk3LpBtnH = () => '<button class="rb spk3-lpp" data-a="lpplay" aria-label="Loop im Kreis abspielen">' + (SPK1.pl && SPK1.pl.lp ? '■' : '▶') + '</button>';
+function spk3LpBtn(U) {
+  const b = U.ly && U.ly.querySelector('.spk3-lpp'); if (!b) return; const on = !!(SPK1.pl && SPK1.pl.lp);
+  const t = on ? '■' : '▶'; if (b.textContent !== t) b.textContent = t; b.setAttribute('aria-label', on ? 'Loop stoppen' : 'Loop im Kreis abspielen'); b.setAttribute('aria-pressed', String(on));
+}
+SPK1_API.spk3 = {
+  loop: {set: async (a, b) => { const U = SPK1.ui; spk2LpSet(U, a, b); spk1Layers(U); return spk3LpSave(U); }, weg: async () => { const U = SPK1.ui; U.loop = null; spk1Layers(U); return spk3LpSave(U); },
+    doc: () => { const t = SPK1.last && SPK1.last.meta && SPK1.last.meta.teil2; return t ? t.loops || [] : null; }, get: () => spk2Lp(SPK1.ui),
+    play: () => spk3LpPlay(SPK1.ui, SPK1.ui.cur), stop: () => spk1Stop(), pos: () => spk1PlayPos(), lauf: () => !!(SPK1.pl && SPK1.pl.lp), sec: () => { const L = spk2Lp(SPK1.ui); return L ? spk2LpSec(SPK1.ui, L) : null; }},
+  kl: SPK3_KL
+};
+/* SPK3-END */
 /* ===== KF1-BEGIN (Paket KF1, Klang-Feinschliff Teil 1 aus der Ur-Roadmap §18 „Klang“; Xander: „Können wir davon noch was machen?“ → ja) =====
    Sechs Wünsche, jeder mit neutralem Standard (= genau der Klang von vorher, alte Projekte bitgleich):
    1 RAUSCHFARBE  VA › OSZ › MIX: Regler „Rauschfarbe“ weiß │ rosa │ braun │ blau (p.kfNc 0…3) für den Rausch-Fader; jede Farbe auf den
