@@ -1,4 +1,4 @@
-# CHR3 – Stimmen trennen: geteilte Teiltöne · NOTES (Stand Auftrag 1/3)
+# CHR3 – Stimmen trennen: geteilte Teiltöne · NOTES (Stand Auftrag 3/3)
 
 Datei: `vx/chr3/index.html` = basis4 (4.59.0) + Kern `chr2Core` aus `src/core3.js` (alle Änderungen dort, Stellen „CHR3“) + Kopf-Hinweis im CHR2-Block
 + Block `CHR3-BEGIN … CHR3-END` (nur Beschreibung) direkt nach `/* CHR2-END */`. Bau: `python3 src/apply3.py <basis4-Kopie>`. Bedienung/Ablage/Speichern
@@ -55,3 +55,25 @@ Befund:
 5. Anlauf −500 50 ms = Mess-Fehler (YIN des Ideals springt in Note 8 auf 2·f0); gegen die Ziel-Kurve 0 ms.
 Das Formant-Maß (Schwerpunkt der Cepstrum-Hülle 300–3500 Hz) schwankt schon mit Orakel-Hülle je Rahmen ±5–12 % – für 2b zusätzlich direkt
 an den Teiltönen messen (dB-Fehler je neuem Teilton, `src/fhull.mjs`).
+
+## Auftrag 3/3 – Test (App-Datei unverändert seit 1/3, nur Test + Messung)
+| Prüfung | Ergebnis |
+|---|---|
+| `chr2-test.mjs` (Original aus `chr/`, Kopie hier; Basis `vx/basis2.html` 4.57 ohne Knackser-Fix) | **ALLE OK (82)** in 115 s (`src/run3-chr2.txt`); CHR2 3/3 war 72/82 |
+| die 10 bekannten FEHLER | alle weg: 3 St. Unterstimme Welle 67,2 → 100 %; 4 eng Verfolgung 98/64/78/63 → 100/100/100/100 %, Welle 99/65/65/68 → 100/100/100/98,9 %, Pegel 22/6/7/13 → 25/25/27/17 dB |
+| App-Weg (Worker, Takes-Blatt › Trennen 3) | Welle 100/100/100 %, 29/28/29 dB, Summe = Original −78 dB, ein ↶/↷ |
+| Tuning gegen 4.57 | Knackser 5 → 0 in allen 5 Fällen, LSD/Formant/Ton gleich |
+| `chr3-test.mjs` (Tuning-Vergleich gegen 4.59) | ALLE OK (82) (`src/run2.txt`, Stand 1/3, Datei seitdem gleich) |
+| chr3-Prüfungen Formant/Übergang/Anlauf (`src/chr3-pruef.mjs`, Bewertung `src/chr3-pruef-eval.mjs`) | ALLE OK (27), **offen 8** (`src/pruef-eval.txt`) |
+| Regression | vx1-test 61/61 (`reg/vx1.txt`), imp1-test ALLE OK 48 (Kopie `reg/imp1-test.mjs`, `reg/imp1.txt`) |
+| Pflicht | topdefs 0/0, dupkeys 0, smoke errors [] (`smoke-3.png`), MS 2000 1×, live: true 1×, VERSION 4.59.0 |
+
+chr3-Prüfungen (Aufruf `TMFILE=<abs index.html> node src/chr3-pruef.mjs <out.json>`, dann `node src/chr3-pruef-eval.mjs <out.json> [<basis.json>]`;
+Ziele aus 2/3: Formant ≤ 4 %, Übergang ≤ 4 dB, Anlauf ≤ 20 ms; Anlauf gegen die bekannte Ziel-Kurve F0·2^(Cent/1200), weil das Ideal in Note 8 selbst springt):
+| Fall | Formant % | Übergang dB | Anlauf Ziel-Kurve (tune-meas) ms | Knackser |
+|---|---|---|---|---|
+| weich / hart / natürlich | 2,43 / 2,58 / 2,67 | 3,15 / 4,02 / 3,30 | 0 / 10 / 0 (0) | 0 |
+| Chor +400 (G2 und Chor-Weg gleich) | **9,25** | **7,08** | 0 (0) | 0 |
+| Chor −500 (G2 und Chor-Weg gleich) | **5,99** | **5,90** | 0 (50 = Mess-Fehler) | 0 |
+Datei = Basis 4.59 in G2/G6 (Text gleich, Zahlen gleich). Offen (Auftrag 2b): Formant und Übergang bei großen Chor-Verschiebungen –
+Wege und Versuche siehe Auftrag 2/3 (Schutzzone G 0 ms: Übergang −1 dB, aber Glätte weich 1,11 → 1,34; Hermite-Hülle: +400 besser, −500 schlechter).

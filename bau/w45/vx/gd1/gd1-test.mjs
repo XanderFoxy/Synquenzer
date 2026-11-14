@@ -34,9 +34,9 @@ for (const [w, h, n] of SIZES) {
     const c = await p.evaluate(async () => { const t = S.tracks.findIndex(x => x && x.kind === 'synth'); selectTrack(t); return t; });
     await p.evaluate(() => { SYNQUENZER.loadDemo(); SYNQUENZER.songFromChain([{scene: 0, bars: 2}, {scene: 1, bars: 2}]); });
     await p.waitForTimeout(300);
-    const put = await p.evaluate(() => SYNQUENZER.jam3.put({k: 'mute', g: 'd', b0: 0, b1: 1}) || SYNQUENZER.jam3.has());
+    const put = await p.evaluate(() => (SYNQUENZER.jam3.put({k: 'm', b: 0, d: 4, g: 'dr', lv: 'stumm'}), SYNQUENZER.jam3.has()));
     const d = await jump(p, 'jam3pf');
-    ok('A3 jam3pf mit Perform-Spur (wenn anlegbar): Rahmen an der Zeile PERFORM', !put || (d.target && d.ring && !d.isRec), {put, d});
+    ok('A3 jam3pf mit Perform-Spur: Rahmen an der Zeile PERFORM (alter Weg)', put && d.target && d.ring && !d.isRec && /j3-pl/.test(d.tgt) && !/Noch keine/.test(d.toast), {put, d});
     void c;
   }
   ok(`A9 keine Fehler ${n}`, !p.errs.length, p.errs.slice(0, 3));
@@ -64,7 +64,7 @@ for (const [w, h, n] of SIZES) {
     const rows = [...EL.menu.querySelectorAll('.mrow')].filter(r => { const s = r.querySelector(':scope>.seg'); return s && s.children.length <= 3 && ui1Shown(s); });
     const out = [], rects = [];
     for (const r of rows) {
-      r.scrollIntoView({block: 'center'});
+      r.scrollIntoView({block: 'center'}); const sc = EL.menu.querySelector('.mb').scrollTop;
       for (const b of r.querySelectorAll(':scope>.seg>button')) {
         const q = b.getBoundingClientRect(), cx = q.left + q.width / 2, cy = q.top + q.height / 2;
         const hit = (x, y) => { const e = document.elementFromPoint(x, y); return !!(e && (e === b || b.contains(e))); };
@@ -76,7 +76,7 @@ for (const [w, h, n] of SIZES) {
         const others = [...EL.menu.querySelectorAll('button, input, select, .lbl, .small, h3, a')].filter(x => x !== b && !x.contains(b) && !b.contains(x) && ui1Shown(x)).filter(x => { const o = x.getBoundingClientRect(); return o.left < H.r - .5 && o.right > H.l + .5 && o.top < H.b - .5 && o.bottom > H.t + .5; });
         const lb = r.querySelector('.lbl');
         out.push({row: (lb ? lb.textContent.trim() : r.className).slice(0, 18), b: b.textContent.trim(), vis: [Math.round(q.width), Math.round(q.height)], hit: [Math.round(rr - l), Math.round(u - t)], over: others.map(x => (x.textContent || x.className).trim().slice(0, 16))});
-        rects.push(H);
+        rects.push({l: H.l, r: H.r, t: H.t + sc, b: H.b + sc});
       }
     }
     let ov = 0; for (let i = 0; i < rects.length; i++) for (let j = i + 1; j < rects.length; j++) { const A = rects[i], Bq = rects[j]; if (A.l < Bq.r - .5 && A.r > Bq.l + .5 && A.t < Bq.b - .5 && A.b > Bq.t + .5) ov++; }
@@ -85,7 +85,7 @@ for (const [w, h, n] of SIZES) {
   const quer = n !== 'hoch';
   const small = m.out.filter(x => x.hit[0] < 44 || x.hit[1] < 44), over = m.out.filter(x => x.over.length);
   if (quer) ok(`C1 Menü ${n}: Trefferfläche ≥ 44 × 44 (${m.out.length} Tasten), keine Überlappung`, m.out.length >= 10 && !small.length && !over.length && !m.ov, {small, over, ov: m.ov, sample: m.out.filter(x => /Lauf|Perform|Begleit/.test(x.row))});
-  else ok(`C1 Menü ${n}: hochkant unverändert (Trefferfläche = Taste)`, m.out.every(x => Math.abs(x.hit[0] - x.vis[0]) <= 1 && Math.abs(x.hit[1] - x.vis[1]) <= 1) && !m.ov, {sample: m.out.slice(0, 4)});
+  else { const bad = m.out.filter(x => Math.abs(x.hit[0] - x.vis[0]) > 1 || Math.abs(x.hit[1] - x.vis[1]) > 1); ok(`C1 Menü ${n}: hochkant unverändert (Trefferfläche = Taste, ${m.out.length} Tasten)`, !bad.length && !m.ov, {bad, ov: m.ov, sample: m.out.slice(0, 3)}); }
   if (quer) {   // echtes Tippen (Touch) 4 px über „Aus“ und 4 px links neben „An“ der Zeile Lauflichter
     const pt = await b.p.evaluate(() => { const r = EL.menu.querySelector('.mrow.pl1llr'); r.scrollIntoView({block: 'center'}); const [an, aus] = r.querySelectorAll('.seg>button'); const A = an.getBoundingClientRect(), U = aus.getBoundingClientRect();
       return {aus: [U.left + U.width / 2, U.top - 4], an: [A.left - 3, A.top + A.height / 2], an2: [A.left + A.width / 2, A.bottom + 4], ll: pl1Ll()}; });
@@ -104,7 +104,7 @@ async function scopeRun(file, tag) {
     if (typeof pl1LlSet === 'function') pl1LlSet(true); kf2ScToggle(true); ui1G.ed('osc')(); await new Promise(r => setTimeout(r, 900)); });
   const before = await p.evaluate(() => ({ed: R.editor, vis: KF2SC.vis, an: !!KF2SC.an, live: !!(KF2SC.an && KF2SC.an.context === AU.ctx), src: !!KF2SC.src}));
   const r = await p.evaluate(async () => {
-    const live = AU.ctx, smp = []; let iv = setInterval(() => { const off = AU.ctx !== live; smp.push({off, anOff: !!(KF2SC.an && KF2SC.an.context !== live), src: !!KF2SC.src, why: KF2SC.why, raf: !!KF2SC.raf}); }, 20);
+    const live = AU.ctx, smp = []; let iv = setInterval(() => { const off = AU.ctx !== live; smp.push({off, anOff: !!(KF2SC.an && KF2SC.an.context !== live), src: !!(KF2SC.src && KF2SC.src.context !== live), why: KF2SC.why, raf: !!KF2SC.raf}); }, 20);
     let out = null, err = null; try { out = await SYNQUENZER.vvRender({range: {a: 0, b: 2, sel: false}}); } catch (e) { err = String(e && e.message || e); }
     clearInterval(iv); await new Promise(r => setTimeout(r, 900));
     const A = AU.tracks[KF2SC.t];
