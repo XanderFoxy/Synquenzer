@@ -201,7 +201,7 @@ await tap(await btn(p, 'Noten ▾')); await p.waitForTimeout(200); await tap(awa
 const KE = await p.evaluate(() => { const s = SYNQUENZER.spk1.spk2.klang.stand(), d = document.querySelector('#spk1Sheet .spk1-dd'), cv = d.querySelector('canvas.spk2-klc'), c = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data; let lit = 0; for (let i = 0; i < c.length; i += 4) if (c[i] + c[i + 1] + c[i + 2] > 300) lit++;
   return {nm: s.nm, eng: s.best.eng, d: +s.best.dist.toFixed(2), d0: +s.d0.toFixed(2), lit, h5: d.querySelector('h5').textContent}; });
 await p.screenshot({path: path.join(fotos, '65-gesamt-klang.png')});
-ok('klang-abstand-ebene', Object.assign(KE, {ms: info.klang_ms}), KE.d <= KE.d0 && KE.d < 12 && KE.lit > 300 && /Klang nachbauen/.test(KE.h5) && info.klang_ms < 60000);
+ok('klang-abstand-ebene', Object.assign(KE, {ms: info.klang_ms}), KE.d < KE.d0 && KE.lit > 300 && /Klang nachbauen/.test(KE.h5) && info.klang_ms < 60000);   // Wert hängt an der Trennung (Bass-Ebene), Güte prüft klang-abstand-bekannt
 const ab = await p.evaluate(() => [...document.querySelectorAll('#spk1Sheet .spk2-klab button')].map(e => { const q = e.getBoundingClientRect(); return [q.left + q.width / 2, q.top + q.height / 2]; }));
 await tap(ab[1]); await p.waitForTimeout(150); const pB = await p.evaluate(() => ({kl: SPK1.pl && SPK1.pl.kl, g: SPK1.pl && SPK1.pl.g}));
 await tap(ab[0]); await p.waitForTimeout(150); const pA = await p.evaluate(() => ({kl: SPK1.pl && SPK1.pl.kl, g: SPK1.pl && SPK1.pl.g}));

@@ -16,9 +16,9 @@ rep("      case 'zstop': if (d) d.zStop = true; return true;\n",
 rep("const src = vsDspMake.toString() + ';' + spk1DspMake.toString() + ';const K = spk1DspMake(vsDspMake());",
     "const src = vsDspMake.toString() + ';' + spk1DspMake.toString() + ';' + (typeof ki1KernMake === 'function' ? ki1KernMake.toString() + ';' : '') /* KI1 */ + 'const K = spk1DspMake(vsDspMake());")
 rep("  U.b_zerl.textContent = U.busy === 'zerlegen' ? '■ Abbrechen' : 'Zerlegen';",
-    "  U.b_zerl.textContent = U.busy === 'zerlegen' || U.busy === 'profi' /* KI1 */ ? '■ Abbrechen' : 'Zerlegen';")
+    "  U.b_zerl.textContent = U.busy === 'zerlegen' || U.busy === 'profi' /* KI1 */ ? '■ Abbrechen' : 'Zerlegen'; if (U.b_ki1) ki1Busy(U);   /* KI1 */")
 rep("  if (U.busy === 'zerlegen') { spk1Call('zstop', {doc: SPK1.doc}).catch(() => {}); spk1Stat(U, 'Breche ab …'); return; }\n",
-    "  if (U.busy === 'zerlegen') { spk1Call('zstop', {doc: SPK1.doc}).catch(() => {}); spk1Stat(U, 'Breche ab …'); return; }\n  if (U.busy === 'profi') { ki1Stop(); spk1Stat(U, 'Halte an …'); return; }   // KI1: ■ Abbrechen während der Profi-Trennung\n")
+    "  if (U.busy === 'zerlegen') { spk1Call('zstop', {doc: SPK1.doc}).catch(() => {}); spk1Stat(U, 'Breche ab …'); return; }\n  if (U.busy === 'profi') { ki1Stop(); spk1Stat(U, 'Halte an …'); return; }   // KI1: ■ Abbrechen während der Profi-Trennung\n  if (typeof ki1ZerlTap === 'function' && ki1ZerlTap(U)) return;   // KI1: quer öffnet „Zerlegen ▾“ das Klappfenster\n")
 rep("A('zerl', 'Zerlegen', 'Ganzes Stück in Ebenen zerlegen'); A('verf', 'Verfeinern …', 'Auswahl genauer trennen');\n",
     "A('zerl', 'Zerlegen', 'Ganzes Stück in Ebenen zerlegen'); A('verf', 'Verfeinern …', 'Auswahl genauer trennen');\n  if (typeof ki1UiAdd === 'function') ki1UiAdd(U);   // KI1: „▾“ am Knopf Zerlegen (Profi-Trennung)\n")
 rep("  const U = SPK1.ui; if (!SPK1.open || !U) return;\n  spk1Dd(U, null); spk1Leave(U); SPK1.open = false;",

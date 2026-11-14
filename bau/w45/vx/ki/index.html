@@ -94216,7 +94216,8 @@ Object.assign(SYNQUENZER, {mtx: MTX_API});                  /* MTX: Test-API (Ob
    Wiener-artig über alle 4 Spuren: Anteil = Leistung der Spur / Σ Leistung (beide Kanäle), ohne Glätten (gemessen besser).
    Abschluss wie Zerlegen: Ebenen l.z = drums | bass | gesang (ein zweiter Lauf füllt sie neu), eigene Ebenen bleiben unberührt
    (verteilt wird nur der freie Teil), Rest = 255 − Σ → Summe = Original; ein Undo-Schritt „Profi-Trennung“.
-   Andere Abtastrate als 44,1 kHz (iPhone meist 48 kHz): Beträge im Frequenzraster auf das Modell-Raster umgerechnet und zurück. */
+   Andere Abtastrate als 44,1 kHz (iPhone meist 48 kHz): jedes Stück auf 44,1 kHz umgerechnet, Anteile in Zeit + Frequenz zurück.
+   Quer ist die Zelle zu schmal für „▾“: dort öffnet „Zerlegen ▾“ dasselbe Klappfenster (erster Eintrag = Zerlegen wie bisher). */
 const KI1 = {
   CACHE: 'synq-ki1-v1',
   MODEL: 'edgetools/umx-hq', REV: '2cc0d6a71963504e3ef32156ea900dd54a1a9502',
@@ -94482,23 +94483,43 @@ function ki1KernMake(X) {
     }
     return out;
   }
-  // Abtastrate ≠ 44,1 kHz: Modell-Bin km liegt bei Doc-Bin km·44100/sr (Eingang); Doc-Bin k bei Modell-Bin k·sr/44100 (Anteile zurück)
-  function remapIn(mag, NB, L, sr) {
-    const o = new Float32Array(mag.length), r = SRM / sr;
-    for (let c = 0; c < 2; c++) for (let km = 0; km < NB; km++) {
-      const p = km * r, k = Math.floor(p), u = p - k; if (k >= NB - 1) continue;
-      const A = (c * NB + k) * L, B = A + L, D = (c * NB + km) * L;
-      for (let f = 0; f < L; f++) o[D + f] = mag[A + f] * (1 - u) + mag[B + f] * u;
-    }
-    return o;
+  // Abtastrate ≠ 44,1 kHz (iPhone meist 48 kHz): Abschnitt auf 44,1 kHz umrechnen (gefensterter Sinc ±16, Tabelle), dort STFT 4096/1024
+  // (Modell-Rahmen j hat die Mitte j·1024/44100 s), die Anteile danach in Zeit und Frequenz linear auf das Doc-Raster zurück
+  const KP = 1024, KW = 16; let KT = null, KR = 0;
+  function ktab(rho) {
+    if (KT && KR === rho) return KT;
+    KT = new Float32Array((KP + 1) * 2 * KW); KR = rho;
+    for (let p = 0; p <= KP; p++) for (let t = 0; t < 2 * KW; t++) { const u = t - KW + 1 - p / KP, z = rho * u, sc = z === 0 ? 1 : Math.sin(Math.PI * z) / (Math.PI * z); KT[p * 2 * KW + t] = Math.abs(u) >= KW ? 0 : rho * sc * (0.5 + 0.5 * Math.cos(Math.PI * u / KW)); }
+    return KT;
   }
-  function remapOut(q, NB, Lc, sr) {
-    const o = new Uint8Array(q.length), r = sr / SRM, Z = Lc * NB;
-    for (let k = 0; k < NB; k++) {
-      const p = k * r, km = Math.floor(p), u = p - km; if (km >= NB - 1) continue;   // über der Modell-Grenze: Rest
-      for (let f = 0; f < Lc; f++) {
+  function resamp(x, sr, i0, y) {
+    const T = ktab(Math.min(1, SRM / sr) * 0.97), st = sr / SRM, g = 1 / 32768, n = x.length, W2 = 2 * KW;
+    for (let i = 0; i < y.length; i++) {
+      const pos = (i0 + i) * st, nn = Math.floor(pos), o = Math.round((pos - nn) * KP) * W2, b0 = nn - KW + 1; let s = 0;
+      if (b0 >= 0 && b0 + W2 <= n) for (let t = 0; t < W2; t++) s += x[b0 + t] * T[o + t];
+      else for (let t = 0; t < W2; t++) { const q = b0 + t; if (q >= 0 && q < n) s += x[q] * T[o + t]; }
+      y[i] = s * g;
+    }
+  }
+  function magsRs(d, a, b) {
+    const sr = d.meta.sr, N = 4096, H = 1024, NB = N / 2 + 1, j0 = Math.floor((a - 1) * SRM / sr) - 1, j1 = Math.ceil((b - 2) * SRM / sr) + 1, Lm = j1 - j0 + 1, i0 = j0 * H - N / 2;
+    const ys = [0, 1].map(c => { const y = new Float32Array((Lm - 1) * H + N); resamp(d.pcm[Math.min(c, d.pcm.length - 1)], sr, i0, y); return y; });
+    const w = X.win(N), re = new Float64Array(N), im = new Float64Array(N), A = new Float64Array(NB), B = new Float64Array(NB), mag = new Float32Array(2 * NB * Lm);
+    for (let jj = 0; jj < Lm; jj++) {
+      const s0 = jj * H; for (let t = 0; t < N; t++) { re[t] = ys[0][s0 + t] * w[t]; im[t] = ys[1][s0 + t] * w[t]; }
+      X.V.fft(re, im); X.magPair(re, im, N, A, B);
+      for (let k = 0; k < NB; k++) { mag[k * Lm + jj] = A[k]; mag[(NB + k) * Lm + jj] = B[k]; }
+    }
+    return {mag, Lm, j0};
+  }
+  function backRs(q, NB, Lm, j0, c0, c1, sr) {
+    const Lc = c1 - c0, o = new Uint8Array(3 * Lc * NB), Z = Lm * NB, Zc = Lc * NB, rt = SRM / sr, rk = sr / SRM;
+    for (let f = 0; f < Lc; f++) {
+      const jf = Math.min(Lm - 1.000001, Math.max(0, (c0 + f - 1) * rt - j0)), jA = Math.floor(jf), v = jf - jA;
+      for (let k = 0; k < NB; k++) {
+        const kf = k * rk, kA = Math.floor(kf), u = kf - kA; if (kA >= NB - 1) continue;   // über der Modell-Grenze: Rest
         let s = 0;
-        for (let j = 0; j < 3; j++) { const A = j * Z + f * NB + km, v = Math.min(255 - s, Math.round(q[A] * (1 - u) + q[A + 1] * u)); o[j * Z + f * NB + k] = v; s += v; }
+        for (let j = 0; j < 3; j++) { const P = j * Z + jA * NB + kA, x = (q[P] * (1 - u) + q[P + 1] * u) * (1 - v) + (q[P + NB] * (1 - u) + q[P + NB + 1] * u) * v, val = Math.min(255 - s, Math.round(x)); o[j * Zc + f * NB + k] = val; s += val; }
       }
     }
     return o;
@@ -94558,10 +94579,10 @@ function ki1KernMake(X) {
         if (have.has(c)) continue;
         if (d.zStop) throw new Error('abgebrochen');
         const tc = Date.now(), c0 = c * CORE, c1 = Math.min(F, c0 + CORE), a = Math.max(0, c0 - CTX), b = Math.min(F, c1 + CTX), L = b - a;
-        let mag = mags(d, a, L); if (sr !== SRM) mag = remapIn(mag, NB, L, sr);
-        const r = await ask(d, {op: 'krun', NB, L, c0: c0 - a, c1: c1 - a, mag}, [mag.buffer]);
+        let r, q;
+        if (sr === SRM) { const mag = mags(d, a, L); r = await ask(d, {op: 'krun', NB, L, c0: c0 - a, c1: c1 - a, mag}, [mag.buffer]); q = r.q; }
+        else { const R = magsRs(d, a, b); r = await ask(d, {op: 'krun', NB, L: R.Lm, c0: 0, c1: R.Lm, mag: R.mag}, [R.mag.buffer]); q = backRs(r.q, NB, R.Lm, R.j0, c0, c1, sr); }
         if (d.zStop) throw new Error('abgebrochen');
-        const q = sr !== SRM ? remapOut(r.q, NB, c1 - c0, sr) : r.q;
         await X.put('audio', pre + c, q.buffer);                       // Zwischenstand sofort sichern
         done++; msM += r.ms; job.k = done; job.ms += Date.now() - tc; job.how = r.how || job.how; d.metaDirty = true; X.soon(d);
         emit({qid: m.qid, prog: 0.95 * done / n, stufe: 'Stück ' + done + '/' + n});
@@ -94592,7 +94613,7 @@ function ki1UiAdd(U) {
   dd.setAttribute('aria-label', 'Zerlegen oder Profi-Trennung wählen');
   z.replaceWith(wrap); wrap.append(z, dd);
   on(dd, 'click', () => { if (U.dd && U.ddA === dd) { spk1Dd(U, null); return; } ki1Dd(U, dd); });
-  if (!document.getElementById('ki1Css')) { const s = document.createElement('style'); s.id = 'ki1Css'; s.textContent = '.ki1-split{display:flex;gap:2px;min-width:0}.ki1-split>.mbtn:first-child{flex:1 1 auto;min-width:0}.spk1-ac .ki1-split>.ki1-dd{flex:0 0 44px;width:44px;padding:0}.spk1-dd .ki1-tx{margin:0;font-size:12px;line-height:1.35;color:var(--text-dim);max-width:300px}'; document.head.appendChild(s); }
+  if (!document.getElementById('ki1Css')) { const s = document.createElement('style'); s.id = 'ki1Css'; s.textContent = '.ki1-split{display:flex;gap:2px;min-width:0}.ki1-split>.mbtn:first-child{flex:1 1 auto;min-width:0}.spk1-ac .ki1-split>.ki1-dd{flex:0 0 44px;width:44px;padding:0}.spk1-dd .ki1-tx{margin:0;font-size:12px;line-height:1.35;color:var(--text-dim);max-width:300px}@media (orientation:landscape){.spk1-ac .ki1-split>.ki1-dd{display:none}.spk1-ac .ki1-split:not(.ki1-busy)>.mbtn:first-child::after{content:"\\00a0▾"}}'; document.head.appendChild(s); }
 }
 function ki1Dd(U, b) {
   spk1Dd(U, b, dd => {
@@ -94600,7 +94621,7 @@ function ki1Dd(U, b) {
     const z = el('button', 'mbtn rb spk1-ck', 'Zerlegen (schnell, ohne Download)'), p = el('button', 'mbtn rb spk1-ck', 'Profi-Trennung …'), tx = el('p', 'ki1-tx', 'Trennt Drums, Bass, Gesang und Rest genauer. Lädt einmal aus dem Netz, danach offline. Am besten mit Ladekabel.');
     const x = el('button', 'mbtn rb spk1-ck', 'Profi-Trennung vom Gerät löschen'); x.style.display = 'none';
     z.disabled = p.disabled = !!U.busy;
-    on(z, 'click', () => { spk1Dd(U, null); spk1Zerl(U); });
+    on(z, 'click', () => { spk1Dd(U, null); U.ki1Direkt = true; try { spk1Zerl(U); } finally { U.ki1Direkt = false; } });
     on(p, 'click', () => { spk1Dd(U, null); ki1Start(U); });
     on(x, 'click', () => { spk1Dd(U, null); ki1Remove().then(() => spk1Stat(U, 'Profi-Trennung vom Gerät gelöscht'), () => {}); });
     dd.append(z, p, tx, x);
@@ -94633,6 +94654,13 @@ async function ki1Start(U) {
     spk1Stat(U, ab ? 'Profi-Trennung angehalten – nichts geändert · später fortsetzen' : 'Profi-Trennung: ' + String(e && e.message || e));
   } finally { U.busy = null; spk1BtnState(U); }
 }
+// Zerlegen-Tipp quer (▾ verborgen): Klappfenster statt sofort; true = erledigt
+function ki1ZerlTap(U) {
+  if (U.busy || U.ki1Direkt || !U.b_ki1 || U.b_ki1.offsetParent) return false;
+  if (U.dd && U.ddA === U.b_zerl) spk1Dd(U, null); else ki1Dd(U, U.b_zerl);
+  return true;
+}
+function ki1Busy(U) { if (U.b_ki1) U.b_ki1.parentNode.classList.toggle('ki1-busy', !!U.busy); }
 // ✕ / Seite zu: eine laufende Profi-Trennung anhalten (Stücke bleiben); sonst nichts
 function ki1Close() { if (KI1.busy || KI1.loadP) ki1Stop(); }
 /* Test-Zugang (nur Funktionen; nichts läuft von selbst) */
@@ -98146,7 +98174,7 @@ function spk1BtnState(U) {
   const has = U.sel.length > 0, pl = !!SPK1.pl;
   U.b_play.textContent = pl && !U.playSel ? '■ Stopp' : '▶ Abspielen'; U.b_psel.textContent = pl && U.playSel ? '■ Stopp' : '▶ Auswahl';
   U.b_psel.disabled = !has && !(pl && U.playSel); U.b_into.disabled = !has || !!U.busy; U.b_drop.disabled = !has;
-  U.b_zerl.textContent = U.busy === 'zerlegen' || U.busy === 'profi' /* KI1 */ ? '■ Abbrechen' : 'Zerlegen'; U.b_zerl.disabled = U.busy === 'verfeinern'; U.b_verf.disabled = !has || !!U.busy;
+  U.b_zerl.textContent = U.busy === 'zerlegen' || U.busy === 'profi' /* KI1 */ ? '■ Abbrechen' : 'Zerlegen'; if (U.b_ki1) ki1Busy(U);   /* KI1 */ U.b_zerl.disabled = U.busy === 'verfeinern'; U.b_verf.disabled = !has || !!U.busy;
   if (U.busy) U.bU.disabled = U.bR.disabled = true; else if (SPK1.last) spk1UndoBtns(U, SPK1.last);
   U.bMin.classList.toggle('on', !!U.opt.minus); U.bMin.setAttribute('aria-pressed', String(!!U.opt.minus));
 }
@@ -98276,6 +98304,7 @@ function spk1Tap(U, b) {
 async function spk1Zerl(U) {
   if (U.busy === 'zerlegen') { spk1Call('zstop', {doc: SPK1.doc}).catch(() => {}); spk1Stat(U, 'Breche ab …'); return; }
   if (U.busy === 'profi') { ki1Stop(); spk1Stat(U, 'Halte an …'); return; }   // KI1: ■ Abbrechen während der Profi-Trennung
+  if (typeof ki1ZerlTap === 'function' && ki1ZerlTap(U)) return;   // KI1: quer öffnet „Zerlegen ▾“ das Klappfenster
   if (U.busy) return;
   U.busy = 'zerlegen'; U.vf = null; spk1Dd(U, null); spk1BtnState(U); spk1Stat(U, 'Zerlegen …');
   try {

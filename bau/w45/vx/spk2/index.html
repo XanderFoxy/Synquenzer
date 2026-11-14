@@ -98767,6 +98767,7 @@ async function spk2MxAudio(U) {
     imp1Prep({bpm: G.bpm, ts: G.ts});   // Projekt-Tempo wie beim Import (nur solange noch kein Audio im Projekt liegt)
     const tk = tkAddPcmTake(pcm, sr, 'import'), m = S.takes[tk.id]; m.route = 'datei'; m.name = nm; m.imp = {bpm: G.bpm, ts: G.ts, t1: 0};
     S.tracks[st].clips[s] = imp1Clip(tk.id, 0, nb, {takt: (tb - ta) / nb}, G.ts, s); clipChanged(st, s);
+    spk1Link(SPK1.doc, U.meta.name);   // Auftrag 5: Ergebnis liegt im Projekt → Analyse mit verweisen (Container nimmt sie mit, ↶ nimmt den Verweis mit)
     return {kind: 'audio', track: st, scene: s, take: tk.id, a: L[0], b: L[1], lid};
   });
   if (!res) { spk1Stat(U, 'Loop → Matrix: nicht möglich'); return null; }
@@ -98807,6 +98808,7 @@ async function spk2MxMidi(U) {
     const ky = Object.assign({}, sceneKeyOf(s) || S.key, {src: 'auto'}), c = normClip({len: Math.max(1, Math.min(64, nb)), key: ky, notes, ts: tsNorm(G.ts) || undefined}, 'synth', S.key);
     if (!c || !c.notes.length) return null;
     S.tracks[t].clips[s] = c; clipChanged(t, s);
+    spk1Link(SPK1.doc, U.meta.name);   // Auftrag 5: Ergebnis liegt im Projekt → Analyse mit verweisen (Container nimmt sie mit, ↶ nimmt den Verweis mit)
     return {kind: 'midi', track: t, scene: s, notes: c.notes.length, neu: sel === 'neu', a: L[0], b: L[1], lid};
   });
   if (!res) { spk1Stat(U, 'Loop → Matrix: nicht möglich'); return null; }
