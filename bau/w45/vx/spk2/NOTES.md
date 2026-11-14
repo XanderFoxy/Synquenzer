@@ -94,3 +94,39 @@ Kick-Ausklang (≈ 48–51 Hz). „Sicherheit“ trennt noch schlecht (Vorschlä
 `spk2-block.js` (Kern + Seite), `bau.py` (Haken), `messk/noten.mjs` (Trefferquote; `STEM=1` = Bass-Stem allein), `spk2-noten-test.mjs`
 (+ `spk2-noten-test.json`), Fotos `fotos/30-noten-hochkant.png`, `31-gehoert-zu.png`, `32-ueberall-finden.png`,
 `33-verfeinern-nach-noten.png`, `34-noten-quer-428.png`, Rauchtest `smoke-a2.png`.
+
+---------------------------------------------------------------------------------------------------------------------------
+## Auftrag 3/5 – Loop → Matrix als Audio oder MIDI (fertig)
+
+### Bedienung
+- Loop-Klammern im Takt-Lineal, Aussehen wie die Import-Klammern (Bernstein-Fläche .18, Klammern 2 px mit 7-px-Haken), dazu zwei dünne
+  Bernstein-Linien über dem Spektrum. Lineal **halten (380 ms) + ziehen** = neuer Loop (Takt-Raster, ab dem Takt unter dem Finger),
+  **Klammer (±18 px) ziehen** = Anfang/Ende ändern. Tipp = Abspielposition und Ziehen ohne Halten = rollen bleiben wie bisher.
+  Ohne Geste: Ansicht ▾ → „Loop setzen · 4 Takte ab Position“. Ziehen zeichnet nur Lineal + Overlay neu (kein DOM-Umbau).
+- Mit Loop steht oben in der Ebenen-Liste: [ ] „Loop Takt a–b · n Takte“ │ **In die Matrix ▾** │ ✕ (entfernt den Loop).
+- In die Matrix ▾ (Quelle = gewählte Ebene der Liste): **Als Audio → Spur „Original“** │ Als MIDI · Spur: [Passende Spur] Synth-Spuren
+  (volle mit „(voll)“, gesperrt) + „+ Neue Spur“ │ **Als MIDI (n Noten)** bzw. „(Noten erst finden)“; Drums: „keine Tonhöhe“.
+
+### Kern / Daten
+- Als Audio: Kern-op `render` (vorhanden) mit `mix = lid` im Loop-Bereich → Mono-Mittel → Int16 → `tkAddPcmTake` (Name „<Ebene> · Takt a–b“,
+  `imp {bpm, ts, t1: 0}`) → `imp1OrigT` (Spur „Original“, sonst neue Zusatzspur) → freie Szene ab R.selS → `imp1Clip(take, 0, nb, {takt})`
+  (in 0, out = nb Takte der Quelle). `imp1Prep`: Projekt-Tempo/-Taktart = Raster der Analyse, solange kein Audio im Projekt liegt (wie Import).
+- Als MIDI: sichtbare Noten der Ebene (bestätigt/gefunden, Vorschläge ab „Sicher ab“) mit Anfang im Loop; t/d aus den Raster-Zeiten t0/t1
+  auf 1/16 (in Vierteln), Ton = round(m), v = max(0,35, v); `normClip` → Szene. Ziel: Art der Ebene (Bass → bass, Pads → pad, Gesang → mel,
+  Lead → phr), sonst Tonlage der Noten (< C3 → bass); erste Spur mit dieser Rolle (sx11Role) und freier Szene, sonst neue Spur
+  (`newSynthTrack` mit dem Grundklang der Rolle aus DEFAULT_SOUNDS, Name = Ebene), sonst irgendeine mit Platz. Klang danach frei.
+  Keine Noten im Loop → erst Kern-op `noten` mit Zeit-Auswahl = Loop (eigener ↶ der Spektral-Seite), dann „was da ist“.
+- Ein ↶ (App) für alles über `imp1Step` (sx14-Stand: Spur, Clip, Take-Eintrag, Tempo); Vorbedingungen werden vor jeder Änderung geprüft.
+- Der Loop gehört zur Seite (`U.loop`, nur für das offene Dokument), wird nicht im Dokument gespeichert. Test-API `SYNQUENZER.spk1.spk2.loop`.
+- Haken im SPK1-Block (alle „SPK2“): spk1RulerDraw, spk1SideGest (down/move/end), spk1Layers (Zeile), spk1Tap (mxdd/mxweg), spk1ViewDd.
+
+### Messung (spk2-loop-test.mjs, Demo-Song 112 BPM, Loop Takt 1–2)
+- Audio: Take = Original-Proben (Abweichung 0,5 LSB = Mono-Rundung), Clip 2 Takte, in 0 / out 4,285714 s; Matrix: 3 Starts, Abstand
+  4285,71 ms (= 2 Takte), Phase zum Taktstrich 0,00 ms, Ausschnitt immer ab 0. ↶ → sx14State wie vorher, ↷ wieder da.
+- MIDI (Original, Noten automatisch im Loop gefunden): 14 Noten im Clip = 14 Ebenen-Noten (Zeit + Ton), alle auf 1/16, Ziel Synth 1
+  (Bass-Klang); „+ Neue Spur“: Spur 8 „Bass“ mit Bass-Klang, ein ↶ nimmt sie mit.
+
+### Grenzen / offen
+- Krummes Quell-Tempo (z. B. 91,6) gegen ganzzahliges Projekt-Tempo: Loop-Audio wird nicht gedehnt (wie IMP1 offen; Abweichung bleibt im Clip).
+- Loop auf der Spektral-Seite nur zum Übergeben – Abspielen im Loop (Wiederholung) auf der Seite selbst noch nicht; Loop nicht im Dokument gespeichert.
+- MIDI-Güte = Güte der Noten (Auftrag 2: im Gemisch 44 %); Takes mono (wie IMP1).

@@ -37,3 +37,4 @@ Weiter mit: 4.54 = rel-4540/k fertig prüfen + INT53D nachziehen + Versionszeile
 - 14:13: Workflow wg1n8wxjd (wf_3b36bd46-1a7, synq-vx2-wf_3b36bd46-1a7.js): SPK2 (S/vx/spk2, 5 Schritte) ∥ CHR2 (S/vx/chr, 3) ∥ NX1 (S/vx/nach, 2), Basis vx/basis2.html = R-4570. XD1 (wwu4y7736) läuft noch → auf aktuelle Linie mergen (Diff gegen w4550/basis.html=R-4530).
 - 14:40: 4.58.0 RELEASED = R-4570 + XD1 (Diff gegen R-4530, sauber). Nächste Basis R-4580. Offen XD1-Nebenwirkung: quer 370 [Video erstellen] nur 26/44 px sichtbar, quer 428 [Teilen] 8 px unter Kante → .x-Fix.
 - 15:08: 4.58.1 RELEASED = R-4580 + VQ1 (vx/vq). Nächste Basis R-4581. Teil-2-Pakete (Basis R-4570) per Diff gegen vx/basis2.html auf R-4581 mergen.
+- 15:09: Workflow wgkqkmvyg (wf_4b631b4b-b2c, synq-ki1-wf_4b631b4b-b2c.js): KI1 Profi-Trennung (MIT 4-Spur-Modell, Download auf Knopfdruck) in S/vx/ki, Basis vx/basis3.html = R-4581. Modell-Dateien in vx/ki/modell/ (nicht sichern/nicht ins Repo).
