@@ -96443,7 +96443,9 @@ function vx1rRun(M, m) {
       if (c2 < 0 || c2 + W2 + l1 >= n2) { kind[f] = zcr[f] > .15 ? 1 : 2; continue; }
       let e0 = 0; for (let i = 0; i < W2; i++) e0 += x2[c2 + i] * x2[c2 + i];
       let best = 0, bl = 0;
-      for (let L = l0; L <= l1; L++) { let ab = 0, bb = 0; for (let i = 0; i < W2; i++) { const v = x2[c2 + i + L]; ab += x2[c2 + i] * v; bb += v * v; } const r = ab / Math.sqrt(e0 * bb + 1e-20); if (r > best) { best = r; bl = L; } }
+      const rr = new Float32Array(l1 + 2);
+      for (let L = l0; L <= l1; L++) { let ab = 0, bb = 0; for (let i = 0; i < W2; i++) { const v = x2[c2 + i + L]; ab += x2[c2 + i] * v; bb += v * v; } const r = ab / Math.sqrt(e0 * bb + 1e-20); rr[L] = r; if (r > best) { best = r; bl = L; } }
+      for (let L = l0 + 1; L < l1; L++) if (rr[L] >= .9 * best && rr[L] >= rr[L - 1] && rr[L] >= rr[L + 1]) { bl = L; break; }   // kleinste Periode nahe am Bestwert (keine Oktavfehler)
       vc[f] = best; f0[f] = best > .5 && bl ? sr2 / bl : 0;
       kind[f] = best > .6 && zcr[f] < .2 ? 2 : 1;          // 2 = gesungen (Vokal), 1 = stimmlos (Konsonant/Atem)
     }
@@ -96456,7 +96458,8 @@ function vx1rRun(M, m) {
       let at = f0i;
       for (let f = f0i; f <= f1i; f++) if (env[f] >= .9 * mx && (f === f1i || env[f] >= env[f + 1])) { at = f; break; }
       // feiner: der lauteste Spitzenwert im Rahmen
-      let bi = at * H, bv = -1; for (let i = Math.max(0, at * H - (Wn >> 1)); i < Math.min(n, at * H + (Wn >> 1)); i++) { const v = x[i] < 0 ? -x[i] : x[i]; if (v > bv) { bv = v; bi = i; } }
+      const R3 = Math.max(Wn >> 1, Math.round(.003 * sr));
+      let bi = at * H, bv = -1; for (let i = Math.max(0, at * H - R3); i < Math.min(n, at * H + R3); i++) { const v = x[i] < 0 ? -x[i] : x[i]; if (v > bv) { bv = v; bi = i; } }
       an[k] = cl(bi / sr - mk[k], 0, .2);
     }
     return {hop: H / sr, env, fh: FH / sr, rms, zcr, vc, f0, kind, an};
@@ -96500,14 +96503,14 @@ function vx1rRun(M, m) {
       continue;
     }
     // Lücke: Vokal-Teil dehnen (≤ RMAX), Einsatz fest
-    const V = len - fix, need = slot - fix;
+    const V = len - fix, need = slot + fiN - fix;
     let r = V > Math.round(.03 * sr) ? Math.min(RMAX, need / V) : 1, tail = null;
     if (r > 1.002 && X) {
       try { const q = X.stretch(x.subarray(S[j] + fix, S[j + 1]), sr, {src: [0, V / sr], dst: [0, V * r / sr]}, {lock: .005, maxRatio: 2}); tail = q && q.y; } catch (e) { tail = null; }
     }
     if (!tail) { r = 1; tail = x.subarray(S[j] + fix, S[j + 1]); } else st.stretch++;
-    const tot = fix + tail.length, full = tot >= slot - 1;
-    const F = full ? 0 : Math.max(1, Math.min(FMAX, Math.max(FMIN, Math.round(tail.length * .25))));
+    const tot = fix + tail.length, full = tot >= slot + fiN - 1;
+    const F = full ? fiN : Math.max(1, Math.min(FMAX, Math.max(FMIN, Math.round(tail.length * .25))));   // voll: Überblendung im Vorlauf des Nachfolgers
     for (let i = 0; i < tot; i++) {
       const v = i < fix ? x[S[j] + i] : tail[i - fix], u = F ? (i - (tot - F) + .5) / F : 0;
       put(d0 + i, v * gIn(i) * (u > 0 ? Math.cos(.5 * Math.PI * Math.min(1, u)) : 1));
@@ -96527,7 +96530,8 @@ function vx1rAnalyse(id) {
     const ts = mk.map(k => k.t), key = id + '@' + wpBid(b) + ':' + ts.join(','), c = VX1R.ana.get(id);
     if (c && c.key === key) return c;
     if (VX1R.aq.has(key)) return VX1R.aq.get(key);
-    const t0 = performance.now(), p = wpCall({op: 'vxa', x: b.getChannelData(0), sr: b.sampleRate, marks: ts}).then(r => {
+    const t0 = performance.now(), g2 = typeof g2Analyse === 'function' ? g2Analyse(id).catch(() => null) : null;   // Tonhöhe: VS2/G2 (eigener Worker, gleichzeitig)
+    const p = Promise.all([wpCall({op: 'vxa', x: b.getChannelData(0), sr: b.sampleRate, marks: ts}), g2]).then(([r]) => {
       const A = Object.assign({key, id, sr: b.sampleRate, len: b.length / b.sampleRate, t: ts}, r);
       VX1R.ana.set(id, A); while (VX1R.ana.size > 6) VX1R.ana.delete(VX1R.ana.keys().next().value);
       VX1R.lastAn = {id, n: ts.length, ms: Math.round(performance.now() - t0), how: WP.how};
@@ -96569,6 +96573,10 @@ function vx1rPieces(id) {
     if (G && G.f0) {                                      // Tonhöhe: Median der VS2/G2-Analyse, wenn sie vorliegt
       const v = []; for (let i = Math.ceil(t / G.hop); i < Math.min(G.n, te / G.hop); i++) if (G.f0[i] > 0) v.push(G2P.midi(G.f0[i]));
       if (v.length) med = VSD.median(v);
+    }
+    if (A) {                                              // Vokal-Beginn: der gesungene Lauf, in dem der Anker liegt (sonst der erste danach)
+      const fa = Math.floor((t + an) / A.fh), f0i = Math.floor(t / A.fh), f1i = Math.min(A.kind.length - 1, Math.ceil(te / A.fh) - 1); let f = fa;
+      if (A.kind[f] === 2) { while (f > f0i && A.kind[f - 1] === 2) f--; vb = Math.max(t, f * A.fh); } else { while (f <= f1i && A.kind[f] !== 2) f++; vb = f <= f1i ? f * A.fh : vb; }
     }
     const tx = lab && lab.labels && lab.labels[k] && !/^[·–]$/.test(lab.labels[k]) ? lab.labels[k] : '';
     out.push({k, t, end: te, an: +(+an).toFixed(4), at: tkR6(t + an), vb: vb == null ? null : +vb.toFixed(4), uv, m: med == null ? null : +med.toFixed(2),
@@ -96614,7 +96622,7 @@ function vx1rCommit(id, label, fn, o) {
     m.marks = mk.map(k => Object.assign({}, k));
     m.marks.forEach((k, i) => { if (!isNum(k.an)) k.an = +vx1rAnOf(A, k.t, i + 1 < m.marks.length ? m.marks[i + 1].t : null).toFixed(4); });
     if (fn(m.marks, m, A) === false) { if (had) m.marks = had; else delete m.marks; return false; }
-    m.marks.sort((x, y) => x.t - y.t);
+    m.marks = wpNormMarks(m.marks, m.len / m.sr) || [];   // sortiert, Schlüssel wie beim Laden (deep-equal)
     if (m.ly && typeof g9MarkHook === 'function') g9MarkHook(id, mk, m.marks);   // G9: Silben folgen ihrer Marke
     const hy = w0 && w0.mode === 'hybrid';
     wpQuant(id, {mode: 'hybrid', grid: o.grid || (hy || w0 ? w0.res : '1/16'), strength: o.strength != null ? o.strength : hy || w0 ? w0.strength : 0,

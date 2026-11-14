@@ -96863,8 +96863,9 @@ function imp1Core() {
     let eAll = 0, eLow = 0; const eb = []; for (let b = 0; b < NB; b++) { let s = 0; for (let t = 0; t < M; t++) s += F.en[b][t]; eb.push(s); eAll += s; if (b === 0) eLow += s; }
     const lowRatio = eAll ? eLow / eAll : 0;
     const fe = new Float32Array(M); let fmax = 0; for (let t = 0; t < M; t++) { let s = 0; for (let b = 0; b < NB; b++) s += F.en[b][t]; fe[t] = s; if (s > fmax) fmax = s; }
-    let start = 0; while (start < M - 1 && fe[start] < fmax * 1e-3) start++;
-    let end = M - 1; while (end > start && fe[end] < fmax * 1e-3) end--;
+    let start = 0; while (start < M - 1 && fe[start] < fmax * 1e-4) start++;
+    const loud = (() => { const a = Array.from(fe).sort((p, q) => p - q); return a[Math.floor(a.length * .95)] || fmax; })();
+    let end = M - 1; while (end > start && fe[end] < loud * 1e-3) end--;   // Hall-Ausklang (unter −30 dB) zählt nicht als Takt
     const tStart = start / fps, tEnd = (end + 1) / fps;
     prog(.55);
     // Tempo-Kandidaten
@@ -96898,14 +96899,15 @@ function imp1Core() {
     const P = 60 * fps / bpm;
     // Schläge (konstantes Raster) + DP-Verfolgung für die Stabilität
     const gf = gridFit(g, fps, bpm, ((ft.ph % P) + P) % P);
-    const beats = []; for (let f = gf.ph; f < M - 1; f += P) beats.push(f);
+    let f0 = gf.ph % P; if (f0 - P >= -.25 * P) f0 -= P;   // ein Schlag knapp vor 0 (Anfang mitten im Rahmen) zählt mit
+    const beats = []; for (let f = f0; f < M - 1; f += P) beats.push(f);
     const dpo = new Float32Array(M), sdv = Math.sqrt(mean(Array.from(on, v => v * v))) || 1; for (let t = 0; t < M; t++) dpo[t] = on[t] / sdv;
     const dp = dpBeats(dpo, P, 100);
     let hit = 0; for (const t of dp) { const k = Math.round((t - gf.ph) / P), d = Math.abs(t - (gf.ph + k * P)) / fps; if (d < .05) hit++; }
     const stab = dp.length ? hit / dp.length : 0;
     prog(.72);
     // Taktart: Unterteilung (2 oder 3) und Gruppe (2, 3, 4) über Schlag-Merkmale
-    const sub3 = !vocal && gf.h3 > 1.3 * gf.h2 && gf.h3 > .25 * gf.on;
+    const sub3 = !vocal && gf.h3 > 1.5 * gf.h2 && gf.h3 > .06 * gf.on;
     const nbt = beats.length, bt = beats.map(f => f / fps), bs = 60 / bpm;
     const bfe = [], blow = [], bon = [];
     for (let k = 0; k < nbt; k++) {
@@ -96932,18 +96934,19 @@ function imp1Core() {
     // Takt-Akzente: Mitte (½) gegen Drittel (⅓, ⅔) – 6/8 gegen 3/4
     const barAcc = (P0, ph0, L) => { const e = q => { let v = 0, c = 0; for (let f = ph0 + q * L; f < M - 1; f += L) { v += at(g, f) + at(gl, f); c++; } return v / Math.max(1, c); }; return {h: e(.5), t: (e(1 / 3) + e(2 / 3)) / 2}; };
     if (grp === 3) {
-      const ac = barAcc(P, gf.ph + phi * P, 3 * P);
+      const ac = barAcc(P, f0 + phi * P, 3 * P);
       if (!sub3 && ac.h > 1.25 * ac.t) {
         if (bpm >= 150) { ts = '6/8'; m = 6; appBpm = bpm / 2; ps = phaseScores(6); phi = ps.sc.indexOf(Math.max(...ps.sc)); }
         else {
           ps = phaseScores(6); phi = ps.sc.indexOf(Math.max(...ps.sc)) % 3;
           const a = chAt(6, phi), b = chAt(6, phi + 3), q = a >= b ? phi : phi + 3;
-          if (Math.max(a, b) > .3 && Math.min(a, b) < .5 * Math.max(a, b)) { ts = '12/8'; m = 6; phi = q; } else { ts = '6/8'; m = 3; }
+          const need = bpm / 1.5 >= 70 ? .8 : .4;   // punktierter Puls ab 70: 6/8, nur mit deutlichen Wechseln je 2 Takte 12/8
+          if (Math.abs(a - b) > need && Math.max(a, b) > .3) { ts = '12/8'; m = 6; phi = q; } else { ts = '6/8'; m = 3; }
         }
       } else { ts = '3/4'; m = 3; }
     } else {
       const a = chAt(4, phi), b = chAt(4, (phi + 2) % 4);
-      const c = Math.max(chAt(4, (phi + 1) % 4), chAt(4, (phi + 3) % 4)), two = Math.min(a, b) > c + .3 && b > .6 * a, four = a > b + .4 && a > c;
+      const c = Math.max(chAt(4, (phi + 1) % 4), chAt(4, (phi + 3) % 4)), two = Math.min(a, b) > c + .3 && b > .6 * a, four = a > b + (sub3 && bpm >= 70 ? .8 : .4) && a > c;
       if (sub3) { if (four) { ts = '12/8'; m = 4; } else { ts = '6/8'; m = 2; half = true; } appBpm = bpm * 1.5; }
       else if (two) { ts = '2/4'; m = 2; half = true; } else { ts = '4/4'; m = 4; }
       if (half) phi = phi % 2;
@@ -96951,8 +96954,9 @@ function imp1Core() {
     if (vocal) { ts = '4/4'; m = 4; appBpm = bpm; }
     appBpm = Math.abs(appBpm - Math.round(appBpm)) < .2 ? Math.round(appBpm) : Math.round(appBpm * 10) / 10;
     // erste „1“: erster Schlag der Phase ab Musik-Anfang (Vorlauf/Auftakt bleibt davor)
-    let k1 = -1; for (let k = 0; k < nbt; k++) if (k % m === phi % m && bt[k] >= tStart - .08) { k1 = k; break; }
-    if (vocal) { k1 = -1; for (let k = 0; k < nbt; k++) if (bt[k] >= tStart - .08) { k1 = k; break; } }
+    const tol = Math.min(.3, .5 * bs);
+    let k1 = -1; for (let k = 0; k < nbt; k++) if (k % m === phi % m && bt[k] >= tStart - tol) { k1 = k; break; }
+    if (vocal) { k1 = -1; for (let k = 0; k < nbt; k++) if (bt[k] >= tStart - tol) { k1 = k; break; } }
     if (k1 < 0) k1 = 0;
     const t1 = bt[k1] || 0, barSec = m * bs;
     prog(.8);
@@ -96991,6 +96995,7 @@ function imp1Core() {
       }
       if (!done) break;
     }
+    if (runs.length > 1 && nBar - runs[runs.length - 1].s * BL < 2) { const z = runs.pop(); runs[runs.length - 1].n += z.n; }   // Rest unter 2 Takten hängt am Teil davor
     const seg = runs.map(r => [r.s * BL, Math.min(nBar, (r.s + r.n) * BL)]).filter(s => s[1] > s[0]);
     const nv = lab;
     const grpOf = [], groups = [], gl2 = [];
