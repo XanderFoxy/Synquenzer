@@ -1,3 +1,15 @@
+## 4.55.1 — Korrekturen zu 4.54 (Begleiter, Klänge, Chor, Export)
+
+- **S&H in der Tonart** folgt jetzt Rückung und „Song transponieren“ (auch feste Spuren).
+- **Begleiter ● AUFN.** in 3/4, 6/8, 7/8, 2/4, 5/4, 12/8: die Akkorde liegen auch im 2. Durchlauf richtig; „Für alle“ rechnet mit der Taktart.
+- **Offener Begleiter** verfälscht den Song-Export (Audio, Video, MIDI) nicht mehr.
+- **Chor rollbar** quer 926×370 mit Video-Regie/Schnitt-Modus: Fenster bleibt richtig groß.
+- **Bild im Bild** quer auf der STIMME-Seite liegt richtig.
+- **Perform-Blöcke** bleiben bei Taktart-Wechsel an ihrer Stelle.
+- **Körnung**: Speichern → Laden → Speichern bleibt gleich.
+- **Song-MIDI** enthält die Clip-Noten der MELODIE-Spur.
+Tests: Zusammenspiel 46/46, Import 48/48, Regeln, doppelte Schlüssel 0, Rauchtest grün.
+
 ## 4.55.0 — Audio/MIDI importieren mit Tempo-, Takt- und Teile-Erkennung
 
 - **Audio/MIDI importieren** (Menü → Export/Import, auch „Gesang importieren“): MP3, WAV, M4A, MIDI. Tempo vorweg eintippen oder **Erkennen** lassen – Tempo, Taktart (2/4, 3/4, 4/4, 6/8, 12/8), die erste „1“ und die Teile (Intro, Strophe, Refrain, Bridge, Outro) werden erkannt.

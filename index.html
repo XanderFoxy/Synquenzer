@@ -27559,7 +27559,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '4.55.0';
+const VERSION = '4.55.1';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -28695,7 +28695,7 @@ function t1Pins(song, from) {
   const out = [], pin = (o, k, early) => { const x = o[k], b = barAt(x + early), a = barBeat(b); if (b >= from) out.push([o, k, b, x - a]); };
   for (const c of song.carrier) pin(c, 'beat', 0);
   for (const v of song.xp || []) pin(v, 'beat', 0);
-  for (const x of song.pf || []) { pin(x, 'b', 0); if (x.k === 'st') pin(x, 's', 0); }   // JAM3: Perform-Spur an ihrem Takt
+  for (const x of song.pf || []) { const n0 = out.length; pin(x, 'b', 0); if (x.k === 'st') pin(x, 's', 0); if (out.length > n0 && x.d > 0) pin({pfE: x, v: x.b + x.d, d0: x.d}, 'v', 0); }   // JAM3: Perform-Spur an ihrem Takt   // INT54: auch das Blockende (t1Unpin: Dauer und Kurvenpunkte decken danach dieselben Takte)
   for (const k in song.mel) for (const nt of song.mel[k].notes) pin(nt, 't', .25);
   for (const e of song.ue || []) if (e.at != null) pin(e, 'at', 0);   // B2: UE-Einwürfe bleiben an ihrem Takt
   return out;
@@ -28708,6 +28708,7 @@ function t1Unpin(song, pins, d) {
     if (off >= L - 1e-9 && off > -1e-9) { if (k === 't') { drop.add(o); continue; } o[k] = +(barBeat(b + d + 1)).toFixed(4); continue; }
     o[k] = k === 't' ? +(a + off).toFixed(6) : +(a + off).toFixed(4);
   }
+  for (const p of pins) { const o = p[0]; if (!o.pfE) continue; const x = o.pfE, d = Math.round((o.v - x.b) * 1e6) / 1e6; if (!(d > 1e-6) || Math.abs(d - o.d0) < 1e-3) continue; const f = d / o.d0; x.d = d; if (Array.isArray(x.c)) x.c = x.c.map(q => [Math.min(d, Math.round(q[0] * f * 1e6) / 1e6)].concat(q.slice(1))); }   // INT54: Perform-Block: Dauer = Ende − Anfang (gleiche Länge: bleibt), Kurvenpunkte mit; Stottern-Raster u bleibt
   if (drop.size) for (const kk in song.mel) song.mel[kk].notes = song.mel[kk].notes.filter(x => !drop.has(x));
   song.carrier.sort((p, q) => p.beat - q.beat); for (let i = song.carrier.length - 1; i > 0; i--) if (Math.abs(song.carrier[i].beat - song.carrier[i - 1].beat) < 1e-6) song.carrier.splice(i - 1, 1);
   if (song.xp) { song.xp.sort((p, q) => p.beat - q.beat); for (let i = song.xp.length - 1; i > 0; i--) if (Math.abs(song.xp[i].beat - song.xp[i - 1].beat) < 1e-6) song.xp.splice(i - 1, 1); }
@@ -37348,9 +37349,12 @@ function openMelTrackPop(anchor) {
    Schläge sind schon exakt (kein zweites Quantisieren durch „Wechsel: am Takt“, §4.5).
    ===================================================================================================================== */
 const partColorVar = c => (c === 'amber' ? 'var(--amber)' : 'var(--' + c + ')');
+// INT54: Schläge je Takt / Länge einer Akkord-Zeile – ohne ts 4 wie bisher (bitgleich); mit ts (BEG1 ● AUFN. außerhalb von 4/4) die Taktart der Clips
+const int54RowBB = r => (r && r.ts ? tsBeats(r.ts) : 4);             // INT54
+const int54RowB = r => r.len * int54RowBB(r);                         // INT54
 function normChordRow(r) {
   if (!r || typeof r !== 'object') return null;
-  const len = isNum(r.len) ? clamp(Math.round(r.len), 1, 16) : 4, L = len * 4, ch = [];
+  const len = isNum(r.len) ? clamp(Math.round(r.len), 1, 16) : 4, ts = tsNorm(r.ts), L = len * (ts ? tsBeats(ts) : 4), ch = [];   // INT54: ts (4/4 = Feld fehlt)
   for (const c of Array.isArray(r.ch) ? r.ch : []) {
     if (!c || !isNum(c.b) || c.b < 0 || c.b >= L - 1e-9) continue;
     const tg = c.tg === null ? null : normTarget(c.tg); if (c.tg !== null && !tg) continue;
@@ -37358,7 +37362,7 @@ function normChordRow(r) {
     if (k >= 0) ch[k] = e; else ch.push(e);
   }
   ch.sort((a, b) => a.b - b.b);
-  return {len, ch};
+  return ts ? {len, ch, ts} : {len, ch};                               // INT54
 }
 function normPart(p, k, nt) {
   if (!p || typeof p !== 'object') return null;
@@ -37505,18 +37509,18 @@ function rowDefaultLen(src) {
 // the row end belongs to the next pass: it lands on beat 0 (the row runs in a circle)
 function quantizeRow(src, grid, a, b, dry) {
   const row = rowOf(src); if (!row || !row.ch.length) return {moved: 0, merged: 0, n: 0};
-  const L = row.len * 4;
+  const L = int54RowB(row), qb = int54RowBB(row);                      // INT54: Zeile mit Taktart: ein Takt = qb Schläge
   const list = row.ch.map(c => ({beat: c.b, target: c.tg}));
-  const r = quantizeChordList(list, grid, a, b);
+  const r = quantizeChordList(list, row.ts && grid >= 2 ? grid * qb / 4 : grid, a, b);   // INT54: „Takt“ / „½“ in der Taktart der Zeile
   let out = r.list.map(c => ({b: c.beat >= L - 1e-6 ? 0 : c.beat, tg: c.target, ob: c.beat}));
   // a wrapped entry is the later-played one on beat 0
   out.sort((x, y) => x.b - y.b || x.ob - y.ob);
   const fin = []; let merged = r.merged;
   for (const e of out) { const pv = fin[fin.length - 1]; if (pv && Math.abs(pv.b - e.b) < 1e-6) { fin[fin.length - 1] = e; merged++; continue; } fin.push(e); }
-  const n = row.ch.filter(c => a == null || (c.b >= a * 4 - 1e-6 && c.b < ((b != null ? b : a) + 1) * 4 - 1e-6)).length;
+  const n = row.ch.filter(c => a == null || (c.b >= a * qb - 1e-6 && c.b < ((b != null ? b : a) + 1) * qb - 1e-6)).length;   // INT54
   if (dry) return {moved: r.moved, merged, n};
   if (r.moved || merged) {
-    setChordRow(src, {len: row.len, ch: fin.map(e => ({b: e.b, tg: e.tg}))}, 'Akkorde quantisiert · ' + rowName(src));
+    setChordRow(src, Object.assign({len: row.len, ch: fin.map(e => ({b: e.b, tg: e.tg}))}, row.ts ? {ts: row.ts} : null), 'Akkorde quantisiert · ' + rowName(src));   // INT54: die Taktart bleibt
     toast('Quantisiert · ' + r.moved + (r.moved === 1 ? ' rückt' : ' rücken') + ' · ' + merged + ' ' + (merged === 1 ? 'fällt' : 'fallen') + ' zusammen', {label: 'Rückgängig', fn: () => undo()});
   } else toast('Alle Akkorde liegen schon im Raster');
   return {moved: r.moved, merged, n};
@@ -37553,7 +37557,7 @@ function rowCommit(tg, t) {
 // the recalls of the running row in the beats [from, to), in time order
 function rowRecalls(row, from, to) {
   const rw = rowOf(row.src); if (!rw || !rw.ch.length) return;
-  const L = rw.len * 4, st = row.startBeat;
+  const L = int54RowB(rw), st = row.startBeat;   // INT54
   from = Math.max(from, st, row.handUntil != null ? row.handUntil : -Infinity); if (to <= from + 1e-9) return;
   for (let k = Math.max(0, Math.floor((from - st) / L + 1e-9) - 1); st + k * L < to - 1e-9; k++) {
     for (const c of rw.ch) {
@@ -37566,7 +37570,7 @@ function rowRecalls(row, from, to) {
 // the index of the row entry heard at transport beat b (null = none yet)
 function rowCurIdx(row, b) {
   const rw = row && rowOf(row.src); if (!rw || !rw.ch.length || b == null) return null;
-  const L = rw.len * 4, ph = (((b - row.startBeat) % L) + L) % L;
+  const L = int54RowB(rw), ph = (((b - row.startBeat) % L) + L) % L;   // INT54
   if (b < row.startBeat - 1e-6) return null;
   let k = -1; for (let j = 0; j < rw.ch.length; j++) if (rw.ch[j].b <= ph + 1e-6) k = j;
   return k >= 0 ? k : (b - row.startBeat >= L ? rw.ch.length - 1 : null);
@@ -37576,7 +37580,7 @@ function rowSwitch(src, beat, st) {
     if (!R.row) rowSaveCarrier();
     R.row = {src, startBeat: st != null ? st : beat, hand: false, handUntil: st != null ? beat : null};
     if (st != null) {                                             // V2d: a row in phase with an earlier start (FANG TEIL): the chord in effect now
-      const rw = rowOf(src); if (rw && rw.ch.length) { const L = rw.len * 4, ph = (((beat - st) % L) + L) % L; if (!rw.ch.some(c => Math.abs(c.b - ph) < 1e-6)) { const k = rowCurIdx(R.row, beat); if (k != null) rowCommit(rw.ch[k].tg, b2t(beat)); } }
+      const rw = rowOf(src); if (rw && rw.ch.length) { const L = int54RowB(rw), ph = (((beat - st) % L) + L) % L; if (!rw.ch.some(c => Math.abs(c.b - ph) < 1e-6)) { const k = rowCurIdx(R.row, beat); if (k != null) rowCommit(rw.ch[k].tg, b2t(beat)); } }   // INT54
     }
   } else if (R.row) {
     const sv = PRT.saved, hand = R.row.hand; R.row = null; PRT.saved = undefined;
@@ -37692,7 +37696,7 @@ function rowLiveCheck() {
   if (rp) { if (!rp.src && Math.abs(rp.beat - st) < 1e-6) { rp.src = src; UI.dirty.carrier = UI.dirty.parts = true; partDue(rp.beat); } return; }
   if (R.row) return;                                           // a row runs (this one, or one the hand paused)
   if (st >= R.schedBeat - 1e-9) { R.rowPend = {src, beat: st}; UI.dirty.carrier = UI.dirty.parts = true; return; }
-  const nb = nextBarFromAudible(), rw = rowOf(src), L = rw.len * 4;
+  const nb = nextBarFromAudible(), rw = rowOf(src), L = int54RowB(rw);   // INT54
   rowSaveCarrier();
   R.row = {src, startBeat: st, hand: false, handUntil: nb};
   const ph = (((nb - st) % L) + L) % L;
@@ -38396,7 +38400,7 @@ function partChunk(p, Lf) {
     }));
   }
   const row = p.chords || (p.xp && p.xp.tg ? {len: L, ch: [{b: 0, tg: p.xp.tg}]} : null), carrier = [];
-  if (row && row.ch.length) { const cl = row.len * 4; for (let m = 0; m * cl < L * 4 - 1e-9; m++) for (const c of row.ch) { const b = c.b + m * cl; if (b < L * 4 - 1e-9) carrier.push({beat: b, target: c.tg ? carrierCopy(c.tg) : null}); } }
+  if (row && row.ch.length) { const cl = int54RowB(row), LB = L * int54RowBB(row); for (let m = 0; m * cl < LB - 1e-9; m++) for (const c of row.ch) { const b = c.b + m * cl; if (b < LB - 1e-9) carrier.push({beat: b, target: c.tg ? carrierCopy(c.tg) : null}); } }   // INT54: Zeile ohne ts: L × 4 wie bisher
   else carrier.push({beat: 0, target: null});
   return kl1Chunk(Object.assign({len: L, lanes, carrier, xp: p.sxp ? konSxpChunk(p.sxp, L) : [{beat: 0, semi: p.xp && p.xp.semi ? p.xp.semi : 0}], mel: s1ChunkMel(p, L), marks: [{a: 0, len: L, part: p.id}]}, s2ChunkExtra(p, L)));   /* KL1: „ganz“ → eigener Clip */   /* S1: mel, S2: own / vox */
 }
@@ -39284,13 +39288,13 @@ function crDefaultSrc() {
 }
 function crList() { const l = []; for (let s = 0; s < NS(); s++) l.push('S' + (s + 1)); (S.parts || []).forEach(p => { if (p) l.push(p.id); }); return l; }
 function crEntries(row, lo, hi) { return row ? row.ch.filter(c => c.b >= lo - 1e-6 && c.b < hi - 1e-6) : []; }
-function crBarSplit(row, k) { return CR.split.has(k) || crEntries(row, 4 * k, 4 * k + 4).some(c => Math.abs(c.b - 4 * k) > 1e-6); }
+function crBarSplit(row, k) { return CR.split.has(k) || crEntries(row, int54RowBB(row) * k, int54RowBB(row) * (k + 1)).some(c => Math.abs(c.b - int54RowBB(row) * k) > 1e-6); }   // INT54
 // the boxes: [{bar, half|null, lo, hi, txt}] in order
 function crBoxes(row, len) {
   const out = [];
   for (let k = 0; k < len; k++) {
-    if (!crBarSplit(row, k)) { const e = crEntries(row, 4 * k, 4 * k + 4); out.push({bar: k, half: null, lo: 4 * k, hi: 4 * k + 4, txt: e.length ? tgShort(e[0].tg) : '–'}); continue; }
-    for (const h of [0, 1]) { const lo = 4 * k + 2 * h, e = crEntries(row, lo, lo + 2); out.push({bar: k, half: h, lo, hi: lo + 2, txt: e.length ? tgShort(e[0].tg) + (e.length > 1 ? '…' : '') : '–'}); }
+    if (!crBarSplit(row, k)) { const q = int54RowBB(row), e = crEntries(row, q * k, q * k + q); out.push({bar: k, half: null, lo: q * k, hi: q * k + q, txt: e.length ? tgShort(e[0].tg) : '–'}); continue; }   // INT54
+    for (const h of [0, 1]) { const q = int54RowBB(row), lo = q * k + q / 2 * h, e = crEntries(row, lo, lo + q / 2); out.push({bar: k, half: h, lo, hi: lo + q / 2, txt: e.length ? tgShort(e[0].tg) + (e.length > 1 ? '…' : '') : '–'}); }   // INT54
   }
   return out;
 }
@@ -39372,13 +39376,13 @@ function rowFit(p) {
     for (const x of cand) { if (!over()) break; x.classList.add('sx'); }
   }
 }
-const crSelLo = () => (CR.sel ? 4 * CR.sel.bar + (CR.sel.half === 1 ? 2 : 0) : 0);
-const crSelHi = () => (CR.sel ? (CR.sel.half == null ? 4 * CR.sel.bar + 4 : crSelLo() + 2) : 0);
+const crSelLo = () => (CR.sel ? int54RowBB(rowOf(CR.src)) * (CR.sel.bar + (CR.sel.half === 1 ? .5 : 0)) : 0);   // INT54
+const crSelHi = () => (CR.sel ? (CR.sel.half == null ? int54RowBB(rowOf(CR.src)) * (CR.sel.bar + 1) : crSelLo() + int54RowBB(rowOf(CR.src)) / 2) : 0);   // INT54
 // the running box glows (this row runs, the hand did not take over)
 function crNowMark(p) {
   p = p || (UI.pop && UI.pop.name === 'chordrow' ? UI.pop.el : null); if (!p || CR.grab) return;
   const row = R.row && R.row.src === CR.src && R.playing ? R.row : null, rw = row && rowOf(row.src);
-  let b = null; if (row && AU.ctx) { const L = rw ? rw.len * 4 : 4, ab = audBeat(); if (ab >= row.startBeat) b = (((ab - row.startBeat) % L) + L) % L; }
+  let b = null; if (row && AU.ctx) { const L = rw ? int54RowB(rw) : 4, ab = audBeat(); if (ab >= row.startBeat) b = (((ab - row.startBeat) % L) + L) % L; }   // INT54
   for (const x of p.querySelectorAll('.cr-b')) { const lo = +x.dataset.lo, hi = +x.dataset.hi, on = b != null && b >= lo - 1e-6 && b < hi - 1e-6; x.classList.toggle('now', on); x.classList.toggle('hand', on && !!row.hand); }
 }
 function crSet(tg, advance, hist) {
@@ -39404,7 +39408,7 @@ function crAct(p, b) {
   const a = b.dataset.a, src = CR.src;
   if (a === 'x') { closePop(); return; }
   if (a === 'prev' || a === 'next') { const l = crList(), k = l.indexOf(src), n = l[(k + (a === 'next' ? 1 : -1) + l.length) % l.length]; CR.src = n; CR.split = new Set(); const rw = rowOf(n); CR.sel = rw && rw.ch.length ? null : {bar: 0, half: null, auto: true}; CR.quant = false; haptic('tick'); crPaint(p); return; }
-  if (a === 'lm' || a === 'lp') { const rw = rowOf(src), L = rw ? rw.len : rowDefaultLen(src), nl = clamp(L + (a === 'lp' ? 1 : -1), 1, 16); if (nl !== L || !rw) rowEdit(src, row => { row.len = nl; row.ch = row.ch.filter(c => c.b < nl * 4 - 1e-6); }, rowName(src) + ': ' + nl + (nl === 1 ? ' Takt' : ' Takte')); haptic('tick'); return; }
+  if (a === 'lm' || a === 'lp') { const rw = rowOf(src), L = rw ? rw.len : rowDefaultLen(src), nl = clamp(L + (a === 'lp' ? 1 : -1), 1, 16); if (nl !== L || !rw) rowEdit(src, row => { row.len = nl; row.ch = row.ch.filter(c => c.b < nl * int54RowBB(row) - 1e-6); }, rowName(src) + ': ' + nl + (nl === 1 ? ' Takt' : ' Takte')); haptic('tick'); return; }   // INT54
   if (b.dataset.bar != null) { const bar = +b.dataset.bar, half = b.dataset.h === '' ? null : +b.dataset.h; CR.sel = CR.sel && !CR.sel.auto && CR.sel.bar === bar && CR.sel.half === half ? null : {bar, half}; haptic('tick'); crPaint(p); return; }
   if (b.dataset.d != null) { const d = degreeChords(rowKey(src))[+b.dataset.d]; if (d) crSet(chordTarget(d.root, d.q), true); return; }
   if (b.dataset.o) { crSet(null, true); return; }
@@ -39413,7 +39417,7 @@ function crAct(p, b) {
     if (!CR.sel) { toast('Erst ein Kästchen antippen'); return; }
     const k = CR.sel.bar, rw = rowOf(src);
     if (!crBarSplit(rw, k)) { CR.split.add(k); CR.sel = {bar: k, half: 0}; crPaint(p); }
-    else { CR.split.delete(k); CR.sel = {bar: k, half: null}; if (crEntries(rw, 4 * k + 2, 4 * k + 4).length || crEntries(rw, 4 * k, 4 * k + 4).some(c => c.b > 4 * k + 1e-6)) rowEdit(src, row => { row.ch = row.ch.filter(c => !(c.b > 4 * k + 1e-6 && c.b < 4 * k + 4 - 1e-6)); }, rowName(src) + ': Takt ' + (k + 1) + ' ganz'); else crPaint(p); }
+    else { CR.split.delete(k); CR.sel = {bar: k, half: null}; const q = int54RowBB(rw); if (crEntries(rw, q * k + q / 2, q * k + q).length || crEntries(rw, q * k, q * k + q).some(c => c.b > q * k + 1e-6)) rowEdit(src, row => { row.ch = row.ch.filter(c => !(c.b > q * k + 1e-6 && c.b < q * k + q - 1e-6)); }, rowName(src) + ': Takt ' + (k + 1) + ' ganz'); else crPaint(p); }   // INT54
     haptic('tick'); return;
   }
   if (a === 'hold') {
@@ -39549,7 +39553,7 @@ function hm1Segs(s, c, how, notes) {
   const L = clipB(c), bb = clipBarB(c), out = [];
   const rw = how === 'row' && s != null && S.scenes[s] && S.scenes[s].chords;
   if (rw && rw.ch.length) {
-    const RL = rw.len * 4, at = x => { const m = ((x % RL) + RL) % RL; let e = null; for (const q of rw.ch) if (q.b <= m + 1e-6) e = q; return e || rw.ch[rw.ch.length - 1]; };
+    const RL = int54RowB(rw), at = x => { const m = ((x % RL) + RL) % RL; let e = null; for (const q of rw.ch) if (q.b <= m + 1e-6) e = q; return e || rw.ch[rw.ch.length - 1]; };   // INT54
     const bs = new Set([0]);
     for (let k = 0; k * RL < L - 1e-6; k++) for (const q of rw.ch) { const x = k * RL + q.b; if (x < L - 1e-6) bs.add(+x.toFixed(4)); }
     const B = [...bs].sort((x, y) => x - y);
@@ -39891,7 +39895,7 @@ function hm1Paint() {
 // das nächste leere Takt-Kästchen der Akkord-Zeile (null = alle belegt)
 function hm1NextBox(src) {
   const rw = rowOf(src), len = rw ? rw.len : rowDefaultLen(src);
-  for (let k = 0; k < len; k++) if (!crEntries(rw, 4 * k, 4 * k + 4).length) return {bar: k, lo: 4 * k, hi: 4 * k + 4};
+  const q = int54RowBB(rw); for (let k = 0; k < len; k++) if (!crEntries(rw, q * k, q * k + q).length) return {bar: k, lo: q * k, hi: q * k + q};   // INT54
   return null;
 }
 function hm1Draw(cv, L, bb, layers) {
@@ -41658,14 +41662,14 @@ function markChordAll(id, rb, tg, exact) {
   const cut = (list, at, key) => (exact ? list.filter(c => Math.abs(c[key] - at) > 1e-6) : list.filter(c => !(c[key] >= barBeat(barAt(at)) - 1e-6 && c[key] < barBeat(barAt(at) + 1) - 1e-6)));
   let n = 0;
   for (const m of song.marks) {
-    if (m.part !== m0.part || rb >= m.len * 4 - 1e-9) continue;
+    if (m.part !== m0.part || rb >= barBeat(m.a + m.len) - barBeat(m.a) - 1e-9) continue;   // INT54: Schläge der Marke in der Taktart des Songs (4/4: len × 4 wie bisher)
     const beat = barBeat(m.a) + rb; song.carrier = cut(song.carrier, beat, 'beat');
     carrierPut(song, {beat, target: t ? carrierCopy(t) : null}); n++;
   }
   const L = partLen(p);
   let row = p.chords ? JSON.parse(JSON.stringify(p.chords)) : {len: L, ch: [{b: 0, tg: null}]};
-  if (row.len < L) { const ch = []; for (let k = 0; k * row.len < L; k++) for (const c of row.ch) { const b = c.b + k * row.len * 4; if (b < L * 4 - 1e-9) ch.push({b, tg: c.tg}); } row = {len: L, ch}; }
-  if (rb < row.len * 4 - 1e-9) { row.ch = cut(row.ch, rb, 'b'); row.ch.push({b: rb, tg: t ? carrierCopy(t) : null}); row.ch.sort((a, b) => a.b - b.b); }
+  if (row.len < L) { const ch = []; for (let k = 0; k * row.len < L; k++) for (const c of row.ch) { const b = c.b + k * int54RowB(row); if (b < L * int54RowBB(row) - 1e-9) ch.push({b, tg: c.tg}); } row = Object.assign({len: L, ch}, row.ts ? {ts: row.ts} : null); }   // INT54: Zeile mit Taktart (ohne ts × 4 wie bisher)
+  if (rb < int54RowB(row) - 1e-9) { row.ch = cut(row.ch, rb, 'b'); row.ch.push({b: rb, tg: t ? carrierCopy(t) : null}); row.ch.sort((a, b) => a.b - b.b); }   // INT54
   p.chords = normChordRow(row);
   songTidy(song);
   undoPush({kind: 'group', label: (t ? prettyTarget(t) : 'ORIGINAL') + ' für alle ' + p.name, items: [{kind: 'part', before: bp}, {kind: 'song', before: bs}]});
@@ -44231,10 +44235,14 @@ function sndSet(snd, key, v) {
   if (key.startsWith('wt.')) { if (!snd.p.wt) snd.p.wt = WT_DEF(); snd.p.wt[key.slice(3)] = v; }
   else if (key.startsWith('fm2.')) { if (!snd.p.fm2) snd.p.fm2 = FM2_DEF(); snd.p.fm2[key.slice(4)] = v; }
   else if (key.startsWith('fx.chorus.')) { if (!snd.fx.chorus) snd.fx.chorus = {mode: 'off', mix: 1, rate: 1, depth: 1}; snd.fx.chorus[key.slice(10)] = v; }
-  else if (key.startsWith('fx.')) snd.fx[key.slice(3)] = v;
+  else if (key.startsWith('fx.')) { snd.fx[key.slice(3)] = v; if (key.startsWith('fx.kf')) int54KornForm(snd.fx); }   // INT54: KÖRNUNG in der Form nach dem Laden
   else if (/^kf(Nc|Rm|Sh[12])$/.test(key)) kf12Put(snd.p, key, v);   // KF12 (Regel 28): ein KF1-Wert 0 wird nicht gespeichert
   else snd.p[key] = v;
 }
+// INT54 (Regel 28): KÖRNUNG wie SQStore kf1Fx – an (Bits < 16 oder Rate < 1): Bits, Rate, Mischung in dieser Reihenfolge am Ende; aus: keiner der drei
+function int54KornForm(fx) { const b = Math.round(clamp(isNum(fx.kfBits) ? fx.kfBits : 16, 2, 16)), r = clamp(isNum(fx.kfRate) ? fx.kfRate : 1, 1 / 32, 1), m = clamp(isNum(fx.kfMix) ? fx.kfMix : 1, 0, 1); delete fx.kfBits; delete fx.kfRate; delete fx.kfMix; if (b < 16 || r < .999) { fx.kfBits = b; fx.kfRate = r; fx.kfMix = m; } }   // INT54
+// INT54: die drei KÖRNUNG-Werte merken und genau so zurücklegen (Making-of „Gerät“: der Regler wird nur für das Bild gesetzt)
+function int54KornKeep(fx) { const o = ['kfBits', 'kfRate', 'kfMix'].map(q => [q, fx[q]]); return () => { for (const [q] of o) delete fx[q]; for (const [q, v] of o) if (v !== undefined) fx[q] = v; }; }   // INT54
 function kf12Put(p, k, v) { if (!v) { delete p[k]; return; } if (k in p || !('fmBite' in p)) { p[k] = v; return; } const t = []; let a = false; for (const q in p) { if (a) t.push([q, p[q]]); else if (q === 'fmBite') a = true; } for (const [q] of t) delete p[q]; const m = new Map(t); m.set(k, v); for (const q of ['kfNc', 'kfRm', 'kfSh1', 'kfSh2']) if (m.has(q)) { p[q] = m.get(q); m.delete(q); } for (const [q, x] of m) p[q] = x; }   // KF12: 0 = Schlüssel weg; ein neuer Wert steht hinter fmBite wie nach normAnalog (Speichern → Laden → Speichern bleibt Zeichen für Zeichen gleich)
 function clampParam(key, v, cur) {
   const d = PD[key]; if (!d) return cur;
@@ -54849,6 +54857,21 @@ function buildMidiLog() {
 /* MIDI export „Song“ (§3.9 P1, §2.5): the song as heard — every block of a lane plays its clip from the block's launch bar
    (looping), synth notes under the song's Träger at their beats (or original with withCarrier false), drums as stored,
    the melody lane on the melody track's channel as played */
+// INT54: die Clip-Noten einer Spur ab MIDI_T (MELODIE …) im Song-MIDI – dieselbe Rechnung wie buildMidiSong für Synth 1–4 und va1MidiSong
+function int54MidiClips(song, i, tr, L, entAt, withC, add) {          // INT54
+  const lane = song.lanes[i] || [], fxm = fllMidiMutes(i), blocks = []; let cur = null;   // INT54
+  for (const e of lane) { const og = laneOriginAt(lane, e.bar); if (cur && og.slot === cur.slot && Math.abs(og.cs - cur.cs) < 1e-6 && (og.own || null) === cur.own) continue; if (cur) cur.end = barBeat(e.bar); cur = og.slot >= 0 ? {slot: og.slot, own: og.own || null, cs: og.cs, start: barBeat(e.bar), end: barBeat(song.bars)} : null; if (cur) blocks.push(cur); }   // INT54
+  for (const bk of blocks) {                                          // INT54
+    const c = bk.own && song.own && song.own[bk.own] ? song.own[bk.own] : tr.clips[bk.slot]; if (!c || !c.notes || !c.notes.length) continue;   // INT54
+    const b0 = bk.start, b1 = Math.min(L, bk.end), cL = clipB(c);   // INT54
+    for (let o = bk.cs + Math.floor((b0 - bk.cs) / cL + 1e-9) * cL; o < b1 - 1e-9; o += cL) for (const nt of jam1SongPass(c, o, bk.cs) || c.notes) {   // INT54
+      if (nt.t >= cL - 1e-9) continue; const st = o + nt.t; if (st >= b1 - 1e-9 || st < b0 - 1e-9 || (fxm && ueMutedAt(fxm, st, nt.n))) continue;   // INT54
+      let p = nt.n; if (withC) { const e2 = entAt(st); if (e2 && e2.target) p = mapOut(i, c.key || S.key, nt.n, 0, e2); }   // INT54
+      if (tr.follow && song.xp && song.xp.length) { let v = 0; for (const x of song.xp) { if (x.beat > st + 1e-6) break; v = x.semi; } p += v; } else if (!tr.follow) p += jam3Fest(song, st);   // INT54: ⇅ folgt: song.xp · ⇅ fest: JAM3-Rückung
+      add(st, Math.min(b1, st + Math.max(nt.d, 1 / 32)), clamp(Math.round(p), 0, 127), nt.v);   // INT54
+    }                                                                 // INT54
+  }                                                                   // INT54
+}                                                                     // INT54
 function buildMidiSong(withC) {
   const song = S.song; if (!song || !song.bars) return null;
   const PPQ = 480, L = barBeat(song.bars), {evs, counts} = midiArrs();
@@ -54899,9 +54922,10 @@ function buildMidiSong(withC) {
   // on that track's channel (its clips follow with V2a′)
   const idxs = midiBaseIdx();
   for (let i = MIDI_T; i < NT(); i++) {
-    const tr = S.tracks[i], m = song.mel[i]; if (!tr || tr.kind !== 'synth' || !m || !m.notes.length) continue;
+    const tr = S.tracks[i], m = song.mel[i]; if (!tr || tr.kind !== 'synth') continue;   // INT54: auch ohne Song-Melodie (die Clips der Spur)
     const ded = new Map(), ch = midiCh(i);
-    for (const n of m.notes) { if (n.t >= L - 1e-9) continue; dedAdd(i, ch, ded, n.t, Math.min(L, n.t + Math.max(n.d, 1 / 32)), clamp(n.n, 0, 127), n.v); }
+    if (!tr.stimme && !percIs(tr)) int54MidiClips(song, i, tr, L, entAt, withC, (st, en, p, v) => dedAdd(i, ch, ded, st, en, p, v));   // INT54
+    if (m) for (const n of m.notes) { if (n.t >= L - 1e-9) continue; dedAdd(i, ch, ded, n.t, Math.min(L, n.t + Math.max(n.d, 1 / 32)), clamp(n.n, 0, 127), n.v); }   // INT54
     if (!ded.size) continue;
     jam3MidiMute(song, i, ded, PPQ);                             // JAM3: Perform-Spur stumm = Noten weg
     for (const x of ded.values()) { evs[i].push({tk: x.t0, b: [0x90 | x.ch, x.p, x.v], o: 1}, {tk: x.t1, b: [0x80 | x.ch, x.p, 0], o: 0}); counts[i]++; }
@@ -78238,6 +78262,7 @@ function vvkScore(a, b) {
   a = clamp(a | 0, 0, song.bars - 1); b = clamp(b | 0, a + 1, song.bars);
   const key = [S.id, UI.songVer | 0, typeof KEYC !== 'undefined' ? KEYC.ver : 0, a, b, NT(), S.bpm].join(':');
   if (VVK.sc && VVK.sc.key === key) return VVK.sc;
+  if (R.beg1 && R.beg1.on && !(BEG1.exp > 0)) return int54BegExp(vvkScore)(a, b);   // INT54: Noten im Video/in der Vorschau wie Ton und MIDI – ohne die Begleiter-Optionen (nur wenn neu gerechnet wird)
   const B0 = barBeat(a), B1 = barBeat(b), pk = S.key, h = S.settings.harmony, ents = []; let prev = 0;
   try { for (const c of song.carrier || []) { const sh = !c.target ? 0 : h.octaveMode === 'absolute' ? c.target.rootNote - Harmony.refNote(pk) : Harmony.nearestShift(c.target.root, pk.root, c.target.sd != null ? c.target.sd : prev); prev = sh; ents.push({beat: c.beat, e: {target: c.target, shift: sh}}); } } catch (e) { ents.length = 0; }
   const entAt = x => { let e = null; for (const o of ents) { if (o.beat > x + 1e-6) break; e = o.e; } return e; };
@@ -79662,13 +79687,14 @@ function vd3Ger(g, W, H, x, u) {
   const key = x.k === 'regler' ? x.p : null, v = key ? vd3KnobAt(x, u) : null;
   const pid = key && s.engine !== 'mk' && s.engine !== 'bm' ? vr1PgOfKey(key, s.engine) : null;
   const keepV = key ? sndGet(s, key) : null, keepM = s.mods, hadM = 'mods' in s, keepPg = vr1Page;
+  const int54K = key && key.startsWith('fx.kf') && s.fx ? int54KornKeep(s.fx) : null;   // INT54: KÖRNUNG genau zurück (sndSet stellt die Form nach dem Laden her: ein kurz ausgeschalteter Regler nähme die Mischung mit)
   let res = null;
   try {
     if (key && v != null) sndSet(s, key, v);
     if (key) s.mods = [];                                            // nur dieser Regler im Fokus (keine Modulationsringe im Making-of)
     if (pid) vr1Page = () => pid;
     res = vv4Shot(g, W, H, st, i, 'geraet');
-  } finally { if (key) sndSet(s, key, keepV); if (key) { if (hadM) s.mods = keepM; else delete s.mods; } vr1Page = keepPg; }
+  } finally { if (int54K) int54K(); else if (key) sndSet(s, key, keepV); if (key) { if (hadM) s.mods = keepM; else delete s.mods; } vr1Page = keepPg; }   // INT54
   // the frame on the knob that turns (the app's highlight) and a finger on it
   const ed = res && res.ger && res.ger.ed, cell = ed && key ? ed.knobs.find(q => q.key === key) : null;
   if (cell) {
@@ -79986,7 +80012,7 @@ function vd4Geo() {
   if (UI.songView && SV.wrap) {
     const r = rc(SV.wrap); if (r && r.width > 0) { L = Math.max(L, r.left - G.left + 4); T = Math.max(T, r.top - G.top + (SV.rulerH | 0) + 4); R_ = Math.min(R_, r.right - G.left - 4); B = Math.min(B, r.bottom - G.top - 4); }
   } else if (EL.grid) {
-    const th = rc(EL.grid.querySelector('.th')), sp = rc(EL.grid.querySelector('.stp:not(.all)')), sc = rc(EL.grid.querySelector('.scn')), pb = EL.partBar && EL.partBar.parentNode === ga ? rc(EL.partBar) : null;
+    const vq = q => { for (const e of EL.grid.querySelectorAll(q)) if (e.getClientRects().length) return e; return null; }, th = rc(vq('.th')), sp = rc(vq('.stp:not(.all)')), sc = rc(vq('.scn')), pb = EL.partBar && EL.partBar.parentNode === ga ? rc(EL.partBar) : null;   // INT54: das erste SICHTBARE (auf Seite 2 sind die ersten im DOM mxoff)
     if (th) L = Math.max(L, th.right - G.left + 4); if (sp) R_ = Math.min(R_, sp.left - G.left - 4); if (sc) T = Math.max(T, sc.bottom - G.top + 4);
     if (pb && pb.height > 0 && pb.top > G.top) B = Math.min(B, pb.top - G.top - 4);
   }
@@ -80118,7 +80144,7 @@ function vd4Frame() {
   VD4.pend = false; VD4.t = now; vd4Draw(vd4Live());
 }
 function vd4Check() {
-  const ga = EL.gridArea, lk = [window.innerWidth, window.innerHeight, ga.clientWidth, ga.clientHeight, UI.songView ? 1 : 0, NT(), SV.rulerH | 0, SV.w | 0, SV.h | 0, vvPrefs().fmt, EL.partBar && EL.partBar.parentNode === ga ? 1 : 0].join('|');   // nach dem Neu-Auslegen von Matrix/Song
+  const ga = EL.gridArea, lk = [window.innerWidth, window.innerHeight, ga.clientWidth, ga.clientHeight, UI.songView ? 1 : 0, NT(), SV.rulerH | 0, SV.w | 0, SV.h | 0, vvPrefs().fmt, EL.partBar && EL.partBar.parentNode === ga ? 1 : 0, UI.trackBank | 0, UI.sceneBank | 0].join('|');   // nach dem Neu-Auslegen von Matrix/Song   // INT54: Spur-/Szenen-Seite: neu legen
   if (lk !== VD4.lay && !VD4.drag) { VD4.lay = lk; vd4Place(false); }
   const vis = vd4Vis(); if (vis !== VD4.vis) { VD4.vis = vis; if (vis) VD4.pend = true; }
   if (!vis) return;
@@ -83207,7 +83233,7 @@ function chqSvW(T, pages) {
   const pf = typeof jam3Has === 'function' && jam3Has(), fit = w => (T - (pf ? jam3SvH(T, cnt(w)).h : 0)) / cnt(w) >= CHQ_MIN - .01;   // INT54: minus Zeile PERFORM (JAM3), so hoch, wie jam3SvSet sie macht
   if (fit(n)) return null;                                              // INT54: fit (ohne Perform-Spur wie bisher: T / cnt ≥ 22)
   let w = n - 1; while (w > 1 && !fit(w)) w--;                          // INT54: fit
-  if (pf && !fit(w)) { const c = cnt(w); while (w < n && cnt(w + 1) === c) w++; if (w >= n) return null; }   // INT54: 22 px nicht erreichbar → so viele Spuren, wie bei gleicher Zeilenhöhe gehen
+  if (!fit(w)) { const c = cnt(w); while (w < n && cnt(w + 1) === c) w++; if (w >= n) return null; }   // INT54: 22 px nicht erreichbar → so viele Spuren, wie bei gleicher Zeilenhöhe gehen
   return w;
 }
 // gl1SvFill: die Zusatz-Zeilen der STIMME-Seite (mit Fenster: Kopfzeile + w)
@@ -85112,7 +85138,7 @@ function bb1Ctx(t, s, c, L) {
   let segs = [], how = 'key', bars = c ? c.len : 1;
   if (rw && rw.ch && rw.ch.length) {
     how = 'row'; bars = rw.len;
-    const RL = rw.len * 4, at = x => { const m = ((x % RL) + RL) % RL; let e = null; for (const q of rw.ch) if (q.b <= m + 1e-6) e = q; return e || rw.ch[rw.ch.length - 1]; };
+    const RL = int54RowB(rw), at = x => { const m = ((x % RL) + RL) % RL; let e = null; for (const q of rw.ch) if (q.b <= m + 1e-6) e = q; return e || rw.ch[rw.ch.length - 1]; };   // INT54
     const bs = new Set([0]);
     for (let k = 0; k * RL < L - 1e-6; k++) for (const q of rw.ch) { const x = k * RL + q.b; if (x < L - 1e-6) bs.add(+x.toFixed(4)); }
     const B = [...bs].sort((x, y) => x - y); let prev = null;
@@ -90679,7 +90705,7 @@ function tktRowAt(row, x) { let e = null; for (const q of row.ch) { if (q.b <= x
 // für einen Clip der Szene s (Spur t; s < 0: nur der Clip selbst): Akkord-Zeile der Szene, sonst die Töne aller Spuren der Szene und
 // des Clips; ein Clip, der in der Szene mehrmals läuft, fragt jede Stelle (uneinig: Regel wie bisher)
 function tktHarmFn(P, s, t, c) {
-  const sc = s >= 0 && S.scenes ? S.scenes[s] : null, row = sc && sc.chords && sc.chords.ch && sc.chords.ch.length ? sc.chords : null, rowL = row ? row.len * 4 : 0, oth = [];
+  const sc = s >= 0 && S.scenes ? S.scenes[s] : null, row = sc && sc.chords && sc.chords.ch && sc.chords.ch.length ? sc.chords : null, rowL = row ? int54RowB(row) : 0, oth = [];   // INT54
   if (s >= 0) for (let j = 0; j < NT(); j++) { const tr = S.tracks[j]; if (j === t || !tr || tr.stimme || isDrum(j) || percIs(tr)) continue; const x = tr.clips[s]; if (x && !x.audio && x.notes && x.notes.length) oth.push({ns: x.notes, L: clipB(x)}); }
   const Lc = c ? clipB(c) : 0, span = Math.max(Lc, rowL, ...oth.map(o => o.L));
   return (n, own) => {
@@ -95362,9 +95388,22 @@ const BEG1 = {on: false, el: null, ro: null, watchT: 0, st: 'euro', fig: 'auto',
 
 /* ---------- Hooks (laufen schon beim Start: nur R.beg1) ---------- */
 // transposerOpts: solange die Leiste offen ist – AKKORD, Latch an, Wechsel des Begleiters
-function beg1Opts(o) { const B = R.beg1; if (!B || !B.on) return o; o.mode = 'chord'; o.latch = true; o.change = B.chg === 'bar' ? 'bar' : 'beat'; return o; }
+function beg1Opts(o) { const B = R.beg1; if (!B || !B.on || BEG1.exp > 0) return o; o.mode = 'chord'; o.latch = true; o.change = B.chg === 'bar' ? 'bar' : 'beat'; return o; }   // INT54: im Export nicht (int54BegExp)
 // osActive: „Eine Skala“ rechnet mit dem Harmonie-Modus der Einstellungen – bei TONART passte sie nicht zu AKKORD (oben)
-function beg1OsOff() { const B = R.beg1; return !!(B && B.on && S.settings.harmony.mode === 'scale'); }
+function beg1OsOff() { const B = R.beg1; return !!(B && B.on && S.settings.harmony.mode === 'scale' && !(BEG1.exp > 0)); }   // INT54: im Export nicht
+// INT54: Video-/WAV-Ton (vvRenderAudio0) und MIDI (Song/Szene/alle, je Spur) rechnen ohne die Begleiter-Optionen – AKKORD/Latch gelten nur live für die
+// offene Leiste, die Datei behält ihren Harmonie-Modus. Vorher/nachher syncTransposer; die Eine-Skala-Zwischenspeicher hängen am Modus (neu) (INT54)
+function int54BegExp(f) {                                             // INT54
+  return function () {                                                // INT54
+    const on0 = !!(R.beg1 && R.beg1.on), sw = on => { if (!on) return; OS.cache = new WeakMap(); OS.z = new WeakMap(); OS.tick++; syncTransposer(); };   // INT54
+    BEG1.exp = (BEG1.exp | 0) + 1; sw(on0); let r;                    // INT54
+    const end = () => { BEG1.exp--; sw(on0 || !!(R.beg1 && R.beg1.on)); };   // INT54
+    try { r = f.apply(this, arguments); } catch (e) { end(); throw e; }   // INT54
+    if (r && typeof r.then === 'function') return r.finally(end);    // INT54
+    end(); return r;                                                  // INT54
+  };                                                                  // INT54
+}                                                                     // INT54
+vvRenderAudio0 = int54BegExp(vvRenderAudio0); buildMidi = int54BegExp(buildMidi); va1MidiSong = int54BegExp(va1MidiSong); va1MidiClip = int54BegExp(va1MidiClip);   // INT54
 // scheduleTrack: eine Ziel-Spur spielt in [t0, tEnd) die Band; zurück kommt das Fenster, das ihre Clips noch planen ([from, to) │ Teil │ null)
 function beg1Sched(i, from, to, late) {
   const B = R.beg1; if (!B || UI.vvOff || !R.playing) return [from, to];
@@ -95789,7 +95828,7 @@ function beg1Scene(run, k0, k1, items) {
     tr.clips[dst] = c; made.push(t);
   }
   if (!made.length) return {err: 'leer'};
-  const row = normChordRow({len: clamp(n, 1, 16), ch});
+  const row = normChordRow(Object.assign({len: clamp(n, 1, 16), ch}, !tkPlain() && tsNorm(S.ts) ? {ts: S.ts} : null));   // INT54: die Akkord-Zeile in der Taktart der Clips (vorher × 4: verrutschte ab dem 2. Durchlauf, 5/4 und 12/8 schon im 1.)
   if (row && row.ch.length) S.scenes[dst].chords = row;
   return {dst, made, names};
 }
@@ -96238,7 +96277,7 @@ function kf1Tick() {
   if (!need) return;
   const now = performance.now(); if (!stop && !UI.vvOff && now - KF1.keyT < 100) return; KF1.keyT = now;
   const key = kf1KeyNow(), sg = key.join(':'), t = stop && AU.ctx ? AU.ctx.currentTime + .5 : null;
-  for (let i = 0; i < NT(); i++) { if (!kf1ShOn(i)) continue; const E = AU.synth[i]; if (E.kf1Key === sg) continue; E.kf1Key = sg; kf1Post(E, key, t); }
+  for (let i = 0; i < NT(); i++) { if (!kf1ShOn(i)) continue; const E = AU.synth[i], k = int54KfKeyX(key, int54KfSh(i, AU.ctx ? AU.ctx.currentTime : 0)), g = k.join(':'); E.kf1B = key; if (E.kf1Key === g) continue; E.kf1Key = g; kf1Post(E, k, t); }   // INT54: Stillstand: je Spur mit der Rückung ihrer Noten (int54KfSh)
 }
 // tick (Einhänge-Zeile nach dem Planen der Spuren): [b0, b1) ist geplant
 function kf1Plan(b0, b1) {
@@ -96250,11 +96289,25 @@ function kf1Plan(b0, b1) {
   const t = b2t(sb != null ? sb : b0);
   for (let i = 0; i < NT(); i++) {
     if (!kf1ShOn(i)) continue; const E = AU.synth[i];
-    if (E.kf1Key == null) { const k0 = kf1KeyNow(); E.kf1Key = k0.join(':'); kf1Post(E, k0, null); }   // eben an: erst die Tonart, die jetzt klingt
-    if (E.kf1Key === sg) continue;
-    E.kf1Key = sg; kf1Post(E, key, t);
+    if (E.kf1Key == null) { const k0 = kf1KeyNow(), k1 = int54KfKeyX(k0, int54KfSh(i, AU.ctx ? AU.ctx.currentTime : 0)); E.kf1Key = k1.join(':'); E.kf1B = k0; kf1Post(E, k1, null); }   // eben an: erst die Tonart, die jetzt klingt (INT54: mit der Rückung der Spur)
+    int54KfPlanX(i, E, key, sb, b0, b1);                             // INT54: Fensteranfang, Szenenwechsel sb und jede Stufe der Rückung im Fenster, je mit ihrer Zeit
   }
 }
+// INT54: Rückung (JAM2/JAM3) und „Song transponieren“ verschieben die Noten einer Spur (outPitch): Folgespuren um song.xp (XP.tl), feste Spuren
+// um JAM3.ft – „S&H in der Tonart“ rastet dann in die verschobene Tonart, mit der Zeit der Stufe (wie beim Szenenwechsel) (INT54)
+function int54KfSh(i, t) { try { const tr = S.tracks[i]; if (!tr || tr.kind !== 'synth') return 0; return tr.follow !== false ? (XP.tl.length > 1 || XP.tl[0].semi ? xpAt(t + 1e-6) || 0 : 0) : jam3FtNow(i, t) || 0; } catch (e) { return 0; } }   // INT54: wie outPitch
+const int54KfKeyX = (k, x) => (x ? [(((k[0] + x) % 12) + 12) % 12, k[1]] : k);   // INT54: [Grundton, Maske relativ zum Grundton]
+function int54KfPlanX(i, E, key, sb, b0, b1) {                       // INT54
+  const tl = S.tracks[i].follow !== false ? XP.tl : JAM3.ft, P = [b0];   // INT54
+  if (sb != null && sb > b0 + 1e-6) P.push(sb);                       // INT54
+  for (const e of tl) if (e.b > b0 + 1e-6 && e.b < b1 + 1e-6) P.push(e.b);   // INT54
+  P.sort((p, q) => p - q);                                            // INT54
+  for (const p of P) {                                                // INT54: vor sb die bisherige Tonart (E.kf1B), ab sb die neue
+    const k = int54KfKeyX(sb == null || p >= sb - 1e-6 ? key : E.kf1B || key, int54KfSh(i, b2t(p))), g = k.join(':');   // INT54
+    if (E.kf1Key !== g) { E.kf1Key = g; kf1Post(E, k, b2t(p)); }      // INT54
+  }                                                                   // INT54
+  E.kf1B = key;                                                       // INT54
+}                                                                     // INT54
 
 /* ---------- (D) Bedienung ---------- */
 // OSZ › MIX (Einhänge-Zeile in pageMix): Fader „Ring“ neben dem Rausch-Fader, Regler „Rauschfarbe“ unter ANALOG
