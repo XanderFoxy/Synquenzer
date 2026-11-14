@@ -1339,7 +1339,8 @@ test('Remix „Mitmachen“ und Unterricht „Melden“ (v5): Frist, Stems, Name
   await springe(page, 'unterricht');
   const u = page.locator('#unterricht');
   assert.match(nbsp(await u.locator('article').first().innerText()), /^Integrationskurs\s*Döbeln · hier\s*bis Mo 30\.11\.[\s\S]*Melden als Deutsch mit Xander/);
-  assert.match(nbsp(await u.innerText()), /Hier kannst du dich immer melden\s*5[\s\S]*italki/i);
+  assert.match(nbsp(await u.innerText()), /Hier kannst du dich immer melden\s*4[\s\S]*italki/i);
+  assert.doesNotMatch(nbsp(await u.innerText()), /Jobbörse|Arbeitsagentur|Nachhilfelehrer Deutsch \(m/, 'Xander 14.11.2026: keine Arbeitsamt-Stellen im Unterricht (auch nicht aus älteren Daten)');
   await u.locator('article').first().getByRole('button', { name: 'Melden' }).click();
   assert.match(await page.locator('#b-text').inputValue(), /Ich bin Xander \(„Deutsch mit Xander“\) und unterrichte Deutsch als Fremd- und Zweitsprache/);
   assert.match(nbsp(await page.locator('#blatt .tipp').innerText()), /Als Deutsch mit Xander\. Anzeige öffnen\. Für Integrationskurse braucht es die BAMF-Zulassung/);
@@ -1364,7 +1365,8 @@ test('Unterricht (v5 + Gesuche): „Gesuche im Netz“ oben, neueste zuerst, mit
   await springe(page, 'unterricht');
   const u = page.locator('#unterricht');
   const alles = nbsp(await u.innerText());
-  assert.match(alles, /Gesuche im Netz\s*2[\s\S]*Ausländerbehörde[\s\S]*Goethe B2[\s\S]*Upwork: neue Aufträge[\s\S]*Neue Stellen & Anfragen[\s\S]*Hier kannst du dich immer melden\s*5/i, 'Gesuche oben (neueste zuerst), Stellen darunter');
+  assert.match(alles, /Gesuche im Netz\s*2[\s\S]*Ausländerbehörde[\s\S]*Goethe B2[\s\S]*Upwork: neue Aufträge[\s\S]*Neue Stellen & Anfragen[\s\S]*Hier kannst du dich immer melden\s*4/i, 'Gesuche oben (neueste zuerst), Stellen darunter');
+  assert.match(alles, /Goethe B2[\s\S]*Hier selbst schauen\s*6[\s\S]*Upwork: neue Aufträge/i, 'feste Suchen als „Hier selbst schauen“');
   const erste = nbsp(await u.locator('article').first().innerText());
   assert.match(erste, /^Gesuch\s*online\s*Reddit r\/German\s*Suche Hilfe beim Brief an die Ausländerbehörde\s*Behördenbrief · vom 06\.11\.2026\s*„Ich muss einen Brief[^“]*“\s*Melden als Deutsch mit Xander/);
   assert.match(nbsp(await text(page, '#w-unterricht')), /^2 Gesuche im Netz · /);
@@ -1383,7 +1385,7 @@ test('Nie leer mit älteren Daten (ohne Kategorien remix/auftritte/unterricht): 
   const patch = { 'vorteile-aktuell.json': d => { d.kategorien.tests = []; } };
   const { ctx, page, fehler } = await oeffne({ satz: 'v2', patch });
   // feste Adressen der Seite: 7 (gigmit seit dem 404 vom 08.11.2026 nur noch die Startseite statt 3 Stadt-Links)
-  for (const [b, muster] of [['auftritte', /Gerade keine neue Ausschreibung[\s\S]*Hier geht immer was\s*7[\s\S]*7:77 – Die Open Stage[\s\S]*Wave-Gotik-Treffen[\s\S]*2 weitere Adressen/i], ['remix', /Hier gibt es laufend Contests\s*5/i], ['unterricht', /Hier kannst du dich immer melden\s*5[\s\S]*Jobbörse/i],
+  for (const [b, muster] of [['auftritte', /Gerade keine neue Ausschreibung[\s\S]*Hier geht immer was\s*7[\s\S]*7:77 – Die Open Stage[\s\S]*Wave-Gotik-Treffen[\s\S]*2 weitere Adressen/i], ['remix', /Hier gibt es laufend Contests\s*5/i], ['unterricht', /Hier kannst du dich immer melden\s*4[\s\S]*italki/i],
     ['preisfehler', /Gerade kein krasser Preisfehler[\s\S]*Hier tauchen sie zuerst auf[\s\S]*mydealz: Gruppe Preisfehler/i], ['gewinnspiele', /Gerade kein laufendes Gewinnspiel ohne Kauf[\s\S]*mydealz: Gruppe Gewinnspiele/]]) {
     await springe(page, b);
     assert.match(nbsp(await page.locator('#' + b).innerText()), muster, b);
@@ -1502,7 +1504,7 @@ for (const [breite, hoehe, lage] of [[428, 926, 'hoch'], [926, 428, 'quer']]) {
       preisfehler: /1 krasser Preisfehler[\s\S]*Blutorangen[\s\S]*du sparst 79,54 € \(−76 %\)/,
       auftritte: /Frische Ausschreibungen[\s\S]*Hier geht immer was\s*9/i,
       remix: /5 laufende Contests[\s\S]*Amnesia von ALICIAMUSIC[\s\S]*Hier gibt es laufend Contests\s*5/i,
-      unterricht: /Hier kannst du dich immer melden\s*5[\s\S]*Jobbörse: Deutschlehrer-Stellen rund um Döbeln/i,
+      unterricht: /Hier kannst du dich immer melden\s*4[\s\S]*italki/i, // Jobbörse-Suche seit 14.11.2026 raus
       konzerte: /Depeche Mode/,
       gewinnspiele: /mydealz: Gruppe Gewinnspiele/,
       krypto: /Bitcoin/,
@@ -1539,17 +1541,16 @@ for (const [breite, hoehe, lage] of [[428, 926, 'hoch'], [926, 428, 'quer']]) {
   });
 }
 
-test('Echter Lauf 08.11. neu gerechnet (repariertes Radar): 7 Stellen, Bernburg, Cerrone/Phantogram, gigmit „Link prüfen“', { skip: ohnePw }, async () => {
+test('Echter Lauf 08.11. neu gerechnet (repariertes Radar): Jobbörse-Stellen raus, Bernburg, Cerrone/Phantogram, gigmit „Link prüfen“', { skip: ohnePw }, async () => {
   for (const [breite, hoehe, lage] of [[428, 926, 'hoch'], [926, 428, 'quer']]) {
     const { ctx, page, fehler } = await oeffne({ satz: 'echt0811neu', jetzt: JETZT_0811, breite, hoehe });
-    assert.match(nbsp(await page.locator('#kacheln a[data-sprung="unterricht"]').innerText()), /Dozent DaF\/DaZ, Lehrkraft allg\. Integrationsk…?[\s\S]*Döbeln · hier/);
-    assert.equal(await zahlIn(page, 'unterricht').innerText(), '7');
+    // Xander 14.11.2026: die 7 Jobbörse-Stellen dieses Laufs (Integrationskurse, Gymnasium …) gehören nicht in den Unterricht
+    assert.doesNotMatch(nbsp(await page.locator('#kacheln a[data-sprung="unterricht"]').innerText()), /Dozent DaF|Integrationsk/);
     await springe(page, 'unterricht');
     const u = page.locator('#unterricht');
-    assert.match(nbsp(await text(page, '#w-unterricht')), /7 frische Funde, davon 5 bis 60 km – dazu 5 feste Adressen\./);
-    const erste = nbsp(await u.locator('article').first().innerText());
-    assert.match(erste, /^Integrationskurs\s*Döbeln · hier\s*MIQR GmbH\s*Jobbörse der Arbeitsagentur\s*Dozent DaF\/DaZ, Lehrkraft allg\. Integrationskurse\s*online seit 24\.08\.2026\s*Melden als Deutsch mit Xander/);
-    assert.equal(await u.locator('article').first().locator('a.zweit-link').getAttribute('href'), 'https://www.arbeitsagentur.de/jobsuche/jobdetail/10001-1003587012-S');
+    assert.doesNotMatch(nbsp(await u.innerText()), /Jobbörse|arbeitsagentur|MIQR|Montessori/i);
+    assert.match(nbsp(await u.innerText()), /Gesuche im Netz[\s\S]*Hier kannst du dich immer melden\s*4[\s\S]*italki/i);
+    assert.equal(await u.locator('a[href*="arbeitsagentur.de"]').count(), 0);
     await pruefeLayout(page, `echt0811neu ${lage} unterricht`);
     await page.screenshot({ path: join(SHOTS, `echt0811neu-unterricht-${lage}.png`) });
     await springe(page, 'auftritte');

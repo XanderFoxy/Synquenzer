@@ -138,7 +138,8 @@ test('JSON-LD: ItemList mit MusicEvents, kaputter Block übersprungen', async ()
 });
 
 test('Jobbörse: v6 zuerst, bei 403 die Ausweich-Adresse (und in diesem Lauf nicht mehr v6), Felder tolerant', async () => {
-  const ba = cfg.module.unterricht.ba;
+  // lib/ba.mjs nutzt seit 14.11.2026 nur noch der Nebenverdienst (Unterricht: keine Arbeitsamt-Stellen mehr)
+  const ba = cfg.module.nebenverdienst.ba;
   const s = { was: 'Deutschlehrer', wo: 'Döbeln', umkreis: 50 };
   assert.match(baUrl(ba, s), /^https:\/\/rest\.arbeitsagentur\.de\/jobboerse\/jobsuche-service\/pc\/v6\/jobs\?was=Deutschlehrer&wo=D%C3%B6beln&umkreis=50&angebotsart=1/);
   assert.ok(!baUrl(ba, { was: 'x', arbeitszeit: 'ho' }).includes('arbeitszeit'), 'v6: kein Homeoffice-Filter');
@@ -164,26 +165,17 @@ test('Jobbörse: v6 zuerst, bei 403 die Ausweich-Adresse (und in diesem Lauf nic
   await assert.rejects(macheBaSuche(async () => { throw new Error('HTTP 403 bei x'); }, ba)(s), /HTTP 403/);
 });
 
-test('Unterricht: Jobbörse (Döbeln, Leipzig, online), Remotive (nur Lehr-Stellen in Europa), News (nicht „Deutschland“), Fundorte', async () => {
-  const { eintraege, fehler } = await unterricht({ holeText, cfg, jetzt: JETZT });
+test('Unterricht: KEINE Jobbörse mehr (Xander 14.11.2026), Remotive (nur Lehr-Stellen in Europa), Sprachpaten-Aufrufe, Fundorte', async () => {
+  const gefragt = [];
+  const { eintraege, fehler } = await unterricht({ holeText: async (u, o) => { gefragt.push(u); return holeText(u, o); }, cfg, jetzt: JETZT });
   assert.deepEqual(fehler, []);
+  assert.ok(!gefragt.some(u => /arbeitsagentur/.test(u)), 'Jobbörse wird für den Unterricht gar nicht mehr abgefragt');
   const t = funde(eintraege).map(e => e.titel);
-  for (const ja of [/Dozent Deutsch als Zweitsprache/, /Nachhilfelehrer Deutsch/, /Deutschlehrer online/, /Freelance Online German Teacher/, /VHS Mittelsachsen sucht Lehrkräfte/, /Sprachpaten gesucht/]) assert.ok(t.some(x => ja.test(x)), `${ja} fehlt: ${t.join(' | ')}`);
-  for (const nein of [/Bürokraft/, /Customer Support/, /German Tutor – Y/, /Wirtschaft wächst/, /Außendienst/]) assert.ok(!t.some(x => nein.test(x)), `${nein} sollte fehlen`);
-  const e = re => eintraege.find(x => re.test(x.titel));
-  const doz = e(/Dozent Deutsch als Zweitsprache/);
-  assert.equal(doz.extra.typ, 'integrationskurs');
-  assert.equal(doz.extra.ort, 'Döbeln');
-  assert.equal(doz.extra.km, 0);
-  assert.equal(doz.link, 'https://www.arbeitsagentur.de/jobsuche/jobdetail/10000-1200000001-S');
-  const online = e(/Deutschlehrer online/);
-  assert.equal(online.extra.online, true);
-  assert.equal(online.extra.ort, 'online');
-  const vhs = e(/VHS Mittelsachsen/);
-  assert.equal(vhs.extra.ort, 'Döbeln');
-  assert.equal(vhs.frist, '2026-11-30');
-  assert.equal(vhs.sofort, true, 'nah + Frist in 23 Tagen');
-  assert.ok(eintraege.filter(x => x.extra.fundort).length >= 5);
+  for (const ja of [/Freelance Online German Teacher/, /Sprachpaten gesucht/]) assert.ok(t.some(x => ja.test(x)), `${ja} fehlt: ${t.join(' | ')}`);
+  // die Jobbörse-Stellen der Fixture (Dozent DaZ Döbeln, Nachhilfelehrer, Deutschlehrer online) kommen nicht mehr vor
+  for (const nein of [/Dozent Deutsch als Zweitsprache/, /Nachhilfelehrer Deutsch/, /Deutschlehrer online/, /Bürokraft/, /Customer Support/, /German Tutor – Y/, /Wirtschaft wächst/, /Außendienst/]) assert.ok(!t.some(x => nein.test(x)), `${nein} sollte fehlen`);
+  assert.ok(!eintraege.some(e => /arbeitsagentur|jobbörse/i.test(`${e.quelle} ${e.link}`)));
+  assert.ok(eintraege.filter(x => x.extra.fundort).length >= 4);
   assert.ok(eintraege.every(x => x.kategorie === 'unterricht' && x.extra.bewerbenAls.name === 'Deutsch mit Xander'));
 });
 

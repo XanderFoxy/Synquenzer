@@ -1524,7 +1524,6 @@ const FUNDORTE = {
     { titel: 'Remix64: Remix-Compos zu C64-/Amiga-Klassikern (Retro-Synth)', link: 'https://remix64.com/news/', ort: 'online', typ: 'remix', quelle: 'Remix64' },
   ],
   unterricht: [
-    { titel: 'Jobbörse: Deutschlehrer-Stellen rund um Döbeln (Live-Suche)', link: 'https://www.arbeitsagentur.de/jobsuche/suche?angebotsart=1&was=Deutschlehrer&wo=D%C3%B6beln&umkreis=50', ort: 'Döbeln', km: 0, typ: 'kurs', quelle: 'Arbeitsagentur' },
     { titel: 'italki: als Deutschlehrer (Community Tutor) bewerben', link: 'https://teach.italki.com', ort: 'online', typ: 'online', quelle: 'italki', bewerbung: { art: 'formular', ziel: 'https://teach.italki.com' } },
     { titel: 'Preply: Deutsch online unterrichten', link: 'https://preply.com/en/job/21798', ort: 'online', typ: 'online', quelle: 'Preply' },
     { titel: 'Lingoda: Lehrkraft im Online-Team (freiberuflich)', link: 'https://www.lingoda.com/english/jobs', ort: 'online', typ: 'online', quelle: 'Lingoda' },
@@ -1580,6 +1579,8 @@ function fundortEintrag(f, bereich) {
 function nahWert(x) { const km = zahl(x?.km); if (istOnlineOrt(x)) return 8; if (km == null) return 0; return km <= 15 ? 16 : km <= 60 ? 14 : km <= 120 ? 8 : km <= 250 ? 2 : -6; }
 const sortWertVon = e => zahl(e.extra?.sortWert) ?? (zahl(e.wert) ?? 50) + nahWert(e.extra);
 const nachSortWert = (a, b) => sortWertVon(b) - sortWertVon(a) || (zeit(a.bis) ?? Infinity) - (zeit(b.bis) ?? Infinity);
+// Bereich Unterricht = Leute im Netz, die Hilfe mit Deutsch suchen – nicht die Jobbörse der Arbeitsagentur (Lehrkraft-Stellen)
+const OHNE_ARBEITSAMT = e => /arbeitsagentur|jobbörse/i.test(`${e.quelle || ''} ${e.extra?.quelle || ''}`) || /arbeitsagentur\.de\//i.test(e.link || '');
 const istUnterricht = e => /deutsch\s?(unterricht|lehrer|lehrkraft|kurs|nachhilfe)|daf\b|daz\b|integrationskurs|sprachkurs|sprachpate|german teacher|nachhilfe\s+deutsch/i.test(`${e.titel} ${e.zeile || ''} ${e.grund || ''}`);
 
 // --- Vorteile auf die Bereiche verteilen -----------------------------------------------------------------------------
@@ -1619,6 +1620,7 @@ function einteilen() {
       const fund = e.extra?.fundort === true;
       if (!fund) { if (links.has(e.link)) continue; links.add(e.link); }
       const text = `${e.titel} ${e.zeile || ''}`;
+      if (e.kategorie === 'unterricht' && OHNE_ARBEITSAMT(e)) continue; // Xander 14.11.2026: keine Arbeitsamt-Stellen (auch aus älteren Daten)
       if (e.kategorie === 'unterricht' && e.extra?.typ === 'gesuch') { (fund ? r.gesucheFund : r.gesuche).push(e); continue; }
       if (ASSISTENT.includes(e.kategorie)) { (fund ? r[e.kategorie + 'Fund'] : r[e.kategorie]).push(e); continue; }
       if (istCashback(e)) { if (interessant(text)) r.cashback.push(e); continue; } // Cashback für anderes: weg
@@ -1898,7 +1900,7 @@ function gesucheGruppe(t) {
     + (g.length ? zeigen.map(e => assistentKarte(e, 'unterricht')).join('')
       + (g.length > zeigen.length ? `<button class="mehr" type="button" data-mehr="gesuche">${g.length - zeigen.length} weitere zeigen</button>` : '')
       : `<p class="leer">Gerade kein neues Gesuch${t.da ? '' : ' (Radar gerade nicht erreichbar)'} – selbst nachsehen:</p>`)
-    + (f.length ? `<ul class="liste fundorte">${fZeigen.map(e => fundZeile(e, 'unterricht')).join('')}</ul>`
+    + (f.length ? `${g.length ? `<h3 class="unter">Hier selbst schauen <small>${f.length}</small></h3>` : ''}<ul class="liste fundorte">${fZeigen.map(e => fundZeile(e, 'unterricht')).join('')}</ul>`
       + (f.length > fZeigen.length ? `<button class="mehr" type="button" data-mehr="gesuche-fund">${f.length - fZeigen.length} weitere Suchen</button>` : '') : '');
 }
 const zeichneAuftritte = t => zeichneAssistent(t, 'auftritte');

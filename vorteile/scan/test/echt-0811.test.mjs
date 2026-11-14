@@ -59,50 +59,27 @@ test('Jobbörse v6 (echte Antwort „Deutschlehrer“, Döbeln 50 km): Felder ge
   assert.equal(ohneGender('Sprachlehrkräfte für Deutsch als Zweitsprache (m/w/div)'), 'Sprachlehrkräfte für Deutsch als Zweitsprache');
 });
 
-test('Unterricht (echter Lauf): 7 echte Stellen um Döbeln VOR den Fundorten – Titel, Arbeitgeber, Ort, km, Link zur Stelle, Datum', async () => {
+test('Unterricht (echter Lauf 08.11.): die 7 Jobbörse-Stellen (Integrationskurse, Gymnasium …) kommen NICHT mehr in den Bereich', async () => {
+  // Xander 14.11.2026: „nicht so normale Stellen, die übers Arbeitsamt ausgeschrieben sind, sondern wirklich im Internet“
   const { eintraege, fehler } = await unterricht({ holeText: aufnahme(), cfg, jetzt: JETZT });
   assert.deepEqual(fehler, []);
   const f = funde(eintraege);
-  assert.equal(f.length, 7, f.map(e => e.titel).join(' | '));
-  assert.ok(f.every(e => e.quelle === 'Jobbörse der Arbeitsagentur'), 'Remotive: 12 fremde Stellen (Customer Service, Developer …) – keine davon');
-  for (const e of f) {
-    assert.match(e.link, /^https:\/\/www\.arbeitsagentur\.de\/jobsuche\/jobdetail\/\d{5}-[\w.-]+-S$/);
-    assert.ok(e.extra.arbeitgeber && e.extra.ort && e.extra.km != null && e.datum, e.titel);
-    assert.ok(e.extra.km <= 80, `${e.titel}: ${e.extra.km} km`);
-    assert.doesNotMatch(e.titel, /\(m\/w\/d\)/);
-  }
-  const miqr = f.find(e => e.extra.refnr === '10001-1003587012-S');
-  assert.equal(miqr.titel, 'Dozent DaF/DaZ, Lehrkraft allg. Integrationskurse');
-  assert.equal(miqr.extra.arbeitgeber, 'MIQR GmbH');
-  assert.equal(miqr.extra.ort, 'Döbeln');
-  assert.ok(miqr.extra.km <= 3);
-  assert.equal(miqr.extra.typ, 'integrationskurs');
-  assert.equal(miqr.datum, '2026-11-04T00:00:00.000Z');
-  assert.match(miqr.zeile, /^Integrations-\/Sprachkurs · MIQR GmbH · Döbeln · \d km · online seit 24\.08\.2026$/);
-  assert.equal(miqr.link, 'https://www.arbeitsagentur.de/jobsuche/jobdetail/10001-1003587012-S');
+  assert.equal(f.filter(e => /arbeitsagentur|jobbörse/i.test(`${e.quelle} ${e.link}`)).length, 0, f.map(e => e.titel).join(' | '));
   const titel = f.map(e => e.titel).join(' | ');
-  for (const ja of [/Montessori-Gymnasium/, /Deutsch Sekundarstufe/, /BAMF-Zulassung/, /Saalfeld und Pößneck/, /Alphabetisierungskurse/, /Integrationskursen/]) assert.match(titel, ja);
-  for (const nein of [/Verkäufer/, /Maschinenbediener/, /Servicetechniker/, /Willkommensmanager/, /Job-Coach/, /Chemieingenieur/, /Installateur/]) assert.doesNotMatch(titel, nein);
-  // echte Stellen vor jedem Fundort
-  const minStelle = Math.min(...f.map(e => e.extra.sortWert));
-  const maxFund = Math.max(...eintraege.filter(e => e.extra.fundort).map(e => e.extra.sortWert));
-  assert.ok(minStelle > maxFund, `${minStelle} > ${maxFund}`);
-  // Anzeigefenster ab dem Lauf (die Jobbörse zeigt nur offene Stellen), nicht ab der Veröffentlichung
-  const gera = f.find(e => /Saalfeld/.test(e.titel));
-  assert.equal(gera.datum, '2026-10-14T00:00:00.000Z');
-  assert.ok(Date.parse(gera.sichtbarBis) > JETZT.getTime());
+  for (const nein of [/Montessori-Gymnasium/, /Deutsch Sekundarstufe/, /BAMF-Zulassung/, /Saalfeld und Pößneck/, /Alphabetisierungskurse/, /Integrationskursen/]) assert.doesNotMatch(titel, nein);
+  assert.ok(!eintraege.some(e => e.extra.fundort && /arbeitsagentur/i.test(e.link)), 'auch keine Jobbörse-Suche als feste Adresse');
 });
 
-test('Unterricht im ganzen Lauf: nach dem Aufräumen stehen die Stellen oben, dann die Fundorte', async () => {
+test('Unterricht im ganzen Lauf: ohne Jobbörse nur noch Fundorte (Plattformen + Gesuche-Suchen), Ausfälle als Hinweis', async () => {
   const { lauf } = await import('../main.mjs');
   const r = await lauf({ cfg: nur('unterricht'), wunschliste: {}, vorher: null, zustand: {}, holeText: aufnahme(), jetzt: JETZT, alle: true });
   const l = r.aktuell.kategorien.unterricht;
   assert.equal(r.aktuell.status.unterricht.ok, true);
-  // 7 Stellen/Aufrufe + 5 Fundorte + die Fundorte der Gesuche (Upwork, Fiverr …; ab 14.11.2026 – in dieser Aufnahme gab es
-  // noch keine Reddit-/Freelancer-Abrufe, deshalb keine Gesuche)
-  assert.equal(l.length, 12 + nur('unterricht').module.unterricht.gesuche.fundorte.length);
+  // in dieser Aufnahme (08.11.) gab es noch keine Freelancer-/Lemmy-/Reddit-Abrufe -> keine Gesuche, nur feste Adressen
+  const u = nur('unterricht').module.unterricht;
+  assert.equal(l.length, u.fundorte.length + u.gesuche.fundorte.length, l.map(e => e.titel).join(' | '));
+  assert.ok(l.every(e => e.extra.fundort));
   assert.ok(r.aktuell.status.unterricht.hinweise?.some(h => /^Gesuche: Freelancer/.test(h)), 'nicht aufgenommene Quelle = Hinweis, keine Störung');
-  assert.ok(l.slice(0, 7).every(e => !e.extra.fundort) && l.slice(7).every(e => e.extra.fundort), l.map(e => e.titel).join(' | '));
 });
 
 test('Nebenverdienst (echte v6-Antworten): keine Vollzeitstelle, kein Schwedisch-Übersetzer, „Textil“ ist kein Text', async () => {
