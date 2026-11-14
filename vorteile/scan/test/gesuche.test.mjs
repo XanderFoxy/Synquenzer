@@ -20,7 +20,8 @@ const holeText = macheFixtureAbruf(FX, FIXTURE_KARTE);
 const funde = l => l.filter(e => !e.extra?.fundort);
 
 test('Gesuche: Reddit + Freelancer + Lemmy – Gesuch ja, Angebot nein, zu alt nein, Duplikat einmal, neueste zuerst', async () => {
-  const { eintraege, hinweise } = await gesucheAusNetz({ holeText, m, jetzt: JETZT, zustand: {}, kuenstler: cfg.kuenstler });
+  const mL = { ...m, lemmy: [{ instanz: 'feddit.org', q: 'Nachhilfe Deutsch' }] }; // Lemmy ist in der config aus (nur Nachrichten), Code bleibt
+  const { eintraege, hinweise } = await gesucheAusNetz({ holeText, m: mL, jetzt: JETZT, zustand: {}, kuenstler: cfg.kuenstler });
   assert.deepEqual(hinweise, []);
   const f = funde(eintraege);
   const t = f.map(e => e.titel);
@@ -79,6 +80,7 @@ test('Gesuche: Fundorte (Upwork, Fiverr, Kleinanzeigen …) erscheinen immer –
   assert.ok(fund.find(e => e.quelle === 'Kleinanzeigen').zeile.includes('Link prüfen'), 'nicht live belegte Adresse markiert');
   // Reddit ganz gesperrt = EIN kurzer Hinweis (vorher eine Zeile je Subreddit)
   assert.equal(hinweise.length, 1 + m.freelancer.length + m.lemmy.length, hinweise.join(' | '));
+  assert.ok(hinweise.some(h => /Freelancer „German Translator\/Tutoring“/.test(h)), 'Name der Fähigkeits-Abfrage im Hinweis');
   assert.equal(hinweise.filter(h => /Reddit/.test(h)).length, 1);
   assert.match(hinweise[0], /^Gesuche: Reddit gesperrt \(403\) – Suche unter „Hier selbst schauen“$/);
   assert.ok(hinweise.every(h => /^Gesuche: /.test(h) && /403/.test(h)));
@@ -96,7 +98,7 @@ test('Gesuche im Bereich Unterricht: keine Jobbörse mehr, gleicher Link nur ein
   const r = await unterricht({ holeText, cfg, jetzt: JETZT, zustand: {} });
   assert.deepEqual(r.fehler, []);
   const g = r.eintraege.filter(e => e.extra.gesuch && !e.extra.fundort);
-  assert.equal(g.length, 8, g.map(e => e.titel).join(' | '));
+  assert.equal(g.length, 6, g.map(e => e.titel).join(' | ')); // Reddit + Freelancer (Lemmy in der config aus)
   assert.ok(!r.eintraege.some(e => /arbeitsagentur|jobbörse/i.test(`${e.quelle} ${e.link}`)), 'Xander 14.11.2026: keine Arbeitsamt-Stellen in diesem Bereich');
   const links = r.eintraege.filter(e => !e.extra.fundort).map(e => e.link);
   assert.equal(new Set(links).size, links.length);
@@ -134,8 +136,12 @@ test('Gesuche-Filter: Wörter, Angebote, Thema, Art der Hilfe', () => {
 test('Gesuche: Adressen der Quellen', () => {
   assert.equal(redditSuche({ sub: 'German', q: 'tutor OR teacher' }), 'https://www.reddit.com/r/German/search.rss?q=tutor%20OR%20teacher&restrict_sr=1&sort=new&t=month');
   assert.equal(redditSuche({ sub: 'German+LearnGerman', q: 'tutor' }), 'https://www.reddit.com/r/German+LearnGerman/search.rss?q=tutor&restrict_sr=1&sort=new&t=month', '„+“ bleibt (eine Abfrage für mehrere Subreddits)');
-  assert.ok(m.reddit.length <= 2, 'höchstens 2 Reddit-Abfragen je Lauf');
+  // Roh-Lauf 14.11.2026: Reddit-Suche aus GitHub 403 „Verboten“, die Liste /new/.rss 200 -> Standard ist die Liste
+  assert.equal(redditSuche({ sub: 'German+LearnGerman' }), 'https://www.reddit.com/r/German+LearnGerman/new/.rss?limit=100');
+  assert.ok(m.reddit.length <= 2 && m.reddit.every(r => !r.q), 'höchstens 2 Reddit-Abfragen je Lauf, Liste statt Suche');
   assert.equal(freelancerSuche('german tutor'), 'https://www.freelancer.com/api/projects/0.1/projects/active/?query=german%20tutor&limit=50&job_details=true');
+  assert.equal(freelancerSuche({ jobs: [518, 2108], limit: 100 }), 'https://www.freelancer.com/api/projects/0.1/projects/active/?jobs%5B%5D=518&jobs%5B%5D=2108&limit=100&job_details=true');
+  assert.ok(m.freelancer.some(q => q?.jobs?.includes(518)), 'Fähigkeit German Translator (518) wird abgefragt');
   assert.equal(lemmySuche({ instanz: 'feddit.org', q: 'Nachhilfe Deutsch' }), 'https://feddit.org/api/v3/search?q=Nachhilfe%20Deutsch&type_=Posts&sort=New&listing_type=All&limit=50');
   assert.equal(freelancerLink('/translation/x-1'), 'https://www.freelancer.com/projects/translation/x-1');
   assert.equal(auszugAus('Text hier submitted by /u/abc [link] [comments]'), 'Text hier');

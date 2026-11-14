@@ -35,12 +35,12 @@ export const FIXTURE_KARTE = [
   ['remotive.com/api/', 'remotive-leer.json'],
   // Gesuche aus dem Netz (module/gesuche.mjs): Reddit-Suche (Atom) und Freelancer-API – NACHGEBAUT nach dem Format der
   // Quellen (Bau-Sitzung 14.11.2026 ohne Netz), andere Subreddits: leerer Feed
-  ['reddit.com/r/German+LearnGerman/search.rss', 'gesuche/reddit-german.xml'],
-  ['reddit.com/r/germany+Austria+askswitzerland+forhire+slavelabour/search.rss', 'gesuche/reddit-forhire.xml'],
+  ['reddit.com/r/German+LearnGerman/new/.rss', 'gesuche/reddit-german.xml'],
+  ['reddit.com/r/forhire+slavelabour+germany+Austria+askswitzerland/new/.rss', 'gesuche/reddit-forhire.xml'],
   // Lemmy-Such-API (NACHGEBAUT im Format von Lemmy 0.19): feddit.org mit Gesuchen, andere Instanzen leer
   ['feddit.org/api/v3/search?q=Nachhilfe', 'gesuche/lemmy-feddit.json'],
   ['/api/v3/search?', 'gesuche/lemmy-leer.json'],
-  ['freelancer.com/api/projects/0.1/projects/active/?query=german%20tutor', 'gesuche/freelancer-german.json'],
+  ['freelancer.com/api/projects/0.1/projects/active/?jobs%5B%5D=518&jobs%5B%5D=2108', 'gesuche/freelancer-german.json'],
   ['freelancer.com/api/', 'gesuche/freelancer-leer.json'],
   ['q=Sprachpaten%20gesucht', 'news-unterricht.xml'], // seit 14.11.2026 ohne die Lehrkräfte-Suchen (Arbeitsamt-Stellen raus)
   ['rss/gruppe/freebies', 'mydealz-freebies.xml'],

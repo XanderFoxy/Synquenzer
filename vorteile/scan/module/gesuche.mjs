@@ -2,8 +2,9 @@
 // wenn jemand über Fiverr, Upwork oder andere Seiten, Foren, Reddit usw. jemanden sucht, der ihm mit Deutsch hilft“.
 // Gehört zum Bereich „unterricht“ (unterricht.mjs ruft gesucheAusNetz auf), Einträge mit extra.typ 'gesuch'.
 // Quellen (config module.unterricht.gesuche):
-//   - Reddit-Suche je Subreddit als Atom-Feed (…/search.rss?q=…&restrict_sr=1&sort=new), ohne Login
-//   - Freelancer.com: öffentliche Projekt-API (…/api/projects/0.1/projects/active/?query=…), JSON, ohne Schlüssel
+//   - Reddit: neueste Beiträge mehrerer Subreddits als Atom-Feed (…/r/A+B/new/.rss), ohne Login (die Suche gibt GitHub 403)
+//   - Freelancer.com: öffentliche Projekt-API (…/projects/active/?jobs[]=518…), JSON, ohne Schlüssel – Fähigkeits-Filter
+//   - Lemmy (Fediverse): Such-API, gerade aus (Roh-Lauf 14.11.2026: nur Nachrichten)
 //   - Fundorte mit fertiger Suche für Plattformen ohne offenen Zugang (Upwork: RSS seit 08/2024 abgeschaltet, Fiverr: keine
 //     öffentlichen Käufer-Anfragen, Kleinanzeigen: kein Feed) – erscheinen IMMER.
 // Filter: Sucht jemand Hilfe (suche/looking for/need/[hiring] …)? Geht es um Deutsch (oder ist das Forum Deutsch)? Welche
@@ -16,9 +17,19 @@ import { sammleFeeds, eintrag } from './gemeinsam.mjs';
 import { bewerbenAls, fundortEintraege, sortWert } from './assistent.mjs';
 
 // sub darf mehrere Subreddits mit „+“ verbinden (eine Abfrage statt sieben: Reddit drosselt GitHub-Läufe schnell mit 429)
-export const redditSuche = ({ sub, q }) =>
-  `https://www.reddit.com/r/${String(sub).split('+').map(encodeURIComponent).join('+')}/search.rss?q=${encodeURIComponent(q)}&restrict_sr=1&sort=new&t=month`;
-export const freelancerSuche = q => `https://www.freelancer.com/api/projects/0.1/projects/active/?query=${encodeURIComponent(q)}&limit=50&job_details=true`;
+// Ohne q: die Liste der neuesten Beiträge (/new/.rss) – die Reddit-SUCHE antwortet GitHub-Läufen mit 403 „Verboten“,
+// die Liste nicht (Roh-Lauf 14.11.2026: search.rss 403/429, /r/German/new/.rss 200 mit 25 Beiträgen)
+export const redditSuche = ({ sub, q }) => {
+  const r = `https://www.reddit.com/r/${String(sub).split('+').map(encodeURIComponent).join('+')}`;
+  return q ? `${r}/search.rss?q=${encodeURIComponent(q)}&restrict_sr=1&sort=new&t=month` : `${r}/new/.rss?limit=100`;
+};
+// q = Suchwort oder { jobs: [Fähigkeits-IDs] } (518 German Translator, 2108 German Tutoring …): die Volltextsuche der API ist
+// unscharf („german translation“ lieferte vor allem Hindi/Chinesisch, Roh-Lauf 14.11.2026), der Fähigkeits-Filter nicht
+export const freelancerSuche = q => (typeof q === 'object' && q?.jobs
+  ? `https://www.freelancer.com/api/projects/0.1/projects/active/?${q.jobs.map(j => `jobs%5B%5D=${Number(j)}`).join('&')}&limit=${q.limit ?? 50}&job_details=true`
+  : `https://www.freelancer.com/api/projects/0.1/projects/active/?query=${encodeURIComponent(q)}&limit=50&job_details=true`);
+// Fähigkeit „German Translator“/„German Tutoring“ am Projekt = es geht um Deutsch, auch wenn der Text es nicht sagt
+const FL_DEUTSCH = /^german (translator|tutoring)$/i;
 // Lemmy (Fediverse, z. B. feddit.org): offene Such-API, JSON, ohne Konto
 export const lemmySuche = ({ instanz, q }) => `https://${instanz}/api/v3/search?q=${encodeURIComponent(q)}&type_=Posts&sort=New&listing_type=All&limit=50`;
 // Lemmy 0.18 liefert „2026-11-10T12:00:00.123“ ohne Zone (= UTC), 0.19 mit „Z“
@@ -35,7 +46,7 @@ const ARTEN = [
   ['bewerbung', 'bewerbung|lebenslauf|anschreiben|cover letter|=cv|motivationsschreiben|job application'],
   ['behoerde', 'behörde|=amt|=ämter|jobcenter|=brief|=briefe|=letter|=letters|formular|=forms|=anmeldung|=antrag'],
   ['uebersetzung', 'übersetz|translat'],
-  ['korrektur', 'proofread|korrektur|korrigier|lektor|correct my|correcting|correction|=edit|editing'],
+  ['korrektur', 'proofread|korrektur|korrigier|lektor|correct my|correcting|correction|=edit|editing|localization|localisation|lokalisierung'],
   ['konversation', 'konversation|conversation|speaking|=sprechen|practice|=üben|=chat'],
 ];
 export const WAS_NAME = {
@@ -89,7 +100,7 @@ export async function gesucheAusNetz({ holeText, m, jetzt = new Date(), zustand 
   const zuAlt = d => !Number.isFinite(d) || jetztMs - d > maxTage * 864e5 || d - jetztMs > 864e5;
 
   // 1) Reddit (Atom). sammleFeeds: Höchstalter, gleicher Link/Titel einmal, HTTP 401 = gesperrt
-  const feeds = (m.reddit || []).filter(r => r?.sub && r?.q).map(r => ({ name: `Reddit r/${r.sub}`, url: redditSuche(r), maxAlterTage: maxTage, quelleInfo: r }));
+  const feeds = (m.reddit || []).filter(r => r?.sub).map(r => ({ name: `Reddit r/${r.sub}`, url: redditSuche(r), maxAlterTage: maxTage, quelleInfo: r }));
   if (feeds.length) {
     const { items, fehler, gesperrt } = await sammleFeeds(holeText, feeds, { jetzt, maxAlterTage: maxTage, zustand });
     const aus = [...fehler, ...(gesperrt || [])];
@@ -115,7 +126,7 @@ export async function gesucheAusNetz({ holeText, m, jetzt = new Date(), zustand 
       for (const pr of j.result?.projects || []) {
         if (!pr?.seo_url || !pr.title) continue;
         const text = pr.preview_description || pr.description || '';
-        const p = pruefeGesuch(pr.title, text, m, { immerGesuch: true });
+        const p = pruefeGesuch(pr.title, text, m, { immerGesuch: true, thema: (pr.jobs || []).some(j => FL_DEUTSCH.test(j?.name || '')) ? 'deutsch' : null });
         if (!p.was || !freelancerPasst(pr)) continue;
         const d = Number(pr.time_submitted || pr.submitdate) * 1000;
         if (zuAlt(d)) continue;
@@ -124,7 +135,7 @@ export async function gesucheAusNetz({ holeText, m, jetzt = new Date(), zustand 
         const gebote = pr.bid_stats?.bid_count != null ? `${pr.bid_stats.bid_count} ${pr.bid_stats.bid_count === 1 ? 'Gebot' : 'Gebote'}` : '';
         funde.push({ titel: pr.title, link: freelancerLink(pr.seo_url), datum: new Date(d).toISOString(), auszug: auszugAus(text), quelle: 'Freelancer', was: p.was, art: 'freelancer', zusatz: [budget, gebote].filter(Boolean).join(' · ') });
       }
-    } catch (e) { hinweise.push(`Gesuche: Freelancer „${q}“: ${e.message}`); }
+    } catch (e) { hinweise.push(`Gesuche: Freelancer „${q?.name || q}“: ${e.message}`); }
   }
 
   // 3) Lemmy (Fediverse-Foren, z. B. feddit.org) – Beiträge wie bei Reddit prüfen (Gesuch + Deutsch + Hilfe)
@@ -143,8 +154,6 @@ export async function gesucheAusNetz({ holeText, m, jetzt = new Date(), zustand 
       }
     } catch (e) { hinweise.push(`Gesuche: Lemmy ${l.instanz} „${l.q}“: ${e.message}`); }
   }
-  // VORLÄUFIG (nur Erkundungs-Lauf, vor dem Zusammenführen entfernen): Kandidaten-Quellen abrufen, damit der Roh-Mitschnitt sie zeigt
-  for (const u of [].concat(m._probe || [])) { try { await holeText(u); } catch { /* nur Mitschnitt */ } }
 
   // gleicher Link oder (fast) gleicher Titel aus mehreren Suchen -> einmal; neueste zuerst
   const gesehen = new Set();
