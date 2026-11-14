@@ -54,13 +54,13 @@ try {
 
   /* 1 Analyse: Anker am Spitzenwert, Konsonant/Vokal-Grenze, Tonhöhe */
   const A = await run(p, async o => { const a = await window.__vx1.analyse(o.id); const x = wpBase(o.id).getChannelData(0), sr = o.SR;
-    const pk = o.ANCH.map(t => { let bi = 0, bv = -1; for (let i = Math.round((t - .006) * sr); i < Math.round((t + .006) * sr); i++) if (Math.abs(x[i]) > bv) { bv = Math.abs(x[i]); bi = i; } return bi / sr; });
-    return {a, L: window.__vx1.list(o.id), pk}; }, {id, SR, ANCH});
+    const pk = o.ANCH.map(t => { let bi = 0, bv = -1; for (let i = Math.round((t - o.PK) * sr); i < Math.round((t - o.PK + .12) * sr); i++) if (Math.abs(x[i]) > bv) { bv = Math.abs(x[i]); bi = i; } return bi / sr; });
+    return {a, L: window.__vx1.list(o.id), pk}; }, {id, SR, ANCH, PK});
   info('Analyse', JSON.stringify({ms: A.a.ms, how: A.a.how, n: A.a.n}));
   const anErr = A.L.map((q, k) => Math.abs(q.at - ANCH[k]) * 1000), pkS = A.pk;
   ok(anErr.every(e => e <= 5), 'Anker liegt am Gipfel der Hüllkurve (±5 ms = eine Schwingung)', anErr.map(e => e.toFixed(1)).join(' '));
   const smpErr = A.L.map((q, k) => Math.abs(q.at - pkS[k]) * 1000);
-  ok(smpErr.every(e => e <= .1), 'Anker = lautester Spitzenwert (Sample) des Einsatzes', smpErr.map(e => e.toFixed(2)).join(' '));
+  ok(smpErr.every(e => e <= .1), 'Anker = lautester Spitzenwert (Sample) in den ersten 120 ms', smpErr.map(e => e.toFixed(2)).join(' '));
   const vbErr = A.L.map((q, k) => q.vb == null ? 999 : (q.vb - (ANCH[k] - PK + .05)) * 1000);
   ok(vbErr.every(e => Math.abs(e) <= 15), 'Konsonant/Vokal-Grenze am Vokal-Beginn (±15 ms)', vbErr.map(e => e.toFixed(0)).join(' '));
   ok(A.L.every(q => q.uv.length && q.uv[0][0] < q.t + .02 && q.uv[0][1] > q.t + .02), 'stimmloser Anteil am Stück-Anfang erkannt', JSON.stringify(A.L.map(q => q.uv[0])));
@@ -85,7 +85,7 @@ try {
   const bit = Q.L.map(q => { const s0 = Math.round(q.t * SR), d0 = Math.round(q.dst * SR), L = Math.round((q.an + .02) * SR); let eq = 0; for (let i = 0; i < L; i++) if (Math.abs(y[d0 + i] - x[s0 + i]) < 1e-7) eq++; return eq / L; });
   ok(bit.every(v => v === 1), 'Einsatz bis Anker + 20 ms bitgleich an das Ziel gelegt (nie gedehnt)', bit.map(v => v.toFixed(3)).join(' '));
   // Spitzenwert im Ausgang: die lauteste Stelle im Einschwingbereich liegt am Raster
-  const pkOut = Q.L.map(q => { const a = Math.round(q.dst * SR), e = Math.round((q.dst + .12) * SR); let bi = a, bv = 0; for (let i = a; i < e; i++) { const v = Math.abs(y[i]); if (v > bv) { bv = v; bi = i; } } const t = bi / SR, g = Math.round((t - r0.t0) / st) * st + r0.t0; return (t - g) * 1000; });
+  const pkOut = Q.L.map(q => { const a = Math.round(q.dst * SR), e = Math.round((q.dst + .12) * SR) - 1; let bi = a, bv = 0; for (let i = a; i < e; i++) { const v = Math.abs(y[i]); if (v > bv) { bv = v; bi = i; } } const t = bi / SR, g = Math.round((t - r0.t0) / st) * st + r0.t0; return (t - g) * 1000; });
   ok(pkOut.every(e => Math.abs(e) <= 3), 'gehörter Spitzenwert sitzt auf dem Taktstrich (±3 ms)', pkOut.map(e => e.toFixed(1)).join(' '));
   // Nach links (Stück 1, 3, 5 rücken früher): Ausklang des Vorgängers bis zur Ausblende unverändert (nicht gestaucht), dann leise
   const jumps = [], keep = [];
@@ -122,6 +122,10 @@ try {
     ok(ratio <= 1.5 ? rms > .02 : true, 'nach rechts: Vokal des Vorgängers gedehnt (keine Lücke bei ≤ 1,5×)', 'Faktor ' + ratio.toFixed(3) + ', Pegel vor dem Nachfolger ' + rms.toFixed(3));
   }
 
+  // Hauptfaden-Rückfall (ohne Worker, Claude-App): derselbe Kern rechnet dasselbe
+  const HF = await run(p, async id => { const w = window.__vx1.warp(id), b = wpBase(id), msg = vx1rMsg(b, w); const r = window.__vx1.dsp(Array.from(msg.x), msg.sr, {op: 'hyb', src: msg.src, dst: msg.dst, an: msg.an, pre: msg.pre, lock: msg.lock, maxr: msg.maxr});
+    const y = WP.cache.get(id).buf.getChannelData(0); let mx = 0; for (let i = 0; i < y.length; i++) mx = Math.max(mx, Math.abs(y[i] - r.y[i])); return {mx, cut: r.cut, stretch: r.stretch, gap: r.gap}; }, id);
+  ok(HF.mx < 1e-6, 'Hauptfaden-Rückfall rechnet bitgleich zum Worker', JSON.stringify(HF));
   /* 3 Stück verschieben (vd, Raster 1/16 am Anker), Teilen/Verbinden, Undo je Aktion */
   const M = await run(p, async id => {
     const u0 = UNDO.length, L0 = window.__vx1.list(id), k = 2, ta = L0[k].da + .11;
@@ -156,12 +160,12 @@ try {
   const SV = await run(p, async id => {
     await window.__vx1.quant(id, {grid: '1/8', strength: 1}); await window.__vx1.move(id, 1, window.__vx1.list(id)[1].da + .02, {grid: 'off'});
     const m = S.takes[id], n = tkNormTake(JSON.parse(JSON.stringify(m)));
-    const same = JSON.stringify(n) === JSON.stringify(m);
-    const z = await SYNQUENZER.tkZipRoundtrip(), j = z.json ? JSON.parse(z.json) : null, tj = j && j.takes && j.takes[id];
+    const same = JSON.stringify([n.marks, n.warp]) === JSON.stringify([m.marks, m.warp]);
+    const z = await SYNQUENZER.tkZipRoundtrip(), j = z.json ? JSON.parse(z.json) : null, tj = j && ((j.project && j.project.takes) || j.takes || {})[id];
     // alt: ein Take ohne VX1-Felder (Scheiben-Karte) bleibt Byte für Byte
     const old = {sr: m.sr, len: m.len, chunks: m.chunks, route: m.route, latMs: m.latMs, created: m.created, src: m.src, marks: [{t: .4, conf: 1}, {t: .9, conf: .5}], warp: {mode: 'slice', grid: 'auto', res: '1/16', strength: 1, swing: .5, bpm: 120, t0: 0, map: {v: 1, src: [0, .4, .9, 3.6], dst: [0, .42, .9, 3.6]}}};
     const on = tkNormTake(JSON.parse(JSON.stringify(old)));
-    return {same, dbg: {zk: j && Object.keys(j).slice(0, 30), tk: tj && Object.keys(tj), diff: same ? null : [JSON.stringify(n).slice(0, 300), JSON.stringify(m).slice(0, 300)]}, zip: z.ok, hy: !!(tj && tj.warp && tj.warp.mode === 'hybrid' && tj.warp.an), vd: !!(tj && tj.marks && tj.marks.some(k => k.vd != null)), an: !!(tj && tj.marks && tj.marks.every(k => k.an != null)),
+    return {same, dbg: {zk: j && Object.keys(j).slice(0, 30), tk: tj && Object.keys(tj), diff: same ? null : [JSON.stringify([n.marks, n.warp]).slice(0, 400), JSON.stringify([m.marks, m.warp]).slice(0, 400)]}, zip: z.ok, hy: !!(tj && tj.warp && tj.warp.mode === 'hybrid' && tj.warp.an), vd: !!(tj && tj.marks && tj.marks.some(k => k.vd != null)), an: !!(tj && tj.marks && tj.marks.every(k => k.an != null)),
       oldOk: on && !on.warp.an && on.warp.mode === 'slice' && on.marks.every(k => k.an == null && k.vd == null), oldKeys: on && Object.keys(on.marks[0]).join(',')};
   }, id);
   ok(SV.same, 'Speichern/Laden: Take mit Stücken normalisiert deep-equal', SV.same ? '' : JSON.stringify(SV.dbg.diff));

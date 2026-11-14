@@ -96958,7 +96958,8 @@ function imp1Core() {
     let k1 = -1; for (let k = 0; k < nbt; k++) if (k % m === phi % m && bt[k] >= tStart - tol) { k1 = k; break; }
     if (vocal) { k1 = -1; for (let k = 0; k < nbt; k++) if (bt[k] >= tStart - tol) { k1 = k; break; } }
     if (k1 < 0) k1 = 0;
-    const t1 = bt[k1] || 0, barSec = m * bs;
+    let t1 = bt[k1] || 0; if (t1 < 0 && t1 > -.06) t1 = 0;   // Rahmen-Raster: knapp vor 0 = 0
+    const barSec = m * bs;
     prog(.8);
     // Teile: Takt-Merkmale → Selbstähnlichkeit → Grenzen (Schachbrett) → 4er-Raster → Gruppen → Namen
     const nBar = Math.max(1, Math.round((tEnd - t1) / barSec)), bars = [];

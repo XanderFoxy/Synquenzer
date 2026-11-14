@@ -93916,17 +93916,22 @@ function xd1Short(s) {
   const a = w.length > 4 ? w.slice(0, w.length > 5 && n ? 3 : 4) + '.' : w;
   return (a + (n ? ' ' + n : '')).trim();
 }
+// Schrift und Innenabstände der Zeile (::before) je Kopf – nur neu gelesen, wenn sich Fenstergröße oder Klasse ändern (oriFrame läuft alle 100 ms)
+function xd1WoStyle(h) {
+  const k = innerWidth + 'x' + innerHeight + '|' + h.className, C = h._xd1Wo; if (C && C.k === k) return C;
+  let font = '600 10px sans-serif', ls = 0, cut = 13;
+  try { const b = getComputedStyle(h, '::before'), hs = getComputedStyle(h); font = [b.fontStyle, b.fontWeight, b.fontSize, b.fontFamily].join(' '); ls = parseFloat(b.letterSpacing) || 0;
+    cut = (b.position === 'absolute' ? 0 : (parseFloat(hs.paddingLeft) || 0) + (parseFloat(hs.paddingRight) || 0)) + (parseFloat(b.paddingLeft) || 0); } catch (e) {}
+  return (h._xd1Wo = {k, font, ls, cut});
+}
 oriFit = function (c, h) {
   const P = c.path; if (!P.length) return '';
-  const r = h.getBoundingClientRect(); if (r.width < 1) return P.join(' › ');
-  let font = '600 10px sans-serif', ls = 0, avail = r.width;
-  try { const b = getComputedStyle(h, '::before'), hs = getComputedStyle(h); font = [b.fontStyle, b.fontWeight, b.fontSize, b.fontFamily].join(' '); ls = parseFloat(b.letterSpacing) || 0;
-    avail = (b.position === 'absolute' ? r.width : r.width - (parseFloat(hs.paddingLeft) || 0) - (parseFloat(hs.paddingRight) || 0)) - (parseFloat(b.paddingLeft) || 0); } catch (e) {}
-  const fits = s => xd1TxtW(font, ls, s) <= avail + .5;
+  const w = h.getBoundingClientRect().width; if (w < 1) return P.join(' › ');
+  const st = xd1WoStyle(h), avail = w - st.cut, fits = s => xd1TxtW(st.font, st.ls, s) <= avail + .5;   // mit der echten Schrift gemessen (vorher grob 5,2 px je Zeichen)
   const Q = c.part && P[0] !== c.part ? P.slice(1) : P, part = c.part || Q[Q.length - 1] || P[0];
   for (const s of [P.join(' › '), Q.join(' › '), part]) if (fits(s)) return s;
-  const sh = xd1Short(part); XD1.oriN++;
-  return fits(sh) ? sh : sh;                                          // kürzer geht es nicht – lieber „Sz 1“ als „Sze…“
+  XD1.oriN++;
+  return xd1Short(part);                                             // kürzer geht es nicht – lieber „Sz 1“ (die Nummer bleibt) als „Sze…“
 };
 
 /* ---------- Test-Schnittstelle ---------- */

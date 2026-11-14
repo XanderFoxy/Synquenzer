@@ -96449,20 +96449,23 @@ function vx1rRun(M, m) {
       vc[f] = best; f0[f] = best > .5 && bl ? sr2 / bl : 0;
       kind[f] = best > .6 && zcr[f] < .2 ? 2 : 1;          // 2 = gesungen (Vokal), 1 = stimmlos (Konsonant/Atem)
     }
-    // Anker je Marke: erster Gipfel ≥ 90 % des Höchstwerts in [Marke, Marke + 120 ms) (nicht über die nächste Marke)
+    // Spitzen-Hüllkurve: größter Betrag in ±2,5 ms (eine Schwingung tiefer Stimmen), Schritt 1 ms
+    const R5 = Math.max(1, Math.round(.0025 * sr)), pe = new Float32Array(ne);
+    for (let f = 0; f < ne; f++) { const c = f * H; let v = 0; for (let i = Math.max(0, c - R5); i < Math.min(n, c + R5); i++) { const a = x[i] < 0 ? -x[i] : x[i]; if (a > v) v = a; } pe[f] = v; }
+    // Anker je Marke: der erste Gipfel der Spitzen-Hüllkurve, der ≥ 90 % des Höchstwerts in [Marke, Marke + 120 ms) erreicht
+    // (nicht über die nächste Marke), genau: das lauteste Sample dort
     const mk = m.marks || [], an = new Float32Array(mk.length);
     for (let k = 0; k < mk.length; k++) {
-      const f0i = Math.max(0, Math.round(mk[k] * 1000)), lim = k + 1 < mk.length ? Math.round(mk[k + 1] * 1000) - 5 : ne - 1;
-      const f1i = Math.min(ne - 1, Math.round((mk[k] + .12) * 1000), Math.max(f0i, lim));
-      let mx = 0; for (let f = f0i; f <= f1i; f++) if (env[f] > mx) mx = env[f];
-      let at = f0i;
-      for (let f = f0i; f <= f1i; f++) if (env[f] >= .9 * mx && (f === f1i || env[f] >= env[f + 1])) { at = f; break; }
-      // feiner: der lauteste Spitzenwert im Rahmen
-      const R3 = Math.max(Wn >> 1, Math.round(.003 * sr));
-      let bi = at * H, bv = -1; for (let i = Math.max(0, at * H - R3); i < Math.min(n, at * H + R3); i++) { const v = x[i] < 0 ? -x[i] : x[i]; if (v > bv) { bv = v; bi = i; } }
+      const f0i = Math.max(0, Math.round(mk[k] * sr / H)), lim = k + 1 < mk.length ? Math.round(mk[k + 1] * sr / H) - 5 : ne - 1;
+      const f1i = Math.min(ne - 1, Math.round((mk[k] + .12) * sr / H), Math.max(f0i, lim));
+      let mx = 0; for (let f = f0i; f <= f1i; f++) if (pe[f] > mx) mx = pe[f];
+      let at = f0i, ag = f0i;                             // der erste Gipfel = zusammenhängende Rahmen ≥ 90 % (spätere Crescendi zählen nicht)
+      for (let f = f0i; f <= f1i; f++) if (pe[f] >= .9 * mx) { at = ag = f; while (ag < f1i && pe[ag + 1] >= .9 * mx) ag++; break; }
+      const o = Math.round(mk[k] * sr);
+      let bi = at * H, bv = -1; for (let i = Math.max(o, at * H - R5); i < Math.min(n, ag * H + R5, Math.round((mk[k] + .12) * sr)); i++) { const v = x[i] < 0 ? -x[i] : x[i]; if (v > bv) { bv = v; bi = i; } }
       an[k] = cl(bi / sr - mk[k], 0, .2);
     }
-    return {hop: H / sr, env, fh: FH / sr, rms, zcr, vc, f0, kind, an};
+    return {hop: H / sr, env, pk: pe, fh: FH / sr, rms, zcr, vc, f0, kind, an};
   }
   // ---- 'hyb': Schneiden/Dehnen ----
   const src = m.src, dst = m.dst, anc = m.an || [], K = src.length, y = new Float32Array(n);
@@ -96521,7 +96524,7 @@ function vx1rRun(M, m) {
 }
 
 /* ---------- Analyse (Worker, je Take + Quelle gecacht) ---------- */
-function vx1rSrc(id) { try { return wpBase(id, null, true); } catch (e) { return tkBuffer(id); } }
+function vx1rSrc(id) { try { return wpBase(id); } catch (e) { return tkBuffer(id); } }   // die Quelle, die die Zeitkarte rendert (gehörter Spitzenwert)
 function vx1rAnalyse(id) {
   const m = S.takes && S.takes[id]; if (!m) return Promise.resolve(null);
   return (wpMarks(id) ? Promise.resolve(wpMarks(id)) : wpDetect(id)).then(async mk0 => {
@@ -96546,8 +96549,8 @@ function vx1rAnOf(A, t, tn) {
   if (!A) return 0;
   const i = A.t.indexOf(t); if (i >= 0) return +A.an[i];
   const H = A.hop, f0i = Math.max(0, Math.round(t / H)), f1i = Math.min(A.env.length - 1, Math.round(Math.min(t + VX1R.ATK, tn == null ? 1e9 : tn - .005) / H));
-  let mx = 0; for (let f = f0i; f <= f1i; f++) if (A.env[f] > mx) mx = A.env[f];
-  for (let f = f0i; f <= f1i; f++) if (A.env[f] >= .9 * mx && (f === f1i || A.env[f] >= A.env[f + 1])) return clamp(f * H - t, 0, .2);
+  const E = A.pk || A.env; let mx = 0; for (let f = f0i; f <= f1i; f++) if (E[f] > mx) mx = E[f];
+  for (let f = f0i; f <= f1i; f++) if (E[f] >= .9 * mx) { let g = f, b = f; while (g < f1i && E[g + 1] >= .9 * mx) { g++; if (E[g] > E[b]) b = g; } return clamp(b * H - t, 0, .2); }
   return 0;
 }
 // die Stücke eines Takes (abgeleitet; nur aus Caches – synchron)
