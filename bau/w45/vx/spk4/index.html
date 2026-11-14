@@ -98156,13 +98156,14 @@ function spk1DspMake(V) {
   }
   const Z2 = typeof spk2DspMake === 'function' ? spk2DspMake({V, magsAt, hpss, f0Sum, comb, ramp, medLine, win, stft, istft, selFn, Fn, NBn, magPair, render, mixOf, transfer, uBegin, uEnd, lay, tick}) : null;   // SPK2 (Auftrag 2: Noten brauchen render/transfer/Undo)
   if (Z2 && typeof spk3DspMake === 'function') spk3DspMake(Z2);   // SPK3: Tiefband mit Kick-Vorlage (ersetzt Z2.lowSplit, schaltet es ein)
+  if (Z2 && typeof spk4DspMake === 'function') spk4DspMake(Z2);   // SPK4: mehrstimmige Noten (Pads, Rest, Original)
   return {on, stft, istft, specInfo, docs, lowSplit, Z2};   // SPK2: Z2 für Messungen
 }
 /* ---------- Hauptfaden: Worker (Blob aus Text), Rückfall = derselbe Kern hier ---------- */
 function spk1Worker() {
   if (SPK1.w !== null) return SPK1.w;
   try {
-    const src = vsDspMake.toString() + ';' + spk1DspMake.toString() + ';' + (typeof spk2DspMake === 'function' ? spk2DspMake.toString() : '') + ';' + (typeof spk3DspMake === 'function' ? spk3DspMake.toString() + ';' : '') /* SPK3 */ + (typeof ki1KernMake === 'function' ? ki1KernMake.toString() + ';' : '') /* KI1 */ + 'const K = spk1DspMake(vsDspMake());onmessage = e => K.on(e.data, (m, tr) => postMessage(m, tr || []));';   // SPK2: Kern-Ergänzung mitschicken · KI1
+    const src = vsDspMake.toString() + ';' + spk1DspMake.toString() + ';' + (typeof spk2DspMake === 'function' ? spk2DspMake.toString() : '') + ';' + (typeof spk3DspMake === 'function' ? spk3DspMake.toString() + ';' : '') /* SPK3 */ + (typeof spk4DspMake === 'function' ? spk4DspMake.toString() + ';' : '') /* SPK4 */ + (typeof ki1KernMake === 'function' ? ki1KernMake.toString() + ';' : '') /* KI1 */ + 'const K = spk1DspMake(vsDspMake());onmessage = e => K.on(e.data, (m, tr) => postMessage(m, tr || []));';   // SPK2: Kern-Ergänzung mitschicken · KI1
     const u = URL.createObjectURL(new Blob([src], {type: 'application/javascript'}));
     const w = new Worker(u); setTimeout(() => { try { URL.revokeObjectURL(u); } catch (e) {} }, 30000);
     w.onmessage = e => spk1Reply(e.data);
@@ -98782,6 +98783,7 @@ function spk1Got(U, r) { if (!r || !r.meta) return; SPK1.last = r; U.meta = r.me
 /* ---- Ebenen-Liste ---- */
 function spk1Layers(U) {
   if (typeof spk3LpFromMeta === 'function') spk3LpFromMeta(U);   // SPK3: Loop aus dem Dokument
+  if (typeof spk4Lab === 'function') spk4Lab(U);   // SPK4: Hinweis einstimmig/mehrstimmig der gewählten Ebene
   const L = U.meta.layers, R = U.meta.rest || {}, row = (id, name, col, o) => {
     const act = U.act === id ? ' act' : '';
     let h = `<div class="spk1-lr${act}" data-l="${esc(id)}"><button class="spk1-dot" data-a="lcol" style="--c:${col}" aria-label="Farbe ${esc(name)}"></button><button class="rb spk1-nm" data-a="lact" aria-label="Quelle für In Ebene: ${esc(name)}">${esc(name)}</button>`;
@@ -99655,7 +99657,7 @@ function spk2Zu(U, art, refs) {
 function spk2Weg(U) { const refs = U.n2sel; if (!refs.length) return; return spk2Run(U, 'notenWeg', {notes: refs}, 'Verwerfen', r => { U.n2sel = []; return r.n + ' verworfen'; }); }
 function spk2Finden(U) {
   const lid = U.act || 'orig', sel = U.sel.filter(s => s.art === 'rect' || s.art === 'zeit' || s.art === 'freq');
-  return spk2Run(U, 'noten', {lid, sel}, 'Noten · ' + spk2LName(U, lid), r => r.drums ? 'Drums haben keine Tonhöhe' : r.neu + ' Noten in ' + spk2LName(U, lid) + ' · einstimmig · Note antippen = zuordnen');
+  return spk2Run(U, 'noten', {lid, sel, poly: spk4Arg(U, lid) /* SPK4 */}, 'Noten · ' + spk2LName(U, lid), r => r.drums ? 'Drums haben keine Tonhöhe' : r.neu + ' Noten in ' + spk2LName(U, lid) + (r.mehrstimmig ? ' · mehrstimmig' : ' · einstimmig') /* SPK4 */ + ' · Note antippen = zuordnen');
 }
 function spk2Ueberall(U) {
   const lid = U.act; return spk2Run(U, 'finden', {lid}, 'Überall finden · ' + spk2LName(U, lid), r => r.neu + ' ähnliche Töne · Vorlage aus ' + r.vorlage.n + ' Noten · „Sicher ab“ filtert');
@@ -99682,12 +99684,13 @@ function spk2NotenDd(U, b) {
     B('Alle übernehmen' + (kand ? ' (' + kand + ')' : ''), () => spk2Alle(U), !l || !kand, 'alle');
     B('Verfeinern nach Noten', () => spk2VerfNoten(U), !l || !zu, 'verf');
     B('Klang nachbauen', () => spk2KlOpen(U, lid, spk2KlPick(U, lid), b), (l && l.art === 'drums') || !spk2KlPick(U, lid), 'klang');   // Auftrag 4
+    const p4 = el('p', '', ''); spk4Btn(U, g, lid, p4, l ? zu + ' bestätigt · ' : '');   // SPK4: Schalter Mehrstimmig + Text
     dd.appendChild(g);
-    dd.appendChild(el('p', '', (l ? zu + ' bestätigt · ' : '') + 'Einstimmig: je Ebene ein Ton zur Zeit, Akkorde werden nicht getrennt. Quelle = gewählte Ebene in der Liste.'));
+    dd.appendChild(p4);
   });
 }
 SPK1_API.spk2 = {
-  noten: (lid, sel) => spk1Call('noten', {doc: SPK1.doc, lid, sel}).then(r => { SPK1.last = r; return r; }),
+  noten: (lid, sel, poly) => spk1Call('noten', {doc: SPK1.doc, lid, sel, poly}).then(r => { SPK1.last = r; return r; }),   // SPK4: poly (true/false, sonst nach Ebene)
   zuordnen: (notes, nach, art) => spk1Call('zuordnen', {doc: SPK1.doc, notes, nach, art}).then(r => { SPK1.last = r; return r; }),
   finden: lid => spk1Call('finden', {doc: SPK1.doc, lid}).then(r => { SPK1.last = r; return r; }),
   weg: notes => spk1Call('notenWeg', {doc: SPK1.doc, notes}).then(r => { SPK1.last = r; return r; }),
@@ -100522,6 +100525,162 @@ SPK1_API.spk3 = {
   kl: SPK3_KL
 };
 /* SPK3-END */
+/* ===== SPK4-BEGIN (Spektral-Seite Teil 4 · mehrstimmige Noten) ===== */
+// Kern-Ergänzung im selben Worker (Text wird mitgeschickt, Haken „SPK4“ in spk1DspMake/spk1Worker). Z2 = SPK2-Kern (nach SPK3).
+// Mehrstimmig (Pads, Rest, Original – oder Schalter in Noten ▾): je Rahmen iterative Obertonsumme – Ton mit der größten Salienz,
+// seine Obertöne abziehen (glatte Hüllkurve: ein Oberton, der mit einem anderen Ton zusammenfällt, wird nur so weit abgezogen,
+// wie die Nachbar-Obertöne erwarten lassen), nächster Ton, bis er < pr der ersten Salienz liegt (max. pv Töne).
+// Oktav-Schutz: der Grundton muss selbst als Spitze da sein (sonst wäre C3 aus C4 + G4 „gefunden“). Dauer/Stetigkeit: je Ton
+// Aktivität mit Hysterese (an ≥ on, aus < off) und Mindestdauer; Anschläge je Ton an Pegel-Senken + Anschlägen der Ebene.
+function spk4DspMake(Z2) {
+  if (!Z2 || !Z2.I || !Z2.h || !Z2.ops) return Z2;
+  const {I} = Z2, H2 = Z2.h;
+  const o5 = {N: 8192, H: 10, pv: 5, pr: 0.3, fund: 0.12, sub: 0.5, oe: 0.3, cent: 30, bw: 3, sm: 3, on: 0.3, off: 0.15, minD: 0.14, gap: 10, dip: 5, rise: 3, snap: 0.35, cmin: 0.3, bd: 2, vd: 1, jump: 6, back: 1.5, pre: 0.08, dbg: null};
+  const AUTO = {pads: 1, rest: 1, orig: 1};
+  const mf = m => 440 * Math.pow(2, (m - 69) / 12);
+  // Regel (gleich auf der Seite in spk4Auto): Pads/Rest/Original mehrstimmig, Original im Bass-Band (Auswahl oben ≤ 400 Hz) einstimmig wie bisher;
+  // Bass und Drums nie; m.poly (Schalter in Noten ▾) gilt sonst immer
+  const polyOf = (d, m) => { const art = H2.artOf(d, m.lid || 'orig'); if (art === 'drums' || art === 'bass') return false; if (m.poly != null) return !!m.poly;
+    if (art === 'orig') { let hi = 0; for (const s of m.sel || []) if (s && s.art !== 'zeit' && s.f1 != null) hi = Math.max(hi, +s.f1); if (hi > 0 && hi <= 400) return false; }
+    return !!AUTO[art]; };
+  async function polyNoten(d, m, emit) {
+    const lid = m.lid || 'orig', R = H2.rangeOf(d, lid, m.sel); if (!R) return {notes: [], drums: true};
+    const sr = d.meta.sr, hop = d.meta.base.hop, n = d.meta.n, hopS = hop / sr, a0 = Math.max(0, Math.floor((R.ta - 0.5) * sr)), b0 = Math.min(n, Math.ceil((R.tb + 0.5) * sr));
+    let x;
+    if (lid === 'orig') x = d.mid; else { const ch = I.render(d, I.mixOf(d, lid), a0, b0); x = new Float32Array(n); const g = 1 / ch.length; for (const c of ch) for (let i = 0; i < c.length; i++) x[a0 + i] += c[i] * g; }
+    emit({qid: m.qid, prog: 0.3});
+    const N = o5.N, df = sr / N, H = o5.H, fTop = Math.min(sr / 2 - 1, Math.max(3000, R.fb * 4)), K = Math.min(N / 2 + 1, Math.ceil(fTop / df) + 3);
+    const i0 = Math.max(0, Math.floor(R.ta * sr / hop)), i1 = Math.ceil(R.tb * sr / hop) + 1, F = Math.max(0, i1 - i0);
+    const Y = H2.magsX(x, N, hop, K, i0, i1);
+    // Kandidaten: Halbtöne im Band; je Oberton ein Bin-Fenster ±cent (mind. ±1 Bin)
+    const M = []; for (let mm = Math.ceil(H2.midiOf(R.fa)); mf(mm) <= R.fb; mm++) M.push(mm);
+    const S = M.length, lo = new Int32Array(S * H), hi = new Int32Array(S * H), wh = new Float32Array(H), cw = Math.pow(2, o5.cent / 1200) - 1;
+    for (let h = 0; h < H; h++) wh[h] = h === 0 ? 1 : Math.pow(0.84, h);
+    for (let j = 0; j < S; j++) for (let h = 0; h < H; h++) { const c = (h + 1) * mf(M[j]) / df, w = Math.max(1, c * cw); lo[j * H + h] = Math.max(1, Math.floor(c - w)); hi[j * H + h] = Math.min(K - 2, Math.ceil(c + w)); }
+    const A = new Float32Array(K), pk = new Float32Array(H), pkK = new Int32Array(H), sal = new Float32Array(S);
+    const PV = o5.pv, sel = new Int16Array(F * PV).fill(-1), sv = new Float32Array(F * PV), s0 = new Float32Array(F);
+    // nur echte Spitzen im Fenster zählen (die Flanke eines Nachbartons ist kein Oberton)
+    const peaks = j => { let s = 0; for (let h = 0; h < H; h++) { const a = lo[j * H + h], b = hi[j * H + h]; let v = 0, kb = -1; if (a >= K - 2) { pk[h] = 0; pkK[h] = -1; continue; } for (let k = a; k <= b; k++) if (A[k] > v && A[k] >= A[k - 1] && A[k] >= A[k + 1]) { v = A[k]; kb = k; } pk[h] = v; pkK[h] = kb; s += wh[h] * Math.sqrt(v); } return s; };
+    for (let i = 0; i < F; i++) {
+      const o = i * K; for (let k = 0; k < K; k++) A[k] = Y[o + k];
+      let first = 0;
+      for (let it = 0; it < PV; it++) {
+        let bs = 0, bj = -1;
+        for (let j = 0; j < S; j++) {
+          let s = peaks(j); let mx = 0; for (let h = 1; h < 4; h++) mx = Math.max(mx, pk[h]);
+          if (pk[0] < o5.fund * mx || pk[0] < o5.sub * pk[1] || pk[2] + pk[4] + pk[6] < o5.oe * (pk[1] + pk[3] + pk[5])) s = 0;   // Oktav-Schutz: Grundton fehlt oder schwächer als Oberton 2 (Sub-Oszillator / fehlender Grundton) → zählt zur Oktave darüber
+          sal[j] = s; if (s > bs) { bs = s; bj = j; }
+        }
+        if (bj < 0 || bs <= 0) break; if (!it) first = bs; else if (bs < o5.pr * first) break;
+        sel[i * PV + it] = bj; sv[i * PV + it] = bs;
+        // abziehen: glatte Hüllkurve über die Obertöne (Nachbarn), Hauptkeule ±2 Bins anteilig
+        peaks(bj);
+        for (let h = 0; h < H; h++) {
+          const kb = pkK[h]; if (kb < 0 || pk[h] <= 0) continue;
+          const nb = h === 0 ? pk[1] * 2 : h === H - 1 ? pk[h - 1] : 0.5 * (pk[h - 1] + pk[h + 1]), e = h === 0 ? pk[0] : Math.min(pk[h], Math.max(nb, 0.25 * pk[h])), f = Math.max(0, 1 - e / pk[h]);
+          for (let k = Math.max(1, kb - o5.bw); k <= Math.min(K - 1, kb + o5.bw); k++) A[k] *= f;
+        }
+        { const c = 0.5 * mf(M[bj]) / df, w = Math.max(1, c * cw); let v = 0, kb = -1; for (let k = Math.max(1, Math.floor(c - w)); k <= Math.ceil(c + w) && k < K - 1; k++) if (A[k] > v) { v = A[k]; kb = k; }   // Sub-Oszillator (f/2) gehört zum Ton
+          if (kb > 0 && v <= pk[0]) for (let k = Math.max(1, kb - 2); k <= kb + 2; k++) A[k] = 0; }
+      }
+      s0[i] = first;
+      if ((i & 127) === 127) { emit({qid: m.qid, prog: 0.3 + 0.5 * i / F}); if (I.tick) await I.tick(); }
+    }
+    // Bezug: 95-%-Quantil der ersten Salienz (Stellen ohne Ton zählen nicht)
+    const srt = Array.from(s0).sort((p, q) => p - q), ref = Math.max(1e-9, srt[Math.floor(srt.length * 0.95)] || 0);
+    // Aktivität je Ton (relativ zum Bezug), Pegel je Ton (dB, Obertöne 1–3 im Originalspektrum)
+    const act = new Float32Array(S * F);
+    for (let i = 0; i < F; i++) for (let it = 0; it < PV; it++) { const j = sel[i * PV + it]; if (j < 0) break; act[j * F + i] = sv[i * PV + it] / ref; }
+    // Halbton-Nachbarn (Schwebung/Chorus: die Spitze springt kurz einen Halbton) → zeitlich glätten (±sm Rahmen), dann trägt nur der stärkere
+    // Nachbar die Summe beider (ein Ton statt zwei)
+    { const W = o5.sm, sm = new Float32Array(S * F);
+      for (let j = 0; j < S; j++) { let acc = 0; const o = j * F; for (let i = 0; i < F + W; i++) { if (i < F) acc += act[o + i]; if (i - 2 * W - 1 >= 0) acc -= act[o + i - 2 * W - 1]; const c = i - W; if (c >= 0 && c < F) sm[o + c] = acc / (2 * W + 1); } }
+      for (let i = 0; i < F; i++) for (let j = 0; j < S; j++) { const v = sm[j * F + i]; if (v <= 0) { act[j * F + i] = 0; continue; } const L = j > 0 ? sm[(j - 1) * F + i] : 0, Rr = j + 1 < S ? sm[(j + 1) * F + i] : 0;
+        act[j * F + i] = v >= L && v > Rr ? v + (L < v ? 0.5 * L : 0) + (Rr < v ? 0.5 * Rr : 0) : 0; } }
+    const O = H2.onsetsOf(x, sr, R.ta - 0.1, R.tb + 0.1, R.fa, R.fb), G = H2.gridOf(d), T = i => (i0 + i) * hopS, out = [];
+    const lvl = (j, i) => { const o = i * K; let e = 0; for (let h = 0; h < 3; h++) { const a = lo[j * H + h], b = hi[j * H + h]; if (a >= K - 2) break; let v = 0; for (let k = a; k <= b; k++) v = Math.max(v, Y[o + k]); e += v * v; } return 10 * Math.log10(e + 1e-12); };
+    const minF = Math.max(2, Math.round(o5.minD / hopS)), runs = [], dips = [], ES = new Map(), beat = 4 * G.step;
+    // 1) je Ton: Läufe (Hysterese, Lücken ≤ gap überbrückt), geglätteter Pegel, Pegel-Senken (Abfall ≥ dip, danach Anstieg ≥ rise)
+    for (let j = 0; j < S; j++) {
+      const on = new Uint8Array(F); let st = 0, gap = 0, has = false;
+      for (let i = 0; i < F; i++) { const v = act[j * F + i]; if (!st) { if (v >= o5.on) { st = 1; gap = 0; } } else if (v < o5.off) { if (++gap > o5.gap) { st = 0; for (let g = 1; g < gap; g++) on[i - g] = 0; } } else gap = 0; on[i] = st; if (st) has = true; }
+      if (!has) continue;
+      const E = new Float32Array(F), Es = new Float32Array(F); for (let i = 0; i < F; i++) E[i] = lvl(j, i);
+      for (let i = 0; i < F; i++) { let s = 0, c = 0; for (let k = Math.max(0, i - 1); k <= Math.min(F - 1, i + 1); k++) { s += E[k]; c++; } Es[i] = s / c; }
+      ES.set(j, Es);
+      for (let i = 0; i < F;) { if (!on[i]) { i++; continue; } let e = i; while (e < F && on[e]) e++; if (e - i >= minF) runs.push({j, i, e}); i = e; }
+      const W1 = Math.round(0.5 / hopS), W2 = Math.round(0.8 / hopS);
+      for (let r = 1; r < F - 1; r++) { if (!on[r] && !on[Math.min(F - 1, r + W1)]) continue; let mn = true; for (let k = Math.max(0, r - 6); k <= Math.min(F - 1, r + 6); k++) if (Es[k] < Es[r]) { mn = false; break; } if (!mn) continue;
+        let mb = -1e9, ma = -1e9; for (let k = Math.max(0, r - W1); k < r; k++) mb = Math.max(mb, Es[k]); for (let k = r + 1; k <= Math.min(F - 1, r + W2); k++) ma = Math.max(ma, Es[k]);
+        if (mb - Es[r] >= o5.dip && ma - Es[r] >= o5.rise) dips.push({j, r, dd: mb - Es[r], ru: ma - Es[r]}); }
+    }
+    // 2) Senke gilt als neuer Anschlag, wenn ein zweiter Ton zur selben Zeit eine Senke hat (Akkord neu angeschlagen) oder die Ebene dort einen Anschlag hat
+    // 2) Anschlag der Ebene, an dem dieser Ton selbst sprunghaft lauter wird (≥ jump dB in ~70 ms) → neuer Anschlag (Klavier, Gitarre);
+    //    Trommel-Anschläge im Gemisch ändern den Pegel des Tons nicht
+    const onR = O.ons.map(u => Math.round(u / hopS) - i0), ok = [];
+    for (const ru of runs) { const Es = ES.get(ru.j); for (const r of onR) { if (r < ru.i + minF || r > ru.e - minF) continue; let mb = 1e9, ma = -1e9; for (let k = r - 4; k < r; k++) mb = Math.min(mb, Es[k]); for (let k = r; k <= r + 3; k++) ma = Math.max(ma, Es[k]); if (ma - mb >= o5.jump) ok.push({j: ru.j, r}); } }
+    // 3) Akkord neu angeschlagen (weiche Klänge ohne Anschlag): je Schlag des Rasters Pegel davor/danach je Ton; im Mittel über die
+    //    gehaltenen Töne ≥ bd dB leiser danach (alter Ton klingt aus, neuer schwillt an) und stärker als die Nachbarschläge → Grenze
+    const bnd = [], wB = Math.round(0.3 / hopS), g5 = Math.round(0.05 / hopS), lastT = T(F - 1), beatsS = [];
+    if (beat > 0.15) for (let bt = G.off + Math.ceil((T(0) + 0.4 - G.off) / beat) * beat; bt < lastT - 0.4; bt += beat) {
+      const r = Math.round(bt / hopS) - i0; let sum = 0, nv = 0; const per = [];
+      for (const ru of runs) { if (ru.i > r - wB - g5 || ru.e < r + wB + g5) continue; const Es = ES.get(ru.j); let b0 = 0, a0 = 0; for (let k = r - g5 - wB; k < r - g5; k++) b0 += Es[k]; for (let k = r + g5; k < r + g5 + wB; k++) a0 += Es[k]; const dr = (b0 - a0) / wB; per.push({j: ru.j, dr}); sum += dr; nv++; }
+      beatsS.push({r, bt, s: nv ? sum / nv : 0, nv, per});
+    }
+    for (let q = 0; q < beatsS.length; q++) { const B = beatsS[q]; if (B.nv < 1 || B.s < o5.bd) continue; if ((q && beatsS[q - 1].s > B.s) || (q + 1 < beatsS.length && beatsS[q + 1].s > B.s)) continue;
+      for (const p of B.per) if (p.dr >= o5.vd) bnd.push({j: p.j, r: B.r, bt: B.bt}); }
+    // Anfang: von der Senke bzw. vom Laufbeginn zurück bis zum Beginn des Anstiegs; lange Noten (≥ 1 Schlag) rasten auf den Schlag ein
+    const startOf = (Es, k0, lim) => { let k = k0; while (k > lim && Es[k - 1] < Es[k] + 0.3) k--; return k; };
+    const snapA = (a, len) => { let bu = null; for (const u of O.ons) if (u >= a - o5.snap && u <= a + 0.06 && (bu == null || Math.abs(u - a) < Math.abs(bu - a))) bu = u; if (bu != null) return bu;
+      if (len >= beat) { const bt = G.off + Math.round((a - G.off) / beat) * beat; if (bt >= a - o5.snap && bt <= a + 0.1) return Math.max(0, bt); } return a; };
+    let pj = -1, pe = 0;
+    for (const {j, i, e} of runs) {
+      const Es = ES.get(j), f = mf(M[j]), cut = [{k: i, s: true}], lim0 = j === pj ? pe : 0; pj = j; pe = e;
+      const cs = ok.filter(p => p.j === j).map(p => ({k: p.r, s: false})).concat(bnd.filter(p => p.j === j).map(p => ({k: p.r, s: false, bt: p.bt}))).sort((p, q) => p.k - q.k);
+      for (const p of cs) if (p.k > cut[cut.length - 1].k + minF && p.k < e - minF) cut.push(p);
+      cut.push({k: e});
+      for (let c = 0; c + 1 < cut.length; c++) {
+        const ia = cut[c].k, ib = cut[c + 1].k; if (ib - ia < minF) continue;
+        let s = 0, pkE = -200; for (let k = ia; k < ib; k++) { s += act[j * F + k]; pkE = Math.max(pkE, Es[k]); }
+        const conf = Math.min(1, s / (ib - ia)); if (conf < o5.cmin) continue;
+        const k0 = cut[c].s ? startOf(Es, ia, Math.max(lim0, ia - Math.round(o5.back / hopS))) : ia, b = T(ib - 1) + hopS;
+        const a = cut[c].bt != null ? cut[c].bt : Math.max(cut[c].s && lim0 ? T(lim0) : 0, snapA(cut[c].s ? T(k0) : T(k0) - o5.pre, b - T(k0))), t0 = H2.snapT(G, a), t1 = Math.max(t0 + G.step, H2.snapT(G, b)), fz = [];
+        for (let k = Math.max(0, Math.floor(a / hopS)); k * hopS <= b + 0.05; k++) fz.push(+f.toFixed(1));
+        out.push({t0: +t0.toFixed(4), t1: +t1.toFixed(4), a: +a.toFixed(4), b: +b.toFixed(4), m: M[j], f: +f.toFixed(2), v: +Math.min(1, Math.max(0.05, (pkE + 60) / 60)).toFixed(2), conf: +conf.toFixed(2), fi: Math.max(0, Math.floor(a / hopS)), fz, poly: 1});
+      }
+    }
+    const found = out.filter(q => q.a >= R.ta - 0.05 && q.a < R.tb).sort((p, q) => p.a - q.a || p.m - q.m);
+    if (o5.dbg) o5.dbg({found, act, M, F, i0, ref, O, lvl, dips, ok, beatsS, bnd});
+    emit({qid: m.qid, prog: 0.9});
+    I.uBegin(d, 'Noten finden'); const t2 = H2.t2Of(d), old = t2.notes[lid] || [];
+    const keep = old.filter(q => q.st === 'zu' || q.a < R.ta - 0.05 || q.a >= R.tb), res = keep.slice();
+    for (const q of found) { if (keep.some(k => k.st === 'zu' && k.m === q.m && Math.min(k.b, q.b) - Math.max(k.a, q.a) > 0.5 * (q.b - q.a))) continue; q.id = H2.nid(d); q.st = 'ok'; res.push(q); }
+    res.sort((p, q) => p.a - q.a); t2.notes[lid] = res; I.uEnd(d);
+    return {lid, neu: found.length, notes: res.length, einstimmig: false, mehrstimmig: true};
+  }
+  const noten0 = Z2.ops.noten;
+  Z2.ops.noten = async (d, m, emit, info) => polyOf(d, m) ? Object.assign(await polyNoten(d, m, emit), info(d)) : Object.assign(await noten0(d, m, emit, info), {mehrstimmig: false});
+  Z2.o5 = o5;
+  return Z2;
+}
+/* ---- Seite: Hinweis „einstimmig“/„mehrstimmig“ in der Noten-Leiste, Schalter je Ebene in Noten ▾ (nur für diese Sitzung) ---- */
+function spk4Auto(U, lid) {   // gleiche Regel wie im Kern (polyOf); null = fest einstimmig (Bass) bzw. ohne Tonhöhe (Drums)
+  const l = U.meta && U.meta.layers.find(x => x.id === lid), art = lid === 'orig' || lid === 'rest' ? lid : l ? l.art : 'eigene';
+  if (art === 'drums' || art === 'bass') return null;
+  if (art === 'orig') { let hi = 0; for (const s of U.sel || []) if (s && s.art !== 'zeit' && s.f1 != null) hi = Math.max(hi, +s.f1); if (hi > 0 && hi <= 400) return false; }
+  return art === 'pads' || art === 'rest' || art === 'orig';
+}
+function spk4Poly(U, lid) { const a = spk4Auto(U, lid); if (a === null) return false; const p = U.n4p && U.n4p[lid]; return p != null ? p : a; }
+const spk4Arg = (U, lid) => (U.n4p && U.n4p[lid] != null ? U.n4p[lid] : undefined);   // nur gesetzt, wenn der Schalter benutzt wurde
+const spk4Txt = (U, lid) => spk4Poly(U, lid) ? 'Mehrstimmig: Akkorde werden in einzelne Töne getrennt (bis 5 zugleich). Quelle = gewählte Ebene in der Liste.' : 'Einstimmig: je Ebene ein Ton zur Zeit, Akkorde werden nicht getrennt. Quelle = gewählte Ebene in der Liste.';
+function spk4Lab(U) { if (!U || !U.n2lab || !U.meta) return; const t = spk4Poly(U, U.act || 'orig') ? 'mehrstimmig' : 'einstimmig'; if (U.n2lab.textContent !== t) U.n2lab.textContent = t; }
+function spk4Btn(U, g, lid, p, pre) {   // Schalter in Noten ▾: Mehrstimmig an/aus für die gewählte Ebene
+  const x = el('button', 'mbtn rb spk1-ck', ''); x.dataset.n2 = 'mehr'; x.disabled = spk4Auto(U, lid) === null;
+  const upd = () => { const v = spk4Poly(U, lid); x.textContent = 'Mehrstimmig: ' + (v ? 'an' : 'aus'); x.setAttribute('aria-pressed', String(v)); p.textContent = pre + spk4Txt(U, lid); };
+  on(x, 'click', () => { (U.n4p || (U.n4p = {}))[lid] = !spk4Poly(U, lid); upd(); spk4Lab(U); });
+  upd(); g.appendChild(x);
+}
+/* ===== SPK4-END ===== */
 /* ===== KF1-BEGIN (Paket KF1, Klang-Feinschliff Teil 1 aus der Ur-Roadmap §18 „Klang“; Xander: „Können wir davon noch was machen?“ → ja) =====
    Sechs Wünsche, jeder mit neutralem Standard (= genau der Klang von vorher, alte Projekte bitgleich):
    1 RAUSCHFARBE  VA › OSZ › MIX: Regler „Rauschfarbe“ weiß │ rosa │ braun │ blau (p.kfNc 0…3) für den Rausch-Fader; jede Farbe auf den

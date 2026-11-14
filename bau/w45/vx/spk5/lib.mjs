@@ -23,7 +23,7 @@ export async function page(E, w, h, errs, init) {
   const touch = async (type, pts) => cdp.send('Input.dispatchTouchEvent', {type, touchPoints: pts.map((q, i) => ({x: q[0], y: q[1], id: i}))});
   const drag = async (a, z, steps = 8) => { await touch('touchStart', [a]); for (let i = 1; i <= steps; i++) { await touch('touchMove', [[a[0] + (z[0] - a[0]) * i / steps, a[1] + (z[1] - a[1]) * i / steps]]); await p.waitForTimeout(16); } await touch('touchEnd', []); await p.waitForTimeout(120); };
   const tap = async q => { await p.touchscreen.tap(q[0], q[1]); await p.waitForTimeout(150); };
-  return {ctx, p, touch, drag, tap};
+  return {ctx, p, touch, drag, tap, cdp};
 }
 export const box = (p, sel) => p.evaluate(s => { const e = document.querySelector(s); if (!e) return null; const r = e.getBoundingClientRect(); return {x: r.left, y: r.top, w: r.width, h: r.height}; }, sel);
 export const btn = (p, txt, scope = '#spk1Sheet') => p.evaluate(([t, sc]) => { const e = [...document.querySelectorAll(sc + ' button')].find(x => x.offsetParent && x.textContent.trim().startsWith(t)); if (!e) return null; e.scrollIntoView({block: 'nearest', inline: 'nearest'}); const r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }, [txt, scope]);

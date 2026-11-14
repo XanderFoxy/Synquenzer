@@ -94921,9 +94921,9 @@ async function ki1Profi(o) {
     const ch = new MessageChannel();
     await spk1Call('kiport', {port: ch.port1}, [ch.port1]);
     await ki1Call('kport', {port: ch.port2}, null, [ch.port2]);
-    const r = await spk1Call('profi', {doc, how: KI1.how, rev: KI1.REV, neu: !!o.neu}, null, {prog: (p, st) => { if (o.prog) o.prog('rechnen', p, st); }});
+    const r = await spk1Call(o.sel ? 'spk5Profi' : 'profi', {doc, how: KI1.how, rev: KI1.REV, neu: !!o.neu, sel: o.sel || null}, null, {prog: (p, st) => { if (o.prog) o.prog('rechnen', p, st); }});   // SPK5: mit Auswahl nur dort
     KI1.diag.push(KI1.how + ' · ' + r.n + ' Stücke · Modell ' + r.msModell + ' ms · gesamt ' + r.ms + ' ms'); if (KI1.diag.length > 20) KI1.diag.shift();
-    try { const mt = r.meta; if (!r.weiter && mt && mt.n > mt.sr * 10) localStorage.setItem('synq-ki1-sps', (r.ms / 1000 / (mt.n / mt.sr)).toFixed(3)); } catch (e) {}   // Dauer je Sekunde Audio auf diesem Gerät (für die Schätzung im Klappfenster)
+    try { const mt = r.meta; if (!o.sel /* SPK5 */ && !r.weiter && mt && mt.n > mt.sr * 10) localStorage.setItem('synq-ki1-sps', (r.ms / 1000 / (mt.n / mt.sr)).toFixed(3)); } catch (e) {}   // Dauer je Sekunde Audio auf diesem Gerät (für die Schätzung im Klappfenster)
     SPK1.last = r; KI1.last = r;
     return r;
   } catch (e) {
@@ -95097,7 +95097,7 @@ function ki1KernMake(X) {
     if (m.op === 'profi') return profi(d, m, emit);
     throw new Error('op ' + m.op);
   }
-  return {op};
+  return {op, h: {ask, mags, magsRs, backRs, CORE, CTX, SRM}};   // SPK5: Teile für die Profi-Trennung in der Auswahl
 }
 
 /* Bedienung: schmaler Teil „▾“ am Knopf Zerlegen (Split-Knopf) → Klappfenster mit Zerlegen / Profi-Trennung; Fortschritt in der Statuszeile */
@@ -95111,7 +95111,7 @@ function ki1UiAdd(U) {
 }
 function ki1Dd(U, b) {
   spk1Dd(U, b, dd => {
-    dd.appendChild(el('h5', '', 'Ganzes Stück trennen'));
+    dd.appendChild(el('h5', '', U.sel.length ? 'Nur die Auswahl trennen' : 'Ganzes Stück trennen'));   // SPK5
     const z = el('button', 'mbtn rb spk1-ck', 'Zerlegen (schnell, ohne Download)'), p = el('button', 'mbtn rb spk1-ck', 'Profi-Trennung …'), tx = el('p', 'ki1-tx', 'Trennt Drums, Bass, Gesang und Rest genauer. Lädt einmal aus dem Netz, danach offline. Am besten mit Ladekabel.');
     const x = el('button', 'mbtn rb spk1-ck', 'Profi-Trennung vom Gerät löschen'); x.style.display = 'none';
     z.disabled = p.disabled = !!U.busy;
@@ -95131,6 +95131,7 @@ function ki1Dd(U, b) {
   });
 }
 async function ki1Start(U) {
+  if (typeof spk5Run === 'function') return spk5Run(U, 'profi');   // SPK5: Auswahl oder alles, Fortschritt über dem Bereich
   if (U.busy || !SPK1.doc) return;
   U.busy = 'profi'; U.vf = null; spk1Dd(U, null); spk1BtnState(U); spk1Stat(U, 'Profi-Trennung …');
   try {
@@ -96303,6 +96304,342 @@ ${f}~button:last-child::before{right:-4px}
   };
 }
 /* GD1-END */
+/* ===== SPK5-BEGIN (Spektral-Seite Teil 5 · Zerlegen sichtbar: nur Auswahl oder alles, Fortschritt über dem Bereich, neue Ebenen hervorgehoben, Farbstufen; Xander 14.11. abends) ===== */
+/* Kern-Teil: läuft im Spektral-Worker (Text wird mit spk1DspMake mitgeschickt). X = Innenteile des SPK1-Kerns (+ Z2, KI1K).
+   Mit Auswahl wirken Zerlegen und Profi-Trennung nur in der Auswahl (weiche Kante wie die Auswahl selbst): neu·w + alt·(1 − w).
+   Danach Energie-Anteile je Ebene im Bereich → ehrliche Meldung; neu angelegte, leere Ebenen fallen weg (ihr Anteil bleibt im Rest). */
+function spk5DspMake(X) {
+  const BT = X.BT, ART = ['drums', 'bass', 'gesang'], MIN = 0.02;
+  const cell = (st, tr, i) => !st ? 0 : st.h[tr] === 1 ? st.t[tr][i] : st.h[tr];
+  // Energie-Anteile (Maske² · |X|²) je Ebene und Rest, in der Auswahl S oder im ganzen Stück; Beträge bis 10 kHz, ≤ ~800 Rahmen
+  function shares(d, lids, S) {
+    const N = d.meta.base.N, hop = d.meta.base.hop, NB = N / 2 + 1, F = X.Fn(d), KV = Math.min(NB, Math.ceil(10000 * N / d.meta.sr));
+    const m0 = S ? Math.max(0, S.box.m0) : 0, m1 = S ? Math.min(F - 1, S.box.m1) : F - 1, k0 = S ? Math.max(0, S.box.k0) : 0, k1 = Math.min(KV - 1, S ? S.box.k1 : KV - 1);
+    const out = {tot: 0, sh: {}, rest: 0}; for (const a of Object.keys(lids)) out.sh[a] = 0;
+    if (m1 < m0 || k1 < k0) return out;
+    const stp = Math.max(1, Math.ceil((m1 - m0 + 1) / 800)), ms = []; for (let m = m0; m <= m1; m += stp) ms.push(m);
+    const all = d.meta.layers.map(l => l.id), arts = Object.keys(lids), jx = arts.map(a => all.indexOf(lids[a])), acc = new Float64Array(arts.length), K = k1 + 1, a = new Float32Array(all.length);
+    let tot = 0, rest = 0;
+    for (let i0 = 0; i0 < ms.length; i0 += 128) {
+      const n = Math.min(128, ms.length - i0), cen = new Int32Array(n); for (let i = 0; i < n; i++) cen[i] = (ms[i0 + i] - 1) * hop;
+      const M = X.magsAt(d, N, cen, K);
+      for (let i = 0; i < n; i++) {
+        const m = ms[i0 + i], s = m >> 7, sts = all.map(id => X.stripe(d, id, s, false)), r = (m & 127) * BT;
+        for (let k = k0; k <= k1; k++) {
+          const w = S ? S.fnc(m, k) : 1; if (!(w > 0)) continue;
+          const P = w * M[i * K + k] * M[i * K + k]; if (!(P > 0)) continue; tot += P;
+          let sum = 0; const tr = k >> 7, ii = r + (k & 127);
+          for (let j = 0; j < all.length; j++) { a[j] = cell(sts[j], tr, ii) / 255; sum += a[j]; }
+          for (let q = 0; q < jx.length; q++) if (jx[q] >= 0) acc[q] += a[jx[q]] * a[jx[q]] * P;
+          rest += Math.max(0, 1 - sum) ** 2 * P;
+        }
+      }
+    }
+    out.tot = tot; arts.forEach((x, q) => { out.sh[x] = tot > 0 ? +(acc[q] / tot).toFixed(4) : 0; }); out.rest = tot > 0 ? +(rest / tot).toFixed(4) : 0;
+    return out;
+  }
+  // gerade neu angelegte Ebenen ohne Inhalt im Bereich wieder entfernen (gehört zum selben ↶-Schritt: der Schritt kennt die Ebene nicht)
+  function dropEmpty(d, lids, before, sh) {
+    const weg = [];
+    for (const a of Object.keys(lids)) {
+      const id = lids[a]; if (before.includes(id) || (sh.sh[a] || 0) >= MIN) continue;
+      const M = d.masks.get(id); if (M) for (const s of M.keys()) d.dirty.add(id + '|' + s);
+      d.masks.delete(id); d.meta.layers = d.meta.layers.filter(l => l.id !== id); weg.push(a);
+    }
+    if (weg.length) { d.cache.clear(); d.metaDirty = true; X.soon(d); }
+    return weg;
+  }
+  // Gewichte der Auswahl in Kachel (Streifen s, Band tr) → W (BT·BT), true wenn etwas drin ist
+  function wTile(d, S, s, tr, W) {
+    const NB = X.NBn(d), F = X.Fn(d), b = S.box, mA = Math.max(b.m0, s * BT), mB = Math.min(b.m1, F - 1, s * BT + BT - 1), kA = Math.max(b.k0, tr * BT), kB = Math.min(b.k1, NB - 1, tr * BT + BT - 1);
+    W.fill(0); let any = false; if (kA > kB || mA > mB) return false;
+    for (let m = mA; m <= mB; m++) for (let k = kA; k <= kB; k++) { const w = S.fnc(m, k); if (w > 0) { W[(m & 127) * BT + (k & 127)] = Math.min(1, w); any = true; } }
+    return any;
+  }
+  // Zerlegen-Ergebnis (ganze Streifen) mit dem Stand davor mischen: außerhalb der Auswahl bleibt alles wie vorher
+  function blend(d, zl, u, S) {
+    const TR = X.TRn(d), W = new Float32Array(BT * BT), F = X.Fn(d);
+    for (let s = S.box.m0 >> 7; s <= Math.min(F - 1, S.box.m1) >> 7; s++) {
+      const cur = zl.map(id => X.stripe(d, id, s, true)), old = zl.map(id => u.st.get(id + '|' + s) || null);
+      for (let tr = 0; tr < TR; tr++) {
+        if (!wTile(d, S, s, tr, W)) { for (let j = 0; j < zl.length; j++) { const c = cur[j], o = old[j]; c.h[tr] = o ? o.h[tr] : 0; c.t[tr] = o && o.h[tr] === 1 ? o.t[tr].slice() : null; } continue; }
+        const nw = zl.map(() => new Uint8Array(BT * BT));
+        for (let i = 0; i < BT * BT; i++) {
+          const w = W[i]; let sa = 0, sb = 0;
+          for (let j = 0; j < zl.length; j++) { sa += cell(cur[j], tr, i); sb += cell(old[j], tr, i); }
+          const cap = Math.max(sa, sb); let acc = 0;
+          for (let j = 0; j < zl.length; j++) { const A = cell(cur[j], tr, i), B = cell(old[j], tr, i), v = Math.max(0, Math.min(cap - acc, w ? Math.round(w * A + (1 - w) * B) : B)); nw[j][i] = v; acc += v; }
+        }
+        for (let j = 0; j < zl.length; j++) { cur[j].t[tr] = nw[j]; cur[j].h[tr] = 1; X.tidy(cur[j], tr); }
+      }
+      for (const id of zl) d.dirty.add(id + '|' + s);
+    }
+    for (const id of zl) X.verUp(d, id);
+  }
+  async function zerl(d, m, emit, info) {
+    const before = d.meta.layers.map(l => l.id), sel = Array.isArray(m.sel) && m.sel.length ? m.sel : null;
+    if (!sel) {
+      const r = await X.zerlegen(d, m, emit, m.qid), sh = shares(d, r.lids, null), weg = dropEmpty(d, r.lids, before, sh);
+      return Object.assign(r, {teil: false, sh, weg}, info(d));
+    }
+    const S = X.selFn(d, sel); if (S.box.m1 < S.box.m0 || S.box.k1 < S.box.k0) throw new Error('Keine Auswahl');
+    const job = d.meta.jobs.zerlegen ? JSON.stringify(d.meta.jobs.zerlegen) : null;   // ein angefangenes Zerlegen (ganzes Stück) bleibt fortsetzbar
+    let r;
+    try { r = await X.zerlegen(d, {weiter: false, sA: S.box.m0 >> 7, sB: S.box.m1 >> 7}, emit, m.qid); }
+    finally { if (job) d.meta.jobs.zerlegen = JSON.parse(job); else delete d.meta.jobs.zerlegen; d.metaDirty = true; }
+    const u = d.undo[d.undo.length - 1]; if (!u) throw new Error('Undo fehlt'); u.label = 'Zerlegen (Auswahl)';
+    emit({qid: m.qid, prog: 0.99, stufe: 'Auswahl'});
+    blend(d, ART.map(a => r.lids[a]), u, S);
+    const sh = shares(d, r.lids, S), weg = dropEmpty(d, r.lids, before, sh);
+    X.soon(d);
+    return Object.assign(r, {teil: true, sh, weg}, info(d));
+  }
+  // Profi-Trennung nur in der Auswahl: nur die Modell-Stücke, die die Auswahl berühren (Stücke eines angefangenen Laufs werden genutzt)
+  async function profi(d, m, emit, info) {
+    const K = X.KI1K && X.KI1K.h; if (!K) throw new Error('Profi-Trennung fehlt');
+    if (d.busy) throw new Error('Rechnung läuft');
+    const N = d.meta.base.N, NB = N / 2 + 1, F = X.Fn(d), sr = d.meta.sr, t0 = Date.now(), before = d.meta.layers.map(l => l.id);
+    if (N !== 4096 || d.meta.base.hop !== 1024) throw new Error('Raster passt nicht');
+    const S = X.selFn(d, m.sel || []), box = S.box; if (box.m1 < box.m0 || box.k1 < box.k0) throw new Error('Keine Auswahl');
+    d.busy = 'profi'; d.zStop = false;
+    try {
+      const C = K.CORE, mE = Math.min(F - 1, box.m1), cA = Math.floor(box.m0 / C), cB = Math.floor(mE / C), n = cB - cA + 1, Q = new Map();
+      const pre = 'spk:' + d.meta.id + ':q', job = d.meta.jobs.profi, sig = [Math.ceil(F / C), F, sr, m.rev || ''].join('/');
+      let msM = 0;
+      emit({qid: m.qid, prog: 0, stufe: 'Stück 0/' + n});
+      for (let c = cA; c <= cB; c++) {
+        if (d.zStop) throw new Error('abgebrochen');
+        let q = null;
+        if (job && !job.fertig && job.sig === sig) { const b = await X.get('audio', pre + c); if (b) q = new Uint8Array(b); }
+        if (!q) {
+          const c0 = c * C, c1 = Math.min(F, c0 + C), a = Math.max(0, c0 - K.CTX), b = Math.min(F, c1 + K.CTX); let r;
+          if (sr === K.SRM) { const mag = K.mags(d, a, b - a); r = await K.ask(d, {op: 'krun', NB, L: b - a, c0: c0 - a, c1: c1 - a, mag}, [mag.buffer]); q = r.q; }
+          else { const R = K.magsRs(d, a, b); r = await K.ask(d, {op: 'krun', NB, L: R.Lm, c0: 0, c1: R.Lm, mag: R.mag}, [R.mag.buffer]); q = K.backRs(r.q, NB, R.Lm, R.j0, c0, c1, sr); }
+          msM += r.ms || 0; if (!(q instanceof Uint8Array)) q = new Uint8Array(q.buffer || q);
+        }
+        if (d.zStop) throw new Error('abgebrochen');
+        Q.set(c, q);
+        emit({qid: m.qid, prog: 0.94 * (c - cA + 1) / n, stufe: 'Stück ' + (c - cA + 1) + '/' + n}); await X.tick();
+      }
+      emit({qid: m.qid, prog: 0.97, stufe: 'Ebenen'});
+      X.uBegin(d, 'Profi-Trennung (Auswahl)');
+      const lids = {}; for (const a of ART) { let l = d.meta.layers.find(x => x.z === a); if (!l) { l = X.newLayer(d, {art: a}); l.z = a; } lids[a] = l.id; }
+      const zl = ART.map(a => lids[a]), own = d.meta.layers.filter(l => !zl.includes(l.id)).map(l => l.id), TR = X.TRn(d), W = new Float32Array(BT * BT);
+      for (let s = box.m0 >> 7; s <= mE >> 7; s++) {
+        let touched = false;
+        for (let tr = 0; tr < TR; tr++) {
+          if (!wTile(d, S, s, tr, W)) continue;
+          if (!touched) { for (const id of zl) X.uTouch(d, id, s); touched = true; }
+          const T = zl.map(id => X.tileArr(X.stripe(d, id, s, true), tr)), OW = own.map(id => X.stripe(d, id, s, false));
+          for (let i = 0; i < BT * BT; i++) {
+            const w = W[i]; if (!w) continue;
+            const mm = s * BT + (i >> 7), k = tr * BT + (i & 127), c = Math.floor(mm / C), q = Q.get(c); if (!q) continue;
+            const Z = q.length / 3, p = (mm - c * C) * NB + k; let used = 0; for (const o of OW) used += cell(o, tr, i);
+            const free = Math.max(0, 255 - used), v = [free * q[p] / 255, free * q[Z + p] / 255, free * q[2 * Z + p] / 255];
+            let acc = 0; for (let j = 0; j < 3; j++) { const x = Math.max(0, Math.min(free - acc, Math.round(w * v[j] + (1 - w) * T[j][i]))); T[j][i] = x; acc += x; }
+          }
+          for (const id of zl) X.tidy(X.stripe(d, id, s, true), tr);
+        }
+        if (touched) for (const id of zl) d.dirty.add(id + '|' + s);
+      }
+      for (const id of zl) X.verUp(d, id);
+      X.uEnd(d);
+      const sh = shares(d, lids, S), weg = dropEmpty(d, lids, before, sh);
+      return Object.assign({lids, ms: Date.now() - t0, n, msModell: msM, teil: true, sh, weg}, info(d));
+    } catch (e) { if (d.u) X.uAbort(d); throw e; }
+    finally { d.busy = null; d.zStop = false; }
+  }
+  const ops = {spk5Zerl: zerl, spk5Profi: profi, spk5Anteil: async (d, m) => ({sh: shares(d, m.lids || {}, m.sel && m.sel.length ? X.selFn(d, m.sel) : null)})};
+  if (X.Z2) { X.Z2.ops = X.Z2.ops || {}; Object.assign(X.Z2.ops, ops); }
+  return ops;
+}
+
+/* ---- Hauptfaden: Farbstufen (Ansicht ▾ → Farben), nur die Farbtabelle wechselt (Uniform-Textur), Wahl im Gerät gemerkt ---- */
+const SPK5_FARBEN = [
+  ['glut', 'Glut', [[0, '#000000'], [0.2, '#2b0509'], [0.4, '#8c1005'], [0.58, '#d93d07'], [0.74, '#fa8c14'], [0.88, '#ffd640'], [1, '#fffbea']]],
+  ['magma', 'Magma', [[0, '#000004'], [0.13, '#1c1044'], [0.25, '#4f127b'], [0.38, '#812581'], [0.5, '#b5367a'], [0.63, '#e55064'], [0.75, '#fb8761'], [0.88, '#fec287'], [1, '#fcfdbf']]],
+  ['gruenblau', 'Grün-Blau', [[0, '#440154'], [0.13, '#482878'], [0.25, '#3e4989'], [0.38, '#31688e'], [0.5, '#26828e'], [0.63, '#1f9e89'], [0.75, '#35b779'], [0.88, '#6ece58'], [1, '#fde725']]],
+  ['grau', 'Graustufen', [[0, '#000000'], [1, '#ffffff']]],
+  ['blau', 'Blau', null]   // bisherige Tabelle (spk1Lut aus den App-Farben)
+];
+const SPK5 = {farbe: null};
+function spk5Farbe() {
+  if (SPK5.farbe) return SPK5.farbe;
+  let k = 'glut'; try { const v = localStorage.getItem('synq-spk5-farbe'); if (v && SPK5_FARBEN.some(f => f[0] === v)) k = v; } catch (e) {}
+  return (SPK5.farbe = k);
+}
+function spk5Lut() {   // null = bisherige Tabelle
+  const f = SPK5_FARBEN.find(x => x[0] === spk5Farbe()); if (!f || !f[2]) return null;
+  const st = f[2].map(([p, c]) => [p, spk1Rgb(c)]), o = new Uint8Array(256 * 4);
+  for (let i = 0; i < 256; i++) {
+    const x = i / 255; let k = 0; while (k < st.length - 2 && x > st[k + 1][0]) k++;
+    const [pa, ca] = st[k], [pb, cb] = st[k + 1], u = Math.max(0, Math.min(1, (x - pa) / (pb - pa)));
+    for (let j = 0; j < 3; j++) o[i * 4 + j] = Math.round(255 * (ca[j] + (cb[j] - ca[j]) * u)); o[i * 4 + 3] = 255;
+  }
+  return o;
+}
+function spk5FarbeSet(U, k) {
+  if (!SPK5_FARBEN.some(f => f[0] === k)) return;
+  SPK5.farbe = k; try { localStorage.setItem('synq-spk5-farbe', k); } catch (e) {}
+  const lut = spk1Lut(); U.lut = null;
+  if (U.gl) { const G = U.gl, gl = G.gl; gl.bindTexture(gl.TEXTURE_2D, G.lut); gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1); gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 256, 1, gl.RGBA, gl.UNSIGNED_BYTE, lut); }
+  spk1Dirty(U, 'g');
+}
+function spk5Grad(k) {   // kleiner Farbverlauf für die Taste
+  const old = SPK5.farbe; SPK5.farbe = k; const t = spk1Lut(); SPK5.farbe = old;
+  return 'linear-gradient(90deg,' + [0, 64, 128, 192, 255].map(i => `rgb(${t[i * 4]},${t[i * 4 + 1]},${t[i * 4 + 2]})`).join(',') + ')';
+}
+function spk5ViewFarben(U, dd) {
+  spk5Css();
+  dd.appendChild(el('h5', '', 'Farben'));
+  const g = el('div', 'spk1-g spk5-fb'), cur = spk5Farbe();
+  for (const [k, nm] of SPK5_FARBEN) {
+    const b = el('button', 'mbtn rb spk1-ck' + (k === cur ? ' on' : ''), `<i class="spk5-sw" style="background:${spk5Grad(k)}"></i>${esc(nm)}`);
+    b.dataset.f = k; b.setAttribute('aria-pressed', String(k === cur)); b.setAttribute('aria-label', 'Farben ' + nm);
+    on(b, 'click', () => { spk5FarbeSet(U, k); for (const x of g.children) { const o = x.dataset.f === k; x.classList.toggle('on', o); x.setAttribute('aria-pressed', String(o)); } });
+    g.appendChild(b);
+  }
+  dd.appendChild(g);
+}
+/* ---- Zerlegen / Profi-Trennung: Knopf sagt vorher, was getrennt wird; Fortschritt über dem Bereich; Ergebnis sichtbar ---- */
+function spk5Css() {
+  if (document.getElementById('spk5Css')) return;
+  const s = document.createElement('style'); s.id = 'spk5Css';
+  s.textContent = [
+    '.spk1-ac .mbtn.spk5-zl{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;line-height:1}',
+    '.spk5-zl .spk5-z1{font:700 13px/1 var(--font-ui)}.spk5-zl .spk5-z2{font:700 10px/1 var(--font-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim)}.spk5-zl .spk5-z2.a{color:var(--amber)}',
+    '@media (orientation:landscape){.spk1-ac .ki1-split:not(.ki1-busy)>.mbtn.spk5-zl:first-child::after{content:none}.spk1-ac .ki1-split:not(.ki1-busy)>.mbtn.spk5-zl .spk5-z2::after{content:"\\00a0▾"}}',
+    '.spk1-lr.spk5-neu{animation:spk5neu 3s ease-out 1}',
+    '@keyframes spk5neu{0%,45%{background:rgba(255,178,46,.24);box-shadow:inset 4px 0 0 var(--amber)}100%{background:rgba(255,178,46,0);box-shadow:inset 4px 0 0 rgba(255,178,46,0)}}',
+    '.spk5-msg{position:absolute;z-index:5;display:none;align-items:center;gap:6px;box-sizing:border-box;min-height:52px;padding:4px 4px 4px 12px;background:rgba(18,20,24,.95);border:1px solid var(--line);border-radius:var(--r);box-shadow:0 8px 24px rgba(0,0,0,.6);font:600 13px/1.3 var(--font-ui);color:var(--text);pointer-events:auto}',
+    '.spk5-msg.on{display:flex}.spk5-msg .spk5-mt{flex:1 1 auto;min-width:0}',
+    '.spk5-msg .mbtn{flex:none;width:44px;height:44px;min-height:44px;margin:0;padding:0;font-size:18px;justify-content:center}',
+    '.spk5-fb .mbtn{gap:8px}.spk5-fb .mbtn.on{outline:2px solid var(--sel);outline-offset:-2px}.spk5-sw{display:inline-block;flex:none;width:30px;height:14px;border-radius:3px;box-shadow:0 0 0 1px rgba(255,255,255,.2)}'
+  ].join('\n');
+  document.head.appendChild(s);
+}
+function spk5ZerlLab(U) {   // statt SPK1-Text: „Zerlegen / AUSWAHL“ bzw. „Zerlegen / ALLES“ (zweizeilig, passt in die schmale Zelle)
+  const b = U.b_zerl, busy = U.busy === 'zerlegen' || U.busy === 'profi', sel = U.sel.length > 0, k = busy ? 'x' : sel ? 'a' : 'g';
+  if (b.dataset.s5 === k) return; b.dataset.s5 = k; spk5Css();
+  b.classList.toggle('spk5-zl', !busy);
+  b.innerHTML = busy ? '■ Abbrechen' : '<span class="spk5-z1">Zerlegen</span><span class="spk5-z2' + (sel ? ' a' : '') + '">' + (sel ? 'Auswahl' : 'alles') + '</span>';
+  b.setAttribute('aria-label', busy ? 'Abbrechen' : sel ? 'Zerlegen: Auswahl' : 'Zerlegen: alles');
+}
+// Bereich (Zeit/Frequenz) der Auswahl für Schraffur und Balken
+function spk5Area(U, sel) {
+  if (!sel) return null; const sp = spk1SelSpan(U); if (!sp) return null;
+  let f0 = 1e9, f1 = 0;
+  for (const s of sel) {
+    if (s.art === 'zeit') { f0 = Math.min(f0, 1); f1 = Math.max(f1, 30000); }
+    else if (s.art === 'pinsel') { if (s.minus) continue; const q = Math.pow(2, (+s.rc || 100) / 1200); for (const p of s.pts) { f0 = Math.min(f0, p[1] / q); f1 = Math.max(f1, p[1] * q); } }
+    else if (s.art === 'harm') { for (const p of s.spur || []) { f0 = Math.min(f0, p[1]); f1 = Math.max(f1, p[1] * (s.K || 16)); } }
+    else { f0 = Math.min(f0, +s.f0 > 0 ? +s.f0 : 1); f1 = Math.max(f1, s.f1 == null ? 30000 : +s.f1); }
+  }
+  if (!(f1 > f0)) { f0 = 1; f1 = 30000; }
+  return {t0: sp[0], t1: sp[1], f0: Math.max(1, f0), f1};
+}
+// Während der Rechnung: Bereich leicht schraffiert + Balken (nur Leinwand, kein DOM)
+function spk5OvDraw(U, x) {
+  const B = U.s5; if (!B) return;
+  const W = U.W, H = U.H, A = B.area; let xa = 0, xb = W, ya = 0, yb = H;
+  if (A) { xa = Math.max(0, spk1X(U, A.t0)); xb = Math.min(W, spk1X(U, A.t1)); ya = Math.max(0, spk1Y(U, A.f1)); yb = Math.min(H, spk1Y(U, A.f0)); }
+  if (xb - xa < 4 || yb - ya < 4) { xa = 0; xb = W; ya = 0; yb = H; }
+  x.save(); x.beginPath(); x.rect(xa, ya, xb - xa, yb - ya); x.clip();
+  x.fillStyle = 'rgba(8,9,11,.30)'; x.fillRect(xa, ya, xb - xa, yb - ya);
+  x.strokeStyle = 'rgba(244,241,234,.20)'; x.lineWidth = 1; x.beginPath();
+  const h = yb - ya, ph = (B.ph || 0) % 10; for (let s = xa - h - 10 + ph; s < xb; s += 10) { x.moveTo(s, yb); x.lineTo(s + h, ya); }
+  x.stroke(); x.restore();
+  x.strokeStyle = 'rgba(255,178,46,.85)'; x.lineWidth = 1.5; x.setLineDash([]); x.strokeRect(Math.round(xa) + 0.75, Math.round(ya) + 0.75, Math.max(1, Math.round(xb - xa) - 1.5), Math.max(1, Math.round(yb - ya) - 1.5));
+  const bw = Math.max(60, Math.min(W - 16, xb - xa - 16)), bx = Math.max(8, Math.min(W - bw - 8, xa + (xb - xa - bw) / 2)), by = Math.max(8, Math.min(H - 40, ya + 10));
+  x.fillStyle = 'rgba(8,9,11,.85)'; x.fillRect(bx - 2, by - 2, bw + 4, 30);
+  x.fillStyle = 'rgba(244,241,234,.18)'; x.fillRect(bx, by, bw, 6);
+  x.fillStyle = '#ffb22e'; x.fillRect(bx, by, Math.round(bw * Math.max(0, Math.min(1, B.p))), 6);
+  x.fillStyle = '#f4f1ea'; x.font = '600 12px ' + (spk1Var('--font-ui') || 'sans-serif'); x.textBaseline = 'top'; x.textAlign = 'left';
+  const t = B.lab + ' · ' + Math.round(B.p * 100) + ' %'; x.fillText(t.length > 46 ? t.slice(0, 45) + '…' : t, bx + 2, by + 11, bw - 4);
+}
+// Kurze Meldung über dem Spektrum (fester Platz, nichts verschiebt sich) mit ↶ und ✕
+function spk5Msg(U, txt, undo) {
+  let m = U.s5m; clearTimeout(U.s5mt);
+  if (!txt) { if (m) m.classList.remove('on'); return; }
+  spk5Css();
+  if (!m || !m.isConnected) {
+    m = U.s5m = el('div', 'spk5-msg', '<span class="spk5-mt"></span>');
+    const bu = el('button', 'mbtn rb spk1-ck spk5-mu', '↶'), bx = el('button', 'mbtn rb spk1-ck spk5-mx', '✕');
+    bu.setAttribute('aria-label', 'Rückgängig'); bx.setAttribute('aria-label', 'Meldung schließen');
+    on(bu, 'click', () => { spk5Msg(U, null); spk1UndoRedo(U, 'undo'); });
+    on(bx, 'click', () => spk5Msg(U, null));
+    m.append(bu, bx); U.sh.appendChild(m);
+    U.mn.addEventListener('pointerdown', () => { if (U.s5m && U.s5m.classList.contains('on')) spk5Msg(U, null); });
+  }
+  m.firstChild.textContent = txt; m.querySelector('.spk5-mu').style.display = undo ? '' : 'none';
+  const R = U.sh.getBoundingClientRect(), a = U.mn.getBoundingClientRect();
+  m.style.left = Math.round(a.left - R.left + 6) + 'px'; m.style.width = Math.round(Math.max(200, a.width - 12)) + 'px'; m.style.top = '0px';
+  m.classList.add('on'); m.style.top = Math.round(a.bottom - R.top - m.offsetHeight - 6) + 'px';
+  U.s5mt = setTimeout(() => spk5Msg(U, null), 12000);
+}
+// Tipp auf Zerlegen (Hook am Anfang von spk1Zerl): true = erledigt
+function spk5Zerl(U) {
+  if (U.busy === 'zerlegen' || U.busy === 'profi') {
+    if (Date.now() - (U.s5t || 0) < 900) return true;   // Doppeltipp bricht nicht sofort ab
+    if (U.busy === 'zerlegen') { spk1Call('zstop', {doc: SPK1.doc}).catch(() => {}); spk1Stat(U, 'Breche ab …'); } else { ki1Stop(); spk1Stat(U, 'Halte an …'); }
+    if (U.s5) { U.s5.lab = 'Breche ab'; spk1Dirty(U, 'ov'); }
+    return true;
+  }
+  if (typeof ki1ZerlTap === 'function' && ki1ZerlTap(U)) return true;   // quer: Klappfenster
+  if (U.busy) return true;
+  spk5Run(U, 'zerlegen'); return true;
+}
+const SPK5_NM = {drums: 'Drums', bass: 'Bass', gesang: 'Gesang'}, SPK5_KEIN = {drums: 'keine Drums', bass: 'kein Bass', gesang: 'kein Gesang'};
+async function spk5Run(U, how) {
+  if (U.busy || !SPK1.doc || !U.meta) return;
+  const sel = U.sel.length ? U.sel.map(s => Object.assign({}, s)) : null, area = spk5Area(U, sel), sv = U.selVer, span = sel ? spk1SelSpan(U) : null;
+  const nm = how === 'profi' ? 'Profi-Trennung' : 'Zerlegen', wo = sel ? 'Auswahl' : 'ganzes Stück';
+  U.busy = how === 'profi' ? 'profi' : 'zerlegen'; U.vf = null; U.s5t = Date.now(); U.s5 = {area, p: 0, lab: nm + ' · ' + wo, ph: 0};
+  spk1Dd(U, null); spk5Msg(U, null); spk1BtnState(U); spk1Stat(U, nm + ' · ' + wo + ' …'); spk1Dirty(U, 'ov');
+  const prog = (p, st) => { const B = U.s5; if (!B) return; B.p = p; B.ph = (B.ph || 0) + 2; B.lab = nm + ' · ' + wo + (st ? ' · ' + st : ''); spk1Stat(U, nm + ' · ' + (st || 'Rechne') + ' ' + Math.round(p * 100) + ' %'); spk1Dirty(U, 'ov'); };
+  try {
+    let r;
+    if (how === 'profi') {
+      r = await ki1Profi({sel, prog: (was, a, b) => {
+        if (U.busy !== 'profi' || !U.s5) return;
+        if (was === 'laden') { U.s5.p = a / Math.max(1, b); U.s5.lab = 'Profi-Trennung lädt ' + ki1MB(a) + '/' + ki1MB(b) + ' MB'; spk1Stat(U, 'Profi-Trennung lädt … ' + ki1MB(a) + '/' + ki1MB(b) + ' MB · ' + Math.round(100 * a / Math.max(1, b)) + ' %'); spk1Dirty(U, 'ov'); }
+        else if (was === 'start') { U.s5.lab = 'Profi-Trennung startet'; spk1Stat(U, 'Profi-Trennung startet …'); spk1Dirty(U, 'ov'); }
+        else prog(a, b);
+      }});
+      if (!r.sh && r.lids) { try { r.sh = (await spk1Call('spk5Anteil', {doc: SPK1.doc, lids: r.lids})).sh; } catch (e) { logErr(e); } }
+    } else r = await spk1Call('spk5Zerl', {doc: SPK1.doc, sel}, null, {prog});
+    U.busy = null; U.s5 = null; spk1Got(U, r); U.tintOn = true; spk1TintLoad(U);
+    spk5Done(U, r, sel, how, {sv, span});
+    return r;
+  } catch (e) {
+    const ab = /abgebrochen|gestoppt/.test(String(e && e.message)); if (!ab) logErr(e);
+    const t = ab ? nm + ' abgebrochen – nichts geändert' : nm + ': ' + String(e && e.message || e);
+    spk1Stat(U, t); spk5Msg(U, t, false);
+    return null;
+  } finally { U.busy = null; U.s5 = null; spk1BtnState(U); spk1Dirty(U, 'ov'); }
+}
+function spk5Done(U, r, sel, how, o) {
+  const sh = (r && r.sh && r.sh.sh) || {}, has = [], miss = [];
+  for (const a of ['drums', 'bass', 'gesang']) ((sh[a] || 0) >= 0.02 ? has : miss).push(a);
+  const pre = how === 'profi' ? 'Profi-getrennt' : 'Zerlegt', wo = sel ? ' (Auswahl)' : '';
+  const txt = !has.length ? pre + wo + ': nichts Trennbares gefunden – alles bleibt im Rest'
+    : pre + ': ' + has.map(a => SPK5_NM[a]).join(' · ') + ' · Rest' + wo + (miss.length ? ' – ' + miss.map(a => SPK5_KEIN[a]).join(', ') + ' gefunden' : '');
+  spk1Stat(U, txt + (r && r.ms ? ' · ' + (r.ms / 1000).toFixed(1).replace('.', ',') + ' s' : '') + ' · ↶ macht es rückgängig');
+  spk5Msg(U, txt, true);
+  const ids = has.map(a => r.lids[a]).filter(id => U.meta.layers.some(l => l.id === id));
+  U.s5last = {ids, sel, sv: o.sv, span: o.span};
+  const rows = [...U.ly.querySelectorAll('.spk1-lr')].filter(x => ids.includes(x.dataset.l) || (has.length && x.dataset.l === 'rest'));
+  for (const x of rows) x.classList.add('spk5-neu');
+  if (rows[0]) { const d = rows[0].getBoundingClientRect().top - U.ly.getBoundingClientRect().top; if (Math.abs(d) > 1) U.ly.scrollTop += d; }
+}
+// Solo-Taste einer neuen Ebene: sofort hören (Auswahl-Bereich bzw. ab Position), wenn gerade nichts spielt
+function spk5Solo(U, lid) {
+  const L = U.s5last; if (SPK1.pl || !L || !L.ids.includes(lid)) return;
+  if (L.sel && L.span) { U.playSel = true; spk1Play(L.span[0], null, {sel: L.sel, sv: L.sv, bis: L.span[1]}); spk1BtnState(U); spk1Dirty(U, 'ov'); }
+  else spk1PlayFrom(U, U.cur);
+}
+SYNQUENZER.spk5 = {farbe: k => (k ? spk5FarbeSet(SPK1.ui, k) : spk5Farbe()), lut: () => spk1Lut(), area: () => SPK1.ui && spk5Area(SPK1.ui, SPK1.ui.sel), last: () => SPK1.ui && SPK1.ui.s5last, msg: () => { const m = SPK1.ui && SPK1.ui.s5m; return m && m.classList.contains('on') ? m.firstChild.textContent : null; }, run: how => SPK1.ui && spk5Run(SPK1.ui, how || 'zerlegen')};
+/* SPK5-END */
 /* INT53C-BEGIN ===== Prüfung INT53C (Zusammenspiel ORI · VID5 · MIXG), Befund A: ein Export enthält immer den Nachher-Stand.
    Befund: Mix & Master im Vergleich auf „Vorher“, das Blatt abgelegt (⌄), dann Video erstellen → im Video klang der Vorher-Mix, und das
    Video-Blatt sagte „Video ist aktuell“ (die abgelegte Leiste liegt unter dem Video-Blatt, VORHER sieht man nicht). Ursache: „Vorher“
@@ -97864,10 +98201,11 @@ function spk1DspMake(V) {
       const A = await zPrep(d, emit, qid), KV = A.KV, KN = A.KN, LUT = A.LUT;
       const job = d.meta.jobs.zerlegen; let s0 = 0;
       if (job && !job.fertig && job.lids && job.lids.join() === zl.join() && o.weiter !== false) s0 = Math.min(NS, job.k | 0);   // Weiterrechnen nach Unterbrechung
+      const sE = o.sB != null ? Math.min(NS, (o.sB | 0) + 1) : NS; if (o.sA > s0) s0 = Math.min(sE, o.sA | 0);   // SPK5: nur die Streifen der Auswahl
       d.meta.jobs.zerlegen = {k: s0, n: NS, lids: zl, fertig: false};
       const Lt = 17, Lf = 17, MG = (Lt >> 1) + 1, low = new Float32Array(NB), voc = new Float32Array(NB), cb = new Float32Array(NB), med = new Float32Array(KN + 1);
       for (let k = 0; k < NB; k++) { const f = k * df; low[k] = 1 - ramp(f, 110, 260); voc[k] = ramp(f, 100, 180) * (1 - ramp(f, 7000, 10000)); }
-      for (let s = s0; s < NS; s++) {
+      for (let s = s0; s < sE; s++) {   // SPK5: sE
         if (d.zStop) throw new Error('abgebrochen');
         const mA = s * BT, mB = Math.min(F - 1, mA + BT - 1), a0 = mA - MG, n = mB + MG - a0 + 1, cen = new Int32Array(n);
         for (let i = 0; i < n; i++) cen[i] = (a0 + i - 1) * hop;
@@ -97912,7 +98250,7 @@ function spk1DspMake(V) {
         }
         for (const id of zl) d.dirty.add(id + '|' + s);
         d.meta.jobs.zerlegen.k = s + 1;
-        emit({qid, prog: 0.3 + 0.7 * (s + 1) / NS, stufe: 'Trennen'}); await tick();
+        emit({qid, prog: 0.3 + 0.7 * (s + 1 - s0) / Math.max(1, sE - s0), stufe: 'Trennen'}); await tick();   // SPK5: Fortschritt der zu rechnenden Streifen
       }
       for (const id of zl) verUp(d, id);
       d.meta.jobs.zerlegen = {fertig: true, n: NS, lids: zl, ms: Date.now() - t0};
@@ -98156,13 +98494,14 @@ function spk1DspMake(V) {
   }
   const Z2 = typeof spk2DspMake === 'function' ? spk2DspMake({V, magsAt, hpss, f0Sum, comb, ramp, medLine, win, stft, istft, selFn, Fn, NBn, magPair, render, mixOf, transfer, uBegin, uEnd, lay, tick}) : null;   // SPK2 (Auftrag 2: Noten brauchen render/transfer/Undo)
   if (Z2 && typeof spk3DspMake === 'function') spk3DspMake(Z2);   // SPK3: Tiefband mit Kick-Vorlage (ersetzt Z2.lowSplit, schaltet es ein)
+  if (typeof spk5DspMake === 'function') spk5DspMake({Z2, KI1K, BT, zerlegen, selFn, magsAt, stripe, tileArr, tidy, uTouch, uBegin, uEnd, uAbort, verUp, newLayer, Fn, NBn, TRn, tick, get, soon});   // SPK5: Zerlegen/Profi nur in der Auswahl, Anteile je Ebene
   return {on, stft, istft, specInfo, docs, lowSplit, Z2};   // SPK2: Z2 für Messungen
 }
 /* ---------- Hauptfaden: Worker (Blob aus Text), Rückfall = derselbe Kern hier ---------- */
 function spk1Worker() {
   if (SPK1.w !== null) return SPK1.w;
   try {
-    const src = vsDspMake.toString() + ';' + spk1DspMake.toString() + ';' + (typeof spk2DspMake === 'function' ? spk2DspMake.toString() : '') + ';' + (typeof spk3DspMake === 'function' ? spk3DspMake.toString() + ';' : '') /* SPK3 */ + (typeof ki1KernMake === 'function' ? ki1KernMake.toString() + ';' : '') /* KI1 */ + 'const K = spk1DspMake(vsDspMake());onmessage = e => K.on(e.data, (m, tr) => postMessage(m, tr || []));';   // SPK2: Kern-Ergänzung mitschicken · KI1
+    const src = vsDspMake.toString() + ';' + spk1DspMake.toString() + ';' + (typeof spk2DspMake === 'function' ? spk2DspMake.toString() : '') + ';' + (typeof spk3DspMake === 'function' ? spk3DspMake.toString() + ';' : '') /* SPK3 */ + (typeof ki1KernMake === 'function' ? ki1KernMake.toString() + ';' : '') /* KI1 */ + (typeof spk5DspMake === 'function' ? spk5DspMake.toString() + ';' : '') /* SPK5 */ + 'const K = spk1DspMake(vsDspMake());onmessage = e => K.on(e.data, (m, tr) => postMessage(m, tr || []));';   // SPK2: Kern-Ergänzung mitschicken · KI1
     const u = URL.createObjectURL(new Blob([src], {type: 'application/javascript'}));
     const w = new Worker(u); setTimeout(() => { try { URL.revokeObjectURL(u); } catch (e) {} }, 30000);
     w.onmessage = e => spk1Reply(e.data);
@@ -98309,6 +98648,7 @@ function spk1Rgb(c) {
   return [0.6, 0.6, 0.6];
 }
 function spk1Lut() {   // Farbtabelle aus den App-Farben: Anzeige-Schwarz → Blau → --t2 → --t1 → --amber → --sel
+  { const o5 = typeof spk5Lut === 'function' ? spk5Lut() : null; if (o5) return o5; }   // SPK5: gewählte Farbstufe (Ansicht ▾ → Farben)
   const st = [[0, '--lcd'], [0.3, '#1d2452'], [0.52, '--t2'], [0.7, '--t1'], [0.87, '--amber'], [1, '--sel']].map(([p, c]) => [p, spk1Rgb(c[0] === '-' ? spk1Var(c) : c)]);
   const o = new Uint8Array(256 * 4);
   for (let i = 0; i < 256; i++) {
@@ -98636,6 +98976,7 @@ function spk1OvDraw(U) {
   }
   x.setLineDash([]);
   if (typeof spk2OvDraw === 'function') spk2OvDraw(U, x);   // SPK2: Noten-Kästchen
+  if (typeof spk5OvDraw === 'function') spk5OvDraw(U, x);   // SPK5: Fortschritt über dem Bereich
   const p = U.pos != null ? U.pos : U.cur, px = Math.round(spk1X(U, p)) + 0.5;
   if (px >= 0 && px <= W) { x.strokeStyle = U.pos != null ? spk1Var('--play') : 'rgba(244,241,234,.55)'; x.lineWidth = U.pos != null ? 2 : 1; x.beginPath(); x.moveTo(px, 0); x.lineTo(px, H); x.stroke(); }
 }
@@ -98769,7 +99110,7 @@ function spk1BtnState(U) {
   const has = U.sel.length > 0, pl = !!SPK1.pl;
   U.b_play.textContent = pl && !U.playSel ? '■ Stopp' : '▶ Abspielen'; U.b_psel.textContent = pl && U.playSel ? '■ Stopp' : '▶ Auswahl';
   U.b_psel.disabled = !has && !(pl && U.playSel); U.b_into.disabled = !has || !!U.busy; U.b_drop.disabled = !has;
-  U.b_zerl.textContent = U.busy === 'zerlegen' || U.busy === 'profi' /* KI1 */ ? '■ Abbrechen' : 'Zerlegen'; if (U.b_ki1) ki1Busy(U);   /* KI1 */ U.b_zerl.disabled = U.busy === 'verfeinern'; U.b_verf.disabled = !has || !!U.busy;
+  if (typeof spk5ZerlLab === 'function') spk5ZerlLab(U); /* SPK5: Zerlegen · Auswahl/alles */ else U.b_zerl.textContent = U.busy === 'zerlegen' || U.busy === 'profi' /* KI1 */ ? '■ Abbrechen' : 'Zerlegen'; if (U.b_ki1) ki1Busy(U);   /* KI1 */ U.b_zerl.disabled = U.busy === 'verfeinern'; U.b_verf.disabled = !has || !!U.busy;
   if (U.busy) U.bU.disabled = U.bR.disabled = true; else if (SPK1.last) spk1UndoBtns(U, SPK1.last);
   U.bMin.classList.toggle('on', !!U.opt.minus); U.bMin.setAttribute('aria-pressed', String(!!U.opt.minus));
   if (typeof spk3LpBtn === 'function') spk3LpBtn(U);   // SPK3: ▶/■ in der Loop-Zeile
@@ -98844,6 +99185,7 @@ function spk1ViewDd(U, b) {
     on(bq, 'click', () => { spk1Dd(U, null); spk1Leave(U); spk1StartPaint(U); });
     g.append(bt, bf, bq); dd.appendChild(g);
     if (typeof spk2ViewLp === 'function') spk2ViewLp(U, dd);   // SPK2: Loop setzen
+    if (typeof spk5ViewFarben === 'function') spk5ViewFarben(U, dd);   // SPK5: Farbstufen
   });
 }
 function spk1IntoDd(U, b) {
@@ -98891,7 +99233,7 @@ function spk1Tap(U, b) {
     case 'drop': U.sel = []; U.hits = U.ex = null; U.hitLab.textContent = ''; if (SPK1.pl && U.playSel) spk1Stop(); spk1SelDone(U, 'Auswahl verworfen'); return;
     case 'lact': if (lid && U.act !== lid) { U.act = lid; spk1Layers(U); } return;
     case 'lcol': if (lid && lid !== 'orig' && lid !== 'rest') { const l = U.meta.layers.find(x => x.id === lid), i = SPK1_PAL.indexOf(l.col); spk1Layer(U, 'farbe', lid, SPK1_PAL[(i + 1) % SPK1_PAL.length]); } return;
-    case 'solo': case 'mute': { const o = lid === 'rest' ? U.meta.rest : U.meta.layers.find(x => x.id === lid); if (o) spk1Layer(U, a, lid, !o[a]); return; }
+    case 'solo': case 'mute': { const o = lid === 'rest' ? U.meta.rest : U.meta.layers.find(x => x.id === lid); if (o) { const nv = !o[a], pr = spk1Layer(U, a, lid, nv); if (a === 'solo' && nv && typeof spk5Solo === 'function') pr.then(() => spk5Solo(U, lid)); } return; }   // SPK5: Solo einer neuen Ebene = sofort hören
     case 'ab': U.ab = !U.ab; spk1Layers(U); if (SPK1.pl && !U.playSel) spk1PlayFrom(U, spk1PlayPos() || U.cur); return;
     case 'lmore': spk1MoreDd(U, b, lid); return;
     case 'mxdd': case 'mxweg': case 'lpplay' /* SPK3 */: spk2Tap(U, b, a); return;   // SPK2: Loop → Matrix
@@ -98902,6 +99244,7 @@ function spk1Tap(U, b) {
 }
 /* ---- Zerlegen / Verfeinern (Schritt 4): Rechnung im Worker, Fortschritt in der Statuszeile, Abbrechen = nichts geändert ---- */
 async function spk1Zerl(U) {
+  if (typeof spk5Zerl === 'function' && spk5Zerl(U)) return;   // SPK5: Auswahl oder alles, Fortschritt sichtbar, Ergebnis gemeldet
   if (U.busy === 'zerlegen') { spk1Call('zstop', {doc: SPK1.doc}).catch(() => {}); spk1Stat(U, 'Breche ab …'); return; }
   if (U.busy === 'profi') { ki1Stop(); spk1Stat(U, 'Halte an …'); return; }   // KI1: ■ Abbrechen während der Profi-Trennung
   if (typeof ki1ZerlTap === 'function' && ki1ZerlTap(U)) return;   // KI1: quer öffnet „Zerlegen ▾“ das Klappfenster
