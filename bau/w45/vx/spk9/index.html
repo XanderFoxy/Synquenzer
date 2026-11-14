@@ -105302,20 +105302,21 @@ function spk7Tgts(U) {
 function spk9DspMake(Z2) {
   if (!Z2 || !Z2.h || !Z2.opt || !Z2.h.segNotes || !Z2.h.midiOf) return Z2;
   const H2 = Z2.h, seg0 = H2.segNotes, opt = Z2.opt;
-  const o9 = {an: 1, hys: 0.6, hold: 0.07, stab: 0.07, span: 0.5, look: 0.5, nl: 0.15, vib: 0.16, gegen: 0.3, lvl: 12, minS: 0.08, near: 0.07, win: 0.6, dbg: null};
+  const o9 = {an: 1, hys: 0.6, hold: 0.07, stab: 0.06, span: 0.25, bandv: 0.6, vmin: 0.3, tr: 0.17, look: 0.5, nl: 0.15, vib: 0.16, gegen: 0.3, lvl: 12, minS: 0.08, near: 0.07, win: 0.6, dbg: null};
   const med = v => { if (!v.length) return NaN; v.sort((p, q) => p - q); return v[v.length >> 1]; };
   // Tonhöhen-Stufen (Zeit der Grenze in s) aus der Grundton-Spur f0 (Rahmen i ↔ (i0 + i)·hopS), nur stimmhafte Rahmen (ok)
   function steps(o) {
     const {f0, ok, F, hopS, i0, O} = o, T = i => (i0 + i) * hopS, fr = s => Math.max(1, Math.round(s / hopS)), p = new Float32Array(F).fill(NaN), s3 = new Float32Array(F).fill(NaN);
     for (let i = 0; i < F; i++) if (ok[i] && f0[i] > 0) p[i] = H2.midiOf(f0[i]);
     for (let i = 0; i < F; i++) { if (isNaN(p[i])) continue; const v = []; for (let r = i - 1; r <= i + 1; r++) if (r >= 0 && r < F && !isNaN(p[r])) v.push(p[r]); s3[i] = med(v); }
-    const out = [], warm = fr(0.06), W = fr(o9.stab), look = fr(o9.look), NL = fr(o9.nl), back = fr(0.06), wc = fr(o9.win);
+    const out = [], warm = fr(0.06), W = fr(o9.stab) + 1, VB = fr(0.2), look = fr(o9.look), NL = fr(o9.nl), back = fr(0.06), wc = fr(o9.win);
+    const mOf = (a, b) => { const v = []; for (let r = Math.max(0, a); r < Math.min(F, b); r++) if (!isNaN(s3[r])) v.push(s3[r]); return med(v); };
     const lvl = (ta, tb) => { const v = []; for (let t = ta; t < tb; t += hopS) v.push(O.envAt(t)); return med(v); };
     let i = 0;
     while (i < F) {
       while (i < F && isNaN(s3[i])) i++; if (i >= F) break;
       let j = i, gap = 0; while (j + 1 < F && gap <= 2) { j++; if (isNaN(s3[j])) gap++; else gap = 0; } j = j - gap + 1;   // Lauf [i, j), Lücken ≤ 2 Rahmen
-      let s0 = i, k = i + warm;
+      let s0 = i, k = i + warm; const rb = [];
       while (k < j) {
         const sk = Math.min(fr(0.04), (k - s0) >> 2), cv = []; for (let r = Math.max(s0 + sk, k - wc); r < k; r++) if (!isNaN(s3[r])) cv.push(s3[r]);
         const c = med(cv), v = s3[k];
@@ -105324,7 +105325,10 @@ function spk9DspMake(Z2) {
         if ((q - k) * hopS < o9.hold - 1e-6) { k = q + 1; continue; }   // kurzer Ausschlag (Vibrato, Wackler)
         if ((q - k) * hopS < o9.vib) { let od = 0; for (let r = q; r < Math.min(j, q + fr(0.13)); r++) if (!isNaN(s3[r])) od = Math.max(od, -(s3[r] - c) * sg); if (od >= o9.gegen) { k = q + 1; continue; } }   // Halbwelle, die zur Gegenseite schwingt = Vibrato
         let js = -1;   // ruhige Stelle auf der neuen Höhe (Gleiten steht nie ruhig)
-        for (let a = k; a + W <= j && a - k <= look; a++) { let lo = 1e9, hi = -1e9, s = 0, n = 0; for (let r = a; r < a + W; r++) { const x = s3[r]; if (isNaN(x)) break; lo = Math.min(lo, x); hi = Math.max(hi, x); s += x; n++; } if (n === W && hi - lo <= o9.span && Math.abs(s / n - c) >= o9.hys) { js = a; break; } }
+        const ruhig = (a, w, sp) => { let lo = 1e9, hi = -1e9, s = 0, n = 0; for (let r = a; r < a + w; r++) { const x = s3[r]; if (isNaN(x)) return NaN; lo = Math.min(lo, x); hi = Math.max(hi, x); s += x; n++; } return hi - lo <= sp ? s / n : NaN; };
+        for (let a = k; a + W <= j && a - k <= look; a++) { const mu = ruhig(a, W, o9.span); if (!isNaN(mu) && Math.abs(mu - c) >= o9.hys) { js = a; break; } }
+        // Vibrato auf dem neuen Ton (steht nie 60 ms flach): 200 ms im Band ±bandv um eine Höhe ≥ 60 ct neben der Mitte, mit Auf und Ab
+        if (js < 0 && o9.bandv) for (let a = k; a + VB <= j && a - k <= look; a++) { const mu = ruhig(a, VB, 2 * o9.bandv); if (isNaN(mu) || Math.abs(mu - c) < o9.hys) continue; let up = 0, dn = 0; for (let r = a + 1; r < a + VB; r++) { const dd = s3[r] - s3[r - 1]; if (dd > 0) up += dd; else dn -= dd; } if (Math.min(up, dn) >= o9.vmin) { js = a; break; } }
         if (js < 0) { k = q + 1; continue; }
         const nv = []; for (let r = js; r < Math.min(j, js + NL); r++) if (!isNaN(s3[r])) nv.push(s3[r]); const nl = med(nv);
         if (isNaN(nl) || Math.abs(nl - c) < o9.hys) { k = q + 1; continue; }
@@ -105332,8 +105336,21 @@ function spk9DspMake(Z2) {
         if ((bd - s0) * hopS < o9.minS || (j - bd) * hopS < o9.minS) { k = q + 1; continue; }
         const tb = T(bd) - hopS / 2;
         if (O && O.envAt && lvl(tb, Math.min(T(j), tb + 0.1)) < lvl(Math.max(T(s0), tb - 0.25), tb) - o9.lvl) { k = q + 1; continue; }   // Ausklang: neuer Teil viel leiser
-        out.push(tb); s0 = bd; k = Math.max(js, bd + warm);
+        rb.push(bd); s0 = bd; k = Math.max(js, bd + warm);
       }
+      // Übergang statt Ton: ein kurzes Stück (< tr s) zwischen zwei Stufen, das tonhöhenmäßig zwischen seinen Nachbarn liegt und sich
+      // dabei ≥ 0,4 HT auf den nächsten Ton zu bewegt (Anfahrt eines Gleitens), gehört zu den Nachbarn: Grenze auf halbem Weg
+      for (let again = 1; again && o9.tr;) {
+        again = 0; const bs = [i].concat(rb, [j]);
+        for (let z = 1; z + 1 < bs.length - 1 + 1 && z < bs.length - 2; z++) {
+          const a = bs[z], b = bs[z + 1]; if ((b - a) * hopS >= o9.tr) continue;
+          const mP = mOf(bs[z - 1], a), mS = mOf(a, b), mN = mOf(b, bs[z + 2]), L = Math.max(1, Math.round((b - a) * 0.4)), d1 = mOf(a, a + L), d2 = mOf(b - L, b);
+          if (isNaN(mP) || isNaN(mS) || isNaN(mN) || !((mS - mP) * (mN - mS) > 0) || !((d2 - d1) * Math.sign(mN - mP) >= 0.4)) continue;
+          const md = (mP + mN) / 2, sg = Math.sign(mN - mP); let bd = Math.max(bs[z - 1] + 1, a - back); while (bd < b && !((s3[bd] - md) * sg > 0)) bd++;
+          rb.splice(z - 1, 2, bd); again = 1; break;
+        }
+      }
+      for (const b of rb) out.push(T(b) - hopS / 2);
       i = j;
     }
     if (o9.dbg) o9.dbg({s3, out});
