@@ -26,3 +26,4 @@ Weiter mit: 4.54 = rel-4540/k fertig prüfen + INT53D nachziehen + Versionszeile
 - 12:5x: Workflow wsgwlr6uw (wf_60a0853d-7c7, Skript synq-vx1-imp1-wf_60a0853d-7c7.js): VX1 Gesang-Notenrolle (S/vx/rolle, 5 Schritte) ∥ IMP1 Import Tempo/Takt/Teile (S/vx/imp, 3 Schritte). Je LOG.md. Basis S/vx/basis.html = R-4541.
 - Recherche Spektral (Hintergrund-Agent) → S/vx-privat/SPEKTRAL-RECHERCHE.md (privat, nicht ins Repo). Danach Workflow SPK (Spektral-Seite, Trennen, Verfeinern, Noten→Spur, Klang-Nachbau) + CHR (Chorstimmen extrahieren).
 - Läuft weiter: wsf4zpvpt (4.54-Fixes, wird 4.54.2 + novw.py), wwu4y7736 (XD1 → 4.55.0 + novw.py).
+- 12:50: Workflow wwo12ndgq (wf_126c1421-5a8, synq-spk1-wf_126c1421-5a8.js): SPK1 Teil 1 (Plan, Kern STFT/Ebenen, Seite+Auswahl, Trennen+Verfeinern+Test) in S/vx/spk. Teil 2 (Noten→Spur, Vorlagen-Suche, Loop→Matrix Audio/MIDI, Klang-Nachbau VA/FM, opt. KI-Download) nach Zusammenführen mit IMP1.

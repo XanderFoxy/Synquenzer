@@ -83,7 +83,7 @@ for (const c of cases) {
   const tb = s.truth.slice(1).map(p => p.a), db = r.teile.slice(1).map(p => p.a + Math.round(t1err));
   const miss = tb.filter(a => !db.some(d => Math.abs(d - a) <= 1)), extra = db.filter(d => !tb.some(a => Math.abs(d - a) <= 1));
   const ok = Math.abs(r.bpm - bpm) <= 1 && r.ts === ts && Math.abs(t1err - Math.round(t1err)) < .1 && Math.abs(Math.round(t1err)) === 0 && !miss.length && !extra.length;
-  out.push({case: c, ok, bpm: r.bpm, roh: r.bpmRoh, ts: r.ts, t1: r.t1, lead: s.lead, t1Takte: +t1err.toFixed(2), teile: r.teile.map(p => p.name + '@' + p.a).join(' '), soll: s.truth.map(p => p.name + '@' + p.a).join(' '), miss, extra, sub3: r.sub3, A: r.A, wechsel: r.wechsel, stabil: r.stabil, ms: Date.now() - t0, quelle: r.quelle, pulse: r.pulse, lowRatio: r.lowRatio});
+  out.push({case: c, ok, bpm: r.bpm, roh: r.bpmRoh, ts: r.ts, t1: r.t1, lead: s.lead, t1Takte: +t1err.toFixed(2), teile: r.teile.map(p => p.name + '@' + p.a).join(' '), soll: s.truth.map(p => p.name + '@' + p.a).join(' '), miss, extra, stabil: r.stabil, ms: Date.now() - t0, quelle: r.quelle});
 }
 for (const o of out) console.log(JSON.stringify(o));
 console.log('OK', out.filter(o => o.ok).length, '/', out.length);
