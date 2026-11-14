@@ -101882,7 +101882,7 @@ function vx1rAnalyse(id, rn) {   // SPK5-R: rn = Wiederholung, weil die Quelle w
   return (wpMarks(id) ? Promise.resolve(wpMarks(id)) : wpDetect(id)).then(async mk0 => {
     let b = vx1rSrc(id); if (!b) { tkLoad(id); const w = TK.wait.get(id); if (w) await w; b = vx1rSrc(id); }
     if (b && typeof G4 !== 'undefined' && G4.job.has(id)) { for (let i = 0; i < 600 && G4.job.has(id); i++) await new Promise(r => setTimeout(r, 25)); b = vx1rSrc(id) || b; }   // SPK5-R: G4 rechnet die Quelle gerade neu → an der neuen Fassung messen (≤ 15 s)
-    const mk = wpMarks(id) || mk0 || []; if (!b) return null;
+    const mk = (b && typeof vx2Marks === 'function' ? await vx2Marks(id, b) : null) || wpMarks(id) || mk0 || []; if (!b) return null;   /* VX2: Stücke = Noten/Silben (Tonhöhen-Noten + Einsatz-Merkmal) */
     const ts = mk.map(k => k.t), key = id + '@' + wpBid(b) + ':' + ts.join(','), c = VX1R.ana.get(id);
     if (c && c.key === key) return c;
     if (VX1R.aq.has(key)) return VX1R.aq.get(key);
@@ -102851,6 +102851,98 @@ window.__nx1 = {
   hasAu: () => nx1HasAu(), target: c => nx1ImpTarget(c || IMP1.cur), hyOk: id => nx1HyOk(id),
 };
 /* ===== NX1-END ===== */
+/* ===== VX2-BEGIN (Paket VX2 – Gesang-Editor an echtem Gesang: Stücke = Noten/Silben; Präfix vx2/VX2)
+   Befund (Echttest mit echtem Gesang): die Einsatz-Erkennung (wpDetect) setzt Marken auch mitten in gehaltenen Vokalen (Vibrato-/
+   Pegelwellen) – 33-s-Aufnahme: 150 Stücke für 59 Noten, nur 37 % beginnen an einer Note; Quantisieren schob Teile mitten in Noten.
+   Jetzt (nur Gesang-Editor, nur erkannte Marken – gespeicherte/eigene Marken alter Takes bleiben unverändert):
+     1. jede Tonhöhen-Note (G2, VS2-Segmente) beginnt ein Stück – auch ein Legato-Tonwechsel; ein Einsatz der Erkennung ±20 ms
+        davon gibt die probengenaue Stelle, sonst der Noten-Beginn;
+     2. Erkennungs-Marken ohne Note bleiben nur mit Einsatz-Merkmal: stimmloser Konsonant davor, Pegel-Tal > 6 dB (30 ms) oder Wort-
+        Beginn nach Ruhe – und danach wird gesungen (≥ 50 ms stimmhaft); Atem/Geräusch/Pausen werden kein eigenes Stück;
+     3. Konsonant vor dem Vokal gehört wie bisher zum Stück (Anlauf), Anker wie bisher (lautester Spitzenwert im Einschwingbereich) –
+        Anker und Anlauf auf dem Hauptfaden aus derselben Analyse (gleich wie Op 'vxa', ohne zweiten Lauf).
+   Gemessen (Node, 33-s-Aufnahme mit Noten): 213 erkannte Marken → 60 Stücke für 59 Noten, an einer Note 26 % → 85 %,
+   Einsätze ±40 ms Anfang 35 → 43, Vokal-Beginn 46 → 50 von 59.
+   Einhänge-Zeile (Kommentar „VX2“): vx1rAnalyse (Marken vor der Analyse). Test-API: window.__vx2. */
+const VX2 = {on: true, done: new Map(), q: new Map(), last: null};
+// Stücke = Noten/Silben: Marken aus den Tonhöhen-Noten (G2), am Einsatz der Erkennung eingerastet; Erkennungs-Marken ohne Note
+// nur mit Einsatz-Merkmal (stimmloser Konsonant davor oder Pegel-Tal > 6 dB, danach gesungen); Atem/Pausen werden kein eigenes Stück
+function vx2Pick(raw, A, G, len, o) {
+  o = o || {};
+  if (!G || !Array.isArray(G.notes) || G.notes.length < 2 || !A || !A.kind) return null;
+  const fh = A.fh, K = A.kind, nf = K.length, R = A.rms;
+  const cnt = (a, b, v) => { let c = 0; for (let f = Math.max(0, Math.floor(a / fh)); f < Math.min(nf, Math.ceil(b / fh)); f++) if (K[f] === v) c++; return c; };
+  const lv = f => { let s = 0, c = 0; for (let j = f - 1; j <= f + 1; j++) if (j >= 0 && j < nf) { s += R[j] * R[j]; c++; } return 10 * Math.log10(s / Math.max(1, c) + 1e-12); };   // Pegel über 30 ms (dB)
+  const ext = (a, b, mx) => { let v = mx ? -1e9 : 1e9; for (let f = Math.max(0, Math.floor(a / fh)); f < Math.min(nf, Math.ceil(b / fh)); f++) { const d = lv(f); if (mx ? d > v : d < v) v = d; } return v; };
+  const SN = o.snapPre == null ? .02 : o.snapPre, SP = o.snapPost == null ? .02 : o.snapPost, out = [];
+  // 1) jede Tonhöhen-Note beginnt ein Stück (auch Legato-Tonwechsel); Zeit = Einsatz der Erkennung in der Nähe (probengenau), sonst Noten-Beginn
+  for (const n of G.notes) {
+    if (!(n.t1 - n.t0 >= .04)) continue;
+    let r = null; for (const k of raw) if (k.t >= n.t0 - SN && k.t <= n.t0 + SP && (!r || Math.abs(k.t - n.t0) < Math.abs(r.t - n.t0))) r = k;
+    out.push(r ? {t: r.t, conf: r.conf, src: r.src, word: !!r.word} : {t: n.t0, conf: .6, src: 'pitch'});
+  }
+  // 2) Erkennungs-Marken ohne Note: nur mit Einsatz-Merkmal (gleiche Tonhöhe, neue Silbe)
+  for (const k of raw) {
+    if (out.some(z => Math.abs(z.t - k.t) < .1)) continue;
+    if (cnt(k.t, k.t + .15, 2) < 5) continue;                                  // danach nichts Gesungenes → Atem/Geräusch
+    const uv = cnt(k.t - .1, k.t + .02, 1) >= 2 && cnt(k.t - .1, k.t + .02, 2) <= 8;   // stimmloser Konsonant davor
+    const dip = Math.min(ext(k.t - .15, k.t - .03, true), ext(k.t + .02, k.t + .15, true)) - ext(k.t - .04, k.t + .03, false);
+    if (k.word || uv || dip > 6) out.push({t: k.t, conf: k.conf, src: k.src, word: !!k.word});
+  }
+  out.sort((a, b) => a.t - b.t);
+  const res = [];
+  for (const z of out) { const p = res[res.length - 1]; if (p && z.t - p.t < .05) continue; res.push(z); }
+  return res;
+}
+// Anker-Abstand und Anlauf je Marke wie im Analyse-Kern (Op 'vxa'), auf dem Hauptfaden aus derselben Analyse (ohne zweiten Lauf)
+function vx2AnLead(x, sr, A, mk) {
+  const n = x.length, H = Math.max(1, Math.round(sr / 1000)), FH = Math.round(.01 * sr), R5 = Math.max(1, Math.round(.0025 * sr)), pe = A.pk, env = A.env, kind = A.kind, ne = pe.length;
+  let pk = 0; for (let i = 0; i < n; i++) { const v = x[i] < 0 ? -x[i] : x[i]; if (v > pk) pk = v; }
+  const TH = Math.max(.002, pk * .02), an = new Float32Array(mk.length), lead = new Float32Array(mk.length), cl = (v, a, b) => (v < a ? a : v > b ? b : v);
+  for (let k = 0; k < mk.length; k++) {
+    const f0i = Math.max(0, Math.round(mk[k] * sr / H)), lim = k + 1 < mk.length ? Math.round(mk[k + 1] * sr / H) - 5 : ne - 1;
+    const f1i = Math.min(ne - 1, Math.round((mk[k] + .12) * sr / H), Math.max(f0i, lim));
+    let mx = 0; for (let f = f0i; f <= f1i; f++) if (pe[f] > mx) mx = pe[f];
+    let at = f0i, ag = f0i;
+    for (let f = f0i; f <= f1i; f++) if (pe[f] >= .9 * mx) { at = ag = f; while (ag < f1i && pe[ag + 1] >= .9 * mx) ag++; break; }
+    const o = Math.round(mk[k] * sr);
+    let bi = at * H, bv = -1; for (let i = Math.max(o, at * H - R5); i < Math.min(n, ag * H + R5, Math.round((mk[k] + .12) * sr)); i++) { const v = x[i] < 0 ? -x[i] : x[i]; if (v > bv) { bv = v; bi = i; } }
+    an[k] = cl(bi / sr - mk[k], 0, .2);
+  }
+  for (let k = 0; k < mk.length; k++) {
+    const fm = Math.floor(mk[k] * sr / FH), lo = k ? mk[k - 1] + .04 : 0; let f = fm - 1;
+    if (f < 0 || kind[f] !== 1) continue;
+    while (f - 1 >= 0 && kind[f - 1] === 1 && (f - 1) * FH / sr > lo && mk[k] - (f - 1) * FH / sr <= .15) f--;
+    let e = Math.max(0, Math.round(Math.max(lo, f * FH / sr) * sr / H)); const em = Math.round(mk[k] * sr / H);
+    while (e < em && env[e] < TH * .5) e++;
+    const L = mk[k] - e * H / sr; if (L > .005) lead[k] = Math.min(.15, L);
+  }
+  return {an, lead};
+}
+// die Marken für den Gesang-Editor (null = unverändert): einmal je Take + Quelle, Ergebnis in WP.det (wpMarks) und VX1R.ana (Analyse)
+function vx2Marks(id, b) {
+  const m = S.takes && S.takes[id], raw = m && !m.marks ? wpMarks(id) : null;
+  if (!VX2.on || !raw || raw !== WP.det.get(id) || raw.length < 2 || VX2.done.get(id) === raw || typeof g2Analyse !== 'function') return Promise.resolve(null);
+  const key = id + '@' + wpBid(b); if (VX2.q.has(key)) return VX2.q.get(key);
+  const p = (async () => {
+    const t0 = performance.now(), x = b.getChannelData(0), sr = b.sampleRate, len = b.length / sr;
+    const [A, G] = await Promise.all([wpCall({op: 'vxa', x, sr, marks: raw.map(k => k.t)}), g2Analyse(id).catch(() => null)]);
+    const m2 = S.takes && S.takes[id]; if (!m2 || m2.marks || WP.det.get(id) !== raw) return null;   // inzwischen bearbeitet / neu erkannt
+    const pick = A ? vx2Pick(raw, A, G, len) : null, mk = pick ? wpNormMarks(pick, len) || [] : null;
+    if (!mk || mk.length < 2) { VX2.done.set(id, raw); VX2.last = {id, roh: raw.length, n: null, why: G ? 'zu wenig Noten' : 'keine Tonhöhe'}; return null; }
+    const ts = mk.map(k => k.t), al = vx2AnLead(x, sr, A, ts);
+    WP.det.set(id, mk); VX2.done.set(id, mk);
+    const An = Object.assign({key: id + '@' + wpBid(b) + ':' + ts.join(','), id, sr, len, t: ts}, A, {an: al.an, lead: al.lead});
+    VX1R.ana.set(id, An); while (VX1R.ana.size > 6) VX1R.ana.delete(VX1R.ana.keys().next().value);
+    VX1R.lastAn = {id, n: ts.length, ms: Math.round(performance.now() - t0), how: WP.how};
+    VX2.last = {id, roh: raw.length, n: mk.length, noten: G && G.notes ? G.notes.length : 0, ms: Math.round(performance.now() - t0), src: mk.reduce((o, k) => (o[k.src || 'on'] = (o[k.src || 'on'] | 0) + 1, o), {})};
+    return mk;
+  })();
+  VX2.q.set(key, p); p.then(() => VX2.q.delete(key), () => VX2.q.delete(key));
+  return p.catch(e => { logErr(e); return null; });
+}
+window.__vx2 = {last: () => VX2.last, on: v => { if (v != null) VX2.on = !!v; return VX2.on; }, pick: (raw, A, G, len, o) => vx2Pick(raw, A, G, len, o)};
+/* ===== VX2-END ===== */
 /* ===== IMP1-BEGIN (Paket IMP1, Audio-/MIDI-Import mit Tempo, Taktart und Teilen – Xander 14.11.: „MP3 … BPM erkennen und die Taktart …
    in Szenen als zerschnittene Audios … Strophe eins, Refrain eins …“). Schritt 1: die Erkennung.
    imp1Core: Kern ohne DOM, läuft als Worker (Blob, sonst data:-URL; ohne Worker stückweise im Hauptfaden). Ablauf: herunterteilen auf ~11 kHz →
