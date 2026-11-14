@@ -96930,7 +96930,7 @@ function spk1Css() {
     '.spk1-ly{grid-area:ly;min-height:0;overflow-y:auto;overflow-x:hidden;background:var(--bg);border-top:1px solid var(--panel-edge);overscroll-behavior:contain;touch-action:pan-y}',
     '.spk1-lr{display:grid;grid-template-columns:36px minmax(0,1fr) 44px 44px minmax(56px,120px) 48px 44px;grid-template-areas:"d n s m v db x";align-items:center;column-gap:4px;height:46px;padding:0 6px;border-bottom:1px solid var(--line)}',
     '.spk1-lr.act{background:linear-gradient(90deg,rgba(244,241,234,.09),transparent)}',
-    '.spk1-lr>button{height:40px;min-width:0;margin:0;padding:0;border-radius:6px;font:700 13px/1 var(--font-ui)}',
+    '.spk1-lr>button{height:44px;min-width:0;margin:0;padding:0;border-radius:6px;font:700 13px/1 var(--font-ui)}',
     '.spk1-lr>.spk1-dot{grid-area:d;width:36px;height:44px;border:0;background:transparent;position:relative}',
     '.spk1-lr>.spk1-dot::before{content:"";position:absolute;left:8px;top:12px;width:20px;height:20px;border-radius:50%;background:var(--c);box-shadow:0 0 0 1px rgba(0,0,0,.6),0 0 8px var(--c)}',
     '.spk1-lr>.spk1-nm{grid-area:n;justify-content:flex-start;padding:0 8px;text-align:left;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;background:transparent;border-color:transparent;box-shadow:none}',
@@ -96947,15 +96947,15 @@ function spk1Css() {
     '.spk1-sp p{margin:0;color:var(--text-dim);font-size:13px;line-height:1.35}',
     '.spk1.nodoc>:not(.spk1-hd):not(.spk1-sp):not(.spk1-dd){display:none}.spk1:not(.nodoc)>.spk1-sp{display:none}',
     '.spk1-dd{position:absolute;z-index:6;width:max-content;min-width:200px;max-width:min(340px,calc(100% - 16px));max-height:calc(100% - 70px);overflow-y:auto;box-sizing:border-box;padding:8px 10px 10px;background:var(--chassis-2);border:1px solid var(--line);border-radius:var(--r);box-shadow:0 10px 30px rgba(0,0,0,.65);display:flex;flex-direction:column;gap:6px;touch-action:pan-y}',
-    '.spk1-dd .spk1-g{display:flex;flex-wrap:wrap;gap:6px}.spk1-dd .seg button{min-height:40px;min-width:52px}',
+    '.spk1-dd .spk1-g{display:flex;flex-wrap:wrap;gap:6px}.spk1-dd .seg button{min-height:44px;min-width:52px}',
     '.spk1-dd .spk1-sw{width:44px;height:44px;padding:0;border-radius:50%;background:var(--c);border:2px solid transparent}.spk1-dd .spk1-sw.on{border-color:var(--sel)}',
     '.spk1-dd input[type=text]{height:40px;min-width:0;flex:1 1 140px;padding:0 10px;border-radius:6px;border:1px solid var(--line);background:var(--lcd);color:var(--text);font:500 15px var(--font-ui)}',
     '.spk1-dd label{display:flex;align-items:center;gap:8px;font:700 11px/1 var(--font-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim)}.spk1-dd label input[type=range]{flex:1 1 auto;height:32px;accent-color:var(--sel)}',
     '@media (orientation:landscape){',
-    '.spk1{grid-template-columns:40px minmax(0,1fr) minmax(0,190px) 264px;grid-template-rows:44px 26px minmax(0,1fr) 48px 44px;grid-template-areas:"tl tl tl hd" "co ru ru ly" "ky mn mn ly" "ky mn mn ac" "op op st ac"}',
+    '.spk1{grid-template-columns:40px minmax(0,1fr) minmax(0,190px) 264px;grid-template-rows:44px 26px minmax(0,1fr) 52px 46px;grid-template-areas:"tl tl tl hd" "co ru ru ly" "ky mn mn ly" "ky mn mn ac" "op op st ac"}',
     '.spk1-hd{padding-left:10px;border-left:1px solid var(--panel-edge)}.spk1-t span{display:none}',
-    '.spk1-ly{border-left:1px solid var(--panel-edge);border-top:0}.spk1-ac{border-left:1px solid var(--panel-edge);grid-auto-rows:42px;padding:3px 4px}.spk1-ac .mbtn{height:42px;min-height:42px;padding:0 3px;font-size:12px}',
-    '.spk1-st{line-height:44px;border-top:1px solid var(--panel-edge)}',
+    '.spk1-ly{border-left:1px solid var(--panel-edge);border-top:0}.spk1-ac{border-left:1px solid var(--panel-edge);padding:3px 4px}.spk1-ac .mbtn{padding:0 3px;font-size:12px}',
+    '.spk1-st{line-height:45px;border-top:1px solid var(--panel-edge)}',
     '.spk1-lr{grid-template-columns:36px minmax(0,1fr) 44px 44px 44px;grid-template-rows:44px 30px;grid-template-areas:"d n s m x" ". v v v db";height:76px}',
     '.spk1-lr>.spk1-ab{grid-column:3/6}',
     '.spk1-sp{grid-row:1/-1;grid-column:1/4}',
@@ -96976,7 +96976,7 @@ function spk1Build() {
   hd.append(ttl, bU, bR, x);
   const tl = U.tl = el('div', 'pr-bar spk1-tl pan-x');
   for (const [k, n] of SPK1_TOOLS) { const b = el('button', 'n1b', spk1Svg(k) + '<span>' + n + '</span>'); b.dataset.tool = k; b.setAttribute('aria-label', 'Werkzeug ' + n); tl.appendChild(b); }
-  tl.appendChild(el('span', 'sep')); const bV = el('button', '', 'Ansicht ▾'); bV.dataset.a = 'view'; tl.appendChild(bV);
+  tl.appendChild(el('span', 'sep')); const bV = el('button', 'n1b', 'Ansicht ▾'); bV.dataset.a = 'view'; tl.appendChild(bV);
   const co = el('div', 'pr-corner spk1-co', 'TAKT'), ru = U.ru = el('div', 'spk1-ru', '<canvas></canvas>'), ky = U.ky = el('div', 'spk1-ky', '<canvas></canvas>');
   const mn = U.mn = el('div', 'spk1-mn', '<canvas class="spk1-gl"></canvas><canvas class="spk1-ov"></canvas>');
   const op = U.op = el('div', 'pr-bar spk1-op pan-x');
@@ -96988,7 +96988,7 @@ function spk1Build() {
   const pK = pane('rect zeit freq'); sl(pK, 'Kante', 'kante', 0, 1, 0.05, v => Math.round(v * 100) + ' %');
   pK.appendChild(el('label', '', 'Tipp = Abspielposition'));
   const pP = pane('pinsel'); sl(pP, 'Größe', 'size', 6, 60, 1, v => v + ' px'); sl(pP, 'Weich', 'weich', 0, 0.95, 0.05, v => Math.round(v * 100) + ' %');
-  const bMin = U.bMin = el('button', '', 'Radierer'); bMin.dataset.a = 'minus'; bMin.setAttribute('aria-pressed', 'false'); pP.appendChild(bMin);
+  const bMin = U.bMin = el('button', 'n1b', 'Radierer'); bMin.dataset.a = 'minus'; bMin.setAttribute('aria-pressed', 'false'); pP.appendChild(bMin);
   const pH = pane('harm'); sl(pH, 'Obertöne', 'K', 1, 32, 1, v => String(v), () => spk1HarmOpt(U)); sl(pH, 'Breite', 'bw', 10, 100, 5, v => v + ' ct', () => spk1HarmOpt(U));
   const pA = pane('aehn'); sl(pA, 'Empfindlich', 'empf', 0, 1, 0.05, v => Math.round(v * 100) + ' %', () => spk1HitsApply(U)); U.hitLab = el('label', '', ''); pA.appendChild(U.hitLab);
   const st = U.st = el('div', 'spk1-st', ''), ac = U.ac = el('div', 'spk1-ac'), ly = U.ly = el('div', 'spk1-ly pan-y'), sp = U.sp = el('div', 'spk1-sp pan-y');

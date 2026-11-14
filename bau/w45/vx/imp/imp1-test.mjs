@@ -67,6 +67,7 @@ async function layouts(p, tag, setup) {
     await p.screenshot({path: path.join(fotos, 'imp1t-' + tag.replace(/[^a-z0-9]+/gi, '-').toLowerCase() + '-' + w + 'x' + h + '.png')});
   }
   await p.setViewportSize({width: 428, height: 926}); await p.waitForTimeout(250);
+  await p.evaluate(() => { closePop(); window.__imp1.ui.sheet(); }); await p.waitForTimeout(300);
 }
 
 /* ===== 1. Songs rendern (die App rendert eigene Songs) → WAV ===== */
@@ -160,7 +161,7 @@ console.log('INFO Abschnitt 2 fertig (' + el() + ')');
 
 /* ===== 3. In Szenen zerschneiden: Reihenfolge, Ausschnitte ±10 ms, Song-Ablauf, Wiedergabe ===== */
 const before = await p.evaluate(() => ({st: sx14State(), bpm: S.bpm, ts: S.ts || '4/4', nt: NT(), undo: UNDO.length}));
-await tapSel(p, '.imp1 button[data-i="scenes"]'); await p.waitForTimeout(300);
+ok(await tapSel(p, '.imp1 button[data-i="scenes"]'), 'Knopf „In Szenen zerschneiden“ im Blatt'); await p.waitForTimeout(300);
 const sc = await p.evaluate(async () => {
   const c = window.__imp1.ui.cur(), G = window.__imp1.ui.geo(), P = window.__imp1.ui.parts(), o = S.tracks.findIndex(t => t.orig), tr = S.tracks[o];
   const lane = S.song.lanes[o], clips = tr.clips.map(x => x && x.audio ? {len: x.len, ts: x.ts || '4/4', in: x.audio.in, out: x.audio.out, take: x.audio.take} : null);
