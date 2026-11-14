@@ -6,3 +6,5 @@
 - 16:53 A3 ergänzt (mit Perform-Spur: Rahmen an der Zeile PERFORM, alter Weg bleibt): gd1-test 25/25 OK
 - 16:56 Rauchtest smoke.mjs: errors [] (out/smoke/smoke.png); xd1-Regression läuft
 - 16:57 Fotos zeigten: der Toast (oben, top 58 px) liegt hochkant genau über der Klangerzeugung bzw. teils über ● SONG → Hinweis jetzt im Etikett am Rahmen (vorhandenes .ui1rl, ui1Ring umhüllt, nur für diesen Sprung + dieses Ziel): „Arp Treppe: erst MS 2000 / Bit Mask“, „Perform-Spur: ● SONG + Perform-Leiste“; kein Toast über dem Ziel. gd1-test 26/26 OK (neu A4: danach behält „Song transponieren“ sein Etikett). topdefs 0/0, dupkeys 0.
+- 17:01 Test erweitert: alle „Mehr ▾“ auf → 59 Tasten in Zeilen mit 2–3 Tasten. „Split“ hat eine mittlere Taste von 40 px → mittlere Tasten unter 44 px jetzt mittig auf 44 px (min(0px, 50 % − 22 px) = höchstens in die 2,00-px-Fugen, gemessen); breitere mittlere unverändert. gd1-test 26/26 OK; xd1-Regression neu gestartet (Datei endgültig).
+- 17:01 Basis4 selbst (ONLY=video): dieselben 3 FEHLER in (2) Video quer/quer-370 (Bühnenhöhe, Live-Vorschau-Platz) → vorbestehend, nicht GD1

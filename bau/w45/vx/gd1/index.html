@@ -96111,7 +96111,7 @@ Object.assign(SYNQUENZER, {vid5: VID5_API});                  /* VID5: Test-API 
        Der Hinweis steht im Etikett am Rahmen statt im Toast: der läge oben über der Klangerzeugung bzw. hochkant über ● SONG.
    (2) Menü quer: die Zeilen mit 2–3 Tasten (An │ Aus: Lauflichter, Perform-Leiste, Begleiter; Dur │ Moll, Modus, Einzähler, Rest unter
        Mehr ▾) sind 38 px hoch, die Tasten 32 px (≥ 40 breit). Trefferfläche ≥ 44 × 44 über ein unsichtbares ::before (44 px hoch mittig, erste
-       Taste 4 px nach links, letzte 4 px nach rechts, eine mittlere je 2 px in die Fugen) – das Bild bleibt pixelgleich, zwischen zwei Zeilen
+       Taste 4 px nach links, letzte 4 px nach rechts, eine mittlere unter 44 px mittig auf 44 px, d. h. höchstens in die 2-px-Fugen) – das Bild bleibt pixelgleich, zwischen zwei Zeilen
        bleiben 2 px frei (8 px Abstand − 2 × 3).
        Zeilen mit mehr Tasten (Tonart, Quantisieren) brechen um – dort hätte eine Erweiterung die nächste Tastenreihe überdeckt. Hochkant unverändert.
    (3) KF2-Oszilloskop während eines Video-/Audio-Exports: vvRenderAudio0 tauscht AU.ctx gegen den Offline-Kontext (UI.vvOff); bei offenem
@@ -96167,7 +96167,7 @@ function gd1Off() { try { return !!(UI.vvOff || (AU.ctx && typeof OfflineAudioCo
 @media (orientation:landscape){
 ${f}::before,${f}~button::before{content:"";position:absolute;left:0;right:0;top:50%;height:44px;margin-top:-22px}
 ${f}::before{left:-4px}
-${f}~button:not(:last-child)::before{left:-2px;right:-2px}
+${f}~button:not(:last-child)::before{left:min(0px,calc(50% - 22px));right:min(0px,calc(50% - 22px))}
 ${f}~button:last-child::before{right:-4px}
 }`;
   document.head.appendChild(st);
