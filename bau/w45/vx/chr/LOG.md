@@ -11,3 +11,4 @@
 - NOTES.md geschrieben (Kern, Ablage, Messtabelle, Befunde, Offen) → fertig. Ende Auftrag 1/3.
 - 14.11. Start Auftrag 2/3 (realistische Chöre aus Import + Tuning ohne Artefakte): LOG/LESEN/NOTES gelesen.
 - (1) Befund: Chor-Weg G6 v2 steht schon für jedes Audio-Stück offen (Takes-Blatt [Chor] hängt nur an tkAudioOk; Song-Stimme {vox} aus IMP1 „Als Gesang“ hat Chor-Zeile, Akkorde über g6pVoxPcs) → Freischalten nicht nötig (Beleg: index.html tkSheetPaint ok = tkAudioOk(); kein src/route-Filter außer vx1Probe).
+- (2) Messung vorher (src/tune-meas.mjs, Ideal = gleiche Stimme synthetisch an der Ziel-Tonhöhe): weich LSD ruhig 2,18/Übergang 3,15 dB, Knackser 5 (max +45,8 dB Hochton), Formant 2,4 %, Ton ±1,9 ct, Glätte 1,11; Chor +400 ct LSD 4,06/7,09 dB, Formant 9,3 %, Glätte 1,34; −500 ct Anlauf 50 ms. Ursache Knackser: Plosiv/Stille MITTEN in einer stimmhaften Strecke (pYIN überbrückt „t“) wird mitverschoben → Nachklingen im Loch (auch bei 0,1 ct).
