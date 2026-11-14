@@ -103913,7 +103913,7 @@ window.__vx2 = {last: () => VX2.last, on: v => { if (v != null) VX2.on = !!v; re
    stabil). Der Anlauf (Konsonant vor dem Vokal gehört zum Stück) suchte nur stimmlose Rahmen direkt vor der Marke – dort liegt dann der
    Vokal-Einsatz, der Konsonant blieb im Ausklang des Vorgängers (wurde beim Quantisieren mit ihm verschoben/gedehnt).
    Jetzt (gleiche Rechnung im Analyse-Kern Op 'vxa' und in vx2AnLead): von der Marke über ≤ 3 gesungene Rahmen zurück zum Vokal-Einsatz
-   (mehr gesungen davor = Legato, kein Anlauf), über ≤ 3 stille Rahmen (Verschluss vor p/t/k), dann der stimmlose Lauf (Konsonant/Atem)
+   (mehr gesungen davor = Legato, kein Anlauf), über ≤ 3 stille Rahmen (leise Behauchung nach dem Knall), dann der stimmlose Lauf (Konsonant/Atem)
    bis 150 ms vor dem Vokal-Einsatz; liegt die Marke selbst im stimmlosen Rahmen, zählt er mit. Liegt der Lauf ohne Verschluss zwischen
    zwei gesungenen Läufen, muss er rauschen (Nulldurchgänge ≥ 0,15) oder ≥ 3 dB leiser als der Vokal sein – ein Tonwechsel im Legato
    (dort ist die Periodik kurz gestört) wird kein Anlauf. Wie bisher: nie vor Vorgänger + 40 ms,
@@ -103921,7 +103921,13 @@ window.__vx2 = {last: () => VX2.last, on: v => { if (v != null) VX2.on = !!v; re
    Gemessen (App-Quelle der 3 Echt-Aufnahmen, Prüfer-Maß „Konsonant beim Stück“): #1 12 → 24 von 31, #10 9 → 10 von 13, #14 7 → 18 von 18;
    Vokal-Beginn, Stückzahl, Anker unverändert. Stück-Anfang gegen die Noten-Annotation (die den Vokal-Einsatz markiert) sinkt dabei
    gewollt dort, wo der Konsonant länger als 40 ms ist (#1 45 → 39 von 59) – der Konsonant gehört zum Stück (Festlegung VX1/VX2).
-   Einhänge-Zeilen (Kommentar „VX3“): nx1RunG (Op 'vxa'), wpWorker (vx3Lead in den Worker), wpCall (Schalter), vx2AnLead. Test-API: window.__vx3. */
+   Prüfung (Nachbesserung): P1 Grenze auch Anker des Vorgängers + 30 ms (dessen Einsatz bleibt, wie die Sperre beim Quantisieren); P2 Knall,
+   ein stiller Rahmen, Behauchung = ein Konsonant; P3 Lücke nur nach Stille (Knall nach Verschluss) – nach Gesang ist es der Ausklang des
+   Vorgängers, kein Anlauf; P4 bliebe vom Vorgänger nur ein Rest < 80 ms, gilt der Anlauf wie 4.64; P6 liegt die Marke davor im selben
+   Konsonanten (Stück am Konsonanten), wie 4.64; P5 (vx3Cut) beim Quantisieren gibt bei der Vorgänger-Sperre zuerst der Anlauf nach.
+   Grenze Anker-Abstand 0,2 s: bei spätem Anker (weicher Einsatz) beginnt das Stück dafür im Konsonanten (sonst spränge der Anker).
+   Einhänge-Zeilen (Kommentar „VX3“): nx1RunG (Op 'vxa'), wpWorker (vx3Lead in den Worker), wpCall (Schalter), vx2AnLead, vx1rQuant (vx3Cut).
+   Test-API: window.__vx3. */
 const VX3 = {on: true, cut: 0};
 // Anlauf je Marke – ersetzt den Anlauf-Lauf in Op 'vxa' (Worker, Quelltext per toString: ganz in sich geschlossen) und in vx2AnLead
 function vx3Lead(mk, F, an, sr, H, FH, TH, lead) {
@@ -103932,6 +103938,7 @@ function vx3Lead(mk, F, an, sr, H, FH, TH, lead) {
     let e = Math.max(0, Math.round(Math.max(lo, f * fs) * sr / H)); const em = Math.round(mk[k] * sr / H); while (e < em && env[e] < TH * .5) e++;
     const L = mk[k] - e * H / sr; return L > .005 ? Math.min(.15, L) : 0;
   };
+  if (P.old) { for (let k = 0; k < mk.length; k++) lead[k] = old(k); return lead; }   // nur die Regel 4.64 (für vx3Cut)
   for (let k = 0; k < mk.length; k++) {
     lead[k] = 0;
     // Grenze: Vorgänger + 40 ms und (P1) nicht in dessen Einsatz – Anker des Vorgängers + 30 ms (wie die Vorgänger-Sperre beim Quantisieren)
@@ -103965,12 +103972,13 @@ function vx3Lead(mk, F, an, sr, H, FH, TH, lead) {
   return lead;
 }
 // Quantisieren (Haken in vx1rQuant, P5): greift die Vorgänger-Sperre (Stück k begänne vor Anker des Vorgängers + 30 ms, schnelle Silben),
-// gibt zuerst der Anlauf nach: das Stück beginnt später im Konsonanten (höchstens bis zur Marke vor dem Anlauf), der Anker bleibt
-// auf dem Raster (4.64 hatte dort den Konsonanten ganz beim Vorgänger). Ändert die festgeschriebene Marke (t später, an kleiner, Anker gleich).
+// gibt zuerst der neue Teil des Anlaufs nach: das Stück beginnt später im Konsonanten, höchstens bis zum Stück-Anfang nach 4.64 (dort hatte
+// 4.64 den Konsonanten beim Vorgänger), der Anker bleibt auf dem Raster. Ändert die festgeschriebene Marke (t später, an kleiner, Anker gleich).
 function vx3Cut(id, m, mk, an, k, d, L) {
   if (!VX3.on || !(d < L - 1e-6) || !m || mk !== m.marks || !mk[k] || !isNum(mk[k].an)) return d;
   const A = VX1R.ana.get(id), t = mk[k].t; if (!A || !A.lead || !A.t) return d;
-  let lim = 0; for (let i = 0; i < A.t.length; i++) { const ld = +A.lead[i]; if (ld > 0 && Math.abs(A.t[i] - ld - t) < 2 / (A.sr || 48000) + 2e-6) { lim = A.t[i] - t; break; } }   // Marke vor dem Anlauf
+  let lim = 0, i = 0; for (; i < A.t.length; i++) { const ld = +A.lead[i]; if (ld > 0 && Math.abs(A.t[i] - ld - t) < 2 / (A.sr || 48000) + 2e-6) break; }
+  if (i < A.t.length) { const o = vx3LeadOf(A, true); lim = A.t[i] - (o ? +o[i] : 0) - t; }   // höchstens bis zum Stück-Anfang nach 4.64 (Konsonant ≥ 4.64)
   const dl = Math.min(L - d, lim, an[k]); if (!(dl > 1e-4)) return d;
   const nt = tkR6(wpSmp(m, t + dl)), na = +Math.max(0, an[k] - (nt - t)).toFixed(4);
   if (!(nt > t) || (k + 1 < mk.length && nt >= mk[k + 1].t)) return d;
@@ -103983,10 +103991,12 @@ function vx3On(v) {
   return VX3.on;
 }
 // Anlauf aus einer fertigen Analyse nachrechnen (Test: App-Analyse = vx3Lead)
-function vx3LeadOf(A) {
+function vx3LeadOf(A, alt) {
   if (!A || !A.kind || !A.env || !A.t) return null;
+  if (alt && A.vx3alt) return A.vx3alt;                                                // Regel 4.64 (vx3Cut), je Analyse einmal
   const sr = A.sr, H = Math.max(1, Math.round(sr / 1000)), FH = Math.round(.01 * sr); let pk = 0; for (const v of A.pk || []) if (v > pk) pk = v;
-  return vx3Lead(Array.from(A.t), A, A.an, sr, H, FH, Math.max(.002, pk * .02), new Float32Array(A.t.length));
+  const r = vx3Lead(Array.from(A.t), alt ? {kind: A.kind, env: A.env, p: {old: true}} : A, A.an, sr, H, FH, Math.max(.002, pk * .02), new Float32Array(A.t.length));
+  if (alt) A.vx3alt = r; return r;
 }
 window.__vx3 = {on: v => vx3On(v), lead: (mk, F, an, sr, H, FH, TH) => vx3Lead(mk, F, an, sr, H, FH, TH, new Float32Array(mk.length)), leadOf: id => vx3LeadOf(VX1R.ana.get(id))};
 /* ===== VX3-END ===== */
