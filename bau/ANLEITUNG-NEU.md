@@ -1,6 +1,6 @@
-# SYNQUENZER – Anleitung für alles Neue (4.44 bis 4.54)
+# SYNQUENZER – Anleitung für alles Neue (4.44 bis 4.59)
 
-Stand 08.11.2026. Suchen geht immer: **≡ › „Wo finde ich …?“** – Stichwort eintippen, die App springt hin und rahmt die Stelle gelb ein.
+Stand 14.11.2026. Suchen geht immer: **≡ › „Wo finde ich …?“** – Stichwort eintippen, die App springt hin und rahmt die Stelle gelb ein.
 
 ## Begleiter (Band spielt live zu deinen Akkorden)
 1. Über der Tastatur **AKKORD ▾ › BEGLEITER** (oder ≡ › Bedienung › Begleiter). Eine Leiste erscheint.
@@ -66,3 +66,39 @@ Stand 08.11.2026. Suchen geht immer: **≡ › „Wo finde ich …?“** – Sti
 ## Orientierung
 - Oben in jedem Blatt die Zeile **„● Szene 1 › …“** – antippen = zurück an die Stelle. Farbe je Bereich: Matrix türkis, Song gelb, Klang blau, Gesang pink, Mix grün, Video lila.
 - ≡-Menü: Seltenes unter **Mehr ▾**. **Raumschiff-Look:** ≡ › Bedienung.
+
+## NEU 4.55–4.59 (14.11.)
+
+### Audio/MIDI importieren (Tempo, Takt, Teile)
+1. **≡ › Export/Import › Audio/MIDI importieren** (auch über „Gesang importieren“). MP3, WAV, M4A, MIDI.
+2. Tempo vorweg eintippen (wenn bekannt) oder **Erkennen** – Tempo, Taktart, erste „1“ und Teile (Intro, Strophe, Refrain, Bridge, Outro).
+3. Nur Gesang? Die App schätzt aus den Silben und fragt mit Vorschlag („96 oder 48 / 192?“).
+4. Korrigieren: Tempo − / + / ½× / 2× / Tippen, Taktart, „1“-Marke ziehen, Teile umbenennen/zusammen/teilen.
+5. Ziel: **In Szenen zerschneiden** │ **Als eine Spur** │ **Als Gesang**. Ein ↶ für alles.
+6. **Loop-Klammern** unten in der Welle ziehen → **Als Loop in die Matrix**.
+
+### Gesang bearbeiten wie Noten
+1. Matrix: Gesang-Clip **✎** – Song: Gesang-Block antippen → **✎ Bearbeiten**.
+2. Jede Silbe = ein Stück mit Text, Tonhöhenkurve, Welle; Konsonanten anders getönt.
+3. Die kräftige Linie im Stück = **Anker** (stärkster Einsatz). Ziehen rastet mit dem Anker auf dem Raster ein, **QUANT.** (mit Stärke) setzt Anker auf den Taktstrich – der Anschwung liegt davor.
+4. Waagrecht = verschieben (links: Ausklang davor wird sauber abgeschnitten mit Ausblende; rechts: nur der Vokal wird gedehnt), senkrecht = Tonhöhe. Teilen/Verbinden, ↶ je Schritt.
+
+### Spektral-Seite (≡ › Analyse › Spektral …)
+1. Datei laden oder Take wählen („Im Spektrum öffnen“ im Takes-Blatt). Tastatur links, Takt-Lineal oben, zwei Finger zoomen, Doppeltipp = alles.
+2. Auswahl: Rechteck, Zeit, Frequenz, Pinsel, **Harmonische** (Ton antippen), **Ähnliche** (Beispiel ziehen). ▶ hört die Auswahl, Transfer in eine Ebene.
+3. **Zerlegen ▾**: „Zerlegen“ (schnell, ohne Download) oder **Profi-Trennung** (KI, einmal ~86 MB, deutlich sauberer). Ergebnis: Ebenen Drums, Bass, Gesang, Rest – Solo/Stumm/Lautstärke je Ebene.
+4. **Verfeinern**: Auswahl + „Was steckt hier?“ (Bass, Gesang, …) – Vorher/Nachher hören.
+5. **Noten**: Werkzeug „Noten“ zeigt die Töne einer Ebene; Note antippen → **Gehört zu: Bass …**; **Überall finden** sucht den Klang im ganzen Stück.
+6. **Loop → Matrix**: Lineal halten und ziehen = Loop → **In die Matrix: als Audio** oder **als MIDI** (auf eine Synth-Spur).
+7. **Klang nachbauen**: Note antippen → Analyse (Periode, Obertöne) → Nachbau mit VA oder FM, A/B gleich laut, **Als Klang übernehmen**.
+
+### Chor
+- **Stimmen trennen** (Takes-Blatt): ein Chor-Take wird in 2–4 einzelne Stimmen auf eigene Chor-Spuren zerlegt; der Rest bleibt hörbar, das Original liegt stumm darunter (A/B).
+- **Echte Chöre**: neue Chöre bekommen je Stimme eigenen Versatz, eigene kleine Tonhöhen-Schwankung und Klangfarbe; Konsonanten kommen nur vom Lead.
+
+### Aufnehmen, Video, Matrix (deine 8 Entscheidungen)
+- Mikrofon-Blatt: **Beim Singen hören** und **Mich selbst hören An │ Aus** (über Lautsprecher stumm).
+- Matrix im Stopp: Szenen-Kopf startet beim **Loslassen**; Halten = nur Menü.
+- Echtzeit-Mitschnitt und Klang-Editor enden immer auf **NACHHER**.
+- Video quer: Live-Vorschau rechts, Tasten als feste Fußzeile.
+- Kein „Neue Version“-Hinweis mehr – die App aktualisiert sich still selbst.
