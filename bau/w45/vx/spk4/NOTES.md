@@ -141,3 +141,12 @@ Zusatz (`messu/uni.mjs`, `UD`/`MM`): Unison 0,45 auf D3: Kette A 2,47 → Unison
 ### Offen (A3)
 1. Lead aus dem Rest bleibt klein, solange die Gesang-Ebene den Lead-Synth hält – „Gesang → Lead“ wäre ein eigener Schritt (Gesang-Ebene ohne Stimme).
 2. Unison-Breite (uniWidth) und Unison-Pegel (uniMix) werden nicht geschätzt (fest 0 / 0,6); Stimmenzahl fest 5.
+
+## Pflicht / Regression (A3)
+topdefs doppelt 0 / Syntaxfehler 0 · dupkeys 0 · smoke errors [] (`smoke-a3.png`) · „MS 2000“ 1× · „  live: true,“ 1× · VERSION wie basis5 · CHANGES unberührt ·
+keine neuen Markenwörter. spk3-test (`spk3-test.out`, Basis basis5): **15 OK / 2 FEHLER** (A2: 14/3) – nachbau-abstaende-besser jetzt OK (Mittel 2,13 → 1,97,
+schlechter []); FEHLER nur die aus A2 bekannten: verfeinern-plus-1db (−0,01) und spk2-test 28/30 (verfeinern-verbessert, verfeinern-nach-noten).
+spk1-test (`spk1-test.out`) 17 OK / 1 FEHLER verfeinern-verbessert-ziel (4,37 → 4,36) – gleich mit `index.a2.html` (`spk1-test.a2.out`), kommt aus A2, nicht aus A3.
+Seite `spk4-rest.mjs` 7/0. Nicht neu gelaufen (Bereiche unberührt): ki1, chr2, vx1, imp1.
+Werkzeuge A3: `messb/rest4.mjs` (Rest aufteilen, `R_voll`/`R_lg`/`R_pw` = Z2.o7, `VERF=1` Vergleich Verfeinern), `messu/uni.mjs <datei>` (Pad-Unison, Ketten-Verlauf;
+`MODE='{"ab":99,"kd":…}'`, `UD`/`MM` = anderer Unison-Klang), `messu/uni2.mjs` (Startwert-Raster, Wahrheit mit einzelnen Analyse-Werten).
