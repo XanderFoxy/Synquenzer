@@ -27,7 +27,8 @@ const zeitOk = (n, v, f = 1.3, plus = 300) => n != null && v != null && n <= v *
 // ---------- 0 Pflicht (topdefs, dupkeys, smoke, Marken-Zähler, VERSION)
 let PF = ALT ? rd('spk4-pflicht.json') : null;
 if (!ALT && NUR.includes('pflicht')) {
-  const td = run([path.join(SP, 'rel-4271', 'tools', 'topdefs.cjs'), file], {}, 180000).out, dk = run([path.join(SP, 'tools2', 'dupkeys.cjs'), file], {}, 180000).out;
+  const NP = {NODE_PATH: '/opt/node-tools/node_modules'};   // Pflicht-Werkzeuge brauchen genau diesen Pfad (Umgebung setzt sonst einen anderen)
+  const td = run([path.join(SP, 'rel-4271', 'tools', 'topdefs.cjs'), file], NP, 180000).out, dk = run([path.join(SP, 'tools2', 'dupkeys.cjs'), file], NP, 180000).out;
   const png = path.join(dir, 'smoke-a4.png'), sm = run([path.join(SP, 'dirigent-test', 'smoke.mjs'), file, png], {}, 180000).out;
   const html = fs.readFileSync(file, 'utf8'), alt = fs.existsSync(vorher) ? fs.readFileSync(vorher, 'utf8') : '', cnt = (s, w) => s.split(w).length - 1, ver = s => (/VERSION = '(\d+\.\d+\.\d+)'/.exec(s) || [])[1];
   const m = /doppelt (\d+), Syntaxfehler (\d+)/.exec(td), d = /(\d+) doppelte Schlüssel/.exec(dk), e = /errors (\[.*\])/.exec(sm);

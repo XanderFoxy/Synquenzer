@@ -72,6 +72,17 @@ H = [
   "verfeinern ebenen stems bass gesang drums auswahl pinsel harmonische obertöne farben farbstufe glut magma graustufen profi hybrid genauer',   // SPK5\n"),
  ("d: 'Trennt das ganze Stück genauer als „Zerlegen“",
   "d: /* SPK5 */ 'Trennt die Auswahl (ohne Auswahl das ganze Stück) genauer als „Zerlegen“"),
+ # SPK5-R: VX1-Analyse misst an der Quelle, die gehört wird – nicht am Roh-Take, während die Gesang-Effekte (G4) sie gerade neu rechnen
+ ("function vx1rAnalyse(id) {\n",
+  "function vx1rAnalyse(id, rn) {   // SPK5-R: rn = Wiederholung, weil die Quelle während der Rechnung wechselte\n"),
+ ("    let b = vx1rSrc(id); if (!b) { tkLoad(id); const w = TK.wait.get(id); if (w) await w; b = vx1rSrc(id); }\n    const mk = wpMarks(id) || mk0 || []; if (!b) return null;\n",
+  "    let b = vx1rSrc(id); if (!b) { tkLoad(id); const w = TK.wait.get(id); if (w) await w; b = vx1rSrc(id); }\n"
+  "    if (b && typeof G4 !== 'undefined' && G4.job.has(id)) { for (let i = 0; i < 600 && G4.job.has(id); i++) await new Promise(r => setTimeout(r, 25)); b = vx1rSrc(id) || b; }   // SPK5-R: G4 rechnet die Quelle gerade neu → an der neuen Fassung messen (≤ 15 s)\n"
+  "    const mk = wpMarks(id) || mk0 || []; if (!b) return null;\n"),
+ ("      VX1R.lastAn = {id, n: ts.length, ms: Math.round(performance.now() - t0), how: WP.how};\n      return A;\n",
+  "      VX1R.lastAn = {id, n: ts.length, ms: Math.round(performance.now() - t0), how: WP.how};\n"
+  "      if ((rn | 0) < 2 && vx1rSrc(id) !== b) return vx1rAnalyse(id, (rn | 0) + 1);   // SPK5-R: Quelle wechselte während der Rechnung (G4/G2/Säubern fertig) → neu messen\n"
+  "      return A;\n"),
  # Block
  ("/* GD1-END */\n", "/* GD1-END */\n" + blk),
 ]

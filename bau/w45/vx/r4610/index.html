@@ -101513,10 +101513,11 @@ function* nx1RunG(M, m) {   // NX1: der Kern als Generator – nach kleinen Stü
 
 /* ---------- Analyse (Worker, je Take + Quelle gecacht) ---------- */
 function vx1rSrc(id) { try { return wpBase(id); } catch (e) { return tkBuffer(id); } }   // die Quelle, die die Zeitkarte rendert (gehörter Spitzenwert)
-function vx1rAnalyse(id) {
+function vx1rAnalyse(id, rn) {   // SPK5-R: rn = Wiederholung, weil die Quelle während der Rechnung wechselte
   const m = S.takes && S.takes[id]; if (!m) return Promise.resolve(null);
   return (wpMarks(id) ? Promise.resolve(wpMarks(id)) : wpDetect(id)).then(async mk0 => {
     let b = vx1rSrc(id); if (!b) { tkLoad(id); const w = TK.wait.get(id); if (w) await w; b = vx1rSrc(id); }
+    if (b && typeof G4 !== 'undefined' && G4.job.has(id)) { for (let i = 0; i < 600 && G4.job.has(id); i++) await new Promise(r => setTimeout(r, 25)); b = vx1rSrc(id) || b; }   // SPK5-R: G4 rechnet die Quelle gerade neu → an der neuen Fassung messen (≤ 15 s)
     const mk = wpMarks(id) || mk0 || []; if (!b) return null;
     const ts = mk.map(k => k.t), key = id + '@' + wpBid(b) + ':' + ts.join(','), c = VX1R.ana.get(id);
     if (c && c.key === key) return c;
@@ -101526,6 +101527,7 @@ function vx1rAnalyse(id) {
       const A = Object.assign({key, id, sr: b.sampleRate, len: b.length / b.sampleRate, t: ts}, r);
       VX1R.ana.set(id, A); while (VX1R.ana.size > 6) VX1R.ana.delete(VX1R.ana.keys().next().value);
       VX1R.lastAn = {id, n: ts.length, ms: Math.round(performance.now() - t0), how: WP.how};
+      if ((rn | 0) < 2 && vx1rSrc(id) !== b) return vx1rAnalyse(id, (rn | 0) + 1);   // SPK5-R: Quelle wechselte während der Rechnung (G4/G2/Säubern fertig) → neu messen
       return A;
     });
     VX1R.aq.set(key, p); p.then(() => VX1R.aq.delete(key), () => VX1R.aq.delete(key));
