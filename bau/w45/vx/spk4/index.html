@@ -100869,7 +100869,7 @@ async function spk4RestAuf(U) {
    anders als zwei verstimmte Oszillatoren (dort schweben nur die Obertöne, die beide Wellen haben) oder FM (Grundton ruhig). Die Verstimmung
    kommt aus der Schwebung: x3.det (Raten je Oberton, in ct) ≈ Abstand der äußeren Stimme → uniDet über die Kurve der Engine
    (äußere Stimme = (0,25·d + 0,75·d⁴)·1,8 Halbtöne). Startwerte „uni“ (wie Analyse) und „uni0“ (eine Welle) – der Optimierer stimmt nach. ---- */
-const SPK4_UNI = {an: 1, cv: 0.2, n: 5, min: 0.15, ka: 0.5, ks: 0.7, ra: 0.15, kd: 1};   // ra: Spielraum Kette B (Unison) beim Wechsel; kd: äußere Stimme = kd × x3.det
+const SPK4_UNI = {an: 1, cv: 0.2, n: 5, min: 0.15, ka: 0.5, ks: 0.7, ra: 0.15, kd: 0.92};   // ra: Spielraum Kette B (Unison) beim Wechsel; kd: äußere Stimme = kd × x3.det (gemessen 3 Unison-Klänge: det / äußere Stimme 1,08–1,09)
 function spk4KlUni(x) {
   if (!SPK4_UNI.an || !x || !x.cv || x.cv.length < 6 || !(x.det > 0.5)) return null;
   const c = x.cv.slice(0, 6); if (c.filter(v => v > SPK4_UNI.cv).length < SPK4_UNI.n || Math.min(...c.slice(0, 4)) < SPK4_UNI.min) return null;

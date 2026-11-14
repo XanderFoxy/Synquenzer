@@ -57,3 +57,48 @@ Läufe: `run1.txt` (Basis), `run3.txt` (Endstand), Zahlen `rv1-vorher.json` / `r
 ## Pflicht (Endstand)
 topdefs doppelt 0 / Syntax 0, dupkeys 0, smoke errors [] (`smoke-1.png`), „MS 2000“ 1×, „  live: true,“ 1×, Markenwörter = Basis (Zählung gleich),
 VERSION unverändert, Diff zur Basis: RV1-Block + 5 Zeilen imp1Core + diag.quiet. Regression imp1-test (Kopie aus vx/imp, danach gelöscht; Lauf `reg/imp1.txt`) ALLE OK (48).
+
+---
+# Auftrag 2/2 – Nachprüfung (Ergebnis)
+
+App-Datei unverändert seit Auftrag 1 (`index.html` 17:46 = basis5 + RV1-Import-Fix). Geändert nur der Test `rv1-test.mjs` (Mess-Fehler) – alte Fassung
+`dbg/rv1-test.vor-a2.mjs`. Diagnose-Skripte: `dbg/hyb-node.cjs` (Gesang-Kern 'hyb' aus index.html in Node nachrechnen, Abweichung orten),
+`dbg/chor-lag.mjs` (Chor-Versatz je 1-s-Fenster). Test-Schalter: `RV1_ONLY=1|10|14`, `RV1_K=<Stück>` (Stück erzwingen), `RV1_DUMP=1` (Puffer nach dbg/).
+
+## Läufe
+| Lauf | rv1-test | Rest |
+|---|---|---|
+| Lauf 4 (Beginn, = Lauf 3) `run4.txt` | 42/53 OK | 11 Fehler |
+| Lauf 7 (Ende) `run7.txt`, Zahlen `rv1-nachher.json` | **49/53 OK** | 4 = echte Grenzen (Übersegmentierung #1, Raster #1/#10/#14) |
+| vx1-test (`rolle/vx1-test.mjs`, `reg/vx1.txt`) | **61/61 OK** | |
+| imp1-test (Kopie `reg/imp1-test.mjs`, `reg/imp1.txt`) | **ALLE OK (48)**, 119 s | |
+| chr2-test (Kopie `chr2-test.mjs` + `src/synth.mjs`, `src/tune-meas.mjs` aus chr3; Basis `vx/basis2.html`; `src/run-chr2.txt`) | **ALLE OK (82)**, 115 s | |
+
+## Befunde aus Auftrag 1, nachgeprüft
+- **Befund 3 (Links-Verschieben nicht bitgleich) = Test-Fehler.** Node-Nachrechnung: vorher/nachher weicht nur Stück k selbst ab (#10: 2,8817–3,1316 s),
+  der Vorgänger ist bitgleich. Ursache: die Quelle des Renders (wpBase) wechselt zwischen Quantisieren und Verschieben (Tonhöhen-Fassung wird fertig) –
+  der Test verglich zwei Quellen. Jetzt Vergleich mit der Fassung nach ↶ (gleiche Quelle) + Meldung „quelle gleich/gewechselt“; wo die Quelle gleich
+  blieb (#14), ist ↶ bitgleich mit dem Quantisier-Stand. Ergebnis: #1 400 ms, #10 111 ms, #14 127 ms Ausklang bitgleich (max Abw. 0).
+- **Befund 2 (Chor st+2 Versatz 32/40 statt 9/17 ms, σ 16,7 ct, 5 Knackser) = Mess-Fehler.** Rechnung stabil (Kopie mit „echt“ vor/nach der Kopie ohne
+  bitgleich). Versatz je 1-s-Fenster = Plan (9 ms in 17/31 Fenstern); einzelne Fenster 25–49 ms (Hülle ändert sich mit „echt“ an Noten-Übergängen der
+  Terz) zogen die Gesamt-Korrelation weg, mit falschem Versatz stiegen σ und „Knackser“. Test: Median der Fenster-Versätze. Ergebnis #1:
+  6/6 12/12 9/9 17/17 15/15 16/16 ms, σ 2,9–5,4 ct, Knackser 0 (vorher 5/5 bei st+2).
+- **#10 rechts (Dehnung 15,8×) = Test-Fehler:** Stück ohne Platz für den Vokal des Vorgängers gewählt (Anker am Stück-Ende). Jetzt Wahl mit Anker ≥ 0,2 s
+  vor dem Stück; Rechts-Ziel rechnet die eigene Verschiebung des Vorgängers mit (#14 Stück 55: Vorgänger +101 ms → sonst 0,80× „gestaucht“ gemessen).
+  Ergebnis: #1 1,13× / 0 ct, #10 1,30× / −4 ct, #14 1,30× (Ton dort nicht messbar, Vorgänger-Rest stimmlos).
+
+## Echte Grenzen (bleiben, nicht klein)
+1. **Übersegmentierung**: #1 150 Stücke für 59 Noten, nur 56/150 (37 %) beginnen an einer Note. Marken (wpDetect) auch mitten in gehaltenen Vokalen.
+   Folge: Quantisieren 1/8 – #1 94/150 auf dem Raster (35 Linie besetzt, 14 Vorgänger-Sperre, 7 frei daneben), #10 31/56, #14 45/69. Ohne Knacken
+   (2. Ableitung/Sprung an allen Schnitten ≤ Quelle, 0 auffällig), aber Teile werden mitten in Noten verschoben. Weg: Marke nur bei Einsatz-Merkmal
+   (stimmlos davor, Tonhöhen-Sprung > 70 ct, Pegel-Tal > 6 dB), Tonhöhen-Noten (G2) als zweite Quelle – eigenes Paket, ändert Marken alter Takes nicht.
+2. **Tempo #14 hängt von der Abtastrate ab** (44,1 kHz 120,7 / 48 kHz 132,6 im Gesang-Weg); Frage kommt in beiden Fällen. Weg: immer auf 11,025 kHz
+   umrechnen – ändert Mix-Ergebnisse minimal, nur mit imp1-test.
+3. **Chor-Formant aus echtem Gesang**: #1 (33 s, Männerstimme) in Plan-Richtung (+1,5 / +3,3 / +1,6 %), #10 (9 s) und #14 (12 s, höher) teils
+   umgekehrt (#10 uni −1,7 %; #14 uni −1,0 %, st+2 −2,1 %, oct-1 −0,7 %; ohne „echt“ ≈ 0). Messung über den Spektral-Schwerpunkt 300–3500 Hz ist bei
+   kurzen Aufnahmen/höheren Stimmen unsicher (Teiltöne, eigenes Schwanken je Kopie) → an CHR4 (Formanten) übergeben; Versatz/σ/Knackser dort OK.
+4. **Spracherkennung offline nicht vorhanden**: Silben bleiben ehrlich leer, Hinweis schickt in den Marken-Editor (kein erfundener Text).
+
+## Pflicht (Ende Auftrag 2)
+topdefs 26 Skripte, doppelt 0 / Syntax 0; dupkeys 0; smoke errors [] (`smoke-2.png`); „MS 2000“ 1×; „  live: true,“ 1× (= Basis); Markenwörter = Basis;
+VERSION 4.60.0 unverändert; nichts beim App-Start neu.

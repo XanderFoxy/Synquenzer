@@ -33,3 +33,4 @@
   Noten-Übergängen der Terz) ziehen die Gesamt-Korrelation weg; mit falschem Versatz steigen σ und „Knackser“ (Vergleich an falscher Stelle).
   Test: Versatz = Median der Fenster-Versätze (gesamt bleibt als Info). #1 allein: Chor 6/6 12/12 9/9 17/17 15/15 16/16, σ 4,6–5,4 ct, Knackser 0.
 18:28 rv1-test: Rechts-Ziel rechnet die Verschiebung des Vorgängers mit (#14 Stück 55: Vorgänger +101 ms → vorher 0,80× „gestaucht“ gemessen, jetzt D 160 ms → 1,30×). #10/#14 allein: Chor-Versatz/σ/Knackser OK, Formant-Richtung #10 uni −1,7 %, #14 uni −1,0 % / st+2 −2,1 % (Befund, siehe NOTES).
+18:29 Ende Auftrag 2/2: Lauf 7 rv1-test 49/53 (vorher 42/53), vx1 61/61, imp1 ALLE OK (48), chr2 ALLE OK (82); Pflicht: topdefs 0/0, dupkeys 0, smoke [] (smoke-2.png), MS 2000 1×, live 1×, Marken = Basis, VERSION gleich. NOTES ergänzt (echte Grenzen: Übersegmentierung/Raster, Tempo #14 je Abtastrate, Chor-Formant kurze/hohe Takes, keine Spracherkennung). dbg-Puffer (*.f32) gelöscht.

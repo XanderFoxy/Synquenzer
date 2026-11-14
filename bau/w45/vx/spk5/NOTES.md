@@ -1,4 +1,4 @@
-# SPK5 – NOTES (Stand Auftrag 2/3: Noten-Überblendung – fertig; Auftrag 1/3 Zerlegen sichtbar + Farbstufen – fertig)
+# SPK5 – NOTES (Stand Auftrag 3/3: Hybrid + Gesamttest – fertig; 2/3 Noten-Überblendung – fertig; 1/3 Zerlegen sichtbar + Farbstufen – fertig)
 
 `index.html` = basis5.html (4.60.0) + Block `SPK5-BEGIN … SPK5-END` direkt nach `/* GD1-END */` (Quelle `spk5-block.js`) + 19 Haken „SPK5“.
 Bau: `python3 einbau.py` (jede Ersetzung genau 1×, bricht sonst ab). VERSION/CHANGES unberührt.
@@ -33,7 +33,7 @@ bei schon zerlegtem Stück entstand keine neue Ebene. → Kein Fehler im Rechenk
 ## Offen / Hinweise
 1. Doppeltipp-Schutz nur 0,12 s (Prellen) – ein echter zweiter Tipp bricht ab; die Meldung sagt das dann deutlich („abgebrochen – nichts geändert“).
 2. Ganz-Stück-Profi läuft über den alten Weg (fortsetzbar); leere neue Ebenen fallen dort nicht weg, nur die Meldung sagt „nicht gefunden“.
-3. Auftrag 3/3 offen.
+3. Auftrag 3/3 erledigt (unten).
 
 ---------------------------------------------------------------------------------------------------------------------------
 ## Auftrag 2/3 – Überblenden Spektrum ↔ Noten (fertig)
@@ -82,3 +82,52 @@ Regression: `spk5-test.mjs` ALLES OK (17) · `spk/spk1-test.mjs` ALLE OK. Pflich
 2. Hintergrund-Suche läuft je Ebene über das ganze Stück (Demo 20 s: ~1 s; 3-min-Song auf dem iPhone geschätzt 5–15 s je Ebene),
    blockiert nichts; andere Kern-Aufträge warten in der Schlange dahinter.
 3. Neu zerlegte Bereiche (Zerlegen Auswahl auf vorhandene Ebenen) suchen nicht automatisch neu – Noten ▾ → Noten finden.
+
+---------------------------------------------------------------------------------------------------------------------------
+## Auftrag 3/3 – Hybrid sichtbar + Gesamttest (fertig)
+Bau wie oben (`python3 einbau.py`, jetzt 23 Haken); Sicherung vor Auftrag 3: `spk5-block.a2.js`, `index.a2.html`, `spk5-test.a1.mjs`, `spk5-profi-test.a1.mjs`.
+
+### Hybrid (Profi-Trennung als Grundlage, klassische Werkzeuge zum Herausarbeiten)
+- Ist die Profi-Trennung auf dem Gerät, steht im Klappfenster „Zerlegen ▾“ (hochkant ▾ neben Zerlegen, quer „Zerlegen ▾“) zuerst
+  **„Profi-Trennung (genauer, ≈ 10 s)“** (Bernstein-Kante links), danach „Zerlegen (schnell, ohne Download)“; Hinweis darunter:
+  „Genauer, vor allem Gesang und Bass. Danach arbeiten Verfeinern, Harmonische, Pinsel, In Ebene und Gehört zu auf diesen Ebenen weiter.“
+  Ohne Modell bleibt alles wie bisher (Zerlegen zuerst, „Profi-Trennung laden (~86 MB, einmalig)“).
+- Reihenfolge wird beim Öffnen sofort entschieden (`spk5KiDa`: KI1-Zustand ready/cached → letzter Cache-Blick `KI1.scan` → Merker
+  `localStorage synq-ki1` aus ki1Scan) – nichts springt, wenn der Cache-Blick später antwortet. Der hochkant große Knopf „Zerlegen“
+  rechnet weiter sofort klassisch (bewusst nicht geändert: Bedienung wie festgelegt; Profi = ein Tipp auf ▾).
+- Geprüft, dass es wirklich ein Hybrid ist: Profi-Ebenen sind dieselben Ebenen wie beim Zerlegen (`z` = drums/bass/gesang, `art` gleich) →
+  Verfeinern Bass trifft die Profi-Bass-Ebene (L2), In Ebene verschiebt in eine Profi-Ebene, Noten finden + Gehört zu → Bass legt die Note
+  in die Profi-Bass-Ebene; keine neue Ebene, je Aktion ein ↶, 4× ↶ = zurück auf „Profi-Trennung (Auswahl)“.
+- Guide „Spektral (Frequenzspektrum)“ +3 Sätze (Profi zuerst, normale Ebenen + Werkzeuge, Werkzeuge holen heraus, was übersehen wurde);
+  Suche zusätzlich „profi“, „hybrid“, „genauer“ (der Eintrag „Profi-Trennung“ bleibt Treffer 1).
+- Kleiner Fehler behoben: das Klappfenster wurde nach dem Cache-Blick breiter (Texte kommen später; mit Ersatzschrift) und ragte quer bis
+  10 px über den rechten Rand. Jetzt steht „vom Gerät löschen (86 MB)“ bei geladenem Modell gleich drin, und `spk5DdFit`
+  (ResizeObserver, wirkt nur bei Größenänderung) hält das Fenster rechts im Bild.
+- Haken (SPK5): `ki1Dd` → `spk5KiOrder(U, dd, z, p, tx, x)`; Guide-Text/Suchwörter in `spk1Guide`. Test-API `SYNQUENZER.spk5.kiDa()`.
+
+### Tests
+- `spk5-test.mjs <abs index.html>` – **ALLES OK, 24 Prüfungen, 54 s** (Touch, 428×926 + 926×428 + 926×370): Start lädt nichts · Knopf sagt
+  Auswahl/alles · Fortschritt über dem Bereich (CPU gedrosselt) · Ebenen angelegt + Hervorhebung + Tönung an · Meldung mit ↶ · nur in der
+  Auswahl (außen 0, Summe ohne Überlauf) · Solo = sofort hören · ↶ aus der Meldung · ehrlich „kein Bass“ (keine leere Ebene) · Farbstufen
+  (5 Stufen, Tasten 44, kein Neurechnen) + gemerkt nach Neuladen · Zerlegen alles · Layout hochkant (Regler im Bild, ✕ 44) ·
+  **neu:** Klappfenster ohne Profi = Zerlegen zuerst · Überblendung 50/100/0 % (Deckkraft 0,5/0,9 · 1/1 · 0/0, 129 Noten aus den Ebenen,
+  drei verschiedene Bilder) · Note antippen (100 %) → Gehört zu → Gesang = „Note zuordnen“, keine neue Ebene, ↶ über die Kopf-Taste 44×44 ·
+  quer 428/370: Zerlegen Auswahl + Layout + Überblendung 50 % + Klappfenster bleibt im Bild auch beim Breiterwerden · keine Fehler.
+- `spk5-profi-test.mjs <abs index.html> <abs vx/ki/modell> <abs ki-ort/web>` – ALLES OK (6): Profi nur in der Auswahl (außen 0) ·
+  vor dem Laden Zerlegen zuerst · mit Modell Profi zuerst (Kante, bleibt an Ort nach dem Cache-Blick, Hinweis) · Werkzeuge auf Profi-Ebenen
+  (s. o.) · keine Fehler. Routen nach Dateiendung (keine Host-Namen in der Datei).
+- `spk5-fade-test.mjs` ALLES OK (16) · `../spk/spk1-test.mjs` ALLE OK.
+- `../spk3/spk3-test.mjs <abs index.html> <abs basis5.html>`: 13 OK / 4 FEHLER = die bekannten offenen SPK3-Ziele (bass-zerlegen-4db 3,01 ·
+  verfeinern-plus-1db +0,52 · mehrstimmig 0/28 → SPK4 · nachbau-abstaende-besser „gleich“, weil basis5 SPK3 schon enthält); regression-spk2 OK.
+- `../ki/ki1-test.mjs`: quer-428/quer-370 erwarten bei geladenem Modell „Zerlegen (schnell)“ als 1. Eintrag – genau das ändert Auftrag 3
+  absichtlich. Kopie `ki1-test-spk5.mjs` (gleicher Aufruf) mit neuer Erwartung: quer OK; übrig dieselben 3 vorbestehenden FEHL wie basis5
+  (besser-als-klassisch-demo, gesang ohne WAV-Argument, guide-eintrag ohne gemessene Geschwindigkeit). Beim Übernehmen in den
+  Release-Satz: die Erwartung in `ki1-test.mjs` Zeile „quer-“ ebenso umstellen.
+- Pflicht: topdefs doppelt 0 / Syntaxfehler 0 · dupkeys 0 · smoke errors [] (`smoke-a3.png`) · „MS 2000“ 1× · „  live: true,“ 1× ·
+  VERSION 4.60.0, CHANGES unberührt · Block direkt nach „/* GD1-END */“ · keine Marken-/Hostnamen in Block, Tests, LOG, NOTES.
+- Fotos: `fotos/spk5-08-hybrid-klappfenster.png` (Profi zuerst), `spk5-30-fade-0`, `-31-fade-50`, `-32-fade-100` (Ausschnitt Spektrum),
+  `-33-note-antippen`, `-34-quer-428-fade-50`, `-35-quer-370-fade-50`.
+
+### Funk-Vorschlag (nicht gebaut, sichtbar anders)
+- Hochkant: soll der große Knopf „Zerlegen“ bei geladenem Modell direkt die Profi-Trennung rechnen (statt erst ▾)? Heute bewusst nicht,
+  weil Xander die Bedienung so festgelegt hat – ein Satz im Funk genügt.

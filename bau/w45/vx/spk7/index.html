@@ -102783,13 +102783,13 @@ Object.assign(SYNQUENZER, {int53d: {info: () => ({files: INT53D.files, waits: IN
 function spk7CoreMake(SR) {
   const NV = 16, NG = 12, WN = 1024, TW = 2 * Math.PI;
   const P = {art: 'korn', pos: 0.3, bew: 0, gs: 0.08, dc: 4, spo: 0.1, spt: 0, form: 0.3, a: 0.02, d: 0.3, s: 0.8, r: 0.4, fc: 1, q: 0.1, br: 0.5, vol: 0.7, poly: 8};
-  let X = null, XL = 0, XR = 1, F0 = 261.63, FZ = null, FL = 0, NF = 0, fr = 0, seed = 12345, wPow = 0.375, wForm = -1;
+  let X = null, XL = 0, XR = 1, F0 = 261.63, FZ = null, FL = 0, NF = 0, fr = 0, seed = 12345, wPow = 0.375, wForm = -1, wLen = 0;
   const W = new Float32Array(WN + 2), Q = [], tL = new Float32Array(4096), tR = new Float32Array(4096);
   const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
-  const mkW = () => {
-    const a = Math.max(0.1, 1 - 0.9 * P.form); let s2 = 0;
+  const mkW = gsN => {   // Kornform: Tukey-Fenster, Flanken mindestens 2 ms (auch bei „hart“ kein Knacken)
+    const a = Math.min(1, Math.max(0.1, 1 - 0.9 * P.form, 2 * 0.002 * SR / gsN)); let s2 = 0;
     for (let i = 0; i <= WN; i++) { const x = i / WN; let w = 1; if (x < a / 2) w = 0.5 - 0.5 * Math.cos(TW * x / a); else if (x > 1 - a / 2) w = 0.5 - 0.5 * Math.cos(TW * (1 - x) / a); W[i] = w; s2 += w * w; }
-    W[WN + 1] = 0; wPow = s2 / (WN + 1); wForm = P.form;
+    W[WN + 1] = 0; wPow = s2 / (WN + 1); wForm = P.form; wLen = gsN;
   };
   const V = [];
   for (let k = 0; k < NV; k++) { const g = []; for (let j = 0; j < NG; j++) g.push({on: 0, p: 0, inc: 1, i: 0, n: 1, gl: 0, gr: 0, o: 0}); V.push({st: 0, id: 0, m: 60, r: 1, vel: 1, env: 0, rate: 0, age: 0, pos: 0, nx: 0, g, a1: 0, b1: 0, a2: 0, b2: 0, ph: 0, fp: 0, drift: 0, t: 0}); }
@@ -102803,7 +102803,7 @@ function spk7CoreMake(SR) {
     if (!v) { for (const x of V) if (!v || x.env < v.env) v = x; }               // nur bei Überlast: leiseste Stimme
     for (const x of V) if (x.st) x.age++;
     v.st = 1; v.id = id; v.m = m; v.r = ratio(m); v.vel = Math.max(0, Math.min(1, vel)); v.env = 0; v.age = 0;
-    v.rate = 1 / Math.max(0.003, P.a) / SR; v.pos = P.pos * XL; v.nx = 0; v.a1 = v.b1 = v.a2 = v.b2 = 0; v.ph = rnd() * FL; v.fp = P.pos * Math.max(0, NF - 1); v.drift = 0; v.t = 0;
+    v.rate = 1 / Math.max(0.003, P.a) / SR; v.pos = P.pos * XL; v.nx = 0; v.a1 = v.b1 = v.a2 = v.b2 = 0; v.ph = rnd() * FL; v.fp = P.pos * Math.max(0, NF - 1); v.drift = 0; v.t = 0; v.brS = P.br; v.gn = (0.25 + 0.75 * v.vel) * Math.max(0, Math.min(1.5, P.vol));
     for (const g of v.g) g.on = 0;
   };
   const apply = e => {
@@ -102823,8 +102823,8 @@ function spk7CoreMake(SR) {
   };
   // ein Abschnitt ohne Ereignisse: o..o+n in die Ausgänge L/R (addierend)
   const seg = (L, R, o, n) => {
-    if (wForm !== P.form) mkW();
     const gsN = Math.max(16, Math.round(Math.max(0.01, Math.min(0.5, P.gs)) * SR)), dc = Math.max(1, Math.min(8, P.dc)), step = gsN / dc;
+    if (wForm !== P.form || wLen !== gsN) mkW(gsN);
     const nrm = 1 / Math.sqrt(Math.max(1, dc * wPow) ), br = Math.max(0, Math.min(1, P.br)), frz = P.art === 'frz' && NF > 0;
     const fc = 40 * Math.pow(2, Math.max(0, Math.min(1, P.fc)) * 9), filt = P.fc < 0.995;
     const gq = Math.tan(Math.PI * Math.min(fc, SR * 0.45) / SR), kq = 1 / (0.5 + P.q * P.q * 15), c1 = 1 / (1 + gq * (gq + kq)), c2 = gq * c1, c3 = gq * c2;
@@ -102861,18 +102861,19 @@ function spk7CoreMake(SR) {
         v.t += n / SR; v.drift += P.bew * 0.25 * n / SR;
         let fp = P.pos * (NF - 1) + v.drift * (NF - 1) + Math.sin(TW * 0.13 * v.t) * P.spo * 0.5 * (NF - 1), M = 2 * (NF - 1);
         if (M > 0) { fp %= M; if (fp < 0) fp += M; if (fp > NF - 1) fp = M - fp; } else fp = 0;
-        const k0 = Math.min(NF - 1, fp | 0), k1 = Math.min(NF - 1, k0 + 1), fw = fp - k0, A0 = k0 * FL, A1 = k1 * FL, h = FL >> 1, inc = v.r * XR;
-        let ph = v.ph; const gL = 1, mixR = br;
+        const fpA = v.fp, mv = 3 * n / SR, fpB = Math.abs(fp - fpA) > mv ? fpA + Math.sign(fp - fpA) * mv : fp, brA = v.brS, h = FL >> 1, inc = v.r * XR;   // höchstens 3 Bilder/s
+        let ph = v.ph; const gL = 1;
         for (let j = 0; j < n; j++) {
+          const u = (j + 1) / n, fq = fpA + (fpB - fpA) * u, k0 = Math.min(NF - 1, fq | 0), k1 = Math.min(NF - 1, k0 + 1), fw = fq - k0, A0 = k0 * FL, A1 = k1 * FL, mixR = brA + (br - brA) * u;
           const i0 = ph | 0, f = ph - i0, i1 = i0 + 1 < FL ? i0 + 1 : 0, j0 = i0 + h < FL ? i0 + h : i0 + h - FL, j1 = j0 + 1 < FL ? j0 + 1 : 0;
           const a = FZ[A0 + i0] + (FZ[A0 + i1] - FZ[A0 + i0]) * f, b = FZ[A1 + i0] + (FZ[A1 + i1] - FZ[A1 + i0]) * f, sL = a + (b - a) * fw;
           const c = FZ[A0 + j0] + (FZ[A0 + j1] - FZ[A0 + j0]) * f, d = FZ[A1 + j0] + (FZ[A1 + j1] - FZ[A1 + j0]) * f, sR = c + (d - c) * fw;
           tL[j] = sL * gL; tR[j] = (sL + (sR - sL) * mixR) * gL; ph += inc; if (ph >= FL) ph -= FL;
         }
-        v.ph = ph;
+        v.ph = ph; v.fp = fpB; v.brS = br;
       }
       // Hüllkurve + Filter + Summe
-      const g0 = (0.25 + 0.75 * v.vel) * vol; let env = v.env, st = v.st, rate = v.rate, a1 = v.a1, b1 = v.b1, a2 = v.a2, b2 = v.b2;
+      const gT = (0.25 + 0.75 * v.vel) * vol, gk = 1 - Math.exp(-1 / (0.01 * SR)); let gn = v.gn, env = v.env, st = v.st, rate = v.rate, a1 = v.a1, b1 = v.b1, a2 = v.a2, b2 = v.b2;
       for (let j = 0; j < n; j++) {
         if (st === 1) { env += rate; if (env >= 1) { env = 1; st = 2; } }
         else if (st === 2) { env -= dRate; if (env <= sus) { env = sus; st = 3; } }
@@ -102882,10 +102883,10 @@ function spk7CoreMake(SR) {
           let v3 = xl - b1, v1 = c1 * a1 + c2 * v3, v2 = b1 + c2 * a1 + c3 * v3; a1 = 2 * v1 - a1; b1 = 2 * v2 - b1; xl = v2;
           v3 = xr - b2; v1 = c1 * a2 + c2 * v3; v2 = b2 + c2 * a2 + c3 * v3; a2 = 2 * v1 - a2; b2 = 2 * v2 - b2; xr = v2;
         }
-        const e = env * env * g0; L[o + j] += xl * e; R[o + j] += xr * e;
+        gn += (gT - gn) * gk; const e = env * env * gn; L[o + j] += xl * e; R[o + j] += xr * e;
         if (!st) { break; }
       }
-      v.env = env; v.rate = rate; v.a1 = a1; v.b1 = b1; v.a2 = a2; v.b2 = b2;
+      v.env = env; v.gn = gn; v.rate = rate; v.a1 = a1; v.b1 = b1; v.a2 = a2; v.b2 = b2;
       if (!st) { v.st = 0; for (const g of v.g) g.on = 0; done(v.id); } else v.st = st;
     }
   };
