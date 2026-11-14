@@ -93879,7 +93879,7 @@ function xd1PlUpd(ids) {
   const m = ids.has('mx2') || ids.has('ch1') ? mx2El() : null;
   if (m) {
     for (const c of m.querySelectorAll('.mx2cap')) { const t = c.textContent.replace(/\b(live|im Schnitt)$/, pl ? 'live' : 'im Schnitt'); if (/^Kompression/.test(t) && t !== c.textContent) c.textContent = t; }
-    const sb = m.querySelector('.mx3st > b'); if (sb && /^Live – was gerade läuft \(/.test(sb.textContent)) { const t = sb.textContent.replace(/\((Matrix|Song|startet die Szene),/, '(' + (R.playing && !R.songPlay ? 'Matrix' : R.playing ? 'Song' : 'startet die Szene') + ','); if (t !== sb.textContent) sb.textContent = t; }
+    for (const sb of m.querySelectorAll('.mxgsrc > b, .mx3st > b')) if (/^Live – was gerade läuft \(/.test(sb.textContent)) { const t = sb.textContent.replace(/\((Matrix|Song|startet die Szene),/, '(' + (R.playing && !R.songPlay ? 'Matrix' : R.playing ? 'Song' : 'startet die Szene') + ','); if (t !== sb.textContent) sb.textContent = t; }   // MIXG stellt die Zeile als .mxgsrc in Schritt ①
     did.push('mx2');
   }
   XD1.plN++; XD1.plLast = did; return did;
