@@ -95119,7 +95119,7 @@ function ki1Dd(U, b) {
     on(p, 'click', () => { spk1Dd(U, null); ki1Start(U); });
     on(x, 'click', () => { spk1Dd(U, null); ki1Remove().then(() => spk1Stat(U, 'Profi-Trennung vom Gerät gelöscht'), () => {}); });
     dd.append(z, p, tx, x);
-    if (typeof spk5KiOrder === 'function') spk5KiOrder(U, dd, z, p, tx);   // SPK5: Profi-Trennung geladen → erster Weg
+    if (typeof spk5KiOrder === 'function') spk5KiOrder(U, dd, z, p, tx, x);   // SPK5: Profi-Trennung geladen → erster Weg
     ki1Stand().then(s => {
       if (!p.isConnected) return;
       const j = s.job && !s.job.fertig && s.job.have > 0 ? s.job : null;
@@ -96847,11 +96847,24 @@ function spk5KiDa() {
     return localStorage.getItem('synq-ki1') === '1';   // Merker aus ki1Scan (letzter Cache-Blick)
   } catch (e) { return false; }
 }
-function spk5KiOrder(U, dd, z, p, tx) {
+function spk5KiOrder(U, dd, z, p, tx, x) {
+  spk5DdFit(U, dd);
   if (!spk5KiDa()) return;
   dd.insertBefore(p, z); p.classList.add('spk5-erst');
   p.textContent = 'Profi-Trennung (genauer, ' + ki1Dauer() + ')';
   tx.textContent = 'Genauer, vor allem Gesang und Bass. Danach arbeiten Verfeinern, Harmonische, Pinsel, In Ebene und Gehört zu auf diesen Ebenen weiter.';
+  const by = KI1.scan && KI1.scan.bytes;   // „vom Gerät löschen“ gleich zeigen (Breite steht vor dem Platzieren fest)
+  if (x && by > 0 && !U.busy) { x.textContent = 'Profi-Trennung vom Gerät löschen (' + ki1MB(by) + ' MB)'; x.style.display = ''; }
+}
+// Klappfenster wächst nach dem Cache-Blick (längere Texte, andere Schrift) → rechts im Bild halten; nur bei Größenänderung
+function spk5DdFit(U, dd) {
+  if (typeof ResizeObserver !== 'function') return;
+  const ro = new ResizeObserver(() => {
+    if (!dd.isConnected) { ro.disconnect(); return; }
+    const W = U.sh.clientWidth, w = dd.offsetWidth, l = parseFloat(dd.style.left) || 0;
+    if (l + w > W - 8) dd.style.left = Math.max(8, W - w - 8) + 'px';
+  });
+  ro.observe(dd);
 }
 SYNQUENZER.spk5 = {farbe: k => (k ? spk5FarbeSet(SPK1.ui, k) : spk5Farbe()), lut: () => spk1Lut(), area: () => SPK1.ui && spk5Area(SPK1.ui, SPK1.ui.sel), last: () => SPK1.ui && SPK1.ui.s5last, msg: () => { const m = SPK1.ui && SPK1.ui.s5m; return m && m.classList.contains('on') ? m.firstChild.textContent : null; }, run: how => SPK1.ui && spk5Run(SPK1.ui, how || 'zerlegen'),
   // Auftrag 2/3: Überblenden

@@ -64,7 +64,7 @@ H = [
 
  # SPK5 Auftrag 3: Zerlegen ▾ → Profi-Trennung zuerst, wenn sie auf dem Gerät ist
  ("    dd.append(z, p, tx, x);\n",
-  "    dd.append(z, p, tx, x);\n    if (typeof spk5KiOrder === 'function') spk5KiOrder(U, dd, z, p, tx);   // SPK5: Profi-Trennung geladen → erster Weg\n"),
+  "    dd.append(z, p, tx, x);\n    if (typeof spk5KiOrder === 'function') spk5KiOrder(U, dd, z, p, tx, x);   // SPK5: Profi-Trennung geladen → erster Weg\n"),
  # Guide-Texte: Zerlegen/Profi wirken auf die Auswahl; Farbstufen
  ("„Zerlegen“ trennt das ganze Stück in Drums, Bass, Gesang und Rest; „Verfeinern“ rechnet eine Auswahl genauer nach („Was steckt hier?“).',\n",
   "„Zerlegen“ trennt die Auswahl (ohne Auswahl das ganze Stück) in Drums, Bass, Gesang und Rest; „Verfeinern“ rechnet eine Auswahl genauer nach („Was steckt hier?“). „Ansicht ▾ → Farben“ wählt die Farbstufe (Glut, Magma, Grün-Blau, Graustufen, Blau). Ist die Profi-Trennung geladen, steht sie unter „Zerlegen ▾“ an erster Stelle und liefert die genaue Grundlage. Ihre Ebenen sind ganz normale Ebenen: Verfeinern, Harmonische, Pinsel, In Ebene und Noten zuordnen („Gehört zu“) arbeiten danach darauf weiter. So holen die Werkzeuge heraus, was die Profi-Trennung noch übersehen hat.',   // SPK5\n"),

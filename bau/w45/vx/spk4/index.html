@@ -100782,7 +100782,7 @@ function spk4DspMake(Z2) {
   /* ---- Auftrag 3/4: „Rest aufteilen“ – nur der Rest (255 − Summe der Ebenen) gibt ab: Anteil Lead wie Verfeinern Lead (Grundton-Kamm × tonal),
      vom Übrigen Anteil Pads wie Verfeinern Pads (tonal², über 120–220 Hz); was keins von beiden ist (Rauschen, Tiefes), bleibt Rest. Ganzes Stück
      in Blöcken von 4 Streifen (Speicher), andere Ebenen unverändert, Summe = Original, ein ↶ „Rest aufteilen“. o7.voll 1 = der ganze Rest. ---- */
-  const X4 = I.x4, o7 = {voll: 0, S4: 4};
+  const X4 = I.x4, o7 = {voll: 0, S4: 4, pw: 1, lg: 3};   // lg: Lead-Anteil ×3 (gemessen: Lead 0,40 → 0,96, Pads 2,85 → 2,94)
   if (X4) Z2.ops.restAuf = async (d, m, emit, info) => {
     if (d.busy) throw new Error('Rechnung läuft');
     if (!d.meta.layers.length) throw new Error('Erst zerlegen');
@@ -100808,7 +100808,7 @@ function spk4DspMake(Z2) {
               const o = (mm - m0) * NB;
               for (let k = tr * BT; k <= kB; k++) {
                 const i = (mm & 127) * BT + (k & 127), r = 255 - sumT[i]; if (r <= 0) continue;
-                const aL = Math.max(0, Math.min(1, EL[o + k])), aP = Math.max(0, Math.min(1, EP[o + k])), rl = o7.voll ? (aL + aP > 0 ? aL / (aL + aP * (1 - aL)) : 0) : aL;
+                const aL = Math.max(0, Math.min(1, o7.lg * EL[o + k])), aP = Math.pow(Math.max(0, Math.min(1, EP[o + k])), o7.pw), rl = o7.voll ? (aL + aP > 0 ? aL / (aL + aP * (1 - aL)) : 0) : aL;
                 const dl = Math.round(r * rl), dp = o7.voll ? (aL + aP > 0 ? r - dl : 0) : Math.round((r - dl) * aP);
                 TL[i] += dl; TP[i] += dp; rS += r; gL += dl; gP += dp;
               }

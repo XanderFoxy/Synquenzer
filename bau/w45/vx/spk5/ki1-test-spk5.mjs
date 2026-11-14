@@ -24,7 +24,7 @@ const ok = (k, v, cond) => { res[k] = {v, ok: !!cond}; console.log((cond ? 'OK  
 const b = await chromium.launch();
 const ctx = await b.newContext({viewport: {width: 428, height: 926}, hasTouch: true, isMobile: true, deviceScaleFactor: 2});
 // Modell-Ablage + CDN lokal gespiegelt (Inhalt = Original, Prüfsummen echt)
-await ctx.route(/^https:\/\/(?!127\.0\.0\.1)/,   // Modell-Ablage + Laufzeit-Ablage: Dateiname entscheidet (Modell-Ordner zuerst)
+await ctx.route(/^https:\/\/[^/]+\/.*\.(onnx|wasm|mjs)(\?.*)?$/,   // Modell- und Laufzeit-Dateien: Dateiname entscheidet (Modell-Ordner zuerst)
   async (rt) => {
   const u = rt.request().url(), f = u.split('?')[0].split('/').pop(), src = fs.existsSync(path.join(MOD, f)) ? path.join(MOD, f) : path.join(ORTD, f);
   net.push(f);

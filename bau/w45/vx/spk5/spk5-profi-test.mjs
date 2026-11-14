@@ -7,7 +7,7 @@ const E = await start(file), errs = [], res = {}, net = [];
 const ok = (k, v, c) => { res[k] = {v, ok: !!c}; console.log((c ? 'OK  ' : 'FEHL') + ' ' + k + ' ' + JSON.stringify(v)); };
 const ty = f => f.endsWith('.wasm') ? 'application/wasm' : /m?js$/.test(f) ? 'text/javascript' : 'application/octet-stream';
 const P = await page(E, 428, 926, errs, null), {p} = P;
-await P.ctx.route(/^https:\/\/(?!127\.0\.0\.1)/,   // Modell-Ablage + Laufzeit-Ablage: Dateiname entscheidet (Modell-Ordner zuerst)
+await P.ctx.route(/^https:\/\/[^/]+\/.*\.(onnx|wasm|mjs)(\?.*)?$/,   // Modell- und Laufzeit-Dateien: Dateiname entscheidet (Modell-Ordner zuerst)
   async rt => {
   const u = rt.request().url(), f = u.split('?')[0].split('/').pop(), src = fs.existsSync(path.join(MOD, f)) ? path.join(MOD, f) : path.join(ORTD, f); net.push(f);
   if (!fs.existsSync(src)) return rt.fulfill({status: 404, body: ''});

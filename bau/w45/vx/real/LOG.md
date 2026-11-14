@@ -32,3 +32,4 @@
   Versatz je 1-s-Fenster (dbg/chor-lag.mjs) = Plan in 17 von 31 Fenstern (9 ms), einzelne Fenster 25–49 ms (Hülle ändert sich mit „echt“ an
   Noten-Übergängen der Terz) ziehen die Gesamt-Korrelation weg; mit falschem Versatz steigen σ und „Knackser“ (Vergleich an falscher Stelle).
   Test: Versatz = Median der Fenster-Versätze (gesamt bleibt als Info). #1 allein: Chor 6/6 12/12 9/9 17/17 15/15 16/16, σ 4,6–5,4 ct, Knackser 0.
+18:28 rv1-test: Rechts-Ziel rechnet die Verschiebung des Vorgängers mit (#14 Stück 55: Vorgänger +101 ms → vorher 0,80× „gestaucht“ gemessen, jetzt D 160 ms → 1,30×). #10/#14 allein: Chor-Versatz/σ/Knackser OK, Formant-Richtung #10 uni −1,7 %, #14 uni −1,0 % / st+2 −2,1 % (Befund, siehe NOTES).

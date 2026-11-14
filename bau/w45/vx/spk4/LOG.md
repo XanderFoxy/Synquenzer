@@ -17,3 +17,5 @@
 - 18:18 A2 letzter Versuch Verfeinern: N 16384 unter 70/110 Hz gemischt → 4,29/4,11 (schlechter, verworfen). Endstand bleibt: Zerlegen Bass 4,37 (Ziel erreicht), Verfeinern −0,01 (Ziel +1 nicht erreicht). Datei = bau.py-Ausgabe (gespeichert).
 - 18:20 A3 Start: Plan (1) Unison-Erkennung aus x3 (alle Obertöne schweben) → Unison-Startwerte mit Verstimmung aus der Schwebung; (2) „Rest aufteilen“ im Ebenen-Menü der Rest-Ebene.
 - 18:24 A3 gebaut: Kern-op restAuf (spk4DspMake, Innereien über Haken x4), ⋯ an der Rest-Zeile + spk4RestDd, Unison spk4KlUni (+3 Haken in spk3KlStart/More).
+- 18:25 A3 Rest aufteilen Node (rest4.mjs): vorher Rest als Pad 2,29 / Gesang als Lead 0,72; Variante voll=0: Lead 0,40 Pads 2,85; voll=1: 0,50/2,66; Verfeinern ganzes Stück Lead 0,52 Pads 2,46; Lead-Anteil ×3: 0,96/2,94. Summe = Original (144 dB), ↶ bitgleich.
+- 18:26 A3 Rest aufteilen: o7.lg 3 gewählt (Lead 0,96 · Pads 2,94 · Lead+Gesang 1,45; lg 6: 1,22/2,58; lg 12: 1,24/2,12; pw 0,5/2 ohne Gewinn).
