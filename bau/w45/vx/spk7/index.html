@@ -103120,7 +103120,7 @@ function spk7Css() {
     '.spk1-dd .spk7-cv{display:block;width:300px;max-width:100%;height:84px;border-radius:6px;touch-action:none;cursor:ew-resize}',
     '.spk1-dd .spk7-oc{align-items:center}.spk1-dd .spk7-oc .mbtn{min-width:64px;justify-content:center}.spk1-dd .spk7-oc .spk1-v{min-width:0;flex:1 1 auto;text-align:center}',
     '.spk1-dd .mbtn.on{background:var(--sel);color:#111}',
-    '.spk7-kb{position:relative;flex:none;width:300px;max-width:100%;height:76px;border-radius:6px;overflow:hidden;background:#0d0e11;touch-action:none}',
+    '.spk7-kb{position:relative;flex:none;width:100%;height:76px;border-radius:6px;overflow:hidden;background:#0d0e11;touch-action:none}',
     '.spk7-kb>i{position:absolute;top:0;bottom:0;box-sizing:border-box;background:#ece6d8;border-right:1px solid #0d0e11;font:700 9px/1 var(--font-num);font-style:normal;color:#222;display:flex;align-items:flex-end;justify-content:center;padding-bottom:4px}',
     '.spk7-kb>i.b{bottom:42%;z-index:1;background:#1a1b1f;border:0;border-radius:0 0 3px 3px}.spk7-kb>i.on{background:var(--amber);box-shadow:0 0 10px var(--amber)}',
     '.spk1>.spk1-co{position:relative}.spk7-cob{position:absolute;left:0;top:0;width:100%;height:38px;z-index:3;margin:0;padding:0 0 12px;border:0;border-radius:0;background:transparent;color:var(--text-dim);font:700 9px/1 var(--font-ui);letter-spacing:.08em;box-shadow:none}',
@@ -103260,6 +103260,7 @@ function spk7Dd(U, b) {
     const g2 = el('div', 'spk1-g'); D.bT = el('button', 'mbtn rb spk1-ck', 'Als Instrument übernehmen'); D.bT.dataset.k = 'take'; on(D.bT, 'click', () => spk7Take(U, SPK7.tgt)); g2.appendChild(D.bT); dd.appendChild(g2);
     spk7DdSync(U);
   });
+  const dd = U.dd; if (dd && SPK7.dd && SPK7.dd.dd === dd) { const R = U.sh.getBoundingClientRect(), l = parseFloat(dd.style.left) || 0, w = dd.offsetWidth; if (l < 48 && R.width - w - 8 >= 48) dd.style.left = '48px'; }
   if (!SPK7.src && (U.sel.length || U.act !== 'orig')) spk7Grab(U);
 }
 function spk7SetP(k, v) {   // Wert setzen + Regler/Anzeige im Blatt nachziehen
@@ -103275,19 +103276,22 @@ function spk7Vor(U) {
   spk7DdSync(U);
 }
 /* Quellbild: kleines Spektrogramm der Quelle (Farben wie die Spektral-Seite), Marker = Position, Band = Streuung Ort */
-function spk7Pic(S7, W, H) {
+function spk7Pic(S7, W, H) {   // Zeit waagrecht, Frequenz logarithmisch – auf den Bereich gezoomt, in dem die Auswahl Energie hat
   if (S7.pic && S7.pic.W === W && S7.pic.H === H) return S7.pic;
-  const N = 1024, x = S7.x, n = x.length, sr = S7.sr, re = new Float64Array(N), im = new Float64Array(N), lut = spk1Lut(), img = new ImageData(W, H), db = new Float32Array(W * H);
-  const fl = 50, fh = Math.min(12000, sr / 2 - 100), rowB = new Float64Array(H); for (let r = 0; r < H; r++) rowB[r] = fl * Math.pow(fh / fl, (H - 1 - r) / (H - 1)) * N / sr;
-  let mx = -200;
+  const N = 1024, h = N / 2, x = S7.x, n = x.length, sr = S7.sr, re = new Float64Array(N), im = new Float64Array(N), lut = spk1Lut(), img = new ImageData(W, H), M = new Float32Array(W * h), avg = new Float64Array(h);
   for (let c = 0; c < W; c++) {
-    const s0 = Math.round((c + 0.5) / W * n) - N / 2;
+    const s0 = Math.round((c + 0.5) / W * n) - h;
     for (let i = 0; i < N; i++) { const j = s0 + i; re[i] = j >= 0 && j < n ? x[j] * (0.5 - 0.5 * Math.cos(2 * Math.PI * i / N)) : 0; im[i] = 0; }
-    spk7Fft(re, im, false);
-    for (let r = 0; r < H; r++) { const b = rowB[r], b0 = Math.min(N / 2 - 1, b | 0), u = b - b0, m = Math.hypot(re[b0], im[b0]) * (1 - u) + Math.hypot(re[b0 + 1], im[b0 + 1]) * u, v = 20 * Math.log10(m + 1e-9); db[r * W + c] = v; if (v > mx) mx = v; }
+    spk7Fft(re, im, false); for (let b = 0; b < h; b++) { const m = Math.hypot(re[b], im[b]); M[c * h + b] = m; avg[b] += m * m; }
   }
-  for (let i = 0; i < W * H; i++) { const q = Math.max(0, Math.min(255, Math.round((db[i] - mx + 70) / 66 * 255))) * 4; img.data[i * 4] = lut[q]; img.data[i * 4 + 1] = lut[q + 1]; img.data[i * 4 + 2] = lut[q + 2]; img.data[i * 4 + 3] = 255; }
-  return (S7.pic = {W, H, img});
+  let top = 0; for (let b = 1; b < h; b++) top = Math.max(top, avg[b]); let b0 = h - 1, b1 = 1;
+  for (let b = 1; b < h; b++) if (avg[b] > top * 1e-4) { b0 = Math.min(b0, b); b1 = Math.max(b1, b); }
+  const fl = Math.max(30, b0 * sr / N / 1.41), fh = Math.min(sr / 2 - 50, Math.max(fl * 4, b1 * sr / N * 1.41)), rowB = new Float64Array(H), db = new Float32Array(W * H);
+  for (let r = 0; r < H; r++) rowB[r] = fl * Math.pow(fh / fl, (H - 1 - r) / (H - 1)) * N / sr;
+  let mx = -200;
+  for (let c = 0; c < W; c++) for (let r = 0; r < H; r++) { const q = rowB[r], q0 = Math.min(h - 2, q | 0), u = q - q0, v = 20 * Math.log10(M[c * h + q0] * (1 - u) + M[c * h + q0 + 1] * u + 1e-9); db[r * W + c] = v; if (v > mx) mx = v; }
+  for (let i = 0; i < W * H; i++) { const q = Math.max(0, Math.min(255, Math.round((db[i] - mx + 66) / 62 * 255))) * 4; img.data[i * 4] = lut[q]; img.data[i * 4 + 1] = lut[q + 1]; img.data[i * 4 + 2] = lut[q + 2]; img.data[i * 4 + 3] = 255; }
+  return (S7.pic = {W, H, img, fl, fh});
 }
 function spk7PicDraw() {
   const D = SPK7.dd, cv = D && D.cv; if (!cv || !cv.isConnected) return;
@@ -103297,6 +103301,8 @@ function spk7PicDraw() {
   if (S7) { const P = spk7Pic(S7, cv.width, cv.height); x.putImageData(P.img, 0, 0); } else { x.fillStyle = spk1Var('--lcd') || '#111'; x.fillRect(0, 0, cv.width, cv.height); }
   x.setTransform(dpr, 0, 0, dpr, 0, 0);
   if (!S7) { x.fillStyle = spk1Var('--text-dim') || '#888'; x.font = '500 12px ' + (spk1Var('--font-ui') || 'sans-serif'); x.fillText('Noch keine Quelle – Auswahl malen', 10, H / 2 + 4); return; }
+  const P = S7.pic, hz = f => (f >= 1000 ? (f / 1000).toFixed(1).replace('.', ',') + ' kHz' : Math.round(f) + ' Hz');
+  x.font = '600 9px ' + (spk1Var('--font-num') || 'monospace'); x.fillStyle = 'rgba(244,241,234,.75)'; if (P && P.fh) { x.fillText(hz(P.fh), 4, 11); x.fillText(hz(P.fl), 4, H - 4); }
   const px = p.pos * W, bw = p.spo * W;
   x.fillStyle = 'rgba(255,178,46,.20)'; x.fillRect(Math.max(0, px - bw / 2), 0, Math.min(W, px + bw / 2) - Math.max(0, px - bw / 2), H);
   const c = spk1Var('--sel') || '#ffb22e'; x.fillStyle = c; x.fillRect(Math.round(px) - 1, 0, 2, H);

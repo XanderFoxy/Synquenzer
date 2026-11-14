@@ -102311,7 +102311,7 @@ function spk6Rows(U) {
   const now = performance.now(), F = U.s6fl && U.s6fl.t > now ? U.s6fl.ids : null;
   for (const r of U.ly.querySelectorAll('.spk1-lr[data-l]')) {
     const l = U.meta.layers.find(x => x.id === r.dataset.l), nm = r.querySelector('.spk1-nm'); if (!l || !nm) continue;
-    const tg = [l.r6 === 'chor' ? 'Chor' : l.r6 === 'kopie' || l.k6 ? 'Kopie' : '', l.a6 && l.a6.id && l.r6 !== 'chor' ? 'neu' : '', l.fx ? 'FX' : ''].filter(Boolean);
+    const tg = [l.r6 === 'chor' ? 'Chor' : l.r6 === 'kopie' || l.k6 ? 'Kopie' : '', l.a6 && l.a6.id && l.r6 !== 'chor' ? 'neu' : '', l.fx && Object.keys(l.fx).some(k => +l.fx[k] && !(k === 'pan' && l.r6 === 'chor')) ? 'FX' : ''].filter(Boolean);
     if (tg.length) { const s = el('span', 'spk6-tg', esc(tg.join(' · '))); s.style.cssText = 'margin-left:6px;padding:2px 4px;border:1px solid var(--line);border-radius:4px;font:600 10px/1 var(--font-num);color:var(--text-dim);vertical-align:middle'; nm.appendChild(s); }
     if (F && F.includes(l.id)) r.style.animation = 'stepFl .55s ease-out 3';
   }
@@ -102351,6 +102351,7 @@ async function spk6EdOpen(U, lid) {
   U.n2sel = []; spk6EdPane(U); spk1ToolSet(U, 's6ed'); spk6EdKeys(U);
   const Q = spk6EdNotes(U), q0 = Q.reduce((a, q) => !a || q.t0 < a.t0 ? q : a, null), v = U.v;   // Noten ins Bild holen
   if (q0 && (spk1X(U, q0.t0) < 0 || spk1X(U, q0.t0) > U.W - 20)) { v.t0 = Math.max(0, q0.t0 - 0.5); }
+  if (v.rowH < 8) v.rowH = 8;   // Halbton ≥ 8 px: eine Zeile ziehen = ein Halbton, sicher von einem Tipp getrennt
   if (Q.length) { const ms = Q.map(q => q.m), mid = (Math.min(...ms) + Math.max(...ms)) / 2, rows = U.H / v.rowH; if (mid > v.mTop - 1 || mid < v.mTop - rows + 1) v.mTop = mid + rows / 2; }
   spk1Clamp(U); spk1Dirty(U, 'all'); spk6EdStat(U, 'Noten bearbeiten · ' + l.name + ' · Note ziehen = Tonhöhe/Zeit · Tipp = wählen');
 }
@@ -102385,7 +102386,7 @@ function spk6EdHit(U, p) {
 }
 function spk6EdDown(U, p) { const q = spk6EdHit(U, p), G = {tool: 's6ed', x0: p.x, y0: p.y, t0: spk1T(U, p.x), f0: spk1F(U, p.y), moved: false, shape: null, s6: q ? q.id : null, dm: 0, dt: 0}; if (U.s6e) U.s6e.G = null; return G; }
 function spk6EdDrag(U, G, p) {
-  if (!G.moved && Math.hypot(p.x - G.x0, p.y - G.y0) < 8) return; const E = U.s6e; if (!E) return;
+  if (!G.moved && Math.hypot(p.x - G.x0, p.y - G.y0) < 6) return; const E = U.s6e; if (!E) return;
   if (!G.moved) { G.moved = true; if (!E.sel.has(G.s6)) { E.sel.clear(); E.sel.add(G.s6); } }
   const st = spk6Step(U); G.dm = Math.round((G.y0 - p.y) / U.v.rowH); G.dt = Math.round((p.x - G.x0) / U.v.pps / st) * st; E.G = G; spk1Dirty(U, 'ov');
   spk1Stat(U, E.sel.size + (E.sel.size > 1 ? ' Noten ' : ' Note ') + (G.dm > 0 ? '+' : G.dm < 0 ? '−' : '±') + Math.abs(G.dm) + ' · ' + (Math.round(G.dt / st) > 0 ? '+' : '') + Math.round(G.dt / st) + '/16');
@@ -102448,8 +102449,8 @@ function spk6ChorDd(U, b, lid) {
   const st = U.s6c || (U.s6c = {n: 3, art: 'satz', br: 1, sp: 0.5});
   spk1Dd(U, b, dd => {
     dd.appendChild(el('h5', '', 'Chor aus ' + esc(spk6Name(U, lid))));
-    dd.appendChild(makeSeg([2, 3, 4, 5, 6].map(n => [n, n + ' Stimmen']), () => st.n, v => { st.n = v; }, 'spk6-n'));
-    dd.appendChild(makeSeg(SPK6_CHOR, () => st.art, v => { st.art = v; }, 'spk6-art'));
+    dd.appendChild(el('h5', '', 'Stimmen')); dd.appendChild(makeSeg([2, 3, 4, 5, 6].map(n => [n, String(n)]), () => st.n, v => { st.n = v; }, 'spk6-n'));
+    dd.appendChild(el('h5', '', 'Art')); dd.appendChild(makeSeg(SPK6_CHOR, () => st.art, v => { st.art = v; }, 'spk6-art'));
     for (const [k, lab] of [['br', 'Breite'], ['sp', 'Streuung']]) {
       const r = el('input'), v = el('span', 'spk1-v', Math.round(st[k] * 100) + ' %'), w = el('label', '', esc(lab)); r.type = 'range'; r.min = 0; r.max = 1; r.step = 0.05; r.value = st[k]; r.style.minHeight = '40px'; r.setAttribute('aria-label', lab); r.dataset.s6 = 'c' + k;
       on(r, 'input', () => { st[k] = +r.value; v.textContent = Math.round(st[k] * 100) + ' %'; }); w.append(r, v); dd.appendChild(w);
