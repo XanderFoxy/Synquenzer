@@ -20,3 +20,11 @@
   Neue Kategorie R (schnelle Legato-Läufe, Töne 0,15–0,24 s, 1–2 HT): vorher 1,4 % (1/72) → nachher 100 % (72/72), 0 Zusatz.
   Probe trN (Übergangs-Regel bis 2,5 HT vor dem Ziel, nur Node per O9, nicht eingebaut): G-Zusatz 3,1 %, aber R 91,7 % → verworfen;
   zweite Stichprobe (ONLY=R,G) mit eingebautem trN 1,5: G 3,1 % Zusatz, R 94,4 %. G-Zusatz je nach Stichprobe 3–12,5 % (beide zusammen 7,8 %).
+
+## Prüfung (Prüfer, unabhängig)
+- 22:05 Pflicht direkt auf index.html: topdefs Skripte 26 / Namen 7460 / doppelt 0 / Syntaxfehler 0 · dupkeys 0 · smoke errors [] (pruef/smoke-pruef.png) ·
+  „MS 2000“ 1× · „  live: true,“ 1× · VERSION 4.63.0 = Basis · Markenwörter (13er-Liste) 17 = Basis 17 · keine Marken-/Datensatz-/Produktnamen in Block, Tests,
+  Notizen, pruef/ · einbau.py baut bitgleich.
+- Regression einzeln nacheinander (Kopie pruef/reg/): spk4-test 6 FEHLER/23 (bekannt/erwartet, s. PRUEFUNG.md) · spk5 24/24 · spk5-fade OK · spk6 OK ·
+  spk6-pruef fails 0 · spk1 17/18 (verfeinern-verbessert-ziel wie Basis).
+- Befunde (9, davon 5 mittel, 4 leicht) mit Messwerten in PRUEFUNG.md.

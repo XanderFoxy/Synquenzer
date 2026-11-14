@@ -102110,6 +102110,7 @@ function vx1rQuant(id, m, o) {
   const dst = [];
   for (let k = 0; k < mk.length; k++) {
     let d = (isNum(mk[k].vd) ? mk[k].vd : q ? q.times[k] : at[k]) - an[k];
+    if (k && typeof vx3Cut === 'function') d = vx3Cut(id, m, mk, an, k, d, dst[k - 1] + an[k - 1] + VX1R.LOCK + .01);   /* VX3: Sperre → erst gibt der Anlauf nach, Anker bleibt auf dem Raster */
     if (k) d = Math.max(d, dst[k - 1] + an[k - 1] + VX1R.LOCK + .01);   // nie in den Einsatz des Vorgängers
     dst.push(Math.max(0, d));
   }
@@ -103921,7 +103922,7 @@ window.__vx2 = {last: () => VX2.last, on: v => { if (v != null) VX2.on = !!v; re
    Vokal-Beginn, Stückzahl, Anker unverändert. Stück-Anfang gegen die Noten-Annotation (die den Vokal-Einsatz markiert) sinkt dabei
    gewollt dort, wo der Konsonant länger als 40 ms ist (#1 45 → 39 von 59) – der Konsonant gehört zum Stück (Festlegung VX1/VX2).
    Einhänge-Zeilen (Kommentar „VX3“): nx1RunG (Op 'vxa'), wpWorker (vx3Lead in den Worker), wpCall (Schalter), vx2AnLead. Test-API: window.__vx3. */
-const VX3 = {on: true};
+const VX3 = {on: true, cut: 0};
 // Anlauf je Marke – ersetzt den Anlauf-Lauf in Op 'vxa' (Worker, Quelltext per toString: ganz in sich geschlossen) und in vx2AnLead
 function vx3Lead(mk, F, an, sr, H, FH, TH, lead) {
   const kind = F.kind, env = F.env, rms = F.rms, zcr = F.zcr, nf = kind.length, fs = FH / sr, P = F.p || {};
@@ -103934,23 +103935,40 @@ function vx3Lead(mk, F, an, sr, H, FH, TH, lead) {
     if (f < 0 || v > 3) continue;                                                       // länger gesungen → Legato, kein Anlauf
     const fv = f + 1; let g = f, gp = 0; while (g >= 0 && kind[g] === 0 && gp < 3) { g--; gp++; }   // leise Behauchung (unter der Schwelle) nach dem Knall
     if (g < 0 || kind[g] !== 1 || g * fs <= lo) continue;
-    const mx = .15 + Math.max(0, mk[k] - fv * fs); let s = g;                          // Konsonant ≤ 150 ms vor dem Vokal-Einsatz
-    while (s - 1 >= 0 && kind[s - 1] === 1 && (s - 1) * fs > lo && mk[k] - (s - 1) * fs <= mx) s--;
-    // P2: Knall nach dem Verschluss – ein stiller Rahmen IM Konsonanten (Knall, still, Behauchung), davor ≤ 3 stimmlose Rahmen nach Stille
-    if (P.burst !== false && s >= 3 && kind[s - 1] === 0 && kind[s - 2] === 1) { let b = s - 2; while (b - 1 >= 0 && kind[b - 1] === 1 && s - 1 - b < 3) b--;
-      if (b > 0 && kind[b - 1] === 0 && b * fs > lo && mk[k] - b * fs <= mx) s = b; }
-    if (gp && s > 0 && kind[s - 1] === 2 && P.gap !== false) continue;                 // P3: Lücke nach Gesang = Ausklang des Vorgängers, kein Anlauf
-    if (!gp && s > 0 && kind[s - 1] === 2 && rms && zcr) {                             // zwischen zwei gesungenen Läufen ohne Lücke:
-      let zm = 0, rc = 0, rv = 0; for (let h = s; h <= g; h++) { if (zcr[h] > zm) zm = zcr[h]; if (rms[h] > rc) rc = rms[h]; }   // nur ein echter Konsonant
+    let s0 = g; while (s0 - 1 >= 0 && kind[s0 - 1] === 1) s0--;                       // der ganze stimmlose Lauf (ohne Grenzen)
+    if (P.burst !== false && s0 >= 3 && kind[s0 - 1] === 0 && kind[s0 - 2] === 1) {    // P2: Knall nach dem Verschluss, ein stiller Rahmen, dann
+      let b = s0 - 2; while (b - 1 >= 0 && kind[b - 1] === 1 && s0 - 1 - b < 3) b--;    // die Behauchung: ≤ 3 stimmlose Rahmen nach Stille gehören dazu
+      if (b > 0 && kind[b - 1] === 0) s0 = b;
+    }
+    const pre = s0 > 0 ? kind[s0 - 1] : 0;                                              // davor: 2 = gesungen, 0 = still
+    if (gp && pre === 2 && P.gap !== false) continue;                                   // P3: Lücke nach Gesang = Ausklang des Vorgängers, kein Anlauf
+    if (!gp && pre === 2 && rms && zcr) {                                               // zwischen zwei gesungenen Läufen ohne Lücke:
+      let zm = 0, rc = 0, rv = 0; for (let h = s0; h <= g; h++) { if (zcr[h] > zm) zm = zcr[h]; if (rms[h] > rc) rc = rms[h]; }   // nur ein echter Konsonant
       for (let h = fv; h < Math.min(nf, fv + 8); h++) if (kind[h] === 2 && rms[h] > rv) rv = rms[h];                     // (Rauschen oder leiser als
       if (zm < .15 && rc > .7079 * rv) continue;                                      // der Vokal −3 dB), kein Tonwechsel im Legato
     }
+    const mx = .15 + Math.max(0, mk[k] - fv * fs); let s = g;                          // Konsonant ≤ 150 ms vor dem Vokal-Einsatz
+    while (s - 1 >= s0 && (s - 1) * fs > lo && mk[k] - (s - 1) * fs <= mx) s--;
+    if (s > s0 && (s - 1) * fs <= lo && Math.max(lo, s * fs) - (k ? mk[k - 1] : 0) < (P.min == null ? .08 : P.min)) continue;   // P4: nur ein Rest bliebe beim Vorgänger
     let e = Math.max(0, Math.round(Math.max(lo, s * fs) * sr / H)); const em = Math.round(mk[k] * sr / H);
     while (e < em && env[e] < TH * .5) e++;
     const L = Math.min(mk[k] - e * H / sr, mx, .199 - (an ? +an[k] || 0 : 0));
     if (L > .005) lead[k] = L;
   }
   return lead;
+}
+// Quantisieren (Haken in vx1rQuant, P5): greift die Vorgänger-Sperre (Stück k begänne vor Anker des Vorgängers + 30 ms, schnelle Silben),
+// gibt zuerst der Anlauf nach: das Stück beginnt später im Konsonanten (höchstens bis zur Marke vor dem Anlauf), der Anker bleibt
+// auf dem Raster (4.64 hatte dort den Konsonanten ganz beim Vorgänger). Ändert die festgeschriebene Marke (t später, an kleiner, Anker gleich).
+function vx3Cut(id, m, mk, an, k, d, L) {
+  if (!VX3.on || !(d < L - 1e-6) || !m || mk !== m.marks || !mk[k] || !isNum(mk[k].an)) return d;
+  const A = VX1R.ana.get(id), t = mk[k].t; if (!A || !A.lead || !A.t) return d;
+  let lim = 0; for (let i = 0; i < A.t.length; i++) { const ld = +A.lead[i]; if (ld > 0 && Math.abs(A.t[i] - ld - t) < 2 / (A.sr || 48000) + 2e-6) { lim = A.t[i] - t; break; } }   // Marke vor dem Anlauf
+  const dl = Math.min(L - d, lim, an[k]); if (!(dl > 1e-4)) return d;
+  const nt = tkR6(wpSmp(m, t + dl)), na = +Math.max(0, an[k] - (nt - t)).toFixed(4);
+  if (!(nt > t) || (k + 1 < mk.length && nt >= mk[k + 1].t)) return d;
+  const d2 = d + (an[k] - na); mk[k].t = nt; mk[k].an = na; an[k] = na; VX3.cut = (VX3.cut | 0) + 1;
+  return d2;
 }
 // Schalter (Tests/Vergleich): aus = Anlauf wie 4.64 (stimmlose Rahmen direkt vor der Marke); Analysen werden neu gerechnet
 function vx3On(v) {
