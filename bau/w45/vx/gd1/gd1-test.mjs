@@ -19,15 +19,17 @@ const jump = async (p, id) => { await p.evaluate(() => ui1Home()); await p.evalu
       tgt: t ? (t.getAttribute('aria-label') || t.className || '').slice(0, 40) : null, isEng: !!(t && t.matches && t.matches('.sh-head .seg.eng')),
       isRec: !!(t && SV.btn && t === SV.btn.bRec), inView: !!(tr && tr.top >= 0 && tr.bottom <= innerHeight && tr.left >= 0 && tr.right <= innerWidth),
       around: !!(rr && tr && rr.left <= tr.left && rr.top <= tr.top && rr.right >= tr.right && rr.bottom >= tr.bottom),
-      toast: EL.toast ? EL.toast.textContent.slice(0, 90) : ''}; }); };
+      toast: EL.toast ? EL.toast.textContent.slice(0, 90) : '',
+      label: r && r.querySelector('.ui1rl') ? r.querySelector('.ui1rl').textContent : null, labelFits: !!(r && r.querySelector('.ui1rl') && r.querySelector('.ui1rl').scrollWidth <= r.querySelector('.ui1rl').clientWidth + 1),
+      covered: (() => { const T = EL.toast; if (!T || !tr || !T.classList.contains('show')) return false; const q = T.getBoundingClientRect(); return q.left < tr.right && q.right > tr.left && q.top < tr.bottom && q.bottom > tr.top; })()}; }); };
 // ---------- A Guide-Sprünge ohne Voraussetzung ----------
 for (const [w, h, n] of SIZES) {
   const p = await page(F, w, h);
   const a = await jump(p, 'kf1trp');
-  ok(`A1 kf1trp ${n}: Klang-Editor, Rahmen um Klangerzeugung, Hinweis`, a.ok && a.target && a.ring && a.ed === 'synth' && a.isEng && a.around && a.inView && /Klangerzeugung/.test(a.toast), a);
+  ok(`A1 kf1trp ${n}: Klang-Editor, Rahmen um Klangerzeugung, Hinweis am Rahmen (ganz lesbar, nichts verdeckt)`, a.ok && a.target && a.ring && a.ed === 'synth' && a.isEng && a.around && a.inView && /^Arp Treppe: erst MS 2000 \/ Bit Mask$/.test(a.label) && a.labelFits && !a.covered, a);
   await p.screenshot({path: `${OUT}/A1-kf1trp-${n}.png`});
   const b = await jump(p, 'jam3pf');
-  ok(`A2 jam3pf ${n}: Song-Ansicht, Rahmen um ● SONG, Hinweis`, b.ok && b.target && b.ring && b.songView && b.isRec && b.around && b.inView && /● SONG/.test(b.toast), b);
+  ok(`A2 jam3pf ${n}: Song-Ansicht, Rahmen um ● SONG, Hinweis (Toast verdeckt ● SONG nicht)`, b.ok && b.target && b.ring && b.songView && b.isRec && b.around && b.inView && /● SONG/.test(b.toast) && !b.covered && b.label === 'Perform-Spur im Song', b);
   await p.screenshot({path: `${OUT}/A2-jam3pf-${n}.png`});
   // mit Voraussetzung: der alte Weg (Rahmen am Ziel selbst)
   if (n === 'hoch') {
@@ -39,6 +41,7 @@ for (const [w, h, n] of SIZES) {
     ok('A3 jam3pf mit Perform-Spur: Rahmen an der Zeile PERFORM (alter Weg)', put && d.target && d.ring && !d.isRec && /^Perform-Spur/.test(d.tgt), {put, d});
     void c;
   }
+  if (n === 'quer') { await jump(p, 'kf1trp'); const x = await jump(p, 'xp'); ok('A4 nach Arp Treppe: anderer Sprung mit Ersatz-Ziel behält sein Etikett', x.ring && x.label === 'Song transponieren', x); }
   ok(`A9 keine Fehler ${n}`, !p.errs.length, p.errs.slice(0, 3));
   await p.close();
 }

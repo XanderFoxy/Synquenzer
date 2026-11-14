@@ -96107,7 +96107,8 @@ Object.assign(SYNQUENZER, {vid5: VID5_API});                  /* VID5: Test-API 
 /* GD1-BEGIN ===== Drei offene Punkte aus der Zusammenführung 4.54 (NOTES „Offen / Vorschläge“), ohne sichtbare Änderung an Bestehendem.
    (1) Guide-Sprung ohne Voraussetzung: „Arp Treppe“ (kf1trp) ohne Spur auf MS-Platte / Bit Mask und „Perform-Spur im Song“ (jam3pf)
        ohne Perform-Spur zeigten nur einen Hinweis und keinen Rahmen. Jetzt wie die anderen Sprünge (UI1.alt, vgl. „Song transponieren“):
-       Rahmen dort, wo es entsteht – Klang-Editor › Klangerzeugung bzw. Song › ● SONG (sonst die Zeile MELODIE) – plus der kurze Hinweis.
+       Rahmen dort, wo es entsteht – Klang-Editor › Klangerzeugung bzw. Song › ● SONG (sonst die Zeile MELODIE) – plus der kurze Hinweis
+       (Arp Treppe: im Etikett am Rahmen, ein Toast läge oben genau über der Klangerzeugung; Perform-Spur: der bisherige Toast).
    (2) Menü quer: die Zeilen mit 2–3 Tasten (An │ Aus: Lauflichter, Perform-Leiste, Begleiter; Dur │ Moll, Modus, Einzähler, Rest unter
        Mehr ▾) sind 38 px hoch, die Tasten 32 px. Trefferfläche ≥ 44 × 44 über ein unsichtbares ::before (44 px hoch mittig, erste Taste
        4 px nach links, letzte 4 px nach rechts) – das Bild bleibt pixelgleich, zwischen zwei Zeilen bleiben 2 px frei (8 px Abstand − 2 × 3).
@@ -96115,7 +96116,7 @@ Object.assign(SYNQUENZER, {vid5: VID5_API});                  /* VID5: Test-API 
    (3) KF2-Oszilloskop während eines Video-/Audio-Exports: vvRenderAudio0 tauscht AU.ctx gegen den Offline-Kontext (UI.vvOff); bei offenem
        Klang-Editor hängte sich das Oszilloskop dann mit einem eigenen Analyser an die Offline-Spur. Jetzt: abgekoppelt (kein Analyser im
        Render, das Bild steht), alle 250 ms nachsehen, danach wieder am Live-Kontext.
-   Einhänge-Zeilen: keine (Einträge kf1trp/jam3pf werden hier ergänzt; kf2ScFrame wird umhüllt). */
+   Einhänge-Zeilen: keine (Einträge kf1trp/jam3pf werden hier ergänzt; ui1Ring und kf2ScFrame werden umhüllt). */
 function gd1Off() { try { return !!(UI.vvOff || (AU.ctx && typeof OfflineAudioContext !== 'undefined' && AU.ctx instanceof OfflineAudioContext)); } catch (e) { return false; } }   // GD1 (3)
 (function gd1Guide() {                                                                             // GD1 (1)
   try {
@@ -96125,12 +96126,13 @@ function gd1Off() { try { return !!(UI.vvOff || (AU.ctx && typeof OfflineAudioCo
       const go0 = t.go, q0 = t.q;
       t.gd1 = true;
       t.go = () => {
-        UI1.alt = null;
+        UI1.alt = null; UI1.gd1N = null;
         if (S.tracks.some(x => x && x.kind === 'synth' && x.sound && (x.sound.engine === 'mk' || x.sound.engine === 'bm'))) return go0();
         ui1Home(); const i = ui1SynthT(true); if (i < 0) return go0();
         selectTrack(i); FXF.big = null; openEditor();
-        toast('Arp Treppe gibt es auf ' + MK_LABEL + ' und ' + BM_NAME + ' – erst die Klangerzeugung umstellen');
+        // der Hinweis steht am Rahmen (Etikett), nicht als Toast: der läge oben genau über der Klangerzeugung
         UI1.alt = () => (EL.synthSheet ? EL.synthSheet.querySelector('.sh-head .seg.eng') : null);
+        UI1.gd1N = {id: 'kf1trp', n: 'Arp Treppe: erst ' + MK_LABEL + ' / ' + BM_NAME};
         return true;
       };
       t.q = () => (UI1.alt ? UI1.alt() : q0());
@@ -96139,7 +96141,7 @@ function gd1Off() { try { return !!(UI.vvOff || (AU.ctx && typeof OfflineAudioCo
     if (j && !j.gd1) {
       j.gd1 = true;
       j.go = () => {
-        UI1.alt = null; ui1Home(); setSongView(true);
+        UI1.alt = null; UI1.gd1N = null; ui1Home(); setSongView(true);
         if (!jam3Has()) {
           toast('Noch keine Perform-Spur – ● SONG drücken und dabei die Perform-Leiste spielen');
           UI1.alt = () => { const b = SV.btn && SV.btn.bRec; return b && ui1Shown(b) ? b : (EL.songView || document).querySelector('.sv-l.sv-lm'); };
@@ -96150,6 +96152,14 @@ function gd1Off() { try { return !!(UI.vvOff || (AU.ctx && typeof OfflineAudioCo
     }
   } catch (e) { logErr(e); }
 })();
+// Etikett des Rahmens: beim Ersatz-Ziel des letzten Sprungs der Hinweis statt des Namens (nur dieser Sprung, nur dieses Ziel)
+{ const r0 = ui1Ring;
+  ui1Ring = function (t, label, ms) {
+    const N = UI1.gd1N;
+    if (label && N && UI1.alt && UI1.lastJump && UI1.lastJump.id === N.id) { try { if (t === UI1.alt()) label = N.n; } catch (e) {} }
+    return r0(t, label, ms);
+  };
+}
 { const st = document.createElement('style'); st.id = 'gd1-css';                                   // GD1 (2)
   const f = '#menu .mrow>.seg>button:first-child:nth-last-child(-n+3)';
   st.textContent = `
