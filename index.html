@@ -27568,7 +27568,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '4.58.0';
+const VERSION = '4.58.1';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -74962,6 +74962,7 @@ function vvFit() {
     if (lq && u.rowL.parentNode !== u.body) u.body.appendChild(u.rowL); else if (!lq && u.rowL.parentNode !== u.ctl) u.ctl.insertBefore(u.rowL, u.acts);
     u.body.classList.toggle('vvlq', lq);
     sx1VvFit(u, lq);                                                // SX126
+    u.ctl.classList.toggle('pan-y', lq);                            // VQ1: quer rollt die Spalte mit dem Finger (guardTouch lässt .pan-y durch); die Haupttasten stehen fest darunter
   }
   const [W, H] = VV_SIZE[vvPrefs().fmt], bw = Math.floor(u.stage.clientWidth), bh = Math.floor(u.stage.clientHeight), k = Math.min(bw / W, bh / H) || .1;
   const cw = Math.max(10, Math.min(bw, Math.round(W * k))), ch = Math.max(10, Math.min(bh, Math.round(H * k)));
@@ -100268,7 +100269,15 @@ function xd1MonSync() {
       '.stpop .xd1seg button small{font-size:9px;opacity:.75;white-space:nowrap}.stpop .xd1mon{margin:2px 0 6px}.stpop .st-c2>.xd1sing:first-child>.st-lbl{margin-top:0}' +
       '.stpop .xd1mon>span small{display:block;color:var(--text-dim);font-size:10px;margin-top:2px}.stpop .xd1mon>span small.st-warn{color:var(--amber);margin:2px 0 0;font-size:10px;line-height:normal}' +
       // (2) quer: die Taste im Extras-Kasten bricht ihren Text um (statt „…“) – Höhe bleibt 44 px
-      '@media (orientation:landscape){.vvsheet .vd3-box .rb.vd4-lv span{white-space:normal;line-height:1.15}.vvsheet .vvctl>.vvrow.vd3-vr{flex-shrink:0}}';   // der Kasten behält seine zwei Reihen (sonst läge die Taste über [Vorschau]); die Spalte rollt, wie sie es quer 370 schon tat
+      '@media (orientation:landscape){.vvsheet .vd3-box .rb.vd4-lv span{white-space:normal;line-height:1.15}.vvsheet .vvctl>.vvrow.vd3-vr{flex-shrink:0}}' +   // der Kasten behält seine zwei Reihen (sonst läge die Taste über [Vorschau])
+      // VQ1: quer sind [Vorschau]/[Video erstellen] (beim Erstellen der Fortschritt) und [Teilen]/[Sichern] die feste Fußzeile der Spalte – sie rollen nie
+      // mit; nur die Einstellungen darüber rollen (quer 370, Auswahl, Ränder am Gerät). Die Fußzeile deckt, was darunter rollt (auch die leere Reihe
+      // von [Teilen], solange es noch kein Video gibt); scrollIntoView hält Abstand zu ihr.
+      '@media (orientation:landscape){.vvsheet .vvctl{scroll-padding-bottom:96px}.vvsheet .vvctl>.vvacts,.vvsheet .vvctl>.vvprog,.vvsheet .vvctl>.vvdone{position:sticky;z-index:3;background:var(--bg)}' +
+      '.vvsheet .vvctl>.vvdone{bottom:0;box-shadow:0 -4px 0 var(--bg)}.vvsheet .vvctl>.vvacts,.vvsheet .vvctl>.vvprog{bottom:48px;box-shadow:0 -4px 0 var(--bg),0 46px 0 2px var(--bg)}}' +
+      '@media (orientation:landscape) and (max-height:400px){.vvsheet.sel .vvctl>.vvacts,.vvsheet.sel .vvctl>.vvprog{bottom:46px}}' +   // dort 2 px Abstand (VV2)
+      // VQ1: niedrig quer (bis 440 px) ist die reine Textzeile „Bereich“ 24 statt 32 px hoch – quer 428 passt die Spalte so ganz, ohne Rollen
+      '@media (orientation:landscape) and (max-height:440px){.vvsheet .vvctl>.vvrow.txt{min-height:24px}}';
     document.head.appendChild(s);
   } catch (e) {}
 })();
