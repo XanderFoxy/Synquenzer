@@ -102878,8 +102878,9 @@ function vx2Pick(raw, A, G, len, o) {
   // 1) jede Tonhöhen-Note beginnt ein Stück (auch Legato-Tonwechsel); Zeit = Einsatz der Erkennung in der Nähe (probengenau), sonst Noten-Beginn
   for (const n of G.notes) {
     if (!(n.t1 - n.t0 >= .04)) continue;
-    let r = null; for (const k of raw) if (k.t >= n.t0 - SN && k.t <= n.t0 + SP && (!r || Math.abs(k.t - n.t0) < Math.abs(r.t - n.t0))) r = k;
-    out.push(r ? {t: r.t, conf: r.conf, src: r.src, word: !!r.word} : {t: n.t0, conf: .6, src: 'pitch'});
+    const t0 = n.t0;
+    let r = null; for (const k of raw) if (k.t >= t0 - SN && k.t <= t0 + SP && (!r || Math.abs(k.t - t0) < Math.abs(r.t - t0))) r = k;
+    out.push(r ? {t: r.t, conf: r.conf, src: r.src, word: !!r.word} : {t: +t0.toFixed(4), conf: .6, src: 'pitch'});
   }
   // 2) Erkennungs-Marken ohne Note: nur mit Einsatz-Merkmal (gleiche Tonhöhe, neue Silbe)
   for (const k of raw) {

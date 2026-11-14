@@ -1,4 +1,5 @@
 // RV1 Echttest mit echtem Gesang (freier Datensatz, nur lokal gelesen). Weg wie Xander: Export-Blatt › Audio/MIDI importieren › Datei › „Als Gesang“.
+// VX2-Kopie: wie vx/real/rv1-test.mjs (Prüfungen gleich); zusätzlich INFO „VX2-Bezug“ (Knacken gegen Quelle inkl. Ausklang des Vorgängers) und RV1_DUMP für Quantisier-Puffer.
 // (a) Gesang-Editor: Stücke/Anker gegen die Noten-Annotation (Einsatz ±40 ms, Tonhöhe ±50 ct), Silben ehrlich leer ohne Spracherkennung,
 //     Quantisieren ohne Knacken (Sprung/Knack-Index an jedem Schnitt gegen die Quelle), Verschieben links (Ausklang bitgleich) / rechts (Dehnung, Ton gleich)
 // (b) Import Gesang allein: Tempo-Vorschlag plausibel (Raster-Treue der annotierten Einsätze) + Frage
@@ -151,12 +152,14 @@ for (const nr of ONLY) {
     const y = f32(Q.y), x = f32(Q.x), sr = Q.sr, L = Q.L, Ks = [], Js = [];
     for (let i = 1; i < L.length; i++) { const q = L[i], so = Math.round(q.dst * sr), si = Math.round(q.t * sr), sp = Math.round((q.dst - (L[i - 1].dst - L[i - 1].t)) * sr);
       const dO = d2m(y, sr, so - Math.round(.002 * sr), 4), dS = Math.max(d2m(x, sr, si, 20), d2m(x, sr, sp, 20)), jO = jump(y, sr, so, 4), jS = Math.max(jump(x, sr, si, 20), jump(x, sr, sp, 20));
-      Ks.push({i, dO: +dO.toFixed(4), dS: +dS.toFixed(4), jO: +jO.toFixed(4), jS: +jS.toFixed(4), sh: Math.round((q.dst - q.t) * 1000)}); }
+      const dT = d2m(x, sr, si - Math.round(.04 * sr), 20), jT = jump(x, sr, si - Math.round(.04 * sr), 20);   // VX2: Ausklang des Vorgängers (letzte 60 ms), spielt gedehnt bis an den Schnitt
+      Ks.push({i, dO: +dO.toFixed(4), dS: +dS.toFixed(4), jO: +jO.toFixed(4), jS: +jS.toFixed(4), dT: +Math.max(dS, dT).toFixed(4), jT: +Math.max(jS, jT).toFixed(4), sh: Math.round((q.dst - q.t) * 1000)}); }
     const badK = Ks.filter(z => z.dO > 1.5 * z.dS + .002), badJ = Ks.filter(z => z.jO > 1.5 * z.jS + .002);
     const anyQ = Ks.map(z => z.sh), qe = L.map(q => { const st = 60 / Q.warp.bpm / 2, t0 = Q.warp.t0; return Math.abs(((q.da - t0) / st) - Math.round((q.da - t0) / st)) * st * 1000; });
     R.quant = {schnitte: Ks.length, d2Max: Math.max(...Ks.map(z => z.dO)), d2QuelleMax: Math.max(...Ks.map(z => z.dS)), d2Ratio: +Math.max(...Ks.map(z => z.dO / Math.max(1e-4, z.dS))).toFixed(2), knackBad: badK.length, sprungMax: Math.max(...Ks.map(z => z.jO)), sprungBad: badJ.length, verschMs: [Math.min(...anyQ), Math.max(...anyQ)], ankerRasterMaxMs: +Math.max(...qe).toFixed(2), renderMs: Q.ms, how: Q.last && Q.last.how};
     info(`#${nr} Quantisieren`, R.quant);
     if (badK.length || badJ.length) info(`#${nr} auffällige Schnitte`, badK.concat(badJ).slice(0, 8));
+    info(`#${nr} VX2-Bezug mit Ausklang des Vorgängers (gedehnt bis an den Schnitt)`, {knackBad: Ks.filter(z => z.dO > 1.5 * z.dT + .002).length, sprungBad: Ks.filter(z => z.jO > 1.5 * z.jT + .002).length});
     if (process.env.RV1_DUMP) { fs.writeFileSync(path.join(here, 'dbg', `q-${nr}.json`), JSON.stringify({sr, L, warp: Q.warp, Ks})); fs.writeFileSync(path.join(here, 'dbg', `qx-${nr}.f32`), Buffer.from(x.buffer, x.byteOffset, x.byteLength)); fs.writeFileSync(path.join(here, 'dbg', `qy-${nr}.f32`), Buffer.from(y.buffer, y.byteOffset, y.byteLength)); }   // VX2: Quantisier-Puffer zur Diagnose
     ok(!badK.length, `#${nr} Quantisieren: kein Knacken an den Schnitten (2. Ableitung ≤ 1,5× Quelle an beiden Nahtseiten)`, `${Ks.length} Schnitte, max ${R.quant.d2Max} (Quelle ${R.quant.d2QuelleMax}), Verhältnis max ${R.quant.d2Ratio}, auffällig ${badK.length}`);
     ok(!badJ.length, `#${nr} Quantisieren: max. Sprung an den Schnitten ≤ 1,5× Sprung der Quelle`, `max ${R.quant.sprungMax}, auffällig ${badJ.length}`);

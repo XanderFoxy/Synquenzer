@@ -223,12 +223,12 @@ if (TEIL.includes('b')) {   // quer 926x428: Erreichbarkeit der Blaetter, Kennun
   const s0 = await p.evaluate(SRC, LEG); await idle(p);
   await p.evaluate(async () => { const r = await __spk6.dup('L1'); spk1Got(SPK1.ui, r); const f = await __spk6.fx('L2', {echo: 0.3}); spk1Got(SPK1.ui, f); });
   const reach = async (name, open) => { await open(); await p.waitForTimeout(300);
-    const g = await p.evaluate(() => { const d = SPK1.ui.dd; if (!d) return null; const r = d.getBoundingClientRect(), it = [...d.querySelectorAll('button,input')].filter(e => e.offsetParent);
-      return {dd: [Math.round(r.top), Math.round(r.bottom), Math.round(r.height)], vp: innerHeight, scrollH: d.scrollHeight, clientH: d.clientHeight, oy: getComputedStyle(d).overflowY, n: it.length,
+    const g = await p.evaluate(() => { const d = SPK1.ui.dd; if (!d) return null; const r = d.getBoundingClientRect(), xl = r.left + 5, it = [...d.querySelectorAll('button,input')].filter(e => e.offsetParent);
+      return {xl, ddX: [Math.round(r.left), Math.round(r.right)], dd: [Math.round(r.top), Math.round(r.bottom), Math.round(r.height)], vp: innerHeight, scrollH: d.scrollHeight, clientH: d.clientHeight, oy: getComputedStyle(d).overflowY, n: it.length,
         last: (it[it.length - 1].textContent || it[it.length - 1].dataset.s6 || '').trim().slice(0, 20), lastBottom: Math.round(it[it.length - 1].getBoundingClientRect().bottom)}; });
     // per Touch im Blatt nach oben wischen, dann letztes Element sichtbar?
-    if (g) { await drag(g && 600, g.dd[0] + g.dd[2] - 20, 600, g.dd[0] + 20, 10);
-      g.nachWischen = await p.evaluate(() => { const d = SPK1.ui.dd, it = [...d.querySelectorAll('button,input')].filter(e => e.offsetParent), l = it[it.length - 1].getBoundingClientRect(), r = d.getBoundingClientRect(); return {scrollTop: d.scrollTop, lastIn: l.bottom <= r.bottom + 1 && l.top >= r.top - 1 && l.bottom <= innerHeight}; }); }
+    if (g) { await drag(g.xl, g.dd[0] + g.dd[2] - 20, g.xl, g.dd[0] + 20, 10);
+      g.nachWischen = await p.evaluate(() => { const d = SPK1.ui.dd; if (!d) return 'Blatt zu'; const it = [...d.querySelectorAll('button,input')].filter(e => e.offsetParent), l = it[it.length - 1].getBoundingClientRect(), r = d.getBoundingClientRect(); return {scrollTop: d.scrollTop, lastIn: l.bottom <= r.bottom + 1 && l.top >= r.top - 1 && l.bottom <= innerHeight}; }); }
     await foto(p, 'p6-q-' + name + '.png'); log('b-' + name, g); await p.evaluate(() => spk1Dd(SPK1.ui, null)); };
   await reach('menue', async () => { const m = await btn(p, '#spk1Sheet .spk1-lr[data-l="L2"] [data-a="lmore"]'); await tap(m); });
   await reach('chor', async () => { let m = await btn(p, '#spk1Sheet .spk1-lr[data-l="L1"] [data-a="lmore"]'); await tap(m); m = await btn(p, '#spk1Sheet .spk1-dd [data-s6="chor"]'); await tap(m); });
@@ -327,6 +327,23 @@ if (TEIL.includes('e')) {   // Zusatz: Chor-Intervalle sauber gemessen, Tiefpass
   await P.ctx.close();
 }
 
+if (TEIL.includes('f')) {   // Kennungen: Ueberdeckung in beiden Lagen, mit „Kopie · neu · FX“
+  for (const [w, h] of [[428, 926], [926, 428]]) {
+    const P = await page(w, h), {p} = P;
+    await p.evaluate(SRC, Object.assign({}, LEG, {pad: 0})); await idle(p);
+    await p.evaluate(async () => { const r = await __spk6.dup('L1'); spk1Got(SPK1.ui, r); const N = SPK1.ui.meta.teil2.notes.L2; let a = await __spk6.plan('L2', [{id: N[0].id, dm: 1, dt: 0}]); spk1Got(SPK1.ui, a); a = await __spk6.fx('L2', {hall: 0.3}); spk1Got(SPK1.ui, a); a = await __spk6.chor('L1', 2, 'terz'); spk1Got(SPK1.ui, a); a = await __spk6.fx(a.voices[0].lid, {echo: 0.3}); spk1Got(SPK1.ui, a); spk1Layers(SPK1.ui); });
+    await p.waitForTimeout(400);
+    const g = await p.evaluate(() => [...document.querySelectorAll('#spk1Sheet .spk1-lr[data-l]')].map(r => { const nm = r.querySelector('.spk1-nm'), t = r.querySelector('.spk6-tg'), s = r.querySelector('.spk1-s'), a = nm.getBoundingClientRect(), sr = s ? s.getBoundingClientRect() : null, c = t ? t.getBoundingClientRect() : null, sp = nm.querySelector('span');
+      return {l: r.dataset.l, name: sp ? sp.textContent : nm.textContent, tag: t ? t.textContent : '', nm: [Math.round(a.left), Math.round(a.right)], tagR: c ? Math.round(c.right) : null, soloL: sr ? Math.round(sr.left) : null, ueberS: c && sr ? Math.round(c.right - sr.left) : null, nameAbgeschnitten: sp ? sp.scrollWidth > sp.clientWidth : nm.scrollWidth > nm.clientWidth, zeileH: Math.round(r.getBoundingClientRect().height)}; }));
+    log('f-kennung-' + w + 'x' + h, g);
+    const box = await p.evaluate(() => { const r = SPK1.ui.ly.getBoundingClientRect(); return {x: r.left, y: r.top, width: r.width, height: Math.min(r.height, innerHeight - r.top)}; });
+    await p.screenshot({path: path.join(fotos, 'p6-kennung-' + w + 'x' + h + '.png'), clip: box});
+    await p.evaluate(() => { const r = SPK1.ui.ly.querySelector('.spk1-lr[data-l="L2"]'); r.scrollIntoView({block: 'center'}); });
+    const b2 = await p.evaluate(() => { const r = SPK1.ui.ly.querySelector('.spk1-lr[data-l="L2"]').getBoundingClientRect(); return {x: r.left, y: r.top, width: r.width, height: r.height}; });
+    await p.screenshot({path: path.join(fotos, 'p6-kennung-L2-' + w + 'x' + h + '.png'), clip: b2});
+    await P.ctx.close();
+  }
+}
 log('konsole-fehler', errs.slice(0, 10));
 fs.writeFileSync(path.join(dir, 'pruef6-' + TEIL.join('') + '.json'), JSON.stringify({ms: Date.now() - T0, res}, null, 1));
 await b.close(); srv.close();
