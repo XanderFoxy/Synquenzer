@@ -99992,6 +99992,8 @@ function spk3DspMake(Z2) {
   const mf = m => 440 * Math.pow(2, (m - 69) / 12);
   // Profi-Ebenen vorhanden (Profi-Trennung fertig) → Bass-Noten auf der Profi-Bass-Ebene suchen (sauberer als das Gemisch)
   function profiBass(d) { const j = d.meta.jobs && d.meta.jobs.profi; return j && j.fertig ? d.meta.layers.find(l => l.z === 'bass') || null : null; }
+  // SPK3 A4: ohne Profi-Lauf ist die zerlegte Bass-Ebene (z 'bass', Kick schon heraus) die bessere Quelle als das Gemisch (Demo: Präzision 71 → 84 %)
+  function quelleBass(d) { return profiBass(d) || d.meta.layers.find(l => l.z === 'bass') || null; }
   function monoOf(d, lid) { const n = d.meta.n, ch = I.render(d, I.mixOf(d, lid), 0, n), x = new Float32Array(n), g = 1 / ch.length; for (const c of ch) for (let i = 0; i < c.length && i < n; i++) x[i] += c[i] * g; return x; }
   // Beträge des ganzen Stücks (Rahmen i ↔ Mitte i·hop), Kick-Vorlage doppelt abgezogen (60-%-Quantil, Anschläge streuen) (nur Original; Profi-Bass hat keinen Kick mehr)
   async function magsAll(d, x, N, K, kick, emit, qid, p0, p1) {
@@ -100009,7 +100011,7 @@ function spk3DspMake(Z2) {
   async function finden3(d, m, emit, info) {
     const lid = m.lid, t2 = H2.t2Of(d), L = (t2.notes[lid] || []).filter(q => q.st === 'zu');
     if (H2.artOf(d, lid) !== 'bass' || !L.length) return finden0(d, m, emit, info);
-    const PB = profiBass(d), x = PB ? monoOf(d, PB.id) : d.mid, sr = d.meta.sr, hop = d.meta.base.hop, N = 8192, df = sr / N, H = 12;
+    const PB = quelleBass(d) /* SPK3 A4 */, x = PB ? monoOf(d, PB.id) : d.mid, sr = d.meta.sr, hop = d.meta.base.hop, N = 8192, df = sr / N, H = 12;
     let mlo = 127, mhi = 0; for (const q of L) { mlo = Math.min(mlo, q.m); mhi = Math.max(mhi, q.m); }
     const fa = Math.max(H2.N2R.bass[0], mf(mlo - 7)), fb = Math.min(o4.fbB, Math.max(mf(mhi + o4.up), fa * 1.5)), K = Math.min(N / 2 + 1, Math.ceil(Math.min(sr / 2 - 1, fb * (H + 1)) / df));
     const {Y, F} = await magsAll(d, x, N, K, !PB, emit, m.qid, 0.05, 0.5);
@@ -100031,7 +100033,7 @@ function spk3DspMake(Z2) {
     for (const f of fs) for (let i = 0; i < F; i++) { const o = i * K; if (low(o, f) >= o4.gq * lowMed) continue; const s = vec(o, f, v); if (s * s < 1e-3 * lowMed) continue; for (let h = 0; h < H; h++) G[h] += v[h]; nG++; }
     let Tq = Float64Array.from(T);
     if (nG >= 8 && o4.orth) { nrm(G); let c = 0; for (let h = 0; h < H; h++) c += T[h] * G[h]; for (let h = 0; h < H; h++) Tq[h] = T[h] - o4.orth * c * G[h]; nrm(Tq); }
-    t2.tmpl[lid] = {H, T: Array.from(T, z => +z.toFixed(4)), G: nG ? Array.from(nrm(G), z => +z.toFixed(4)) : null, mlo, mhi, n: L.length, p0: +p0.toExponential(3), low: +lowMed.toExponential(3), profi: !!PB};
+    t2.tmpl[lid] = {H, T: Array.from(T, z => +z.toFixed(4)), G: nG ? Array.from(nrm(G), z => +z.toFixed(4)) : null, mlo, mhi, n: L.length, p0: +p0.toExponential(3), low: +lowMed.toExponential(3), profi: !!profiBass(d), quelle: PB ? PB.id : 'orig'};
     // Suche (Viertelton-Raster)
     const C = []; for (let c = 12 * Math.log2(fa / 440); ; c += 0.25) { const f = 440 * Math.pow(2, c / 12); if (f > fb) break; C.push(f); }
     const S = C.length, E = new Float32Array(F * S), best = new Float32Array(F), f0 = new Float32Array(F);
@@ -100061,7 +100063,7 @@ function spk3DspMake(Z2) {
     const prev = (t2.notes[lid] || []).filter(q => q.st !== 'neu'), neu = [];
     for (const q of found) { if (all.some(([k, A]) => A.some(p => p.st === 'zu' && hit(q, p) && (k === lid || Math.abs(p.m - q.m) % 12 === 0)))) continue; q.id = H2.nid(d); q.st = 'neu'; neu.push(q); }
     t2.notes[lid] = prev.concat(neu).sort((p, q) => p.a - q.a); I.uEnd(d);
-    return Object.assign({lid, neu: neu.length, vorlage: t2.tmpl[lid], profi: !!PB}, info(d));
+    return Object.assign({lid, neu: neu.length, vorlage: t2.tmpl[lid], profi: !!profiBass(d), quelle: PB ? PB.id : 'orig'}, info(d));
   }
   // Zuordnen in eine Bass-Ebene: Kamm nur bis 300 Hz (darüber Akkord-Teiltöne). Zerlegte/Profi-Bass-Ebene (l.z) hält den Bass schon:
   // dort nur Noten bestätigen (Anteil zg = 0, Haken „SPK3“ in selRaster: s.g) – gemessen: jeder Kamm-Anteil machte sie schlechter

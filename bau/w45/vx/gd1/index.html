@@ -96104,6 +96104,71 @@ const VID5_API = {
 };
 Object.assign(SYNQUENZER, {vid5: VID5_API});                  /* VID5: Test-API (Objekt, wird nicht umhüllt) */
 /* VID5-END */
+/* GD1-BEGIN ===== Drei offene Punkte aus der Zusammenführung 4.54 (NOTES „Offen / Vorschläge“), ohne sichtbare Änderung an Bestehendem.
+   (1) Guide-Sprung ohne Voraussetzung: „Arp Treppe“ (kf1trp) ohne Spur auf MS-Platte / Bit Mask und „Perform-Spur im Song“ (jam3pf)
+       ohne Perform-Spur zeigten nur einen Hinweis und keinen Rahmen. Jetzt wie die anderen Sprünge (UI1.alt, vgl. „Song transponieren“):
+       Rahmen dort, wo es entsteht – Klang-Editor › Klangerzeugung bzw. Song › ● SONG (sonst die Zeile MELODIE) – plus der kurze Hinweis.
+   (2) Menü quer: die Zeilen mit 2–3 Tasten (An │ Aus: Lauflichter, Perform-Leiste, Begleiter; Dur │ Moll, Modus, Einzähler, Rest unter
+       Mehr ▾) sind 38 px hoch, die Tasten 32 px. Trefferfläche ≥ 44 × 44 über ein unsichtbares ::before (44 px hoch mittig, erste Taste
+       4 px nach links, letzte 4 px nach rechts) – das Bild bleibt pixelgleich, zwischen zwei Zeilen bleiben 2 px frei (8 px Abstand − 2 × 3).
+       Zeilen mit mehr Tasten (Tonart, Quantisieren) brechen um – dort hätte eine Erweiterung die nächste Tastenreihe überdeckt. Hochkant unverändert.
+   (3) KF2-Oszilloskop während eines Video-/Audio-Exports: vvRenderAudio0 tauscht AU.ctx gegen den Offline-Kontext (UI.vvOff); bei offenem
+       Klang-Editor hängte sich das Oszilloskop dann mit einem eigenen Analyser an die Offline-Spur. Jetzt: abgekoppelt (kein Analyser im
+       Render, das Bild steht), alle 250 ms nachsehen, danach wieder am Live-Kontext.
+   Einhänge-Zeilen: keine (Einträge kf1trp/jam3pf werden hier ergänzt; kf2ScFrame wird umhüllt). */
+function gd1Off() { try { return !!(UI.vvOff || (AU.ctx && typeof OfflineAudioContext !== 'undefined' && AU.ctx instanceof OfflineAudioContext)); } catch (e) { return false; } }   // GD1 (3)
+(function gd1Guide() {                                                                             // GD1 (1)
+  try {
+    const L = ui1Entries(), by = id => L.find(x => x.id === id);
+    const t = by('kf1trp');
+    if (t && !t.gd1) {
+      const go0 = t.go, q0 = t.q;
+      t.gd1 = true;
+      t.go = () => {
+        UI1.alt = null;
+        if (S.tracks.some(x => x && x.kind === 'synth' && x.sound && (x.sound.engine === 'mk' || x.sound.engine === 'bm'))) return go0();
+        ui1Home(); const i = ui1SynthT(true); if (i < 0) return go0();
+        selectTrack(i); FXF.big = null; openEditor();
+        toast('Arp Treppe gibt es auf ' + MK_LABEL + ' und ' + BM_NAME + ' – erst die Klangerzeugung umstellen');
+        UI1.alt = () => (EL.synthSheet ? EL.synthSheet.querySelector('.sh-head .seg.eng') : null);
+        return true;
+      };
+      t.q = () => (UI1.alt ? UI1.alt() : q0());
+    }
+    const j = by('jam3pf');
+    if (j && !j.gd1) {
+      j.gd1 = true;
+      j.go = () => {
+        UI1.alt = null; ui1Home(); setSongView(true);
+        if (!jam3Has()) {
+          toast('Noch keine Perform-Spur – ● SONG drücken und dabei die Perform-Leiste spielen');
+          UI1.alt = () => { const b = SV.btn && SV.btn.bRec; return b && ui1Shown(b) ? b : (EL.songView || document).querySelector('.sv-l.sv-lm'); };
+        }
+        return true;
+      };
+      j.q = () => (UI1.alt ? UI1.alt() : (EL.songView || document).querySelector('.sv-l.j3-pl'));
+    }
+  } catch (e) { logErr(e); }
+})();
+{ const st = document.createElement('style'); st.id = 'gd1-css';                                   // GD1 (2)
+  const f = '#menu .mrow>.seg>button:first-child:nth-last-child(-n+3)';
+  st.textContent = `
+@media (orientation:landscape){
+${f}::before,${f}~button::before{content:"";position:absolute;left:0;right:0;top:50%;height:44px;margin-top:-22px}
+${f}::before{left:-4px}
+${f}~button:last-child::before{right:-4px}
+}`;
+  document.head.appendChild(st);
+}
+{ const f0 = kf2ScFrame;                                                                           // GD1 (3)
+  kf2ScFrame = function (ts) {
+    if (!gd1Off()) return f0(ts);
+    const S_ = KF2SC; S_.raf = 0; kf2ScStop('export');
+    const w = () => { S_.poll = 0; if (!S_.el || !S_.el.isConnected || !kf2ScOn()) return; if (gd1Off()) { S_.poll = setTimeout(w, 250); return; } kf2ScArm(); };
+    clearTimeout(S_.poll); S_.poll = setTimeout(w, 250);
+  };
+}
+/* GD1-END */
 /* INT53C-BEGIN ===== Prüfung INT53C (Zusammenspiel ORI · VID5 · MIXG), Befund A: ein Export enthält immer den Nachher-Stand.
    Befund: Mix & Master im Vergleich auf „Vorher“, das Blatt abgelegt (⌄), dann Video erstellen → im Video klang der Vorher-Mix, und das
    Video-Blatt sagte „Video ist aktuell“ (die abgelegte Leiste liegt unter dem Video-Blatt, VORHER sieht man nicht). Ursache: „Vorher“
