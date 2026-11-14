@@ -39,14 +39,15 @@
   Spektral-Schleife, Probeton-Modus, Als Instrument + ↶/↷, Spur-Stimme, Worklet/Rückfall offline (220,02 / 440,02 Hz), CPU im Browser
   (Worklet offline 8 × 5 s = 114 ms), Speichern/Laden (JSON gleich, ZIP mit takes/<id>.wav, Audio aus dem Gerätespeicher), quer 926×428.
 
-## Offen
-1. Klangkorn-Werte einer Spur: über das Blatt (Spur-Chip wählen → übernehmen, ein ↶). Der Klang-Editor der Spur kennt p.wt.h noch nicht
-   (zeigt die Wavetable-Seite); eigene Klangkorn-Seite im Klang-Editor wäre ein Folgeschritt.
-2. Erster Ton nach dem Laden eines Projekts kann still sein, bis das Audio aus dem Gerätespeicher geholt ist (einige 10 ms).
-3. Offline-Export (Video/WAV): Spur-Engine im Offline-Kontext = ScriptProcessor-Rückfall (in Chromium geprüft über spk7Render); der
-   Song-Export selbst ist noch nicht mit einer Klangkorn-Spur gemessen.
-4. Guide-Text (Hilfe) fehlt noch.
-5. Sichtbare Änderung Aktionsfeld/Ebenenliste (siehe Teil 2) – vorschlagen, Xander entscheidet.
+## Offen (Stand nach der Prüfer-Runde)
+1. Klang-Editor einer Klangkorn-Spur: zeigt weiter die Wavetable-Seite. Position, Cutoff, Resonanz, Hüllkurve und Stimmen wirken jetzt
+   auf das Klangkorn; Tabelle und Scan wirken nicht. Eine eigene Klangkorn-Seite im Editor wäre sichtbar neu → im Funk vorschlagen.
+2. Erster Ton nach dem Laden eines Projekts kann still sein, bis das Audio aus dem Gerätespeicher geholt ist (einige 10 ms; Spektren jetzt im Worker).
+3. Song-Export mit Klangkorn-Spur: Einsatz ist jetzt sofort (Körner vorgefüllt), der Versatz zur Synth-Spur ist aber nicht neu gemessen.
+4. (erledigt) Hilfe-Eintrag.
+5. **Vorschlag für den Funk:** Knopf „Als Klangkorn“ als 3. Zeile im Aktionsfeld (hochkant Ebenenliste 180 → 129 px, nach „Zerlegen“ 2 statt 3
+   Ebenen ganz sichtbar; quer 284 → 236 px). Gebaut hinter `SPK7_ROW = false`; ohne Freigabe bleibt das Layout wie in der Basis.
+   Ebenfalls sichtbar: „Klangkorn ▾“ am Ende der Werkzeugleiste (hochkant nur per Wischen erreichbar) – ohne diesen Knopf gäbe es keinen Weg.
 
 ## Teil 2 – Bedienung (Entscheidungen)
 - **Knopf „Als Klangkorn“** im Aktionsfeld (neben ▶ Auswahl / In Ebene / Verwerfen / Zerlegen / Verfeinern), als 3. Zeile über die volle Breite
@@ -105,3 +106,31 @@ Lauf 19:05 auf der fertigen `index.html` (nach `python3 einbau.py`), alles nache
   (bass 3,01/4 · verfeinern +0,52 · mehrstimmig 0/28) + nachbau-abstaende-besser „2,13 → 2,13, schlechter []“ (gleich gut; im Lauf davor OK –
   Zufall des Optimierers, SPK7 berührt den Nachbau nicht). layout-3-groessen OK, regression-spk2-test 29/30 (bekannt: zerlegen-bass-ziel).
   Der erste Lauf fand den 38-px-Eckknopf (SPK2-Regel ≥ 44 px) → behoben.
+
+## Prüfung (Prüfer-Runde, PRUEFUNG.md: 1 schwer, 6 mittel, 8 leicht)
+Jeder Befund erst nachgestellt (alte Fassung = Nachbau des Prüfers `pruef-spk7/rebuild.html`), dann behoben, dann Test ergänzt.
+Neue Tests: `spk7-kern-test.mjs` +5 (Node, Kern aus index.html) und `spk7-pruef-test.mjs` (12, Browser, Touch, 428×926).
+
+| # | Befund | Stand | Nachweis neu (alt) |
+|---|---|---|---|
+| 1 | NaN bei Quellwechsel mit klingender Note | behoben: jede Stimme behält ihre Quelle bis zum Ende; Filterzustand und Summe nie NaN; Vorhören läuft mit der neuen Quelle weiter | Kern 0 NaN (230 400); Nutzerweg wie pr9: 0 NaN in 163 840 Proben hinter der Master-Kette |
+| 2 | Knackser Modus/Filter | behoben: Moduswechsel blendet die Stimme 6 ms aus und wieder ein; Filter läuft immer, Grenzfrequenz/Resonanz gleiten 12 ms, „offen“ blendet 10 ms auf trocken | Kern 1,02 / 1,01 / 1,10 / Resonanz 1,03 (43,6 / 33,5 / 26,4 / 25,0); Browser 1,0 / 1,0 / 1,0 |
+| 3 | Position wirkt nicht bei klingender Note | behoben: Position folgt live, Bewegung bleibt | Kern 1200/300-Anteil 0 → 16 644 (0 → 0); Browser Vorhören + Marker ziehen: Schwerpunkt 360 → 832 Hz |
+| 4 | Klang-Editor / Engine-Wechsel | behoben: andere Engine = normaler Klang, zurück auf WT = Klangkorn; Position, Cutoff (Hz), Resonanz, Hüllkurve, Stimmen aus dem Klang wirken. Rest siehe Offen 1 | Browser: Cutoff 300 Hz → fc 0,32, VA/FM kein Korn, WT Korn |
+| 5 | „Als Klangkorn“ blockiert die Seite | behoben: Grundton, Spektren und Quellbild im eigenen kleinen Worker (Blob, erst bei Bedarf; Rückfall im Hauptfaden). Nicht im Spektral-Worker, damit SPK4/5/6 dort ohne Konflikt einbauen. Laden eines Projekts ebenso | 5,7-s-Auswahl: 0 Longtasks (282 + 94 ms); 10-s-Quelle: 0 Longtasks, 142–162 ms im Worker (108 + 44 + 59 ms im Hauptfaden) |
+| 6 | Rollen links macht Ton | behoben: Ton erst nach 70 ms ohne Bewegung (Halten); Tipp = kurzer Ton beim Loslassen | Rollen 16,8 Ht: Spitze 0 (0,208); Tipp 0,22 |
+| 7 | Layout ohne Freigabe | zurückgenommen: Aktionsfeld + Ebenenliste wie Basis (hochkant 96/180 px, quer 284 px). Weg: „Klangkorn ▾“ holt eine neue Auswahl, Tastatur links → KORN, Blatt auf. Zeile im Aktionsfeld = Vorschlag (Offen 5) | spk7-test 1 + 12 |
+| 8 | Ecke überdeckt 18 px Tasten | behoben: Druck unter der Tasten-Oberkante geht an die Tasten (Ton/Rollen), oben schaltet die Ecke um (44 px bleibt) | Tipp 8 px unter Oberkante: Modus bleibt, Ton klingt |
+| 9 | Überlast / volle Akkorde | behoben: Stimmen-Raub mit 4-ms-Blende (Note wartet so lange); gleiche Taste neu blendet den alten Ausklang 30 ms aus; Pegel-Ausgleich √(2/Σ Hüllkurve²), gleitet 10 ms | Sprung 0,90 (3,04), Spitze 0,65 (1,0); 8-Stimmen-Akkord 0,74 (0,99) – unter der weichen Grenze. Folge: Akkorde ab 3 Stimmen leiser als vorher |
+| 10 | Einsatz weich und spät | behoben: Körner beim Anschlag vorgefüllt (wie eingeschwungen) | 50 % nach 2 ms bei Anschlag 2 ms (26 ms); Anschlag 0,3 s → 219 ms |
+| 11 | 8 Spuren: Knopf + verwaister Take | behoben: Knopf „Keine Spur frei – oben wählen“ gesperrt; Prüfung vor dem Take | Takes 1 → 1, Spuren 8 → 8 |
+| 12 | „↶ macht es rückgängig“ | behoben: Statuszeile „Rückgängig im Hinweis unten“ (der Hinweis hat ↶). Spektral-Kopf-↶ unverändert (Basis-Muster, auch „Klang nachbauen“) | Browser b11-b12 |
+| 13 | Halten quadratisch, Regler, schwarze Tasten | behoben: Halten-Ziel √s (80 % → 0,800); Korngröße/Dichte/Streuung Ton/Kornform im Schleife-Modus ausgeblendet; schwarze Tasten 16 px (14) | Kern + Browser b13 |
+| 14 | Listener / Spur-Engines | behoben: visibilitychange nur einmal; Spur-Engines ohne Klangkorn-Spur und ohne Stimme nach ≥ 3 s abgebaut (Worklet endet, Rückfall getrennt) | 1 → 0 Engines nach Klangwechsel |
+| 15 | Hilfe fehlt | behoben: „Wo finde ich …?“ → „Klangkorn (Auswahl als Instrument)“ | Suche „klangkorn“ → Eintrag |
+
+Weitere Entscheidungen dieser Runde:
+- Kern: Quelle als Objekt je Stimme (`v.S`); Filter immer an (CPU Node 8 × 5 s: 109–119 / 170–272 / 87–113 ms, Grenze 1250).
+- Test-Aufnahme im Browser: Lücken der ScriptProcessor-Aufnahme (Hauptfaden zu spät) werden erkannt; Sprünge genau an so einer Naht zählen nicht
+  (ein Lauf zeigte sonst 19,4 an einer Puffer-Naht; der Kern-Test misst ohne diese Unsicherheit).
+- Keine neuen Haken, einbau.py unverändert (6 Haken + Block); `SPK7_ROW` steht im Block.
