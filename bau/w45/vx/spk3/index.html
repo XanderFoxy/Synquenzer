@@ -97265,7 +97265,7 @@ function spk1DspMake(V) {
           for (let h = 1; h <= K; h++) {
             const fh = h * f0; if (fh >= sr / 2) break;
             const kc = fh * N / sr, hw = Math.max(1.5, fh * q * N / sr);
-            for (let k = Math.max(1, Math.floor(kc - hw)); k <= Math.min(NB - 1, Math.ceil(kc + hw)); k++) { const w = Math.min(1, 1.6 * (1 - Math.abs(k - kc) / (hw + 0.5))); put(pos, m, k, w); put(pos, m + 1, k, w * 0.999); }
+            for (let k = Math.max(1, Math.floor(kc - hw)); k <= Math.min(NB - 1, Math.ceil(kc + hw)); k++) { const w = Math.min(1, 1.6 * (1 - Math.abs(k - kc) / (hw + 0.5))) * (s.g > 0 && s.g < 1 ? +s.g : 1);   /* SPK3: Anteil g (Zuordnen in Bass) */ put(pos, m, k, w); put(pos, m + 1, k, w * 0.999); }
           }
         }
       }
@@ -99982,7 +99982,7 @@ function spk3DspMake(Z2) {
   Z2.lowSplit = lowSplit; Z2.o3 = o3; Z2.kickTpl = kickTpl; Z2.kickAt = kickAt; opt.an = true;   // misst besser als SPK1 → an
   /* ---- Auftrag 2/4: Noten sicherer (Bass) + mehrstimmig (Pads). Z2.h = Helfer aus SPK2 (Haken „SPK3“ im return von spk2DspMake). ---- */
   const H2 = Z2.h; if (!H2 || !Z2.ops) return Z2;
-  const o4 = {up: 12, rf: 230, kk: 2, fbB: 260, gate: 0.1, gq: 0.05, orth: 1, ref: 1, thr: 0.35, sure: 0.7, zK: 300, zg: 1, poly: 1, pv: 5, pr: 0.5, dbg: null};
+  const o4 = {up: 12, rf: 230, kk: 1, fbB: 260, gate: 0.1, gq: 0.05, orth: 1, ref: 1, thr: 0.35, sure: 0.7, zK: 300, zg: 0.5, poly: 1, pv: 5, pr: 0.5, dbg: null};
   const mf = m => 440 * Math.pow(2, (m - 69) / 12);
   // Profi-Ebenen vorhanden (Profi-Trennung fertig) → Bass-Noten auf der Profi-Bass-Ebene suchen (sauberer als das Gemisch)
   function profiBass(d) { const j = d.meta.jobs && d.meta.jobs.profi; return j && j.fertig ? d.meta.layers.find(l => l.z === 'bass') || null : null; }
@@ -100009,6 +100009,7 @@ function spk3DspMake(Z2) {
     const {Y, F} = await magsAll(d, x, N, K, !PB, emit, m.qid, 0.05, 0.5);
     const pk = (o, f, h) => { const k = Math.round(h * f / df); return k >= 1 && k + 1 < K ? Math.max(Y[o + k - 1], Y[o + k], Y[o + k + 1]) : 0; };
     const vec = (o, f, out) => { let s = 0; for (let h = 1; h <= H; h++) { const v = Math.sqrt(pk(o, f, h)); out[h - 1] = v; s += v * v; } s = Math.sqrt(s) || 1; for (let h = 0; h < H; h++) out[h] /= s; return s; };
+    const pkL = (o, f, h) => { const kc = h * f / df, k = Math.floor(kc), u = kc - k; return k >= 1 && k + 1 < K ? Y[o + k] * (1 - u) + Y[o + k + 1] * u : 0; };   // genau an der Frequenz (Halbton < 1 Bin)
     const low = (o, f) => { let e = 0; for (let h = 1; h <= 3; h++) { const v = pk(o, f, h); e += v * v; } return e; };
     const band = o => { let bt = 0; for (let k = Math.max(1, Math.floor(fa * 0.8 / df)); k < K; k++) bt += Y[o + k]; return bt; };
     // Vorlage + Pegel der bestätigten Noten
@@ -100044,7 +100045,7 @@ function spk3DspMake(Z2) {
     if (o4.ref) for (const q of found) {
       const ia = Math.max(0, Math.ceil((q.a + 0.03) * sr / hop)), ib = Math.min(F, Math.max(ia + 1, Math.floor(q.b * sr / hop) + 1)); let bm = q.m, bv = -1e9;
       for (let mm = Math.ceil(H2.midiOf(fa)); mf(mm) <= fb; mm++) { const f = mf(mm); let s = 0;
-        for (let i = ia; i < ib; i++) { const o = i * K; let a = 0, w = 0; for (let h = 1; h <= 6 && (h <= 2 || h * f <= o4.rf); h++) { const g = Math.pow(0.85, h - 1); a += g * Math.log(0.05 + Math.sqrt(pk(o, f, h) / lowMed)); w += g; } s += a / w; }
+        for (let i = ia; i < ib; i++) { const o = i * K; let a = 0, w = 0; for (let h = 1; h <= 6 && (h <= 2 || h * f <= o4.rf); h++) { const g = Math.pow(0.85, h - 1); a += g * Math.log(0.05 + Math.sqrt(pkL(o, f, h) / lowMed)); w += g; } s += a / w; }
         if (s > bv) { bv = s; bm = mm; } }
       if (bm !== q.m) { const r = mf(bm) / q.f; q.m = bm; q.f = +mf(bm).toFixed(2); q.fz = q.fz.map(z => +(z * r).toFixed(1)); }
     }
@@ -100056,6 +100057,21 @@ function spk3DspMake(Z2) {
     t2.notes[lid] = prev.concat(neu).sort((p, q) => p.a - q.a); I.uEnd(d);
     return Object.assign({lid, neu: neu.length, vorlage: t2.tmpl[lid], profi: !!PB}, info(d));
   }
+  // Zuordnen in eine Bass-Ebene: Kamm nur bis 300 Hz (darüber Akkord-Teiltöne) und mit Anteil zg (Haken „SPK3“ in selRaster: s.g);
+  // gemessen: voller Kamm bis 16 Obertöne machte die Bass-Ebene schlechter (3,01 → 0,73 dB schon mit 4 richtigen Noten)
+  function zuordnen3(d, m, emit, info) {
+    if (d.busy) throw new Error('Rechnung läuft');
+    let nach = m.nach; if (nach !== 'neu' && !I.lay(d, nach)) { const l = d.meta.layers.find(x => x.art === m.art); nach = l ? l.id : 'neu'; }
+    const tl = nach !== 'neu' ? I.lay(d, nach) : null; if (!(tl ? tl.art === 'bass' : m.art === 'bass')) return zuordnen0(d, m, emit, info);
+    const refs = (m.notes || []).map(r => ({r, q: H2.findN(d, r)})).filter(x => x.q); if (!refs.length) throw new Error('Keine Note');
+    const sel = refs.map(x => Object.assign(H2.noteSel(d, x.q, Math.max(2, Math.floor(o4.zK / Math.max(20, x.q.f))), m.bw), {g: o4.zg}));
+    const r = I.transfer(d, {von: 'orig', nach: nach === 'neu' ? {art: 'bass', name: m.name} : nach, modus: 'verschieben', sel, label: refs.length > 1 ? refs.length + ' Noten zuordnen' : 'Note zuordnen'});
+    const t2 = H2.t2Of(d), dst = t2.notes[r.nach] || (t2.notes[r.nach] = []);
+    for (const {r: ref, q} of refs) { const L = t2.notes[ref.lid], i = L.indexOf(q); if (i >= 0) L.splice(i, 1); q.st = 'zu'; delete q.ref; dst.push(q); }
+    dst.sort((p, q) => p.a - q.a); d.metaDirty = true;
+    return Object.assign({nach: r.nach, n: refs.length, anteil: r.anteil}, info(d));
+  }
+  const zuordnen0 = Z2.ops.zuordnen; Z2.ops.zuordnen = zuordnen3;
   const finden0 = Z2.ops.finden; Z2.ops.finden = finden3;
   Z2.o4 = o4;
   return Z2;
