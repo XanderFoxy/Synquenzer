@@ -2,8 +2,8 @@
 // Kategorie „unterricht“ (Xander 08.11.2026: „Leute, die Deutschunterricht suchen … da fehlen Recherchen“).
 // Quellen: (1) Jobbörse der Arbeitsagentur – seit 14.11.2026 raus (Xander: keine Arbeitsamt-Stellen, sondern Gesuche im Netz);
 // (2) Remotive-API (Remote-Stellen „German teacher/tutor“, JSON); (3) Google News (Integrationskurse, Sprachpaten,
-// DaZ-Lehrkräfte Sachsen); (4) Fundorte (config): Lehr-Plattformen (italki, Preply, Lingoda), BAMF-Zulassung,
-// Jobbörse-Website – erscheinen IMMER; (5) Gesuche aus dem Netz (gesuche.mjs, Xander 14.11.2026): Leute, die auf Reddit,
+// seit 14.11.2026 nur noch Sprachpaten/Ehrenamt); (4) Fundorte (config): Lehr-Plattformen (italki, Preply, Lingoda),
+// BAMF-Zulassung – erscheinen IMMER; (5) Gesuche aus dem Netz (gesuche.mjs, Xander 14.11.2026): Leute, die auf Reddit,
 // Freelancer & Co. Hilfe mit Deutsch suchen – Einträge mit extra.typ 'gesuch', auf der Seite eine eigene Gruppe oben.
 import { enthaelt, zaehle, datumDe } from '../lib/text.mjs';
 import { berlinTag } from '../lib/ende.mjs';

@@ -9,10 +9,14 @@
 //     öffentlichen Käufer-Anfragen, Kleinanzeigen: kein Feed) – erscheinen IMMER.
 // Filter: Sucht jemand Hilfe (suche/looking for/need/[hiring] …)? Geht es um Deutsch (oder ist das Forum Deutsch)? Welche
 // Hilfe (Nachhilfe, Korrektur, Übersetzung, Konversation, Prüfung, Behördenbrief, Bewerbung)? Angebote von Lehrern selbst
-// ([for hire], [offer], biete …) raus, höchstens maxAlterTage (14) alt, gleicher Link/Titel nur einmal.
+// ([for hire], [offer], biete …) raus, Präsenz-Wunsch an fernem Ort raus, höchstens maxAlterTage (21) alt, gleicher Link/Titel
+// nur einmal. Forenbeiträge (Reddit, Lemmy) merkt sich der Radar im Zustand (zustand.gesuche) bis maxAlterTage und prüft sie
+// jeden Lauf mit dem aktuellen Filter neu – /new/.rss reicht nur Tage (r/German) bzw. Stunden (Sammelabfrage) zurück.
 // Ausfälle (Reddit sperrt Rechenzentrums-IPs gern mit 403/429) landen als Hinweis im Status, nicht als Störung des Bereichs.
 import { enthaelt, norm, datumDe } from '../lib/text.mjs';
 import { berlinTag } from '../lib/ende.mjs';
+import { entities } from '../lib/rss.mjs';
+import { ortAus, istOnline } from '../lib/orte.mjs';
 import { sammleFeeds, eintrag } from './gemeinsam.mjs';
 import { bewerbenAls, fundortEintraege, sortWert } from './assistent.mjs';
 
@@ -35,15 +39,18 @@ const FL_DEUTSCH = /^german tutoring$/i;
 export const lemmySuche = ({ instanz, q }) => `https://${instanz}/api/v3/search?q=${encodeURIComponent(q)}&type_=Posts&sort=New&listing_type=All&limit=50`;
 // Lemmy 0.18 liefert „2026-11-10T12:00:00.123“ ohne Zone (= UTC), 0.19 mit „Z“
 const lemmyZeit = s => Date.parse(/[zZ]|[+-]\d\d:?\d\d$/.test(String(s || '')) ? s : `${s}Z`);
-// Freelancer-Volltextsuche trifft auch Aufträge, in denen Deutsch/Übersetzung nur nebenbei vorkommt (echter Lauf 14.11.2026:
-// „E-Mail-Vorlagen für ein Übersetzungsbüro“). Darum: „German/Deutsch“ im Titel ODER eine passende Fähigkeit (jobs) am Projekt.
+// Freelancer: „German/Deutsch“ im Titel ODER eine passende Fähigkeit (jobs) am Projekt. Das allein reicht nicht: der Fehltreffer
+// „Setup of Professional Email Templates … for Translation Business“ (Live 13./14.11.2026) trug die Fähigkeiten „Translation“
+// und „German Translator“ und kam so durch – erst das nichtWort „email template“ (config) nimmt ihn heraus.
 const FL_SKILL = /german|deutsch|translat|proofread|tutor|teach|language|lektor|übersetz/i;
 export const freelancerPasst = pr => /german|deutsch/i.test(pr?.title || '') || (pr?.jobs || []).some(j => FL_SKILL.test(j?.name || ''));
 export const freelancerLink = seo => `https://www.freelancer.com/projects/${String(seo).replace(/^\/+/, '')}`;
 
 // Welche Hilfe? Reihenfolge = Vorrang (Bewerbung vor Korrektur: „Anschreiben korrigieren“ ist eine Bewerbung).
+// „Goethe“ allein ist keine Prüfung („Kurs am Goethe-Institut“, Roh-Lauf 14.11.2026: Preply-Lehrersuche hieß sonst
+// „Prüfungsvorbereitung“) – nur Goethe + Niveau/Zertifikat/Prüfung.
 const ARTEN = [
-  ['pruefung', 'goethe|telc|testdaf|=dsh|=ösd|prüfung|=exam|=exams|examen'],
+  ['pruefung', 'goethe zertifikat|goethe a1|goethe a2|goethe b1|goethe b2|goethe c1|goethe c2|goethe exam|goethe test|goethe prüfung|telc|testdaf|=dsh|=ösd|prüfung|=exam|=exams|examen'],
   ['bewerbung', 'bewerbung|lebenslauf|anschreiben|cover letter|=cv|motivationsschreiben|job application'],
   ['behoerde', 'behörde|=amt|=ämter|jobcenter|=brief|=briefe|=letter|=letters|formular|=forms|=anmeldung|=antrag'],
   ['uebersetzung', 'übersetz|translat'],
@@ -54,7 +61,17 @@ export const WAS_NAME = {
   pruefung: 'Prüfungsvorbereitung', bewerbung: 'Bewerbung auf Deutsch', behoerde: 'Behördenbrief', uebersetzung: 'Übersetzung',
   korrektur: 'Korrektur', konversation: 'Konversation', nachhilfe: 'Nachhilfe',
 };
-export const hilfeArt = text => ARTEN.find(([, w]) => enthaelt(text, [w]))?.[0] || 'nachhilfe';
+const artIn = text => ARTEN.find(([, w]) => enthaelt(text, [w]))?.[0] || null;
+// titel (optional) zuerst: was der Titel sagt, gilt; sonst eine im Text genannte Prüfung (am genauesten); sucht der Titel einen
+// Lehrer/Tutor -> Nachhilfe; sonst der Text
+export const hilfeArt = (text, titel = '') => {
+  if (!titel) return artIn(text) || 'nachhilfe';
+  const t = artIn(titel), x = artIn(text);
+  if (t) return t;
+  if (x === 'pruefung') return x;
+  if (/tutor|teacher|lehrer|nachhilfe|privatstunde|privatunterricht|lessons?\b/i.test(titel)) return 'nachhilfe';
+  return x || 'nachhilfe';
+};
 
 /**
  * Ist das ein Gesuch? titel/text getrennt, weil „[Offer]“/„biete“ im Titel ein Angebot ist, ein „offering 20 $/h“ im Text
@@ -71,18 +88,30 @@ export function pruefeGesuch(titel, text, w, q = {}) {
   if (enthaelt(titel, w.angebotTitelWoerter) && !enthaelt(titel, w.suchWoerter)) return { grund: 'Angebot' };
   if (enthaelt(alles, w.angebotWoerter)) return { grund: 'Angebot' };
   if (enthaelt(alles, w.nichtWoerter)) return { grund: 'passt nicht' };
+  // Foren: Präsenz an fernem Ort ist nichts für Xander (online oder rund um Döbeln). Roh-Lauf 14.11.2026: „I'm looking for a
+  // good B2.1 exam prep course in Berlin … I would prefer in person classes“. Ort im Titel ohne „online“ = vor Ort gesucht.
+  if (!q.immerGesuch) {
+    const km = w.vorOrtKm ?? 80;
+    const imTitel = ortAus(titel);
+    if (imTitel && imTitel.km > km && !istOnline(titel)) return { grund: `vor Ort (${imTitel.ort})` };
+    if (enthaelt(alles, w.vorOrtWoerter) && !istOnline(alles)) { const o = ortAus(alles); if (!o || o.km > km) return { grund: 'vor Ort' }; }
+  }
   if (!q.immerGesuch && !enthaelt(alles, w.suchWoerter)) return { grund: 'kein Gesuch' };
   if (q.streng && w.personWoerter && !(enthaelt(titel, w.suchWoerter) && enthaelt(titel, w.personWoerter))) return { grund: 'kein Gesuch (Titel)' };
   if (q.thema !== 'deutsch' && !enthaelt(alles, w.deutschWoerter)) return { grund: 'nicht Deutsch' };
   if (!enthaelt(alles, w.hilfeWoerter)) return { grund: 'keine Deutsch-Hilfe' };
-  return { was: hilfeArt(alles) };
+  return { was: hilfeArt(alles, titel) };
 }
 
-// Reddit hängt „submitted by /u/… [link] [comments]“ an jeden Inhalt
-const ohneRedditFuss = s => String(s || '').replace(/\s*submitted by\s+\/u\/\S+.*$/i, '').replace(/\s*\[link\]\s*\[comments\]\s*$/i, '').trim();
-export const auszugAus = (s, n = 180) => {
-  const t = ohneRedditFuss(s).replace(/\s+/g, ' ').trim();
-  return t.length > n ? `${t.slice(0, n - 1).replace(/\s+\S*$/, '')} …` : t;
+// Reddit-Inhalt ist doppelt kodiert (HTML im Atom-<content>): nach dem Feed-Leser stehen noch „I&#39;ve“, „&#32;“, „&quot;“ da
+export const klar = s => entities(entities(String(s ?? ''))).replace(/\s+/g, ' ').trim();
+// Reddit hängt „submitted by /u/… [link] [comments]“ (oder „[Kommentare]“) an jeden Inhalt
+const ohneRedditFuss = s => String(s || '').replace(/\s*submitted by\s+\/u\/\S+.*$/i, '').replace(/\s*\[link\]\s*\[(?:comments|kommentare)\]\s*$/i, '').trim();
+// gekuerzt: die Quelle hat den Text schon abgeschnitten (Freelancer-Vorschau: 100 Zeichen, oft mitten im Wort) -> Wortrest weg, „…“
+export const auszugAus = (s, n = 180, { gekuerzt = false } = {}) => {
+  const t = ohneRedditFuss(klar(s));
+  if (t.length > n) return `${t.slice(0, n - 1).replace(/\s+\S*$/, '')} …`;
+  return gekuerzt && t && !/[.!?…)"“”]$/.test(t) ? `${t.replace(/\s+\S*$/, '').replace(/[,;:–-]+$/, '')} …` : t;
 };
 
 const SO = {
@@ -112,13 +141,14 @@ export async function gesucheAusNetz({ holeText, m, jetzt = new Date(), zustand 
     if (aus.length === feeds.length && aus.every(f => /HTTP (40[13]|429)/.test(f))) hinweise.push(`Gesuche: Reddit gesperrt (${[...new Set(aus.map(f => f.match(/HTTP (\d+)/)[1]))].join('/')}) – Suche unter „Hier selbst schauen“`);
     else hinweise.push(...aus.map(f => `Gesuche: ${f}`));
     for (const it of items) {
-      const p = pruefeGesuch(it.titel, it.beschreibung, m, { thema: it.feedInfo?.quelleInfo?.thema, streng: true });
+      const titel = klar(it.titel), text = ohneRedditFuss(klar(it.beschreibung)), thema = it.feedInfo?.quelleInfo?.thema || null;
+      const p = pruefeGesuch(titel, text, m, { thema, streng: true });
       if (!p.was || !it.link) continue;
       const d = Date.parse(it.datum || '');
       if (zuAlt(d)) continue;
       // Abfrage über mehrere Subreddits („German+LearnGerman“): Quelle = das Subreddit des Beitrags (aus dem Link)
       const sub = String(it.link).match(/reddit\.com\/r\/([^/]+)\//i)?.[1];
-      funde.push({ titel: it.titel, link: it.link, datum: new Date(d).toISOString(), auszug: auszugAus(it.beschreibung), quelle: sub ? `Reddit r/${sub}` : it.feed, was: p.was, art: 'reddit' });
+      funde.push({ titel, link: it.link, datum: new Date(d).toISOString(), auszug: auszugAus(text), quelle: sub ? `Reddit r/${sub}` : it.feed, was: p.was, art: 'reddit', text, thema });
     }
   }
 
@@ -129,7 +159,7 @@ export async function gesucheAusNetz({ holeText, m, jetzt = new Date(), zustand 
       if (j.status && j.status !== 'success') throw new Error(`Status ${j.status}`);
       for (const pr of j.result?.projects || []) {
         if (!pr?.seo_url || !pr.title) continue;
-        const text = pr.preview_description || pr.description || '';
+        const text = klar(pr.description || pr.preview_description || '');
         const p = pruefeGesuch(pr.title, text, m, { immerGesuch: true, thema: (pr.jobs || []).some(j => FL_DEUTSCH.test(j?.name || '')) ? 'deutsch' : null });
         if (!p.was || !freelancerPasst(pr)) continue;
         const d = Number(pr.time_submitted || pr.submitdate) * 1000;
@@ -137,7 +167,7 @@ export async function gesucheAusNetz({ holeText, m, jetzt = new Date(), zustand 
         const b = pr.budget || {}, cur = pr.currency?.code || '';
         const budget = b.minimum != null ? `${b.maximum != null && b.maximum !== b.minimum ? `${Math.round(b.minimum)}–${Math.round(b.maximum)}` : Math.round(b.minimum)} ${cur}${pr.type === 'hourly' ? ' pro Std.' : ''}`.trim() : '';
         const gebote = pr.bid_stats?.bid_count != null ? `${pr.bid_stats.bid_count} ${pr.bid_stats.bid_count === 1 ? 'Gebot' : 'Gebote'}` : '';
-        funde.push({ titel: pr.title, link: freelancerLink(pr.seo_url), datum: new Date(d).toISOString(), auszug: auszugAus(text), quelle: 'Freelancer', was: p.was, art: 'freelancer', zusatz: [budget, gebote].filter(Boolean).join(' · ') });
+        funde.push({ titel: pr.title, link: freelancerLink(pr.seo_url), datum: new Date(d).toISOString(), auszug: auszugAus(text, 180, { gekuerzt: !pr.description && text.length >= 95 }), quelle: 'Freelancer', was: p.was, art: 'freelancer', zusatz: [budget, gebote].filter(Boolean).join(' · ') });
       }
     } catch (e) { hinweise.push(`Gesuche: Freelancer „${q?.name || q}“: ${e.message}`); }
   }
@@ -149,21 +179,42 @@ export async function gesucheAusNetz({ holeText, m, jetzt = new Date(), zustand 
       for (const x of j.posts || []) {
         const po = x?.post;
         if (!po?.name || !po.ap_id || po.deleted || po.removed) continue;
-        const p = pruefeGesuch(po.name, po.body || '', m, { thema: l.thema, streng: true });
+        const titel = klar(po.name), text = klar(po.body), thema = l.thema || null;
+        const p = pruefeGesuch(titel, text, m, { thema, streng: true });
         if (!p.was) continue;
         const d = lemmyZeit(po.published);
         if (zuAlt(d)) continue;
         const forum = x.community?.name ? `${x.community.name}@${new URL(x.community.actor_id || `https://${l.instanz}`).host}` : l.instanz;
-        funde.push({ titel: po.name, link: po.ap_id, datum: new Date(d).toISOString(), auszug: auszugAus(po.body), quelle: `Lemmy ${forum}`, was: p.was, art: 'lemmy' });
+        funde.push({ titel, link: po.ap_id, datum: new Date(d).toISOString(), auszug: auszugAus(text), quelle: `Lemmy ${forum}`, was: p.was, art: 'lemmy', text, thema });
       }
     } catch (e) { hinweise.push(`Gesuche: Lemmy ${l.instanz} „${l.q}“: ${e.message}`); }
+  }
+
+  // Gedächtnis für Forenbeiträge (Prüfer 14.11.2026): /new/.rss?limit=100 reicht bei r/German ~9 Tage, bei der Sammelabfrage
+  // (forhire+…) unter 1 Tag zurück, und jeder Lauf ersetzte die Einträge – ein „[Hiring]“ wäre nur Stunden zu sehen gewesen.
+  // Gemerkte Beiträge kommen wieder dazu, solange sie jünger als maxAlterTage sind, und werden mit dem AKTUELLEN Filter neu
+  // geprüft (ein später erkannter Fehltreffer verschwindet beim nächsten Lauf). Freelancer nicht: dort zählt nur „noch offen“.
+  const linkKey = l => String(l).replace(/[?#].*$/, '').replace(/\/+$/, '').toLowerCase();
+  const merk = zustand ? (zustand.gesuche && typeof zustand.gesuche === 'object' ? zustand.gesuche : (zustand.gesuche = {})) : null;
+  if (merk) {
+    const frischeLinks = new Set(funde.map(f => linkKey(f.link)));
+    for (const [k, s] of Object.entries(merk)) {
+      if (frischeLinks.has(k) || !s?.titel || !s.link) continue;
+      const d = Date.parse(s.datum || '');
+      if (zuAlt(d)) continue;
+      const p = pruefeGesuch(s.titel, s.text || '', m, { thema: s.thema || null, streng: true });
+      if (p.was) funde.push({ titel: s.titel, link: s.link, datum: s.datum, auszug: auszugAus(s.text || ''), quelle: s.quelle, was: p.was, art: s.art, text: s.text || '', thema: s.thema || null });
+    }
+    for (const k of Object.keys(merk)) delete merk[k];
+    const foren = funde.filter(f => f.art === 'reddit' || f.art === 'lemmy').sort((a, b) => Date.parse(b.datum) - Date.parse(a.datum)).slice(0, 60);
+    for (const f of foren) merk[linkKey(f.link)] = { titel: f.titel, link: f.link, datum: f.datum, quelle: f.quelle, art: f.art, thema: f.thema || null, text: String(f.text || '').slice(0, 500) };
   }
 
   // gleicher Link oder (fast) gleicher Titel aus mehreren Suchen -> einmal; neueste zuerst
   const gesehen = new Set();
   const liste = funde.sort((a, b) => Date.parse(b.datum) - Date.parse(a.datum)).filter(f => {
     // Freelancer: gleiche Titel („English to German translation“) sind oft verschiedene Aufträge -> Titel + Budget
-    const k1 = f.link.replace(/[?#].*$/, '').replace(/\/+$/, '').toLowerCase(), k2 = norm(`${f.titel} ${f.art === 'freelancer' ? f.zusatz || f.link : ''}`).slice(0, 110);
+    const k1 = linkKey(f.link), k2 = norm(`${f.titel} ${f.art === 'freelancer' ? f.zusatz || f.link : ''}`).slice(0, 110);
     if (gesehen.has(k1) || gesehen.has(k2)) return false;
     gesehen.add(k1); gesehen.add(k2); return true;
   }).slice(0, m.maxEintraege ?? 20);

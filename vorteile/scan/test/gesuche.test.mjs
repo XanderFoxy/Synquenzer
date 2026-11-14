@@ -10,6 +10,7 @@ import { macheFixtureAbruf } from '../lib/http.mjs';
 import { FIXTURE_KARTE } from './fixtures/karte.mjs';
 import { gesucheAusNetz, pruefeGesuch, hilfeArt, redditSuche, freelancerSuche, freelancerLink, freelancerPasst, auszugAus, lemmySuche } from '../module/gesuche.mjs';
 import unterricht from '../module/unterricht.mjs';
+import { lauf } from '../main.mjs';
 
 const HIER = dirname(fileURLToPath(import.meta.url));
 const FX = join(HIER, 'fixtures');
@@ -49,6 +50,11 @@ test('Gesuche: Reddit + Freelancer + Lemmy – Gesuch ja, Angebot nein, zu alt n
   assert.match(b2.extra.auszug, /^Hi! My Goethe B2 exam/);
   assert.ok(!/submitted by|\[link\]/.test(b2.extra.auszug), 'Reddit-Fußzeile weg');
   assert.ok(b2.extra.auszug.length <= 180);
+  // Reddit-Inhalt ist doppelt kodiert: keine „&#39;“/„&#32;“-Reste, Fußzeile auch hinter „&#32;“ weg (Prüfer 14.11.2026)
+  assert.match(b2.extra.auszug, /I'm looking for a tutor/);
+  const pr = f.find(e => /proofread my Anschreiben/.test(e.titel));
+  assert.equal(pr.extra.auszug, "I'm applying for an Ausbildung and need someone to proofread my Anschreiben (one page). Will pay, of course.");
+  for (const e of f) assert.ok(!/&#?\w+;|submitted by/.test(`${e.titel} ${e.extra.auszug || ''}`), `HTML-Rest: ${e.extra.auszug}`);
   assert.equal(f.find(e => /Anschreiben/.test(e.titel)).extra.was, 'bewerbung');
   assert.equal(f.find(e => /Ausländerbehörde/.test(e.titel)).extra.was, 'behoerde');
   assert.equal(f.find(e => /daughter/.test(e.titel)).quelle, 'Reddit r/forhire', 'Quelle = Subreddit des Beitrags, nicht die Sammel-Abfrage');
@@ -146,6 +152,10 @@ test('Gesuche: Adressen der Quellen', () => {
   assert.equal(freelancerLink('/translation/x-1'), 'https://www.freelancer.com/projects/translation/x-1');
   assert.equal(auszugAus('Text hier submitted by /u/abc [link] [comments]'), 'Text hier');
   assert.ok(auszugAus('wort '.repeat(80)).endsWith(' …'));
+  assert.equal(auszugAus('I&#39;ve taken classes &#32; submitted by &#32; /u/abc &#32; to &#32; r/German [link] &#32; [Kommentare]'), "I've taken classes");
+  // Freelancer-Vorschau (100 Zeichen, mitten im Wort): Wortrest weg, „…“ dran (Prüfer 14.11.2026: „convers“, „insi“)
+  assert.equal(auszugAus('Looking for a native speaker for weekly convers', 180, { gekuerzt: true }), 'Looking for a native speaker for weekly …');
+  assert.equal(auszugAus('Short and complete.', 180, { gekuerzt: true }), 'Short and complete.');
   assert.equal(cfg.abruf.pauseMsJeHost['www.reddit.com'], 6000, 'Reddit höflich: höchstens ~10 Abrufe pro Minute');
 });
 
@@ -158,11 +168,68 @@ test('Freelancer: nur mit German/Deutsch im Titel oder passender Fähigkeit (Feh
 
 test('Echte Titel aus dem Roh-Lauf 14.11.2026 (r/German, Freelancer): echte Gesuche drin, Fragen/Fehltreffer raus', () => {
   const forum = { thema: 'deutsch', streng: true };
-  for (const t of ['Looking for German tutor recommendations on Preply (A1–A2)', 'I\'m looking for a good B2.1 exam prep course in Berlin']) assert.ok(pruefeGesuch(t, '', m, forum).was, t);
+  assert.ok(pruefeGesuch('Looking for German tutor recommendations on Preply (A1–A2)', '', m, forum).was);
+  // Präsenzkurs in Berlin (Text: „I would prefer in person classes“) – nichts für Xander (Prüfer 14.11.2026)
+  assert.equal(pruefeGesuch('I\'m looking for a good B2.1 exam prep course in Berlin', 'I would prefer in person classes, but am open to online classes too for the right price.', m, forum).grund, 'vor Ort (Berlin)');
+  assert.equal(pruefeGesuch('Looking for a German tutor', 'Face to face only, I live in Hamburg.', m, forum).grund, 'vor Ort');
+  assert.ok(pruefeGesuch('Looking for a German tutor in Leipzig', 'In person would be great.', m, forum).was, 'nah (Leipzig 57 km) bleibt');
+  assert.ok(pruefeGesuch('Looking for a German tutor in Berlin – online is fine', '', m, forum).was, 'Ort + online bleibt');
+  assert.ok(pruefeGesuch('German tutor for my team in Munich', 'Remote, 2 sessions a week', m, { immerGesuch: true }).was, 'Freelancer (immer online) ohne Orts-Regel');
+  // Art: „Goethe-Institut“ ist keine Prüfung; Titel sucht einen Tutor -> Nachhilfe (Prüfer 14.11.2026)
+  const preply = 'My partner and I are currently taking an online A1.2 German course with Goethe-Institut, but we’re considering switching to private lessons on Preply. While Goethe has been a decent introduction … We don’t feel we’re getting enough actual speaking practice';
+  assert.equal(pruefeGesuch('Looking for German tutor recommendations on Preply (A1–A2)', preply, m, forum).was, 'nachhilfe');
+  assert.equal(pruefeGesuch('Looking for a tutor to prepare for the Goethe B2 exam (speaking)', 'I struggle with the speaking part', m, forum).was, 'pruefung');
+  assert.equal(pruefeGesuch('Suche Nachhilfe in Deutsch für meine Frau (B1, online)', 'Hilfe für die telc-B1-Prüfung', m, { thema: 'deutsch', streng: true }).was, 'pruefung', 'genannte Prüfung im Text gilt');
   for (const t of ['Need help deciphering lyrics', 'Seeking grammaticality judgements', 'which is better for A1? online or onsite?', 'Passed TELC B1? Please share the study plan that worked for you', 'Brand new learner', 'I need suggestions to improve my german skills.', 'Büchempfehlungen (B1 -> B2) für meinen Urlaub?'])
     assert.ok(!pruefeGesuch(t, 'I am looking for a teacher, any tips?', m, forum).was, `${t} ist kein Gesuch`);
   assert.ok(!pruefeGesuch('Night life in interlaken', 'Looking for bars, German speaking, chat', m, { streng: true }).was);
-  // Freelancer: E-Mail-Vorlagen für ein Übersetzungsbüro = kein Deutsch-Gesuch (Live-Daten 19:27)
+  // Freelancer: E-Mail-Vorlagen für ein Übersetzungsbüro = kein Deutsch-Gesuch (Live-Daten 19:27 und 22:57). Mit den ECHTEN
+  // Fähigkeiten (Translation, German Translator …) lässt freelancerPasst es durch – erst das nichtWort „email template“ hält es auf
+  const mail = { title: 'Setup of Professional Email Templates and Follow-up System for Translation Business', jobs: ['Translation', 'Internet Marketing', 'Data Entry', 'German Translator', 'Email Marketing', 'Content Writing', 'Customer Service', 'Business Writing'].map(name => ({ name })) };
+  assert.equal(freelancerPasst(mail), true);
+  assert.equal(pruefeGesuch(mail.title, 'I\'m starting a translation business specializing in English, French, and German for general document', m, { immerGesuch: true }).grund, 'passt nicht');
   assert.ok(!pruefeGesuch('Setup of Professional Email Templates and Follow-up System for Translation Business', 'I\'m starting a translation business specializing in English, French, and German … email templates and a follow-up system', m, { immerGesuch: true }).was);
   assert.equal(pruefeGesuch('German Fitness App Localization Review', 'I need a native German (Germany) speaker to run a full sanity-check on the existing German text', m, { immerGesuch: true }).was, 'korrektur');
+});
+
+test('Gesuche-Gedächtnis: Forenbeiträge bleiben bis 21 Tage (auch wenn Reddit sperrt), neu geprüft mit dem aktuellen Filter', async () => {
+  // Prüfer 14.11.2026: /new/.rss reicht bei der Sammelabfrage < 1 Tag zurück, jeder Lauf ersetzte alles
+  const zustand = {};
+  const r1 = await gesucheAusNetz({ holeText, m, jetzt: JETZT, zustand, kuenstler: cfg.kuenstler });
+  const reddit1 = funde(r1.eintraege).filter(e => /^Reddit/.test(e.quelle)).map(e => e.titel);
+  assert.ok(reddit1.length >= 3, reddit1.join(' | '));
+  assert.ok(Object.keys(zustand.gesuche).length >= reddit1.length);
+  assert.ok(Object.values(zustand.gesuche).every(g => g.text.length <= 500 && !/submitted by|&#/.test(g.text)), 'Text ohne Fuß und HTML-Reste');
+  // gemerkter Fehltreffer (alter Filter): fliegt beim nächsten Lauf raus; zu alter Beitrag ebenso
+  zustand.gesuche['https://www.reddit.com/r/german/comments/alt01/x'] = { titel: 'Looking for a German tutor in Berlin', link: 'https://www.reddit.com/r/German/comments/alt01/x/', datum: '2026-11-13T10:00:00.000Z', quelle: 'Reddit r/German', art: 'reddit', thema: 'deutsch', text: 'In person please.' };
+  zustand.gesuche['https://www.reddit.com/r/german/comments/alt02/y'] = { titel: 'Looking for a German tutor', link: 'https://www.reddit.com/r/German/comments/alt02/y/', datum: '2026-10-01T10:00:00.000Z', quelle: 'Reddit r/German', art: 'reddit', thema: 'deutsch', text: 'Online, A2.' };
+  zustand.gesuche['https://www.reddit.com/r/german/comments/alt03/z'] = { titel: 'Need someone to correct my Motivationsschreiben', link: 'https://www.reddit.com/r/German/comments/alt03/z/', datum: '2026-11-03T10:00:00.000Z', quelle: 'Reddit r/German', art: 'reddit', thema: 'deutsch', text: 'Will pay 20 €.' };
+  // Tag 2: Reddit gesperrt (429), Freelancer da
+  const zwei = async (url, o) => (/reddit\.com/.test(url) ? Promise.reject(new Error('HTTP 429 bei www.reddit.com')) : holeText(url, o));
+  const r2 = await gesucheAusNetz({ holeText: zwei, m, jetzt: new Date(JETZT.getTime() + 864e5), zustand, kuenstler: cfg.kuenstler });
+  const t2 = funde(r2.eintraege).map(e => e.titel);
+  for (const t of reddit1) assert.ok(t2.includes(t), `${t} sollte bleiben: ${t2.join(' | ')}`);
+  assert.ok(t2.includes('Need someone to correct my Motivationsschreiben'), 'gemerktes Gesuch (11 Tage alt) bleibt');
+  assert.ok(!t2.some(t => /in Berlin/.test(t)), 'gemerkter Fehltreffer wird mit dem aktuellen Filter neu geprüft');
+  assert.ok(!t2.includes('Looking for a German tutor'), 'älter als 21 Tage -> weg');
+  assert.ok(!Object.values(zustand.gesuche).some(g => /alt0[12]/.test(g.link)), 'Zustand räumt Fehltreffer und Altes auf');
+  assert.equal(funde(r2.eintraege).find(e => /Motivationsschreiben/.test(e.titel)).extra.was, 'bewerbung');
+  assert.ok(r2.hinweise.some(h => /Reddit gesperrt \(429\)/.test(h)));
+  // Freelancer wird nicht gemerkt (dort zählt nur „noch offen“)
+  assert.ok(!Object.values(zustand.gesuche).some(g => /freelancer/.test(g.link)));
+});
+
+test('Radar: fallen Remotive/News aus und gibt es 0 Gesuche, bleiben alte Stellen – alte Gesuche nicht (Prüfer 14.11.2026)', async () => {
+  const cfgU = { ...cfg, module: { unterricht: cfg.module.unterricht } };
+  const alt = (id, extra, titel) => ({ id, kategorie: 'unterricht', titel, link: `https://example.org/${id}`, datum: '2026-11-13T07:00:00.000Z', sichtbarBis: '2026-11-30T00:00:00.000Z', wert: 70, extra });
+  const vorher = { kategorien: { unterricht: [
+    alt('u1', { typ: 'gesuch', gesuch: true, sortWert: 85 }, 'Setup of Professional Email Templates and Follow-up System for Translation Business'),
+    alt('u2', { typ: 'online', sortWert: 70 }, 'Online German Teacher – Firma'),
+  ] } };
+  const tot = async url => { throw new Error(`HTTP 503 bei ${new URL(url).host}`); };
+  const r = await lauf({ cfg: cfgU, wunschliste: {}, vorher, zustand: { lauf: {} }, holeText: tot, jetzt: JETZT, alle: true });
+  const t = r.aktuell.kategorien.unterricht.map(e => e.titel);
+  assert.ok(t.includes('Online German Teacher – Firma'), 'alte Stelle bleibt');
+  assert.ok(!t.some(x => /Email Templates/.test(x)), 'alter Gesuch-Fehltreffer bleibt nicht stehen');
+  assert.ok(r.aktuell.kategorien.unterricht.some(e => e.extra?.fundort), 'Fundorte frisch');
 });

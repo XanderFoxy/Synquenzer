@@ -1626,7 +1626,7 @@ function einteilen() {
       if (istCashback(e)) { if (interessant(text)) r.cashback.push(e); continue; } // Cashback für anderes: weg
       if (istGewinnspielArt(e)) { if (gewinnspielEinfach(e)) r.gewinnspiele.push(e); continue; } // mit Kaufpflicht: weg
       if (e.kategorie === 'musik') { (istRemix(e) ? r.remix : istAufruf(e) ? r.auftritte : r.synths).push(e); continue; }
-      if (e.kategorie === 'nebenverdienst' && istUnterricht(e)) { r.unterricht.push(e); continue; }
+      if (e.kategorie === 'nebenverdienst' && istUnterricht(e) && !OHNE_ARBEITSAMT(e)) { r.unterricht.push(e); continue; } // Arbeitsamt-DaF-Stellen bleiben im Nebenverdienst
       if (e.kategorie === 'deals') {
         const p = meinProdukt(text);
         if (p) { r.produkt.push({ ...e, meins: p }); continue; }
@@ -1862,8 +1862,8 @@ const ASSISTENT_TEXT = {
     regel: 'Was zuerst endet, steht oben. „Mitmachen“: Frist, Stems und Text für die Einreichung.',
   },
   unterricht: {
-    frisch: 'Neue Stellen & Anfragen', fund: 'Hier kannst du dich immer melden', nichts: 'Gerade keine neue Anzeige',
-    regel: 'Oben Gesuche aus dem Netz (neueste zuerst), darunter Stellen – Döbeln und online zuerst. „Melden“: fertiger Text als „Deutsch mit Xander“.',
+    frisch: 'Online-Stellen & Aufrufe', fund: 'Hier kannst du dich immer melden', nichts: 'Gerade keine Online-Stelle und kein Sprachpaten-Aufruf',
+    regel: 'Oben Gesuche aus dem Netz (neueste zuerst), darunter Online-Stellen und Sprachpaten-Aufrufe. „Melden“: fertiger Text als „Deutsch mit Xander“.',
   },
 };
 function zeichneAssistent(t, bereich) {
@@ -2675,7 +2675,7 @@ function zeichne() {
   Object.assign(ZUSATZ, {
     start: '', deals: `${(S.angebote?.d?.produkte || []).filter(p => !ausgeblendet(p.id)).length || ''} Produkte im Blick`.replace(/^ Produkte im Blick$/, ''),
     preisfehler: 'nur krasse', auftritte: `${t.auftritte.length} frisch · ${t.auftritteFund.length} feste Adressen`, remix: `${t.remix.length} laufend · ${t.remixFund.length} Fundorte`,
-    unterricht: t.gesuche.length ? `${t.gesuche.length} ${t.gesuche.length === 1 ? 'Gesuch' : 'Gesuche'} · ${t.unterricht.length} Stellen` : `${t.unterricht.length} neu · ${t.unterrichtFund.length} feste Adressen`, konzerte: nurNah ? `bis ${konzertTeile().radius} km` : 'alle Termine',
+    unterricht: t.gesuche.length ? `${t.gesuche.length} ${t.gesuche.length === 1 ? 'Gesuch' : 'Gesuche'}${t.unterricht.length ? ` · ${t.unterricht.length} ${t.unterricht.length === 1 ? 'Stelle' : 'Stellen'}` : ` · ${t.unterrichtFund.length} feste Adressen`}` : `${t.unterricht.length} neu · ${t.unterrichtFund.length} feste Adressen`, konzerte: nurNah ? `bis ${konzertTeile().radius} km` : 'alle Termine',
     gewinnspiele: 'ohne Kauf', krypto: 'nur auf diesem iPhone', mehr: '', filme: 'Apple TV',
   });
   for (const [ab, n] of Object.entries(zahlen)) if (ab !== 'krypto') setzeZahl(ab, n);

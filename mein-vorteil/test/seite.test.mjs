@@ -1357,7 +1357,7 @@ test('Unterricht (v5 + Gesuche): „Gesuche im Netz“ oben, neueste zuerst, mit
     sichtbarBis: new Date(Date.parse(datum) + 14 * 864e5).toISOString(), preisfehler: false,
     extra: { typ: 'gesuch', gesuch: true, was, auszug, ort: 'online', km: null, online: true, frist: null, bewerbung: { art: 'seite', ziel: `https://www.reddit.com/r/German/comments/${id}/` }, quelle, bewerbenAls: { name: 'Deutsch mit Xander' }, sortWert: 80 },
   });
-  const patch = { 'vorteile-aktuell.json': d => { d.kategorien.unterricht.push(
+  const patch = { 'vorteile-aktuell.json': d => { (d.kategorien.nebenverdienst ||= []).push({ ...gesuch('ba01', 'Deutschlehrer DaF (m/w/d) – Sprachschule', 'Jobbörse (Arbeitsagentur)', '2026-11-06T08:00:00.000Z', 'Stelle', ''), kategorie: 'nebenverdienst', link: 'https://www.arbeitsagentur.de/jobsuche/jobdetail/beispiel-ba01', extra: { quelle: 'Jobbörse (Arbeitsagentur)', sortWert: 60 } }); d.kategorien.unterricht.push(
     gesuch('beispiel01', 'Looking for a tutor to prepare for the Goethe B2 exam', 'Reddit r/German', '2026-11-05T09:15:40.000Z', 'Prüfungsvorbereitung', 'My Goethe B2 exam is on December 12th, looking for a tutor, 2–3 online sessions per week.'),
     gesuch('beispiel04', 'Suche Hilfe beim Brief an die Ausländerbehörde', 'Reddit r/German', '2026-11-06T20:05:00.000Z', 'Behördenbrief', 'Ich muss einen Brief an die Ausländerbehörde schreiben und suche jemanden, der hilft.'),
   ); } };
@@ -1365,8 +1365,10 @@ test('Unterricht (v5 + Gesuche): „Gesuche im Netz“ oben, neueste zuerst, mit
   await springe(page, 'unterricht');
   const u = page.locator('#unterricht');
   const alles = nbsp(await u.innerText());
-  assert.match(alles, /Gesuche im Netz\s*2[\s\S]*Ausländerbehörde[\s\S]*Goethe B2[\s\S]*Upwork: neue Aufträge[\s\S]*Neue Stellen & Anfragen[\s\S]*Hier kannst du dich immer melden\s*4/i, 'Gesuche oben (neueste zuerst), Stellen darunter');
+  assert.match(alles, /Gesuche im Netz\s*2[\s\S]*Ausländerbehörde[\s\S]*Goethe B2[\s\S]*Upwork: neue Aufträge[\s\S]*Online-Stellen & Aufrufe[\s\S]*Hier kannst du dich immer melden\s*4/i, 'Gesuche oben (neueste zuerst), Stellen darunter');
   assert.match(alles, /Goethe B2[\s\S]*Hier selbst schauen\s*6[\s\S]*Upwork: neue Aufträge/i, 'feste Suchen als „Hier selbst schauen“');
+  assert.match(alles, /darunter Online-Stellen und Sprachpaten-Aufrufe/);
+  assert.doesNotMatch(alles, /Deutschlehrer DaF \(m\/w\/d\) – Sprachschule|Döbeln und online zuerst/, 'Arbeitsamt-DaF-Stelle aus dem Nebenverdienst kommt nicht in den Unterricht');
   const erste = nbsp(await u.locator('article').first().innerText());
   assert.match(erste, /^Gesuch\s*online\s*Reddit r\/German\s*Suche Hilfe beim Brief an die Ausländerbehörde\s*Behördenbrief · vom 06\.11\.2026\s*„Ich muss einen Brief[^“]*“\s*Melden als Deutsch mit Xander/);
   assert.match(nbsp(await text(page, '#w-unterricht')), /^2 Gesuche im Netz · /);
