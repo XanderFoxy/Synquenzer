@@ -135,7 +135,7 @@ export function wikidataKandidaten(zeilen, item) {
 // Für Chart-Titel (nicht für deine Listen): Bekanntheit = Zahl der Wikipedia-Sprachen (wikibase:sitelinks), Kritik = Rotten
 // Tomatoes (P444 „review score“ mit P447 = Q105584), Horror = Genre (P136) ist Horrorfilm Q200092 oder eine Unterart davon.
 // Gefunden wird der Film über die Apple-Nummer (P6398, oft die US-Nummer) ODER die Namenssuche (wbsearchentities über
-// mwapi, nur Filme); bei der Namenssuche müssen Name und Jahr passen (Jahr ±1, sonst ein älterer Film = Wiederveröffentlichung).
+// Bezeichnung/Alias deutsch oder englisch, nur Filme); bei der Namenssuche müssen Name und Jahr passen (Jahr ±1, sonst ein älterer Film = Wiederveröffentlichung).
 export const HORROR_TEXT = /horror(?!\s*!)|grusel|schocker|slasher|zombie|exorzis|okkult|satanis|paranormal|poltergeist|d(?:ä|ae)mon(?:en|isch\w*)?\b/i;
 // schwache Zeichen: einzeln harmlos („unheimlich“, „Albtraum“); zwei verschiedene = Horror-Verdacht. Der zählt, wenn Wikidata
 // den Film nicht kennt oder gestört ist (Apple führt Horror oft als „Thriller“: Midsommar, The Autopsy of Jane Doe); kennt
@@ -172,12 +172,13 @@ export const jahrImTitel = t => { const x = String(t ?? '').match(/\((19\d\d|20\
 /** SPARQL für bis zu qualiJeAbfrage Titel: [{ nr: '123', name: 'Charade' }] -> eine Zeile je (Titel, Wikidata-Film). */
 export function qualiAbfrage(titel) {
   const ids = titel.map(t => sparqlText(t.nr)).join(' ');
-  const namen = titel.map(t => `(${sparqlText(t.nr)} ${sparqlText(t.name)})`).join(' ');
+  // Name genau wie Bezeichnung/Alias (deutsch oder englisch) – wie der Weg „wikidata“, der im echten Lauf antwortet.
+  // (Die mwapi-Namenssuche brach im echten Lauf 14.11.2026 mit HTTP 500 ab: „Could not find binding for parameter search“.)
+  const namen = titel.flatMap(t => ['de', 'en'].map(l => `(${sparqlText(t.nr)} ${sparqlText(t.name)}@${l})`)).join(' ');
   return 'SELECT ?key ?weg ?item ?l (MIN(?j) AS ?jahr) (MAX(?h0) AS ?h) (GROUP_CONCAT(DISTINCT ?rt0; separator="|") AS ?rt) '
-    + '(GROUP_CONCAT(DISTINCT ?lab0; separator="|") AS ?lab) WHERE { hint:Query hint:optimizer "None" . '
+    + '(GROUP_CONCAT(DISTINCT ?lab0; separator="|") AS ?lab) WHERE { '
     + `{ VALUES ?key { ${ids} } ?item wdt:P6398 ?key . BIND("id" AS ?weg) } UNION `
-    + `{ VALUES (?key ?suche) { ${namen} } SERVICE wikibase:mwapi { bd:serviceParam wikibase:endpoint "www.wikidata.org" ; `
-    + 'wikibase:api "EntitySearch" ; mwapi:search ?suche ; mwapi:language "de" ; mwapi:limit "5" . ?item wikibase:apiOutputItem mwapi:item . } '
+    + `{ VALUES (?key ?suche) { ${namen} } ?item rdfs:label|skos:altLabel ?suche . `
     + `?item wdt:P31 ?typ . VALUES ?typ { ${FILM_TYPEN} } BIND("name" AS ?weg) } `
     + '?item wikibase:sitelinks ?l . '
     + 'OPTIONAL { ?item wdt:P577 ?d . BIND(YEAR(?d) AS ?j) } '

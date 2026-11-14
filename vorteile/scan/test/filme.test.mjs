@@ -570,7 +570,7 @@ test('Apple-TV-Angebotsraum (Xander 08.11.2026): Raum-Links finden, Filme abglei
 });
 
 // ---------------------------------------------------------------- MV7 (14.11.2026): Übersicht nach Genres + Qualität
-const QUALI = [['wikibase%3Amwapi', 'wikidata-qualitaet.json']];
+const QUALI = [['P6398%20%3Fkey', 'wikidata-qualitaet.json']];
 
 test('Qualität: Apple-Titel säubern, Wikidata-Antwort lesen, passenden Film wählen (Name + Jahr, Wiederveröffentlichung)', () => {
   assert.equal(suchName('Charade (1963)'), 'Charade');
@@ -581,7 +581,7 @@ test('Qualität: Apple-Titel säubern, Wikidata-Antwort lesen, passenden Film w�
   assert.equal(jahrImTitel('Meteor (1979)'), 1979);
   assert.equal(jahrImTitel('Dirty Harry'), null);
   const q = qualiAbfrage([{ nr: '123', name: 'Charade "X"' }]);
-  assert.match(q, /wdt:P6398/); assert.match(q, /EntitySearch/); assert.match(q, /Q200092/); assert.match(q, /Q105584/);
+  assert.match(q, /wdt:P6398/); assert.match(q, /"@de\) \("123"/); assert.doesNotMatch(q, /mwapi|hint:/, "keine mwapi-Suche (HTTP 500 im echten Lauf)"); assert.match(q, /Q200092/); assert.match(q, /Q105584/);
   assert.match(q, /"Charade \\"X\\""/, 'Anführungszeichen sicher');
   const zeilen = leseQuali(JSON.stringify({ results: { bindings: [
     { key: { value: '1234567' }, weg: { value: 'name' }, item: { value: 'http://www.wikidata.org/entity/Q1' }, l: { value: '45' }, jahr: { value: '1971' }, rt: { value: '91%|8.1/10' }, lab: { value: 'Dirty Harry' } },
@@ -648,9 +648,9 @@ test('Übersicht: Für 3,99 € · Action & Thriller · Comedy · 80er & Klassik
   // Qualität bleibt im Zustand: zweiter Lauf fragt Wikidata nicht noch einmal
   const z2 = abruf(QUALI);
   await filme(ctx(z2.holeText, zustand, tagPlus(1)));
-  assert.equal(z2.urls.filter(u => u.includes('mwapi')).length, 0, 'gemerkt');
+  assert.equal(z2.urls.filter(u => u.includes('P6398%20%3Fkey')).length, 0, 'gemerkt');
   // Wikidata gestört: Chart-Spitze bleibt, Modul meldet keinen Fehler (nur Status)
-  const z3 = abruf([['wikibase%3Amwapi', '!fehler']]);
+  const z3 = abruf([['P6398%20%3Fkey', '!fehler']]);
   const r3 = await filme(ctx(z3.holeText, {}));
   assert.equal(r3.datei.status.qualitaet.ok, false);
   assert.ok(!r3.fehler.some(f => /Qualität/.test(f)));
@@ -675,7 +675,7 @@ test('Horror aus der Apple-Beschreibung (echte Texte 14.11.2026): klare Wörter,
 });
 
 test('Ohne Wikidata (gestört): Horror-Verdacht aus der Beschreibung fliegt trotzdem raus, auch auf Platz 1 der Charts', async () => {
-  const z = abruf([['wikibase%3Amwapi', '!fehler']]);
+  const z = abruf([['P6398%20%3Fkey', '!fehler']]);
   const r = await filme(ctx(async (url, o) => {
     const t = await z.holeText(url, o);
     if (!/rss\/topmovies/.test(url)) return t;
