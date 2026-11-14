@@ -55850,6 +55850,7 @@ function ui1Entries() {
   kf1Guide(UI1.ents);    // KF1: Rauschfarbe, Ringmod, Körnung, Anschlag Filter, S&H Tonart, Arp Treppe
   kf2Guide(UI1.ents);    // KF2: Saite, Vokal-Filter, Oszilloskop
   spk1Guide(UI1.ents);   // SPK1: Spektral-Seite
+  if (typeof ki1Guide === 'function') ki1Guide(UI1.ents);   // KI1: Profi-Trennung
   return UI1.ents;
 }
 function ui1Search(q) {
@@ -94430,6 +94431,7 @@ async function ki1Profi(o) {
     await ki1Call('kport', {port: ch.port2}, null, [ch.port2]);
     const r = await spk1Call('profi', {doc, how: KI1.how, rev: KI1.REV, neu: !!o.neu}, null, {prog: (p, st) => { if (o.prog) o.prog('rechnen', p, st); }});
     KI1.diag.push(KI1.how + ' · ' + r.n + ' Stücke · Modell ' + r.msModell + ' ms · gesamt ' + r.ms + ' ms'); if (KI1.diag.length > 20) KI1.diag.shift();
+    try { const mt = r.meta; if (!r.weiter && mt && mt.n > mt.sr * 10) localStorage.setItem('synq-ki1-sps', (r.ms / 1000 / (mt.n / mt.sr)).toFixed(3)); } catch (e) {}   // Dauer je Sekunde Audio auf diesem Gerät (für die Schätzung im Klappfenster)
     SPK1.last = r; KI1.last = r;
     return r;
   } catch (e) {
@@ -94629,7 +94631,7 @@ function ki1Dd(U, b) {
       if (!p.isConnected) return;
       const j = s.job && !s.job.fertig && s.job.have > 0 ? s.job : null;
       p.textContent = j ? 'Profi-Trennung fortsetzen (' + Math.round(100 * j.have / Math.max(1, j.n)) + ' %)'
-        : s.full ? 'Profi-Trennung (genauer, ≈ 1 min)'
+        : s.full ? 'Profi-Trennung (genauer, ' + ki1Dauer() + ')'
         : s.rest < s.total ? 'Profi-Trennung weiter laden (noch ' + ki1MB(s.rest) + ' MB)'
         : 'Profi-Trennung laden (~' + ki1MB(s.total) + ' MB, einmalig)';
       if (s.bytes > 0 && !U.busy) { x.textContent = 'Profi-Trennung vom Gerät löschen (' + ki1MB(s.bytes) + ' MB)'; x.style.display = ''; }
@@ -94663,6 +94665,21 @@ function ki1ZerlTap(U) {
 function ki1Busy(U) { if (U.b_ki1) U.b_ki1.parentNode.classList.toggle('ki1-busy', !!U.busy); }
 // ✕ / Seite zu: eine laufende Profi-Trennung anhalten (Stücke bleiben); sonst nichts
 function ki1Close() { if (KI1.busy || KI1.loadP) ki1Stop(); }
+// Geschätzte Dauer für das offene Stück: gemessene Sekunden je Sekunde Audio auf diesem Gerät, sonst 0,35 (Prüf-Rechner 0,22 · iPhone geschätzt 1,5×)
+function ki1Dauer() {
+  let k = 0.35; try { const v = +localStorage.getItem('synq-ki1-sps'); if (v > 0.02 && v < 20) k = v; } catch (e) {}
+  const m = SPK1.last && SPK1.last.meta, t = 3 + k * (m && m.sr ? m.n / m.sr : 180);
+  return t < 55 ? '≈ ' + Math.max(5, Math.round(t / 5) * 5) + ' s' : '≈ ' + Math.max(1, Math.round(t / 60)) + ' min';
+}
+// Guide-Eintrag (Suche im Guide; Text ohne Namen)
+function ki1Guide(ents) {
+  try {
+    ents.push({id: 'ki1', n: 'Profi-Trennung (Drums, Bass, Gesang, Rest)', w: 'Spektral › ▾ neben „Zerlegen“ (quer: „Zerlegen ▾“) › Profi-Trennung',
+      d: 'Trennt das ganze Stück genauer als „Zerlegen“ – vor allem Gesang und Bass – mit einem gelernten Modell. Lädt einmal ≈ 70–86 MB aus dem Netz, danach offline. Rechnet in Stücken: ■ Abbrechen oder ✕ hält an, später „fortsetzen“ (auch nach Neuladen). Ergebnis sind die Ebenen Drums, Bass, Gesang + Rest; zusammen = Original, ein ↶ nimmt alles zurück. Im selben Klappfenster: „vom Gerät löschen“.',
+      s: 'profi trennung genauer trennen ki modell stems gesang vocals stimme bass drums rest download offline fortsetzen zerlegen spektral',
+      go: () => { spk1Open({back: {menu: true}}); }, q: () => (SPK1.open && SPK1.ui ? (SPK1.ui.b_ki1 && SPK1.ui.b_ki1.offsetParent ? SPK1.ui.b_ki1 : SPK1.ui.b_zerl) : null)});
+  } catch (e) { logErr(e); }
+}
 /* Test-Zugang (nur Funktionen; nichts läuft von selbst) */
 const KI1_API = {
   state: () => ({st: Object.assign({}, KI1.st), how: KI1.how, worker: !!KI1.w, busy: KI1.busy, net: KI1.net.slice(), diag: KI1.diag.slice(), files: (KI1.F || []).map(x => ({f: x.f, n: x.n, ways: x.ways}))}),

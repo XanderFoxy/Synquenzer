@@ -23,5 +23,7 @@ rep("A('zerl', 'Zerlegen', 'Ganzes Stück in Ebenen zerlegen'); A('verf', 'Verfe
     "A('zerl', 'Zerlegen', 'Ganzes Stück in Ebenen zerlegen'); A('verf', 'Verfeinern …', 'Auswahl genauer trennen');\n  if (typeof ki1UiAdd === 'function') ki1UiAdd(U);   // KI1: „▾“ am Knopf Zerlegen (Profi-Trennung)\n")
 rep("  const U = SPK1.ui; if (!SPK1.open || !U) return;\n  spk1Dd(U, null); spk1Leave(U); SPK1.open = false;",
     "  const U = SPK1.ui; if (!SPK1.open || !U) return;\n  if (typeof ki1Close === 'function') ki1Close();   // KI1: laufende Profi-Trennung anhalten (Stücke bleiben)\n  spk1Dd(U, null); spk1Leave(U); SPK1.open = false;")
+rep("  spk1Guide(UI1.ents);   // SPK1: Spektral-Seite\n",
+    "  spk1Guide(UI1.ents);   // SPK1: Spektral-Seite\n  if (typeof ki1Guide === 'function') ki1Guide(UI1.ents);   // KI1: Profi-Trennung\n")
 open(P, 'w', encoding='utf-8').write(s)
 print('ok')
