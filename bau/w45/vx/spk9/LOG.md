@@ -29,3 +29,4 @@
   spk6-pruef fails 0 · spk1 17/18 (verfeinern-verbessert-ziel wie Basis).
 - Befunde (9, davon 5 mittel, 4 leicht) mit Messwerten in PRUEFUNG.md.
 - 22:14 Prüfer-Befunde (9) bearbeiten: Stand vor der Prüfung gesichert (fix/spk9-block.vor-pruef.js, fix/index.vor-pruef.html).
+- 22:34 Block überarbeitet (Befunde 1–8), Schnellmessungen: SG/SZ/SM/SD/ST/M1/M3/M7, leg.mjs, poly9, finden9, bassband. Vollmessung fix/mess-alle.sh gestartet.

@@ -44,26 +44,40 @@ Bass-Anteil (lowRatio) jetzt rate-unabhängig (#1 0,051 bei 48k → 0,025; #10 0
 Richtig? Unabhängige Einsätze aus der Tonhöhe (pitchons.mjs: YIN 10 ms, Stimm-Beginn / Sprung > 70 ct; fitcurve.mjs = Raster-Treue wie rv1-test),
 an #1 geeicht (beste 119,5 = Annotation 119): #14 → beste 60,5–61 (½ von 121): **120,6 Rang 0,8 %** (mit ½×), **132,6 Rang 59 %** → der alte
 48-kHz-Wert war falsch, jetzt richtig. Oktav-Fehler: keiner (Vorschlag 120,6 = Viertel, ½× wird gefragt wie bisher).
-#10: 112 Rang 76 % (Tonhöhe) bzw. 53 % (Modell-Noten aus einem freien Paket) – beide Bezüge zeigen 125–130; rate-unabhängig gleich wie vorher,
-also kein Abtastraten-Fehler, aber vermutlich nicht richtig (siehe offen).
+#10: 112 Rang 76 % (Tonhöhe) bzw. 53 % (Modell-Noten aus einem freien Paket) – rate-unabhängig gleich wie vorher, also kein Abtastraten-Fehler.
+**Korrektur nach Prüfung (Befund 6):** „125–130“ ist NICHT belegt – mit Energie-Einsätzen des Prüfers (Spektralfluss, an #1 geeicht) liegt 112 auf
+Rang 10,4 %, 126 auf 61 %, am besten 167,5 ≈ 1,5 × 112. Das Urteil über #10 hängt an der Einsatz-Quelle; offen, nicht „vermutlich falsch“.
+#14 stützen die Prüfer-Einsätze nur schwach (120,6 Rang 5 %, 132,6 Rang 18 %; am besten 138–140 bei nur 31 Einsätzen in 12 s).
 
 ## Regression
 - imp1-test: ALLE OK (48), 124 s. vx1-test: 61/61.
-- rv1-test: Basis heute 48/53 → IMP2 45/53. +1 (#1 „≥ 80 % der Noten haben einen Stück-Anfang“ jetzt OK, Basis 38/59). −4 = Verschieben links/rechts an
+- rv1-test: Basis heute 48/53 → IMP2 45/53. +1 (#1 „≥ 80 % der Noten haben einen Stück-Anfang“ jetzt OK – knapp: Vokal-Beginn 47 → 48 von 59
+  = 81,4 % bei Grenze 80 %, Stück-Anfang bleibt 38/59). −4 = Verschieben links/rechts an
   ANDEREN Stücken (#10 Stück 47 statt 30, #14 Stück 52 statt 55): neues Tempo/t1 → `imp1Take` legt den Take ab Takt 0 an (Auftakt als Stille) → Take um
   einige ms verschoben → Marken (`wpDetect`) anders (#10 56 → 58, #14 69 → 66 Stücke) → der Test wählt andere Stücke. Gegenprobe `RV1_K=30` (#10): mit
   IMP2 links + rechts OK. Fehlerbilder liegen im Gesang-Editor-Verschieben (Ausklang 31 ms vor dem Schnitt nicht bitgleich; #10 −27 ct gegen Grenze 25;
   #14 Dehnung 1,61× gegen 1,55, Vorgänger stimmlos), nicht im Import. → Entscheidung beim Zusammenführen (VX2/VX3 berührt genau diese Stellen).
+  **Korrektur nach Prüfung (Befund 2):** Zuordnung nach Datei-Zeit statt Index (`fix/rv1t-test.mjs`, `RV1_T`): #10 ist eine andere Silbe (Basis 4,985 s,
+  IMP2 7,068 s; IMP2 an 4,985 s = Stück 32: OK/OK; Basis an 7,068 s = Stück 45: FEHLER/FEHLER mit denselben Zahlen). **#14 ist dieselbe Silbe**
+  (9,742 s: Basis Stück 55 OK/OK, IMP2 Stück 52 FEHLER/FEHLER, Dehnung 1,609×, Abweichung bei 245 ms) – „andere Stücke“ war dort falsch. Ursache ist
+  das (richtige) Tempo-Raster 121 statt 133: die Basis mit vorweg eingetipptem 120,6 scheitert an derselben Silbe genauso (Prüfer: 1,618×).
+  Meine Gegenproben `RV1_K=30/55` trafen auf IMP2 andere Silben (4,703 s / 10,294 s). Keine der 4 neuen FEHLER-Zeilen kommt aus dem IMP2-Code.
 - Laufzeit Analyse (Node, 148-s-Song bei 48 kHz): Herunterteilen 40 → 175 ms, gesamt ≈ 800 → 940 ms (+17 %, im Worker, einmal je Import).
+  Seit Prüfung (Befund 4) mit reeller FFT schneller als die Basis – Zahlen unter „Prüfung“.
 
 ## Offen / Vorschläge
-1. Laufzeit ausgleichen (Vorschlag, nicht gebaut): `features()` rechnet reelle Signale mit komplexer FFT (512 je Rahmen + 4096 je 8 Rahmen ≈ 300 ms
-   von 650 ms). Reelle FFT über halbe Länge (Paar-Packung) spart ≈ 40 % davon (≈ 120 ms) – mehr als IMP2 kostet; Ergebnis bis auf Rundung gleich.
-2. #10 (9 s, frei gesungen): Gesang-Weg schlägt 112 vor, Tonhöhen- und Modell-Einsätze sprechen für 125–130. Weg: Tonhöhen-Einsätze (VX1/G2 hat sie)
-   als zweite Quelle in die Raster-Treue nehmen; eigenes Paket, mit imp1-/rv1-test.
+1. ~~Laufzeit ausgleichen~~ – seit Prüfung gebaut (`imp2Spec`, reelle FFT über halbe Länge), Analyse zeichengleich, siehe „Prüfung“.
+2. #10 (9 s, frei gesungen): Gesang-Weg schlägt 112 vor; Tonhöhen-/Modell-Einsätze zeigen 125–130, Energie-Einsätze (Prüfer) dagegen 112 bzw. 167,5 –
+   Wahrheit unbekannt, also nichts ändern ohne Annotation. Weg, falls eine kommt: Tonhöhen-Einsätze (VX1/G2) als zweite Quelle in die Raster-Treue.
 3. Gesang-Editor: Marken hängen von einer Verschiebung des Takes um wenige ms ab (#10: 5 ms → 2 Stücke mehr) – zu VX2/VX3 (Übersegmentierung).
-4. Test-Hinweis: rv1-test wählt das Verschiebe-Stück aus dem Quantisier-Stand; bei anderem Tempo wechselt es. Für Vergleiche Stück fest per RV1_K.
+4. Test-Hinweis: rv1-test wählt das Verschiebe-Stück nach Index aus dem Quantisier-Stand; bei anderem Tempo wechselt es. Für Vergleiche NICHT RV1_K
+   (Index), sondern die Silbe nach Datei-Zeit (`fix/rv1t-test.mjs`, `RV1_T=<s>`) – Vorschlag für real/rv1-test.mjs (Ordner des RV1-Pakets, nicht hier geändert).
+5. Für VX2/VX3 (Gesang-Editor-Verschieben, eigener Fehler, schon in der Basis): #14 Silbe 9,742 s bei Tempo-Raster 121 (rechts: stimmloser Vorgänger
+   1,61× gedehnt > 1,55; links: Ausklang ab 245 ms nicht bitgleich), #10 Silbe 7,068 s bei Raster 112 (−27 ct, 1,42×; Ausklang Abw. 0,043 bei 162 ms).
+6. Nebenbefund (schon in der Basis, nicht IMP2, nicht gebaut – sichtbar): Import-Blatt nach Antippen des ½×-Vorschlags „… 60 oder 60?“ mit zwei gleichen
+   Knöpfen „60 BPM | 60 BPM“ (Basis: 66/66). Vorschlag: nach der Wahl die Frage mit dem neuen Paar (60 · 121) neu stellen oder ausblenden.
 
 ## Dateien
 `imp2-node.mjs` (Raten-Prüfung), `resp.mjs` (Kennlinie + Zeit), `prof.mjs` (Zeitanteile), `pitchons.mjs` + `fitcurve.mjs` (unabhängige Tempo-Prüfung),
-`block.js` + `apply.mjs` (Bau). Audio liegt außerhalb von vx (realvox/imp2rs, realvox/npz). Läufe: node-*.txt/json, run-*.txt, rv1-*.json.
+`block.js` + `apply.mjs` (Bau). Seit Prüfung in `fix/`: `krumm-test.mjs` (Befund 1), `fft-test.mjs` (Befund 4), `sweep.mjs` + `kennlinie.mjs` (Befund 5),
+`zeit.mjs`, `rv1t-test.mjs` + `rv1t-lauf.sh` (Befund 2, Silbe nach Datei-Zeit). Audio liegt außerhalb von vx (realvox/imp2rs, realvox/npz). Läufe: node-*.txt/json, run-*.txt, rv1-*.json.
