@@ -77,7 +77,7 @@ Kick-Rest je Schlag (kleinste Quadrate) bringt für die Oktave nichts mehr, seit
 - Misch-Lage: Block nach SPK8-END (SPK9 liegt nach SPK7-END), Haken nur im SPK8-Block; keine SPK9-Stelle (spk1DspMake-Haken, `const src`,
   SPK2 segNotes) berührt.
 
-## Prüfung (Nachbesserung nach PRUEFUNG.md, 22:05–22:4x)
+## Prüfung (Nachbesserung nach PRUEFUNG.md, 22:05–22:37)
 Werkzeuge (alle im Paket): `messb/faelle8p.mjs` (Prüfer-Fassung: `FALL=name@Bass,Pad1,Pad2,Trommeln`, Fälle mit „;“ getrennt; 5. Listenfeld =
 nächste Wahrheit; `SOLL=1` auch je Mischung), Prüfer-Linien in `messb/faelle/` (adur, chrom, chromab, chromdunkel, dunkel120, dunkel200, fdemo,
 gdemo, hell, sinus), `messb/faelle-alle.txt` (54 Prüfer-Läufe + 13 Prüf-Satz = 67), `messb/cmp10.mjs` (Vergleich an/aus je Note:
@@ -127,3 +127,23 @@ Je Befund:
    Speicher +0,0 … 0,1 MB.
 
 Misch-Probe: `git merge-file` SPK9 (basis7 → spk9) auf das neue SPK10: 0 Konflikte (`merge/spk10+spk9.html`).
+
+### Regression nach der Nachbesserung (einzeln nacheinander, `reg2.sh` → `reg2/*.out`)
+- Pflicht: topdefs Skripte 26 / doppelt 0 / Syntaxfehler 0 · dupkeys 0 · smoke `errors []` (`smoke.png`) · „MS 2000“ 1× · „  live: true,“ 1× ·
+  VERSION 4.64.0 · Markenwörter je Wort 0 = Basis (auch in allen Paket-Dateien 0) · keine Datensatz-/Produktnamen.
+- faelle8 SOLL=1 (13 Fälle) 13 OK / 0 FEHLER (bassdrums 23/32 · 0,793, alle anderen unverändert) · faelle8p SOLL=1 (11 Prüfer-Mischungen) 11 OK / 0 FEHLER.
+- spk10-seite 16/16 (27/32 · 0,90 hochkant + quer, Worker, Sicherheit richtig 0,95 / falsch 0,74, ↶/↷, Konsole []; mit SOLL10 26 wiederholt: 16/16).
+- spk8-seite 14/14 (Demo 29/32 · 0,806) · spk5-test ALLES OK 24 · spk5-fade-test ALLES OK · spk1-test 17 OK / 1 FEHL verfeinern-verbessert-ziel
+  4,37 → 4,36 (bekannt) · worker10: spk10Okt im Hauptfaden, im Worker-Text und im Worker als Funktion, Seitenfehler [].
+- spk4-test (gegen basis5): 18 OK / 5 FEHLER – erwartet: pflicht (Version 4.60 → 4.64), a2-verfeinern-plus-1db (−0,01), reg-ki1 (quer-428/quer-370/
+  besser-als-klassisch, vorbestehend); Last: a3-andere-klaenge-nicht-schlechter (lead 0,95 → 1,34 im 2. Lauf) und a3-nachbau-zeit (Abstände ungleich).
+  Gegenprobe Klang-Probe allein basis 4.64 → SPK10 direkt danach: va2 3,89/3,89 · fm 2,06/2,06 · pad 0,96/0,96 · lead 0,95/0,95, Texte gleich,
+  Zeiten 2268/2272 · 1632/1684 · 2339/2574 · 2091/2167 ms (`reg2/klang-probe-allein.out`) – der Nachbau-Weg ist von SPK10 nicht berührt
+  (wie in der ersten Fassung und beim Prüfer: dort einmal 19/4, einmal 20/3).
+- Misch-Probe SPK9: 0 Konflikte. Bedienung/Aussehen unverändert (keine neuen Knöpfe; nur Sicherheit umgestellter Noten blasser, wie SPK8 es schon macht).
+
+### Offen
+- Ziel „ohne Pads ≥ 24/32“ weiter nicht erreicht (23/32); Lauf 8/32 und 16tel 29/64 unverändert (Ursachen s. „Ziel – NICHT erreicht“).
+- Oktavfehler mit r über −15 dB (die Mehrheit der Unter-C2-Oktavfehler: 122 von 157 in den Prüfer-Läufen, gezählt vor dem Leck-Schutz) bleiben – richtige Noten unter C2
+  reichen bis −10,2 dB, eine tiefere Schwelle hätte < 5 dB Abstand. Oktavfehler ab C2 (z. B. Lauf, mit Pads) sind mit diesem Merkmal nicht trennbar.
+- Nach dem Mischen `spk10/messb/faelle8.mjs` + `faelle8p.mjs` + `faelle8-soll.json` + `faelle/` übernehmen (spk8-Fassung misst ohne SPK10).
