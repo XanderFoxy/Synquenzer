@@ -28,3 +28,4 @@
   pruef/reg-imp1.txt) · rv1-test Basis 48/53, IMP2 45/53 (pruef/rv1-basis-1.txt, rv1-imp2-1.txt; = Bauer) · vx1-test 61/61 (pruef/reg-vx1.txt).
 - 22:26 FIX-Auftrag (Prüfer-Befunde 1–6) Start: Befunde gelesen (PRUEFUNG.md), Plan: 1 Bedingung in imp2Rs, 5 Übergang Stufe 1, 4 Laufzeit, 2/3/6 Notizen + Test.
 - 22:28 Befund 1 behoben: imp2Rs schrittweise nur bei ganzzahliger Rate mit voller Tabelle (`st = exact && P === P0`), sonst je Probe gerundet. Test fix/krumm-test.mjs (down-Pegel/Klick bei 22,05/32/44,1/48/96 kHz + 0,5/−0,3/0,001/… Hz; Analyse #1/#10/#14/92 4/4 bei sr+δ): vorher FEHLER 37/37, nachher ALLE OK (37) (fix/krumm-vorher.txt, fix/krumm-nachher.txt).
+- 22:31 Befund 5 + 4 gebaut: Stufe 1 Übergang 5 000…16 025 Hz (fc 10 512,5, df 11 025 statt 11 025/12 050); reelle FFT imp2Spec (Haken 1. Zeile in spec()). fix/fft-test.mjs: Betrag gleich bis 1e-13, Analyse von 7 Stücken zeichengleich (alle Felder außer ms), Zeit 92 4/4 148 s 874 → 544 ms.
