@@ -94103,7 +94103,7 @@ async function chr2Sep(r, n) {
   if (!m || st < 0) { toast('Take fehlt'); return null; }
   if (a.chor && a.chor.voices && a.chor.voices.length) { toast('Hier gibt es schon Chor-Stimmen – Trennen geht nur ohne'); return null; }
   if (rec.state !== 'off' || R.songRec) { toast('Erst Aufnahme beenden'); return null; }
-  const b = tkPlayBuf(a.take, a) || tkBuffer(a.take); if (!b) { tkLoad(a.take); toast('Audio lädt noch – gleich noch einmal'); return null; }
+  const b = tkBuffer(a.take); if (!b) { tkLoad(a.take); toast('Audio lädt noch – gleich noch einmal'); return null; }
   const sr = b.sampleRate, s0 = Math.max(0, Math.floor((a.in - g3PreOf(a) - .25) * sr)), s1 = Math.min(b.length, Math.ceil((a.out + .5) * sr));
   if (s1 - s0 < sr * .3) { toast('Zu kurz zum Trennen'); return null; }
   const xs = b.getChannelData(0).slice(s0, s1), t0 = performance.now(), sig = JSON.stringify([a.take, a.in, a.out, a.at]);
