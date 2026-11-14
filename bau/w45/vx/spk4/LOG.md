@@ -24,3 +24,4 @@
 - 18:31 A3 Klang-Probe (spk3-klang-probe basis5 → Datei): VA 3,89 → 3,89 · FM 2,06 → 2,06 · Pad 1,62 → 0,96 (Unison 5) · Lead 0,95 → 0,95; Zeit Pad 2511 → 2891 ms, sonst gleich; Fehler [].
 - 18:32 A3 Seite spk4-rest.mjs: 7 OK / 0 FEHLER (⋯ an der Rest-Zeile gleiche Spalte/Größe wie Ebenen 44×44, Zeile 46 px wie vorher; Menü in 3 Größen im Bild; Rest aufteilen 2156 ms, Lead 2 % · Pads 22 %, Summe = Original 144 dB, ein ↶; Konsole []).
 - 18:32 A3 Pflicht: topdefs 0/0 · dupkeys 0 · smoke errors [] (smoke-a3.png) · MS 2000 1× · live: true 1× · VERSION wie basis5 · keine neuen Markenwörter. Starte spk3-test (Regression).
+- 18:35 A3 spk3-test (Basis basis5): 15 OK / 2 FEHLER (A2: 14/3) – nachbau-abstaende-besser jetzt OK (Pad 1,62 → 0,96, Mittel 2,13 → 1,97, schlechter []); FEHLER nur bekannt aus A2: verfeinern-plus-1db (−0,01), spk2-test 28/30 (verfeinern-verbessert, verfeinern-nach-noten); 178 s.

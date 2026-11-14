@@ -103030,7 +103030,7 @@ function spk7SrcTxt() {
 /* ---- Engine: AudioWorklet (Modul aus spk7CoreMake), Rückfall ScriptProcessor (auch für Offline-Kontexte) ---- */
 function spk7Mod(c) {
   let pr = SPK7.mods.get(c); if (pr) return pr;
-  if (!SPK7.url) SPK7.url = URL.createObjectURL(new Blob([spk7CoreMake.toString() + ";registerProcessor('spk7-korn', class extends AudioWorkletProcessor { constructor() { super(); this.c = spk7CoreMake(sampleRate); this.port.onmessage = e => this.c.msg(e.data); this.c.onEnd = id => this.port.postMessage({end: id}); } process(i, o) { const L = o[0][0], R = o[0][1] || o[0][0]; this.c.render(L, R, L.length, currentFrame); return true; } });"], {type: 'text/javascript'}));
+  if (!SPK7.url) SPK7.url = URL.createObjectURL(new Blob([spk7CoreMake.toString() + ";registerProcessor('spk7-korn', class extends AudioWorkletProcessor { constructor(o) { super(); this.c = spk7CoreMake(sampleRate); for (const m of (o && o.processorOptions && o.processorOptions.q) || []) this.c.msg(m); this.port.onmessage = e => this.c.msg(e.data); this.c.onEnd = id => this.port.postMessage({end: id}); } process(i, o) { const L = o[0][0], R = o[0][1] || o[0][0]; this.c.render(L, R, L.length, currentFrame); return true; } });"], {type: 'text/javascript'}));
   pr = c.audioWorklet.addModule(SPK7.url); SPK7.mods.set(c, pr); return pr;
 }
 function spk7Engine(c, dest, o) {
@@ -103055,7 +103055,8 @@ function spk7Engine(c, dest, o) {
   const off = typeof OfflineAudioContext === 'function' && c instanceof OfflineAudioContext;
   if (!o.script && !SPK7.noWk && c.audioWorklet && typeof AudioWorkletNode === 'function' && (!off || o.wk)) {
     E.ready = spk7Mod(c).then(() => {
-      if (E.dead) return; const n = new AudioWorkletNode(c, 'spk7-korn', {numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [2]});
+      if (E.dead) return; const q = E.q; E.q = [];   // Wartendes (Quelle, Regler, Noten) geht mit dem Bau mit: offline sonst zu spät
+      const n = new AudioWorkletNode(c, 'spk7-korn', {numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [2], processorOptions: {q}});
       E.node = n; E.port = n.port; E.kind = 'worklet'; n.port.onmessage = e => ended(e.data); n.connect(dest); flush();
     }).catch(e => { logErr(e); if (!E.dead) sp(); });
   } else { sp(); E.ready = Promise.resolve(); }
@@ -103206,9 +103207,9 @@ function spk7NormWt(w, base) {
 /* ---- Prüf-Zugang (Messungen offline: dieselbe Engine im OfflineAudioContext) ---- */
 async function spk7Render(o) {
   o = o || {}; const sr = o.sr || 48000, dur = o.dur || 2, oc = new OfflineAudioContext(2, Math.round(sr * dur), sr), E = spk7Engine(oc, oc.destination, {wk: !o.script, script: o.script});
-  await E.ready; const S7 = o.src || SPK7.src; if (!S7) return null; spk7Feed(E, S7); E.set(spk7Norm(Object.assign({}, SPK7.p || SPK7_DEF, o.p || {})));
+  const S7 = o.src || SPK7.src; if (!S7) return null; spk7Feed(E, S7); E.set(spk7Norm(Object.assign({}, SPK7.p || SPK7_DEF, o.p || {})));
   let id = 0; for (const n of o.notes || [{m: 60, t0: 0.05, t1: dur - 0.6}]) { const k = ++id; E.on(k, n.m, n.v == null ? 0.85 : n.v, n.t0); if (n.t1 != null) E.off(k, n.t1); }
-  const t = performance.now(), b = await oc.startRendering(); return {L: b.getChannelData(0), R: b.getChannelData(1), sr, kind: E.kind, ms: performance.now() - t};
+  await E.ready; const t = performance.now(), b = await oc.startRendering(); return {L: b.getChannelData(0), R: b.getChannelData(1), sr, kind: E.kind, ms: performance.now() - t};
 }
 SYNQUENZER.spk7 = {
   mode: v => { if (v) spk7Mode(SPK1.ui, v); return SPK7.mode; }, p: q => { const p = spk7P(); if (q) { Object.assign(p, spk7Norm(Object.assign({}, p, q))); spk7Push(); } return Object.assign({}, p); },
@@ -103218,6 +103219,7 @@ SYNQUENZER.spk7 = {
   on: (m, v) => spk7NoteOn(m, v), off: id => spk7NoteOff(id), eng: () => { const E = SPK7.eng; return E ? {kind: E.kind, q: E.q.length} : null; },
   take: () => spk7Take(SPK1.ui), last: () => SPK7.last, render: o => spk7Render(o), core: () => spk7CoreMake, dd: () => SPK7.dd && SPK7.dd.dd && SPK7.dd.dd.isConnected ? SPK7.dd.dd : null,
   voices: () => VOICES.filter(v => v.korn && !v.dead).length, cache: t => { const c = SPK7.pcm.get(t); return c ? {n: c.x.length, sr: c.sr} : null; }, forget: t => SPK7.pcm.delete(t),
+  load: (t, f0) => spk7Src(t, f0).then(o => (o ? {n: o.x.length, sr: o.sr, nf: o.NF, fk: o.fk} : null)),
   trEng: i => { const A = AU.tracks[i], E = A && SPK7.tr.get(A.trackIn); return E ? {kind: E.kind, take: E.take, q: E.q.length, voices: E.proxies.size} : null; }
 };
 /* SPK7-END */

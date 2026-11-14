@@ -101989,11 +101989,11 @@ function spk6DspMake(I) {
   }
   function chainOf(f, sr) {
     const c = [];
-    if (f.hp) c.push(bq('hp', f.hp, sr, 0, Math.SQRT1_2));
-    if (f.lo) c.push(bq('ls', 200, sr, f.lo, Math.SQRT1_2));
+    if (f.hp) c.push(bq('hp', f.hp, sr, 0, 0.5412), bq('hp', f.hp, sr, 0, 1.3066));   // 24 dB/Oktave (Butterworth)
+    if (f.lo) c.push(bq('ls', 250, sr, f.lo, Math.SQRT1_2));
     if (f.mi) c.push(bq('pk', 1200, sr, f.mi, 0.8));
-    if (f.hi) c.push(bq('hs', 5000, sr, f.hi, Math.SQRT1_2));
-    if (f.lp) c.push(bq('lp', f.lp, sr, 0, Math.SQRT1_2));
+    if (f.hi) c.push(bq('hs', 4000, sr, f.hi, Math.SQRT1_2));
+    if (f.lp) c.push(bq('lp', f.lp, sr, 0, 0.5412), bq('lp', f.lp, sr, 0, 1.3066));
     return c;
   }
   const LIR = 65536 - BLK, IRC = {};
