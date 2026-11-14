@@ -76,7 +76,7 @@ nachher 57 (0,99–2,00) · 62 (2,00–3,00) · 59 (3,00–4,09) (+ kurzer Vorla
    eines **anderen** Tons, Oberton-Oktaven gegen den Grundton prüfen).
 4. Bass-Band bleibt SPK2 (mit Stufen-Regel 14 → 12 Treffer im spk2-test); SPK8 bringt dort eine eigene Verfolgung.
 
-## Prüfung (9 Befunde aus PRUEFUNG.md, nachgestellt und bearbeitet 14.11. 22:08–23:2x)
+## Prüfung (9 Befunde aus PRUEFUNG.md, nachgestellt und bearbeitet 14.11. 22:08–23:26)
 
 Vorher = Stand vor der Prüfung (`fix/index.vor-pruef.html`, `fix/spk9-block.vor-pruef.js`), nachher = `index.html`. Alle Zahlen frisch
 gemessen mit den Prüfer-Skripten (`pruef/legx.mjs`, `pruef/rescore.cjs`, `pruef/bassband.mjs`) und `leg/leg.mjs`, Läufe in `fix/mess-alle.sh`,
@@ -120,7 +120,7 @@ gleicher Tonklasse. Neue Tests: `fix/poly9.mjs` (Mehrstimmig ohne Schalter: eine
 | „Überall finden“ Gesang (finden9): 2. Phrase A3 D4 H3 | 0/3 (eine Note 59) | **3/3** |
 | Befund 17, Auswahl 150–380 Hz (bassband) | eine Note 59 | **57 · 62 · 59** |
 | Laufzeit legx 88 Fälle / leg 88 Fälle (Node) | 71,8 s / 23,9 s | 75,1 s / 25,9 s |
-| Laufzeit „Noten finden“ 3 min Gesang (pruef/lang.mjs, 2 Läufe) | 7,0–7,4 s | 7,0–7,1 s (erster Stand 10,9–11,4 s, s. LOG 23:1x) |
+| Laufzeit „Noten finden“ 3 min Gesang (pruef/lang.mjs, 2 Läufe) | 7,0–7,4 s (Endlauf 7,1–7,2 s) | 7,0–7,3 s (erster Stand 10,9–11,4 s, behoben, s. LOG) |
 
 Probiert und nicht eingebaut: Vibrato-Weg mit Drift-Prüfung (Höhe läuft 0,1 s danach ≥ 0,45 HT weiter → kein Ton) gegen Gleiten mit Vibrato –
 M8/M3 unverändert; Anschlag im gehaltenen Ton erst ab 9 dB – M7 nur 87,5 → 83,3 %. Prüfer-Ergebnis `pruef/mx-index.json` ließ sich mit dem
@@ -133,6 +133,12 @@ heutigen `legx.mjs` nicht nachstellen → alle Vorher-Werte frisch gemessen.
   Innenpegel (kein Knack); Konsole [].
 - Probe-Merge (`git merge-file`): IMP2, CHR5 (Basis 4.63) je 0 Konflikte; SPK9 auf 4.64 (basis8 mit VX2 + SPK8) 0 Konflikte, darauf SPK10 und
   VX3 je 0 Konflikte (`fix/merge/spk9-auf-4.64.html`).
+
+### Regression und Pflicht (Endstand, einzeln nacheinander, `fix/reg/*.out`)
+- spk4-test: 5 FEHLER von 23 = dieselbe bekannte Liste wie vor der Prüfung (gemisch-besser, verfeinern +1 dB, unison-besser, reg-spk3 bekannt,
+  reg-ki1 quer); a1-mehrstimmig-pad-allein 24/28 · 0,75 wie vorher, a1-seite 8/8, a1-noten-zeit ok, reg-spk2 28/30, vx1 61/61.
+- spk5-test 24/24 · spk5-fade-test ALLES OK · spk6-test ALLES OK · spk6-pruef-test fails 0 · spk1-test 17/18 (verfeinern-verbessert-ziel wie Basis).
+- topdefs 0/0 · dupkeys 0 · smoke errors [] · MS 2000 1× · live 1× · VERSION 4.63.0 · Markenwörter Basis = index · einbau.py bitgleich.
 
 ### Offen nach der Prüfung
 1. Gleiten MIT Vibrato (~3 HT/s): das Vibrato macht aus dem Gleiten Stufen (Plateau je Halbwelle) → in Halbtönen zerhackt (M8 Zusatz 28–44 %,

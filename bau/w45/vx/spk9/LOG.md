@@ -35,3 +35,15 @@
 - 22:48 Prüfer-Ergebnis mx-index.json lässt sich mit dem heutigen legx.mjs nicht nachstellen (frisch: MX-12 86,4 %/47,7 %, MX-6 56,3 %/60,4 % statt 88,6/40,9 und 60,4/58,3) → alle Vorher-Werte frisch gemessen, nicht übernommen. Oktav-Regel ergänzt: ungerade < 12 % ODER (ungerade < 30 % UND Grundton schwach < 0,3 × gerader Mittelwert) – mit Begleitung im selben Layer (MX) war die reine 12-%-Regel schlechter.
 - 22:49 Probe-Merge (git merge-file): mit IMP2, CHR5 (Basis 4.63) 0 Konflikte; SPK9 auf 4.64 (basis8, enthält VX2+SPK8) 0 Konflikte, darauf SPK10 und VX3 je 0 Konflikte (fix/merge/spk9-auf-4.64.html).
 - 23:13 Laufzeit 3 min Gesang („Noten finden“, Ebene Gesang, lang.mjs): vorher 7,0–7,4 s, erster Stand nachher 10,9–11,4 s (Ein-Stimmen-Prüfung lief auch dort, wo SPK4 gar nicht mehrstimmig rechnet) → Prüfung nur noch, wo SPK4 mehrstimmig rechnen würde (wirdPoly, gleiche Regel wie polyOf) und höchstens 1500 Rahmen → 7,0–7,1 s. poly9 ok, Mehrstimmig-Schalter L 97,7 %/4,7 %, B 12/12 unverändert. Regression neu gestartet (fix/reg-alle.sh).
+- 23:00 Vollmessung vorher/nachher fertig (fix/mess/, Tabelle fix/tabelle.txt): SG Gleiten 0,6–1,4 s getrennt 88/75/50/75 → 100 %, Zusatz 25/44/56 → 0/0/12,5 %;
+  SZ 0,15 s 63 → 100 %; SM 0,10 s 73 → 96 %; SD −11/−13/−16 dB 72/39/11 → 100 %; Oktav-Fehler M1–M10 20 und 38 (2 Stichproben) → 0 und 0;
+  M3 88,4/85,2 → 93,7/98,9 %; leg.mjs L/G/R 98,8/93,8/97,2 → 100/100/98,6 %, G-Zusatz 15,6 → 0 %; Mehrstimmig-Schalter L 17,4 → 97,7 %, B 0/12 → 12/12;
+  poly9 (Original ohne Schalter) Befund 17 0/3 → 3/3, Akkorde unverändert; finden9 0/3 → 3/3; Auswahl 150–380 Hz eine Note → 3 Noten.
+- 23:01–23:25 Seite + Regression einzeln nacheinander (fix/reg-alle.sh, fix/reg/*.out), zweiter Lauf nach der Laufzeit-Korrektur:
+  spk9-ui ok (Anwenden 520 ms) · ui-pruef hochkant+quer ok (Anwenden 526–614 ms, Konsole []) · lang 3 min: vorher 7,1–7,2 s, nachher 7,0–7,3 s ·
+  spk4-test 5 FEHLER von 23 = bekannte Liste (gemisch-besser, verfeinern +1 dB, unison-besser, reg-spk3 bekannt, reg-ki1 quer), a1-pad-allein 24/28 wie vorher,
+  a1-seite 8/8, reg-spk2 28/30 (noten-erkannt wie Basis), vx1 61/61 · spk5-test 24/24 · spk5-fade ALLES OK · spk6 ALLES OK · spk6-pruef fails 0 ·
+  spk1 17/18 (verfeinern-verbessert-ziel wie Basis).
+- 23:26 Pflicht direkt auf index.html: topdefs Skripte 26 / Namen 7460 / doppelt 0 / Syntaxfehler 0 · dupkeys 0 · smoke errors [] (fix/smoke-pruef.png) ·
+  „MS 2000“ 1× · „  live: true,“ 1× · VERSION 4.63.0 = Basis · Markenwörter (13er-Liste, Groß/klein egal) Basis 2 = index 2, 0 in Block/Tests/Notizen ·
+  keine Datensatz-/Produktnamen · einbau.py baut bitgleich · Haken SPK9 4 (+ Block BEGIN/END je 1×) · Probe-Merge auf dem Endstand wiederholt: 0 Konflikte.
