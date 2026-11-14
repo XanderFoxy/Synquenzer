@@ -16,19 +16,19 @@ try {
   await p.evaluate(() => { const c = ensureAudio(), a = c.createAnalyser(); a.fftSize = 2048; (AU.masterSum || c.destination).connect(a); window.__an = a; });
   const rms = () => p.evaluate(() => { const a = window.__an, d = new Float32Array(a.fftSize); a.getFloatTimeDomainData(d); let e = 0; for (const v of d) e += v * v; return Math.sqrt(e / d.length); });
   const shut = () => p.evaluate(() => spk1Dd(SPK1.ui, null));
-  // 1) Pinsel malen → Knopf „Als Klangkorn“ im Aktionsfeld (vorher gesperrt, danach frei)
-  const dis0 = await p.evaluate(() => SPK1.ui.b7a.disabled);
+  // 1) Pinsel malen → „Klangkorn ▾“ in der Werkzeugleiste (Aktionsfeld + Ebenenliste wie in der Basis: 3. Zeile erst nach Freigabe)
+  const dis0 = await p.evaluate(() => !SPK1.ui.b7a && !SPK1.ui.sh.classList.contains('spk7g'));
   await tap(await btn(p, 'Pinsel'));
   const mn = await box(p, '#spk1Sheet .spk1-mn'), y = mn.y + mn.h * 0.42;
   await drag([mn.x + mn.w * 0.15, y], [mn.x + mn.w * 0.75, y], 14);
-  const ab = await p.evaluate(() => { const b = SPK1.ui.b7a, r = b.getBoundingClientRect(), ac = SPK1.ui.ac.getBoundingClientRect(), ly = SPK1.ui.ly.getBoundingClientRect(), m = SPK1.ui.mn.getBoundingClientRect(); return {dis: b.disabled, w: Math.round(r.width), h: Math.round(r.height), imFeld: r.bottom <= ac.bottom + 1 && r.top >= ac.top, lyH: Math.round(ly.height), mnH: Math.round(m.height), sel: SPK1.ui.sel.map(s => s.art)}; });
-  await tap(await btn(p, 'Als Klangkorn'));
+  const ab = await p.evaluate(() => { const b = SPK1.ui.b7, r = b.getBoundingClientRect(), ly = SPK1.ui.ly.getBoundingClientRect(), m = SPK1.ui.mn.getBoundingClientRect(), ac = SPK1.ui.ac.getBoundingClientRect(); return {dis: b.disabled, w: Math.round(r.width), h: Math.round(r.height), imFeld: true, lyH: Math.round(ly.height), acH: Math.round(ac.height), mnH: Math.round(m.height), sel: SPK1.ui.sel.map(s => s.art)}; });
+  await tap(await btn(p, 'Klangkorn ▾'));
   await p.waitForFunction(() => SYNQUENZER.spk7.src() && SYNQUENZER.spk7.dd() && !SPK7.busy, null, {timeout: 30000}); await p.waitForTimeout(400);
   const s1 = await p.evaluate(() => { const dd = SYNQUENZER.spk7.dd(), r = dd.getBoundingClientRect(), cv = dd.querySelector('.spk7-cv'), x = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data; let lo = 1e9, hi = -1; for (let i = 0; i < x.length; i += 16) { const v = x[i] + x[i + 1] + x[i + 2]; lo = Math.min(lo, v); hi = Math.max(hi, v); }
     return {src: SYNQUENZER.spk7.src(), mode: SYNQUENZER.spk7.mode(), co: SPK1.ui.co7.textContent, dd: [Math.round(r.left), Math.round(r.top), Math.round(r.right), Math.round(r.bottom)], W: innerWidth, H: innerHeight, bild: {w: cv.width, h: cv.height, kontrast: hi - lo}, tasten: dd.querySelectorAll('.spk7-kb>i').length, h5: [...dd.querySelectorAll('h5')].map(h => h.textContent)}; });
   await p.screenshot({path: path.join(foto, 'spk7-10-als-klangkorn-hochkant.png')});
   ok('als-klangkorn-knopf-blatt', {dis0, ab, src: {n: s1.src.n, f0: Math.round(s1.src.f0), wo: s1.src.wo, txt: s1.src.txt}, mode: s1.mode, co: s1.co, dd: s1.dd, bild: s1.bild, tasten: s1.tasten, h5: s1.h5},
-    dis0 && !ab.dis && ab.h >= 36 && ab.imFeld && ab.sel.includes('pinsel') && s1.src.n > 1000 && s1.mode === 'korn' && s1.co === 'KORN' && s1.dd[0] >= 0 && s1.dd[2] <= s1.W && s1.dd[3] <= s1.H && s1.bild.kontrast > 120 && s1.tasten === 24);
+    dis0 && !ab.dis && ab.h >= 36 && ab.lyH === 180 && ab.acH === 96 && ab.sel.includes('pinsel') && s1.src.n > 1000 && s1.mode === 'korn' && s1.co === 'KORN' && s1.dd[0] >= 0 && s1.dd[2] <= s1.W && s1.dd[3] <= s1.H && s1.bild.kontrast > 120 && s1.tasten === 24);
   // 2) Marker im Quellbild ziehen → Position folgt (Regler + Engine-Wert)
   const cvb = await box(p, '#spk1Sheet .spk7-cv');
   await drag([cvb.x + cvb.w * 0.3, cvb.y + cvb.h / 2], [cvb.x + cvb.w * 0.72, cvb.y + cvb.h / 2], 8);
@@ -125,16 +125,16 @@ try {
   ok('speichern-laden', rt, rt.gleich && rt.wav && rt.cache && rt.cache.n > 1000 && rt.rms > 0.001 && rt.korn);
   // 11) quer 926×428: Knopf + Blatt bedienbar (alle Knöpfe ≥ 36 px, Blatt im Bild), Mini-Tastatur spielt, Ecke ≥ 36 px
   await p.setViewportSize({width: 926, height: 428}); await p.evaluate(() => SPK1_API.page.open({id: SPK1.doc})); await p.waitForTimeout(1200);
-  const ql = await p.evaluate(() => { const U = SPK1.ui, b = U.b7a.getBoundingClientRect(), ac = U.ac.getBoundingClientRect(), ly = U.ly.getBoundingClientRect(), m = U.mn.getBoundingClientRect(), co = U.co7.getBoundingClientRect(); return {ab: [Math.round(b.width), Math.round(b.height)], imFeld: b.bottom <= ac.bottom + 1 && b.top >= ac.top && b.right <= innerWidth, lyH: Math.round(ly.height), mnH: Math.round(m.height), co: [Math.round(co.width), Math.round(co.height)], sel: U.sel.length}; });
+  const ql = await p.evaluate(() => { const U = SPK1.ui, b = U.b7.getBoundingClientRect(), ac = U.ac.getBoundingClientRect(), ly = U.ly.getBoundingClientRect(), m = U.mn.getBoundingClientRect(), co = U.co7.getBoundingClientRect(); return {ab: [Math.round(b.width), Math.round(b.height)], imFeld: b.height >= 36, lyH: Math.round(ly.height), mnH: Math.round(m.height), co: [Math.round(co.width), Math.round(co.height)], sel: U.sel.length}; });
   if (!ql.sel) { await tap(await btn(p, 'Pinsel')); const m2 = await box(p, '#spk1Sheet .spk1-mn'); await drag([m2.x + m2.w * 0.2, m2.y + m2.h * 0.45], [m2.x + m2.w * 0.7, m2.y + m2.h * 0.45], 10); }
-  await tap(await btn(p, 'Als Klangkorn')); await p.waitForFunction(() => SYNQUENZER.spk7.dd() && !SPK7.busy, null, {timeout: 30000}); await p.waitForTimeout(400);
+  await tap(await btn(p, 'Klangkorn ▾')); await p.waitForFunction(() => SYNQUENZER.spk7.dd() && !SPK7.busy, null, {timeout: 30000}); await p.waitForTimeout(400);
   await p.screenshot({path: path.join(foto, 'spk7-14-quer-blatt.png')});
   const lay = await p.evaluate(() => { const dd = SYNQUENZER.spk7.dd(), r = dd.getBoundingClientRect(), bs = [...dd.querySelectorAll('button')].map(b => b.getBoundingClientRect()); return {dd: [Math.round(r.left), Math.round(r.top), Math.round(r.right), Math.round(r.bottom)], klein: bs.filter(b => b.height < 36 || b.width < 36).length, n: bs.length, W: innerWidth, H: innerHeight, scroll: dd.scrollHeight > dd.clientHeight}; });
   const kq = await p.evaluate(() => { const k = SYNQUENZER.spk7.dd().querySelector('.spk7-kb'); k.scrollIntoView({block: 'nearest'}); const r = k.getBoundingClientRect(); return {x: r.left, y: r.top, w: r.width, h: r.height}; }); await p.waitForTimeout(200);
   const qr0 = R(await rms()); await touch('touchStart', [[kq.x + kq.w * 4.5 / 14, kq.y + kq.h * 0.85]]); await p.waitForTimeout(600); const qr1 = R(await rms()), qlit = await p.evaluate(() => SYNQUENZER.spk7.lit());
   await p.screenshot({path: path.join(foto, 'spk7-15-quer-spielen.png')});
   await touch('touchEnd', []); await p.waitForTimeout(1200); const qr2 = R(await rms());
-  ok('quer-bedienbar', {ql, lay, spielen: {qr0, qr1, qlit, qr2}}, ql.ab[1] >= 36 && ql.imFeld && ql.co[1] >= 36 && !lay.klein && lay.dd[0] >= 0 && lay.dd[2] <= lay.W && lay.dd[3] <= lay.H && qr1 > 0.002 && qlit.length === 1 && qr2 < qr1 * 0.2);
+  ok('quer-bedienbar', {ql, lay, spielen: {qr0, qr1, qlit, qr2}}, ql.ab[1] >= 36 && ql.imFeld && ql.lyH === 284 && ql.co[1] >= 36 && !lay.klein && lay.dd[0] >= 0 && lay.dd[2] <= lay.W && lay.dd[3] <= lay.H && qr1 > 0.002 && qlit.length === 1 && qr2 < qr1 * 0.2);
   await shut(); await p.screenshot({path: path.join(foto, 'spk7-16-quer-gesamt.png')});
   await p.setViewportSize({width: 428, height: 926}); await p.waitForTimeout(600); await p.screenshot({path: path.join(foto, 'spk7-17-hochkant-gesamt.png')});
 } catch (e) { ok('ablauf', {e: String(e && e.stack || e).slice(0, 700)}, false); }

@@ -102814,6 +102814,7 @@ function spk7CoreMake(SR) {
   const on = (id, m, vel) => {
     let held = 0, old = null; for (const v of V) if (v.st && v.st < 4) { held++; if (!old || v.age > old.age) old = v; }
     if (held >= Math.max(1, P.poly | 0) && old) rel(old, 0.006);                 // Stimme abgeben: 6 ms Blende statt Schnitt
+    for (const v of V) if (v.st === 4 && v.m === m && v.env > 0.05) rel(v, 0.03);   // gleiche Taste neu: der alte Ausklang blendet 30 ms aus (sonst addiert sich der Ton phasengleich)
     let v = null; for (const x of V) if (!x.st && !x.pend) { v = x; break; }
     if (!v) {                                                                     // Überlast: leiseste Stimme blendet 4 ms aus, dann startet die neue Note dort
       let q = null; for (const x of V) if (!x.pend && (!q || x.env < q.env)) q = x;
@@ -102852,8 +102853,8 @@ function spk7CoreMake(SR) {
     const nrm = 1 / Math.max(1, dc * wMean), br = Math.max(0, Math.min(1, P.br));
     const fcT = fcN(P.fc), qT = Math.max(0, Math.min(1, P.q)), wetT = P.fc < 0.995 ? 1 : 0, ks = 1 - Math.exp(-n / (0.012 * SR)), wS = 1 / (0.01 * SR), xS = 1 / (0.006 * SR);
     const susE = Math.sqrt(Math.max(0, Math.min(1, P.s))), dRate = (1 - susE) / Math.max(1, P.d * SR), vol = Math.max(0, Math.min(1.5, P.vol));   // Hüllkurve wirkt quadratisch → Halten-Ziel √s (80 % = 80 % Pegel)
-    let nH = 0; for (const v of V) if (v.st && v.st < 4) nH++;
-    const pc = nH > 3 ? Math.sqrt(3 / nH) : 1;   // volle Akkorde: Pegel-Ausgleich statt weicher Grenze
+    let nE = 0; for (const v of V) if (v.st) nE += v.env * v.env;   // wirksame Stimmenzahl (auch ausklingende)
+    const pc = nE > 2 ? Math.sqrt(2 / nE) : 1;   // volle Akkorde / langer Ausklang: Pegel-Ausgleich (gleitet 10 ms) statt weicher Grenze
     for (const v of V) {
       if (!v.st) continue;
       if (!v.S && CS) { v.S = CS; v.r = ratio(v.m, CS); v.pos = P.pos * CS.XL; v.pp = P.pos; v.ph = rnd() * CS.FL; v.fp = P.pos * Math.max(0, CS.NF - 1); v.art = P.art === 'frz' && CS.NF > 0 ? 'frz' : 'korn'; }

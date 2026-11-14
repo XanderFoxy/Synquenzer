@@ -91,7 +91,7 @@ const P0 = {art: 'korn', pos: 0.3, bew: 0, gs: 0.08, dc: 4, spo: 0.1, spt: 0, fo
   ok('polyfonie-8', {gehalten: held, beendet: ends.length, still: pk === 0, aktiv: C.info().voices}, held === 8 && ends.length === 10 && pk === 0 && C.info().voices === 0);
 }
 // ---- Prüfer-Runde: Befunde 1, 2, 3, 9, 10, 13 (Kern) ----
-const jumpQ = (ys, fmax, from = 0) => { const w = 2 * Math.PI * fmax / SR, H = Math.round(0.003 * SR); let maxQ = 0, nan = 0, at = 0;
+const jumpQ = (ys, fmax, from = 0, hs = 0.003) => { const w = 2 * Math.PI * fmax / SR, H = Math.round(hs * SR); let maxQ = 0, nan = 0, at = 0;
   for (const y of ys) for (let i = Math.max(1, from); i < y.length; i++) { if (!(y[i] === y[i])) { nan++; continue; } const j = Math.abs(y[i] - y[i - 1]); if (j < 1e-4) continue; let loc = 0; for (let q = Math.max(0, i - H); q < Math.min(y.length, i + H); q++) loc = Math.max(loc, Math.abs(y[q])); const qq = j / (w * Math.max(loc, 1e-3)); if (qq > maxQ) { maxQ = qq; at = i; } }
   return {maxQ: +maxQ.toFixed(3), nan, at: +(at / SR).toFixed(3)}; };
 function run(S, p, ev, dur, at) {   // at: [[sek, fn(C)]] mitten im Lauf
@@ -133,10 +133,11 @@ function run(S, p, ev, dur, at) {   // at: [[sek, fn(C)]] mitten im Lauf
 {
   const S = src(sine(220, 2), 220), P = Object.assign({}, P0, {r: 6}), ev = [];
   for (let k = 0; k < 20; k++) ev.push({t: 'on', id: k + 1, m: 57 + (k % 5) * 2, v: 0.85, at: 0.02 + k * 0.06}, {t: 'off', id: k + 1, at: 0.05 + k * 0.06});
-  const r = run(S, P, ev, 2.2), j = jumpQ([r.L, r.R], 220 * Math.pow(2, 8 / 12));
+  const r = run(S, P, ev, 2.2), j = jumpQ([r.L, r.R], 220 * Math.pow(2, 8 / 12), 0, 0.02);   // viele Stimmen mit Schwebung: örtliche Spitze über ±20 ms
   const x = saw(110, 3), Sx = src(x, 110), ch = []; [48, 52, 55, 59, 62, 64, 67, 71].forEach((m, k) => ch.push({t: 'on', id: k + 1, m, v: 0.8, at: 0}));
   const r2 = run(Sx, P0, ch, 2.5); let pk = 0; for (const v of r2.L) pk = Math.max(pk, Math.abs(v));
-  ok('ueberlast-und-akkord', {sprung: j, akkordSpitze: +pk.toFixed(3)}, j.maxQ <= 1.5 && !j.nan && pk < 0.8);
+  let pk1 = 0; for (const v of r.L) pk1 = Math.max(pk1, Math.abs(v));
+  ok('ueberlast-und-akkord', {sprung: j, ueberlastSpitze: +pk1.toFixed(3), akkordSpitze: +pk.toFixed(3)}, j.maxQ <= 1.5 && !j.nan && pk < 0.8 && pk1 < 0.85);
 }
 // 12) Einsatz: Note bei 100 ms, Standard-Korn 80 ms – 50 % Pegel nach ≤ 12 ms (Anschlag 2 ms); Anschlag 0,3 s deutlich später; Halten 80 % = 80 % Pegel
 {
