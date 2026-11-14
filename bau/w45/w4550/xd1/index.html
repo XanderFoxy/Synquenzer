@@ -93739,8 +93739,8 @@ function xd1MonDrop() {
 function xd1MonSync() {
   try {
     const run = ST.run, src = run && !run.stopped && run.nodes ? run.nodes[0] : null, want = xd1MonPref() && !!src;
-    if (want && !XD1.monIv) XD1.monIv = setInterval(xd1MonSync, 400);   // folgt Weg, Einmessen, Render, Mitschnitt, Regler der STIMME
-    if (!xd1MonPref() && XD1.monIv) { clearInterval(XD1.monIv); XD1.monIv = 0; }
+    if (want && !XD1.monIv) XD1.monIv = setInterval(xd1MonSync, 400);   // folgt Weg, Einmessen, Render, Mitschnitt, Regler der STIMME – nur solange Mikro und Mithören an sind
+    if (!want && XD1.monIv) { clearInterval(XD1.monIv); XD1.monIv = 0; }   // Mikro aus: kein Takt (stRender startet ihn beim nächsten Mikro-Start wieder)
     let M = XD1.mon;
     if (M && (!want || M.src !== src)) { xd1MonDrop(); M = null; }
     if (!want) return;
