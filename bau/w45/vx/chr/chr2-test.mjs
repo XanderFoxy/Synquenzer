@@ -82,7 +82,8 @@ const measure = p => p.evaluate(() => {
 
 const p = await page(428, 926);
 /* --- 2a. Gesang importieren (WAV, Datei-Wähler) → „Als Gesang“ --- */
-const LEAD = makeVoices({mel: MEL, iv: [0], sr: SR}), leadWav = wav(LEAD.voices[0].y, SR);
+// Lead eine Oktave tiefer (Männerstimme C4–G4): bei hohen Stimmen (Teiltöne ~800 Hz auseinander) ist die Formant-Lage nicht messbar
+const LEAD = makeVoices({mel: MEL.map(([m, d]) => [m - 12, d]), iv: [0], sr: SR}), leadWav = wav(LEAD.voices[0].y, SR);
 await run(p, () => { closePop(); window.__imp1.ui.sheet(); }); await sleep(400);
 let imp = null;
 { await run(p, () => { window.__pc = window.__imp1.ui.cur(); });
