@@ -95182,6 +95182,10 @@ const KI1_API = {
 SYNQUENZER.ki1 = KI1_API;
 try { window.__ki1 = KI1_API; } catch (e) {}
 /* KI1-END */
+/* ===== RV1-BEGIN · Echttest mit echtem Gesang (freier Datensatz, nur lokal) – Befunde und kleine Korrekturen, Stellen „RV1“:
+   1. imp1Core: Gesang allein auch bei tiefer Stimme (Bass-Anteil < 15 % und ≥ 1,5 % leise Rahmen); vorher nur < 3 % – bei 48 kHz kippte
+      echter Männer-Gesang (5 %) auf „Mix“ ohne Frage. diag.quiet = Anteil leiser Rahmen. ===== */
+/* RV1-END */
 /* ===== ORI-BEGIN (Paket ORI, Xander 07.11. (13) FL-C: „ich verliere so ein bisschen den Überblick … weiß gar nicht so richtig, wo ich
    bin … viele Menüs überfordern … ergonomischer, übersichtlicher … vielleicht ein Raumschiff-Look, mehr geführt, weil ein paar Lampen an
    sind oder kodierte Sachen, die man wiedererkennt … Fülle an Optionen, die ich alle brauche, aber es fehlt der Workflow … Vocal-Bearbeitung
@@ -102100,7 +102104,11 @@ function imp1Core() {
     for (const c of cand) c.w = c.s * prior(c.b);
     cand.sort((p, q) => q.w - p.w);
     const ons = peaks(on, fps);
-    const vocal = o.gesang === true || (o.gesang !== false && lowRatio < .03);
+    let qn = 0; for (let t = start; t <= end; t++) if (fe[t] < loud * 1e-3) qn++;   // RV1: Anteil leiser Rahmen (unter −30 dB) zwischen Anfang und Ende
+    const quiet = qn / Math.max(1, end - start + 1);
+    // RV1: tiefe Männerstimme (Grundton 100–130 Hz) streut ins Bass-Band; bei 48 kHz (Safari) lag echter Gesang bei 5 % → „Mix“ ohne Frage.
+    // Gesang allein auch bei wenig Bass (< 15 %) mit Atem-/Phrasen-Pausen (≥ 1,5 % der Rahmen leise; Mischungen mit Band ~0 %).
+    const vocal = o.gesang === true || (o.gesang !== false && (lowRatio < .03 || (lowRatio < .15 && quiet >= .015)));
     let b0 = cand.length ? cand[0].b : 120, how = 'mix';
     if (vocal) {
       // Gesang: Silben-Einsätze → Raster-Treue (Viertel + Achtel) über 60–180
@@ -102245,7 +102253,7 @@ function imp1Core() {
     return {ok: true, dauer: r3(dur), bpm: appBpm, bpmRoh: r3(how === 'gesang' ? bpmRaw : bpmRaw * appBpm / bpm), puls: r2(bpm), ts, alt,
       quelle: how, frage: !(o.bpm > 0) && (how === 'gesang' || stab < .5), vorgabe: o.bpm > 0, stabil: r2(stab), t1: r3(t1), takt: r3(barSec), schlag: r3(60 / appBpm),
       start: r3(tStart), ende: r3(tEnd), takte: bars.map(r3), teile,
-      diag: {sub3, grp, A: {A2: r3(A2), A3: r3(A3), A4: r3(A4), A6: r3(A6), A8: r3(A8), A9: r3(A9)}, bloecke: nv.slice(), lowRatio: r3(lowRatio), pulse: r3(pulse)}, ms: Date.now() - T0};
+      diag: {sub3, grp, A: {A2: r3(A2), A3: r3(A3), A4: r3(A4), A6: r3(A6), A8: r3(A8), A9: r3(A9)}, bloecke: nv.slice(), lowRatio: r3(lowRatio), quiet: r3(quiet), pulse: r3(pulse)}, ms: Date.now() - T0};
   }
   return {analyse, peaks, down};
 }

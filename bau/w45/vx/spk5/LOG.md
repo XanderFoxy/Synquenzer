@@ -1,2 +1,3 @@
 # SPK5 LOG
 - 17:30 A1 Start: index.html = basis5 (4.60.0, cmp gleich). WUNSCH.md + NOTES SPK1/2/3/KI1 gelesen. Plan: Fehler nachstellen (Touch, hochkant + quer), Zerlegen Auswahl/alles, Feedback, Farbstufen.
+- A1 a) Fehler nachgestellt (repro.mjs, Touch hochkant + quer, Demo 8 s): Ebenen entstehen im Prüf-Browser, aber Zerlegen wirkt IMMER aufs ganze Stück (Auswahl wird ignoriert), einziges Zeichen = 24-px-Statuszeile, derselbe Knopf wird sofort „■ Abbrechen“ (zweiter Tipp = Abbruch „nichts geändert“), neue Ebenen unten in der Liste (hochkant Gesang/Rest unsichtbar), bei schon zerlegtem Stück keine neue Ebene. Fotos fotos/repro-*.png.

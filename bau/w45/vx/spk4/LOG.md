@@ -5,3 +5,4 @@
 - 17:38 A1 Akkord-Grenzen über das Schlag-Raster (Pegel davor/danach im Mittel der gehaltenen Töne): allein 19/28 Präz 57,6 % (bd 3); Gemisch 8/28 Präz 8 %.
 - 17:40 A1 Anschlag je Ton nur bei eigenem Sprung ≥ 6 dB (Trommeln im Gemisch teilen nicht mehr), Rückverfolgen bis Ende des Vorläufers, Lücken ≤ 10 Rahmen: allein 24/28 Präz ~73 %, Gemisch 8/28 Präz ~11 %.
 - 17:42 A1 eingebaut: bau.py (basis5 + spk4-block.js nach SPK3-END + 6 Haken SPK4), topdefs 0/0, dupkeys 0.
+- 17:42 A1 Messung noten3 TEIL=pad (Node): allein 0/28 → 24/28 (Quote 85,7 %, Präz 75 %), Gemisch 1/28 (4 %) → 8/28 (Präz 11 %), Laufzeit 1,0–1,2 s wie vorher. noten3.mjs grabbt jetzt auch spk4DspMake (Sicherung noten3.spk3.mjs).

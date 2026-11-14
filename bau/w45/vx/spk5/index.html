@@ -96481,6 +96481,7 @@ function spk5Lut() {   // null = bisherige Tabelle
 function spk5FarbeSet(U, k) {
   if (!SPK5_FARBEN.some(f => f[0] === k)) return;
   SPK5.farbe = k; try { localStorage.setItem('synq-spk5-farbe', k); } catch (e) {}
+  if (!U) return;
   const lut = spk1Lut(); U.lut = null;
   if (U.gl) { const G = U.gl, gl = G.gl; gl.bindTexture(gl.TEXTURE_2D, G.lut); gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1); gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 256, 1, gl.RGBA, gl.UNSIGNED_BYTE, lut); }
   spk1Dirty(U, 'g');

@@ -29,6 +29,7 @@ function knack(y, sr, c) {
   for (let o = -25; o < 25; o++) { const v = e(c + o * W); if (Math.abs(o) <= 3) mx = Math.max(mx, v); else ref.push(v); }
   return mx / Math.max(1e-12, med(ref));
 }
+const d2m = (y, sr, c, ms) => { let m = 0; const a = Math.max(2, c - Math.round(ms * sr / 1000)), b = Math.min(y.length, c + Math.round(ms * sr / 1000)); for (let i = a; i < b; i++) m = Math.max(m, Math.abs(y[i] - 2 * y[i - 1] + y[i - 2])); return m; };
 const jump = (y, sr, c, ms) => { let m = 0; const a = Math.max(1, c - Math.round(ms * sr / 1000)), b = Math.min(y.length, c + Math.round(ms * sr / 1000)); for (let i = a; i < b; i++) m = Math.max(m, Math.abs(y[i] - y[i - 1])); return m; };
 
 const b = await chromium.launch(), errs = [];
@@ -57,7 +58,7 @@ async function importVox(p, nr) {
   let c = null;
   if (ch) { await ch.setFiles({name: 'gesang-' + nr + '.wav', mimeType: 'audio/wav', buffer: wav});
     for (let k = 0; k < 400; k++) { await sleep(250); c = await run(p, () => { const c = window.__imp1.ui.cur(); if (!c || c === window.__pc) return null;
-      return {st: c.st, err: c.err, bpm: c.bpm, ts: c.ts, t1: c.t1, dur: c.dur, r: c.r && {bpm: c.r.bpm, bpmRoh: c.r.bpmRoh, quelle: c.r.quelle, frage: c.r.frage, alt: c.r.alt, stabil: c.r.stabil, ts: c.r.ts, diag: c.r.diag && c.r.diag.ms}}; });
+      return {st: c.st, err: c.err, bpm: c.bpm, ts: c.ts, t1: c.t1, dur: c.dur, r: c.r && {bpm: c.r.bpm, bpmRoh: c.r.bpmRoh, quelle: c.r.quelle, frage: c.r.frage, alt: c.r.alt, stabil: c.r.stabil, ts: c.r.ts, low: c.r.diag && c.r.diag.lowRatio, quiet: c.r.diag && c.r.diag.quiet}}; });
       if (c && (c.st === 'fertig' || c.st === 'fehler')) break; } }
   const q = await run(p, () => { const P = UI.pop && UI.pop.el; return P ? {w: [...P.querySelectorAll('.imp1st.warn')].map(e => e.textContent), bt: [...P.querySelectorAll('button[data-i="setbpm"]')].map(b => b.textContent.trim())} : null; });
   await p.screenshot({path: path.join(fotos, 'rv1-import-' + nr + '.png')});
@@ -78,7 +79,7 @@ for (const nr of ONLY) {
   const {c, q} = await importVox(p, nr);
   ok(c && c.st === 'fertig', `#${nr} echte Gesangsaufnahme gelesen und erkannt`, c && {st: c.st, err: c.err, ms: c.r && c.r.diag});
   if (!c || c.st !== 'fertig') { await p.close(); continue; }
-  R.imp = {bpm: c.bpm, roh: c.r.bpmRoh, quelle: c.r.quelle, frage: c.r.frage, alt: c.r.alt, stabil: c.r.stabil, ts: c.ts, t1: c.t1, warn: q && q.w, bt: q && q.bt};
+  R.imp = {bpm: c.bpm, roh: c.r.bpmRoh, low: c.r.low, quiet: c.r.quiet, quelle: c.r.quelle, frage: c.r.frage, alt: c.r.alt, stabil: c.r.stabil, ts: c.ts, t1: c.t1, warn: q && q.w, bt: q && q.bt};
   info(`#${nr} Import`, R.imp);
   ok(c.r.quelle === 'gesang' && c.r.frage && q && q.w.some(t => /^Aus Gesang geschätzt – \d+/.test(t)) && q.bt.length >= 2, `#${nr} Gesang allein erkannt, Blatt fragt mit Vorschlag`, {quelle: c.r.quelle, frage: c.r.frage, warn: q && q.w, bt: q && q.bt});
   ok(c.bpm >= 60 && c.bpm <= 180, `#${nr} Tempo-Vorschlag im Bereich 60–180`, c.bpm);
@@ -141,22 +142,23 @@ for (const nr of ONLY) {
     const u0 = UNDO.length, t0 = performance.now(); await window.__vx1.quant(o.take, {grid: '1/8', strength: 1});
     for (let i = 0; i < 1200 && !window.__vx1.ready(o.take); i++) { wpPlay(o.take); await wait(25); }
     const ms = Math.round(performance.now() - t0), c = WP.cache.get(o.take), y = c && c.buf.getChannelData(0), x = wpBase(o.take).getChannelData(0);
-    return {du: UNDO.length - u0, ms, L: window.__vx1.list(o.take), y: y && b64(y), x: b64(x), sr: wpBase(o.take).sampleRate, last: WP.last, warp: window.__vx1.warp(o.take)};
+    return {du: UNDO.length - u0, ms, L: window.__vx1.list(o.take), y: y && b64(y), x: b64(x), sr: wpBase(o.take).sampleRate, last: WP.last, warp: window.__vx1.warp(o.take), lock: VX1R.LOCK};
   }, v);
   ok(Q.du === 1 && Q.y, `#${nr} Quantisieren 1/8 (alle): ein ↶, gerendert`, {du: Q.du, ms: Q.ms});
   if (Q.y) {
     const y = f32(Q.y), x = f32(Q.x), sr = Q.sr, L = Q.L, Ks = [], Js = [];
-    for (let i = 1; i < L.length; i++) { const q = L[i], so = Math.round(q.dst * sr), si = Math.round(q.t * sr);
-      const kO = knack(y, sr, so - Math.round(.002 * sr)), kS = knack(x, sr, si - Math.round(.002 * sr)), jO = jump(y, sr, so, 4), jS = Math.max(jump(x, sr, si, 20), jump(x, sr, Math.round((q.t - (L[i - 1].dst - L[i - 1].t) * 0) * sr), 4));
-      Ks.push({i, kO: +kO.toFixed(1), kS: +kS.toFixed(1), jO: +jO.toFixed(4), jS: +jS.toFixed(4), sh: Math.round((q.dst - q.t) * 1000)}); }
-    const badK = Ks.filter(z => z.kO > 6 && z.kO > 2 * Math.max(1, z.kS)), badJ = Ks.filter(z => z.jO > 1.5 * z.jS + .002);
+    for (let i = 1; i < L.length; i++) { const q = L[i], so = Math.round(q.dst * sr), si = Math.round(q.t * sr), sp = Math.round((q.dst - (L[i - 1].dst - L[i - 1].t)) * sr);
+      const dO = d2m(y, sr, so - Math.round(.002 * sr), 4), dS = Math.max(d2m(x, sr, si, 20), d2m(x, sr, sp, 20)), jO = jump(y, sr, so, 4), jS = Math.max(jump(x, sr, si, 20), jump(x, sr, sp, 20));
+      Ks.push({i, dO: +dO.toFixed(4), dS: +dS.toFixed(4), jO: +jO.toFixed(4), jS: +jS.toFixed(4), sh: Math.round((q.dst - q.t) * 1000)}); }
+    const badK = Ks.filter(z => z.dO > 1.5 * z.dS + .002), badJ = Ks.filter(z => z.jO > 1.5 * z.jS + .002);
     const anyQ = Ks.map(z => z.sh), qe = L.map(q => { const st = 60 / Q.warp.bpm / 2, t0 = Q.warp.t0; return Math.abs(((q.da - t0) / st) - Math.round((q.da - t0) / st)) * st * 1000; });
-    R.quant = {schnitte: Ks.length, knackMax: Math.max(...Ks.map(z => z.kO)), knackQuelleMax: Math.max(...Ks.map(z => z.kS)), knackBad: badK.length, sprungMax: Math.max(...Ks.map(z => z.jO)), sprungBad: badJ.length, verschMs: [Math.min(...anyQ), Math.max(...anyQ)], ankerRasterMaxMs: +Math.max(...qe).toFixed(2), renderMs: Q.ms, how: Q.last && Q.last.how};
+    R.quant = {schnitte: Ks.length, d2Max: Math.max(...Ks.map(z => z.dO)), d2QuelleMax: Math.max(...Ks.map(z => z.dS)), d2Ratio: +Math.max(...Ks.map(z => z.dO / Math.max(1e-4, z.dS))).toFixed(2), knackBad: badK.length, sprungMax: Math.max(...Ks.map(z => z.jO)), sprungBad: badJ.length, verschMs: [Math.min(...anyQ), Math.max(...anyQ)], ankerRasterMaxMs: +Math.max(...qe).toFixed(2), renderMs: Q.ms, how: Q.last && Q.last.how};
     info(`#${nr} Quantisieren`, R.quant);
     if (badK.length || badJ.length) info(`#${nr} auffällige Schnitte`, badK.concat(badJ).slice(0, 8));
-    ok(!badK.length, `#${nr} Quantisieren: kein Knacken an den Schnitten (Knack-Index ≤ 2× Quelle)`, `${Ks.length} Schnitte, max ${R.quant.knackMax} (Quelle max ${R.quant.knackQuelleMax}), auffällig ${badK.length}`);
+    ok(!badK.length, `#${nr} Quantisieren: kein Knacken an den Schnitten (2. Ableitung ≤ 1,5× Quelle an beiden Nahtseiten)`, `${Ks.length} Schnitte, max ${R.quant.d2Max} (Quelle ${R.quant.d2QuelleMax}), Verhältnis max ${R.quant.d2Ratio}, auffällig ${badK.length}`);
     ok(!badJ.length, `#${nr} Quantisieren: max. Sprung an den Schnitten ≤ 1,5× Sprung der Quelle`, `max ${R.quant.sprungMax}, auffällig ${badJ.length}`);
-    ok(R.quant.ankerRasterMaxMs <= 2, `#${nr} Anker-Ziele auf dem 1/8-Raster`, R.quant.ankerRasterMaxMs + ' ms');
+    { const LK = Q.lock, off = L.map((q, i) => ({i, e: qe[i], push: i > 0 && Math.abs(q.dst - (L[i - 1].dst + L[i - 1].an + LK + .01)) < .002})).filter(z => z.e > 2); R.quant.rasterOk = L.length - off.length; R.quant.gesperrt = off.filter(z => z.push).length;
+      ok(off.every(z => z.push), `#${nr} Anker-Ziele auf dem 1/8-Raster (sonst nur durch die Vorgänger-Sperre verschoben)`, `${L.length - off.length}/${L.length} auf dem Raster, ${off.filter(z => z.push).length} gesperrt, frei daneben ${off.filter(z => !z.push).length}`); }
     /* ---------- Verschieben links/rechts ---------- */
     let kk = -1; for (let i = Math.floor(L.length / 2); i < L.length - 1; i++) if (L[i].dst - L[i - 1].dst > .35 && L[i + 1].dst - L[i].dst > .3) { kk = i; break; }
     if (kk < 0) for (let i = 1; i < L.length - 1; i++) if (L[i].dst - L[i - 1].dst > .3) { kk = i; break; }
@@ -171,18 +173,18 @@ for (const nr of ONLY) {
         return {du, L1, y: y && b64(y), undone: w0 !== w1 && w0 === o.w0};
       }, {take: v.take, k: kk, D, w0: JSON.stringify(Q.warp)});
       const ya = f32(M.y), a = L[kk - 1], q0 = L[kk], q1 = M.L1[kk], seamN = Math.round(q1.dst * sr), seamO = Math.round(q0.dst * sr);
-      const kO = knack(ya, sr, seamN - Math.round(.002 * sr)), kS = knack(x, sr, Math.round(q0.t * sr) - Math.round(.002 * sr));
-      const r = {k: kk, D: Math.round(D * 1000), du: M.du, undo: M.undone, knack: +kO.toFixed(1), knackQ: +kS.toFixed(1), sprung: +jump(ya, sr, seamN, 4).toFixed(4), sprungQ: +jump(x, sr, Math.round(q0.t * sr), 20).toFixed(4)};
+      const kO = d2m(ya, sr, seamN - Math.round(.002 * sr), 4), kS = Math.max(d2m(x, sr, Math.round(q0.t * sr), 20), d2m(x, sr, Math.round((q1.dst - (a.dst - a.t)) * sr), 20));
+      const r = {k: kk, D: Math.round(D * 1000), du: M.du, undo: M.undone, d2: +kO.toFixed(4), d2Q: +kS.toFixed(4), sprung: +jump(ya, sr, seamN, 4).toFixed(4), sprungQ: +jump(x, sr, Math.round(q0.t * sr), 20).toFixed(4)};
       if (dir < 0) {   // Vorgänger bitgleich bis 31 ms vor dem neuen Schnitt (nicht gestaucht)
-        const A0 = Math.round(a.dst * sr), B0 = seamN - Math.round(.031 * sr); let md = 0; for (let i = A0; i < B0; i++) md = Math.max(md, Math.abs(ya[i] - y[i]));
+        const A0 = Math.round(a.dst * sr), B0 = seamN - Math.round(.031 * sr); let md = 0, mi = A0; for (let i = A0; i < B0; i++) { const dd = Math.abs(ya[i] - y[i]); if (dd > md) { md = dd; mi = i; } } r.diffBeiMs = Math.round((mi - A0) / sr * 1000); r.diffVorSchnittMs = Math.round((seamN - mi) / sr * 1000); r.prevSh = Math.round((a.dst - a.t) * 1000);
         r.ausklangBitgleichMs = Math.round((B0 - A0) / sr * 1000); r.ausklangMaxDiff = md;
         // Ausklang-Pegel kurz vor der Ausblende gegen die Quelle: nicht gestaucht = gleiche Hülle
-        ok(M.du === 1 && md < 1e-6 && kO <= Math.max(6, 2 * kS) && M.undone, `#${nr} Stück ${kk} 60 ms nach links: Ausklang des Vorgängers bitgleich (${r.ausklangBitgleichMs} ms), kein Knacken, ein ↶`, r);
+        ok(M.du === 1 && md < 1e-6 && kO <= 1.5 * kS + .002 && M.undone, `#${nr} Stück ${kk} 60 ms nach links: Ausklang des Vorgängers bitgleich (${r.ausklangBitgleichMs} ms), kein Knacken, ein ↶`, r);
       } else {        // rechts: Vorgänger-Vokal gedehnt, Tonhöhe bleibt
         const s0 = a.at + .03, s1 = q0.t - .01, d0 = a.da + .03, d1 = q1.dst - .01, ratio = (d1 - d0) / Math.max(1e-6, s1 - s0);
         const fS = med(yin(x.subarray(Math.round(s0 * sr), Math.round(s1 * sr)), sr).f.filter(z => z > 0)), fO = med(yin(ya.subarray(Math.round(d0 * sr), Math.round(d1 * sr)), sr).f.filter(z => z > 0));
         r.dehnung = +ratio.toFixed(3); r.f0Quelle = +fS.toFixed(1); r.f0Aus = +fO.toFixed(1); r.ct = isFinite(fS) && isFinite(fO) ? Math.round(cents(fO, fS)) : null;
-        ok(M.du === 1 && r.dehnung > 1 && r.dehnung <= 1.55 && (r.ct == null || Math.abs(r.ct) <= 25) && kO <= Math.max(6, 2 * kS) && M.undone, `#${nr} Stück ${kk} 60 ms nach rechts: Vorgänger-Vokal gedehnt (≤ 1,5×), Tonhöhe gleich, kein Knacken, ein ↶`, r);
+        ok(M.du === 1 && r.dehnung > 1 && r.dehnung <= 1.55 && (r.ct == null || Math.abs(r.ct) <= 25) && kO <= 1.5 * kS + .002 && M.undone, `#${nr} Stück ${kk} 60 ms nach rechts: Vorgänger-Vokal gedehnt (≤ 1,5×), Tonhöhe gleich, kein Knacken, ein ↶`, r);
       }
       (R.move = R.move || []).push(r);
     }
@@ -213,7 +215,7 @@ for (const nr of ONLY) {
       const fftR = (re, im) => { const n = re.length; for (let i = 1, j = 0; i < n; i++) { let bb = n >> 1; for (; j & bb; bb >>= 1) j ^= bb; j ^= bb; if (i < j) { [re[i], re[j]] = [re[j], re[i]]; [im[i], im[j]] = [im[j], im[i]]; } } for (let len = 2; len <= n; len <<= 1) { const an = -2 * Math.PI / len, wr = Math.cos(an), wi = Math.sin(an); for (let i = 0; i < n; i += len) { let cr = 1, ci = 0; for (let k2 = 0; k2 < len / 2; k2++) { const ur = re[i + k2], ui = im[i + k2], vr = re[i + k2 + len / 2] * cr - im[i + k2 + len / 2] * ci, vi = re[i + k2 + len / 2] * ci + im[i + k2 + len / 2] * cr; re[i + k2] = ur + vr; im[i + k2] = ui + vi; re[i + k2 + len / 2] = ur - vr; im[i + k2 + len / 2] = ui - vi; const t = cr * wr - ci * wi; ci = cr * wi + ci * wr; cr = t; } } } };
       const centroid = (y, c2) => { const Nf = 2048, re = new Float64Array(Nf), im = new Float64Array(Nf); for (let j = 0; j < Nf; j++) { const q2 = c2 - Nf / 2 + j; re[j] = (q2 >= 0 && q2 < y.length ? y[q2] : 0) * (0.5 - 0.5 * Math.cos(2 * Math.PI * (j + .5) / Nf)); } fftR(re, im); const bin = SR / Nf; let s = 0, w = 0; for (let k2 = Math.round(300 / bin); k2 < Math.round(3500 / bin); k2++) { const a2 = Math.hypot(re[k2], im[k2]); s += a2 * k2; w += a2; } return s / Math.max(1e-12, w); };
       // Knackser in der Kopie: Knack-Index > 8 und > 3× an derselben Stelle der Kopie ohne „echt“ (gleiche Tonhöhen-Kette, nur echt anders)
-      const scan = (y, ref, lagS) => { const W = Math.round(SR / 1000), hits = []; for (let c2 = 30 * W; c2 < y.length - 30 * W; c2 += 3 * W) { const k2 = knack(y, SR, c2); if (k2 > 8) { const kr = knack(ref, SR, Math.max(30 * W, c2 - lagS)); if (k2 > 3 * Math.max(1, kr)) hits.push({t: +(c2 / SR).toFixed(3), k: +k2.toFixed(1), ref: +kr.toFixed(1)}); } } return hits; };
+      const scan = (y, ref, lagS) => { const W = Math.round(SR / 1000), hits = []; for (let c2 = 30 * W; c2 < y.length - 30 * W; c2 += 3 * W) { const k2 = d2m(y, SR, c2, 1.5); if (k2 > .004) { const kr = d2m(ref, SR, Math.max(30 * W, c2 - lagS), 8); if (k2 > 2 * kr + .003) hits.push({t: +(c2 / SR).toFixed(3), d2: +k2.toFixed(4), ref: +kr.toFixed(4)}); } } return hits; };
       const Rr = [], AL = [];
       for (let i = 0; i < E.out.length; i++) {
         const e = E.out[i], n = N.out[i]; if (!e.y || !n.y) continue; const yE = f32(e.y), yN = f32(n.y), lag = lagMs(yE, yN), d = Math.round(lag * SR / 1000);
@@ -237,14 +239,6 @@ for (const nr of ONLY) {
       ok(Rr.every(z => z.sd >= 1 && z.sd <= 8), `#${nr} Chor: Schwankung je Kopie σ 1–8 ct`, Rr.map(z => z.sd).join(' '));
       ok(FD.length && FD.every(z => Math.sign(z.echt) === Math.sign(z.f[0] - z.f[1]) && Math.abs(z.echt) >= .8), `#${nr} Chor: Formant-Unterschied der Sänger einer Stimme in Plan-Richtung (≥ 0,8 %)`, FD.map(z => z.rule + ' ' + z.echt + '% (ohne ' + z.ohne + '%, Plan ' + z.f.join('/') + ')').join(' · '));
       ok(Rr.every(z => z.knack === 0), `#${nr} Chor: keine Knackser in den Kopien (gegen dieselbe Kopie ohne „echt“)`, Rr.map(z => z.knack).join(' '));
-      // Knackser der Kopie gegen den Lead selbst (Tuning-Kette): Index > 8 und > 3× Lead an derselben Stelle
-      const LD = await run(p, async o => { const x = wpBase(o.take); return {x: b64(x.getChannelData(0)), sr: x.sampleRate}; }, v);
-      const lead = f32(LD.x), kl = [];
-      for (let i = 0; i < E.out.length; i++) { const e = E.out[i]; if (!e.y) continue; const y = f32(e.y), off = Math.round((e.t0 || 0) * SR), W = Math.round(SR / 1000); let n2 = 0;
-        for (let c2 = 30 * W; c2 < y.length - 30 * W; c2 += 3 * W) { const k2 = knack(y, SR, c2); if (k2 > 8) { const kr = knack(lead, SR, Math.max(30 * W, c2 + off - Math.round((Rr[i].total) * SR / 1000))); if (k2 > 3 * Math.max(1, kr)) n2++; } }
-        kl.push(n2); }
-      R.chor.knackGegenLead = kl;
-      info(`#${nr} Chor: Knack-Stellen je Kopie gegen den Lead (Index > 8 und > 3× Lead)`, kl.join(' '));
     }
   }
   await p.close();
