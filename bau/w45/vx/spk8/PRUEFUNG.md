@@ -110,7 +110,7 @@ Auf der Demo ist das Ziel erreicht. Mit demselben Bass-Synth, denselben Pads und
 ### 5. [leicht] Mehr Speicher beim Noten finden auf langen Stücken
 - 174 s, Node, maxRSS-Zuwachs während Noten finden: Basis +125 MB, SPK8 +155 MB.
 - Neu angelegte Felder 346 → 404 MB. Ursache: drei Spektren gleichzeitig, nämlich Ebene, Original und Kick-Vorlage mit je F × 894 Werten.
-- Im Worker auf dem iPhone ist das +30 MB Spitze (+22 % gegenüber der Basis) bei 3-Minuten-Stücken.
+- Im Worker auf dem Telefon ist das +30 MB Spitze (+22 % gegenüber der Basis) bei 3-Minuten-Stücken.
 
 ### 6. [leicht] Zeitangabe im Bericht zu günstig
 - Bericht: Node „1,13–1,38 → 0,98–1,19 s“, also schneller.
