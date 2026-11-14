@@ -86,7 +86,7 @@ gleicher Tonklasse. Neue Tests: `fix/poly9.mjs` (Mehrstimmig ohne Schalter: eine
 | Befund | Stand | Was geändert (alles im Block, Schalter in `Z2.o9`, 0 = aus) |
 |---|---|---|
 | 1 mittel, langes Gleiten = 1 falsche Note | **behoben** | nichts Ruhiges in `look` → 0,25 s weiter suchen statt ans Laufende springen (`adv`); Mitte der neuen Note erst ab der ruhigen Stelle (`cst`); Tonhöhe = Median der dichtesten Halbton-Breite, nur nahe am Median (`dicht`, `dichtA`, `dichtW`) |
-| 2 mittel, Gleiten-Zusatz | **behoben bis 1,4 s**, Rest offen | Viertelton-Treppe eines Gleitens ist kein ruhiger Ton (`stair`); Übergangs-Regel bis 0,5 s / 3 HT, aber geschützt: flache Mitte ≥ ¾ HT vor dem Ziel = Ton, langes Stück nur bei gleichmäßigem Lauf (`tr`, `trN`, `trFlat`) |
+| 2 mittel, Gleiten-Zusatz | **behoben bis 1,0 s** (0 %), 1,4 s 12,5 %, 2,0 s 25 %, mit Vibrato offen | Viertelton-Treppe eines Gleitens ist kein ruhiger Ton (`stair`); Übergangs-Regel bis 0,5 s / 3 HT, aber geschützt: flache Mitte ≥ ¾ HT vor dem Ziel = Ton, langes Stück nur bei gleichmäßigem Lauf (`tr`, `trN`, `trFlat`) |
 | 3 mittel, kurze Verzierungen | **behoben ab 0,1 s** | Vibrato-Regel nur bis 0,875 HT Hub (`vibMax`); Durchgangston mit flacher Mitte bleibt (`trFlat`); kurzer Ton: Höhe nur aus seinem Plateau, wenn die 150-ms-Höhe schon den nächsten Ton enthält (`nlP`) |
 | 4 mittel, Oktav-Fehler | **behoben** | Oktave höher nur, wenn ungerade Obertöne < 12 % der geraden (`okt`) oder < 30 % UND der Grundton selbst schwach (< 0,3 × gerader Mittelwert, `oktG`) – reine 12-%-Regel war mit Begleitung im selben Layer (MX) schlechter |
 | 5 mittel, SPK3/SPK4 | **behoben** (eine Stimme) | Haken 4 in SPK2 `finden` („Überall finden“); `Z2.ops.noten` umhüllt: Mehrstimmig (automatisch oder Schalter) prüft, ob nur EINE Stimme klingt (Spektral-Spitzen bis 2,5 kHz, fremde Spitzen ≤ 15 %, Grundton da, in ≥ 70 % der lauten Rahmen, jeder 3. Rahmen) → einstimmiger Weg, Ergebnis bleibt „mehrstimmig“ (`mono`, `qMono`, `pMono`). Akkorde: Anteil 0 → unverändert SPK4 |
@@ -120,10 +120,19 @@ gleicher Tonklasse. Neue Tests: `fix/poly9.mjs` (Mehrstimmig ohne Schalter: eine
 | „Überall finden“ Gesang (finden9): 2. Phrase A3 D4 H3 | 0/3 (eine Note 59) | **3/3** |
 | Befund 17, Auswahl 150–380 Hz (bassband) | eine Note 59 | **57 · 62 · 59** |
 | Laufzeit legx 88 Fälle / leg 88 Fälle (Node) | 71,8 s / 23,9 s | 75,1 s / 25,9 s |
+| Laufzeit „Noten finden“ 3 min Gesang (pruef/lang.mjs, 2 Läufe) | 7,0–7,4 s | 7,0–7,1 s (erster Stand 10,9–11,4 s, s. LOG 23:1x) |
 
 Probiert und nicht eingebaut: Vibrato-Weg mit Drift-Prüfung (Höhe läuft 0,1 s danach ≥ 0,45 HT weiter → kein Ton) gegen Gleiten mit Vibrato –
 M8/M3 unverändert; Anschlag im gehaltenen Ton erst ab 9 dB – M7 nur 87,5 → 83,3 %. Prüfer-Ergebnis `pruef/mx-index.json` ließ sich mit dem
 heutigen `legx.mjs` nicht nachstellen → alle Vorher-Werte frisch gemessen.
+
+### Seite (nur Touch) und Zusammenspiel
+- `spk9-ui.mjs` (428×926): Befund 17 → 57 · 62 · 59 (+ Vorlauf 0,90–0,99 s wie vorher), D4 2 Zeilen hoch → Anwenden 563 ms, E4 +1,8 ct,
+  A3 −0,1 ct, H3 −1,6 ct, ↶ „Noten bearbeiten“ – ok. `fix/ui-pruef.mjs` (Kopie Prüfer, Fotos `fix/fotos/p9-*`): hochkant UND quer, Legato mit
+  Vibrato 5 Noten, F4 → G4 −3,7 ct, Nachbarn gleich, ↶ genau zurück; Befund 17 D4 → C#4 0,004 ct; Anwenden 524–563 ms; Grenzen 0,39–1,19 ×
+  Innenpegel (kein Knack); Konsole [].
+- Probe-Merge (`git merge-file`): IMP2, CHR5 (Basis 4.63) je 0 Konflikte; SPK9 auf 4.64 (basis8 mit VX2 + SPK8) 0 Konflikte, darauf SPK10 und
+  VX3 je 0 Konflikte (`fix/merge/spk9-auf-4.64.html`).
 
 ### Offen nach der Prüfung
 1. Gleiten MIT Vibrato (~3 HT/s): das Vibrato macht aus dem Gleiten Stufen (Plateau je Halbwelle) → in Halbtönen zerhackt (M8 Zusatz 28–44 %,

@@ -105308,7 +105308,7 @@ function spk9DspMake(Z2) {
   if (!Z2 || !Z2.h || !Z2.opt || !Z2.h.segNotes || !Z2.h.midiOf) return Z2;
   const H2 = Z2.h, seg0 = H2.segNotes, opt = Z2.opt;
   const o9 = {an: 1, hys: 0.6, hold: 0.07, stab: 0.06, span: 0.25, bandv: 0.6, vmin: 0.3, tr: 0.5, trN: 3, look: 0.5, nl: 0.15, vib: 0.16, gegen: 0.3, lvl: 12, minS: 0.08, near: 0.07, win: 0.6, fbMin: 400,
-    adv: 0.25, cst: 1, nlP: 1, vibMax: 0.875, stair: 0.3, stairN: 0.035, trFlat: 1, fall: 4, fallT: 0.45, dicht: 1, dichtA: 0.3, dichtW: 4, okt: 0.12, oktG: 0.3, rise2: 6, mono: 1, qMono: 0.85, pMono: 0.7, dbg: null};   // Prüfung: adv … pMono (0 = aus)
+    adv: 0.25, cst: 1, nlP: 1, vibMax: 0.875, stair: 0.3, stairN: 0.035, trFlat: 1, fall: 4, fallT: 0.45, dicht: 1, dichtA: 0.3, dichtW: 4, okt: 0.12, oktG: 0.3, rise2: 6, mono: 1, qMono: 0.85, pMono: 0.7, monoF: 1500, dbg: null};   // Prüfung: adv … pMono (0 = aus)
   const med = v => { if (!v.length) return NaN; v.sort((p, q) => p - q); return v[v.length >> 1]; };
   // Tonhöhen-Stufen (Zeit der Grenze in s) aus der Grundton-Spur f0 (Rahmen i ↔ (i0 + i)·hopS), nur stimmhafte Rahmen (ok)
   function steps(o) {
@@ -105419,7 +105419,7 @@ function spk9DspMake(Z2) {
     const lid = m.lid || 'orig', R = H2.rangeOf(d, lid, m.sel); if (!R || !I9) return false;
     const sr = d.meta.sr, hop = d.meta.base.hop, n = d.meta.n, a0 = Math.max(0, Math.floor((R.ta - 0.1) * sr)), b0 = Math.min(n, Math.ceil((R.tb + 0.1) * sr));
     let x; if (lid === 'orig') x = d.mid; else { const ch = I9.render(d, I9.mixOf(d, lid), a0, b0); x = new Float32Array(n); const g = 1 / ch.length; for (const c of ch) for (let i = 0; i < c.length; i++) x[a0 + i] += c[i] * g; }
-    const N = R.fa < 70 ? 8192 : 4096, df = sr / N, K = Math.min(N / 2 + 1, Math.ceil(Math.min(sr / 2 - 1, R.fb * 12) / df)), st = 3 * hop;   // jeder 3. Rahmen reicht
+    const N = R.fa < 70 ? 8192 : 4096, df = sr / N, K = Math.min(N / 2 + 1, Math.ceil(Math.min(sr / 2 - 1, R.fb * 12) / df)), st = hop * Math.max(3, Math.ceil((R.tb - R.ta) * sr / hop / o9.monoF));   // jeder 3. Rahmen, höchstens monoF Rahmen (langes Stück: Stichprobe)
     const i0 = Math.floor(R.ta * sr / st), i1 = Math.ceil(R.tb * sr / st) + 1, F = i1 - i0; if (F < 8) return false;
     const Y = H2.magsX(x, N, st, K, i0, i1), Tr = H2.trackF(Y, F, K, df, R.fa, R.fb, 10), es = Array.from(Tr.e).sort((p, q) => p - q), emx = es[Math.floor(es.length * 0.98)];
     // je lauter Rahmen: Spektral-Spitzen bis 2,5 kHz (≥ −20 dB unter der stärksten); fremd = nicht auf einem Oberton des Grundtons (Akkord-Töne,
@@ -105431,8 +105431,12 @@ function spk9DspMake(Z2) {
     if (o9.dbg) o9.dbg({eineStimme: nq / Math.max(1, nl), nl});
     return nl >= 8 && nq >= o9.pMono * nl;
   }
+  // nur wo SPK4 wirklich mehrstimmig rechnen würde (gleiche Regel wie dort polyOf): Schalter an, oder ohne Schalter Pads/Rest/Original (nicht Bass-Band)
+  const wirdPoly = (d, m) => { const art = H2.artOf(d, m.lid || 'orig'); if (art === 'drums' || art === 'bass') return false; if (m.poly != null) return !!m.poly;
+    if (art === 'orig') { let hi = 0; for (const x of m.sel || []) if (x && x.art !== 'zeit' && x.f1 != null) hi = Math.max(hi, +x.f1); if (hi > 0 && hi <= 400) return false; }
+    return art === 'pads' || art === 'rest' || art === 'orig'; };
   if (noten4) Z2.ops.noten = async (d, m, emit, info) => {
-    if (o9.an && o9.mono && m.poly !== false && m.lid !== 'bass' && H2.artOf(d, m.lid || 'orig') !== 'bass' && H2.artOf(d, m.lid || 'orig') !== 'drums' && eineStimme(d, m)) {
+    if (o9.an && o9.mono && wirdPoly(d, m) && eineStimme(d, m)) {
       const r = await noten4(d, Object.assign({}, m, {poly: false}), emit, info); return Object.assign(r, {mehrstimmig: true, stimmen9: 1}); }   // Modus bleibt „mehrstimmig“: es klang nur eine Stimme
     return noten4(d, m, emit, info);
   };
