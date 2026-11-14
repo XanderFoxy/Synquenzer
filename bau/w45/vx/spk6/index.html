@@ -102534,7 +102534,7 @@ async function spk6EdOpen(U, lid) {
   if (Q.length) { const ms = Q.map(q => q.m), mid = (Math.min(...ms) + Math.max(...ms)) / 2, rows = U.H / v.rowH; if (mid > v.mTop - 1 || mid < v.mTop - rows + 1) v.mTop = mid + rows / 2; }
   spk1Clamp(U); spk1Dirty(U, 'all'); spk6EdStat(U, 'Noten bearbeiten · ' + l.name + ' · Note ziehen = Tonhöhe/Zeit · Tipp = wählen');
 }
-/* Optionszeile: das Wichtigste zuerst (hochkant ohne Wischen sichtbar): Anwenden, −1, +1, Vorhören, A/B, Fertig – dann ±12, Fein, Alle, Entwurf weg */
+/* Optionszeile: das Wichtigste zuerst (hochkant ohne Wischen sichtbar): Anwenden, −1, +1, Fertig, Vorhören – dann A/B, ±12, Fein, Alle, Entwurf weg */
 function spk6EdPane(U) {
   let p = U.s6p; if (!p) { p = U.s6p = el('div', 'spk1-o'); p.dataset.for = 's6ed'; U.op.appendChild(p); }
   const E = U.s6e, l = U.meta.layers.find(x => x.id === E.lid); p.innerHTML = '';
@@ -102543,9 +102543,9 @@ function spk6EdPane(U) {
   const st = E.fine ? 0.1 : 1, nm = v => E.fine ? (v > 0 ? '+' : '−') + '10 ct' : (v > 0 ? '+' : '−') + '1';
   U.s6go = B('Anwenden', 'edGo', () => spk6EdGo(U), 'Entwurf anwenden und neu rechnen');
   for (const v of [-1, 1]) B(nm(v), 'edM' + v, () => spk6EdMove(U, v * st, 0), (v > 0 ? 'Höher ' : 'Tiefer ') + (E.fine ? '10 Cent' : '1 Halbton'));
+  const x = B('Fertig', 'edEnd', () => { if (E.mv.size && !x.dataset.arm) { x.dataset.arm = '1'; x.textContent = 'Entwurf weg?'; setTimeout(() => { delete x.dataset.arm; x.textContent = 'Fertig'; }, 2500); return; } spk6EdClose(U); });
   B('▶ Vorhören', 'edPv', () => spk6EdPv(U), 'Entwurf vorhören');
   const ab = B(spk6ABTxt(U), 'edAB', () => spk6AB(U), 'Umschalten Original / Neu'); ab.setAttribute('aria-pressed', String(U.s6ab === 'A'));
-  const x = B('Fertig', 'edEnd', () => { if (E.mv.size && !x.dataset.arm) { x.dataset.arm = '1'; x.textContent = 'Entwurf weg?'; setTimeout(() => { delete x.dataset.arm; x.textContent = 'Fertig'; }, 2500); return; } spk6EdClose(U); });
   for (const v of [-12, 12]) B((v > 0 ? '+' : '−') + '12', 'edM' + v, () => spk6EdMove(U, v, 0), (v > 0 ? 'Höher ' : 'Tiefer ') + '12 Halbtöne');
   const fn = B('Fein', 'edFine', () => { E.fine = !E.fine; spk6EdPane(U); spk6EdStat(U, E.fine ? 'Fein: ±10 ct je Tipp, Ziehen 10 ct je Zeile (bis ±50 ct)' : 'Halbton-Raster'); }, 'Fein: Cent statt Halbtöne');
   fn.setAttribute('aria-pressed', String(!!E.fine)); fn.classList.toggle('on', !!E.fine);
