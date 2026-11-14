@@ -73,3 +73,35 @@ Bau zusätzlich: `python3 src/apply2.py <datei>` (Quelle `src/real.js`). Messung
 Offen: Formant-Abweichung bei großen Verschiebungen (6–9 %) und LSD an Übergängen (Geist der Original-Tonhöhe im Rest x − Modell,
 Hülle an der 7-kHz-Kante); Anlauf −500 ct 50 ms (Schutzzone 15 ms + ap-Rand); Schalter „echt“ im Chor-Blatt; Browser-Hörtest
 eines echten Chors (Worker-Weg) und echte MP3/WAV-Aufnahmen; zeitlich schwankender Versatz je Silbe.
+
+## Auftrag 3/3 (Gesamt-Test)
+Test `chr2-test.mjs` (neben index.html; Aufruf `node chr2-test.mjs [index.html] [basis.html]`, ~2,5 min, Fotos `fotos/chr2t-*.png`,
+Läufe `src/run3.txt`). Die App-Datei wurde in Auftrag 3/3 nicht geändert (nur Test + Messung).
+1. Kern der Datei in Node (2/3/4 Vokal-Stimmen, Tonhöhe der Verfolgung, Tonhöhe der getrennten Welle (YIN), Pegel-Abstand).
+2. Browser/Touch: Gesang-WAV über den Datei-Wähler → „Als Gesang“ → Chor „Pop modern“ (echt) → Kopien mit/ohne echt gerechnet und gemessen;
+   Takes-Blatt › Stimmen trennen (3) mit Abbrechen; Speichern/Laden; Container in frischem Speicher; Blätter 428×926/926×428/926×370.
+3. `src/tune-meas.mjs` auf Basis (vorher) und Datei (nachher).
+Ergebnis: 72/82 OK. Alle 10 FEHLER sind die bekannten Grenzen beim Trennen (unten).
+| Prüfung | Ergebnis |
+|---|---|
+| 2 Stimmen Terz | Verfolgung 100/100 %, Welle 100/100 %, 31/32 dB |
+| 3 Stimmen Terz + Quinte | Verfolgung 100/98,6/100 %, Welle 100/99,5/**67,2** %, 24/28/29 dB (App gleich) |
+| 4 Stimmen eng | Verfolgung 98/**64/78/63** %, Welle 99/**65/65/68** %, 22/**6/7**/13 dB |
+| Auto-Zahl (3 Stimmen) | 3 |
+| Chor aus importiertem Gesang | 3 Stimmen auf c1–c3, echt = 1, ein ↶, ↶/↷ ganz |
+| Versatz je Kopie (Plan/gemessen) | 6/7 · 12/12,2 · 9/9,7 · 17/18,5 · 15/16,5 · 16/17,2 ms; gegen den Lead 15–36,5 ms |
+| Schwankung je Kopie | σ 2,3–3,6 ct (ohne echt 0) |
+| Formant Kopie 1 gegen 2 | uni +3,1 % · Terz +2,7 % · Oktave unten +1,9 % (ohne echt −0,2…+0,4 %) |
+| Konsonanten der Kopie (Kern) | −18,4 dB gegen den Lead |
+| Tuning-Knackser vorher → nachher | 5 → 0 in allen 5 Fällen (max +44…46 dB → +1,6…2,5 dB), LSD/Formant/Ton/Glätte gleich |
+| Trennen in der App | Abbrechen ändert nichts, eigene Chor-Spuren c4–c6 neben dem Import-Chor, Rest/alt, Summe −78 dB, ein ↶/↷ |
+| Speichern/Laden | Herkunft der Takes, Rest, alt, 6 Chor-Spuren, echt bleibt; alter Chor ohne Feld bleibt ohne |
+| Container frisch | alle Takes bitgleich, beide Chöre da, fester Pegel (unity) |
+| Blätter | Szene + Song-Stimme, offen/zu, 3 Lagen: ✕ sichtbar, Tasten ≥ 44, keine Überlappung, nichts außerhalb |
+| Konsole | keine Fehler |
+| Regression | vx1-test 61/61 (reg/vx1.txt), imp1-test ALLE OK (reg/imp1.txt) |
+Mess-Befunde (Test, nicht App): Formant-Lage ist bei hohen Stimmen (Teiltöne ~800 Hz auseinander) mit dem Spektral-Schwerpunkt nicht
+messbar (Vorzeichen zufällig) → Import-Lead im Test eine Oktave tiefer (C4–G4); Vergleich „echt gegen ohne echt“ ist durch Rest × 0,3
+verfälscht → verglichen werden zwei echte Sänger derselben Stimme. Versatz per Hüllkurve: ±1,5 ms Genauigkeit, Toleranz ±4 ms.
+Offen (für das nächste Paket): Unterstimme bei Terz + Quinte (Teiltöne 3/6/9 gehen an die Oberstimme → YIN springt auf 2·f0) und
+4 enge Stimmen (Verfolgung 63–78 %) – Weg: Kollisions-Teilung über die eigene Hülle der Stimme über die Zeit; Oktav-Verdopplung bleibt Grenze.

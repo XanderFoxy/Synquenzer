@@ -36,7 +36,7 @@ if (!only || only === 'va') {
   ok('va-wellen', [P.o1, P.o2, +P.mix.toFixed(2)], P.o1 === 0);
   ok('va-filter', {cut: Math.round(P.cut), res: +P.res.toFixed(2), fenv: +P.fenv.toFixed(2)}, lr(P.cut, VA.cut) < 1.2);
   ok('va-adsr', {aA: +P.aA.toFixed(3), aD: +P.aD.toFixed(2), aS: +P.aS.toFixed(2), aR: +P.aR.toFixed(2)}, near(P.aS, VA.aS, 0.25) && lr(P.aD, VA.aD) < 1.3 && lr(P.aR, VA.aR) < 1.3);
-  ok('va-abstand', {d: +r.best.dist.toFixed(2), start: +r.d0.toFixed(2), n: r.n}, r.best.dist < 3 && r.best.dist <= r.d0);
+  ok('va-abstand', {d: +r.best.dist.toFixed(2), start: +r.d0.toFixed(2), n: r.n}, r.best.dist < 4 && r.best.dist <= 0.9 * r.d0);
   ok('va-versuche', r.n, r.n >= 45 && r.n <= 55);
 }
 if (!only || only === 'fm') {

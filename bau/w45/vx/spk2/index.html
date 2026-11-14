@@ -98892,7 +98892,8 @@ async function spk2KlOpt(src, o) {
     if (o.prog) o.prog(done, n, best);
   };
   if (!best) {
-    const L = o.eng ? [spk2KlStart(o.eng, src.est, src), spk2KlStart(o.eng, src.est, src, o.eng === 'va' ? 'eins' : 'r2')] : [spk2KlStart('va', src.est, src), spk2KlStart('fm', src.est, src), spk2KlStart('va', src.est, src, 'eins'), spk2KlStart('va', src.est, src, 'flach'), spk2KlStart('fm', src.est, src, 'r2')];
+    const e = src.est, eng = o.eng || (e.fm.e < 0.5 * e.va.e ? 'fm' : null), S = (g, a) => spk2KlStart(g, e, src, a), ix = (c, d) => { c.u[0] = Math.max(0, Math.min(1, c.u[0] + d)); return c; };   // FM klar besser erklärt → Familie FM
+    const L = eng === 'fm' ? [S('fm'), ix(S('fm'), -0.1), ix(S('fm'), 0.1), S('fm', 'r2'), ix(S('fm'), 0.2)] : eng === 'va' ? [S('va'), S('va', 'eins'), S('va', 'flach')] : [S('va'), S('fm'), S('va', 'eins'), S('va', 'flach'), S('fm', 'r2'), ix(S('fm'), 0.1)];
     await evalB(L); d0 = Math.min(...L.map(c => c.dist));
   } else d0 = best.dist;
   let sig = o.sig || 0.12;
