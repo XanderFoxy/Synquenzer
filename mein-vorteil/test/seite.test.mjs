@@ -1017,9 +1017,9 @@ test('Krypto-Import per Link: gespeichert, Fragment sofort weg, „übernommen�
   // nie gesendet: keine Anfrage enthält die Zahlen oder das Fragment
   assert.ok(zustand.alleAbrufe.length > 5);
   assert.ok(!zustand.alleAbrufe.some(u => /krypto=|0\.02|btc:/.test(u)), zustand.alleAbrufe.filter(u => /krypto|btc/.test(u)).join('\n'));
-  // Wert für das GitHub-Secret: aus den Zahlen hier, nur zum Kopieren (steht nicht auf der Seite)
-  assert.equal(await page.evaluate(() => kryptoSecret()), 'btc:0.02:1000,eth:0.5:1000');
-  assert.doesNotMatch(await page.locator('body').textContent(), /btc:0\.02/);
+  // keine Secret-Anleitung mehr (der Wecker läuft auf einem privaten Server); die Zahlen stehen nicht auf der Seite
+  assert.equal(await page.evaluate(() => typeof kryptoSecret), 'undefined');
+  assert.doesNotMatch(await page.locator('body').textContent(), /btc:0\.02|Secret|KRYPTO_NTFY_TOPIC/);
   await page.locator('#hinweis button').click();
   assert.equal(await page.locator('#hinweis').isHidden(), true);
   assert.deepEqual(fehler, []);
@@ -1032,7 +1032,7 @@ test('Krypto-Import per Link: gespeichert, Fragment sofort weg, „übernommen�
   await o.ctx.close();
 });
 
-test('Krypto: Kurs beim Öffnen und alle 60 s; Quellen gestört -> klare Meldung; Push-Anleitung mit eigenem Thema', { skip: ohnePw }, async () => {
+test('Krypto: Kurs beim Öffnen und alle 60 s; Quellen gestört -> klare Meldung; Push: Wecker auf dem Server, ntfy-Thema nur auf dem Gerät', { skip: ohnePw }, async () => {
   let o = await oeffne({ satz: 'vertrag', krypto: KRYPTO_TEST, kurs: 'kaputt' });
   await o.page.waitForFunction(() => /nicht abrufbar/.test(document.getElementById('i-krypto').textContent));
   assert.match(nbsp(await o.page.locator('#i-krypto .kurs-stand').innerText()), /Kurs gerade nicht abrufbar \(Quellen gestört\)\. Neuer Versuch in einer Minute\./);
@@ -1044,20 +1044,104 @@ test('Krypto: Kurs beim Öffnen und alle 60 s; Quellen gestört -> klare Meldung
   const n = o.zustand.kursAbrufe.length;
   await o.page.clock.fastForward('01:00');
   await waitFor(() => o.zustand.kursAbrufe.length > n);
-  // Push-Anleitung: privates Thema (zufällig, gemerkt), 3 Schritte
+  // Push: der Wecker läuft auf einem privaten Server – keine GitHub-/Secret-Anleitung mehr; das ntfy-Thema (Name aus dem
+  // Chat) steht nur auf diesem Gerät und füllt „In ntfy öffnen“
   await o.page.locator('#krypto-push > summary').click();
-  const thema = await o.page.locator('#krypto-topic').innerText();
-  assert.match(thema, /^xander-krypto-[0-9a-f]{16}$/);
-  assert.notEqual(thema, 'xander-schnaeppchen-b5cbf4442aaa9734f3');
+  const push = nbsp(await o.page.locator('#krypto-push').innerText());
+  assert.match(push, /Der Wecker läuft automatisch \(stündlich\)\. Nachrichten kommen in dein privates ntfy-Thema – den Namen hast du im Chat bekommen\./);
+  assert.doesNotMatch(push, /Secret|GitHub|KRYPTO|Wert kopieren/);
+  assert.equal(await o.page.locator('#krypto-push a[href*="github.com"], #krypto-push ol').count(), 0);
+  assert.equal(await o.page.locator('#krypto-ntfy').getAttribute('href'), null, 'ohne Thema kein Link');
+  assert.equal(await o.page.locator('#krypto-ntfy').getAttribute('aria-disabled'), 'true');
+  const thema = 'test-thema-0815'; // Test-Name, nie das private Thema
+  await o.page.locator('#krypto-thema').fill(thema);
   assert.equal(await o.page.locator('#krypto-ntfy').getAttribute('href'), `https://ntfy.sh/${thema}`);
-  assert.equal(await o.page.locator('#krypto-push ol > li').count(), 3);
-  assert.match(nbsp(await o.page.locator('#krypto-push').innerText()), /KRYPTO\s*= deine Zahlen\s*Wert kopieren[\s\S]*KRYPTO_NTFY_TOPIC/);
+  assert.equal(await o.page.locator('#krypto-ntfy').getAttribute('aria-disabled'), null);
+  assert.equal(await o.page.evaluate(() => JSON.parse(localStorage.getItem('mein-vorteil-krypto-thema'))), thema);
+  // ungültig (Leerzeichen) -> Hinweis, kein Link; eingefügter ntfy-Link -> nur der Name
+  await o.page.locator('#krypto-thema').fill('mein thema');
+  assert.equal(await o.page.locator('#krypto-thema-fehler').isVisible(), true);
+  assert.equal(await o.page.locator('#krypto-ntfy').getAttribute('href'), null);
+  await o.page.locator('#krypto-thema').fill(`https://ntfy.sh/${thema}`);
+  await o.page.locator('#krypto-thema').blur();
+  assert.equal(await o.page.locator('#krypto-thema').inputValue(), thema);
+  assert.equal(await o.page.locator('#krypto-thema-fehler').isHidden(), true);
+  assert.equal(await o.page.locator('#krypto-ntfy').getAttribute('href'), `https://ntfy.sh/${thema}`);
   await o.page.reload();
   await o.page.locator('#krypto-push > summary').click();
-  await o.page.waitForFunction(() => document.getElementById('krypto-topic').textContent !== '');
-  assert.equal(await o.page.locator('#krypto-topic').innerText(), thema, 'Thema bleibt gleich');
+  assert.equal(await o.page.locator('#krypto-thema').inputValue(), thema, 'Thema bleibt gemerkt');
+  assert.equal(await o.page.locator('#krypto-ntfy').getAttribute('href'), `https://ntfy.sh/${thema}`);
+  // Käufe ändern rührt das Thema nicht an; das Thema geht nie ins Netz (nur der Link, wenn Xander tippt)
+  assert.ok(!o.zustand.alleAbrufe.some(u => u.includes(thema)), o.zustand.alleAbrufe.filter(u => u.includes('thema')).join('\n'));
   await pruefeLayout(o.page, 'Krypto-Push');
   await o.ctx.close();
+});
+
+test('ntfy-Thema per Link (#ntfy=…): gemerkt, Fragment sofort weg, „übernommen“, Krypto mit offenem Push-Kasten', { skip: ohnePw }, async () => {
+  const thema = 'test-thema-4711'; // Test-Name, nie das private Thema
+  const { ctx, page, fehler, zustand } = await oeffne({ satz: 'vertrag', pfad: `/mein-vorteil/#ntfy=${thema}` });
+  assert.equal(new URL(page.url()).hash, '', 'Fragment ist weg');
+  assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('mein-vorteil-krypto-thema'))), thema);
+  assert.match(await page.locator('#hinweis').innerText(), /ntfy-Thema übernommen ✓ – nur auf diesem iPhone gespeichert\./);
+  assert.equal(await page.locator('#krypto').isVisible(), true);
+  assert.equal(await page.locator('#krypto-push').evaluate(d => d.open), true);
+  assert.equal(await page.locator('#krypto-thema').inputValue(), thema);
+  assert.equal(await page.locator('#krypto-ntfy').getAttribute('href'), `https://ntfy.sh/${thema}`);
+  assert.ok(zustand.alleAbrufe.length > 5);
+  assert.ok(!zustand.alleAbrufe.some(u => u.includes(thema) || /ntfy=/.test(u)), 'Thema geht nirgends hin');
+  assert.deepEqual(fehler, []);
+  await ctx.close();
+  // ungültig: nichts gespeichert, Fragment trotzdem weg
+  const o = await oeffne({ satz: 'vertrag', pfad: '/mein-vorteil/#ntfy=mein%20thema' });
+  assert.equal(new URL(o.page.url()).hash, '');
+  assert.equal(await o.page.evaluate(() => localStorage.getItem('mein-vorteil-krypto-thema')), null);
+  assert.match(await o.page.locator('#hinweis').innerText(), /ntfy-Link ungültig – nichts geändert\./);
+  await o.ctx.close();
+});
+
+// Deals im Datenformat des Radars (Modul deals, mydealz): im Laden (Kaufland, Lidl) und schon bei Amazon
+const AMAZON_TEST = () => {
+  const d = { kategorie: 'deals', quelle: 'mydealz Lebensmittel', wert: 50, sofort: false, grund: 'Deal durchgerechnet', datum: '2026-11-07T08:00:00.000Z', bis: '2026-11-14T22:59:59.000Z', bisQuelle: 'text', ab: null, sichtbarBis: '2026-11-14T22:59:59.000Z', preisfehler: false };
+  return [
+    { ...d, id: 'sn-kaufland', titel: '[Kaufland] Pringles Original Chips 185g für 1,49€', zeile: '1 Packung für 1,49 € statt 2,49 € (−40 %)', link: 'https://www.mydealz.de/deals/pringles-kaufland-1', extra: { shop: 'Kaufland' } },
+    { ...d, id: 'sn-amazon', titel: 'Lorenz Erdnusslocken Chips 12 x 150 g (Prime Spar-Abo)', zeile: '1 Packung für 11,99 € statt 17,99 € (−33 %)', link: 'https://www.mydealz.de/deals/erdnusslocken-2', extra: { shop: 'Amazon' } },
+    { ...d, id: 'pr-lidl', titel: '[Lidl] Haribo Colorado 1kg für 4,99€', zeile: '1 Packung für 4,99 € statt 6,99 € (−29 %)', link: 'https://www.mydealz.de/deals/haribo-lidl-3', extra: { shop: 'Lidl' } },
+  ];
+};
+
+test('Auf Amazon ansehen: Markt-Angebote mit fertiger Suche (ohne Mengen/Shop, ohne Partner-Tag), Amazon-Preis nur aus den Daten', { skip: ohnePw }, async () => {
+  const patch = { 'vorteile-aktuell.json': d => { (d.kategorien.deals ||= []).push(...AMAZON_TEST()); } };
+  const { ctx, page, fehler, zustand } = await oeffne({ satz: 'v5', jetzt: JETZT_V5, patch, pfad: '/mein-vorteil/#deals' });
+  await aufklappen(page, '#deals');
+  const amazon = sel => page.locator(`${sel} .amazon`);
+  // Knoppers: Markt-Angebot (Kaufland) + laufendes Amazon-Angebot in den Daten (mydealz) -> Preisvergleich je Stück
+  const kn = amazon('[data-produkt="knoppers-schnitte"]');
+  assert.equal(await kn.count(), 1);
+  assert.match(nbsp(await kn.innerText()), /^Auf Amazon ansehen\s*Amazon: 10,48 € \(24 × 25 g\) · 0,44 € pro Stück – Markt günstiger$/);
+  const a = kn.locator('a.amazon-link');
+  assert.equal(await a.getAttribute('href'), 'https://www.amazon.de/s?k=Knoppers+Schnitte');
+  assert.equal(await a.getAttribute('target'), '_blank');
+  assert.match(await a.getAttribute('rel'), /noopener noreferrer/);
+  // ohne Amazon-Angebot in den Daten: nur der Link, kein Preis (nie geschätzt)
+  const cr = amazon('[data-produkt="crunchips"]');
+  assert.equal(nbsp(await cr.innerText()).trim(), 'Auf Amazon ansehen');
+  assert.equal(await cr.locator('a').getAttribute('href'), 'https://www.amazon.de/s?k=Lorenz+Crunchips');
+  assert.equal(await amazon('[data-produkt="ben-jerrys"]').locator('a').getAttribute('href'), 'https://www.amazon.de/s?k=Ben+%26+Jerry%27s+Eis');
+  // Deal zu meinem Produkt im Laden (Lidl): Suche nach dem Produkt; Snacks: im Laden ja, schon bei Amazon nein
+  assert.equal(await amazon('article[data-id="pr-lidl"]').locator('a').getAttribute('href'), 'https://www.amazon.de/s?k=Haribo+Colorado');
+  const snacks = page.locator('#snacks li');
+  assert.equal(await snacks.count(), 2);
+  assert.equal(await snacks.filter({ hasText: 'Pringles' }).locator('.amazon a').getAttribute('href'), 'https://www.amazon.de/s?k=Pringles+Original+Chips');
+  assert.equal(await snacks.filter({ hasText: 'Erdnusslocken' }).locator('.amazon').count(), 0);
+  // alle Amazon-Links: nur die Suche, kein Partner-Tag; die Seite fragt Amazon nie selbst ab
+  const links = await page.locator('#deals a.amazon-link').evaluateAll(l => l.map(x => x.getAttribute('href')));
+  assert.ok(links.length >= 8, links.join('\n'));
+  for (const l of links) assert.match(l, /^https:\/\/www\.amazon\.de\/s\?k=[^&]+$/, l);
+  assert.ok(!links.some(l => /tag=|ref=|linkCode|\d+\+?g\b|kaufland|lidl/i.test(l)), links.join('\n'));
+  assert.ok(!zustand.alleAbrufe.some(u => /amazon\./.test(u)), 'kein Abruf von Amazon');
+  await pruefeLayout(page, 'Deals mit Amazon');
+  assert.deepEqual(fehler, []);
+  await ctx.close();
 });
 
 test('Cashback nur passend und laufend; Prämien & Freunde werben nie; Remix-Contests eigener Abschnitt (laufend, nach Frist)', { skip: ohnePw }, async () => {

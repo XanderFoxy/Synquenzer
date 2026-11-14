@@ -265,6 +265,12 @@
   details > summary::before { content: "›"; display: inline-block; width: 18px; font-size: 20px; line-height: 1; transition: transform .15s; color: var(--f); }
   details[open] > summary::before { transform: rotate(90deg); }
   .weitere ul { list-style: none; padding: 0; margin: 0; }
+  /* Auf Amazon ansehen: dezent unter dem Markt-Angebot (nur Such-Link, kein Partner-Link) */
+  .amazon { display: flex; flex-wrap: wrap; align-items: center; gap: 0 12px; margin: 4px 0 0; font-size: 14px; color: var(--leise); }
+  a.amazon-link { display: inline-flex; align-items: center; min-height: 44px; color: var(--leise); font-weight: 650; text-decoration: underline; text-decoration-color: var(--linie); text-underline-offset: 3px; }
+  .amazon-preis { min-width: 0; overflow-wrap: anywhere; }
+  .amazon-preis b { color: var(--text); font-weight: 650; }
+  .liste > li > .amazon { margin: 0 0 0 14px; }
   .weitere li a {
     display: flex; justify-content: space-between; gap: 10px; padding: 10px 0; border-top: 1px solid var(--linie);
     text-decoration: none; color: inherit; min-height: 44px; font-size: 14px;
@@ -379,9 +385,9 @@
     border: 1px solid var(--linie); background: var(--bg); color: var(--text);
   }
   .privat { font-size: 13px; color: var(--leise); margin: 2px 0 10px; }
-  .schritte-gh { margin: 6px 0 8px; padding-left: 20px; font-size: 14px; }
-  .schritte-gh li { margin-bottom: 6px; }
-  .schritte-gh code { background: var(--flaeche); border-radius: 6px; padding: 1px 5px; font-size: 13px; }
+  .ntfy-text { margin: 2px 0 10px; font-size: 15px; }
+  .ntfy-feld { display: flex; flex-direction: column; gap: 3px; font-size: 13px; color: var(--leise); font-weight: 650; margin: 0 0 6px; }
+  a.zweit-link[aria-disabled="true"] { opacity: .55; }
 
   /* Meine Produkte: Liste bearbeiten */
   .zweit.klein-knopf { min-height: 44px; padding: 0 12px; font-size: 14px; border-radius: 999px; }
@@ -425,8 +431,6 @@
   .kauf-neu { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 12px; margin-top: 10px; }
   .kauf-neu .breit { grid-column: 1 / -1; }
   .formfehler { margin: 0; color: var(--rot); font-size: 14px; font-weight: 650; }
-  .secret-zeile { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-top: 6px; }
-  .secret-zeile code { overflow-wrap: anywhere; }
   button.klein-knopf:disabled { opacity: .55; }
   button.x { flex: none; width: 44px; height: 44px; border-radius: 999px; border: 1px solid var(--linie); background: var(--flaeche); color: var(--text); font-size: 18px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; padding: 0; }
   #krypto-alarm { width: min(460px, calc(100vw - 24px)); }
@@ -574,6 +578,18 @@ const KRYPTO_IMPORT = (() => {
     return { ok: true, coins: Object.keys(r.coins) };
   } catch { return { ok: false, speicher: true }; }
 })();
+
+// Privates ntfy-Thema des Krypto-Weckers per Link (von Claude): …/mein-vorteil/#ntfy=<thema> – wie oben sofort aus der
+// Adresse, nur in localStorage (nie senden, nie loggen). Gültig: Buchstaben, Ziffern, - und _ (höchstens 64).
+const NTFY_IMPORT = (() => {
+  if (!/^#ntfy=/i.test(location.hash)) return null;
+  let t = location.hash.replace(/^#ntfy=/i, '');
+  history.replaceState(history.state, '', location.pathname + location.search);
+  try { t = decodeURIComponent(t); } catch {}
+  t = t.trim();
+  if (!/^[A-Za-z0-9_-]{1,64}$/.test(t)) return { ok: false };
+  try { localStorage.setItem('mein-vorteil-krypto-thema', JSON.stringify(t)); return { ok: true }; } catch { return { ok: false, speicher: true }; }
+})();
 </script>
 </head>
 <body>
@@ -703,15 +719,12 @@ const KRYPTO_IMPORT = (() => {
       </details>
       <details class="kasten-innen" id="krypto-push">
         <summary>Push auch bei geschlossener Seite</summary>
-        <ol class="schritte-gh">
-          <li>In GitHub <b>Settings → Secrets and variables → Actions → New repository secret</b> öffnen (Knopf unten) und zwei Secrets anlegen:
-            <span class="secret-zeile"><code>KRYPTO</code> = deine Zahlen <button id="krypto-secret-kopie" class="zweit klein-knopf" type="button">Wert kopieren</button></span>
-            <span class="secret-zeile"><code>KRYPTO_NTFY_TOPIC</code> = <code id="krypto-topic"></code> <button id="krypto-topic-kopie" class="zweit klein-knopf" type="button">Kopieren</button></span></li>
-          <li>In der App <b>ntfy</b> auf <b>+</b> tippen und genau dieses Thema abonnieren (Server ntfy.sh).</li>
-          <li>Fertig: Der <b>Krypto-Wecker</b> prüft stündlich und meldet Gewinn ↔ Verlust, +5 %, +10 % und −10 %. Beim ersten Lauf kommt „Krypto-Wecker ist aktiv“.</li>
-        </ol>
-        <p class="privat">Das Thema gehört nur dir (zufällig erzeugt, nicht das gemeinsame Push-Thema). Deine Zahlen liegen nur im Secret – nie im Code, im Log oder in den Daten. Ändern sich deine Käufe: Wert neu kopieren und das Secret <code>KRYPTO</code> überschreiben.</p>
-        <div class="aktionen"><a class="los" href="https://github.com/XanderFoxy/Synquenzer/settings/secrets/actions/new" target="_blank" rel="noopener">Secret anlegen</a><a id="krypto-ntfy" class="zweit-link" href="#" target="_blank" rel="noopener">In ntfy öffnen</a></div>
+        <p class="ntfy-text">Der Wecker läuft automatisch (stündlich). Nachrichten kommen in dein privates ntfy-Thema – den Namen hast du im Chat bekommen.</p>
+        <label class="ntfy-feld" for="krypto-thema">ntfy-Thema
+          <input type="text" id="krypto-thema" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="done" maxlength="80" placeholder="Name aus dem Chat"></label>
+        <p class="formfehler" id="krypto-thema-fehler" hidden>Nur Buchstaben, Ziffern, - und _ – so wie im Chat.</p>
+        <p class="privat">Nur auf diesem iPhone gemerkt – nie im Code oder in den Daten. In der App ntfy auf <b>+</b> tippen und genau dieses Thema abonnieren (Server ntfy.sh).</p>
+        <div class="aktionen"><a id="krypto-ntfy" class="zweit-link" target="_blank" rel="noopener" aria-disabled="true">In ntfy öffnen</a></div>
       </details>
     </div>
   </section>
@@ -1067,6 +1080,83 @@ function meinProdukt(text) {
 }
 const interessant = text => !!meinProdukt(text) || istSnack(text) || einWort(text, MUSIK_WOERTER);
 
+// --- Auf Amazon ansehen (nur Such-Link, kein Partner-Tag; Preis nur aus laufenden Amazon-Angeboten in den Daten) ---
+// Wort für Wort wie vorteile/scan/lib/amazon.mjs (ohne „export “) – test/regeln.test.mjs prüft das.
+// <amazon-suche>
+// Wörter, die nie zum Produktnamen gehören: Ketten/Portale (Müller, dm, Hit, Real fehlen absichtlich – auch Marken),
+// Mengen-/Preis-Einheiten und Prospekt-Wörter. Verglichen wird klein, mit ae/oe/ue/ss.
+const AMAZON_WEG = new Set(('kaufland lidl aldi nord sued netto marken-discount penny edeka marktkauf rewe globus norma nahkauf '
+  + 'rossmann amazon amazon.de kaufda marktguru mydealz prospekt xtra centershop diska markant mytime '
+  + 'fuer statt nur je ab bis bei beim im versch verschiedene verschiedenen sorten sorte sortiert sortierte angebot angebote '
+  + 'abgelaufen aktion aktionspreis deal prime spar-abo sparabo abo uvp coupon gratis app neu ca mo di mi do fr sa so '
+  + 'pack packung packungen packs multipack vorratspackung familienpackung grosspackung inhalt '
+  + 'stueck stk st g gr gramm kg mg ml cl l ltr liter x eur euro € ct cent wl').split(' '));
+// Mengen und Preise als ein Wort: „200g“, „1,5l“, „6x“, „x6“, „24x25g“, „24er“, „5er-Pack“, „0,88€“, „3.11.“, „175“
+const AMAZON_MENGE = /^(?:[x×]\d+|\d+(?:[.,]\d+)*(?:[x×]\d+(?:[.,]\d+)?)?(?:kg|gr|g|mg|ml|cl|ltr|l|stück|stk|st|wl|er|€|eur|euro|ct|x|×)?(?:-?(?:pack|packs|packung|box|karton|set|tray))?\.?)$/i;
+const AMAZON_RAND = /^(?:und|oder|mit|von|aus|in|&|-)$/i;
+const amazonKey = w => w.toLowerCase().replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss');
+
+/** Produktname/Angebotstitel -> Suchwörter für Amazon („Haribo Goldbären“) oder '' (nichts Brauchbares) */
+function amazonSuchwort(text) {
+  const roh = String(text ?? '').replace(/\[[^\]]*\]|\([^)]*\)|\{[^}]*\}/g, ' ');
+  const woerter = [], gesehen = new Set();
+  for (const teil of roh.split(/[\s|;:!?+*"„“”‚‘«»•·/\\_=~^<>#%–—,]+/)) {
+    const w = teil.replace(/^[.\-'’]+|[.\-'’]+$/g, '');
+    if (!w || w === '×') continue;
+    const k = amazonKey(w);
+    if (AMAZON_WEG.has(k) || AMAZON_MENGE.test(w) || gesehen.has(k)) continue;
+    if (!/[\p{L}\d&]/u.test(w)) continue;
+    gesehen.add(k);
+    woerter.push(w);
+  }
+  while (woerter.length && AMAZON_RAND.test(woerter[0])) woerter.shift();
+  while (woerter.length && AMAZON_RAND.test(woerter[woerter.length - 1])) woerter.pop();
+  const s = woerter.slice(0, 8).join(' ');
+  return /\p{L}/u.test(s) ? s : '';
+}
+
+/** Fertige Amazon-Suche (ohne Partner-Tag) oder null */
+function amazonLink(text) {
+  const s = amazonSuchwort(text);
+  return s ? `https://www.amazon.de/s?${new URLSearchParams({ k: s })}` : null;
+}
+
+/** Ist das Angebot schon bei Amazon? Dann braucht es keinen Amazon-Link. */
+const istAmazon = shop => /amazon/i.test(String(shop || ''));
+
+/**
+ * Markt-Angebot gegen ein laufendes Amazon-Angebot aus den Daten: je Einheit (€/100 g, €/Stück), wenn bei beiden die
+ * Menge sicher ist, sonst nur bei gleicher Packung. -> { urteil: 'guenstiger'|'teurer'|'gleich', basis: 'einheit'|'packung' } | null
+ */
+function amazonVergleich(markt, amazon) {
+  if (!markt || !amazon) return null;
+  const sicher = o => o.mengeSicher === true || (o.mengeSicher == null && !!o.packung);
+  const z = v => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : null);
+  let m, a, basis;
+  if (sicher(markt) && sicher(amazon) && z(markt.einheitspreis) && z(amazon.einheitspreis)) [m, a, basis] = [markt.einheitspreis, amazon.einheitspreis, 'einheit'];
+  else if (markt.packung && markt.packung === amazon.packung && z(markt.preis) && z(amazon.preis)) [m, a, basis] = [markt.preis, amazon.preis, 'packung'];
+  else return null;
+  const d = (m - a) / a;
+  return { urteil: Math.abs(d) < 0.01 ? 'gleich' : d < 0 ? 'guenstiger' : 'teurer', basis };
+}
+// </amazon-suche>
+const AMAZON_URTEIL = { guenstiger: 'Markt günstiger', teurer: 'Markt teurer', gleich: 'gleich teuer' };
+// „Auf Amazon ansehen“ (Suche nach dem Produktnamen) und – nur wenn ein laufendes Amazon-Angebot in den Daten steht –
+// „Amazon: 10,48 € (24 × 25 g) · 0,44 € pro Stück – Markt günstiger“. Ohne echten Amazon-Preis nur der Link.
+function amazonZeile(name, { markt = null, amazon = null, basis = '' } = {}) {
+  const link = amazonLink(name);
+  if (!link) return '';
+  let preis = '';
+  if (amazon && zahl(amazon.preis) != null) {
+    const v = amazonVergleich(markt, amazon);
+    const ep = v?.basis === 'einheit' ? ` · ${euro(amazon.einheitspreis, true)} ${basis}`.trimEnd() : '';
+    preis = `<span class="amazon-preis">Amazon: ${esc(euro(amazon.preis))}${amazon.packung ? ` (${esc(amazon.packung)})` : ''}${esc(ep)}${v ? ` – <b>${esc(AMAZON_URTEIL[v.urteil])}</b>` : ''}</span>`;
+  }
+  return `<p class="amazon"><a class="amazon-link" href="${esc(link)}" target="_blank" rel="noopener noreferrer">Auf Amazon ansehen</a>${preis}</p>`;
+}
+// Radar-Eintrag (mydealz): Suchname, wenn das Angebot nicht schon bei Amazon ist
+const amazonName = (e, name) => [e.extra?.shop, e.titel, e.link].some(istAmazon) ? null : name || e.titel;
+
 // --- Angebote (Schnäppchen-Wecker + Preisfehler) ------------------------------------------------------------------
 const BASIS_KURZ = { stueck: 'pro Stück', '100g': 'pro 100 g', '100ml': 'pro 100 ml' };
 const mengeSicher = o => o.mengeSicher === true || (o.mengeSicher == null && !!o.packung);
@@ -1229,6 +1319,8 @@ function produktKarte(p, o, rest) {
     const bedingung = [gueltigText(w), w.hinweis || ''].filter(Boolean).join(' · ');
     return `<li><a href="${esc(sicher(w.link))}" target="_blank" rel="noopener"><span><b>${esc(w.shop)}</b> · ${esc(w.titel)}${pk ? ' · ' + esc(pk) : ''}<br><span class="klein">${esc(bedingung)}</span></span><span><b>${esc(euro(w.preis))}</b><br><span class="klein">${esc(ep)}</span></span></a></li>`;
   }).join('')}</ul></details>` : '';
+  // Markt-Angebot -> „Auf Amazon ansehen“; Preisvergleich nur mit einem laufenden Amazon-Angebot derselben Karte
+  const amazon = istAmazon(o.shop) ? '' : amazonZeile(p.name, { markt: o, amazon: rest.find(w => istAmazon(w.shop)) || null, basis });
   const oben = [];
   if (o.regional) oben.push(`<span class="marke grau">Region${o.region ? ' · ' + esc(o.region) : ''}</span>`); // kaufDA: Prospekt außerhalb Döbelns
   if (startetSpaeter(o)) oben.push(`<span class="marke warm">${esc(abText(o.ab ?? o.gueltigAb))}</span>`);
@@ -1243,7 +1335,7 @@ function produktKarte(p, o, rest) {
     ${k ? kontextBlock(k, o) : ''}
     <dl class="fakten">${fakten.join('')}</dl>
     <a class="los" href="${esc(sicher(o.link))}" target="_blank" rel="noopener">${esc(knopfText(o))}</a>
-    ${weitere}
+    ${amazon}${weitere}
   </article>`;
 }
 
@@ -1374,7 +1466,7 @@ function quellenKasten(titel, zeilen, zusatz = '') {
 }
 
 // --- Vorteils-Karte (Gewinnspiele, Cashback, Musik-Technik, Mehr) ---------------------------------------------------
-function vorteilKarte(e, namen) {
+function vorteilKarte(e, namen, amazonSuche = null) {
   const oben = [`<span class="marke">${esc(namen[e.kategorie] || BEREICH[e.kategorie]?.[0] || e.kategorie || '')}</span>`];
   if (startetSpaeter(e)) oben.push(`<span class="marke warm">${esc(abText(e.ab))}</span>`);
   if (e.bis) oben.push(`<span class="marke warm">${esc(bisText(e.bis))}</span>`);
@@ -1389,7 +1481,7 @@ function vorteilKarte(e, namen) {
     <h3>${esc(e.titel)}</h3>
     ${e.zeile ? `<p class="zeile">${esc(e.zeile)}</p>` : ''}
     ${e.soGehts ? `<p class="sogehts"><b>So geht's:</b> ${esc(e.soGehts)}</p>` : ''}
-    ${haken}${schritte}
+    ${haken}${schritte}${amazonSuche ? amazonZeile(amazonSuche) : ''}
     <div class="aktionen"><a class="los" href="${esc(sicher(e.link))}" target="_blank" rel="noopener">Öffnen</a><button class="zweit weg" type="button" data-id="${esc(e.id)}">Ausblenden</button></div>
   </article>`;
 }
@@ -1583,7 +1675,7 @@ function zeichneProdukte(t) {
   const teile = [stoerHinweis('angebote')];
   const jetzt = deals.length + radar.filter(laeuftSchon).length;
   teile.push(`<h3 class="unter">Jetzt günstig <small>${jetzt || ''}</small></h3>`);
-  teile.push(deals.length || radar.length ? deals.join('') + radar.map(e => vorteilKarte(e, namen)).join('')
+  teile.push(deals.length || radar.length ? deals.join('') + radar.map(e => vorteilKarte(e, namen, amazonName(e, e.meins?.name))).join('')
     : '<p class="leer">Gerade kein echtes Schnäppchen bei deinen Produkten. Du bekommst eine Push-Nachricht, sobald etwas richtig günstig ist.</p>');
   if (bald.length) teile.push(`<h3 class="unter">Bald günstig <small>${bald.length}</small></h3>${bald.join('')}`);
   if (liste.length) teile.push(`<h3 class="unter">Weitere Angebote <small>${liste.length}</small></h3>${liste.join('')}`);
@@ -1660,7 +1752,8 @@ function zeichneCashback(t) {
 function snackZeile(e) {
   const b = zeit(e.bis);
   const rechts = startetSpaeter(e) ? abText(e.ab) : b != null ? bisText(e.bis) : '';
-  return `<li><a class="reihe" href="${esc(sicher(e.link))}" target="_blank" rel="noopener"><div class="haupt"><b>${esc(e.titel)}</b>${e.zeile ? `<span class="zeile">${esc(e.zeile)}</span>` : ''}<span>${esc(e.quelle || '')}</span></div>${rechts ? `<div class="rechts${b != null && tag(b) === 'heute' ? ' warm' : ''}">${esc(rechts)}</div>` : ''}</a></li>`;
+  const amazon = amazonName(e);
+  return `<li><a class="reihe" href="${esc(sicher(e.link))}" target="_blank" rel="noopener"><div class="haupt"><b>${esc(e.titel)}</b>${e.zeile ? `<span class="zeile">${esc(e.zeile)}</span>` : ''}<span>${esc(e.quelle || '')}</span></div>${rechts ? `<div class="rechts${b != null && tag(b) === 'heute' ? ' warm' : ''}">${esc(rechts)}</div>` : ''}</a>${amazon ? amazonZeile(amazon) : ''}</li>`;
 }
 function zeichneSnacks(t) {
   if (!t.da) return { html: vorteileFehlen(), n: 0 };
@@ -2180,7 +2273,7 @@ $('blatt-zu').addEventListener('click', blattZu);
 // Rechnung, Zonen und Import-Format: Block <krypto-zonen> im <head> (Wort für Wort wie krypto/zonen.mjs).
 const KRYPTO = 'mein-vorteil-krypto';             // { v: 2, coins: { btc: { kaeufe: [{ betrag, kurs | menge }], aktuell } } }
 const KRYPTO_ZONE = 'mein-vorteil-krypto-zone';   // { btc: 'plus', … } – zuletzt gemeldete Zone je Coin (nur Wörter)
-const KRYPTO_TOPIC = 'mein-vorteil-krypto-topic'; // eigenes, privates ntfy-Thema für den Krypto-Wecker (zufällig)
+const KRYPTO_THEMA = 'mein-vorteil-krypto-thema'; // privates ntfy-Thema des Krypto-Weckers (Name aus dem Chat, nur hier)
 const KURS = 'mein-vorteil-kurs';                 // letzter Kurs (für den sofortigen Start)
 const KURS_ALLE_MS = 60000;                       // Kurs prüfen beim Öffnen und alle 60 s, solange die Seite offen ist
 
@@ -2382,7 +2475,6 @@ function kryptoGeaendert(c) {
   zonenMerken();
   zeichneKrypto();
   zeichneWichtig();
-  zeichneKryptoPush();
   if (kurs.zeit && !kurs.ausSpeicher) pruefeZonen();
 }
 $('krypto-editor').addEventListener('submit', ev => {
@@ -2422,38 +2514,34 @@ function aktuellAus(inp) {
 $('krypto-editor').addEventListener('input', ev => { const i = ev.target.closest('input[data-aktuell]'); if (i) { clearTimeout(aktuellTimer); aktuellTimer = setTimeout(() => aktuellAus(i), 500); } });
 $('krypto-editor').addEventListener('change', ev => { const i = ev.target.closest('input[data-aktuell]'); if (i) { clearTimeout(aktuellTimer); aktuellAus(i); } });
 
-// Push über GitHub: Wert für das Secret KRYPTO (aus den Zahlen hier) und eigenes privates Thema – beides nur kopieren
-function kryptoSecret() {
-  const teile = [];
-  for (const { c, pos } of kryptoStand()) {
-    if (!pos) continue;
-    const menge = Number(pos.menge.toFixed(8)), einsatz = Math.round(pos.einsatz * 100) / 100;
-    teile.push(`${c}:${String(menge)}:${String(einsatz)}`);
-  }
-  return teile.join(',');
-}
-function kryptoTopic() {
-  let t = lies(KRYPTO_TOPIC, null);
-  if (typeof t !== 'string' || !/^xander-krypto-[0-9a-f]{12,}$/.test(t)) {
-    const b = new Uint8Array(8);
-    (self.crypto?.getRandomValues ? crypto.getRandomValues(b) : b.forEach((_, i) => (b[i] = Math.floor(Math.random() * 256))));
-    t = 'xander-krypto-' + [...b].map(x => x.toString(16).padStart(2, '0')).join('');
-    merk(KRYPTO_TOPIC, t);
-  }
-  return t;
+// Push bei geschlossener Seite: Der Krypto-Wecker läuft auf einem privaten Server (stündlich) und schreibt in Xanders
+// privates ntfy-Thema. Den Namen bekommt er im Chat; die Seite merkt ihn nur auf diesem Gerät (localStorage, auch per
+// Link …/mein-vorteil/#ntfy=<thema>, siehe <head>) und baut daraus nur den Link „In ntfy öffnen“ – nie im Code oder in den Daten.
+const ntfyThemaOk = t => /^[A-Za-z0-9_-]{1,64}$/.test(String(t ?? ''));
+const themaAusText = v => String(v ?? '').trim().replace(/^(?:https?:\/\/)?ntfy\.sh\//i, '').replace(/\/+$/, '');
+function ntfyLink(t) {
+  const a = $('krypto-ntfy');
+  if (ntfyThemaOk(t)) { a.href = `https://ntfy.sh/${t}`; a.removeAttribute('aria-disabled'); }
+  else { a.removeAttribute('href'); a.setAttribute('aria-disabled', 'true'); }
 }
 function zeichneKryptoPush() {
-  const t = kryptoTopic();
-  $('krypto-topic').textContent = t;
-  $('krypto-ntfy').href = `https://ntfy.sh/${t}`;
-  const s = $('krypto-secret-kopie');
-  const leer = !kryptoSecret();
-  s.disabled = leer;
-  s.textContent = leer ? 'erst Käufe eintragen' : 'Wert kopieren';
+  const t = lies(KRYPTO_THEMA, '');
+  const feld = $('krypto-thema');
+  if (document.activeElement !== feld) feld.value = ntfyThemaOk(t) ? t : '';
+  $('krypto-thema-fehler').hidden = true;
+  ntfyLink(t);
 }
-$('krypto-secret-kopie').addEventListener('click', ev => { const v = kryptoSecret(); if (v) kopiere(v, ev.currentTarget); });
-$('krypto-topic-kopie').addEventListener('click', ev => kopiere(kryptoTopic(), ev.currentTarget));
-$('krypto-push').addEventListener('toggle', () => { if ($('krypto-push').open) zeichneKryptoPush(); });
+function themaEingabe(ev) {
+  const t = themaAusText(ev.target.value);
+  const ok = !t || ntfyThemaOk(t);
+  $('krypto-thema-fehler').hidden = ok;
+  if (!ok) { ntfyLink(''); return; }
+  if (t) merk(KRYPTO_THEMA, t); else try { localStorage.removeItem(KRYPTO_THEMA); } catch {}
+  ntfyLink(t);
+  if (ev.type === 'change' && t !== ev.target.value) ev.target.value = t; // eingefügter ntfy-Link -> nur der Name
+}
+$('krypto-thema').addEventListener('input', themaEingabe);
+$('krypto-thema').addEventListener('change', themaEingabe);
 
 // Import per Link (#krypto=…): schon im <head> übernommen, hier nur die Bestätigung
 function zeigeHinweis(text, warm = false) {
@@ -2766,7 +2854,12 @@ zeichneKryptoPush();
 if (!kryptoStand().some(x => x.pos)) $('krypto-form').open = true;
 // Bereich aus der Adresse (Push-Link, altes Symbol) schon vor dem ersten Zeichnen – kein Aufblitzen der Startseite
 (() => {
-  if (KRYPTO_IMPORT) { history.replaceState(null, '', location.pathname + location.search); zeigeBereich('krypto', { scroll: false }); return; }
+  if (KRYPTO_IMPORT || NTFY_IMPORT) {
+    history.replaceState(null, '', location.pathname + location.search);
+    if (NTFY_IMPORT) $('krypto-push').open = true;
+    zeigeBereich('krypto', { scroll: false });
+    return;
+  }
   const r = reiterAusHash();
   if (r) { zeigeReiter(r); return; }
   const z = zielAusHash();
@@ -2778,6 +2871,10 @@ zeichneAlles();
 if (KRYPTO_IMPORT) {
   zeigeHinweis(KRYPTO_IMPORT.ok ? `Krypto-Daten übernommen ✓ (${KRYPTO_IMPORT.coins.map(c => KRYPTO_COINS[c].name).join(', ')}) – nur auf diesem iPhone gespeichert.`
     : KRYPTO_IMPORT.speicher ? 'Krypto-Daten konnten nicht gespeichert werden (privates Surfen?).' : 'Krypto-Link ungültig – nichts geändert.', !KRYPTO_IMPORT.ok);
+}
+if (NTFY_IMPORT) {
+  zeigeHinweis(NTFY_IMPORT.ok ? 'ntfy-Thema übernommen ✓ – nur auf diesem iPhone gespeichert.'
+    : NTFY_IMPORT.speicher ? 'ntfy-Thema konnte nicht gespeichert werden (privates Surfen?).' : 'ntfy-Link ungültig – nichts geändert.', !NTFY_IMPORT.ok);
 }
 lade();
 ladeKurs();
