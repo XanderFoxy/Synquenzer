@@ -41,3 +41,4 @@
 - Stand Ende Auftrag 2/3 (Zeit aus, ~60 min): Datei index.html UNVERÄNDERT (Stand 1/3, Pflicht-Prüfungen von 1/3 gelten). Offen → Auftrag 2b:
   Ränder G 0 ms (Glätte weich 1,11 → 1,34 klären) und Hülle −500 (F1-Spitze zu breit) – Messung direkt an den Teiltönen statt Cepstrum-Schwerpunkt.
 - 14.11. Start Auftrag 3/3 (Test): LOG/NOTES gelesen; Datei index.html seit 1/3 unverändert (cmp folgt).
+- (1) chr2-test.mjs (Original aus chr/, Kopie chr3/chr2-test.mjs, Basis basis2 = 4.57 ohne Knackser-Fix) auf chr3/index.html: ALLE OK (82) in 115 s (src/run3-chr2.txt); CHR2 3/3 war 72/82 – die 10 FEHLER (3 St. Unterstimme Welle 67 %, 4 St. eng Verfolgung/Welle/Pegel) alle weg → fertig.

@@ -99762,7 +99762,7 @@ async function spk2KlOpt(src, o) {
   const evalB = async L => {
     const pcs = await spk2KlRender(L.map(c => spk2KlSnd(c)), src.m, src.on, src.off, src.len, src.sr);
     const r = await spk1Call('klangFeat', {pcs, sr: src.sr, f, on: src.on, off: src.off});
-    L.forEach((c, i) => { c.F = r.fs[i]; c.dist = (typeof spk3KlDist === 'function' ? spk3KlDist : spk2KlDist)(src.feat, c.F);   /* SPK3: + Bewegung */ c.pcm = pcs[i]; }); done += L.length;
+    L.forEach((c, i) => { c.F = r.fs[i]; c.dist = (src.x3on && typeof spk3KlDist === 'function' ? spk3KlDist : spk2KlDist)(src.feat, c.F);   /* SPK3: + Bewegung (nicht bei reinem FM) */ c.pcm = pcs[i]; }); done += L.length;
     for (const c of L) if (!best || c.dist < best.dist) best = c;
     for (const c of L) if (c !== best) c.pcm = null;
     if (o.prog) o.prog(done, n, best);
@@ -99770,7 +99770,7 @@ async function spk2KlOpt(src, o) {
   if (!best) {
     const e = src.est, eng = o.eng || (e.fm.e < 0.5 * e.va.e ? 'fm' : null), S = (g, a) => spk2KlStart(g, e, src, a), ix = (c, d) => { c.u[0] = Math.max(0, Math.min(1, c.u[0] + d)); return c; };   // FM klar besser erklärt → Familie FM
     const L = eng === 'fm' ? [S('fm'), ix(S('fm'), -0.1), ix(S('fm'), 0.1), S('fm', 'r2'), ix(S('fm'), 0.2)] : eng === 'va' ? [S('va'), S('va', 'eins'), S('va', 'flach')] : [S('va'), S('fm'), S('va', 'eins'), S('va', 'flach'), S('fm', 'r2'), ix(S('fm'), 0.1)];
-    if (eng !== 'fm' && typeof spk3KlMore === 'function') spk3KlMore(L, S, e, src);   // SPK3: verstimmt / Unison als Start
+    if (eng !== 'fm' && typeof spk3KlMore === 'function') { src.x3on = true; spk3KlMore(L, S, e, src); }   // SPK3: verstimmt / Unison als Start, Abstand mit Bewegung
     await evalB(L); d0 = Math.min(...L.map(c => c.dist));
   } else d0 = best.dist;
   let sig = o.sig || 0.12;
