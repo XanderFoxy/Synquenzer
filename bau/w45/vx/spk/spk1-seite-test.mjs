@@ -39,7 +39,7 @@ async function page(w, h, noGl) {
   return {ctx, p, touch, drag, tap};
 }
 const box = (p, sel) => p.evaluate(s => { const e = document.querySelector(s); if (!e) return null; const r = e.getBoundingClientRect(); return {x: r.left, y: r.top, w: r.width, h: r.height}; }, sel);
-const btn = (p, txt) => p.evaluate(t => { const e = [...document.querySelectorAll('#spk1Sheet button')].find(x => x.offsetParent && x.textContent.trim().startsWith(t)); if (!e) return null; const r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }, txt);
+const btn = (p, txt) => p.evaluate(t => { const e = [...document.querySelectorAll('#spk1Sheet button')].find(x => x.offsetParent && x.textContent.trim().startsWith(t)); if (!e) return null; e.scrollIntoView({block: 'nearest', inline: 'nearest'}); const r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }, txt);
 const info = p => p.evaluate(() => __spk.page.info());
 const waitChunks = p => p.waitForFunction(() => { const i = __spk.page.info(); return i && i.chunks > 0 && !/Spektrum \d/.test(i.stat); }, null, {timeout: 60000});
 const layout = p => p.evaluate(() => {
@@ -102,19 +102,19 @@ const layout = p => p.evaluate(() => {
   await tap(await p.evaluate(() => { const e = document.querySelector('#spk1Sheet .spk1-lr[data-l=L1] .spk1-s'); const r = e.getBoundingClientRect(); return [r.left + 22, r.top + 22]; })); await p.waitForTimeout(300);
   const so = await p.evaluate(() => __spk.layers()); ok('solo', so.layers.map(l => l.solo), so.layers[0].solo === true);
   // Pinsel
-  await tap(await p.evaluate(() => { const e = document.querySelector('#spk1Sheet [data-tool=pinsel]'); const r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }));
+  await tap(await p.evaluate(() => { const e = document.querySelector('#spk1Sheet [data-tool=pinsel]'); e.scrollIntoView({inline: 'center'}); const r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }));
   await drag(await pt(0.5, 40), await pt(2.5, 45), 12);
   const s8 = await info(p); ok('pinsel', {sel: s8.selArts}, s8.selArts.join() === 'pinsel');
   await p.screenshot({path: path.join(fotos, '06-pinsel.png')});
   // Harmonische: Ton (440 Hz) bei 3 s antippen
-  await tap(await p.evaluate(() => { const e = document.querySelector('#spk1Sheet [data-tool=harm]'); const r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }));
+  await tap(await p.evaluate(() => { const e = document.querySelector('#spk1Sheet [data-tool=harm]'); e.scrollIntoView({inline: 'center'}); const r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }));
   await tap(await pt(3, 69)); await p.waitForFunction(() => /Ton |Kein Ton/.test(__spk.page.info().stat), null, {timeout: 20000});
   const s9 = await info(p), hs = await p.evaluate(() => { const s = __spk.page.ui().sel.find(x => x.art === 'harm'); if (!s) return null; const f = s.spur.map(q => q[1]); return {n: s.spur.length, t0: s.spur[0][0], t1: s.spur[s.spur.length - 1][0], fmin: Math.min(...f), fmax: Math.max(...f)}; });
   ok('harmonische', {stat: s9.stat, spur: hs}, hs && hs.n > 50 && hs.fmin > 420 && hs.fmax < 460 && hs.t1 - hs.t0 > 2.5);
   await p.screenshot({path: path.join(fotos, '07-harmonische.png')});
   // Ähnliche: Beispiel um einen Klick (1,0 s) ziehen
-  await tap(await p.evaluate(() => { const e = document.querySelector('#spk1Sheet [data-tool=aehn]'); const r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }));
-  await drag(await pt(0.98, 118), await pt(1.12, 95));
+  await tap(await p.evaluate(() => { const e = document.querySelector('#spk1Sheet [data-tool=aehn]'); e.scrollIntoView({inline: 'center'}); const r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }));
+  await drag(await pt(0.97, 106), await pt(1.13, 88));
   await p.waitForFunction(() => /ähnliche|Keine/.test(__spk.page.info().stat), null, {timeout: 20000});
   const s10 = await info(p); ok('aehnliche', {hits: s10.hits, sel: s10.sel, stat: s10.stat}, s10.hits >= 5 && s10.sel >= 5);
   await p.screenshot({path: path.join(fotos, '08-aehnliche.png')});

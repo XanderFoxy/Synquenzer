@@ -20,3 +20,4 @@
 - 13:30 Schritt 4 FERTIG: Pflicht topdefs doppelt 0/Syntax 0, dupkeys 0, smoke errors [] (smoke-zug.png); MS 2000 1×, live: true 1×, Markenwörter 46 = Basis; VERSION/CHANGES unberührt; Regression ed 36/36, kern 34/34; zug 24/24, blatt 13/13; NOTES Schritt 4 + Offen geschrieben
 - 13:31 Schritt 5 (Gesamt-Test) begonnen: LOG/NOTES/WUNSCH gelesen
 - 13:32 Plan Schritt 5: vx1-test.mjs = Gesamt-Abnahme (Kern-Messungen am Signal, Editor per Touch, beide Zugänge, Silben per fillText, Speichern .json + Container, Layout/Treffer 44 px); danach vox2/gl1-Regression
+- 13:36 vx1-test.mjs geschrieben (10 Bereiche), erster Lauf

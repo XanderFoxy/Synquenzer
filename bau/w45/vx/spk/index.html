@@ -96998,7 +96998,7 @@ function spk1Build() {
   U.b_zerl.disabled = U.b_verf.disabled = true;   // Schritt 4
   sh.append(hd, tl, co, ru, ky, mn, op, st, ac, ly, sp);
   document.body.appendChild(sh);
-  onTap(sh, (b, e) => spk1Tap(U, b, e), 'button');
+  onTap(sh, (b, e) => spk1Tap(U, b, e), 'button:not(.spk1-ck)');   // .spk1-ck = Knöpfe mit eigenem click (Klappfenster, Zwei-Schritt): kein Geister-Klick-Schutz davor
   sh.addEventListener('pointerdown', e => { if (U.dd && !U.dd.contains(e.target) && e.target !== U.ddA) spk1Dd(U, null); }, true);
   sh.addEventListener('gesturestart', e => e.preventDefault());
   for (const n of [ru, ky, mn]) n.addEventListener('touchstart', e => { if (e.cancelable) e.preventDefault(); }, {passive: false});
@@ -97296,6 +97296,7 @@ function spk1ToolUp(U, G) {
     U.cur = Math.max(0, Math.min(U.dur, G.t0)); if (SPK1.pl && !U.playSel) spk1PlayFrom(U, U.cur); spk1Dirty(U, 'ov'); spk1Dirty(U, 'r'); return;
   }
   if (G.tool === 'pinsel') return spk1SelDone(U);
+  if (G.tool === 'harm' || !G.shape) return;   // Harmonische: nur Tipp
   if (G.tool === 'aehn') return spk1Aehn(U, G.shape);
   U.sel = [G.shape]; U.hits = U.ex = null; spk1SelDone(U);
 }
@@ -97408,7 +97409,7 @@ function spk1ViewDd(U, b) {
     sl('Boden', -120, -30, 'lo'); sl('Decke', -60, 0, 'hi');
     dd.appendChild(el('h5', '', 'Auflösung (FFT)'));
     dd.appendChild(makeSeg([1024, 2048, 4096, 8192, 16384].map(n => [n, String(n)]), () => U.N, n => { U.N = n; spk1SpecLoad(U); }, 'spk1-n'));
-    const g = el('div', 'spk1-g'), bt = el('button', 'mbtn rb', (U.tintOn ? '✓ ' : '') + 'Ebenen-Farben'), bf = el('button', 'mbtn rb', 'Alles zeigen'), bq = el('button', 'mbtn rb', 'Andere Quelle …');
+    const g = el('div', 'spk1-g'), bt = el('button', 'mbtn rb spk1-ck', (U.tintOn ? '✓ ' : '') + 'Ebenen-Farben'), bf = el('button', 'mbtn rb spk1-ck', 'Alles zeigen'), bq = el('button', 'mbtn rb spk1-ck', 'Andere Quelle …');
     on(bt, 'click', () => { U.tintOn = !U.tintOn; bt.textContent = (U.tintOn ? '✓ ' : '') + 'Ebenen-Farben'; spk1Dirty(U, 'g'); });
     on(bf, 'click', () => { spk1Dd(U, null); spk1FitAll(U); });
     on(bq, 'click', () => { spk1Dd(U, null); spk1Leave(U); spk1StartPaint(U); });
@@ -97421,11 +97422,11 @@ function spk1IntoDd(U, b) {
     dd.appendChild(el('h5', '', 'Aus ' + esc(src)));
     dd.appendChild(makeSeg([['verschieben', 'Verschieben'], ['kopieren', 'Kopieren']], () => U.modus, v => { U.modus = v; }, 'spk1-md'));
     const g = el('div', 'spk1-g');
-    for (const l of U.meta.layers) if (l.id !== U.act) { const x = el('button', 'mbtn rb', `<span style="color:var(${l.col})">●</span>&nbsp;${esc(l.name)}`); on(x, 'click', () => { spk1Dd(U, null); spk1Into(U, l.id); }); g.appendChild(x); }
-    if (U.act !== 'rest' && U.act !== 'orig' && U.meta.layers.length) { const x = el('button', 'mbtn rb', 'Rest'); on(x, 'click', () => { spk1Dd(U, null); spk1Into(U, 'rest'); }); g.appendChild(x); }
+    for (const l of U.meta.layers) if (l.id !== U.act) { const x = el('button', 'mbtn rb spk1-ck', `<span style="color:var(${l.col})">●</span>&nbsp;${esc(l.name)}`); on(x, 'click', () => { spk1Dd(U, null); spk1Into(U, l.id); }); g.appendChild(x); }
+    if (U.act !== 'rest' && U.act !== 'orig' && U.meta.layers.length) { const x = el('button', 'mbtn rb spk1-ck', 'Rest'); on(x, 'click', () => { spk1Dd(U, null); spk1Into(U, 'rest'); }); g.appendChild(x); }
     if (g.children.length) { dd.appendChild(el('h5', '', 'In Ebene')); dd.appendChild(g); }
     dd.appendChild(el('h5', '', 'Neue Ebene'));
-    const n = el('div', 'spk1-g'); for (const [a, nm] of SPK1_ARTS) { const x = el('button', 'mbtn rb', '+ ' + nm); on(x, 'click', () => { spk1Dd(U, null); spk1Into(U, 'neu', a); }); n.appendChild(x); }
+    const n = el('div', 'spk1-g'); for (const [a, nm] of SPK1_ARTS) { const x = el('button', 'mbtn rb spk1-ck', '+ ' + nm); on(x, 'click', () => { spk1Dd(U, null); spk1Into(U, 'neu', a); }); n.appendChild(x); }
     dd.appendChild(n);
   });
 }
@@ -97433,13 +97434,13 @@ function spk1MoreDd(U, b, lid) {
   const l = U.meta.layers.find(x => x.id === lid); if (!l) return;
   spk1Dd(U, b, dd => {
     dd.appendChild(el('h5', '', 'Name'));
-    const g = el('div', 'spk1-g'), inp = el('input'), ok = el('button', 'mbtn rb', 'OK'); inp.type = 'text'; inp.maxLength = 40; inp.value = l.name; inp.setAttribute('aria-label', 'Name der Ebene');
+    const g = el('div', 'spk1-g'), inp = el('input'), ok = el('button', 'mbtn rb spk1-ck', 'OK'); inp.type = 'text'; inp.maxLength = 40; inp.value = l.name; inp.setAttribute('aria-label', 'Name der Ebene');
     on(ok, 'click', () => { const v = inp.value.trim(); spk1Dd(U, null); if (v && v !== l.name) spk1Layer(U, 'name', lid, v); });
     g.append(inp, ok); dd.appendChild(g);
     dd.appendChild(el('h5', '', 'Farbe'));
-    const c = el('div', 'spk1-g'); for (const p of SPK1_PAL) { const x = el('button', 'spk1-sw' + (p === l.col ? ' on' : '')); x.style.setProperty('--c', 'var(' + p + ')'); x.setAttribute('aria-label', 'Farbe'); on(x, 'click', () => { spk1Dd(U, null); if (p !== l.col) spk1Layer(U, 'farbe', lid, p); }); c.appendChild(x); }
+    const c = el('div', 'spk1-g'); for (const p of SPK1_PAL) { const x = el('button', 'spk1-sw spk1-ck' + (p === l.col ? ' on' : '')); x.style.setProperty('--c', 'var(' + p + ')'); x.setAttribute('aria-label', 'Farbe'); on(x, 'click', () => { spk1Dd(U, null); if (p !== l.col) spk1Layer(U, 'farbe', lid, p); }); c.appendChild(x); }
     dd.appendChild(c);
-    const del = el('button', 'mbtn rb', 'Ebene löschen'); twoStep(del, 'Wirklich löschen?', () => { spk1Dd(U, null); if (U.act === lid) U.act = 'orig'; spk1Layer(U, 'weg', lid); });
+    const del = el('button', 'mbtn rb spk1-ck', 'Ebene löschen'); twoStep(del, 'Wirklich löschen?', () => { spk1Dd(U, null); if (U.act === lid) U.act = 'orig'; spk1Layer(U, 'weg', lid); });
     dd.appendChild(del);
   });
 }
@@ -97515,7 +97516,7 @@ async function spk1StartPaint(U) {
   if (list.length) {
     sp.appendChild(el('h5', '', 'Analysen auf diesem Gerät'));
     for (const a of list.slice().sort((p, q) => q.mt - p.mt)) {
-      const r = el('div', 'spk1-i'), bo = el('button', 'mbtn rb', 'Öffnen'), bd = el('button', 'mbtn rb', 'Löschen');
+      const r = el('div', 'spk1-i'), bo = el('button', 'mbtn rb', 'Öffnen'), bd = el('button', 'mbtn rb spk1-ck', 'Löschen');
       r.appendChild(el('span', '', esc(a.name) + `<small>${Math.floor(a.sec / 60)}:${String(Math.round(a.sec % 60)).padStart(2, '0')} · ${esc(relTime(a.mt))}</small>`));
       bo.dataset.a = 'open'; bo.dataset.id = a.id;
       twoStep(bd, 'Wirklich?', () => { spk1Call('remove', {id: a.id}).then(() => { if (SPK1.doc === a.id) SPK1.doc = null; spk1StartPaint(U); }, logErr); });

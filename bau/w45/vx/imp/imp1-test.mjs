@@ -186,15 +186,15 @@ ok(sc.undo === before.undo + 1 && sc.label === 'In Szenen zerschnitten', 'genau 
 // Song-Ablauf spielt den richtigen Ausschnitt (ab Teil 3 gestartet)
 const pl = await p.evaluate(async A => {
   const o = S.tracks.findIndex(t => t.orig), L = []; const f0 = tkStartSrc; window.tkStartSrc = x => { if (x.i === o) L.push({when: x.when, off: x.off, end: x.end}); return f0(x); };
-  closePop(); songPlayStart(A); await new Promise(r => setTimeout(r, 1500)); const t0 = b2t(barBeat(A)); stop(); window.tkStartSrc = f0;
-  return {L, t0, in2: S.tracks[o].clips[2].audio.in};
+  closePop(); const n0 = AU.ctx ? AU.ctx.currentTime : 0; songPlayStart(A); await new Promise(r => setTimeout(r, 1500)); stop(); window.tkStartSrc = f0;
+  return {L, n0, in2: S.tracks[o].clips[2].audio.in};
 }, sc.P[2].A);
-ok(pl.L.length >= 1 && Math.abs(pl.L[0].off - pl.in2) < .002 && Math.abs(pl.L[0].when - pl.t0) < .03, 'Song ab Teil 3: die Spur spielt den Ausschnitt von Szene 3', pl.L.slice(0, 2));
+ok(pl.L.length >= 1 && Math.abs(pl.L[0].off - pl.in2) < .002 && pl.L[0].when - pl.n0 < .5, 'Song ab Teil 3: die Spur spielt sofort den Ausschnitt von Szene 3', {when_ab_start: pl.L[0] && +(pl.L[0].when - pl.n0).toFixed(3), off: pl.L[0] && pl.L[0].off, in: pl.in2});
 await p.screenshot({path: path.join(fotos, 'imp1t-2-szenen-hochkant.png')});
 
 /* ===== 4. ↶ nimmt den ganzen Import zurück, ↷ bringt ihn wieder ===== */
 const un = await p.evaluate(b0 => { undo(); const a = {same: sx14State() === b0.st, bpm: S.bpm, ts: S.ts || '4/4', orig: S.tracks.some(t => t.orig), nt: NT(), song: !!(S.song && S.song.bars)}; redo(); const r = {orig: S.tracks.some(t => t.orig), bpm: S.bpm}; return {a, r}; }, before);
-ok(un.a.same && un.a.bpm === 120 && !un.a.orig && un.a.nt === before.nt, '↶: Stand wie vor dem Import (Spuren, Szenen, Song, Tempo 120)', un.a);
+ok(un.a.same && un.a.bpm === before.bpm && un.a.ts === before.ts && !un.a.orig && un.a.nt === before.nt, '↶: Stand wie vor dem Import (Spuren, Szenen, Song, Tempo ' + before.bpm + ')', un.a);
 ok(un.r.orig && un.r.bpm === 92, '↷: Import wieder da', un.r);
 
 /* ===== 5. Loop-Klammern → Loop-Clip läuft in der Matrix taktgenau ===== */
@@ -233,12 +233,12 @@ const p2 = await page(428, 926);
 const ct = await p2.evaluate(async ({b64, take, h}) => {
   const D = window.SYNQUENZER, r = await D.va1BoxImport(b64); await new Promise(x => setTimeout(x, 2500));
   const loaded = await D.tkLoadAll(), h2 = await D.tkPcmHash(take), o = S.tracks.findIndex(t => t.orig);
-  const L = []; const f0 = tkStartSrc; window.tkStartSrc = x => { if (x.i === o) L.push({off: x.off}); return f0(x); };
-  closePop(); launchScene(1); await new Promise(x => setTimeout(x, 1500)); stop(); window.tkStartSrc = f0;
-  return {ok: r.ok, note: r.note, same: h2 === h, loaded: loaded.includes(take), o, clips: o >= 0 ? S.tracks[o].clips.filter(x => x && x.audio).length : 0, bpm: S.bpm, plays: L.length, in1: o >= 0 && S.tracks[o].clips[1].audio.in, off: L[0] && L[0].off};
+  const L = []; const f0 = tkStartSrc; window.tkStartSrc = x => { if (x.i === o) L.push({off: x.off, when: x.when}); return f0(x); };
+  closePop(); launchScene(1); await new Promise(x => setTimeout(x, 1500)); const z = b2t(R.cstart[o]); stop(); window.tkStartSrc = f0;
+  return {ok: r.ok, note: r.note, same: h2 === h, loaded: loaded.includes(take), o, clips: o >= 0 ? S.tracks[o].clips.filter(x => x && x.audio).length : 0, bpm: S.bpm, plays: L.length, in1: o >= 0 && S.tracks[o].clips[1].audio.in, off: L[0] && L[0].off, lag: L[0] && L[0].when - z};
 }, {b64: sv.box, take: sv.take, h: sv.h});
 ok(ct.ok && ct.same && ct.loaded && ct.clips === 8 && ct.bpm === 92, 'Container (ZIP Projekt + Audio) in frischem Speicher: Audio bitgleich, Spur und Clips da', {ok: ct.ok, same: ct.same, loaded: ct.loaded, clips: ct.clips, bpm: ct.bpm, note: ct.note});
-ok(ct.plays >= 1 && Math.abs(ct.off - ct.in1) < .002, 'nach dem Öffnen spielt Szene 2 den Ausschnitt der Strophe', {plays: ct.plays, off: ct.off, in: ct.in1});
+ok(ct.plays >= 1 && Math.abs(ct.off - ct.in1 - ct.lag) < .002, 'nach dem Öffnen spielt Szene 2 den Ausschnitt der Strophe im Takt (Einstieg an der laufenden Stelle)', {plays: ct.plays, off: ct.off, in: ct.in1, einstieg_ms: +(ct.lag * 1000).toFixed(1)});
 await p2.close();
 console.log('INFO Abschnitt 3–6 fertig (' + el() + ')');
 await p.close();
@@ -269,13 +269,13 @@ await g.close();
 const q = await page(428, 926);
 const mid = (() => { const ev = [0, 0xFF, 0x51, 3, 0x09, 0x27, 0xC0, 0, 0xFF, 0x58, 4, 3, 2, 24, 8]; for (let k = 0; k < 6; k++) ev.push(0, 0x90, 60 + k, 100, 0x83, 0x60, 0x80, 60 + k, 0); ev.push(0, 0xFF, 0x2F, 0);
   const hd = [0x4D, 0x54, 0x68, 0x64, 0, 0, 0, 6, 0, 0, 0, 1, 1, 0xE0], tk = [0x4D, 0x54, 0x72, 0x6B, 0, 0, 0, ev.length]; return Buffer.from(hd.concat(tk, ev)); })();
-await q.evaluate(() => { for (const tr of S.tracks) for (let s = 0; s < tr.clips.length; s++) tr.clips[s] = null; S.song = null; UNDO.length = 0; });
+const qb = await q.evaluate(() => { for (const tr of S.tracks) for (let s = 0; s < tr.clips.length; s++) tr.clips[s] = null; S.song = null; UNDO.length = 0; return {bpm: S.bpm, ts: S.ts || '4/4'}; });
 ok(await openSheet(q), 'Import-Blatt für MIDI');
 { const fc = q.waitForEvent('filechooser', {timeout: 5000}); await tapSel(q, '.imp1 button[data-i="pick"]'); const ch = await fc.catch(() => null); if (ch) await ch.setFiles({name: 'test.mid', mimeType: 'audio/midi', buffer: mid}); await q.waitForTimeout(800); }
 const mr = await q.evaluate(() => { const n = S.tracks.reduce((a, t) => a + t.clips.filter(x => x && x.notes && x.notes.length).length, 0), notes = S.tracks.reduce((a, t) => a + t.clips.reduce((b2, x) => b2 + (x && x.notes ? x.notes.length : 0), 0), 0);
   const r = {clips: n, notes, bpm: S.bpm, ts: S.ts || '4/4', undo: UNDO.length, label: UNDO.length && UNDO[UNDO.length - 1].label}; undo(); r.after = {bpm: S.bpm, ts: S.ts || '4/4', clips: S.tracks.reduce((a, t) => a + t.clips.filter(Boolean).length, 0)}; return r; });
 ok(mr.clips >= 1 && mr.notes === 6 && mr.bpm === 100 && mr.ts === '3/4' && mr.undo === 1 && mr.label === 'MIDI importiert', 'MIDI über den Wähler: 6 Noten, Tempo 100 und 3/4 aus der Datei, ein ↶', mr);
-ok(mr.after.bpm === 120 && mr.after.ts === '4/4' && mr.after.clips === 0, '↶ nimmt den MIDI-Import ganz zurück (Tempo, Taktart, Clips)', mr.after);
+ok(mr.after.bpm === qb.bpm && mr.after.ts === qb.ts && mr.after.clips === 0, '↶ nimmt den MIDI-Import ganz zurück (Tempo, Taktart, Clips)', mr.after);
 await q.close();
 
 ok(!errs.length, 'keine Fehler in der Konsole', errs.slice(0, 3).join(' | '));
