@@ -18,3 +18,8 @@ Weiter mit: 4.54 = rel-4540/k fertig prüfen + INT53D nachziehen + Versionszeile
 - 4.54.1: Fix-Workflow wf_48addb94-86c (Skript workflows/scripts/synq-int454-wf_48addb94-86c.js) → per Resume fortsetzen; sein Stand liegt in rel-4540/k/index.html. Danach INT53D nachziehen (rel-4530/m3/int53d), Version 4.54.1, Rauchtest, hochladen.
 - 4.55 (XD1): Workflow wf_d87f8eed-964 (synq-xd1-…js) → Resume; Stand in w4550/xd1/index.html. Danach auf 4.54.1 mergen, hochladen.
 - Regel Xander: nicht endlos prüfen, Fertiges sofort zum Ausprobieren hochladen.
+
+## 14.11. 12:4x UTC
+- 4.54.1 RELEASED (main 25dd0ed) = R-4540 + rel-4541/novw.py (kein „Neue Version“-Streifen/Toast; VW lädt still). In-App neu.
+- WICHTIG: Fix-Release aus rel-4540/k wird 4.54.2 und braucht vorher `python3 rel-4541/novw.py <datei>` (+ INT53D-Merge). XD1 → 4.55.0 auch mit novw.
+- NEU von Xander (14.11.): Gesang-Editor wie Notenrolle (Transienten, Peak auf Taktstrich, Silben-Beschriftung, Schnitt+Dehnen mit Blende), Audio/MP3-Import mit Tempo/Takt/Teile-Erkennung → Szenen, Spektral-Seite (Trennen, Verfeinern, Noten einer Spur zuordnen, Klang-Analyse → Nachbau VA/FM), Chor-Stimmen extrahieren, Container mit Gesang. Plan: S/vx/PLAN.md
