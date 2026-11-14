@@ -14,7 +14,11 @@ Eigene Läufe (Playwright, Touch über CDP, 428×926 und 926×428, dazu 926×370
   - nachbau-abstaende-besser: „2,13 → 2,13, schlechter []". Alle vier Werte sind gleich wie basis5. Das ist erklärbar, weil SPK7 den Nachbau nicht berührt.
   - layout-3-groessen OK; regression-spk2-test 29/30 (bekannt: zerlegen-bass-ziel)
 - Bauer-Tests nachgefahren: spk7-kern-test ALLES OK (7), spk7-test ALLES OK (13) – reproduzierbar.
-- chr2-test (Chor): siehe Ende.
+- chr2-test (Chor, `vx/chr4/chr2-test.mjs`, gegen basis5): 77 OK / 5 FEHLER.
+  - Die 5 Fehler sind „Tuning … Knackser weniger"-Vergleiche; vorher und nachher sind die Werte gleich (z. B. LSD 2,18/3,15 → 2,18/3,15).
+  - Der Test verlangt eine Verbesserung gegenüber der Vergleichsdatei. Weil SPK7 Tuning und Chor nicht berührt, ist das erklärbar.
+  - Chor-Import, Stimmen trennen, ↶/↷, Speichern/Laden, Container und Blätter in 3 Größen sind OK; Konsole ohne Fehler.
+  - Nebenwirkung des Tests: Er schreibt seine Fotos nach `vx/chr4/fotos/chr2t-*.png` (9 Stück überschrieben). Seine zwei Messdateien in `vx/chr4/src/` habe ich wieder gelöscht.
 
 **Funktioniert als Nutzer (bestätigt):**
 - Pinsel → „Als Klangkorn" → Blatt mit Quellbild, Marker, Mini-Tastatur (Gleiten ohne Knackser, Sprung 0,96 × Grenze), Tastatur links halten/leuchten.

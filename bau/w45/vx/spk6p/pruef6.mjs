@@ -392,6 +392,36 @@ if (TEIL.includes('h')) {   // Regler / Kopieren, waehrend eine lange Rechnung (
   log('h2-kopieren-waehrend-rechnung', {k1, k2});
   await P.ctx.close();
 }
+if (TEIL.includes('i')) {   // Formant-Erhalt bei Oktave + (Gesang) und bei Chor Oktave ↓
+  const P = await page(428, 926), {p, tap} = P;
+  await p.evaluate(SRC, Object.assign({}, LEG, {pad: 0})); await idle(p);
+  const r = await p.evaluate(async () => { const sr = 48000;
+    const cen = (x) => { const w = __q.win(x, sr, 1.2, 1.9); let N = 32768; const re = new Float64Array(N), im = new Float64Array(N); for (let i = 0; i < w.length && i < N; i++) re[i] = w[i] * (0.5 - 0.5 * Math.cos(2 * Math.PI * i / Math.min(N, w.length)));
+      const bands = [[300, 1000], [1000, 2000], [2000, 3500]]; return bands.map(([a, b]) => __q.band(w, sr, a, b)); };
+    const r0 = __q.mono(await __spk.render('L1')); const b0 = cen(r0);
+    const t = await __spk6.trans('L1', 12); spk1Got(SPK1.ui, t); const r1 = __q.mono(await __spk.render('L1')); const b1 = cen(r1);
+    const rel = b => b.map(v => +(10 * Math.log10(v / b[0])).toFixed(1));
+    return {vorher_dB_rel_300_1000: rel(b0), nachOktave_dB_rel: rel(b1), pitch: +__q.ct(__q.pitch(__q.win(r1, sr, 1.3, 1.7), sr, 380, 520), 440).toFixed(1)}; });
+  log('i1-formant-oktave-plus', r);
+  await P.ctx.close();
+}
+if (TEIL.includes('j')) {   // hochkant: sichtbare Knoepfe im Notenmodus ohne Wischen; Trefferhoehe der Balken; Ebene loeschen im Notenmodus
+  const P = await page(428, 926), {p, tap} = P;
+  await p.evaluate(SRC, Object.assign({}, LEG, {pad: 0})); await idle(p);
+  let m = await btn(p, '#spk1Sheet .spk1-lr[data-l="L1"] [data-a="lmore"]'); await tap(m); m = await btn(p, '#spk1Sheet .spk1-dd [data-s6="ed"]'); await tap(m); await idle(p); await p.waitForTimeout(300);
+  const vis = await p.evaluate(() => [...document.querySelectorAll('#spk1Sheet .spk1-o.on [data-s6]')].map(e => { const r = e.getBoundingClientRect(); return e.textContent.trim() + (r.right <= innerWidth && r.left >= 0 ? '' : ' (nur nach Wischen)'); }));
+  const hit = await p.evaluate(() => { const U = SPK1.ui, q = SPK1.ui.meta.teil2.notes.L1[0], b = __spk6.edBox(q.id); return {balkenH: b.h, trefferH: Math.max(b.h, 18), rowH: U.v.rowH}; });
+  const verw = await p.evaluate(() => [...document.querySelectorAll('#spk1Sheet button')].filter(b => b.textContent.trim() === 'Verwerfen').length);
+  log('j1-notenmodus-hochkant', {knoepfe: vis, hit, knoepfeMitText_Verwerfen: verw});
+  // Ebene loeschen, waehrend ihr Notenmodus offen ist
+  await p.evaluate(async () => { const r = await __spk6.dup('L1'); spk1Got(SPK1.ui, r); });
+  m = await btn(p, '#spk1Sheet .spk1-lr[data-l="L2"] [data-a="lmore"]'); await tap(m); m = await btn(p, '#spk1Sheet .spk1-dd [data-s6="ed"]'); await tap(m); await idle(p); await p.waitForTimeout(250);
+  m = await btn(p, '#spk1Sheet .spk1-lr[data-l="L2"] [data-a="lmore"]'); await tap(m); m = await btn(p, '#spk1Sheet .spk1-dd button', 'Ebene löschen'); await tap(m); await p.waitForTimeout(300); const tx = await p.evaluate(() => [...document.querySelectorAll('#spk1Sheet .spk1-dd button')].map(b => b.textContent.trim()).slice(-2)); m = await btn(p, '#spk1Sheet .spk1-dd button', tx[tx.length - 1]); if (m) await tap(m); await idle(p); await p.waitForTimeout(500); log('j2-knopftexte', tx);
+  const st = await p.evaluate(() => ({tool: SPK1.ui.tool, s6e: SPK1.ui.s6e && SPK1.ui.s6e.lid, layers: SPK1.ui.meta.layers.map(l => l.id), zeile: (SPK1.ui.op.querySelector('.spk1-o.on label') || {}).textContent || ''}));
+  log('j2-ebene-geloescht-im-notenmodus', st);
+  await foto(p, 'p6-09-geloescht-im-notenmodus.png');
+  await P.ctx.close();
+}
 log('konsole-fehler', errs.slice(0, 10));
 fs.writeFileSync(path.join(dir, 'pruef6-' + TEIL.join('') + '.json'), JSON.stringify({ms: Date.now() - T0, res}, null, 1));
 await b.close(); srv.close();
