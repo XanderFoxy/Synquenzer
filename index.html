@@ -27568,7 +27568,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '4.56.0';
+const VERSION = '4.57.0';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -28890,6 +28890,7 @@ function normalizeProject(obj) {
     };
     p.tracks.forEach((t, i) => fix(t, 't', i)); p.scenes.forEach((sc, i) => fix(sc, 's', i));
     tkNormProject(obj, p);                                         // VS3: Takes (nur IDs und Maße), STIMME-Spur
+    spk1NormProject(obj, p);                                       // SPK1: Verweise auf Spektral-Analysen (nur wenn benutzt)
     // WP6 (§7.4): kit substitutions of the drum migration are toasted once (applyProject)
     if (warns.length) Object.defineProperty(p, '_warn', {value: warns, enumerable: false, configurable: true});
     p.fxBus = normFxBus(obj.fxBus);
@@ -51665,6 +51666,7 @@ function openClipSheet(t, s, opts) {
     const g = el('div', 'cgrid');
     g.append(B('✎ Bearbeiten', () => { closeClipSheet(); openRoll(t, s); }, 'big'));
     g.append(B(tr.stimme && clip.audio ? 'Marken & Timing …' : 'Quantisieren…', () => (tr.stimme && clip.audio ? (wpOpen({t, s}) ? closeClipSheet() : toast('Audio nur auf der eigenen Seite')) : openQuantSheet(t, s))));   // K3: STIMME → Marken-Editor
+    if (tr.stimme && clip.audio) spk1ClipBtn(g, B, t, s);   // SPK1: Im Spektrum öffnen
     g.append(B('Clip kopieren', () => { copyClip(t, s); toast('Clip kopiert'); reopen(); }));   // WEGE (D13)
     const pb = B('Clip einfügen', () => { if (pasteClip(t, s)) reopen(); }); pb.disabled = !CLIPBOARD.clip; g.append(pb);
     g.append(B('Duplizieren → frei', () => { const k = duplicateClip(t, s); if (k >= 0) toast('Dupliziert in Szene ' + (k + 1)); }, null, 'Duplizieren → freier Platz'));
@@ -52363,6 +52365,7 @@ function openMenu(goto) {
   // WEGE (D7): [Song als Audio] steht jetzt im Blatt Export › Audio (Echtzeit-Mitschnitt)
   vvMenuRow(s1, row, btn);                                        // VV1 (Nachtrag 5): Menü → Video
   va1MenuRow(s1, row, btn);                                       // VA1: Menü → Export (WAV, Einzelspuren, MIDI, Video, Container)
+  spk1MenuRow(s1, row, btn);                                      // SPK1: Analyse › [Spektral …]
   if (!(S.song && S.song.bars)) gr1MenuRow(s1, row, btn);         // GR1: Song › [Remix …] [Transponieren …] (WEGE Abschnitt 4: mit Song = REMIX in der Song-Leiste, Transponieren im Tempo-Blatt)
   mx2MenuRow(s1, row, btn);                                       // MX2: Mix › [Mix & Master …]
   tktMenuRow(s1, row, btn);                                       // TKT: Song › [Dur ↔ Moll …]
@@ -55846,6 +55849,7 @@ function ui1Entries() {
   wegeGuide(UI1.ents);   // WEGE: verschobene / umbenannte Wege + neue Einträge
   kf1Guide(UI1.ents);    // KF1: Rauschfarbe, Ringmod, Körnung, Anschlag Filter, S&H Tonart, Arp Treppe
   kf2Guide(UI1.ents);    // KF2: Saite, Vokal-Filter, Oszilloskop
+  spk1Guide(UI1.ents);   // SPK1: Spektral-Seite
   return UI1.ents;
 }
 function ui1Search(q) {
@@ -56282,6 +56286,7 @@ function onKeyDown(e) {
   if (code === 'Space' || code === 'Tab' || code === 'Backspace') e.preventDefault();
   if (e.repeat) return;
   if (VV.open || UI.vvOff) { if (code === 'Escape') vvClose(); return; }   // VV1: the Video sheet blocks the shortcuts like the menu; Esc closes it (§10.5)
+  if (SPK1.open) { if (code === 'Escape') spk1Close(); return; }   // SPK1: die Spektral-Seite sperrt die Kurztasten, Esc schließt
   const menuOpen = EL.menu.classList.contains('open');
   if (code === 'Escape') {
     if (MIC.open) { micClose(); return; }
@@ -59718,6 +59723,7 @@ function tkSheet(r, anchor) {
       if (d.a === 'zip') { tkExportZip(); return; }
       if (d.a === 'vx1r') { closePop(); vx1rOpen(rr); return; }   // VX1R: Gesang-Editor (Noten-Rolle)
       if (d.a === 'wp') { closePop(); wpOpen(rr); return; }      // VS5a: Marken-Editor
+      if (d.a === 'spk1') { const x = tkRef(rr); closePop(); if (x) spk1Open({take: x.a.take, in: x.a.in, out: x.a.out, name: x.a.name, back: {tk: rr}}); return; }   // SPK1: Im Spektrum öffnen
       if (d.a === 'g5') { closePop(); g5Convert(rr); return; }   // G5: Gesang → Melodie
       if (d.a === 'g7') { g7Toggle(rr); if (UI.pop && UI.pop.name === 'takes') tkSheetPaint(UI.pop.el); return; }   // G-GES: G7 je Take
       if (d.a === 'g2') { closePop(); g2Open(rr); return; }      // G2: Tonhöhe · Noten
@@ -59752,6 +59758,7 @@ function tkSheetPaint(p) {
     `<div class="small">${esc(est + per)}</div>` +
     (ok ? vx1rTkBtn(x) : '') +   // VX1R: Gesang-Editor (Noten-Rolle) = Standard
     (ok ? '<button class="mbtn rb tk-wp" data-a="wp">✎ Marken & Timing …</button>' : '') +
+    (ok ? spk1TkBtn() : '') +   // SPK1: Im Spektrum öffnen
     (ok ? `<div class="tkg57"><button class="mbtn rb tk-g5" data-a="g5"${G5.busy || TK.missing.has(x.a.take) ? ' disabled' : ''}>Noten-Clip aus Gesang</button>` +   // G5 (WEGE D14)
       `<button class="mbtn rb tk-g7${g7Follows(x.a.take) ? ' on' : ''}" data-a="g7" aria-pressed="${g7Follows(x.a.take)}">${g7Follows(x.a.take) ? '✓ ' : ''}folgt Transponieren</button></div>` : '') +   // G-GES: G7 je Take
     (ok ? '<div class="tkedrow">' + (TK.dupAsk ? g6pfSheetBtn(x.a) : '<button class="mbtn rb tk-g2" data-a="g2">Tonhöhe korrigieren</button><button class="mbtn rb tk-g6" data-a="g6">Chor</button><button class="mbtn rb tk-g4" data-a="g4">Effekte …</button>' + g6pfSheetBtn(x.a)) + '</div>' : '') +   /* G2 */
@@ -60020,8 +60027,9 @@ const g10cUnused = () => Object.keys(S.takes || {}).filter(id => !g10cRefIds().h
 async function g10cGcPlan(drop) {
   if (!kv || !kv.akeys) return {keys: [], bytes: 0};
   const keep = new Set(Object.keys(S.takes || {}).filter(id => !drop.has(id))), keepCh = new Set();
+  keep.add('spk');   // SPK1: Spektral-Analysen räumt die Seite selbst auf
   const chunksOf = s => { for (const m of s.match(/[0-9a-v]{10}:[0-9a-z]+(?::[0-9]+)?/g) || []) if (!drop.has(m.slice(0, 10))) keepCh.add(m); };
-  for (const id of keep) { const m = S.takes[id]; for (const c of m.chunks || []) keepCh.add(c); if (m.of) keep.add(m.of); }
+  for (const id of keep) { const m = S.takes[id]; if (!m) continue; for (const c of m.chunks || []) keepCh.add(c); if (m.of) keep.add(m.of); }   // SPK1 (4.57): 'spk' ist kein Take
   if (!drop.size) for (const u of UNDO.concat(REDO)) { const s = JSON.stringify(u.before || '') + JSON.stringify(u.items || ''); for (const m of s.match(/[0-9a-v]{10}/g) || []) keep.add(m); chunksOf(s); }
   for (const k of await kv.keys('')) {
     if (!/^(project|proj:|hist:)/.test(k) || (drop.size && k === 'project')) continue;
@@ -60238,6 +60246,7 @@ async function tkZipBytes() {
   for (const id of tkUsedIds()) { const m = S.takes[id], pcm = await tkPcm(id); if (m && pcm) files.push({name: 'takes/' + id + '.wav', data: tkWav(pcm, m.sr)}); }
   await clZipAdd(files);                                       // VS4: Referenz je Take (Säubern nach dem Import gleich)
   await va1Manifest(files);                                    // VA1: Inhaltsliste (manifest.json) – welche Takes, wo, was fehlt
+  await spk1ZipAdd(files);                                     // SPK1: Spektral-Analysen des Projekts (spektral/…)
   return buildZip(files);
 }
 async function tkExportZip() {
@@ -60279,6 +60288,7 @@ async function tkImportZip(u8, open) {
     if (await tkStore(id, w.pcm, keys)) { nOk++; TK.missing.delete(id); TK.buf.delete(id); }
   }
   if (tkAudioOk()) await clZipRead(fs);                // VS4: Referenz-WAVs
+  await spk1ZipRead(fs);                               // SPK1: Spektral-Analysen in den Audio-Speicher
   va1ImportNote(fs, nOk);                              // VA1: gegen die Inhaltsliste prüfen
   open(new TextDecoder().decode(pj.data));
   if (nOk) setTimeout(() => toast(nOk + (nOk === 1 ? ' Take' : ' Takes') + ' übernommen'), 1800);
@@ -60291,6 +60301,7 @@ async function tkGc() {
      bisher nach Kennung. Entkoppelte/duplizierte Takes nutzen die Stücke des Lead-Takes mit (chunks = 'lead:k'): Fehlt der Lead-Take, bleiben
      seine Stücke, solange ein Duplikat sie nennt; die Säubern-Referenz des Leads (<lead>:r<k>) bleibt dann auch (Feld of). */
   const keep = new Set(Object.keys(S.takes || {})), keepCh = new Set(), chunksOf = s => { for (const m of s.match(/[0-9a-v]{10}:[0-9a-z]+(?::[0-9]+)?/g) || []) keepCh.add(m); };
+  keep.add('spk');   // SPK1
   const ofIds = s => { for (const m of s.match(/\\?"of\\?":\\?"([0-9a-v]{10})/g) || []) keep.add(m.slice(-10)); };
   for (const id in S.takes || {}) { const m = S.takes[id]; for (const c of m.chunks || []) keepCh.add(c); if (m.of) keep.add(m.of); }
   for (const u of UNDO.concat(REDO)) { const s = JSON.stringify(u.before || '') + JSON.stringify(u.items || ''); for (const m of s.match(/[0-9a-v]{10}/g) || []) keep.add(m); chunksOf(s); }
@@ -96204,6 +96215,1833 @@ SYNQUENZER.beg1 = {
   rect: () => { const E = BEG1.el; if (!E) return null; const r = E.getBoundingClientRect(); return {x: r.left, y: r.top, w: r.width, h: r.height}; },
 };
 /* BEG1-END */
+/* ===== SPK1-BEGIN (Spektral-Seite Teil 1 · Kern) =====
+   Eigene Seite „Spektral“ (wie eine Extra-App in der App). Dieser Teil ist der Rechen-Kern, ohne Bedienfläche:
+   - Worker aus Text (Blob, wie vsWorker): STFT/ISTFT mit Hann, Hop N/4, Overlap-Add (Rekonstruktion bitnah), zwei reelle Rahmen je
+     komplexer FFT (V.fft aus vsDspMake). Rückfall ohne Worker: derselbe Kern im Hauptfaden.
+   - Anzeige-Stücke: Spektrum mit log. Frequenz (8 Zeilen je Halbton, MIDI 12…135), dB als Uint8, 1024 Spalten je Stück, Hop N/8;
+     jedes Stück liegt sofort im Audio-Speicher (Zwischenstand, Weiterrechnen nach Neuladen).
+   - Ebenen = Masken auf dem Original (nicht-destruktiv): Uint8 je Base-Frame (N 4096, Hop 1024) und Bin, Kacheln 128×128, gleichförmige
+     Kacheln (0 / 255) kosten nichts, je 128 Frames ein Streifen in IDB (spk:<id>:m<lid>:<s>). „Rest“ = 255 − Σ Ebenen → Summe = Original.
+   - Wiedergabe: Mischmaske (Lautstärke/Solo/Stumm) × STFT des Originals → ISTFT in Blöcken à 16384 Samples, gecacht (LRU 64).
+   - Undo: ein Schritt je Aktion (Verschieben/Kopieren, Ebene neu/weg/Name/Farbe), Stapel im Kern (30 Schritte / 48 MB).
+   - Projekt: Verweis S.spk = [{id, name}] (nur wenn benutzt → alte Projekte bleiben gleich), Daten im Audio-Speicher; der ZIP-Container
+     trägt sie mit (spektral/<id>/…). Takt-Raster: Projekt-Tempo, falls imp1Analyse vorhanden, dessen Ergebnis (spk1Grid).
+   App-Start: nur const/function – kein Worker, kein IDB, kein DOM, bis die Seite (oder die Test-API) es braucht. */
+const SPK1 = {open: false, w: null, wq: new Map(), wid: 0, K: null, how: '', doc: null, pl: null, plSeq: 0, last: null};
+const SPK1_BLK = 16384, SPK1_MAXS = 600;
+/* Rechen-Kern (läuft im Worker; als Text kopiert → nur eigene Namen + V) */
+function spk1DspMake(V) {
+  const BT = 128, CH = 524288, BLK = 16384, ROWS = 984, M0 = 12, RPS = 8, DBF = 120;
+  const docs = new Map(), WIN = {}, RMAP = {};
+  /* ---- IDB: gleiche Datenbank wie die App (synquenzer v2), große Daten im Store 'audio', Meta im Store 'kv'; ohne IDB Speicher ---- */
+  let dbp = null; const mem = {kv: new Map(), audio: new Map()};
+  function db() {
+    if (dbp) return dbp;
+    dbp = new Promise(res => {
+      try {
+        if (typeof indexedDB === 'undefined' || !indexedDB) return res(null);
+        const rq = indexedDB.open('synquenzer', 2);
+        rq.onupgradeneeded = () => { const d = rq.result; if (!d.objectStoreNames.contains('kv')) d.createObjectStore('kv'); if (!d.objectStoreNames.contains('audio')) d.createObjectStore('audio'); };
+        rq.onsuccess = () => { const d = rq.result; d.onversionchange = () => { try { d.close(); } catch (e) {} dbp = null; }; res(d); };
+        rq.onerror = rq.onblocked = () => res(null);
+        setTimeout(() => res(null), 4000);
+      } catch (e) { res(null); }
+    });
+    return dbp;
+  }
+  const tx = (st, m, fn) => db().then(d => d ? new Promise((ok, no) => { try { const t = d.transaction(st, m), r = fn(t.objectStore(st)); t.oncomplete = () => ok(r && r.result); t.onerror = t.onabort = () => no(t.error || new Error('idb')); } catch (e) { no(e); } }) : (r => r && typeof r === 'object' && 'result' in r ? r.result : undefined)(fn(null)));   // ohne IDB: Speicher
+  const put = (st, k, v) => tx(st, 'readwrite', s => s ? s.put(v, k) : mem[st].set(k, v));
+  const get = (st, k) => tx(st, 'readonly', s => s ? s.get(k) : {result: mem[st].get(k)});
+  const del = (st, k) => tx(st, 'readwrite', s => s ? s.delete(k) : mem[st].delete(k));
+  const keys = (st, pre) => tx(st, 'readonly', s => s ? s.getAllKeys() : {result: [...mem[st].keys()]}).then(ks => (ks || []).map(String).filter(k => k.startsWith(pre)));
+  /* ---- Fenster, FFT-Paare ---- */
+  function win(N) { if (WIN[N]) return WIN[N]; const w = new Float64Array(N); for (let j = 0; j < N; j++) w[j] = 0.5 - 0.5 * Math.cos(2 * Math.PI * j / N); return (WIN[N] = w); }
+  const smp = (x, i) => i >= 0 && i < x.length ? x[i] * (1 / 32768) : 0;
+  /* Zeilen der Anzeige: Zeile r = MIDI 12 + r/8; breite Zeilen (hoch) = Maximum der Bins, schmale (tief) = Interpolation */
+  function rmap(N, sr) {
+    const key = N + ':' + sr; if (RMAP[key]) return RMAP[key];
+    const a = new Int32Array(ROWS), b = new Int32Array(ROWS), fr = new Float32Array(ROWS), NB = N / 2, mf = m => 440 * Math.pow(2, (m - 69) / 12);
+    for (let r = 0; r < ROWS; r++) {
+      const m = M0 + r / RPS, bc = mf(m) * N / sr, lo = mf(m - 0.5 / RPS) * N / sr, hi = mf(m + 0.5 / RPS) * N / sr;
+      if (bc >= NB) { a[r] = -1; b[r] = -2; continue; }
+      const k0 = Math.ceil(lo), k1 = Math.min(NB, Math.floor(hi));
+      if (hi - lo >= 1 && k1 >= k0) { a[r] = k0; b[r] = k1; } else { a[r] = Math.floor(bc); b[r] = -1; fr[r] = bc - Math.floor(bc); }
+    }
+    return (RMAP[key] = {a, b, fr});
+  }
+  /* zwei reelle Rahmen in einer komplexen FFT: Betrag von Rahmen 1 (Re) und 2 (Im) je Bin 0…N/2 */
+  function magPair(re, im, N, m1, m2) {
+    for (let k = 0; k <= N / 2; k++) {
+      const kk = (N - k) % N, zr = re[k], zi = im[k], wr = re[kk], wi = im[kk];
+      m1[k] = 0.5 * Math.hypot(zr + wr, zi - wi); m2[k] = 0.5 * Math.hypot(zi + wi, wr - zr);
+    }
+  }
+  /* ---- STFT / ISTFT allgemein (Hann, ov = N/hop ≥ 4; Rahmen m beginnt bei (m − ov + 1)·hop → jedes Sample voll überdeckt) ---- */
+  function stft(x, N, hop) {
+    const ov = N / hop, F = Math.floor((x.length - 1) / hop) + ov, NB = N / 2 + 1, w = win(N), re = new Float64Array(N), im = new Float64Array(N);
+    const SR = new Float32Array(F * NB), SI = new Float32Array(F * NB), xs = i => i >= 0 && i < x.length ? x[i] : 0;
+    for (let m = 0; m < F; m += 2) {
+      const sA = (m - ov + 1) * hop, two = m + 1 < F;
+      for (let j = 0; j < N; j++) { re[j] = xs(sA + j) * w[j]; im[j] = two ? xs(sA + hop + j) * w[j] : 0; }
+      V.fft(re, im);
+      for (let k = 0; k < NB; k++) {
+        const kk = (N - k) % N, zr = re[k], zi = im[k], wr = re[kk], wi = im[kk], o1 = m * NB + k;
+        SR[o1] = 0.5 * (zr + wr); SI[o1] = 0.5 * (zi - wi);
+        if (two) { SR[o1 + NB] = 0.5 * (zi + wi); SI[o1 + NB] = 0.5 * (wr - zr); }
+      }
+    }
+    return {N, hop, F, NB, re: SR, im: SI};
+  }
+  function istft(S, n) {
+    const N = S.N, hop = S.hop, ov = N / hop, NB = S.NB, w = win(N), sc = 1 / (N * 3 * ov / 8), y = new Float64Array(n), re = new Float64Array(N), im = new Float64Array(N);
+    for (let m = 0; m < S.F; m += 2) {
+      const two = m + 1 < S.F;
+      for (let k = 0; k < NB; k++) {
+        const a = m * NB + k, b = a + NB, ar = S.re[a], ai = S.im[a], br = two ? S.re[b] : 0, bi = two ? S.im[b] : 0;
+        re[k] = ar - bi; im[k] = ai + br;                                        // Z = X1 + i·X2
+        if (k > 0 && k < N / 2) { re[N - k] = ar + bi; im[N - k] = br - ai; }    // Z[N−k] = conj(X1) + i·conj(X2)
+      }
+      V.fft(re, im, true);
+      const sA = (m - ov + 1) * hop;
+      for (let j = 0; j < N; j++) { const i = sA + j, i2 = i + hop; if (i >= 0 && i < n) y[i] += re[j] * w[j] * sc; if (two && i2 >= 0 && i2 < n) y[i2] += im[j] * w[j] * sc; }
+    }
+    return y;
+  }
+  /* ---- Dokument ---- */
+  const TRn = d => Math.ceil((d.meta.base.N / 2 + 1) / BT), NBn = d => d.meta.base.N / 2 + 1;
+  const Fn = d => Math.floor((d.meta.n - 1) / d.meta.base.hop) + d.meta.base.N / d.meta.base.hop;
+  const NSn = d => Math.ceil(Fn(d) / BT);
+  const mkey = (d, lid, s) => 'spk:' + d.meta.id + ':m' + lid + ':' + s;
+  function stNew(d) { return {h: new Uint8Array(TRn(d)), t: new Array(TRn(d)).fill(null)}; }
+  function stPack(st) {
+    let n = 0; for (let i = 0; i < st.h.length; i++) if (st.h[i] === 1) n++;
+    if (!n && st.h.every(v => v === 0)) return null;
+    const out = new Uint8Array(st.h.length + n * BT * BT); out.set(st.h); let o = st.h.length;
+    for (let i = 0; i < st.h.length; i++) if (st.h[i] === 1) { out.set(st.t[i], o); o += BT * BT; }
+    return out;
+  }
+  function stUnpack(d, u8) {
+    const st = stNew(d), TR = st.h.length; if (!u8 || u8.length < TR) return st;
+    st.h.set(u8.subarray(0, TR)); let o = TR;
+    for (let i = 0; i < TR; i++) if (st.h[i] === 1) { st.t[i] = u8.slice(o, o + BT * BT); o += BT * BT; } else if (st.h[i] !== 255) st.h[i] = 0;
+    return st;
+  }
+  const stCopy = st => st ? {h: st.h.slice(), t: st.t.map(t => t ? t.slice() : null)} : null;
+  const stBytes = st => st ? st.h.length + st.t.reduce((a, t) => a + (t ? t.length : 0), 0) : 0;
+  function tileArr(st, tr) { if (st.h[tr] !== 1) { const t = new Uint8Array(BT * BT); if (st.h[tr] === 255) t.fill(255); st.t[tr] = t; st.h[tr] = 1; } return st.t[tr]; }
+  function tidy(st, tr) { if (st.h[tr] !== 1) return; const t = st.t[tr], v = t[0]; if (v !== 0 && v !== 255) return; for (let i = 1; i < t.length; i++) if (t[i] !== v) return; st.h[tr] = v; st.t[tr] = null; }
+  const lay = (d, lid) => d.meta.layers.find(l => l.id === lid) || null;
+  const masksOf = (d, lid) => { let m = d.masks.get(lid); if (!m) d.masks.set(lid, m = new Map()); return m; };
+  function stripe(d, lid, s, make) { const M = masksOf(d, lid); let st = M.get(s); if (!st && make) M.set(s, st = stNew(d)); return st || null; }
+  async function saveMeta(d) {
+    d.meta.mt = Date.now(); await put('kv', 'spk:doc:' + d.meta.id, JSON.parse(JSON.stringify(d.meta)));
+    const idx = (await get('kv', 'spk:idx')) || [], e = {id: d.meta.id, name: d.meta.name, sec: +(d.meta.n / d.meta.sr).toFixed(2), mt: d.meta.mt, src: d.meta.src ? d.meta.src.kind : '', tk: d.meta.src && d.meta.src.take ? d.meta.src.take + (d.meta.src.out > d.meta.src.in ? ':' + (+d.meta.src.in).toFixed(2) + '-' + (+d.meta.src.out).toFixed(2) : '') : ''};
+    const i = idx.findIndex(x => x && x.id === d.meta.id); if (i >= 0) idx[i] = e; else idx.push(e);
+    await put('kv', 'spk:idx', idx);
+  }
+  async function flush(d) {
+    clearTimeout(d.ft); d.ft = 0; const ds = [...d.dirty]; d.dirty.clear(); let bytes = 0;
+    for (const ks of ds) {
+      const [lid, s] = ks.split('|'), st = lay(d, lid) ? stripe(d, lid, +s, false) : null, p = st ? stPack(st) : null, k = mkey(d, lid, s);
+      if (p) { await put('audio', k, p.buffer); bytes += p.length; } else await del('audio', k);
+    }
+    if (d.metaDirty || ds.length) { d.metaDirty = false; await saveMeta(d); }
+    return bytes;
+  }
+  const soon = d => { clearTimeout(d.ft); d.ft = setTimeout(() => { flush(d).catch(() => {}); }, 2000); };
+  function verUp(d, lid) { const l = lay(d, lid); if (l) l.ver = ++d.vc; d.cache.clear(); }
+  /* ---- Undo (Kern) ---- */
+  function uBegin(d, label) { d.u = {label, meta: JSON.stringify(d.meta.layers), rest: JSON.stringify(d.meta.rest), st: new Map(), bytes: 0}; }
+  function uTouch(d, lid, s) { const k = lid + '|' + s; if (!d.u || d.u.st.has(k)) return; const st = stripe(d, lid, s, false); d.u.st.set(k, stCopy(st)); d.u.bytes += stBytes(st); }
+  function uEnd(d) {
+    const u = d.u; d.u = null; if (!u) return;
+    d.undo.push(u); d.redo.length = 0;
+    let tot = d.undo.reduce((a, x) => a + x.bytes, 0);
+    while (d.undo.length > 30 || (tot > 48e6 && d.undo.length > 1)) tot -= d.undo.shift().bytes;
+    d.metaDirty = true; soon(d);
+  }
+  function uSwap(d, from, to) {
+    const u = from.pop(); if (!u) return null;
+    const back = {label: u.label, meta: JSON.stringify(d.meta.layers), rest: JSON.stringify(d.meta.rest), st: new Map(), bytes: u.bytes};
+    for (const [k, prev] of u.st) {
+      const [lid, s] = k.split('|'), M = masksOf(d, lid);
+      back.st.set(k, stCopy(M.get(+s) || null));
+      if (prev) M.set(+s, stCopy(prev)); else M.delete(+s);
+      d.dirty.add(k);
+    }
+    d.meta.layers = JSON.parse(u.meta); d.meta.rest = JSON.parse(u.rest);
+    for (const l of d.meta.layers) { l.ver = ++d.vc; for (const s of masksOf(d, l.id).keys()) d.dirty.add(l.id + '|' + s); }
+    d.cache.clear(); to.push(back); d.metaDirty = true; soon(d);
+    return u.label;
+  }
+  /* ---- Auswahl (Vektor): Rechteck / Zeit / Frequenz mit weicher Kante; Gewicht 0…1 je Base-Frame und Bin ---- */
+  /* Pinsel (Polylinie mit Radius in Zeit/Cent, weiche Kante, Radierer) und Harmonische (Kamm entlang der Grundton-Spur) als Raster je Base-Frame */
+  function selRaster(d, list) {
+    const sr = d.meta.sr, N = d.meta.base.N, hop = d.meta.base.hop, NB = N / 2 + 1, F = Fn(d), pos = new Map(), neg = new Map(), box = {m0: 1e9, m1: -1, k0: 1e9, k1: -1};
+    const put = (M, m, k, w) => {
+      if (m < 0 || m >= F || k < 0 || k >= NB || !(w > 0)) return;
+      let r = M.get(m); if (!r) M.set(m, r = new Uint8Array(NB)); const v = Math.min(255, Math.round(w * 255)); if (v > r[k]) r[k] = v;
+      if (M === pos) { if (m < box.m0) box.m0 = m; if (m > box.m1) box.m1 = m; if (k < box.k0) box.k0 = k; if (k > box.k1) box.k1 = k; }
+    };
+    const fm = t => t * sr / hop + 1;
+    for (const s of list) {
+      if (s.art === 'pinsel') {
+        const M = s.minus ? neg : pos, rt = Math.max(0.004, +s.rt || 0.05), rc = Math.max(5, +s.rc || 100), soft = Math.min(0.95, Math.max(0, +s.weich || 0));
+        for (const p of s.pts || []) {
+          const t = +p[0], f = +p[1]; if (!(f > 0)) continue;
+          const ma = Math.max(0, Math.floor(fm(t - rt))), mb = Math.min(F - 1, Math.ceil(fm(t + rt))), c0 = 1200 * Math.log2(f);
+          const ka = Math.max(1, Math.floor(f * Math.pow(2, -rc / 1200) * N / sr)), kb = Math.min(NB - 1, Math.ceil(f * Math.pow(2, rc / 1200) * N / sr));
+          for (let m = ma; m <= mb; m++) {
+            const dt = ((m - 1) * hop / sr - t) / rt;
+            for (let k = ka; k <= kb; k++) { const dc = (1200 * Math.log2(k * sr / N) - c0) / rc, r = Math.sqrt(dt * dt + dc * dc); if (r < 1) put(M, m, k, soft > 0 && r > 1 - soft ? (1 - r) / soft : 1); }
+          }
+        }
+      } else if (s.art === 'harm') {
+        const K = Math.max(1, Math.min(48, s.K | 0 || 16)), bw = Math.max(5, +s.bw || 40), q = Math.pow(2, bw / 1200) - 1;
+        for (const p of s.spur || []) {
+          const f0 = +p[1]; if (!(f0 > 0)) continue; const m = Math.round(fm(+p[0]));
+          for (let h = 1; h <= K; h++) {
+            const fh = h * f0; if (fh >= sr / 2) break;
+            const kc = fh * N / sr, hw = Math.max(1.5, fh * q * N / sr);
+            for (let k = Math.max(1, Math.floor(kc - hw)); k <= Math.min(NB - 1, Math.ceil(kc + hw)); k++) { const w = Math.min(1, 1.6 * (1 - Math.abs(k - kc) / (hw + 0.5))); put(pos, m, k, w); put(pos, m + 1, k, w * 0.999); }
+          }
+        }
+      }
+    }
+    return {pos, neg, box};
+  }
+  function selFn(d, sel) {
+    const sr = d.meta.sr, N = d.meta.base.N, hop = d.meta.base.hop, dur = d.meta.n / sr, ny = sr / 2;
+    const all = (Array.isArray(sel) ? sel : [sel]).filter(Boolean), ras = all.filter(s => s.art === 'pinsel' || s.art === 'harm');
+    const RA = ras.length ? selRaster(d, ras) : null;
+    const shapes = all.filter(s => s.art !== 'pinsel' && s.art !== 'harm').map(s => {
+      const art = s.art || 'rect', t0 = art === 'freq' ? -1 : +s.t0 || 0, t1 = art === 'freq' ? dur + 1 : (s.t1 == null ? dur + 1 : +s.t1);
+      const f0 = art === 'zeit' ? 0 : Math.max(0, +s.f0 || 0), f1 = art === 'zeit' ? ny * 2 : (s.f1 == null ? ny * 2 : +s.f1);
+      return {t0, t1, f0, f1, kt: Math.max(0, +s.kt || 0), kf: Math.max(0, +s.kf || 0)};
+    });
+    const ramp = (v, a, b, k) => k > 0 ? Math.min(1, Math.max(0, (v - (a - k / 2)) / k), Math.max(0, ((b + k / 2) - v) / k)) : (v >= a && v <= b ? 1 : 0);
+    const cents = f => f > 0 ? 1200 * Math.log2(f / 440) : -1e9;
+    const box = {m0: 1e9, m1: -1, k0: 1e9, k1: -1};
+    for (const s of shapes) {
+      box.m0 = Math.min(box.m0, Math.max(0, Math.floor((s.t0 - s.kt / 2) * sr / hop))); box.m1 = Math.max(box.m1, Math.min(Fn(d) - 1, Math.ceil((s.t1 + s.kt / 2) * sr / hop) + 2));
+      const fk = c => 440 * Math.pow(2, c / 1200);
+      box.k0 = Math.min(box.k0, s.f0 > 0 ? Math.max(0, Math.floor(fk(cents(s.f0) - s.kf / 2) * N / sr)) : 0); box.k1 = Math.max(box.k1, Math.min(N / 2, Math.ceil(fk(cents(s.f1) + s.kf / 2) * N / sr)));
+    }
+    if (RA && RA.box.m1 >= 0) { box.m0 = Math.min(box.m0, RA.box.m0); box.m1 = Math.max(box.m1, RA.box.m1); box.k0 = Math.min(box.k0, RA.box.k0); box.k1 = Math.max(box.k1, RA.box.k1); }
+    const fnc = (m, k) => {
+      const t = (m - 1) * hop / sr, f = k * sr / N; let best = 0;   // Mitte von Rahmen m = (m − 1)·hop
+      for (const s of shapes) {
+        const wt = ramp(t, s.t0, s.t1, s.kt); if (!wt) continue;
+        const wf = s.kf > 0 && f > 0 ? ramp(cents(f), s.f0 > 0 ? cents(s.f0) : -1e9, cents(s.f1), s.kf) : (f >= s.f0 && f <= s.f1 ? 1 : 0);
+        if (wt * wf > best) best = wt * wf;
+      }
+      if (RA) { const p = RA.pos.get(m); if (p && p[k] / 255 > best) best = p[k] / 255; const q = RA.neg.get(m); if (q && q[k]) best *= 1 - q[k] / 255; }
+      return best;
+    };
+    return {fnc, box};
+  }
+  /* ---- Verschieben / Kopieren zwischen Ebenen (ein Undo-Schritt). von: lid | 'orig' | 'rest', nach: lid | 'neu' | 'rest' ---- */
+  function newLayer(d, o) {
+    o = o || {}; let n = 1; while (lay(d, 'L' + n)) n++;
+    const art = ['bass', 'gesang', 'drums', 'lead', 'pads', 'eigene'].includes(o.art) ? o.art : 'eigene';
+    const COL = {bass: '--t1', gesang: '--t6', drums: '--t5', lead: '--t4', pads: '--t3', eigene: '--t8'};
+    const l = {id: 'L' + n, name: String(o.name || ({bass: 'Bass', gesang: 'Gesang', drums: 'Drums', lead: 'Lead', pads: 'Pads'}[art] || 'Ebene ' + n)).slice(0, 40), art, col: o.col || COL[art], vol: 0, solo: false, mute: false, ver: ++d.vc};
+    d.meta.layers.push(l); return l;
+  }
+  function transfer(d, o) {
+    const von = o.von || 'orig', modus = o.modus === 'kopieren' ? 'kopieren' : 'verschieben';
+    uBegin(d, o.label || (modus === 'kopieren' ? 'In Ebene kopieren' : 'In Ebene verschieben'));
+    let nach = o.nach;
+    if (nach === 'neu' || (nach && typeof nach === 'object')) nach = newLayer(d, typeof o.nach === 'object' ? o.nach : {art: o.art, name: o.name}).id;
+    if (nach !== 'rest' && !lay(d, nach)) { d.u = null; throw new Error('Ebene fehlt'); }
+    if (von !== 'orig' && von !== 'rest' && !lay(d, von)) { d.u = null; throw new Error('Ebene fehlt'); }
+    if (von === nach) { d.u = null; return {nach, anteil: 0}; }
+    const {fnc, box} = selFn(d, o.sel || {}), TR = TRn(d), NB = NBn(d), all = d.meta.layers.map(l => l.id);
+    let moved = 0, cells = 0;
+    for (let s = box.m0 >> 7; s <= box.m1 >> 7 && box.m1 >= 0; s++) {
+      for (let tr = box.k0 >> 7; tr <= Math.min(TR - 1, box.k1 >> 7); tr++) {
+        const kA = Math.max(box.k0, tr * BT), kB = Math.min(box.k1, tr * BT + BT - 1, NB - 1), mA = Math.max(box.m0, s * BT), mB = Math.min(box.m1, s * BT + BT - 1);
+        // Gewichte zuerst – leere Kachel = nichts anfassen
+        const wts = new Float32Array(BT * BT); let any = false;
+        for (let m = mA; m <= mB; m++) for (let k = kA; k <= kB; k++) { const v = fnc(m, k); if (v > 0) { wts[(m & 127) * BT + (k & 127)] = v; any = true; } }
+        if (!any) continue;
+        const ids = all.filter(id => { const st = stripe(d, id, s, false); return st && st.h[tr]; });
+        if (nach !== 'rest' && !ids.includes(nach)) ids.push(nach);
+        for (const id of all) uTouch(d, id, s);
+        const T = {}; for (const id of ids) T[id] = tileArr(stripe(d, id, s, true), tr);
+        const sumAt = i => { let a = 0; for (const id of ids) a += T[id][i]; return a; };
+        for (let i = 0; i < BT * BT; i++) {
+          const w = wts[i]; if (!w) continue; cells++;
+          if (von === 'orig') {
+            if (modus === 'verschieben') for (const id of ids) if (id !== nach) T[id][i] = Math.round(T[id][i] * (1 - w));
+            if (nach !== 'rest') { const B = T[nach][i], free = modus === 'verschieben' ? 255 - (sumAt(i) - B) : 255; const nb = Math.min(free, Math.round(B + w * (255 - B))); moved += nb - B; T[nach][i] = nb; }
+          } else if (von === 'rest') {
+            if (nach === 'rest') continue;
+            const r = 255 - sumAt(i); if (r <= 0) continue; const dd = Math.round(w * r); T[nach][i] += dd; moved += dd;
+          } else {
+            const A = T[von] ? T[von][i] : 0; if (!A) continue; let dd = Math.round(w * A);
+            if (nach !== 'rest') { dd = Math.min(dd, 255 - T[nach][i]); T[nach][i] += dd; }
+            if (modus === 'verschieben' && T[von]) T[von][i] -= dd; moved += dd;
+          }
+        }
+        for (const id of ids) { const st = stripe(d, id, s, true); tidy(st, tr); d.dirty.add(id + '|' + s); }
+      }
+    }
+    if (nach !== 'rest') verUp(d, nach); if (von !== 'orig' && von !== 'rest') verUp(d, von);
+    if (von === 'orig' && modus === 'verschieben') for (const l of d.meta.layers) l.ver = ++d.vc;
+    d.cache.clear(); uEnd(d);
+    return {nach, cells, anteil: cells ? +(moved / (cells * 255)).toFixed(4) : 0};
+  }
+  /* ---- Mischung: Gewicht je Bin für Rahmen m (Ebenen + Rest + Original) ---- */
+  function mixOf(d, mx) {
+    const L = d.meta.layers, R = d.meta.rest || {vol: 0, solo: false, mute: false}, db = v => Math.pow(10, (+v || 0) / 20);
+    if (mx === 'orig') return {g: {}, rest: 0, orig: 1};
+    if (typeof mx === 'string') return {g: mx === 'rest' ? {} : {[mx]: 1}, rest: mx === 'rest' ? 1 : 0, orig: 0};
+    if (mx && typeof mx === 'object') return {g: Object.assign({}, mx.g || {}), rest: +mx.rest || 0, orig: +mx.orig || 0};
+    const solo = L.some(l => l.solo) || R.solo, g = {};
+    for (const l of L) g[l.id] = l.mute || (solo && !l.solo) ? 0 : db(l.vol);
+    return {g, rest: R.mute || (solo && !R.solo) ? 0 : db(R.vol), orig: 0};
+  }
+  function gainFn(d, mx) {
+    const NB = NBn(d), acc = new Uint16Array(NB), L = d.meta.layers;
+    return (m, out) => {
+      acc.fill(0); out.fill(0); const s = m >> 7, c = (m & 127) * BT;
+      for (const l of L) {
+        const st = stripe(d, l.id, s, false); if (!st) continue; const g = mx.g[l.id] || 0;
+        for (let tr = 0; tr < st.h.length; tr++) {
+          const h = st.h[tr]; if (!h) continue; const b0 = tr * BT, lim = Math.min(BT, NB - b0);
+          if (h === 255) { for (let b = 0; b < lim; b++) { acc[b0 + b] += 255; out[b0 + b] += g * 255; } }
+          else { const t = st.t[tr]; for (let b = 0; b < lim; b++) { const v = t[c + b]; acc[b0 + b] += v; out[b0 + b] += g * v; } }
+        }
+      }
+      for (let k = 0; k < NB; k++) { const r = 255 - acc[k]; out[k] = (out[k] + (r > 0 ? mx.rest * r : 0)) / 255 + mx.orig; }
+    };
+  }
+  /* Block k (Samples k·BLK … +BLK) aller Kanäle, Maske je Rahmen; zwei Rahmen je FFT, Y = p·Z + q·conj(Z[N−k]) */
+  function block(d, k, mx, sel, sv) {
+    const mk = JSON.stringify([mx, d.meta.layers.map(l => l.ver), sel ? 's' + sv : '']) + ':' + k, hit = d.cache.get(mk);
+    if (hit) { d.cache.delete(mk); d.cache.set(mk, hit); return hit; }
+    const N = d.meta.base.N, hop = d.meta.base.hop, ov = N / hop, NB = N / 2 + 1, a = k * BLK, w = win(N), sc = 1 / (N * 3 * ov / 8);
+    let SF = null; if (sel) { if (!d.selC || d.selC.v !== sv) d.selC = {v: sv, f: selFn(d, sel)}; SF = d.selC.f; }
+    const plain = !SF && mx.orig === 1 && !Object.values(mx.g).some(Boolean) && !mx.rest, silent = !mx.orig && !mx.rest && !Object.values(mx.g).some(Boolean);
+    const outs = d.pcm.map(() => new Float32Array(BLK));
+    if (plain) { d.pcm.forEach((x, c) => { for (let i = 0; i < BLK; i++) outs[c][i] = smp(x, a + i); }); }
+    else if (!silent) {
+      const gf = gainFn(d, mx), g2 = new Float32Array(NB), re = new Float64Array(N), im = new Float64Array(N);
+      const m0 = a / hop, m1 = (a + BLK) / hop + ov - 2, G = [];
+      for (let m = m0; m <= m1; m++) {
+        const g = new Float32Array(NB); gf(m, g);
+        if (SF) { if (m < SF.box.m0 || m > SF.box.m1) g.fill(0); else for (let q = 0; q < NB; q++) g[q] = q < SF.box.k0 || q > SF.box.k1 ? 0 : g[q] * SF.fnc(m, q); }
+        G.push(g);
+      }
+      d.pcm.forEach((x, c) => {
+        const y = outs[c];
+        for (let m = m0; m <= m1; m += 2) {
+          const sA = (m - ov + 1) * hop, two = m + 1 <= m1, ga = G[m - m0], gb = two ? G[m + 1 - m0] : g2.fill(0);
+          for (let j = 0; j < N; j++) { re[j] = smp(x, sA + j) * w[j]; im[j] = two ? smp(x, sA + hop + j) * w[j] : 0; }
+          V.fft(re, im);
+          for (let q = 0; q <= N / 2; q++) {
+            const kk = (N - q) % N, p = 0.5 * (ga[q] + gb[q]), r = 0.5 * (ga[q] - gb[q]), zr = re[q], zi = im[q], wr = re[kk], wi = im[kk];
+            re[q] = p * zr + r * wr; im[q] = p * zi - r * wi;
+            if (kk !== q) { re[kk] = p * wr + r * zr; im[kk] = p * wi - r * zi; }
+          }
+          V.fft(re, im, true);
+          for (let j = 0; j < N; j++) { const i = sA + j - a, i2 = i + hop; if (i >= 0 && i < BLK) y[i] += re[j] * w[j] * sc; if (two && i2 >= 0 && i2 < BLK) y[i2] += im[j] * w[j] * sc; }
+        }
+      });
+    }
+    d.cache.set(mk, outs); while (d.cache.size > 64) d.cache.delete(d.cache.keys().next().value);
+    return outs;
+  }
+  function render(d, mx, a, b) {
+    a = Math.max(0, Math.floor(a || 0)); b = Math.min(d.meta.n, b == null ? d.meta.n : Math.floor(b));
+    const outs = d.pcm.map(() => new Float32Array(Math.max(0, b - a)));
+    for (let k = Math.floor(a / BLK); k * BLK < b; k++) { const bl = block(d, k, mx), o = k * BLK; for (let c = 0; c < outs.length; c++) { const s0 = Math.max(a, o), s1 = Math.min(b, o + BLK); outs[c].set(bl[c].subarray(s0 - o, s1 - o), s0 - a); } }
+    return outs;
+  }
+  /* ---- Anzeige-Stücke: 1024 Spalten × 984 Zeilen Uint8 (dB −120…0), Zeilen-Reihe (data[r·W + c]) ---- */
+  function specInfo(d, N) { let hop = N / 8, cols = Math.floor(d.meta.n / hop) + 1; while (cols > 24000) { hop *= 2; cols = Math.floor(d.meta.n / hop) + 1; } return {N, hop, cols, rows: ROWS, chunks: Math.ceil(cols / 1024), m0: M0, rps: RPS, dbf: DBF}; }
+  function specChunk(d, N, ci) {
+    const I = specInfo(d, N), x = d.mid, W = Math.min(1024, I.cols - ci * 1024), out = new Uint8Array(ROWS * W), w = win(N), M = rmap(N, d.meta.sr);
+    const re = new Float64Array(N), im = new Float64Array(N), m1 = new Float64Array(N / 2 + 1), m2 = new Float64Array(N / 2 + 1), sc = 4 / N, k255 = 255 / DBF;
+    const col = (mag, c) => {
+      for (let r = 0; r < ROWS; r++) {
+        let v; const A = M.a[r], B = M.b[r];
+        if (B === -2) v = 0; else if (B === -1) v = mag[A] * (1 - M.fr[r]) + (A + 1 < mag.length ? mag[A + 1] : 0) * M.fr[r]; else { v = 0; for (let k = A; k <= B; k++) if (mag[k] > v) v = mag[k]; }
+        const dbv = 20 * Math.log10(v * sc + 1e-12) + DBF; out[r * W + c] = dbv <= 0 ? 0 : dbv >= DBF ? 255 : Math.round(dbv * k255);
+      }
+    };
+    for (let c = 0; c < W; c += 2) {
+      const gc = ci * 1024 + c, sA = gc * I.hop - N / 2, two = c + 1 < W;
+      for (let j = 0; j < N; j++) { const i = sA + j, i2 = i + I.hop; re[j] = (i >= 0 && i < x.length ? x[i] : 0) * w[j]; im[j] = two && i2 >= 0 && i2 < x.length ? x[i2] * w[j] : 0; }
+      V.fft(re, im); magPair(re, im, N, m1, m2); col(m1, c); if (two) col(m2, c + 1);
+    }
+    return {N, k: ci, x0: ci * 1024, w: W, R: ROWS, hop: I.hop, data: out};
+  }
+  /* ---- Harmonische: Tipp (t, f) → Grundton-Spur je Base-Frame (Spitze verfolgen, ±70 Cent je Frame, parabolisch verfeinert) ---- */
+  function harmTrack(d, t, f, maxS) {
+    const sr = d.meta.sr, hop = d.meta.base.hop, F = Fn(d), N = f < 160 ? 16384 : f < 420 ? 8192 : 4096, x = d.mid, w = win(N), NB = N / 2 + 1;
+    const re = new Float64Array(N), im = new Float64Array(N), cache = new Map();
+    const magAt = m => {
+      if (cache.has(m)) return cache.get(m);
+      const m1 = new Float32Array(NB), m2 = new Float32Array(NB), a = new Float64Array(NB), b = new Float64Array(NB), sA = (m - 1) * hop - N / 2;
+      for (let j = 0; j < N; j++) { const i = sA + j, i2 = i + hop; re[j] = (i >= 0 && i < x.length ? x[i] : 0) * w[j]; im[j] = i2 >= 0 && i2 < x.length ? x[i2] * w[j] : 0; }
+      V.fft(re, im); magPair(re, im, N, a, b); m1.set(a); m2.set(b); cache.set(m, m1); cache.set(m + 1, m2);
+      if (cache.size > 64) { const it = cache.keys(); cache.delete(it.next().value); cache.delete(it.next().value); }
+      return m1;
+    };
+    const peak = (m, fc, ct) => {
+      const g = magAt(m), ka = Math.max(1, Math.floor(fc * Math.pow(2, -ct / 1200) * N / sr)), kb = Math.min(NB - 2, Math.ceil(fc * Math.pow(2, ct / 1200) * N / sr));
+      let bk = -1, bv = 0; for (let k = ka; k <= kb; k++) if (g[k] > bv && g[k] >= g[k - 1] && g[k] >= g[k + 1]) { bv = g[k]; bk = k; }
+      if (bk < 0) return null;
+      const l = Math.log(g[bk - 1] + 1e-12), c = Math.log(bv + 1e-12), r = Math.log(g[bk + 1] + 1e-12), den = l - 2 * c + r, dk = den < 0 ? 0.5 * (l - r) / den : 0;
+      return {f: (bk + Math.max(-0.5, Math.min(0.5, dk))) * sr / N, v: bv};
+    };
+    const mc = Math.max(1, Math.min(F - 2, Math.round(t * sr / hop + 1))), st = peak(mc, f, 100);
+    if (!st) return {spur: [], f0: 0, len: 0};
+    const out = new Map([[mc, st.f]]), lim = st.v * Math.pow(10, -32 / 20), span = Math.round(Math.min(12, maxS) * sr / hop);
+    for (const dir of [1, -1]) {
+      let fc = st.f, miss = 0;
+      for (let m = mc + dir, n = 1; m >= 1 && m < F - 1 && n <= span; m += dir, n++) {
+        const p = peak(m, fc, 70);
+        if (!p || p.v < lim) { if (++miss > 3) break; continue; }
+        miss = 0; fc = p.f; out.set(m, p.f);
+      }
+    }
+    const ms = [...out.keys()].sort((a, b) => a - b), spur = [];
+    for (let i = 0; i < ms.length; i++) {   // kleine Lücken (≤ 3 Frames) überbrücken
+      spur.push([+((ms[i] - 1) * hop / sr).toFixed(4), +out.get(ms[i]).toFixed(2)]);
+      const nx = ms[i + 1]; if (nx && nx - ms[i] > 1 && nx - ms[i] <= 4) for (let m = ms[i] + 1; m < nx; m++) { const a = out.get(ms[i]), b = out.get(nx), u = (m - ms[i]) / (nx - ms[i]); spur.push([+((m - 1) * hop / sr).toFixed(4), +(a + (b - a) * u).toFixed(2)]); }
+    }
+    return {spur, f0: st.f, len: spur.length ? spur[spur.length - 1][0] - spur[0][0] : 0, N};
+  }
+  /* ---- Ähnliche: grobes Log-Spektrum (Halbtöne, Hop 2048), Korrelation der Beispiel-Schablone über das ganze Stück ---- */
+  function coarse(d) {
+    if (d.co) return d.co;
+    const N = 4096, hop = 2048, sr = d.meta.sr, x = d.mid, F = Math.floor(x.length / hop) + 1, B = 108, M0 = 21, w = win(N), NB = N / 2 + 1;
+    const v = new Float32Array(F * B), re = new Float64Array(N), im = new Float64Array(N), a = new Float64Array(NB), b = new Float64Array(NB), ka = new Int32Array(B), kb = new Int32Array(B);
+    for (let j = 0; j < B; j++) { const mf = mm => 440 * Math.pow(2, (mm - 69) / 12); ka[j] = Math.min(NB - 1, Math.max(1, Math.round(mf(M0 + j - 0.5) * N / sr))); kb[j] = Math.min(NB - 1, Math.max(ka[j], Math.round(mf(M0 + j + 0.5) * N / sr))); }
+    const col = (g, f) => { for (let j = 0; j < B; j++) { let mx = 0; for (let k = ka[j]; k <= kb[j]; k++) if (g[k] > mx) mx = g[k]; v[f * B + j] = Math.max(0, 20 * Math.log10(mx * 4 / N + 1e-12) + 100); } };
+    for (let f = 0; f < F; f += 2) {
+      const sA = f * hop - N / 2;
+      for (let j = 0; j < N; j++) { const i = sA + j, i2 = i + hop; re[j] = (i >= 0 && i < x.length ? x[i] : 0) * w[j]; im[j] = i2 >= 0 && i2 < x.length ? x[i2] * w[j] : 0; }
+      V.fft(re, im); magPair(re, im, N, a, b); col(a, f); if (f + 1 < F) col(b, f + 1);
+    }
+    return (d.co = {hop, F, B, M0, v});
+  }
+  function similar(d, ex) {
+    const C = coarse(d), sr = d.meta.sr, hz2m = f => 69 + 12 * Math.log2(Math.max(1, f) / 440);
+    const fa = Math.max(0, Math.floor((+ex.t0 || 0) * sr / C.hop)), fb = Math.min(C.F - 1, Math.max(fa + 1, Math.ceil((+ex.t1 || 0) * sr / C.hop))), L = fb - fa + 1;
+    const j0 = ex.f0 > 0 ? Math.max(0, Math.floor(hz2m(ex.f0)) - C.M0) : 0, j1 = ex.f1 > 0 ? Math.min(C.B - 1, Math.ceil(hz2m(ex.f1)) - C.M0) : C.B - 1;
+    if (j1 < j0 || L < 2) return {hits: [], L};
+    const nb = j1 - j0 + 1, n = L * nb, T = new Float32Array(n); let mT = 0;
+    for (let u = 0; u < L; u++) for (let j = 0; j < nb; j++) mT += (T[u * nb + j] = C.v[(fa + u) * C.B + j0 + j]);
+    mT /= n; let nT = 0; for (let i = 0; i < n; i++) { T[i] -= mT; nT += T[i] * T[i]; } nT = Math.sqrt(nT) || 1;
+    const R = new Float32Array(Math.max(0, C.F - L + 1));
+    for (let s = 0; s < R.length; s++) {
+      let mX = 0; for (let u = 0; u < L; u++) { const o = (s + u) * C.B + j0; for (let j = 0; j < nb; j++) mX += C.v[o + j]; } mX /= n;
+      let xy = 0, xx = 0; for (let u = 0; u < L; u++) { const o = (s + u) * C.B + j0, p = u * nb; for (let j = 0; j < nb; j++) { const xv = C.v[o + j] - mX; xy += xv * T[p + j]; xx += xv * xv; } }
+      R[s] = xx > 0 ? xy / (Math.sqrt(xx) * nT) : 0;
+    }
+    const hits = [], gap = Math.max(1, Math.round(L * 0.75));
+    for (let s = 0; s < R.length; s++) {
+      if (R[s] < 0.3 || Math.abs(s - fa) < gap) continue;
+      let ok = true; for (let q = Math.max(0, s - gap); q <= Math.min(R.length - 1, s + gap); q++) if (R[q] > R[s] || (R[q] === R[s] && q < s)) { ok = false; break; }
+      if (ok) hits.push({t0: +(s * C.hop / sr).toFixed(4), t1: +((s + L) * C.hop / sr).toFixed(4), wert: +R[s].toFixed(3)});
+    }
+    hits.sort((a, b) => b.wert - a.wert); hits.length = Math.min(hits.length, 300); hits.sort((a, b) => a.t0 - b.t0);
+    return {hits, L};
+  }
+  /* ---- Ebenen-Tönung für die Anzeige: bis 8 Ebenen in 2 RGBA-Bildern (Zeit = Frames/fst, Höhe = 246 Halb-Halbtöne ab MIDI 12) ---- */
+  function tint(d, maxW) {
+    const L = d.meta.layers.slice(0, 8), F = Fn(d), NB = NBn(d), sr = d.meta.sr, N = d.meta.base.N, H = 246, fst = Math.max(2, Math.ceil(F / Math.max(256, maxW))), W = Math.ceil(F / fst);
+    const ka = new Int32Array(H), kb = new Int32Array(H), mf = mm => 440 * Math.pow(2, (mm - 69) / 12);
+    for (let j = 0; j < H; j++) { const mm = 12 + (j + 0.5) / 2; ka[j] = Math.round(mf(mm - 0.25) * N / sr); kb[j] = Math.max(ka[j], Math.round(mf(mm + 0.25) * N / sr)); if (ka[j] >= NB) { ka[j] = -1; } else kb[j] = Math.min(NB - 1, kb[j]); }
+    const out = [new Uint8Array(W * H * 4), L.length > 4 ? new Uint8Array(W * H * 4) : null];
+    L.forEach((l, li) => {
+      const img = out[li >> 2], ch = li & 3;
+      for (let m = 0; m < F; m++) {
+        const st = stripe(d, l.id, m >> 7, false); if (!st) { m |= 127; continue; }
+        const x = (m / fst) | 0, c = (m & 127) * BT;
+        for (let j = 0; j < H; j++) {
+          if (ka[j] < 0) break; let mx = 0;
+          for (let k = ka[j]; k <= kb[j]; k++) { const h = st.h[k >> 7]; const v = h === 1 ? st.t[k >> 7][c + (k & 127)] : h; if (v > mx) mx = v; }
+          const o = (j * W + x) * 4 + ch; if (mx > img[o]) img[o] = mx;
+        }
+      }
+    });
+    return {W, H, fst, hop: d.meta.base.hop, sr, ids: L.map(l => l.id), img0: out[0], img1: out[1]};
+  }
+  /* ---- Zerlegen / Verfeinern (ohne KI, Recherche §3): HPSS + Grundton-Kamm + REPET-SIM, Wiener-artig, Summe = Original ---- */
+  const tick = () => new Promise(r => setTimeout(r, 0));
+  const ZNAME = {bass: 'Bass', gesang: 'Gesang', drums: 'Drums', lead: 'Lead', pads: 'Pads', rest: 'Rest'};
+  // Beträge (mono) der Rahmen mit Mitte cen[i] (Sample), FFT N, Bins 0…K−1 → Float32Array(n·K), zwei Rahmen je FFT
+  function magsAt(d, N, cen, K) {
+    const x = d.mid, w = win(N), NB = N / 2 + 1, n = cen.length, out = new Float32Array(n * K), re = new Float64Array(N), im = new Float64Array(N), a = new Float64Array(NB), b = new Float64Array(NB);
+    for (let i = 0; i < n; i += 2) {
+      const sA = cen[i] - N / 2, two = i + 1 < n, sB = two ? cen[i + 1] - N / 2 : 0;
+      for (let j = 0; j < N; j++) { const p = sA + j, q = sB + j; re[j] = (p >= 0 && p < x.length ? x[p] : 0) * w[j]; im[j] = two && q >= 0 && q < x.length ? x[q] * w[j] : 0; }
+      V.fft(re, im); magPair(re, im, N, a, b);
+      for (let k = 0; k < K; k++) out[i * K + k] = a[k];
+      if (two) for (let k = 0; k < K; k++) out[(i + 1) * K + k] = b[k];
+    }
+    return out;
+  }
+  // gleitender Median (Länge L ungerade, außen 0): n Werte src[o + i·st] → dst[o + i·st]; buf = sortiertes Fenster
+  function medLine(src, o, st, n, L, dst, buf) {
+    const h = L >> 1; let c = 0;
+    const at = i => i >= 0 && i < n ? src[o + i * st] : 0;
+    const ins = v => { let lo = 0, hi = c; while (lo < hi) { const m = (lo + hi) >> 1; if (buf[m] < v) lo = m + 1; else hi = m; } for (let j = c; j > lo; j--) buf[j] = buf[j - 1]; buf[lo] = v; c++; };
+    const rem = v => { let lo = 0, hi = c - 1; while (lo < hi) { const m = (lo + hi) >> 1; if (buf[m] < v) lo = m + 1; else hi = m; } for (let j = lo; j < c - 1; j++) buf[j] = buf[j + 1]; c--; };
+    for (let i = -h; i <= h; i++) ins(Math.fround(at(i)));
+    for (let i = 0; i < n; i++) { dst[o + i * st] = buf[h]; rem(Math.fround(at(i - h))); ins(Math.fround(at(i + h + 1))); }
+  }
+  // HPSS (Median zeitlich Lt Rahmen / spektral Lf Bins) → harmonischer Anteil mh = H²/(H²+P²) je Zelle; H bleibt für den Grundton
+  function hpss(X, n, K, Lt, Lf) {
+    const H = new Float32Array(n * K), P = new Float32Array(n * K), buf = new Float32Array(Math.max(Lt, Lf) + 2), mh = new Float32Array(n * K);
+    for (let k = 0; k < K; k++) medLine(X, k, K, n, Lt, H, buf);
+    for (let i = 0; i < n; i++) medLine(X, i * K, 1, K, Lf, P, buf);
+    for (let i = 0; i < n * K; i++) { const h = H[i] * H[i], p = P[i] * P[i]; mh[i] = h + p > 0 ? h / (h + p) : 0.5; }
+    return {H, mh};
+  }
+  // Grundton je Rahmen per Obertonsumme (fa…fb Hz, 1/8 Halbton); df = Hz je Bin; zug = Stetigkeit (Sprünge > 3 Halbtöne kosten)
+  function f0Sum(Y, n, K, df, fa, fb, nh, zug) {
+    const f0 = new Float32Array(n), q = new Float32Array(n), hr = new Float32Array(n), C = []; for (let f = fa; f <= fb; f *= Math.pow(2, 1 / 96)) C.push(f);
+    let prev = 0;
+    for (let i = 0; i < n; i++) {
+      const o = i * K, at = kf => { const k = Math.floor(kf), u = kf - k; return k + 1 < K ? Y[o + k] * (1 - u) + Y[o + k + 1] * u : 0; };
+      let tot = 0; const ka = Math.max(1, Math.floor(fa * 0.9 / df)), kb = Math.min(K, Math.ceil(Math.min(fb * nh, fb < 400 ? 400 : 4000) / df)); for (let k = ka; k < kb; k++) tot += Y[o + k];
+      let best = 0, bf = 0;
+      for (const f of C) {
+        let s = 0, g = 1; for (let h = 1; h <= nh; h++, g *= 0.85) { const kf = h * f / df; if (kf >= K - 1) break; s += g * at(kf); }
+        if (zug && prev) { const j = Math.abs(12 * Math.log2(f / prev)); if (j > 3) s *= 0.8; }
+        if (s > best) { best = s; bf = f; }
+      }
+      f0[i] = bf; const r = tot > 0 ? best / tot : 0; q[i] = Math.max(0, Math.min(1, (r - 0.08) / 0.22)); prev = q[i] > 0.3 ? bf : 0;
+      let a2 = 0; for (let h = 2; h <= nh && h * bf / df < K - 1; h++) a2 += at(h * bf / df); hr[i] = bf ? a2 / (at(bf / df) + 1e-12) : 0;   // Obertöne / Grundton (Kick-Ausklang ≈ Sinus → klein)
+    }
+    return {f0, q, hr};
+  }
+  // Kamm: Gewicht 0…1 je Bin für k·f0 (r = halbe Breite in Bins), bis fmax
+  function comb(out, K, df, f0, fmax, r, h0) {
+    out.fill(0); if (!(f0 > 0)) return out;
+    for (let h = h0 || 1; h * f0 < fmax; h++) { const kc = h * f0 / df; for (let k = Math.max(0, Math.floor(kc - r)); k <= Math.min(K - 1, Math.ceil(kc + r)); k++) { const w = 1 - Math.abs(k - kc) / (r + 0.5); if (w > out[k]) out[k] = w; } }
+    return out;
+  }
+  const ramp = (f, a, b) => f <= a ? 0 : f >= b ? 1 : 0.5 - 0.5 * Math.cos(Math.PI * (f - a) / (b - a));
+  // Stufe 1 (ganzes Stück): Beträge bis 10 kHz als dB-Bytes + je 4 Rahmen die 10 ähnlichsten Stellen (REPET-SIM, Abstand ≥ 1 s)
+  async function zPrep(d, emit, qid) {
+    if (d.zA) return d.zA;
+    const sr = d.meta.sr, N = d.meta.base.N, hop = d.meta.base.hop, NB = N / 2 + 1, F = Fn(d), KV = Math.min(NB, Math.ceil(10000 * N / sr)), KN = 10;
+    const kq = 'spk:' + d.meta.id + ':zq', kn = 'spk:' + d.meta.id + ':zn';
+    const oq = await get('audio', kq), on2 = await get('audio', kn);
+    const LUT = new Float32Array(256); for (let i = 0; i < 256; i++) LUT[i] = i ? Math.pow(10, (i / 1.6 - 90) / 20) : 0;
+    if (oq && on2 && oq.byteLength === F * KV) return (d.zA = {Q: new Uint8Array(oq), nb: new Int32Array(on2), KV, KN, LUT});
+    const Q = new Uint8Array(F * KV), step = 256;
+    for (let m0 = 0; m0 < F; m0 += step) {
+      if (d.zStop) throw new Error('abgebrochen');
+      const n = Math.min(step, F - m0), cen = new Int32Array(n); for (let i = 0; i < n; i++) cen[i] = (m0 + i - 1) * hop;
+      const X = magsAt(d, N, cen, KV);
+      for (let i = 0; i < n * KV; i++) { const v = X[i] > 0 ? Math.round((20 * Math.log10(X[i]) + 90) * 1.6) : 0; Q[m0 * KV + i] = v < 1 ? (X[i] > 0 ? 1 : 0) : v > 255 ? 255 : v; }
+      emit({qid, prog: 0.25 * (m0 + n) / F, stufe: 'Ähnlichkeit'}); await tick();
+    }
+    // Merkmale je 4 Rahmen: 48 log-Bänder 60 Hz…10 kHz (dB), mittelwertfrei + normiert → Kosinus
+    const G = Math.ceil(F / 4), B = 48, fe = new Float32Array(G * B), bk = new Int32Array(B + 1);
+    for (let b = 0; b <= B; b++) bk[b] = Math.min(KV, Math.max(1, Math.round(60 * Math.pow(10000 / 60, b / B) * N / sr)));
+    for (let g = 0; g < G; g++) {
+      for (let b = 0; b < B; b++) { let s = 0, c = 0; for (let m = g * 4; m < Math.min(F, g * 4 + 4); m++) for (let k = bk[b]; k < Math.max(bk[b] + 1, bk[b + 1]); k++) { s += Q[m * KV + k]; c++; } fe[g * B + b] = c ? s / c : 0; }
+      let mu = 0; for (let b = 0; b < B; b++) mu += fe[g * B + b]; mu /= B; let nn = 0; for (let b = 0; b < B; b++) { fe[g * B + b] -= mu; nn += fe[g * B + b] ** 2; } nn = Math.sqrt(nn) || 1; for (let b = 0; b < B; b++) fe[g * B + b] /= nn;
+    }
+    const nb = new Int32Array(G * KN).fill(-1), minD = Math.max(2, Math.round(sr / (4 * hop))), bv = new Float32Array(KN);
+    for (let g = 0; g < G; g++) {
+      bv.fill(-2); const o = g * KN;
+      for (let h = 0; h < G; h++) {
+        if (Math.abs(h - g) < minD) continue; let s = 0; for (let b = 0; b < B; b++) s += fe[g * B + b] * fe[h * B + b];
+        if (s <= bv[KN - 1]) continue; let j = KN - 1; while (j > 0 && bv[j - 1] < s) { bv[j] = bv[j - 1]; nb[o + j] = nb[o + j - 1]; j--; } bv[j] = s; nb[o + j] = h;
+      }
+      if ((g & 63) === 63) { emit({qid, prog: 0.25 + 0.05 * g / G, stufe: 'Ähnlichkeit'}); await tick(); if (d.zStop) throw new Error('abgebrochen'); }
+    }
+    await put('audio', kq, Q.buffer.slice(0)); await put('audio', kn, nb.buffer.slice(0));   // Zwischenstand: nach Neuladen nicht noch einmal
+    return (d.zA = {Q, nb, KV, KN, LUT});
+  }
+  function uAbort(d) {
+    const u = d.u; d.u = null; if (!u) return;
+    for (const [k, prev] of u.st) { const [lid, s] = k.split('|'); if (prev) masksOf(d, lid).set(+s, prev); else masksOf(d, lid).delete(+s); d.dirty.add(k); }
+    d.meta.layers = JSON.parse(u.meta); d.meta.rest = JSON.parse(u.rest); for (const lid of [...d.masks.keys()]) if (!lay(d, lid)) d.masks.delete(lid);
+    for (const l of d.meta.layers) l.ver = ++d.vc; d.cache.clear(); d.metaDirty = true; soon(d);
+  }
+  // Tiefband mit langer FFT (Nf): Bass = harmonisch UND auf dem Kamm des verfolgten Grundtons; Drums = perkussiv + tiefe Reste neben dem Kamm (Kick)
+  function lowSplit(d, cen, Nf, fmax, r, trust) {   // trust: der Nutzer sagt „hier ist Bass“ → Kamm ohne Zweifel-Schranke
+    const sr = d.meta.sr, dff = sr / Nf, Kf = Math.min(Nf / 2 + 1, Math.ceil(fmax / dff) + 2), n = cen.length, X = magsAt(d, Nf, cen, Kf), {H, mh} = hpss(X, n, Kf, 17, 17);
+    const fz = f0Sum(H, n, Kf, dff, 30, 260, 6, true), SB = new Float32Array(n * Kf), SD = new Float32Array(n * Kf), cb = new Float32Array(Kf), G = new Float32Array(n);
+    for (let i = 0; i < n; i++) {
+      const o = i * Kf; comb(cb, Kf, dff, fz.f0[i], Math.min(fmax, Math.max(260, 4.5 * fz.f0[i])), r, 1);   // nur die unteren Obertöne: darüber liegen Akkorde/Melodie dicht
+      const gate = G[i] = trust ? Math.min(1, fz.q[i] / 0.1) * Math.min(1, Math.max(0, (fz.hr[i] - 0.2) / 0.3)) : Math.min(1, Math.max(0, (fz.q[i] - 0.05) / 0.25)) * Math.min(1, Math.max(0, (fz.hr[i] - 0.3) / 0.6));
+      for (let k = 0; k < Kf; k++) { const f = k * dff, h = mh[o + k], on = cb[k] * gate, kick = 1 - ramp(f, 90, 160); SB[o + k] = on; SD[o + k] = (1 - on) * ((1 - h) + h * kick); }   // Bass-Anschlag bleibt Bass (auf dem Kamm)
+    }
+    return {X, SB, SD, Kf, Nf, f0: fz, gate: G};
+  }
+  // feine Schätzung S (Anteil 0…1 je feinem Bin) → Basis-Bin k (Leistung gewichtet), Zeile i
+  function projRow(X, S, o, Kf, r, k) {
+    const c = k * r, hw = r / 2; let num = 0, den = 0;
+    for (let kk = Math.max(0, Math.ceil(c - hw)); kk <= Math.min(Kf - 1, Math.floor(c + hw)); kk++) { const w = Math.abs(kk - c) === hw ? 0.5 : 1, p = X[o + kk] * X[o + kk] * w; num += p * S[o + kk]; den += p; }
+    return den > 0 ? num / den : -1;
+  }
+  // Zerlegen: ganzes Stück → Drums (perkussiv), Bass (Tiefband + Grundton-Kamm), Gesang (Vordergrund, stimmhaft), Rest. Ein Undo-Schritt.
+  // Eigene Ebenen bleiben: verteilt wird nur, was frei ist (255 − Σ eigene); frühere Zerlegen-Ebenen (l.z) werden neu gefüllt.
+  async function zerlegen(d, o, emit, qid) {
+    if (d.busy) throw new Error('Rechnung läuft');
+    const sr = d.meta.sr, N = d.meta.base.N, hop = d.meta.base.hop, NB = N / 2 + 1, F = Fn(d), NS = NSn(d), TR = TRn(d), df = sr / N, t0 = Date.now();
+    d.busy = 'zerlegen'; d.zStop = false;
+    try {
+      uBegin(d, 'Zerlegen');
+      const lids = {};
+      for (const art of ['drums', 'bass', 'gesang']) { let l = d.meta.layers.find(x => x.z === art); if (!l) { l = newLayer(d, {art}); l.z = art; } lids[art] = l.id; }
+      const zl = [lids.drums, lids.bass, lids.gesang], own = d.meta.layers.filter(l => !zl.includes(l.id)).map(l => l.id);
+      const A = await zPrep(d, emit, qid), KV = A.KV, KN = A.KN, LUT = A.LUT;
+      const job = d.meta.jobs.zerlegen; let s0 = 0;
+      if (job && !job.fertig && job.lids && job.lids.join() === zl.join() && o.weiter !== false) s0 = Math.min(NS, job.k | 0);   // Weiterrechnen nach Unterbrechung
+      d.meta.jobs.zerlegen = {k: s0, n: NS, lids: zl, fertig: false};
+      const Lt = 17, Lf = 17, MG = (Lt >> 1) + 1, low = new Float32Array(NB), voc = new Float32Array(NB), cb = new Float32Array(NB), med = new Float32Array(KN + 1);
+      for (let k = 0; k < NB; k++) { const f = k * df; low[k] = 1 - ramp(f, 110, 260); voc[k] = ramp(f, 100, 180) * (1 - ramp(f, 7000, 10000)); }
+      for (let s = s0; s < NS; s++) {
+        if (d.zStop) throw new Error('abgebrochen');
+        const mA = s * BT, mB = Math.min(F - 1, mA + BT - 1), a0 = mA - MG, n = mB + MG - a0 + 1, cen = new Int32Array(n);
+        for (let i = 0; i < n; i++) cen[i] = (a0 + i - 1) * hop;
+        const X = magsAt(d, N, cen, NB), {H, mh} = hpss(X, n, NB, Lt, Lf);
+        const LS = lowSplit(d, cen, 8192, 520, 1.5), rL = 8192 / N, KL = Math.ceil(520 / df);   // Tiefband feiner (Kick ↔ Bass)
+        const ED = new Float32Array(n * NB), EB = new Float32Array(n * NB), EV = new Float32Array(n * NB);
+        for (let i = MG - 1; i <= n - MG; i++) {
+          const m = a0 + i, o = i * NB; if (m < 0 || m >= F) continue;
+          const gt = 0;
+          const g = m >> 2, nbo = g * KN, ph = m & 3;
+          for (let k = 0; k < NB; k++) {
+            const h = mh[o + k], lb = 0;
+            let fg = 0;
+            if (k < KV && voc[k] > 0) {
+              let c = 0; for (let j = 0; j < KN; j++) { const gg = A.nb[nbo + j]; if (gg < 0) continue; const mm = Math.min(F - 1, gg * 4 + ph), v = LUT[A.Q[mm * KV + k]]; let p = c++; while (p > 0 && med[p - 1] > v) { med[p] = med[p - 1]; p--; } med[p] = v; }
+              if (c) { const x = X[o + k], R = Math.min(x, c & 1 ? med[c >> 1] : 0.5 * (med[(c >> 1) - 1] + med[c >> 1])), v = x - R; fg = v * v + R * R > 0 ? v * v / (v * v + R * R) : 0; }
+            }
+            ED[o + k] = (1 - lb) * (1 - h); EB[o + k] = lb; EV[o + k] = (1 - lb) * h * fg * voc[k];
+            if (k < KL) {
+              const x = 1 - ramp(k * df, 320, 500), eb = projRow(LS.X, LS.SB, i * LS.Kf, LS.Kf, rL, k), ed = projRow(LS.X, LS.SD, i * LS.Kf, LS.Kf, rL, k);
+              if (eb >= 0) { ED[o + k] = x * ed + (1 - x) * ED[o + k]; EB[o + k] = x * eb + (1 - x) * EB[o + k]; EV[o + k] *= 1 - x; }
+            }
+          }
+        }
+        // 3×3 glätten (Wiener-artig, keine harten Kanten) und in die Kacheln schreiben
+        const sm = (E, i, k) => { let a = 0, c = 0; for (let di = -1; di <= 1; di++) for (let dk = -1; dk <= 1; dk++) { const kk = k + dk; if (kk < 0 || kk >= NB) continue; a += E[(i + di) * NB + kk]; c++; } return a / c; };
+        for (const id of zl) uTouch(d, id, s);
+        for (let tr = 0; tr < TR; tr++) {
+          const T = zl.map(id => tileArr(stripe(d, id, s, true), tr)), OW = own.map(id => { const st = stripe(d, id, s, false); return st && st.h[tr] ? (st.h[tr] === 255 ? 255 : st.t[tr]) : 0; });
+          for (const t of T) t.fill(0);
+          for (let m = mA; m <= mB; m++) {
+            const i = m - a0, c = (m & 127) * BT;
+            for (let b = 0; b < BT; b++) {
+              const k = tr * BT + b; if (k >= NB) break;
+              let used = 0; for (const t of OW) used += t === 255 ? 255 : t ? t[c + b] : 0;
+              const free = Math.max(0, 255 - used); if (!free) continue;
+              const vd = Math.round(free * sm(ED, i, k)), vb = Math.min(free - vd, Math.round(free * sm(EB, i, k))), vv = Math.min(free - vd - vb, Math.round(free * sm(EV, i, k)));
+              T[0][c + b] = vd; T[1][c + b] = vb < 0 ? 0 : vb; T[2][c + b] = vv < 0 ? 0 : vv;
+            }
+          }
+          for (const id of zl) tidy(stripe(d, id, s, true), tr);
+        }
+        for (const id of zl) d.dirty.add(id + '|' + s);
+        d.meta.jobs.zerlegen.k = s + 1;
+        emit({qid, prog: 0.3 + 0.7 * (s + 1) / NS, stufe: 'Trennen'}); await tick();
+      }
+      for (const id of zl) verUp(d, id);
+      d.meta.jobs.zerlegen = {fertig: true, n: NS, lids: zl, ms: Date.now() - t0};
+      uEnd(d);
+      return {lids, ms: Date.now() - t0, weiter: s0};
+    } catch (e) { uAbort(d); delete d.meta.jobs.zerlegen; throw e; }
+    finally { d.busy = null; d.zStop = false; }
+  }
+  // Verfeinern: in der Auswahl mit passender FFT neu schätzen, welcher Anteil zum Ziel gehört → Ziel-Ebene (andere Ebenen geben anteilig ab)
+  const ZN = {bass: 8192, pads: 8192, gesang: 4096, lead: 4096, drums: 1024, rest: 4096};
+  function refineEst(d, ziel, m0, m1, k1) {
+    const sr = d.meta.sr, N = d.meta.base.N, hop = d.meta.base.hop, NB = N / 2 + 1, nF = m1 - m0 + 1, E = new Float32Array(nF * NB), Nf = ZN[ziel];
+    if (ziel === 'rest') { E.fill(1); return {E, Nf}; }
+    if (ziel === 'drums') {   // kurze Rahmen (1024, Hop 256): perkussiver Anteil, je Basis-Rahmen 4 Unter-Rahmen
+      const sub = 4, sh = hop / sub, Kf = Nf / 2 + 1, MG = 9, n = (nF + 2 * MG) * sub, cen = new Int32Array(n);
+      for (let i = 0; i < n; i++) cen[i] = (m0 - MG - 1) * hop + Math.round((i - (sub - 1) / 2) * sh);
+      const X = magsAt(d, Nf, cen, Kf), {mh} = hpss(X, n, Kf, 17, 9), r = N / Nf;
+      for (let m = 0; m < nF; m++) for (let k = 0; k <= Math.min(k1, NB - 1); k++) {
+        const kf = k / r, a = Math.floor(kf), u = kf - a; let num = 0, den = 0;
+        for (let j = 0; j < sub; j++) { const o = ((m + MG) * sub + j) * Kf; for (const [kk, w] of [[a, 1 - u], [a + 1, u]]) { if (kk >= Kf || !w) continue; const p = X[o + kk] * X[o + kk] * w; num += p * (1 - mh[o + kk]); den += p; } }
+        E[m * NB + k] = den > 0 ? num / den : 0;
+      }
+      const cl = new Int32Array(nF); for (let i = 0; i < nF; i++) cl[i] = (m0 + i - 1) * hop;   // tief: Kick ↔ Bass mit langer FFT (wie Zerlegen)
+      const LS = lowSplit(d, cl, 8192, 520, 1.5), rL = 8192 / N, df = sr / N;
+      for (let m = 0; m < nF; m++) for (let k = 0; k * df < 500; k++) { const x = 1 - ramp(k * df, 320, 500), e = projRow(LS.X, LS.SD, m * LS.Kf, LS.Kf, rL, k); if (e >= 0) E[m * NB + k] = x * e + (1 - x) * E[m * NB + k]; }
+      return {E, Nf};
+    }
+    if (ziel === 'bass') {   // lange FFT (16384): Bass nur auf dem Kamm des verfolgten Grundtons, Kick daneben fällt heraus
+      const MG = 9, n = nF + 2 * MG, cen = new Int32Array(n); for (let i = 0; i < n; i++) cen[i] = (m0 - MG + i - 1) * hop;
+      const LS = lowSplit(d, cen, Nf, 2000, 1.5, true), r = Nf / N;
+      for (let m = 0; m < nF; m++) for (let k = 0; k <= Math.min(k1, NB - 1); k++) { const e = projRow(LS.X, LS.SB, (m + MG) * LS.Kf, LS.Kf, r, k); if (e < 0) break; E[m * NB + k] = e; }
+      return {E, Nf};
+    }
+    const fmax = {bass: 2000, pads: 12000, gesang: 9000, lead: 10000}[ziel], dff = sr / Nf, Kf = Math.min(Nf / 2 + 1, Math.ceil(fmax / dff) + 2), MG = ziel === 'pads' ? 16 : 9, n = nF + 2 * MG, cen = new Int32Array(n);
+    for (let i = 0; i < n; i++) cen[i] = (m0 - MG + i - 1) * hop;
+    const X = magsAt(d, Nf, cen, Kf), {H, mh} = hpss(X, n, Kf, ziel === 'pads' ? 31 : 17, 17), S = new Float32Array(n * Kf), cb = new Float32Array(Kf);
+    const fz = ziel === 'bass' ? f0Sum(H, n, Kf, dff, 30, 300, 8, true) : ziel === 'gesang' ? f0Sum(H, n, Kf, dff, 80, 1000, 8, true) : ziel === 'lead' ? f0Sum(X, n, Kf, dff, 100, 2000, 8, false) : null;
+    for (let i = MG; i < MG + nF; i++) {
+      const o = i * Kf;
+      if (fz) comb(cb, Kf, dff, fz.f0[i], fmax, ziel === 'bass' ? 2.5 : 1.5, 1);
+      for (let k = 0; k < Kf; k++) {
+        const f = k * dff;
+        if (ziel === 'bass') S[o + k] = mh[o + k] * Math.max(cb[k] * fz.q[i], 1 - ramp(f, 55, 90));
+        else if (ziel === 'pads') S[o + k] = mh[o + k] * mh[o + k] * ramp(f, 120, 220);
+        else S[o + k] = mh[o + k] * cb[k] * fz.q[i] * ramp(f, 70, 110);
+      }
+    }
+    const r = Nf / N, hw = r / 2;   // Basis-Bin k ↔ feine Bins k·r ± r/2 (Leistung gewichtet)
+    for (let m = 0; m < nF; m++) {
+      const o = (m + MG) * Kf;
+      for (let k = 0; k <= Math.min(k1, NB - 1); k++) {
+        const c = k * r; if (c - hw >= Kf - 1) break; let num = 0, den = 0;
+        for (let kk = Math.max(0, Math.ceil(c - hw)); kk <= Math.min(Kf - 1, Math.floor(c + hw)); kk++) { const w = Math.abs(kk - c) === hw ? 0.5 : 1, p = X[o + kk] * X[o + kk] * w; num += p * S[o + kk]; den += p; }
+        E[m * NB + k] = den > 0 ? num / den : 0;
+      }
+    }
+    return {E, Nf};
+  }
+  async function verfeinern(d, o, emit, qid) {
+    if (d.busy) throw new Error('Rechnung läuft');
+    const ziel = ZN[o.ziel] ? o.ziel : 'rest', {fnc, box} = selFn(d, o.sel || {}), TR = TRn(d), NB = NBn(d);
+    if (box.m1 < box.m0 || box.k1 < box.k0) throw new Error('Keine Auswahl');
+    d.busy = 'verfeinern';
+    try {
+      uBegin(d, 'Verfeinern: ' + ZNAME[ziel]);
+      let tl = 'rest';
+      if (ziel !== 'rest') { let l = d.meta.layers.find(x => x.z === ziel) || d.meta.layers.find(x => x.art === ziel); if (!l) l = newLayer(d, {art: ziel}); tl = l.id; }
+      emit({qid, prog: 0.1, stufe: 'Verfeinern'}); await tick();
+      const {E, Nf} = refineEst(d, ziel, box.m0, box.m1, box.k1);
+      emit({qid, prog: 0.7, stufe: 'Verfeinern'}); await tick();
+      const all = d.meta.layers.map(l => l.id); let vor = 0, nach = 0, wsum = 0;
+      for (let s = box.m0 >> 7; s <= box.m1 >> 7; s++) {
+        for (let tr = box.k0 >> 7; tr <= Math.min(TR - 1, box.k1 >> 7); tr++) {
+          const kA = Math.max(box.k0, tr * BT), kB = Math.min(box.k1, tr * BT + BT - 1, NB - 1), mA = Math.max(box.m0, s * BT), mB = Math.min(box.m1, s * BT + BT - 1);
+          const wts = new Float32Array(BT * BT); let any = false;
+          for (let m = mA; m <= mB; m++) for (let k = kA; k <= kB; k++) { const v = fnc(m, k); if (v > 0) { wts[(m & 127) * BT + (k & 127)] = v; any = true; } }
+          if (!any) continue;
+          const ids = all.filter(id => { const st = stripe(d, id, s, false); return st && st.h[tr]; }); if (tl !== 'rest' && !ids.includes(tl)) ids.push(tl);
+          for (const id of all) uTouch(d, id, s);
+          const T = {}; for (const id of ids) T[id] = tileArr(stripe(d, id, s, true), tr);
+          for (let m = mA; m <= mB; m++) for (let k = kA; k <= kB; k++) {
+            const i = (m & 127) * BT + (k & 127), w = wts[i]; if (!w) continue;
+            let sum = 0; for (const id of ids) sum += T[id][i];
+            const rest = Math.max(0, 255 - sum), told = tl === 'rest' ? rest : T[tl][i], e = E[(m - box.m0) * NB + k];
+            const tnew = Math.max(0, Math.min(255, Math.round(w * 255 * e + (1 - w) * told))), sc = 255 - told > 0 ? (255 - tnew) / (255 - told) : 0;
+            for (const id of ids) if (id !== tl) T[id][i] = Math.floor(T[id][i] * sc);
+            if (tl !== 'rest') T[tl][i] = tnew;
+            vor += w * told; nach += w * tnew; wsum += w * 255;
+          }
+          for (const id of ids) { tidy(stripe(d, id, s, true), tr); d.dirty.add(id + '|' + s); }
+        }
+      }
+      for (const id of all) verUp(d, id);
+      d.meta.patches = (d.meta.patches || []).concat([{id: 'P' + (d.meta.patches || []).length, lid: tl, ziel, N: Nf, m0: box.m0, m1: box.m1, k0: box.k0, k1: box.k1}]).slice(-50);
+      uEnd(d);
+      return {lid: tl, ziel, N: Nf, frames: box.m1 - box.m0 + 1, vorher: wsum ? +(vor / wsum).toFixed(4) : 0, nachher: wsum ? +(nach / wsum).toFixed(4) : 0};
+    } catch (e) { uAbort(d); throw e; }
+    finally { d.busy = null; }
+  }
+  /* ---- Laden / Anlegen ---- */
+  async function loadPcm(d) {
+    d.pcm = [];
+    for (let c = 0; c < d.meta.ch; c++) {
+      const x = new Int16Array(d.meta.n), nc = Math.ceil(d.meta.n / CH);
+      for (let k = 0; k < nc; k++) { const b = await get('audio', 'spk:' + d.meta.id + ':p' + c + ':' + k); if (!b) throw new Error('Audio fehlt'); x.set(new Int16Array(b instanceof ArrayBuffer ? b : b.buffer).subarray(0, Math.min(CH, d.meta.n - k * CH)), k * CH); }
+      d.pcm.push(x);
+    }
+    d.mid = new Float32Array(d.meta.n); const kk = 1 / (32768 * d.pcm.length);
+    for (const x of d.pcm) for (let i = 0; i < x.length; i++) d.mid[i] += x[i] * kk;
+  }
+  function mkDoc(meta) { return {meta, pcm: null, mid: null, masks: new Map(), dirty: new Set(), cache: new Map(), undo: [], redo: [], u: null, vc: 1, ft: 0, metaDirty: false}; }
+  async function open(id) {
+    if (docs.has(id)) return docs.get(id);
+    const meta = await get('kv', 'spk:doc:' + id); if (!meta) throw new Error('Analyse fehlt');
+    const d = mkDoc(meta); await loadPcm(d);
+    for (const l of meta.layers) { for (let s = 0; s < NSn(d); s++) { const b = await get('audio', mkey(d, l.id, s)); if (b) masksOf(d, l.id).set(s, stUnpack(d, new Uint8Array(b))); } l.ver = ++d.vc; }
+    docs.set(id, d); return d;
+  }
+  const info = d => ({meta: JSON.parse(JSON.stringify(d.meta)), F: Fn(d), NS: NSn(d), undo: d.undo.length ? d.undo[d.undo.length - 1].label : '', redo: d.redo.length ? d.redo[d.redo.length - 1].label : '', nu: d.undo.length, nr: d.redo.length});
+  async function create(o) {
+    const sr = Math.round(+o.sr) || 48000, chs = (o.ch || []).slice(0, 2), n = Math.min(chs.length ? chs[0].length : 0, sr * 600);
+    if (!n) throw new Error('leer');
+    const id = (o.id && /^[a-z0-9]{6,24}$/.test(o.id)) ? o.id : Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    const meta = {v: 1, id, name: String(o.name || 'Analyse').slice(0, 80), ct: Date.now(), mt: Date.now(), src: o.src || {kind: 'datei'}, sr, n, ch: chs.length, cut: (chs[0].length > n) ? +(chs[0].length / sr).toFixed(1) : 0,
+      grid: o.grid || {bpm: 120, off: 0, ts: '4/4', from: 'projekt'}, base: {N: 4096, hop: 1024}, view: {N: 4096, lo: -90, hi: -12},
+      layers: [], rest: {vol: 0, solo: false, mute: false}, patches: [], jobs: {spec: {}}, teil2: {notes: {}, tmpl: {}, loops: []}};
+    const d = mkDoc(meta);
+    d.pcm = chs.map(x => { const y = new Int16Array(n); if (x instanceof Int16Array) y.set(x.subarray(0, n)); else for (let i = 0; i < n; i++) { const v = Math.round(x[i] * 32767); y[i] = v > 32767 ? 32767 : v < -32768 ? -32768 : v; } return y; });
+    for (let c = 0; c < d.pcm.length; c++) for (let k = 0; k * CH < n; k++) await put('audio', 'spk:' + id + ':p' + c + ':' + k, d.pcm[c].slice(k * CH, Math.min(n, (k + 1) * CH)).buffer);
+    d.mid = new Float32Array(n); const kk = 1 / (32768 * d.pcm.length);
+    for (const x of d.pcm) for (let i = 0; i < n; i++) d.mid[i] += x[i] * kk;
+    docs.set(id, d); await saveMeta(d); return d;
+  }
+  async function remove(id) {
+    const d = docs.get(id); if (d) clearTimeout(d.ft); docs.delete(id);
+    for (const k of await keys('audio', 'spk:' + id + ':')) await del('audio', k);
+    await del('kv', 'spk:doc:' + id);
+    const idx = ((await get('kv', 'spk:idx')) || []).filter(x => x && x.id !== id); await put('kv', 'spk:idx', idx);
+    return true;
+  }
+  /* Container: Meta + PCM je Kanal + Masken je Ebene (Streifen: u32 s, u32 Länge, Daten) */
+  async function exportDoc(id) {
+    const d = await open(id); await flush(d); const masks = [];
+    for (const l of d.meta.layers) {
+      const parts = []; let len = 0;
+      for (const [s, st] of masksOf(d, l.id)) { const p = stPack(st); if (!p) continue; const h = new Uint8Array(8); new DataView(h.buffer).setUint32(0, s, true); new DataView(h.buffer).setUint32(4, p.length, true); parts.push(h, p); len += 8 + p.length; }
+      const u = new Uint8Array(len); let o = 0; for (const p of parts) { u.set(p, o); o += p.length; } masks.push({lid: l.id, data: u});
+    }
+    return {meta: JSON.parse(JSON.stringify(d.meta)), pcm: d.pcm.map(x => x.slice()), masks};
+  }
+  async function importDoc(o) {
+    const meta = o.meta; if (!meta || !/^[a-z0-9]{6,24}$/.test(meta.id) || !Array.isArray(o.pcm) || !o.pcm.length) throw new Error('Analyse ungültig');
+    if (docs.has(meta.id)) { clearTimeout(docs.get(meta.id).ft); docs.delete(meta.id); }
+    meta.n = Math.min(meta.n, o.pcm[0].length); meta.ch = o.pcm.length;
+    for (let c = 0; c < o.pcm.length; c++) for (let k = 0; k * CH < meta.n; k++) await put('audio', 'spk:' + meta.id + ':p' + c + ':' + k, o.pcm[c].slice(k * CH, Math.min(meta.n, (k + 1) * CH)).buffer);
+    for (const m of o.masks || []) {
+      const u = m.data, dv = new DataView(u.buffer, u.byteOffset, u.byteLength); let p = 0;
+      while (p + 8 <= u.length) { const s = dv.getUint32(p, true), len = dv.getUint32(p + 4, true); await put('audio', 'spk:' + meta.id + ':m' + m.lid + ':' + s, u.slice(p + 8, p + 8 + len).buffer); p += 8 + len; }
+    }
+    const d = mkDoc(meta); d.pcm = o.pcm; d.mid = new Float32Array(1); await saveMeta(d);
+    return meta.id;
+  }
+  /* ---- Nachrichten ---- */
+  async function op(m, emit) {
+    const d = m.doc ? await open(m.doc) : null;
+    switch (m.op) {
+      case 'create': return info(await create(m));
+      case 'open': return info(d);
+      case 'list': return (await get('kv', 'spk:idx')) || [];
+      case 'remove': return remove(m.id);
+      case 'rt': { const x = m.x, N = m.N || 4096, S = stft(x, N, m.hop || N / 4), y = istft(S, x.length); let pk = 1e-12, mx = 0, e2 = 0, s2 = 0; for (let i = 0; i < x.length; i++) { const e = y[i] - x[i]; pk = Math.max(pk, Math.abs(x[i])); mx = Math.max(mx, Math.abs(e)); e2 += e * e; s2 += x[i] * x[i]; } return {N, F: S.F, maxDb: 20 * Math.log10(mx / pk + 1e-300), rmsDb: 10 * Math.log10(e2 / Math.max(s2, 1e-300) + 1e-300)}; }
+      case 'spec': {
+        const N = [1024, 2048, 4096, 8192, 16384].includes(m.N) ? m.N : 4096, I = specInfo(d, N), from = Math.max(0, m.from | 0), to = Math.min(I.chunks, m.to == null ? I.chunks : m.to | 0);
+        d.meta.jobs.spec[N] = d.meta.jobs.spec[N] || {done: 0};
+        const tok = d.specTok = (d.specTok || 0) + 1; d.stop = false;   // ein neuer Auftrag löst den alten ab
+        for (let ci = from; ci < to; ci++) {
+          if (d.stop || d.specTok !== tok) { d.stop = false; break; }
+          const key = 'spk:' + d.meta.id + ':v' + N + ':' + ci, have = await get('audio', key); let ch;
+          if (have && have.byteLength === ROWS * Math.min(1024, I.cols - ci * 1024)) ch = {N, k: ci, x0: ci * 1024, w: Math.min(1024, I.cols - ci * 1024), R: ROWS, hop: I.hop, data: new Uint8Array(have), cached: true};
+          else { ch = specChunk(d, N, ci); await put('audio', key, ch.data.slice().buffer); d.meta.jobs.spec[N].done = Math.max(d.meta.jobs.spec[N].done, ci + 1); d.metaDirty = true; }
+          if (m.stream !== false) emit({qid: m.qid, chunk: ch}, [ch.data.buffer]);
+          emit({qid: m.qid, prog: (ci + 1 - from) / Math.max(1, to - from)});
+        }
+        if (d.metaDirty) soon(d);
+        return I;
+      }
+      case 'transfer': { if (d.busy) throw new Error('Rechnung läuft'); const r = transfer(d, m); return Object.assign(r, info(d)); }
+      case 'zerlegen': return Object.assign(await zerlegen(d, m, emit, m.qid), info(d));
+      case 'verfeinern': return Object.assign(await verfeinern(d, m, emit, m.qid), info(d));
+      case 'zstop': if (d) d.zStop = true; return true;
+      case 'layer': {
+        const step = ['neu', 'weg', 'name', 'farbe'].includes(m.was);
+        if (step && d.busy) throw new Error('Rechnung läuft');
+        if (step && m.lid === 'rest' && m.was !== 'neu') throw new Error('Rest bleibt');
+        if (step) uBegin(d, {neu: 'Neue Ebene', weg: 'Ebene löschen', name: 'Ebene umbenennen', farbe: 'Ebenen-Farbe'}[m.was]);
+        let l = m.lid === 'rest' ? d.meta.rest : lay(d, m.lid);
+        if (m.was === 'neu') l = newLayer(d, m.v || {});
+        else if (!l) { d.u = null; throw new Error('Ebene fehlt'); }
+        else if (m.was === 'weg') { for (const s of masksOf(d, l.id).keys()) { uTouch(d, l.id, s); d.dirty.add(l.id + '|' + s); } d.masks.delete(l.id); d.meta.layers = d.meta.layers.filter(x => x !== l); d.cache.clear(); }
+        else if (m.was === 'name') l.name = String(m.v || l.name).slice(0, 40);
+        else if (m.was === 'farbe') l.col = String(m.v || l.col).slice(0, 24);
+        else if (m.was === 'vol') l.vol = Math.max(-60, Math.min(12, +m.v || 0));
+        else if (m.was === 'solo' || m.was === 'mute') l[m.was] = !!m.v;
+        if (step) uEnd(d); else { d.metaDirty = true; soon(d); }
+        return Object.assign({lid: l.id || 'rest'}, info(d));
+      }
+      case 'undo': if (d.busy) throw new Error('Rechnung läuft'); return Object.assign({label: uSwap(d, d.undo, d.redo)}, info(d));
+      case 'redo': if (d.busy) throw new Error('Rechnung läuft'); return Object.assign({label: uSwap(d, d.redo, d.undo)}, info(d));
+      case 'render': { const outs = render(d, mixOf(d, m.mix), m.a, m.b); return {ch: outs, sr: d.meta.sr}; }
+      case 'block': { const outs = block(d, m.k, mixOf(d, m.mix), m.sel || null, m.sv || 0).map(x => x.slice()); return {k: m.k, ch: outs, sr: d.meta.sr}; }
+      case 'harm': return harmTrack(d, +m.t || 0, +m.f || 220, m.max || 6);
+      case 'aehnlich': return similar(d, m.ex || {});
+      case 'tint': return tint(d, m.maxW || 8192);
+      case 'maskAt': { const st = stripe(d, m.lid, m.m >> 7, false), tr = m.k >> 7; if (!st || !st.h[tr]) return 0; return st.h[tr] === 255 ? 255 : st.t[tr][(m.m & 127) * BT + (m.k & 127)]; }
+      case 'sum': {
+        const F = Fn(d), NB = NBn(d), acc = new Uint16Array(NB); let over = 0, full = 0, part = 0, mx = 0, tiles = 0, bytes = 0;
+        for (const l of d.meta.layers) for (const st of masksOf(d, l.id).values()) { tiles += st.h.filter(v => v === 1).length; bytes += stBytes(st); }
+        for (let m = 0; m < F; m++) { acc.fill(0); for (const l of d.meta.layers) { const st = stripe(d, l.id, m >> 7, false); if (!st) continue; for (let tr = 0; tr < st.h.length; tr++) { const h = st.h[tr]; if (!h) continue; for (let b = 0; b < BT && tr * BT + b < NB; b++) acc[tr * BT + b] += h === 255 ? 255 : st.t[tr][(m & 127) * BT + b]; } }
+          for (let k = 0; k < NB; k++) { const v = acc[k]; if (v > 255) over++; else if (v === 255) full++; else if (v) part++; if (v > mx) mx = v; } }
+        return {F, NB, over, full, part, max: mx, tiles, bytes};
+      }
+      case 'stop': if (d) d.stop = true; return true;
+      case 'save': return {bytes: await flush(d)};
+      case 'export': return exportDoc(m.id);
+      case 'import': return importDoc(m);
+      case 'close': { if (d) { await flush(d); docs.delete(d.meta.id); } return true; }
+      default: throw new Error('op ' + m.op);
+    }
+  }
+  function on(m, emit) {
+    op(m, emit).then(r => {
+      const tr = [];
+      if (r && (m.op === 'render' || m.op === 'block')) for (const x of r.ch) tr.push(x.buffer);
+      if (r && m.op === 'tint') { tr.push(r.img0.buffer); if (r.img1) tr.push(r.img1.buffer); }
+      if (r && m.op === 'export') { for (const x of r.pcm) tr.push(x.buffer); for (const x of r.masks) tr.push(x.data.buffer); }
+      emit({qid: m.qid, ok: r}, tr);
+    }, e => emit({qid: m.qid, err: String(e && e.message || e)}));
+  }
+  return {on, stft, istft, specInfo, docs, lowSplit};
+}
+/* ---------- Hauptfaden: Worker (Blob aus Text), Rückfall = derselbe Kern hier ---------- */
+function spk1Worker() {
+  if (SPK1.w !== null) return SPK1.w;
+  try {
+    const src = vsDspMake.toString() + ';' + spk1DspMake.toString() + ';const K = spk1DspMake(vsDspMake());onmessage = e => K.on(e.data, (m, tr) => postMessage(m, tr || []));';
+    const u = URL.createObjectURL(new Blob([src], {type: 'application/javascript'}));
+    const w = new Worker(u); setTimeout(() => { try { URL.revokeObjectURL(u); } catch (e) {} }, 30000);
+    w.onmessage = e => spk1Reply(e.data);
+    w.onerror = e => { SPK1.w = false; SPK1.how = 'hauptfaden'; for (const q of SPK1.wq.values()) q.no(new Error('worker')); SPK1.wq.clear(); try { e.preventDefault(); } catch (er) {} };
+    SPK1.w = w; SPK1.how = 'worker';
+  } catch (e) { SPK1.w = false; SPK1.how = 'hauptfaden'; }
+  return SPK1.w;
+}
+function spk1Reply(m) {
+  const q = SPK1.wq.get(m.qid); if (!q) return;
+  if (m.prog != null) { if (q.prog) q.prog(m.prog, m.stufe || ''); return; }
+  if (m.chunk) { if (q.chunk) q.chunk(m.chunk); return; }
+  SPK1.wq.delete(m.qid); if (m.err) q.no(new Error(m.err)); else q.ok(m.ok);
+}
+// ein Auftrag an den Kern: {op, doc?, …}; cb = {prog(p), chunk(c)}
+function spk1Call(op, a, tr, cb) {
+  const w = spk1Worker(), id = ++SPK1.wid, m = Object.assign({}, a, {op, qid: id});   // qid = Auftrag, id = Analyse
+  return new Promise((ok, no) => {
+    SPK1.wq.set(id, Object.assign({ok, no}, cb || {}));
+    if (w) { try { w.postMessage(m, tr || []); return; } catch (e) { SPK1.wq.delete(id); no(e); return; } }
+    if (!SPK1.K) SPK1.K = spk1DspMake(VSD);
+    setTimeout(() => SPK1.K.on(m, r => spk1Reply(r)), 0);
+  });
+}
+/* Takt-Raster: Projekt-Tempo; falls imp1Analyse vorhanden (Paket IMP1), dessen Ergebnis */
+async function spk1Grid(src) {
+  const pr = {bpm: +S.bpm || 120, off: 0, ts: S.ts || '4/4', from: 'projekt'};
+  if (typeof imp1Analyse === 'function' && src && src.ch && src.ch.length && +src.sr > 0) {   // SPK1·IMP1 (4.57): Quelle {sr, ch} → Mono Float32 für die Erkennung
+    try {
+      const ch = src.ch, n = ch[0].length, x = new Float32Array(n), k = 1 / ch.length;
+      for (const c of ch) { const sc = c instanceof Int16Array ? k / 32768 : k; for (let i = 0; i < n; i++) x[i] += c[i] * sc; }
+      const r = await imp1Analyse(x, +src.sr);
+      if (r && r.ok !== false && +r.bpm > 0) return {bpm: +r.bpm, off: +(r.t1 != null ? r.t1 : r.off) || 0, ts: r.ts || pr.ts, from: 'imp1'};
+    } catch (e) { logErr(e); }
+  }
+  return pr;
+}
+/* Quelle → Analyse: {name, sr, ch: [Float32Array|Int16Array]} | {take: id} | {file: File|ArrayBuffer, name} */
+async function spk1Load(o, cb) {
+  let name = o.name || 'Analyse', sr = o.sr, ch = o.ch, src = o.src || {kind: 'datei'};
+  if (o.take) {
+    const m = S.takes && S.takes[o.take]; let pcm = m && await tkPcm(o.take); if (!pcm) throw new Error('Take fehlt auf diesem Gerät');
+    sr = m.sr; src = {kind: 'take', take: o.take};
+    if (+o.out > +o.in) { pcm = pcm.subarray(Math.max(0, Math.round(o.in * sr)), Math.min(pcm.length, Math.round(o.out * sr))); src.in = +o.in; src.out = +o.out; }   // Clip: nur der benutzte Teil
+    ch = [pcm]; name = o.name || m.name || 'Take ' + o.take.slice(0, 4);
+  } else if (o.file) {
+    const ab = o.file instanceof ArrayBuffer ? o.file : await o.file.arrayBuffer(); name = o.name || (o.file.name || 'Datei').replace(/\.[a-z0-9]{2,4}$/i, '');
+    const c = AU.ctx || new OfflineAudioContext(1, 1, 48000), b = await new Promise((ok, no) => { const p = c.decodeAudioData(ab.slice(0), ok, no); if (p && p.then) p.then(ok, no); });
+    sr = b.sampleRate; ch = []; for (let i = 0; i < Math.min(2, b.numberOfChannels); i++) ch.push(b.getChannelData(i));
+  }
+  const grid = await spk1Grid({sr, ch});
+  const tr = ch.filter(x => x instanceof Int16Array && x.buffer.byteLength === x.byteLength).map(x => x.buffer);
+  const r = await spk1Call('create', {name, sr, ch, src, grid}, SPK1.w ? tr : [], cb);
+  SPK1.doc = r.meta.id; SPK1.last = r; return r;
+}
+/* Projekt-Verweis (nur wenn benutzt): S.spk = [{id, name}] */
+function spk1Link(id, name) {
+  if (!id) return false; if (!Array.isArray(S.spk)) S.spk = [];
+  const e = S.spk.find(x => x.id === id); if (e) { if (name && e.name !== name) { e.name = String(name).slice(0, 80); markDirty(); } return true; }
+  if (S.spk.length >= 16) return false; S.spk.push({id, name: String(name || 'Analyse').slice(0, 80)}); markDirty(); return true;
+}
+function spk1NormProject(obj, p) {
+  const a = obj && Array.isArray(obj.spk) ? obj.spk : null; if (!a) return;
+  const out = []; for (const x of a.slice(0, 16)) if (x && typeof x.id === 'string' && /^[a-z0-9]{6,24}$/.test(x.id) && !out.some(y => y.id === x.id)) out.push({id: x.id, name: String(x.name || 'Analyse').slice(0, 80)});
+  if (out.length) p.spk = out;
+}
+// ZIP-Container: spektral/<id>/doc.json + p<c>.wav (16 Bit je Kanal) + m<lid>.bin (Masken-Streifen)
+async function spk1ZipAdd(files) {
+  for (const e of (Array.isArray(S.spk) ? S.spk : [])) {
+    let x = null; try { x = await spk1Call('export', {id: e.id}); } catch (er) { continue; }
+    const base = 'spektral/' + e.id + '/';
+    files.push({name: base + 'doc.json', data: new TextEncoder().encode(JSON.stringify(x.meta))});
+    x.pcm.forEach((pcm, c) => files.push({name: base + 'p' + c + '.wav', data: tkWav(pcm, x.meta.sr)}));
+    for (const m of x.masks) if (m.data.length) files.push({name: base + 'm' + m.lid + '.bin', data: m.data});
+  }
+}
+async function spk1ZipRead(fs) {
+  let n = 0;
+  for (const f of fs) {
+    const mm = /^spektral\/([a-z0-9]{6,24})\/doc\.json$/.exec(f.name); if (!mm || !f.data) continue;
+    try {
+      const id = mm[1], meta = JSON.parse(new TextDecoder().decode(f.data)), pcm = [], masks = [];
+      for (let c = 0; c < 2; c++) { const w = fs.find(g => g.name === 'spektral/' + id + '/p' + c + '.wav' && g.data), r = w && tkWavRead(w.data); if (r) pcm.push(r.pcm); }
+      for (const g of fs) { const q = new RegExp('^spektral/' + id + '/m(L[0-9]{1,3})\\.bin$').exec(g.name); if (q && g.data) masks.push({lid: q[1], data: g.data.slice()}); }
+      meta.id = id; await spk1Call('import', {meta, pcm, masks}); n++;
+    } catch (e) { logErr(e); }
+  }
+  return n;
+}
+/* ---------- Wiedergabe (gestreamt): Blöcke vom Kern, sample-genau aneinander, 5 ms Blende ---------- */
+function spk1Play(from, mix, o) {
+  spk1Stop(); const c = ensureAudio(); if (!c || !SPK1.doc || !SPK1.last) return false; o = o || {};
+  const meta = SPK1.last.meta, sr = meta.sr, B = SPK1_BLK, out = c.createGain(), t0 = c.currentTime + 0.15;
+  out.gain.setValueAtTime(0, t0); out.gain.linearRampToValueAtTime(1, t0 + 0.005); out.connect(AU.masterSum || c.destination);
+  from = Math.max(0, Math.min(meta.n / sr, +from || 0));
+  const P = SPK1.pl = {seq: ++SPK1.plSeq, out, t0, from, next: Math.floor(from * sr / B), pend: 0, src: [], mix: mix || null, timer: 0, end: Math.ceil(meta.n / B), sel: o.sel || null, sv: o.sv || 0, te: 0};
+  if (+o.bis > from) { P.end = Math.min(P.end, Math.ceil(o.bis * sr / B)); P.te = t0 + (o.bis - from); out.gain.setValueAtTime(1, Math.max(t0 + 0.006, P.te - 0.006)); out.gain.linearRampToValueAtTime(0, P.te); }   // ▶ Auswahl: Ende mit Blende
+  const at = k => P.t0 + k * B / sr - P.from;
+  const pump = () => {
+    if (SPK1.pl !== P) return;
+    while (P.pend < 3 && P.next < P.end && at(P.next) < c.currentTime + 1.5) {
+      const k = P.next++; P.pend++;
+      spk1Call('block', {doc: SPK1.doc, k, mix: P.mix, sel: P.sel, sv: P.sv}).then(r => {
+        P.pend--; if (SPK1.pl !== P) return;
+        const b = c.createBuffer(r.ch.length, B, sr); r.ch.forEach((x, i) => b.copyToChannel(x, i));
+        const s = c.createBufferSource(); s.buffer = b; s.connect(out);
+        const t = at(k), off = Math.max(0, c.currentTime + 0.02 - t);
+        if (off < B / sr) { s.start(t + off, off); P.src.push(s); s.onended = () => { const i = P.src.indexOf(s); if (i >= 0) P.src.splice(i, 1); }; }
+        pump();
+      }, e => { P.pend--; logErr(e); });
+    }
+    if ((P.next >= P.end && !P.pend && !P.src.length) || (P.te && c.currentTime > P.te + 0.05)) { spk1Stop(); return; }
+    P.timer = setTimeout(pump, 120);
+  };
+  pump(); return true;
+}
+function spk1Stop() {
+  const P = SPK1.pl; if (!P) return; SPK1.pl = null; clearTimeout(P.timer);
+  try { const c = AU.ctx, t = c.currentTime; P.out.gain.cancelScheduledValues(t); P.out.gain.setValueAtTime(P.out.gain.value, t); P.out.gain.linearRampToValueAtTime(0, t + 0.005); for (const s of P.src) s.stop(t + 0.01); setTimeout(() => { try { P.out.disconnect(); } catch (e) {} }, 60); } catch (e) {}
+}
+function spk1PlayPos() { const P = SPK1.pl, c = AU.ctx; return P && c ? P.from + Math.max(0, c.currentTime - P.t0) : null; }
+/* ---------- Seite „Spektral“ (Schritt 3): Vollbild wie das Video-Blatt, Raster wie der Noten-Editor ----------
+   Anzeige: WebGL2 (je Stück eine R8-Textur 1024 × 984 mit Mipmaps, Farbtabelle + dB-Bereich als Uniforms, Ebenen-Tönung als 2 RGBA-Bilder),
+   ohne WebGL2 Canvas2D in halber Auflösung aus denselben Daten. Zoom/Schieben = nur Zahlen + ein Neuzeichnen je Bild, kein DOM-Umbau.
+   Auswahl = Vektor-Formen (Rechteck, Zeit, Frequenz, Pinsel, Harmonische, Ähnliche) – der Kern rechnet daraus die Gewichte. */
+const SPK1_TOOLS = [['rect', 'Rechteck'], ['zeit', 'Zeit'], ['freq', 'Frequenz'], ['pinsel', 'Pinsel'], ['harm', 'Harmonische'], ['aehn', 'Ähnliche']];
+const SPK1_ICON = {
+  rect: '<rect x="3" y="5" width="14" height="10" stroke-dasharray="3 2"/>',
+  zeit: '<path d="M4 3v14M16 3v14M6.5 10h7M8.5 8l-2 2 2 2M11.5 8l2 2-2 2"/>',
+  freq: '<path d="M3 4h14M3 16h14M10 6.5v7M8 8.5l2-2 2 2M8 11.5l2 2 2-2"/>',
+  pinsel: '<path d="M3.5 14.5c3 0 3-4.5 6-4.5s3 3.5 7 1.5" stroke-width="3.2" stroke-linecap="round"/>',
+  harm: '<path d="M3 16h14M3 12.2h11.5M3 8.6h9M3 5.2h6.5"/>',
+  aehn: '<rect x="2.5" y="6" width="6" height="8"/><rect x="11.5" y="6" width="6" height="8" stroke-dasharray="2 1.6"/>'
+};
+const SPK1_ARTS = [['bass', 'Bass'], ['gesang', 'Gesang'], ['drums', 'Drums'], ['lead', 'Lead'], ['pads', 'Pads'], ['eigene', 'Eigene']];
+const SPK1_PAL = ['--t1', '--t6', '--t5', '--t4', '--t3', '--t8', '--p2', '--p9', '--p3', '--p6'];
+const SPK1_NOTE = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'H'];
+const spk1Svg = k => `<svg class="n1i" width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true">${SPK1_ICON[k]}</svg>`;
+const spk1Hz = m => 440 * Math.pow(2, (m - 69) / 12), spk1Midi = f => 69 + 12 * Math.log2(Math.max(1, f) / 440);
+function spk1Var(v) { try { return getComputedStyle(document.documentElement).getPropertyValue(v).trim() || '#888888'; } catch (e) { return '#888888'; } }
+function spk1Rgb(c) {
+  const m = /^#([0-9a-f]{6})$/i.exec(c); if (m) { const n = parseInt(m[1], 16); return [(n >> 16) / 255, (n >> 8 & 255) / 255, (n & 255) / 255]; }
+  const q = /rgba?\(([^)]+)\)/.exec(c); if (q) { const a = q[1].split(',').map(Number); return [a[0] / 255, a[1] / 255, a[2] / 255]; }
+  return [0.6, 0.6, 0.6];
+}
+function spk1Lut() {   // Farbtabelle aus den App-Farben: Anzeige-Schwarz → Blau → --t2 → --t1 → --amber → --sel
+  const st = [[0, '--lcd'], [0.3, '#1d2452'], [0.52, '--t2'], [0.7, '--t1'], [0.87, '--amber'], [1, '--sel']].map(([p, c]) => [p, spk1Rgb(c[0] === '-' ? spk1Var(c) : c)]);
+  const o = new Uint8Array(256 * 4);
+  for (let i = 0; i < 256; i++) {
+    const x = i / 255; let k = 0; while (k < st.length - 2 && x > st[k + 1][0]) k++;
+    const [pa, ca] = st[k], [pb, cb] = st[k + 1], u = Math.max(0, Math.min(1, (x - pa) / (pb - pa)));
+    for (let j = 0; j < 3; j++) o[i * 4 + j] = Math.round(255 * (ca[j] + (cb[j] - ca[j]) * u)); o[i * 4 + 3] = 255;
+  }
+  return o;
+}
+function spk1Css() {
+  if (document.getElementById('spk1Css')) return;
+  const s = document.createElement('style'); s.id = 'spk1Css';
+  s.textContent = [
+    '.vvsheet.spk1.open{display:grid}',
+    '.spk1{grid-template-columns:40px minmax(0,1fr);grid-template-rows:48px 44px 26px minmax(0,1fr) 44px 24px 96px 180px;grid-template-areas:"hd hd" "tl tl" "co ru" "ky mn" "op op" "st st" "ac ac" "ly ly";font-family:var(--font-ui);color:var(--text);user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}',
+    '.spk1-hd{grid-area:hd;display:flex;align-items:center;gap:4px;min-width:0;padding:0 4px 0 14px;background:linear-gradient(#1b1d22,#121418);border-bottom:1px solid var(--panel-edge)}',
+    '.spk1-t{flex:1 1 auto;min-width:0;display:flex;align-items:baseline;gap:8px;overflow:hidden;white-space:nowrap}',
+    '.spk1-t b{flex:none;font:700 15px/1 var(--font-ui);letter-spacing:.12em;text-transform:uppercase}',
+    '.spk1-t span{min-width:0;overflow:hidden;text-overflow:ellipsis;color:var(--text-dim);font:500 13px/1 var(--font-ui)}',
+    '.spk1-hd .rb{flex:none;width:44px;height:44px;padding:0;font-size:18px}.spk1-hd .rb:disabled{opacity:.35}',
+    '.spk1-tl{grid-area:tl;background:var(--chassis);border-bottom:1px solid var(--panel-edge);color:var(--text)}',
+    '.spk1-tl button span{font-size:13px}',
+    '.spk1>.spk1-co{grid-area:co;background:var(--chassis);border-bottom:1px solid var(--panel-edge)}',
+    '.spk1-ru{grid-area:ru;background:var(--chassis-2);border-bottom:1px solid var(--panel-edge)}',
+    '.spk1-ky{grid-area:ky;background:var(--bg);border-right:1px solid var(--panel-edge)}',
+    '.spk1-mn{grid-area:mn;background:var(--lcd)}',
+    '.spk1-ru,.spk1-ky,.spk1-mn{position:relative;min-width:0;min-height:0;overflow:hidden;touch-action:none}',
+    '.spk1-ru canvas,.spk1-ky canvas,.spk1-mn canvas{position:absolute;left:0;top:0;width:100%;height:100%;display:block;touch-action:none}',
+    '.spk1-op{grid-area:op;background:var(--chassis);border-top:1px solid var(--panel-edge);color:var(--text)}',
+    '.spk1-o{display:none;align-items:center;gap:12px;flex:none}.spk1-o.on{display:flex}',
+    '.spk1-o label{display:flex;align-items:center;gap:6px;flex:none;font:700 11px/1 var(--font-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim)}',
+    '.spk1-o input[type=range]{width:104px;height:32px;margin:0;accent-color:var(--sel)}',
+    '.spk1-o .spk1-v{min-width:34px;font:600 11px/1 var(--font-num);color:var(--text);text-transform:none;letter-spacing:0}',
+    '.spk1-st{grid-area:st;min-width:0;padding:0 12px;font:500 12px/24px var(--font-ui);color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:var(--chassis)}',
+    '.spk1-ac{grid-area:ac;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:44px;gap:4px;padding:3px 6px;background:var(--chassis);border-top:1px solid var(--panel-edge)}',
+    '.spk1-ac .mbtn{height:44px;min-height:44px;margin:0;min-width:0;padding:0 6px;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+    '.spk1-ac .mbtn:disabled{opacity:.35}.spk1-ac .mbtn.on{background:var(--sel);color:#111}',
+    '.spk1-ly{grid-area:ly;min-height:0;overflow-y:auto;overflow-x:hidden;background:var(--bg);border-top:1px solid var(--panel-edge);overscroll-behavior:contain;touch-action:pan-y}',
+    '.spk1-lr{display:grid;grid-template-columns:36px minmax(0,1fr) 44px 44px minmax(56px,120px) 48px 44px;grid-template-areas:"d n s m v db x";align-items:center;column-gap:4px;height:46px;padding:0 6px;border-bottom:1px solid var(--line)}',
+    '.spk1-lr.act{background:linear-gradient(90deg,rgba(244,241,234,.09),transparent)}',
+    '.spk1-lr>button{height:44px;min-width:0;margin:0;padding:0;border-radius:6px;font:700 13px/1 var(--font-ui)}',
+    '.spk1-lr>.spk1-dot{grid-area:d;width:36px;height:44px;border:0;background:transparent;position:relative}',
+    '.spk1-lr>.spk1-dot::before{content:"";position:absolute;left:8px;top:12px;width:20px;height:20px;border-radius:50%;background:var(--c);box-shadow:0 0 0 1px rgba(0,0,0,.6),0 0 8px var(--c)}',
+    '.spk1-lr>.spk1-nm{grid-area:n;justify-content:flex-start;padding:0 8px;text-align:left;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;background:transparent;border-color:transparent;box-shadow:none}',
+    '.spk1-lr>.spk1-s{grid-area:s;height:44px}.spk1-lr>.spk1-m{grid-area:m;height:44px}.spk1-lr>.spk1-x{grid-area:x;height:44px;font-size:18px}',
+    '.spk1-lr>.spk1-s.on{background:var(--amber);color:#111}.spk1-lr>.spk1-m.on{background:var(--rec);color:#fff}.spk1-lr>.spk1-ab.on{background:var(--sel);color:#111}',
+    '.spk1-lr>.spk1-ab{grid-column:3/6;height:44px}',
+    '.spk1-lr>input{grid-area:v;width:100%;min-width:0;height:32px;margin:0;accent-color:var(--sel)}',
+    '.spk1-lr>.spk1-db{grid-area:db;font:600 11px/1 var(--font-num);color:var(--text-dim);text-align:right;white-space:nowrap}',
+    '.spk1-sp{grid-row:2/-1;grid-column:1/-1;min-height:0;overflow-y:auto;padding:10px 14px 18px;display:flex;flex-direction:column;gap:8px;touch-action:pan-y}',
+    '.spk1-sp h5,.spk1-dd h5{margin:8px 0 2px;font:700 11px/1 var(--font-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim)}',
+    '.spk1-sp .mbtn,.spk1-dd .mbtn{min-height:44px;height:auto;margin:0;padding:6px 12px;text-align:left;justify-content:flex-start}',
+    '.spk1-sp .spk1-i{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px;align-items:center}',
+    '.spk1-sp .spk1-i>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}.spk1-sp .spk1-i small{color:var(--text-dim);margin-left:6px}',
+    '.spk1-sp p{margin:0;color:var(--text-dim);font-size:13px;line-height:1.35}',
+    '.spk1.nodoc>:not(.spk1-hd):not(.spk1-sp):not(.spk1-dd){display:none}.spk1:not(.nodoc)>.spk1-sp{display:none}',
+    '.spk1-dd{position:absolute;z-index:6;width:max-content;min-width:200px;max-width:min(340px,calc(100% - 16px));max-height:calc(100% - 70px);overflow-y:auto;box-sizing:border-box;padding:8px 10px 10px;background:var(--chassis-2);border:1px solid var(--line);border-radius:var(--r);box-shadow:0 10px 30px rgba(0,0,0,.65);display:flex;flex-direction:column;gap:6px;touch-action:pan-y}',
+    '.spk1-dd .spk1-g{display:flex;flex-wrap:wrap;gap:6px}.spk1-dd .seg button{min-height:44px;min-width:52px}',
+    '.spk1-dd .spk1-sw{width:44px;height:44px;padding:0;border-radius:50%;background:var(--c);border:2px solid transparent}.spk1-dd .spk1-sw.on{border-color:var(--sel)}',
+    '.spk1-dd input[type=text]{height:40px;min-width:0;flex:1 1 140px;padding:0 10px;border-radius:6px;border:1px solid var(--line);background:var(--lcd);color:var(--text);font:500 15px var(--font-ui)}',
+    '.spk1-dd label{display:flex;align-items:center;gap:8px;font:700 11px/1 var(--font-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim)}.spk1-dd label input[type=range]{flex:1 1 auto;height:32px;accent-color:var(--sel)}',
+    '@media (orientation:landscape){',
+    '.spk1{grid-template-columns:40px minmax(0,1fr) minmax(0,190px) 264px;grid-template-rows:46px 26px minmax(0,1fr) 52px 46px;grid-template-areas:"tl tl tl hd" "co ru ru ly" "ky mn mn ly" "ky mn mn ac" "op op st ac"}',
+    '.spk1-hd{padding-left:10px;border-left:1px solid var(--panel-edge)}.spk1-t span{display:none}',
+    '.spk1-ly{border-left:1px solid var(--panel-edge);border-top:0}.spk1-ac{border-left:1px solid var(--panel-edge);padding:3px 4px}.spk1-ac .mbtn{padding:0 3px;font-size:12px}',
+    '.spk1-st{line-height:45px;border-top:1px solid var(--panel-edge)}',
+    '.spk1-lr{grid-template-columns:36px minmax(0,1fr) 44px 44px 44px;grid-template-rows:44px 30px;grid-template-areas:"d n s m x" ". v v v db";height:76px}',
+    '.spk1-lr>.spk1-ab{grid-column:3/6}',
+    '.spk1-sp{grid-row:1/-1;grid-column:1/4}',
+    '}'
+  ].join('\n');
+  document.head.appendChild(s);
+}
+/* ---- Aufbau (einmal, beim ersten Öffnen) ---- */
+function spk1Build() {
+  const U = SPK1.ui = {tool: 'rect', sel: [], selVer: 1, hits: null, ex: null, tmp: null, cur: 0, pos: null, act: 'orig', ab: false, modus: 'verschieben',
+    N: 4096, lo: -96, hi: -18, tintOn: true, v: {t0: 0, pps: 50, mTop: 108, rowH: 5}, W: 300, H: 300, dpr: 1, opt: {kante: 0.3, size: 22, weich: 0.5, minus: false, K: 16, bw: 45, empf: 0.5},
+    spec: null, tint: null, specSeq: 0, tintSeq: 0, raf: 0, lastTap: 0, meta: null, dur: 0, back: null, gl: null, c2: null};
+  const sh = U.sh = el('section', 'vvsheet spk1 nodoc'); sh.id = 'spk1Sheet'; sh.setAttribute('aria-label', 'Spektral');
+  const hd = el('div', 'spk1-hd'), ttl = U.ttl = el('div', 'spk1-t', '<b>Spektral</b><span></span>');
+  const bU = U.bU = el('button', 'rb', '↶'), bR = U.bR = el('button', 'rb', '↷'), x = el('button', 'sh-x rb', '✕');
+  bU.dataset.a = 'undo'; bR.dataset.a = 'redo'; x.dataset.a = 'close';
+  bU.setAttribute('aria-label', 'Rückgängig'); bR.setAttribute('aria-label', 'Wiederholen'); x.setAttribute('aria-label', 'Spektral schließen');
+  hd.append(ttl, bU, bR, x);
+  const tl = U.tl = el('div', 'pr-bar spk1-tl pan-x');
+  for (const [k, n] of SPK1_TOOLS) { const b = el('button', 'n1b', spk1Svg(k) + '<span>' + n + '</span>'); b.dataset.tool = k; b.setAttribute('aria-label', 'Werkzeug ' + n); tl.appendChild(b); }
+  tl.appendChild(el('span', 'sep')); const bV = el('button', 'n1b', 'Ansicht ▾'); bV.dataset.a = 'view'; tl.appendChild(bV);
+  const co = el('div', 'pr-corner spk1-co', 'TAKT'), ru = U.ru = el('div', 'spk1-ru', '<canvas></canvas>'), ky = U.ky = el('div', 'spk1-ky', '<canvas></canvas>');
+  const mn = U.mn = el('div', 'spk1-mn', '<canvas class="spk1-gl"></canvas><canvas class="spk1-ov"></canvas>');
+  const op = U.op = el('div', 'pr-bar spk1-op pan-x');
+  const sl = (pane, label, key, min, max, step, fmt, after) => {
+    const l = el('label', '', esc(label)), r = el('input'), v = el('span', 'spk1-v'); r.type = 'range'; r.min = min; r.max = max; r.step = step; r.value = U.opt[key]; v.textContent = fmt(U.opt[key]);
+    r.setAttribute('aria-label', label); on(r, 'input', () => { U.opt[key] = +r.value; v.textContent = fmt(+r.value); if (after) after(); }); l.append(r, v); pane.appendChild(l); return r;
+  };
+  const pane = tools => { const p = el('div', 'spk1-o'); p.dataset.for = tools; op.appendChild(p); return p; };
+  const pK = pane('rect zeit freq'); sl(pK, 'Kante', 'kante', 0, 1, 0.05, v => Math.round(v * 100) + ' %');
+  pK.appendChild(el('label', '', 'Tipp = Abspielposition'));
+  const pP = pane('pinsel'); sl(pP, 'Größe', 'size', 6, 60, 1, v => v + ' px'); sl(pP, 'Weich', 'weich', 0, 0.95, 0.05, v => Math.round(v * 100) + ' %');
+  const bMin = U.bMin = el('button', 'n1b', 'Radierer'); bMin.dataset.a = 'minus'; bMin.setAttribute('aria-pressed', 'false'); pP.appendChild(bMin);
+  const pH = pane('harm'); sl(pH, 'Obertöne', 'K', 1, 32, 1, v => String(v), () => spk1HarmOpt(U)); sl(pH, 'Breite', 'bw', 10, 100, 5, v => v + ' ct', () => spk1HarmOpt(U));
+  const pA = pane('aehn'); sl(pA, 'Empfindlich', 'empf', 0, 1, 0.05, v => Math.round(v * 100) + ' %', () => spk1HitsApply(U)); U.hitLab = el('label', '', ''); pA.appendChild(U.hitLab);
+  const st = U.st = el('div', 'spk1-st', ''), ac = U.ac = el('div', 'spk1-ac'), ly = U.ly = el('div', 'spk1-ly pan-y'), sp = U.sp = el('div', 'spk1-sp pan-y');
+  const A = (a, t, lab) => { const b = el('button', 'mbtn rb', t); b.dataset.a = a; if (lab) b.setAttribute('aria-label', lab); ac.appendChild(b); U['b_' + a] = b; return b; };
+  A('play', '▶ Abspielen', 'Abspielen ab der Position'); A('psel', '▶ Auswahl', 'Nur die Auswahl hören'); A('into', 'In Ebene ▾', 'Auswahl in eine Ebene verschieben oder kopieren');
+  A('drop', 'Verwerfen', 'Auswahl verwerfen'); A('zerl', 'Zerlegen', 'Ganzes Stück in Ebenen zerlegen'); A('verf', 'Verfeinern …', 'Auswahl genauer trennen');
+  sh.append(hd, tl, co, ru, ky, mn, op, st, ac, ly, sp);
+  document.body.appendChild(sh);
+  onTap(sh, (b, e) => spk1Tap(U, b, e), 'button:not(.spk1-ck)');   // .spk1-ck = Knöpfe mit eigenem click (Klappfenster, Zwei-Schritt): kein Geister-Klick-Schutz davor
+  sh.addEventListener('pointerdown', e => { if (U.dd && !U.dd.contains(e.target) && e.target !== U.ddA) spk1Dd(U, null); }, true);
+  sh.addEventListener('gesturestart', e => e.preventDefault());
+  for (const n of [ru, ky, mn]) n.addEventListener('touchstart', e => { if (e.cancelable) e.preventDefault(); }, {passive: false});
+  const gcv = mn.querySelector('.spk1-gl'); U.ov = mn.querySelector('.spk1-ov'); U.gcv = gcv;
+  U.gl = spk1GlInit(gcv); if (!U.gl) U.c2 = gcv.getContext('2d');
+  gcv.addEventListener('webglcontextlost', e => { e.preventDefault(); spk1GlLost(U); });
+  spk1Gest(U); spk1SideGest(U);
+  try { U.ro = new ResizeObserver(() => { if (SPK1.open && U.meta) { spk1Size(U); spk1Dirty(U, 'all'); } }); U.ro.observe(mn); } catch (e) { on(window, 'resize', () => { if (SPK1.open && U.meta) { spk1Size(U); spk1Dirty(U, 'all'); } }); }
+  window.addEventListener('pagehide', () => { if (SPK1.doc && SPK1.w) spk1Call('save', {doc: SPK1.doc}).catch(() => {}); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden && SPK1.open) { spk1Stop(); if (SPK1.doc) spk1Call('save', {doc: SPK1.doc}).catch(() => {}); } });
+  spk1ToolSet(U, 'rect');
+  return U;
+}
+/* ---- WebGL2 ---- */
+const SPK1_VS = '#version 300 es\nin vec2 a;uniform vec4 r;uniform vec2 sz;out vec2 uv;out vec2 px;void main(){vec2 p=mix(r.xy,r.zw,a);px=p;uv=vec2(a.x,1.0-a.y);gl_Position=vec4(p.x/sz.x*2.0-1.0,1.0-p.y/sz.y*2.0,0.0,1.0);}';
+const SPK1_FS = '#version 300 es\nprecision highp float;in vec2 uv;in vec2 px;uniform sampler2D sp;uniform sampler2D lut;uniform sampler2D ta;uniform sampler2D tb;uniform vec2 db;uniform vec4 tv;uniform vec3 lc[8];uniform int nl;out vec4 o;' +
+  'void main(){float v=texture(sp,uv).r;float t=clamp((v-db.x)/max(0.001,db.y-db.x),0.0,1.0);vec3 c=texture(lut,vec2(t*0.996+0.002,0.5)).rgb;' +
+  'if(nl>0){vec2 q=vec2(px.x*tv.x+tv.y,px.y*tv.z+tv.w);vec4 A=texture(ta,q);vec4 B=texture(tb,q);float w[8]=float[8](A.r,A.g,A.b,A.a,B.r,B.g,B.b,B.a);vec3 s=vec3(0.0);float sw=0.0;' +
+  'for(int i=0;i<8;i++){if(i>=nl)break;s+=lc[i]*w[i];sw+=w[i];}if(sw>0.004){c=mix(c,s/sw*(0.18+0.95*t),clamp(sw,0.0,1.0)*0.8);}}o=vec4(c,1.0);}';
+function spk1GlInit(cv) {
+  if (SPK1.noGl) return null;
+  let gl = null; try { gl = cv.getContext('webgl2', {alpha: false, antialias: false, depth: false, stencil: false, premultipliedAlpha: false}); } catch (e) { gl = null; }
+  if (!gl) return null;
+  try {
+    const mk = (t, src) => { const o = gl.createShader(t); gl.shaderSource(o, src); gl.compileShader(o); if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(o) || 'shader'); return o; };
+    const p = gl.createProgram(); gl.attachShader(p, mk(gl.VERTEX_SHADER, SPK1_VS)); gl.attachShader(p, mk(gl.FRAGMENT_SHADER, SPK1_FS)); gl.linkProgram(p);
+    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p) || 'link');
+    const vao = gl.createVertexArray(); gl.bindVertexArray(vao);
+    const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]), gl.STATIC_DRAW);
+    const loc = gl.getAttribLocation(p, 'a'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+    const u = {}; for (const n of ['r', 'sz', 'sp', 'lut', 'ta', 'tb', 'db', 'tv', 'lc', 'nl']) u[n] = gl.getUniformLocation(p, n);
+    const tex = (w, h, fmt, data, mip) => {
+      const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t); gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+      if (fmt === 'r') gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, w, h, 0, gl.RED, gl.UNSIGNED_BYTE, data); else gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, data);
+      if (mip) gl.generateMipmap(gl.TEXTURE_2D);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, mip ? gl.LINEAR_MIPMAP_LINEAR : gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      return t;
+    };
+    const lut = tex(256, 1, 'rgba', spk1Lut(), false), z = new Uint8Array(4);
+    return {gl, p, vao, u, tex, lut, ta: tex(1, 1, 'rgba', z, false), tb: tex(1, 1, 'rgba', z, false), max: gl.getParameter(gl.MAX_TEXTURE_SIZE) || 4096};
+  } catch (e) { logErr(e); return null; }
+}
+function spk1GlLost(U) {   // Kontext weg (Speicherdruck) → neue Leinwand mit Canvas2D, gleiche Daten
+  U.gl = null; const old = U.gcv, cv = el('canvas', 'spk1-gl'); old.replaceWith(cv); U.gcv = cv; U.c2 = cv.getContext('2d');
+  if (U.spec) for (const c of U.spec.chunks) if (c) c.tex = null;
+  spk1Size(U); spk1Dirty(U, 'all');
+}
+function spk1GlDraw(U) {
+  const G = U.gl, gl = G.gl, W = U.cw, H = U.ch, d = U.dpr, v = U.v;
+  gl.viewport(0, 0, W, H); gl.clearColor(0.03, 0.035, 0.045, 1); gl.clear(gl.COLOR_BUFFER_BIT);
+  if (!U.spec || !U.spec.hop) return;
+  gl.useProgram(G.p); gl.bindVertexArray(G.vao);
+  gl.uniform2f(G.u.sz, W, H); gl.uniform2f(G.u.db, (U.lo + 120) / 120, (U.hi + 120) / 120);
+  gl.uniform1i(G.u.sp, 0); gl.uniform1i(G.u.lut, 1); gl.uniform1i(G.u.ta, 2); gl.uniform1i(G.u.tb, 3);
+  gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, G.lut);
+  gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, G.ta); gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, G.tb);
+  const T = U.tintOn ? U.tint : null, nl = T ? Math.min(8, T.ids.length) : 0;
+  gl.uniform1i(G.u.nl, nl);
+  if (nl) {
+    const fw = T.fst * T.W, k = T.sr / T.hop;
+    gl.uniform4f(G.u.tv, k / (v.pps * d) / fw, (v.t0 * k + 1.5) / fw, -2 / (v.rowH * d * T.H), (v.mTop - 12) * 2 / T.H);
+    const cols = new Float32Array(24); T.ids.slice(0, 8).forEach((id, i) => { const l = U.meta.layers.find(x => x.id === id); cols.set(spk1Rgb(spk1Var(l ? l.col : '--t8')), i * 3); });
+    gl.uniform3fv(G.u.lc, cols);
+  }
+  const hs = U.spec.hop / U.meta.sr, yT = (v.mTop - (12 + 983 / 8 + 1 / 16)) * v.rowH * d, yB = (v.mTop - (12 - 1 / 16)) * v.rowH * d;
+  gl.activeTexture(gl.TEXTURE0);
+  for (const c of U.spec.chunks) {
+    if (!c) continue;
+    const xa = ((c.x0 - 0.5) * hs - v.t0) * v.pps * d, xb = ((c.x0 + c.w - 0.5) * hs - v.t0) * v.pps * d; if (xb < 0 || xa > W) continue;
+    if (!c.tex) c.tex = G.tex(c.w, c.R, 'r', c.data, true);
+    gl.bindTexture(gl.TEXTURE_2D, c.tex); gl.uniform4f(G.u.r, xa, yT, xb, yB); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  }
+}
+function spk1CpuDraw(U) {   // Rückfall: halbe Auflösung, gleiche Farben und Tönung
+  const cv = U.gcv, W = cv.width, H = cv.height, x = U.c2; if (!x || !W || !H) return;
+  if (!U.img || U.img.width !== W || U.img.height !== H) U.img = x.createImageData(W, H);
+  const px = U.img.data, v = U.v, sc = W / U.W, lut = U.lut || (U.lut = spk1Lut()), lo = (U.lo + 120) / 120 * 255, span = Math.max(1, (U.hi - U.lo) / 120 * 255);
+  px.fill(0); for (let i = 3; i < px.length; i += 4) px[i] = 255;
+  if (!U.spec || !U.spec.hop) { x.putImageData(U.img, 0, 0); return; }
+  const hs = U.spec.hop / U.meta.sr, colC = new Int32Array(W), colK = new Int32Array(W), rowR = new Int32Array(H);
+  for (let i = 0; i < W; i++) { const c = Math.round((v.t0 + (i + 0.5) / sc / v.pps) / hs); const k = c >> 10, ch = U.spec.chunks[k]; colK[i] = ch && c >= 0 ? k : -1; colC[i] = ch ? c - ch.x0 : 0; if (ch && colC[i] >= ch.w) colK[i] = -1; }
+  for (let j = 0; j < H; j++) { const m = v.mTop - (j + 0.5) / sc / v.rowH, r = Math.round((m - 12) * 8); rowR[j] = r >= 0 && r < 984 ? r : -1; }
+  const T = U.tintOn ? U.tint : null, cols = T ? T.ids.map(id => { const l = U.meta.layers.find(q => q.id === id); return spk1Rgb(spk1Var(l ? l.col : '--t8')); }) : null;
+  for (let j = 0; j < H; j++) {
+    const r = rowR[j]; if (r < 0) continue; const tj = T ? Math.max(0, Math.min(T.H - 1, Math.floor(((v.mTop - (j + 0.5) / sc / v.rowH) - 12) * 2))) : 0;
+    for (let i = 0; i < W; i++) {
+      const k = colK[i]; if (k < 0) continue; const ch = U.spec.chunks[k], val = ch.data[r * ch.w + colC[i]];
+      const t = Math.max(0, Math.min(1, (val - lo) / span)), li = Math.round(t * 255) * 4, o = (j * W + i) * 4;
+      let R = lut[li], Gc = lut[li + 1], B = lut[li + 2];
+      if (T) {
+        const m = Math.floor(((v.t0 + (i + 0.5) / sc / v.pps) * T.sr / T.hop + 1) / T.fst); if (m >= 0 && m < T.W) {
+          let sr = 0, sg = 0, sb = 0, sw = 0; for (let q = 0; q < cols.length && q < 8; q++) { const img = q < 4 ? T.img0 : T.img1, w = img[(tj * T.W + m) * 4 + (q & 3)] / 255; if (w) { sr += cols[q][0] * w; sg += cols[q][1] * w; sb += cols[q][2] * w; sw += w; } }
+          if (sw > 0.004) { const a = Math.min(1, sw) * 0.8, b = (0.18 + 0.95 * t) * 255 / sw; R += (sr * b - R) * a; Gc += (sg * b - Gc) * a; B += (sb * b - B) * a; }
+        }
+      }
+      px[o] = R; px[o + 1] = Gc; px[o + 2] = B;
+    }
+  }
+  x.putImageData(U.img, 0, 0);
+}
+/* ---- Größe, Ansicht ---- */
+function spk1Size(U) {
+  const d = U.dpr = Math.min(2, window.devicePixelRatio || 1), W = U.W = Math.max(1, U.mn.clientWidth), H = U.H = Math.max(1, U.mn.clientHeight);
+  U.cw = Math.round(W * d); U.ch = Math.round(H * d);
+  const set = (cv, w, h) => { if (cv.width !== w) cv.width = w; if (cv.height !== h) cv.height = h; };
+  if (U.gl) set(U.gcv, U.cw, U.ch); else set(U.gcv, Math.max(1, Math.round(W / 2)), Math.max(1, Math.round(H / 2)));
+  set(U.ov, U.cw, U.ch);
+  set(U.ru.firstChild, Math.round(U.ru.clientWidth * d), Math.round(U.ru.clientHeight * d));
+  set(U.ky.firstChild, Math.round(U.ky.clientWidth * d), Math.round(U.ky.clientHeight * d));
+  if (U.meta) spk1Clamp(U);
+}
+function spk1Clamp(U) {
+  const v = U.v, W = U.W, H = U.H;
+  v.pps = Math.min(4000, Math.max(W / (U.dur + 0.5), v.pps)); v.rowH = Math.min(48, Math.max(H / 122, v.rowH));
+  v.t0 = Math.max(-0.25, Math.min(U.dur + 0.25 - W / v.pps, v.t0)); v.mTop = Math.min(135, Math.max(12.5 + H / v.rowH, v.mTop));
+}
+function spk1FitAll(U) { const v = U.v; v.pps = U.W / Math.max(0.5, U.dur + 0.1); v.t0 = -0.05; v.rowH = U.H / 84; v.mTop = 110; spk1Clamp(U); spk1Dirty(U, 'all'); }
+const spk1T = (U, x) => U.v.t0 + x / U.v.pps, spk1F = (U, y) => spk1Hz(U.v.mTop - y / U.v.rowH);
+const spk1X = (U, t) => (t - U.v.t0) * U.v.pps, spk1Y = (U, f) => (U.v.mTop - spk1Midi(f)) * U.v.rowH;
+function spk1Dirty(U, w) {
+  if (w === 'all') U.dg = U.dk = U.dr = U.dov = true; else U['d' + w] = true;
+  if (!U.raf && SPK1.open) U.raf = requestAnimationFrame(() => spk1Frame(U));
+}
+function spk1Frame(U) {
+  U.raf = 0; if (!SPK1.open || !U.meta) return;
+  const pos = spk1PlayPos();
+  if (pos != null) {
+    U.pos = pos; U.dov = U.dr = true;
+    const vis = U.W / U.v.pps; if (!U.hold && (pos > U.v.t0 + vis * 0.94 || pos < U.v.t0)) { U.v.t0 = pos - vis * 0.08; spk1Clamp(U); U.dg = true; }
+  } else if (U.pos != null) { U.pos = null; U.dov = U.dr = true; spk1BtnState(U); }
+  try {
+    if (U.dg) { U.dg = false; if (U.gl) spk1GlDraw(U); else spk1CpuDraw(U); }
+    if (U.dk) { U.dk = false; spk1KeysDraw(U); }
+    if (U.dr) { U.dr = false; spk1RulerDraw(U); }
+    if (U.dov) { U.dov = false; spk1OvDraw(U); }
+  } catch (e) { logErr(e); }
+  if (pos != null) U.raf = requestAnimationFrame(() => spk1Frame(U));
+}
+/* ---- Tastatur links, Takt-Lineal, Auswahl-Ebene ---- */
+function spk1KeysDraw(U) {
+  const cv = U.ky.firstChild, x = cv.getContext('2d'), d = U.dpr, v = U.v, W = cv.width / d, H = cv.height / d; x.setTransform(d, 0, 0, d, 0, 0);
+  x.fillStyle = '#0d0e11'; x.fillRect(0, 0, W, H);
+  const mLo = Math.floor(v.mTop - H / v.rowH) - 1, mHi = Math.ceil(v.mTop) + 1, gap = v.rowH >= 5 ? 1 : 0, font = spk1Var('--font-num');
+  for (let m = Math.max(12, mLo); m <= Math.min(135, mHi); m++) {
+    const y = (v.mTop - m - 0.5) * v.rowH, pc = m % 12, black = [1, 3, 6, 8, 10].includes(pc);
+    x.fillStyle = black ? '#1a1b1f' : '#ece6d8'; x.fillRect(0, y, W - 1, v.rowH - gap);
+    if (pc === 0 && v.rowH < 5) { x.fillStyle = '#6b6f78'; x.fillRect(0, y + v.rowH - 1, W - 1, 1); }
+    if ((pc === 0 && v.rowH * 12 >= 26) || v.rowH >= 14) {
+      x.font = (pc === 0 ? '700 ' : '500 ') + '10px ' + font; x.fillStyle = black ? '#cfc6b2' : '#222';
+      x.fillText(SPK1_NOTE[pc] + (Math.floor(m / 12) - 1), 3, Math.min(H - 2, Math.max(9, y + v.rowH / 2 + 3.5)), W - 5);
+    }
+  }
+}
+function spk1Grid0(U) { const g = U.meta.grid || {}, ts = String(g.ts || '4/4').split('/'), num = +ts[0] || 4, den = +ts[1] || 4, beat = 60 / (+g.bpm || 120) * 4 / den; return {beat, bar: beat * num, off: +g.off || 0, num}; }
+function spk1RulerDraw(U) {
+  const cv = U.ru.firstChild, x = cv.getContext('2d'), d = U.dpr, W = cv.width / d, H = cv.height / d; x.setTransform(d, 0, 0, d, 0, 0);
+  x.fillStyle = '#1c1f25'; x.fillRect(0, 0, W, H);
+  const g = spk1Grid0(U), pps = U.v.pps, ta = U.v.t0, tb = ta + W / pps, font = spk1Var('--font-num');
+  const sb = spk1SelSpan(U); if (sb) { x.fillStyle = 'rgba(255,178,46,.35)'; x.fillRect(spk1X(U, sb[0]), 0, (sb[1] - sb[0]) * pps, H); }
+  if (U.hits && U.ex) { x.fillStyle = '#ffb22e'; for (const s of U.sel) if (s.hit != null) x.fillRect(spk1X(U, s.t0), H - 5, Math.max(2, (s.t1 - s.t0) * pps), 4); }
+  let step = 1; while (g.bar * pps * step < 26) step *= 2;
+  const showBeat = g.beat * pps >= 7;
+  for (let b = Math.max(0, Math.floor((ta - g.off) / g.bar)); g.off + b * g.bar <= tb; b++) {
+    const bx = Math.round(spk1X(U, g.off + b * g.bar)) + 0.5;
+    if (b % step === 0) { x.strokeStyle = '#9aa0aa'; x.beginPath(); x.moveTo(bx, 3); x.lineTo(bx, H); x.stroke(); x.fillStyle = '#ece8df'; x.font = '600 10px ' + font; x.fillText(String(b + 1), bx + 3, 12); }
+    if (showBeat) { x.strokeStyle = '#3a3f4a'; for (let q = 1; q < g.num; q++) { const qx = Math.round(spk1X(U, g.off + b * g.bar + q * g.beat)) + 0.5; x.beginPath(); x.moveTo(qx, H - 7); x.lineTo(qx, H); x.stroke(); } }
+  }
+  const p = U.pos != null ? U.pos : U.cur, px = spk1X(U, p);
+  if (px >= -6 && px <= W + 6) { x.fillStyle = U.pos != null ? spk1Var('--play') : '#f4f1ea'; x.beginPath(); x.moveTo(px - 5, H - 9); x.lineTo(px + 5, H - 9); x.lineTo(px, H - 1); x.fill(); }
+}
+function spk1SelSpan(U) {   // Zeitbereich der Auswahl (für ▶ Auswahl und das Lineal)
+  let a = 1e9, b = -1e9;
+  for (const s of U.sel) {
+    if (s.art === 'freq') { a = Math.min(a, 0); b = Math.max(b, U.dur); }
+    else if (s.art === 'pinsel') { if (s.minus) continue; for (const p of s.pts) { a = Math.min(a, p[0] - s.rt); b = Math.max(b, p[0] + s.rt); } }
+    else if (s.art === 'harm') { if (s.spur.length) { a = Math.min(a, s.spur[0][0]); b = Math.max(b, s.spur[s.spur.length - 1][0] + 0.03); } }
+    else { a = Math.min(a, s.t0 - (s.kt || 0) / 2); b = Math.max(b, s.t1 + (s.kt || 0) / 2); }
+  }
+  return b > a ? [Math.max(0, a), Math.min(U.dur, b)] : null;
+}
+function spk1OvDraw(U) {
+  const cv = U.ov, x = cv.getContext('2d'), d = U.dpr, W = U.W, H = U.H, v = U.v; x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, cv.width, cv.height); x.setTransform(d, 0, 0, d, 0, 0);
+  if (v.rowH * 12 >= 18) { x.fillStyle = 'rgba(255,255,255,.07)'; for (let m = Math.ceil((v.mTop - H / v.rowH) / 12) * 12; m <= v.mTop; m += 12) x.fillRect(0, Math.round((v.mTop - m + 0.5) * v.rowH), W, 1); }
+  const sel = U.tmp ? U.sel.filter(s => s.art === 'pinsel' || s.art === 'harm').concat([U.tmp]) : U.sel;
+  // Pinsel-Striche (Ellipse = Radius in Zeit × Cent), Radierer schneidet heraus
+  for (const s of sel) {
+    if (s.art !== 'pinsel' || !s.pts.length) continue;
+    const elx = Math.max(1, s.rt * v.pps), ely = Math.max(1, s.rc / 100 * v.rowH);
+    x.save(); x.setTransform(d * elx, 0, 0, d * ely, 0, 0); x.lineCap = x.lineJoin = 'round'; x.lineWidth = 2;
+    x.globalCompositeOperation = s.minus ? 'destination-out' : 'source-over'; x.strokeStyle = s.minus ? '#000' : 'rgba(244,241,234,.30)'; x.fillStyle = x.strokeStyle;
+    x.beginPath(); s.pts.forEach((p, i) => { const px = spk1X(U, p[0]) / elx, py = spk1Y(U, p[1]) / ely; if (i) x.lineTo(px, py); else x.moveTo(px, py); });
+    if (s.pts.length === 1) { x.arc(spk1X(U, s.pts[0][0]) / elx, spk1Y(U, s.pts[0][1]) / ely, 1, 0, Math.PI * 2); x.fill(); } else x.stroke();
+    x.restore();
+  }
+  x.setLineDash([5, 4]); x.lineWidth = 1.2;
+  for (const s of sel) {
+    if (s.art === 'pinsel') continue;
+    if (s.art === 'harm') {
+      x.setLineDash([]);
+      for (let h = 1; h <= s.K; h++) {
+        x.strokeStyle = h === 1 ? 'rgba(244,241,234,.95)' : 'rgba(244,241,234,' + Math.max(0.25, 0.75 - h * 0.03) + ')'; x.lineWidth = h === 1 ? 2 : 1.2; x.beginPath();
+        let last = -1; for (const p of s.spur) { const px = spk1X(U, p[0]), py = spk1Y(U, p[1] * h); if (p[0] - last > 0.06 || last < 0) x.moveTo(px, py); else x.lineTo(px, py); last = p[0]; }
+        x.stroke();
+      }
+      x.setLineDash([5, 4]); x.lineWidth = 1.2; continue;
+    }
+    let xa = 0, xb = W, ya = 0, yb = H;
+    if (s.art !== 'freq') { xa = spk1X(U, s.t0); xb = spk1X(U, s.t1); }
+    if (s.art !== 'zeit') { ya = spk1Y(U, s.f1); yb = spk1Y(U, Math.max(1, s.f0)); }
+    const hit = s.hit != null;
+    x.fillStyle = hit ? 'rgba(255,178,46,.14)' : 'rgba(244,241,234,.10)'; x.fillRect(xa, ya, xb - xa, yb - ya);
+    x.strokeStyle = hit ? '#ffb22e' : '#f4f1ea'; x.strokeRect(Math.round(xa) + 0.5, Math.round(ya) + 0.5, Math.round(xb - xa), Math.round(yb - ya));
+  }
+  x.setLineDash([]);
+  const p = U.pos != null ? U.pos : U.cur, px = Math.round(spk1X(U, p)) + 0.5;
+  if (px >= 0 && px <= W) { x.strokeStyle = U.pos != null ? spk1Var('--play') : 'rgba(244,241,234,.55)'; x.lineWidth = U.pos != null ? 2 : 1; x.beginPath(); x.moveTo(px, 0); x.lineTo(px, H); x.stroke(); }
+}
+/* ---- Gesten: ein Finger = Werkzeug, zwei Finger = Zoom (waagrecht/senkrecht getrennt) + Schieben ---- */
+function spk1Gest(U) {
+  const mn = U.mn, P = new Map(); let G = null, Z = null;
+  const pt = e => { const r = mn.getBoundingClientRect(); return {x: e.clientX - r.left, y: e.clientY - r.top}; };
+  const zStart = () => { const [a, b] = [...P.values()], ax = Math.abs(a.x - b.x), ay = Math.abs(a.y - b.y); return {ax, ay, cx: (a.x + b.x) / 2, cy: (a.y + b.y) / 2, v: Object.assign({}, U.v), zx: ax > 40, zy: ay > 40}; };
+  mn.addEventListener('pointerdown', e => {
+    if (!U.meta || e.button > 0) return; try { mn.setPointerCapture(e.pointerId); } catch (er) {}
+    P.set(e.pointerId, pt(e)); spk1Dd(U, null);
+    if (P.size === 1) G = spk1ToolDown(U, pt(e));
+    else if (P.size === 2) { if (G) spk1ToolCancel(U, G); G = null; Z = zStart(); U.hold = true; }
+  });
+  mn.addEventListener('pointermove', e => {
+    if (!P.has(e.pointerId)) return; P.set(e.pointerId, pt(e));
+    if (Z && P.size >= 2) {
+      const [a, b] = [...P.values()], cx = (a.x + b.x) / 2, cy = (a.y + b.y) / 2, v0 = Z.v, v = U.v;
+      const tA = v0.t0 + Z.cx / v0.pps, mA = v0.mTop - Z.cy / v0.rowH;   // Punkt unter den Fingern bleibt
+      v.pps = Z.zx ? v0.pps * Math.max(10, Math.abs(a.x - b.x)) / Z.ax : v0.pps; v.rowH = Z.zy ? v0.rowH * Math.max(10, Math.abs(a.y - b.y)) / Z.ay : v0.rowH;
+      spk1Clamp(U); v.t0 = tA - cx / v.pps; v.mTop = mA + cy / v.rowH; spk1Clamp(U); spk1Dirty(U, 'all');
+    } else if (G) spk1ToolMove(U, G, pt(e));
+  });
+  const up = e => {
+    if (!P.has(e.pointerId)) return; P.delete(e.pointerId);
+    if (Z) { if (!P.size) { Z = null; U.hold = false; } return; }
+    if (G && !P.size) { const g = G; G = null; if (e.type === 'pointercancel') spk1ToolCancel(U, g); else spk1ToolUp(U, g); }
+  };
+  mn.addEventListener('pointerup', up); mn.addEventListener('pointercancel', up);
+}
+function spk1SideGest(U) {   // Tasten: Ziehen = senkrecht rollen, Tipp = Ton · Lineal: Ziehen = waagrecht rollen, Tipp = Abspielposition
+  const drag = (node, axis) => {
+    let s = null;
+    node.addEventListener('pointerdown', e => { if (!U.meta) return; try { node.setPointerCapture(e.pointerId); } catch (er) {} const r = node.getBoundingClientRect(); s = {id: e.pointerId, x: e.clientX, y: e.clientY, r, v: Object.assign({}, U.v), mv: false}; });
+    node.addEventListener('pointermove', e => {
+      if (!s || s.id !== e.pointerId) return; const dx = e.clientX - s.x, dy = e.clientY - s.y; if (!s.mv && Math.hypot(dx, dy) < 8) return; s.mv = true;
+      if (axis === 'y') U.v.mTop = s.v.mTop + dy / U.v.rowH; else U.v.t0 = s.v.t0 - dx / U.v.pps; spk1Clamp(U); spk1Dirty(U, 'all');
+    });
+    const end = e => {
+      if (!s || s.id !== e.pointerId) return; const q = s; s = null; if (q.mv || e.type === 'pointercancel') return;
+      if (axis === 'y') spk1Tone(Math.round(U.v.mTop - (e.clientY - q.r.top) / U.v.rowH));
+      else { U.cur = Math.max(0, Math.min(U.dur, spk1T(U, e.clientX - q.r.left))); if (SPK1.pl && !U.playSel) spk1PlayFrom(U, U.cur); spk1Dirty(U, 'ov'); spk1Dirty(U, 'r'); }
+    };
+    node.addEventListener('pointerup', end); node.addEventListener('pointercancel', end);
+  };
+  drag(U.ky, 'y'); drag(U.ru, 'x');
+}
+function spk1Tone(m) {
+  const c = ensureAudio(); if (!c || !(m >= 12 && m <= 120)) return;
+  try { const o = c.createOscillator(), g = c.createGain(), t = c.currentTime; o.type = 'triangle'; o.frequency.value = spk1Hz(m); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.16, t + 0.01); g.gain.exponentialRampToValueAtTime(0.001, t + 0.6); o.connect(g); g.connect(AU.masterSum || c.destination); o.start(t); o.stop(t + 0.65); } catch (e) { logErr(e); }
+}
+/* ---- Werkzeuge ---- */
+const spk1Soft = U => U.sel.length && U.sel.every(s => s.art === 'pinsel' || s.art === 'harm');
+function spk1ToolDown(U, p) {
+  const G = {tool: U.tool, x0: p.x, y0: p.y, t0: spk1T(U, p.x), f0: spk1F(U, p.y), moved: false, shape: null};
+  if (G.tool === 'pinsel') {
+    const o = U.opt; if (!spk1Soft(U)) { U.sel = []; U.hits = U.ex = null; }
+    G.shape = {art: 'pinsel', pts: [[+G.t0.toFixed(4), +G.f0.toFixed(2)]], rt: +(o.size / U.v.pps).toFixed(4), rc: Math.round(o.size / U.v.rowH * 100), weich: o.weich, minus: !!o.minus};
+    U.sel.push(G.shape); G.lx = p.x; G.ly = p.y; spk1Dirty(U, 'ov');
+  }
+  return G;
+}
+function spk1ToolMove(U, G, p) {
+  if (!G.moved && Math.hypot(p.x - G.x0, p.y - G.y0) < 8) return; G.moved = true;
+  const t = spk1T(U, p.x), f = spk1F(U, p.y);
+  if (G.tool === 'pinsel') { if (Math.hypot(p.x - G.lx, p.y - G.ly) >= Math.max(3, U.opt.size / 3)) { G.shape.pts.push([+t.toFixed(4), +f.toFixed(2)]); G.lx = p.x; G.ly = p.y; spk1Dirty(U, 'ov'); } return; }
+  if (G.tool === 'harm') return;
+  const art = G.tool === 'zeit' ? 'zeit' : G.tool === 'freq' ? 'freq' : 'rect', k = G.tool === 'aehn' ? 0 : U.opt.kante;
+  G.shape = U.tmp = {art, t0: +Math.max(0, Math.min(G.t0, t)).toFixed(4), t1: +Math.min(U.dur, Math.max(G.t0, t)).toFixed(4), f0: +Math.min(G.f0, f).toFixed(2), f1: +Math.max(G.f0, f).toFixed(2), kt: +(k * 0.12).toFixed(3), kf: Math.round(k * 120)};
+  spk1Dirty(U, 'ov');
+}
+function spk1ToolCancel(U, G) { U.tmp = null; if (G && G.tool === 'pinsel') { const i = U.sel.indexOf(G.shape); if (i >= 0) U.sel.splice(i, 1); } spk1Dirty(U, 'ov'); }
+function spk1ToolUp(U, G) {
+  U.tmp = null;
+  if (!G.moved) {
+    if (G.tool === 'harm') return spk1Harm(U, G.t0, G.f0);
+    if (G.tool === 'aehn') return spk1Aehn(U, null, G.t0, G.f0);
+    if (G.tool === 'pinsel') return spk1SelDone(U);
+    const now = performance.now(); if (now - U.lastTap < 330) { U.lastTap = 0; spk1FitAll(U); return; } U.lastTap = now;
+    U.cur = Math.max(0, Math.min(U.dur, G.t0)); if (SPK1.pl && !U.playSel) spk1PlayFrom(U, U.cur); spk1Dirty(U, 'ov'); spk1Dirty(U, 'r'); return;
+  }
+  if (G.tool === 'pinsel') return spk1SelDone(U);
+  if (G.tool === 'harm' || !G.shape) return;   // Harmonische: nur Tipp
+  if (G.tool === 'aehn') return spk1Aehn(U, G.shape);
+  U.sel = [G.shape]; U.hits = U.ex = null; spk1SelDone(U);
+}
+function spk1SelDone(U, txt) {
+  U.selVer++; spk1BtnState(U); spk1Dirty(U, 'ov'); spk1Dirty(U, 'r');
+  if (txt != null) { spk1Stat(U, txt); return; }
+  const sb = spk1SelSpan(U), f = n => n.toFixed(1).replace('.', ',');
+  spk1Stat(U, !U.sel.length ? '' : 'Auswahl' + (sb ? ' ' + f(sb[0]) + '–' + f(sb[1]) + ' s' : '') + (U.sel.length > 1 ? ' · ' + U.sel.length + ' Teile' : ''));
+}
+function spk1HarmOpt(U) { let n = 0; for (const s of U.sel) if (s.art === 'harm') { s.K = U.opt.K; s.bw = U.opt.bw; n++; } if (n) spk1SelDone(U); }
+async function spk1Harm(U, t, f) {
+  spk1Stat(U, 'Suche den Ton …');
+  try {
+    const r = await spk1Call('harm', {doc: SPK1.doc, t, f});
+    if (!r.spur.length) { spk1Stat(U, 'Kein Ton gefunden – genau auf die unterste Linie tippen'); return; }
+    if (!spk1Soft(U)) { U.sel = []; U.hits = U.ex = null; }
+    U.sel.push({art: 'harm', spur: r.spur, K: U.opt.K, bw: U.opt.bw});
+    const m = Math.round(spk1Midi(r.f0));
+    spk1SelDone(U, 'Ton ' + SPK1_NOTE[m % 12] + (Math.floor(m / 12) - 1) + ' · ' + Math.round(r.f0) + ' Hz · ' + r.len.toFixed(1).replace('.', ',') + ' s · ' + U.opt.K + ' Obertöne');
+  } catch (e) { logErr(e); spk1Stat(U, 'Harmonische: Fehler'); }
+}
+async function spk1Aehn(U, ex, t, f) {
+  if (!ex) {
+    const r0 = U.ex || U.sel.find(s => s.art === 'rect' || s.art === 'zeit');
+    ex = r0 ? Object.assign({}, r0) : {art: 'rect', t0: +Math.max(0, t - 0.3).toFixed(4), t1: +Math.min(U.dur, t + 0.3).toFixed(4), f0: +(f * Math.pow(2, -4 / 12)).toFixed(2), f1: +(f * Math.pow(2, 4 / 12)).toFixed(2), kt: 0, kf: 0};
+  }
+  delete ex.hit; U.ex = ex; U.sel = [ex]; U.hits = null; spk1SelDone(U, 'Suche ähnliche Stellen …'); U.hitLab.textContent = '';
+  try {
+    const r = await spk1Call('aehnlich', {doc: SPK1.doc, ex: {t0: ex.t0, t1: ex.t1, f0: ex.art === 'zeit' ? 0 : ex.f0, f1: ex.art === 'zeit' ? 0 : ex.f1}});
+    if (U.ex !== ex) return; U.hits = r.hits; spk1HitsApply(U);
+  } catch (e) { logErr(e); spk1Stat(U, 'Ähnliche: Fehler'); }
+}
+function spk1HitsApply(U) {
+  if (!U.ex || !U.hits) return; const thr = 0.92 - 0.6 * U.opt.empf, hs = U.hits.filter(h => h.wert >= thr);
+  U.sel = [U.ex].concat(hs.map(h => Object.assign({}, U.ex, {t0: h.t0, t1: h.t1, hit: h.wert})));
+  U.hitLab.textContent = hs.length + ' Treffer'; spk1SelDone(U, hs.length ? hs.length + ' ähnliche Stellen + Beispiel' : 'Keine ähnliche Stelle – Empfindlichkeit erhöhen');
+}
+function spk1ToolSet(U, k) {
+  U.tool = k; for (const b of U.tl.querySelectorAll('button[data-tool]')) { const o = b.dataset.tool === k; b.classList.toggle('on', o); b.setAttribute('aria-pressed', String(o)); }
+  for (const p of U.op.querySelectorAll('.spk1-o')) p.classList.toggle('on', p.dataset.for.split(' ').includes(k));
+  const tip = {rect: 'Ziehen = Rechteck', zeit: 'Ziehen = Zeitbereich', freq: 'Ziehen = Tonbereich', pinsel: 'Malen = Auswahl', harm: 'Grundton antippen', aehn: 'Beispiel ziehen oder antippen'}[k];
+  if (U.meta && !U.sel.length) spk1Stat(U, tip + ' · zwei Finger = Zoom');
+}
+/* ---- Status, Knöpfe ---- */
+function spk1Stat(U, t) { if (U.st.textContent !== t) U.st.textContent = t; }
+function spk1BtnState(U) {
+  const has = U.sel.length > 0, pl = !!SPK1.pl;
+  U.b_play.textContent = pl && !U.playSel ? '■ Stopp' : '▶ Abspielen'; U.b_psel.textContent = pl && U.playSel ? '■ Stopp' : '▶ Auswahl';
+  U.b_psel.disabled = !has && !(pl && U.playSel); U.b_into.disabled = !has || !!U.busy; U.b_drop.disabled = !has;
+  U.b_zerl.textContent = U.busy === 'zerlegen' ? '■ Abbrechen' : 'Zerlegen'; U.b_zerl.disabled = U.busy === 'verfeinern'; U.b_verf.disabled = !has || !!U.busy;
+  if (U.busy) U.bU.disabled = U.bR.disabled = true; else if (SPK1.last) spk1UndoBtns(U, SPK1.last);
+  U.bMin.classList.toggle('on', !!U.opt.minus); U.bMin.setAttribute('aria-pressed', String(!!U.opt.minus));
+}
+function spk1UndoBtns(U, r) {
+  if (!r) return; U.bU.disabled = !r.nu; U.bR.disabled = !r.nr;
+  U.bU.setAttribute('aria-label', r.undo ? 'Rückgängig: ' + r.undo : 'Rückgängig'); U.bR.setAttribute('aria-label', r.redo ? 'Wiederholen: ' + r.redo : 'Wiederholen');
+}
+function spk1Got(U, r) { if (!r || !r.meta) return; SPK1.last = r; U.meta = r.meta; spk1UndoBtns(U, r); spk1Layers(U); }
+/* ---- Ebenen-Liste ---- */
+function spk1Layers(U) {
+  const L = U.meta.layers, R = U.meta.rest || {}, row = (id, name, col, o) => {
+    const act = U.act === id ? ' act' : '';
+    let h = `<div class="spk1-lr${act}" data-l="${esc(id)}"><button class="spk1-dot" data-a="lcol" style="--c:${col}" aria-label="Farbe ${esc(name)}"></button><button class="rb spk1-nm" data-a="lact" aria-label="Quelle für In Ebene: ${esc(name)}">${esc(name)}</button>`;
+    if (o.ab) h += `<button class="rb spk1-ab${U.ab ? ' on' : ''}" data-a="ab" aria-pressed="${U.ab}">${U.ab ? '✓ ' : ''}Original hören</button>`;
+    else h += `<button class="rb spk1-s${o.solo ? ' on' : ''}" data-a="solo" aria-pressed="${!!o.solo}" aria-label="Solo ${esc(name)}">S</button><button class="rb spk1-m${o.mute ? ' on' : ''}" data-a="mute" aria-pressed="${!!o.mute}" aria-label="Stumm ${esc(name)}">M</button>` +
+      `<input type="range" min="-30" max="6" step="1" value="${Math.round(o.vol || 0)}" data-l="${esc(id)}" aria-label="Lautstärke ${esc(name)}"><span class="spk1-db">${(o.vol > 0 ? '+' : '') + Math.round(o.vol || 0)} dB</span>`;
+    if (o.more) h += `<button class="rb spk1-x" data-a="lmore" aria-label="Mehr zu ${esc(name)}">⋯</button>`;
+    return h + '</div>';
+  };
+  let h = row('orig', 'Original', 'linear-gradient(135deg,var(--t2),var(--t1),var(--amber))', {ab: true});
+  for (const l of L) h += row(l.id, l.name, 'var(' + l.col + ')', {solo: l.solo, mute: l.mute, vol: l.vol, more: true});
+  if (L.length) h += row('rest', 'Rest', 'var(--text-dim)', {solo: R.solo, mute: R.mute, vol: R.vol});
+  else h += '<div class="spk1-lr"><span></span><span class="spk1-db" style="grid-column:2/-1;text-align:left;font-family:var(--font-ui);font-size:12px">Noch keine Ebene – Auswahl treffen, dann „In Ebene ▾“</span></div>';
+  const sc = U.ly.scrollTop; U.ly.innerHTML = h; U.ly.scrollTop = sc;
+  for (const r of U.ly.querySelectorAll('input[type=range]')) {
+    let tm = 0; const lab = r.nextElementSibling, send = () => { tm = 0; spk1Call('layer', {doc: SPK1.doc, was: 'vol', lid: r.dataset.l, v: +r.value}).then(x => { SPK1.last = x; U.meta = x.meta; }, logErr); };
+    on(r, 'input', () => { lab.textContent = (+r.value > 0 ? '+' : '') + r.value + ' dB'; if (!tm) tm = setTimeout(send, 150); });
+  }
+}
+async function spk1Layer(U, was, lid, v) {
+  try { const r = await spk1Call('layer', {doc: SPK1.doc, was, lid, v}); spk1Got(U, r); if (['neu', 'weg', 'farbe'].includes(was)) spk1TintLoad(U); return r; } catch (e) { logErr(e); spk1Stat(U, String(e.message || e)); return null; }
+}
+/* ---- Auswahl → Ebene (ein Undo-Schritt im Kern) ---- */
+async function spk1Into(U, nach, art) {
+  if (!U.sel.length) return; const von = U.act || 'orig';
+  spk1Stat(U, 'Rechne …');
+  try {
+    const r = await spk1Call('transfer', {doc: SPK1.doc, von, nach, art, modus: U.modus, sel: U.sel});
+    spk1Got(U, r); spk1TintLoad(U);
+    const l = U.meta.layers.find(x => x.id === r.nach), nm = r.nach === 'rest' ? 'Rest' : l ? l.name : '';
+    spk1Stat(U, (U.modus === 'kopieren' ? 'Kopiert nach ' : 'Verschoben nach ') + nm + ' · ↶ macht es rückgängig');
+  } catch (e) { logErr(e); spk1Stat(U, 'Nicht möglich: ' + (e.message || e)); }
+}
+async function spk1UndoRedo(U, which) {
+  if (U.busy) return; U.vf = null;
+  try { const r = await spk1Call(which, {doc: SPK1.doc}); spk1Got(U, r); spk1TintLoad(U); spk1Stat(U, r.label ? (which === 'undo' ? 'Rückgängig: ' : 'Wiederholt: ') + r.label : ''); } catch (e) { logErr(e); }
+}
+/* ---- Klappfenster (Ansicht, In Ebene, Ebene ⋯) ---- */
+function spk1Dd(U, anchor, fill) {
+  if (U.dd) { U.dd.remove(); U.dd = null; U.ddA = null; }
+  if (!anchor) return null;
+  const dd = U.dd = el('div', 'spk1-dd pan-y'); U.ddA = anchor; fill(dd); U.sh.appendChild(dd);
+  const R = U.sh.getBoundingClientRect(), a = anchor.getBoundingClientRect(), w = dd.offsetWidth, h = dd.offsetHeight;
+  let left = Math.max(8, Math.min(R.width - w - 8, a.left - R.left)), top = a.bottom - R.top + 4; if (top + h > R.height - 8) top = Math.max(8, a.top - R.top - h - 4);
+  dd.style.left = left + 'px'; dd.style.top = top + 'px';
+  return dd;
+}
+function spk1ViewDd(U, b) {
+  spk1Dd(U, b, dd => {
+    dd.appendChild(el('h5', '', 'Pegel'));
+    const sl = (lab, min, max, key) => { const l = el('label', '', esc(lab)), r = el('input'), v = el('span', 'spk1-v', U[key] + ' dB'); r.type = 'range'; r.min = min; r.max = max; r.step = 1; r.value = U[key]; r.setAttribute('aria-label', lab);
+      on(r, 'input', () => { U[key] = +r.value; if (U.hi - U.lo < 12) { if (key === 'lo') U.hi = U.lo + 12; else U.lo = U.hi - 12; } v.textContent = U[key] + ' dB'; spk1Dirty(U, 'g'); }); l.append(r, v); dd.appendChild(l); };
+    sl('Boden', -120, -30, 'lo'); sl('Decke', -60, 0, 'hi');
+    dd.appendChild(el('h5', '', 'Auflösung (FFT)'));
+    dd.appendChild(makeSeg([1024, 2048, 4096, 8192, 16384].map(n => [n, String(n)]), () => U.N, n => { U.N = n; spk1SpecLoad(U); }, 'spk1-n'));
+    const g = el('div', 'spk1-g'), bt = el('button', 'mbtn rb spk1-ck', (U.tintOn ? '✓ ' : '') + 'Ebenen-Farben'), bf = el('button', 'mbtn rb spk1-ck', 'Alles zeigen'), bq = el('button', 'mbtn rb spk1-ck', 'Andere Quelle …');
+    on(bt, 'click', () => { U.tintOn = !U.tintOn; bt.textContent = (U.tintOn ? '✓ ' : '') + 'Ebenen-Farben'; spk1Dirty(U, 'g'); });
+    on(bf, 'click', () => { spk1Dd(U, null); spk1FitAll(U); });
+    on(bq, 'click', () => { spk1Dd(U, null); spk1Leave(U); spk1StartPaint(U); });
+    g.append(bt, bf, bq); dd.appendChild(g);
+  });
+}
+function spk1IntoDd(U, b) {
+  spk1Dd(U, b, dd => {
+    const src = U.act === 'orig' ? 'Original' : U.act === 'rest' ? 'Rest' : (U.meta.layers.find(l => l.id === U.act) || {}).name || '';
+    dd.appendChild(el('h5', '', 'Aus ' + esc(src)));
+    dd.appendChild(makeSeg([['verschieben', 'Verschieben'], ['kopieren', 'Kopieren']], () => U.modus, v => { U.modus = v; }, 'spk1-md'));
+    const g = el('div', 'spk1-g');
+    for (const l of U.meta.layers) if (l.id !== U.act) { const x = el('button', 'mbtn rb spk1-ck', `<span style="color:var(${l.col})">●</span>&nbsp;${esc(l.name)}`); on(x, 'click', () => { spk1Dd(U, null); spk1Into(U, l.id); }); g.appendChild(x); }
+    if (U.act !== 'rest' && U.act !== 'orig' && U.meta.layers.length) { const x = el('button', 'mbtn rb spk1-ck', 'Rest'); on(x, 'click', () => { spk1Dd(U, null); spk1Into(U, 'rest'); }); g.appendChild(x); }
+    if (g.children.length) { dd.appendChild(el('h5', '', 'In Ebene')); dd.appendChild(g); }
+    dd.appendChild(el('h5', '', 'Neue Ebene'));
+    const n = el('div', 'spk1-g'); for (const [a, nm] of SPK1_ARTS) { const x = el('button', 'mbtn rb spk1-ck', '+ ' + nm); on(x, 'click', () => { spk1Dd(U, null); spk1Into(U, 'neu', a); }); n.appendChild(x); }
+    dd.appendChild(n);
+  });
+}
+function spk1MoreDd(U, b, lid) {
+  const l = U.meta.layers.find(x => x.id === lid); if (!l) return;
+  spk1Dd(U, b, dd => {
+    dd.appendChild(el('h5', '', 'Name'));
+    const g = el('div', 'spk1-g'), inp = el('input'), ok = el('button', 'mbtn rb spk1-ck', 'OK'); inp.type = 'text'; inp.maxLength = 40; inp.value = l.name; inp.setAttribute('aria-label', 'Name der Ebene');
+    on(ok, 'click', () => { const v = inp.value.trim(); spk1Dd(U, null); if (v && v !== l.name) spk1Layer(U, 'name', lid, v); });
+    g.append(inp, ok); dd.appendChild(g);
+    dd.appendChild(el('h5', '', 'Farbe'));
+    const c = el('div', 'spk1-g'); for (const p of SPK1_PAL) { const x = el('button', 'spk1-sw spk1-ck' + (p === l.col ? ' on' : '')); x.style.setProperty('--c', 'var(' + p + ')'); x.setAttribute('aria-label', 'Farbe'); on(x, 'click', () => { spk1Dd(U, null); if (p !== l.col) spk1Layer(U, 'farbe', lid, p); }); c.appendChild(x); }
+    dd.appendChild(c);
+    const del = el('button', 'mbtn rb spk1-ck', 'Ebene löschen'); twoStep(del, 'Wirklich löschen?', () => { spk1Dd(U, null); if (U.act === lid) U.act = 'orig'; spk1Layer(U, 'weg', lid); });
+    dd.appendChild(del);
+  });
+}
+/* ---- Tipps ---- */
+function spk1Tap(U, b) {
+  if (b.dataset.tool) { spk1ToolSet(U, b.dataset.tool); return; }
+  const a = b.dataset.a, row = b.closest('.spk1-lr'), lid = row ? row.dataset.l : null;
+  switch (a) {
+    case 'close': spk1Close(); return;
+    case 'undo': case 'redo': spk1UndoRedo(U, a); return;
+    case 'view': spk1ViewDd(U, b); return;
+    case 'minus': U.opt.minus = !U.opt.minus; spk1BtnState(U); return;
+    case 'play': if (SPK1.pl && !U.playSel) { spk1Stop(); spk1BtnState(U); spk1Dirty(U, 'ov'); } else spk1PlayFrom(U, U.cur); return;
+    case 'psel': spk1PlaySel(U); return;
+    case 'into': spk1IntoDd(U, b); return;
+    case 'zerl': spk1Zerl(U); return;
+    case 'verf': spk1VerfDd(U, b); return;
+    case 'drop': U.sel = []; U.hits = U.ex = null; U.hitLab.textContent = ''; if (SPK1.pl && U.playSel) spk1Stop(); spk1SelDone(U, 'Auswahl verworfen'); return;
+    case 'lact': if (lid && U.act !== lid) { U.act = lid; spk1Layers(U); } return;
+    case 'lcol': if (lid && lid !== 'orig' && lid !== 'rest') { const l = U.meta.layers.find(x => x.id === lid), i = SPK1_PAL.indexOf(l.col); spk1Layer(U, 'farbe', lid, SPK1_PAL[(i + 1) % SPK1_PAL.length]); } return;
+    case 'solo': case 'mute': { const o = lid === 'rest' ? U.meta.rest : U.meta.layers.find(x => x.id === lid); if (o) spk1Layer(U, a, lid, !o[a]); return; }
+    case 'ab': U.ab = !U.ab; spk1Layers(U); if (SPK1.pl && !U.playSel) spk1PlayFrom(U, spk1PlayPos() || U.cur); return;
+    case 'lmore': spk1MoreDd(U, b, lid); return;
+    case 'file': spk1Pick(U); return;
+    case 'take': spk1FromTake(U, {take: b.dataset.id}); return;
+    case 'open': spk1OpenId(U, b.dataset.id); return;
+  }
+}
+/* ---- Zerlegen / Verfeinern (Schritt 4): Rechnung im Worker, Fortschritt in der Statuszeile, Abbrechen = nichts geändert ---- */
+async function spk1Zerl(U) {
+  if (U.busy === 'zerlegen') { spk1Call('zstop', {doc: SPK1.doc}).catch(() => {}); spk1Stat(U, 'Breche ab …'); return; }
+  if (U.busy) return;
+  U.busy = 'zerlegen'; U.vf = null; spk1Dd(U, null); spk1BtnState(U); spk1Stat(U, 'Zerlegen …');
+  try {
+    const r = await spk1Call('zerlegen', {doc: SPK1.doc}, null, {prog: (p, st) => { if (U.busy === 'zerlegen') spk1Stat(U, 'Zerlegen · ' + (st || 'Rechne') + ' ' + Math.round(p * 100) + ' %'); }});
+    U.busy = null; spk1Got(U, r); spk1TintLoad(U);
+    spk1Stat(U, 'Zerlegt: Drums, Bass, Gesang, Rest · ' + (r.ms / 1000).toFixed(1).replace('.', ',') + ' s · ↶ macht es rückgängig');
+  } catch (e) { const ab = /abgebrochen/.test(e.message || ''); if (!ab) logErr(e); spk1Stat(U, ab ? 'Zerlegen abgebrochen – nichts geändert' : 'Zerlegen: ' + (e.message || e)); }
+  finally { U.busy = null; spk1BtnState(U); }
+}
+const SPK1_ZIEL = [['bass', 'Bass'], ['gesang', 'Gesang'], ['drums', 'Drums'], ['lead', 'Lead'], ['pads', 'Pads'], ['rest', 'Rest']];
+function spk1VerfDd(U, b) {
+  if (!U.sel.length || U.busy) return;
+  spk1Dd(U, b, dd => {
+    dd.appendChild(el('h5', '', 'Was steckt hier?'));
+    const g = el('div', 'spk1-g');
+    for (const [z, nm] of SPK1_ZIEL) { const x = el('button', 'mbtn rb spk1-ck', nm); x.dataset.z = z; on(x, 'click', () => { spk1Dd(U, null); spk1Verf(U, z); }); g.appendChild(x); }
+    dd.appendChild(g); dd.appendChild(el('p', '', 'Die Auswahl wird genauer neu gerechnet; das Ergebnis kommt in diese Ebene.'));
+  });
+}
+async function spk1Verf(U, ziel) {
+  if (!U.sel.length || U.busy) return;
+  U.busy = 'verfeinern'; spk1Stop(); spk1BtnState(U);
+  const nm = (SPK1_ZIEL.find(x => x[0] === ziel) || [0, ziel])[1], pc = v => Math.round(v * 100) + ' %';
+  try {
+    const r = await spk1Call('verfeinern', {doc: SPK1.doc, ziel, sel: U.sel}, null, {prog: p => spk1Stat(U, 'Verfeinern · ' + nm + ' · ' + Math.round(p * 100) + ' %')});
+    U.busy = null; spk1Got(U, r); spk1TintLoad(U);
+    U.vf = {lid: r.lid, nm, nach: true, sel: U.sel.slice(), sv: U.selVer, r};
+    spk1Stat(U, 'Verfeinert: ' + nm + ' · FFT ' + r.N + ' · Anteil ' + pc(r.vorher) + ' → ' + pc(r.nachher));
+    spk1VfDd(U);
+    return r;
+  } catch (e) { logErr(e); spk1Stat(U, 'Verfeinern: ' + (e.message || e)); return null; }
+  finally { U.busy = null; spk1BtnState(U); }
+}
+function spk1VfDd(U) {   // Vorher/Nachher sehen (Ebenen-Farben) und hören (Ziel-Ebene in der Auswahl); Übernehmen / Verwerfen
+  const V = U.vf; if (!V || !SPK1.open) return;
+  spk1Dd(U, U.b_verf, dd => {
+    dd.appendChild(el('h5', '', 'Verfeinert: ' + esc(V.nm)));
+    dd.appendChild(makeSeg([['vor', 'Vorher'], ['nach', 'Nachher']], () => (V.nach ? 'nach' : 'vor'), v => { spk1VfAb(U, v === 'nach'); }, 'spk1-vf'));
+    const g = el('div', 'spk1-g'), bp = el('button', 'mbtn rb spk1-ck', '▶ Hören'), bo = el('button', 'mbtn rb spk1-ck', 'Übernehmen'), bx = el('button', 'mbtn rb spk1-ck', 'Verwerfen');
+    on(bp, 'click', () => spk1VfPlay(U));
+    on(bo, 'click', async () => { spk1Dd(U, null); spk1Stop(); if (!V.nach) await spk1VfAb(U, true); U.vf = null; spk1Stat(U, 'Übernommen: ' + V.nm + ' · ↶ macht es rückgängig'); });
+    on(bx, 'click', async () => { spk1Dd(U, null); spk1Stop(); if (V.nach) await spk1VfAb(U, false); U.vf = null; spk1Stat(U, 'Verworfen – Ebene wie vorher'); });
+    g.append(bp, bo, bx); dd.appendChild(g);
+  });
+}
+async function spk1VfAb(U, nach) {
+  const V = U.vf; if (!V || V.nach === nach || U.busy) return;
+  try { const r = await spk1Call(nach ? 'redo' : 'undo', {doc: SPK1.doc}); V.nach = nach; spk1Got(U, r); spk1TintLoad(U); if (SPK1.pl && U.playSel) spk1VfPlay(U); } catch (e) { logErr(e); }
+}
+function spk1VfPlay(U) {
+  const V = U.vf; if (!V) return; const sb = spk1SelSpan(U); if (!sb) return;
+  U.playSel = true; spk1Play(sb[0], V.lid, {sel: V.sel, sv: V.sv, bis: sb[1]}); spk1BtnState(U); spk1Dirty(U, 'ov');
+}
+/* ---- Teil 2: nur Schnittstellen (Daten liegen im Dokument: teil2.notes / tmpl / loops, patches; Takt aus spk1Grid, IMP1-Haken dort) ---- */
+const SPK1_T2 = {notes: 'Noten je Ebene', learn: 'Vorlage lernen', find: 'Überall suchen', matrix: 'Loop in die Clip-Matrix', recipe: 'Klang-Nachbau', ki: 'KI-Trennung (Zusatz-Download)'};
+function spk1Teil2(was) { return {teil2: true, was, text: (SPK1_T2[was] || String(was)) + ' kommt in Teil 2'}; }
+/* ---- Wiedergabe ---- */
+function spk1PlayFrom(U, t) {
+  U.playSel = false; spk1Play(t >= U.dur - 0.05 ? 0 : t, U.ab ? 'orig' : null); spk1BtnState(U); spk1Dirty(U, 'ov');
+}
+function spk1PlaySel(U) {
+  if (SPK1.pl && U.playSel) { spk1Stop(); U.playSel = false; spk1BtnState(U); spk1Dirty(U, 'ov'); return; }
+  const sb = spk1SelSpan(U); if (!sb) return;
+  const mix = U.act === 'orig' ? 'orig' : U.act;   // was in der Auswahl steckt – aus der gewählten Quelle (Original oder Ebene)
+  U.playSel = true; spk1Play(sb[0], mix, {sel: U.sel, sv: U.selVer, bis: sb[1]}); spk1BtnState(U); spk1Dirty(U, 'ov');
+}
+/* ---- Spektrum-Stücke und Tönung laden ---- */
+function spk1SpecFree(U) {
+  if (U.spec && U.gl) for (const c of U.spec.chunks) if (c && c.tex) U.gl.gl.deleteTexture(c.tex);
+  U.spec = null;
+}
+function spk1SpecLoad(U) {
+  const seq = ++U.specSeq;
+  spk1SpecFree(U); U.spec = {N: U.N, hop: 0, chunks: []}; spk1Dirty(U, 'g');
+  const N = U.N; U.specQ = true;
+  spk1Call('spec', {doc: SPK1.doc, N}, null, {
+    chunk: c => { if (seq !== U.specSeq) return; U.spec.hop = c.hop; U.spec.chunks[c.k] = {x0: c.x0, w: c.w, R: c.R, data: c.data, tex: null}; spk1Dirty(U, 'g'); },
+    prog: p => { if (seq === U.specSeq && p < 1) spk1Stat(U, 'Spektrum ' + N + ' · ' + Math.round(p * 100) + ' %'); }
+  }).then(I => { if (seq !== U.specSeq) return; U.specQ = false; U.spec.info = I; U.spec.hop = I.hop; if (/^Spektrum/.test(U.st.textContent)) spk1Stat(U, 'Ziehen = Auswahl · zwei Finger = Zoom · Doppeltipp = alles'); spk1Dirty(U, 'g'); },
+    e => { if (seq === U.specSeq) { U.specQ = false; logErr(e); spk1Stat(U, 'Spektrum: Fehler'); } });
+}
+function spk1TintLoad(U) {
+  const seq = ++U.tintSeq;
+  if (!U.meta || !U.meta.layers.length) { U.tint = null; spk1Dirty(U, 'g'); return; }
+  spk1Call('tint', {doc: SPK1.doc, maxW: U.gl ? Math.min(8192, U.gl.max) : 4096}).then(r => {
+    if (seq !== U.tintSeq || !SPK1.open) return; U.tint = r;
+    if (U.gl) { const G = U.gl, gl = G.gl; gl.deleteTexture(G.ta); gl.deleteTexture(G.tb); G.ta = G.tex(r.W, r.H, 'rgba', r.img0, false); G.tb = r.img1 ? G.tex(r.W, r.H, 'rgba', r.img1, false) : G.tex(1, 1, 'rgba', new Uint8Array(4), false); }
+    spk1Dirty(U, 'g');
+  }, logErr);
+}
+/* ---- Quelle: Startfläche, Datei, Take/Clip, gespeicherte Analyse ---- */
+async function spk1StartPaint(U) {
+  U.sh.classList.add('nodoc'); U.meta = null; U.ttl.lastChild.textContent = '';
+  const sp = U.sp; sp.innerHTML = '<p>Ein Stück als Frequenzspektrum ansehen, Teile auswählen und in Ebenen trennen (Bass, Gesang, Drums …).</p><h5>Datei</h5>';
+  const bf = el('button', 'mbtn rb', 'Datei laden … <small>&nbsp;MP3, WAV, M4A</small>'); bf.dataset.a = 'file'; sp.appendChild(bf);
+  const tk = Object.keys(S.takes || {}).filter(id => S.takes[id] && S.takes[id].len > 0).slice(-12).reverse();
+  if (tk.length) {
+    sp.appendChild(el('h5', '', 'Aus dem Projekt (Gesang-Takes)'));
+    for (const id of tk) { const m = S.takes[id], b = el('button', 'mbtn rb', esc(m.name || 'Take ' + id.slice(0, 4)) + `<small>&nbsp;${(m.len / m.sr).toFixed(1).replace('.', ',')} s</small>`); b.dataset.a = 'take'; b.dataset.id = id; sp.appendChild(b); }
+  }
+  let list = []; try { list = await spk1Call('list', {}); } catch (e) { logErr(e); }
+  if (!SPK1.open || !U.sh.classList.contains('nodoc')) return;
+  if (list.length) {
+    sp.appendChild(el('h5', '', 'Analysen auf diesem Gerät'));
+    for (const a of list.slice().sort((p, q) => q.mt - p.mt)) {
+      const r = el('div', 'spk1-i'), bo = el('button', 'mbtn rb', 'Öffnen'), bd = el('button', 'mbtn rb spk1-ck', 'Löschen');
+      r.appendChild(el('span', '', esc(a.name) + `<small>${Math.floor(a.sec / 60)}:${String(Math.round(a.sec % 60)).padStart(2, '0')} · ${esc(relTime(a.mt))}</small>`));
+      bo.dataset.a = 'open'; bo.dataset.id = a.id;
+      twoStep(bd, 'Wirklich?', () => { spk1Call('remove', {id: a.id}).then(() => { if (SPK1.doc === a.id) SPK1.doc = null; spk1StartPaint(U); }, logErr); });
+      r.append(bo, bd); sp.appendChild(r);
+    }
+  }
+}
+function spk1Pick(U) {
+  let inp = U.inp;
+  if (!inp || !inp.isConnected) {
+    inp = U.inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'audio/*,.mp3,.wav,.m4a,.aif,.aiff,.caf'; inp.hidden = true;
+    inp.addEventListener('change', () => { const f = inp.files && inp.files[0]; inp.value = ''; if (f) spk1Busy(U, spk1Load({file: f}), 'Lade ' + f.name + ' …'); });
+    document.body.appendChild(inp);
+  }
+  inp.value = ''; inp.click();
+}
+async function spk1Busy(U, pr, txt) {
+  const sp = U.sp, note = el('p', '', esc(txt)); if (U.sh.classList.contains('nodoc')) sp.insertBefore(note, sp.firstChild);
+  try { const r = await pr; if (!SPK1.open) return; spk1Show(U, r); }
+  catch (e) { logErr(e); note.textContent = 'Nicht lesbar: ' + (e.message || e); }
+}
+async function spk1FromTake(U, o) {
+  let list = []; try { list = await spk1Call('list', {}); } catch (e) {}
+  const key = o.take + (o.out > o.in ? ':' + (+o.in).toFixed(2) + '-' + (+o.out).toFixed(2) : ''), hit = list.find(a => a.tk === key);
+  if (hit) return spk1OpenId(U, hit.id);
+  return spk1Busy(U, spk1Load(o), 'Lade Take …');
+}
+function spk1OpenId(U, id) { return spk1Busy(U, spk1Call('open', {doc: id}), 'Öffne …'); }
+function spk1Show(U, r) {
+  SPK1.doc = r.meta.id; SPK1.last = r; U.meta = r.meta; U.dur = r.meta.n / r.meta.sr;
+  U.sel = []; U.hits = U.ex = U.tmp = null; U.cur = 0; U.act = 'orig'; U.ab = false; U.tint = null; U.playSel = false;  U.vf = null;
+  U.sh.classList.remove('nodoc'); U.ttl.lastChild.textContent = r.meta.name;
+  spk1Size(U); spk1FitAll(U); spk1Layers(U); spk1UndoBtns(U, r); spk1BtnState(U); spk1SpecLoad(U); spk1TintLoad(U);
+  spk1ToolSet(U, U.tool); spk1Dirty(U, 'all');
+}
+function spk1Leave(U) { spk1Stop(); U.playSel = false; if (SPK1.doc) spk1Call('save', {doc: SPK1.doc}).catch(() => {}); spk1SpecFree(U); U.tint = null; U.specSeq++; U.tintSeq++; }
+/* ---- Öffnen / Schließen ---- */
+async function spk1Open(o) {
+  o = o || {}; spk1Css(); closePop(); if (UI.toastActs) hideToast();
+  const U = SPK1.ui || spk1Build(); clearTimeout(SPK1.idle);
+  SPK1.open = true; U.back = o.back || null; U.sh.classList.add('open'); R.editor = R.editor === 'menu' ? null : R.editor;
+  if (o.clip) { const c = S.tracks[o.clip.t] && S.tracks[o.clip.t].clips[o.clip.s], a = c && c.audio; if (a) o = Object.assign({}, o, {take: a.take, in: a.in, out: a.out}); }
+  if (o.take) { await spk1StartPaint(U); return spk1FromTake(U, {take: o.take, in: o.in, out: o.out, name: o.name}); }
+  if (o.id) { await spk1StartPaint(U); return spk1OpenId(U, o.id); }
+  if (SPK1.doc && SPK1.last && SPK1.last.meta.id === SPK1.doc) return spk1Show(U, SPK1.last);   // zurück an dieselbe Stelle
+  return spk1StartPaint(U);
+}
+function spk1Close() {
+  const U = SPK1.ui; if (!SPK1.open || !U) return;
+  spk1Dd(U, null); spk1Leave(U); SPK1.open = false; U.sh.classList.remove('open');
+  clearTimeout(SPK1.idle); SPK1.idle = setTimeout(spk1Idle, 180000);   // Rechnung endet 3 min nach dem Schließen (wie G9A)
+  UI.dirty.all = true;
+  const b = U.back; U.back = null;
+  try { if (b && b.tk) tkSheet(b.tk); else if (b && b.clip) openClipSheet(b.clip.t, b.clip.s); else if (b && b.menu) openMenu(); } catch (e) { logErr(e); }
+}
+function spk1Idle() {
+  if (SPK1.open) return; const w = SPK1.w; if (!w) return;
+  spk1Call('close', {doc: SPK1.doc}).catch(() => {}).then(() => { if (SPK1.open || SPK1.w !== w) return; try { w.terminate(); } catch (e) {} SPK1.w = null; SPK1.how = ''; SPK1.wq.clear(); });
+}
+/* ---- Einstiege: ≡-Menü, Takes-Blatt, Clip-Blatt, Guide ---- */
+function spk1MenuRow(sec, row, btn) {
+  const b = btn('Spektral …'); b.setAttribute('aria-label', 'Spektral: Frequenzspektrum ansehen, auswählen und trennen');
+  on(b, 'click', () => { closeMenu(); spk1Open({back: {menu: true}}); }); row(sec, 'Analyse', b);
+}
+function spk1TkBtn() { return '<button class="mbtn rb tk-spk1" data-a="spk1">Im Spektrum öffnen</button>'; }
+function spk1ClipBtn(g, B, t, s) { g.append(B('Im Spektrum öffnen', () => { closeClipSheet(); spk1Open({clip: {t, s}, back: {clip: {t, s}}}); })); }
+function spk1Guide(ents) {
+  try {
+    const E = (id, n, w, d, s, go, q) => ({id, n, w, d, s, go, q});
+    ents.push(E('spk1', 'Spektral (Frequenzspektrum)', '≡ Menü › Analyse › Spektral … · Takes-Blatt › Im Spektrum öffnen',
+      'Ein Stück als Frequenzbild: links die Tasten, oben die Takte. Rechteck, Zeit, Frequenz, Pinsel, Harmonische (Ton antippen) und Ähnliche wählen Teile aus; „In Ebene“ legt sie als Ebene ab (Bass, Gesang, Drums …) – nichts am Original geht verloren. „Zerlegen“ trennt das ganze Stück in Drums, Bass, Gesang und Rest; „Verfeinern“ rechnet eine Auswahl genauer nach („Was steckt hier?“).',
+      'spektrum spektral frequenz analyse trennen zerlegen verfeinern ebenen stems bass gesang drums auswahl pinsel harmonische obertöne',
+      () => { spk1Open({back: {menu: true}}); }, () => (SPK1.open && SPK1.ui ? SPK1.ui.tl : null)));
+  } catch (e) { logErr(e); }
+}
+/* ---------- Test-Zugang (window.__spk, SYNQUENZER.spk1); nur Funktionen, nichts läuft von selbst ---------- */
+const SPK1_API = {
+  load: (o, cb) => spk1Load(o || {}, cb),
+  open: id => spk1Call('open', {doc: id}).then(r => { SPK1.doc = id; SPK1.last = r; return r; }),
+  list: () => spk1Call('list', {}),
+  remove: id => spk1Call('remove', {id}),
+  stft: (x, N, hop) => spk1Call('rt', {x: x instanceof Float32Array ? x : Float32Array.from(x), N: N || 4096, hop}),
+  spec: (N, o) => { const cs = []; return spk1Call('spec', Object.assign({doc: SPK1.doc, N: N || 4096}, o || {}), null, {chunk: c => cs.push(c)}).then(I => Object.assign(I, {got: cs})); },
+  layers: () => spk1Call('open', {doc: SPK1.doc}).then(r => { SPK1.last = r; return {layers: r.meta.layers, rest: r.meta.rest}; }),
+  layer: (was, lid, v) => spk1Call('layer', {doc: SPK1.doc, was, lid, v}).then(r => { SPK1.last = r; return r; }),
+  mask: o => spk1Call('transfer', Object.assign({doc: SPK1.doc}, o)).then(r => { SPK1.last = r; return r; }),
+  maskAt: (lid, m, k) => spk1Call('maskAt', {doc: SPK1.doc, lid, m, k}),
+  sum: () => spk1Call('sum', {doc: SPK1.doc}),
+  render: (mix, a, b) => spk1Call('render', {doc: SPK1.doc, mix, a, b}),
+  undo: () => spk1Call('undo', {doc: SPK1.doc}).then(r => { SPK1.last = r; return r; }),
+  redo: () => spk1Call('redo', {doc: SPK1.doc}).then(r => { SPK1.last = r; return r; }),
+  save: () => spk1Call('save', {doc: SPK1.doc}),
+  close: () => spk1Call('close', {doc: SPK1.doc}),
+  link: () => SPK1.last ? spk1Link(SPK1.last.meta.id, SPK1.last.meta.name) : false,
+  zipAdd: async () => { const f = []; await spk1ZipAdd(f); return f.map(x => ({name: x.name, bytes: x.data.length})); },
+  play: (t, mix, o) => spk1Play(t, mix, o), stop: () => spk1Stop(), pos: () => spk1PlayPos(),
+  zerlegen: (o, cb) => spk1Call('zerlegen', Object.assign({doc: SPK1.doc}, o || {}), null, cb).then(r => { SPK1.last = r; return r; }),
+  zstop: () => spk1Call('zstop', {doc: SPK1.doc}),
+  verfeinern: (ziel, sel) => spk1Call('verfeinern', {doc: SPK1.doc, ziel, sel}).then(r => { SPK1.last = r; return r; }),
+  teil2: was => spk1Teil2(was),
+  page: {open: o => spk1Open(o), close: () => spk1Close(), noGl: b => { SPK1.noGl = !!b; }, ui: () => SPK1.ui, tool: k => SPK1.ui && spk1ToolSet(SPK1.ui, k),
+    zerl: () => spk1Zerl(SPK1.ui), verf: z => spk1Verf(SPK1.ui, z), vfAb: nach => spk1VfAb(SPK1.ui, nach), vfDd: () => spk1VfDd(SPK1.ui),
+    harm: (t, f) => spk1Harm(SPK1.ui, t, f), aehn: ex => spk1Aehn(SPK1.ui, ex), into: (nach, art) => spk1Into(SPK1.ui, nach, art), playSel: () => spk1PlaySel(SPK1.ui),
+    info: () => { const U = SPK1.ui; return U ? {open: SPK1.open, doc: SPK1.doc, gl: !!U.gl, cpu: !U.gl && !!U.c2, tool: U.tool, sel: U.sel.length, selArts: U.sel.map(x => x.art), hits: U.hits ? U.hits.length : null, chunks: U.spec ? U.spec.chunks.filter(Boolean).length : 0, tint: U.tint ? U.tint.ids.length : 0, layers: U.meta ? U.meta.layers.map(l => l.name) : [], v: Object.assign({}, U.v), W: U.W, H: U.H, stat: U.st.textContent, busy: U.busy || null, vf: U.vf ? {lid: U.vf.lid, nach: U.vf.nach} : null, playing: !!SPK1.pl, playSel: !!U.playSel, nodoc: U.sh.classList.contains('nodoc')} : null; }},
+  grid: () => spk1Grid(null),
+  state: () => ({how: SPK1.how, worker: !!SPK1.w, doc: SPK1.doc, playing: !!SPK1.pl, q: SPK1.wq.size}),
+};
+SYNQUENZER.spk1 = SPK1_API;
+try { window.__spk = SPK1_API; } catch (e) {}
+/* SPK1-END */
 /* ===== KF1-BEGIN (Paket KF1, Klang-Feinschliff Teil 1 aus der Ur-Roadmap §18 „Klang“; Xander: „Können wir davon noch was machen?“ → ja) =====
    Sechs Wünsche, jeder mit neutralem Standard (= genau der Klang von vorher, alte Projekte bitgleich):
    1 RAUSCHFARBE  VA › OSZ › MIX: Regler „Rauschfarbe“ weiß │ rosa │ braun │ blau (p.kfNc 0…3) für den Rausch-Fader; jede Farbe auf den
