@@ -98116,13 +98116,27 @@ function spk2DspMake(I) {
     }
     return {f0, on, q, sg};
   }
+  // Schlag-Modell im Tiefband: der Kick kommt auf jedem Schlag wieder, der Bass wechselt die Töne → je Rahmen/Bin das zweitkleinste von
+  // 7 Werten im Schlag-Abstand (Tempo aus dem Takt-Raster) = Leistung, die sicher nicht zum Bass gehört. Nur bis 200 Hz.
+  function kickModel(d, cen, Nf, Kf) {
+    const g = d.meta.grid || {}, bpm = +g.bpm, sr = d.meta.sr, n = cen.length, st = n > 1 ? cen[1] - cen[0] : d.meta.base.hop;
+    if (globalThis.NOKICK || !(bpm >= 50 && bpm <= 220) || !(st > 0)) return null;
+    const P = 60 / bpm * sr / st, J = 3, ext = Math.ceil(J * P) + 1, n2 = n + 2 * ext, c2 = new Int32Array(n2), KK = Math.min(Kf, Math.ceil(200 * Nf / sr) + 1);
+    for (let i = 0; i < n2; i++) c2[i] = cen[0] + (i - ext) * st;
+    const X2 = magsAt(d, Nf, c2, KK), KQ = new Float32Array(n * Kf), v = [], len = d.mid.length;
+    for (let i = 0; i < n; i++) for (let k = 0; k < KK; k++) {
+      v.length = 0; for (let j = -J; j <= J; j++) { const ii = i + ext + Math.round(j * P), c = c2[ii]; if (c < 0 || c >= len) continue; const x = X2[ii * KK + k]; v.push(x * x); }
+      if (v.length < 4) continue; v.sort((a, b) => a - b); KQ[i * Kf + k] = v[1] * (1 - ramp(k * sr / Nf, 150, 200));
+    }
+    return KQ;
+  }
   // Tiefband: Bass = Obertonkamm des verfolgten Grundtons (Leistungs-Modell aus der Fensterantwort, Wiener-Anteil), Drums = perkussiv +
   // tiefe tonale Reste neben dem Kamm (Kick). Rückgabe wie SPK1 lowSplit (X/SB/SD auf der FFT Nf), projiziert wird mit projLk.
   function lowSplit(d, cen, Nf, fmax, r, trust) {
     const sr = d.meta.sr, n = cen.length, N16 = 16384, df16 = sr / N16, K16 = Math.min(N16 / 2 + 1, Math.ceil(2400 / df16) + 2);
     const Y = magsAt(d, N16, cen, K16), T = bassTrack(Y, n, K16, df16, (cen.length > 1 ? cen[1] - cen[0] : d.meta.base.hop) / sr, trust);
     const dff = sr / Nf, Kf = Math.min(Nf / 2 + 1, Math.ceil(fmax / dff) + 2), X = magsAt(d, Nf, cen, Kf), {mh} = hpss(X, n, Kf, 17, 17);
-    const SB = new Float32Array(n * Kf), SD = new Float32Array(n * Kf), B = new Float32Array(Kf), G = new Float32Array(n);
+    const SB = new Float32Array(n * Kf), SD = new Float32Array(n * Kf), B = new Float32Array(Kf), G = new Float32Array(n), KQ = kickModel(d, cen, Nf, Kf);
     const hmax = trust ? 40 : 12, HM = hmax + 1, LA = new Float32Array(n * HM), LC = new Float32Array(n * HM), WR = Math.max(4, Math.round(0.25 * sr / Math.max(1, cen.length > 1 ? cen[1] - cen[0] : 1024)));
     // je Rahmen und Oberton: Spitze (±1 Bin, parabolisch) → Amplitude² A2 und Lage
     for (let i = 0; i < n; i++) {
@@ -98132,7 +98146,7 @@ function spk2DspMake(I) {
         const c = h * f0 / dff, k0 = Math.round(c); if (k0 < 1 || k0 >= Kf - 1) break;
         let km = k0; for (let t = k0 - 1; t <= k0 + 1; t++) if (X[o + t] > X[o + km]) km = t;   // Spitze darf ±1 Bin liegen
         const xa = X[o + km - 1], xb = X[o + km], xc = X[o + km + 1], dn = xa - 2 * xb + xc, cc = km + (dn < 0 ? Math.max(-0.5, Math.min(0.5, 0.5 * (xa - xc) / dn)) : 0);
-        const cx = Math.abs(cc - c) <= 1.2 ? cc : c; LA[i * HM + h] = xb * xb / Math.max(0.3, w2(km - cx)); LC[i * HM + h] = cx;
+        const cx = Math.abs(cc - c) <= 1.2 ? cc : c; LA[i * HM + h] = Math.max(0, xb * xb - (KQ ? KQ[o + km] : 0)) / Math.max(0.3, w2(km - cx)); LC[i * HM + h] = cx;
       }
     }
     // Stetigkeit: ein Ton hält seinen Pegel; kurze Spitzen darüber (Kick-Schlag auf demselben Bin) zählen nicht zum Bass →
@@ -98143,11 +98157,11 @@ function spk2DspMake(I) {
       const a = Math.max(T.sg[i], i - WR); let b = i; while (b + 1 < n && b + 1 <= i + WR && T.sg[b + 1] === T.sg[i]) b++;
       for (let h = 1; g > 0 && h <= hmax; h++) {
         const A2 = LA[i * HM + h]; if (!A2) continue; let L = A2;
-        if (b - a >= 3) { tmp.length = 0; for (let j = a; j <= b; j++) tmp.push(LA[j * HM + h]); tmp.sort((x, y) => x - y); L = Math.min(A2, 2 * tmp[Math.floor((tmp.length - 1) * 0.2)]); }
+        if (!globalThis.NOROB && b - a >= 3) { tmp.length = 0; for (let j = a; j <= b; j++) tmp.push(LA[j * HM + h]); tmp.sort((x, y) => x - y); L = Math.min(A2, 2 * tmp[Math.floor((tmp.length - 1) * 0.2)]); }
         const cx = LC[i * HM + h]; for (let k = Math.max(0, Math.floor(cx - 4)); k <= Math.min(Kf - 1, Math.ceil(cx + 4)); k++) B[k] += L * w2(k - cx);
       }
       for (let k = 0; k < Kf; k++) {
-        const f = k * dff, x2 = X[o + k] * X[o + k], b = g * B[k], sb = x2 > 0 ? Math.min(1, b / (b + Math.max(0, x2 - b) + 1e-20)) : 0, h = mh[o + k], kick = 1 - ramp(f, 90, 160);
+        const f = k * dff, x2 = X[o + k] * X[o + k], b = g * B[k], kq = KQ ? KQ[o + k] : 0, sb = x2 > 0 ? Math.min(1, b / Math.max(x2, b + kq, 1e-20)) : 0, h = mh[o + k], kick = 1 - ramp(f, 90, 160);
         SB[o + k] = sb; SD[o + k] = (1 - sb) * ((1 - h) + h * kick);
       }
     }
