@@ -10,3 +10,8 @@
 - (6) 21:04 Kleines G nur für große Verschiebungen (src/fexp5c.mjs: Modell G 3 ms, render hält bei Strecken mit |Verschiebung| < 150 ct den alten Rand per Versatz 12 ms): +400 9,07, −500 6,00, Ü 6,14/5,08 dB, aber weich 2,43 → 2,60 % (Modell-Raster verschoben), hart 2,80 % (Kurve hart > 150 ct an Gleittönen) → verworfen.
 - (7) 21:05 Hülle Betrag-linear statt Log-linear gemischt (src/fexp5d.mjs, β 0,5 / 1): +400 9,06 / 9,00, −500 6,06 / 6,24 → −500 schlechter, verworfen.
 - Entscheidung 21:07: nichts erfüllt „messbar besser, nirgends schlechter“ → index.html bleibt = basis.html (4.63.0, cmp gleich), kein Markerblock eingebaut. Weiter mit Pflicht- und Regressions-Prüfungen.
+- (P) 21:09 Pflicht auf index.html (= basis.html, cmp gleich): topdefs Skripte 26, doppelt 0, Syntaxfehler 0 · dupkeys 0 · smoke errors [] (smoke.png) · „MS 2000“ 1× · „^  live: true,“ 1× · VERSION 4.63.0 · Markenwörter = basis (Datei gleich) · keine Datensatz-/Produktnamen in LOG/NOTES/src.
+- (R1) 21:11 chr2-test (`vx/chr3/chr2-test.mjs`, Basis vx/basis2.html): ALLE OK (82) in 127 s (reg/chr2.txt; „Knackser weniger“ gegen basis2 erwartet).
+- (R2) 21:12 vx1-test: 61/61 OK (reg/vx1.txt).
+- (R3) 21:13 spk6-test: ALLES OK, 26 OK-Zeilen, kern-messwerte fails 0 (reg/spk6.txt).
+- Ende 21:14: kein Einbau (Ziel nicht erreichbar mit Rand-Maßnahmen; Kern-Hülle braucht neue Information) – NOTES.md mit Zahlen und nächstem Weg.

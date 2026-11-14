@@ -62,7 +62,7 @@ async function thumbDrag(P, from, to) {   // Finger auf dem Daumen von Wert „f
   await shot(p, 'spk5-22-hoch-100.png');
   // Note antippen → Klappfenster wie Werkzeug „Noten“
   const tool = await p.evaluate(() => __spk.page.ui().tool);
-  let hb = null; for (let i = 0; i < 40 && !hb; i++) { const h = await p.evaluate(i => SYNQUENZER.spk5.hit(i), i); if (h && h.w >= 10 && h.y > 0) { const mn = await box(p, '#spk1Sheet .spk1-mn'); if (h.x > mn.x + 4 && h.x < mn.x + mn.w - 4 && h.y > mn.y + 4 && h.y < mn.y + mn.h - 4) hb = h; } }
+  let hb = null; for (let i = 0; i < 400 && !hb; i++)   /* alle gezeichneten Noten durchsuchen (SPK8: Bass-Ebene hat echte, tiefere Noten) */ { const h = await p.evaluate(i => SYNQUENZER.spk5.hit(i), i); if (h && h.w >= 10 && h.y > 0) { const mn = await box(p, '#spk1Sheet .spk1-mn'); if (h.x > mn.x + 4 && h.x < mn.x + mn.w - 4 && h.y > mn.y + 4 && h.y < mn.y + mn.h - 4) hb = h; } }
   if (hb) await tap([hb.x, hb.y]); await p.waitForTimeout(400);
   const dd = await p.evaluate(() => { const d = document.querySelector('#spk1Sheet .spk1-dd'); if (!d) return null; return {txt: [...d.querySelectorAll('button')].map(b => b.textContent.trim() + (b.disabled ? ' (aus)' : '')), h5: [...d.querySelectorAll('h5')].map(h => h.textContent), sel: __spk.page.ui().n2sel, klein: [...d.querySelectorAll('button')].filter(b => b.getBoundingClientRect().height < 43.5).length}; });
   await shot(p, 'spk5-23-hoch-note-antippen.png');
