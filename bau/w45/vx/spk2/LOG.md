@@ -8,3 +8,4 @@
 - Auftrag 1/5 e) Pflicht → fertig: topdefs doppelt 0 / Syntaxfehler 0, dupkeys 0, smoke errors [] (smoke-a1.png), „MS 2000“ 1×, „  live: true,“ 1×, Markenwörter wie Basis, VERSION gleich, CHANGES unberührt. Regression spk1-test.mjs auf spk2/index.html: 17 OK, 1 FEHLER (verfeinern-verbessert-ziel 0,77 → −0,46, wie SPK1), Werte bitgleich zu SPK1.
 - Auftrag 1/5 f) Verfeinern je Ziel (NMF mit gelernten Vorlagen für Bass/Lead/Gesang, Drums HPSS feiner + Transienten, Pads lange Glättung) → offen, nicht begonnen (Zeit in Bass/Kick-Messung gegangen).
 - Auftrag 1/5 Ergebnis → halb: Ziel Bass ≥ 4 dB beim Zerlegen und Verfeinern ≥ +1 dB NICHT erreicht. Weiter bei NOTES.md „Nächster Schritt“.
+- Auftrag 2/5 Start: LOG/NOTES gelesen; Plan: Kern-Ops noten/zuordnen/finden im SPK2-Block (Haken: op-Weiche default, Undo mit teil2), Werkzeug „Noten“ + Kästchen im Overlay + Klappfenster „Gehört zu“ → begonnen.

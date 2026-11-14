@@ -99309,6 +99309,113 @@ const KF2_API = {
 };
 Object.assign(SYNQUENZER, {kf2: KF2_API});
 /* ===== KF2-END ===== */
+/* ===== NX1-BEGIN (Paket NX1 – Nachzüge Gesang-Editor + Import; Präfix nx1)
+   a  Gesang-Editor einer Song-Stimme: das Lineal zählt die Song-Takte – opts.tk wie bei der Song-Melodie (Taktart-Karte), relativ zum
+      Block; lab(k) = Song-Takt (nx1VoxTk). Szene-Clips unverändert.
+   b  Ecke der Aktionsleiste im Gesang-Editor: „1 Stück“ / „n Stücke“ (opts.audio.unit).
+   c  Marken-Editor: Modus Schneiden/Dehnen ('hybrid', Gesang-Editor) als dritter Knopf – nur bei Takes mit Ankern sichtbar (sonst sieht
+      alles aus wie bisher); wpSetMode macht daraus nicht mehr 'slice'; Raster, Stärke, Marken behalten 'hybrid' (wpRequant → vx1rQuant).
+   d  Ohne Worker (Rückfall Hauptfaden): der Gesang-Kern ist ein Generator (nx1RunG) – nx1Local rechnet ihn in Stücken ≤ 25 ms mit
+      setTimeout dazwischen; Ergebnis bitgleich zum Worker (gleiche Rechnung, gleiche Reihenfolge).
+   e  Import: liegt im Projekt schon Audio (Matrix, Song-Clips, Song-Gesang) oder ist das erkannte Tempo krumm (91,6 → Projekt 92), wird
+      das Audio vor dem Ablegen im Zeitkarten-Worker gedehnt (WSOLA des VS5b-Kerns vsStretchMake, Tonhöhe bleibt) – Faktor = Audio-Tempo /
+      Projekt-Tempo (0,5–2). Teile, „1“ und Loop bleiben an ihren Takten; ein ↶ wie bisher; der gedehnte Take trägt imp.bpm = Projekt-Tempo.
+      Ohne Worker oder außerhalb 0,5–2: wie bisher (eigenes Tempo + Hinweis).
+   g  Guide: der Eintrag „MIDI importieren“ heißt „Audio/MIDI importieren“ und findet MP3/WAV/Tempo/Teile.
+   Einhänge-Zeilen (Kommentar „NX1“): PianoRoll (tkLab, Ecke), vx1rBuild (tk, unit), vx1rRun → nx1RunG, wpWorker, wpCall, wpSetMode,
+   wpOpen, wpPaint, imp1Prep, imp1Place. Test-Zugang window.__nx1. */
+const NX1 = {maxMs: 0, steps: 0, runs: 0, imp: null};
+const NX1_HY = 'Schnitt+Dehnen';
+// a: Takt k des Blocks → Schlag ab Block-Anfang (Song-Taktkarte), Schlag → Takt, Takt → Song-Taktnummer
+function nx1VoxTk(vox) {
+  const b0 = () => { const v = S.song && S.song.vox && S.song.vox.find(z => z.id === vox); return v ? v.bar : 0; };
+  return {beat: k => barBeat(b0() + k) - barBeat(b0()), at: b => barAt(barBeat(b0()) + b) - b0(), lab: k => b0() + k + 1};
+}
+// c: Schneiden/Dehnen anbieten, wenn der Take im Gesang-Editor bearbeitet wurde (Anker an den Marken) oder schon so spielt
+function nx1HyOk(id) { const m = S.takes && S.takes[id]; return !!(m && ((m.warp && m.warp.mode === 'hybrid') || (m.marks && m.marks.some(k => isNum(k.an))))); }
+const nx1SegBtn = () => '<button data-m="hybrid" hidden>' + NX1_HY + '</button>';
+function nx1SegPaint(E, id) { const b = E.seg && E.seg.querySelector('button[data-m="hybrid"]'); if (!b) return; const on = nx1HyOk(id); if (b.hidden === on) b.hidden = !on; }
+// d: Hauptfaden-Rückfall in Stücken (je Schritt ≤ 25 ms, dann setTimeout – Wiedergabe und Finger bleiben flüssig)
+function nx1Local(m) {
+  return new Promise((ok, no) => {
+    const g = nx1RunG(VSM, m); NX1.runs++;
+    const step = () => {
+      const t0 = performance.now(); let more = false;
+      try { for (;;) { const r = g.next(); if (r.done) { ok(r.value); break; } if (performance.now() - t0 > 25) { more = true; break; } } } catch (e) { no(e); }
+      const dt = performance.now() - t0; NX1.steps++; if (dt > NX1.maxMs) NX1.maxMs = dt;
+      if (more) setTimeout(step, 0);
+    };
+    step();
+  });
+}
+// e: Audio im Projekt? (Matrix-Clips, eigene Song-Clips, Song-Gesang)
+function nx1HasAu() {
+  if (S.tracks.some(t => t.clips.some(x => x && x.audio))) return true;
+  const sg = S.song; return !!(sg && ((sg.vox && sg.vox.length) || (sg.own && Object.keys(sg.own).some(k => sg.own[k] && sg.own[k].audio))));
+}
+const nx1ImpTarget = c => (imp1Empty() || !nx1HasAu() ? Math.round(c.bpm) : S.bpm);   // dasselbe Tempo, das imp1Prep setzt bzw. behält
+// die Sicht, mit der imp1Place ablegt: c selbst (Tempo passt / nicht dehnbar) oder eine Kopie mit dem gedehnten Audio; null = rechnet noch
+function nx1ImpView(c, kind) {
+  const P = nx1ImpTarget(c), q = c.bpm / P;
+  if (Math.abs(q - 1) < 1e-4 || q < .5 || q > 2 || !c.x || !wpWorker()) return c;
+  const key = c.bpm + '|' + P + '|' + c.x.length + '|' + c.sr;
+  const s = c.sx && c.sx.key === key ? c.sx : null;
+  if (s && s.pcm) {
+    const k = s.pcm.length / c.x.length;                              // = q bis auf eine Probe
+    return Object.assign({}, c, {bpm: P, t1: c.t1 * k, dur: s.pcm.length / c.sr, pcm: s.pcm, parts: c.parts.map(p => Object.assign({}, p, {ta: p.ta * k})), take: s.take, nx1: {from: c.bpm, to: P}});
+  }
+  if (s && s.run) { toast('Audio wird noch ans Tempo angepasst …'); return null; }
+  const sx = c.sx = {key, run: true, pcm: null, take: null, ms: 0}, t0 = performance.now();
+  c.made = 'Tempo ' + String(+c.bpm.toFixed(2)).replace('.', ',') + ' → ' + P + ' BPM wird angepasst …'; imp1Paint();
+  nx1ImpStretch(c, q).then(pcm => {
+    if (c.sx !== sx) return;
+    sx.run = false; sx.pcm = pcm; sx.ms = Math.round(performance.now() - t0); c.made = null;
+    NX1.imp = {from: c.bpm, to: P, q, ms: sx.ms, n: c.x.length, out: pcm ? pcm.length : 0};
+    if (!pcm) { c.sx = null; toast('Anpassen fehlgeschlagen – das Audio läuft im eigenen Tempo'); imp1Paint(); return; }
+    if (IMP1.cur === c && imp1Pop()) imp1Place(kind); else imp1Paint();   // Blatt zu: nicht ablegen (das Ergebnis bleibt für den nächsten Tipp)
+  });
+  return null;
+}
+// Dehnen im Zeitkarten-Worker (eine Strecke, Faktor q), dann Int16 in Stücken
+async function nx1ImpStretch(c, q) {
+  const n = c.x.length, L = n / c.sr;
+  let r = null; try { r = await nx1Call({op: 'stretch', x: c.x, sr: c.sr, src: [0, L], dst: [0, L * q], lock: 0}, 240000); } catch (e) { logErr(e); return null; }
+  const y = r && r.y; if (!y || !y.length) return null;
+  const pcm = new Int16Array(y.length);
+  for (let i = 0; i < y.length; i += 262144) {
+    const e = Math.min(y.length, i + 262144);
+    for (let j = i; j < e; j++) { const v = Math.round(y[j] * 32767); pcm[j] = v > 32767 ? 32767 : v < -32768 ? -32768 : v; }
+    if (e < y.length) await vvYield();
+  }
+  return pcm;
+}
+// wie wpCall, aber mit eigener Wartezeit und OHNE Hauptfaden-Rückfall (ein ganzer Song würde den Hauptfaden Sekunden blockieren)
+function nx1Call(m, ms) {
+  const w = wpWorker(); if (!w) return Promise.reject(new Error('kein Worker'));
+  return new Promise((ok, no) => {
+    const id = ++WP.wid, x = new Float32Array(m.x);
+    const to = setTimeout(() => { WP.wq.delete(id); no(new Error('Zeit')); }, ms);
+    WP.wq.set(id, {ok, no, to});
+    try { w.postMessage(Object.assign({}, m, {id, x}), [x.buffer]); } catch (e) { clearTimeout(to); WP.wq.delete(id); no(e); }
+  });
+}
+const nx1ImpMsg = c => (c && c.nx1 ? ' · Audio ' + String(+c.nx1.from.toFixed(2)).replace('.', ',') + ' → ' + c.nx1.to + ' BPM' : '');
+// g: Guide – ein Import-Weg für Audio und MIDI
+(function nx1Guide() {
+  try {
+    const e = ui1Entries().find(x => x.id === 'midiimp'); if (!e) return;
+    Object.assign(e, {n: 'Audio/MIDI importieren', w: 'Menü › Export › Audio/MIDI importieren',
+      d: 'MP3, WAV, M4A oder MIDI: Tempo, Taktart und Teile werden erkannt – in Szenen zerschneiden, als eine Spur, als Gesang oder als Loop.',
+      s: e.s + ' audio mp3 wav m4a aiff lied song importieren tempo bpm taktart teile refrain strophe szenen loop original zerschneiden', q: 'Audio/MIDI importieren'});
+  } catch (e) {}
+})();
+window.__nx1 = {
+  st: () => ({maxMs: +NX1.maxMs.toFixed(1), steps: NX1.steps, runs: NX1.runs, imp: NX1.imp}),
+  reset: () => { NX1.maxMs = 0; NX1.steps = 0; NX1.runs = 0; },
+  local: (x, sr, o) => nx1Local(Object.assign({x: Float32Array.from(x), sr}, o)),
+  hasAu: () => nx1HasAu(), target: c => nx1ImpTarget(c || IMP1.cur), hyOk: id => nx1HyOk(id),
+};
+/* ===== NX1-END ===== */
 /* ===== IMP1-BEGIN (Paket IMP1, Audio-/MIDI-Import mit Tempo, Taktart und Teilen – Xander 14.11.: „MP3 … BPM erkennen und die Taktart …
    in Szenen als zerschnittene Audios … Strophe eins, Refrain eins …“). Schritt 1: die Erkennung.
    imp1Core: Kern ohne DOM, läuft als Worker (Blob, sonst data:-URL; ohne Worker stückweise im Hauptfaden). Ablauf: herunterteilen auf ~11 kHz →
@@ -100033,15 +100140,16 @@ function imp1Clip(take, A, B, G, ts, s) {
 }
 function imp1Prep(c) {
   const empty = imp1Empty(), bpm = Math.round(c.bpm);
-  if (empty || !S.tracks.some(t => t.clips.some(x => x && x.audio))) { if (S.bpm !== bpm) setBpm(bpm); const t = tsNorm(c.ts); if ((S.ts || null) !== t) { if (t) S.ts = t; else delete S.ts; tkBump(); } }
+  if (empty || !nx1HasAu()) { if (S.bpm !== bpm) setBpm(bpm); const t = tsNorm(c.ts); if ((S.ts || null) !== t) { if (t) S.ts = t; else delete S.ts; tkBump(); } }   // NX1: auch Song-Clips und Song-Gesang zählen als Audio
   else if (S.bpm !== bpm) toast('Projekt bleibt bei ' + S.bpm + ' BPM – das Audio läuft im eigenen Tempo');
   if (!S.song) songEnsure();
   const song = S.song; while (song.lanes.length < NT()) song.lanes.push([]);
   return song;
 }
 function imp1Place(kind) {
-  const c = IMP1.cur; if (!c || c.st !== 'fertig' || imp1Busy()) return null;
+  const c0 = IMP1.cur; if (!c0 || c0.st !== 'fertig' || imp1Busy()) return null;
   if (!tkAudioOk()) { toast('Audio nur auf der eigenen Seite'); return null; }
+  const c = nx1ImpView(c0, kind); if (!c) return null;                // NX1: Audio ans Projekt-Tempo gedehnt (Worker); null = rechnet, legt danach selbst ab
   const P = imp1Parts(c), labels = {scenes: 'In Szenen zerschnitten', track: 'Als Spur importiert', vox: 'Als Gesang importiert', loop: 'Loop in die Matrix'};
   if (R.songPlay) songPlayEnd(true);
   const res = imp1Step(labels[kind], () => {
@@ -100089,7 +100197,8 @@ function imp1Place(kind) {
   if (res.track >= 0) tkTrackResync(res.track);
   const msg = kind === 'loop' ? 'Loop Takt ' + (res.a + 1) + '–' + res.b + ' → Szene ' + (res.scene + 1) + ' · ' + S.tracks[res.track].name
     : kind === 'vox' ? 'Als Gesang · ' + c.name : (kind === 'scenes' ? P.length + ' Teile → Szenen ' + (res.scenes.length ? res.scenes.map(s => s + 1).join(', ') : '') : 'Ganzes Audio im Song') + ' · ' + S.bpm + ' BPM · ' + (S.ts || '4/4');
-  c.made = labels[kind]; toast(msg, {label: '↶ Rückgängig', fn: () => undo()}); haptic('pop');
+  c.made = labels[kind]; toast(msg + nx1ImpMsg(c), {label: '↶ Rückgängig', fn: () => undo()}); haptic('pop');   // NX1: + „Audio 91,6 → 92 BPM“
+  if (c !== c0) { c0.made = c.made; if (c0.sx) c0.sx.take = c.take; }   // NX1: der gedehnte Take wird wiederverwendet
   imp1Paint();
   IMP1.lastPlace = res;
   return res;
