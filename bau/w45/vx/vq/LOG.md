@@ -1,2 +1,3 @@
 - 14:41 Start VQ1: Dateien gesichtet
 - 14:41 Basis=index (4.58.0, XD1 drin); xd1-test vergleicht gegen w4550/basis.html (4.53.0)
+- 14:43 Sonde probe.mjs gebaut, Basis gemessen (out-basis): q2 [Video erstellen] sichtbar 26/44, [Teilen] 0; q [Teilen] 36/44

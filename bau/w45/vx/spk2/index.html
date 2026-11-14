@@ -98221,13 +98221,14 @@ function spk2DspMake(I) {
   }
   // Grundton je Rahmen (einstimmig): Obertonsumme auf √|X| (Viertelton-Raster), Viterbi (±1 Viertelton frei, Sprung kostet), Anwesenheit q
   function trackF(Y, F, K, df, fa, fb, NH) {
+    const H1 = +(opt.h1 != null ? opt.h1 : 0.5);   // Grundton schwächer gewichtet: ein lauter Kick-Sinus tief unten überstimmt die Obertöne nicht
     const C = []; for (let c = 12 * Math.log2(fa / 440); ; c += 0.25) { const f = 440 * Math.pow(2, c / 12); if (f > fb) break; C.push(f); }
     const S = C.length, E = new Float32Array(F * S), q = new Float32Array(F), e = new Float32Array(F), Z = new Float32Array(K);
     for (let i = 0; i < F; i++) {
       const o = i * K; for (let k = 0; k < K; k++) Z[k] = Math.sqrt(Y[o + k]);
       const pk = kf => { const k = Math.round(kf); return k < 1 || k >= K - 1 ? 0 : Math.max(Z[k - 1], Z[k], Z[k + 1]); };
       let best = 0, jb = 0;
-      for (let j = 0; j < S; j++) { let s = 0, g = 1; for (let h = 1; h <= NH; h++, g *= 0.86) { const kf = h * C[j] / df; if (kf >= K - 2) break; s += g * pk(kf); } E[i * S + j] = s; if (s > best) { best = s; jb = j; } }
+      for (let j = 0; j < S; j++) { let s = 0, g = 1; for (let h = 1; h <= NH; h++, g *= 0.86) { const kf = h * C[j] / df; if (kf >= K - 2) break; s += (h === 1 ? H1 : g) * pk(kf); } E[i * S + j] = s; if (s > best) { best = s; jb = j; } }
       const f0 = C[jb], ka = Math.max(1, Math.floor(fa * 0.8 / df)), kt = Math.min(K - 2, Math.ceil(Math.min((K - 2) * df, 8.5 * f0) / df)); let pt = 0, pc = 0;
       for (let k = ka; k <= kt; k++) pt += Y[o + k] * Y[o + k];
       for (let h = 1; h * f0 / df < kt; h++) { const kc = Math.round(h * f0 / df); for (let k = Math.max(1, kc - 1); k <= kc + 1; k++) pc += Y[o + k] * Y[o + k]; }
