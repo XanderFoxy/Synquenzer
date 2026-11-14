@@ -67,6 +67,8 @@ try {
   const mErr = A.L.map((q, k) => q.m == null ? 99 : q.m - (69 + 12 * Math.log2(F[k] / 440)));
   ok(mErr.every(e => Math.abs(e) <= .5), 'Tonhöhe des Stücks = Median (±0,5 HT)', mErr.map(e => e.toFixed(2)).join(' '));
 
+  const TX = await run(p, async id => { wpSetLyrics(id, 'la le-li lo lu na'); return window.__vx1.list(id).map(q => q.tx); }, id);
+  ok(JSON.stringify(TX) === JSON.stringify(['la', 'le', 'li', 'lo', 'lu', 'na']), 'Silben-Text je Stück aus dem vorhandenen Songtext (nichts neu erkannt)', JSON.stringify(TX));
   /* 2 Quantisieren alles 1/8, 100 %: Anker genau auf dem Raster, Einsatz bitgleich, Ausklang nicht gestaucht, kein Knacken */
   const Q = await run(p, async id => {
     const u0 = UNDO.length, okq = await window.__vx1.quant(id, {grid: '1/8', strength: 1});
@@ -185,6 +187,22 @@ try {
   } else ok(false, 'Tonhöhe: G2-Noten angelegt', JSON.stringify(PT));
   const RP = await run(p, async id => { const R = await window.__vx1.render(id, 0, 10); return {ok: !!R, ready: window.__vx1.ready(id)}; }, id);
   ok(RP.ok && RP.ready, 'Wiedergabe nach Tonhöhe + Zeitkarte fertig gerechnet (G2 unter der Zeitkarte)');
+  /* 7 erkannte Marken (wpDetect, Marke am Vokal-Beginn): der Konsonant davor gehört zum Stück, Anker am Vokal-Gipfel, Einrasten */
+  const DT = await run(p, async o => {
+    const old = S.takes[o.id], pcm = Array.from((await SYNQUENZER.tkPcmRange(o.id)) || []);
+    const r = await SYNQUENZER.tkInject({pcm, sr: old.sr, scene: 1, at: 0, len: 2}); await wait(300);
+    const id = r.id; await window.__vx1.analyse(id); const L0 = window.__vx1.list(id);
+    const x = wpBase(id).getChannelData(0), sr = old.sr;
+    const pk = o.ANCH.map(t => { let bi = 0, bv = -1; for (let i = Math.round((t - o.PK) * sr); i < Math.round((t - o.PK + .12) * sr); i++) if (Math.abs(x[i]) > bv) { bv = Math.abs(x[i]); bi = i; } return bi / sr; });
+    await window.__vx1.quant(id, {grid: '1/8', strength: 1}); const L1 = window.__vx1.list(id), mk = window.__vx1.marks(id);
+    return {id, L0: L0.map(q => ({t: q.t, at: q.at})), L1: L1.map(q => ({t: q.t, at: q.at, da: q.da})), pk, mk: mk.map(k => k.t)};
+  }, {id, ANCH, PK});
+  info('erkannte Stücke vor/nach dem ersten Bearbeiten', JSON.stringify(DT.L0.map(q => +q.t.toFixed(3))) + ' → ' + JSON.stringify(DT.mk.map(t => +t.toFixed(3))));
+  const near = (L, t, d) => L.find(q => Math.abs(q.t - t) <= d);
+  const hit = ANCH.map((a, k) => near(DT.L1, a - PK, .006));
+  ok(hit.every(Boolean), 'Konsonant gehört zum Stück: jedes Stück beginnt am Konsonanten (±6 ms), nicht am Vokal', JSON.stringify(hit.map((q, k) => q ? +((q.t - (ANCH[k] - PK)) * 1000).toFixed(1) : null)));
+  ok(hit.every((q, k) => q && Math.abs(q.at - DT.pk[k]) <= .0002), 'Anker der erkannten Stücke = lautestes Sample des Vokal-Gipfels', JSON.stringify(hit.map((q, k) => q ? +((q.at - DT.pk[k]) * 1000).toFixed(2) : null)));
+  ok(hit.every(q => q && Math.abs((q.da / .25) - Math.round(q.da / .25)) * 250 <= 2), 'erkannte Stücke: Anker nach Quantisieren auf 1/8 (±2 ms)', JSON.stringify(hit.map(q => q && +q.da.toFixed(4))));
   await p.close();
 } catch (e) { console.log('ABBRUCH ' + (e && e.stack || e)); bad++; }
 ok(errs.length === 0, 'keine Seitenfehler', errs.slice(0, 5).join(' | '));

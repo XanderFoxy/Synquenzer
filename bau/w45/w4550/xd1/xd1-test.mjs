@@ -271,85 +271,130 @@ if (run('klang')) for (const vk of ['p', 'q', 'q2']) {
     await new Promise(r => setTimeout(r, 300)); selectSlot(0, 0); openEditor(); await new Promise(r => setTimeout(r, 300)); closeEditor(); await new Promise(r => setTimeout(r, 300));
     return {side: mx2Side(), dock: !!PSH.dock, vol: S.tracks[1].sound.fx.vol}; });
   ok(`(5) ${VN[vk]}: abgelegtes Mix & Master auf Vorher bleibt Vorher, wenn der Klang-Editor schließt`, m.side === 'A' && m.dock && Math.abs(m.vol - .4) < 1e-6, m);
+  // die anderen Wege zu: Klang-Browser ✕ (Finger), ≡-Menü über dem Editor, Wechsel auf die Drum-Spur und dann zu; Export leiht gerade
+  const prep = async how => p.evaluate(async how => {
+    const w = ms => new Promise(r => setTimeout(r, ms)); pshDockClose && PSH.dock && pshDockClose(); closePop(); stop();
+    selectSlot(0, 0); openEditor(); await w(250); const t = 0, s = deep(S.tracks[t].sound); s.p.cutoff = Math.round((s.p.cutoff || 1000) * 0.4); soundEdit(t, 'Test', () => applySound(t, s)); await w(120);
+    window.__ed = JSON.stringify(S.tracks[t].sound.p); UI.ab = null; toggleAB(t); await w(150);
+    if (how === 'browser') { openBrowser(0); await w(300); }
+    return {side: UI.ab && UI.ab.side};
+  }, how);
+  const st = () => p.evaluate(() => ({side: UI.ab && UI.ab.side, nach: JSON.stringify(S.tracks[0].sound.p) === window.__ed, ed: R.editor}));
+  const r1 = await prep('browser');
+  await tapSel(P, () => [...document.querySelectorAll('#sndSheet .sh-head button')].find(b => b.textContent.trim() === '✕')); await sleep(400);
+  const r1b = await st();
+  const r2 = await prep('menu'); await p.evaluate(() => openMenu()); await sleep(400); const r2b = await st(); await p.evaluate(() => closeMenu()); await sleep(200);
+  const r3 = await prep('drum'); await p.evaluate(() => { selectTrack(DRUM_T); openEditor(); }); await sleep(350); const r3m = await st(); await p.evaluate(() => closeEditor()); await sleep(300); const r3b = await st();
+  const r4 = await prep('leih'); const r4m = await p.evaluate(async () => { INT53C.n++; closeEditor(); await new Promise(r => setTimeout(r, 300)); const o = {side: UI.ab && UI.ab.side, orig: JSON.stringify(S.tracks[0].sound.p) !== window.__ed}; INT53C.n--; return o; }); await sleep(600); const r4b = await st();
+  ok(`(5) ${VN[vk]}: auch Klang-Browser ✕ (Finger), ≡-Menü und „erst Drum-Spur, dann zu“ enden auf NACHHER; Wechsel auf die Drum-Spur allein lässt den Vergleich stehen`,
+    r1.side === 'B' && r1b.side === 'A' && r1b.nach && r2.side === 'B' && r2b.side === 'A' && r2b.nach && r2b.ed === 'menu' && r3m.side === 'B' && r3b.side === 'A' && r3b.nach, {r1, r1b, r2b, r3m, r3b});
+  ok(`(5) ${VN[vk]}: leiht ein Export gerade den Nachher-Stand, wartet das Ende, bis er zurückgegeben hat (dann NACHHER)`, r4.side === 'B' && r4m.side === 'B' && r4m.orig && r4b.side === 'A' && r4b.nach, {r4m, r4b});
   ok(`(5) ${VN[vk]}: keine Fehler`, !P.errs.length, P.errs.slice(0, 3));
   await P.close();
+  if (vk === 'p') {   // Gegenprobe Basis: dort bleibt der Vergleich nach dem Schließen auf VORHER (Autosave/Projekt = Original)
+    const PB = await open(BASIS, 'p');
+    const g = await PB.p.evaluate(async () => { const w = ms => new Promise(r => setTimeout(r, ms)); SYNQUENZER.loadDemo(); ui1Home(); setSongView(false); selectSlot(0, 0); openEditor(); await w(300);
+      const t = 0, s = deep(S.tracks[t].sound); s.p.cutoff = Math.round((s.p.cutoff || 1000) * 0.5); soundEdit(t, 'Test', () => applySound(t, s)); await w(120); const ed = JSON.stringify(S.tracks[t].sound.p);
+      toggleAB(t); await w(150); closeEditor(); await w(300); return {side: UI.ab && UI.ab.side, file: JSON.stringify(projectFileObj(S, true, true)).includes(ed)}; });
+    ok('(5) Gegenprobe Basis: nach dem Schließen blieb VORHER (Projekt ohne deine Änderung) – das ist behoben', g.side === 'B' && !g.file, g);
+    await PB.close();
+  }
 }
 
 /* ======================= (6) MIXG: ▶/■ ohne Neuaufbau ======================= */
+// je Blatt und Zustand: ▶ und ■ von außen; danach müssen alle Tasten dieselben Elemente sein (kein Neuaufbau) und das Blatt muss genau so
+// aussehen, wie es der alte Weg (MXG_HEAR[…].repaint) gezeichnet hätte – verglichen per innerHTML (die Live-Balken des Kompressors setzt
+// mx2Loop im Bild-Takt, sie werden beim Abspielen ausgeblendet)
 if (run('mixg')) {
   const G = {};
+  const STATES = [
+    ['Remix-Blatt (Song)', "closePop(); setSongView(true); gr2RemixOpen()"],
+    ['Remix-Blatt (Alles)', "closePop(); setSongView(true); SYNQUENZER.gen4.open('all')"],
+    ['Remix-Blatt beim Vorhören', "closePop(); setSongView(true); gr2RemixOpen(); setTimeout(() => { const b = document.querySelector('.pop button.gr2-go'); if (b) b.click(); }, 300)", 900],
+    ['Dur ↔ Moll (Song)', "closePop(); setSongView(true); tktModeOpen()"],
+    ['Dur ↔ Moll (Szene)', "closePop(); setSongView(false); tktModeOpen()"],
+    ['Mix & Master (frisch)', "closePop(); setSongView(true); mx2Sheet()"],
+    ['Mix & Master (gemastert)', "closePop(); setSongView(true); mx2Sheet(); SYNQUENZER.mx2Way('am')", 6000],
+    ['Mix & Master (Messen aus: Live)', "MX3.src = 'live'; mx2Paint()"],
+  ];
   for (const [nm, f] of [['X', FILE], ['B', BASIS]]) for (const vk of (nm === 'X' ? ['p', 'q', 'q2'] : ['p'])) {
-    const P = await open(f, vk), {p, T} = P;
+    const P = await open(f, vk), {p, T} = P, R1 = {st: []};
     await p.evaluate(async () => { SYNQUENZER.loadDemo(); SYNQUENZER.songFromChain([{scene: 0, bars: 4}, {scene: 1, bars: 4}]); ensureAudio(); await new Promise(r => setTimeout(r, 300)); });
-    const one = async (open, sel, label) => {
-      await p.evaluate(open); await sleep(600);
-      const tag = await p.evaluate(sel => { const P = UI.pop && UI.pop.el, bs = P ? [...P.querySelectorAll(sel)] : []; bs.forEach((x, i) => { x.__xd1 = 'k' + i; }); window.__xd1b = bs; return bs.length; }, sel);
-      const out = {};
-      for (const go of ['play', 'stop']) {
-        await p.evaluate(go => { if (go === 'play') { if (S.song && S.song.bars) songPlayStart(0); else play(); } else stop(); }, go); await sleep(650);
-        out[go] = await p.evaluate(() => { const P = UI.pop && UI.pop.el; const same = (window.__xd1b || []).every(x => x.isConnected && P.contains(x));
-          const norm = h => h.replace(/\s+/g, ' ');
-          const before = norm(P.innerHTML); let after = null; try { if (P._paint) P._paint(); else if (UI.pop.name === 'mx2') mx2Paint(); after = norm(P.innerHTML); } catch (e) { after = 'ERR ' + e; }
-          (window.__xd1b || []).forEach((x, i) => { x.__xd1 = null; }); const bs = [...P.querySelectorAll('button')]; window.__xd1b = bs.filter(x => x.matches('.gr2-go,[data-tk],.mx2pl,[data-x2],[data-g2],[data-g3m],[data-g4]'));
-          const go = P.querySelector('button.gr2-go,[data-tk="play"],.mxgpl'); return {same, eq: before === after, go: go ? go.textContent.trim() : null, playing: !!R.playing, pl: SYNQUENZER.xd1 ? SYNQUENZER.xd1.info().plLast : null, diff: before === after ? null : (() => { let i = 0; while (i < before.length && before[i] === after[i]) i++; return [before.slice(Math.max(0, i - 60), i + 80), after.slice(Math.max(0, i - 60), i + 80)]; })()}; });
+    for (const [snm, go, wt] of (nm === 'X' ? STATES : STATES.slice(0, 1))) {
+      await p.evaluate(() => stop()); await sleep(300);
+      await p.evaluate(go); await sleep(wt || 700); if (wt) { await p.waitForFunction(() => !MIXA.busy, null, {timeout: 90000}).catch(() => {}); await sleep(300); }
+      const out = {name: snm, pop: await p.evaluate(() => (UI.pop ? UI.pop.name : null)), r: []};
+      for (const g of ['play', 'stop', 'play', 'stop']) {
+        await p.evaluate(() => { const P = UI.pop && UI.pop.el; window.__bs = P ? [...P.querySelectorAll('button')] : []; });
+        await p.evaluate(g => { if (g === 'play') { if (S.song && S.song.bars) songPlayStart(0); else play(); } else stop(); }, g); await sleep(700);
+        out.r.push(await p.evaluate(g => {
+          const P = UI.pop && UI.pop.el; if (!P) return {g, pop: null};
+          const norm = h => h.replace(/\s+/g, ' ').replace(/vor \d+ s/g, 'vor n s').replace(R.playing ? /<div class="mx2mr[^"]*" data-k="\d"><span>[^<]*<\/span><i><b style="[^"]*"><\/b><\/i><em>[^<]*<\/em><\/div>/g : /$^/, '<mr/>');
+          const kept = window.__bs.filter(x => x.isConnected).length, all = window.__bs.length, before = norm(P.innerHTML);
+          for (const id of new Set([...document.querySelectorAll('.mxgh')].map(e => e.dataset.mxgh))) { const H = MXG_HEAR[id]; if (H && H.repaint) { try { H.repaint(); } catch (e) {} } }
+          const after = norm((UI.pop && UI.pop.el || P).innerHTML); let i = 0; while (i < before.length && before[i] === after[i]) i++;
+          const go = P.querySelector('button.gr2-go,[data-tk="play"],.mxgpl');
+          return {g, pl: !!R.playing, kept, all, eq: before === after, go: go ? go.textContent.trim() : null, diff: before === after ? null : [before.slice(Math.max(0, i - 60), i + 80), after.slice(Math.max(0, i - 60), i + 80)]};
+        }, g));
       }
-      // Tipp genau in den Wechsel: Finger auf „Vorher“, ■ von außen, nach dem 200-ms-Takt loslassen → der Tipp gilt
-      return out;
-    };
-    const R1 = {};
-    R1.remix = await one(() => { setSongView(true); gr2RemixOpen(); }, 'button');
-    await p.evaluate(() => { stop(); closePop(); }); await sleep(300);
-    R1.tkt = await one(() => tktModeOpen(), 'button');
+      R1.st.push(out);
+    }
     if (nm === 'X') {   // Tipp in den Wechsel (Dur ↔ Moll): Finger auf [✕], ■ von außen, dann loslassen → das Blatt geht zu
+      await p.evaluate(() => { stop(); closePop(); setSongView(true); tktModeOpen(); }); await sleep(600);
       await p.evaluate(() => { stop(); songPlayStart(0); }); await sleep(500);
       const xb = await box(p, '.pop [data-tk="x"]'); await T.down(xb.cx, xb.cy); await sleep(40); await p.evaluate(() => stop()); await sleep(450); await T.up(); await sleep(300);
       R1.tapThrough = await p.evaluate(() => ({pop: UI.pop ? UI.pop.name : null}));
+      await p.evaluate(() => { stop(); closePop(); setSongView(true); mx2Sheet(); }); await sleep(500);
+      await p.screenshot({path: `${OUT}/xd1-6-mixg-${vk}.png`});
     }
-    await p.evaluate(() => { stop(); closePop(); }); await sleep(300);
-    R1.mx2 = await one(() => { setSongView(true); mx2Sheet(); }, 'button');
     await p.evaluate(() => { stop(); closePop(); }); await sleep(200);
     R1.errs = P.errs.slice(0, 3);
-    if (nm === 'X') await p.screenshot({path: `${OUT}/xd1-6-mixg-${vk}.png`});
     G[nm + vk] = R1; await P.close();
   }
   for (const vk of ['p', 'q', 'q2']) {
     const X = G['X' + vk];
-    for (const k of ['remix', 'tkt', 'mx2']) {
-      const r = X[k];
-      ok(`(6) ${VN[vk]}: ${k === 'remix' ? 'Remix-Blatt' : k === 'tkt' ? 'Dur ↔ Moll' : 'Mix & Master'} – ▶ und ■: dieselben Tasten bleiben im Bild (kein Neuaufbau), Beschriftung „${r.play.go}“ / „${r.stop.go}“, Blatt sieht aus wie neu gezeichnet`,
-        r.play.same && r.stop.same && r.play.eq && r.stop.eq && r.play.playing && !r.stop.playing, {play: {same: r.play.same, eq: r.play.eq, go: r.play.go, pl: r.play.pl, diff: r.play.diff}, stop: {same: r.stop.same, eq: r.stop.eq, go: r.stop.go, diff: r.stop.diff}});
+    for (const o of X.st) {
+      const sm = o.r.every(x => x.kept === x.all && x.all > 0), eq = o.r.every(x => x.eq), pl = o.r.map(x => x.pl).join() === 'true,false,true,false';
+      ok(`(6) ${VN[vk]}: ${o.name} – ▶/■ von außen: alle ${o.r[0].all} Tasten bleiben dieselben Elemente, Blatt wie frisch gezeichnet („${o.r[0].go}“ / „${o.r[1].go}“)`, sm && eq && pl,
+        o.r.filter(x => !(x.kept === x.all && x.eq)).map(x => ({g: x.g, kept: x.kept, all: x.all, diff: x.diff})));
     }
     ok(`(6) ${VN[vk]}: Finger liegt auf ✕, während ■ wechselt – der Tipp geht nicht verloren (Blatt zu)`, X.tapThrough && X.tapThrough.pop === null, X.tapThrough);
     ok(`(6) ${VN[vk]}: keine Fehler`, !X.errs.length, X.errs);
   }
-  const B = G.Bp;
-  ok('(6) Gegenprobe Basis: dort baut ▶/■ das Blatt neu (Tasten ersetzt) – das ist behoben', !B.remix.play.same || !B.tkt.play.same, {remix: B.remix.play.same, tkt: B.tkt.play.same});
+  const B = G.Bp.st[0].r;
+  ok('(6) Gegenprobe Basis: dort baut ▶/■ das Remix-Blatt neu (alle Tasten ersetzt) – das ist behoben', B.every(x => x.kept === 0 && x.all > 0), B.map(x => [x.kept, x.all]));
 }
 
 /* ======================= (7) MIX-A-Messung mit Quittung ======================= */
+// Messen per Finger (Mix & Master ① Messen): zweimal mit Quittung, einmal ohne (Test-Schalter). Gemessen: wartet der Messlauf auf die
+// Engines? Ist Schlag 1 im Messlauf voll da (Spitze der Summe in den ersten 40 ms)? Vorschläge fest und musikalisch stimmig?
 if (run('messung')) {
   const M = [];
   for (const ack of [true, true, false]) {
     const P = await open(FILE, 'p'), {p} = P;
-    const r = await p.evaluate(async ack => {
-      SYNQUENZER.xd1.ack(ack); window.__ack = 0; const o = int53WkSync; int53WkSync = oc => { window.__ack++; return o(oc); };
+    await p.evaluate(async ack => {
+      SYNQUENZER.xd1.ack(ack); window.__ack = 0; window.__pk = null;
+      const o = int53WkSync; int53WkSync = oc => { window.__ack++; return o(oc); };
+      const mr0 = mixaRender; mixaRender = async function (...a) { const res = await mr0.apply(this, a); try { const c = res.r.ch[0], sr = res.r.sr || 48000; let pk = 0; for (let i = 0; i < sr * 0.04 && i < c.length; i++) pk = Math.max(pk, Math.abs(c[i])); window.__pk = +pk.toFixed(3); } catch (e) {} return res; };
       SYNQUENZER.loadDemo(); SYNQUENZER.songFromChain([{scene: 0, bars: 4}, {scene: 1, bars: 4}]); ensureAudio(); await new Promise(r => setTimeout(r, 300));
-      mx2Sheet(); await new Promise(r => setTimeout(r, 300));
-      return true; }, ack);
+      mx2Sheet(); await new Promise(r => setTimeout(r, 300)); }, ack);
     await tapSel(P, '.mxgs1 button[data-mxg="meas"]'); await sleep(400);
     await p.waitForFunction(() => !MIXA.busy, null, {timeout: 90000}).catch(() => {}); await sleep(500);
-    const q = await p.evaluate(() => { const res = MIXA.res, o = {}; if (res && res.T) res.T.forEach((t, k) => { o[t.name] = {cls: t.cls, lowBands: t.f && t.f.lowBands ? t.f.lowBands.map(v => +v.toFixed(1)) : null, hiDb: t.f && t.f.hiDb != null ? +t.f.hiDb.toFixed(1) : null, sug: (res.sug[k] || []).filter(s => s.art === 'eq').map(s => s.id + ':' + JSON.stringify(s.patch.mix))}; });
-      const E = SYNQUENZER.mixg.eq(), eq = {}; for (const k of Object.keys(E)) eq[E[k].role] = {mix: E[k].mix, why: E[k].why}; return {ack: window.__ack, o, eq, t1: SYNQUENZER.mixg.info().t1}; });
-    M.push(q); await P.close();
+    const q = await p.evaluate(() => { const E = SYNQUENZER.mixg.eq(), eq = {}; for (const k of Object.keys(E)) eq[E[k].role] = {mix: E[k].mix, why: E[k].why};
+      const res = MIXA.res, hi = {}; if (res && res.T) res.T.forEach(t => { if (t.f && t.f.hiDb != null) hi[t.cls] = +t.f.hiDb.toFixed(1); });
+      return {ack: window.__ack, pk: window.__pk, eq, hi}; });
+    q.errs = P.errs.slice(0, 2); M.push(q); await P.close();
   }
   const [a, b2, c] = M, eqS = x => JSON.stringify(x.eq);
   ok('(7) Messen per Finger: der MIX-A-Messlauf wartet jetzt auf die Quittung der Engines (wie Video/Audio)', a.ack >= 1 && b2.ack >= 1 && c.ack === 0, {mitQuittung: [a.ack, b2.ack], ohne: c.ack});
+  ok('(7) Schlag 1 ist im Messlauf vollständig: Spitze der ersten 40 ms mit Quittung zweimal gleich und höher als ohne (dort fehlen die ersten Synth-Noten)',
+    a.pk != null && a.pk === b2.pk && c.pk != null && a.pk > c.pk + 0.05, {mit: [a.pk, b2.pk], ohne: c.pk});
   ok('(7) zwei Messungen mit vollständigem Ton: gleiche Vorschläge (fest)', eqS(a) === eqS(b2), {a: a.eq, b: b2.eq});
   const bass = a.eq.bass, pad = a.eq.pad, drums = a.eq.drums;
-  ok('(7) Vorschläge musikalisch stimmig, Begründung passt: Bass −3 dB beim Kick-Grundton 50 Hz, Fläche Glocke gegen die Sequenz, keine Höhen-Absenkung der Fläche (Höhenanteil −30 dB), Drums Pappkarton 300 Hz',
+  ok('(7) Vorschläge musikalisch stimmig, Begründung passt: Bass −3 dB beim Kick-Grundton 50 Hz, Fläche Glocke gegen die Sequenz, keine Höhen-Absenkung der Fläche, Drums Pappkarton 300 Hz – die MIXG-Schwellen bleiben',
     bass && bass.mix.pf === 50 && bass.mix.pg === -3 && bass.why.some(w => /Kick bekommt Platz/.test(w)) && pad && pad.mix.pg < 0 && pad.mix.pf >= 700 && pad.mix.pf <= 1100 && !(pad.mix.hs < 0) && pad.why.some(w => /überdeckt Sequenz/.test(w)) && drums && drums.mix.pf === 300,
-    {bass, pad, drums, padHi: a.o['Synth 3'] && a.o['Synth 3'].hiDb});
-  ok('(7) mit Quittung = ohne Quittung auf ruhiger Maschine (die Schwellen müssen nicht wandern; ohne Quittung schwankt es nur unter Last)', eqS(a) === eqS(c), {ohne: c.eq});
+    {bass, pad, drums, hiDb: a.hi});
+  ok('(7) keine Fehler', !a.errs.length && !b2.errs.length && !c.errs.length, [a.errs, b2.errs, c.errs]);
 }
 
 /* ======================= (8) ORI „Wo bin ich“ ganz lesbar ======================= */
@@ -371,6 +416,7 @@ if (run('ori')) {
     ['mx2', "ui1Home(); setSongView(true); SV.pos = 4; mx2Sheet()", '.pop .psh-h'],
     ['export', "ui1Home(); setSongView(true); SV.pos = 0; va1Sheet()", '.pop .psh-h'],
     ['video', "ui1Home(); setSongView(true); vvOpen()", '#vvSheet .vvh'],
+    ['bitmask', "ui1Home(); setSongView(false); ui1BmSheet(1)", '.pop .psh-h'],
   ];
   const close = "try{closePop()}catch(e){}; try{ if (PSH.dock) pshDockClose() }catch(e){}; try{ if (typeof vvClose==='function') vvClose() }catch(e){}; try{ closeSheets(); R.editor = null }catch(e){}; ui1Home()";
   const grab = (p, hd) => p.evaluate(hd => {
@@ -388,16 +434,18 @@ if (run('ori')) {
   for (const vk of ['p', 'q', 'q2']) {
     const PX = await open(FILE, vk), PB = await open(BASIS, vk);
     await setup(PX.p); await setup(PB.p);
-    const bad = [], moved = [], seen = [];
+    const bad = [], moved = [], seen = [], badB = [];
     for (const [k, go, hd] of VIEWS) {
       for (const P of [PX, PB]) { try { await P.p.evaluate(go); } catch (e) {} await sleep(650); }
       const gx = await grab(PX.p, hd), gb = await grab(PB.p, hd);
       if (k === 'drum-schritte' || k === 'drum-song') await PX.p.screenshot({path: `${OUT}/xd1-8-${k}-${vk}.png`, clip: {x: 0, y: 0, width: VP[vk][0], height: 150}});
       for (const w of gx.wo) { seen.push(k + ':' + w.t); if (!w.fit) bad.push(k + ':' + w.t + ' ' + w.need + '/' + w.avail); }
+      for (const w of gb.wo) if (!w.fit) badB.push(k + ':' + w.t + ' ' + w.need + '/' + w.avail);
       if (JSON.stringify(gx.head) !== JSON.stringify(gb.head)) moved.push(k);
       for (const P of [PX, PB]) { await P.p.evaluate(close).catch(() => {}); await sleep(250); }
     }
-    ok(`(8) ${VN[vk]}: jede Wo-bin-ich-Zeile in allen Blatt-Köpfen ganz lesbar (gemessen mit der echten Schrift)`, !bad.length && seen.length >= 9, {bad, seen});
+    ok(`(8) ${VN[vk]}: jede Wo-bin-ich-Zeile in allen Blatt-Köpfen ganz lesbar (gemessen mit der echten Schrift)`, !bad.length && seen.length >= 10, {bad, seen});
+    if (vk === 'p') ok('(8) Gegenprobe Basis hochkant: dort war mindestens eine Zeile abgeschnitten (Drum-Blatt „Sze…“) – das ist behoben', badB.some(x => /^drum-schritte:/.test(x)), badB);
     ok(`(8) ${VN[vk]}: kein Kopf höher, keine Taste im Kopf verschoben (alle Kopf-Elemente wie in der Basis, gemessen im Kopf)`, !moved.length, moved);
     if (vk === 'p') ok('(8) hochkant Drum-Blatt (Schritte): statt „● Sze…“ steht „● Sz 1“; im Song „Ref. 2“ statt abgeschnitten', seen.includes('drum-schritte:Sz 1') && seen.some(s => /^drum-song:(Refrain 2|Ref\. 2)$/.test(s)), seen.filter(s => /^drum/.test(s)));
     ok(`(8) ${VN[vk]}: keine Fehler`, !PX.errs.length, PX.errs.slice(0, 3));

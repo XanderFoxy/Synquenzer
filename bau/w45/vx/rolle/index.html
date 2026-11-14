@@ -96465,7 +96465,18 @@ function vx1rRun(M, m) {
       let bi = at * H, bv = -1; for (let i = Math.max(o, at * H - R5); i < Math.min(n, ag * H + R5, Math.round((mk[k] + .12) * sr)); i++) { const v = x[i] < 0 ? -x[i] : x[i]; if (v > bv) { bv = v; bi = i; } }
       an[k] = cl(bi / sr - mk[k], 0, .2);
     }
-    return {hop: H / sr, env, pk: pe, fh: FH / sr, rms, zcr, vc, f0, kind, an};
+    // Anlauf je Marke: liegt die Marke am Vokal-Beginn, gehört der stimmlose Lauf direkt davor (Konsonant/Atem, ≤ 150 ms,
+    // nicht vor Vorgänger + 40 ms) zum Stück – lead = so viele Sekunden beginnt das Stück früher (erste Millisekunde über der Schwelle)
+    const lead = new Float32Array(mk.length);
+    for (let k = 0; k < mk.length; k++) {
+      const fm = Math.floor(mk[k] * sr / FH), lo = k ? mk[k - 1] + .04 : 0; let f = fm - 1;
+      if (f < 0 || kind[f] !== 1) continue;
+      while (f - 1 >= 0 && kind[f - 1] === 1 && (f - 1) * FH / sr > lo && mk[k] - (f - 1) * FH / sr <= .15) f--;
+      let e = Math.max(0, Math.round(Math.max(lo, f * FH / sr) * sr / H)); const em = Math.round(mk[k] * sr / H);   // ab dem stimmlosen Rahmen (im Legato nicht in den Ausklang davor)
+      while (e < em && env[e] < TH * .5) e++;
+      const L = mk[k] - e * H / sr; if (L > .005) lead[k] = Math.min(.15, L);
+    }
+    return {hop: H / sr, env, pk: pe, fh: FH / sr, rms, zcr, vc, f0, kind, an, lead};
   }
   // ---- 'hyb': Schneiden/Dehnen ----
   const src = m.src, dst = m.dst, anc = m.an || [], K = src.length, y = new Float32Array(n);
@@ -96553,15 +96564,18 @@ function vx1rAnOf(A, t, tn) {
   for (let f = f0i; f <= f1i; f++) if (E[f] >= .9 * mx) { let g = f, b = f; while (g < f1i && E[g + 1] >= .9 * mx) { g++; if (E[g] > E[b]) b = g; } return clamp(b * H - t, 0, .2); }
   return 0;
 }
+// Anlauf (Konsonant vor einer Marke am Vokal-Beginn) aus der Analyse
+function vx1rLead(A, t) { if (!A || !A.lead) return 0; const i = A.t.indexOf(t); return i >= 0 ? +A.lead[i] : 0; }
 // die Stücke eines Takes (abgeleitet; nur aus Caches – synchron)
 function vx1rPieces(id) {
   const m = S.takes && S.takes[id], mk = m && wpMarks(id); if (!mk) return null;
   const A = VX1R.ana.get(id), w = m.warp, len = m.len / m.sr, G = typeof G2 !== 'undefined' && G2.an.get(id);
   const lab = (typeof g9LabelsOf === 'function' && m.ly ? g9LabelsOf(id, mk) : null) || wpLyr(id);
   const dstOf = t => (w && w.map ? VSM.warpTime({src: w.map.src, dst: w.map.dst}, t) : t);
-  const out = [];
+  const out = [], st = mk.map((z, k) => { const ld = isNum(z.an) ? 0 : vx1rLead(A, z.t); return ld && (!k || z.t - ld > mk[k - 1].t + .04) ? tkR6(z.t - ld) : z.t; });   // noch nicht bearbeitet: Anlauf wie beim ersten Bearbeiten
   for (let k = 0; k < mk.length; k++) {
-    const t = mk[k].t, te = k + 1 < mk.length ? mk[k + 1].t : len, an = isNum(mk[k].an) ? mk[k].an : vx1rAnOf(A, t, k + 1 < mk.length ? mk[k + 1].t : null);
+    const t1 = mk[k].t, t = st[k], te = k + 1 < mk.length ? st[k + 1] : len, fix = isNum(mk[k].an);
+    const an = fix ? mk[k].an : vx1rAnOf(A, t1, k + 1 < mk.length ? mk[k + 1].t : null) + (t1 - t);
     let vb = null, uv = [], med = null;
     if (A) {
       const f0i = Math.floor(t / A.fh), f1i = Math.min(A.kind.length, Math.ceil(te / A.fh)), mids = []; let r0 = -1;
@@ -96623,7 +96637,12 @@ function vx1rCommit(id, label, fn, o) {
     const m = S.takes && S.takes[id], mk = wpMarks(id); if (!m || !mk) return false;
     const before = JSON.stringify(S.takes), had = m.marks, w0 = m.warp;
     m.marks = mk.map(k => Object.assign({}, k));
-    m.marks.forEach((k, i) => { if (!isNum(k.an)) k.an = +vx1rAnOf(A, k.t, i + 1 < m.marks.length ? m.marks[i + 1].t : null).toFixed(4); });
+    m.marks.forEach((k, i) => {
+      if (isNum(k.an)) return;
+      const a0 = vx1rAnOf(A, k.t, i + 1 < m.marks.length ? m.marks[i + 1].t : null), L = vx1rLead(A, k.t);
+      if (L && (!i || k.t - L > m.marks[i - 1].t + .04)) { const nt = wpSmp(m, k.t - L); k.an = +clamp(a0 + (k.t - nt), 0, .2).toFixed(4); k.t = nt; }   // Konsonant gehört zum Stück
+      else k.an = +a0.toFixed(4);
+    });
     if (fn(m.marks, m, A) === false) { if (had) m.marks = had; else delete m.marks; return false; }
     m.marks = wpNormMarks(m.marks, m.len / m.sr) || [];   // sortiert, Schlüssel wie beim Laden (deep-equal)
     if (m.ly && typeof g9MarkHook === 'function') g9MarkHook(id, mk, m.marks);   // G9: Silben folgen ihrer Marke
