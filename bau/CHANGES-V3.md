@@ -1,3 +1,12 @@
+## 4.62.0 — Spektral: mehrstimmige Noten, Bass sauberer, Unison im Nachbau, Rest aufteilen · Import erkennt echten Gesang
+
+- **Noten mehrstimmig**: Pads und Original zeigen jetzt Akkorde (bis 5 Töne gleichzeitig; Pad-Spur 24 von 28 Akkord-Tönen statt 0). Bass und Drums bleiben einstimmig. Schalter in Noten ▾ „Mehrstimmig: an/aus“.
+- **Zerlegen › Bass** deutlich sauberer (4,4 dB statt 3,0), Drums und Tonal ebenfalls besser, gleich schnell.
+- **Klang nachbauen** erkennt Unison (schwebende Stimmen): Pad-Nachbau viel näher am Original (0,96 statt 1,62).
+- **Rest aufteilen**: der Rest lässt sich in Lead und Pads trennen, Summe bleibt das Original, ein ↶.
+- **Import**: Gesang allein wird auch bei tiefen Männerstimmen richtig erkannt (vorher als „Mix“ eingestuft) und fragt nach dem Tempo.
+Tests: Gesang-Editor 61/61, Import 48/48, Chor 82/82, Spektral 5 alle OK (24+16+6), Mehrstimmig/Bass/Unison/Rest 18 OK (offen: Verfeinern +1 dB), Echttest Gesang 48/53 (offen: zu feine Stücke bei echtem Gesang), doppelte Schlüssel 0, Rauchtest grün.
+
 ## 4.61.0 — Spektral: Noten-Überblendung, Farbstufen, Zerlegen nur in der Auswahl
 
 - **Spektrum ↔ Noten**: neuer Regler rechts in der Werkzeugleiste blendet stufenlos vom Frequenzbild zur Notenrolle (Takt-Raster, Noten-Kästchen in Ebenen-Farbe). Ziehen, Doppeltipp = 50 %. Noten werden im Hintergrund gesucht; Note antippen ab 50 % → Gehört zu / Verwerfen / Klang nachbauen / Überall finden.

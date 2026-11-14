@@ -19,7 +19,7 @@ async function page(w, h) {
 const btn = (p, sel) => p.evaluate(s => { const e = [...document.querySelectorAll(s)].find(x => x.offsetParent); if (!e) return null; e.scrollIntoView({block: 'nearest', inline: 'nearest'}); const r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2, Math.round(r.width), Math.round(r.height)]; }, sel);
 const idle = p => p.waitForFunction(() => { const U = __spk.page.ui(); return U && !U.busy; }, null, {timeout: 120000});
 const ddInfo = p => p.evaluate(() => { const d = document.querySelector('#spk1Sheet .spk1-dd'); if (!d) return null; const r = d.getBoundingClientRect(), bs = [...d.querySelectorAll('button,input[type=range]')].filter(e => e.offsetParent).map(e => { const q = e.getBoundingClientRect(); return {t: (e.textContent || e.dataset.s6 || '').trim().slice(0, 14), w: Math.round(q.width), h: Math.round(q.height), in: q.left >= -0.5 && q.right <= innerWidth + 0.5}; });
-  return {box: [Math.round(r.left), Math.round(r.top), Math.round(r.width), Math.round(r.height)], inView: r.left >= 0 && r.right <= innerWidth + 0.5 && r.top >= 0 && r.bottom <= innerHeight + 0.5, scroll: d.scrollHeight > d.clientHeight + 1, s6: bs.filter(x => x.t && /Duplizieren|Oktave|−1|\+1|Chor|Effekte|erzeugen|Alle aus|ct|1\/16/.test(x.t)), klein: bs.filter(x => x.h < 36 || x.w < 36).map(x => x.t + ' ' + x.w + '×' + x.h)}; });
+  return {box: [Math.round(r.left), Math.round(r.top), Math.round(r.width), Math.round(r.height)], inView: r.left >= 0 && r.right <= innerWidth + 0.5 && r.top >= 0 && r.bottom <= innerHeight + 0.5, scroll: d.scrollHeight > d.clientHeight + 1, s6: bs.filter(x => x.t && /Kopieren|Noten bearb|Duplizieren|Oktave|−1|\+1|Chor|Effekte|erzeugen|Alle aus|ct|1\/16/.test(x.t)), klein: bs.filter(x => x.h < 36 || x.w < 36).map(x => x.t + ' ' + x.w + '×' + x.h)}; });
 const rows = p => p.evaluate(() => [...document.querySelectorAll('#spk1Sheet .spk1-lr')].map(r => r.dataset.l + ':' + (r.querySelector('.spk1-nm') || {}).textContent));
 
 // ---- Quelle wie im Kern-Test (Gesang A3, D4, B3 + Bass), Ebene + Noten
@@ -64,7 +64,7 @@ const fxv = await p.evaluate(() => SPK1.ui.meta.layers.find(l => l.id === 'L2').
 // ---- Chor … (aus L1): 4 Stimmen
 await p.evaluate(() => spk1Dd(SPK1.ui, null));
 m = await btn(p, '#spk1Sheet .spk1-lr[data-l="L1"] [data-a="lmore"]'); await tap(m); m = await btn(p, '#spk1Sheet .spk1-dd [data-s6="chor"]'); await tap(m); await p.waitForTimeout(250);
-await p.evaluate(() => { const s = [...document.querySelectorAll('#spk1Sheet .spk1-dd button')].find(e => e.textContent.trim() === '4 Stimmen'); if (s) s.click(); });
+await p.evaluate(() => { const s = [...document.querySelectorAll('#spk1Sheet .spk1-dd button')].find(e => e.textContent.trim() === '4'); if (s) s.click(); });
 dd = await ddInfo(p); await p.screenshot({path: path.join(fotos, 'spk6-04-chor.png')});
 const chk = await p.evaluate(() => [...document.querySelectorAll('#spk1Sheet .spk1-dd button')].filter(e => e.offsetParent).map(e => { const q = e.getBoundingClientRect(); return Math.round(q.height); }));
 ok('chor-klappfenster', {hoehen: chk, inView: dd && dd.inView}, chk.length >= 11 && chk.every(h => h >= 36));
