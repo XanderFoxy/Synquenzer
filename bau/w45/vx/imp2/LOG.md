@@ -12,3 +12,12 @@
 - 21:07 imp2-node.mjs nachher (node-nachher.txt): ALLE OK – #14 120,6 bei allen Raten (Spanne 0,05), #1 118,6 (0,00), #10 112,13 (0,00), Renders gleich+richtig.
   Unabhängige Einsätze aus der Tonhöhe (pitchons.mjs + fitcurve.mjs): an #1 geeicht (beste 119,5 = Annotation 119); #14: 120,6 Rang 0,8 % (mit ½×), 132,6 Rang 59 % → 132,6 (alt, 48k) war falsch.
   #10: 112 Rang 76 % (Tonhöhe) / 53 % (Modell-Noten) – bei allen Raten gleich, aber wohl nicht richtig (Rest-Befund, nicht abtastraten-bedingt).
+- 21:19 imp1-test (vx/imp): ALLE OK (48), 124 s (run-imp1.txt).
+- rv1-test: Basis heute 48/53 (run-rv1-basis.txt), IMP2 45/53 (run-rv1.txt). +1: #1 „Einsätze ≥ 80 %" jetzt OK (Basis 38/59 → OK). −4: Verschieben links/rechts
+  an anderen Stücken (#10 Stück 47 statt 30, #14 Stück 52 statt 55). Ursache: neues Tempo/t1 (#14 132,6 → 120,6; #10 t1 0,383 → 0,388) → imp1Take legt den Take
+  ab Takt 0 an (Auftakt = Stille) → Take um einige ms verschoben → Marken (wpDetect) anders (#10 56 → 58, #14 69 → 66 Stücke) → Test wählt andere Stücke.
+  Gegenprobe RV1_K: #10 Stück 30 mit IMP2 links+rechts OK (run-rv1-k10-30.txt); #14 Stück 55 FEHLER (anderes Stück als in der Basis). Fehler liegen im
+  Gesang-Editor-Verschieben (Ausklang 31 ms vor dem Schnitt nicht bitgleich, #10 Ton −27 ct gegen Grenze 25, #14 Dehnung 1,61 gegen 1,55) – nicht im Import.
+- vx1-test (rolle): 61/61 (run-vx1.txt).
+- 21:19 Pflicht (Endstand): topdefs Skripte 26, doppelt 0, Syntax 0 · dupkeys 0 · smoke errors [] (smoke.png) · „MS 2000" 1× · „^  live: true," 1× ·
+  VERSION 4.63.0 · keine Markenwörter im Unterschied zu basis.html · keine Datensatz-/Produktnamen unter vx/imp2.
