@@ -66,4 +66,9 @@ Kick-Rest je Schlag (kleinste Quadrate) bringt für die Oktave nichts mehr, seit
   VERSION 4.64.0 unverändert · eingefügter Text ohne Marken-/Datensatz-/Produktnamen (Markenwörter je Wort = Basis).
 - faelle8 (Kopie spk10/messb) 13/13 · spk8-seite 14/14 (Worker, hochkant + quer, Demo 29/32 · 0,806, ↶/↷, Konsole []) ·
   spk5-test ALLES OK 24 · spk5-fade-test ALLES OK · spk1-test 17 OK / 1 FEHLER verfeinern-verbessert-ziel 4,37 → 4,36 (bekannt seit SPK4).
-- spk4-test: siehe LOG.md.
+- spk4-test (gegen basis5): 19 OK / 4 FEHLER: pflicht/Version, a2-verfeinern-plus-1db, reg-ki1 (alle erwartet) und a3-nachbau-zeit
+  (Last: FM-Abstand im 2. Klang-Probe-Lauf vorher und nachher 0 statt 2,06). Gegenprobe Klang-Probe allein basis 4.64 → SPK10: alle Abstände und
+  Texte gleich (va2 3,89 · fm 2,06 · pad 0,96 · lead 0,95), Zeiten im Rauschen – der Nachbau-Weg ist von SPK10 nicht berührt.
+- Worker-Probe `messb/worker10.mjs`: `spk10Okt` im Worker-Text und im Worker als Funktion vorhanden, Seitenfehler [].
+- Misch-Lage: Block nach SPK8-END (SPK9 liegt nach SPK7-END), Haken nur im SPK8-Block; keine SPK9-Stelle (spk1DspMake-Haken, `const src`,
+  SPK2 segNotes) berührt.

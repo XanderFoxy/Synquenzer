@@ -9,3 +9,4 @@
 - 21:15 vx1-test 61/61 (reg/vx1.txt), imp1-test ALLE OK (126 s) (reg/imp1.txt).
 - 21:18 eigener Test vx3-test.mjs: Legato-Tonwechsel (synthetisch) bekam 35 ms Anlauf (Periodik am Tonwechsel kurz gestört → 2 'stimmlose' Rahmen). Echt-Läufe angesehen (dbg/runstat.cjs): Brücke zwischen zwei gesungenen Läufen ohne Verschluss nur mit ZCR ≥ 0,15 oder ≥ 3 dB leiser → fällt weg: #1 13,61 s (10 ms), #10 2,30 s (20 ms). Danach #1 24/31, #10 10/13, #14 18/18.
 - 21:19 App-Sonde nach Legato-Schutz: #1 24/31, #10 10/13, #14 18/18; A1 Anfang 39 Vokal 50 Präz 50; A2 Präz 57 (56); Stücke 69/32/35 (reg/probe-analyze.txt). vx3-test 9/9 (reg/vx3.txt); gegen basis.html rot (Stücke 75 ms hinter dem Konsonanten-Beginn).
+- 21:21 Nach Legato-Schutz: vx2-test 14/14, rv1-test 52/53 (nur #10 Raster wie 4.64; Raster 67/69·24/32·30/35, Präz 50/69, Einsätze 39·50 grün).
