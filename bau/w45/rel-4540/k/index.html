@@ -44237,6 +44237,8 @@ function sndSet(snd, key, v) {
 }
 // INT54 (Regel 28): KÖRNUNG wie SQStore kf1Fx – an (Bits < 16 oder Rate < 1): Bits, Rate, Mischung in dieser Reihenfolge am Ende; aus: keiner der drei
 function int54KornForm(fx) { const b = Math.round(clamp(isNum(fx.kfBits) ? fx.kfBits : 16, 2, 16)), r = clamp(isNum(fx.kfRate) ? fx.kfRate : 1, 1 / 32, 1), m = clamp(isNum(fx.kfMix) ? fx.kfMix : 1, 0, 1); delete fx.kfBits; delete fx.kfRate; delete fx.kfMix; if (b < 16 || r < .999) { fx.kfBits = b; fx.kfRate = r; fx.kfMix = m; } }   // INT54
+// INT54: die drei KÖRNUNG-Werte merken und genau so zurücklegen (Making-of „Gerät“: der Regler wird nur für das Bild gesetzt)
+function int54KornKeep(fx) { const o = ['kfBits', 'kfRate', 'kfMix'].map(q => [q, fx[q]]); return () => { for (const [q] of o) delete fx[q]; for (const [q, v] of o) if (v !== undefined) fx[q] = v; }; }   // INT54
 function kf12Put(p, k, v) { if (!v) { delete p[k]; return; } if (k in p || !('fmBite' in p)) { p[k] = v; return; } const t = []; let a = false; for (const q in p) { if (a) t.push([q, p[q]]); else if (q === 'fmBite') a = true; } for (const [q] of t) delete p[q]; const m = new Map(t); m.set(k, v); for (const q of ['kfNc', 'kfRm', 'kfSh1', 'kfSh2']) if (m.has(q)) { p[q] = m.get(q); m.delete(q); } for (const [q, x] of m) p[q] = x; }   // KF12: 0 = Schlüssel weg; ein neuer Wert steht hinter fmBite wie nach normAnalog (Speichern → Laden → Speichern bleibt Zeichen für Zeichen gleich)
 function clampParam(key, v, cur) {
   const d = PD[key]; if (!d) return cur;
@@ -79683,13 +79685,14 @@ function vd3Ger(g, W, H, x, u) {
   const key = x.k === 'regler' ? x.p : null, v = key ? vd3KnobAt(x, u) : null;
   const pid = key && s.engine !== 'mk' && s.engine !== 'bm' ? vr1PgOfKey(key, s.engine) : null;
   const keepV = key ? sndGet(s, key) : null, keepM = s.mods, hadM = 'mods' in s, keepPg = vr1Page;
+  const int54K = key && key.startsWith('fx.kf') && s.fx ? int54KornKeep(s.fx) : null;   // INT54: KÖRNUNG genau zurück (sndSet stellt die Form nach dem Laden her: ein kurz ausgeschalteter Regler nähme die Mischung mit)
   let res = null;
   try {
     if (key && v != null) sndSet(s, key, v);
     if (key) s.mods = [];                                            // nur dieser Regler im Fokus (keine Modulationsringe im Making-of)
     if (pid) vr1Page = () => pid;
     res = vv4Shot(g, W, H, st, i, 'geraet');
-  } finally { if (key) sndSet(s, key, keepV); if (key) { if (hadM) s.mods = keepM; else delete s.mods; } vr1Page = keepPg; }
+  } finally { if (int54K) int54K(); else if (key) sndSet(s, key, keepV); if (key) { if (hadM) s.mods = keepM; else delete s.mods; } vr1Page = keepPg; }   // INT54
   // the frame on the knob that turns (the app's highlight) and a finger on it
   const ed = res && res.ger && res.ger.ed, cell = ed && key ? ed.knobs.find(q => q.key === key) : null;
   if (cell) {

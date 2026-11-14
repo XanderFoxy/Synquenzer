@@ -96929,7 +96929,7 @@ function vx1rDeco(g, nt, r) {
   const Gp = typeof G2 !== 'undefined' && G2.an.get(id);             // Tonhöhenkurve (VS2/G2), relativ zur Zeile des Stücks
   if (Gp && Gp.f0) {
     const i0 = Math.max(0, Math.ceil(p.t / Gp.hop)), i1 = Math.min(Gp.n, Math.floor(p.end / Gp.hop)), cy = r.y + r.h / 2, sh = nt._sh || 0;
-    g.save(); g.beginPath(); g.rect(x0, r.y - r.h, w, r.h * 3); g.clip();   // ±1 Zeile: Gleiten in den Nachbarn nur angedeutet g.beginPath(); let on = false;
+    g.save(); g.beginPath(); g.rect(x0, r.y - r.h, w, r.h * 3); g.clip(); g.beginPath(); let on = false;   // ±1 Zeile: Gleiten in den Nachbarn nur angedeutet
     for (let i = i0; i < i1; i++) {
       const f = Gp.f0[i]; if (!(f > 0)) { on = false; continue; }
       const px = X(i * Gp.hop), py = cy - (G2P.midi(f) + sh - nt.n) * r.h;

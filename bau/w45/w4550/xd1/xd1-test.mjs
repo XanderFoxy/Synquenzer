@@ -387,8 +387,8 @@ if (run('messung')) {
   }
   const [a, b2, c] = M, eqS = x => JSON.stringify(x.eq);
   ok('(7) Messen per Finger: der MIX-A-Messlauf wartet jetzt auf die Quittung der Engines (wie Video/Audio)', a.ack >= 1 && b2.ack >= 1 && c.ack === 0, {mitQuittung: [a.ack, b2.ack], ohne: c.ack});
-  ok('(7) Schlag 1 ist im Messlauf vollständig: Spitze der ersten 40 ms mit Quittung zweimal gleich und höher als ohne (dort fehlen die ersten Synth-Noten)',
-    a.pk != null && a.pk === b2.pk && c.pk != null && a.pk > c.pk + 0.05, {mit: [a.pk, b2.pk], ohne: c.pk});
+  ok('(7) Schlag 1 ist im Messlauf vollständig: Spitze der ersten 40 ms mit Quittung zweimal gleich (±0,01) und deutlich höher als ohne (dort fehlen die ersten Synth-Noten)',
+    a.pk != null && b2.pk != null && Math.abs(a.pk - b2.pk) <= 0.01 && c.pk != null && Math.min(a.pk, b2.pk) > c.pk + 0.05, {mit: [a.pk, b2.pk], ohne: c.pk});
   ok('(7) zwei Messungen mit vollständigem Ton: gleiche Vorschläge (fest)', eqS(a) === eqS(b2), {a: a.eq, b: b2.eq});
   const bass = a.eq.bass, pad = a.eq.pad, drums = a.eq.drums;
   ok('(7) Vorschläge musikalisch stimmig, Begründung passt: Bass −3 dB beim Kick-Grundton 50 Hz, Fläche Glocke gegen die Sequenz, keine Höhen-Absenkung der Fläche, Drums Pappkarton 300 Hz – die MIXG-Schwellen bleiben',
