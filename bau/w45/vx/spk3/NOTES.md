@@ -1,4 +1,4 @@
-# SPK3 – NOTES (Stand Auftrag 1/4: Bass ohne Download 0,77 → 3,01 dB – Ziel 4 dB noch offen)
+# SPK3 – NOTES (Stand Auftrag 2/4: Bass-Noten Präzision 23 → 58 % (fair 71 %), Bass-Ebene bleibt 3,01 dB; mehrstimmig + Profi-Messung offen)
 
 `index.html` = basis4.html (4.59.0) + Block `SPK3-BEGIN … SPK3-END` direkt nach `/* SPK2-END */` (Quelle `spk3-block.js`, bitgleich)
 + 2 Haken „SPK3“ im SPK1-Kern: `spk3DspMake(Z2)` nach der Z2-Anlage, Worker-Text schickt `spk3DspMake.toString()` mit. VERSION/CHANGES unberührt.
@@ -41,3 +41,47 @@ Verfolgung (messk/trk.mjs, Bass-Leistung): richtig 27 %, Oktave +12 (Sub, jetzt 
 ## Pflicht / Regression (Auftrag 1)
 topdefs doppelt 0 / Syntaxfehler 0 · dupkeys 0 · smoke errors [] (`smoke-a1.png`) · „MS 2000“ 1× · „  live: true,“ 1× · Markenwörter = Basis ·
 VERSION 4.59.0. spk2-test 29/30 OK (nur zerlegen-bass-ziel 3,01 < 4), spk1-test ALLE OK (verfeinern-verbessert-ziel jetzt grün).
+
+---------------------------------------------------------------------------------------------------------------------------
+## Auftrag 2/4 – Noten sicherer (halb: Bass fertig gemessen, Profi ungemessen, mehrstimmig offen)
+
+Bau: `python3 bau3.py` = `index.a1.html` (Stand A1) + `spk3-block.js` + 2 Haken „SPK3“: SPK2-`return` gibt `h: {magsX, onsetsOf, viterbi,
+segNotes, gridOf, snapT, t2Of, nid, artOf, rangeOf, N2R, midiOf, trackF, noteSel, findN}` heraus; SPK1-`selRaster` (harm) kennt Anteil `s.g` (0…1).
+Sicherungen: `index.a1.html`, `spk3-block.a1.js`, `spk2-test.a1.json`.
+
+### Kern (spk3DspMake, Worker) – ersetzt `Z2.ops.finden` / `Z2.ops.zuordnen` nur für Bass, sonst SPK2 wie bisher
+- `finden3` (Ebene der Art Bass): Quelle = Profi-Bass-Ebene (`l.z === 'bass'`, wenn `meta.jobs.profi.fertig`), sonst Original.
+  Beträge N 8192 des ganzen Stücks, Kick-Vorlage (A1) abgezogen (`o4.kk` 1). Vorlage T aus bestätigten Noten; **Gegen-Vorlage G** = gleiche
+  Tonhöhen in Rahmen, deren Obertöne 1–3 < 5 % der Vorlage liegen (Stellen ohne Bass) → T' = T − (T·G)·G. Wert = cos²(T')·Anteil·Pegel,
+  **Pegel** = Obertöne 1–3 ≥ 10 % der Vorlage (`o4.gate`). Band: Vorlage −7 … +12 Halbtöne, **oben ≤ 260 Hz**. Danach **Ton je Note
+  nachschärfen**: Halbtöne im Band, Obertöne 1–6 bis 230 Hz (mind. 2), log-Mittel relativ zur Vorlage, Betrag genau an der Frequenz
+  (Halbton < 1 Bin bei 65 Hz). Befund: Pads C4-E4-G4 = Obertöne 4-5-6 von C2 → ohne Pegel-/Gegen-Prüfung überall „C2“.
+- `zuordnen3` (Ziel Bass): Kamm nur bis 300 Hz; Ziel = zerlegte/Profi-Bass-Ebene (`l.z`) → nur Noten bestätigen (Anteil 0, Masken bleiben),
+  sonst voller Kamm. Ein ↶ wie bisher.
+- Parameter `Z2.o4` (`up, rf, kk, fbB, gate, gq, orth, ref, thr, zK, zg, dbg`); `sure/poly/pv/pr` sind Platzhalter für die nächsten Schritte.
+
+### Messung (`messk/noten3.mjs`, Node = Browser; Wahrheit = Bass-Clip Synth 1, 4 Noten aus Takt 1 bestätigt)
+| | vorher (A1) | nachher (A2) |
+|---|---|---|
+| Überall finden: Quote / Präzision (Wahrheit Takt 2–4) | 45,8 % / 23,4 % | **58,3 % / 58,3 %** |
+| … ab „Sicher ab“ 0,5 | 45,8 % / 23,4 % (Sicherheit 0,76–0,96 = trennt nicht) | 54,2 % / 65,0 % |
+| … fair (Wahrheit = alle 32 − 4 bestätigte, Takt 1 zählt mit) | – | 17/24 = **71 %** Präzision, Quote 61 % |
+| Fehlalarme Takt 5–8 (kein Bass) | 27 (alle „C2“) | 2 |
+| Bass-SDR: zerlegt → 4 Noten zuordnen → Alle übernehmen → Verfeinern nach Noten | 3,01 → 0,73 → −5,30 → 2,81 | **3,01 → 3,01 → 3,01 → 3,29** |
+| Laufzeit Überall finden (20 s, Node) | 0,55 s | 1,0 s |
+Zuordnen-Versuche (Takt 1 / Alle): voller Kamm 0,73 / −5,30 · ≤300 Hz g 1 1,48 / −1,24 · g 0,5 2,55 / 1,57 · g 0,25 2,87 / 2,67 · g 0 3,01 / 3,01.
+Restfehler: C2 auf Zählzeit 3 (Kick) wird G2/C3 (3×), ±1 Halbton (2×), Oktave (1×). „Sicher ab“ trennt noch schwach (richtig 0,39–0,73, falsch 0,34–0,68).
+
+### Offen (Auftrag 2)
+1. **Profi-Bass messen** (Quelle ist eingebaut, ungemessen): ki1-Ablauf im Prüf-Chrome (`ki/ki1-test.mjs`-Routen, Modell `ki/modell`), danach
+   `SYNQUENZER.spk1.spk2.finden` + Wertung wie `noten3.mjs`; „Noten finden“ auf dem Original (Bass-Band) ebenfalls auf Profi-Bass umstellen.
+2. **Mehrstimmig (Pads)**: nicht gebaut. Plan: in `noten` für Art Pads iterative Obertonsumme je Rahmen (bester Ton, Obertöne mit Fensterbreite
+   abziehen, nächster ≥ 50 %, max. 5), Halbton-Aktivität je Ton glätten (Hysterese), Anschläge je Ton; Anzeige gleich, Text „mehrstimmig“
+   (`spk2Pane`/`spk2Finden`/`spk2NotenDd`, Haken „SPK3“). Messung steht: `TEIL=pad node messk/noten3.mjs` – vorher Pad-Spur allein 0/28,
+   Gemisch → Verfeinern Pads → Noten 1/28 (Präzision 4 %). Wahrheit: Pad-Clip (C-E-G / C-E-G-H je Takt, 28 Noten).
+3. Sicherheit: Rand-Abstand der Tonwahl (beste − zweitbeste) in `conf` einrechnen, damit „Sicher ab“ trennt; Kick-Zählzeiten (C2 → G2).
+4. Zuordnen in eine zerlegte Bass-Ebene ändert den Klang nicht mehr (nur Noten) – im Funk erklären: Klang wird über „Verfeinern nach Noten“ besser.
+
+### Pflicht / Regression (A2)
+topdefs doppelt 0 / Syntaxfehler 0 · dupkeys 0 · smoke errors [] (`smoke-a2.png`) · „MS 2000“ 1× · „  live: true,“ 1× · VERSION 4.59.0 ·
+spk2-test 29/30 (nur zerlegen-bass-ziel 3,01 < 4, wie A1; `spk2-test.json/log`). spk1-test nicht neu gelaufen (Zerlegen unverändert seit A1).
