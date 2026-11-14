@@ -10,3 +10,4 @@
 - Pflicht auf Endstand: topdefs doppelt 0/Syntax 0, dupkeys 0, smoke errors [] (smoke-1.png), MS 2000 1×, live: true 1×, Markenwörter wie Basis, VERSION gleich → fertig.
 - NOTES.md geschrieben (Kern, Ablage, Messtabelle, Befunde, Offen) → fertig. Ende Auftrag 1/3.
 - 14.11. Start Auftrag 2/3 (realistische Chöre aus Import + Tuning ohne Artefakte): LOG/LESEN/NOTES gelesen.
+- (1) Befund: Chor-Weg G6 v2 steht schon für jedes Audio-Stück offen (Takes-Blatt [Chor] hängt nur an tkAudioOk; Song-Stimme {vox} aus IMP1 „Als Gesang“ hat Chor-Zeile, Akkorde über g6pVoxPcs) → Freischalten nicht nötig (Beleg: index.html tkSheetPaint ok = tkAudioOk(); kein src/route-Filter außer vx1Probe).

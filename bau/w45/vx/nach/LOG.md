@@ -19,3 +19,4 @@
 - (f) fertig (war schon da) – Beleg: Zelle der Spur „Original“ zeichnet tkMiniSvg wie Gesang-Clips (64 Säulen, Signatur au:); kein Code nötig.
 - (g) fertig – Beleg: Suche „mp3 importieren“ → midiimp „Audio/MIDI importieren“, Sprung ringt den Knopf im Export-Blatt.
 - (h) offen (ehrlich): Takes sind mono gespeichert (Int16-Stücke in IDB, tkPcm/tkLoad bauen 1-Kanal-AudioBuffer, Container schreibt takes/<id>.wav mono, Rundlauf/Normalisieren darauf gebaut). Die Wiedergabe-Quelle könnte Stereo spielen, aber Speichern/Laden/Container müssten einen zweiten Kanal bekommen = Umbau → nicht gemacht.
+- Ende Auftrag 1: Pflicht final topdefs 0/0, dupkeys 0, smoke errors [] (smoke-end.png), Markenwörter 282 = Basis, VERSION unberührt; Regression vx1-test 61/61, imp1-test ALLE OK; NOTES.md geschrieben. Offen: (h).

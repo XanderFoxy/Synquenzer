@@ -5,3 +5,7 @@
 - 14:50 VQ1-CSS in xd1Css eingebaut (sticky Fußzeile + Bereich-Textzeile 24 px bis 440 px Höhe)
 - 14:51 Sonde nach VQ1 (out-vq1): q alles ganz sichtbar ohne Rollen; q2 Haupttasten fest, Extras rollen unter die Fußzeile
 - 14:53 Befund: Spalte quer rollt per Finger gar nicht (guardTouch verhindert touchstart, .vvctl hat kein .pan-y) – auch in 4.58.0/4.53.0; Wisch-Sonde scrollTop 0
+- 14:54 pan-y in vvFit (VQ1-Einhängezeile): Wischen rollt jetzt (q 34 px, q2 92 px), Fotos geprüft
+- 14:55 Fortschritt/[Abbrechen] quer 370: 26 → 44 px sichtbar
+- 14:55 topdefs doppelt 0/Syntax 0, dupkeys 0, MS 2000 1×, live:true 1×
+- 14:55 smoke errors [] – starte xd1-test gegen w4550/basis.html (4.53.0)
