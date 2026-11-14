@@ -69040,7 +69040,7 @@ function curveNat(an, plan) {
 // komplexen Teilton-Amplituden c_h (Hann über 3 Perioden, Chirp-fest über Φ), Teiltöne bis 7 kHz
 const HMAX = 64, FTOP = 7000;
 function model(x, sr, an) {
-  const n = x.length, Hs = an.hop * sr, f0 = an.f0, G = Math.round(0.015 * sr), runs = [];
+  const n = x.length, Hs = an.hop * sr, f0 = an.f0, G = Math.round(0.003 * sr), runs = [];   // CHR4: Rand 3 ms (vorher 15) + Blende 20 ms → weniger Original-Tonhöhe am Strecken-Rand
   for (let i = 0; i < an.n;) {
     if (!(f0[i] > 0)) { i++; continue; }
     let j = i; while (j < an.n && f0[j] > 0) j++;
@@ -69098,7 +69098,7 @@ function render(x, sr, an, plan) {
   const y = Float32Array.from(x), n = x.length, H = an.hop;
   const {c, runs} = curve(an, plan);
   if (!an.mdl) an.mdl = model(x, sr, an);
-  const RMP = Math.round(0.010 * sr), BLK = 64, o2 = [0, 0], o3 = [0, 0];
+  const RMP = Math.round(0.020 * sr), BLK = 64, o2 = [0, 0], o3 = [0, 0];
   let segs = 0;
   for (const [i0, i1] of runs) {
     const R = an.mdl.find(z => z.i0 === i0 && z.i1 === i1); if (!R) continue;
@@ -73194,7 +73194,7 @@ function coef(R, q, h, out) {
 }
 // Teilton-Modell (wie G2 model, Strecke für Strecke identisch) – nur für die Strecken, die das Fenster [w0, w1) berühren; have = Map i0 → Strecke
 function modelRuns(x, sr, an, w0, w1, have) {
-  const n = x.length, Hs = an.hop * sr, f0 = an.f0, G = Math.round(0.015 * sr);
+  const n = x.length, Hs = an.hop * sr, f0 = an.f0, G = Math.round(0.003 * sr);   // CHR4: wie G2 model
   for (let i = 0; i < an.n;) {
     if (!(f0[i] > 0)) { i++; continue; }
     let j = i; while (j < an.n && f0[j] > 0) j++;
@@ -73242,7 +73242,7 @@ function chr2Drift(X, i, sr) { const t = i / sr, s = X.s || 0; return X.d * (0.5
 function renderMulti(x, sr, an, getRun, cvs, w0, w1) {
   const K = cvs.length, H = an.hop, ys = cvs.map(() => x.slice(w0, w1));
   cvs.forEach((cv, j) => { const X = cv.x; if (X && X.c !== 1) { const y = ys[j]; for (let i = 0; i < y.length; i++) y[i] *= X.c; } });   // CHR2: Atem/Konsonanten der Kopie leise (kommen vom Lead)
-  const RMP = Math.round(0.010 * sr), BLK = 64, o2 = [0, 0];
+  const RMP = Math.round(0.020 * sr), BLK = 64, o2 = [0, 0];
   const runSet = new Map();
   cvs.forEach((cv, j) => { for (const [i0, i1] of cv.runs) { const k = i0 + ':' + i1; let e = runSet.get(k); if (!e) runSet.set(k, (e = {i0, i1, js: []})); e.js.push(j); } });
   let segs = 0;

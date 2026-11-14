@@ -23,3 +23,5 @@
   (b) dann G 2,5 ms + Rampe 20 ms (G2 model/render + G6 modelRuns/renderMulti gleich) einbauen; (c) Hülle: Hermite nur mit verlässlicher
   Steigung (ρ ≥ 0,5), unter T1 fortsetzen – bringt +400 bis −2,5 %-Punkte, −500 erst nach den Rändern prüfen.
 - 14.11. 17:47 Start Auftrag 2/2 (Test): index.html = basis5 (cmp gleich). Entscheidung: Rand-Kandidat G 2,5 ms + Rampe 20 ms erst als Variante (tmp/) über alle 5 Fälle + Nachbarwerte prüfen; nur übernehmen, wenn nirgends schlechter (Knackser 0, Glätte ≤ Basis + 0,05).
+- (A1) Varianten Rand (chr3-pruef, alle 5 Fälle, tmp/pruef-*.json): Übergang überall besser (−0,2…−0,7 dB), aber hart Formant 2,58 → 2,77…2,93 %, hart Glätte 1,19 → 1,23…1,40; G 3 ms/R 20 am ausgewogensten (hart F +0,19, Gl +0,04, natürlich Gl +0,06). Prüfe Nachbarn G 3,5/4 ms.
+- (A2) Eingebaut in index.html: G 3 ms (G2 model + G6 modelRuns), RMP 20 ms (G2 render + G6 renderMulti), 2 Kommentare „CHR4“. Grund: Nachbarn G 2…4 ms stabil (Übergang −0,2…−0,7 dB, Knackser 0), G 3 ms bester Ausgleich.
