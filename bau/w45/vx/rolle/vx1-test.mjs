@@ -159,6 +159,9 @@ try {
     const rms = (a, e) => { let s = 0; for (let i = a; i < e; i++) s += y[i] * y[i]; return Math.sqrt(s / Math.max(1, e - a)); };
     const gapR = rms(Math.round((q.dst - .03) * SR), Math.round((q.dst - .006) * SR));
     const mid = Math.round((pv.dst + lock + ((q.dst - pv.dst) - lock) * .5) * SR), f0 = f0of(y, SR, mid, 1920);
+    { const dif = (a, i0, i1) => { let m = 0; for (let i = Math.max(1, i0); i < i1; i++) m = Math.max(m, Math.abs(a[i] - a[i - 1])); return m; };
+      const ref = dif(x, Math.round((pv.t + lock + .01) * SR), Math.round((pv.end - .02) * SR)), jmp = dif(y, Math.round((pv.dst + lock - .01) * SR), Math.round(q.dst * SR));
+      ok(jmp <= ref * 1.1 + .01, '4 kein Knacken im gedehnten Vokal (Naht fest → gedehnt und bis zum Nachfolger)', jmp.toFixed(4) + ' / ' + ref.toFixed(4)); }
     ok(gapR > .02 && Math.abs(f0 / F[3] - 1) < .015, '4 Vokal gedehnt (keine Lücke, Tonhöhe der Silbe bleibt)', 'Pegel vor dem Nachfolger ' + gapR.toFixed(3) + ', Grundton im gedehnten Vokal ' + f0.toFixed(1) + ' Hz (Soll ' + F[3] + ')');
     // weit nach rechts: Faktor > 1,5 → Vokal höchstens 1,5× gedehnt, danach Lücke mit Ausblende
     const B = MR.r2, y2 = B.y, q2 = B.L[1], p2 = B.L[0], lk2 = p2.an + .02, need = ((q2.dst - p2.dst) - lk2) / ((q2.t - p2.t) - lk2);

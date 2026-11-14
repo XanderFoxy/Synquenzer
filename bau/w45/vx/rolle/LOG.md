@@ -22,3 +22,4 @@
 - 13:32 Plan Schritt 5: vx1-test.mjs = Gesamt-Abnahme (Kern-Messungen am Signal, Editor per Touch, beide Zugänge, Silben per fillText, Speichern .json + Container, Layout/Treffer 44 px); danach vox2/gl1-Regression
 - 13:36 vx1-test.mjs geschrieben (10 Bereiche), erster Lauf
 - 13:38 Lauf 2: 53/59 – offen: Knacken vor Lücke (rechts weit), Silbe 'li' nicht gezeichnet, Trefferfläche 36/30 px (Leisten-Knöpfe ohne Treffer-Rand) → Diagnose
+- 13:41 Befunde behoben: (1) Knacken 5 ms nach der Naht fest→gedehnt (VSX.stretch klemmte den ersten WSOLA-Rahmen an 0: Vorlauf 20 ms mitgeben), (2) schmale Silben ('li', 'a') wurden nicht gezeichnet (Schwelle 12 px auf Textbreite statt Platz), (3) Gesang-Leisten: Trefferfläche bis an den Leistenrand (::after, Trennlinie als Schatten wie #top) – Test folgt
