@@ -98064,7 +98064,7 @@ function spk2DspMake(I) {
   // die Obertöne nicht), Viterbi mit Sprungkosten (bleiben ist billig), danach Noten-Prüfung: Dauer ≥ 0,1 s, Obertöne vorhanden,
   // kein Fall der Tonhöhe (Kick = kurzer Abklang mit fallender Tonhöhe, Bass = Ton mit Dauer).
   function bassTrack(Y, n, K, df, hopS, trust) {
-    const C = []; for (let c = 12 * Math.log2(36 / 440); ; c += 0.25) { const f = 440 * Math.pow(2, c / 12); if (f > 290) break; C.push(f); }
+    const C = []; for (let c = 12 * Math.log2(27 / 440); ; c += 0.25) { const f = 440 * Math.pow(2, c / 12); if (f > 290) break; C.push(f); }
     const S = C.length, NH = 8, E = new Float32Array(n * S), q = new Float32Array(n), hrA = new Float32Array(n * S), Z = new Float32Array(K);
     for (let i = 0; i < n; i++) {
       const o = i * K; for (let k = 0; k < K; k++) Z[k] = Math.sqrt(Y[o + k]);
@@ -98076,7 +98076,12 @@ function spk2DspMake(I) {
         for (let h = 1; h <= NH; h++, g *= 0.86) { const kf = h * f / df; if (kf >= K - 2) break; const v = pk(kf); s += g * v; if (h >= 2 && h <= 5) up += v; }
         E[i * S + j] = s; hrA[i * S + j] = up / (pk(f / df) + 1e-9); if (s > best) best = s;
       }
-      q[i] = tot > 0 ? best / (tot * 3 * df / 2.69) : 0;   // Anteil des Kamms an der Summe (Breite der Bins ausgleichen)
+      let jb = 0; for (let j = 1; j < S; j++) if (E[i * S + j] > E[i * S + jb]) jb = j;
+      // Anwesenheit: Leistung auf dem Kamm (Spitzen ±1 Bin) / Leistung im Band 30 Hz … 8·f0
+      let pc = 0, pt = 0; const fb0 = C[jb], kt = Math.min(K - 1, Math.ceil(Math.min(1200, 8.5 * fb0) / df));
+      for (let k = ka; k <= kt; k++) pt += Y[o + k] * Y[o + k];
+      for (let h = 1; h <= NH && h * fb0 / df < kt; h++) { const kc = Math.round(h * fb0 / df); for (let k = kc - 1; k <= kc + 1; k++) pc += Y[o + k] * Y[o + k]; }
+      q[i] = pt > 0 ? pc / pt : 0;
       for (let j = 0; j < S; j++) E[i * S + j] = Math.log((E[i * S + j] + 1e-9) / (best + 1e-9));
     }
     // Viterbi: Nachbar ±1 Viertelton frei, größerer Sprung kostet P
@@ -98095,19 +98100,21 @@ function spk2DspMake(I) {
     const st = new Int16Array(n); let bj = 0; for (let j = 1; j < S; j++) if (D[j] > D[bj]) bj = j; st[n - 1] = bj;
     for (let i = n - 1; i > 0; i--) st[i - 1] = bp[i * S + st[i]];
     // Noten: zusammenhängende Stücke (Schritt ≤ 1 Viertelton); prüfen
-    const f0 = new Float32Array(n), on = new Float32Array(n), minF = Math.max(2, Math.round(0.1 / hopS));
+    const f0 = new Float32Array(n), on = new Float32Array(n), sg = new Int32Array(n), minF = Math.max(2, Math.round(0.1 / hopS));
+    // deutliche Obertöne: Spitze (±1 Bin) ≥ 4× Umgebung (±4…8 Bins); Kick-Ausklang = Sinus ohne Obertöne, Rauschen ohne Spitzen
+    const prom = (i, f) => { const o = i * K; let c = 0; for (let h = 2; h <= 6; h++) { const kc = Math.round(h * f / df); if (kc + 9 >= K) break; const pk = Math.max(Y[o + kc - 1], Y[o + kc], Y[o + kc + 1]) ** 2; let e = 0; for (let t = 4; t <= 8; t++) e += Y[o + kc - t] ** 2 + Y[o + kc + t] ** 2; if (pk > 4 * e / 10) c++; } return c; };
     for (let a = 0; a < n;) {
       let b = a; while (b + 1 < n && Math.abs(st[b + 1] - st[b]) <= 1) b++;
-      const len = b - a + 1; let qm = 0, hm = 0; for (let i = a; i <= b; i++) { qm += q[i]; hm += Math.min(4, hrA[i * S + st[i]]); } qm /= len; hm /= len;
+      const len = b - a + 1; let qm = 0, hm = 0; for (let i = a; i <= b; i++) { qm += q[i]; hm += prom(i, C[st[i]]); } qm /= len; hm /= len;
       const fall = st[a] - st[b];   // Viertelton-Schritte nach unten über das Stück
       let ok = (len >= minF || trust) ? 1 : 0;
       ok *= Math.min(1, Math.max(0, (qm - (trust ? 0.04 : 0.08)) / 0.12));
-      ok *= Math.min(1, Math.max(0, (hm - (trust ? 0.15 : 0.3)) / 0.4));
+      ok *= Math.min(1, Math.max(0, (hm - (trust ? 0.4 : 0.9)) / 0.6));   // im Mittel ≥ 1,5 deutliche Obertöne (2.–6.) je Rahmen
       if (!trust && fall >= 6 && len * hopS < 0.6) ok *= 0.2;   // fällt ≥ 1,5 Halbtöne in kurzer Zeit → Kick-Ausklang
-      for (let i = a; i <= b; i++) { f0[i] = C[st[i]]; on[i] = ok; }
+      for (let i = a; i <= b; i++) { f0[i] = C[st[i]]; on[i] = ok; sg[i] = a; }
       a = b + 1;
     }
-    return {f0, on, q};
+    return {f0, on, q, sg};
   }
   // Tiefband: Bass = Obertonkamm des verfolgten Grundtons (Leistungs-Modell aus der Fensterantwort, Wiener-Anteil), Drums = perkussiv +
   // tiefe tonale Reste neben dem Kamm (Kick). Rückgabe wie SPK1 lowSplit (X/SB/SD auf der FFT Nf), projiziert wird mit projLk.
@@ -98116,18 +98123,28 @@ function spk2DspMake(I) {
     const Y = magsAt(d, N16, cen, K16), T = bassTrack(Y, n, K16, df16, (cen.length > 1 ? cen[1] - cen[0] : d.meta.base.hop) / sr, trust);
     const dff = sr / Nf, Kf = Math.min(Nf / 2 + 1, Math.ceil(fmax / dff) + 2), X = magsAt(d, Nf, cen, Kf), {mh} = hpss(X, n, Kf, 17, 17);
     const SB = new Float32Array(n * Kf), SD = new Float32Array(n * Kf), B = new Float32Array(Kf), G = new Float32Array(n);
-    const hmax = trust ? 40 : 12;
+    const hmax = trust ? 40 : 12, HM = hmax + 1, LA = new Float32Array(n * HM), LC = new Float32Array(n * HM), WR = Math.max(4, Math.round(0.25 * sr / Math.max(1, cen.length > 1 ? cen[1] - cen[0] : 1024)));
+    // je Rahmen und Oberton: Spitze (±1 Bin, parabolisch) → Amplitude² A2 und Lage
     for (let i = 0; i < n; i++) {
-      const o = i * Kf, f0 = T.f0[i], g = G[i] = T.on[i]; B.fill(0);
-      if (g > 0 && f0 > 0) {
-        const top = Math.min(fmax, trust ? fmax : Math.max(300, 6.5 * f0));
-        for (let h = 1; h <= hmax && h * f0 < top; h++) {
-          const c = h * f0 / dff, k0 = Math.round(c); if (k0 < 1 || k0 >= Kf - 1) break;
-          let km = k0; for (let t = k0 - 1; t <= k0 + 1; t++) if (X[o + t] > X[o + km]) km = t;   // Spitze darf ±1 Bin liegen
-          const xa = X[o + km - 1], xb = X[o + km], xc = X[o + km + 1], dn = xa - 2 * xb + xc, cc = km + (dn < 0 ? Math.max(-0.5, Math.min(0.5, 0.5 * (xa - xc) / dn)) : 0);
-          const cx = Math.abs(cc - c) <= 1.2 ? cc : c, A2 = xb * xb / Math.max(0.3, w2(km - cx));
-          for (let k = Math.max(0, Math.floor(cx - 4)); k <= Math.min(Kf - 1, Math.ceil(cx + 4)); k++) B[k] += A2 * w2(k - cx);
-        }
+      const o = i * Kf, f0 = T.f0[i]; if (!(T.on[i] > 0 && f0 > 0)) continue;
+      const top = Math.min(fmax, trust ? fmax : Math.max(300, 6.5 * f0));
+      for (let h = 1; h <= hmax && h * f0 < top; h++) {
+        const c = h * f0 / dff, k0 = Math.round(c); if (k0 < 1 || k0 >= Kf - 1) break;
+        let km = k0; for (let t = k0 - 1; t <= k0 + 1; t++) if (X[o + t] > X[o + km]) km = t;   // Spitze darf ±1 Bin liegen
+        const xa = X[o + km - 1], xb = X[o + km], xc = X[o + km + 1], dn = xa - 2 * xb + xc, cc = km + (dn < 0 ? Math.max(-0.5, Math.min(0.5, 0.5 * (xa - xc) / dn)) : 0);
+        const cx = Math.abs(cc - c) <= 1.2 ? cc : c; LA[i * HM + h] = xb * xb / Math.max(0.3, w2(km - cx)); LC[i * HM + h] = cx;
+      }
+    }
+    // Stetigkeit: ein Ton hält seinen Pegel; kurze Spitzen darüber (Kick-Schlag auf demselben Bin) zählen nicht zum Bass →
+    // Pegel ≤ 2 × unteres Fünftel im Fenster ±0,25 s innerhalb derselben Note
+    const tmp = [];
+    for (let i = 0; i < n; i++) {
+      const o = i * Kf, g = G[i] = T.on[i]; B.fill(0);
+      const a = Math.max(T.sg[i], i - WR); let b = i; while (b + 1 < n && b + 1 <= i + WR && T.sg[b + 1] === T.sg[i]) b++;
+      for (let h = 1; g > 0 && h <= hmax; h++) {
+        const A2 = LA[i * HM + h]; if (!A2) continue; let L = A2;
+        if (b - a >= 3) { tmp.length = 0; for (let j = a; j <= b; j++) tmp.push(LA[j * HM + h]); tmp.sort((x, y) => x - y); L = Math.min(A2, 2 * tmp[Math.floor((tmp.length - 1) * 0.2)]); }
+        const cx = LC[i * HM + h]; for (let k = Math.max(0, Math.floor(cx - 4)); k <= Math.min(Kf - 1, Math.ceil(cx + 4)); k++) B[k] += L * w2(k - cx);
       }
       for (let k = 0; k < Kf; k++) {
         const f = k * dff, x2 = X[o + k] * X[o + k], b = g * B[k], sb = x2 > 0 ? Math.min(1, b / (b + Math.max(0, x2 - b) + 1e-20)) : 0, h = mh[o + k], kick = 1 - ramp(f, 90, 160);
