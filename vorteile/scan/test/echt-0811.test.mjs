@@ -98,7 +98,10 @@ test('Unterricht im ganzen Lauf: nach dem Aufräumen stehen die Stellen oben, da
   const r = await lauf({ cfg: nur('unterricht'), wunschliste: {}, vorher: null, zustand: {}, holeText: aufnahme(), jetzt: JETZT, alle: true });
   const l = r.aktuell.kategorien.unterricht;
   assert.equal(r.aktuell.status.unterricht.ok, true);
-  assert.equal(l.length, 12);
+  // 7 Stellen/Aufrufe + 5 Fundorte + die Fundorte der Gesuche (Upwork, Fiverr …; ab 14.11.2026 – in dieser Aufnahme gab es
+  // noch keine Reddit-/Freelancer-Abrufe, deshalb keine Gesuche)
+  assert.equal(l.length, 12 + nur('unterricht').module.unterricht.gesuche.fundorte.length);
+  assert.ok(r.aktuell.status.unterricht.hinweise?.some(h => /^Gesuche: Freelancer/.test(h)), 'nicht aufgenommene Quelle = Hinweis, keine Störung');
   assert.ok(l.slice(0, 7).every(e => !e.extra.fundort) && l.slice(7).every(e => e.extra.fundort), l.map(e => e.titel).join(' | '));
 });
 

@@ -1263,6 +1263,38 @@ test('Remix „Mitmachen“ und Unterricht „Melden“ (v5): Frist, Stems, Name
   await ctx.close();
 });
 
+test('Unterricht (v5 + Gesuche): „Gesuche im Netz“ oben, neueste zuerst, mit Auszug; Stellen darunter; feste Suchen immer', { skip: ohnePw }, async () => {
+  // Form wie vorteile/scan/module/gesuche.mjs (Radar ab 14.11.2026); Links mit „beispiel“ = Platzhalter
+  const gesuch = (id, titel, quelle, datum, was, auszug) => ({
+    id: `unterricht:${id}`, kategorie: 'unterricht', titel, zeile: `Gesuch · ${was} · vom ${datum.slice(8, 10)}.${datum.slice(5, 7)}.${datum.slice(0, 4)}`,
+    soGehts: 'Beitrag öffnen und kurz antworten (Kommentar oder Nachricht). Vorlage unten.', link: `https://www.reddit.com/r/German/comments/${id}/`,
+    quelle, wert: 70, sofort: false, grund: 'gesuch', frist: null, datum, bis: null, bisQuelle: null, ab: null,
+    sichtbarBis: new Date(Date.parse(datum) + 14 * 864e5).toISOString(), preisfehler: false,
+    extra: { typ: 'gesuch', gesuch: true, was, auszug, ort: 'online', km: null, online: true, frist: null, bewerbung: { art: 'seite', ziel: `https://www.reddit.com/r/German/comments/${id}/` }, quelle, bewerbenAls: { name: 'Deutsch mit Xander' }, sortWert: 80 },
+  });
+  const patch = { 'vorteile-aktuell.json': d => { d.kategorien.unterricht.push(
+    gesuch('beispiel01', 'Looking for a tutor to prepare for the Goethe B2 exam', 'Reddit r/German', '2026-11-05T09:15:40.000Z', 'Prüfungsvorbereitung', 'My Goethe B2 exam is on December 12th, looking for a tutor, 2–3 online sessions per week.'),
+    gesuch('beispiel04', 'Suche Hilfe beim Brief an die Ausländerbehörde', 'Reddit r/German', '2026-11-06T20:05:00.000Z', 'Behördenbrief', 'Ich muss einen Brief an die Ausländerbehörde schreiben und suche jemanden, der hilft.'),
+  ); } };
+  const { ctx, page, fehler } = await oeffne({ satz: 'v5', jetzt: JETZT_V5, pfad: '/mein-vorteil/#unterricht', patch });
+  await springe(page, 'unterricht');
+  const u = page.locator('#unterricht');
+  const alles = nbsp(await u.innerText());
+  assert.match(alles, /Gesuche im Netz\s*2[\s\S]*Ausländerbehörde[\s\S]*Goethe B2[\s\S]*Upwork: neue Aufträge[\s\S]*Neue Stellen & Anfragen[\s\S]*Hier kannst du dich immer melden\s*5/i, 'Gesuche oben (neueste zuerst), Stellen darunter');
+  const erste = nbsp(await u.locator('article').first().innerText());
+  assert.match(erste, /^Gesuch\s*online\s*Reddit r\/German\s*Suche Hilfe beim Brief an die Ausländerbehörde\s*Behördenbrief · vom 06\.11\.2026\s*„Ich muss einen Brief[^“]*“\s*Melden als Deutsch mit Xander/);
+  assert.match(nbsp(await text(page, '#w-unterricht')), /^2 Gesuche im Netz · /);
+  assert.equal(await u.locator('.fundorte').first().locator('li').count(), 3, 'feste Suchen: 3 sichtbar');
+  assert.match(nbsp(await u.locator('button[data-mehr="gesuche-fund"]').innerText()), /3 weitere Suchen/);
+  await u.locator('article').first().getByRole('button', { name: 'Melden' }).click();
+  assert.match(await page.locator('#b-text').inputValue(), /„Suche Hilfe beim Brief an die Ausländerbehörde“ gesehen[\s\S]*Deutsch mit Xander/);
+  await page.locator('#blatt-zu').click();
+  await pruefeLayout(page, 'Gesuche im Netz');
+  await page.screenshot({ path: join(SHOTS, 'gesuche-unterricht.png'), fullPage: false });
+  assert.deepEqual(fehler, []);
+  await ctx.close();
+});
+
 test('Nie leer mit älteren Daten (ohne Kategorien remix/auftritte/unterricht): feste Adressen, Preisfehler- und Gewinnspiel-Fundorte', { skip: ohnePw }, async () => {
   const patch = { 'vorteile-aktuell.json': d => { d.kategorien.tests = []; } };
   const { ctx, page, fehler } = await oeffne({ satz: 'v2', patch });
