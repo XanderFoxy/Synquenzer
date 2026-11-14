@@ -100157,7 +100157,7 @@ function spk3DspMake(Z2) {
    (Stimmen fix.uni 1/5), u[13] LFO-Rate 0,2…10 Hz, u[14] Vibrato 0…60 ct, u[15] Wah (Cutoff ±0…18 Halbtöne). Startwerte aus der Bewegung
    (Worker: Schwebung je Oberton, Tonhöhe, Schwerpunkt); was die Analyse nicht sieht, bleibt fest (fz) – der Optimierer verändert nur den Rest.
    Abstand = SPK2-Abstand + Bewegung (Schwankung je Oberton, Schwebungs-Rate, Vibrato, Wah). Rauschen nur, wenn die Analyse > 10 % misst. ---- */
-const SPK3_KL = {x3: true, w: 0.2, dual: true};
+const SPK3_KL = {x3: true, w: 0.2, dual: true, ab: 99, ra: 0.1};
 function spk3KlP(c, P) {
   const u = c.u; if (c.eng !== 'va' || !u || u.length < 16) return P;
   return Object.assign(P, {det: (u[11] * 2 - 1) * 25, uni: (c.fix && c.fix.uni) || 1, udet: u[12], lr: spk2Lg(u[13], 0.2, 10), vib: u[14] * 60, wah: u[15] * 0.15});
@@ -100219,25 +100219,29 @@ async function spk3KlOpt(src, o) {
     const L = []; for (let i = 0; i < Math.min(lam, n - X.done); i++) { const best = X.best, D = best.u.length, fr = [...Array(D).keys()].filter(j => !(best.fz || []).includes(j)), k = i === lam - 1 ? fr.length : Math.min(fr.length, 1 + Math.floor(X.rnd() * 3)), pick = new Set(); while (pick.size < k) pick.add(fr[Math.floor(X.rnd() * fr.length)]); L.push({eng: best.eng, fix: best.fix, fz: best.fz, u: best.u.map((v, j) => (pick.has(j) ? Math.max(0, Math.min(1, v + X.sig * 1.6 * X.gauss())) : v))}); }
     return L;
   };
-  // beide Ketten laufen nebeneinander: Rendern (eigener Audio-Faden je OfflineAudioContext) und Merkmale (Worker) überlappen sich
-  let dead = false;
-  const run = async (X, L0) => {
-    const ev = async L => {
-      const pcs = await spk2KlRender(L.map(c => spk2KlSnd(c)), src.m, src.on, src.off, src.len, src.sr);
-      const r = await spk1Call('klangFeat', {pcs, sr: src.sr, f, on: src.on, off: src.off, x3: X === B ? 1 : 0});
-      L.forEach((c, i) => { c.F = r.fs[i]; c.pcm = pcs[i]; c.dA = spk2KlDist(src.feat, c.F); if (X === B) c.dB = spk3KlDist(src.feat, c.F); c.dist = c.dA; });
-      X.done += L.length; for (const c of L) if (!X.best || c[X.key] < X.best[X.key]) X.best = c;
-      for (const c of L) if (c !== X.best) c.pcm = null;
-      if (o.prog) o.prog(Math.min(n, A.done, B.done), n, pick());
-    };
-    try {
-      await ev(L0); X.d0 = Math.min(...L0.map(c => c.dA));
-      while (X.done < n && !dead) { if (o.stop && o.stop()) break; const x0 = X.best; await ev(gen(X)); X.sig = X.best !== x0 ? Math.min(0.3, X.sig * 1.25) : Math.max(0.02, X.sig * 0.7); }
-    } catch (err) { dead = true; throw err; }
+  // beide Ketten in denselben Render-Durchgängen (ein OfflineAudioContext je Runde – nebeneinander gerendert wäre der Klang nicht mehr bitgleich);
+  // gleiche Klänge (FM-Startwerte) einmal. Eine Kette, die nach `ab` Runden im SPK2-Abstand um mehr als `ra` zurückliegt, hört auf (Zeit).
+  let done = 0; const tr = [];
+  const evalD = async (la, lb) => {
+    const all = la.map(c => [c, A]).concat(lb.map(c => [c, B])), keys = all.map(([c]) => JSON.stringify([c.eng, c.fix, c.u])), uq = [...new Set(keys)];
+    const pcs = await spk2KlRender(uq.map(k => spk2KlSnd(all[keys.indexOf(k)][0])), src.m, src.on, src.off, src.len, src.sr);
+    const r = await spk1Call('klangFeat', {pcs, sr: src.sr, f, on: src.on, off: src.off, x3: uq.map(k => all.some(([, X], i) => X === B && keys[i] === k) ? 1 : 0)});
+    all.forEach(([c, X], i) => { const j = uq.indexOf(keys[i]); c.F = r.fs[j]; c.pcm = pcs[j]; c.dA = spk2KlDist(src.feat, c.F); if (X === B) c.dB = spk3KlDist(src.feat, c.F); c.dist = c.dA; });
+    for (const [X, L] of [[A, la], [B, lb]]) { X.done += L.length; for (const c of L) if (!X.best || c[X.key] < X.best[X.key]) X.best = c; }
+    for (const [c] of all) if (c !== A.best && c !== B.best) c.pcm = null;
+    done = Math.max(A.done, B.done); tr.push([+A.best.dA.toFixed(2), +B.best.dA.toFixed(2)]);
+    if (o.prog) o.prog(Math.min(done, n), n, pick());
   };
-  await Promise.all([run(A, LA), run(B, LB)]);
+  await evalD(LA, LB); A.d0 = Math.min(...LA.map(c => c.dA));
+  let rd = 0;
+  while ((A.done < n && !A.aus) || (B.done < n && !B.aus)) {
+    if (o.stop && o.stop()) break;
+    if (++rd > SPK3_KL.ab && !A.aus && !B.aus) { const a = A.best.dA, b = B.best.dA; if (b > a * (1 + SPK3_KL.ra)) B.aus = 1; else if (a > b * (1 + SPK3_KL.ra)) A.aus = 1; }
+    const a0 = A.best, b0 = B.best; await evalD(A.aus ? [] : gen(A), B.aus ? [] : gen(B));
+    for (const [X, x0] of [[A, a0], [B, b0]]) X.sig = X.best !== x0 ? Math.min(0.3, X.sig * 1.25) : Math.max(0.02, X.sig * 0.7);
+  }
   const P = pick(); P.dist = P.dA;
-  return {best: P, d0: A.d0, n: Math.min(A.done, B.done), sig: (P === A.best ? A : B).sig, ketten: {A: +A.best.dA.toFixed(3), B: +B.best.dA.toFixed(3), B_bew: +B.best.dB.toFixed(3)}};
+  return {best: P, d0: A.d0, n: done, sig: (P === A.best ? A : B).sig, ketten: {A: +A.best.dA.toFixed(3), B: +B.best.dA.toFixed(3), aus: A.aus ? 'A' : B.aus ? 'B' : '', tr: tr.map(t => t.join('/')).join(' ')}};
 }
 function spk3KlTxt(c, L) {
   const P = spk2KlP(c); if (c.eng !== 'va' || P.det == null) return L;

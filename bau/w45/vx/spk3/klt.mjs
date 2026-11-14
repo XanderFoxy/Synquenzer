@@ -35,7 +35,7 @@ for (const k of keys) {
     const pcs = await spk2KlRender([t, a, bb].map(s => SQStore.normalizeSound(s)), C.m, on, off, len, sr), r = await spk1Call('klangFeat', {pcs, sr, f, on, off});
     const [T, FA, FB] = r.fs; return {altA: spk2KlDist(T, FA), altB: spk2KlDist(T, FB), neuA: spk3KlDist(T, FA), neuB: spk3KlDist(T, FB), x3T: T.x3, x3B: FB.x3};
   }, [C, RB[k].truth, RA[k].best, RB[k].best]);
-  res[k] = {wahr: C.wahr, vorher: {txt: RA[k].txt.join(' | '), ms: RA[k].ms, tm: RA[k].tm}, nachher: {txt: RB[k].txt.join(' | '), ms: RB[k].ms, tm: RB[k].tm}, abstandAlt: [+ev.altA.toFixed(2), +ev.altB.toFixed(2)], abstandNeu: [+ev.neuA.toFixed(2), +ev.neuB.toFixed(2)], x3: {det: ev.x3T.det, cv: ev.x3T.cv.slice(0, 6), b: ev.x3T.b.slice(0, 6)}};
+  res[k] = {wahr: C.wahr, vorher: {txt: RA[k].txt.join(" | "), ms: RA[k].ms, tm: RA[k].tm}, nachher: {txt: RB[k].txt.join(" | "), ms: RB[k].ms, tm: RB[k].tm, k: RB[k].k}, abstandAlt: [+ev.altA.toFixed(2), +ev.altB.toFixed(2)], abstandNeu: [+ev.neuA.toFixed(2), +ev.neuB.toFixed(2)], x3: {det: ev.x3T.det, cv: ev.x3T.cv.slice(0, 6), b: ev.x3T.b.slice(0, 6)}};
   console.log(k, JSON.stringify(res[k]));
 }
 res.fehler = errs.slice(0, 5); console.log('Fehler', JSON.stringify(errs.slice(0, 5)));
