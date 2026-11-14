@@ -94203,6 +94203,448 @@ const MTX_API = {
 };
 Object.assign(SYNQUENZER, {mtx: MTX_API});                  /* MTX: Test-API (Objekt, wird nicht umhüllt) */
 /* MTX-END */
+/* ===== KI1-BEGIN (Profi-Trennung auf der Spektral-Seite; Xander 14.11.: „Jedes Instrument muss voneinander gut trennbar sein“) =====
+   Optional, nur auf Knopfdruck: MIT-lizenziertes 4-Spur-Modell (Drums, Bass, Gesang, Rest; je Spur ein LSTM-Netz als ONNX, ≈ 17 MB),
+   feste Revision der Modell-Ablage, Laufzeit-Bibliothek in derselben festen Version wie G9A. Nichts davon beim App-Start.
+   Laden: der G9A-Lader (Worker-Code g9AsrWorkerMain, unverändert) – in Stücken, Größe + SHA-256 geprüft, Cache `synq-ki1-v1`;
+   liegen die Laufzeit-Dateien schon im G9A-Cache, werden sie lokal übernommen (kein zweiter Download). Fehlt nach Wochen etwas
+   (Safari räumt), zeigt der Eintrag „weiter laden (noch x MB)“ und lädt nur den Rest.
+   Rechnen: eigener Modul-Worker (WebGPU nur mit shader-f16, sonst WASM, ein Faden, ohne Isolation). Der SPK1-Kern-Worker und der
+   KI1-Worker sprechen direkt über einen MessagePort; der Haupt-Faden sieht nur den Fortschritt.
+   Stücke: 256 Base-Frames (= 2 Masken-Streifen) + 32 Frames Kontext je Seite; jedes fertige Stück liegt sofort in IDB
+   (spk:<id>:q<c>, Anteile Drums/Bass/Gesang als Uint8) → nach Neuladen/Abbrechen geht es beim nächsten Stück weiter.
+   Wiener-artig über alle 4 Spuren: Anteil = Leistung der Spur / Σ Leistung (beide Kanäle), ohne Glätten (gemessen besser).
+   Abschluss wie Zerlegen: Ebenen l.z = drums | bass | gesang (ein zweiter Lauf füllt sie neu), eigene Ebenen bleiben unberührt
+   (verteilt wird nur der freie Teil), Rest = 255 − Σ → Summe = Original; ein Undo-Schritt „Profi-Trennung“.
+   Andere Abtastrate als 44,1 kHz (iPhone meist 48 kHz): Beträge im Frequenzraster auf das Modell-Raster umgerechnet und zurück. */
+const KI1 = {
+  CACHE: 'synq-ki1-v1',
+  MODEL: 'edgetools/umx-hq', REV: '2cc0d6a71963504e3ef32156ea900dd54a1a9502',
+  IDLE: 120000,                     // Worker nach 2 min ohne Arbeit beenden (4 Sitzungen ≈ 150–250 MB)
+  F: null, w: null, q: new Map(), qid: 0, ready: null, loadP: null, how: '', st: {state: 'none'}, net: [], diag: [], idleT: 0, busy: false, scan: null
+};
+// [Datei, Bytes, SHA-256, Wege] – w = WASM, g = WebGPU; Laufzeit-Teile aus G9A.FILES (dieselbe Version, nur gelesen).
+// G9A + Lader stehen im Paket-Text sq-g9-src → erst bei Bedarf auswerten (g9Load), nie beim App-Start.
+function ki1Files() {
+  if (KI1.F) return KI1.F;
+  if (!(typeof g9Load === 'function' && g9Load() && typeof G9A === 'object' && typeof g9AsrWorkerMain === 'function')) throw new Error('Profi-Trennung nicht verfügbar');
+  return (KI1.F = [
+  ['ort.wasm.min.mjs', 50195, '1617c813ada08592706d29a9963ab6258864dce4299bd402d2196bd648b63bfe', 'w'],
+  ['ort.webgpu.min.mjs', 66543, '5dd65363be87d182ce0617665489cab4b78359cea9f04d813b2a423c9be651a1', 'g'],
+  ...G9A.FILES.filter(x => x.f.startsWith('ort-')).map(x => [x.f, x.n, x.h, x.ways]),
+  ['drums.onnx', 17820856, '18152f9240356a039ff0bba6b3cbaa810a50a895ddf31891bb70ef32bbf8431b', 'wg'],
+  ['bass.onnx', 17820856, '76e6156584763b401e44a3fb7fee41ec0c70760acbb519cf2c0928f6f06e4176', 'wg'],
+  ['vocals.onnx', 17820856, '3d05709ff7197bbd4a33aee759e4e82002acb491f41c94770227ab57507b6ccb', 'wg'],
+  ['other.onnx', 17820856, 'f8b110f3db82d04ed2f106b86175dbb41134dc606f9f98b24933554da6c0bab6', 'wg']
+].map(([f, n, h, ways]) => ({f, n, h, ways, u: f.startsWith('ort') ? G9A.ORT + f : G9A.HF + KI1.MODEL + '/resolve/' + KI1.REV + '/' + f})));
+}
+const ki1Set = how => ki1Files().filter(x => x.ways.includes(how === 'webgpu' ? 'g' : 'w'));
+const ki1MB = n => Math.max(1, Math.round(n / 1e6));
+
+// Worker-Teil (hängt hinter g9AsrWorkerMain im selben Modul-Worker): load = G9A-Lader; kinit/kport/kfree hier; Stücke kommen über den Port
+function ki1WorkerMain() {
+  const g9 = self.onmessage, ARTS = ['drums', 'bass', 'vocals', 'other'];
+  let ort = null, ORTW = '', HOW = '', SS = null, CA = null, PORT = null;
+  async function blob(u, type) { const r = await CA.match(u); if (!r) throw new Error('fehlt im Cache: ' + String(u).split('/').pop()); return URL.createObjectURL(new Blob([await r.arrayBuffer()], {type})); }
+  async function free() { if (SS) for (const s of SS) { try { await s.release(); } catch (e) {} } SS = null; HOW = ''; return true; }
+  async function init(m) {
+    if (SS && HOW === m.how) return {how: HOW};
+    CA = CA || await caches.open(m.cache);
+    const g = m.how === 'webgpu', sfx = g ? '.asyncify' : '', lib = g ? 'ort.webgpu.min.mjs' : 'ort.wasm.min.mjs';
+    if (!ort || ORTW !== lib) { ort = await import(await blob(m.u[lib], 'text/javascript')); ORTW = lib; }
+    const ow = ort.env.wasm;
+    ow.wasmPaths = {mjs: await blob(m.u['ort-wasm-simd-threaded' + sfx + '.mjs'], 'text/javascript'), wasm: await blob(m.u['ort-wasm-simd-threaded' + sfx + '.wasm'], 'application/wasm')};
+    ow.numThreads = 1; ow.proxy = false;
+    await free(); const ss = [];
+    for (const a of ARTS) {
+      const r = await CA.match(m.u[a + '.onnx']); if (!r) throw new Error('fehlt im Cache: ' + a);
+      ss.push(await ort.InferenceSession.create(new Uint8Array(await r.arrayBuffer()), {executionProviders: [g ? 'webgpu' : 'wasm'], graphOptimizationLevel: 'all'}));
+    }
+    SS = ss; HOW = m.how;
+    return {how: HOW};
+  }
+  // ein Stück: mag [2, NB, L] (Bins außen, Frames innen) → Anteile Drums/Bass/Gesang der Kern-Frames c0…c1−1 als Uint8 [3, c1−c0, NB]; Rest = 255 − Σ
+  async function run(m) {
+    if (!SS) throw new Error('Profi-Trennung nicht bereit');
+    const NB = m.NB, L = m.L, Lc = m.c1 - m.c0, P = new Float32Array(4 * Lc * NB), t0 = performance.now();
+    for (let j = 0; j < 4; j++) {
+      const s = SS[j], o = await s.run({[s.inputNames[0]]: new ort.Tensor('float32', m.mag, [1, 2, NB, L])}), T = o[s.outputNames[0]], y = T.data;
+      for (let c = 0; c < 2; c++) for (let k = 0; k < NB; k++) { const r = (c * NB + k) * L + m.c0, o2 = j * Lc * NB + k; for (let f = 0; f < Lc; f++) { const e = y[r + f]; P[o2 + f * NB] += e * e; } }
+      try { if (T.dispose) T.dispose(); } catch (e) {}
+    }
+    const q = new Uint8Array(3 * Lc * NB), Z = Lc * NB;
+    for (let i = 0; i < Z; i++) {
+      const t = P[i] + P[Z + i] + P[2 * Z + i] + P[3 * Z + i] + 1e-20;
+      const a = Math.round(255 * P[i] / t), b = Math.min(255 - a, Math.round(255 * P[Z + i] / t)), v = Math.min(255 - a - b, Math.round(255 * P[2 * Z + i] / t));
+      q[i] = a; q[Z + i] = b; q[2 * Z + i] = v;
+    }
+    return {q, ms: Math.round(performance.now() - t0)};
+  }
+  self.onmessage = e => {
+    const m = e.data;
+    if (m.op === 'load') return g9(e);
+    if (m.op === 'kport') {
+      if (PORT) { try { PORT.close(); } catch (x) {} }
+      PORT = m.port;
+      PORT.onmessage = async ev => { const x = ev.data; try { const r = await run(x); PORT.postMessage({id: x.id, q: r.q, ms: r.ms, how: HOW}, [r.q.buffer]); } catch (err) { PORT.postMessage({id: x.id, err: String(err && err.message || err)}); } };
+      postMessage({op: 'ok', id: m.id, r: true}); return;
+    }
+    (async () => {
+      try { const r = m.op === 'kinit' ? await init(m) : m.op === 'kfree' ? await free() : null; postMessage({op: 'ok', id: m.id, r}); }
+      catch (err) { postMessage({op: 'err', id: m.id, err: String(err && err.message || err)}); }
+    })();
+  };
+}
+function ki1Worker() {
+  if (KI1.w) return KI1.w;
+  ki1Files();
+  const u = URL.createObjectURL(new Blob(['(' + g9AsrWorkerMain.toString() + ')();(' + ki1WorkerMain.toString() + ')();'], {type: 'text/javascript'}));
+  const w = KI1.w = new Worker(u, {type: 'module', name: 'ki1'}); setTimeout(() => { try { URL.revokeObjectURL(u); } catch (e) {} }, 30000);
+  KI1.ready = null;
+  w.onmessage = e => {
+    const m = e.data;
+    if (m.op === 'net') { KI1.net.push({url: m.u, method: m.m, bytes: m.n}); return; }
+    const q = KI1.q.get(m.id); if (!q) return;
+    if (m.op === 'prog') { if (q.prog) q.prog(m.got, m.total); return; }
+    KI1.q.delete(m.id); if (m.op === 'err') q.no(new Error(m.err)); else q.ok(m.r);
+  };
+  w.onerror = e => { try { e.preventDefault(); } catch (x) {} ki1Kill('Worker-Fehler: ' + (e && e.message || '')); };
+  return w;
+}
+function ki1Call(op, o, prog, tr) {
+  const w = ki1Worker(); clearTimeout(KI1.idleT);
+  return new Promise((ok, no) => {
+    const id = ++KI1.qid; KI1.q.set(id, {ok, no, prog});
+    try { w.postMessage(Object.assign({op, id}, o), tr || []); } catch (e) { KI1.q.delete(id); no(e); }
+  }).finally(ki1Idle);
+}
+function ki1Idle() { clearTimeout(KI1.idleT); KI1.idleT = setTimeout(() => { if (!KI1.busy && !KI1.q.size) ki1Kill('ruht'); }, KI1.IDLE); }
+// Worker beenden (Abbrechen, ✕, Ruhe): sofort; laufende Aufrufe enden mit Fehler; die fertigen Stücke bleiben in IDB
+function ki1Kill(why) {
+  const w = KI1.w; if (!w) return false;
+  KI1.w = null; KI1.ready = null; clearTimeout(KI1.idleT);
+  try { w.terminate(); } catch (e) {}
+  for (const q of KI1.q.values()) q.no(new Error(why || 'gestoppt')); KI1.q.clear();
+  if (KI1.st.state !== 'none') KI1.st = {state: KI1.scan && KI1.scan.full[KI1.how || 'wasm'] ? 'cached' : 'none'};
+  return true;
+}
+// Weg wählen (ohne Netz): ?ki1how=…, gemerkter Fehlschlag → WASM; sonst WebGPU nur mit Adapter + shader-f16; vollständiger anderer Satz im Cache gewinnt
+async function ki1How() {
+  if (KI1.how) return KI1.how;
+  let how = 'wasm';
+  try {
+    const want = new URLSearchParams(location.search).get('ki1how');
+    if (want === 'wasm' || want === 'webgpu') how = want;
+    else if (localStorage.getItem('synq-ki1-how') !== 'wasm' && navigator.gpu) {
+      const ad = await navigator.gpu.requestAdapter();
+      if (ad && ad.features && ad.features.has('shader-f16')) how = 'webgpu';
+    }
+  } catch (e) {}
+  const st = await ki1Scan(), oth = how === 'webgpu' ? 'wasm' : 'webgpu';
+  if (!st.full[how] && st.full[oth]) how = oth;
+  return (KI1.how = how);
+}
+// Cache prüfen (nur lesen, kein Netz, legt keinen Cache an)
+async function ki1Scan() {
+  const r = {bytes: 0, have: new Set(), full: {wasm: false, webgpu: false}, rest: {wasm: 0, webgpu: 0}};
+  try {
+    if (await caches.has(KI1.CACHE)) {
+      const ca = await caches.open(KI1.CACHE), by = new Map(ki1Files().map(x => [x.u, x]));
+      for (const k of await ca.keys()) { const x = by.get(k.url); if (x) { r.have.add(x.u); r.bytes += x.n; } }
+    }
+  } catch (e) {}
+  for (const how of ['wasm', 'webgpu']) { const s = ki1Set(how); r.full[how] = s.every(x => r.have.has(x.u)); r.rest[how] = s.reduce((a, x) => a + (r.have.has(x.u) ? 0 : x.n), 0); }
+  KI1.scan = r;
+  try { if (r.full.wasm || r.full.webgpu) localStorage.setItem('synq-ki1', '1'); else localStorage.removeItem('synq-ki1'); } catch (e) {}
+  if (KI1.st.state === 'none' || KI1.st.state === 'cached') KI1.st = {state: r.full[KI1.how || 'wasm'] ? 'cached' : 'none'};
+  return r;
+}
+// Laufzeit-Dateien, die die Spracherkennung schon geladen hat, lokal übernehmen (gleiche URL, gleiche Prüfsumme)
+async function ki1FromG9(files, st) {
+  try {
+    if (!(await caches.has(G9A.CACHE))) return 0;
+    const a = await caches.open(G9A.CACHE), b = await caches.open(KI1.CACHE); let n = 0;
+    for (const x of files) if (x.f.startsWith('ort-') && !st.have.has(x.u)) { const r = await a.match(x.u); if (r) { await b.put(x.u, r); n++; } }
+    return n;
+  } catch (e) { return 0; }
+}
+// laden (falls nötig) und die 4 Sitzungen starten; prog(was, a, b)
+async function ki1Ensure(o) {
+  o = o || {};
+  if (KI1.ready && KI1.w) return KI1.ready;
+  if (KI1.loadP) return KI1.loadP;
+  const p = KI1.loadP = (async () => {
+    const how = await ki1How(), files = ki1Set(how);
+    let st = await ki1Scan();
+    if (!st.full[how] && await ki1FromG9(files, st)) st = await ki1Scan();
+    if (!st.full[how]) {
+      if (o.noLoad) throw new Error('Profi-Trennung nicht auf dem Gerät');
+      const total = files.reduce((s, x) => s + x.n, 0);
+      KI1.st = {state: 'loading', got: 0, total};
+      try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
+      if (o.prog) o.prog('laden', 0, total);
+      await ki1Call('load', {cache: KI1.CACHE, files: files.map(x => ({u: x.u, n: x.n, h: x.h, f: x.f}))}, (got, tot) => { KI1.st = {state: 'loading', got, total: tot}; if (o.prog) o.prog('laden', got, tot); });
+      st = await ki1Scan();
+    }
+    KI1.st = {state: 'starting'}; if (o.prog) o.prog('start');
+    const u = {}; for (const x of files) u[x.f] = x.u;
+    const t0 = performance.now();
+    try { await ki1Call('kinit', {cache: KI1.CACHE, how, u}); }
+    catch (e) {
+      if (how !== 'webgpu' || !KI1.w) throw e;                       // gestoppt/beendet: nicht umschalten
+      KI1.loadP = null; await ki1ToWasm(e);
+      return ki1Ensure(o);
+    }
+    KI1.st = {state: 'ready', how, initMs: Math.round(performance.now() - t0)};
+    return true;
+  })();
+  KI1.ready = null;
+  try { await p; KI1.ready = p; return true; }
+  catch (e) { if (KI1.st.state === 'loading' || KI1.st.state === 'starting') KI1.st = {state: 'none'}; ki1Scan().catch(() => {}); throw e; }
+  finally { if (KI1.loadP === p) KI1.loadP = null; }
+}
+// WebGPU klappt auf diesem Gerät nicht → WASM (gemerkt), die nur für WebGPU geladenen Dateien wieder freigeben
+async function ki1ToWasm(e) {
+  try { localStorage.setItem('synq-ki1-how', 'wasm'); } catch (x) {}
+  KI1.diag.push('webgpu: ' + String(e && e.message || e).slice(0, 120));
+  ki1Kill('Weg'); KI1.how = 'wasm'; KI1.ready = null;
+  try { const ca = await caches.open(KI1.CACHE); await Promise.all(ki1Files().filter(x => x.ways === 'g').map(x => ca.delete(x.u))); } catch (x) {}
+}
+async function ki1Remove() {
+  ki1Kill('entfernt');
+  try { await caches.delete(KI1.CACHE); } catch (e) {}
+  try { localStorage.removeItem('synq-ki1'); } catch (e) {}
+  KI1.st = {state: 'none'}; return ki1Scan();
+}
+// Profi-Trennung des offenen Stücks: laden/starten → Port Kern ↔ KI1 → Kern-Auftrag „profi“ (Stücke, IDB, Ebenen, ein ↶)
+async function ki1Profi(o) {
+  o = o || {};
+  const doc = SPK1.doc; if (!doc) throw new Error('keine Analyse offen');
+  if (!spk1Worker()) throw new Error('braucht Hintergrund-Rechnung');
+  KI1.busy = true; clearTimeout(KI1.idleT);
+  try {
+    await ki1Ensure({prog: o.prog});
+    const ch = new MessageChannel();
+    await spk1Call('kiport', {port: ch.port1}, [ch.port1]);
+    await ki1Call('kport', {port: ch.port2}, null, [ch.port2]);
+    const r = await spk1Call('profi', {doc, how: KI1.how, rev: KI1.REV, neu: !!o.neu}, null, {prog: (p, st) => { if (o.prog) o.prog('rechnen', p, st); }});
+    KI1.diag.push(KI1.how + ' · ' + r.n + ' Stücke · Modell ' + r.msModell + ' ms · gesamt ' + r.ms + ' ms'); if (KI1.diag.length > 20) KI1.diag.shift();
+    SPK1.last = r; KI1.last = r;
+    return r;
+  } catch (e) {
+    if (KI1.how === 'webgpu' && KI1.w && !/abgebrochen|gestoppt|Rechnung läuft/.test(String(e && e.message))) { KI1.busy = false; await ki1ToWasm(e); return ki1Profi(o); }   // WebGPU scheitert erst beim Rechnen → einmal WASM
+    throw e;
+  } finally { KI1.busy = false; ki1Idle(); }
+}
+// Anhalten (■ Abbrechen, ✕): Kern hört nach dem laufenden Stück auf (fertige Stücke bleiben), Worker sofort weg
+function ki1Stop() {
+  if (SPK1.doc) spk1Call('zstop', {doc: SPK1.doc}).catch(() => {});
+  ki1Kill('gestoppt');
+  return true;
+}
+// Zustand für Klappfenster/Test: Cache (ohne Netz) + Zwischenstand der offenen Analyse
+async function ki1Stand() {
+  const st = await ki1Scan(), how = KI1.how || 'wasm';
+  let job = null; try { if (SPK1.doc) job = (await spk1Call('pstand', {doc: SPK1.doc})).stand; } catch (e) {}
+  return {state: KI1.st.state, how, full: st.full[how], rest: st.rest[how], bytes: st.bytes, total: ki1Set(how).reduce((s, x) => s + x.n, 0), job};
+}
+
+/* Kern-Teil: läuft im SPK1-Kern-Worker (Text wird mit spk1DspMake in den Worker gehängt); X = Innenteile des Kerns */
+function ki1KernMake(X) {
+  const CORE = 256, CTX = 32, SRM = 44100;
+  let PORT = null, pid = 0; const pend = new Map();
+  function setPort(p) {
+    if (PORT) { try { PORT.close(); } catch (e) {} }
+    for (const r of pend.values()) r.no(new Error('neu verbunden')); pend.clear();
+    PORT = p;
+    PORT.onmessage = e => { const r = pend.get(e.data.id); if (r) { if (e.data.err) r.no(new Error(e.data.err)); else r.ok(e.data); } };
+  }
+  // ein Stück an den KI1-Worker; endet bei zstop (≤ 0,1 s) oder wenn der Worker nicht antwortet
+  function ask(d, msg, tr) {
+    return new Promise((ok, no) => {
+      if (!PORT) { no(new Error('Profi-Trennung nicht bereit')); return; }
+      const id = ++pid, t1 = Date.now(); let t = 0;
+      const end = f => v => { clearInterval(t); pend.delete(id); f(v); };
+      pend.set(id, {ok: end(ok), no: end(no)});
+      t = setInterval(() => { const r = pend.get(id); if (!r) return; if (d.zStop) r.no(new Error('abgebrochen')); else if (Date.now() - t1 > 300000) r.no(new Error('Profi-Trennung antwortet nicht')); }, 100);
+      PORT.postMessage(Object.assign({id}, msg), tr);
+    });
+  }
+  // Beträge je Kanal [2, NB, L] der Frames m0…m0+L−1 (Mitte (m − 1)·hop wie Zerlegen), beide Kanäle in einer komplexen FFT
+  function mags(d, m0, L) {
+    const N = d.meta.base.N, hop = d.meta.base.hop, NB = N / 2 + 1, w = X.win(N), re = new Float64Array(N), im = new Float64Array(N), a = new Float64Array(NB), b = new Float64Array(NB);
+    const xL = d.pcm[0], xR = d.pcm[1] || d.pcm[0], n = xL.length, g = 1 / 32768, out = new Float32Array(2 * NB * L);
+    for (let i = 0; i < L; i++) {
+      const s0 = (m0 + i - 1) * hop - N / 2;
+      for (let j = 0; j < N; j++) { const p = s0 + j; if (p >= 0 && p < n) { re[j] = xL[p] * g * w[j]; im[j] = xR[p] * g * w[j]; } else re[j] = im[j] = 0; }
+      X.V.fft(re, im); X.magPair(re, im, N, a, b);
+      for (let k = 0; k < NB; k++) { out[k * L + i] = a[k]; out[(NB + k) * L + i] = b[k]; }
+    }
+    return out;
+  }
+  // Abtastrate ≠ 44,1 kHz: Modell-Bin km liegt bei Doc-Bin km·44100/sr (Eingang); Doc-Bin k bei Modell-Bin k·sr/44100 (Anteile zurück)
+  function remapIn(mag, NB, L, sr) {
+    const o = new Float32Array(mag.length), r = SRM / sr;
+    for (let c = 0; c < 2; c++) for (let km = 0; km < NB; km++) {
+      const p = km * r, k = Math.floor(p), u = p - k; if (k >= NB - 1) continue;
+      const A = (c * NB + k) * L, B = A + L, D = (c * NB + km) * L;
+      for (let f = 0; f < L; f++) o[D + f] = mag[A + f] * (1 - u) + mag[B + f] * u;
+    }
+    return o;
+  }
+  function remapOut(q, NB, Lc, sr) {
+    const o = new Uint8Array(q.length), r = sr / SRM, Z = Lc * NB;
+    for (let k = 0; k < NB; k++) {
+      const p = k * r, km = Math.floor(p), u = p - km; if (km >= NB - 1) continue;   // über der Modell-Grenze: Rest
+      for (let f = 0; f < Lc; f++) {
+        let s = 0;
+        for (let j = 0; j < 3; j++) { const A = j * Z + f * NB + km, v = Math.min(255 - s, Math.round(q[A] * (1 - u) + q[A + 1] * u)); o[j * Z + f * NB + k] = v; s += v; }
+      }
+    }
+    return o;
+  }
+  // Ebenen schreiben (gleiche Logik wie Zerlegen): eigene Ebenen bleiben, verteilt wird nur der freie Teil; Rest = 255 − Σ; ein Undo-Schritt
+  async function write(d, pre) {
+    const F = X.Fn(d), NS = X.NSn(d), TR = X.TRn(d), NB = d.meta.base.N / 2 + 1, BT = X.BT;
+    X.uBegin(d, 'Profi-Trennung');
+    const lids = {};
+    for (const art of ['drums', 'bass', 'gesang']) { let l = d.meta.layers.find(x => x.z === art); if (!l) { l = X.newLayer(d, {art}); l.z = art; } lids[art] = l.id; }
+    const zl = [lids.drums, lids.bass, lids.gesang], own = d.meta.layers.filter(l => !zl.includes(l.id)).map(l => l.id);
+    let qc = -1, Q = null, Z = 0;
+    for (let s = 0; s < NS; s++) {
+      if (d.zStop) throw new Error('abgebrochen');
+      const mA = s * BT, mB = Math.min(F - 1, mA + BT - 1), c = Math.floor(mA / CORE);
+      if (c !== qc) { const b = await X.get('audio', pre + c); if (!b) throw new Error('Stück ' + (c + 1) + ' fehlt'); Q = new Uint8Array(b); qc = c; Z = Q.length / 3; }
+      for (const id of zl) X.uTouch(d, id, s);
+      for (let tr = 0; tr < TR; tr++) {
+        const T = zl.map(id => X.tileArr(X.stripe(d, id, s, true), tr)), OW = own.map(id => { const st = X.stripe(d, id, s, false); return st && st.h[tr] ? (st.h[tr] === 255 ? 255 : st.t[tr]) : 0; });
+        for (const t of T) t.fill(0);
+        for (let m = mA; m <= mB; m++) {
+          const f = m - c * CORE, cc = (m & 127) * BT;
+          for (let b = 0; b < BT; b++) {
+            const k = tr * BT + b; if (k >= NB) break;
+            let used = 0; for (const t of OW) used += t === 255 ? 255 : t ? t[cc + b] : 0;
+            const free = Math.max(0, 255 - used); if (!free) continue;
+            const o = f * NB + k, vd = Math.round(free * Q[o] / 255), vb = Math.min(free - vd, Math.round(free * Q[Z + o] / 255)), vv = Math.min(free - vd - vb, Math.round(free * Q[2 * Z + o] / 255));
+            T[0][cc + b] = vd; T[1][cc + b] = vb; T[2][cc + b] = vv;
+          }
+        }
+        for (const id of zl) X.tidy(X.stripe(d, id, s, true), tr);
+      }
+      for (const id of zl) d.dirty.add(id + '|' + s);
+      if ((s & 3) === 3) await X.tick();
+    }
+    for (const id of zl) X.verUp(d, id);
+    X.uEnd(d);
+    return lids;
+  }
+  async function profi(d, m, emit) {
+    if (d.busy) throw new Error('Rechnung läuft');
+    const F = X.Fn(d), N = d.meta.base.N, NB = N / 2 + 1, n = Math.ceil(F / CORE), sr = d.meta.sr, pre = 'spk:' + d.meta.id + ':q', t0 = Date.now();
+    if (N !== 4096 || d.meta.base.hop !== 1024) throw new Error('Raster passt nicht');
+    d.busy = 'profi'; d.zStop = false;
+    try {
+      const sig = [n, F, sr, m.rev || ''].join('/');
+      let job = d.meta.jobs.profi;
+      if (!job || job.fertig || job.sig !== sig || m.neu) {
+        for (const k of await X.keys('audio', pre)) await X.del('audio', k);
+        job = d.meta.jobs.profi = {k: 0, n, sig, core: CORE, ctx: CTX, how: m.how || '', ms: 0};
+        await X.saveMeta(d);
+      }
+      const have = new Set((await X.keys('audio', pre)).map(k => +k.slice(pre.length))), s0 = have.size;
+      let done = s0, msM = 0;
+      emit({qid: m.qid, prog: 0.95 * done / n, stufe: 'Stück ' + done + '/' + n});
+      for (let c = 0; c < n; c++) {
+        if (have.has(c)) continue;
+        if (d.zStop) throw new Error('abgebrochen');
+        const tc = Date.now(), c0 = c * CORE, c1 = Math.min(F, c0 + CORE), a = Math.max(0, c0 - CTX), b = Math.min(F, c1 + CTX), L = b - a;
+        let mag = mags(d, a, L); if (sr !== SRM) mag = remapIn(mag, NB, L, sr);
+        const r = await ask(d, {op: 'krun', NB, L, c0: c0 - a, c1: c1 - a, mag}, [mag.buffer]);
+        if (d.zStop) throw new Error('abgebrochen');
+        const q = sr !== SRM ? remapOut(r.q, NB, c1 - c0, sr) : r.q;
+        await X.put('audio', pre + c, q.buffer);                       // Zwischenstand sofort sichern
+        done++; msM += r.ms; job.k = done; job.ms += Date.now() - tc; job.how = r.how || job.how; d.metaDirty = true; X.soon(d);
+        emit({qid: m.qid, prog: 0.95 * done / n, stufe: 'Stück ' + done + '/' + n});
+        await X.tick();
+      }
+      emit({qid: m.qid, prog: 0.96, stufe: 'Ebenen'});
+      const lids = await write(d, pre);
+      for (const k of await X.keys('audio', pre)) await X.del('audio', k);
+      d.meta.jobs.profi = {fertig: true, n, ms: Date.now() - t0, how: job.how, rev: m.rev || ''}; d.metaDirty = true; X.soon(d);
+      return {lids, ms: Date.now() - t0, weiter: s0, n, msModell: msM};
+    } catch (e) { if (d.u) X.uAbort(d); throw e; }                     // Stücke bleiben in IDB → fortsetzen
+    finally { d.busy = null; d.zStop = false; }
+  }
+  async function op(d, m, emit) {
+    if (m.op === 'kiport') { setPort(m.port); return {port: true}; }
+    if (!d) throw new Error('Analyse fehlt');
+    if (m.op === 'pstand') { const j = d.meta.jobs.profi || null, have = (await X.keys('audio', 'spk:' + d.meta.id + ':q')).length; return {stand: j ? Object.assign({}, j, {have, n: j.n || Math.ceil(X.Fn(d) / CORE)}) : null}; }
+    if (m.op === 'profi') return profi(d, m, emit);
+    throw new Error('op ' + m.op);
+  }
+  return {op};
+}
+
+/* Bedienung: schmaler Teil „▾“ am Knopf Zerlegen (Split-Knopf) → Klappfenster mit Zerlegen / Profi-Trennung; Fortschritt in der Statuszeile */
+function ki1UiAdd(U) {
+  const z = U.b_zerl; if (!z || U.b_ki1) return;
+  const wrap = el('div', 'ki1-split'), dd = U.b_ki1 = el('button', 'mbtn rb spk1-ck ki1-dd', '▾');
+  dd.setAttribute('aria-label', 'Zerlegen oder Profi-Trennung wählen');
+  z.replaceWith(wrap); wrap.append(z, dd);
+  on(dd, 'click', () => { if (U.dd && U.ddA === dd) { spk1Dd(U, null); return; } ki1Dd(U, dd); });
+  if (!document.getElementById('ki1Css')) { const s = document.createElement('style'); s.id = 'ki1Css'; s.textContent = '.ki1-split{display:flex;gap:2px;min-width:0}.ki1-split>.mbtn:first-child{flex:1 1 auto;min-width:0}.spk1-ac .ki1-split>.ki1-dd{flex:0 0 44px;width:44px;padding:0}.spk1-dd .ki1-tx{margin:0;font-size:12px;line-height:1.35;color:var(--text-dim);max-width:300px}'; document.head.appendChild(s); }
+}
+function ki1Dd(U, b) {
+  spk1Dd(U, b, dd => {
+    dd.appendChild(el('h5', '', 'Ganzes Stück trennen'));
+    const z = el('button', 'mbtn rb spk1-ck', 'Zerlegen (schnell, ohne Download)'), p = el('button', 'mbtn rb spk1-ck', 'Profi-Trennung …'), tx = el('p', 'ki1-tx', 'Trennt Drums, Bass, Gesang und Rest genauer. Lädt einmal aus dem Netz, danach offline. Am besten mit Ladekabel.');
+    const x = el('button', 'mbtn rb spk1-ck', 'Profi-Trennung vom Gerät löschen'); x.style.display = 'none';
+    z.disabled = p.disabled = !!U.busy;
+    on(z, 'click', () => { spk1Dd(U, null); spk1Zerl(U); });
+    on(p, 'click', () => { spk1Dd(U, null); ki1Start(U); });
+    on(x, 'click', () => { spk1Dd(U, null); ki1Remove().then(() => spk1Stat(U, 'Profi-Trennung vom Gerät gelöscht'), () => {}); });
+    dd.append(z, p, tx, x);
+    ki1Stand().then(s => {
+      if (!p.isConnected) return;
+      const j = s.job && !s.job.fertig && s.job.have > 0 ? s.job : null;
+      p.textContent = j ? 'Profi-Trennung fortsetzen (' + Math.round(100 * j.have / Math.max(1, j.n)) + ' %)'
+        : s.full ? 'Profi-Trennung (genauer, ≈ 1 min)'
+        : s.rest < s.total ? 'Profi-Trennung weiter laden (noch ' + ki1MB(s.rest) + ' MB)'
+        : 'Profi-Trennung laden (~' + ki1MB(s.total) + ' MB, einmalig)';
+      if (s.bytes > 0 && !U.busy) { x.textContent = 'Profi-Trennung vom Gerät löschen (' + ki1MB(s.bytes) + ' MB)'; x.style.display = ''; }
+    }, () => {});
+  });
+}
+async function ki1Start(U) {
+  if (U.busy || !SPK1.doc) return;
+  U.busy = 'profi'; U.vf = null; spk1Dd(U, null); spk1BtnState(U); spk1Stat(U, 'Profi-Trennung …');
+  try {
+    const r = await ki1Profi({prog: (was, a, b) => {
+      if (U.busy !== 'profi') return;
+      if (was === 'laden') spk1Stat(U, 'Profi-Trennung lädt … ' + ki1MB(a) + '/' + ki1MB(b) + ' MB · ' + Math.round(100 * a / Math.max(1, b)) + ' %');
+      else if (was === 'start') spk1Stat(U, 'Profi-Trennung startet …');
+      else spk1Stat(U, 'Profi-Trennung · ' + (b || 'Rechne') + ' · ' + Math.round(a * 100) + ' %');
+    }});
+    U.busy = null; spk1Got(U, r); spk1TintLoad(U);
+    spk1Stat(U, 'Profi-getrennt: Drums, Bass, Gesang, Rest · ' + (r.ms / 1000).toFixed(1).replace('.', ',') + ' s · ↶ macht es rückgängig');
+  } catch (e) {
+    const ab = /abgebrochen|gestoppt/.test(String(e && e.message));
+    if (!ab) logErr(e);
+    spk1Stat(U, ab ? 'Profi-Trennung angehalten – nichts geändert · später fortsetzen' : 'Profi-Trennung: ' + String(e && e.message || e));
+  } finally { U.busy = null; spk1BtnState(U); }
+}
+// ✕ / Seite zu: eine laufende Profi-Trennung anhalten (Stücke bleiben); sonst nichts
+function ki1Close() { if (KI1.busy || KI1.loadP) ki1Stop(); }
+/* Test-Zugang (nur Funktionen; nichts läuft von selbst) */
+const KI1_API = {
+  state: () => ({st: Object.assign({}, KI1.st), how: KI1.how, worker: !!KI1.w, busy: KI1.busy, net: KI1.net.slice(), diag: KI1.diag.slice(), files: (KI1.F || []).map(x => ({f: x.f, n: x.n, ways: x.ways}))}),
+  scan: () => ki1Scan().then(r => ({bytes: r.bytes, full: r.full, rest: r.rest, have: r.have.size})),
+  stand: () => ki1Stand(), ensure: o => ki1Ensure(o), profi: o => ki1Profi(o), stop: () => ki1Stop(), kill: w => ki1Kill(w), remove: () => ki1Remove(),
+  start: () => SPK1.ui && ki1Start(SPK1.ui), dd: () => SPK1.ui && SPK1.ui.b_ki1 && ki1Dd(SPK1.ui, SPK1.ui.b_ki1)
+};
+SYNQUENZER.ki1 = KI1_API;
+try { window.__ki1 = KI1_API; } catch (e) {}
+/* KI1-END */
 /* ===== ORI-BEGIN (Paket ORI, Xander 07.11. (13) FL-C: „ich verliere so ein bisschen den Überblick … weiß gar nicht so richtig, wo ich
    bin … viele Menüs überfordern … ergonomischer, übersichtlicher … vielleicht ein Raumschiff-Look, mehr geführt, weil ein paar Lampen an
    sind oder kodierte Sachen, die man wiedererkennt … Fülle an Optionen, die ich alle brauche, aber es fehlt der Workflow … Vocal-Bearbeitung
@@ -97017,6 +97459,7 @@ function spk1DspMake(V) {
     const d = mkDoc(meta); d.pcm = o.pcm; d.mid = new Float32Array(1); await saveMeta(d);
     return meta.id;
   }
+  const KI1K = typeof ki1KernMake === 'function' ? ki1KernMake({V, BT, win, magPair, Fn, NSn, TRn, uBegin, uTouch, uEnd, uAbort, stripe, tileArr, tidy, newLayer, verUp, tick, soon, get, put, del, keys, saveMeta}) : null;   // KI1: Profi-Trennung (Kern-Teil)
   /* ---- Nachrichten ---- */
   async function op(m, emit) {
     const d = m.doc ? await open(m.doc) : null;
@@ -97045,6 +97488,7 @@ function spk1DspMake(V) {
       case 'zerlegen': return Object.assign(await zerlegen(d, m, emit, m.qid), info(d));
       case 'verfeinern': return Object.assign(await verfeinern(d, m, emit, m.qid), info(d));
       case 'zstop': if (d) d.zStop = true; return true;
+      case 'kiport': case 'pstand': case 'profi': { if (!KI1K) throw new Error('Profi-Trennung fehlt'); const r = await KI1K.op(d, m, emit); return m.op === 'profi' ? Object.assign(r, info(d)) : r; }   // KI1
       case 'layer': {
         const step = ['neu', 'weg', 'name', 'farbe'].includes(m.was);
         if (step && d.busy) throw new Error('Rechnung läuft');
@@ -97099,7 +97543,7 @@ function spk1DspMake(V) {
 function spk1Worker() {
   if (SPK1.w !== null) return SPK1.w;
   try {
-    const src = vsDspMake.toString() + ';' + spk1DspMake.toString() + ';const K = spk1DspMake(vsDspMake());onmessage = e => K.on(e.data, (m, tr) => postMessage(m, tr || []));';
+    const src = vsDspMake.toString() + ';' + spk1DspMake.toString() + ';' + (typeof ki1KernMake === 'function' ? ki1KernMake.toString() + ';' : '') /* KI1 */ + 'const K = spk1DspMake(vsDspMake());onmessage = e => K.on(e.data, (m, tr) => postMessage(m, tr || []));';
     const u = URL.createObjectURL(new Blob([src], {type: 'application/javascript'}));
     const w = new Worker(u); setTimeout(() => { try { URL.revokeObjectURL(u); } catch (e) {} }, 30000);
     w.onmessage = e => spk1Reply(e.data);
@@ -97351,6 +97795,7 @@ function spk1Build() {
   const A = (a, t, lab) => { const b = el('button', 'mbtn rb', t); b.dataset.a = a; if (lab) b.setAttribute('aria-label', lab); ac.appendChild(b); U['b_' + a] = b; return b; };
   A('play', '▶ Abspielen', 'Abspielen ab der Position'); A('psel', '▶ Auswahl', 'Nur die Auswahl hören'); A('into', 'In Ebene ▾', 'Auswahl in eine Ebene verschieben oder kopieren');
   A('drop', 'Verwerfen', 'Auswahl verwerfen'); A('zerl', 'Zerlegen', 'Ganzes Stück in Ebenen zerlegen'); A('verf', 'Verfeinern …', 'Auswahl genauer trennen');
+  if (typeof ki1UiAdd === 'function') ki1UiAdd(U);   // KI1: „▾“ am Knopf Zerlegen (Profi-Trennung)
   sh.append(hd, tl, co, ru, ky, mn, op, st, ac, ly, sp);
   document.body.appendChild(sh);
   onTap(sh, (b, e) => spk1Tap(U, b, e), 'button:not(.spk1-ck)');   // .spk1-ck = Knöpfe mit eigenem click (Klappfenster, Zwei-Schritt): kein Geister-Klick-Schutz davor
@@ -97701,7 +98146,7 @@ function spk1BtnState(U) {
   const has = U.sel.length > 0, pl = !!SPK1.pl;
   U.b_play.textContent = pl && !U.playSel ? '■ Stopp' : '▶ Abspielen'; U.b_psel.textContent = pl && U.playSel ? '■ Stopp' : '▶ Auswahl';
   U.b_psel.disabled = !has && !(pl && U.playSel); U.b_into.disabled = !has || !!U.busy; U.b_drop.disabled = !has;
-  U.b_zerl.textContent = U.busy === 'zerlegen' ? '■ Abbrechen' : 'Zerlegen'; U.b_zerl.disabled = U.busy === 'verfeinern'; U.b_verf.disabled = !has || !!U.busy;
+  U.b_zerl.textContent = U.busy === 'zerlegen' || U.busy === 'profi' /* KI1 */ ? '■ Abbrechen' : 'Zerlegen'; U.b_zerl.disabled = U.busy === 'verfeinern'; U.b_verf.disabled = !has || !!U.busy;
   if (U.busy) U.bU.disabled = U.bR.disabled = true; else if (SPK1.last) spk1UndoBtns(U, SPK1.last);
   U.bMin.classList.toggle('on', !!U.opt.minus); U.bMin.setAttribute('aria-pressed', String(!!U.opt.minus));
 }
@@ -97830,6 +98275,7 @@ function spk1Tap(U, b) {
 /* ---- Zerlegen / Verfeinern (Schritt 4): Rechnung im Worker, Fortschritt in der Statuszeile, Abbrechen = nichts geändert ---- */
 async function spk1Zerl(U) {
   if (U.busy === 'zerlegen') { spk1Call('zstop', {doc: SPK1.doc}).catch(() => {}); spk1Stat(U, 'Breche ab …'); return; }
+  if (U.busy === 'profi') { ki1Stop(); spk1Stat(U, 'Halte an …'); return; }   // KI1: ■ Abbrechen während der Profi-Trennung
   if (U.busy) return;
   U.busy = 'zerlegen'; U.vf = null; spk1Dd(U, null); spk1BtnState(U); spk1Stat(U, 'Zerlegen …');
   try {
@@ -97985,6 +98431,7 @@ async function spk1Open(o) {
 }
 function spk1Close() {
   const U = SPK1.ui; if (!SPK1.open || !U) return;
+  if (typeof ki1Close === 'function') ki1Close();   // KI1: laufende Profi-Trennung anhalten (Stücke bleiben)
   spk1Dd(U, null); spk1Leave(U); SPK1.open = false; U.sh.classList.remove('open');
   clearTimeout(SPK1.idle); SPK1.idle = setTimeout(spk1Idle, 180000);   // Rechnung endet 3 min nach dem Schließen (wie G9A)
   UI.dirty.all = true;
