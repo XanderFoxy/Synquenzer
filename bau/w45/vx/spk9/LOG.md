@@ -4,3 +4,8 @@
 - 20:45 Ursache gefunden (SPK2 segNotes): Tonwechsel-Grenze wird verworfen, wenn ein Fluss-Anschlag ≤ 70 ms daneben liegt (`near`),
   der Anschlag selbst zählt aber nur mit Pegel-Anstieg ≥ 3 dB – bei Legato steigt der Pegel nicht → keine Grenze, eine Note (Median-Ton).
 - 20:49 Block spk9-block.js + einbau.py (4 Anker je 1×). Befund-17-Fälle (Delle ohne/50/25/0 %): vorher 0/12 getrennt → nachher 12/12, 0 Zusatz.
+- 20:53 leg/leg.mjs (Node, Kern aus der Datei, 76 Fälle, 48 kHz, Ebene Gesang, einstimmig). vorher (basis) → nachher (index):
+  L Legato 32 Phrasen/172 Töne getrennt 13,4 % → 98,8 %, Zusatz 9,9 % → 1,2 % · V Vibrato 16 Zusatz 18,8 % → 0 % ·
+  G Gleiten 16 getrennt 71,9 % → 96,9 %, Zusatz 96,9 % → 12,5 % · A Ausklang 8 Zusatz 25 % → 0 % · B Befund 17: 0/12 → 12/12.
+  Schritte: a1 (Hysterese + ruhig 50 ct) G-Zusatz 97 % · a2 (ruhig 25 ct/60 ms, Vibrato-Band) 56 % · a3 (Übergang < 0,17 s) 50 % (alte G-Wahrheit) ·
+  a4 (Übergang < 0,25 s, ≤ 1,5 HT zum Ziel, G-Wahrheit = Mitte des Gleitens) 12,5 %.

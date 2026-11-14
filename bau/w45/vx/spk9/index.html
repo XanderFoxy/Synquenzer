@@ -105302,7 +105302,7 @@ function spk7Tgts(U) {
 function spk9DspMake(Z2) {
   if (!Z2 || !Z2.h || !Z2.opt || !Z2.h.segNotes || !Z2.h.midiOf) return Z2;
   const H2 = Z2.h, seg0 = H2.segNotes, opt = Z2.opt;
-  const o9 = {an: 1, hys: 0.6, hold: 0.07, stab: 0.06, span: 0.25, bandv: 0.6, vmin: 0.3, tr: 0.17, look: 0.5, nl: 0.15, vib: 0.16, gegen: 0.3, lvl: 12, minS: 0.08, near: 0.07, win: 0.6, dbg: null};
+  const o9 = {an: 1, hys: 0.6, hold: 0.07, stab: 0.06, span: 0.25, bandv: 0.6, vmin: 0.3, tr: 0.25, trN: 1.5, look: 0.5, nl: 0.15, vib: 0.16, gegen: 0.3, lvl: 12, minS: 0.08, near: 0.07, win: 0.6, dbg: null};
   const med = v => { if (!v.length) return NaN; v.sort((p, q) => p - q); return v[v.length >> 1]; };
   // Tonhöhen-Stufen (Zeit der Grenze in s) aus der Grundton-Spur f0 (Rahmen i ↔ (i0 + i)·hopS), nur stimmhafte Rahmen (ok)
   function steps(o) {
@@ -105345,7 +105345,7 @@ function spk9DspMake(Z2) {
         for (let z = 1; z + 1 < bs.length - 1 + 1 && z < bs.length - 2; z++) {
           const a = bs[z], b = bs[z + 1]; if ((b - a) * hopS >= o9.tr) continue;
           const mP = mOf(bs[z - 1], a), mS = mOf(a, b), mN = mOf(b, bs[z + 2]), L = Math.max(1, Math.round((b - a) * 0.4)), d1 = mOf(a, a + L), d2 = mOf(b - L, b);
-          if (isNaN(mP) || isNaN(mS) || isNaN(mN) || !((mS - mP) * (mN - mS) > 0) || !((d2 - d1) * Math.sign(mN - mP) >= 0.4)) continue;
+          if (isNaN(mP) || isNaN(mS) || isNaN(mN) || !((mS - mP) * (mN - mS) > 0) || Math.abs(mN - mS) > o9.trN || !((d2 - d1) * Math.sign(mN - mP) >= 0.4)) continue;
           const md = (mP + mN) / 2, sg = Math.sign(mN - mP); let bd = Math.max(bs[z - 1] + 1, a - back); while (bd < b && !((s3[bd] - md) * sg > 0)) bd++;
           rb.splice(z - 1, 2, bd); again = 1; break;
         }
