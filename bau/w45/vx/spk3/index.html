@@ -99924,7 +99924,33 @@ function spk3DspMake(Z2) {
   const {I, w2, bassTrack, opt} = Z2, {magsAt, hpss, ramp} = I;
   // q: Anteil (60 %) über die Schläge – Snare/Becken auf 2 und 4 zählen mit; hA…hB: darüber gibt der Bass nichts ab (dort liegen Akkord-Teiltöne
   // auf denselben Bins, gemessen: Fehlalarm kostet mehr als fehlender Bass). trk/dbg = Mess-Haken (aus).
-  const o3 = {tpl: true, q: 0.6, nb: 32, fk: 160, per: 1, stp: 512, sub: 1, hA: 180, hB: 300, trk: null, dbg: null};
+  const o3 = {tpl: true, q: 0.6, nb: 32, fk: 160, per: 1, stp: 512, sub: 1, hA: 180, hB: 300, trk: null, dbg: null, dec: 1};
+  // SPK3-R (Tempo): Tiefband-Beträge auf dem herabgesetzten Signal – Tiefpass (Blackman-Sinc) und nur jede R-te Probe (einmal je Analyse);
+  // die Bins unterhalb fmax sind dieselben (Fenster win(N/R) = win(N) an jeder R-ten Stelle, Spiegelungen < −74 dB), die FFT ist R-mal kürzer.
+  // R 16 bis 560 Hz (Kick-Vorlage, Tiefband 8192), R 4 bis 2450 Hz (Bass-Suche 16384, Verfeinern), sonst wie vorher (magsAt).
+  const {V, win, magPair} = I, LO = {16: {M: 161, fc: 1400}, 4: {M: 65, fc: 5500}};
+  function loSig(d, R) {
+    const c = d.spk3lo || (d.spk3lo = {}); if (c[R]) return c[R];
+    const x = d.mid, len = x.length, P = LO[R], M = P.M, mid = (M - 1) >> 1, wc = 2 * Math.PI * P.fc / d.meta.sr, h = new Float64Array(M); let s = 0;
+    for (let t = 0; t < M; t++) { const u = t - mid; h[t] = (u ? Math.sin(wc * u) / (Math.PI * u) : wc / Math.PI) * (0.42 - 0.5 * Math.cos(2 * Math.PI * t / (M - 1)) + 0.08 * Math.cos(4 * Math.PI * t / (M - 1))); s += h[t]; }
+    for (let t = 0; t < M; t++) h[t] /= s;
+    const n = Math.ceil(len / R), y = new Float32Array(n);
+    for (let j = 0; j < n; j++) { const c0 = j * R + mid, t0 = Math.max(0, c0 - len + 1), t1 = Math.min(M - 1, c0); let a = 0; for (let t = t0; t <= t1; t++) a += h[t] * x[c0 - t]; y[j] = a; }
+    return (c[R] = y);
+  }
+  function magsLo(d, N, cen, K, fmax) {
+    const R = !o3.dec || d.meta.sr < 44100 ? 1 : fmax <= 560 && N >= 4096 ? 16 : fmax <= 2450 && N >= 2048 ? 4 : 1, Nd = N / R, NB = Nd / 2 + 1;
+    if (R === 1 || K > NB) return magsAt(d, N, cen, K);
+    const y = loSig(d, R), w = win(Nd), n = cen.length, out = new Float32Array(n * K), re = new Float64Array(Nd), im = new Float64Array(Nd), a = new Float64Array(NB), b = new Float64Array(NB), ny = y.length;
+    for (let i = 0; i < n; i += 2) {
+      const sA = Math.round((cen[i] - N / 2) / R), two = i + 1 < n, sB = two ? Math.round((cen[i + 1] - N / 2) / R) : 0;
+      for (let j = 0; j < Nd; j++) { const p = sA + j, q = sB + j; re[j] = (p >= 0 && p < ny ? y[p] : 0) * w[j] * R; im[j] = two && q >= 0 && q < ny ? y[q] * w[j] * R : 0; }
+      V.fft(re, im); magPair(re, im, Nd, a, b);
+      for (let k = 0; k < K; k++) out[i * K + k] = a[k];
+      if (two) for (let k = 0; k < K; k++) out[(i + 1) * K + k] = b[k];
+    }
+    return out;
+  }
   function kickTpl(d, N, K) {
     const c = d.spk3kt || (d.spk3kt = {}), key = N + ':' + K; if (c[key] !== undefined) return c[key];
     const g = d.meta.grid || {}, bpm = +g.bpm, sr = d.meta.sr, len = d.mid.length;
@@ -99933,7 +99959,7 @@ function spk3DspMake(Z2) {
     const j0 = Math.ceil(-off / L), j1 = Math.floor((len - off - L) / L), nB = j1 - j0 + 1; if (nB < 4) return (c[key] = null);
     const nb = Math.min(o3.nb, nB), js = []; for (let t = 0; t < nb; t++) js.push(j0 + Math.round(t * (nB - 1) / Math.max(1, nb - 1)));
     const cen = new Int32Array(nb * Q); for (let t = 0; t < nb; t++) for (let q = 0; q < Q; q++) cen[t * Q + q] = Math.round(off + js[t] * L + q * stp);
-    const KK = Math.min(K, Math.ceil((o3.fk + 40) * N / sr) + 2), M = magsAt(d, N, cen, KK), T = new Float32Array(Q * K), v = new Float32Array(nb), qi = Math.floor((nb - 1) * o3.q);
+    const KK = Math.min(K, Math.ceil((o3.fk + 40) * N / sr) + 2), M = magsLo(d, N, cen, KK, (KK + 1) * sr / N), T = new Float32Array(Q * K), v = new Float32Array(nb), qi = Math.floor((nb - 1) * o3.q);
     for (let q = 0; q < Q; q++) for (let k = 0; k < KK; k++) {
       for (let t = 0; t < nb; t++) { const x = M[(t * Q + q) * KK + k]; v[t] = x * x; }
       v.sort(); T[q * K + k] = v[qi] * (1 - ramp(k * sr / N, o3.fk, o3.fk + 40));
@@ -99951,10 +99977,10 @@ function spk3DspMake(Z2) {
   }
   function lowSplit(d, cen, Nf, fmax, r, trust) {
     const sr = d.meta.sr, n = cen.length, N16 = 16384, df16 = sr / N16, K16 = Math.min(N16 / 2 + 1, Math.ceil(2400 / df16) + 2), hopS = (n > 1 ? cen[1] - cen[0] : d.meta.base.hop) / sr;
-    const Y = o3.trk ? o3.trk(d, N16, cen, K16) : magsAt(d, N16, cen, K16), K1 = kickAt(kickTpl(d, N16, K16), cen, null, K16);
+    const Y = o3.trk ? o3.trk(d, N16, cen, K16) : magsLo(d, N16, cen, K16, (K16 + 1) * df16), K1 = kickAt(kickTpl(d, N16, K16), cen, null, K16);
     if (K1 && !o3.trk) for (let i = 0; i < Y.length; i++) Y[i] = Math.sqrt(Math.max(0, Y[i] * Y[i] - K1[i]));
     const T = bassTrack(Y, n, K16, df16, hopS, trust); if (o3.dbg) o3.dbg(d, cen, T, N16, K16, hopS, trust);
-    const dff = sr / Nf, Kf = Math.min(Nf / 2 + 1, Math.ceil(fmax / dff) + 2), X = magsAt(d, Nf, cen, Kf), {mh} = hpss(X, n, Kf, 17, 17);
+    const dff = sr / Nf, Kf = Math.min(Nf / 2 + 1, Math.ceil(fmax / dff) + 2), X = magsLo(d, Nf, cen, Kf, (Kf + 1) * dff), {mh} = hpss(X, n, Kf, 17, 17);
     const SB = new Float32Array(n * Kf), SD = new Float32Array(n * Kf), B = new Float32Array(Kf), G = new Float32Array(n), KQ = kickAt(kickTpl(d, Nf, Kf), cen, null, Kf);
     const hmax = trust ? 40 : 16, HM = hmax + 1, LA = new Float32Array(n * HM), LC = new Float32Array(n * HM), WR = Math.max(4, Math.round(0.25 / hopS));
     for (let i = 0; i < n; i++) {

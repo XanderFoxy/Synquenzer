@@ -96157,7 +96157,7 @@ function gd1Off() { try { return !!(UI.vvOff || (AU.ctx && typeof OfflineAudioCo
 { const r0 = ui1Ring;
   ui1Ring = function (t, label, ms) {
     const N = UI1.gd1N;
-    if (label && N && UI1.alt && UI1.lastJump && UI1.lastJump.id === N.id) { try { if (t === UI1.alt()) label = N.n; } catch (e) {} }
+    if (label && N && UI1.alt && UI1.lastJump && UI1.lastJump.id === N.id) { try { if (t === UI1.alt()) { label = N.n; UI1.gd1N = null; } } catch (e) {} }   // einmal
     return r0(t, label, ms);
   };
 }
