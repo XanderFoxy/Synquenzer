@@ -78258,6 +78258,7 @@ function vvkScore(a, b) {
   a = clamp(a | 0, 0, song.bars - 1); b = clamp(b | 0, a + 1, song.bars);
   const key = [S.id, UI.songVer | 0, typeof KEYC !== 'undefined' ? KEYC.ver : 0, a, b, NT(), S.bpm].join(':');
   if (VVK.sc && VVK.sc.key === key) return VVK.sc;
+  if (R.beg1 && R.beg1.on && !(BEG1.exp > 0)) return int54BegExp(vvkScore)(a, b);   // INT54: Noten im Video/in der Vorschau wie Ton und MIDI – ohne die Begleiter-Optionen (nur wenn neu gerechnet wird)
   const B0 = barBeat(a), B1 = barBeat(b), pk = S.key, h = S.settings.harmony, ents = []; let prev = 0;
   try { for (const c of song.carrier || []) { const sh = !c.target ? 0 : h.octaveMode === 'absolute' ? c.target.rootNote - Harmony.refNote(pk) : Harmony.nearestShift(c.target.root, pk.root, c.target.sd != null ? c.target.sd : prev); prev = sh; ents.push({beat: c.beat, e: {target: c.target, shift: sh}}); } } catch (e) { ents.length = 0; }
   const entAt = x => { let e = null; for (const o of ents) { if (o.beat > x + 1e-6) break; e = o.e; } return e; };

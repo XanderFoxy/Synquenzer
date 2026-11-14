@@ -93879,6 +93879,15 @@ function xd1PlUpd(ids) {
   const m = ids.has('mx2') || ids.has('ch1') ? mx2El() : null;
   if (m) {
     for (const c of m.querySelectorAll('.mx2cap')) { const t = c.textContent.replace(/\b(live|im Schnitt)$/, pl ? 'live' : 'im Schnitt'); if (/^Kompression/.test(t) && t !== c.textContent) c.textContent = t; }
+    // ■: die Balken zeigen wieder den Schnitt (wie mx2Paint) – live setzt sie mx2Loop beim Abspielen selbst
+    const F = MX2.fit && S.fxBus.am && S.fxBus.am.on ? MX2.fit : null, I = F && F.info;
+    if (!pl && I) {
+      const G = I.mbGr || [], V = [G[0] && G[0].avg, G[1] && G[1].avg, G[2] && G[2].avg, I.compAvg, I.limAvg];
+      for (const r of m.querySelectorAll('.mx2mr')) {
+        const v = V[+r.dataset.k] || 0, b = r.querySelector('b'), e = r.querySelector('em'), w = 'width:' + Math.min(100, Math.max(0, v / 6 * 100)).toFixed(1) + '%', t = mx2F(v) + ' dB';
+        if (b && b.getAttribute('style') !== w) b.setAttribute('style', w); if (e && e.textContent !== t) e.textContent = t; r.classList.remove('live');
+      }
+    }
     for (const sb of m.querySelectorAll('.mxgsrc > b, .mx3st > b')) if (/^Live – was gerade läuft \(/.test(sb.textContent)) { const t = sb.textContent.replace(/\((Matrix|Song|startet die Szene),/, '(' + (R.playing && !R.songPlay ? 'Matrix' : R.playing ? 'Song' : 'startet die Szene') + ','); if (t !== sb.textContent) sb.textContent = t; }   // MIXG stellt die Zeile als .mxgsrc in Schritt ①
     did.push('mx2');
   }

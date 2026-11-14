@@ -78,7 +78,7 @@ for (const c of cases) {
     out.push({case: 'Gesang ' + bpm, ok, bpm: r.bpm, alt: r.alt, quelle: r.quelle, frage: r.frage, t1: r.t1, lead: s.lead, ms: Date.now() - t0, lowRatio: r.lowRatio, pulse: r.pulse});
     continue;
   }
-  const [b, ts] = c.split(' '), bpm = +b, s = std(ts, bpm), r = C.analyse(s.x, SR, {}); if (process.env.NV) console.log(JSON.stringify(r.nov));
+  const [b, ts] = c.split(' '), bpm = +b, s = std(ts, bpm), dbg = {}, r = C.analyse(s.x, SR, {dbg}); if (process.env.AB) console.log(c, JSON.stringify(dbg.ab)); if (process.env.NV) console.log(JSON.stringify(r.nov));
   const barSec = METER[ts].q * 60 / bpm, t1err = (r.t1 - s.lead) / barSec;
   const tb = s.truth.slice(1).map(p => p.a), db = r.teile.slice(1).map(p => p.a + Math.round(t1err));
   const miss = tb.filter(a => !db.some(d => Math.abs(d - a) <= 1)), extra = db.filter(d => !tb.some(a => Math.abs(d - a) <= 1));

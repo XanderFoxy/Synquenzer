@@ -4,3 +4,4 @@
 - 12:50 Lesen 2/3 fertig: G9 (5762/6303/63888), Container (60193/60200/75727, saveFile 53035 = .json ohne Audio), QuantSheet 51526, Test-API tkInject 60359 gelesen
 - 12:51 Schritt 1 FERTIG: LESEN.md geschrieben (Funktionen+Zeilen, Bau-Entscheidung PianoRoll+opts.audio, Datenmodell an/vd/'hybrid', Wiedergabe-Kette, 8 Einhängestellen, Teilschritte 2a-2e/3a-3f/4a-4d, Risiken). index.html unverändert = Basis; Pflicht: topdefs doppelt 0/Syntax 0, dupkeys 0, smoke errors []
 - 12:51 Schritt 2 (Kern) begonnen
+- 12:56 2a–2e Kern eingebaut (Block nach KF1-END, 7 Einhänge-Zeilen VX1R: wpNormMarks/wpNormWarp/wpKey/wpRun/wpWorker/wpRender/wpQuant); topdefs doppelt 0/Syntax 0, dupkeys 0 – Test folgt
