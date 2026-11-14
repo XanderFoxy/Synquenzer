@@ -131,3 +131,29 @@ Bau wie oben (`python3 einbau.py`, jetzt 23 Haken); Sicherung vor Auftrag 3: `sp
 ### Funk-Vorschlag (nicht gebaut, sichtbar anders)
 - Hochkant: soll der große Knopf „Zerlegen“ bei geladenem Modell direkt die Profi-Trennung rechnen (statt erst ▾)? Heute bewusst nicht,
   weil Xander die Bedienung so festgelegt hat – ein Satz im Funk genügt.
+
+---------------------------------------------------------------------------------------------------------------------------
+## Regression VX1 (SPK5-R)
+Meldung: `rolle/vx1-test.mjs` mit SPK5 (r4610) 58/61 – FEHL „Anker = lautester Spitzenwert“ (0.12 3.58 0.10 3.00 0.06 0.13 ms),
+„Konsonant getrennt“ (uv 0,97/2,96 statt 0,96/2,95), Folgefehler „Stück 4 um 60 ms nach links“ (rechnet mit dem falschen Anker aus Teil 1).
+
+### Ursache (kein SPK5-Code, sondern ein Wettlauf in VX1, den Last sichtbar macht)
+- Die Stimme-Spur hat die Gesang-Effekte G4 an (hp 100, de-ess, EQ …); `wpBase()` liefert die G4-Fassung, sobald sie gerechnet ist, vorher den
+  Roh-Take. `vx1rAnalyse` nahm die Quelle, die *in dem Moment* da war: Setzt der Test die Marken und ruft sofort die Analyse, startet `wpBase`
+  die G4-Rechnung (neue Marken = neuer Schlüssel) und gibt noch den Roh-Take (bzw. die alte G4-Fassung) zurück. Die Analyse misst daran,
+  G4 wird währenddessen fertig – gehört (und vom Test gemessen) wird aber die G4-Fassung → Anker/Konsonant um 0,1–3,6 ms daneben.
+- Nachweis (`spk5r/diag3.mjs`, nur Teil 1, CPU-Drosselung per CDP): **basis5 ohne SPK5** zeigt bei Drosselung 3× und 6× exakt dieselben Werte
+  (0.12 3.58 0.10 3.00 0.06 0.13, uv 0,97/2,96; Analyse-Schlüssel `@1` = Roh-Take, danach Quelle `@2` = G4). Ohne Last bestehen basis5 und
+  SPK5 (alt) beide 61/61 (`spk5r/vx1-basis5.log`, `vx1-spk5.log`). r4610 lief vx1 parallel zu spk3/chr2/imp1 (Last) → zweimal rot; r4600b
+  (basis5) lief ohne diese Last. SPK5 macht beim Start nichts (nur Definitionen), ändert weder wp-Worker noch G4.
+
+### Fix (VX1-Code, begründet: der Fehler liegt dort, SPK5 hat ihn nur zufällig im Lastlauf getroffen) – 3 Zeilen in `vx1rAnalyse`, Kommentar „SPK5-R“
+1. Rechnet G4 die Quelle dieses Takes gerade neu (`G4.job.has(id)`), wartet die Analyse darauf (25-ms-Schritte, höchstens 15 s) und misst an der neuen Fassung.
+2. Wechselt die Quelle trotzdem während der Rechnung (G4/G2/Säubern fertig geworden), wird sofort neu gemessen (höchstens 2 Wiederholungen, Parameter `rn`).
+   Die Rechnung selbst (Kern `vxa`) ist unverändert; ohne laufendes G4 und ohne Quellwechsel ist alles bitgleich wie vorher.
+- Eingebaut über `einbau.py` (3 zusätzliche Ersetzungen, 26 statt 23; Rebuild vorher = index.html bitgleich geprüft). Sicherung: `index.vor-r.html`,
+  `spk5r/einbau.vor-r.py`. `r4610/index.html` = dieselbe Datei.
+
+### Messwerte
+- Diagnose Teil 1 mit Fix: Drosselung 1×/3×/6× → Anker 0.00 0.00 0.00 0.00 0.00 0.00, uv 0,96/2,95, Analyse-Schlüssel = aktuelle G4-Fassung (`@3`/`@2`/`@2`).
+- `rolle/vx1-test.mjs` (Fix, parallel zu spk5-test): **61/61 OK** (`spk5r/vx1-fix.log`).
