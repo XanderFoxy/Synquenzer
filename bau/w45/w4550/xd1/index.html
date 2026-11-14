@@ -93701,7 +93701,7 @@ Object.assign(SYNQUENZER, {int53d: {info: () => ({files: INT53D.files, waits: IN
        „Sz 1“) – nie mehr „Sze…“. Kein Kopf wird höher, keine Taste rückt.
    Einhänge-Zeilen (je mit „XD1“ markiert): stSheetFill (1: die Zeilen vor „Stimme → Noten“), bindStSheet (1), vvSwapIn (1). Alles andere hier als Hülle (vox2Tap, vox2TkHtml,
    stRender, vd4LvFit, mtxScnDown, mtxHoldEnd, songAudioStart, openEditor, openBrowser, closeSheets, mxgSync, oriFit) und Guide-Eintrag. */
-var XD1 = {mon: null, monIv: 0, ack: true, sw: 0, mtxN: 0, rtN: 0, rtLast: null, sndN: 0, plN: 0, plLast: null, oriN: 0};
+var XD1 = {mon: null, monIv: 0, ack: true, sw: 0, sndT: 0, mtxN: 0, rtN: 0, rtLast: null, sndN: 0, plN: 0, plLast: null, oriN: 0};
 
 /* ---------- (1) Mikrofon-Blatt: „Beim Singen hören“ + „Mich selbst hören“ ---------- */
 const xd1MonPref = () => { try { return uiPrefs().xd1Mon === true; } catch (e) { return false; } };
@@ -93829,16 +93829,28 @@ function xd1ToNach() {
 }; }
 
 /* ---------- (5) Klang-Editor: Schließen beendet den Vergleich auf NACHHER ---------- */
+// wie toggleAB (Seite B → A = deine Änderung), ohne Meldung/Neuaufbau – das Blatt geht ja gerade zu. Hat ein Export den Nachher-Stand
+// gerade geliehen (INT53C), erst danach (sonst gäbe er das Original zurück, während die Seite schon „Nachher“ sagt).
 function xd1SndEnd() {
   try {
-    const B = (EL.synthSheet.classList.contains('open') || (EL.sndSheet && EL.sndSheet.classList.contains('open'))) ? int53cSnd() : null;
-    if (B) { const a = B.a; B.side = 'A'; applySound(B.t, deep(a)); XD1.sndN++; }   // wie toggleAB (Seite B → A = deine Änderung), ohne Meldung/Neuaufbau
-  } catch (e) { logErr(e); }
+    const B = int53cSnd(); if (!B) return false;
+    if (typeof INT53C !== 'undefined' && (INT53C.n > 0 || INT53C.hold)) {
+      if (!XD1.sndT) XD1.sndT = setInterval(() => { if (INT53C.n > 0 || INT53C.hold) return; clearInterval(XD1.sndT); XD1.sndT = 0; if (!xd1SndOpen()) xd1SndEnd(); }, 250);
+      return false;
+    }
+    if (V6A.ed && V6A.ed.ak1 && V6A.ed.i === B.t) ak1End();          // wie toggleAB: A = der Grundklang, nie die Arbeitskopie eines offenen ◆
+    const a = B.a; B.side = 'A'; applySound(B.t, deep(a)); XD1.sndN++; return true;
+  } catch (e) { logErr(e); return false; }
 }
-// Wechsel Editor ↔ Klang-Browser schließt nur das eine Blatt, um das andere zu öffnen – der Vergleich läuft dort weiter (ein Zustand)
+const xd1SndOpen = () => [EL.synthSheet, EL.drumSheet, EL.sndSheet].some(e => e && e.classList.contains('open'));
+// Wechsel Editor ↔ Klang-Browser (auch auf eine andere Spur) schließt nur das eine Blatt, um das andere zu öffnen – der Vergleich bleibt
+// (ein Zustand, die Kopfzeile zeigt ihn). Ein Projektwechsel verwirft ihn wie bisher (über ≡ war der Editor da längst zu).
 { const xd1Ed0 = openEditor; openEditor = function () { XD1.sw++; try { return xd1Ed0.apply(this, arguments); } finally { XD1.sw--; } }; }
 { const xd1Br0 = openBrowser; openBrowser = function () { XD1.sw++; try { return xd1Br0.apply(this, arguments); } finally { XD1.sw--; } }; }
+{ const xd1Ap0 = applyProject; applyProject = function () { XD1.sw++; try { return xd1Ap0.apply(this, arguments); } finally { XD1.sw--; } }; }
+// jedes Zumachen: ✕, Wischen, ≡-Menü, Noten-/Clip-Editor öffnen (alle über closeSheets) – und der Klang-Browser per ✕ (closeBrowser(false))
 { const xd1Close0 = closeSheets; closeSheets = function () { if (!XD1.sw) xd1SndEnd(); return xd1Close0.apply(this, arguments); }; }
+{ const xd1BrX0 = closeBrowser; closeBrowser = function (back) { if (!back && !XD1.sw) xd1SndEnd(); return xd1BrX0.apply(this, arguments); }; }
 
 /* ---------- (6) MIXG: bei ▶/■ nur Beschriftung und Satz, kein Neuaufbau ---------- */
 function xd1PlUpd(ids) {
