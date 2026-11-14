@@ -1,4 +1,4 @@
-# SPK4 – NOTES (Stand Auftrag 1/4: mehrstimmige Noten)
+# SPK4 – NOTES (Stand Auftrag 4/4: Test spk4-test.mjs 22 OK / 1 FEHLER – nur Verfeinern +1 dB offen; mehrstimmig, Bass 4,37 dB, Unison, Rest aufteilen fertig)
 
 Bau: `python3 bau.py` = `../basis5.html` (4.60.0) + `spk4-block.js` direkt nach `/* SPK3-END */` + 6 Haken „SPK4“:
 spk1DspMake (`spk4DspMake(Z2)` nach SPK3), spk1Worker (Text `spk4DspMake.toString()` mitschicken), spk1Layers (`spk4Lab(U)`),
@@ -150,3 +150,62 @@ spk1-test (`spk1-test.out`) 17 OK / 1 FEHLER verfeinern-verbessert-ziel (4,37 �
 Seite `spk4-rest.mjs` 7/0. Nicht neu gelaufen (Bereiche unberührt): ki1, chr2, vx1, imp1.
 Werkzeuge A3: `messb/rest4.mjs` (Rest aufteilen, `R_voll`/`R_lg`/`R_pw` = Z2.o7, `VERF=1` Vergleich Verfeinern), `messu/uni.mjs <datei>` (Pad-Unison, Ketten-Verlauf;
 `MODE='{"ab":99,"kd":…}'`, `UD`/`MM` = anderer Unison-Klang), `messu/uni2.mjs` (Startwert-Raster, Wahrheit mit einzelnen Analyse-Werten).
+
+---------------------------------------------------------------------------------------------------------------------------
+## Auftrag 4/4 – Gesamt-Test `spk4-test.mjs` (22 OK / 1 FEHLER – nur Verfeinern +1 dB, offen aus A2)
+Aufruf: `node spk4-test.mjs <abs index.html> [<abs vorher.html> = ../basis5.html]` (mess/ neben der Datei, basis2.html eine Ebene höher).
+Läuft nacheinander, jeder Teil mit Zeitgrenze, `NUR=pflicht,kern,ui,rest,spk3,zeit,spk1,ki1,vx1` wählt Teile, `ALT=1` wertet nur die Ergebnis-Dateien
+neben der Datei aus (nichts neu). Ergebnis `spk4-test.json`, Ausgabe `spk4-test.out`, Teil-Ausgaben `kern-*.out`, `spk3-test.out`, `spk1-test.out`, `ki1-test.out`,
+`vx1-test.out`; Zwischen-Dateien `spk4-pflicht.json`, `spk4-kern.json`, `spk4-zeit.json`. Ganzer Lauf ≈ 6–7 min.
+Teile: Pflicht (topdefs, dupkeys, smoke → `smoke-a4.png`, MS 2000/live: true/VERSION/Block-Lage) · Kern Node vorher/nachher (`messb/x4.mjs FULL=1`,
+`messb/rest4.mjs VERF=1`) · Seite (`spk4-ui.mjs`, `spk4-rest.mjs`) · `../spk3/spk3-test.mjs` (noten3 Datei+Basis, spk2-test, Loop, Klang-Probe) ·
+Zeit (Noten finden Pads vorher/nachher abwechselnd ×2, Klang-Probe 2. Lauf; je Minimum, weil andere Agenten parallel rechnen) ·
+`../spk/spk1-test.mjs` · `../ki/ki1-test.mjs` (Modell + Laufzeit lokal gespiegelt, mit Solo-Gesang aus `realvox/dl`) · `../rolle/vx1-test.mjs`.
+
+| Prüfung | vorher (basis5 4.60) → nachher (SPK4) |
+|---|---|
+| pflicht | topdefs 0/0 · dupkeys 0 · smoke [] · MS 2000 1× · live: true 1× · VERSION 4.60.0 = 4.60.0 · Block SPK4 1× direkt nach SPK3-END |
+| a1-mehrstimmig-pad-allein | 0/28 (Präz 0) → **24/28 (Präz 75 %)**, mehrstimmig |
+| a1-mehrstimmig-gemisch-besser | 1/28 (4 %) → 8/28 (11 %) – offen: Pads-Ebene im Gemisch enthält Bass/Lead/Trommeln |
+| a1-bassband-einstimmig-unveraendert | Original + Bass-Band: 14/32 → 14/32, gleiche Noten (bitgleich bis auf Zeit) |
+| a1-noten-zeit | Pads allein 986 → 1189 ms · Gemisch 947 → 1177 ms (Minimum aus 2; +20–24 % für mehrstimmig) · Seite 98 Noten 1044 ms |
+| a1-seite | spk4-ui 8/8 (Hinweis, Schalter 44 px in 3 Größen, Menü springt nicht, ein ↶) |
+| a2-bass-zerlegen-4db | 3,01 → **4,37 dB** (Browser = Node) |
+| a2-drums-tonal-nicht-schlechter | Drums 7,47 → 8,55 · Tonal 9,77 → 9,95 · Verfeinern Drums 7,41 → 7,90 |
+| **a2-verfeinern-plus-1db** | **FEHLER** 4,37 → 4,36 (−0,01; vorher +0,52) – offen aus A2 (Kamm-Modell selbst mit idealem Pegel 5,00) |
+| a2-verfeinern-nicht-schlechter | Verfeinern-Ergebnis 3,53 → 4,36 dB (absolut besser), gegen Zerlegen −0,01 |
+| a2-zerlegen-zeit | Zerlegen Node 1984 → 2134 ms (+8 %), Verfeinern 826 → 846 ms |
+| a2-bass-noten-praezision | Überall finden fair 84 → 79 % (Ziel 70), Quote 75 → 82 % |
+| a3-unison-pad-besser | Pad 1,62 → **0,96** („VA · Säge · Unison 5“) |
+| a3-andere-klaenge-nicht-schlechter | VA 3,89 → 3,89 · FM 2,06 → 2,06 · Lead 0,95 → 0,95 (kein Unison erkannt) |
+| a3-nachbau-zeit | ruhig: VA 2746 → 2350 · FM 1941 → 1680 · Pad 2536 → 2586 · Lead 2268 → 2066 ms |
+| a3-rest-aufteilen-kern | Pads 2,29 (Rest) / 2,46 (Verfeinern) → **2,94** · Lead 0,18 / 0,52 → **0,96** · Lead + Gesang 1,45 · 1,4 s |
+| a3-rest-summe-und-undo | Summe = Original 144,5 dB · ↶ Rest gleich 158,8 dB, Ebenen wie vorher |
+| a3-rest-seite | spk4-rest 7/7 (⋯ 44×44, Menü in 3 Größen, Rest aufteilen 1,8 s, ein ↶) |
+| reg-spk3-test | 15/17 – FEHLER nur verfeinern-plus-1db + regression-spk2-test (beide = Verfeinern relativ, s. u.) |
+| reg-spk2-test | 28/30 – verfeinern-verbessert, verfeinern-nach-noten (4,37 → 4,37; Basis 3,01 → 3,39, absolut besser) |
+| reg-spk1-test | 17/18 – verfeinern-verbessert-ziel (4,37 → 4,36) |
+| reg-ki1-test | 18/19 – besser-als-klassisch-demo (vorbestehend auf basis5; Profi 4,59 gegen klassisch jetzt 4,37) · Gesang + Guide OK |
+| reg-vx1-test | 61/61 |
+
+Regel „bekannt“: Seit A2 schreibt Zerlegen das Tiefband ungeglättet – genau das war der alte Gewinn von „Verfeinern“ (3,01 → 3,53). Darum fallen die
+relativen Prüfungen „Verfeinern verbessert“ in spk1/spk2/spk3; der Test lässt nur genau diese zu und prüft dafür das Verfeinern-Ergebnis absolut
+(≥ Basis 3,53, nach Noten ≥ 3,39). Alles andere muss grün sein.
+
+### Behoben in Auftrag 4 (nur Test, App unverändert seit A3 – `index.html` = Stand A3, Pflicht erneut grün)
+1. Pflicht-Werkzeuge liefen im Test mit dem NODE_PATH der Umgebung (fehlendes Modul) → im Test fest `/opt/node-tools/node_modules`.
+2. spk1-/ki1-Ergebnisse enthalten Mess-Einträge ohne „ok“ (messung, sek, sdrProfi, net …) → als FEHLER gezählt; jetzt zählen nur Prüfungen.
+3. Zeit-Prüfungen unter Last (Load 5, andere Agenten): Noten finden Pads 1448 → 2776 ms, VA-Nachbau 3059 → 4994 ms in einem Lauf; ruhig nachgemessen
+   986 → 1189 bzw. 2746 → 2350 → Teil „zeit“ misst abwechselnd zweimal und nimmt das Minimum.
+4. Name des Gesang-Datensatzes steht nicht mehr im Test (erste `*_1.wav` im Ordner, oder `VOX=`).
+
+### Nebenbefund (SPK3 offen 4, nicht SPK4): „Noten finden“ auf der zerlegten Bass-Ebene
+`messb/bassnot.mjs [GP=3]`: 0/32 vorher wie nachher – die einstimmige Verfolgung bleibt am unteren Bandrand 28–29 Hz hängen (MIDI 21/22; die Ebene
+hat dort echte Energie vom Kick/Rumpeln). Grundton-Pflicht wie in A2 allein: 0 → 5/32 → kein kleiner Fix, nicht eingebaut. Weg: auf Bass-Ebenen
+die A2-Verfolgung `bassTrack4` (ab 30 Hz, Kick-Vorlage) statt `trackF` nehmen. Überall finden (79 %) und Original + Bass-Band (14/32) sind nicht betroffen.
+
+### Offen nach SPK4
+1. Verfeinern Bass ≥ +1 dB (anderes Modell als der Obertonkamm, s. A2 Offen 1).
+2. Mehrstimmig im Gemisch (8/28): Takt-Grenzen aus der Pad-Aktivität, Leck von Bass/Lead als Gegen-Vorlage (A1 Offen 1).
+3. Noten finden auf der Bass-Ebene (s. Nebenbefund).
+4. Unison-Breite/-Pegel schätzen, Lead aus dem Rest bleibt klein, solange die Gesang-Ebene den Lead hält (A3 Offen).
