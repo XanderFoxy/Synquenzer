@@ -57118,7 +57118,7 @@ function stSheetFill(p) {
   html += '</div><div class="st-c2"><div class="st-lbl">Stimme → Noten</div>' + vsMelRowHTML(vc) + g10cPassRow() +   /* G10c */ segHTML('vsSrc', [['voice', '🎤 Stimme'], ['inst', '🎸 Instrument']], vc.src) +
     `<div class="st-vs"><button class="rb${vc.snap ? ' on' : ''}" data-vs="snap" aria-pressed="${vc.snap}">${vc.snap ? '✓ In Tonart einrasten' : 'Frei (nicht einrasten)'}</button>` +
     (vc.src === 'inst' ? `<button class="rb${vc.lock ? ' on' : ''}" data-vs="lock" aria-pressed="${vc.lock}">${vc.lock ? '✓ ' : ''}Oktave sperren</button>` : '') + '</div></div>';
-  if (typeof xd1MicHtml === 'function') html = html.replace('<div class="st-c2">', '<div class="st-c2">' + xd1MicHtml());   // XD1 (1): Beim Singen hören · Mich selbst hören (Schritt 1 Aufnehmen), vor „Stimme → Noten“
+  if (typeof xd1MicHtml === 'function') html = xd1MicHtml(html);   // XD1 (1): „Mich selbst hören“ unter dem Weg, „Beim Singen hören“ vor „Stimme → Noten“ (Schritt 1 Aufnehmen)
   html += `<div class="st-c3"><div class="st-btns"><button class="rb st-cal"${!ST.on || cal || ST.phase !== 'live' ? ' disabled' : ''}>Einmessen</button><button class="rb st-go ${ST.on ? 'off' : ''}">${ST.on ? '✕ Mikro aus' : '🎤 Mikro an'}</button></div>`;
   html += `<p class="small st-hint">${MICIN.ext && ST.on ? 'Interface: Kopfhörer-Weg, kein Einmessen nötig.' : rt === 'speaker' ? 'Mit Kopfhörer klingt die Musik normal und dein Gesang bleibt sauber.' : 'Zum Einmessen mit Kopfhörern einen Ohrhörer direkt ans Mikrofon halten.'}</p></div>`;
   if (p._h !== html) { p._h = html; p.innerHTML = html; }
@@ -93674,10 +93674,11 @@ Object.assign(SYNQUENZER, {int53d: {info: () => ({files: INT53D.files, waits: IN
 /* XD1-BEGIN ===== Paket XD1 (Xander 08.11.: „Du sollst eigenmächtig entscheiden, was logischer ist … logisch entscheiden, was praktikabel
    ist, den Workflow nicht sperrt, alles intuitiv und leicht. Optik nichts hinzuerfinden, Sachen richtig darstellen.“) – acht Punkte:
    (1) Gesang: „Beim Singen hören“ [Begleitung │ + Melodie │ nur Klick] steht jetzt im Mikrofon-Blatt (Schritt 1 Aufnehmen) – dort, wo man
-       aufnimmt. Darunter, wie in jeder DAW: „Mich selbst hören“ [an │ aus] (Eingangs-Mithören, Standard aus; über den Lautsprecher bleibt
-       es stumm, sonst pfeift es). An = die eigene Stimme direkt auf den Kopfhörer (am Master vorbei: kein Kompressor-Vorlauf, kleinste
-       Verzögerung), Pegel wie die STIMME-Spur, mit deren Hall (Send in den Hall der App). Aus beim Einmessen, im Offline-Render und im
-       Echtzeit-Mitschnitt (der Hall-Send; die Aufnahme selbst ist immer das trockene Mikro). Gemerkt im Gerät (uiPrefs xd1Mon), nie im Projekt.
+       aufnimmt (oben in der Spalte „Stimme → Noten“). Unter dem Weg, wie in jeder DAW: „Mich selbst hören“ [An │ Aus] (Eingangs-Mithören,
+       Zeile wie „Melodieerkennung“, Zustand klein darunter; Standard aus; über den Lautsprecher bleibt es stumm, sonst pfeift es).
+       An = die eigene Stimme direkt auf den Kopfhörer (am Master vorbei: kein Kompressor-Vorlauf, kleinste Verzögerung), Pegel wie die
+       STIMME-Spur (auch stumm/Solo wie dort), mit deren Hall (Send in den Hall der App). Still beim Einmessen und im Offline-Render; im
+       Echtzeit-Mitschnitt ohne Hall-Send (die Aufnahme selbst ist immer das trockene Mikro). Gemerkt im Gerät (uiPrefs xd1Mon), nie im Projekt.
        Takes-Blatt: nur noch „Hören: Gesang │ Melodie │ beides“, dazu ein Verweis-Satz. Blatt von ● halten: Zeile „Beim Singen“ bleibt
        (dieselbe Einstellung vox2Sm, ein Zustand – ein Tipp dort zeichnet ein offenes Mikrofon-Blatt nach).
    (2) Video quer: [Live-Vorschau beim Komponieren] liegt wie hochkant im Extras-Kasten der rechten Spalte (unter Titel · Rand · Making-of ·
@@ -93702,18 +93703,26 @@ var XD1 = {mon: null, monIv: 0, ack: true, sw: 0, mtxN: 0, rtN: 0, rtLast: null,
 
 /* ---------- (1) Mikrofon-Blatt: „Beim Singen hören“ + „Mich selbst hören“ ---------- */
 const xd1MonPref = () => { try { return uiPrefs().xd1Mon === true; } catch (e) { return false; } };
-function xd1MicHtml() {
-  const sm = vox2Sm(), mon = xd1MonPref(), rt = ST.route, mic = !!(ST.run && !ST.run.stopped);
+// Zustand des Mithörens als kurzer Satz unter „Mich selbst hören“ (wie „geschätzt“ unter der Verzögerung); warn = gelb
+function xd1MonState() {
+  const rt = ST.route, mic = !!(ST.run && !ST.run.stopped);
+  if (!xd1MonPref()) return ['Standard · nur mit Kopfhörer sinnvoll', false];
+  if (rt === 'speaker') return ['Lautsprecher: bleibt stumm, sonst pfeift es', true];
+  if (ST.cal) return ['beim Einmessen stumm', false];
+  if (rt === 'bt') return ['Bluetooth: kommt hörbar verzögert', true];
+  return [mic ? 'mit dem Hall der STIMME auf dem Kopfhörer' : 'sobald das Mikro an ist', false];
+}
+// html des Blatts → mit „Mich selbst hören“ (Zeile wie „Melodieerkennung“, direkt unter dem Weg: hängt am Kopfhörer) und
+// „Beim Singen hören“ (oben in der Spalte „Stimme → Noten“, wie im Blatt von ● halten)
+function xd1MicHtml(html) {
+  const sm = vox2Sm(), mon = xd1MonPref(), [st, warn] = xd1MonState();
   const B = (k, v, l, s, on) => `<button data-v="${v}" data-xd1="${k}:${v}" class="${on ? 'on' : ''}" aria-pressed="${on}">${esc(l)}${s ? '<small>' + esc(s) + '</small>' : ''}</button>`;
-  const warn = mon && rt === 'speaker';
-  const hint = !mon ? 'Aus (Standard): über den Lautsprecher würde es pfeifen. An: deine Stimme mit dem Hall der STIMME direkt auf den Kopfhörer.'
-    : rt === 'speaker' ? 'Gerade Lautsprecher: bleibt stumm, damit es nicht pfeift – mit Kopfhörer oben den Weg wählen.'
-    : rt === 'bt' ? 'Bluetooth: deine Stimme kommt hörbar verzögert – Kabel-Kopfhörer sind besser.'
-    : mic ? 'Deine Stimme mit dem Hall der STIMME auf dem Kopfhörer – direkt, ohne Umweg über den Master.' : 'Kommt, sobald das Mikro an ist.';
-  return `<div class="xd1mic"><div class="st-lbl">Beim Singen hören</div><div class="seg xd1seg" role="group" aria-label="Beim Singen hören">` +
-    VOX2_SM.map(([v, l, s]) => B('vox2s', v, l, s, v === sm)).join('') + '</div>' +
-    `<div class="st-lbl">Mich selbst hören</div><div class="seg xd1seg xd1mon" role="group" aria-label="Mich selbst hören">${B('mon', '1', 'an', '', mon)}${B('mon', '0', 'aus', '', !mon)}</div>` +
-    `<p class="small ${warn ? 'st-warn' : 'st-melx'} xd1hp">${esc(hint)}</p></div>`;
+  const sing = `<div class="xd1mic xd1sing"><div class="st-lbl">Beim Singen hören</div><div class="seg xd1seg" role="group" aria-label="Beim Singen hören">` +
+    VOX2_SM.map(([v, l, s]) => B('vox2s', v, l, s, v === sm)).join('') + '</div></div>';
+  const row = `<div class="st-mel xd1mic xd1mon"><span>Mich selbst hören<small class="xd1hp${warn ? ' st-warn' : ''}">${esc(st)}</small></span>` +
+    `<div class="seg" role="group" aria-label="Mich selbst hören">${B('mon', '1', 'An', '', mon)}${B('mon', '0', 'Aus', '', !mon)}</div></div>`;
+  html = html.replace('<div class="st-lat">', row + '<div class="st-lat">');
+  return html.replace('<div class="st-c2">', '<div class="st-c2">' + sing);
 }
 function xd1MicTap(b, p) {
   const v = String(b.dataset.xd1 || '');
@@ -93748,7 +93757,7 @@ function xd1MonSync() {
     if (!M) { M = XD1.mon = {src, c, g: c.createGain(), rs: c.createGain(), hall: null, gv: 0, rv: 0}; M.g.gain.value = 0; M.rs.gain.value = 0; src.connect(M.g); M.g.connect(c.destination); src.connect(M.rs); }
     if (AU.ctx === c && AU.hallIn && M.hall !== AU.hallIn) { try { if (M.hall) M.rs.disconnect(M.hall); } catch (e) {} try { M.rs.connect(AU.hallIn); M.hall = AU.hallIn; } catch (e) { logErr(e); } }
     const st = stimmeT(), tr = st >= 0 ? S.tracks[st] : null; let fx = null; try { fx = tr && tr.sound ? trackFx(tr) : null; } catch (e) {}
-    const mute = ST.route === 'speaker' || !!ST.cal || ST.phase !== 'live' || !!UI.vvOff || !!(typeof VV !== 'undefined' && VV.off);
+    const mute = ST.route === 'speaker' || !!ST.cal || ST.phase !== 'live' || !!UI.vvOff || !!(typeof VV !== 'undefined' && VV.off) || !!(tr && (tr.mute || !sx4Pass(st)));   // STIMME stumm/Solo woanders: wie in jeder DAW still
     const g = mute ? 0 : fx ? clamp(fx.vol * fx.vol, 0, 1) : 0.64, r = mute || SREC.on ? 0 : g * (fx ? clamp(fx.rev || 0, 0, 1) : 0);
     const t = c.currentTime; if (Math.abs(M.gv - g) > 1e-4) M.g.gain.setTargetAtTime(g, t, .02); if (Math.abs(M.rv - r) > 1e-4) M.rs.gain.setTargetAtTime(r, t, .02);
     M.gv = g; M.rv = r;
@@ -93759,7 +93768,8 @@ function xd1MonSync() {
   try {
     const s = document.createElement('style'); s.id = 'xd1-css';
     s.textContent = '.stpop .xd1seg button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;line-height:1.1}' +
-      '.stpop .xd1seg button small{font-size:9px;opacity:.75;white-space:nowrap}.stpop .xd1hp{margin:4px 0 0}' +
+      '.stpop .xd1seg button small{font-size:9px;opacity:.75;white-space:nowrap}.stpop .xd1mon{margin:8px 0 0}' +
+      '.stpop .xd1mon>span small{display:block;color:var(--text-dim);font-size:10px;margin-top:2px}.stpop .xd1mon>span small.st-warn{color:var(--amber);margin:2px 0 0;font-size:10px;line-height:normal}' +
       // (2) quer: die Taste im Extras-Kasten bricht ihren Text um (statt „…“) – Höhe bleibt 44 px
       '@media (orientation:landscape){.vvsheet .vd3-box .rb.vd4-lv span{white-space:normal;line-height:1.15}.vvsheet .vvctl>.vvrow.vd3-vr{flex-shrink:0}}';   // der Kasten behält seine zwei Reihen (sonst läge die Taste über [Vorschau]); die Spalte rollt, wie sie es quer 370 schon tat
     document.head.appendChild(s);
@@ -93770,10 +93780,10 @@ function xd1MonSync() {
   try {
     const L = ui1Entries(); if (L.some(x => x.id === 'xd1mon')) return;
     const go = () => { ui1Home(); setSongView(false); if (!micAvail()) { toast('Hier gibt es kein Mikrofon'); return false; } return stSheet() !== false; };
-    const q = () => (UI.pop && UI.pop.el ? UI.pop.el.querySelector('.xd1mic') || UI.pop.el : EL.top);
-    const e = L.find(x => x.id === 'vox2sing'); if (e) { e.w = 'Mikrofon-Blatt (1 Aufnehmen) › Beim Singen hören · ● halten › Beim Singen'; e.go = go; e.q = q; }
-    L.push({id: 'xd1mon', n: 'Mich selbst hören (Mithören)', w: 'Mikrofon-Blatt (1 Aufnehmen) › Mich selbst hören', d: 'Deine Stimme mit dem Hall der STIMME direkt auf den Kopfhörer – Standard aus, über den Lautsprecher bleibt es stumm.',
-      s: 'mithoeren monitor monitoring selbst hoeren eigene stimme kopfhoerer direkt hall singen aufnehmen', go, q});
+    const q = c => () => (UI.pop && UI.pop.el ? UI.pop.el.querySelector(c) || UI.pop.el : EL.top);
+    const e = L.find(x => x.id === 'vox2sing'); if (e) { e.w = 'Mikrofon-Blatt (1 Aufnehmen) › Beim Singen hören · ● halten › Beim Singen'; e.go = go; e.q = q('.xd1sing'); }
+    L.push({id: 'xd1mon', n: 'Mich selbst hören (Mithören)', w: 'Mikrofon-Blatt (1 Aufnehmen) › unter Weg: Mich selbst hören', d: 'Deine Stimme mit dem Hall der STIMME direkt auf den Kopfhörer – Standard aus, über den Lautsprecher bleibt es stumm.',
+      s: 'mithoeren monitor monitoring selbst hoeren eigene stimme kopfhoerer direkt hall singen aufnehmen', go, q: q('.xd1mon')});
   } catch (e) {}
 })();
 

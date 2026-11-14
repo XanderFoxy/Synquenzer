@@ -41658,14 +41658,14 @@ function markChordAll(id, rb, tg, exact) {
   const cut = (list, at, key) => (exact ? list.filter(c => Math.abs(c[key] - at) > 1e-6) : list.filter(c => !(c[key] >= barBeat(barAt(at)) - 1e-6 && c[key] < barBeat(barAt(at) + 1) - 1e-6)));
   let n = 0;
   for (const m of song.marks) {
-    if (m.part !== m0.part || rb >= m.len * 4 - 1e-9) continue;
+    if (m.part !== m0.part || rb >= barBeat(m.a + m.len) - barBeat(m.a) - 1e-9) continue;   // INT54: Schläge der Marke in der Taktart des Songs (4/4: len × 4 wie bisher)
     const beat = barBeat(m.a) + rb; song.carrier = cut(song.carrier, beat, 'beat');
     carrierPut(song, {beat, target: t ? carrierCopy(t) : null}); n++;
   }
   const L = partLen(p);
   let row = p.chords ? JSON.parse(JSON.stringify(p.chords)) : {len: L, ch: [{b: 0, tg: null}]};
-  if (row.len < L) { const ch = []; for (let k = 0; k * row.len < L; k++) for (const c of row.ch) { const b = c.b + k * row.len * 4; if (b < L * 4 - 1e-9) ch.push({b, tg: c.tg}); } row = {len: L, ch}; }
-  if (rb < row.len * 4 - 1e-9) { row.ch = cut(row.ch, rb, 'b'); row.ch.push({b: rb, tg: t ? carrierCopy(t) : null}); row.ch.sort((a, b) => a.b - b.b); }
+  if (row.len < L) { const ch = []; for (let k = 0; k * row.len < L; k++) for (const c of row.ch) { const b = c.b + k * int54RowB(row); if (b < L * int54RowBB(row) - 1e-9) ch.push({b, tg: c.tg}); } row = Object.assign({len: L, ch}, row.ts ? {ts: row.ts} : null); }   // INT54: Zeile mit Taktart (ohne ts × 4 wie bisher)
+  if (rb < int54RowB(row) - 1e-9) { row.ch = cut(row.ch, rb, 'b'); row.ch.push({b: rb, tg: t ? carrierCopy(t) : null}); row.ch.sort((a, b) => a.b - b.b); }   // INT54
   p.chords = normChordRow(row);
   songTidy(song);
   undoPush({kind: 'group', label: (t ? prettyTarget(t) : 'ORIGINAL') + ' für alle ' + p.name, items: [{kind: 'part', before: bp}, {kind: 'song', before: bs}]});
