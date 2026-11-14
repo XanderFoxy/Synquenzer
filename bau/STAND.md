@@ -34,3 +34,4 @@ Weiter mit: 4.54 = rel-4540/k fertig prüfen + INT53D nachziehen + Versionszeile
 - 14:00: 4.55.1 RELEASED = R-4550 + INT54-Fix-Diff (t/k.html→k/index.html). Tests int54 46/46, imp1 48/48. Nächste Basis: synq-snapshots/R-4551.html
 - 14:04: 4.56.0 RELEASED = R-4551 + VX1 (Konflikt openRoll: beide Zeilen). Tests vx1 61/61, imp1 48/48. Nächste Basis: synq-snapshots/R-4560.html
 - 14:12: 4.57.0 RELEASED = R-4560 + SPK1 Teil 1 + 2 Anschluss-Fixes (spk1Grid→imp1Analyse mono; g10cGcPlan 'spk' kein Take). Nächste Basis R-4570.
+- 14:13: Workflow wg1n8wxjd (wf_3b36bd46-1a7, synq-vx2-wf_3b36bd46-1a7.js): SPK2 (S/vx/spk2, 5 Schritte) ∥ CHR2 (S/vx/chr, 3) ∥ NX1 (S/vx/nach, 2), Basis vx/basis2.html = R-4570. XD1 (wwu4y7736) läuft noch → auf aktuelle Linie mergen (Diff gegen w4550/basis.html=R-4530).
