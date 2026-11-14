@@ -126,6 +126,7 @@ Ein Block `XD1-BEGIN … XD1-END` direkt nach `INT53D-END`, dazu drei Einhänge-
 - `oriFit` misst die Zeile mit der echten Schrift des `::before`: Canvas-`measureText` plus Buchstabenabstand, Platz = Kopfbreite − Innenabstände − Lampe 13 px.
 - Reihenfolge: ganzer Pfad → ohne Bereich → nur der Teil → Kurzform `xd1Short`. „Szene n“ → „Sz n“, „Refrain 2“ → „Ref. 2“, „Intro“ → „Intr.“; die Nummer bleibt immer.
 - Neu in Schritt 2: Schrift und Abstände je Kopf zwischengespeichert (`xd1WoStyle`, neu gelesen nur bei anderer Fenstergröße oder Klasse). `oriFrame` läuft alle 100 ms und liest `getComputedStyle` sonst nicht mehr.
+- Weil die Regel `[data-oriwo]::before` erst mit dem Attribut greift, wird es beim ersten Messen leer vorgesetzt (`oriApply` setzt gleich danach den Text). Ohne das maß der erste Rahmen mit der Titelschrift und schnitt zu früh ab; im ersten Endlauf zeigte ori-test „Szene 3“ statt „Szene 3 › STIMME“. Beleg `s2/p8.mjs`: Takes sofort „Szene 3 › STIMME“ wie die Basis.
 - Textbreiten im Speicher, höchstens 300 Einträge.
 
 ## Tests (nacheinander, je mit timeout; Ausgaben `out/s2run/<test>.log`, Zusammenfassung `out/s2run/summary.txt`)

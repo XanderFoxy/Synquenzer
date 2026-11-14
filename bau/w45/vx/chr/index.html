@@ -2715,7 +2715,8 @@ a.mbtn[aria-disabled=true]{opacity:.55}
 /* VX1-CSS-END */
 /* VX1R-CSS-BEGIN: Gesang-Editor (PianoRoll mit opts.audio): keine Anschlag-Zeile, nur die Werkzeuge für Gesang */
 #rollSheet .pr.vx1r,.pr.vx1r{--pr-vh:0px}.pr.vx1r .pr-vlab,.pr.vx1r .pr-vel{display:none}.vx1rx{display:none!important}
-.tksheet .tk-vx1r{width:100%;min-height:44px;margin:0 0 6px}   /* Takes-Blatt: [✎ Bearbeiten] wie [✎ Marken & Timing …] */
+.tksheet .tk-vx1r{width:100%;min-height:44px;margin:0 0 6px}
+.tksheet .tk-chr2{width:100%;min-height:44px;margin:0 0 6px}.tksheet .chr2{margin:0 0 6px}.tksheet .chr2 h5{margin:4px 0}   /* CHR2: Stimmen trennen wie [✎ Bearbeiten] */   /* Takes-Blatt: [✎ Bearbeiten] wie [✎ Marken & Timing …] */
 /* Trefferfläche: die Knöpfe der Gesang-Leisten greifen bis an den Leistenrand (hochkant 44 px); die Trennlinie als Schatten statt Rand (sieht gleich aus) */
 #rollSheet:has(.pr.vx1r) .pr-bar button{position:relative}#rollSheet:has(.pr.vx1r) .pr-bar button::after{content:'';position:absolute;left:-2px;right:-2px;top:-6px;bottom:-6px}
 #rollSheet .pr.vx1r>.pr-bar.prt{border-bottom:0;box-shadow:inset 0 -1px 0 var(--panel-edge)}#rollSheet .pr.vx1r>.pr-bar.pra{border-top:0;box-shadow:inset 0 1px 0 var(--panel-edge)}
@@ -59715,6 +59716,7 @@ function tkSheet(r, anchor) {
       if (d.a && d.a.slice(0, 3) === 'ggb') { ggbTap(b); return; }   // G-GB
       if (d.a && d.a.slice(0, 4) === 'g10c' && g10cTap(b, rr)) return;   // G10c
       if (d.a && d.a.slice(0, 4) === 'vox2' && vox2Tap(d.a)) { tkSheetPaint(p); return; }   // VOX2: Hören / Beim Singen
+      if (d.a && d.a.slice(0, 4) === 'chr2' && chr2Tap(b, rr)) return;   // CHR2: Stimmen trennen
       if (d.k != null && d.del === '1') { g10cDel(rr, +d.k); return; }   // G10c: Löschen mit ↶ im Hinweis
       if (d.k != null && performance.now() - G10C.hold < 700) return;   // G10c: Halten/Wischen ist kein Tipp
       if (d.k != null) { g10cNameCommit(); G10C.ed = -1; tkPick(rr, +d.k, false); return; }
@@ -59759,6 +59761,7 @@ function tkSheetPaint(p) {
     (ok ? vx1rTkBtn(x) : '') +   // VX1R: Gesang-Editor (Noten-Rolle) = Standard
     (ok ? '<button class="mbtn rb tk-wp" data-a="wp">✎ Marken & Timing …</button>' : '') +
     (ok ? spk1TkBtn() : '') +   // SPK1: Im Spektrum öffnen
+    (ok ? chr2TkHtml(x) : '') +   // CHR2: Stimmen trennen
     (ok ? `<div class="tkg57"><button class="mbtn rb tk-g5" data-a="g5"${G5.busy || TK.missing.has(x.a.take) ? ' disabled' : ''}>Noten-Clip aus Gesang</button>` +   // G5 (WEGE D14)
       `<button class="mbtn rb tk-g7${g7Follows(x.a.take) ? ' on' : ''}" data-a="g7" aria-pressed="${g7Follows(x.a.take)}">${g7Follows(x.a.take) ? '✓ ' : ''}folgt Transponieren</button></div>` : '') +   // G-GES: G7 je Take
     (ok ? '<div class="tkedrow">' + (TK.dupAsk ? g6pfSheetBtn(x.a) : '<button class="mbtn rb tk-g2" data-a="g2">Tonhöhe korrigieren</button><button class="mbtn rb tk-g6" data-a="g6">Chor</button><button class="mbtn rb tk-g4" data-a="g4">Effekte …</button>' + g6pfSheetBtn(x.a)) + '</div>' : '') +   /* G2 */
@@ -73611,6 +73614,7 @@ function g6pMixKey(a) {
 // gA der Stelle (linear) oder null (noch nicht gemessen); nach einer Mischungs-Geste gilt bis zur neuen Messung der vorige Wert
 function g6pGA(a) {
   const c = a && a.chor; if (!c || c.v !== 2) return null;
+  if (chr2Unity(c)) return Math.SQRT2;   // CHR2: getrennte Stimmen – fester Pegel (Rest + Stimmen = Original), kein Auto-Abstand
   // gA = 10^((L_Lead − below − L_Chor)/20) mit dem below von JETZT (Merge 4.27.0: Abstand/Kopplung ohne neue Messung, kein Sprung)
   const below = c.grp && isNum(c.grp.below) ? c.grp.below : 9, gOf = e => (isFinite(e.Ll) && isFinite(e.Lc) ? Math.pow(10, (e.Ll - below - e.Lc) / 20) : 1);
   if (!g6pBufsReady(a)) { g6pPrefetch(a, 1); const L = G6P.gAlast.get(a); return L && L.stale ? gOf(L) : null; }
@@ -93824,6 +93828,324 @@ const VOX2_API = {
 };
 Object.assign(SYNQUENZER, {vox2: VOX2_API});              /* VOX2: Test-API (Objekt, wird nicht umhüllt) */
 /* VOX2-END */
+/* CHR2-BEGIN ===================== Chorstimmen aus einem Take herauslösen (Paket CHR2, Xander 14.11.: „einzelne Chor-Stimmen im Nachhinein
+   extrahieren … realistische Chöre“). Takes-Blatt › „Stimmen trennen …“: der Kern (Worker) verfolgt bis zu 4 Grundtöne zugleich
+   (Harmonischen-Summe, Schätzen und Abziehen, Oktav-Prüfung) und bildet daraus Stimmen (geordnet hoch → tief, kreuzen nur mit klarem
+   Grund, stetig: Median, Lücken füllen, Inseln weg). Je Stimme eine Obertonmaske (Modell-Wiener: Teiltöne mit geschätzter Stärke,
+   geteilte Teiltöne nach den Nachbarn geteilt) → eigener Take; Rest = Original − Summe. Ablage: jede Stimme = selbst gesungene
+   Chor-Stimme (eigenes Fenster) auf einer neuen freien Chor-Spur (G6+a/CHS), Gruppe neutral, Pegel fest (chr2Unity statt Auto-Abstand);
+   der Rest wird das hörbare Stück, das Original liegt stumm in alt (A/B). Ein ↶ (takes + Stück + chorlanes). Nichts beim App-Start. */
+// CHR2: Kern ohne DOM (läuft im Worker aus chr2Core.toString(); Hauptfaden-Rückfall). sep(x Int16Array|Float32Array, sr, o, prog) →
+// {ok, V, sr, hop, f0: [Float32Array je Stimme (Hz, 0 = still)], y: [Int16Array je Stimme], rest: Int16Array, info}
+function chr2Core() {
+  const C1 = 1200 / Math.LN2;
+  function fftMake(N) {
+    const lev = Math.round(Math.log2(N)), rev = new Uint32Array(N), cs = new Float64Array(N >> 1), sn = new Float64Array(N >> 1);
+    for (let i = 0; i < N; i++) { let r = 0, x = i; for (let k = 0; k < lev; k++) { r = (r << 1) | (x & 1); x >>= 1; } rev[i] = r; }
+    for (let i = 0; i < N >> 1; i++) { cs[i] = Math.cos(2 * Math.PI * i / N); sn[i] = Math.sin(2 * Math.PI * i / N); }
+    return (re, im, inv) => {
+      for (let i = 0; i < N; i++) { const j = rev[i]; if (j > i) { let t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; } }
+      for (let size = 2; size <= N; size <<= 1) {
+        const half = size >> 1, step = N / size;
+        for (let i = 0; i < N; i += size) for (let j = 0, k = 0; j < half; j++, k += step) {
+          const a = i + j, b = a + half, wr = cs[k], wi = inv ? sn[k] : -sn[k], tr = re[b] * wr - im[b] * wi, ti = re[b] * wi + im[b] * wr;
+          re[b] = re[a] - tr; im[b] = im[a] - ti; re[a] += tr; im[a] += ti;
+        }
+      }
+    };
+  }
+  // Haupt-Keule des Hann-Fensters (Betrag, normiert), d in Bins
+  const kern = d => { d = Math.abs(d); if (d < 1e-6) return 1; if (d >= 2) return 0; const s = Math.sin(Math.PI * d) / (Math.PI * d); return Math.abs(s / (1 - d * d)); };
+
+  function sep(x0, sr, o, prog) {
+    o = o || {}; prog = prog || (() => {});
+    const n = x0.length, x = new Float32Array(n), k16 = x0 instanceof Int16Array ? 1 / 32768 : 1;
+    for (let i = 0; i < n; i++) x[i] = x0[i] * k16;
+    const N = sr >= 32000 ? 4096 : 2048, hop = N >> 2, df = sr / N, half = N >> 1;
+    const lo = o.lo || 70, hi = o.hi || 1100, fH = Math.min(5000, sr / 2 - 200), B5 = Math.min(half, Math.ceil(fH / df) + 3);
+    const F = Math.max(1, Math.ceil((n + N / 2) / hop)), win = new Float32Array(N);
+    for (let i = 0; i < N; i++) win[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / N);
+    const fft = fftMake(N), re = new Float64Array(N), im = new Float64Array(N);
+    const frame = f => { const c = f * hop - N / 2; for (let i = 0; i < N; i++) { const j = c + i; re[i] = j >= 0 && j < n ? x[j] * win[i] : 0; im[i] = 0; } fft(re, im, false); };
+    // Log-Frequenz-Raster (20 Cent) für die Harmonischen-Summe
+    const LS = 20, L0 = 55, NL = Math.floor(C1 * Math.log(fH / L0) / LS) + 1, lf = new Float64Array(NL);
+    for (let j = 0; j < NL; j++) lf[j] = L0 * Math.pow(2, j * LS / 1200);
+    const ci0 = Math.ceil(C1 * Math.log(lo / L0) / LS), ci1 = Math.min(NL - 1, Math.floor(C1 * Math.log(hi / L0) / LS));
+    const HM = 20, hOff = new Int32Array(HM + 1); for (let h = 1; h <= HM; h++) hOff[h] = Math.round(1200 * Math.log2(h) / LS);
+    const MAXC = 5, cand = new Float32Array(F * MAXC * 2), ncand = new Uint8Array(F), lspec = new Float64Array(NL), lmax = new Float64Array(NL), R = new Float64Array(B5);
+    const toLog = () => {
+      for (let j = 0; j < NL; j++) {
+        const c = lf[j] / df, a = Math.floor(c), fr = c - a; let v = a + 1 < B5 ? R[a] * (1 - fr) + R[a + 1] * fr : 0;
+        const b0 = Math.ceil(lf[j] * Math.pow(2, -LS / 2400) / df), b1 = Math.floor(lf[j] * Math.pow(2, LS / 2400) / df);
+        for (let b = b0; b <= b1 && b < B5; b++) if (R[b] > v) v = R[b];
+        lspec[j] = v;
+      }
+      for (let j = 0; j < NL; j++) { let v = 0; for (let d = -1; d <= 1; d++) { const q = j + d; if (q >= 0 && q < NL && lspec[q] > v) v = lspec[q]; } lmax[j] = v; }
+    };
+    // genaue Spitze (parabolisch) nahe Frequenz f in R: [Frequenz, Betrag]
+    const peakAt = (f, tol) => {
+      const b0 = Math.max(1, Math.floor(f * (1 - tol) / df)), b1 = Math.min(B5 - 2, Math.ceil(f * (1 + tol) / df)); let bm = -1, vm = 0;
+      for (let b = b0; b <= b1; b++) if (R[b] > vm && R[b] >= R[b - 1] && R[b] >= R[b + 1]) { vm = R[b]; bm = b; }
+      if (bm < 0) return [f, 0];
+      const a = R[bm - 1], c = R[bm + 1], den = a - 2 * vm + c, p = den < 0 ? 0.5 * (a - c) / den : 0;
+      return [(bm + p) * df, vm - 0.25 * (a - c) * p];
+    };
+    const sal = new Float64Array(NL), ban = new Uint8Array(NL);
+    // Schritt 1: mehrstimmige Grundtöne je Rahmen (Harmonischen-Summe, Schätzen und Abziehen)
+    let pk = 0;
+    for (let f = 0; f < F; f++) {
+      frame(f);
+      let rmax = 0; for (let b = 0; b < B5; b++) { R[b] = Math.hypot(re[b], im[b]); if (R[b] > rmax) rmax = R[b]; }
+      let first = 0, nc = 0, guard = 0; const cf0 = [], cs0 = []; ban.fill(0);
+      for (let it = 0; it < MAXC; it++) {
+        toLog();
+        let best = -1, bv = 0;
+        for (let i = ci0; i <= ci1; i++) {
+          if (ban[i]) continue; const f0 = lf[i]; let s = 0, m4 = 0, a1 = lmax[i];
+          for (let h = 1; h <= HM; h++) { const q = i + hOff[h]; if (q >= NL) break; const v = lmax[q]; s += v * (f0 + 20) / (h * f0 + 320); if (h <= 4 && v > m4) m4 = v; }
+          if (a1 < 0.08 * m4) s *= 0.25;                         // ohne Grundton: eher eine Unter-Oktave zweier Stimmen
+          sal[i] = s; if (s > bv) { bv = s; best = i; }
+        }
+        if (best < 0 || bv <= 0) break;
+        {                                                       // Oktav-Fehler: liegt eine Stimme eine Oktave tiefer (ungerade Teiltöne da), dann sie
+          const i2 = best - hOff[2]; if (i2 >= ci0 && !ban[i2]) {
+            let so = 0, se = 0; const g = lf[i2];
+            for (let h = 1; h <= 9; h++) { const q = i2 + hOff[h]; if (q >= NL) break; const w = lmax[q] * (g + 20) / (h * g + 320); if (h & 1) so += w; else se += w; }
+            if (lmax[i2] > 0.05 * rmax && so > 0.15 * se) { best = i2; bv = Math.max(bv, sal[i2]); }
+          }
+        }
+        if (it === 0) first = bv; else if (bv < 0.2 * first) break;
+        // verfeinern: Harmonische 1…6 parabolisch, nach Betrag gewichtet
+        let f0 = lf[best], sw = 0, sf = 0, hit = 0, p12 = 0;
+        for (let h = 1; h <= 6; h++) { if (h * f0 > fH) break; const [pf, pa] = peakAt(h * f0, 0.025); if (pa > 0.05 * rmax) { sw += pa; sf += pa * pf / h; hit++; if ((h === 1 || (h === 2 && f0 < 150)) && pa > 0.02 * rmax) p12++; } }
+        if (sw > 0) { const g = sf / sw; if (Math.abs(C1 * Math.log(g / f0)) < 50) f0 = g; }
+        if (hit < 1 || !p12) { for (let i = Math.max(0, best - 3); i <= Math.min(NL - 1, best + 3); i++) ban[i] = 1; it--; if (++guard > 8) break; continue; }   // nur Reste: keine echte Stimme
+        const bi = Math.round(C1 * Math.log(f0 / L0) / LS); for (let i = Math.max(0, Math.min(best, bi) - 4); i <= Math.min(NL - 1, Math.max(best, bi) + 4); i++) ban[i] = 1;
+        if (cf0.some(z => Math.abs(C1 * Math.log(z / f0)) < 90) || cf0.some((z, k) => (Math.abs(C1 * Math.log(f0 / (2 * z))) < 40 || Math.abs(C1 * Math.log(f0 / (3 * z))) < 40) && bv < 1.2 * cs0[k])) { it--; if (++guard > 8) break; continue; }   // Rest-Oktave einer gefundenen Stimme
+        cand[(f * MAXC + nc) * 2] = f0; cand[(f * MAXC + nc) * 2 + 1] = bv; nc++; cf0.push(f0); cs0.push(bv); guard = 0;
+        // abziehen (Amplituden über die Nachbar-Harmonischen geglättet: geteilte Teiltöne bleiben für die andere Stimme)
+        const A = [];
+        for (let h = 1; h * f0 < fH; h++) A.push(peakAt(h * f0, 0.015));
+        for (let h = 0; h < A.length; h++) {
+          const [pf, pa] = A[h]; if (!(pa > 0)) continue;
+          let m = 0, k = 0; for (let d = -1; d <= 1; d += 2) { const q = A[h + d]; if (q) { m += q[1]; k++; } }
+          const amp = k ? Math.min(pa, 1.6 * m / k) : pa, c = pf / df, sc = 1 + 0.006 * c;
+          for (let b = Math.max(0, Math.ceil(c - 2 * sc)); b <= Math.floor(c + 2 * sc) && b < B5; b++) { R[b] -= amp * kern((b - c) / sc); if (R[b] < 0) R[b] = 0; }
+        }
+      }
+      ncand[f] = nc;
+      const q = Math.floor(f / F * 50); if (q > pk) { pk = q; prog(q / 100); }
+    }
+    // Schritt 2: Stimmen bilden – Zahl, Schwelle, Stimmführung (geordnet, kreuzen nur bei klar besserer Stetigkeit)
+    const firsts = []; for (let f = 0; f < F; f++) if (ncand[f]) firsts.push(cand[f * MAXC * 2 + 1]);
+    firsts.sort((a, b) => a - b);
+    const ref = firsts.length ? firsts[Math.floor(firsts.length * 0.95)] : 0, thr = 0.04 * ref;
+    const cnt = new Uint8Array(F), cf = [];
+    for (let f = 0; f < F; f++) {
+      const l = []; for (let k = 0; k < ncand[f]; k++) { const fq = cand[(f * MAXC + k) * 2], s = cand[(f * MAXC + k) * 2 + 1]; if (s >= thr && !l.some(z => Math.abs(C1 * Math.log(z.f / fq)) < 60)) l.push({f: fq, s}); }
+      cf.push(l); cnt[f] = l.length;
+    }
+    let V = o.n | 0;
+    if (!(V >= 1 && V <= 4)) {
+      const vo = []; for (let f = 0; f < F; f++) if (cnt[f]) vo.push(cnt[f]);
+      V = 1; for (let v = 4; v >= 1; v--) { const c = vo.filter(z => z >= v).length; if (vo.length && c >= 0.4 * vo.length) { V = v; break; } }
+    }
+    const f0 = []; for (let v = 0; v < V; v++) f0.push(new Float32Array(F));
+    const last = new Float64Array(V).fill(0), lastT = new Int32Array(V).fill(-999);
+    const perms = (arr) => { if (arr.length <= 1) return [arr]; const out = []; arr.forEach((a, i) => { for (const p of perms(arr.slice(0, i).concat(arr.slice(i + 1)))) out.push([a].concat(p)); }); return out; };
+    const combos = (m, k, s = 0, cur = [], out = []) => { if (cur.length === k) { out.push(cur.slice()); return out; } for (let i = s; i < m; i++) { cur.push(i); combos(m, k, i + 1, cur, out); cur.pop(); } return out; };
+    const cost = (v, fq, f) => (last[v] > 0 && f - lastT[v] < 40 ? Math.abs(C1 * Math.log(fq / last[v])) : 0);
+    for (let f = 0; f < F; f++) {
+      let l = cf[f].slice().sort((a, b) => b.s - a.s).slice(0, V).sort((a, b) => b.f - a.f);   // hoch → tief
+      if (!l.length) continue;
+      let bestA = null, bc = Infinity;
+      for (const slots of combos(V, l.length)) {                                      // geordnet: keine Kreuzung
+        let c = 0; for (let k = 0; k < l.length; k++) c += cost(slots[k], l[k].f, f);
+        if (c < bc) { bc = c; bestA = slots; }
+      }
+      if (l.length > 1) for (const p of perms(l.map((_, k) => k))) {                   // gekreuzt nur mit klarem Grund
+        for (const slots of combos(V, l.length)) {
+          let c = 0; for (let k = 0; k < l.length; k++) c += cost(slots[k], l[p[k]].f, f);
+          if (c < 0.3 * bc && bc - c > 300) { bc = c; bestA = slots.map((s, k) => ({s, k: p[k]})); }
+        }
+      }
+      for (let k = 0; k < l.length; k++) {
+        const z = bestA[k], v = typeof z === 'object' ? z.s : z, q = typeof z === 'object' ? l[z.k] : l[k];
+        f0[v][f] = q.f; last[v] = q.f; lastT[v] = f;
+      }
+    }
+    // glätten: Median 5 Rahmen, Lücken ≤ 3 Rahmen füllen, Inseln < 4 Rahmen weg, kurze Oktav-Sprünge zurück
+    for (let v = 0; v < V; v++) {
+      const a = f0[v], b = a.slice();
+      for (let f = 0; f < F; f++) { if (!a[f]) continue; const w = []; for (let d = -2; d <= 2; d++) { const q = f + d; if (q >= 0 && q < F && a[q]) w.push(a[q]); } w.sort((p, q) => p - q); b[f] = w[w.length >> 1]; }
+      for (let f = 1; f < F; f++) if (!b[f] && b[f - 1]) { let e = f; while (e < F && !b[e]) e++; if (e < F && e - f <= 3 && Math.abs(C1 * Math.log(b[e] / b[f - 1])) < 150) for (let q = f; q < e; q++) b[q] = b[f - 1] * Math.pow(b[e] / b[f - 1], (q - f + 1) / (e - f + 1)); f = e; }
+      for (let f = 0; f < F; f++) if (b[f]) { let e = f; while (e < F && b[e]) e++; if (e - f < 4) for (let q = f; q < e; q++) b[q] = 0; f = e; }
+      f0[v] = b;
+    }
+    prog(0.55);
+    // Schritt 3: Obertonmaske je Stimme (Modell-Wiener), Rücktransformation, Rest = Original − Summe
+    const fM = Math.min(11000, sr / 2 - 100), BM = Math.min(half, Math.ceil(fM / df)), P = [], Ph = new Float64Array(half + 1);
+    for (let v = 0; v < V; v++) P.push(new Float64Array(half + 1));
+    const acc = [], y = []; for (let v = 0; v < V; v++) { acc.push(new Float64Array(N)); y.push(new Int16Array(n)); }
+    const yre = new Float64Array(N), yim = new Float64Array(N), MX = new Float64Array(half + 1), q16 = s => { const v = Math.round(s * 32767); return v > 32767 ? 32767 : v < -32768 ? -32768 : v; };
+    const yf = []; for (let v = 0; v < V; v++) yf.push(new Float32Array(n));
+    let pk2 = 55;
+    for (let f = 0; f < F; f++) {
+      frame(f);
+      for (let b = 0; b <= half; b++) { MX[b] = Math.hypot(re[b], im[b]); }
+      const hs = [];                                                                        // Harmonische aller Stimmen (für Kollisionen)
+      for (let v = 0; v < V; v++) { const g = f0[v][f], L = []; if (g > 0) for (let h = 1; h * g < fM; h++) L.push(h * g / df); hs.push(L); }
+      for (let v = 0; v < V; v++) {
+        const Pv = P[v]; Pv.fill(0); const L = hs[v]; if (!L.length) continue;
+        const A = L.map(c => { const b = Math.round(c); let m = 0; for (let d = -1; d <= 1; d++) { const q = b + d; if (q > 0 && q <= half && MX[q] > m) m = MX[q]; } return m; });
+        for (let h = 0; h < L.length; h++) {
+          const c = L[h]; let col = false;
+          for (let u = 0; u < V && !col; u++) if (u !== v) for (const c2 of hs[u]) if (Math.abs(c2 - c) < 2.5) { col = true; break; }
+          let amp = A[h];
+          if (col) { let m = 0, k = 0; for (const d of [-2, -1, 1, 2]) { const q = h + d; if (q >= 0 && q < A.length) { m += A[q]; k++; } } if (k) amp = Math.min(amp, m / k); }
+          const sg = 1.0 + 0.008 * c, r0 = Math.max(1, Math.ceil(c - 3 * sg)), r1 = Math.min(BM, Math.floor(c + 3 * sg)), a2 = amp * amp;
+          for (let b = r0; b <= r1; b++) { const d = (b - c) / sg; Pv[b] += a2 * Math.exp(-0.5 * d * d); }
+        }
+      }
+      for (let b = 0; b <= half; b++) { let s = 0; for (let v = 0; v < V; v++) s += P[v][b]; const x2 = MX[b] * MX[b]; Ph[b] = Math.max(x2 - s, 0) + 0.02 * x2 + 1e-24 + s; }
+      const c0 = f * hop - N / 2;
+      for (let v = 0; v < V; v++) {
+        const Pv = P[v], ac = acc[v];
+        if (hs[v].length) {
+          for (let b = 0; b <= half; b++) { const m = b > 0 && b <= BM ? Pv[b] / Ph[b] : 0; yre[b] = re[b] * m; yim[b] = im[b] * m; }
+          for (let b = 1; b < half; b++) { yre[N - b] = yre[b]; yim[N - b] = -yim[b]; }
+          fft(yre, yim, true);
+          for (let i = 0; i < N; i++) ac[i] += yre[i] / N * win[i] / 1.5;
+        }
+        // die ersten hop Proben sind fertig → ausgeben, Speicher rückt
+        const o0 = c0; for (let i = 0; i < hop; i++) { const j = o0 + i; if (j >= 0 && j < n) yf[v][j] = ac[i]; }
+        ac.copyWithin(0, hop); ac.fill(0, N - hop);
+      }
+      const q = 55 + Math.floor(f / F * 44); if (q > pk2) { pk2 = q; prog(q / 100); }
+    }
+    // Rest dazu: was keine Stimme bekam; ausgeben als PCM16 (Summe = Original bis auf Rundung)
+    const rest = new Int16Array(n), st = {e: new Float64Array(V), er: 0, ex: 0};
+    for (let i = 0; i < n; i++) {
+      let s = 0; for (let v = 0; v < V; v++) { const q = yf[v][i]; s += q; st.e[v] += q * q; y[v][i] = q16(q); }
+      const r = x[i] - s; rest[i] = q16(r); st.er += r * r; st.ex += x[i] * x[i];
+    }
+    const db = e => (e > 0 ? +(10 * Math.log10(e / Math.max(1e-30, st.ex))).toFixed(1) : -120);
+    const med = a => { const l = Array.from(a).filter(z => z > 0).sort((p, q) => p - q); return l.length ? +l[l.length >> 1].toFixed(1) : 0; };
+    const act = a => { let c = 0; for (const z of a) if (z > 0) c++; return +(c / Math.max(1, a.length)).toFixed(3); };
+    prog(1);
+    return {ok: V >= 1 && firsts.length > 0, V, sr, hop, N, f0, y, rest,
+      info: {V, frames: F, voiced: firsts.length, vdb: Array.from(st.e).map(db), rdb: db(st.er), med: f0.map(med), act: f0.map(act)}};
+  }
+  return {sep};
+}
+const CHR2 = {w: null, wait: new Map(), id: 0, idle: 0, job: null, open: false, n: 0, last: null};
+// Gruppe der getrennten Stimmen: neutral (kein Tiefschnitt/EQ/Zischlaut/Hall/Echo) – Rest + Stimmen klingen wie das Original
+const CHR2_GRP = {below: 0, hp: 20, mid: 0, midF: 400, air: 0, sib: 0, rev: 0, pre: 'aus', dly: 0};
+tkExt().take.push((m, o) => { const c = m && m.chr2; if (c && typeof c === 'object' && isNum(c.k) && isNum(c.n)) { o.chr2 = {k: clamp(Math.round(c.k), 0, 4), n: clamp(Math.round(c.n), 1, 4)}; if (typeof c.of === 'string' && UID_RE.test(c.of)) o.chr2.of = c.of; } });
+// Chor einer Stelle, deren Stimmen alle getrennt wurden: fester Pegel statt Auto-Abstand (√2 = Mono-Panner-Gesetz gegen die L=R-Lead-Kette)
+function chr2Unity(c) { return !!(c && Array.isArray(c.voices) && c.voices.length && S.takes && c.voices.every(v => v && v.take && S.takes[v.take.take] && S.takes[v.take.take].chr2)); }
+function chr2Worker() {
+  if (CHR2.w) return CHR2.w;
+  if (typeof Worker === 'undefined') return null;
+  const src = chr2Core.toString() + '\nconst C = chr2Core();\nself.onmessage = e => { const d = e.data; try { const r = C.sep(d.x, d.sr, d.o, p => self.postMessage({id: d.id, p})); const tr = r.y.map(a => a.buffer).concat([r.rest.buffer], r.f0.map(a => a.buffer)); self.postMessage({id: d.id, r}, tr); } catch (err) { self.postMessage({id: d.id, err: String(err && err.message || err)}); } };';
+  const ways = [() => URL.createObjectURL(new Blob([src], {type: 'application/javascript'})), () => 'data:application/javascript;base64,' + btoa(unescape(encodeURIComponent(src)))];
+  for (const mk of ways) {
+    try {
+      const u = mk(), w = new Worker(u); if (u.startsWith('blob:')) setTimeout(() => { try { URL.revokeObjectURL(u); } catch (e) {} }, 30000);
+      w.onmessage = e => { const d = e.data, j = CHR2.wait.get(d.id); if (!j) return; if (d.p != null) { if (j.prog) try { j.prog(d.p); } catch (x) {} return; } CHR2.wait.delete(d.id); chr2Idle(); if (d.err) j.rej(new Error(d.err)); else j.res(d.r); };
+      w.onerror = () => { const all = [...CHR2.wait.values()]; CHR2.wait.clear(); try { w.terminate(); } catch (x) {} CHR2.w = null; for (const j of all) j.rej(new Error('Trennen fehlgeschlagen')); };
+      return CHR2.w = w;
+    } catch (e) {}
+  }
+  return null;
+}
+function chr2Idle() { clearTimeout(CHR2.idle); CHR2.idle = setTimeout(() => { if (!CHR2.wait.size && CHR2.w) { try { CHR2.w.terminate(); } catch (e) {} CHR2.w = null; } }, 20000); }
+// x Float32 mono → Ergebnis des Kerns (im Worker; ohne Worker im Hauptfaden)
+function chr2Run(x, sr, o, prog) {
+  const w = chr2Worker();
+  if (!w) return new Promise((res, rej) => setTimeout(() => { try { res(chr2Core().sep(x, sr, o, prog)); } catch (e) { rej(e); } }, 0));
+  return new Promise((res, rej) => { const id = ++CHR2.id; CHR2.wait.set(id, {res, rej, prog}); w.postMessage({id, x, sr, o}, [x.buffer]); });
+}
+// Abbrechen: Worker beenden, nichts ändert sich
+function chr2Cancel() {
+  const j = CHR2.job; if (!j) return false; j.stop = true;
+  const all = [...CHR2.wait.values()]; CHR2.wait.clear(); if (CHR2.w) { try { CHR2.w.terminate(); } catch (e) {} CHR2.w = null; }
+  for (const q of all) q.rej(new Error('abgebrochen'));
+  return true;
+}
+/* ---------- Takes-Blatt: „Stimmen trennen …“ ---------- */
+const chr2BusyTxt = () => 'Abbrechen · ' + Math.round((CHR2.job ? CHR2.job.p : 0) * 100) + ' %';
+function chr2TkHtml(x) {
+  const busy = !!CHR2.job, has = !!(x.a.chor && x.a.chor.voices && x.a.chor.voices.length);
+  if (!CHR2.open && !busy) return '<button class="mbtn rb tk-chr2" data-a="chr2">Stimmen trennen …</button>';
+  const dis = busy ? ' disabled' : '';
+  return '<div class="chr2" role="group" aria-label="Stimmen trennen"><h5>Stimmen trennen</h5>' +
+    '<div class="ggbpre"><span class="small">Stimmen</span>' + [[0, 'Auto'], [2, '2'], [3, '3'], [4, '4']].map(([v, t]) => `<button class="mbtn rb" data-a="chr2n" data-v="${v}" aria-pressed="${v === CHR2.n}" aria-label="${v ? v + ' Stimmen' : 'Zahl selbst finden'}"${dis}${v ? '' : ' style="flex:0 0 auto;padding:0 10px"'}>${t}</button>`).join('') + '</div>' +
+    `<div class="ggbrow"><button class="mbtn rb${busy ? '' : ' go'}" data-a="chr2go"${has && !busy ? ' disabled' : ''}>${busy ? chr2BusyTxt() : 'Trennen'}</button><button class="mbtn rb" data-a="chr2x"${dis}>Schließen</button></div>` +
+    `<div class="small">${has ? 'Hier gibt es schon Chor-Stimmen – Trennen geht nur ohne.' : 'Jede Stimme wird ein eigener Take auf einer eigenen Chor-Spur. Der Rest bleibt der Gesang hier; das Original liegt stumm darunter (A/B).'}</div></div>`;
+}
+function chr2Paint() { const p = UI.pop && UI.pop.name === 'takes' ? UI.pop.el : null; if (p) tkSheetPaint(p); }
+function chr2Prog() { const p = UI.pop && UI.pop.name === 'takes' ? UI.pop.el : null, b = p && p.querySelector('button[data-a="chr2go"]'); if (b) b.textContent = chr2BusyTxt(); }
+function chr2Tap(b, rr) {
+  const a = b.dataset.a;
+  if (a === 'chr2') { CHR2.open = true; chr2Paint(); return true; }
+  if (a === 'chr2x') { CHR2.open = false; chr2Paint(); return true; }
+  if (a === 'chr2n') { if (!CHR2.job) { CHR2.n = +b.dataset.v || 0; chr2Paint(); } return true; }
+  if (a === 'chr2go') { if (CHR2.job) chr2Cancel(); else chr2Sep(rr, CHR2.n); return true; }
+  return false;
+}
+/* ---------- Trennen: Stück → Stimmen-Takes auf Chor-Spuren + Rest als Lead (ein ↶) ---------- */
+async function chr2Sep(r, n) {
+  if (CHR2.job) return null;
+  const x = tkRef(r); if (!x) return null;
+  const a = x.a, st = stimmeT(), m = S.takes && S.takes[a.take];
+  if (!tkAudioOk()) { toast('Audio nur auf der eigenen Seite'); return null; }
+  if (!m || st < 0) { toast('Take fehlt'); return null; }
+  if (a.chor && a.chor.voices && a.chor.voices.length) { toast('Hier gibt es schon Chor-Stimmen – Trennen geht nur ohne'); return null; }
+  if (rec.state !== 'off' || R.songRec) { toast('Erst Aufnahme beenden'); return null; }
+  const b = tkPlayBuf(a.take, a) || tkBuffer(a.take); if (!b) { tkLoad(a.take); toast('Audio lädt noch – gleich noch einmal'); return null; }
+  const sr = b.sampleRate, s0 = Math.max(0, Math.floor((a.in - g3PreOf(a) - .25) * sr)), s1 = Math.min(b.length, Math.ceil((a.out + .5) * sr));
+  if (s1 - s0 < sr * .3) { toast('Zu kurz zum Trennen'); return null; }
+  const xs = b.getChannelData(0).slice(s0, s1), t0 = performance.now(), sig = JSON.stringify([a.take, a.in, a.out, a.at]);
+  CHR2.job = {r, p: 0, stop: false}; chr2Paint();
+  let res = null, err = null;
+  try { res = await chr2Run(xs, sr, {n: n || 0}, p => { if (CHR2.job) { CHR2.job.p = p; chr2Prog(); } }); } catch (e) { err = e; }
+  const stop = CHR2.job && CHR2.job.stop; CHR2.job = null;
+  if (stop || (err && String(err.message) === 'abgebrochen')) { toast('Trennen abgebrochen – nichts geändert'); chr2Paint(); return null; }
+  if (err || !res) { logErr(err); toast('Trennen fehlgeschlagen'); chr2Paint(); return null; }
+  const x2 = tkRef(r); if (!x2 || x2.a !== a || JSON.stringify([a.take, a.in, a.out, a.at]) !== sig || (a.chor && a.chor.voices && a.chor.voices.length)) { toast('Inzwischen geändert – bitte noch einmal'); chr2Paint(); return null; }
+  if (!res.ok || res.V < 2) { toast(res.V === 1 ? 'Nur eine Stimme erkannt – nichts zu trennen' : 'Keine Stimmen erkannt'); chr2Paint(); return null; }
+  if (Object.keys(S.takes).length + res.V + 1 > 512) { toast('Höchstens 512 Takes – erst aufräumen'); chr2Paint(); return null; }
+  const tb = JSON.stringify(S.takes), lb = g6pLanesSnap(st), it = g6pfSnapStelle(r), sb = r.vox ? songSnapshot() : null;
+  const L = g6pfLanes(st), used = new Set(), lanes = [];
+  for (let k = 0; k < res.V; k++) { const ln = g6pLaneFor(L, 'free', used, g6pChoirs(S, st), 'Stimme ' + (k + 1)); if (!ln) { toast('Höchstens 8 Chor-Spuren – erst eine Spur löschen'); chr2Paint(); return null; } used.add(ln.id); lanes.push(ln); }
+  const T0 = s0 / sr, ids = [], voices = [];
+  for (let k = 0; k < res.V; k++) {
+    const q = tkAddPcmTake(res.y[k], sr, 'import'), mt = S.takes[q.id]; mt.name = 'Stimme ' + (k + 1); mt.chr2 = {of: a.take, k: k + 1, n: res.V}; ids.push(q.id);
+    voices.push({lane: lanes[k].id, rule: 'free', n: [], db: 0, pan: 0, w: 0, dbl: [{ms: 0, ct: 0, p: 0}], take: {take: q.id, in: tkR6(a.in - T0), out: tkR6(a.out - T0), at: a.at}, name: lanes[k].name});
+  }
+  const qr = tkAddPcmTake(res.rest, sr, 'import'), mr = S.takes[qr.id]; mr.name = 'Rest'; mr.chr2 = {of: a.take, k: 0, n: res.V}; ids.push(qr.id);
+  for (const id of ids) { const nt = tkNormTake(S.takes[id]); if (nt) S.takes[id] = nt; }
+  // Original rutscht nach unten (stumm, A/B), der Rest wird das hörbare Stück; die Stimmen spielen über die Chor-Gruppe
+  const old = Object.assign({take: a.take, in: a.in, out: a.out, at: a.at}, g10cSegF(a));
+  a.alt = [old].concat(a.alt || []).slice(0, 16); g10cSegSet(a, null);
+  Object.assign(a, {take: qr.id, in: tkR6(a.in - T0), out: tkR6(a.out - T0)});
+  a.chor = {v: 2, style: null, grp: Object.assign({}, CHR2_GRP), voices};
+  S.tracks[st].chor = g6pNormLanes(L) || L;
+  g6pfNormStelle(r);
+  g6pfCommit('Stimmen getrennt', tb, r.vox ? [{kind: 'song', before: sb}] : [it], st, lb);
+  CHR2.open = false;
+  CHR2.last = {V: res.V, ids, info: res.info, ms: Math.round(performance.now() - t0), f0: res.f0.map(f => Array.from(f)), hop: res.hop, sr, s0};
+  g6pfAfter([r], ids);
+  toast(res.V + ' Stimmen getrennt – je eine Chor-Spur, der Rest bleibt hier', {label: '↶ Rückgängig', fn: () => undo()});
+  return CHR2.last;
+}
+const CHR2_API = {
+  sep: (r, n) => chr2Sep(r || {t: stimmeT(), s: R.selS}, n || 0), cancel: () => chr2Cancel(), busy: () => (CHR2.job ? CHR2.job.p : null), last: () => CHR2.last,
+  core: (x, sr, o) => chr2Core().sep(x, sr, o), unity: r => { const z = tkRef(r || {t: stimmeT(), s: R.selS}); return z ? chr2Unity(z.a.chor) : null; }
+};
+Object.assign(SYNQUENZER, {chr2: CHR2_API});              /* CHR2: Test-API (Objekt, wird nicht umhüllt) */
+/* CHR2-END */
 /* MTX-BEGIN ===================== Matrix: Ziehen über alle Zeilen, Wahl beim Ablegen, Szene / Spur duplizieren (Paket MTX, Xander 07.11. (13) FL-D)
    Xander: „wenn ich einen Clip von der unteren Hälfte nach oben ziehen will, komme ich nicht hoch … wenn ich einen Clip halte und in einen
    anderen Slot ziehe, fragt er nicht, ob kopieren oder loslassen … Clip duplizieren … Szene duplizieren … Instrumentenspur duplizieren
