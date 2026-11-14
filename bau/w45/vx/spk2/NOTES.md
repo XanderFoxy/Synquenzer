@@ -1,4 +1,4 @@
-# SPK2 – NOTES (Stand Auftrag 2/5, halb)
+# SPK2 – NOTES (Stand Auftrag 5/5: Gesamt-Test 28 OK / 2 FEHLER – Bass-Trennung offen)
 
 Datei `vx/spk2/index.html` = basis2.html (4.57.0) + Block `SPK2-BEGIN … SPK2-END` direkt nach `/* SPK1-END */` + 4 Haken mit „SPK2“
 im SPK1-Block. Quelle des Blocks: `spk2-block.js`, Einbau: `python3 bau.py` (baut immer neu aus basis2.html). VERSION/CHANGES unberührt.
@@ -185,3 +185,59 @@ Kick-Ausklang (≈ 48–51 Hz). „Sicherheit“ trennt noch schlecht (Vorschlä
 ### Dateien
 `spk2-klang-probe.mjs` (+ json), `spk2-klang-test.mjs` (+ json), Fotos `fotos/50-klang-nachbauen-hochkant.png`, `51-klang-nachbauen-quer-370.png`,
 Rauchtest `smoke-a4.png`, Sicherung vor Auftrag 4: `spk2-block.a3.js`.
+
+---------------------------------------------------------------------------------------------------------------------------
+## Auftrag 5/5 – Gesamt-Test (28 OK / 2 FEHLER, beide bekannt offen aus Auftrag 1)
+
+`spk2-test.mjs <abs. index.html>` (Touch, Demo-Song = Summe der Stems aus mess/, Wahrheit = Bass-Clip Synth 1 aus dem Demo-Projekt,
+32 Noten Takt 1–4; basis2.html eine Ebene höher für den Vergleich alter Projekte), 30 Prüfungen, 66 s, Ergebnis `spk2-test.json`,
+Fotos `fotos/60-gesamt-zerlegt.png` … `66-gesamt-quer-428.png` / `66-gesamt-quer-370.png`, Rauchtest `smoke-a5.png`.
+
+| Prüfung | Ergebnis |
+|---|---|
+| App-Start lädt nichts (kein Blatt/CSS/Worker/Klang-Worklet-Text) | OK |
+| Zerlegen: Drums ≥ 4 dB · ein ↶ | OK (5,99 dB, 1,7 s) |
+| **Zerlegen: Bass ≥ Ziel 4 dB** | **FEHLER 0,77 dB** (Auftrag 1 offen) |
+| **Verfeinern (Ziel Bass) verbessert** | **FEHLER 0,77 → −0,46 dB** (Auftrag 1 offen); ↶ = vorher OK |
+| Noten erkannt (Original, Bass-Band) | OK 43,8 % (14/32, Präzision 27,5 %, 5 Oktavfehler) |
+| Zuordnung per Tipp → „Gehört zu“ → Bass (vorhandene Bass-Ebene), ein ↶ | OK |
+| Überall finden (Vorlage aus Takt 1) | OK 45,8 % (11/24, Präzision 23 %) |
+| Alle übernehmen ↶/↷ | OK |
+| Verfeinern nach Noten verbessert die Ebene | OK (−5,6 → −1,12 dB, s. Befund) |
+| Loop Takt 1–2 (Ansicht ▾ + Klammer ziehen) → als MIDI | OK 14 Noten = Ebenen-Noten, 1/16-Raster, Synth 1 (Rolle Bass), 8/16 wie das Original |
+| MIDI gespielt taktgenau | OK 20 Noten, Phase 0 ms |
+| als Audio (Bass-Ebene) → Spur „Original“ | OK Take = Ebene bitgleich (0 LSB), in 0 / out 4,285714 s |
+| Audio gespielt taktgenau | OK Abstand 4285,71 ms (= 2 Takte), Phase 0 ms |
+| Klang nachbauen, bekannter Klang (VA) | OK 4,02 → 3,40 dB in 2 s |
+| Klang nachbauen, Note der Bass-Ebene (Noten ▾) | OK 15,9 → 14,2 dB (Wert hängt an der Ebene) |
+| A/B gleich laut · Als Klang übernehmen · ↶ je Aktion (MIDI/Audio/Klang) | OK (0,000 dB Unterschied) |
+| Spektral speichern/laden (Masken, Noten 98, Vorlage) | OK |
+| Container (ZIP) in frischem Speicher: Take bitgleich, Original-Clip, MIDI-Clip, Klang, Spektral-Dokument mit Noten + Masken | OK (nach Fix, s. u.) |
+| Alte Projekte: Demo speichern/laden ergibt in Basis und neuer Fassung dieselbe Datei | OK |
+| Layout 428×926 / 926×428 / 926×370 (zu, Noten ▾ offen, In die Matrix ▾ offen): keine Überlappung, Tasten ≥ 44, ✕ 44×44 sichtbar, Loop-✕ 44×44 | OK |
+| ✕ schließt · keine Konsolen-Fehler | OK |
+
+### Behoben in Auftrag 5
+- **Container ohne Analyse**: SPK1 setzt den Projekt-Verweis `S.spk` nur über die Test-API (`spk1Link` wurde nie aufgerufen) → der ZIP-Container
+  trug die Spektral-Analyse nie mit. Jetzt: „Loop → In die Matrix“ (Audio und MIDI) verknüpft die Analyse im selben ↶-Schritt (`spk1Link` in
+  beiden `imp1Step`, Kommentar „Auftrag 5“). Ohne Matrix-Übergabe bleibt das Projekt wie bisher (alte Projekte gleich). Sicherung `spk2-block.a4.js`.
+
+### Befund (für Auftrag 1/2)
+Bass-Ebene SDR: Zerlegen 0,77 → nach Zuordnen Takt 1 (4 richtige Noten) −0,59 → nach „Alle übernehmen“ (51 Noten, viele falsch: Pads C3
+in Takt 5–8, Kick-Ausklang) −5,6 → Verfeinern nach Noten −1,12 dB. Zuordnen zieht Kämme falscher Noten in die Bass-Ebene → Präzision der
+Noten (23–28 %) ist der Hebel, nicht nur die Quote. Vorschlag: „Alle übernehmen“ nur ab „Sicher ab“ mit geschärfter Sicherheit (Gegen-Vorlage,
+NOTES Auftrag 2 Punkt 1) und Bass-Band oben enger.
+
+### Regression auf spk2/index.html
+spk1-test 17 OK / 1 FEHLER (verfeinern-verbessert-ziel, unverändert seit SPK1) · spk2-loop-test ALLE OK (18) · vx1-test 61/61 OK
+(Fotos `fotos/vx1/`) · imp1-test ALLE OK (121 s, Kopie in `reg/`, Log `reg/imp1-test.log`, Fotos `reg/fotos/`).
+
+### Pflicht
+topdefs doppelt 0 / Syntaxfehler 0 · dupkeys 0 · smoke errors [] · „MS 2000“ 1× · „  live: true,“ 1× · Markenwörter = Basis · VERSION 4.57.0 ·
+CHANGES unberührt.
+
+### Offen (Paket SPK2 gesamt)
+1. Bass-Trennung ≥ 4 dB und Verfeinern ≥ +1 dB (Auftrag 1, NOTES „Nächster Schritt“ 1–4).
+2. Noten im Gemisch: Quote 44–46 %, Präzision 23–28 %; mehrstimmig nicht gebaut (Seite sagt „einstimmig“).
+3. Klang nachbauen: zweiter VA-Oszillator, Unison/LFO/Hall nicht geschätzt; Güte auf Ebenen hängt an der Trennung.
+4. Loop: krumme Quell-Tempi nicht gedehnt, Loop nicht im Dokument gespeichert, kein Loop-Abspielen auf der Seite.

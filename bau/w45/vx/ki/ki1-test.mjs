@@ -116,10 +116,11 @@ ok('x-sichtbar', lay, lay.x);
 // 9) Speichern / Neu öffnen (Kern-Worker zu, wieder auf): gleiche Masken, gleiche Ebenen, Auftrag als fertig vermerkt, keine q-Stücke übrig
 const pts = [[30, 3], [200, 10], [400, 60], [600, 300], [800, 1000]];
 const rdMasks = (p) => p.evaluate(async pts => { const L = (await __spk.layers()).layers, o = []; for (const l of L) for (const [m, k] of pts) o.push(await __spk.maskAt(l.id, m, k)); return {names: L.map(l => l.name + ':' + l.z), v: o}; }, pts);
+// (nach dem Abbrechen in 6) liegt ein angefangener neuer Lauf: Stück 1/4 muss das Speichern überstehen → später fortsetzen)
 const sv0 = await rdMasks(p);
-const sv = await p.evaluate(async () => { const id = SPK1.doc; await __spk.save(); await __spk.close(); const o = await __spk.open(id); const st = await __ki1.stand(); return {job: o.meta.jobs && o.meta.jobs.profi, stand: st.job}; });
+const sv = await p.evaluate(async () => { const id = SPK1.doc, a = (await __ki1.stand()).job; await __spk.save(); await __spk.close(); const o = await __spk.open(id); const b = (await __ki1.stand()).job; return {vor: a, nach: b}; });
 const sv1 = await rdMasks(p);
-ok('speichern-laden', {gleich: sv0.v.join() === sv1.v.join(), names: sv1.names, job: sv.job, stand: sv.stand}, sv0.v.join() === sv1.v.join() && sv0.v.some(v => v > 0) && sv1.names.join() === sv0.names.join() && sv.job && sv.job.fertig && sv.stand && sv.stand.have === 0);
+ok('speichern-laden', {gleich: sv0.v.join() === sv1.v.join(), names: sv1.names, stand: sv.nach}, sv0.v.join() === sv1.v.join() && sv0.v.some(v => v > 0) && sv1.names.join() === sv0.names.join() && sv.vor && sv.nach && sv.nach.have === sv.vor.have && sv.nach.k === sv.vor.k && sv.nach.sig === sv.vor.sig && !sv.nach.fertig);
 // 10) Container (ZIP wie „Container sichern“): Analyse im Projekt → ZIP → Analyse vom Gerät weg → ZIP lesen → gleiche Masken
 const zp = await p.evaluate(async () => {
   const id = SPK1.doc; __spk.page.close(); __spk.link();
