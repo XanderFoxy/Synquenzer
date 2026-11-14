@@ -95025,6 +95025,7 @@ function ki1KernMake(X) {
     const lids = {};
     for (const art of ['drums', 'bass', 'gesang']) { let l = d.meta.layers.find(x => x.z === art); if (!l) { l = X.newLayer(d, {art}); l.z = art; } lids[art] = l.id; }
     const zl = [lids.drums, lids.bass, lids.gesang], own = d.meta.layers.filter(l => !zl.includes(l.id)).map(l => l.id);
+    if (typeof spk6DspMake === 'function') own.splice(0, own.length, ...own.filter(id => !(d.meta.layers.find(l => l.id === id) || {}).k6));   /* SPK6: Kopien belegen nichts */
     let qc = -1, Q = null, Z = 0;
     for (let s = 0; s < NS; s++) {
       if (d.zStop) throw new Error('abgebrochen');
@@ -97519,6 +97520,7 @@ function spk1DspMake(V) {
     if (von !== 'orig' && von !== 'rest' && !lay(d, von)) { d.u = null; throw new Error('Ebene fehlt'); }
     if (von === nach) { d.u = null; return {nach, anteil: 0}; }
     const {fnc, box} = selFn(d, o.sel || {}), TR = TRn(d), NB = NBn(d), all = d.meta.layers.map(l => l.id);
+    if (typeof Z2 !== 'undefined' && Z2 && Z2.s6) Z2.s6.tAll(d, all, von, nach);   /* SPK6: Kopien nehmen/geben nichts */
     let moved = 0, cells = 0;
     for (let s = box.m0 >> 7; s <= box.m1 >> 7 && box.m1 >= 0; s++) {
       for (let tr = box.k0 >> 7; tr <= Math.min(TR - 1, box.k1 >> 7); tr++) {
@@ -97865,6 +97867,7 @@ function spk1DspMake(V) {
       const lids = {};
       for (const art of ['drums', 'bass', 'gesang']) { let l = d.meta.layers.find(x => x.z === art); if (!l) { l = newLayer(d, {art}); l.z = art; } lids[art] = l.id; }
       const zl = [lids.drums, lids.bass, lids.gesang], own = d.meta.layers.filter(l => !zl.includes(l.id)).map(l => l.id);
+      if (typeof spk6DspMake === 'function') own.splice(0, own.length, ...own.filter(id => !(d.meta.layers.find(l => l.id === id) || {}).k6));   /* SPK6: Kopien belegen nichts */
       const A = await zPrep(d, emit, qid), KV = A.KV, KN = A.KN, LUT = A.LUT;
       const job = d.meta.jobs.zerlegen; let s0 = 0;
       if (job && !job.fertig && job.lids && job.lids.join() === zl.join() && o.weiter !== false) s0 = Math.min(NS, job.k | 0);   // Weiterrechnen nach Unterbrechung
@@ -98124,6 +98127,7 @@ function spk1DspMake(V) {
         else if (m.was === 'farbe') l.col = String(m.v || l.col).slice(0, 24);
         else if (m.was === 'vol') l.vol = Math.max(-60, Math.min(12, +m.v || 0));
         else if (m.was === 'solo' || m.was === 'mute') l[m.was] = !!m.v;
+        if (m.was === 'weg' && typeof Z2 !== 'undefined' && Z2 && Z2.s6) Z2.s6.gone(d, l);   /* SPK6: Kopie übernimmt den Platz der gelöschten Quelle */
         if (step) uEnd(d); else { d.metaDirty = true; soon(d); }
         return Object.assign({lid: l.id || 'rest'}, info(d));
       }
@@ -98162,7 +98166,7 @@ function spk1DspMake(V) {
   }
   const Z2 = typeof spk2DspMake === 'function' ? spk2DspMake({V, magsAt, hpss, f0Sum, comb, ramp, medLine, win, stft, istft, selFn, Fn, NBn, magPair, render, mixOf, transfer, uBegin, uEnd, lay, tick}) : null;   // SPK2 (Auftrag 2: Noten brauchen render/transfer/Undo)
   if (Z2 && typeof spk3DspMake === 'function') spk3DspMake(Z2);   // SPK3: Tiefband mit Kick-Vorlage (ersetzt Z2.lowSplit, schaltet es ein)
-  if (Z2 && typeof spk6DspMake === 'function') Z2.s6 = spk6DspMake({Z2, V, BT, BLK, win, lay, masksOf, stripe, stCopy, newLayer, verUp, uBegin, uTouch, uEnd, render, block, get, put, del, keys});   // SPK6: Ebenen-Werkstatt (Ops über Z2.ops)
+  if (Z2 && typeof spk6DspMake === 'function') Z2.s6 = spk6DspMake({Z2, V, BT, BLK, win, lay, masksOf, stripe, stCopy, newLayer, verUp, uBegin, uTouch, uEnd, render, block, get, put, del, keys, selFn});   // SPK6: Ebenen-Werkstatt (Ops über Z2.ops)
   return {on, stft, istft, specInfo, docs, lowSplit, Z2};   // SPK2: Z2 für Messungen
 }
 /* ---------- Hauptfaden: Worker (Blob aus Text), Rückfall = derselbe Kern hier ---------- */
@@ -101934,7 +101938,7 @@ window.__nx1 = {
      l.fx = {pan, lo, mi, hi, hp, lp, hall, echo, sat}  Effekte im Block → Abspielen, render, Export und In Matrix gleich, deterministisch.
    Tonhöhe: eigener Phasen-Vocoder (wahre Frequenz je Bin, Verhältnis je Rahmen, Hüllkurve für Formant-Erhalt), nur wo r ≠ 1; Blenden 20 ms. ===== */
 function spk6DspMake(I) {
-  const BT = I.BT, BLK = I.BLK, V = I.V, CH = 524288, TAU = 2 * Math.PI;
+  const BT = I.BT, BLK = I.BLK, V = I.V, CH = 524288, TAU = 2 * Math.PI, CS = 65536, AMAX = 64e6, HR = 1.12;
   const PAL = ['--t1', '--t6', '--t5', '--t4', '--t3', '--t8', '--p2', '--p9', '--p3', '--p6'];
   const FXK = {pan: [-1, 1], lo: [-15, 15], mi: [-15, 15], hi: [-15, 15], hp: [0, 2000], lp: [0, 20000], hall: [0, 1], echo: [0, 1], sat: [0, 1]};
   const fxNorm = f => { const o = {}; f = f || {}; for (const k in FXK) { let v = +f[k] || 0; v = Math.max(FXK[k][0], Math.min(FXK[k][1], v)); if (k === 'hp' && v && v < 20) v = 20; if (k === 'lp' && v && v < 200) v = 200; o[k] = +v.toFixed(4); } return o; };
@@ -101945,6 +101949,27 @@ function spk6DspMake(I) {
   const akey = (id, aid, k) => 'spk:' + id + ':a' + aid + ':' + k;
   const lidOk = (d, lid) => { const l = I.lay(d, lid); if (!l) throw new Error('Ebene fehlt'); return l; };
   const colNext = (c, k) => PAL[((PAL.indexOf(c) < 0 ? 0 : PAL.indexOf(c)) + (k || 1)) % PAL.length];
+  const cl = o => JSON.parse(JSON.stringify(o));
+  /* ---- Audio der Ebenen im Speicher: Stücke à 65536 Proben (Int16), unveränderlich. Eine neue Fassung teilt alle Stücke, die gleich bleiben –
+     eine umgesetzte Note kostet so ein paar hundert KB statt der ganzen Ebene (Undo-Schritte teilen sich das Audio). ---- */
+  const axOf = x => { const c = []; for (let i = 0; i < x.length; i += CS) c.push(x.slice(i, Math.min(x.length, i + CS))); return {n: x.length, c}; };
+  const axFlat = X => { const y = new Int16Array(X.n); X.c.forEach((c, j) => y.set(c, j * CS)); return y; };
+  function axRd(X, s0, y, g) {   // y[i] = X[s0 + i] · g (außerhalb bleibt y unverändert)
+    const n = y.length, e = Math.min(n, X.n - s0); let i = Math.max(0, -s0);
+    while (i < e) { const p = s0 + i, c = X.c[Math.floor(p / CS)], o = p % CS, m = Math.min(e - i, c.length - o); for (let q = 0; q < m; q++) y[i + q] = c[o + q] * g; i += m; }
+    return y;
+  }
+  function axPut(X, a, z) {   // neue Fassung: z ab Probe a, alle anderen Stücke geteilt
+    const c = X.c.slice(), b = Math.min(X.n, a + z.length);
+    for (let j = Math.floor(Math.max(0, a) / CS); j * CS < b; j++) { const o = j * CS, nc = c[j].slice(); for (let p = Math.max(a, o); p < Math.min(b, o + nc.length); p++) nc[p - o] = z[p - a]; c[j] = nc; }
+    return {n: X.n, c};
+  }
+  function memOf(d) {   // Bytes: von den Ebenen benutzt / nur noch für ↶ ↷ gehalten
+    const cur = new Set(d.meta.layers.filter(l => l.a6 && l.a6.id).map(l => l.a6.id)), U = new Set(), E = new Set();
+    for (const [id, X] of A6(d)) for (const c of X.c) (cur.has(id) ? U : E).add(c);
+    let u = 0, e = 0; for (const c of U) u += c.byteLength; for (const c of E) if (!U.has(c)) e += c.byteLength;
+    return {cur: u, undo: e, n: A6(d).size};
+  }
   /* ---- Speicher: Audio der Ebenen (IDB 'audio' spk:<doc>:a<id>:<k>, Int16 in Stücken), nur die von den Ebenen benutzten ---- */
   async function open(d) {
     const M = A6(d); d.a6s = d.a6s || new Set();
@@ -101952,17 +101977,17 @@ function spk6DspMake(I) {
       const a = l.a6; if (!a || !a.id || M.has(a.id)) continue;
       const x = new Int16Array(Math.max(0, a.n | 0)); let ok = true;
       for (let k = 0; k * CH < x.length; k++) { const b = await I.get('audio', akey(d.meta.id, a.id, k)); if (!b) { ok = false; break; } x.set(new Int16Array(b instanceof ArrayBuffer ? b : b.buffer).subarray(0, Math.min(CH, x.length - k * CH)), k * CH); }
-      M.set(a.id, x); if (ok) d.a6s.add(a.id);
+      M.set(a.id, axOf(x)); if (ok) d.a6s.add(a.id);
     }
   }
   async function flush(d) {
     if (!d.a6) return 0; d.a6s = d.a6s || new Set(); let by = 0;
     const cur = new Set(d.meta.layers.filter(l => l.a6 && l.a6.id).map(l => l.a6.id));
-    for (const id of cur) if (!d.a6s.has(id) && d.a6.has(id)) { const x = d.a6.get(id); for (let k = 0; k * CH < x.length; k++) { const p = x.slice(k * CH, Math.min(x.length, (k + 1) * CH)); await I.put('audio', akey(d.meta.id, id, k), p.buffer); by += p.byteLength; } d.a6s.add(id); }
+    for (const id of cur) if (!d.a6s.has(id) && d.a6.has(id)) { const x = axFlat(d.a6.get(id)); for (let k = 0; k * CH < x.length; k++) { const p = x.slice(k * CH, Math.min(x.length, (k + 1) * CH)); await I.put('audio', akey(d.meta.id, id, k), p.buffer); by += p.byteLength; } d.a6s.add(id); }
     for (const id of [...d.a6s]) if (!cur.has(id)) { for (const k of await I.keys('audio', 'spk:' + d.meta.id + ':a' + id + ':')) await I.del('audio', k); d.a6s.delete(id); }
     return by;
   }
-  function exp(d, r) { const ids = [...new Set(d.meta.layers.filter(l => l.a6 && l.a6.id).map(l => l.a6.id))].filter(id => A6(d).has(id)); r.a6 = ids.map(id => ({id, x: A6(d).get(id).slice()})); return r; }
+  function exp(d, r) { const ids = [...new Set(d.meta.layers.filter(l => l.a6 && l.a6.id).map(l => l.a6.id))].filter(id => A6(d).has(id)); r.a6 = ids.map(id => ({id, x: axFlat(A6(d).get(id))})); return r; }
   async function imp(meta, o) {
     for (const a of (o && o.a6) || []) {
       if (!a || !/^A[0-9]{1,6}$/.test(a.id) || !a.x) continue;
@@ -101975,6 +102000,9 @@ function spk6DspMake(I) {
     for (const u of d.undo.concat(d.redo)) { const re = /"id":"(A[0-9]+)"/g; let mm; while ((mm = re.exec(u.meta))) need.add(mm[1]); }
     for (const id of [...d.a6.keys()]) if (!need.has(id)) d.a6.delete(id);
   }
+  function budget(d) {   // Audio nur für ↶ ↷ höchstens 64 MB: die ältesten ↶-Schritte fallen weg (wie die 48-MB-Grenze der Masken im Kern)
+    prune(d); while (d.undo.length && memOf(d).undo > AMAX) { d.undo.shift(); prune(d); }
+  }
   /* ---- Rest: Kopien/Chorstimmen ziehen nichts ab (Haken in gainFn) ---- */
   function k6(d) { const L = d.meta.layers.filter(l => l.k6 === 1); return L.length ? L.map(l => l.id) : null; }
   function acc(d, ids, s, c, a, NB) {
@@ -101982,6 +102010,22 @@ function spk6DspMake(I) {
       const st = I.stripe(d, id, s, false); if (!st) continue;
       for (let tr = 0; tr < st.h.length; tr++) { const h = st.h[tr]; if (!h) continue; const b0 = tr * BT, lim = Math.min(BT, NB - b0); if (h === 255) { for (let b = 0; b < lim; b++) a[b0 + b] -= 255; } else { const t = st.t[tr]; for (let b = 0; b < lim; b++) a[b0 + b] -= t[c + b]; } }
     }
+  }
+  /* Haken in transfer („In Ebene“): eine Kopie/Chorstimme ist unabhängig – „aus Original“ in die Kopie nimmt den anderen Ebenen nichts weg,
+     „aus Original“ in eine normale Ebene nimmt der Kopie nichts weg. Zwischen zwei Ebenen (von = Ebene) bleibt alles wie gewohnt. */
+  function tAll(d, all, von, nach) {
+    const K = new Set(d.meta.layers.filter(l => l.k6 === 1).map(l => l.id)); if (!K.size) return;
+    const keep = K.has(nach) ? (von === 'orig' ? [nach] : von === 'rest' ? all.filter(id => !K.has(id) || id === nach) : all) : all.filter(id => !K.has(id) || id === von);
+    all.splice(0, all.length, ...keep);
+  }
+  /* Haken „Ebene löschen“: hatte die gelöschte Ebene eine Kopie, übernimmt die erste deren Platz (klingt nicht mehr zusätzlich → kein doppelter Gesang).
+     Stimmen, die auf der gelöschten Ebene aufbauten, bauen jetzt auf der Kopie auf (gleiche Maske). */
+  function gone(d, l) {
+    if (!l || l.k6 === 1) return;
+    const c = d.meta.layers.find(x => x.k6 === 1 && x.r6 === 'kopie' && (x.q6 ? x.q6 === l.id : x.name === (l.name + ' Kopie').slice(0, 40))); if (!c) return;
+    delete c.k6; delete c.r6; delete c.q6;
+    for (const x of d.meta.layers) { if (x.a6 && x.a6.b === l.id) x.a6 = Object.assign({}, x.a6, {b: c.id}); if (x.q6 === l.id) x.q6 = c.id; }
+    I.verUp(d, c.id);
   }
   /* ---- Effekte: Biquads (Kochbuch-Formeln), Sättigung, Echo (punktierte Achtel), Hall (Faltung, fester Raum) ---- */
   function bq(t, f, sr, g, Q) {
@@ -102016,12 +102060,30 @@ function spk6DspMake(I) {
     V.fft(re, im); return (IRC[sr] = {re, im});
   }
   const lru = (d, key, mk) => { const C = d.c6 || (d.c6 = new Map()); if (C.has(key)) { const v = C.get(key); C.delete(key); C.set(key, v); return v; } const v = mk(); C.set(key, v); while (C.size > 160) C.delete(C.keys().next().value); return v; };
-  // rohes Signal einer Ebene im Block k (Kanäle wie das Dokument): Audio-Ebene = eigenes Audio, sonst Maske × Original
+  // ▶ Auswahl: eigenes Audio der Ebene mit derselben Auswahl gewichtet (STFT-Raster des Kerns: Rahmen m, Bin q, Gewicht 0…1)
+  function selRaw(d, a, X, k, sel, sv) {
+    if (!d.selC || d.selC.v !== sv) d.selC = {v: sv, f: I.selFn(d, sel)};
+    const SF = d.selC.f, N = d.meta.base.N, hop = d.meta.base.hop, ov = N / hop, NB = N / 2 + 1, A = k * BLK, w = I.win(N), sc = 1 / (N * 3 * ov / 8), g = (a.sc || 1) / 32767;
+    const y = new Float32Array(BLK), m0 = Math.max(A / hop, SF.box.m0), m1 = Math.min((A + BLK) / hop + ov - 2, SF.box.m1); if (m1 < m0) return y;
+    const re = new Float64Array(N), im = new Float64Array(N), buf = new Float32Array(N), gq = new Float32Array(NB);
+    for (let m = m0; m <= m1; m++) {
+      let any = false; for (let q = 0; q < NB; q++) { const v = q < SF.box.k0 || q > SF.box.k1 ? 0 : SF.fnc(m, q); gq[q] = v; if (v) any = true; } if (!any) continue;
+      const sA = (m - ov + 1) * hop; axRd(X, sA - a.o, buf.fill(0), g);
+      for (let j = 0; j < N; j++) { re[j] = buf[j] * w[j]; im[j] = 0; }
+      V.fft(re, im);
+      for (let q = 0; q < NB; q++) { const v = gq[q]; re[q] *= v; im[q] *= v; if (q > 0 && q < N / 2) { re[N - q] *= v; im[N - q] *= v; } }
+      V.fft(re, im, true);
+      for (let j = 0; j < N; j++) { const i = sA + j - A; if (i >= 0 && i < BLK) y[i] += re[j] * w[j] * sc; }
+    }
+    return y;
+  }
+  // rohes Signal einer Ebene im Block k (Kanäle wie das Dokument): Audio-Ebene = eigenes Audio (mit Auswahl gewichtet), sonst Maske × Original
   function raw(d, l, k, sel, sv) {
     const nc = d.pcm.length;
     if (l.a6) {
-      if (sel) return null; const a = l.a6, x = A6(d).get(a.id); if (!x) return null;
-      return lru(d, 'r|' + a.id + '|' + a.o + '|' + k, () => { const y = new Float32Array(BLK), s0 = k * BLK - a.o, g = (a.sc || 1) / 32767; for (let i = Math.max(0, -s0); i < BLK && s0 + i < x.length; i++) y[i] = x[s0 + i] * g; return Array.from({length: nc}, () => y); });
+      const a = l.a6, X = A6(d).get(a.id); if (!X) return null;
+      if (sel) return lru(d, 'q|' + a.id + '|' + a.o + '|' + k + '|' + sv, () => { const y = selRaw(d, a, X, k, sel, sv); return Array.from({length: nc}, () => y); });
+      return lru(d, 'r|' + a.id + '|' + a.o + '|' + k, () => { const y = axRd(X, k * BLK - a.o, new Float32Array(BLK), (a.sc || 1) / 32767); return Array.from({length: nc}, () => y); });
     }
     return I.block(d, k, {g: {[l.id]: 1}, rest: 0, orig: 0, n6: 1}, sel || null, sv || 0);
   }
@@ -102095,6 +102157,12 @@ function spk6DspMake(I) {
     d.cache.set(mk, outs); while (d.cache.size > 64) d.cache.delete(d.cache.keys().next().value);
     return outs;
   }
+  /* ---- Rechnen in Häppchen: der Worker gibt alle ~25 ms ab → Abspiel-Blöcke werden dazwischen geliefert, die Wiedergabe läuft ohne Lücke weiter ---- */
+  const now = () => typeof performance !== 'undefined' ? performance.now() : Date.now();
+  let yt = 0; const yq = [];
+  const ych = (() => { try { if (typeof window === 'undefined' && typeof WorkerGlobalScope === 'undefined') return null; const c = new MessageChannel(); c.port1.onmessage = () => { const r = yq.shift(); if (r) r(); }; return c; } catch (e) { return null; } })();
+  const yld = () => new Promise(r => { if (ych) { yq.push(r); ych.port2.postMessage(0); } else setTimeout(r, 0); });
+  async function slice() { if (now() - yt > 25) { await yld(); yt = now(); } }
   /* ---- Tonhöhe: Phasen-Vocoder mit Verhältnis je Rahmen (rr[i] gilt für Probe i·H) und Formant-Erhalt über eine Hüllkurve ---- */
   function envOf(mag, env, NB, hw, lg, cs) {
     for (let k = 0; k < NB; k++) lg[k] = Math.log(mag[k] + 1e-9);
@@ -102105,14 +102173,15 @@ function spk6DspMake(I) {
     for (let k = 0; k < NB; k++) env[k] = Math.exp(lg[k]);
   }
   const envAt = (env, fk, NB) => { if (fk >= NB - 1) return env[NB - 1]; if (fk <= 0) return env[0]; const i = Math.floor(fk), t = fk - i; return env[i] * (1 - t) + env[i + 1] * t; };
-  function pv(x, sr, rr, fvA, H, N, fmt, regs, prog) {
+  async function pv(x, sr, rr, fvA, H, N, fmt, regs, prog) {
     const y = Float32Array.from(x), NB = N / 2 + 1, w = I.win(N), re = new Float64Array(N), im = new Float64Array(N), ex = TAU * H / N, sc = 1 / (N * (3 * N / 8) / H);
     const mag = new Float64Array(NB), ph = new Float64Array(NB), lp = new Float64Array(NB), sp = new Float64Array(NB), om = new Float64Array(NB), smag = new Float64Array(NB), sfr = new Float64Array(NB);
     const env = new Float64Array(NB), lg = new Float64Array(NB), cs = new Float64Array(NB + 1), hw = Math.max(2, Math.round(250 / (sr / N))), F = Math.round(0.02 * sr), tot = regs.reduce((s, r) => s + r[1] - r[0], 0) || 1;
-    let done = 0;
+    let done = 0, fc = 0;
     for (const [s0, e0] of regs) {
       const L = e0 - s0, acc = new Float64Array(L + N); let fresh = true;
       for (let p = s0 - N; p < e0; p += H) {
+        if ((++fc & 7) === 0) { await slice(); if (prog) prog((done + Math.max(0, p - s0)) / tot); }
         let en = 0; for (let j = 0; j < N; j++) { const i = p + j, v = i >= 0 && i < x.length ? x[i] * w[j] : 0; re[j] = v; im[j] = 0; en += v * v; }
         if (en < N * 1e-11) { fresh = true; continue; }   // Stille: nichts ausgeben, danach Phasen neu
         V.fft(re, im);
@@ -102127,27 +102196,46 @@ function spk6DspMake(I) {
         V.fft(re, im, true);
         for (let j = 0; j < N; j++) { const i = p + j - s0 + N; if (i >= 0 && i < acc.length) acc[i] += re[j] * w[j] * sc; }
         fresh = false;
-        if (prog && ((p - s0) / H) % 400 === 0) prog((done + Math.max(0, p - s0)) / tot);
       }
       for (let q = 0; q < L; q++) { const g = q < F ? 0.5 - 0.5 * Math.cos(Math.PI * q / F) : q > L - F ? 0.5 - 0.5 * Math.cos(Math.PI * (L - q) / F) : 1; y[s0 + q] = x[s0 + q] * (1 - g) + acc[q + N] * g; }
       done += L;
     }
     return y;
   }
-  /* ---- Plan einer Audio-Ebene → Audio ---- */
-  function baseOf(d, b, rg) {   // Grundlage: Maske der Ebene b × Original, mono, nur der klingende Bereich (rg = [a, b] Proben: nur dieser Ausschnitt, fürs Vorhören)
+  /* ---- Grundlage: Maske der Ebene b × Original, mono – blockweise mit Fortschritt (der Worker bleibt ansprechbar) ---- */
+  async function baseWin(d, b, A0, B0, pg) {
+    const n = Math.max(0, B0 - A0), x = new Float32Array(n), mx = {g: {[b]: 1}, rest: 0, orig: 0, n6: 1}, k0 = Math.floor(A0 / BLK), k1 = Math.ceil(B0 / BLK);
+    for (let k = k0; k < k1; k++) {
+      const bl = I.block(d, k, mx, null, 0), o = k * BLK, s0 = Math.max(A0, o), s1 = Math.min(B0, o + BLK), g = 1 / bl.length;
+      for (const c of bl) for (let i = s0; i < s1; i++) x[i - A0] += c[i - o] * g;
+      if (pg) pg((k - k0 + 1) / Math.max(1, k1 - k0)); await slice();
+    }
+    return x;
+  }
+  async function baseOf(d, b, rg, pg) {   // nur der klingende Bereich (rg = [a, b] Proben: nur dieser Ausschnitt, fürs Vorhören)
     const A0 = rg ? Math.max(0, Math.floor(rg[0])) : 0, B0 = rg ? Math.max(A0 + 1, Math.min(d.meta.n, Math.ceil(rg[1]))) : d.meta.n;
-    const ch = I.render(d, {g: {[b]: 1}, rest: 0, orig: 0, n6: 1}, A0, B0), n = ch[0].length, x = new Float32Array(n), g = 1 / ch.length;
-    for (const c of ch) for (let i = 0; i < n; i++) x[i] += c[i] * g;
+    const x = await baseWin(d, b, A0, B0, pg), n = x.length;
     let pk = 0; for (let i = 0; i < n; i++) { const v = Math.abs(x[i]); if (v > pk) pk = v; }
     const th = pk * 1e-4; let a = 0, e = n; while (a < n && Math.abs(x[a]) <= th) a++; while (e > a && Math.abs(x[e - 1]) <= th) e--;
     const pad = Math.round(0.25 * d.meta.sr); a = Math.max(0, a - pad); e = Math.min(n, e + pad);
     return {o: A0 + a, x: x.slice(a, Math.max(a + 1, e)), pk};
   }
-  function remake(d, l, base, prog) {
-    const sr = d.meta.sr, a = l.a6, x = base.x, n = x.length, o0 = base.o, N = l.art === 'bass' ? (sr > 32000 ? 4096 : 2048) : (sr > 32000 ? 2048 : 1024), H = N / 8;
+  function msig(d, b) {   // Fingerabdruck der Maske der Grundlage: ändert sie sich (In Ebene, Verfeinern …), rechnet „Anwenden“ die ganze Ebene neu
+    let h = 0x811c9dc5; const M = I.masksOf(d, b), mix = v => { h = Math.imul(h ^ v, 16777619); };
+    for (const s of [...M.keys()].sort((p, q) => p - q)) {
+      const st = M.get(s); if (!st || st.h.every(v => !v)) continue; mix(s + 1);
+      for (let tr = 0; tr < st.h.length; tr++) {
+        const v = st.h[tr]; if (!v) continue; mix(tr * 256 + v); if (v !== 1) continue; const t = st.t[tr];
+        if (t.byteOffset & 3 || t.length & 3) { for (let i = 0; i < t.length; i++) mix(t[i]); } else { const u = new Int32Array(t.buffer, t.byteOffset, t.length >> 2); for (let i = 0; i < u.length; i++) mix(u[i]); }
+      }
+    }
+    return (h >>> 0).toString(36);
+  }
+  /* ---- Plan → Audio (ohne das Dokument anzufassen): x = Grundlage ab Probe o0, a = Werte der Audio-Ebene, Ns = Noten mit o6 (Lage in der Grundlage) ---- */
+  async function synth(sr, art, a, Ns, x, o0, prog) {
+    const n = x.length, N = art === 'bass' ? (sr > 32000 ? 4096 : 2048) : (sr > 32000 ? 2048 : 1024), H = N / 8;
     const dts = (+a.dt || 0) / 1000, rb = Math.pow(2, (+a.tr || 0) / 12), M = Math.ceil(n / H) + 2, rr = new Float32Array(M).fill(rb), fvA = a.fv && +a.fv !== 1 ? new Float32Array(M).fill(+a.fv) : null;
-    const Q = (t2(d).notes[l.id] || []).filter(q => q.o6).map(q => ({a: q.o6.a, b: q.o6.b, r: Math.pow(2, (q.m + (+q.c6 || 0) / 100 - q.o6.m) / 12), dt: (q.a - dts) - q.o6.a})).sort((p, q) => p.a - q.a);
+    const Q = Ns.filter(q => q.o6).map(q => ({a: q.o6.a, b: q.o6.b, r: Math.pow(2, (q.m + (+q.c6 || 0) / 100 - q.o6.m) / 12), dt: (q.a - dts) - q.o6.a})).sort((p, q) => p.a - q.a);
     for (let j = 0; j < Q.length; j++) {   // Verhältnis je Rahmen: Note = ihr Verhältnis, kurze Lücken (< 120 ms) dazwischen gleitend
       const q = Q[j], nx = Q[j + 1], i0 = Math.max(0, Math.floor((q.a * sr - o0) / H)), i1 = Math.min(M - 1, Math.ceil((q.b * sr - o0) / H));
       for (let i = i0; i <= i1; i++) rr[i] = q.r;
@@ -102157,7 +102245,7 @@ function spk6DspMake(I) {
     const act = new Uint8Array(M); for (let i = 0; i < M; i++) act[i] = Math.abs(rr[i] - 1) > 1e-6 || (fvA && Math.abs(fvA[i] - 1) > 1e-6) ? 1 : 0;
     const P = N + Math.round(0.02 * sr) + N / 2, regs = []; let i = 0;
     while (i < M) { if (!act[i]) { i++; continue; } let j = i; while (j < M && act[j]) j++; const s = Math.max(0, i * H - P), e = Math.min(n, j * H + P); if (regs.length && s <= regs[regs.length - 1][1]) regs[regs.length - 1][1] = Math.max(regs[regs.length - 1][1], e); else if (e > s) regs.push([s, e]); i = j; }
-    let y = regs.length ? pv(x, sr, rr, fvA, H, N, l.art === 'gesang' || !!a.fmt, regs, prog) : Float32Array.from(x);
+    const y = regs.length ? await pv(x, sr, rr, fvA, H, N, art === 'gesang' || !!a.fmt, regs, prog) : Float32Array.from(x);
     const Fm = Math.round(0.012 * sr), win = (q, i) => { const A0 = q.a * sr - o0, B0 = q.b * sr - o0; return i < A0 - Fm || i > B0 + Fm ? 0 : i < A0 ? 0.5 - 0.5 * Math.cos(Math.PI * (i - A0 + Fm) / Fm) : i > B0 ? 0.5 - 0.5 * Math.cos(Math.PI * (B0 + Fm - i) / Fm) : 1; };
     if (+a.bg >= 0 && +a.bg < 1 && Q.length) { const W = new Float32Array(n); for (const q of Q) { const i0 = Math.max(0, Math.floor(q.a * sr - o0 - Fm)), i1 = Math.min(n, Math.ceil(q.b * sr - o0 + Fm)); for (let i = i0; i < i1; i++) W[i] = Math.max(W[i], win(q, i)); } for (let i = 0; i < n; i++) y[i] *= +a.bg + (1 - a.bg) * W[i]; }
     const mv = Q.filter(q => Math.abs(q.dt) * sr >= 1);
@@ -102166,27 +102254,61 @@ function spk6DspMake(I) {
       for (const q of mv) { const ds = Math.round(q.dt * sr), i0 = Math.max(0, Math.floor(q.a * sr - o0 - Fm)), i1 = Math.min(n, Math.ceil(q.b * sr - o0 + Fm)); for (let i = i0; i < i1; i++) { const wv = win(q, i); W[i] += wv; const t = i + ds; if (t >= 0 && t < n) z[t] += y[i] * wv; } }
       for (let i = 0; i < n; i++) y[i] = y[i] * Math.max(0, 1 - W[i]) + z[i];
     }
-    let pk = 0; for (let i = 0; i < n; i++) { const v = Math.abs(y[i]); if (v > pk) pk = v; }
-    const sc = Math.max(1e-6, pk), x16 = new Int16Array(n), k = 32767 / sc; for (let i = 0; i < n; i++) x16[i] = Math.max(-32767, Math.min(32767, Math.round(y[i] * k)));
-    d.meta.a6c = (d.meta.a6c | 0) + 1; const id = 'A' + d.meta.a6c; A6(d).set(id, x16);
-    l.a6 = Object.assign({}, a, {id, o: o0 + Math.round(dts * sr), n, sc: +sc.toPrecision(9)}); I.verUp(d, l.id);
-    return {regs: regs.length, len: n, moved: mv.length};
+    return {y, regs: regs.length, moved: mv.length};
   }
-  function toAudio(d, l) {   // Masken-Ebene wird Audio-Ebene (Grundlage = ihre eigene Maske); Noten bekommen ihre Lage in der Grundlage
-    if (!l.a6) l.a6 = {id: '', b: l.id, o: 0, n: 0, sc: 1, tr: 0, fv: 1, dt: 0};
-    const a = l.a6, dts = (+a.dt || 0) / 1000;
-    for (const q of t2(d).notes[l.id] || []) if (!q.o6) q.o6 = {a: q.a - dts, b: q.b - dts, m: q.m + (+q.c6 || 0) / 100 - (+a.tr || 0)};
+  const peak = y => { let pk = 0; for (let i = 0; i < y.length; i++) { const v = Math.abs(y[i]); if (v > pk) pk = v; } return pk; };
+  function pack(y, sc) { const n = y.length, x16 = new Int16Array(n), k = 32767 / sc; for (let i = 0; i < n; i++) x16[i] = Math.max(-32767, Math.min(32767, Math.round(y[i] * k))); return x16; }
+  const pkey = a => JSON.stringify([a.b, +a.tr || 0, +a.fv || 1, +a.dt || 0, a.bg == null ? null : +a.bg, a.fmt ? 1 : 0]);
+  /* Nur den geänderten Bereich neu rechnen: Noten, die sich geändert haben (alte und neue Lage, Quelle und Ziel), + 0,2 s; verschobene Noten, die hineinragen,
+     ganz dazu; die Ränder an die leiseste Stelle im Umkreis von 0,5 s gelegt, dort 10 ms Überblendung. Gerechnet wird mit 0,25 s Vorlauf je Seite. */
+  async function patchA(d, art, aOld, a, NsOld, Ns, pg) {
+    const sr = d.meta.sr, X = A6(d).get(aOld.id), n = X.n, dts = (+a.dt || 0) / 1000, o0 = aOld.o - Math.round(dts * sr), old = new Map(NsOld.map(q => [q.id, q]));
+    const ch = Ns.filter(q => { const p = old.get(q.id); return !p || !p.o6 || p.a !== q.a || p.b !== q.b || p.m !== q.m || (+p.c6 || 0) !== (+q.c6 || 0); });
+    if (!ch.length || ch.length > 0.6 * Ns.length + 4) return null;   // nichts oder fast alles geändert → ganz rechnen
+    let A = Infinity, B = -Infinity;
+    for (const q of ch) { const p = old.get(q.id); A = Math.min(A, q.o6.a, q.a - dts, p ? p.a - dts : Infinity); B = Math.max(B, q.o6.b, q.b - dts, p ? p.b - dts : -Infinity); }
+    A -= 0.2; B += 0.2;
+    const mvd = []; for (const q of Ns.concat(NsOld)) if (q.o6 && Math.abs(q.a - dts - q.o6.a) * sr >= 1) mvd.push([Math.min(q.o6.a, q.a - dts) - 0.05, Math.max(q.o6.b, q.b - dts) + 0.05]);
+    for (let grow = true; grow;) { grow = false; for (const [lo, hi] of mvd) if (hi > A && lo < B && (lo < A || hi > B)) { A = Math.min(A, lo); B = Math.max(B, hi); grow = true; } }
+    const QW = Math.round(0.01 * sr), SR = Math.round(0.5 * sr), buf = new Float32Array(QW);
+    const quiet = (from, dir) => { let best = from, bv = Infinity; for (let s = from, k = 0; k * (QW >> 1) <= SR && s >= 0 && s + QW <= n; s += dir * (QW >> 1), k++) { axRd(X, s, buf, 1); let e = 0; for (let i = 0; i < QW; i++) e += buf[i] * buf[i]; if (e < bv) { bv = e; best = s; } } return best; };
+    const a0 = Math.floor(A * sr) - o0, b0 = Math.ceil(B * sr) - o0; if (b0 <= 0 || a0 >= n) return null;
+    const sa = a0 <= QW ? 0 : quiet(a0 - QW, -1), sb = b0 >= n - QW ? n : quiet(b0, 1) + QW;
+    const N = art === 'bass' ? (sr > 32000 ? 4096 : 2048) : (sr > 32000 ? 2048 : 1024), Mg = Math.round(0.25 * sr) + N, ca = Math.max(0, sa - Mg), cb = Math.min(n, sb + Mg);
+    const xw = await baseWin(d, a.b, o0 + ca, o0 + cb, p => pg && pg(0.4 * p)), s = await synth(sr, art, a, Ns, xw, o0 + ca, p => pg && pg(0.4 + 0.55 * p));
+    const L = sb - sa, z = new Float32Array(L), go = (aOld.sc || 1) / 32767; axRd(X, sa, z, go);
+    for (let i = 0; i < L; i++) { const wa = sa > 0 && i < QW ? 0.5 - 0.5 * Math.cos(Math.PI * i / QW) : 1, wb = sb < n && i >= L - QW ? 0.5 - 0.5 * Math.cos(Math.PI * (L - i) / QW) : 1, w = Math.min(wa, wb); z[i] = z[i] * (1 - w) + s.y[sa - ca + i] * w; }
+    let sc = aOld.sc || 1, Xn; const pk = peak(z);
+    if (pk <= sc) Xn = axPut(X, sa, pack(z, sc));
+    else { sc = pk * HR; const F = axRd(X, 0, new Float32Array(n), go); F.set(z, sa); Xn = axOf(pack(F, sc)); }   // lauter als bisher: einmal neu skalieren
+    return {X: Xn, o: aOld.o, n, sc, regs: s.regs, moved: s.moved, part: [+((aOld.o + sa) / sr).toFixed(3), +((aOld.o + sb) / sr).toFixed(3)]};
+  }
+  // Plan einer Ebene → neue Fassung: nur der geänderte Bereich, wenn das alte Audio dazu passt (gleiche Grundlage/Maske, gleiche Ebenen-Werte), sonst alles
+  async function make(d, l, a, NsOld, Ns, pg, full) {
+    const aOld = l.a6;
+    if (!full && aOld && aOld.id && A6(d).has(aOld.id) && aOld.hs && pkey(aOld) === pkey(a) && aOld.hs === msig(d, a.b)) { const r = await patchA(d, l.art, aOld, a, NsOld, Ns, pg); if (r) return r; }
+    const sr = d.meta.sr, base = await baseOf(d, a.b, null, p => pg && pg(0.3 * p)), s = await synth(sr, l.art, a, Ns, base.x, base.o, p => pg && pg(0.3 + 0.65 * p)), sc = Math.max(1e-6, peak(s.y) * HR);
+    return {X: axOf(pack(s.y, sc)), o: base.o + Math.round((+a.dt || 0) / 1000 * sr), n: s.y.length, sc, regs: s.regs, moved: s.moved, part: null};
+  }
+  function aNew(d, X) { d.meta.a6c = (d.meta.a6c | 0) + 1; const id = 'A' + d.meta.a6c; A6(d).set(id, X); return id; }
+  function put6(d, l, a, Ns, r) {   // im offenen ↶-Schritt: Ebene klingt aus der neuen Fassung, Noten wie geplant
+    l.a6 = Object.assign({}, a, {id: aNew(d, r.X), o: r.o, n: r.n, sc: +r.sc.toPrecision(9), hs: msig(d, a.b)}); t2(d).notes[l.id] = Ns; I.verUp(d, l.id);
+  }
+  function toAudio(L, Ns) {   // Masken-Ebene wird Audio-Ebene (Grundlage = ihre eigene Maske); Noten bekommen ihre Lage in der Grundlage (auf Kopien)
+    if (!L.a6) L.a6 = {id: '', b: L.id, o: 0, n: 0, sc: 1, tr: 0, fv: 1, dt: 0};
+    const a = L.a6, dts = (+a.dt || 0) / 1000;
+    for (const q of Ns) if (!q.o6) q.o6 = {a: q.a - dts, b: q.b - dts, m: q.m + (+q.c6 || 0) / 100 - (+a.tr || 0)};
   }
   function moveNote(d, q, dm, dt) {
     const tot = q.m + (+q.c6 || 0) / 100 + dm, m = Math.round(tot), c6 = Math.round((tot - m) * 100), rf = Math.pow(2, dm / 12), hop = d.meta.base.hop;
     q.m = m; if (c6) q.c6 = c6; else delete q.c6; q.f = +(440 * Math.pow(2, (tot - 69) / 12)).toFixed(2); if (Array.isArray(q.fz)) q.fz = q.fz.map(f => +(f * rf).toFixed(2));
     if (dt) { for (const k of ['a', 'b', 't0', 't1']) if (q[k] != null) q[k] = +(q[k] + dt).toFixed(4); if (q.fi != null) q.fi += Math.round(dt * d.meta.sr / hop); }
   }
-  function abort(d) { const u = d.u; d.u = null; if (!u) return; d.meta.layers = JSON.parse(u.meta); d.meta.rest = JSON.parse(u.rest); if (u.t2 != null) { const t = JSON.parse(u.t2); if (t) d.meta.teil2 = t; } for (const [k, prev] of u.st) { const [lid, s] = k.split('|'), M = I.masksOf(d, lid); if (prev) M.set(+s, I.stCopy(prev)); else M.delete(+s); } for (const l of d.meta.layers) l.ver = ++d.vc; d.cache.clear(); }
+  const same = (d, l) => { if (I.lay(d, l.id) !== l) throw new Error('Ebene wurde inzwischen geändert'); };
   /* ---- Ops ---- */
   function dup(d, m) {
     const l = lidOk(d, m.lid); I.uBegin(d, 'Ebene duplizieren');
-    const c = I.newLayer(d, {art: l.art, name: (l.name + ' Kopie').slice(0, 40), col: colNext(l.col)}); c.vol = l.vol; c.mute = l.mute; c.k6 = 1; c.r6 = 'kopie';
+    const c = I.newLayer(d, {art: l.art, name: (l.name + ' Kopie').slice(0, 40), col: colNext(l.col)}); c.vol = l.vol; c.mute = l.mute; c.k6 = 1; c.r6 = 'kopie'; c.q6 = l.id;
     if (l.fx) c.fx = Object.assign({}, l.fx); if (l.a6) c.a6 = Object.assign({}, l.a6, {b: l.a6.b === l.id ? c.id : l.a6.b});
     const L = d.meta.layers; L.splice(L.indexOf(c), 1); L.splice(L.indexOf(l) + 1, 0, c);
     for (const [s, st] of I.masksOf(d, l.id)) { I.uTouch(d, c.id, s); I.masksOf(d, c.id).set(s, I.stCopy(st)); d.dirty.add(c.id + '|' + s); }
@@ -102194,17 +102316,15 @@ function spk6DspMake(I) {
     I.verUp(d, c.id); I.uEnd(d); return {lid: c.id};
   }
   async function shift(d, m, emit) {
-    const l = lidOk(d, m.lid), Ns = t2(d).notes[l.id] || [], tr = +m.tr || 0, dm = +m.dm || 0, dt = +m.dt || 0;
-    const sel = tr ? Ns : m.ids && m.ids.length ? Ns.filter(q => m.ids.includes(q.id)) : Ns;
-    if (!tr && !sel.length) throw new Error('Keine Noten – erst „Noten finden“');
+    const l = lidOk(d, m.lid), N0 = t2(d).notes[l.id] || [], tr = +m.tr || 0, dm = +m.dm || 0, dt = +m.dt || 0, ids = !tr && m.ids && m.ids.length ? new Set(m.ids) : null;
+    const nSel = tr ? N0.length : ids ? N0.filter(q => ids.has(q.id)).length : N0.length;
+    if (!tr && !nSel) throw new Error('Keine Noten – erst „Noten finden“');
     if (l.a6 && l.a6.b && !I.lay(d, l.a6.b)) throw new Error('Grundlage fehlt');
-    I.uBegin(d, tr ? 'Ebene transponieren' : 'Noten umsetzen');
-    try {
-      toAudio(d, l); if (tr) l.a6.tr = (+l.a6.tr || 0) + tr;
-      for (const q of sel) moveNote(d, q, tr || dm, tr ? 0 : dt);
-      const r = remake(d, l, baseOf(d, l.a6.b), p => emit && emit({qid: m.qid, prog: 0.1 + 0.85 * p}));
-      I.uEnd(d); prune(d); return Object.assign({lid: l.id, n: sel.length}, r);
-    } catch (e) { abort(d); throw e; }
+    const L = cl(l), Ns = cl(N0); toAudio(L, Ns); if (tr) L.a6.tr = (+L.a6.tr || 0) + tr;
+    for (const q of Ns) if (tr || !ids || ids.has(q.id)) moveNote(d, q, tr || dm, tr ? 0 : dt);
+    const r = await make(d, l, L.a6, N0, Ns, p => emit && emit({qid: m.qid, prog: Math.min(0.99, p)}), !!tr);
+    same(d, l); I.uBegin(d, tr ? 'Ebene transponieren' : 'Noten umsetzen'); put6(d, l, L.a6, Ns, r); I.uEnd(d); budget(d);
+    return {lid: l.id, n: nSel, regs: r.regs, len: r.n, moved: r.moved, part: r.part};
   }
   const MAJ = [0, 2, 4, 5, 7, 9, 11], MIN = [0, 2, 3, 5, 7, 8, 10];
   const KMA = [6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88], KMI = [6.33, 2.68, 3.52, 5.38, 2.6, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17];
@@ -102222,77 +102342,115 @@ function spk6DspMake(I) {
   }
   const CHOR = {satz: ['t+', 'q+', 'u', 'o-', 't-', 'u'], terz: ['t+', 't-', 't+', 't-', 't+', 't-'], quinte: ['q+', 'q-', 'q+', 'q-', 'q+', 'q-'], oktave: ['o+', 'o-', 'o+', 'o-', 'o+', 'o-'], dopplung: ['u', 'u', 'u', 'u', 'u', 'u']};
   const CNAME = {'t+': 'Terz ↑', 't-': 'Terz ↓', 'q+': 'Quinte ↑', 'q-': 'Quinte ↓', 'o+': 'Oktave ↑', 'o-': 'Oktave ↓', u: 'Unisono'};
+  const CTAG = {'t+': 'Terz↑', 't-': 'Terz↓', 'q+': 'Quint↑', 'q-': 'Quint↓', 'o+': 'Okt↑', 'o-': 'Okt↓', u: 'Uni'};
   const VDT = [11, 19, 7, 23, 15, 5], VCT = [6, -7, 5, -8, 7, -5], VFV = [1.03, 0.97, 1.02, 0.98, 1.04, 0.96], VPAN = [-0.55, 0.55, -0.3, 0.3, -0.8, 0.8];
+  function uniq(d, nm) { if (!d.meta.layers.some(l => l.name === nm)) return nm; for (let k = 2; ; k++) { const t = (nm.slice(0, 37) + ' ' + k); if (!d.meta.layers.some(l => l.name === t)) return t; } }
   async function chor(d, m, emit) {
-    const l = lidOk(d, m.lid), Ns = (t2(d).notes[l.id] || []).filter(q => q.st !== 'neu'); if (!Ns.length) throw new Error('Keine Noten – erst „Noten finden“');
-    const n = Math.max(2, Math.min(6, m.n | 0 || 3)), art = CHOR[m.art] ? m.art : 'satz', key = keyOf(Ns), bl = l.a6 ? l.a6.b : l.id, sr = d.meta.sr;
+    const l = lidOk(d, m.lid), Ns0 = (t2(d).notes[l.id] || []).filter(q => q.st !== 'neu'); if (!Ns0.length) throw new Error('Keine Noten – erst „Noten finden“');
+    const n = Math.max(2, Math.min(6, m.n | 0 || 3)), art = CHOR[m.art] ? m.art : 'satz', key = keyOf(Ns0), bl = l.a6 ? l.a6.b : l.id, sr = d.meta.sr;
     const s2 = m.sp == null ? 1 : Math.max(0, Math.min(1, +m.sp)) * 2, bw = m.br == null ? 1 : Math.max(0, Math.min(1, +m.br)), rg = m.dry && m.win ? [m.win[0] * sr, m.win[1] * sr] : null;   // Streuung 0,5 / Breite 1 = Grundwerte
     const vdt = v => s2 === 1 ? VDT[v] : Math.round(VDT[v] * s2), vct = v => s2 === 1 ? VCT[v] : Math.round(VCT[v] * s2), vfv = v => s2 === 1 ? VFV[v] : 1 + (VFV[v] - 1) * s2, vpan = v => bw === 1 ? VPAN[v] : +(VPAN[v] * bw).toFixed(4);
     if (!I.lay(d, bl)) throw new Error('Grundlage fehlt');
-    I.uBegin(d, 'Chor aus Ebene');
-    try {
-      const base = baseOf(d, bl, rg), dts0 = l.a6 ? (+l.a6.dt || 0) / 1000 : 0, out = [];
-      for (let v = 0; v < n; v++) {
-        const sp = CHOR[art][v], c = I.newLayer(d, {art: l.art, name: (l.name + ' ' + CNAME[sp]).slice(0, 40), col: colNext(l.col, v + 1)});
-        const L = d.meta.layers; L.splice(L.indexOf(c), 1); L.splice(L.indexOf(l) + 1 + v, 0, c);
-        c.k6 = 1; c.r6 = 'chor'; c.vol = Math.max(-60, (+l.vol || 0) - 7); c.fx = fxNorm({pan: vpan(v)}); if (!fxOn(c.fx)) delete c.fx; c.a6 = {id: '', b: bl, o: 0, n: 0, sc: 1, tr: l.a6 ? +l.a6.tr || 0 : 0, fv: sp === 'o-' ? vfv(v) * 0.97 : vfv(v), dt: vdt(v), bg: 0.5, fmt: 1};
-        const dts = vdt(v) / 1000;
-        t2(d).notes[c.id] = Ns.map(q => { const z = JSON.parse(JSON.stringify(q)); z.id = nid(d); z.st = 'zu'; z.o6 = q.o6 ? Object.assign({}, q.o6) : {a: q.a - dts0, b: q.b - dts0, m: q.m + (+q.c6 || 0) / 100 - (l.a6 ? +l.a6.tr || 0 : 0)};
-          for (const k of ['a', 'b', 't0', 't1']) if (z[k] != null) z[k] = +(z[k] - dts0 + dts).toFixed(4);
-          moveNote(d, z, ivOf(q.m, sp, key) + vct(v) / 100, 0); return z; });
-        remake(d, c, base, p => emit && emit({qid: m.qid, prog: (v + p) / n}));
-        out.push({lid: c.id, iv: sp, ct: vct(v), dt: vdt(v), pan: vpan(v)});
-      }
-      if (m.dry) {   // Vorhören: A = Ebene allein, B = Ebene + Chor (Stereo, Lautstärken wie eingestellt), dann alles zurück
-        const db = v => Math.pow(10, (+v || 0) / 20), a0 = rg ? Math.floor(rg[0]) : 0, a1 = rg ? Math.ceil(rg[1]) : d.meta.n, gA = {[l.id]: db(l.vol)}, gB = Object.assign({}, gA);
-        for (const o of out) gB[o.lid] = db(I.lay(d, o.lid).vol);
-        const A = I.render(d, {g: gA, rest: 0, orig: 0}, a0, a1), B = I.render(d, {g: gB, rest: 0, orig: 0}, a0, a1);
-        abort(d); prune(d); return {sr, a: {ch: A, o: a0}, b: {ch: B, o: a0}, n: out.length, key: {root: key.root, minor: key.minor}};
-      }
-      I.uEnd(d); prune(d); return {voices: out, key: {root: key.root, minor: key.minor}};
-    } catch (e) { abort(d); throw e; }
+    const pg = p => emit && emit({qid: m.qid, prog: Math.min(0.99, p)}), base = await baseOf(d, bl, rg, p => pg(0.2 * p)), dts0 = l.a6 ? (+l.a6.dt || 0) / 1000 : 0, W = [], cnt = {};
+    for (let v = 0; v < n; v++) {   // je Stimme: Noten = Intervall + Streuung, eigenes Audio (noch nichts am Dokument)
+      const sp = CHOR[art][v], dts = vdt(v) / 1000; cnt[sp] = (cnt[sp] || 0) + 1;
+      const a = {id: '', b: bl, o: 0, n: 0, sc: 1, tr: l.a6 ? +l.a6.tr || 0 : 0, fv: sp === 'o-' ? vfv(v) * 0.97 : vfv(v), dt: vdt(v), bg: 0.5, fmt: 1};
+      const Nv = Ns0.map(q => { const z = cl(q); z.st = 'zu'; z.o6 = q.o6 ? Object.assign({}, q.o6) : {a: q.a - dts0, b: q.b - dts0, m: q.m + (+q.c6 || 0) / 100 - (l.a6 ? +l.a6.tr || 0 : 0)};
+        for (const k of ['a', 'b', 't0', 't1']) if (z[k] != null) z[k] = +(z[k] - dts0 + dts).toFixed(4);
+        moveNote(d, z, ivOf(q.m, sp, key) + vct(v) / 100, 0); return z; });
+      const s = await synth(sr, l.art, a, Nv, base.x, base.o, p => pg(0.2 + 0.8 * (v + p) / n)), o = base.o + Math.round(dts * sr);
+      if (m.dry) W.push({sp, v, y: s.y, o});
+      else { const sc = Math.max(1e-6, peak(s.y) * HR); W.push({sp, v, k: cnt[sp], a, Nv, X: axOf(pack(s.y, sc)), sc, o, len: s.y.length}); }
+    }
+    const db = v => Math.pow(10, (+v || 0) / 20), vol = Math.max(-60, (+l.vol || 0) - 7);
+    if (m.dry) {   // Vorhören: A = Ebene allein, B = Ebene + Chor (Stereo, Pegel und Pan wie beim Erzeugen)
+      const a0 = rg ? Math.floor(rg[0]) : 0, a1 = rg ? Math.ceil(rg[1]) : d.meta.n, A = I.render(d, {g: {[l.id]: db(l.vol)}, rest: 0, orig: 0}, a0, a1), B = A.map(c => Float32Array.from(c)), nc = B.length;
+      for (const z of W) { const th = (vpan(z.v) + 1) * Math.PI / 4, pgn = nc > 1 ? [Math.cos(th) * Math.SQRT2, Math.sin(th) * Math.SQRT2] : [1];
+        for (let c = 0; c < nc; c++) { const g = db(vol) * Math.min(1, pgn[c]), y = B[c]; for (let i = Math.max(0, a0 - z.o); i < z.y.length && z.o + i < a1; i++) y[z.o + i - a0] += g * z.y[i]; } }
+      return {sr, a: {ch: A, o: a0}, b: {ch: B, o: a0}, n: W.length, key: {root: key.root, minor: key.minor}};
+    }
+    same(d, l); I.uBegin(d, 'Chor aus Ebene'); const out = [], hs = msig(d, bl), tot = {};
+    for (const z of W) tot[z.sp] = (tot[z.sp] || 0) + 1;
+    for (const z of W) {
+      const nm = CNAME[z.sp] + (tot[z.sp] > 1 ? ' ' + z.k : ''), c = I.newLayer(d, {art: l.art, name: uniq(d, (l.name + ' ' + nm).slice(0, 40)), col: colNext(l.col, z.v + 1)});
+      const L = d.meta.layers; L.splice(L.indexOf(c), 1); L.splice(L.indexOf(l) + 1 + z.v, 0, c);
+      c.k6 = 1; c.r6 = 'chor'; c.q6 = l.id; c.v6 = CTAG[z.sp] + (tot[z.sp] > 1 ? ' ' + z.k : ''); c.vol = vol; c.fx = fxNorm({pan: vpan(z.v)}); if (!fxOn(c.fx)) delete c.fx;
+      c.a6 = Object.assign({}, z.a, {id: aNew(d, z.X), o: z.o, n: z.len, sc: +z.sc.toPrecision(9), hs}); t2(d).notes[c.id] = z.Nv.map(q => Object.assign(q, {id: nid(d)})); I.verUp(d, c.id);
+      out.push({lid: c.id, iv: z.sp, ct: vct(z.v), dt: vdt(z.v), pan: vpan(z.v)});
+    }
+    I.uEnd(d); budget(d); return {voices: out, key: {root: key.root, minor: key.minor}};
   }
-  async function plan(d, m, emit) {   // Entwurf anwenden: je Note {id, dm (Halbtöne), dt (s)} → ein Schritt, neu aus der Grundlage gerechnet
-    const l = lidOk(d, m.lid), Ns = t2(d).notes[l.id] || [], sr = d.meta.sr;
-    const mv = (Array.isArray(m.mv) ? m.mv : []).filter(z => z && Ns.some(q => q.id === z.id) && (+z.dm || +z.dt));
+  async function plan(d, m, emit) {   // Entwurf anwenden: je Note {id, dm (Halbtöne), dt (s)} → ein Schritt; nur der geänderte Bereich wird neu gerechnet
+    const l = lidOk(d, m.lid), N0 = t2(d).notes[l.id] || [], sr = d.meta.sr;
+    const mv = (Array.isArray(m.mv) ? m.mv : []).filter(z => z && N0.some(q => q.id === z.id) && (+z.dm || +z.dt));
     if (!mv.length && !m.dry) throw new Error('Nichts geändert');
-    if (!Ns.length) throw new Error('Keine Noten – erst „Noten finden“');
+    if (!N0.length) throw new Error('Keine Noten – erst „Noten finden“');
     if (l.a6 && l.a6.b && !I.lay(d, l.a6.b)) throw new Error('Grundlage fehlt');
-    const rg = m.dry && m.win ? [m.win[0] * sr, m.win[1] * sr] : null;
-    I.uBegin(d, 'Noten bearbeiten');
-    try {
-      toAudio(d, l);
-      for (const z of mv) moveNote(d, Ns.find(q => q.id === z.id), +z.dm || 0, +z.dt || 0);
-      const base = baseOf(d, l.a6.b, rg), r = remake(d, l, base, p => emit && emit({qid: m.qid, prog: 0.05 + 0.9 * p}));
-      if (m.dry) {
-        const a = l.a6, x = A6(d).get(a.id), y = new Float32Array(x.length), g = (a.sc || 1) / 32767; for (let i = 0; i < x.length; i++) y[i] = x[i] * g;
-        const res = {sr, a: {ch: [base.x], o: base.o}, b: {ch: [y], o: a.o}, n: mv.length}; abort(d); prune(d); return res;
-      }
-      I.uEnd(d); prune(d); return Object.assign({lid: l.id, n: mv.length}, r);
-    } catch (e) { abort(d); throw e; }
+    const pg = p => emit && emit({qid: m.qid, prog: Math.min(0.99, p)}), L = cl(l), Ns = cl(N0); toAudio(L, Ns);
+    for (const z of mv) moveNote(d, Ns.find(q => q.id === z.id), +z.dm || 0, +z.dt || 0);
+    if (m.dry) {   // Vorhören: A = Grundlage (Original der Ebene), B = Entwurf – nur der Ausschnitt, nichts am Dokument
+      const rg = m.win ? [m.win[0] * sr, m.win[1] * sr] : null, base = await baseOf(d, L.a6.b, rg, p => pg(0.4 * p)), s = await synth(sr, l.art, L.a6, Ns, base.x, base.o, p => pg(0.4 + 0.6 * p));
+      return {sr, a: {ch: [base.x], o: base.o}, b: {ch: [s.y], o: base.o + Math.round((+L.a6.dt || 0) / 1000 * sr)}, n: mv.length};
+    }
+    const r = await make(d, l, L.a6, N0, Ns, pg, !!m.full);
+    same(d, l); I.uBegin(d, 'Noten bearbeiten'); put6(d, l, L.a6, Ns, r); I.uEnd(d); budget(d);
+    return {lid: l.id, n: mv.length, regs: r.regs, len: r.n, moved: r.moved, part: r.part};
   }
   function fx(d, m) {
     const l = lidOk(d, m.lid); I.uBegin(d, 'Effekte · ' + l.name);
     const f = fxNorm(Object.assign({}, l.fx || {}, m.fx || {})); if (fxOn(f)) l.fx = f; else delete l.fx;
     I.verUp(d, l.id); I.uEnd(d); return {lid: l.id, fx: l.fx || null};
   }
-  const wrap = fn => async (d, m, emit, info) => { if (d.busy) throw new Error('Rechnung läuft'); const r = await fn(d, m, emit); return Object.assign(r, info(d)); };
-  const ops = {s6dup: wrap(dup), s6shift: wrap(shift), s6chor: wrap(chor), s6fx: wrap(fx), s6plan: wrap(plan),
-    s6audio: async (d, m) => { const l = lidOk(d, m.lid); if (!l.a6) return {x: null}; const x = A6(d).get(l.a6.id); return {x: x ? x.slice() : null, o: l.a6.o, sc: l.a6.sc, sr: d.meta.sr}; },
-    s6key: async (d, m) => keyOf(t2(d).notes[m.lid] || [])};
+  // lange Rechnungen: Dokument „beschäftigt“ (↶/In Ebene/Löschen warten), Abspielen läuft weiter; Fehler = kurze Meldung (kein Absturz)
+  const wrap = (fn, long) => async (d, m, emit, info) => {
+    if (d.busy) throw new Error('Rechnung läuft'); if (long) d.busy = 's6';
+    try { const r = await fn(d, m, emit); return Object.assign(r, info(d)); } finally { if (long && d.busy === 's6') d.busy = null; }
+  };
+  const ops = {s6dup: wrap(dup), s6shift: wrap(shift, 1), s6chor: wrap(chor, 1), s6fx: wrap(fx), s6plan: wrap(plan, 1),
+    s6audio: async (d, m) => { const l = lidOk(d, m.lid); if (!l.a6) return {x: null}; const X = A6(d).get(l.a6.id); return {x: X ? axFlat(X) : null, o: l.a6.o, sc: l.a6.sc, sr: d.meta.sr}; },
+    s6key: async (d, m) => keyOf(t2(d).notes[m.lid] || []),
+    s6mem: async d => Object.assign(memOf(d), {undo6: d.undo.length, busy: d.busy || null})};
   if (I.Z2) { I.Z2.ops = I.Z2.ops || {}; Object.assign(I.Z2.ops, ops); }
-  return {open, flush, exp, imp, k6, acc, block, fxNorm, fxOn, pv, keyOf, ivOf};
+  return {open, flush, exp, imp, k6, acc, block, fxNorm, fxOn, keyOf, ivOf, tAll, gone, memOf};
 }
 /* ---- Seite (Teil 2): Ebenen-Menü ⋯ → Werkstatt (Kopieren, Noten bearbeiten, Chor erzeugen, Effekte, ganze Ebene ±); Modus „Noten bearbeiten“ (Balken über
-   dem Spektrum ziehen = Tonhöhe/Zeit im 1/16-Raster, Tipp = wählen, Rahmen = mehrere, ±1/±12, Vorhören, A/B, Anwenden = ein ↶-Schritt); Chor-Blatt mit Vorhören ---- */
+   dem Spektrum ziehen = Tonhöhe/Zeit im 1/16-Raster, Fein = 10 ct, Tipp = wählen, Rahmen = mehrere, ±1/±12, Vorhören, A/B, Anwenden = ein ↶-Schritt); Chor-Blatt mit Vorhören ---- */
+const SPK6_SOFT = /^(Keine Noten|Nichts geändert|Grundlage fehlt|Rechnung läuft|Ebene fehlt|Ebene wurde inzwischen)/;   // erwartete Meldungen: Statuszeile, keine Konsole
+const spk6Idle = U => new Promise(res => { const t0 = performance.now(), f = () => { if (!U.busy) res(true); else if (performance.now() - t0 > 900000) res(false); else setTimeout(f, 60); }; f(); });
+function spk6Turn(U) {   // Warteschlange: eine Werkstatt-Aktion nach der anderen; was während einer Rechnung kommt, wartet (nichts wird still verworfen)
+  const prev = U.s6q || Promise.resolve(); let rel; const mine = new Promise(r => { rel = r; }); U.s6q = prev.then(() => mine);
+  return prev.then(() => spk6Idle(U)).then(ok => ({ok, rel}));
+}
+function spk6Keep(U, t) {   // Ergebnis 4 s stehen lassen (der Spektrum-Fortschritt überschreibt es sonst sofort)
+  if (U.s6mo) U.s6mo.disconnect(); const until = performance.now() + 4000;
+  U.s6mo = new MutationObserver(() => { if (performance.now() > until) { U.s6mo.disconnect(); U.s6mo = null; return; } if (/^Spektrum \d+ · /.test(U.st.textContent)) U.st.textContent = t; });
+  U.s6mo.observe(U.st, {childList: true, characterData: true, subtree: true}); spk1Stat(U, t);
+}
 async function spk6Run(U, op, a, txt, done, pg) {
-  if (U.busy) return null; U.busy = 's6'; spk1BtnState(U); spk1Stat(U, txt + ' …'); if (pg) pg(0);
-  try { const r = await spk1Call(op, Object.assign({doc: SPK1.doc}, a), null, {prog: p => { spk1Stat(U, txt + ' · ' + Math.round(p * 100) + ' %'); if (pg) pg(p); }}); U.busy = null; spk1Got(U, r); spk1TintLoad(U); spk1Dirty(U, 'ov'); spk1Stat(U, done(r)); return r; }
-  catch (e) { logErr(e); spk1Stat(U, txt + ': ' + (e.message || e)); return null; }
-  finally { U.busy = null; spk1BtnState(U); if (pg) pg(null); }
+  if (U.busy) spk1Stat(U, txt + ' wartet – Rechnung läuft');
+  const T = await spk6Turn(U); let mine = false;
+  try {
+    if (!T.ok) { spk1Stat(U, txt + ': Rechnung läuft noch – bitte später'); return null; }
+    U.busy = 's6'; mine = true; spk1BtnState(U); spk1Stat(U, txt + ' …'); if (pg) pg(0);
+    const r = await spk1Call(op, Object.assign({doc: SPK1.doc}, a), null, {prog: p => { spk1Stat(U, txt + ' · ' + Math.round(p * 100) + ' %'); if (pg) pg(p); }});
+    U.busy = null; mine = false; spk1Got(U, r); spk1TintLoad(U); spk1Dirty(U, 'ov'); spk6Keep(U, done(r)); return r;
+  } catch (e) { if (!SPK6_SOFT.test(String(e && e.message || e))) logErr(e); spk1Stat(U, txt + ': ' + (e.message || e)); return null; }
+  finally { if (mine && U.busy === 's6') U.busy = null; spk1BtnState(U); if (pg) pg(null); T.rel(); }
+}
+async function spk6NeedNotes(U, lid) {   // Noten der Ebene da? sonst erst „Noten finden“ (wie Noten bearbeiten)
+  const l = U.meta.layers.find(x => x.id === lid); if (!l) return false;
+  if (spk2Notes(U, lid).filter(q => q.st !== 'neu' || q.conf >= U.opt.n2thr).length) return true;
+  if (U.busy) await spk6Idle(U);
+  const r = await spk2Run(U, 'noten', {lid, sel: []}, 'Noten finden · ' + l.name, r => r.neu + ' Noten gefunden');
+  if (!r || !spk2Notes(U, lid).filter(q => q.st !== 'neu' || q.conf >= U.opt.n2thr).length) { spk1Stat(U, 'Keine Noten in ' + l.name); return false; }
+  return true;
 }
 const SPK6_CHOR = [['satz', 'Satz'], ['terz', 'Terzen'], ['quinte', 'Quinten'], ['oktave', 'Oktave'], ['dopplung', 'Unisono']];
 const SPK6_FX = [['pan', 'Pan', -1, 1, 0.05], ['lo', 'Tiefen dB', -15, 15, 1], ['mi', 'Mitten dB', -15, 15, 1], ['hi', 'Höhen dB', -15, 15, 1], ['hp', 'Hochpass Hz', 0, 2000, 10], ['lp', 'Tiefpass Hz', 0, 20000, 100], ['hall', 'Hall', 0, 1, 0.05], ['echo', 'Echo', 0, 1, 0.05], ['sat', 'Sättigung', 0, 1, 0.05]];
+/* Filter-Regler logarithmisch (0…100): Hochpass links = aus, 20 Hz … 2 kHz; Tiefpass rechts = aus, 20 kHz … 200 Hz – gleich viel Weg je Oktave */
+const SPK6_LOG = {hp: {f0: 20, off: 0}, lp: {f0: 200, off: 100}};
+const spk6Hz = (k, p) => { const L = SPK6_LOG[k]; p = +p; if (p === L.off) return 0; return Math.round(L.f0 * Math.pow(100, p / 100)); };
+const spk6Pos = (k, f) => { const L = SPK6_LOG[k]; f = +f || 0; if (!f) return L.off; const p = Math.round(100 * Math.log(f / L.f0) / Math.log(100)); return k === 'hp' ? Math.max(1, Math.min(100, p)) : Math.max(0, Math.min(99, p)); };
 function spk6MoreDd(U, dd, lid) {
   const l = U.meta.layers.find(x => x.id === lid); if (!l) return;
   const f = document.createDocumentFragment(), g = el('div', 'spk1-g'), t = el('div', 'spk1-g'), B = (p, tx, k, fn) => { const x = el('button', 'mbtn rb spk1-ck', esc(tx)); x.dataset.s6 = k; on(x, 'click', fn); p.appendChild(x); return x; };
@@ -102303,20 +102461,36 @@ function spk6MoreDd(U, dd, lid) {
   B(g, 'Effekte …', 'fx', () => spk6FxDd(U, U.ddA, lid));
   f.appendChild(g); f.appendChild(el('h5', '', 'Ganze Ebene'));
   for (const [tx, v] of [['Oktave −', -12], ['−1', -1], ['+1', 1], ['Oktave +', 12]]) B(t, tx, 'tr' + v, () => { spk1Dd(U, null); spk6Run(U, 's6shift', {lid, tr: v}, 'Transponieren', () => { spk6Flash(U, [lid]); return l.name + ' ' + (v > 0 ? '+' : '−') + Math.abs(v) + ' Halbtöne · ↶ macht es rückgängig'; }); });
-  f.appendChild(t); dd.insertBefore(f, dd.firstChild);
+  f.appendChild(t);
+  // gewohnte Reihenfolge bleibt (Name, Farbe, Ebene löschen); die Werkstatt kommt darunter – sie wird gleich hinter „Ebene löschen“ eingehängt
+  const ap = dd.appendChild;
+  dd.appendChild = function (n) { const r = ap.call(dd, n); if (n && n.tagName === 'BUTTON' && /Ebene löschen/.test(n.textContent)) { delete dd.appendChild; ap.call(dd, f); } return r; };
+  setTimeout(() => { if (Object.prototype.hasOwnProperty.call(dd, 'appendChild')) { delete dd.appendChild; if (!f.isConnected && f.childNodes.length) dd.appendChild(f); } }, 0);
 }
 const spk6Name = (U, lid) => { const l = U.meta.layers.find(x => x.id === lid); return l ? l.name : lid; };
-/* Ebenen-Zeilen: Kennung (Kopie, Chor, neu gerechnet, Effekte) und kurzes Blinken neuer/geänderter Ebenen */
+/* Kennung einer Ebene: zuerst das Unterscheidende (Stimme „Terz↑“ bzw. „Kopie“), dann „FX“ und „neu“ – passt die Zeile nicht, endet sie mit …; der volle Text steht im Hinweis */
+function spk6Tag(l) {
+  let p = '';
+  if (l.r6 === 'chor') { p = l.v6 || ''; if (!p) { const m = /(Terz|Quinte|Oktave) ([↑↓])( \d+)?$|Unisono( \d+)?$/.exec(l.name || ''); p = m ? (m[1] ? {Terz: 'Terz', Quinte: 'Quint', Oktave: 'Okt'}[m[1]] + m[2] + (m[3] || '') : 'Uni' + (m[4] || '')) : 'Chor'; } }
+  else if (l.r6 === 'kopie' || l.k6) p = 'Kopie';
+  const fx = l.fx && Object.keys(l.fx).some(k => +l.fx[k] && !(k === 'pan' && l.r6 === 'chor')), nu = l.a6 && l.a6.id && l.r6 !== 'chor';
+  const s = [p, fx ? 'FX' : '', nu ? 'neu' : ''].filter(Boolean), lang = [l.r6 === 'chor' ? 'Chorstimme' + (p ? ' ' + p : '') : p, fx ? 'Effekte' : '', nu ? 'neu gerechnet' : ''].filter(Boolean);
+  return s.length ? {t: s.join(' · '), lang: lang.join(', ')} : null;
+}
+/* Ebenen-Zeilen: Kennung und kurzes Blinken neuer/geänderter Ebenen; Notenmodus endet, wenn seine Ebene/sein Dokument weg ist */
 function spk6Rows(U) {
+  const E = U.s6e; if (E && (E.doc !== SPK1.doc || !U.meta.layers.some(l => l.id === E.lid))) spk6EdClose(U, 'Noten bearbeiten beendet – die Ebene ist nicht mehr da');
+  else if (!E && U.tool === 's6ed') spk1ToolSet(U, 'rect');
   const now = performance.now(), F = U.s6fl && U.s6fl.t > now ? U.s6fl.ids : null;
   for (const r of U.ly.querySelectorAll('.spk1-lr[data-l]')) {
     const l = U.meta.layers.find(x => x.id === r.dataset.l), nm = r.querySelector('.spk1-nm'); if (!l || !nm) continue;
-    const tg = [l.r6 === 'chor' ? 'Chor' : l.r6 === 'kopie' || l.k6 ? 'Kopie' : '', l.a6 && l.a6.id && l.r6 !== 'chor' ? 'neu' : '', l.fx && Object.keys(l.fx).some(k => +l.fx[k] && !(k === 'pan' && l.r6 === 'chor')) ? 'FX' : ''].filter(Boolean);
-    if (tg.length) {   // Name oben, Kennung darunter (hochkant ist die Namensspalte schmal – so bleibt die Kennung sichtbar)
-      const t = nm.textContent, a = el('span', '', esc(t)), s = el('span', 'spk6-tg', esc(tg.join(' · '))); nm.textContent = '';
+    const tg = spk6Tag(l);
+    if (tg) {   // Name oben, Kennung darunter; beides bleibt in der Namensspalte (abgeschnitten mit …), nichts ragt unter S/M
+      const t = nm.textContent, a = el('span', '', esc(t)), s = el('span', 'spk6-tg', esc(tg.t)); nm.textContent = '';
       a.style.cssText = 'max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
-      s.style.cssText = 'padding:2px 4px;border:1px solid var(--line);border-radius:4px;font:600 10px/1 var(--font-num);color:var(--text-dim);white-space:nowrap';
-      nm.style.display = 'flex'; nm.style.flexDirection = 'column'; nm.style.alignItems = 'flex-start'; nm.style.justifyContent = 'center'; nm.style.gap = '3px'; nm.append(a, s);
+      s.style.cssText = 'max-width:100%;box-sizing:border-box;overflow:hidden;text-overflow:ellipsis;padding:2px 3px;border:1px solid var(--line);border-radius:4px;font:600 10px/1 var(--font-num);color:var(--text-dim);white-space:nowrap';
+      nm.style.display = 'flex'; nm.style.flexDirection = 'column'; nm.style.alignItems = 'flex-start'; nm.style.justifyContent = 'center'; nm.style.gap = '3px'; nm.style.paddingLeft = nm.style.paddingRight = '4px'; nm.append(a, s);
+      nm.title = t + ' · ' + tg.lang; nm.setAttribute('aria-label', 'Quelle für In Ebene: ' + t + ' (' + tg.lang + ')');
     }
     if (F && F.includes(l.id)) r.style.animation = 'stepFl .55s ease-out 3';
   }
@@ -102343,16 +102517,16 @@ function spk6AB(U) {
 const spk6ABTxt = U => U.s6ab === 'A' ? 'A · Original' : 'B · Neu';
 /* ---- Noten bearbeiten ---- */
 const spk6EdNotes = U => { const E = U.s6e; return E ? spk2Notes(U, E.lid).filter(q => q.st !== 'neu' || q.conf >= U.opt.n2thr) : []; };
-const spk6EdOff = (E, q) => { const z = E.mv.get(q.id) || {dm: 0, dt: 0}, G = E.G; return G && G.s6 && E.sel.has(q.id) ? {dm: z.dm + (G.dm || 0), dt: z.dt + (G.dt || 0)} : z; };
-const spk6EdBox = (U, q, z) => ({xa: spk1X(U, q.t0 + z.dt), xb: spk1X(U, q.t1 + z.dt), ya: (U.v.mTop - (q.m + z.dm) - 0.5) * U.v.rowH, h: Math.max(3, U.v.rowH)});
+const spk6EdOff = (E, q) => { const z = E.mv.get(q.id) || {dm: 0, dt: 0}, G = E.G; return G && G.s6 && E.sel.has(q.id) ? {dm: Math.round((z.dm + (G.dm || 0)) * 100) / 100, dt: z.dt + (G.dt || 0)} : z; };
+const spk6EdBox = (U, q, z) => ({xa: spk1X(U, q.t0 + z.dt), xb: spk1X(U, q.t1 + z.dt), ya: (U.v.mTop - (q.m + (+q.c6 || 0) / 100 + z.dm) - 0.5) * U.v.rowH, h: Math.max(3, U.v.rowH)});
 const spk6Step = U => spk1Grid0(U).beat / 4;
+const spk6Ct = dm => { const c = Math.round(dm * 100); return Math.abs(c) >= 100 && c % 100 === 0 ? (c > 0 ? '+' : '−') + Math.abs(c / 100) : (c > 0 ? '+' : '−') + Math.abs(c) + ' ct'; };
 async function spk6EdOpen(U, lid) {
-  const l = U.meta.layers.find(x => x.id === lid); if (!l || U.busy) return;
+  const l = U.meta.layers.find(x => x.id === lid); if (!l) return;
   if (l.art === 'drums') { spk1Stat(U, 'Drums haben keine Tonhöhe'); return; }
-  if (!spk2Notes(U, lid).filter(q => q.st !== 'neu' || q.conf >= U.opt.n2thr).length) {
-    const r = await spk2Run(U, 'noten', {lid, sel: []}, 'Noten finden · ' + l.name, r => r.neu + ' Noten gefunden'); if (!r || !spk2Notes(U, lid).length) { spk1Stat(U, 'Keine Noten in ' + l.name); return; }
-  }
-  if (!U.s6e || U.s6e.lid !== lid) U.s6e = {lid, sel: new Set(), mv: new Map(), G: null, prev: U.tool === 's6ed' ? (U.s6e && U.s6e.prev) || 'rect' : U.tool};
+  if (!(await spk6NeedNotes(U, lid))) return;
+  if (!U.meta.layers.some(x => x.id === lid)) return;
+  if (!U.s6e || U.s6e.lid !== lid || U.s6e.doc !== SPK1.doc) U.s6e = {lid, doc: SPK1.doc, sel: new Set(), mv: new Map(), G: null, fine: false, prev: U.tool === 's6ed' ? (U.s6e && U.s6e.prev) || 'rect' : U.tool};
   U.n2sel = []; spk6EdPane(U); spk1ToolSet(U, 's6ed'); spk6EdKeys(U);
   const Q = spk6EdNotes(U), q0 = Q.reduce((a, q) => !a || q.t0 < a.t0 ? q : a, null), v = U.v;   // Noten ins Bild holen
   if (q0 && (spk1X(U, q0.t0) < 0 || spk1X(U, q0.t0) > U.W - 20)) { v.t0 = Math.max(0, q0.t0 - 0.5); }
@@ -102360,20 +102534,26 @@ async function spk6EdOpen(U, lid) {
   if (Q.length) { const ms = Q.map(q => q.m), mid = (Math.min(...ms) + Math.max(...ms)) / 2, rows = U.H / v.rowH; if (mid > v.mTop - 1 || mid < v.mTop - rows + 1) v.mTop = mid + rows / 2; }
   spk1Clamp(U); spk1Dirty(U, 'all'); spk6EdStat(U, 'Noten bearbeiten · ' + l.name + ' · Note ziehen = Tonhöhe/Zeit · Tipp = wählen');
 }
+/* Optionszeile: das Wichtigste zuerst (hochkant ohne Wischen sichtbar): Anwenden, −1, +1, Vorhören, A/B, Fertig – dann ±12, Fein, Alle, Entwurf weg */
 function spk6EdPane(U) {
   let p = U.s6p; if (!p) { p = U.s6p = el('div', 'spk1-o'); p.dataset.for = 's6ed'; U.op.appendChild(p); }
   const E = U.s6e, l = U.meta.layers.find(x => x.id === E.lid); p.innerHTML = '';
-  const lab = el('label', '', esc('Noten · ' + (l ? l.name : ''))); p.appendChild(lab);
+  const lab = el('label', '', 'Noten'); lab.title = l ? l.name : ''; p.appendChild(lab);
   const B = (t, k, fn, al) => { const x = el('button', 'n1b spk1-ck', esc(t)); x.dataset.s6 = k; if (al) x.setAttribute('aria-label', al); on(x, 'click', fn); p.appendChild(x); return x; };
-  B('Alle', 'edAll', () => { const Q = spk6EdNotes(U); if (E.sel.size === Q.length) E.sel.clear(); else for (const q of Q) E.sel.add(q.id); spk1Dirty(U, 'ov'); spk6EdStat(U); }, 'Alle Noten wählen');
-  for (const [t, v] of [['−12', -12], ['−1', -1], ['+1', 1], ['+12', 12]]) B(t, 'edM' + v, () => spk6EdMove(U, v, 0), (v > 0 ? 'Höher ' : 'Tiefer ') + Math.abs(v) + ' Halbtöne');
+  const st = E.fine ? 0.1 : 1, nm = v => E.fine ? (v > 0 ? '+' : '−') + '10 ct' : (v > 0 ? '+' : '−') + '1';
+  U.s6go = B('Anwenden', 'edGo', () => spk6EdGo(U), 'Entwurf anwenden und neu rechnen');
+  for (const v of [-1, 1]) B(nm(v), 'edM' + v, () => spk6EdMove(U, v * st, 0), (v > 0 ? 'Höher ' : 'Tiefer ') + (E.fine ? '10 Cent' : '1 Halbton'));
   B('▶ Vorhören', 'edPv', () => spk6EdPv(U), 'Entwurf vorhören');
   const ab = B(spk6ABTxt(U), 'edAB', () => spk6AB(U), 'Umschalten Original / Neu'); ab.setAttribute('aria-pressed', String(U.s6ab === 'A'));
-  U.s6go = B('Anwenden', 'edGo', () => spk6EdGo(U), 'Entwurf anwenden und neu rechnen');
-  B('Verwerfen', 'edX', () => { E.mv.clear(); spk1Dirty(U, 'ov'); spk6EdStat(U, 'Entwurf verworfen'); });
   const x = B('Fertig', 'edEnd', () => { if (E.mv.size && !x.dataset.arm) { x.dataset.arm = '1'; x.textContent = 'Entwurf weg?'; setTimeout(() => { delete x.dataset.arm; x.textContent = 'Fertig'; }, 2500); return; } spk6EdClose(U); });
+  for (const v of [-12, 12]) B((v > 0 ? '+' : '−') + '12', 'edM' + v, () => spk6EdMove(U, v, 0), (v > 0 ? 'Höher ' : 'Tiefer ') + '12 Halbtöne');
+  const fn = B('Fein', 'edFine', () => { E.fine = !E.fine; spk6EdPane(U); spk6EdStat(U, E.fine ? 'Fein: ±10 ct je Tipp, Ziehen 10 ct je Zeile (bis ±50 ct)' : 'Halbton-Raster'); }, 'Fein: Cent statt Halbtöne');
+  fn.setAttribute('aria-pressed', String(!!E.fine)); fn.classList.toggle('on', !!E.fine);
+  B('Alle', 'edAll', () => { const Q = spk6EdNotes(U); if (E.sel.size === Q.length) E.sel.clear(); else for (const q of Q) E.sel.add(q.id); spk1Dirty(U, 'ov'); spk6EdStat(U); }, 'Alle Noten wählen');
+  B('Entwurf weg', 'edX', () => { E.mv.clear(); spk1Dirty(U, 'ov'); spk6EdStat(U, 'Entwurf verworfen'); }, 'Entwurf verwerfen');
+  spk6EdStat(U, U.st.textContent);
 }
-function spk6EdClose(U) { const E = U.s6e; if (!E) return; U.s6e = null; if (SPK1.pl && SPK1.pl.s6) spk1Stop(); spk1ToolSet(U, E.prev && E.prev !== 's6ed' ? E.prev : 'rect'); spk1Dirty(U, 'ov'); spk1BtnState(U); }
+function spk6EdClose(U, why) { const E = U.s6e; if (!E) return; U.s6e = null; if (SPK1.pl && SPK1.pl.s6) spk1Stop(); spk1ToolSet(U, E.prev && E.prev !== 's6ed' ? E.prev : 'rect'); spk1Dirty(U, 'ov'); spk1BtnState(U); if (why) spk1Stat(U, why); }
 function spk6EdStat(U, t) {
   const E = U.s6e; if (!E) return; const n = [...E.mv.values()].filter(z => z.dm || z.dt).length;
   spk1Stat(U, t || ((E.sel.size ? E.sel.size + ' gewählt' : 'Tipp = wählen') + (n ? ' · ' + n + ' geändert · „Anwenden“ rechnet neu' : ' · Note ziehen = Tonhöhe/Zeit')));
@@ -102382,24 +102562,24 @@ function spk6EdStat(U, t) {
 function spk6EdMove(U, dm, dt) {   // Entwurf: gewählte Noten (oder alle) verschieben – noch nichts gerechnet
   const E = U.s6e; if (!E) return; const Q = spk6EdNotes(U), ids = E.sel.size ? [...E.sel] : Q.map(q => q.id);
   for (const id of ids) { const z = E.mv.get(id) || {dm: 0, dt: 0}; z.dm = Math.round((z.dm + dm) * 100) / 100; z.dt = +(z.dt + dt).toFixed(5); if (Math.abs(z.dt) < 1e-6) z.dt = 0; if (z.dm || z.dt) E.mv.set(id, z); else E.mv.delete(id); }
-  spk1Dirty(U, 'ov'); spk6EdStat(U, (ids.length > 1 ? ids.length + ' Noten' : 'Note') + (dm ? ' ' + (dm > 0 ? '+' : '−') + Math.abs(dm) : '') + (dt ? (dt > 0 ? ' später' : ' früher') : '') + ' · „Anwenden“ rechnet neu');
+  spk1Dirty(U, 'ov'); spk6EdStat(U, (ids.length > 1 ? ids.length + ' Noten' : 'Note') + (dm ? ' ' + spk6Ct(dm) : '') + (dt ? (dt > 0 ? ' später' : ' früher') : '') + ' · „Anwenden“ rechnet neu');
 }
-function spk6EdHit(U, p) {
+function spk6EdHit(U, p) {   // Trefferfläche je Balken ≥ 36 px hoch (Balken selbst ≥ 8 px), bei Überschneidung zählt der nächste
   let best = null, bd = 1e9; const E = U.s6e;
-  for (const q of spk6EdNotes(U)) { const b = spk6EdBox(U, q, spk6EdOff(E, q)), pad = Math.max(0, (18 - b.h) / 2); if (p.x < b.xa - 6 || p.x > Math.max(b.xb, b.xa + 12) + 6 || p.y < b.ya - pad || p.y > b.ya + b.h + pad) continue; const dd = Math.abs(p.y - (b.ya + b.h / 2)); if (dd < bd) { bd = dd; best = q; } }
+  for (const q of spk6EdNotes(U)) { const b = spk6EdBox(U, q, spk6EdOff(E, q)), pad = Math.max(0, (36 - b.h) / 2); if (p.x < b.xa - 8 || p.x > Math.max(b.xb, b.xa + 12) + 8 || p.y < b.ya - pad || p.y > b.ya + b.h + pad) continue; const dd = Math.abs(p.y - (b.ya + b.h / 2)); if (dd < bd) { bd = dd; best = q; } }
   return best;
 }
 function spk6EdDown(U, p) { const q = spk6EdHit(U, p), G = {tool: 's6ed', x0: p.x, y0: p.y, t0: spk1T(U, p.x), f0: spk1F(U, p.y), moved: false, shape: null, s6: q ? q.id : null, dm: 0, dt: 0}; if (U.s6e) U.s6e.G = null; return G; }
 function spk6EdDrag(U, G, p) {
   if (!G.moved && Math.hypot(p.x - G.x0, p.y - G.y0) < 6) return; const E = U.s6e; if (!E) return;
   if (!G.moved) { G.moved = true; if (!E.sel.has(G.s6)) { E.sel.clear(); E.sel.add(G.s6); } }
-  const st = spk6Step(U); G.dm = Math.round((G.y0 - p.y) / U.v.rowH); G.dt = Math.round((p.x - G.x0) / U.v.pps / st) * st; E.G = G; spk1Dirty(U, 'ov');
-  spk1Stat(U, E.sel.size + (E.sel.size > 1 ? ' Noten ' : ' Note ') + (G.dm > 0 ? '+' : G.dm < 0 ? '−' : '±') + Math.abs(G.dm) + ' · ' + (Math.round(G.dt / st) > 0 ? '+' : '') + Math.round(G.dt / st) + '/16');
+  const st = spk6Step(U), rows = Math.round((G.y0 - p.y) / U.v.rowH); G.dm = E.fine ? Math.max(-5, Math.min(5, rows)) / 10 : rows; G.dt = E.fine ? 0 : Math.round((p.x - G.x0) / U.v.pps / st) * st; E.G = G; spk1Dirty(U, 'ov');
+  spk1Stat(U, E.sel.size + (E.sel.size > 1 ? ' Noten ' : ' Note ') + (G.dm ? spk6Ct(G.dm) : '±0') + (E.fine ? '' : ' · ' + (Math.round(G.dt / st) > 0 ? '+' : '') + Math.round(G.dt / st) + '/16'));
 }
 function spk6EdUp(U, G) {
   U.tmp = null; const E = U.s6e; if (!E) return;
   if (G.s6 && !G.moved) { if (E.sel.has(G.s6)) E.sel.delete(G.s6); else { E.sel.add(G.s6); const q = spk6EdNotes(U).find(z => z.id === G.s6); if (q) spk1Tone(Math.round(q.m + spk6EdOff(E, q).dm)); } }
-  else if (G.s6) { E.G = null; if (G.dm || G.dt) { const dm = G.dm, dt = G.dt; for (const id of E.sel) { const z = E.mv.get(id) || {dm: 0, dt: 0}; z.dm += dm; z.dt = +(z.dt + dt).toFixed(5); if (Math.abs(z.dt) < 1e-6) z.dt = 0; if (z.dm || z.dt) E.mv.set(id, z); else E.mv.delete(id); } } }
+  else if (G.s6) { E.G = null; if (G.dm || G.dt) { const dm = G.dm, dt = G.dt; for (const id of E.sel) { const z = E.mv.get(id) || {dm: 0, dt: 0}; z.dm = Math.round((z.dm + dm) * 100) / 100; z.dt = +(z.dt + dt).toFixed(5); if (Math.abs(z.dt) < 1e-6) z.dt = 0; if (z.dm || z.dt) E.mv.set(id, z); else E.mv.delete(id); } } }
   else if (G.moved && G.shape) { const s = G.shape, m0 = spk1Midi(Math.max(1, s.f0)), m1 = spk1Midi(Math.max(1, s.f1)); for (const q of spk6EdNotes(U)) { const z = spk6EdOff(E, q); if (q.t1 + z.dt > s.t0 && q.t0 + z.dt < s.t1 && q.m + z.dm >= m0 - 0.5 && q.m + z.dm <= m1 + 0.5) E.sel.add(q.id); } }
   else { E.sel.clear(); U.cur = Math.max(0, Math.min(U.dur, G.t0)); spk1Dirty(U, 'r'); }
   spk1Dirty(U, 'ov'); spk6EdStat(U);
@@ -102415,15 +102595,15 @@ function spk6EdDraw(U, x) {
     if (b.xb < 0 || b.xa > W || b.ya > H || b.ya + b.h < 0) continue;
     x.fillStyle = 'rgba(' + rgb + ',' + (s ? 0.92 : 0.7) + ')'; x.fillRect(b.xa, b.ya, w, b.h);
     x.lineWidth = s ? 2 : 1; x.strokeStyle = s ? '#f4f1ea' : 'rgb(' + rgb + ')'; x.strokeRect(Math.round(b.xa) + 0.5, Math.round(b.ya) + 0.5, Math.round(w), Math.round(b.h));
-    if (b.h >= 10 && w > 26) { x.fillStyle = '#111'; x.font = '700 9px ' + (fnt.startsWith('#') ? 'monospace' : fnt); x.fillText(spk2Name(Math.round(q.m + z.dm)), b.xa + 3, b.ya + b.h - 2); }
+    if (b.h >= 10 && w > 26) { const tot = q.m + (+q.c6 || 0) / 100 + z.dm, mm = Math.round(tot), c = Math.round((tot - mm) * 100); x.fillStyle = '#111'; x.font = '700 9px ' + (fnt.startsWith('#') ? 'monospace' : fnt); x.fillText(spk2Name(mm) + (c ? (c > 0 ? '+' : '') + c : ''), b.xa + 3, b.ya + b.h - 2); }
   }
 }
 function spk6EdKeys(U) {
   if (U.s6k) return; U.s6k = 1;
   document.addEventListener('keydown', e => {
     if (!SPK1.open || !U.s6e || U.tool !== 's6ed' || /^(INPUT|TEXTAREA|SELECT)$/.test((e.target && e.target.tagName) || '')) return;
-    const k = e.key, st = spk6Step(U);
-    if (k === 'ArrowUp' || k === 'ArrowDown') spk6EdMove(U, (k === 'ArrowUp' ? 1 : -1) * (e.shiftKey ? 12 : 1), 0);
+    const k = e.key, st = spk6Step(U), fine = U.s6e.fine || e.altKey;
+    if (k === 'ArrowUp' || k === 'ArrowDown') spk6EdMove(U, (k === 'ArrowUp' ? 1 : -1) * (fine ? 0.1 : e.shiftKey ? 12 : 1), 0);   // Fein/Alt = 10 ct, Shift = Oktave
     else if (k === 'ArrowLeft' || k === 'ArrowRight') spk6EdMove(U, 0, (k === 'ArrowRight' ? 1 : -1) * st);
     else if (k === 'Enter') spk6EdGo(U); else return;
     e.preventDefault();
@@ -102431,22 +102611,23 @@ function spk6EdKeys(U) {
 }
 const spk6Mv = E => [...E.mv].filter(([, z]) => z.dm || z.dt).map(([id, z]) => ({id, dm: z.dm, dt: z.dt}));
 async function spk6EdGo(U) {
-  const E = U.s6e; if (!E || U.busy) return; const mv = spk6Mv(E); if (!mv.length) { spk6EdStat(U, 'Nichts geändert'); return; }
+  const E = U.s6e; if (!E) return; const mv = spk6Mv(E); if (!mv.length) { spk6EdStat(U, 'Nichts geändert'); return; }
   if (SPK1.pl && SPK1.pl.s6) spk1Stop(); const b = U.s6go, lid = E.lid;
   const r = await spk6Run(U, 's6plan', {lid, mv}, 'Anwenden', r => r.n + (r.n > 1 ? ' Noten' : ' Note') + ' neu gerechnet · ↶ macht es rückgängig', p => { if (b) b.textContent = p == null ? 'Anwenden' : 'Rechne ' + Math.round(p * 100) + ' %'; });
-  if (r && U.s6e === E) { E.mv.clear(); spk6Flash(U, [lid]); spk6EdStat(U, r.n + (r.n > 1 ? ' Noten' : ' Note') + ' neu gerechnet · ↶ macht es rückgängig'); spk1Dirty(U, 'ov'); }
+  if (r && U.s6e === E) { E.mv.clear(); spk6Flash(U, [lid]); spk6Keep(U, r.n + (r.n > 1 ? ' Noten' : ' Note') + ' neu gerechnet · ↶ macht es rückgängig'); if (U.s6go) U.s6go.disabled = true; spk1Dirty(U, 'ov'); }
 }
 function spk6Win(U, Q) {   // Vorhör-Ausschnitt: ab der ersten gewählten/geänderten Note (sonst ab der Position), 8 s
   const ts = Q.map(q => q.t0).filter(t => t != null), from = Math.max(0, ts.length ? Math.min(...ts) - 0.4 : U.cur || 0); return [from, Math.min(U.dur, from + 8)];
 }
 async function spk6EdPv(U) {
-  const E = U.s6e; if (!E || U.busy) return; if (SPK1.pl && SPK1.pl.s6) { spk1Stop(); spk1BtnState(U); spk1Dirty(U, 'ov'); return; }
+  const E = U.s6e; if (!E) return; if (SPK1.pl && SPK1.pl.s6) { spk1Stop(); spk1BtnState(U); spk1Dirty(U, 'ov'); return; }
+  if (U.busy) { spk1Stat(U, 'Vorhören: Rechnung läuft – gleich noch einmal tippen'); return; }
   const Q = spk6EdNotes(U), pick = Q.filter(q => E.sel.has(q.id) || E.mv.has(q.id)).map(q => ({t0: q.t0 + Math.min(0, spk6EdOff(E, q).dt)})), win = spk6Win(U, pick.length ? pick : Q.filter(q => q.t1 > (U.cur || 0)).slice(0, 1));
   const b = U.dd ? null : U.s6p && U.s6p.querySelector('[data-s6="edPv"]'); U.busy = 's6'; spk1BtnState(U);
   try {
     const r = await spk1Call('s6plan', {doc: SPK1.doc, lid: E.lid, mv: spk6Mv(E), dry: 1, win}, null, {prog: p => { spk1Stat(U, 'Vorhören · ' + Math.round(p * 100) + ' %'); if (b) b.textContent = 'Rechne ' + Math.round(p * 100) + ' %'; }});
     U.busy = null; spk6Pv(U, r, win[0]); spk1Stat(U, 'Vorhören ' + (U.s6ab === 'A' ? 'A: Original' : 'B: Neu') + ' · A/B schaltet um');
-  } catch (e) { logErr(e); spk1Stat(U, 'Vorhören: ' + (e.message || e)); }
+  } catch (e) { if (!SPK6_SOFT.test(String(e && e.message || e))) logErr(e); spk1Stat(U, 'Vorhören: ' + (e.message || e)); }
   finally { U.busy = null; if (b) b.textContent = '▶ Vorhören'; spk1BtnState(U); }
 }
 /* ---- Chor-Blatt ---- */
@@ -102463,18 +102644,21 @@ function spk6ChorDd(U, b, lid) {
     const g = el('div', 'spk1-g'), B = (t, k, fn) => { const x = el('button', 'mbtn rb spk1-ck', esc(t)); x.dataset.s6 = k; on(x, 'click', fn); g.appendChild(x); return x; };
     const pv = B('▶ Vorhören', 'chorPv', () => spk6ChorPv(U, lid, st, pv));
     const ab = B(spk6ABTxt(U), 'chorAB', () => spk6AB(U)); ab.setAttribute('aria-pressed', String(U.s6ab === 'A'));
-    B('Chor erzeugen', 'chorGo', () => { spk1Dd(U, null); if (SPK1.pl && SPK1.pl.s6) spk1Stop(); spk6Run(U, 's6chor', {lid, n: st.n, art: st.art, br: st.br, sp: st.sp}, 'Chor', r => { spk6Flash(U, r.voices.map(z => z.lid)); return r.voices.length + ' Stimmen als neue Ebenen (Kennung „Chor“) · Tonart ' + SPK1_NOTE[r.key.root] + (r.key.minor ? '-Moll' : '-Dur') + ' · ↶ macht es rückgängig'; }); });
+    B('Chor erzeugen', 'chorGo', async () => { spk1Dd(U, null); if (SPK1.pl && SPK1.pl.s6) spk1Stop(); if (!(await spk6NeedNotes(U, lid))) return; const o = {lid, n: st.n, art: st.art, br: st.br, sp: st.sp};
+      spk6Run(U, 's6chor', o, 'Chor', r => { spk6Flash(U, r.voices.map(z => z.lid)); return r.voices.length + ' Stimmen als neue Ebenen (Kennung „Chor“) · Tonart ' + SPK1_NOTE[r.key.root] + (r.key.minor ? '-Moll' : '-Dur') + ' · ↶ macht es rückgängig'; }); });
     dd.appendChild(g); dd.appendChild(el('p', '', 'Breite = Stereo, Streuung = Versatz und Verstimmung. A = Ebene allein, B = mit Chor. Jede Stimme wird eine eigene Ebene.'));
   });
 }
 async function spk6ChorPv(U, lid, st, b) {
-  if (U.busy) return; if (SPK1.pl && SPK1.pl.s6) { spk1Stop(); spk1BtnState(U); spk1Dirty(U, 'ov'); return; }
+  if (SPK1.pl && SPK1.pl.s6) { spk1Stop(); spk1BtnState(U); spk1Dirty(U, 'ov'); return; }
+  if (U.busy) { spk1Stat(U, 'Chor vorhören: Rechnung läuft – gleich noch einmal tippen'); return; }
+  if (!(await spk6NeedNotes(U, lid))) return;
   const Q = spk2Notes(U, lid).filter(q => q.st !== 'neu'), win = spk6Win(U, Q.filter(q => q.t1 > (U.cur || 0)).slice(0, 1).concat(Q.length && !Q.some(q => q.t1 > (U.cur || 0)) ? [Q[0]] : []));
   U.busy = 's6'; spk1BtnState(U);
   try {
     const r = await spk1Call('s6chor', {doc: SPK1.doc, lid, n: st.n, art: st.art, br: st.br, sp: st.sp, dry: 1, win}, null, {prog: p => { spk1Stat(U, 'Chor vorhören · ' + Math.round(p * 100) + ' %'); if (b) b.textContent = 'Rechne ' + Math.round(p * 100) + ' %'; }});
     U.busy = null; spk6Pv(U, r, win[0]); spk1Stat(U, 'Vorhören ' + r.n + ' Stimmen · ' + (U.s6ab === 'A' ? 'A: Ebene allein' : 'B: mit Chor') + ' · A/B schaltet um');
-  } catch (e) { logErr(e); spk1Stat(U, 'Chor: ' + (e.message || e)); }
+  } catch (e) { if (!SPK6_SOFT.test(String(e && e.message || e))) logErr(e); spk1Stat(U, 'Chor: ' + (e.message || e)); }
   finally { U.busy = null; if (b) b.textContent = '▶ Vorhören'; spk1BtnState(U); }
 }
 function spk6FxDd(U, b, lid) {
@@ -102482,9 +102666,11 @@ function spk6FxDd(U, b, lid) {
   spk1Dd(U, b, dd => {
     dd.appendChild(el('h5', '', 'Effekte · ' + esc(l.name)));
     for (const [k, lab, mn, mx, stp] of SPK6_FX) {
-      const r = el('input'), v = el('span', 'spk1-v', String(+f[k] || 0)), w = el('label', '', esc(lab)); r.type = 'range'; r.min = mn; r.max = mx; r.step = stp; r.value = +f[k] || 0; r.style.minHeight = '40px'; r.setAttribute('aria-label', lab); r.dataset.s6 = k;
-      on(r, 'input', () => { v.textContent = r.value; });
-      on(r, 'change', () => { const o = {}; o[k] = +r.value; spk6Run(U, 's6fx', {lid, fx: o}, 'Effekte', () => lab + ' ' + r.value + ' · ↶ macht es rückgängig'); });
+      const lg = SPK6_LOG[k], r = el('input'), w = el('label', '', esc(lab)), txt = () => lg ? (spk6Hz(k, r.value) ? spk6Hz(k, r.value) + ' Hz' : 'aus') : r.value, v = el('span', 'spk1-v');
+      r.type = 'range'; if (lg) { r.min = 0; r.max = 100; r.step = 1; r.value = spk6Pos(k, f[k]); } else { r.min = mn; r.max = mx; r.step = stp; r.value = +f[k] || 0; }
+      r.style.minHeight = '40px'; r.setAttribute('aria-label', lab); r.dataset.s6 = k; v.textContent = txt();
+      on(r, 'input', () => { v.textContent = txt(); });
+      on(r, 'change', () => { const o = {}; o[k] = lg ? spk6Hz(k, r.value) : +r.value; const say = txt(); spk6Run(U, 's6fx', {lid, fx: o}, 'Effekte', () => lab.replace(/ Hz$/, '') + ' ' + say + ' · ↶ macht es rückgängig'); });
       w.append(r, v); dd.appendChild(w);
     }
     const z = el('button', 'mbtn rb spk1-ck', 'Alle aus'); z.dataset.s6 = 'fx0'; on(z, 'click', () => { spk1Dd(U, null); const o = {}; for (const e of SPK6_FX) o[e[0]] = 0; spk6Run(U, 's6fx', {lid, fx: o}, 'Effekte', () => 'Effekte aus · ↶ macht es rückgängig'); });
@@ -102516,10 +102702,12 @@ const SPK6_API = {
   fx: (lid, fx) => spk1Call('s6fx', {doc: SPK1.doc, lid, fx}).then(r => { SPK1.last = r; return r; }),
   audio: lid => spk1Call('s6audio', {doc: SPK1.doc, lid}),
   key: lid => spk1Call('s6key', {doc: SPK1.doc, lid}),
-  plan: (lid, mv, dry, win) => spk1Call('s6plan', {doc: SPK1.doc, lid, mv, dry, win}).then(r => { if (!dry) SPK1.last = r; return r; }),
+  mem: () => spk1Call('s6mem', {doc: SPK1.doc}),
+  plan: (lid, mv, dry, win, full) => spk1Call('s6plan', {doc: SPK1.doc, lid, mv, dry, win, full}).then(r => { if (!dry) SPK1.last = r; return r; }),
   chorDry: (lid, n, art, br, sp, win) => spk1Call('s6chor', {doc: SPK1.doc, lid, n, art, br, sp, dry: 1, win}),
-  ed: () => { const U = SPK1.ui, E = U && U.s6e; return E ? {lid: E.lid, sel: [...E.sel], mv: spk6Mv(E), tool: U.tool, ab: U.s6ab || 'B'} : null; },
-  edBox: id => { const U = SPK1.ui, E = U.s6e, q = spk6EdNotes(U).find(z => z.id === id); if (!q) return null; const b = spk6EdBox(U, q, spk6EdOff(E, q)), R = U.mn.getBoundingClientRect(); return {x: R.left + (Math.max(b.xa, 0) + Math.min(b.xb, U.W)) / 2, y: R.top + b.ya + b.h / 2, w: b.xb - b.xa, h: b.h}; }
+  ed: () => { const U = SPK1.ui, E = U && U.s6e; return E ? {lid: E.lid, sel: [...E.sel], mv: spk6Mv(E), tool: U.tool, ab: U.s6ab || 'B', fine: !!E.fine} : null; },
+  edBox: id => { const U = SPK1.ui, E = U.s6e, q = spk6EdNotes(U).find(z => z.id === id); if (!q) return null; const b = spk6EdBox(U, q, spk6EdOff(E, q)), R = U.mn.getBoundingClientRect(); return {x: R.left + (Math.max(b.xa, 0) + Math.min(b.xb, U.W)) / 2, y: R.top + b.ya + b.h / 2, w: b.xb - b.xa, h: b.h}; },
+  hz: (k, p) => spk6Hz(k, p), pos: (k, f) => spk6Pos(k, f)
 };
 try { window.__spk6 = SPK6_API; } catch (e) {}
 /* SPK6-END */

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# SPK6: baut index.html neu aus basis.html + spk6-block.js (nach „/* ===== NX1-END ===== */“) + Haken „SPK6“. Jede Ersetzung genau einmal.
+# SPK6: baut index.html neu aus basis.html + spk6-block.js (nach „/* ===== NX1-END ===== */“) + Haken „SPK6“. Jede Ersetzung genau einmal. (Prüfung: + transfer/zerlegen/Profi/Löschen, 23)
 import sys, pathlib
 here = pathlib.Path(__file__).resolve().parent
 src = (here / 'basis.html').read_text(encoding='utf-8')
@@ -8,7 +8,7 @@ out = sys.argv[1] if len(sys.argv) > 1 else str(here / 'index.html')
 H = [
  # Kern: Werkstatt anhängen (Ops über Z2.ops)
  ("  return {on, stft, istft, specInfo, docs, lowSplit, Z2};",
-  "  if (Z2 && typeof spk6DspMake === 'function') Z2.s6 = spk6DspMake({Z2, V, BT, BLK, win, lay, masksOf, stripe, stCopy, newLayer, verUp, uBegin, uTouch, uEnd, render, block, get, put, del, keys});   // SPK6: Ebenen-Werkstatt (Ops über Z2.ops)\n"
+  "  if (Z2 && typeof spk6DspMake === 'function') Z2.s6 = spk6DspMake({Z2, V, BT, BLK, win, lay, masksOf, stripe, stCopy, newLayer, verUp, uBegin, uTouch, uEnd, render, block, get, put, del, keys, selFn});   // SPK6: Ebenen-Werkstatt (Ops über Z2.ops)\n"
   "  return {on, stft, istft, specInfo, docs, lowSplit, Z2};"),
  # block: Audio-Ebenen und Effekte
  ("  function block(d, k, mx, sel, sv) {\n",
@@ -65,6 +65,21 @@ H = [
   "  if (typeof spk6EdDraw === 'function') spk6EdDraw(U, x);   /* SPK6: Noten bearbeiten */\n}\n/* ---- Gesten:"),
  ("  }\n}\nasync function spk1Layer(U, was, lid, v) {",
   "  }\n  if (typeof spk6Rows === 'function') spk6Rows(U);   /* SPK6: Kennung Kopie/Chor/FX, Blinken */\n}\nasync function spk1Layer(U, was, lid, v) {"),
+ # Prüfung: Kopien/Chorstimmen unabhängig (In Ebene, Zerlegen, Profi-Trennung), Quelle löschen → Kopie übernimmt
+ ("    const {fnc, box} = selFn(d, o.sel || {}), TR = TRn(d), NB = NBn(d), all = d.meta.layers.map(l => l.id);\n",
+  "    const {fnc, box} = selFn(d, o.sel || {}), TR = TRn(d), NB = NBn(d), all = d.meta.layers.map(l => l.id);\n"
+  "    if (typeof Z2 !== 'undefined' && Z2 && Z2.s6) Z2.s6.tAll(d, all, von, nach);   /* SPK6: Kopien nehmen/geben nichts */\n"),
+ ("      const zl = [lids.drums, lids.bass, lids.gesang], own = d.meta.layers.filter(l => !zl.includes(l.id)).map(l => l.id);\n      const A = await zPrep(",
+  "      const zl = [lids.drums, lids.bass, lids.gesang], own = d.meta.layers.filter(l => !zl.includes(l.id)).map(l => l.id);\n"
+  "      if (typeof spk6DspMake === 'function') own.splice(0, own.length, ...own.filter(id => !(d.meta.layers.find(l => l.id === id) || {}).k6));   /* SPK6: Kopien belegen nichts */\n"
+  "      const A = await zPrep("),
+ ("    const zl = [lids.drums, lids.bass, lids.gesang], own = d.meta.layers.filter(l => !zl.includes(l.id)).map(l => l.id);\n    let qc = -1,",
+  "    const zl = [lids.drums, lids.bass, lids.gesang], own = d.meta.layers.filter(l => !zl.includes(l.id)).map(l => l.id);\n"
+  "    if (typeof spk6DspMake === 'function') own.splice(0, own.length, ...own.filter(id => !(d.meta.layers.find(l => l.id === id) || {}).k6));   /* SPK6: Kopien belegen nichts */\n"
+  "    let qc = -1,"),
+ ("        if (step) uEnd(d); else { d.metaDirty = true; soon(d); }\n",
+  "        if (m.was === 'weg' && typeof Z2 !== 'undefined' && Z2 && Z2.s6) Z2.s6.gone(d, l);   /* SPK6: Kopie übernimmt den Platz der gelöschten Quelle */\n"
+  "        if (step) uEnd(d); else { d.metaDirty = true; soon(d); }\n"),
  # Block
  ("/* ===== NX1-END ===== */\n", "/* ===== NX1-END ===== */\n" + blk),
 ]
