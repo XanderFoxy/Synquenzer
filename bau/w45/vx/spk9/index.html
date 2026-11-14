@@ -105362,7 +105362,9 @@ function spk9DspMake(Z2) {
           const mP = mOf(bs[z - 1], a), mS = mOf(a, b), mN = mOf(b, bs[z + 2]), L = Math.max(1, Math.round((b - a) * 0.4)), d1 = mOf(a, a + L), d2 = mOf(b - L, b);
           if (isNaN(mP) || isNaN(mS) || isNaN(mN) || !((mS - mP) * (mN - mS) > 0) || Math.abs(mN - mS) > o9.trN || !((d2 - d1) * Math.sign(mN - mP) >= 0.4)) continue;
           if (o9.trFlat) { const qa = a + ((b - a) >> 2), qb = b - ((b - a) >> 2), h = (qa + qb) >> 1, m1 = mOf(qa, h), m2 = mOf(h, qb); let lo = 1e9, hi = -1e9; for (let r = qa; r < qb; r++) if (!isNaN(s3[r])) { lo = Math.min(lo, s3[r]); hi = Math.max(hi, s3[r]); }
-            if ((qb - qa) * hopS >= 0.05 - 1e-6 && hi - lo <= 0.25 + 1e-6 && Math.abs(m2 - m1) < 0.1) continue; }   // flache Mitte = echter (Durchgangs-)Ton, kein Gleiten
+            if ((qb - qa) * hopS >= 0.05 - 1e-6 && hi - lo <= 0.25 + 1e-6 && Math.abs(m2 - m1) < 0.1 && Math.abs(mN - (m1 + m2) / 2) >= 0.75) continue;   // flache Mitte ≥ ¾ HT vor dem Ziel = echter (Durchgangs-)Ton; näher dran = Anschleifen
+            if ((b - a) * hopS >= 0.25) { const sg2 = Math.sign(mN - mP); let al = 0, op = 0; for (let r = a + 1; r < b; r++) { if (isNaN(s3[r]) || isNaN(s3[r - 1])) continue; const dd = (s3[r] - s3[r - 1]) * sg2; if (dd > 0) al += dd; else op -= dd; }
+              if (op > Math.max(0.25, 0.2 * al)) continue; } }   // langes Stück nur, wenn es gleichmäßig auf das Ziel zu läuft (Vibrato schwingt zurück = Ton)
           const md = (mP + mN) / 2, sg = Math.sign(mN - mP); let bd = Math.max(bs[z - 1] + 1, a - back); while (bd < b && !((s3[bd] - md) * sg > 0)) bd++;
           rb.splice(z - 1, 2, bd); again = 1; break;
         }
