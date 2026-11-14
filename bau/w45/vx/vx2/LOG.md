@@ -29,3 +29,18 @@
 - Pflicht index.html: topdefs Skripte 26, doppelt 0, Syntaxfehler 0 · dupkeys 0 · smoke errors [] (pruef/smoke-pruef.png) · „MS 2000“ 1× (= Basis) · „^  live: true,“ 1× (= Basis) · VERSION 4.62.0 · Markenwörter je Wort = Basis, 0 im Block · keine Datensatz-/Produktnamen unter vx2 (auch nicht in pruef/).
 - Regression: vx1-test 61/61 (pruef/reg-vx1.txt) · imp1-test ALLE OK (48) (pruef/reg-imp1.txt) · rv1-test offiziell VX2 49/53, Basis 48/53 (pruef/run-vx2-a.txt, run-basis-a.txt).
 - Befunde: PRUEFUNG.md (2 schwer, 2 mittel, 4 leicht).
+
+## Prüfer-Befunde beheben (Auftrag VX2-P)
+20:18 PRUEFUNG.md gelesen (2 schwer, 2 mittel, 4 leicht). Vorher-Stand gesichert: fix/index.v1.html (= index.html vor der Behebung), dbg/vx2-core.v1.js.
+20:20 Befund 1 nachgestellt in Node (fix/eval2.cjs: Anfang/Vokal/Präzision + verloren/zusammen wie der Prüfer, gegen A1 und A2; fix/ftab.cjs Merkmal-Tabelle):
+  VX2 v1 A1 verloren 5, zusammen 4; A2 Vokal 52/64, verloren 8, zusammen 8; nur-A2-Silben 5/13 (Erkennung roh 10/13).
+  Merkmale der 11 Kandidaten an echten Silben: sicherer Einsatz (conf ≥ 0,6), Pegel-Tal 2,5–6 dB, Nulldurchgänge im Tal < Vokal (Nasal/Lateral);
+  die 120 Kandidaten ohne Note: kein einziger mit conf ≥ 0,6 + Tal ≥ 2 dB + weniger Nulldurchgänge.
+20:22 Regel „stimmhafter Konsonant“ in vx2Pick (fix/vx2-core.js): A1 verloren 5 → 4, zusammen 4 → 3; A2 Vokal 52 → 57/64, verloren 8 → 2, zusammen 8 → 2,
+  nur-A2-Silben 5 → 9/13; #10 29 → 30, #14 30 → 33 Stücke. Tal-Schwelle 2 dB (2,5: A2 verloren 3; 3: 4). Rest (A1 8,03/10,25/13,14/22,21 s) = späte/frühe
+  Tonhöhen-Noten, an denen A1 und A2 sich selbst um 40–100 ms unterscheiden – nicht angefasst.
+20:23 Befunde 2/3: VX2-Marken nur noch Sicht des Gesang-Editors (VX2.res, vx2Mk), WP.det bleibt; nicht mit Songtext (m.lyrics/m.ly) oder gespeicherten
+  Marken; SPK5-R im VX2-Weg (Quelle gewechselt → neu messen, ≤ 2×), Haken in vx1rAnalyse gibt die gemessene Quelle zurück. 2 neue Haken-Zeilen
+  (vx1rPieces, vx1rCommit: vx2Mk statt wpMarks). sync.py-Anker angepasst (idempotent geprüft). topdefs 0/0, dupkeys 0. Node „check“: Kern = Op 'vxa' (Δ 0, #1/#10/#14).
+20:26 Neuer Test vx2-test.mjs (Befunde 2/3/6/7, Weg „erkannte Marken + VX2“ ohne gespeicherte Marken): fix 14/14 OK; gegen fix/index.v1.html 10/14 –
+  die 4 FEHLER sind genau Befund 2 (Marken 9 → 6 app-weit; Text Fall A/B springt) und Befund 3 (Analyse auf alter Quelle) → fix/vx2-test-v1.txt.
