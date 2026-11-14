@@ -344,6 +344,54 @@ if (TEIL.includes('f')) {   // Kennungen: Ueberdeckung in beiden Lagen, mit „K
     await P.ctx.close();
   }
 }
+if (TEIL.includes('g')) {   // 3-min-Lied: Anwenden waehrend der Wiedergabe → Aussetzer? Ganze Ebene ±1, Kopieren
+  const P = await page(428, 926), {p} = P;
+  const L3 = {name: 'Lang', sek: 180, gap: 1, noten: []}; const sc = [220, 246.942, 277.183, 293.665, 329.628, 369.994, 415.305, 440];
+  for (let t = 2, k = 0; t < 176; t += 0.5, k++) L3.noten.push([t, t + 0.42, sc[(k * 3) % 8]]);
+  await p.evaluate(SRC, L3); await idle(p);
+  const r = await p.evaluate(async () => { const N = SPK1.ui.meta.teil2.notes.L1, o = {};
+    __spk.play(30); const t0 = performance.now(); while (!(SPK1.pl && SPK1.pl.src.length) && performance.now() - t0 < 20000) await new Promise(z => setTimeout(z, 10));
+    await new Promise(z => setTimeout(z, 1000)); const P0 = SPK1.pl, c = AU.ctx; let leer = 0, maxLeer = 0, cur = 0; const tA = performance.now();
+    const pr = __spk6.plan('L1', [{id: N[100].id, dm: 1, dt: 0}]).then(a => { spk1Got(SPK1.ui, a); o.anwendenMs = Math.round(performance.now() - tA); });
+    const tl = performance.now(); while (performance.now() - tl < 9000) { await new Promise(z => setTimeout(z, 20)); const live = P0.src.some(s => true) && SPK1.pl === P0; const ahead = P0.src.length; if (SPK1.pl === P0 && ahead === 0) { cur += 20; leer += 20; maxLeer = Math.max(maxLeer, cur); } else cur = 0; }
+    await pr; o.stilleMsGesamt = leer; o.laengsteStilleMs = maxLeer; o.wiedergabeLaeuft = SPK1.pl === P0; __spk.stop();
+    let t = performance.now(); const tr = await __spk6.trans('L1', 1); spk1Got(SPK1.ui, tr); o.ganzeEbenePlus1Ms = Math.round(performance.now() - t);
+    t = performance.now(); const d = await __spk6.dup('L1'); spk1Got(SPK1.ui, d); o.kopierenMs = Math.round(performance.now() - t);
+    return o; });
+  log('g1-anwenden-waehrend-wiedergabe', r);
+  await P.ctx.close();
+}
+if (TEIL.includes('h')) {   // Regler / Kopieren, waehrend eine lange Rechnung (Chor) laeuft
+  const P = await page(428, 926), {p, tap} = P;
+  const L3 = {name: 'Mittel', sek: 40, gap: 1, noten: []}; const sc = [220, 246.942, 277.183, 293.665, 329.628, 369.994, 415.305, 440];
+  for (let t = 2, k = 0; t < 38; t += 0.5, k++) L3.noten.push([t, t + 0.42, sc[(k * 3) % 8]]);
+  await p.evaluate(SRC, L3); await idle(p);
+  await p.evaluate(async () => { const r = await __spk6.dup('L1'); spk1Got(SPK1.ui, r); });
+  // Chor-Blatt per Touch: 6 Stimmen, Erzeugen
+  let m = await btn(p, '#spk1Sheet .spk1-lr[data-l="L1"] [data-a="lmore"]'); await tap(m); m = await btn(p, '#spk1Sheet .spk1-dd [data-s6="chor"]'); await tap(m); await p.waitForTimeout(200);
+  m = await btn(p, '#spk1Sheet .spk1-dd button', '6'); await tap(m);
+  m = await btn(p, '#spk1Sheet .spk1-dd [data-s6="chorGo"]'); await tap(m);
+  // sofort: Effekte der Kopie oeffnen und Hall-Regler ziehen
+  m = await btn(p, '#spk1Sheet .spk1-lr[data-l="L2"] [data-a="lmore"]'); await tap(m); m = await btn(p, '#spk1Sheet .spk1-dd [data-s6="fx"]'); await tap(m); await p.waitForTimeout(150);
+  const busy1 = await p.evaluate(() => SPK1.ui.busy);
+  const hv = await slide(P, '#spk1Sheet .spk1-dd input[data-s6="hall"]', 0.7);
+  const mid = await p.evaluate(() => ({regler: +document.querySelector('#spk1Sheet .spk1-dd input[data-s6="hall"]').value, fx: SPK1.ui.meta.layers.find(l => l.id === 'L2').fx || null, busy: SPK1.ui.busy, stat: __spk.page.info().stat}));
+  await idle(p); await p.waitForTimeout(300);
+  const end = await p.evaluate(() => ({fx: SPK1.ui.meta.layers.find(l => l.id === 'L2').fx || null, chor: SPK1.ui.meta.layers.filter(l => l.r6 === 'chor').length, stat: __spk.page.info().stat}));
+  log('h1-regler-waehrend-chor', {busyBeimZiehen: busy1, hv, mid, end});
+  // Kopieren waehrend einer laufenden Rechnung
+  await p.evaluate(() => spk1Dd(SPK1.ui, null));
+  const t = await p.evaluate(() => { const N = SPK1.ui.meta.teil2.notes.L1; return spk1Call('s6chor', {doc: SPK1.doc, lid: 'L1', n: 4, art: 'terz', dry: 0}).then(() => 1); });
+  m = await btn(p, '#spk1Sheet .spk1-lr[data-l="L1"] [data-a="lmore"]'); await tap(m); m = await btn(p, '#spk1Sheet .spk1-dd [data-s6="chor"]'); await tap(m); await p.waitForTimeout(100);
+  m = await btn(p, '#spk1Sheet .spk1-dd [data-s6="chorGo"]'); await tap(m); await p.waitForTimeout(150);
+  const n0 = await p.evaluate(() => SPK1.ui.meta.layers.length);
+  m = await btn(p, '#spk1Sheet .spk1-lr[data-l="L2"] [data-a="lmore"]'); await tap(m); m = await btn(p, '#spk1Sheet .spk1-dd [data-s6="dup"]'); await tap(m); await p.waitForTimeout(150);
+  const k1 = await p.evaluate(() => ({busy: SPK1.ui.busy, stat: __spk.page.info().stat, dd: !!SPK1.ui.dd}));
+  await idle(p); await p.waitForTimeout(300);
+  const k2 = await p.evaluate(() => ({layers: SPK1.ui.meta.layers.map(l => l.name), stat: __spk.page.info().stat}));
+  log('h2-kopieren-waehrend-rechnung', {k1, k2});
+  await P.ctx.close();
+}
 log('konsole-fehler', errs.slice(0, 10));
 fs.writeFileSync(path.join(dir, 'pruef6-' + TEIL.join('') + '.json'), JSON.stringify({ms: Date.now() - T0, res}, null, 1));
 await b.close(); srv.close();
