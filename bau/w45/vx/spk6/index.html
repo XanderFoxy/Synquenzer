@@ -98646,6 +98646,7 @@ function spk1OvDraw(U) {
   if (typeof spk2OvDraw === 'function') spk2OvDraw(U, x);   // SPK2: Noten-Kästchen
   const p = U.pos != null ? U.pos : U.cur, px = Math.round(spk1X(U, p)) + 0.5;
   if (px >= 0 && px <= W) { x.strokeStyle = U.pos != null ? spk1Var('--play') : 'rgba(244,241,234,.55)'; x.lineWidth = U.pos != null ? 2 : 1; x.beginPath(); x.moveTo(px, 0); x.lineTo(px, H); x.stroke(); }
+  if (typeof spk6EdDraw === 'function') spk6EdDraw(U, x);   /* SPK6: Noten bearbeiten */
 }
 /* ---- Gesten: ein Finger = Werkzeug, zwei Finger = Zoom (waagrecht/senkrecht getrennt) + Schieben ---- */
 function spk1Gest(U) {
@@ -98698,6 +98699,7 @@ function spk1Tone(m) {
 /* ---- Werkzeuge ---- */
 const spk1Soft = U => U.sel.length && U.sel.every(s => s.art === 'pinsel' || s.art === 'harm');
 function spk1ToolDown(U, p) {
+  if (U.tool === 's6ed' && typeof spk6EdDown === 'function') return spk6EdDown(U, p);   /* SPK6: Noten bearbeiten */
   const G = {tool: U.tool, x0: p.x, y0: p.y, t0: spk1T(U, p.x), f0: spk1F(U, p.y), moved: false, shape: null};
   if (G.tool === 'pinsel') {
     const o = U.opt; if (!spk1Soft(U)) { U.sel = []; U.hits = U.ex = null; }
@@ -98707,6 +98709,7 @@ function spk1ToolDown(U, p) {
   return G;
 }
 function spk1ToolMove(U, G, p) {
+  if (G.tool === 's6ed' && G.s6 && typeof spk6EdDrag === 'function') return spk6EdDrag(U, G, p);   /* SPK6: Note ziehen */
   if (!G.moved && Math.hypot(p.x - G.x0, p.y - G.y0) < 8) return; G.moved = true;
   const t = spk1T(U, p.x), f = spk1F(U, p.y);
   if (G.tool === 'pinsel') { if (Math.hypot(p.x - G.lx, p.y - G.ly) >= Math.max(3, U.opt.size / 3)) { G.shape.pts.push([+t.toFixed(4), +f.toFixed(2)]); G.lx = p.x; G.ly = p.y; spk1Dirty(U, 'ov'); } return; }
@@ -98717,6 +98720,7 @@ function spk1ToolMove(U, G, p) {
 }
 function spk1ToolCancel(U, G) { U.tmp = null; if (G && G.tool === 'pinsel') { const i = U.sel.indexOf(G.shape); if (i >= 0) U.sel.splice(i, 1); } spk1Dirty(U, 'ov'); }
 function spk1ToolUp(U, G) {
+  if (G.tool === 's6ed' && typeof spk6EdUp === 'function') return spk6EdUp(U, G);   /* SPK6: Noten bearbeiten */
   U.tmp = null;
   if (G.tool === 'noten' && typeof spk2NoteUp === 'function') return spk2NoteUp(U, G);   // SPK2: Noten wählen
   if (!G.moved) {
@@ -98809,6 +98813,7 @@ function spk1Layers(U) {
     let tm = 0; const lab = r.nextElementSibling, send = () => { tm = 0; spk1Call('layer', {doc: SPK1.doc, was: 'vol', lid: r.dataset.l, v: +r.value}).then(x => { SPK1.last = x; U.meta = x.meta; }, logErr); };
     on(r, 'input', () => { lab.textContent = (+r.value > 0 ? '+' : '') + r.value + ' dB'; if (!tm) tm = setTimeout(send, 150); });
   }
+  if (typeof spk6Rows === 'function') spk6Rows(U);   /* SPK6: Kennung Kopie/Chor/FX, Blinken */
 }
 async function spk1Layer(U, was, lid, v) {
   try { const r = await spk1Call('layer', {doc: SPK1.doc, was, lid, v}); spk1Got(U, r); if (['neu', 'weg', 'farbe'].includes(was)) spk1TintLoad(U); return r; } catch (e) { logErr(e); spk1Stat(U, String(e.message || e)); return null; }
@@ -102130,13 +102135,14 @@ function spk6DspMake(I) {
     return y;
   }
   /* ---- Plan einer Audio-Ebene → Audio ---- */
-  function baseOf(d, b) {   // Grundlage: Maske der Ebene b × Original, mono, nur der klingende Bereich
-    const ch = I.render(d, {g: {[b]: 1}, rest: 0, orig: 0, n6: 1}, 0, d.meta.n), n = ch[0].length, x = new Float32Array(n), g = 1 / ch.length;
+  function baseOf(d, b, rg) {   // Grundlage: Maske der Ebene b × Original, mono, nur der klingende Bereich (rg = [a, b] Proben: nur dieser Ausschnitt, fürs Vorhören)
+    const A0 = rg ? Math.max(0, Math.floor(rg[0])) : 0, B0 = rg ? Math.max(A0 + 1, Math.min(d.meta.n, Math.ceil(rg[1]))) : d.meta.n;
+    const ch = I.render(d, {g: {[b]: 1}, rest: 0, orig: 0, n6: 1}, A0, B0), n = ch[0].length, x = new Float32Array(n), g = 1 / ch.length;
     for (const c of ch) for (let i = 0; i < n; i++) x[i] += c[i] * g;
     let pk = 0; for (let i = 0; i < n; i++) { const v = Math.abs(x[i]); if (v > pk) pk = v; }
     const th = pk * 1e-4; let a = 0, e = n; while (a < n && Math.abs(x[a]) <= th) a++; while (e > a && Math.abs(x[e - 1]) <= th) e--;
     const pad = Math.round(0.25 * d.meta.sr); a = Math.max(0, a - pad); e = Math.min(n, e + pad);
-    return {o: a, x: x.slice(a, Math.max(a + 1, e)), pk};
+    return {o: A0 + a, x: x.slice(a, Math.max(a + 1, e)), pk};
   }
   function remake(d, l, base, prog) {
     const sr = d.meta.sr, a = l.a6, x = base.x, n = x.length, o0 = base.o, N = l.art === 'bass' ? (sr > 32000 ? 4096 : 2048) : (sr > 32000 ? 2048 : 1024), H = N / 8;
@@ -102180,7 +102186,7 @@ function spk6DspMake(I) {
   /* ---- Ops ---- */
   function dup(d, m) {
     const l = lidOk(d, m.lid); I.uBegin(d, 'Ebene duplizieren');
-    const c = I.newLayer(d, {art: l.art, name: (l.name + ' Kopie').slice(0, 40), col: colNext(l.col)}); c.vol = l.vol; c.mute = l.mute; c.k6 = 1;
+    const c = I.newLayer(d, {art: l.art, name: (l.name + ' Kopie').slice(0, 40), col: colNext(l.col)}); c.vol = l.vol; c.mute = l.mute; c.k6 = 1; c.r6 = 'kopie';
     if (l.fx) c.fx = Object.assign({}, l.fx); if (l.a6) c.a6 = Object.assign({}, l.a6, {b: l.a6.b === l.id ? c.id : l.a6.b});
     const L = d.meta.layers; L.splice(L.indexOf(c), 1); L.splice(L.indexOf(l) + 1, 0, c);
     for (const [s, st] of I.masksOf(d, l.id)) { I.uTouch(d, c.id, s); I.masksOf(d, c.id).set(s, I.stCopy(st)); d.dirty.add(c.id + '|' + s); }
@@ -102219,23 +102225,50 @@ function spk6DspMake(I) {
   const VDT = [11, 19, 7, 23, 15, 5], VCT = [6, -7, 5, -8, 7, -5], VFV = [1.03, 0.97, 1.02, 0.98, 1.04, 0.96], VPAN = [-0.55, 0.55, -0.3, 0.3, -0.8, 0.8];
   async function chor(d, m, emit) {
     const l = lidOk(d, m.lid), Ns = (t2(d).notes[l.id] || []).filter(q => q.st !== 'neu'); if (!Ns.length) throw new Error('Keine Noten – erst „Noten finden“');
-    const n = Math.max(2, Math.min(6, m.n | 0 || 3)), art = CHOR[m.art] ? m.art : 'satz', key = keyOf(Ns), bl = l.a6 ? l.a6.b : l.id;
+    const n = Math.max(2, Math.min(6, m.n | 0 || 3)), art = CHOR[m.art] ? m.art : 'satz', key = keyOf(Ns), bl = l.a6 ? l.a6.b : l.id, sr = d.meta.sr;
+    const s2 = m.sp == null ? 1 : Math.max(0, Math.min(1, +m.sp)) * 2, bw = m.br == null ? 1 : Math.max(0, Math.min(1, +m.br)), rg = m.dry && m.win ? [m.win[0] * sr, m.win[1] * sr] : null;   // Streuung 0,5 / Breite 1 = Grundwerte
+    const vdt = v => s2 === 1 ? VDT[v] : Math.round(VDT[v] * s2), vct = v => s2 === 1 ? VCT[v] : Math.round(VCT[v] * s2), vfv = v => s2 === 1 ? VFV[v] : 1 + (VFV[v] - 1) * s2, vpan = v => bw === 1 ? VPAN[v] : +(VPAN[v] * bw).toFixed(4);
     if (!I.lay(d, bl)) throw new Error('Grundlage fehlt');
     I.uBegin(d, 'Chor aus Ebene');
     try {
-      const base = baseOf(d, bl), dts0 = l.a6 ? (+l.a6.dt || 0) / 1000 : 0, out = [];
+      const base = baseOf(d, bl, rg), dts0 = l.a6 ? (+l.a6.dt || 0) / 1000 : 0, out = [];
       for (let v = 0; v < n; v++) {
         const sp = CHOR[art][v], c = I.newLayer(d, {art: l.art, name: (l.name + ' ' + CNAME[sp]).slice(0, 40), col: colNext(l.col, v + 1)});
         const L = d.meta.layers; L.splice(L.indexOf(c), 1); L.splice(L.indexOf(l) + 1 + v, 0, c);
-        c.k6 = 1; c.vol = Math.max(-60, (+l.vol || 0) - 7); c.fx = fxNorm({pan: VPAN[v]}); c.a6 = {id: '', b: bl, o: 0, n: 0, sc: 1, tr: l.a6 ? +l.a6.tr || 0 : 0, fv: sp === 'o-' ? VFV[v] * 0.97 : VFV[v], dt: VDT[v], bg: 0.5, fmt: 1};
-        const dts = VDT[v] / 1000;
+        c.k6 = 1; c.r6 = 'chor'; c.vol = Math.max(-60, (+l.vol || 0) - 7); c.fx = fxNorm({pan: vpan(v)}); if (!fxOn(c.fx)) delete c.fx; c.a6 = {id: '', b: bl, o: 0, n: 0, sc: 1, tr: l.a6 ? +l.a6.tr || 0 : 0, fv: sp === 'o-' ? vfv(v) * 0.97 : vfv(v), dt: vdt(v), bg: 0.5, fmt: 1};
+        const dts = vdt(v) / 1000;
         t2(d).notes[c.id] = Ns.map(q => { const z = JSON.parse(JSON.stringify(q)); z.id = nid(d); z.st = 'zu'; z.o6 = q.o6 ? Object.assign({}, q.o6) : {a: q.a - dts0, b: q.b - dts0, m: q.m + (+q.c6 || 0) / 100 - (l.a6 ? +l.a6.tr || 0 : 0)};
           for (const k of ['a', 'b', 't0', 't1']) if (z[k] != null) z[k] = +(z[k] - dts0 + dts).toFixed(4);
-          moveNote(d, z, ivOf(q.m, sp, key) + VCT[v] / 100, 0); return z; });
+          moveNote(d, z, ivOf(q.m, sp, key) + vct(v) / 100, 0); return z; });
         remake(d, c, base, p => emit && emit({qid: m.qid, prog: (v + p) / n}));
-        out.push({lid: c.id, iv: sp, ct: VCT[v], dt: VDT[v], pan: VPAN[v]});
+        out.push({lid: c.id, iv: sp, ct: vct(v), dt: vdt(v), pan: vpan(v)});
+      }
+      if (m.dry) {   // Vorhören: A = Ebene allein, B = Ebene + Chor (Stereo, Lautstärken wie eingestellt), dann alles zurück
+        const db = v => Math.pow(10, (+v || 0) / 20), a0 = rg ? Math.floor(rg[0]) : 0, a1 = rg ? Math.ceil(rg[1]) : d.meta.n, gA = {[l.id]: db(l.vol)}, gB = Object.assign({}, gA);
+        for (const o of out) gB[o.lid] = db(I.lay(d, o.lid).vol);
+        const A = I.render(d, {g: gA, rest: 0, orig: 0}, a0, a1), B = I.render(d, {g: gB, rest: 0, orig: 0}, a0, a1);
+        abort(d); prune(d); return {sr, a: {ch: A, o: a0}, b: {ch: B, o: a0}, n: out.length, key: {root: key.root, minor: key.minor}};
       }
       I.uEnd(d); prune(d); return {voices: out, key: {root: key.root, minor: key.minor}};
+    } catch (e) { abort(d); throw e; }
+  }
+  async function plan(d, m, emit) {   // Entwurf anwenden: je Note {id, dm (Halbtöne), dt (s)} → ein Schritt, neu aus der Grundlage gerechnet
+    const l = lidOk(d, m.lid), Ns = t2(d).notes[l.id] || [], sr = d.meta.sr;
+    const mv = (Array.isArray(m.mv) ? m.mv : []).filter(z => z && Ns.some(q => q.id === z.id) && (+z.dm || +z.dt));
+    if (!mv.length && !m.dry) throw new Error('Nichts geändert');
+    if (!Ns.length) throw new Error('Keine Noten – erst „Noten finden“');
+    if (l.a6 && l.a6.b && !I.lay(d, l.a6.b)) throw new Error('Grundlage fehlt');
+    const rg = m.dry && m.win ? [m.win[0] * sr, m.win[1] * sr] : null;
+    I.uBegin(d, 'Noten bearbeiten');
+    try {
+      toAudio(d, l);
+      for (const z of mv) moveNote(d, Ns.find(q => q.id === z.id), +z.dm || 0, +z.dt || 0);
+      const base = baseOf(d, l.a6.b, rg), r = remake(d, l, base, p => emit && emit({qid: m.qid, prog: 0.05 + 0.9 * p}));
+      if (m.dry) {
+        const a = l.a6, x = A6(d).get(a.id), y = new Float32Array(x.length), g = (a.sc || 1) / 32767; for (let i = 0; i < x.length; i++) y[i] = x[i] * g;
+        const res = {sr, a: {ch: [base.x], o: base.o}, b: {ch: [y], o: a.o}, n: mv.length}; abort(d); prune(d); return res;
+      }
+      I.uEnd(d); prune(d); return Object.assign({lid: l.id, n: mv.length}, r);
     } catch (e) { abort(d); throw e; }
   }
   function fx(d, m) {
@@ -102244,42 +102277,199 @@ function spk6DspMake(I) {
     I.verUp(d, l.id); I.uEnd(d); return {lid: l.id, fx: l.fx || null};
   }
   const wrap = fn => async (d, m, emit, info) => { if (d.busy) throw new Error('Rechnung läuft'); const r = await fn(d, m, emit); return Object.assign(r, info(d)); };
-  const ops = {s6dup: wrap(dup), s6shift: wrap(shift), s6chor: wrap(chor), s6fx: wrap(fx),
+  const ops = {s6dup: wrap(dup), s6shift: wrap(shift), s6chor: wrap(chor), s6fx: wrap(fx), s6plan: wrap(plan),
     s6audio: async (d, m) => { const l = lidOk(d, m.lid); if (!l.a6) return {x: null}; const x = A6(d).get(l.a6.id); return {x: x ? x.slice() : null, o: l.a6.o, sc: l.a6.sc, sr: d.meta.sr}; },
     s6key: async (d, m) => keyOf(t2(d).notes[m.lid] || [])};
   if (I.Z2) { I.Z2.ops = I.Z2.ops || {}; Object.assign(I.Z2.ops, ops); }
   return {open, flush, exp, imp, k6, acc, block, fxNorm, fxOn, pv, keyOf, ivOf};
 }
-/* ---- Seite: wenige Knöpfe (Teil 1). Ebenen-Menü ⋯ → Werkstatt; Noten-Klappfenster → Tonhöhe/Zeit ---- */
-async function spk6Run(U, op, a, txt, done) {
-  if (U.busy) return null; U.busy = 's6'; spk1BtnState(U); spk1Stat(U, txt + ' …');
-  try { const r = await spk1Call(op, Object.assign({doc: SPK1.doc}, a), null, {prog: p => spk1Stat(U, txt + ' · ' + Math.round(p * 100) + ' %')}); U.busy = null; spk1Got(U, r); spk1TintLoad(U); spk1Dirty(U, 'ov'); spk1Stat(U, done(r)); return r; }
+/* ---- Seite (Teil 2): Ebenen-Menü ⋯ → Werkstatt (Kopieren, Noten bearbeiten, Chor erzeugen, Effekte, ganze Ebene ±); Modus „Noten bearbeiten“ (Balken über
+   dem Spektrum ziehen = Tonhöhe/Zeit im 1/16-Raster, Tipp = wählen, Rahmen = mehrere, ±1/±12, Vorhören, A/B, Anwenden = ein ↶-Schritt); Chor-Blatt mit Vorhören ---- */
+async function spk6Run(U, op, a, txt, done, pg) {
+  if (U.busy) return null; U.busy = 's6'; spk1BtnState(U); spk1Stat(U, txt + ' …'); if (pg) pg(0);
+  try { const r = await spk1Call(op, Object.assign({doc: SPK1.doc}, a), null, {prog: p => { spk1Stat(U, txt + ' · ' + Math.round(p * 100) + ' %'); if (pg) pg(p); }}); U.busy = null; spk1Got(U, r); spk1TintLoad(U); spk1Dirty(U, 'ov'); spk1Stat(U, done(r)); return r; }
   catch (e) { logErr(e); spk1Stat(U, txt + ': ' + (e.message || e)); return null; }
-  finally { U.busy = null; spk1BtnState(U); }
+  finally { U.busy = null; spk1BtnState(U); if (pg) pg(null); }
 }
-const SPK6_CHOR = [['satz', 'Satz'], ['terz', 'Terzen'], ['quinte', 'Quinten'], ['oktave', 'Oktaven'], ['dopplung', 'Dopplung']];
+const SPK6_CHOR = [['satz', 'Satz'], ['terz', 'Terzen'], ['quinte', 'Quinten'], ['oktave', 'Oktave'], ['dopplung', 'Unisono']];
 const SPK6_FX = [['pan', 'Pan', -1, 1, 0.05], ['lo', 'Tiefen dB', -15, 15, 1], ['mi', 'Mitten dB', -15, 15, 1], ['hi', 'Höhen dB', -15, 15, 1], ['hp', 'Hochpass Hz', 0, 2000, 10], ['lp', 'Tiefpass Hz', 0, 20000, 100], ['hall', 'Hall', 0, 1, 0.05], ['echo', 'Echo', 0, 1, 0.05], ['sat', 'Sättigung', 0, 1, 0.05]];
 function spk6MoreDd(U, dd, lid) {
   const l = U.meta.layers.find(x => x.id === lid); if (!l) return;
-  dd.appendChild(el('h5', '', 'Werkstatt'));
-  const g = el('div', 'spk1-g'), B = (t, k, fn) => { const x = el('button', 'mbtn rb spk1-ck', esc(t)); x.dataset.s6 = k; on(x, 'click', fn); g.appendChild(x); return x; };
-  B('Duplizieren', 'dup', () => { spk1Dd(U, null); spk6Run(U, 's6dup', {lid}, 'Duplizieren', r => 'Kopie: ' + spk6Name(U, r.lid) + ' · ↶ macht es rückgängig'); });
-  for (const [t, v] of [['Oktave −', -12], ['−1', -1], ['+1', 1], ['Oktave +', 12]]) B(t, 'tr' + v, () => { spk1Dd(U, null); spk6Run(U, 's6shift', {lid, tr: v}, 'Transponieren', () => l.name + ' ' + (v > 0 ? '+' : '−') + Math.abs(v) + ' Halbtöne · ↶ macht es rückgängig'); });
-  B('Chor …', 'chor', () => spk6ChorDd(U, U.ddA, lid));
-  B('Effekte …', 'fx', () => spk6FxDd(U, U.ddA, lid));
-  dd.appendChild(g);
+  const f = document.createDocumentFragment(), g = el('div', 'spk1-g'), t = el('div', 'spk1-g'), B = (p, tx, k, fn) => { const x = el('button', 'mbtn rb spk1-ck', esc(tx)); x.dataset.s6 = k; on(x, 'click', fn); p.appendChild(x); return x; };
+  f.appendChild(el('h5', '', 'Werkstatt'));
+  B(g, 'Kopieren', 'dup', () => { spk1Dd(U, null); spk6Run(U, 's6dup', {lid}, 'Kopieren', r => { spk6Flash(U, [r.lid]); return 'Echte Kopie: ' + spk6Name(U, r.lid) + ' · klingt zusätzlich · ↶ macht es rückgängig'; }); });
+  B(g, 'Noten bearbeiten', 'ed', () => { spk1Dd(U, null); spk6EdOpen(U, lid); });
+  B(g, 'Chor erzeugen …', 'chor', () => spk6ChorDd(U, U.ddA, lid));
+  B(g, 'Effekte …', 'fx', () => spk6FxDd(U, U.ddA, lid));
+  f.appendChild(g); f.appendChild(el('h5', '', 'Ganze Ebene'));
+  for (const [tx, v] of [['Oktave −', -12], ['−1', -1], ['+1', 1], ['Oktave +', 12]]) B(t, tx, 'tr' + v, () => { spk1Dd(U, null); spk6Run(U, 's6shift', {lid, tr: v}, 'Transponieren', () => { spk6Flash(U, [lid]); return l.name + ' ' + (v > 0 ? '+' : '−') + Math.abs(v) + ' Halbtöne · ↶ macht es rückgängig'; }); });
+  f.appendChild(t); dd.insertBefore(f, dd.firstChild);
 }
 const spk6Name = (U, lid) => { const l = U.meta.layers.find(x => x.id === lid); return l ? l.name : lid; };
+/* Ebenen-Zeilen: Kennung (Kopie, Chor, neu gerechnet, Effekte) und kurzes Blinken neuer/geänderter Ebenen */
+function spk6Rows(U) {
+  const now = performance.now(), F = U.s6fl && U.s6fl.t > now ? U.s6fl.ids : null;
+  for (const r of U.ly.querySelectorAll('.spk1-lr[data-l]')) {
+    const l = U.meta.layers.find(x => x.id === r.dataset.l), nm = r.querySelector('.spk1-nm'); if (!l || !nm) continue;
+    const tg = [l.r6 === 'chor' ? 'Chor' : l.r6 === 'kopie' || l.k6 ? 'Kopie' : '', l.a6 && l.a6.id && l.r6 !== 'chor' ? 'neu' : '', l.fx ? 'FX' : ''].filter(Boolean);
+    if (tg.length) { const s = el('span', 'spk6-tg', esc(tg.join(' · '))); s.style.cssText = 'margin-left:6px;padding:2px 4px;border:1px solid var(--line);border-radius:4px;font:600 10px/1 var(--font-num);color:var(--text-dim);vertical-align:middle'; nm.appendChild(s); }
+    if (F && F.includes(l.id)) r.style.animation = 'stepFl .55s ease-out 3';
+  }
+}
+function spk6Flash(U, ids) { U.s6fl = {ids: ids.slice(), t: performance.now() + 1700}; spk1Layers(U); const r = U.ly.querySelector('.spk1-lr[data-l="' + ids[0] + '"]'); if (r) r.scrollIntoView({block: 'nearest'}); }
+/* Vorhören: A und B laufen gleichzeitig, A/B blendet nur um (12 ms) – wie ein Umschalter am Pult; Abspiel-Linie und ■ wie beim normalen Abspielen */
+function spk6Pv(U, r, from) {
+  spk1Stop(); const c = ensureAudio(); if (!c || !r) return false;
+  const sr = r.sr, t0 = c.currentTime + 0.08, out = c.createGain(); out.connect(AU.masterSum || c.destination); let end = from;
+  const mk = s => { if (!s || !s.ch || !s.ch[0] || !s.ch[0].length) return null; const n = s.ch[0].length, b = c.createBuffer(s.ch.length, n, sr); s.ch.forEach((y, i) => b.copyToChannel(y, i));
+    const src = c.createBufferSource(), g = c.createGain(), st = s.o / sr, off = from - st; src.buffer = b; src.connect(g); g.connect(out); end = Math.max(end, st + n / sr);
+    if (off >= n / sr) return null; if (off >= 0) src.start(t0, off); else src.start(t0 - off); return {src, g}; };
+  const A = mk(r.a), B = mk(r.b), ab = U.s6ab === 'A'; if (A) A.g.gain.value = ab ? 1 : 0; if (B) B.g.gain.value = ab ? 0 : 1;
+  const P = SPK1.pl = {seq: ++SPK1.plSeq, out, t0, from, src: [A, B].filter(Boolean).map(z => z.src), timer: 0, pos: t => Math.min(end, from + Math.max(0, t - t0)), s6: {A, B}};
+  P.timer = setTimeout(() => { if (SPK1.pl === P) { spk1Stop(); spk1BtnState(U); spk1Dirty(U, 'ov'); } }, (end - from + 0.3) * 1000);
+  spk1BtnState(U); spk1Dirty(U, 'ov'); return true;
+}
+function spk6AB(U) {
+  U.s6ab = U.s6ab === 'A' ? 'B' : 'A'; const P = SPK1.pl, isA = U.s6ab === 'A';
+  if (P && P.s6) { const t = AU.ctx.currentTime; for (const [z, v] of [[P.s6.A, isA ? 1 : 0], [P.s6.B, isA ? 0 : 1]]) if (z) { z.g.gain.cancelScheduledValues(t); z.g.gain.setValueAtTime(z.g.gain.value, t); z.g.gain.linearRampToValueAtTime(v, t + 0.012); } }
+  for (const b of document.querySelectorAll('#spk1Sheet [data-s6="edAB"],#spk1Sheet [data-s6="chorAB"]')) { b.textContent = isA ? 'A · Original' : 'B · Neu'; b.setAttribute('aria-pressed', String(isA)); }
+  spk1Stat(U, isA ? 'A: Original' : 'B: Neu');
+}
+const spk6ABTxt = U => U.s6ab === 'A' ? 'A · Original' : 'B · Neu';
+/* ---- Noten bearbeiten ---- */
+const spk6EdNotes = U => { const E = U.s6e; return E ? spk2Notes(U, E.lid).filter(q => q.st !== 'neu' || q.conf >= U.opt.n2thr) : []; };
+const spk6EdOff = (E, q) => { const z = E.mv.get(q.id) || {dm: 0, dt: 0}, G = E.G; return G && G.s6 && E.sel.has(q.id) ? {dm: z.dm + (G.dm || 0), dt: z.dt + (G.dt || 0)} : z; };
+const spk6EdBox = (U, q, z) => ({xa: spk1X(U, q.t0 + z.dt), xb: spk1X(U, q.t1 + z.dt), ya: (U.v.mTop - (q.m + z.dm) - 0.5) * U.v.rowH, h: Math.max(3, U.v.rowH)});
+const spk6Step = U => spk1Grid0(U).beat / 4;
+async function spk6EdOpen(U, lid) {
+  const l = U.meta.layers.find(x => x.id === lid); if (!l || U.busy) return;
+  if (l.art === 'drums') { spk1Stat(U, 'Drums haben keine Tonhöhe'); return; }
+  if (!spk2Notes(U, lid).filter(q => q.st !== 'neu' || q.conf >= U.opt.n2thr).length) {
+    const r = await spk2Run(U, 'noten', {lid, sel: []}, 'Noten finden · ' + l.name, r => r.neu + ' Noten gefunden'); if (!r || !spk2Notes(U, lid).length) { spk1Stat(U, 'Keine Noten in ' + l.name); return; }
+  }
+  if (!U.s6e || U.s6e.lid !== lid) U.s6e = {lid, sel: new Set(), mv: new Map(), G: null, prev: U.tool === 's6ed' ? (U.s6e && U.s6e.prev) || 'rect' : U.tool};
+  U.n2sel = []; spk6EdPane(U); spk1ToolSet(U, 's6ed'); spk6EdKeys(U);
+  const Q = spk6EdNotes(U), q0 = Q.reduce((a, q) => !a || q.t0 < a.t0 ? q : a, null), v = U.v;   // Noten ins Bild holen
+  if (q0 && (spk1X(U, q0.t0) < 0 || spk1X(U, q0.t0) > U.W - 20)) { v.t0 = Math.max(0, q0.t0 - 0.5); }
+  if (Q.length) { const ms = Q.map(q => q.m), mid = (Math.min(...ms) + Math.max(...ms)) / 2, rows = U.H / v.rowH; if (mid > v.mTop - 1 || mid < v.mTop - rows + 1) v.mTop = mid + rows / 2; }
+  spk1Clamp(U); spk1Dirty(U, 'all'); spk6EdStat(U, 'Noten bearbeiten · ' + l.name + ' · Note ziehen = Tonhöhe/Zeit · Tipp = wählen');
+}
+function spk6EdPane(U) {
+  let p = U.s6p; if (!p) { p = U.s6p = el('div', 'spk1-o'); p.dataset.for = 's6ed'; U.op.appendChild(p); }
+  const E = U.s6e, l = U.meta.layers.find(x => x.id === E.lid); p.innerHTML = '';
+  const lab = el('label', '', esc('Noten · ' + (l ? l.name : ''))); p.appendChild(lab);
+  const B = (t, k, fn, al) => { const x = el('button', 'n1b spk1-ck', esc(t)); x.dataset.s6 = k; if (al) x.setAttribute('aria-label', al); on(x, 'click', fn); p.appendChild(x); return x; };
+  B('Alle', 'edAll', () => { const Q = spk6EdNotes(U); if (E.sel.size === Q.length) E.sel.clear(); else for (const q of Q) E.sel.add(q.id); spk1Dirty(U, 'ov'); spk6EdStat(U); }, 'Alle Noten wählen');
+  for (const [t, v] of [['−12', -12], ['−1', -1], ['+1', 1], ['+12', 12]]) B(t, 'edM' + v, () => spk6EdMove(U, v, 0), (v > 0 ? 'Höher ' : 'Tiefer ') + Math.abs(v) + ' Halbtöne');
+  B('▶ Vorhören', 'edPv', () => spk6EdPv(U), 'Entwurf vorhören');
+  const ab = B(spk6ABTxt(U), 'edAB', () => spk6AB(U), 'Umschalten Original / Neu'); ab.setAttribute('aria-pressed', String(U.s6ab === 'A'));
+  U.s6go = B('Anwenden', 'edGo', () => spk6EdGo(U), 'Entwurf anwenden und neu rechnen');
+  B('Verwerfen', 'edX', () => { E.mv.clear(); spk1Dirty(U, 'ov'); spk6EdStat(U, 'Entwurf verworfen'); });
+  const x = B('Fertig', 'edEnd', () => { if (E.mv.size && !x.dataset.arm) { x.dataset.arm = '1'; x.textContent = 'Entwurf weg?'; setTimeout(() => { delete x.dataset.arm; x.textContent = 'Fertig'; }, 2500); return; } spk6EdClose(U); });
+}
+function spk6EdClose(U) { const E = U.s6e; if (!E) return; U.s6e = null; if (SPK1.pl && SPK1.pl.s6) spk1Stop(); spk1ToolSet(U, E.prev && E.prev !== 's6ed' ? E.prev : 'rect'); spk1Dirty(U, 'ov'); spk1BtnState(U); }
+function spk6EdStat(U, t) {
+  const E = U.s6e; if (!E) return; const n = [...E.mv.values()].filter(z => z.dm || z.dt).length;
+  spk1Stat(U, t || ((E.sel.size ? E.sel.size + ' gewählt' : 'Tipp = wählen') + (n ? ' · ' + n + ' geändert · „Anwenden“ rechnet neu' : ' · Note ziehen = Tonhöhe/Zeit')));
+  if (U.s6go) U.s6go.disabled = !n;
+}
+function spk6EdMove(U, dm, dt) {   // Entwurf: gewählte Noten (oder alle) verschieben – noch nichts gerechnet
+  const E = U.s6e; if (!E) return; const Q = spk6EdNotes(U), ids = E.sel.size ? [...E.sel] : Q.map(q => q.id);
+  for (const id of ids) { const z = E.mv.get(id) || {dm: 0, dt: 0}; z.dm = Math.round((z.dm + dm) * 100) / 100; z.dt = +(z.dt + dt).toFixed(5); if (Math.abs(z.dt) < 1e-6) z.dt = 0; if (z.dm || z.dt) E.mv.set(id, z); else E.mv.delete(id); }
+  spk1Dirty(U, 'ov'); spk6EdStat(U, (ids.length > 1 ? ids.length + ' Noten' : 'Note') + (dm ? ' ' + (dm > 0 ? '+' : '−') + Math.abs(dm) : '') + (dt ? (dt > 0 ? ' später' : ' früher') : '') + ' · „Anwenden“ rechnet neu');
+}
+function spk6EdHit(U, p) {
+  let best = null, bd = 1e9; const E = U.s6e;
+  for (const q of spk6EdNotes(U)) { const b = spk6EdBox(U, q, spk6EdOff(E, q)), pad = Math.max(0, (18 - b.h) / 2); if (p.x < b.xa - 6 || p.x > Math.max(b.xb, b.xa + 12) + 6 || p.y < b.ya - pad || p.y > b.ya + b.h + pad) continue; const dd = Math.abs(p.y - (b.ya + b.h / 2)); if (dd < bd) { bd = dd; best = q; } }
+  return best;
+}
+function spk6EdDown(U, p) { const q = spk6EdHit(U, p), G = {tool: 's6ed', x0: p.x, y0: p.y, t0: spk1T(U, p.x), f0: spk1F(U, p.y), moved: false, shape: null, s6: q ? q.id : null, dm: 0, dt: 0}; if (U.s6e) U.s6e.G = null; return G; }
+function spk6EdDrag(U, G, p) {
+  if (!G.moved && Math.hypot(p.x - G.x0, p.y - G.y0) < 8) return; const E = U.s6e; if (!E) return;
+  if (!G.moved) { G.moved = true; if (!E.sel.has(G.s6)) { E.sel.clear(); E.sel.add(G.s6); } }
+  const st = spk6Step(U); G.dm = Math.round((G.y0 - p.y) / U.v.rowH); G.dt = Math.round((p.x - G.x0) / U.v.pps / st) * st; E.G = G; spk1Dirty(U, 'ov');
+  spk1Stat(U, E.sel.size + (E.sel.size > 1 ? ' Noten ' : ' Note ') + (G.dm > 0 ? '+' : G.dm < 0 ? '−' : '±') + Math.abs(G.dm) + ' · ' + (Math.round(G.dt / st) > 0 ? '+' : '') + Math.round(G.dt / st) + '/16');
+}
+function spk6EdUp(U, G) {
+  U.tmp = null; const E = U.s6e; if (!E) return;
+  if (G.s6 && !G.moved) { if (E.sel.has(G.s6)) E.sel.delete(G.s6); else { E.sel.add(G.s6); const q = spk6EdNotes(U).find(z => z.id === G.s6); if (q) spk1Tone(Math.round(q.m + spk6EdOff(E, q).dm)); } }
+  else if (G.s6) { E.G = null; if (G.dm || G.dt) { const dm = G.dm, dt = G.dt; for (const id of E.sel) { const z = E.mv.get(id) || {dm: 0, dt: 0}; z.dm += dm; z.dt = +(z.dt + dt).toFixed(5); if (Math.abs(z.dt) < 1e-6) z.dt = 0; if (z.dm || z.dt) E.mv.set(id, z); else E.mv.delete(id); } } }
+  else if (G.moved && G.shape) { const s = G.shape, m0 = spk1Midi(Math.max(1, s.f0)), m1 = spk1Midi(Math.max(1, s.f1)); for (const q of spk6EdNotes(U)) { const z = spk6EdOff(E, q); if (q.t1 + z.dt > s.t0 && q.t0 + z.dt < s.t1 && q.m + z.dm >= m0 - 0.5 && q.m + z.dm <= m1 + 0.5) E.sel.add(q.id); } }
+  else { E.sel.clear(); U.cur = Math.max(0, Math.min(U.dur, G.t0)); spk1Dirty(U, 'r'); }
+  spk1Dirty(U, 'ov'); spk6EdStat(U);
+}
+function spk6EdDraw(U, x) {
+  const E = U.s6e; if (!E || U.tool !== 's6ed') return; const l = U.meta.layers.find(z => z.id === E.lid); if (!l) return;
+  if (U.hold) E.G = null; const W = U.W, H = U.H, v = U.v, gr = spk1Grid0(U), st = gr.beat / 4;
+  if (st * v.pps >= 6) { for (let k = Math.ceil((v.t0 - gr.off) / st), t; (t = gr.off + k * st) < v.t0 + W / v.pps; k++) { const px = Math.round(spk1X(U, t)) + 0.5, b4 = ((k % 4) + 4) % 4 === 0; x.fillStyle = b4 ? 'rgba(244,241,234,.16)' : 'rgba(244,241,234,.06)'; x.fillRect(px - 0.5, 0, 1, H); } }
+  const rgb = spk1Rgb(spk1Var(l.col)).map(c => Math.round(c * 255)).join(','), fnt = spk1Var('--font-num');
+  for (const q of spk6EdNotes(U)) {
+    const z = spk6EdOff(E, q), b = spk6EdBox(U, q, z), s = E.sel.has(q.id), w = Math.max(3, b.xb - b.xa);
+    if (z.dm || z.dt) { const o = spk2Box(U, q); x.setLineDash([3, 3]); x.lineWidth = 1; x.strokeStyle = 'rgba(' + rgb + ',.85)'; x.strokeRect(Math.round(o.xa) + 0.5, Math.round(o.ya) + 0.5, Math.round(Math.max(3, o.xb - o.xa)), Math.round(o.h)); x.setLineDash([]); }
+    if (b.xb < 0 || b.xa > W || b.ya > H || b.ya + b.h < 0) continue;
+    x.fillStyle = 'rgba(' + rgb + ',' + (s ? 0.92 : 0.7) + ')'; x.fillRect(b.xa, b.ya, w, b.h);
+    x.lineWidth = s ? 2 : 1; x.strokeStyle = s ? '#f4f1ea' : 'rgb(' + rgb + ')'; x.strokeRect(Math.round(b.xa) + 0.5, Math.round(b.ya) + 0.5, Math.round(w), Math.round(b.h));
+    if (b.h >= 10 && w > 26) { x.fillStyle = '#111'; x.font = '700 9px ' + (fnt.startsWith('#') ? 'monospace' : fnt); x.fillText(spk2Name(Math.round(q.m + z.dm)), b.xa + 3, b.ya + b.h - 2); }
+  }
+}
+function spk6EdKeys(U) {
+  if (U.s6k) return; U.s6k = 1;
+  document.addEventListener('keydown', e => {
+    if (!SPK1.open || !U.s6e || U.tool !== 's6ed' || /^(INPUT|TEXTAREA|SELECT)$/.test((e.target && e.target.tagName) || '')) return;
+    const k = e.key, st = spk6Step(U);
+    if (k === 'ArrowUp' || k === 'ArrowDown') spk6EdMove(U, (k === 'ArrowUp' ? 1 : -1) * (e.shiftKey ? 12 : 1), 0);
+    else if (k === 'ArrowLeft' || k === 'ArrowRight') spk6EdMove(U, 0, (k === 'ArrowRight' ? 1 : -1) * st);
+    else if (k === 'Enter') spk6EdGo(U); else return;
+    e.preventDefault();
+  });
+}
+const spk6Mv = E => [...E.mv].filter(([, z]) => z.dm || z.dt).map(([id, z]) => ({id, dm: z.dm, dt: z.dt}));
+async function spk6EdGo(U) {
+  const E = U.s6e; if (!E || U.busy) return; const mv = spk6Mv(E); if (!mv.length) { spk6EdStat(U, 'Nichts geändert'); return; }
+  if (SPK1.pl && SPK1.pl.s6) spk1Stop(); const b = U.s6go, lid = E.lid;
+  const r = await spk6Run(U, 's6plan', {lid, mv}, 'Anwenden', r => r.n + (r.n > 1 ? ' Noten' : ' Note') + ' neu gerechnet · ↶ macht es rückgängig', p => { if (b) b.textContent = p == null ? 'Anwenden' : 'Rechne ' + Math.round(p * 100) + ' %'; });
+  if (r && U.s6e === E) { E.mv.clear(); spk6Flash(U, [lid]); spk6EdStat(U, r.n + (r.n > 1 ? ' Noten' : ' Note') + ' neu gerechnet · ↶ macht es rückgängig'); spk1Dirty(U, 'ov'); }
+}
+function spk6Win(U, Q) {   // Vorhör-Ausschnitt: ab der ersten gewählten/geänderten Note (sonst ab der Position), 8 s
+  const ts = Q.map(q => q.t0).filter(t => t != null), from = Math.max(0, ts.length ? Math.min(...ts) - 0.4 : U.cur || 0); return [from, Math.min(U.dur, from + 8)];
+}
+async function spk6EdPv(U) {
+  const E = U.s6e; if (!E || U.busy) return; if (SPK1.pl && SPK1.pl.s6) { spk1Stop(); spk1BtnState(U); spk1Dirty(U, 'ov'); return; }
+  const Q = spk6EdNotes(U), pick = Q.filter(q => E.sel.has(q.id) || E.mv.has(q.id)).map(q => ({t0: q.t0 + Math.min(0, spk6EdOff(E, q).dt)})), win = spk6Win(U, pick.length ? pick : Q.filter(q => q.t1 > (U.cur || 0)).slice(0, 1));
+  const b = U.dd ? null : U.s6p && U.s6p.querySelector('[data-s6="edPv"]'); U.busy = 's6'; spk1BtnState(U);
+  try {
+    const r = await spk1Call('s6plan', {doc: SPK1.doc, lid: E.lid, mv: spk6Mv(E), dry: 1, win}, null, {prog: p => { spk1Stat(U, 'Vorhören · ' + Math.round(p * 100) + ' %'); if (b) b.textContent = 'Rechne ' + Math.round(p * 100) + ' %'; }});
+    U.busy = null; spk6Pv(U, r, win[0]); spk1Stat(U, 'Vorhören ' + (U.s6ab === 'A' ? 'A: Original' : 'B: Neu') + ' · A/B schaltet um');
+  } catch (e) { logErr(e); spk1Stat(U, 'Vorhören: ' + (e.message || e)); }
+  finally { U.busy = null; if (b) b.textContent = '▶ Vorhören'; spk1BtnState(U); }
+}
+/* ---- Chor-Blatt ---- */
 function spk6ChorDd(U, b, lid) {
-  const st = U.s6c || (U.s6c = {n: 3, art: 'satz'});
+  const st = U.s6c || (U.s6c = {n: 3, art: 'satz', br: 1, sp: 0.5});
   spk1Dd(U, b, dd => {
     dd.appendChild(el('h5', '', 'Chor aus ' + esc(spk6Name(U, lid))));
     dd.appendChild(makeSeg([2, 3, 4, 5, 6].map(n => [n, n + ' Stimmen']), () => st.n, v => { st.n = v; }, 'spk6-n'));
     dd.appendChild(makeSeg(SPK6_CHOR, () => st.art, v => { st.art = v; }, 'spk6-art'));
-    const x = el('button', 'mbtn rb spk1-ck', 'Chor erzeugen'); x.dataset.s6 = 'chorGo';
-    on(x, 'click', () => { spk1Dd(U, null); spk6Run(U, 's6chor', {lid, n: st.n, art: st.art}, 'Chor', r => r.voices.length + ' Stimmen als eigene Ebenen · Tonart ' + SPK1_NOTE[r.key.root] + (r.key.minor ? '-Moll' : '-Dur') + ' · ↶ macht es rückgängig'); });
-    dd.appendChild(x); dd.appendChild(el('p', '', 'Jede Stimme ist eine eigene Ebene: Noten umsetzen, Effekte, Lautstärke wie jede Ebene.'));
+    for (const [k, lab] of [['br', 'Breite'], ['sp', 'Streuung']]) {
+      const r = el('input'), v = el('span', 'spk1-v', Math.round(st[k] * 100) + ' %'), w = el('label', '', esc(lab)); r.type = 'range'; r.min = 0; r.max = 1; r.step = 0.05; r.value = st[k]; r.style.minHeight = '40px'; r.setAttribute('aria-label', lab); r.dataset.s6 = 'c' + k;
+      on(r, 'input', () => { st[k] = +r.value; v.textContent = Math.round(st[k] * 100) + ' %'; }); w.append(r, v); dd.appendChild(w);
+    }
+    const g = el('div', 'spk1-g'), B = (t, k, fn) => { const x = el('button', 'mbtn rb spk1-ck', esc(t)); x.dataset.s6 = k; on(x, 'click', fn); g.appendChild(x); return x; };
+    const pv = B('▶ Vorhören', 'chorPv', () => spk6ChorPv(U, lid, st, pv));
+    const ab = B(spk6ABTxt(U), 'chorAB', () => spk6AB(U)); ab.setAttribute('aria-pressed', String(U.s6ab === 'A'));
+    B('Chor erzeugen', 'chorGo', () => { spk1Dd(U, null); if (SPK1.pl && SPK1.pl.s6) spk1Stop(); spk6Run(U, 's6chor', {lid, n: st.n, art: st.art, br: st.br, sp: st.sp}, 'Chor', r => { spk6Flash(U, r.voices.map(z => z.lid)); return r.voices.length + ' Stimmen als neue Ebenen (Kennung „Chor“) · Tonart ' + SPK1_NOTE[r.key.root] + (r.key.minor ? '-Moll' : '-Dur') + ' · ↶ macht es rückgängig'; }); });
+    dd.appendChild(g); dd.appendChild(el('p', '', 'Breite = Stereo, Streuung = Versatz und Verstimmung. A = Ebene allein, B = mit Chor. Jede Stimme wird eine eigene Ebene.'));
   });
+}
+async function spk6ChorPv(U, lid, st, b) {
+  if (U.busy) return; if (SPK1.pl && SPK1.pl.s6) { spk1Stop(); spk1BtnState(U); spk1Dirty(U, 'ov'); return; }
+  const Q = spk2Notes(U, lid).filter(q => q.st !== 'neu'), win = spk6Win(U, Q.filter(q => q.t1 > (U.cur || 0)).slice(0, 1).concat(Q.length && !Q.some(q => q.t1 > (U.cur || 0)) ? [Q[0]] : []));
+  U.busy = 's6'; spk1BtnState(U);
+  try {
+    const r = await spk1Call('s6chor', {doc: SPK1.doc, lid, n: st.n, art: st.art, br: st.br, sp: st.sp, dry: 1, win}, null, {prog: p => { spk1Stat(U, 'Chor vorhören · ' + Math.round(p * 100) + ' %'); if (b) b.textContent = 'Rechne ' + Math.round(p * 100) + ' %'; }});
+    U.busy = null; spk6Pv(U, r, win[0]); spk1Stat(U, 'Vorhören ' + r.n + ' Stimmen · ' + (U.s6ab === 'A' ? 'A: Ebene allein' : 'B: mit Chor') + ' · A/B schaltet um');
+  } catch (e) { logErr(e); spk1Stat(U, 'Chor: ' + (e.message || e)); }
+  finally { U.busy = null; if (b) b.textContent = '▶ Vorhören'; spk1BtnState(U); }
 }
 function spk6FxDd(U, b, lid) {
   const l = U.meta.layers.find(x => x.id === lid); if (!l) return; const f = Object.assign({}, l.fx || {});
@@ -102319,7 +102509,11 @@ const SPK6_API = {
   chor: (lid, n, art) => spk1Call('s6chor', {doc: SPK1.doc, lid, n, art}).then(r => { SPK1.last = r; return r; }),
   fx: (lid, fx) => spk1Call('s6fx', {doc: SPK1.doc, lid, fx}).then(r => { SPK1.last = r; return r; }),
   audio: lid => spk1Call('s6audio', {doc: SPK1.doc, lid}),
-  key: lid => spk1Call('s6key', {doc: SPK1.doc, lid})
+  key: lid => spk1Call('s6key', {doc: SPK1.doc, lid}),
+  plan: (lid, mv, dry, win) => spk1Call('s6plan', {doc: SPK1.doc, lid, mv, dry, win}).then(r => { if (!dry) SPK1.last = r; return r; }),
+  chorDry: (lid, n, art, br, sp, win) => spk1Call('s6chor', {doc: SPK1.doc, lid, n, art, br, sp, dry: 1, win}),
+  ed: () => { const U = SPK1.ui, E = U && U.s6e; return E ? {lid: E.lid, sel: [...E.sel], mv: spk6Mv(E), tool: U.tool, ab: U.s6ab || 'B'} : null; },
+  edBox: id => { const U = SPK1.ui, E = U.s6e, q = spk6EdNotes(U).find(z => z.id === id); if (!q) return null; const b = spk6EdBox(U, q, spk6EdOff(E, q)), R = U.mn.getBoundingClientRect(); return {x: R.left + (Math.max(b.xa, 0) + Math.min(b.xb, U.W)) / 2, y: R.top + b.ya + b.h / 2, w: b.xb - b.xa, h: b.h}; }
 };
 try { window.__spk6 = SPK6_API; } catch (e) {}
 /* SPK6-END */

@@ -49,6 +49,22 @@ H = [
  ("    dd.appendChild(el('p', '', 'Die Obertöne der Note wandern in die Ebene.'));",
   "    if (typeof spk6NoteDd === 'function') spk6NoteDd(U, dd, qs);   // SPK6: Noten umsetzen\n"
   "    dd.appendChild(el('p', '', 'Die Obertöne der Note wandern in die Ebene.'));"),
+
+ # Teil 2: Modus „Noten bearbeiten“ (Werkzeug s6ed) – ziehen/tippen/Rahmen, Zeichnen, Kennung in der Ebenen-Zeile
+ ("function spk1ToolDown(U, p) {\n",
+  "function spk1ToolDown(U, p) {\n"
+  "  if (U.tool === 's6ed' && typeof spk6EdDown === 'function') return spk6EdDown(U, p);   /* SPK6: Noten bearbeiten */\n"),
+ ("function spk1ToolMove(U, G, p) {\n",
+  "function spk1ToolMove(U, G, p) {\n"
+  "  if (G.tool === 's6ed' && G.s6 && typeof spk6EdDrag === 'function') return spk6EdDrag(U, G, p);   /* SPK6: Note ziehen */\n"),
+ ("function spk1ToolUp(U, G) {\n",
+  "function spk1ToolUp(U, G) {\n"
+  "  if (G.tool === 's6ed' && typeof spk6EdUp === 'function') return spk6EdUp(U, G);   /* SPK6: Noten bearbeiten */\n"),
+ ("x.lineTo(px, H); x.stroke(); }\n}\n/* ---- Gesten:",
+  "x.lineTo(px, H); x.stroke(); }\n"
+  "  if (typeof spk6EdDraw === 'function') spk6EdDraw(U, x);   /* SPK6: Noten bearbeiten */\n}\n/* ---- Gesten:"),
+ ("  }\n}\nasync function spk1Layer(U, was, lid, v) {",
+  "  }\n  if (typeof spk6Rows === 'function') spk6Rows(U);   /* SPK6: Kennung Kopie/Chor/FX, Blinken */\n}\nasync function spk1Layer(U, was, lid, v) {"),
  # Block
  ("/* ===== NX1-END ===== */\n", "/* ===== NX1-END ===== */\n" + blk),
 ]
