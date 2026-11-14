@@ -97475,7 +97475,7 @@ function imp1Marks(song, P) {
   const old = (song.marks || []).filter(m => m.a >= P[P.length - 1].B);
   song.marks = marksNorm(P.map(p => ({a: p.A, len: p.B - p.A, name: p.name.slice(0, 12)})).concat(old), song.bars);
 }
-window.__imp1.ui = {pick: imp1Pick, file: (ab, name, hint) => imp1File(ab, name, hint), sheet: () => imp1Sheet(), place: k => imp1Place(k), cur: () => IMP1.cur, geo: () => IMP1.cur && imp1Geo(IMP1.cur), parts: () => IMP1.cur && imp1Parts(IMP1.cur), regrid: (b, t) => { imp1Regrid(IMP1.cur, b, t); imp1Paint(); }, loop: (a, b) => { IMP1.cur.loop = [a, b]; imp1Paint(); }, midiMeta: u8 => imp1MidiMeta(u8)};   // IMP1: Test-Zugang
+window.__imp1.ui = {last: () => IMP1.lastPlace, pick: imp1Pick, file: (ab, name, hint) => imp1File(ab, name, hint), sheet: () => imp1Sheet(), place: k => imp1Place(k), cur: () => IMP1.cur, geo: () => IMP1.cur && imp1Geo(IMP1.cur), parts: () => IMP1.cur && imp1Parts(IMP1.cur), regrid: (b, t) => { imp1Regrid(IMP1.cur, b, t); imp1Paint(); }, loop: (a, b) => { IMP1.cur.loop = [a, b]; imp1Paint(); }, midiMeta: u8 => imp1MidiMeta(u8)};   // IMP1: Test-Zugang
 /* ===== IMP1-END ===== */
 /* INT53D-BEGIN ===== Schlussprüfung zu INT53C: vier Randfälle. Hörbar und sichtbar bleibt VORHER, danach ist alles exakt wie vorher.
    1  Aufnahme-Weg (vvEncodeMR, Bild in Echtzeit): wirft das Zeichnen eines Bildes, endet die Aufnahme jetzt mit dieser Meldung

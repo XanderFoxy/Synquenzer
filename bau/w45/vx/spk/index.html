@@ -28879,6 +28879,7 @@ function normalizeProject(obj) {
     };
     p.tracks.forEach((t, i) => fix(t, 't', i)); p.scenes.forEach((sc, i) => fix(sc, 's', i));
     tkNormProject(obj, p);                                         // VS3: Takes (nur IDs und Maße), STIMME-Spur
+    spk1NormProject(obj, p);                                       // SPK1: Verweise auf Spektral-Analysen (nur wenn benutzt)
     // WP6 (§7.4): kit substitutions of the drum migration are toasted once (applyProject)
     if (warns.length) Object.defineProperty(p, '_warn', {value: warns, enumerable: false, configurable: true});
     p.fxBus = normFxBus(obj.fxBus);
@@ -59977,6 +59978,7 @@ const g10cUnused = () => Object.keys(S.takes || {}).filter(id => !g10cRefIds().h
 async function g10cGcPlan(drop) {
   if (!kv || !kv.akeys) return {keys: [], bytes: 0};
   const keep = new Set(Object.keys(S.takes || {}).filter(id => !drop.has(id))), keepCh = new Set();
+  keep.add('spk');   // SPK1: Spektral-Analysen räumt die Seite selbst auf
   const chunksOf = s => { for (const m of s.match(/[0-9a-v]{10}:[0-9a-z]+(?::[0-9]+)?/g) || []) if (!drop.has(m.slice(0, 10))) keepCh.add(m); };
   for (const id of keep) { const m = S.takes[id]; for (const c of m.chunks || []) keepCh.add(c); if (m.of) keep.add(m.of); }
   if (!drop.size) for (const u of UNDO.concat(REDO)) { const s = JSON.stringify(u.before || '') + JSON.stringify(u.items || ''); for (const m of s.match(/[0-9a-v]{10}/g) || []) keep.add(m); chunksOf(s); }
@@ -60195,6 +60197,7 @@ async function tkZipBytes() {
   for (const id of tkUsedIds()) { const m = S.takes[id], pcm = await tkPcm(id); if (m && pcm) files.push({name: 'takes/' + id + '.wav', data: tkWav(pcm, m.sr)}); }
   await clZipAdd(files);                                       // VS4: Referenz je Take (Säubern nach dem Import gleich)
   await va1Manifest(files);                                    // VA1: Inhaltsliste (manifest.json) – welche Takes, wo, was fehlt
+  await spk1ZipAdd(files);                                     // SPK1: Spektral-Analysen des Projekts (spektral/…)
   return buildZip(files);
 }
 async function tkExportZip() {
@@ -60236,6 +60239,7 @@ async function tkImportZip(u8, open) {
     if (await tkStore(id, w.pcm, keys)) { nOk++; TK.missing.delete(id); TK.buf.delete(id); }
   }
   if (tkAudioOk()) await clZipRead(fs);                // VS4: Referenz-WAVs
+  await spk1ZipRead(fs);                               // SPK1: Spektral-Analysen in den Audio-Speicher
   va1ImportNote(fs, nOk);                              // VA1: gegen die Inhaltsliste prüfen
   open(new TextDecoder().decode(pj.data));
   if (nOk) setTimeout(() => toast(nOk + (nOk === 1 ? ' Take' : ' Takes') + ' übernommen'), 1800);
@@ -60248,6 +60252,7 @@ async function tkGc() {
      bisher nach Kennung. Entkoppelte/duplizierte Takes nutzen die Stücke des Lead-Takes mit (chunks = 'lead:k'): Fehlt der Lead-Take, bleiben
      seine Stücke, solange ein Duplikat sie nennt; die Säubern-Referenz des Leads (<lead>:r<k>) bleibt dann auch (Feld of). */
   const keep = new Set(Object.keys(S.takes || {})), keepCh = new Set(), chunksOf = s => { for (const m of s.match(/[0-9a-v]{10}:[0-9a-z]+(?::[0-9]+)?/g) || []) keepCh.add(m); };
+  keep.add('spk');   // SPK1
   const ofIds = s => { for (const m of s.match(/\\?"of\\?":\\?"([0-9a-v]{10})/g) || []) keep.add(m.slice(-10)); };
   for (const id in S.takes || {}) { const m = S.takes[id]; for (const c of m.chunks || []) keepCh.add(c); if (m.of) keep.add(m.of); }
   for (const u of UNDO.concat(REDO)) { const s = JSON.stringify(u.before || '') + JSON.stringify(u.items || ''); for (const m of s.match(/[0-9a-v]{10}/g) || []) keep.add(m); chunksOf(s); }
@@ -96140,6 +96145,601 @@ SYNQUENZER.beg1 = {
   rect: () => { const E = BEG1.el; if (!E) return null; const r = E.getBoundingClientRect(); return {x: r.left, y: r.top, w: r.width, h: r.height}; },
 };
 /* BEG1-END */
+/* ===== SPK1-BEGIN (Spektral-Seite Teil 1 · Kern) =====
+   Eigene Seite „Spektral“ (wie eine Extra-App in der App). Dieser Teil ist der Rechen-Kern, ohne Bedienfläche:
+   - Worker aus Text (Blob, wie vsWorker): STFT/ISTFT mit Hann, Hop N/4, Overlap-Add (Rekonstruktion bitnah), zwei reelle Rahmen je
+     komplexer FFT (V.fft aus vsDspMake). Rückfall ohne Worker: derselbe Kern im Hauptfaden.
+   - Anzeige-Stücke: Spektrum mit log. Frequenz (8 Zeilen je Halbton, MIDI 12…135), dB als Uint8, 1024 Spalten je Stück, Hop N/8;
+     jedes Stück liegt sofort im Audio-Speicher (Zwischenstand, Weiterrechnen nach Neuladen).
+   - Ebenen = Masken auf dem Original (nicht-destruktiv): Uint8 je Base-Frame (N 4096, Hop 1024) und Bin, Kacheln 128×128, gleichförmige
+     Kacheln (0 / 255) kosten nichts, je 128 Frames ein Streifen in IDB (spk:<id>:m<lid>:<s>). „Rest“ = 255 − Σ Ebenen → Summe = Original.
+   - Wiedergabe: Mischmaske (Lautstärke/Solo/Stumm) × STFT des Originals → ISTFT in Blöcken à 16384 Samples, gecacht (LRU 64).
+   - Undo: ein Schritt je Aktion (Verschieben/Kopieren, Ebene neu/weg/Name/Farbe), Stapel im Kern (30 Schritte / 48 MB).
+   - Projekt: Verweis S.spk = [{id, name}] (nur wenn benutzt → alte Projekte bleiben gleich), Daten im Audio-Speicher; der ZIP-Container
+     trägt sie mit (spektral/<id>/…). Takt-Raster: Projekt-Tempo, falls imp1Analyse vorhanden, dessen Ergebnis (spk1Grid).
+   App-Start: nur const/function – kein Worker, kein IDB, kein DOM, bis die Seite (oder die Test-API) es braucht. */
+const SPK1 = {open: false, w: null, wq: new Map(), wid: 0, K: null, how: '', doc: null, pl: null, plSeq: 0, last: null};
+const SPK1_BLK = 16384, SPK1_MAXS = 600;
+/* Rechen-Kern (läuft im Worker; als Text kopiert → nur eigene Namen + V) */
+function spk1DspMake(V) {
+  const BT = 128, CH = 524288, BLK = 16384, ROWS = 984, M0 = 12, RPS = 8, DBF = 120;
+  const docs = new Map(), WIN = {}, RMAP = {};
+  /* ---- IDB: gleiche Datenbank wie die App (synquenzer v2), große Daten im Store 'audio', Meta im Store 'kv'; ohne IDB Speicher ---- */
+  let dbp = null; const mem = {kv: new Map(), audio: new Map()};
+  function db() {
+    if (dbp) return dbp;
+    dbp = new Promise(res => {
+      try {
+        if (typeof indexedDB === 'undefined' || !indexedDB) return res(null);
+        const rq = indexedDB.open('synquenzer', 2);
+        rq.onupgradeneeded = () => { const d = rq.result; if (!d.objectStoreNames.contains('kv')) d.createObjectStore('kv'); if (!d.objectStoreNames.contains('audio')) d.createObjectStore('audio'); };
+        rq.onsuccess = () => { const d = rq.result; d.onversionchange = () => { try { d.close(); } catch (e) {} dbp = null; }; res(d); };
+        rq.onerror = rq.onblocked = () => res(null);
+        setTimeout(() => res(null), 4000);
+      } catch (e) { res(null); }
+    });
+    return dbp;
+  }
+  const tx = (st, m, fn) => db().then(d => d ? new Promise((ok, no) => { try { const t = d.transaction(st, m), r = fn(t.objectStore(st)); t.oncomplete = () => ok(r && r.result); t.onerror = t.onabort = () => no(t.error || new Error('idb')); } catch (e) { no(e); } }) : fn(null));
+  const put = (st, k, v) => tx(st, 'readwrite', s => s ? s.put(v, k) : mem[st].set(k, v));
+  const get = (st, k) => tx(st, 'readonly', s => s ? s.get(k) : {result: mem[st].get(k)});
+  const del = (st, k) => tx(st, 'readwrite', s => s ? s.delete(k) : mem[st].delete(k));
+  const keys = (st, pre) => tx(st, 'readonly', s => s ? s.getAllKeys() : {result: [...mem[st].keys()]}).then(ks => (ks || []).map(String).filter(k => k.startsWith(pre)));
+  /* ---- Fenster, FFT-Paare ---- */
+  function win(N) { if (WIN[N]) return WIN[N]; const w = new Float64Array(N); for (let j = 0; j < N; j++) w[j] = 0.5 - 0.5 * Math.cos(2 * Math.PI * j / N); return (WIN[N] = w); }
+  const smp = (x, i) => i >= 0 && i < x.length ? x[i] * (1 / 32768) : 0;
+  /* Zeilen der Anzeige: Zeile r = MIDI 12 + r/8; breite Zeilen (hoch) = Maximum der Bins, schmale (tief) = Interpolation */
+  function rmap(N, sr) {
+    const key = N + ':' + sr; if (RMAP[key]) return RMAP[key];
+    const a = new Int32Array(ROWS), b = new Int32Array(ROWS), fr = new Float32Array(ROWS), NB = N / 2, mf = m => 440 * Math.pow(2, (m - 69) / 12);
+    for (let r = 0; r < ROWS; r++) {
+      const m = M0 + r / RPS, bc = mf(m) * N / sr, lo = mf(m - 0.5 / RPS) * N / sr, hi = mf(m + 0.5 / RPS) * N / sr;
+      if (bc >= NB) { a[r] = -1; b[r] = -2; continue; }
+      const k0 = Math.ceil(lo), k1 = Math.min(NB, Math.floor(hi));
+      if (hi - lo >= 1 && k1 >= k0) { a[r] = k0; b[r] = k1; } else { a[r] = Math.floor(bc); b[r] = -1; fr[r] = bc - Math.floor(bc); }
+    }
+    return (RMAP[key] = {a, b, fr});
+  }
+  /* zwei reelle Rahmen in einer komplexen FFT: Betrag von Rahmen 1 (Re) und 2 (Im) je Bin 0…N/2 */
+  function magPair(re, im, N, m1, m2) {
+    for (let k = 0; k <= N / 2; k++) {
+      const kk = (N - k) % N, zr = re[k], zi = im[k], wr = re[kk], wi = im[kk];
+      m1[k] = 0.5 * Math.hypot(zr + wr, zi - wi); m2[k] = 0.5 * Math.hypot(zi + wi, wr - zr);
+    }
+  }
+  /* ---- STFT / ISTFT allgemein (Hann, ov = N/hop ≥ 4; Rahmen m beginnt bei (m − ov + 1)·hop → jedes Sample voll überdeckt) ---- */
+  function stft(x, N, hop) {
+    const ov = N / hop, F = Math.floor((x.length - 1) / hop) + ov, NB = N / 2 + 1, w = win(N), re = new Float64Array(N), im = new Float64Array(N);
+    const SR = new Float32Array(F * NB), SI = new Float32Array(F * NB), xs = i => i >= 0 && i < x.length ? x[i] : 0;
+    for (let m = 0; m < F; m += 2) {
+      const sA = (m - ov + 1) * hop, two = m + 1 < F;
+      for (let j = 0; j < N; j++) { re[j] = xs(sA + j) * w[j]; im[j] = two ? xs(sA + hop + j) * w[j] : 0; }
+      V.fft(re, im);
+      for (let k = 0; k < NB; k++) {
+        const kk = (N - k) % N, zr = re[k], zi = im[k], wr = re[kk], wi = im[kk], o1 = m * NB + k;
+        SR[o1] = 0.5 * (zr + wr); SI[o1] = 0.5 * (zi - wi);
+        if (two) { SR[o1 + NB] = 0.5 * (zi + wi); SI[o1 + NB] = 0.5 * (wr - zr); }
+      }
+    }
+    return {N, hop, F, NB, re: SR, im: SI};
+  }
+  function istft(S, n) {
+    const N = S.N, hop = S.hop, ov = N / hop, NB = S.NB, w = win(N), sc = 1 / (N * 3 * ov / 8), y = new Float64Array(n), re = new Float64Array(N), im = new Float64Array(N);
+    for (let m = 0; m < S.F; m += 2) {
+      const two = m + 1 < S.F;
+      for (let k = 0; k < NB; k++) {
+        const a = m * NB + k, b = a + NB, ar = S.re[a], ai = S.im[a], br = two ? S.re[b] : 0, bi = two ? S.im[b] : 0;
+        re[k] = ar - bi; im[k] = ai + br;                                        // Z = X1 + i·X2
+        if (k > 0 && k < N / 2) { re[N - k] = ar + bi; im[N - k] = br - ai; }    // Z[N−k] = conj(X1) + i·conj(X2)
+      }
+      V.fft(re, im, true);
+      const sA = (m - ov + 1) * hop;
+      for (let j = 0; j < N; j++) { const i = sA + j, i2 = i + hop; if (i >= 0 && i < n) y[i] += re[j] * w[j] * sc; if (two && i2 >= 0 && i2 < n) y[i2] += im[j] * w[j] * sc; }
+    }
+    return y;
+  }
+  /* ---- Dokument ---- */
+  const TRn = d => Math.ceil((d.meta.base.N / 2 + 1) / BT), NBn = d.meta.base.N / 2 + 1;
+  const Fn = d => Math.floor((d.meta.n - 1) / d.meta.base.hop) + d.meta.base.N / d.meta.base.hop;
+  const NSn = d => Math.ceil(Fn(d) / BT);
+  const mkey = (d, lid, s) => 'spk:' + d.meta.id + ':m' + lid + ':' + s;
+  function stNew(d) { return {h: new Uint8Array(TRn(d)), t: new Array(TRn(d)).fill(null)}; }
+  function stPack(st) {
+    let n = 0; for (let i = 0; i < st.h.length; i++) if (st.h[i] === 1) n++;
+    if (!n && st.h.every(v => v === 0)) return null;
+    const out = new Uint8Array(st.h.length + n * BT * BT); out.set(st.h); let o = st.h.length;
+    for (let i = 0; i < st.h.length; i++) if (st.h[i] === 1) { out.set(st.t[i], o); o += BT * BT; }
+    return out;
+  }
+  function stUnpack(d, u8) {
+    const st = stNew(d), TR = st.h.length; if (!u8 || u8.length < TR) return st;
+    st.h.set(u8.subarray(0, TR)); let o = TR;
+    for (let i = 0; i < TR; i++) if (st.h[i] === 1) { st.t[i] = u8.slice(o, o + BT * BT); o += BT * BT; } else if (st.h[i] !== 255) st.h[i] = 0;
+    return st;
+  }
+  const stCopy = st => st ? {h: st.h.slice(), t: st.t.map(t => t ? t.slice() : null)} : null;
+  const stBytes = st => st ? st.h.length + st.t.reduce((a, t) => a + (t ? t.length : 0), 0) : 0;
+  function tileArr(st, tr) { if (st.h[tr] !== 1) { const t = new Uint8Array(BT * BT); if (st.h[tr] === 255) t.fill(255); st.t[tr] = t; st.h[tr] = 1; } return st.t[tr]; }
+  function tidy(st, tr) { if (st.h[tr] !== 1) return; const t = st.t[tr], v = t[0]; if (v !== 0 && v !== 255) return; for (let i = 1; i < t.length; i++) if (t[i] !== v) return; st.h[tr] = v; st.t[tr] = null; }
+  const lay = (d, lid) => d.meta.layers.find(l => l.id === lid) || null;
+  const masksOf = (d, lid) => { let m = d.masks.get(lid); if (!m) d.masks.set(lid, m = new Map()); return m; };
+  function stripe(d, lid, s, make) { const M = masksOf(d, lid); let st = M.get(s); if (!st && make) M.set(s, st = stNew(d)); return st || null; }
+  async function saveMeta(d) {
+    d.meta.mt = Date.now(); await put('kv', 'spk:doc:' + d.meta.id, JSON.parse(JSON.stringify(d.meta)));
+    const idx = (await get('kv', 'spk:idx')) || [], e = {id: d.meta.id, name: d.meta.name, sec: +(d.meta.n / d.meta.sr).toFixed(2), mt: d.meta.mt, src: d.meta.src ? d.meta.src.kind : ''};
+    const i = idx.findIndex(x => x && x.id === d.meta.id); if (i >= 0) idx[i] = e; else idx.push(e);
+    await put('kv', 'spk:idx', idx);
+  }
+  async function flush(d) {
+    clearTimeout(d.ft); d.ft = 0; const ds = [...d.dirty]; d.dirty.clear(); let bytes = 0;
+    for (const ks of ds) {
+      const [lid, s] = ks.split('|'), st = lay(d, lid) ? stripe(d, lid, +s, false) : null, p = st ? stPack(st) : null, k = mkey(d, lid, s);
+      if (p) { await put('audio', k, p.buffer); bytes += p.length; } else await del('audio', k);
+    }
+    if (d.metaDirty || ds.length) { d.metaDirty = false; await saveMeta(d); }
+    return bytes;
+  }
+  const soon = d => { clearTimeout(d.ft); d.ft = setTimeout(() => { flush(d).catch(() => {}); }, 2000); };
+  function verUp(d, lid) { const l = lay(d, lid); if (l) l.ver = ++d.vc; d.cache.clear(); }
+  /* ---- Undo (Kern) ---- */
+  function uBegin(d, label) { d.u = {label, meta: JSON.stringify(d.meta.layers), rest: JSON.stringify(d.meta.rest), st: new Map(), bytes: 0}; }
+  function uTouch(d, lid, s) { const k = lid + '|' + s; if (!d.u || d.u.st.has(k)) return; const st = stripe(d, lid, s, false); d.u.st.set(k, stCopy(st)); d.u.bytes += stBytes(st); }
+  function uEnd(d) {
+    const u = d.u; d.u = null; if (!u) return;
+    d.undo.push(u); d.redo.length = 0;
+    let tot = d.undo.reduce((a, x) => a + x.bytes, 0);
+    while (d.undo.length > 30 || (tot > 48e6 && d.undo.length > 1)) tot -= d.undo.shift().bytes;
+    d.metaDirty = true; soon(d);
+  }
+  function uSwap(d, from, to) {
+    const u = from.pop(); if (!u) return null;
+    const back = {label: u.label, meta: JSON.stringify(d.meta.layers), rest: JSON.stringify(d.meta.rest), st: new Map(), bytes: u.bytes};
+    for (const [k, prev] of u.st) {
+      const [lid, s] = k.split('|'), M = masksOf(d, lid);
+      back.st.set(k, stCopy(M.get(+s) || null));
+      if (prev) M.set(+s, stCopy(prev)); else M.delete(+s);
+      d.dirty.add(k);
+    }
+    d.meta.layers = JSON.parse(u.meta); d.meta.rest = JSON.parse(u.rest);
+    for (const l of d.meta.layers) { l.ver = ++d.vc; for (const s of masksOf(d, l.id).keys()) d.dirty.add(l.id + '|' + s); }
+    d.cache.clear(); to.push(back); d.metaDirty = true; soon(d);
+    return u.label;
+  }
+  /* ---- Auswahl (Vektor): Rechteck / Zeit / Frequenz mit weicher Kante; Gewicht 0…1 je Base-Frame und Bin ---- */
+  function selFn(d, sel) {
+    const sr = d.meta.sr, N = d.meta.base.N, hop = d.meta.base.hop, dur = d.meta.n / sr, ny = sr / 2;
+    const shapes = (Array.isArray(sel) ? sel : [sel]).filter(Boolean).map(s => {
+      const art = s.art || 'rect', t0 = art === 'freq' ? -1 : +s.t0 || 0, t1 = art === 'freq' ? dur + 1 : (s.t1 == null ? dur + 1 : +s.t1);
+      const f0 = art === 'zeit' ? 0 : Math.max(0, +s.f0 || 0), f1 = art === 'zeit' ? ny * 2 : (s.f1 == null ? ny * 2 : +s.f1);
+      return {t0, t1, f0, f1, kt: Math.max(0, +s.kt || 0), kf: Math.max(0, +s.kf || 0)};
+    });
+    const ramp = (v, a, b, k) => k > 0 ? Math.min(1, Math.max(0, (v - (a - k / 2)) / k), Math.max(0, ((b + k / 2) - v) / k)) : (v >= a && v <= b ? 1 : 0);
+    const cents = f => f > 0 ? 1200 * Math.log2(f / 440) : -1e9;
+    const box = {m0: 1e9, m1: -1, k0: 1e9, k1: -1};
+    for (const s of shapes) {
+      box.m0 = Math.min(box.m0, Math.max(0, Math.floor((s.t0 - s.kt / 2) * sr / hop))); box.m1 = Math.max(box.m1, Math.min(Fn(d) - 1, Math.ceil((s.t1 + s.kt / 2) * sr / hop) + 2));
+      const fk = c => 440 * Math.pow(2, c / 1200);
+      box.k0 = Math.min(box.k0, s.f0 > 0 ? Math.max(0, Math.floor(fk(cents(s.f0) - s.kf / 2) * N / sr)) : 0); box.k1 = Math.max(box.k1, Math.min(N / 2, Math.ceil(fk(cents(s.f1) + s.kf / 2) * N / sr)));
+    }
+    const fnc = (m, k) => {
+      const t = (m - 1) * hop / sr, f = k * sr / N; let best = 0;   // Mitte von Rahmen m = (m − 1)·hop
+      for (const s of shapes) {
+        const wt = ramp(t, s.t0, s.t1, s.kt); if (!wt) continue;
+        const wf = s.kf > 0 && f > 0 ? ramp(cents(f), s.f0 > 0 ? cents(s.f0) : -1e9, cents(s.f1), s.kf) : (f >= s.f0 && f <= s.f1 ? 1 : 0);
+        if (wt * wf > best) best = wt * wf;
+      }
+      return best;
+    };
+    return {fnc, box};
+  }
+  /* ---- Verschieben / Kopieren zwischen Ebenen (ein Undo-Schritt). von: lid | 'orig' | 'rest', nach: lid | 'neu' | 'rest' ---- */
+  function newLayer(d, o) {
+    o = o || {}; let n = 1; while (lay(d, 'L' + n)) n++;
+    const art = ['bass', 'gesang', 'drums', 'lead', 'pads', 'eigene'].includes(o.art) ? o.art : 'eigene';
+    const COL = {bass: '--t1', gesang: '--t6', drums: '--t5', lead: '--t4', pads: '--t3', eigene: '--t8'};
+    const l = {id: 'L' + n, name: String(o.name || ({bass: 'Bass', gesang: 'Gesang', drums: 'Drums', lead: 'Lead', pads: 'Pads'}[art] || 'Ebene ' + n)).slice(0, 40), art, col: o.col || COL[art], vol: 0, solo: false, mute: false, ver: ++d.vc};
+    d.meta.layers.push(l); return l;
+  }
+  function transfer(d, o) {
+    const von = o.von || 'orig', modus = o.modus === 'kopieren' ? 'kopieren' : 'verschieben';
+    uBegin(d, o.label || (modus === 'kopieren' ? 'In Ebene kopieren' : 'In Ebene verschieben'));
+    let nach = o.nach;
+    if (nach === 'neu' || (nach && typeof nach === 'object')) nach = newLayer(d, typeof o.nach === 'object' ? o.nach : {art: o.art, name: o.name}).id;
+    if (nach !== 'rest' && !lay(d, nach)) { d.u = null; throw new Error('Ebene fehlt'); }
+    if (von !== 'orig' && von !== 'rest' && !lay(d, von)) { d.u = null; throw new Error('Ebene fehlt'); }
+    if (von === nach) { d.u = null; return {nach, anteil: 0}; }
+    const {fnc, box} = selFn(d, o.sel || {}), TR = TRn(d), NB = NBn(d), all = d.meta.layers.map(l => l.id);
+    let moved = 0, cells = 0;
+    for (let s = box.m0 >> 7; s <= box.m1 >> 7 && box.m1 >= 0; s++) {
+      for (let tr = box.k0 >> 7; tr <= Math.min(TR - 1, box.k1 >> 7); tr++) {
+        const kA = Math.max(box.k0, tr * BT), kB = Math.min(box.k1, tr * BT + BT - 1, NB - 1), mA = Math.max(box.m0, s * BT), mB = Math.min(box.m1, s * BT + BT - 1);
+        // Gewichte zuerst – leere Kachel = nichts anfassen
+        const wts = new Float32Array(BT * BT); let any = false;
+        for (let m = mA; m <= mB; m++) for (let k = kA; k <= kB; k++) { const v = fnc(m, k); if (v > 0) { wts[(m & 127) * BT + (k & 127)] = v; any = true; } }
+        if (!any) continue;
+        const ids = all.filter(id => { const st = stripe(d, id, s, false); return st && st.h[tr]; });
+        if (nach !== 'rest' && !ids.includes(nach)) ids.push(nach);
+        for (const id of all) uTouch(d, id, s);
+        const T = {}; for (const id of ids) T[id] = tileArr(stripe(d, id, s, true), tr);
+        const sumAt = i => { let a = 0; for (const id of ids) a += T[id][i]; return a; };
+        for (let i = 0; i < BT * BT; i++) {
+          const w = wts[i]; if (!w) continue; cells++;
+          if (von === 'orig') {
+            if (modus === 'verschieben') for (const id of ids) if (id !== nach) T[id][i] = Math.round(T[id][i] * (1 - w));
+            if (nach !== 'rest') { const B = T[nach][i], free = modus === 'verschieben' ? 255 - (sumAt(i) - B) : 255; const nb = Math.min(free, Math.round(B + w * (255 - B))); moved += nb - B; T[nach][i] = nb; }
+          } else if (von === 'rest') {
+            if (nach === 'rest') continue;
+            const r = 255 - sumAt(i); if (r <= 0) continue; const dd = Math.round(w * r); T[nach][i] += dd; moved += dd;
+          } else {
+            const A = T[von] ? T[von][i] : 0; if (!A) continue; let dd = Math.round(w * A);
+            if (nach !== 'rest') { dd = Math.min(dd, 255 - T[nach][i]); T[nach][i] += dd; }
+            if (modus === 'verschieben' && T[von]) T[von][i] -= dd; moved += dd;
+          }
+        }
+        for (const id of ids) { const st = stripe(d, id, s, true); tidy(st, tr); d.dirty.add(id + '|' + s); }
+      }
+    }
+    if (nach !== 'rest') verUp(d, nach); if (von !== 'orig' && von !== 'rest') verUp(d, von);
+    if (von === 'orig' && modus === 'verschieben') for (const l of d.meta.layers) l.ver = ++d.vc;
+    d.cache.clear(); uEnd(d);
+    return {nach, cells, anteil: cells ? +(moved / (cells * 255)).toFixed(4) : 0};
+  }
+  /* ---- Mischung: Gewicht je Bin für Rahmen m (Ebenen + Rest + Original) ---- */
+  function mixOf(d, mx) {
+    const L = d.meta.layers, R = d.meta.rest || {vol: 0, solo: false, mute: false}, db = v => Math.pow(10, (+v || 0) / 20);
+    if (mx === 'orig') return {g: {}, rest: 0, orig: 1};
+    if (typeof mx === 'string') return {g: mx === 'rest' ? {} : {[mx]: 1}, rest: mx === 'rest' ? 1 : 0, orig: 0};
+    if (mx && typeof mx === 'object') return {g: Object.assign({}, mx.g || {}), rest: +mx.rest || 0, orig: +mx.orig || 0};
+    const solo = L.some(l => l.solo) || R.solo, g = {};
+    for (const l of L) g[l.id] = l.mute || (solo && !l.solo) ? 0 : db(l.vol);
+    return {g, rest: R.mute || (solo && !R.solo) ? 0 : db(R.vol), orig: 0};
+  }
+  function gainFn(d, mx) {
+    const NB = NBn(d), acc = new Uint16Array(NB), L = d.meta.layers;
+    return (m, out) => {
+      acc.fill(0); out.fill(0); const s = m >> 7, c = (m & 127) * BT;
+      for (const l of L) {
+        const st = stripe(d, l.id, s, false); if (!st) continue; const g = mx.g[l.id] || 0;
+        for (let tr = 0; tr < st.h.length; tr++) {
+          const h = st.h[tr]; if (!h) continue; const b0 = tr * BT, lim = Math.min(BT, NB - b0);
+          if (h === 255) { for (let b = 0; b < lim; b++) { acc[b0 + b] += 255; out[b0 + b] += g * 255; } }
+          else { const t = st.t[tr]; for (let b = 0; b < lim; b++) { const v = t[c + b]; acc[b0 + b] += v; out[b0 + b] += g * v; } }
+        }
+      }
+      for (let k = 0; k < NB; k++) { const r = 255 - acc[k]; out[k] = (out[k] + (r > 0 ? mx.rest * r : 0)) / 255 + mx.orig; }
+    };
+  }
+  /* Block k (Samples k·BLK … +BLK) aller Kanäle, Maske je Rahmen; zwei Rahmen je FFT, Y = p·Z + q·conj(Z[N−k]) */
+  function block(d, k, mx) {
+    const mk = JSON.stringify([mx, d.meta.layers.map(l => l.ver)]) + ':' + k, hit = d.cache.get(mk);
+    if (hit) { d.cache.delete(mk); d.cache.set(mk, hit); return hit; }
+    const N = d.meta.base.N, hop = d.meta.base.hop, ov = N / hop, NB = N / 2 + 1, a = k * BLK, w = win(N), sc = 1 / (N * 3 * ov / 8);
+    const plain = mx.orig === 1 && !Object.values(mx.g).some(Boolean) && !mx.rest, silent = !mx.orig && !mx.rest && !Object.values(mx.g).some(Boolean);
+    const outs = d.pcm.map(() => new Float32Array(BLK));
+    if (plain) { d.pcm.forEach((x, c) => { for (let i = 0; i < BLK; i++) outs[c][i] = smp(x, a + i); }); }
+    else if (!silent) {
+      const gf = gainFn(d, mx), g2 = new Float32Array(NB), re = new Float64Array(N), im = new Float64Array(N);
+      const m0 = a / hop, m1 = (a + BLK) / hop + ov - 2, G = [];
+      for (let m = m0; m <= m1; m++) { const g = new Float32Array(NB); gf(m, g); G.push(g); }
+      d.pcm.forEach((x, c) => {
+        const y = outs[c];
+        for (let m = m0; m <= m1; m += 2) {
+          const sA = (m - ov + 1) * hop, two = m + 1 <= m1, ga = G[m - m0], gb = two ? G[m + 1 - m0] : g2.fill(0);
+          for (let j = 0; j < N; j++) { re[j] = smp(x, sA + j) * w[j]; im[j] = two ? smp(x, sA + hop + j) * w[j] : 0; }
+          V.fft(re, im);
+          for (let q = 0; q <= N / 2; q++) {
+            const kk = (N - q) % N, p = 0.5 * (ga[q] + gb[q]), r = 0.5 * (ga[q] - gb[q]), zr = re[q], zi = im[q], wr = re[kk], wi = im[kk];
+            re[q] = p * zr + r * wr; im[q] = p * zi - r * wi;
+            if (kk !== q) { re[kk] = p * wr + r * zr; im[kk] = p * wi - r * zi; }
+          }
+          V.fft(re, im, true);
+          for (let j = 0; j < N; j++) { const i = sA + j - a, i2 = i + hop; if (i >= 0 && i < BLK) y[i] += re[j] * w[j] * sc; if (two && i2 >= 0 && i2 < BLK) y[i2] += im[j] * w[j] * sc; }
+        }
+      });
+    }
+    d.cache.set(mk, outs); while (d.cache.size > 64) d.cache.delete(d.cache.keys().next().value);
+    return outs;
+  }
+  function render(d, mx, a, b) {
+    a = Math.max(0, Math.floor(a || 0)); b = Math.min(d.meta.n, b == null ? d.meta.n : Math.floor(b));
+    const outs = d.pcm.map(() => new Float32Array(Math.max(0, b - a)));
+    for (let k = Math.floor(a / BLK); k * BLK < b; k++) { const bl = block(d, k, mx), o = k * BLK; for (let c = 0; c < outs.length; c++) { const s0 = Math.max(a, o), s1 = Math.min(b, o + BLK); outs[c].set(bl[c].subarray(s0 - o, s1 - o), s0 - a); } }
+    return outs;
+  }
+  /* ---- Anzeige-Stücke: 1024 Spalten × 984 Zeilen Uint8 (dB −120…0), Zeilen-Reihe (data[r·W + c]) ---- */
+  function specInfo(d, N) { let hop = N / 8, cols = Math.floor(d.meta.n / hop) + 1; while (cols > 24000) { hop *= 2; cols = Math.floor(d.meta.n / hop) + 1; } return {N, hop, cols, rows: ROWS, chunks: Math.ceil(cols / 1024), m0: M0, rps: RPS, dbf: DBF}; }
+  function specChunk(d, N, ci) {
+    const I = specInfo(d, N), x = d.mid, W = Math.min(1024, I.cols - ci * 1024), out = new Uint8Array(ROWS * W), w = win(N), M = rmap(N, d.meta.sr);
+    const re = new Float64Array(N), im = new Float64Array(N), m1 = new Float64Array(N / 2 + 1), m2 = new Float64Array(N / 2 + 1), sc = 4 / N, k255 = 255 / DBF;
+    const col = (mag, c) => {
+      for (let r = 0; r < ROWS; r++) {
+        let v; const A = M.a[r], B = M.b[r];
+        if (B === -2) v = 0; else if (B === -1) v = mag[A] * (1 - M.fr[r]) + (A + 1 < mag.length ? mag[A + 1] : 0) * M.fr[r]; else { v = 0; for (let k = A; k <= B; k++) if (mag[k] > v) v = mag[k]; }
+        const dbv = 20 * Math.log10(v * sc + 1e-12) + DBF; out[r * W + c] = dbv <= 0 ? 0 : dbv >= DBF ? 255 : Math.round(dbv * k255);
+      }
+    };
+    for (let c = 0; c < W; c += 2) {
+      const gc = ci * 1024 + c, sA = gc * I.hop - N / 2, two = c + 1 < W;
+      for (let j = 0; j < N; j++) { const i = sA + j, i2 = i + I.hop; re[j] = (i >= 0 && i < x.length ? x[i] : 0) * w[j]; im[j] = two && i2 >= 0 && i2 < x.length ? x[i2] * w[j] : 0; }
+      V.fft(re, im); magPair(re, im, N, m1, m2); col(m1, c); if (two) col(m2, c + 1);
+    }
+    return {N, k: ci, x0: ci * 1024, w: W, R: ROWS, hop: I.hop, data: out};
+  }
+  /* ---- Laden / Anlegen ---- */
+  async function loadPcm(d) {
+    d.pcm = [];
+    for (let c = 0; c < d.meta.ch; c++) {
+      const x = new Int16Array(d.meta.n), nc = Math.ceil(d.meta.n / CH);
+      for (let k = 0; k < nc; k++) { const b = await get('audio', 'spk:' + d.meta.id + ':p' + c + ':' + k); if (!b) throw new Error('Audio fehlt'); x.set(new Int16Array(b instanceof ArrayBuffer ? b : b.buffer).subarray(0, Math.min(CH, d.meta.n - k * CH)), k * CH); }
+      d.pcm.push(x);
+    }
+    d.mid = new Float32Array(d.meta.n); const kk = 1 / (32768 * d.pcm.length);
+    for (const x of d.pcm) for (let i = 0; i < x.length; i++) d.mid[i] += x[i] * kk;
+  }
+  function mkDoc(meta) { return {meta, pcm: null, mid: null, masks: new Map(), dirty: new Set(), cache: new Map(), undo: [], redo: [], u: null, vc: 1, ft: 0, metaDirty: false}; }
+  async function open(id) {
+    if (docs.has(id)) return docs.get(id);
+    const meta = await get('kv', 'spk:doc:' + id); if (!meta) throw new Error('Analyse fehlt');
+    const d = mkDoc(meta); await loadPcm(d);
+    for (const l of meta.layers) { for (let s = 0; s < NSn(d); s++) { const b = await get('audio', mkey(d, l.id, s)); if (b) masksOf(d, l.id).set(s, stUnpack(d, new Uint8Array(b))); } l.ver = ++d.vc; }
+    docs.set(id, d); return d;
+  }
+  const info = d => ({meta: JSON.parse(JSON.stringify(d.meta)), F: Fn(d), NS: NSn(d), undo: d.undo.length ? d.undo[d.undo.length - 1].label : '', redo: d.redo.length ? d.redo[d.redo.length - 1].label : '', nu: d.undo.length, nr: d.redo.length});
+  async function create(o) {
+    const sr = Math.round(+o.sr) || 48000, chs = (o.ch || []).slice(0, 2), n = Math.min(chs.length ? chs[0].length : 0, sr * 600);
+    if (!n) throw new Error('leer');
+    const id = (o.id && /^[a-z0-9]{6,24}$/.test(o.id)) ? o.id : Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    const meta = {v: 1, id, name: String(o.name || 'Analyse').slice(0, 80), ct: Date.now(), mt: Date.now(), src: o.src || {kind: 'datei'}, sr, n, ch: chs.length, cut: (chs[0].length > n) ? +(chs[0].length / sr).toFixed(1) : 0,
+      grid: o.grid || {bpm: 120, off: 0, ts: '4/4', from: 'projekt'}, base: {N: 4096, hop: 1024}, view: {N: 4096, lo: -90, hi: -12},
+      layers: [], rest: {vol: 0, solo: false, mute: false}, patches: [], jobs: {spec: {}}, teil2: {notes: {}, tmpl: {}, loops: []}};
+    const d = mkDoc(meta);
+    d.pcm = chs.map(x => { const y = new Int16Array(n); if (x instanceof Int16Array) y.set(x.subarray(0, n)); else for (let i = 0; i < n; i++) { const v = Math.round(x[i] * 32767); y[i] = v > 32767 ? 32767 : v < -32768 ? -32768 : v; } return y; });
+    for (let c = 0; c < d.pcm.length; c++) for (let k = 0; k * CH < n; k++) await put('audio', 'spk:' + id + ':p' + c + ':' + k, d.pcm[c].slice(k * CH, Math.min(n, (k + 1) * CH)).buffer);
+    d.mid = new Float32Array(n); const kk = 1 / (32768 * d.pcm.length);
+    for (const x of d.pcm) for (let i = 0; i < n; i++) d.mid[i] += x[i] * kk;
+    docs.set(id, d); await saveMeta(d); return d;
+  }
+  async function remove(id) {
+    const d = docs.get(id); if (d) clearTimeout(d.ft); docs.delete(id);
+    for (const k of await keys('audio', 'spk:' + id + ':')) await del('audio', k);
+    await del('kv', 'spk:doc:' + id);
+    const idx = ((await get('kv', 'spk:idx')) || []).filter(x => x && x.id !== id); await put('kv', 'spk:idx', idx);
+    return true;
+  }
+  /* Container: Meta + PCM je Kanal + Masken je Ebene (Streifen: u32 s, u32 Länge, Daten) */
+  async function exportDoc(id) {
+    const d = await open(id); await flush(d); const masks = [];
+    for (const l of d.meta.layers) {
+      const parts = []; let len = 0;
+      for (const [s, st] of masksOf(d, l.id)) { const p = stPack(st); if (!p) continue; const h = new Uint8Array(8); new DataView(h.buffer).setUint32(0, s, true); new DataView(h.buffer).setUint32(4, p.length, true); parts.push(h, p); len += 8 + p.length; }
+      const u = new Uint8Array(len); let o = 0; for (const p of parts) { u.set(p, o); o += p.length; } masks.push({lid: l.id, data: u});
+    }
+    return {meta: JSON.parse(JSON.stringify(d.meta)), pcm: d.pcm.map(x => x.slice()), masks};
+  }
+  async function importDoc(o) {
+    const meta = o.meta; if (!meta || !/^[a-z0-9]{6,24}$/.test(meta.id) || !Array.isArray(o.pcm) || !o.pcm.length) throw new Error('Analyse ungültig');
+    if (docs.has(meta.id)) { clearTimeout(docs.get(meta.id).ft); docs.delete(meta.id); }
+    meta.n = Math.min(meta.n, o.pcm[0].length); meta.ch = o.pcm.length;
+    for (let c = 0; c < o.pcm.length; c++) for (let k = 0; k * CH < meta.n; k++) await put('audio', 'spk:' + meta.id + ':p' + c + ':' + k, o.pcm[c].slice(k * CH, Math.min(meta.n, (k + 1) * CH)).buffer);
+    for (const m of o.masks || []) {
+      const u = m.data, dv = new DataView(u.buffer, u.byteOffset, u.byteLength); let p = 0;
+      while (p + 8 <= u.length) { const s = dv.getUint32(p, true), len = dv.getUint32(p + 4, true); await put('audio', 'spk:' + meta.id + ':m' + m.lid + ':' + s, u.slice(p + 8, p + 8 + len).buffer); p += 8 + len; }
+    }
+    const d = mkDoc(meta); d.pcm = o.pcm; d.mid = new Float32Array(1); await saveMeta(d);
+    return meta.id;
+  }
+  /* ---- Nachrichten ---- */
+  async function op(m, emit) {
+    const d = m.doc ? await open(m.doc) : null;
+    switch (m.op) {
+      case 'create': return info(await create(m));
+      case 'open': return info(d);
+      case 'list': return (await get('kv', 'spk:idx')) || [];
+      case 'remove': return remove(m.id);
+      case 'rt': { const x = m.x, N = m.N || 4096, S = stft(x, N, m.hop || N / 4), y = istft(S, x.length); let pk = 1e-12, mx = 0, e2 = 0, s2 = 0; for (let i = 0; i < x.length; i++) { const e = y[i] - x[i]; pk = Math.max(pk, Math.abs(x[i])); mx = Math.max(mx, Math.abs(e)); e2 += e * e; s2 += x[i] * x[i]; } return {N, F: S.F, maxDb: 20 * Math.log10(mx / pk + 1e-300), rmsDb: 10 * Math.log10(e2 / Math.max(s2, 1e-300) + 1e-300)}; }
+      case 'spec': {
+        const N = [1024, 2048, 4096, 8192, 16384].includes(m.N) ? m.N : 4096, I = specInfo(d, N), from = Math.max(0, m.from | 0), to = Math.min(I.chunks, m.to == null ? I.chunks : m.to | 0);
+        d.meta.jobs.spec[N] = d.meta.jobs.spec[N] || {done: 0};
+        for (let ci = from; ci < to; ci++) {
+          if (d.stop) { d.stop = false; break; }
+          const key = 'spk:' + d.meta.id + ':v' + N + ':' + ci, have = await get('audio', key); let ch;
+          if (have && have.byteLength === ROWS * Math.min(1024, I.cols - ci * 1024)) ch = {N, k: ci, x0: ci * 1024, w: Math.min(1024, I.cols - ci * 1024), R: ROWS, hop: I.hop, data: new Uint8Array(have), cached: true};
+          else { ch = specChunk(d, N, ci); await put('audio', key, ch.data.slice().buffer); d.meta.jobs.spec[N].done = Math.max(d.meta.jobs.spec[N].done, ci + 1); d.metaDirty = true; }
+          if (m.stream !== false) emit({id: m.id, chunk: ch}, [ch.data.buffer]);
+          emit({id: m.id, prog: (ci + 1 - from) / Math.max(1, to - from)});
+        }
+        if (d.metaDirty) soon(d);
+        return I;
+      }
+      case 'transfer': { const r = transfer(d, m); return Object.assign(r, info(d)); }
+      case 'layer': {
+        const step = ['neu', 'weg', 'name', 'farbe'].includes(m.was);
+        if (step && m.lid === 'rest' && m.was !== 'neu') throw new Error('Rest bleibt');
+        if (step) uBegin(d, {neu: 'Neue Ebene', weg: 'Ebene löschen', name: 'Ebene umbenennen', farbe: 'Ebenen-Farbe'}[m.was]);
+        let l = m.lid === 'rest' ? d.meta.rest : lay(d, m.lid);
+        if (m.was === 'neu') l = newLayer(d, m.v || {});
+        else if (!l) { d.u = null; throw new Error('Ebene fehlt'); }
+        else if (m.was === 'weg') { for (const s of masksOf(d, l.id).keys()) { uTouch(d, l.id, s); d.dirty.add(l.id + '|' + s); } d.masks.delete(l.id); d.meta.layers = d.meta.layers.filter(x => x !== l); d.cache.clear(); }
+        else if (m.was === 'name') l.name = String(m.v || l.name).slice(0, 40);
+        else if (m.was === 'farbe') l.col = String(m.v || l.col).slice(0, 24);
+        else if (m.was === 'vol') l.vol = Math.max(-60, Math.min(12, +m.v || 0));
+        else if (m.was === 'solo' || m.was === 'mute') l[m.was] = !!m.v;
+        if (step) uEnd(d); else { d.metaDirty = true; soon(d); }
+        return Object.assign({lid: l.id || 'rest'}, info(d));
+      }
+      case 'undo': return Object.assign({label: uSwap(d, d.undo, d.redo)}, info(d));
+      case 'redo': return Object.assign({label: uSwap(d, d.redo, d.undo)}, info(d));
+      case 'render': { const outs = render(d, mixOf(d, m.mix), m.a, m.b); return {ch: outs, sr: d.meta.sr}; }
+      case 'block': { const outs = block(d, m.k, mixOf(d, m.mix)).map(x => x.slice()); return {k: m.k, ch: outs, sr: d.meta.sr}; }
+      case 'maskAt': { const st = stripe(d, m.lid, m.m >> 7, false), tr = m.k >> 7; if (!st || !st.h[tr]) return 0; return st.h[tr] === 255 ? 255 : st.t[tr][(m.m & 127) * BT + (m.k & 127)]; }
+      case 'sum': {
+        const F = Fn(d), NB = NBn(d), acc = new Uint16Array(NB); let over = 0, full = 0, part = 0, mx = 0, tiles = 0, bytes = 0;
+        for (const l of d.meta.layers) for (const st of masksOf(d, l.id).values()) { tiles += st.h.filter(v => v === 1).length; bytes += stBytes(st); }
+        for (let m = 0; m < F; m++) { acc.fill(0); for (const l of d.meta.layers) { const st = stripe(d, l.id, m >> 7, false); if (!st) continue; for (let tr = 0; tr < st.h.length; tr++) { const h = st.h[tr]; if (!h) continue; for (let b = 0; b < BT && tr * BT + b < NB; b++) acc[tr * BT + b] += h === 255 ? 255 : st.t[tr][(m & 127) * BT + b]; } }
+          for (let k = 0; k < NB; k++) { const v = acc[k]; if (v > 255) over++; else if (v === 255) full++; else if (v) part++; if (v > mx) mx = v; } }
+        return {F, NB, over, full, part, max: mx, tiles, bytes};
+      }
+      case 'stop': if (d) d.stop = true; return true;
+      case 'save': return {bytes: await flush(d)};
+      case 'export': return exportDoc(m.id);
+      case 'import': return importDoc(m);
+      case 'close': { if (d) { await flush(d); docs.delete(d.meta.id); } return true; }
+      default: throw new Error('op ' + m.op);
+    }
+  }
+  function on(m, emit) {
+    op(m, emit).then(r => {
+      const tr = [];
+      if (r && (m.op === 'render' || m.op === 'block')) for (const x of r.ch) tr.push(x.buffer);
+      if (r && m.op === 'export') { for (const x of r.pcm) tr.push(x.buffer); for (const x of r.masks) tr.push(x.data.buffer); }
+      emit({id: m.id, ok: r}, tr);
+    }, e => emit({id: m.id, err: String(e && e.message || e)}));
+  }
+  return {on, stft, istft, specInfo, docs};
+}
+/* ---------- Hauptfaden: Worker (Blob aus Text), Rückfall = derselbe Kern hier ---------- */
+function spk1Worker() {
+  if (SPK1.w !== null) return SPK1.w;
+  try {
+    const src = vsDspMake.toString() + ';' + spk1DspMake.toString() + ';const K = spk1DspMake(vsDspMake());onmessage = e => K.on(e.data, (m, tr) => postMessage(m, tr || []));';
+    const u = URL.createObjectURL(new Blob([src], {type: 'application/javascript'}));
+    const w = new Worker(u); setTimeout(() => { try { URL.revokeObjectURL(u); } catch (e) {} }, 30000);
+    w.onmessage = e => spk1Reply(e.data);
+    w.onerror = e => { SPK1.w = false; SPK1.how = 'hauptfaden'; for (const q of SPK1.wq.values()) q.no(new Error('worker')); SPK1.wq.clear(); try { e.preventDefault(); } catch (er) {} };
+    SPK1.w = w; SPK1.how = 'worker';
+  } catch (e) { SPK1.w = false; SPK1.how = 'hauptfaden'; }
+  return SPK1.w;
+}
+function spk1Reply(m) {
+  const q = SPK1.wq.get(m.id); if (!q) return;
+  if (m.prog != null) { if (q.prog) q.prog(m.prog); return; }
+  if (m.chunk) { if (q.chunk) q.chunk(m.chunk); return; }
+  SPK1.wq.delete(m.id); if (m.err) q.no(new Error(m.err)); else q.ok(m.ok);
+}
+// ein Auftrag an den Kern: {op, doc?, …}; cb = {prog(p), chunk(c)}
+function spk1Call(op, a, tr, cb) {
+  const w = spk1Worker(), id = ++SPK1.wid, m = Object.assign({}, a, {op, id});
+  return new Promise((ok, no) => {
+    SPK1.wq.set(id, Object.assign({ok, no}, cb || {}));
+    if (w) { try { w.postMessage(m, tr || []); return; } catch (e) { SPK1.wq.delete(id); no(e); return; } }
+    if (!SPK1.K) SPK1.K = spk1DspMake(VSD);
+    setTimeout(() => SPK1.K.on(m, r => spk1Reply(r)), 0);
+  });
+}
+/* Takt-Raster: Projekt-Tempo; falls imp1Analyse vorhanden (Paket IMP1), dessen Ergebnis */
+async function spk1Grid(src) {
+  const pr = {bpm: +S.bpm || 120, off: 0, ts: S.ts || '4/4', from: 'projekt'};
+  if (typeof imp1Analyse === 'function') { try { const r = await imp1Analyse(src); if (r && +r.bpm > 0) return {bpm: +r.bpm, off: +r.off || 0, ts: r.ts || pr.ts, from: 'imp1'}; } catch (e) { logErr(e); } }
+  return pr;
+}
+/* Quelle → Analyse: {name, sr, ch: [Float32Array|Int16Array]} | {take: id} | {file: File|ArrayBuffer, name} */
+async function spk1Load(o, cb) {
+  let name = o.name || 'Analyse', sr = o.sr, ch = o.ch, src = o.src || {kind: 'datei'};
+  if (o.take) {
+    const m = S.takes && S.takes[o.take], pcm = m && await tkPcm(o.take); if (!pcm) throw new Error('Take fehlt auf diesem Gerät');
+    sr = m.sr; ch = [pcm]; src = {kind: 'take', take: o.take}; name = o.name || 'Take ' + o.take.slice(0, 4);
+  } else if (o.file) {
+    const ab = o.file instanceof ArrayBuffer ? o.file : await o.file.arrayBuffer(); name = o.name || (o.file.name || 'Datei').replace(/\.[a-z0-9]{2,4}$/i, '');
+    const c = AU.ctx || new OfflineAudioContext(1, 1, 48000), b = await new Promise((ok, no) => { const p = c.decodeAudioData(ab.slice(0), ok, no); if (p && p.then) p.then(ok, no); });
+    sr = b.sampleRate; ch = []; for (let i = 0; i < Math.min(2, b.numberOfChannels); i++) ch.push(b.getChannelData(i));
+  }
+  const grid = await spk1Grid({sr, ch});
+  const tr = ch.filter(x => x instanceof Int16Array && x.buffer.byteLength === x.byteLength).map(x => x.buffer);
+  const r = await spk1Call('create', {name, sr, ch, src, grid}, SPK1.w ? tr : [], cb);
+  SPK1.doc = r.meta.id; SPK1.last = r; return r;
+}
+/* Projekt-Verweis (nur wenn benutzt): S.spk = [{id, name}] */
+function spk1Link(id, name) {
+  if (!id) return false; if (!Array.isArray(S.spk)) S.spk = [];
+  const e = S.spk.find(x => x.id === id); if (e) { if (name && e.name !== name) { e.name = String(name).slice(0, 80); markDirty(); } return true; }
+  if (S.spk.length >= 16) return false; S.spk.push({id, name: String(name || 'Analyse').slice(0, 80)}); markDirty(); return true;
+}
+function spk1NormProject(obj, p) {
+  const a = obj && Array.isArray(obj.spk) ? obj.spk : null; if (!a) return;
+  const out = []; for (const x of a.slice(0, 16)) if (x && typeof x.id === 'string' && /^[a-z0-9]{6,24}$/.test(x.id) && !out.some(y => y.id === x.id)) out.push({id: x.id, name: String(x.name || 'Analyse').slice(0, 80)});
+  if (out.length) p.spk = out;
+}
+// ZIP-Container: spektral/<id>/doc.json + p<c>.wav (16 Bit je Kanal) + m<lid>.bin (Masken-Streifen)
+async function spk1ZipAdd(files) {
+  for (const e of (Array.isArray(S.spk) ? S.spk : [])) {
+    let x = null; try { x = await spk1Call('export', {id: e.id}); } catch (er) { continue; }
+    const base = 'spektral/' + e.id + '/';
+    files.push({name: base + 'doc.json', data: new TextEncoder().encode(JSON.stringify(x.meta))});
+    x.pcm.forEach((pcm, c) => files.push({name: base + 'p' + c + '.wav', data: tkWav(pcm, x.meta.sr)}));
+    for (const m of x.masks) if (m.data.length) files.push({name: base + 'm' + m.lid + '.bin', data: m.data});
+  }
+}
+async function spk1ZipRead(fs) {
+  let n = 0;
+  for (const f of fs) {
+    const mm = /^spektral\/([a-z0-9]{6,24})\/doc\.json$/.exec(f.name); if (!mm || !f.data) continue;
+    try {
+      const id = mm[1], meta = JSON.parse(new TextDecoder().decode(f.data)), pcm = [], masks = [];
+      for (let c = 0; c < 2; c++) { const w = fs.find(g => g.name === 'spektral/' + id + '/p' + c + '.wav' && g.data), r = w && tkWavRead(w.data); if (r) pcm.push(r.pcm); }
+      for (const g of fs) { const q = new RegExp('^spektral/' + id + '/m(L[0-9]{1,3})\\.bin$').exec(g.name); if (q && g.data) masks.push({lid: q[1], data: g.data.slice()}); }
+      meta.id = id; await spk1Call('import', {meta, pcm, masks}); n++;
+    } catch (e) { logErr(e); }
+  }
+  return n;
+}
+/* ---------- Wiedergabe (gestreamt): Blöcke vom Kern, sample-genau aneinander, 5 ms Blende ---------- */
+function spk1Play(from, mix) {
+  spk1Stop(); const c = ensureAudio(); if (!c || !SPK1.doc || !SPK1.last) return false;
+  const meta = SPK1.last.meta, sr = meta.sr, B = SPK1_BLK, out = c.createGain(), t0 = c.currentTime + 0.15;
+  out.gain.setValueAtTime(0, t0); out.gain.linearRampToValueAtTime(1, t0 + 0.005); out.connect(AU.masterSum || c.destination);
+  from = Math.max(0, Math.min(meta.n / sr, +from || 0));
+  const P = SPK1.pl = {seq: ++SPK1.plSeq, out, t0, from, next: Math.floor(from * sr / B), pend: 0, src: [], mix: mix || null, timer: 0, end: Math.ceil(meta.n / B)};
+  const at = k => P.t0 + k * B / sr - P.from;
+  const pump = () => {
+    if (SPK1.pl !== P) return;
+    while (P.pend < 3 && P.next < P.end && at(P.next) < c.currentTime + 1.5) {
+      const k = P.next++; P.pend++;
+      spk1Call('block', {doc: SPK1.doc, k, mix: P.mix}).then(r => {
+        P.pend--; if (SPK1.pl !== P) return;
+        const b = c.createBuffer(r.ch.length, B, sr); r.ch.forEach((x, i) => b.copyToChannel(x, i));
+        const s = c.createBufferSource(); s.buffer = b; s.connect(out);
+        const t = at(k), off = Math.max(0, c.currentTime + 0.02 - t);
+        if (off < B / sr) { s.start(t + off, off); P.src.push(s); s.onended = () => { const i = P.src.indexOf(s); if (i >= 0) P.src.splice(i, 1); }; }
+        pump();
+      }, e => { P.pend--; logErr(e); });
+    }
+    if (P.next >= P.end && !P.pend && !P.src.length) { spk1Stop(); return; }
+    P.timer = setTimeout(pump, 120);
+  };
+  pump(); return true;
+}
+function spk1Stop() {
+  const P = SPK1.pl; if (!P) return; SPK1.pl = null; clearTimeout(P.timer);
+  try { const c = AU.ctx, t = c.currentTime; P.out.gain.cancelScheduledValues(t); P.out.gain.setValueAtTime(P.out.gain.value, t); P.out.gain.linearRampToValueAtTime(0, t + 0.005); for (const s of P.src) s.stop(t + 0.01); setTimeout(() => { try { P.out.disconnect(); } catch (e) {} }, 60); } catch (e) {}
+}
+function spk1PlayPos() { const P = SPK1.pl, c = AU.ctx; return P && c ? P.from + Math.max(0, c.currentTime - P.t0) : null; }
+/* ---------- Test-Zugang (window.__spk, SYNQUENZER.spk1); nur Funktionen, nichts läuft von selbst ---------- */
+const SPK1_API = {
+  load: (o, cb) => spk1Load(o || {}, cb),
+  open: id => spk1Call('open', {doc: id}).then(r => { SPK1.doc = id; SPK1.last = r; return r; }),
+  list: () => spk1Call('list', {}),
+  remove: id => spk1Call('remove', {id}),
+  stft: (x, N, hop) => spk1Call('rt', {x: x instanceof Float32Array ? x : Float32Array.from(x), N: N || 4096, hop}),
+  spec: (N, o) => { const cs = []; return spk1Call('spec', Object.assign({doc: SPK1.doc, N: N || 4096}, o || {}), null, {chunk: c => cs.push(c)}).then(I => Object.assign(I, {got: cs})); },
+  layers: () => spk1Call('open', {doc: SPK1.doc}).then(r => { SPK1.last = r; return {layers: r.meta.layers, rest: r.meta.rest}; }),
+  layer: (was, lid, v) => spk1Call('layer', {doc: SPK1.doc, was, lid, v}).then(r => { SPK1.last = r; return r; }),
+  mask: o => spk1Call('transfer', Object.assign({doc: SPK1.doc}, o)).then(r => { SPK1.last = r; return r; }),
+  maskAt: (lid, m, k) => spk1Call('maskAt', {doc: SPK1.doc, lid, m, k}),
+  sum: () => spk1Call('sum', {doc: SPK1.doc}),
+  render: (mix, a, b) => spk1Call('render', {doc: SPK1.doc, mix, a, b}),
+  undo: () => spk1Call('undo', {doc: SPK1.doc}).then(r => { SPK1.last = r; return r; }),
+  redo: () => spk1Call('redo', {doc: SPK1.doc}).then(r => { SPK1.last = r; return r; }),
+  save: () => spk1Call('save', {doc: SPK1.doc}),
+  close: () => spk1Call('close', {doc: SPK1.doc}),
+  link: () => SPK1.last ? spk1Link(SPK1.last.meta.id, SPK1.last.meta.name) : false,
+  zipAdd: async () => { const f = []; await spk1ZipAdd(f); return f.map(x => ({name: x.name, bytes: x.data.length})); },
+  play: (t, mix) => spk1Play(t, mix), stop: () => spk1Stop(), pos: () => spk1PlayPos(),
+  grid: () => spk1Grid(null),
+  state: () => ({how: SPK1.how, worker: !!SPK1.w, doc: SPK1.doc, playing: !!SPK1.pl, q: SPK1.wq.size}),
+};
+SYNQUENZER.spk1 = SPK1_API;
+try { window.__spk = SPK1_API; } catch (e) {}
+/* SPK1-END */
 /* ===== KF1-BEGIN (Paket KF1, Klang-Feinschliff Teil 1 aus der Ur-Roadmap §18 „Klang“; Xander: „Können wir davon noch was machen?“ → ja) =====
    Sechs Wünsche, jeder mit neutralem Standard (= genau der Klang von vorher, alte Projekte bitgleich):
    1 RAUSCHFARBE  VA › OSZ › MIX: Regler „Rauschfarbe“ weiß │ rosa │ braun │ blau (p.kfNc 0…3) für den Rausch-Fader; jede Farbe auf den

@@ -7,3 +7,4 @@
 - 13:02 App-Test (app-test.mjs): 92 4/4, 120 3/4, 120 6/8, Melodie-only 96 → ALLE OK (Tempo, Taktart, erste 1, 7 Grenzen exakt, Namen; Worker true; Analyse 0,4–0,95 s)
 - 13:03 Tempo bekannt + Gesang erzwungen (known-test.mjs) OK; Pflicht: topdefs doppelt 0 / Syntax 0, dupkeys 0, smoke errors [], MS 2000 1×, live: true 1×, Marken = Basis
 - 13:04 LESEN.md (Funktionen + Zeilen) fertig; NOTES.md (Verfahren, Ergebnisse, Grenzen) fertig. Schritt 1/3 fertig.
+- 13:11 Schritt 2/3 Start. ui.js (Blatt, Wähler, Ziele, Loop) + Einhänge-Zeilen IMP1 (normTrack orig, scheduleTrack orig→tkSched, tkPlace orig, va1 'Audio/MIDI importieren', ggbPick→imp1Pick); sync.py bindet ui.js ein. topdefs doppelt 0/Syntax 0, dupkeys 0. Test noch offen (halb).
