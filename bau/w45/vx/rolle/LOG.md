@@ -24,3 +24,4 @@
 - 13:38 Lauf 2: 53/59 – offen: Knacken vor Lücke (rechts weit), Silbe 'li' nicht gezeichnet, Trefferfläche 36/30 px (Leisten-Knöpfe ohne Treffer-Rand) → Diagnose
 - 13:41 Befunde behoben: (1) Knacken 5 ms nach der Naht fest→gedehnt (VSX.stretch klemmte den ersten WSOLA-Rahmen an 0: Vorlauf 20 ms mitgeben), (2) schmale Silben ('li', 'a') wurden nicht gezeichnet (Schwelle 12 px auf Textbreite statt Platz), (3) Gesang-Leisten: Trefferfläche bis an den Leistenrand (::after, Trennlinie als Schatten wie #top) – Test folgt
 - 13:45 vx1-test.mjs Lauf 5: ERGEBNIS 61/61 – alles OK
+- 13:46 Pflicht: topdefs doppelt 0/Syntax 0, dupkeys 0, smoke errors [] (smoke-test5.png); MS 2000 1×, live: true 1×, Markenwörter 16 = Basis; VERSION unberührt. Regression Paket: kern 34/34, ed 36/36, zug 24/24, blatt 13/13. Weiter: vox2/gl1

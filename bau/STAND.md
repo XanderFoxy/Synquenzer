@@ -27,3 +27,7 @@ Weiter mit: 4.54 = rel-4540/k fertig prüfen + INT53D nachziehen + Versionszeile
 - Recherche Spektral (Hintergrund-Agent) → S/vx-privat/SPEKTRAL-RECHERCHE.md (privat, nicht ins Repo). Danach Workflow SPK (Spektral-Seite, Trennen, Verfeinern, Noten→Spur, Klang-Nachbau) + CHR (Chorstimmen extrahieren).
 - Läuft weiter: wsf4zpvpt (4.54-Fixes, wird 4.54.2 + novw.py), wwu4y7736 (XD1 → 4.55.0 + novw.py).
 - 12:50: Workflow wwo12ndgq (wf_126c1421-5a8, synq-spk1-wf_126c1421-5a8.js): SPK1 Teil 1 (Plan, Kern STFT/Ebenen, Seite+Auswahl, Trennen+Verfeinern+Test) in S/vx/spk. Teil 2 (Noten→Spur, Vorlagen-Suche, Loop→Matrix Audio/MIDI, Klang-Nachbau VA/FM, opt. KI-Download) nach Zusammenführen mit IMP1.
+- 13:5x: 4.55.0 RELEASED (main f310a37) = R-4541 + IMP1 (S/vx/imp, Test 48/48). Snapshot synq-snapshots/R-4550.html, In-App v9.
+  NÄCHSTE MERGES immer auf R-4550: VX1 → `git merge-file -p R-4550.html vx/basis.html vx/rolle/index.html` (+resolve) → 4.56.0;
+  INT54-Fixes (k, Basis R-4530!) + XD1 (Basis R-4530) → jeweils Diff gegen R-4530 auf aktuelle Linie mergen, novw ist in R-4550 schon drin.
+  SPK Teil 2: erst IMP1+VX1 in S/vx/spk mergen (Basis vx/basis.html), dann Noten/Matrix/Nachbau.
