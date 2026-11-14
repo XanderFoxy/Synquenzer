@@ -17,7 +17,11 @@ import { bewerbenAls, fundortEintraege, sortWert } from './assistent.mjs';
 
 export const redditSuche = ({ sub, q }) =>
   `https://www.reddit.com/r/${encodeURIComponent(sub)}/search.rss?q=${encodeURIComponent(q)}&restrict_sr=1&sort=new&t=month`;
-export const freelancerSuche = q => `https://www.freelancer.com/api/projects/0.1/projects/active/?query=${encodeURIComponent(q)}&limit=30`;
+export const freelancerSuche = q => `https://www.freelancer.com/api/projects/0.1/projects/active/?query=${encodeURIComponent(q)}&limit=30&job_details=true`;
+// Freelancer-Volltextsuche trifft auch Aufträge, in denen Deutsch/Übersetzung nur nebenbei vorkommt (echter Lauf 14.11.2026:
+// „E-Mail-Vorlagen für ein Übersetzungsbüro“). Darum: „German/Deutsch“ im Titel ODER eine passende Fähigkeit (jobs) am Projekt.
+const FL_SKILL = /german|deutsch|translat|proofread|tutor|teach|language|lektor|übersetz/i;
+export const freelancerPasst = pr => /german|deutsch/i.test(pr?.title || '') || (pr?.jobs || []).some(j => FL_SKILL.test(j?.name || ''));
 export const freelancerLink = seo => `https://www.freelancer.com/projects/${String(seo).replace(/^\/+/, '')}`;
 
 // Welche Hilfe? Reihenfolge = Vorrang (Bewerbung vor Korrektur: „Anschreiben korrigieren“ ist eine Bewerbung).
@@ -101,7 +105,7 @@ export async function gesucheAusNetz({ holeText, m, jetzt = new Date(), zustand 
         if (!pr?.seo_url || !pr.title) continue;
         const text = pr.preview_description || pr.description || '';
         const p = pruefeGesuch(pr.title, text, m, { immerGesuch: true });
-        if (!p.was) continue;
+        if (!p.was || !freelancerPasst(pr)) continue;
         const d = Number(pr.time_submitted || pr.submitdate) * 1000;
         if (zuAlt(d)) continue;
         const b = pr.budget || {}, cur = pr.currency?.code || '';

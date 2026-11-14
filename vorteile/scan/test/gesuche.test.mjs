@@ -8,7 +8,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { macheFixtureAbruf } from '../lib/http.mjs';
 import { FIXTURE_KARTE } from './fixtures/karte.mjs';
-import { gesucheAusNetz, pruefeGesuch, hilfeArt, redditSuche, freelancerSuche, freelancerLink, auszugAus } from '../module/gesuche.mjs';
+import { gesucheAusNetz, pruefeGesuch, hilfeArt, redditSuche, freelancerSuche, freelancerLink, freelancerPasst, auszugAus } from '../module/gesuche.mjs';
 import unterricht from '../module/unterricht.mjs';
 
 const HIER = dirname(fileURLToPath(import.meta.url));
@@ -124,9 +124,16 @@ test('Gesuche-Filter: Wörter, Angebote, Thema, Art der Hilfe', () => {
 
 test('Gesuche: Adressen der Quellen', () => {
   assert.equal(redditSuche({ sub: 'German', q: 'tutor OR teacher' }), 'https://www.reddit.com/r/German/search.rss?q=tutor%20OR%20teacher&restrict_sr=1&sort=new&t=month');
-  assert.equal(freelancerSuche('german tutor'), 'https://www.freelancer.com/api/projects/0.1/projects/active/?query=german%20tutor&limit=30');
+  assert.equal(freelancerSuche('german tutor'), 'https://www.freelancer.com/api/projects/0.1/projects/active/?query=german%20tutor&limit=30&job_details=true');
   assert.equal(freelancerLink('/translation/x-1'), 'https://www.freelancer.com/projects/translation/x-1');
   assert.equal(auszugAus('Text hier submitted by /u/abc [link] [comments]'), 'Text hier');
   assert.ok(auszugAus('wort '.repeat(80)).endsWith(' …'));
   assert.equal(cfg.abruf.pauseMsJeHost['www.reddit.com'], 6000, 'Reddit höflich: höchstens ~10 Abrufe pro Minute');
+});
+
+test('Freelancer: nur mit German/Deutsch im Titel oder passender Fähigkeit (Fehltreffer 14.11.2026)', () => {
+  assert.equal(freelancerPasst({ title: 'Setup of Professional Email Templates and Follow-up System for Translation Business', jobs: [{ name: 'Email Marketing' }, { name: 'Copywriting' }] }), false);
+  assert.equal(freelancerPasst({ title: 'Setup of Professional Email Templates and Follow-up System for Translation Business' }), false);
+  assert.equal(freelancerPasst({ title: 'Conversational German Tutor Needed' }), true);
+  assert.equal(freelancerPasst({ title: 'Proofread my thesis', jobs: [{ name: 'Proofreading' }, { name: 'German Translator' }] }), true);
 });
