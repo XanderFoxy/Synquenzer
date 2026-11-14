@@ -27571,7 +27571,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '4.63.0';
+const VERSION = '4.64.0';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -98747,6 +98747,7 @@ function spk1DspMake(V) {
   const Z2 = typeof spk2DspMake === 'function' ? spk2DspMake({V, magsAt, hpss, f0Sum, comb, ramp, medLine, win, stft, istft, selFn, Fn, NBn, magPair, render, mixOf, transfer, uBegin, uEnd, lay, tick, x4: {refineEst, stripe, tileArr, tidy, verUp, uTouch, newLayer, uAbort, TRn, BT, Fn} /* SPK4: Rest aufteilen */}) : null;   // SPK2 (Auftrag 2: Noten brauchen render/transfer/Undo)
   if (Z2 && typeof spk3DspMake === 'function') spk3DspMake(Z2);   // SPK3: Tiefband mit Kick-Vorlage (ersetzt Z2.lowSplit, schaltet es ein)
   if (Z2 && typeof spk4DspMake === 'function') spk4DspMake(Z2);   // SPK4: mehrstimmige Noten (Pads, Rest, Original)
+  if (Z2 && typeof spk8DspMake === 'function') spk8DspMake(Z2);   /* SPK8: Noten auf der Bass-Ebene (Verfolgung wie im Zerlegen) */
   if (typeof spk5DspMake === 'function') spk5DspMake({Z2, KI1K, BT, zerlegen, selFn, magsAt, stripe, tileArr, tidy, uTouch, uBegin, uEnd, uAbort, verUp, newLayer, Fn, NBn, TRn, tick, get, soon});   // SPK5: Zerlegen/Profi nur in der Auswahl, Anteile je Ebene
   if (Z2 && typeof spk6DspMake === 'function') Z2.s6 = spk6DspMake({Z2, V, BT, BLK, win, lay, masksOf, stripe, stCopy, newLayer, verUp, uBegin, uTouch, uEnd, render, block, get, put, del, keys, selFn});   // SPK6: Ebenen-Werkstatt (Ops über Z2.ops)
   return {on, stft, istft, specInfo, docs, lowSplit, Z2};   // SPK2: Z2 für Messungen
@@ -98757,7 +98758,7 @@ function spk1Worker() {
   try {
     const src = vsDspMake.toString() + ';' + (typeof spk6DspMake === 'function' ? spk6DspMake.toString() + ';' : '') /* SPK6 */ + spk1DspMake.toString() + ';' + (typeof spk2DspMake === 'function' ? spk2DspMake.toString() : '') + ';' + (typeof spk3DspMake === 'function' ? spk3DspMake.toString() + ';' : '') /* SPK3 */ + (typeof spk4DspMake === 'function' ? spk4DspMake.toString() + ';' : '') /* SPK4 */ + (typeof ki1KernMake === 'function' ? ki1KernMake.toString() + ';' : '') /* KI1 */ + (typeof spk5DspMake === 'function' ? spk5DspMake.toString() + ';' : '') /* SPK5 */ + 'const K = spk1DspMake(vsDspMake());onmessage = e => K.on(e.data, (m, tr) => postMessage(m, tr || []));';   // SPK2: Kern-Ergänzung mitschicken · KI1
     const u = URL.createObjectURL(new Blob([src], {type: 'application/javascript'}));
-    const w = new Worker(u); setTimeout(() => { try { URL.revokeObjectURL(u); } catch (e) {} }, 30000);
+    const w = new Worker(typeof spk8WUrl === 'function' ? spk8WUrl(src, u) : u) /* SPK8: Kern-Ergänzung mitschicken */; setTimeout(() => { try { URL.revokeObjectURL(u); } catch (e) {} }, 30000);
     w.onmessage = e => spk1Reply(e.data);
     w.onerror = e => { SPK1.w = false; SPK1.how = 'hauptfaden'; for (const q of SPK1.wq.values()) q.no(new Error('worker')); SPK1.wq.clear(); try { e.preventDefault(); } catch (er) {} };
     SPK1.w = w; SPK1.how = 'worker';
@@ -101490,6 +101491,130 @@ function spk4KlUni(x) {
 function spk4KlAdsr(u) { const ka = SPK4_UNI.ka, ks = SPK4_UNI.ks; u[4] = spk2Ul(spk2Lg(u[4], 0.001, 2) * ka, 0.001, 2); u[6] = Math.min(1, u[6] / ks); return u; }
 SPK1_API.spk4 = {restAuf: () => spk4RestAuf(SPK1.ui), uni: spk4KlUni, UNI: SPK4_UNI};
 /* ===== SPK4-END ===== */
+/* SPK8-BEGIN */
+/* ===== SPK8 (Spektral-Seite · Noten auf der Bass-Ebene): „Noten finden“ auf einer Bass-Ebene verfolgt den Grundton wie das Zerlegen
+   (SPK4 bassTrack4 auf dem Original, N 16384, Kick-Vorlage abgezogen, Grundton-Pflicht, Kick-Ausklang/Rauschen ohne Obertöne zählt nicht;
+   hier ohne Unter-Oktave, weil eine Note den Hauptton meint) statt der allgemeinen einstimmigen Verfolgung auf der Ebene (die blieb am
+   unteren Bandrand 28–29 Hz hängen: Kick/Rumpeln in der Ebene). Die Ebene selbst entscheidet, WO Noten sind: Anschläge, Pegel und Leck-Schutz
+   (Ebene auf dem Kamm zu leise oder nur kleiner Anteil am Original → Rest von Kick/Pads, keine Note). Original, Original + Bass-Band,
+   Pads, Gesang usw. laufen unverändert. Kern im Spektral-Worker (Text über spk1Worker/spk8WUrl, Haken „SPK8“ in spk1DspMake). ===== */
+function spk8DspMake(Z2) {
+  if (!Z2 || !Z2.h || !Z2.ops || !Z2.I || !Z2.h.segNotes || !Z2.h.magsX) return Z2;
+  const {I} = Z2, H2 = Z2.h;
+  // dec: Ebene unterabgetastet (SPK3 magsLo) statt FFT 16384 · src: Verfolgung auf 'mix' (Original wie im Zerlegen) oder 'lay' (Ebene); kick: Kick-Vorlage abziehen (Anteil); eDb: Rahmen ≥ 98-%-Quantil − eDb;
+  // gS/gL: Leck-Schutz je Note (cL + cR ≥ −gS und cL ≥ −gL, dB); sub 0: keine Unter-Oktave; pf/phi/P wie SPK4 o6
+  const o8 = {an: 1, dec: 1, N: 16384, fTop: 2400, onMin: 0.3, kick: 1, kM: 1, src: 'mix', eDb: 40, gS: 26, gL: 24, sub: 0, pf: 3, phi: 0.8, P: 1.2, fMax: 290, minS: 0.1, cut: 1, kCh: 1, cf: 12, mrg: 3, dbg: null, dbg2: null};
+  function track8(Y, n, K, df, hopS, trust, fMax) {   // Kopie SPK4 bassTrack4 (Zerlegen), Schalter aus o8 (sub: Unter-Oktave)
+    const C = []; for (let c = 12 * Math.log2(27 / 440); ; c += 0.25) { const f = 440 * Math.pow(2, c / 12); if (f > (fMax || 290)) break; C.push(f); }
+    const S = C.length, NH = 8, E = new Float32Array(n * S), q = new Float32Array(n), Z = new Float32Array(K);
+    for (let i = 0; i < n; i++) {
+      const o = i * K; for (let k = 0; k < K; k++) Z[k] = Math.sqrt(Y[o + k]);
+      const pk = kf => { const k = Math.round(kf); if (k < 1 || k >= K - 1) return 0; return Math.max(Z[k - 1], Z[k], Z[k + 1]); };
+      const ka = Math.floor(30 / df);
+      let best = 0;
+      for (let j = 0; j < S; j++) {
+        const f = C[j]; let s = 0, g = 1;
+        for (let h = 1; h <= NH; h++, g *= 0.86) { const kf = h * f / df; if (kf >= K - 2) break; s += g * pk(kf); }
+        // SPK4: Grundton-Pflicht – der Grundton muss als Spitze da sein (≥ φ × stärkster 2./3. Oberton), sonst Abschlag (Pads: C2/C3 aus C3+G3+C4)
+        if (o8.pf) { const v1 = pk(f / df), u = Math.max(pk(2 * f / df), pk(3 * f / df)); if (v1 < o8.phi * u) s *= Math.pow(v1 / (o8.phi * u) + 1e-6, o8.pf); }
+        E[i * S + j] = s; if (s > best) best = s;
+      }
+      let jb = 0; for (let j = 1; j < S; j++) if (E[i * S + j] > E[i * S + jb]) jb = j;
+      // Anwesenheit: Leistung auf dem Kamm (Spitzen ±1 Bin) / Leistung im Band 30 Hz … 8·f0
+      let pc = 0, pt = 0; const fb0 = C[jb], kt = Math.min(K - 1, Math.ceil(Math.min(1200, 8.5 * fb0) / df));
+      for (let k = ka; k <= kt; k++) pt += Y[o + k] * Y[o + k];
+      for (let h = 1; h <= NH && h * fb0 / df < kt; h++) { const kc = Math.round(h * fb0 / df); for (let k = kc - 1; k <= kc + 1; k++) pc += Y[o + k] * Y[o + k]; }
+      q[i] = pt > 0 ? pc / pt : 0;
+      for (let j = 0; j < S; j++) E[i * S + j] = Math.log((E[i * S + j] + 1e-9) / (best + 1e-9));
+    }
+    // Viterbi: Nachbar ±1 Viertelton frei, größerer Sprung kostet P
+    const P = o8.P, D = new Float32Array(S), D2 = new Float32Array(S), bp = new Int16Array(n * S);
+    for (let j = 0; j < S; j++) D[j] = E[j];
+    for (let i = 1; i < n; i++) {
+      let gb = -1e9, gj = 0; for (let j = 0; j < S; j++) if (D[j] > gb) { gb = D[j]; gj = j; }
+      for (let j = 0; j < S; j++) {
+        let b = gb - P, bj = gj;
+        for (let t = Math.max(0, j - 1); t <= Math.min(S - 1, j + 1); t++) if (D[t] > b) { b = D[t]; bj = t; }
+        D2[j] = b + E[i * S + j]; bp[i * S + j] = bj;
+      }
+      let mx = -1e9; for (let j = 0; j < S; j++) if (D2[j] > mx) mx = D2[j];
+      for (let j = 0; j < S; j++) D[j] = D2[j] - mx;
+    }
+    const st = new Int16Array(n); let bj = 0; for (let j = 1; j < S; j++) if (D[j] > D[bj]) bj = j; st[n - 1] = bj;
+    for (let i = n - 1; i > 0; i--) st[i - 1] = bp[i * S + st[i]];
+    // Noten: zusammenhängende Stücke (Schritt ≤ 1 Viertelton); prüfen
+    const f0 = new Float32Array(n), on = new Float32Array(n), sg = new Int32Array(n), minF = Math.max(2, Math.round(o8.minS / hopS));
+    // deutliche Obertöne: Spitze (±1 Bin) ≥ 4× Umgebung (±4…8 Bins); Kick-Ausklang = Sinus ohne Obertöne, Rauschen ohne Spitzen
+    const subR = (i, f) => { const o = i * K, kc = Math.round(f / df); if (kc < 9) return 0; const pk = Math.max(Y[o + kc - 1], Y[o + kc], Y[o + kc + 1]) ** 2; let e = 0; for (let t = 4; t <= 8; t++) e += Y[o + kc - t] ** 2 + Y[o + kc + t] ** 2; return pk / (e / 10 + 1e-20); };
+    const prom = (i, f) => { const o = i * K; let c = 0; for (let h = 2; h <= 6; h++) { const kc = Math.round(h * f / df); if (kc + 9 >= K) break; const pk = Math.max(Y[o + kc - 1], Y[o + kc], Y[o + kc + 1]) ** 2; let e = 0; for (let t = 4; t <= 8; t++) e += Y[o + kc - t] ** 2 + Y[o + kc + t] ** 2; if (pk > 4 * e / 10) c++; } return c; };
+    for (let a = 0; a < n;) {
+      let b = a; while (b + 1 < n && Math.abs(st[b + 1] - st[b]) <= 1) b++;
+      const len = b - a + 1; let qm = 0, hm = 0; for (let i = a; i <= b; i++) { qm += q[i]; hm += prom(i, C[st[i]]); } qm /= len; hm /= len;
+      const fall = st[a] - st[b];   // Viertelton-Schritte nach unten über das Stück
+      let ok = (len >= minF || trust) ? 1 : 0;
+      ok *= Math.min(1, Math.max(0, (qm - (trust ? 0.04 : 0.08)) / 0.12));
+      ok *= Math.min(1, Math.max(0, (hm - (trust ? 0.4 : 0.9)) / 0.6));   // im Mittel ≥ 1,5 deutliche Obertöne (2.–6.) je Rahmen
+      if (!trust && fall >= 6 && len * hopS < 0.6) ok *= 0.2;   // fällt ≥ 1,5 Halbtöne in kurzer Zeit → Kick-Ausklang
+      // Unter-Oktave (Sub-Oszillator): Spitze bei f0/2 deutlich und über die Note stetig (unteres Drittel der Rahmen) → Kamm ab f0/2
+      let sub = 1; if (o8.sub && ok > 0 && C[st[a]] / 2 >= 27) { const rr = []; for (let i = a; i <= b; i++) rr.push(subR(i, C[st[i]] / 2)); rr.sort((x, y) => x - y); if (rr[Math.floor((rr.length - 1) / 3)] > 4) sub = 0.5; }
+      for (let i = a; i <= b; i++) { f0[i] = C[st[i]] * sub; on[i] = ok; sg[i] = a; }
+      a = b + 1;
+    }
+    return {f0, on, q, sg};
+  }
+  async function bassNoten(d, m, emit) {
+    const lid = m.lid, R = H2.rangeOf(d, lid, m.sel); if (!R) return {notes: [], drums: true};
+    const sr = d.meta.sr, hop = d.meta.base.hop, n = d.meta.n, hopS = hop / sr, a0 = Math.max(0, Math.floor((R.ta - 0.5) * sr)), b0 = Math.min(n, Math.ceil((R.tb + 0.5) * sr));
+    const ch = I.render(d, I.mixOf(d, lid), a0, b0), x = new Float32Array(n), g = 1 / ch.length; for (const c of ch) for (let i = 0; i < c.length; i++) x[a0 + i] += c[i] * g;
+    emit({qid: m.qid, prog: 0.4});
+    const N = o8.N, df = sr / N, K = Math.min(N / 2 + 1, Math.ceil(o8.fTop / df) + 2), i0 = Math.floor(R.ta * sr / hop), i1 = Math.ceil(R.tb * sr / hop) + 1, F = i1 - i0;
+    const cen = new Int32Array(F); for (let i = 0; i < F; i++) cen[i] = (i0 + i) * hop;
+    // Ebene: Tiefband über das Unterabtasten aus SPK3 (magsLo auf der Ebene statt auf dem Original: FFT 4096 statt 16384, gleiche Auflösung)
+    const lo = o8.dec && typeof Z2.magsLo === 'function', s0 = o8.cut ? a0 - a0 % 16 : 0, cs = s0 ? cen.map(c => c - s0) : cen, Y = lo ? Z2.magsLo({mid: s0 || o8.cut ? x.subarray(s0, b0) : x, meta: d.meta}, N, cs, K, (K + 1) * df) : H2.magsX(x, N, hop, K, i0, i1), O = H2.onsetsOf(x, sr, R.ta - 0.1, R.tb + 0.1, R.fa, R.fb);
+    let YT = Y;   // Verfolgung: Ebene (lay) oder Original wie im Zerlegen (mix); Kick-Vorlage abziehen (kick)
+    const mix = o8.src === 'mix' && typeof Z2.magsLo === 'function';
+    if (mix || o8.kick) {
+      YT = mix ? Z2.magsLo(d, N, cen, K, (K + 1) * df) : Y.slice();
+      const KT = o8.kick && Z2.kickTpl && Z2.kickAt ? Z2.kickTpl(d, N, K) : null, kg = mix ? o8.kM : o8.kick, B = o8.kCh ? 256 : F, buf = KT ? new Float32Array(Math.min(B, F) * K) : null;
+      if (KT) for (let c = 0; c < F; c += B) { const n1 = Math.min(B, F - c), K1 = Z2.kickAt(KT, cen.subarray(c, c + n1), buf, K), o = c * K; for (let i = 0; i < n1 * K; i++) YT[o + i] = Math.sqrt(Math.max(0, YT[o + i] * YT[o + i] - kg * K1[i])); }
+    }
+    const T = track8(YT, F, K, df, hopS, false, Math.min(o8.fMax, R.fb));
+    const e = new Float32Array(F); for (let i = 0; i < F; i++) { let s = 0; const o = i * K; for (let k = 1; k < K; k++) s += Y[o + k] * Y[o + k]; e[i] = 10 * Math.log10(s + 1e-12); }
+    let emx = -200; { const es = Array.from(e).sort((p, q) => p - q); emx = es[Math.floor(es.length * 0.98)] || -200; }
+    const ok = new Uint8Array(F), sc = new Float32Array(F); if (o8.dbg) o8.dbg({T, e, emx, F, i0, hopS, Y, YT, K, df, x, sr});
+    for (let i = 0; i < F; i++) { const f = T.f0[i]; sc[i] = Math.min(1, T.on[i]); ok[i] = T.on[i] >= o8.onMin && f >= R.fa && f <= R.fb && e[i] >= emx - o8.eDb ? 1 : 0; }
+    const found = H2.segNotes({f0: T.f0, sc, ok, i0, F, hopS, O, G: H2.gridOf(d), Y: null /* keine Oktav-Verdopplung: die Bass-Ebene ist fast ein Sinus */, K, df, fb: R.fb}).filter(q => q.a >= R.ta - 0.05 && q.a < R.tb);
+    // Leck-Schutz je Note (Median über die Note): Pegel der Ebene auf dem Kamm (cL, rel. 95-%-Quantil) + Anteil der Ebene am Original auf
+    // demselben Kamm (cR); Noten, die die Ebene nur als Rest von Kick/Pads enthält, fallen (gemessen: echte Noten cL+cR ≥ −25, Leck ≤ −23 … −36)
+    const pkc = (A, i, f) => { let s = 0; for (let h = 1; h <= 4; h++) { const k = Math.round(h * f / df); if (k < 1 || k >= K - 1) break; s += Math.max(A[i * K + k - 1], A[i * K + k], A[i * K + k + 1]) ** 2; } return s; };
+    const cL = new Float32Array(F), cM = new Float32Array(F); for (let i = 0; i < F; i++) { cL[i] = 10 * Math.log10(pkc(Y, i, T.f0[i]) + 1e-12); cM[i] = 10 * Math.log10(pkc(YT, i, T.f0[i]) + 1e-12); }
+    const cq = Array.from(cL).sort((p, q) => p - q)[Math.floor(F * 0.95)] || 0, st = found.map(q => { const ia = Math.max(0, Math.round(q.a / hopS) - i0), ib = Math.min(F, Math.max(ia + 1, Math.round(q.b / hopS) - i0)), md = A => { const v = Array.from(A.slice(ia, ib)).sort((p, r) => p - r); return v[v.length >> 1]; };
+      return {a: q.a, m: q.m, cL: +(md(cL) - cq).toFixed(1), cR: +(md(cL) - md(cM)).toFixed(1)}; });
+    if (o8.dbg2) o8.dbg2(st);
+    let found2 = o8.gS ? found.filter((q, k) => st[k].cL + st[k].cR >= -o8.gS && st[k].cL >= -o8.gL) : found;
+    // Sicherheit: Abstand zum Leck-Schutz (dB über der Schwelle) statt fast immer 1 – knapp behaltene Noten (oft Kick-/Pad-Rest) wirken blasser
+    if (o8.cf && o8.gS) found.forEach((q, k) => { const g = Math.min(st[k].cL + st[k].cR + o8.gS, st[k].cL + o8.gL); q.conf = +Math.min(q.conf, Math.max(0.3, Math.min(1, 0.3 + 0.7 * g / o8.cf))).toFixed(2); });
+    // Liegende Töne: Teilstücke gleicher Höhe ohne Lücke und ohne Einbruch der Ebene vor dem Schnitt (Schnitt nur durch einen Trommelschlag) → eine Note
+    if (o8.mrg) { const mean = (u, v) => { let s = 0, c = 0; for (let t = u; t < v; t += 0.01) { s += O.envAt(t); c++; } return c ? s / c : -200; }, mn = (u, v) => { let m = 1e9; for (let t = u; t <= v; t += 0.01) m = Math.min(m, O.envAt(t)); return m; }, o = [];
+      for (const q of found2) { const p = o[o.length - 1]; if (p && p.m === q.m && q.a - p.b < 0.03 && q.a - p.a >= 0.2 && mean(q.a - 0.2, q.a - 0.08) - mn(q.a - 0.06, q.a) < o8.mrg) { const nP = Math.max(0, Math.floor(q.a / hopS) - Math.floor(p.a / hopS)); p.fz = p.fz.slice(0, nP).concat(q.fz); p.b = q.b; p.t1 = q.t1; p.v = Math.max(p.v, q.v); p.conf = Math.min(p.conf, q.conf); } else o.push(q); }
+      found2 = o; }
+    emit({qid: m.qid, prog: 0.9});
+    I.uBegin(d, 'Noten finden'); const t2 = H2.t2Of(d), old = t2.notes[lid] || [];
+    const keep = old.filter(q => q.st === 'zu' || q.a < R.ta - 0.05 || q.a >= R.tb), out = keep.slice();
+    for (const q of found2) { if (keep.some(k => k.st === 'zu' && k.m === q.m && Math.min(k.b, q.b) - Math.max(k.a, q.a) > 0.5 * (q.b - q.a))) continue; q.id = H2.nid(d); q.st = 'ok'; out.push(q); }
+    out.sort((p, q) => p.a - q.a); t2.notes[lid] = out; I.uEnd(d);
+    return {lid, neu: found2.length, notes: out.length, einstimmig: true, bass8: true};
+  }
+  const noten0 = Z2.ops.noten;
+  Z2.ops.noten = async (d, m, emit, info) => o8.an && m.lid && m.lid !== 'orig' && H2.artOf(d, m.lid) === 'bass' ? Object.assign(await bassNoten(d, m, emit), info(d), {mehrstimmig: false}) : noten0(d, m, emit, info);
+  Z2.o8 = o8;
+  return Z2;
+}
+// Worker-Text: spk8DspMake wird an den Kern-Text angehängt (Funktions-Deklaration → im Worker schon beim Aufbau des Kerns da)
+function spk8WUrl(src, u) {
+  try { const v = URL.createObjectURL(new Blob([src, ';' + spk8DspMake.toString() + ';'], {type: 'application/javascript'})); try { URL.revokeObjectURL(u); } catch (e) {} setTimeout(() => { try { URL.revokeObjectURL(v); } catch (e) {} }, 30000); return v; } catch (e) { return u; }
+}
+/* SPK8-END */
 /* ===== KF1-BEGIN (Paket KF1, Klang-Feinschliff Teil 1 aus der Ur-Roadmap §18 „Klang“; Xander: „Können wir davon noch was machen?“ → ja) =====
    Sechs Wünsche, jeder mit neutralem Standard (= genau der Klang von vorher, alte Projekte bitgleich):
    1 RAUSCHFARBE  VA › OSZ › MIX: Regler „Rauschfarbe“ weiß │ rosa │ braun │ blau (p.kfNc 0…3) für den Rausch-Fader; jede Farbe auf den
@@ -101908,7 +102033,7 @@ function vx1rAnalyse(id, rn) {   // SPK5-R: rn = Wiederholung, weil die Quelle w
   return (wpMarks(id) ? Promise.resolve(wpMarks(id)) : wpDetect(id)).then(async mk0 => {
     let b = vx1rSrc(id); if (!b) { tkLoad(id); const w = TK.wait.get(id); if (w) await w; b = vx1rSrc(id); }
     if (b && typeof G4 !== 'undefined' && G4.job.has(id)) { for (let i = 0; i < 600 && G4.job.has(id); i++) await new Promise(r => setTimeout(r, 25)); b = vx1rSrc(id) || b; }   // SPK5-R: G4 rechnet die Quelle gerade neu → an der neuen Fassung messen (≤ 15 s)
-    const mk = wpMarks(id) || mk0 || []; if (!b) return null;
+    const v2 = b && typeof vx2Marks === 'function' ? await vx2Marks(id, b) : null; if (v2) b = v2.b; const mk = (v2 && v2.mk) || wpMarks(id) || mk0 || []; if (!b) return null;   /* VX2: Stücke = Noten/Silben (Tonhöhen-Noten + Einsatz-Merkmal), an der Quelle, an der VX2 gemessen hat */
     const ts = mk.map(k => k.t), key = id + '@' + wpBid(b) + ':' + ts.join(','), c = VX1R.ana.get(id);
     if (c && c.key === key) return c;
     if (VX1R.aq.has(key)) return VX1R.aq.get(key);
@@ -101937,7 +102062,7 @@ function vx1rAnOf(A, t, tn) {
 function vx1rLead(A, t) { if (!A || !A.lead) return 0; const i = A.t.indexOf(t); return i >= 0 ? +A.lead[i] : 0; }
 // die Stücke eines Takes (abgeleitet; nur aus Caches – synchron)
 function vx1rPieces(id) {
-  const m = S.takes && S.takes[id], mk = m && wpMarks(id); if (!mk) return null;
+  const m = S.takes && S.takes[id], mk = m && (typeof vx2Mk === 'function' ? vx2Mk(id) : wpMarks(id)); if (!mk) return null;   /* VX2: Marken des Gesang-Editors */
   const A = VX1R.ana.get(id), w = m.warp, len = m.len / m.sr, G = typeof G2 !== 'undefined' && G2.an.get(id);
   const lab = (typeof g9LabelsOf === 'function' && m.ly ? g9LabelsOf(id, mk) : null) || wpLyr(id);
   const dstOf = t => (w && w.map ? VSM.warpTime({src: w.map.src, dst: w.map.dst}, t) : t);
@@ -102003,7 +102128,7 @@ function vx1rMsg(b, w) {
 function vx1rCommit(id, label, fn, o) {
   o = o || {};
   return vx1rAnalyse(id).then(A => {
-    const m = S.takes && S.takes[id], mk = wpMarks(id); if (!m || !mk) return false;
+    const m = S.takes && S.takes[id], mk = typeof vx2Mk === 'function' ? vx2Mk(id) : wpMarks(id); if (!m || !mk) return false;   /* VX2: Marken des Gesang-Editors */
     const before = JSON.stringify(S.takes), had = m.marks, w0 = m.warp;
     m.marks = mk.map(k => Object.assign({}, k));
     m.marks.forEach((k, i) => {
@@ -103665,6 +103790,120 @@ const SPK6_API = {
 };
 try { window.__spk6 = SPK6_API; } catch (e) {}
 /* SPK6-END */
+/* ===== VX2-BEGIN (Paket VX2 – Gesang-Editor an echtem Gesang: Stücke = Noten/Silben; Präfix vx2/VX2)
+   Befund (Echttest mit echtem Gesang): die Einsatz-Erkennung (wpDetect) setzt Marken auch mitten in gehaltenen Vokalen (Vibrato-/
+   Pegelwellen) – 33-s-Aufnahme: 150 Stücke für 59 Noten, nur 37 % beginnen an einer Note; Quantisieren schob Teile mitten in Noten.
+   Jetzt (nur Gesang-Editor, nur erkannte Marken – gespeicherte/eigene Marken alter Takes bleiben unverändert):
+     1. jede Tonhöhen-Note (G2, VS2-Segmente) beginnt ein Stück – auch ein Legato-Tonwechsel; ein Einsatz der Erkennung ±20 ms
+        davon gibt die probengenaue Stelle, sonst der Noten-Beginn;
+     2. Erkennungs-Marken ohne Note bleiben nur mit Einsatz-Merkmal: stimmloser Konsonant davor, Pegel-Tal > 6 dB (30 ms), Wort-
+        Beginn nach Ruhe oder stimmhafter Konsonant (l, m, n: sicherer Einsatz, Tal ≥ 2 dB, weniger Nulldurchgänge als im Vokal) –
+        und danach wird gesungen (≥ 50 ms stimmhaft); Atem/Geräusch/Pausen werden kein eigenes Stück;
+     3. Konsonant vor dem Vokal gehört wie bisher zum Stück (Anlauf), Anker wie bisher (lautester Spitzenwert im Einschwingbereich) –
+        Anker und Anlauf auf dem Hauptfaden aus derselben Analyse (gleich wie Op 'vxa', ohne zweiten Lauf).
+   Gemessen (33-s-Aufnahme mit Noten-Annotation, Kern ohne Browser): 213 erkannte Marken → 60 Stücke für 59 Noten, an einer Note 26 % → 85 %,
+   Einsätze ±40 ms Anfang 35 → 43, Vokal-Beginn 46 → 50 von 59; mit stimmhaften Konsonanten (Prüfung): 66 Stücke, gegen die 2. Annotation
+   (64 Noten, trennt wieder angesungene Silben) Vokal-Beginn 52 → 57, Noten ohne Grenze 8 → 2.
+   Die VX2-Marken sind nur die Sicht des Gesang-Editors (WP.det, Marken-Editor, Zeitkarte und Songtext bleiben); mit Songtext oder
+   gespeicherten Marken gilt wie bisher die Erkennung. Beim ersten Bearbeiten werden die Stücke wie bisher festgeschrieben (m.marks).
+   Einhänge-Zeilen (Kommentar „VX2“): vx1rAnalyse (Marken + Quelle vor der Analyse), vx1rPieces, vx1rCommit (vx2Mk). Test-API: window.__vx2. */
+const VX2 = {on: true, res: new Map(), q: new Map(), last: null};
+// Stücke = Noten/Silben: Marken aus den Tonhöhen-Noten (G2), am Einsatz der Erkennung eingerastet; Erkennungs-Marken ohne Note
+// nur mit Einsatz-Merkmal (stimmloser Konsonant davor oder Pegel-Tal > 6 dB, danach gesungen); Atem/Pausen werden kein eigenes Stück
+function vx2Pick(raw, A, G, len, o) {
+  o = o || {};
+  if (!G || !Array.isArray(G.notes) || G.notes.length < 2 || !A || !A.kind) return null;
+  const fh = A.fh, K = A.kind, nf = K.length, R = A.rms;
+  const cnt = (a, b, v) => { let c = 0; for (let f = Math.max(0, Math.floor(a / fh)); f < Math.min(nf, Math.ceil(b / fh)); f++) if (K[f] === v) c++; return c; };
+  const lv = f => { let s = 0, c = 0; for (let j = f - 1; j <= f + 1; j++) if (j >= 0 && j < nf) { s += R[j] * R[j]; c++; } return 10 * Math.log10(s / Math.max(1, c) + 1e-12); };   // Pegel über 30 ms (dB)
+  const ext = (a, b, mx) => { let v = mx ? -1e9 : 1e9; for (let f = Math.max(0, Math.floor(a / fh)); f < Math.min(nf, Math.ceil(b / fh)); f++) { const d = lv(f); if (mx ? d > v : d < v) v = d; } return v; };
+  const Z = A.zcr, zav = (a, b) => { let s = 0, c = 0; for (let f = Math.max(0, Math.floor(a / fh)); f < Math.min(nf, Math.ceil(b / fh)); f++) { s += Z ? Z[f] : 0; c++; } return c ? s / c : 0; };
+  const SN = o.snapPre == null ? .02 : o.snapPre, SP = o.snapPost == null ? .02 : o.snapPost, out = [];
+  // 1) jede Tonhöhen-Note beginnt ein Stück (auch Legato-Tonwechsel); Zeit = Einsatz der Erkennung in der Nähe (probengenau), sonst Noten-Beginn
+  for (const n of G.notes) {
+    if (!(n.t1 - n.t0 >= .04)) continue;
+    const t0 = n.t0;
+    let r = null; for (const k of raw) if (k.t >= t0 - SN && k.t <= t0 + SP && (!r || Math.abs(k.t - t0) < Math.abs(r.t - t0))) r = k;
+    out.push(r ? {t: r.t, conf: r.conf, src: r.src, word: !!r.word} : {t: +t0.toFixed(4), conf: .6, src: 'pitch'});
+  }
+  // 2) Erkennungs-Marken ohne Note: nur mit Einsatz-Merkmal (gleiche Tonhöhe, neue Silbe)
+  for (const k of raw) {
+    if (out.some(z => Math.abs(z.t - k.t) < .1)) continue;
+    if (cnt(k.t, k.t + .15, 2) < 5) continue;                                  // danach nichts Gesungenes → Atem/Geräusch
+    const uv = cnt(k.t - .1, k.t + .02, 1) >= 2 && cnt(k.t - .1, k.t + .02, 2) <= 8;   // stimmloser Konsonant davor
+    const dip = Math.min(ext(k.t - .15, k.t - .03, true), ext(k.t + .02, k.t + .15, true)) - ext(k.t - .04, k.t + .03, false);
+    // Fix 1: wieder angesungene Silbe mit stimmhaftem Konsonanten (l, m, n, w): sicherer Einsatz der Erkennung, kleines Pegel-Tal
+    // (≥ DV dB) und weniger Nulldurchgänge im Tal als im Vokal davor/danach (Nasal/Lateral) – Vibrato-Wellen haben das nicht
+    let vcn = false;
+    if (o.vc !== false && k.conf >= (o.vcConf == null ? .6 : o.vcConf) && dip >= (o.vcDip == null ? 2 : o.vcDip)) {
+      const za = zav(k.t - .03, k.t + .03), zb = (zav(k.t - .12, k.t - .03) + zav(k.t + .03, k.t + .12)) / 2;
+      vcn = za < (o.vcZr == null ? 1 : o.vcZr) * zb;
+    }
+    if (k.word || uv || dip > 6 || vcn) out.push({t: k.t, conf: k.conf, src: k.src, word: !!k.word, vc: vcn || undefined});
+  }
+  out.sort((a, b) => a.t - b.t);
+  const res = [];
+  for (const z of out) { const p = res[res.length - 1]; if (p && z.t - p.t < .05) continue; res.push(z); }
+  return res;
+}
+// Anker-Abstand und Anlauf je Marke wie im Analyse-Kern (Op 'vxa'), auf dem Hauptfaden aus derselben Analyse (ohne zweiten Lauf)
+function vx2AnLead(x, sr, A, mk) {
+  const n = x.length, H = Math.max(1, Math.round(sr / 1000)), FH = Math.round(.01 * sr), R5 = Math.max(1, Math.round(.0025 * sr)), pe = A.pk, env = A.env, kind = A.kind, ne = pe.length;
+  let pk = 0; for (let i = 0; i < n; i++) { const v = x[i] < 0 ? -x[i] : x[i]; if (v > pk) pk = v; }
+  const TH = Math.max(.002, pk * .02), an = new Float32Array(mk.length), lead = new Float32Array(mk.length), cl = (v, a, b) => (v < a ? a : v > b ? b : v);
+  for (let k = 0; k < mk.length; k++) {
+    const f0i = Math.max(0, Math.round(mk[k] * sr / H)), lim = k + 1 < mk.length ? Math.round(mk[k + 1] * sr / H) - 5 : ne - 1;
+    const f1i = Math.min(ne - 1, Math.round((mk[k] + .12) * sr / H), Math.max(f0i, lim));
+    let mx = 0; for (let f = f0i; f <= f1i; f++) if (pe[f] > mx) mx = pe[f];
+    let at = f0i, ag = f0i;
+    for (let f = f0i; f <= f1i; f++) if (pe[f] >= .9 * mx) { at = ag = f; while (ag < f1i && pe[ag + 1] >= .9 * mx) ag++; break; }
+    const o = Math.round(mk[k] * sr);
+    let bi = at * H, bv = -1; for (let i = Math.max(o, at * H - R5); i < Math.min(n, ag * H + R5, Math.round((mk[k] + .12) * sr)); i++) { const v = x[i] < 0 ? -x[i] : x[i]; if (v > bv) { bv = v; bi = i; } }
+    an[k] = cl(bi / sr - mk[k], 0, .2);
+  }
+  for (let k = 0; k < mk.length; k++) {
+    const fm = Math.floor(mk[k] * sr / FH), lo = k ? mk[k - 1] + .04 : 0; let f = fm - 1;
+    if (f < 0 || kind[f] !== 1) continue;
+    while (f - 1 >= 0 && kind[f - 1] === 1 && (f - 1) * FH / sr > lo && mk[k] - (f - 1) * FH / sr <= .15) f--;
+    let e = Math.max(0, Math.round(Math.max(lo, f * FH / sr) * sr / H)); const em = Math.round(mk[k] * sr / H);
+    while (e < em && env[e] < TH * .5) e++;
+    const L = mk[k] - e * H / sr; if (L > .005) lead[k] = Math.min(.15, L);
+  }
+  return {an, lead};
+}
+// Prüfung 2: die VX2-Marken sind die Sicht des Gesang-Editors – WP.det (Marken-Editor, Zeitkarte, Songtext) bleibt unverändert.
+// Sie gelten nur, solange der Take keine gespeicherten Marken und keinen Songtext hat (Text hängt per Reihenfolge an den erkannten Marken)
+// und die erkannten Marken dieselben sind; beim ersten Bearbeiten im Gesang-Editor werden sie wie bisher festgeschrieben (m.marks).
+function vx2Ok(id) { const m = S.takes && S.takes[id]; return !!(VX2.on && m && !m.marks && !(m.lyrics && String(m.lyrics).trim()) && !m.ly); }
+function vx2Mk(id) { const raw = wpMarks(id), r = raw && VX2.res.get(id); return r && r.mk && r.raw === raw && vx2Ok(id) ? r.mk : raw; }
+// die Marken für den Gesang-Editor ({mk, b} oder null = unverändert): einmal je Take + erkannte Marken + Quelle; Ergebnis in VX2.res und VX1R.ana.
+// Prüfung 3 (SPK5-R): wechselt die Quelle während der Rechnung (G4/G2/Säubern fertig), wird an der neuen Quelle neu gemessen (≤ 2×)
+function vx2Marks(id, b, rn) {
+  const raw = vx2Ok(id) ? wpMarks(id) : null;
+  if (!raw || raw !== WP.det.get(id) || raw.length < 2 || typeof g2Analyse !== 'function') return Promise.resolve(null);
+  const bid = wpBid(b), r0 = VX2.res.get(id);
+  if (r0 && r0.raw === raw && r0.bid === bid) { if (r0.An && VX1R.ana.get(id) !== r0.An) VX1R.ana.set(id, r0.An); return Promise.resolve(r0.mk ? {mk: r0.mk, b} : null); }
+  const key = id + '@' + bid; if (VX2.q.has(key)) return VX2.q.get(key);
+  const p = (async () => {
+    const t0 = performance.now(), x = b.getChannelData(0), sr = b.sampleRate, len = b.length / sr;
+    const [A, G] = await Promise.all([wpCall({op: 'vxa', x, sr, marks: raw.map(k => k.t)}), g2Analyse(id).catch(() => null)]);
+    if (!vx2Ok(id) || WP.det.get(id) !== raw) return null;   // inzwischen bearbeitet / neu erkannt / Text eingegeben
+    const b2 = vx1rSrc(id); if ((rn | 0) < 2 && b2 && b2 !== b) return vx2Marks(id, b2, (rn | 0) + 1);   // SPK5-R: Quelle wechselte → an der neuen messen
+    const pick = A ? vx2Pick(raw, A, G, len) : null, mk = pick ? wpNormMarks(pick, len) || [] : null;
+    if (!mk || mk.length < 2) { VX2.res.set(id, {raw, bid, mk: null}); VX2.last = {id, roh: raw.length, n: null, why: G ? 'zu wenig Noten' : 'keine Tonhöhe'}; return null; }
+    const ts = mk.map(k => k.t), al = vx2AnLead(x, sr, A, ts);
+    const An = Object.assign({key: id + '@' + bid + ':' + ts.join(','), id, sr, len, t: ts}, A, {an: al.an, lead: al.lead});
+    VX2.res.set(id, {raw, bid, mk, An}); while (VX2.res.size > 8) VX2.res.delete(VX2.res.keys().next().value);
+    VX1R.ana.set(id, An); while (VX1R.ana.size > 6) VX1R.ana.delete(VX1R.ana.keys().next().value);
+    VX1R.lastAn = {id, n: ts.length, ms: Math.round(performance.now() - t0), how: WP.how};
+    VX2.last = {id, roh: raw.length, n: mk.length, noten: G && G.notes ? G.notes.length : 0, ms: Math.round(performance.now() - t0), quelle: rn | 0, src: pick.reduce((o, k) => (o[k.vc ? 'stimmhaft' : k.src || 'on'] = (o[k.vc ? 'stimmhaft' : k.src || 'on'] | 0) + 1, o), {})};
+    return {mk, b};
+  })();
+  VX2.q.set(key, p); p.then(() => VX2.q.delete(key), () => VX2.q.delete(key));
+  return p.catch(e => { logErr(e); return null; });
+}
+window.__vx2 = {last: () => VX2.last, on: v => { if (v != null) VX2.on = !!v; return VX2.on; }, pick: (raw, A, G, len, o) => vx2Pick(raw, A, G, len, o), marks: id => vx2Mk(id), anLead: (x, sr, A, ts) => vx2AnLead(x, sr, A, ts)};
+/* ===== VX2-END ===== */
 /* ===== IMP1-BEGIN (Paket IMP1, Audio-/MIDI-Import mit Tempo, Taktart und Teilen – Xander 14.11.: „MP3 … BPM erkennen und die Taktart …
    in Szenen als zerschnittene Audios … Strophe eins, Refrain eins …“). Schritt 1: die Erkennung.
    imp1Core: Kern ohne DOM, läuft als Worker (Blob, sonst data:-URL; ohne Worker stückweise im Hauptfaden). Ablauf: herunterteilen auf ~11 kHz →

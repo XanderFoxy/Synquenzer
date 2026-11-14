@@ -1,3 +1,12 @@
+## 4.64.0 — Gesang-Editor: echter Gesang ergibt Noten statt Schnipsel · Spektral: Noten auf der Bass-Ebene
+
+- **Gesang-Editor** bei echtem Gesang: Jedes Stück ist jetzt eine Note bzw. Silbe statt vieler kleiner Schnipsel. In einer 33-s-Aufnahme sind es 69 Stücke statt 150, und 67 davon sitzen beim Quantisieren auf dem 1/8-Raster.
+  - Marken in gehaltenen Vokalen fallen weg, stimmhafte Silben bleiben erhalten.
+  - Die Anker springen nicht mehr, wenn die Gesang-Effekte gerade neu rechnen.
+  - Marken-Editor, Zeitkarte und Songtext behalten ihre eigenen Marken.
+- **Spektral › Noten finden auf der Bass-Ebene**: Nach dem Zerlegen findet die Bass-Ebene jetzt 29 von 32 Bass-Noten statt 0. Die Sicherheit ist nach Treffern abgestuft, ein ↶ macht es rückgängig. Lang gehaltene Töne, die an Trommelschlägen zerfallen, werden zu einer Note zusammengefasst.
+Tests: Gesang-Editor 61/61 + 14/14 (neu), Echttest Gesang 52/53 (vorher 48/53; offen: #10 Raster 24/32), Import alle OK, Chor 82/82, Bass-Noten-Seite 14/14 (Touch hochkant + quer), Spektral, Zerlegen, Profi, Ebenen-Werkstatt und Klangkorn alle wie 4.63. Offen: Verfeinern +1 dB; Konsonant-Anlauf bei echtem Gesang; Oktavfehler bei Bass mit lauten Trommeln.
+
 ## 4.63.0 — Spektral: Ebenen-Werkstatt (echte Kopie, Noten umsetzen, Chor, Effekte je Ebene) · Klangkorn (Auswahl als Instrument)
 
 - **Ebene duplizieren** (⋯ einer Ebene → Werkstatt): eine echte Kopie, die zusätzlich klingt und dem Rest nichts wegnimmt. Wird die Quelle gelöscht, rückt die Kopie an ihren Platz; ein ↶ macht alles rückgängig.
