@@ -60,7 +60,8 @@ const measure = p => p.evaluate(() => {
 async function layouts(p, tag, setup) {
   for (const [w, h] of [[428, 926], [926, 428], [926, 370]]) {
     await p.setViewportSize({width: w, height: h}); await p.waitForTimeout(250);
-    if (setup) await setup(); await p.waitForTimeout(350);
+    if (setup) await setup(); else await p.evaluate(() => { closePop(); window.__imp1.ui.sheet(); });   // die App schließt Blätter beim Drehen (wie überall)
+    await p.waitForTimeout(350);
     const m = await measure(p);
     ok(m.xVis && !m.small.length && !m.out && !m.ov.length && m.pop[0] >= 0 && m.pop[0] + m.pop[2] <= w, tag + ' ' + w + '×' + h + ': ✕ sichtbar, Tasten ≥ 44, nichts außerhalb, keine Überlappung', m);
     await p.screenshot({path: path.join(fotos, 'imp1t-' + tag.replace(/[^a-z0-9]+/gi, '-').toLowerCase() + '-' + w + 'x' + h + '.png')});
