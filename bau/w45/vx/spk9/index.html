@@ -105307,8 +105307,8 @@ function spk7Tgts(U) {
 function spk9DspMake(Z2) {
   if (!Z2 || !Z2.h || !Z2.opt || !Z2.h.segNotes || !Z2.h.midiOf) return Z2;
   const H2 = Z2.h, seg0 = H2.segNotes, opt = Z2.opt;
-  const o9 = {an: 1, hys: 0.6, hold: 0.07, stab: 0.06, span: 0.25, bandv: 0.6, vmin: 0.3, tr: 0.25, trN: 1.5, look: 0.5, nl: 0.15, vib: 0.16, gegen: 0.3, lvl: 12, minS: 0.08, near: 0.07, win: 0.6, fbMin: 400,
-    adv: 0.25, cst: 1, vibMax: 0.875, stair: 0.3, stairN: 0.035, trFlat: 1, fall: 4, fallT: 0.45, dicht: 1, okt: 0.12, rise2: 6, mono: 1, qMono: 0.5, pMono: 0.85, dbg: null};   // Prüfung: adv … pMono (0 = aus)
+  const o9 = {an: 1, hys: 0.6, hold: 0.07, stab: 0.06, span: 0.25, bandv: 0.6, vmin: 0.3, tr: 0.8, trN: 99, look: 0.5, nl: 0.15, vib: 0.16, gegen: 0.3, lvl: 12, minS: 0.08, near: 0.07, win: 0.6, fbMin: 400,
+    adv: 0.25, cst: 1, nlP: 1, vibMax: 0.875, stair: 0.3, stairN: 0.035, trFlat: 1, fall: 4, fallT: 0.45, dicht: 1, okt: 0.12, rise2: 6, mono: 1, qMono: 0.5, pMono: 0.85, dbg: null};   // Prüfung: adv … pMono (0 = aus)
   const med = v => { if (!v.length) return NaN; v.sort((p, q) => p - q); return v[v.length >> 1]; };
   // Tonhöhen-Stufen (Zeit der Grenze in s) aus der Grundton-Spur f0 (Rahmen i ↔ (i0 + i)·hopS), nur stimmhafte Rahmen (ok)
   function steps(o) {
@@ -105337,11 +105337,12 @@ function spk9DspMake(Z2) {
         const stair = (a, mu) => { if (!o9.stair) return false; let pe = a; while (pe < j && !isNaN(s3[pe]) && Math.abs(s3[pe] - mu) <= 0.3) pe++;
           if (pe >= j || isNaN(s3[pe]) || (pe - a) * hopS >= o9.stair) return false; const nx = s3[pe], dd = (nx - mu) * sg; if (!(dd > 0 && dd < 0.55)) return false;
           let r = pe; while (r < j && s3[r] === nx) r++; return (r - pe) * hopS >= o9.stairN - 1e-6; };
-        for (let a = k; a + W <= j && a - k <= look; a++) { const mu = ruhig(a, W, o9.span); if (!isNaN(mu) && Math.abs(mu - c) >= o9.hys && !stair(a, mu)) { js = a; break; } }
+        let jmu = NaN; for (let a = k; a + W <= j && a - k <= look; a++) { const mu = ruhig(a, W, o9.span); if (!isNaN(mu) && Math.abs(mu - c) >= o9.hys && !stair(a, mu)) { js = a; jmu = mu; break; } }
         // Vibrato auf dem neuen Ton (steht nie 60 ms flach): 200 ms im Band ±bandv um eine Höhe ≥ 60 ct neben der Mitte, mit Auf und Ab
         if (js < 0 && o9.bandv) for (let a = k; a + VB <= j && a - k <= look; a++) { const mu = ruhig(a, VB, 2 * o9.bandv); if (isNaN(mu) || Math.abs(mu - c) < o9.hys) continue; let up = 0, dn = 0; for (let r = a + 1; r < a + VB; r++) { const dd = s3[r] - s3[r - 1]; if (dd > 0) up += dd; else dn -= dd; } if (Math.min(up, dn) >= o9.vmin) { js = a; break; } }
         if (js < 0) { k = o9.adv ? Math.min(q, k + fr(o9.adv)) + 1 : q + 1; continue; }   // nichts Ruhiges in look: weiter suchen (langes Gleiten), nicht ans Ende der Abweichung springen
-        const nv = []; for (let r = js; r < Math.min(j, js + NL); r++) if (!isNaN(s3[r])) nv.push(s3[r]); const nl = med(nv);
+        let ne = Math.min(j, js + NL); if (o9.nlP && !isNaN(jmu)) { let pe = js; while (pe < ne && !isNaN(s3[pe]) && Math.abs(s3[pe] - jmu) <= 0.3) pe++; ne = Math.max(Math.min(j, js + W), pe); }   // kurzer Ton: nur sein Plateau, nicht schon der nächste Ton
+        const nv = []; for (let r = js; r < ne; r++) if (!isNaN(s3[r])) nv.push(s3[r]); const nl = med(nv);
         if (isNaN(nl) || Math.abs(nl - c) < o9.hys) { k = q + 1; continue; }
         const md = (c + nl) / 2, s2 = Math.sign(nl - c); let bd = Math.max(s0 + 1, k - back); while (bd < js && !((s3[bd] - md) * s2 > 0)) bd++;
         if ((bd - s0) * hopS < o9.minS || (j - bd) * hopS < o9.minS) { k = q + 1; continue; }

@@ -9,11 +9,12 @@ def rep(a, b):
     h = h.replace(a, b)
 # 1) Block direkt nach SPK8-END
 rep('/* SPK8-END */\n', '/* SPK8-END */\n' + blk)
-# 2) Haken in SPK8 bassNoten: Oktave je Note nach den Notengrenzen (neue Zeile direkt nach „const found = …“)
-a = "K, df, fb: R.fb}).filter(q => q.a >= R.ta - 0.05 && q.a < R.tb);\n"
-i = h.find("const found = H2.segNotes({f0: T.f0, sc, ok, i0, F, hopS, O, G: H2.gridOf(d), Y: null /* keine Oktav-Verdopplung")
+# 2) Haken in SPK8 bassNoten: Oktave je Note nach dem Leck-Schutz (nur behaltene Noten; neue Zeile direkt nach der Sicherheits-Zeile)
+a = "q.conf = +Math.min(q.conf, Math.max(0.3, Math.min(1, 0.3 + 0.7 * g / o8.cf))).toFixed(2); });\n"
+i = h.find("if (o8.cf && o8.gS) found.forEach((q, k) => {")
+assert i > 0 and h.count(a) == 1 and h.find(a, i) > i
 j = h.find(a, i) + len(a)
-h = h[:j] + "    if (typeof spk10Okt === 'function') spk10Okt(Z2, d, found, {R, hopS});   /* SPK10: Oktave je Note mit kurzem Fenster */\n" + h[j:]
+h = h[:j] + "    if (typeof spk10Okt === 'function') spk10Okt(Z2, d, found2, {R, hopS});   /* SPK10: Oktave je Note unter C2 (nach dem Leck-Schutz) */\n" + h[j:]
 # 3) Haken in spk8WUrl: spk10Okt in den Worker-Text
 rep("new Blob([src, ';' + spk8DspMake.toString() + ';'], {type: 'application/javascript'})",
     "new Blob([src, ';' + spk8DspMake.toString() + ';' + (typeof spk10Okt === 'function' ? spk10Okt.toString() + ';' : '') /* SPK10 */], {type: 'application/javascript'})")
