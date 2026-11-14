@@ -10,3 +10,4 @@
 - 14:55 topdefs doppelt 0/Syntax 0, dupkeys 0, MS 2000 1×, live:true 1×
 - 14:55 smoke errors [] – starte xd1-test gegen w4550/basis.html (4.53.0)
 - 15:04 xd1-test: 137 OK, 6 FEHLER (s. out-test/xd1.log) – prüfe, welche schon 4.58.0 hat
+- 15:06 Gegenprobe 4.58.0 unverändert: Pflicht-Markenwörter, VERSION, klang/menu-Pixel schlagen dort genauso fehl → nicht von VQ1. Neu nur: (2) quer-370 Rechteck-Prüfung LV×Fußzeile

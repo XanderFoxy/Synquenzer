@@ -3,6 +3,7 @@
 //  c  Marken-Editor zeigt Schneiden/Dehnen, bleibt 'hybrid'       d  Rückfall ohne Worker stückweise (≤ 50 ms), bitgleich
 //  e  Import dehnt Audio aufs Projekt-Tempo (91,6 → 92; 100 → 92), Tonhöhe bleibt, Schläge auf dem Raster, ein ↶
 //  f  Matrix-Zelle „Original“ zeigt die Welle (wie Gesang)       g  Guide „Audio/MIDI importieren“
+//  h  Stereo: nicht gebaut – Stereo-Datei wird wie bisher zu Mono gemischt (auch beim Dehnen)
 import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
 import path from 'node:path';
 import fs from 'node:fs';
@@ -289,6 +290,37 @@ try {
   ok(e4.sync && e4.bpm === 96 && e4.len === e4.nIn, 'e Tempo passt (96 in leeres Projekt): sofort abgelegt, Audio unverändert (bitgleich wie bisher)', JSON.stringify(e4));
   info('e Hauptfaden-Pause beim Ablegen ohne Dehnen (wie bisher, 8 Takte)', e4.gap + ' ms, imp1Place am Stück ' + e4.syncMs + ' ms');
   await run(q, async () => { undo(); await wait(150); });
+  // h: Stereo – NICHT gebaut (Takes sind mono gespeichert). Geprüft wird, dass eine Stereo-Datei wie bisher zu Mono gemischt wird
+  //    (beide Seiten hörbar, gleich laut) – auch auf dem neuen Weg „Import dehnen“ (91,6 → 92), Tonhöhe beider Seiten bleibt.
+  const h1 = await run(q, async () => {
+    const sr = 48000, bpm = 91.6, sp = 60 / bpm, bars = 8, n = Math.round((bars * 4 * sp + 1) * sr), L = new Float32Array(n), R = new Float32Array(n);
+    for (let k = 0; k < bars * 4; k++) { const i0 = Math.round(k * sp * sr); for (let i = 0; i < Math.round(.09 * sr); i++) { const t = i / sr, v = (k % 4 ? .45 : .7) * Math.sin(2 * Math.PI * (55 + 60 * Math.exp(-t / .02)) * t) * Math.exp(-t / .03); L[i0 + i] += v; R[i0 + i] += v; } }
+    for (let i = 0; i < n; i++) { const t = i / sr; L[i] += .12 * Math.sin(2 * Math.PI * 440 * t); R[i] += .12 * Math.sin(2 * Math.PI * 660 * t); }
+    const buf = new ArrayBuffer(44 + n * 4), v = new DataView(buf), ws = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+    ws(0, 'RIFF'); v.setUint32(4, 36 + n * 4, true); ws(8, 'WAVE'); ws(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 2, true); v.setUint32(24, sr, true); v.setUint32(28, sr * 4, true); v.setUint16(32, 4, true); v.setUint16(34, 16, true); ws(36, 'data'); v.setUint32(40, n * 4, true);
+    for (let i = 0; i < n; i++) { v.setInt16(44 + i * 4, Math.round(L[i] * 26000), true); v.setInt16(46 + i * 4, Math.round(R[i] * 26000), true); }
+    IMP1.known = 91.6; IMP1.lastPlace = null; window.__nx1.reset(); const u0 = UNDO.length;
+    await window.__imp1.ui.file(buf, 'stereo-916.wav');
+    for (let i = 0; i < 400 && !(IMP1.cur && IMP1.cur.st === 'fertig' && IMP1.cur.name === 'stereo-916'); i++) await wait(50);
+    const c = IMP1.cur; window.__imp1.ui.place('scenes');
+    for (let i = 0; i < 1200 && !(IMP1.lastPlace && IMP1.lastPlace.take); i++) await wait(50);
+    const lp = IMP1.lastPlace, m = lp && S.takes[lp.take];
+    for (let i = 0; i < 100 && lp && !tkBuffer(lp.take); i++) { tkLoad(lp.take); await wait(50); }
+    const ab = lp && tkBuffer(lp.take); if (!ab) return {err: 'kein Take'};
+    const x = ab.getChannelData(0), fs = ab.sampleRate;
+    // Goertzel mit Hann-Fenster (1 s ab 2,5 s): Amplitude bei f
+    const amp = (src, a, f) => { const N = fs, w = 2 * Math.PI * f / fs; let re = 0, im = 0, ws = 0; for (let i = 0; i < N; i++) { const h = .5 - .5 * Math.cos(2 * Math.PI * i / (N - 1)); re += src[a + i] * h * Math.cos(w * i); im -= src[a + i] * h * Math.sin(w * i); ws += h; } return 2 * Math.hypot(re, im) / ws; };
+    const a0 = Math.round(2.5 * fs), r = {ch: ab.numberOfChannels, bpm: S.bpm, len: m.len, nIn: c.x.length, nx: window.__nx1.st().imp, du: UNDO.length - u0,
+      a440: +amp(x, a0, 440).toFixed(4), a660: +amp(x, a0, 660).toFixed(4), a550: +amp(x, a0, 550).toFixed(4)};
+    // Tonhöhe: Spitze ±3 Hz um 440 / 660 (0,1-Hz-Schritte)
+    const pk = f0 => { let bf = f0, ba = 0; for (let f = f0 - 3; f <= f0 + 3; f += .1) { const a = amp(x, a0, f); if (a > ba) { ba = a; bf = f; } } return +bf.toFixed(1); };
+    r.f440 = pk(440); r.f660 = pk(660);
+    undo(); await wait(150); r.undoBpm = S.bpm; return r;
+  });
+  info('h1', JSON.stringify(h1));
+  const hq = h1.a440 / (h1.a660 || 1e-9);
+  ok(!h1.err && h1.ch === 1 && h1.a440 > .03 && h1.a660 > .03 && hq > .8 && hq < 1.25 && h1.a550 < .01, 'h Stereo nicht gebaut (Takes bleiben mono): Stereo-Datei wird wie bisher gemischt – linke (440 Hz) und rechte Seite (660 Hz) gleich laut im Take', 'Kanäle ' + h1.ch + ', 440 Hz ' + h1.a440 + ' · 660 Hz ' + h1.a660 + ' · dazwischen ' + h1.a550);
+  ok(!h1.err && h1.bpm === 92 && h1.nx && Math.abs(h1.len - Math.round(h1.nIn * 91.6 / 92)) <= 2 && Math.abs(h1.f440 - 440) <= .5 && Math.abs(h1.f660 - 660) <= .5 && h1.du === 1, 'h Stereo-Datei 91,6 BPM: gedehnt wie Mono (92), Tonhöhe beider Seiten bleibt, ein ↶', JSON.stringify({len: h1.len, nIn: h1.nIn, f: [h1.f440, h1.f660], du: h1.du}));
   // g: Guide-Eintrag
   const g1 = await run(q, async () => {
     const e = ui1Entries().find(x => x.id === 'midiimp'); const hit = (ui1Search('mp3 importieren') || []).slice(0, 3).map(x => x.id || x.e && x.e.id || x);

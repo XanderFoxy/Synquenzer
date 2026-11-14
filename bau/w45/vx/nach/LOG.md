@@ -22,3 +22,4 @@
 - Ende Auftrag 1: Pflicht final topdefs 0/0, dupkeys 0, smoke errors [] (smoke-end.png), Markenwörter 282 = Basis, VERSION unberührt; Regression vx1-test 61/61, imp1-test ALLE OK; NOTES.md geschrieben. Offen: (h).
 - 15:03 Start Auftrag 2/2 (Test): nx1-test a–g war schon 33/33 (test5.log); jetzt h, Regression spk1, Nachprüfung.
 - 15:04 Regression spk1-test (mess/ verlinkt): 17 OK, 1 FEHLER verfeinern-verbessert-ziel (Bass 0,77 → −0,46 dB) – IDENTISCH zur Basis 4.57.0 (reg-spk/spk1-basis.log, gleiche Zahlen) = bekannter offener Punkt aus SPK1, nicht durch NX1. Log reg-spk/spk1.log, Fotos reg-spk/.
+- 15:05 (h) Test ergänzt: Stereo-WAV (links 440 Hz, rechts 660 Hz, 91,6 BPM) → Take mono, beide Seiten gleich laut (0,043/0,046), gedehnt auf 92, Tonhöhe 440,2/659,9 Hz, ein ↶ → OK. nx1-test ALLE OK 35/35 (test6.log). Stereo selbst bleibt offen (Umbau).

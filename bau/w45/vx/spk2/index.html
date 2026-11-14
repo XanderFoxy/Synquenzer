@@ -98608,14 +98608,16 @@ function spk2MxDef(U, want) {   // Standard-Ziel: Spur mit passender Rolle und f
 function spk2MxDd(U, b) {
   const L = spk2Lp(U); if (!L || U.busy) return;
   const lid = U.act || 'orig', l = U.meta.layers.find(x => x.id === lid), drums = !!(l && l.art === 'drums'), qs = spk2LpNotes(U, lid), want = spk2Want(U, lid, qs);
-  if (U.mxFor !== lid + '|' + L.join('-')) { U.mxFor = lid + '|' + L.join('-'); U.mxT = spk2MxDef(U, want); }
-  if (U.mxT !== 'neu' && !spk2MxOk(U.mxT)) U.mxT = spk2MxDef(U, want);
+  const blind = !(l && SPK2_ROLE[l.art]) && !qs.length;   // Rolle erst nach dem Finden der Noten bekannt (Tonlage) → „Passende Spur“
+  if (U.mxFor !== lid + '|' + L.join('-')) { U.mxFor = lid + '|' + L.join('-'); U.mxT = blind ? 'auto' : spk2MxDef(U, want); }
+  if (U.mxT !== 'neu' && U.mxT !== 'auto' && !spk2MxOk(U.mxT)) U.mxT = blind ? 'auto' : spk2MxDef(U, want);
   spk1Dd(U, b, dd => {
     dd.appendChild(el('h5', '', 'Loop ' + esc(spk2LpTxt(L)) + ' · ' + esc(spk2LName(U, lid))));
     const B = (g, t, k, fn, dis) => { const x = el('button', 'mbtn rb spk1-ck', esc(t)); x.dataset.mx = k; x.disabled = !!dis; on(x, 'click', fn); g.appendChild(x); return x; };
     const ga = el('div', 'spk1-g'); B(ga, 'Als Audio → Spur „Original“', 'audio', () => { spk1Dd(U, null); spk2MxAudio(U); }); dd.appendChild(el('h5', '', 'Als Audio')); dd.appendChild(ga);
     dd.appendChild(el('h5', '', 'Als MIDI · Spur'));
     const gt = el('div', 'spk1-g'), pick = v => { U.mxT = v; spk2MxDd(U, b); };
+    if (blind) B(gt, (U.mxT === 'auto' ? '✓ ' : '') + 'Passende Spur', 'tauto', () => pick('auto'));
     for (let i = 0; i < NT(); i++) if (spk2MxOk(i)) B(gt, (U.mxT === i ? '✓ ' : '') + S.tracks[i].name + (spk2Free(i) < 0 ? ' (voll)' : ''), 't' + i, () => pick(i), spk2Free(i) < 0);
     if (canAddTrack()) B(gt, (U.mxT === 'neu' ? '✓ ' : '') + '+ Neue Spur', 'tneu', () => pick('neu'));
     dd.appendChild(gt);
@@ -98666,7 +98668,7 @@ async function spk2MxMidi(U) {
     if (!qs.length) { spk1Stat(U, 'Keine Noten im Loop – Ebene oder Bereich wählen'); return null; }
   }
   const G = spk2MxGrid(U), g = spk1Grid0(U), nb = L[1] - L[0], spQ = 60 / G.bpm, stepS = g.beat / 4, stepQ = stepS / spQ, LQ = nb * tsBeats(tsNorm(G.ts));
-  const want = spk2Want(U, lid, qs), key = lid + '|' + L.join('-'), sel = U.mxFor === key && U.mxT != null ? U.mxT : spk2MxDef(U, want);
+  const want = spk2Want(U, lid, qs), key = lid + '|' + L.join('-'), sel = U.mxFor === key && U.mxT != null && U.mxT !== 'auto' ? U.mxT : spk2MxDef(U, want);
   const notes = [];
   for (const q of qs) {
     const s0 = q.t0 != null ? q.t0 : q.a, s1 = q.t1 != null && q.t1 > s0 ? q.t1 : Math.max(q.b, s0 + stepS);

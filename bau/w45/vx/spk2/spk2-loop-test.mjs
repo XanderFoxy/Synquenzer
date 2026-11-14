@@ -127,10 +127,10 @@ async function openDemo(w, h) {
     const soll = qs.map(q => ({t: Math.round((q.t0 - ta) / st) * sq, n: Math.round(q.m)})).sort((a, b) => a.t - b.t || a.n - b.n), ist = c.notes.map(n => ({t: n.t, n: n.n})).sort((a, b) => a.t - b.t || a.n - b.n);
     const gleich = soll.length === ist.length && soll.every((s, i) => Math.abs(s.t - ist[i].t) < 1e-6 && s.n === ist[i].n);
     const lab = UNDO[UNDO.length - 1].label;
-    return {r, len: c.len, n: c.notes.length, soll: soll.length, gleich, erste: ist.slice(0, 6), raster: c.notes.every(n => Math.abs(n.t / 0.25 - Math.round(n.t / 0.25)) < 1e-6), name: S.tracks[r.track].name, cat: S.tracks[r.track].sound.cat, role: sx11Role(r.track, c), undo: UNDO.length, lab, bpm: S.bpm};
+    return {r, len: c.len, n: c.notes.length, soll: soll.length, gleich, erste: ist.slice(0, 6), raster: c.notes.every(n => Math.abs(n.t / 0.25 - Math.round(n.t / 0.25)) < 1e-6), name: S.tracks[r.track].name, cat: S.tracks[r.track].sound.cat, role: sx11Role(r.track, c), spurRolle: sx11Role(r.track, null), undo: UNDO.length, lab, bpm: S.bpm};
   });
   ok('als-midi-noten-gleich', m1, m1.r.notes > 0 && m1.gleich && m1.len === 2 && m1.raster && m1.undo === u0.n + 1 && /MIDI/.test(m1.lab));
-  ok('als-midi-ziel-rolle', {name: m1.name, cat: m1.cat, role: m1.role, neu: m1.r.neu}, m1.role === 'bass');
+  ok('als-midi-ziel-rolle', {name: m1.name, cat: m1.cat, spur: m1.spurRolle, role: m1.role, neu: m1.r.neu, vorher: d1.ziel}, d1.ziel === 'auto' && d1.b.some(x => /Passende Spur/.test(x)) && m1.spurRolle === 'bass' && m1.role === 'bass');
   // ein ↶ nimmt alles zurück (Spur, Clip, Tempo), ↷ bringt es
   const un1 = await p.evaluate(b0 => { undo(); const a = {same: sx14State() === b0.st, nt: NT(), bpm: S.bpm}; redo(); const r = __spk.spk2.loop.last(), c = S.tracks[r.track] && S.tracks[r.track].clips[r.scene]; return {a, b: {n: c ? c.notes.length : 0, nt: NT()}}; }, u0);
   ok('midi-ein-undo', un1, un1.a.same && un1.a.nt === u0.nt && un1.b.n === m1.n);
@@ -161,6 +161,10 @@ async function openDemo(w, h) {
       ws.length >= 2 && d.every(v => Math.abs(v - per) < 0.002) && ph.every(v => Math.abs(v * bar) < 0.005) && mx.L.every(x => Math.abs(x.off) < 0.001)); }
   const un2 = await p.evaluate(b0 => { undo(); const a = {same: sx14State() === b0.st, nt: NT()}; redo(); const r = __spk.spk2.loop.last(); return {a, b: !!(S.tracks[r.track] && S.tracks[r.track].clips[r.scene] && S.tracks[r.track].clips[r.scene].audio)}; }, u1);
   ok('audio-ein-undo', un2, un2.a.same && un2.a.nt === u1.nt && un2.b);
+  // 5b) „+ Neue Spur“: neue Synth-Spur mit Bass-Klang, ein ↶ nimmt die Spur mit
+  const nz = await p.evaluate(async () => { const n0 = NT(), u = UNDO.length, r = await __spk.spk2.loop.midi('neu'); const t = S.tracks[r.track], a = {r, nt: NT(), name: t.name, cat: t.sound.cat, n: t.clips[r.scene].notes.length, undo: UNDO.length - u};
+    undo(); const b = {nt: NT()}; redo(); return {n0, a, b, c: NT()}; });
+  ok('als-midi-neue-spur', nz, nz.a.r.neu && nz.a.nt === nz.n0 + 1 && nz.a.cat === 'bass' && nz.a.n > 0 && nz.a.undo === 1 && nz.b.nt === nz.n0 && nz.c === nz.n0 + 1);
   // 6) Loop entfernen (✕)
   { const x = await p.evaluate(() => { const e = document.querySelector('#spk1Sheet .spk2-lp .spk2-lx'); const r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }); await tap(x); }
   const l6 = await p.evaluate(() => ({lp: __spk.spk2.loop.get(), row: !!document.querySelector('#spk1Sheet .spk2-lp')}));
