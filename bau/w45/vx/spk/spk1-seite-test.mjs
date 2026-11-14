@@ -131,6 +131,8 @@ const layout = p => p.evaluate(() => {
   await tap(await btn(p, '16384')); await waitChunks(p);
   const s11 = await p.evaluate(() => ({N: __spk.page.ui().N, chunks: __spk.page.info().chunks, hop: __spk.page.ui().spec.hop}));
   ok('aufloesung-16384', s11, s11.N === 16384 && s11.chunks >= 1 && s11.hop === 2048);
+  await p.screenshot({path: path.join(fotos, '10b-16384.png')});
+  await p.evaluate(() => spk1Dd(__spk.page.ui(), null));
   // Quer 926×428 / 926×370 (gleiche Seite, nur Größe)
   for (const [w, h, n] of [[926, 428, '11-quer-428'], [926, 370, '12-quer-370']]) {
     await p.setViewportSize({width: w, height: h}); await p.waitForTimeout(500);

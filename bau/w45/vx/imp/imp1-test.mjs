@@ -211,6 +211,8 @@ const lp = await p.evaluate(() => { const l = window.__imp1.ui.last(), x = S.tra
 ok(lp.l.kind === 'loop' && lp.l.scene === 2 && lp.len === 2 && Math.abs(lp.in - 12 * c.takt) < .001 && Math.abs(lp.out - lp.in - 2 * c.takt) < .001 && lp.undo === u0 + 1,
   'Als Loop in die Matrix (alle 8 Szenen belegt): Szene 3 = Refrain 1 bekommt den Loop Takt 13–14, ein ↶', lp);
 ok(lp.songTeil3 && lp.songTeil3.len === 8 && Math.abs(lp.songTeil3.in - sc.clips[2].in) < 1e-6, 'der Song behält den ganzen Refrain 1 (eigener Song-Clip)', lp.songTeil3);
+{ const r = await p.evaluate(o => { undo(); const a = {len: S.tracks[o].clips[2].len, own: !!S.song.lanes[o][2].own}; redo(); const b2 = {len: S.tracks[o].clips[2].len, own: !!S.song.lanes[o][2].own}; return {a, b: b2}; }, lp.l.track);
+  ok(r.a.len === 8 && !r.a.own && r.b.len === 2 && r.b.own, '↶ nimmt den Loop ganz zurück (Szene 3 wieder der ganze Refrain), ↷ bringt ihn', r); }
 const mx = await p.evaluate(async ({o, s}) => {
   const L = []; const f0 = tkStartSrc; window.tkStartSrc = x => { if (x.i === o) L.push({when: x.when, off: x.off, end: x.end}); return f0(x); };
   closePop(); launchScene(s); await new Promise(r => setTimeout(r, 7000));
