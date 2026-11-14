@@ -97712,7 +97712,7 @@ function spk1UndoBtns(U, r) {
   if (!r) return; U.bU.disabled = !r.nu; U.bR.disabled = !r.nr;
   U.bU.setAttribute('aria-label', r.undo ? 'Rückgängig: ' + r.undo : 'Rückgängig'); U.bR.setAttribute('aria-label', r.redo ? 'Wiederholen: ' + r.redo : 'Wiederholen');
 }
-function spk1Got(U, r) { if (!r || !r.meta) return; SPK1.last = r; U.meta = r.meta; spk1UndoBtns(U, r); spk1Layers(U); }
+function spk1Got(U, r) { if (!r || !r.meta) return; SPK1.last = r; U.meta = r.meta; spk1UndoBtns(U, r); spk1Layers(U); if (typeof spk2OvDraw === 'function') spk1Dirty(U, 'ov'); }   // SPK2: Noten neu zeichnen
 /* ---- Ebenen-Liste ---- */
 function spk1Layers(U) {
   const L = U.meta.layers, R = U.meta.rest || {}, row = (id, name, col, o) => {
@@ -98387,6 +98387,122 @@ function spk2DspMake(I) {
   };
   return {lowSplit, projLk, bassTrack, kickModel, w2, I, opt, ops, noten, finden, zuordnen};
 }
+/* ---- Seite (Auftrag 2): Werkzeug „Noten“ – Kästchen in der Farbe der Ebene über dem Spektrum, Tipp/Ziehen → „Gehört zu“,
+   Noten ▾ (finden, überall finden, alle übernehmen, verfeinern nach Noten). Alles rechnet im Worker; ein ↶ je Aktion. ---- */
+SPK1_TOOLS.push(['noten', 'Noten']);
+SPK1_ICON.noten = '<rect x="2.5" y="12.5" width="6" height="3.2"/><rect x="7.5" y="8.4" width="5.5" height="3.2"/><rect x="12" y="4.3" width="5.5" height="3.2"/>';
+const SPK2_ZU = [['bass', 'Bass'], ['gesang', 'Gesang'], ['lead', 'Lead'], ['pads', 'Pads'], ['neu', 'Neue Ebene']];
+function spk2Pane(U, pane, sl) {
+  const p = pane('noten'), b = el('button', 'n1b spk1-ck', 'Noten ▾'); b.setAttribute('aria-label', 'Noten der Ebene: finden, überall finden, übernehmen');
+  on(b, 'click', () => spk2NotenDd(U, b)); p.appendChild(b); U.n2b = b; U.n2sel = []; U.opt.n2thr = 0.5;
+  sl(p, 'Sicher ab', 'n2thr', 0, 1, 0.05, v => Math.round(v * 100) + ' %', () => spk1Dirty(U, 'ov'));
+  p.appendChild(U.n2lab = el('label', '', 'einstimmig'));
+}
+const spk2LName = (U, lid) => lid === 'orig' ? 'Original' : lid === 'rest' ? 'Rest' : ((U.meta.layers.find(l => l.id === lid) || {}).name || '');
+const spk2Notes = (U, lid) => (U.meta && U.meta.teil2 && U.meta.teil2.notes && U.meta.teil2.notes[lid]) || [];
+function spk2Each(U, fn) {   // sichtbare Noten: Original + vorhandene Ebenen; Vorschläge erst ab „Sicher ab“
+  const T = U.meta && U.meta.teil2 && U.meta.teil2.notes; if (!T) return;
+  for (const lid in T) { const l = U.meta.layers.find(x => x.id === lid); if (lid !== 'orig' && !l) continue; for (const q of T[lid] || []) if (q.st !== 'neu' || q.conf >= U.opt.n2thr) fn(q, lid, l); }
+}
+const spk2Box = (U, q) => ({xa: spk1X(U, q.t0), xb: spk1X(U, q.t1), ya: (U.v.mTop - q.m - 0.5) * U.v.rowH, h: Math.max(3, U.v.rowH)});
+function spk2OvDraw(U, x) {
+  if (!U.meta || !U.meta.teil2) return;
+  const on = U.tool === 'noten', sel = new Set((U.n2sel || []).map(r => r.lid + '|' + r.id)), W = U.W, H = U.H, rgbOf = {}, fnt = spk1Var('--font-num');
+  spk2Each(U, (q, lid, l) => {
+    const b = spk2Box(U, q); if (b.xb < 0 || b.xa > W || b.ya > H || b.ya + b.h < 0) return;
+    const rgb = rgbOf[lid] || (rgbOf[lid] = spk1Rgb(l ? spk1Var(l.col) : '#f4f1ea').map(c => Math.round(c * 255)).join(','));
+    const s = sel.has(lid + '|' + q.id), w = Math.max(2, b.xb - b.xa);
+    x.globalAlpha = on ? 1 : 0.45;
+    x.fillStyle = 'rgba(' + rgb + ',' + (q.st === 'zu' ? 0.62 : q.st === 'neu' ? 0.2 : 0.36) + ')'; x.fillRect(b.xa, b.ya, w, b.h);
+    x.setLineDash(q.st === 'neu' ? [4, 3] : []); x.lineWidth = s ? 2 : 1; x.strokeStyle = s ? '#f4f1ea' : 'rgb(' + rgb + ')';
+    x.strokeRect(Math.round(b.xa) + 0.5, Math.round(b.ya) + 0.5, Math.round(w), Math.round(b.h));
+    if (on && q.st === 'neu' && w > 28 && b.h >= 9) { x.fillStyle = '#f4f1ea'; x.font = '600 9px ' + (fnt.startsWith('#') ? 'monospace' : fnt); x.fillText(Math.round(q.conf * 100) + '%', b.xa + 3, b.ya + b.h - 2); }
+  });
+  x.setLineDash([]); x.globalAlpha = 1;
+}
+function spk2NoteUp(U, G) {
+  const hits = [];
+  if (!G.moved) {
+    let best = null, bd = 1e9; const p = {x: spk1X(U, G.t0), y: (U.v.mTop - spk1Midi(G.f0)) * U.v.rowH};
+    spk2Each(U, (q, lid) => { const b = spk2Box(U, q), pad = Math.max(0, (14 - b.h) / 2); if (p.x < b.xa - 4 || p.x > b.xb + 4 || p.y < b.ya - pad || p.y > b.ya + b.h + pad) return; const dd = Math.abs(p.y - (b.ya + b.h / 2)); if (dd < bd) { bd = dd; best = {lid, id: q.id, q}; } });
+    if (!best) { U.n2sel = []; spk1Dd(U, null); U.cur = Math.max(0, Math.min(U.dur, G.t0)); if (SPK1.pl && !U.playSel) spk1PlayFrom(U, U.cur); spk1Dirty(U, 'ov'); spk1Dirty(U, 'r'); return; }
+    hits.push(best);
+  } else if (G.shape) {
+    const s = G.shape, m0 = spk1Midi(Math.max(1, s.f0)), m1 = spk1Midi(Math.max(1, s.f1));
+    spk2Each(U, (q, lid) => { if (q.t1 > s.t0 && q.t0 < s.t1 && q.m >= m0 - 0.5 && q.m <= m1 + 0.5) hits.push({lid, id: q.id, q}); });
+  }
+  U.n2sel = hits.map(h => ({lid: h.lid, id: h.id})); spk1Dirty(U, 'ov');
+  if (!hits.length) { spk1Dd(U, null); spk1Stat(U, 'Keine Note im Rahmen'); return; }
+  const r = U.mn.getBoundingClientRect(), b0 = hits.reduce((a, h) => { const b = spk2Box(U, h.q); return {xa: Math.min(a.xa, b.xa), xb: Math.max(a.xb, b.xb), ya: Math.min(a.ya, b.ya), yb: Math.max(a.yb, b.ya + b.h)}; }, {xa: 1e9, xb: -1e9, ya: 1e9, yb: -1e9});
+  const L = r.left + Math.max(0, b0.xa), T = r.top + Math.max(0, b0.ya), Rr = r.left + Math.min(U.W, b0.xb), B = r.top + Math.min(U.H, b0.yb);
+  spk2NoteDd(U, {getBoundingClientRect: () => ({left: L, top: T, right: Rr, bottom: B, width: Rr - L, height: B - T})}, hits.map(h => h.q));
+}
+const spk2Name = m => SPK1_NOTE[((m % 12) + 12) % 12] + (Math.floor(m / 12) - 1);
+function spk2NoteDd(U, anchor, qs) {
+  const f = v => v.toFixed(2).replace('.', ',');
+  spk1Dd(U, anchor, dd => {
+    const q = qs[0], neu = qs.filter(x => x.st !== 'zu').length;
+    dd.appendChild(el('h5', '', qs.length > 1 ? qs.length + ' Noten' : esc(spk2Name(q.m)) + ' · ' + f(q.b - q.a) + ' s · ' + (q.st === 'zu' ? 'bestätigt' : 'sicher ' + Math.round(q.conf * 100) + ' %')));
+    dd.appendChild(el('h5', '', 'Gehört zu'));
+    const g = el('div', 'spk1-g');
+    for (const [a, nm] of SPK2_ZU) { const x = el('button', 'mbtn rb spk1-ck', esc(nm)); x.dataset.zu = a; on(x, 'click', () => { spk1Dd(U, null); spk2Zu(U, a); }); g.appendChild(x); }
+    dd.appendChild(g);
+    if (neu) { const x = el('button', 'mbtn rb spk1-ck', neu > 1 ? neu + ' verwerfen' : 'Verwerfen'); x.dataset.zu = 'weg'; on(x, 'click', () => { spk1Dd(U, null); spk2Weg(U); }); dd.appendChild(x); }
+    dd.appendChild(el('p', '', 'Die Obertöne der Note wandern in die Ebene.'));
+  });
+}
+async function spk2Run(U, op, a, txt, done) {
+  if (U.busy) return null; U.busy = 'noten'; spk1BtnState(U); spk1Stat(U, txt + ' …');
+  try { const r = await spk1Call(op, Object.assign({doc: SPK1.doc}, a), null, {prog: p => spk1Stat(U, txt + ' · ' + Math.round(p * 100) + ' %')}); U.busy = null; spk1Got(U, r); if (op === 'zuordnen') spk1TintLoad(U); spk1Dirty(U, 'ov'); spk1Stat(U, done(r)); return r; }
+  catch (e) { logErr(e); spk1Stat(U, txt + ': ' + (e.message || e)); return null; }
+  finally { U.busy = null; spk1BtnState(U); }
+}
+function spk2Zu(U, art, refs) {
+  refs = refs || U.n2sel; if (!refs || !refs.length) return;
+  const l = art === 'neu' ? null : U.meta.layers.find(x => x.art === art);
+  return spk2Run(U, 'zuordnen', {notes: refs, nach: l ? l.id : 'neu', art: art === 'neu' ? 'eigene' : art}, 'Zuordnen', r => { U.n2sel = []; return (r.n > 1 ? r.n + ' Noten' : 'Note') + ' → ' + spk2LName(U, r.nach) + ' · ↶ macht es rückgängig'; });
+}
+function spk2Weg(U) { const refs = U.n2sel; if (!refs.length) return; return spk2Run(U, 'notenWeg', {notes: refs}, 'Verwerfen', r => { U.n2sel = []; return r.n + ' verworfen'; }); }
+function spk2Finden(U) {
+  const lid = U.act || 'orig', sel = U.sel.filter(s => s.art === 'rect' || s.art === 'zeit' || s.art === 'freq');
+  return spk2Run(U, 'noten', {lid, sel}, 'Noten · ' + spk2LName(U, lid), r => r.drums ? 'Drums haben keine Tonhöhe' : r.neu + ' Noten in ' + spk2LName(U, lid) + ' · einstimmig · Note antippen = zuordnen');
+}
+function spk2Ueberall(U) {
+  const lid = U.act; return spk2Run(U, 'finden', {lid}, 'Überall finden · ' + spk2LName(U, lid), r => r.neu + ' ähnliche Töne · Vorlage aus ' + r.vorlage.n + ' Noten · „Sicher ab“ filtert');
+}
+function spk2Alle(U) {
+  const lid = U.act, refs = spk2Notes(U, lid).filter(q => q.st === 'neu' && q.conf >= U.opt.n2thr).map(q => ({lid, id: q.id})), l = U.meta.layers.find(x => x.id === lid);
+  if (!refs.length || !l) return; return spk2Run(U, 'zuordnen', {notes: refs, nach: lid, art: l.art}, 'Übernehmen', r => r.n + ' Noten übernommen → ' + spk2LName(U, r.nach) + ' · ↶ macht es rückgängig');
+}
+function spk2VerfNoten(U) {   // erneut verfeinern auf Basis der bestätigten Noten: Auswahl = Obertonkämme dieser Noten, Ziel = Art der Ebene
+  const lid = U.act, l = U.meta.layers.find(x => x.id === lid); if (!l) return;
+  const sr = U.meta.sr, hop = U.meta.base.hop, qs = spk2Notes(U, lid).filter(q => q.st === 'zu'); if (!qs.length) return;
+  U.sel = qs.map(q => { const spur = []; q.fz.forEach((f, j) => { const t = (q.fi + j) * hop / sr; if (t >= q.a - 0.03 && t <= q.b + 0.06) spur.push([+t.toFixed(4), f]); }); return {art: 'harm', spur: spur.length ? spur : [[q.a, q.f]], K: U.opt.K, bw: U.opt.bw}; });
+  U.hits = U.ex = null; spk1SelDone(U, qs.length + ' bestätigte Noten als Auswahl');
+  const z = ['bass', 'gesang', 'drums', 'lead', 'pads'].includes(l.art) ? l.art : 'rest'; return spk1Verf(U, z);
+}
+function spk2NotenDd(U, b) {
+  if (U.busy) return;
+  spk1Dd(U, b, dd => {
+    const lid = U.act || 'orig', l = U.meta.layers.find(x => x.id === lid), N = spk2Notes(U, lid), zu = N.filter(q => q.st === 'zu').length, kand = N.filter(q => q.st === 'neu' && q.conf >= U.opt.n2thr).length;
+    dd.appendChild(el('h5', '', 'Noten · ' + esc(spk2LName(U, lid))));
+    const g = el('div', 'spk1-g'), B = (t, fn, dis, k) => { const x = el('button', 'mbtn rb spk1-ck', esc(t)); x.dataset.n2 = k; x.disabled = !!dis; on(x, 'click', () => { spk1Dd(U, null); fn(); }); g.appendChild(x); };
+    B(U.sel.length ? 'Noten finden (Auswahl)' : 'Noten finden', () => spk2Finden(U), lid === 'rest' || (l && l.art === 'drums'), 'finden');
+    B('Überall finden', () => spk2Ueberall(U), !l || !zu, 'ueberall');
+    B('Alle übernehmen' + (kand ? ' (' + kand + ')' : ''), () => spk2Alle(U), !l || !kand, 'alle');
+    B('Verfeinern nach Noten', () => spk2VerfNoten(U), !l || !zu, 'verf');
+    dd.appendChild(g);
+    dd.appendChild(el('p', '', (l ? zu + ' bestätigt · ' : '') + 'Einstimmig: je Ebene ein Ton zur Zeit, Akkorde werden nicht getrennt. Quelle = gewählte Ebene in der Liste.'));
+  });
+}
+SPK1_API.spk2 = {
+  noten: (lid, sel) => spk1Call('noten', {doc: SPK1.doc, lid, sel}).then(r => { SPK1.last = r; return r; }),
+  zuordnen: (notes, nach, art) => spk1Call('zuordnen', {doc: SPK1.doc, notes, nach, art}).then(r => { SPK1.last = r; return r; }),
+  finden: lid => spk1Call('finden', {doc: SPK1.doc, lid}).then(r => { SPK1.last = r; return r; }),
+  weg: notes => spk1Call('notenWeg', {doc: SPK1.doc, notes}).then(r => { SPK1.last = r; return r; }),
+  page: {finden: () => spk2Finden(SPK1.ui), ueberall: () => spk2Ueberall(SPK1.ui), alle: () => spk2Alle(SPK1.ui), verf: () => spk2VerfNoten(SPK1.ui), zu: (art, refs) => spk2Zu(SPK1.ui, art, refs),
+    sel: () => (SPK1.ui && SPK1.ui.n2sel) || [], box: (lid, id) => { const U = SPK1.ui, q = spk2Notes(U, lid).find(x => x.id === id); if (!q) return null; const b = spk2Box(U, q), r = U.mn.getBoundingClientRect(); return {x: r.left + (b.xa + b.xb) / 2, y: r.top + b.ya + b.h / 2, w: b.xb - b.xa, h: b.h}; }}
+};
 /* SPK2-END */
 /* ===== KF1-BEGIN (Paket KF1, Klang-Feinschliff Teil 1 aus der Ur-Roadmap §18 „Klang“; Xander: „Können wir davon noch was machen?“ → ja) =====
    Sechs Wünsche, jeder mit neutralem Standard (= genau der Klang von vorher, alte Projekte bitgleich):

@@ -99333,8 +99333,17 @@ function nx1VoxTk(vox) {
 }
 // c: Schneiden/Dehnen anbieten, wenn der Take im Gesang-Editor bearbeitet wurde (Anker an den Marken) oder schon so spielt
 function nx1HyOk(id) { const m = S.takes && S.takes[id]; return !!(m && ((m.warp && m.warp.mode === 'hybrid') || (m.marks && m.marks.some(k => isNum(k.an))))); }
-const nx1SegBtn = () => '<button data-m="hybrid" hidden>' + NX1_HY + '</button>';
-function nx1SegPaint(E, id) { const b = E.seg && E.seg.querySelector('button[data-m="hybrid"]'); if (!b) return; const on = nx1HyOk(id); if (b.hidden === on) b.hidden = !on; }
+// Platz wie bisher (zwei Knöpfe): bei Takes aus dem Gesang-Editor steht „Schnitt + Dehnen“ an der Stelle von „Scheiben“ (Scheiben schneidet nur;
+// Schnitt + Dehnen schneidet genauso am Einsatz und dehnt zusätzlich den Vokal – es ersetzt Scheiben). Spielt so ein Take noch 'slice', bleibt Scheiben.
+function nx1SegBtn() {
+  if (!document.getElementById('nx1css')) { const st = document.createElement('style'); st.id = 'nx1css'; st.textContent = '#wpSheet .wpmode button[data-m="hybrid"]{line-height:1.05;white-space:normal;padding:0 4px}'; document.head.appendChild(st); }
+  return '<button data-m="hybrid" hidden aria-label="' + NX1_HY + '">Schnitt +<br>Dehnen</button>';
+}
+function nx1SegPaint(E, id) {
+  const hb = E.seg && E.seg.querySelector('button[data-m="hybrid"]'), sb = E.seg && E.seg.querySelector('button[data-m="slice"]'); if (!hb || !sb) return;
+  const m = S.takes && S.takes[id], md = m && m.warp ? m.warp.mode : E.mode, on = nx1HyOk(id) && md !== 'slice';
+  if (hb.hidden === on) hb.hidden = !on; if (sb.hidden !== on) sb.hidden = on;
+}
 // d: Hauptfaden-Rückfall in Stücken (je Schritt ≤ 25 ms, dann setTimeout – Wiedergabe und Finger bleiben flüssig)
 function nx1Local(m) {
   return new Promise((ok, no) => {
@@ -99377,9 +99386,13 @@ function nx1ImpView(c, kind) {
   return null;
 }
 // Dehnen im Zeitkarten-Worker (eine Strecke, Faktor q), dann Int16 in Stücken
+// Abschnitte beginnen 5 ms vor jedem Viertel des erkannten Rasters; die ersten 30 ms jedes Abschnitts (Anschlag) bleiben bitgleich und
+// landen genau auf dem Raster des Projekt-Tempos – gedehnt wird dazwischen (wie „Dehnen“ der Gesangs-Marken)
 async function nx1ImpStretch(c, q) {
-  const n = c.x.length, L = n / c.sr;
-  let r = null; try { r = await nx1Call({op: 'stretch', x: c.x, sr: c.sr, src: [0, L], dst: [0, L * q], lock: 0}, 240000); } catch (e) { logErr(e); return null; }
+  const n = c.x.length, L = n / c.sr, sp = 60 / c.bpm, src = [0];
+  for (let t = c.t1 - Math.ceil(c.t1 / sp) * sp - .005; t < L - .1; t += sp) if (t > src[src.length - 1] + .05) src.push(+t.toFixed(6));
+  src.push(L);
+  let r = null; try { r = await nx1Call({op: 'stretch', x: c.x, sr: c.sr, src, dst: src.map(t => t * q), lock: .03}, 240000); } catch (e) { logErr(e); return null; }
   const y = r && r.y; if (!y || !y.length) return null;
   const pcm = new Int16Array(y.length);
   for (let i = 0; i < y.length; i += 262144) {

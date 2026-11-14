@@ -36,6 +36,8 @@ H += [
    "function spk1ToolUp(U, G) {\n  U.tmp = null;\n  if (G.tool === 'noten' && typeof spk2NoteUp === 'function') return spk2NoteUp(U, G);   // SPK2: Noten wählen\n"),
   ("  x.setLineDash([]);\n  const p = U.pos != null ? U.pos : U.cur, px = Math.round(spk1X(U, p)) + 0.5;\n",
    "  x.setLineDash([]);\n  if (typeof spk2OvDraw === 'function') spk2OvDraw(U, x);   // SPK2: Noten-Kästchen\n  const p = U.pos != null ? U.pos : U.cur, px = Math.round(spk1X(U, p)) + 0.5;\n"),
+  ("function spk1Got(U, r) { if (!r || !r.meta) return; SPK1.last = r; U.meta = r.meta; spk1UndoBtns(U, r); spk1Layers(U); }\n",
+   "function spk1Got(U, r) { if (!r || !r.meta) return; SPK1.last = r; U.meta = r.meta; spk1UndoBtns(U, r); spk1Layers(U); if (typeof spk2OvDraw === 'function') spk1Dirty(U, 'ov'); }   // SPK2: Noten neu zeichnen\n"),
   ("aehn: 'Beispiel ziehen oder antippen'}[k];\n",
    "aehn: 'Beispiel ziehen oder antippen', noten: 'Note antippen oder Kästchen ziehen'}[k];   // SPK2: Noten\n"),
 ]

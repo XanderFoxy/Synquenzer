@@ -66,10 +66,10 @@ try {
 
   /* ---- c: Marken-Editor zeigt Schneiden/Dehnen, Umschalten bleibt hybrid ---- */
   await run(p, async o => { wpOpen({t: o.st, s: 0}); await wait(500); }, r0);
-  const segS = () => run(p, () => [...EL.wpSheet.querySelectorAll('.wpmode button')].map(b => { const r = b.getBoundingClientRect(); return {m: b.dataset.m, t: b.textContent, vis: r.width > 0, on: b.getAttribute('aria-pressed') === 'true', w: Math.round(r.width), h: Math.round(r.height), fit: b.scrollWidth <= b.clientWidth + 1}; }));
+  const segS = () => run(p, () => [...EL.wpSheet.querySelectorAll('.wpmode button')].map(b => { const r = b.getBoundingClientRect(); return {m: b.dataset.m, t: b.textContent, vis: r.width > 0, on: b.getAttribute('aria-pressed') === 'true', w: Math.round(r.width), h: Math.round(r.height), fit: b.scrollWidth <= b.clientWidth + 1 && b.scrollHeight <= b.clientHeight + 1}; }));
   const s1 = await segS();
   const hy = s1.find(z => z.m === 'hybrid');
-  ok(hy && hy.vis && hy.on && s1.filter(z => z.on).length === 1, 'c Marken-Editor zeigt „' + (hy && hy.t) + '“ als gewählten Modus (nicht Dehnen/Scheiben)', JSON.stringify(s1));
+  ok(hy && hy.vis && hy.on && s1.filter(z => z.on).length === 1 && s1.filter(z => z.vis).map(z => z.m).join() === 'stretch,hybrid', 'c Marken-Editor zeigt „' + (hy && hy.t) + '“ als gewählten Modus (an der Stelle von Scheiben, zwei Knöpfe wie bisher)', JSON.stringify(s1));
   ok(s1.every(z => !z.vis || (z.h >= 44 && z.fit)), 'c Modus-Knöpfe 44 px hoch, Text passt (428 px)', s1.map(z => z.t + ' ' + z.w + '×' + z.h + (z.fit ? '' : ' ABGESCHNITTEN')).join(' · '));
   await p.screenshot({path: out + '/nx1-marken-hybrid-hochkant.png'});
   const tapMode = async m => { const c = await run(p, m => { const b = EL.wpSheet.querySelector('.wpmode button[data-m="' + m + '"]'); const r = b.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }, m); await ttap(cdp, c[0], c[1]); await sleep(300); };
@@ -89,7 +89,7 @@ try {
     await p.setViewportSize({width: w, height: h}); await sleep(600);
     await run(p, async o => { if (!WP.ed) wpOpen({t: o.st, s: 0}); await wait(500); }, r0);
     const sq = await segS();
-    ok(sq.filter(z => z.vis).length === 3 && sq.every(z => !z.vis || (z.h >= 44 && z.fit)), 'c Modus-Knöpfe quer ' + w + '×' + h + ': drei sichtbar, 44 px, Text passt', sq.map(z => z.t + ' ' + z.w + '×' + z.h).join(' · '));
+    ok(sq.filter(z => z.vis).length === 2 && sq.every(z => !z.vis || (z.h >= 44 && z.fit)), 'c Modus-Knöpfe quer ' + w + '×' + h + ': zwei sichtbar, 44 px, Text passt', sq.map(z => z.t + ' ' + z.w + '×' + z.h).join(' · '));
     await p.screenshot({path: out + '/nx1-marken-hybrid-' + w + 'x' + h + '.png'});
   }
   await p.setViewportSize({width: 428, height: 926}); await sleep(600);
@@ -106,7 +106,7 @@ try {
     closeRoll(); await wait(150);
     if (o.vox) vx1rOpen({vox: S.song.vox[0].id}); else { selectSlot(o.st, 0); vx1rOpen({t: o.st, s: 0}); }
     for (let i = 0; i < 100 && !(window.__vx1.ed() && window.__vx1.ed().n); i++) await wait(50);
-    ED.roll.cmd && 0; ED.roll.showPage && ED.roll.showPage(0); await wait(200); window.__nxT = []; ED.roll.render(); await wait(50);
+    const zb = [...ED.roll.el.bar.querySelectorAll('button')].find(b => b.title === 'Ganzer Clip / 1 Takt'); const f0 = ED.roll.fol(); if (zb && f0.W / f0.ppb < f0.L - .01) zb.click(); await wait(250); window.__nxT = []; ED.roll.render(); await wait(50);
     return {nums: [...new Set(window.__nxT.filter(t => /^\d+$/.test(t)))], fmt: ED.rollInfo && ED.rollInfo.textContent, head: EL.rollSheet.querySelector('.sh-title') && EL.rollSheet.querySelector('.sh-title').textContent};
   }, Object.assign({vox}, r0));
   const ra = await ruler(true), rb = await ruler(false);
@@ -213,7 +213,13 @@ try {
       for (let l = Math.floor(sr / 470) + 1; l < Math.ceil(sr / 410); l++) if (c[l] > best && c[l] >= c[l - 1] && c[l] >= c[l + 1]) { best = c[l]; bl = l; }
       const pp = .5 * (c[bl - 1] - c[bl + 1]) / (c[bl - 1] - 2 * c[bl] + c[bl + 1]); f.push(+(sr / (bl + (isFinite(pp) ? pp : 0))).toFixed(2));
     }
-    return {n: err.length, max: +Math.max(...err.map(Math.abs)).toFixed(2), mean: +(err.reduce((a, b) => a + b, 0) / err.length).toFixed(2), first: +err[0].toFixed(2), last: +err[err.length - 1].toFixed(2), f};
+    // dieselbe Messung am Original (vor dem Dehnen), an denselben Schlägen
+    const fr = []; { const X = IMP1.cur.x, sr0 = IMP1.cur.sr, sp0 = 60 / IMP1.cur.bpm, t1 = IMP1.cur.t1;
+      for (const k of [3, Math.floor(o.nb / 2), o.nb - 3]) { const a = Math.round((t1 + k * sp0 + .15) * sr0), N = Math.round(.12 * sr0); let best = 0, bl = 0; const c = [];
+        for (let l = Math.floor(sr0 / 470); l <= Math.ceil(sr0 / 410); l++) { let s = 0, e1 = 0, e2 = 0; for (let i = 0; i < N; i++) { s += X[a + i] * X[a + i + l]; e1 += X[a + i] ** 2; e2 += X[a + i + l] ** 2; } c[l] = s / Math.sqrt(e1 * e2 + 1e-12); }
+        for (let l = Math.floor(sr0 / 470) + 1; l < Math.ceil(sr0 / 410); l++) if (c[l] > best && c[l] >= c[l - 1] && c[l] >= c[l + 1]) { best = c[l]; bl = l; }
+        const pp = .5 * (c[bl - 1] - c[bl + 1]) / (c[bl - 1] - 2 * c[bl] + c[bl + 1]); fr.push(+(sr0 / (bl + (isFinite(pp) ? pp : 0))).toFixed(2)); } }
+    return {n: err.length, max: +Math.max(...err.map(Math.abs)).toFixed(2), mean: +(err.reduce((a, b) => a + b, 0) / err.length).toFixed(2), first: +err[0].toFixed(2), last: +err[err.length - 1].toFixed(2), f, fr, sr};
   };
   // e1: leeres Projekt, Lied 91,6 BPM → Projekt 92, gedehnt
   const e1 = await run(q, async o => {
@@ -239,7 +245,7 @@ try {
   const M1 = await run(q, (o) => { const MEAS = eval('(' + o.MEAS + ')'); const m = S.takes[o.take]; const t1 = m.imp.t1, first = Math.round(t1 / (60 / S.bpm)); return MEAS({take: o.take, first, nb: 96 - 1}); }, {MEAS: MEAS.toString(), take: e1.take});
   info('e1 Messung', JSON.stringify(M1));
   ok(M1.n >= 90 && M1.max <= 12 && Math.abs(M1.last - M1.first) <= 8, 'e jeder Schlag im gedehnten Take liegt auf dem 92-BPM-Raster (±12 ms, kein Weglaufen über 24 Takte)', 'max ' + M1.max + ' ms, erster ' + M1.first + ', letzter ' + M1.last + ' (ungedehnt wäre der letzte ' + Math.round(95 * (60 / 91.6 - 60 / 92) * 1000) + ' ms daneben)');
-  ok(M1.f.every(v => Math.abs(v - 440) <= .6), 'e Tonhöhe bleibt (Dauerton 440 Hz)', M1.f.join(' / ') + ' Hz (umgerechnet ohne Dehnen wäre ' + (440 / qx).toFixed(1) + ')');
+  ok(M1.f.every((v, i) => Math.abs(v - M1.fr[i]) <= .5), 'e Tonhöhe bleibt (Dauerton wie im Original gemessen)', 'gedehnt ' + M1.f.join(' / ') + ' Hz, Original ' + M1.fr.join(' / ') + ' Hz (umgerechnet statt gedehnt: +' + ((1 / qx - 1) * 100).toFixed(2) + ' %)');
   // f: Matrix-Zelle der Spur „Original“ zeigt die Welle (wie Gesang)
   await run(q, async () => { closePop(); UI.dirty.all = true; await wait(600); });
   const f1 = await run(q, (o) => { const cells = [...document.querySelectorAll('#clipGrid .slot')].filter(e => e.closest('[data-t="' + o.t + '"]') || e.dataset.t == o.t); const rowCells = cells.length ? cells : []; const sv = [...document.querySelectorAll('#clipGrid .slot .mini svg path')].map(p => (p.getAttribute('d') || '').split('M').length - 1);
@@ -262,7 +268,7 @@ try {
   info('e2', JSON.stringify(e2));
   ok(e2.tgt === 92 && e2.bpm === 92 && Math.abs(e2.len - Math.round(e2.nIn * 100 / 92)) <= 2 && e2.du === 1, 'e Projekt mit Audio (92): Lied 100 BPM bleibt bei 92, Audio auf 100/92 gedehnt, ein ↶', JSON.stringify({len: e2.len, imp: e2.imp}));
   const M2 = await run(q, (o) => { const MEAS = eval('(' + o.MEAS + ')'); const m = S.takes[o.take]; const first = Math.round(m.imp.t1 / (60 / S.bpm)); return MEAS({take: o.take, first, nb: 63}); }, {MEAS: MEAS.toString(), take: e2.take});
-  ok(M2.n >= 60 && M2.max <= 12 && M2.f.every(v => Math.abs(v - 440) <= .6), 'e 100 → 92: Schläge auf dem Raster (±12 ms), Tonhöhe bleibt 440 Hz', JSON.stringify(M2));
+  ok(M2.n >= 60 && M2.max <= 12 && M2.f.every((v, i) => Math.abs(v - M2.fr[i]) <= .5), 'e 100 → 92: Schläge auf dem Raster (±12 ms), Tonhöhe wie im Original', JSON.stringify(M2));
   // ↶ nimmt alles zurück (Stand vorher), ↶ noch einmal = leeres Projekt wie vorher
   const e3 = await run(q, async o => { undo(); await wait(150); const a = S.bpm; undo(); await wait(150); return {a, bpm: S.bpm, same: JSON.stringify(sx14State()) === o.s0}; }, {s0: e1.s0});
   ok(e3.a === 92 && e3.same, 'e ↶ ↶: Stand wie vor beiden Importen (sx14State gleich)', JSON.stringify({a: e3.a, bpm: e3.bpm}));
