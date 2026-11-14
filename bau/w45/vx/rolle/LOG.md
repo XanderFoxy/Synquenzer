@@ -9,3 +9,5 @@
 - 13:02 Prüf-Lauf 2: vx1r-kern-test.mjs 29/29 OK (Anker = lautestes Sample im ersten Gipfel ≤120 ms an der gerenderten Quelle; gehörter Spitzenwert ±0,1 ms auf 1/8; Sprung an Schnitten ≤ Vokal-Sprung der Quelle; Container enthält an/vd/hybrid)
 - 13:04 NOTES.md Schritt 2 geschrieben; Leistung 60-s-Take: vxa 330 ms, hyb 481 ms (Hauptfaden)
 - 13:05 Befund: wpDetect setzt Marken auf den Vokal-Beginn (Konsonant gehört sonst zum Vorgänger) → Anlauf (lead) je Marke: stimmloser Lauf direkt vor der Marke wird beim ersten Bearbeiten zum Stück genommen
+- 13:06 Schritt 2 FERTIG: vx1r-kern-test.mjs 34/34 (inkl. erkannte Marken: Stück beginnt am Konsonanten 0–1 ms, Silben aus Songtext, Container mit WAV); topdefs doppelt 0/Syntax 0, dupkeys 0, smoke errors [], MS 2000 1×, live: true 1×, Marken 15/15 wie Basis; VERSION/CHANGES unberührt. Weiter: Schritt 3 Editor (NOTES.md 'Offen')
+- 13:07 Schritt 3 (Editor) begonnen: LESEN/LOG/NOTES gelesen

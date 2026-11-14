@@ -24,12 +24,15 @@ Definitionen:
   (über Pegelschwelle). vb = Beginn des gesungenen Laufs, in dem der Anker liegt. uv = stimmlose Läufe im Stück.
 - Tonhöhe m = Median der G2-f0 (VS2) im Stück; Rückfall eigene f0 (kleinste Periode nahe am Bestwert).
 - Silbe tx = g9LabelsOf (G9) bzw. wpLyr (Songtext) an Index k; '·'/'–' = leer.
+- Anlauf (lead): wpDetect setzt die Marke oft an den Vokal-Beginn. Liegt direkt davor ein stimmloser Lauf (≤ 150 ms, nicht vor
+  Vorgänger + 40 ms), beginnt das Stück dort: in vx1rPieces sofort, gespeichert beim ersten Bearbeiten (Marke rückt auf den
+  Konsonanten, an wächst um denselben Betrag; ein Undo). Test: erkannte Stücke beginnen 0–1 ms am Konsonanten.
 - Hybrid (Op 'hyb'): Schnitt ≤ 4 ms (WP_LEAD) vor der Marke am Nulldurchgang; fest (bitgleich): Schnitt … Anker + 20 ms.
   Unveränderte Nachbarn nahtlos. Platz kleiner → Ausklang bitgleich bis zur Ausblende, Ausblende 10–30 ms gleiche Leistung,
   endet im Vorlauf des Nachfolgers (dort dessen Einblende ≤ 6 ms). Platz größer → Vokal-Teil per VSX.stretch (WSOLA) bis 1,5×,
   Inhalt reicht in den Vorlauf des Nachfolgers (Überblendung); darüber Lücke mit Ausblende 10–30 ms. Länge = Take-Länge.
 
-Messung (vx1r-kern-test.mjs, synthetischer Gesang 6 Silben, 120 BPM, 1/8): 30/30 OK – Anker = lautestes Sample (≤ 0,13 ms),
+Messung (vx1r-kern-test.mjs, synthetischer Gesang 6 Silben, 120 BPM, 1/8): 34/34 OK – Anker = lautestes Sample (≤ 0,13 ms),
 Anker-Ziel auf 1/8 (≤ 0,01 ms), gehörter Spitzenwert auf dem Taktstrich (≤ 0,1 ms), Einsatz bitgleich, links nicht gestaucht
 (bitgleich bis zur Ausblende, 376–378 ms je Stück), max. Sprung an jeder Grenze ≤ Sprung im Vokal der Quelle (z. B. 0,025/0,029),
 Dehnen rechts 1,17× ohne Lücke, Hauptfaden = Worker bitgleich, Undo je Aktion, Container enthält an/vd/hybrid, alte Takes gleich.
