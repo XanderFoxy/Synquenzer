@@ -28794,6 +28794,7 @@ function normTrack(t, def, pk, warns) {
   o.clips = emptyClips().map((_, s) => normClip(cl[s], def.kind, pk));
   if (typeof t.uid === 'string' && UID_RE.test(t.uid)) o.uid = t.uid;
   if (def.kind === 'synth' && t.stimme === true) o.stimme = true;  // VS3: STIMME-Spur (normalizeProject: nur eine, Index ≥ 6)
+  if (def.kind === 'synth' && t.orig === true && !o.stimme) o.orig = true;   // IMP1: Spur „Original“ (importiertes Audio über die Take-Wiedergabe)
   if (o.stimme) { const g = g4Norm(t.gfx); if (g) o.gfx = g; }    // G4: Effekte der STIMME-Spur
   if (o.stimme && t.chor) { const ch = g6pNormLanes(t.chor); if (ch) o.chor = ch; }   // G6+a: Chor-Spuren (nur an der STIMME-Spur)
   { const mx = mixaNormMix(t.mix); if (mx) o.mix = mx; }          // MIX-A: Mix-Einschub der Spur (fehlt = nichts)
@@ -33262,6 +33263,7 @@ function scheduleTrack(i, from, to, late) {
   const s = R.slot[i]; if (s < 0) { if (BMC.act[i]) bmcSched(i, null, from, to, late); return; }
   const tr = S.tracks[i], oc = ownPlaying(i), clip = oc || tr.clips[s];
   if (BMC.act[i] || (clip && clip.cv && bmcIs(i))) bmcSched(i, tr.mute || !bmcIs(i) ? null : clip, from, to, late);   // BM8: Bend · Rad · Druck des Clips
+  if (tr.orig) { if (clip && !tr.mute) tkSched(i, clip, from, to, late, oc ? R.own[i] : null); return; }   // IMP1: Spur „Original“ = Audio wie STIMME
   if (tr.stimme) { if (clip && (!tr.mute || vx1ChorOn(clip.audio))) tkSched(i, clip, from, to, late, oc ? R.own[i] : null); return; }   /* VX1-C: stumm = nur der Lead, der Chor klingt weiter */   // VS3: STIMME = Audio
   if (!clip || tr.mute || !clip.notes.length) return;
   const mu = takeMute(i);                                        // V2d′ (K2-21, 7.2): the target track's old notes are silent during the take
@@ -59311,7 +59313,7 @@ function tkPlace(i, buf, a, A, B, key, vox, lo) {
   if (!vpReady(o.buf)) return;                                     // VS-P: noch nicht gemessen – setzt danach ein (wie ein Take, der lädt)
   TK.reg.add(key);
   const X = TK.xf, jt = X ? X.t : now + .004;
-  const pieces = vox ? tkUnmuted(o.A, o.B) : tkUncovered(o.A, o.B);
+  const pieces = vox ? tkUnmuted(o.A, o.B) : S.tracks[i] && S.tracks[i].orig ? [[o.A, o.B]] : tkUncovered(o.A, o.B);   // IMP1: „Original“ schweigt nicht unter der Song-Stimme
   for (const [pa0, pb] of pieces) {
     const pa = lo != null ? Math.max(pa0, lo) : pa0; if (pb <= pa + 1e-6) continue;
     let t0 = b2t(pa); const t1 = b2t(pb); let off = a.in + (pa - o.A) * sp, joined = pa > o.A + 1e-6;
@@ -75242,6 +75244,7 @@ async function ggbImportBuf(ab, o) {
 const ggbReadFile = f => (f.arrayBuffer ? f.arrayBuffer() : new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(r.error); r.readAsArrayBuffer(f); }));
 // Dateiauswahl (im Tipp selbst geöffnet: Safari braucht die Geste)
 function ggbPick() {
+  if (typeof imp1Pick === 'function') { imp1Pick('gesang'); return; }   // IMP1: ein Wähler für alle Dateien (Audio → wie bisher)
   let inp = GGB.inp;
   if (!inp || !inp.isConnected) {
     inp = GGB.inp = document.createElement('input'); inp.type = 'file'; inp.id = 'ggbIn'; inp.accept = GGB_ACCEPT; inp.hidden = true;
@@ -75792,7 +75795,7 @@ function va1Html() {
   if (!song) h += '<div class="small">Audio und Video brauchen einen Song – erst ● SONG.</div>';
   const tg = va1MidiTarget(), mt = va1MidiTracks();
   h += '<h5>MIDI</h5><div class="va1g">' + B('midiall', 'Ganzer Song', 'alle Spuren · .mid', song && !busy) +
-    B('midiin', 'MIDI importieren', tg >= 0 ? 'in neue Clips · ' + S.tracks[tg].name : 'keine passende Spur', tg >= 0 && !busy) + '</div>' +
+    B('midiin', 'Audio/MIDI importieren', 'Tempo · Taktart · Teile', !busy) + '</div>' +   // IMP1: ein Import-Weg
     '<div class="va1tr" role="group" aria-label="Eine Spur als MIDI"><span class="small">Eine Spur:</span>' + mt.map(i => `<button class="mbtn rb" data-va="midi" data-t="${i}"${busy ? ' disabled' : ''}>${esc(S.tracks[i].name)}</button>`).join('') + '</div>';
   h += '<h5>Video</h5><div class="va1g">' + B('v916', 'Video 9:16', 'hochkant · mit Ton', song && !busy) + B('v169', 'Video 16:9', 'quer · mit Ton', song && !busy) + '</div>';
   const inv = va1Inventory(), nM = inv.takes.filter(x => x.miss).length, sec = inv.takes.reduce((a, x) => a + x.sec, 0), n = inv.takes.length;
@@ -75825,7 +75828,7 @@ function va1Tap(b) {
   if (VA1_KIND[a]) { va1Run(a); return; }
   if (a === 'midiall') { va1MidiGo(null); return; }
   if (a === 'midi') { va1MidiGo(+b.dataset.t); return; }
-  if (a === 'midiin') { va1MidiPick(); return; }
+  if (a === 'midiin') { closePop(); imp1Sheet(); return; }   // IMP1: ein Import-Weg (Audio + MIDI)
   if (a === 'v916' || a === 'v169') { vvPrefSet('fmt', a === 'v916' ? '9:16' : '16:9'); closePop(); vvOpen(); return; }
   if (a === 'box') { va1BoxSave(); return; }
   if (a === 'boxin') { closePop(); EL.fileIn.value = ''; EL.fileIn.click(); }
@@ -97075,6 +97078,404 @@ async function imp1Analyse(src, sr, o, prog) {
   return r;
 }
 window.__imp1 = {analyse: (src, sr, o) => imp1Analyse(src, sr, o), last: () => IMP1.last, core: () => imp1Core()};   // IMP1: Test-Zugang
+/* ---------- IMP1 Schritt 2: ein Import-Weg (Audio + MIDI), das Import-Blatt, die Ziele, Loop-Klammern ----------
+   Ein Wähler für alle Dateien (ohne accept: iOS graut .mid sonst aus): MIDI → va1MidiImport (+ Tempo/Taktart aus der Datei, wenn das
+   Projekt noch leer ist), Audio → Blatt. „Gesang importieren“ (GGB) nutzt denselben Wähler und legt Audio wie bisher ab.
+   Blatt: Tempo bekannt (vorweg, leer = erkennen) → Datei → Analyse im Worker → Wellenform (Canvas) mit Takt-Raster, farbigen Teilen,
+   „1“-Marke (ziehen) und Loop-Klammern (unten ziehen, Takt-Raster). Ziele: In Szenen zerschneiden │ Als eine Spur │ Als Gesang;
+   Loop → Als Loop in die Matrix. Audio liegt als Take (IDB, Projekt-Container) und spielt über die Take-Wiedergabe (Spur „Original“,
+   track.orig). Jede Aktion = ein ↶ (ganzer Stand 'sx14'). */
+const IMP1_TS = ['2/4', '3/4', '4/4', '6/8', '12/8'], IMP1_PC = ['amber', 't1', 't2', 't3', 't4', 't5', 't6', 't8'];
+tkExt().take.push((m, o) => { const x = m && m.imp; if (x && isNum(x.bpm) && isNum(x.t1)) o.imp = {bpm: +clamp(x.bpm, 30, 300).toFixed(3), ts: IMP1_TS.includes(x.ts) ? x.ts : '4/4', t1: +clamp(x.t1, 0, 3600).toFixed(4)}; });   // IMP1: Raster am Take
+const imp1Pop = () => (UI.pop && UI.pop.name === 'imp1' ? UI.pop.el : null);
+function imp1Pick(hint) {
+  let inp = IMP1.inp;
+  if (!inp || !inp.isConnected) {
+    inp = IMP1.inp = document.createElement('input'); inp.type = 'file'; inp.id = 'imp1In'; inp.hidden = true;   // ohne accept: iOS graut .mid sonst aus
+    inp.addEventListener('change', () => { const f = inp.files && inp.files[0]; if (!f) return; const h = IMP1.hint; ggbReadFile(f).then(ab => { inp.value = ''; return imp1File(ab, f.name || 'Import', h); }, () => { inp.value = ''; toast('Datei nicht lesbar'); }); });
+    document.body.appendChild(inp);
+  }
+  IMP1.hint = hint || null; inp.value = ''; inp.click();
+}
+const imp1IsMidi = ab => { const u = new Uint8Array(ab, 0, Math.min(4, ab.byteLength)); return u.length === 4 && u[0] === 77 && u[1] === 84 && u[2] === 104 && u[3] === 100; };
+// Tempo (FF 51) und Taktart (FF 58) – das erste Vorkommen
+function imp1MidiMeta(u8) {
+  let bpm = null, ts = null;
+  for (let i = 14; i + 6 < u8.length && (bpm == null || ts == null); i++) {
+    if (u8[i] !== 0xFF) continue;
+    if (bpm == null && u8[i + 1] === 0x51 && u8[i + 2] === 3) { const us = (u8[i + 3] << 16) | (u8[i + 4] << 8) | u8[i + 5]; if (us > 0) bpm = 6e7 / us; }
+    else if (ts == null && u8[i + 1] === 0x58 && u8[i + 2] === 4) { const t = u8[i + 3] + '/' + Math.pow(2, u8[i + 4]); if (tsDefs()[t]) ts = t; }
+  }
+  return {bpm, ts};
+}
+const imp1Empty = () => !S.tracks.some(t => t.clips.some(c => c && ((c.notes && c.notes.length) || c.audio))) && !(S.song && S.song.bars);
+function imp1Busy() {
+  if (rec.state !== 'off' || R.songRec) { toast('Erst Aufnahme beenden'); return true; }
+  if (GGB.busy || GGB.imp || VV.off) { toast('Erst fertig rechnen lassen'); return true; }
+  return false;
+}
+// ein Schritt für die ganze Aktion: Stand vorher → fn() → ein ↶ (eigene Einträge der benutzten Wege fallen weg)
+function imp1Step(label, fn) {
+  const before = sx14State(), n0 = UNDO.length;
+  let r; try { r = fn(); } catch (e) { logErr(e); r = null; }
+  if (!r) { if (UNDO.length > n0) { UNDO.length = n0; edUndoBtns(); } return null; }
+  UNDO.length = n0; undoPush({kind: 'sx14', before, label});
+  markDirty(); UI.dirty.all = true; songChanged(); return r;
+}
+function imp1Midi(u8, name) {
+  const m = imp1MidiMeta(u8), known = imp1Known(), bpm = known || m.bpm, empty = imp1Empty();
+  const r = imp1Step('MIDI importiert', () => {
+    if (empty && bpm) setBpm(bpm);
+    if (empty && m.ts) { const t = tsNorm(m.ts); if (t) S.ts = t; else delete S.ts; tkBump(); }
+    return va1MidiImport(u8);
+  });
+  if (r && empty && (bpm || m.ts)) toast('MIDI · ' + (name || '') + ' · ' + Math.round(S.bpm) + ' BPM · ' + (S.ts || '4/4'), {label: '↶ Rückgängig', fn: () => undo()});
+  return r;
+}
+async function imp1File(ab, name, hint) {
+  if (imp1IsMidi(ab)) { const r = imp1Midi(new Uint8Array(ab), name); if (UI.pop && UI.pop.name === 'va1') va1Paint(); return r; }
+  if (hint === 'gesang') return ggbImportBuf(ab, {name: String(name).replace(/\.[^.]+$/, '')});   // GGB wie bisher
+  if (!tkAudioOk()) { toast('Audio nur auf der eigenen Seite'); return null; }
+  if (imp1Busy()) return null;
+  const c = IMP1.cur = {name: String(name).replace(/\.[^.]+$/, '').slice(0, 40) || 'Import', st: 'lesen', p: 0, known: imp1Known(), sel: 0, loop: null, made: null};
+  if (!imp1Pop()) imp1Sheet(); else imp1Paint();
+  let buf = null;
+  try { buf = await ggbDecode(ab); } catch (e) { buf = null; }
+  if (IMP1.cur !== c) return null;
+  if (!buf) { c.st = 'fehler'; c.err = 'Datei nicht lesbar – bitte MP3, WAV, M4A, AIFF, CAF oder MID'; imp1Paint(); return null; }
+  c.sr = buf.sampleRate; c.dur = buf.length / buf.sampleRate;
+  c.pcm = await ggbMono(buf);
+  c.x = await imp1Mono(buf); c.peaks = imp1Peaks(c.x, 1200);
+  c.st = 'analyse'; imp1Paint();
+  return imp1Run(c);
+}
+// Tempo bekannt (Feld im Blatt), sonst null
+function imp1Known() { const p = imp1Pop(), i = p && p.querySelector('.imp1bpmin'), v = i ? parseFloat(String(i.value).replace(',', '.')) : NaN; return v >= 40 && v <= 240 ? v : (IMP1.known || null); }
+async function imp1Run(c) {
+  let r = null;
+  try { r = await imp1Analyse(c.x.slice(), c.sr, c.known ? {bpm: c.known} : {}, p => { c.p = p; imp1Prog(); }); } catch (e) { r = null; }
+  if (IMP1.cur !== c) return null;
+  if (!r || !r.ok) { c.st = 'fehler'; c.err = r && r.err === 'still' ? 'In der Datei ist nichts zu hören' : r && r.err === 'zu kurz' ? 'Die Datei ist zu kurz' : 'Analyse fehlgeschlagen'; imp1Paint(); return null; }
+  c.r = r; c.bpm = r.bpm; c.ts = IMP1_TS.includes(r.ts) ? r.ts : '4/4'; c.t1 = r.t1;
+  c.parts = r.teile.map(p => ({name: p.name, a: p.a, b: p.b, grp: p.grp}));
+  if (!c.parts.length) c.parts = [{name: 'Teil 1', a: 0, b: Math.max(1, imp1Geo(c).nb), grp: 0}];
+  c.st = 'fertig'; c.sel = 0; imp1Paint();
+  return r;
+}
+function imp1Peaks(x, n) {
+  const pk = new Float32Array(n * 2), L = x.length, st = L / n;
+  for (let k = 0; k < n; k++) { const a = Math.floor(k * st), b = Math.min(L, Math.floor((k + 1) * st)); let lo = 0, hi = 0; for (let i = a; i < b; i += 4) { const v = x[i]; if (v < lo) lo = v; else if (v > hi) hi = v; } pk[2 * k] = lo; pk[2 * k + 1] = hi; }
+  return pk;
+}
+// Raster: Takt-Länge, Vorlauf-Takte k vor der „1“, Song-Takt 0 bei org (s), nb Takte bis zum Ende
+function imp1Geo(c) {
+  const tb = tsBeats(tsNorm(c.ts)), sp = 60 / c.bpm, takt = tb * sp;
+  const k = c.t1 > .03 ? Math.ceil((c.t1 - .03) / takt) : 0, org = c.t1 - k * takt;
+  return {tb, sp, takt, k, org, nb: Math.max(1, Math.ceil((c.dur - org) / takt - .02))};
+}
+// Teile in Song-Takten [A, B): der erste ab 0 (Auftakt), der letzte bis zum Ende
+function imp1Parts(c) {
+  const G = imp1Geo(c), out = [];
+  for (const p of c.parts) { const A = clamp(p.a + G.k, 0, G.nb), B = clamp(p.b + G.k, 0, G.nb); if (B > A) out.push({name: p.name, A, B, grp: p.grp}); }
+  if (!out.length) out.push({name: 'Teil 1', A: 0, B: G.nb, grp: 0});
+  out[0].A = 0; out[out.length - 1].B = G.nb;
+  for (let i = 1; i < out.length; i++) if (out[i].A !== out[i - 1].B) out[i].A = out[i - 1].B;
+  return out.filter(p => p.B > p.A);
+}
+// Tempo/Taktart geändert: Teile auf das neue Raster (gleiche Zeit)
+function imp1Regrid(c, bpm, ts) {
+  const g0 = imp1Geo(c); c.bpm = clamp(+(+bpm).toFixed(2), 40, 240); if (ts) c.ts = ts;
+  const g1 = imp1Geo(c), f = g0.takt / g1.takt;
+  for (const p of c.parts) { p.a = Math.round(p.a * f); p.b = Math.round(p.b * f); }
+  c.parts = c.parts.filter(p => p.b > p.a);
+  if (c.loop) { c.loop = [Math.round(c.loop[0] * f), Math.max(Math.round(c.loop[0] * f) + 1, Math.round(c.loop[1] * f))]; }
+}
+const imp1Col = (() => { const m = {}; return k => m[k] || (m[k] = (getComputedStyle(document.documentElement).getPropertyValue('--' + k) || '').trim() || '#ffb22e'); })();
+const imp1PCol = c => p => imp1Col(IMP1_PC[(p.grp | 0) % IMP1_PC.length]);
+function imp1Css() {
+  if (IMP1.css) return; IMP1.css = true;
+  const s = document.createElement('style'); s.id = 'imp1Css';
+  s.textContent = [
+    '.pop.imp1{width:min(440px,calc(100vw - 16px));box-sizing:border-box}',
+    '.imp1 h5{margin:12px 0 6px;font:700 11px/1 var(--font-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim)}',
+    '.imp1 .imp1st{min-height:22px;font:600 12px/1.3 var(--font-ui);color:var(--text)}',
+    '.imp1 .imp1st.warn{color:var(--amber,#ffb22e)}',
+    '.imp1 .imp1bar{height:5px;border-radius:3px;background:var(--line);overflow:hidden;margin:4px 0}',
+    '.imp1 .imp1bar i{display:block;height:100%;background:var(--amber,#ffb22e);transform-origin:0 50%}',
+    '.imp1 .imp1r{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:6px}',
+    '.imp1 .imp1r .mbtn{min-width:44px;min-height:44px;height:auto;margin:0;padding:0 10px;flex:0 1 auto}',
+    '.imp1 .imp1r .mbtn.on{border-color:var(--amber,#ffb22e);color:var(--amber,#ffb22e)}',
+    '.imp1 .imp1r .lbl{font:600 12px/1 var(--font-ui);color:var(--text-dim);min-width:52px}',
+    '.imp1 input.imp1in{width:76px;min-height:44px;box-sizing:border-box;padding:0 8px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--text);font:600 15px/1 var(--font-ui)}',
+    '.imp1 input.imp1nm{flex:1 1 120px;width:auto}',
+    '.imp1 .imp1bpm{min-width:64px;text-align:center;font:700 16px/1 var(--font-ui);color:var(--text)}',
+    '.imp1 canvas.imp1cv{display:block;width:100%;height:150px;border:1px solid var(--line);border-radius:8px;touch-action:none;margin-top:6px}',
+    '.imp1 .imp1g{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}',
+    '.imp1 .imp1g .mbtn{width:100%;min-height:52px;height:auto;margin:0;padding:6px 8px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:3px;text-align:left;line-height:1.15}',
+    '.imp1 .mbtn small{display:block;font:500 11px/1.2 var(--font-ui);letter-spacing:0;color:var(--text-dim);text-transform:none}',
+    '.imp1 .imp1pt{display:flex;gap:6px;overflow-x:auto;padding:2px 0}',
+    '.imp1 .imp1pt .mbtn{flex:none;min-height:44px;margin:0;padding:0 10px;border-left-width:4px}',
+    '.imp1 .imp1pt .mbtn.on{background:var(--line)}'
+  ].join('\n');
+  document.head.appendChild(s);
+}
+function imp1Html() {
+  const c = IMP1.cur, B = (a, t, s, ok, cls, more) => `<button class="mbtn rb${cls ? ' ' + cls : ''}" data-i="${a}"${more || ''}${ok === false ? ' disabled' : ''}>${s != null ? '<b>' + esc(t) + '</b><small>' + esc(s) + '</small>' : esc(t)}</button>`;
+  const kn = IMP1.known ? String(IMP1.known).replace('.', ',') : '';
+  let h = '';
+  const st = !c ? 'Audio (MP3, WAV, M4A, AIFF, CAF) oder MIDI wählen. Tempo bekannt? Vorher eintragen – sonst wird es erkannt.'
+    : c.st === 'lesen' ? c.name + ' · wird gelesen …' : c.st === 'analyse' ? c.name + ' · Tempo, Taktart und Teile werden erkannt …'
+    : c.st === 'fehler' ? c.err : c.name + ' · ' + va1Mmss(c.dur) + (c.made ? ' · ' + c.made : '');
+  h += `<div class="imp1st${c && c.st === 'fehler' ? ' warn' : ''}" role="status">${esc(st)}</div>`;
+  if (c && c.st === 'analyse') h += `<div class="imp1bar"><i style="transform:scaleX(${(c.p || 0).toFixed(3)})"></i></div>`;
+  h += `<div class="imp1r"><span class="lbl">Tempo bekannt</span><input class="imp1in imp1bpmin" type="text" inputmode="decimal" placeholder="—" value="${esc(kn)}" aria-label="Tempo bekannt in BPM"><span class="lbl">BPM</span>` +
+    B('pick', 'Datei wählen', null, !(c && (c.st === 'lesen' || c.st === 'analyse')), 'go') + (c && c.x && c.st !== 'analyse' ? B('again', 'Erkennen') : '') + '</div>';
+  if (!c || c.st !== 'fertig') return h;
+  const G = imp1Geo(c), P = imp1Parts(c), r = c.r;
+  if (r.quelle === 'gesang' || r.frage) {
+    const al = (r.alt || []).filter(v => v >= 40 && v <= 240);
+    h += `<div class="imp1st warn">${esc((r.quelle === 'gesang' ? 'Aus Gesang geschätzt' : 'Tempo schwankt') + ' – ' + Math.round(c.bpm) + (al.length ? ' oder ' + al.map(Math.round).join(' / ') : '') + '?')}</div>` +
+      '<div class="imp1r">' + [c.bpm].concat(al).map(v => B('setbpm', Math.round(v) + ' BPM', null, true, Math.abs(v - c.bpm) < .01 ? 'on' : '', ` data-v="${v}"`)).join('') + '</div>';
+  }
+  h += '<canvas class="imp1cv" aria-label="Wellenform mit Takt-Raster, Teilen, 1-Marke und Loop-Klammern"></canvas>';
+  h += `<div class="imp1r"><span class="lbl">Tempo</span>${B('bpm-', '−')}<span class="imp1bpm">${esc(String(+c.bpm.toFixed(2)).replace('.', ','))}</span>${B('bpm+', '+')}${B('half', '½×')}${B('dbl', '2×')}${B('tap', 'Tippen')}</div>`;
+  h += '<div class="imp1r"><span class="lbl">Taktart</span>' + IMP1_TS.map(t => B('ts', t, null, true, t === c.ts ? 'on' : '', ` data-v="${t}"`)).join('') + '</div>';
+  h += '<h5>Teile</h5><div class="imp1pt pan-x">' + P.map((p, i) => B('part', p.name + ' · ' + (p.B - p.A), null, true, i === c.sel ? 'on' : '', ` data-k="${i}" style="border-left-color:${imp1PCol(c)(p)}"`)).join('') + '</div>';
+  const sp = P[Math.min(c.sel, P.length - 1)];
+  h += `<div class="imp1r"><input class="imp1in imp1nm" type="text" maxlength="12" value="${esc(sp ? sp.name : '')}" aria-label="Name des Teils">` + B('merge', 'Zusammen ▸', null, c.sel < P.length - 1) + B('split', 'Teilen', null, !!sp && sp.B - sp.A >= 2) + '</div>';
+  h += '<h5>Ziel</h5><div class="imp1g">' + B('scenes', 'In Szenen zerschneiden', 'jeder Teil eine Szene · Song-Ablauf') + B('track', 'Als eine Spur', 'ganzes Audio im Song') + B('vox', 'Als Gesang', 'STIMME-Spur · Takes') + '</div>';
+  const lp = c.loop;
+  h += `<h5>Loop</h5><div class="imp1r"><span class="imp1st imp1lp">${esc(lp ? 'Takt ' + (lp[0] + 1) + '–' + lp[1] + ' (' + (lp[1] - lp[0]) + ' Takte)' : 'Unten in der Wellenform ziehen: zwei Klammern auf dem Takt-Raster')}</span>` + B('loop', 'Als Loop in die Matrix', null, !!lp) + '</div>';
+  return h;
+}
+function imp1Paint() {
+  const p = imp1Pop(); if (!p) return;
+  const bd = p.querySelector(':scope > .imp1-bd'); if (!bd) return;
+  const fi = document.activeElement && bd.contains(document.activeElement) ? document.activeElement.className : '';
+  const sc = p.scrollTop; bd.innerHTML = imp1Html(); if (p.scrollTop !== sc) p.scrollTop = sc;
+  IMP1.cv = bd.querySelector('canvas.imp1cv'); if (IMP1.cv) imp1Draw();
+  if (fi && /imp1in/.test(fi)) { const x = bd.querySelector('input.' + fi.split(' ').pop()); if (x) try { x.focus({preventScroll: true}); } catch (e) {} }
+  popFit(p);
+}
+function imp1Prog() { const p = imp1Pop(), i = p && p.querySelector('.imp1bar i'); if (i && IMP1.cur) i.style.transform = 'scaleX(' + (IMP1.cur.p || 0).toFixed(3) + ')'; }
+function imp1Sheet() {
+  imp1Css();
+  const p = openPop(EL.top, q => {
+    q.classList.add('imp1'); guardTouch(q);
+    const bd = el('div', 'imp1-bd'); bd.innerHTML = imp1Html(); q.appendChild(bd);
+    onTap(q, b => imp1Tap(b), 'button[data-i]');
+    q.addEventListener('change', e => { const t = e.target; if (t.classList.contains('imp1bpmin')) { const v = parseFloat(String(t.value).replace(',', '.')); IMP1.known = v >= 40 && v <= 240 ? v : null; } else if (t.classList.contains('imp1nm')) imp1Rename(t.value); });
+    q.addEventListener('pointerdown', e => { if (e.target && e.target.classList && e.target.classList.contains('imp1cv')) imp1Down(e); });
+  }, {name: 'imp1', sheet: {title: () => 'Audio/MIDI importieren'}, onClose: () => { IMP1.cv = null; }});
+  IMP1.cv = p.querySelector('canvas.imp1cv'); if (IMP1.cv) imp1Draw();
+  return p;
+}
+function imp1Tap(b) {
+  const a = b.dataset.i, c = IMP1.cur;
+  if (a === 'pick') { IMP1.known = imp1Known(); imp1Pick(null); return; }
+  if (!c || !c.x) return;
+  if (a === 'again') { c.known = IMP1.known = imp1Known(); c.st = 'analyse'; c.p = 0; imp1Paint(); imp1Run(c); return; }
+  if (c.st !== 'fertig') return;
+  if (a === 'setbpm') { imp1Regrid(c, +b.dataset.v); imp1Paint(); return; }
+  if (a === 'bpm-' || a === 'bpm+') { imp1Regrid(c, Math.round(c.bpm) + (a === 'bpm+' ? 1 : -1)); imp1Paint(); return; }
+  if (a === 'half' || a === 'dbl') { const v = a === 'half' ? c.bpm / 2 : c.bpm * 2; if (v < 40 || v > 240) { toast('Tempo 40–240 BPM'); return; } imp1Regrid(c, v); imp1Paint(); return; }
+  if (a === 'tap') { imp1TapTempo(c); return; }
+  if (a === 'ts') { imp1Regrid(c, c.bpm, b.dataset.v); imp1Paint(); return; }
+  if (a === 'part') { c.sel = +b.dataset.k; imp1Paint(); return; }
+  if (a === 'merge') { imp1Merge(c); return; }
+  if (a === 'split') { imp1Split(c); return; }
+  if (a === 'scenes' || a === 'track' || a === 'vox' || a === 'loop') { imp1Place(a); return; }
+}
+function imp1TapTempo(c) {
+  const now = performance.now(), T = IMP1.taps = (IMP1.taps || []).filter(t => now - t < 3000); T.push(now);
+  if (T.length < 3) { toast('Weiter tippen …'); return; }
+  const d = []; for (let i = 1; i < T.length; i++) d.push(T[i] - T[i - 1]); d.sort((x, y) => x - y);
+  let v = 60000 / d[d.length >> 1]; while (v < 60) v *= 2; while (v > 180) v /= 2;
+  imp1Regrid(c, Math.round(v)); imp1Paint();
+}
+// Teile bearbeiten (im Blatt, vor dem Ablegen)
+function imp1Rename(v) {
+  const c = IMP1.cur; if (!c || !c.parts) return; const P = imp1Parts(c), sp = P[c.sel]; if (!sp) return;
+  const n = String(v || '').trim().slice(0, 12); if (!n || !PART_NAME_RE.test(n)) { toast('Name: Buchstaben, Ziffern, bis 12 Zeichen'); imp1Paint(); return; }
+  c.parts[imp1PartAt(c, sp.A)].name = n; imp1Paint();
+}
+function imp1PartAt(c, A) { const k = imp1Geo(c).k; let best = 0; c.parts.forEach((p, i) => { if (p.a + k <= A) best = i; }); return best; }
+function imp1Merge(c) {
+  const P = imp1Parts(c); if (c.sel >= P.length - 1) return;
+  const i = imp1PartAt(c, P[c.sel].A), j = imp1PartAt(c, P[c.sel + 1].A); if (j <= i) return;
+  c.parts[i].b = c.parts[j].b; c.parts.splice(j, 1); imp1Paint();
+}
+function imp1Split(c) {
+  const P = imp1Parts(c), sp = P[c.sel]; if (!sp || sp.B - sp.A < 2) return;
+  const L = sp.B - sp.A, m = sp.A + (L >= 8 ? Math.round(L / 2 / 4) * 4 || 4 : Math.floor(L / 2)), k = imp1Geo(c).k, i = imp1PartAt(c, sp.A), p = c.parts[i];
+  const q = {name: p.name.replace(/\s*[a-z]$/, '') + ' b', a: m - k, b: p.b, grp: p.grp}; p.b = m - k;
+  if (!/ a$/.test(p.name) && (p.name + ' a').length <= 12) p.name = p.name + ' a';
+  q.name = q.name.slice(0, 12); c.parts.splice(i + 1, 0, q); imp1Paint();
+}
+/* ---------- Wellenform (Canvas): Raster, Teile, „1“, Loop-Klammern; Ziehen zeichnet nur neu ---------- */
+function imp1Draw() {
+  const c = IMP1.cur, cv = IMP1.cv; if (!c || !cv || !cv.isConnected || c.st !== 'fertig') return;
+  const dpr = Math.min(2, window.devicePixelRatio || 1), w = cv.clientWidth, h = cv.clientHeight; if (!w || !h) return;
+  if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+  const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+  const G = imp1Geo(c), P = imp1Parts(c), X = t => t / c.dur * w, top = 20, bot = 24, wh = h - top - bot, mid = top + wh / 2;
+  const font = getComputedStyle(cv).fontFamily || 'sans-serif', txt = imp1Col('text-dim') || '#999', amb = imp1Col('amber');
+  // Teile: Band oben + Hauch über der Welle
+  P.forEach((p, i) => {
+    const x0 = X(G.org + p.A * G.takt), x1 = X(G.org + p.B * G.takt), col = imp1PCol(c)(p);
+    g.globalAlpha = i === c.sel ? .9 : .55; g.fillStyle = col; g.fillRect(x0, 0, Math.max(1, x1 - x0 - 1), 16);
+    g.globalAlpha = .08; g.fillRect(x0, top, Math.max(1, x1 - x0 - 1), wh);
+    g.globalAlpha = 1; if (x1 - x0 > 24) { g.save(); g.beginPath(); g.rect(x0, 0, x1 - x0 - 2, 16); g.clip(); g.fillStyle = '#000'; g.font = '700 10px ' + font; g.fillText(p.name, x0 + 3, 12); g.restore(); }
+  });
+  // Raster: Takte (stark), Schläge (schwach, wenn Platz)
+  const pxBar = X(G.takt), beats = G.tb >= 1 ? Math.round(G.tb / tsOf(tsNorm(c.ts)).u) : 4;
+  g.fillStyle = txt;
+  for (let b = 0; b <= G.nb; b++) {
+    const t = G.org + b * G.takt, x = X(t); if (x < -1 || x > w + 1) continue;
+    g.globalAlpha = b % 4 === 0 ? .55 : .28; g.fillRect(Math.round(x), top, 1, wh);
+    if (pxBar / beats > 5) { g.globalAlpha = .1; for (let k = 1; k < beats; k++) g.fillRect(Math.round(X(t + k * G.takt / beats)), top, 1, wh); }
+  }
+  // Welle
+  g.globalAlpha = .9; g.fillStyle = imp1Col('text') || '#ddd';
+  const pk = c.peaks, n = pk.length / 2;
+  for (let px = 0; px < w; px++) {
+    const k0 = Math.floor(px / w * n), k1 = Math.max(k0 + 1, Math.floor((px + 1) / w * n)); let lo = 0, hi = 0;
+    for (let k = k0; k < k1 && k < n; k++) { if (pk[2 * k] < lo) lo = pk[2 * k]; if (pk[2 * k + 1] > hi) hi = pk[2 * k + 1]; }
+    const y0 = mid - hi * wh / 2, y1 = mid - lo * wh / 2; g.fillRect(px, y0, 1, Math.max(1, y1 - y0));
+  }
+  // Loop-Klammern unten
+  const lp = c.loop;
+  if (lp) {
+    const x0 = X(G.org + lp[0] * G.takt), x1 = X(G.org + lp[1] * G.takt);
+    g.globalAlpha = .18; g.fillStyle = amb; g.fillRect(x0, top, x1 - x0, wh);
+    g.globalAlpha = 1; g.strokeStyle = amb; g.lineWidth = 2;
+    for (const [x, d] of [[x0, 1], [x1, -1]]) { g.beginPath(); g.moveTo(x + 7 * d, h - 3); g.lineTo(x, h - 3); g.lineTo(x, top); g.lineTo(x + 7 * d, top); g.stroke(); }
+  }
+  g.globalAlpha = .35; g.fillStyle = txt; g.fillRect(0, h - bot + 2, w, 1);
+  // „1“-Marke
+  const x1 = X(c.t1); g.globalAlpha = 1; g.fillStyle = amb; g.fillRect(Math.round(x1) - 1, top - 2, 2, wh + 2);
+  g.beginPath(); g.arc(x1, top + 7, 8, 0, Math.PI * 2); g.fill(); g.fillStyle = '#000'; g.font = '700 11px ' + font; g.fillText('1', x1 - 3, top + 11);
+  g.globalAlpha = 1;
+}
+function imp1Down(e) {
+  const c = IMP1.cur, cv = IMP1.cv; if (!c || !cv || c.st !== 'fertig') return;
+  e.preventDefault(); e.stopPropagation();
+  const r = cv.getBoundingClientRect(), G = imp1Geo(c), tOf = cx => clamp((cx - r.left) / r.width, 0, 1) * c.dur, X = t => r.left + t / c.dur * r.width;
+  const y = e.clientY - r.top, bar = t => clamp(Math.round((t - G.org) / G.takt), 0, G.nb);
+  let mode = null, anchor = 0;
+  if (Math.abs(e.clientX - X(c.t1)) < 22 && y < 44) mode = 'eins';
+  else if (y < 18) { const A = Math.floor((tOf(e.clientX) - G.org) / G.takt), P = imp1Parts(c); const i = P.findIndex(p => A >= p.A && A < p.B); if (i >= 0) { c.sel = i; imp1Paint(); } return; }
+  else if (c.loop && Math.abs(e.clientX - X(G.org + c.loop[0] * G.takt)) < 22) { mode = 'loop'; anchor = c.loop[1]; }
+  else if (c.loop && Math.abs(e.clientX - X(G.org + c.loop[1] * G.takt)) < 22) { mode = 'loop'; anchor = c.loop[0]; }
+  else if (y > r.height * .45) { mode = 'loop'; anchor = Math.floor((tOf(e.clientX) - G.org) / G.takt); anchor = clamp(anchor, 0, G.nb - 1); c.loop = [anchor, anchor + 1]; }
+  if (!mode) return;
+  try { cv.setPointerCapture(e.pointerId); } catch (x) {}
+  let raf = 0; const id = e.pointerId, t10 = c.t1;
+  const mv = ev => {
+    if (ev.pointerId !== id) return;
+    if (mode === 'eins') c.t1 = +clamp(tOf(ev.clientX), 0, Math.min(c.dur - .1, t10 + 4 * G.takt)).toFixed(3);
+    else { const b = bar(tOf(ev.clientX)); c.loop = b > anchor ? [anchor, b] : b < anchor ? [b, anchor] : [anchor, Math.min(G.nb, anchor + 1)]; }
+    if (!raf) raf = requestAnimationFrame(() => { raf = 0; imp1Draw(); });
+  };
+  const up = ev => {
+    if (ev.pointerId !== id) return;
+    cv.removeEventListener('pointermove', mv); cv.removeEventListener('pointerup', up); cv.removeEventListener('pointercancel', up);
+    if (raf) cancelAnimationFrame(raf);
+    if (mode === 'eins') c.t1 = +(Math.round(c.t1 / .005) * .005).toFixed(3);
+    imp1Paint();
+  };
+  cv.addEventListener('pointermove', mv); cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+  imp1Draw();
+}
+/* ---------- Ablegen ---------- */
+// Spur „Original“ (Audio über die Take-Wiedergabe): vorhandene, neue Zusatzspur oder eine leere Zusatzspur
+function imp1OrigT() {
+  for (let i = 0; i < S.tracks.length; i++) if (S.tracks[i] && S.tracks[i].orig) return i;
+  if (canAddTrack()) { const i = NT(), t = newSynthTrack(i); t.name = 'Original'; t.orig = true; restoreTrack(i, JSON.stringify(t)); if (S.tracks[i]) S.tracks[i].orig = true; return i; }
+  for (let i = NT() - 1; i >= BASE_T; i--) if (!S.tracks[i].stimme && tkTrackEmpty(i)) { S.tracks[i].orig = true; S.tracks[i].name = 'Original'; return i; }
+  return -1;
+}
+// Take aus dem ganzen Audio, Song-Takt 0 = Probe 0 (Auftakt davor wird Stille)
+function imp1Take(c) {
+  const G = imp1Geo(c), off = Math.round(G.org * c.sr), src = c.pcm;
+  let pcm;
+  if (off >= 0) pcm = src.subarray(Math.min(off, src.length));
+  else { pcm = new Int16Array(src.length - off); pcm.set(src, -off); }
+  const r = tkAddPcmTake(pcm.slice ? pcm.slice() : pcm, c.sr, 'import'), m = S.takes[r.id];
+  m.route = 'datei'; m.name = c.name; m.imp = {bpm: c.bpm, ts: c.ts, t1: c.t1 - G.org};
+  return r.id;
+}
+function imp1Clip(take, A, B, G, ts, s) {
+  const barS = G.takt, key = Object.assign({}, (s != null && sceneKeyOf(s)) || S.key, {src: 'auto'});
+  const c = {len: clamp(B - A, 1, 64), key, notes: [], audio: tkNormAudio({take, in: tkR6(A * barS), out: tkR6(B * barS), at: 0})};
+  if (tsNorm(ts)) c.ts = tsNorm(ts);
+  return c;
+}
+function imp1Prep(c) {
+  const empty = imp1Empty(), bpm = Math.round(c.bpm);
+  if (empty || !S.tracks.some(t => t.clips.some(x => x && x.audio))) { if (S.bpm !== bpm) setBpm(bpm); const t = tsNorm(c.ts); if ((S.ts || null) !== t) { if (t) S.ts = t; else delete S.ts; tkBump(); } }
+  else if (S.bpm !== bpm) toast('Projekt bleibt bei ' + S.bpm + ' BPM – das Audio läuft im eigenen Tempo');
+  if (!S.song) songEnsure();
+  const song = S.song; while (song.lanes.length < NT()) song.lanes.push([]);
+  return song;
+}
+function imp1Place(kind) {
+  const c = IMP1.cur; if (!c || c.st !== 'fertig' || imp1Busy()) return null;
+  if (!tkAudioOk()) { toast('Audio nur auf der eigenen Seite'); return null; }
+  const P = imp1Parts(c), labels = {scenes: 'In Szenen zerschnitten', track: 'Als Spur importiert', vox: 'Als Gesang importiert', loop: 'Loop in die Matrix'};
+  if (R.songPlay) songPlayEnd(true);
+  const res = imp1Step(labels[kind], () => {
+    const G = imp1Geo(c), song = imp1Prep(c);
+    if (kind === 'vox') {
+      const gb = song.gb; delete song.gb;
+      if (song.bars < G.nb) songSetBars(song, Math.min(SONG_MAX_BARS, G.nb));
+      let pcm; const off = Math.round(G.org * c.sr);
+      if (off >= 0) pcm = c.pcm.subarray(Math.min(off, c.pcm.length)); else { pcm = new Int16Array(c.pcm.length - off); pcm.set(c.pcm, -off); }
+      let r; try { r = ggbPlace(pcm, c.sr, c.name); } finally { if (gb) song.gb = gb; }
+      if (r && S.takes[r.id]) S.takes[r.id].imp = {bpm: c.bpm, ts: c.ts, t1: c.t1 - G.org};
+      imp1Marks(song, P);
+      return r ? {kind, take: r.id, track: r.track} : null;
+    }
+    const st = imp1OrigT(); if (st < 0) { toast('Kein Platz für die Spur „Original“ – eine Zusatzspur leeren'); return null; }
+    const take = c.take && S.takes && S.takes[c.take] ? c.take : (c.take = imp1Take(c)), tr = S.tracks[st];
+    if (kind === 'loop') {
+      const [a, b] = c.loop; let s = -1; for (let k = 0; k < NS(); k++) { const q = (R.selS + k) % NS(); if (!tr.clips[q]) { s = q; break; } }
+      if (s < 0) { toast('Keine freie Szene auf ' + tr.name); return null; }
+      tr.clips[s] = imp1Clip(take, a, b, G, c.ts, s); clipChanged(st, s);
+      return {kind, track: st, scene: s, take, a, b};
+    }
+    const lane = song.lanes[st] = [], made = [];
+    song.own = song.own || {};
+    for (const k of Object.keys(song.own)) if (song.own[k].from && song.own[k].from.t === st) delete song.own[k];
+    P.forEach((p, i) => {
+      for (let A = p.A; A < p.B; A += 64) {
+        const B = Math.min(p.B, A + 64);
+        if (kind === 'scenes' && i < NS() && A === p.A && B === p.B) { tr.clips[i] = imp1Clip(take, A, B, G, c.ts, i); clipChanged(st, i); lane.push({bar: A, slot: i}); made.push(i); }
+        else { const id = ownNewId(song), cl = imp1Clip(take, A, B, G, c.ts, null); cl.from = {t: st, s: kind === 'scenes' ? Math.min(i, NS() - 1) : 0, bar: A, e: null}; song.own[id] = cl; lane.push({bar: A, slot: cl.from.s, own: id}); }
+      }
+    });
+    if (kind === 'scenes') for (let s = P.length; s < NS(); s++) if (tr.clips[s] && tr.clips[s].audio && tr.clips[s].audio.take === take) { tr.clips[s] = null; clipChanged(st, s); }
+    lane.push({bar: G.nb, slot: -1});
+    if (song.bars < G.nb) songSetBars(song, Math.min(SONG_MAX_BARS, G.nb));
+    imp1Marks(song, P);
+    return {kind, track: st, take, scenes: made, parts: P.length};
+  });
+  if (!res) return null;
+  try { if (UI.heads && EL.grid) buildGrid(); if (UI.songView) svLayout(); } catch (e) { logErr(e); }
+  if (res.track >= 0) tkTrackResync(res.track);
+  const msg = kind === 'loop' ? 'Loop Takt ' + (res.a + 1) + '–' + res.b + ' → Szene ' + (res.scene + 1) + ' · ' + S.tracks[res.track].name
+    : kind === 'vox' ? 'Als Gesang · ' + c.name : (kind === 'scenes' ? P.length + ' Teile → Szenen ' + (res.scenes.length ? res.scenes.map(s => s + 1).join(', ') : '') : 'Ganzes Audio im Song') + ' · ' + S.bpm + ' BPM · ' + (S.ts || '4/4');
+  c.made = labels[kind]; toast(msg, {label: '↶ Rückgängig', fn: () => undo()}); haptic('pop');
+  imp1Paint();
+  IMP1.lastPlace = res;
+  return res;
+}
+// Teil-Namen als Marken im Song (wie das Marken-Blatt)
+function imp1Marks(song, P) {
+  const old = (song.marks || []).filter(m => m.a >= P[P.length - 1].B);
+  song.marks = marksNorm(P.map(p => ({a: p.A, len: p.B - p.A, name: p.name.slice(0, 12)})).concat(old), song.bars);
+}
+window.__imp1.ui = {pick: imp1Pick, file: (ab, name, hint) => imp1File(ab, name, hint), sheet: () => imp1Sheet(), place: k => imp1Place(k), cur: () => IMP1.cur, geo: () => IMP1.cur && imp1Geo(IMP1.cur), parts: () => IMP1.cur && imp1Parts(IMP1.cur), regrid: (b, t) => { imp1Regrid(IMP1.cur, b, t); imp1Paint(); }, loop: (a, b) => { IMP1.cur.loop = [a, b]; imp1Paint(); }, midiMeta: u8 => imp1MidiMeta(u8)};   // IMP1: Test-Zugang
 /* ===== IMP1-END ===== */
 /* INT53D-BEGIN ===== Schlussprüfung zu INT53C: vier Randfälle. Hörbar und sichtbar bleibt VORHER, danach ist alles exakt wie vorher.
    1  Aufnahme-Weg (vvEncodeMR, Bild in Echtzeit): wirft das Zeichnen eines Bildes, endet die Aufnahme jetzt mit dieser Meldung
