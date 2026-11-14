@@ -102953,7 +102953,7 @@ function vx2Marks(id, b, rn) {
     VX2.res.set(id, {raw, bid, mk, An}); while (VX2.res.size > 8) VX2.res.delete(VX2.res.keys().next().value);
     VX1R.ana.set(id, An); while (VX1R.ana.size > 6) VX1R.ana.delete(VX1R.ana.keys().next().value);
     VX1R.lastAn = {id, n: ts.length, ms: Math.round(performance.now() - t0), how: WP.how};
-    VX2.last = {id, roh: raw.length, n: mk.length, noten: G && G.notes ? G.notes.length : 0, ms: Math.round(performance.now() - t0), quelle: rn | 0, src: mk.reduce((o, k) => (o[k.vc ? 'stimmhaft' : k.src || 'on'] = (o[k.vc ? 'stimmhaft' : k.src || 'on'] | 0) + 1, o), {})};
+    VX2.last = {id, roh: raw.length, n: mk.length, noten: G && G.notes ? G.notes.length : 0, ms: Math.round(performance.now() - t0), quelle: rn | 0, src: pick.reduce((o, k) => (o[k.vc ? 'stimmhaft' : k.src || 'on'] = (o[k.vc ? 'stimmhaft' : k.src || 'on'] | 0) + 1, o), {})};
     return {mk, b};
   })();
   VX2.q.set(key, p); p.then(() => VX2.q.delete(key), () => VX2.q.delete(key));
