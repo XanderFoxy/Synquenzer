@@ -16,3 +16,7 @@ In der App selber kommt oben immer eine Benachrichtigung, dass Sie eine neue Ver
 - Synth auf Spektrum-Basis: Sample laden, mit Pinsel Auswahl im Spektrum malen, nur diese Auswahl als Klangkörnchen (Grain/Wavetable) weiterformen.
 - Handbuch des Spektral-Editors: Xander schickt PDF (nur privat in vx-privat auswerten).
 → Pakete SPK6 (Ebenen-Werkstatt) + SPK7 (Klangkorn), Workflow w49ddgrbx.
+
+## SPK9 (nächstes Paket, aus SPK6-Prüfung Nr. 17)
+- Spektral-Notenerkennung: gebundener Gesang (Legato, A3→D4→H3 ohne Lücke) wird zu EINER Note → „Noten bearbeiten“ kann Einzeltöne nicht umsetzen.
+- Ziel: Trennung an stabilen Tonhöhen-Stufen (≥ ~60–80 ms auf neuem Halbton, Hysterese wie VS2b 70 ms / 60 ct), Vibrato/Gleiten nicht zerhacken. Kein neuer Knopf (Teilen-Knopf nur nach Freigabe).

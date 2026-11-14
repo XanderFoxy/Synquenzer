@@ -101882,7 +101882,7 @@ function vx1rAnalyse(id, rn) {   // SPK5-R: rn = Wiederholung, weil die Quelle w
   return (wpMarks(id) ? Promise.resolve(wpMarks(id)) : wpDetect(id)).then(async mk0 => {
     let b = vx1rSrc(id); if (!b) { tkLoad(id); const w = TK.wait.get(id); if (w) await w; b = vx1rSrc(id); }
     if (b && typeof G4 !== 'undefined' && G4.job.has(id)) { for (let i = 0; i < 600 && G4.job.has(id); i++) await new Promise(r => setTimeout(r, 25)); b = vx1rSrc(id) || b; }   // SPK5-R: G4 rechnet die Quelle gerade neu → an der neuen Fassung messen (≤ 15 s)
-    const mk = (b && typeof vx2Marks === 'function' ? await vx2Marks(id, b) : null) || wpMarks(id) || mk0 || []; if (!b) return null;   /* VX2: Stücke = Noten/Silben (Tonhöhen-Noten + Einsatz-Merkmal) */
+    const v2 = b && typeof vx2Marks === 'function' ? await vx2Marks(id, b) : null; if (v2) b = v2.b; const mk = (v2 && v2.mk) || wpMarks(id) || mk0 || []; if (!b) return null;   /* VX2: Stücke = Noten/Silben (Tonhöhen-Noten + Einsatz-Merkmal), an der Quelle, an der VX2 gemessen hat */
     const ts = mk.map(k => k.t), key = id + '@' + wpBid(b) + ':' + ts.join(','), c = VX1R.ana.get(id);
     if (c && c.key === key) return c;
     if (VX1R.aq.has(key)) return VX1R.aq.get(key);
@@ -101911,7 +101911,7 @@ function vx1rAnOf(A, t, tn) {
 function vx1rLead(A, t) { if (!A || !A.lead) return 0; const i = A.t.indexOf(t); return i >= 0 ? +A.lead[i] : 0; }
 // die Stücke eines Takes (abgeleitet; nur aus Caches – synchron)
 function vx1rPieces(id) {
-  const m = S.takes && S.takes[id], mk = m && wpMarks(id); if (!mk) return null;
+  const m = S.takes && S.takes[id], mk = m && (typeof vx2Mk === 'function' ? vx2Mk(id) : wpMarks(id)); if (!mk) return null;   /* VX2: Marken des Gesang-Editors */
   const A = VX1R.ana.get(id), w = m.warp, len = m.len / m.sr, G = typeof G2 !== 'undefined' && G2.an.get(id);
   const lab = (typeof g9LabelsOf === 'function' && m.ly ? g9LabelsOf(id, mk) : null) || wpLyr(id);
   const dstOf = t => (w && w.map ? VSM.warpTime({src: w.map.src, dst: w.map.dst}, t) : t);
@@ -101977,7 +101977,7 @@ function vx1rMsg(b, w) {
 function vx1rCommit(id, label, fn, o) {
   o = o || {};
   return vx1rAnalyse(id).then(A => {
-    const m = S.takes && S.takes[id], mk = wpMarks(id); if (!m || !mk) return false;
+    const m = S.takes && S.takes[id], mk = typeof vx2Mk === 'function' ? vx2Mk(id) : wpMarks(id); if (!m || !mk) return false;   /* VX2: Marken des Gesang-Editors */
     const before = JSON.stringify(S.takes), had = m.marks, w0 = m.warp;
     m.marks = mk.map(k => Object.assign({}, k));
     m.marks.forEach((k, i) => {
@@ -102864,7 +102864,7 @@ window.__nx1 = {
    Gemessen (33-s-Aufnahme mit Noten-Annotation, Kern ohne Browser): 213 erkannte Marken → 60 Stücke für 59 Noten, an einer Note 26 % → 85 %,
    Einsätze ±40 ms Anfang 35 → 43, Vokal-Beginn 46 → 50 von 59.
    Einhänge-Zeile (Kommentar „VX2“): vx1rAnalyse (Marken vor der Analyse). Test-API: window.__vx2. */
-const VX2 = {on: true, done: new Map(), q: new Map(), last: null};
+const VX2 = {on: true, res: new Map(), q: new Map(), last: null};
 // Stücke = Noten/Silben: Marken aus den Tonhöhen-Noten (G2), am Einsatz der Erkennung eingerastet; Erkennungs-Marken ohne Note
 // nur mit Einsatz-Merkmal (stimmloser Konsonant davor oder Pegel-Tal > 6 dB, danach gesungen); Atem/Pausen werden kein eigenes Stück
 function vx2Pick(raw, A, G, len, o) {
@@ -102874,6 +102874,7 @@ function vx2Pick(raw, A, G, len, o) {
   const cnt = (a, b, v) => { let c = 0; for (let f = Math.max(0, Math.floor(a / fh)); f < Math.min(nf, Math.ceil(b / fh)); f++) if (K[f] === v) c++; return c; };
   const lv = f => { let s = 0, c = 0; for (let j = f - 1; j <= f + 1; j++) if (j >= 0 && j < nf) { s += R[j] * R[j]; c++; } return 10 * Math.log10(s / Math.max(1, c) + 1e-12); };   // Pegel über 30 ms (dB)
   const ext = (a, b, mx) => { let v = mx ? -1e9 : 1e9; for (let f = Math.max(0, Math.floor(a / fh)); f < Math.min(nf, Math.ceil(b / fh)); f++) { const d = lv(f); if (mx ? d > v : d < v) v = d; } return v; };
+  const Z = A.zcr, zav = (a, b) => { let s = 0, c = 0; for (let f = Math.max(0, Math.floor(a / fh)); f < Math.min(nf, Math.ceil(b / fh)); f++) { s += Z ? Z[f] : 0; c++; } return c ? s / c : 0; };
   const SN = o.snapPre == null ? .02 : o.snapPre, SP = o.snapPost == null ? .02 : o.snapPost, out = [];
   // 1) jede Tonhöhen-Note beginnt ein Stück (auch Legato-Tonwechsel); Zeit = Einsatz der Erkennung in der Nähe (probengenau), sonst Noten-Beginn
   for (const n of G.notes) {
@@ -102888,7 +102889,14 @@ function vx2Pick(raw, A, G, len, o) {
     if (cnt(k.t, k.t + .15, 2) < 5) continue;                                  // danach nichts Gesungenes → Atem/Geräusch
     const uv = cnt(k.t - .1, k.t + .02, 1) >= 2 && cnt(k.t - .1, k.t + .02, 2) <= 8;   // stimmloser Konsonant davor
     const dip = Math.min(ext(k.t - .15, k.t - .03, true), ext(k.t + .02, k.t + .15, true)) - ext(k.t - .04, k.t + .03, false);
-    if (k.word || uv || dip > 6) out.push({t: k.t, conf: k.conf, src: k.src, word: !!k.word});
+    // Fix 1: wieder angesungene Silbe mit stimmhaftem Konsonanten (l, m, n, w): sicherer Einsatz der Erkennung, kleines Pegel-Tal
+    // (≥ DV dB) und weniger Nulldurchgänge im Tal als im Vokal davor/danach (Nasal/Lateral) – Vibrato-Wellen haben das nicht
+    let vcn = false;
+    if (o.vc !== false && k.conf >= (o.vcConf == null ? .6 : o.vcConf) && dip >= (o.vcDip == null ? 2 : o.vcDip)) {
+      const za = zav(k.t - .03, k.t + .03), zb = (zav(k.t - .12, k.t - .03) + zav(k.t + .03, k.t + .12)) / 2;
+      vcn = za < (o.vcZr == null ? 1 : o.vcZr) * zb;
+    }
+    if (k.word || uv || dip > 6 || vcn) out.push({t: k.t, conf: k.conf, src: k.src, word: !!k.word, vc: vcn || undefined});
   }
   out.sort((a, b) => a.t - b.t);
   const res = [];
@@ -102920,29 +102928,38 @@ function vx2AnLead(x, sr, A, mk) {
   }
   return {an, lead};
 }
-// die Marken für den Gesang-Editor (null = unverändert): einmal je Take + Quelle, Ergebnis in WP.det (wpMarks) und VX1R.ana (Analyse)
-function vx2Marks(id, b) {
-  const m = S.takes && S.takes[id], raw = m && !m.marks ? wpMarks(id) : null;
-  if (!VX2.on || !raw || raw !== WP.det.get(id) || raw.length < 2 || VX2.done.get(id) === raw || typeof g2Analyse !== 'function') return Promise.resolve(null);
-  const key = id + '@' + wpBid(b); if (VX2.q.has(key)) return VX2.q.get(key);
+// Prüfung 2: die VX2-Marken sind die Sicht des Gesang-Editors – WP.det (Marken-Editor, Zeitkarte, Songtext) bleibt unverändert.
+// Sie gelten nur, solange der Take keine gespeicherten Marken und keinen Songtext hat (Text hängt per Reihenfolge an den erkannten Marken)
+// und die erkannten Marken dieselben sind; beim ersten Bearbeiten im Gesang-Editor werden sie wie bisher festgeschrieben (m.marks).
+function vx2Ok(id) { const m = S.takes && S.takes[id]; return !!(VX2.on && m && !m.marks && !(m.lyrics && String(m.lyrics).trim()) && !m.ly); }
+function vx2Mk(id) { const raw = wpMarks(id), r = raw && VX2.res.get(id); return r && r.mk && r.raw === raw && vx2Ok(id) ? r.mk : raw; }
+// die Marken für den Gesang-Editor ({mk, b} oder null = unverändert): einmal je Take + erkannte Marken + Quelle; Ergebnis in VX2.res und VX1R.ana.
+// Prüfung 3 (SPK5-R): wechselt die Quelle während der Rechnung (G4/G2/Säubern fertig), wird an der neuen Quelle neu gemessen (≤ 2×)
+function vx2Marks(id, b, rn) {
+  const raw = vx2Ok(id) ? wpMarks(id) : null;
+  if (!raw || raw !== WP.det.get(id) || raw.length < 2 || typeof g2Analyse !== 'function') return Promise.resolve(null);
+  const bid = wpBid(b), r0 = VX2.res.get(id);
+  if (r0 && r0.raw === raw && r0.bid === bid) { if (r0.An && VX1R.ana.get(id) !== r0.An) VX1R.ana.set(id, r0.An); return Promise.resolve(r0.mk ? {mk: r0.mk, b} : null); }
+  const key = id + '@' + bid; if (VX2.q.has(key)) return VX2.q.get(key);
   const p = (async () => {
     const t0 = performance.now(), x = b.getChannelData(0), sr = b.sampleRate, len = b.length / sr;
     const [A, G] = await Promise.all([wpCall({op: 'vxa', x, sr, marks: raw.map(k => k.t)}), g2Analyse(id).catch(() => null)]);
-    const m2 = S.takes && S.takes[id]; if (!m2 || m2.marks || WP.det.get(id) !== raw) return null;   // inzwischen bearbeitet / neu erkannt
+    if (!vx2Ok(id) || WP.det.get(id) !== raw) return null;   // inzwischen bearbeitet / neu erkannt / Text eingegeben
+    const b2 = vx1rSrc(id); if ((rn | 0) < 2 && b2 && b2 !== b) return vx2Marks(id, b2, (rn | 0) + 1);   // SPK5-R: Quelle wechselte → an der neuen messen
     const pick = A ? vx2Pick(raw, A, G, len) : null, mk = pick ? wpNormMarks(pick, len) || [] : null;
-    if (!mk || mk.length < 2) { VX2.done.set(id, raw); VX2.last = {id, roh: raw.length, n: null, why: G ? 'zu wenig Noten' : 'keine Tonhöhe'}; return null; }
+    if (!mk || mk.length < 2) { VX2.res.set(id, {raw, bid, mk: null}); VX2.last = {id, roh: raw.length, n: null, why: G ? 'zu wenig Noten' : 'keine Tonhöhe'}; return null; }
     const ts = mk.map(k => k.t), al = vx2AnLead(x, sr, A, ts);
-    WP.det.set(id, mk); VX2.done.set(id, mk);
-    const An = Object.assign({key: id + '@' + wpBid(b) + ':' + ts.join(','), id, sr, len, t: ts}, A, {an: al.an, lead: al.lead});
+    const An = Object.assign({key: id + '@' + bid + ':' + ts.join(','), id, sr, len, t: ts}, A, {an: al.an, lead: al.lead});
+    VX2.res.set(id, {raw, bid, mk, An}); while (VX2.res.size > 8) VX2.res.delete(VX2.res.keys().next().value);
     VX1R.ana.set(id, An); while (VX1R.ana.size > 6) VX1R.ana.delete(VX1R.ana.keys().next().value);
     VX1R.lastAn = {id, n: ts.length, ms: Math.round(performance.now() - t0), how: WP.how};
-    VX2.last = {id, roh: raw.length, n: mk.length, noten: G && G.notes ? G.notes.length : 0, ms: Math.round(performance.now() - t0), src: mk.reduce((o, k) => (o[k.src || 'on'] = (o[k.src || 'on'] | 0) + 1, o), {})};
-    return mk;
+    VX2.last = {id, roh: raw.length, n: mk.length, noten: G && G.notes ? G.notes.length : 0, ms: Math.round(performance.now() - t0), quelle: rn | 0, src: mk.reduce((o, k) => (o[k.vc ? 'stimmhaft' : k.src || 'on'] = (o[k.vc ? 'stimmhaft' : k.src || 'on'] | 0) + 1, o), {})};
+    return {mk, b};
   })();
   VX2.q.set(key, p); p.then(() => VX2.q.delete(key), () => VX2.q.delete(key));
   return p.catch(e => { logErr(e); return null; });
 }
-window.__vx2 = {last: () => VX2.last, on: v => { if (v != null) VX2.on = !!v; return VX2.on; }, pick: (raw, A, G, len, o) => vx2Pick(raw, A, G, len, o)};
+window.__vx2 = {last: () => VX2.last, on: v => { if (v != null) VX2.on = !!v; return VX2.on; }, pick: (raw, A, G, len, o) => vx2Pick(raw, A, G, len, o), marks: id => vx2Mk(id), anLead: (x, sr, A, ts) => vx2AnLead(x, sr, A, ts)};
 /* ===== VX2-END ===== */
 /* ===== IMP1-BEGIN (Paket IMP1, Audio-/MIDI-Import mit Tempo, Taktart und Teilen – Xander 14.11.: „MP3 … BPM erkennen und die Taktart …
    in Szenen als zerschnittene Audios … Strophe eins, Refrain eins …“). Schritt 1: die Erkennung.
