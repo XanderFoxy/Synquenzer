@@ -96239,7 +96239,7 @@ function spk1DspMake(V) {
     return y;
   }
   /* ---- Dokument ---- */
-  const TRn = d => Math.ceil((d.meta.base.N / 2 + 1) / BT), NBn = d.meta.base.N / 2 + 1;
+  const TRn = d => Math.ceil((d.meta.base.N / 2 + 1) / BT), NBn = d => d.meta.base.N / 2 + 1;
   const Fn = d => Math.floor((d.meta.n - 1) / d.meta.base.hop) + d.meta.base.N / d.meta.base.hop;
   const NSn = d => Math.ceil(Fn(d) / BT);
   const mkey = (d, lid, s) => 'spk:' + d.meta.id + ':m' + lid + ':' + s;
@@ -96545,8 +96545,8 @@ function spk1DspMake(V) {
           const key = 'spk:' + d.meta.id + ':v' + N + ':' + ci, have = await get('audio', key); let ch;
           if (have && have.byteLength === ROWS * Math.min(1024, I.cols - ci * 1024)) ch = {N, k: ci, x0: ci * 1024, w: Math.min(1024, I.cols - ci * 1024), R: ROWS, hop: I.hop, data: new Uint8Array(have), cached: true};
           else { ch = specChunk(d, N, ci); await put('audio', key, ch.data.slice().buffer); d.meta.jobs.spec[N].done = Math.max(d.meta.jobs.spec[N].done, ci + 1); d.metaDirty = true; }
-          if (m.stream !== false) emit({id: m.id, chunk: ch}, [ch.data.buffer]);
-          emit({id: m.id, prog: (ci + 1 - from) / Math.max(1, to - from)});
+          if (m.stream !== false) emit({qid: m.qid, chunk: ch}, [ch.data.buffer]);
+          emit({qid: m.qid, prog: (ci + 1 - from) / Math.max(1, to - from)});
         }
         if (d.metaDirty) soon(d);
         return I;
@@ -96592,8 +96592,8 @@ function spk1DspMake(V) {
       const tr = [];
       if (r && (m.op === 'render' || m.op === 'block')) for (const x of r.ch) tr.push(x.buffer);
       if (r && m.op === 'export') { for (const x of r.pcm) tr.push(x.buffer); for (const x of r.masks) tr.push(x.data.buffer); }
-      emit({id: m.id, ok: r}, tr);
-    }, e => emit({id: m.id, err: String(e && e.message || e)}));
+      emit({qid: m.qid, ok: r}, tr);
+    }, e => emit({qid: m.qid, err: String(e && e.message || e)}));
   }
   return {on, stft, istft, specInfo, docs};
 }
@@ -96611,14 +96611,14 @@ function spk1Worker() {
   return SPK1.w;
 }
 function spk1Reply(m) {
-  const q = SPK1.wq.get(m.id); if (!q) return;
+  const q = SPK1.wq.get(m.qid); if (!q) return;
   if (m.prog != null) { if (q.prog) q.prog(m.prog); return; }
   if (m.chunk) { if (q.chunk) q.chunk(m.chunk); return; }
-  SPK1.wq.delete(m.id); if (m.err) q.no(new Error(m.err)); else q.ok(m.ok);
+  SPK1.wq.delete(m.qid); if (m.err) q.no(new Error(m.err)); else q.ok(m.ok);
 }
 // ein Auftrag an den Kern: {op, doc?, …}; cb = {prog(p), chunk(c)}
 function spk1Call(op, a, tr, cb) {
-  const w = spk1Worker(), id = ++SPK1.wid, m = Object.assign({}, a, {op, id});
+  const w = spk1Worker(), id = ++SPK1.wid, m = Object.assign({}, a, {op, qid: id});   // qid = Auftrag, id = Analyse
   return new Promise((ok, no) => {
     SPK1.wq.set(id, Object.assign({ok, no}, cb || {}));
     if (w) { try { w.postMessage(m, tr || []); return; } catch (e) { SPK1.wq.delete(id); no(e); return; } }

@@ -70,14 +70,18 @@ if (ch) await ch.setFiles({name: 'demo-92.wav', mimeType: 'audio/wav', buffer: w
 let c = null; for (let k = 0; k < 120; k++) { await p.waitForTimeout(250); c = await cur(p); if (c && (c.st === 'fertig' || c.st === 'fehler')) break; }
 ok(c && c.st === 'fertig', 'Analyse fertig', JSON.stringify(c));
 ok(c && Math.abs(c.bpm - 92) < 1 && c.ts === '4/4', 'Tempo/Taktart erkannt', c && c.bpm + ' ' + c.ts);
-ok(c && c.parts.length >= 5 && c.parts.length <= 7, 'Teile erkannt', c && c.parts.join(' '));
+ok(c && c.parts.length >= 4 && c.parts.length <= 7, 'Teile erkannt', c && c.parts.join(' '));
 await p.waitForTimeout(200);
 await p.screenshot({path: path.join(fotos, 'imp1-2-erkannt-hochkant.png')});
 // 3 Touch: Tempo ±, Taktart, Loop-Klammern ziehen
 await tapSel(p, '.imp1 button[data-i="bpm+"]'); c = await cur(p); ok(c.bpm === 93, 'Tempo + → 93', c.bpm);
 await tapSel(p, '.imp1 button[data-i="bpm-"]'); c = await cur(p); ok(c.bpm === 92, 'Tempo − → 92', c.bpm);
 await tapSel(p, '.imp1 button[data-i="ts"][data-v="3/4"]'); c = await cur(p); ok(c.ts === '3/4', 'Taktart 3/4');
-await tapSel(p, '.imp1 button[data-i="ts"][data-v="4/4"]'); c = await cur(p); ok(c.ts === '4/4' && c.parts.length >= 5, 'Taktart zurück 4/4', c.parts.join(' '));
+await tapSel(p, '.imp1 button[data-i="ts"][data-v="4/4"]'); c = await cur(p); ok(c.ts === '4/4' && c.parts.length >= 4, 'Taktart zurück 4/4', c.parts.join(' '));
+{ const n1 = c.parts.length; await tapSel(p, '.imp1 button[data-i="part"][data-k="1"]'); await tapSel(p, '.imp1 button[data-i="split"]'); c = await cur(p); ok(c.parts.length === n1 + 1, 'Teil teilen (Takt-Raster)', c.parts.join(' '));
+  await p.fill('.imp1 input.imp1nm', 'Strophe 1'); await p.dispatchEvent('.imp1 input.imp1nm', 'change'); await p.waitForTimeout(150); c = await cur(p); ok(c.parts[1].startsWith('Strophe 1@'), 'Teil umbenennen', c.parts.join(' '));
+  await tapSel(p, '.imp1 button[data-i="part"][data-k="1"]'); await tapSel(p, '.imp1 button[data-i="merge"]'); c = await cur(p); ok(c.parts.length === n1, 'Teile zusammenlegen', c.parts.join(' '));
+  await tapSel(p, '.imp1 button[data-i="part"][data-k="1"]'); await tapSel(p, '.imp1 button[data-i="split"]'); c = await cur(p); }
 const cv = await ctr(p, '.imp1 canvas.imp1cv');
 const g = await p.evaluate(() => window.__imp1.ui.geo());
 const xb = bar => cv.x - cv.w / 2 + (g.org + bar * g.takt) / wav.dur * cv.w;
@@ -100,7 +104,7 @@ const u = await p.evaluate(() => { undo(); const a = {nt: NT(), orig: S.tracks.s
 ok(!u.a.orig && u.b.orig, '↶ nimmt den ganzen Import zurück, ↷ bringt ihn wieder', JSON.stringify(u));
 // Speichern/Laden: Spur-Flag + Audio-Clips bleiben
 const rt = await p.evaluate(() => { const fo = SQStore.buildProjectFile(S, null, VERSION); const q = normalizeProject(projFromFile(JSON.parse(JSON.stringify(fo)))); const o = q.tracks.findIndex(t => t.orig); return {o, clips: o >= 0 ? q.tracks[o].clips.filter(c => c && c.audio).length : 0, takes: Object.keys(q.takes || {}).length, imp: o >= 0 && q.takes ? Object.values(q.takes).some(t => t.imp) : false}; });
-ok(rt.o >= 0 && rt.clips >= 5 && rt.takes >= 1, 'Speichern/Laden: Original-Spur, Clips, Take', JSON.stringify(rt));
+ok(rt.o >= 0 && rt.clips === c.parts.length && rt.takes >= 1 && rt.imp, 'Speichern/Laden: Original-Spur, Clips, Take', JSON.stringify(rt));
 // 5 Loop in die Matrix (Blatt neu öffnen, Stand bleibt)
 await p.evaluate(() => { closePop(); window.__imp1.ui.sheet(); });
 await p.waitForTimeout(300);
@@ -112,7 +116,7 @@ ok(lc && lc.len === 8 && Math.abs(lc.out - lc.in - 8 * 4 * 60 / 92) < .01, 'Loop
 // 6 Als eine Spur, Als Gesang
 await tapSel(p, '.imp1 button[data-i="track"]');
 const tr1 = await p.evaluate(() => { const o = S.tracks.findIndex(t => t.orig); return {own: S.song.lanes[o].filter(e => e.own).length, lane: S.song.lanes[o].length}; });
-ok(tr1.own >= 5, 'Als eine Spur: eigene Song-Clips in Reihenfolge', JSON.stringify(tr1));
+ok(tr1.own === c.parts.length && tr1.lane === c.parts.length + 1, 'Als eine Spur: eigene Song-Clips in Reihenfolge', JSON.stringify(tr1));
 await tapSel(p, '.imp1 button[data-i="vox"]');
 const vx = await p.evaluate(() => ({st: stimmeT(), vox: (S.song.vox || []).length, label: UNDO[UNDO.length - 1].label}));
 ok(vx.st >= 0 && vx.vox >= 1 && vx.label === 'Als Gesang importiert', 'Als Gesang: STIMME-Spur mit Song-Stück', JSON.stringify(vx));

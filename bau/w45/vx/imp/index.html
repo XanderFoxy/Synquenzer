@@ -97213,7 +97213,7 @@ function imp1Css() {
     '.imp1 .imp1g{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}',
     '.imp1 .imp1g .mbtn{width:100%;min-height:52px;height:auto;margin:0;padding:6px 8px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:3px;text-align:left;line-height:1.15}',
     '.imp1 .mbtn small{display:block;font:500 11px/1.2 var(--font-ui);letter-spacing:0;color:var(--text-dim);text-transform:none}',
-    '.imp1 .imp1pt{display:flex;gap:6px;overflow-x:auto;padding:2px 0}',
+    '.imp1 .imp1pt{display:flex;flex-wrap:wrap;gap:6px;padding:2px 0}',
     '.imp1 .imp1pt .mbtn{flex:none;min-height:44px;margin:0;padding:0 10px;border-left-width:4px}',
     '.imp1 .imp1pt .mbtn.on{background:var(--line)}'
   ].join('\n');
@@ -97240,7 +97240,7 @@ function imp1Html() {
   h += '<canvas class="imp1cv" aria-label="Wellenform mit Takt-Raster, Teilen, 1-Marke und Loop-Klammern"></canvas>';
   h += `<div class="imp1r"><span class="lbl">Tempo</span>${B('bpm-', '−')}<span class="imp1bpm">${esc(String(+c.bpm.toFixed(2)).replace('.', ','))}</span>${B('bpm+', '+')}${B('half', '½×')}${B('dbl', '2×')}${B('tap', 'Tippen')}</div>`;
   h += '<div class="imp1r"><span class="lbl">Taktart</span>' + IMP1_TS.map(t => B('ts', t, null, true, t === c.ts ? 'on' : '', ` data-v="${t}"`)).join('') + '</div>';
-  h += '<h5>Teile</h5><div class="imp1pt pan-x">' + P.map((p, i) => B('part', p.name + ' · ' + (p.B - p.A), null, true, i === c.sel ? 'on' : '', ` data-k="${i}" style="border-left-color:${imp1PCol(c)(p)}"`)).join('') + '</div>';
+  h += '<h5>Teile</h5><div class="imp1pt">' + P.map((p, i) => B('part', p.name + ' · ' + (p.B - p.A), null, true, i === c.sel ? 'on' : '', ` data-k="${i}" style="border-left-color:${imp1PCol(c)(p)}"`)).join('') + '</div>';
   const sp = P[Math.min(c.sel, P.length - 1)];
   h += `<div class="imp1r"><input class="imp1in imp1nm" type="text" maxlength="12" value="${esc(sp ? sp.name : '')}" aria-label="Name des Teils">` + B('merge', 'Zusammen ▸', null, c.sel < P.length - 1) + B('split', 'Teilen', null, !!sp && sp.B - sp.A >= 2) + '</div>';
   h += '<h5>Ziel</h5><div class="imp1g">' + B('scenes', 'In Szenen zerschneiden', 'jeder Teil eine Szene · Song-Ablauf') + B('track', 'Als eine Spur', 'ganzes Audio im Song') + B('vox', 'Als Gesang', 'STIMME-Spur · Takes') + '</div>';

@@ -2713,6 +2713,9 @@ a.mbtn[aria-disabled=true]{opacity:.55}
 #wpSheet .qrow.vx1-nat .lbl{font:700 11px/1 var(--font-ui)}
 #wpSheet .vx1lead.on{color:var(--ink);background:var(--amber);border-color:var(--amber)}
 /* VX1-CSS-END */
+/* VX1R-CSS-BEGIN: Gesang-Editor (PianoRoll mit opts.audio): keine Anschlag-Zeile, nur die Werkzeuge für Gesang */
+#rollSheet .pr.vx1r,.pr.vx1r{--pr-vh:0px}.pr.vx1r .pr-vlab,.pr.vx1r .pr-vel{display:none}.vx1rx{display:none!important}
+/* VX1R-CSS-END */
 /* G10A-CSS-BEGIN: G10a – Einsingen fertig (Pegel der Stimme in der Aufnahme-Leiste, Hörmuschel-Hinweis im 🎤-Blatt) */
 .g10a-lvl{grid-column:1;grid-row:2;position:relative;display:block;min-width:0;min-height:0;background:var(--lcd);border-radius:4px;box-shadow:inset 0 1px 4px rgba(0,0,0,.9);overflow:hidden;pointer-events:none}
 .g10a-lvl[hidden]{display:none}
@@ -21198,7 +21201,7 @@ const RecHelpers = (() => {
       }
       if (!best) return null;
       const r = noteRect(best), edge = Math.max(10, Math.min(22, r.w * .35));
-      return {note: best, zone: x >= r.x + r.w - edge ? 'end' : 'body'};
+      return {note: best, zone: !opts.audio && x >= r.x + r.w - edge ? 'end' : 'body'};   // VX1R: Gesang-Stücke haben keine Länge
     }
     const scope = () => { const ns = clip().notes; return E.sel.size ? ns.filter(n => E.sel.has(n)) : ns.slice(); };
 
@@ -21649,9 +21652,9 @@ const RecHelpers = (() => {
             if (gst.mFz && gst.mFz.s * (p.y - gst.mFz.y) < 0) gst.mFz = null;
             if (!gst.mFz) gst.mDR = dR;
           }
-          const q = onMap ? dB : g ? Math.round(dB / g) * g : dB;
+          const q = onMap ? dB : opts.audio ? opts.audio.snap(gst, ai, dB, g) : g ? Math.round(dB / g) * g : dB;   // VX1R: Gesang rastet absolut am Anker ein
           const minT = Math.min(...gst.t0), maxT = Math.max(...gst.t0);
-          const dt = clamp(q, -minT, L() - 1e-6 - maxT);
+          const dt = opts.audio ? clamp(q, -minT - 4, L() - maxT) : clamp(q, -minT, L() - 1e-6 - maxT);   // VX1R: der Anschwung darf vor Schlag 0 liegen
           gst.set.forEach((nt, i) => { nt.t = +(gst.t0[i] + dt).toFixed(6); if (dt) delete nt.o; nt.n = clamp(V.rows[clamp(rowOfNote(gst.n0[i]) + dR, 0, V.rows.length - 1)], 0, 127); });
           if (gst.anchor.n !== gst.lastN) { gst.lastN = gst.anchor.n; model.audition && model.audition(gst.anchor.n, gst.anchor.v); }
           gst.changed = true; say(nm(gst.anchor.n) + ' · ' + fmtPos(gst.anchor.t)); break;
@@ -21707,6 +21710,7 @@ const RecHelpers = (() => {
     }
     function tap() {
       const h = gst.hit, tool = E.tool;
+      if (opts.audio && opts.audio.tap) opts.audio.tap(h && h.note, gst.beat0);   // VX1R: getippte Stelle (Teilen, Vorhören)
       if (MS && MS.owns(tool)) { MS.tap(gst); return; }           /* MAGIC */
       if (tool === 'mpBrush' && mp2On()) return;   // PINSEL2: kurz getippt = nicht eingerastet = nichts geändert
       if (tool === 'mpBrush') { model.begin(); mpStart(); mpTo(gst.p0); const ch = !!MB.changed; MB = null; model.end(ch, 'Pinsel'); return; }   /* MP: ein Pinselpunkt */
@@ -21782,7 +21786,7 @@ const RecHelpers = (() => {
       if (s.rip == null) s.rip = !!(MS && MS.ripStart(s)); if (s.rip) { MS.ripDrag(s, p); return; }   /* MAGIC: Takt-Leiste halten + ziehen */
       if (s.vx2 == null) s.vx2 = vx2GripAt(s.p0.x, true); if (s.vx2) { vx2GripDrag(s, p); return; }   /* VOX2: Rand des gelben Bereichs ziehen (am Clip-Ende: Länge zuerst) */
       if (s.len == null) {                                           // decide once: length handle or scroll
-        s.len = Math.abs(s.p0.x - xOf(L())) < 22;
+        s.len = !opts.audio && Math.abs(s.p0.x - xOf(L())) < 22;   // VX1R: Gesang ohne Längen-Griff
         if (s.len) {
           model.begin(); s.len0 = clip().len; s.ppb0 = V.ppb; s.x00 = V.x0; V.freeze = true;
           s.end = cancel => {
@@ -44031,6 +44035,7 @@ function closeSheets() {
   previewStop();
   ED.lfoPrev = null; ED.env = null; ED.hdr = null;
   if (QS.open) closeQuantSheet(false, true);
+  if (typeof vx1rClosed === 'function') vx1rClosed();   // VX1R: Vorhören + Quantisier-Blatt des Gesang-Editors enden
   if (WP.ed) wpClose();                                        // VS5a
   // the clip editor: destroyed on close, so it opens with the Zeichnen tool next time (never a "deleting" editor)
   if (ED.roll) { try { ED.roll.destroy(); } catch (e) { logErr(e); } ED.roll = null; }
@@ -50363,6 +50368,7 @@ const ROLLP = {grid: '1/16', fold: false, kb: false, view: 'roll'};   // editor 
 function buildRoll() {
   if (ED.rollAt && ED.rollAt.mel) return buildMelodyRoll();
   if (ED.rollAt && ED.rollAt.own) return buildOwnRoll();             // V2e′: ROLLE on an own clip of the song
+  if (ED.rollAt && ED.rollAt.vx) return vx1rBuild();                 // VX1R: Gesang-Editor (dieselbe PianoRoll)
   const {t, s} = ED.rollAt, tr = S.tracks[t], sh = EL.rollSheet;
   // WP5: LAUF (§3.10) when chosen and the clip is one note per step; otherwise the piano roll
   if (ROLLP.view === 'lauf') { const chk = tr.kind === 'synth' ? laufCheck(tr.clips[s]) : {ok: false}; if (chk.ok) { LAUF.grid = chk.grid; return buildLauf(); } ROLLP.view = 'roll'; }
@@ -50420,6 +50426,7 @@ function rollKbApply() {
 }
 function rollHeadUpdate() {
   if (!ED.rollInfo || !ED.rollAt) return;
+  if (ED.rollAt.vx) { vx1rHead(); return; }   // VX1R
   if (ED.rollAt.own) { const c = S.song && S.song.own && S.song.own[ED.rollAt.own]; if (!c) return; const txt = (c.ver >= 2 ? 'Version v' + c.ver : 'eigener Clip') /* SX9 */ + ' · ' + c.notes.length + (c.notes.length === 1 ? ' Note' : ' Noten') + ' · ' + c.len + (c.len === 1 ? ' Takt' : ' Takte'); if (ED.rollInfo._t !== txt) { ED.rollInfo._t = txt; ED.rollInfo.textContent = txt; } return; }
   if (ED.rollAt.mel) { const m = S.song && curMel(S.song); if (!m) return; const txt = m.notes.length + (m.notes.length === 1 ? ' Note' : ' Noten') + ' · ' + m.len + (m.len === 1 ? ' Takt' : ' Takte'); if (ED.rollInfo._t !== txt) { ED.rollInfo._t = txt; ED.rollInfo.textContent = txt; ED.rollInfo.title = txt + ' · wie gespielt (nie umgerechnet)'; } return; }
   const c = S.tracks[ED.rollAt.t].clips[ED.rollAt.s]; if (!c) return;
@@ -50481,6 +50488,7 @@ function closeRoll() {
 }
 // the playhead follows in clip coordinates while the clip plays (transform only)
 function rollFrame(bAud) {
+  if (ED.rollAt.vx) { vx1rFrame(bAud); return; }   // VX1R: Gesang-Editor
   if (ED.rollAt.own) {                                                   // V2e′: the playhead while this own clip plays
     const t = ED.rollAt.t, c = S.song && S.song.own && S.song.own[ED.rollAt.own]; if (!c) { closeRoll(); return; }
     const L = clipB(c), b = R.playing && R.own[t] === ED.rollAt.own && bAud >= 0 ? ((((bAud - audCstart(t, bAud)) % L) + L) % L) : -1;
@@ -62075,7 +62083,8 @@ function wpSetLyrics(id, text) {
 function wpLyr(id) { const m = S.takes && S.takes[id]; if (!m || !m.lyrics) return null; const mk = wpMarks(id) || []; return VSM.assignLyrics(m.lyrics, mk.length); }
 // ↶ ↷ einer 'takes'-Änderung: Wiedergabe und Editor folgen
 function wpUndone() {
-  vx1WpUndone();   // VX1-W: der Editor folgt dem Take des Stücks (Schnitt ↶ ↷)
+  vx1WpUndone();
+  if (typeof vx1rUndone === 'function') vx1rUndone();   // VX1R: Gesang-Editor folgt ↶ ↷   // VX1-W: der Editor folgt dem Take des Stücks (Schnitt ↶ ↷)
   if (typeof g9TakesUndone === 'function') g9TakesUndone();   // G9 (§7.8)
   if (typeof g2Undone === 'function') g2Undone();   // G2
   if (WP.ed && !tkRef(WP.ed.r)) { wpClose(); return; }
@@ -96730,6 +96739,319 @@ window.__vx1 = {
   norm: id => { const m = S.takes && S.takes[id]; if (!m) return null; const o = tkNormTake ? tkNormTake(JSON.parse(JSON.stringify(m))) : null; return o; },
   state: () => ({ana: [...VX1R.ana.keys()], last: VX1R.last, lastAn: VX1R.lastAn, wp: WP.last}),
 };
+/* ---------- Schritt 3: Gesang-Editor = dieselbe PianoRoll wie bei den Instrumenten (opts.audio); die Stücke sind virtuelle Noten.
+   Tastatur, Lineal, Raster, Zoom/Scroll, ⬚-Wahl, Teilen/Verbinden, ↶ ↷ kommen 1:1 aus der PianoRoll. Ziehen ändert nur die virtuellen
+   Noten (Zeichnen per Canvas, kein Neuaufbau je Bewegung); beim Loslassen EIN Commit: waagrecht = vd (Anker rastet absolut am Raster),
+   senkrecht = G2-Verschiebung (formanterhaltend), beides = ein Undo. Gezeichnet über opts.noteDeco: Welle (Hüllkurve), stimmlose Teile
+   schraffiert, Tonhöhenkurve, Anker-Linie, Silbe rechts unten vom Anker. ---------- */
+const VX1E = {clip: null, id: null, a: null, ps: null, tapN: null, tapB: null, tapAt: 0, glow: null, graf: 0, q: null, pv: null, pb: null, centered: false, envMax: new Map()};
+const vx1rRef = r => (r ? (r.vox ? {vox: r.vox} : {t: r.t, s: r.s}) : null);
+const vx1rOpenNow = () => !!(ED.roll && ED.rollAt && ED.rollAt.vx);
+// öffnen: r = {t, s} (Szene-Clip der STIMME-Spur) oder {vox} (Song-Stimme)
+function vx1rOpen(r) {
+  const x = r && tkRef(vx1rRef(r)); if (!x || !S.takes || !S.takes[x.a.take]) { toast('Kein Gesang an dieser Stelle'); return false; }
+  if (!r.vox) selectSlot(r.t, r.s);
+  if (!EL.rollSheet.classList.contains('open')) UI.shield = null;
+  closeSheets(); R.editor = 'roll';
+  ED.rollAt = r.vox ? {t: Math.max(0, stimmeT()), s: -1, vox: r.vox, vx: 1} : {t: r.t, s: r.s, vx: 1};
+  VX1E.clip = null; VX1E.centered = false; VX1E.tapN = null; VX1E.glow = null;
+  if (UI.toastActs) hideToast();
+  buildRoll();
+  setSheetOpen(true); UI.dirty.all = true;
+  return true;
+}
+function vx1rBuild() {
+  const r = ED.rollAt, x = tkRef(vx1rRef(r)), sh = EL.rollSheet; if (!x) { closeRoll(); return; }
+  const t = r.t, tr = S.tracks[t] || {name: 'STIMME'};
+  ED.lauf = null; ED.laufBtn = null;
+  if (ED.roll) { try { ED.roll.destroy(); } catch (e) {} ED.roll = null; }
+  vx1rPvStop(); vx1rQClose();
+  sh.innerHTML = ''; sh.style.setProperty('--tc', `var(--t${t + 1})`);
+  const land = window.matchMedia('(orientation: landscape)').matches; ED.rollLand = land;
+  const head = el('div', 'rhead'), ht = el('div', 'rht');
+  ht.appendChild(el('div', 'sh-title', `<span class="dot"></span><b>${esc(tr.name)} · ${esc(x.label)}</b>`));
+  const info = el('span', 'rinfo'); ht.appendChild(info); ED.rollInfo = info;
+  const chip = el('span', 'trchip'); chip.hidden = true; ht.appendChild(chip); ED.trChip = chip;
+  head.appendChild(ht); ED.rollHT = ht;
+  const xb = el('button', 'sh-x rb', '✕'); xb.setAttribute('aria-label', 'Editor schließen'); onTap(xb, closeRoll);
+  const body = el('div', 'rbody');
+  sh.append(head, body); sh.classList.add('open');
+  VX1E.col = getComputedStyle(document.documentElement).getPropertyValue('--t' + (t + 1)).trim() || '#4cc9f0';
+  vx1rSync();
+  const P_T = 'Abspielen ab dem gewählten Stück (sonst ab dem Anfang)', id = x.a.take;
+  ED.roll = PianoRoll.create(body, vx1rModel(), {color: VX1E.col, grid: ROLLP.grid, fold: false, rowH: 22, undoHold: sx14UndoHold, toolbarHost: land ? head : null,
+    extraTools: [{id: 'vx1rp', label: '▶', title: P_T, fn: () => vx1rPlay()}],
+    extraActs: [{id: 'vx1rtx', label: 'Text erkennen', title: 'Silben aus der Spracherkennung', fn: () => vx1rText()},
+      {id: 'vx1rtk', label: 'Takes …', title: 'Takes, Marken & Timing, Tonhöhe, Chor', fn: () => { const rr = vx1rRef(ED.rollAt); closeRoll(); tkSheet(rr); }}],
+    center: 60, noteDeco: vx1rDeco,
+    audio: {snap: vx1rSnapB, tap: (nt, b) => { VX1E.tapN = VX1E.tapNt = nt; VX1E.tapB = b; VX1E.tapAt = performance.now(); }},
+    tap: (b, fn) => b.addEventListener('click', () => { try { fn(); } catch (e) { logErr(e); } }),
+    reg: folReg('roll'), onHand: () => folHand('roll'),
+    onPrefs: p => { ROLLP.grid = p.grid; },
+    onQuant: sel => vx1rQSheet(sel),
+    onTick: () => haptic('tick')});
+  head.append(folChip('roll'), xb);
+  vx1rTrim(ED.roll, P_T);
+  ED.roll.setTool('select');                                         // Tipp = wählen (Mehrfachwahl), Ziehen = verschieben, leer ziehen = Rahmen
+  rollKbApply(); rollHeadUpdate(); renderEdChip();
+  sh.classList.add('open');
+  vx1rAnalyse(id).then(() => { if (vx1rOpenNow()) vx1rSync(); }).catch(logErr);
+}
+// nur die Werkzeuge, die für Gesang gelten (Rest per Klasse aus – draw() setzt hidden sonst zurück)
+function vx1rTrim(api, pT) {
+  const pr = api.el.main.closest('.pr'); if (pr) pr.classList.add('vx1r');
+  const keep = new Set(['Raster', 'Ganzer Clip / 1 Takt', 'Rückgängig', 'Wiederholen', pT, 'Quantisieren', 'Silben aus der Spracherkennung', 'Takes, Marken & Timing, Tonhöhe, Chor']);
+  for (const b of [...api.el.bar.querySelectorAll('button'), ...api.el.acts.querySelectorAll('button')]) {
+    const tt = b.title || '';
+    if (/teilen \(am Raster\)$/.test(tt)) { b.title = 'Stück teilen (an der getippten Stelle, sonst in der Mitte)'; b.setAttribute('aria-label', b.title); continue; }
+    if (/zu einer Note verbinden$/.test(tt)) { b.title = 'Gewählte Stücke verbinden'; b.setAttribute('aria-label', b.title); continue; }
+    if (!keep.has(tt)) b.classList.add('vx1rx');
+  }
+  for (const s of [...api.el.bar.querySelectorAll('.sep'), ...api.el.acts.querySelectorAll('.sep')]) s.classList.add('vx1rx');
+  VX1E.pb = [...api.el.bar.querySelectorAll('button')].find(b => b.title === pT) || null;
+  vx1rTxBtn();
+}
+// „Text erkennen“ nur, wenn am Take noch keine Silben liegen
+function vx1rTxBtn() {
+  if (!ED.roll) return; const b = [...ED.roll.el.acts.querySelectorAll('button')].find(z => z.title === 'Silben aus der Spracherkennung'); if (!b) return;
+  const has = (VX1E.ps || []).some(p => p.tx); b.classList.toggle('vx1rx', has);
+}
+// das Modell der PianoRoll: virtueller Clip; begin/end vergleichen die Stücke, end schreibt EINE Aktion
+function vx1rModel() {
+  let snap = null;
+  return {
+    getClip: () => VX1E.clip,
+    begin() { const c = VX1E.clip; snap = c ? {ns: c.notes.slice(), v: c.notes.map(n => ({t: n.t, n: n.n, d: n.d}))} : null; },
+    end(changed, label) { const s = snap; snap = null; if (changed && s) vx1rApply(s, label).catch(logErr); else vx1rSync(); },
+    revert() { const s = snap, c = VX1E.clip; snap = null; if (!s || !c) return; c.notes = s.ns; s.ns.forEach((n, i) => Object.assign(n, s.v[i])); },
+    undo: () => { undo(); }, redo: () => { redo(); },
+    canUndo: () => UNDO.length > 0, canRedo: () => REDO.length > 0,
+    audition(n) {                                                       // Tipp auf ein Stück = das Stück hören (gehörte Fassung); Tastatur = Ton
+      if (VX1E.tapN && performance.now() - VX1E.tapAt < 80) { const nt = VX1E.tapN; VX1E.tapN = null; vx1rPlay(nt, true); return; }
+      vx1rTone(n);
+    }
+  };
+}
+// Bezugs-Ton (Tastatur links, senkrechtes Ziehen): kurz und leise
+function vx1rTone(n) {
+  const c = ensureAudio(); if (!c) return;
+  const o = c.createOscillator(), g = c.createGain(), t = c.currentTime + .005;
+  o.type = 'triangle'; o.frequency.value = 440 * Math.pow(2, (n - 69) / 12);
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.12, t + .01); g.gain.exponentialRampToValueAtTime(.001, t + .25);
+  o.connect(g); g.connect(AU.masterSum || c.destination); o.start(t); o.stop(t + .27);
+}
+// Schlag (Clip) ↔ gehörte Take-Zeit
+const vx1rHeard = (a, b) => a.in + (b - a.at) * spb();
+const vx1rSrcT = (id, T) => { const w = S.takes[id] && S.takes[id].warp; return w && w.map ? VSM.warpTime({src: w.map.dst, dst: w.map.src}, T) : T; };
+// die Stücke → virtuelle Noten (gleiche Objekte je Stück, damit die Wahl bleibt)
+function vx1rSync() {
+  const r = ED.rollAt; if (!r || !r.vx) return;
+  if (ED.roll) { const g = ED.roll.state.gesture; if (g && g !== 'pending' && g !== 'pinch') return; }   // eine laufende Geste nie überschreiben (end() holt nach)
+  const x = tkRef(vx1rRef(r)); if (!x || !S.takes || !S.takes[x.a.take]) { if (ED.roll) closeRoll(); return; }
+  const a = x.a, id = a.take, m = S.takes[id], sp = spb(), bt = T => a.at + (T - a.in) / sp;
+  const ps = vx1rPieces(id) || [], w = m.warp, hd = t => (w && w.map ? VSM.warpTime({src: w.map.src, dst: w.map.dst}, t) : t);
+  const c = VX1E.clip || (VX1E.clip = {len: 1, notes: []}), vc = x.clip;
+  c.len = vc ? vc.len : Math.max(1, a.len | 0); c.key = vc && vc.key ? vc.key : S.key; if (vc && vc.ts) c.ts = vc.ts; else delete c.ts;
+  const P = m.pitch && m.pitch.notes, shAt = (t0, t1) => { if (!P) return 0; const cc = (t0 + t1) / 2, n = P.find(z => z.t0 <= cc && z.t1 > cc); return n && n.sh ? n.sh : 0; };
+  const byK = new Map(c.notes.map(n => [n._k, n])), out = [], ms = ps.map(p => p.m);
+  for (let i = 0; i < ms.length; i++) if (ms[i] == null) ms[i] = ms.slice(0, i).reverse().find(v => v != null) ?? ms.slice(i + 1).find(v => v != null) ?? null;   // ohne Ton: Nachbar
+  for (let i = 0; i < ps.length; i++) {
+    const p = ps[i], hs = p.dst, he = i + 1 < ps.length ? ps[i + 1].dst : hd(p.end);
+    if (he < a.in - .01 || (isNum(a.out) && hs > a.out + .01)) continue;   // nur der Ausschnitt des Clips
+    const nt = byK.get(p.k) || {v: 1};
+    Object.assign(nt, {t: +bt(hs).toFixed(6), d: +Math.max(1 / 64, (he - hs) / sp).toFixed(6), n: clamp(Math.round((ms[i] == null ? 60 : ms[i]) + shAt(p.t, p.end)), 0, 127), v: 1, _k: p.k, _a: p.an / sp, _p: p, _sh: shAt(p.t, p.end)});
+    out.push(nt);
+  }
+  c.notes = out; VX1E.id = id; VX1E.a = a; VX1E.ps = ps;
+  if (ED.roll) {
+    ED.roll.refresh();
+    if (!VX1E.centered && ms.some(v => v != null)) { VX1E.centered = true; ED.roll.centerOn(Math.round(VSD.median(ms.filter(v => v != null)))); }
+    vx1rTxBtn();
+  }
+  rollHeadUpdate();
+}
+// Kopf: Stücke · Takte
+function vx1rHead() {
+  const c = VX1E.clip; if (!c || !ED.rollInfo) return;
+  const txt = c.notes.length + (c.notes.length === 1 ? ' Stück' : ' Stücke') + ' · ' + c.len + (c.len === 1 ? ' Takt' : ' Takte');
+  if (ED.rollInfo._t !== txt) { ED.rollInfo._t = txt; ED.rollInfo.textContent = txt; }
+}
+// Einrasten am Anker (absolut am Takt): Verschiebung so, dass der Anker auf die Rasterlinie fällt; die Linie leuchtet kurz
+function vx1rSnapB(gs, ai, dB, g) {
+  if (gs.ax === 'v') return 0;                                       // senkrecht = nur Tonhöhe
+  const nt = gs.anchor, a0 = gs.t0[ai] + (nt._a || 0);
+  if (!g) { VX1E.glow = null; return dB; }
+  const tb = Math.round((a0 + dB) / g) * g;
+  if (!VX1E.glow || VX1E.glow.nt !== nt || Math.abs(VX1E.glow.b - tb) > 1e-9) { VX1E.glow = {nt, b: tb, at: performance.now()}; vx1rGlowRun(); }
+  return tb - a0;
+}
+function vx1rGlowRun() {
+  if (VX1E.graf) return;
+  const step = () => { VX1E.graf = 0; if (!VX1E.glow || !ED.roll || !vx1rOpenNow()) return; ED.roll.render(); if (performance.now() - VX1E.glow.at < 520) VX1E.graf = requestAnimationFrame(step); };
+  VX1E.graf = requestAnimationFrame(step);
+}
+// Zeichnen eines Stücks (in der Note der PianoRoll; Auswahl-Rahmen bleibt sichtbar)
+function vx1rDeco(g, nt, r) {
+  const p = nt._p, id = VX1E.id; if (!p || !id) return;
+  const A = VX1R.ana.get(id), sp = spb(), ppb = nt.d > 0 ? r.w / nt.d : 0; if (!ppb) return;
+  const X = ts => r.x + (ts - p.t) / sp * ppb, x0 = r.x + 2, y0 = r.y + 3, w = r.w - 4, h = r.h - 6; if (w < 2 || h < 2) return;
+  g.save(); g.beginPath(); g.rect(x0, y0, w, h); g.clip();
+  g.fillStyle = VX1E.col; g.fillRect(x0, y0, w, h);
+  for (const [u0, u1] of p.uv || []) {                               // stimmlos (Konsonant/Atem): grau getönt + schraffiert
+    const a = Math.max(x0, X(u0)), b = Math.min(x0 + w, X(u1)); if (b <= a) continue;
+    g.fillStyle = 'rgba(21,23,27,.62)'; g.fillRect(a, y0, b - a, h);
+    g.strokeStyle = 'rgba(236,232,223,.38)'; g.lineWidth = 1; g.beginPath();
+    for (let s = Math.floor(a / 6) * 6 - h; s < b; s += 6) { g.moveTo(s, y0 + h); g.lineTo(s + h, y0); }
+    g.stroke();
+  }
+  if (A && A.env) {                                                  // Welle: Hüllkurve, gespiegelt um die Mitte
+    let mx = VX1E.envMax.get(A); if (mx == null) { mx = 1e-6; for (let i = 0; i < A.env.length; i++) if (A.env[i] > mx) mx = A.env[i]; VX1E.envMax.set(A, mx); }
+    const H = A.hop, cy = y0 + h / 2, hh = h / 2 - .5, e = A.env, px0 = Math.max(x0, X(p.t)), px1 = Math.min(x0 + w, X(p.end));
+    if (px1 > px0) {
+      g.fillStyle = 'rgba(11,12,15,.55)'; g.beginPath(); const top = [];
+      for (let px = px0; px <= px1; px += 1) {
+        const ta = p.t + (px - r.x) / ppb * sp, tb = ta + sp / ppb, i0 = Math.max(0, Math.floor(ta / H)), i1 = Math.min(e.length - 1, Math.max(i0, Math.ceil(tb / H)));
+        let v = 0; for (let i = i0; i <= i1; i++) if (e[i] > v) v = e[i];
+        top.push([px, Math.sqrt(v / mx) * hh]);
+      }
+      g.moveTo(top[0][0], cy - top[0][1]); for (const [px, v] of top) g.lineTo(px, cy - v);
+      for (let i = top.length - 1; i >= 0; i--) g.lineTo(top[i][0], cy + top[i][1]);
+      g.closePath(); g.fill();
+    }
+  }
+  g.restore();
+  const Gp = typeof G2 !== 'undefined' && G2.an.get(id);             // Tonhöhenkurve (VS2/G2), relativ zur Zeile des Stücks
+  if (Gp && Gp.f0) {
+    const i0 = Math.max(0, Math.ceil(p.t / Gp.hop)), i1 = Math.min(Gp.n, Math.floor(p.end / Gp.hop)), cy = r.y + r.h / 2, sh = nt._sh || 0;
+    g.save(); g.beginPath(); g.rect(x0, r.y - r.h * 2, w, r.h * 5); g.clip(); g.beginPath(); let on = false;
+    for (let i = i0; i < i1; i++) {
+      const f = Gp.f0[i]; if (!(f > 0)) { on = false; continue; }
+      const px = X(i * Gp.hop), py = cy - (G2P.midi(f) + sh - nt.n) * r.h;
+      if (on) g.lineTo(px, py); else g.moveTo(px, py); on = true;
+    }
+    g.lineJoin = 'round'; g.strokeStyle = 'rgba(11,12,15,.8)'; g.lineWidth = 3; g.stroke(); g.strokeStyle = '#ece8df'; g.lineWidth = 1.4; g.stroke(); g.restore();
+  }
+  const ax = r.x + (p.an / sp) * ppb;                                // Anker: kräftige senkrechte Linie
+  if (ax >= r.x && ax <= r.x + r.w) { g.fillStyle = '#0b0c0f'; g.fillRect(ax - 2, r.y + 1, 4, r.h - 2); g.fillStyle = '#f4f1ea'; g.fillRect(ax - 1, r.y + 1, 2, r.h - 2); }
+  if (p.tx) {                                                        // Silbe: klein, unten, rechts vom Anker (nie darüber)
+    g.font = '600 10px ' + (getComputedStyle(document.documentElement).getPropertyValue('--font-ui').trim() || 'sans-serif');
+    const lx = Math.max(ax + 4, r.x + 4), room = r.x + r.w - 3 - lx, tw = Math.min(room, g.measureText(p.tx).width + 6);
+    if (tw >= 12 && r.h >= 16) { const yy = r.y + r.h - 13; g.fillStyle = 'rgba(11,12,15,.85)'; g.beginPath(); g.rect(lx, yy, tw, 11); g.fill(); g.fillStyle = '#ffb22e'; g.fillText(p.tx, lx + 3, yy + 9, tw - 5); }
+  }
+  const G = VX1E.glow;                                                // Einrasten: die Rasterlinie leuchtet kurz
+  if (G && G.nt === nt && ED.roll) {
+    const k = 1 - (performance.now() - G.at) / 520;
+    if (k > 0) { const gx = r.x + (G.b - nt.t) * ppb; g.save(); g.fillStyle = '#ffb22e'; g.globalAlpha = .25 + .6 * k; g.fillRect(gx - 1.5, -4000, 3, 9000); g.globalAlpha = .18 * k; g.fillRect(gx - 5, -4000, 10, 9000); g.restore(); }
+  }
+}
+// beim Loslassen: was hat sich geändert → EINE Aktion (ein Undo)
+async function vx1rApply(s, label) {
+  const id = VX1E.id, a = VX1E.a, c = VX1E.clip; if (!id || !a || !c) { vx1rSync(); return; }
+  const old = new Set(s.ns), now = c.notes, gr = ED.roll ? ED.roll.state.grid : 'aus', grid = gr === 'aus' ? 'off' : gr;
+  const added = now.filter(n => !old.has(n)), gone = s.ns.filter(n => !now.includes(n));
+  if (added.length && !gone.length) {                                 // Teilen: an der getippten Stelle (im Stück), sonst wo die PianoRoll teilt
+    const ts = added.map(n2 => { const i = s.ns.findIndex(o => o._k === n2._k), o = s.v[i]; let b = n2.t;
+      if (i >= 0 && VX1E.tapB != null && s.ns[i] === VX1E.tapNt && VX1E.tapB > o.t + .02 && VX1E.tapB < o.t + o.d - .02) b = VX1E.tapB;
+      return vx1rSrcT(id, vx1rHeard(a, b)); });
+    if (ED.roll) ED.roll.select([]);
+    await vx1rCommit(id, 'Stück geteilt', (mk, m, A) => {
+      let ch = false;
+      for (let t of ts) { t = clamp(t, 0, m.len / m.sr); if (mk.some(k => Math.abs(k.t - t) < WP_GAP)) continue; const nx = mk.find(k => k.t > t); mk.push({t: wpSmp(m, t), conf: 1, user: true, an: +vx1rAnOf(A, t, nx ? nx.t : null).toFixed(4)}); mk.sort((p, q) => p.t - q.t); ch = true; }
+      return ch;
+    }, {a});
+  } else if (gone.length) {                                           // Verbinden: alles zwischen dem ersten und dem letzten gewählten Stück wird eins
+    const ks = gone.map(n => n._k).filter(isNum), k0 = Math.min(...ks), k1 = Math.max(...ks);
+    if (ED.roll) ED.roll.select([]);
+    if (ks.length >= 2) await vx1rCommit(id, 'Stücke verbunden', mk => { if (!mk[k1]) return false; mk.splice(k0 + 1, k1 - k0); }, {a});
+  } else {                                                            // Verschieben (waagrecht → vd am Anker) / Tonhöhe (senkrecht → G2) – ein Undo
+    const mv = [], pt = [];
+    s.ns.forEach((n, i) => { const o = s.v[i]; if (Math.abs(n.t - o.t) > 1e-6) mv.push({k: n._k, ta: vx1rHeard(a, n.t + (n._a || 0))}); if (n.n !== o.n) pt.push({k: n._k, d: n.n - o.n}); });
+    const u0 = UNDO.length;
+    if (mv.length) await vx1rCommit(id, 'Stück verschoben', mk => { let ch = false; for (const z of mv) { const p = mk[z.k]; if (!p) continue; p.vd = grid !== 'off' ? vx1rSnap(id, z.ta, grid, a) : tkR6(z.ta); p.user = true; ch = true; } return ch; }, {a});
+    if (pt.length) await vx1rPitchMany(id, pt, vx1rRef(ED.rollAt));
+    if (UNDO.length > u0 + 1) { UNDO.splice(u0 + 1); UNDO[u0].label = mv.length ? 'Stück verschoben' : 'Tonhöhe · Stück'; UI.dirty.strip = true; if (typeof edUndoBtns === 'function') edUndoBtns(); }
+  }
+  vx1rSync();
+}
+// Tonhöhe mehrerer Stücke in EINEM G2-Schritt: Noten an den Stück-Grenzen teilen, dann verschieben (formanterhaltend wie dort)
+function vx1rPitchMany(id, list, r) {
+  const ps = vx1rPieces(id) || [], seg = list.map(z => { const p = ps.find(q => q.k === z.k); return p && z.d ? {a: p.t, b: p.end, d: Math.round(z.d)} : null; }).filter(Boolean);
+  if (!seg.length) return Promise.resolve(false);
+  return g2Edit(id, 'Tonhöhe · Stück', P => {
+    for (const z of seg) for (const t of [z.a, z.b]) {
+      const i = P.notes.findIndex(n => n.t0 < t - .01 && n.t1 > t + .01); if (i < 0) continue;
+      const n = P.notes[i]; P.notes.splice(i, 1, Object.assign({}, n, {t1: tkR6(t)}), Object.assign({}, n, {t0: tkR6(t)}));
+    }
+    let hit = false;
+    for (const n of P.notes) { const cc = (n.t0 + n.t1) / 2, z = seg.find(q => cc >= q.a && cc < q.b); if (z) { n.sh = (n.sh || 0) + z.d; hit = true; } }
+    return hit;
+  }, r);
+}
+// ↶ ↷ (Art 'takes'): der Editor folgt
+function vx1rUndone() { if (vx1rOpenNow()) queueMicrotask(() => { if (vx1rOpenNow()) { ED.roll.select([]); vx1rSync(); } }); }
+// Laufstrich: Szene wie bei den Instrumenten, Song-Stimme im Song-Takt, Vorhören des Editors
+function vx1rFrame(bAud) {
+  const r = ED.rollAt, c = VX1E.clip; if (!c || !ED.roll) return;
+  if (VX1E.pv && AU.ctx) { const b = VX1E.pv.b0 + (AU.ctx.currentTime - VX1E.pv.t) / spb(); ED.roll.playhead(b < VX1E.pv.b1 ? b : -1); return; }
+  let b = -1;
+  if (r.vox) { const v = S.song && S.song.vox && S.song.vox.find(z => z.id === r.vox); if (!v) { closeRoll(); return; } const sb = svSongBeat(bAud); if (sb != null && sb >= 0) { const q = sb - barBeat(v.bar); if (q >= 0 && q < barBeat(v.bar + v.len) - barBeat(v.bar)) b = q; } }
+  else { const cc = S.tracks[r.t] && S.tracks[r.t].clips[r.s]; if (!cc) { closeRoll(); return; } const vs = R.playing ? visualSlots(r.t, bAud) : null; if (vs && vs.playing === r.s && bAud >= 0) b = (((bAud - audCstart(r.t, bAud)) % clipB(cc)) + clipB(cc)) % clipB(cc); }
+  folRoll('roll', b); ED.roll.playhead(b);
+}
+// ▶ ab der Auswahl (gehörte Fassung); nt = ein Stück allein (Tipp)
+function vx1rPlay(nt, one) {
+  if (VX1E.pv && !one) { vx1rPvStop(); return; }
+  const id = VX1E.id, a = VX1E.a, c = VX1E.clip; if (!id || !a || !c) return;
+  const ctx = ensureAudio(); if (!ctx) return;
+  const buf = g10eHeardBuf({id}, a); if (!buf) { toast('Take fehlt auf diesem Gerät'); return; }
+  const sel = nt ? [nt] : ED.roll ? ED.roll.selection : [];
+  const b0 = sel.length ? Math.min(...sel.map(n => n.t)) : 0, b1 = one && nt ? nt.t + nt.d : clipB(c);
+  const T0 = Math.max(0, vx1rHeard(a, b0)), T1 = Math.min(buf.duration, isNum(a.out) ? Math.min(a.out, vx1rHeard(a, b1)) : vx1rHeard(a, b1)), d = T1 - T0; if (d <= .02) return;
+  vx1rPvStop();
+  const V = vpGet(buf), G = (V ? V.g : 1) * (isNum(a.gain) ? a.gain : 1), src = ctx.createBufferSource(), g = ctx.createGain(), t = ctx.currentTime + .02;
+  src.buffer = buf; src.connect(g); g.connect(AU.masterSum || ctx.destination);
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(G, t + .005); g.gain.setValueAtTime(G, t + d - .006); g.gain.linearRampToValueAtTime(0, t + d);
+  try { src.start(t, T0); src.stop(t + d + .01); } catch (e) { logErr(e); return; }
+  VX1E.pv = {s: src, g, t, b0: b0, b1: b1}; if (VX1E.pb && !one) VX1E.pb.textContent = '■';
+  src.onended = () => { if (VX1E.pv && VX1E.pv.s === src) { VX1E.pv = null; if (VX1E.pb) VX1E.pb.textContent = '▶'; if (ED.roll && !R.playing) ED.roll.playhead(-1); } };
+}
+function vx1rPvStop() { const p = VX1E.pv; VX1E.pv = null; if (VX1E.pb) VX1E.pb.textContent = '▶'; if (p) { try { p.s.onended = null; p.s.stop(); } catch (e) {} try { p.s.disconnect(); p.g.disconnect(); } catch (e) {} } }
+// „Text erkennen“: vorhandener G9-Weg (Spracherkennung des Takes)
+function vx1rText() {
+  const id = VX1E.id; if (!id) return;
+  if ((VX1E.ps || []).some(p => p.tx)) { toast('Silben sind schon da'); return; }
+  if (typeof g9RecJob === 'function' && G9.rec) { const pf = (typeof stProf === 'function' && stProf()) || {}; const pr = g9RecJob(id, {lang: (pf.g9 && pf.g9.lang) || 'auto', mode: 'all'}); toast('Text wird erkannt …'); if (pr && pr.then) pr.then(() => { if (vx1rOpenNow()) vx1rSync(); }, () => {}); return; }
+  const rr = vx1rRef(ED.rollAt); closeRoll(); wpOpen(rr); toast('Text: im Marken-Editor „Text“ wählen');
+}
+// QUANT.: Blatt im Stil des Quantisier-Blatts (Raster-Chips, Stärke, Abbrechen/Anwenden); Auswahl oder alle Stücke
+function vx1rQSheet(sel) {
+  const id = VX1E.id, a = VX1E.a; if (!id || !a) return;
+  vx1rQClose();
+  const ks = sel ? sel.map(n => n._k).filter(isNum) : null, w = S.takes[id] && S.takes[id].warp;
+  const Q = VX1E.q = {grid: w && w.mode === 'hybrid' && VX1R_GRIDS.includes(w.res) ? w.res : (ROLLP.grid !== 'aus' && VX1R_GRIDS.includes(ROLLP.grid) ? ROLLP.grid : '1/16'), str: 1};
+  const sh = EL.qSheet; sh.innerHTML = '';
+  const head = el('div', 'qh', `<b>Quantisieren · Gesang${ks ? ' · ' + ks.length + (ks.length === 1 ? ' Stück' : ' Stücke') : ''}</b>`);
+  const x = el('button', 'sh-x rb', '✕'); x.setAttribute('aria-label', 'Abbrechen'); x.addEventListener('click', () => vx1rQClose()); head.appendChild(x);
+  const b = el('div', 'qb'), chips = el('div', 'qchips');
+  [['1/4', '1/4'], ['1/8', '1/8'], ['1/8T', '1/8T'], ['1/16', '1/16'], ['1/16T', '1/16T'], ['off', 'Aus']].forEach(([v, l]) => { const bt = el('button', 'rb' + (Q.grid === v ? ' on' : ''), l); bt.dataset.v = v; chips.appendChild(bt); });
+  chips.addEventListener('click', e => { const bt = e.target.closest('button[data-v]'); if (!bt) return; Q.grid = bt.dataset.v; chips.querySelectorAll('button').forEach(z => z.classList.toggle('on', z === bt)); });
+  const r = el('div', 'qrow'); r.appendChild(el('span', 'lbl', 'Stärke'));
+  const inp = el('input'); inp.type = 'range'; inp.min = 0; inp.max = 100; inp.step = 1; inp.value = 100; inp.setAttribute('aria-label', 'Stärke');
+  const v = el('span', 'mval', '100 %'); inp.addEventListener('input', () => { Q.str = +inp.value / 100; v.textContent = inp.value + ' %'; }); r.append(inp, v);
+  const act = el('div', 'qact'), note = el('div', 'qnote', 'Der Anker jedes Stücks rastet ein – der Anschwung liegt davor.'), cancel = el('button', 'rb', 'Abbrechen'), apply = el('button', 'rb go', 'Anwenden');
+  cancel.addEventListener('click', () => vx1rQClose());
+  apply.addEventListener('click', () => { const o = {grid: Q.grid, strength: Q.str, a, sel: ks}; vx1rQClose(); vx1rQuantize(id, o).then(() => vx1rSync()).catch(logErr); });
+  act.append(note, cancel, apply); b.append(chips, r, act); sh.append(head, b); sh.classList.add('open');
+}
+function vx1rQClose() { if (!VX1E.q) return; VX1E.q = null; EL.qSheet.classList.remove('open'); EL.qSheet.innerHTML = ''; }
+// beim Schließen aller Blätter (closeSheets): Vorhören und Quantisier-Blatt enden
+function vx1rClosed() { vx1rPvStop(); vx1rQClose(); VX1E.glow = null; }
+Object.assign(window.__vx1, {
+  open: r => vx1rOpen(r),
+  ed: () => (vx1rOpenNow() ? {n: VX1E.clip ? VX1E.clip.notes.length : 0, notes: (VX1E.clip ? VX1E.clip.notes : []).map(n => ({t: n.t, d: n.d, n: n.n, a: n._a, k: n._k, tx: n._p && n._p.tx})), sel: ED.roll.selection.map(n => n._k), grid: ED.roll.state.grid, tool: ED.roll.state.tool, q: !!VX1E.q, pv: !!VX1E.pv} : null),
+  xy: (i, f) => { const n = VX1E.clip && VX1E.clip.notes[i]; if (!n || !ED.roll) return null; return ED.roll._xy(n.t + (f == null ? n.d / 2 : f), n.n); },
+  beatXY: (b, n) => (ED.roll ? ED.roll._xy(b, n) : null),
+});
 /* VX1-END */
 /* ===== KF2-BEGIN (Paket KF2, Klang-Feinschliff Teil 2 – aus Xanders Ur-Roadmap §18 „Klang“; Xander: „Können wir davon noch was machen?“ → ja)
    Inventar zuerst (NOTES.md): eine gezupfte Saite, einen Vokal-Filter mit a–e–i–o–u und ein Oszilloskop gab es in keinem Klangerzeuger.

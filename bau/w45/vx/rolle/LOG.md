@@ -11,3 +11,4 @@
 - 13:05 Befund: wpDetect setzt Marken auf den Vokal-Beginn (Konsonant gehört sonst zum Vorgänger) → Anlauf (lead) je Marke: stimmloser Lauf direkt vor der Marke wird beim ersten Bearbeiten zum Stück genommen
 - 13:06 Schritt 2 FERTIG: vx1r-kern-test.mjs 34/34 (inkl. erkannte Marken: Stück beginnt am Konsonanten 0–1 ms, Silben aus Songtext, Container mit WAV); topdefs doppelt 0/Syntax 0, dupkeys 0, smoke errors [], MS 2000 1×, live: true 1×, Marken 15/15 wie Basis; VERSION/CHANGES unberührt. Weiter: Schritt 3 Editor (NOTES.md 'Offen')
 - 13:07 Schritt 3 (Editor) begonnen: LESEN/LOG/NOTES gelesen
+- 13:15 3a–3e Editor-Code eingebaut (vx1rOpen/Build/Model/Sync/Deco/Apply/QSheet/Play/Frame; 5 PianoRoll-Haken opts.audio; Weichen buildRoll/rollHeadUpdate/rollFrame/closeSheets/wpUndone; CSS VX1R) – topdefs doppelt 0/Syntax 0, dupkeys 0; Test folgt
