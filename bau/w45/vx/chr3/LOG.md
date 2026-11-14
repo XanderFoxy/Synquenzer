@@ -12,3 +12,5 @@
 - (2) Hüllkurven-Modell je Stimme (Log-Pegel der ungeteilten Teiltöne über Log-Frequenz, ±2 Rahmen geglättet) → halb: 4eng S4 Welle 81 → 93 %, 3TQ-M2 S3 73 → 89, 4eng-M2 S3/S4 84/71 → 89/87, 4eng-Vok S4 70 → 91; aber 3TQ S3 / 4eng S3 bleiben 67,2 %.
   Befund: hohe Stimmen tasten die Formant-Hülle zu grob ab (D5 „e“: Teilton 2 liegt im Tal zwischen F1 und F2, Hülle schätzt 0,25 statt 0,03) → Oberstimme bekommt 86 % des geteilten Teiltons, G4-Teilton 3 fehlt → YIN springt auf 2·f0 (Noten G4 0,77–1,19 s, 3,27–4,19 s, F4 7,27–8,19 s).
   Nächster Weg: „gemeinsames Schicksal“ – die Spitze eines geteilten Teiltons folgt im Vibrato der Stimme, die ihn trägt (Schwerpunkt ≈ leistungsgewichtet) → Anteil über ±6 Rahmen schätzen.
+- (2b) Gemeinsames Schicksal (Spitze des geteilten Teiltons gegen die Vibrato-Bahnen beider Stimmen, ±6 Rahmen, f0 je Rahmen aus ungeteilten Spitzen) → Anteil; sonst Hülle → halb:
+  3TQ S3 Welle 67,2 → 98,3 %, 4eng S3/S4 67/93 → 99,4/95,5 %, 3TQ-M2 S3 89 → 92; Rückgang 4eng-M2 S4 87 → 77, 4eng-Vok S4 91 → 83 (prüfen).
