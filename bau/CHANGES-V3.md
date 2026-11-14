@@ -1,3 +1,13 @@
+## 4.55.0 — Audio/MIDI importieren mit Tempo-, Takt- und Teile-Erkennung
+
+- **Audio/MIDI importieren** (Menü → Export/Import, auch „Gesang importieren“): MP3, WAV, M4A, MIDI. Tempo vorweg eintippen oder **Erkennen** lassen – Tempo, Taktart (2/4, 3/4, 4/4, 6/8, 12/8), die erste „1“ und die Teile (Intro, Strophe, Refrain, Bridge, Outro) werden erkannt.
+- Nur Gesang ohne Begleitung: Tempo wird aus den Silben geschätzt, die App fragt mit Vorschlag (z. B. „96 oder 48 / 192?“).
+- Im Blatt: Welle mit Takt-Raster und farbigen Teilen, Tempo − / + / ½× / 2× / Tippen, Taktart, „1“-Marke ziehen, Teile umbenennen/zusammenlegen/teilen.
+- Ziele: **In Szenen zerschneiden** (jeder Teil eine Szene auf der Spur „Original“, Song-Ablauf und Marken in Reihenfolge) │ **Als eine Spur** │ **Als Gesang**. Ein ↶ für alles.
+- **Loop-Klammern**: Bereich auf dem Takt-Raster wählen → **Als Loop in die Matrix**, läuft taktgenau mit.
+- Audio ist in der Projektdatei/Container mit drin.
+Tests: Import 48/48 (WAV, MP3, M4A; 92 4/4, 120 3/4, 120 6/8, Gesang allein), Regeln, doppelte Schlüssel 0, Rauchtest grün.
+
 ## 4.54.1 — Kein Hinweis-Streifen „Neue Version“ mehr
 
 - Kein Hinweis-Streifen „Neue Version“ mehr oben. Die App holt eine neuere Fassung weiter selbst (beim Öffnen, nach dem Stopp), aber ohne Meldung.
