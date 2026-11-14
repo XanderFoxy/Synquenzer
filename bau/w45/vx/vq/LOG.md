@@ -1,0 +1,2 @@
+- 14:41 Start VQ1: Dateien gesichtet
+- 14:41 Basis=index (4.58.0, XD1 drin); xd1-test vergleicht gegen w4550/basis.html (4.53.0)
