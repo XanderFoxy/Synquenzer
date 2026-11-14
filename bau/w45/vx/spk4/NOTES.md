@@ -40,3 +40,15 @@ Ziel „allein ≥ 50 % bei Präzision ≥ 50 %“ erreicht. Gemisch: Pads-Ebene
    allein stehen; Leck von Bass/Lead (C3/E3 Teiltöne) als Gegen-Vorlage.
 2. „Noten finden“ ist auf Rest in Noten ▾ weiter gesperrt (Rest-Noten werden auf der Seite nicht gezeigt); Kern kann Rest.
 3. Ton-Präzision allein 81 %: verbleibend B3/E3-Geister (Unison-Teil −90 ct) und B4 als Oberton 2 des tief verstimmten C4-Teils.
+
+## Seite (Test `spk4-ui.mjs <abs index.html>`: 8 OK / 0 FEHLER, `spk4-ui.json`, Fotos `fotos/80-*`, `81-*`)
+- Hinweis in der Noten-Leiste: Original ohne Auswahl „mehrstimmig“, mit Bass-Band „einstimmig“. Noten ▾: neue Taste „Mehrstimmig: an/aus“
+  (44 px hoch, aria-pressed) in der Tastenreihe neben „Klang nachbauen“, Text darunter passt sich an; Umlegen ändert die Größe des
+  Menüs nicht (340×259 beide). 428×926, 926×428, 926×370: im Bild, keine Überlappung, keine Taste < 44.
+- Noten finden auf dem Original (ganzer Song, Browser): 98 Noten, gleichzeitige Töne, Text „… · mehrstimmig · …“, 883 ms, ein ↶ „Noten finden“.
+
+## Pflicht / Regression (A1)
+topdefs doppelt 0 / Syntaxfehler 0 · dupkeys 0 · smoke errors [] (`smoke-a1.png`) · „MS 2000“ 1× · „  live: true,“ 1× · VERSION wie basis5 ·
+CHANGES unberührt · Markenwörter keine neuen. spk3-test (`spk3-test.out`, Basis basis5): 14 OK / 3 FEHLER – **mehrstimmig-akkord-toene OK**;
+FEHLER nur bekannte Ziele (Bass 3,01 < 4 dB, Verfeinern +0,52 < +1 dB) und nachbau-abstaende-besser (Werte = Basis 4.60, kein Rückschritt);
+spk2-test 29/30 (bekannt zerlegen-bass-ziel), Loop/Layout/Konsole OK. Bass-Noten-Weg bitgleich (`bass-neu.json` = `bass-alt.json`).
