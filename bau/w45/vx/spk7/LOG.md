@@ -17,3 +17,5 @@
 - 19:46 spk7-pruef-test.mjs neu (12 Prüfungen, Befunde 1–6, 8, 11–15 im Browser per Touch): ALLES OK (12). Aufnahme erkennt Lücken des ScriptProcessor (ein Lauf hatte sonst 19,4 an einer Puffer-Naht).
 - 19:46 Pflicht: topdefs Skripte 26, doppelt 0, Syntaxfehler 0 · dupkeys 0 · smoke errors [] (smoke-p.png) · MS 2000 1× (Basis 1×) · live 1× · vwStart 3× · Krypto 0 · Markenwörter alle 21 = Basis, 0 in Quellen/Tests/NOTES/LOG/KARTE/einbau.py.
 - 19:47 spk1-test: ALLE OK (spk1-regr3.out). spk3-test läuft (allein).
+- 19:49 spk3-test (allein, gegen basis5): 13 OK / 4 FEHLER = dieselben Zahlen wie Bauer/Prüfer (bass 3,01/4 · verfeinern +0,52 · mehrstimmig 0/28 · Nachbau 2,13 → 2,13 gleich gut); layout-3-groessen OK, spk2 29/30 (bekannt). SPK7 berührt Spektral-Kern, Worker-Text und Nachbau nicht.
+- 19:50 Export-Einsatz (pr7): Klangkorn 4,7 ms, normale Synth-Spur 0,5 ms (vorher 16 ms Versatz). index.html byte-gleich mit einbau.py. NOTES „Prüfung“ geschrieben. Fertig.

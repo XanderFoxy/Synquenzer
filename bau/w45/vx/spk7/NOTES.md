@@ -43,7 +43,7 @@
 1. Klang-Editor einer Klangkorn-Spur: zeigt weiter die Wavetable-Seite. Position, Cutoff, Resonanz, Hüllkurve und Stimmen wirken jetzt
    auf das Klangkorn; Tabelle und Scan wirken nicht. Eine eigene Klangkorn-Seite im Editor wäre sichtbar neu → im Funk vorschlagen.
 2. Erster Ton nach dem Laden eines Projekts kann still sein, bis das Audio aus dem Gerätespeicher geholt ist (einige 10 ms; Spektren jetzt im Worker).
-3. Song-Export mit Klangkorn-Spur: Einsatz ist jetzt sofort (Körner vorgefüllt), der Versatz zur Synth-Spur ist aber nicht neu gemessen.
+3. (erledigt) Song-Export: Einsatz 4,7 ms gegen 0,5 ms bei einer normalen Synth-Spur (Anschlag 2 ms, Schwelle 10 %; vorher 16 ms später).
 4. (erledigt) Hilfe-Eintrag.
 5. **Vorschlag für den Funk:** Knopf „Als Klangkorn“ als 3. Zeile im Aktionsfeld (hochkant Ebenenliste 180 → 129 px, nach „Zerlegen“ 2 statt 3
    Ebenen ganz sichtbar; quer 284 → 236 px). Gebaut hinter `SPK7_ROW = false`; ohne Freigabe bleibt das Layout wie in der Basis.
@@ -122,7 +122,7 @@ Neue Tests: `spk7-kern-test.mjs` +5 (Node, Kern aus index.html) und `spk7-pruef-
 | 7 | Layout ohne Freigabe | zurückgenommen: Aktionsfeld + Ebenenliste wie Basis (hochkant 96/180 px, quer 284 px). Weg: „Klangkorn ▾“ holt eine neue Auswahl, Tastatur links → KORN, Blatt auf. Zeile im Aktionsfeld = Vorschlag (Offen 5) | spk7-test 1 + 12 |
 | 8 | Ecke überdeckt 18 px Tasten | behoben: Druck unter der Tasten-Oberkante geht an die Tasten (Ton/Rollen), oben schaltet die Ecke um (44 px bleibt) | Tipp 8 px unter Oberkante: Modus bleibt, Ton klingt |
 | 9 | Überlast / volle Akkorde | behoben: Stimmen-Raub mit 4-ms-Blende (Note wartet so lange); gleiche Taste neu blendet den alten Ausklang 30 ms aus; Pegel-Ausgleich √(2/Σ Hüllkurve²), gleitet 10 ms | Sprung 0,90 (3,04), Spitze 0,65 (1,0); 8-Stimmen-Akkord 0,74 (0,99) – unter der weichen Grenze. Folge: Akkorde ab 3 Stimmen leiser als vorher |
-| 10 | Einsatz weich und spät | behoben: Körner beim Anschlag vorgefüllt (wie eingeschwungen) | 50 % nach 2 ms bei Anschlag 2 ms (26 ms); Anschlag 0,3 s → 219 ms |
+| 10 | Einsatz weich und spät | behoben: Körner beim Anschlag vorgefüllt (wie eingeschwungen) | 50 % nach 2 ms bei Anschlag 2 ms (26 ms); Anschlag 0,3 s → 219 ms; Song-Export 4,2 ms nach der Synth-Spur (16 ms) |
 | 11 | 8 Spuren: Knopf + verwaister Take | behoben: Knopf „Keine Spur frei – oben wählen“ gesperrt; Prüfung vor dem Take | Takes 1 → 1, Spuren 8 → 8 |
 | 12 | „↶ macht es rückgängig“ | behoben: Statuszeile „Rückgängig im Hinweis unten“ (der Hinweis hat ↶). Spektral-Kopf-↶ unverändert (Basis-Muster, auch „Klang nachbauen“) | Browser b11-b12 |
 | 13 | Halten quadratisch, Regler, schwarze Tasten | behoben: Halten-Ziel √s (80 % → 0,800); Korngröße/Dichte/Streuung Ton/Kornform im Schleife-Modus ausgeblendet; schwarze Tasten 16 px (14) | Kern + Browser b13 |
@@ -134,3 +134,9 @@ Weitere Entscheidungen dieser Runde:
 - Test-Aufnahme im Browser: Lücken der ScriptProcessor-Aufnahme (Hauptfaden zu spät) werden erkannt; Sprünge genau an so einer Naht zählen nicht
   (ein Lauf zeigte sonst 19,4 an einer Puffer-Naht; der Kern-Test misst ohne diese Unsicherheit).
 - Keine neuen Haken, einbau.py unverändert (6 Haken + Block); `SPK7_ROW` steht im Block.
+
+Regression und Pflicht dieser Runde (index.html = `python3 einbau.py`, byte-gleich geprüft; basis.html = basis5):
+- spk7-kern-test ALLES OK (12) · spk7-test ALLES OK (13) · spk7-pruef-test ALLES OK (12) · spk1-test ALLE OK
+- spk3-test 13 OK / 4 FEHLER: dieselben vier wie beim Bauer und beim Prüfer, gleiche Zahlen (bass 3,01/4 · verfeinern +0,52 · mehrstimmig 0/28 ·
+  Nachbau 2,13 → 2,13 gleich gut); layout-3-groessen OK, spk2 29/30 (bekannt). SPK7 berührt Spektral-Kern, Worker-Text und Nachbau nicht.
+- topdefs 26/0/0 · dupkeys 0 · smoke errors [] · MS 2000 1× · live 1× · vwStart 3× · Krypto 0 · Markenwörter = Basis, 0 im Paket.
