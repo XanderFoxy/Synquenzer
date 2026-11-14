@@ -52,3 +52,45 @@ topdefs doppelt 0 / Syntaxfehler 0 · dupkeys 0 · smoke errors [] (`smoke-a1.pn
 CHANGES unberührt · Markenwörter keine neuen. spk3-test (`spk3-test.out`, Basis basis5): 14 OK / 3 FEHLER – **mehrstimmig-akkord-toene OK**;
 FEHLER nur bekannte Ziele (Bass 3,01 < 4 dB, Verfeinern +0,52 < +1 dB) und nachbau-abstaende-besser (Werte = Basis 4.60, kein Rückschritt);
 spk2-test 29/30 (bekannt zerlegen-bass-ziel), Loop/Layout/Konsole OK. Bass-Noten-Weg bitgleich (`bass-neu.json` = `bass-alt.json`).
+
+---------------------------------------------------------------------------------------------------------------------------
+## Auftrag 2/4 – Bass ≥ 4 dB (erreicht) · Verfeinern ≥ +1 dB (nicht erreicht)
+Bau: `python3 bau.py` = basis5 + `spk4-block.js` + 8 Haken „SPK4“ (neu: `Z2.magsLo = magsLo` im SPK3-Block; in `zerlegen` Tiefband < 520 Hz
+ungeglättet, nur wenn `Z2.o6.nosm`). Sicherungen Stand A1: `index.a1.html`, `spk4-block.a1.js`, `bau.a1.py`.
+Kern: Abschnitt „Auftrag 2/4“ am Anfang von `spk4DspMake` (Block `if (Z2.magsLo …)`), ersetzt `Z2.lowSplit` (SPK3), Schalter `Z2.o6`.
+- Eigene Verfolgung `bassTrack4` (Kopie SPK2 bassTrack) + **Grundton-Pflicht**: Kandidat f, dessen Grundton-Spitze < φ 0,8 × max(2., 3. Oberton)
+  liegt, verliert Salienz × (Verhältnis)^3. Grund (messb/hist.mjs): Fehltöne = Pad-Grundton C2/C3 (Kamm C2 trifft C3+G3+C4 der Pads) statt Bass F#/E.
+- **Teiltöne breiter** (bw 1,5 × Fensterantwort, ±6 Bins): der Bass ändert Pegel/Ton im 186-ms-Fenster; die Spitze ist breiter als ein stehender Sinus.
+- **Zerlegen glättet das Tiefband nicht mehr 3×3** (Drums/Bass < 520 Hz): Glätten kostete 0,6 dB Bass und 0,6 dB Drums.
+- Verfeinern Bass mit **Profi-Bass als Startwert** (nur wenn Profi-Lauf fertig): Anteil |Profi|²/|X|² je feinem Bin, wo der Grundton verfolgt
+  wird Maximum mit dem Kamm-Anteil. Simuliert (Profi = zerlegte Ebene): 4,40 statt 4,36; echter Modell-Lauf ungemessen (ki1-Ablauf im Browser).
+  Ohne Profi bleibt Verfeinern klassisch (zerlegte Ebene als Startwert brächte +0,03 dB für +0,7 s → aus, `o6.pri 2`).
+
+### Messung (Demo 20 s; Node = `messb/x4.mjs` Kern aus der Datei, `NOB=1`; Browser = spk3-test/spk2-test)
+| | vorher (basis5 4.60) | nachher |
+|---|---|---|
+| Zerlegen Bass (SDR) | 3,01 | **4,37** (Browser 4,37) |
+| Zerlegen Drums / Tonal | 7,47 / 9,77 | 8,55 / 9,95 |
+| Verfeinern Bass 20–300 Hz | 3,01 → 3,53 (+0,52) | 4,37 → 4,36 (−0,01) |
+| Verfeinern Drums | 7,41 | 7,90 |
+| Zerlegen Zeit | Node 1,8–2,0 s · Browser 1770–2375 ms | Node 1,9–2,2 s · Browser 1986 / 2323 ms (Last 5,6) |
+| Überall finden Bass (Präzision fair / streng) | 0,84 / 0,72 | 0,79 / 0,69 (Quote 0,75 → 0,82) |
+Schritte (Node): bw 1,5 → 3,23 · + Grundton-Pflicht → 3,75 (Verf 4,36) · + ungeglättet → 4,37.
+Oracle (Stem, `messb/orc4.mjs`): Ton vom Stem 4,34 (unsere Verfolgung ist jetzt so gut wie die Stem-Verfolgung), An/Aus vom Stem +0,0,
+Ton + Teiltonpegel vom Stem + bw 2 → 5,00 (Zerlegen und Verfeinern). → Verfeinern +1 dB (≥ 5,37) liegt über dem Kamm-Modell selbst mit idealem Pegel.
+Warum Verfeinern nicht mehr gewinnt: die alten +0,52 kamen nur daher, dass Verfeinern ungeglättet schrieb; jetzt tut das Zerlegen auch.
+Verworfen (gemessen): Ton-Vorwissen < 100 Hz (3,11), Kick-Vorlage q 0,45 (0,69), N 16384 / 4096 im Verfeinern (4,19 / 2,61),
+Verfeinern mit eigener Breite/Grenze (bwT 2: 4,08; robT 1–2: 3,99–4,23), zerlegte Ebene als Mischung (4,04).
+
+### Offen
+1. Verfeinern ≥ +1 dB: braucht ein anderes Modell als den Obertonkamm – z. B. Teiltonpegel per kleinster Quadrate gegen Kick-Vorlage + Pad-Teiltöne
+   (Oracle-Pegel bringt +0,6) oder Profi-Bass (allein 4,59) als Startwert mit echtem Modell messen.
+2. spk2-test: `verfeinern-verbessert` (> +0,3) und `verfeinern-nach-noten` jetzt FEHLER (Verfeinern = Zerlegen, nicht schlechter: −0,01).
+3. Klang-Probe unter Last (Load 5,6) einmal va2 3,89 → 5,17; erneut allein: 3,89 → 3,89 (Zeit-abhängig, nicht SPK4).
+
+## Pflicht / Regression (A2)
+topdefs doppelt 0 / Syntaxfehler 0 · dupkeys 0 · smoke errors [] (`smoke-a2.png`) · „MS 2000“ 1× · „  live: true,“ 1× · VERSION wie basis5 ·
+CHANGES unberührt · keine Markenwörter. spk3-test (`spk3-test.out`): 14 OK / 3 FEHLER – **bass-zerlegen-4db OK (4,37)**; FEHLER verfeinern-plus-1db,
+regression-spk2-test (28/30: verfeinern-verbessert, verfeinern-nach-noten) und nachbau (Last, s. o.). Mehrstimmig, Loop, Layout, Konsole, Undo OK.
+Werkzeuge: `messb/x4.mjs` (Zerlegen/Verfeinern Bass; `FULL=1` Drums/Tonal, `PROFI=1` Profi simuliert, `O_*` = Z2.o6, `P_*` = Z2.o3),
+`messb/orc4.mjs` (`MODE=on|f0|onf0`, `LVL=1`), `messb/hist.mjs` (Ton-Fehler je Intervall), `messb/bass4.js` (Versuchsstand).

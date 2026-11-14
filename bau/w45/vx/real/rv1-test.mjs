@@ -216,7 +216,8 @@ for (const nr of ONLY) {
           for (let k = 0; k < cps.length; k++) { const h = g6pBuf(a, v, k), pl = sp.plans[sp.idx[k]]; out.push({vi, k, rule: v.rule, cms: cps[k].ms, x: pl && pl.chr2 ? pl.chr2 : null, t0: h && h.t0, sr: h && h.buf.sampleRate, y: h ? b64(h.buf.getChannelData(0)) : null}); } }
         c.grp.echt = 1; return {ready, out};
       }, o);
-      const E = await grab({id: v.id, echt: 1}), N = await grab({id: v.id, echt: 0});
+      const E0 = await grab({id: v.id, echt: 1}), N = await grab({id: v.id, echt: 0}), E = await grab({id: v.id, echt: 1});
+      info(`#${nr} Chor: Kopie mit „echt“ vor/nach der Kopie ohne gleich (Rechnung stabil)`, E.out.map((z, i) => z.rule + '/' + (z.k + 1) + ':' + (z.y === E0.out[i].y ? 'gleich' : 'ANDERS')).join(' '));
       const SR = E.out[0].sr;
       const envOf = y => { const D = 11, n = Math.floor(y.length / D), e = new Float32Array(n), a = new Float32Array(n); let acc = 0; const W = 20; for (let i = 0; i < n; i++) { let s = 0; for (let j = 0; j < D; j++) s += Math.abs(y[i * D + j]); a[i] = s / D; } for (let i = 0; i < n; i++) { acc += a[i]; if (i >= W) acc -= a[i - W]; e[i] = acc / W; } return e; };
       const lagMs = (yE, yN) => { const a = envOf(yN), bq = envOf(yE), D = 11, maxL = Math.round(.06 * SR / D); let best = 0, bv = -1; for (let L = 0; L <= maxL; L++) { let s = 0, sa = 0, sb = 0; for (let i = 0; i + L < bq.length && i < a.length; i += 2) { s += a[i] * bq[i + L]; sa += a[i] * a[i]; sb += bq[i + L] * bq[i + L]; } const v2 = s / Math.sqrt(sa * sb + 1e-20); if (v2 > bv) { bv = v2; best = L; } } return best * D / SR * 1000; };

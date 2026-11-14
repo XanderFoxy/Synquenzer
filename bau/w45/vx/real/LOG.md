@@ -24,3 +24,7 @@
 18:05 imp1-test (Kopie reg/imp1-test.mjs, reg/imp1.txt): ALLE OK (48), 119 s.
 18:07 chr2-test (Kopie real/chr2-test.mjs + src/synth.mjs, src/tune-meas.mjs aus chr3; Basis vx/basis2.html; src/run-chr2.txt): ALLE OK (82), 115 s.
 18:10 rv1-test: Stück-Wahl fürs Verschieben verlangt jetzt Platz für den Vokal des Vorgängers (Anker ≥ 0,2 s vor dem Stück; #10 Stück 6 hatte leeres Dehn-Fenster → 15,8× Schein-Wert). Info-Zeile „andere Stücke verändert“: bei #10 [] (Ursache der Links-Abweichung liegt im Render, nicht in den Zielen).
+18:19 Befund 3 (Links-Verschieben nicht bitgleich) = TEST-Fehler, kein App-Fehler: Node-Nachrechnung (dbg/hyb-node.cjs, Kern aus index.html) gibt
+  vor/nach dem Verschieben im Vorgänger 0 Abweichung, nur Stück k selbst ändert sich (2,8817–3,1316 s). Ursache: die Quelle (wpBase) wechselt zwischen
+  Quantisieren und Verschieben (Tonhöhen-Fassung wird fertig, wpBid anders) → Test verglich zwei Quellen. Test vergleicht jetzt mit der Fassung nach ↶
+  (gleiche Quelle) und meldet „quelle gleich/gewechselt“. #10 rechts: Stück 30 (Platz für den Vokal) → 1,30× gedehnt, −4 ct. Lauf 5: 44/53, #10 allein: links+rechts OK.
