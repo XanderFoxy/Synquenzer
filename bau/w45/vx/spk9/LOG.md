@@ -28,3 +28,4 @@
 - Regression einzeln nacheinander (Kopie pruef/reg/): spk4-test 6 FEHLER/23 (bekannt/erwartet, s. PRUEFUNG.md) · spk5 24/24 · spk5-fade OK · spk6 OK ·
   spk6-pruef fails 0 · spk1 17/18 (verfeinern-verbessert-ziel wie Basis).
 - Befunde (9, davon 5 mittel, 4 leicht) mit Messwerten in PRUEFUNG.md.
+- 22:14 Prüfer-Befunde (9) bearbeiten: Stand vor der Prüfung gesichert (fix/spk9-block.vor-pruef.js, fix/index.vor-pruef.html).
