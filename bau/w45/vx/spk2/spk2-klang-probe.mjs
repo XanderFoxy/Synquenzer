@@ -51,7 +51,7 @@ if (!only || only === 'fm') {
   ok('fm-abstand', {d: +r.best.dist.toFixed(2), start: +r.d0.toFixed(2)}, r.best.dist < 3 && r.best.dist <= r.d0);
 }
 if (!only || only === 'werk') {
-  const snd = await p.evaluate(() => factorySound('f-moog-bass'));
+  const snd = await p.evaluate(() => factorySound(DEFAULT_SOUNDS[0]));
   const r = await run(snd, 36, 0.5, {n: 50});
   console.log('Werk Nachbau', JSON.stringify(r.best), 'Start', r.d0.toFixed(2), r.ms + ' ms');
   ok('werk-abstand', {d: +r.best.dist.toFixed(2), start: +r.d0.toFixed(2), eng: r.best.eng, txt: r.best.txt}, r.best.dist < 4.5 && r.best.dist <= r.d0);

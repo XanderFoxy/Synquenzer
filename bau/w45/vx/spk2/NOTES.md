@@ -130,3 +130,58 @@ Kick-Ausklang (≈ 48–51 Hz). „Sicherheit“ trennt noch schlecht (Vorschlä
 - Krummes Quell-Tempo (z. B. 91,6) gegen ganzzahliges Projekt-Tempo: Loop-Audio wird nicht gedehnt (wie IMP1 offen; Abweichung bleibt im Clip).
 - Loop auf der Spektral-Seite nur zum Übergeben – Abspielen im Loop (Wiederholung) auf der Seite selbst noch nicht; Loop nicht im Dokument gespeichert.
 - MIDI-Güte = Güte der Noten (Auftrag 2: im Gemisch 44 %); Takes mono (wie IMP1).
+
+---------------------------------------------------------------------------------------------------------------------------
+## Auftrag 4/5 – Klang nachbauen (fertig, Grenzen unten)
+
+### Bedienung
+- Einstiege: Note antippen (Werkzeug „Noten“) → Klappfenster → **Klang nachbauen** (nur bei einer Note, nicht bei Drums);
+  **Noten ▾ → Klang nachbauen** = beste Note der gewählten Ebene (lang, Luft danach, bestätigt bevorzugt; `spk2KlPick`).
+- Klappfenster „Klang nachbauen · C2 · Bass“: Bild (eine Periode wie ein Oszilloskop + 16 Obertöne als Balken; hell = Original,
+  Auswahlfarbe = Nachbau), zwei Textzeilen mit fester Höhe (Analyse bzw. Ergebnis; Status „Versuch n/50 · Abstand x dB“),
+  [A Original │ B Nachbau] (Tipp = hören, gleich laut), ▶ Hören, Weiter verbessern (+50 Versuche ab dem besten), Spur-Wahl
+  (Synth-Spuren + „+ Neue Spur“, Standard = passende Rolle wie „In die Matrix“), **Als Klang übernehmen** (ein ↶).
+- Nach der Analyse startet der Nachbau sofort (ein Tipp). Läuft das Klappfenster zu, rechnet es zu Ende; Ergebnis bleibt in `U.kl`.
+
+### Kern
+- Worker (`spk2DspMake`): op `klang` {lid, a, b, f, tail} → Ebene (oder Original) im Bereich a−30 ms … b+Ausklang (bis zur nächsten
+  Note der Ebene, ≤ 0,6 s) mono → `klangFeat` + `klangSchaetz`, gibt Proben für A/B zurück. op `klangFeat` {pcs[], sr, f, on, off}
+  → Merkmale je Versuch (ohne Dokument).
+- `klangFeat`: Pegel (Schritt 5 ms, Fenster ≥ 2 Perioden) → Hüllkurve 64 Punkte (dB) + ADSR (Anstieg 10→90 %, 1/e-Abfall auf Sustain,
+  Sustain = Median der letzten 40 %, 1/e-Ausklang); Obertöne 1–24 aus dem gehaltenen Teil (FFT ≥ 5 Bins je Grundton, Grundton ±70 ct
+  nachgeschärft), Rauschanteil = Energie zwischen den Obertönen; Bänder 36 (40 Hz…16 kHz) × 4 Abschnitte (Anschlag 0–60 ms, früh
+  60–250 ms, gehalten, Ausklang 250 ms); Schwerpunkt 16 Punkte (in Obertönen); eine Periode (Mittel aus ≤ 8, ab Nulldurchgang nach dem
+  Minimum, 128 Punkte); RMS der Note (für gleich laut).
+- `klangSchaetz`: Wellen-Mischung (Säge / Puls d ∈ {50, 40, 33, 25, 20, 12,5 %} / Dreieck / Sinus, nicht negativ, alle Teilmengen) ×
+  Tiefpass 24 dB (Grenze 1…45 Obertöne, Resonanz 0…0,75) – Rastersuche, Fehler in dB; FM: Träger = Grundton, Modulator × 1…8,
+  Index 0…12 über Bessel-Tabelle J0…J40; Filter-Hüllkurve aus dem Schwerpunkt (Start / gehalten, 1/e-Zeit).
+- Hauptfaden: `spk2KlRender` = eigene Klangerzeugung offline (SynthHost.track wie mkRender; n Versuche je OfflineAudioContext, je Versuch
+  ein Kanal über ChannelMerger; Worklet-Text erst beim ersten Nachbau als data-URL gemerkt). `spk2KlSnd`: VA (o1/o2 Wellen fest aus der
+  Analyse, kt 0,5, ftype 24 dB, fS 0, keine LFO-Wege, kein Hall) bzw. FM6 (Alg. 1, Op 2 → Op 1, Verhältnis fest, Pegel/Abfall/Halten
+  von Op 2 = Index-Hüllkurve, fmAmp 1 = ADSR in Sekunden). Optimierer `spk2KlOpt`: Runde 0 = Startwerte (VA, FM, Varianten; FM-Familie
+  allein, wenn der FM-Rasterfehler < ½ VA), dann (1+6) mit dünner Mutation (1–3 Werte, einer alle), Schrittweite ×1,25 / ×0,7, 50 Versuche.
+  Abstand = 0,45 × Bänder + 0,3 × Obertöne 1–16 + 0,25 × Pegel-Hüllkurve (alles dB, unter −60 dB gekappt).
+  Eichung: gemessene 1/e-Zeiten × 6,9 = Engine-Zeiten (aD/aR/fD, an eigenen VA-Klängen gemessen).
+- Übernehmen: bestehende Spur → `soundEdit` + `applySound` (Klang-↶); neue Spur → `imp1Step` (newSynthTrack + applySound, ein ↶).
+- Test-API `SYNQUENZER.spk1.spk2.klang` (open, mehr, play, take, stand, probe(sound, m, dur), snd, dist, render, P).
+
+### Messung (spk2-klang-probe.mjs, Prüf-Chrome, je ~2 s für 50 Versuche)
+| Klang | Wahrheit | Nachbau | Abstand Start → Ende |
+|---|---|---|---|
+| VA Säge + 30 % Rechteck | 1,2 kHz · Res 0,3 · Hk +0,4/0,25 s · ADSR 5 ms/0,3/60 %/0,2 | VA Säge · 1,5 kHz · Res 0,25 · Hk +0,16/0,37 · ADSR 9 ms/0,41/55 %/0,31 · Rauschen 19 % | 4,0 → 3,4 dB |
+| FM 1:2 Pegel 75 | Abfall 40 · Halten 60 · ADSR 3 ms/0,4/50 %/0,3 | FM 1:2 (Analyse: 1:2, Index 1,0) · Pegel 78 · ADSR 4 ms/0,66/58 %/0,28 | 4,3 → 2,1 dB |
+| Grundklang Bass-Spur (VA) | – | VA Säge · 1,5 kHz · ADSR 4 ms/0,69/40 %/0,17 | 3,9 → 3,2 dB |
+| Demo-Bass-Ebene (aus dem Gemisch) | – | VA Säge + Rechteck 24 % | 8,6 → 7,1 dB |
+
+### Grenzen / nächster Schritt
+1. VA: zweiter Oszillator (gleiche Tonhöhe, 30 %) wird nicht gefunden – die Mischung Säge+Rechteck ist der Säge zu ähnlich; der Optimierer
+   gleicht mit Rauschen aus. Besser: Phase der Obertöne mitnehmen (Periode vergleichen) und Rauschen erst zulassen, wenn der Rauschanteil
+   der Analyse > 10 % ist.
+2. Unison/Verstimmung, LFO (Vibrato/Tremolo), Glide, Hall/Chorus werden nicht geschätzt (Klang trocken übernommen).
+3. FM nur 2 Operatoren (Alg. 1), Rückkopplung 0; mehr Operatoren = später.
+4. Auf dem iPhone ist der Nachbau langsamer (Schätzung 10–20 s für 50 Versuche); Fortschritt läuft im Klappfenster mit.
+5. Güte auf Ebenen aus dem Gemisch hängt an der Trennung (Auftrag 1 offen).
+
+### Dateien
+`spk2-klang-probe.mjs` (+ json), `spk2-klang-test.mjs` (+ json), Fotos `fotos/50-klang-nachbauen-hochkant.png`, `51-klang-nachbauen-quer-370.png`,
+Rauchtest `smoke-a4.png`, Sicherung vor Auftrag 4: `spk2-block.a3.js`.
