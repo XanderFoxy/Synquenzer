@@ -238,7 +238,8 @@ const CB = await p.evaluate(async () => { const r = __spk.spk2.loop.last(), D = 
   ok('container-frisch', {dateien: CB.files.filter(f => /doc\.json|\.bin$/.test(f)).length, ...C}, C.ok && C.audio && C.orig && C.midi && C.klang && C.spk && C.noten && C.masken && C.verkn);
   await p2.ctx.close(); }
 // alte Projekte unverändert: Demo-Projekt + gespeichertes Projekt (ohne SPK2-Felder) ergeben in Basis und neuer Fassung dieselbe Projektdatei
-{ const mk = async u => { const q = await page(428, 926, u); const s = await q.p.evaluate(() => { SYNQUENZER.loadDemo(); const f = SQStore.buildProjectFile(S, null, 'x'); const g = normalizeProject(projFromFile(JSON.parse(JSON.stringify(f)))); return JSON.stringify([f, SQStore.buildProjectFile(g, null, 'x')]).replace(/"(saved|time|ts0|created|modified|id)":("[^"]*"|\d+)/g, ''); }); await q.ctx.close(); return s; };
+{ const mk = async u => { const q = await page(428, 926, u); const s = await q.p.evaluate(() => { SYNQUENZER.loadDemo(); const f = SQStore.buildProjectFile(S, null, 'x'), g = SQStore.buildProjectFile(normalizeProject(projFromFile(JSON.parse(JSON.stringify(f)))), null, 'x');
+    const k = o => { const id = o.project.id; delete o.saved; delete o.sum; return JSON.stringify(o).split(id).join('PID').replace(/"uid":"[^"]*"/g, ''); }; return k(f) + '|' + k(g); });   /* Speicher-Zeit, Prüfsumme, Projekt-Kennung und uids sind je Lauf neu */ await q.ctx.close(); return s; };
   const a = await mk(base + '__basis.html'), c = await mk(url);
   ok('alte-projekte-unveraendert', {gleich: a === c, laenge: [a.length, c.length]}, a === c); }
 console.log('INFO Speichern/Container fertig (' + el() + ')');

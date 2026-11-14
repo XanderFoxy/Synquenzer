@@ -43,16 +43,17 @@ const doc = await p.evaluate(async () => {
   return {id: r.meta.id, n, sr: r.meta.sr, pk};
 });
 await p.waitForFunction(() => { const i = __spk.page.info(); return i && i.chunks > 0; }, null, {timeout: 60000}); await p.waitForTimeout(500);
+const zc = await p.evaluate(() => { const r = __spk.page.ui().b_zerl.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; });
+await p.touchscreen.tap(zc[0], zc[1]); await p.waitForTimeout(700);
 const lay = await p.evaluate(async () => {
   const U = __spk.page.ui(), z = U.b_zerl.getBoundingClientRect(), k = U.b_ki1.getBoundingClientRect(), x = document.querySelector('#spk1Sheet .sh-x').getBoundingClientRect();
   const small = [...document.querySelectorAll('#spk1Sheet .spk1-ac button')].filter(e => e.offsetParent).map(e => e.getBoundingClientRect()).filter(r => r.height < 43.5 || r.width < 43.5).length;
   const out = [...document.querySelectorAll('#spk1Sheet .spk1-ac button')].filter(e => e.offsetParent && (e.getBoundingClientRect().right > innerWidth + 0.5 || e.getBoundingClientRect().bottom > innerHeight + 0.5)).length;
-  __ki1.dd(); await new Promise(r => setTimeout(r, 600));
-  const d = U.dd.getBoundingClientRect();
-  return {zerl: [Math.round(z.width), Math.round(z.height)], ki: [Math.round(k.width), Math.round(k.height)], small, out, x: x.left >= 0 && x.right <= innerWidth && x.top >= 0 && x.bottom <= innerHeight, dd: [Math.round(d.left), Math.round(d.top), Math.round(d.right), Math.round(d.bottom)], W: innerWidth, H: innerHeight};
+  const d = U.dd ? U.dd.getBoundingClientRect() : null, items = U.dd ? [...U.dd.querySelectorAll('button')].filter(e => e.offsetParent).map(e => e.textContent) : [];
+  return {zerl: [Math.round(z.width), Math.round(z.height)], label: getComputedStyle(U.b_zerl, '::after').content, ki: [Math.round(k.width), Math.round(k.height)], small, out, x: x.left >= 0 && x.right <= innerWidth && x.top >= 0 && x.bottom <= innerHeight, dd: d && [Math.round(d.left), Math.round(d.top), Math.round(d.right), Math.round(d.bottom)], items, layers: SPK1.last.meta.layers.length, W: innerWidth, H: innerHeight};
 });
 await p.screenshot({path: path.join(fotos, 'ki1-03-quer-' + lay.W + 'x' + lay.H + '.png')});
-ok('quer-split-knopf', lay, lay.ki[0] >= 44 && lay.ki[1] >= 44 && !lay.small && !lay.out && lay.x && lay.dd[2] <= lay.W && lay.dd[3] <= lay.H && lay.zerl[0] >= 44);
+ok('quer-zerlegen-oeffnet-klappfenster', lay, lay.ki[0] === 0 && lay.zerl[0] >= 60 && /▾/.test(lay.label) && !lay.small && !lay.out && lay.x && lay.dd && lay.dd[2] <= lay.W && lay.dd[3] <= lay.H && lay.items[0] === 'Zerlegen (schnell, ohne Download)' && lay.items.some(x => /^Profi-Trennung laden/.test(x)) && lay.layers === 0);
 const r = await p.evaluate(() => { const U = __spk.page.ui(); spk1Dd(U, null); return __ki1.profi().then(r => ({ms: r.ms, n: r.n, msModell: r.msModell, layers: r.meta.layers.length}), e => ({err: String(e.message || e)})); });
 const M = await p.evaluate(async () => {
   const ref = window.__ref48, L = (await __spk.layers()).layers, n = Math.round(SPK1.last.meta.n);

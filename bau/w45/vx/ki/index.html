@@ -94668,7 +94668,7 @@ const KI1_API = {
   state: () => ({st: Object.assign({}, KI1.st), how: KI1.how, worker: !!KI1.w, busy: KI1.busy, net: KI1.net.slice(), diag: KI1.diag.slice(), files: (KI1.F || []).map(x => ({f: x.f, n: x.n, ways: x.ways}))}),
   scan: () => ki1Scan().then(r => ({bytes: r.bytes, full: r.full, rest: r.rest, have: r.have.size})),
   stand: () => ki1Stand(), ensure: o => ki1Ensure(o), profi: o => ki1Profi(o), stop: () => ki1Stop(), kill: w => ki1Kill(w), remove: () => ki1Remove(),
-  start: () => SPK1.ui && ki1Start(SPK1.ui), dd: () => SPK1.ui && SPK1.ui.b_ki1 && ki1Dd(SPK1.ui, SPK1.ui.b_ki1)
+  start: () => SPK1.ui && ki1Start(SPK1.ui), dd: () => { const U = SPK1.ui; if (U && U.b_ki1) ki1Dd(U, U.b_ki1.offsetParent ? U.b_ki1 : U.b_zerl); }
 };
 SYNQUENZER.ki1 = KI1_API;
 try { window.__ki1 = KI1_API; } catch (e) {}
