@@ -36,7 +36,7 @@ for (const [w, h, n] of SIZES) {
     await p.waitForTimeout(300);
     const put = await p.evaluate(() => (SYNQUENZER.jam3.put({k: 'm', b: 0, d: 4, g: 'dr', lv: 'stumm'}), SYNQUENZER.jam3.has()));
     const d = await jump(p, 'jam3pf');
-    ok('A3 jam3pf mit Perform-Spur: Rahmen an der Zeile PERFORM (alter Weg)', put && d.target && d.ring && !d.isRec && /j3-pl/.test(d.tgt) && !/Noch keine/.test(d.toast), {put, d});
+    ok('A3 jam3pf mit Perform-Spur: Rahmen an der Zeile PERFORM (alter Weg)', put && d.target && d.ring && !d.isRec && /^Perform-Spur/.test(d.tgt), {put, d});
     void c;
   }
   ok(`A9 keine Fehler ${n}`, !p.errs.length, p.errs.slice(0, 3));

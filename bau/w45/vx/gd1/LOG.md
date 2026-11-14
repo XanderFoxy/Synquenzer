@@ -3,3 +3,5 @@
 - 16:47 Code gelesen: Guide-Sprung (ui1Jump/UI1.alt), Menü-Zeilen (.seg button quer 32 px, Zeile 38), KF2SC-Oszilloskop + vvRenderAudio0 (UI.vvOff)
 - 16:50 GD1-Block nach „/* VID5-END */“ eingefügt (Zeilen 96107–96171): (1) kf1trp/jam3pf mit UI1.alt-Rahmen, (2) ::before-Trefferfläche Menü quer, (3) kf2ScFrame umhüllt (gd1Off). topdefs 0/0, dupkeys 0; guide2-Sonde: kf1trp + jam3pf jetzt ok/target/ring (vorher false/false).
 - 16:56 gd1-test.mjs (Touch, 428×926 / 926×428 / 926×370): 25/25 OK – Guide-Rahmen, Menü pixelgleich zur Basis, quer 20 Tasten ≥ 44×44 ohne Überlappung + Touch-Tipp daneben trifft, hochkant Trefferfläche = Taste; Oszilloskop: Basis 57× Analyser im Offline-Kontext, GD1 0×, danach wieder live
+- 16:53 A3 ergänzt (mit Perform-Spur: Rahmen an der Zeile PERFORM, alter Weg bleibt): gd1-test 25/25 OK
+- 16:56 Rauchtest smoke.mjs: errors [] (out/smoke/smoke.png); xd1-Regression läuft

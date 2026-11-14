@@ -1,4 +1,4 @@
-# SPK3 – NOTES (Stand Auftrag 3/4: Loop im Dokument + im Kreis fertig; Nachbau halb – Vibrato gut, Osz-2-Verstimmung erkannt aber nicht gehalten, Unison offen)
+# SPK3 – NOTES (Stand Auftrag 4/4: Test spk3-test.mjs 13 OK / 4 FEHLER – Bass 3,01 dB, Verfeinern +0,52, mehrstimmig fehlt, Pad-Nachbau schlechter; Loop + Noten-Präzision fertig)
 
 `index.html` = basis4.html (4.59.0) + Block `SPK3-BEGIN … SPK3-END` direkt nach `/* SPK2-END */` (Quelle `spk3-block.js`, bitgleich)
 + 2 Haken „SPK3“ im SPK1-Kern: `spk3DspMake(Z2)` nach der Z2-Anlage, Worker-Text schickt `spk3DspMake.toString()` mit. VERSION/CHANGES unberührt.
@@ -126,3 +126,44 @@ Teile des Blocks liegen auch einzeln in `a3-worker.js`, `a3-main.js`, `a3-loop.j
 ### Pflicht / Regression (A3)
 topdefs doppelt 0 / Syntaxfehler 0 · dupkeys 0 · smoke errors [] (`smoke-a3.png`) · „MS 2000“ 1× · „  live: true,“ 1× · VERSION 4.59.0 · Markenwörter = Basis ·
 spk2-test 29/30 (nur zerlegen-bass-ziel 3,01 < 4, wie A1/A2; klang-abstand-bekannt 3,16; gelaufen vor der letzten FM-Weiche, VA-Weg unverändert) · spk3-loop-test ALLE OK.
+
+---------------------------------------------------------------------------------------------------------------------------
+## Auftrag 4/4 – Gesamt-Test `spk3-test.mjs` (13 OK / 4 FEHLER, 162 s) + 1 Verbesserung
+
+Aufruf: `node spk3-test.mjs <abs index.html> [<abs vorher.html> = ../basis4.html]` (mess/ neben der Datei, basis2.html eine Ebene höher; NODE_PATH wird gesetzt).
+Ruft nacheinander mit Zeitgrenze auf und wertet mit den SPK3-Zielen (Ergebnis `spk3-test.json`, Ausgabe `spk3-test.log`):
+Kern `messk/noten3.mjs TEIL=alle PROFI=1` (Datei und Basis) · `../spk2/spk2-test.mjs` · `spk3-loop-test.mjs` · `spk3-klang-probe.mjs <basis> <datei>`.
+`NUR=kern,spk2,loop,klang` wählt Teile. noten3.mjs neu: `ueberall_fair` (Wahrheit = 32 − bestätigte, Takt 1 zählt mit) und `PROFI=1`
+(Profi-Lauf simuliert: `meta.jobs.profi.fertig`, Bass-Ebene `z 'bass'`; Sicherung `messk/noten3.a3.mjs`).
+
+| Prüfung | Ergebnis (Basis 4.59.0 → SPK3) |
+|---|---|
+| **bass-zerlegen-4db** | **FEHLER** 0,77 → 3,01 dB (Ziel 4) |
+| **verfeinern-plus-1db** | **FEHLER** 0,77 → −0,46 (−1,23) → jetzt 3,01 → 3,53 (+0,52; Ziel +1) |
+| verfeinern-undo · zerlegen-undo | OK (zurück 3,01 bitgleich; Zerlegen ↶ 0 / ↷ 3 Ebenen) |
+| noten-praezision-70 | OK fair 23 % → **84 %** (21/25, Quote 75 %); streng Takt 2–4 23 → 72 %; Browser 58,3 → 72 % |
+| uebernehmen-verschlechtert-nicht | OK Bass-SDR zerlegt → Zuordnen Takt 1 → Alle (25): Basis 0,77 → −0,59 → −5,6 · SPK3 3,01 → 3,01 → 3,01; Verfeinern nach Noten 3,01 → 3,39 |
+| uebernehmen-undo | OK (25 Noten, ↶ 4/25, ↷ 29/0) |
+| profi-ebene-als-quelle | OK (simuliert: Quelle = Profi-Bass, profi/vorlage true, 84 %); echter Modell-Lauf + Noten nicht gemessen |
+| **mehrstimmig-akkord-toene** | **FEHLER** Pad allein 0/28, Gemisch 1/28 (nicht gebaut, A2 offen) |
+| **nachbau-abstaende-besser** | **FEHLER** Lead 1,69 → 0,95 · FM 2,06 → 2,06 · VA 2 Osz 3,91 → 3,89 · **Pad 1,62 → 2,36** (Mittel 2,32 → 2,31) |
+| nachbau-ohne-fehler · keine-konsolenfehler | OK [] |
+| loop-gespeichert · loop-abspielbar · loop-undo | OK (Dokument {a 0, b 2}, nach Neu-Laden da, 2 Nähte in 11 s, Lücke 0 ms, Blende 3 ms, ■, ↶/↷, ✕) |
+| layout-3-groessen | OK 428×926 (+ Matrix ▾ offen), 926×428, 926×370; Loop-Zeile hochkant + quer 370, Tasten ≥ 44, ✕ sichtbar |
+| regression-spk2-test | OK 29/30 (nur zerlegen-bass-ziel, bekannt) |
+
+### Behoben / verbessert in Auftrag 4 (Haken „SPK3 A4“ in spk3-block.js, Bau `python3 bau4.py`; Sicherungen `*.a3.*`)
+- **Überall finden (Bass) rechnet auf der zerlegten Bass-Ebene**, wenn kein Profi-Lauf da ist (`quelleBass` = Profi-Bass, sonst Ebene `z 'bass'`, sonst Gemisch).
+  Befund im Test: Profi-Weg mit der zerlegten Ebene als Ersatz war besser als das Gemisch. Kern: fair 70,8 → 84 %, Oktav-/Ton-Fehler 5 → 0,
+  Laufzeit 1,1 → 0,6 s; Browser: Quote/Präzision 58,3/58,3 → 75/72 %, „Sicher ab“ 0,65–0,80 (vorher 0,54–0,73); Verfeinern nach Noten 3,29 → 3,39 dB.
+  Feld `profi` bleibt ehrlich (nur echter Profi-Lauf), neu `quelle` (Ebenen-id oder 'orig'). Nichts sichtbar geändert.
+
+### Offen (Stand nach Auftrag 4)
+1. Bass ≥ 4 dB / Verfeinern +1 dB: Wege s. Auftrag 1 (Verfolgung falscher Ton 22 %, Fehlalarm Takt 5–8); neu: Verfeinern könnte wie finden die Bass-Noten
+   (84 % richtig) als Vorwissen nehmen (Kamm nur auf bestätigten Noten).
+2. Mehrstimmig (Pads) bauen – Plan in Auftrag 2, Messung steht (`TEIL=pad messk/noten3.mjs`).
+3. Pad-Nachbau: Optimierer findet Unison nicht (wählt 2 Sägen +16 ct); Schutz: SPK2-Start ohne Bewegung immer mitlaufen lassen und im
+   gemeinsamen Maß vergleichen; Maß „Streuung der Raten“ für Unison.
+4. Befund: „Noten finden“ auf der zerlegten Bass-Ebene selbst (nicht Überall finden) trifft 0/32 (26 falscher Ton, Anschläge richtig) – Ursache prüfen
+   (vermutlich Sub-Oberton f0/2 bzw. Kick-Vorlage im SPK2-noten-Weg); Überall finden und Original-Bassband (43,8 %) sind nicht betroffen.
+5. Profi-Bass mit echtem Modell messen (ki1-Ablauf + finden im selben Prüf-Chrome).
