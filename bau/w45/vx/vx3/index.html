@@ -103924,18 +103924,23 @@ window.__vx2 = {last: () => VX2.last, on: v => { if (v != null) VX2.on = !!v; re
 const VX3 = {on: true};
 // Anlauf je Marke – ersetzt den Anlauf-Lauf in Op 'vxa' (Worker, Quelltext per toString: ganz in sich geschlossen) und in vx2AnLead
 function vx3Lead(mk, F, an, sr, H, FH, TH, lead) {
-  const kind = F.kind, env = F.env, rms = F.rms, zcr = F.zcr, nf = kind.length, fs = FH / sr;
+  const kind = F.kind, env = F.env, rms = F.rms, zcr = F.zcr, nf = kind.length, fs = FH / sr, P = F.p || {};
   for (let k = 0; k < mk.length; k++) {
     lead[k] = 0;
-    const fm = Math.floor(mk[k] * sr / FH), lo = k ? mk[k - 1] + .04 : 0; let f = fm - 1;
+    // Grenze: Vorgänger + 40 ms und (P1) nicht in dessen Einsatz – Anker des Vorgängers + 30 ms (wie die Vorgänger-Sperre beim Quantisieren)
+    const lo = k ? Math.max(mk[k - 1] + .04, P.anc === false ? 0 : mk[k - 1] + (an ? +an[k - 1] || 0 : 0) + .03) : 0, fm = Math.floor(mk[k] * sr / FH); let f = fm - 1;
     if (fm < nf && kind[fm] === 1 && mk[k] - fm * fs > .001) f = fm;                 // die Marke liegt im stimmlosen Rahmen
     let v = 0; while (f >= 0 && kind[f] === 2 && v < 4) { f--; v++; }                 // gesungene Rahmen vor der Marke = Vokal-Einsatz
     if (f < 0 || v > 3) continue;                                                       // länger gesungen → Legato, kein Anlauf
-    const fv = f + 1; let g = f, gp = 0; while (g >= 0 && kind[g] === 0 && gp < 3) { g--; gp++; }   // Verschluss (still) vor p/t/k
+    const fv = f + 1; let g = f, gp = 0; while (g >= 0 && kind[g] === 0 && gp < 3) { g--; gp++; }   // leise Behauchung (unter der Schwelle) nach dem Knall
     if (g < 0 || kind[g] !== 1 || g * fs <= lo) continue;
     const mx = .15 + Math.max(0, mk[k] - fv * fs); let s = g;                          // Konsonant ≤ 150 ms vor dem Vokal-Einsatz
     while (s - 1 >= 0 && kind[s - 1] === 1 && (s - 1) * fs > lo && mk[k] - (s - 1) * fs <= mx) s--;
-    if (!gp && s > 0 && kind[s - 1] === 2 && rms && zcr) {                             // zwischen zwei gesungenen Läufen ohne Verschluss:
+    // P2: Knall nach dem Verschluss – ein stiller Rahmen IM Konsonanten (Knall, still, Behauchung), davor ≤ 3 stimmlose Rahmen nach Stille
+    if (P.burst !== false && s >= 3 && kind[s - 1] === 0 && kind[s - 2] === 1) { let b = s - 2; while (b - 1 >= 0 && kind[b - 1] === 1 && s - 1 - b < 3) b--;
+      if (b > 0 && kind[b - 1] === 0 && b * fs > lo && mk[k] - b * fs <= mx) s = b; }
+    if (gp && s > 0 && kind[s - 1] === 2 && P.gap !== false) continue;                 // P3: Lücke nach Gesang = Ausklang des Vorgängers, kein Anlauf
+    if (!gp && s > 0 && kind[s - 1] === 2 && rms && zcr) {                             // zwischen zwei gesungenen Läufen ohne Lücke:
       let zm = 0, rc = 0, rv = 0; for (let h = s; h <= g; h++) { if (zcr[h] > zm) zm = zcr[h]; if (rms[h] > rc) rc = rms[h]; }   // nur ein echter Konsonant
       for (let h = fv; h < Math.min(nf, fv + 8); h++) if (kind[h] === 2 && rms[h] > rv) rv = rms[h];                     // (Rauschen oder leiser als
       if (zm < .15 && rc > .7079 * rv) continue;                                      // der Vokal −3 dB), kein Tonwechsel im Legato
