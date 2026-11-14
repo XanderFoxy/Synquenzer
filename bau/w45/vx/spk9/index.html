@@ -105307,7 +105307,7 @@ function spk7Tgts(U) {
 function spk9DspMake(Z2) {
   if (!Z2 || !Z2.h || !Z2.opt || !Z2.h.segNotes || !Z2.h.midiOf) return Z2;
   const H2 = Z2.h, seg0 = H2.segNotes, opt = Z2.opt;
-  const o9 = {an: 1, hys: 0.6, hold: 0.07, stab: 0.06, span: 0.25, bandv: 0.6, vmin: 0.3, tr: 0.8, trN: 99, look: 0.5, nl: 0.15, vib: 0.16, gegen: 0.3, lvl: 12, minS: 0.08, near: 0.07, win: 0.6, fbMin: 400,
+  const o9 = {an: 1, hys: 0.6, hold: 0.07, stab: 0.06, span: 0.25, bandv: 0.6, vmin: 0.3, tr: 0.5, trN: 3, look: 0.5, nl: 0.15, vib: 0.16, gegen: 0.3, lvl: 12, minS: 0.08, near: 0.07, win: 0.6, fbMin: 400,
     adv: 0.25, cst: 1, nlP: 1, vibMax: 0.875, stair: 0.3, stairN: 0.035, trFlat: 1, fall: 4, fallT: 0.45, dicht: 1, okt: 0.12, rise2: 6, mono: 1, qMono: 0.5, pMono: 0.85, dbg: null};   // Prüfung: adv … pMono (0 = aus)
   const med = v => { if (!v.length) return NaN; v.sort((p, q) => p - q); return v[v.length >> 1]; };
   // Tonhöhen-Stufen (Zeit der Grenze in s) aus der Grundton-Spur f0 (Rahmen i ↔ (i0 + i)·hopS), nur stimmhafte Rahmen (ok)
@@ -105318,6 +105318,7 @@ function spk9DspMake(Z2) {
     const out = [], warm = fr(0.06), W = fr(o9.stab) + 1, VB = fr(0.2), look = fr(o9.look), NL = fr(o9.nl), back = fr(0.06), wc = fr(o9.win);
     const mOf = (a, b) => { const v = []; for (let r = Math.max(0, a); r < Math.min(F, b); r++) if (!isNaN(s3[r])) v.push(s3[r]); return med(v); };
     const lvl = (ta, tb) => { const v = []; for (let t = ta; t < tb; t += hopS) v.push(O.envAt(t)); return med(v); };
+    const lvlMx = (ta, tb) => { let m = -200; for (let t = ta; t + 0.1 <= tb; t += 0.05) m = Math.max(m, lvl(t, t + 0.1)); return m; };
     let i = 0;
     while (i < F) {
       while (i < F && isNaN(s3[i])) i++; if (i >= F) break;
@@ -105348,7 +105349,8 @@ function spk9DspMake(Z2) {
         if ((bd - s0) * hopS < o9.minS || (j - bd) * hopS < o9.minS) { k = q + 1; continue; }
         const tb = T(bd) - hopS / 2;
         if (O && O.envAt) { const l1 = lvl(tb, Math.min(T(j), tb + 0.1));   // Ausklang: neuer Teil viel leiser UND fällt weiter bzw. endet bald (ein leiserer neuer Ton bleibt stehen)
-          if (l1 < lvl(Math.max(T(s0), tb - 0.25), tb) - o9.lvl && (!o9.fall || T(j) - tb < o9.fallT || lvl(tb + 0.1, Math.min(T(j), tb + 0.35)) < l1 - o9.fall)) { k = q + 1; continue; } }
+          const l0 = o9.fall ? Math.max(lvl(Math.max(T(s0), tb - 0.25), tb), lvlMx(T(s0), tb)) : lvl(Math.max(T(s0), tb - 0.25), tb);   // Bezug: lautester Teil der laufenden Note (im Abklingen ist schon der Teil davor leiser)
+          if (l1 < l0 - o9.lvl && (!o9.fall || T(j) - tb < o9.fallT || lvl(tb + 0.1, Math.min(T(j), tb + 0.35)) < l1 - o9.fall)) { k = q + 1; continue; } }
         rb.push(bd); s0 = bd; cst = js; k = Math.max(js, bd + warm);
       }
       // Übergang statt Ton: ein kurzes Stück (< tr s) zwischen zwei Stufen, das tonhöhenmäßig zwischen seinen Nachbarn liegt und sich

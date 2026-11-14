@@ -2,20 +2,23 @@
 
 Bau: `python3 bau.py` = `basis.html` (4.64.0, unverändert) + `spk10-block.js` direkt nach `/* SPK8-END */` + 2 Haken „SPK10“ im SPK8-Block
 (je ein Ein-Zeilen-Eingriff, typeof-Schutz; SPK9-Stellen – spk1DspMake-Hakenzeile, `const src`-Zeile, SPK2 `segNotes`-Zeile – nicht berührt):
-1. SPK8 `bassNoten`: neue Zeile direkt nach `const found = H2.segNotes(…)`:
-   `if (typeof spk10Okt === 'function') spk10Okt(Z2, d, found, {R, hopS});`
+1. SPK8 `bassNoten`: neue Zeile direkt nach der Sicherheits-Zeile des Leck-Schutzes (`if (o8.cf && o8.gS) found.forEach(…)`), vor „Liegende Töne“:
+   `if (typeof spk10Okt === 'function') spk10Okt(Z2, d, found2, {R, hopS});` (Nachbesserung: vorher direkt nach `const found = …` auf allen Roh-Noten)
 2. SPK8 `spk8WUrl`: Blob-Teil `';' + spk8DspMake.toString() + ';'` + `(typeof spk10Okt === 'function' ? spk10Okt.toString() + ';' : '')`
    → `spk10Okt` ist im Spektral-Worker vorhanden; Hauptfaden-Rückfall hat die globale Funktion.
 VERSION/CHANGES unberührt. Schalter `Z2.o10` (wird bei jedem Aufruf über die Grundwerte gelegt; `an: 0` = genau SPK8).
 
-## Was gebaut ist – `spk10Okt(Z2, d, found, c)` (nur Bass-Ebene, nur über SPK8)
-- Je gefundene Note Rahmen alle 25 ms von a + 50 ms bis b − 40 ms (mind. einer), Betragsspektrum des **Originals** mit **kurzem Fenster
-  N 4096** (≈ 93 ms) über das SPK3-Unterabtasten (`Z2.magsLo`, R 4), Leistung.
-- Merkmal r = 10·log10((P(3f) + P(5f)) / (P(2f) + P(4f))), Spitze ±1 Bin, über die Note summiert (Grundton-Bereich bewusst nicht benutzt:
-  dort liegen Kick-Rest und die Unter-Oktave des Bass-Klangs).
-- r < −19 dB (ungerade Obertöne fehlen deutlich) und 2f ≤ 290 Hz → Note ist die Unter-Oktave einer Note um 2f: Ton im Viertelton-Raster
-  ±1,5 Halbtöne um 2f mit dem Kamm 1–6 (Gewicht 0,86^h) im kurzen Fenster neu, auf MIDI gerundet; `m`, `f`, `fz` umgerechnet.
-- Kick-Abzug (`o10.kick`) als Schalter aus: gleiche Noten, spart die Kick-Vorlage für N 4096.
+## Was gebaut ist – `spk10Okt(Z2, d, found2, c)` (nur Bass-Ebene, nur über SPK8) – Stand nach der Nachbesserung
+- Nur behaltene Noten (nach dem Leck-Schutz) und nur Töne **unter C2** (`f < 63,5 Hz`, `o10.fK`; Kick-/Unter-Oktaven-Bereich).
+  Töne ab C2 bleiben unberührt (z. B. richtige G2, deren Oktave G3 ein Pad trägt – Prüfung Befund 1).
+- Je solche Note Rahmen alle 25 ms von a + 50 ms bis b − 40 ms (mind. einer), Betragsspektrum des **Originals** (nichts abgezogen) mit
+  **kurzem Fenster N 4096** (≈ 93 ms) über das SPK3-Unterabtasten (`Z2.magsLo`, R 4), Leistung.
+- Merkmal r = 10·log10((P(3f) + P(5f)) / (P(2f) + P(4f))), Spitze ±1 Bin, über die Note summiert (Grundton-Bereich bewusst nicht benutzt).
+- r < **−15 dB** → f ist die Unter-Oktave einer Note um 2f. Ton neu: **Halbton-Kandidaten im MIDI-Raster** m(2f) − 1 … + 1, Kamm 1–6
+  (Gewicht 0,86^h) auf dem **zwischen den Bins linear gelesenen Betrag** (kein ±1-Bin-Maximum mehr, das Nachbarn gleich macht),
+  Gleichstand → der Kandidat näher an 2f. `m`, `f`, `fz` umgerechnet.
+- Sicherheit der umgestellten Note: `min(conf, 0,5 + 0,5 · min(1, (−15 − r) / 8))` → knapp unter der Schwelle 0,5, ab r ≤ −23 dB 1.
+- Kein Kick-Abzug mehr im Code (war `kick: 0`, gleiche Noten), kein Feld `q.o10` mehr.
 
 ## Messung (`messb/faelle8.mjs` = Kopie aus spk8/messb, ergänzt um `spk10Okt`, `B10=` Block-Datei, `P10=` Schalter-JSON, `D10=1` Merkmal je Note)
 WICHTIG: Die Kopie in `spk10/messb/` benutzen – `spk8/messb/faelle8.mjs` holt nur `spk8DspMake` aus der Datei und misst daher den SPK8-Stand.

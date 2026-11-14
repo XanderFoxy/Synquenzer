@@ -29,3 +29,9 @@
   - 22:15 Befund 7: `src/vokale.mjs`: a 330/392/397 · o 400/483 · e 432/330 · i 531 (1×).
   - 22:16 Test `src/chr5-check.mjs` (B1–B8, 19 Zeilen): ALLE OK in 40 s (`reg/chr5-check.txt`).
   - 22:18 Befund 6: Uhrzeiten der Bauer-Einträge (0)–Ende nach den Dateizeiten korrigiert (alte Zeit in Klammern); Reihenfolge war richtig.
+  - 22:18 Pflicht auf index.html (= basis.html, cmp): topdefs Skripte 26 / doppelt 0 / Syntaxfehler 0 · dupkeys 0 · smoke errors [] (`smoke-nach.png`) · „MS 2000“ 1× · „^  live: true,“ 1× · VERSION 4.63.0 · Markenwörter = Basis (Datei gleich) · keine Marken-/Datensatz-/Produktnamen in NOTES, LOG, neuen src-Skripten, tmp, reg/chr5-check.txt.
+  - 22:19–22:21 chr2-test gegen basis2: ALLE OK (82), 112 s (`reg/chr2-nach.txt`).
+  - 22:21 vx1-test: 61/61 OK, 32 s (`reg/vx1-nach.txt`).
+  - 22:22 spk6-test (byteweise gleiche Kopie in reg/spk6-lauf, Fotos dort): ALLES OK, 26 OK-Zeilen, kern-messwerte fails 0, 33 s (`reg/spk6-nach.txt`).
+  - 22:22 chr3-pruef: `reg/chr3-pruef-nach.json` = `src/pruef-vorher.json` (cmp).
+  - 22:24 NOTES.md überarbeitet (Aufteilung +400/−500 korrigiert, hart-Ursache gemessen statt behauptet, Ton-Maß „Ziel-Ton“, Vokal-Tonhöhen, Vorschläge mit Regel-3-Vermerk, Ziel-Vorschlag, Einbau-Regel G2/G6) + Abschnitt „Prüfung“ (8 Befunde, je Stand und Nachweis). index.html unverändert (cmp basis.html und vx/basis7.html gleich). Ende Nacharbeit.
