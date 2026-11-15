@@ -1,0 +1,21 @@
+import { createRequire } from 'node:module';
+const { chromium } = createRequire(import.meta.url)('/opt/node-tools/node_modules/playwright/index.js');
+import http from 'node:http'; import fs from 'node:fs'; import path from 'node:path';
+const file = path.resolve(process.argv[2]), dir = path.dirname(file);
+const srv = http.createServer((q, r) => { const p = path.join(dir, decodeURIComponent(q.url.split('?')[0])); if (!fs.existsSync(p)) { r.writeHead(404); r.end(); return; } r.writeHead(200, {'content-type': p.endsWith('.html') ? 'text/html; charset=utf-8' : 'application/octet-stream'}); fs.createReadStream(p).pipe(r); });
+await new Promise(ok => srv.listen(0, ok)); const url = 'http://127.0.0.1:' + srv.address().port + '/' + path.basename(file);
+const b = await chromium.launch(); const p = await (await b.newContext({viewport: {width: 428, height: 926}})).newPage();
+await p.goto(url); await p.waitForFunction(() => window.__spk && window.__fokus1, null, {timeout: 90000});
+const out = await p.evaluate(async () => {
+  await __spk.page.open({}); const sr = 44100, n = 14 * sr, x = new Float32Array(n);
+  const tone = (f, a, b) => { for (let i = a * sr; i < b * sr; i++) { let v = 0; for (let h = 1; h <= 8; h++) v += 0.3 / h * Math.sin(2 * Math.PI * f * h * i / sr); x[i] += v * Math.min(1, (i - a * sr) / 441, (b * sr - i) / 441); } };
+  tone(220, 2, 6); tone(311.13, 8, 12); let s = 7; for (let i = 0; i < n; i++) x[i] += 0.002 * (((s = (s * 1103515245 + 12345) >>> 0) / 4294967296) * 2 - 1);
+  const r0 = await __spk.load({name: "dbg", sr, ch: [x]}); await __spk.page.open({id: r0.meta.id});
+  await new Promise(ok => { const t = setInterval(() => { const i = __spk.page.info(); if (i.chunks > 0 && !/Spektrum \d/.test(i.stat)) { clearInterval(t); ok(); } }, 200); });
+  const r1 = await __spk.spk2.noten('orig', [{art: 'zeit', t0: 1.5, t1: 6.5}]); const N = r1.meta.teil2.notes.orig;
+  await __spk.spk2.zuordnen(N.map(q => ({lid: 'orig', id: q.id})), 'neu', 'lead');
+  const U = __spk.page.ui(); U.f1 = {mode: 'rest', aus: 'alle'};
+  const r = await __spk.spk2.noten('orig', []);
+  const T = r.meta.teil2.notes; return {fokus: r.fokus, mehr: r.mehrstimmig, T: Object.fromEntries(Object.entries(T).map(([k, L]) => [k, L.map(q => ({id: q.id, st: q.st, f: q.f, a: q.a, b: q.b, conf: q.conf}))]))};
+});
+console.log(JSON.stringify(out, null, 1)); await b.close(); srv.close();
