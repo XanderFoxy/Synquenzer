@@ -27571,7 +27571,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '4.68.0';
+const VERSION = '4.69.0';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -28806,6 +28806,7 @@ function normTrack(t, def, pk, warns) {
   const cl = Array.isArray(t.clips) ? t.clips : [];
   o.clips = emptyClips().map((_, s) => normClip(cl[s], def.kind, pk));
   if (typeof mtx3NormTr === 'function') mtx3NormTr(t, o, def, pk, cl);   /* MTX3: Einzelspur (tr.dvx, Drum-Clips) */
+  if (typeof mtx3bNormTr === 'function') mtx3bNormTr(t, o, def, pk, cl);   /* MTX3B: Drum-Felder auch mit anderem Klang */
   if (typeof t.uid === 'string' && UID_RE.test(t.uid)) o.uid = t.uid;
   if (def.kind === 'synth' && t.stimme === true) o.stimme = true;  // VS3: STIMME-Spur (normalizeProject: nur eine, Index ≥ 6)
   if (def.kind === 'synth' && t.orig === true && !o.stimme) o.orig = true;   // IMP1: Spur „Original“ (importiertes Audio über die Take-Wiedergabe)
@@ -28898,6 +28899,7 @@ function normalizeProject(obj) {
     // WP6 (§7.4): kit substitutions of the drum migration are toasted once (applyProject)
     if (warns.length) Object.defineProperty(p, '_warn', {value: warns, enumerable: false, configurable: true});
     p.fxBus = normFxBus(obj.fxBus);
+    if (typeof mtx3bOwnNorm === 'function') mtx3bOwnNorm.tr = p.tracks;   /* MTX3B: die geladenen Spuren für ownNorm */
     p.song = normSong(obj.song, p.key, p.tracks.length);   // §3.9 (WP6); V2a: NT lanes
     const ui = obj.ui && typeof obj.ui === 'object' ? obj.ui : {};
     const nt = p.tracks.length, ord = Array.isArray(ui.order) && ui.order.length === nt && ui.order[nt - 1] === DRUM_T && new Set(ui.order).size === nt && ui.order.every(x => Number.isInteger(x) && x >= 0 && x < nt) ? ui.order.slice() : orderFor(nt);
@@ -28906,6 +28908,7 @@ function normalizeProject(obj) {
     if (ui.partPage === 1) p.ui.partPage = 1;                       // V2c: page 5–8 of the Teil-Leiste (a view field)
     // V2c (§4.4/§4.5): the parts and the chord rows of the scenes (lossless; a file without them has none)
     p.parts = Array.from({length: N_PART}, (_, k) => normPart(Array.isArray(obj.parts) ? obj.parts[k] : null, k, nt));
+    if (typeof mtx3bOwnNorm === 'function') mtx3bOwnNorm.tr = null;   /* MTX3B: wieder die Spuren der App */
     if (Array.isArray(obj.scenes)) obj.scenes.slice(0, N_SCN).forEach((sc, i) => { const r = sc && normChordRow(sc.chords); if (r) p.scenes[i].chords = r; });
     // V0b FOLGEN: the editor kinds switched to AUS (only false entries are kept; missing = FOLGT)
     if (ui.follow && typeof ui.follow === 'object') { const f = {}; for (const k of ['roll', 'lauf', 'steps', 'song']) if (ui.follow[k] === false) f[k] = false; if (Object.keys(f).length) p.ui.follow = f; }
@@ -29041,6 +29044,7 @@ function ownNorm(c, pk, nt) {
   const t = isNum(c.from.t) ? Math.round(c.from.t) : -1; if (t < 0 || t >= (nt || MAX_T)) return null;
   const s = isNum(c.from.s) ? clamp(Math.round(c.from.s), 0, N_SCN - 1) : 0, bar = isNum(c.from.bar) ? clamp(Math.round(c.from.bar), 0, SONG_MAX_BARS - 1) : 0;
   const out = normClip(c, t === DRUM_T ? 'drum' : 'synth', pk); if (!out) return null;
+  if (typeof mtx3bOwnNorm === 'function') mtx3bOwnNorm(t, c, pk, out);   /* MTX3B: Version einer Einzelspur = Drum-Clip (Saat, Chance, Wirbel) */
   delete out.lw;                                                   // KL1: nur Szenen-Clips haben ein Fenster
   out.from = {t, s, bar};
   // what „Zurück zum Szenen-Clip“ restores: the lane entry that stood at the own clip's bar before, and whether its end entry was added
@@ -34902,6 +34906,7 @@ function undoApply(e, val) {
   if (e.kind === 'clip' && ED.rollAt && e.track === ED.rollAt.t && e.scene === ED.rollAt.s && S.tracks[e.track]) {
     if (S.tracks[e.track].clips[e.scene] && ED.roll) { ED.roll.refresh(); rollHeadUpdate(); }
     else if (S.tracks[e.track].clips[e.scene] && ED.lauf) { laufPaint(); rollHeadUpdate(); }
+    else if (S.tracks[e.track].clips[e.scene] && typeof mtx3bOpen === 'function' && mtx3bOpen()) { mtx3bPaint(true); rollHeadUpdate(); }   /* MTX3B: Drum-Schritt-Editor der Einzelspur bleibt offen */
     else closeRoll();
   }
   if (e.kind === 'clip' && S.tracks[e.track].kind === 'synth') scheduleAutoKey(e.scene);
@@ -35927,6 +35932,7 @@ function recBegin() {
   if (rec.fixedLen) {
     const before = S.tracks[ti].clips[si];
     const clip = {len: rec.fixedLen, key: Object.assign({}, rec.key), notes: []};
+    if (typeof mtx3Is === 'function' && mtx3Is(ti)) clip.seed = newSeed();   /* MTX3B: Drum-Clip der Einzelspur */
     if (S.tracks[ti].kind === 'drum') clip.seed = newSeed();
     { const ts = recTs(); if (ts) clip.ts = ts; }                   // T1: Taktart der Aufnahme-Stelle
     pushUndo(ti, si, before, 'Aufnahme');
@@ -36119,6 +36125,7 @@ function recClose(bd) {
   if (!notes.length && !late.length && !cvT) { if (!VS.busy) toast('Nichts aufgenommen'); UI.dirty.all = true; return; }
   notes.sort((a, b) => a.t - b.t);
   const clip = {len, key: Object.assign({}, rec.key || {root: S.key.root, scale: S.key.scale, src: 'auto'}), notes};
+  if (typeof mtx3Is === 'function' && mtx3Is(ti)) clip.seed = newSeed();   /* MTX3B: Drum-Clip der Einzelspur */
   if (S.tracks[ti].kind === 'drum') clip.seed = newSeed();
   { const ts = recTs(); if (ts) clip.ts = ts; }                     // T1
   pushUndo(ti, si, S.tracks[ti].clips[si], 'Aufnahme');
@@ -36163,8 +36170,10 @@ function commitRecNote(o, bOff) {
       const L = clipB(rec.clip); if (t >= L - 1e-9) t = 0;
       const ro = +Math.min(raw, L - 1e-4).toFixed(4);
       rec.clip.notes.push({t: q ? +t.toFixed(6) : raw >= L - 1e-9 ? 0 : ro, o: ro, d: Math.min(o.drum ? .1 : d0, L), n, v: vv, born: o.b, bornRun: R.runId});
+      if (typeof mtx3bRecDup === 'function') mtx3bRecDup(o, rec.clip.notes);   /* MTX3B: ein Schlag je Stelle (Einzelspur) */
       UI.dirty.grid = true;
     } else rec.temp.push({t, o: raw, d: Math.min(o.drum ? .1 : d0, 64), n, v: vv, born: o.b});
+    if (typeof mtx3bRecDup === 'function' && !(rec.fixedLen && rec.clip)) mtx3bRecDup(o, rec.temp);   /* MTX3B: ein Schlag je Stelle (Einzelspur) */
     return;
   }
   const clip = o.clip || (o.kind === 'tail' ? (rec.tail && rec.tail.clip) : rec.clip);
@@ -36180,6 +36189,7 @@ function commitRecNote(o, bOff) {
   const n = o.drum ? o.n : clipNoteFor(tr, clip.key, o.n, o.tm != null ? o.tm : b2t(o.b), o.en);
   const ro = +Math.min(raw, L - 1e-4).toFixed(4);
   clip.notes.push({t: q ? +t.toFixed(6) : (t === 0 && raw >= L - 1e-9 ? 0 : ro), o: ro, d: Math.min(o.drum ? .1 : d0, L), n, v: vv, born: o.b, bornRun: R.runId});
+  if (typeof mtx3bRecDup === 'function') mtx3bRecDup(o, clip.notes);   /* MTX3B: ein Schlag je Stelle (Einzelspur) */
   clip.notes.sort((a, b) => a.t - b.t);
   if (o.kind === 'od') rec.added++;
   clipChanged(tr, scene); markDirty();
@@ -36222,6 +36232,7 @@ function recNoteOn(id, track, note, vel, atT) {
   if (!R.playing || !AU.ctx) return null;
   const tm = atT != null && atT <= AU.ctx.currentTime ? atT : AU.ctx.currentTime, b = t2b(tm - AU.outLat), k = recKindFor(track, b);
   const o = {b, n: note, v: vel, kind: null, track, tm, en: T.targetAt(tm + 1e-6)};
+  if (typeof mtx3bRecO === 'function') mtx3bRecO(o);   /* MTX3B: Einzelspur nimmt Schläge ihres Pads auf */
   if (!k) { recRemember(id, o); return null; }
   rec.open.set(id, recOpenFor(o, k));
   return k;
@@ -43185,6 +43196,7 @@ function uiFrame() {
   if (R.editor === 'browser' && UI.dirty.br) { UI.dirty.br = false; brRefresh(); }
   if (ED.roll && ED.rollAt) rollFrame(bAud);
   else if (ED.lauf && ED.rollAt) laufFrame(bAud);
+  if (typeof mtx3bFrame === 'function' && ED.mtx3b && ED.rollAt) mtx3bFrame(bAud);   /* MTX3B: Lauflicht im Drum-Schritt-Editor der Einzelspur */
   mpTick();                                                 /* MP Mithören */
   if (UI.toastActs) toastPlace();                           // sheets opened/closed/rebuilt under an action toast
   if (VD4 && VD4.on) vd4Frame();                            // VD4: Regie-Vorschau (aus = nur diese Prüfung)
@@ -49698,6 +49710,7 @@ function pageDrumSteps(pg) {
   onTap(eb, () => openEuclid(eb)); onTap(mb, () => openPatterns(mb));
   tools.append(eb, mb);
   d1Tools(tools, clip);                                            /* D1: [Länge n ▾] [×2] */
+  if (typeof mtx3bDrumTools === 'function') mtx3bDrumTools(tools, clip);   /* MTX3B: [Auslagern ▾] */
   ED.dLand = window.matchMedia('(orientation: landscape)').matches;
   foot.append(ov); if (ED.dLand) stabs.appendChild(side); else foot.appendChild(side);
   ED.pgnav = null; ED.runBar = -2;
@@ -50401,6 +50414,7 @@ function buildRoll() {
   if (ED.rollAt && ED.rollAt.mel) return buildMelodyRoll();
   if (ED.rollAt && ED.rollAt.own) return buildOwnRoll();             // V2e′: ROLLE on an own clip of the song
   if (ED.rollAt && ED.rollAt.vx) return vx1rBuild();                 // VX1R: Gesang-Editor (dieselbe PianoRoll)
+  if (typeof mtx3bDrumView === 'function' && mtx3bDrumView()) return;   /* MTX3B: Einzelspur = Drum-Schritt-Editor ihres Pads */
   const {t, s} = ED.rollAt, tr = S.tracks[t], sh = EL.rollSheet;
   // WP5: LAUF (§3.10) when chosen and the clip is one note per step; otherwise the piano roll
   if (ROLLP.view === 'lauf') { const chk = tr.kind === 'synth' ? laufCheck(tr.clips[s]) : {ok: false}; if (chk.ok) { LAUF.grid = chk.grid; return buildLauf(); } ROLLP.view = 'roll'; }
@@ -50446,6 +50460,7 @@ function buildRoll() {
   gl1RollPlace();                                                    // GL1: [wie gespielt] gleich hinter LAUF (nur mit LAUF-Richtung zu sehen)
   bb1RollHook(t, s);                                                 // BB1: [Werkzeugkasten] neben [Spielweise]
   if (typeof mtx3RollHook === 'function') mtx3RollHook(t, s);   /* MTX3: [Auslagern ▾] */
+  if (typeof mtx3bRollHook === 'function') mtx3bRollHook(t, s);   /* MTX3B: Einzelspur [SCHRITTE] statt [LAUF] */
   rollKbApply();
   rollHeadUpdate(); renderEdChip();
   sh.classList.add('open');
@@ -84568,6 +84583,7 @@ function gr1Pad(id, used) {
 }
 // the style's drums over the clip's bars, with the pads the clip uses
 function gr1DrumNotes(src, st) {
+  if (typeof mtx3bIn === 'function') src = mtx3bIn(src);   /* MTX3B: DRUMS + Einzelspuren zusammen (wie vor dem Aufteilen) */
   if (st.ts || src.ts) return gen4DrumPat(src, st);                   // GEN4: in der Taktart des Stils
   const bars = Math.max(1, src.len | 0), used = new Set((src.notes || []).map(n => n.n)), by = new Map();
   for (const id of Object.keys(st.d)) {
@@ -84664,7 +84680,9 @@ function gr1RemixDo(song, st, a, b, z) {
         continue;
       }
       if (role !== 'z' && src.c.ts) { res.ts++; continue; }           // the patterns are 4/4
+      if (typeof mtx3bRole === 'function') mtx3bRole(t, src.c);   /* MTX3B: Kontext für mtx3bIn */
       const notes = role === 'dr' ? gr1DrumNotes(src.c, st) : role === 'bass' ? gr1BassNotes(src.c, st) : gr1ForceNotes(src.c, st, z);
+      if (typeof mtx3bPads === 'function') mtx3bPads(t, notes, src.c);   /* MTX3B: ausgelagerte Pads nicht doppelt */
       const id = gr1VerPut(song, t, sp.s, src.c, role === 'z' ? {s: st.id, v: src.v, z} : {s: st.id, v: src.v}, notes);
       if (!id) { res.full++; continue; }
       if (id !== sp.id) sx9Set(song, t, sp.a, sp.b, id);
@@ -84726,7 +84744,9 @@ function gr1Pattern(t, s, stId) {
   const before = cleanClip(c);
   if (!c) c = drumClipFor(s);
   if (c.ts) { if (!before) { tr.clips[s] = null; clipChanged(t, s); } toast('Grundmuster gibt es nur für Clips im 4/4-Takt'); return false; }
+  if (drum && typeof mtx3bRole === 'function') mtx3bRole(t, c);   /* MTX3B: Kontext für mtx3bIn */
   c.notes = drum ? gr1DrumNotes(c, st) : gr1BassNotes(c, st);
+  if (drum && typeof mtx3bPads === 'function') mtx3bPads(t, c.notes, before);   /* MTX3B: ausgelagerte Pads nicht doppelt */
   if (drum) delete c.lanes;
   pushUndo(t, s, before, 'Grundmuster ' + st.name);
   afterClipEdit(t, s); UI.dirty.grid = true;
@@ -86595,6 +86615,7 @@ function gr2Drums(ns, st, s, N, LB, bars) {
 }
 // die Noten eines Clips im Stil st, Stärke s (0–1), Rolle role; eine andere Taktart (4/4 ↔ 3/4) wird je Takt anteilig gefaltet
 function gr2Translate(src, st, s, role) {
+  if (role === 'dr' && typeof mtx3bIn === 'function') src = mtx3bIn(src);   /* MTX3B: DRUMS + Einzelspuren zusammen (wie vor dem Aufteilen) */
   s = clamp(+s || 0, 0, 1);
   if (st && st.tv) return gen3TvNotes(src, st, s, role);               // GEN3: Tempo-Version
   if (gen4On() && st) return gen4Conv(src, st, s, role);               // GEN4: Basis ↔ Stil aus dem Blatt (Taktart, Raster, Muster)
@@ -86612,6 +86633,7 @@ function gr2Translate(src, st, s, role) {
 // die Rolle einer Spur im Remix: dr · bass · comp (Akkorde) · pad · seq (laufende Figur, Perkussion) · lead — null: Gesang, Audio
 function gr2Role(t, c) {
   const tr = S.tracks[t]; if (!tr || !c || c.audio || tr.stimme) return null;
+  if (typeof mtx3bRole === 'function') { const r3 = mtx3bRole(t, c); if (r3 !== undefined) return r3; }   /* MTX3B: Einzelspur = Drum-Rolle wie DRUMS */
   { const o = gen4On() ? gen4RoleOv(t, c) : undefined; if (o !== undefined) return o; }   // GEN4: die Rolle aus dem Blatt
   if (isDrum(t)) return 'dr';
   if (typeof mtx3Dr === 'function' && mtx3Dr(t)) return null;   /* MTX3: Einzelspur bleibt (kein Synth-Stil) */
@@ -86716,7 +86738,9 @@ function gr2RemixDo(song, st, a, b, k, art) {
       if (!conv && ((!k && !gen4On()) || !(src.c.notes || []).length)) { if (sp.id !== src.id) { sx9Set(song, t, sp.a, sp.b, src.id); res.n++; } continue; }   // 0 % = Original
       const pat = art === 'm' && !conv && !st.only && (role === 'dr' || role === 'bass');
       const notes = pat ? (role === 'dr' ? gr1DrumNotes(src.c, st) : gr1BassNotes(src.c, st)) : gr2Translate(src.c, st, k / 100, role);
+      if (typeof mtx3bPads === 'function') mtx3bPads(t, notes, src.c);   /* MTX3B: ausgelagerte Pads nicht doppelt */
       const id = gr2VerPut(song, t, sp.s, src.c, pat ? {s: st.id, v: src.v} : {s: st.id, v: src.v, u: k}, notes, tTs);
+      if (id && pat && typeof mtx3Dr === 'function' && mtx3Dr(t) && song.own && song.own[id]) delete song.own[id].lanes;   /* MTX3B: Stil-Muster ohne D1-Spuren wie auf DRUMS */
       if (!id) { res.full++; continue; }
       gen3VerSt(song.own[id], src.c, st, k, t);                          // GEN3: Klangzustand der Version (Tempo-Version: Hall, Release)
       if (id !== sp.id) sx9Set(song, t, sp.a, sp.b, id);
@@ -87792,12 +87816,14 @@ function gen3MxRemix(src, stId, k, art) {
     }
     const pat = art === 'm' && !conv && (role === 'dr' || role === 'bass');
     const notes = !k && !conv && !gen4On() ? (c.notes || []).map(cleanNote) : pat ? (role === 'dr' ? gr1DrumNotes(c, st) : gr1BassNotes(c, st)) : gr2Translate(c, st, k / 100, role);
+    if (typeof mtx3bPads === 'function') mtx3bPads(t, notes, c);   /* MTX3B: ausgelagerte Pads nicht doppelt */
     const nc = cleanClip(c); delete nc.sf; delete nc.gr;
     if (pat && role === 'dr') delete nc.lanes;
     if (conv) { if (tTs) nc.ts = tTs; else delete nc.ts; delete nc.lanes; }
     nc.notes = notes.map(cleanNote); nc.gr = pat ? {s: st.id, v: 1, m: src} : {s: st.id, v: 1, u: k, m: src};
     gen3VerSt(nc, c, st, k, t);
     const clip = normClip(nc, tr.kind === 'drum' ? 'drum' : 'synth', S.key); if (!clip) { res.skip++; continue; }
+    if (typeof mtx3bReClip === 'function') mtx3bReClip(t, clip, nc);   /* MTX3B: Einzelspur = Drum-Clip */
     items.push({kind: 'clip', track: t, scene: dst, before: old ? cleanClip(old) : null});
     tr.clips[dst] = clip; ch.push(t); res.n++;
     if (role === 'dr') res.dr++; else if (role === 'bass') res.bass++; else res.other++;
@@ -91730,6 +91756,7 @@ function snd1Build(F, lv, off) {
     if (r === 'dr') { snd1Drums(snd, F); applyDrumSound(snd); } else { snd1Syn(snd, F, r); applySound(i, snd); }
     if (lv === 'mix') { snd1Mix(S.tracks[i], F, r, scOk); mixIdx.push(i); }
   }
+  if (typeof mtx3bSnd === 'function') mtx3bSnd(F, lv, ro, off, mixIdx, scOk);   /* MTX3B: Stil-Klang der Drums auch auf den Einzelspuren */
   if (mixIdx.length) mixaAfter(mixIdx, true);
   if (!off.has('fx')) { const b = deep(S.fxBus); snd1Bus(b, F, lv); S.fxBus = normFxBus(b); applyFxBus(); applyTempoDependents(); }
   return {skip: !scOk};
@@ -92858,9 +92885,11 @@ function gen4ClipConv(t, src, st, k, cnt, own) {
   const tr = S.tracks[t], role = gr2Role(t, src); if (!tr || !role) return null;
   const nc = deep(src), tTs = st.tv ? (src.ts || null) : (st.ts || null);
   nc.notes = gr2Translate(src, st, k / 100, role).map(cleanNote);
+  if (typeof mtx3bPads === 'function') mtx3bPads(t, nc.notes, src);   /* MTX3B: ausgelagerte Pads nicht doppelt */
   if ((src.ts || null) !== tTs) { if (tTs) nc.ts = tTs; else delete nc.ts; delete nc.lanes; }
   gen3VerSt(nc, src, st, k, t);
   if (cnt && role !== 'fold') { if (role === 'dr') cnt.dr++; else if (role === 'bass') cnt.bass++; else cnt.other++; }
+  if (!own && typeof mtx3bReClip === 'function' && typeof mtx3Dr === 'function' && mtx3Dr(t)) return normClip(nc, 'drum', S.key) || nc;   /* MTX3B: Einzelspur = Drum-Clip */
   return own ? nc : normClip(nc, tr.kind === 'drum' ? 'drum' : 'synth', S.key) || nc;       // eigene Clips/Versionen des Songs: Felder bleiben (wie gr2VerPut)
 }
 // Tempo-Version an Ort und Stelle: das Tempo der Version (vom Tempo vor der Sitzung aus), sonst zurück auf das Tempo vorher
@@ -92879,6 +92908,7 @@ function gen4DoScene(s, st, k, Z, play) {
   for (let t = 0; t < NT(); t++) {
     const tr = S.tracks[t], cur = tr && tr.clips[s]; if (!cur) continue;
     const key = t + ':' + s; if (!Z.src.has(key)) Z.src.set(key, cleanClip(cur));
+    if (typeof mtx3bZ === 'function') mtx3bZ(Z, 's');   /* MTX3B: Originale der Szene für die Einzelspuren */
     const src = Z.src.get(key); if (tr.stimme || src.audio) { res.voc++; continue; }
     const next = gen4ClipConv(t, src, st, k, res) || src, a = JSON.stringify(cleanClip(cur)), b = JSON.stringify(cleanClip(next)); if (a === b) continue;
     if (((cur.ts || null) !== (next.ts || null))) tsCh = true;
@@ -92908,6 +92938,7 @@ function gen4DoAll(st, k, Z, play) {
   const song = S.song, hasSong = !!(song && song.bars), res = {n: 0, dr: 0, bass: 0, other: 0, voc: 0, ts: 0}, before = t1Snap(), items = [], ch = [];
   const tTs = st.tv ? undefined : (st.ts || null), playing = !!(R.playing && AU.ctx), nb = playing && !R.songPlay ? nextBarFromAudible() : null, sp = playing && R.songPlay;
   const conv = (key, t, cur, own) => { if (!Z.src.has(key)) Z.src.set(key, own ? deep(cur) : cleanClip(cur)); const src = Z.src.get(key); if (src.audio) { res.voc++; return null; } return gen4ClipConv(t, src, st, k, res, own) || src; };
+  if (typeof mtx3bZ === 'function') mtx3bZ(Z, 'all');   /* MTX3B: Originale für die Einzelspuren */
   for (let t = 0; t < NT(); t++) {
     const tr = S.tracks[t]; if (!tr) continue;
     if (tr.stimme) { if (tr.clips.some(Boolean)) res.voc++; continue; }
@@ -93047,6 +93078,7 @@ function gen4Tracks() {
     else if (sc === 'all') c = (Z && [...Z.src.entries()].find(([k]) => k.startsWith('c' + t + ':')) || [])[1] || tr.clips.find(Boolean) || null;
     else if (song && song.bars) { const [a, b] = gr2Rng(), sp = gr1Spans(song, t, a, b)[0]; c = sp ? gr1Src(song, t, sp).c : null; }
     if (!c) continue;
+    if (typeof mtx3Dr === 'function' && mtx3Dr(t)) continue;   /* MTX3B: Einzelspuren folgen der Wahl für DRUMS */
     const voc = !!(tr.stimme || c.audio), det = voc ? 'voc' : (gr2Role(t, c) || 'off'), ov = voc ? undefined : gen4RoleOv(t);
     out.push({t, name: tr.name, det, role: voc ? 'voc' : ov === undefined ? det : ov === null ? 'off' : ov, voc, vt: voc ? (c.ts || null) : null, mute: !!tr.mute});
   }
@@ -94979,6 +95011,7 @@ function mtx3Split(ids, quiet) {
   });
   // Song-Zeile und Teile wie DRUMS (eigene Clips des Songs bleiben ganz auf DRUMS: dort Stopp)
   if (S.song) for (const j of made) S.song.lanes[j] = mtx3LaneOwnOff(S.song.lanes[DRUM_T]);
+  if (typeof mtx3bVerMove === 'function') mtx3bVerMove(made.map(j => ({id: S.tracks[j].dvx.v, j})));   /* MTX3B: Song-Versionen (Remix) geben das Pad mit */
   for (const pt of S.parts || []) if (pt && pt.slots) for (const j of made) { const v = pt.slots[DRUM_T]; pt.slots[j] = v == null ? null : mtx3Jc(v); if (Array.isArray(pt.lanes) && pt.lanes[DRUM_T] !== undefined) pt.lanes[j] = mtx3LaneOwnOff(pt.lanes[DRUM_T]); }
   // Reihenfolge: die Einzelspuren direkt vor DRUMS (DRUMS bleibt unten)
   const syn = orderBefore.filter(x => x !== DRUM_T && !made.includes(x));
@@ -94996,6 +95029,7 @@ function mtx3Split(ids, quiet) {
   clipBefore.forEach((c, s) => { if (JSON.stringify(c) !== JSON.stringify(D.clips[s] ? cleanClip(D.clips[s]) : null)) items.push({kind: 'clip', track: DRUM_T, scene: s, before: c}); });
   undoPush({kind: 'group', label: 'DRUMS aufteilen', items, mtx3: {src: DRUM_T}});
   MTX3.n++; MTX3.last = {op: 'split', ids: ids.slice(), tracks: made.slice()};
+  if (typeof mtx3bShow === 'function') mtx3bShow(made);   /* MTX3B: quer zu den neuen Spuren blättern */
   markDirty(); UI.dirty.all = UI.dirty.grid = true;
   if (!quiet) { toast('DRUMS aufgeteilt → ' + made.map(j => S.tracks[j].name).join(', ') + ' (eigene Kanäle)', {label: 'Rückgängig', fn: () => undo()}); haptic('pop'); }
   return made;
@@ -95031,6 +95065,7 @@ function mtx3Merge(quiet) {
   const D = S.tracks[DRUM_T], L = mtx3Parts(-1).sort((a, b) => b - a);
   if (R.editor) closeEditor();
   const orderBefore = trackOrder().slice(), songBefore = S.song ? songSnapshot() : null, partBefore = partSnap(), clipBefore = D.clips.map(c => (c ? cleanClip(c) : null)), trBefore = L.map(j => trackSnapshot(j));
+  if (typeof mtx3bMergeVer === 'function') mtx3bMergeVer(L);   /* MTX3B: Song-Versionen der Einzelspuren zurück nach DRUMS */
   for (const j of L) {
     const tr = S.tracks[j];
     tr.clips.forEach((c, s) => {
@@ -95268,6 +95303,661 @@ const MTX3_API = {
 };
 Object.assign(SYNQUENZER, {mtx3: MTX3_API});                /* MTX3: Test-API */
 /* MTX3-END */
+/* MTX3B-BEGIN ===================== Einzelspuren von DRUMS: die offenen Punkte (Paket MTX3b, Xander 15.11.)
+   Xander: „Drum-Groove … die Hi-Hats einfach nur auswählen und sagen, sie sollen auf eine eigene Percussion-Spur kommen … oder ein
+   Funktionsknopf, der das automatisch in einzelne mischbare Einzelspuren aufteilt.“
+   1 Remix / Stil / Grundmuster (GR1, GR2, GEN3-Matrix, GEN4) mit Einzelspuren: eine Einzelspur hat die Drum-Rolle wie DRUMS (folgt der
+     DRUMS-Wahl im Stil-Blatt) und behält nur ihr Pad; DRUMS lässt ein Pad weg, das eine Einzelspur hat und im Quell-Clip nicht mehr
+     auf DRUMS liegt („ein Pad lebt, wo seine Noten sind“) – keine Doppel-Schläge, alles im selben ↶. Stil-Klang (SND1): Drive/Hall/Echo
+     und Mischung des Drum-Profils auch auf den Einzelspuren (gleicher ↶-Schritt wie SND1).
+   2 Tastatur-Aufnahme auf einer Einzelspur: jede Taste = ein Schritt ihres Pads (GM-Nummer, Schrittlänge wie Pads), Clip mit Saat.
+   3 Laden mit anderem Klang (Synth-Modus): die Drum-Felder (Saat, D1-Spuren, Akzent/Chance/Wirbel/Timing/Locks) bleiben erhalten.
+   4 Nach dem Aufteilen / Auslagern blättert die Spur-Seite (quer) zu den neuen Spuren.
+   5 Drum-Schritt-Editor (DRUMS) › [Auslagern ▾]: gewählte Töne (Pads) – alle Szenen – oder gewählte Schritte dieser Szene auf eine
+     eigene Einzelspur (neu oder dazu); ein ↶.
+   6 Clip einer Einzelspur: Drum-Schritt-Editor nur mit ihrer Pad-Zeile (VEL, Akzent, Chance, Wirbel, Timing, Tune, Decay) im
+     Noten-Editor-Blatt; [SCHRITTE │ ROLLE] wie [LAUF │ ROLLE].
+   Prüfung MTX3b: ein Pad, das (auch nur teilweise) auf einer Einzelspur liegt, geht im Remix ganz dorthin (keine Doppel nach „Nur diese
+   Schritte“); Partner-Clip bei duplizierten Szenen über die Szene des Kontexts, bei Song-Versionen über Szene + Versionsnummer;
+   Song-Versionen (Remix) geben beim Auslagern/Aufteilen das Pad mit und kommen beim Zusammenführen zurück nach DRUMS (Summe gleich);
+   Versionen einer Einzelspur laden als Drum-Clips (Saat, Chance, Wirbel); „dazu“ in einen kürzeren Clip wiederholt ihn, was nicht passt,
+   bleibt auf DRUMS; Tastatur-Akkord = ein Schlag je Schritt; D1-Länge im Schritt-Editor sichtbar. */
+const MTX3B = {view: 'steps', lane: 'vel', ed: null, mode: 'all', n: 0, last: null, cut: 0, mix: 0, ctx: null, z: null, mres: null};
+(function mtx3bCss() {
+  try {
+    if (document.getElementById('mtx3b-css')) return;
+    const s = document.createElement('style'); s.id = 'mtx3b-css';
+    s.textContent =
+      '.pop.mtx3s.mtx3bs{width:min(420px,calc(100vw - 16px))}' +
+      '.mtx3bs .mtx3b-st{display:grid;grid-template-columns:repeat(8,minmax(44px,1fr));gap:3px;margin-top:6px}' +
+      '.mtx3bs .mtx3b-st .mbtn{min-width:44px;min-height:44px;height:auto;padding:0 2px;font:700 11px/1.1 var(--font-num)}' +
+      '.mtx3bs .mtx3b-st .mbtn.on,.mtx3bs .mtx3b-md .mbtn.on{color:#ffcf7a;border-color:#6b4c16;box-shadow:inset 0 0 0 1px #6b4c16}' +
+      '.mtx3bs .mtx3b-md{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}.mtx3bs .mtx3b-md .mbtn{min-height:48px;height:auto;line-height:1.15;white-space:normal;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}' +
+      '.mtx3bs .mtx3b-md small{display:block;font:600 10px/1.15 var(--font-ui);color:var(--text-dim);text-transform:none}' +
+      '.mtx3bd .se-tabs{gap:3px}.mtx3bd .se-tabs button{flex:1 1 auto;padding:0 4px;font-size:10.5px;letter-spacing:.03em}.mtx3bd .se-tabs .ts{display:none}' +
+      '@media (orientation:portrait) and (max-width:399px),(orientation:landscape) and (max-width:759px){.mtx3bd .se-tabs .tl{display:none}.mtx3bd .se-tabs .ts{display:inline}}' +
+      '.pgside .mtx3bdb{position:relative;flex:none}.pgside .mtx3bdb::after{content:"";position:absolute;left:0;right:0;top:-8px;bottom:-8px}' +   // Trefferfläche ≥ 44 px (Zeile bleibt wie sie ist)
+      '.pgside .mtx3bir{display:flex;align-items:center;gap:6px;min-width:0}.pgside .mtx3bir .pginfo{flex:1 1 auto;min-width:0}.pgside .mtx3bir .mtx3bdb{height:34px;padding:0 10px;font-size:12px;white-space:nowrap}' +   // wie .dtools .mbtn
+      // quer, wenig Höhe (926×370): Blatt breiter, Schritte in einer Reihe, [Auf eigene Spur] bleibt unten im Bild (Blatt scrollt darüber)
+      '@media (orientation:landscape) and (max-height:500px){.pop.mtx3s.mtx3bs{width:min(800px,calc(100vw - 16px))}.mtx3bs .mtx3b-st{grid-template-columns:repeat(auto-fill,minmax(44px,1fr))}.mtx3bs .mtx-wh{display:none}.mtx3bs .mtx3-main{position:sticky;bottom:0;z-index:2}.mtx3bs .mtx3b-md .mbtn{min-height:44px}}' +
+      '.mtx3bd .lacts .m3bpad{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:600 11px/1.2 var(--font-ui);color:var(--text-dim);padding:0 6px}';
+    document.head.appendChild(s);
+  } catch (e) {}
+})();
+const mtx3bPad = n => (n ? (DRUM_BY_GM[n.n] || DRUM_BY_GM[mapV1Drum(n.n)] || {}).id : undefined);
+// die aktive Einzelspur des Pads id (von DRUMS), sonst -1
+function mtx3bPartOf(id) { for (const j of mtx3Parts(-1)) if (mtx3Is(j) && S.tracks[j].dvx.v === id) return j; return -1; }
+function mtx3bOutIds() { const o = new Set(); for (const j of mtx3Parts(-1)) if (mtx3Is(j)) o.add(S.tracks[j].dvx.v); return o; }
+
+/* ---------- 1 · Remix / Stil / Grundmuster ---------- */
+// gr2Role-Haken (oben): die Einzelspur hat die Drum-Rolle von DRUMS (im Stil-Blatt: die Wahl für DRUMS gilt für alle ihre Einzelspuren)
+function mtx3bRole(t, c) {
+  if (t === DRUM_T || mtx3Dr(t)) MTX3B.ctx = {t, c};                     // die gleich folgende Umrechnung (mtx3bIn) kennt Spur und Clip
+  if (!mtx3Dr(t)) return undefined;
+  let o; try { o = gen4On() ? gen4RoleOv(DRUM_T, c) : undefined; } catch (e) { o = undefined; }
+  return o !== undefined ? o : 'dr';
+}
+// Eingabe-Haken (gr2Translate, gr1DrumNotes): DRUMS und ihre Einzelspuren werden ZUSAMMEN umgerechnet – dieselben Noten wie vor dem
+// Aufteilen (Pad-Zuordnung, Kern-Schläge, Ausdünnen); danach behält jede Spur nur ihre Pads (mtx3bPads) = das Ergebnis ohne Aufteilen.
+// Partner-Clip je Spur: gleiche Saat, Länge und Taktart (beim Aufteilen kopiert), bei mehreren der in derselben Szene
+function mtx3bPartner(j, src, t) {
+  if (!src || !isNum(src.seed) || !S.tracks[j]) return null;
+  const same = c => !!c && c.seed === src.seed && c.len === src.len && (c.ts || null) === (src.ts || null);
+  // eine Song-Version (v2 …): die Version der Spur j mit derselben Szene und Nummer (Auslagern / Remix legen sie so an)
+  const zk = mtx3bZKey(src);                                                                        // GEN4: src ist das gemerkte Original
+  if (src.from && src.ver >= 2 && S.song && S.song.own) { const id = sx9Find(S.song, j, src.from.s, src.ver), v = id ? S.song.own[id] : null; if (same(v)) return zk ? mtx3bOrig(j, v) : v; }
+  const cl = S.tracks[j].clips, cs = cl.filter(same), X = MTX3B.ctx;
+  let sAt = S.tracks[t] ? S.tracks[t].clips.indexOf(src) : -1;
+  if (sAt < 0 && src.from && isNum(src.from.s)) sAt = src.from.s;                                  // Version: ihre Szene
+  if (sAt < 0 && zk && zk.sc != null) sAt = zk.sc;                                                 // GEN4: die Szene des Originals
+  if (sAt < 0 && X && X.t === t && S.tracks[t]) sAt = S.tracks[t].clips.indexOf(X.c);             // Kopie des Clips (Grundmuster): die Szene des Kontexts
+  const c = cs.length === 1 ? cs[0] : cs.length > 1 && sAt >= 0 && cs.includes(cl[sAt]) ? cl[sAt] : null;
+  return zk ? mtx3bOrig(j, c) : c;
+}
+// GEN4 (Stil auf Szene / alles) ersetzt die Clips Spur für Spur und merkt die Originale in Z.src: die Einzelspur rechnet mit dem
+// Original von DRUMS (nicht mit dem schon umgerechneten Clip) – gen4DoScene / gen4DoAll-Haken
+function mtx3bZ(Z, mode) { MTX3B.z = Z && Z.src instanceof Map ? {Z, mode} : null; }
+function mtx3bZKey(src) {
+  const z = MTX3B.z; if (!z || !src) return null;
+  for (const [k, v] of z.Z.src) if (v === src) { const m = /^c?(\d+):(\d+)$/.exec(k); return m ? {t: +m[1], sc: +m[2]} : {own: k.slice(1)}; }
+  return null;
+}
+function mtx3bOrig(j, c) {
+  const z = MTX3B.z; if (!z || !c || !S.tracks[j]) return c;
+  const sc = S.tracks[j].clips.indexOf(c); let k = null;
+  if (sc >= 0) k = (z.mode === 'all' ? 'c' : '') + j + ':' + sc;
+  else if (S.song && S.song.own) { const id = Object.keys(S.song.own).find(q => S.song.own[q] === c); if (id) k = 'o' + id; }
+  return (k != null && z.Z.src.get(k)) || c;
+}
+function mtx3bIn(src) {
+  const X = MTX3B.ctx; if (!X || X.c !== src || !src || !Array.isArray(src.notes) || !isNum(src.seed)) return src;
+  const grp = [DRUM_T].concat(mtx3Parts(-1).filter(j => mtx3Is(j))); if (grp.length < 2 || !grp.includes(X.t)) return src;
+  const add = [];
+  for (const j of grp) { if (j === X.t) continue; const c = mtx3bPartner(j, src, X.t); if (c) for (const n of c.notes) add.push(cleanNote(n)); }
+  if (!add.length) return src;
+  const o = Object.assign({}, src); o.notes = src.notes.concat(add).sort((a, b) => a.t - b.t || a.n - b.n); MTX3B.mix++;
+  return o;
+}
+// Ausgabe-Haken (Remix, Stil, Grundmuster): die Noten einer Spur in place gefiltert. DRUMS: ohne die Pads, deren Einzelspur hier einen
+// Partner-Clip hat. Einzelspur: nur ihr Pad. Gibt die Anzahl entfernter Noten zurück
+function mtx3bPads(t, arr, src) {
+  if (!Array.isArray(arr) || !arr.length) return 0;
+  let keep = null;
+  if (t === DRUM_T) {
+    // ein Pad geht dorthin, wo seine Einzelspur den Partner-Clip hat (sonst bliebe es stumm) – auch wenn DRUMS dort noch Schläge davon
+    // hat („Nur diese Schritte“): die Umrechnung kennt beide Teile (mtx3bIn), das Ergebnis spielt einmal, auf der Einzelspur
+    const out = new Set();
+    for (const j of mtx3Parts(-1)) if (mtx3Is(j) && mtx3bPartner(j, src, DRUM_T)) out.add(S.tracks[j].dvx.v);
+    if (!out.size) return 0;
+    keep = n => !out.has(mtx3bPad(n));
+  } else if (mtx3Dr(t)) { const v = S.tracks[t].dvx.v; keep = n => mtx3bPad(n) === v; }
+  else return 0;
+  let k0 = 0; for (let k = arr.length - 1; k >= 0; k--) if (!keep(arr[k])) { arr.splice(k, 1); k0++; }
+  MTX3B.cut += k0; return k0;
+}
+// gen3MxRemix / gen4ClipConv: der neue Clip einer Einzelspur ist ein Drum-Clip (Saat, D1-Spuren, Akzent/Chance/Wirbel bleiben)
+function mtx3bReClip(t, clip, raw) {
+  if (!clip || !raw || !mtx3Dr(t)) return clip;
+  const d = normClip(raw, 'drum', S.key); if (!d) return clip;
+  for (const k of Object.keys(clip)) delete clip[k];
+  return Object.assign(clip, d);
+}
+// snd1Build-Haken: der Stil-Klang für DRUMS (Drive, Hall, Echo; Mischung) gilt auch für die Einzelspuren (sie haben eigene Kanäle)
+function mtx3bSnd(F, lv, ro, off, mixIdx, scOk) {
+  if (!ro || ro[DRUM_T] !== 'dr' || (off && off.has(DRUM_T))) return;
+  const X = (F && F.dfx) || {};
+  for (const j of mtx3Parts(-1)) {
+    if (!mtx3Is(j) || (off && off.has(j))) continue;
+    try {
+      const snd = deep(S.tracks[j].sound); snd.fx = Object.assign({}, snd.fx || {});
+      let ch = false; for (const k of ['drive', 'rev', 'dly']) if (isNum(X[k]) && snd.fx[k] !== X[k]) { snd.fx[k] = X[k]; ch = true; }
+      if (ch) applySound(j, snd);
+      if (lv === 'mix') { snd1Mix(S.tracks[j], F, 'dr', scOk); mixIdx.push(j); }
+    } catch (e) { logErr(e); }
+  }
+}
+
+/* ---------- 2 · Tastatur-Aufnahme auf einer Einzelspur ---------- */
+// recNoteOn-Haken: die gespielte Taste wird ein Schlag des Pads (wie recPad: GM-Nummer, Schrittlänge der Pads)
+function mtx3bRecO(o) { if (!o || o.drum || !mtx3Dr(o.track)) return; o.n = S.tracks[o.track].dvx.gm; o.drum = true; }
+// commitRecNote-Haken (direkt nach dem Ablegen): mehrere Tasten zugleich sind auf der Einzelspur derselbe Schlag – ein Schlag je Stelle
+// (wie ein Pad), der lautere bleibt. arr: die Notenliste, deren letzter Eintrag eben dazukam
+function mtx3bRecDup(o, arr) {
+  if (!o || !o.drum || !Array.isArray(arr) || arr.length < 2 || !mtx3Dr(o.track)) return false;
+  const x = arr[arr.length - 1]; if (!x || x.n !== o.n) return false;
+  const q = GRID_STEP[S.settings.inQuant] || 0, tol = q ? 1e-6 : .09;   // ohne Raster: Tasten innerhalb von 0,09 Schlägen gelten als zugleich
+  for (let k = arr.length - 2; k >= 0; k--) {
+    const y = arr[k];
+    if (y && y.n === x.n && Math.abs(y.t - x.t) < tol) { y.v = Math.max(+y.v || 0, +x.v || 0); arr.pop(); return true; }
+  }
+  return false;
+}
+
+/* ---------- 3 · Laden mit anderem Klang (Synth-Modus): Drum-Felder bleiben ---------- */
+// normTrack-Haken (nach MTX3): eine Einzelspur mit anderem Klang wurde als Synth-Clip gelesen; die Drum-Felder (Saat, D1-Spuren,
+// Akzent / Chance / Wirbel / Timing / Locks an Drum-Noten, Klang-Locks) kommen aus derselben Quelle dazu – Tonhöhen bleiben, wie sie sind
+function mtx3bNormTr(t, o, def, pk, cl) {
+  if (!o || !o.dvx || def.kind !== 'synth' || !o.sound || o.sound.name === o.dvx.sn) return;
+  for (let s = 0; s < o.clips.length; s++) mtx3bAug(o.clips[s], cl[s], pk);
+}
+// ein als Synth-Clip gelesener Clip a bekommt aus seiner Quelle raw die Drum-Felder dazu (Tonhöhen bleiben)
+function mtx3bAug(a, raw, pk) {
+  if (!a || !raw || !Array.isArray(a.notes)) return;
+  let d = null; try { d = normClip(raw, 'drum', pk); } catch (e) { d = null; }
+  if (!d) return;
+  if (isNum(raw.seed)) a.seed = d.seed;
+  if (d.lanes) a.lanes = d.lanes;
+  if (d.kl && !a.kl) { a.kl = d.kl; if (d.klq != null) a.klq = d.klq; }
+  if (a.notes.length !== d.notes.length) return;
+  a.notes.forEach((n, k) => {
+    const m = d.notes[k]; if (!m || m.n !== n.n || Math.abs(m.t - n.t) > 1e-9) return;
+    for (const x of ['a', 'p', 'r', 'm']) if (m[x] != null && n[x] == null) n[x] = m[x];
+    if (m.lk) n.lk = Object.assign({}, n.lk || {}, m.lk);
+  });
+}
+// ownNorm-Haken: eine Version (song.own) einer Einzelspur ist ein Drum-Clip wie ihre Szenen-Clips (Saat, Chance, Wirbel, Akzent, D1) –
+// beim Laden kennt normalizeProject die neuen Spuren (mtx3bOwnNorm.tr), sonst gelten die Spuren der App
+function mtx3bOwnNorm(t, c, pk, out) {
+  if (!out || !c || t === DRUM_T) return;
+  let L = mtx3bOwnNorm.tr; if (!L) { try { L = S.tracks; } catch (e) { return; } }   // während das Skript lädt: S gibt es noch nicht
+  const tr = L && L[t];
+  if (!tr || tr.kind !== 'synth' || !tr.dvx || typeof tr.dvx !== 'object' || !tr.sound) return;
+  if (tr.sound.name !== tr.dvx.sn) { mtx3bAug(out, c, pk); return; }    // anderer Klang: Synth-Clip mit den Drum-Feldern (wie die Szenen-Clips)
+  let d = null; try { d = normClip(c, 'drum', pk); } catch (e) { d = null; }
+  if (!d) return;
+  for (const k of Object.keys(out)) delete out[k];
+  Object.assign(out, d);
+}
+mtx3bOwnNorm.tr = null;
+
+/* ---------- 4 · neue Einzelspuren sichtbar (quer: Spur-Seite umblättern) ---------- */
+function mtx3bShow(list) {
+  try {
+    const j = (list || []).find(x => S.tracks[x]); if (j == null) return;
+    if (EL.grid) mxApply();                                              // Seiten mit den neuen Spuren
+    if (MX.bankT && MX.pages) { const pg = MX.pages.findIndex(p => p.includes(j)); if (pg >= 0 && pg !== trackBankOf()) setTrackBank(pg); }
+    if (UI.songView && typeof svLayout === 'function') { try { svLayout(); } catch (e) {} }
+    UI.dirty.all = UI.dirty.grid = true;
+  } catch (e) { logErr(e); }
+}
+
+/* ---------- 5 · Drum-Schritt-Editor › [Auslagern ▾]: Töne oder Schritte auf eine eigene Spur ---------- */
+// sel: Szene s und Set der gewählten Noten (nur diese Schritte) – ohne s: alle Szenen (ganze Töne)
+function mtx3bMoves(ids, s, pick) {
+  const D = S.tracks[DRUM_T], want = new Set(ids), out = [];
+  D.clips.forEach((c, sc) => {
+    if (!c || (s != null && sc !== s)) return;
+    const ns = c.notes.filter(n => want.has(mtx3bPad(n)) && (!pick || pick.has(n)));
+    if (ns.length) out.push({sc, c, ns});
+  });
+  return out;
+}
+function mtx3bOutOk(ids, s, pick) {
+  if (mtx3Busy()) return 'Erst Aufnahme beenden';
+  const D = S.tracks[DRUM_T]; if (D.sound && D.sound._nv) return 'Dieses Drum-Kit kommt aus einer neueren Fassung';
+  if (!ids || !ids.length) return 'Erst Töne wählen';
+  if (ids.some(id => mtx3Md(id))) return 'Töne aus ' + mtx3MdName() + ' bleiben auf DRUMS';
+  const need = ids.filter(id => mtx3bPartOf(id) < 0).length, free = MAX_T - NT();
+  if (need > free) return free < 1 ? 'Alle ' + MAX_T + ' Spur-Plätze belegt – erst eine Zusatzspur entfernen' : 'Nur ' + free + (free === 1 ? ' Spur' : ' Spuren') + ' frei (höchstens ' + MAX_T + ')';
+  const mv = mtx3bMoves(ids, s, pick); if (!mv.length) return s != null ? 'Keine gewählten Schritte in Szene ' + (s + 1) : 'Diese Töne spielen auf DRUMS nicht';
+  if (s == null) { const left = mtx3Plan().used.filter(u => !ids.includes(u.id)); if (!left.length) return 'Ein Ton bleibt auf DRUMS'; }
+  return '';
+}
+// ein Clip der Einzelspur aus dem DRUMS-Clip c (Länge, Taktart, Saat, Raster wie DRUMS; D1-Spur und Locks des Pads gehen mit)
+function mtx3bClipFrom(c, ns, sl) {
+  const o = mtx3Jc(c); o.notes = mtx3Jc(ns);
+  if (o.lanes) { const L = {}; if (o.lanes[sl.gm]) L[sl.gm] = o.lanes[sl.gm]; if (Object.keys(L).length) o.lanes = L; else delete o.lanes; }
+  if (Array.isArray(o.ln)) { o.ln = o.ln.filter(l => !(l && typeof l.p === 'string' && l.p.startsWith('drum.')) || l.p.startsWith('drum.' + sl.id + '.')); if (!o.ln.length) delete o.ln; }
+  return o;
+}
+// „dazu“ in den vorhandenen Clip cur der Einzelspur: Schläge ns aus dem DRUMS-Clip src. Ist cur kürzer, wird er bis zur Länge von src
+// wiederholt (klingt gleich); ist er länger, wiederholen sich die Schläge darin wie auf DRUMS. Was nicht passt (andere Taktart, krumme
+// Länge, D1-Spur), bleibt auf DRUMS; zwei Schläge auf einer Stelle werden einer (der lautere). → {ok: Set, kept, dup, tiled}
+function mtx3bInto(cur, src, ns, sl) {
+  const out = {ok: new Set(), kept: 0, dup: 0, tiled: false};
+  const Ls = clipB(src), tsOk = (cur.ts || null) === (src.ts || null), whole = (a, b) => b > 1e-9 && Math.abs(a / b - Math.round(a / b)) < 1e-6;
+  let Lt = clipB(cur);
+  if (tsOk && Lt < Ls - 1e-9 && whole(Ls, Lt) && src.len <= 16 && !d1Lane(cur, sl.gm)) {
+    const k = Math.round(Ls / Lt), base = cur.notes.filter(n => n.t < Lt - 1e-9), add = [];
+    for (let r = 1; r < k; r++) for (const n of base) add.push(Object.assign(mtx3Jc(n), {t: +(n.t + r * Lt).toFixed(6)}, n.o != null ? {o: +(n.o + r * Lt).toFixed(4)} : {}));
+    cur.notes = cur.notes.concat(add); cur.len = src.len; Lt = clipB(cur); out.tiled = true;
+  }
+  const rep = Lt / Ls, okLen = tsOk && (Math.abs(Lt - Ls) < 1e-9 || (Lt > Ls && whole(Lt, Ls)));
+  const st = t => Math.round(t / .25);
+  for (const n of ns) {
+    if (!okLen || n.t >= Lt - 1e-9) { out.kept++; continue; }
+    for (let r = 0; r < Math.round(rep); r++) {
+      const t = +(n.t + r * Ls).toFixed(6), x = cur.notes.find(y => mtx3bPad(y) === sl.id && st(y.t) === st(t));
+      if (x) { x.v = Math.max(+x.v || 0, +n.v || 0); out.dup++; continue; }
+      cur.notes.push(Object.assign(mtx3Jc(n), {t}, n.o != null ? {o: +(n.o + r * Ls).toFixed(4)} : {}));
+    }
+    out.ok.add(n);
+  }
+  cur.notes.sort((a, b) => a.t - b.t);
+  return out;
+}
+// eine neue Song-Version (v2 …) der Spur t für Szene s aus base (Kopie; fn ändert sie), gleiche Nummer ver wenn frei; normalisiert wie
+// beim Laden (Rundreise gleich). null: kein Platz
+function mtx3bVerNew(song, t, s, base, fn, ver) {
+  if (!song || !base) return null;
+  const v = ver >= 2 && ver <= sx9Max() && !sx9Find(song, t, s, ver) ? ver : sx9List(song, t, s).reduce((m, q) => Math.max(m, q.v), 1) + 1;
+  if (v > sx9Max() || ownCount(song) >= OWN_MAX) return null;
+  const c = mtx3Jc(base); delete c.from; delete c.ver; delete c.sf; if (fn) fn(c);
+  c.from = {t, s, bar: 0}; c.ver = v;
+  const id = ownNewId(song); (song.own || (song.own = {}))[id] = c; mtx3bOwnFix(song, id);
+  return id;
+}
+function mtx3bOwnFix(song, id) {
+  const c = song.own && song.own[id]; if (!c) return;
+  let z = null; try { z = ownNorm(c, S.key, NT()); } catch (e) { z = null; }
+  if (!z) return; for (const k of Object.keys(c)) delete c[k]; Object.assign(c, z);
+}
+// Zeile der Spur j in [a, b): spielt dort wie DRUMS, die Version X als Y (j schwieg dort); danach wie vorher (Stopp)
+function mtx3bLaneCopy(song, j, a, b, X, Y) {
+  const ld = song.lanes[DRUM_T] || [], lj = song.lanes[j] || [], hadB = lj.some(e => e.bar === b);
+  const ins = ld.filter(e => e && isNum(e.bar) && e.bar >= a && e.bar < b).map(e => Object.assign(mtx3Jc(e), e.own === X ? {own: Y} : {}));
+  if (!ins.length || ins[0].bar !== a) { const o = laneOriginAt(ld, a), x = {bar: a, slot: o.slot, own: Y}, ph = +(barBeat(a) - o.cs).toFixed(4); if (Math.abs(ph) > 1e-6) x.ph = ph; ins.unshift(x); }
+  const nl = lj.filter(e => !(e.bar >= a && e.bar < b)).concat(ins);
+  if (b < song.bars && !hadB) nl.push({bar: b, slot: -1});
+  nl.sort((p, q) => p.bar - q.bar); song.lanes[j] = nl;
+}
+// Auslagern / Aufteilen „ganze Töne“: die Song-Versionen von DRUMS (Remix, v2 …) geben ihre Schläge des Pads an eine Version der
+// Einzelspur ab, die dort spielt, wo DRUMS die Version spielt (die Einzelspur schweigt dort bisher). pairs: [{id: Pad, j: Spur}]
+function mtx3bVerMove(pairs) {
+  const song = S.song, res = {n: 0, keep: 0}; if (!song || !song.bars || !song.own || !pairs || !pairs.length) return res;
+  const byX = new Map();
+  for (const sp of gr1Spans(song, DRUM_T, 0, song.bars)) if (sp.id) (byX.get(sp.id) || byX.set(sp.id, []).get(sp.id)).push(sp);
+  for (const [X, sps] of byX) {
+    const xc = song.own[X]; if (!xc || !Array.isArray(xc.notes) || !xc.from) continue;
+    for (const {id, j} of pairs) {
+      const sl = DRUM_BY_ID[id], ns = xc.notes.filter(n => mtx3bPad(n) === id); if (!sl || !ns.length || !S.tracks[j]) continue;
+      const quiet = sps.every(sp => { for (let x = sp.a; x < sp.b; x++) if (laneOriginAt(song.lanes[j] || [], x).slot >= 0) return false; return true; });
+      if (!quiet) { res.keep += ns.length; continue; }
+      const y = mtx3bVerNew(song, j, xc.from.s, mtx3bClipFrom(xc, ns, sl), null, xc.ver); if (!y) { res.keep += ns.length; continue; }
+      for (const sp of sps) mtx3bLaneCopy(song, j, sp.a, sp.b, X, y);
+      xc.notes = xc.notes.filter(n => mtx3bPad(n) !== id);
+      if (xc.lanes && xc.lanes[sl.gm]) { delete xc.lanes[sl.gm]; if (!Object.keys(xc.lanes).length) delete xc.lanes; }
+      if (Array.isArray(xc.ln)) { xc.ln = xc.ln.filter(l => !(l && typeof l.p === 'string' && l.p.startsWith('drum.' + id + '.'))); if (!xc.ln.length) delete xc.ln; }
+      res.n += ns.length;
+    }
+  }
+  return res;
+}
+// mtx3Merge-Haken (vor dem Zusammenführen der Szenen-Clips): was die Einzelspuren im Song als Version spielen (Remix …), kommt in das,
+// was DRUMS dort spielt – eine Version von DRUMS bekommt die Schläge (spielt sie anderswo anders, eine Kopie), ein Szenen-Clip von DRUMS
+// eine neue Version. Danach sind die Versionen der Einzelspuren weg (keine Waisen). Die Summe klingt wie vorher
+function mtx3bMergeVer(L) {
+  const song = S.song, res = {n: 0, skip: 0}; MTX3B.mres = res;
+  if (!song || !song.bars || !L || !L.length) return res;
+  const D = S.tracks[DRUM_T], key = h => (h ? (h.id || 'b' + h.s) : '-');
+  {
+    const segs = []; let g = null;
+    for (let x = 0; x < song.bars; x++) {
+      const hd = sx9At(song, DRUM_T, x), hj = L.map(j => sx9At(song, j, x)), k = key(hd) + '|' + hj.map(key).join(',');
+      if (g && g.k === k) { g.b = x + 1; continue; }
+      g = {a: x, b: x + 1, k, hd, hj}; segs.push(g);
+    }
+    for (const q of segs) {
+      q.add = [];
+      q.hj.forEach((h, k) => {
+        if (!h) return; const j = L[k], c = h.id ? song.own[h.id] : S.tracks[j].clips[h.s]; if (!c || !S.tracks[j].dvx) return;
+        q.add.push({c, ver: !!h.id, v: S.tracks[j].dvx.v, same: !h.id && !!q.hd && !q.hd.id && q.hd.s === h.s});
+      });
+      if (q.add.every(a => a.same)) q.add = [];                             // nur Szenen-Clip ↔ Szenen-Clip derselben Szene: mtx3Merge (sonst kommen sie mit in die neue Version)
+    }
+    const pads = c => new Set((c.notes || []).map(mtx3bPad));
+    const into = (tg, add) => {
+      const Lb = clipB(tg), have = pads(tg);
+      for (const a of add) {
+        if (!a.ver && have.has(a.v)) continue;                              // die Version von DRUMS hat das Pad schon (älterer Remix): keine Doppel
+        for (const n0 of a.c.notes || []) {
+          const gm = DRUM_GMS.includes(n0.n) ? n0.n : mapV1Drum(n0.n); if (!DRUM_GMS.includes(gm)) continue;
+          const n = Object.assign(mtx3Jc(n0), {n: gm}); if (n.t >= Lb - 1e-9) continue;
+          if (!tg.notes.some(x => x.n === n.n && Math.abs(x.t - n.t) < 1e-6)) tg.notes.push(n);
+        }
+        tg.notes.sort((p, q) => p.t - q.t);
+        if (a.c.lanes) tg.lanes = Object.assign(tg.lanes || {}, mtx3Jc(a.c.lanes));
+        if (Array.isArray(a.c.ln)) { const hv = new Set((tg.ln || []).map(l => JSON.stringify(l))), kp = a.c.ln.filter(l => l && typeof l.p === 'string' && l.p.startsWith('drum.') && !hv.has(JSON.stringify(l))); if (kp.length) tg.ln = (tg.ln || []).concat(mtx3Jc(kp)); }
+      }
+    };
+    const xk = new Map();
+    for (const q of segs) if (q.hd && q.hd.id) { const s0 = xk.get(q.hd.id) || new Set(); s0.add(q.add.length ? q.k : '='); xk.set(q.hd.id, s0); }
+    const inPlace = new Map(), orig = new Map(), made = new Map();
+    for (const q of segs) {
+      if (!q.add.length) continue;
+      if (!q.hd) { res.skip++; continue; }                                  // DRUMS schweigt dort (oder spielt einen eigenen Clip)
+      const X = q.hd.id;
+      if (X) {
+        if (inPlace.get(X) === q.k) continue;
+        if (!xk.get(X).has('=') && !inPlace.has(X)) { orig.set(X, mtx3Jc(song.own[X])); inPlace.set(X, q.k); into(song.own[X], q.add); mtx3bOwnFix(song, X); res.n++; continue; }
+      }
+      let id = made.get(q.k);
+      if (!id) {
+        const base = X ? orig.get(X) || song.own[X] : D.clips[q.hd.s];
+        id = mtx3bVerNew(song, DRUM_T, q.hd.s, base, c => into(c, q.add), X && base ? base.ver : 0);
+        if (!id) { res.skip++; continue; }
+        made.set(q.k, id);
+      }
+      sx9Set(song, DRUM_T, q.a, q.b, id); res.n++;
+    }
+  }
+  // Versionen und eigene Clips der Einzelspuren: ihre Zeilen gehen gleich weg – nichts bleibt mit from.t einer entfernten Spur zurück
+  if (song.own) for (const id of Object.keys(song.own)) { const c = song.own[id]; if (c && c.from && L.includes(c.from.t)) delete song.own[id]; }
+  return res;
+}
+function mtx3bOut(ids, s, pick, quiet) {
+  const no = m => { if (!quiet) { toast(m); haptic('err'); } return null; };
+  ids = (ids || []).filter((id, k, a) => DRUM_BY_ID[id] && a.indexOf(id) === k);
+  if (s != null && !S.tracks[DRUM_T].clips[s]) return no('Szene ' + (s + 1) + ' hat auf DRUMS keinen Clip');
+  const why = mtx3bOutOk(ids, s, pick); if (why) return no(why);
+  const D = S.tracks[DRUM_T], snd = D.sound, made = [], into = [], drumEd = R.editor === 'drum';
+  if (R.editor && !drumEd) closeEditor();
+  const orderBefore = trackOrder().slice(), songBefore = S.song ? songSnapshot() : null, partBefore = partSnap(), clipBefore = D.clips.map(c => (c ? cleanClip(c) : null));
+  const items = [], gone = new Set(), pairs = []; let moved = 0, kept = 0, dup = 0, tiled = 0;
+  for (const id of ids) {
+    const sl = DRUM_BY_ID[id], mv = mtx3bMoves([id], s, pick); if (!mv.length) continue;
+    let j = mtx3bPartOf(id);
+    if (j < 0) {
+      j = NT(); const raw = newSynthTrack(j, 'f-init-analog'), sn = (sl.sl + ' · ' + (snd.name || 'Drums')).slice(0, 40);
+      raw.name = String(sl.l || sl.sl).slice(0, 24); raw.follow = false; raw.os = false; raw.mute = !!D.mute; raw.kbOct = 3; raw.mxRole = 'drums';
+      raw.sound.name = sn; raw.sound.fx = mtx3Jc(snd.fx || {}); if (D.mix) raw.mix = mtx3Jc(D.mix);
+      raw.dvx = {v: id, gm: sl.gm, sn, src: D.uid, p: mtx3Jc((snd.p && snd.p.slots && snd.p.slots[id]) || {}), kit: mtx3Jc(drumKit()), pk: snd.name || ''};
+      raw.clips = emptyClips(); for (const m of mv) raw.clips[m.sc] = mtx3bClipFrom(m.c, m.ns, sl);
+      restoreTrack(j, JSON.stringify(raw));
+      if (!S.tracks[j] || !S.tracks[j].dvx) { for (let k = made.length - 1; k >= 0; k--) restoreTrack(made[k], null); return no('Auslagern ging nicht'); }
+      made.push(j); items.push({kind: 'track', track: j, before: null});
+      for (const m of mv) for (const n of m.ns) gone.add(n);
+      moved += mv.reduce((a, m) => a + m.ns.length, 0);
+    } else {
+      const tr = S.tracks[j];
+      for (const m of mv) {
+        const cur = tr.clips[m.sc];
+        items.push({kind: 'clip', track: j, scene: m.sc, before: cur ? cleanClip(cur) : null});
+        if (!cur) { tr.clips[m.sc] = normClip(mtx3bClipFrom(m.c, m.ns, sl), 'drum', S.key) || mtx3bClipFrom(m.c, m.ns, sl); for (const n of m.ns) gone.add(n); moved += m.ns.length; }
+        else {
+          const r = mtx3bInto(cur, m.c, m.ns, sl);
+          for (const n of r.ok) gone.add(n); moved += r.ok.size; kept += r.kept; dup += r.dup; if (r.tiled) tiled++;
+          if (r.ok.size && m.c.lanes && m.c.lanes[sl.gm] && !(cur.lanes && cur.lanes[sl.gm])) cur.lanes = Object.assign(cur.lanes || {}, {[sl.gm]: mtx3Jc(m.c.lanes[sl.gm])});
+        }
+      }
+      if (!into.includes(j)) into.push(j);
+    }
+    pairs.push({id, j});
+  }
+  // DRUMS: die übertragenen Schläge weg; D1-Spur und Locks eines Pads gehen mit, sobald es im Clip keine Schläge mehr hat
+  D.clips.forEach(c => {
+    if (!c) return;
+    c.notes = c.notes.filter(n => !gone.has(n));
+    for (const id of ids) {
+      if (c.notes.some(n => mtx3bPad(n) === id)) continue;
+      const gm = DRUM_BY_ID[id].gm;
+      if (c.lanes && c.lanes[gm]) { delete c.lanes[gm]; if (!Object.keys(c.lanes).length) delete c.lanes; }
+      if (Array.isArray(c.ln)) { c.ln = c.ln.filter(l => !(l && typeof l.p === 'string' && l.p.startsWith('drum.' + id + '.'))); if (!c.ln.length) delete c.ln; }
+    }
+  });
+  // neue Spuren: Song-Zeile und Teile wie DRUMS (wie Aufteilen), direkt vor DRUMS
+  if (S.song) for (const j of made) S.song.lanes[j] = mtx3LaneOwnOff(S.song.lanes[DRUM_T]);
+  for (const pt of S.parts || []) if (pt && pt.slots) for (const j of made) { const v = pt.slots[DRUM_T]; pt.slots[j] = v == null ? null : mtx3Jc(v); if (Array.isArray(pt.lanes) && pt.lanes[DRUM_T] !== undefined) pt.lanes[j] = mtx3LaneOwnOff(pt.lanes[DRUM_T]); }
+  // ganze Töne (alle Szenen): auch die Song-Versionen von DRUMS (Remix) geben die Schläge ab
+  const vm = s == null ? mtx3bVerMove(pairs) : {n: 0, keep: 0};
+  if (made.length) ux2OrderPut(orderBefore.filter(x => x !== DRUM_T && !made.includes(x)).concat(made, [DRUM_T]));
+  mtx3UeDirty();
+  mtx3Resync([DRUM_T].concat(made, into), DRUM_T);
+  for (let sc = 0; sc < D.clips.length; sc++) { clipChanged(DRUM_T, sc); for (const j of made.concat(into)) clipChanged(j, sc); }
+  const songCh = !!songBefore && songBefore !== songSnapshot();
+  if (S.song) { UI.dirty.song = true; try { songChanged(); } catch (e) { logErr(e); } }
+  partsChanged();
+  const head = [];
+  if (made.length) head.push({kind: 'ux2', op: 'o', before: JSON.stringify(orderBefore)});
+  if (songBefore && (made.length || songCh)) head.push({kind: 'song', before: songBefore});
+  if (made.length) head.push({kind: 'part', before: partBefore});
+  const all = items.filter(x => x.kind === 'track').concat(head, items.filter(x => x.kind === 'clip'));
+  clipBefore.forEach((c, sc) => { if (JSON.stringify(c) !== JSON.stringify(D.clips[sc] ? cleanClip(D.clips[sc]) : null)) all.push({kind: 'clip', track: DRUM_T, scene: sc, before: c}); });
+  const names = made.concat(into).map(j => S.tracks[j].name);
+  undoPush({kind: 'group', label: 'Auslagern → ' + names.join(', '), items: all, mtx3: {src: DRUM_T, tr: made.concat(into)}});
+  MTX3B.n++; MTX3B.last = {op: 'out', ids: ids.slice(), s: s == null ? null : s, n: moved, kept, dup, tiled, ver: vm.n, verKeep: vm.keep, made: made.slice(), into: into.slice()};
+  markDirty(); UI.dirty.all = UI.dirty.grid = true;
+  mtx3bShow(made.concat(into));
+  if (drumEd) safeRebuild(buildDrumEd);
+  if (!quiet) {
+    const tail = (vm.n ? ' · Song-Versionen: ' + vm.n : '') + (kept ? ' · ' + kept + ' bleiben auf DRUMS (passen nicht in den Clip)' : '') + (dup ? ' · ' + dup + ' doppelte zusammengefasst' : '') + (vm.keep ? ' · ' + vm.keep + ' in Song-Versionen bleiben auf DRUMS' : '');
+    toast(moved + (moved === 1 ? ' Schlag' : ' Schläge') + ' → ' + names.join(', ') + (s != null ? ' · Szene ' + (s + 1) : '') + ' (eigener Kanal)' + tail, {label: 'Rückgängig', fn: () => undo()}); haptic('pop');
+  }
+  return made.concat(into);
+}
+// Schritt-Beschriftung im Blatt: Takt·Schritt (1 Takt: nur der Schritt)
+function mtx3bStepLab(c, n) { const N = dStepsOf(c), k = Math.round(n.t / .25), b = Math.floor(k / N); return (c.len > 1 ? (b + 1) + '·' : '') + (k - b * N + 1); }
+function mtx3bOutSheet(anchor) {
+  const s = R.selS, D = S.tracks[DRUM_T], c = D.clips[s], P = mtx3Plan();
+  if (!P.used.length) { toast('DRUMS spielt keine Noten'); haptic('err'); return false; }
+  // Vorwahl: das im Drum-Editor gewählte Pad – außer dem Ton, der wie beim Aufteilen auf DRUMS bleibt (KICK); dann Hi-Hat zuerst (MTX3)
+  const v0 = DRUM_VOICES[clamp(ED.dVoice | 0, 0, 11)].id, keep0 = P.used.some(u => u.id === 'kick') ? 'kick' : (P.used[0] || {}).id;
+  const pri = ['hatC', 'snare', 'clap', 'hatO', 'rim', 'tomL', 'tomM', 'tomH', 'cym', 'perc', 'shaker', 'kick'], rk = id => { const k = pri.indexOf(id); return k < 0 ? 99 : k; };
+  const first = P.can.filter(u => u.id !== keep0).sort((a, b) => rk(a.id) - rk(b.id))[0] || P.can[0];
+  const sel = new Set(v0 !== keep0 && P.used.some(u => u.id === v0 && !u.md) ? [v0] : first ? [first.id] : []);
+  let mode = MTX3B.mode === 'steps' && c ? 'steps' : 'all', pick = null;
+  const pickAll = () => { pick = new Set(c ? c.notes.filter(n => sel.has(mtx3bPad(n))) : []); };
+  pickAll();
+  openPop(anchor, p => {
+    p.classList.add('mtx3s', 'mtx3bs');
+    p.innerHTML = '<div class="mtx-hd"><h4>Auslagern</h4><button class="rb mtx-x" data-m3b="no" aria-label="Schließen">✕</button></div>' +
+      '<div class="small mtx-wh">Drum-Töne auf eine eigene, mischbare Spur (eigener Kanal: Pegel, Pan, Effekte).</div>' +
+      '<div class="mtx3-sub">Töne</div><div class="mtx3-l mtx3-v"></div>' +
+      '<div class="mtx3-sub">Was</div><div class="mtx3b-md"><button class="mbtn rb" data-m3b="all">Ganze Töne<small>alle Szenen</small></button>' +
+      '<button class="mbtn rb" data-m3b="steps"' + (c ? '' : ' disabled') + '>Nur diese Schritte<small>Szene ' + (s + 1) + (c ? '' : ' · leer') + '</small></button></div>' +
+      '<div class="mtx3b-stw"></div><div class="small mtx3-rest"></div>' +
+      '<button class="mbtn rb mtx3-main" data-m3b="go"><b>Auf eigene Spur</b><small></small></button>';
+    const box = p.querySelector('.mtx3-v'), stw = p.querySelector('.mtx3b-stw'), rest = p.querySelector('.mtx3-rest'), go = p.querySelector('[data-m3b="go"]');
+    for (const u of P.used) {
+      const j = mtx3bPartOf(u.id), b = el('button', 'mbtn rb', esc(u.sl) + '<small>' + (u.md ? esc(mtx3MdName()) + ' · bleibt' : j >= 0 ? '→ ' + esc(S.tracks[j].name) + ' dazu' : u.n + (u.n === 1 ? ' Schlag' : ' Schläge')) + '</small>');
+      b.dataset.v = u.id; b.setAttribute('aria-label', u.l + (u.md ? ' (bleibt auf DRUMS)' : j >= 0 ? ' (zur Spur ' + S.tracks[j].name + ')' : '')); if (u.md) b.disabled = true; box.appendChild(b);
+    }
+    const paintSteps = () => {
+      stw.innerHTML = '';
+      if (mode !== 'steps' || !c) return;
+      for (const id of [...sel]) {
+        const ns = c.notes.filter(n => mtx3bPad(n) === id); if (!ns.length) continue;
+        stw.appendChild(el('div', 'mtx3-sub', esc(DRUM_BY_ID[id].sl) + ' · Szene ' + (s + 1)));
+        const g = el('div', 'mtx3b-st');
+        ns.forEach(n => { const b = el('button', 'mbtn rb', esc(mtx3bStepLab(c, n))); b.dataset.k = String(c.notes.indexOf(n)); b.setAttribute('aria-label', DRUM_BY_ID[id].l + ' Schritt ' + mtx3bStepLab(c, n)); g.appendChild(b); });
+        stw.appendChild(g);
+      }
+    };
+    const paint = () => {
+      for (const b of box.children) b.classList.toggle('on', sel.has(b.dataset.v));
+      for (const b of p.querySelectorAll('.mtx3b-md .mbtn')) b.classList.toggle('on', b.dataset.m3b === mode);
+      for (const b of stw.querySelectorAll('.mtx3b-st .mbtn')) b.classList.toggle('on', pick.has(c.notes[+b.dataset.k]));
+      const keep = P.used.filter(u => mode === 'steps' || !sel.has(u.id)).map(u => u.sl);
+      rest.textContent = keep.length ? 'DRUMS behält: ' + keep.join(', ') + (mode === 'steps' ? ' (ohne die gewählten Schritte)' : '') : 'Ein Ton bleibt auf DRUMS';
+      const ids = [...sel], w = mtx3bOutOk(ids, mode === 'steps' ? s : null, mode === 'steps' ? pick : null);
+      const nn = mtx3bMoves(ids, mode === 'steps' ? s : null, mode === 'steps' ? pick : null).reduce((a, m) => a + m.ns.length, 0), nw = ids.filter(id => mtx3bPartOf(id) < 0).length;
+      go.disabled = !!w; go.querySelector('small').textContent = w || nn + (nn === 1 ? ' Schlag' : ' Schläge') + (nw ? ' · ' + nw + (nw === 1 ? ' neue Spur' : ' neue Spuren') : ' · dazu') + ' · ↶ holt alles zurück';
+    };
+    paintSteps(); paint(); guardTouch(p);
+    onTap(p, b => {
+      if (b.dataset.v) { if (b.disabled) return; const id = b.dataset.v; if (sel.has(id)) sel.delete(id); else sel.add(id); pickAll(); paintSteps(); paint(); popFit(p); return; }
+      if (b.dataset.k != null && c) { const n = c.notes[+b.dataset.k]; if (n) { if (pick.has(n)) pick.delete(n); else pick.add(n); } paint(); return; }
+      const a = b.dataset.m3b; if (a === 'no') { closePop(); return; }
+      if ((a === 'all' || a === 'steps') && !b.disabled) { mode = MTX3B.mode = a; pickAll(); paintSteps(); paint(); popFit(p); return; }
+      if (a === 'go' && !b.disabled) { const ids = [...sel], pk = mode === 'steps' ? new Set(pick) : null; closePop(); mtx3bOut(ids, mode === 'steps' ? s : null, pk); }
+    }, 'button');
+  }, {name: 'mtx3bout'});
+  popFit(UI.pop && UI.pop.el); haptic('pop');
+  return !!(UI.pop && UI.pop.name === 'mtx3bout');
+}
+// pageDrumSteps-Haken: [Auslagern ▾] in der Werkzeug-Zeile (gleicher Knopf wie [Euklid…] / [Muster ▾]); hochkant, wo die Zeile voll ist, darunter
+function mtx3bDrumTools(tools, clip) {
+  if (!tools || tools.querySelector('.mtx3bdb')) return;
+  const b = el('button', 'rb mbtn mtx3bdb', 'Auslagern ▾'); b.title = 'Gewählte Töne oder Schritte auf eine eigene, mischbare Spur'; b.setAttribute('aria-label', b.title);
+  onTap(b, () => { try { mtx3bOutSheet(b); } catch (e) { logErr(e); } });
+  tools.appendChild(b);
+  // passt die Werkzeug-Zeile nicht (hochkant: Euklid · Muster · Länge füllen sie), steht der Knopf in der Zeile darunter neben „Szene n“
+  queueMicrotask(() => {
+    try {
+      if (!b.isConnected || tools.scrollWidth <= tools.clientWidth + 1) return;
+      const side = tools.parentElement, info = side && side.querySelector(':scope > .pginfo'); if (!info) return;
+      const row = el('div', 'mtx3bir'); side.insertBefore(row, info); row.append(info, b);
+    } catch (e) { logErr(e); }
+  });
+}
+
+/* ---------- 6 · Drum-Schritt-Editor einer Einzelspur (im Noten-Editor-Blatt) ---------- */
+function mtx3bModel(t, s, V) {
+  const cur = () => S.tracks[t] && S.tracks[t].clips[s], gm = () => S.tracks[t].dvx.gm, N = () => dStepsOf(cur());
+  const mine = n => n.n === gm() || mapV1Drum(n.n) === gm();
+  const at = (c, i) => { const NS = Math.round(clipB(c) * 4), si = V.page * N() + i; return n => mine(n) && Math.round(n.t / .25) % NS === si; };
+  const find = i => { const c = cur(); if (!c || V.page >= c.len) return null; return c.notes.find(at(c, i)) || null; };
+  let snap = null;
+  return {
+    steps: N(),
+    get: find,
+    set(i, n) {
+      const c = cur(); if (!c) return;
+      if (!n) { c.notes = c.notes.filter(x => !at(c, i)(x)); return; }
+      if (V.page >= c.len || find(i)) return;
+      const o = Object.assign({}, n, {t: V.page * dBarB(c) + i * .25, d: .1, n: gm()}); if (o.v == null) o.v = .8;
+      c.notes.push(o); c.notes.sort((a, b) => a.t - b.t);
+    },
+    begin() { snap = cleanClip(cur()); },
+    commit(label) { pushUndo(t, s, snap, STEP_LABEL[label] || 'Schritte'); snap = null; afterClipEdit(t, s, true); UI.dirty.grid = true; V.sig = mtx3bSig(cur()); },
+    revert() { const c = cur(); if (snap && c) { const d = deep(snap); Object.keys(c).forEach(k => { if (!(k in d)) delete c[k]; }); Object.assign(c, d); afterClipEdit(t, s, true); } snap = null; },
+    audition(i, v) {
+      const n = find(i), lk = n && n.lk ? {lk: n.lk} : null; ensureAudio(); if (!AU.ctx) return null;
+      const k = MTX3.cur; MTX3.cur = t;
+      try { return drumHit(gm(), v || .8, AU.ctx.currentTime + .005, 'audition', lk); } catch (e) { logErr(e); return null; } finally { MTX3.cur = k; }
+    }
+  };
+}
+const mtx3bSig = c => (c ? c.notes.length + ':' + c.len + ':' + (c.ts || '') + ':' + (c.lanes ? JSON.stringify(c.lanes) : '') + ':' + c.notes.reduce((a, n) => a + n.t * 7 + n.v + (n.a ? 3 : 0) + (n.p || 0) + (n.r || 0) + (n.m || 0), 0).toFixed(4) : '-');
+// buildRoll-Haken (vor LAUF/ROLLE): ein Clip einer aktiven Einzelspur zeigt den Drum-Schritt-Editor ihrer Pad-Zeile
+function mtx3bDrumView() {
+  const A = ED.rollAt; if (!A || A.mel || A.own || A.vx || MTX3B.view !== 'steps') return false;
+  const t = A.t, s = A.s, tr = S.tracks[t]; if (!tr || !mtx3Is(t)) return false;
+  const c = tr.clips[s]; if (!c) return false;
+  if (!isNum(c.seed)) c.seed = parseInt(SQStore.fnv(JSON.stringify(c.notes.map(cleanNote))), 16) % 2147483647;   // wie normClip: gleicher Clip = gleiche Zufallsentscheidungen
+  const sh = EL.rollSheet, sl = DRUM_BY_ID[tr.dvx.v];
+  if (ED.roll) { try { ED.roll.destroy(); } catch (e) {} ED.roll = null; }
+  ED.lauf = null; ED.laufBtn = null;
+  sh.innerHTML = ''; sh.style.setProperty('--tc', `var(--t${t + 1})`);
+  const land = isLand(); ED.rollLand = land;
+  const pages = Math.max(1, c.len | 0), V = {t, s, page: 0, pages, sig: '', ph: -2};
+  if (MTX3B.ed && MTX3B.ed.t === t && MTX3B.ed.s === s) V.page = clamp(MTX3B.ed.page | 0, 0, pages - 1);
+  const head = el('div', 'rhead'), ht = el('div', 'rht');
+  ht.appendChild(el('div', 'sh-title', `<span class="dot"></span><b>${esc(tr.name)} · Szene ${s + 1}</b>` + (S.song && sx9List(S.song, t, s).length ? '<span class="sx9-tag">v1</span>' : '')));
+  const info = el('span', 'rinfo'); ht.appendChild(info); ED.rollInfo = info;
+  const chip = el('span', 'trchip'); chip.hidden = true; ht.appendChild(chip); ED.trChip = chip;
+  head.appendChild(ht); ED.rollHT = ht;
+  const x = el('button', 'sh-x rb', '✕'); x.setAttribute('aria-label', 'Editor schließen'); onTap(x, closeRoll);
+  const body = el('div', 'rbody lauf mtx3bd');
+  sh.append(head, body);
+  // Leiste: [SCHRITTE|ROLLE] [Takt] │ [↶][↷] (quer im Kopf, + [⌨]) – wie LAUF
+  const bar = el('div', 'pr-bar prt lbar');
+  const view = makeSeg([['steps', 'SCHRITTE'], ['roll', 'ROLLE']], () => 'steps', v => { if (v === 'roll') { MTX3B.view = 'roll'; safeRebuild(buildRoll); } }, 'lview', {lcd: false});
+  const pager = el('div', 'lpager');
+  const pgPaint = () => { for (const b of pager.querySelectorAll('button[data-pg]')) b.classList.toggle('on', +b.dataset.pg === V.page); const tx = pager.querySelector('.lpt'); if (tx) tx.textContent = 'Takt ' + (V.page + 1) + '/' + pages; };
+  const goPg = k => { V.page = clamp(k, 0, pages - 1); MTX3B.ed = V; pgPaint(); if (V.E && !V.E.busy()) V.E.paint(); V.ph = -2; };
+  if (pages <= 1) pager.appendChild(el('span', 'lpg1', 'Takt 1'));
+  else if (pages <= (land ? 4 : 2)) { const sg = el('div', 'seg'); for (let k = 0; k < pages; k++) { const b = el('button', 'rb', String(k + 1)); b.dataset.pg = String(k); b.setAttribute('aria-label', 'Takt ' + (k + 1)); sg.appendChild(b); } pager.appendChild(sg); onTap(sg, b => goPg(+b.dataset.pg), 'button'); }
+  else { const pv = el('button', 'rb', '‹'), nx = el('button', 'rb', '›'), lb = el('span', 'lpt'); pv.setAttribute('aria-label', 'Voriger Takt'); nx.setAttribute('aria-label', 'Nächster Takt'); pager.append(pv, lb, nx); onTap(pv, () => goPg(V.page - 1)); onTap(nx, () => goPg(V.page + 1)); }
+  const ub = el('button', 'rb', '↶'), rb2 = el('button', 'rb', '↷');
+  ub.setAttribute('aria-label', 'Rückgängig'); rb2.setAttribute('aria-label', 'Wiederholen');
+  bindHoldTap(ub, () => { undo(); mtx3bPaint(true); }, () => sx14Open(ub)); onTap(rb2, () => { redo(); mtx3bPaint(true); });
+  bar.append(view, pager, el('span', 'sep'), ub, rb2);
+  if (land) { const kb = el('button', 'rb' + (ROLLP.kb ? ' on' : ''), '⌨'); kb.setAttribute('aria-label', 'Tastatur zeigen / verbergen'); onTap(kb, () => { ROLLP.kb = !ROLLP.kb; rollKbApply(); kb.classList.toggle('on', ROLLP.kb); }); bar.appendChild(kb); }
+  if (land) head.appendChild(bar); else body.appendChild(bar);
+  head.appendChild(x);
+  const N = dStepsOf(c), se = el('div', 'se lse');
+  se.style.setProperty('--lcols', land ? N : (N <= 8 ? N : N === 12 ? 6 : N === 14 ? 7 : N === 20 ? 5 : N === 24 ? 6 : 8)); se.style.setProperty('--lsteps', N); se.style.setProperty('--pc', `var(--t${t + 1})`);
+  body.appendChild(se);
+  const E = StepEditor.create(se, mtx3bModel(t, s, V), {defVel: .8, lanes: ['vel', 'acc', 'prob', 'rat', 'nud', 'tune', 'dec'], lane: MTX3B.lane || 'vel',
+    cols: null, qAt: N === 16 ? null : dStepQ(c),
+    tap: (node, fn, sel) => onTap(node, fn, sel), onLane: k => { MTX3B.lane = k; },
+    onTap: (i, onS) => { haptic('tick'); if (onS && V.E) V.E.model.audition(i, .8); },
+    onVel: (i, n) => { const q = performance.now(); if (V.E && n && q - (V.hq || 0) > 110) { V.hq = q; V.E.model.audition(i, n.v); } },
+    decorate: (cell, n, i) => {
+      let lb = cell._lb; if (!lb) { lb = cell._lb = el('b', 'ln'); cell.appendChild(lb); } const si = V.page * N + i, tx = String(si + 1); if (lb.textContent !== tx) lb.textContent = tx;
+      const l = d1Lane(S.tracks[t] && S.tracks[t].clips[s], tr.dvx.gm);   // D1: Schritte hinter dem Spur-Ende gedimmt, Klammer am letzten (wie DRUMS)
+      cell.classList.toggle('d1o', !!l && si >= l.Ls); cell.classList.toggle('d1e', !!l && si === l.Ls - 1);
+    }});
+  const LSH = {vel: 'VEL', acc: 'AKZ.', prob: 'CHANCE', rat: 'WIRB.', nud: 'TIM.', tune: 'TUNE', dec: 'DEC.'};
+  for (const b of se.querySelectorAll('.se-tabs button[data-lane]')) { const l = b.textContent; b.innerHTML = `<span class="tl">${esc(l)}</span><span class="ts">${esc(LSH[b.dataset.lane] || l)}</span>`; }
+  // untere Zeile: woher der Ton kommt · [Pad-Klang] (Pad-Editor von DRUMS)
+  const acts = el('div', 'pr-bar pra lacts');
+  const lab = el('span', 'm3bpad', 'Pad ' + esc(sl.sl) + ' · Klang von DRUMS (' + esc(tr.dvx.pk || drumSnd().name || 'Kit') + ')');
+  const pb = el('button', 'rb mtx3rb', 'Pad-Klang');   // mtx3rb: Trefferfläche 52 px (Leiste bleibt 36 px) pb.setAttribute('aria-label', 'Pad-Klang öffnen (Drum-Editor von DRUMS)');
+  onTap(pb, () => { try { const v = DRUM_VOICES.findIndex(q => q.id === sl.id); closeRoll(); selectTrack(DRUM_T); if (v >= 0) ED.dVoice = v; ED.dTab = 'sound'; openEditor(); } catch (e) { logErr(e); } });
+  acts.append(lab, pb); body.appendChild(acts);
+  V.E = E; V.se = se; ED.mtx3b = V; MTX3B.ed = V;
+  pgPaint(); mtx3bPaint(true);
+  rollKbApply(); rollHeadUpdate(); renderEdChip();
+  sh.classList.add('open');
+  return true;
+}
+const mtx3bOpen = () => { const V = ED.mtx3b; return !!(V && V.se && V.se.isConnected && ED.rollAt && ED.rollAt.t === V.t && ED.rollAt.s === V.s && !ED.roll && !ED.lauf && !ED.rollAt.own && !ED.rollAt.mel) ? V : null; };
+function mtx3bPaint(force) {
+  const V = mtx3bOpen(); if (!V) return;
+  const c = S.tracks[V.t] && S.tracks[V.t].clips[V.s]; if (!c || !mtx3Is(V.t)) { safeRebuild(() => { if (ED.rollAt) buildRoll(); }); return; }
+  if (Math.max(1, c.len | 0) !== V.pages || dStepsOf(c) !== V.E.model.steps) { safeRebuild(() => { if (ED.rollAt) buildRoll(); }); return; }   // Länge / Taktart geändert (↶, Takte ±)
+  const sg = mtx3bSig(c); if (!force && sg === V.sig) return;
+  V.sig = sg; if (!V.E.busy()) V.E.paint();
+}
+// Bild-Haken: Lauflicht und Nachziehen nach ↶ / Änderungen von außen
+function mtx3bFrame(bAud) {
+  const V = mtx3bOpen(); if (!V) return;
+  const t = V.t, s = V.s, c = S.tracks[t] && S.tracks[t].clips[s]; if (!c) { closeRoll(); return; }
+  mtx3bPaint(false);
+  const vs = R.playing ? visualSlots(t, bAud) : null, L = clipB(c), B = dBarB(c);
+  let st = -1;
+  if (vs && vs.playing === s && bAud >= 0) { const ph = (((bAud - audCstart(t, bAud)) % L) + L) % L; if (Math.floor(ph / B) === V.page) st = Math.floor((ph % B) / .25); }
+  if (typeof pl1Ll === 'function' && !pl1Ll()) st = -1;
+  if (st !== V.ph) { V.ph = st; V.E.setPlayhead(st); }
+}
+// buildRoll-Haken (Ende): in der Klavierrolle einer Einzelspur führt [LAUF] zurück zu [SCHRITTE]
+function mtx3bRollHook(t, s) {
+  const b = ED.laufBtn; if (!b || !mtx3Is(t) || !b.isConnected) return;
+  const nb = b.cloneNode(true); nb.textContent = 'SCHRITTE'; nb.title = 'SCHRITTE: Drum-Schritt-Editor des Pads'; nb.setAttribute('aria-label', nb.title);
+  b.replaceWith(nb); ED.laufBtn = nb;
+  nb.addEventListener('click', () => { MTX3B.view = 'steps'; safeRebuild(buildRoll); });
+}
+/* ---------- „Wo finde ich …?“ ---------- */
+(function mtx3bGuide() {
+  try {
+    const L = ui1Entries(); if (L.some(x => x.id === 'mtx3bdr')) return;
+    L.push({id: 'mtx3bdr', n: 'Hi-Hats (Drum-Töne) auf eine eigene Spur', w: 'DRUMS › Schritte › Auslagern ▾', d: 'Töne (ganze Pads) oder einzelne Schritte einer Szene auf eine eigene mischbare Spur – ein ↶.',
+      s: 'hihat hi-hat drums auslagern eigene spur percussion schritte pad einzelspur', go: () => { ui1Home(); setSongView(false); closeSheets(); selectTrack(DRUM_T); ED.dTab = 'steps'; openEditor(); return R.editor === 'drum'; },
+      q: () => (R.editor === 'drum' ? EL.drumSheet.querySelector('.mtx3bdb') : null)});
+  } catch (e) {}
+})();
+/* ---------- Test-Schnittstelle ---------- */
+const MTX3B_API = {
+  info: () => ({n: MTX3B.n, last: MTX3B.last ? mtx3Jc(MTX3B.last) : null, cut: MTX3B.cut, mix: MTX3B.mix, view: MTX3B.view, ed: mtx3bOpen() ? {t: ED.mtx3b.t, s: ED.mtx3b.s, page: ED.mtx3b.page} : null}),
+  out: (ids, s, ix) => { const c = s != null ? S.tracks[DRUM_T].clips[s] : null; return mtx3bOut(ids, s == null ? null : s, ix && c ? new Set(ix.map(k => c.notes[k]).filter(Boolean)) : (c ? new Set(c.notes) : null), true); },
+  outSheet: () => mtx3bOutSheet(EL.drumSheet.querySelector('.mtx3bdb') || EL.grid), why: (ids, s) => mtx3bOutOk(ids, s == null ? null : s, null),
+  pads: (t, notes, src) => { const a = notes.slice(); mtx3bPads(t, a, src); return a; }, role: (t, s) => { const c = S.tracks[t] && S.tracks[t].clips[s]; return c ? gr2Role(t, c) : null; },
+  view: v => { if (v) MTX3B.view = v === 'roll' ? 'roll' : 'steps'; return MTX3B.view; },
+};
+Object.assign(SYNQUENZER, {mtx3b: MTX3B_API});              /* MTX3B: Test-API */
+/* MTX3B-END */
 /* ===== KI1-BEGIN (Profi-Trennung auf der Spektral-Seite; Xander 14.11.: „Jedes Instrument muss voneinander gut trennbar sein“) =====
    Optional, nur auf Knopfdruck: MIT-lizenziertes 4-Spur-Modell (Drums, Bass, Gesang, Rest; je Spur ein LSTM-Netz als ONNX, ≈ 17 MB),
    feste Revision der Modell-Ablage, Laufzeit-Bibliothek in derselben festen Version wie G9A. Nichts davon beim App-Start.
