@@ -12,3 +12,4 @@
 22:13 | load average: 0.84, 0.94, 1.74 | medLine-Fix: medline-alle L=1..40 0/578665 abweichend (vorher 12990 bei geradem L); zr-node 20 s + 3 min Energie/SDR bitgleich zur Basis; Start zrl1-test RUNDEN3=2
 22:15 | load average: 1.03, 1.05, 1.67 | zrl1-test ALLE OK: 20 s Median 1146 vs 1841 ms (x1,61), 3 min 8919 vs 13863 ms (x1,55, Last 1,2-1,3), SDR/Energie gleich, RSS max 405 MB; Start Regression reg/run.sh (alte Logs in reg/vor-pruef/)
 22:20 | load average: 4.31, 2.86, 2.26 | Regression Strom 2: spk5 24/24, spk6 26/26, spk11b 17/0, fokus1 26 OK, 0 FEHLER; Pflicht topdefs 0/0, dupkeys 0, smoke errors [] (PNG = Basis), MS2000 1, live 1, 4.74.0
+22:22 | load average: 11.31, 5.93, 3.45 | spk4 (Last bis 11,6) 4 FEHLER/23: pflicht (4.60 erwartet), verfeinern+1, reg-spk2 27/30 (= Basis direkt), reg-ki1 quer – a3-andere-klaenge/a3-nachbau-zeit jetzt OK (va2 3.89 → 3.89)
