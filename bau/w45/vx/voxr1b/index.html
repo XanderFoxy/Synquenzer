@@ -61381,11 +61381,13 @@ function plopFind(Fe, o) {
     const rb = med(r, j - B0, j - B1), ra = med(r, j + A0, j + A1), lb = med(LF, j - B0, j - B1), la = med(LF, j + A0, j + A1);
     const base = rb == null ? ra : ra == null ? rb : Math.max(rb, ra), lbase = lb == null ? la : la == null ? lb : Math.max(lb, la);   // kurz: über beiden Seiten (Tonwechsel nach tief ist kein Stoß)
     if (base == null) continue;
-    ex[j] = r[j] - base; if (ex[j] >= thr && LF[j] - lbase >= thr - 3) cand[j] = 1;
+    // VOXR1B: Bezug ist das Tiefband selbst (Median beider Seiten, das größere). Das Verhältnis zu 300–3000 Hz sprang neben Pausen
+    // (dort fehlt die Mitte) und verdeckte 4 von 10 eingesetzten Stößen; ein gesungener Ton liegt hier nie (Grundton ≥ 100 Hz)
+    ex[j] = LF[j] - lbase; if (ex[j] >= thr + (o.rise != null ? o.rise : 6)) cand[j] = 1;
   }
   const ev = [];
   for (let j = 0; j < nf; j++) {
-    if (!cand[j]) continue; let e = j, mx = ex[j]; while (e + 1 < nf && (cand[e + 1] || (e + 2 < nf && cand[e + 2]))) { e++; if (ex[e] > mx) mx = ex[e]; }
+    if (!cand[j]) continue; let e = j, mx = ex[j]; while (e + 1 < nf && (cand[e + 1] || (e + 6 < nf && cand.subarray(e + 2, e + 7).some(Boolean)))) { e++; if (ex[e] > mx) mx = ex[e]; }   // VOXR1B: Lücken ≤ 25 ms gehören zum selben Stoß
     const dur = (e - j + 2) / fps;
     if (dur >= 0.02 && dur <= 0.1) ev.push({t0: j * Fe.H / Fe.sr, t1: (e + 2) * Fe.H / Fe.sr, s0: j * Fe.H, s1: Math.min(Fe.n, (e + 2) * Fe.H), exDb: +mx.toFixed(1)});
     j = e;
