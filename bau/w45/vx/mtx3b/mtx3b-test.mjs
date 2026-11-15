@@ -284,7 +284,7 @@ const DT = 4;
       SYNQUENZER.mtx3b.out(['hatC'], null); const h = S.tracks[j].clips[0]; const B = await __R();
       o.b4 = {len: h.len, beyond: h.notes.filter(n => n.t >= clipB(h) - 1e-9).length, db: __db(A, B), last: SYNQUENZER.mtx3b.info().last}; undo();
       // belegte Stelle: HH ZU hat dort schon einen Schlag (leiser) → ein Schlag, der lautere, mit Hinweis
-      const hz = S.tracks[j].clips[0], t0 = hz.notes[0].t; hz.notes[0].v = .3; c.notes.push({t: t0, d: .1, n: 42, v: .95}); c.notes.sort((x, y) => x.t - y.t); clipChanged(DRUM_T, 0);
+      const hz = S.tracks[j].clips[0], t0 = hz.notes[0].t, c2 = S.tracks[DRUM_T].clips[0]; hz.notes[0].v = .3; c2.notes.push({t: t0, d: .1, n: 42, v: .95}); c2.notes.sort((x, y) => x.t - y.t); clipChanged(DRUM_T, 0);
       SYNQUENZER.mtx3b.out(['hatC'], 0); const at = S.tracks[j].clips[0].notes.filter(n => Math.abs(n.t - t0) < 1e-6);
       o.b4b = {n: at.length, v: at[0] && at[0].v, dup: SYNQUENZER.mtx3b.info().last.dup}; undo(); }
     // B5: duplizierte Szene (gleiche Saat) + Grundmuster auf DRUMS

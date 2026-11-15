@@ -11,3 +11,4 @@
 - 04:19 Blatt-CSS („Was“-Knöpfe zweizeilig) + Haken gr2RemixDo (Stil-Muster-Version der Einzelspur ohne D1) → 25 Haken. Erneut: mtx3b 67/67 · mtx3 51/51 · mtx3p 21/21 · smoke errors [] · topdefs 26/0/0 · dupkeys 0 · MS 2000 1× · live 1× · VERSION 4.68.0 · block.js = Block · basis→index nur Zusätze. FERTIG (md5 bd3d03b9)
 - 04:36 Prüfer-Befunde (PRUEFUNG.md, 11) übernommen; Lesen Block/ins.cjs/Sonden
 - 04:49 Behebungen 1–11 gebaut (Block + 8 neue Haken = 33), Sonden des Prüfers laufen nacheinander
+- 04:56 Prüfsonden des Prüfers a–j auf neuer Fassung grün (bis auf C7-Zeitfenster), Abschnitt „Prüfung MTX3b“ im Bauer-Test 19/19

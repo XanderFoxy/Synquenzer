@@ -9,3 +9,4 @@
 2026-11-15 04:40:52 Block-Änderungen (trf, trs-Keep, nur je Blatt, nach-nur-Zeile, Blatt fest, Texte) + Testteil 7 geschrieben
 2026-11-15 04:44:45 eigener Test 81/81 (Teil 7 Prüfung 17 neue Punkte)
 2026-11-15 04:51:39 Regression JAM3 (w4530): basis 4.68.0 64/67, index 63/67 – dieselben 3 Basis-Fehler, dazu nur die Einhänge-Prüfung (TRP1-Zeilen tragen nicht JAM3 = erwartet)
+2026-11-15 04:57:07 Regression JAM2 (w4510): basis 104/105, index 103/105 – zusätzlich nur „Zeile hat genau 5 Tasten“ quer (TRP1 legt seit dem Bau ab hier/nur/Mehr in dieselbe Zeile; alle 8 Tasten ≥ 44 px) – kein Rückschritt der Prüf-Fixes
