@@ -255,8 +255,10 @@ for (const [w, h] of [[926, 428], [926, 370]]) {
   ok('zweite Aktion in derselben Auswahl: keine weitere Version (die Fassung vor der Auswahl bleibt v2)', v2.n === 2 && v2.u === 2 && !v2.kinds.includes('song'), v2);
   const rt = await p.evaluate(() => { const a = serialize(), q = normalizeProject(projFromFile(JSON.parse(a))); return {own: JSON.stringify(q.song.own) === JSON.stringify(S.song.own), all: JSON.stringify(projectFileObj(q, true, true)) === a}; });
   ok('Speichern/Laden: die Versionen kommen bit-gleich zurück', rt.own, rt);
-  await p.evaluate(() => { undo(); undo(); }); await sleep(150);
-  ok('zwei ↶: Clips, Song und Versionen bit-gleich wie vorher', (await p.evaluate(() => serialize())) === r.ser0);
+  await p.evaluate(() => { undo(); undo(); }); await sleep(800);                // die automatische Szenen-Tonart folgt nach 400 ms (wie immer)
+  const bk = await p.evaluate(s0 => { const flat = (o, pre = '', out = {}) => { if (o && typeof o === 'object') { for (const k in o) flat(o[k], pre + '.' + k, out); } else out[pre] = o; return out; };
+    const a = flat(JSON.parse(s0)), q = flat(JSON.parse(serialize())); return Object.keys({...a, ...q}).filter(k => a[k] !== q[k] && k !== '.sum').slice(0, 8).map(k => k + ': ' + a[k] + ' → ' + q[k]); }, r.ser0);
+  ok('zwei ↶: Clips, Song und Versionen bit-gleich wie vorher', bk.length === 0, bk);
   ok('↶/↷ stimmig', await p.evaluate(() => { redo(); redo(); return undoRedoCheck(); }));
   // Clip-Blatt zeigt die Versionen (vorhandene Zeile VERSIONEN IM SONG): v1 v2
   await tapBtn(T, p, 'x'); await sleep(150);

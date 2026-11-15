@@ -20,3 +20,4 @@
 - 05:07 spk12-test3 alle 3 Größen 47 OK / 0 FEHLER; spk12-test2 72/0; Nachtrag: Regionen beim Öffnen des Stücks vorab holen, offenes Auswahl ▾ baut sich neu auf (Test öffnet nur einmal)
 - 05:12 reg.sh: spk6 OK, spk5 24 OK, spk1 1 = Basis (verfeinern-verbessert-ziel), spk8-seite 14/0, spk11 38/3 (drums-auf-kit bekannt); Endlauf test3 → test → test2 → smoke gestartet
 - 05:18 Endlauf: test3 47/0 · test 98/0 · test2 71/1 (Long Task 72 ms bei Last; Wiederholung 926x370 24/0) · smoke errors [] · FFT-Probe Basis 64 ms / Paket 83 ms (alter Weg) · NOTES.md Teil 3 + Pflicht fertig
+- 05:33 Start Prüfer-Befunde beheben (PRUEFUNG.md 1–9, a, b)
