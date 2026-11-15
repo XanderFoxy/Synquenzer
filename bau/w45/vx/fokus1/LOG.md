@@ -16,3 +16,5 @@
 12:37 krist: 2 Runden ok (B, dann C; nichts doppelt, 1 Phantom verworfen)
 12:40 lang/lt: Speicher +18 MB GPU/+13,6 MB Daten, frei nach 20 s; erstes Umschalten 3 min: 4 Long Tasks 51-62 ms (außerhalb JS), Wiederholung 0
 12:45 Prüfung iPhone fertig: Befunde in NOTES.md (Abschnitt Prüfung iPhone/Bedienung), Fotos pruef-iphone/fotos
+13:00 Prüfung Regression+Regeln (pruef-regress/, Logs pruef/): Diff nur 8 Haken + Block, Pflicht grün, spk1/6k/6/6u/12/12b/12c/11/11b wie r4710 (spk6/6u erster Lauf 'Target crashed' = Umgebung, Wiederholung grün); Nebenprodukte der Tests aus fotos/ nach pruef/nebenprodukte/ verschoben
+13:00 Fix-Runde gestartet (Befunde der drei Prüfer)
