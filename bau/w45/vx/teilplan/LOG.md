@@ -1,0 +1,2 @@
+- 23:37 Entwurf Bauliste Songteile/Clips: Fotos + Code (rel-4750) gelesen, Last: 1.19 2.79 2.87
+- 23:38 Bauliste fertig (teil1 Spektral-Teile, clip1 Auswahl → neuer Clip), nichts an App/Repo geändert, Last: 0.55 2.18 2.65

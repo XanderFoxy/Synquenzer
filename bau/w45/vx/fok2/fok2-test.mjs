@@ -39,8 +39,8 @@ const loadDoc = (p, spec) => p.evaluate(async ([spec, sr]) => {
   const n = Math.round(spec.sec * sr), x = new Float32Array(n); let s1 = 7; const rnd = () => ((s1 = (s1 * 1103515245 + 12345) >>> 0) / 4294967296) * 2 - 1;
   for (const t of spec.tones) { const i0 = Math.round(t.a * sr), i1 = Math.round(t.b * sr), fd = Math.round(0.01 * sr); for (let i = i0; i < i1 && i < n; i++) { const e = Math.min(1, (i - i0) / fd, (i1 - i) / fd); let v = 0; for (let h = 1; h <= (t.H || 1); h++) v += t.amp / h * Math.sin(2 * Math.PI * t.f * h * i / sr); x[i] += e * v; } }
   for (let i = 0; i < n; i++) x[i] += (spec.noise || 0) * rnd();
-  const r = await __spk.load({name: spec.name, sr, ch: spec.stereo ? [x, x.map((v, i) => 0.8 * v + 0.001 * Math.sin(i * 0.37))] : [x]}); await __spk.open(r.meta.id); return r.meta.id;
-}, [spec, SR]);
+  const r = await __spk.load({name: spec.name, sr, ch: (spec.stereo || spec.stq) ? [x, x.map((v, i) => 0.8 * v + 0.001 * Math.sin(i * 0.37))] : [x]}); await __spk.open(r.meta.id); return r.meta.id;
+}, [process.env.STEREOQ ? Object.assign({stq: 1}, spec) : spec, SR]);
 const OUT = {};
 for (const [tag, file] of (process.env.NURZEIT ? [] : [['neu', files[0]], ['basis', files[1]]])) {
   const {p, ctx, errs} = await page(file); const R = OUT[tag] = {};

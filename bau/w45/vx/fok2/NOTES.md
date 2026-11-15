@@ -66,6 +66,8 @@ schlimmster Fall, jede Spalte betroffen; N 4096 zuerst, N 16384 danach mit vorha
 | Kamm-Fall 8 s (Ebene nur 4 s, schmal), N 16384 / 4096 / 1024 | 51 / 91 / 144 ms | 148 / 143 / 178 ms | nur betroffene Spalten |
 | Long Tasks Hauptfaden (alle Läufe) | 0 | 0 | Rechnen im Worker, Scheiben ≈ 20 ms |
 | Abbruch (fokusStop mitten im Satz, 3 min) | 37 ms | 13 ms bis zur Antwort 'abgeloest' | Scheiben + ok() |
+| 3 min STEREO, N 4096 (2 Läufe, Median) | 807 ms (erstes 85) | 7842 ms (erstes 621) | Rest-Audio je Kanal → ≈ doppelt |
+| 3 min STEREO, N 16384 | 2807 ms (erstes 753) | 4778 ms (erstes 1475) | |
 
 v1 (Verhältnis |Rest|/|Original|, eine FFT je Spalte, ohne restMid) war gleich genau, aber 3 min N 4096 7,7 s, N 16384 10,4 s (erstes
 Stück 3,0 s) → verworfen zugunsten v2. Kosten-Aufteilung je Stück N 4096: FFT 512 × 0,13 ms ≈ 70 ms (spk12Fft, gemessen in Node),
@@ -89,10 +91,24 @@ Keine neuen Haken. Alle Änderungen im FOKUS1-Block (Kommentar FOK2):
 - `ops.spk12zauber` (Fokus-Prüfung): Stück aus dem Zwischenspeicher oder Näherung ohne Speichern
 Die drei Kern-Haken aus FOKUS1 (spk1DspMake, spk1Call, spk8WUrl) und die fünf Anzeige-Haken sind unverändert.
 
-## Regression (Endfassung, siehe reg2/*.log)
-siehe Bericht / LOG.md (Ergebnisse je Test mit Uhrzeit und Last).
+## Regression (Endfassung md5 6c5a05646d88866ecf71bb5f6176728c, Logs in reg2/)
+| Test | Ergebnis | Bemerkung |
+|---|---|---|
+| fokus1-kern-test | 26 OK / 0 | |
+| fokus1-test (Kopie reg2/) | 50 OK / 1 | einziger Fehler Long Tasks 3 min (Texturen, außerhalb JS); basis unter gleicher Last 44 / 7 (alle Long Tasks) |
+| spk12-test / -test2 / -test3 | 98/0 · 72/0 · 47/0 | erster Lauf unter Last 8: test2/test3 je 1 Long-Task-Fehler (Werkzeuge, nicht Fokus) |
+| spk6-test | ALLES OK (24 Kern-Messwerte) | |
+| spk5-test | ALLES OK, 24 Prüfungen | braucht mess/*.f32 neben index.html (aus spk5/mess kopiert) |
+| spkfix-test | ALLES OK, 11 Prüfungen | |
+| zrl1-test (Kopie reg2/) | Zerlegen 20 s A 1243 / B 1252 ms (5 Runden, Faktor 1,01), SDR + Energie je Ebene gleich, Speicher OK | erster Lauf (3 Runden + 3 min, Last 3–5,6): 1362/1253 bzw. 10060/9610 – Streuung; Zerlegen-Code unberührt |
+| fok2-test | 21 OK / 0 | |
+| Pflicht | topdefs doppelt 0 / Syntaxfehler 0; dupkeys 0; smoke errors []; MS 2000 = 1; live = 1; VERSION 4.75.0 | |
 
 ## Offenes
+- Stereo kostet beim Rest-Audio das Doppelte (render je Kanal). Für 'rest' ist der Weg linear und ohne SPK6-Effekte (s6.block gibt
+  null) → Rest der Mitte = Mitte der Rest-Kanäle; restMid könnte die Mitte (d.mid, Faktor 32768 exakt) einmal rendern: ≈ −2,5 s bei
+  3 min N 4096, erstes Stück ≈ 0,4 statt 0,6 s, gilt auch für „Noten finden“ auf dem Rest. Nicht gebaut (Zeit; ändert restMid, das
+  „Noten finden“ nutzt – braucht eigenen Stereo-Test).
 - Erstes Stück bei N 16384 und Ebenen über das ganze Lied 0,7–2 s statt 0,4–0,9 s. Profi-Weg für später: erst das sichtbare
   Spaltenfenster (statt ganzes 1024er-Stück) rechnen, oder Rest-Audio nach jeder Ebenen-Änderung im Leerlauf vorab rechnen.
 - Rest-Audio-Speicher wächst mit der Lied-Länge (Float32 voll); bei sehr langen Liedern (> 10 min) wäre ein Block-LRU sparsamer.

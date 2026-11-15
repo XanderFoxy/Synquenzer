@@ -109125,9 +109125,12 @@ function fokus1KMake(Z2, X) {
     clearTimeout(RS.t); RS.t = setTimeout(() => { RS.key = ''; RS.mid = RS.done = null; }, 90000);
     const mid = RS.mid, done = RS.done, mx = X.mixOf(d, 'rest'), k0 = Math.max(0, Math.floor(a0 / BL)), k1 = Math.min(done.length - 1, Math.floor(Math.max(0, b0 - 1) / BL));
     let todo = 0, nd = 0, tY = performance.now(), tP = tY; for (let k = k0; k <= k1; k++) if (!done[k]) todo++;
+    /* FOK2: Mix 'rest' ist linear und je Kanal gleich (gleiche Gewinne je Bin, keine SPK6-Effekte: s6.block gibt null) → Rest der Mitte =
+       Mitte der Rest-Kanäle. Die Mitte (d.mid) wird als ein „Kanal“ gerendert (smp teilt durch 32768, ×32768 exakt), eigener Block-Speicher. */
+    const mono = d.pcm && d.pcm.length > 1 && d.mid && d.mid.length === n ? Object.assign(Object.create(d), {pcm: [d.mid], cache: new Map()}) : null;
     for (let k = k0; k <= k1; k++) {
       if (done[k]) continue;
-      const o = k * BL, ch = X.render(d, mx, o, Math.min(n, o + BL)), g = 1 / ch.length;
+      const o = k * BL, ch = X.render(mono || d, mx, o, Math.min(n, o + BL)), g = mono ? 32768 : 1 / ch.length;   /* FOK2: Stereo → nur die Mitte rendern */
       for (const y of ch) for (let i = 0; i < y.length; i++) mid[o + i] += y[i] * g;
       done[k] = 1; nd++;
       const t = performance.now(); if (t - tY > 25) { if (emit && t - tP > 120) { emit({qid: m.qid, prog: 0.4 * nd / Math.max(1, todo), stufe: 'Rest abtasten'}); tP = t; } await X.tick(); tY = performance.now(); }

@@ -42,5 +42,64 @@ Take-Daten + AudioBuffer-Hash + PCM-Stücke aus IndexedDB (`tkPcm`), Daten-/Rast
 b1–b7 (Schlüssel `q*` = Messung, nicht verglichen; Speicher = CDP `Runtime.getHeapUsage().backingStorageSize` nach 3× gc()).
 basis = 4.75.0 (LT1 Teil 2 ohne LT1B) = „vorher“.
 
-## Messung
-(Ergebnis-Tabelle siehe unten, wird nach den Läufen gefüllt)
+## Messung (23:20–23:36 UTC, Last 0,4–7,8 auf 4 Kerne; Rohdaten t/*.out, t/*.json)
+„vorher“ = basis 4.75.0, „nachher“ = index; je Fall frischer Kontext 926×428; b1–b7 zweimal gelaufen (t/ab-b1.out + t/ab-b2b7.out
+und im Gesamtlauf t/ab-a.out), Werte unten: Lauf 1 / Lauf 2.
+
+### Speicher (backingStorageSize nach 3× gc, MB)
+| Fall | vorher (basis) | nachher (index) | Unterschied |
+|---|---|---|---|
+| b1 Datei über der Grenze, 401 s 48 kHz, Blatt offen nach „fertig“ | 232 / 232 (Vorbereitung liegt: 19,3 Mio × 6 B) | **121 / 121** (keine Vorbereitung, `LT1.big` = 19 344 480) | −111 MB |
+| b2 100 s 48 kHz vorbereitet → „Als Gesang“, Blatt offen | 94 / 94 (Vorbereitung bleibt liegen) | **66 / 66** (sofort frei) | −28 MB |
+| b2 vor dem Tipp (beide vorbereitet) | 67 / 67 | 67 / 67 | 0 |
+| Prüfer mem.mjs (44,1 kHz 3 min): nach Gesang, Blatt offen | 170,2 | **120** | −50 MB |
+| mem.mjs: nach Gesang, Blatt zu | 120 | 120 | 0 |
+| mem.mjs: 5× öffnen/schließen (offen / zu) | 126,3 / 76 | 126,3 / 76 | gleich, WeakRefs alle frei |
+
+### Ablegen-Dauer (imp1Place, ms) – Fälle, in denen vorher der alte Weg lief
+| Fall | vorher (basis) | nachher (index) | Vorbereitung genommen (index) |
+|---|---|---|---|
+| b3 3 min 48 kHz: Blatt in die Leiste 1,5 s, zurück, Szenen | 100 / 109 | **30 / 25** | ja (`LT1.re` 1) |
+| b4 3 min: „1“ +0,137 s verschoben, Spur | 93 / 97 | **29 / 24** | ja (alte sofort frei: `drop` 1, `re` 1) |
+| b5 3 min 44,1k: Tempo +1 und 3/4 (Versatz −1,71 → −1,09 s), Szenen | 120 / 123 | **25 / 24** | ja |
+| b6 100 s: 6 Tempo-Tipps im Abstand 80 ms | – | – | 1 Neustart (`re` 1), frei ab dem 1. Tipp (`pre` 0 in allen 6 Messpunkten; basis hielt die alte) |
+| b7 nach dem 1. Ablegen Tempo +1 (Take liegt vor) | – | – | keine neue Vorbereitung (`re` 0), wie gewollt |
+
+### Gewollte Rückschritte (Speicher statt Tempo)
+| Fall | vorher (basis) | nachher (index) |
+|---|---|---|
+| b1 401-s-Datei Szenen ablegen | 26 / 33 ms (vorbereitet) | **203 / 215 ms** (alter Weg, wie vor LT1) |
+| b2/a10 nach „Als Gesang“ noch Szenen ablegen | 20 / 28 ms | 58 / 56 ms (alter Weg) |
+| a14 Ablegen 300 ms nach dem Zurückholen (Neustart wartet 400 ms) | alter Weg | alter Weg (gleich) |
+
+### Normalweg unverändert (lt1-imp-ab.mjs s10 = 44,1 kHz 3 min, STOP=1, abwechselnd; Last 1,5–3,3)
+926×428 index 27/34/30 · basis 44/32/52 (basis 1 Long Task 54); 428×926 index 27/26/32 · basis 23/23/26 → Median index 28,5 / basis 29 ms
+(n 6), gleich=true, Vorbereitung in allen index-Läufen genommen; längste Vorbereitungs-Scheibe 6,3–9,9 ms (basis 7–8).
+Erster Lauf parallel zu mem.mjs (Last ~6): index 47/32, basis 31/30, index 1× Long Task 55 – Lastspitze, Wiederholung allein s. o.
+
+## Gleichheit (Ergebnis immer wie basis)
+- t/ab.mjs alle 28 Fälle (a1–a14 Prüfer-Randfälle + b1–b7): **28/28 gleich=true**, keine Konsolenfehler (t/ab-a.out); b1–b7 zusätzlich
+  einzeln (t/ab-b1.out, t/ab-b2b7.out) ebenfalls gleich. Verglichen: Fall-Ergebnisse, Take-Daten (len, sr, route, name, imp, Stück-Zahl,
+  src, follow, latMs), **AudioBuffer-Hash**, **PCM aus IndexedDB** (tkPcm-Hash), Daten- und Raster-Signatur, ↶ und ↷ danach, a9
+  Speichern → Neu laden → Takes aus IndexedDB.
+- lt1-test.mjs ONLY=c REPS=3 (t/lt1-test-c.out): Ergebnis gleich true in beiden Größen; Long Task beim Ablegen index 0× (beide Größen),
+  basis 1×53 / 1×62; imp1Place index 25–28 ms, basis 23–59 ms.
+- Regression: imp1-test (Kopie t/imp, Fotos/Audio in t/imp) **ALLE OK (145 s)**; imp2-node realvox/imp2rs **ALLE OK**.
+
+## Pflichtprüfungen (Endfassung md5 b5dd6b364cf60f3f4077c8e8bd6714ac, basis b8009096f96446a5d06f1c0a393b6312)
+topdefs „Skripte 26, Namen 7929, doppelt 0, Syntaxfehler 0“ · dupkeys „0 doppelte Schlüssel“ · smoke errors [] (smoke.png) ·
+„MS 2000“ 1× · „^  live: true,“ 1× · VERSION '4.75.0' unverändert · `git diff --no-index --stat` 35 insertions(+), 5 deletions(-).
+
+## Offen
+- Datei über der Grenze (> 100 MiB Vorbereitung, ≈ > 6 min bei 48 kHz): Ablegen wieder ~200 ms am Stück (Long Task, wie vor LT1).
+  Besser ginge es nur ohne zusätzliche Kopie, z. B. Take-Stücke/AudioBuffer erst im Tipp, aber in Scheiben über mehrere Aufgaben
+  (synchrones place() mit einem ↶ aufbrechen) – eigener Punkt.
+- Nach „Als Gesang“ ist ein weiteres Ablegen derselben Datei als Szenen/Spur wieder der alte Weg (~56 ms bei 100 s, ~130 ms bei 3 min).
+  Das Ziel ist vor dem Tipp im Blatt nicht erkennbar (Tipp = Ablegen); eine Vorbereitung „nur bis zum ersten Gesang-Tipp“ ist der
+  Kompromiss.
+- Neustart wartet 400 ms Ruhe + Vorbereitung (3 min ≈ 0,1–0,3 s): wer innerhalb ~0,5 s nach Zurückholen/Ändern tippt, bekommt den alten
+  Weg (Ergebnis gleich). Für das Zurückholen aus der Leiste könnte die Ruhezeit 0 sein (kein Tipp-Gewitter) – nicht gemessen, nicht gebaut.
+- Grenze ist fest (100 MiB). Freien Speicher des Geräts kann die Seite auf dem iPhone nicht abfragen (`performance.memory` /
+  `navigator.deviceMemory` gibt es in Safari nicht) – Messung auf dem iPhone mit sehr langer Datei wäre der nächste Beleg.
+- `c.made === 'Als Gesang importiert'` hängt am Text in imp1Place (labels.vox); wird der Text geändert, greift die Gesang-Regel nicht mehr
+  (dann wird nur wieder vorbereitet – Ergebnis bleibt gleich).
