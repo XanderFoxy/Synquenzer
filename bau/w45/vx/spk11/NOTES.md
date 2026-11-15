@@ -85,3 +85,5 @@ Alles im SPK11-Block; Haken unverändert (2 Ein-Zeiler). Neue Entscheidungen:
 - **B11** Loop → Matrix (Audio) nimmt die erste Audio-Spur (imp1OrigT, Grund-/IMP1-Code, Stelle von IMP2B) – offen.
 - **B15** Speicher: je Audio-Ebene ein Take über die Strecke (jetzt höchstens 2 Audio-Ebenen bei 6 Grundspuren) – offen, nicht gemessen.
 - Drum-Kit im Bauer-Lied weiter: Kick 63/64 + 26 Zusatz aus Bass-Resten, Snare in den Strophen schwach (Mitten in anderen Ebenen).
+- Bass-Phantomnoten in Intro/Outro (Prüferlied): die Bass-Ebene hat dort Trennreste bei −34 dBFS (13 dB unter den Strophen, 5 dB unter
+  der lautesten Ebene) – das „still“-Maß greift nicht; schärfer würde leise echte Intros abschneiden. Offen (Notenerkennung der Ebene).
