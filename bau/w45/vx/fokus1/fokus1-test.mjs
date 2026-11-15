@@ -188,8 +188,9 @@ for (const [W, H] of VIEWS) {
       const L2 = await pick(0, 'alles'); await closeDd();
       const L3 = await pick(2, 'gef'); await closeDd(); await pick(0, 'alles'); await closeDd();
       const good = L1.max <= 50 && L2.max <= 50 && L3.max <= 50 && L1i.info.n >= 16;
-      ok(tag + ' 3min-umschalten longtasks<=50' + (run ? ' (wiederholt)' : ''), {grundlast_6_bilder_alles: B0, rest: L1, alles: L2, gef: L3, n: L1i.info.n, tex: L1i.info.tex, stat: L1i.info.txt}, good || run === 0 ? good : good);
-      if (good) break; console.log('  (Last? einmal wiederholen)'); delete res[tag + ' 3min-umschalten longtasks<=50']; nF--;
+      const v3 = {grundlast_6_bilder_alles: B0, rest: L1, alles: L2, gef: L3, n: L1i.info.n, tex: L1i.info.tex, stat: L1i.info.txt};
+      if (!good && run === 0) { console.log('  (3 min: Long Task > 50 ms – bei Last einmal wiederholen)', JSON.stringify(v3).slice(0, 400)); res[tag + ' 3min-lauf1'] = {v: v3, ok: false, info: 'wiederholt'}; continue; }
+      ok(tag + ' 3min-umschalten longtasks<=50' + (run ? ' (wiederholt)' : ''), v3, good); break;
     }
   }
   ok(tag + ' keine-konsolen-fehler', errs.slice(0, 5), errs.length === 0);
