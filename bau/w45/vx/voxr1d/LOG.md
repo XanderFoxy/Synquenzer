@@ -3,3 +3,12 @@
 - 12:59 Prüfer-Nachbau voxr1d-w/hk.mjs (Plopp-Teil von kern.mjs, B44/C48 gleiche Stöße, dazu B48/C44 + Vor-Echo A44/A48) gibt den Stand voxr1c exakt wieder: Abzug 8/8/7/9, Obertöne 6/7/6/7 von 10, Vor-Echo A44 2 (max +15,3 dB), A48 4 Stellen. Last load average: 0.50, 0.99, 0.97
 - 13:01 plopFit (Phase aus Oberton ≥ 300 Hz, Hüllkurve = Stärke dieses Obertons × τ^0..2, Tiefton-Satz < 80 Hz, Rand-Vorhersage als Startwert): Abzug 10/10/8/10, Obertöne 9/9/9/9, Vor-Echo A44 max +0,2 dB gesamt. Ohne Oberton-Hüllkurve: Vor-Echo +22 dB (Phase im Stillen verrauscht) → verworfen.
 - 13:02 In index.html eingesetzt (nur vr1Make im Block: neue Funktion plopFit + Aufruf in plop). topdefs 26/7836/0/0, dupkeys 0, MS 2000 1×, live: true 1×, VERSION 4.70.0, außerhalb Block+7 Haken = basis.html. Last load average: 0.35, 0.71, 0.87
+- 13:00–13:06 Messreihe (voxr1d-w/sw.mjs): Prior-Stärke PA 0,15/0,3/0,6, Rauschmaß SG, Ränder mitmessen (EXT, schlechter, verworfen), Hüllkurve √/3× (Vor-Echo +9…+16 dB, verworfen).
+  Oktav-Probe der Rand-f0 (126-Hz-Ton als 247 Hz gemessen → Grundton −18 dB): B48 Abzug 8 → 10/10. Hüllkurve nie unter dem kleineren Rand-Mittel
+  (Oberton-Einbruch im Gleiten zog den Grundton mit): Obertöne B 9 → 10/10. „Nie lauter als vorher“ (gleitend ≈ 6 ms, Tiefband): Vor-Echo A44 0 Stellen.
+- 13:06 Platte voll (/ 100 %, 44 KB frei, fremde Belegung). Eigene Sicherung index.vor-plopfit.html gelöscht (cmp gleich vx/voxr1c/index.html),
+  basis.html durch harten Link auf rel-4700/index.html ersetzt (cmp gleich, kein Platz für 2. Kopie). Browser-Tests laufen mit TMPDIR=/dev/shm/voxr1d/tmp,
+  große Ausgaben (Fotos, o-vx1) unter /dev/shm/voxr1d.
+- 13:08 index.html = voxr1c/index.html + neuer vr1Make-Text (Block). topdefs 26/7836/0/0, dupkeys 0, MS 2000 1×, live: true 1×, VERSION 4.70.0, außerhalb Block + 7 Haken = basis.html.
+- 13:09 Prüfer-Kern kern.mjs: 49/60 → 53/60 (Last 0,94). Kette 3 min Median 5,96 s, × 3 = 17,9 s (vorher 5,54 / 16,6 s).
+- 13:11 smoke: errors [] (Last 0,63).

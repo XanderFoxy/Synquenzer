@@ -61480,9 +61480,10 @@ function plopFit(z, g0, g1, sd, cut, hb, D, sr) {
   const jA = g0 - W, jB = g1 + W, cA = (g0 - W / 2) * D, cB = (g1 + W / 2) * D, Tw = Math.round(Math.min(0.035, Math.max(0.012, (plopFit.TW || 3) / fm)) * sr), h2 = Tw >> 1;
   const s0 = jA * D - h2, s1 = jB * D + h2; if (s0 < 0 || s1 >= hb.length) return null;
   const th = new Float64Array(s1 - s0 + 1); { let ph = 0; for (let s = s0; s <= s1; s++) { const q = Math.min(1, Math.max(0, (s - cA) / (cB - cA))); ph += TAU * m * (fL + (fR - fL) * q) / sr; th[s - s0] = ph; } }
+  const tc = new Float64Array(th.length), ts = new Float64Array(th.length); for (let i = 0; i < th.length; i++) { tc[i] = Math.cos(th[i]); ts[i] = Math.sin(th[i]); }   // VOXR1D: einmal je Stelle (Kette 3 min schneller)
   const wn = new Float64Array(2 * h2 + 1); for (let i = -h2; i <= h2; i++) wn[i + h2] = 0.5 + 0.5 * Math.cos(Math.PI * i / (h2 + 1));
   const NJ = jB - jA, Ph = new Float64Array(NJ), Am = new Float64Array(NJ), Dr = new Float64Array(NJ); let amx = 0;
-  for (let j = 0; j < NJ; j++) { const c = (jA + j) * D; let ur = 0, ui = 0; for (let i = -h2; i <= h2; i++) { const v = hb[c + i] * wn[i + h2], t = th[c + i - s0]; ur += v * Math.cos(t); ui -= v * Math.sin(t); }
+  for (let j = 0; j < NJ; j++) { const c = (jA + j) * D; let ur = 0, ui = 0; for (let i = -h2, q = c - h2 - s0; i <= h2; i++, q++) { const v = hb[c + i] * wn[i + h2]; ur += v * tc[q]; ui -= v * ts[q]; }
     Dr[j] = Math.atan2(ui, ur); Am[j] = Math.hypot(ur, ui); if (Am[j] > amx) amx = Am[j]; }
   if (!(amx > 0)) return null;
   // VOXR1D: Phase nur verfolgen, wo der Oberton klingt (≥ 1/8 der Spitze); sonst Abweichung halten. Hüllkurve A(t) = Stärke des Obertons
