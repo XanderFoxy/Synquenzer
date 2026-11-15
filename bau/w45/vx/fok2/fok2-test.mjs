@@ -102,6 +102,10 @@ if (process.env.LANG !== '0') for (const sec of [20, 180]) for (let run = 0; run
     o.lt = window.__lt.map(e => +e.d.toFixed(0));
     return o;
   }, sec);
+  if (sec === 180 && run === 0) r.abbruch = await p.evaluate(async () => {   // Abbruch: neuer Ebenen-Stand im Worker vergessen (anderes N, Rest neu) → fokusStop, wie schnell kommt die Antwort?
+    const t0 = performance.now(), pr = __fokus1.get({mode: 'rest', aus: 'alle', N: 8192}); await new Promise(r => setTimeout(r, 400)); const t1 = performance.now(); await __fokus1.stop(); const F = await pr;
+    return {stop: F.stop, n: F.n, nachStop_ms: +(performance.now() - t1).toFixed(0), gesamt_ms: +(performance.now() - t0).toFixed(0)};
+  });
   r.last = load(); (T[tag]['s' + sec] = T[tag]['s' + sec] || []).push(r); console.log(tag, sec + ' s', JSON.stringify(r));
   await ctx.close();
 }
@@ -121,6 +125,7 @@ for (const N of ['N16384', 'N4096']) {
 }
 ok('noten ohne Ebene: byte-gleich zu basis (Rest + Gefundenes)', {neu: N1.noten, basis: B1.noten}, JSON.stringify(N1.noten) === JSON.stringify(B1.noten));
 ok('keine Fehler', {neu: N1.errs, basis: B1.errs}, !N1.errs.length);
+if (T.neu.s180) { const ab = T.neu.s180[0].abbruch; ok('abbruch: fokusStop beendet den Auftrag (stop abgeloest, < 300 ms)', ab, ab && ab.stop === 'abgeloest' && ab.nachStop_ms < 300); }
 if (zt.neu) for (const k of Object.keys(zt.neu)) ok('zeit ' + k + ' (Long Tasks Hauptfaden < 50 ms oder wie basis)', {neu: zt.neu[k], basis: zt.basis[k]}, Math.max(...zt.neu[k].lt) < 50 || Math.max(...zt.neu[k].lt) <= Math.max(...zt.basis[k].lt) + 10);
 fs.writeFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), 'fok2-ergebnis.json'), JSON.stringify({OUT, T, zt, res, nOk, nF}, null, 1));
 console.log('ERGEBNIS', nOk, 'OK', nF, 'FEHLER');

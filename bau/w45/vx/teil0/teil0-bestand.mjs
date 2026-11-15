@@ -78,6 +78,8 @@ for (const [W, H] of VIEWS) {
   const P0 = await p.evaluate(() => { const P = __spk11.plan(); return {parts: P.parts.map(x => x.name + ' ' + x.A + '–' + x.B), rows: P.rows.map(r => r.name + ':' + r.mode + ':' + r.n), scenes: P.scenes}; }), T0 = await p.evaluate(() => { const T = __spk11.teile(); return T && {ok: T.ok, bpm: T.bpm, ts: T.ts, fein: T.fein, imp1: T.imp1, teile: (T.teile || []).map(x => x.name + ' ' + x.t0 + '–' + x.t1 + 's g' + x.grp)}; });
   log(tag + ' teile-plan', P0); log(tag + ' teile-roh', T0);
   await shot('04-szenen-blatt-teile');
+  log(tag + ' teile-streifen', await p.evaluate(() => { const st = document.querySelector('.spk11-dd .spk11-st'); if (!st) return null; const r = st.getBoundingClientRect(), cs = getComputedStyle(st); return {x: Math.round(r.left), y: Math.round(r.top), w: Math.round(r.width), h: Math.round(r.height), disp: cs.display, kids: [...st.children].map(c => { const q = c.getBoundingClientRect(); return c.textContent + ' ' + Math.round(q.width) + 'x' + Math.round(q.height) + ' ' + getComputedStyle(c).backgroundColor; })}; }));
+  if (process.env.NUR_BLATT) { await ctx.close(); continue; }
   { const dd = await p.evaluate(() => { const d = document.querySelector('.spk11-dd'); if (!d) return null; d.scrollTop = d.scrollHeight; const R = d.getBoundingClientRect(); return {h: Math.round(R.height), sh: d.scrollHeight}; }); log(tag + ' szenen-blatt-hoehe', dd); await p.waitForTimeout(150); await shot('05-szenen-blatt-unten'); }
   // Blatt zu → Lineal nach der Erkennung: zeigt es jetzt Teile? (Speicher SPK11.ana nur in der Sitzung)
   await p.evaluate(() => { const U = __spk.page.ui(); spk1Dd(U, null); }); await p.waitForTimeout(250);
