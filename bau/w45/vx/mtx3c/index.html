@@ -30427,6 +30427,7 @@ function wkReady() { return SynthHost.state === 'ready' && !UI.forceNative && !!
 function wkWanted(i) { const tr = S.tracks[i]; return !!(tr && tr.kind === 'synth' && isWkEngine(tr.sound.engine) && wkReady() && AU.tracks[i]); }
 // a VA/FM track that is not on the worklet (blocked, forced, still loading) runs the native fallback: „ECO-Klang“ (§1.3)
 function trackEco(i) { const tr = S.tracks[i]; if (tr && tr.kind === 'synth' && tr.sound.engine === 'bm') return !!AU.ctx && (UI.forceNative || BMX.st === 'failed' || !bmCan());   // BM6
+  if (typeof mtx3Is === 'function' && mtx3Is(i)) return false;   /* MTX3C: Einzelspur spielt den Drum-Ton (keine Engine, kein ECO-Klang) */
   return !!(tr && tr.kind === 'synth' && isWkEngine(tr.sound.engine) && (UI.forceNative || SynthHost.state === 'failed' || (SynthHost.state === 'ready' && AU.ctx && !AU.synth[i]))); }
 // the flat patch for the worklet: numbers only, the engine id, and the limiter's working values (§14.3: the stored sound
 // is never changed)
@@ -33423,6 +33424,7 @@ function cancelTrackFrom(i, t) {
   if (S.tracks[i].kind === 'drum') for (const h of HITS.slice()) if (!h.dead && h.src === 'clip' && h.start >= t - 1e-6) hitCancel(h);
   if (S.tracks[i].kind === 'drum') mdCancelFrom(t);              // ND4
   if (typeof mtx3Cancel === 'function' && S.tracks[i].dvx) mtx3Cancel(i, t, 0);   /* MTX3 */
+  if (typeof mtx3cCancel === 'function') mtx3cCancel(i, t, 0);   /* MTX3C: Band-Schläge über Einzelspuren */
 }
 /* switch track i to slot at beat (bar line). If that beat is already scheduled, apply retroactively.
    cs (optional): the clip's start beat when it must run in phase with something played earlier (FANG, §3.6) */
@@ -33515,6 +33517,7 @@ function stopTrackNow(i) {
   if (S.tracks[i].kind === 'drum') for (const h of HITS.slice()) if (!h.dead && h.src === 'clip') { try { h.out.gain.setTargetAtTime(0, now, .01); } catch (e) {} hitStopAll(h, now + .06); }
   if (S.tracks[i].kind === 'drum') { const E = mdE(); if (E) E.stop(now, .01); }   // ND4: klingende North-Stimmen ebenso
   if (typeof mtx3Cancel === 'function' && S.tracks[i].dvx) mtx3Cancel(i, now, 1);   /* MTX3 */
+  if (typeof mtx3cCancel === 'function') mtx3cCancel(i, now, 1);   /* MTX3C: Band-Schläge über Einzelspuren */
   UI.dirty.grid = true;
 }
 // a stop that was queued by a tap on the playing clip (§3.2): cancelled silently when the clip is opened for editing
@@ -34406,6 +34409,7 @@ function melNoteOn(id, track, n, vel) {
     const cl = ownPlaying(track) || (R.slot[track] >= 0 ? S.tracks[track].clips[R.slot[track]] : null);
     o.nc = cl ? clipNoteFor(track, cl.key, n, AU.ctx.currentTime) : n;
   }
+  if (typeof mtx3cMelO === 'function') mtx3cMelO(o, track);   /* MTX3C: Taste auf einer Einzelspur = Pad-Note */
   MEL.open.set(id, o);
 }
 function melCommit(id, o, atBeat) {
@@ -34413,6 +34417,7 @@ function melCommit(id, o, atBeat) {
   if (!S.song) return;
   const endA = atBeat != null ? atBeat : AU.ctx && R.playing ? audBeat() : o.ab + .25;
   const note = {t: +o.b.toFixed(4), d: +Math.max(1 / 32, endA - o.ab).toFixed(4), n: o.n, v: +o.v.toFixed(3)};
+  if (typeof mtx3cMelC === 'function' && mtx3cMelC(o, note)) return;   /* MTX3C: Einzelspur ein Schlag je Stelle */
   if (o.sr) { o.sr.notes.push({b: note.t, d: note.d, n: o.n, nc: o.nc, v: note.v}); UI.dirty.song = true; return; }   // V2d′: the take's notes
   const m = curMel(S.song); m.notes.push(note); m.notes.sort((a, b) => a.t - b.t);
   m.len = Math.max(m.len || 1, Math.ceil((note.t + 1e-6) / 4), S.song.bars || 1);
@@ -36638,6 +36643,7 @@ function capture() {
   pushUndo(ti, si, null, 'Fang');
   tr.clips[si] = {len: ph.len, key, notes};
   if (tr.kind === 'drum') tr.clips[si].seed = newSeed();
+  if (typeof mtx3cFang === 'function') mtx3cFang(ti, si);   /* MTX3C: FANG auf einer Einzelspur = Schläge ihres Pads */
   if (bmcIs(ti)) { const c = tr.clips[si], L = clipB(c), B0 = ph.startBeat; bmcWrite(ti, B0, Math.min(ab, B0 + L), b => [c, b - B0, L], {fresh: true}); }   // BM8: FANG nimmt die Kurven mit (T1: Clip-Länge in Schlägen)
   if (!tkPlain() && S.ts) tr.clips[si].ts = S.ts;                    // T1
   analyseClip(ti, si, true, true);
@@ -84726,6 +84732,7 @@ function gr1ABDo(song, ab, a, b, stId) {
     if (!rc || (rc.gr.z === 0 && gr1Role(t, src.c) === 'z')) continue;
     sx9Set(song, t, sp.a, sp.b, id); n++;
   }
+  if (typeof mtx3cAB === 'function') n += mtx3cAB(song, ab, a, b, stId);   /* MTX3C: B schaltet die Versionen der Einzelspuren mit */
   return n;
 }
 // what [a, b) plays now: places with a remix (and its styles), places a remix of stId could take over
@@ -86766,6 +86773,7 @@ function gr2RemixDo(song, st, a, b, k, art) {
       const id = gr2VerPut(song, t, sp.s, src.c, pat ? {s: st.id, v: src.v} : {s: st.id, v: src.v, u: k}, notes, tTs);
       if (id && pat && typeof mtx3Dr === 'function' && mtx3Dr(t) && song.own && song.own[id]) delete song.own[id].lanes;   /* MTX3B: Stil-Muster ohne D1-Spuren wie auf DRUMS */
       if (!id) { res.full++; continue; }
+      if (typeof mtx3cVer === 'function') mtx3cVer(song, t, sp, src, id, st, k, pat, tTs);   /* MTX3C: Pad ohne Einzelspur-Clip hier = Version der Einzelspur */
       gen3VerSt(song.own[id], src.c, st, k, t);                          // GEN3: Klangzustand der Version (Tempo-Version: Hall, Release)
       if (id !== sp.id) sx9Set(song, t, sp.a, sp.b, id);
       res.n++; if (role === 'dr') res.dr++; else if (role === 'bass') res.bass++; else res.other++;
@@ -87852,6 +87860,7 @@ function gen3MxRemix(src, stId, k, art) {
     tr.clips[dst] = clip; ch.push(t); res.n++;
     if (role === 'dr') res.dr++; else if (role === 'bass') res.bass++; else res.other++;
   }
+  if (typeof mtx3cMx === 'function') mtx3cMx(src, dst, items, ch);   /* MTX3C: Matrix-Remix – Pads ohne Einzelspur-Clip auf ihre Einzelspur */
   const row = S.scenes[src] && S.scenes[src].chords;
   if (S.scenes[dst]) { const nr = row && row.ch && row.ch.length ? normChordRow(deep(row)) : null; if (nr) S.scenes[dst].chords = nr; else delete S.scenes[dst].chords; }
   if (partSnap() !== pb) items.push({kind: 'part', before: pb});
@@ -96388,6 +96397,174 @@ const MTX3B_API = {
 };
 Object.assign(SYNQUENZER, {mtx3b: MTX3B_API});              /* MTX3B: Test-API */
 /* MTX3B-END */
+/* MTX3C-BEGIN ===================== Einzelspuren von DRUMS: der Rest (Paket MTX3c, Xander 15.11.)
+   Xander: „Drum-Groove … die Hi-Hats … auf eine eigene Percussion-Spur … mischbare Einzelspuren.“ Was MTX3/MTX3b offen ließen:
+   1 Begleiter (BEG1) mit DRUMS als Drum-Spur: ein Pad, das auf einer aktiven Einzelspur liegt, spielt live über deren Kanal (ihr Kit-Bus,
+     Pegel, Pan, Effekte – wie ihre Clips); ihre eigenen Clips schweigen im Band-Fenster wie die von DRUMS („nur die Band“ behält sie wie
+     DRUMS); ● Aufnahme der Band legt die Schläge dieser Pads in einen Clip der Einzelspur (dieselbe neue Szene). ■ / Neu-Planung von
+     DRUMS räumt auch diese Schläge.
+   2 FANG (letzte Phrase) und Melodie-Spur im Song ([● MEL.], ● SONG mit NOTEN) auf einer Einzelspur: jede Taste = ein Schlag ihres Pads
+     (GM-Nummer, Schrittlänge 0,1 wie die Pads, ein Schlag je Stelle – der lautere bleibt); FANG-Clip mit Saat (Drum-Clip).
+   3 Klang-Editor einer aktiven Einzelspur: kein „ECO-Klang“ mehr (sie spielt den Drum-Ton, braucht keine Synth-Engine).
+   4 Stil-Muster / Remix (GR2 im Song, Matrix-Remix) in einer Szene, in der die Einzelspur keinen Clip hat: das Pad kommt auf seine
+     Einzelspur (Song: eine Version der Einzelspur an derselben Stelle, A/B schaltet sie mit; Matrix: ein Clip in der neuen Szene) statt
+     auf DRUMS. Spielt die Einzelspur dort schon etwas anderes, bleibt das Pad auf DRUMS. Alles im selben ↶. */
+const MTX3C = {beg: 0, rec: 0, fang: 0, mel: 0, ver: 0, ab: 0, mx: 0};
+const mtx3cPad = gm => (DRUM_BY_GM[gm] || DRUM_BY_GM[mapV1Drum(gm)] || {}).id;
+const mtx3cOn = () => { try { return mtx3Parts(-1).some(j => mtx3Is(j)); } catch (e) { return false; } };
+// die Noten des Pads id aus arr herausnehmen (in place, Reihenfolge bleibt); zurück: die herausgenommenen
+function mtx3cCut(arr, id) { const out = []; for (let k = arr.length - 1; k >= 0; k--) if (mtx3bPad(arr[k]) === id) out.unshift(arr.splice(k, 1)[0]); return out; }
+// ein DRUMS-Clip nur mit dem Pad der Einzelspur j (D1-Spur und Locks des Pads gehen mit; Saat, Länge, Taktart bleiben) – wie beim Aufteilen
+function mtx3cTpl(c, j) {
+  const d = S.tracks[j].dvx, o = mtx3Jc(c);
+  o.notes = (o.notes || []).filter(n => mtx3bPad(n) === d.v);
+  if (o.lanes) { const L = {}; if (o.lanes[d.gm]) L[d.gm] = o.lanes[d.gm]; if (Object.keys(L).length) o.lanes = L; else delete o.lanes; }
+  if (Array.isArray(o.ln)) { o.ln = o.ln.filter(l => !(l && typeof l.p === 'string' && l.p.startsWith('drum.')) || l.p.startsWith('drum.' + d.v + '.')); if (!o.ln.length) delete o.ln; }
+  return o;
+}
+// D1-Spur und Locks des Pads aus dem DRUMS-Clip c (das Pad ist jetzt auf seiner Einzelspur)
+function mtx3cStrip(c, j) {
+  const d = S.tracks[j].dvx;
+  if (c.lanes) { delete c.lanes[d.gm]; if (!Object.keys(c.lanes).length) delete c.lanes; }
+  if (Array.isArray(c.ln)) { c.ln = c.ln.filter(l => !(l && typeof l.p === 'string' && l.p.startsWith('drum.' + d.v + '.'))); if (!c.ln.length) delete c.ln; }
+}
+
+/* ---------- 1 · Begleiter: Pads der Einzelspuren über deren Kanal ---------- */
+// beg1Emit-Haken (Drum-Zweig, vor drumHit): ein Pad mit aktiver Einzelspur spielt über deren Kit-Bus und Kanal (wie mtx3Voice)
+function mtx3cBegHit(i, x, ex) {
+  if (i !== DRUM_T || !x) return false;
+  const j = mtx3bPartOf(mtx3cPad(x.n)); if (j < 0) return false;
+  if (S.tracks[j].mute) return true;                                    // stumme Einzelspur: ihr Pad schweigt (wie DRUMS stumm)
+  const k = MTX3.cur; MTX3.cur = j;
+  try { const h = drumHit(x.n, x.v, x.t, 'clip', ex); if (h) { h.b3c = 1; if (h.log) h.log.src = 'beg'; } } catch (e) { logErr(e); } finally { MTX3.cur = k; }
+  MTX3C.beg++;
+  return true;
+}
+// beg1Sched-Haken: eine Einzelspur von DRUMS ist Teil der Band, wenn DRUMS die Drum-Spur ist – ihre Clips spielen nur außerhalb des
+// Band-Fensters (wie die von DRUMS); die Band-Schläge ihres Pads kommen über mtx3cBegHit. undefined = keine Einzelspur der Band
+function mtx3cBegSched(i, from, to, tg) {
+  if (!tg || tg.dr !== DRUM_T || !mtx3Is(i)) return undefined;
+  const run = beg1RunOf(from); if (!run) return undefined;
+  if (from >= run.t0 - 1e-9 && run.t0 > 0 && !run.cut.has(i)) { run.cut.add(i); try { cutTrackAt(i, b2t(run.t0)); } catch (e) { logErr(e); } }
+  if (from < run.t0 - 1e-9) return [from, Math.min(to, run.t0)];
+  if (run.tEnd != null && to > run.tEnd + 1e-9) return [Math.max(from, run.tEnd), to];
+  return null;
+}
+// beg1Alone-Haken: „nur die Band“ behält die Einzelspuren von DRUMS (sie gehören zu DRUMS; nach SCHLUSS spielt DRUMS wieder ganz)
+function mtx3cBegKeep(keep, tg) { if (!tg || tg.dr !== DRUM_T || !keep.has(DRUM_T)) return; for (const j of mtx3Parts(-1)) if (mtx3Is(j)) keep.add(j); }
+// cancelTrackFrom / stopTrackNow-Haken (DRUMS): die Band-Schläge, die über eine Einzelspur gehen, gehören zu DRUMS
+function mtx3cCancel(i, t, stop) {
+  if (i !== DRUM_T || !HITS.length) return;
+  for (const h of HITS.slice()) {
+    if (h.dead || !h.b3c) continue;
+    if (!stop) { if (h.start >= t - 1e-6) hitCancel(h); }
+    else { try { h.out.gain.setTargetAtTime(0, t, .01); } catch (e) {} hitStopAll(h, t + .06); }
+  }
+}
+// beg1Scene-Haken (● Aufnahme der Band): die Schläge eines Pads mit Einzelspur kommen in deren Clip derselben neuen Szene
+function mtx3cBegScene(dst, items, made) {
+  const c = made.includes(DRUM_T) ? S.tracks[DRUM_T].clips[dst] : null; if (!c || !Array.isArray(c.notes)) return 0;
+  let n = 0;
+  for (const j of mtx3Parts(-1)) {
+    const tr = S.tracks[j]; if (!mtx3Is(j) || tr.clips[dst]) continue;
+    if (!c.notes.some(x => mtx3bPad(x) === tr.dvx.v)) continue;
+    const nc = normClip(mtx3cTpl(c, j), 'drum', S.key); if (!nc) continue;
+    mtx3cCut(c.notes, tr.dvx.v); mtx3cStrip(c, j);
+    items.push({kind: 'clip', track: j, scene: dst, before: null});
+    tr.clips[dst] = nc; made.push(j); n++;
+  }
+  MTX3C.rec += n; return n;
+}
+
+/* ---------- 2 · FANG und Melodie-Spur auf einer Einzelspur: Schläge ihres Pads ---------- */
+// Tasten → Schläge des Pads: GM-Nummer, Schrittlänge 0,1 (wie die Pads), ein Schlag je Stelle (innerhalb 0,09 Schlägen), der lautere bleibt
+function mtx3cHits(t, ns) {
+  const gm = S.tracks[t].dvx.gm, out = [];
+  for (const n of ns.slice().sort((a, b) => a.t - b.t)) {
+    const y = out.length ? out[out.length - 1] : null;
+    if (y && Math.abs(n.t - y.t) < .09) { y.v = Math.max(+y.v || 0, +n.v || 0); continue; }
+    out.push(Object.assign({}, n, {n: gm, d: .1}));
+  }
+  return out;
+}
+// capture-Haken (FANG): der eingefangene Clip einer Einzelspur ist ein Drum-Clip ihres Pads (Saat, Bezug wie bei DRUMS)
+function mtx3cFang(t, s) {
+  if (!mtx3Dr(t)) return false;
+  const c = S.tracks[t].clips[s]; if (!c || !Array.isArray(c.notes)) return false;
+  c.notes = mtx3cHits(t, c.notes); c.key = {root: S.key.root, scale: S.key.scale, src: 'auto'}; c.seed = newSeed();
+  MTX3C.fang++; return true;
+}
+// melNoteOn-Haken: die Taste auf einer Einzelspur ist der Schlag ihres Pads (auch für NOTEN einer Song-Aufnahme: nc)
+function mtx3cMelO(o, track) {
+  if (!o || !mtx3Dr(track)) return;
+  const gm = S.tracks[track].dvx.gm; o.n = gm; if ('nc' in o) o.nc = gm; o.dr3 = 1;
+}
+// melCommit-Haken: Schrittlänge der Pads; zwei Tasten zugleich = ein Schlag (der lautere). true = schon da (nicht noch einmal ablegen)
+function mtx3cMelC(o, note) {
+  if (!o || !o.dr3 || !note) return false;
+  note.d = .1;
+  const arr = o.sr ? o.sr.notes : S.song && curMel(S.song).notes, at = x => (o.sr ? x.b : x.t);
+  if (!Array.isArray(arr)) return false;
+  for (let k = arr.length - 1; k >= 0; k--) { const y = arr[k]; if (y && y.n === note.n && Math.abs(at(y) - note.t) < .09) { y.v = Math.max(+y.v || 0, note.v); UI.dirty.song = true; return true; } }
+  MTX3C.mel++; return false;
+}
+
+/* ---------- 4 · Stil-Muster / Remix: ein Pad ohne Einzelspur-Clip kommt trotzdem auf seine Einzelspur ---------- */
+// spielt die Spur j in den Takten [a, b) des Songs irgendetwas?
+function mtx3cSilent(song, j, a, b) { for (let x = a; x < b; x++) if (sx9At(song, j, x)) return false; return true; }
+// gr2RemixDo-Haken (nach dem Ablegen der DRUMS-Version id an der Stelle sp): Pads, deren Einzelspur hier keinen Clip hat und schweigt,
+// werden eine Version der Einzelspur (gleiche Szene, Stil, Quelle; Saat/Länge wie DRUMS) und spielen an derselben Stelle
+function mtx3cVer(song, t, sp, src, id, st, k, pat, tTs) {
+  if (t !== DRUM_T || !song || !song.own || !song.own[id] || !src || !src.c) return 0;
+  const V = song.own[id]; if (!Array.isArray(V.notes) || !V.notes.length) return 0;
+  let n = 0;
+  for (const j of mtx3Parts(-1)) {
+    if (!mtx3Is(j) || !song.lanes[j]) continue;
+    const pid = S.tracks[j].dvx.v; if (!V.notes.some(x => mtx3bPad(x) === pid)) continue;
+    if (mtx3bPartner(j, src.c, DRUM_T)) continue;                       // hat sie hier den Partner-Clip: MTX3B hat das Pad schon dorthin gegeben
+    if (laneOriginAt(song.lanes[j], sp.a).slot !== sp.s || !mtx3cSilent(song, j, sp.a, sp.b)) continue;   // spielt dort etwas anderes: bleibt auf DRUMS
+    const ns = mtx3cCut(V.notes, pid), gr = Object.assign({}, V.gr);
+    const jid = gr2VerPut(song, j, sp.s, mtx3cTpl(src.c, j), gr, ns, tTs);
+    if (!jid) { V.notes.push(...ns); V.notes.sort((a, b) => a.t - b.t || a.n - b.n); continue; }   // kein Platz für eine Version: bleibt auf DRUMS
+    const W = song.own[jid]; if (pat) delete W.lanes;
+    try { gen3VerSt(W, src.c, st, k, j); } catch (e) { logErr(e); }
+    sx9Set(song, j, sp.a, sp.b, jid); n++;
+  }
+  MTX3C.ver += n; return n;
+}
+// gr1ABDo-Haken (B): wo DRUMS jetzt die Version des Stils spielt und die Einzelspur schweigt, spielt sie ihre Version dieses Stils wieder
+// (A schaltet sie über die vorhandene Schleife ab: ihre Quelle ist der leere Szenen-Clip)
+function mtx3cAB(song, ab, a, b, stId) {
+  if (ab === 'a' || !song || !song.own) return 0;
+  let n = 0;
+  for (const sp of gr1Spans(song, DRUM_T, a, b)) {
+    const c = gr1ClipOf(song, DRUM_T, sp); if (!c || !c.gr || c.gr.s !== stId) continue;
+    for (const j of mtx3Parts(-1)) {
+      if (!mtx3Is(j) || !song.lanes[j] || laneOriginAt(song.lanes[j], sp.a).slot !== sp.s || !mtx3cSilent(song, j, sp.a, sp.b)) continue;
+      const jid = gr1Find(song, j, sp.s, stId, c.gr.v); if (!jid) continue;
+      sx9Set(song, j, sp.a, sp.b, jid); n++;
+    }
+  }
+  MTX3C.ab += n; return n;
+}
+// gen3MxRemix-Haken (nach allen Spuren): in der neuen Szene kommen die Pads, deren Einzelspur in der Quell-Szene keinen Clip hat, in einen
+// Clip der Einzelspur (Drum-Clip, gleiche Saat/Länge) – derselbe ↶-Schritt
+function mtx3cMx(src, dst, items, ch) {
+  const c = S.tracks[DRUM_T] ? S.tracks[DRUM_T].clips[dst] : null; if (!c || !Array.isArray(c.notes) || !c.notes.length) return 0;
+  let n = 0;
+  for (const j of mtx3Parts(-1)) {
+    const tr = S.tracks[j]; if (!mtx3Is(j) || tr.clips[src] || tr.clips[dst]) continue;
+    if (!c.notes.some(x => mtx3bPad(x) === tr.dvx.v)) continue;
+    const nc = normClip(mtx3cTpl(c, j), 'drum', S.key); if (!nc) continue;
+    mtx3cCut(c.notes, tr.dvx.v); mtx3cStrip(c, j);
+    if (!items.some(x => x.kind === 'clip' && x.track === j && x.scene === dst)) items.push({kind: 'clip', track: j, scene: dst, before: null});
+    tr.clips[dst] = nc; if (!ch.includes(j)) ch.push(j); n++;
+  }
+  MTX3C.mx += n; return n;
+}
+const MTX3C_API = {state: () => Object.assign({}, MTX3C), on: mtx3cOn};
+Object.assign(SYNQUENZER, {mtx3c: MTX3C_API});              /* MTX3C: Test-API */
+/* MTX3C-END */
 /* MTX4-BEGIN ===================== Matrix: mehrere Clips zugleich (Paket MTX4 Teil 1+2, Xander 15.11.: „Abschnitt / mehrere Clips transponieren“)
    • Einstieg: Clip-Blatt › [Mehrere wählen] – dieser Clip ist gewählt, danach weitere Clips antippen (Tipp = dazu / weg). Ein Tipp auf
      einen Szenen-Kopf nimmt alle Noten-Clips der Szene dazu (noch einmal = weg); Drum-Clips nur per eigenem Tipp. Solange der Modus
@@ -99284,6 +99461,7 @@ function beg1Sched(i, from, to, late) {
   const rs = B.run;                                                     // SCHLUSS: hinter dem Schlusstakt plant KEINE Spur mehr (auch die übrigen nicht)
   if (rs && rs.stopB != null && rs.id === R.runId) { if (from >= rs.stopB - 1e-9) return null; if (to > rs.stopB) to = rs.stopB; }
   const tg = B.tgc, role = !tg ? null : tg.dr === i ? 'dr' : tg.bs === i ? 'bs' : tg.cp === i ? 'cp' : null;
+  if (!role && typeof mtx3cBegSched === 'function') { const w3 = mtx3cBegSched(i, from, to, tg); if (w3 !== undefined) return w3; }   /* MTX3C: Einzelspur von DRUMS gehört zur Band */
   if (!role) return [from, to];
   const run = beg1RunOf(from); if (!run) return [from, to];
   if (from >= run.t0 - 1e-9 && run.t0 > 0 && !run.cut.has(i)) { run.cut.add(i); try { cutTrackAt(i, b2t(run.t0)); } catch (e) { logErr(e); } }   // Clip-Töne, die über t0 klingen
@@ -99550,6 +99728,7 @@ function beg1Emit(i, role, run, a, e, late) {
       if (x.t < R.j1F) continue;
       let ex = x.ex; const tu = dt ? drumTune(x.t) : 0;
       if (tu) ex = Object.assign({}, ex, {lk: Object.assign({}, ex && ex.lk, {tune: ((ex && ex.lk && ex.lk.tune) || 0) + tu})});
+      if (typeof mtx3cBegHit === 'function' && mtx3cBegHit(i, x, ex)) { n++; continue; }   /* MTX3C: Pad einer Einzelspur über deren Kanal */
       const h = drumHit(x.n, x.v, x.t, 'clip', ex); if (h && h.log) h.log.src = 'beg'; n++;
     }
   } else {
@@ -99594,6 +99773,7 @@ function beg1Act(a) {
 // Ihr Szenen-Stand wird gemerkt (B.solo): ✕ holt ihn zurück. Kein Stil in dieser Taktart: kein Start (es gäbe keine Band, nur stille Spuren).
 function beg1Alone() {
   const tg = BEG1.tgc || {}, keep = new Set([tg.dr, tg.bs, tg.cp].filter(x => x != null));
+  if (typeof mtx3cBegKeep === 'function') mtx3cBegKeep(keep, tg);   /* MTX3C: Einzelspuren bleiben mit DRUMS */
   for (let i = 0; i < NT(); i++) if (!keep.has(i)) beg1Hush(i);
   beg1SoloMark(); UI.dirty.grid = true;
 }
@@ -99701,6 +99881,7 @@ function beg1Scene(run, k0, k1, items) {
     items.push({kind: 'clip', track: t, scene: dst, before: tr.clips[dst] ? cleanClip(tr.clips[dst]) : null});
     tr.clips[dst] = c; made.push(t);
   }
+  if (typeof mtx3cBegScene === 'function') mtx3cBegScene(dst, items, made);   /* MTX3C: Band-Aufnahme legt die Pads der Einzelspuren dorthin */
   if (!made.length) return {err: 'leer'};
   const row = normChordRow(Object.assign({len: clamp(n, 1, 16), ch}, !tkPlain() && tsNorm(S.ts) ? {ts: S.ts} : null));   // INT54: die Akkord-Zeile in der Taktart der Clips (vorher × 4: verrutschte ab dem 2. Durchlauf, 5/4 und 12/8 schon im 1.)
   if (row && row.ch.length) S.scenes[dst].chords = row;
