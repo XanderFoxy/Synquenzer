@@ -61337,10 +61337,10 @@ function* humFind(x, sr, Fe) {
     // VOXR1C: grob nach Linien-Schärfe (Oberton gegen seine Nachbarn ±off, je 0…30 dB, Gewicht 1/k) statt roher Summenleistung – die rastete bei hoher
     // Stimme auf einen gesungenen Teilton ein (61,75 statt 50 Hz). Netzbrumm ist über Sekunden eine scharfe Linie, ein gesungener Teilton nicht.
     for (let f = base - 2; f <= base + 2 + 1e-9; f += 0.05) { let s = 0; for (let h = 1; h <= KH; h++) { const c = db(P(h * f)) - db((P(h * f - off) + P(h * f + off)) / 2); s += (c > 30 ? 30 : c > 0 ? c : 0) / h; } if (s > bs) { bs = s; bf = f; } if (++step % 8 === 0) yield 0.2 + 0.6 * step / 170; }
-    // VOXR1C: fein nur über die klaren Obertöne (≥ 6 dB über den Nachbarn bei der groben Wahl) – sonst ziehen verdeckte Obertöne (Gesang) f0 weg
-    const HS = []; for (let h = 1; h <= KH; h++) { const c = db(P(h * bf)) - db((P(h * bf - off) + P(h * bf + off) + P(h * bf - off * 1.7) + P(h * bf + off * 1.7)) / 4); if (c >= 6) HS.push(h); } if (!HS.length) HS.push(1);
+    // VOXR1C: fein nur über die klaren Obertöne (≥ 10 dB über den Nachbarn bei der groben Wahl, Suche ±0,1 Hz) – sonst ziehen verdeckte Obertöne (Gesang) f0 weg
+    const HS = []; for (let h = 1; h <= KH; h++) { const c = db(P(h * bf)) - db((P(h * bf - off) + P(h * bf + off) + P(h * bf - off * 1.7) + P(h * bf + off * 1.7)) / 4); if (c >= 10) HS.push(h); } if (!HS.length) HS.push(1);
     let f1 = bf; bs = -1; const sc = f => { let s = 0; for (const h of HS) s += P(h * f); return s; };
-    for (let f = bf - 0.05; f <= bf + 0.05 + 1e-9; f += 0.005) { const s = sc(f); if (s > bs) { bs = s; f1 = f; } }
+    for (let f = bf - 0.1; f <= bf + 0.1 + 1e-9; f += 0.005) { const s = sc(f); if (s > bs) { bs = s; f1 = f; } }   // VOXR1C: ±0,1 Hz
     const ym = sc(f1 - 0.005), y0 = bs, yp = sc(f1 + 0.005), den = ym - 2 * y0 + yp; if (den < 0) f1 += 0.005 * 0.5 * (ym - yp) / den;
     const rk = [], amp = [];
     for (let h = 1; h <= KM; h++) { const pc = P(h * f1), nb = (P(h * f1 - off) + P(h * f1 + off) + P(h * f1 - off * 1.7) + P(h * f1 + off * 1.7)) / 4; rk.push(db(pc) - db(nb)); amp.push(2 * Math.sqrt(pc) / ws); }
