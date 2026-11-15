@@ -1230,7 +1230,7 @@ test('Start „Heute für dich“ (v5): je Bereich eine Kachel mit den besten Tr
   assert.equal(await page.locator('#ort-name').innerText(), 'Filme & Serien');
   await page.waitForFunction(() => /Wunschliste/.test(document.getElementById('i-filme').textContent));
   // Apple-TV-Angebotsräume: abgeglichen und verlinkt
-  await page.locator('#i-filme [data-fi-chip="angebot"]').click();
+  await page.locator('#i-filme [data-fi-chip="weitere"]').click(); // alte Daten ohne fuer399: die Räume stehen unter „Angebote“
   assert.match(nbsp(await page.locator('#i-filme').innerText()), /Zurück in die Zukunft[\s\S]*Apple TV: Filme für 3,99 €/);
   assert.match(nbsp(await page.locator('#i-filme').innerText()), /Abgeglichen mit den Apple-TV-Angeboten: Filme für 3,99 € \(5 Filme\)/);
   assert.deepEqual(fehler, []);
@@ -1533,9 +1533,10 @@ for (const [breite, hoehe, lage] of [[428, 926, 'hoch'], [926, 428, 'quer']]) {
     // Filme: eigener Reiter, Angebote ohne das Gerät „Apple TV 4K (2026)“ aus der mydealz-Gruppe
     await page.locator('.sprung a[data-reiter="filme"]').click();
     await page.waitForFunction(() => /Wunschliste/.test(document.getElementById('i-filme').textContent));
-    await page.locator('#i-filme [data-fi-chip="angebot"]').click();
+    // Daten vom 08.11. (vor „Für 3,99 €“): was in keinem Bereich steht, zeigt der Chip „Angebote“
+    await page.locator('#i-filme [data-fi-chip="weitere"]').click();
     const f = nbsp(await page.locator('#i-filme').innerText());
-    assert.match(f, /Manta Manta[\s\S]*Flash Gordon/);
+    assert.match(f, /Timecop[\s\S]*Dirty Harry/);
     assert.doesNotMatch(f, /Apple TV 4K/);
     await page.screenshot({ path: join(SHOTS, `echt0811-filme-${lage}.png`) });
     assert.deepEqual(fehler, []);

@@ -1294,7 +1294,7 @@ export default async function filme(ctx) {
     ].filter(Boolean).join(' · ');
     eintraege.push(eintrag({
       id: `film-${schluessel(t.id, String(t.preis))}`, kategorie: 'filme',
-      titel: `${t.titel}${t.typ === 'film' && t.jahr ? ` (${t.jahr})` : ''} für ${euro(t.preis)}`,
+      titel: `${t.titel}${t.typ === 'film' && t.jahr && jahrImTitel(t.titel) == null ? ` (${t.jahr})` : ''} für ${euro(t.preis)}`, // nicht „Charade (1963) (1963)“
       link: t.link, quelle: 'Apple TV', datum: jetzt, jetzt, art: 'deal', preise: p, zeile,
       soGehts: t.typ === 'staffel' ? SO_STAFFEL : SO_FILM, wert, sofort, grund,
       extra: { filmId: t.id, typ: t.typ, bild: t.bild, jahr: t.jahr, tiefst: t.tiefst?.p ?? null, gruppe },

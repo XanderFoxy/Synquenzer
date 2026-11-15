@@ -738,7 +738,7 @@ const NTFY_IMPORT = (() => {
 <!-- Filme: Inhalt kommt aus filme.js (Skript, CSS und Daten erst beim ersten Öffnen) -->
 <section id="p-filme" class="reiter-seite breite f-filme" aria-labelledby="h-filme" hidden>
   <div class="bereich-kopf"><span class="gross" aria-hidden="true"><svg class="ic"><use href="#ic-filme"/></svg></span><h2 id="h-filme">Filme &amp; Serien</h2></div>
-  <p class="warum" id="w-filme">Apple TV, abgeglichen mit deinen Listen: Wunschfilme, Angebote (auch die Angebots-Räume der TV-App wie „Filme für 3,99 €“), Neu, 80er &amp; Kult, Serien, Disney.</p>
+  <p class="warum" id="w-filme">Apple TV, abgeglichen mit deinen Listen: Wunschliste, Für 3,99 €, Action &amp; Thriller, Comedy, 80er &amp; Kult, Neu, Serien, Disney – gute Filme, kein Horror.</p>
   <div id="i-filme"><p class="leer">Lade Filme …</p></div>
 </section>
 
@@ -2100,11 +2100,20 @@ function kachelInhalt(b, t) { // -> { z: [[Titel, Zeile, gut?]], w: Satz }
     const z = letztePreisfehler.slice(0, 3).map(x => [kurzTitel(ohnePrefix(x.titel), 44), x.preisVorher ? `${euro(x.preis)} statt ${euro(x.preisVorher)}` : euro(x.preis), true]);
     return z.length ? { z, w: '' } : { z: [['Gerade kein krasser', 'nur No-Brainer, die laufen']], w: 'Push kommt sofort, wenn einer da ist' };
   }
-  if (b === 'filme') {
-    const z = [...t.filme].sort((a, c) => (c.wert ?? 0) - (a.wert ?? 0)).map(e => [kurzTitel(e.titel, 44), e.zeile || e.quelle || '', /wunsch/i.test(`${e.zeile} ${e.grund}`)]);
+  if (b === 'filme') { // höchstens 2 Zeilen (auf dem Handy ist die 3. ausgeblendet): Push-Treffer zuerst, dann die Übersicht
+    const jahrEinmal = s => String(s || '').replace(/\((\d{4})\)\s*\(\1\)/g, '($1)'); // „Charade (1963) (1963)“
+    const kern = s => jahrEinmal(s).toLowerCase().replace(/\s+für\s+[\d.,]+\s*€.*$/, '').replace(/\(\d{4}\)/g, ' ').replace(/[^\p{L}\d]+/gu, ' ').trim();
+    const gleich = (a, c) => { const x = kern(a), y = kern(c); return !!x && !!y && (x.startsWith(y) || y.startsWith(x)); };
+    const z = [], roh = [];
+    const dazu = (titel, zeile, gut) => { if (z.length >= 2 || !titel || roh.some(r => gleich(r, titel))) return; roh.push(titel); z.push([kurzTitel(jahrEinmal(titel), 44), zeile, gut]); };
+    for (const e of [...t.filme].sort((a, c) => (c.wert ?? 0) - (a.wert ?? 0))) dazu(e.titel, e.zeile || e.quelle || '', /wunsch/i.test(`${e.zeile} ${e.grund}`));
+    // Übersicht des Radars (status.filme.kurz, ab 14.11.2026): die besten Angebote, auch ohne Push-Ereignis
+    const kurz = S.vorteile?.d?.status?.filme?.kurz;
+    for (const x of Array.isArray(kurz?.top) ? kurz.top : []) if (x?.titel) dazu(String(x.titel), zahl(x.preis) > 0 ? `${euro(x.preis)} · Apple TV` : 'Apple TV');
     if (!z.length) {
-      const f = lies('mein-vorteil-daten-filme', null)?.d?.gruppen?.angebot;
-      for (const x of Array.isArray(f) ? f.slice(0, 3) : []) if (x?.titel) z.push([String(x.titel), zahl(x.preis) > 0 ? `${euro(x.preis)} · Apple TV` : 'Apple TV']);
+      const f0 = lies('mein-vorteil-daten-filme', null)?.d?.gruppen;
+      const f = f0?.fuer399 || f0?.angebot;
+      for (const x of Array.isArray(f) ? f : []) if (x?.titel) dazu(String(x.titel), zahl(x.preis) > 0 ? `${euro(x.preis)} · Apple TV` : 'Apple TV');
     }
     return z.length ? { z, w: '' } : { z: [['Wunschliste & Angebote', 'Apple TV, mit deinen Listen abgeglichen']], w: 'tippen zum Öffnen' };
   }
@@ -2669,7 +2678,9 @@ function zeichne() {
   $('technik').hidden = !letzteEinteilung.synths.length;
   // Deals = Meine Produkte (+ Cashback, Snacks, Musik-Technik darunter)
   $('w-deals').innerHTML = r.produkte.warum || '';
-  const filme = letzteEinteilung.filme.filter(laeuftSchon).length;
+  // Zahl: Angebote der Film-Übersicht (Radar status.filme.kurz), mindestens die Film-Einträge (Push-Ereignisse)
+  const filmeKurz = Number(S.vorteile?.d?.status?.filme?.kurz?.angebote);
+  const filme = Math.max(letzteEinteilung.filme.filter(laeuftSchon).length, Number.isInteger(filmeKurz) && filmeKurz > 0 ? filmeKurz : 0);
   const zahlen = { deals: r.produkte.n, preisfehler: r.preisfehler.n, filme, auftritte: r.auftritte.n, remix: r.remix.n, unterricht: r.unterricht.n, konzerte: r.konzerte.n, gewinnspiele: r.gewinnspiele.n, krypto: kryptoStand().filter(x => x.e && x.e.gv > 0.004).length, mehr: r.mehr.n };
   const t = letzteEinteilung;
   Object.assign(ZUSATZ, {

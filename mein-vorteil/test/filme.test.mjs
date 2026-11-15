@@ -23,7 +23,9 @@ const FOTOS = join(process.env.MV_SHOTS || join(tmpdir(), 'mein-vorteil-shots'),
 const JETZT = '2026-11-07T15:00:00Z'; // 16:00 Berliner Zeit, Daten von 14:05
 const FILME_PFAD = 'vorteile-daten/vorteile/data/filme.json';
 const FILME = JSON.parse(readFileSync(join(FIX, 'filme.json'), 'utf8'));
-const GRUPPEN = ['wunsch', 'angebot', 'neu', 'achtziger', 'serien', 'disney'];
+const GRUPPEN = ['wunsch', 'fuer399', 'action', 'comedy', 'achtziger', 'neu', 'serien', 'disney', 'angebot'];
+// Chips in Xanders Reihenfolge (15.11.2026); „Angebote“ (weitere) nur, wenn dort etwas steht, das sonst fehlt
+const CHIPS = ['wunsch', 'fuer399', 'action', 'comedy', 'achtziger', 'neu', 'serien', 'disney'];
 
 // filme.js ohne Browser laden (reine Funktionen über _intern)
 function modul(speicher = {}) {
@@ -40,17 +42,17 @@ test('Vertrag: Fixture filme.json hat alle Gruppen und Felder', () => {
   assert.equal(FILME.version, 1);
   assert.ok(!Number.isNaN(Date.parse(FILME.aktualisiert)));
   const n = Object.fromEntries(GRUPPEN.map(g => [g, FILME.gruppen[g].length]));
-  assert.deepEqual(n, { wunsch: 4, angebot: 6, neu: 6, achtziger: 10, serien: 14, disney: 8 });
+  assert.deepEqual(n, { wunsch: 4, fuer399: 10, action: 5, comedy: 4, achtziger: 10, neu: 6, serien: 14, disney: 8, angebot: 6 });
   const w = FILME.gruppen.wunsch;
   assert.equal(w.filter(t => t.fehlt === true).length, 1, 'ein Wunschtitel nicht im Store');
   assert.ok(w.some(t => t.angebot && t.preis === 3.99 && t.istTiefst), 'ein Wunschtitel im Angebot für 3,99 € mit Tiefstpreis');
   const felder = ['id', 'typ', 'titel', 'jahr', 'genre', 'preis', 'preisSd', 'preisHd', 'leihe', 'vorher', 'tiefst', 'seit', 'tage', 'istTiefst', 'angebot', 'bild', 'link', 'chart', 'quelle'];
   for (const g of GRUPPEN) for (const t of FILME.gruppen[g]) {
     for (const f of felder) assert.ok(f in t, `${g}/${t.titel}: Feld ${f} fehlt`);
-    assert.match(t.id, /^(itunes:\d+|wunsch:[a-z0-9-]+)$/);
+    assert.match(t.id, /^(itunes:\d+|wunsch:[a-z0-9-]+|mydealz:\d+)$/);
     assert.ok(['film', 'staffel'].includes(t.typ));
     assert.doesNotMatch(String(t.genre), /horror/i, 'kein Horror');
-    if (t.link) assert.match(t.link, /^https:\/\/itunes\.apple\.com\/de\//);
+    if (t.link) assert.match(t.link, /^https:\/\/(itunes\.apple\.com\/de\/|www\.mydealz\.de\/)/);
     if (t.tiefst) assert.ok(t.tiefst.p > 0 && /^\d{4}-\d\d-\d\d$/.test(t.tiefst.tag));
   }
   const s = FILME.gruppen.serien;
@@ -127,7 +129,7 @@ test('Echte Scanner-Ausgabe (test/fixtures/filme-scanner.json aus „npm run pro
   }
 });
 
-test('Start-Chip: Wunschliste bei neuem Wunsch-Angebot, sonst der gemerkte, sonst „Angebote“', () => {
+test('Start-Chip: Wunschliste bei neuem Wunsch-Angebot, sonst der gemerkte, sonst „Für 3,99 €“', () => {
   const { F, speicher } = modul();
   const I = F._intern;
   const mit = I.normalisiere(FILME);
@@ -137,8 +139,43 @@ test('Start-Chip: Wunschliste bei neuem Wunsch-Angebot, sonst der gemerkte, sons
   const ohne = I.normalisiere({ gruppen: { wunsch: FILME.gruppen.wunsch.map(t => ({ ...t, angebot: false, unterZiel: false })) } });
   assert.equal(I.startChip(ohne), 'disney');
   delete speicher['mein-vorteil-filme-chip'];
-  assert.equal(I.startChip(ohne), 'angebot');
+  assert.equal(I.startChip(ohne), 'fuer399');
+  speicher['mein-vorteil-filme-chip'] = JSON.stringify('angebot'); // gemerkt von der Fassung vor dem 15.11.2026
+  assert.equal(I.startChip(ohne), 'fuer399');
+  speicher['mein-vorteil-filme-chip'] = JSON.stringify('weitere'); // „Angebote“ gerade ohne eigene Titel -> kein Chip
+  assert.equal(I.startChip(ohne), 'fuer399');
+  speicher['mein-vorteil-filme-chip'] = JSON.stringify('neu');
+  assert.equal(I.startChip(ohne), 'neu');
+  delete speicher['mein-vorteil-filme-chip'];
   assert.equal(I.startChip(mit), 'wunsch', 'kommt das Angebot wieder, steht die Wunschliste wieder vorn');
+});
+
+test('Für 3,99 €, Action & Thriller, Comedy: Listen zuerst, Top-Filme vor Kinderfilmen, dann der Rest; „Angebote“ nur mit dem, was sonst fehlt', () => {
+  const { F } = modul();
+  const I = F._intern;
+  const n = plain(I.normalisiere(FILME));
+  // Scanner-Reihenfolge: Listen, Preis (Antigone 2,49 € vorn), Qualität – die Seite: Bekanntheit + Kritik, Kinderfilme nach den Top-Filmen
+  assert.deepEqual(n.gruppen.fuer399.map(t => t.titel), ['Manta Manta', 'Stirb langsam', 'Die nackte Kanone', 'Charade (1963)', 'Ocean’s Eleven', 'Antigone',
+    'Shrek – Der tollkühne Held', 'Bad Boys – Harte Jungs', 'Nicht so schnell, mein Junge', 'Indiana Jones – 4 Filme als Set in 4K Dolby Vision @ Apple TV']);
+  assert.deepEqual(n.gruppen.action.map(t => t.titel), ['Stirb langsam', 'John Wick: Kapitel 4', 'Ocean’s Eleven', 'Black Bag – Doppeltes Spiel', 'Bad Boys – Harte Jungs']);
+  assert.deepEqual(n.gruppen.comedy.map(t => t.titel), ['Manta Manta', 'Die nackte Kanone', 'Charade (1963)', 'Nicht so schnell, mein Junge']);
+  assert.deepEqual([n.gruppen.fuer399[3].rt, n.gruppen.fuer399[3].bekannt], [94, 51], 'Rotten Tomatoes und Bekanntheit gelesen');
+  assert.equal(n.gruppen.action[3].neu, true);
+  // „Angebote“: alles steht schon in einem Bereich -> kein Chip
+  assert.deepEqual(n.gruppen.weitere, []);
+  assert.deepEqual(plain(I.sichtbar(n)).map(c => c[0]), ['wunsch', 'fuer399', 'action', 'comedy', 'achtziger', 'neu', 'serien', 'disney']);
+  const mit = plain(I.normalisiere({ ...FILME, gruppen: { ...FILME.gruppen, angebot: [...FILME.gruppen.angebot, { id: 'itunes:77', titel: 'Nur hier', preis: 4.99, genre: 'Drama' }] } }));
+  assert.deepEqual(mit.gruppen.weitere.map(t => t.titel), ['Nur hier']);
+  assert.deepEqual(plain(I.sichtbar(mit)).map(c => c[1]).slice(-2), ['Disney', 'Angebote']);
+  // Karte: Jahr nicht doppelt, Bewertung statt Chartplatz (unter „Neu“ der Chartplatz), Set mit Preis je Film
+  const charade = I.karte(n.gruppen.fuer399[3], false, 'fuer399');
+  assert.match(charade, /Charade \(1963\)<\/span>/);
+  assert.doesNotMatch(charade, /fi-jahr/);
+  assert.match(charade, /<span class="fi-info">Komödie · Rotten Tomatoes 94 %<\/span>/);
+  assert.match(I.karte(n.gruppen.action[3], false, 'action'), /<span class="fi-info">Thriller · neu · Rotten Tomatoes 96 %<\/span>/);
+  assert.match(I.karte(n.gruppen.action[3], false, 'neu'), /<span class="fi-info">Thriller · Platz 9 der Charts<\/span>/);
+  assert.match(I.karte(n.gruppen.fuer399[9], false, 'fuer399').replace(/[  ]/g, ' '), /4 Filme, 3,75 € je Film · Tipp von mydealz/);
+  assert.match(I.karte(n.gruppen.wunsch[0], false, 'wunsch'), /Manta Manta <span class="fi-jahr">\(1991\)<\/span>/);
 });
 
 test('Haken: index.html (Link in der Sprung-Leiste, eigene Seite, Skript erst beim Öffnen), sw.js (filme.js im Zwischenspeicher)', () => {
@@ -305,7 +342,7 @@ test('Wunschliste: Start-Chip, Preis, Abzeichen, statt/Tiefstpreis, Film ohne Fu
   const { ctx, page, fehler } = await oeffne();
   assert.equal(await chip(page, 'wunsch').getAttribute('aria-selected'), 'true', 'Manta Manta im Angebot -> Wunschliste zuerst');
   assert.deepEqual((await page.locator('.fi-chip').allInnerTexts()).map(t => t.replace(/\s+/g, ' ').trim()),
-    ['Wunschliste 4', 'Angebote 6', 'Neu 6', '80er & Kult 10', 'Serien 14', 'Disney 8']);
+    ['Wunschliste 4', 'Für 3,99 € 10', 'Action & Thriller 5', 'Comedy 4', '80er & Kult 10', 'Neu 6', 'Serien 14', 'Disney 8']);
   assert.equal(nbsp(await page.locator('.fi-stand').innerText()), 'Stand: heute 14:05');
   assert.deepEqual(await page.locator('#fi-liste .fi-titel').allInnerTexts(), ['Manta Manta (1991)', 'Mallrats (1995)', 'Shadow und der Fluch des Khan (1994)', 'Go Trabi Go (1991)']);
   const manta = karte(page, 'Manta Manta');
@@ -334,11 +371,12 @@ test('Wunschliste: Start-Chip, Preis, Abzeichen, statt/Tiefstpreis, Film ohne Fu
   assert.equal(await trabi.locator('.fi-ohnebild').innerText(), 'GT');
   assert.match(nbsp(await page.locator('.fi-fuss').innerText()), /^Tiefstpreis = niedrigster Preis seit Beobachtung \(seit 01\.11\.\)\./);
   // Bilder: 200x200bb (auch wo die Daten noch 100x100bb liefern), faul geladen, feste Größe
-  await waehle(page, 'angebot');
+  await waehle(page, 'fuer399');
   const bilder = await page.locator('#fi-liste img.fi-bild').evaluateAll(i => i.map(x => [x.getAttribute('src'), x.loading, x.getAttribute('width'), x.getAttribute('height')]));
-  assert.equal(bilder.length, 6);
+  assert.equal(bilder.length, 9, 'der mydealz-Tipp ohne Bild hat einen Platzhalter');
   for (const [src, l, w, h] of bilder) { assert.match(src, /\/200x200bb\.jpg$/); assert.equal(l, 'lazy'); assert.deepEqual([w, h], ['56', '84']); }
-  assert.match(nbsp(await karte(page, 'John Wick').innerText()), /Action & Abenteuer · Platz 14 der Charts[\s\S]*4,99 €[\s\S]*Tipp von mydealz/);
+  await waehle(page, 'action');
+  assert.match(nbsp(await karte(page, 'John Wick').innerText()), /Action & Abenteuer · Rotten Tomatoes 94 %[\s\S]*4,99 €[\s\S]*Tipp von mydealz/);
   // Quellen: mydealz gestört
   await page.locator('.fi-quellen summary').click();
   assert.match(nbsp(await page.locator('.fi-quellen').innerText()), /Apple-Store: 41 gefunden\s*Apple-Charts: 100 gefunden\s*mydealz: gestört – HTTP 403/);
@@ -408,6 +446,82 @@ test('Gewählter Chip bleibt gemerkt; ein neues Wunsch-Angebot holt die Wunschli
   await ctx.close();
 });
 
+test('Für 3,99 € / Action & Thriller / Comedy im Browser: Reihenfolge, Infozeile, Karte nicht höher als vorher, Chip „Angebote“ nur bei Bedarf', { skip: ohnePw }, async () => {
+  let o = await oeffne();
+  const { page } = o;
+  await waehle(page, 'fuer399');
+  assert.equal(nbsp(await page.locator('.fi-unter').innerText()), 'Gute Filme zum Kaufen für 3,99 € – deine Listen zuerst, dann die bekanntesten und bestbewerteten.');
+  const titel = await page.locator('#fi-liste .fi-titel').allInnerTexts();
+  assert.equal(titel[3], 'Charade (1963)', 'Jahr nicht doppelt');
+  assert.ok(titel.indexOf('Ocean’s Eleven (2001)') < titel.indexOf('Shrek – Der tollkühne Held (2001)'), 'Top-Film vor Kinderfilm');
+  assert.match(nbsp(await karte(page, 'Indiana Jones').innerText()), /14,99 €[\s\S]*4 Filme, 3,75 € je Film · Tipp von mydealz/);
+  // Höhe: jede Karte so hoch wie dieselbe Karte in der alten Fassung (Genre · Platz N der Charts, ohne „neu“/Bewertung)
+  for (const k of ['fuer399', 'action', 'comedy', 'achtziger']) {
+    await waehle(page, k);
+    const h = await page.evaluate(k => {
+      const I = window.MeinVorteilFilme._intern, liste = document.getElementById('fi-liste');
+      const roh = JSON.parse(localStorage.getItem('mein-vorteil-daten-filme')).d;
+      const n = I.normalisiere(roh);
+      const ul = document.createElement('ul'); ul.className = 'fi-karten'; liste.appendChild(ul);
+      const out = n.gruppen[k].map(t => {
+        ul.innerHTML = I.karte(t, false, k); const neu = ul.firstElementChild.getBoundingClientRect().height;
+        ul.innerHTML = I.karte({ ...t, rt: null, neu: false }, false, 'neu'); const alt = ul.firstElementChild.getBoundingClientRect().height;
+        return [t.titel, Math.round(neu), Math.round(alt)];
+      });
+      ul.remove();
+      return out;
+    }, k);
+    for (const [t, neu, alt] of h) assert.ok(neu <= alt, `${k}/${t}: Karte ${neu} px statt ${alt} px`);
+  }
+  assert.equal(await chip(page, 'weitere').count(), 0);
+  assert.deepEqual(o.fehler, []);
+  await o.ctx.close();
+  // ein Angebot, das in keinem Bereich steht -> Chip „Angebote“ ganz hinten
+  o = await oeffne({ patch: d => { d.gruppen.angebot.push({ ...d.gruppen.angebot[1], id: 'itunes:4242', titel: 'Der dritte Mann', jahr: 1949, genre: 'Drama', chart: null }); } });
+  assert.deepEqual((await o.page.locator('.fi-chip').allInnerTexts()).map(t => t.replace(/\s+/g, ' ').trim()).slice(-2), ['Disney 8', 'Angebote 1']);
+  await waehle(o.page, 'weitere');
+  assert.deepEqual(await o.page.locator('#fi-liste .fi-titel').allInnerTexts(), ['Der dritte Mann (1949)']);
+  await pruefeLayout(o.page, 'Angebote');
+  assert.deepEqual(o.fehler, []);
+  await o.ctx.close();
+});
+
+test('Start-Kachel „Filme“: höchstens 2 Zeilen, keine doppelte Zeile (auch bei langen Titeln), Jahr nicht doppelt, Zahl aus der Übersicht', { skip: ohnePw }, async () => {
+  const { ctx, page, fehler } = await oeffne({ pfad: '/mein-vorteil/#start' });
+  const a = JSON.parse(readFileSync(join(FIX, 'vertrag', 'vorteile-aktuell.json'), 'utf8'));
+  const eintrag = (id, titel, zeile, wert) => ({ id, kategorie: 'filme', titel, zeile, soGehts: 'Link öffnen – die TV-App zeigt den Film.',
+    link: `https://itunes.apple.com/de/movie/x/id${wert}`, quelle: 'Apple TV', wert, sofort: false, grund: 'Preis gesenkt',
+    datum: '2026-11-07T13:05:00.000Z', bis: null, sichtbarBis: '2026-11-10T13:05:00.000Z', preisfehler: false, preis: 7.99, extra: {} });
+  const lang = 'Lager sperren und 2 Räucherfässer (Lock, Stock & Two Smoking Barrels)';
+  const setze = async (filme, kurz) => {
+    a.kategorien.filme = filme;
+    a.status = { ...a.status, filme: { ok: true, anzahl: filme.length, fehler: [], kurz } };
+    await ctx.unroute(/aktuell\.json/).catch(() => {});
+    await ctx.route(/^https:\/\/raw\.githubusercontent\.com\/XanderFoxy\/Synquenzer\/vorteile-daten\/vorteile\/data\/aktuell\.json/,
+      r => r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(a) }));
+    await page.reload();
+    await page.waitForFunction(() => document.querySelector('#kacheln a[data-sprung="filme"] li'), null, { timeout: 10000 });
+    const k = page.locator('#kacheln a[data-sprung="filme"]');
+    return { zeilen: (await k.locator('li b').allInnerTexts()).map(nbsp), sichtbar: await k.locator('li').evaluateAll(l => l.map(x => getComputedStyle(x).display !== 'none')), zahl: await k.locator('.kn').innerText() };
+  };
+  // ein Push-Treffer mit langem Titel (> 30 Zeichen) + derselbe Film in der Übersicht -> nicht doppelt; 2. Zeile aus der Übersicht
+  let r = await setze([eintrag('film-a', `${lang} (1998) für 7,99 €`, 'Kaufen 7,99 € statt 9,99 €', 60)],
+    { angebote: 12, top: [{ titel: lang, preis: 7.99 }, { titel: 'Charade (1963)', preis: 3.99 }, { titel: 'Flash Gordon', preis: 3.99 }] });
+  assert.equal(r.zeilen.length, 2, r.zeilen.join(' | '));
+  assert.match(r.zeilen[0], /^Lager sperren und 2 Räucherfässer/);
+  assert.equal(r.zeilen[1], 'Charade (1963)');
+  assert.deepEqual(r.sichtbar, [true, true], 'auf dem Handy beide Zeilen sichtbar');
+  assert.equal(r.zahl, '12', 'Zahl = Angebote der Übersicht');
+  // „Charade (1963) (1963) für 3,99 €“ (alter Scanner) -> Jahr einmal; drei Push-Treffer -> trotzdem 2 Zeilen
+  r = await setze([eintrag('film-b', 'Charade (1963) (1963) für 3,99 €', 'Kaufen 3,99 €', 70), eintrag('film-c', 'Dune (1984) für 7,99 €', 'Kaufen 7,99 €', 50), eintrag('film-d', 'Flash Gordon (1981) für 3,99 €', 'Kaufen 3,99 €', 40)],
+    { angebote: 3, top: [{ titel: 'Charade (1963)', preis: 3.99 }] });
+  assert.deepEqual(r.zeilen, ['Charade (1963) für 3,99 €', 'Dune (1984) für 7,99 €']);
+  assert.equal(r.zahl, '3');
+  await page.screenshot({ path: join(FOTOS, 'kachel-filme.png'), clip: await page.locator('#kacheln a[data-sprung="filme"]').boundingBox() });
+  assert.deepEqual(fehler, []);
+  await ctx.close();
+});
+
 test('Offline-Kopie: letzter Stand sofort; Quelle gestört bzw. offline steht in der Stand-Zeile', { skip: ohnePw }, async () => {
   const { ctx, page, fehler, zustand } = await oeffne();
   zustand.offline = true;
@@ -440,13 +554,15 @@ test('Ohne Daten: freundliche Hinweise (Liste noch nicht erstellt, leerer Bereic
   const patch = d => {
     d.gruppen.wunsch = d.gruppen.wunsch.map(t => ({ ...t, angebot: false, unterZiel: false }));
     d.gruppen.angebot = [];
+    d.gruppen.fuer399 = [];
     d.gruppen.disney = d.gruppen.disney[0]; // Einzelobjekt statt Liste
     d.gruppen.neu = [{ id: 'itunes:9', preis: 3.99 }, { ...d.gruppen.neu[0], preis: -1, preisHd: -1, preisSd: -1, leihe: null }];
     delete d.gruppen.serien;
   };
   o = await oeffne({ patch });
-  assert.equal(await chip(o.page, 'angebot').getAttribute('aria-selected'), 'true', 'kein Wunsch-Angebot -> Angebote');
-  assert.equal(nbsp(await o.page.locator('#fi-liste').innerText()), 'Gerade keine Angebote – du bekommst eine Nachricht, sobald einer deiner Filme günstig ist. Eine Quelle ist gerade gestört.');
+  assert.equal(await chip(o.page, 'fuer399').getAttribute('aria-selected'), 'true', 'kein Wunsch-Angebot -> Für 3,99 €');
+  assert.equal(nbsp(await o.page.locator('#fi-liste').innerText()), 'Gerade keine guten Filme für 3,99 € – du bekommst eine Nachricht, sobald einer deiner Filme günstig ist. Eine Quelle ist gerade gestört.');
+  assert.equal(await chip(o.page, 'weitere').count(), 0, 'kein leerer Chip „Angebote“');
   assert.match(await chip(o.page, 'disney').innerText(), /1/);
   await waehle(o.page, 'neu');
   assert.equal(await karten(o.page).count(), 1);
@@ -513,7 +629,7 @@ for (const [breite, hoehe, lage] of [[428, 926, 'hoch'], [926, 428, 'quer']]) {
     assert.ok(vorher.some(([t, offen]) => t === 'IMG' && offen), 'mindestens ein Bild lädt noch');
     for (const [, , w, h] of vorher) assert.deepEqual([w, h], [56, 84]);
     const start = await page.evaluate(() => performance.now());
-    for (const k of GRUPPEN) {
+    for (const k of CHIPS) {
       await waehle(page, k);
       const chips = await page.locator('.fi-chip').evaluateAll(c => c.map(x => Math.round(x.getBoundingClientRect().height)));
       assert.ok(chips.every(h => h >= 44), `${k}: Chips ${chips}`);
