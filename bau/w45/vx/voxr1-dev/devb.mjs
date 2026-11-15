@@ -7,7 +7,7 @@ const wav = f => { const b = fs.readFileSync(f); let o = 12, sr = 0, d = null; w
 const TAU = 2 * Math.PI;
 for (const tk of [0, 1, 2]) {
 const A = wav(RV + SRC[tk]), sr = A.sr, v = A.x, n = v.length;
-let seed = 777 + tk; const rnd = () => { seed = (seed * 1103515245 + 12345) >>> 0; return seed / 4294967296; };
+let seed = 777 + tk; const rnd = () => { seed = (Math.imul(seed, 1103515245) + 12345) >>> 0; return seed / 4294967296; };
 const CL = [], x = Float32Array.from(v);
 const hpS = (() => { const y = Float64Array.from(v); const c = [0.5411961, 1.3065630].map(q => { const w = TAU * 2000 / sr, cc = Math.cos(w), al = Math.sin(w) / (2 * q), a0 = 1 + al; return [(1 + cc) / 2 / a0, -(1 + cc) / a0, (1 + cc) / 2 / a0, -2 * cc / a0, (1 - al) / a0]; }); for (const k of c) { let z1 = 0, z2 = 0; for (let i = 0; i < y.length; i++) { const x0 = y[i], o = k[0] * x0 + z1; z1 = k[1] * x0 - k[3] * o + z2; z2 = k[2] * x0 - k[4] * o; y[i] = o; } } return y; })();
 for (let k = 0; k < 20; k++) {
