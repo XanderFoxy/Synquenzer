@@ -69,6 +69,9 @@ for (const [W, H] of VIEWS) {
       cmp('¬A', await M([A, {art: 'inv'}]), i => 255 - a[i]);
       cmp('A nur Frequenzen umgekehrt', await M([A, {art: 'inv', nurF: 1, t0: tt - 1, t1: tt + 1}]), i => { const m = box.m0 + Math.floor(i / H); return m >= i0 && m <= i1 ? 255 - a[i] : 0; });
       cmp('(A∪B)−P∩Z', await M([A, B, Object.assign({}, P, {op: 'sub'}), Object.assign({}, Wd, {op: 'and'})]), i => Math.min(Math.min(Math.max(a[i], bb[i]), 255 - pp[i]), w[i]));
+      const w2 = await M([Object.assign({}, Wd, {gc: 100, gt: 0.05, key: 'tw2'})]), w3 = await M([Object.assign({}, Wd, {gc: -25, key: 'tw3'})]), w4 = await M([Object.assign({}, Wd, {ws: 1, key: 'tw4'})]);
+      let sup = 0, sub = 0, n1 = 0, n2 = 0, n3 = 0, soft4 = 0; for (let i = 0; i < w.length; i++) { if (w[i] && w2[i] < w[i]) sup++; if (w3[i] > w[i]) sub++; n1 += w[i] > 0; n2 += w2[i] > 0; n3 += w3[i] > 0; if (w4[i] > 0 && w4[i] < 255) soft4++; }
+      R['Zauberstab wachsen/schrumpfen/weich'] = {bad: sup + sub + (n2 > n1 ? 0 : 1) + (n3 < n1 ? 0 : 1) + (soft4 > 0 ? 0 : 1), nz: n1, groesser: n2, kleiner: n3, weich: soft4};
       return R;
     }, [TT]);
     for (const [k, v] of Object.entries(bit)) ok(tag + ' bitgenau ' + k, v, v.bad === 0 && v.nz > 0);

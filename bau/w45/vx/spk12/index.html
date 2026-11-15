@@ -105130,7 +105130,7 @@ function spk12Move(U, G, p) {
     const ws = Math.round((Math.hypot(pv[0].x - pv[1].x, pv[0].y - pv[1].y) - G.d0) / 120 * 4) / 4; if (ws === G.ws) return true;
     G.ws = ws; U.sel = spk12Xf(U, G.base, {ws}); spk12Live(U); spk1Stat(U, 'Weichheit ' + (ws > 0 ? '+' : '') + String(ws).replace('.', ',')); return true;
   }
-  if (!G.s12) { if (Math.hypot(p.x - G.x0, p.y - G.y0) < 8) return true; G.s12 = G.s12cand; G.base = G.base0 = U.sel; G.moved = true; }
+  if (!G.s12) { if (Math.hypot(p.x - G.x0, p.y - G.y0) < 8) return true; G.s12 = G.s12cand; G.base = G.base0 = U.sel; G.moved = true; spk12S(U).drag = G; }
   const dx = p.x - G.x0, dy = p.y - G.y0;
   if (G.s12 === 'move') U.sel = spk12Xf(U, G.base, {dt: dx / v.pps, dm: -dy / v.rowH});
   else if (G.single && !(G.base[0].art === 'zeit' && (G.s12 === 't' || G.s12 === 'b')) && !(G.base[0].art === 'freq' && (G.s12 === 'l' || G.s12 === 'r'))) U.sel = [spk12Edge(G.base[0], G.s12, dx / v.pps, -dy / v.rowH * 100)];
@@ -105140,10 +105140,11 @@ function spk12Move(U, G, p) {
 function spk12Two(U, G, P) {   // zweiter Finger, während der erste am Rand liegt → Weichheit
   if (!G.s12cand || G.s12cand === 'move') return false;
   const pv = [...P.values()]; if (pv.length < 2) return false;
-  if (!G.base0) G.base0 = U.sel; G.base = U.sel; G.s12 = 'soft'; G.P = P; G.d0 = Math.hypot(pv[0].x - pv[1].x, pv[0].y - pv[1].y); G.ws = 0; G.moved = true;
+  if (!G.base0) G.base0 = U.sel; G.base = U.sel; G.s12 = 'soft'; G.P = P; spk12S(U).drag = G; G.d0 = Math.hypot(pv[0].x - pv[1].x, pv[0].y - pv[1].y); G.ws = 0; G.moved = true;
   spk1Stat(U, 'Zwei Finger: auseinander = weicher, zusammen = härter'); return true;
 }
 function spk12Up(U, G) {
+  spk12S(U).drag = null;
   const lab = G.s12 === 'move' ? 'Auswahl verschoben' : G.s12 === 'soft' ? 'Auswahl ' + (G.ws >= 0 ? 'weicher' : 'härter') : 'Auswahl-Größe';
   spk12Push(U, lab, spk12Clone(G.base0 || [])); spk12Set(U, U.sel, lab + ' · ↶ macht es rückgängig');
 }
@@ -105235,6 +105236,7 @@ function spk12Pane(U, pane, sl) {
   b.addEventListener('pointermove', e => { if (lp && Math.hypot(e.clientX - x0, e.clientY - y0) > 10) stop(); });
   b.addEventListener('pointerup', stop); b.addEventListener('pointercancel', stop);
   b.addEventListener('contextmenu', e => e.preventDefault());
+  U.mn.addEventListener('pointercancel', () => { const S = spk12S(U), g = S.drag; if (!g) return; S.drag = null; U.sel = g.base0 || U.sel; U.selVer++; spk12ViewReq(U); spk1Dirty(U, 'ov'); });   // Abbruch: Form wie vorher
 }
 function spk12Slot(U, k) {
   const b = U.tl.querySelector('button[data-s12slot]'); if (!b) return; const w = k === 'wand';
