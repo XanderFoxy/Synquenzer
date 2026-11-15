@@ -175,8 +175,22 @@ Kosten beim ersten Öffnen der Spektral-Seite (einmal je Sitzung, `SPKL.ms`, Med
 Größe: roh +2 996 B, gzip +0,9 KB (Kommentar-Zeilen und Block-Rahmen).
 
 ## Regression (`e/reg/reg.log`, `e/reg/reg2.log`; zwei Spuren nacheinander, siehe LOG)
-Siehe Bericht/LOG. Bisher: spk6k, spk6, spk6u ALLES OK; spk9u/spk9p/spk9poly/spk9f ok (= r4700); vx1 61/61; spk1 17 OK + der bekannte
-FEHLER `verfeinern-verbessert-ziel` (identisch in r4700/spk1.log).
+| Sonde | index.html | r4700 (Quelle 4.70.0) |
+|---|---|---|
+| Pflicht | topdefs 26 Skripte, 7 382 Namen, 0 doppelt, 0 Syntax; dupkeys 0; MS 2000 1×, live 1×, VERSION '4.70.0'; sq-spk-src 0 doppelt | – |
+| Rauchtest | errors [] (`e/smoke.png`) | errors [] |
+| e/probe.mjs (neu) | ALLES OK 13/13 | – |
+| spk1 | 17 OK + FEHLER `verfeinern-verbessert-ziel` | gleich |
+| spk5 / spk5f | ALLES OK (24) / ALLES OK | gleich |
+| spk6k / spk6 / spk6u | ALLES OK | gleich |
+| spk8s / spk10s | 14/0 / 16/0 | gleich |
+| spk9u / spk9p / spk9poly / spk9f | ok, Werte gleich | gleich |
+| spk11 (Kopie reg/spk11-test.mjs) | 38 OK / 3 FEHLER `drums-auf-kit` (dieselben Zahlen) | gleich (SPK11B behebt) |
+| spk12 | 98 OK / 0 FEHLER | 97 / 1 |
+| ki1 (spk5-Fassung) | 16 OK, dieselben 3 FEHL (besser-als-klassisch-demo, gesang-…, guide-eintrag) mit denselben Werten | gleich |
+| vx1 / imp1 | 61/61 / ALLE OK | gleich |
+| spk5p | 6 OK, 0 FEHL | gleich |
+| **nicht mehr gelaufen** (Zeitgrenze) | spk7, spk12b, spk12c, spk12d, spk6p, spk4 – `e/reg.sh` enthält sie, Aufruf `e/reg.sh` | – |
 
 ## Offen / Folgen
 1. **Auslieferung (Teil D):** `ausliefern.mjs` lässt text/plain unberührt → die SPK-Kommentare bleiben in der Auslieferung:

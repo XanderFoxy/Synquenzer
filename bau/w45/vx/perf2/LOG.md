@@ -44,3 +44,4 @@
   r4700/mess kopiert, zweite Spur e/reg2.sh.
 - 10:33 `e/probe.mjs` ALLES OK (13): Container schreiben/lesen in frischer Seite ohne Spektral-Code ohne Verlust; Block-Ladezeit 33 / 96 ms.
 - 10:36 ausliefern.mjs auf index.html: OK, aber +52 KB gzip (text/plain unberührt) → Offen Nr. 1.
+- 10:41 Regression bis ki1 fertig (alles wie r4700, spk12 besser); spk5p/spk7/spk12b-d/spk6p/spk4 aus Zeitgründen nicht mehr gelaufen.
