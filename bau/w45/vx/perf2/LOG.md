@@ -31,3 +31,16 @@
 - 09:39 chr2 (Kopie, Import absolut): 76/77, der eine Fehler = Hilfsskript tune-meas.mjs findet seinen Text-Anker
   `function vsDspMake() {` nicht (Prüf-Werkzeug; auf der Quelle ALLE OK 82).
 - 09:42 pflicht.log, regression.log, NOTES.md. index.html = basis.html (unverändert, cmp gleich).
+
+# PERF2 – LOG Teil E (Spektral-Code erst beim Öffnen)
+- 10:21 Auftrag. perf1/PLAN Nr. 5 gelesen. Inventar `e/analyse.cjs` (acorn + eslint-scope): 12 SPK-Bereiche, 485 Namen, 61 Seiteneffekte,
+  64 Zugriffe von außen; Abhängigkeits-Graph `e/deps.cjs`: SPK7-Wege (normWt/Stimme/Takes) nur SPK7-intern → SPK7 bleibt ganz.
+- 10:26 Entscheidung: verschieben ja, mit Bleibe-Stellen (SPK1-Zustand, NormProject, Zip, Open, Einstiege, spk12Guide) und Hüllen + Gettern
+  im Block SPKL. Getter erst nach der SYNQUENZER-Umhüllungs-Schleife (liest alle Felder).
+- 10:28 `e/bau.cjs` + `e/spkl.js` → index.html. Pflicht: topdefs 26 Skripte, 7 382 Namen, 0 doppelt, 0 Syntax; dupkeys 0; MS 2000 1×,
+  live 1×, VERSION '4.70.0'; `e/pruef-spk.cjs` sq-spk-src 410 Namen, 0 doppelt, Syntax OK. Rauchtest errors [] (`e/smoke.png`).
+- 10:29 Messung 4× (basis/index abwechselnd, 3 Paare): bereit 2 912 → 2 657 ms, längste Aufgabe 1 286 → 968 ms.
+- 10:31 Regression e/reg.sh gestartet; spk1/spk5/spk5f/spk8s/spk10s brachen ab (mess/spur*.f32 fehlten neben der HTML) → Dateien aus
+  r4700/mess kopiert, zweite Spur e/reg2.sh.
+- 10:33 `e/probe.mjs` ALLES OK (13): Container schreiben/lesen in frischer Seite ohne Spektral-Code ohne Verlust; Block-Ladezeit 33 / 96 ms.
+- 10:36 ausliefern.mjs auf index.html: OK, aber +52 KB gzip (text/plain unberührt) → Offen Nr. 1.

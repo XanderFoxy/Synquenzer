@@ -105,3 +105,86 @@ deterministische Weg mkRender (Hauptfaden-Parameter → App-Worklet → Puffer).
    angenommen gzip, nicht gemessen – Proxy 403).
 7. Möglicher nächster Schritt (nicht gebaut): die restlichen 4 342 Nicht-Latin-1-Zeichen in Zeichenketten als `\u…` schreiben →
    Haupt-Skript als 1-Byte-Text (≈ −4,7 MB Quelltext-Speicher). Ändert raw-Texte (AST-Wert gleich), braucht eigene Prüfung.
+
+---
+
+# PERF2 Teil E – Spektral-Code erst beim Öffnen (umgesetzt)
+
+**Ab Teil E ist `index.html` ≠ `basis.html`.** `basis.html` = rel-4700/index.html (4.70.0) bleibt unverändert, `index.html` ist der
+Kandidat mit verschobenem Spektral-Code. VERSION bleibt '4.70.0'. Aussehen und Bedienung unverändert.
+Bau: `node e/bau.cjs basis.html index.html` (sucht die Blöcke per Marke, nicht per Zeilennummer; Block-Text in `e/spkl.js`).
+
+## Was verschoben ist
+- Neuer Block `<script type="text/plain" id="sq-spk-src">` direkt vor dem Haupt-Skript: **6 682 Zeilen / 612 535 Zeichen**,
+  wörtlich und in der alten Reihenfolge aus SPK5, SPK1–SPK4, SPK8, SPK10, SPK6, SPK11, SPK12, SPK9 (410 oberste Namen).
+- **SPK7 (Klangkorn) bleibt ganz im Haupt-Skript**: `normWt` (anderes Skript, Z ~24206) ruft `spk7NormWt` beim Laden jedes Klangs,
+  die Stimme ruft `spk7Voice` beim Abspielen, `tkUsedIds` ruft `spk7TakeIds` beim Container. Ohne SPK7 würde ein Klangkorn-Klang
+  beim Laden `p.wt.h` verlieren und anders klingen → Datenverlust. Diese drei Wege brauchen nur SPK7-eigene Namen (geprüft per Abhängigkeits-Graph).
+- **Im Haupt-Skript geblieben** (Zeilen unverändert, je eine Kommentar-Zeile `/* SPKL: … */` davor): `const SPK1` (Zustand; Tasten-Sperre
+  `SPK1.open`, KI1 liest `SPK1.doc/.ui/.last`), `spk1NormProject` (Projekt-Verweise S.spk beim Laden), `spk1ZipAdd`/`spk1ZipRead`
+  (Container), `spk1Open`, die Einstiege `spk1MenuRow`/`spk1TkBtn`/`spk1ClipBtn`/`spk1Guide`, die Guide-IIFE `spk12Guide`.
+- **Block SPKL** (neu, nach `srLoad`): `spkLoad()` = `blockLoad('sq-spk-src', …)` (tickAhead vorher, wie sq-form-src), Hüllen um
+  `spk1Open` (lädt vorher, sonst Hinweis), `spk1ZipAdd` (lädt nur, wenn S.spk Einträge hat), `spk1ZipRead` (lädt nur, wenn der Container
+  `spektral/…` enthält); Test-Zugänge `SYNQUENZER.spk1/.spk5`, `window.__spk/__spk6/__spk11/__spk12` als Getter, der den Block lädt –
+  die Zuweisung im Block macht daraus wieder ein normales Feld. `SYNQUENZER.spkl.info()/load()` für Sonden. Der Block steht nach der
+  Schleife, die SYNQUENZER-Funktionen umhüllt (Z ~109846 liest alle Felder – sonst hätte sie den Block beim Start geladen).
+
+## Vollständige Liste der Zugriffe von außen (e/analyse.cjs, acorn + eslint-scope, alle ausführbaren Skripte + Form/SR/NDP/ARP/MD/BM/G9/MK-Blöcke)
+485 oberste SPK-Namen, 61 Seiteneffekte der obersten Ebene, **64 Zugriffe von außen**, 0 davon beim Start auf oberster Ebene:
+| Stelle (basis) | Zugriff | Wann | Lösung |
+|---|---|---|---|
+| 24206 normWt | spk7NormWt (typeof) | Laden jedes Klangs | SPK7 bleibt |
+| 28899 normProject | spk1NormProject | Projekt laden | bleibt |
+| 32013 Stimme | spk7Voice (typeof) | Abspielen | SPK7 bleibt |
+| 51715 Clip-Blatt | spk1ClipBtn | Blatt öffnen | bleibt (ruft nur spk1Open) |
+| 52415 ≡-Menü | spk1MenuRow | Menü öffnen | bleibt |
+| 55901 Guide | spk1Guide | Guide bauen | bleibt |
+| 56339 Tasten | SPK1.open, spk1Close | jede Taste | SPK1 bleibt; spk1Close nur bei SPK1.open (dann geladen) |
+| 59779 / 59814 Takes-Blatt | spk1Open, spk1TkBtn | Tippen / Blatt | Hülle lädt / bleibt |
+| 60303 tkZipBytes | spk1ZipAdd | Container sichern | Hülle lädt, wenn S.spk Einträge hat |
+| 60315 tkUsedIds | spk7TakeIds (typeof) | Container | SPK7 bleibt |
+| 60346 tkImportZip | spk1ZipRead | Container öffnen | Hülle lädt, wenn spektral/… drin |
+| 97122–97149 KI1 | SPK1.doc, spk1Worker, spk1Call | Profi-Trennung | erst nach `SPK1.doc` (nur bei geladener Seite gesetzt) |
+| 97234 KI1-Kern | spk6DspMake (typeof) | im Rechen-Worker | unabhängig vom Hauptfaden |
+| 97316–97363 KI1-Knöpfe | spk1Dd/Stat/Zerl/BtnState/Got/TintLoad, spk5KiOrder/spk5Run (typeof) | nur mit U = SPK1.ui | nur bei offener Seite |
+| 97372 / 97381 / 97389 KI1 | SPK1.last, spk1Open (Guide go), SPK1.ui | Guide / Test | SPK1 bleibt, Hülle lädt |
+Seiteneffekte: alle `const`-Startwerte sind Literale; außer den Test-Zugängen (→ Getter), `SPK1_TOOLS.push`/`SPK1_ICON.noten`/SPK11-Hülle
+um `spk2KlRun` (alle im verschobenen Code, Reihenfolge gleich) und den zwei Guide-IIFEs (spk12 bleibt, spk7 bleibt mit SPK7) gibt es keine.
+Kein Zugriff über `window['spk…']`, HTML-Attribute oder Text; topdefs (Haupt) 0 doppelt; `e/pruef-spk.cjs`: sq-spk-src Syntax OK,
+410 Namen, 0 doppelt gegen alle Skripte.
+
+## Speichern/Laden (das Daten-Risiko) – geprüft, kein Verlust
+- Projekt-JSON: die Analysen selbst liegen im Audio-Speicher (IDB, Worker); im Projekt steht nur S.spk = [{id, name}], normalisiert von
+  `spk1NormProject` (bleibt geladen).
+- Container: `e/probe.mjs` (ALLES OK, 13/13): Analyse anlegen → **frische Seite ohne Spektral-Code** → `tkZipBytes()` lädt den Block
+  vorher und schreibt `spektral/<id>/doc.json` + `p0.wav`; Analyse löschen → **frische Seite** → `tkImportZip()` lädt vorher, Analyse ist
+  wieder da; Container ohne Spektral-Analyse lädt den Block nicht; Start ohne Block (`typeof spk2Notes === 'undefined'`), Guide-Einträge
+  spk1/ki1/spk12/spk7 da, Menü-Zeile „Spektral …“ ohne Laden, Tasten ohne Laden, Öffnen lädt, Escape schließt, 0 Konsolenfehler.
+
+## Messung (Chromium 428×926, 4×, Median aus 3, je Lauf abwechselnd, `e/r/`)
+| ms ab Navigation | basis | index | Δ |
+|---|---:|---:|---:|
+| **bereit** | 2 912 [2 705–3 033] | **2 657** [2 569–2 741] | **−255 (−9 %)** |
+| HTML gelesen (domInteractive) | 2 382 | 2 214 | −168 |
+| DOMContentLoaded | 2 630 | 2 422 | −208 |
+| **längste Aufgabe bis bereit** | 1 286 | **968** | **−318** |
+| Sperrzeit bis bereit | 1 857 | 1 628 | −229 |
+| erste Darstellung | 508 | 440 | (Rauschen) |
+| Quelltext-Speicher | 7,2 MB | 6,6 MB | −0,6 MB |
+Kosten beim ersten Öffnen der Spektral-Seite (einmal je Sitzung, `SPKL.ms`, Median 3): **33 ms ungedrosselt, 96 ms bei 4×**.
+Größe: roh +2 996 B, gzip +0,9 KB (Kommentar-Zeilen und Block-Rahmen).
+
+## Regression (`e/reg/reg.log`, `e/reg/reg2.log`; zwei Spuren nacheinander, siehe LOG)
+Siehe Bericht/LOG. Bisher: spk6k, spk6, spk6u ALLES OK; spk9u/spk9p/spk9poly/spk9f ok (= r4700); vx1 61/61; spk1 17 OK + der bekannte
+FEHLER `verfeinern-verbessert-ziel` (identisch in r4700/spk1.log).
+
+## Offen / Folgen
+1. **Auslieferung (Teil D):** `ausliefern.mjs` lässt text/plain unberührt → die SPK-Kommentare bleiben in der Auslieferung:
+   aus-e.html gzip 2 350 810 statt 2 298 440 (+52 KB). Nächster Schritt: `sq-spk-src` in ausliefern.mjs wie ein Skript behandeln
+   (Kommentare/Leerraum raus, AST-Prüfung wie bei den Skripten).
+2. **SPK11B** (fehlt hier noch) muss beim Zusammenführen **in sq-spk-src** landen (neben SPK11), nicht ins Haupt-Skript; Haken aus dem
+   Haupt-Skript in SPK-Funktionen nur mit typeof-Schutz oder nach `spkLoad()`. Danach `e/analyse.cjs` erneut laufen lassen.
+3. Neue Zugriffe von außen auf SPK-Namen: vor jedem Release `e/analyse.cjs <html>` – jede Zeile der Liste muss „bleibt“, „typeof“ oder
+   „nur bei offener Seite“ sein. Neue Test-Zugänge (`window.__spkN`) in die Getter-Liste von SPKL eintragen.
+4. Zeilennummern im Haupt-Skript haben sich verschoben (Fehler-Stapel aus sq-spk-src zeigen Zeilen relativ zum Block).
+5. Gleiches Muster für Video/Import/Gesang (PERF1E Rest) erst nach grüner SPK-Regression.
