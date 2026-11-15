@@ -133,7 +133,8 @@ export function wikidataKandidaten(zeilen, item) {
 
 // ---------------------------------------------------------------- Qualität (Wikidata) – „richtig geile Filme, nicht irgendein Quatsch“
 // Für Chart-Titel (nicht für deine Listen): Bekanntheit = Zahl der Wikipedia-Sprachen (wikibase:sitelinks), Kritik = Rotten
-// Tomatoes (P444 „review score“ mit P447 = Q105584), Horror = Genre (P136) ist Horrorfilm Q200092 oder eine Unterart davon.
+// Tomatoes (P444 „review score“ mit P447 = Q105584), Horror = Genre (P136) ist Horrorfilm Q200092 oder eine Unterart davon,
+// Kinderfilm = Genre ist Kinderfilm Q2143665, Familienfilm Q1361932 oder Animationsfilm Q202866 (oder eine Unterart davon).
 // Gefunden wird der Film über die Apple-Nummer (P6398, oft die US-Nummer) ODER die Namenssuche (wbsearchentities über
 // Bezeichnung/Alias deutsch oder englisch, nur Filme); bei der Namenssuche müssen Name und Jahr passen (Jahr ±1, sonst ein älterer Film = Wiederveröffentlichung).
 export const HORROR_TEXT = /horror(?!\s*!)|grusel|schocker|slasher|zombie|exorzis|okkult|satanis|paranormal|poltergeist|d(?:ä|ae)mon(?:en|isch\w*)?\b/i;
@@ -153,6 +154,27 @@ export function horrorText(text, genre = '') {
   return schwach >= 2 ? 2 : schwach;
 }
 const FILM_TYPEN = 'wd:Q11424 wd:Q29168811 wd:Q24869 wd:Q506240 wd:Q202866 wd:Q226730';
+
+// Kinderfilme gehören nicht unter „Neu“ (Xander, Prüfer-Befund MV8 11: Woodwalkers 2, Die Schule der magischen Tiere 4,
+// Vaiana – Apple führt sie als „Action“; Disney hat einen eigenen Bereich). Drei Zeichen, keins kostet einen Abruf extra:
+// Apple-Chart „Kinder & Familie“ (charts.kinder, Standard 4410: gleiche Nummer oder gleiche Reihe), Wikidata-Genre
+// (KINDER_GENRES, Flag k im Zustand), Apple-Genre.
+export const KINDER_GENRES = ['wd:Q2143665', 'wd:Q1361932', 'wd:Q202866']; // Kinderfilm, Familienfilm, Animationsfilm
+export const KINDER_TEXT = /kinder|familie|animation/i;
+/** Reihe eines Titels (ohne Folgenummer) für den Abgleich mit dem Kinder-Chart: „Woodwalkers 2“ -> „woodwalkers“, „Die Schule
+ *  der magischen Tiere 4“ wie Teil 3 im Chart, „Vaiana“ (2026) wie „Vaiana 2“. Echtes Kinder-Chart 07.11.2026: dort stehen die
+ *  früheren Teile als „Kinder und Familie“, die neuen führt Apple als „Action“. Untertitel bleiben („Spider-Man: Brand New Day“
+ *  ≠ „Spider-Man: A New Universe“), Jahreszahlen auch („Blade Runner 2049“ ≠ „Blade Runner“). */
+export function kinderReihe(titel) {
+  const w = [...titelTokens(suchName(titel))];
+  if (w.length > 1 && /^\d{1,2}$/.test(w.at(-1))) w.pop();
+  while (w.length > 1 && /^(?:\||teil|part|kapitel)$/.test(w.at(-1))) w.pop();
+  return w.join(' ');
+}
+/** Kinderfilm? kinderChart = steht im Kinder-Chart, genres = Apple-Genre-Texte, q = Wikidata (Zustand, null = keine Daten). */
+export function kinderfilm({ kinderChart = false, genres = [], q = null } = {}) {
+  return !!kinderChart || genres.some(g => KINDER_TEXT.test(String(g ?? ''))) || q?.kinder === true;
+}
 
 /** Apple-Titel für die Namenssuche: „Charade (1963)“ -> „Charade“, „Jungs Von Spinal Tap, Die“ -> „Die Jungs Von Spinal Tap“,
  *  „THX 1138 (Director's Cut)“ -> „THX 1138“, „The Outfit -- Verbrechen nach Maß“ -> „The Outfit“. */
@@ -175,7 +197,7 @@ export function qualiAbfrage(titel) {
   // Name genau wie Bezeichnung/Alias (deutsch oder englisch) – wie der Weg „wikidata“, der im echten Lauf antwortet.
   // (Die mwapi-Namenssuche brach im echten Lauf 14.11.2026 mit HTTP 500 ab: „Could not find binding for parameter search“.)
   const namen = titel.flatMap(t => ['de', 'en'].map(l => `(${sparqlText(t.nr)} ${sparqlText(t.name)}@${l})`)).join(' ');
-  return 'SELECT ?key ?weg ?item ?l (MIN(?j) AS ?jahr) (MAX(?h0) AS ?h) (GROUP_CONCAT(DISTINCT ?rt0; separator="|") AS ?rt) '
+  return 'SELECT ?key ?weg ?item ?l (MIN(?j) AS ?jahr) (MAX(?h0) AS ?h) (MAX(?k0) AS ?k) (GROUP_CONCAT(DISTINCT ?rt0; separator="|") AS ?rt) '
     // feste Reihenfolge: erst die paar Filme (Nummer/Name), dann je Film Genre/Kritik – sonst rechnet Wikidata erst alle
     // Horrorfilme der Welt aus (2. echter Lauf 14.11.2026: Zeitüberschreitung nach 20 s)
     + '(GROUP_CONCAT(DISTINCT ?lab0; separator="|") AS ?lab) WHERE { hint:Query hint:optimizer "None" . '
@@ -183,6 +205,9 @@ export function qualiAbfrage(titel) {
     + `{ VALUES (?key ?suche) { ${namen} } ?item rdfs:label|skos:altLabel ?suche . `
     + `?item wdt:P31 ?typ . VALUES ?typ { ${FILM_TYPEN} } BIND("name" AS ?weg) } `
     + '?item wikibase:sitelinks ?l . '
+    // Kinderfilm wie Horror (OPTIONAL): von den paar Genres des Films aufwärts, nicht alle Unterarten von Animationsfilm abwärts;
+    // vor den Erscheinungsdaten, damit es je Film einmal läuft und nicht je Datum (Filme haben oft 10+ Länder-Daten)
+    + `OPTIONAL { ?item wdt:P136 ?kg . ?kg wdt:P279* ?kz . FILTER(?kz IN (${KINDER_GENRES.join(', ')})) BIND(1 AS ?k0) } `
     + 'OPTIONAL { ?item wdt:P577 ?d . BIND(YEAR(?d) AS ?j) } '
     + 'OPTIONAL { ?item wdt:P136 ?gen . ?gen wdt:P279* wd:Q200092 . BIND(1 AS ?h0) } '
     + 'OPTIONAL { ?item p:P444 ?st . ?st pq:P447 wd:Q105584 ; ps:P444 ?rt0 . } '
@@ -190,7 +215,7 @@ export function qualiAbfrage(titel) {
     + '} GROUP BY ?key ?weg ?item ?l LIMIT 2000';
 }
 
-/** Antwort -> [{ key, weg, item, l, jahr, horror, rt, namen }] (Zeilen ohne Schlüssel fallen weg). */
+/** Antwort -> [{ key, weg, item, l, jahr, horror, kinder, rt, namen }] (Zeilen ohne Schlüssel fallen weg). */
 export function leseQuali(text) {
   let j;
   try { j = JSON.parse(String(text ?? '').trim()); } catch { throw new Error('keine gültige Wikidata-Antwort'); }
@@ -206,18 +231,19 @@ export function leseQuali(text) {
     out.push({
       key, weg: r?.weg?.value === 'id' ? 'id' : 'name', item: String(r?.item?.value ?? '').replace(/^.*\//, '') || null, l,
       jahr: Number.isInteger(jahr) && jahr > 1880 && jahr < 2100 ? jahr : null, horror: Number(r?.h?.value) === 1,
-      rt: rts.length ? Math.max(...rts) : null, namen: String(r?.lab?.value ?? '').split('|').map(x => x.trim()).filter(Boolean),
+      kinder: Number(r?.k?.value) === 1, rt: rts.length ? Math.max(...rts) : null, namen: String(r?.lab?.value ?? '').split('|').map(x => x.trim()).filter(Boolean),
     });
   }
   return out;
 }
 
-/** Passender Wikidata-Film für einen Apple-Titel ({ nr, name, jahr }) -> { l, horror, rt, item } | null. */
+/** Passender Wikidata-Film für einen Apple-Titel ({ nr, name, jahr }) -> { l, horror, kinder, rt, item, jahr } | null. */
 export function qualiWahl(zeilen, t) {
   const eigene = zeilen.filter(z => z.key === t.nr);
   const best = l => l.sort((a, b) => b.l - a.l)[0] || null;
   const perId = best(eigene.filter(z => z.weg === 'id'));
-  if (perId) return { l: perId.l, horror: perId.horror, rt: perId.rt, item: perId.item, jahr: perId.jahr ?? null };
+  const wahl = z => ({ l: z.l, horror: z.horror, kinder: !!z.kinder, rt: z.rt, item: z.item, jahr: z.jahr ?? null });
+  if (perId) return wahl(perId);
   const passName = z => z.namen.some(n => namensWert(n, t.name) >= 85 || namensWert(t.name, n) >= 85);
   const kand = eigene.filter(z => z.weg === 'name' && passName(z));
   if (!kand.length) return null;
@@ -226,7 +252,7 @@ export function qualiWahl(zeilen, t) {
     w = best(kand.filter(z => z.jahr != null && Math.abs(z.jahr - t.jahr) <= 1))
       || best(kand.filter(z => z.jahr != null && z.jahr < t.jahr)); // Apple-Datum = Wiederveröffentlichung („Dirty Harry“ 2014)
   } else w = best(kand);
-  return w ? { l: w.l, horror: w.horror, rt: w.rt, item: w.item, jahr: w.jahr ?? null } : null;
+  return w ? wahl(w) : null;
 }
 
 /** Horror-Verdacht aus der Beschreibung (ht = horrorText 0–3) zusammen mit Wikidata (q = Zustand, null = keine Daten):
@@ -722,6 +748,7 @@ export default async function filme(ctx) {
   const chartsAngebot = chartCfg.angebot ? liste(chartCfg.angebot) : [{ id: 4403, name: 'Klassiker' }, { id: 4410, name: 'Kinder & Familie' }];
   const chartsSuche = liste(chartCfg.suche).filter(g => Number.isInteger(Number(g?.id)));
   const horrorIds = new Set(liste(chartCfg.horror ?? [4408]).map(Number));
+  const kinderCharts = new Set(liste(chartCfg.kinder ?? [4410]).map(Number)); // wer hier steht, ist ein Kinderfilm (nicht unter „Neu“)
   const neuMonate = chartCfg.neuMonate ?? 18;
   const neuProGenre = chartCfg.neuProGenre ?? 25;
   const zielpreis = preisWert(listen.zielpreis) ?? 4.99;
@@ -771,6 +798,7 @@ export default async function filme(ctx) {
   // 2) Charts
   const chartTreffer = new Map(); // id -> { pos, genreId, neu, d }
   const alleCharts = []; // alle Chart-Einträge dieses Laufs (Weg „charts“: Apple-Nummern per Titel/Jahr-Abgleich)
+  const kinderIds = new Set(), kinderReihen = new Set(); // alle Titel der Kinder-Charts (auch teure: chartTreffer kennt nur Neues und Angebote)
   const neuGrenze = new Date(new Date(jetzt).getTime() - neuMonate * 30.44 * 864e5);
   for (const g of [...chartsNeu.map(x => ({ ...x, neu: true })), ...chartsAngebot.map(x => ({ ...x, neu: false }))]) {
     let eintraege;
@@ -778,6 +806,7 @@ export default async function filme(ctx) {
       eintraege = leseCharts(await apple(chartUrl(g.id)));
       status['apple-charts'].anzahl += eintraege.length;
       alleCharts.push(...eintraege);
+      if (kinderCharts.has(Number(g.id))) for (const e of eintraege) { kinderIds.add(e.id); kinderReihen.add(kinderReihe(e.titel)); }
     } catch (e) {
       melde('apple-charts', `Charts ${g.name || g.id}: ${e.message}`);
       // alter Stand dieses Genres (höchstens 3 Tage)
@@ -785,6 +814,7 @@ export default async function filme(ctx) {
       if (z && tageZwischen(z.tag, tag) <= 3) {
         for (const [id, pos, neu] of liste(z.ids)) {
           const t = alt.get(id);
+          if (kinderCharts.has(Number(g.id))) { kinderIds.add(id); if (t) kinderReihen.add(kinderReihe(t.titel)); } // nur die gemerkten (Angebote)
           if (!t) continue;
           const vor = chartTreffer.get(id);
           if (!vor || pos < vor.pos) chartTreffer.set(id, { pos, genreId: g.id, neu: !!neu, altTitel: t });
@@ -1143,7 +1173,7 @@ export default async function filme(ctx) {
         const zeilen = leseQuali(await holeText(wikidataUrl(qualiAbfrage(teil)), { headers: { accept: 'application/sparql-results+json' } }));
         for (const t of teil) {
           const q = qualiWahl(zeilen, t);
-          zf.quali[t.nr] = q ? { l: q.l, h: q.horror ? 1 : 0, rt: q.rt, j: q.jahr ?? null, tag } : { l: -1, tag };
+          zf.quali[t.nr] = q ? { l: q.l, h: q.horror ? 1 : 0, k: q.kinder ? 1 : 0, rt: q.rt, j: q.jahr ?? null, tag } : { l: -1, tag };
           if (q) qs.gefunden++;
         }
         qs.anzahl += teil.length;
@@ -1156,7 +1186,8 @@ export default async function filme(ctx) {
     // alte Einträge (Titel lange nicht mehr in den Charts) vergessen
     for (const [k, q] of Object.entries(zf.quali)) if (!q?.tag || tageZwischen(q.tag, tag) > m.qualiTage * 2) delete zf.quali[k];
   }
-  const qualiVon = id => { const q = zf.quali[nr(id)]; return q ? { l: q.l, horror: q.h === 1, rt: q.rt ?? null, jahr: q.j ?? null } : null; };
+  // k fehlt (vor dem 15.11.2026 gemerkt) = unbekannt; kommt mit der nächsten regulären Abfrage (qualiTage), kein Abruf extra
+  const qualiVon = id => { const q = zf.quali[nr(id)]; return q ? { l: q.l, horror: q.h === 1, kinder: 'k' in q ? q.k === 1 : null, rt: q.rt ?? null, jahr: q.j ?? null } : null; };
 
   // 5) Titel bauen + Preis-Historie
   const titel = new Map(); // id -> Titel-Objekt
@@ -1236,9 +1267,13 @@ export default async function filme(ctx) {
   }
   gruppen.serien = [...staffeln.values()].slice(0, 400)
     .sort((a, b) => (b.angebot - a.angebot) || ((serienReihe.get(a.serie) ?? 99) - (serienReihe.get(b.serie) ?? 99)) || ((a.nr ?? 0) - (b.nr ?? 0)));
-  // Neu aus den Charts
-  gruppen.neu = [...chartTreffer.entries()].filter(([, c]) => c.neu).sort((a, b) => a[1].pos - b[1].pos)
-    .map(([id]) => baue(id)).filter(t => t && !t._horror && t.typ === 'film').slice(0, m.maxNeu);
+  // Neu aus den Charts – ohne Kinderfilme (Kinder-Chart, Wikidata-Genre, Apple-Genre); in den anderen Bereichen bleiben sie
+  const istKind = t => kinderfilm({ kinderChart: kinderIds.has(t.id) || kinderReihen.has(kinderReihe(t.titel)), genres: [t.genre, chartTreffer.get(t.id)?.d?.genre], q: qualiVon(t.id) });
+  const neuRoh = [...chartTreffer.entries()].filter(([, c]) => c.neu).sort((a, b) => a[1].pos - b[1].pos)
+    .map(([id]) => baue(id)).filter(t => t && !t._horror && t.typ === 'film');
+  const ohneKinder = neuRoh.filter(t => !istKind(t));
+  gruppen.neu = ohneKinder.slice(0, m.maxNeu);
+  status['apple-charts'].kinderNichtNeu = neuRoh.length - ohneKinder.length; // so viele Kinderfilme nicht unter „Neu“
   // Angebote: Filme ≤ 3,99 € (≤ 4,99 € bei Tiefstpreis oder laufender Apple-Aktion) – nur Kuratiertes oder Chart-Titel
   const kandidaten = new Map();
   for (const t of [...gruppen.wunsch, ...gruppen.achtziger, ...gruppen.disney]) if (t.id?.startsWith('itunes:')) kandidaten.set(t.id, t);
