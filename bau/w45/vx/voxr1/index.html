@@ -61204,7 +61204,7 @@ const CL_API = {
    Schritte hier: 0 Prüfen (Brumm 50/60 Hz, Plopp-/Klick-/Atmer-Kandidaten, Zisch-Anteil, Rauschboden, Übersteuerung),
    4 Plopps (Tiefstoß < 150 Hz gegen 300–3000 Hz, 10–80 ms; nur das Band unter der Grenze wird gedämpft, die Stimme bleibt über
    ihr eigenes Spektrum vor/nach dem Stoß geschützt), 5 Brummen (Kerben-Kette mit begrenzter Tiefe auf f0·k, live-fähig: dieselben
-   Biquads als IIRFilterNode), 6 Hochpass 80 Hz (rückt hinter Plopps und Brummen: feste Reihenfolge VR1_ORDER).
+   Biquads als IIRFilterNode), 6 Hochpass 80 Hz (rückt hinter Plopps und Brummen: feste Reihenfolge VXR1_ORDER).
    Kern = vr1Make() (ohne DOM, auch in Node prüfbar). Jeder Schritt ist ein Generator, der seinen Fortschritt meldet: im Worker
    läuft er durch (Abbruch = Worker beenden), auf dem Hauptfaden (Rückfall) in Scheiben ≤ 8 ms.
    Nicht-destruktiv: der Kern liefert eine neue Fassung (Float32) – der Roh-Take bleibt unberührt.
@@ -61440,60 +61440,60 @@ function* run(x, sr, o) {
 function done(g) { let r; while (!(r = g.next()).done); return r.value; }
 return {check, run, feats, humFind, humCoefs, hum, hp, plopFind, plop, bqC, done, ORDER, VERSION: 'vr1-kern-1'};
 }
-const VR1 = {w: null, wid: 0, q: new Map(), core: null, runs: 0, last: null, prog: null, aborts: 0, slices: 0};
-const VR1_ORDER = ['plop', 'hum', 'hp'];   // Plopps vor jedem Hochpass (sie sehen den Tiefbass), Brummen vor dem Breitband-Rauschen
+const VXR1 = {w: null, wid: 0, q: new Map(), core: null, runs: 0, last: null, prog: null, aborts: 0, slices: 0};
+const VXR1_ORDER = ['plop', 'hum', 'hp'];   // Plopps vor jedem Hochpass (sie sehen den Tiefbass), Brummen vor dem Breitband-Rauschen
 function vr1Worker() {
-  if (VR1.w) return VR1.w; if (VR1.w === false) return false;
+  if (VXR1.w) return VXR1.w; if (VXR1.w === false) return false;
   try {
     const src = vr1Make.toString() + ';const K = vr1Make();const f = a => { if (a instanceof Float32Array) return a; const y = new Float32Array(a.length); for (let i = 0; i < a.length; i++) y[i] = a[i] / 32767; return y; };' +
       'onmessage = e => { const m = e.data; try { const x = f(m.x), g = K[m.op](x, m.sr, m.o || {}); let r, t = 0; while (!(r = g.next()).done) { const n = Date.now(); if (n - t > 60) { t = n; postMessage({id: m.id, prog: r.value}); } } const v = r.value, tr = v && v.y ? [v.y.buffer] : []; postMessage({id: m.id, res: v}, tr); } catch (err) { postMessage({id: m.id, err: String(err && err.message || err)}); } };';
     const u = URL.createObjectURL(new Blob([src], {type: 'application/javascript'})), w = new Worker(u);
     setTimeout(() => { try { URL.revokeObjectURL(u); } catch (e) {} }, 30000);
-    w.onmessage = e => { const m = e.data, q = VR1.q.get(m.id); if (!q) return; if (m.prog != null) { VR1.prog = m.prog; if (q.on) q.on(m.prog); return; } VR1.q.delete(m.id); clearTimeout(q.to); if (m.err) q.no(new Error(m.err)); else q.ok(m.res); };
-    w.onerror = e => { for (const q of VR1.q.values()) { clearTimeout(q.to); q.no(new Error('worker')); } VR1.q.clear(); VR1.w = false; try { e.preventDefault(); } catch (er) {} };
-    VR1.w = w;
-  } catch (e) { VR1.w = false; }
-  return VR1.w;
+    w.onmessage = e => { const m = e.data, q = VXR1.q.get(m.id); if (!q) return; if (m.prog != null) { VXR1.prog = m.prog; if (q.on) q.on(m.prog); return; } VXR1.q.delete(m.id); clearTimeout(q.to); if (m.err) q.no(new Error(m.err)); else q.ok(m.res); };
+    w.onerror = e => { for (const q of VXR1.q.values()) { clearTimeout(q.to); q.no(new Error('worker')); } VXR1.q.clear(); VXR1.w = false; try { e.preventDefault(); } catch (er) {} };
+    VXR1.w = w;
+  } catch (e) { VXR1.w = false; }
+  return VXR1.w;
 }
 /* Auftrag: op 'check' | 'run', x = Int16Array (Take) oder Float32Array; on(p) = Fortschritt 0…1. Ergebnis {p, abort()}.
    Abbruch: Worker beenden (sofort, auch mitten im Block) – der nächste Auftrag startet einen neuen. Rückfall Hauptfaden: Scheiben ≤ 8 ms. */
 function vr1Job(op, x, sr, o, on) {
-  const w = vr1Worker(), id = ++VR1.wid, t0 = performance.now(); VR1.runs++;
-  const fin = r => { VR1.last = {op, how: w ? 'worker' : 'hauptfaden', ms: Math.round(performance.now() - t0), sec: +(x.length / sr).toFixed(2)}; VR1.prog = null; return r; };
+  const w = vr1Worker(), id = ++VXR1.wid, t0 = performance.now(); VXR1.runs++;
+  const fin = r => { VXR1.last = {op, how: w ? 'worker' : 'hauptfaden', ms: Math.round(performance.now() - t0), sec: +(x.length / sr).toFixed(2)}; VXR1.prog = null; return r; };
   let abort = () => {};
   const p = new Promise((ok, no) => {
     if (w) {
-      const lim = 30000 + 2000 * x.length / sr, to = setTimeout(() => { VR1.q.delete(id); no(new Error('Zeit')); }, lim);
-      VR1.q.set(id, {ok: r => ok(fin(r)), no, to, on});
-      abort = () => { if (!VR1.q.has(id)) return; VR1.aborts++; try { w.terminate(); } catch (e) {} if (VR1.w === w) VR1.w = null; for (const [k, q] of VR1.q) { clearTimeout(q.to); q.no(new Error('abgebrochen')); VR1.q.delete(k); } VR1.prog = null; };
-      const c = x.slice(); try { w.postMessage({id, op, x: c, sr, o: o || {}}, [c.buffer]); } catch (e) { clearTimeout(to); VR1.q.delete(id); no(e); }
+      const lim = 30000 + 2000 * x.length / sr, to = setTimeout(() => { VXR1.q.delete(id); no(new Error('Zeit')); }, lim);
+      VXR1.q.set(id, {ok: r => ok(fin(r)), no, to, on});
+      abort = () => { if (!VXR1.q.has(id)) return; VXR1.aborts++; try { w.terminate(); } catch (e) {} if (VXR1.w === w) VXR1.w = null; for (const [k, q] of VXR1.q) { clearTimeout(q.to); q.no(new Error('abgebrochen')); VXR1.q.delete(k); } VXR1.prog = null; };
+      const c = x.slice(); try { w.postMessage({id, op, x: c, sr, o: o || {}}, [c.buffer]); } catch (e) { clearTimeout(to); VXR1.q.delete(id); no(e); }
       return;
     }
-    const K = VR1.core || (VR1.core = vr1Make()); let xf = x; if (!(x instanceof Float32Array)) { xf = new Float32Array(x.length); for (let i = 0; i < x.length; i++) xf[i] = x[i] / 32767; }
-    const g = K[op](xf, sr, o || {}); let stop = false; abort = () => { if (!stop) { stop = true; VR1.aborts++; no(new Error('abgebrochen')); } };
-    const step = () => { if (stop) return; const t = performance.now(); let r; VR1.slices++;
-      try { while (!(r = g.next()).done) { if (performance.now() - t > 8) { VR1.prog = r.value; if (on) on(r.value); setTimeout(step, 0); return; } } } catch (e) { stop = true; no(e); return; }
+    const K = VXR1.core || (VXR1.core = vr1Make()); let xf = x; if (!(x instanceof Float32Array)) { xf = new Float32Array(x.length); for (let i = 0; i < x.length; i++) xf[i] = x[i] / 32767; }
+    const g = K[op](xf, sr, o || {}); let stop = false; abort = () => { if (!stop) { stop = true; VXR1.aborts++; no(new Error('abgebrochen')); } };
+    const step = () => { if (stop) return; const t = performance.now(); let r; VXR1.slices++;
+      try { while (!(r = g.next()).done) { if (performance.now() - t > 8) { VXR1.prog = r.value; if (on) on(r.value); setTimeout(step, 0); return; } } } catch (e) { stop = true; no(e); return; }
       stop = true; ok(fin(r.value)); };
     setTimeout(step, 0);
   });
   return {p, abort: () => abort()};
 }
 // Take prüfen / Kette rechnen (Roh-Take bleibt; Ergebnis = neue Fassung als Float32)
-async function vr1TakeJob(op, id, o, on) { const m = S.takes && S.takes[id]; if (!m) return null; const pcm = await tkPcm(id); if (!pcm) return null; const j = vr1Job(op, pcm, m.sr, o, on); VR1.cur = j; try { return await j.p; } finally { if (VR1.cur === j) VR1.cur = null; } }
+async function vr1TakeJob(op, id, o, on) { const m = S.takes && S.takes[id]; if (!m) return null; const pcm = await tkPcm(id); if (!pcm) return null; const j = vr1Job(op, pcm, m.sr, o, on); VXR1.cur = j; try { return await j.p; } finally { if (VXR1.cur === j) VXR1.cur = null; } }
 /* Brummen live: dieselben Kerben als IIRFilterNode-Kette (Rückfall BiquadFilterNode „notch“) – für Wiedergabe/Mithören */
 function vr1HumLive(ctx, h) {
-  const K = (VR1.core || (VR1.core = vr1Make())).humCoefs(ctx.sampleRate, h || {}), nodes = [];
+  const K = (VXR1.core || (VXR1.core = vr1Make())).humCoefs(ctx.sampleRate, h || {}), nodes = [];
   for (const k of K) { let nd; try { nd = ctx.createIIRFilter([k.c[0], k.c[1], k.c[2]], [1, k.c[3], k.c[4]]); } catch (e) { nd = ctx.createBiquadFilter(); nd.type = 'notch'; nd.frequency.value = k.f; nd.Q.value = k.q; } if (nodes.length) nodes[nodes.length - 1].connect(nd); nodes.push(nd); }
   if (!nodes.length) { const g = ctx.createGain(); nodes.push(g); }
   return {input: nodes[0], output: nodes[nodes.length - 1], nodes, n: K.length};
 }
-const VR1_API = {
+const VXR1_API = {
   vr1Check: (id, o) => vr1TakeJob('check', id, o),
   vr1Run: (id, o) => vr1TakeJob('run', id, o),
-  vr1Abort: () => { if (VR1.cur) VR1.cur.abort(); },
-  vr1Info: () => ({runs: VR1.runs, last: VR1.last, prog: VR1.prog, aborts: VR1.aborts, slices: VR1.slices, order: VR1_ORDER.slice(), worker: VR1.w ? 'worker' : VR1.w === false ? 'hauptfaden' : null}),
+  vr1Abort: () => { if (VXR1.cur) VXR1.cur.abort(); },
+  vr1Info: () => ({runs: VXR1.runs, last: VXR1.last, prog: VXR1.prog, aborts: VXR1.aborts, slices: VXR1.slices, order: VXR1_ORDER.slice(), worker: VXR1.w ? 'worker' : VXR1.w === false ? 'hauptfaden' : null}),
 };
-window.__vr1 = {job: vr1Job, make: vr1Make, humLive: vr1HumLive, take: vr1TakeJob, api: VR1_API, st: VR1, noWorker: v => { VR1.w = v ? false : null; }};
+window.__vr1 = {job: vr1Job, make: vr1Make, humLive: vr1HumLive, take: vr1TakeJob, api: VXR1_API, st: VXR1, noWorker: v => { VXR1.w = v ? false : null; }};
 /* VOXR1-END */
 /* =====================================================================================================================
    VS5a (Nachtrag 2 C.5, C.4 N2-VS5a-01; r7/stimme.md §9, §10; N7V-26, N7V-27, N7S-51): Marken & Scheiben, Audio quantisieren.
@@ -84701,7 +84701,7 @@ Object.assign(SYNQUENZER, G3_API);                // G3: Vorlauf/Ausklang
 Object.assign(SYNQUENZER, G8_API);                // G8: lange Aufnahmen
 Object.assign(SYNQUENZER, G10A_API);              // G10a: Einsingen fertig
 Object.assign(SYNQUENZER, CL_API);                // VS4: Säubern
-if (typeof VR1_API === 'object') Object.assign(SYNQUENZER, VR1_API);   /* VOXR1 */
+if (typeof VXR1_API === 'object') Object.assign(SYNQUENZER, VXR1_API);   /* VOXR1 */
 Object.assign(SYNQUENZER, WP_API);                // VS5a/b: Marken & Scheiben, Dehnen, Songtext
 Object.assign(SYNQUENZER, KON_API);               // KON: Block & Konsolidieren
 Object.assign(SYNQUENZER, UE_API);                // UE-A/B: Übergänge auf der Schnittkante
