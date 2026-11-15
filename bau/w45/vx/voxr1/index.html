@@ -61880,12 +61880,12 @@ const VR1_PRE = ['click', 'plop', 'hum'], VR1_POST = ['breath', 'room', 'ess'], 
 // Befund 5: entzischen die Gesangs-Effekte (Entzischer > 0), macht die Kette kein zweites Mal Zischen – es gibt nur einen Entzischer
 const vr1G4Ess = () => { try { const g = typeof g4Active === 'function' ? g4Active() : null; return !!(g && g.ds > 0.05); } catch (e) { return false; } };
 const vr1Sig = (v, m) => JSON.stringify([v.lv, v.steps, v.br, m ? m.cl | 0 : 0, vr1G4Ess()]);
-const vr1Key = (id, m) => { const b = tkBuffer(id); return m && m.vr1 && b ? vr1Sig(m.vr1, m) + '@' + vr1Bid(b) : null; };
+const vr1VerKey = (id, m) => { const b = tkBuffer(id); return m && m.vr1 && b ? vr1Sig(m.vr1, m) + '@' + vr1Bid(b) : null; };
 function vr1Proc(id, a) {
   const m = S.takes && S.takes[id]; if (!m || !m.vr1) return null;
   if (CL.ab === 'roh') return null;                                   // A/B „Roh“
   if (VXR1.ab === 'weg' && !(UI.pop && UI.pop.name === 'takes')) { VXR1.ab = null; vr1WegFree(); }   // Blatt zu → wieder „Sauber“
-  const key = vr1Key(id, m); if (!key) return null;
+  const key = vr1VerKey(id, m); if (!key) return null;
   const c = VXR1.ver.get(id);
   if (c && c.key === key) { c.at = performance.now(); return VXR1.ab === 'weg' && c.weg ? c.weg : c.buf; }   // buf null = ging nicht: nicht in Schleife neu
   if (!VXR1.vjob.has(id)) vr1Render(id, key, m);
@@ -61893,7 +61893,7 @@ function vr1Proc(id, a) {
 }
 { const P = tkExt().proc; P.unshift(vr1Proc); }   // vor SÄUBERN (VS4); Zeitkarte/G2/G4 setzen sich später davor
 // Befund 11: „nur Entferntes“ der angewandten Fassung läuft nicht durch Gesangs-Effekte/Tonhöhe (Haken in g4Proc/g2Proc) → sofort
-function vr1Skip(id) { if (VXR1.ab !== 'weg' || !(UI.pop && UI.pop.name === 'takes')) return false; const c = VXR1.ver.get(id), m = S.takes && S.takes[id]; return !!(m && m.vr1 && c && c.weg && c.key === vr1Key(id, m)); }
+function vr1Skip(id) { if (VXR1.ab !== 'weg' || !(UI.pop && UI.pop.name === 'takes')) return false; const c = VXR1.ver.get(id), m = S.takes && S.takes[id]; return !!(m && m.vr1 && c && c.weg && c.key === vr1VerKey(id, m)); }
 function vr1StepsOf(v, sr) { const st = JSON.parse(JSON.stringify(v.steps || {})); if (st.breath && v.br && v.br.length) st.breath.list = v.br.map(b => ({t0: b[0], t1: b[1], s0: Math.round(b[0] * sr), s1: Math.round(b[1] * sr), act: b[2]})); return st; }
 // Kette für x (Float32) mit SÄUBERN cl % in der Mitte; Ergebnis {y, wg (nur Entferntes), info}; ctl.stop/ctl.j = abbrechbar
 async function vr1Pipe(x, sr, st, cl, refGet, on, ctl) {
@@ -61956,7 +61956,7 @@ function vr1Cancel(id) {
     if (P.vr1) m.vr1 = P.vr1; else delete m.vr1;
     if (P.u && UNDO[UNDO.length - 1] === P.u) { UNDO.pop(); UI.dirty.strip = true; try { if (typeof edUndoBtns === 'function') edUndoBtns(); } catch (e) {} }
     delete VXR1.prev[id]; const s = vr1Sel(id); s.lv = m.vr1 ? m.vr1.lv : s.lv; markDirty(); UI.dirty.all = true;
-  } else if (m && m.vr1) { const c = VXR1.ver.get(id), k = vr1Key(id, m); if (c && c.buf && k) Object.assign(c, {key: k, stale: true}); else if (k) VXR1.ver.set(id, {id, key: k, buf: null, wg: null, weg: null, at: 0, n: 0}); }
+  } else if (m && m.vr1) { const c = VXR1.ver.get(id), k = vr1VerKey(id, m); if (c && c.buf && k) Object.assign(c, {key: k, stale: true}); else if (k) VXR1.ver.set(id, {id, key: k, buf: null, wg: null, weg: null, at: 0, n: 0}); }
   try { clResync(); } catch (e) {} clPaint(); vr1Status(); toast('Gesang reinigen abgebrochen'); return true;
 }
 // Zustand je Take im Blatt: Befund (Prüfen), gewählte Stufe, Schritte an/aus
@@ -62039,7 +62039,7 @@ function vr1Sheet(p, box, id, ok) {
 }
 function vr1ClPaint(p, box, id0) {
   const id = id0 || p._clId, m = id && S.takes && S.takes[id], on = !!(m && m.vr1) || !!VXR1.pv, c = id && VXR1.ver.get(id);
-  const wegOk = !!VXR1.pv || !!(m && m.vr1 && c && c.weg && c.key === vr1Key(id, m));   // Befund 6
+  const wegOk = !!VXR1.pv || !!(m && m.vr1 && c && c.weg && c.key === vr1VerKey(id, m));   // Befund 6
   if (!wegOk && VXR1.ab === 'weg') VXR1.ab = null;
   for (const b of box.querySelectorAll('.clab button[data-cl],.clab button[data-vr1ab]')) {
     if (b.dataset.vr1ab) b.disabled = !wegOk || !tkAudioOk(); else if (on && tkAudioOk()) b.disabled = false;
