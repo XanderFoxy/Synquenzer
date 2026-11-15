@@ -104109,10 +104109,10 @@ function spk11Hits(x, sr, stepS, nStep) {
   const out = [];
   for (let k = 0; k < nStep; k++) {
     const l = pk[0][k], m = pk[1][k], hh = pk[2][k], nl = l / ref[0], nm = m / ref[1], nh = hh / ref[2];
-    const sn = nm > 0.2 && m >= 1.9 * l;                                                    // Snare: Mitten-Rauschen, Tiefen klein
+    const sn = (nm > 0.2 && m >= 1.9 * l) || nh > 0.7;                                     // Snare: Mitten-Rauschen, Tiefen klein – oder der lauteste Höhen-Einsatz (getrennte Drum-Ebene: Mitten oft weg)
     if (nl > 0.35 && l >= 0.5 * m && dk[k] < 0.6) out.push({k, w: 'k', v: Math.min(1, 0.45 + 0.55 * nl)});   // Kick: tief, kurz
     if (sn) out.push({k, w: 's', v: Math.min(1, 0.45 + 0.55 * Math.min(1, nm / 0.6))});
-    else if (nh > 0.35) out.push({k, w: 'h', v: Math.min(1, 0.35 + 0.5 * nh)});
+    else if (nh > 0.2) out.push({k, w: 'h', v: Math.min(1, 0.35 + 0.6 * nh)});
   }
   return out;
 }
