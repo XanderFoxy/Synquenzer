@@ -253,6 +253,120 @@ for (const [w, h] of [[428, 926], [926, 428], [926, 370]]) {
   ok(tag + ': keine Konsolenfehler', errs.length === 0, errs.slice(0, 3));
   await ctx.close();
 }
+// ---------- Prüfung MTX3b (Befunde 1–11): Messungen über die App-Funktionen, Touch für Blatt/Knopf ----------
+const DT = 4;
+{
+  const {ctx, p, errs, T} = await open(428, 926);
+  const r = await p.evaluate(async () => {
+    const o = {}, own = () => Object.keys(S.song.own || {}).length;
+    const orphan = () => Object.values(S.song.own || {}).filter(c => c.from && c.from.t >= NT()).length;
+    const fresh = chain => { while (UNDO.length && mtx3Parts(-1).length) undo(); __only(); SYNQUENZER.songFromChain(chain || [{scene: 0, bars: 2}, {scene: 1, bars: 1}]); };
+    // Bezug ohne Aufteilen
+    fresh(); SYNQUENZER.gr2.remix('italo', {k: 100, art: 'm'}); o.refM = __pads().sum; undo();
+    gen4DoScene(0, gr2Style('italo'), 70, {src: new Map()}, false); o.refG4 = S.tracks[DRUM_T].clips[0].notes.filter(n => n.n === 42).length; undo();
+    // B1: „Nur diese Schritte“ (2 von 6 HH) → Remix / GEN4
+    { const c = S.tracks[DRUM_T].clips[0], ix = c.notes.map((n, k) => (n.n === 42 ? k : -1)).filter(k => k >= 0);
+      const j = SYNQUENZER.mtx3b.out(['hatC'], 0, ix.slice(0, 2))[0];
+      SYNQUENZER.gr2.remix('italo', {k: 100, art: 'm'}); const a = __pads(); o.b1 = {m: a.sum, dbl: a.dbl}; undo();
+      gen4DoScene(0, gr2Style('italo'), 70, {src: new Map()}, false);
+      o.b1g = {drums: S.tracks[DRUM_T].clips[0].notes.filter(n => n.n === 42).length, hh: S.tracks[j].clips[0].notes.filter(n => n.n === 42).length}; undo(); undo(); }
+    // B2: Aufteilen → Remix → Zusammenführen (Treffer je Pad bleiben, keine Waisen-Versionen); ↶ holt alles zurück
+    { fresh(); SYNQUENZER.mtx3.split(['hatC', 'snare']); SYNQUENZER.gr2.remix('italo', {k: 100, art: 'm'}); const a = __pads(); o.b2a = a.sum;
+      const A = await __R(); SYNQUENZER.mtx3.merge(); o.b2b = __pads().sum; o.b2orph = orphan(); const B = await __R(); o.b2db = __db(A, B);
+      undo(); o.b2u = __pads().sum; o.b2nt = NT();
+      // DRUMS spielt in Szene 1 wieder das Original (ohne HH), HH ZU seine Version → Zusammenführen legt eine Version von DRUMS an
+      sx9Set(S.song, DRUM_T, 0, 2, null); const a3 = __pads().sum; const C = await __R(); SYNQUENZER.mtx3.merge(); o.b2c = {vor: a3, nach: __pads().sum}; const D = await __R(); o.b2cdb = __db(C, D); undo(); undo(); undo(); }
+    // B4: „dazu“ in einen kürzeren Clip (DRUMS 2 Takte, HH ZU 1 Takt) und auf eine schon belegte Stelle
+    { fresh(); const D0 = S.tracks[DRUM_T], c = D0.clips[0], j = SYNQUENZER.mtx3.split(['hatC'])[0];
+      const L0 = clipB(c), ns = c.notes.map(n => Object.assign({}, n, {t: n.t + L0})); c.notes = c.notes.concat(ns); c.len *= 2;
+      for (const t of [3, 3.25, 3.5]) c.notes.push({t: L0 + t, d: .1, n: 42, v: .9}); c.notes.sort((x, y) => x.t - y.t); clipChanged(DRUM_T, 0);
+      SYNQUENZER.songFromChain([{scene: 0, bars: c.len}]); const A = await __R();
+      SYNQUENZER.mtx3b.out(['hatC'], null); const h = S.tracks[j].clips[0]; const B = await __R();
+      o.b4 = {len: h.len, beyond: h.notes.filter(n => n.t >= clipB(h) - 1e-9).length, db: __db(A, B), last: SYNQUENZER.mtx3b.info().last}; undo();
+      // belegte Stelle: HH ZU hat dort schon einen Schlag (leiser) → ein Schlag, der lautere, mit Hinweis
+      const hz = S.tracks[j].clips[0], t0 = hz.notes[0].t; hz.notes[0].v = .3; c.notes.push({t: t0, d: .1, n: 42, v: .95}); c.notes.sort((x, y) => x.t - y.t); clipChanged(DRUM_T, 0);
+      SYNQUENZER.mtx3b.out(['hatC'], 0); const at = S.tracks[j].clips[0].notes.filter(n => Math.abs(n.t - t0) < 1e-6);
+      o.b4b = {n: at.length, v: at[0] && at[0].v, dup: SYNQUENZER.mtx3b.info().last.dup}; undo(); }
+    // B5: duplizierte Szene (gleiche Saat) + Grundmuster auf DRUMS
+    { fresh(); const k = mtxSceneDup(0, true); const j = SYNQUENZER.mtx3.split(['hatC'])[0];
+      gr1Pattern(DRUM_T, 0, GR1_STYLES[0].id); o.b5 = {drums: S.tracks[DRUM_T].clips[0].notes.filter(n => n.n === 42).length, hh: S.tracks[j].clips[0].notes.length, k}; undo(); undo(); undo(); }
+    // B6: erst Remix, dann HH auslagern (ganze Töne) – und ebenso Aufteilen: im Song spielen die HH auf der neuen Spur; ↶
+    { fresh(); SYNQUENZER.gr2.remix('italo', {k: 70, art: 'u'}); const a = __pads(); o.b6a = a.per.hatC;
+      SYNQUENZER.mtx3b.out(['hatC'], null); o.b6b = __pads().per.hatC; o.b6v = SYNQUENZER.mtx3b.info().last.ver; undo(); o.b6u = __pads().per.hatC;
+      SYNQUENZER.mtx3.split(['hatC']); o.b6s = __pads().per.hatC; undo(); undo(); }
+    // B7: Schritt-Editor der Einzelspur mit D1-Länge 12: Schritte 13–16 gedimmt, Klammer an 12
+    { fresh(); const j = SYNQUENZER.mtx3.split(['hatC'])[0], c = S.tracks[j].clips[0]; c.lanes = {42: {len: 12}}; clipChanged(j, 0);
+      selectTrack(j); openRoll(j, 0); await __W(500);
+      const cells = [...EL.rollSheet.querySelectorAll('.mtx3bd .se-cell')];
+      o.b7 = {n: cells.length, dim: cells.map((x, i) => (x.classList.contains('d1o') ? i : -1)).filter(i => i >= 0), end: cells.findIndex(x => x.classList.contains('d1e'))}; closeRoll(); undo(); }
+    // B3: Speichern/Laden: Versionen der Einzelspur behalten Saat, Chance, Wirbel
+    { fresh([{scene: 0, bars: 4}]); const j = SYNQUENZER.mtx3.split(['hatC'])[0]; SYNQUENZER.gr2.remix('italo', {k: 100, art: 'm'});
+      const vs = t => Object.values(S.song.own || {}).filter(c => c.from && c.from.t === t);
+      vs(j).forEach(V => V.notes.forEach((n, k) => { if (k % 2) n.p = .5; if (k % 3 === 0) n.r = 2; }));
+      const d = () => vs(j).map(V => [V.seed != null, V.notes.filter(n => n.p != null).length, V.notes.filter(n => n.r != null).length].join('/')).join(' ');
+      o.b3a = d(); const A = await __R(); const pf = JSON.stringify(SQStore.buildProjectFile(S, null, VERSION)); sx14Put(pf);
+      o.b3b = d(); const B = await __R(); o.b3db = __db(A, B); o.b3rt = JSON.stringify(SQStore.buildProjectFile(S, null, VERSION).project) === JSON.stringify(JSON.parse(pf).project); }
+    return o;
+  });
+  const eq = (x, y) => Object.keys(y).every(k => x[k] === y[k]) && Object.keys(x).every(k => x[k] === y[k]);
+  ok('Prüfung 1: „Nur diese Schritte“ (2 von 6 HH) → Remix Stil-Muster: Treffer je Pad wie ohne Aufteilen, 0 Doppel', eq(r.b1.m, r.refM) && r.b1.dbl === 0, {mit: r.b1, ohne: r.refM});
+  ok('Prüfung 1: … → GEN4 Szene: HH einmal (DRUMS 0, HH ZU = ohne Aufteilen)', r.b1g.drums === 0 && r.b1g.hh === r.refG4, {mit: r.b1g, ohne: r.refG4});
+  ok('Prüfung 2: Zusammenführen nach Remix: Treffer je Pad bleiben, Song klingt gleich, keine Waisen-Versionen', eq(r.b2b, r.b2a) && r.b2db <= -60 && r.b2orph === 0, {vor: r.b2a, nach: r.b2b, dB: r.b2db, waisen: r.b2orph});
+  ok('Prüfung 2: ↶ nach Zusammenführen holt Einzelspuren und Versionen zurück', eq(r.b2u, r.b2a) && r.b2nt === 8, {u: r.b2u, nt: r.b2nt});
+  ok('Prüfung 2: DRUMS spielt Original, Einzelspur eine Version → Zusammenführen: gleiche Treffer, Summe gleich', eq(r.b2c.nach, r.b2c.vor) && r.b2cdb <= -60, {b2c: r.b2c, dB: r.b2cdb});
+  ok('Prüfung 3: Speichern/Laden: Versionen der Einzelspur behalten Saat/Chance/Wirbel, Summe gleich, Rundreise byte-gleich', r.b3a === r.b3b && /^true\/[1-9]/.test(r.b3b) && r.b3db <= -60 && r.b3rt, {vor: r.b3a, nach: r.b3b, dB: r.b3db, rt: r.b3rt});
+  ok('Prüfung 4: „dazu“ in kürzeren Clip: Clip wiederholt (2 Takte), nichts hinter dem Ende, Summe gleich', r.b4.len === 2 && r.b4.beyond === 0 && r.b4.db <= -60 && r.b4.last.kept === 0, r.b4);
+  ok('Prüfung 4: „dazu“ auf belegte Stelle: ein Schlag (der lautere), gemeldet', r.b4b.n === 1 && r.b4b.v >= .95 - 1e-6 && r.b4b.dup >= 1, r.b4b);
+  ok('Prüfung 5: duplizierte Szene + Grundmuster auf DRUMS: DRUMS ohne HH', r.b5.drums === 0 && r.b5.hh > 0, r.b5);
+  ok('Prüfung 6: erst Remix, dann Auslagern ganze Töne: HH im Song nur auf HH ZU; ↶ zurück; Aufteilen ebenso', !(r.b6b || {})[DT] && (r.b6b || {})[6] === r.b6a[DT] && r.b6v > 0 && (r.b6u || {})[DT] === r.b6a[DT] && !(r.b6s || {})[DT] && (r.b6s || {})[6] === r.b6a[DT], {remix: r.b6a, aus: r.b6b, ver: r.b6v, u: r.b6u, split: r.b6s});
+  ok('Prüfung 7: Schritt-Editor der Einzelspur, D1-Länge 12: Schritte 13–16 gedimmt, Klammer an 12', r.b7.n === 16 && r.b7.dim.join() === '12,13,14,15' && r.b7.end === 11, r.b7);
+  ok('Prüfung: keine Konsolenfehler (hochkant, Teil 1)', errs.length === 0, errs.slice(0, 3));
+  await ctx.close();
+}
+{
+  const {ctx, p, errs, T} = await open(428, 926);
+  // Befund 8: Tastatur-Akkord während Overdub = ein Schlag je Stelle
+  const r8 = await p.evaluate(async () => {
+    while (UNDO.length && mtx3Parts(-1).length) undo(); __only(); const j = SYNQUENZER.mtx3.split(['hatC'])[0];
+    S.settings.countIn = 0; S.settings.inQuant = '1/16'; S.bpm = 120; selectTrack(j); launchScene(0); ensureAudio(); play(); await __W(500);
+    const c = S.tracks[j].clips[0], n0 = c.notes.length;
+    recPress(); for (let k = 0; k < 60 && rec.state !== 'overdub'; k++) await __W(50);
+    for (let k = 0; k < 2; k++) { for (const n of [60, 64, 67]) inputDown(n, 'ch' + n, .8); await __W(120); for (const n of [60, 64, 67]) inputUp('ch' + n); await __W(700); }
+    recPress(); await __W(400); stop(); await __W(300);
+    const by = new Map(); for (const n of c.notes) { const k = Math.round(n.t * 4); by.set(k, (by.get(k) || 0) + 1); }
+    const o = {neu: c.notes.length - n0, max: Math.max(...by.values()), st: rec.state}; undo(); undo(); return o;
+  });
+  ok('Prüfung 8: Tastatur-Akkord (3 Tasten) auf der Einzelspur: ein Schlag je Schritt', r8.max === 1 && r8.neu >= 0 && r8.neu <= 2, r8);
+  // Befund 9: Drum-Editor mit KICK gewählt › [Auslagern ▾] → Hi-Hat vorgewählt
+  await p.evaluate(() => { while (UNDO.length && mtx3Parts(-1).length) undo(); closeEditor && closeEditor(); selectTrack(DRUM_T); openRoll(DRUM_T, 0); }); await sleep(700);
+  let q = await R_(p, () => EL.drumSheet.querySelector('.mtx3bdb')); if (q) await T.tap(q.cx, q.cy); await sleep(400);
+  const pre = await p.evaluate(() => ({pad: DRUM_VOICES[ED.dVoice | 0].id, sel: UI.pop ? [...UI.pop.el.querySelectorAll('.mtx3-v .mbtn.on')].map(x => x.dataset.v) : null}));
+  ok('Prüfung 9: KICK im Drum-Editor › [Auslagern ▾]: Hi-Hat vorgewählt, nicht KICK', pre.pad === 'kick' && pre.sel && pre.sel.join() === 'hatC', pre);
+  await p.evaluate(() => { closePop(); closeEditor(); });
+  ok('Prüfung: keine Konsolenfehler (hochkant)', errs.length === 0, errs.slice(0, 3));
+  await ctx.close();
+}
+// Befund 10/11: quer 926×370 – [Auf eigene Spur] ohne Wischen im Bild (16 HH, „Nur diese Schritte“); [Pad-Klang] Trefferfläche ≥ 44 px
+{
+  const {ctx, p, errs, T} = await open(926, 370);
+  await p.evaluate(() => { __only(); const c = S.tracks[DRUM_T].clips[0]; c.notes = c.notes.filter(n => n.n !== 42); for (let k = 0; k < 16; k++) c.notes.push({t: k * .25, d: .1, n: 42, v: .8}); c.notes.sort((a, b) => a.t - b.t); clipChanged(DRUM_T, 0);
+    selectTrack(DRUM_T); openRoll(DRUM_T, 0); ED.dVoice = DRUM_VOICES.findIndex(x => x.id === 'hatC'); safeRebuild(buildDrumEd); }); await sleep(700);
+  let q = await R_(p, () => EL.drumSheet.querySelector('.mtx3bdb')); if (q) await T.tap(q.cx, q.cy); await sleep(400);
+  q = await R_(p, () => UI.pop && UI.pop.el.querySelector('[data-m3b="steps"]')); if (q) await T.tap(q.cx, q.cy); await sleep(400);
+  const g = await p.evaluate(() => { const P = UI.pop && UI.pop.el; if (!P) return null; const go = P.querySelector('[data-m3b="go"]').getBoundingClientRect(), st = [...P.querySelectorAll('.mtx3b-st .mbtn')];
+    return {steps: st.length, goTop: Math.round(go.top), goBot: Math.round(go.bottom), vh: innerHeight, scrollTop: P.scrollTop, min: Math.round(Math.min(...st.map(b => Math.min(b.getBoundingClientRect().width, b.getBoundingClientRect().height))))}; });
+  await p.screenshot({path: dir + '/mtx3b-p-auslagern-schritte-926x370.png'});
+  ok('Prüfung 10: quer 926×370, 16 HH „Nur diese Schritte“: [Auf eigene Spur] im Bild ohne Wischen, Schritte ≥ 44 px', g && g.steps === 16 && g.goTop >= 0 && g.goBot <= g.vh && g.min >= 44, g);
+  q = await R_(p, () => UI.pop && UI.pop.el.querySelector('[data-m3b="go"]')); if (q) await T.tap(q.cx, q.cy); await sleep(500);
+  const done = await p.evaluate(() => ({nt: NT(), hh: S.tracks[6] && S.tracks[6].clips[0] ? S.tracks[6].clips[0].notes.length : 0}));
+  ok('Prüfung 10: … Tipp darauf lagert die 16 Schritte aus', done.nt === 7 && done.hh === 16, done);
+  // [Pad-Klang] im Schritt-Editor der Einzelspur
+  await p.evaluate(() => { closeEditor(); selectTrack(6); openRoll(6, 0); }); await sleep(700);
+  const pk = await p.evaluate(() => { const b = [...EL.rollSheet.querySelectorAll('button')].find(x => x.textContent.trim() === 'Pad-Klang'); if (!b) return null; const q = b.getBoundingClientRect(), a = getComputedStyle(b, '::after'); return {w: Math.round(q.width), h: Math.round(q.height), hit: Math.round(q.height - (parseFloat(a.top) || 0) - (parseFloat(a.bottom) || 0)), pos: a.position}; });
+  ok('Prüfung 11: [Pad-Klang] Trefferfläche ≥ 44 px (Leiste bleibt gleich hoch)', pk && pk.hit >= 44 && pk.pos === 'absolute', pk);
+  ok('Prüfung: keine Konsolenfehler (quer)', errs.length === 0, errs.slice(0, 3));
+  await ctx.close();
+}
 await b.close();
 const bad = res.filter(x => !x.ok);
 console.log('\nERGEBNIS ' + (res.length - bad.length) + '/' + res.length + (bad.length ? ' – offen: ' + bad.map(x => x.name).join(' | ') : ' – alles OK'));
