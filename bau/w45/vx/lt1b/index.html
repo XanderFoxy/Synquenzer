@@ -109305,16 +109305,43 @@ function lt1GridOk() {   // Haken in imp1Place: true = Raster wurde in diesem Ab
    werden erst beim Schreiben kopiert (Stück für Stück). Passt beim Ablegen etwas nicht (anderes Audio, Versatz, Rate, noch nicht
    fertig), läuft der alte Weg. Gleiche Werte: dieselbe Rechnung (pcm[i] * (1 / 32767)) in dieselbe Puffer-Art wie tkToBuffer. */
 function lt1PreDrop() { const p = LT1.pre; LT1.pre = null; if (p && p.tm) clearTimeout(p.tm); }
-function lt1PreStart(c) {   // Haken in imp1Run nach „fertig“
-  lt1PreDrop();
+/* LT1B (Paket LT1B, 4.76 – Rest der Zweitprüfung): Speicher begrenzen und Neustart.
+   (1) Die Vorbereitung hält 6 Byte je Probe (Int16-Kopie + Float32-AudioBuffer, ≈ 17 MB je Minute bei 48 kHz), solange das Blatt offen
+       ist. Obergrenze LT1_MAXB = 100 MiB (≈ 6 min bei 48 kHz, 6,6 min bei 44,1 kHz, 3 min bei 96 kHz) – darüber der alte Weg.
+       Keine Vorbereitung, wenn im Blatt „Als Gesang importiert“ steht (eigener Take-Weg) oder das Blatt schon einen Take hat
+       (imp1Place nimmt dann c.take wieder, imp1Take läuft nicht) – eine liegende Vorbereitung wird dann sofort freigegeben.
+   (2) Neustart: lt1PreCheck (Haken in imp1Paint, imp1Sheet, pshUndock) vergleicht Versatz/Länge/Dehnen mit dem Blatt. Passt die
+       Vorbereitung nicht mehr („1“ verschoben, Tempo/Taktart mit anderem Versatz, Blatt aus der Leiste zurück), wird sie sofort
+       freigegeben und nach 400 ms Ruhe neu gestartet (entprellt: jede weitere Änderung schiebt den Start). Ergebnis unverändert:
+       lt1Take prüft wie bisher Audio, Versatz und Rate, sonst alter Weg. */
+const LT1_MAXB = 100 * 1048576;
+function lt1PreWant(c) {   // LT1B: lohnt eine Vorbereitung für c (Blatt offen, fertig, kein Dehnen, unter der Grenze)? → Versatz und Längen, sonst null
+  if (!c || IMP1.cur !== c || c.st !== 'fertig' || !c.pcm || !(c.sr > 0) || !tkAudioOk() || !imp1Pop()) return null;
+  if (c.made === 'Als Gesang importiert' || (c.take && S.takes && S.takes[c.take])) return null;   // Gesang gewählt (eigener Weg) / Take wird wiederverwendet
+  const q = c.bpm / nx1ImpTarget(c); if (!(Math.abs(q - 1) < 1e-4 || q < .5 || q > 2 || !c.x)) return null;   // wird gedehnt (nx1ImpView) → anderes Audio
+  const src = c.pcm, off = Math.round(imp1Geo(c).org * c.sr), s0 = Math.min(Math.max(0, off), src.length), d0 = Math.max(0, -off), m = src.length - s0, n = d0 + m;
+  if (n * 6 > LT1_MAXB) { LT1.big = n; return null; }   // zu lang: alter Weg (kein zusätzlicher Speicher, solange das Blatt offen ist)
+  return {off, s0, d0, m, n};
+}
+function lt1PreCheck() {   // LT1B: Haken in imp1Paint, imp1Sheet und pshUndock – passt die Vorbereitung noch zum Blatt? sonst sofort frei, nach Ruhe neu
   try {
-    if (!c || !c.pcm || !(c.sr > 0) || !tkAudioOk() || !imp1Pop()) return;
-    const q = c.bpm / nx1ImpTarget(c); if (!(Math.abs(q - 1) < 1e-4 || q < .5 || q > 2 || !c.x)) return;   // wird gedehnt (nx1ImpView) → anderes Audio
-    const src = c.pcm, sr = c.sr, off = Math.round(imp1Geo(c).org * sr), s0 = Math.min(Math.max(0, off), src.length), d0 = Math.max(0, -off), m = src.length - s0, n = d0 + m;
+    const c = IMP1.cur, p = LT1.pre, w = lt1PreWant(c);
+    if (p && (!w || p.c !== c || p.src !== c.pcm || p.sr !== c.sr || p.off !== w.off || p.n !== w.n)) { lt1PreDrop(); LT1.drop = (LT1.drop || 0) + 1; }
+    clearTimeout(LT1.rs); LT1.rs = 0;
+    if (!w || LT1.pre) return;
+    LT1.rs = setTimeout(() => { LT1.rs = 0; const c1 = IMP1.cur; if (!LT1.pre && c1 === c && lt1PreWant(c1)) { LT1.re = (LT1.re || 0) + 1; lt1PreStart(c1); } }, 400);
+  } catch (e) {}
+}
+function lt1PreStart(c) {   // Haken in imp1Run nach „fertig“; LT1B: auch Neustart aus lt1PreCheck
+  lt1PreDrop(); clearTimeout(LT1.rs); LT1.rs = 0;
+  try {
+    const w = lt1PreWant(c); if (!w) return;   // LT1B: Grenze, Gesang, Take liegt vor, Dehnen
+    const src = c.pcm, sr = c.sr, {off, s0, d0, m, n} = w;
     const pre = LT1.pre = {c, src, sr, off, n, pcm: null, buf: null, d: null, i: 0, f: 0, ok: false, tm: 0}, K = 1 / 32767;
     const step = () => {
       pre.tm = 0; if (LT1.pre !== pre) return;
       if (IMP1.cur !== c || c.st !== 'fertig' || c.pcm !== src || !imp1Pop()) { lt1PreDrop(); return; }   // Blatt zu / neue Datei: freigeben
+      if (pre.ok) { lt1PreCheck(); if (LT1.pre !== pre) return; }   // LT1B: liegt bereit – passt sie noch (Versatz, Gesang, Take)? sonst frei + Neustart
       const t0 = performance.now();
       try {
         if (pre.ok) {}
