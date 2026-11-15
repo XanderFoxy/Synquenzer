@@ -17,3 +17,5 @@
 - 13:24 Kette fertig (Last 2,9): kern 53/60, smoke [], dev 77/83, app 12/14, vx1 61/61, vx2 14/14, vx3 15/15, chr2 82/82.
 - 13:26 App-Zeit wiederholt (Last 2,5 → 2,1): 12/14, Prüfen ohne Long Task / Lücke 88 ms, Anwenden 50–55 ms + 103 ms / Lücke 110 ms (außerhalb Block). Nachbau B48/C44: 10/9, 10/9.
 - 13:28 VOXR1E-Schritt (Long Tasks/Raumton/Klicks) begonnen. Platte / voll (7,8 MB frei): Sicherung index.vor-lt.html und Arbeitskopie unter /dev/shm/voxr1e. Last load average: 0.50, 1.67, 1.59
+- 13:37 CPU-Profil (voxr1d-w/prof.mjs, profan.cjs): Die 20–25 Long Tasks à 50–60 ms beim Anwenden sind SYNQUENZER.clPlayHash (Test-Probe, FNV über 34,5 MB, 98 % self), gerufen alle ≈ 256 ms aus dem settle() des Prüfers; das Anwenden selbst (Tap → fertig) hatte keine Long Task. Prüfen: 1× 58–63 ms = ensureAudio/buildBuffers beim ersten Touch (Audio-Start, außerhalb). Last 1,2–5.
+- 13:37 VOXR1D-LT eingebaut (clPlayHash in VXR1_API: gleicher FNV-Wert, je Inhalt gemerkt mit schnellem Prüfwert, Vorrechnung in Scheiben nur nach erster Probe). App-Prüfer 12/14, Hashes gleich (d56b3e8a / 3c8c2bcc), Zeiten unbrauchbar: Last 12,5 → 19,3.
