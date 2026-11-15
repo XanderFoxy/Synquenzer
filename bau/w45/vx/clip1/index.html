@@ -96848,7 +96848,7 @@ function mtx3Out(t, s, notes, to, copy, quiet) {
      derselben Spur ein Knopf „Szene n“ (klein: Länge). Die Auswahl wird dort ein eigener Clip: ab dem Takt der ersten Note, Länge = bis zum Ende der
      letzten Note auf ganze Takte aufgerundet (1–64, Schläge je Takt der Quelle, auch 3/4), Tonart / Taktart / Raster wie die Quelle. Der Schalter
      NOTEN Verschieben │ Kopieren gilt auch hier. Ein ↶ (Gruppe: neuer Clip + Quelle). Song und Teile bleiben (neue Szene), es startet nichts.
-     Toast mit [Öffnen]; im Noten-Editor (dort sonst ohne Knöpfe) dockt er auf dem Titel – nie über den Werkzeugen.
+     Toast mit [Öffnen]; im Noten-Editor (dort sonst ohne Knöpfe) dockt er auf dem Titel (quer: TAKT-Anzeige) – nie über den Werkzeugen.
    • Drum-Schritt-Editor › [Auslagern ▾] › Abschnitt „Als neuer Clip · DRUMS“: was oben unter TÖNE / WAS gewählt ist („Ganze Töne“ = alle Schläge
      dieser Töne in dieser Szene, „Nur diese Schritte“ = die gewählten) wird ein neuer DRUMS-Clip in der freien Szene: Kopie des Clips (Länge,
      Taktart, Spur-Längen und Locks der Töne) nur mit diesen Schlägen. Immer Kopieren, die Quelle bleibt. Ein ↶.
@@ -96887,10 +96887,14 @@ function clip1SecHtml(t, len, attr, alt) {
 const clip1Open = (t, x) => ({label: 'Öffnen', clip1: true, fn: () => { try { if (R.editor === 'roll') closeRoll(); } catch (e) { logErr(e); } openRoll(t, x); }});
 // toast-Haken: im Noten-Editor bleibt nur [Öffnen] des neuen Clips (die übrigen Knöpfe hat der Editor selbst: ↶ ↷)
 const clip1RollActs = acts => acts.filter(a => a && a.clip1);
-// toastHome-Haken: dort dockt der Toast auf dem Titel des Editors („Synth 1 · Szene 1“), nie über den Werkzeugen
+// toastHome-Haken: dort dockt der Toast auf dem Titel des Editors („Synth 1 · Szene 1“), nie über den Werkzeugen; quer ist der Titel schmal
+// (die Werkzeuge stehen daneben im Kopf) – dann auf der TAKT-Anzeige oben (eine Anzeige, quer ohne Tipp-Funktion)
 function clip1ToastHome() {
   if (R.editor !== 'roll' || !UI.toastActs || !EL.rollSheet || !EL.rollSheet.classList.contains('open')) return null;
-  const q = ED.rollHT; return q && q.isConnected && q.offsetWidth > 0 && q.offsetHeight > 0 ? {kind: 'lcd', ref: q, wp: true} : null;
+  const v = q => !!(q && q.isConnected && q.offsetWidth > 0 && q.offsetHeight > 0), q = ED.rollHT, k = EL.takt;
+  if (v(q) && q.offsetWidth >= 240) return {kind: 'lcd', ref: q, wp: true};
+  if (v(k) && k.offsetWidth > (v(q) ? q.offsetWidth : 0)) return {kind: 'lcd', ref: k, wp: true};
+  return v(q) ? {kind: 'lcd', ref: q, wp: true} : null;
 }
 
 /* ---------- Noten-Editor: Auswahl → neuer Clip derselben Spur ---------- */
