@@ -105698,6 +105698,7 @@ function vx1rAnalyse(id, rn) {   // SPK5-R: rn = Wiederholung, weil die Quelle w
     const t0 = performance.now(), g2 = typeof g2Analyse === 'function' ? g2Analyse(id).catch(() => null) : null;   // Tonhöhe: VS2/G2 (eigener Worker, gleichzeitig)
     const p = Promise.all([wpCall({op: 'vxa', x: b.getChannelData(0), sr: b.sampleRate, marks: ts}), g2]).then(([r]) => {
       const A = Object.assign({key, id, sr: b.sampleRate, len: b.length / b.sampleRate, t: ts}, r);
+      if (typeof vxr2An === 'function') vxr2An(id, A);   /* VXR2: Anker-Abstand/Anlauf aus der lagefesten Rechnung */
       VX1R.ana.set(id, A); while (VX1R.ana.size > 6) VX1R.ana.delete(VX1R.ana.keys().next().value);
       VX1R.lastAn = {id, n: ts.length, ms: Math.round(performance.now() - t0), how: WP.how};
       if ((rn | 0) < 2 && vx1rSrc(id) !== b) return vx1rAnalyse(id, (rn | 0) + 1);   // SPK5-R: Quelle wechselte während der Rechnung (G4/G2/Säubern fertig) → neu messen
@@ -109738,9 +109739,10 @@ function imp2bYield(dst, mk, an, k, d, q, LK) {
    Stück-Wahl (VX2: Erkennung, 'vxa', Tonhöhen-Noten) an derselben Ausschnitt-Lage – immer genau 0,25 s Stille vor dem ersten Ton –
    und die Zeiten werden zurückgeschoben. Damit ist die Stück-Wahl gleich, egal wie lang der Vorlauf ist. Gemessen wird sie an der
    Quelle vor G4 (wie Erkennung und Tonhöhe schon bisher) – die G4-Fassung rechnet selbst in Rahmen ab Probe 0 und ist nicht lagefest.
-   Analyse-Felder, Anker und Anlauf bleiben wie bisher am ganzen Take und an der gehörten Fassung (Op 'vxa' in vx1rAnalyse).
+   Die Analyse-Felder (Teilen, Anzeige) bleiben am ganzen Take (Op 'vxa' in vx1rAnalyse); Anker-Abstand und Anlauf je Marke kommen aus
+   der lagefesten Rechnung (sonst springt der Anlauf mit dem 10-ms-Raster um 5 ms, einzeln bis 37 ms).
    Ohne Vorlauf (aufgenommene Takes) oder ohne Worker: alles wie bisher.
-   Einhänge-Zeilen (Kommentar „VXR2“): wpDetect, vx2Marks. Test-API: __vxr2 am window. */
+   Einhänge-Zeilen (Kommentar „VXR2“): wpDetect, vx2Marks, vx1rAnalyse. Test-API: __vxr2 am window. */
 const VXR2 = {on: true, Z0: .25, last: null};
 // Vorlauf: führende Nullproben über 0,25 s hinaus (0 = kein Ausschnitt)
 function vxr2Off(x, sr) {
@@ -109756,7 +109758,8 @@ async function vxr2Det(b) {
   return r;
 }
 // Stück-Wahl (VX2) an der lagefesten Ausschnitt-Lage. undefined = nicht zuständig (kein Vorlauf, kein Worker) → VX2 rechnet wie bisher.
-// An = null: vx1rAnalyse misst Anker/Anlauf wie bisher an der gehörten Fassung (gleiche Rechnung wie vx2AnLead, Op 'vxa').
+// An = null: vx1rAnalyse rechnet die Analyse-Felder am ganzen Take (gehörte Fassung); Anker-Abstand und Anlauf (relativ zur Marke, gleiche
+// Rechnung wie vx2AnLead/Op 'vxa') setzt vxr2An aus dieser lagefesten Rechnung ein.
 async function vxr2Marks(id, b, raw, rn) {
   const sr = b.sampleRate, pb = wpBase(id, null, true);
   if (!pb || pb.length !== b.length || pb.sampleRate !== sr) return undefined;
@@ -109769,10 +109772,16 @@ async function vxr2Marks(id, b, raw, rn) {
   const b2 = vx1rSrc(id); if ((rn | 0) < 2 && b2 && b2 !== b) return vx2Marks(id, b2, (rn | 0) + 1);   // SPK5-R: Quelle wechselte → neu
   const pick = A ? vx2Pick(ro, A, G, len - o) : null, mk = pick ? wpNormMarks(pick.map(k => Object.assign({}, k, {t: (Math.round(k.t * sr) + off) / sr})), len) || [] : null;
   if (!mk || mk.length < 2) { VX2.res.set(id, {raw, bid, mk: null}); VX2.last = {id, roh: raw.length, n: null, why: G ? 'zu wenig Noten' : 'keine Tonhöhe', vxr2: off}; return null; }
-  VX2.res.set(id, {raw, bid, mk, An: null}); while (VX2.res.size > 8) VX2.res.delete(VX2.res.keys().next().value);
+  const ts = mk.map(k => k.t), al = vx2AnLead(xo, sr, A, ts.map(t => Math.round(t * sr - off) / sr));   // Anker/Anlauf lagefest (relativ zur Marke)
+  VX2.res.set(id, {raw, bid, mk, An: null, inv: {ts: ts.join(','), an: al.an, lead: al.lead}}); while (VX2.res.size > 8) VX2.res.delete(VX2.res.keys().next().value);
   VX2.last = {id, roh: raw.length, n: mk.length, noten: G && G.notes ? G.notes.length : 0, ms: Math.round(performance.now() - t0), quelle: rn | 0, vxr2: off, src: pick.reduce((q, k) => (q[k.vc ? 'stimmhaft' : k.src || 'on'] = (q[k.vc ? 'stimmhaft' : k.src || 'on'] | 0) + 1, q), {})};
   VXR2.last = {id, off, ms: VX2.last.ms, n: mk.length};
   return {mk, b};
+}
+// vx1rAnalyse (ganzer Take, gehörte Fassung): Anker-Abstand und Anlauf aus der lagefesten Rechnung, wenn sie zu denselben Marken gehört
+function vxr2An(id, A) {
+  const z = VX2.res.get(id), v = z && z.inv; if (!v || !A || !A.t || !v.an || v.an.length !== A.t.length || v.ts !== A.t.join(',')) return;
+  A.an = Float32Array.from(v.an); A.lead = Float32Array.from(v.lead); A.vxr2 = true;
 }
 window.__vxr2 = {on: v => { if (v != null) VXR2.on = !!v; return VXR2.on; }, last: () => VXR2.last, off: (x, sr) => vxr2Off(x, sr)};
 /* ===== VXR2-END ===== */
