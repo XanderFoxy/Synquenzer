@@ -14,6 +14,8 @@ export function oeffne(plan, opt) {
   if (aktiv) aktiv.beenden('gestoppt', true);
   const { T, einst = {}, quelle = 'frei', beiEnde, riskant = false, test = false } = opt;
   const host = $('#sitzung'); host.classList.remove('figur-gross'); host.classList.toggle('riskant', riskant);
+  const kk = plan.runden > 0;   // Kopfkarte „Runde 3/8 · Phase“ nur bei Übungen mit Runden (Tabellen, Kraft, Wach, Gerät)
+  host.classList.toggle('mit-kk', kk);
   const ruhigMedia = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const ruhig = !!einst.ruhig || ruhigMedia;
   host.innerHTML = `
@@ -21,7 +23,7 @@ export function oeffne(plan, opt) {
       <div class="sz-titel">${plan.name}</div>
       <button class="knopf-ico" data-a="ton" aria-label="Ton an oder aus">${sym(einst.ton === 'aus' ? 'tonAus' : 'ton')}</button></div>
     <div class="sz-haupt">
-      <div class="sz-kreis"><canvas></canvas><div class="sz-mitte"><div class="sz-wort">Gleich geht's los</div><div class="sz-zahl">3</div><div class="sz-hinweis"></div></div></div>
+      ${kk ? '<div class="sz-kk-block"><div class="sz-kk" role="status"><b class="sz-kk-runde"></b><span class="sz-kk-phase"></span></div>' : ''}<div class="sz-kreis"><canvas></canvas><div class="sz-mitte"><div class="sz-wort">Gleich geht's los</div><div class="sz-zahl">3</div><div class="sz-hinweis"></div></div></div>${kk ? '</div>' : ''}
       <div class="sz-zeile"><span class="sz-weg"></span><span class="sz-zug"></span><span class="sz-rest"></span></div>
       ${plan.tabelle ? `<div class="sz-tab">${plan.tabelle.map((r, i) => `<div class="sz-tab-sp" data-r="${i + 1}"><b style="height:${Math.round(8 + 40 * r.halten_s / 180)}px"></b><i style="height:${Math.round(8 + 40 * r.pause_s / 180)}px"></i></div>`).join('')}</div>` : ''}
       <div class="sz-anat ${einst.figur === false ? 'aus' : ''}" role="button" aria-label="Figur groß oder klein"><button class="sz-ans" data-a="seitevorn" aria-label="Ansicht Seite oder Vorne">${einst.ansicht === 'vorn' ? 'Seite' : 'Vorne'}</button></div>
@@ -38,12 +40,38 @@ export function oeffne(plan, opt) {
     <div class="sz-blatt" hidden></div>`;
   host.hidden = false; document.body.classList.add('in-sitzung');
   const cv = $('canvas', host), quer = () => innerWidth > innerHeight;
-  const kreisPx = () => (gross ? 120 : quer() ? Math.min(riskant ? 240 : 300, innerHeight - 110) : Math.min(320, innerWidth - 60));   // quer + riskant: Platz für die Bedienspalte
+  // hochkant + Karte: bei knappem Platz wird der Kreis bis Kartenhöhe kleiner, Figur/Streifen wie ohne Karte
+  const knopfPlan = kk && plan.schritte.some((x) => x.kuerzbar && /^halten/.test(x.art));
+  const kreisHoch = () => {
+    const K = Math.min(320, innerWidth - 60), q = (s) => $(s, host), h = kk ? q('.sz-kk').offsetHeight : 0, tab = q('.sz-tab');
+    if (!h) return K;
+    const frei = q('.sz-haupt').clientHeight - (knopfPlan && q('.sz-atmen').hidden && q('.sz-stopp').hidden ? 104 : 0) - 28 - K - q('.sz-zeile').offsetHeight - (tab ? tab.offsetHeight + 8 : 0) - (q('.sz-anat.aus') ? 0 : 170);
+    const r = K - h + Math.min(h, Math.max(0, Math.floor(frei))); host.style.setProperty('--kk-b', r + 'px'); return r;
+  };
+  const kreisPx = () => (gross ? 120 : quer() ? Math.min(riskant ? 240 : 300, innerHeight - 110, kk ? $('.sz-haupt', host).clientHeight - 88 : 1e9) : kreisHoch());   // quer: riskant mit Bedienspalte; Karte: 44 px über dem Kreis frei
   let gross = false;
   const f = erzeugeFuehrung(cv, { ruhig, blumen: einst.blumen !== false, px: kreisPx() });
   const uhr = erzeugeUhr();
   let an = null, raf = 0, letzteSek = -1, letzterI = -1, zustand = 'zaehlen', zaehlStart = performance.now(), wake = null, offenWand = null, tippZahl = 0, gekuerzt = [];
-  const el = { wort: $('.sz-wort', host), zahl: $('.sz-zahl', host), hinweis: $('.sz-hinweis', host), weg: $('.sz-weg', host), zug: $('.sz-zug', host), rest: $('.sz-rest', host), atmen: $('.sz-atmen', host), stopp: $('.sz-stopp', host), blatt: $('.sz-blatt', host), anat: $('.sz-anat', host) };
+  const el = { wort: $('.sz-wort', host), zahl: $('.sz-zahl', host), hinweis: $('.sz-hinweis', host), weg: $('.sz-weg', host), zug: $('.sz-zug', host), rest: $('.sz-rest', host), atmen: $('.sz-atmen', host), stopp: $('.sz-stopp', host), blatt: $('.sz-blatt', host), anat: $('.sz-anat', host), kkRunde: $('.sz-kk-runde', host), kkPhase: $('.sz-kk-phase', host) };
+  // Kopfkarte: Abschnitt der Runde (nicht Ein/Aus – das steht im Kreis). Nach dem letzten Halten einer Tabelle: „Erholung“.
+  let kkText = '';
+  const letztesHalten = kk ? plan.schritte.reduce((a, x, k) => (x.abschnitt === 'halten' ? k : a), -1) : -1;
+  function kopfkarte(s, i) {
+    if (!kk) return;
+    const [wort, art] = s.abschnitt === 'ruhe' ? ['Ruhe', 'ruhe'] : plan.modus === 'tabelle' ? (s.abschnitt === 'halten' ? ['Halten', 'halten'] : i > letztesHalten ? ['Erholung', 'ruhe'] : ['Pause', 'pause']) : s.zug > 0 ? ['Atemzüge', 'zuege'] : s.abschnitt === 'halten' ? ['Anhalten', 'halten'] : [s.wort, 'zuege'];   // Ein/Aus im Anhalte-Block: Wort wie im Kreis
+    const t = 'Runde ' + (s.runde || 1) + '/' + (s.runden || plan.runden) + '|' + wort;
+    if (t === kkText) return; kkText = t;
+    el.kkRunde.textContent = 'Runde ' + (s.runde || 1) + '/' + (s.runden || plan.runden); el.kkPhase.textContent = wort; el.kkPhase.dataset.art = art;
+  }
+  kopfkarte(plan.schritte[0], 0);
+  // Zeile unter dem Kreis: Runde steht in der Kopfkarte – außer quer bei „Figur groß“ (dort ist links kein Platz für die Karte)
+  function zeile(s) {
+    const karte = kk && !(gross && quer());
+    el.zug.textContent = karte ? (s.zuege && s.zug ? 'Zug ' + s.zug + '/' + s.zuege : '')
+      : s.runden ? 'Runde ' + s.runde + '/' + s.runden + (s.zuege && s.zug ? ' · Zug ' + s.zug + '/' + s.zuege : '') : s.zuege ? 'Zug ' + s.zug + '/' + s.zuege : '';
+  }
+  const zeileNeu = () => { if (kk && uhr.plan) zeile(uhr.zustand().schritt); };
   if (einst.figur !== false) import('./anatomie.js').then((m) => { if (!aktiv || aktiv.uhr !== uhr) return; an = m.erzeugeAnatomie(el.anat, { ansicht: einst.ansicht || 'seite', modus: gross ? 'gross' : 'klein', daten: { MUSKELN } }); figurRuhe(); }).catch(() => { el.anat.classList.add('aus'); });
   ton.einstellen({ art: einst.ton || 'klang', laut: einst.laut ?? 0.6, sekunden: !!einst.sekunden, ansage: !!einst.ansage });
   ton.entsperren(einst.musik);
@@ -85,7 +113,8 @@ export function oeffne(plan, opt) {
     el.wort.textContent = s.wort; el.hinweis.textContent = s.hinweis || (s.abschnitt === 'erholung' && s.wort === 'Erholung' ? WORT_KURZ[s.art] || '' : '');
     el.wort.style.color = s.art === 'halten_leer' ? '#8d9cc0' : phasenFarbe(s.art);   // Kontrast ≥ 4,5:1 auch klein
     el.weg.innerHTML = s.art.startsWith('halten') || s.art === 'ruhe' ? '' : sym(s.weg === 'summen' ? 'summen' : s.weg === 'mund' || s.weg === 'ha' || s.weg === 'vokal' ? 'mund' : s.weg === 'links' ? 'links' : s.weg === 'rechts' ? 'rechts' : 'nase') + '<span>' + WEG[s.weg] + '</span>';
-    el.zug.textContent = s.runden ? 'Runde ' + s.runde + '/' + s.runden + (s.zuege && s.zug ? ' · Zug ' + s.zug + '/' + s.zuege : '') : s.zuege ? 'Zug ' + s.zug + '/' + s.zuege : '';
+    zeile(s);
+    kopfkarte(s, z.i);
     const offen = s.ms == null;
     el.atmen.hidden = !(s.kuerzbar && !offen && (s.art.startsWith('halten')));
     el.stopp.hidden = !offen;
@@ -124,10 +153,10 @@ export function oeffne(plan, opt) {
     if (still) { schliessen(); return; }
     beiEnde(erg, { zeigeBlatt, schliessen, nochmal: () => oeffne(plan, opt) });
   }
-  function schliessen() { host.hidden = true; host.innerHTML = ''; host.classList.remove('figur-gross'); document.body.classList.remove('in-sitzung'); if (an && an.zerstoere) an.zerstoere(); }
+  function schliessen() { host.hidden = true; host.innerHTML = ''; host.classList.remove('figur-gross', 'mit-kk'); document.body.classList.remove('in-sitzung'); if (an && an.zerstoere) an.zerstoere(); }
   function klick(e) {
     if (!wake && zustand === 'laeuft') holeWake();   // vom System freigegeben → beim nächsten Tipp neu
-    const b = e.target.closest('[data-a]'); if (!b) { if (e.target.closest('.sz-anat') && an) { gross = !gross; host.classList.toggle('figur-gross', gross); f.groesse(kreisPx()); if (an.modus) an.modus(gross ? 'gross' : 'klein'); } return; }
+    const b = e.target.closest('[data-a]'); if (!b) { if (e.target.closest('.sz-anat') && an) { gross = !gross; host.classList.toggle('figur-gross', gross); f.groesse(kreisPx()); if (an.modus) an.modus(gross ? 'gross' : 'klein'); zeileNeu(); } return; }
     const a = b.dataset.a;
     if (a === 'pause') pause('knopf');
     else if (a === 'weiter') weiter();
@@ -138,12 +167,12 @@ export function oeffne(plan, opt) {
     else if (a === 'ton') { einst.ton = einst.ton === 'aus' ? 'klang' : 'aus'; ton.einstellen({ art: einst.ton }); b.innerHTML = sym(einst.ton === 'aus' ? 'tonAus' : 'ton'); if (opt.merke) opt.merke({ ton: einst.ton }); }
     else if (a === 'ansage') { einst.ansage = !einst.ansage; ton.einstellen({ ansage: einst.ansage }); b.innerHTML = sym(einst.ansage ? 'ton' : 'tonAus'); if (opt.merke) opt.merke({ ansage: einst.ansage }); }
     else if (a === 'seitevorn') { einst.ansicht = einst.ansicht === 'vorn' ? 'seite' : 'vorn'; b.textContent = einst.ansicht === 'vorn' ? 'Seite' : 'Vorne'; if (an) an.ansicht(einst.ansicht); if (opt.merke) opt.merke({ ansicht: einst.ansicht }); }
-    else if (a === 'ansicht' && an) { gross = !gross; host.classList.toggle('figur-gross', gross); f.groesse(kreisPx()); if (an.modus) an.modus(gross ? 'gross' : 'klein'); }
+    else if (a === 'ansicht' && an) { gross = !gross; host.classList.toggle('figur-gross', gross); f.groesse(kreisPx()); if (an.modus) an.modus(gross ? 'gross' : 'klein'); zeileNeu(); }
   }
   function aufraeumen() { host.removeEventListener('click', klick); document.removeEventListener('visibilitychange', sicht); removeEventListener('resize', lage); }
   host.addEventListener('click', klick);
   const sicht = () => { if (document.visibilityState === 'hidden') pause('hidden'); };
-  const lage = () => { f.groesse(kreisPx()); letzteSek = -1; };
+  const lage = () => { f.groesse(kreisPx()); letzteSek = -1; zeileNeu(); };
   document.addEventListener('visibilitychange', sicht); addEventListener('resize', lage);
   ton.beiStoerung = () => pause('ton');
   aktiv = { uhr, plan, pause, weiter, kuerze, beenden, f, get zustand() { return zustand; }, get an() { return an; }, _nachZaehlen: null };

@@ -94,8 +94,14 @@ body.in-sitzung #leiste,body.in-sitzung #kopf{visibility:hidden}
 .sz-atmen,.sz-stopp{min-height:96px;border-radius:20px;border:0;background:var(--fl2);color:var(--text);font:inherit;font-size:22px;font-weight:600;cursor:pointer}.sz-atmen[hidden],.sz-stopp[hidden]{display:none}
 .sz-stopp{background:var(--akzent2);color:#0d1218}
 .sz-blatt{position:absolute;inset:0;z-index:5;background:rgba(5,8,12,.75);display:flex;align-items:flex-end;justify-content:center}.sz-blatt[hidden]{display:none}
+/* Kopfkarte „Runde 3/8 · Phase“ (nur Übungen mit Runden): über dem Kreis, nie über seiner Mitte; Farben ≥ 4,5:1 auf --fl */
+.sz-kk-block{display:contents}
+.sz-kk{flex:none;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:10px;width:clamp(min(240px,calc(100vw - 32px)),var(--kk-b,320px),calc(100vw - 60px));min-height:40px;padding:4px 14px;background:var(--fl);border:1px solid var(--rand);border-radius:14px;white-space:nowrap;line-height:1.2;font-variant-numeric:tabular-nums;pointer-events:none}
+.sz-kk-runde{font-size:20px;font-weight:700;color:var(--text)}.sz-kk-phase{font-size:17px;font-weight:600;color:var(--leise);overflow:hidden;text-overflow:ellipsis}
+.sz-kk-phase[data-art=zuege],.sz-kk-phase[data-art=pause]{color:#6cc4d9}.sz-kk-phase[data-art=halten]{color:#9a8fd6}
 /* Quer */
-@media (orientation:portrait){.figur-gross .sz-zeile{align-self:flex-start}.figur-gross .sz-anat{flex:1;height:auto;min-height:320px}}
+@media (orientation:portrait){.figur-gross .sz-zeile{align-self:flex-start}.figur-gross .sz-anat{flex:1;height:auto;min-height:320px}.figur-gross .sz-kk{align-self:flex-start;width:calc(100% - 136px)}.mit-kk .sz-haupt{padding-top:4px}.mit-kk.figur-gross .sz-anat{min-height:280px}}
+@media (orientation:portrait) and (max-width:399px){.figur-gross .sz-kk{flex-direction:column;align-items:flex-start;justify-content:center;gap:0}.mit-kk.figur-gross .sz-anat{min-height:266px}}
 @media (orientation:landscape){
  body{grid-template-columns:calc(72px + var(--sl)) 1fr;grid-template-rows:calc(44px + var(--st)) 1fr}
  #kopf{grid-column:2}#inhalt{grid-column:2;grid-row:2;padding-left:16px}
@@ -112,6 +118,8 @@ body.in-sitzung #leiste,body.in-sitzung #kopf{visibility:hidden}
  .sz-unten{position:absolute;right:var(--sr);top:calc(44px + var(--st));bottom:var(--sb);width:auto;max-width:300px;justify-content:center;padding:8px 12px}
  .riskant .sz-haupt{padding-right:236px}.riskant .sz-anat{width:300px}.riskant .sz-unten{width:220px}
  .sz-knoepfe{flex-direction:column}.sz-atmen,.sz-stopp{min-width:200px}
+ .sz-kk-block{display:block;position:relative;flex:none}.sz-kk{position:absolute;left:0;right:0;bottom:calc(100% + 6px);width:auto;min-height:38px}
+ .figur-gross .sz-kk-block{display:contents}.figur-gross .sz-kk{display:none}
  .vergleich{flex-direction:row}.vg-fig{flex:1}.nur-quer{display:block}
  .kurven{grid-template-columns:1fr 1fr}
 }

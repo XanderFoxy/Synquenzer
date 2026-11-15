@@ -1,6 +1,6 @@
 // Atem – Service Worker (Muster foto/app/sw.js). Netz zuerst mit 2,5 s Zeitlimit, sonst Schale aus dem Cache.
 // Versionswechsel: SCHALE und VERSION in app.js zusammen hochzählen (daten-test prüft das).
-const SCHALE = 'atem-schale-v2';   // v2: 0.1.1
+const SCHALE = 'atem-schale-v3';   // v3: 0.1.2 (Kopfkarte)
 const DATEIEN = ['./', './index.html', './app.js', './symbole.js', './daten.js', './wissen.js', './plan.js', './uhr.js', './training.js',
   './sitzung.js', './fuehrung.js', './anatomie.js', './vorschau.js', './ton.js', './speicher.js', './manifest.webmanifest', './icon.svg', './icon-180.png',
   './icon-192.png', './icon-512.png'];

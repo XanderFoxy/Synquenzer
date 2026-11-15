@@ -5,7 +5,7 @@ import { speicher } from './speicher.js';
 import { baue, baueProgramm, wortFuer } from './plan.js';
 import * as TRN from './training.js';
 
-export const VERSION = '0.1.1';
+export const VERSION = '0.1.2';
 const TEST = /[?&]test=1/.test(location.search);
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (t) => String(t ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
