@@ -12,3 +12,4 @@
 12:28 Nur Gefundenes: Tönung erst, wenn alle Stücke da sind (Long Tasks 8 → 0); Sicherung index.vor-toenung.html
 12:31 Endstand: fokus1-test 51/0, Kern 26/0, Hauptfaden 24/0, Pflicht grün (topdefs 0/0, dupkeys 0, smoke [], MS 2000 1, live 1, Diff nur Einfügungen). fokus1-block.js aktualisiert.
 12:34 Prüfung iPhone gestartet (pruef-iphone/pruef.mjs, dpr 3)
+12:37 UI-Stufe: Status-Fehler Rest→Alles→Rest nachgestellt (ergebnis-ui.json)
