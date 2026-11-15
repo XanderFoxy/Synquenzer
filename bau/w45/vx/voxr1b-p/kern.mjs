@@ -65,12 +65,12 @@ const NEAR = (e, t, d) => e.t1 >= t - 0.01 && e.t0 <= t + d + 0.01;
 for (const tk of ['B44', 'C48']) {
   const {x: v, sr} = LOAD[tk], n = v.length, T = TR[tk], P = new Float32Array(n), PT = [];
   const cand = T.filter(q => q.t > 0.4 && q.t < n / sr - 0.4 && voicedSpan(T, q.t - 0.06, q.t + 0.1)).map(q => q.t);
-  { let last = -9; const gap = Math.max(0.3, (cand[cand.length - 1] - cand[0]) / 10.2); for (const t of cand) if (t - last >= gap && PT.length < 10) { PT.push(+t.toFixed(3)); last = t; } }
+  for (let gap = (cand[cand.length - 1] - cand[0]) / 9.5; gap >= 0.25; gap *= 0.95) { PT.length = 0; let last = -9; for (const t of cand) if (t - last >= gap && PT.length < 10) { PT.push(+t.toFixed(3)); last = t; } if (PT.length >= 10) break; }
   const lpN = bq('lp', 90, 0.707, sr);
   for (const t of PT) { const i0 = Math.round(t * sr), M = Math.round(0.04 * sr), f = 25 + rnd() * 35, phs = rnd() * TAU, tau = 0.008 + rnd() * 0.012, G = 2 + rnd() * 6, nz = new Float64Array(M + 4000);
     for (let i = 0; i < nz.length; i++) nz[i] = rnd() * 2 - 1; filt(nz, lpN); filt(nz, lpN);
     const p = new Float64Array(M); let ep = 0, ev = 0; for (let i = 0; i < M; i++) { const tt = i / sr, w = Math.min(1, i / (0.002 * sr)) * Math.min(1, (M - i) / (0.004 * sr)); p[i] = w * (Math.sin(TAU * f * tt + phs) * Math.exp(-tt / tau) + 0.15 * nz[3000 + i] * 30); ep += p[i] * p[i]; ev += v[i0 + i] * v[i0 + i]; }
-    let g = Math.sqrt(ev / ep) * Math.pow(10, G / 20), pk = 0; for (let i = 0; i < M; i++) pk = Math.max(pk, Math.abs(v[i0 + i] + g * p[i])); if (pk > 0.95) g *= 0.95 / pk; for (let i = 0; i < M; i++) P[i0 + i] += g * p[i]; }
+    let g = Math.sqrt(ev / ep) * Math.pow(10, G / 20), pk = 0; for (let i = 0; i < M; i++) pk = Math.max(pk, Math.abs(v[i0 + i] + g * p[i])); if (pk > 0.85) g *= 0.85 / pk; for (let i = 0; i < M; i++) P[i0 + i] += g * p[i]; }
   const x = new Float32Array(n); for (let i = 0; i < n; i++) x[i] = v[i] + P[i];
   const own = K.done(K.check(v, sr)).plops, Bx = K.done(K.check(x, sr));
   const r = K.done(K.run(x, sr, {steps: {plop: {}}})), ev = r.info.plop;
