@@ -105123,7 +105123,7 @@ function spk12DspMake(Z2, X) {
     const sr = d.meta.sr, x = d.mid, sp = (m.spur || []).filter(p => p[1] > 0), Kx = Math.max(1, Math.min(48, m.K | 0 || 32)); if (!sp.length) return {hm: [], K: 0, snr: []};
     const f0m = sp.reduce((a, p) => a + p[1], 0) / sp.length, N = f0m < 160 ? 16384 : 8192, NB = N / 2 + 1, re = new Float64Array(N), im = new Float64Array(N), use = [];
     for (let i = 0; i < 16; i++) use.push(sp[Math.min(sp.length - 1, Math.round((i + 0.5) * sp.length / 16))]);
-    const snr = new Float64Array(Kx + 1), pk = new Float64Array(Kx + 1);
+    const snr = new Float64Array(Kx + 1), pk = new Float64Array(Kx + 1).fill(-400);
     for (const p of use) {
       const g = spk12Mag(x, Math.round(p[0] * sr), N, re, im), f0 = +p[1], db = v => 20 * Math.log10(v + 1e-7);
       for (let h = 1; h <= Kx; h++) {
@@ -105134,7 +105134,7 @@ function spk12DspMake(Z2, X) {
       }
     }
     const top = Math.max(...pk.slice(1)), hm = []; for (let h = 1; h <= Kx; h++) if (snr[h] >= 12 && pk[h] >= top - 50) hm.push(h);   // hörbar über dem Grund und höchstens 50 dB unter dem stärksten Rang
-    return {hm, K: hm.length ? hm[hm.length - 1] : 0, snr: Array.from(snr.slice(1), v => +v.toFixed(1))};
+    return {hm, K: hm.length ? hm[hm.length - 1] : 0, snr: Array.from(snr.slice(1), v => +v.toFixed(1)), pk: Array.from(pk.slice(1), v => +(v - top).toFixed(1))};
   };
   ops.spk12follow = (d, m) => {   // folgt dem Ton: stärkste Spitze im Band → verfolgen (±ct Cent je Rahmen); unsicher → letzte gute Stelle halten (Rücksprung)
     const T0 = performance.now(), sr = d.meta.sr, x = d.mid, t0 = Math.max(0, +m.t0), t1 = Math.min(x.length / sr, +m.t1), fa = Math.max(20, +m.f0), fb = Math.max(fa * 1.01, +m.f1);
@@ -105553,7 +105553,7 @@ function spk12HDd(U, b) {
     dd.appendChild(el('h5', '', 'Obertöne · Rang 1–' + K));
     const g = el('div', 'spk1-g'), cur = spk12HmCur(U);
     for (let h = 1; h <= K; h++) {
-      const x = el('button', 'mbtn rb spk12-hn' + (cur.has(h) ? ' on' : ''), (cur.has(h) ? '✓' : '') + h); x.dataset.s12h = h; x.setAttribute('aria-pressed', String(cur.has(h))); x.setAttribute('aria-label', 'Oberton ' + h);
+      const x = el('button', 'mbtn rb spk1-ck spk12-hn' + (cur.has(h) ? ' on' : ''), (cur.has(h) ? '✓' : '') + h); x.dataset.s12h = h; x.setAttribute('aria-pressed', String(cur.has(h))); x.setAttribute('aria-label', 'Oberton ' + h);
       on(x, 'click', () => { const c = spk12HmCur(U), o = !c.has(h); if (o) c.add(h); else c.delete(h); if (!c.size) return; spk12HmSet(U, [...c].sort((p, q) => p - q), 'Oberton ' + h + (o ? ' an' : ' aus')); x.classList.toggle('on', o); x.setAttribute('aria-pressed', String(o)); x.textContent = (o ? '✓' : '') + h; });
       g.appendChild(x);
     }

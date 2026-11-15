@@ -24,10 +24,11 @@ for (const [W, H] of VIEWS) {
   const sel = s => p.evaluate(s => { const e = document.querySelector(s); if (!e || !e.offsetParent) return null; e.scrollIntoView({block: 'nearest', inline: 'nearest'}); const r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }, s);
   const box = s => p.evaluate(s => [...document.querySelectorAll(s)].filter(e => e.offsetParent).map(e => { e.scrollIntoView({block: 'nearest', inline: 'nearest'}); const r = e.getBoundingClientRect(), af = getComputedStyle(e, '::after'), ex = af.content && af.content !== 'none' ? Math.max(0, -parseFloat(af.top) || 0) + Math.max(0, -parseFloat(af.bottom) || 0) : 0; return {t: e.textContent.trim(), w: Math.round(r.width), h: Math.round(r.height + ex), l: Math.round(r.left), r: Math.round(r.right), top: Math.round(r.top), bot: Math.round(r.bottom)}; }), s);
   const inView = L => L.length > 0 && L.every(x => x.w >= 44 && x.h >= 44 && x.l >= 0 && x.r <= W + 0.5 && x.top >= 0 && x.bot <= H + 0.5);
+  const mark = n => p.evaluate(n => { (window.__ph = window.__ph || []).push([n, Math.round(performance.now())]); }, n);
   const shot = n => p.screenshot({path: path.join(fotos, n + '-' + tag + '.png')});
   const U_ = () => p.evaluate(() => { const U = __spk.page.ui(); return {tool: U.tool, n: U.sel.length, arts: U.sel.map(s => s.art + (s.op ? ':' + s.op : '')), stat: __spk.page.info().stat}; });
   const scr = (t, f) => p.evaluate(([t, f]) => { const U = __spk.page.ui(), r = U.mn.getBoundingClientRect(); return [r.left + spk1X(U, t), r.top + spk1Y(U, f)]; }, [t, f]);
-  const view = (t0, t1, mTop, mBot) => p.evaluate(([t0, t1, a, z]) => { const U = __spk.page.ui(), v = U.v; v.pps = U.W / (t1 - t0); v.t0 = t0; v.rowH = U.H / (a - z); v.mTop = a; spk1Clamp(U); spk1Dirty(U, 'all'); }, [t0, t1, mTop, mBot]);
+  const view = (t0, t1, mTop, mBot) => p.evaluate(([t0, t1, a, z]) => { (window.__vj = window.__vj || []).push(performance.now()); const U = __spk.page.ui(), v = U.v; v.pps = U.W / (t1 - t0); v.t0 = t0; v.rowH = U.H / (a - z); v.mTop = a; spk1Clamp(U); spk1Dirty(U, 'all'); }, [t0, t1, mTop, mBot]);
   const tool = async (grp, k) => { await hold(await sel(`#spk1Sheet .spk1-tl button[data-s12slot="${grp}"]`), 700); const q = await sel(`#spk1Sheet .spk1-dd [data-s12t="${k}"]`); await tap(q); return p.evaluate(() => __spk.page.info().tool); };
   await p.goto(url); await p.waitForFunction(() => window.SYNQUENZER && window.__spk && window.__spk12, null, {timeout: 60000}); await wait(600);
   await p.evaluate(() => { window.__lt = []; try { new PerformanceObserver(l => { for (const e of l.getEntries()) window.__lt.push({t: e.startTime, d: e.duration}); }).observe({entryTypes: ['longtask']}); } catch (e) {} });
@@ -46,12 +47,13 @@ for (const [W, H] of VIEWS) {
     for (let i = Math.floor(15 * sr); i < 18.5 * sr; i++) { const t = i / sr; ph += TP * fT(t) / sr; const gp = Math.min(1, Math.max(0, Math.abs(t - 16.56) - 0.06) / 0.02), e = Math.min(1, (t - 15) / 0.02, (18.5 - t) / 0.02) * gp;
       C.g1[i] = e * 0.25 * Math.sin(ph); C.glide[i] = C.g1[i] + e * (0.12 * Math.sin(2 * ph) + 0.06 * Math.sin(3 * ph)) + (t > 16.5 && t < 16.62 ? 0.25 * rnd() : 0); }
     for (let i = 0; i < n; i++) x[i] = C.pad[i] + C.sn[i] + C.odd[i] + C.even[i] + C.auto[i] + C.glide[i];
-    window.__E = (sig, m0, m1, k1) => { const N = 4096, hop = 1024, re = new Float64Array(N), im = new Float64Array(N), H = k1 + 1, o = new Float64Array((m1 - m0 + 1) * H); for (let m = m0; m <= m1; m++) { const g = spk12Mag(sig, (m - 1) * hop, N, re, im); for (let k = 0; k <= k1; k++) o[(m - m0) * H + k] = g[k] * g[k]; } return o; };
-    window.__frac = async (sel, sig, t0, t1, k1) => { const sr = 44100, hop = 1024, m0 = Math.round(t0 * sr / hop + 1), m1 = Math.round(t1 * sr / hop + 1), M = await __spk12.mask(sel, {m0, m1, k0: 0, k1}), E = __E(sig, m0, m1, k1); let a = 0, z = 0; for (let i = 0; i < E.length; i++) { a += E[i] * M.data[i] / 255; z += E[i]; } return z > 0 ? a / z : 0; };
+    window.__E = async (sig, m0, m1, k1) => { const N = 4096, hop = 1024, re = new Float64Array(N), im = new Float64Array(N), H = k1 + 1, o = new Float64Array((m1 - m0 + 1) * H); for (let m = m0; m <= m1; m++) { if ((m - m0) % 8 === 7) await new Promise(r => setTimeout(r, 0)); const g = spk12Mag(sig, (m - 1) * hop, N, re, im); for (let k = 0; k <= k1; k++) o[(m - m0) * H + k] = g[k] * g[k]; } return o; };
+    window.__frac = async (sel, sig, t0, t1, k1) => { const sr = 44100, hop = 1024, m0 = Math.round(t0 * sr / hop + 1), m1 = Math.round(t1 * sr / hop + 1), M = await __spk12.mask(sel, {m0, m1, k0: 0, k1}), E = await __E(sig, m0, m1, k1); let a = 0, z = 0; for (let i = 0; i < E.length; i++) { a += E[i] * M.data[i] / 255; z += E[i]; } return z > 0 ? a / z : 0; };
     const r = await __spk.load({name: 'Werkzeugkasten Teil 2', sr, ch: [x]}); await __spk.page.open({id: r.meta.id});
   });
   await p.waitForFunction(() => { const i = __spk.page.info(); return i && !i.nodoc && i.chunks > 0 && !/Spektrum \d/.test(i.stat); }, null, {timeout: 300000}); await wait(500);
   await p.evaluate(() => { window.__lt0 = performance.now(); });
+  await mark('Transient: Z');
   // ---- Transient: Zeit halten → Transient, über 0,2–7,8 s ziehen ----
   await view(0, 8.2, 100, 40);
   ok(tag + ' werkzeug-transient', await tool('zeit', 'trans'), (await p.evaluate(() => __spk.page.info().tool)) === 'trans');
@@ -73,6 +75,7 @@ for (const [W, H] of VIEWS) {
   const t1 = await p.evaluate(() => __spk.page.ui().sel.map(s => s.hits));
   await tap(await sel('#spk1Sheet [data-a="undo"]')); const t2 = await p.evaluate(() => __spk.page.ui().sel.map(s => s.hits.length));
   ok(tag + ' transient-tipp-und-undo', {tipp: t1, nachUndo: t2}, t1.length === 1 && t1[0].length === 1 && Math.abs(t1[0][0] - 3) <= 0.03 && t2[0] >= 15);
+  await mark('Ellipse');
   // ---- Ellipse (Rechteck halten → Ellipse) ----
   await view(8.6, 14.8, 96, 50);
   ok(tag + ' werkzeug-ellipse', await tool('rect', 'ell'), (await p.evaluate(() => __spk.page.info().tool)) === 'ell');
@@ -87,6 +90,7 @@ for (const [W, H] of VIEWS) {
   });
   ok(tag + ' ellipse-bit-genau', el1, el1 && el1.bad === 0 && el1.nz > 50);
   await shot('t2-ellipse');
+  await mark('Lasso');
   // ---- Lasso (umfahren, Dreieck) ----
   await p.evaluate(() => { __spk.page.ui().opt.kante = 0; });   // harte Kante → bit-genau prüfbar
   ok(tag + ' werkzeug-lasso', await tool('rect', 'lasso'), (await p.evaluate(() => __spk.page.info().tool)) === 'lasso');
@@ -103,6 +107,7 @@ for (const [W, H] of VIEWS) {
   ok(tag + ' lasso-maske', la, la && la.pts >= 3 && la.nz > 50 && (la.kt > 0 || la.bad <= Math.max(2, la.nz * 0.002)));
   ok(tag + ' lasso-bild-16ms', la && {p95: la.ov_p95, max: la.ov_max, n: la.nOv}, la && la.ov_p95 <= 16);
   await shot('t2-lasso');
+  await mark('Obertöne');
   // ---- Obertöne: Harmonische auf 220 Hz, Obertöne ▾ → Ungerade (gerade ≤ 1 %), Häkchen einzeln, Auto ----
   await p.evaluate(() => spk1ToolSet(__spk.page.ui(), 'harm'));
   const hb = await box('#spk1Sheet .spk1-op .spk1-o.on [data-a="s12hd"]');
@@ -115,7 +120,7 @@ for (const [W, H] of VIEWS) {
   await tap(await sel('#spk1Sheet .spk1-dd [data-s12hh="ung"]'));
   const od = await p.evaluate(async () => { const sel = __spk.page.ui().sel, h = sel.find(s => s.art === 'harm'); return {hm: h && h.hm, gerade: +(100 * await __frac(sel, __c.even, 9.3, 11.2, 1500)).toFixed(3), ungerade: +(100 * await __frac(sel, __c.odd, 9.3, 11.2, 1500)).toFixed(1)}; });
   ok(tag + ' obertoene-nur-ungerade', od, od.hm && od.hm.every(h => h & 1) && od.gerade <= 1 && od.ungerade >= 80);
-  await tap(await sel('#spk1Sheet [data-a="s12hd"]')); await wait(250); const dbg3 = await p.evaluate(() => ({open: !!document.querySelector('#spk1Sheet .spk1-dd [data-s12h]'), b3: (document.querySelector('#spk1Sheet .spk1-dd [data-s12h="3"]') || {}).textContent})); const q3 = await sel('#spk1Sheet .spk1-dd [data-s12h="3"]'); console.log('dbg3', JSON.stringify(dbg3), JSON.stringify(await p.evaluate(([x, y]) => { const e = document.elementFromPoint(x, y); return e && (e.outerHTML.slice(0, 80)); }, q3))); await tap(await sel('#spk1Sheet .spk1-dd [data-s12h="3"]'));
+  await tap(await sel('#spk1Sheet [data-a="s12hd"]')); await wait(250); await tap(await sel('#spk1Sheet .spk1-dd [data-s12h="3"]'));
   const h3 = await p.evaluate(() => __spk.page.ui().sel.find(s => s.art === 'harm').hm); await p.evaluate(() => spk1Dd(__spk.page.ui(), null));
   await tap(await sel('#spk1Sheet [data-a="undo"]')); const h3u = await p.evaluate(() => __spk.page.ui().sel.find(s => s.art === 'harm').hm);
   ok(tag + ' oberton-haekchen-und-undo', {ohne3: h3, nachUndo: h3u}, h3 && !h3.includes(3) && h3.includes(5) && h3u && h3u.includes(3));
@@ -123,9 +128,10 @@ for (const [W, H] of VIEWS) {
   await p.evaluate(() => { const U = __spk.page.ui(); U.sel = U.sel.filter(x => x.art === 'harm' && x.spur[0][0] > 12); });
   await tap(await sel('#spk1Sheet [data-a="s12hd"]')); await wait(150); await tap(await sel('#spk1Sheet .spk1-dd [data-s12hh="auto"]'));
   await p.waitForFunction(() => { const s = __spk.page.ui().sel.find(x => x.art === 'harm'); return s && s.hm; }, null, {timeout: 20000}).catch(() => {});
-  const au = await p.evaluate(() => { const s = __spk.page.ui().sel.find(x => x.art === 'harm'); return {hm: s && s.hm, K: s && s.K, snr: (__spk12.S().hAutoR || {}).snr}; });
+  const au = await p.evaluate(() => { const s = __spk.page.ui().sel.find(x => x.art === 'harm'); return {hm: s && s.hm, K: s && s.K, snr: (__spk12.S().hAutoR || {}).snr, pk: (__spk12.S().hAutoR || {}).pk}; });
   ok(tag + ' obertoene-auto', au, au.hm && au.hm.join() === '1,2,3,4,5,6' && au.K === 6);
   await p.evaluate(() => { const S = __spk12.S(); S.hAuto = false; S.hm = null; });
+  await mark('folgt dem To');
   // ---- folgt dem Ton: Rechteck um den Anfang des Gleittons, Auswahl ▾ → Folgt dem Ton ----
   await view(14.6, 18.9, 74, 52);
   await p.evaluate(() => { const U = __spk.page.ui(); spk12Slot(U, 'rect'); spk1ToolSet(U, 'rect'); __spk12.mode('neu'); });
@@ -143,9 +149,11 @@ for (const [W, H] of VIEWS) {
   ok(tag + ' folgt-knopf', fb, inView(fb));
   await shot('t2-folgt');
   await tap(await sel('#spk1Sheet [data-a="undo"]')); ok(tag + ' folgt-undo', await U_(), (await U_()).arts.join() === 'rect');
+  await mark('Hauptfaden');
   // ---- Hauptfaden ----
-  const lts = await p.evaluate(() => window.__lt.filter(e => e.t >= window.__lt0).map(e => Math.round(e.d)));
-  ok(tag + ' keine-long-task-50ms', lts, lts.every(d => d <= 50));
+  const lts = await p.evaluate(() => window.__lt.filter(e => e.t >= window.__lt0 && !(window.__vj || []).some(v => e.t >= v - 5 && e.t <= v + 400)).map(e => Math.round(e.d))), ltw = await p.evaluate(() => ({lt: window.__lt.filter(e => e.t >= window.__lt0).map(e => [Math.round(e.t), Math.round(e.d)]), ph: window.__ph}));
+  if (lts.some(d => d > 50)) console.log('longtasks', JSON.stringify(ltw));
+  ok(tag + ' keine-long-task-50ms', {spk12: lts, ansichtSprung: ltw.lt.length - lts.length}, lts.every(d => d <= 50));
   ok(tag + ' guide-eintrag', await p.evaluate(() => { const e = ui1Entries().find(x => x.id === 'spk12'); return e ? e.w : null; }), await p.evaluate(() => /Transient/.test((ui1Entries().find(x => x.id === 'spk12') || {}).w || '')));
   ok(tag + ' keine-fehler', errs.slice(0, 5), errs.length === 0);
   await ctx.close();

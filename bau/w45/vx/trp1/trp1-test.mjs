@@ -240,6 +240,145 @@ for (const [w, h, n] of [[428, 926, 'hochkant'], [926, 428, 'quer'], [926, 370, 
   }
   await P.close();
 }
+/* ---------- 7 Prüfung (TRP1-P): die Befunde 1–11 des Prüfers ---------- */
+{
+  const P = await page(428, 926);
+  await run(P, () => {
+    window.__toasts = []; const t0 = window.toast; window.toast = function (m, ...a) { window.__toasts.push(String(m)); return t0.call(this, m, ...a); };
+    window.__parse2 = () => { const N = __midi(); return N; };
+    window.__cmp = (N0, N1, lo, hi, f) => { const a = N0.filter(x => x.b >= lo - 1e-6 && x.b < hi - 1e-6 && (!f || f(x))), c = N1.filter(x => x.b >= lo - 1e-6 && x.b < hi - 1e-6 && (!f || f(x))); const d = []; for (let i = 0; i < a.length; i++) d.push(c[i] ? c[i].n - a[i].n : 'fehlt'); return {n: a.length, n1: c.length, d: [...new Set(d)]}; };
+  });
+  // Befund 1a: Song ganz ohne Marken, Takt 5–6 +3 → auch die ⇅-feste MELODIE; davor/danach gleich; Speichern/Laden; ↶
+  const A = await run(P, async () => {
+    SYNQUENZER.setBpm(240); const K = __song(), ch = midiCh(K.ft), o = {fest: K.fest};
+    S.song.marks = []; songChanged(); const N0 = __midi(), j0 = serializeProject();
+    o.ok = SYNQUENZER.trp1.set({a: 4, b: 6, r: 3}); const N1 = __midi();
+    o.fest = __cmp(N0, N1, 16, 24, x => x.ch === ch); o.rest = __cmp(N0, N1, 16, 24, x => x.ch !== ch && x.ch !== 9); o.dr = __cmp(N0, N1, 16, 24, x => x.ch === 9);
+    o.out = __cmp(N0, N1, 0, 16); o.out2 = __cmp(N0, N1, 24, 40); o.trf = JSON.stringify(S.song.trf); o.lv = [3, 4, 5, 6].map(b => SYNQUENZER.trp1.lv(b));
+    const j1 = serializeProject(); applyProject(normalizeProject(JSON.parse(j1)), {ui: true}); await wait(300); o.load = serializeProject() === j1 && JSON.stringify(__midi()) === JSON.stringify(N1);
+    undo(); o.undo = serializeProject() === j0 || JSON.stringify(__midi()) === JSON.stringify(N0); o.undoTrf = S.song.trf === undefined;
+    // Takt einfügen vor dem Bereich: der Versatz wandert mit
+    SYNQUENZER.trp1.set({a: 4, b: 6, r: 3}); songShift(S.song, 2, 1); o.shift = JSON.stringify(S.song.trf); undo();
+    return o;
+  });
+  ok(A.ok && A.fest.n === 4 && JSON.stringify(A.fest.d) === '[3]' && JSON.stringify(A.rest.d) === '[3]' && JSON.stringify(A.dr.d) === '[0]' && JSON.stringify(A.out.d) === '[0]' && JSON.stringify(A.out2.d) === '[0]',
+    'Befund 1: Song ohne Marken, Takt 5–6 +3 – ⇅-feste MELODIE ' + A.fest.n + '/' + A.fest.n + ' +3, übrige ' + A.rest.n + ' +3, Drums gleich, sonst gleich', {fest: A.fest, rest: A.rest, trf: A.trf, lv: A.lv});
+  ok(A.load && A.undo && A.undoTrf && A.shift === '[[5,3],[6,3]]', 'Befund 1: Versatz ohne Marke (song.trf) – Speichern/Laden bitgleich, ↶ ganz zurück, Takt einfügen schiebt mit', {load: A.load, undo: A.undo, shift: A.shift});
+  // Befund 1b: Lücke nach „nur Teil 3 +3“ (Takt 7–8 ohne Marke) → dort alles wie vorher
+  const B = await run(P, async () => {
+    const K = __song(), ch = midiCh(K.ft), o = {}; S.song.marks = S.song.marks.filter(m => m.a !== 6); songChanged();
+    const N0 = __midi(); o.ok = SYNQUENZER.trp1.set({a: 4, b: 6, r: 3}); const N1 = __midi();
+    o.gapF = __cmp(N0, N1, 24, 32, x => x.ch === ch); o.gapR = __cmp(N0, N1, 24, 32, x => x.ch !== ch); o.p3F = __cmp(N0, N1, 16, 24, x => x.ch === ch); o.p5 = __cmp(N0, N1, 32, 40);
+    // eine spätere Rückung „ab hier“ an Teil 3 nimmt die Lücke mit (relativ)
+    SYNQUENZER.jam2.rkSet(S.song.marks.find(m => m.a === 4).id, 4); const N2 = __midi(); o.rkGap = __cmp(N0, N2, 24, 32, x => x.ch === ch); o.rkGapR = __cmp(N0, N2, 24, 32, x => x.ch !== ch && x.ch !== 9);
+    undo(); undo(); return o;
+  });
+  ok(B.ok && B.gapF.n === 4 && JSON.stringify(B.gapF.d) === '[0]' && JSON.stringify(B.gapR.d) === '[0]' && JSON.stringify(B.p3F.d) === '[3]' && JSON.stringify(B.p5.d) === '[0]' && JSON.stringify(B.rkGap.d) === JSON.stringify(B.rkGapR.d),
+    'Befund 1: Lücke nach „nur Teil 3 +3“ – ⇅-feste MELODIE dort ' + B.gapF.n + '/' + B.gapF.n + ' wie vorher, Rest ' + B.gapR.n + ' gleich; Rückung danach: Lücke fest = Rest', B);
+  // Befund 2: Zusammenfassen / Konsolidieren eines Stufen-Teils (und eines gemischten Bereichs) klingt gleich
+  const C = await run(P, async () => {
+    const o = {}; const same = (A, B, lo, hi) => { const a = A.filter(x => x.b >= lo && x.b < hi).map(x => x.ch + '@' + x.b + ':' + x.n).sort(), c = B.filter(x => x.b >= lo && x.b < hi).map(x => x.ch + '@' + x.b + ':' + x.n).sort(); let d = 0; for (let i = 0; i < Math.max(a.length, c.length); i++) if (a[i] !== c[i]) d++; return {n: a.length, diff: d}; };
+    for (const [nm, fn] of [['s2Sum', (a, e) => s2Sum(a, e, 'Z')], ['konDo', (a, e) => konDo(a, e, 'K')]]) {
+      __song(); SYNQUENZER.trp1.set({a: 4, b: 6, r: 1, deg: true}); let N0 = __midi(); fn(4, 6); let N1 = __midi(); const m = S.song.marks.find(x => x.a === 4);
+      o[nm] = {trs: m && m.trs, p3: same(N0, N1, 0, 40)};
+      __song(); SYNQUENZER.trp1.set({a: 4, b: 6, r: 1, deg: true}); N0 = __midi(); fn(2, 6); N1 = __midi(); const m2 = S.song.marks.find(x => x.a === 2);
+      o[nm + 'Mix'] = {trs: m2 && JSON.stringify(m2.trs), all: same(N0, N1, 0, 40)};
+      const j = serializeProject(); applyProject(normalizeProject(JSON.parse(j)), {ui: true}); await wait(200); o[nm + 'Load'] = serializeProject() === j && JSON.stringify(__midi()) === JSON.stringify(N1);
+      // Bereich mit Versatz ohne Marke (trf) zusammenfassen
+      __song(); S.song.marks = S.song.marks.filter(x => x.a !== 6); songChanged(); SYNQUENZER.trp1.set({a: 6, b: 8, r: 2}); N0 = __midi(); fn(6, 8); N1 = __midi();
+      o[nm + 'Trf'] = same(N0, N1, 0, 40);
+    }
+    return o;
+  });
+  ok(C.s2Sum.p3.diff === 0 && C.konDo.p3.diff === 0 && C.s2Sum.trs && C.konDo.trs && C.s2SumMix.all.diff === 0 && C.konDoMix.all.diff === 0 && C.s2SumLoad && C.konDoLoad && C.s2SumTrf.diff === 0 && C.konDoTrf.diff === 0,
+    'Befund 2: Zusammenfassen/Konsolidieren – Stufen bleiben (Teil 3: 0/' + C.s2Sum.p3.n + ' bzw. 0/' + C.konDo.p3.n + ' Noten anders; gemischter Bereich und Lücke mit Versatz ebenso), Laden bitgleich', C);
+  // Befund 4: Dur ↔ Moll nach einem Stufen-Teil – keine leiterfremden Töne in Teil 3
+  const D = await run(P, async () => {
+    const o = {}; __song(); SYNQUENZER.trp1.set({a: 4, b: 6, r: 1, deg: true}); tktModeDo('g'); o.trs = JSON.stringify((S.song.marks.find(x => x.a === 4) || {}).trs);
+    const N = __midi(), sc = new Set(Harmony.SCALES[S.key.scale].map(x => (x + S.key.root) % 12)), outS = (lo, hi) => N.filter(x => x.b >= lo && x.b < hi && x.ch !== 9 && !sc.has(x.n % 12)).length;
+    o.p1 = outS(0, 8); o.p3 = outS(16, 24); o.n3 = N.filter(x => x.b >= 16 && x.b < 24 && x.ch !== 9).length; undo(); o.back = JSON.stringify((S.song.marks.find(x => x.a === 4) || {}).trs); return o;
+  });
+  ok(D.p3 === D.p1 && D.p3 === 0 && /aeolian|minor|moll/i.test(D.trs || '') && /ionian/.test(D.back || ''), 'Befund 4: Dur → Moll nach „Teil 3 +1 Stufe“ – Teil 3 ' + D.p3 + '/' + D.n3 + ' Töne außerhalb (wie Teil 1), ↶ zurück', D);
+  // Befund 5: „nur dieser Teil“ gilt nur im offenen Blatt; die Rückungs-Zeile anderer Marken bleibt wie gewohnt
+  const E = await run(P, async () => {
+    const K = __song(), ms = K.marks; SYNQUENZER.jam2.rkSet(ms[4].id, 2); ui1Home(); setSongView(true); await wait(150);
+    openMarkSheet(ms[1].id); if (UI.pop && typeof wegeMsTab === 'function') wegeMsTab(UI.pop.el, 'a'); await wait(150);
+    const nur = document.querySelector('.msheet [data-trm="nur"]'); nur && nur.dispatchEvent(new PointerEvent('pointerdown', {bubbles: true})); 
+    return {n: !!nur};
+  });
+  await tapSel(P, '.msheet [data-trm="nur"]');
+  const E2 = await run(P, async () => {
+    const o = {nurAn: SYNQUENZER.trp1.state().only, trv: document.querySelectorAll('.msheet [data-trv]').length}; closePop(); await wait(150);
+    const ms = S.song.marks.slice().sort((a, b) => a.a - b.a); openMarkSheet(ms[4].id); if (UI.pop && typeof wegeMsTab === 'function') wegeMsTab(UI.pop.el, 'a'); await wait(150);
+    o.jrk = document.querySelectorAll('.msheet [data-jrk]').length; o.trv5 = document.querySelectorAll('.msheet [data-trv]').length; o.on = (document.querySelector('.msheet .j2rk-b.on') || {}).textContent || null; o.only5 = SYNQUENZER.trp1.state().only;
+    closePop(); await wait(100);
+    const E = ui1Entries().find(x => x.id === 'trp1'); E.go(); await wait(400); o.guide = SYNQUENZER.trp1.state().only; closePop(); await wait(100);
+    openMarkSheet(ms[2].id); if (UI.pop && typeof wegeMsTab === 'function') wegeMsTab(UI.pop.el, 'a'); await wait(150); o.after = SYNQUENZER.trp1.state().only; o.jrk3 = document.querySelectorAll('.msheet [data-jrk]').length; closePop();
+    undo(); return o;
+  });
+  ok(E2.nurAn && E2.trv === 4 && E2.jrk === 5 && !E2.trv5 && E2.on === '+2' && !E2.only5 && E2.guide && !E2.after && E2.jrk3 === 5,
+    'Befund 5: „nur dieser Teil“ nur im offenen Blatt – Teil 5 danach normal (Rückung +2 markiert), Guide nur für sein Blatt', E2);
+  // Befund 6: nach „nur Teil 3 +3“ rechnet die Zeile an Teil 4 gegen vor Teil 3 (0 markiert; +1 → Teil 4 absolut +1; 0 → nichts)
+  const F = await run(P, async () => {
+    const K = __song(), ms = K.marks; SYNQUENZER.trp1.set({a: 4, b: 6, r: 3}); const xp0 = JSON.stringify(S.song.xp);
+    openMarkSheet(ms[3].id); if (UI.pop && typeof wegeMsTab === 'function') wegeMsTab(UI.pop.el, 'a'); await wait(150);
+    return {xp0, trk: document.querySelectorAll('.msheet [data-trk]').length, on: (document.querySelector('.msheet [data-trk].on') || {}).textContent || null, lab: (document.querySelector('.msheet .j2rk .j2rk-l small') || {}).textContent, trn: ms[3] && S.song.marks.find(x => x.id === ms[3].id).trn};
+  });
+  await tapSel(P, '.msheet [data-trk="0"]');
+  const F1 = await run(P, () => JSON.stringify(S.song.xp));
+  await tapSel(P, '.msheet [data-trk="1"]');
+  const F2 = await run(P, async () => { const o = {xp: S.song.xp.map(x => [x.beat, x.semi]), toast: __toasts.slice(-1)[0], lv4: SYNQUENZER.trp1.lv(6), lv3: SYNQUENZER.trp1.lv(4)}; closePop(); undo(); undo(); return o; });
+  ok(F.trk === 5 && F.on === '0' && F.lab === 'nach „nur“' && F.trn === 1 && F1 === F.xp0 && JSON.stringify(F2.xp) === '[[16,3],[24,1]]' && F2.lv4 === 1 && F2.lv3 === 3,
+    'Befund 6: Teil 4 nach „nur Teil 3 +3“ – Zeile „nach „nur““, 0 markiert und ohne Wirkung, +1 = Teil 4 absolut +1 (auch ⇅ fest)', {F, F2});
+  // Befund 8, 9, 11: Meldungen
+  const G = await run(P, () => {
+    const o = {}; __song(); __toasts.length = 0;
+    o.ok8 = SYNQUENZER.trp1.set({a: 3, b: 7, r: 1, deg: true}); o.m8 = trp1Msg('Nur Takt 4–7'); undo();
+    o.ok9 = SYNQUENZER.trp1.set({a: 3, b: 5, r: 1, deg: true}); o.m9 = __toasts.slice(-1)[0];
+    const ms = S.song.marks.slice().sort((a, b) => a.a - b.a);
+    SYNQUENZER.trp1.set({a: 8, b: 10, r: 2, label: markLabel(ms[4])}); o.m11 = trp1Msg('Nur ' + trp1Name(ms[4])); undo();
+    SYNQUENZER.trp1.set({a: 4, b: 6, r: 1}); o.m11b = trp1Msg('Nur ' + trp1Name(ms[2])); undo();
+    return o;
+  });
+  ok(G.ok8 && /Nur .*Takt 5–6/.test(G.m8) && /nur ganze Teile/.test(G.m8) && !/Takt 4–7/.test(G.m8), 'Befund 8: Stufen über Takt 4–7 – die Meldung nennt den Teil, der sich ändert', G.m8);
+  ok(G.ok9 === false && /nichts geändert/.test(G.m9 || ''), 'Befund 9: Ablehnung „in der Tonart“ sagt „nichts geändert“', G.m9);
+  ok(/Halbtöne/.test(G.m11) && !/Halbtone/.test(G.m11 + G.m11b) && !/danach wie vorher/.test(G.m11) && /danach wie vorher/.test(G.m11b) && /\(Takt 9–10\)/.test(G.m11) && /Halbton –|Halbton /.test(G.m11b),
+    'Befund 11: „Halbtöne“, „danach wie vorher“ nicht beim letzten Teil, Teil mit Takt-Angabe', [G.m11, G.m11b]);
+  await P.close();
+}
+// Befund 9 + 7 (Bedienung): „in der Tonart“ nicht vorgewählt, wo es nicht geht; das Blatt springt beim Umschalten nicht (3 Größen)
+for (const [w, h, n] of [[428, 926, 'hochkant'], [926, 428, 'quer'], [926, 370, 'quer-370']]) {
+  const P = await page(w, h);
+  await run(P, async () => { __song(); ui1Home(); setSongView(true); await wait(200); SYNQUENZER.trp1.opts({deg: true}); SYNQUENZER.trp1.open({a: 3, b: 5}); await wait(250); });
+  const H0 = await run(P, () => { const p = document.querySelector('.pop.trp1p'), r = p.getBoundingClientRect(), d = p.querySelector('[data-tp="d"][data-v="0"]'); return {r: [Math.round(r.left), Math.round(r.top), Math.round(r.right), Math.round(r.bottom)], ht: d && d.classList.contains('on')}; });
+  await run(P, async () => { closePop(); await wait(100); const ms = S.song.marks.slice().sort((a, b) => a.a - b.a); SYNQUENZER.trp1.opts({deg: false}); SYNQUENZER.trp1.open({a: ms[2].a, b: ms[2].a + ms[2].len, mark: ms[2].id}); await wait(250); });
+  const r0 = await run(P, () => { const r = document.querySelector('.pop.trp1p').getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top), Math.round(r.right), Math.round(r.bottom)]; });
+  await tapSel(P, '.pop.trp1p [data-tp="d"][data-v="1"]');
+  const r1 = await run(P, () => { const p = document.querySelector('.pop.trp1p'), r = p.getBoundingClientRect(), x = p.querySelector('.ux1-x, .ms-x, [aria-label="Schließen"]'); const xr = x && x.getBoundingClientRect(); return {r: [Math.round(r.left), Math.round(r.top), Math.round(r.right), Math.round(r.bottom)], deg: SYNQUENZER.trp1.state().deg, vw: innerWidth, vh: innerHeight, x: xr ? [Math.round(xr.left), Math.round(xr.right)] : null}; });
+  await tapSel(P, '.pop.trp1p [data-tp="o"]');
+  const r2 = await run(P, () => { const r = document.querySelector('.pop.trp1p').getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top), Math.round(r.right), Math.round(r.bottom)]; });
+  await P.screenshot({path: path.join(fotos, 'trp1p-blatt-' + n + '.png')});
+  ok(H0.ht, 'Befund 9: Bereich ohne ganzen Teil – Blatt öffnet mit „Halbtöne“ (' + n + ')', H0);
+  ok(r1.deg && Math.abs(r1.r[1] - r0[1]) <= 2 && Math.abs(r2[1] - r0[1]) <= 2 && r1.r[2] <= r1.vw && r1.r[0] >= 0 && r1.r[3] <= r1.vh && (!r1.x || r1.x[1] <= r1.vw),
+    'Befund 7: Blatt „Transponieren“ bleibt beim Umschalten stehen (oben ' + r0[1] + ' → ' + r1.r[1] + ' → ' + r2[1] + ' px), im Bild (' + n + ')', {r0, r1, r2});
+  await P.close();
+}
+// Befund 3: ↶ während ▶ mitten im „nur“-Teil – Teil 4 klingt wieder wie Teil 2 (ab dem nächsten Takt)
+{
+  const P = await page(428, 926);
+  const Q = await run(P, async () => {
+    SYNQUENZER.setBpm(240); const o = {};
+    const play = async (bars, at, fn) => { SYNQUENZER.clearLog(); songPlayFrom(0); await wait(40); const off = R.songPlay ? R.songPlay.off : 0, t0 = performance.now(); let done = false;
+      while (performance.now() - t0 < bars * 1000 + 500) { const sb = R.songPlay ? songBeatOf(t2b(AU.ctx.currentTime)) : null; if (!done && sb != null && sb >= at * 4) { done = true; o.at = +sb.toFixed(2); fn(); } await wait(20); }
+      SYNQUENZER.stop(); await wait(150); return SYNQUENZER.noteLog(8192).filter(e => e.src !== 'click' && e.src !== 'audition' && e.beat != null).map(e => ({t: e.track, b: +(e.beat - off).toFixed(3), n: e.out, src: e.src, dr: S.tracks[e.track].kind === 'drum'})); };
+    const diff = (L, lo, hi, rlo) => { const ref = new Map(); for (const e of L) if (e.b >= rlo && e.b < rlo + (hi - lo) && !e.dr) ref.set(e.t + '@' + (e.b - rlo).toFixed(3) + e.src, e.n); let n = 0, bad = 0; for (const e of L) if (e.b >= lo && e.b < hi && !e.dr) { const r = ref.get(e.t + '@' + (e.b - lo).toFixed(3) + e.src); if (r == null) continue; n++; if (r !== e.n) bad++; } return {n, bad}; };
+    __song(); SYNQUENZER.trp1.set({a: 4, b: 6, r: 3}); __lt.length = 0;
+    const L = await play(9, 4.3, () => undo()); o.p4 = diff(L, 24, 32, 8); o.xp = JSON.stringify(S.song.xp); o.lt = __lt.filter(x => x > 50).length;
+    return o;
+  });
+  ok(Q.p4 && Q.p4.n >= 20 && Q.p4.bad === 0 && Q.xp === '[]', 'Befund 3: ↶ während ▶ in Teil 3 (Schlag ' + Q.at + ') – Teil 4 ' + (Q.p4 && Q.p4.n - Q.p4.bad) + '/' + (Q.p4 && Q.p4.n) + ' wie Teil 2', Q);
+  await P.close();
+}
 ok(!errs.length, 'keine Seitenfehler', errs.slice(0, 4));
 console.log('ERGEBNIS ' + (all - bad) + '/' + all + (bad ? ' – ' + bad + ' FEHLER' : ''));
 await b.close();

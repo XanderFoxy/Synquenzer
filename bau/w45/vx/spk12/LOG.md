@@ -7,3 +7,4 @@
 - 04:18 NOTES.md geschrieben (Haken, Entscheidungen, Messungen, Offen)
 - 04:19 Regression fertig: spk11-test 38 OK / 3 FEHLER (nur drums-auf-kit je Größe = bekannt offen in 4.68 „Szenen 38/41“). Fremd-Fotos/Ergebnisse der Regression nach reg/ verschoben; fotos/ = nur SPK12 (15 Fotos).
 - 04:27 Start Teil 2/3 (Plan-Schritte 4–6): Transient, Lasso/Ellipse, Obertöne-Häkchen/Auto, folgt dem Ton
+- 04:40 Teil-2-Block (Kern spk12K2/Fft/Ops trans/hauto/follow, UI Ellipse/Lasso/Transient/Obertöne ▾/Folgt dem Ton) gebaut; spk12-test2 hochkant 22/1 (Long Task nur beim Ansicht-Sprung des Tests)
