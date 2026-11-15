@@ -1,0 +1,2 @@
+- 16:18 Paket angelegt: index.html = basis.html = rel-4730/index.html (4.73.0). load average: 4.33, 3.63, 3.36
+- 16:19 Schnelltest w/qc.mjs (Klick-/Raumton-Teil des Entwickler-Tests, gleicher Code) gibt Stand 4.73.0 wieder: Klicks A 16 (d1 23/d2 4), Überstand A 7,5 / B 3,2 / C 2,9 dB; Raumton Pegel Lücke 3 −66,6→−70,7, Farbe [2,1, 4,8, 6,3, 2,3, 6,7]. load average: 6.25, 4.28, 3.60
