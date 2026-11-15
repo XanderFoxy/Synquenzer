@@ -101,3 +101,6 @@ Weiter mit: 4.54 = rel-4540/k fertig prüfen + INT53D nachziehen + Versionszeile
 - 02:20 rel-4670/m1.html = R-4660 + MTX3 (sauber gemergt, basis10 = R-4660). SPK11 folgt, dann Regression r4670.
 - IMP2B: Prüfung sagt rv1 4/53, kein Code eingebaut → IMP2 bleibt geparkt, wenn Workflow nichts Besseres liefert.
 - 02:2x Xander schickte 2 PDFs (Safari-Druck der Online-Hilfe SL12, je 1 Seite = nur Titelblatt, kein Inhalt) → privat in vx-privat/handbuch; um echte PDF gebeten bzw. Erlaubnis „hol es selbst“.
+- 02:4x IMP2B fertig (wfoe2qfg1): rv1 Original 1/53 (= alter Stand), chr2 Original weiter 3 FEHLER (Bauer: Test-Ursache, Kopie 82/82). M1 (x,5-Tempo → 2 Knöpfe) = Vorschlag Funk, nicht bauen. M2 entschieden: Spektral übernimmt geräteunabhängiges Tempo (Fehlerbehebung).
+- rel-4670/index.html = R-4660 + MTX3 + IMP2B, VERSION 4.67.0; Regression vx/r4670/run.sh läuft (Spur A+B+C mtx3 + rv1k/chrk/imp2n); Warte-Job b9mmphubt.
+- wht5phjn4: Gegenprobe chr2 (Messung/Code/Hören + Richter) → GO/NO-GO für IMP2 in 4.67. Bei NO-GO: 4.67 = R-4660 + MTX3 allein (rel-4670/m1.html + VERSION).
