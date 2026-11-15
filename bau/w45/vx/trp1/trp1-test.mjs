@@ -322,13 +322,14 @@ for (const [w, h, n] of [[428, 926, 'hochkant'], [926, 428, 'quer'], [926, 370, 
   const F = await run(P, async () => {
     const K = __song(), ms = K.marks; SYNQUENZER.trp1.set({a: 4, b: 6, r: 3}); const xp0 = JSON.stringify(S.song.xp);
     openMarkSheet(ms[3].id); if (UI.pop && typeof wegeMsTab === 'function') wegeMsTab(UI.pop.el, 'a'); await wait(150);
-    return {xp0, trk: document.querySelectorAll('.msheet [data-trk]').length, on: (document.querySelector('.msheet [data-trk].on') || {}).textContent || null, lab: (document.querySelector('.msheet .j2rk .j2rk-l small') || {}).textContent, trn: ms[3] && S.song.marks.find(x => x.id === ms[3].id).trn};
+    return {xp0, trk: document.querySelectorAll('.msheet [data-trk]').length, on: (document.querySelector('.msheet [data-trk].on') || {}).textContent || null, lab: (document.querySelector('.msheet .j2rk .j2rk-l small') || {}).textContent, trn: ms[3] && S.song.marks.find(x => x.id === ms[3].id).trn, fit: (() => { const l = document.querySelector('.msheet .j2rk .j2rk-l'), r = document.querySelector('.msheet').getBoundingClientRect(); return !!l && l.scrollWidth <= l.clientWidth + 1 && r.bottom <= innerHeight + 1; })()};
   });
+  await P.screenshot({path: path.join(fotos, 'trp1p-nach-nur-hochkant.png')});
   await tapSel(P, '.msheet [data-trk="0"]');
   const F1 = await run(P, () => JSON.stringify(S.song.xp));
   await tapSel(P, '.msheet [data-trk="1"]');
   const F2 = await run(P, async () => { const o = {on: (document.querySelector('.msheet [data-trk].on') || {}).textContent || null, xp: S.song.xp.map(x => [x.beat, x.semi]), toast: __toasts.slice(-1)[0], lv4: SYNQUENZER.trp1.lv(6), lv3: SYNQUENZER.trp1.lv(4)}; closePop(); undo(); undo(); return o; });
-  ok(F.trk === 5 && F.on === "0" && F.lab === "nach „nur“" && F.trn === 3 && F1 === F.xp0 && JSON.stringify(F2.xp) === '[[16,3],[24,1]]' && F2.lv4 === 1 && F2.lv3 === 3 && F2.on === '+1',
+  ok(F.fit && F.trk === 5 && F.on === "0" && F.lab === "nach „nur“" && F.trn === 3 && F1 === F.xp0 && JSON.stringify(F2.xp) === '[[16,3],[24,1]]' && F2.lv4 === 1 && F2.lv3 === 3 && F2.on === '+1',
     'Befund 6: Teil 4 nach „nur Teil 3 +3“ – Zeile „nach „nur““, 0 markiert und ohne Wirkung, +1 = Teil 4 absolut +1 (auch ⇅ fest)', {F, F2});
   // Befund 8, 9, 11: Meldungen
   const G = await run(P, () => {

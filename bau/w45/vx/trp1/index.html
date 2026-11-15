@@ -90012,7 +90012,8 @@ SYNQUENZER.jam3 = {
    Bedienung: Marken-Blatt › Reiter Ablauf: unter der Rückung „Wirkt ab hier │ nur dieser Teil“ + Mehr ▾ (Blatt: nur dieser Teil │ ab hier,
    Halbtöne │ in der Tonart, Oktavbereich halten, −12 … +12). Bereich-Leiste › ⋯ › „Transponieren …“ öffnet dasselbe Blatt für A–B.
    Einhänge-Zeilen (alle mit „TRP1“ markiert): marksNorm, outPitch, int54MidiClips, buildMidiSong, va1MidiSong, vvkScore, openMarkSheet,
-   openRangeMore (2×). ===== */
+   openRangeMore (2×); Prüfung: normSong, songShift, t1Shift, songClear (song.trf), jam3LvAt, jam3FestL (feste Spuren ohne Marke),
+   s2Sum, konDo (je 2×: Stufen/Stand bleiben), restoreSong (↶ ↷ während ▶), tktModeDo (Dur ↔ Moll). ===== */
 const TRP1 = {next: null, deg: false, oct: false, fc: null, ffc: null, keep: null, last: null};
 const trp1Sgn = v => (v > 0 ? 1 : v < 0 ? -1 : 0);
 // Oktavbereich halten: +7 → −5 (Halbtöne), +4 → −3 (Stufen)
