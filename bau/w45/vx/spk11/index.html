@@ -103890,8 +103890,45 @@ async function spk11Teile(U, prog) {
   }
   const o = +g.bpm > 0 && g.from !== 'projekt' ? {bpm: +g.bpm} : {};   // Tempo des Dokuments (Erkennung beim Öffnen oder selbst gestellt) als Vorgabe
   const r = await imp1Analyse(x, sr, o, p => { if (prog) prog(0.25 + 0.75 * p); });
-  const T = r && r.ok ? {ok: true, bpm: r.bpm, ts: r.ts, t1: r.t1, takt: r.takt, teile: r.teile.map(p => ({name: p.name, t0: p.t0, t1: p.t1, grp: p.grp}))} : {ok: false, err: (r && r.err) || 'Analyse fehlgeschlagen'};
+  const sg = r && r.ok ? spk11Seg(r, x, sr) : null;
+  const T = r && r.ok ? {ok: true, bpm: r.bpm, ts: r.ts, t1: r.t1, takt: r.takt, teile: sg || r.teile.map(p => ({name: p.name, t0: p.t0, t1: p.t1, grp: p.grp})), imp1: r.teile.map(p => p.name + ' ' + p.a + '–' + p.b), fein: !!sg} : {ok: false, err: (r && r.err) || 'Analyse fehlgeschlagen'};
   SPK11.ana.set(key, T); return T;
+}
+// Teile für Szenen aus den 4-Takt-Blöcken der IMP1-Erkennung (diag.bloecke): wie IMP1, nur verbindet „Y folgt immer auf X“ hier bloß zwei
+// einzelne Blöcke (eine 8-Takt-Phrase) – zwei ganze Abschnitte (Strophe 8 + Refrain 8) bleiben zwei Szenen. Namen wie IMP1 (oft + laut = Refrain).
+function spk11Seg(r, x, sr) {
+  const lab = r.diag && r.diag.bloecke, nBar = (r.takte || []).length, BL = 4; if (!lab || !lab.length || !nBar || !(r.takt > 0)) return null;
+  const bE = lab.map((_, i) => { const a = Math.max(0, Math.round((r.t1 + i * BL * r.takt) * sr)), b = Math.min(x.length, Math.round((r.t1 + Math.min(nBar, (i + 1) * BL) * r.takt) * sr)); let s = 0, c = 0; for (let j = a; j < b; j += 4) { s += x[j] * x[j]; c++; } return 10 * Math.log10(s / Math.max(1, c) + 1e-12); });
+  const mu = bE.reduce((a, v) => a + v, 0) / bE.length, sd = Math.sqrt(bE.reduce((a, v) => a + (v - mu) * (v - mu), 0) / bE.length) || 1, z = bE.map(v => (v - mu) / sd);
+  let runs = []; lab.forEach((l, i) => { const q = runs[runs.length - 1]; if (q && q.l === l) q.n++; else runs.push({l, n: 1, s: i}); });
+  for (let it = 0; it < 8; it++) {
+    let done = false;
+    for (const X of [...new Set(runs.map(q => q.l))]) {
+      const ix = runs.map((q, i) => (q.l === X ? i : -1)).filter(i => i >= 0); if (ix.length < 2) continue;
+      const Y = runs[ix[0] + 1] && runs[ix[0] + 1].l; if (Y == null || Y === X) continue;
+      if (!ix.every(i => runs[i + 1] && runs[i + 1].l === Y && runs[i].n === 1 && runs[i + 1].n === 1)) continue;
+      if (!runs.every((q, i) => q.l !== Y || (i > 0 && runs[i - 1].l === X))) continue;
+      const nl = 1000 + it * 100 + X, out = [];
+      for (let i = 0; i < runs.length; i++) { if (runs[i].l === X && runs[i + 1] && runs[i + 1].l === Y) { out.push({l: nl, n: 2, s: runs[i].s}); i++; } else out.push(runs[i]); }
+      runs = out; done = true; break;
+    }
+    if (!done) break;
+  }
+  if (runs.length > 1 && nBar - runs[runs.length - 1].s * BL < 2) { const q = runs.pop(); runs[runs.length - 1].n += q.n; }
+  runs = runs.filter(q => Math.min(nBar, (q.s + q.n) * BL) > q.s * BL);
+  const gl = [], groups = [], grpOf = runs.map((q, i) => { let g = gl.indexOf(q.l); if (g < 0) { gl.push(q.l); groups.push([]); g = groups.length - 1; } groups[g].push(i); return g; });
+  const segE = runs.map(q => { let s = 0, c = 0; for (let k = q.s; k < q.s + q.n && k < z.length; k++) { s += z[k]; c++; } return c ? s / c : 0; });
+  const gE = groups.map(G => G.reduce((a, i) => a + segE[i], 0) / G.length), rep = groups.map((G, g) => g).filter(g => groups[g].length >= 2);
+  rep.sort((p, q) => (groups[q].length + gE[q]) - (groups[p].length + gE[p]));
+  const gName = {}; if (rep[0] != null) gName[rep[0]] = 'Refrain'; if (rep[1] != null) gName[rep[1]] = 'Strophe'; rep.slice(2).forEach((g, k) => { gName[g] = 'Teil ' + String.fromCharCode(65 + k); });
+  const cnt = {}, tot = {}; runs.forEach((q, i) => { const n = gName[grpOf[i]]; if (n) tot[n] = (tot[n] || 0) + 1; });
+  const brT = runs.filter((q, i) => !gName[grpOf[i]] && i > 0 && i < runs.length - 1).length; let nBr = 0;
+  return runs.map((q, i) => {
+    let n = gName[grpOf[i]];
+    if (n) { cnt[n] = (cnt[n] || 0) + 1; if (tot[n] > 1) n += ' ' + cnt[n]; }
+    else if (i === 0) n = 'Intro'; else if (i === runs.length - 1) n = 'Outro'; else { nBr++; n = brT > 1 ? 'Bridge ' + nBr : 'Bridge'; }
+    return {name: n, t0: +(r.t1 + q.s * BL * r.takt).toFixed(3), t1: +(r.t1 + Math.min(nBar, (q.s + q.n) * BL) * r.takt).toFixed(3), grp: grpOf[i]};
+  });
 }
 // Teile in Takten des Dokument-Rasters [A, B) (A < 0 = Vorlauf vor der „1“); mit Auswahl nur der Bereich darin
 function spk11Parts(U, T) {
@@ -104069,7 +104106,7 @@ function spk11Hits(x, sr, stepS, nStep) {
   const out = [];
   for (let k = 0; k < nStep; k++) {
     const nl = pk[0][k] / ref[0], nm = pk[1][k] / ref[1], nh = pk[2][k] / ref[2];
-    if (nl > 0.35) out.push({k, w: 'k', v: Math.min(1, 0.45 + 0.55 * nl)});
+    if (nl > 0.35 && nl > 0.5 * nm) out.push({k, w: 'k', v: Math.min(1, 0.45 + 0.55 * nl)});   // tief und nicht nur der Rest eines Snare-Schlags
     if (nm > 0.45 && nm > 0.7 * nl) out.push({k, w: 's', v: Math.min(1, 0.45 + 0.55 * nm)});
     else if (nh > 0.35) out.push({k, w: 'h', v: Math.min(1, 0.35 + 0.5 * nh)});
   }

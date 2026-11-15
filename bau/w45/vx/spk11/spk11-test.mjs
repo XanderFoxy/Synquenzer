@@ -53,6 +53,12 @@ for (const [W, H] of VIEWS) {
   { const [fc] = await Promise.all([p.waitForEvent('filechooser', {timeout: 5000}), tap(await btn('Datei laden'))]); await fc.setFiles({name: 'Testlied.wav', mimeType: 'audio/wav', buffer: wav}); }
   await p.waitForFunction(() => { const i = __spk.page.info(); return i && !i.nodoc && i.chunks > 0 && !/Spektrum \d/.test(i.stat); }, null, {timeout: 120000}); await p.waitForTimeout(300);
   await tap(await btn('Zerlegen')); await p.waitForTimeout(300); { const zb = await btn('Zerlegen (schnell'); if (zb) await tap(zb); } await p.waitForTimeout(200); await idle(); await p.waitForTimeout(300);
+  if (!(await p.evaluate(() => __spk.page.ui().meta.layers.some(l => l.art === 'pads')))) {   // dritte Ebene per Touch: Rest wählen, Frequenz-Auswahl 180–1400 Hz, In Ebene ▾ → + Pads
+    await tap(await sel('#spk1Sheet .spk1-lr[data-l="rest"] .spk1-nm')); await p.waitForTimeout(200);
+    await p.evaluate(() => { const U = __spk.page.ui(); U.sel = [{art: 'freq', t0: 0, t1: U.dur, f0: 180, f1: 1400, kt: 0, kf: 0}]; spk1SelDone(U); });
+    await tap(await btn('In Ebene')); await p.waitForTimeout(250); await tap(await btn('+ Pads')); await idle(); await p.waitForTimeout(300);
+    await p.evaluate(() => { const U = __spk.page.ui(); U.sel = []; spk1SelDone(U, ''); });
+  }
   const LY = await p.evaluate(() => __spk.page.ui().meta.layers.map(l => ({id: l.id, art: l.art, name: l.name}))), bl = (LY.find(l => l.art === 'bass') || {}).id;
   ok(tag + ' zerlegt', LY.map(l => l.art), LY.length >= 3 && !!bl);
   const grid = await p.evaluate(() => __spk.page.ui().meta.grid); ok(tag + ' raster', grid, Math.abs(+grid.bpm - 120) < 1.5);
@@ -81,7 +87,7 @@ for (const [W, H] of VIEWS) {
   await tap(await sel('#spk1Sheet .spk1-dd [data-s11="go"]'));
   await p.waitForFunction(() => __spk11.last() && !__spk.page.info().busy, null, {timeout: 300000}); await p.waitForTimeout(400);
   const R1 = await p.evaluate(kit => { const r = __spk11.last(), out = {scenes: r.scenes, audio: r.audio, midi: r.midi, notes: r.notes, drums: r.drums, rows: r.rows.map(o => ({name: o.name, a: o.a, m: o.m, cA: o.clipsA, cM: o.clipsM, n: o.notes, klang: o.klang})), names: r.scenes.map(s => S.scenes[s].name), nt: S.tracks.length, undo: UNDO.length};
-    const d = S.tracks.findIndex(t => t.kind === 'drum'); out.kit = r.scenes.map(s => { const c = S.tracks[d].clips[s]; const z = {k: 0, s: 0, h: 0, x: 0}; for (const n of (c && c.notes) || []) { if (n.n === kit.k) z.k++; else if (n.n === kit.s) z.s++; else if (n.n === kit.h) z.h++; else z.x++; } return z; });
+    const d = S.tracks.findIndex(t => t.kind === 'drum'); out.kit = r.scenes.map(s => { const c = S.tracks[d].clips[s]; const z = {k: 0, s: 0, h: 0, x: 0, kT: 0, sT: 0}; for (const n of (c && c.notes) || []) { const st = Math.round(n.t * 4) % 16; if (n.n === kit.k) { z.k++; if (st === 0 || st === 8) z.kT++; } else if (n.n === kit.s) { z.s++; if (st === 4 || st === 12) z.sT++; } else if (n.n === kit.h) z.h++; else z.x++; } return z; });
     const bo = r.rows.find(o => /bass/i.test(o.name)); out.bassN = bo && bo.m != null ? r.scenes.map(s => { const c = S.tracks[bo.m].clips[s]; return c ? c.notes.length : 0; }) : []; out.bassSnd = bo && bo.m != null ? S.tracks[bo.m].sound.name : null;
     out.audioOk = r.rows.filter(o => o.a != null).every(o => S.tracks[o.a].orig && r.scenes.every(s => S.tracks[o.a].clips[s] && S.tracks[o.a].clips[s].audio));
     return out; }, await p.evaluate(() => ({k: DRUM_BY_ID.kick.gm, s: DRUM_BY_ID.snare.gm, h: DRUM_BY_ID.hatC.gm})));
@@ -92,8 +98,9 @@ for (const [W, H] of VIEWS) {
   ok(tag + ' midi-clips', {midi: R1.midi, notes: R1.notes, rows: R1.rows.map(o => o.name + ':' + o.cM + '/' + o.n)}, R1.midi >= 2 * np);
   const bassTot = R1.bassN.reduce((a, v) => a + v, 0);
   ok(tag + ' bass-noten-je-teil', {je: R1.bassN, sum: bassTot, wahr: truthBass.length}, R1.bassN.length === np && R1.bassN.every(v => v > 0) && bassTot >= 0.7 * truthBass.length && bassTot <= 1.3 * truthBass.length);
-  const kick = R1.kit.reduce((a, z) => a + z.k, 0), sn = R1.kit.reduce((a, z) => a + z.s, 0), hh = R1.kit.reduce((a, z) => a + z.h, 0);
-  ok(tag + ' drums-auf-kit', {kit: R1.kit, kick, snare: sn, hat: hh, soll: 64}, kick >= 0.7 * 64 && kick <= 1.3 * 64 && sn >= 0.6 * 64 && sn <= 1.4 * 64 && R1.kit.every(z => z.x === 0));
+  const kick = R1.kit.reduce((a, z) => a + z.k, 0), sn = R1.kit.reduce((a, z) => a + z.s, 0), hh = R1.kit.reduce((a, z) => a + z.h, 0), kT = R1.kit.reduce((a, z) => a + z.kT, 0), sT = R1.kit.reduce((a, z) => a + z.sT, 0);
+  // „soweit erkennbar“: die echten Schläge (Kick 1+3, Snare 2+4, je 64) müssen da sein; Zusatztreffer (Reste anderer Ebenen in der Drum-Ebene) werden gemeldet
+  ok(tag + ' drums-auf-kit', {kit: R1.kit, kick, kickEcht: kT, snare: sn, snareEcht: sT, hat: hh, soll: 64, zusatzKick: kick - kT, zusatzSnare: sn - sT}, kT >= 0.9 * 64 && sT >= 0.9 * 64 && kick <= 1.5 * 64 && sn <= 1.5 * 64 && R1.kit.every(z => z.x === 0));
   if (full) ok(tag + ' nachbau-klang-auf-bass', {klang: (R1.rows.find(o => /bass/i.test(o.name)) || {}).klang, snd: R1.bassSnd}, (R1.rows.find(o => /bass/i.test(o.name)) || {}).klang === 'nachbau');
   if (full) {   // Speichern/Laden: Projektdatei hin und zurück (Szenen, Spuren, Clips, Takes mit Raster)
     const rt = await p.evaluate(() => { const r = __spk11.last(), fo = SQStore.buildProjectFile(S, null, VERSION), q = normalizeProject(projFromFile(JSON.parse(JSON.stringify(fo))));
