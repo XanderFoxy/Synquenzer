@@ -127,3 +127,4 @@ Weiter mit: 4.54 = rel-4540/k fertig prüfen + INT53D nachziehen + Versionszeile
 - r4700: Funktion grün; Zeitprüfungen unter Last 20 rot → Wiederholung vx/r4700/wdh läuft. CHANGES-4700.md geschrieben.
 - Gestartet wqzj6jm57: VOXR1B, PERF2 (D Auslieferung ohne Kommentare, E Spektral lazy), MTX3C + SPKFIX, Bildwerk 0.3 (Basis rel-4700).
 - Nach 4.70: 4.71 = R-4700 + SPK11B (vx/spk11b, Basis rel-4690) + PERF1 A/B (vx/perf1, Basis rel-4690).
+- 09:2x r4700 Wdh: mtx3b 86/87 wieder rot (Tastatur-Overdub HH ZU add 2 statt ≥3) → A/B-Lauf 4.69 vs 4.70 (vx/r4700/ab, Job bnvmm4vo7) klärt Regression vs Zeit. rel-4710/index.html (4.71 = R-4700 + SPK11B + PERF1 A/B, Konflikt SPK12/SPK11B beide behalten) vorbereitet.
