@@ -6,3 +6,4 @@
 - 04:03 Lauf 1: 51/66 (Testwähler quer, Wischen hochkant, Aufnahme-Start, CHANCE-Zug) → Trefferfläche ::after, Test angepasst; Lauf 2
 - 04:06 undoApply-Haken (Schritt-Editor bleibt nach ↶ offen), Aufnahme-Test (Overdub + leerer Slot); Lauf 3
 - 04:09 hochkant: Werkzeug-Zeile voll → [Auslagern ▾] in der Zeile darunter neben „Szene n“ (34 px wie [Euklid…], Trefferfläche 50 px); Lauf 4
+- 04:11 mtx3b-test 67/67 (Fotos fotos/mtx3b-*.png). Pflicht: topdefs 26/0/0 · dupkeys 0 · smoke errors [] · MS 2000 1× · live 1× · VERSION 4.68.0. Regression startet nacheinander (reg/run.sh)

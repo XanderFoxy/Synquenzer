@@ -105110,7 +105110,7 @@ function spk12Geo(U) {
 function spk12Down(U, G, p) {
   const g = spk12Geo(U); if (!g) return;
   const c = []; if (Math.hypot(p.x - g.cx, p.y - g.cy) <= 22) c.push(['move', Math.hypot(p.x - g.cx, p.y - g.cy) + 4]);
-  const inY = p.y >= g.ya - 10 && p.y <= g.yb + 10, inX = p.x >= g.xa - 10 && p.x <= g.xb + 10;
+  const inY = Math.abs(p.y - g.cy) <= 36, inX = Math.abs(p.x - g.cx) <= 36;   // Griff-Zonen um die Balken (Rand-Mitte), sonst beginnt dort eine neue Form
   if (g.side.l && inY && Math.abs(p.x - g.xL) <= 16) c.push(['l', Math.abs(p.x - g.xL)]);
   if (g.side.r && inY && Math.abs(p.x - g.xR) <= 16) c.push(['r', Math.abs(p.x - g.xR)]);
   if (g.side.t && inX && Math.abs(p.y - g.yT) <= 16) c.push(['t', Math.abs(p.y - g.yT)]);

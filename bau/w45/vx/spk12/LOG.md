@@ -1,2 +1,3 @@
 - 03:51 Start SPK12 Teil 1/3; basis.html+index.html aus rel-4680 angelegt
 - 04:07 Block spk12-block.js + bau.py (16 Haken) gebaut; topdefs 26/7615/0/0, dupkeys 0
+- 04:11 Griff-Zonen auf Balken (±36 px) begrenzt; spk12-test 428x926: 43 OK / 0 FEHLER
