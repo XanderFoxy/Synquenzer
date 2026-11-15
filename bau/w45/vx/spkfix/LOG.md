@@ -20,3 +20,11 @@
   VERSION 4.70.0 · diff 0 `<`.
 - spkfix-test: ALLES OK, 11 Prüfungen, 22 s.
 - 10:53 Regression Spur B (reg/runb.sh, nacheinander, gegen reg/index.html = index.html) gestartet.
+- 11:07 Regression Spur B fertig (14 min 48 s, nacheinander, Last ~1–3). Gegen r4700 (Basis 4.70.0):
+  - spk5 24/24 · spk5f OK · spk5p OK · spk6k OK · spk6 OK · spk6p OK · spk6u OK · spk8s 14/0 · spk10s 16/0 · spk9u ok · spk9p Konsole [] · spk9poly ok
+    (Noten wie Basis) · spk9f ok (Noten wie Basis).
+  - spk4 4 FEHLER von 22 (Basis 5 von 23): pflicht (Erwartung Version 4.60.0), a2-verfeinern-plus-1db (4,37 → 4,36, wie Basis), a3-nachbau-zeit
+    (Zeitregel), reg-ki1-test (quer-428, quer-370, besser-als-klassisch-demo – dieselben drei wie Basis). reg-spk3-test hier 11/11 grün (Basis rot).
+  - spk1: verfeinern-verbessert-ziel FEHL (4,37 → 4,36) wie Basis.
+  - ki1: besser-als-klassisch-demo, gesang-besser-als-klassisch, guide-eintrag FEHL – dieselben drei wie Basis.
+  - Keine neue rote Prüfung durch SPKFIX.

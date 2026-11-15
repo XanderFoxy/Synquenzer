@@ -43,3 +43,8 @@ Nichts sichtbar neu. Hörbar/merkbar anders: umgesetzte Ebenen klingen nach „I
 ## Tests
 `spkfix-test.mjs <abs. index.html>` (Sonden in `sonde/`: `p2-name.mjs`, `p16.mjs` im Kern, `pseite.mjs` in der Seite) – 11 Prüfungen.
 Auf basis.html sind die sechs Fehler mit denselben Sonden nachgestellt (siehe LOG.md).
+
+## Regression Spur B (reg/runb.sh, nacheinander, Logs in reg/)
+spk5 24/24, spk5f, spk5p, spk6k, spk6, spk6p, spk6u, spk8s 14/0, spk10s 16/0, spk9u, spk9p, spk9poly, spk9f grün (Noten wie Basis).
+spk4 (4 von 22), spk1 (verfeinern) und ki1 (3) rot – genau die vorbestehenden Prüfungen der Basis r4700; keine neue rote Prüfung.
+
