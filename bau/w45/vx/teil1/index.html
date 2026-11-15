@@ -107545,7 +107545,7 @@ async function spk11Teile(U, prog) {
 // einzelne Blöcke (eine 8-Takt-Phrase) – zwei ganze Abschnitte (Strophe 8 + Refrain 8) bleiben zwei Szenen. Namen wie IMP1 (oft + laut = Refrain).
 function spk11Seg(r, x, sr) {
   const lab = r.diag && r.diag.bloecke, nBar = (r.takte || []).length, BL = 4; if (!lab || !lab.length || !nBar || !(r.takt > 0)) return null;
-  const bE = lab.map((_, i) => { const a = Math.max(0, Math.round((r.t1 + i * BL * r.takt) * sr)), b = Math.min(x.length, Math.round((r.t1 + Math.min(nBar, (i + 1) * BL) * r.takt) * sr)); let s = 0, c = 0; for (let j = a; j < b; j += 4) { s += x[j] * x[j]; c++; } return 10 * Math.log10(s / Math.max(1, c) + 1e-12); });
+  const bE = lab.map((_, i) => { const a = Math.max(0, Math.round((r.t1 + i * BL * r.takt) * sr)), b = Math.min(x.length, Math.round((r.t1 + Math.min(nBar, (i + 1) * BL) * r.takt) * sr)); let s = 0, c = 0; for (let j = a; j < b; j += 16) { s += x[j] * x[j]; c++; } return 10 * Math.log10(s / Math.max(1, c) + 1e-12); });   /* TEIL1: jede 16. Probe (Pegel je 4-Takt-Block, beim Laden < 5 ms) */
   const mu = bE.reduce((a, v) => a + v, 0) / bE.length, sd = Math.sqrt(bE.reduce((a, v) => a + (v - mu) * (v - mu), 0) / bE.length) || 1, z = bE.map(v => (v - mu) / sd);
   let runs = []; lab.forEach((l, i) => { const q = runs[runs.length - 1]; if (q && q.l === l) q.n++; else runs.push({l, n: 1, s: i}); });
   for (let it = 0; it < 8; it++) {

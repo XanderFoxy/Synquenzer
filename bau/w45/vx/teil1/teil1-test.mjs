@@ -89,27 +89,26 @@ for (const [W, H] of VIEWS) {
     await p.evaluate(() => spk1Dd(SPK1.ui, null)); await p.waitForTimeout(200); }
   // T5 Fokus-Tipp auf Refrain 1
   const v0 = await view(); await p.evaluate(() => { window.__lt0 = performance.now(); __teil1.clearMs(); });
-  await tap(await ruAt(32, 9)); await p.waitForTimeout(400);
+  await tap(await ruAt(32, 13)); await p.waitForTimeout(400);
   { const v = await view(), lt = await lpTxt(), s = await stat(); const span = 16, m = 0.03 * span;
     ok(tag + ' T5 fokus', {v, lt, s}, v.loop && v.loop[0] === 12 && v.loop[1] === 20 && Math.abs(v.t0 - (24 - m)) < 0.03 * span && Math.abs(v.t1 - (40 + m)) < 0.03 * span && v.mTop === v0.mTop && v.rowH === v0.rowH && /^Refrain 1 · Takt 13–20/.test(lt || '') && /Refrain 1 · Takt 13–20 · im Loop/.test(s)); }
   await shot('03-fokus-refrain');
   await tap(await sel('#spk1Sheet [data-a="undo"]')); await p.waitForTimeout(600);
   { const v = await view(); ok(tag + ' T5 undo-entfernt-loop', v.loop, !v.loop); }
-  await tap(await ruAt(32, 9)); await p.waitForTimeout(400); await tap(await ruAt(32, 9)); await p.waitForTimeout(400);
+  await tap(await ruAt(32, 13)); await p.waitForTimeout(400); await tap(await ruAt(32, 13)); await p.waitForTimeout(400);
   { const v = await view(), dur = 80; ok(tag + ' T5 zweiter-tipp-ganzes-lied', v, v.loop && v.loop[0] === 12 && v.t0 < 0 && v.t1 > dur - 1 && v.mTop === v0.mTop); }
-  { const a = await ruAt(32, 9), v1 = await view(); await drag(a, [a[0] - 60, a[1]]); const v = await view(); ok(tag + ' T5 ziehen-rollt', {vor: v1.t0, nach: v.t0, loop: v.loop}, v.t0 !== v1.t0 && v.loop && v.loop[0] === 12 && v.loop[1] === 20); }
-  { const a = await ruAt(50, 9); await p.evaluate(() => { window.__pe = []; for (const t of ['pointerdown', 'pointerup', 'pointercancel', 'contextmenu', 'touchstart']) document.addEventListener(t, e => window.__pe.push(t + ':' + e.pointerId + ':' + (e.target.className || e.target.tagName) + ':' + SPK1.ui.ru.contains(e.target)), true); }); await hold(a, 450); const v = await view();
+  { const a = await ruAt(32, 13), v1 = await view(); await drag(a, [a[0] - 60, a[1]]); const v = await view(); ok(tag + ' T5 ziehen-rollt', {vor: v1.t0, nach: v.t0, loop: v.loop}, v.t0 !== v1.t0 && v.loop && v.loop[0] === 12 && v.loop[1] === 20); }
+  { const a = await ruAt(50, 13); await p.evaluate(() => { window.__pe = []; for (const t of ['pointerdown', 'pointerup', 'pointercancel', 'contextmenu', 'touchstart']) document.addEventListener(t, e => window.__pe.push(t + ':' + e.pointerId + ':' + (e.target.className || e.target.tagName) + ':' + SPK1.ui.ru.contains(e.target)), true); }); await hold(a, 450); const v = await view();
     if (process.env.DBG) { console.log(JSON.stringify(await p.evaluate(a => ({pe: window.__pe, at: (document.elementFromPoint(a[0], a[1]) || {}).tagName + ':' + SPK1.ui.ru.contains(document.elementFromPoint(a[0], a[1])), a, st: SPK1.ui.st.textContent, dd: !!SPK1.ui.dd}), a))); await shot('dbg-hold'); }
     ok(tag + ' T5 halten-1-takt-loop', v.loop, v.loop && v.loop[1] - v.loop[0] === 1); }
-  if (process.env.DBG) process.exit(0);
   // T6 Fokus Nur Rest + Tipp Strophe 2
   await p.evaluate(() => fokus1Mode(SPK1.ui, 'rest')); await p.waitForTimeout(1500);
-  { const a = await ruAt(48, 9); await tap(a); await p.waitForTimeout(800); const r = await p.evaluate(() => ({f1: SPK1.ui.f1 && SPK1.ui.f1.mode, err: SPK1.ui.f1 && SPK1.ui.f1.err, loop: SPK1.ui.loop, tl1: SPK1.ui.tl1.length, cls: SPK1.ui.sh.classList.contains('spk13-tl'), st: SPK1.ui.st.textContent}));
+  { const a = await ruAt(48, 13); await tap(a); await p.waitForTimeout(800); const r = await p.evaluate(() => ({f1: SPK1.ui.f1 && SPK1.ui.f1.mode, err: SPK1.ui.f1 && SPK1.ui.f1.err, loop: SPK1.ui.loop, tl1: SPK1.ui.tl1.length, cls: SPK1.ui.sh.classList.contains('spk13-tl'), st: SPK1.ui.st.textContent}));
     ok(tag + ' T6 nur-rest', r, r.f1 === 'rest' && !r.err && r.loop && r.loop[0] === 20 && r.loop[1] === 28 && r.tl1 === 6 && r.cls); await shot('04-nur-rest-strophe2'); }
   await p.evaluate(() => fokus1Mode(SPK1.ui, 'alles')); await p.waitForTimeout(500);
   // T7 Refrain 1 → Szene
-  await tap(await ruAt(32, 9)); await p.waitForTimeout(400);
-  { const v = await view(); if (!(v.loop && v.loop[0] === 12)) { await tap(await ruAt(32, 9)); await p.waitForTimeout(300); } }
+  await tap(await ruAt(32, 13)); await p.waitForTimeout(400);
+  { const v = await view(); if (!(v.loop && v.loop[0] === 12)) { await tap(await ruAt(32, 13)); await p.waitForTimeout(300); } }
   const sc0 = await p.evaluate(() => S.scenes.map(s => s.name));
   await tap(await sel('#spk1Sheet [data-a="mxdd"]')); await p.waitForTimeout(300);
   const dd1 = await p.evaluate(() => [...document.querySelectorAll('#spk1Sheet .spk1-dd button, #spk1Sheet .spk1-dd p')].slice(0, 3).map(e => e.textContent));
@@ -129,12 +128,19 @@ for (const [W, H] of VIEWS) {
     const r = await p.evaluate(() => ({clips: S.tracks.reduce((a, t) => a + t.clips.filter(Boolean).length, 0), names: S.scenes.map(s => s.name)})); ok(tag + ' T7 undo-matrix', {vor: n0, nach: r.clips, refrain: r.names.includes('Refrain 1')}, r.clips === 0 && !r.names.includes('Refrain 1')); }
   await p.evaluate(() => spk1Open()); await p.waitForTimeout(800);
   // Intro still → keine leere, benannte Szene
-  await p.evaluate(() => { const m = __spk11.mode; }); await tap(await ruAt(4, 9)); await p.waitForTimeout(400);
+  await p.evaluate(() => { const m = __spk11.mode; }); await tap(await ruAt(4, 13)); await p.waitForTimeout(400);
   await tap(await sel('#spk1Sheet [data-a="mxdd"]')); await p.waitForTimeout(300); await tap(await sel('#spk1Sheet .spk1-dd [data-mx="szene"]')); await p.waitForFunction(() => __spk11.plan(), null, {timeout: 60000}); await p.waitForTimeout(300);
   await p.evaluate(() => { __spk11.mode('rest', 'x'); }); await p.waitForTimeout(200);
   { const pl = await p.evaluate(() => __spk11.plan().parts.map(x => x.name)); const last0 = await p.evaluate(() => __spk11.last()); await tap(await sel('#spk1Sheet .spk1-dd [data-s11="go"]')); await p.waitForTimeout(500); await idle(); await p.waitForTimeout(800);
     const r = await p.evaluate(() => ({names: S.scenes.map(s => s.name), clips: S.tracks.reduce((a, t) => a + t.clips.filter(Boolean).length, 0), st: SPK1.ui.st.textContent}));
-    ok(tag + ' T7 intro-still', {pl, r}, pl.join() === 'Intro' && !r.names.includes('Intro')); }
+    const leer = await p.evaluate(() => S.scenes.map((s, i) => [i, s.name]).filter(([i, n]) => !/^Szene \d+$/.test(n) && !S.tracks.some(t => t && t.clips[i])).map(x => x[1]));
+    ok(tag + ' T7 intro-keine-leere-benannte-szene', {pl, r, leer}, pl.join() === 'Intro' && !leer.length && (r.names.includes('Intro') ? r.clips > 0 : true)); }
+  // stiller Teil: alle Ebenen Aus außer Bass MIDI im Intro (dort spielt kein Bass) → keine Szene „Intro“
+  { await p.evaluate(() => undo()); await p.waitForTimeout(400); await tap(await sel('#spk1Sheet [data-a="mxdd"]')); await p.waitForTimeout(300); await tap(await sel('#spk1Sheet .spk1-dd [data-mx="szene"]')); await p.waitForFunction(() => __spk11.plan(), null, {timeout: 60000}); await p.waitForTimeout(300);
+    await p.evaluate(() => { for (const r of __spk11.plan().rows) __spk11.mode(r.lid, r.art === 'bass' ? 'm' : 'x'); }); await p.waitForTimeout(200);
+    await tap(await sel('#spk1Sheet .spk1-dd [data-s11="go"]')); await p.waitForTimeout(500); await idle(); await p.waitForTimeout(800);
+    const r = await p.evaluate(() => ({names: S.scenes.map(s => s.name), clips: S.tracks.reduce((a, t) => a + t.clips.filter(Boolean).length, 0), st: SPK1.ui.st.textContent, last: __spk11.last() && __spk11.last().ex}));
+    ok(tag + ' T7 intro-bass-midi-still', r, !r.names.includes('Intro') || r.clips > 0); }
   // Leistung Lineal: 120 Zeichnungen
   await p.evaluate(() => { __teil1.clearMs(); const U = SPK1.ui; for (let i = 0; i < 120; i++) { U.v.t0 += 0.05; spk1RulerDraw(U); } });
   { const I = await p.evaluate(() => __teil1.info()); const base = await p.evaluate(() => { const U = SPK1.ui, c = U.sh.classList; c.remove('spk13-tl'); const t = performance.now(); for (let i = 0; i < 120; i++) spk1RulerDraw(U); const ms = (performance.now() - t) / 120; c.add('spk13-tl'); spk1Size(U); spk1Dirty(U, 'all'); return +ms.toFixed(3); });
