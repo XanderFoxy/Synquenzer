@@ -61656,13 +61656,13 @@ function* click(y, sr, ev, o) {
     // Art „Mund“: nur das Band über 1,5 kHz neu berechnen (Grundton und tiefe Obertöne bleiben, wie sie sind); „tief“: das ganze Signal
     const lo = o && o.art === 'tief' ? null : lpZero(y, a, b, sr, 1500); if (lo) for (let i = 0; i < L; i++) z[i] -= lo[i];
     const [h0, h1, nb] = clickSpan(z, g0, g1, sr, p, o);   /* VOXR1F */
-    let A = arCoef(z, [[p, h0], [h1 + p, L]].filter(s => s[1] - s[0] > p), p), zu = lsar(z, h0, h1, A), lw = lo;
+    let lw = lo;
     /* VOXR1F: starker Klick (Band > 1,5 kHz im Fund > 20 dB über der Umgebung, z. B. in einer Pause): Bandgrenze 700 Hz statt 1,5 kHz.
        Sonst bleibt der Teil des Klicks an der Filterflanke (1,5–2,5 kHz) im Tiefband stehen (bis +8 dB über dem Rauschboden im Band > 2 kHz).
-       Grundton und erste Obertöne einer Stimme bleiben auch so unberührt. {lowF: 0} = aus. */
+       Grundton und erste Obertöne einer Stimme bleiben auch so unberührt. {lowF: 0} = aus. (Entscheidung vor dem LSAR – nur eine Rechnung je Klick.) */
     if (lo && nb > 0 && !(o && o.lowF === 0)) { let pz = 0; for (let j = h0; j < h1; j++) pz += z[j] * z[j]; pz /= Math.max(1, h1 - h0);
-      if (pz > (o && o.lowH != null ? o.lowH : 100) * nb) { lw = lpZero(y, a, b, sr, o && o.lowF ? o.lowF : 700); for (let i = 0; i < L; i++) z[i] = y[a + i] - lw[i];
-        A = arCoef(z, [[p, h0], [h1 + p, L]].filter(s => s[1] - s[0] > p), p); zu = lsar(z, h0, h1, A); } }
+      if (pz > (o && o.lowH != null ? o.lowH : 100) * nb) { lw = lpZero(y, a, b, sr, o && o.lowF ? o.lowF : 700); for (let i = 0; i < L; i++) z[i] = y[a + i] - lw[i]; } }
+    const A = arCoef(z, [[p, h0], [h1 + p, L]].filter(s => s[1] - s[0] > p), p), zu = lsar(z, h0, h1, A);
     if (nb > 0 && !(o && o.cap === 0)) { let pu = 0; for (let j = 0; j < zu.length; j++) pu += zu[j] * zu[j]; pu /= Math.max(1, zu.length); const cap = (o && o.capK != null ? o.capK : 2) * nb;   /* VOXR1F: Füllung nie lauter als 3 dB über der Umgebung (Band > 1,5 kHz) */
       if (pu > cap) { const g = Math.sqrt(cap / pu); for (let j = 0; j < zu.length; j++) zu[j] *= g; } }
     let e0 = 0, e1 = 0; for (let j = h0; j < h1; j++) { const u = zu[j - h0]; e0 += z[j] * z[j]; e1 += u * u; y[a + j] = lw ? lw[j] + u : u; }
