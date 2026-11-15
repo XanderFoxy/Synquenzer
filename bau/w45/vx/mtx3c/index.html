@@ -96446,6 +96446,7 @@ function mtx3cBegSched(i, from, to, tg) {
   if (!tg || tg.dr !== DRUM_T || !mtx3Is(i)) return undefined;
   const run = beg1RunOf(from); if (!run) return undefined;
   if (from >= run.t0 - 1e-9 && run.t0 > 0 && !run.cut.has(i)) { run.cut.add(i); try { cutTrackAt(i, b2t(run.t0)); } catch (e) { logErr(e); } }
+  if (run.tEnd != null && from >= run.tEnd - 1e-9 && run.cutE && !run.cutE.has(i)) { run.cutE.add(i); try { cutTrackAt(i, b2t(run.tEnd)); } catch (e) { logErr(e); } }   // Band-Ende: Schnitt wie bei DRUMS
   if (from < run.t0 - 1e-9) return [from, Math.min(to, run.t0)];
   if (run.tEnd != null && to > run.tEnd + 1e-9) return [Math.max(from, run.tEnd), to];
   return null;
@@ -96519,12 +96520,13 @@ function mtx3cMelO(o, track) {
   const gm = S.tracks[track].dvx.gm; o.n = gm; if ('nc' in o) o.nc = gm; o.dr3 = 1;
 }
 // melCommit-Haken: Schrittlänge der Pads; zwei Tasten zugleich = ein Schlag (der lautere). true = schon da (nicht noch einmal ablegen)
+// (Zusammenlegen in der Melodie-Spur markiert das Projekt wie melCommit mit markDirty; Take-Noten einer Song-Aufnahme wie dort nur UI.dirty.song)
 function mtx3cMelC(o, note) {
   if (!o || !o.dr3 || !note) return false;
   note.d = .1;
   const arr = o.sr ? o.sr.notes : S.song && curMel(S.song).notes, at = x => (o.sr ? x.b : x.t);
   if (!Array.isArray(arr)) return false;
-  for (let k = arr.length - 1; k >= 0; k--) { const y = arr[k]; if (y && y.n === note.n && Math.abs(at(y) - note.t) < .09) { y.v = Math.max(+y.v || 0, note.v); UI.dirty.song = true; return true; } }
+  for (let k = arr.length - 1; k >= 0; k--) { const y = arr[k]; if (y && y.n === note.n && Math.abs(at(y) - note.t) < .09) { y.v = Math.max(+y.v || 0, note.v); UI.dirty.song = true; if (!o.sr) markDirty(); return true; } }
   MTX3C.mel++; return false;
 }
 

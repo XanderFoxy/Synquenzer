@@ -110516,8 +110516,9 @@ function srLoad() { return blockLoad('sq-sr-src', SRL, () => typeof NEIGEN !== '
 const SPKL = {loaded: false, ms: 0, err: null};
 function spkLoad() { return blockLoad('sq-spk-src', SPKL, () => typeof SPK1_API !== 'undefined' && typeof SPK12_API !== 'undefined' && typeof spk9DspMake === 'function'); }
 { const f = spk1Open; spk1Open = function (o) { if (!spkLoad()) { if (typeof toast === 'function') toast('Spektral-Seite konnte nicht laden'); return Promise.resolve(); } return f(o); }; }
-{ const f = spk1ZipAdd; spk1ZipAdd = function (files) { if (Array.isArray(S.spk) && S.spk.length) spkLoad(); return f(files); }; }
-{ const f = spk1ZipRead; spk1ZipRead = function (fs) { if (fs && typeof fs.some === 'function' && fs.some(x => x && /^spektral\//.test(x.name))) spkLoad(); return f(fs); }; }
+{ const f = spk1ZipAdd; spk1ZipAdd = function (files) { if (Array.isArray(S.spk) && S.spk.length && !spkLoad() && typeof toast === 'function') toast('Spektral-Analysen nicht gesichert: Spektral-Seite konnte nicht laden'); return f(files); }; }
+{ const f = spk1ZipRead; spk1ZipRead = function (fs) { if (fs && typeof fs.some === 'function' && fs.some(x => x && /^spektral\//.test(x.name)) && !spkLoad() && typeof toast === 'function') toast('Spektral-Analysen nicht gelesen: Spektral-Seite konnte nicht laden'); return f(fs); }; }
+// Lädt der Block nicht (z. B. Speicher knapp), schreibt/liest der Container den Rest wie bisher – der Hinweis sagt, dass die Analysen fehlen
 // Test-Zugänge: Zugriff lädt den Block; die Zuweisung im Block macht daraus wieder ein gewöhnliches Feld
 function spkLazy(o, k) {
   try {
