@@ -39,17 +39,17 @@ ok(h0.sheet && h0.row, 'Takes-Blatt mit Zeile „Gesang reinigen“ offen (3-min
 // VOXR1E-Trace: Chrome-Trace über Prüfen + Anwenden, lange Aufgaben (RunTask > 40 ms) des Hauptfadens mit Inhalt
 const chunks = []; cdp.on('Tracing.dataCollected', e => { for (const v of e.value) chunks.push(v); });
 const done = new Promise(r => cdp.once('Tracing.tracingComplete', r));
-await cdp.send('Tracing.start', {transferMode: 'ReportEvents', traceConfig: {recordMode: 'recordAsMuchAsPossible', includedCategories: ['devtools.timeline', 'toplevel', 'disabled-by-default-devtools.timeline', 'v8.execute']}});
+if (process.env.TR) await cdp.send('Tracing.start', {transferMode: 'ReportEvents', traceConfig: {recordMode: 'recordAsMuchAsPossible', includedCategories: ['devtools.timeline', 'toplevel', 'disabled-by-default-devtools.timeline', 'v8.execute']}});
 const T0 = await run(async () => performance.timeOrigin + performance.now(), null);
 let m0 = await mark('pruefen'); await tapSel('[data-vr1="mittel"]');
 const P1 = await until(async () => { const s = document.querySelector('.vr1st'); return {ok: /Befund/.test(s && s.textContent || ''), st: s && s.textContent}; }, null, 60000);
-const L1 = await ltSince(m0.lt); console.log('PRUEFEN', JSON.stringify({ms: P1.waitMs, lt: L1.lt, gap: L1.gapMax, big: L1.big, fx: L1.fx}));
+const L1 = await ltSince(m0.lt); console.log('PRUEFEN', JSON.stringify({vx: await run(async () => ({last: VXR1.last, w: VXR1.w ? 'lebt' : String(VXR1.w), slices: VXR1.slices}), null), ms: P1.waitMs, lt: L1.lt, gap: L1.gapMax, big: L1.big, fx: L1.fx}));
 await p.waitForTimeout(800);
 m0 = await mark('anwenden'); const tAp = await run(async () => performance.now(), null); await tapSel('[data-vr1a="ap"]');
 const A1 = await until(async o => { const v = SYNQUENZER.vr1Ver(o.id); return {ok: v.ready && !v.busy}; }, {id}, 120000);
 const tRd = await run(async () => performance.now(), null);
 await p.waitForTimeout(1500); const hh = await settle();
-const L3 = await ltSince(m0.lt); console.log('ANWENDEN', JSON.stringify({ms: A1.waitMs, tAp: Math.round(tAp), tReady: Math.round(tRd), lt: L3.lt, gap: L3.gapMax, big: L3.big.slice(-12), fx: L3.fx, hash: hh, hi: await run(async () => SYNQUENZER.vr1HashInfo ? SYNQUENZER.vr1HashInfo() : null, null)}));
-await cdp.send('Tracing.end'); await done;
+const L3 = await ltSince(m0.lt); console.log('ANWENDEN', JSON.stringify({ms: A1.waitMs, tAp: Math.round(tAp), tReady: Math.round(tRd), lt: L3.lt, gap: L3.gapMax, big: L3.big.slice(-12), fx: L3.fx, hash: hh, hi: await run(async () => SYNQUENZER.vr1HashInfo ? SYNQUENZER.vr1HashInfo() : null, null), vx: await run(async () => ({last: VXR1.last, w: VXR1.w ? 'lebt' : String(VXR1.w), slices: VXR1.slices, runs: VXR1.runs, g4: typeof G4 !== 'undefined' ? G4.how : null, wp: typeof WP !== 'undefined' ? WP.how : null}), null)}));
+if (process.env.TR) { await cdp.send('Tracing.end'); await done; }
 fs.writeFileSync(OUT, JSON.stringify(chunks));
 await b.close();
