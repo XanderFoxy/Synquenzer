@@ -61198,6 +61198,298 @@ const CL_API = {
   clDecCheck: async (a, b) => { const s = stRead(a, b, {d16: true}); if (!s) return null; const x = await clNotes(s, {raw: true, pre: 0}); if (!x) return null; let mx = 0, ms = 0; for (let i = 0; i < x.length; i++) { mx = Math.max(mx, Math.abs(x[i] - s.d16[i])); ms = Math.max(ms, Math.abs(s.d16[i])); } return {n: x.length, maxDiff: mx, peak: ms}; },
 };
 
+/* VOXR1-BEGIN */
+/* =====================================================================================================================
+   VOX-R1 (P4 „Gesang reinigen – Grundstufe“, Teil 1/3): gemeinsame Reinigungs-Kerne im Worker, blockweise und abbrechbar.
+   Schritte hier: 0 Prüfen (Brumm 50/60 Hz, Plopp-/Klick-/Atmer-Kandidaten, Zisch-Anteil, Rauschboden, Übersteuerung),
+   4 Plopps (Tiefstoß < 150 Hz gegen 300–3000 Hz, 10–80 ms; nur das Band unter der Grenze wird gedämpft, die Stimme bleibt über
+   ihr eigenes Spektrum vor/nach dem Stoß geschützt), 5 Brummen (Kerben-Kette mit begrenzter Tiefe auf f0·k, live-fähig: dieselben
+   Biquads als IIRFilterNode), 6 Hochpass 80 Hz (rückt hinter Plopps und Brummen: feste Reihenfolge VR1_ORDER).
+   Kern = vr1Make() (ohne DOM, auch in Node prüfbar). Jeder Schritt ist ein Generator, der seinen Fortschritt meldet: im Worker
+   läuft er durch (Abbruch = Worker beenden), auf dem Hauptfaden (Rückfall) in Scheiben ≤ 8 ms.
+   Nicht-destruktiv: der Kern liefert eine neue Fassung (Float32) – der Roh-Take bleibt unberührt.
+   ===================================================================================================================== */
+function vr1Make() {
+'use strict';
+const TAU = 2 * Math.PI, EPS = 1e-12, BLK = 16384;
+const db = p => 10 * Math.log10(p + EPS);
+// Biquad (RBJ), normiert [b0, b1, b2, a1, a2]; 'kerbe' = Kerbe mit begrenzter Tiefe g (linear): H = g + (1 − g)·Notch
+function bqC(type, sr, f, q, g) {
+  const w = TAU * f / sr, c = Math.cos(w), al = Math.sin(w) / (2 * q), a0 = 1 + al, a1 = -2 * c, a2 = 1 - al;
+  let b0, b1, b2;
+  if (type === 'lp') { b0 = (1 - c) / 2; b1 = 1 - c; b2 = b0; }
+  else if (type === 'hp') { b0 = (1 + c) / 2; b1 = -(1 + c); b2 = b0; }
+  else { b0 = g * a0 + (1 - g); b1 = g * a1 + (1 - g) * a1; b2 = g * a2 + (1 - g); }
+  return [b0 / a0, b1 / a0, b2 / a0, a1 / a0, a2 / a0];
+}
+const BW4 = [0.5411961, 1.3065630];   // Butterworth 4. Ordnung als zwei Biquads
+function bqStep(co, st, v) { const o = co[0] * v + st[0]; st[0] = co[1] * v - co[3] * o + st[1]; st[1] = co[2] * v - co[4] * o; return o; }
+function bqRun(co, st, x, y, a, b) {
+  const b0 = co[0], b1 = co[1], b2 = co[2], a1 = co[3], a2 = co[4]; let z1 = st[0], z2 = st[1];
+  for (let i = a; i < b; i++) { const v = x[i], o = b0 * v + z1; z1 = b1 * v - a1 * o + z2; z2 = b2 * v - a2 * o; y[i] = o; }
+  st[0] = z1 < 1e-30 && z1 > -1e-30 ? 0 : z1; st[1] = z2 < 1e-30 && z2 > -1e-30 ? 0 : z2;
+}
+function FFT(n) {
+  const rev = new Uint32Array(n), cs = new Float64Array(n >> 1), sn = new Float64Array(n >> 1); let bits = 0; while ((1 << bits) < n) bits++;
+  for (let i = 0; i < n; i++) { let r = 0; for (let b = 0; b < bits; b++) r |= ((i >> b) & 1) << (bits - 1 - b); rev[i] = r; }
+  for (let i = 0; i < n >> 1; i++) { cs[i] = Math.cos(TAU * i / n); sn[i] = Math.sin(TAU * i / n); }
+  return (re, im, inv) => {
+    for (let i = 0; i < n; i++) { const j = rev[i]; if (j > i) { let t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; } }
+    for (let size = 2; size <= n; size <<= 1) { const half = size >> 1, step = n / size;
+      for (let i = 0; i < n; i += size) for (let j = i, k = 0; j < i + half; j++, k += step) {
+        const l = j + half, c = cs[k], s = inv ? sn[k] : -sn[k], tr = re[l] * c - im[l] * s, ti = re[l] * s + im[l] * c;
+        re[l] = re[j] - tr; im[l] = im[j] - ti; re[j] += tr; im[j] += ti; } }
+  };
+}
+function* part(g, a, s) { let r; while (!(r = g.next()).done) yield a + s * r.value; return r.value; }
+const med = (a, i0, i1) => { i0 = Math.max(0, i0); i1 = Math.min(a.length, i1); if (i1 <= i0) return null; const t = Array.prototype.slice.call(a, i0, i1).sort((p, q) => p - q); return t[t.length >> 1]; };
+const pct = (a, q) => { const t = Array.from(a).filter(v => v > -150).sort((p, r) => p - r); return t.length ? t[Math.min(t.length - 1, Math.floor(q * t.length))] : -150; };
+
+/* ---------- Merkmale je 5-ms-Schritt (Fenster 10 ms): Gesamt, < 150 Hz, 300–3000, 1–6 kHz, > 5 kHz, > 2 kHz (Spitze) ---------- */
+function* feats(x, sr) {
+  const n = x.length, H = Math.max(32, Math.round(0.005 * sr)), nh = Math.ceil(n / H);
+  const C = {lf: BW4.map(q => bqC('lp', sr, 150, q)), mh: bqC('hp', sr, 300, Math.SQRT1_2), ml: bqC('lp', sr, 3000, Math.SQRT1_2),
+    bh: bqC('hp', sr, 1000, Math.SQRT1_2), bl: bqC('lp', sr, 6000, Math.SQRT1_2), hf: BW4.map(q => bqC('hp', sr, 5000, q)), k2: BW4.map(q => bqC('hp', sr, 2000, q))};
+  const st = () => [0, 0], S = {lf: [st(), st()], mh: st(), ml: st(), bh: st(), bl: st(), hf: [st(), st()], k2: [st(), st()]};
+  const F = {tot: new Float64Array(nh), lf: new Float64Array(nh), mid: new Float64Array(nh), br: new Float64Array(nh), hf: new Float64Array(nh), k2: new Float64Array(nh), pk2: new Float64Array(nh)};
+  let clip = 0, run = 0, pk = 0;
+  for (let i0 = 0; i0 < n; i0 += BLK) {
+    const i1 = Math.min(n, i0 + BLK);
+    for (let i = i0; i < i1; i++) {
+      const v = x[i], h = (i / H) | 0, av = v < 0 ? -v : v;
+      if (av > pk) pk = av;
+      if (av >= 0.998) { run++; if (run === 2) clip++; } else run = 0;
+      F.tot[h] += v * v;
+      let a = bqStep(C.lf[1], S.lf[1], bqStep(C.lf[0], S.lf[0], v)); F.lf[h] += a * a;
+      a = bqStep(C.ml, S.ml, bqStep(C.mh, S.mh, v)); F.mid[h] += a * a;
+      a = bqStep(C.bl, S.bl, bqStep(C.bh, S.bh, v)); F.br[h] += a * a;
+      a = bqStep(C.hf[1], S.hf[1], bqStep(C.hf[0], S.hf[0], v)); F.hf[h] += a * a;
+      a = bqStep(C.k2[1], S.k2[1], bqStep(C.k2[0], S.k2[0], v)); a *= a; F.k2[h] += a; if (a > F.pk2[h]) F.pk2[h] = a;
+    }
+    for (const k in S) { const s = S[k]; for (const z of (Array.isArray(s[0]) ? s : [s])) { if (z[0] < 1e-30 && z[0] > -1e-30) z[0] = 0; if (z[1] < 1e-30 && z[1] > -1e-30) z[1] = 0; } }
+    yield i1 / n;
+  }
+  // Rahmen j = Schritte j, j+1 (10 ms), Pegel in dB je Sample
+  const nf = Math.max(1, nh - 1), R = {}, w = 1 / (2 * H);
+  for (const k of ['tot', 'lf', 'mid', 'br', 'hf']) { const a = F[k], o = new Float64Array(nf); for (let j = 0; j < nf; j++) o[j] = db((a[j] + (a[j + 1] || 0)) * w); R[k] = o; }
+  return {H, nh, nf, F, R, clip, pk, sr, n};
+}
+
+/* ---------- Brummen: 50/60 Hz finden (dezimierter, ruhigster zusammenhängender Ausschnitt ≤ 10 s, Goertzel mit Hann) ---------- */
+function* humFind(x, sr, Fe) {
+  const D = Math.max(1, Math.floor(sr / 2600)), sd = sr / D, L = BW4.map(q => bqC('lp', sr, 1100, q)), s0 = [0, 0], s1 = [0, 0];
+  let a = 0, b = x.length; const want = Math.round(10 * sr);
+  if (b > want && Fe) {   // ruhigste 10 s (Pegel je Rahmen), Schritt 1 s
+    const fpS = sr / Fe.H, W = Math.round(10 * fpS), st = Math.max(1, Math.round(fpS)); let best = 1e9;
+    for (let j = 0; j + W <= Fe.nf; j += st) { let s = 0; for (let q = j; q < j + W; q += 4) s += Fe.R.tot[q]; if (s < best) { best = s; a = Math.round(j * Fe.H); } }
+    b = Math.min(x.length, a + want);
+  }
+  const pre = Math.min(a, Math.round(0.2 * sr)), M = Math.floor((b - a) / D), xd = new Float64Array(M);
+  let k = 0; for (let i = a - pre; i < b && k < M; i++) { const v = bqStep(L[1], s1, bqStep(L[0], s0, x[i])); if (i >= a && (i - a) % D === 0) xd[k++] = v; }
+  let ws = 0; for (let i = 0; i < M; i++) { const w = 0.5 - 0.5 * Math.cos(TAU * i / M); xd[i] *= w; ws += w; }
+  yield 0.2;
+  const P = f => { const c = 2 * Math.cos(TAU * f / sd); let p1 = 0, p2 = 0; for (let i = 0; i < M; i++) { const s = xd[i] + c * p1 - p2; p2 = p1; p1 = s; } return p1 * p1 + p2 * p2 - c * p1 * p2; };
+  const T = M / sd, off = Math.max(1.5, 3 / Math.max(0.5, T)), KH = 7, KM = Math.min(16, Math.floor((sd / 2 - 40) / 60));
+  const res = {};
+  let step = 0;
+  for (const base of [50, 60]) {
+    let bf = base, bs = -1;
+    for (let f = base - 2; f <= base + 2 + 1e-9; f += 0.05) { let s = 0; for (let h = 1; h <= KH; h++) s += P(h * f); if (s > bs) { bs = s; bf = f; } if (++step % 8 === 0) yield 0.2 + 0.6 * step / 170; }
+    let f1 = bf; bs = -1; const sc = f => { let s = 0; for (let h = 1; h <= KH; h++) s += P(h * f); return s; };
+    for (let f = bf - 0.05; f <= bf + 0.05 + 1e-9; f += 0.005) { const s = sc(f); if (s > bs) { bs = s; f1 = f; } }
+    const ym = sc(f1 - 0.005), y0 = bs, yp = sc(f1 + 0.005), den = ym - 2 * y0 + yp; if (den < 0) f1 += 0.005 * 0.5 * (ym - yp) / den;
+    const rk = [], amp = [];
+    for (let h = 1; h <= KM; h++) { const pc = P(h * f1), nb = (P(h * f1 - off) + P(h * f1 + off) + P(h * f1 - off * 1.7) + P(h * f1 + off * 1.7)) / 4; rk.push(db(pc) - db(nb)); amp.push(2 * Math.sqrt(pc) / ws); }
+    res[base] = {f0: f1, rk, amp, score: rk.slice(0, 4).reduce((s, v) => s + Math.max(0, v), 0)};
+  }
+  const B = res[50].score >= res[60].score ? res[50] : res[60], base = B === res[50] ? 50 : 60;
+  let n = 0; for (let h = 0; h < B.rk.length; h++) if (B.rk[h] >= 10) n = h + 1;
+  const hits = B.rk.slice(0, 4).filter(v => v >= 10).length, on = hits >= 2;
+  let hp = 0; for (let h = 0; h < n; h++) if (B.rk[h] >= 10) hp += B.amp[h] * B.amp[h] / 2;
+  return {on, base, f0: +B.f0.toFixed(4), n: on ? Math.max(2, n) : 0, rk: B.rk.map(v => +v.toFixed(1)), db: on ? +db(hp).toFixed(1) : null, sec: +T.toFixed(1)};
+}
+// Kerben je Oberton: Tiefe d (dB, −30) bis zum 7., darüber flacher (bis d/2 beim 16.), Güte q (30)
+function humCoefs(sr, h) {
+  const out = [], f0 = h.f0 || 50, n = Math.max(1, Math.min(16, h.n || 7)), d = h.depth != null ? h.depth : -30, q = h.q || 30;
+  for (let k = 1; k <= n; k++) { const f = k * f0; if (f >= sr * 0.45) break; const dk = k <= 7 ? d : d * (1 - 0.5 * (k - 7) / 9); out.push({f, q, db: dk, c: bqC('kerbe', sr, f, q, Math.pow(10, dk / 20))}); }
+  return out;
+}
+function* hum(x, y, sr, h) {
+  const K = humCoefs(sr, h), S = K.map(() => [0, 0]), n = x.length;
+  for (let i0 = 0; i0 < n; i0 += BLK) { const i1 = Math.min(n, i0 + BLK); for (let k = 0; k < K.length; k++) bqRun(K[k].c, S[k], k ? y : x, y, i0, i1); if (!K.length) y.set(x.subarray(i0, i1), i0); yield i1 / n; }
+  return K.map(k => ({f: +k.f.toFixed(3), db: +k.db.toFixed(1), q: k.q}));
+}
+function* hp(x, y, sr, fc) { const c = bqC('hp', sr, fc || 80, Math.SQRT1_2), s = [0, 0], n = x.length; for (let i0 = 0; i0 < n; i0 += BLK) { const i1 = Math.min(n, i0 + BLK); bqRun(c, s, x, y, i0, i1); yield i1 / n; } }
+
+/* ---------- Plopps finden: Sprung von (< 150 Hz) − (300–3000 Hz) gegen die Umgebung, 10–80 ms ---------- */
+function plopFind(Fe, o) {
+  o = o || {}; const sens = o.sens != null ? o.sens : 8, thr = 6 + (10 - sens) * 1.5, R = Fe.R, nf = Fe.nf, fps = Fe.sr / Fe.H;
+  const r = new Float64Array(nf); for (let j = 0; j < nf; j++) r[j] = R.lf[j] - R.mid[j];
+  const flo = pct(R.lf, 0.1), top = pct(R.tot, 0.99), B0 = Math.round(0.25 * fps), B1 = Math.round(0.03 * fps), A0 = Math.round(0.1 * fps), A1 = Math.round(0.3 * fps);
+  const ex = new Float64Array(nf), cand = new Uint8Array(nf);
+  for (let j = 0; j < nf; j++) {
+    if (R.lf[j] < flo + 15 || R.lf[j] < top - 45) continue;
+    const rb = med(r, j - B0, j - B1), ra = med(r, j + A0, j + A1), lb = med(R.lf, j - B0, j - B1), la = med(R.lf, j + A0, j + A1);
+    const base = rb == null ? ra : ra == null ? rb : Math.min(rb, ra), lbase = lb == null ? la : la == null ? lb : Math.min(lb, la);
+    if (base == null) continue;
+    ex[j] = r[j] - base; if (ex[j] >= thr && R.lf[j] - lbase >= thr - 3) cand[j] = 1;
+  }
+  const ev = [];
+  for (let j = 0; j < nf; j++) {
+    if (!cand[j]) continue; let e = j, mx = ex[j]; while (e + 1 < nf && (cand[e + 1] || (e + 2 < nf && cand[e + 2]))) { e++; if (ex[e] > mx) mx = ex[e]; }
+    const dur = (e - j + 2) / fps;
+    if (dur >= 0.01 && dur <= 0.1) ev.push({t0: j * Fe.H / Fe.sr, t1: (e + 2) * Fe.H / Fe.sr, s0: j * Fe.H, s1: Math.min(Fe.n, (e + 2) * Fe.H), exDb: +mx.toFixed(1)});
+    j = e;
+  }
+  return ev;
+}
+/* ---------- Plopps dämpfen: STFT nur um den Stoß, nur Bins unter der Grenze; |Y| ≤ Spektrum der Stimme davor/danach (+1 dB),
+   höchstens bis zur Stärken-Grenze (50 % = −24 dB); Korrektur = ISTFT((G − 1)·X) – außerhalb der Stöße bleibt alles bitgleich ---------- */
+function* plop(y, sr, ev, o) {
+  o = o || {}; const N = sr >= 32000 ? 2048 : 1024, Hp = N >> 2, fft = FFT(N), cut = o.cut || 250, kc = Math.max(2, Math.round(cut * N / sr)), KT = kc + 3;
+  const gmin = Math.pow(10, -0.48 * (o.str != null ? o.str : 50) / 20), al = Math.pow(10, 1 / 20), n = y.length;
+  const win = new Float64Array(N); for (let i = 0; i < N; i++) win[i] = Math.sqrt(0.5 - 0.5 * Math.cos(TAU * i / N));
+  const re = new Float64Array(N), im = new Float64Array(N), out = [];
+  const spec = p => { for (let i = 0; i < N; i++) { const q = p + i; re[i] = q >= 0 && q < n ? y[q] * win[i] : 0; im[i] = 0; } fft(re, im, false); };
+  const mag = p => { spec(p); const m = new Float64Array(KT + 1); for (let k = 0; k <= KT; k++) m[k] = Math.hypot(re[k], im[k]); return m; };
+  for (let e = 0; e < ev.length; e++) {
+    const E = ev[e], pB = Math.floor((E.s0 - N) / Hp) * Hp, pA = Math.ceil(E.s1 / Hp) * Hp, ref = new Float64Array(KT + 1);
+    const refs = [pB - Hp, pB, pA, pA + Hp].filter(p => p >= 0 && p + N <= n), side = [];
+    for (const p of refs) { const m = mag(p); side.push({p, m}); }
+    for (let k = 0; k <= KT; k++) { let b = 0, a = 0, nb = 0, na = 0; for (const s of side) { if (s.p < E.s0) { b += s.m[k]; nb++; } else { a += s.m[k]; na++; } } ref[k] = al * Math.max(nb ? b / nb : 0, na ? a / na : 0); }
+    const corr = new Float64Array(pA - pB + N); let e0 = 0, e1 = 0;
+    for (let p = pB + Hp; p < pA; p += Hp) {
+      spec(p);
+      for (let k = 0; k <= KT; k++) {
+        const m = Math.hypot(re[k], im[k]), wt = k <= kc ? 1 : (KT - k) / (KT - kc); let g = m > ref[k] ? Math.max(gmin, ref[k] / m) : 1; g = 1 - wt * (1 - g);
+        e0 += m * m; e1 += m * m * g * g;
+        const gm = g - 1; re[k] *= gm; im[k] *= gm; if (k > 0) { re[N - k] *= gm; im[N - k] *= gm; }
+      }
+      for (let k = KT + 1; k < N - KT; k++) { re[k] = 0; im[k] = 0; }
+      fft(re, im, true);
+      for (let i = 0; i < N; i++) corr[p - pB + i] += re[i] / N * win[i] * 0.5;
+    }
+    for (let i = 0; i < corr.length; i++) { const q = pB + i; if (q >= 0 && q < n) y[q] += corr[i]; }
+    out.push({t0: +E.t0.toFixed(4), t1: +E.t1.toFixed(4), exDb: E.exDb, redDb: +(db(e0) - db(e1)).toFixed(1)});
+    yield (e + 1) / ev.length;
+  }
+  return out;
+}
+
+/* ---------- 0 Prüfen: was ist da ---------- */
+function* check(x, sr, o) {
+  o = o || {}; const t0 = Date.now(), Fe = yield* part(feats(x, sr), 0, 0.6), R = Fe.R, nf = Fe.nf, fps = sr / Fe.H;
+  const Hm = yield* part(humFind(x, sr, Fe), 0.6, 0.35);
+  const plops = plopFind(Fe, o.plop);
+  const floor = pct(R.tot, 0.1), act = pct(R.tot, 0.6), top = pct(R.tot, 0.99);
+  // Klicks (Kandidaten): Spitze > 2 kHz ≥ 16 dB über dem örtlichen Mittel, kurz, nicht im Zischen
+  let clicks = 0;
+  { const F = Fe.F, H = Fe.H, e2 = new Float64Array(Fe.nh); for (let h = 0; h < Fe.nh; h++) e2[h] = F.k2[h] / H;
+    for (let h = 2; h < Fe.nh - 2; h++) { const m = med(e2, h - 10, h + 11); if (F.pk2[h] > 40 * m && F.pk2[h] > 1e-7 && F.pk2[h] > 4 * F.pk2[h - 1] && F.pk2[h] > 4 * F.pk2[h + 1] && F.hf[h] < 0.6 * F.tot[h] + 1e-12) { clicks++; h += 2; } } }
+  // Atmer (Kandidaten): leise, kaum < 300 Hz, Energie 1–6 kHz, 120–900 ms
+  const breaths = [];
+  { let s = -1, gap = 0;
+    for (let j = 0; j <= nf; j++) {
+      const ok = j < nf && R.tot[j] > floor + 6 && R.tot[j] < act - 6 && R.br[j] - R.tot[j] > -3.5 && R.lf[j] - R.tot[j] < -8;
+      if (ok) { if (s < 0) s = j; gap = 0; } else if (s >= 0 && ++gap > 3) { const e = j - gap, d = (e - s + 2) / fps; if (d >= 0.12 && d <= 0.9) breaths.push({t0: +(s / fps).toFixed(3), t1: +((e + 2) / fps).toFixed(3)}); s = -1; gap = 0; }
+    } }
+  // Zischen: Anteil > 5 kHz an der Energie der aktiven Rahmen
+  let eh = 0, et = 0, sib = 0; for (let j = 0; j < nf; j++) if (R.tot[j] > act - 20) { const t = Math.pow(10, R.tot[j] / 10), h = Math.pow(10, R.hf[j] / 10); et += t; eh += h; if (h > 0.4 * t) sib++; }
+  const B = {sr, sec: +(x.length / sr).toFixed(2), clip: Fe.clip, peakDb: +(20 * Math.log10(Fe.pk + EPS)).toFixed(1), floorDb: +floor.toFixed(1), snrDb: +(act - floor).toFixed(1),
+    hum: Hm, plops, clicks, breaths: breaths.length, breathList: breaths, sibPct: +(100 * eh / (et + EPS)).toFixed(1), sibFrames: sib, ms: Date.now() - t0};
+  const L = [];
+  if (B.clip) L.push(B.clip + ' Übersteuerung' + (B.clip > 1 ? 'en' : ''));
+  if (B.clicks) L.push(B.clicks + ' Klick' + (B.clicks > 1 ? 's' : ''));
+  if (plops.length) L.push(plops.length + ' Plopp' + (plops.length > 1 ? 's' : ''));
+  if (Hm.on) L.push('Brumm ' + Hm.base + ' Hz');
+  if (B.breaths) L.push(B.breaths + ' Atmer');
+  if (B.sibPct >= 8) L.push('Zischen ' + Math.round(B.sibPct) + ' %');
+  if (B.snrDb < 35) L.push('Raumton ' + Math.round(B.floorDb) + ' dB');
+  B.line = L.length ? L.join(' · ') : 'sauber';
+  yield 1;
+  return B;
+}
+
+/* ---------- Kette (feste Reihenfolge): Plopps → Brummen → Hochpass ---------- */
+const ORDER = ['plop', 'hum', 'hp'];
+function* run(x, sr, o) {
+  o = o || {}; const st = o.steps || {}, t0 = Date.now(), y = Float32Array.from(x), info = {order: []}, on = ORDER.filter(k => st[k]), sp = 1 / Math.max(1, on.length);
+  let at = 0, Fe = null;
+  for (const k of on) {
+    if (k === 'plop') {
+      Fe = yield* part(feats(y, sr), at, sp * 0.5);
+      const ev = st.plop.list || plopFind(Fe, st.plop);
+      info.plop = yield* part(plop(y, sr, ev, st.plop), at + sp * 0.5, sp * 0.5);
+    } else if (k === 'hum') {
+      let h = st.hum === true || st.hum === 'auto' ? null : st.hum;
+      if (!h || !h.f0) { const f = yield* part(humFind(y, sr, null), at, sp * 0.3); h = Object.assign({}, h || {}, {f0: f.f0, n: f.on ? Math.max(f.n, 7) : 0, found: f}); }
+      info.hum = {f0: h.f0, n: h.n, depth: h.depth != null ? h.depth : -30, q: h.q || 30, found: h.found || null};
+      if (h.n) info.hum.k = yield* part(hum(y, y, sr, h), at + sp * 0.3, sp * 0.7);
+    } else if (k === 'hp') { yield* part(hp(y, y, sr, st.hp.fc), at, sp); info.hp = {fc: st.hp.fc || 80}; }
+    info.order.push(k); at += sp;
+  }
+  info.ms = Date.now() - t0;
+  return {y, info};
+}
+// fertig rechnen ohne Scheiben (Worker, Node)
+function done(g) { let r; while (!(r = g.next()).done); return r.value; }
+return {check, run, feats, humFind, humCoefs, hum, hp, plopFind, plop, bqC, done, ORDER, VERSION: 'vr1-kern-1'};
+}
+const VR1 = {w: null, wid: 0, q: new Map(), core: null, runs: 0, last: null, prog: null, aborts: 0, slices: 0};
+const VR1_ORDER = ['plop', 'hum', 'hp'];   // Plopps vor jedem Hochpass (sie sehen den Tiefbass), Brummen vor dem Breitband-Rauschen
+function vr1Worker() {
+  if (VR1.w) return VR1.w; if (VR1.w === false) return false;
+  try {
+    const src = vr1Make.toString() + ';const K = vr1Make();const f = a => { if (a instanceof Float32Array) return a; const y = new Float32Array(a.length); for (let i = 0; i < a.length; i++) y[i] = a[i] / 32767; return y; };' +
+      'onmessage = e => { const m = e.data; try { const x = f(m.x), g = K[m.op](x, m.sr, m.o || {}); let r, t = 0; while (!(r = g.next()).done) { const n = Date.now(); if (n - t > 60) { t = n; postMessage({id: m.id, prog: r.value}); } } const v = r.value, tr = v && v.y ? [v.y.buffer] : []; postMessage({id: m.id, res: v}, tr); } catch (err) { postMessage({id: m.id, err: String(err && err.message || err)}); } };';
+    const u = URL.createObjectURL(new Blob([src], {type: 'application/javascript'})), w = new Worker(u);
+    setTimeout(() => { try { URL.revokeObjectURL(u); } catch (e) {} }, 30000);
+    w.onmessage = e => { const m = e.data, q = VR1.q.get(m.id); if (!q) return; if (m.prog != null) { VR1.prog = m.prog; if (q.on) q.on(m.prog); return; } VR1.q.delete(m.id); clearTimeout(q.to); if (m.err) q.no(new Error(m.err)); else q.ok(m.res); };
+    w.onerror = e => { for (const q of VR1.q.values()) { clearTimeout(q.to); q.no(new Error('worker')); } VR1.q.clear(); VR1.w = false; try { e.preventDefault(); } catch (er) {} };
+    VR1.w = w;
+  } catch (e) { VR1.w = false; }
+  return VR1.w;
+}
+/* Auftrag: op 'check' | 'run', x = Int16Array (Take) oder Float32Array; on(p) = Fortschritt 0…1. Ergebnis {p, abort()}.
+   Abbruch: Worker beenden (sofort, auch mitten im Block) – der nächste Auftrag startet einen neuen. Rückfall Hauptfaden: Scheiben ≤ 8 ms. */
+function vr1Job(op, x, sr, o, on) {
+  const w = vr1Worker(), id = ++VR1.wid, t0 = performance.now(); VR1.runs++;
+  const fin = r => { VR1.last = {op, how: w ? 'worker' : 'hauptfaden', ms: Math.round(performance.now() - t0), sec: +(x.length / sr).toFixed(2)}; VR1.prog = null; return r; };
+  let abort = () => {};
+  const p = new Promise((ok, no) => {
+    if (w) {
+      const lim = 30000 + 2000 * x.length / sr, to = setTimeout(() => { VR1.q.delete(id); no(new Error('Zeit')); }, lim);
+      VR1.q.set(id, {ok: r => ok(fin(r)), no, to, on});
+      abort = () => { if (!VR1.q.has(id)) return; VR1.aborts++; try { w.terminate(); } catch (e) {} if (VR1.w === w) VR1.w = null; for (const [k, q] of VR1.q) { clearTimeout(q.to); q.no(new Error('abgebrochen')); VR1.q.delete(k); } VR1.prog = null; };
+      const c = x.slice(); try { w.postMessage({id, op, x: c, sr, o: o || {}}, [c.buffer]); } catch (e) { clearTimeout(to); VR1.q.delete(id); no(e); }
+      return;
+    }
+    const K = VR1.core || (VR1.core = vr1Make()); let xf = x; if (!(x instanceof Float32Array)) { xf = new Float32Array(x.length); for (let i = 0; i < x.length; i++) xf[i] = x[i] / 32767; }
+    const g = K[op](xf, sr, o || {}); let stop = false; abort = () => { if (!stop) { stop = true; VR1.aborts++; no(new Error('abgebrochen')); } };
+    const step = () => { if (stop) return; const t = performance.now(); let r; VR1.slices++;
+      try { while (!(r = g.next()).done) { if (performance.now() - t > 8) { VR1.prog = r.value; if (on) on(r.value); setTimeout(step, 0); return; } } } catch (e) { stop = true; no(e); return; }
+      stop = true; ok(fin(r.value)); };
+    setTimeout(step, 0);
+  });
+  return {p, abort: () => abort()};
+}
+// Take prüfen / Kette rechnen (Roh-Take bleibt; Ergebnis = neue Fassung als Float32)
+async function vr1TakeJob(op, id, o, on) { const m = S.takes && S.takes[id]; if (!m) return null; const pcm = await tkPcm(id); if (!pcm) return null; const j = vr1Job(op, pcm, m.sr, o, on); VR1.cur = j; try { return await j.p; } finally { if (VR1.cur === j) VR1.cur = null; } }
+/* Brummen live: dieselben Kerben als IIRFilterNode-Kette (Rückfall BiquadFilterNode „notch“) – für Wiedergabe/Mithören */
+function vr1HumLive(ctx, h) {
+  const K = (VR1.core || (VR1.core = vr1Make())).humCoefs(ctx.sampleRate, h || {}), nodes = [];
+  for (const k of K) { let nd; try { nd = ctx.createIIRFilter([k.c[0], k.c[1], k.c[2]], [1, k.c[3], k.c[4]]); } catch (e) { nd = ctx.createBiquadFilter(); nd.type = 'notch'; nd.frequency.value = k.f; nd.Q.value = k.q; } if (nodes.length) nodes[nodes.length - 1].connect(nd); nodes.push(nd); }
+  if (!nodes.length) { const g = ctx.createGain(); nodes.push(g); }
+  return {input: nodes[0], output: nodes[nodes.length - 1], nodes, n: K.length};
+}
+const VR1_API = {
+  vr1Check: (id, o) => vr1TakeJob('check', id, o),
+  vr1Run: (id, o) => vr1TakeJob('run', id, o),
+  vr1Abort: () => { if (VR1.cur) VR1.cur.abort(); },
+  vr1Info: () => ({runs: VR1.runs, last: VR1.last, prog: VR1.prog, aborts: VR1.aborts, slices: VR1.slices, order: VR1_ORDER.slice(), worker: VR1.w ? 'worker' : VR1.w === false ? 'hauptfaden' : null}),
+};
+window.__vr1 = {job: vr1Job, make: vr1Make, humLive: vr1HumLive, take: vr1TakeJob, api: VR1_API, st: VR1, noWorker: v => { VR1.w = v ? false : null; }};
+/* VOXR1-END */
 /* =====================================================================================================================
    VS5a (Nachtrag 2 C.5, C.4 N2-VS5a-01; r7/stimme.md §9, §10; N7V-26, N7V-27, N7S-51): Marken & Scheiben, Audio quantisieren.
    Daten (additiv am Take, Format bleibt, K2-31; ein Take ohne Änderung bleibt Zeichen für Zeichen gleich):
@@ -84404,6 +84696,7 @@ Object.assign(SYNQUENZER, G3_API);                // G3: Vorlauf/Ausklang
 Object.assign(SYNQUENZER, G8_API);                // G8: lange Aufnahmen
 Object.assign(SYNQUENZER, G10A_API);              // G10a: Einsingen fertig
 Object.assign(SYNQUENZER, CL_API);                // VS4: Säubern
+if (typeof VR1_API === 'object') Object.assign(SYNQUENZER, VR1_API);   /* VOXR1 */
 Object.assign(SYNQUENZER, WP_API);                // VS5a/b: Marken & Scheiben, Dehnen, Songtext
 Object.assign(SYNQUENZER, KON_API);               // KON: Block & Konsolidieren
 Object.assign(SYNQUENZER, UE_API);                // UE-A/B: Übergänge auf der Schnittkante

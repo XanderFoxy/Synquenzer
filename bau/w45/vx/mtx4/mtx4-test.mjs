@@ -239,22 +239,23 @@ for (const [w, h] of [[926, 428], [926, 370]]) {
     UI.dirty.all = UI.dirty.grid = true; await W(400);
     const L = []; for (let i = 0; i < NT(); i++) for (let s = 0; s < NS(); s++) if (S.tracks[i].clips[s]) L.push([i, s]);
     SYNQUENZER.mtx4.start(); SYNQUENZER.mtx4.set(L);
+    ensureAudio(); launchScene(0); play(); await W(1200);                // Long Tasks erst nach dem Start der Wiedergabe zählen
     const lt = []; let po = null; try { po = new PerformanceObserver(l => { for (const e of l.getEntries()) lt.push(Math.round(e.duration)); }); po.observe({entryTypes: ['longtask']}); } catch (e) {}
-    ensureAudio(); launchScene(0); play(); await W(600);
     // Bild: Zeit von renderGrid je Aufruf (mit Auswahl) + Frame-Abstände
     const orig = renderGrid; const rg = [];
     const fr = []; let last = performance.now(), run = true; const loop = () => { const n = performance.now(); fr.push(n - last); last = n; if (run) requestAnimationFrame(loop); }; requestAnimationFrame(loop);
     for (let k = 0; k < 60; k++) { UI.dirty.grid = true; for (const C of UI.cells.flat()) if (C) { C.st = {}; C.sig = null; } const t0 = performance.now(); orig(audBeat()); rg.push(performance.now() - t0); await W(16); }
+    const lt0 = lt.length; await W(300);
     const t1 = performance.now(); SYNQUENZER.mtx4.semi(1); const dSemi = performance.now() - t1;
     const t2 = performance.now(); SYNQUENZER.mtx4.fit('dorian'); const dFit = performance.now() - t2;
     const t3 = performance.now(); SYNQUENZER.mtx4.quant('1/16'); const dQ = performance.now() - t3;
-    await W(1500); run = false; stop(); if (po) po.disconnect();
+    await W(1500); run = false; const ltAct = lt.slice(lt0); stop(); if (po) po.disconnect();
     const s = rg.slice().sort((a, b) => a - b), f = fr.slice(5).sort((a, b) => a - b);
-    return {n: L.length, nt: NT(), rgMed: +s[s.length >> 1].toFixed(2), rgMax: +s[s.length - 1].toFixed(2), frP95: +f[Math.floor(f.length * .95)].toFixed(1), dSemi: Math.round(dSemi), dFit: Math.round(dFit), dQ: Math.round(dQ), lt, undo: UNDO.slice(-3).map(u => (u.items || []).length)};
+    return {n: L.length, nt: NT(), rgMed: +s[s.length >> 1].toFixed(2), rgMax: +s[s.length - 1].toFixed(2), frP95: +f[Math.floor(f.length * .95)].toFixed(1), dSemi: Math.round(dSemi), dFit: Math.round(dFit), dQ: Math.round(dQ), lt, ltAct, undo: UNDO.slice(-3).map(u => (u.items || []).length)};
   });
   ok('8 Spuren × 8 Szenen gewählt', r.nt === 8 && r.n >= 56, {n: r.n, nt: r.nt});
   ok('Bild der Matrix mit Auswahl (renderGrid ohne Zwischenspeicher, alle Zellen) ≤ 16 ms', r.rgMax <= 16, {median: r.rgMed, max: r.rgMax, frameP95: r.frP95});
-  ok('±1 / Dorisch / Quantisieren über alle Clips je < 50 ms (kein Long Task der Aktion)', r.dSemi < 50 && r.dFit < 50 && r.dQ < 50, {semi: r.dSemi, fit: r.dFit, quant: r.dQ, longtasks: r.lt});
+  ok('±1 / Dorisch / Quantisieren über alle 64 Clips je < 50 ms, kein Long Task > 50 ms ab den Aktionen', r.dSemi < 50 && r.dFit < 50 && r.dQ < 50 && r.ltAct.every(x => x <= 50), {semi: r.dSemi, fit: r.dFit, quant: r.dQ, longtasksAktion: r.ltAct, longtasksBild: r.lt});
   ok('je Aktion ein ↶-Schritt über alle Clips', r.undo.every(x => x >= 40), r.undo);
   ok('Leistung: keine Fehler', errs.length === 0, errs.slice(0, 3));
   await ctx.close();
