@@ -48,11 +48,17 @@ daneben (Luft/Atem mitten in der Pause) – aus der Nachbarschaft nicht ableitba
 | Prüfer-Kern Klicks B@44 / C@48 | 19 / 20, fehl 0, bitgleich | 19 / 20, fehl 0, bitgleich |
 | Prüfer-Kern Raumton Farbe C@48 / C@44 (kroom, exakte Löcher) | [3,3, 3,5] / [3,8, 1,8] | [3,0, 1,4] / [2,5, 1,9] |
 | Prüfer-Kern Raumton Pegel C@48 / C@44 | [0,3, −1,9] / [0,3, −1,8] | [2,3, 0,1] / [2,3, 0,2] |
-| Prüfer-Kern gesamt | siehe LOG (Lauf Basis 56/60) | siehe LOG |
+| Prüfer-Kern gesamt (kern.mjs) | 56/60 | **56/60** (gleiche 4 FEHLER: „5 Lücken“ C48/C44/B48 – Prüfer findet nur 2/0 Pausen; sauberer A@48 Plopps) |
+| Entwickler-Test gesamt (einzeln, A/B, Last 5–7) | 76/83 | **80/83** (offen: Klicks A 17/20, Raumton-Farbe, App-Worker 3-min-Zeit – auch Basis FEHLER) |
+| 3-min-Kette Node (tm.mjs, abwechselnd, Median je Lauf) | 5762 / 6038 ms | 5931 / 6320 ms (+3…+5 %); Entwickler-Test 5184 → 5228 ms; Prüfer-Kern ×3 19,7 s (OK) |
 | Abnahme kern2 gesamt / Klicks | 41/62; B@48 18/20, fehl 0 | 41/62; B@48 19/20, fehl 1 (≤ 1 erlaubt; auch ohne BIG) |
 | Abnahme kern3 (Raumton v2) gesamt / Pegel / Farbe | 29/50; 14/24; 8/24 | 29/50; 14/24; 9/24 (A Lücke 6 schlechter, C besser) |
 
-Abschluss-Läufe (Kette, Zeit-A/B): siehe LOG.md, Endstand unten in „Ergebnis“.
+Pflicht (Endfassung md5 4449057f6ec65ea4b7c1f4ecc70d4ea2): topdefs „Skripte 26, Namen 7918, doppelt 0, Syntaxfehler 0“, dupkeys „0 doppelte Schlüssel“,
+smoke errors [], „MS 2000“ 1×, „^  live: true,“ 1×, VERSION '4.73.0', außerhalb des VOXR1-Blocks bitgleich zu basis.html.
+Regression: vx1 61/61, vx2 14/14, vx3 15/15, chr2 82/82 (ALLE OK).
+Tempo: die erste Endfassung rechnete bei starken Klicks die LSAR doppelt (+5…+14 %); behoben (Entscheidung vor der LSAR), Ausgabe bitgleich
+(3-min-Kette FNV 679d4930 vor/nach dem Fix). Rest-Kosten +3…+5 % (größere Lücken in der LSAR, Tonal-Prüfung der Raumton-Fenster).
 
 ## Abwägungen (gemessen, verworfen)
 - Nachbar-Fenster der Erkennung 18–22 ms statt 25 ms: A 17 gefunden, aber neue Fehlalarme (A 1, B 1–3) → verworfen, stattdessen BIG.
