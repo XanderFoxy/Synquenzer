@@ -61756,7 +61756,13 @@ function* room(y, sr, o, Lr) {
       for (const [u0, u1] of [[a - W * H, a], [b, b + W * H]]) for (let u = Math.max(0, u0); u + H <= Math.min(n, u1); u += H) { const l = lev(u, u + H); if (l > -110 && l <= Lr.db + 15) { nb.push(l); nbu.push(u); } else if (l <= -110) ns++; }
       if (nb.length >= 12 || (nb.length < 5 && ns >= 5)) break; }
     if (nb.length < 5 && ns >= 5) continue;   // daneben ist es auch digital still (Take mit Tor): nichts erfinden
-    nb.sort((p1, p2) => p1 - p2); const pt = nb.length >= 5 ? Math.pow(10, (nb[nb.length >> 1] + 0.5) / 10) : Lr.p, need = pt - Math.pow(10, ph / 10); if (need <= 0 || L < 2 * R) continue;   // Mittelwert (dB) der Nachbarn, robust gegen einzelne laute Rahmen
+    // VOXR1D-RP: Pegel = Median der Nachbarn, aber nie über dem Median der nächsten Rahmen direkt an der Lücke (je Seite NR = 5 × 10 ms) –
+    // in kurzen Pausen zwischen Silben zählten sonst Ausklang/Atem bis gelernt + 15 dB mit (Prüfer: Füllung +4…+10 dB über dem Original). {nr: 0} = wie vorher.
+    nb.sort((p1, p2) => p1 - p2); let pt = nb.length >= 5 ? Math.pow(10, (nb[Math.floor((room.PQ != null ? room.PQ : 0.5) * nb.length)] + 0.5) / 10) : Lr.p;
+    { const NR = o.nr != null ? o.nr : (room.NR != null ? room.NR : 5), ne = []; if (NR > 0) for (let w = 0; w < nbu.length; w++) { const u = nbu[w]; if ((u < a && u >= a - NR * H) || (u >= b && u < b + NR * H)) ne.push(nb.length ? null : 0, w); }
+      const nl = []; if (NR > 0) for (let u = Math.max(0, a - NR * H); u + H <= a; u += H) { const l = lev(u, u + H); if (l > -110 && l <= Lr.db + 15) nl.push(l); } if (NR > 0) for (let u = b; u + H <= Math.min(n, b + NR * H); u += H) { const l = lev(u, u + H); if (l > -110 && l <= Lr.db + 15) nl.push(l); }
+      if (nl.length >= 3) { nl.sort((p1, p2) => p1 - p2); pt = Math.min(pt, Math.pow(10, (nl[nl.length >> 1] + 0.5) / 10)); } }
+    const need = pt - Math.pow(10, ph / 10); if (need <= 0 || L < 2 * R) continue;   // Mittelwert (dB) der Nachbarn, robust gegen einzelne laute Rahmen
     // Klangfarbe ebenfalls von daneben (zusammenhängende rauschartige Rahmen, je 1024er-Fenster), sonst die gelernte
     let mg = mag; { const P2 = new Float64Array(N / 2 + 1); let c2 = 0; const okU = new Set(nbu);
       const PW = [];   // VOXR1D-RT: je Fenster ein Spektrum (für die Ausreißer-Wahl je Terzband)

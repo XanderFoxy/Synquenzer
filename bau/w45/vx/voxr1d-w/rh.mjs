@@ -62,7 +62,6 @@ for (const tk of ['A44', 'A48', 'B44', 'B48', 'C44', 'C48']) {
   ok(rows.every(q => Math.abs(q.pegelAbw) <= 3), `${nm}: ${holes.length} eigene Lücken, Pegel ±3 dB je Lücke`, rows.map(q => q.pegelAbw));
   ok(rows.every(q => q.farbeAbw <= 4), `${nm}: Klangfarbe (Oktaven 250 Hz–8 kHz) ±4 dB je Lücke`, rows.map(q => q.farbeAbw));
   ok(out === 0, `${nm}: außerhalb der Lücken bitgleich`, {proben: out, beiProbeAbstandDbfs: outAt});
-}
   for (const q of rows) { RS.n++; if (Math.abs(q.pegelAbw) <= 3) RS.pegel++; if (q.farbeAbw <= 4) RS.farbe++; if (Math.abs(q.pegelAbw) > 3 || q.farbeAbw > 4) RS.schlecht.push([tk, q.t, q.ms, q.pegelAbw, q.farbeAbw, q.fuellungGegenNachbar, q.baender]); }
 }
 console.log('RAUM', JSON.stringify(RS));
