@@ -1,3 +1,22 @@
+## 4.72.0 — Spektral: Gefundenes ausblenden, Fokus auf den Rest; Einzelspuren mit dem Begleiter; kleinere Online-Fassung
+
+- **Spektral → Ansicht ▾ → Fokus: Alles │ Nur Rest │ Nur Gefundenes**
+  - „Nur Rest“ zeigt nur, was noch nicht in Ebenen liegt. Grundton und Obertöne schon gefundener Noten werden weich ausgeblendet, so tritt hervor, was übrig ist.
+  - Zauberstab, „Ähnliches finden“ und „Noten finden“ suchen dann im Rest. Schon gefundene Noten werden nicht doppelt gefunden. „In Ebene“ nimmt nur aus dem freien Rest.
+  - „Ausblenden: Sichere │ Alle“, wenn Noten eine Sicherheit haben. Die Statuszeile zeigt z. B. „Fokus: Rest · 12 Noten ausgeblendet · übrig ≈ 23 %“.
+  - Nur eine Ansicht: Klang, Ebenen und Noten bleiben unverändert, „Alles“ zeigt das Bild wie vorher. Neuer Eintrag in der Anleitung.
+- **Einzelspuren (Rest):**
+  - Begleiter live: Pads mit eigener Einzelspur spielen über deren Kanal, keine doppelte Hi-Hat mehr zur Band.
+  - FANG und Tastatur auf einer Einzelspur ergeben Schläge ihres Pads (zwei Tasten zugleich = ein Schlag).
+  - Remix, A/B und Matrix-Remix nehmen die Einzelspuren mit.
+- **Spektral-Kleinfehler:**
+  - „In Ebene“ rechnet nur den geänderten Bereich neu (90-s-Lied: 3,1 s → 0,4 s, Klang bitgleich).
+  - Notennamen bei einzelnen Spitzen stimmen (z. B. 98 Hz = G2).
+  - Ein Nachbau hängt nur noch an seiner eigenen Ebene, auch nach ↶ und Neuladen.
+  - Loop → Matrix nutzt umbenannte Spuren wieder, „Tief“ bekommt eine eigene Spur.
+- **Kleinere Online-Fassung:** ohne Programm-Kommentare, rund 0,75 MB weniger je Update (gzip 3,06 → 2,31 MB). Ablauf und Aussehen gleich.
+Tests: Fokus 26/26 (Kern) + 47/51 (Rest: Zeitmessung unter Last), Einzelspuren 27/27 + 5/5 + 87/87, Begleiter 57/59 (wie vorher), Spektral-Kleinfehler 11/11, Szenen-Drums 17/17 + 41/41, mehrere Clips 116/118 (Zeit wie 4.71), Transponieren 81/81, Spektral-Auswahl 98/98 · 72/72, Gesang 61/61 · 14/14 · 15/15, Import, Chor 82/82, Echttest 52/53, Spektral wie 4.71.
+
 ## 4.71.0 — Szenen-Drums genauer, keine Bass-Phantomnoten, schnellerer Start
 
 - **Spektral → Szenen anlegen, Drums:**
