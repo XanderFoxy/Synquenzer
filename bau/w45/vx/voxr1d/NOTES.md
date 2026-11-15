@@ -53,3 +53,28 @@ Quelle des Blocks: voxr1d-w/fit.js + voxr1d-w/call.js, zusammengesetzt mit voxr1
 - Prüfer-App 12/14 wie voxr1c (2 Läufe, Last 2,0–2,9): Prüfen 58 ms / Lücke 111 ms, 2. Lauf keine Long Task / 88 ms; Anwenden 50–76 ms + 1× 102/103 ms,
   Lücke 274 / 110 ms – wie vorher außerhalb des Blocks (tkPlayBuf, g4Call, Welle). Die Plopp-Reparatur läuft im Worker, nicht auf dem Hauptfaden.
   ↶/↷, Abbrechen (170 ms), Speichern/Laden, Speicher wie bisher OK.
+
+# VOXR1D – Schritt 2 (VOXR1E-Auftrag): Long Tasks, Raumton-Klangfarbe, Klicks (15.11.2026, 13:40–14:2x)
+
+Sicherungen: index.vor-lt.html (= Endfassung Plopps, md5 e8f8bc56…), index.vor-rt.html (nach LT/LT2, vor Raumton).
+Werkzeuge: voxr1d-w/trace.mjs (Chrome-Trace, verfälscht – siehe unten), voxr1d-w/ltattr.mjs (Long-Animation-Frames mit Skript-Zuordnung),
+voxr1d-w/prof.mjs + profan.cjs (CPU-Profil, Vorarbeit), voxr1d-w/room.mjs (Raumton-Nachbau), /dev/shm/voxr1e2/kroom.mjs (genaue Prüfer-Löcher).
+
+## 1 Long Tasks (App-Prüfer, 3-min-Take)
+Ursachen (CPU-Profil + LoAF, je Lauf mehrfach):
+- **Die 50–115-ms-Aufgaben beim „Anwenden“ waren die Test-Probe selbst**: `SYNQUENZER.clPlayHash` (FNV-1a über 34,5 MB, 98 % self), vom
+  Prüfer in `settle()` alle 200–300 ms gerufen. → **VOXR1D-LT** (Vorarbeit, geprüft und übernommen): gleicher Wert, je Inhalt gemerkt
+  (schneller 8-fach-Prüfwert über 32-bit-Wörter erkennt jede Änderung), Vorrechnung in 4-MB-Scheiben erst nachdem die Probe einmal benutzt
+  wurde (für Nutzer kostet es nichts). Haken: keiner neu (VXR1_API.clPlayHash über den vorhandenen Object.assign-Haken).
+- **tkPlayBuf 26–67 ms / g4Call 22–70 ms** (außerhalb des Blocks): nach „Anwenden“ rechnen die Gesangs-Effekte (G4) und die
+  Marken-Suche (WP 'det') die neue Fassung neu; beide kopierten den ganzen Take in einem Stück (`new Float32Array(m.x)`), G4 baute den
+  Ergebnis-Puffer in einem Stück (`wpToBuf`). → **VOXR1D-LT2**: `vr1BigPost` (Kopie in Scheiben ≤ 6 ms, dieselbe Nachricht an denselben
+  Worker, dieselben Rückfälle/Zeitlimits), `vr1PreBuf` (G4-Ergebnis-Puffer vorab in Scheiben), `vr1ToBuf` (wpToBuf holt ihn).
+  Nur G4 'render' und WP 'det', erst ab 1 Mio. Proben. **3 neue Haken** (Ein-Zeiler, typeof, /* VOXR1 */): erste Zeile nach `const w = …, local`
+  in `g4Call` und `wpCall`, erste Zeile in `wpToBuf`. Bitgleich: Abspiel-Hash nach Anwenden und nach Laden 3c8c2bcc wie vorher (G4-Weg).
+- **Erster Touch (Prüfen) 58–63 ms**: `ensureAudio`/`buildBuffers` (Audio-Start beim ersten Antippen, außerhalb, nicht VOXR1) – offen.
+- **Hauptfaden-Block 21–38 s ohne Skript** (LoAF: keine scripts, renderStart ≈ Dauer) – genau während eines langen Worker-Laufs, endet mit
+  dem Worker. Tritt auch in der Basis voxr1d auf (Prüfen, 27,6 s), nur bei Überlast (4 Kerne, Last 10–16; Worker-Lauf dann 25–43 s statt 4–6 s),
+  nicht bei Last 2–3 (frühere Läufe). Kein JS auf dem Hauptfaden → nicht durch Scheiben lösbar. Verdacht: Chromium wartet für einen GC auf
+  einen Sicherpunkt des Workers (geteilter Heap). Offen; auf dem iPhone (JavaScriptCore) nicht zu erwarten. Mit Chrome-Trace (devtools.timeline)
+  trat er in jedem Lauf auf → Trace-Messungen hier unbrauchbar, Messung per LoAF.
