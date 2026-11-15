@@ -106,10 +106,19 @@ for (const [W, H] of VIEWS) {
   log(tag + ' angelegt', R1);
   await shot('09-spektral-nach-anlegen');
   // Seite schließen → Matrix: Szenen-Kopf zeigt Namen?
-  await p.evaluate(() => spk1Close()); await p.waitForTimeout(600);
+  await p.evaluate(() => { spk1Close(); if (typeof closeMenu === 'function') closeMenu(); if (typeof hideToast === 'function') hideToast(); }); await p.waitForTimeout(700);
   const head = await p.evaluate(() => UI.scenes.map(b => b.textContent.replace(/\s+/g, ' ').trim()));
   log(tag + ' matrix-szenen-kopf', head);
   await shot('10-matrix-nach-szenen');
+  // Szenen-Kopf halten → Szenen-Blatt (Name nur hier)
+  await p.evaluate(() => { mtxSceneSheet(1, UI.scenes[1]); }); await p.waitForTimeout(400);
+  log(tag + ' szenen-blatt-titel', await p.evaluate(() => { const h = document.querySelector('.pop.mtxscn h4'); return h ? h.textContent : null; }));
+  await shot('10b-szenen-blatt-name'); await p.evaluate(() => closePop()); await p.waitForTimeout(250);
+  // Noten-Editor eines angelegten Bass-Clips: was gibt es für „Auswahl → neuer Clip“?
+  { const bt = await p.evaluate(() => { const r = __spk11.last(), o = r.rows.find(x => /bass/i.test(x.name) && x.m != null); return o ? o.m : -1; });
+    if (bt >= 0) { await p.evaluate(t => openRoll(t, 1), bt); await p.waitForTimeout(700);
+      log(tag + ' noten-editor-knoepfe', await p.evaluate(() => [...document.querySelectorAll('#rollSheet button')].filter(b => b.offsetParent).map(b => (b.getAttribute('aria-label') || b.textContent || '').trim()).filter(Boolean).slice(0, 60)));
+      await shot('10c-noten-editor-bass'); await p.evaluate(() => { if (typeof closeRoll === 'function') closeRoll(); else if (typeof closeEditors === 'function') closeEditors(); }); await p.waitForTimeout(300); } }
   // Song-Ansicht: Marken/Teile?
   await p.evaluate(() => { if (!UI.songView && typeof toggleView === 'function') toggleView(); else if (!UI.songView) UI.corner.click(); }); await p.waitForTimeout(700);
   log(tag + ' song-ansicht', await p.evaluate(() => ({song: !!UI.songView, marks: (S.song.marks || []).map(m => m.name + '@' + m.a), bars: S.song.bars})));

@@ -4,3 +4,4 @@
 - 23:21 Last 0.09, 0.29, 1.44 · t/ab.mjs CASES=b2..b7 (index vs basis)
 - 23:23 Last 2.07, 0.90, 1.52 · b2–b7 alle gleich=true (t/ab-b2b7.out); jetzt b1 (Grenze) + imp2-node
 - 23:24 Last 2.90, 1.38, 1.65 · b1 gleich=true; imp2-node ALLE OK; Start: ab.mjs a1–a14 (Gleichheit) ∥ imp1-test (Kopie t/imp)
+- 23:25 Last 5.98, 2.43, 1.99 · Pflicht: topdefs doppelt 0/Syntax 0, dupkeys 0, smoke errors [], MS 2000 1×, live:true 1×, VERSION 4.75.0

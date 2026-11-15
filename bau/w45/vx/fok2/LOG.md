@@ -1,3 +1,4 @@
 - 23:17 Start, Last: load average: 0.12, 0.54, 1.85
 - 23:20 FOK2 Kern eingebaut (trueRest im FOKUS1-Block), Last: load average: 0.13, 0.31, 1.48
 - 23:22 fok2-test Qualität: 15/16 (einziger Fehler: wahr > 0 dB = Masken-Artefakt, Anzeige bewusst nie heller → Kriterium min(wahr,0)), Last: load average: 1.25, 0.58, 1.45
+- 23:25 v1 (Verhältnis, 1 FFT je Spalte): Qualität 20/20, 3 min N4096 7,7 s (basis 0,8 s), N16384 10,4 s (2,8 s), erstes Stück 0,57/3,0 s, Long Tasks 0; v2 gebaut (Rest-Byte direkt wie Anzeige, 2 Spalten je FFT, restMid-Zwischenspeicher), Last: load average: 6.46, 2.86, 2.15
