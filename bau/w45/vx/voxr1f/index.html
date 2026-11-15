@@ -61644,10 +61644,13 @@ function clickSpan(z, g0, g1, sr, p, o) {
   for (let i = Math.max(p, g0 - Math.round(0.012 * sr)); i + q <= g0 - Math.round(0.001 * sr); i += q) E.push(fr(i));
   for (let i = g1 + Math.round(0.003 * sr); i + q <= Math.min(L - p, g1 + Math.round(0.012 * sr)); i += q) E.push(fr(i));
   if (E.length < 8) return [g0, g1];
-  E.sort((u, v) => u - v); const nb = E[E.length >> 1], T = (o && o.spanK != null ? o.spanK : 3) * nb;
+  E.sort((u, v) => u - v); let mu = 0; for (const e of E) mu += e; mu /= E.length;
   /* VOXR1F-P: nur in rauschartiger Umgebung (Pause): Mittel der Rahmen ≤ NZ × Median. Über Gesang (Stimmlippen-Pulse im Band → Mittel ≫ Median)
-     wie vorher – sonst ersetzt die längere Spanne gesungene Obertöne und der Deckel (Median-bezogen) löscht die Höhen. {nz: 0} = ohne Prüfung. */
-  const NZ = o && o.nz != null ? o.nz : 2; if (NZ > 0) { let mu = 0; for (const e of E) mu += e; mu /= E.length; if (mu > NZ * nb) return [g0, g1]; }
+     wie vorher – sonst ersetzt die längere Spanne gesungene Obertöne und der Deckel löscht die Höhen. {nz: 0} = ohne Prüfung.
+     Bezug für Ausklang-Schwelle, Deckel und Bandgrenze ist das Mittel (nicht der Median) der Umgebung: Pulse der Stimme im Band zählen
+     dann nicht als Ausklang, und der Deckel drückt die Füllung nie unter den Pegel der Nachbarschaft. {ref: 0} = Median. */
+  const NZ = o && o.nz != null ? o.nz : 2, md = E[E.length >> 1]; if (NZ > 0 && mu > NZ * md) return [g0, g1];
+  const nb = o && o.ref === 0 ? md : mu, T = (o && o.spanK != null ? o.spanK : 3) * nb;
   let e1 = g1, e0 = g0; const mx1 = Math.min(g1 + Math.round((o && o.spanR != null ? o.spanR : 0.002) * sr), g0 + Math.round(0.008 * sr), L - 2 * p), mn0 = Math.max(2 * p, g0 - Math.round((o && o.spanL != null ? o.spanL : 0.0005) * sr));
   while (e1 + q <= mx1 && fr(e1) > T) e1 += q;
   while (e0 - q >= mn0 && fr(e0 - q) > T) e0 -= q;

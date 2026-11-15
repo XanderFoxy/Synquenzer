@@ -10,3 +10,4 @@
 17:02 | load average: 3.98, 5.04, 5.82 | Probelauf s10 926x428: imp1Place 28 ms (basis 122), keine Long Task (basis 124), Audio-Puffer + Speicher-Stücke gleich; Vollauf A/B gestartet
 17:07 | load average: 4.58, 6.03, 6.12 | A/B s1–s11 beide Größen: alle gleich (außer s8 Wiedergabe-Stand), Audio gleich; Nachlauf s3/s10 REPS=3 mit Scheiben-Messung (LT1.preMs) gestartet
 17:12 | load average: 2.44, 3.97, 5.23 | Paket-Test c (REPS=3): index 0 Long Tasks in 6/6 Läufen (basis 3 von 6, max 81); s10 REPS=3: index 26–34 ms ohne Long Task (basis 94–137); 1 Vorbereitungs-Scheibe 87 ms (428x926 rep0) → Nachlauf mit Scheiben-Art
+17:17 | load average: 7.12, 6.23, 5.90 | NOTES.md: Pflicht, Offen, Prüfung ergänzt; Endfassung md5 2a3260c23ee01950b1fac4a3d4223829; imp1/imp2 Endlauf läuft

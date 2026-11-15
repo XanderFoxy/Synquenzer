@@ -107,11 +107,14 @@ Nach Teil 2 (Endfassung) neu gelaufen: siehe „Prüfung“.
 | spkfix-test | ALLES OK 11 | – | |
 
 
-## Pflichtprüfungen
-Endfassung `index.html` md5 88a53dabe895d842acfdff7ff26f1844 (Basis rel-4730 69f50c189dbab745ebdf81a415838208):
-topdefs (NODE_PATH=/opt/node-tools/node_modules) „Skripte 26, Namen 7921, doppelt 0, Syntaxfehler 0“ · dupkeys „0 doppelte Schlüssel“ ·
-smoke errors [] (smoke.png) · „MS 2000“ 1× · „^  live: true,“ 1× · VERSION '4.73.0' unverändert · diff Basis → Paket: 17 neue Zeilen,
-1 geänderte (Haken 2) – 13 Zeilen Block + 1 neue Haken-Zeile + 1 ergänzte Zeile. Keine sichtbare Änderung (Raster-DOM A = B).
+## Pflichtprüfungen (Endfassung nach Prüfung)
+Endfassung `index.html` md5 **2a3260c23ee01950b1fac4a3d4223829** (Basis rel-4730 69f50c189dbab745ebdf81a415838208; Fassung vor der
+Prüfung 88a53dabe895d842acfdff7ff26f1844 = index.vor-lt1c.html):
+topdefs (NODE_PATH=/opt/node-tools/node_modules) „Skripte 26, Namen 7926, doppelt 0, Syntaxfehler 0“ · dupkeys „0 doppelte Schlüssel“ ·
+smoke errors [] (smoke.png) · „MS 2000“ 1× · „^  live: true,“ 1× · VERSION '4.73.0' unverändert ·
+`git diff --no-index --stat`: 69 insertions(+), 2 deletions(-) = 67 neue Zeilen (Block 63 Zeilen 109204–109266 + 4 neue Haken-Zeilen)
+und 2 ergänzte Zeilen (Haken 2 und 6). Keine sichtbare Änderung (Raster-DOM A = B).
+(Berichtigt, Prüfer-Befund 4: die Fassung vor der Prüfung hatte 15 Block-Zeilen 109203–109217, 16 neue + 1 ergänzte Zeile – nicht 13/17.)
 
 ## Offen
 - **a/b nicht erreicht (Long Tasks > 50 ms bleiben, in A und B gleich):** Ursache ist kein Skript, sondern das Warten des Hauptfadens
@@ -122,10 +125,50 @@ smoke errors [] (smoke.png) · „MS 2000“ 1× · „^  live: true,“ 1× · 
   - oder mit sichtbaren Änderungen (z. B. halbe Auflösung während der Bewegung) → erst Funk.
   Der Versuch „eine Textur je Bild“ ist gemessen und verworfen (siehe oben). Auf echten Geräten mit GPU-Compositing liest der
   Browser die Leinwand nicht zurück; dort ist die Wartezeit nicht im Hauptfaden – Messung auf dem iPhone wäre der nächste Beleg.
-- c unter hoher Last: imp1Place hat noch ~30–50 ms am Stück (neue Spur „Original“ inkl. erstem buildGrid ~13 ms, Take aus PCM
-  ~11 ms, normSong ~7 ms, Verlauf ~4 ms, Toast ~6 ms, imp1Paint 3–8 ms). Weiter teilen hieße das synchrone `place()` (Rückgabe,
-  ein ↶) aufzubrechen oder buildGrid in restoreTrack zu verschieben (alle Aufrufer betroffen) → offen.
+- c Rest: imp1Place hat noch ~25–35 ms am Stück (neue Spur „Original“ inkl. erstem buildGrid, normSong, Verlauf, Toast, imp1Paint),
+  unter Last 8 auch 55–68 ms; danach gelegentlich ein Bild > 50 ms (Raster/Song neu zeichnen). Weiter teilen hieße das synchrone
+  `place()` (Rückgabe, ein ↶) aufzubrechen oder buildGrid in restoreTrack zu verschieben (alle Aufrufer betroffen) → offen.
+- c nicht vorbereitet (alter Weg, Zeiten wie Basis): Gesang (`vox`, eigener Take-Weg – Vorbereitung läuft, wird nicht genommen), Audio
+  wird ans Projekt-Tempo gedehnt (nx1; legt sofort nach dem Dehnen ab), „1“/Tempo im Blatt von Hand verschoben (Versatz passt nicht),
+  Ablegen schneller als die Vorbereitung (3 min ≈ 0,1–0,3 s nach „fertig“).
+- Vorbereitung: Scheiben im Median ~8 ms, aber in 2 von 26 Läufen (Last 7–9) eine Scheibe 87 bzw. 106 ms (Füll-Schleife; vermutlich
+  Speicher/Planer unter Last – die Schleife prüft die Zeit alle 131072 Proben). Liegt in der Pause zwischen „fertig“ und dem Tipp,
+  nicht im Tipp; dieselbe Arbeit steckt in der Basis im Ablegen selbst (94–287 ms).
 - Nebenbefund: der erste Tipp einer Sitzung startet den Ton (`ensureAudio` → Drum-Puffer, Wellen, Hall) 55 ms am Stück – eigener
   Punkt für die Ladezeit-Liste (nicht a–c).
 - Nebenbefund: LoAF (`long-animation-frame`) meldet die Grafik-Warte-Aufgaben ohne Skript-Anteil; für a/b ist die CDP-Spur
   (`lt1-trace.mjs`) der Beleg, nicht LoAF.
+
+## Prüfung (unabhängiger Prüfer, Befunde → Nachbesserung 16:56–17:20)
+| # | Befund (Schwere) | Ergebnis | Zahl |
+|---|---|---|---|
+| 1 | Ziel c nur für die 8-Takt-Datei; bei 3-min-Lied imp1Place 140–450 ms in A und B (mittel) | **behoben** (Teil 2: Take im Leerlauf vorbereiten) | s10 (90 Takte, 3 min): imp1Place Median **27 / 34 ms** (index, 428×926 / 926×428, n = 8 / 7) statt **134 / 137 ms** (basis); Long Task beim Ablegen index 0 von 8 / 3 von 7 (71, 172, 60 bei Last ~8), basis 8 von 8 / 7 von 7 (max 284 / 215) |
+| 2 | index-Spalte a/a2/b durchweg mit verworfenem lt1GlChunks, nur teilweise gekennzeichnet (klein) | **behoben** | alle 6 Zeilen gekennzeichnet; Endfassung a/b = basis (Spektral-Code byte-gleich) |
+| 3 | „Regression (Endfassung)“: imp1/imp2/spk12-3 Lauf 1 liefen auf dem Zwischenstand (klein) | **behoben** | reg.log + Regression-Abschnitt berichtigt; Prüfer-Nachlauf imp1 ALLE OK (156 s), imp2 ALLE OK; nach Teil 2 neu (s. u.) |
+| 4 | Zählfehler Block/Diff (klein) | **behoben** | vorher 15 Block-Zeilen, 16 neue + 1 ergänzte; jetzt 63 / 67 + 2 (Pflichtprüfungen) |
+
+Ursache Befund 1 (CPU-Profil, 90 Takte, `vx/nach/probe/probe-place.mjs … 120 90`): imp1Place 107 ms, davon imp1Take 69 ms =
+tkToBuffer (Int16 → AudioBuffer) 35 ms + tkStore (alle 1-MB-Stücke sofort kopieren) 21 ms + Kopie ab Song-Takt 0 12 ms.
+Teil 2 nimmt genau diese Arbeit aus dem Tipp (Vorbereitung im Leerlauf in Scheiben, Stück-Kopien erst beim Schreiben).
+
+Messung Endfassung (`lt1-imp-ab.mjs` = Prüfer-Skript p-imp.mjs + Audio-Vergleich: AudioBuffer-Hash und gespeicherte Stücke je Take
+über tkPcm, Vorbereitungs-Treffer; A/B abwechselnd, STOP=1; Last 1,8–9,3; Rohdaten `ab/*.out|json`):
+| Fall | Größe | index imp1Place Median (Spanne) · Long Task > 50 beim Ablegen | basis | Ergebnis A = B |
+|---|---|---|---|---|
+| s10 90 Takte 3 min | 428×926 (n 8) | 27 (26–36) · 0 von 8 | 134 (94–275) · 8 von 8, max 284 | ja (Daten, Raster ↶/↷, Audio) |
+| s10 | 926×428 (n 7) | 34 (28–68) · 3 von 7 (71/172/60, Last 8) | 137 (101–211) · 7 von 7, max 215 | ja |
+| s11 64 Takte 48 kHz Spur | 926×428 (n 4) | 28 (25–33) · 0 von 4 | 130 (86–284) · 4 von 4 | ja |
+| s6 48 Takte | 428×926 (n 5) | 34 (25–57) · 1 von 5 (61) | 69 (56–147) · 5 von 5 | ja |
+| s3 Loop 16 Takte | beide (n 8) | 25 / 36,5 · 3 von 8 (235/106+158/56, erste Runde unter Last) | 46,5 / 49,5 · 4 von 8 | ja |
+| s1, s2, s4, s5, s7, s8, s9, s11 (je 1) | beide | s1 31/43, s2 33/49, s4 41/46, s5 19/13, s7 56/39, s8 34/36, s9 10/9, s11 40 | s1 89/57, s2 74/39, s4 48/81, s5 19/74, s7 33/39, s8 60/54, s9 11/8, s11 96 | ja; s8 nur ↶-Raster ≠ (Wiedergabe-Stand, schwankt auch zwischen zwei Läufen derselben Datei, Prüfer p-imp-s8) |
+Vorbereitung genommen (`LT1.preHit`) in allen Fällen außer s4 (Gesang: eigener Weg) und s9 2. Import (gedehnt) – dort alter Weg, gleich.
+Audio: AudioBuffer-Hash und gespeicherte PCM-Stücke in jedem Lauf A = B (z. B. s10 `8688000:48000:c0c075aa` / `83b614ff`).
+
+Paket-Test `lt1-test.mjs` ONLY=c REPS=3 (8 Takte, Endfassung, Last 3,8–5,3; `lt1-test-c-pruef.out`):
+c 926×428 basis median 52 max 68 (2× > 50) | index **0 / 0 (0×)**; c 428×926 basis 0 / 81 (1×) | index **0 / 0 (0×)**; Ergebnis gleich.
+imp1Place index 23–43 ms, basis 36–66 ms.
+
+Regression nach Teil 2: imp2 ALLE OK (ab/imp2-c.out), imp1 ALLE OK 148 s (ab/imp1-c.out), spk6 ALLES OK 26, spk5 ALLES OK 24
+(reg.log); Endfassung (mit Messzeile preMs/preK): imp1/imp2 siehe reg.log `index-final`. Spektral-Tests (spk12-1/2/3, fokus1, fokus1k,
+spkfix) nicht neu: Teil 2 ändert keinen Spektral-Code; tkToBuffer/tkStore-Haken greifen nur während lt1Take (`LT1.use`).
+
