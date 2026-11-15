@@ -7,3 +7,4 @@
 - 02:02 Drum-Einteilung neu (Snare = Mitten ≥ 1,9× Tiefen, Kick = tief + kurzes Abklingen < 0,6 nach 100 ms); offline work/hits.mjs: Kick 31/32, Snare 32/32 (Bass-Rest 0,3).
 - 02:05 Snare zusätzlich = lautester Höhen-Einsatz; 428x926: 17/1 (Drums: Kick echt 63/64, Snare echt 42/64, 26 Zusatz-Kicks aus Bass-Resten) – Feinarbeit Drums offen.
 - 02:06 Regression spk6-test: quer-menue FEHLER (Klang nachbauen nach „Noten bearbeiten“ schob „Effekte …“ aus dem Bild) → Knopf jetzt hinter „Effekte …“; spk6-test wird am Ende erneut gefahren.
+- 02:07 spk11-test (vor Knopf-Verschiebung) alle drei Größen: 37 OK / 3 FEHLER = je drums-auf-kit; danach Snare-Regel → 428x926 17/1 (drums). Fotos fotos/10…40-*. Smoke errors [] (smoke.png). Pflicht: topdefs 26/0/0, dupkeys 0, MS 2000 1×, live 1×, VERSION 4.66.0, Markenwörter = Basis (0 im Paket), keine Emojis.
