@@ -105228,12 +105228,12 @@ function spk12DspMake(Z2, X) {
     const e0 = Math.max(0, Math.floor((+ex.t0 || 0) * sr / C.hop)), e1 = Math.min(C.F - 1, Math.max(e0 + 1, Math.ceil((+ex.t1 || 0) * sr / C.hop))), L = e1 - e0 + 1;
     if (L < 2) return {hits: [], L};
     const nS = Math.max(0, C.F - L + 1), R = new Float32Array(nS), cl = v => v < 0 ? 0 : v > 1 ? 1 : v, Ec = v => Math.max(-100, v); let Ee = 0, Te = 0, Fe = 0, De = 0;
-    for (let u = 0; u < L; u++) { Ee += Ec(C.E[e0 + u]); Te += C.T[e0 + u]; Fe += C.SF[e0 + u]; De = Math.max(De, C.D[e0 + u]); } Ee /= L;
+    let Pe = 0; for (let u = 0; u < L; u++) { Ee += Ec(C.E[e0 + u]); Pe += Math.pow(10, C.E[e0 + u] / 10); Te += C.T[e0 + u]; Fe += C.SF[e0 + u]; De = Math.max(De, C.D[e0 + u]); } Ee /= L; const LPe = 10 * Math.log10(Pe / L + 1e-14);
     for (let s = 0; s < nS; s++) {
-      let Ex = 0, dT = 0, dF = 0, dP = 0, mn = 0, mxx = 0;
-      for (let u = 0; u < L; u++) { const a = e0 + u, b = s + u, xe = Ec(C.E[b]); Ex += xe; dT += Math.abs(C.T[b] - C.T[a]); dF += Math.abs(C.SF[b] - C.SF[a]); dP += Math.min(30, Math.abs(xe - Ec(C.E[a]))); mn += Math.min(C.D[a], C.D[b]); mxx += Math.max(C.D[a], C.D[b]); }
-      let w = cl(1 - (Ee - Ex / L - 15) / 10);   // vorhanden: höchstens ~15 dB leiser als das Beispiel (Stille zählt nie)
-      if (mk.ton) w *= cl(1 - dT / L / 0.35); if (mk.rs) w *= cl(1 - dF / L / 0.25); if (mk.pg) w *= cl(1 - dP / L / 10); if (mk.tr) w *= mxx > 0 ? mn / mxx : 1;
+      let Ex = 0, dT = 0, dF = 0, Px = 0, mn = 0, mxx = 0;
+      for (let u = 0; u < L; u++) { const a = e0 + u, b = s + u; Ex += cl(1 - (Ec(C.E[a]) - Ec(C.E[b]) - 15) / 10); Px += Math.pow(10, C.E[b] / 10); dT += Math.abs(C.T[b] - C.T[a]); dF += Math.abs(C.SF[b] - C.SF[a]); mn += Math.min(C.D[a], C.D[b]); mxx += Math.max(C.D[a], C.D[b]); }
+      let w = Ex / L;   // vorhanden, Rahmen für Rahmen: höchstens ~15 dB leiser als das Beispiel (Stille zählt nie, Lage im Takt der Hüllkurve)
+      if (mk.ton) w *= cl(1 - dT / L / 0.35); if (mk.rs) w *= cl(1 - dF / L / 0.25); if (mk.pg) w *= cl(1 - Math.abs(10 * Math.log10(Px / L + 1e-14) - LPe) / 10); if (mk.tr) w *= mxx > 0 ? mn / mxx : 1;
       R[s] = w;
     }
     const hits = [], gap = Math.max(1, Math.round(L * 0.75));
@@ -105243,7 +105243,7 @@ function spk12DspMake(Z2, X) {
       if (ok) hits.push({t0: +(s * C.hop / sr).toFixed(4), t1: +((s + L) * C.hop / sr).toFixed(4), wert: +R[s].toFixed(3)});
     }
     hits.sort((a, b) => b.wert - a.wert); hits.length = Math.min(hits.length, 300); hits.sort((a, b) => a.t0 - b.t0);
-    return {hits, L, mk, bsp: {pegel: +Ee.toFixed(1), tonal: +(Te / L).toFixed(3), rauschen: +(Fe / L).toFixed(3), transient: +De.toFixed(2)}, src: d2 !== d ? {lid: d2.s12lid, ms: d2.s12ms} : null, ms: +(performance.now() - T0).toFixed(1)};
+    return {hits, L, mk, bsp: {pegel: +LPe.toFixed(1), tonal: +(Te / L).toFixed(3), rauschen: +(Fe / L).toFixed(3), transient: +De.toFixed(2)}, src: d2 !== d ? {lid: d2.s12lid, ms: d2.s12ms} : null, ms: +(performance.now() - T0).toFixed(1)};
   };
   /* Auswahl merken: benannte Regionen im Dokument (d.meta.s12reg → Speichern/Laden/Export wie die übrigen Meta-Daten) */
   ops.spk12reg = (d, m) => {
@@ -105751,7 +105751,7 @@ function spk12AllL(U) {
 function spk12FftTxt(U, dd) {   // Haken im Ansicht-Klappfenster: Zeit- und Frequenz-Auflösung am FFT-Regler
   const sr = (U.meta && U.meta.sr) || 44100, p = el('p', 'spk12-fft', '');
   const up = () => { const N = U.N; p.textContent = N + ' Punkte: ' + Math.round(1000 * N / sr) + ' ms / ' + (sr / N).toFixed(1).replace('.', ',') + ' Hz'; };
-  up(); dd.appendChild(p); const seg = dd.querySelector('.spk1-n'); if (seg) seg.addEventListener('click', () => setTimeout(up, 0));
+  up(); dd.appendChild(p); const seg = dd.querySelector('.spk1-n'); if (seg && typeof MutationObserver === 'function') new MutationObserver(up).observe(seg, {subtree: true, attributes: true, attributeFilter: ['class']});
 }
 /* ---------- „Wo finde ich …?“ ---------- */
 (function spk12Guide() {

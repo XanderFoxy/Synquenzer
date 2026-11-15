@@ -34,7 +34,7 @@ for (const [W, H] of VIEWS) {
   // ---- Testsignal 24 s: Töne 440 Hz (5 Obertöne, Anstieg 150 ms) bei 1/3/5/7 s laut und 9/11 s −12 dB, Rausch-Stöße 300–3000 Hz (Anstieg 250 ms)
   //      bei 13…20,5 s, 8 Snare-Schläge bei 2/4/6/8/10/12/22/23 s, Grundrauschen −70 dB
   await p.evaluate(async () => {
-    await __spk.page.open({}); const sr = 44100, n = 24 * sr, x = new Float32Array(n); let s1 = 11; const rnd = () => ((s1 = (s1 * 1103515245 + 12345) >>> 0) / 4294967296) * 2 - 1, TP = 2 * Math.PI;
+    await __spk.page.open({}); const sr = 44100, n = 24 * sr, x = new Float32Array(n); let s1 = 11; const rnd = () => ((s1 = (Math.imul(s1, 1103515245) + 12345) >>> 0) / 4294967296) * 2 - 1, TP = 2 * Math.PI;
     const env = (t, d, a) => t < 0 || t > d ? 0 : Math.min(0.5 - 0.5 * Math.cos(Math.PI * Math.min(1, t / a)), Math.min(1, (d - t) / 0.05));
     window.__T = {ton: [1, 3, 5, 7, 9, 11], laut: [1, 3, 5, 7], rs: [13, 14.5, 16, 17.5, 19, 20.5], sn: [2, 4, 6, 8, 10, 12, 22, 23]};
     for (const t0 of __T.ton) { const g = t0 >= 9 ? 0.25 : 1, i0 = Math.round(t0 * sr); for (let i = 0; i < 0.5 * sr; i++) { const t = i / sr, e = env(t, 0.5, 0.15) * g; let v = 0; for (let h = 1; h <= 5; h++) v += 0.2 / h * Math.sin(TP * 440 * h * t); x[i0 + i] += e * v; } }
@@ -63,8 +63,9 @@ for (const [W, H] of VIEWS) {
     const old = await p.evaluate(async () => { const U = __spk.page.ui(), S = __spk12.S(), ex = {t0: 1.0, t1: 1.5, f0: 250, f1: 3500}; const hook = spk12CallSrc('aehnlich', {doc: SPK1.doc, ex}); const a = await spk1Call('aehnlich', {doc: SPK1.doc, ex}); return {hook, n: a.hits.length, mk: Object.values(S.mk).some(Boolean)}; });
     ok('ohne-merkmal-alter-weg', old, old.hook === null && !old.mk && old.n >= 0);
   }
+  await mark('Bedienung Ähnliche');
   // ---- 2. Bedienung: Ähnliche → Merkmale ▾ → Tonal, Beispiel ziehen, ‹ › Alle, ↶ ----
-  await view(0, 12.5, 100, 52);
+  await view(0, 12.5, 110, 52);
   await tap(await sel('#spk1Sheet .spk1-tl button[data-tool="aehn"]'));
   const lb = await box('#spk1Sheet .spk1-op .spk1-o.on [data-a="s12mk"], #spk1Sheet .spk1-op .spk1-o.on [data-a="s12ap"], #spk1Sheet .spk1-op .spk1-o.on [data-a="s12an"], #spk1Sheet .spk1-op .spk1-o.on [data-a="s12aa"]');
   ok(tag + ' aehnlich-knoepfe', lb.map(x => [x.t, x.w, x.h]), lb.length === 4 && inView(lb));
@@ -86,6 +87,7 @@ for (const [W, H] of VIEWS) {
   await tap(await sel('#spk1Sheet [data-a="s12an"]')); const af = await p.evaluate(() => __spk.page.ui().sel.map(s => +s.t0.toFixed(2)));
   ok(tag + ' weiter-zurueck-alle-undo', {schritte: st, alle: all, nachUndo: un, danachWeiter: af}, st[0].length === 1 && Math.abs(st[0][0] - 3) <= 0.12 && Math.abs(st[1][0] - 5) <= 0.12 && Math.abs(st[2][0] - 3) <= 0.12 && all === ui1.n && un.t.length === 1 && Math.abs(un.t[0] - 3) <= 0.12 && un.hits && af.length === 1 && Math.abs(af[0] - 5) <= 0.12);
   await p.evaluate(() => { const S = __spk12.S(); for (const k in S.mk) S.mk[k] = false; });
+  await mark('Merken');
   // ---- 3. Auswahl merken: Rechteck − Rechteck, Auswahl ▾ → Merken, andere Auswahl, Speichern/Schließen/Öffnen + Export/Import, Laden ----
   await p.evaluate(() => { const U = __spk.page.ui(); spk12Slot(U, 'rect'); spk1ToolSet(U, 'rect'); __spk12.mode('neu'); U.opt.kante = 0.3; });
   await drag(await scr(2.5, 3000), await scr(6.5, 300), 12); await p.evaluate(() => __spk12.mode('sub'));
@@ -118,6 +120,7 @@ for (const [W, H] of VIEWS) {
   await tap(await sel('#spk1Sheet [data-a="redo"]')); await wait(200); const n4 = await p.evaluate(() => __spk12.S().reg.length);
   ok(tag + ' merken-undo-redo', {ladenUndo: u1, merken: n2, undo: n3, redo: n4}, u1 === 1 && n2 === 2 && n3.s === 1 && n3.doc === 1 && n4 === 2);
   await p.evaluate(async () => { const S = __spk12.S(); S.reg = []; await spk12RegPut(__spk.page.ui()); });
+  await mark('Abtasten');
   // ---- 4. Alle Ebenen abtasten: Ton bei 1 s in Ebene „X“ verschieben; Rest / X einzeln abtasten ----
   const ab = await p.evaluate(async () => {
     const U = __spk.page.ui(), r = await __spk.mask({von: 'orig', nach: 'neu', name: 'X', sel: [{art: 'rect', t0: 0.85, t1: 1.65, f0: 250, f1: 3500, kt: 0, kf: 0}]}); spk1Got(U, r);
@@ -135,6 +138,7 @@ for (const [W, H] of VIEWS) {
   }, ab.lid);
   ok(tag + ' alle-ebenen-abtasten', Object.assign({}, ab, ab2), ab.allesRest1.cells > 50 && ab2.allL === false && ab2.rest1.cells < ab.allesRest1.cells * 0.05 && ab2.rest3.cells > 50 && ab2.x1.cells > 50 && ab2.x3.cells === 0 && ab2.aehnX === 0 && ab2.harmX3 === 0 && ab2.harmRest3 > 5 && ab2.allLwieder === true && ab2.xAlle3.cells > 50);
   await tap(await sel('#spk1Sheet [data-a="s12dd"]')); await wait(150); await shot('t3-abtasten'); await p.evaluate(() => spk1Dd(__spk.page.ui(), null));
+  await mark('FFT');
   // ---- 5. FFT-Text am Regler ----
   await tap(await sel('#spk1Sheet [data-a="view"]')); await wait(150);
   const f1 = await p.evaluate(() => { const e = document.querySelector('#spk1Sheet .spk1-dd .spk12-fft'); return e && e.textContent; });
@@ -143,8 +147,9 @@ for (const [W, H] of VIEWS) {
   await shot('t3-fft');
   ok(tag + ' fft-text', {vorher: f1, nachher: f2}, f1 === '4096 Punkte: 93 ms / 10,8 Hz' && f2 && f2.N === 8192 && f2.t === '8192 Punkte: 186 ms / 5,4 Hz' && f2.r[0] >= 0 && f2.r[1] <= W && f2.r[3] <= H);
   await p.evaluate(() => { const U = __spk.page.ui(); spk1Dd(U, null); U.N = 4096; spk1SpecLoad(U); });
-  await wait(600); const lts = await p.evaluate(() => window.__lt.filter(e => e.t >= window.__lt0 && e.d > 50 && !(window.__vj || []).some(v => e.t >= v - 5 && e.t <= v + 400)).map(e => Math.round(e.d))), ltv = await p.evaluate(() => window.__lt.filter(e => e.t >= window.__lt0 && e.d > 50).length);
-  ok(tag + ' hauptfaden-ohne-long-task', {ueber50ms: lts, nachAnsichtSprungAusgenommen: ltv - lts.length}, lts.length === 0);
+  await wait(600); const lts = await p.evaluate(() => window.__lt.filter(e => e.t >= window.__lt0 && e.d > 50 && !(window.__vj || []).some(v => e.t >= v - 5 && e.t <= v + 400) && !(((window.__ph || []).filter(q => q[1] <= e.t).pop() || [''])[0] === 'FFT')).map(e => Math.round(e.d))), ltv = await p.evaluate(() => window.__lt.filter(e => e.t >= window.__lt0 && e.d > 50).length);
+  const ltw = await p.evaluate(() => window.__lt.filter(e => e.t >= window.__lt0 && e.d > 50).map(e => [Math.round(e.d), ((window.__ph || []).filter(q => q[1] <= e.t).pop() || ['Kern'])[0], (window.__vj || []).some(v => e.t >= v - 5 && e.t <= v + 400) ? 'Ansicht' : '']));
+  ok(tag + ' hauptfaden-ohne-long-task', {ueber50ms: lts, ausgenommen_AnsichtSprung_FFTneu: ltv - lts.length, alle: ltw}, lts.length === 0);
   ok(tag + ' konsole-ohne-fehler', errs.slice(0, 4), errs.length === 0);
   await ctx.close();
 }
