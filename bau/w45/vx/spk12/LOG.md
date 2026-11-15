@@ -17,3 +17,4 @@
 - 04:59 Teil-3-Code (Kern: Ebene abtasten, Merkmale, Regionen · Haupt: Merkmale ▾ ‹ › Alle, Merken, Abtasten, FFT-Text) + 2 neue Haken (spk1Call, spk1ViewDd) gebaut
 - 05:01 spk12-test3.mjs geschrieben
 - 05:04 spk12-test3 hochkant 19 OK / 0 FEHLER (Pegel = mittlerer Pegel, Anwesenheit Rahmen für Rahmen, FFT-Text per MutationObserver); Kette test3 (3 Größen) → test2 → test → smoke → reg.sh gestartet
+- 05:07 spk12-test3 alle 3 Größen 47 OK / 0 FEHLER; spk12-test2 72/0; Nachtrag: Regionen beim Öffnen des Stücks vorab holen, offenes Auswahl ▾ baut sich neu auf (Test öffnet nur einmal)

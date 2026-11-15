@@ -107,7 +107,7 @@ for (const [W, H] of VIEWS) {
   }, s0);
   ok(tag + ' speichern-laden-identisch', rt, rt.gleichSpeichern && rt.gleichExport && rt.selGleich);
   await p.evaluate(() => { __spk12.S().reg = null; });   // Liste aus dem Dokument neu holen (wie nach dem Öffnen)
-  await tap(await sel('#spk1Sheet [data-a="s12dd"]')); await wait(400); await p.evaluate(() => spk1Dd(__spk.page.ui(), null)); await tap(await sel('#spk1Sheet [data-a="s12dd"]')); await wait(200);
+  await tap(await sel('#spk1Sheet [data-a="s12dd"]')); await p.waitForFunction(() => document.querySelector('#spk1Sheet .spk1-dd [data-s12r]'), null, {timeout: 5000}).catch(() => {}); await wait(150);   // Liste kommt nach, Klappfenster baut sich neu auf
   await shot('t3-merken');
   const rb = await box('#spk1Sheet .spk1-dd [data-s12r], #spk1Sheet .spk1-dd [data-s12rx]');
   ok(tag + ' region-zeile', rb.map(x => [x.t, x.w, x.h]), rb.length === 2 && inView(rb));

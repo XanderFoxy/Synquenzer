@@ -15,3 +15,4 @@
 - 04:58 mtx3b-test 86/86 (67 + 19 Prüfung), md5 d7be6175; Regression nacheinander startet (reg/run2.sh)
 - 04:59 Pflicht: topdefs 26/0/0 · dupkeys 0 · smoke errors [] · MS 2000 1× · live 1× · VERSION 4.68.0 · diff nur Zusätze (0 <, 690 >)
 - 05:00 Zusammenführen: gemischter Fall (DRUMS + SNARE Original, HH ZU Version) nachgezogen; Prüfung-Abschnitt 20/20; Regression neu (reg/run3.sh, md5 19ae2cc4)
+- 05:08 FERTIG md5 19ae2cc4: mtx3b 87/87 · mtx3 51/51 · mtx3p 21/21 · ux2 22/5 = basis · imp1 ALLE OK · Pflicht sauber · Sonde C7 = Zeitfenster (8-s-Gegenprobe 54 %) · NOTES „Prüfung MTX3b“

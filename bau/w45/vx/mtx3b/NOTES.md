@@ -105,3 +105,11 @@ Gebaut wie zuvor: `block.js` + `ins.cjs` (35 Haken, 10 neu, Anker eindeutig in b
 CPU-Frage (Prüfer): kein Befund; die neuen Wege laufen nur bei Remix/Auslagern/Zusammenführen/Laden, nicht im Planer.
 Offen/Hinweis: Teile (S.parts) mit eigenen Clips einer Einzelspur werden beim Zusammenführen wie in MTX3 behandelt (Zeile gekürzt);
 spielt DRUMS an einer Stelle gar nicht, die Einzelspur aber schon, geht diese Stelle beim Zusammenführen weiter verloren (wie MTX3).
+
+### Läufe nach der Prüfung (nacheinander, md5 19ae2cc4)
+- mtx3b-test **87/87** (67 + 20 „Prüfung MTX3b“, Foto `fotos/mtx3b-p-auslagern-schritte-926x370.png`) · mtx3-test **51/51** · mtx3p-test **21/21**
+  (Kopie reg/, wie zuvor) · ux2-test 22 OK / 5 FAIL = basis.html zeilengleich · imp1-test ALLE OK (116 s).
+- Prüfer-Sonden auf der neuen Fassung: a 6/6 · b 4/4 · d 4/4 · e 3/3 · f 3/3 · h 4/4 · i 3/3 · j 2/2 · g [Pad-Klang] 90×36/52.
+  c: alles OK außer C7 (Lauflicht in einem 2-s-Fenster ≥ 5 von 20 Bildern; gemessen 4). Gegenprobe über 8 s: Lauflicht auf Takt 2 in 43
+  von 80 Bildern (54 %, erwartet 50 %) – das kurze Fenster hängt von der Testzeit ab, kein Fehler.
+- Pflicht: topdefs 26/0/0 · dupkeys 0 · smoke errors [] · „MS 2000“ 1× · „^  live: true,“ 1× · VERSION 4.68.0 · diff basis→index nur Zusätze.

@@ -1,7 +1,7 @@
 # SPK12 – Werkzeugkasten Auswahl (Spektral) · Teil 1/3 (Plan-Schritte 1–3) + Teil 2/3 (4–6) + Teil 3/3 (7–9)
 
 Bau: `python3 bau.py` = `basis.html` (Kandidat 4.68.0, unverändert) + `spk12-block.js` direkt nach `/* SPK11-END */`
-+ 16 Haken-Zeilen „SPK12“ (je eine **neue** Zeile mit typeof-Schutz; keine vorhandene Zeile umgeschrieben).
++ 18 Haken-Zeilen (Teil 1/2: 16, Teil 3: +2, siehe unten) „SPK12“ (je eine **neue** Zeile mit typeof-Schutz; keine vorhandene Zeile umgeschrieben).
 VERSION unverändert 4.68.0. Ein Block `/* SPK12-BEGIN */ … /* SPK12-END */` (Teil 1: 445 Zeilen, mit Teil 2: 751 Zeilen). diff Basis → Paket: 0 entfernte, 767 neue Zeilen (751 Block + 16 Haken).
 
 ## Haken-Liste (Anker → neue Zeile)
@@ -137,7 +137,7 @@ spk12-test (Teil 1) mit Teil-2-Bau: 98 OK / 0 FEHLER. Regression (reg.sh → reg
 spk1 1 FEHLER verfeinern-verbessert-ziel (= Basis) · spk8-seite 14/0 · spk11 38/3 (nur drums-auf-kit = bekannt offen in 4.68) – gleich wie Teil 1.
 
 ## Teil 3/3 (Plan-Schritte 7–9) – Ähnliches mit Merkmalen + ‹ › Alle, Alle Ebenen abtasten, Auswahl merken, FFT ms / Hz
-Bau jetzt **18 Haken** (16 + 2 neue), Block 909 Zeilen, diff Basis → Paket: 0 entfernte, 927 neue Zeilen. Quellen Teil 2 gesichert:
+Bau jetzt **18 Haken** (16 + 2 neue), Block 912 Zeilen, diff Basis → Paket: 0 entfernte, 930 neue Zeilen (912 Block + 18 Haken). Quellen Teil 2 gesichert:
 `spk12-block.teil2.js`, `bau.teil2.py`.
 ### Haken (Teil 3)
 | # | Stelle | Zweck |
@@ -159,6 +159,8 @@ Bau jetzt **18 Haken** (16 + 2 neue), Block 909 Zeilen, diff Basis → Paket: 0 
 - **‹ › Alle:** Liste = Beispiel + Treffer über der Empfindlichkeit nach Zeit; › vom Gesamtbild aus springt zum nächsten nach dem
   Beispiel, ‹ zum vorigen, rundum. Auswahl = nur dieser Treffer, Beispiel und Treffer bleiben gemerkt; „Alle“ wählt wieder alle.
   **Je Schritt ein ↶** (der Eintrag merkt Beispiel/Treffer/Zeiger, ↶ stellt sie mit her).
+- **Regionen-Liste** wird beim Öffnen eines Stücks vorab geholt; ist „Auswahl ▾“ beim Eintreffen offen, baut es sich neu auf.
+- ‹ › Alle tragen die Klasse `spk12-an` (gleiches Aussehen wie Neu/+/−/∩), damit Teil-1-Messungen der Kombinier-Leiste unverändert bleiben.
 - **Alle Ebenen abtasten** (Auswahl ▾ → Abtasten, Häkchen, Standard an = bisheriges Verhalten): aus → Zauberstab, Transient,
   Obertöne-Auto, Folgt dem Ton, Harmonische, Ähnliche (mit und ohne Merkmal) suchen nur im Klang der **aktiven Ebene**
   (Ebene „Original“ = alles). Der Worker rendert das Ebenen-Signal blockweise (`block` mit Mischung nur dieser Ebene, mono wie

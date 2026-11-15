@@ -105254,7 +105254,7 @@ function spk12DspMake(Z2, X) {
 /* ---------- Hauptfaden: Zustand, Stapel, Kombinieren ---------- */
 function spk12S(U) {
   let S = U.s12;
-  if (!S || S.doc !== SPK1.doc) { const o = S || {}; S = U.s12 = {doc: SPK1.doc, mode: o.mode || 'neu', slot: o.slot && typeof o.slot === 'object' ? o.slot : {rect: 'rect', zeit: 'zeit'}, hm: o.hm || null, hAuto: !!o.hAuto, prev: [], last: null, u: [], r: [], vw: null, vKey: '', inSelf: false, ovSel: null, allL: o.allL !== false, mk: Object.assign({ton: false, tr: false, rs: false, pg: false}, o.mk || {}), reg: null, ai: -1}; }
+  if (!S || S.doc !== SPK1.doc) { const o = S || {}; S = U.s12 = {doc: SPK1.doc, mode: o.mode || 'neu', slot: o.slot && typeof o.slot === 'object' ? o.slot : {rect: 'rect', zeit: 'zeit'}, hm: o.hm || null, hAuto: !!o.hAuto, prev: [], last: null, u: [], r: [], vw: null, vKey: '', inSelf: false, ovSel: null, allL: o.allL !== false, mk: Object.assign({ton: false, tr: false, rs: false, pg: false}, o.mk || {}), reg: null, ai: -1};  if (SPK1.doc && U.meta) setTimeout(() => spk12RegGet(U), 0); }
   return S;
 }
 const spk12Has = U => U.sel.some(s => s.op === 'sub' || s.op === 'and' || s.art === 'wand' || s.art === 'inv' || s.art === 'ell' || s.art === 'lasso' || s.art === 'trans' || s.art === 'fol' || (s.art === 'harm' && s.hm));
@@ -105466,7 +105466,7 @@ function spk12Retol(U) {   // Toleranz / Grenze geändert → letzten Zauberstab
 /* ---------- Bedienung: Leiste (Neu │ + │ − │ ∩ · Auswahl ▾), Toleranz/Grenze, Halten auf Rechteck ---------- */
 const spk12Svg = () => '<svg class="n1i" width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true">' + SPK12_ICON + '</svg>';
 function spk12Pane(U, pane, sl) {
-  if (!document.getElementById('spk12Css')) { const st = document.createElement('style'); st.id = 'spk12Css'; st.textContent = '.spk1-o.spk12-c{gap:4px}.spk1-op .spk12-m{min-width:44px;justify-content:center;font-weight:700}.spk1-op .spk12-dd,.spk1-op .spk12-hd{margin-left:6px}.spk1-dd .mbtn.spk12-hn{min-width:44px;padding:6px 4px;justify-content:center;text-align:center}'; document.head.appendChild(st); }
+  if (!document.getElementById('spk12Css')) { const st = document.createElement('style'); st.id = 'spk12Css'; st.textContent = '.spk1-o.spk12-c{gap:4px}.spk1-op .spk12-m,.spk1-op .spk12-an{min-width:44px;justify-content:center;font-weight:700}.spk1-op .spk12-dd,.spk1-op .spk12-hd{margin-left:6px}.spk1-dd .mbtn.spk12-hn{min-width:44px;padding:6px 4px;justify-content:center;text-align:center}'; document.head.appendChild(st); }
   const pC = U.s12pane = pane('rect zeit freq pinsel harm wand ell lasso trans'); pC.classList.add('spk12-c'); U.op.insertBefore(pC, U.op.firstChild);
   for (const [m, t, lab] of SPK12_MODES) { const b = el('button', 'n1b spk12-m', esc(t)); b.dataset.a = 's12m'; b.dataset.m = m; b.setAttribute('aria-label', lab); b.setAttribute('aria-pressed', String(m === 'neu')); if (m === 'neu') b.classList.add('on'); pC.appendChild(b); }
   const bA = el('button', 'n1b spk12-dd', 'Auswahl ▾'); bA.dataset.a = 's12dd'; bA.setAttribute('aria-label', 'Auswahl umkehren, wiederherstellen, erweitern, weicher'); pC.appendChild(bA); U.b12 = bA;
@@ -105476,7 +105476,7 @@ function spk12Pane(U, pane, sl) {
   for (const p of U.op.querySelectorAll('.spk1-o')) if (p.dataset.for === 'rect zeit freq') p.dataset.for += ' ell lasso';   // Kante auch für Ellipse/Lasso
   const pT = pane('trans'); sl(pT, 'Empfindl.', 's12ts', 1, 10, 1, v => String(v), () => spk12ReTr(U)); sl(pT, 'Höhen', 's12hg', 0, SPK12_HG.length - 1, 1, v => 'ab ' + SPK12_HG[v] + ' Hz', () => spk12ReTr(U)); sl(pT, 'Länge', 's12tl', 40, 300, 20, v => v + ' ms', () => spk12ReTr(U));
   const pA = pane('aehn'), bM = el('button', 'n1b spk12-hd', 'Merkmale ▾'); bM.dataset.a = 's12mk'; bM.setAttribute('aria-label', 'Ähnlich in: tonal, Transient, Rauschen, Pegel'); pA.appendChild(bM); U.b12m = bM;
-  for (const [a, t, lab] of [['s12ap', '‹', 'Voriger Treffer'], ['s12an', '›', 'Nächster Treffer'], ['s12aa', 'Alle', 'Alle Treffer wählen']]) { const x = el('button', 'n1b spk12-m', t); x.dataset.a = a; x.setAttribute('aria-label', lab); pA.appendChild(x); }
+  for (const [a, t, lab] of [['s12ap', '‹', 'Voriger Treffer'], ['s12an', '›', 'Nächster Treffer'], ['s12aa', 'Alle', 'Alle Treffer wählen']]) { const x = el('button', 'n1b spk12-an', t); x.dataset.a = a; x.setAttribute('aria-label', lab); pA.appendChild(x); }
   const pH = pane('harm'), bH = el('button', 'n1b spk12-hd', 'Obertöne ▾'); bH.dataset.a = 's12hd'; bH.setAttribute('aria-label', 'Obertöne einzeln anhaken, Auto, nur ungerade'); pH.appendChild(bH); U.b12h = bH;
   for (const g of Object.keys(SPK12_SLOTS)) {
     const b = U.tl.querySelector('button[data-tool="' + g + '"]'); if (!b) continue; b.dataset.s12slot = g;
@@ -105712,7 +105712,10 @@ function spk12MkDd(U, b) {
   });
 }
 /* Auswahl merken: Regionen im Dokument; Merken, Laden, Löschen je ein ↶ */
-function spk12RegGet(U) { const S = spk12S(U), doc = S.doc; if (!doc || S.regQ) return; S.regQ = 1; spk1Call('spk12reg', {doc}).then(r => { if (spk12S(U).doc === doc) S.reg = r.reg; }, logErr).finally(() => { S.regQ = 0; }); }
+function spk12RegGet(U) {   // Regionen des Stücks holen; ist „Auswahl ▾“ gerade offen, neu aufbauen
+  const S = spk12S(U), doc = S.doc; if (!doc || S.regQ) return; S.regQ = 1;
+  spk1Call('spk12reg', {doc}).then(r => { if (spk12S(U).doc !== doc) return; const was = S.reg; S.reg = r.reg; if (was == null && U.dd && U.ddA === U.b12) spk12Dd(U, U.b12); }, logErr).finally(() => { S.regQ = 0; });
+}
 function spk12RegPut(U) { const S = spk12S(U); return spk1Call('spk12reg', {doc: S.doc, set: S.reg || []}).then(r => { S.reg = r.reg; return r.reg; }); }
 const SPK12_ART = {rect: 'Rechteck', zeit: 'Zeit', freq: 'Frequenz', pinsel: 'Pinsel', harm: 'Harmonische', aehn: 'Ähnliche', wand: 'Zauberstab', ell: 'Ellipse', lasso: 'Lasso', trans: 'Transient', fol: 'Folgt dem Ton', inv: 'Umgekehrt'};
 function spk12Merk(U) {
