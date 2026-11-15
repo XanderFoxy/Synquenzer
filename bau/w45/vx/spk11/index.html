@@ -103963,7 +103963,7 @@ function spk11Rows(U, X) {
   const rows = src.map(r => Object.assign(r, {n: r.art === 'drums' ? 0 : spk11Notes(U, r.lid, ta, tb).length, all: r.art === 'drums' ? 0 : spk2Notes(U, r.lid).filter(q => spk11NoteOk(U, q)).length}));
   // Vorwahl: mit Auswahl und gewählter Ebene nur diese Ebene; sonst alle Ebenen (was in der Auswahl still ist, legt das Anlegen von selbst
   // nicht an). Noten standardmäßig nur für Drums und Bass (dort verlässlich) – Flächen, Lead, Gesang als Audio; MIDI bleibt wählbar.
-  const one = sel && U.act && U.act !== 'orig' && rows.some(r => r.lid === U.act) ? U.act : null;
+  const one = sel && U.act && U.act !== 'orig' && U.act !== 'rest' && rows.some(r => r.lid === U.act) ? U.act : null;
   for (const r of rows) {
     const k = SPK1.doc + '|' + r.lid + '|' + (sel ? 's' : 'a');
     if (M[k] == null) M[k] = r.lid === 'rest' || (one && r.lid !== one) ? 'x' : spk11Def(r);
@@ -104062,7 +104062,7 @@ function spk11Dd(U) {
     dd.appendChild(el('h5', '', 'Szenen anlegen'));
     if (Z.st !== 'fertig') { dd.appendChild(Z.pe = el('p', 'spk11-tx', '')); spk11Prog(U, Z); dd.appendChild(el('p', 'spk11-tx', 'Die Songteile werden wie beim Import erkannt (Tempo, Takt, Strophe/Refrain …).')); return; }
     const P = Z.plan = spk11Plan(U), g = P.X.g, f1 = v => v.toFixed(1).replace('.', ','), bpm = +(U.meta.grid || {}).bpm || 120;
-    const nP = P.X.parts.length, head = (Z.T && Z.T.ok ? nP + (nP === 1 ? ' Teil' : ' Teile') : 'Keine Teile erkannt – ein Teil') + ' · ' + Math.round(bpm * 10) / 10 + ' BPM · ' + ((U.meta.grid || {}).ts || '4/4') + (P.X.sel ? ' · nur die Auswahl ' + f1(P.X.span[0]) + '–' + f1(P.X.span[1]) + ' s' : '');
+    const nP = P.X.parts.length, head = (Z.T && Z.T.ok ? nP + (nP === 1 ? ' Teil' : ' Teile') : 'Keine Teile erkannt – ein Teil') + ' · ' + spk11Bpm(bpm) + ' BPM · ' + ((U.meta.grid || {}).ts || '4/4') + (P.X.sel ? ' · nur die Auswahl ' + f1(P.X.span[0]) + '–' + f1(P.X.span[1]) + ' s' : '');
     dd.appendChild(el('p', 'spk11-tx', esc(head)));
     const TP = spk11Tempo(U), tl = [];
     if (TP.wechsel) tl.push('Projekt-Tempo ' + spk11Bpm(S.bpm) + ' → ' + TP.P + ' BPM');

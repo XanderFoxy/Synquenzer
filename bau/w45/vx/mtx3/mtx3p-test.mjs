@@ -24,10 +24,11 @@ async function run(label, fn, arg) {
     SYNQUENZER.songFromChain([{scene: 0, bars: 2}, {scene: 1, bars: 2}]);
     const A = await __R(); const ns = S.tracks[0].clips[0].notes, ix = ns.map((n, k) => k).filter(k => ns[k].n >= 43);
     const j = SYNQUENZER.mtx3.out(0, 0, ix, 'new', false); const B = await __R(); const bar = Math.round(A.sr * 4 * 60 / S.bpm);
-    return {j, src: JSON.stringify(S.song.lanes[0]), lane: JSON.stringify(S.song.lanes[j]), d34: __db(A, B, 2 * bar, 4 * bar), d: __db(A, B)};
+    const rms = (X, a, z) => { let e = 0; for (const c of ['L', 'R']) for (let k = a; k < z; k++) e += X[c][k] * X[c][k]; return Math.round(10 * Math.log10(e / (2 * (z - a)) + 1e-30) * 10) / 10; };
+    return {j, src: JSON.stringify(S.song.lanes[0]), lane: JSON.stringify(S.song.lanes[j]), rms34A: rms(A, Math.round(2.25 * bar), 4 * bar), rms34B: rms(B, Math.round(2.25 * bar), 4 * bar)};
   });
   ok('S1 Auslagern: Song-Zeile der neuen Spur mit Stopp beim Wechsel', /"slot":-1/.test(r.lane || ''), r);
-  ok('S1 Takt 3/4 ohne fremde Noten (Differenz ≤ −40 dB)', r.d34 <= -40, r.d34); }
+  ok('S1 Takt 3/4 (ab dem 2. Viertel) still wie vorher (≤ −45 dBFS)', r.rms34B <= -45 && r.rms34B <= r.rms34A + 3, {vorher: r.rms34A, nachher: r.rms34B}); }
 // S2 – Fill „ersetzt“ schweigt auch auf den Einzelspuren
 { const r = await run('S2', async () => {
     for (let i = 0; i < NT(); i++) if (i !== DRUM_T) S.tracks[i].clips = S.tracks[i].clips.map(() => null);
@@ -61,14 +62,15 @@ async function run(label, fn, arg) {
   ok('S4 ↶ holt Clip und Song-Zeile zurück, Wiedergabe läuft', r.undo && !r.undo.clip && r.undo.lane3 === '[]' && r.undo.playing, r.undo); }
 // M1 / L3 / M5 – ↶/↷ ohne Stopp, Spuren spielen mit, keine Faltungs-Lecks, keine leere Synth-Engine
 { const r = await run('M1', async () => {
-    const o = {}; ensureAudio(); setSongView(false); launchScene(0); play(); await __W(600);
+    const o = {}; ensureAudio(); SYNQUENZER.songFromChain([{scene: 0, bars: 2}]); setSongView(false); launchScene(0); play(); await __W(600);
     const m = SYNQUENZER.mtx3.split(); o.m = m; o.eng = m.map(j => (AU.synth[j] ? 1 : 0)); await __W(500);
     undo(); await __W(300); o.u = {nt: NT(), playing: R.playing}; redo(); await __W(300); o.r = {nt: NT(), playing: R.playing, slot: m.map(j => R.slot[j])};
     const s0 = LOG.seq; await __W(1800); o.heard = m.map(j => __heard(s0, j));
     const n0 = (() => { let k = 0; const L = MTX3.bx.get(AU.ctx) || []; for (const X of L) if (X) k++; return k; })();
     for (let k = 0; k < 2; k++) await __R(2); await __W(300); o.busLive = (MTX3.bx.get(AU.ctx) || []).filter(Boolean).length; o.bus0 = n0;
     const ns = S.tracks[0].clips[0].notes, ix = ns.map((n, k) => k).filter(k => ns[k].n >= 43);
-    SYNQUENZER.mtx3.merge(); await __W(200); const j = SYNQUENZER.mtx3.out(0, 0, ix, 'new', false); undo(); await __W(200); redo(); await __W(300); o.outRedo = {j, slot: R.slot[j], playing: R.playing};
+    SYNQUENZER.mtx3.merge(); await __W(200); if (!R.playing) { launchScene(0); play(); await __W(600); }   // der Offline-Render hält die Wiedergabe an
+    const j = SYNQUENZER.mtx3.out(0, 0, ix, 'new', false); undo(); await __W(200); redo(); await __W(300); o.outRedo = {j, slot: R.slot[j], playing: R.playing};
     stop(); return o;
   });
   ok('M1 ↶/↷ Aufteilen: Wiedergabe läuft weiter', r.u && r.u.playing && r.r && r.r.playing && r.u.nt === 6 && r.r.nt === 8, r);

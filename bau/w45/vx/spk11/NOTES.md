@@ -49,3 +49,39 @@ Spektral-Seite → Ansicht ▾ → „Szenen anlegen …“ → Klappfenster (St
 - Das Nachbau-Ergebnis je Ebene gilt für die Sitzung (nicht im Dokument gespeichert).
 - Kein Song-Ablauf (song.lanes) – nur Szenen in der Matrix (der Import „In Szenen“ legt ihn an; hier bewusst nicht, damit ein vorhandener
   Song bleibt). Vorschlag für den Funk: optional „auch als Song-Ablauf“.
+
+## Prüfung 1 – Nachbesserung (Befunde aus PRUEFUNG.md)
+Alles im SPK11-Block; Haken unverändert (2 Ein-Zeiler). Neue Entscheidungen:
+- **Vorwahl (B1)**: ohne und mit Auswahl alle Ebenen vorgewählt (Rest „Aus“); mit Auswahl und gewählter Ebene (nicht Rest/Original) nur
+  diese. Ob eine Ebene im Bereich etwas hat, entscheidet das Anlegen selbst: Pegel je Teil aus dem (mit Auswahl gefilterten) Audio der Ebene –
+  still = −26 dB unter dem lautesten Teil der Ebene, −30 dB unter der lautesten Ebene im Teil oder unter −54 dBFS → kein Clip (Audio und MIDI).
+  Toast nennt Ebenen ohne Inhalt („nichts in Lead“). Zeilentext: „Noten werden beim Anlegen gesucht“ nur bei MIDI; sonst „noch keine Noten“.
+- **Vorgabe je Ebene (B10)**: Drums und Bass „Beides“, Flächen/Lead/Gesang/Original „Audio“ (ihre Noten sind für Clips zu unsicher);
+  MIDI bleibt wählbar. Spart nebenbei MIDI-Spuren.
+- **Notensuche je Teil (B2)**: gesucht wird für jede zusammenhängende Strecke von (nicht stillen) Teilen ohne Noten – auch wenn die Ebene
+  anderswo schon Noten hat. Je Strecke ein „Noten finden“-Schritt der Seite (wie bisher eigener Seiten-↶).
+- **Tempo (B3, B4)**: Projekt-Tempo wie der Import (nx1ImpTarget/imp1Prep: leer oder ohne Audio → gerundetes Dokument-Tempo, sonst bleibt es).
+  Weicht es vom Dokument ab (97,3 → 97, oder bestehendes Audio-Projekt), wird das Audio jeder Ebene mit derselben Dehnung wie der Import
+  (nx1ImpStretch, Anschläge auf dem Raster) ans Projekt-Tempo gebracht; Take-Raster = Projekt-Tempo, Clip-Grenzen in Projekt-Takten.
+  Blatt sagt vorher „Projekt-Tempo 112 → 100 BPM“ / „Audio wird von 97,3 auf 97 BPM angepasst“, Toast danach dasselbe. Dehnen
+  unmöglich (kein Worker, Faktor außerhalb 0,5–2) → wie vorher, Hinweis „Audio im eigenen Tempo“.
+- **Vor-/Nachlauf (B5)**: eigener Auftakt-Takt erst ab ½ Takt Vorlauf (sonst beginnt das Intro auf der „1“, der Vorlauf entfällt in der
+  Szene); Ausklang nach dem letzten ganzen Takt zählt erst ab 0,6 Takt. Anzeige „Auftakt + Takt 1–4“ statt „Takt 0–4“.
+- **Spuren (B8, B12)**: keine Grundspur (1–6) wird mehr zur Audio-Spur umgebaut; Audio nur auf neuen oder leeren Zusatzspuren (zuerst
+  Ebenen ohne MIDI). Hat die Ebene auch eine MIDI-Spur, heißt die Audio-Spur „<Ebene> Audio“. Ohne Audio-Erlaubnis keine Audio-Ziele,
+  Blatt-Hinweis „Audio-Clips nur auf der eigenen Seite – hier nur Noten“; stille Ebenen bekommen keine (leere) Audio-Spur.
+  Blatt: „keine Spur frei (höchstens 8 Spuren)“.
+- **Drums (B9)**: Hi-Hat unter der Snare, wenn das Hi-Hat-Muster links und rechts (Achtel oder Sechzehntel) weiterläuft; mit
+  Frequenz-Auswahl liefern Bänder außerhalb keine Schläge (< 250 Hz → keine Hi-Hat/Snare-Höhen-Regel, > 200 Hz → kein Kick).
+- **Seiten-↶ (B7)**: Text korrigiert – Statuszeile „Angelegt: 1 Intro · 2 Strophe 1 … – zurück mit ↶ in der Matrix oder im Hinweis“,
+  Blatt „Ein ↶ (Matrix oder Hinweis) nimmt alles zurück“. Das Seiten-↶ bleibt für die Seite (eigener Stapel im Worker).
+- **Texte (B14)**: „1 Teil“, BPM mit Komma.
+
+### Nicht gebaut (Vorschlag für den Funk, sichtbare Änderung der Grund-App)
+- **B6 Szenen-Namen im Matrix-Kopf**: Der Kopf zeigt Nummer + Tonart (Grund-App, auch beim Import „In Szenen“). Vorschlag: Name klein
+  unter der Nummer, wenn die Szene einen eigenen Namen hat. Bis dahin: Namen in Statuszeile der Seite und im Szenen-Blatt (Halten).
+- **B13 Quer-Erreichbarkeit**: „Szenen anlegen …“ ganz oben im Ansicht-Menü bzw. „Klang nachbauen“ vor „Kopieren“ würde die vorhandene
+  Reihenfolge ändern – Vorschlag für den Funk.
+- **B11** Loop → Matrix (Audio) nimmt die erste Audio-Spur (imp1OrigT, Grund-/IMP1-Code, Stelle von IMP2B) – offen.
+- **B15** Speicher: je Audio-Ebene ein Take über die Strecke (jetzt höchstens 2 Audio-Ebenen bei 6 Grundspuren) – offen, nicht gemessen.
+- Drum-Kit im Bauer-Lied weiter: Kick 63/64 + 26 Zusatz aus Bass-Resten, Snare in den Strophen schwach (Mitten in anderen Ebenen).
