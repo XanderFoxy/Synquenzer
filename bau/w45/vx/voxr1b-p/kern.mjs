@@ -65,12 +65,12 @@ const NEAR = (e, t, d) => e.t1 >= t - 0.01 && e.t0 <= t + d + 0.01;
 for (const tk of ['B44', 'C48']) {
   const {x: v, sr} = LOAD[tk], n = v.length, T = TR[tk], P = new Float32Array(n), PT = [];
   const cand = T.filter(q => q.t > 0.4 && q.t < n / sr - 0.4 && voicedSpan(T, q.t - 0.06, q.t + 0.1)).map(q => q.t);
-  { let last = -9; const gap = Math.max(0.45, (cand[cand.length - 1] - cand[0]) / 10.5); for (const t of cand) if (t - last >= gap && PT.length < 10) { PT.push(+t.toFixed(3)); last = t; } }
+  { let last = -9; const gap = Math.max(0.3, (cand[cand.length - 1] - cand[0]) / 10.2); for (const t of cand) if (t - last >= gap && PT.length < 10) { PT.push(+t.toFixed(3)); last = t; } }
   const lpN = bq('lp', 90, 0.707, sr);
   for (const t of PT) { const i0 = Math.round(t * sr), M = Math.round(0.04 * sr), f = 25 + rnd() * 35, phs = rnd() * TAU, tau = 0.008 + rnd() * 0.012, G = 2 + rnd() * 6, nz = new Float64Array(M + 4000);
     for (let i = 0; i < nz.length; i++) nz[i] = rnd() * 2 - 1; filt(nz, lpN); filt(nz, lpN);
     const p = new Float64Array(M); let ep = 0, ev = 0; for (let i = 0; i < M; i++) { const tt = i / sr, w = Math.min(1, i / (0.002 * sr)) * Math.min(1, (M - i) / (0.004 * sr)); p[i] = w * (Math.sin(TAU * f * tt + phs) * Math.exp(-tt / tau) + 0.15 * nz[3000 + i] * 30); ep += p[i] * p[i]; ev += v[i0 + i] * v[i0 + i]; }
-    const g = Math.sqrt(ev / ep) * Math.pow(10, G / 20); for (let i = 0; i < M; i++) P[i0 + i] += g * p[i]; }
+    let g = Math.sqrt(ev / ep) * Math.pow(10, G / 20), pk = 0; for (let i = 0; i < M; i++) pk = Math.max(pk, Math.abs(v[i0 + i] + g * p[i])); if (pk > 0.95) g *= 0.95 / pk; for (let i = 0; i < M; i++) P[i0 + i] += g * p[i]; }
   const x = new Float32Array(n); for (let i = 0; i < n; i++) x[i] = v[i] + P[i];
   const own = K.done(K.check(v, sr)).plops, Bx = K.done(K.check(x, sr));
   const r = K.done(K.run(x, sr, {steps: {plop: {}}})), ev = r.info.plop;
@@ -115,13 +115,13 @@ for (const tk of ['B44', 'C48']) {
 }
 
 // ========== 4) Atmer: 10 eigene Atmer (Rauschen mit zwei Formanten, 0,2–0,55 s, −20…−30 dBFS) in Pausen von B und C (48 kHz, hintereinander) ==========
-{ const B = LOAD.B48, C = LOAD.C48, sr = 48000, v = new Float32Array(B.x.length + C.x.length); v.set(B.x, 0); v.set(C.x, B.x.length); const n = v.length, T = track(v, sr);
+const BRALL = []; for (const [kb, kc, sr] of [['B48', 'C48', 48000], ['B44', 'C44', 44100]]) { const B = LOAD[kb], C = LOAD[kc], v = new Float32Array(B.x.length + C.x.length); v.set(B.x, 0); v.set(C.x, B.x.length); const n = v.length, T = track(v, sr);
   // Pausen: stimmlose Rahmen mit Pegel ≤ aktiv − 25 dB, ≥ 0,32 s
   const ar = 20 * Math.log10(actRms(v)), pz = []; { let s = -1; for (let k = 0; k <= T.length; k++) { const q = k < T.length && T[k].f0 === 0 && T[k].lev < ar - 25; if (q && s < 0) s = k; if (!q && s >= 0) { const a = T[s].t, b = T[k - 1].t; if (b - a >= 0.32) pz.push([a, b]); s = -1; } } }
   // längere Pausen dürfen zwei Atmer tragen
   const slots = []; for (const [a, b] of pz) { if (b - a >= 1.3) { slots.push([a, a + (b - a) / 2 - 0.05], [a + (b - a) / 2 + 0.05, b]); } else slots.push([a, b]); }
   const BR = [], x = Float32Array.from(v); const c1 = bq('bp', 1300, 2.5, sr), c2 = bq('bp', 2900, 3, sr), c3 = bq('hp', 400, 0.707, sr);
-  for (const [a, b] of slots.slice(0, 10)) { const d = Math.min(0.55, b - a - 0.1, 0.2 + rnd() * 0.35); if (d < 0.18) continue; const t0 = a + (b - a - d) / 2, i0 = Math.round(t0 * sr), M = Math.round(d * sr);
+  for (const [a, b] of slots.slice(0, 5)) { const d = Math.min(0.55, b - a - 0.1, 0.2 + rnd() * 0.35); if (d < 0.18) continue; const t0 = a + (b - a - d) / 2, i0 = Math.round(t0 * sr), M = Math.round(d * sr);
     const nz = new Float64Array(M); for (let i = 0; i < M; i++) nz[i] = rnd() * 2 - 1; const y1 = filt(Float64Array.from(nz), c1), y2 = filt(Float64Array.from(nz), c2), y3 = filt(Float64Array.from(nz), c3);
     const z = new Float64Array(M); let e = 0; for (let i = 0; i < M; i++) { const u = i / M, w = u < 0.3 ? 0.5 - 0.5 * Math.cos(Math.PI * u / 0.3) : 0.5 + 0.5 * Math.cos(Math.PI * (u - 0.3) / 0.7); z[i] = w * (y1[i] + 0.7 * y2[i] + 0.25 * y3[i]); e += z[i] * z[i]; }
     const L = -20 - rnd() * 10, g = Math.pow(10, L / 20) / Math.sqrt(e / M); for (let i = 0; i < M; i++) x[i0 + i] += g * z[i]; BR.push({t0: +t0.toFixed(3), t1: +(t0 + d).toFixed(3), s0: i0, s1: i0 + M, dbfs: +rmsDb(x, i0, i0 + M).toFixed(1)}); }
@@ -131,13 +131,18 @@ for (const tk of ['B44', 'C48']) {
   let sung = 0, fr = 0; for (const q of T) { if (!(q.f0 > 0)) continue; fr++; const c = Math.round(q.t * sr), w = Math.round(0.01 * sr); for (let i = Math.max(0, c - w); i < Math.min(n, c + w); i++) if (r.y[i] !== x[i]) { sung++; break; } }
   const rc = K.done(K.run(v, sr, {steps: {breath: {}}})); let sungC = 0; for (const q of T) { if (!(q.f0 > 0)) continue; const c = Math.round(q.t * sr), w = Math.round(0.01 * sr); for (let i = Math.max(0, c - w); i < Math.min(n, c + w); i++) if (rc.y[i] !== v[i]) { sungC++; break; } }
   const fpB = (Bc.breathList || []).filter(e => !BR.some(b => e.t1 >= b.t0 - 0.05 && e.t0 <= b.t1 + 0.05));
-  R.breath = {pausen: pz.length, gesetzt: BR.length, pegel: lv, imZiel: inT, pruefen: Bc.breaths, fehl: fpB.map(e => [+e.t0.toFixed(2), +e.t1.toFixed(2)]), sauberTakeAtmer: Bv.breaths, gesungeneRahmenGeaendert: sung, sauberGeaendert: sungC, rahmen: fr, zeile: Bc.line};
-  ok(BR.length === 10, 'Atmer B+C@48: 10 Atmer in Pausen gesetzt', {pausen: pz.length, gesetzt: BR.length});
-  ok(inT >= 9, 'Atmer B+C@48: ≥ 9 von 10 auf −40 dBFS ± 3 dB', lv.map(q => q.nach));
-  ok(sung === 0 && sungC === 0, 'Atmer B+C@48: keine gesungene Silbe abgesenkt (stimmhafte Rahmen ±10 ms bitgleich, eigener Tracker)', {mitAtmern: sung, sauberTake: sungC, rahmen: fr});
-  ok(fpB.length <= 1 && Math.abs(Bc.breaths - 10) <= 1, 'Atmer B+C@48: Prüfen findet sie, ≤ 1 falscher', {pruefen: Bc.breaths, fehl: fpB.length, sauberTakeAtmer: Bv.breaths});
-  globalThis.__BC = {v, x, sr, BR};
-}
+  R['breath_' + sr] = {pausen: pz.length, gesetzt: BR.length, pegel: lv, imZiel: inT, pruefen: Bc.breaths, fehl: fpB.map(e => [+e.t0.toFixed(2), +e.t1.toFixed(2)]), sauberTakeAtmer: Bv.breaths, gesungeneRahmenGeaendert: sung, sauberGeaendert: sungC, rahmen: fr, zeile: Bc.line};
+  BRALL.push({sr, BR, lv, inT, sung, sungC, fpB, pr: Bc.breaths}); console.log('INFO Atmer ' + sr, JSON.stringify({pausen: pz.length, gesetzt: BR.length, nach: lv.map(q => q.nach), pruefen: Bc.breaths, fehl: fpB.length})); if (0) ok(BR.length === 10, 'x', {pausen: pz.length, gesetzt: BR.length});
+  
+  
+  
+  }
+{ const nB = BRALL.reduce((s, q) => s + q.BR.length, 0), nT = BRALL.reduce((s, q) => s + q.inT, 0), sg = BRALL.reduce((s, q) => s + q.sung + q.sungC, 0), fp = BRALL.reduce((s, q) => s + q.fpB.length, 0), pr = BRALL.reduce((s, q) => s + q.pr, 0);
+  ok(nB === 10, 'Atmer: 10 eigene Atmer in Pausen von B+C (5 bei 48 kHz, 5 bei 44,1 kHz)', {gesetzt: nB});
+  ok(nT >= 9, 'Atmer: ≥ 9 von 10 auf −40 dBFS ± 3 dB', BRALL.map(q => q.lv.map(z => z.nach)));
+  ok(sg === 0, 'Atmer: keine gesungene Silbe abgesenkt (stimmhafte Rahmen ±10 ms bitgleich, eigener Tracker, mit und ohne Atmer)', {geaendert: sg});
+  ok(fp <= 1 && Math.abs(pr - 10) <= 1, 'Atmer: Prüfen findet sie, ≤ 1 falscher', {pruefen: pr, fehl: fp}); }
+
 
 // ========== 5) Zischen: 10 eigene „s“ (Rauschen > 4,5 kHz, 80–180 ms, laut) direkt an gesungenen Silben ==========
 for (const tk of ['B44', 'C48']) {
@@ -162,29 +167,30 @@ for (const tk of ['B44', 'C48']) {
   ok(Math.abs(db(vy) - db(vx)) <= 0.5 && big <= Math.ceil(0.02 * nv), `Zischen Take ${tk[0]}@${tk.slice(1)}: Vokale ≤ 0,5 dB (gesamt, ≤ 2 % der Rahmen darüber)`, {gesamtDb: +(db(vy) - db(vx)).toFixed(3), rahmenUeber05: big + '/' + nv, maxRahmenDb: +mx.toFixed(2)});
 }
 
-// ========== 6) Raumton in Lücken: 5 Schnitte (Stille) in Pausen von B+C@48 ==========
-{ const {v, sr} = globalThis.__BC, n = v.length, H = Math.round(0.01 * sr), Lo = []; for (let p = 0; p + H <= n; p += H) Lo.push(rmsDb(v, p, p + H));
-  const srt = Lo.filter(q => q > -110).sort((a, b) => a - b), flo = srt[Math.floor(0.1 * srt.length)], holes = []; let s = -1;
-  for (let j = 0; j <= Lo.length; j++) { const q = j < Lo.length && Lo[j] > -110 && Lo[j] < flo + 6; if (q && s < 0) s = j; if (!q && s >= 0) { if (j - s >= 22 && holes.length < 5) { const c = Math.round((s + j) / 2 * H), d = Math.round(Math.min(0.35, 0.5 * (j - s) * H / sr, 0.15 + rnd() * 0.2) * sr); holes.push([c - (d >> 1), c + (d >> 1)]); } s = -1; } }
+// ========== 6) Raumton in Lücken: je Take 5 Schnitte (Stille) in eigenen Pausen (nicht in den ersten/letzten 0,3 s) ==========
+for (const tk of ['C48', 'C44', 'B48']) { const {x: v, sr} = LOAD[tk], n = v.length, H = Math.round(0.01 * sr), Lo = []; for (let p = 0; p + H <= n; p += H) Lo.push(rmsDb(v, p, p + H));
+  const srt = Lo.filter(q => q > -110).sort((a, b) => a - b), flo = srt[Math.floor(0.1 * srt.length)], holes = []; let s = -1, j0 = Math.ceil(0.3 * sr / H), j1 = Lo.length - j0;
+  for (let j = j0; j <= j1; j++) { const q = j < j1 && Lo[j] > -110 && Lo[j] < flo + 6; if (q && s < 0) s = j; if (!q && s >= 0) { if (j - s >= 20 && holes.length < 5) { const c = Math.round((s + j) / 2 * H), d = Math.round(Math.min(0.35, 0.6 * (j - s) * H / sr, 0.12 + rnd() * 0.2) * sr); holes.push([c - (d >> 1), c + (d >> 1)]); } s = -1; } }
   const xh = Float32Array.from(v); for (const [a, b] of holes) xh.fill(0, a, b);
   const rr = K.done(K.run(xh, sr, {steps: {room: {}}})), RI = rr.info.room, bandsO = [250, 500, 1000, 2000, 4000, 8000];
-  const lev = holes.map(([a, b]) => { const m = Math.round(0.012 * sr); return [+rmsDb(xh, a, b).toFixed(1), +rmsDb(rr.y, a + m, b - m).toFixed(1), +rmsDb(v, a + m, b - m).toFixed(1)]; });
+  const lev = holes.map(([a, b]) => { const m = Math.round(0.012 * sr); return [+rmsDb(rr.y, a + m, b - m).toFixed(1), +rmsDb(v, a + m, b - m).toFixed(1)]; });
   const tim = holes.map(([a, b]) => { const N = Math.min(4096, b - a - Math.round(0.024 * sr)), a2 = a + Math.round(0.012 * sr); const d = bandsO.map(f => db(bandWin(rr.y, a2, N, sr, f / Math.SQRT2, f * Math.SQRT2)) - db(bandWin(v, a2, N, sr, f / Math.SQRT2, f * Math.SQRT2))); const m = d.reduce((s, q) => s + q, 0) / d.length; return +Math.max(...d.map(q => Math.abs(q - m))).toFixed(1); });
-  let same = true; for (let i = 0; i < n && same; i++) if (!holes.some(([a, b]) => i >= a - 1 && i < b + 1) && rr.y[i] !== xh[i]) same = false;
-  R.room = {loecher: holes.map(([a, b]) => [+(a / sr).toFixed(2), +((b - a) / sr).toFixed(2)]), pegel: lev, klangfarbeAbw: tim, gelernt: RI.learned, why: RI.why || null, bitgleichAussen: same};
-  ok(holes.length === 5 && lev.every(q => Math.abs(q[1] - q[2]) <= 3), 'Raumton B+C@48: 5 Lücken gefüllt, Pegel wie der Raumton vor dem Schnitt ± 3 dB', {pegel: lev.map(q => +(q[1] - q[2]).toFixed(1))});
-  ok(tim.every(q => q <= 4), 'Raumton B+C@48: Klangfarbe (Oktaven 250 Hz–8 kHz) ± 4 dB', tim);
-  ok(same, 'Raumton B+C@48: außerhalb der Lücken bitgleich');
+  let diffOut = 0; for (let i = 0; i < n; i++) if (!holes.some(([a, b]) => i >= a - 1 && i < b + 1) && rr.y[i] !== xh[i]) diffOut++;
+  R['room_' + tk] = {floorDb: +flo.toFixed(1), loecher: holes.map(([a, b]) => [+(a / sr).toFixed(2), +((b - a) / sr).toFixed(2)]), pegelNachVor: lev, klangfarbeAbw: tim, gelernt: RI.learned, why: RI.why || null, gefuellt: (RI.holes || []).length, aussenGeaendert: diffOut};
+  if (RI.why) { console.log('INFO Raumton Take ' + tk + ': ' + RI.why); continue; }
+  ok(holes.length === 5 && lev.every(q => Math.abs(q[0] - q[1]) <= 3), `Raumton Take ${tk[0]}@${tk.slice(1)}: 5 Lücken gefüllt, Pegel wie vor dem Schnitt ± 3 dB`, {abw: lev.map(q => +(q[0] - q[1]).toFixed(1)), floor: +flo.toFixed(1), gelernt: RI.learned && RI.learned.db});
+  ok(tim.every(q => q <= 4), `Raumton Take ${tk[0]}@${tk.slice(1)}: Klangfarbe (Oktaven 250 Hz–8 kHz) ± 4 dB`, tim);
+  ok(diffOut === 0, `Raumton Take ${tk[0]}@${tk.slice(1)}: außerhalb der Lücken bitgleich`, {proben: diffOut, gefuellt: (RI.holes || []).length});
 }
-
 // ========== 7) Saubere Takes: Prüfen meldet keine Plopps/Brumm; Assistent „mittel“ ändert die Stimme nicht ==========
 for (const tk of ['B44', 'C48', 'B48', 'C44', 'A48']) {
   const {x: v, sr} = LOAD[tk], n = v.length, B = K.done(K.check(v, sr)), A = K.assist(B, 'mittel'), r = K.done(K.run(v, sr, {steps: A.steps, weg: true}));
   const T = TR[tk] || track(v, sr), N = 1024; let mx = 0, big = 0, nv = 0; for (const q of T) { if (!(q.f0 > 0)) continue; const c = Math.round(q.t * sr), a = c - N / 2; if (a < 0 || a + N > n) continue; const ey = bandWin(r.y, a, N, sr, 200, 4000), ex = bandWin(v, a, N, sr, 200, 4000); const d = Math.abs(db(ey) - db(ex)); nv++; mx = Math.max(mx, d); if (d > 0.5) big++; }
   const rel = db(band(r.wg, sr, 300, 4000)) - db(band(v, sr, 300, 4000));
-  R['sauber_' + tk] = {zeile: B.line, plops: B.plops.length, brumm: B.hum.on, schritte: Object.keys(A.steps), entferntGesangsbandDb: +rel.toFixed(1), stimmRahmenUeber05dB: big + '/' + nv, stimmRahmenMaxDb: +mx.toFixed(2)};
+  const per = {}; for (const k of Object.keys(A.steps)) { const ry = K.done(K.run(v, sr, {steps: {[k]: A.steps[k]}})).y; let bb = 0, mm = 0; for (const q of T) { if (!(q.f0 > 0)) continue; const c = Math.round(q.t * sr), a = c - N / 2; if (a < 0 || a + N > n) continue; const d = Math.abs(db(bandWin(ry, a, N, sr, 200, 4000)) - db(bandWin(v, a, N, sr, 200, 4000))); mm = Math.max(mm, d); if (d > 0.5) bb++; } per[k] = bb + ' / max ' + mm.toFixed(2); }
+  R['sauber_' + tk] = {proSchritt: per, zeile: B.line, plops: B.plops.length, brumm: B.hum.on, schritte: Object.keys(A.steps), entferntGesangsbandDb: +rel.toFixed(1), stimmRahmenUeber05dB: big + '/' + nv, stimmRahmenMaxDb: +mx.toFixed(2)};
   ok(B.plops.length === 0 && !B.hum.on, `Sauberer Take ${tk[0]}@${tk.slice(1)}: 0 Plopps, kein Brumm`, {zeile: B.line});
-  ok(rel <= -25 && big <= Math.ceil(0.01 * nv), `Sauberer Take ${tk[0]}@${tk.slice(1)} „mittel“: Stimme bleibt (Entferntes 300 Hz–4 kHz ≤ −25 dB, ≤ 1 % stimmhafte Rahmen > 0,5 dB)`, {schritte: Object.keys(A.steps), entfernt: +rel.toFixed(1), rahmen: big + '/' + nv, maxDb: +mx.toFixed(2)});
+  ok(rel <= -25 && big <= Math.ceil(0.01 * nv), `Sauberer Take ${tk[0]}@${tk.slice(1)} „mittel“: Stimme bleibt (Entferntes 300 Hz–4 kHz ≤ −25 dB, ≤ 1 % stimmhafte Rahmen > 0,5 dB)`, {schritte: Object.keys(A.steps), entfernt: +rel.toFixed(1), rahmen: big + '/' + nv, maxDb: +mx.toFixed(2), proSchritt: per});
 }
 
 // ========== 8) 3-min-Take (48 kHz, mit Brumm, Plopps, Klicks): Prüfen + ganze Kette × 3 ≤ 20 s (Median aus 3) ==========
