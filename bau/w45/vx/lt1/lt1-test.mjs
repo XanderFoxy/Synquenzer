@@ -11,6 +11,7 @@ const srv = http.createServer((q, r) => { const p = files[q.url.split('?')[0]]; 
 await new Promise(ok => srv.listen(0, ok)); const base = 'http://127.0.0.1:' + srv.address().port;
 const VIEWS = (process.env.VIEWS || '926x428,428x926').split(',').map(s => s.split('x').map(Number));
 const REPS = +(process.env.REPS || 3), ONLY = new Set((process.env.ONLY || 'a,b,c').split(',')), DIAG = !!process.env.DIAG;
+// Hinweis: c misst nur imp1Place (Ablegen); der erste Tipp/Ton-Start liegt davor (file() lädt).
 const NX1 = '/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/vx/nach/nx1-test.mjs';
 const T = fs.readFileSync(NX1, 'utf8'), i0 = T.indexOf('const SONG = (o) => {'), SONG = T.slice(i0 + 'const SONG = '.length, T.indexOf('\n  };', i0) + 4);
 const b = await chromium.launch({args: ['--disable-renderer-backgrounding', '--enable-blink-features=LongAnimationFrameTiming']});
@@ -25,7 +26,8 @@ async function canvasHash(p) { await p.waitForTimeout(1200); return p.evaluate(a
 async function openSpk(p, W, H) {
   await p.waitForFunction(() => window.SYNQUENZER && window.__spk, null, {timeout: 90000}); await p.waitForTimeout(500);
   await p.evaluate(async () => { await __spk.page.open({}); const sr = 44100, n = 90 * sr, x = new Float32Array(n); for (let i = 0; i < n; i++) { const t = i / sr; x[i] = 0.15 * Math.sin(2 * Math.PI * 440 * t) * (1 + Math.sin(t)) + 0.1 * Math.sin(2 * Math.PI * (220 + 30 * Math.sin(t * 0.7)) * t) + 0.02 * Math.sin(2 * Math.PI * 3000 * t * (1 + 0.1 * Math.sin(t * 3))); } const r = await __spk.load({name: 'LT1', sr, ch: [x]}); await __spk.page.open({id: r.meta.id}); });
-  await p.waitForFunction(() => { const i = __spk.page.info(); return i && !i.nodoc && i.chunks > 0 && !/Spektrum \d/.test(i.stat) && !__spk.page.ui().specQ; }, null, {timeout: 300000}); await p.waitForTimeout(1200);
+  await p.waitForFunction(() => { const i = __spk.page.info(); return i && !i.nodoc && i.chunks > 0 && !/Spektrum \d/.test(i.stat) && !__spk.page.ui().specQ; }, null, {timeout: 300000}); await p.waitForTimeout(800);
+  await p.evaluate(() => document.querySelector('#spk1Sheet .spk1-st').click()); await p.waitForTimeout(1500);   // erster Tipp startet den Ton (ensureAudio ~55 ms) – vor der Messung, gehört nicht zu a/b
 }
 const view = (p, t0, t1, mTop, mBot) => p.evaluate(([t0, t1, a, z]) => { const U = __spk.page.ui(), v = U.v; v.pps = U.W / (t1 - t0); v.t0 = t0; v.rowH = U.H / (a - z); v.mTop = a; spk1Clamp(U); spk1Dirty(U, 'all'); }, [t0, t1, mTop, mBot]);
 async function scA(p) {   // Ansicht-Sprünge: Ganz → Zoom Anfang → Sprung ans Ende → Ganz → Zoom Mitte (wie die Tests: Ansicht per Skript setzen)
