@@ -121,3 +121,11 @@ Diff gegen basis.html: 8 Einfüge-Stellen + Block, 0 geänderte/gelöschte Zeile
 - Noten-Kästchen (SPK2-Überlagerung) bleiben bei „Nur Rest“ sichtbar – sie zeigen, was gefunden ist; das Spektrum zeigt, was übrig ist.
 - „In Ebene“ bei „Nur Rest“ nimmt nur den freien Rest (Kern-Umlenkung transfer orig → rest) – bitte von der Hauptsitzung abnicken.
 - Harmonische / Ähnliches auf dem Rest sehen die Masken, nicht die zusätzlich ausgeblendeten (nur gefundenen) Noten.
+- Nachtrag Leistung: Ursache der meisten Long Tasks beim Umschalten auf „Nur Gefundenes“ war die Tönung (Ebenen-Farben) während des
+  Hochladens. Jetzt zeichnet „Nur Gefundenes“ die Farben erst, wenn alle sichtbaren Stücke da sind (ein Wechsel am Ende) → 8 → 0 Long Tasks.
+
+## Ergebnis (fokus1-test.mjs, 428×926 + 926×428 + CPU-Rückfall, Touch über CDP, dpr 2)
+51 OK / 0 FEHLER (fokus1-ergebnis.json, test-voll.log). 3 Minuten (15 Stücke): erster Lauf unter Last 1 Long Task 56 ms, Wiederholung
+0 / 0 / 0 (Rest / Alles / Gefundenes; Laden des Original-Spektrums im selben Lauf: 177 ms – Grundlast der Test-Grafik).
+Kern-Test erneut: Worker 26/0, Hauptfaden-Rückfall 24/0 (Zauberstab-Prüfung an das neue Verhalten angepasst: Stelle im Rest
+≥ 20 dB leiser → nichts wählen). Pflicht: topdefs 0/0, dupkeys 0, smoke errors [], MS 2000 = 1, live = 1, Diff 8 Haken + Block, 0 gelöscht.

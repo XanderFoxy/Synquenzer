@@ -10,3 +10,4 @@
 12:15 Anzeige eingebaut (Haken: spk1Frame Pre/Post, spk1Layers, spk1ViewDd, spk1SpecFree); Zauberstab-Sperre im Kern; Test fokus1-test.mjs
 12:26 Hochladen: höchstens 2 Texturen je Bild, bei langsamer Grafik Abstand (adaptiv), Neuzeichnen beim Streamen gedrosselt (90 ms); Sicherungen index.vor-ui2/-drossel/-abstand.html
 12:28 Nur Gefundenes: Tönung erst, wenn alle Stücke da sind (Long Tasks 8 → 0); Sicherung index.vor-toenung.html
+12:31 Endstand: fokus1-test 51/0, Kern 26/0, Hauptfaden 24/0, Pflicht grün (topdefs 0/0, dupkeys 0, smoke [], MS 2000 1, live 1, Diff nur Einfügungen). fokus1-block.js aktualisiert.
