@@ -45,8 +45,24 @@ Speicher: Zerlegen selbst braucht je Streifen nur wenige MB (Streifen 128 Rahmen
 die Spitze ist das Dokument (PCM Int16 + Mitte Float32 ≈ 95 MB für 3 min Stereo) plus die Seite. `Runtime.getHeapUsage` des Workers (CDP)
 zeigt nur 3 MB, weil die großen Typed Arrays außerhalb des JS-Heaps liegen – darum RSS als Maß.
 
-## Pflicht / Regression
-siehe Abschnitt unten (wird nach den Läufen eingetragen).
+## Pflicht / Regression (Endfassung md5 `d6b3289dcc42e242bc8465d69ee7bb5c`, Basis `b66de3cbd5c2d66019c5c0c3d199e06c`)
+topdefs „Skripte 26, Namen 7926, doppelt 0, Syntaxfehler 0“ · dupkeys „0 doppelte Schlüssel“ · Rauchtest `errors []` (`smoke-zrl1.png`) ·
+„MS 2000“ 1× · „  live: true,“ 1× · VERSION '4.74.0'.
+
+| Test | ZRL1 | Basis 4.74.0 (wo rot) | Bewertung |
+|---|---|---|---|
+| zrl1-test (eigen) | ALLE OK (7) | – | |
+| spk5-test | 24/24 ALLES OK | | |
+| spk6-test | 26/26 ALLES OK | | |
+| spk11-test (Kopie in reg/) | 41 OK / 0 | | |
+| spk11b-test (Kopie, lib-Pfad absolut) | 17 OK / 0 | | |
+| fokus1-kern-test (Kopie) | 26 OK / 0 | | |
+| spkfix-test (Kopie) | 11/11 ALLES OK | | |
+| spk1-test | 17/18 (verfeinern-verbessert-ziel 4,37 → 4,36) | 17/18, derselbe FEHL | vorbestehend (SPK4) |
+| spk4-test (Last 9–10) | 6 FEHLER/23 | 3 FEHLER/22 (Last ~3): pflicht (erwartet 4.60), verfeinern +1 dB, ki1 quer-428/370 | 3 gleich |
+| · zusätzlich a3-andere-klaenge / a3-nachbau-zeit | va2 3,89 → 4,54, Zeiten +10–25 % | – | Last: Nachbau ist zeitabhängig (SPK4 Offen 3). Nachgemessen bei Last 0,5: Text gleich, Zeiten 2329/1680/2495/2062 → 2066/1563/2259/2057 ms |
+| · zusätzlich reg-spk2-test | 27/30 | spk2-test direkt auf Basis: 27/30, **dieselben 3** (noten-erkannt 12/51 Treffer, Oktave 5 – identisch) | vorbestehend; Noten gleich |
+Fremde Paketordner unberührt: Tests, die neben sich schreiben, liefen als Kopie in `reg/`; Basis-Läufe in `basis-lauf/`, `s2a/`, `s2b/`.
 
 ## Werkzeuge
 - `zrl1-test.mjs <index> <basis>`: Chromium, Worker der Seite über `spk1Call('create'|'zerlegen'|'render')`, A/B abwechselnd (`RUNDEN=3`
