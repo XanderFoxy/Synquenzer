@@ -31,7 +31,7 @@ const view = (p, t0, t1, mTop, mBot) => p.evaluate(([t0, t1, a, z]) => { const U
 async function scA(p) {   // Ansicht-Sprünge: Ganz → Zoom Anfang → Sprung ans Ende → Ganz → Zoom Mitte (wie die Tests: Ansicht per Skript setzen)
   const t0 = await now(p); const J = [[0, 4, 100, 40], [80, 86, 110, 50], [-0.05, 90, 110, 26], [40, 43, 96, 60], [10, 70, 120, 30]];
   for (const j of J) { await view(p, ...j); await p.waitForTimeout(700); }
-  const r = await since(p, t0); r.hash = await canvasHash(p); return r;
+  const r = await since(p, t0); r.hash = await canvasHash(p); r.lt1 = await p.evaluate(() => typeof LT1 !== 'undefined' ? {n: LT1.n, gUp: LT1.gUp} : null); return r;
 }
 async function scB(p) {   // FFT 4096 → 8192 → 4096 per Tipp im Ansicht-Klappfenster
   const t0 = await now(p), res = {};
@@ -41,7 +41,7 @@ async function scB(p) {   // FFT 4096 → 8192 → 4096 per Tipp im Ansicht-Klap
     await p.waitForFunction(() => !__spk.page.ui().specQ, null, {timeout: 120000}); await p.waitForTimeout(800);
     await p.evaluate(() => spk1Dd(__spk.page.ui(), null)); await p.waitForTimeout(300);
   }
-  const r = await since(p, t0); r.hash = await canvasHash(p); return r;
+  const r = await since(p, t0); r.hash = await canvasHash(p); r.lt1 = await p.evaluate(() => typeof LT1 !== 'undefined' ? {n: LT1.n, gUp: LT1.gUp} : null); return r;
 }
 async function scC(p) {   // Import: Lied 96 BPM erkennen, dann Ablegen (imp1Place 'scenes') – nur das Ablegen wird gemessen
   await p.waitForFunction(() => window.SYNQUENZER && window.__imp1 && window.__imp1.ui, null, {timeout: 90000}); await p.waitForTimeout(800);
@@ -51,8 +51,8 @@ async function scC(p) {   // Import: Lied 96 BPM erkennen, dann Ablegen (imp1Pla
   const t0 = await now(p);
   const r0 = await p.evaluate(() => { const t = performance.now(); const r = window.__imp1.ui.place('scenes'); return {ms: Math.round(performance.now() - t), ok: !!r}; });
   await p.waitForTimeout(2500);
-  const r = await since(p, t0); r.place = r0;
-  r.hash = await p.evaluate(() => { const L = IMP1.lastPlace || {}; const s = JSON.stringify({bpm: S.bpm, ts: S.ts, nTracks: (S.tracks || []).length, scenes: (S.scenes || []).length, takes: Object.keys(S.takes || {}).length, kinds: (S.tracks || []).map(t => t.kind || t.type || '').join(','), lp: Object.keys(L).sort().join(',')}); const g = EL.grid, sig = g.textContent + '|' + [...g.querySelectorAll('*')].map(e => e.tagName + '.' + e.className).join(','); let h = 0; for (let i = 0; i < sig.length; i++) h = (h * 31 + sig.charCodeAt(i)) | 0; return s + ' grid=' + (h >>> 0).toString(16) + '/' + g.querySelectorAll('*').length + ' heads=' + UI.heads.length + ' skip=' + (window.LT1 ? LT1.skip : typeof LT1 !== 'undefined' ? LT1.skip : '-'); });
+  const r = await since(p, t0); r.place = r0; r.place.skip = await p.evaluate(() => typeof LT1 !== 'undefined' ? LT1.skip || 0 : '-');
+  r.hash = await p.evaluate(() => { const L = IMP1.lastPlace || {}; const s = JSON.stringify({bpm: S.bpm, ts: S.ts, nTracks: (S.tracks || []).length, scenes: (S.scenes || []).length, takes: Object.keys(S.takes || {}).length, kinds: (S.tracks || []).map(t => t.kind || t.type || '').join(','), lp: Object.keys(L).sort().join(',')}); const g = EL.grid, sig = g.textContent + '|' + [...g.querySelectorAll('*')].map(e => e.tagName + '.' + e.className).join(','); let h = 0; for (let i = 0; i < sig.length; i++) h = (h * 31 + sig.charCodeAt(i)) | 0; return s + ' grid=' + (h >>> 0).toString(16) + '/' + g.querySelectorAll('*').length + ' heads=' + UI.heads.length; });
   return r;
 }
 for (const [W, H] of VIEWS) {
@@ -74,7 +74,7 @@ for (const [W, H] of VIEWS) {
         } catch (e) { r = {err: String(e).slice(0, 300), lt: [], loaf: []}; }
         r.errs = errs.slice(0, 3); r.load = load();
         const row = {file: f === 'a' ? 'index' : 'basis', view: tag, rep, sc, ...r}; out.push(row);
-        console.log(`${tag} ${sc} rep${rep} ${row.file.padEnd(5)} max=${Math.max(0, ...r.lt)} lt=${JSON.stringify(r.lt)} hash=${r.hash && String(r.hash).slice(0, 80)} last=${r.load}` + (r.place ? ' place=' + JSON.stringify(r.place) : '') + ' loafN=' + r.loafN + '/' + r.loafAll + (r.err ? ' ERR ' + r.err : '') + (errs.length ? ' KONSOLE ' + JSON.stringify(errs) : ''));
+        console.log(`${tag} ${sc} rep${rep} ${row.file.padEnd(5)} max=${Math.max(0, ...r.lt)} lt=${JSON.stringify(r.lt)} hash=${r.hash && String(r.hash).slice(0, 80)} last=${r.load}` + (r.place ? ' place=' + JSON.stringify(r.place) : '') + (r.lt1 ? ' lt1=' + JSON.stringify(r.lt1) : '') + ' loafN=' + r.loafN + '/' + r.loafAll + (r.err ? ' ERR ' + r.err : '') + (errs.length ? ' KONSOLE ' + JSON.stringify(errs) : ''));
         for (const l of r.loaf || []) console.log('   LoAF ' + l.d + ' ms (block ' + l.block + ', Stil/Layout am Ende ' + l.st + '): ' + l.scripts.map(s => `${s.inv}${s.fn ? ' [' + s.fn + ']' : ''}@${s.pos} ${s.d} ms` + (s.lay ? ` (Layout erzwungen ${s.lay})` : '')).join(' | '));
         if (r.diag) console.log('   DIAG ' + JSON.stringify(r.diag));
         await ctx.close();
