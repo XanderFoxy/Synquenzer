@@ -18,3 +18,12 @@
   Basis #14 120,6 + t1 0,686 → Raster 31/37, Stück 35 links Abw. 0,1086 bei 346 ms = IMP2; IMP2 #10 t1 0,383 → 32 Stücke, kein Knacken = Basis.
   → rv1-Rückschritt kommt aus dem Gesang-Editor (VX), nicht aus IMP2-Code; Test misst richtig. Nicht in IMP2B behebbar → nichts eingebaut.
 - 01:19 Regression + IMP2-Tests + Pflicht an index.html (unverändert), nacheinander: work/reg.sh → work/reg/*.txt.
+- 01:21 Endstand (work/reg/, nacheinander, an index.html unverändert, sha256 a4d6e9ef…): imp1-test ALLE OK (48) 122 s · vx1-test 61/61 ·
+  vx2-test 14/14 · vx3-test 15/15 · IMP2-eigene: imp2-node.mjs ALLE OK (22,05/44,1/48/96 kHz: #14 Spanne 0,05, #1/#10/Renders 0,00–0,01 BPM) ·
+  fft-test ALLE OK (6) · krumm-test ALLE OK (37) · sweep schlechteste Sperre −51,7 dB.
+  Pflicht: topdefs Skripte 26, Namen 7474, doppelt 0, Syntaxfehler 0 · dupkeys 0 doppelte Schlüssel · smoke title SYNQUENZER errors []
+  (work/reg/smoke.png) · „MS 2000“ 1× · „^  live: true,“ 1× · VERSION 4.66.0 (= Basis) · Markenwörter: neue Wörter gegenüber basis.html nur
+  Fachwörter des IMP2-Blocks (u. a. „Kaiser“ = Fensterform, wie in IMP2 geprüft), keine Marke · keine Datensatz-/Produktnamen in neuen Dateien
+  (NOTES/LOG, work/*.mjs/*.sh, chr3/chr2-test-imp2b.mjs; Audiodateien werden per Muster gefunden).
+  chr2-test Original an index.html bleibt 3 FEHLER (iso-befund), Kopie chr2-test-imp2b 82/82 (index und basis). rv1-test 4/53 (index) vs 1/53 (basis).
+  Kein Code eingebaut (kein IMP2B-Block): rv1 ist ohne Eingriff in den Gesang-Editor nicht ≥ 52/53 zu bekommen.
