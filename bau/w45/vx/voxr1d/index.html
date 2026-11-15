@@ -61399,7 +61399,8 @@ function plopFind(Fe, o) {
     // VOXR1B: Ränder nachziehen, solange das Tiefband ≥ 6 dB über seinem Bezug liegt (≤ 5 ms je Seite) – sonst blieb der Anstieg des Stoßes
     // vor der Lücke stehen (eingesetzte Stöße begannen im Mittel 11 ms vor dem ersten Treffer)
     let q0 = j, q1 = e; const lbE = Math.min(LB[j] || 0, LB[e] || 0) + 6; const gm = o.gmax != null ? o.gmax : 1; while (q0 > 0 && j - q0 < gm && LF[q0 - 1] >= lbE) q0--; while (q1 + 1 < nf && q1 - e < gm && LF[q1 + 1] >= lbE) q1++;
-    if (dur >= 0.02 && dur <= 0.1) ev.push({t0: q0 * Fe.H / Fe.sr, t1: (q1 + 2) * Fe.H / Fe.sr, s0: q0 * Fe.H, s1: Math.min(Fe.n, (q1 + 2) * Fe.H), c0: j * Fe.H, c1: Math.min(Fe.n, (e + 2) * Fe.H), exDb: +mx.toFixed(1)});
+    // VOXR1D-OT: bis 130 ms (Prüfer: die längsten Stöße 95–96 ms wurden verpasst; Take A sauber bleibt bei 13 eigenen Tiefstößen, B/C bei 0)
+    if (dur >= 0.02 && dur <= 0.13) ev.push({t0: q0 * Fe.H / Fe.sr, t1: (q1 + 2) * Fe.H / Fe.sr, s0: q0 * Fe.H, s1: Math.min(Fe.n, (q1 + 2) * Fe.H), c0: j * Fe.H, c1: Math.min(Fe.n, (e + 2) * Fe.H), exDb: +mx.toFixed(1)});
     j = e;
   }
   return ev;
