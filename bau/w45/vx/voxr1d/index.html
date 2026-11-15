@@ -61513,7 +61513,9 @@ function plopFit(z, g0, g1, sd, cut, hb, D, sr) {
   const reg = (lm) => { G.set(BB); rhs.set(Bz); for (let u = 0; u < nc; u++) { G[u * nc + u] += lm[u] + 1e-9 * (BB[u * nc + u] + 1e-12); rhs[u] += lm[u] * pri[u]; } return solve(G, rhs, nc); };
   const th0 = Float64Array.from(reg(lam)); let rss = 0;
   for (let j = J0; j < J1; j++) { let s = 0; for (let c = 0; c < nc; c++) s += th0[c] * col(j, c); const d = z[jA + j] - s; rss += d * d; }
-  const sig = rss / Math.max(1, Lg - nc) * (plopFit.SG || 1);
+  // VOXR1D: Stoß-Anteil ρ = Energie der Lücke / Energie der Ränder; je stärker der Stoß, desto mehr zählt der Startwert (sonst wandert Stoß-Energie bei k·f0 in den Teilton)
+  let eg = 0, ee = 0; for (let j = J0; j < J1; j++) eg += z[jA + j] * z[jA + j]; for (let j = 0; j < W; j++) ee += z[jA + j] * z[jA + j] + z[jA + NJ - 1 - j] * z[jA + NJ - 1 - j];
+  const rho = Math.max(1, (eg / Lg) / (ee / (2 * W) + 1e-20)), sig = rss / Math.max(1, Lg - nc) * (plopFit.SG || 1) * Math.pow(rho, plopFit.RH != null ? plopFit.RH : 1.6);
   for (let k = 0; k < K; k++) { const A = Math.hypot(cl[2 * k], cl[2 * k + 1]), B = Math.hypot(cr[2 * k], cr[2 * k + 1]), dd = Math.hypot(cr[2 * k] - cl[2 * k], cr[2 * k + 1] - cl[2 * k + 1]);
     const t2 = Math.pow((plopFit.PA || 0.3) * Math.max(A, B), 2) + dd * dd + 1e-12; for (let c = 6 * k; c < 6 * k + 6; c++) lam[c] = sig / t2 * (c - 6 * k >= 4 ? (plopFit.P2 || 1) : 1); }
   const th1 = reg(lam), out = new Float64Array(Lg);

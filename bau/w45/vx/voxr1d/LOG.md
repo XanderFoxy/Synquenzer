@@ -12,3 +12,5 @@
 - 13:08 index.html = voxr1c/index.html + neuer vr1Make-Text (Block). topdefs 26/7836/0/0, dupkeys 0, MS 2000 1×, live: true 1×, VERSION 4.70.0, außerhalb Block + 7 Haken = basis.html.
 - 13:09 Prüfer-Kern kern.mjs: 49/60 → 53/60 (Last 0,94). Kette 3 min Median 5,96 s, × 3 = 17,9 s (vorher 5,54 / 16,6 s).
 - 13:11 smoke: errors [] (Last 0,63).
+- 13:13 Entwickler-Test (Take A, Rauschstoß < 120 Hz) zeigte Obertöne +1,0…+1,6 dB (5/10): Fit nahm Stoß-Energie bei f0 auf → Startwert-Gewicht × ρ^RH (ρ = Lücke/Ränder). Messreihe RH 1 / 1,5 / 1,6 / 1,75 / 2 (hk + hd): RH 1,6 gewählt (Prüfer B44 10/10/10/10, Entwickler 9/10 · 10/10, Vor-Echo 0/0). Kette davor abgebrochen (Code geändert).
+- 13:18 Endfassung eingesetzt, Pflicht statisch ok (topdefs 26/7836/0/0, dupkeys 0, MS 2000 1×, live 1×, VERSION 4.70.0, nur Block+Haken). Kette gestartet (kern, smoke, dev, app, vx1, vx2, vx3, chr2; TMPDIR=/dev/shm/voxr1d/tmp). Last load average: 2.10, 1.56, 1.19
