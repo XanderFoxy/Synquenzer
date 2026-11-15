@@ -28805,6 +28805,7 @@ function normTrack(t, def, pk, warns) {
   }
   const cl = Array.isArray(t.clips) ? t.clips : [];
   o.clips = emptyClips().map((_, s) => normClip(cl[s], def.kind, pk));
+  if (typeof mtx3NormTr === 'function') mtx3NormTr(t, o, def, pk, cl);   /* MTX3: Einzelspur (tr.dvx, Drum-Clips) */
   if (typeof t.uid === 'string' && UID_RE.test(t.uid)) o.uid = t.uid;
   if (def.kind === 'synth' && t.stimme === true) o.stimme = true;  // VS3: STIMME-Spur (normalizeProject: nur eine, Index ≥ 6)
   if (def.kind === 'synth' && t.orig === true && !o.stimme) o.orig = true;   // IMP1: Spur „Original“ (importiertes Audio über die Take-Wiedergabe)
@@ -32242,6 +32243,7 @@ const accentAmt = a => 1 - Math.pow(1 - clamp(+a || 0, 0, 1), 3);
 // parameters (browser preview of another kit, through its own preview strips)
 function drumHit(gm, vel, t, src, ex, o) {
   const c = AU.ctx; if (!c) return null;
+  if (!o && typeof mtx3Hit === 'function') { const h3 = mtx3Hit(gm, vel, t, src, ex); if (h3 !== undefined) return h3; }   /* MTX3: Schlag einer Einzelspur */
   const sl = DRUM_BY_GM[gm] || DRUM_BY_GM[mapV1Drum(gm)];
   if (sl && !(o && o.P) && mdPlays(sl.id)) return mdHit(sl, vel, t, src, ex);   // ND4: Pad mit Quelle MD_NAME
   if (!sl || !AU.tracks[DRUM_T] || !drumBufs() || !AU.kit) return null;
@@ -33286,6 +33288,7 @@ function scheduleTrack(i, from, to, late) {
   if (clip.ln) { try { scheduleLanes(i, clip, from, to, late); } catch (e) { logErr(e); } }   // I2c: Reihen vor den Noten (gleiches Fenster)
   if (typeof vox2SelMute === 'function' && vox2SelMute(i)) return;   // VOX2: der Clip der gewählten Spur schweigt (Hören beim Singen / Abhören), die Tasten klingen
   if (tr.kind === 'drum') { scheduleDrums(i, clip, from, to, late, oc ? 'own' : null, mu, um); return; }
+  if (typeof mtx3Sched === 'function' && tr.dvx && mtx3Sched(i, clip, from, to, late, oc, mu, um)) return;   /* MTX3: Einzelspur von DRUMS plant wie DRUMS */
   const cs = R.cstart[i], LF = lf1Win(clip, cs, from, to), L = LF ? 1e9 : clipB(clip), sp = spb(), now = AU.ctx.currentTime, ev = new Map();   // LF1: ein Lauf mit Schritt-Effekten/Richtung kommt als Einzel-Ereignisse (t ab cs; L = 1e9: jedes einmal)
   for (const nt of LF || clip.notes) {
     if (nt.t >= L - 1e-9) continue;                              // V0a K-06: a note behind the clip end never plays
@@ -33408,6 +33411,7 @@ function cancelTrackFrom(i, t) {
   for (const v of VOICES.slice()) if (!v.dead && v.track === i && v.src === 'clip' && v.start >= t - 1e-6) v.cancel();
   if (S.tracks[i].kind === 'drum') for (const h of HITS.slice()) if (!h.dead && h.src === 'clip' && h.start >= t - 1e-6) hitCancel(h);
   if (S.tracks[i].kind === 'drum') mdCancelFrom(t);              // ND4
+  if (typeof mtx3Cancel === 'function' && S.tracks[i].dvx) mtx3Cancel(i, t, 0);   /* MTX3 */
 }
 /* switch track i to slot at beat (bar line). If that beat is already scheduled, apply retroactively.
    cs (optional): the clip's start beat when it must run in phase with something played earlier (FANG, §3.6) */
@@ -33499,6 +33503,7 @@ function stopTrackNow(i) {
   for (const v of VOICES.slice()) if (!v.dead && v.track === i && v.src === 'clip') v.release(now + .005, .01);
   if (S.tracks[i].kind === 'drum') for (const h of HITS.slice()) if (!h.dead && h.src === 'clip') { try { h.out.gain.setTargetAtTime(0, now, .01); } catch (e) {} hitStopAll(h, now + .06); }
   if (S.tracks[i].kind === 'drum') { const E = mdE(); if (E) E.stop(now, .01); }   // ND4: klingende North-Stimmen ebenso
+  if (typeof mtx3Cancel === 'function' && S.tracks[i].dvx) mtx3Cancel(i, now, 1);   /* MTX3 */
   UI.dirty.grid = true;
 }
 // a stop that was queued by a tap on the playing clip (§3.2): cancelled silently when the clip is opened for editing
@@ -35741,6 +35746,7 @@ function openTrackSheet(i, anchor) {
     }, 'button[data-a]');
   }, {name: 'track'});
   mtxTrackSheet(i);                                              // MTX: [Spur duplizieren]
+  if (typeof mtx3TrackSheet === 'function') mtx3TrackSheet(i, anchor);   /* MTX3: aufteilen / zusammenführen */
 }
 /* V2a CPU rule (§4.2): new tracks 6–8 start with Poly 4; ≥ 3 tracks playing with Poly ≥ 6 AND Unison ≥ 5 at the same time
    → once a hint (per app start) */
@@ -50434,6 +50440,7 @@ function buildRoll() {
   if (ED.laufBtn) { const bar = ED.roll.el.bar; bar.insertBefore(ED.laufBtn, bar.firstChild); bar.insertBefore(el('span', 'sep'), ED.laufBtn.nextSibling); ED.laufBtn.classList.add('lgo'); }
   gl1RollPlace();                                                    // GL1: [wie gespielt] gleich hinter LAUF (nur mit LAUF-Richtung zu sehen)
   bb1RollHook(t, s);                                                 // BB1: [Werkzeugkasten] neben [Spielweise]
+  if (typeof mtx3RollHook === 'function') mtx3RollHook(t, s);   /* MTX3: [Auslagern ▾] */
   rollKbApply();
   rollHeadUpdate(); renderEdChip();
   sh.classList.add('open');
@@ -94700,6 +94707,364 @@ const MTX_API = {
 };
 Object.assign(SYNQUENZER, {mtx: MTX_API});                  /* MTX: Test-API (Objekt, wird nicht umhüllt) */
 /* MTX-END */
+/* MTX3-BEGIN ===================== Clip-Matrix: Noten auslagern + Drum-Spur aufteilen (Paket MTX3, Xander 15.11.)
+   Xander: „Basslauf mit vielen Noten … die mit einem anderen Instrument besser klingen würden … auswählen und in einen anderen Clip
+   exportieren, der darunter wie ein Layer spielt … Drum-Groove: Hi-Hats auswählen und auf eine eigene Percussion-Spur … oder ein
+   Funktionsknopf, der die Drumspur automatisch in einzelne mischbare Einzelspuren aufteilt.“
+   • Noten auslagern (Noten-Editor einer Synth-Spur, [Auslagern ▾] in der Aktionsleiste): die gewählten Noten wandern in einen Clip
+     derselben Szene – [In neue Spur darunter] (Spur „<Quelle> · Teil“, Klang/Effekte/Mix wie die Quelle, direkt unter ihr, Clip-Länge,
+     Tonart und Raster wie der Quell-Clip; spielt die Quelle gerade, startet der neue Clip im selben Takt mit) oder [In vorhandene Spur]
+     (Liste; Noten hinter dem Ziel-Clip-Ende fallen weg, mit Hinweis). Schalter „Verschieben │ Kopieren“ (Gerät, uiPrefs.mtx3Copy).
+     Song: die neue Spur bekommt die Song-Einträge der Quelle mit dieser Szene. Ein ↶ (Gruppe: Spur + Reihenfolge + Clips + Song + Teile).
+   • Drum-Spur aufteilen (■ der DRUMS-Zeile halten › [In Einzelspuren aufteilen]): je gewähltem Drum-Ton eine eigene Spur. DRUMS bleibt
+     (Index 4 ist fest, genau eine Drum-Spur) und behält die übrigen Töne; die Einzelspuren stehen direkt vor DRUMS. Höchstens 8 Spuren:
+     es gehen so viele Töne, wie Plätze frei sind (Standard-Projekt: 2 → z. B. Kick bleibt auf DRUMS, Snare und HH ZU eigene Spuren).
+     Eine Einzelspur ist eine Synth-Spur mit tr.dvx = {v: Pad, gm, sn: Klang-Name, src: uid von DRUMS, p: Pad-Werte, kit: Kit-Block,
+     pk: Kit-Name}: ihre Clips sind Drum-Clips (Schritte, Chance, Wirbel, Akzent, Locks, Bedingungen, Spur-Längen D1, Saat) und spielen
+     über scheduleDrums + drumHit mit DENSELBEN Pad-Werten durch einen eigenen Kit-Bus (ROOM/GATE mit denselben Impulsantworten) in die
+     eigene Spur-Kette (Pegel, Pan, Drive, Chorus, Hall/Echo, Mix-Einschub = eigene Mischer-Kanäle; Start-Werte = die von DRUMS).
+     Summe bei gleichen Kanalwerten = DRUMS vorher. Choke-Gruppen (HH zu ↔ offen) greifen über die Spuren hinweg wie vorher.
+     Synth draufpacken: einen anderen Klang wählen → die Spur spielt ihre Noten mit dem Synth (Drum-Ton aus, solange der Klang-Name
+     nicht mehr tr.dvx.sn ist; ↶ des Klangs holt den Drum-Ton zurück). Alle Szenen werden aufgeteilt, Song-Zeile und Teile kopiert.
+     Gegenrichtung (■ DRUMS oder Einzelspur halten › [Einzelspuren zusammenführen]): Noten zurück in DRUMS, Einzelspuren weg.
+     Je ein ↶ (Art 'sx14': ganzer Stand). MIDI-Export: die Einzelspuren als eigene Spuren mit den Drum-Noten (GM-Nummern).
+   Speichern/Laden/ZIP: tr.dvx ist additiv (normTrack-Haken), ältere Fassungen laden die Spur als Synth-Spur mit denselben Noten. */
+const MTX3 = {cur: null, bus: [], n: 0, last: null, pc: new WeakMap()};
+(function mtx3Css() {
+  try {
+    if (document.getElementById('mtx3-css')) return;
+    const s = document.createElement('style'); s.id = 'mtx3-css';
+    s.textContent =
+      '.pop.mtx3s{width:min(392px,calc(100vw - 16px));max-height:calc(100vh - 16px);max-height:calc(100dvh - 16px);overflow-y:auto;box-sizing:border-box}' +
+      '.mtx3s .mtx3-l{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:6px;margin-top:6px}' +
+      '.mtx3s .mtx3-l .mbtn{height:auto;min-height:48px;padding:4px 8px;line-height:1.15;white-space:normal}' +
+      '.mtx3s .mtx3-main{width:100%;height:auto;min-height:52px;margin-top:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}' +
+      '.mtx3s .mtx3-main small,.mtx3s .mtx3-l small{font:600 10px/1.15 var(--font-ui);color:var(--text-dim);text-transform:none}' +
+      '.mtx3s .mtx3-v .mbtn.on{color:#ffcf7a;border-color:#6b4c16;box-shadow:inset 0 0 0 1px #6b4c16}' +
+      '.mtx3s .mtx3-sub{margin:8px 0 0;font:700 11px/1.2 var(--font-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim)}' +
+      '.trksheet .mtx3tr{margin-top:6px}';
+    document.head.appendChild(s);
+  } catch (e) {}
+})();
+const mtx3Jc = x => JSON.parse(JSON.stringify(x));
+const mtx3CopyOn = () => { try { return uiPrefs().mtx3Copy === true; } catch (e) { return false; } };
+function mtx3CopySet(v) { try { setUiPref('mtx3Copy', !!v); } catch (e) { logErr(e); } return mtx3CopyOn(); }
+const mtx3Busy = () => rec.state !== 'off' || !!R.songRec;
+
+/* ---------- 1 · die Drum-Ton-Spur (Einzelspur): Planen, Bus, Schlag ---------- */
+// aktiv = Synth-Spur mit tr.dvx und noch dem Klang der Aufteilung (ein anderer Klang = der Synth spielt die Noten)
+function mtx3Is(i) { const tr = S.tracks[i]; return !!(tr && tr.kind === 'synth' && tr.dvx && tr.sound && tr.sound.name === tr.dvx.sn); }
+// Werte eines Pads der Einzelspur: der eigene Ton aus tr.dvx.p, andere Pads (später dazugesetzte Noten) wie auf DRUMS
+function mtx3P(i, id) {
+  const d = S.tracks[i].dvx, sl = DRUM_BY_ID[id];
+  if (id !== d.v) return slotParams(id);
+  let P = MTX3.pc.get(d);
+  if (!P) { P = Object.assign({}, DrumSynth.DEFAULTS, {model: sl.model, choke: sl.choke || 0}, d.p || {}); MTX3.pc.set(d, P); }
+  return P;
+}
+// eigener Kit-Bus je Einzelspur und Kontext (live / Offline-Render): ROOM und GATE mit den Impulsantworten von DRUMS (gleiche Länge),
+// sonst eigene; ein Streifen je benutztem Pad (Pan, Sends) – nach einem Neubau der Spur-Kette neu
+function mtx3Bus(i) {
+  const c = AU.ctx, A = AU.tracks[i], tr = S.tracks[i]; if (!c || !A || !A.trackIn || !drumBufs() || !AU.kit) return null;
+  let X = MTX3.bus[i];
+  if (X && X.ctx === c && X.dest === A.trackIn && X.d === tr.dvx) return X;
+  const K = Object.assign(KIT_DEF(), tr.dvx.kit || {}), bus = DrumSynth.kitBus(c, AU.drumBufs, A.trackIn);
+  try {
+    if (AU.kit.roomR && AU.kit.roomR.cur && AU.kit.roomR.cur.cv.buffer) bus.roomR.cur.cv.buffer = AU.kit.roomR.cur.cv.buffer;
+    if (Math.abs(K.gate - AU.kit.gateLen) < .005 && AU.kit.gateR && AU.kit.gateR.cur.cv.buffer) { bus.gateR.cur.cv.buffer = AU.kit.gateR.cur.cv.buffer; bus.gateLen = AU.kit.gateLen; }
+  } catch (e) { logErr(e); }
+  bus.setGate(K.gate, K.gateLvl); bus.gateRet.gain.value = K.gateLvl; bus.roomRet.gain.value = K.room;
+  X = MTX3.bus[i] = {ctx: c, dest: A.trackIn, d: tr.dvx, bus, st: {}};
+  return X;
+}
+function mtx3Strip(X, i, id) { let st = X.st[id]; if (!st) { st = X.st[id] = X.bus.strip(); st.set(mtx3P(i, id)); } return st; }
+// scheduleTrack-Haken: die Einzelspur plant wie DRUMS (scheduleDrums), jeder Schlag geht über mtx3Hit in die eigene Kette
+function mtx3Sched(i, clip, from, to, late, oc, mu, um) {
+  if (!mtx3Is(i)) return false;
+  const k = MTX3.cur; MTX3.cur = i;
+  try { scheduleDrums(i, clip, from, to, late, oc ? 'own' : null, mu, um); } catch (e) { logErr(e); } finally { MTX3.cur = k; }
+  return true;
+}
+// drumHit-Haken (nur während mtx3Sched): derselbe Schlag mit den Pad-Werten der Einzelspur, Buchführung auf die Spur
+function mtx3Hit(gm, vel, t, src, ex) {
+  const i = MTX3.cur; if (i == null) return undefined;                  // nicht in mtx3Sched: drumHit wie immer
+  const X = mtx3Bus(i); if (!X) return null;
+  const sl = DRUM_BY_GM[gm] || DRUM_BY_GM[mapV1Drum(gm)]; if (!sl) return null;
+  const h = drumHit(sl.gm, vel, t, src, ex, {P: mtx3P(i, sl.id), Pof: id => mtx3P(i, id), strip: mtx3Strip(X, i, sl.id)});
+  if (h) { h.track = i; h.src = 'mtx3'; if (h.log) h.log.track = i; if (h.perf) h.perf.track = i; }   // eigene Quelle: ■ / Neu-Planung von DRUMS lässt sie stehen
+  return h;
+}
+// cancelTrackFrom / stopTrackNow-Haken: die geplanten / klingenden Schläge der Einzelspur i (stop = ausblenden wie DRUMS)
+function mtx3Cancel(i, t, stop) {
+  for (const h of HITS.slice()) {
+    if (h.dead || h.src !== 'mtx3' || h.track !== i) continue;
+    if (!stop) { if (h.start >= t - 1e-6) hitCancel(h); }
+    else { try { h.out.gain.setTargetAtTime(0, t, .01); } catch (e) {} hitStopAll(h, t + .06); }
+  }
+}
+// normTrack-Haken: tr.dvx (additiv); eine aktive Einzelspur hält Drum-Clips (Schritt-Felder, Saat, D1) wie DRUMS
+function mtx3NormTr(t, o, def, pk, cl) {
+  if (!t || def.kind !== 'synth' || !t.dvx || typeof t.dvx !== 'object' || !DRUM_BY_ID[t.dvx.v] || typeof t.dvx.sn !== 'string') return;
+  const d = t.dvx, sl = DRUM_BY_ID[d.v], num = x => (typeof x === 'number' && isFinite(x));
+  const p = {}; if (d.p && typeof d.p === 'object') for (const k of Object.keys(d.p)) { const v = d.p[k]; if (num(v) || typeof v === 'string' || typeof v === 'boolean') p[k] = v; else if (v && typeof v === 'object') p[k] = mtx3Jc(v); }
+  const kit = {}; if (d.kit && typeof d.kit === 'object') for (const k of ['gate', 'gateLvl', 'room', 'accent']) if (num(d.kit[k])) kit[k] = d.kit[k];
+  o.dvx = {v: sl.id, gm: sl.gm, sn: d.sn.slice(0, 40), src: typeof d.src === 'string' && UID_RE.test(d.src) ? d.src : '', p, kit, pk: typeof d.pk === 'string' ? d.pk.slice(0, 40) : ''};
+  if (o.sound && o.sound.name === o.dvx.sn) o.clips = emptyClips().map((_, s) => normClip(cl[s], 'drum', pk));
+}
+const mtx3RowName = t => (mtx3Is(t) ? n => (DRUM_BY_GM[n] ? DRUM_BY_GM[n].sl : '') : null);   // Noten-Editor: Pad-Namen an den Zeilen
+const mtx3Parts = i => S.tracks.map((x, j) => j).filter(j => S.tracks[j].dvx && S.tracks[j].dvx.src === S.tracks[DRUM_T].uid && j !== i);
+
+/* ---------- 2 · Drum-Spur aufteilen / zusammenführen ---------- */
+// benutzte Töne aller DRUMS-Clips (Pad-Reihenfolge) und freie Plätze
+function mtx3Plan() {
+  const tr = S.tracks[DRUM_T], cnt = {};
+  for (const c of tr.clips) if (c) for (const n of c.notes) { const sl = DRUM_BY_GM[n.n] || DRUM_BY_GM[mapV1Drum(n.n)]; if (sl) cnt[sl.id] = (cnt[sl.id] || 0) + 1; }
+  const used = DRUM_VOICES.filter(v => cnt[v.id]).map(v => ({id: v.id, gm: v.gm, l: v.l, sl: v.sl, n: cnt[v.id]}));
+  const free = MAX_T - NT(), pri = ['hatC', 'snare', 'clap', 'hatO', 'rim', 'tomL', 'tomM', 'tomH', 'cym', 'perc', 'shaker', 'kick'];   // Vorschlag: Hi-Hat zuerst (Xanders Beispiel)
+  const keep = used.some(v => v.id === 'kick') ? 'kick' : (used[0] || {}).id, def = pri.filter(id => id !== keep && used.some(v => v.id === id)).slice(0, Math.max(0, free));   // KICK (sonst der erste Ton) bleibt auf DRUMS
+  return {used, free, def};
+}
+function mtx3SplitOk(ids) {
+  const P = mtx3Plan(); if (mtx3Busy()) return 'Erst Aufnahme beenden';
+  if (S.tracks[DRUM_T].sound && S.tracks[DRUM_T].sound._nv) return 'Dieses Drum-Kit kommt aus einer neueren Fassung';
+  if (P.used.length < 2) return 'DRUMS spielt nur ' + (P.used.length ? 'einen Ton' : 'keine Noten') + ' – nichts aufzuteilen';
+  if (P.free < 1) return 'Höchstens ' + MAX_T + ' Spuren – erst eine Zusatzspur entfernen';
+  if (ids) { if (!ids.length) return 'Erst Töne wählen'; if (ids.length > P.free) return 'Nur ' + P.free + (P.free === 1 ? ' Spur' : ' Spuren') + ' frei'; if (ids.length >= P.used.length) return 'Ein Ton bleibt auf DRUMS'; }
+  return '';
+}
+function mtx3Split(ids, quiet) {
+  const no = m => { if (!quiet) { toast(m); haptic('err'); } return null; };
+  const P = mtx3Plan(); ids = (ids || P.def).filter((id, k, a) => a.indexOf(id) === k && P.used.some(u => u.id === id));
+  const why = mtx3SplitOk(ids); if (why) return no(why);
+  const before = sx14State(), D = S.tracks[DRUM_T], snd = D.sound, made = [];
+  if (R.editor) closeEditor();
+  const orderBefore = trackOrder().slice();
+  for (const id of ids) {
+    const sl = DRUM_BY_ID[id], j = NT(), raw = newSynthTrack(j, 'f-init-analog');
+    const sn = (sl.sl + ' · ' + (snd.name || 'Drums')).slice(0, 40);
+    raw.name = String(sl.l || sl.sl).slice(0, 24); raw.follow = false; raw.os = false; raw.mute = !!D.mute; raw.kbOct = 3;
+    raw.sound.name = sn; raw.sound.fx = mtx3Jc(snd.fx || {});
+    if (D.mix) raw.mix = mtx3Jc(D.mix);
+    raw.dvx = {v: id, gm: sl.gm, sn, src: D.uid, p: mtx3Jc((snd.p && snd.p.slots && snd.p.slots[id]) || {}), kit: mtx3Jc(drumKit()), pk: snd.name || ''};
+    raw.clips = D.clips.map(c => {
+      if (!c) return null; const ns = c.notes.filter(n => (DRUM_BY_GM[n.n] || DRUM_BY_GM[mapV1Drum(n.n)] || {}).id === id); if (!ns.length) return null;
+      const o = mtx3Jc(c); o.notes = mtx3Jc(ns);
+      if (o.lanes) { const L = {}; if (o.lanes[sl.gm]) L[sl.gm] = o.lanes[sl.gm]; if (Object.keys(L).length) o.lanes = L; else delete o.lanes; }
+      if (Array.isArray(o.ln)) { o.ln = o.ln.filter(l => !(l && typeof l.p === 'string' && l.p.startsWith('drum.')) || l.p.startsWith('drum.' + id + '.')); if (!o.ln.length) delete o.ln; }
+      return o;
+    });
+    restoreTrack(j, JSON.stringify(raw));
+    if (!S.tracks[j] || !S.tracks[j].dvx) { sx14Put(before); return no('Aufteilen ging nicht'); }
+    made.push(j);
+  }
+  // DRUMS behält die übrigen Töne (D1-Spuren und Pad-Reihen der ausgelagerten Töne gehen mit)
+  const gone = new Set(ids), gms = new Set(ids.map(id => DRUM_BY_ID[id].gm));
+  D.clips.forEach((c, s) => {
+    if (!c) return;
+    c.notes = c.notes.filter(n => !gone.has((DRUM_BY_GM[n.n] || DRUM_BY_GM[mapV1Drum(n.n)] || {}).id));
+    if (c.lanes) { for (const g of gms) delete c.lanes[g]; if (!Object.keys(c.lanes).length) delete c.lanes; }
+    if (Array.isArray(c.ln)) { c.ln = c.ln.filter(l => !(l && typeof l.p === 'string' && ids.some(id => l.p.startsWith('drum.' + id + '.')))); if (!c.ln.length) delete c.ln; }
+  });
+  // Song-Zeile und Teile wie DRUMS
+  if (S.song) for (const j of made) S.song.lanes[j] = mtx3Jc(S.song.lanes[DRUM_T] || []);
+  for (const pt of S.parts || []) if (pt && pt.slots) for (const j of made) { pt.slots[j] = pt.slots[DRUM_T] == null ? null : pt.slots[DRUM_T]; if (pt.lanes && pt.lanes[DRUM_T] !== undefined) pt.lanes[j] = mtx3Jc(pt.lanes[DRUM_T]); }
+  // Reihenfolge: die Einzelspuren direkt vor DRUMS (DRUMS bleibt unten)
+  const syn = orderBefore.filter(x => x !== DRUM_T && !made.includes(x));
+  ux2OrderPut(syn.concat(made, [DRUM_T]));
+  mtx3Resync([DRUM_T].concat(made), DRUM_T);
+  for (let s = 0; s < D.clips.length; s++) { clipChanged(DRUM_T, s); for (const j of made) clipChanged(j, s); }
+  if (S.song) { UI.dirty.song = true; if (typeof songChanged === 'function') try { songChanged(); } catch (e) { logErr(e); } }
+  undoPush({kind: 'sx14', before, label: 'DRUMS aufteilen'});
+  MTX3.n++; MTX3.last = {op: 'split', ids: ids.slice(), tracks: made.slice()};
+  markDirty(); UI.dirty.all = UI.dirty.grid = true;
+  if (!quiet) { toast('DRUMS aufgeteilt → ' + made.map(j => S.tracks[j].name).join(', ') + ' (eigene Kanäle)', {label: 'Rückgängig', fn: () => undo()}); haptic('pop'); }
+  return made;
+}
+// laufende Wiedergabe: die neuen / geänderten Spuren spielen ab jetzt im Takt der Quelle weiter
+function mtx3Resync(list, srcT) {
+  const c = AU.ctx; if (!c || !R.playing) return;
+  const at = c.currentTime + .006;
+  for (const j of list) {
+    if (j !== srcT && R.slot[srcT] >= 0 && S.tracks[j].clips[R.slot[srcT]]) { R.slot[j] = R.slot[srcT]; R.cstart[j] = R.cstart[srcT]; }
+    if (R.slot[j] < 0) continue;
+    try { cancelTrackFrom(j, at); scheduleTrack(j, Math.max(R.cstart[j], t2b(at)), R.schedBeat, true); } catch (e) { logErr(e); }
+  }
+}
+function mtx3MergeOk() {
+  const L = mtx3Parts(-1); if (mtx3Busy()) return 'Erst Aufnahme beenden';
+  if (!L.length) return 'Keine Einzelspuren von DRUMS da';
+  const tail = L.slice().sort((a, b) => b - a); for (let k = 0; k < tail.length; k++) if (tail[k] !== NT() - 1 - k) return 'Erst die Spuren hinter den Einzelspuren entfernen';
+  return '';
+}
+function mtx3Merge(quiet) {
+  const no = m => { if (!quiet) { toast(m); haptic('err'); } return false; };
+  const why = mtx3MergeOk(); if (why) return no(why);
+  const before = sx14State(), D = S.tracks[DRUM_T], L = mtx3Parts(-1).sort((a, b) => b - a);
+  if (R.editor) closeEditor();
+  for (const j of L) {
+    const tr = S.tracks[j];
+    tr.clips.forEach((c, s) => {
+      if (!c || !c.notes.length) return;
+      const ns = c.notes.filter(n => DRUM_GMS.includes(n.n) || DRUM_GMS.includes(mapV1Drum(n.n))).map(n => Object.assign(mtx3Jc(n), {n: DRUM_GMS.includes(n.n) ? n.n : mapV1Drum(n.n)}));
+      if (!ns.length) return;
+      let d = D.clips[s];
+      if (!d) { d = D.clips[s] = mtx3Jc(c); d.notes = []; delete d.lanes; delete d.ln; }
+      const Lb = clipB(d); for (const n of ns) if (n.t < Lb - 1e-9) d.notes.push(n);
+      d.notes.sort((a, b) => a.t - b.t);
+      if (c.lanes) { d.lanes = Object.assign(d.lanes || {}, mtx3Jc(c.lanes)); }
+      if (Array.isArray(c.ln)) { const keep = c.ln.filter(l => l && typeof l.p === 'string' && l.p.startsWith('drum.')); if (keep.length) d.ln = (d.ln || []).concat(mtx3Jc(keep)); }
+    });
+  }
+  for (const j of L) {
+    if (S.song) { delete S.song.mel[j]; if (S.song.melodyTrack === j) melChoose(S.song, MEL_T < NT() ? MEL_T : 3); S.song.lanes.splice(j, 1); }
+    for (const p of S.parts || []) if (p && p.slots) { p.slots.length = Math.min(p.slots.length, j); if (p.lanes) p.lanes.length = Math.min(p.lanes.length, j); }
+    restoreTrack(j, null); MTX3.bus[j] = null;
+  }
+  mtx3Resync([DRUM_T], DRUM_T);
+  for (let s = 0; s < D.clips.length; s++) clipChanged(DRUM_T, s);
+  partsChanged();
+  undoPush({kind: 'sx14', before, label: 'Einzelspuren zusammenführen'});
+  MTX3.n++; MTX3.last = {op: 'merge', tracks: L.slice()};
+  markDirty(); UI.dirty.all = UI.dirty.grid = UI.dirty.song = true;
+  if (!quiet) { toast('Einzelspuren wieder in DRUMS', {label: 'Rückgängig', fn: () => undo()}); haptic('pop'); }
+  return true;
+}
+// Blatt „In Einzelspuren aufteilen“: Töne wählen (höchstens so viele wie Plätze frei), DRUMS behält den Rest
+function mtx3SplitSheet(anchor) {
+  const P = mtx3Plan(), sel = new Set(P.def), why0 = mtx3SplitOk();
+  openPop(anchor, p => {
+    p.classList.add('mtx3s');
+    p.innerHTML = '<div class="mtx-hd"><h4>DRUMS aufteilen</h4><button class="rb mtx-x" data-m3="no" aria-label="Schließen">✕</button></div>' +
+      '<div class="small mtx-wh">Je Ton eine eigene Spur mit demselben Kit-Klang und eigenem Kanal (Pegel, Pan, Effekte). ' + (P.free > 0 ? P.free + (P.free === 1 ? ' Platz' : ' Plätze') + ' frei.' : '') + '</div>' +
+      '<div class="mtx3-sub">Töne</div><div class="mtx3-l mtx3-v"></div><div class="small mtx3-rest"></div>' +
+      '<button class="mbtn rb mtx3-main" data-m3="go"><b>In Einzelspuren aufteilen</b><small></small></button>';
+    const box = p.querySelector('.mtx3-v'), rest = p.querySelector('.mtx3-rest'), go = p.querySelector('[data-m3="go"]');
+    const paint = () => {
+      for (const b of box.children) b.classList.toggle('on', sel.has(b.dataset.v));
+      const keep = P.used.filter(u => !sel.has(u.id)).map(u => u.sl);
+      rest.textContent = keep.length ? 'DRUMS behält: ' + keep.join(', ') : 'Ein Ton bleibt auf DRUMS';
+      const w = why0 || mtx3SplitOk([...sel]); go.disabled = !!w; go.querySelector('small').textContent = w || sel.size + (sel.size === 1 ? ' neue Spur' : ' neue Spuren') + ' · ↶ holt alles zurück';
+    };
+    for (const u of P.used) { const b = el('button', 'mbtn rb', esc(u.sl) + '<small>' + u.n + (u.n === 1 ? ' Schlag' : ' Schläge') + '</small>'); b.dataset.v = u.id; b.setAttribute('aria-label', u.l); box.appendChild(b); }
+    paint(); guardTouch(p);
+    onTap(p, b => {
+      if (b.dataset.v) { const id = b.dataset.v; if (sel.has(id)) sel.delete(id); else if (sel.size < P.free) sel.add(id); else { toast('Nur ' + P.free + (P.free === 1 ? ' Spur' : ' Spuren') + ' frei'); haptic('err'); } paint(); return; }
+      if (b.dataset.m3 === 'no') { closePop(); return; }
+      if (b.dataset.m3 === 'go' && !b.disabled) { closePop(); mtx3Split([...sel]); }
+    }, 'button');
+  }, {name: 'mtx3split'});
+  popFit(UI.pop && UI.pop.el); haptic('pop');
+  return !!(UI.pop && UI.pop.name === 'mtx3split');
+}
+// Einhängung am Ende von openTrackSheet: DRUMS › [In Einzelspuren aufteilen] / [Einzelspuren zusammenführen]; Einzelspur › [zusammenführen]
+function mtx3TrackSheet(i, anchor) {
+  const p = UI.pop && UI.pop.name === 'track' ? UI.pop.el : null, tr = S.tracks[i]; if (!p || !tr || p.querySelector('[data-mtx3]')) return;
+  const own = isDrum(i), part = !!tr.dvx && mtx3Parts(-1).includes(i); if (!own && !part) return;
+  const r2 = el('div', 'savrow mtx3tr'), has = mtx3Parts(-1).length > 0;
+  if (own) { const b = el('button', 'mbtn rb', 'In Einzelspuren aufteilen'); b.dataset.mtx3 = 'split'; b.title = 'Je Drum-Ton eine eigene, mischbare Spur'; b.setAttribute('aria-label', b.title); if (mtx3SplitOk()) b.disabled = true; r2.appendChild(b); onTap(b, () => { closePop(); mtx3SplitSheet(anchor || EL.grid); }); }
+  if (has) { const b = el('button', 'mbtn rb', 'Einzelspuren zusammenführen'); b.dataset.mtx3 = 'merge'; b.title = 'Alle Einzelspuren zurück in DRUMS'; b.setAttribute('aria-label', b.title); if (mtx3MergeOk()) b.disabled = true; r2.appendChild(b); onTap(b, () => { closePop(); mtx3Merge(); }); }
+  if (!r2.children.length) return;
+  const row = p.querySelector('.mtxtr') || p.querySelector('.savrow'); if (row) row.after(r2); else p.appendChild(r2);
+  popFit(p);
+}
+
+/* ---------- 3 · Noten auslagern (Noten-Editor einer Synth-Spur) ---------- */
+const mtx3OutSrcOk = t => { const tr = S.tracks[t]; return !!tr && tr.kind === 'synth' && !tr.stimme && !tr.orig && !mtx3Is(t); };
+const mtx3Targets = t => S.tracks.map((x, j) => j).filter(j => j !== t && mtx3OutSrcOk(j));
+// notes: Noten-Objekte des Clips (Auswahl). to: 'new' oder Spur-Index. copy: Original bleibt. Gibt die Ziel-Spur zurück (sonst -1)
+function mtx3Out(t, s, notes, to, copy, quiet) {
+  const no = m => { if (!quiet) { toast(m); haptic('err'); } return -1; };
+  const tr = S.tracks[t], c = tr && tr.clips[s]; if (!c || !mtx3OutSrcOk(t)) return no('Hier geht Auslagern nicht');
+  const ns = (notes || []).filter(n => c.notes.includes(n)); if (!ns.length) return no('Erst Noten auswählen');
+  if (mtx3Busy()) return no('Erst Aufnahme beenden');
+  const items = [], cBefore = cleanClip(c);
+  let j;
+  if (to === 'new') {
+    if (!canAddTrack()) return no('Höchstens ' + MAX_T + ' Spuren – erst eine Zusatzspur entfernen');
+    j = NT(); const raw = JSON.parse(trackSnapshot(t)), orderBefore = trackOrder().slice(), songBefore = S.song ? songSnapshot() : null, partBefore = partSnap();
+    delete raw.mel; delete raw.stimme; delete raw.gfx; delete raw.chor; delete raw.orig; delete raw.dvx;
+    raw.uid = newUid(); raw.name = (tr.name + ' · Teil').slice(0, 24);
+    const nc = mtx3Jc(cleanClip(c)); nc.notes = ns.map(cleanNote).map(mtx3Jc); delete nc.take; delete nc.pre;
+    raw.clips = emptyClips(); raw.clips[s] = nc;
+    restoreTrack(j, JSON.stringify(raw));
+    if (!S.tracks[j]) return no('Auslagern ging nicht');
+    const syn = orderBefore.filter(x => x !== DRUM_T), at = syn.indexOf(t); syn.splice(at < 0 ? syn.length : at + 1, 0, j);
+    ux2OrderPut(syn.concat([DRUM_T]));                                             // direkt unter der Quelle
+    if (S.song && S.song.lanes[t]) S.song.lanes[j] = mtx3Jc(S.song.lanes[t].filter(e => e && e.slot === s));   // Song: wo die Quelle diese Szene spielt
+    for (const pt of S.parts || []) if (pt && pt.slots && pt.slots[t] === s) pt.slots[j] = s;
+    items.push({kind: 'track', track: j, before: null}, {kind: 'ux2', op: 'o', before: JSON.stringify(orderBefore)});
+    if (songBefore) items.push({kind: 'song', before: songBefore});
+    items.push({kind: 'part', before: partBefore});
+  } else {
+    j = to | 0; if (!mtx3Targets(t).includes(j)) return no('Diese Spur geht nicht');
+    const d = S.tracks[j].clips[s]; items.push({kind: 'clip', track: j, scene: s, before: cleanClip(d)});
+    let drop = 0;
+    if (!d) { const nc = mtx3Jc(cleanClip(c)); nc.notes = ns.map(cleanNote).map(mtx3Jc); delete nc.take; delete nc.pre; S.tracks[j].clips[s] = normClip(nc, 'synth', S.key); }
+    else { const Lb = clipB(d); for (const n of ns) { if (n.t >= Lb - 1e-9) { drop++; continue; } d.notes.push(Object.assign(mtx3Jc(cleanNote(n)), {d: Math.min(n.d, Lb - n.t)})); } d.notes.sort((a, b) => a.t - b.t); }
+    if (drop && !quiet) toast(drop + (drop === 1 ? ' Note' : ' Noten') + ' hinter dem Clip-Ende weggelassen');
+  }
+  if (!copy) { const gone = new Set(ns); c.notes = c.notes.filter(n => !gone.has(n)); items.push({kind: 'clip', track: t, scene: s, before: cBefore}); }
+  undoPush({kind: 'group', label: (copy ? 'Noten kopieren → ' : 'Noten auslagern → ') + S.tracks[j].name, items});
+  if (R.playing && R.slot[t] === s && to === 'new') { R.slot[j] = s; R.cstart[j] = R.cstart[t]; }   // spielt synchron mit der Quelle
+  clipRestored(t, s); clipRestored(j, s);
+  if (ED.roll && ED.rollAt && ED.rollAt.t === t && ED.rollAt.s === s) { try { ED.roll.select([]); ED.roll.refresh(); } catch (e) { logErr(e); } }
+  partsChanged(); markDirty(); UI.dirty.grid = true; if (S.song) UI.dirty.song = true;
+  MTX3.n++; MTX3.last = {op: copy ? 'copy' : 'out', from: t, to: j, s, n: ns.length};
+  if (!quiet) { toast(ns.length + (ns.length === 1 ? ' Note' : ' Noten') + (copy ? ' kopiert → ' : ' ausgelagert → ') + String(S.tracks[j].name).toUpperCase() + ' · Szene ' + (s + 1), {label: 'Rückgängig', fn: () => undo()}); haptic('pop'); }
+  return j;
+}
+function mtx3OutSheet(t, s, anchor) {
+  const R0 = ED.roll, ns = R0 ? R0.selection : [];
+  if (!ns.length) { toast('Erst Noten auswählen (antippen oder Rahmen ziehen)'); haptic('err'); return false; }
+  const tg = mtx3Targets(t), tr = S.tracks[t];
+  openPop(anchor, p => {
+    p.classList.add('mtx3s');
+    p.innerHTML = '<div class="mtx-hd"><h4>Auslagern</h4><button class="rb mtx-x" data-m3="no" aria-label="Schließen">✕</button></div>' +
+      `<div class="small mtx-wh">${ns.length} ${ns.length === 1 ? 'Note' : 'Noten'} aus ${esc(tr.name)} · Szene ${s + 1}</div>` +
+      `<button class="mbtn rb mtx3-main" data-m3="new"${canAddTrack() ? '' : ' disabled'}><b>In neue Spur darunter</b><small>${canAddTrack() ? esc((tr.name + ' · Teil').slice(0, 24)) + ' · gleicher Klang, spielt mit' : 'Höchstens ' + MAX_T + ' Spuren'}</small></button>` +
+      (tg.length ? '<div class="mtx3-sub">In vorhandene Spur</div><div class="mtx3-l">' + tg.map(j => `<button class="mbtn rb" data-m3="to" data-j="${j}">${esc(S.tracks[j].name)}<small>${S.tracks[j].clips[s] ? 'Clip dazu' : 'neuer Clip'}</small></button>`).join('') + '</div>' : '');
+    const r = el('div', 'mtx-ask'); r.append(el('span', 'lbl', 'Noten'), makeSeg([[false, 'Verschieben'], [true, 'Kopieren']], () => mtx3CopyOn(), v => mtx3CopySet(v)));
+    p.appendChild(r); guardTouch(p);
+    onTap(p, b => {
+      const a = b.dataset.m3; if (a === 'no') { closePop(); return; }
+      if (b.disabled) return;
+      const sel = ED.roll ? ED.roll.selection : ns; closePop();
+      mtx3Out(t, s, sel.length ? sel : ns, a === 'new' ? 'new' : +b.dataset.j, mtx3CopyOn());
+    }, 'button[data-m3]');
+  }, {name: 'mtx3out'});
+  popFit(UI.pop && UI.pop.el); haptic('pop');
+  return !!(UI.pop && UI.pop.name === 'mtx3out');
+}
+// Einhängung am Ende von buildRoll: [Auslagern ▾] hinter [Noten kopieren]/[Einfügen] (Synth-Spuren, nicht STIMME / Original / Einzelspur)
+function mtx3RollHook(t, s) {
+  const Rl = ED.roll; if (!Rl || !Rl.el || !Rl.el.acts || !mtx3OutSrcOk(t) || !S.tracks[t].clips[s]) return;
+  const acts = Rl.el.acts; if (acts.querySelector('.mtx3rb')) return;
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'mtx3rb'; b.textContent = 'Auslagern ▾';
+  b.title = 'Auswahl in einen Clip einer anderen Spur (neu darunter oder vorhanden)'; b.setAttribute('aria-label', b.title);
+  b.addEventListener('click', () => { try { mtx3OutSheet(t, s, b); } catch (e) { logErr(e); } });
+  const pa = [...acts.children].find(x => x.classList.contains('ux2pb') && /einfügen/i.test(x.title || ''));
+  if (pa) pa.after(b); else acts.appendChild(b);
+}
+/* ---------- „Wo finde ich …?“ (UI1): zwei Einträge ---------- */
+(function mtx3Guide() {
+  try {
+    const L = ui1Entries(), E = (id, n, w, d, s, go, q) => ({id, n, w, d, s, go, q}); if (L.some(x => x.id === 'mtx3out')) return;
+    L.push(
+      E('mtx3out', 'Noten auslagern (Layer)', 'Noten-Editor › Auswahl › Auslagern ▾', 'Gewählte Noten in eine neue Spur darunter oder in eine vorhandene Spur – Verschieben oder Kopieren, ein ↶.', 'auslagern layer noten exportieren andere spur verschieben obertoene teil',
+        () => { ui1Home(); setSongView(false); return false; }, null),
+      E('mtx3drm', 'Drum-Spur in Einzelspuren aufteilen', '■ der DRUMS-Zeile halten › In Einzelspuren aufteilen', 'Je Drum-Ton (Kick, Snare, Hi-Hat …) eine eigene mischbare Spur mit demselben Klang – zusammenführen geht zurück.', 'drums aufteilen einzelspuren hihat snare kick percussion spur mischen trennen zusammenfuehren',
+        () => { ui1Home(); setSongView(false); openTrackSheet(DRUM_T, (UI.stops && UI.stops[DRUM_T]) || EL.top); return !!(UI.pop && UI.pop.name === 'track'); }, () => (UI.pop && UI.pop.name === 'track' ? UI.pop.el.querySelector('[data-mtx3="split"]') : null)));
+  } catch (e) {}
+})();
+/* ---------- Test-Schnittstelle ---------- */
+const MTX3_API = {
+  info: () => ({n: MTX3.n, last: MTX3.last ? mtx3Jc(MTX3.last) : null, parts: mtx3Parts(-1), is: S.tracks.map((x, i) => mtx3Is(i)), copy: mtx3CopyOn()}),
+  plan: () => mtx3Plan(), split: ids => mtx3Split(ids, true), merge: () => mtx3Merge(true), out: (t, s, ix, to, copy) => { const c = S.tracks[t] && S.tracks[t].clips[s]; return c ? mtx3Out(t, s, (ix || []).map(k => c.notes[k]).filter(Boolean), to, !!copy, true) : -1; },
+  outSheet: (t, s) => mtx3OutSheet(t, s, ED.roll && ED.roll.el.acts.querySelector('.mtx3rb')), splitSheet: () => mtx3SplitSheet(EL.grid), copySet: v => mtx3CopySet(v),
+  bus: i => { const X = MTX3.bus[i]; return X ? {ctx: X.ctx === AU.ctx, strips: Object.keys(X.st)} : null; },
+};
+Object.assign(SYNQUENZER, {mtx3: MTX3_API});                /* MTX3: Test-API */
+/* MTX3-END */
 /* ===== KI1-BEGIN (Profi-Trennung auf der Spektral-Seite; Xander 14.11.: „Jedes Instrument muss voneinander gut trennbar sein“) =====
    Optional, nur auf Knopfdruck: MIT-lizenziertes 4-Spur-Modell (Drums, Bass, Gesang, Rest; je Spur ein LSTM-Netz als ONNX, ≈ 17 MB),
    feste Revision der Modell-Ablage, Laufzeit-Bibliothek in derselben festen Version wie G9A. Nichts davon beim App-Start.
