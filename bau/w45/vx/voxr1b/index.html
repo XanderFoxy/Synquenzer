@@ -61389,10 +61389,10 @@ function plopFind(Fe, o) {
   for (let j = 0; j < nf; j++) {
     if (!cand[j]) continue; let e = j, mx = ex[j]; while (e + 1 < nf && (cand[e + 1] || (e + 6 < nf && cand.subarray(e + 2, e + 7).some(Boolean)))) { e++; if (ex[e] > mx) mx = ex[e]; }   // VOXR1B: Lücken ≤ 25 ms gehören zum selben Stoß
     const dur = (e - j + 2) / fps;
-    // VOXR1B: Ränder nachziehen, solange das Tiefband ≥ 6 dB über seinem Bezug liegt (≤ 20 ms je Seite) – sonst blieb der Anstieg des Stoßes
+    // VOXR1B: Ränder nachziehen, solange das Tiefband ≥ 6 dB über seinem Bezug liegt (≤ 5 ms je Seite) – sonst blieb der Anstieg des Stoßes
     // vor der Lücke stehen (eingesetzte Stöße begannen im Mittel 11 ms vor dem ersten Treffer)
-    let q0 = j, q1 = e; const lbE = Math.min(LB[j] || 0, LB[e] || 0) + 6; while (q0 > 0 && j - q0 < 4 && LF[q0 - 1] >= lbE) q0--; while (q1 + 1 < nf && q1 - e < 4 && LF[q1 + 1] >= lbE) q1++;
-    if (dur >= 0.02 && dur <= 0.1) ev.push({t0: q0 * Fe.H / Fe.sr, t1: (q1 + 2) * Fe.H / Fe.sr, s0: q0 * Fe.H, s1: Math.min(Fe.n, (q1 + 2) * Fe.H), exDb: +mx.toFixed(1)});
+    let q0 = j, q1 = e; const lbE = Math.min(LB[j] || 0, LB[e] || 0) + 6; const gm = o.gmax != null ? o.gmax : 1; while (q0 > 0 && j - q0 < gm && LF[q0 - 1] >= lbE) q0--; while (q1 + 1 < nf && q1 - e < gm && LF[q1 + 1] >= lbE) q1++;
+    if (dur >= 0.02 && dur <= 0.1) ev.push({t0: q0 * Fe.H / Fe.sr, t1: (q1 + 2) * Fe.H / Fe.sr, s0: q0 * Fe.H, s1: Math.min(Fe.n, (q1 + 2) * Fe.H), c0: j * Fe.H, c1: Math.min(Fe.n, (e + 2) * Fe.H), exDb: +mx.toFixed(1)});
     j = e;
   }
   return ev;
@@ -61424,16 +61424,43 @@ function plopCut(y, sr, E, cut) {
   // tiefste Spitze, die mindestens 1/4 der stärksten hat (Grundton statt Oberton)
   return Math.max(120, Math.min(cut, 0.8 * bf));
 }
+/* VOXR1B: Tiefband über dem Stoß aus Teiltönen neu bauen (Grundton und Obertöne unter der Grenze, je Seite 40 ms per kleinsten Fehlerquadraten
+   gemessen; Frequenz und Stärke laufen linear, die Phase kubisch von Rand zu Rand). Die AR-Interpolation (kleinste Fehlerquadrate) ließ den
+   Ton in 50-ms-Lücken abklingen (Obertöne bis −7 dB, Abzug nur 5–9 dB an 3 von 10 Stellen). */
+function plopSin(z, g0, g1, sd, cut) {
+  const W = Math.max(12, Math.round((plopSin.W || 0.025) * sd)), out = new Float64Array(g1 - g0);
+  const fit = (a, b, f) => { const w = TAU * f / sd; let cc = 0, ss = 0, cs = 0, zc = 0, zs = 0, zz = 0;
+    for (let i = a; i < b; i++) { const c = Math.cos(w * (i - a)), s = Math.sin(w * (i - a)), v = z[i]; cc += c * c; ss += s * s; cs += c * s; zc += v * c; zs += v * s; zz += v * v; }
+    const d = cc * ss - cs * cs || 1e-12, A = (zc * ss - zs * cs) / d, B = (zs * cc - zc * cs) / d; return {R: Math.hypot(A, B), ph: Math.atan2(B, A), w, e: A * zc + B * zs, zz}; };
+  const side = (a, b, at) => { if (a < 0 || b > z.length) return null; let bf = 0, be = -1, zz = 0;
+    for (let f = 90; f <= Math.min(420, cut * 1.1); f += 1) { const r = fit(a, b, f); zz = r.zz; if (r.e > be) { be = r.e; bf = f; } }
+    for (let f = bf - 0.9; f <= bf + 0.9; f += 0.1) { const r = fit(a, b, f); if (r.e > be) { be = r.e; bf = f; } }
+    if (!(be > 0.3 * zz)) return {f: bf, H: [], zz};
+    const H = []; for (let h = 1; h * bf < Math.min(cut * 1.3, 0.45 * sd); h++) { const r = fit(a, b, h * bf); H.push({R: r.R, th: r.w * (at - a) - r.ph, w: r.w}); }   // Phase am Rand
+    return {f: bf, H, zz}; };
+  const Ls = side(g0 - W, g0, g0 - 1), Rs = side(g1, g1 + W, g1), T = g1 - (g0 - 1);
+  if (!Ls || !Rs) return Float64Array.from(z.subarray(g0, g1)).fill(0);
+  const nh = Math.max(Ls.H.length, Rs.H.length);
+  for (let h = 0; h < nh; h++) {
+    let l = Ls.H[h], r = Rs.H[h]; if (!l && !r) continue;
+    if (!l) l = {R: 0, w: r.w, th: r.th - r.w * T}; if (!r) r = {R: 0, w: l.w, th: l.th + l.w * T};
+    const M = Math.round(((l.th + l.w * T - r.th) + (r.w - l.w) * T / 2) / TAU), x = r.th + TAU * M - l.th - l.w * T, yv = r.w - l.w, al = 3 * x / (T * T) - yv / T, be = -2 * x / (T * T * T) + yv / (T * T);
+    const fade = !l.R || !r.R ? Math.max(1, 0.005 * sd) : 0;   // eine Seite ohne Ton: nur kurz ein- bzw. ausklingen (kein Vor-Echo)
+    for (let t = 1; t < T; t++) { const th = l.th + l.w * t + al * t * t + be * t * t * t;
+      const A = fade ? (l.R ? l.R * Math.exp(-t / fade) : r.R * Math.exp(-(T - t) / fade)) : l.R + (r.R - l.R) * t / T; out[t - 1] += A * Math.cos(th); }
+  }
+  return out;
+}
 function* plop(y, sr, ev, o) {
   o = o || {}; const cut = o.cut || 250, g = Math.pow(10, -0.48 * (o.str != null ? o.str : 50) / 20), D = Math.max(1, Math.floor(sr / 1100)), n = y.length, out = [];
-  const C = Math.round((o.ctx || 0.3) * sr), mg = Math.round((o.mg != null ? o.mg : 0.005) * sr), p = o.p || 40;   // VOXR1B: Umgebung/Ordnung einstellbar
+  const C = Math.round((o.ctx || 0.3) * sr), mg = Math.round((o.mg != null ? o.mg : 0.01) * sr), p = o.p || 40;   // VOXR1B: Umgebung/Ordnung einstellbar; Grenze fest 250 Hz (Teiltöne darunter werden neu gebaut), Rand 10 ms
   for (let e = 0; e < ev.length; e++) {
     // Prüfung (Befund 7): Grenze unter dem gesungenen Grundton der Umgebung (stärkste Spitze 90–400 Hz davor/danach), höchstens o.cut
-    const E = ev[e], a = Math.max(0, E.s0 - mg - C), b = Math.min(n, E.s1 + mg + C), ce = o.cut || o.fix ? cut : plopCut(y, sr, E, cut), low = lpZero(y, a, b, sr, ce), L = Math.floor((b - a) / D), z = new Float64Array(L);
+    const E0 = ev[e], E = o.grow === 0 && E0.c0 != null ? {t0: E0.t0, t1: E0.t1, exDb: E0.exDb, s0: E0.c0, s1: E0.c1} : E0, a = Math.max(0, E.s0 - mg - C), b = Math.min(n, E.s1 + mg + C), ce = o.cut || o.fix !== 0 ? cut : plopCut(y, sr, E, cut), low = lpZero(y, a, b, sr, ce), L = Math.floor((b - a) / D), z = new Float64Array(L);
     for (let j = 0; j < L; j++) z[j] = low[j * D];
     const g0 = Math.max(1, Math.floor((E.s0 - mg - a) / D)), g1 = Math.min(L - 1, Math.ceil((E.s1 + mg - a) / D) + 1);
     if (g1 - g0 < 2 || g0 < p || L - g1 < p) { out.push({t0: +E.t0.toFixed(4), t1: +E.t1.toFixed(4), exDb: E.exDb, redDb: 0}); continue; }
-    const A = arCoef(z, [[p, g0], [g1 + p, L]].filter(s => s[1] - s[0] > p), p), zu = lsar(z, g0, g1, A);
+    const zu = o.ar ? lsar(z, g0, g1, arCoef(z, [[p, g0], [g1 + p, L]].filter(s => s[1] - s[0] > p), p)) : plopSin(z, g0, g1, sr / D, ce);   // VOXR1B: Teiltöne statt AR
     const cd = new Float64Array(L); let e0 = 0, e1 = 0; for (let j = g0; j < g1; j++) { cd[j] = (zu[j - g0] - z[j]) * (1 - g); e0 += z[j] * z[j]; e1 += (z[j] + cd[j]) * (z[j] + cd[j]); }
     const q0 = (g0 - 2) * D, q1 = Math.min(b - a, (g1 + 2) * D);
     for (let i = q0; i < q1; i++) { const u = i / D, j = Math.floor(u), f = u - j, c0 = cd[j - 1] || 0, c1 = cd[j] || 0, c2 = cd[j + 1] || 0, c3 = cd[j + 2] || 0;   // Catmull-Rom
