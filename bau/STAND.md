@@ -79,3 +79,9 @@ Weiter mit: 4.54 = rel-4540/k fertig prüfen + INT53D nachziehen + Versionszeile
 - basis9 = R-4650. wpii0ntvp (SPK9/CHR5/IMP2, Basis basis7) → merge auf R-4650 → 4.66.
 - wa4xvs94h (Mein Vorteil MV7: Gesuche ohne Arbeitsamt, Filme-Übersicht, Aktualität) läuft, pusht direkt auf main (nur vorteile/, mein-vorteil/, vorteile.yml).
 - VX3 Befund 1 entschieden: „Anfang ≥ 80 %“ wird gegen den Vokal-Beginn gemessen (rv1 max(Anfang, Vokal) = 85 %), Konsonant bleibt beim Stück.
+
+## 15.11. ~00:55 — nach Container-Neustart
+- wip-loop neu gestartet. Check-in auf 01:40 gestellt.
+- wpii0ntvp fertig: SPK9 (Legato-Noten) + IMP2 (Tempo/Abtastrate) gemergt in rel-4660 (0 Konflikte), CHR5 ohne App-Änderung (nur Analyse/Vorschläge). Regression vx/r4660 läuft.
+- wa4xvs94h (MV7) fertig: Gesuche live (3 echte Gesuche, Arbeitsamt raus, Such-Links), Filme-Scanner live (Wikidata, 33 für 3,99 €, 26 Action, 13 Comedy, 103 80er, 33 Disney, 19 Serien). Aktualitäts-Paket mv7/aktuell-fix Commit 87b9520 NICHT gepusht (Rechte-System lehnte Workflow-Push ab) → Xander um OK gefragt.
+- wfvq0qehs (MV8): Filme-Seite mit Chips Für 3,99 € / Action & Thriller / Comedy ausliefern.
