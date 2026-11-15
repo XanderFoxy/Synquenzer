@@ -84576,6 +84576,7 @@ function gr1Pad(id, used) {
 }
 // the style's drums over the clip's bars, with the pads the clip uses
 function gr1DrumNotes(src, st) {
+  if (typeof mtx3bIn === 'function') src = mtx3bIn(src);   /* MTX3B: DRUMS + Einzelspuren zusammen (wie vor dem Aufteilen) */
   if (st.ts || src.ts) return gen4DrumPat(src, st);                   // GEN4: in der Taktart des Stils
   const bars = Math.max(1, src.len | 0), used = new Set((src.notes || []).map(n => n.n)), by = new Map();
   for (const id of Object.keys(st.d)) {
@@ -84672,6 +84673,7 @@ function gr1RemixDo(song, st, a, b, z) {
         continue;
       }
       if (role !== 'z' && src.c.ts) { res.ts++; continue; }           // the patterns are 4/4
+      if (typeof mtx3bRole === 'function') mtx3bRole(t, src.c);   /* MTX3B: Kontext für mtx3bIn */
       const notes = role === 'dr' ? gr1DrumNotes(src.c, st) : role === 'bass' ? gr1BassNotes(src.c, st) : gr1ForceNotes(src.c, st, z);
       if (typeof mtx3bPads === 'function') mtx3bPads(t, notes, src.c);   /* MTX3B: ausgelagerte Pads nicht doppelt */
       const id = gr1VerPut(song, t, sp.s, src.c, role === 'z' ? {s: st.id, v: src.v, z} : {s: st.id, v: src.v}, notes);
@@ -84735,6 +84737,7 @@ function gr1Pattern(t, s, stId) {
   const before = cleanClip(c);
   if (!c) c = drumClipFor(s);
   if (c.ts) { if (!before) { tr.clips[s] = null; clipChanged(t, s); } toast('Grundmuster gibt es nur für Clips im 4/4-Takt'); return false; }
+  if (drum && typeof mtx3bRole === 'function') mtx3bRole(t, c);   /* MTX3B: Kontext für mtx3bIn */
   c.notes = drum ? gr1DrumNotes(c, st) : gr1BassNotes(c, st);
   if (drum && typeof mtx3bPads === 'function') mtx3bPads(t, c.notes, before);   /* MTX3B: ausgelagerte Pads nicht doppelt */
   if (drum) delete c.lanes;
@@ -86605,6 +86608,7 @@ function gr2Drums(ns, st, s, N, LB, bars) {
 }
 // die Noten eines Clips im Stil st, Stärke s (0–1), Rolle role; eine andere Taktart (4/4 ↔ 3/4) wird je Takt anteilig gefaltet
 function gr2Translate(src, st, s, role) {
+  if (role === 'dr' && typeof mtx3bIn === 'function') src = mtx3bIn(src);   /* MTX3B: DRUMS + Einzelspuren zusammen (wie vor dem Aufteilen) */
   s = clamp(+s || 0, 0, 1);
   if (st && st.tv) return gen3TvNotes(src, st, s, role);               // GEN3: Tempo-Version
   if (gen4On() && st) return gen4Conv(src, st, s, role);               // GEN4: Basis ↔ Stil aus dem Blatt (Taktart, Raster, Muster)
@@ -95301,7 +95305,7 @@ Object.assign(SYNQUENZER, {mtx3: MTX3_API});                /* MTX3: Test-API */
      eigene Einzelspur (neu oder dazu); ein ↶.
    6 Clip einer Einzelspur: Drum-Schritt-Editor nur mit ihrer Pad-Zeile (VEL, Akzent, Chance, Wirbel, Timing, Tune, Decay) im
      Noten-Editor-Blatt; [SCHRITTE │ ROLLE] wie [LAUF │ ROLLE]. */
-const MTX3B = {view: 'steps', lane: 'vel', ed: null, mode: 'all', n: 0, last: null, cut: 0};
+const MTX3B = {view: 'steps', lane: 'vel', ed: null, mode: 'all', n: 0, last: null, cut: 0, mix: 0, ctx: null};
 (function mtx3bCss() {
   try {
     if (document.getElementById('mtx3b-css')) return;
@@ -95327,9 +95331,27 @@ function mtx3bOutIds() { const o = new Set(); for (const j of mtx3Parts(-1)) if 
 /* ---------- 1 · Remix / Stil / Grundmuster ---------- */
 // gr2Role-Haken (oben): die Einzelspur hat die Drum-Rolle von DRUMS (im Stil-Blatt: die Wahl für DRUMS gilt für alle ihre Einzelspuren)
 function mtx3bRole(t, c) {
+  if (t === DRUM_T || mtx3Dr(t)) MTX3B.ctx = {t, c};                     // die gleich folgende Umrechnung (mtx3bIn) kennt Spur und Clip
   if (!mtx3Dr(t)) return undefined;
   let o; try { o = gen4On() ? gen4RoleOv(DRUM_T, c) : undefined; } catch (e) { o = undefined; }
   return o !== undefined ? o : 'dr';
+}
+// Eingabe-Haken (gr2Translate, gr1DrumNotes): DRUMS und ihre Einzelspuren werden ZUSAMMEN umgerechnet – dieselben Noten wie vor dem
+// Aufteilen (Pad-Zuordnung, Kern-Schläge, Ausdünnen); danach behält jede Spur nur ihre Pads (mtx3bPads) = das Ergebnis ohne Aufteilen.
+// Partner-Clip je Spur: gleiche Saat, Länge und Taktart (beim Aufteilen kopiert), bei mehreren der in derselben Szene
+function mtx3bIn(src) {
+  const X = MTX3B.ctx; if (!X || X.c !== src || !src || !Array.isArray(src.notes) || !isNum(src.seed)) return src;
+  const grp = [DRUM_T].concat(mtx3Parts(-1).filter(j => mtx3Is(j))); if (grp.length < 2 || !grp.includes(X.t)) return src;
+  const sAt = S.tracks[X.t] ? S.tracks[X.t].clips.indexOf(src) : -1, add = [];
+  for (const j of grp) {
+    if (j === X.t) continue;
+    const cl = S.tracks[j].clips, cs = cl.filter(c => c && c.seed === src.seed && c.len === src.len && (c.ts || null) === (src.ts || null));
+    const c = cs.length === 1 ? cs[0] : cs.length > 1 && sAt >= 0 && cs.includes(cl[sAt]) ? cl[sAt] : null;
+    if (c) for (const n of c.notes) add.push(cleanNote(n));
+  }
+  if (!add.length) return src;
+  const o = Object.assign({}, src); o.notes = src.notes.concat(add).sort((a, b) => a.t - b.t || a.n - b.n); MTX3B.mix++;
+  return o;
 }
 // Ausgabe-Haken (Remix, Stil, Grundmuster): die Noten einer Spur in place gefiltert. DRUMS: ohne die Pads, die eine Einzelspur haben und im
 // Quell-Clip src nicht auf DRUMS liegen. Einzelspur: nur ihr Pad. Gibt die Anzahl entfernter Noten zurück
@@ -95693,7 +95715,7 @@ function mtx3bRollHook(t, s) {
 })();
 /* ---------- Test-Schnittstelle ---------- */
 const MTX3B_API = {
-  info: () => ({n: MTX3B.n, last: MTX3B.last ? mtx3Jc(MTX3B.last) : null, cut: MTX3B.cut, view: MTX3B.view, ed: mtx3bOpen() ? {t: ED.mtx3b.t, s: ED.mtx3b.s, page: ED.mtx3b.page} : null}),
+  info: () => ({n: MTX3B.n, last: MTX3B.last ? mtx3Jc(MTX3B.last) : null, cut: MTX3B.cut, mix: MTX3B.mix, view: MTX3B.view, ed: mtx3bOpen() ? {t: ED.mtx3b.t, s: ED.mtx3b.s, page: ED.mtx3b.page} : null}),
   out: (ids, s, ix) => { const c = s != null ? S.tracks[DRUM_T].clips[s] : null; return mtx3bOut(ids, s == null ? null : s, ix && c ? new Set(ix.map(k => c.notes[k]).filter(Boolean)) : (c ? new Set(c.notes) : null), true); },
   outSheet: () => mtx3bOutSheet(EL.drumSheet.querySelector('.mtx3bdb') || EL.grid), why: (ids, s) => mtx3bOutOk(ids, s == null ? null : s, null),
   pads: (t, notes, src) => { const a = notes.slice(); mtx3bPads(t, a, src); return a; }, role: (t, s) => { const c = S.tracks[t] && S.tracks[t].clips[s]; return c ? gr2Role(t, c) : null; },
