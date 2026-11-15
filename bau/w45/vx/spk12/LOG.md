@@ -10,3 +10,7 @@
 - 04:40 Teil-2-Block (Kern spk12K2/Fft/Ops trans/hauto/follow, UI Ellipse/Lasso/Transient/Obertöne ▾/Folgt dem Ton) gebaut; spk12-test2 hochkant 22/1 (Long Task nur beim Ansicht-Sprung des Tests)
 - 04:43 Obertöne-Knopf Klasse spk12-hd (Teil-1-Test zählt die Kombinier-Leiste über .spk12-dd); NOTES.md Teil 2 geschrieben; spk12-test (Teil 1) läuft neu
 - 04:43 spk12-test (Teil 1) mit Teil-2-Bau: 98 OK / 0 FEHLER; Kette spk12-test2 → smoke → reg.sh gestartet
+- 04:44 Kern-Zwischenspeicher spk12K2: Schlüssel + Prüfsumme des Form-Inhalts (alter Regler „Obertöne“ ändert Formen an Ort und Stelle); Test ergänzt
+- 04:49 spk12-test2 alle 3 Größen 72 OK / 0 FEHLER · smoke errors [] · reg.sh wie Teil 1 (spk6/spk5/spk8 OK, spk1 1 = Basis, spk11 3 = drums-auf-kit bekannt)
+- 04:50 Pflicht Endstand: topdefs 26/7642/0/0 · dupkeys 0 · MS 2000 1× · live 1× · VERSION 4.68.0 · diff nur Zusätze (767) · Marken 0 · NOTES.md Teil 2 fertig; Fremd-Ergebnisse nach reg/
+- 04:50 Start Teil 3/3 (Plan-Schritte 7–9)

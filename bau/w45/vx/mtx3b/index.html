@@ -92908,6 +92908,7 @@ function gen4DoScene(s, st, k, Z, play) {
   for (let t = 0; t < NT(); t++) {
     const tr = S.tracks[t], cur = tr && tr.clips[s]; if (!cur) continue;
     const key = t + ':' + s; if (!Z.src.has(key)) Z.src.set(key, cleanClip(cur));
+    if (typeof mtx3bZ === 'function') mtx3bZ(Z, 's');   /* MTX3B: Originale der Szene für die Einzelspuren */
     const src = Z.src.get(key); if (tr.stimme || src.audio) { res.voc++; continue; }
     const next = gen4ClipConv(t, src, st, k, res) || src, a = JSON.stringify(cleanClip(cur)), b = JSON.stringify(cleanClip(next)); if (a === b) continue;
     if (((cur.ts || null) !== (next.ts || null))) tsCh = true;
@@ -92937,6 +92938,7 @@ function gen4DoAll(st, k, Z, play) {
   const song = S.song, hasSong = !!(song && song.bars), res = {n: 0, dr: 0, bass: 0, other: 0, voc: 0, ts: 0}, before = t1Snap(), items = [], ch = [];
   const tTs = st.tv ? undefined : (st.ts || null), playing = !!(R.playing && AU.ctx), nb = playing && !R.songPlay ? nextBarFromAudible() : null, sp = playing && R.songPlay;
   const conv = (key, t, cur, own) => { if (!Z.src.has(key)) Z.src.set(key, own ? deep(cur) : cleanClip(cur)); const src = Z.src.get(key); if (src.audio) { res.voc++; return null; } return gen4ClipConv(t, src, st, k, res, own) || src; };
+  if (typeof mtx3bZ === 'function') mtx3bZ(Z, 'all');   /* MTX3B: Originale für die Einzelspuren */
   for (let t = 0; t < NT(); t++) {
     const tr = S.tracks[t]; if (!tr) continue;
     if (tr.stimme) { if (tr.clips.some(Boolean)) res.voc++; continue; }
@@ -95320,7 +95322,7 @@ Object.assign(SYNQUENZER, {mtx3: MTX3_API});                /* MTX3: Test-API */
    Song-Versionen (Remix) geben beim Auslagern/Aufteilen das Pad mit und kommen beim Zusammenführen zurück nach DRUMS (Summe gleich);
    Versionen einer Einzelspur laden als Drum-Clips (Saat, Chance, Wirbel); „dazu“ in einen kürzeren Clip wiederholt ihn, was nicht passt,
    bleibt auf DRUMS; Tastatur-Akkord = ein Schlag je Schritt; D1-Länge im Schritt-Editor sichtbar. */
-const MTX3B = {view: 'steps', lane: 'vel', ed: null, mode: 'all', n: 0, last: null, cut: 0, mix: 0, ctx: null};
+const MTX3B = {view: 'steps', lane: 'vel', ed: null, mode: 'all', n: 0, last: null, cut: 0, mix: 0, ctx: null, z: null, mres: null};
 (function mtx3bCss() {
   try {
     if (document.getElementById('mtx3b-css')) return;
@@ -95362,12 +95364,30 @@ function mtx3bPartner(j, src, t) {
   if (!src || !isNum(src.seed) || !S.tracks[j]) return null;
   const same = c => !!c && c.seed === src.seed && c.len === src.len && (c.ts || null) === (src.ts || null);
   // eine Song-Version (v2 …): die Version der Spur j mit derselben Szene und Nummer (Auslagern / Remix legen sie so an)
-  if (src.from && src.ver >= 2 && S.song && S.song.own) { const id = sx9Find(S.song, j, src.from.s, src.ver), v = id ? S.song.own[id] : null; if (same(v)) return v; }
+  const zk = mtx3bZKey(src);                                                                        // GEN4: src ist das gemerkte Original
+  if (src.from && src.ver >= 2 && S.song && S.song.own) { const id = sx9Find(S.song, j, src.from.s, src.ver), v = id ? S.song.own[id] : null; if (same(v)) return zk ? mtx3bOrig(j, v) : v; }
   const cl = S.tracks[j].clips, cs = cl.filter(same), X = MTX3B.ctx;
   let sAt = S.tracks[t] ? S.tracks[t].clips.indexOf(src) : -1;
   if (sAt < 0 && src.from && isNum(src.from.s)) sAt = src.from.s;                                  // Version: ihre Szene
+  if (sAt < 0 && zk && zk.sc != null) sAt = zk.sc;                                                 // GEN4: die Szene des Originals
   if (sAt < 0 && X && X.t === t && S.tracks[t]) sAt = S.tracks[t].clips.indexOf(X.c);             // Kopie des Clips (Grundmuster): die Szene des Kontexts
-  return cs.length === 1 ? cs[0] : cs.length > 1 && sAt >= 0 && cs.includes(cl[sAt]) ? cl[sAt] : null;
+  const c = cs.length === 1 ? cs[0] : cs.length > 1 && sAt >= 0 && cs.includes(cl[sAt]) ? cl[sAt] : null;
+  return zk ? mtx3bOrig(j, c) : c;
+}
+// GEN4 (Stil auf Szene / alles) ersetzt die Clips Spur für Spur und merkt die Originale in Z.src: die Einzelspur rechnet mit dem
+// Original von DRUMS (nicht mit dem schon umgerechneten Clip) – gen4DoScene / gen4DoAll-Haken
+function mtx3bZ(Z, mode) { MTX3B.z = Z && Z.src instanceof Map ? {Z, mode} : null; }
+function mtx3bZKey(src) {
+  const z = MTX3B.z; if (!z || !src) return null;
+  for (const [k, v] of z.Z.src) if (v === src) { const m = /^c?(\d+):(\d+)$/.exec(k); return m ? {t: +m[1], sc: +m[2]} : {own: k.slice(1)}; }
+  return null;
+}
+function mtx3bOrig(j, c) {
+  const z = MTX3B.z; if (!z || !c || !S.tracks[j]) return c;
+  const sc = S.tracks[j].clips.indexOf(c); let k = null;
+  if (sc >= 0) k = (z.mode === 'all' ? 'c' : '') + j + ':' + sc;
+  else if (S.song && S.song.own) { const id = Object.keys(S.song.own).find(q => S.song.own[q] === c); if (id) k = 'o' + id; }
+  return (k != null && z.Z.src.get(k)) || c;
 }
 function mtx3bIn(src) {
   const X = MTX3B.ctx; if (!X || X.c !== src || !src || !Array.isArray(src.notes) || !isNum(src.seed)) return src;

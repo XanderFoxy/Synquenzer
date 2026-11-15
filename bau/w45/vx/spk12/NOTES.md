@@ -2,7 +2,7 @@
 
 Bau: `python3 bau.py` = `basis.html` (Kandidat 4.68.0, unverändert) + `spk12-block.js` direkt nach `/* SPK11-END */`
 + 16 Haken-Zeilen „SPK12“ (je eine **neue** Zeile mit typeof-Schutz; keine vorhandene Zeile umgeschrieben).
-VERSION unverändert 4.68.0. Ein Block `/* SPK12-BEGIN */ … /* SPK12-END */` (Teil 1: 445 Zeilen, mit Teil 2: 750 Zeilen). diff Basis → Paket: 0 entfernte, 766 neue Zeilen.
+VERSION unverändert 4.68.0. Ein Block `/* SPK12-BEGIN */ … /* SPK12-END */` (Teil 1: 445 Zeilen, mit Teil 2: 751 Zeilen). diff Basis → Paket: 0 entfernte, 767 neue Zeilen (751 Block + 16 Haken).
 
 ## Haken-Liste (Anker → neue Zeile)
 | # | Stelle | Zweck |
@@ -103,11 +103,12 @@ Regression (reg.sh → reg.log, Ausgaben in reg/): spk6 ALLES OK · spk5 ALLES O
   (Spitze < −30 dB unter Bezug oder < 12 dB Abstand zur Nachbarschaft) behalten die **letzte gute Stelle** (Rücksprung statt
   Abdriften), danach geht es dort weiter. Form `{art:'fol', src:[alte Auswahl], cur:[[t, r]…]}`: im Kern wird die Quell-Auswahl je
   Rahmen um r(t) = f(t)/f_Bezug verschoben (Bin k ← k / r). Ein ↶; „Folgt nicht mehr“ holt die Quell-Auswahl zurück.
-- Ellipse/Lasso/Transient/folgt/Obertöne-mit-Häkchen laufen im Kern über `spk12K2` (Zwischenspeicher je Form-Schlüssel, 8); die
+- Ellipse/Lasso/Transient/folgt/Obertöne-mit-Häkchen laufen im Kern über `spk12K2` (Zwischenspeicher 8, Schlüssel + FNV-Prüfsumme des
+  Form-Inhalts, weil der alte Regler „Obertöne“ und Griffe Formen an Ort und Stelle ändern); die
   Anzeige zeigt das Ergebnis aus dem Kern (wie Zauberstab). Auswahl ▾ Erweitern/Weicher wirkt nicht auf Transient/folgt (kein Effekt
   statt falscher Effekt).
 
-### Messungen Teil 2 (`spk12-test2.mjs`, alle 3 Größen: 69 OK / 0 FEHLER, `spk12-test2.out` / `spk12-test2.json`)
+### Messungen Teil 2 (`spk12-test2.mjs`, alle 3 Größen: 72 OK / 0 FEHLER, `spk12-test2.out` / `spk12-test2.json`; Fotos `fotos/t2-*`)
 Testsignal 19 s im Seiten-Kontext: Pad (Akkorde mit 150 ms Anstieg, Wechsel auch im reinen Pad-Teil) + 16 Snare-Schläge 2,0…5,75 s
 (Pegel 0,45…1), Ton 220 Hz mit 12 Obertönen, Ton 196 Hz mit 6 Obertönen, Gleitton 330 → 416 Hz mit Vibrato ±40 Cent und
 120 ms Rausch-Lücke (Ton aus).
@@ -119,12 +120,21 @@ Testsignal 19 s im Seiten-Kontext: Pad (Akkorde mit 150 ms Anstieg, Wechsel auch
 - **Obertöne „nur ungerade“** (Touch: Harmonische tippen → Obertöne ▾ → Ungerade): Energie der geraden Obertöne in der Maske
   **0,000 %** (Ziel ≤ 1 %), ungerade 98,1 %. Häkchen „3“ per Touch aus → hm ohne 3; ↶ → 3 wieder da.
 - **Auto** auf dem 196-Hz-Ton (6 Obertöne): hm = 1…6, K = 6 (Rang 7 liegt 65 dB unter dem stärksten).
+- Regler „Obertöne“ (Master-Rang) an einer Harmonischen mit Häkchen: K 16 → 8 nimmt Rang 9 heraus (0), Rang 7 bleibt (255), zurück
+  auf 16 → Rang 9 wieder 255 (Kern-Zwischenspeicher hängt am Inhalt der Form, nicht nur am Schlüssel).
 - **Folgt dem Ton** (Rechteck 300–365 Hz um den Anfang, Auswahl ▾ → Folgt dem Ton): Ton-Energie in der Maske **42,8 % → 99,7 %**;
   Verfolgung Median 2,3 Cent, in der Rausch-Lücke max 43 Cent (gehalten, 9 Rahmen), danach max 3,9 Cent; 119–140 ms; ↶ → Rechteck.
 - Knöpfe: Obertöne ▾ 80 × 50 (Trefferfläche), Häkchen 44 × 44, Folgt dem Ton 106 × 44, Transient-Regler – alles im Bild in allen 3 Größen.
 - Hauptfaden: keine Long Task > 50 ms bei den SPK12-Aktionen. (Ein Long Task 52–59 ms kam nur direkt nach dem Ansicht-Sprung, den
   der Test per Skript setzt – alter Zeichenweg der Spektrum-Kacheln, nicht SPK12; im Test ausgenommen und gezählt.)
 - Guide-Eintrag `spk12` erweitert (Ellipse, Lasso, Transient, Obertöne ▾, Folgt dem Ton). Konsole ohne Fehler.
+
+## Pflicht Teil 2 (Endstand)
+topdefs 26 / 7642 / doppelt 0 / Syntaxfehler 0 (mit NODE_PATH=/opt/node-tools/node_modules) · dupkeys 0 · smoke errors [] (smoke.png) ·
+„MS 2000“ 1× · „^  live: true,“ 1× · VERSION 4.68.0 unverändert · basis.html = rel-4680 · diff nur Zusätze (767) · keine Marken-/
+Produktnamen (einziger Treffer „rx“ = SVG-Attribut der Ellipse) · keine Emojis (✓ als Text-Häkchen wie 79× in der Basis).
+spk12-test (Teil 1) mit Teil-2-Bau: 98 OK / 0 FEHLER. Regression (reg.sh → reg.log, Ausgaben in reg/): spk6 ALLES OK · spk5 ALLES OK 24 ·
+spk1 1 FEHLER verfeinern-verbessert-ziel (= Basis) · spk8-seite 14/0 · spk11 38/3 (nur drums-auf-kit = bekannt offen in 4.68) – gleich wie Teil 1.
 
 ## Offen (Teil 3/3 und Rest)
 - Plan-Schritte 7–9: Ähnliches mit Merkmalen tonal/Transient/Rauschen/Pegel + ‹ › Alle, „Alle Ebenen abtasten“, Auswahl merken
@@ -136,6 +146,10 @@ Testsignal 19 s im Seiten-Kontext: Pad (Akkorde mit 150 ms Anstieg, Wechsel auch
   der stärkere. Rand-Griffe sind für Transient/folgt aus (die Form ist kein Kasten).
 - Ein Long Task (52–59 ms) direkt nach großen Ansicht-Sprüngen gehört zum alten Kachel-Zeichnen (nicht SPK12) – eigener Punkt für
   die Ladezeit-Liste.
+- Transient-Fläche wirkt unruhig (viele kleine Inseln mit hellem Rand, weil die Maske weich und fein ist); ruhiger wäre nur Füllung
+  ohne Rand bei Transient – sichtbar anders → erst Funk.
+- Die Listen beim Halten (Rechteck/Zeit) werden per Touch bedient (Test tippt sie an), ihre Maße sind nicht eigens gemessen
+  (mbtn ≥ 44 px wie im Klappfenster).
 - Pinsel in + / − / ∩: Beim Aufsetzen leert der alte Pinsel-Code eine nicht-weiche Auswahl; sie erscheint erst beim Loslassen wieder
   (Ergebnis stimmt, nur während des Malens unsichtbar) – Haken in spk1ToolDown wäre eine Änderung im alten Pinsel-Zweig.
 - Wachsen einer kombinierten Auswahl ist parametrisch (je Form, mit Dualität für − und Umkehren), keine echte Dilatation des Ergebnisses.
