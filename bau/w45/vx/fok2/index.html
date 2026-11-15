@@ -109008,8 +109008,9 @@ function fokus1KMake(Z2, X) {
     for (let c = 0; c < W;) {
       if (!aff[c]) { c++; continue; }
       let c1 = c; for (let e = c + 1; e < W && e <= c1 + gap; e++) if (aff[e]) c1 = e;   // Lauf betroffener Spalten (Lücken bis N/hop zusammen)
-      const mid = await restMid(d, {}, (x0 + c) * hop - N / 2 - hb, (x0 + c1 + 1) * hop + N / 2 + hb, null);
-      if (!ok()) return false; tY = performance.now();
+      const ra = Math.max(0, (x0 + c) * hop - N / 2 - hb), rz = (x0 + c1 + 1) * hop + N / 2 + hb, SL = 4 * (X.BLK || 16384); let mid = null;
+      for (let u = ra; u < rz; u += SL) { mid = await restMid(d, {}, u, Math.min(rz, u + SL), null); if (!ok()) return false; }   // in Scheiben: Abbruch greift nach ≤ 4 Blöcken
+      tY = performance.now();
       for (let cc = c; cc <= c1; cc += 2) {
         const sA = (x0 + cc) * hop - N / 2, two = cc + 1 <= c1;
         for (let j = 0; j < N; j++) { const i = sA + j, i2 = i + hop; re[j] = (i >= 0 && i < mid.length ? mid[i] : 0) * w[j]; im[j] = two && i2 >= 0 && i2 < mid.length ? mid[i2] * w[j] : 0; }
@@ -109159,7 +109160,7 @@ function fokus1KMake(Z2, X) {
     const ct = Math.max(0, Math.min(I.cols - 1, Math.round((+m.t || 0) * d.meta.sr / I.hop))), ci = ct >> 10, W = Math.min(1024, I.cols - ci * 1024), cc = ct - ci * 1024;
     const NT = found(d, o), H = sigOf(d, o, N, NT), ck = 'spk:' + d.meta.id + ':fk:' + H + ':v' + N + ':' + ci, have = await X.get('audio', 'spk:' + d.meta.id + ':v' + N + ':' + ci);
     const src = have && have.byteLength === R * W ? new Uint8Array(have) : X.specChunk(d, N, ci).data;
-    let e = C.get(ck); if (!e) { const TR = await trueRest(d, I, ci, W, src, () => true); e = piece(d, I, ci, src, o, gainOf(d, o), NT, TR || null); C.set(ck, e); while (C.size > 6) C.delete(C.keys().next().value); }   /* FOK2 */
+    let e = C.get(ck); if (!e) e = piece(d, I, ci, src, o, gainOf(d, o), NT);   /* FOK2: Stück der Anzeige (genauer Rest), sonst schnelle Näherung wie 4.72 – nicht gespeichert (gleicher Schlüssel) */
     const r0 = Math.max(0, Math.min(R - 1, Math.round((69 + 12 * Math.log2(Math.max(1, +m.f || 440) / 440) - I.m0) * I.rps)));
     let rs = r0, v0 = -1; for (let r = Math.max(0, r0 - 6); r <= Math.min(R - 1, r0 + 6); r++) if (src[r * W + cc] > v0) { v0 = src[r * W + cc]; rs = r; }
     const dB = v0 > 0 ? (v0 - e.data[rs * W + cc]) * DBF / 255 : 0;
