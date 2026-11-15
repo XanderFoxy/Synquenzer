@@ -77,6 +77,7 @@ Tempo: die erste Endfassung rechnete bei starken Klicks die LSAR doppelt (+5…+
 
 ## Haken
 Keine neuen Haken. Alle Änderungen in `vr1Make` (VOXR1-Block): `clickScan` (BIG), neue Funktion `clickSpan`, `click`, `room`.
+Nach der Prüfung (VOXR1F-P): zusätzlich `lsar` (Band-Cholesky, bitgleich) – ebenfalls im VOXR1-Block, weiterhin kein Haken, außerhalb des Blocks bitgleich zu basis.html.
 
 ## Offen
 - Klicks Take A 17/20: drei Klicks auf gesungenen Vokalen (1,9–6,8 dB über der Umgebung). Ansatz: Puls-synchroner Vergleich (Spitze gegen die Spitzen
@@ -84,9 +85,53 @@ Keine neuen Haken. Alle Änderungen in `vr1Make` (VOXR1-Block): `clickScan` (BIG
 - Raumton-Farbe Take A Lücken 2/3/5 (4,8 / 6,3 / 6,7 dB): das Original hat dort mehr Höhen als jede Nachbarschaft; ohne eine Annahme „Pausen-Mitte
   heller“ nicht erreichbar (wäre auf den Test zugeschnitten). Die Fenster-Wahl ({ton: 30}) half dort und im Prüfer-Kern, schadete aber kern2
   (B/A48) – bleibt als Schalter für einen späteren Versuch (z. B. nur wählen, wenn der Nahbereich rauschartig UND leiser als die Lücke ist).
+- Nach der Prüfung: Überstand Take B 3,2 dB (= basis) an einer Stelle, die schon im sauberen Take 4,6 dB herausragt – nur mit Klangverlust
+  an anderen Klicks zu drücken (siehe „Prüfung“). Raumton-Zuschlag +2 dB lässt eine schon falsche Lücke (kern2 A@48 10,73 s) 2 dB schlechter.
 - Klick-Füllung zu leise in den Höhen (Rauschen in Nachbar-Farbe ergänzen) nicht gebaut: senkt den Überstand nicht und erhöht den Fehler gegen sauber.
 
 ## Endlauf (Kette 3, Endfassung md5 ec3ca89fdc4baf2f9fbf9b0e3479f6a5, Last 6,5 → 11,8)
 kern 55/60 – die Inhalts-Prüfungen gleich wie Basis (56/60), zusätzlich FEHLER nur die 3-min-Zeit (Median 13,0 s bei Last ≈ 10–12; derselbe Rechenweg
 bestand in Kette 2 mit 19,7 s ×3 und im A/B gegen Basis +3…+5 %). dev 78/83 (Zeit-Prüfungen unter Last; einzeln bei Last 5–7: 80/83 gegen Basis 76/83).
 smoke errors [], vx1 61/61, vx2 14/14, vx3 15/15, chr2 82/82. Die 3-min-Ausgabe ist mit Kette 2 bitgleich (FNV 679d4930).
+
+## Prüfung (Befunde des unabhängigen Prüfers zu ec3ca89f → Nachbesserung VOXR1F-P, 17:12–)
+Sicherungen: index.vor-pruef.html (= ec3ca89f), index.vor-lsar.html, index.vor-k4.html, index.vor-med.html. Werkzeug: `w2/abzug.mjs` (Klick-Abzug A/B aus den
+INFO-Zeilen; gibt für ec3ca89f genau die Prüfer-Zählung 22 schlechter / 7 besser wieder). Änderungen nur im VOXR1-Block, Kennung `VOXR1F-P`, kein Haken.
+
+Was geändert wurde:
+1. `clickSpan`: Verlängerung nur in **rauschartiger** Umgebung (Mittel der 0,25-ms-Rahmen ≤ 2× Median; über Gesang ist das Mittel durch die
+   Stimmlippen-Pulse viel größer) – sonst alte Spanne **ohne** Deckel und ohne 700-Hz-Grenze (wie basis). `{nz: 0}` = ohne Prüfung.
+2. Bezug für Ausklang-Schwelle, Deckel und 700-Hz-Entscheidung = **Mittel** der Umgebung statt Median (`{ref: 0}` alt). Der Median-Bezug war die Ursache
+   des „Ausfalls“ bei B@48 2,745 s: Deckel 2× Median ≪ mittlere Energie gepulster Höhen → Füllung weit unter der Nachbarschaft.
+3. Ausklang-Schwelle 4× (6 dB) über dem Mittel statt 3× über dem Median (`spanK`).
+4. BIG (Erkennung): nur wenn die Rahmen-Spitzen ±12 ms rauschartig sind (Mittel ≤ 1,2× Median, `{bq: 0}` alt). Take A 6,844 s (Pause) bleibt gefunden.
+5. Tempo: `lsar` mit Band-Cholesky (Normalmatrix ist ein Band der Halbbreite p): nur Nullen ausgelassen, gleiche Summen in gleicher Reihenfolge →
+   **bitgleich** (3-min-Kette FNV vor/nach gleich; basis + nur Band-LSAR = basis a3cf361; Schnelltest basis gleich), Aufwand m·p² statt m³.
+   Dazu: Umgebungs-Median im Klick-Test nur einmal rechnen (bitgleich, FNV 88e05011).
+
+| Befund (Schwere) | Ergebnis | Zahl (basis → ec3ca89f → Endfassung) |
+|---|---|---|
+| 1 BIG-Fund kern2 B@48 2,7448 s schädlich repariert (mittel) | **behoben** | Abzug 0 → −8,8 → **0** (Stelle wird wie in basis nicht angefasst; B@48 18 → 19 → 18/20 gefunden – die Zählverbesserung fällt weg, weil sie Klang kostete). Mit Bezug Mittel allein wäre sie −6,4 dB geblieben, daher zusätzlich die BIG-Prüfung. |
+| 2 Klangtreue der Reparatur schlechter (mittel) | **behoben** | Klick-Abzug (höher = besser) kern + kern2: schlechter > 1 dB / besser 22 / 7 → **1 / 0** (übrig: kern2 B@48 #12 −1,0 → −2,2, war schon in basis negativ). Mittel je Take: kern B44 8,85 → 8,34 → **8,85**, C48 9,51 → 8,62 → **9,50**, kern2 B@44 9,29 → 9,06 → **9,29**, B@48 5,00 → 4,37 → **4,93**, C@44 6,89 → 6,50 → **6,89**, C@48 5,82 → 5,76 → **5,82**. Entwickler-Test Abzug-Median A/B/C 10,9/4,3/6,9 → 13,2/3,7/6,9 → **13,2/4,2/6,9**. |
+| 3 Neuer Fehltreffer kern2 B@48 4,1027 s (mittel) | **behoben** | fehl [] → [4,1027] → **[]** |
+| 4 Tempo +4…+9 %, Klick-Schritt +30 % (mittel) | **behoben** | slice.mjs (Klick-Schritt, beide Reihenfolgen, Median je Lauf): 1602 vs 1233 ms (+30 %) → **1253/1273 vs 1343/1175 ms (−7…+8 %, Rauschen)**; Kette 4008 vs 3577 → **3589/3451 vs 3602/3631 ms**; tm.mjs 3-min (wie Prüfer-Kern): **6429/6387 vs 6218/6204 ms (+3 %, Last 5,7)**. Klicks in der 3-min-Kette 231 → **226 = basis**. |
+| 5 Raumton +2 dB verschlechtert schlechtesten Fall (klein) | **abgewiesen (gemessen)** | up 2: kern2 Pegel im Ziel 9 → **14/28**, schlechteste Lücke A@48 10,73 s 4,6 → **6,6 dB** (war schon außerhalb), Entwickler Lücke 3 −4,1 → −2,1 (OK). up 1 (Prüfer-Vorschlag): kern2 12/28, A@48 5,6 dB, Entwickler −3,1 (**FEHLER**). up 1,5: Entwickler −2,6. → up 2 bleibt; schlechtester Fall in der Messtabelle genannt. |
+| 6 Irreführende Richtung „sinkt“ (klein) | **behoben** | NOTES (Abwägungen, Messtabelle): „Klick-Abzug (höher = besser) sank → klangtreuer schlechter“. |
+
+Preis / Abwägung (gemessen):
+- **Ziel 2 Take B wieder verfehlt:** Überstand B 0,5 → **3,2 dB** (= basis). Die Stelle (B 0,809 s, Klick auf tonalem Abschnitt) ragt schon im
+  **sauberen** Take 4,6 dB aus ihrer Umgebung; 0,5 dB ging nur mit Median-Bezug, und genau der kostete in kern2 Klangtreue (B44 #5 12 → 8,8,
+  #17 8,5 → 1,3, B48 #4 10,2 → 5,7, #17 5,8 → 2,1 dB). Varianten: nz 1,5 (Median) B 3,2 / A-Abzug 10,9; spanK 1,5 (Mittel) B −0,1, aber B-Abzug 3,7.
+  Take A bleibt 2,6 dB (OK), C 1,2 dB.
+- Gefunden Take A bleibt 17/20 (BIG-Fund 6,844 s bleibt; Ziel ≥ 18 weiter verfehlt).
+- Längere Spanne in rauschartiger Umgebung: Rahmen > 6 dB über dem Mittel; die Reste-Kosten liegen bei 1 Klick (kern2 B@48 #12).
+
+Messtabelle Endfassung (Befund-Spalte = ec3ca89f):
+| Messung | basis | ec3ca89f | Endfassung |
+|---|---|---|---|
+| Entwickler Klicks A gefunden / Überstand A·B·C | 16; 7,5/3,2/2,9 | 17; 2,6/0,5/1,2 | **17; 2,6/3,2/1,2** |
+| Entwickler Klicks neue Fehlalarme A/B/C | 0/0/0 | 0/0/0 | **0/0/0** |
+| Prüfer-Kern (kern.mjs) | 56/60 | 56/60 | siehe Endlauf |
+| kern2 / Klicks B@48 / fehl B@48 | 41/62; 18; [] | 41/62; 19; [4,1027] | **41/62; 18; []** |
+| kern3 | 29/50 | 29/50 | **29/50** |
+| Raumton Entwickler Pegel / schlechteste kern2-Lücke | FEHLER (−4,1) / 4,6 | OK / 6,6 | **OK (−2,1) / 6,6** |
