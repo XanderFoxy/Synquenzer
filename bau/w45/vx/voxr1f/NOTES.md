@@ -31,8 +31,11 @@ Nicht gelöst: 3 Klicks auf gesungenen Vokalen (5,17 s 6,8 dB / 23,0 s 4,4 dB / 
 ### Raumton (`room`)
 Befund (gap.mjs): In den Entwickler-Lücken 2/3/5 (Take A) hat das Original **in** der Lücke 3–9 dB mehr Höhen (4–8 kHz) als die 60 ms direkt
 daneben (Luft/Atem mitten in der Pause) – aus der Nachbarschaft nicht ableitbar. Der gelernte Raumton ist noch dunkler (Farbe 5,5–10 dB).
-1. Klangfarbe: Fenster mit Gesangsrest (stärkster Bin 100–1500 Hz > 30× Median dieser Bins) zählen nicht; von den rauschartigen die nahe der
-   Lücke (≤ 100 ms), darüber der Median je Terzband wie VOXR1D-RT. < 3 Fenster → wie bisher. `{ton: 0}` = aus, `{nw}`, `{pm: 1}`.
+1. Klangfarbe (gebaut, gemessen, **Vorgabe AUS**, Schalter `{ton: 30}`): Fenster mit Gesangsrest (stärkster Bin 100–1500 Hz > 30× Median
+   dieser Bins) zählen nicht; von den rauschartigen die nahe der Lücke (≤ 100 ms), darüber der Median je Terzband wie VOXR1D-RT.
+   Abwägung (Farbe im Ziel ±4 dB, beide Varianten mit der Pegel-Änderung): Entwickler 2/5 vs 2/5 (Werte mit ton 30 besser: [1,7, 4,2, 6,2, 2,3, 5,9]
+   vs [2,1, 4,8, 6,3, 2,3, 6,7]), Prüfer-Kern 4/4 vs 4/4, kern3 9/24 vs 8/24, kern2 6/28 vs 9/28 → Summe 21 vs 23 → aus. Mit Vorgabe 0 rechnet
+   die Farbe genau wie VOXR1D-RT.
 2. Pegel: liegt der Raumton direkt an der Lücke (3 Rahmen je Seite) über dem Median von weiter weg, zählt er – höchstens +2 dB darüber
    (VOXR1D-RP deckelte nur nach oben). `{up: 0}` = wie vorher.
 
@@ -44,15 +47,16 @@ daneben (Luft/Atem mitten in der Pause) – aus der Nachbarschaft nicht ableitba
 | Entwickler: Überstand > 2 kHz nach Reparatur A / B / C (≤ 3 dB) | 7,5 / 3,2 / 2,9 | **2,6 / 0,5 / 1,2** |
 | Entwickler: Klick-Fehlerenergie Median A / B / C (Info) | 10,9 / 4,3 / 6,9 dB | 13,2 / 3,7 / 6,9 dB |
 | Entwickler: Raumton Pegel je Lücke ±3 dB | FEHLER (Lücke 3: −4,1) | **OK** (max −2,7) |
-| Entwickler: Raumton Farbe ±4 dB | [2,1, 4,8, 6,3, 2,3, 6,7] | [1,7, 4,2, 6,2, 2,3, 5,9] – FEHLER bleibt (siehe Befund) |
+| Entwickler: Raumton Farbe ±4 dB | [2,1, 4,8, 6,3, 2,3, 6,7] | [2,1, 4,8, 6,3, 2,3, 6,7] (unverändert, FEHLER; mit {ton: 30} [1,7, 4,2, 6,2, 2,3, 5,9]) |
 | Prüfer-Kern Klicks B@44 / C@48 | 19 / 20, fehl 0, bitgleich | 19 / 20, fehl 0, bitgleich |
-| Prüfer-Kern Raumton Farbe C@48 / C@44 (kroom, exakte Löcher) | [3,3, 3,5] / [3,8, 1,8] | [3,0, 1,4] / [2,5, 1,9] |
+| Prüfer-Kern Raumton Farbe C@48 / C@44 | [3,3, 3,5] / [3,8, 1,8] | [3,3, 3,5] / [3,8, 1,8] (OK, unverändert; mit {ton: 30} [3,0, 1,4] / [2,5, 1,9]) |
 | Prüfer-Kern Raumton Pegel C@48 / C@44 | [0,3, −1,9] / [0,3, −1,8] | [2,3, 0,1] / [2,3, 0,2] |
 | Prüfer-Kern gesamt (kern.mjs) | 56/60 | **56/60** (gleiche 4 FEHLER: „5 Lücken“ C48/C44/B48 – Prüfer findet nur 2/0 Pausen; sauberer A@48 Plopps) |
 | Entwickler-Test gesamt (einzeln, A/B, Last 5–7) | 76/83 | **80/83** (offen: Klicks A 17/20, Raumton-Farbe, App-Worker 3-min-Zeit – auch Basis FEHLER) |
 | 3-min-Kette Node (tm.mjs, abwechselnd, Median je Lauf) | 5762 / 6038 ms | 5931 / 6320 ms (+3…+5 %); Entwickler-Test 5184 → 5228 ms; Prüfer-Kern ×3 19,7 s (OK) |
 | Abnahme kern2 gesamt / Klicks | 41/62; B@48 18/20, fehl 0 | 41/62; B@48 19/20, fehl 1 (≤ 1 erlaubt; auch ohne BIG) |
-| Abnahme kern3 (Raumton v2) gesamt / Pegel / Farbe | 29/50; 14/24; 8/24 | 29/50; 14/24; 9/24 (A Lücke 6 schlechter, C besser) |
+| Abnahme kern3 (Raumton v2) gesamt / Pegel / Farbe | 29/50; 14/24; 8/24 | 29/50; 14/24 (C näher an 0); 8/24 |
+| Abnahme kern2 Raumton v1 Pegel / Farbe im Ziel | 9/28; 9/28 | **14/28**; 9/28 |
 
 Pflicht (Endfassung md5 4449057f6ec65ea4b7c1f4ecc70d4ea2): topdefs „Skripte 26, Namen 7918, doppelt 0, Syntaxfehler 0“, dupkeys „0 doppelte Schlüssel“,
 smoke errors [], „MS 2000“ 1×, „^  live: true,“ 1×, VERSION '4.73.0', außerhalb des VOXR1-Blocks bitgleich zu basis.html.
@@ -76,6 +80,7 @@ Keine neuen Haken. Alle Änderungen in `vr1Make` (VOXR1-Block): `clickScan` (BIG
 ## Offen
 - Klicks Take A 17/20: drei Klicks auf gesungenen Vokalen (1,9–6,8 dB über der Umgebung). Ansatz: Puls-synchroner Vergleich (Spitze gegen die Spitzen
   eine Periode davor/danach) statt „zweitgrößter Nachbar“.
-- Raumton-Farbe Take A Lücken 2/3/5 (4,2 / 6,2 / 5,9 dB): das Original hat dort mehr Höhen als jede Nachbarschaft; ohne eine Annahme „Pausen-Mitte
-  heller“ nicht erreichbar (wäre auf den Test zugeschnitten). kern3 A Lücke 6: Farbe schlechter (Nahbereich dort heller als die Lücke).
+- Raumton-Farbe Take A Lücken 2/3/5 (4,8 / 6,3 / 6,7 dB): das Original hat dort mehr Höhen als jede Nachbarschaft; ohne eine Annahme „Pausen-Mitte
+  heller“ nicht erreichbar (wäre auf den Test zugeschnitten). Die Fenster-Wahl ({ton: 30}) half dort und im Prüfer-Kern, schadete aber kern2
+  (B/A48) – bleibt als Schalter für einen späteren Versuch (z. B. nur wählen, wenn der Nahbereich rauschartig UND leiser als die Lücke ist).
 - Klick-Füllung zu leise in den Höhen (Rauschen in Nachbar-Farbe ergänzen) nicht gebaut: senkt den Überstand nicht und erhöht den Fehler gegen sauber.
