@@ -61339,12 +61339,12 @@ function plopFind(Fe, o) {
   o = o || {}; const sens = o.sens != null ? o.sens : 8, thr = 6 + (10 - sens) * 1.5, R = Fe.R, nf = Fe.nf, fps = Fe.sr / Fe.H;
   // Prüfung: das Band < 150 Hz enthält bei tiefen Stimmen den Grundton (Stoß zu wenig sichtbar, Fehlalarme auf gesungenen Tönen) →
   // gesucht wird im Band < 70 Hz (unter jedem gesungenen Grundton); der Stoß muss dort einen großen Teil der Energie tragen
-  const LF = R.sub || R.lf, own = o.own != null ? o.own : -10;
+  const LF = R.sub || R.lf, own = o.own != null ? o.own : -10, lvl = o.lvl != null ? o.lvl : -20;
   const r = new Float64Array(nf); for (let j = 0; j < nf; j++) r[j] = LF[j] - R.mid[j];
   const flo = pct(LF, 0.1), top = pct(R.tot, 0.99), B0 = Math.round(0.25 * fps), B1 = Math.round(0.03 * fps), A0 = Math.round(0.1 * fps), A1 = Math.round(0.3 * fps);
   const ex = new Float64Array(nf), cand = new Uint8Array(nf);
   for (let j = 0; j < nf; j++) {
-    if (LF[j] < flo + 15 || LF[j] < top - 45 || LF[j] < R.tot[j] + own) continue;
+    if (LF[j] < flo + 15 || LF[j] < top + lvl || LF[j] < R.tot[j] + own) continue;
     const rb = med(r, j - B0, j - B1), ra = med(r, j + A0, j + A1), lb = med(LF, j - B0, j - B1), la = med(LF, j + A0, j + A1);
     const base = rb == null ? ra : ra == null ? rb : Math.max(rb, ra), lbase = lb == null ? la : la == null ? lb : Math.max(lb, la);   // kurz: über beiden Seiten (Tonwechsel nach tief ist kein Stoß)
     if (base == null) continue;
@@ -61379,7 +61379,7 @@ function lsar(z, g0, g1, A) { const p = A.length - 1, m = g1 - g0, M = new Float
   for (let i = m - 1; i >= 0; i--) { let s = v[i]; for (let k = i + 1; k < m; k++) s -= M[k * m + i] * v[k]; v[i] = s / M[i * m + i]; }
   return v; }
 function* plop(y, sr, ev, o) {
-  o = o || {}; const cut = o.cut || 250, g = Math.pow(10, -0.48 * (o.str != null ? o.str : 50) / 20), D = Math.max(1, Math.floor(sr / 1100)), n = y.length, out = [];
+  o = o || {}; const cut = o.cut || 160, g = Math.pow(10, -0.48 * (o.str != null ? o.str : 50) / 20), D = Math.max(1, Math.floor(sr / 1100)), n = y.length, out = [];
   const C = Math.round(0.3 * sr), mg = Math.round(0.005 * sr), p = 40;
   for (let e = 0; e < ev.length; e++) {
     const E = ev[e], a = Math.max(0, E.s0 - mg - C), b = Math.min(n, E.s1 + mg + C), low = lpZero(y, a, b, sr, cut), L = Math.floor((b - a) / D), z = new Float64Array(L);
@@ -61715,7 +61715,7 @@ function vr1EssCore(y, sr, amt, o) {
   o = o || {};
   /* Prüfung (VOX-R1 Teil 3 nachgebessert): Bezug ist der Gesangspegel (Plan §3 Nr. 12), nicht nur der Rahmen selbst: ein „s“ in einer
      Pause oder am Wortrand wird nur gesenkt, wenn es über (Gesangspegel − 6 dB) liegt; Gesangspegel = Mittel der lauteren Hälfte der
-     Rahmen (Energie unter der Grenze) in ±4,5 s, höchstens 10 dB unter dem des ganzen Takes; auf einem Vokal zählt der Rahmen selbst,
+     Rahmen (Energie unter der Grenze) im ganzen Take (o.local: je ±4,5 s, höchstens 10 dB darunter); auf einem Vokal zählt der Rahmen selbst,
      wenn er lauter ist. Gesenkt wird gleichmäßig über der Grenze (3 × Überstand, höchstens Stärke dB). Atmer (o.keep) bleiben.
      Tempo: Sprung N/2 (√Hann, 50 %) und je zwei Rahmen in einer komplexen FFT (Analyse und Synthese) → etwa ¼ der Rechnung.
      o.scan: nur zählen (Prüfen), nichts ändern. */
@@ -61745,7 +61745,7 @@ function vr1EssCore(y, sr, amt, o) {
     // Gesangspegel: lautere Hälfte der Rahmen (über −80 dB) je ±4,5 s (Blöcke à 3 s), nicht tiefer als 10 dB unter dem des Takes
     const top = a => { const t = a.filter(v => v > -80).sort((p, q) => q - p); if (!t.length) return -200; let s = 0; const m = Math.max(1, t.length >> 1); for (let i = 0; i < m; i++) s += Math.pow(10, t[i] / 10); return 10 * Math.log10(s / m); };
     const BF = Math.max(8, Math.round(3 * sr / H)), nb = Math.ceil(J / BF), Lall = top(Array.from(Lo)), Lblk = new Float32Array(nb);
-    for (let b = 0; b < nb; b++) Lblk[b] = Math.max(top(Array.from(Lo.subarray(Math.max(0, (b - 1) * BF), Math.min(J, (b + 2) * BF)))), Lall - 10);
+    for (let b = 0; b < nb; b++) Lblk[b] = o.local ? Math.max(top(Array.from(Lo.subarray(Math.max(0, (b - 1) * BF), Math.min(J, (b + 2) * BF)))), Lall - 10) : Lall;
     const keep = new Uint8Array(J); if (o.keep) for (const [a, b] of o.keep) for (let j = Math.max(0, Math.floor(a / H)); j <= Math.min(J - 1, Math.ceil(b / H) + 1); j++) keep[j] = 1;
     const ref = new Float32Array(J);
     for (let j = 0; j < J; j++) { ref[j] = Math.max(Lo[j], Lblk[Math.min(nb - 1, Math.floor(j / BF))]) + thr; sib[j] = !keep[j] && Ls[j] > ref[j] && Ls[j] > -70 ? 1 : 0; }
@@ -61783,7 +61783,7 @@ function vr1Worker() {
   if (VXR1.w) return VXR1.w; if (VXR1.w === false) return false;
   try {
     const src = vr1EssCore.toString() + ';' + vr1Make.toString() + ';const K = vr1Make();const f = a => { if (a instanceof Float32Array) return a; const y = new Float32Array(a.length); for (let i = 0; i < a.length; i++) y[i] = a[i] / 32767; return y; };' +
-      'onmessage = e => { const m = e.data; try { const x = f(m.x), g = K[m.op](x, m.sr, m.o || {}); let r, t = 0; while (!(r = g.next()).done) { const n = Date.now(); if (n - t > 60) { t = n; postMessage({id: m.id, prog: r.value}); } } const v = r.value, tr = v && v.y ? [v.y.buffer] : []; postMessage({id: m.id, res: v}, tr); } catch (err) { postMessage({id: m.id, err: String(err && err.message || err)}); } };';
+      'onmessage = e => { const m = e.data; try { const x = f(m.x), g = K[m.op](x, m.sr, m.o || {}); let r, t = 0; while (!(r = g.next()).done) { const n = Date.now(); if (n - t > 60) { t = n; postMessage({id: m.id, prog: r.value}); } } const v = r.value, tr = v && v.y ? (v.wg ? [v.y.buffer, v.wg.buffer] : [v.y.buffer]) : []; postMessage({id: m.id, res: v}, tr); } catch (err) { postMessage({id: m.id, err: String(err && err.message || err)}); } };';
     const u = URL.createObjectURL(new Blob([src], {type: 'application/javascript'})), w = new Worker(u);
     setTimeout(() => { try { URL.revokeObjectURL(u); } catch (e) {} }, 30000);
     w.onmessage = e => { const m = e.data, q = VXR1.q.get(m.id); if (!q) return; if (m.prog != null) { VXR1.prog = m.prog; if (q.on) q.on(m.prog); return; } VXR1.q.delete(m.id); clearTimeout(q.to); if (m.err) q.no(new Error(m.err)); else q.ok(m.res); };
@@ -61856,49 +61856,112 @@ function vr1HumLive(ctx, h) {
    Fortschritt in der Zustandszeile. Abspielen: tkExt().proc liefert die Fassung (vor SÄUBERN in der Liste, Quelle = SÄUBERN bzw. roh).
    ===================================================================================================================== */
 const VR1_NM = {click: 'Klicks', plop: 'Plopps', hum: 'Brummen', hp: 'Hochpass', breath: 'Atmer', room: 'Raumton', ess: 'Zischen'};
-Object.assign(VXR1, {ver: new Map(), vjob: new Map(), bids: new WeakMap(), bid: 0, ab: null, pv: null, sel: {}, more: false, renders: 0});
+Object.assign(VXR1, {ver: new Map(), vjob: new Map(), bids: new WeakMap(), bid: 0, ab: null, pv: null, sel: {}, more: false, renders: 0, prev: {}, cancels: 0, bytes: 0});
 tkExt().take.push((raw, o) => {
   const v = raw && raw.vr1; if (!v || typeof v !== 'object' || !/^(leicht|mittel|stark)$/.test(v.lv) || !v.steps || typeof v.steps !== 'object') return;
   const st = {}; for (const k of VXR1_ORDER) if (v.steps[k] && typeof v.steps[k] === 'object') st[k] = JSON.parse(JSON.stringify(v.steps[k]));
   o.vr1 = {lv: v.lv, steps: st, br: Array.isArray(v.br) ? v.br.filter(b => Array.isArray(b) && isFinite(b[0]) && isFinite(b[1]) && /^(lassen|leiser|weg)$/.test(b[2])).slice(0, 2000).map(b => [+b[0], +b[1], b[2]]) : []};
 });
 function vr1Bid(b) { let k = VXR1.bids.get(b); if (!k) { k = ++VXR1.bid; VXR1.bids.set(b, k); } return k; }
-function vr1Base(id, a) { const P = tkExt().proc, k = P.indexOf(vr1Proc); for (let j = k + 1; j < P.length; j++) { try { const b = P[j](id, a); if (b) return b; } catch (e) { logErr(e); } } return tkBuffer(id); }
-const vr1Sig = v => JSON.stringify([v.lv, v.steps, v.br]);
+/* Prüfung (Befund 8): Quelle der Kette ist der Roh-Take. Ist SÄUBERN an, läuft es in der Mitte (Plan §3): Klicks → Plopps → Brummen →
+   SÄUBERN (Echo-Abzug, Entrauschen, sein Hochpass 80 Hz) → Atmer → Raumton → Zischen; der Schritt Hochpass entfällt dann (nur einer).
+   Ohne SÄUBERN: Klicks → Plopps → Brummen → Hochpass (nullphasig) → Atmer → Raumton → Zischen. */
+function vr1Base(id) { return tkBuffer(id); }
+const VR1_PRE = ['click', 'plop', 'hum'], VR1_POST = ['breath', 'room', 'ess'], VR1_MAXB = 160e6;
+// Befund 5: entzischen die Gesangs-Effekte (Entzischer > 0), macht die Kette kein zweites Mal Zischen – es gibt nur einen Entzischer
+const vr1G4Ess = () => { try { const g = typeof g4Active === 'function' ? g4Active() : null; return !!(g && g.ds > 0.05); } catch (e) { return false; } };
+const vr1Sig = (v, m) => JSON.stringify([v.lv, v.steps, v.br, m ? m.cl | 0 : 0, vr1G4Ess()]);
+const vr1Key = (id, m) => { const b = tkBuffer(id); return m && m.vr1 && b ? vr1Sig(m.vr1, m) + '@' + vr1Bid(b) : null; };
 function vr1Proc(id, a) {
   const m = S.takes && S.takes[id]; if (!m || !m.vr1) return null;
   if (CL.ab === 'roh') return null;                                   // A/B „Roh“
-  if (VXR1.ab === 'weg' && !(UI.pop && UI.pop.name === 'takes')) VXR1.ab = null;   // Blatt zu → wieder „Sauber“
-  const src = vr1Base(id, a); if (!src) return null;
-  const key = vr1Sig(m.vr1) + '@' + vr1Bid(src), c = VXR1.ver.get(id);
-  if (c && c.key === key) return VXR1.ab === 'weg' ? c.weg : c.buf;
-  if (!VXR1.vjob.has(id)) vr1Render(id, key, src, m.vr1);
-  return c && c.id === id && VXR1.vjob.has(id) ? (VXR1.ab === 'weg' ? c.weg : c.buf) : null;   // bis die neue da ist: die vorige
+  if (VXR1.ab === 'weg' && !(UI.pop && UI.pop.name === 'takes')) { VXR1.ab = null; vr1WegFree(); }   // Blatt zu → wieder „Sauber“
+  const key = vr1Key(id, m); if (!key) return null;
+  const c = VXR1.ver.get(id);
+  if (c && c.key === key) { c.at = performance.now(); return VXR1.ab === 'weg' && c.weg ? c.weg : c.buf; }   // buf null = ging nicht: nicht in Schleife neu
+  if (!VXR1.vjob.has(id)) vr1Render(id, key, m);
+  return c && c.buf ? c.buf : null;                                   // bis die neue da ist: die vorige
 }
 { const P = tkExt().proc; P.unshift(vr1Proc); }   // vor SÄUBERN (VS4); Zeitkarte/G2/G4 setzen sich später davor
+// Befund 11: „nur Entferntes“ der angewandten Fassung läuft nicht durch Gesangs-Effekte/Tonhöhe (Haken in g4Proc/g2Proc) → sofort
+function vr1Skip(id) { if (VXR1.ab !== 'weg' || !(UI.pop && UI.pop.name === 'takes')) return false; const c = VXR1.ver.get(id), m = S.takes && S.takes[id]; return !!(m && m.vr1 && c && c.weg && c.key === vr1Key(id, m)); }
 function vr1StepsOf(v, sr) { const st = JSON.parse(JSON.stringify(v.steps || {})); if (st.breath && v.br && v.br.length) st.breath.list = v.br.map(b => ({t0: b[0], t1: b[1], s0: Math.round(b[0] * sr), s1: Math.round(b[1] * sr), act: b[2]})); return st; }
-function vr1Render(id, key, src, v) {
-  const sr = src.sampleRate, x = src.getChannelData(0), j = vr1Job('run', x, sr, {steps: vr1StepsOf(v, sr)}, q => { VXR1.vprog = q; vr1Status(); });
-  VXR1.vjob.set(id, {key, j}); VXR1.renders++; vr1Status();
-  j.p.then(r => {
-    const y = r.y, n = y.length, mk = d => { const b = new AudioBuffer({length: n, numberOfChannels: 1, sampleRate: sr}); b.getChannelData(0).set(d); return b; };
-    const wg = new Float32Array(n); for (let i = 0; i < n; i++) wg[i] = x[i] - y[i];
-    VXR1.ver.set(id, {id, key, buf: mk(y), weg: mk(wg), info: r.info}); vr1Marks(id, 'run', r);
-  }, e => { if (!/abgebrochen/.test(String(e && e.message))) { logErr(e); toast('Gesang reinigen ging nicht – es spielt die vorige Fassung'); } VXR1.ver.set(id, {id, key: '-', buf: null, weg: null}); })
-    .finally(() => { const q = VXR1.vjob.get(id); if (q && q.key === key) VXR1.vjob.delete(id); VXR1.vprog = null; try { tkPlayBuf(id, null); clResync(); } catch (e) {} UI.dirty.grid = UI.dirty.song = true; if (typeof wpClChanged === 'function') wpClChanged(); vr1Status(); });
+// Kette für x (Float32) mit SÄUBERN cl % in der Mitte; Ergebnis {y, wg (nur Entferntes), info}; ctl.stop/ctl.j = abbrechbar
+async function vr1Pipe(x, sr, st, cl, refGet, on, ctl) {
+  const stop = () => { if (ctl.stop) throw new Error('abgebrochen'); };
+  const job = (y, steps, a, b) => { const j = vr1Job('run', y, sr, {steps, weg: true}, q => { if (on) on(a + b * q); }); ctl.j = j; return j.p; };
+  if (!cl) return job(x, st, 0, 1);
+  const pre = {}, post = {}; for (const k of VR1_PRE) if (st[k]) pre[k] = st[k]; for (const k of VR1_POST) if (st[k]) post[k] = st[k];
+  const nil = y => ({y, wg: new Float32Array(x.length), info: {order: []}});
+  const r1 = Object.keys(pre).length ? await job(x, pre, 0, 0.4) : nil(Float32Array.from(x)); stop(); if (on) on(0.4);
+  const ref = refGet ? await refGet() : null; stop();
+  const r2 = await clRun(r1.y, ref, sr, {amount: cl / 100}, false); stop(); if (on) on(0.7);
+  const y2 = r2.y instanceof Float32Array ? r2.y : Float32Array.from(r2.y);
+  const r3 = Object.keys(post).length ? await job(y2, post, 0.7, 0.3) : nil(y2); stop();
+  const wg = r1.wg; for (let i = 0; i < wg.length; i++) wg[i] += r3.wg[i];
+  return {y: r3.y, wg, info: Object.assign({}, r1.info, r3.info, {order: [...r1.info.order, 'saeubern', ...r3.info.order], cl})};
+}
+// Befund 10: „nur Entferntes“ als Int16 (halber Speicher), als AudioBuffer nur, solange das Blatt dieses Takes offen ist
+function vr1Q16(w) { if (!w) return null; let mx = 1e-9; for (let i = 0; i < w.length; i++) { const a = w[i] < 0 ? -w[i] : w[i]; if (a > mx) mx = a; } const s = 32767 / mx, q = new Int16Array(w.length); for (let i = 0; i < w.length; i++) q[i] = Math.round(w[i] * s); return {q, s}; }
+function vr1WegMake(id) {
+  const c = VXR1.ver.get(id); if (!c || !c.buf || !c.wg || c.weg || c.wmk) return; c.wmk = 1;
+  const n = c.n, b = new AudioBuffer({length: n, numberOfChannels: 1, sampleRate: c.buf.sampleRate}), d = b.getChannelData(0), q = c.wg.q, s = 1 / c.wg.s; let i = 0;
+  const step = () => { if (VXR1.ver.get(id) !== c || !c.wmk) return; const t = performance.now(); while (i < n && performance.now() - t < 6) { const e = Math.min(n, i + 32768); for (; i < e; i++) d[i] = q[i] * s; } if (i < n) { setTimeout(step, 0); return; }
+    c.weg = b; c.wmk = 0; try { if (typeof VP !== 'undefined' && VP.m && !VP.m.has(b)) { const mm = VP.m.get(c.buf); if (mm) VP.m.set(b, mm); } } catch (e) {} vr1ClPaintNow(); };
+  setTimeout(step, 0);
+}
+function vr1WegFree() { for (const c of VXR1.ver.values()) { c.weg = null; c.wmk = 0; } }
+function vr1Prune(keep) {
+  let act = null; try { act = tkActiveIds(); } catch (e) {}
+  for (const [k] of [...VXR1.ver]) { const m = S.takes && S.takes[k]; if (k !== keep && (!m || !m.vr1 || (act && !act.has(k)))) VXR1.ver.delete(k); }
+  const size = c => (c.buf ? c.n * 4 : 0) + (c.wg ? c.n * 2 : 0) + (c.weg ? c.n * 4 : 0); let tot = 0; for (const c of VXR1.ver.values()) tot += size(c);
+  const L = [...VXR1.ver.entries()].filter(([k]) => k !== keep).sort((p, q) => p[1].at - q[1].at);
+  while (tot > VR1_MAXB && L.length) { const [k, c] = L.shift(); tot -= size(c); VXR1.ver.delete(k); }
+  VXR1.bytes = tot; return tot;
+}
+function vr1Render(id, key, m) {
+  const src = tkBuffer(id); if (!src) return;
+  const v = m.vr1, sr = src.sampleRate, x = src.getChannelData(0), cl = m.cl | 0, st = vr1StepsOf(v, sr);
+  if (cl) delete st.hp;                 // SÄUBERN hat seinen Hochpass
+  if (vr1G4Ess()) delete st.ess;        // die Gesangs-Effekte entzischen
+  const ctl = {stop: false, j: null, abort() { this.stop = true; if (this.j) this.j.abort(); }};
+  VXR1.vjob.set(id, {key, j: ctl}); VXR1.renders++; vr1Status();
+  vr1Pipe(x, sr, st, cl, cl && m.rf ? () => clRead(clKeys(id, m, 'r'), m.len) : null, q => { VXR1.vprog = q; vr1Status(); }, ctl).then(r => {
+    if (ctl.stop) throw new Error('abgebrochen');
+    const n = r.y.length, b = new AudioBuffer({length: n, numberOfChannels: 1, sampleRate: sr}); b.getChannelData(0).set(r.y);
+    VXR1.ver.set(id, {id, key, buf: b, wg: vr1Q16(r.wg), weg: null, wmk: 0, info: r.info, at: performance.now(), n}); vr1Marks(id, 'run', r); vr1Prune(id);
+    if (VXR1.prev) delete VXR1.prev[id];
+    const p = UI.pop && UI.pop.name === 'takes' ? UI.pop.el : null; if (p && p._clId === id) vr1WegMake(id);
+  }).catch(e => { const ab = /abgebrochen/.test(String(e && e.message)); if (!ab) { logErr(e); toast('Gesang reinigen ging nicht – es spielt die vorige Fassung'); }
+    if (!ab) VXR1.ver.set(id, {id, key, buf: null, wg: null, weg: null, fail: true, at: 0, n: 0}); })   // Befund 1: gleicher Schlüssel → keine Schleife
+    .finally(() => { const q = VXR1.vjob.get(id); if (q && q.j === ctl) VXR1.vjob.delete(id); VXR1.vprog = null; if (!ctl.stop) { try { tkPlayBuf(id, null); clResync(); } catch (e) {} } UI.dirty.grid = UI.dirty.song = true; if (typeof wpClChanged === 'function') wpClChanged(); vr1Status(); });
+}
+// Befund 1: „Abbrechen“ stoppt die Rechnung wirklich. Kam sie von „Anwenden“, gilt wieder die vorige Fassung (und dessen ↶ fällt weg);
+// sonst (z. B. Atmer-Wahl) spielt die vorige Fassung weiter, bis wieder etwas geändert wird.
+function vr1Cancel(id) {
+  if (VXR1.cur) { try { VXR1.cur.abort(); } catch (e) {} }
+  const q = VXR1.vjob.get(id), m = S.takes && S.takes[id]; if (!q) { vr1Status(); return false; }
+  q.j.abort(); VXR1.vjob.delete(id); VXR1.vprog = null; VXR1.cancels = (VXR1.cancels || 0) + 1;
+  const P = VXR1.prev && VXR1.prev[id];
+  if (m && P) {
+    if (P.vr1) m.vr1 = P.vr1; else delete m.vr1;
+    if (P.u && UNDO[UNDO.length - 1] === P.u) { UNDO.pop(); UI.dirty.strip = true; try { if (typeof edUndoBtns === 'function') edUndoBtns(); } catch (e) {} }
+    delete VXR1.prev[id]; const s = vr1Sel(id); s.lv = m.vr1 ? m.vr1.lv : s.lv; markDirty(); UI.dirty.all = true;
+  } else if (m && m.vr1) { const c = VXR1.ver.get(id), k = vr1Key(id, m); if (c && c.buf && k) Object.assign(c, {key: k, stale: true}); else if (k) VXR1.ver.set(id, {id, key: k, buf: null, wg: null, weg: null, at: 0, n: 0}); }
+  try { clResync(); } catch (e) {} clPaint(); vr1Status(); toast('Gesang reinigen abgebrochen'); return true;
 }
 // Zustand je Take im Blatt: Befund (Prüfen), gewählte Stufe, Schritte an/aus
 function vr1Sel(id) { return VXR1.sel[id] || (VXR1.sel[id] = {B: null, lv: null, on: {}, busy: null, prog: null}); }
 async function vr1Probe(id) {
   const s = vr1Sel(id); if (s.B || s.busy) return s.B; const m = S.takes && S.takes[id]; if (!m) return null;
   s.busy = 'prüft'; vr1Status();
-  try { const b = vr1Base(id, null); const x = b ? b.getChannelData(0) : await tkPcm(id); if (!x) return null; const sr = b ? b.sampleRate : m.sr;
+  try { const b = tkBuffer(id); const x = b ? b.getChannelData(0) : await tkPcm(id); if (!x) return null; const sr = b ? b.sampleRate : m.sr;
     const j = vr1Job('check', x, sr, null, q => { s.prog = q; vr1Status(); }); VXR1.cur = j; const B = await j.p; vr1Marks(id, 'check', B); s.B = B; s.sr = sr; return B; }
   catch (e) { if (!/abgebrochen/.test(String(e && e.message))) logErr(e); return null; } finally { s.busy = null; s.prog = null; VXR1.cur = null; vr1Status(); }
 }
 function vr1Plan(id, lv) {
   const s = vr1Sel(id); if (!s.B) return null; const K = VXR1.core || (VXR1.core = vr1Make()), A = K.assist(s.B, lv), st = {};
-  for (const k of VXR1_ORDER) { const on = s.on[k] != null ? s.on[k] : !!A.steps[k] && (A.found.includes(k) || k === 'hp' || k === 'room'); if (on) st[k] = A.steps[k] || K.assist(Object.assign({}, s.B, {clicks: 1, plops: [{}], hum: Object.assign({}, s.B.hum, {on: true}), breaths: 1, sibPct: 99}), lv).steps[k]; }
+  for (const k of VXR1_ORDER) { const on = s.on[k] != null ? s.on[k] : !!A.steps[k] && (A.found.includes(k) || k === 'hp' || k === 'room'); if (on) st[k] = A.steps[k] || K.assist(Object.assign({}, s.B, {clicks: 1, plops: [{}], hum: Object.assign({}, s.B.hum, {on: true}), breaths: 1, sibPct: 99, sibHot: 1, sibHotMs: 999}), lv).steps[k]; }
   return {lv: A.lv, steps: st, found: A.found};
 }
 async function vr1Pick(id, lv) {
@@ -61909,23 +61972,27 @@ async function vr1Pick(id, lv) {
 function vr1Apply(id) {
   const s = vr1Sel(id), m = S.takes && S.takes[id]; if (!m || !s.B || !s.lv) return false;
   const P = vr1Plan(id, s.lv); if (!P) return false;
-  const before = JSON.stringify(S.takes);
+  const before = JSON.stringify(S.takes), prevV = m.vr1 ? JSON.parse(JSON.stringify(m.vr1)) : null;
   m.vr1 = {lv: P.lv, steps: P.steps, br: (VXR1.marks[id] || []).map(b => [b.t0, b.t1, b.act])};
-  undoPush({kind: 'takes', before, label: 'Gesang reinigen ' + P.lv});
-  clSync(); markDirty(); UI.dirty.all = true; haptic('tick'); vr1Status();
+  const u = {kind: 'takes', before, label: 'Gesang reinigen ' + P.lv}; undoPush(u); VXR1.prev[id] = {vr1: prevV, u};
+  clSync(); markDirty(); UI.dirty.all = true; haptic('tick'); vr1Status(); vr1ShowSt();
   return true;
 }
+// Befund 15: Zustandszeile (Fortschritt, Abbrechen) ins Bild rollen, wenn Mehr ▾ aufgeht oder gerechnet wird
+function vr1ShowSt() { try { const p = UI.pop && UI.pop.name === 'takes' ? UI.pop.el : null, e = p && p.querySelector('.vr1st'); if (e && e.scrollIntoView) e.scrollIntoView({block: 'nearest'}); } catch (e) {} }
 // 10 s Vorhören an der schlimmsten Stelle: Roh, Sauber, nur Entferntes laufen zeitgleich, A/B blendet um (kein Neustart)
 async function vr1Preview(id) {
   if (VXR1.pv) { vr1PvStop(); return null; }
   const s = vr1Sel(id); if (!s.lv) s.lv = 'mittel'; const B = s.B || await vr1Probe(id); if (!B) return null;
-  const K = VXR1.core || (VXR1.core = vr1Make()), W = K.worst(B, 10), b = vr1Base(id, null); if (!b) return null;
+  const K = VXR1.core || (VXR1.core = vr1Make()), W = K.worst(B, 10), b = tkBuffer(id), m = S.takes && S.takes[id]; if (!b || !m) return null;
   const sr = b.sampleRate, x = b.getChannelData(0), a0 = Math.max(0, Math.round(W.t0 * sr)), a1 = Math.min(x.length, Math.round(W.t1 * sr)), x0 = x.slice(a0, a1);
   const P = vr1Plan(id, s.lv), st = JSON.parse(JSON.stringify(P.steps));
   if (st.breath) st.breath.list = (VXR1.marks[id] || []).filter(q => q.t0 >= W.t0 && q.t1 <= W.t1).map(q => ({t0: q.t0 - W.t0, t1: q.t1 - W.t0, s0: Math.round((q.t0 - W.t0) * sr), s1: Math.round((q.t1 - W.t0) * sr), act: q.act}));
+  const cl = m.cl | 0; if (cl) delete st.hp; if (vr1G4Ess()) delete st.ess;
   s.busy = 'rechnet die Stelle'; vr1Status();
-  let r; try { const j = vr1Job('run', x0, sr, {steps: st}, q => { s.prog = q; vr1Status(); }); VXR1.cur = j; r = await j.p; } catch (e) { if (!/abgebrochen/.test(String(e && e.message))) logErr(e); return null; } finally { s.busy = null; s.prog = null; VXR1.cur = null; vr1Status(); }
-  const ctx = ensureAudio(); if (!ctx) return null; const n = x0.length, wg = new Float32Array(n); for (let i = 0; i < n; i++) wg[i] = x0[i] - r.y[i];
+  let r; try { const ctl = {stop: false, j: null, abort() { this.stop = true; if (this.j) this.j.abort(); }}; VXR1.cur = ctl;
+    r = await vr1Pipe(x0, sr, st, cl, cl && m.rf ? async () => { const R = await clRead(clKeys(id, m, 'r'), m.len); return R ? R.slice(a0, a1) : null; } : null, q => { s.prog = q; vr1Status(); }, ctl); } catch (e) { if (!/abgebrochen/.test(String(e && e.message))) logErr(e); return null; } finally { s.busy = null; s.prog = null; VXR1.cur = null; vr1Status(); }
+  const ctx = ensureAudio(); if (!ctx) return null; const n = x0.length, wg = r.wg;
   const t = ctx.currentTime + 0.05, L = {}, mode = vr1AbNow();
   for (const [k, d] of [['roh', x0], ['sauber', r.y], ['weg', wg]]) { const bf = ctx.createBuffer(1, n, sr); bf.getChannelData(0).set(d); const sN = ctx.createBufferSource(), g = ctx.createGain(); sN.buffer = bf; g.gain.value = k === mode ? 1 : 0; sN.connect(g); g.connect(ctx.destination); sN.start(t); L[k] = {s: sN, g}; }
   VXR1.pv = {id, L, t0: t, sec: n / sr, at: W, info: r.info, iv: setInterval(() => { if (!(UI.pop && UI.pop.name === 'takes') || ctx.currentTime > t + n / sr) vr1PvStop(); }, 200)};
@@ -61952,23 +62019,26 @@ function vr1Sheet(p, box, id, ok) {
   onTap(d, b => {
     if (b.dataset.vr1) return vr1Pick(id, b.dataset.vr1);
     const a = b.dataset.vr1a, sk = b.dataset.vr1s;
-    if (a === 'more') { VXR1.more = !VXR1.more; vr1Status(); popFit(p); return; }
+    if (a === 'more') { VXR1.more = !VXR1.more; vr1Status(); popFit(p); if (VXR1.more) vr1ShowSt(); return; }
     if (a === 'pv') return vr1Preview(id);
-    if (a === 'ap') { if (VXR1.cur || VXR1.vjob.has(id)) { const q = VXR1.vjob.get(id); if (q) q.j.abort(); if (VXR1.cur) VXR1.cur.abort(); return; } if (!s.lv) { s.lv = (s.B ? (VXR1.core || (VXR1.core = vr1Make())).suggest(s.B) : 'mittel'); } return (s.B ? Promise.resolve(s.B) : vr1Probe(id)).then(B => B && vr1Apply(id)); }
+    if (a === 'ap') { if (VXR1.cur || VXR1.vjob.has(id)) { vr1Cancel(id); return; } if (!s.lv) { s.lv = (s.B ? (VXR1.core || (VXR1.core = vr1Make())).suggest(s.B) : 'mittel'); } return (s.B ? Promise.resolve(s.B) : vr1Probe(id)).then(B => B && vr1Apply(id)); }
     if (sk) { const P = vr1Plan(id, s.lv || 'mittel'); s.on[sk] = !(P && P.steps[sk]); vr1Status(); }
   }, 'button');
   onTap(box, b => { if (b.dataset.vr1ab) vr1Ab('weg'); else vr1Ab(b.dataset.cl); }, 'button[data-cl],button[data-vr1ab]');
-  vr1ClPaint(p, box, id);
+  vr1ClPaint(p, box, id); vr1Prune(id); vr1WegMake(id);
   vr1Guide();
 }
 function vr1ClPaint(p, box, id0) {
-  const id = id0 || p._clId, m = id && S.takes && S.takes[id], on = !!(m && m.vr1) || !!VXR1.pv;
+  const id = id0 || p._clId, m = id && S.takes && S.takes[id], on = !!(m && m.vr1) || !!VXR1.pv, c = id && VXR1.ver.get(id);
+  const wegOk = !!VXR1.pv || !!(m && m.vr1 && c && c.weg && c.key === vr1Key(id, m));   // Befund 6
+  if (!wegOk && VXR1.ab === 'weg') VXR1.ab = null;
   for (const b of box.querySelectorAll('.clab button[data-cl],.clab button[data-vr1ab]')) {
-    if (on && tkAudioOk()) b.disabled = false; else if (b.dataset.vr1ab) b.disabled = !(m && m.cl) || !tkAudioOk();
+    if (b.dataset.vr1ab) b.disabled = !wegOk || !tkAudioOk(); else if (on && tkAudioOk()) b.disabled = false;
     const md = vr1AbNow(); b.setAttribute('aria-pressed', String((b.dataset.vr1ab ? 'weg' : b.dataset.cl) === md));
   }
   vr1Status(p);
 }
+function vr1ClPaintNow() { const p = UI.pop && UI.pop.name === 'takes' ? UI.pop.el : null, box = p && p.querySelector('.clbox'); if (box) vr1ClPaint(p, box); }
 // Zustandszeile + Knöpfe nachziehen (ohne neu zu bauen)
 function vr1Status(p0) {
   const p = p0 || (UI.pop && UI.pop.name === 'takes' ? UI.pop.el : null); if (!p || !p._clId && !p0) return; const d = p.querySelector('.vr1'); if (!d) return;
@@ -61986,8 +62056,9 @@ function vr1Status(p0) {
   if (!tkAudioOk()) t = 'Audio nur auf der eigenen Seite';
   else if (s.busy) t = s.busy + ' …' + (s.prog != null ? ' ' + Math.round(100 * s.prog) + ' %' : '');
   else if (vj) t = 'rechnet die neue Fassung … ' + Math.round(100 * (VXR1.vprog || 0)) + ' % (Abbrechen geht)';
+  else if (m && m.vr1 && VXR1.ver.get(id) && VXR1.ver.get(id).fail) t = 'Gesang reinigen ging nicht – es spielt die vorige Fassung';
   else if (!s.B) t = m && m.vr1 ? 'angewandt: ' + m.vr1.lv + ' (Roh-Take bleibt, ↶ nimmt es zurück)' : 'leicht │ mittel │ stark antippen: erst wird geprüft';
-  else { const sg = (VXR1.core || (VXR1.core = vr1Make())).suggest(s.B); t = 'Befund: ' + s.B.line + (lvs ? ' · ' + lvs + ': ' + (P ? Object.keys(P.steps).filter(k => k !== 'hp' && k !== 'room').map(k => VR1_NM[k]).join(', ') || 'nur Hochpass' : '') : ' · Vorschlag: ' + sg) + (VXR1.pv ? ' · hört ' + fmtDec(VXR1.pv.at.t0, 0) + '–' + fmtDec(VXR1.pv.at.t1, 0) + ' s' : '') + (m && m.vr1 ? ' · angewandt: ' + m.vr1.lv : ''); }
+  else { const sg = (VXR1.core || (VXR1.core = vr1Make())).suggest(s.B); t = 'Befund: ' + s.B.line + (lvs ? ' · ' + lvs + ': ' + (P ? Object.keys(P.steps).filter(k => k !== 'hp' && k !== 'room').map(k => k === 'ess' && vr1G4Ess() ? 'Zischen (über die Gesangs-Effekte)' : VR1_NM[k]).join(', ') || 'nur Hochpass' : '') : ' · Vorschlag: ' + sg) + (VXR1.pv ? ' · hört ' + fmtDec(VXR1.pv.at.t0, 0) + '–' + fmtDec(VXR1.pv.at.t1, 0) + ' s' : '') + (m && m.vr1 ? ' · angewandt: ' + m.vr1.lv : ''); }
   const e = d.querySelector('.vr1st'); if (e && e.textContent !== t) e.textContent = t;
 }
 // Atmer-Marken antippen (Marken-Editor): oberer Streifen (44 px) über der Marke wechselt lassen → leiser → weg
@@ -62018,11 +62089,11 @@ if (typeof g4DspMake === 'function') { const F = Function.prototype.toString, f 
 const VXR1_API = {
   vr1Check: (id, o) => vr1TakeJob('check', id, o),
   vr1Run: (id, o) => vr1TakeJob('run', id, o),
-  vr1Abort: () => { if (VXR1.cur) VXR1.cur.abort(); },
+  vr1Abort: () => { if (VXR1.cur) VXR1.cur.abort(); }, vr1Cancel: id => vr1Cancel(id),
   vr1Breaths: id => (VXR1.marks[id] || []).map(b => Object.assign({}, b)),
   vr1BreathAct: (id, k, act) => vr1BreathAct(id, k, act),
   vr1Pick: (id, lv) => vr1Pick(id, lv), vr1Plan: (id, lv) => vr1Plan(id, lv), vr1Apply: id => vr1Apply(id), vr1Preview: id => vr1Preview(id), vr1PvStop: () => vr1PvStop(), vr1Ab: v => vr1Ab(v),
-  vr1Ver: id => { const c = VXR1.ver.get(id), m = S.takes && S.takes[id]; return {applied: m && m.vr1 ? JSON.parse(JSON.stringify(m.vr1)) : null, ready: !!(c && c.buf), busy: VXR1.vjob.has(id), info: c && c.info || null, ab: vr1AbNow(), renders: VXR1.renders, pv: VXR1.pv ? {t0: VXR1.pv.at.t0, t1: VXR1.pv.at.t1} : null, taps: VXR1.taps || 0}; },
+  vr1Ver: id => { const c = VXR1.ver.get(id), m = S.takes && S.takes[id]; return {applied: m && m.vr1 ? JSON.parse(JSON.stringify(m.vr1)) : null, ready: !!(c && c.buf), busy: VXR1.vjob.has(id), info: c && c.info || null, ab: vr1AbNow(), renders: VXR1.renders, pv: VXR1.pv ? {t0: VXR1.pv.at.t0, t1: VXR1.pv.at.t1} : null, taps: VXR1.taps || 0, weg: !!(c && c.weg), cancels: VXR1.cancels || 0, bytes: vr1Prune(null), vers: VXR1.ver.size, order: c && c.info ? c.info.order : null}; },
   vr1Info: () => ({runs: VXR1.runs, last: VXR1.last, prog: VXR1.prog, aborts: VXR1.aborts, slices: VXR1.slices, order: VXR1_ORDER.slice(), worker: VXR1.w ? 'worker' : VXR1.w === false ? 'hauptfaden' : null}),
 };
 window.__vr1 = {ess: vr1EssCore, proc: vr1Proc, job: vr1Job, make: vr1Make, humLive: vr1HumLive, take: vr1TakeJob, api: VXR1_API, st: VXR1, paint: vr1PaintBreath, noWorker: v => { VXR1.w = v ? false : null; }};
@@ -65751,6 +65822,7 @@ function g4Marks(id, b) {
 }
 const g4MkSig = mk => { const c = G4.mks.get(mk); if (c) return c; let h = 0x811c9dc5; for (const k of mk) { const s = k.t.toFixed(4); for (let j = 0; j < s.length; j++) { h ^= s.charCodeAt(j); h = Math.imul(h, 0x01000193) >>> 0; } } const r = mk.length + ':' + h.toString(16); G4.mks.set(mk, r); return r; };
 function g4Proc(id, a) {
+  if (typeof vr1Skip === 'function' && vr1Skip(id)) return null;   /* VOXR1 */
   const g = g4Active(); if (!g) return null;
   const b = g4Base(id, a); if (!b) return null;
   const mk = g.sy > 0 ? g4Marks(id, b) : [];
@@ -70060,6 +70132,7 @@ function g2Plan(id, a) {
 }
 /* ---------- Quelle, Worker, Cache ---------- */
 function g2Proc(id, a) {
+  if (typeof vr1Skip === 'function' && vr1Skip(id)) return null;   /* VOXR1 */
   if (G2.ab) return null;
   const plan = g2Plan(id, a); if (!plan) return null;
   const b = g2Base(id, a); if (!b) return null;
