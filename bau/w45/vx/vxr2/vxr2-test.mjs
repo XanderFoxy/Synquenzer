@@ -22,7 +22,7 @@ async function pool(jobs, n) { const res = new Array(jobs.length); let i = 0; aw
 const F = {index: idx, basis: bas}, TS = ['0.378', '0.383', '0.388', '0.393'];
 const jobs = [], key = [];
 for (const t of TS) for (const f of ['index', 'basis']) { key.push(['p', f, t]); jobs.push(() => run(F[f], {RV1_PROBE: '1', RV1_T1: t, RV1_ONLY: '10'}, `p10-${f}-${t}`)); }
-for (const f of ['index', 'basis']) {
+if (process.env.VXR2_NURA !== '1') for (const f of ['index', 'basis']) {
   key.push(['q10', f, '0.388']); jobs.push(() => run(F[f], {RV1_T1: '0.388', RV1_ONLY: '10'}, `q10-${f}-0.388`));
   key.push(['q10', f, '0.383']); jobs.push(() => run(F[f], {RV1_T1: '0.383', RV1_ONLY: '10'}, `q10-${f}-0.383`));
   key.push(['q14', f, '']); jobs.push(() => run(F[f], {RV1_BPM: '120.6', RV1_T1: '0.686', RV1_ONLY: '14'}, `q14-${f}`));
@@ -33,12 +33,14 @@ const info = (m, d) => console.log('INFO ' + m + ' – ' + (typeof d === 'string
 const S = {}, rep = (f, c, m, d) => f === 'index' ? ok(c, m, d) : info(m, d);
 for (const f of ['index', 'basis']) {
   // (a)
-  const P = TS.map(t => { const r = get('p', f, t); return r && r.js ? {t, n: r.js.L.length, ms: r.js.ms, L: r.js.L.map(x => Math.round((x + (+t - K0)) * SR)), off: r.js.last && r.js.last.vxr2} : {t, n: null}; });
+  const P = TS.map(t => { const r = get('p', f, t); const sh = x => Math.round((x + (+t - K0)) * SR); return r && r.js ? {t, n: r.js.L.length, ms: r.js.ms, L: r.js.L.map(sh), M: (r.js.mk || []).map(sh), off: r.js.last && r.js.last.vxr2} : {t, n: null}; });
   const n = P.map(p => p.n), same = n.every(v => v != null && v === n[0]);
-  const md = same ? Math.max(...P.slice(1).map(p => Math.max(...p.L.map((v, k) => Math.abs(v - P[0].L[k]))))) : null;
-  const eq = same ? P.slice(1).map(p => p.L.filter((v, k) => v === P[0].L[k]).length + '/' + p.L.length) : null;
-  S[f] = {stuecke: n, maxDiffProben: md, gleicheGrenzen: eq, analyseMs: P.map(p => p.ms)};
-  rep(f, same && md === 0, `(a) ${f}: #10 Stücke bei Vorlauf ±5 ms (t1 ${TS.join('/')}) gleich, Stück-Anfänge probengleich`, S[f]);
+  const cmp = key => { const ok2 = P.every(p => p[key] && p[key].length === P[0][key].length); return ok2 ? {max: Math.max(...P.slice(1).map(p => Math.max(...p[key].map((v, k) => Math.abs(v - P[0][key][k]))))), gleich: P.slice(1).map(p => p[key].filter((v, k) => v === P[0][key][k]).length + '/' + p[key].length)} : {max: null, gleich: P.map(p => p[key] && p[key].length)}; };
+  const cm = cmp('M'), cl = cmp('L');
+  S[f] = {stuecke: n, markenMaxDiffProben: cm.max, markenGleich: cm.gleich, anfangMitAnlaufMaxDiffProben: cl.max, anfangMitAnlaufGleich: cl.gleich, analyseMs: P.map(p => p.ms)};
+  rep(f, same && cm.max === 0, `(a) ${f}: #10 Stücke bei Vorlauf ±5 ms (t1 ${TS.join('/')}): gleiche Zahl, Stück-Marken probengleich (Datei-Zeit)`, S[f]);
+  info(`(a) ${f}: Stück-Anfang mit Anlauf (Anlauf weiter aus der gehörten Fassung, 10-ms-Raster)`, {maxDiffMs: cl.max == null ? null : +(cl.max / 48).toFixed(1), gleich: cl.gleich});
+  if (process.env.VXR2_NURA === '1') continue;
   // (b) (c) (d)
   const q = (a, t) => { const r = get(a, f, t); return r ? r.txt : ''; };
   const line = (s, re) => (s.split('\n').find(l => re.test(l)) || '');
