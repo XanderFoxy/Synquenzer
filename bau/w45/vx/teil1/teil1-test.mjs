@@ -98,7 +98,10 @@ for (const [W, H] of VIEWS) {
   await tap(await ruAt(32, 9)); await p.waitForTimeout(400); await tap(await ruAt(32, 9)); await p.waitForTimeout(400);
   { const v = await view(), dur = 80; ok(tag + ' T5 zweiter-tipp-ganzes-lied', v, v.loop && v.loop[0] === 12 && v.t0 < 0 && v.t1 > dur - 1 && v.mTop === v0.mTop); }
   { const a = await ruAt(32, 9), v1 = await view(); await drag(a, [a[0] - 60, a[1]]); const v = await view(); ok(tag + ' T5 ziehen-rollt', {vor: v1.t0, nach: v.t0, loop: v.loop}, v.t0 !== v1.t0 && v.loop && v.loop[0] === 12 && v.loop[1] === 20); }
-  { const a = await ruAt(50, 9); await hold(a, 450); const v = await view(); ok(tag + ' T5 halten-1-takt-loop', v.loop, v.loop && v.loop[1] - v.loop[0] === 1); }
+  { const a = await ruAt(50, 9); await p.evaluate(() => { window.__pe = []; for (const t of ['pointerdown', 'pointerup', 'pointercancel', 'contextmenu', 'touchstart']) document.addEventListener(t, e => window.__pe.push(t + ':' + e.pointerId + ':' + (e.target.className || e.target.tagName) + ':' + SPK1.ui.ru.contains(e.target)), true); }); await hold(a, 450); const v = await view();
+    if (process.env.DBG) { console.log(JSON.stringify(await p.evaluate(a => ({pe: window.__pe, at: (document.elementFromPoint(a[0], a[1]) || {}).tagName + ':' + SPK1.ui.ru.contains(document.elementFromPoint(a[0], a[1])), a, st: SPK1.ui.st.textContent, dd: !!SPK1.ui.dd}), a))); await shot('dbg-hold'); }
+    ok(tag + ' T5 halten-1-takt-loop', v.loop, v.loop && v.loop[1] - v.loop[0] === 1); }
+  if (process.env.DBG) process.exit(0);
   // T6 Fokus Nur Rest + Tipp Strophe 2
   await p.evaluate(() => fokus1Mode(SPK1.ui, 'rest')); await p.waitForTimeout(1500);
   { const a = await ruAt(48, 9); await tap(a); await p.waitForTimeout(800); const r = await p.evaluate(() => ({f1: SPK1.ui.f1 && SPK1.ui.f1.mode, err: SPK1.ui.f1 && SPK1.ui.f1.err, loop: SPK1.ui.loop, tl1: SPK1.ui.tl1.length, cls: SPK1.ui.sh.classList.contains('spk13-tl'), st: SPK1.ui.st.textContent}));

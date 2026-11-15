@@ -80,12 +80,14 @@ for (const [W, H] of VIEWS) {
   // C3 Taktgrenzen und 3/4
   const C3 = await p.evaluate(() => { const fr = SYNQUENZER.clip1.free(0); const s = fr[0], x = fr[1];
     S.tracks[0].clips[s] = normClip({len: 6, key: {root: 0, scale: 'ionian'}, notes: [{t: 2, d: 1, n: 60, v: .8}, {t: 10, d: 1, n: 62, v: .8}, {t: 13, d: 1, n: 64, v: .8}, {t: 17.5, d: .5, n: 65, v: .8}]}, 'synth', S.key); clipChanged(0, s);
+    S.tracks[0].clips[s].cv = {mw: [[0, 0], [8, .5], [16, 1]]};
     const sp = SYNQUENZER.clip1.span(0, s, [1, 2, 3]); const r1 = SYNQUENZER.clip1.newClip(0, s, [1, 2, 3], x, true); const nc = S.tracks[0].clips[x];
-    const a = {sp, len: nc.len, t: nc.notes.map(n => n.t)}; undo();
+    const a = {sp, len: nc.len, t: nc.notes.map(n => n.t), cv: nc.cv ? JSON.stringify(nc.cv.mw) : null}; undo();
     S.tracks[0].clips[s] = normClip({len: 4, ts: '3/4', key: {root: 0, scale: 'ionian'}, notes: [{t: 1, d: 1, n: 60, v: .8}, {t: 4.5, d: 1, n: 62, v: .8}, {t: 6.5, d: 1, n: 64, v: .8}]}, 'synth', S.key); clipChanged(0, s);
     const bb = clipBarB(S.tracks[0].clips[s]), sp2 = SYNQUENZER.clip1.span(0, s, [1, 2]); SYNQUENZER.clip1.newClip(0, s, [1, 2], x, true); const nc2 = S.tracks[0].clips[x];
     const b2 = {bb, sp2, len: nc2.len, ts: nc2.ts, t: nc2.notes.map(n => n.t)}; undo(); S.tracks[0].clips[s] = null; clipChanged(0, s); return {a, b2}; });
   ok(T('C3 Auswahl 2,5–4,5 Takte im 6-Takt-Clip → len 3 ab Takt 2 (b0 8)'), C3.a.sp.b0 === 8 && C3.a.len === 3 && C3.a.t.join() === '2,5,9.5', C3.a);
+  ok(T('C3 Kurven (Modulation) nur der Ausschnitt ab b0: Start 0,5 bei 0, 1 bei 8'), !!C3.a.cv && /^\[\[0,0\.5\],\[8,1\]/.test(C3.a.cv), C3.a.cv);
   ok(T('C3 3/4: clipBarB 3, Länge in 3/4-Takten, Taktart bleibt'), C3.b2.bb === 3 && C3.b2.sp2.b0 === 3 && C3.b2.len === 2 && C3.b2.ts === '3/4' && C3.b2.t.join() === '1.5,3.5', C3.b2);
   // C4 alle Szenen belegt
   await p.evaluate(() => { setSongView(false); const c = S.tracks[0].clips[0]; c.len = 4; c.notes = []; for (let k = 0; k < 16; k++) c.notes.push({t: k, d: .5, n: 60 + (k % 5), v: .8}); for (let x = 0; x < NS(); x++) if (!S.tracks[0].clips[x]) { S.tracks[0].clips[x] = normClip({len: 1, key: cleanKey(c.key), notes: []}, 'synth', S.key); clipChanged(0, x); } openRoll(0, 0); ED.roll.selectIdx([8, 9, 10]); });
@@ -105,6 +107,7 @@ for (const [W, H] of VIEWS) {
       const L = SYNQUENZER.mtx3.split(['hatC']); const j = SYNQUENZER.mtx3.info().parts[0]; r.einzelspur = j != null && mtx3OutSrcOk(j) === false; if (j != null) { openRoll(j, 0); r.knopf = !!(ED.roll && ED.roll.el && ED.roll.el.acts && ED.roll.el.acts.querySelector('.mtx3rb')); closeRoll(); } undo(); return r; });
     ok(T('C5 STIMME-, Original-, Einzelspur-Clip: kein Auslagern / kein neuer Clip'), C5.stimme && C5.orig && C5.einzelspur && !C5.knopf, C5);
   }
+  await p.evaluate(() => { try { hideToast(); } catch (e) {} });
   // C8 DRUMS › SCHRITTE › Auslagern ▾ › HH ZU › Nur diese Schritte 2 3 6 7 › „Szene n“
   await p.evaluate(() => { const D = S.tracks[DRUM_T], c = D.clips[0], gm = DRUM_BY_ID.hatC.gm; c.notes = c.notes.filter(n => mtx3bPad(n) !== 'hatC'); for (let k = 0; k < 8; k++) c.notes.push({t: k * .25, d: .1, n: gm, v: .8}); c.notes.sort((a, b) => a.t - b.t); clipChanged(DRUM_T, 0);
     ED.dVoice = DRUM_VOICES.findIndex(x => x.id === 'hatC'); openRoll(DRUM_T, 0); });

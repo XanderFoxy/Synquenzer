@@ -96906,8 +96906,11 @@ function mtx3NewClip(t, s, notes, x, copy, quiet) {
   if (mtx3Busy()) return no('Erst Aufnahme beenden');
   x = +x; if (!(x >= 0 && x < NS()) || x !== (x | 0) || x === s || tr.clips[x]) return no('Szene ' + ((x | 0) + 1) + ' ist nicht frei');
   const sp = clip1Span(c, ns), cBefore = cleanClip(c);
-  const nc = mtx3Jc(cleanClip(c)); delete nc.take; delete nc.pre; nc.len = sp.len;
-  nc.notes = ns.map(cleanNote).map(mtx3Jc).map(n => Object.assign(n, {t: Math.max(0, n.t - sp.b0)}));
+  const nc = mtx3Jc(cleanClip(c)), nl = sp.len * sp.bb; delete nc.take; delete nc.pre; nc.len = sp.len;
+  // wie [Zuschneiden] im Editor: Noten rücken um b0 nach vorn (auch der Lauf-Versatz o), die Kurven (BM8) nur der Ausschnitt
+  const wo = o => { const w = ((o % nl) + nl) % nl; return +(w >= nl - 1e-4 ? 0 : w).toFixed(4); };
+  nc.notes = ns.map(cleanNote).map(mtx3Jc).map(n => { n.t = +Math.max(0, n.t - sp.b0).toFixed(6); if (n.o != null) n.o = wo(Math.max(0, n.o - sp.b0)); return n; });
+  if (nc.cv) { delete nc.cv; if (cvHas(c)) cvSet(nc, cvSlice(c.cv, sp.b0, sp.b0 + nl)); }
   const clip = normClip(nc, 'synth', S.key); if (!clip || clip.notes.length !== ns.length) return no('Neuer Clip ging nicht');
   tr.clips[x] = clip;
   const items = [{kind: 'clip', track: t, scene: x, before: null}];
