@@ -61379,10 +61379,10 @@ function lsar(z, g0, g1, A) { const p = A.length - 1, m = g1 - g0, M = new Float
   for (let i = m - 1; i >= 0; i--) { let s = v[i]; for (let k = i + 1; k < m; k++) s -= M[k * m + i] * v[k]; v[i] = s / M[i * m + i]; }
   return v; }
 function plopCut(y, sr, E, cut) {
-  const M = Math.min(4096, Math.round(0.09 * sr)), seg = [[E.s0 - Math.round(0.02 * sr) - M, E.s0 - Math.round(0.02 * sr)], [E.s1 + Math.round(0.02 * sr), E.s1 + Math.round(0.02 * sr) + M]].filter(([p, q]) => p >= 0 && q <= y.length);
+  const M = Math.min(2048, Math.round(0.045 * sr)), seg = [[E.s0 - Math.round(0.02 * sr) - M, E.s0 - Math.round(0.02 * sr)], [E.s1 + Math.round(0.02 * sr), E.s1 + Math.round(0.02 * sr) + M]].filter(([p, q]) => p >= 0 && q <= y.length);
   if (!seg.length) return cut; let bf = 0, bp = 0, tot = 0;
-  for (let f = 90; f <= 400; f += 4) { const c = 2 * Math.cos(TAU * f / sr); let pw = 0; for (const [p] of seg) { let p1 = 0, p2 = 0; for (let i = 0; i < M; i++) { const s = y[p + i] * (0.5 - 0.5 * Math.cos(TAU * i / M)) + c * p1 - p2; p2 = p1; p1 = s; } pw += p1 * p1 + p2 * p2 - c * p1 * p2; } tot += pw; if (pw > bp) { bp = pw; bf = f; } }
-  if (!bf || bp < 4 * tot / 79) return cut;   // keine klare Tonspitze: feste Grenze
+  for (let f = 90; f <= 400; f += 8) { const c = 2 * Math.cos(TAU * f / sr); let pw = 0; for (const [p] of seg) { let p1 = 0, p2 = 0; for (let i = 0; i < M; i++) { const s = y[p + i] * (0.5 - 0.5 * Math.cos(TAU * i / M)) + c * p1 - p2; p2 = p1; p1 = s; } pw += p1 * p1 + p2 * p2 - c * p1 * p2; } tot += pw; if (pw > bp) { bp = pw; bf = f; } }
+  if (!bf || bp < 4 * tot / 39) return cut;   // keine klare Tonspitze: feste Grenze
   // tiefste Spitze, die mindestens 1/4 der stärksten hat (Grundton statt Oberton)
   return Math.max(120, Math.min(cut, 0.8 * bf));
 }
