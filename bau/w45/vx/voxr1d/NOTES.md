@@ -26,8 +26,8 @@ Quelle des Blocks: voxr1d-w/fit.js + voxr1d-w/call.js, zusammengesetzt mit voxr1
 | Prüfer-Kern B@44 Obertöne ≤ 1 dB | 6/10 (−3,06 · −3,58) | **10/10** (max −1,00 an 2,95 s, Gleiten 154→138 Hz – auf der Grenze) |
 | Prüfer-Kern C@48 Abzug ≥ 12 dB | 8/10 (5,6 · 8,8) | **10/10** (15,1 … 23,8) |
 | Prüfer-Kern C@48 Obertöne ≤ 1 dB | 7/10 (−9,03 · −2,85 · −1,69) | **9/10** (offen: 8,93 s, f0 197→212 Hz, −2,90) |
-| Nachbau B@48 (gleiche Stoß-Art) Abzug / Obertöne | 7/10 · 6/10 | **10/10 · 9/10** (offen: 7,63 s, −1,4) |
-| Nachbau C@44 Abzug / Obertöne | 9/10 · 7/10 | **10/10 · 9/10** (offen: 8,93 s, wie C@48) |
+| Nachbau B@48 (gleiche Stoß-Art) Abzug / Obertöne | 7/10 · 6/10 | **10/10 · 9/10** (offen: f0 148 Hz, −1,39) |
+| Nachbau C@44 Abzug / Obertöne | 9/10 · 7/10 | **10/10 · 9/10** (offen: 8,93 s, −2,31) |
 | Gefunden / Fehlalarme (alle 4) | 10/10, 0 | 10/10, 0 (Erkennung unverändert) |
 | Außerhalb der Funde bitgleich | ja | ja |
 | Vor-Echo sauberer Take A@44 (je Fund, Rahmen 23 ms) | 2 Stellen, bis **+15,3 dB** gesamt / +13,5 dB tief | **0**: gesamt max 0,0 dB, Tiefband max +0,3 dB |
@@ -40,8 +40,16 @@ Quelle des Blocks: voxr1d-w/fit.js + voxr1d-w/call.js, zusammengesetzt mit voxr1
 ## Nicht behoben (offen)
 - Entwickler-Test Plopp #2: Abzug 11,8 dB (Ziel 12). Mit ρ-Exponent 1,75 wäre es 12,0 (10/10), dafür Prüfer-Kern B@44 #4 (Gleiten 154→138 Hz) Obertöne −1,04 dB –
   Abwägung zugunsten des Prüfer-Kerns (ρ^1,6). Hebel: plopFit.RH (Exponent).
-- C 8,93 s (f0 197 → 212 Hz in der Lücke, Grundton dominiert die Stimme): Obertöne −2,9 dB (48 kHz) / ≈ −2,6 dB (44,1 kHz). Phase/Hüllkurve des
+- C 8,93 s (f0 197 → 212 Hz in der Lücke, Grundton dominiert die Stimme): Obertöne −2,9 dB (48 kHz) / −2,31 dB (44,1 kHz). Phase/Hüllkurve des
   2. Obertons (≈ 420 Hz) passt dort nicht zum Grundton; Ränder mitmessen, kürzere/längere Fenster, 400 Hz als Oberton-Grenze brachten nichts.
 - „Sauberer Take A@48: 0 Plopps“ bleibt FEHLER im Prüfer-Kern (15 eigene Tiefstöße des Takes, siehe VOXR1B – Erkennung nicht Teil dieses Schritts).
 - Raumton (5 Punkte im Prüfer-Kern) unverändert offen (nicht Teil dieses Schritts).
 - Plopp-Schritt kostet je Stelle mehr (Demodulation + Fit): 3-min-Kette +0,4 s je Lauf.
+
+## Kette und App (Endfassung, 13:17–13:26)
+- Pflicht: topdefs 26/7836/0/0, dupkeys 0, smoke errors [] (smoke.png), „MS 2000“ 1×, „^  live: true,“ 1×, VERSION 4.70.0, außerhalb Block + 7 Haken = basis.html.
+- Regression: vx1 61/61, vx2 14/14, vx3 15/15, chr2 82/82 (Ausgaben o-vx1/Fotos unter /dev/shm/voxr1d, Platte voll).
+- Entwickler-Test 76/83 → 77/83 (Plopp-Obertöne jetzt OK; offen Plopp-Abzug #2 11,8 dB, Klicks ×3, Raumton ×2 wie vorher). Long Task während Worker-Rechnung [50], Lücke 21 ms.
+- Prüfer-App 12/14 wie voxr1c (2 Läufe, Last 2,0–2,9): Prüfen 58 ms / Lücke 111 ms, 2. Lauf keine Long Task / 88 ms; Anwenden 50–76 ms + 1× 102/103 ms,
+  Lücke 274 / 110 ms – wie vorher außerhalb des Blocks (tkPlayBuf, g4Call, Welle). Die Plopp-Reparatur läuft im Worker, nicht auf dem Hauptfaden.
+  ↶/↷, Abbrechen (170 ms), Speichern/Laden, Speicher wie bisher OK.

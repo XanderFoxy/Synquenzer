@@ -14,3 +14,5 @@
 - 13:11 smoke: errors [] (Last 0,63).
 - 13:13 Entwickler-Test (Take A, Rauschstoß < 120 Hz) zeigte Obertöne +1,0…+1,6 dB (5/10): Fit nahm Stoß-Energie bei f0 auf → Startwert-Gewicht × ρ^RH (ρ = Lücke/Ränder). Messreihe RH 1 / 1,5 / 1,6 / 1,75 / 2 (hk + hd): RH 1,6 gewählt (Prüfer B44 10/10/10/10, Entwickler 9/10 · 10/10, Vor-Echo 0/0). Kette davor abgebrochen (Code geändert).
 - 13:18 Endfassung eingesetzt, Pflicht statisch ok (topdefs 26/7836/0/0, dupkeys 0, MS 2000 1×, live 1×, VERSION 4.70.0, nur Block+Haken). Kette gestartet (kern, smoke, dev, app, vx1, vx2, vx3, chr2; TMPDIR=/dev/shm/voxr1d/tmp). Last load average: 2.10, 1.56, 1.19
+- 13:24 Kette fertig (Last 2,9): kern 53/60, smoke [], dev 77/83, app 12/14, vx1 61/61, vx2 14/14, vx3 15/15, chr2 82/82.
+- 13:26 App-Zeit wiederholt (Last 2,5 → 2,1): 12/14, Prüfen ohne Long Task / Lücke 88 ms, Anwenden 50–55 ms + 103 ms / Lücke 110 ms (außerhalb Block). Nachbau B48/C44: 10/9, 10/9.
