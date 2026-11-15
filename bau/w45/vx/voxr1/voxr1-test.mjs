@@ -355,7 +355,7 @@ async function browser() {
     ok(M2.pruefen >= 9 && M2.marken === M2.pruefen && M2.nachLauf >= 9, 'App: Prüfen legt Atmer-Marken an, der Lauf bringt sie auf −40 dBFS (Roh-Take bleibt)', {pruefen: M2.pruefen, marken: M2.marken, imZiel: M2.nachLauf});
     ok(M2.offen && M2.hits >= 1, 'Marken-Editor zeichnet die Atmer-Marken (Band über der Welle, Farbe der Welle)', {hits: M2.hits, info: M2.info});
     let tapOk = false;
-    if (M2.cv && M2.hit0) { const xx = M2.cv.x + Math.max(4, Math.min(M2.cv.w - 4, (M2.hit0.x0 + M2.hit0.x1) / 2)), yy = M2.cv.y + M2.cv.h * 0.5; await tap(xx, yy);
+    if (M2.cv && M2.hit0) { const xx = M2.cv.x + Math.max(4, Math.min(M2.cv.w - 4, (M2.hit0.x0 + M2.hit0.x1) / 2)), yy = M2.cv.y + M2.cv.h * 0.5; void xx; void yy;   // Prüfung: kein Tipp mitten ins Bild (läge bei kleiner Höhe im Marken-Streifen)
       await tap(M2.cv.x + (M2.hit0.x0 + M2.hit0.x1) / 2, M2.cv.y + 22);   // Prüfung: per Touch im Streifen (leiser → weg), nicht per API
       const T2 = await run(async o => { await wait(100); const E = WP.ed; const r = {offen: !!E, hits: E && E.vr1b ? E.vr1b.length : 0, act: SYNQUENZER.vr1Breaths(o.id)[0].act}; return r; }, tk);
       tapOk = T2.offen && T2.hits >= 1 && T2.act === 'weg'; R.uiAtmerTap = T2; }

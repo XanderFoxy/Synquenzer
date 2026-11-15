@@ -62034,7 +62034,7 @@ function vr1Sheet(p, box, id, ok) {
     if (sk) { const P = vr1Plan(id, s.lv || 'mittel'); s.on[sk] = !(P && P.steps[sk]); vr1Status(); }
   }, 'button');
   onTap(box, b => { if (b.dataset.vr1ab) vr1Ab('weg'); else vr1Ab(b.dataset.cl); }, 'button[data-cl],button[data-vr1ab]');
-  vr1ClPaint(p, box, id); vr1Prune(id); vr1WegMake(id);
+  vr1ClPaint(p, box, id); vr1Prune(id); vr1WegMake(id); if (VXR1.more) setTimeout(vr1ShowSt, 0);
   vr1Guide();
 }
 function vr1ClPaint(p, box, id0) {
@@ -62078,7 +62078,7 @@ function vr1BreathTap(E) {
     const q = d0; d0 = null; const E2 = WP.ed; if (!q || !E2 || E2.cv !== cv || !E2.vr1b || !E2.vr1b.length) return;
     if (Math.hypot(e.clientX - q.x, e.clientY - q.y) > 10 || performance.now() - q.t > 450) return;
     const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top; if (y > 56) return;
-    const h = E2.vr1b.find(b => x >= Math.min(b.x0, (b.x0 + b.x1) / 2 - 22) && x <= Math.max(b.x1, (b.x0 + b.x1) / 2 + 22)); if (!h) return;
+    let h = null, hd = 1e9; for (const b of E2.vr1b) { if (!(x >= Math.min(b.x0, (b.x0 + b.x1) / 2 - 22) && x <= Math.max(b.x1, (b.x0 + b.x1) / 2 + 22))) continue; const dd = x >= b.x0 && x <= b.x1 ? 0 : Math.abs(x - (b.x0 + b.x1) / 2); if (dd < hd) { hd = dd; h = b; } } if (!h) return;   // Prüfung: die nächste Marke, nicht die erste in der Liste
     const L = VXR1.marks[E2.id], b = L && L[h.k]; if (!b) return; const nx = {leiser: 'weg', weg: 'lassen', lassen: 'leiser'}[b.act] || 'leiser';
     vr1BreathAct(E2.id, h.k, nx); VXR1.taps = (VXR1.taps || 0) + 1;
     const m = S.takes && S.takes[E2.id]; if (m && m.vr1) { const before = JSON.stringify(S.takes); m.vr1.br = L.map(z => [z.t0, z.t1, z.act]); undoPush({kind: 'takes', before, label: 'Atmer ' + nx}); clSync(); markDirty(); }
