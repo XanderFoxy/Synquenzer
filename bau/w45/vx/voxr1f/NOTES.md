@@ -131,7 +131,15 @@ Messtabelle Endfassung (Befund-Spalte = ec3ca89f):
 |---|---|---|---|
 | Entwickler Klicks A gefunden / Überstand A·B·C | 16; 7,5/3,2/2,9 | 17; 2,6/0,5/1,2 | **17; 2,6/3,2/1,2** |
 | Entwickler Klicks neue Fehlalarme A/B/C | 0/0/0 | 0/0/0 | **0/0/0** |
-| Prüfer-Kern (kern.mjs) | 56/60 | 56/60 | siehe Endlauf |
+| Prüfer-Kern (kern.mjs) | 56/60 | 56/60 | **56/60** (gleiche 4 Inhalts-FEHLER wie basis; 3-min ×3 17,8 s OK) |
 | kern2 / Klicks B@48 / fehl B@48 | 41/62; 18; [] | 41/62; 19; [4,1027] | **41/62; 18; []** |
 | kern3 | 29/50 | 29/50 | **29/50** |
 | Raumton Entwickler Pegel / schlechteste kern2-Lücke | FEHLER (−4,1) / 4,6 | OK / 6,6 | **OK (−2,1) / 6,6** |
+
+### Endlauf nach der Prüfung (Endfassung md5 2d3d02f56dc16e787b2ac31ca9b8e1a3, 17:39–17:42, Last 2,7–3,6)
+- Pflicht: topdefs „Skripte 26, Namen 7918, doppelt 0, Syntaxfehler 0“, dupkeys „0 doppelte Schlüssel“, smoke errors [], „MS 2000“ 1×,
+  „^  live: true,“ 1×, VERSION '4.73.0', Diff gegen basis.html nur in den Zeilen 61428–61786 (VOXR1-Block 61246–62349), kein Haken.
+- Prüfer-Kern 56/60 (= basis; 3-min Median 5931 ms, ×3 17,8 s), kern2 41/62 (= basis), kern3 29/50 (= basis), Randfälle (pruef/rand.mjs, 112 Fälle) 0 auffällig.
+- Entwickler-Test 80/83 (offen: Klicks A 17/20, Überstand B 3,2 dB, Raumton-Farbe; App-Worker 3-min und Long Task diesmal OK).
+- Regression: vx1 61/61, vx2 14/14, vx3 15/15, chr2 82/82.
+- Ausgaben: kern-p.txt, kern2-p.txt, kern3-p.txt, dev-p.txt, dev-basis-p.txt, smoke-p.txt, reg-*-p.txt, rand-p.txt, tempo-p2.txt (frühere Läufe *-p1/*-p2).
