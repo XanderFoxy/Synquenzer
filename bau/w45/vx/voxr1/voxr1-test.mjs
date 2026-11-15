@@ -97,12 +97,16 @@ for (let k = 0; k < SRC.length; k++) {
   const own = K.done(K.clickScan(v0, srk, {})), fpOwn = fp.filter(e => own.some(q => Math.abs(q.t0 - e.t0) < 0.003)), fpNew = fp.filter(e => !fpOwn.includes(e));
   const ownSung = k === 0 && f0tab ? own.filter(q => f0at(q.t0) > 0).length : null;
   const red = hit.map(c => { let e0 = 0, e1 = 0; for (let i = c.s0 - 44; i < c.s1 + 44; i++) { e0 += (x[i] - v0[i]) ** 2; e1 += (r.y[i] - v0[i]) ** 2; } return +(10 * Math.log10(e0 / (e1 + 1e-20))).toFixed(1); }).sort((a, b) => a - b);
+  // Überstand im Band > 2 kHz: Klick-Stelle gegen die Umgebung (±10 ms) – vorher / nachher (hörbar = ragt heraus)
+  const hb = y => { const z = Float64Array.from(y); for (const q of [0.5411961, 1.3065630]) filt(z, bqc('hp', 2000, q, srk)); return z; }, hx = hb(x), hy = hb(r.y);
+  const ov = (z, c) => { let a = 0, b = 0, na = 0, nb = 0; const m = Math.round(0.01 * srk); for (let i = c.s0 - m; i < c.s1 + m; i++) { if (i >= c.s0 && i < c.s1) { a += z[i] * z[i]; na++; } else { b += z[i] * z[i]; nb++; } } return 10 * Math.log10((a / na + 1e-20) / (b / nb + 1e-20)); };
+  const ovr = hit.map(c => [+ov(hx, c).toFixed(1), +ov(hy, c).toFixed(1)]), ovMax = Math.max(...ovr.map(q => q[1]));
   let same = true; for (let i = 0; i < x.length && same; i++) if (r.y[i] !== x[i] && !L.some(e => i >= Math.round(e.t0 * srk) - 2 && i < Math.round(e.t1 * srk) + 2)) same = false;
   const nm = 'Take ' + 'ABC'[k];
-  R.click[nm] = {gesetzt: 20, gefunden: hit.length, durchgang1: r.info.click.pass1, durchgang2: r.info.click.pass2, fehlNeu: fpNew.length, eigeneGeraeusche: fpOwn.length, eigeneImGesang: ownSung, reduktionMedianDb: red[red.length >> 1], reduktionMinDb: red[0], ms};
+  R.click[nm] = {gesetzt: 20, gefunden: hit.length, durchgang1: r.info.click.pass1, durchgang2: r.info.click.pass2, fehlNeu: fpNew.length, eigeneGeraeusche: fpOwn.length, eigeneImGesang: ownSung, reduktionMedianDb: red[red.length >> 1], reduktionMinDb: red[0], ueberstandVorMedianDb: ovr.map(q => q[0]).sort((a, b) => a - b)[ovr.length >> 1], ueberstandNachMaxDb: +ovMax.toFixed(1), ms};
   ok(hit.length >= 18, `Klicks ${nm}: ≥ 18 von 20 gefunden (2 Durchgänge)`, {gefunden: hit.length, d1: r.info.click.pass1, d2: r.info.click.pass2});
   ok(fpNew.length <= 1, `Klicks ${nm}: ≤ 1 falscher Treffer (Stellen, an denen der Take vorher kein Geräusch hatte)`, {neu: fpNew.map(e => e.t0), eigeneGeraeuscheDesTakes: fpOwn.length});
-  ok(red.length && red[0] > 0 && red[red.length >> 1] >= 8, `Klicks ${nm}: repariert (Fehler-Energie an jedem Klick kleiner, Median ≥ 8 dB)`, {median: red[red.length >> 1], min: red[0]});
+  ok(ovr.length && ovMax <= 3, `Klicks ${nm}: repariert – keine gefundene Stelle ragt danach mehr als 3 dB aus ihrer Umgebung (Band > 2 kHz)`, {vorherMedian: R.click[nm].ueberstandVorMedianDb, nachherMax: +ovMax.toFixed(1), fehlerEnergieMedianDb: red[red.length >> 1]});
   ok(same, `Klicks ${nm}: außerhalb der reparierten Stellen bitgleich`, null);
 }
 // ---------- 6) Atmer: 10 Atmer in den ruhigen Pausen von Take A (auf −20 dBFS Gesang gebracht) → −40 dBFS ± 3 dB, keine Silbe ----------
@@ -126,19 +130,19 @@ for (let k = 0; k < SRC.length; k++) {
   R.breathTakes = {}; for (let k = 1; k < SRC.length; k++) { const W = wav(RV + SRC[k]); R.breathTakes['Take ' + 'ABC'[k]] = K.done(K.check(W.x, W.sr)).breaths; }
   // ---------- 7) Raumton in Lücken: 5 Schnitte (Stille) in ruhigen Stellen von Take A ----------
   const Lo = frames(v, H), Lov = Lo.filter(q => q > -110).sort((a, b) => a - b), flo = Lov[Math.floor(0.1 * Lov.length)], holes = [], xh = Float32Array.from(v);
-  { let s = -1; for (let j = 0; j <= Lo.length; j++) { const q = j < Lo.length && Lo[j] > -110 && Lo[j] < flo + 4; if (q && s < 0) s = j; if (!q && s >= 0) { if (j - s >= 30 && holes.length < 5) { const c = (s + j) / 2 * H, d = Math.min(0.3, (j - s) * H / sr - 0.1); holes.push([Math.round(c - d * sr / 2), Math.round(c + d * sr / 2)]); } s = -1; } } }
+  { let s = -1; for (let j = 0; j <= Lo.length; j++) { const q = j < Lo.length && Lo[j] > -110 && Lo[j] < flo + 6; if (q && s < 0) s = j; if (!q && s >= 0) { if (j - s >= 25 && holes.length < 5) { const c = (s + j) / 2 * H, d = Math.min(0.3, (j - s) * H / sr - 0.1); holes.push([Math.round(c - d * sr / 2), Math.round(c + d * sr / 2)]); } s = -1; } } }
   for (const [a, b] of holes) xh.fill(0, a, b);
   const t0 = Date.now(), rr = K.done(K.run(xh, sr, {steps: {room: {}}})), msR = Date.now() - t0, RI = rr.info.room;
   const lev = (y, a, b) => { let s = 0; for (let i = a; i < b; i++) s += y[i] * y[i]; return db(s / Math.max(1, b - a)); };
   const oct = (y, a, b) => { const out = []; for (const f of [250, 500, 1000, 2000, 4000, 8000]) out.push(db(band(Float32Array.from(y.subarray(a, b)), sr, f / Math.SQRT2, f * Math.SQRT2))); return out; };
   const HR = holes.map(([a, b]) => { const R0 = Math.round(0.012 * sr), nbA = Math.max(0, a - Math.round(0.15 * sr)), nbB = Math.min(n, b + Math.round(0.15 * sr)), nb = db((Math.pow(10, lev(v, nbA, a) / 10) + Math.pow(10, lev(v, b, nbB) / 10)) / 2);
     const so = oct(v, a, b), sf = oct(rr.y, a, b), d0 = so.map((q, i) => sf[i] - q), mean = d0.reduce((s, q) => s + q, 0) / d0.length;
-    return {vorher: +lev(xh, a + R0, b - R0).toFixed(1), daneben: +nb.toFixed(1), gefuellt: +lev(rr.y, a + R0, b - R0).toFixed(1), formDb: +Math.max(...d0.map(q => Math.abs(q - mean))).toFixed(1), rand: +Math.max(Math.abs(rr.y[a]), Math.abs(rr.y[b - 1])).toExponential(1)}; });
+    return {vorher: +lev(xh, a + R0, b - R0).toFixed(1), daneben: +nb.toFixed(1), original: +lev(v, a + R0, b - R0).toFixed(1), baender: d0.map(q => +q.toFixed(1)), gefuellt: +lev(rr.y, a + R0, b - R0).toFixed(1), formDb: +Math.max(...d0.map(q => Math.abs(q - mean))).toFixed(1), rand: +Math.max(Math.abs(rr.y[a]), Math.abs(rr.y[b - 1])).toExponential(1)}; });
   let sameR = true; for (let i = 0; i < n && sameR; i++) if (rr.y[i] !== xh[i] && !RI.holes.some(h => i >= Math.round(h.t0 * sr) && i < Math.round(h.t1 * sr))) sameR = false;
   const allIn = holes.every(([a, b]) => RI.holes.some(h => h.t0 * sr <= a + 441 && h.t1 * sr >= b - 441));
   R.room = {gelernt: RI.learned, luecken: HR, gefuellt: RI.holes.length, ms: msR};
-  ok(holes.length === 5 && allIn && HR.every(h => Math.abs(h.gefuellt - h.daneben) <= 3), 'Raumton: jede Lücke gefüllt, Pegel wie daneben ± 3 dB (kein Loch mehr)', HR.map(h => [h.vorher, h.daneben, h.gefuellt]));
-  ok(HR.every(h => h.formDb <= 4), 'Raumton: Klangfarbe (Oktavbänder 250 Hz–8 kHz) wie der Raumton ± 4 dB', HR.map(h => h.formDb));
+  ok(holes.length === 5 && allIn && HR.every(h => Math.abs(h.gefuellt - h.original) <= 3), 'Raumton: jede Lücke gefüllt, Pegel wie der Raumton an der Stelle vor dem Schnitt ± 3 dB (kein Loch mehr)', HR.map(h => [h.vorher, h.original, h.gefuellt]));
+  ok(HR.every(h => h.formDb <= 4), 'Raumton: Klangfarbe (Oktavbänder 250 Hz–8 kHz) wie der Raumton an der Stelle ± 4 dB', HR.map(h => h.formDb));
   ok(sameR && HR.every(h => +h.rand < 1e-3), 'Raumton: 10-ms-Blenden innen, außerhalb der Lücken bitgleich', {bitgleich: sameR, rand: HR.map(h => h.rand)});
   { const W = wav(RV + SRC[1]), r1 = K.done(K.run(W.x, W.sr, {steps: {room: {}}})); R.room.takeB = r1.info.room.why || (r1.info.room.holes.length + ' gefüllt'); }
   // Kette mit allem: feste Reihenfolge

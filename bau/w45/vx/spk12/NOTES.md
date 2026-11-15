@@ -245,3 +245,43 @@ spk8-seite 14/0 · spk11 38/3 (nur drums-auf-kit = bekannt offen in 4.68) – gl
   Gruppen „Gemerkt“ (Merken, Regionen) und „Abtasten“, Textzeile „… ms / … Hz“ unter dem FFT-Regler. Davor: – sichtbar neu sind die 4er-Zeile + „Auswahl ▾“ in der Werkzeug-Optionsleiste und die Griffe;
   Teil 2: Halten auf Rechteck/Zeit zeigt Ellipse, Lasso, Transient; „Obertöne ▾“ bei Harmonische; „Folgt dem Ton“ in Auswahl ▾;
   kleine Schlag-Marken oben am Rand bei einer Transient-Auswahl.
+
+## Prüfung (PRUEFUNG.md Teil 3/3) – Befunde behoben
+Bau weiter `python3 bau.py` = basis.html + `spk12-block.js` + **18 Haken** (keine neue Haken-Zeile; zwei eigene SPK12-Zeilen erweitert, s. u.).
+Block 967 Zeilen, diff Basis → Paket: 0 entfernte, 985 neue Zeilen. Quellen vor der Prüfung gesichert: `spk12-block.teil3.js`, `bau.teil3.py`.
+### Haken (geändert, nur eigene Zeilen)
+| # | Stelle | Änderung |
+|---|---|---|
+| 2 | Kern vor `return {on, stft, …}` | übergibt zusätzlich `gainFn` (Anteil der Ebenen je Base-Rahmen, wie beim Abspielen) |
+| 17 | `spk1Call` 1. Zeile | `spk12CallSrc(op, a, cb)` darf auch `cb` setzen (Fortschritt „Ebene … abtasten … %“ in der Status-Zeile) |
+
+### Befunde
+| # | Befund | Stand | Lösung |
+|---|---|---|---|
+| 1 schwer | Alter Ebenen-Stand nach Schließen/Öffnen (Abtasten aus) | **behoben** | Schlüssel im Worker = Dokument-Objekt (`d.s12uid`, neu nach Öffnen/Import/Container) + Ebene + Versionen; Einträge eines anderen Dokument-Objekts mit gleicher id werden beim nächsten Aufruf entfernt; der Eintrag hält **nur das Signal** (`mid`, kein `Object.create(d)` mehr) → altes Dokument wird frei. Gleicher Fehler-Typ auch im Kern-Zwischenspeicher `spk12K2` (Schlüssel jetzt mit `d.s12uid`, Transient aus einer Ebene zusätzlich mit Ebenen-Versionen). |
+| 2 mittel | ↶-Reihenfolge Merken ↔ Ebenen-Aktion | **behoben** | Kern-Stand im Auswahl-Stapel = `nu|Name` (ohne `nr`, das sich bei jedem Kern-↶ ändert). LIFO gemessen: ↶ EB → ↶ Merken (Region weg, auch im Dokument) → ↶ EA, ↷ in umgekehrter Folge. |
+| 3 mittel | Auswahl ▾ fehlt bei Ähnliche | **behoben** | derselbe Knopf „Auswahl ▾“ wandert bei Ähnliche hinter ‹ › Alle (`spk12ToolSet`), mit Merken, Abtasten, Umkehren …; Merken der Treffer ohne Werkzeugwechsel gemessen. Guide nennt es. |
+| 4 mittel | Abtasten aus, 3 min: erster Zauberstab 2894 ms | **behoben** | Zauberstab rendert die Ebene nicht mehr: Anzeige-Raster des Originals (Stücke aus IDB) × Anteil der Ebene je Base-Rahmen/Zeile (`gainFn`, Masken). 3 min, Desktop: 29–75 ms (Anteil 13–64 ms), Ebene leer → 0 Zellen. Übrige Ops rendern das Ebenen-Signal **nur im gebrauchten Bereich** (Blöcke mit `done`-Merker: Transient ±0,4 s, Folgt ±0,6 s, Obertöne-Auto, Harmonische ±(max+0,8) s); Ähnliche braucht das ganze Stück → Fortschritt in der Status-Zeile („Ebene „X“ abtasten … 6 % … 98 %“), Hauptfaden ohne Long Task. Ebenen mit eigenem Audio/Effekten: Ebenen-Signal im Fenster der Anzeige-Stücke (16 s-Test: 476 ms beim ersten Tipp, danach 3–25 ms) – über 150 ms, s. Offen. |
+| 5 mittel | Neue Leiste schiebt vorhandene Regler hochkant aus dem Bild | **behoben** | Neu │ + │ − │ ∩ · Auswahl ▾ stehen **hinter** den vorhandenen Reglern (nicht mehr vorn). Gemessen in allen 3 Größen: Kante 6–190, „Tipp = Abspielposition“ 202–325, Größe/Weich/Radierer 6–195/207–389/401–468, Obertöne/Breite 6–209/221–406, Empfindlich 6–222 = Basis. Neue Knöpfe hochkant per Wischen (nach scrollIntoView alle im Bild, ≥ 44 px). NOTES Teil 1 („vorn … scrollt wie bisher“) damit überholt. |
+| 6 leicht | Hochkant › und Alle über dem Rand | **offen (gewollt)** | Wie alle neuen Knöpfe hinter den vorhandenen Reglern, per Wischen erreichbar; Platz reicht hochkant nicht (Empfindlich + Treffer-Text belegen 0–234 px). Eine zweite Zeile wäre sichtbar anders → nur als Funk-Vorschlag. |
+| 7 leicht | Ansicht ▾ 51 px höher | **behoben** | Text als Zusatz in der vorhandenen Überschrift: „Auflösung (FFT) · 93 ms / 10,8 Hz“ (aria-label „4096 Punkte: …“). Höhe und scrollHeight des Klappfensters = Basis in allen 3 Größen. Test 3 erwartet jetzt „ · 93 ms / 10,8 Hz“ / „ · 186 ms / 5,4 Hz“. |
+| 8 leicht | Neuer Code im Hauptskript (+1,0 %) | **offen** | Wie SPK11; ein Nachlade-Weg für Blöcke ist ein eigenes Paket (PERF1 Ladezeit). Ladezeit nicht messbar schlechter (Prüfer). |
+| 9 leicht | Fremde Fotos/Ergebnisse im Paket-Ordner | **behoben** | nach dem Regressionslauf nach `reg/` verschoben (fotos/ = nur SPK12). |
+| a | Transient-Maske bei Abtasten aus aus dem Original | **behoben** | Form merkt `src` (Ebene); Kern rechnet Grund und Schlag im Anteil der Ebene (`spk12K2.gain`). Gemessen: Schlag in Ebene X (Band 250–3500 Hz) → Maske außerhalb des Bands 0 Zellen (vorher aus dem Original 13 792). |
+| b | Merkmal-Häkchen ersetzt Auswahl ohne ↶ | **behoben** | Häkchen mit vorhandenem Beispiel = ein ↶ (Auswahl, Beispiel, Treffer zurück). |
+
+### Messungen Prüfung (`spk12-test4.mjs`, Touch über CDP; `spk12-test4.out` / `spk12-test4.json`; Fotos `fotos/t4-*`)
+**28 OK / 0 FEHLER** (Teil A je Größe, B hochkant, C quer 926×370):
+- **A Layout (alle 3 Größen, Basis ↔ Paket gemessen):** vorhandene Regler bei Rechteck/Zeit/Frequenz/Pinsel/Harmonische/Ähnliche an
+  denselben Stellen wie in der Basis; neue Knöpfe (Neu/+/−/∩/Auswahl ▾, Obertöne ▾, Merkmale ▾ ‹ › Alle Auswahl ▾) nach Wischen im Bild,
+  ≥ 44 px; Auswahl ▾ bei Ähnliche mit Merken/Abtasten/Umkehren; Ansicht ▾ Höhe = Basis (690/358/300 px, scrollHeight 688), FFT-Text im Bild.
+- **B 2 ↶-Reihenfolge (Touch):** EA → Merken → EB; ↶ EB, ↶ Region (1 → 0, Dokument 0), ↶ EA; ↷ EA, ↷ Region (Dokument 1), ↷ EB.
+- **B b Merkmal-Häkchen (Touch):** Treffer ändern sich, ↶ stellt Auswahl und Treffer genau her.
+- **B 3 Ähnliche → Auswahl ▾ → Merken (Touch):** Werkzeug bleibt „Ähnliche“, Region im Dokument.
+- **B 1 Wieder-Öffnen (Abtasten aus, Ebene X):** 1. Öffnen: 1 s 472 Zellen, 3 s 0, Harmonische 3 s 0 Punkte; Ton 3 s nach X → 469;
+  2. Öffnen (X wieder `L1:2`): **3 s 469 Zellen** (vorher 0), 1 s 472, **Harmonische 23 Punkte** (vorher 0).
+- **B Ebene mit Effekt** (Ebenen-Signal statt Masken-Anteil): 470 / 472 / 0 Zellen richtig; erster Tipp 614 ms (33 Blöcke), danach 6–9 ms.
+- **B a Transient in Ebene X:** Maske außerhalb 250–3500 Hz **0** Zellen (aus dem Original wären es 13 792), im Band 2 416.
+- **C 3 min, Abtasten aus, Ebene X:** Zauberstab Original 34 ms; Ebene 55 / 58 / 47 ms (Anteil 14–39 ms), leere Stelle 36 ms → 0 Zellen;
+  Harmonische 238 ms (Fenster ±6,8 s gerendert, früher 2,6 s ganzes Stück), Folgt dem Ton danach 34 ms; **keine Long Task**.
+  Ähnliche in der Ebene (ganzes Stück): Status „Ebene „X“ abtasten … 7 % … 99 %“, 3,8 s, keine Long Task.

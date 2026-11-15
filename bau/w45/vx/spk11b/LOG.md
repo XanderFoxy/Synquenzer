@@ -1,3 +1,12 @@
 # SPK11B LOG
 - 05:27 Start: Paket angelegt (basis.html = index.html = rel-4690 4.69.0). SPK11 NOTES/LOG/Test gelesen.
 - 05:42 Block SPK11B + 1 Haken (nach Still-Regel in spk11Go) eingebaut; offline eval (work/eval.mjs auf dump/) vorher/nachher; spk11b-test 9/9 nach Rahmen-Fix.
+- Messweg: work/dump.mjs (basis.html, Zerlegen schnell, + Pads aus Rest) → dump/<lied>/ (Ebenen + Original f32); work/eval.mjs = Drum-Treffer offline (Wahrheit ±50 ms), work/sn.mjs/feat.mjs = Merkmale je Instrument, work/dom*.mjs = Bass-Teile.
+- Befund Drums: in der getrennten Drum-Ebene Snare = Tiefen 0,2–0,4 / Mitten 0,2–0,4 / Höhen 0,7–1,0 (Mitten fehlen → Regel „Mitten ≥ 1,9× Tiefen“ greift kaum); Kick = Tiefen ~0,9; Zusatz-Kicks Bauer = Snare-Tiefen (0,33 an der alten Schwelle 0,35); dicht: Schwebung Kick+Bass 1/16 nach dem Kick (nur tief, Mitten 0,2).
+- Befund Bass: Dominanz gegen Original-minus-Ebene trennt NICHT (Trennrest ist im eigenen Bereich dominant, 0,99); Pegel trennt nicht (Rest −34 dBFS, echtes leises Intro −32 dBFS); Grundton-Bereich des lautesten Teils trennt klar (Rest −57…−77 dB, echtes Intro −16 dB).
+- Offline vorher/nachher (eval-vorher.out / eval-nachher.out): Kick 95,9 % +19,9 % → 98,3 % +0 %; Snare 89,4 % +7,2 % → 99,5 % +1,0 %; HH 80,8 % → 98,8 %.
+- spk11b-test index.html: 9 OK / 0 FEHLER (spk11b-test.out); basis.html: 4 OK / 5 FEHLER (work/spk11b-test-basis.out, = Prüferzahlen 75/80+14, 64+5, 247/288, Bass Intro 10 / Outro 10).
+- Erster Lauf pruef Bass Intro −29 dB statt −57: letzte Rahmen ragten in die Strophe → nur Rahmen ganz im Teil (Sp.win). Danach 9/9.
+- spk11-test (Kopie) index.html alle drei Größen: 41 OK / 0 FEHLER (vorher 38/3; drums-auf-kit Kick 63/64 +0, Snare 63/64 +0).
+- Pflicht: topdefs 26/7614/0/0 (Basis 7607, +7 Namen) · dupkeys 0 · smoke errors [] (smoke.png) · MS 2000 1× · live 1× · VERSION 4.69.0 · basis.html = rel-4690 · Diff nur + (Block 134 Zeilen + 1 Haken), 0 Zeilen geändert · keine Emojis/Marken im Block.
+- Zeiten (je 1 Lauf, Last durch andere Läufe): Szenen anlegen dicht 6,9 → 7,2 s, intro 8,5 → 7,9 s, pruef 12,8 → 12,0 s (Bass-Ebene wird nicht doppelt gerechnet: Zwischenspeicher); spk11bSpec 98 s Bass offline Median 102 ms (5 Läufe); spk11bHits 22–52 ms je Lied.

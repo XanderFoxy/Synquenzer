@@ -61248,25 +61248,24 @@ const pct = (a, q) => { const t = Array.from(a).filter(v => v > -150).sort((p, r
 /* ---------- Merkmale je 5-ms-Schritt (Fenster 10 ms): Gesamt, < 150 Hz, 300–3000, 1–6 kHz, > 5 kHz, > 2 kHz (Spitze) ---------- */
 function* feats(x, sr) {
   const n = x.length, H = Math.max(32, Math.round(0.005 * sr)), nh = Math.ceil(n / H);
-  const C = {lf: BW4.map(q => bqC('lp', sr, 150, q)), mh: bqC('hp', sr, 300, Math.SQRT1_2), ml: bqC('lp', sr, 3000, Math.SQRT1_2),
-    bh: bqC('hp', sr, 1000, Math.SQRT1_2), bl: bqC('lp', sr, 6000, Math.SQRT1_2), hf: BW4.map(q => bqC('hp', sr, 5000, q)), k2: BW4.map(q => bqC('hp', sr, 2000, q))};
-  const st = () => [0, 0], S = {lf: [st(), st()], mh: st(), ml: st(), bh: st(), bl: st(), hf: [st(), st()], k2: [st(), st()]};
-  const F = {tot: new Float64Array(nh), lf: new Float64Array(nh), mid: new Float64Array(nh), br: new Float64Array(nh), hf: new Float64Array(nh), k2: new Float64Array(nh), pk2: new Float64Array(nh)};
+  // Teil 2: je Band eine enge Schleife über den Block statt vier Filterketten je Sample – gleiche Formel, deutlich schneller
+  const C = {lf: BW4.map(q => bqC('lp', sr, 150, q)), mid: [bqC('hp', sr, 300, Math.SQRT1_2), bqC('lp', sr, 3000, Math.SQRT1_2)],
+    br: [bqC('hp', sr, 1000, Math.SQRT1_2), bqC('lp', sr, 6000, Math.SQRT1_2)], hf: BW4.map(q => bqC('hp', sr, 5000, q))};
+  const S = {lf: [[0, 0], [0, 0]], mid: [[0, 0], [0, 0]], br: [[0, 0], [0, 0]], hf: [[0, 0], [0, 0]]};
+  const F = {tot: new Float64Array(nh), lf: new Float64Array(nh), mid: new Float64Array(nh), br: new Float64Array(nh), hf: new Float64Array(nh)};
+  const ta = new Float64Array(BLK), tb = new Float64Array(BLK);
+  const run2 = (co, st, src, dst, L) => { const b0 = co[0], b1 = co[1], b2 = co[2], a1 = co[3], a2 = co[4]; let z1 = st[0], z2 = st[1];
+    for (let i = 0; i < L; i++) { const v = src[i], o = b0 * v + z1; z1 = b1 * v - a1 * o + z2; z2 = b2 * v - a2 * o; dst[i] = o; }
+    st[0] = z1 < 1e-30 && z1 > -1e-30 ? 0 : z1; st[1] = z2 < 1e-30 && z2 > -1e-30 ? 0 : z2; };
   let clip = 0, run = 0, pk = 0;
   for (let i0 = 0; i0 < n; i0 += BLK) {
-    const i1 = Math.min(n, i0 + BLK);
-    for (let i = i0; i < i1; i++) {
-      const v = x[i], h = (i / H) | 0, av = v < 0 ? -v : v;
-      if (av > pk) pk = av;
-      if (av >= 0.998) { run++; if (run === 2) clip++; } else run = 0;
-      F.tot[h] += v * v;
-      let a = bqStep(C.lf[1], S.lf[1], bqStep(C.lf[0], S.lf[0], v)); F.lf[h] += a * a;
-      a = bqStep(C.ml, S.ml, bqStep(C.mh, S.mh, v)); F.mid[h] += a * a;
-      a = bqStep(C.bl, S.bl, bqStep(C.bh, S.bh, v)); F.br[h] += a * a;
-      a = bqStep(C.hf[1], S.hf[1], bqStep(C.hf[0], S.hf[0], v)); F.hf[h] += a * a;
-      a = bqStep(C.k2[1], S.k2[1], bqStep(C.k2[0], S.k2[0], v)); a *= a; F.k2[h] += a; if (a > F.pk2[h]) F.pk2[h] = a;
+    const i1 = Math.min(n, i0 + BLK), L = i1 - i0;
+    for (let i = i0; i < i1; i++) { const v = x[i], h = (i / H) | 0, av = v < 0 ? -v : v; if (av > pk) pk = av; if (av >= 0.998) { run++; if (run === 2) clip++; } else run = 0; F.tot[h] += v * v; ta[i - i0] = v; }
+    for (const k of ['lf', 'mid', 'br', 'hf']) {
+      run2(C[k][0], S[k][0], ta, tb, L); run2(C[k][1], S[k][1], tb, tb, L);
+      const A = F[k]; let h = (i0 / H) | 0, e = (h + 1) * H - i0, acc = 0;
+      for (let i = 0; i < L; i++) { if (i === e) { A[h] += acc; acc = 0; h++; e += H; } const v = tb[i]; acc += v * v; } A[h] += acc;
     }
-    for (const k in S) { const s = S[k]; for (const z of (Array.isArray(s[0]) ? s : [s])) { if (z[0] < 1e-30 && z[0] > -1e-30) z[0] = 0; if (z[1] < 1e-30 && z[1] > -1e-30) z[1] = 0; } }
     yield i1 / n;
   }
   // Rahmen j = Schritte j, j+1 (10 ms), Pegel in dB je Sample
@@ -61386,7 +61385,7 @@ function* plop(y, sr, ev, o) {
    noch einmal mit etwas höherer Empfindlichkeit dort, wo der erste repariert hat (dort hat sich das Signal geändert). ---------- */
 function* clickScan(x, sr, o, wins) {
   o = o || {}; const sens = Math.max(1, Math.min(10, o.sens != null ? o.sens : 4)), mouth = o.art !== 'tief', n = x.length;
-  const J = Math.max(8, Math.round(0.0005 * sr)), nj = Math.ceil(n / J), N = 2048, p = 16, PR = 256 + p;
+  const J = Math.max(8, Math.round(0.0005 * sr)), nj = Math.ceil(n / J) + 1, N = 2048, p = 10, PR = 256 + p;   // p = 10 fest (unten ausgeschrieben)
   const fe = new Float32Array(nj), fh = new Float32Array(nj), done = new Uint8Array(Math.ceil(n / N));
   const blocks = []; if (!wins) for (let b = 0; b * N < n; b++) blocks.push(b); else for (const [a, e] of wins) for (let b = Math.max(0, Math.floor(a / N)); b * N < Math.min(n, e); b++) if (!done[b]) { done[b] = 1; blocks.push(b); }
   const C = mouth ? BW4.map(q => bqC('hp', sr, 2000, q)) : [bqC('hp', sr, 60, Math.SQRT1_2)], h = new Float64Array(N + PR), hw = new Float64Array(N), wn = new Float64Array(N), r = new Float64Array(p + 1), A = new Float64Array(p + 1), T = new Float64Array(p + 1);
@@ -61399,7 +61398,15 @@ function* clickScan(x, sr, o, wins) {
     for (let k = 0; k <= p; k++) { let q = 0; for (let i = k; i < M; i++) q += hw[i] * hw[i - k]; r[k] = q; }
     r[0] *= 1 + 1e-4; A.fill(0); A[0] = 1; let E = r[0] + EPS;
     for (let m = 1; m <= p && E > EPS; m++) { let acc = r[m]; for (let k = 1; k < m; k++) acc += A[k] * r[m - k]; const kk = -acc / E; T.set(A); for (let k = 1; k < m; k++) A[k] = T[k] + kk * T[m - k]; A[m] = kk; E *= 1 - kk * kk; }
-    for (let i = o0; i < L; i++) { let q = 0; for (let k = 0; k <= p; k++) q += A[k] * h[i - k]; const t = a + i, j = (t / J) | 0, aq = q < 0 ? -q : q, ah = h[i] < 0 ? -h[i] : h[i]; if (aq > fe[j]) fe[j] = aq; if (ah > fh[j]) fh[j] = ah; }
+    // Rest e = Σ A[k]·h[t−k] (Ordnung 10 ausgeschrieben), Rahmen-Maxima ohne Division je Sample
+    const A1 = A[1], A2 = A[2], A3 = A[3], A4 = A[4], A5 = A[5], A6 = A[6], A7 = A[7], A8 = A[8], A9 = A[9], A10 = A[10];
+    let j = (s / J) | 0, eJ = (j + 1) * J - a, me = fe[j], mh = fh[j];
+    for (let i = o0; i < L; i++) {
+      if (i === eJ) { fe[j] = me; fh[j] = mh; j++; eJ += J; me = fe[j]; mh = fh[j]; }
+      const hi = h[i], q = hi + A1 * h[i - 1] + A2 * h[i - 2] + A3 * h[i - 3] + A4 * h[i - 4] + A5 * h[i - 5] + A6 * h[i - 6] + A7 * h[i - 7] + A8 * h[i - 8] + A9 * h[i - 9] + A10 * h[i - 10];
+      const aq = q < 0 ? -q : q, ah = hi < 0 ? -hi : hi; if (aq > me) me = aq; if (ah > mh) mh = ah;
+    }
+    fe[j] = me; fh[j] = mh;
     if ((bi & 63) === 63) yield 0.9 * (bi + 1) / blocks.length;
   }
   // Rahmen (0,5 ms): Spitze gegen örtliches Mittel (±12 ms ohne das Ereignis) und gegen die nächsten Spitzen (allein stehend)
@@ -61411,11 +61418,12 @@ function* clickScan(x, sr, o, wins) {
   // die sagt das AR-Modell gut voraus). Beide müssen allein stehen: Stimmlippen-Pulse kommen alle 1–16 ms wieder.
   const test = (arr, j, k1, k2) => { const v = arr[j]; if (v < 2e-4 || v < arr[j - 1] || v < arr[j + 1] || v < arr[j - 2] || v < arr[j + 2]) return null;
     let jl = j, jr = j; while (jl > j - MX && arr[jl - 1] > 0.25 * v) jl--; while (jr < j + MX && jr + 1 < nj && arr[jr + 1] > 0.25 * v) jr++;
-    const xl = Math.min(jl - 2, j - X3), xr = Math.max(jr + 2, j + X3), m = (MED ? medx : mean)(arr, xl - W, xr + W + 1, xl, xr); if (!(v > k1 * m)) return null;
+    const xl = Math.min(jl - 2, j - X3), xr = Math.max(jr + 2, j + X3);
     // Nachbarn: zweitgrößte örtliche Spitze in ±25 ms (ein Nachbar-Klick darf sein – Klicks kommen oft zu zweit –, Stimmlippen-Pulse
-    // kommen mindestens viermal)
+    // kommen mindestens viermal). Zuerst (billig), danach erst der Median der Umgebung.
     let n1 = 0, n2 = 0; for (let q = Math.max(1, xl - I); q < Math.min(nj - 1, xr + I + 1); q++) { if (q >= xl && q <= xr) continue; const u = arr[q]; if (u < arr[q - 1] || u < arr[q + 1]) continue; if (u > n1) { n2 = n1; n1 = u; } else if (u > n2) n2 = u; }
-    if (!(v > k2 * n2)) return null; return {jl, jr, sc: 20 * Math.log10(v / (m + EPS))}; };
+    if (!(v > k2 * n2)) return null;
+    const m = (MED ? medx : mean)(arr, xl - W, xr + W + 1, xl, xr); if (!(v > k1 * m)) return null; return {jl, jr, sc: 20 * Math.log10(v / (m + EPS))}; };
   for (let j = 2; j < nj - 2; j++) {
     if (!sel[j]) continue;
     const T1 = test(fe, j, K1, K2), T2 = T1 ? null : test(fh, j, K1 + 1, K2 + 0.4), Tq = T1 || T2; if (!Tq) continue;
@@ -61564,15 +61572,19 @@ function* room(y, sr, o, Lr) {
   for (let i = 0; i < N; i++) win[i] = Math.sin(Math.PI * (i + 0.5) / N);
   for (let k = 1; k < N / 2; k++) mag[k] = Math.sqrt(Lr.P[k]);
   for (let q = 0; q < holes.length; q++) {
-    // Pegel: der Raumton gleich daneben (je 300 ms, nur rauschartige Rahmen ≤ gelernt + 12 dB), sonst der gelernte
-    const [a, b] = holes[q], L = b - a, ph = lev(a, b), nb = []; let ns = 0;
-    for (const [u0, u1] of [[a - 30 * H, a], [b, b + 30 * H]]) for (let u = Math.max(0, u0); u + H <= Math.min(n, u1); u += H) { const l = lev(u, u + H); if (l > -110 && l <= Lr.db + 12) nb.push(l); else if (l <= -110) ns++; }
+    // Pegel: der Raumton gleich daneben (je 300 ms, nur rauschartige Rahmen ≤ gelernt + 15 dB), sonst der gelernte
+    const [a, b] = holes[q], L = b - a, ph = lev(a, b), nb = [], nbu = []; let ns = 0;
+    for (const [u0, u1] of [[a - 30 * H, a], [b, b + 30 * H]]) for (let u = Math.max(0, u0); u + H <= Math.min(n, u1); u += H) { const l = lev(u, u + H); if (l > -110 && l <= Lr.db + 15) { nb.push(l); nbu.push(u); } else if (l <= -110) ns++; }
     if (nb.length < 5 && ns >= 5) continue;   // daneben ist es auch digital still (Take mit Tor): nichts erfinden
     nb.sort((p1, p2) => p1 - p2); const pt = nb.length >= 5 ? Math.pow(10, (nb[nb.length >> 1] + 0.5) / 10) : Lr.p, need = pt - Math.pow(10, ph / 10); if (need <= 0 || L < 2 * R) continue;   // Mittelwert (dB) der Nachbarn, robust gegen einzelne laute Rahmen
+    // Klangfarbe ebenfalls von daneben (zusammenhängende rauschartige Rahmen, je 1024er-Fenster), sonst die gelernte
+    let mg = mag; { const P2 = new Float64Array(N / 2 + 1); let c2 = 0; const okU = new Set(nbu);
+      for (const u of nbu) { if (!okU.has(u + H) || !okU.has(u + 2 * H) || u + N > n) continue; for (let i = 0; i < N; i++) { re[i] = y[u + i] * (0.5 - 0.5 * Math.cos(TAU * (i + 0.5) / N)); im[i] = 0; } F(re, im, false); for (let k = 0; k <= N / 2; k++) P2[k] += re[k] * re[k] + im[k] * im[k]; c2++; }
+      if (c2 >= 3) { mg = new Float64Array(N / 2 + 1); for (let k = 1; k < N / 2; k++) mg[k] = Math.sqrt(P2[k] / c2); } }
     let sd = (a * 2654435761 + 12345) >>> 0; const rnd = () => { sd = (Math.imul(sd, 1103515245) + 12345) >>> 0; return sd / 4294967296; };
     const z = new Float64Array(L + 2 * N);
     for (let f = 0; f * (N >> 1) < L + N; f++) { re.fill(0); im.fill(0);
-      for (let k = 1; k < N / 2; k++) { const t = TAU * rnd(); re[k] = mag[k] * Math.cos(t); im[k] = mag[k] * Math.sin(t); re[N - k] = re[k]; im[N - k] = -im[k]; }
+      for (let k = 1; k < N / 2; k++) { const t = TAU * rnd(); re[k] = mg[k] * Math.cos(t); im[k] = mg[k] * Math.sin(t); re[N - k] = re[k]; im[N - k] = -im[k]; }
       F(re, im, true); const o0 = f * (N >> 1); for (let i = 0; i < N && o0 + i < z.length; i++) z[o0 + i] += re[i] * win[i]; }
     let zp = 0; for (let i = N; i < N + L; i++) zp += z[i] * z[i]; const gn = Math.sqrt(need * L / (zp + EPS));
     for (let i = 0; i < L; i++) { const r = Math.min(1, (i + 0.5) / R, (L - i - 0.5) / R), fw = 0.5 - 0.5 * Math.cos(Math.PI * r); y[a + i] += gn * fw * z[N + i]; }
