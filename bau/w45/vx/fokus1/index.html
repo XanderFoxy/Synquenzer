@@ -107733,7 +107733,8 @@ async function fokus1Load(U) {
           if (seq !== F.seq || F.set !== S) return;
           const old = S.chunks[c.k], nc = {x0: c.x0, w: c.w, R: c.R, data: c.data, tex: null, old: null};
           if (old) { if (old.tex) nc.old = old; else if (old.old) nc.old = old.old; if (old.tex && old.old) fokus1Tex(U, old.old); }
-          S.chunks[c.k] = nc; S.hop = c.hop; S.key = c.key; got++; spk1Dirty(U, 'g');
+          S.chunks[c.k] = nc; S.hop = c.hop; S.key = c.key; got++;
+          if (!F.dt) F.dt = setTimeout(() => { F.dt = 0; spk1Dirty(U, 'g'); }, 90);   // neu zeichnen höchstens ~11× je Sekunde (Stücke kommen alle ~30 ms)
           const t = performance.now(); if (got < nC && t - tP > 150) { tP = t; fokus1Stat(U, 'Fokus · ' + Math.round(100 * got / nC) + ' %'); }
         }
       });

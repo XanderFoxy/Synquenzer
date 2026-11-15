@@ -19,7 +19,7 @@ const helpers = () => {
   const fnv = (h, u8) => { for (let i = 0; i < u8.length; i++) { h ^= u8[i]; h = Math.imul(h, 16777619); } return h >>> 0; };
   const U = () => __spk.page.ui();
   { const f0 = window.spk1Frame, p0 = window.fokus1Pre; window.__fr = [];   // Messung: lange Bilder (Zeichnen) und Fokus-Vorbereitung
-    window.spk1Frame = function (u) { const t = performance.now(), r = f0.apply(this, arguments), d = performance.now() - t; if (d > 12) __fr.push({t: Math.round(t), d: Math.round(d), m: u.f1 && u.f1.mode, w: 'bild'}); return r; };
+    window.spk1Frame = function (u) { const t = performance.now(), r = f0.apply(this, arguments), d = performance.now() - t; if (d > 8) __fr.push({t: Math.round(t), d: Math.round(d), m: u.f1 && u.f1.mode, w: 'bild'}); return r; };
     for (const n of ['fokus1Mode', 'fokus1Drop', 'spk1Tap', 'fokus1Done', 'spk1ViewDd']) { const g = window[n]; window[n] = function () { const t = performance.now(), r = g.apply(this, arguments), d = performance.now() - t; if (d > 6) __fr.push({t: Math.round(t), d: Math.round(d), w: n}); return r; }; }
     window.fokus1Pre = function (u) { const t = performance.now(), r = p0.apply(this, arguments), d = performance.now() - t; if (d > 6) __fr.push({t: Math.round(t), d: Math.round(d), w: 'pre'}); return r; }; }
   window.__fkT = {
@@ -75,7 +75,7 @@ for (const [W, H] of VIEWS) {
   const shot = n => p.screenshot({path: path.join(fotos, n + '-' + tag + '.png')});
   const segB = (cls, i) => p.evaluate(([cls, i]) => { const e = document.querySelectorAll(`#spk1Sheet .spk1-dd .${cls} button`)[i]; if (!e) return null; e.scrollIntoView({block: 'nearest'}); const r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }, [cls, i]);
   const openView = async () => { if (!(await p.evaluate(() => !!__spk.page.ui().dd))) { const q = await pos('#spk1Sheet [data-a="view"]'); await tap(q); } await wait(150); if (!(await p.evaluate(() => !!__spk.page.ui().dd))) console.log('  Ansicht nicht offen', JSON.stringify(await p.evaluate(() => { const e = document.querySelector('#spk1Sheet [data-a="view"]'), r = e.getBoundingClientRect(), q = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return {r: [r.left, r.top, r.width, r.height], hit: q && (q.className + ' ' + q.textContent).slice(0, 60)}; }))); };
-  const closeDd = async () => { await tap(await pos('#spk1Sheet .spk1-st') || [W / 2, 20]); await p.evaluate(() => spk1Dd(__spk.page.ui(), null)); };
+  const closeDd = () => p.evaluate(() => spk1Dd(__spk.page.ui(), null));   // wie ein Tipp daneben (Tipp auf die Statuszeile ändert schon in basis.html das Bild)
   const ltSince = t0 => p.evaluate(t0 => __lt.filter(e => e.t >= t0).map(e => Math.round(e.d)), t0), frSince = t0 => p.evaluate(t0 => __fr.filter(e => e.t >= t0), t0);
   const now = () => p.evaluate(() => performance.now());
   // Umschalten per Touch: Ansicht ▾ → Segment i; misst Long Tasks bis alles fertig (Rechnen + Texturen)
