@@ -128,3 +128,36 @@ Haken: 10 (7 alte + 3 neue: g4Call, wpCall, wpToBuf). Außerhalb Block + Haken =
 Offen: Hauptfaden-Block ohne Skript bei Überlast (siehe 1), Audio-Start beim ersten Touch (58–83 ms, außerhalb), vr1WegMake legt den
 AudioBuffer in einem Stück an (25 ms im Wrapper, im Block – nächster kleiner Schritt), Klicks (3), Raumton Take A (2), Obertöne C 8,93 s,
 „0 Plopps in A“, Prüfer-„5 Lücken“ (Testdaten).
+
+## Befund-Runde nach Prüfer-Abnahme VOXR1D (15.11., 14:32–)
+Nachbau der Prüfer-Messungen (gleicher Code, nur Einsatz-Weg für Parameter): `voxr1d-w/ph.mjs` (Plopps beider Serien aus pruef/kern2+kern3),
+`voxr1d-w/rh.mjs` (Raumton v2 aus pruef/kern3), `voxr1d-w/kh.mjs` (Klicks aus pruef/kern2), `voxr1d-w/dp.mjs` (Plopp-Teil des Entwickler-Tests, Take A).
+Ausgangslage nachgestellt: Obertöne > 1 dB 20/78, Abzug < 12 dB 3, 2 verpasst, Raumton-Pegel 11/24, Farbe 8/24 – deckt sich mit dem Prüfer.
+
+1. **Obertöne (hoch) – teilweise behoben (VOXR1D-OT).**
+   - Vorschlag „Stärke je Teilton auf ±1 dB der Ränder begrenzen“ gebaut und gemessen: schlechter (24/78 > 1 dB, Abzug-Fehler 3 → 9; ±0,5 dB: 26/78).
+     Die Ränder sagen die Stärke in der Lücke schlecht voraus; der Hauptfehler ist die **Phase** (B48 1,928 s: Grundton fällt mitten in der Lücke auf −17 dB,
+     mit Begrenzung bleibt −3,8 dB durch Phasenfehler). Verworfen. Ebenso: reine Rand-Vorhersage (29/78), lineare Phase ohne Oberton (32/78), MF 450/650/900.
+   - Gebaut: (a) Phasen-Demodulation des m-ten Obertons über ≈ 6 statt 3 Perioden (20 → 16/78); (b) singt die Stimme daneben ≥ 200 Hz, liegt die Grenze
+     unter dem Grundton (plopCut 0,8·f0) statt fest 250 Hz – der Grundton nahe 250 Hz wurde sonst halb neu gebaut (16 → 13/78).
+     Grenze immer unter dem Grundton ({fix: 0}) wäre beim Prüfer 14/78 und behebt B48 1,928 s (−8,1 → −1,4 dB), bricht aber den Entwickler-Test Take A
+     (Abzug 10,2/11,2/10,9 dB, Obertöne +3,85 dB) → nur für hohe Stimmen.
+   - Stand (Nachbau, beide Serien): **13–14 von 80 über 1 dB** (vorher 20/78); Entwickler-Plopps alle OK (Abzug ≥ 12,7, Obertöne ≤ 0,88 dB).
+     Offen: schwache lange Stöße bei tiefer/mittlerer Stimme (B48 1,928 s −8,1 dB, C44 4,462 s −4,2, C48 9,226 s −4,5).
+2. **Raumton (hoch) – Pegel teilweise behoben (VOXR1D-RP), Farbe offen.** Pegel = Median der Nachbarn wie bisher, aber höchstens der Median der
+   je 3 Rahmen (30 ms) direkt an der Lücke. Prüfer v2: Pegel 11 → **15/24**; Farbe unverändert 8/24 (Atem-/Zischfenster verwerfen nicht mehr geschafft).
+   Varianten: 5 bzw. 8 Rahmen 14–15/24, Quantil 0,3 statt Median 10–11/24 (verworfen). Prüfer v1 (kern2): seine Lücken liegen z. T. in Gesang
+   (Original −10…−24 dB lauter als Raumton) – dort wird die Füllung leiser; der Prüfer hat v1 selbst durch v2 ersetzt.
+3. **Prüfen Takt-Lücke (mittel) – nicht im Block behebbar, begründet:** Die Lücke beim ersten Touch ist `ensureAudio`/AudioContext-Start (außerhalb des
+   Blocks, CPU-Profil 13:37); die LoAF-Einträge ohne Skript-Zuordnung sind der Hauptfaden-Halt während des Worker-Laufs unter Last (siehe 13:54).
+   Wiederholung im Endlauf mit Last-Angabe.
+4. **Abzug < 12 dB (mittel) – offen:** gleiche Fälle wie 1 (B48 1,928 s, B48 7,719 s, C48 9,226 s). „Ränder nachziehen“ nicht mehr geschafft.
+5. **Vor-Echo sauberer Take A, 10-ms-Rahmen (klein) – nebenbei besser:** gesamt A44 1,3 → 0,41 dB, A48 1,62 → 0,77 dB (kein Rahmen > 1 dB mehr);
+   Tiefband in einem Rahmen A48 7,0 → 5,9 dB (offen).
+6. **Raumton außerhalb der Lücke (klein) – abgewiesen:** Die Lücke ist bewusst der Bereich unter Raumton − 10 dB, nicht nur die digitale Null; er wird in 1-ms-
+   Schritten erweitert, solange es dort so leise ist, und mit 10-ms-Blenden gefüllt. Die gemeldeten Proben liegen in diesem leisen Bereich (A: −138…−189 dBFS;
+   C44: 4 Proben = 0,09 ms bei −71…−77 dBFS, 8 dB unter dem Raumton) – nicht hörbar. Eine Begrenzung auf die Null ließe am Rand einen hörbaren Pegelsprung.
+7. **Längste Plopps (klein) – behoben:** Dauer bis 130 ms statt 100 ms. Nachbau: 80/80 gefunden, 0 Fehlalarme; sauberer Take A weiter 13 eigene Tiefstöße, B/C 0.
+8. **Klick-Abzug negativ (klein) – abgewiesen (P4 erfüllt 18–19/20):** Der negative Abzug entsteht, wo das Original in der Lücke rauschartige Höhen hat,
+   die LSAR nicht vorhersagt. Den Ersatz auf die Energie der Nachbarschaft zu heben (Vorschlag) senkt den Fehler gegen den sauberen Take nicht – unkorreliertes
+   Rauschen addiert sich zum Fehler –, es klingt nur voller. Bleibt als Klang-Verbesserung offen (Ansatz wie oben in diesem Dokument).
