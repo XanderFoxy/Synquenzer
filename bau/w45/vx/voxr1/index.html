@@ -61850,7 +61850,7 @@ function vr1Render(id, key, src, v) {
     const wg = new Float32Array(n); for (let i = 0; i < n; i++) wg[i] = x[i] - y[i];
     VXR1.ver.set(id, {id, key, buf: mk(y), weg: mk(wg), info: r.info}); vr1Marks(id, 'run', r);
   }, e => { if (!/abgebrochen/.test(String(e && e.message))) { logErr(e); toast('Gesang reinigen ging nicht – es spielt die vorige Fassung'); } VXR1.ver.set(id, {id, key: '-', buf: null, weg: null}); })
-    .finally(() => { const q = VXR1.vjob.get(id); if (q && q.key === key) VXR1.vjob.delete(id); VXR1.vprog = null; try { clResync(); } catch (e) {} UI.dirty.grid = UI.dirty.song = true; if (typeof wpClChanged === 'function') wpClChanged(); vr1Status(); });
+    .finally(() => { const q = VXR1.vjob.get(id); if (q && q.key === key) VXR1.vjob.delete(id); VXR1.vprog = null; try { tkPlayBuf(id, null); clResync(); } catch (e) {} UI.dirty.grid = UI.dirty.song = true; if (typeof wpClChanged === 'function') wpClChanged(); vr1Status(); });
 }
 // Zustand je Take im Blatt: Befund (Prüfen), gewählte Stufe, Schritte an/aus
 function vr1Sel(id) { return VXR1.sel[id] || (VXR1.sel[id] = {B: null, lv: null, on: {}, busy: null, prog: null}); }

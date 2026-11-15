@@ -19,3 +19,4 @@
 - 05:58 Prüfer-Befunde (PRUEFUNG.md) gelesen, Nachbesserung Start.
 - 06:12 Plan: (1) ↶ ↷ in die Leiste + Hinweise ohne Aktionsknopf + Toast über der Leiste; (2) blockweise Abarbeitung + Vorschaubilder gestaffelt (Haken renderGrid) + afterClipEdit einmal; (3) Pentatonik = leitereigene bleiben; (4) höchstens eine Auto-Version; (6) ↶/↷ am nächsten Takt (Haken undo/redo); (7)(9)(10) klein.
 - 06:07 Block geändert (↶ ↷ in der Leiste über dem App-↶, blockweise, Pentatonik, Versionen, Haken renderGrid/undo/redo); Sonde 2 des Prüfers: Tipp auf ↶-Mitte = ↶ in allen 3 Größen (UNDO 1→0).
+- 06:11 Versionen als 'own'-Schritte (statt Song-Schritt), Szenen-Tonarten je Szene eigene Aufgabe. Sonde F des Prüfers 1×: 0 Long Tasks bei allen 7 Aktionen (vorher 52–183 ms); 4×: noch 50–116 ms.

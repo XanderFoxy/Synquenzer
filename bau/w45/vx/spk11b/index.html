@@ -105564,7 +105564,10 @@ function spk11bEnv(x, sr) {
     E[0][f] = Math.sqrt(sl / H); E[1][f] = Math.sqrt(sm / H); E[2][f] = Math.sqrt(sh / H);
   }
   const O = E.map(e => { const o = new Float32Array(F); for (let f = 2; f < F; f++) { let m = 0, c = 0; for (let j = Math.max(0, f - 8); j < f - 1; j++) { m += e[j]; c++; } o[f] = Math.max(0, e[f] - (c ? m / c : 0)); } return o; });
-  return {E, O, H, F};
+  // Höhen mit Ausklang-Vorhersage: Pegel minus fortgeschriebenes Abklingen davor (leise Hi-Hat im Ausklang einer offenen Hi-Hat/Snare)
+  const eh = E[2], Q = new Float32Array(F);
+  for (let f = 10; f < F; f++) { const a = (eh[f - 2] + eh[f - 3] + eh[f - 4]) / 3, b = (eh[f - 7] + eh[f - 8] + eh[f - 9]) / 3, r = b > 1e-9 ? Math.min(1, Math.pow(a / b, 0.2)) : 1; Q[f] = Math.max(0, eh[f] - a * r * r * r); }
+  return {E, O, H, F, Q};
 }
 // Schwelle aus dem Lied: zwei Häufungen (log, Otsu) unter den Werten > lo; null, wenn keine klare Trennung (Mittel-Verhältnis < sep)
 function spk11bSplit(v, lo, sep) {
@@ -105577,14 +105580,15 @@ function spk11bSplit(v, lo, sep) {
 }
 function spk11bHits(x, sr, stepS, nStep, fr, ref) {
   const A = spk11bEnv(x, sr), {E, O, H, F} = A, Bo = ref && ref.bass && ref.bass.length === x.length ? spk11bEnv(ref.bass, sr) : null;
-  const pk = [[], [], []], dk = [], bk = [];
+  const pk = [[], [], []], dk = [], bk = [], pq = [];
   for (let k = 0; k < nStep; k++) {
     const c = k * stepS, f0 = Math.max(0, Math.floor((c - 0.03) * sr / H)), f1 = Math.min(F - 1, Math.ceil((c + 0.035) * sr / H));
     for (let b = 0; b < 3; b++) { let m = 0, mf = f0; for (let f = f0; f <= f1; f++) if (O[b][f] > m) { m = O[b][f]; mf = f; } pk[b].push(m); if (!b) { let e0 = 0; for (let f = mf; f <= Math.min(F - 1, mf + 4); f++) e0 = Math.max(e0, E[0][f]); const f2 = Math.min(F - 1, mf + Math.round(0.1 * sr / H)); dk.push(e0 > 0 ? E[0][f2] / e0 : 1); } }
+    { let q = 0; for (let f = f0; f <= f1; f++) q = Math.max(q, A.Q[f]); pq.push(q); }
     let m = 0; if (Bo) for (let f = f0; f <= Math.min(Bo.F - 1, f1); f++) m = Math.max(m, Bo.O[0][f]); bk.push(m);
   }
   const ref97 = pk.map(a => { const s = a.slice().sort((p, q) => p - q); return Math.max(1e-4, s[Math.floor(0.97 * (s.length - 1))] || 0); });
-  const nl = pk[0].map(v => v / ref97[0]), nm = pk[1].map(v => v / ref97[1]), nh = pk[2].map(v => v / ref97[2]);
+  const nl = pk[0].map(v => v / ref97[0]), nm = pk[1].map(v => v / ref97[1]), nh = pk[2].map(v => v / ref97[2]), nq = pq.map(v => v / ref97[2]);
   const lo = !fr || fr[0] < 200, mi = !fr || (fr[1] > 200 && fr[0] < 5000), hi = !fr || fr[1] > 4000;
   // Snare-Vorlage aus dem Lied: Höhen-Einsätze in zwei Häufungen (Hi-Hat leiser, Snare lauter); Körper (Tiefen oder Mitten) muss da sein
   // (zwei Stufen: leise/laute Hi-Hats, darüber die Snare – trennt sich die obere Häufung noch einmal klar, gilt die obere Grenze)
@@ -105603,7 +105607,7 @@ function spk11bHits(x, sr, stepS, nStep, fr, ref) {
     if (kick) { out.push({k, w: 'k', v: Math.min(1, 0.45 + 0.55 * nl[k])}); kk[k] = 1; }
     else if (lo && click && !sn && dk[k] < 0.7 && nl[k] >= 0.6 * tK2 && pk[0][k] >= 0.4 * pk[1][k] && (!Bo || pk[0][k] >= 0.7 * bk[k])) weak.push(k);
     if (sn) { out.push({k, w: 's', v: Math.min(1, 0.45 + 0.55 * Math.min(1, Math.max(nm[k], nh[k]) / 0.8))}); snS.push([k, nh[k]]); }
-    else if (hi && nh[k] > 0.12) { out.push({k, w: 'h', v: Math.min(1, 0.35 + 0.6 * nh[k])}); hat[k] = 1; }
+    else if (hi && (nh[k] > 0.12 || nq[k] > 0.12)) { out.push({k, w: 'h', v: Math.min(1, 0.35 + 0.6 * nh[k])}); hat[k] = 1; }   // nq: gleiche Schwelle; tiefer (0,08) kämen Ghost-Snares als Hi-Hat dazu
   }
   // Wiederholung je Takt: ein schwacher Tiefen-Einsatz zählt als Kick, wenn in den Takten ringsum (±4) an derselben Stelle meist einer ist
   for (const k of weak) { const p = k % spb, b0 = Math.floor(k / spb); let n = 0, c = 0; for (let b = b0 - 4; b <= b0 + 4; b++) { const j = b * spb + p; if (b === b0 || j < 0 || j >= nStep) continue; c++; n += kk[j]; } if (c >= 3 && n >= 0.6 * c) out.push({k, w: 'k', v: Math.min(1, 0.45 + 0.55 * nl[k])}); }

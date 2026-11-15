@@ -120,7 +120,7 @@ async function tapPop(T, p, sel) { const r = await R_(p, a => (UI.pop && UI.pop.
   await p.evaluate(() => undo()); await sleep(150);
   await tapBtn(T, p, 'dr'); await tapBtn(T, p, 'p1');
   const dr2 = await p.evaluate(() => ({c: S.tracks[4].clips[0].notes.map(n => n.n), lab: SYNQUENZER.mtx4.bar().querySelector('[data-m4="dr"]').textContent}));
-  ok('„Drums ±“ (ausdrücklich): Drum-Clip +1', JSON.parse(dr0).notes.every((n, j) => dr2.c[j] === n.n + 1) && dr2.lab === 'Drums ±', dr2.lab);
+  ok('„Drums ±“ (ausdrücklich): Drum-Clip +1', JSON.parse(dr0).notes.every((n, j) => dr2.c[j] === n.n + 1) && dr2.lab.replace(/\s/g, '') === 'Drums±', dr2.lab);
   await p.screenshot({path: dir + '/mtx4-drums-hochkant.png'});
   await p.evaluate(() => undo()); await sleep(150);
   ok('↶: wieder alles wie vorher', JSON.stringify(await sig(p)) === JSON.stringify(before));
@@ -249,10 +249,10 @@ for (const [w, h] of [[926, 428], [926, 370]]) {
   ok('+1 auf Clips im Song: die Fassung von vorher wird je Clip eine neue Version (v2)', L.length === 2 && a && b && a.ver === 2 && b.ver === 2 && !L.some(x => x.from.t === 2), v1.L.map(x => x.from.t + ':' + x.from.s + ' v' + x.ver));
   ok('die Version hält genau den alten Inhalt (Clip 0:0: vorher = v2)', v1.own00 !== null && JSON.parse(v1.own00).notes.map(n => n.n).join() === JSON.parse(r.c00).notes.map(n => n.n).join(), {v2: a && a.notes, vorher: JSON.parse(r.c00).notes.map(n => n.n)});
   ok('Clip im Song nicht dabei (2:1): keine Version; der Song spielt weiter v1 (Spuren-Einträge gleich)', v1.lanes === r.lanes0);
-  ok('Änderung + Versionen = ein ↶-Schritt (3 Clip-Schritte + Song)', v1.n === 1 && v1.kinds.join() === 'clip,clip,clip,song', v1.kinds);
+  ok('Änderung + Versionen = ein ↶-Schritt (3 Clip-Schritte + 2 Versions-Schritte)', v1.n === 1 && v1.kinds.join() === 'clip,clip,clip,own,own', v1.kinds);
   await tapBtn(T, p, 'p1'); await sleep(150);
   const v2 = await p.evaluate(() => ({n: Object.keys(S.song.own || {}).length, u: UNDO.length, kinds: (UNDO[UNDO.length - 1].items || []).map(x => x.kind)}));
-  ok('zweite Aktion in derselben Auswahl: keine weitere Version (die Fassung vor der Auswahl bleibt v2)', v2.n === 2 && v2.u === 2 && !v2.kinds.includes('song'), v2);
+  ok('zweite Aktion in derselben Auswahl: keine weitere Version (die Fassung vor der Auswahl bleibt v2)', v2.n === 2 && v2.u === 2 && !v2.kinds.includes('own'), v2);
   const rt = await p.evaluate(() => { const a = serialize(), q = normalizeProject(projFromFile(JSON.parse(a))); return {own: JSON.stringify(q.song.own) === JSON.stringify(S.song.own), all: JSON.stringify(projectFileObj(q, true, true)) === a}; });
   ok('Speichern/Laden: die Versionen kommen bit-gleich zurück', rt.own, rt);
   await p.evaluate(() => { undo(); undo(); }); await sleep(800);                // die automatische Szenen-Tonart folgt nach 400 ms (wie immer)
@@ -267,9 +267,9 @@ for (const [w, h] of [[926, 428], [926, 370]]) {
   ok('Clip-Blatt › VERSIONEN IM SONG zeigt v1 v2', cv && cv.join() === 'v1,v2', cv);
   await p.screenshot({path: dir + '/mtx4-versionen-hochkant.png'});
   await p.evaluate(() => closeClipSheet()); await sleep(100);
-  // neue Auswahl-Sitzung: die nächste Änderung legt v3 an
-  const v3 = await p.evaluate(() => { SYNQUENZER.mtx4.start(0, 0); SYNQUENZER.mtx4.len(2); const own = S.song.own; return Object.keys(own).filter(id => own[id].from.t === 0 && own[id].from.s === 0).map(id => own[id].ver).sort().join(); });
-  ok('neue Auswahl-Sitzung (Länge ×2): die Fassung davor wird v3', v3 === '2,3', v3);
+  // Prüfung 4: neue Auswahl-Sitzung – der Clip hat schon v2: keine weitere automatische Version (höchstens eine je Clip)
+  const v3 = await p.evaluate(async () => { SYNQUENZER.mtx4.start(0, 0); await SYNQUENZER.mtx4.len(2); const own = S.song.own; return Object.keys(own).filter(id => own[id].from.t === 0 && own[id].from.s === 0).map(id => own[id].ver).sort().join(); });
+  ok('neue Auswahl-Sitzung (Länge ×2): keine zweite automatische Version (bleibt v2)', v3 === '2', v3);
   ok('Versionen: keine Fehler', errs.length === 0, errs.slice(0, 3));
   await ctx.close();
 }
@@ -355,12 +355,12 @@ for (const [w, h] of [[926, 428], [926, 370]]) {
     for (let k = 0; k < 60; k++) { UI.dirty.grid = true; for (const C of UI.cells.flat()) if (C) { C.st = {}; C.sig = null; } const t0 = performance.now(); orig(audBeat()); rg.push(performance.now() - t0); await W(16); }
     const lt0 = lt.length; await W(300);
     // je Aktion ein eigener Tipp (eigene Aufgabe) – wie in der App; früher liefen alle Aktionen in einer Aufgabe hintereinander
-    const t1 = performance.now(); SYNQUENZER.mtx4.semi(1); const dSemi = performance.now() - t1; await W(120);
-    const t2 = performance.now(); SYNQUENZER.mtx4.fit('dorian'); const dFit = performance.now() - t2; await W(120);
-    const t3 = performance.now(); SYNQUENZER.mtx4.quant('1/16'); const dQ = performance.now() - t3; await W(120);
-    const t4 = performance.now(); SYNQUENZER.mtx4.len(2); const dX2 = performance.now() - t4; await W(120);
-    const t5 = performance.now(); SYNQUENZER.mtx4.len(.5); const dH2 = performance.now() - t5; await W(120);
-    SYNQUENZER.mtx4.len(2); await W(200);
+    const t1 = performance.now(); let pr = SYNQUENZER.mtx4.semi(1); const dSemi = performance.now() - t1; await pr; await W(120);
+    const t2 = performance.now(); pr = SYNQUENZER.mtx4.fit('dorian'); const dFit = performance.now() - t2; await pr; await W(120);
+    const t3 = performance.now(); pr = SYNQUENZER.mtx4.quant('1/16'); const dQ = performance.now() - t3; await pr; await W(120);
+    const t4 = performance.now(); pr = SYNQUENZER.mtx4.len(2); const dX2 = performance.now() - t4; await pr; await W(120);
+    const t5 = performance.now(); pr = SYNQUENZER.mtx4.len(.5); const dH2 = performance.now() - t5; await pr; await W(120);
+    await SYNQUENZER.mtx4.len(2); await W(200);
     const rg2 = []; for (let k = 0; k < 40; k++) { UI.dirty.grid = true; for (const C of UI.cells.flat()) if (C) { C.st = {}; C.sig = null; } const t0 = performance.now(); orig(audBeat()); rg2.push(performance.now() - t0); await W(16); }
     await W(1500); run = false; const ltAct = lt.slice(lt0); stop(); if (po) po.disconnect();
     const s = rg.slice().sort((a, b) => a - b), f = fr.slice(5).sort((a, b) => a - b);

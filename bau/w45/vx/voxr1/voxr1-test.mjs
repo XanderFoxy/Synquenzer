@@ -261,13 +261,13 @@ async function browser() {
   const h0 = await run(async o => SYNQUENZER.tkPcmHash(o.id), {id}), ph0 = await run(async o => SYNQUENZER.clPlayHash(o.id), {id});
   await tapEl('ap'); const Ap = await until(async o => { const v = SYNQUENZER.vr1Ver(o.id); return {ok: v.ready && !v.busy, v: {applied: v.applied && v.applied.lv, steps: v.applied && Object.keys(v.applied.steps), ready: v.ready}}; }, {id}, 40000);
   // die Gesangs-Effekte (G4, an der STIMME-Spur an) rechnen danach auf der neuen Fassung neu – darauf warten
-  await until(async o => { await wait(100); return {ok: !(typeof G4 !== 'undefined' && G4.job.has(o.id))}; }, {id}, 20000);
+  await until(async o => { SYNQUENZER.clPlayHash(o.id); await wait(150); return {ok: !(typeof G4 !== 'undefined' && (G4.job.has(o.id) || G4.dq.has(o.id)))}; }, {id}, 30000);
   const h1 = await run(async o => SYNQUENZER.tkPcmHash(o.id), {id}), ph1 = await run(async o => SYNQUENZER.clPlayHash(o.id), {id});
   const fv = await run(async o => { const b = window.__vr1.proc(o.id, null), r = tkBuffer(o.id); if (!b || !r) return null; const x = b.getChannelData(0), y = r.getChannelData(0); let d = 0; for (let i = 0; i < x.length; i++) d = Math.max(d, Math.abs(x[i] - y[i])); return {laenge: x.length === y.length, maxDiff: +d.toFixed(4)}; }, {id});
   R.ui3.anwenden = {ap: Ap, rohGleich: h0 === h1, spieltNeu: ph0 !== ph1, fassung: fv};
   ok(Ap && Ap.ok && h0 === h1 && ph0 !== ph1 && fv && fv.laenge && fv.maxDiff > 0, 'Touch „Anwenden“: neue Fassung spielt (auch durch die Gesangs-Effekte), Roh-Take bitgleich', R.ui3.anwenden);
   await run(async () => { undo(); await wait(400); }, null);
-  await until(async o => { await wait(100); return {ok: !(typeof G4 !== 'undefined' && G4.job.has(o.id))}; }, {id}, 20000);
+  await until(async o => { SYNQUENZER.clPlayHash(o.id); await wait(150); return {ok: !(typeof G4 !== 'undefined' && (G4.job.has(o.id) || G4.dq.has(o.id)))}; }, {id}, 30000);
   const Un = await run(async o => ({v: SYNQUENZER.vr1Ver(o.id).applied, ph: SYNQUENZER.clPlayHash(o.id)}), {id});
   ok(!Un.v && Un.ph === ph0, 'Ein ↶ nimmt „Gesang reinigen“ zurück (es spielt wieder die vorige Fassung)', {applied: Un.v, gleich: Un.ph === ph0});
   // Fotos quer (926×428 und 926×370)
