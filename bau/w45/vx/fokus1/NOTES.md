@@ -140,3 +140,45 @@ Kern-Test erneut: Worker 26/0, Hauptfaden-Rückfall 24/0 (Zauberstab-Prüfung an
 - Speicher 3 min (15 Stücke): zweiter Satz +18,1 MB Texturen (R8+Mipmaps, geschätzt) + 13,6 MB Daten; 21 s nach „Alles“ frei.
 - Long Tasks 3 min: erstes Umschalten auf Rest 2–4 Tasks 51–62 ms (6/6 Läufe), außerhalb JS (spk1Frame 0 ms); wiederholt 0. Grundlast 6 Bilder „Alles“: 0. Mit 1 Upload/Bild (Kopie exp/): 0 bzw. 1×52 ms. CPU 4×: Grundlast-Bilder selbst 50–58 ms; Umschalten bis 64 ms, Rest-Neuladen 4–11 Tasks bis 73 ms.
 - CPU-Rückfall ohne WebGL: hochkant/quer Rest dunkel (A 191→23/42), Alles byte-gleich, 0 Long Tasks, 0 Fehler.
+
+# Prüfung der Befunde (Fix-Runde 13:00–13:30, Sicherung index.vor-fix.html)
+
+Umgebung: Platte voll (0–30 MB frei, auch basis.html stürzte im Browser ab). Gelöst ohne fremde Dateien: index.vor-kern.html (= basis.html,
+gleiche md5), index.vor-ueberlappung.html und die Prüfer-Kopie pruef-iphone/exp/index.html gelöscht; Browser-Profil über TMPDIR=/dev/shm/fk1tmp.
+
+1. Projekt laden / Schließen-Öffnen → alter Zwischenstand (hoch): ECHT, behoben. Kennung je Dokument-Objekt `inst(d)` (d.fkI) in sigOf und
+   im restMid-Schlüssel. m2 b nachher: neuer Schlüssel, neu 2, cached [false,false], B −321 dB (vorher ±0 dB, alter Inhalt).
+   Hauptfaden: spk1Show → spk1SpecLoad → spk1SpecFree → fokus1Free verwirft den Satz ohnehin; nur der Worker-Speicher war betroffen.
+2. Kamm-Maske ohne Noten zu hell (hoch): ECHT, teilweise behoben. rowsOf: statt Maximum über floor..ceil jetzt leistungsgewichtetes
+   Mittel g² über die Hann-Hauptkeule (±2 Basis-Bins, (½+½cos)²) plus Zeilenbreite; dazu im Rest-Modus je Spalte Glätten über ±2,5 Anzeige-
+   Bins mit der Leistung des Originalbilds (Flanken gehören zur hellen Stelle; nie heller als vorher). m2 a (Fokus / wahr):
+   220 Hz halt N4096 −15,2 → −17,0 (wahr −32,4), N16384 −21,1 → −21,4 (−34,8); 65 Hz −14,6 → −18,6 (−24,4). m1 C3 Rechteck 65 Hz
+   −5,1 → −8,5 (−17,7), Umfeld 40–130 Hz N4096 −2,4 → −7,2, N1024 −0,8 → −2,4. Ziel „≤ 3 dB zum wahren Rest“ NICHT erreicht: dafür
+   bräuchte es die Leistung je Basis-Bin (Basis-STFT), die im Fokus-Kern nicht vorliegt – Rest-Audio neu rechnen wäre der echte Weg (teuer).
+3. „übrig ≈ %“ verzerrt (mittel): ECHT, behoben. Zeilengewicht wr = min(Zeilenbreite in Hz, sr/N). m3 c: tief 0,415/0,418, hoch 0,585/0,582
+   (= capBin des Prüfers; vorher 0,05/0,95). m1 C2 gleich.
+4. Schatten vor/nach Ebenen-Tönen bei N 16384 (mittel): ECHT, teilweise behoben. Bei Anzeige-N > Basis-N wird der Rest-Anteil² über die
+   Basis-Rahmen im Fenster ±N/2 gemittelt (Hann² × Breitband-Leistung des Rahmens aus d.mid, einmal je Dokument). m2 a: vor 0 → −7,4 dB
+   (wahr −25,6), nach 0 → −15,6 dB (wahr −25,8); m1 C3 −3,9 / −6,5 (wahr −16,3 / −27,1). Genauer ginge es nur mit Band-Leistung je Rahmen.
+   Versucht und verworfen: Glätten über Nachbar-Spalten mit der Leistung des Bildes (nach-Wert schlechter, −6,4).
+5. Status „Fokus aus“ nach Rest → Alles → Rest (mittel): ECHT, behoben. Ergebnis liegt am Satz (S.st); „noch aktuell“ setzt F.st = S.st.
+   pruef.mjs STAGE=stat nachher: rest_nach_alles_2s und gef_nach_alles_1s zeigen den richtigen Status (pruef-iphone/nachfix-stat.log).
+6. Helle Flanke neben ausgeblendeter Note (mittel): ECHT, behoben über das Glätten aus 2. (kein breiteres Ausblende-Band, also keine feste
+   Sperre für Nachbarnoten: eine echte Nachbarnote hat eigene Leistung und bleibt sichtbar, nur gedämpft, bei gleicher Lautstärke ≈ −3 dB).
+   STAGE=col nachher (Alles → Rest): 196 Hz 142 → 45,6 (vorher 121), 246,9 Hz 130 → 31,7 (vorher 103), 174,6 Hz 75 → 48,6, 698 Hz 72 → 10.
+   Dafür ist die Mitte von A nicht mehr schwarz: 191 → 41 (vorher 1), Summe der Spalte 872 → 612. Ursache der Flanke war die lineare
+   Zwischenwert-Bildung von rmap zwischen Anzeige-Bins (Hann bei 2,2 Bins ≈ −32 dB, angezeigt −23 dB).
+7. Kein bleibender Hinweis (mittel): ECHT, teilweise. Gebaut (ohne neuen Look): beim Wechsel auf ein anderes Lied springt der Fokus auf
+   „Alles“ (Werkzeuge arbeiten im neuen Lied wieder normal). Schließen/Öffnen derselben Seite behält den Modus. Ein Zeichen am Knopf
+   („Ansicht · Rest ▾“) ist sichtbar → NICHT gebaut, Funk-Vorschlag.
+8. Long Tasks beim ersten Umschalten (klein): umgesetzt wie vorgeschlagen, upMax 2 → 1 (ohne Risiko). Messung in dieser Runde nicht
+   aussagekräftig: Last + volle Platte; Grundlast „6 Bilder in Alles“ ohne Fokus hat selbst 50–90 ms; index.vor-fix.html (früher 51/0)
+   ergab im A/B unter gleicher Last ebenfalls 46 OK / 5 FEHLER, dieselben 5 Long-Task-Prüfungen.
+9. Quer-Statustexte (klein): behoben. Schmal: „Rest 42 % · 1 Note weg“, „Gefunden · 58 % · 1 Note“; title ohne „der Energie“, wenn
+   keine Zahl im Text („noch nichts gefunden“).
+10. Ansicht-Knopf außerhalb / 36 px (klein): ABGEWIESEN für FOKUS1 – schon in basis.html, nicht Teil des Pakets (Funk-Vorschlag möglich).
+11. Anleitung verdrängt 'frequenzen'/'erkannt' (klein): ABGEWIESEN (bewusst so) – Xanders Wortlaut ist „erkannte Frequenzen“; alle 175
+    alten Eintragsnamen behalten ihren ersten Treffer.
+
+Kosten: Worker je Stück (3 min, 16 Stücke) 41–46 ms statt 30–35 ms (gleiche Last, A/B); Hauptfaden-Rückfall 2 Stücke 148 ms statt 77 ms
+(nur ohne Worker). Hauptfaden mit Worker unverändert (nur Hochladen).

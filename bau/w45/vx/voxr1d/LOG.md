@@ -16,3 +16,4 @@
 - 13:18 Endfassung eingesetzt, Pflicht statisch ok (topdefs 26/7836/0/0, dupkeys 0, MS 2000 1×, live 1×, VERSION 4.70.0, nur Block+Haken). Kette gestartet (kern, smoke, dev, app, vx1, vx2, vx3, chr2; TMPDIR=/dev/shm/voxr1d/tmp). Last load average: 2.10, 1.56, 1.19
 - 13:24 Kette fertig (Last 2,9): kern 53/60, smoke [], dev 77/83, app 12/14, vx1 61/61, vx2 14/14, vx3 15/15, chr2 82/82.
 - 13:26 App-Zeit wiederholt (Last 2,5 → 2,1): 12/14, Prüfen ohne Long Task / Lücke 88 ms, Anwenden 50–55 ms + 103 ms / Lücke 110 ms (außerhalb Block). Nachbau B48/C44: 10/9, 10/9.
+- 13:28 VOXR1E-Schritt (Long Tasks/Raumton/Klicks) begonnen. Platte / voll (7,8 MB frei): Sicherung index.vor-lt.html und Arbeitskopie unter /dev/shm/voxr1e. Last load average: 0.50, 1.67, 1.59

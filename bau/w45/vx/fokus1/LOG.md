@@ -24,3 +24,4 @@
 13:13 Platte voll (auch basis.html stürzt ab): index.vor-kern.html (= basis.html) und Prüfer-Kopie pruef-iphone/exp/index.html und index.vor-ueberlappung.html gelöscht; Tests mit TMPDIR=/dev/shm/fk1tmp (Browser-Profil im RAM)
 13:16 Glätten (Frequenz, Leistung des Originalbilds ±2,5 Bins) + Rahmen-Mittel N>4096; m2 a/b nachgemessen
 13:20 Glätten je Spalte (lokal), Kern 26/0, 41–46 ms/Stück im Worker (vorher 30–35)
+13:27 Ende Fix-Runde: Kern 26/0, Hauptfaden 24/0, fokus1-test 46/5 (nur Long Tasks, A/B mit vor-fix gleich 46/5 = Last), Pflicht grün, m1/m2/m3/stat/col nachgemessen
