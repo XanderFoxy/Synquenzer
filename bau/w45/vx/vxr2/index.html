@@ -63237,7 +63237,7 @@ function wpDetect(id) {
     WP.detCl = WP.detCl || new Map();
     WP.detCl.set(id, ca);                               // die Stärke, für die erkannt wurde (auch wenn Säubern nicht ging: kein Dauer-Neustart)
     if (!b) return null;
-    const t0 = performance.now(), r = typeof vxr2Det === 'function' ? await vxr2Det(b) : await wpCall({op: 'det', x: b.getChannelData(0), sr: b.sampleRate});   /* VXR2: Erkennung lagefest (Vorlauf aus Stille) */
+    const t0 = performance.now(), r = typeof vxr2Det === 'function' ? await vxr2Det(b, id) : await wpCall({op: 'det', x: b.getChannelData(0), sr: b.sampleRate});   /* VXR2: Erkennung lagefest (Vorlauf aus Stille, nicht bei Takes mit Songtext) */
     const mk = wpNormMarks(r, b.length / b.sampleRate) || [];
     WP.det.set(id, mk); WP.lastDet = {id, n: mk.length, ms: Math.round(performance.now() - t0), how: WP.how};
     return mk;
@@ -109734,47 +109734,107 @@ function imp2bYield(dst, mk, an, k, d, q, LK) {
    Vorlauf aus digitaler Stille ist 240 Proben kürzer. Erkennung und Stück-Wahl rechnen in Rahmen ab Probe 0 (Erkennung, Op 'vxa'
    1/10 ms, Tonhöhe G2 10 ms) – der Inhalt liegt dadurch um eine halbe Rahmenbreite anders im Raster, Noten-Grenzen und Marken kippen
    (4.74: 31 Stücke, aber nur 11 von 31 Grenzen gleich; 4.66: 32 → 31 Stücke).
-   Jetzt: hat der Take mehr als 0,25 s digitale Stille vorn (der Import legt den Takt-Anfang so), rechnen Erkennung (wpDetect) und die
-   Stück-Wahl (VX2: Erkennung, 'vxa', Tonhöhen-Noten) an derselben Ausschnitt-Lage – immer genau 0,25 s Stille vor dem ersten Ton –
-   und die Zeiten werden zurückgeschoben. Damit ist die Stück-Wahl gleich, egal wie lang der Vorlauf ist. Gemessen wird sie an der
-   Quelle vor G4 (wie Erkennung und Tonhöhe schon bisher) – die G4-Fassung rechnet selbst in Rahmen ab Probe 0 und ist nicht lagefest.
-   Analyse-Felder, Anker und Anlauf bleiben wie bisher am ganzen Take und an der gehörten Fassung (Op 'vxa' in vx1rAnalyse).
-   Ohne Vorlauf (aufgenommene Takes) oder ohne Worker: alles wie bisher.
+   Jetzt: Erkennung (wpDetect) und Stück-Wahl (VX2: Erkennung, 'vxa', Tonhöhen-Noten) rechnen an einer festen Lage – immer genau
+   0,25 s Stille vor dem ersten Ton: längerer Vorlauf wird ausgeschnitten, kürzerer (Import) mit Nullen aufgefüllt – und die Zeiten
+   werden probengenau zurückgeschoben. Gemessen wird an der Quelle vor G4 (wie Erkennung und Tonhöhe schon bisher) – die G4-Fassung
+   rechnet selbst in Rahmen ab Probe 0 und ist nicht lagefest. Anker und Anlauf bleiben wie bisher an der gehörten Fassung (Op 'vxa'
+   am ganzen Take + vx2AnLead, wie VX2) – im selben Schritt, ohne zweiten Durchgang in vx1rAnalyse.
+   Tempo (Nachbesserung): die Tonhöhen-Noten des Ausschnitts rechnet ein eigener, kurzlebiger Worker gleichzeitig mit der normalen
+   G2-Analyse des ganzen Takes (vorher nacheinander im selben Worker: +0,9 s bei #10, +2 s bei #1); die Stück-Wahl je Quelle wird
+   gemerkt (Quellwechsel G4 → nur 'vxa' der neuen Fassung).
+   Songtext: Takes, die schon Songtext haben (Text hängt per Reihenfolge an den erkannten Marken), bleiben bei der bisherigen Erkennung.
+   Die lagefeste Erkennung gilt ab der ersten Erkennung eines Takes ohne Songtext und wird am Take gemerkt (m.vxr2 = 1, gespeichert),
+   damit später eingegebener Text nach dem Laden an denselben Marken hängt.
+   Ohne digitale Stille vorn (aufgenommene Takes) oder ohne Worker: alles wie bisher.
    Einhänge-Zeilen (Kommentar „VXR2“): wpDetect, vx2Marks. Test-API: __vxr2 am window. */
-const VXR2 = {on: true, Z0: .25, last: null};
-// Vorlauf: führende Nullproben über 0,25 s hinaus (0 = kein Ausschnitt)
-function vxr2Off(x, sr) {
-  if (!VXR2.on || !x || !(sr > 0)) return 0;
+const VXR2 = {on: true, Z0: .25, last: null, pk: new Map(), w: null, wid: 0, wq: new Map(), wt: 0, runs: 0};
+tkExt().take.push((m, o) => { if (m && m.vxr2 === 1) o.vxr2 = 1; });   // Kennung am Take (Speichern/Laden)
+function vxr2Lyr(m) { return !!(m && ((m.lyrics && String(m.lyrics).trim()) || m.ly)); }
+// zuständig: Take mit Kennung, oder (noch) ohne Songtext
+function vxr2Take(id) { const m = S.takes && S.takes[id]; return !!(VXR2.on && m && (m.vxr2 === 1 || !vxr2Lyr(m))); }
+// Lage: > 0 = Ausschnitt ab off (Vorlauf > 0,25 s), < 0 = −off Nullen vorn anfügen (Import mit kürzerem Vorlauf), 0 = liegt schon so,
+// null = nicht zuständig (keine digitale Stille vorn, nur Stille)
+function vxr2Off(x, sr, imp) {
+  if (!VXR2.on || !x || !(sr > 0)) return null;
   const n = x.length; let z = 0; while (z < n && x[z] === 0) z++;
-  return z >= n ? 0 : Math.max(0, z - Math.round(VXR2.Z0 * sr));
+  if (z >= n) return null;
+  const z0 = Math.round(VXR2.Z0 * sr);
+  return z > z0 || (imp && z > 0) ? z - z0 : null;
 }
-// Erkennung (Op 'det') an der lagefesten Ausschnitt-Lage; Zeiten zurück auf den Take (probengenau)
-async function vxr2Det(b) {
-  const x = b.getChannelData(0), sr = b.sampleRate, off = vxr2Off(x, sr);
-  const r = await wpCall({op: 'det', x: off ? x.subarray(off) : x, sr});
-  if (off && Array.isArray(r)) for (const k of r) if (k && isNum(k.t)) k.t = (Math.round(k.t * sr) + off) / sr;
+function vxr2View(x, off) { if (off >= 0) return off ? x.subarray(off) : x; const y = new Float32Array(x.length - off); y.set(x, -off); return y; }
+// Erkennung (Op 'det') an der lagefesten Lage; Zeiten zurück auf den Take (probengenau)
+async function vxr2Det(b, id) {
+  const x = b.getChannelData(0), sr = b.sampleRate, m = id != null && S.takes ? S.takes[id] : null;
+  const off = m && vxr2Take(id) ? vxr2Off(x, sr, !!m.imp) : null;
+  if (off === null) return wpCall({op: 'det', x, sr});
+  if (m.vxr2 !== 1) m.vxr2 = 1;
+  const r = await wpCall({op: 'det', x: vxr2View(x, off), sr});
+  if (Array.isArray(r)) for (const k of r) if (k && isNum(k.t)) k.t = Math.max(0, Math.round(k.t * sr) + off) / sr;
   return r;
 }
-// Stück-Wahl (VX2) an der lagefesten Ausschnitt-Lage. undefined = nicht zuständig (kein Vorlauf, kein Worker) → VX2 rechnet wie bisher.
-// An = null: vx1rAnalyse misst Anker/Anlauf wie bisher an der gehörten Fassung (gleiche Rechnung wie vx2AnLead, Op 'vxa').
+// eigener Worker für die Tonhöhen-Noten des Ausschnitts (gleicher Kern wie G2, ohne Cache; beendet sich nach 20 s ohne Arbeit)
+function vxr2W() {
+  if (VXR2.w !== null) return VXR2.w;
+  try {
+    const src = vsDspMake.toString() + '\n' + g2PitchMake.toString() + '\n' + g2Run.toString() + '\n' + g6pDspMake.toString() + '\n' + g6pRun.toString() + '\nconst V = vsDspMake(), P = g2PitchMake();onmessage = e => { const m = e.data; try { postMessage({id: m.id, r: g2Run(V, P, new Map(), m)}); } catch (err) { postMessage({id: m.id, err: String(err && err.message || err)}); } };';
+    const u = URL.createObjectURL(new Blob([src], {type: 'application/javascript'}));
+    const w = new Worker(u); setTimeout(() => { try { URL.revokeObjectURL(u); } catch (e) {} }, 30000);
+    w.onmessage = e => { const m = e.data, q = VXR2.wq.get(m.id); if (!q) return; VXR2.wq.delete(m.id); if (m.err) q.no(new Error(m.err)); else q.ok(m.r); };
+    w.onerror = e => { const qs = [...VXR2.wq.values()]; VXR2.wq.clear(); VXR2.w = false; for (const q of qs) q.no(new Error('worker')); try { e.preventDefault(); } catch (er) {} };
+    VXR2.w = w;
+  } catch (e) { VXR2.w = false; }
+  return VXR2.w;
+}
+function vxr2Idle() { clearTimeout(VXR2.wt); VXR2.wt = setTimeout(() => { if (VXR2.w && !VXR2.wq.size) { try { VXR2.w.terminate(); } catch (e) {} VXR2.w = null; } }, 20000); }
+function vxr2G2(x, sr, key) {
+  const fb = () => g2Call({op: 'an', key, x, sr}).catch(() => null), w = vxr2W();
+  if (!w) return fb();
+  return new Promise(ok => {
+    const id = ++VXR2.wid, y = new Float32Array(x);
+    const to = setTimeout(() => { VXR2.wq.delete(id); ok(fb()); }, 30000);
+    VXR2.wq.set(id, {ok: r => { clearTimeout(to); vxr2Idle(); ok(r); }, no: () => { clearTimeout(to); ok(fb()); }});
+    try { w.postMessage({id, op: 'an', key, x: y, sr}, [y.buffer]); } catch (e) { clearTimeout(to); VXR2.wq.delete(id); ok(fb()); }
+  });
+}
+// Stück-Wahl (VX2) an der lagefesten Lage. undefined = nicht zuständig (keine Kennung, kein Vorlauf, kein Worker) → VX2 rechnet wie bisher.
+// Anker/Anlauf wie VX2 aus Op 'vxa' an der gehörten Fassung (b) + vx2AnLead → vx1rAnalyse findet sie im Cache (kein zweiter Durchgang).
 async function vxr2Marks(id, b, raw, rn) {
+  const m = S.takes && S.takes[id]; if (!VXR2.on || !m || m.vxr2 !== 1) return undefined;
   const sr = b.sampleRate, pb = wpBase(id, null, true);
   if (!pb || pb.length !== b.length || pb.sampleRate !== sr) return undefined;
-  const px = pb.getChannelData(0), off = vxr2Off(px, sr);
-  if (!off || !wpWorker() || typeof g2Worker !== 'function' || !g2Worker() || typeof g2Call !== 'function') return undefined;
-  const t0 = performance.now(), len = b.length / sr, o = off / sr, xo = px.subarray(off), bid = wpBid(b);
-  const ro = raw.map(k => ({t: Math.round(k.t * sr - off) / sr, conf: k.conf, src: k.src, word: !!k.word})).filter(k => k.t >= 0);
-  const [A, G] = await Promise.all([wpCall({op: 'vxa', x: xo, sr, marks: ro.map(k => k.t)}), g2Call({op: 'an', key: 'vxr2:' + id + '@' + wpBid(pb) + ':' + off, x: xo, sr}).catch(() => null)]);
+  if (!wpWorker() || typeof g2Worker !== 'function' || !g2Worker() || typeof g2Call !== 'function') return undefined;
+  const t0 = performance.now(), len = b.length / sr, bid = wpBid(b), pbid = wpBid(pb), xb = b.getChannelData(0);
+  let P = VXR2.pk.get(id);
+  if (!(P && P.raw === raw && P.pbid === pbid)) {
+    const off = vxr2Off(pb.getChannelData(0), sr, !!m.imp); if (off === null) return undefined;
+    const o = off / sr, xo = vxr2View(pb.getChannelData(0), off);
+    const ro = raw.map(k => ({t: Math.round(k.t * sr - off) / sr, conf: k.conf, src: k.src, word: !!k.word})).filter(k => k.t >= 0);
+    VXR2.runs++;
+    const p = Promise.all([wpCall({op: 'vxa', x: xo, sr, marks: ro.map(k => k.t)}), vxr2G2(xo, sr, 'vxr2:' + id + '@' + pbid + ':' + off)])
+      .then(([A, G]) => ({pick: A ? vx2Pick(ro, A, G, len - o) : null, G: !!G, noten: G && G.notes ? G.notes.length : 0}));
+    P = {raw, pbid, off, p}; VXR2.pk.set(id, P); while (VXR2.pk.size > 8) VXR2.pk.delete(VXR2.pk.keys().next().value);
+    p.catch(() => { if (VXR2.pk.get(id) === P) VXR2.pk.delete(id); });
+  }
+  const off = P.off;
+  const [Q, Ab] = await Promise.all([P.p, wpCall({op: 'vxa', x: xb, sr, marks: raw.map(k => k.t)}), g2Analyse(id).catch(() => null)]);
   if (!vx2Ok(id) || WP.det.get(id) !== raw) return null;   // inzwischen bearbeitet / neu erkannt / Text eingegeben
-  const b2 = vx1rSrc(id); if ((rn | 0) < 2 && b2 && b2 !== b) return vx2Marks(id, b2, (rn | 0) + 1);   // SPK5-R: Quelle wechselte → neu
-  const pick = A ? vx2Pick(ro, A, G, len - o) : null, mk = pick ? wpNormMarks(pick.map(k => Object.assign({}, k, {t: (Math.round(k.t * sr) + off) / sr})), len) || [] : null;
-  if (!mk || mk.length < 2) { VX2.res.set(id, {raw, bid, mk: null}); VX2.last = {id, roh: raw.length, n: null, why: G ? 'zu wenig Noten' : 'keine Tonhöhe', vxr2: off}; return null; }
-  VX2.res.set(id, {raw, bid, mk, An: null}); while (VX2.res.size > 8) VX2.res.delete(VX2.res.keys().next().value);
-  VX2.last = {id, roh: raw.length, n: mk.length, noten: G && G.notes ? G.notes.length : 0, ms: Math.round(performance.now() - t0), quelle: rn | 0, vxr2: off, src: pick.reduce((q, k) => (q[k.vc ? 'stimmhaft' : k.src || 'on'] = (q[k.vc ? 'stimmhaft' : k.src || 'on'] | 0) + 1, q), {})};
-  VXR2.last = {id, off, ms: VX2.last.ms, n: mk.length};
+  const b2 = vx1rSrc(id); if ((rn | 0) < 2 && b2 && b2 !== b) return vx2Marks(id, b2, (rn | 0) + 1);   // SPK5-R: Quelle wechselte → An an der neuen (Stück-Wahl gemerkt)
+  const pick = Q.pick, mk = pick ? wpNormMarks(pick.map(k => Object.assign({}, k, {t: (Math.round(k.t * sr) + off) / sr})), len) || [] : null;
+  if (!mk || mk.length < 2) { VX2.res.set(id, {raw, bid, mk: null}); VX2.last = {id, roh: raw.length, n: null, why: Q.G ? 'zu wenig Noten' : 'keine Tonhöhe', vxr2: off}; return null; }
+  const ts = mk.map(k => k.t);
+  let An = null;
+  if (Ab && Ab.kind) {
+    const al = vx2AnLead(xb, sr, Ab, ts);
+    An = Object.assign({key: id + '@' + bid + ':' + ts.join(','), id, sr, len, t: ts}, Ab, {an: al.an, lead: al.lead});
+    VX1R.ana.set(id, An); while (VX1R.ana.size > 6) VX1R.ana.delete(VX1R.ana.keys().next().value);
+    VX1R.lastAn = {id, n: ts.length, ms: Math.round(performance.now() - t0), how: WP.how};
+  }
+  VX2.res.set(id, {raw, bid, mk, An}); while (VX2.res.size > 8) VX2.res.delete(VX2.res.keys().next().value);
+  VX2.last = {id, roh: raw.length, n: mk.length, noten: Q.noten, ms: Math.round(performance.now() - t0), quelle: rn | 0, vxr2: off, src: pick.reduce((q, k) => (q[k.vc ? 'stimmhaft' : k.src || 'on'] = (q[k.vc ? 'stimmhaft' : k.src || 'on'] | 0) + 1, q), {})};
+  VXR2.last = {id, off, ms: VX2.last.ms, n: mk.length, runs: VXR2.runs, w: VXR2.w ? 'eigen' : 'g2'};
   return {mk, b};
 }
-window.__vxr2 = {on: v => { if (v != null) VXR2.on = !!v; return VXR2.on; }, last: () => VXR2.last, off: (x, sr) => vxr2Off(x, sr)};
+window.__vxr2 = {on: v => { if (v != null) VXR2.on = !!v; return VXR2.on; }, last: () => VXR2.last, off: (x, sr, imp) => vxr2Off(x, sr, imp), take: id => vxr2Take(id), flag: id => !!(S.takes && S.takes[id] && S.takes[id].vxr2 === 1)};
 /* ===== VXR2-END ===== */
 /* ===== IMP1-BEGIN (Paket IMP1, Audio-/MIDI-Import mit Tempo, Taktart und Teilen – Xander 14.11.: „MP3 … BPM erkennen und die Taktart …
    in Szenen als zerschnittene Audios … Strophe eins, Refrain eins …“). Schritt 1: die Erkennung.
