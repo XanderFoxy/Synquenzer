@@ -66,10 +66,11 @@ for (const tk of ['B44', 'C48', 'B48', 'C44']) {
   console.log(`${tk} gef ${hit.filter(Boolean).length}/10 fp ${fp.length} | Abzug>=12: ${nr}/10 [${red.join(' ')}] | Obert<=1: ${nh}/10 [${hAll.join(' ')}] low [${hLow.join(' ')}] max [${hMax.join(' ')}] f0 [${f0s.join(' ')}] bit ${same} ${ms}ms`);
 }
 // Vor-Echo im sauberen Take A (44,1/48 kHz): je Fund max. Änderung der Gesamtenergie (21/23-ms-Rahmen, Schritt 5 ms) und Tiefband < 250 Hz
-for (const tk of ['A44', 'A48']) { const {x: v, sr} = LOAD[tk], r = K.done(K.run(v, sr, {steps: {plop: {}}})), N = 1024, out = [];
+for (const tk of ['A44', 'A48']) { globalThis.__PL = []; const {x: v, sr} = LOAD[tk], r = K.done(K.run(v, sr, {steps: {plop: {}}})), N = 1024, out = [];
   for (const e of r.info.plop) { const a = Math.round((e.t0 - 0.03) * sr), b = Math.round((e.t1 + 0.03) * sr); let dmax = -99, dl = -99;
     for (let c = a; c < b; c += Math.round(0.005 * sr)) { let ey = 0, ex = 0; for (let i = c - N / 2; i < c + N / 2; i++) { ey += r.y[i] * r.y[i]; ex += v[i] * v[i]; } dmax = Math.max(dmax, db(ey) - db(ex)); dl = Math.max(dl, db(bandWin(r.y, c - N / 2, N, sr, 0, 250)) - db(bandWin(v, c - N / 2, N, sr, 0, 250))); }
     out.push([+e.t0.toFixed(2), e.redDb, +dmax.toFixed(1), +dl.toFixed(1)]); }
+  if (process.env.DIAG) console.log(tk, JSON.stringify((globalThis.__PL || []).filter(q => Math.abs(q.t - 4.34) < 0.05)));
   const bad = out.filter(q => q[2] > 1 || q[3] > 1 || q[1] < 0); SUM[tk] = {n: out.length, echo: bad.length, max: Math.max(...out.map(q => q[2])), maxLow: Math.max(...out.map(q => q[3]))};
   console.log(`${tk} Funde ${out.length}, Vor-Echo (>+1 dB gesamt oder tief, oder redDb<0): ${bad.length} ` + JSON.stringify(bad) + ' max ' + SUM[tk].max + ' / tief ' + SUM[tk].maxLow); }
 console.log('SUMME ' + JSON.stringify(SUM));
