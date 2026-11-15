@@ -129,3 +129,14 @@ Diff gegen basis.html: 8 Einfüge-Stellen + Block, 0 geänderte/gelöschte Zeile
 0 / 0 / 0 (Rest / Alles / Gefundenes; Laden des Original-Spektrums im selben Lauf: 177 ms – Grundlast der Test-Grafik).
 Kern-Test erneut: Worker 26/0, Hauptfaden-Rückfall 24/0 (Zauberstab-Prüfung an das neue Verhalten angepasst: Stelle im Rest
 ≥ 20 dB leiser → nichts wählen). Pflicht: topdefs 0/0, dupkeys 0, smoke errors [], MS 2000 = 1, live = 1, Diff 8 Haken + Block, 0 gelöscht.
+
+## Prüfung iPhone/Bedienung (unabhängig, pruef-iphone/pruef.mjs, hasTouch/isMobile/dpr 3)
+- Klappfenster: hochkant 80–420 × 92–918 (scrollt 3 px), quer 340–680 × 45–403 (scrollt, Finger-Scroll geht). Fokus-Knöpfe 52–102 × 44, alle per Treffer-Test tippbar. Ansicht-Knopf selbst (basis): 36 px hoch, erst nach 2× (hochkant) / 1× (quer) Wischen in der Werkzeugleiste sichtbar.
+- FEHLER Status: Rest → Alles → Rest (oder Gef → Alles → Gef) innerhalb 20 s: Statuszeile bleibt „Fokus aus · alles sichtbar“, Bild zeigt Rest (lA 0) bzw. Gefundenes (lB 0). Nach 21 s korrekt. Ursache: fokus1Mode setzt F.st = null, fokus1Load „noch aktuell“ → fokus1Done kehrt bei F.st null zurück.
+- Quer-Status: „Gefunden · 58 % · 1 Noten“ (Einzahl fehlt), „Rest · 42 % übrig · 1 aus“; title „… noch nichts gefunden der Energie“.
+- Kein Dauer-Anzeiger: nach Werkzeug-Tipp steht Werkzeug-Hinweis in der Statuszeile, „Nur Rest“ bleibt an (lA 0), Ansicht-Knopf unverändert; Modus überlebt Schließen/Öffnen und Liedwechsel.
+- Rest-Halo: Spalte durch Ton A bei 4 s: 220 Hz 191→0, aber 196 Hz 142→121, 246,9 Hz 130→103, 174,6 Hz 75→75 (Fensterflanke bleibt hell unter/über der ausgeblendeten Note).
+- Herauskristallisieren 2 Runden (A Ebene → B finden+Ebene → C finden+Ebene): nichts doppelt, Runde 2 1 Phantom verworfen, Status 55 % → 24 % → < 1 %, Rest nach Ebene in 560/605 ms neu.
+- Speicher 3 min (15 Stücke): zweiter Satz +18,1 MB Texturen (R8+Mipmaps, geschätzt) + 13,6 MB Daten; 21 s nach „Alles“ frei.
+- Long Tasks 3 min: erstes Umschalten auf Rest 2–4 Tasks 51–62 ms (6/6 Läufe), außerhalb JS (spk1Frame 0 ms); wiederholt 0. Grundlast 6 Bilder „Alles“: 0. Mit 1 Upload/Bild (Kopie exp/): 0 bzw. 1×52 ms. CPU 4×: Grundlast-Bilder selbst 50–58 ms; Umschalten bis 64 ms, Rest-Neuladen 4–11 Tasks bis 73 ms.
+- CPU-Rückfall ohne WebGL: hochkant/quer Rest dunkel (A 191→23/42), Alles byte-gleich, 0 Long Tasks, 0 Fehler.

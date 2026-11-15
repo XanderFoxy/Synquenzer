@@ -15,3 +15,4 @@
 12:37 UI-Stufe: Status-Fehler Rest→Alles→Rest nachgestellt (ergebnis-ui.json)
 12:37 krist: 2 Runden ok (B, dann C; nichts doppelt, 1 Phantom verworfen)
 12:40 lang/lt: Speicher +18 MB GPU/+13,6 MB Daten, frei nach 20 s; erstes Umschalten 3 min: 4 Long Tasks 51-62 ms (außerhalb JS), Wiederholung 0
+12:45 Prüfung iPhone fertig: Befunde in NOTES.md (Abschnitt Prüfung iPhone/Bedienung), Fotos pruef-iphone/fotos
