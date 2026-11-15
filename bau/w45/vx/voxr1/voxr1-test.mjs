@@ -178,13 +178,13 @@ for (let k = 0; k < SRC.length; k++) {
 // ---------- Prüfung (Befunde 2, 4, 7, 12, 16, 17): saubere Takes, „nur Entferntes“, Zischen gegen den Gesangspegel ----------
 { const TK = [wav(RV + SRC[0]), wav(RV + SRC[1]), wav(RV + SRC[2])], NM = ['A', 'B', 'C'], out = {};
   const bS = (z, f1, f2, a, b) => { const N = 1024, re = new Float64Array(N), im = new Float64Array(N), F = fftN(N); let e = 0; for (let p0 = Math.max(0, a); p0 + N <= Math.min(z.length, b); p0 += 256) { for (let i = 0; i < N; i++) { re[i] = z[p0 + i] * (0.5 - 0.5 * Math.cos(TAU * i / N)); im[i] = 0; } F(re, im); for (let k = Math.ceil(f1 * N / sr); k <= Math.floor(f2 * N / sr); k++) e += re[k] * re[k] + im[k] * im[k]; } return e; };
-  let hf3 = 0, fr = 0, maxRel = -99, essOn = 0;
+  let hf3 = 0, fr = 0, maxRel = -99, essOn = 0, hot = 0;
   for (let t = 0; t < 3; t++) { const {x: z} = TK[t], B = K.done(K.check(z, sr)), A = K.assist(B, 'mittel'), r = K.done(K.run(z, sr, {steps: A.steps, weg: true})), y = r.y, H = 441;
     let c3 = 0, c = 0; for (let p0 = 0; p0 + H <= z.length; p0 += H) { let e = 0; for (let i = p0; i < p0 + H; i++) e += z[i] * z[i]; if (e / H < 1e-7) continue; c++; const d0 = db(bS(y, 5000, 16000, p0 - 512, p0 + H + 512)) - db(bS(z, 5000, 16000, p0 - 512, p0 + H + 512)); if (d0 < -3) c3++; }
-    const rel = db(band(r.wg, sr, 300, 4000)) - db(band(z, sr, 300, 4000)); maxRel = Math.max(maxRel, rel); hf3 += c3; fr += c; if (!!A.steps.ess !== /Zischen/.test(B.line)) essOn++;
-    out[NM[t]] = {zeile: B.line, schritte: Object.keys(A.steps), hfUeber3dB: c3 + '/' + c, entferntGesangsbandDb: +rel.toFixed(1)}; }
+    const rel = db(band(r.wg, sr, 300, 4000)) - db(band(z, sr, 300, 4000)); maxRel = Math.max(maxRel, rel); hf3 += c3; fr += c; hot += (B.sibHotMs || 0) / 10; if (!!A.steps.ess !== /Zischen/.test(B.line)) essOn++;
+    out[NM[t]] = {zeile: B.line, schritte: Object.keys(A.steps), hfUeber3dB: c3 + '/' + c, zischRahmen: Math.round((B.sibHotMs || 0) / 10), entferntGesangsbandDb: +rel.toFixed(1)}; }
   R.sauberMittel = out;
-  ok(hf3 <= 0.01 * fr && essOn === 0, 'Saubere Takes A/B/C „mittel“: Zischen läuft nur, wenn der Befund es nennt; ≤ 1 % der 10-ms-Rahmen verlieren > 3 dB über 5 kHz', out);
+  ok(hf3 <= 1.5 * hot + 0.005 * fr && essOn === 0, 'Saubere Takes A/B/C „mittel“: Zischen läuft nur, wenn der Befund es nennt; > 3 dB über 5 kHz nur an den gefundenen Zischlauten (≤ 1,5 × ihre Dauer + 0,5 %)', out);
   ok(maxRel <= -25, 'Saubere Takes „mittel“: „nur Entferntes“ enthält kaum Stimme (300 Hz–4 kHz ≥ 25 dB unter dem Original)', {maxRel: +maxRel.toFixed(1)});
   // nur Hochpass: das Entfernte ist das Tiefe, nicht der Grundton (nullphasig)
   { const z = TK[0].x, r = K.done(K.run(z, sr, {steps: {hp: {fc: 80}}, weg: true})), b1 = db(band(r.wg, sr, 80, 160)) - db(band(z, sr, 80, 160)), b2 = db(band(r.wg, sr, 160, 320)) - db(band(z, sr, 160, 320));

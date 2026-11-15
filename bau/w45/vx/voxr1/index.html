@@ -61378,11 +61378,20 @@ function lsar(z, g0, g1, A) { const p = A.length - 1, m = g1 - g0, M = new Float
   for (let i = 0; i < m; i++) { let s = v[i]; for (let k = 0; k < i; k++) s -= M[i * m + k] * v[k]; v[i] = s / M[i * m + i]; }
   for (let i = m - 1; i >= 0; i--) { let s = v[i]; for (let k = i + 1; k < m; k++) s -= M[k * m + i] * v[k]; v[i] = s / M[i * m + i]; }
   return v; }
+function plopCut(y, sr, E, cut) {
+  const M = Math.min(4096, Math.round(0.09 * sr)), seg = [[E.s0 - Math.round(0.02 * sr) - M, E.s0 - Math.round(0.02 * sr)], [E.s1 + Math.round(0.02 * sr), E.s1 + Math.round(0.02 * sr) + M]].filter(([p, q]) => p >= 0 && q <= y.length);
+  if (!seg.length) return cut; let bf = 0, bp = 0, tot = 0;
+  for (let f = 90; f <= 400; f += 4) { const c = 2 * Math.cos(TAU * f / sr); let pw = 0; for (const [p] of seg) { let p1 = 0, p2 = 0; for (let i = 0; i < M; i++) { const s = y[p + i] * (0.5 - 0.5 * Math.cos(TAU * i / M)) + c * p1 - p2; p2 = p1; p1 = s; } pw += p1 * p1 + p2 * p2 - c * p1 * p2; } tot += pw; if (pw > bp) { bp = pw; bf = f; } }
+  if (!bf || bp < 4 * tot / 79) return cut;   // keine klare Tonspitze: feste Grenze
+  // tiefste Spitze, die mindestens 1/4 der stärksten hat (Grundton statt Oberton)
+  return Math.max(120, Math.min(cut, 0.8 * bf));
+}
 function* plop(y, sr, ev, o) {
   o = o || {}; const cut = o.cut || 250, g = Math.pow(10, -0.48 * (o.str != null ? o.str : 50) / 20), D = Math.max(1, Math.floor(sr / 1100)), n = y.length, out = [];
   const C = Math.round(0.3 * sr), mg = Math.round(0.005 * sr), p = 40;
   for (let e = 0; e < ev.length; e++) {
-    const E = ev[e], a = Math.max(0, E.s0 - mg - C), b = Math.min(n, E.s1 + mg + C), low = lpZero(y, a, b, sr, cut), L = Math.floor((b - a) / D), z = new Float64Array(L);
+    // Prüfung (Befund 7): Grenze unter dem gesungenen Grundton der Umgebung (stärkste Spitze 90–400 Hz davor/danach), höchstens o.cut
+    const E = ev[e], a = Math.max(0, E.s0 - mg - C), b = Math.min(n, E.s1 + mg + C), ce = o.cut ? cut : plopCut(y, sr, E, cut), low = lpZero(y, a, b, sr, ce), L = Math.floor((b - a) / D), z = new Float64Array(L);
     for (let j = 0; j < L; j++) z[j] = low[j * D];
     const g0 = Math.max(1, Math.floor((E.s0 - mg - a) / D)), g1 = Math.min(L - 1, Math.ceil((E.s1 + mg - a) / D) + 1);
     if (g1 - g0 < 2 || g0 < p || L - g1 < p) { out.push({t0: +E.t0.toFixed(4), t1: +E.t1.toFixed(4), exDb: E.exDb, redDb: 0}); continue; }
@@ -61733,13 +61742,13 @@ function vr1EssCore(y, sr, amt, o) {
     const bin = f => Math.round(f * N / sr), k0 = bin(fc), kT = Math.min(half - 1, bin(Math.min(20000, sr * 0.47)));   // bis 20 kHz: ein „s“ reicht weit nach oben
     if (kT <= k0 + 2) return res;
     const J = Math.ceil(n / H) + 2, nrm = 4 / (N * N), lg = p => 10 * Math.log10(p * nrm + 1e-20);
-    const Ls = new Float32Array(J), Lo = new Float32Array(J), red = new Float32Array(J), sib = new Uint8Array(J);
+    const Ls = new Float32Array(J), Lo = new Float32Array(J), Lm = new Float32Array(J), k2 = bin(2000), red = new Float32Array(J), sib = new Uint8Array(J);
     // zwei reelle Rahmen j (Realteil) und j+1 (Imaginärteil) in einer FFT
     const pair = j => { const s0 = (j - 1) * H, s1 = j * H; for (let i = 0; i < N; i++) { const q0 = s0 + i, q1 = s1 + i; re[i] = q0 >= 0 && q0 < n ? y[q0] * w[i] : 0; im[i] = q1 >= 0 && q1 < n ? y[q1] * w[i] : 0; } fft(false); };
     for (let j = 0; j < J; j += 2) {
-      pair(j); let pa = 0, pb = 0, qa = 0, qb = 0;
-      for (let k = 1; k <= kT; k++) { const a = re[k], b = im[k], c = re[N - k], d = im[N - k], P0 = (a + c) * (a + c) + (b - d) * (b - d), P1 = (b + d) * (b + d) + (a - c) * (a - c); if (k < k0) { pa += P0; pb += P1; } else { qa += P0; qb += P1; } }
-      Lo[j] = lg(pa / 4); Ls[j] = lg(qa / 4); if (j + 1 < J) { Lo[j + 1] = lg(pb / 4); Ls[j + 1] = lg(qb / 4); }
+      pair(j); let pa = 0, pb = 0, qa = 0, qb = 0, ma = 0, mb = 0;
+      for (let k = 1; k <= kT; k++) { const a = re[k], b = im[k], c = re[N - k], d = im[N - k], P0 = (a + c) * (a + c) + (b - d) * (b - d), P1 = (b + d) * (b + d) + (a - c) * (a - c); if (k < k0) { pa += P0; pb += P1; if (k >= k2) { ma += P0; mb += P1; } } else { qa += P0; qb += P1; } }
+      Lo[j] = lg(pa / 4); Ls[j] = lg(qa / 4); Lm[j] = lg(ma / 4); if (j + 1 < J) { Lo[j + 1] = lg(pb / 4); Ls[j + 1] = lg(qb / 4); Lm[j + 1] = lg(mb / 4); }
       if ((j & 31) === 30) yield 0.4 * j / J;
     }
     // Gesangspegel: lautere Hälfte der Rahmen (über −80 dB) je ±4,5 s (Blöcke à 3 s), nicht tiefer als 10 dB unter dem des Takes
@@ -61747,8 +61756,8 @@ function vr1EssCore(y, sr, amt, o) {
     const BF = Math.max(8, Math.round(3 * sr / H)), nb = Math.ceil(J / BF), Lall = top(Array.from(Lo)), Lblk = new Float32Array(nb);
     for (let b = 0; b < nb; b++) Lblk[b] = o.local ? Math.max(top(Array.from(Lo.subarray(Math.max(0, (b - 1) * BF), Math.min(J, (b + 2) * BF)))), Lall - 10) : Lall;
     const keep = new Uint8Array(J); if (o.keep) for (const [a, b] of o.keep) for (let j = Math.max(0, Math.floor(a / H)); j <= Math.min(J - 1, Math.ceil(b / H) + 1); j++) keep[j] = 1;
-    const ref = new Float32Array(J);
-    for (let j = 0; j < J; j++) { ref[j] = Math.max(Lo[j], Lblk[Math.min(nb - 1, Math.floor(j / BF))]) + thr; sib[j] = !keep[j] && Ls[j] > ref[j] && Ls[j] > -70 ? 1 : 0; }
+    const ref = new Float32Array(J), shp = o.shape != null ? o.shape : 6;
+    for (let j = 0; j < J; j++) { ref[j] = Math.max(Lo[j], Lblk[Math.min(nb - 1, Math.floor(j / BF))]) + thr; sib[j] = !keep[j] && Ls[j] > ref[j] && Ls[j] > Lm[j] + shp && Ls[j] > -70 ? 1 : 0; }   // Zischlaut: über 5 kHz deutlich mehr als 2–5 kHz (Atem, „sch“ bleiben)
     // nur Zischlaute ≥ 20 ms (kurze Anschläge t/k/p bleiben)
     const minR = Math.max(2, Math.ceil(0.02 * sr / H));
     for (let j = 0; j < J;) { if (!sib[j]) { j++; continue; } let e = j; while (e < J && sib[e]) e++; if (e - j < minR) for (let q = j; q < e; q++) sib[q] = 0; else { res.hot++; res.hotMs += Math.round((e - j) * H / sr * 1000); } j = e; }
