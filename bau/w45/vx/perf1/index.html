@@ -32153,6 +32153,7 @@ function liveUpdate(i, key, Pov) {                                   // N8: Pov 
 const DRB = {ctx: null, B: null, steps: null, k: 0, wait: false};
 function drumBufsStep(all) {
   const c = AU.ctx; if (!c) return null;
+  if (DRB.ctx !== c && typeof perf1bTake === 'function') perf1bTake(c);   /* PERF1B */
   if (DRB.ctx !== c) { const s = DrumSynth.buildSteps(c); Object.assign(DRB, {ctx: c, B: s.B, steps: s.steps, k: 0}); AU.drumBufs = null; }
   while (DRB.k < DRB.steps.length) { DRB.steps[DRB.k++](); if (!all) break; }
   if (DRB.k >= DRB.steps.length && !AU.drumBufs) { AU.drumBufs = DRB.B; drumBusBuild(); }
@@ -52767,6 +52768,7 @@ async function vwReload() {
   try { if (typeof cloudFlushNow === 'function') cloudFlushNow(); } catch (e) {}
   try { if (window.caches) { const ks = await caches.keys(); await Promise.all(ks.filter(k => /^synq-app-/.test(k)).map(k => caches.delete(k))); } } catch (e) {}
   try { const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration(); if (reg) await Promise.race([reg.update(), new Promise(r => setTimeout(r, 1500))]); } catch (e) {}
+  if (typeof perf1aPre === 'function' && await perf1aPre(v, o)) return;   /* PERF1A */
   location.replace(location.pathname + '?v=' + encodeURIComponent(v || String(Date.now())) + location.hash);
 }
 function vwStart() {
@@ -108731,6 +108733,66 @@ function init() {
   } catch (e) {}
   requestAnimationFrame(frame);
 }
+/* PERF1B-BEGIN */
+/* PERF1B (PERF1, Plan Nr. 2): die Trommel-Klänge (DrumSynth.buildSteps, beim ersten ▶ ≈ 210 ms in einem Stück bei 4×) entstehen
+   schon vor dem ersten Tipp – in Leerlauf-Schritten nach dem Laden, mit einer Hilfs-Umgebung ohne Geste (buildSteps braucht nur
+   sampleRate + createBuffer; ein AudioBuffer gehört keiner Umgebung). Die Abtastrate ist die zuletzt gesehene (synq.perf1b.sr),
+   sonst 48 kHz. Beim ersten echten Start übernimmt drumBufsStep (Haken) die fertigen Schritte, wenn die Rate gleich ist; sonst
+   bleibt alles wie bisher (Neubau für die Umgebung). Die Schritte und Klänge sind dieselben – nur der Zeitpunkt ist früher. */
+const PERF1B = {sr: 0, s: null, k: 0, wait: false, off: false, took: false};
+function perf1bRate() { let r = 0; try { r = +localStorage.getItem('synq.perf1b.sr') || 0; } catch (e) {} return r >= 8000 && r <= 192000 ? r : 48000; }
+function perf1bStart() {
+  if (PERF1B.s || PERF1B.off || PERF1B.took || AU.ctx || typeof AudioBuffer !== 'function' || typeof DrumSynth === 'undefined' || !DrumSynth.buildSteps) return;
+  const sr = perf1bRate();
+  try { new AudioBuffer({numberOfChannels: 1, length: 1, sampleRate: sr}); } catch (e) { PERF1B.off = true; return; }
+  const h = {sampleRate: sr, createBuffer: (ch, len, r) => new AudioBuffer({numberOfChannels: ch, length: len, sampleRate: r})};
+  try { PERF1B.s = DrumSynth.buildSteps(h); } catch (e) { PERF1B.off = true; return; }
+  PERF1B.sr = sr; PERF1B.k = 0; perf1bIdle();
+}
+function perf1bIdle() {
+  if (PERF1B.wait || !PERF1B.s || AU.ctx || PERF1B.k >= PERF1B.s.steps.length) return;
+  PERF1B.wait = true;
+  idle(() => {
+    PERF1B.wait = false; if (AU.ctx || !PERF1B.s) return;                    // die echte Umgebung ist da: drumBufsStep übernimmt
+    try { PERF1B.s.steps[PERF1B.k](); PERF1B.k++; } catch (e) { PERF1B.s = null; PERF1B.off = true; return; }
+    perf1bIdle();
+  });
+}
+// Haken in drumBufsStep (vor dem Neubau für eine neue Umgebung c): gleiche Rate → die vorgebauten Schritte übernehmen (einmal)
+function perf1bTake(c) {
+  if (!c || DRB.ctx === c) return false;
+  try { const AC = window.AudioContext || window.webkitAudioContext; if (AC && c instanceof AC && c.sampleRate !== perf1bRate()) localStorage.setItem('synq.perf1b.sr', String(c.sampleRate)); } catch (e) {}
+  const s = PERF1B.s; if (!s || PERF1B.took || c.sampleRate !== PERF1B.sr) return false;
+  PERF1B.s = null; PERF1B.took = true;
+  Object.assign(DRB, {ctx: c, B: s.B, steps: s.steps, k: PERF1B.k}); AU.drumBufs = null;
+  return true;
+}
+try { addEventListener('load', () => { try { idle(perf1bStart); } catch (e) {} }); } catch (e) {}
+/* PERF1B-END */
+/* PERF1A-BEGIN */
+/* PERF1A (PERF1, Plan Nr. 1): eine neue Fassung nur einmal laden. Bisher lud vwReload die Seite unter ?v=<Fassung> – der
+   Browser-Zwischenspeicher der normalen Adresse blieb dabei alt, also kam die Datei (≈ 2,9 MB) beim nächsten Start vom
+   Home-Bildschirm ein zweites Mal (oder bis zu 10 min lang noch die alte). Jetzt holt der Vorlauf die normale Adresse einmal am
+   Zwischenspeicher vorbei (cache: 'reload' – das füllt Browser-Zwischenspeicher und Service-Worker-Kopie mit der neuen Fassung),
+   prüft, dass genau diese Fassung kam, und lädt dann die normale Adresse. Nur beim ersten Versuch je Fassung; scheitert der Vorlauf,
+   kommt die alte Antwort oder dauert es zu lange, bleibt der bisherige Weg (?v=) – der zweite Versuch nimmt ihn immer.
+   Vor dem Neuladen wie bisher: nie während Wiedergabe/Aufnahme/Tippen in ein Feld, vorher speichern. */
+function perf1aPre(v, o) {
+  if (!v || !o || o.n !== 1 || typeof fetch !== 'function' || !/^https?:$/.test(location.protocol)) return Promise.resolve(false);
+  const url = location.pathname, wait = (ms, x) => new Promise(r => setTimeout(() => r(x), ms));
+  const get = fetch(url, {cache: 'reload', credentials: 'same-origin'}).then(r => (r && r.ok ? r.text() : '')).catch(() => '');
+  return Promise.race([get, wait(60000, '')]).then(txt => {
+    if (!txt || txt.indexOf("const VERSION = '" + v + "';") < 0) return false;
+    const go = async () => {
+      if (!vwIdle()) { setTimeout(go, 3000); return; }                       // inzwischen Wiedergabe/Aufnahme/Feld: kurz danach
+      try { await Promise.race([saveNow(), wait(1500)]); } catch (e) {}
+      try { if (typeof cloudFlushNow === 'function') cloudFlushNow(); } catch (e) {}
+      if (!location.search) location.reload(); else location.replace(location.pathname + location.hash);
+    };
+    go(); return true;
+  }, () => false);
+}
+/* PERF1A-END */
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 
 </script>

@@ -104989,7 +104989,8 @@ function spk12Mag(x, c, N, re, im) {   // Betrag eines Hann-Rahmens um Sample c 
 /* Neue Formen → {val(m, k) 0…255, box} auf dem Base-Raster */
 function spk12K2(d, s, base) {   // Zwischenspeicher: Schlüssel + Prüfsumme des Inhalts (Regler/Griffe ändern Formen an Ort und Stelle)
   const C = spk12K2.C || (spk12K2.C = new Map()), js = s.key ? JSON.stringify(s) : ''; let hs = 2166136261; for (let i = 0; i < js.length; i++) hs = Math.imul(hs ^ js.charCodeAt(i), 16777619);
-  const key = s.key ? d.meta.id + '|' + s.key + '|' + js.length + '|' + (hs >>> 0) + (s.src ? '|' + d.meta.layers.map(l => l.id + ':' + l.ver).join(',') : '') : '';   // Prüfung: Transient aus einer Ebene hängt an deren Stand
+  if (!d.s12uid) d.s12uid = spk12K2.U = (spk12K2.U || 0) + 1;   // Prüfung: je Dokument-Objekt (nach Schließen/Öffnen beginnen die Ebenen-Versionen neu)
+  const key = s.key ? d.meta.id + '#' + d.s12uid + '|' + s.key + '|' + js.length + '|' + (hs >>> 0) + (s.src ? '|' + d.meta.layers.map(l => l.id + ':' + l.ver).join(',') : '') : '';   // Prüfung: Transient aus einer Ebene hängt an deren Stand
   if (key && C.has(key)) return C.get(key);
   const sr = d.meta.sr, N = d.meta.base.N, hop = d.meta.base.hop, NB = N / 2 + 1, F = Math.floor((d.meta.n - 1) / hop) + N / hop;
   const cn = f => f > 0 ? 1200 * Math.log2(f / 440) : -1e9, kOf = c => 440 * Math.pow(2, c / 1200) * N / sr, tOf = m => (m - 1) * hop / sr, mOf = t => t * sr / hop + 1;
@@ -105187,11 +105188,11 @@ function spk12DspMake(Z2, X) {
   /* Teil 3: „Alle Ebenen abtasten“ aus → Analyse-Signal = nur die aktive Ebene (blockweise gerechnet, Zwischenspeicher je Ebenen-Stand) */
   /* Prüfung: Schlüssel = Dokument-Objekt (d.s12uid; nach Schließen/Öffnen/Import neu) + Ebene + Versionen; der Eintrag hält nur das Signal
      (kein altes Dokument), Blöcke werden nur im gebrauchten Bereich gerechnet (done je Block), Fortschritt über emit */
-  const SRC = new Map(); let srcN = 0, srcU = 0;
+  const SRC = new Map(); let srcN = 0;
   const srcLid = (d, m) => { const lid = m && m.s12src; if (!lid || lid === 'orig' || !X.block || !X.mixOf) return null; return lid === 'rest' || d.meta.layers.some(l => l.id === lid) ? lid : null; };
   async function src(d, m, a, b, emit) {
     const lid = srcLid(d, m); if (!lid) return d;
-    if (!d.s12uid) d.s12uid = ++srcU;
+    if (!d.s12uid) d.s12uid = spk12K2.U = (spk12K2.U || 0) + 1;
     for (const [k, e] of SRC) if (e.id === d.meta.id && e.uid !== d.s12uid) SRC.delete(k);   // Stand eines geschlossenen/neu geladenen Dokuments
     const key = d.meta.id + '#' + d.s12uid + '|' + lid + '|' + d.meta.layers.map(l => l.id + ':' + l.ver).join(','), n = d.meta.n, BL = X.BLK, nb = Math.ceil(n / BL);
     let e = SRC.get(key); if (e) SRC.delete(key); else e = {id: d.meta.id, uid: d.s12uid, mid: new Float32Array(n), done: new Uint8Array(nb), s12k: ':s12L' + (++srcN), ms: 0};

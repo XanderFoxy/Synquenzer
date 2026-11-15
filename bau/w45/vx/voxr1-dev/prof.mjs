@@ -14,3 +14,4 @@ T('clicks2', () => K.done(K.clicks2(y, sr, {})));
 T('roomLearn', () => K.done(K.roomLearn(x, sr)));
 T('hum', () => K.done(K.hum(y, y, sr, {f0: 50, n: 7})));
 T('hp', () => K.done(K.hp(y, y, sr, 80)));
+const tq = Date.now(); K.done(K.clickScan(x, sr, {prof: tq})); console.log('scan', Date.now() - tq);

@@ -22,3 +22,4 @@
 - 05:18 Endlauf: test3 47/0 · test 98/0 · test2 71/1 (Long Task 72 ms bei Last; Wiederholung 926x370 24/0) · smoke errors [] · FFT-Probe Basis 64 ms / Paket 83 ms (alter Weg) · NOTES.md Teil 3 + Pflicht fertig
 - 05:33 Start Prüfer-Befunde beheben (PRUEFUNG.md 1–9, a, b)
 - 05:43 Befunde 1–5, a, b im Block behoben (Worker-Signal je Dokument-Objekt + fensterweise, Zauberstab über Masken-Anteil, ↶-Schlüssel ohne nr, Leiste hinter den Reglern, Auswahl ▾ bei Ähnliche, Merkmal ↶, Fortschritt, Transient-Maske in der Ebene); Haken 2 und 17 (eigene Zeilen) erweitert; topdefs 26/7659/0/0 · dupkeys 0
+- 05:47 FFT-Text in die vorhandene Überschrift „Auflösung (FFT)“ (Befund 7; Test 3 erwartet jetzt „ · 93 ms / 10,8 Hz“); spk12-test4.mjs (Prüfung) einzeln grün: A 18/0, B 7/0, C 3/0; Endlauf kette4.sh gestartet

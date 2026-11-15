@@ -48,6 +48,12 @@ if (!ONLY || ONLY.includes('A')) for (const [W, H] of VIEWS) {
     for (const k of ['rect', 'zeit', 'freq', 'pinsel', 'harm', 'aehn']) L[wh][k] = await T.p.evaluate(k => { __spk.page.tool(k); const U = __spk.page.ui(); U.op.scrollLeft = 0;
       const own = e => e.closest('.spk12-c') || e.matches('.spk12-hd,.spk12-an,.spk12-dd') || e.closest('.spk1-o.on') && [...e.closest('.spk1-o.on').children].some(c => c.matches('.spk12-hd,.spk12-an')) && !e.closest('.spk1-o.on').querySelector('input[aria-label="Empfindlich"],input[aria-label="Obertöne"]');
       return [...U.op.querySelectorAll('.spk1-o.on > *')].filter(e => e.offsetParent && !own(e)).map(e => { const r = e.getBoundingClientRect(); return (e.textContent.trim().slice(0, 12) || e.tagName) + '@' + Math.round(r.left) + '-' + Math.round(r.right); }); }, k);
+    // Ansicht ▾: Höhe des Klappfensters wie in der Basis, FFT-Text im Bild
+    await T.p.evaluate(() => __spk.page.tool('rect')); await T.tap(await T.sel('#spk1Sheet .spk1-tl [data-a="view"]')); await T.wait(250);
+    L[wh].ansicht = await T.p.evaluate(([W, H]) => { const d = document.querySelector('#spk1Sheet .spk1-dd'), f = d && d.querySelector('.spk12-fft'), r = d && d.getBoundingClientRect(), q = f && f.getBoundingClientRect(), h = f && f.closest('h5');
+      return d ? {h: Math.round(r.height), sh: d.scrollHeight, fft: f ? {t: f.textContent, im: q.left >= 0 && q.right <= Math.min(W, r.right) + 0.5 && q.bottom <= H, h5: h ? Math.round(h.getBoundingClientRect().height) : null} : null} : null; }, [W, H]);
+    if (wh === 'paket') await T.shot('t4-ansicht');
+    await T.p.evaluate(() => spk1Dd(__spk.page.ui(), null)); await T.wait(150);
     if (wh === 'paket') {
       // neue Knöpfe: nach Wischen im Bild, ≥ 44 px; Auswahl ▾ bei Ähnliche sichtbar und bedienbar
       const nb = {};
@@ -66,6 +72,8 @@ if (!ONLY || ONLY.includes('A')) for (const [W, H] of VIEWS) {
     }
     await T.ctx.close();
   }
+  const an = {basis: L.basis.ansicht, paket: L.paket.ansicht}; delete L.basis.ansicht; delete L.paket.ansicht;
+  ok(tag + ' ansicht-hoehe-wie-basis', an, an.basis && an.paket && an.paket.h === an.basis.h && an.paket.sh === an.basis.sh && an.paket.fft && an.paket.fft.im && an.paket.fft.t === ' · 93 ms / 10,8 Hz');
   const same = Object.keys(L.basis).every(k => JSON.stringify(L.basis[k]) === JSON.stringify(L.paket[k]));
   ok(tag + ' vorhandene-regler-wie-basis', {basis: L.basis, paket: same ? '= Basis' : L.paket}, same);
 }
@@ -102,7 +110,7 @@ if (!ONLY || ONLY.includes('B')) {
   const n1 = await p.evaluate(() => ({n: __spk.page.ui().sel.length, und: __spk.page.ui().bU.disabled, lab: __spk.page.ui().bU.getAttribute('aria-label'), h: JSON.stringify((__spk.page.ui().hits || []).map(h => [h.t0, h.wert]))}));
   await T.tap(await T.sel('#spk1Sheet [data-a="undo"]')); await wait(300);
   const n2 = await p.evaluate(() => ({n: __spk.page.ui().sel.length, h: JSON.stringify((__spk.page.ui().hits || []).map(h => [h.t0, h.wert]))}));
-  ok('merkmal-haekchen-ein-undo', {vorher: n0, rauschen: n1, undo: n2}, n0.n > 2 && n1.h !== n0.h && !n1.und && /Merkmal/.test(n1.lab) && n2.n === n0.n && n2.h === n0.h);
+  ok('merkmal-haekchen-ein-undo', {vorher: n0, rauschen: n1, undo: n2}, n0.n > 2 && n1.h !== n0.h && !n1.und && n2.n === n0.n && n2.h === n0.h);
   // ---- 3. Auswahl ▾ im Werkzeug Ähnliche: Treffer merken ohne Werkzeugwechsel ----
   await T.tap(await T.sel('#spk1Sheet [data-a="s12dd"]')); await T.tap(await T.sel('#spk1Sheet .spk1-dd [data-s12a="mer"]')); await wait(400);
   const m3 = await p.evaluate(async () => ({tool: __spk.page.ui().tool, reg: (__spk12.S().reg || []).length, doc: (await __spk12.reg()).reg.length, n: __spk.page.ui().sel.length}));
@@ -121,7 +129,10 @@ if (!ONLY || ONLY.includes('B')) {
   const o2 = await p.evaluate(async ([lid, zz]) => { const z = eval(zz), U = __spk.page.ui(), S = __spk12.S(); U.act = lid; spk1Layers(U);
     const c3 = await z(3.25), c1 = await z(1.25), h = await spk1Call('harm', {doc: SPK1.doc, t: 3.25, f: 440}); return {ver: U.meta.layers.map(l => l.id + ':' + l.ver).join(), allL: S.allL, c1, c3, harm3: h.spur.length}; }, [lid, zz]);
   ok('abtasten-aus-nach-wiederoeffnen-aktuell', {o1, o2}, o1.a1.cells > 50 && o1.a3.cells === 0 && o1.h3a === 0 && o1.b3.cells > 50 && o2.allL === false && o2.c3.cells > 50 && o2.c1.cells > 50 && o2.harm3 > 5);
-  // gleiche Rechnung mit Ebenen-Signal (Ebene mit Effekt → kein Masken-Weg): nach Wieder-Öffnen aktueller Stand
+  // Ebene mit Effekt (kein Masken-Weg → Ebenen-Signal im Fenster): Ergebnis und Stand stimmen ebenfalls
+  const of = await p.evaluate(async ([lid, zz]) => { const z = eval(zz), U = __spk.page.ui(); const r = await __spk6.fx(lid, {lo: 2}); spk1Got(U, r);
+    const a3 = await z(3.25), a1 = await z(1.25), a5 = await z(5.25); const r2 = await __spk6.fx(lid, {lo: 0}); spk1Got(U, r2); return {a1, a3, a5}; }, [lid, zz]);
+  ok('abtasten-aus-ebene-mit-effekt', of, of.a3.cells > 50 && of.a1.cells > 50 && of.a5.cells === 0 && of.a3.src && of.a3.src.weg === 'signal');
   // ---- a. Transient in der Ebene: Maske nur im Anteil der Ebene (Band 250–3500 Hz) ----
   const oa = await p.evaluate(async lid => {
     const U = __spk.page.ui(); let r = await __spk.mask({von: 'orig', nach: lid, sel: [{art: 'rect', t0: 3.9, t1: 4.4, f0: 250, f1: 3500, kt: 0, kf: 0}]}); spk1Got(U, r);

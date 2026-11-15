@@ -21,7 +21,7 @@ for (const name of (process.env.LIEDER || 'dicht,intro,pruef').split(',')) {
   const ms = Date.now() - t0; await p.screenshot({path: path.join(fotos, name + '-angelegt-' + tag + '.png')});
   const R = await p.evaluate(() => { const r = __spk11.last(), g = spk1Grid0(__spk.page.ui()), kit = {[DRUM_BY_ID.kick.gm]: 'k', [DRUM_BY_ID.snare.gm]: 's', [DRUM_BY_ID.hatC.gm]: 'h'}, o = {};
     for (const x of r.rows) if (x.m != null) o[x.name] = r.scenes.map((s, j) => { const c = S.tracks[x.m].clips[s], ta = g.off + r.parts[j].A * g.bar; return c ? c.notes.map(n => [+(ta + n.t * 60 / S.bpm).toFixed(3), n.n, kit[n.n] || null]) : []; });
-    return {MS: o, parts: r.parts, g: {off: g.off, bar: g.bar}, rows: r.rows.map(x => ({name: x.name, cA: x.clipsA, cM: x.clipsM, n: x.notes, dB: x.dB})), b11: __spk11b.last()}; });
+    return {MS: o, parts: r.parts, g: {off: g.off, bar: g.bar}, rows: r.rows.map(x => ({name: x.name, cA: x.clipsA, cM: x.clipsM, n: x.notes, dB: x.dB})), b11: window.__spk11b ? __spk11b.last() : null}; });
   const partT = R.parts.map(pp => [R.g.off + pp.A * R.g.bar, R.g.off + pp.B * R.g.bar]), inAny = t => partT.some(([a, b2]) => t >= a - 0.03 && t < b2 - 0.03);
   const drName = (R.rows.find(x => /drum/i.test(x.name)) || {}).name, D = ((R.MS[drName]) || []).flat();
   const sc = (w, tru) => { const pr = D.filter(x => x[2] === w); let hit = 0; const used = new Set(); for (const t of tru) { const i = pr.findIndex((x, k) => !used.has(k) && Math.abs(x[0] - t) <= 0.05); if (i >= 0) { used.add(i); hit++; } } return {wahr: tru.length, treffer: hit, zuviel: pr.length - hit, q: +(hit / Math.max(1, tru.length)).toFixed(3), x: +((pr.length - hit) / Math.max(1, tru.length)).toFixed(3)}; };
