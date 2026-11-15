@@ -105,3 +105,14 @@ Datei: `fix/index.html` = `index.html` (basis + IMP2, sha a4d6e9ef…) + IMP2B. 
 | L2 Rate-Unabhängigkeit bis zur Kante | **zur Kenntnis**, kein Code | Spanne ≤ 0,33 BPM (±0,5 erfüllt); gerundetes Tempo kann je Rate kippen (126/127) = M1 |
 | L3 Kopie korrigiert Rate nur für Versatz | **behoben** (NOTES oben präzisiert) | YIN/Formant-Band weiter 44 100 (Band 326–3 809 Hz), für das Verhältnis harmlos |
 | L4 Ungenauigkeiten | **behoben** (NOTES oben) | 13,5 gegen 13,06 · Vorlauf 25,5 ms statt 17 ms · „#14 dieselbe Silbe“ stammt aus 4.63 |
+
+Endzahlen (nacheinander, `fix/out/`, an index.html = fix/index.html, sha 9f414c75…):
+- rv1-test ORIGINAL: **4/53 → 1/53** (Rest: #14 Stück 35 links, Bezug gedehnte Fassung). Basis weiter 1/53 (#10 Raster).
+- rv1-test-imp2b (Kopie): IMP2B **ALLE OK 53**; Basis 1/53 (#10 Raster) → die Kopie verdeckt den Basis-Fehler nicht.
+- chr2-test Original 3 FEHLER (unverändert, Ursache Test, s. oben); chr2-test-imp2b ALLE OK (82).
+- Synthetische Takes 120/112/132 (Import → Editor → Quantisieren → Chor): ALLE OK 61.
+- imp1 ALLE OK (48) · vx1 61/61 · vx2 14/14 · vx3 15/15 · imp2-node ALLE OK (#14 Spanne 0,05 BPM) · fft ALLE OK (6) · krumm ALLE OK (37) · sweep −51,7 dB.
+- Pflicht: topdefs Skripte 26, Namen 7476 (+2: imp2bGap, imp2bYield), doppelt 0, Syntaxfehler 0 · dupkeys 0 · smoke errors [] · „MS 2000“ 1× ·
+  „^  live: true,“ 1× · VERSION 4.66.0 · keine neue Marke · keine Datensatz-/Produktnamen.
+Offen: M1 (Vorschlag sichtbar → Funk), M2-Entscheidung (Vorschlag: übernehmen, ankündigen), #10-Chor-Messung bei RV1_ONLY=10 (Kopie), Original-rv1/chr2
+als Abnahme durch die Kopien ersetzen (Entscheidung RV1/CHR).

@@ -61825,7 +61825,7 @@ function wpRun(M, m) {
 function wpWorker() {
   if (WP.w !== null) return WP.w;
   try {
-    const src = vsMarksMake.toString() + '\n' + vsStretchMake.toString() + '\n' + wpRun.toString() + '\n' + vx1rRun.toString() + '\n' + nx1RunG.toString() + '\n' + (typeof vx3Lead === 'function' ? vx3Lead.toString() + '\n' : '') /* VX3 */ +   /* VX1R, NX1 */ g9Make.toString() + '\n' + g9Run.toString() + '\nconst K9 = g9Make();const M = vsMarksMake();M.X = vsStretchMake();onmessage = e => { const m = e.data; if (m.id === -1) { try { g9Run(K9, m); } catch (er) {} return; } try { const r = m.op === "g9f" || m.op === "g9a" || m.op === "g9s" ? g9Run(K9, m) : wpRun(M, m); postMessage({id: m.id, r}, r instanceof Float32Array ? [r.buffer] : r && r.y instanceof Float32Array ? [r.y.buffer] : []); } catch (err) { postMessage({id: m.id, err: String(err && err.message || err)}); } };';
+    const src = vsMarksMake.toString() + '\n' + vsStretchMake.toString() + '\n' + wpRun.toString() + '\n' + vx1rRun.toString() + '\n' + nx1RunG.toString() + '\n' + (typeof vx3Lead === 'function' ? vx3Lead.toString() + '\n' : '') /* VX3 */ + (typeof imp2bGap === 'function' ? imp2bGap.toString() + '\n' : '') /* IMP2B */ +   /* VX1R, NX1 */ g9Make.toString() + '\n' + g9Run.toString() + '\nconst K9 = g9Make();const M = vsMarksMake();M.X = vsStretchMake();onmessage = e => { const m = e.data; if (m.id === -1) { try { g9Run(K9, m); } catch (er) {} return; } try { const r = m.op === "g9f" || m.op === "g9a" || m.op === "g9s" ? g9Run(K9, m) : wpRun(M, m); postMessage({id: m.id, r}, r instanceof Float32Array ? [r.buffer] : r && r.y instanceof Float32Array ? [r.y.buffer] : []); } catch (err) { postMessage({id: m.id, err: String(err && err.message || err)}); } };';
     const u = URL.createObjectURL(new Blob([src], {type: 'application/javascript'}));
     const w = new Worker(u); setTimeout(() => { try { URL.revokeObjectURL(u); } catch (e) {} }, 30000);
     w.onmessage = e => { const m = e.data, q = WP.wq.get(m.id); if (!q) return; WP.wq.delete(m.id); clearTimeout(q.to); if (m.err) q.no(new Error(m.err)); else q.ok(m.r); };
@@ -102048,6 +102048,7 @@ function* nx1RunG(M, m) {   // NX1: der Kern als Generator – nach kleinen Stü
       st.cut++; st.fades.push(F / sr);
       continue;
     }
+    if (typeof imp2bGap === 'function' && imp2bGap(x, n, S[j], len, slot, fiN, d0, gIn, put, st, sr)) continue;   /* IMP2B: Kleinst-Lücke (≤ 2 ms) nicht dehnen, Quelle läuft durch */
     // Lücke: Vokal-Teil dehnen (≤ RMAX), Einsatz fest
     const V = len - fix, need = slot + fiN - fix;
     let r = V > Math.round(.03 * sr) ? Math.min(RMAX, need / V) : 1, tail = null;
@@ -102151,6 +102152,7 @@ function vx1rQuant(id, m, o) {
   for (let k = 0; k < mk.length; k++) {
     let d = (isNum(mk[k].vd) ? mk[k].vd : q ? q.times[k] : at[k]) - an[k];
     if (k && typeof vx3Cut === 'function') d = vx3Cut(id, m, mk, an, k, d, dst[k - 1] + an[k - 1] + VX1R.LOCK + .01);   /* VX3: Sperre → erst gibt der Anlauf nach, Anker bleibt auf dem Raster */
+    if (k && typeof imp2bYield === 'function') imp2bYield(dst, mk, an, k, d, q, VX1R.LOCK);   /* IMP2B: nicht eingerastetes k−1 gibt ≤ 15 ms nach, Anker k bleibt auf der Linie */
     if (k) d = Math.max(d, dst[k - 1] + an[k - 1] + VX1R.LOCK + .01);   // nie in den Einsatz des Vorgängers
     dst.push(Math.max(0, d));
   }
@@ -104040,6 +104042,30 @@ function vx3LeadOf(A, alt) {
 }
 window.__vx3 = {on: v => vx3On(v), lead: (mk, F, an, sr, H, FH, TH) => vx3Lead(mk, F, an, sr, H, FH, TH, new Float32Array(mk.length)), leadOf: id => vx3LeadOf(VX1R.ana.get(id))};
 /* ===== VX3-END ===== */
+/* ===== IMP2B-BEGIN (Paket IMP2B-FIX, Prüfer-Befund S1: Gesang-Editor robust gegen Kleinst-Verschiebungen der Take-Lage)
+   Befund: nach dem Quantisieren liegt ein Stück oft nur Bruchteile einer ms später als nahtlos (#10 Stück 13: +0,75 ms, weil der Take 5 ms
+   anders liegt – mit IMP2 bei 48 kHz, mit der Basis schon heute bei 22,05/44,1 kHz). 'hyb' behandelte das als Lücke: Vokal-Teil des Vorgängers
+   (hier 37 ms) per WSOLA um 1,13× gedehnt (die Lücke zählt seine Einblende mit) → Knacken an der Naht (2. Ableitung 4× der Quelle).
+   Jetzt: Lücke ≤ 2 ms wird nicht gedehnt – der Vorgänger spielt die Quelle einfach weiter (bitgleich, wie ein unveränderter Nachbar) und blendet
+   im Vorlauf des Nachfolgers über (gleiche Leistung, cos/sin über dessen Einblende). Größere Lücken unverändert (Dehnen bis 1,5×).
+   Läuft im Zeitkarten-Worker mit (Quelltext per toString, Haken in wpWorker) und im Hauptfaden-Rückfall (nx1RunG). */
+function imp2bGap(x, n, Sj, len, slot, fiN, d0, gIn, put, st, sr) {
+  const g = slot - len; if (!(g > 0) || g > Math.round(.002 * sr)) return false;
+  const end = Math.max(1, Math.min(n - Sj, slot + fiN)), F = Math.max(1, Math.min(fiN, end));
+  for (let i = 0; i < end; i++) { const u = (i - (end - F) + .5) / F; put(d0 + i, x[Sj + i] * gIn(i) * (u > 0 ? Math.cos(.5 * Math.PI * Math.min(1, u)) : 1)); }
+  st.cut++; return true;
+}
+// Quantisieren: belegt der Nachfolger k die Rasterlinie, auf die auch das Stück k−1 wollte (k−1 bleibt dann wie gesungen), sperrte bisher
+// der Einsatz von k−1 das Stück k von der Linie (#14 Stück 16: 10 ms daneben, #10 Stück 4: 3,7 ms – „frei daneben“ in rv1, in der Basis schon
+// bei #10). Jetzt gibt das nicht eingerastete k−1 bis 15 ms nach vorn nach (eigene Sperre zu k−2 und Take-Anfang eingehalten), damit der
+// Anker von k auf der Linie liegt. Nur bei Quantisieren über die Karte (keine eigenen Ziele vd); Hand-Verschieben bleibt gesperrt wie bisher.
+function imp2bYield(dst, mk, an, k, d, q, LK) {
+  if (!q || !q.moved || !(k > 0) || !q.moved[k] || q.moved[k - 1] || isNum(mk[k].vd) || isNum(mk[k - 1].vd)) return;
+  const lim = dst[k - 1] + an[k - 1] + LK + .01, dl = lim - d; if (!(dl > 1e-6) || dl > .015) return;
+  const lo = k > 1 ? dst[k - 2] + an[k - 2] + LK + .01 : 0; if (dst[k - 1] - dl < lo - 1e-9 || dst[k - 1] - dl < 0) return;
+  dst[k - 1] = tkR6(dst[k - 1] - dl);
+}
+/* ===== IMP2B-END ===== */
 /* ===== IMP1-BEGIN (Paket IMP1, Audio-/MIDI-Import mit Tempo, Taktart und Teilen – Xander 14.11.: „MP3 … BPM erkennen und die Taktart …
    in Szenen als zerschnittene Audios … Strophe eins, Refrain eins …“). Schritt 1: die Erkennung.
    imp1Core: Kern ohne DOM, läuft als Worker (Blob, sonst data:-URL; ohne Worker stückweise im Hauptfaden). Ablauf: herunterteilen auf ~11 kHz →

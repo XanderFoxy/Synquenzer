@@ -60,3 +60,9 @@
 - 02:16 rv1-test ORIGINAL an fix/index.html: **FEHLER 1/53** (vorher 4/53; einzig #14 Stück 35 links = Bezug gedehnte Fassung).
 - 02:18 rv1-Kopie: Glättung im Fenster-Median lagMed verschlechterte #1 (18/6 …) → `fix/lagmed-sim.mjs` an #10-Puffern: Original-lagMed trifft 5/6,
   jede Glättung 6–8 ms daneben → zurückgenommen (nur envOf/Rückfall 20 ms + NaN-Fix bleiben). Kopie-Läufe danach neu.
+- 02:14–02:28 Kette fix/lauf.sh an fix/index.html (nacheinander, fix/out/zeit.txt): rv1 ORIGINAL 1/53 · chr2 Original 3 FEHLER (unverändert, Ursache Test,
+  Projekt-Tempo 121) · chr2-test-imp2b ALLE OK (82) · synth. Takes (pruef/syn, RV1_ONLY=1,2,3) ALLE OK 61 · imp1 ALLE OK (48) 118 s · vx1 61/61 · vx2 14/14 ·
+  vx3 15/15 · imp2-node ALLE OK (#14 Spanne 0,05, #1/#10 0,00) · fft ALLE OK (6) · krumm ALLE OK (37) · sweep −51,7 dB.
+- 02:28–02:31 rv1-Kopie (lagMed wie Original) neu: fix/index.html **ALLE OK 53** · basis.html FEHLER 1/53 (nur #10 Raster – die Kopie verdeckt nichts).
+- 02:31 index.html (IMP2, a4d6e9ef…) → index-imp2.html; fix/apply.mjs baut daraus fix/index.html; **index.html = fix/index.html** (sha 9f414c75…),
+  basis.html unverändert (51da4b6b…). 02:33 NOTES.md (Abschnitt „Prüfung – IMP2B-FIX“, Korrekturen L1/L3/L4/M2 im Text) geschrieben.
