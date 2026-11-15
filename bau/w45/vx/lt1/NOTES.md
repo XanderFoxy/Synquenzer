@@ -171,6 +171,6 @@ c 926×428 basis median 52 max 68 (2× > 50) | index **0 / 0 (0×)**; c 428×926
 imp1Place index 23–43 ms, basis 36–66 ms.
 
 Regression nach Teil 2: imp2 ALLE OK (ab/imp2-c.out), imp1 ALLE OK 148 s (ab/imp1-c.out), spk6 ALLES OK 26, spk5 ALLES OK 24
-(reg.log); Endfassung (mit Messzeile preMs/preK): imp1/imp2 siehe reg.log `index-final`. Spektral-Tests (spk12-1/2/3, fokus1, fokus1k,
+(reg.log); Endfassung 2a3260c2… (mit Messzeile preMs/preK): imp1 ALLE OK (130 s), imp2 ALLE OK 8 (reg.log `index-final`, reg/imp1-index-final.out). Spektral-Tests (spk12-1/2/3, fokus1, fokus1k,
 spkfix) nicht neu: Teil 2 ändert keinen Spektral-Code; tkToBuffer/tkStore-Haken greifen nur während lt1Take (`LT1.use`).
 

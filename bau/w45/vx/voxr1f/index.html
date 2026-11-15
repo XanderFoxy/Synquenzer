@@ -61600,7 +61600,7 @@ function* clickScan(x, sr, o, wins) {
   // die sagt das AR-Modell gut voraus). Beide müssen allein stehen: Stimmlippen-Pulse kommen alle 1–16 ms wieder.
   /* VOXR1F-P: BIG nur in rauschartiger Umgebung (Pause): Mittel der Rahmen-Spitzen in ±12 ms ≤ BQ × Median (Gesang: Pulse → Mittel ≫ Median).
      Prüfung B@48 2,745 s: BIG fand dort einen Klick mitten im lauten Gesang, die Reparatur kostete Höhen. {bq: 0} = ohne Prüfung. */
-  const BQ = o.bq != null ? o.bq : 1.5, bigQuiet = (arr, xl, xr) => !(BQ > 0) || mean(arr, xl - W, xr + W + 1, xl, xr) <= BQ * medx(arr, xl - W, xr + W + 1, xl, xr);
+  const BQ = o.bq != null ? o.bq : 1.2, bigQuiet = (arr, xl, xr) => !(BQ > 0) || mean(arr, xl - W, xr + W + 1, xl, xr) <= BQ * medx(arr, xl - W, xr + W + 1, xl, xr);
   const test = (arr, j, k1, k2) => { const v = arr[j]; if (v < 2e-4 || v < arr[j - 1] || v < arr[j + 1] || v < arr[j - 2] || v < arr[j + 2]) return null;
     let jl = j, jr = j; while (jl > j - MX && arr[jl - 1] > 0.25 * v) jl--; while (jr < j + MX && jr + 1 < nj && arr[jr + 1] > 0.25 * v) jr++;
     const xl = Math.min(jl - 2, j - X3), xr = Math.max(jr + 2, j + X3);
@@ -61637,7 +61637,7 @@ function* clickScan(x, sr, o, wins) {
    (bei lauten Klicks in der Pause noch +15…+25 dB über der Umgebung) blieb stehen und war zugleich Randwert der Interpolation (Füllung zu laut).
    Hier: Band > 1,5 kHz in 0,25-ms-Rahmen gegen den Median der Umgebung (links 1–12 ms, rechts 3–12 ms); verlängert, solange ein Rahmen
    > 4,8 dB (3×) darüber liegt – rechts höchstens 2 ms (Ausklang), links höchstens 0,5 ms, gesamt ≤ 8 ms; nur für Funde ≤ 3 ms (längere
-   Geräusche des Takes wie bisher – sonst fand der 2. Durchgang daneben neue Stellen). Gibt den Umgebungs-Median mit zurück. {span: 0} = wie vorher. */
+   Geräusche des Takes wie bisher – sonst fand der 2. Durchgang daneben neue Stellen). Gibt den Bezug der Umgebung mit zurück (VOXR1F-P: Mittel statt Median, nur in rauschartiger Umgebung). {span: 0} = wie vorher. */
 function clickSpan(z, g0, g1, sr, p, o) {
   if ((o && o.span === 0) || g1 - g0 > Math.round((o && o.spanMax != null ? o.spanMax : 0.003) * sr)) return [g0, g1];   // längere Funde (Geräusche des Takes) wie bisher
   const q = Math.max(4, Math.round(0.00025 * sr)), L = z.length, fr = i => { let s = 0; for (let k = i; k < i + q; k++) s += z[k] * z[k]; return s / q; }, E = [];
