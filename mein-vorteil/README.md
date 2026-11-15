@@ -41,7 +41,7 @@ Sprungmarken: `#start`, `#deals` (`#produkte`, `#cashback`, `#snacks` = Ziel im 
 | **Start „Heute für dich“** | „Heute wichtig“ (höchstens 4 Zeilen) + je Bereich eine Kachel mit 1–3 besten Treffern; Tippen öffnet den Bereich | jede Kachel nennt den nächstbesten Treffer bzw. den Grund |
 | **Deals** | Meine Produkte (Jetzt/Bald/Weitere, kaufDA-Region mit „in Döbeln prüfen“), Musik-Technik, Cashback, andere Snacks | ohne Angebot steht die Liste „zuletzt gesehen 0,99 € (225 g) bei Penny, Okt. 2026“ offen; beginnen alle Angebote erst später (Sonntag), nennt die Start-Kachel sie („ab morgen · 0,66 € bei Netto“, „11 Angebote starten bald“) statt „gerade kein Angebot“ |
 | **Preisfehler** | nur krasse (Regel unverändert) | sonst: wo sie zuerst auftauchen (mydealz-Gruppe Preisfehler, heiße Deals) |
-| **Filme** | Reiter aus `filme.js` (faul geladen), jetzt mit Apple-TV-Angebotsräumen („Filme für 3,99 €“) | Start-Kachel aus `aktuell.json` → `filme` |
+| **Filme** | Reiter aus `filme.js` (faul geladen): Wunschliste · Für 3,99 € · Action & Thriller · Comedy · 80er & Kult · Neu · Serien · Disney, mit Apple-TV-Angebotsräumen („Filme für 3,99 €“) | Start-Kachel: Push-Treffer aus `aktuell.json` → `filme`, dann die Übersicht `status.filme.kurz` (Zahl echter Angebote + beste Titel, höchstens 2 Zeilen) |
 | **Auftritte** | frische Ausschreibungen (nah + bald zuerst) mit **Bewerben**, darunter feste Adressen (Döbeln, Leipzig, Dresden, Chemnitz, deutschlandweit) | feste Adressen immer (gigmit nur noch die Startseite, Zeile „Link prüfen“); ältere Daten: dieselben Adressen aus der Seite (`FUNDORTE`, Test gegen `vorteile/config.json`) |
 | **Remix** | laufende Contests (was zuerst endet, oben) mit **Mitmachen** (Frist, Stems, Text) | Fundorte mit laufenden Contests weltweit |
 | **Unterricht** | oben **Gesuche im Netz** (Reddit, Freelancer …, neueste zuerst, mit Auszug), darunter Stellen (Döbeln + online zuerst) – alles mit **Melden** als „Deutsch mit Xander“ | Jobbörse-Live-Suche, italki, Preply, Lingoda, BAMF; Gesuche: Upwork, Fiverr, Kleinanzeigen, Freelancer, Reddit |
@@ -92,7 +92,12 @@ Antippen blendet die Bereiche aus (main hidden) und springt unter die Leiste; je
 
 **Reiter „Filme“ (Film-Radar, `filme.js`):** letzter Link der Leiste, `#filme` öffnet ihn direkt. Skript, CSS (`.fi-…`) und
 Daten (`vorteile-daten/vorteile/data/filme.json`) kommen erst beim ersten Öffnen; vorher lädt die Seite nichts davon.
-Chips Wunschliste · Angebote · Neu · 80er & Kult · Serien · Disney, Tiefstpreis, „dein Ziel“, letzter Stand offline.
+Chips Wunschliste · Für 3,99 € · Action & Thriller · Comedy · 80er & Kult · Neu · Serien · Disney („Angebote“ nur, wenn dort
+etwas steht, das in keinem anderen Bereich vorkommt), Tiefstpreis, „dein Ziel“, letzter Stand offline (ein Stand vom Scanner vor
+dem 14.11.2026, 23:39 – ohne Horror-/Qualitätsfilter – wird nicht aus dem Gerätespeicher gezeigt). Reihenfolge in den drei
+Angebots-Chips: deine Listen, Top-Filme (≥ 55 Wikipedia-Sprachen oder Rotten Tomatoes ≥ 80 % und ≥ 30 Sprachen), Kinderfilme, Rest.
+Die Infozeile bleibt einzeilig (bei schmalen Handys kürzt sich das Genre), ein mydealz-Tipp zu einem Film, der schon als
+Apple-Karte dasteht, fällt weg.
 Film-Einträge aus `aktuell.json` (Kategorie `filme`, für die Pushes) stehen nur dort, nicht noch einmal unter „Mehr“.
 Der Service Worker hält `filme.js` wie die Seite (erst Netz, nach 3 s die letzte gute Kopie). Tests: `test/filme.test.mjs`.
 

@@ -15,6 +15,7 @@ import filme, {
   merkeFilmPreis, preisLage, preisWert, istAppleFilmDeal, postenListe, sucheUrl,
   chartIndex, chartFilm, serienBegriffe, wikidataAbfrage, wikidataTeile, leseWikidata, wikidataKandidaten, englisch,
   suchName, jahrImTitel, qualiAbfrage, leseQuali, qualiWahl, qualiOk, genreGruppe, STANDARD as FILM_STANDARD, horrorText,
+  horrorVerdacht, doppelTipp, filmPushTitel,
 } from '../module/filme.mjs';
 
 const HIER = dirname(fileURLToPath(import.meta.url));
@@ -592,6 +593,7 @@ test('Qualität: Apple-Titel säubern, Wikidata-Antwort lesen, passenden Film w�
   assert.deepEqual([zeilen[0].rt, zeilen[0].jahr, zeilen[0].item, zeilen[0].horror], [91, 1971, 'Q1', false]);
   // Apple-Datum 2014 = Wiederveröffentlichung -> älterer Film mit gleichem Namen
   assert.equal(qualiWahl(zeilen, { nr: '1234567', name: 'Dirty Harry', jahr: 2014 }).item, 'Q1');
+  assert.equal(qualiWahl(zeilen, { nr: '1234567', name: 'Dirty Harry', jahr: 2014 }).jahr, 1971, 'Wikidata-Jahr kommt mit (Filmjahr statt Apple-Datum)');
   assert.equal(qualiWahl(zeilen, { nr: '1234567', name: 'Dirty Harry', jahr: 1960 }), null, 'kein Film vor 1960 mit dem Namen');
   assert.equal(qualiWahl(zeilen, { nr: '1234567', name: 'Ganz anderer Film', jahr: 1971 }), null, 'Name muss passen');
   assert.throws(() => leseQuali('<html>'), /Wikidata/);
@@ -697,4 +699,59 @@ test('main: Kachel-Zusammenfassung der Filme landet in aktuell.json (status.film
   const r = await lauf({ cfg, wunschliste: {}, filmListen: listen, vorher: null, zustand: {}, holeText: z.holeText, jetzt: JETZT, alle: true });
   assert.ok(r.aktuell.status.filme.kurz.angebote >= 10);
   assert.ok(Array.isArray(r.aktuell.status.filme.kurz.top));
+});
+
+test('Prüfer MV8: Horror-Verdacht mit einem schwachen Zeichen, wenn Wikidata den Film nicht kennt (Kraken, Flight 298)', () => {
+  // echte Fälle 15.11.2026: „Kraken: Erwachen der Tiefe“ („Alptraum“, Apple: Thriller), „Flight 298“ („unheimliche“, Apple: Sci-Fi)
+  assert.equal(horrorText('Was als Forschungsreise beginnt, wird zum Alptraum in der Tiefe.', 'Thriller'), 1);
+  assert.equal(horrorVerdacht(1, { l: -1 }), true, 'Wikidata kennt ihn nicht + ein schwaches Zeichen -> raus');
+  assert.equal(horrorVerdacht(1, { l: 40, horror: false }), false, 'bekannter Film (Fluch der Karibik: „Untote“) bleibt');
+  assert.equal(horrorVerdacht(1, null), false, 'Wikidata gestört: ein Zeichen allein reicht nicht');
+  assert.equal(horrorVerdacht(2, null), true);
+  assert.equal(horrorVerdacht(2, { l: 30 }), false, 'Wikidata kennt ihn: dort entscheidet das Genre (Serenity)');
+  assert.equal(horrorVerdacht(3, { l: 90 }), true);
+  assert.equal(horrorVerdacht(0, { l: -1 }), false);
+});
+
+test('Prüfer MV8: mydealz-Tipp zu einem Film, der schon als Apple-Titel da ist, zählt nicht doppelt (Flow)', () => {
+  assert.equal(doppelTipp('Flow ~ 3,99€ | UHD digital | Apple TV / Amazon Video', ['Charade (1963)', 'Flow']), true);
+  assert.equal(doppelTipp('Charade für 3,99 € bei Apple TV', ['Charade (1963)']), true, 'Jahr im Apple-Titel stört nicht');
+  assert.equal(doppelTipp('Dead Man ~ 3,99€ | HD digital | Johnny Depp | Apple TV', ['Flow']), false);
+  assert.equal(doppelTipp('Up to 5 Filme für 9,99 €', ['Up']), false, 'Set bleibt');
+  assert.equal(doppelTipp('Upgrade ~ 3,99€', ['Up']), false, 'nach dem Titel muss ein Trenner folgen');
+  assert.equal(doppelTipp('Der Pate Trilogie für 9,99 €', ['Der Pate']), false, 'anderes Angebot (Trilogie)');
+});
+
+test('Prüfer MV8: Filmjahr von Wikidata statt Wiederveröffentlichung, Push-Titel ohne zweites Jahr', async () => {
+  // Apple liefert „Der Pate“ mit Datum 2008 (Wiederveröffentlichung); Wikidata kennt 1972
+  const umbau = (name, datum) => async (url, o) => {
+    const t = await abruf(QUALI).holeText(url, o);
+    if (!/itunes\.apple\.com/.test(url)) return t;
+    return t.replace(/("trackName":")Der Pate(")/g, `$1${name}$2`).replace(/("im:name":\{"label":")Der Pate(")/g, `$1${name}$2`)
+      .replace(/(1000000601[^}]*?"releaseDate":")1972-03-24[^"]*/g, '$12008-05-01T07:00:00Z')
+      .replace(/("im:releaseDate":\{"label":")1972-03-24T00:00:00-08:00(")/g, '$12008-05-01T00:00:00-07:00$2');
+  };
+  const r = await filme(ctx(umbau('Der Pate', '2008'), {}));
+  const pate = alleTitel(r.datei).find(t => t.id === 'itunes:1000000601');
+  assert.ok(pate, 'Der Pate steht auf der Seite');
+  assert.equal(pate.jahr, 1972, 'Wikidata-Jahr statt 2008');
+  assert.ok(r.datei.gruppen.achtziger.some(t => t.id === 'itunes:1000000601'), 'mit dem echten Jahr ein Klassiker');
+  for (const e of r.eintraege.filter(x => /Der Pate/.test(x.titel))) assert.match(e.titel, /^Der Pate \(1972\) für/);
+  // Jahr schon im Apple-Titel: kein zweites („Scarface (1983) (1984)“); auch hier gewinnt das Jahr aus dem Titel
+  const r2 = await filme(ctx(umbau('Der Pate (1972)', '2008'), {}));
+  for (const t of alleTitel(r2.datei).filter(x => x.id === 'itunes:1000000601')) assert.equal(t.titel, 'Der Pate (1972)');
+  // Push-Titel (Prüfer-Befund MV8 12): Jahr nur, wenn keins im Titel steht
+  assert.equal(filmPushTitel({ titel: 'Charade (1963)', typ: 'film', jahr: 1963, preis: 3.99 }).replace(/\s/g, ' '), 'Charade (1963) für 3,99 €');
+  assert.equal(filmPushTitel({ titel: 'Scarface (1983)', typ: 'film', jahr: 1984, preis: 3.99 }).replace(/\s/g, ' '), 'Scarface (1983) für 3,99 €');
+  assert.equal(filmPushTitel({ titel: 'Dirty Harry', typ: 'film', jahr: 1971, preis: 3.99 }).replace(/\s/g, ' '), 'Dirty Harry (1971) für 3,99 €');
+  assert.equal(filmPushTitel({ titel: 'Rick and Morty, Staffel 2', typ: 'staffel', jahr: 2015, preis: 9.99 }).replace(/\s/g, ' '), 'Rick and Morty, Staffel 2 für 9,99 €');
+});
+
+test('Prüfer MV8: Kachel-Zahl zählt nur echte Angebote (kein Normalpreis bis 7,99 € aus Action/Comedy)', async () => {
+  const r = await filme(ctx(abruf(QUALI).holeText, {}));
+  const g = r.datei.gruppen;
+  const normal = [...g.action, ...g.comedy].filter(t => !t.angebot && t.preis > 3.99 && !g.wunsch.some(w => w.id === t.id && w.unterZiel));
+  const echt = new Set([...g.fuer399, ...[...g.action, ...g.comedy, ...g.achtziger, ...g.disney, ...g.serien].filter(t => t.angebot || (t.typ === 'film' && t.preis != null && t.preis <= 3.99)), ...g.wunsch.filter(t => t.angebot || t.unterZiel)].map(t => t.id));
+  assert.equal(r.kurz.angebote, echt.size);
+  for (const t of normal) if (!g.fuer399.some(x => x.id === t.id)) assert.ok(!echt.has(t.id), t.titel);
 });

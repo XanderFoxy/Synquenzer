@@ -155,8 +155,9 @@ test('Für 3,99 €, Action & Thriller, Comedy: Listen zuerst, Top-Filme vor Kin
   const I = F._intern;
   const n = plain(I.normalisiere(FILME));
   // Scanner-Reihenfolge: Listen, Preis (Antigone 2,49 € vorn), Qualität – die Seite: Bekanntheit + Kritik, Kinderfilme nach den Top-Filmen
-  assert.deepEqual(n.gruppen.fuer399.map(t => t.titel), ['Manta Manta', 'Stirb langsam', 'Die nackte Kanone', 'Charade (1963)', 'Ocean’s Eleven', 'Antigone',
-    'Shrek – Der tollkühne Held', 'Bad Boys – Harte Jungs', 'Nicht so schnell, mein Junge', 'Indiana Jones – 4 Filme als Set in 4K Dolby Vision @ Apple TV']);
+  assert.deepEqual(n.gruppen.fuer399.map(t => t.titel), ['Manta Manta', 'Stirb langsam', 'Die nackte Kanone', 'Charade (1963)', 'Ocean’s Eleven',
+    // Prüfer MV8 5: Antigone (Kritik 95 %, aber nur 8 Wikipedia-Sprachen) ist kein Top-Film mehr -> hinter Shrek (Kinderfilm)
+    'Shrek – Der tollkühne Held', 'Antigone', 'Bad Boys – Harte Jungs', 'Nicht so schnell, mein Junge', 'Indiana Jones – 4 Filme als Set in 4K Dolby Vision @ Apple TV']);
   assert.deepEqual(n.gruppen.action.map(t => t.titel), ['Stirb langsam', 'John Wick: Kapitel 4', 'Ocean’s Eleven', 'Black Bag – Doppeltes Spiel', 'Bad Boys – Harte Jungs']);
   assert.deepEqual(n.gruppen.comedy.map(t => t.titel), ['Manta Manta', 'Die nackte Kanone', 'Charade (1963)', 'Nicht so schnell, mein Junge']);
   assert.deepEqual([n.gruppen.fuer399[3].rt, n.gruppen.fuer399[3].bekannt], [94, 51], 'Rotten Tomatoes und Bekanntheit gelesen');
@@ -171,11 +172,42 @@ test('Für 3,99 €, Action & Thriller, Comedy: Listen zuerst, Top-Filme vor Kin
   const charade = I.karte(n.gruppen.fuer399[3], false, 'fuer399');
   assert.match(charade, /Charade \(1963\)<\/span>/);
   assert.doesNotMatch(charade, /fi-jahr/);
-  assert.match(charade, /<span class="fi-info">Komödie · Rotten Tomatoes 94 %<\/span>/);
-  assert.match(I.karte(n.gruppen.action[3], false, 'action'), /<span class="fi-info">Thriller · neu · Rotten Tomatoes 96 %<\/span>/);
-  assert.match(I.karte(n.gruppen.action[3], false, 'neu'), /<span class="fi-info">Thriller · Platz 9 der Charts<\/span>/);
-  assert.match(I.karte(n.gruppen.fuer399[9], false, 'fuer399').replace(/[  ]/g, ' '), /4 Filme, 3,75 € je Film · Tipp von mydealz/);
+  // Infozeile einzeilig (Prüfer MV8 2): Genre und Rest in eigenen Teilen, das Genre kürzt sich zuerst
+  const info = html => html.match(/<span class="fi-info[^"]*">(.*?)<\/span><span class="fi-preiszeile">/)[1].replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ');
+  assert.equal(info(charade), 'Komödie · Rotten Tomatoes 94 %');
+  assert.match(charade, /<span class="fi-info fi-eng"><span class="fi-ig">Komödie<\/span><span class="fi-ir">&nbsp;· Rotten Tomatoes 94 %<\/span><\/span>/);
+  assert.equal(info(I.karte(n.gruppen.action[3], false, 'action')), 'Thriller · neu · Rotten Tomatoes 96 %');
+  assert.equal(info(I.karte(n.gruppen.action[3], false, 'neu')), 'Thriller · Platz 9 der Charts');
+  assert.match(I.karte(n.gruppen.fuer399[9], false, 'fuer399').replace(/[  ]/g, ' '), /4 Filme, je 3,75 € · mydealz-Tipp/);
   assert.match(I.karte(n.gruppen.wunsch[0], false, 'wunsch'), /Manta Manta <span class="fi-jahr">\(1991\)<\/span>/);
+});
+
+test('Prüfer MV8: doppelter mydealz-Tipp (Flow), zwei Jahre im Titel, alter Gerätespeicher, Fußtext mydealz', () => {
+  const { F } = modul();
+  const I = F._intern;
+  // Flow als Apple-Karte und als „Flow ~ 3,99€ | UHD …“ von mydealz -> nur die Apple-Karte; Sets und andere Filme bleiben
+  const g = { ...FILME.gruppen, fuer399: [
+    { id: 'itunes:1', titel: 'Flow', preis: 3.99, genre: 'Kinder und Familie', quelle: 'Apple' },
+    { id: 'mydealz:1', titel: 'Flow ~ 3,99€ | UHD digital | Apple TV / Amazon Video', preis: 3.99, quelle: 'mydealz' },
+    { id: 'mydealz:2', titel: 'Dead Man ~ 3,99€ | HD digital | Johnny Depp | Apple TV', preis: 3.99, quelle: 'mydealz' },
+    { id: 'mydealz:3', titel: 'Flow und 3 Filme für 9,99 €', preis: 9.99, quelle: 'mydealz' },
+  ] };
+  const n = plain(I.normalisiere({ ...FILME, gruppen: g }));
+  assert.deepEqual(n.gruppen.fuer399.map(t => t.id), ['itunes:1', 'mydealz:2', 'mydealz:3']);
+  const n2 = plain(I.normalisiere({ ...FILME, gruppen: { ...g, angebot: [...g.fuer399] } }));
+  assert.deepEqual(n2.gruppen.weitere, [], 'der weggelassene Tipp taucht nicht unter „Angebote“ auf');
+  // „Scarface (1983)“ mit Apple-Jahr 1984 -> kein zweites Jahr
+  const sc = I.karte(plain(I.titelNorm({ id: 'itunes:9', titel: 'Scarface (1983)', jahr: 1984, preis: 3.99 })), false, 'fuer399');
+  assert.match(sc, /Scarface \(1983\)<\/span>/);
+  assert.doesNotMatch(sc, /1984/);
+  // Stand eines Scanners vor dem 14.11.2026, 23:39 (ohne Für 3,99 € / Action / Comedy, „Angebote“ ungefiltert) -> nicht aus dem Speicher zeigen
+  const { fuer399, action, comedy, ...alt } = FILME.gruppen;
+  assert.equal(I.altFormat({ gruppen: alt }), true);
+  assert.equal(I.altFormat({ gruppen: { ...alt, fuer399: [], action: [], comedy: [] } }), true);
+  assert.equal(I.altFormat(FILME), false);
+  assert.equal(I.altFormat({ gruppen: { ...FILME.gruppen, angebot: [] , fuer399: [], action: [], comedy: [] } }), false, 'neu, aber gerade leer');
+  // Disney-Untertext verspricht keinen Tiefstpreis mehr
+  assert.equal(plain(I.CHIPS).find(c => c[0] === 'disney')[2], 'Disney und Pixar – Angebote zuerst.');
 });
 
 test('Haken: index.html (Link in der Sprung-Leiste, eigene Seite, Skript erst beim Öffnen), sw.js (filme.js im Zwischenspeicher)', () => {
@@ -370,13 +402,15 @@ test('Wunschliste: Start-Chip, Preis, Abzeichen, statt/Tiefstpreis, Film ohne Fu
   assert.equal(await trabi.locator('.fi-preis').count(), 0);
   assert.equal(await trabi.locator('.fi-ohnebild').innerText(), 'GT');
   assert.match(nbsp(await page.locator('.fi-fuss').innerText()), /^Tiefstpreis = niedrigster Preis seit Beobachtung \(seit 01\.11\.\)\./);
+  // Prüfer MV8 7: mydealz-Karten öffnen mydealz.de, nicht die TV-App
+  assert.match(nbsp(await page.locator('.fi-fuss').innerText()), /Tippen öffnet die TV-App, Tipps von mydealz öffnen mydealz\.de\.$/);
   // Bilder: 200x200bb (auch wo die Daten noch 100x100bb liefern), faul geladen, feste Größe
   await waehle(page, 'fuer399');
   const bilder = await page.locator('#fi-liste img.fi-bild').evaluateAll(i => i.map(x => [x.getAttribute('src'), x.loading, x.getAttribute('width'), x.getAttribute('height')]));
   assert.equal(bilder.length, 9, 'der mydealz-Tipp ohne Bild hat einen Platzhalter');
   for (const [src, l, w, h] of bilder) { assert.match(src, /\/200x200bb\.jpg$/); assert.equal(l, 'lazy'); assert.deepEqual([w, h], ['56', '84']); }
   await waehle(page, 'action');
-  assert.match(nbsp(await karte(page, 'John Wick').innerText()), /Action & Abenteuer · Rotten Tomatoes 94 %[\s\S]*4,99 €[\s\S]*Tipp von mydealz/);
+  assert.match(nbsp(await karte(page, 'John Wick').innerText()), /Action & Abenteuer\s*· Rotten Tomatoes 94 %[\s\S]*4,99 €[\s\S]*Tipp von mydealz/);
   // Quellen: mydealz gestört
   await page.locator('.fi-quellen summary').click();
   assert.match(nbsp(await page.locator('.fi-quellen').innerText()), /Apple-Store: 41 gefunden\s*Apple-Charts: 100 gefunden\s*mydealz: gestört – HTTP 403/);
@@ -454,7 +488,7 @@ test('Für 3,99 € / Action & Thriller / Comedy im Browser: Reihenfolge, Infoze
   const titel = await page.locator('#fi-liste .fi-titel').allInnerTexts();
   assert.equal(titel[3], 'Charade (1963)', 'Jahr nicht doppelt');
   assert.ok(titel.indexOf('Ocean’s Eleven (2001)') < titel.indexOf('Shrek – Der tollkühne Held (2001)'), 'Top-Film vor Kinderfilm');
-  assert.match(nbsp(await karte(page, 'Indiana Jones').innerText()), /14,99 €[\s\S]*4 Filme, 3,75 € je Film · Tipp von mydealz/);
+  assert.match(nbsp(await karte(page, 'Indiana Jones').innerText()), /14,99 €[\s\S]*4 Filme, je 3,75 € · mydealz-Tipp/);
   // Höhe: jede Karte so hoch wie dieselbe Karte in der alten Fassung (Genre · Platz N der Charts, ohne „neu“/Bewertung)
   for (const k of ['fuer399', 'action', 'comedy', 'achtziger']) {
     await waehle(page, k);

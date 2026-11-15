@@ -2,7 +2,7 @@
    Neu, Serien, Disney; „Angebote“ nur, wenn dort etwas steht, das in keinem anderen Bereich vorkommt).
    Eine Datei für alles (Logik + CSS mit Präfix .fi-). Nutzt nur die CSS-Variablen der Seite:
    --karte --flaeche --text --leise --linie --akzent --akzent-hell --akzent-text --warm --warm-hell --rot.
-   Einbau (siehe FILME-SEITE-NOTES.md):
+   Einbau (in mein-vorteil/index.html, Reiter „Filme“):
      MeinVorteilFilme.start(element)   beim ersten Öffnen des Reiters (zeichnet den letzten Stand sofort, holt dann frisch)
      MeinVorteilFilme.lade()           bei „Neu laden“ / Rückkehr zur Seite
    Daten: filme.json vom Vorteils-Wecker (Zweig vorteile-daten). Erst beim ersten Öffnen geholt; der letzte Stand liegt im
@@ -24,7 +24,7 @@
     ['achtziger', '80er & Kult', 'Klassiker und Kultfilme für die Sammlung – Angebote zuerst.'],
     ['neu', 'Neu', 'Neue Filme aus Komödie, Action und Thriller – nach Platz in den Apple-Charts.'],
     ['serien', 'Serien', 'Rick and Morty und Star Trek – Angebote zuerst.'],
-    ['disney', 'Disney', 'Disney und Pixar – Angebote zuerst, mit Tiefstpreis.'],
+    ['disney', 'Disney', 'Disney und Pixar – Angebote zuerst.'],
     ['weitere', 'Angebote', 'Weitere Angebote, die in keinem anderen Bereich stehen.'], // Chip nur, wenn hier etwas steht
   ];
   const GRUPPEN = [...CHIPS.map(([k]) => k).filter(k => k !== 'weitere'), 'angebot']; // „angebot“ = alle Angebote des Radars
@@ -112,21 +112,37 @@
       bekannt: zahl(t.bekannt) != null && zahl(t.bekannt) >= 0 ? Math.round(zahl(t.bekannt)) : null, // in so vielen Wikipedia-Sprachen (Bekanntheit)
     };
   }
+  // „6 Filme in 4K …“ von mydealz: Preis je Film (wie preisJeFilm im Scanner) – erklärt, warum ein Set unter „Für 3,99 €“ steht
+  const SET = /\b(\d{1,2})[\s-]*(?:filme|film-kollektion|film collection|filme-kollektion|movie collection|movies)\b/i;
   const zuerst = (arr, f) => [...arr.filter(f), ...arr.filter(x => !f(x))]; // stabil
   // Reihenfolge in „Für 3,99 €“, „Action & Thriller“, „Comedy“ (Xander 15.11.2026: Kinderfilme ja, aber nicht vor den
   // Top-Filmen): deine Listen zuerst (wie der Scanner), dann Top-Filme, dann Kinderfilme, dann der Rest – je nach Bekanntheit
   // und Kritik (gleicher Wert wie qualiWert im Scanner); Tipps von mydealz und Angebots-Räume bleiben in Scanner-Reihenfolge hinten.
-  const KINDER = /kinder|familie|animation/i, TOP_RT = 80, TOP_BEKANNT = 55; // TOP_BEKANNT = qualiBlockbuster im Scanner
+  // Top-Film = sehr bekannt (≥ 55 Wikipedia-Sprachen = qualiBlockbuster im Scanner) oder Kritik ≥ 80 % UND bekannt (≥ 30 Sprachen
+  // = qualiBekannt) – sonst stünde Antigone (8 Sprachen) als „bekanntester“ Film vor Shrek (Prüfer-Befund MV8 5)
+  const KINDER = /kinder|familie|animation/i, TOP_RT = 80, TOP_BEKANNT = 55, TOP_RT_BEKANNT = 30;
   const wert = t => (t.bekannt != null ? (t.rt ?? 55) + Math.min(t.bekannt, 120) / 2 : 0);
   function nachGuete(arr, g) {
     const wunsch = new Set(g.wunsch.map(t => t.id)), listen = new Set([...g.achtziger, ...g.disney].map(t => t.id));
     const rang = t => (!/^itunes:/.test(t.id) ? 9 : wunsch.has(t.id) || t.unterZiel || t.ziel != null ? 0
       // Listen-Titel prüft der Scanner nicht bei Wikidata (keine Bewertung) – Klassiker aus den Charts haben eine
       : listen.has(t.id) && t.bekannt == null && t.rt == null ? 1
-      : KINDER.test(t.genre) ? 3 : (t.rt ?? 0) >= TOP_RT || (t.bekannt ?? 0) >= TOP_BEKANNT ? 2 : 4);
+      : KINDER.test(t.genre) ? 3 : ((t.rt ?? 0) >= TOP_RT && (t.bekannt ?? 0) >= TOP_RT_BEKANNT) || (t.bekannt ?? 0) >= TOP_BEKANNT ? 2 : 4);
     return arr.map((t, i) => [t, i, rang(t)])
       .sort((a, b) => a[2] - b[2] || (a[2] >= 2 && a[2] <= 4 ? wert(b[0]) - wert(a[0]) || (a[0].chart ?? 1e6) - (b[0].chart ?? 1e6) : 0) || a[1] - b[1])
       .map(x => x[0]);
+  }
+  // mydealz-Tipp zu genau einem Film, der in derselben Liste schon als Apple-Karte steht („Flow ~ 3,99€ | UHD …“ neben „Flow“)
+  // -> nur die Apple-Karte (Prüfer-Befund MV8 4). Sets („6 Filme …“) bleiben; nach dem Apple-Titel muss ein Trenner folgen
+  // (~ - | : ( , Preis, „für“), damit „Up“ nicht „Up to 5 …“ schluckt.
+  const kleinTitel = s => String(s || '').toLowerCase().replace(/\s*\((?:1[89]|20)\d\d\)\s*/g, ' ').replace(/\s+/g, ' ').trim();
+  function ohneDoppelTipp(arr) {
+    const apple = arr.filter(t => !/mydealz/i.test(t.quelle)).map(t => kleinTitel(t.titel)).filter(x => x.length >= 2);
+    return arr.filter(t => {
+      if (!/mydealz/i.test(t.quelle) || Number(SET.exec(t.titel)?.[1]) >= 2) return true;
+      const m = kleinTitel(t.titel);
+      return !apple.some(a => m.startsWith(a) && /^(?:\s*$|\s*[~|:(\[,–—-]|\s+(?:für|for|ab|nur)\b|\s*\d)/.test(m.slice(a.length)));
+    });
   }
   function normalisiere(d) {
     const g = d && typeof d === 'object' && d.gruppen && typeof d.gruppen === 'object' && !Array.isArray(d.gruppen) ? d.gruppen : {};
@@ -137,14 +153,26 @@
     }
     // Reihenfolge kommt vom Scanner; die Seite sorgt dafür, dass Angebote oben stehen und Top-Filme vor Kinderfilmen
     gruppen.wunsch = zuerst(zuerst(gruppen.wunsch, t => !t.fehlt), t => t.angebot || t.unterZiel);
-    for (const k of ['fuer399', 'action', 'comedy']) gruppen[k] = nachGuete(gruppen[k], gruppen);
+    const doppelt = new Set(); // weggelassene Doppel-Tipps stehen nicht unter „Angebote“ (die Apple-Karte ist ja da)
+    for (const k of ['fuer399', 'action', 'comedy']) {
+      const ohne = ohneDoppelTipp(gruppen[k]);
+      for (const t of gruppen[k]) if (!ohne.includes(t)) doppelt.add(t.id);
+      gruppen[k] = nachGuete(ohne, gruppen);
+    }
     gruppen.neu = gruppen.neu.map((t, i) => [t, i]).sort((a, b) => (a[0].chart ?? 1e6) - (b[0].chart ?? 1e6) || a[1] - b[1]).map(x => x[0]);
     for (const k of ['achtziger', 'disney']) gruppen[k] = zuerst(gruppen[k], t => t.angebot);
     // „Angebote“ nur mit dem, was sonst fehlt
     const sonst = new Set(GRUPPEN.filter(k => k !== 'angebot').flatMap(k => gruppen[k].map(t => t.id)));
-    gruppen.weitere = gruppen.angebot.filter(t => !sonst.has(t.id));
+    gruppen.weitere = gruppen.angebot.filter(t => !sonst.has(t.id) && !doppelt.has(t.id));
     const status = d && typeof d.status === 'object' && d.status ? d.status : {};
     return { aktualisiert: typeof d?.aktualisiert === 'string' ? d.aktualisiert : null, gruppen, status };
+  }
+  // Stand eines Scanners vor dem 14.11.2026, 23:39 (Prüfer-Befund MV8 9): ohne „Für 3,99 €“/Action/Comedy, „Angebote“ noch ohne
+  // Horror- und Qualitätsfilter (Midsommar, Longlegs …). Der wird nicht aus dem Gerätespeicher gezeigt – lieber kurz „Lade Filme …“.
+  function altFormat(d) {
+    const g = d && d.gruppen && typeof d.gruppen === 'object' ? d.gruppen : {};
+    if (!('fuer399' in g)) return true;
+    return !liste(g.fuer399).length && !liste(g.action).length && !liste(g.comedy).length && liste(g.angebot).length > 0;
   }
   const sichtbar = n => CHIPS.filter(([k]) => k !== 'weitere' || n.gruppen.weitere.length);
   // Start: Wunschliste, wenn dort ein (neues) Angebot ist – sonst der zuletzt gewählte Bereich, sonst „Für 3,99 €“
@@ -159,11 +187,10 @@
   // --- Karten ------------------------------------------------------------------------------------------------------------
   const zeigeTiefst = t => t.istTiefst && !t.fehlt && t.preis != null && (t.vorher != null || t.angebot || t.unterZiel || t.preis <= 3.99);
   function initialen(s) { return s.split(/[\s:–-]+/).filter(w => /^[\p{L}\d]/u.test(w)).slice(0, 2).map(w => w[0].toUpperCase()).join(''); }
-  // „6 Filme in 4K …“ von mydealz: Preis je Film (wie preisJeFilm im Scanner) – erklärt, warum ein Set unter „Für 3,99 €“ steht
-  const SET = /\b(\d{1,2})[\s-]*(?:filme|film-kollektion|film collection|filme-kollektion|movie collection|movies)\b/i;
   function karte(t, staffel, chip) {
     const name = staffel && staffelNr(t) != null ? `Staffel ${staffelNr(t)}` : t.titel;
-    const jahrDoppelt = t.jahr != null && new RegExp(`\\(${t.jahr}\\)`).test(name); // „Charade (1963)“ nicht noch einmal „(1963)“
+    // „Charade (1963)“ nicht noch einmal „(1963)“, „Scarface (1983)“ nicht „(1983) (1984)“ (Apple-Datum = deutscher Start)
+    const jahrDoppelt = t.jahr != null && /\((?:1[89]|20)\d\d\)/.test(name);
     const marken = [];
     if (t.fehlt) marken.push('<span class="fi-marke fi-grau">nicht im Apple-Store</span>');
     // „Tiefstpreis“ nur, wenn es etwas heißt: gesenkt, Angebot oder ≤ 3,99 € – nicht bei einem Preis, der sich nie bewegt hat
@@ -190,19 +217,24 @@
     }
     if (t.ziel != null && !t.fehlt && !t.unterZiel) klein.push(esc(`dein Ziel: ${euro(t.ziel)}`));
     const set = Number(SET.exec(t.titel)?.[1]);
-    if (/mydealz/i.test(t.quelle) && set >= 2 && t.preis != null) klein.push(esc(`${set} Filme, ${euro(t.preis / set)} je Film`));
-    if (/mydealz/i.test(t.quelle)) klein.push('Tipp von mydealz');
+    // kurz, damit die Zeile auch bei 375 px einzeilig bleibt (Prüfer-Befund MV8 2): „4 Filme, je 3,75 € · mydealz-Tipp“
+    if (/mydealz/i.test(t.quelle) && set >= 2 && t.preis != null) klein.push(esc(`${set} Filme, je ${euro(t.preis / set)}`));
+    if (/mydealz/i.test(t.quelle)) klein.push(set >= 2 && t.preis != null ? 'mydealz-Tipp' : 'Tipp von mydealz');
     // Infozeile bleibt so kurz wie vorher (Karte nicht höher): Bewertung statt Chartplatz; unter „Neu“ wie gehabt der Chartplatz
     const platz = t.chart ? `Platz ${t.chart} der Charts` : '';
-    const info = (chip === 'neu' ? [t.genre, platz]
-      : [t.genre, t.neu ? 'neu' : '', t.rt != null ? `Rotten Tomatoes ${t.rt} %` : platz]).filter(Boolean).join(' · ');
+    const infoTeile = (chip === 'neu' ? [t.genre, platz]
+      : [t.genre, t.neu ? 'neu' : '', t.rt != null ? `Rotten Tomatoes ${t.rt} %` : platz]).filter(Boolean);
+    // eine Zeile auf jedem Handy (Prüfer-Befund MV8 2): wird es eng, kürzt sich das Genre („Kinder und Fa… · Rotten Tomatoes 89 %“)
+    const info = infoTeile.length > 1 && t.genre && infoTeile[0] === t.genre
+      ? `<span class="fi-ig">${esc(t.genre)}</span><span class="fi-ir">&nbsp;· ${esc(infoTeile.slice(1).join(' · '))}</span>`
+      : esc(infoTeile.join(' · '));
     const gross = staffel ? 84 : 56;
     const bild = t.bild
       ? `<img class="fi-bild" src="${esc(t.bild)}" alt="" width="${gross}" height="84" loading="lazy" decoding="async">`
       : `<span class="fi-bild fi-ohnebild" aria-hidden="true">${esc(initialen(t.titel))}</span>`;
     const klasse = `fi-karte${t.angebot || t.unterZiel ? ' fi-deal' : ''}${staffel ? ' fi-quadrat' : ''}`;
     const innen = `${bild}<span class="fi-text"><span class="fi-titel">${esc(name)}${t.jahr && !jahrDoppelt ? ` <span class="fi-jahr">(${t.jahr})</span>` : ''}</span>`
-      + `${info ? `<span class="fi-info">${esc(info)}</span>` : ''}`
+      + `${info ? `<span class="fi-info${info.startsWith('<span') ? ' fi-eng' : ''}">${info}</span>` : ''}`
       + `<span class="fi-preiszeile">${preis}${marken.join('')}</span>`
       + `${klein.length ? `<span class="fi-klein">${klein.join(' · ')}</span>` : ''}</span>`;
     return t.link
@@ -246,7 +278,9 @@
     return `<p class="fi-stand${alt || S.gestoert ? ' fi-alt' : ''}">Stand: ${esc((st || 'unbekannt') + zusatz)}</p>`;
   }
   function fussHtml() {
-    const seit = Object.values(S.n.gruppen).flat().map(t => t.seit).filter(Boolean).sort()[0];
+    const alle = Object.values(S.n.gruppen).flat();
+    const seit = alle.map(t => t.seit).filter(Boolean).sort()[0];
+    const md = alle.some(t => t.link && /mydealz/i.test(t.quelle));
     const quellen = Object.entries(S.n.status).filter(([, q]) => q && typeof q === 'object').map(([k, q]) => {
       const f = Array.isArray(q.fehler) ? q.fehler.filter(Boolean) : [];
       const text = q.ok === false ? `gestört${f.length ? ' – ' + f.slice(0, 2).join('; ') : ''}` : `${zahl(q.anzahl) ?? 0} gefunden`;
@@ -255,7 +289,7 @@
     // Angebots-Räume der TV-App, mit denen die Listen abgeglichen wurden (Link öffnet den Raum in der TV-App)
     const raeume = Array.isArray(S.n.status['apple-tv-raeume']?.raeume) ? S.n.status['apple-tv-raeume'].raeume.filter(r => r && sicher(r.url)) : [];
     const raumHtml = raeume.length ? `<p class="fi-fuss">Abgeglichen mit den Apple-TV-Angeboten: ${raeume.slice(0, 4).map(r => `<a href="${esc(sicher(r.url))}" target="_blank" rel="noopener" class="fi-raum">${esc(String(r.name || 'Angebote').slice(0, 40))}${zahl(r.filme) ? ` (${zahl(r.filme)} Filme)` : ''}</a>`).join(', ')}</p>` : '';
-    return raumHtml + `<p class="fi-fuss">Tiefstpreis = niedrigster Preis seit Beobachtung${seit ? ` (seit ${esc(tm(seit))})` : ''}. Tippen öffnet die TV-App.</p>`
+    return raumHtml + `<p class="fi-fuss">Tiefstpreis = niedrigster Preis seit Beobachtung${seit ? ` (seit ${esc(tm(seit))})` : ''}. Tippen öffnet die TV-App${md ? ', Tipps von mydealz öffnen mydealz.de' : ''}.</p>`
       + (quellen.length ? `<details class="fi-quellen"><summary>Quellen</summary><ul>${quellen.join('')}</ul></details>` : '');
   }
   function chipHtml([k, name]) {
@@ -355,7 +389,7 @@
       document.head.appendChild(st);
     }
     const alt = lies(SPEICHER, null);
-    if (alt && alt.d && typeof alt.d === 'object') { S.d = alt.d; S.roh = JSON.stringify(alt.d); S.n = normalisiere(alt.d); }
+    if (alt && alt.d && typeof alt.d === 'object' && !altFormat(alt.d)) { S.d = alt.d; S.roh = JSON.stringify(alt.d); S.n = normalisiere(alt.d); }
     el.addEventListener('click', ev => {
       const c = ev.target.closest('[data-fi-chip]');
       if (c && c.dataset.fiChip !== S.chip) waehle(c.dataset.fiChip);
@@ -422,6 +456,9 @@ a.fi-karte:active { background: var(--flaeche); }
 .fi-titel { font-size: 17px; line-height: 1.3; font-weight: 650; }
 .fi-jahr { font-weight: 400; color: var(--leise); white-space: nowrap; }
 .fi-info { font-size: 14px; color: var(--leise); }
+.fi-info.fi-eng { display: flex; min-width: 0; white-space: nowrap; }
+.fi-ig { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.fi-ir { flex: none; max-width: 100%; overflow: hidden; text-overflow: ellipsis; } /* Bewertung bleibt ganz, nur das Genre kürzt sich */
 .fi-preiszeile { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: 4px; }
 .fi-preis { font-size: 24px; font-weight: 750; letter-spacing: -0.02em; line-height: 1.1; white-space: nowrap; }
 .fi-preis.fi-ohnepreis { font-size: 15px; font-weight: 600; color: var(--leise); letter-spacing: 0; white-space: normal; }
@@ -453,6 +490,6 @@ a.fi-karte:active { background: var(--flaeche); }
     start, lade,
     get gestartet() { return !!S.el; },
     // für Tests (ohne Browser): reine Funktionen
-    _intern: { normalisiere, titelNorm, serieVon, staffelNr, bildUrl, startChip, standText, karte, zeigeTiefst, sichtbar, CHIPS, CSS: () => CSS },
+    _intern: { normalisiere, altFormat, ohneDoppelTipp, titelNorm, serieVon, staffelNr, bildUrl, startChip, standText, karte, zeigeTiefst, sichtbar, CHIPS, CSS: () => CSS },
   };
 })();

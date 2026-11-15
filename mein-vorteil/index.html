@@ -2101,7 +2101,8 @@ function kachelInhalt(b, t) { // -> { z: [[Titel, Zeile, gut?]], w: Satz }
     return z.length ? { z, w: '' } : { z: [['Gerade kein krasser', 'nur No-Brainer, die laufen']], w: 'Push kommt sofort, wenn einer da ist' };
   }
   if (b === 'filme') { // höchstens 2 Zeilen (auf dem Handy ist die 3. ausgeblendet): Push-Treffer zuerst, dann die Übersicht
-    const jahrEinmal = s => String(s || '').replace(/\((\d{4})\)\s*\(\1\)/g, '($1)'); // „Charade (1963) (1963)“
+    // „Charade (1963) (1963)“ und „Scarface (1983) (1984)“ (Apple-Datum = deutscher Start) -> nur das erste Jahr
+    const jahrEinmal = s => String(s || '').replace(/\(((?:1[89]|20)\d\d)\)\s*\((?:1[89]|20)\d\d\)/g, '($1)');
     const kern = s => jahrEinmal(s).toLowerCase().replace(/\s+für\s+[\d.,]+\s*€.*$/, '').replace(/\(\d{4}\)/g, ' ').replace(/[^\p{L}\d]+/gu, ' ').trim();
     const gleich = (a, c) => { const x = kern(a), y = kern(c); return !!x && !!y && (x.startsWith(y) || y.startsWith(x)); };
     const z = [], roh = [];
@@ -2112,7 +2113,7 @@ function kachelInhalt(b, t) { // -> { z: [[Titel, Zeile, gut?]], w: Satz }
     for (const x of Array.isArray(kurz?.top) ? kurz.top : []) if (x?.titel) dazu(String(x.titel), zahl(x.preis) > 0 ? `${euro(x.preis)} · Apple TV` : 'Apple TV');
     if (!z.length) {
       const f0 = lies('mein-vorteil-daten-filme', null)?.d?.gruppen;
-      const f = f0?.fuer399 || f0?.angebot;
+      const f = f0?.fuer399; // nicht „angebot“ eines alten Stands: der war noch ohne Horror-Filter (Prüfer-Befund MV8 9)
       for (const x of Array.isArray(f) ? f : []) if (x?.titel) dazu(String(x.titel), zahl(x.preis) > 0 ? `${euro(x.preis)} · Apple TV` : 'Apple TV');
     }
     return z.length ? { z, w: '' } : { z: [['Wunschliste & Angebote', 'Apple TV, mit deinen Listen abgeglichen']], w: 'tippen zum Öffnen' };
