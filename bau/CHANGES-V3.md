@@ -1,3 +1,16 @@
+## 4.69.0 — Drums: Hi-Hats im Drum-Editor auslagern, Schritt-Editor je Einzelspur, keine Doppel-Schläge
+
+- **Hi-Hats auswählen → eigene Spur:** Im Drum-Editor gibt es jetzt [Auslagern ▾] (quer in der Werkzeug-Zeile, hochkant rechts in der Zeile „Szene n“). Du wählst Pads und entweder „Ganze Töne · alle Szenen“ oder „Nur diese Schritte“. Ziel ist eine neue Einzelspur oder eine vorhandene („→ HH ZU dazu“). Ein ↶ genügt, der Editor bleibt offen.
+- **Schritt-Editor je Einzelspur:** Der Clip einer Einzelspur öffnet jetzt einen Schritt-Editor nur für ihren Ton, mit VEL, AKZENT, CHANCE, WIRBEL, TIMING, TUNE und DECAY wie bei DRUMS. Dazu gibt es Lauflicht und [Pad-Klang]. [ROLLE] ist einen Tipp entfernt.
+- **Keine Doppel-Schläge mehr:**
+  - Remix, Stil, Grundmuster und Szene-Stil rechnen DRUMS und Einzelspuren zusammen. Jede Spur behält ihre Töne (gemessen: 0 Doppel statt 16), Hall/Echo/Drive des Stils gelten für alle.
+  - „Zusammenführen“ nach einem Remix behält alle Schläge.
+  - Aufteilen nimmt Remix-Fassungen mit.
+- **Tastatur-Aufnahme** auf einer Einzelspur speichert den Drum-Ton, ein Akkord ergibt einen Schlag.
+- **Speichern/Laden** behält Saat, Chance, Wirbel und Locks der Einzelspuren (Rundreise byte-gleich).
+- Nach dem Aufteilen blättert das Querformat zu den neuen Spuren. Das Stil-Blatt führt Einzelspuren zusammen mit DRUMS.
+Tests: Einzelspuren 87/87 + 51/51 + 20/21 (die eine Abweichung ist gewollt: Einzelspuren haben jetzt die Drum-Rolle), Gesang 61/61 · 14/14 · 15/15, Import, Chor 82/82, Echttest 52/53, Spektral wie 4.68. Offen: Begleiter spielt live über DRUMS, FANG/Melodie-Spur auf Einzelspuren.
+
 ## 4.68.0 — Spektral: Szenen aus den Songteilen + Klang nachbauen im Menü; Einzelspuren sauber
 
 - **Szenen anlegen** (Spektral-Seite → Ansicht ▾ → „Szenen anlegen …“): Die Songteile im Audio werden erkannt (Intro, Strophe, Refrain, Bridge, Outro, mit Takten). Jeder Teil wird eine Szene in der Clip-Matrix, benannt nach dem Teil. Je Ebene wählbar: Beides │ Audio │ MIDI │ Aus. Drums und Bass kommen als MIDI auf passende Spuren (Drums auf das Kit: Kick, Snare, Hi-Hat), Pads, Lead und Gesang als Audio-Ausschnitt.
