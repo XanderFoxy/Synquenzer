@@ -2,3 +2,6 @@
 - 04:07 Block spk12-block.js + bau.py (16 Haken) gebaut; topdefs 26/7615/0/0, dupkeys 0
 - 04:11 Griff-Zonen auf Balken (±36 px) begrenzt; spk12-test 428x926: 43 OK / 0 FEHLER
 - 04:15 Nachtrag: Abbruch (pointercancel) im Griff-Zug stellt Form wieder her; Test um Zauberstab wachsen/schrumpfen/weich ergänzt; spk12-test alle 3 Größen 98 OK / 0 FEHLER (spk12-test.out/.json)
+- 04:18 Pflicht: topdefs 26/7615/0/0 · dupkeys 0 · smoke errors [] (smoke.png) · MS 2000 1× · live 1× · VERSION 4.68.0 (alle VERSION-Zeilen = Basis) · basis.html = rel-4680 · diff Basis→Paket nur Zusätze (461 Zeilen = 445 Block + 16 Haken) · Markennamen 0 · keine Emojis
+- 04:18 Regression (reg.sh → reg.log, mess/ = Verweis auf ../spk11/mess): spk6 ALLES OK · spk5 ALLES OK 24 · spk1 1 FEHLER verfeinern-verbessert-ziel (= Basis, schon in SPK11/4.68) · spk8-seite 14/0 · spk11-test läuft
+- 04:18 NOTES.md geschrieben (Haken, Entscheidungen, Messungen, Offen)
