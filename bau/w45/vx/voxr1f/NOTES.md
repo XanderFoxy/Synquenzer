@@ -141,5 +141,6 @@ Messtabelle Endfassung (Befund-Spalte = ec3ca89f):
   „^  live: true,“ 1×, VERSION '4.73.0', Diff gegen basis.html nur in den Zeilen 61428–61786 (VOXR1-Block 61246–62349), kein Haken.
 - Prüfer-Kern 56/60 (= basis; 3-min Median 5931 ms, ×3 17,8 s), kern2 41/62 (= basis), kern3 29/50 (= basis), Randfälle (pruef/rand.mjs, 112 Fälle) 0 auffällig.
 - Entwickler-Test 80/83 (offen: Klicks A 17/20, Überstand B 3,2 dB, Raumton-Farbe; App-Worker 3-min und Long Task diesmal OK).
+  basis direkt danach (17:42–17:43, Last 2,4–1,5): 78/83 (zusätzlich FEHLER: Überstand A 7,5 dB, Raumton-Pegel Lücke 3).
 - Regression: vx1 61/61, vx2 14/14, vx3 15/15, chr2 82/82.
 - Ausgaben: kern-p.txt, kern2-p.txt, kern3-p.txt, dev-p.txt, dev-basis-p.txt, smoke-p.txt, reg-*-p.txt, rand-p.txt, tempo-p2.txt (frühere Läufe *-p1/*-p2).
