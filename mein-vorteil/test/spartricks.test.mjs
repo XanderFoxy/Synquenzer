@@ -23,6 +23,11 @@ const DATEN = JSON.parse(readFileSync(join(MV, 'spartricks.json'), 'utf8'));
 const CHIPS = ['top', 'geld', 'einkaufen', 'gratis', 'geburtstag', 'freizeit', 'gewinnspiele'];
 const CHIP_NAMEN = ['Top 10', 'Geld zurück', 'Clever einkaufen', 'Gratis & Proben', 'Geburtstag gratis', 'Freizeit & Reisen', 'Gewinnspiele'];
 const REGIONEN = ['Döbeln', 'Leipzig', 'Dresden', 'Chemnitz', 'Sachsen', 'bundesweit'];
+// Zahlen je Chip kommen aus der Datei (Datenpflege lässt die Tests nicht scheitern)
+const ANZAHL = Object.fromEntries(CHIPS.slice(1).map(c => [c, DATEN.tipps.filter(t => t.bereich === c).length]));
+// Deal-Portale/Vergleichsseiten: allein kein Beleg (dann „community“); Umfrage-/Provisionsportale und fremde Länderseiten nie
+const PORTAL = /(^|\.)(mydealz\.de|monsterdealz\.de|dealdoktor\.de|schnaeppchenfuchs\.com|freizeitparkdeals\.de|travelcircus\.de|groupon\.de)$/;
+const NIE_QUELLE = /freecash\.com|airhelp\.|wandernundmehr\.|flightright\.|euclaim\.|\/en-(ie|gb|us)\//i;
 
 function modul(speicher = {}) {
   const localStorage = { getItem: k => (k in speicher ? speicher[k] : null), setItem: (k, v) => { speicher[k] = String(v); } };
@@ -67,6 +72,11 @@ test('Schema spartricks.json: Fassung, Stand, Bereiche, Pflichtfelder, gültige 
     }
     if ('top' in t) { assert.ok(Number.isInteger(t.top) && t.top > 0, wo); tops.push(t.top); }
     if ('bis' in t) assert.match(t.bis, /^\d{4}-\d\d-\d\d$/, wo);
+    if ('einmalig' in t) assert.ok(t.einmalig === true && 'bis' in t, `${wo}: einmalig nur mit bis`);
+    if ('aktionBis' in t) assert.match(t.aktionBis, /^\d{4}-\d\d-\d\d$/, wo);
+    if ('art' in t) assert.equal(t.art, 'anleitung', wo);
+    for (const q of t.quellen) assert.doesNotMatch(q.url, NIE_QUELLE, `${wo}: fragwürdige Quelle ${q.url}`);
+    if (t.sicherheit === 'belegt') assert.ok(t.quellen.some(q => !PORTAL.test(new URL(q.url).hostname)), `${wo}: „belegt“ nur mit Deal-Portalen`);
     if (t.bereich === 'geburtstag') {
       assert.ok(t.anmelden && Number.isInteger(t.anmelden.tage) && t.anmelden.tage >= 0 && t.anmelden.text.length > 5, `${wo}: anmelden fehlt`);
     } else assert.equal(t.anmelden, undefined, `${wo}: anmelden nur bei Geburtstag`);
@@ -75,12 +85,26 @@ test('Schema spartricks.json: Fassung, Stand, Bereiche, Pflichtfelder, gültige 
   }
   assert.deepEqual([...tops].sort((a, b) => a - b), tops.map((_, i) => i + 1), 'Top-Plätze lückenlos ab 1');
   assert.ok(tops.length >= 12, 'Ersatz für abgelaufene Fristen');
-  const n = Object.fromEntries(CHIPS.slice(1).map(c => [c, DATEN.tipps.filter(t => t.bereich === c).length]));
-  assert.deepEqual(n, { geld: 24, einkaufen: 18, gratis: 15, geburtstag: 20, freizeit: 15, gewinnspiele: 4 });
-  // Geburtstag: jede Region der Liste kommt vor
+  for (const [c, z] of Object.entries(ANZAHL)) assert.ok(z >= 3, `Bereich ${c} fast leer (${z})`);
+  // Top 10: Fristen zuerst, nur ein Flug-Tipp in den ersten zehn
+  const top = DATEN.tipps.filter(t => t.top).sort((a, b) => a.top - b.top);
+  const mitFrist = top.slice(0, 10).map(t => !!t.bis);
+  assert.deepEqual(mitFrist, [...mitFrist].sort((a, b) => b - a), 'Fristen vor den übrigen');
+  assert.equal(top.slice(0, 10).filter(t => /flug/i.test(t.id)).length, 1, 'ein Flug-Tipp in den Top 10');
+  // Geburtstag: Regionen ehrlich (Marke = Ort), Anleitungen gekennzeichnet, kein Nicht-Angebot
   const geb = DATEN.tipps.filter(t => t.bereich === 'geburtstag');
-  for (const r of ['Döbeln', 'Leipzig', 'Dresden', 'Chemnitz', 'bundesweit']) assert.ok(geb.some(t => t.region.includes(r)), `Geburtstag ohne ${r}`);
+  for (const r of ['Leipzig', 'Dresden', 'Chemnitz', 'Sachsen', 'bundesweit']) assert.ok(geb.some(t => t.region.includes(r)), `Geburtstag ohne ${r}`);
   assert.ok(geb.some(t => t.anmelden.tage > 0) && geb.some(t => t.anmelden.tage === 0));
+  for (const t of geb) assert.doesNotMatch(`${t.titel} ${t.anmelden.text}`, /kein Geburtstag/i, `${t.id}: kein Geburtstagsangebot`);
+  assert.deepEqual(geb.filter(t => t.art === 'anleitung').map(t => t.id), ['geb-planen', 'geb-plan-sachsen']);
+  assert.match(geb.find(t => t.id === 'geb-plan-sachsen').ort, /Döbeln selbst .*kein Geburtstagsangebot/);
+  // Prüfer-Stichprobe 15.11.2026 (M2–M5): richtige Regeln
+  const tx = id => DATEN.tipps.find(t => t.id === id).text;
+  assert.match(tx('rundfunk'), /binnen zwei Monaten nach dem Bescheid/);
+  assert.match(tx('internet'), /Festnetz: 30 Messungen an 3 verschiedenen Kalendertagen/);
+  assert.doesNotMatch(tx('museen-dresden'), /Weber-Museum ist der Eintritt|und im Carl-Maria-von-Weber-Museum ist/);
+  assert.doesNotMatch(tx('lidl-plus'), /100 Punkte → 5/);
+  assert.match(tx('flug-verspaetung'), /Pilotphase/);
 });
 
 test('spartricks.js liest tolerant: fehlende Pflichtfelder, doppelte ids, kaputte Links, fremde Regionen, neue Fassung', () => {
@@ -96,10 +120,13 @@ test('spartricks.js liest tolerant: fehlende Pflichtfelder, doppelte ids, kaputt
       { id: 'dd', bereich: 'gratis', titel: '', text: 'x' },
       { id: 'E E', bereich: 'gratis', titel: 'E', text: 'x' },
       null, 'Quatsch',
-      { id: 'ff', bereich: 'geburtstag', titel: 'F', text: 'x', anmelden: { tage: 'viel', text: 'y' }, bis: '2026-13-40' },
+      { id: 'ff', bereich: 'geburtstag', titel: 'F', text: 'x', anmelden: { tage: 'viel', text: 'y' }, bis: '2026-13-40', einmalig: 'ja', aktionBis: 'bald', art: 'werbung' },
+      { id: 'gg', bereich: 'geld', titel: 'G', text: 'x', bis: '2026-12-31', einmalig: true, aktionBis: '2027-02-28', art: 'anleitung' },
     ],
   }), namen: null });
-  assert.deepEqual(n.tipps.map(t => t.id), ['aa', 'ff']);
+  assert.deepEqual(n.tipps.map(t => t.id), ['aa', 'ff', 'gg']);
+  assert.deepEqual([n.tipps[1].einmalig, n.tipps[1].aktionBis, n.tipps[1].art], [false, null, null]);
+  assert.deepEqual([n.tipps[2].einmalig, n.tipps[2].aktionBis, n.tipps[2].art], [true, '2027-02-28', 'anleitung']);
   assert.deepEqual(n.tipps[0].quellen, [{ name: 'gut', url: 'https://example.org/a' }]);
   assert.deepEqual(n.tipps[0].region, ['Leipzig']);
   assert.deepEqual(n.tipps[1].region, ['bundesweit']);
@@ -125,7 +152,12 @@ test('Listen: Top 10 nach Platz (abgelaufene Frist rückt nach), Bereiche in Dat
   assert.deepEqual(top.slice(0, 3), ['kfz-wechsel', 'steuer-2022', 'flug-2023']);
   const dez = plain(I.liste(n, 'top', '2026-12-01').map(t => t.id));
   assert.equal(dez.length, 10);
-  assert.ok(!dez.includes('kfz-wechsel') && dez.includes('sachsen-ticket'), 'Frist 30.11. vorbei -> Platz 11 rückt nach');
+  assert.ok(!dez.includes('kfz-wechsel') && dez.at(-1) === 'bahn-entschaedigung', 'Frist 30.11. vorbei -> Platz 11 rückt nach');
+  // einmalige Frist (Steuer 2022) kommt nie wieder: danach ganz weg, nur unter „Gemerkt“ noch zu sehen
+  assert.ok(I.liste(n, 'geld', '2026-12-31').some(t => t.id === 'steuer-2022'));
+  assert.ok(!I.liste(n, 'geld', '2027-01-01').some(t => t.id === 'steuer-2022' || t.id === 'flug-2023'));
+  assert.equal(I.liste(n, 'geld', '2027-01-01').at(-1).id, 'kfz-wechsel', 'jährliche Frist bleibt am Ende');
+  assert.deepEqual(plain(I.liste(n, 'gemerkt', '2027-01-01', ['steuer-2022']).map(t => t.id)), ['steuer-2022']);
   const geld = I.liste(n, 'geld', '2026-12-01').map(t => t.id);
   assert.equal(geld.at(-1), 'kfz-wechsel', 'Frist vorbei: ans Ende des Bereichs');
   assert.equal(I.liste(n, 'geld', '2026-11-15')[0].id, 'kfz-wechsel');
@@ -150,14 +182,24 @@ test('Geburtstag: nächster Geburtstag und „vorher anmelden bis …“', () =>
   assert.equal(I.naechsterGeburtstag('02-29', '2026-11-15'), '2028-02-29');
   assert.equal(I.naechsterGeburtstag('kaputt', '2026-11-15'), null);
   const t = { anmelden: { tage: 28, text: 'Club beitreten' } };
-  assert.equal(I.anmeldeZeile(t, '2027-03-04', '2026-11-15'), '<b>Vorher anmelden bis 04.02.</b> (4 Wochen vorher) – Club beitreten');
-  assert.equal(I.anmeldeZeile(t, null, '2026-11-15'), '<b>Vorher anmelden:</b> spätestens 4 Wochen vor dem Geburtstag – Club beitreten');
-  assert.match(I.anmeldeZeile(t, '2026-11-25', '2026-11-15'), /^<b>Jetzt anmelden<\/b> – eigentlich 4 Wochen vorher, der Geburtstag ist in 10 Tagen/);
-  assert.equal(I.anmeldeZeile({ anmelden: { tage: 14, text: 'App' } }, null, '2026-11-15'), '<b>Vorher anmelden:</b> spätestens 2 Wochen vor dem Geburtstag – App');
+  // Vorlauf ist eine Faustregel, keine Frist des Anbieters – so steht es da (Prüfer M6)
+  assert.equal(I.anmeldeZeile(t, '2027-03-04', '2026-11-15'), '<b>Am besten anmelden bis 04.02.</b> (Faustregel 4 Wochen vorher) – Club beitreten');
+  assert.equal(I.anmeldeZeile(t, null, '2026-11-15'), '<b>Rechtzeitig anmelden:</b> Faustregel 4 Wochen vor dem Geburtstag – Club beitreten');
+  assert.match(I.anmeldeZeile(t, '2026-11-25', '2026-11-15'), /^<b>Jetzt anmelden<\/b> – Faustregel wäre 4 Wochen vorher, der Geburtstag ist in 10 Tagen/);
+  assert.equal(I.anmeldeZeile({ anmelden: { tage: 14, text: 'App' } }, null, '2026-11-15'), '<b>Rechtzeitig anmelden:</b> Faustregel 2 Wochen vor dem Geburtstag – App');
+  assert.doesNotMatch(JSON.stringify(DATEN.tipps.map(x => I.anmeldeZeile(x, '2027-03-04', '2026-11-15'))), /spätestens|musst/);
   assert.equal(I.anmeldeZeile({ anmelden: { tage: 0, text: 'keine Anmeldung – am Geburtstag mit Ausweis' } }, null), '<b>Ohne Anmeldung</b> – am Geburtstag mit Ausweis');
   assert.equal(I.anmeldeZeile({ anmelden: { tage: 0, text: 'vorher anrufen, ob es gilt' } }, null), '<b>Vorher:</b> vorher anrufen, ob es gilt');
   assert.equal(I.kurzName('Verbraucherzentrale Niedersachsen – Kfz-Versicherung 2026'), 'Verbraucherzentrale Niedersachsen');
   assert.equal(I.kurzName('Lohnsteuer kompakt: Antragsveranlagung'), 'Lohnsteuer kompakt');
+  // gleich lautende Knöpfe bekommen das Thema dazu (Prüfer L7) – auf keiner Karte zwei gleiche Knöpfe
+  assert.deepEqual(plain(I.quellNamen([{ name: 'mydealz – Übersicht Freebies zum Geburtstag' }, { name: 'mydealz – Zum Geburtstag: Gratis-Eintritte, Essen, Gutscheine' }, { name: 'Finanztip – Rundfunk' }, { name: 'mydealz' }, { name: 'L-IZ – Zoo Leipzig Kindertag 2026 am 1. Juni' }, { name: 'L-IZ – Zoo Leipzig Kindertag 2026 im September' }])),
+    ['mydealz: Übersicht Freebies zum …', 'mydealz: Zum Geburtstag: …', 'Finanztip', 'mydealz', 'L-IZ: Zoo Leipzig Kindertag (1)', 'L-IZ: Zoo Leipzig Kindertag (2)']);
+  for (const x of DATEN.tipps) { const k = I.quellNamen(x.quellen); assert.equal(new Set(k).size, k.length, `${x.id}: ${k.join(' · ')}`); }
+  // Start-Kachel-Auszug: klein, nur was die Kachel braucht
+  const auszug = JSON.stringify(I.kachelAuszug(DATEN));
+  assert.ok(auszug.length < JSON.stringify(DATEN).length / 4, `Auszug ${auszug.length} Zeichen`);
+  assert.deepEqual(Object.keys(I.kachelAuszug(DATEN).tipps[0]).sort(), ['bis', 'id', 'nutzen', 'sicherheit', 'titel', 'top']);
 });
 
 test('Haken: index.html (Leiste, eigene Seite, Skript erst beim Öffnen, Kachel), sw.js (spartricks.js im Zwischenspeicher)', () => {
@@ -173,6 +215,8 @@ test('Haken: index.html (Leiste, eigene Seite, Skript erst beim Öffnen, Kachel)
   assert.match(html, /REITER_NEU\.spartricks = /);
   assert.match(html, /const KACHEL_REIHE = \[[^\]]*'krypto', 'spartricks', 'mehr'\]/);
   assert.doesNotMatch(html, /\.sp-/, 'kein Spartricks-CSS in der Seite');
+  assert.doesNotMatch(html, /fetch\(\s*['"`][^'"`]*spartricks\.json/, 'die Startseite holt die Daten nie selbst (lazy)');
+  assert.doesNotMatch(html, /sparVorladen|requestIdleCallback\(los/, 'kein Abruf im Leerlauf');
   assert.doesNotMatch(readFileSync(join(MV, 'spartricks.js'), 'utf8'), /https?:\/\/(?!example)[^'"`\s]*\.(js|css)\b|googletagmanager|analytics|gtag\(|<script/i, 'keine fremden Skripte, kein Tracking');
   const sw = readFileSync(join(MV, 'sw.js'), 'utf8');
   assert.match(sw, /addAll\(\[SEITE, 'filme\.js', 'spartricks\.js',/);
@@ -188,6 +232,7 @@ const TYP = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.j
 let server, basis, browser;
 const abrufe = [];
 let sparAus = false; // spartricks.json „offline“
+let sparInhalt = null; // statt der echten spartricks.json (neue Fassung, kaputte Datei)
 
 before(async () => {
   if (!pw) return;
@@ -196,6 +241,7 @@ before(async () => {
     if (pfad.endsWith('/')) pfad += 'index.html';
     if (/spartricks\.(js|json)$/.test(pfad)) abrufe.push(pfad.split('/').pop());
     if (sparAus && pfad.endsWith('spartricks.json')) { rs.writeHead(503); rs.end(); return; }
+    if (sparInhalt != null && pfad.endsWith('spartricks.json')) { rs.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-cache' }); rs.end(sparInhalt); return; }
     const datei = normalize(join(WURZEL, pfad));
     if (!datei.startsWith(WURZEL)) { rs.writeHead(403); rs.end(); return; }
     try {
@@ -283,30 +329,31 @@ async function pruefeLayout(page, wo, { tippen = true } = {}) {
   assert.ok(r.sw <= vw && r.bw <= vw, `${wo}: seitliches Scrollen (${r.sw}/${r.bw} > ${vw})`);
 }
 
-test('Lazy: spartricks.js erst beim Öffnen; die Daten holt die Kachel einmal leise im Leerlauf, danach „Tipp des Tages“', { skip: ohnePw }, async () => {
+test('Lazy: Startseite holt weder spartricks.js noch spartricks.json; erst der Reiter, danach „Tipp des Tages“ aus kleinem Auszug', { skip: ohnePw }, async () => {
   abrufe.length = 0;
   const { ctx, page, fehler, fremd } = await oeffne({ pfad: '/mein-vorteil/' });
-  await page.waitForTimeout(500);
-  assert.deepEqual(abrufe, [], 'beim Start nichts davon geholt');
+  await page.waitForTimeout(3500); // früher kam die Datei nach ~2,6 s im Leerlauf
+  assert.deepEqual(abrufe, [], 'beim Start nichts davon geholt – auch nicht im Leerlauf');
   assert.equal(await page.evaluate(() => !!document.getElementById('sp-stil') || 'MeinVorteilSpartricks' in window), false);
   const kachel = page.locator('#kacheln a[data-sprung="spartricks"]');
   assert.match(nbsp(await kachel.innerText()), /Spartricks[\s\S]*Geld zurück, Gratis, Geburtstag/);
-  // nach dem Zeichnen, im Leerlauf: einmal spartricks.json (nicht das Skript)
-  await page.waitForFunction(() => /Tipp des Tages/.test(document.querySelector('#kacheln a[data-sprung="spartricks"]').textContent), null, { timeout: 8000 });
-  assert.deepEqual(abrufe, ['spartricks.json']);
-  const k = nbsp(await kachel.innerText());
-  assert.equal(await kachel.locator('li').count(), 2, 'zwei Zeilen');
-  // 15.11.: Frist Kfz-Versicherung (30.11.) steht als zweite Zeile
-  assert.match(k, /Kfz-Versicherung: bis 30\. November kündigen und wechseln\s*Frist bis 30\.11\. · noch 15 Tage/);
-  await kachel.screenshot({ path: join(FOTOS, 'kachel-spartricks.png') });
-  // Tippen auf die Kachel öffnet den Reiter, Skript erst jetzt
+  await kachel.screenshot({ path: join(FOTOS, 'kachel-spartricks-erst.png') });
+  // Tippen auf die Kachel öffnet den Reiter, Skript und Daten erst jetzt
   await kachel.click();
   await sparDa(page);
   assert.equal(new URL(page.url()).hash, '#spartricks');
   assert.equal(await page.locator('main').isHidden(), true);
   assert.equal(await page.locator('.sprung a[data-reiter="spartricks"]').getAttribute('aria-current'), 'true');
   assert.equal(await page.locator('#ort-name').innerText(), 'Spartricks');
-  assert.ok(abrufe.includes('spartricks.js'));
+  assert.deepEqual(abrufe, ['spartricks.js', 'spartricks.json']);
+  // Speicher: nur ein kleiner Auszug im localStorage (den sich die Seite mit dem Synquenzer teilt), die Datei im Cache Storage
+  const sp = await page.evaluate(async () => ({
+    auszug: (localStorage.getItem('mein-vorteil-spartricks-kachel') || '').length, alt: localStorage.getItem('mein-vorteil-daten-spartricks'),
+    ablage: await caches.open('mv-spartricks').then(c => c.keys()).then(k => k.map(r => new URL(r.url).pathname)),
+  }));
+  assert.ok(sp.auszug > 500 && sp.auszug < 25000, `Auszug ${sp.auszug} Zeichen`);
+  assert.equal(sp.alt, null);
+  assert.deepEqual(sp.ablage, ['/mein-vorteil/spartricks.json']);
   // Wechsel hin und her: nichts doppelt
   for (const ab of ['deals', 'mehr']) {
     await page.locator(`.sprung a[data-ziel="${ab}"]`).click();
@@ -315,19 +362,47 @@ test('Lazy: spartricks.js erst beim Öffnen; die Daten holt die Kachel einmal le
     await page.waitForFunction(() => !document.getElementById('p-spartricks').hidden);
   }
   assert.equal(abrufe.filter(a => a === 'spartricks.js').length, 1);
-  assert.equal(abrufe.filter(a => a === 'spartricks.json').length, 2, 'Kachel einmal, Reiter einmal');
+  assert.equal(abrufe.filter(a => a === 'spartricks.json').length, 1, 'nur der Reiter, einmal');
+  // zurück auf Start: jetzt „Tipp des Tages“ + nächste Frist (15.11.: Kfz-Versicherung 30.11.)
+  await page.locator('.sprung a[data-ziel="start"]').click();
+  await page.waitForFunction(() => /Tipp des Tages/.test(document.querySelector('#kacheln a[data-sprung="spartricks"]').textContent));
+  assert.equal(await kachel.locator('li').count(), 2, 'zwei Zeilen');
+  assert.match(nbsp(await kachel.innerText()), /Kfz-Versicherung: bis 30\. November kündigen und wechseln\s*Frist bis 30\.11\. · noch 15 Tage/);
+  await kachel.screenshot({ path: join(FOTOS, 'kachel-spartricks.png') });
+  // neu laden: Kachel bleibt (Auszug), Reiter zeigt sofort den letzten Stand
+  await page.reload();
+  await page.waitForFunction(() => /Tipp des Tages/.test(document.querySelector('#kacheln a[data-sprung="spartricks"]')?.textContent || ''));
+  assert.equal(abrufe.filter(a => a === 'spartricks.json').length, 1, 'Start nach Neuladen holt nichts');
   assert.deepEqual(fremd, [], 'keine fremden Adressen geladen');
   assert.deepEqual(fehler, []);
   await ctx.close();
+});
+
+test('Neue Fassung oder kaputte Datei: sagt „Seite neu laden“ statt „nicht erreichbar“', { skip: ohnePw }, async () => {
+  try {
+    sparInhalt = JSON.stringify({ ...DATEN, version: 2 });
+    let { ctx, page, fehler } = await oeffne();
+    assert.match(nbsp(await page.locator('#p-spartricks').innerText()), /neue Fassung der Spartricks – bitte die Seite neu laden/);
+    assert.equal(await page.locator('#p-spartricks [data-sp-neuladen]').innerText(), 'Seite neu laden');
+    assert.doesNotMatch(await page.locator('#p-spartricks').innerText(), /nicht erreichbar/);
+    await pruefeLayout(page, 'neue Fassung');
+    assert.deepEqual(fehler, []);
+    await ctx.close();
+    sparInhalt = '{"version":1,"tipps":[{kaputt';
+    ({ ctx, page, fehler } = await oeffne());
+    assert.match(nbsp(await page.locator('#p-spartricks').innerText()), /Spartricks-Datei ist gerade fehlerhaft/);
+    assert.deepEqual(fehler, []);
+    await ctx.close();
+  } finally { sparInhalt = null; }
 });
 
 for (const [breite, hoehe, lage] of [[428, 926, 'hoch'], [926, 428, 'quer']]) {
   test(`Chips, Top 10, Karten, Suche, Geburtstag, Layout (${lage} ${breite} × ${hoehe})`, { skip: ohnePw }, async () => {
     const { ctx, page, fehler } = await oeffne({ breite, hoehe });
     assert.deepEqual((await page.locator('.sp-chips .sp-chip').allInnerTexts()).map(t => t.replace(/\s+/g, ' ').trim()),
-      ['Top 10 10', 'Geld zurück 24', 'Clever einkaufen 18', 'Gratis & Proben 15', 'Geburtstag gratis 20', 'Freizeit & Reisen 15', 'Gewinnspiele 4']);
+      ['Top 10 10', ...CHIPS.slice(1).map((c, i) => `${CHIP_NAMEN[i + 1]} ${ANZAHL[c]}`)]);
     assert.equal(await chip(page, 'top').getAttribute('aria-selected'), 'true');
-    assert.match(nbsp(await page.locator('.sp-standzeile').innerText()), /^Stand der Tipps: 15\.11\.2026 · 96 Tipps mit Quellen$/);
+    assert.equal(nbsp(await page.locator('.sp-standzeile').innerText()), `Stand der Tipps: 15.11.2026 · ${DATEN.tipps.length} Tipps mit Quellen`);
     const t = await titel(page);
     assert.equal(t.length, 10);
     assert.match(t[0], /^1\s*Kfz-Versicherung: bis 30\. November kündigen und wechseln$/);
@@ -344,7 +419,7 @@ for (const [breite, hoehe, lage] of [[428, 926, 'hoch'], [926, 428, 'quer']]) {
     await page.screenshot({ path: join(FOTOS, `top10-${lage}.png`) });
     // Bereich „Geld zurück“: Reihenfolge der Daten, regionale Marke nur, wo es nicht bundesweit ist
     await waehle(page, 'geld');
-    assert.equal((await titel(page)).length, 24);
+    assert.equal((await titel(page)).length, ANZAHL.geld);
     assert.match(nbsp(await page.locator('#sp-reparaturbonus').innerText()), /Sachsen/);
     assert.equal(await page.locator('#sp-kfz-wechsel .sp-region').count(), 0);
     // Community-Erfahrung ist gekennzeichnet
@@ -368,26 +443,35 @@ for (const [breite, hoehe, lage] of [[428, 926, 'hoch'], [926, 428, 'quer']]) {
     assert.match(await page.locator('#sp-liste').innerText(), /Keine Treffer für „xyzqq“/);
     assert.equal(await page.locator('.sp-woanders').count(), 0);
     await suche(page, '');
-    assert.equal((await titel(page)).length, 15);
+    assert.equal((await titel(page)).length, ANZAHL.freizeit);
     // Geburtstag gratis: Region an jeder Karte, „vorher anmelden“
     await waehle(page, 'geburtstag');
     const gk = page.locator('#sp-liste .sp-karte');
-    assert.equal(await gk.count(), 20);
+    assert.equal(await gk.count(), ANZAHL.geburtstag);
     for (const k of await gk.all()) {
       assert.ok(await k.locator('.sp-region').count() >= 1, 'Region-Markierung');
-      assert.match(nbsp(await k.locator('.sp-anmelden').innerText()), /^(Vorher anmelden: spätestens \d+ Wochen vor dem Geburtstag – |Ohne Anmeldung – |Vorher: )/);
+      assert.match(nbsp(await k.locator('.sp-anmelden').innerText()), /^(Rechtzeitig anmelden: Faustregel \d+ Wochen vor dem Geburtstag – |Ohne Anmeldung – |Vorher: )/);
     }
-    assert.match(nbsp(await page.locator('#sp-saurierpark').innerText()), /Dresden[\s\S]*Bautzen-Kleinwelka[\s\S]*Ohne Anmeldung – am Geburtstag mit Ausweis/);
+    assert.equal(await page.locator('#sp-liste .sp-karte .sp-anleitung').count(), 2, 'Anleitungen gekennzeichnet');
+    assert.match(nbsp(await page.locator('#sp-saurierpark').innerText()), /Sachsen[\s\S]*Bautzen-Kleinwelka, ca\. 60 km von Dresden[\s\S]*Ohne Anmeldung – am Geburtstag mit Ausweis/);
+    assert.equal(await page.locator('#sp-zoo-leipzig').count(), 0, 'kein Nicht-Angebot unter Geburtstag');
     assert.match(nbsp(await page.locator('#sp-dm-geburtstag').innerText()), /bundesweit/);
     await page.locator('#sp-geb-tag').fill('2027-03-04');
     await page.waitForFunction(() => /bis 04\.02\./.test(document.getElementById('sp-dm-geburtstag')?.textContent || ''));
-    assert.match(nbsp(await page.locator('#sp-dm-geburtstag .sp-anmelden').innerText()), /^Vorher anmelden bis 04\.02\. \(4 Wochen vorher\) – dm-Konto/);
-    assert.match(nbsp(await page.locator('#sp-supermarkt-geburtstag .sp-anmelden').innerText()), /^Vorher anmelden bis 18\.02\. \(2 Wochen vorher\)/);
+    assert.match(nbsp(await page.locator('#sp-dm-geburtstag .sp-anmelden').innerText()), /^Am besten anmelden bis 04\.02\. \(Faustregel 4 Wochen vorher\) – dm-Konto/);
+    assert.match(nbsp(await page.locator('#sp-supermarkt-geburtstag .sp-anmelden').innerText()), /^Am besten anmelden bis 18\.02\. \(Faustregel 2 Wochen vorher\)/);
+    // gleich lautende Quellen-Knöpfe gibt es nicht mehr (z. B. drei mydealz-Links an „Gratis-Geburtstag planen“)
+    const knoepfe = await page.locator('#sp-geb-planen .sp-fuss a').allInnerTexts();
+    assert.equal(new Set(knoepfe).size, knoepfe.length, knoepfe.join(' · '));
+    if (lage === 'hoch') await page.locator('#sp-geb-planen').screenshot({ path: join(FOTOS, 'karte-geb-planen-hoch.png') });
     assert.match(nbsp(await page.locator('.sp-geb-info').innerText()), /in 109 Tagen/);
     await pruefeLayout(page, `Geburtstag ${lage}`);
     await page.screenshot({ path: join(FOTOS, `geburtstag-${lage}.png`) });
     // Gewinnspiele + Freizeit: Layout
     for (const c of ['gewinnspiele', 'freizeit', 'einkaufen']) { await waehle(page, c); await pruefeLayout(page, `${c} ${lage}`); }
+    // befristete Aktion: Datum an der Karte (dm 10fach bis 28.02.2027)
+    assert.match(nbsp(await page.locator('#sp-drogerie .sp-marken').innerText()), /Aktion bis 28\.02\.2027/);
+    if (lage === 'hoch') await page.locator('#sp-drogerie').screenshot({ path: join(FOTOS, 'karte-drogerie-hoch.png') });
     if (lage === 'quer') await page.screenshot({ path: join(FOTOS, 'einkaufen-quer.png') });
     assert.deepEqual(fehler, []);
     await ctx.close();
@@ -427,7 +511,7 @@ test('Frist vorbei (01.12.): Kfz nicht mehr in Top 10 und Kachel, im Bereich am 
   const t = await titel(page);
   assert.equal(t.length, 10);
   assert.ok(!t.some(x => /Kfz/.test(x)));
-  assert.match(t.at(-1), /Sachsen-Ticket/);
+  assert.match(t.at(-1), /Bahn verspätet/);
   await waehle(page, 'geld');
   const letzte = page.locator('#sp-liste .sp-karte').last();
   assert.match(nbsp(await letzte.innerText()), /Kfz-Versicherung[\s\S]*Frist für dieses Jahr vorbei/);
@@ -444,7 +528,7 @@ test('Frist vorbei (01.12.): Kfz nicht mehr in Top 10 und Kachel, im Bereich am 
     await page.waitForFunction(() => !/lädt|Lade/.test(document.getElementById('stand').textContent));
     await page.locator('.sprung a[data-reiter="spartricks"]').click();
     await page.waitForFunction(() => /gerade offline/.test(document.querySelector('#p-spartricks .sp-standzeile')?.textContent || ''), null, { timeout: 8000 });
-    assert.equal((await titel(page)).length, 24, 'gemerkter Chip Geld zurück aus dem Speicher');
+    assert.equal((await titel(page)).length, ANZAHL.geld, 'gemerkter Chip Geld zurück aus dem Speicher (Cache Storage)');
   } finally { sparAus = false; }
   assert.deepEqual(fehler.filter(f => !/503/.test(f)), []);
   await ctx.close();

@@ -2096,15 +2096,15 @@ function zeichneKonzerte() {
   return { html: teile.join(''), n: nah.length, warum };
 }
 
-// --- Spartricks-Kachel: „Tipp des Tages“ (wechselt täglich) + nächste Frist, aus dem gemerkten Stand von spartricks.json --
-// Die Daten holt der Reiter beim Öffnen; hat die Kachel noch nichts (oder ist der Stand > 3 Tage alt), einmal leise im
-// Leerlauf nach dem Zeichnen (gleiche Seite, kein fremder Server, kein Skript).
-const SPAR_SPEICHER = 'mein-vorteil-daten-spartricks';
+// --- Spartricks-Kachel: „Tipp des Tages“ (wechselt täglich) + nächste Frist, aus dem Auszug, den der Reiter beim Öffnen
+// merkt (mein-vorteil-spartricks-kachel, wenige KB). Die Startseite holt spartricks.json nie selbst (lazy): vor dem ersten
+// Öffnen steht „Geld zurück, Gratis, Geburtstag“. Alter Stand (ganze Datei, bis 15.11.2026) wird noch gelesen.
+const SPAR_KACHEL = 'mein-vorteil-spartricks-kachel', SPAR_ALT = 'mein-vorteil-daten-spartricks';
 const isoHeute = () => { const p = teile(Date.now()); return `${p.year}-${String(p.month).padStart(2, '0')}-${String(p.day).padStart(2, '0')}`; };
 const isoTage = (a, b) => Math.round((Date.parse(b + 'T00:00:00Z') - Date.parse(a + 'T00:00:00Z')) / 864e5);
 function sparKachel() { // -> { z, w } wie kachelInhalt; höchstens 2 Zeilen
   const h = isoHeute();
-  const d = lies(SPAR_SPEICHER, null)?.d;
+  const d = lies(SPAR_KACHEL, null)?.d || lies(SPAR_ALT, null)?.d;
   const tipps = (Array.isArray(d?.tipps) ? d.tipps : []).filter(t => t && typeof t.id === 'string' && typeof t.titel === 'string' && t.titel
     && (typeof t.bis !== 'string' || t.bis >= h));
   const pool = tipps.filter(t => Number.isInteger(t.top) || t.sicherheit === 'belegt');
@@ -2120,23 +2120,7 @@ function sparKachel() { // -> { z, w } wie kachelInhalt; höchstens 2 Zeilen
   }
   return { z, w: '' };
 }
-let sparHolt = false;
 addEventListener('mein-vorteil-spartricks', () => zeichne()); // der Reiter hat frische Spartricks gemerkt -> Kachel neu
-function sparVorladen() {
-  if (sparHolt) return;
-  const alt = lies(SPAR_SPEICHER, null);
-  if (alt?.d && Date.now() - (Number(alt.holZeit) || 0) < 3 * 864e5) return;
-  sparHolt = true;
-  const frischer = () => (Number(lies(SPAR_SPEICHER, null)?.holZeit) || 0) > (Number(alt?.holZeit) || 0); // der Reiter war schneller
-  const los = () => {
-    if (frischer()) { zeichne(); return; }
-    fetch('spartricks.json', { cache: 'no-cache' }).then(r => (r.ok ? r.json() : null)).then(d => {
-      if (!frischer()) { if (!d || !Array.isArray(d.tipps) || d.version > 1) return; merk(SPAR_SPEICHER, { d, holZeit: Date.now() }); }
-      zeichne();
-    }).catch(() => {});
-  };
-  setTimeout(() => ('requestIdleCallback' in window ? requestIdleCallback(los, { timeout: 4000 }) : los()), 2500);
-}
 
 // --- Start: „Heute für dich“ – je Bereich 1–3 beste Treffer als Kachel, Tippen führt in den Bereich ------------------------
 const KACHEL_REIHE = ['deals', 'preisfehler', 'filme', 'auftritte', 'remix', 'unterricht', 'konzerte', 'gewinnspiele', 'krypto', 'spartricks', 'mehr'];
@@ -2770,7 +2754,6 @@ function zeichne() {
   zeigeStand();
   zeigeOrt();
   springNachLaden();
-  sparVorladen();
 }
 const zeichneAlles = () => zeichne();
 

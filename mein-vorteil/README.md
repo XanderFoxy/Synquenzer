@@ -48,7 +48,7 @@ Sprungmarken: `#start`, `#deals` (`#produkte`, `#cashback`, `#snacks` = Ziel im 
 | **Konzerte** | in der Nähe (bis `pushRadiusKm`), darunter **je Band der nächste Termin, auch weit weg, mit km**; Tourdaten-Links je Band (`../konzerte/artists.json`, erst beim Öffnen) | nächster Termin bzw. Tourdaten-Links |
 | **Gewinnspiele** | nur laufende ohne Kauf/Abo | sonst mydealz-Gruppen Gewinnspiele/Gratis |
 | **Krypto** | wie bisher (nur `localStorage`); Push-Kasten mit Feld „ntfy-Thema“ (nur auf dem Gerät) | Kurs immer |
-| **Spartricks** | eigener Reiter (`spartricks.js`, Daten `spartricks.json`): Top 10 · Geld zurück · Clever einkaufen · Gratis & Proben · Geburtstag gratis · Freizeit & Reisen · Gewinnspiele, Suche, Stern | Start-Kachel: „Tipp des Tages“ (wechselt täglich) + nächste Frist; ohne gemerkten Stand „Geld zurück, Gratis, Geburtstag“ |
+| **Spartricks** | eigener Reiter (`spartricks.js`, Daten `spartricks.json`): Top 10 · Geld zurück · Clever einkaufen · Gratis & Proben · Geburtstag gratis · Freizeit & Reisen · Gewinnspiele, Suche, Stern | Start-Kachel: „Tipp des Tages“ (wechselt täglich) + nächste Frist, sobald der Reiter einmal offen war; vorher „Geld zurück, Gratis, Geburtstag“ |
 | **Mehr** | Erleben, Reisen, Nebenverdienst, Spar-Tipps, Vorlage Übersetzung, Quellen | – |
 
 **Echter Lauf 08.11.2026** (`test/fixtures/echt-0811/`): die Ausgaben der drei Wecker unverändert (`satz: 'echt0811'`)
@@ -103,18 +103,29 @@ Film-Einträge aus `aktuell.json` (Kategorie `filme`, für die Pushes) stehen nu
 Der Service Worker hält `filme.js` wie die Seite (erst Netz, nach 3 s die letzte gute Kopie). Tests: `test/filme.test.mjs`.
 
 **Reiter „Spartricks“ (seit 15.11.2026, `spartricks.js` + `spartricks.json`):** komprimiertes Wissen aus drei Recherchen
-(Geld zurück, Einkaufen & Gratis, Geburtstag & Freizeit; 133 Einträge → 96 Tipps: Doppelte vereint, Prämien-Themen Strom/Bank/Konto
+(Geld zurück, Einkaufen & Gratis, Geburtstag & Freizeit; 133 Einträge → 94 Tipps: Doppelte vereint, Prämien-Themen Strom/Bank/Konto
 nach Xanders Regel vom 07.11. raus, Unsicheres ohne Mehrwert raus). Chips **Top 10 · Geld zurück · Clever einkaufen · Gratis & Proben ·
 Geburtstag gratis · Freizeit & Reisen · Gewinnspiele** (dazu „Gemerkt“, sobald ein Stern gesetzt ist). Jede Karte: Titel, „Bringt“,
-„So geht’s“, Quellen als Links (`rel="noopener noreferrer"`), Stand, „Erfahrung aus der Community“ wo nicht amtlich belegt, Region
-(Döbeln/Leipzig/Dresden/Chemnitz/Sachsen; bundesweit nur unter „Geburtstag gratis“ ausgeschrieben), Frist mit „noch N Tage“ – nach
-der Frist rückt der nächste Top-Tipp nach, der Tipp steht dann am Ende seines Bereichs. „Geburtstag gratis“: Feld „Dein nächster
-Geburtstag“ (nur `localStorage`, ohne Jahr gemerkt) → an jeder Karte „Vorher anmelden bis TT.MM.“ bzw. „Ohne Anmeldung“.
+„So geht’s“, Quellen als Links (`rel="noopener noreferrer"`; heißen zwei Knöpfe gleich, steht das Thema dabei), Stand, „Erfahrung aus
+der Community“ wo nicht amtlich bzw. vom Anbieter belegt (reine Deal-Portale = Community), „Anleitung“ bei Plan-Tipps, Region
+(Döbeln/Leipzig/Dresden/Chemnitz/Sachsen = wo es ist; bundesweit nur unter „Geburtstag gratis“ ausgeschrieben), Frist mit „noch N Tage“ –
+nach der Frist rückt der nächste Top-Tipp nach, ein jährlicher Tipp steht dann am Ende seines Bereichs („Frist für dieses Jahr vorbei“),
+ein einmaliger (`einmalig: true`, z. B. Steuer 2022) verschwindet. `aktionBis`: befristete Aktion im Tipp („Aktion bis …“, danach
+„Aktion vorbei? Beim Anbieter prüfen“). Top 10: Fristen zuerst, dann nach Geld. „Geburtstag gratis“: Feld „Dein nächster Geburtstag“
+(nur `localStorage`, ohne Jahr gemerkt) → an jeder Karte „Am besten anmelden bis TT.MM. (Faustregel N Wochen vorher)“ bzw.
+„Ohne Anmeldung“ – der Vorlauf ist eine Faustregel, keine Frist des Anbieters.
 Suchfeld oben: alle Wörter müssen passen, Umlaute egal (Döbeln = Doebeln = Dobeln), Zahl je Chip zeigt die Treffer.
-Laden: Skript und CSS (`.sp-…`) erst beim Öffnen; die Daten holt der Reiter (`cache: no-cache`) bzw. einmal leise im Leerlauf
-2,5 s nach dem Zeichnen für die Start-Kachel, wenn kein Stand gemerkt oder er älter als 3 Tage ist. Gemerkter Stand, Chip,
-Sterne, Geburtstag: `mein-vorteil-daten-spartricks`, `-spartricks-chip`, `-spartricks-gemerkt`, `-spartricks-geburtstag`.
-Kein Tracking, keine fremden Skripte. Neue Fassung der Daten: `version` gleich lassen (Seite liest bis Fassung 1), `stand` setzen.
+Laden (lazy): Skript, CSS (`.sp-…`) und Daten erst beim Öffnen des Reiters – die Startseite holt `spartricks.json` nie selbst.
+Letzter Stand im Cache Storage `mv-spartricks` (nicht im localStorage, den sich die Seite mit dem Synquenzer teilt; sofort gezeigt,
+dann frisch mit `cache: no-cache`). Die Start-Kachel liest nur einen Auszug (`mein-vorteil-spartricks-kachel`, wenige KB): vor dem
+ersten Öffnen steht dort „Geld zurück, Gratis, Geburtstag“, danach „Tipp des Tages“ + nächste Frist. Der alte Stand
+`mein-vorteil-daten-spartricks` (ganze Datei, ~107 000 Zeichen) wird einmal übernommen und gelöscht. Chip, Sterne, Geburtstag:
+`mein-vorteil-spartricks-chip`, `-spartricks-gemerkt`, `-spartricks-geburtstag`. Neue Daten-Fassung (> 1) oder kaputte Datei: der Reiter
+sagt „Seite neu laden“ statt „nicht erreichbar“.
+Kein Tracking, keine fremden Skripte. **Pflege:** `spartricks.json` ist die Quelle und wird direkt bearbeitet (die einmalige
+Zusammenführung der Recherchen liegt nicht im Repo); `version` gleich lassen (Seite liest bis Fassung 1), `stand` setzen. Die Tests
+zählen nicht fest, sondern prüfen Regeln: Pflichtfelder, Quellen (kein Umfrage-/Provisionsportal, keine fremde Länderseite,
+„belegt“ nie nur mit Deal-Portalen), Top 10 mit Fristen zuerst, Geburtstag ohne Nicht-Angebote.
 Tests: `test/spartricks.test.mjs` (Schema, tolerantes Lesen, Chips, Suche, Stern, Geburtstag, Frist, Kachel, 428 × 926 und 926 × 428).
 
 ## Was eine Angebotskarte zeigt

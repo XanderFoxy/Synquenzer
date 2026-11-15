@@ -26,7 +26,7 @@
   {
    "id": "geburtstag",
    "name": "Geburtstag gratis",
-   "text": "Was es am Geburtstag gratis gibt – und bis wann du dich vorher anmelden musst."
+   "text": "Was es am Geburtstag gratis gibt – und wann du dich am besten vorher anmeldest."
   },
   {
    "id": "freizeit",
@@ -94,7 +94,8 @@
    "region": [
     "bundesweit"
    ],
-   "bis": "2026-12-31"
+   "bis": "2026-12-31",
+   "einmalig": true
   },
   {
    "id": "flug-2023",
@@ -105,16 +106,16 @@
    "nutzen": "250–600 € pro Person für „vergessene“ Flüge.",
    "quellen": [
     {
-     "name": "AirHelp – Flugverspätung: Fristen und Verjährung",
-     "url": "https://www.airhelp.de/ec261/flugverspaetung-entschaedigung-verjaehrung/"
-    },
-    {
-     "name": "Wandern und mehr – Wie lange hat man Anspruch?",
-     "url": "https://www.wandernundmehr.at/faq/wie-lange-hat-man-anspruch-auf-entschadigung-fur-einen-flug"
-    },
-    {
      "name": "Finanztip – Flugverspätung: bis zu 600 € zurück",
      "url": "https://www.finanztip.de/flugverspaetung"
+    },
+    {
+     "name": "BGB § 195 – Regelmäßige Verjährungsfrist (3 Jahre)",
+     "url": "https://www.gesetze-im-internet.de/bgb/__195.html"
+    },
+    {
+     "name": "BGB § 199 – Beginn der Verjährung (Jahresende)",
+     "url": "https://www.gesetze-im-internet.de/bgb/__199.html"
     }
    ],
    "stand": "2026",
@@ -122,7 +123,8 @@
    "region": [
     "bundesweit"
    ],
-   "bis": "2026-12-31"
+   "bis": "2026-12-31",
+   "einmalig": true
   },
   {
    "id": "krankenkasse-2027",
@@ -150,14 +152,15 @@
    "region": [
     "bundesweit"
    ],
-   "bis": "2027-01-31"
+   "bis": "2027-01-31",
+   "einmalig": true
   },
   {
    "id": "flug-verspaetung",
    "bereich": "geld",
-   "top": 5,
+   "top": 14,
    "titel": "Flug verspätet: bis 600 € selbst holen – ohne Portal-Provision",
-   "text": "Ab 3 Stunden Verspätung am Ziel oder bei kurzfristiger Annullierung (weniger als 14 Tage vorher) gibt es je nach Strecke 250, 400 oder 600 € pro Person – außer bei außergewöhnlichen Umständen. Erst selbst bei der Airline fordern, bei Ablehnung die Schlichtungsstelle söp einschalten: kostenlos, während Portale rund 30 % behalten. Mauert die Airline weiter, hilft das Online-Klagetool des Bundes (service.justiz.de/fluggastrechte) – Gerichtskosten möglich, also nur bei klarem Fall.",
+   "text": "Ab 3 Stunden Verspätung am Ziel oder bei kurzfristiger Annullierung (weniger als 14 Tage vorher) gibt es je nach Strecke 250, 400 oder 600 € pro Person – außer bei außergewöhnlichen Umständen. Erst selbst bei der Airline fordern, bei Ablehnung die Schlichtungsstelle söp einschalten: kostenlos, während Portale rund 30 % behalten. Mauert die Airline weiter, hilft das Online-Klagetool der Justiz (service.justiz.de/fluggastrechte; noch Pilotphase an einigen Amtsgerichten, braucht Online-Ausweis und BundID) – Gerichtskosten möglich, also nur bei klarem Fall.",
    "nutzen": "250–600 € pro Person; spart 75–180 € Portal-Provision.",
    "quellen": [
     {
@@ -182,7 +185,7 @@
   {
    "id": "reparaturbonus",
    "bereich": "geld",
-   "top": 6,
+   "top": 8,
    "titel": "Reparaturbonus Sachsen: 50 % bis 200 € pro Reparatur zurück",
    "text": "Lässt du ein Elektrogerät (seit 2026 auch E-Bike-Akkus) bei einem teilnehmenden Betrieb reparieren, erstattet der Freistaat 50 % der Kosten, höchstens 200 € pro Reparatur; die Rechnung muss mindestens 115 € betragen. Antrag mit Rechnung online bei der Sächsischen Aufbaubank (SAB) – das Geld ist begrenzt, wer zuerst vollständig beantragt, kommt zuerst dran.",
    "nutzen": "57,50–200 € pro Reparatur.",
@@ -210,7 +213,7 @@
   {
    "id": "werbungskosten",
    "bereich": "geld",
-   "top": 7,
+   "top": 5,
    "titel": "Werbungskosten ohne Belege – und Laptop sofort absetzen",
    "text": "Homeoffice-Pauschale 6 € pro Tag (höchstens 1.260 €); ohne Belege erkennen Finanzämter oft 110 € für Arbeitsmittel und 16 € Kontoführung an (Verwaltungspraxis, kein Anspruch). Arbeitsmittel bis 952 € brutto sowie Computer, Tablets und Software in jeder Preislage setzt du im Kaufjahr komplett ab – bei privater Mitnutzung nur den beruflichen Anteil. Es wirkt erst, wenn alle Werbungskosten zusammen über 1.230 € liegen – also alles zusammenzählen.",
    "nutzen": "Je nach Steuersatz 100–400 € Erstattung; ein beruflicher 1.000-€-Laptop bringt bei 30 % Steuersatz rund 300 € (Schätzung).",
@@ -237,7 +240,7 @@
   {
    "id": "abos-kuendigen",
    "bereich": "geld",
-   "top": 8,
+   "top": 9,
    "titel": "Abos aufräumen: Kündigungsbutton nutzen, Prime-Rest zurückholen",
    "text": "Online abgeschlossene Abos (Fitnessstudio, Streaming, Zeitschrift) müssen sich über einen „Verträge hier kündigen“-Button beenden lassen; die Bestätigung speichern. Verträge seit März 2022 verlängern sich nach der Mindestlaufzeit nur noch auf unbestimmte Zeit und sind dann monatlich kündbar. Einmal im Quartal Kontoauszug und App-Store-Abos durchsehen. Wer Amazon Prime kündigt und die Vorteile im laufenden Zeitraum nicht genutzt hat, bekommt laut Ratgebern den Beitrag ganz oder anteilig zurück – die Kündigungsseite zeigt den Betrag.",
    "nutzen": "Jedes vergessene Abo kostet oft 5–15 € im Monat (Schätzung).",
@@ -264,7 +267,7 @@
   {
    "id": "bahn-entschaedigung",
    "bereich": "geld",
-   "top": 9,
+   "top": 11,
    "titel": "Bahn verspätet: 25 % ab 60, 50 % ab 120 Minuten – auch mit Deutschlandticket",
    "text": "Kommst du 60 Minuten zu spät an, gibt es 25 %, ab 120 Minuten 50 % des Fahrpreises der einfachen Fahrt. Beträge unter 4 € werden nicht ausgezahlt – mehrere Verspätungen lassen sich aber sammeln. Online-Tickets direkt im DB Navigator bzw. auf bahn.de unter „Entschädigung beantragen“ einreichen; seit Juni 2023 entfällt sie bei außergewöhnlichen Umständen wie Unwetter. Mit Deutschlandticket gibt es 1,50 € pro Fahrt ab 60 Minuten Verspätung, höchstens 25 % des Ticketpreises im Monat (15,75 €).",
    "nutzen": "Z. B. 10–30 € bei einer Fernverkehrsfahrt; mit Deutschlandticket bis 15,75 € im Monat.",
@@ -291,9 +294,9 @@
   {
    "id": "rundfunk",
    "bereich": "geld",
-   "top": 13,
+   "top": 7,
    "titel": "Rundfunkbeitrag: nur einmal pro Wohnung – oder ganz befreien",
-   "text": "Der Beitrag (18,36 € im Monat) fällt pro Wohnung an, nicht pro Person: In WG oder Partnerschaft zahlt nur einer, die anderen melden sich schriftlich beim Beitragsservice ab (Name und Beitragsnummer des Zahlers nennen). Befreien lassen können sich u. a. Menschen mit Bürgergeld bzw. Grundsicherung und Azubis oder Studierende mit BAföG oder BAB, die nicht bei den Eltern wohnen – geht der Antrag mit Bescheid binnen drei Monaten ein, gilt er rückwirkend.",
+   "text": "Der Beitrag (18,36 € im Monat) fällt pro Wohnung an, nicht pro Person: In WG oder Partnerschaft zahlt nur einer, die anderen melden sich schriftlich beim Beitragsservice ab (Name und Beitragsnummer des Zahlers nennen). Befreien lassen können sich u. a. Menschen mit Bürgergeld bzw. Grundsicherung und Azubis oder Studierende mit BAföG oder BAB, die nicht bei den Eltern wohnen – kommt der Antrag binnen zwei Monaten nach dem Bescheid, gilt die Befreiung ab Leistungsbeginn; später geht es bis zu drei Jahre rückwirkend, solange der Bescheid für diese Zeit gültig war.",
    "nutzen": "220,32 € im Jahr pro Person, die bisher doppelt zahlt oder befreit wäre.",
    "quellen": [
     {
@@ -318,9 +321,9 @@
   {
    "id": "internet",
    "bereich": "geld",
-   "top": 14,
+   "top": 10,
    "titel": "Internet zu langsam oder weg: messen, mindern, Geld pro Tag",
-   "text": "Mit der Breitbandmessung der Bundesnetzagentur (Festnetz: bis 30 Messungen an höchstens 5 Tagen innerhalb von 14 Tagen; seit 20.04.2026 auch per App für Mobilfunk) weist du nach, dass der Anschluss deutlich langsamer ist – dann darfst du mindern oder sonderkündigen. Bei Totalausfall gibt es nach zwei Kalendertagen ohne Reparatur pauschal Geld: am 3. und 4. Tag je 5 € (oder 10 % des Monatspreises), ab dem 5. Tag je 10 € (oder 20 %), dazu 10 € je versäumtem Technikertermin. Störung schriftlich melden.",
+   "text": "Mit der Breitbandmessung der Bundesnetzagentur (Festnetz: 30 Messungen an 3 verschiedenen Kalendertagen innerhalb von 14 Tagen, mit mindestens einem Tag Abstand; für Mobilfunk gibt es seit 20.04.2026 eine eigene App mit Messungen an höchstens 5 Tagen) weist du nach, dass der Anschluss deutlich langsamer ist – dann darfst du mindern oder sonderkündigen. Bei Totalausfall gibt es nach zwei Kalendertagen ohne Reparatur pauschal Geld: am 3. und 4. Tag je 5 € (oder 10 % des Monatspreises), ab dem 5. Tag je 10 € (oder 20 %), dazu 10 € je versäumtem Technikertermin. Störung schriftlich melden.",
    "nutzen": "Z. B. 10 Tage Ausfall = 70 €; bei dauerhaft langsamem Netz anteilig weniger zahlen.",
    "quellen": [
     {
@@ -345,6 +348,7 @@
   {
    "id": "pendlerpauschale",
    "bereich": "geld",
+   "top": 6,
    "titel": "Pendlerpauschale 2026: 38 Cent ab dem ersten Kilometer",
    "text": "Ab dem Steuerjahr 2026 zählt jeder Kilometer des einfachen Arbeitswegs mit 38 Cent – vorher waren die ersten 20 km nur 30 Cent wert. Rechenbeispiel: 15 km × 220 Arbeitstage × 0,38 € = 1.254 € liegen allein schon über der 1.230-€-Pauschale; Arbeitsmittel und Kontoführung zählen dann voll obendrauf.",
    "nutzen": "Bei 15 km rund 260 € mehr Werbungskosten als 2025.",
@@ -502,7 +506,7 @@
    "id": "preisgarantie",
    "bereich": "geld",
    "titel": "Billiger gesehen? Tiefpreisgarantie im Baumarkt, Differenz im Shop erfragen",
-   "text": "Bauhaus und Hornbach haben eine Tiefpreisgarantie: Zeigst du für genau denselben Artikel ein günstigeres Angebot (Foto oder Link), bekommst du ihn günstiger – Bauhaus unterbot 2026 laut Community den Konkurrenzpreis um 12 %. Ist ein Preis kurz nach dem Kauf gesunken, gibt es keinen Anspruch, eine freundliche Mail bringt aber oft die Differenz oder einen Gutschein. Online innerhalb der Widerrufsfrist neu bestellen und zurückschicken ist erlaubt – nur sparsam, sonst droht eine Kontosperre.",
+   "text": "Bauhaus und Hornbach haben eine Tiefpreisgarantie: Zeigst du für genau denselben Artikel ein günstigeres Angebot (Foto oder Link), bekommst du ihn günstiger – Bauhaus unterbot 2026 laut Community den Konkurrenzpreis um 12 %. Ist ein Preis kurz nach dem Kauf gesunken, gibt es keinen Anspruch, eine freundliche Mail bringt aber oft die Differenz oder einen Gutschein. Den Widerruf nicht als Preis-Hebel missbrauchen: Erst um Preisanpassung bitten, zurückschicken nur, wenn du die Ware wirklich nicht willst – sonst droht eine Kontosperre.",
    "nutzen": "Oft 10–30 € bei Werkzeug und Garten, 5–50 € bei Technik.",
    "quellen": [
     {
@@ -580,7 +584,7 @@
    "id": "aok-bonus",
    "bereich": "geld",
    "titel": "Bonusprogramm der Krankenkasse in Geld umwandeln (Beispiel AOK PLUS)",
-   "text": "Fast jede Kasse belohnt Vorsorge, Impfungen, Sportverein oder Kurse mit Bonuspunkten. Bei der AOK PLUS lassen sie sich über die App „Meine AOK“ in Geld oder in Zusatzleistungen wie Zahnreinigung umwandeln (bis 400 €); seit 2026 gibt es dazu Lidl-Plus-Coupons über eine Kooperation. Nachweise gleich nach dem Termin in der App hochladen.",
+   "text": "Fast jede Kasse belohnt Vorsorge, Impfungen, Sportverein oder Kurse mit Bonuspunkten. Bei der AOK PLUS lassen sie sich über die App „Meine AOK“ in Geld oder in Zusatzleistungen wie Zahnreinigung umwandeln (bis 400 €); eine Kooperation mit Lidl Plus wurde 2026 angekündigt (Details in der App prüfen). Nachweise gleich nach dem Termin in der App hochladen.",
    "nutzen": "Je nach Kasse und Aktivität 50–400 € im Jahr.",
    "quellen": [
     {
@@ -684,7 +688,7 @@
   {
    "id": "payback",
    "bereich": "einkaufen",
-   "top": 12,
+   "top": 13,
    "titel": "Payback: Coupons vorher aktivieren, Punkte in der Einlöse-Aktion ausgeben",
    "text": "Coupons zählen nur, wenn sie vor dem Bezahlen aktiviert sind („Alle aktivieren“ in der App); bei Papier-Coupons erst die Karte, dann den Coupon scannen lassen. Partner sind u. a. dm, EDEKA, Marktkauf, Netto Marken-Discount und Aral. Punkte nicht im Prämienshop tauschen, sondern an der Kasse einlösen (1 Punkt = 1 Cent) – am besten in einer Einlöse-Aktion, in der EDEKA oder Netto 5–10 % der eingelösten Punkte zurückgeben.",
    "nutzen": "Grundrate 0,5 %; mit 10–20fach-Coupons 5–10 % auf einen Großeinkauf, beim Einlösen in Aktionen noch einmal 5–10 %.",
@@ -784,13 +788,14 @@
    "sicherheit": "community",
    "region": [
     "bundesweit"
-   ]
+   ],
+   "aktionBis": "2027-02-28"
   },
   {
    "id": "coupons-kombinieren",
    "bereich": "einkaufen",
    "titel": "Coupons kombinieren wie die Profis",
-   "text": "Laut einer Couponing-Anleitung klappen meist: Einkaufswert-Coupon plus Produkt-Coupon, zwei Hersteller-Coupons auf dasselbe Produkt und mehrere Einkaufswert-Coupons in einem Einkauf; EDEKA, REWE und Kaufland sind beim Einlösen kulanter, Aldi und Lidl nehmen fast nur eigene App-Coupons. Kleingedrucktes lesen: Manche Hersteller-Coupons gelten für alle Produkte der Marke, nicht nur das abgebildete – so zahlte ein Couponer in einer ARD-Doku 1,13 € statt 46,89 €. Realistisch sind eher um 20 %.",
+   "text": "Laut einer Couponing-Anleitung klappen meist: Einkaufswert-Coupon plus Produkt-Coupon und mehrere Einkaufswert-Coupons in einem Einkauf – pro Produkt aber meist nur ein Hersteller-Coupon (Bedingungen lesen); EDEKA, REWE und Kaufland sind beim Einlösen kulanter, Aldi und Lidl nehmen fast nur eigene App-Coupons. Kleingedrucktes lesen: Manche Hersteller-Coupons gelten für alle Produkte der Marke, nicht nur das abgebildete. Fernseh-Rekorde wie „1,13 € statt 46,89 €“ sind die Ausnahme, realistisch sind eher um 20 %.",
    "nutzen": "realistisch 10–20 % auf geplante Markenkäufe",
    "quellen": [
     {
@@ -998,7 +1003,7 @@
    "id": "lidl-plus",
    "bereich": "einkaufen",
    "titel": "Lidl Plus: Coupons plus neues Punkte-System",
-   "text": "Seit Juni 2026 sammelt man in Lidl Plus Punkte und tauscht sie gegen über 200 Prämien wie Lebensmittel oder Wert-Coupons (laut mydealz z. B. 100 Punkte → 5-€-Coupon, 60 Punkte → 3 €); zum Start gab es 50 Punkte geschenkt, zwischendurch 2-fach-Punkte-Aktionen. Daneben wöchentlich die Coupons aktivieren und Partnervorteile (z. B. Shell, Cineplex) im Blick behalten.",
+   "text": "Seit Juni 2026 sammelt man in Lidl Plus Punkte und tauscht sie gegen über 200 Prämien wie Lebensmittel oder Wert-Coupons (für 5 € Rabatt im Laden brauchst du laut mehreren Berichten rund 500–600 Punkte; der oft genannte 5-€-Gutschein für 100 Punkte gilt nur im Onlineshop ab 49 € Einkauf); zum Start gab es 50 Punkte geschenkt, zwischendurch 2-fach-Punkte-Aktionen. Daneben wöchentlich die Coupons aktivieren und Partnervorteile (z. B. Shell, Cineplex) im Blick behalten.",
    "nutzen": "Erfahrungsbericht: ca. 7,50 € Ersparnis bei 60 € Wocheneinkauf mit passenden Coupons",
    "quellen": [
     {
@@ -1050,7 +1055,7 @@
    "id": "rewe-bonus",
    "bereich": "einkaufen",
    "titel": "REWE Bonus: Guthaben ansparen, in der Einlöse-Aktion ausgeben",
-   "text": "REWE Bonus sammelt Euro-Guthaben statt Punkte; eingelöst wird ab 1 € (bis 100 € pro Tag) an der Kasse per App-Code, eine Auszahlung gibt es nicht. Spartrick: Guthaben ansparen und in einer Einlöse-Aktion ausgeben – zuletzt gab es vom 1. bis 14.11.2026 5 % des eingelösten Betrags als Coupon zurück, frühere Aktionen brachten 10 %. Die Einkaufsschwellen für App-Rabatte wurden angehoben.",
+   "text": "REWE Bonus sammelt Euro-Guthaben statt Punkte; eingelöst wird ab 1 € (bis 100 € pro Tag) an der Kasse per App-Code, eine Auszahlung gibt es nicht. Spartrick: Guthaben ansparen und in einer Einlöse-Aktion ausgeben – zuletzt (1.–14.11.2026) gab es 5 % des eingelösten Betrags als Coupon zurück, frühere Aktionen brachten 10 % – auf die nächste warten. Die Einkaufsschwellen für App-Rabatte wurden angehoben.",
    "nutzen": "5–10 % extra auf das eingelöste Guthaben in Aktionswochen",
    "quellen": [
     {
@@ -1149,7 +1154,6 @@
   {
    "id": "gratis-testen",
    "bereich": "gratis",
-   "top": 10,
    "titel": "Gratis testen: Kaufpreis vom Hersteller zurück",
    "text": "Aktionsprodukt kaufen, Kassenbon (oft auch ein Foto des Strichcodes) im Aktionsportal hochladen, IBAN angeben – der Kaufpreis kommt aufs Konto. Gleich nach dem Kauf einreichen: Viele Aktionen sind gedeckelt (z. B. 250 Einlösungen pro Tag) und gelten einmal pro Person bzw. Haushalt; Original-Bon bis zur Gutschrift aufheben, Frist notieren. Profi-Trick: Kassenbon-App-Cashback und Payback-Coupon obendrauf – nur, wenn die Teilnahmebedingungen das nicht ausschließen. Aktuelle Listen führen DealDoktor und mydealz.",
    "nutzen": "Produkt komplett gratis, meist 2–10 € pro Aktion – gestapelt sogar ein kleines Plus.",
@@ -1168,7 +1172,7 @@
     }
    ],
    "stand": "2026",
-   "sicherheit": "belegt",
+   "sicherheit": "community",
    "region": [
     "bundesweit"
    ]
@@ -1194,7 +1198,7 @@
     }
    ],
    "stand": "2026",
-   "sicherheit": "belegt",
+   "sicherheit": "community",
    "region": [
     "bundesweit"
    ]
@@ -1575,6 +1579,7 @@
    "region": [
     "bundesweit"
    ],
+   "art": "anleitung",
    "anmelden": {
     "tage": 28,
     "text": "alle Apps und Clubs anlegen, Geburtsdatum eintragen"
@@ -1603,12 +1608,10 @@
    "stand": "2025/2026",
    "sicherheit": "community",
    "region": [
-    "Döbeln",
-    "Leipzig",
-    "Dresden",
-    "Chemnitz"
+    "Sachsen"
    ],
-   "ort": "Sachsen (Döbeln, Leipzig, Dresden, Chemnitz)",
+   "ort": "Sachsen – in Döbeln selbst ist uns kein Geburtstagsangebot bekannt, die Parks und Zoos liegen 60–130 km entfernt",
+   "art": "anleitung",
    "anmelden": {
     "tage": 28,
     "text": "Apps und Kundenkarten für den Tag anlegen"
@@ -1633,7 +1636,7 @@
    "stand": "2025",
    "sicherheit": "belegt",
    "region": [
-    "Dresden"
+    "Sachsen"
    ],
    "ort": "Bautzen-Kleinwelka, ca. 60 km von Dresden, 130 km von Döbeln",
    "anmelden": {
@@ -1660,9 +1663,9 @@
    "stand": "2025/2026",
    "sicherheit": "community",
    "region": [
-    "Chemnitz"
+    "Sachsen"
    ],
-   "ort": "Lengenfeld/Vogtland, ca. 110 km von Döbeln",
+   "ort": "Lengenfeld (Vogtland), ca. 50 km von Chemnitz, 110 km von Döbeln",
    "anmelden": {
     "tage": 0,
     "text": "keine Anmeldung – nur am Geburtstag, mit Nachweis"
@@ -1671,8 +1674,8 @@
   {
    "id": "belantis",
    "bereich": "geburtstag",
-   "titel": "BELANTIS Leipzig: am Geburtstag frei – Winterkinder im Frühjahr",
-   "text": "Laut Park-Vergleichsseite haben Geburtstagskinder ohne Altersgrenze am exakten Geburtstag freien Eintritt (bei Schließtag am nächsten Öffnungstag), mit Nachweis. Wer im Winter Geburtstag hat, wenn der Park zu ist: 2026 kamen alle mit Geburtstag zwischen 2. November 2025 und 27. März 2026 vom 28. März bis 5. April einmalig gratis rein – ab Februar nach der Aktion für 2027 schauen.",
+   "titel": "BELANTIS Leipzig: am Geburtstag frei (prüfen)",
+   "text": "Laut Park-Vergleichsseite haben Geburtstagskinder ohne Altersgrenze am exakten Geburtstag freien Eintritt (bei Schließtag am nächsten Öffnungstag), mit Nachweis. Eine offizielle Bestätigung fehlt, daher vorher beim Park nachfragen. Die Winteraktion 2026 (28.3.–5.4. für Winter-Geburtstagskinder) ist vorbei – ab Februar schauen, ob es 2027 wieder eine gibt.",
    "nutzen": "Spart einen Tageseintritt, rund 35–40 €.",
    "quellen": [
     {
@@ -1707,10 +1710,6 @@
    "nutzen": "Spart den Kinder-Eintritt, ca. 7–10 €.",
    "quellen": [
     {
-     "name": "wandernundmehr – Ist der Eintritt in den Zoo Dresden für Kinder frei? (Stand März 2026)",
-     "url": "https://www.wandernundmehr.at/faq/ist-der-eintritt-in-den-zoo-dresden-fur-kinder-frei"
-    },
-    {
      "name": "tourispo – Zoo Dresden Preise und Öffnungszeiten",
      "url": "https://tourispo.de/tierpark-zoo/zoo-dresden_preise-und-oeffnungszeiten.html"
     }
@@ -1724,37 +1723,6 @@
    "anmelden": {
     "tage": 0,
     "text": "keine Anmeldung – Kinderausweis oder Pass zeigen"
-   }
-  },
-  {
-   "id": "zoo-leipzig",
-   "bereich": "geburtstag",
-   "titel": "Zoo Leipzig: kein Geburtstags-Bonus, aber feste Gratis-Tage für Kinder",
-   "text": "Einen Geburtstags-Freieintritt hat der Zoo Leipzig nicht, dafür kommen Kinder bis 16 an festen Aktionstagen gratis rein: zum Kindertag am 1. Juni, beim KIDZ-Riesenkinderfest im September (2026: 19.09.) und zu Halloween verkleidete Kinder. Den Kindergeburtstag auf so einen Tag legen und die Termine im Kalender markieren.",
-   "nutzen": "Spart pro Kind den Eintritt von ca. 19 €.",
-   "quellen": [
-    {
-     "name": "L-IZ – 1. Juni: Stadt und Zoo Leipzig laden zum Kindertag ein (2026)",
-     "url": "https://www.l-iz.de/kultur/lebensart/2026/05/1-juni-stadt-zoo-leipzig-laden-internationaler-kindertag-zoo-ein-658935"
-    },
-    {
-     "name": "DealDoktor – Gratis Eintritt in den Zoo Leipzig am 19.09.2026",
-     "url": "https://www.dealdoktor.de/user-deals/zoo-leipzig-gratis-eintritt-kinder/"
-    },
-    {
-     "name": "mydealz – Halloween im Zoo: freier Eintritt für verkleidete Kinder",
-     "url": "https://www.mydealz.de/deals/sammeldeal-halloween-im-zoo-freier-eintritt-fur-verkleidete-kinder-in-stuttgart-leipzig-neumunster-3110-2860794"
-    }
-   ],
-   "stand": "2026",
-   "sicherheit": "belegt",
-   "region": [
-    "Leipzig"
-   ],
-   "ort": "Leipzig",
-   "anmelden": {
-    "tage": 0,
-    "text": "kein Geburtstagsangebot – Aktionstage im Kalender markieren"
    }
   },
   {
@@ -1850,42 +1818,13 @@
     }
    ],
    "stand": "2025",
-   "sicherheit": "belegt",
+   "sicherheit": "community",
    "region": [
     "bundesweit"
    ],
    "anmelden": {
     "tage": 28,
     "text": "IKEA Family mit Kindern hinterlegen"
-   }
-  },
-  {
-   "id": "wenzel",
-   "bereich": "geburtstag",
-   "titel": "Wenzel Prager Bierstuben: Lieblingsgericht + Bier mit der Kundenkarte",
-   "text": "Mit der (digitalen oder Papier-)Kundenkarte der Wenzel-Restaurants wurde man einmal im Jahr zum Geburtstag zum Lieblingsgericht plus 0,3-l-Bier eingeladen, die Begleitung bekam ein Glas Sekt – Tisch zum Wunschtermin reservieren und Karte bei der Bestellung zeigen. Der mydealz-Eintrag ist seit 28.06.2025 als abgelaufen markiert, daher vorher im Restaurant fragen, ob es das Geschenk noch gibt.",
-   "nutzen": "Bis zu 15–20 € für ein Hauptgericht mit Getränk.",
-   "quellen": [
-    {
-     "name": "mydealz – Wenzel Restaurants: Kundenkarte zum Geburtstag Lieblingsgericht + 0,3 l Bier gratis",
-     "url": "https://www.mydealz.de/deals/lokal-ostdeutschland-wenzel-restaurants-kundenkarte-zum-geburtstag-lieblingsgericht-03l-bier-gratis-glas-sekt-fur-gaste-2495128"
-    },
-    {
-     "name": "speisekarte.de – Wenzel Chemnitz",
-     "url": "https://www.speisekarte.de/chemnitz-sachsen/restaurant/wenzel_prager_bierstuben_chemnitz/speisekarte"
-    }
-   ],
-   "stand": "2024/2025 – aktuell nicht bestätigt",
-   "sicherheit": "community",
-   "region": [
-    "Leipzig",
-    "Dresden",
-    "Chemnitz"
-   ],
-   "ort": "Leipzig, Dresden, Chemnitz",
-   "anmelden": {
-    "tage": 14,
-    "text": "Wenzel-Kundenkarte holen, Tisch reservieren"
    }
   },
   {
@@ -1898,10 +1837,6 @@
     {
      "name": "mydealz Magazin – Zum Geburtstag kostenlos essen",
      "url": "https://www.mydealz.de/magazin/zum-geburtstag-kostenlos-essen-die-besten-gratis-aktionen-fuer-echte-foodies-46342"
-    },
-    {
-     "name": "Subway Rewards (offizielle Programmseite, IE)",
-     "url": "https://subway.com/en-ie/rewards"
     }
    ],
    "stand": "2025/2026",
@@ -2020,10 +1955,6 @@
     {
      "name": "mydealz – Zum Geburtstag: Gratis-Eintritte, Essen, Gutscheine und Rabatte",
      "url": "https://www.mydealz.de/deals/zum-geburtstag-gratis-eintritte-essen-gutscheine-und-rabatte-2190971"
-    },
-    {
-     "name": "Freecash Academy – Wie man an seinem Geburtstag gratis Essen bekommt",
-     "url": "https://freecash.com/academy/de/freebies/free-food-birthday"
     }
    ],
    "stand": "2025",
@@ -2034,33 +1965,6 @@
    "anmelden": {
     "tage": 0,
     "text": "keine Anmeldung – beim Reservieren erwähnen, Ausweis zeigen"
-   }
-  },
-  {
-   "id": "therme-geburtstag",
-   "bereich": "geburtstag",
-   "titel": "Therme am Geburtstag: in Brandenburg ja, Sachsen-Therme nicht belegt",
-   "text": "Die Fläming Therme Luckenwalde gibt Geburtstagskindern jeden Alters einmalig in der Geburtstagswoche freien Eintritt (mit Nachweis), auch die Saarow Therme hat ein Geburtstagsangebot. Für die Sachsen-Therme Leipzig gibt es nur einen alten Hinweis von 2019 (Geburtstagskind frei, wenn es mindestens fünf zahlende Freunde mitbringt) – vor einem Gruppenbesuch dort direkt nachfragen.",
-   "nutzen": "Ein Thermen-Eintritt gratis, oft 20–35 €.",
-   "quellen": [
-    {
-     "name": "kindaling – Freier Eintritt am Geburtstag (Feb. 2026)",
-     "url": "https://www.kindaling.de/magazin/freier-eintritt-geburtstag"
-    },
-    {
-     "name": "Reiseuhu – Sachsen-Therme (2019)",
-     "url": "https://www.reiseuhu.de/blog/sachsen-therme/"
-    }
-   ],
-   "stand": "2026 (Brandenburg) / 2019 (Sachsen-Therme, unsicher)",
-   "sicherheit": "community",
-   "region": [
-    "Leipzig"
-   ],
-   "ort": "Fläming Therme Luckenwalde, Saarow Therme (Brandenburg); Sachsen-Therme Leipzig: nachfragen",
-   "anmelden": {
-    "tage": 0,
-    "text": "keine Anmeldung – Nachweis mitbringen, Sachsen-Therme vorher anrufen"
    }
   },
   {
@@ -2079,7 +1983,7 @@
      "url": "https://www.mydealz.de/deals/lokal-lichtenau-schulanfanger-kommen-kostenlos-am-15-august-2026-im-sonnenlandpark-2814047"
     }
    ],
-   "stand": "2026 – Geburtstagsregel nicht bestätigt",
+   "stand": "2026 – Geburtstagsregel nur von einem Reiseportal",
    "sicherheit": "community",
    "region": [
     "Chemnitz"
@@ -2093,7 +1997,7 @@
   {
    "id": "sachsen-ticket",
    "bereich": "freizeit",
-   "top": 11,
+   "top": 12,
    "titel": "Sachsen-Ticket: in der Gruppe ab ca. 13 € pro Person",
    "text": "Das Sachsen-Ticket gilt einen Tag in allen Regionalzügen in Sachsen, Sachsen-Anhalt und Thüringen: 35 € für die erste Person plus 8 € für jede weitere (bis 5 Personen = 67 €), Mo–Fr ab 9 Uhr, am Wochenende und an Feiertagen ganztags. Online kaufen – im Reisezentrum kostet es 2 € mehr; alle müssen gemeinsam fahren.",
    "nutzen": "Zu fünft 13,40 € pro Person für Hin- und Rückfahrt, z. B. Döbeln–Dresden oder –Leipzig.",
@@ -2220,19 +2124,42 @@
    "ort": "Leipzig"
   },
   {
+   "id": "zoo-leipzig",
+   "bereich": "freizeit",
+   "titel": "Zoo Leipzig: feste Gratis-Tage für Kinder bis 16",
+   "text": "Im Zoo Leipzig kommen Kinder bis 16 an festen Aktionstagen gratis rein: zum Kindertag am 1. Juni, beim KIDZ-Riesenkinderfest im September (2026: 19.09.) und zu Halloween verkleidete Kinder. Ein Geburtstagsangebot hat der Zoo nicht – die Termine im Kalender markieren.",
+   "nutzen": "Spart pro Kind den Eintritt von ca. 19 €.",
+   "quellen": [
+    {
+     "name": "L-IZ – 1. Juni: Stadt und Zoo Leipzig laden zum Kindertag ein (2026)",
+     "url": "https://www.l-iz.de/kultur/lebensart/2026/05/1-juni-stadt-zoo-leipzig-laden-internationaler-kindertag-zoo-ein-658935"
+    },
+    {
+     "name": "DealDoktor – Gratis Eintritt in den Zoo Leipzig am 19.09.2026",
+     "url": "https://www.dealdoktor.de/user-deals/zoo-leipzig-gratis-eintritt-kinder/"
+    },
+    {
+     "name": "mydealz – Halloween im Zoo: freier Eintritt für verkleidete Kinder",
+     "url": "https://www.mydealz.de/deals/sammeldeal-halloween-im-zoo-freier-eintritt-fur-verkleidete-kinder-in-stuttgart-leipzig-neumunster-3110-2860794"
+    }
+   ],
+   "stand": "2026",
+   "sicherheit": "belegt",
+   "region": [
+    "Leipzig"
+   ],
+   "ort": "Leipzig"
+  },
+  {
    "id": "museen-dresden",
    "bereich": "freizeit",
-   "titel": "Dresden: freitags ab 12 Uhr Eintritt frei",
-   "text": "Im Stadtmuseum Dresden und im Carl-Maria-von-Weber-Museum ist der Eintritt freitags ab 12 Uhr frei. Für andere städtische Museen gilt das nicht automatisch – vorher auf der Museumsseite nachsehen.",
+   "titel": "Dresden: Stadtmuseum freitags ab 12 Uhr frei",
+   "text": "Im Stadtmuseum Dresden ist der Eintritt freitags ab 12 Uhr frei. Das Carl-Maria-von-Weber-Museum, für das die Regel auch galt, ist seit 2024 geschlossen (Sanierung, Wiedereröffnung laut Stadt etwa 2028/29). Für andere städtische Museen gilt das nicht automatisch – vorher auf der Museumsseite nachsehen.",
    "nutzen": "spart den Eintritt",
    "quellen": [
     {
      "name": "Stadtmuseum Dresden: Besuch planen",
      "url": "https://stmd.de/en/visit/location-amp-getting-here-1"
-    },
-    {
-     "name": "Stadt Dresden: Museen-App (Weber-Museum)",
-     "url": "https://www.dresden.de/apps_ext/MuseenApp_de/detail?objektId=25"
     },
     {
      "name": "museum.de: Stadtmuseum Dresden",
@@ -2277,7 +2204,7 @@
    "id": "kino-guenstig",
    "bereich": "freizeit",
    "titel": "Kino günstig: Kinotag, Best Price Day, Gutschein-Pakete",
-   "text": "Im CineStar Leipzig ist dienstags Kinotag (6,90 € plus Zuschläge), bei Cineplex sind für PLUS-Mitglieder jeden 1. Dienstag im Monat alle Tickets 50 % günstiger; im September gibt es beim bundesweiten Kinofest Filme für ca. 5 €. Mehrmals im Jahr kommen Gutschein-Pakete (UCI über Groupon bis 60 % günstiger, Cineplex über Lidl Plus zuletzt 3 Tickets für 18,50 €) – nur so viele kaufen, wie du vor Ablauf nutzt.",
+   "text": "Im CineStar Leipzig ist dienstags Kinotag (6,90 € plus Zuschläge), bei Cineplex sind für PLUS-Mitglieder jeden 1. Dienstag im Monat die Tickets günstiger (laut Aktion 50 %, vor Ort teils nur 20 % – im Kino nachfragen); im September gibt es beim bundesweiten Kinofest Filme für ca. 5 €. Mehrmals im Jahr kommen Gutschein-Pakete (UCI über Groupon bis 60 % günstiger, Cineplex über Lidl Plus zuletzt 3 Tickets für 18,50 €) – nur so viele kaufen, wie du vor Ablauf nutzt.",
    "nutzen": "Ticket für ca. 5–7 € statt 12–14 €.",
    "quellen": [
     {
@@ -2322,7 +2249,7 @@
     }
    ],
    "stand": "2026 (gültig teils bis Feb. 2027)",
-   "sicherheit": "belegt",
+   "sicherheit": "community",
    "region": [
     "Leipzig"
    ],
@@ -2414,10 +2341,6 @@
     {
      "name": "test.de – Last-Minute-Reisen: Spätbuchen lohnt sich",
      "url": "https://www.test.de/Last-Minute-Reisen-Spaetbuchen-lohnt-sich-4260067-0/"
-    },
-    {
-     "name": "wandernundmehr – Wann buche ich am günstigsten eine Pauschalreise?",
-     "url": "https://www.wandernundmehr.at/faq/wann-buche-ich-am-gunstigsten-eine-pauschalreise"
     }
    ],
    "stand": "älterer Test, Tendenz weiter gültig",

@@ -5,13 +5,17 @@
    Einbau (mein-vorteil/index.html):
      MeinVorteilSpartricks.start(element)   beim ersten Öffnen des Reiters (letzter Stand sofort, dann frisch)
      MeinVorteilSpartricks.lade()           bei „Neu laden“
-   Daten: spartricks.json (statisch, gleicher Ordner, versioniert mit „stand“). Erst beim Öffnen geholt (die Start-Kachel
-   liest nur den gemerkten Stand). Gemerkt, gewählter Chip und Geburtstag nur im localStorage dieses Geräts – nichts
-   davon geht ans Netz. Kein Tracking, keine fremden Skripte; Quellen öffnen mit rel="noopener noreferrer". */
+   Daten: spartricks.json (statisch, gleicher Ordner, versioniert mit „stand“). Nur beim Öffnen geholt – die Startseite
+   holt sie nie (lazy). Der letzte Stand liegt im Cache Storage („mv-spartricks“, nicht im localStorage, den sich die
+   Seite mit dem Synquenzer teilt); die Start-Kachel liest nur einen kleinen Auszug (mein-vorteil-spartricks-kachel,
+   wenige KB). Gemerkt, gewählter Chip und Geburtstag nur im localStorage dieses Geräts – nichts davon geht ans Netz.
+   Kein Tracking, keine fremden Skripte; Quellen öffnen mit rel="noopener noreferrer". */
 (function () {
   'use strict';
   const DATEI = 'spartricks.json';
-  const SPEICHER = 'mein-vorteil-daten-spartricks'; // wie die anderen Daten: { d, holZeit } (liest auch die Start-Kachel)
+  const SPEICHER_ALT = 'mein-vorteil-daten-spartricks'; // bis 15.11.2026: ganze Datei im localStorage (~107 000 Zeichen) – nur noch gelesen, dann gelöscht
+  const KACHEL_SPEICHER = 'mein-vorteil-spartricks-kachel'; // { d: { stand, tipps: [{ id, titel, nutzen, top?, sicherheit?, bis? }] }, holZeit } für die Start-Kachel
+  const ABLAGE = 'mv-spartricks'; // Cache Storage; Name ohne „mein-vorteil-“, sonst räumt sw.js ihn beim Aktivieren weg
   const CHIP_SPEICHER = 'mein-vorteil-spartricks-chip';
   const STERN_SPEICHER = 'mein-vorteil-spartricks-gemerkt'; // [id, …]
   const GEB_SPEICHER = 'mein-vorteil-spartricks-geburtstag'; // „MM-TT“ (ohne Jahr)
@@ -22,7 +26,7 @@
     ['geld', 'Geld zurück', 'Erstattungen, Entschädigungen, Steuer, Verträge und Abos.'],
     ['einkaufen', 'Clever einkaufen', 'Payback, Coupons, Apps, Abverkauf und Preisschilder richtig lesen.'],
     ['gratis', 'Gratis & Proben', 'Gratis testen, Proben, Lebensmittel retten, leihen und verschenken.'],
-    ['geburtstag', 'Geburtstag gratis', 'Was es am Geburtstag gratis gibt – und bis wann du dich vorher anmelden musst.'],
+    ['geburtstag', 'Geburtstag gratis', 'Was es am Geburtstag gratis gibt – und wann du dich am besten vorher anmeldest.'],
     ['freizeit', 'Freizeit & Reisen', 'Bahn, Kino, Museen, Thermen und Reisen günstiger.'],
     ['gewinnspiele', 'Gewinnspiele', 'Wo sich Mitmachen lohnt – und wie du Fakes erkennst.'],
   ];
@@ -53,6 +57,18 @@
   const faltung = s => String(s || '').toLowerCase().replace(/ä/g, 'a').replace(/ö/g, 'o').replace(/ü/g, 'u').replace(/ß/g, 'ss')
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9€%]+/g, ' ').trim();
   const kurzName = n => { const k = String(n).split(/\s[–—-]\s|:\s/)[0].trim(); return k.length > 2 ? k : String(n); }; // „Finanztip – …“ -> „Finanztip“
+  /** Knopf-Texte der Quellen einer Karte: kurz („Finanztip“); heißen zwei gleich („mydealz · mydealz“), kommt das Thema dazu */
+  function quellNamen(qs) {
+    const k = qs.map(q => kurzName(q.name));
+    const l = qs.map((q, i) => {
+      if (k.filter(x => x === k[i]).length < 2) return k[i];
+      let rest = String(q.name).slice(k[i].length).replace(/^\s*(?:[–—-]|:)\s*/, '').trim();
+      if (rest.length > 26) rest = rest.slice(0, 26).replace(/\s+\S*$/, '') + ' …';
+      return rest ? `${k[i]}: ${rest}` : k[i];
+    });
+    // immer noch gleich (gleicher Anfang): durchzählen
+    return l.map((x, i) => (l.filter(y => y === x).length < 2 ? x : `${x.replace(/ …$/, '')} (${l.slice(0, i + 1).filter(y => y === x).length})`));
+  }
 
   // --- Daten tolerant lesen ------------------------------------------------------------------------------------------
   function normalisiere(d) {
@@ -80,7 +96,8 @@
         id, bereich: t.bereich, titel, text: so, nutzen: text(t.nutzen, 300), quellen,
         top: Number.isInteger(t.top) && t.top > 0 ? t.top : null, stand: text(t.stand, 80),
         sicher: t.sicherheit === 'belegt', region: region.length ? [...new Set(region)] : ['bundesweit'], ort: text(t.ort, 160),
-        bis: isoTag(t.bis), anmelden: tage != null ? { tage, text: text(a.text, 200) } : null,
+        bis: isoTag(t.bis), einmalig: t.einmalig === true, aktionBis: isoTag(t.aktionBis), art: t.art === 'anleitung' ? 'anleitung' : null,
+        anmelden: tage != null ? { tage, text: text(a.text, 200) } : null,
       });
     }
     return {
@@ -89,11 +106,12 @@
     };
   }
   const laeuft = (t, h) => !t.bis || t.bis >= h;
-  /** Tipps eines Chips in Anzeige-Reihenfolge (Top-Tipps zuerst = Reihenfolge der Daten; Frist vorbei ans Ende) */
+  const erledigt = (t, h) => t.einmalig && !laeuft(t, h); // einmalige Frist (z. B. Steuer 2022) vorbei: kommt nie wieder -> nicht mehr zeigen
+  /** Tipps eines Chips in Anzeige-Reihenfolge (Top-Tipps zuerst = Reihenfolge der Daten; jährliche Frist vorbei ans Ende) */
   function liste(n, chip, h = heute(), gemerkt = []) {
     if (chip === 'top') return n.tipps.filter(t => t.top != null && laeuft(t, h)).sort((a, b) => a.top - b.top).slice(0, TOP_N);
     if (chip === 'gemerkt') { const g = new Set(gemerkt); return n.tipps.filter(t => g.has(t.id)); }
-    const l = n.tipps.filter(t => t.bereich === chip);
+    const l = n.tipps.filter(t => t.bereich === chip && !erledigt(t, h));
     return [...l.filter(t => laeuft(t, h)), ...l.filter(t => !laeuft(t, h))];
   }
   /** Suche: alle Wörter müssen vorkommen (ä = ae = a, Groß/klein egal) – in Titel, Text, Nutzen, Region, Ort, Quellen */
@@ -114,7 +132,8 @@
     }
     return null;
   }
-  /** „Vorher anmelden bis …“ – Zeile für eine Geburtstags-Karte */
+  /** „Am besten anmelden bis …“ – Zeile für eine Geburtstags-Karte. Der Vorlauf (anmelden.tage) ist eine Faustregel
+      (2–4 Wochen, weil Coupons erst nach Tagen erscheinen), keine Frist des Anbieters – so steht es auch da. */
   function anmeldeZeile(t, geb, h = heute()) {
     const a = t.anmelden;
     if (!a) return '';
@@ -123,14 +142,14 @@
       return /^keine Anmeldung/i.test(a.text) ? `<b>Ohne Anmeldung</b> – ${esc(rest)}` : `<b>Vorher:</b> ${esc(a.text)}`;
     }
     const wann = a.tage % 7 === 0 ? `${a.tage / 7} ${a.tage === 7 ? 'Woche' : 'Wochen'}` : `${a.tage} Tage`;
-    if (!geb) return `<b>Vorher anmelden:</b> spätestens ${wann} vor dem Geburtstag – ${esc(a.text)}`;
+    if (!geb) return `<b>Rechtzeitig anmelden:</b> Faustregel ${wann} vor dem Geburtstag – ${esc(a.text)}`;
     const bis = plusTage(geb, -a.tage);
-    if (bis >= h) return `<b>Vorher anmelden bis ${tm(bis)}</b> (${wann} vorher) – ${esc(a.text)}`;
-    return `<b>Jetzt anmelden</b> – eigentlich ${wann} vorher, der Geburtstag ist in ${tageZwischen(h, geb)} ${tageZwischen(h, geb) === 1 ? 'Tag' : 'Tagen'}: ${esc(a.text)}`;
+    if (bis >= h) return `<b>Am besten anmelden bis ${tm(bis)}</b> (Faustregel ${wann} vorher) – ${esc(a.text)}`;
+    return `<b>Jetzt anmelden</b> – Faustregel wäre ${wann} vorher, der Geburtstag ist in ${tageZwischen(h, geb)} ${tageZwischen(h, geb) === 1 ? 'Tag' : 'Tagen'}: ${esc(a.text)}`;
   }
 
   // --- Zustand -----------------------------------------------------------------------------------------------------------
-  const S = { el: null, n: null, roh: null, chip: null, q: '', laedt: false, gestoert: false, url: DATEI, gemerkt: [], geb: null };
+  const S = { el: null, n: null, roh: null, chip: null, q: '', laedt: false, fehler: null, url: DATEI, gemerkt: [], geb: null, ablage: null };
   function chipsDa() {
     const da = BEREICHE.map(([k]) => k);
     return S.gemerkt.some(id => S.n.tipps.some(t => t.id === id)) ? [...da, 'gemerkt'] : da;
@@ -146,12 +165,15 @@
     const marken = [];
     const zeigeRegion = chip === 'geburtstag' || t.region.some(r => r !== 'bundesweit');
     if (zeigeRegion) for (const r of t.region) marken.push(`<span class="sp-region${r === 'bundesweit' ? ' sp-weit' : ''}">${esc(r)}</span>`);
+    if (t.art === 'anleitung') marken.push('<span class="sp-anleitung">Anleitung</span>');
     if (t.bis) {
       if (laeuft(t, h)) { const d = tageZwischen(h, t.bis); marken.push(`<span class="sp-frist">Frist: bis ${tm(t.bis)}${d <= 60 ? ` · noch ${d === 0 ? 'heute' : d === 1 ? '1 Tag' : `${d} Tage`}` : ''}</span>`); }
-      else marken.push('<span class="sp-frist sp-vorbei">Frist für dieses Jahr vorbei</span>');
+      else marken.push(`<span class="sp-frist sp-vorbei">${t.einmalig ? 'Frist abgelaufen' : 'Frist für dieses Jahr vorbei'}</span>`);
     }
+    if (t.aktionBis) marken.push(t.aktionBis >= h ? `<span class="sp-aktion">Aktion bis ${tmj(t.aktionBis)}</span>` : '<span class="sp-aktion sp-vorbei">Aktion vorbei? Beim Anbieter prüfen</span>');
     if (!t.sicher) marken.push('<span class="sp-erfahrung">Erfahrung aus der Community</span>');
-    const quellen = t.quellen.map(q => `<a href="${esc(q.url)}" target="_blank" rel="noopener noreferrer" title="${esc(q.name)}">${esc(kurzName(q.name))}</a>`).join('');
+    const namen = quellNamen(t.quellen);
+    const quellen = t.quellen.map((q, i) => `<a href="${esc(q.url)}" target="_blank" rel="noopener noreferrer" title="${esc(q.name)}">${esc(namen[i])}</a>`).join('');
     return `<article class="sp-karte${t.top != null && chip === 'top' ? ' sp-top' : ''}" id="sp-${esc(t.id)}" data-sp-id="${esc(t.id)}">`
       + `<div class="sp-kopf"><h3 class="sp-titel">${chip === 'top' ? `<span class="sp-platz">${t.top}</span>` : ''}${esc(t.titel)}</h3>`
       + `<button type="button" class="sp-stern" data-sp-stern="${esc(t.id)}" aria-pressed="${an}" aria-label="${an ? 'Gemerkt – nicht mehr merken' : 'Merken'}">${STERN}</button></div>`
@@ -169,7 +191,7 @@
     const d = g ? tageZwischen(heute(), g) : null;
     return `<div class="sp-geb"><label for="sp-geb-tag">Dein nächster Geburtstag</label>`
       + `<input type="date" id="sp-geb-tag" value="${esc(wert)}" min="${heute()}">`
-      + `<p class="sp-geb-info">${g ? (d === 0 ? 'Heute – alles Gute!' : `in ${d} ${d === 1 ? 'Tag' : 'Tagen'} – darunter steht, bis wann du dich anmelden musst.`) : 'Trag ihn ein, dann steht an jeder Karte das Datum zum Anmelden.'} Nur auf diesem Gerät gemerkt.</p></div>`;
+      + `<p class="sp-geb-info">${g ? (d === 0 ? 'Heute – alles Gute!' : `in ${d} ${d === 1 ? 'Tag' : 'Tagen'} – darunter steht, bis wann du dich am besten anmeldest (Faustregel, keine Frist des Anbieters).`) : 'Trag ihn ein, dann steht an jeder Karte, bis wann du dich am besten anmeldest.'} Nur auf diesem Gerät gemerkt.</p></div>`;
   }
   function listeHtml(k) {
     const l = treffer(k);
@@ -188,15 +210,19 @@
     return `<button type="button" class="sp-chip${S.q && !z ? ' sp-ohne' : ''}" role="tab" id="sp-c-${k}" data-sp-chip="${k}" aria-controls="sp-liste" aria-selected="${an}" tabindex="${an ? 0 : -1}">`
       + `${k === 'gemerkt' ? STERN : ''}${esc(chipName(k))}<span class="sp-n">${z}</span></button>`;
   }
+  const WARN = { netz: 'gerade offline – letzter Stand', neu: 'neue Fassung da – Seite neu laden', kaputt: 'Datei gerade fehlerhaft – letzter Stand' };
   function standHtml() {
     const s = S.n.stand ? `Stand der Tipps: ${tmj(S.n.stand)}` : 'Stand unbekannt';
-    return `<p class="sp-standzeile">${s} · ${S.n.tipps.length} Tipps mit Quellen${S.gestoert ? ' · <span class="sp-warn">gerade offline – letzter Stand</span>' : ''}</p>`;
+    const h = heute();
+    return `<p class="sp-standzeile">${s} · ${S.n.tipps.filter(t => !erledigt(t, h)).length} Tipps mit Quellen${S.fehler ? ` · <span class="sp-warn">${WARN[S.fehler]}</span>` : ''}</p>`;
   }
   function zeichne() {
     const el = S.el;
     if (!S.n || !S.n.tipps.length) {
-      el.innerHTML = `<p class="sp-leer sp-erst">${S.laedt ? 'Lade Spartricks …' : navigator.onLine === false
-        ? 'Keine Verbindung – die Spartricks erscheinen, sobald du wieder Netz hast.' : 'Spartricks gerade nicht erreichbar. Später noch einmal auf ↻ tippen.'}</p>`;
+      el.innerHTML = S.laedt ? '<p class="sp-leer sp-erst">Lade Spartricks …</p>'
+        : S.fehler === 'neu' ? '<p class="sp-leer sp-erst">Es gibt eine neue Fassung der Spartricks – bitte die Seite neu laden.</p><p class="sp-woanders"><button type="button" class="sp-chip" data-sp-neuladen>Seite neu laden</button></p>'
+        : S.fehler === 'kaputt' ? '<p class="sp-leer sp-erst">Die Spartricks-Datei ist gerade fehlerhaft – bitte später die Seite neu laden.</p>'
+        : `<p class="sp-leer sp-erst">${navigator.onLine === false ? 'Keine Verbindung – die Spartricks erscheinen, sobald du wieder Netz hast.' : 'Spartricks gerade nicht erreichbar. Später noch einmal auf ↻ tippen.'}</p>`;
       return;
     }
     if (!chipsDa().includes(S.chip)) S.chip = 'top';
@@ -267,25 +293,67 @@
       return await r.text();
     } finally { clearTimeout(t); }
   }
-  function lade() {
+  // letzter Stand: Cache Storage (eigener Browser-Speicher, kein localStorage); alter localStorage-Stand nur zum Übergang
+  const ablageUrl = () => { try { return new URL(S.url, location.href).href; } catch { return S.url; } };
+  async function inAblage(s) {
+    try { if (typeof caches !== 'undefined') await (await caches.open(ABLAGE)).put(ablageUrl(), new Response(s, { headers: { 'content-type': 'application/json' } })); } catch {}
+  }
+  async function ausAblage() {
+    try {
+      if (typeof caches !== 'undefined') { const r = await (await caches.open(ABLAGE)).match(ablageUrl()); if (r) return await r.text(); }
+    } catch {}
+    const alt = lies(SPEICHER_ALT, null);
+    if (!alt || !alt.d) return null;
+    const s = JSON.stringify(alt.d);
+    inAblage(s);
+    return s;
+  }
+  /** kleiner Auszug für die Start-Kachel („Tipp des Tages“ + nächste Frist) statt der ganzen Datei im localStorage */
+  function kachelAuszug(d) {
+    const tipps = [];
+    for (const t of d.tipps) {
+      if (!t || typeof t.id !== 'string' || typeof t.titel !== 'string' || !(Number.isInteger(t.top) || t.sicherheit === 'belegt' || isoTag(t.bis))) continue;
+      const k = { id: t.id, titel: text(t.titel, 120), nutzen: text(t.nutzen, 160) };
+      if (Number.isInteger(t.top)) k.top = t.top;
+      if (t.sicherheit === 'belegt') k.sicherheit = 'belegt';
+      if (isoTag(t.bis)) k.bis = t.bis;
+      tipps.push(k);
+    }
+    return { stand: isoTag(d.stand), tipps };
+  }
+  function merkKachel(d) {
+    merk(KACHEL_SPEICHER, { d: kachelAuszug(d), holZeit: Date.now() });
+    try { localStorage.removeItem(SPEICHER_ALT); } catch {}
+  }
+  const tauglich = d => d && typeof d === 'object' && Array.isArray(d.tipps) && !(Number.isInteger(d.version) && d.version > VERSION);
+  async function lade() {
     if (!S.el || S.laedt) return;
     S.laedt = true;
     if (!S.n) zeichne();
-    hol(S.url).then(roh => {
-      const d = JSON.parse(roh);
-      if (!d || !Array.isArray(d.tipps) || (Number.isInteger(d.version) && d.version > VERSION)) throw new Error('Format');
-      S.gestoert = false;
-      merk(SPEICHER, { d, holZeit: Date.now() });
+    let was = 'neu';
+    try {
+      const roh = await hol(S.url);
+      let d = null;
+      try { d = JSON.parse(roh); } catch {}
+      if (!d || typeof d !== 'object' || !Array.isArray(d.tipps)) throw new Error('kaputt');
+      if (!tauglich(d)) throw new Error('neu');
+      S.fehler = null;
+      merkKachel(d);
       const s = JSON.stringify(d);
-      if (s === S.roh && S.n) return 'gleich';
-      S.roh = s; S.n = normalisiere(d);
-      try { window.dispatchEvent(new CustomEvent('mein-vorteil-spartricks')); } catch {} // Start-Kachel neu (Tipp des Tages)
-      return 'neu';
-    }).catch(() => { S.gestoert = true; return S.n ? 'stand' : 'neu'; }).then(was => {
-      S.laedt = false;
-      if (was === 'neu') zeichne();
-      else { const p = S.el.querySelector('.sp-standzeile'); if (p) p.outerHTML = standHtml(); }
-    });
+      if (s === S.roh && S.n) was = 'gleich';
+      else {
+        inAblage(s);
+        S.roh = s; S.n = normalisiere(d);
+        try { window.dispatchEvent(new CustomEvent('mein-vorteil-spartricks')); } catch {} // Start-Kachel neu (Tipp des Tages)
+      }
+    } catch (e) {
+      S.fehler = e && (e.message === 'neu' || e.message === 'kaputt') ? e.message : 'netz';
+      if (!S.n && S.ablage) await S.ablage; // letzter Stand noch unterwegs: erst ihn zeigen, nicht „nicht erreichbar“
+      was = S.n ? 'stand' : 'neu';
+    }
+    S.laedt = false;
+    if (was === 'neu') zeichne();
+    else { const p = S.el.querySelector('.sp-standzeile'); if (p) p.outerHTML = standHtml(); }
   }
   function start(el, opt) {
     if (!el) return;
@@ -304,9 +372,17 @@
     S.geb = typeof gb === 'string' && /^\d\d-\d\d$/.test(gb) ? gb : null;
     const c = lies(CHIP_SPEICHER, 'top');
     S.chip = typeof c === 'string' ? c : 'top';
-    const alt = lies(SPEICHER, null);
-    if (alt && alt.d && Array.isArray(alt.d.tipps) && !(alt.d.version > VERSION)) { S.roh = JSON.stringify(alt.d); S.n = normalisiere(alt.d); }
+    // letzter Stand sofort (parallel zum Netz); kommt das Netz zuerst, bleibt es dabei
+    S.ablage = ausAblage().then(roh => {
+      if (!roh || S.n) return;
+      let d = null;
+      try { d = JSON.parse(roh); } catch { return; }
+      if (!tauglich(d)) return;
+      S.roh = JSON.stringify(d); S.n = normalisiere(d);
+      zeichne();
+    }).catch(() => {});
     el.addEventListener('click', ev => {
+      if (ev.target.closest('[data-sp-neuladen]')) { location.reload(); return; }
       const s = ev.target.closest('[data-sp-stern]');
       if (s) { stern(s.dataset.spStern); return; }
       const c2 = ev.target.closest('[data-sp-chip]');
@@ -335,7 +411,6 @@
       neuListe();
     });
     el.addEventListener('submit', ev => ev.preventDefault());
-    if (S.n) zeichne();
     lade();
   }
 
@@ -397,6 +472,9 @@
 .sp-frist { background: var(--warm-hell); color: var(--warm); }
 .sp-frist.sp-vorbei { background: var(--flaeche); color: var(--leise); }
 .sp-erfahrung { background: var(--flaeche); color: var(--leise); font-weight: 600 !important; }
+.sp-anleitung { background: var(--flaeche); color: var(--text); }
+.sp-aktion { background: var(--warm-hell); color: var(--warm); }
+.sp-aktion.sp-vorbei { background: var(--flaeche); color: var(--leise); }
 .sp-ort { margin: 4px 0 0; font-size: 13px; color: var(--leise); }
 .sp-nutzen { margin: 8px 0 0; font-size: 15px; line-height: 1.4; color: var(--akzent); font-weight: 600; }
 .sp-nutzen b { color: var(--text); }
@@ -428,6 +506,6 @@
     start, lade,
     get gestartet() { return !!S.el; },
     // für Tests (ohne Browser): reine Funktionen
-    _intern: { normalisiere, liste, passt, naechsterGeburtstag, anmeldeZeile, heute, kurzName, sicherUrl, BEREICHE, REGIONEN, CSS: () => CSS },
+    _intern: { normalisiere, liste, passt, naechsterGeburtstag, anmeldeZeile, heute, kurzName, quellNamen, kachelAuszug, sicherUrl, BEREICHE, REGIONEN, CSS: () => CSS },
   };
 })();
