@@ -199,9 +199,9 @@ for (let k = 0; k < SRC.length; k++) {
   // Atem als Stilmittel bleibt (Atmer-Schritt aus, nur Zischen)
   { const z = TK[0].x, xs = Float32Array.from(z), pos = [], M = Math.round(0.3 * sr); seed = 99;
     for (let t = 1.5; t < z.length / sr - 1 && pos.length < 6; t += 0.05) { let q = true; for (let dd = -0.05; dd <= 0.35; dd += 0.01) if (f0at(t + dd) > 0) { q = false; break; } if (q && (!pos.length || t * sr - pos[pos.length - 1] > 2 * sr)) pos.push(Math.round(t * sr)); }
-    const g = Math.pow(10, -28 / 20) * Math.sqrt(2); for (const i0 of pos) { let a = 0, b = 0; const c1 = Math.exp(-TAU * 6000 / sr), c2 = Math.exp(-TAU * 1000 / sr); for (let i = 0; i < M; i++) { const u = rnd() * 2 - 1; a = u * (1 - c1) + a * c1; b = u * (1 - c2) + b * c2; xs[i0 + i] += g * 3 * (a - b) * Math.sin(Math.PI * i / M); } }
+    const g = Math.pow(10, -38 / 20) * Math.sqrt(2); for (const i0 of pos) { let a = 0, b = 0; const c1 = Math.exp(-TAU * 6000 / sr), c2 = Math.exp(-TAU * 1000 / sr); for (let i = 0; i < M; i++) { const u = rnd() * 2 - 1; a = u * (1 - c1) + a * c1; b = u * (1 - c2) + b * c2; xs[i0 + i] += g * 3 * (a - b) * Math.sin(Math.PI * i / M); } }
     const ys = Float32Array.from(xs); K.ess(ys, sr, 9); const d = pos.map(i0 => +(db(bS(ys, 5000, 16000, i0, i0 + M)) - db(bS(xs, 5000, 16000, i0, i0 + M))).toFixed(1));
-    ok(d.every(v => v > -1), 'Zischen „stark“: eingesetzte Atmer (Stilmittel) verlieren über 5 kHz < 1 dB', d); }
+    ok(d.every(v => v > -1), 'Zischen „stark“: eingesetzte Atmer (Stilmittel, 10 dB unter dem Gesang) verlieren über 5 kHz < 1 dB', d); }
   ok(K.assist({clicks: 3, plops: [], hum: {on: false}, breaths: 0, sibHot: 0}, 'stark').steps.click.sens === 6 && K.assist({clicks: 3, plops: [], hum: {on: false}, breaths: 0, sibHot: 0}, 'leicht').steps.click.sens === 2, 'Assistent: Klick-Empfindlichkeit 2 / 4 / 6 (× 0,5 / 1 / 1,5)', null);
   // Rückfall Hauptfaden: eine Scheibe des Entzischers bleibt klein
   { const L = Math.round(60 * sr), xl = new Float32Array(L); for (let i = 0; i < L; i++) xl[i] = v[i % n]; const it = K.ess(xl, sr, 6, {gen: true}); let mx = 0, t = performance.now(), q; while (!(q = it.next()).done) { const nw = performance.now(); mx = Math.max(mx, nw - t); t = nw; }

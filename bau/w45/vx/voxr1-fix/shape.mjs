@@ -1,0 +1,9 @@
+const sr = 44100, TAU = 2 * Math.PI, N = 1 << 16; let seed = 777; const rnd = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
+const z = new Float64Array(N + 4000); for (let i = 0; i < z.length; i++) z[i] = rnd() * 2 - 1;
+const lp = (a, f) => { const c = Math.exp(-TAU * f / sr); let o = Float64Array.from(a); for (let k = 0; k < 4; k++) { let s = 0; for (let i = 0; i < o.length; i++) { s = o[i] * (1 - c) + s * c; o[i] = s; } } return o; };
+const A = lp(z, 12000), B = lp(z, 5000), sS = A.map((v, i) => v - B[i]);
+let a = 0, b = 0; const c1 = Math.exp(-TAU * 6000 / sr), c2 = Math.exp(-TAU * 1000 / sr); const br = new Float64Array(z.length); for (let i = 0; i < z.length; i++) { a = z[i] * (1 - c1) + a * c1; b = z[i] * (1 - c2) + b * c2; br[i] = a - b; }
+// builder s: HP 5k biquad
+const w = TAU * 5000 / sr, al = Math.sin(w) / (2 * 0.7071), a0 = 1 + al, C = [(1 + Math.cos(w)) / 2 / a0, -(1 + Math.cos(w)) / a0, (1 + Math.cos(w)) / 2 / a0, -2 * Math.cos(w) / a0, (1 - al) / a0]; let z1 = 0, z2 = 0; const hs = new Float64Array(z.length); for (let i = 0; i < z.length; i++) { const u = z[i], o = C[0] * u + z1; z1 = C[1] * u - C[3] * o + z2; z2 = C[2] * u - C[4] * o; hs[i] = o; }
+const M = 1024; let LO = 46; function ratio(x) { let e1 = 0, e2 = 0; for (let p = 2000; p + M <= x.length; p += M) { const re = new Float64Array(M), im = new Float64Array(M); for (let i = 0; i < M; i++) re[i] = x[p + i] * (0.5 - 0.5 * Math.cos(TAU * i / M)); for (let k = 1; k < M / 2; k++) { let r = 0, q = 0; if (k < LO || k > 465) continue; for (let i = 0; i < M; i++) { r += re[i] * Math.cos(TAU * k * i / M); q -= re[i] * Math.sin(TAU * k * i / M); } const P = r * r + q * q; if (k >= 116) e1 += P; else e2 += P; } if (p > 12000) break; } return (10 * Math.log10(e1 / e2)).toFixed(1); }
+for (const f of [1000, 1500, 2000]) { LO = Math.round(f * M / sr); console.log(f, 'reviewer s', ratio(sS), 'breath', ratio(br), 'builder s', ratio(hs)); }

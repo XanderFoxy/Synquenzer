@@ -61756,8 +61756,8 @@ function vr1EssCore(y, sr, amt, o) {
     const BF = Math.max(8, Math.round(3 * sr / H)), nb = Math.ceil(J / BF), Lall = top(Array.from(Lo)), Lblk = new Float32Array(nb);
     for (let b = 0; b < nb; b++) Lblk[b] = o.local ? Math.max(top(Array.from(Lo.subarray(Math.max(0, (b - 1) * BF), Math.min(J, (b + 2) * BF)))), Lall - 10) : Lall;
     const keep = new Uint8Array(J); if (o.keep) for (const [a, b] of o.keep) for (let j = Math.max(0, Math.floor(a / H)); j <= Math.min(J - 1, Math.ceil(b / H) + 1); j++) keep[j] = 1;
-    const ref = new Float32Array(J), shp = o.shape != null ? o.shape : 6;
-    for (let j = 0; j < J; j++) { ref[j] = Math.max(Lo[j], Lblk[Math.min(nb - 1, Math.floor(j / BF))]) + thr; sib[j] = !keep[j] && Ls[j] > ref[j] && Ls[j] > Lm[j] + shp && Ls[j] > -70 ? 1 : 0; }   // Zischlaut: über 5 kHz deutlich mehr als 2–5 kHz (Atem, „sch“ bleiben)
+    const ref = new Float32Array(J), shp = o.shape != null ? o.shape : 0;
+    for (let j = 0; j < J; j++) { ref[j] = Math.max(Lo[j], Lblk[Math.min(nb - 1, Math.floor(j / BF))]) + thr; sib[j] = !keep[j] && Ls[j] > ref[j] && Ls[j] > Lm[j] + shp && Ls[j] > -70 ? 1 : 0; }   // Zischlaut: über 5 kHz mehr Energie als 2–5 kHz (dumpfer Atem, „sch“ bleiben)
     // nur Zischlaute ≥ 20 ms (kurze Anschläge t/k/p bleiben)
     const minR = Math.max(2, Math.ceil(0.02 * sr / H));
     for (let j = 0; j < J;) { if (!sib[j]) { j++; continue; } let e = j; while (e < J && sib[e]) e++; if (e - j < minR) for (let q = j; q < e; q++) sib[q] = 0; else { res.hot++; res.hotMs += Math.round((e - j) * H / sr * 1000); } j = e; }
