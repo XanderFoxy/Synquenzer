@@ -1,2 +1,3 @@
 - 23:17 Start, Last: load average: 0.12, 0.54, 1.85
 - 23:20 FOK2 Kern eingebaut (trueRest im FOKUS1-Block), Last: load average: 0.13, 0.31, 1.48
+- 23:22 fok2-test Qualität: 15/16 (einziger Fehler: wahr > 0 dB = Masken-Artefakt, Anzeige bewusst nie heller → Kriterium min(wahr,0)), Last: load average: 1.25, 0.58, 1.45

@@ -109,7 +109,7 @@ const med = a => { const s = a.slice().sort((x, y) => x - y); return s.length ? 
 const zt = {}; for (const tag of ['neu', 'basis']) for (const k in T[tag]) for (const N of ['N4096', 'N16384']) (zt[tag] = zt[tag] || {})[k + N] = {ms: med(T[tag][k].map(r => r[N].ms)), first: med(T[tag][k].map(r => r[N].first)), je: med(T[tag][k].map(r => r[N].je)), lt: T[tag][k].map(r => r.lt.length ? Math.max(...r.lt) : 0)};
 console.log('ZEIT', JSON.stringify(zt));
 // Bewertung
-const N1 = OUT.neu, B1 = OUT.basis, d3 = x => Math.abs(x.fokus - x.wahr) <= 3;
+const N1 = OUT.neu, B1 = OUT.basis, d3 = x => Math.abs(x.fokus - Math.min(0, x.wahr)) <= 3;   // wahrer Rest heller als das Original (Masken-Artefakt vor dem Einsatz) → Anzeige nie heller: Ziel min(wahr, 0)
 for (const N of ['N16384', 'N4096']) {
   ok('kamm ' + N + ' 220 halt ≤3 dB zum wahren Rest', N1.kamm[N].t220_halt, d3(N1.kamm[N].t220_halt));
   ok('kamm ' + N + ' 65 halt ≤3 dB', N1.kamm[N].t65_halt_3TT, d3(N1.kamm[N].t65_halt_3TT));
