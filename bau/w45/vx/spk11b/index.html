@@ -105612,7 +105612,33 @@ function spk11bHits(x, sr, stepS, nStep, fr, ref) {
   // Wiederholung je Takt: ein schwacher Tiefen-Einsatz zählt als Kick, wenn in den Takten ringsum (±4) an derselben Stelle meist einer ist
   for (const k of weak) { const p = k % spb, b0 = Math.floor(k / spb); let n = 0, c = 0; for (let b = b0 - 4; b <= b0 + 4; b++) { const j = b * spb + p; if (b === b0 || j < 0 || j >= nStep) continue; c++; n += kk[j]; } if (c >= 3 && n >= 0.6 * c) out.push({k, w: 'k', v: Math.min(1, 0.45 + 0.55 * nl[k])}); }
   for (const [k, v] of snS) if (v > 0.2 && ((k >= 2 && hat[k - 2] && hat[k + 2]) || (k >= 1 && hat[k - 1] && hat[k + 1]))) out.push({k, w: 'h', v: Math.min(1, 0.35 + 0.3 * v)});
-  out.sort((p, q) => p.k - q.k); out.info = {tK: +tK.toFixed(3), tS: +tS.toFixed(3), kick: !!sK, snare: !!sS, bass: !!Bo};
+  // Leiser Abschnitt (≥ 2 Takte, −12 … −26 dB gegen die lauten Takte), in dem alle Bänder gleich viel leiser sind (Einsätze je Band innerhalb
+  // 6 dB, wie ein leise gemischtes Intro): dort eigene Normierung – gilt nur, wenn ein Schlag-Muster mit Höhen (Hi-Hat/Snare) entsteht
+  // (≥ 2 Schläge je Takt, ≥ 70 % auf wiederkehrenden Stellen, ≥ 1 Höhen-Schlag je Takt). Reste anderer Instrumente sind nicht gleichmäßig leiser.
+  const leise = [];
+  if (!(ref && ref.inner) && spb >= 4 && nStep >= 4 * spb) {
+    const nb = Math.floor(nStep / spb), Lb = [];
+    for (let b = 0; b < nb; b++) { const f0 = Math.floor(b * spb * stepS * sr / H), f1 = Math.min(F, Math.floor((b + 1) * spb * stepS * sr / H)); let s = 0; for (let f = f0; f < f1; f++) s += E[0][f] * E[0][f] + E[1][f] * E[1][f] + E[2][f] * E[2][f]; Lb.push(s / Math.max(1, f1 - f0)); }
+    const q = Lb.slice().sort((p, q) => p - q)[Math.floor(0.9 * (nb - 1))] || 0, ql = q * Math.pow(10, -2.6), qh = q * Math.pow(10, -1.2), isQ = b => Lb[b] >= ql && Lb[b] <= qh;
+    for (let b = 0; b < nb;) {
+      if (!isQ(b)) { b++; continue; }
+      let e = b; while (e < nb && isQ(e)) e++;
+      const k0 = b * spb, n = (e - b) * spb, rb = [];
+      for (let c = 0; c < 3; c++) if (c === 0 ? lo : c === 1 ? mi : hi) { const z = pk[c].slice(k0, k0 + n).sort((p, q) => p - q); rb.push((z[Math.floor(0.97 * (z.length - 1))] || 0) / ref97[c]); }
+      const L = {takte: [b, e], dB: rb.map(v => Math.round(20 * Math.log10(v + 1e-9))), ok: false}; if (e - b >= 2) leise.push(L);
+      if (e - b >= 2 && rb.length && Math.min(...rb) > 0 && Math.max(...rb) <= 2 * Math.min(...rb)) {
+        const i0 = Math.round(k0 * stepS * sr), hs = spk11bHits(x.subarray(i0, Math.min(x.length, i0 + Math.round((n * stepS + 0.05) * sr))), sr, stepS, n, fr, {spb, inner: true});
+        const pos = new Map(); for (const h of hs) { const p = h.k % spb; if (!pos.has(p)) pos.set(p, new Set()); pos.get(p).add(Math.floor(h.k / spb)); }
+        const rec = new Set([...pos].filter(([p, z]) => z.size >= Math.max(2, 0.5 * (e - b))).map(([p]) => p)), onRec = hs.filter(h => rec.has(h.k % spb)).length;
+        if (hs.length >= 2 * (e - b) && onRec >= 0.7 * hs.length && hs.filter(h => h.w !== 'k').length >= e - b) {
+          for (let i = out.length - 1; i >= 0; i--) if (out[i].k >= k0 && out[i].k < k0 + n) out.splice(i, 1);
+          for (const h of hs) out.push({k: h.k + k0, w: h.w, v: h.v}); L.ok = true;
+        }
+      }
+      b = e;
+    }
+  }
+  out.sort((p, q) => p.k - q.k); out.info = {tK: +tK.toFixed(3), tS: +tS.toFixed(3), kick: !!sK, snare: !!sS, bass: !!Bo, leise};
   return out;
 }
 // FFT (Radix 2, an Ort und Stelle) für spk11bSpec

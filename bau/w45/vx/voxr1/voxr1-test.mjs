@@ -297,6 +297,13 @@ async function browser() {
       const T2 = await run(async o => { const okA = SYNQUENZER.vr1BreathAct(o.id, 0, 'weg'); await wait(100); const E = WP.ed; const r = {offen: !!E, hits: E && E.vr1b ? E.vr1b.length : 0, act: SYNQUENZER.vr1Breaths(o.id)[0].act, okA}; return r; }, tk);
       tapOk = T2.offen && T2.hits >= 1 && T2.act === 'weg'; R.uiAtmerTap = T2; }
     ok(tapOk, 'Touch (CDP) auf eine Marke: Editor bleibt offen, Marke „weg“ setzbar (Bedienung der Marken folgt mit der Zeile)', R.uiAtmerTap);
+    // Teil 3: Antippen im oberen Streifen der Marke wechselt lassen → leiser → weg (Touch über CDP)
+    if (M2.cv && M2.hit0) { const a0 = await run(async o => SYNQUENZER.vr1Breaths(o.id)[1] ? SYNQUENZER.vr1Breaths(o.id)[1].act : null, tk), tp0 = await run(async o => SYNQUENZER.vr1Ver(o.id).taps, tk);
+      const h1 = await run(async () => { const E = WP.ed; return E && E.vr1b && E.vr1b[1] ? E.vr1b[1] : null; }, null);
+      if (h1) { await tap(M2.cv.x + (h1.x0 + h1.x1) / 2, M2.cv.y + 22); }
+      const a1 = await run(async o => ({act: SYNQUENZER.vr1Breaths(o.id)[1] ? SYNQUENZER.vr1Breaths(o.id)[1].act : null, taps: SYNQUENZER.vr1Ver(o.id).taps, offen: !!WP.ed}), tk);
+      R.uiAtmerTap3 = {vorher: a0, nachher: a1};
+      ok(!!h1 && a0 === 'leiser' && a1.act === 'weg' && a1.taps === tp0 + 1 && a1.offen, 'Touch (CDP) im Streifen über einer Atmer-Marke: leiser → weg, Editor bleibt offen', R.uiAtmerTap3); }
     const U2 = await ui(); ok(U2.over === 0, 'Marken-Editor: nichts ragt aus dem Bild (hochkant 428×926)', U2);
     await run(async () => { wpClose(); await wait(150); }, null);
     const raw = await run(async o => { const a = await SYNQUENZER.tkPcmHash(o.id); return a; }, tk); R.rohHash = raw;

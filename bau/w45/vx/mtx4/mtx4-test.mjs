@@ -1,4 +1,4 @@
-// MTX4 Teil 1+2 – mehrere Clips zugleich (Teil 2: Länge ÷2/×2, neue Clip-Versionen, Länge im Lauf): Auswahl (Clip-Blatt › Mehrere wählen, Tipp = dazu/weg, Szenen-Kopf), Leiste −12 −1 +1 +12,
+// MTX4 Teil 1+2 + Prüfung (Befunde 1–10, Abschnitt am Ende) – mehrere Clips zugleich (Teil 2: Länge ÷2/×2, neue Clip-Versionen, Länge im Lauf): Auswahl (Clip-Blatt › Mehrere wählen, Tipp = dazu/weg, Szenen-Kopf), Leiste −12 −1 +1 +12,
 // Stufe ▲▼, In Tonart einpassen ▾, Quantisieren ▾, Drum-Clips nur mit „Drums ±“, ein ↶ je Aktion, Änderung ab dem nächsten Takt, Leistung.
 // Aufruf: node mtx4-test.mjs <index.html> <fotoordner>   (absolute Pfade). Echte Touch-Ereignisse über CDP (428×926, 926×428, 926×370).
 import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
@@ -374,6 +374,144 @@ for (const [w, h] of [[926, 428], [926, 370]]) {
   ok('Bild der Matrix mit Auswahl nach ×2 (doppelt so viele Noten) ≤ 16 ms', r.rg2Max <= 16, {median: r.rg2Med, max: r.rg2Max});
   ok('je Aktion ein ↶-Schritt über alle Clips', r.undo.every(x => x >= 40), r.undo);
   ok('Leistung: keine Fehler', errs.length === 0, errs.slice(0, 3));
+  await ctx.close();
+}
+// ======================= Prüfung 15.11.: Befunde 1–10 nachgemessen =======================
+// P1 (schwer): ↶ ↷ in der Leiste, ↶ genau über dem ↶ der Spur-Leiste; Hinweise ohne Aktionsknopf; per Touch in allen 3 Größen
+for (const [w, h] of [[428, 926], [926, 428], [926, 370]]) {
+  const {ctx, p, errs, T} = await open(w, h); const L = w + '×' + h;
+  await p.evaluate(() => { SYNQUENZER.mtx4.start(0, 0); while (UNDO.length) UNDO.pop(); REDO.length = 0; }); await sleep(1900);   // Start-Hinweis ist weg
+  // P10: Tipp auf einen weiteren Clip – kein Hinweis über den Szenen-Köpfen (der Zähler der Leiste sagt es)
+  for (const [t, s] of [[1, 1], [2, 1]]) { const c = await cell(p, t, s); await T.tap(c.cx, c.cy); }
+  const hint = await p.evaluate(() => ({show: EL.toast.classList.contains('show'), n: SYNQUENZER.mtx4.bar().querySelector('.n').textContent}));
+  ok(L + ' P10: Tipp im Modus ohne Hinweis über den Szenen-Köpfen, Zähler der Leiste zählt', !hint.show && /^3 Clips/.test(hint.n), hint);
+  const bar = await barCheck(p, L + ' P1');
+  ok(L + ' P1: Leiste trägt ↶ und ↷', (bar.names || []).includes('↶') && (bar.names || []).includes('↷'), bar.names);
+  const s0 = await sig(p);
+  await tapBtn(T, p, 'p1'); await sleep(200);
+  const a = await p.evaluate(() => { const B = SYNQUENZER.mtx4.bar(), u = document.getElementById('bUndo').getBoundingClientRect(), top = document.elementFromPoint(u.left + u.width / 2, u.top + u.height / 2);
+    return {u: UNDO.length, acts: EL.toast.querySelectorAll('button').length, zT: +getComputedStyle(EL.toast).zIndex, zB: +getComputedStyle(B).zIndex, top: top && (top.closest('[data-m4]') || {dataset: {}}).dataset.m4, msg: UI.lastToast}; });
+  ok(L + ' P1: +1 per Touch = ein Schritt; Hinweis ohne Aktionsknopf und über der Leiste', a.u === 1 && a.acts === 0 && a.zT > a.zB, a);
+  ok(L + ' P1: auf der Mitte des ↶ der Spur-Leiste liegt das ↶ der Leiste', a.top === 'un', a.top);
+  await p.screenshot({path: dir + '/mtx4-pruef-undo-' + w + 'x' + h + '.png'});
+  const ur = await p.evaluate(() => { const r = document.getElementById('bUndo').getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; });
+  await T.tap(ur[0], ur[1]); await sleep(250);
+  const b1 = await p.evaluate(() => ({u: UNDO.length, r: REDO.length, on: SYNQUENZER.mtx4.on(), acts: EL.toast.querySelectorAll('button').length, msg: UI.lastToast}));
+  const s1 = await sig(p);
+  ok(L + ' P1: Tipp auf die Stelle des gewohnten ↶ macht +1 rückgängig (alles bit-gleich, Modus bleibt, Hinweis ohne Knopf)', b1.u === 0 && b1.r === 1 && b1.on && b1.acts === 0 && JSON.stringify(s0) === JSON.stringify(s1), b1);
+  await tapBtn(T, p, 're'); await sleep(250);
+  const b2 = await p.evaluate(() => ({u: UNDO.length, r: REDO.length, acts: EL.toast.querySelectorAll('button').length, chk: undoRedoCheck()}));
+  ok(L + ' P1: ↷ der Leiste wiederholt (ein Schritt), Hinweis ohne Knopf, ↶/↷ stimmig', b2.u === 1 && b2.r === 0 && b2.acts === 0 && b2.chk, b2);
+  ok(L + ' P1: keine Fehler', errs.length === 0, errs.slice(0, 3));
+  await ctx.close();
+}
+// P2 (mittel): dichte Clips (64 × 64 Noten, Song mit 64 Clips), Wiedergabe läuft – keine Long Tasks; 4× gedrosselt zum Vergleich mit Grundlast
+for (const rate of [1, 4]) {
+  const {ctx, p, errs} = await open(428, 926);
+  const cdp = await ctx.newCDPSession(p); if (rate > 1) await cdp.send('Emulation.setCPUThrottlingRate', {rate});
+  const r = await p.evaluate(async () => {
+    const W = ms => new Promise(r => setTimeout(r, ms));
+    while (NT() < 8) addTrack();
+    for (let i = 0; i < NT(); i++) { const tr = S.tracks[i]; if (tr.stimme || tr.orig) continue; for (let s = 0; s < 8; s++) {
+      const notes = []; for (let k = 0; k < 64; k++) notes.push({t: k * .25, d: .2, n: (tr.kind === 'drum' ? 36 + (k % 4) * 2 : 60 + [0, 2, 4, 5, 7, 9, 11, 12][(k * 3 + s) % 8]), v: .5 + (k % 5) / 10});
+      tr.clips[s] = Object.assign(deep(S.tracks[0].clips[0] || {}), {len: 4, notes}); } }
+    UI.dirty.all = UI.dirty.grid = true; await W(600);
+    songEdit('Test', sg => { sg.bars = 32; for (let i = 0; i < NT(); i++) sg.lanes[i] = [0, 1, 2, 3, 4, 5, 6, 7].map(s => ({bar: s * 4, slot: s})); });
+    await W(300); while (UNDO.length) UNDO.pop(); REDO.length = 0;
+    const L = []; for (let i = 0; i < NT(); i++) for (let s = 0; s < 8; s++) if (S.tracks[i].clips[s]) L.push([i, s]);
+    SYNQUENZER.mtx4.start(); SYNQUENZER.mtx4.set(L); SYNQUENZER.mtx4.drums(true);
+    ensureAudio(); launchScene(0); play(); await W(1500);
+    const lt = []; const po = new PerformanceObserver(l => { for (const e of l.getEntries()) lt.push({d: Math.round(e.duration), at: e.startTime}); }); po.observe({entryTypes: ['longtask']});
+    const fr = []; let last = performance.now(), run = true; const loop = () => { const n = performance.now(); fr.push(n - last); last = n; if (run) requestAnimationFrame(loop); }; requestAnimationFrame(loop);
+    await W(1500); const base = lt.map(x => x.d); lt.length = 0;                     // Grundlast: Wiedergabe ohne Aktion
+    const acts = [['+1 (64 Versionen)', () => SYNQUENZER.mtx4.semi(1)], ['Dorisch', () => SYNQUENZER.mtx4.fit('dorian')], ['Quant 1/16', () => SYNQUENZER.mtx4.quant('1/16')], ['×2', () => SYNQUENZER.mtx4.len(2)], ['÷2', () => SYNQUENZER.mtx4.len(.5)], ['↶', () => SYNQUENZER.mtx4.undo()], ['↷', () => SYNQUENZER.mtx4.undo(true)]];
+    const out = [];
+    for (const [n, f] of acts) { const f0 = fr.length, a0 = performance.now(); const pr = f(); const sync = performance.now() - a0; await pr; await W(900); const fx = fr.slice(f0); out.push({n, sync: Math.round(sync), maxFrame: Math.round(Math.max(...fx)), lt: lt.filter(x => x.at >= a0 - 5).map(x => x.d)}); lt.length = 0; }
+    run = false; po.disconnect(); stop();
+    return {clips: L.length, notes: L.length * 64, own: Object.keys(S.song.own || {}).length, undo: UNDO.length, base, out, chk: undoRedoCheck()};
+  });
+  const all = r.out.flatMap(x => x.lt);
+  if (rate === 1) {
+    ok('P2 1×: 64 dichte Clips (4096 Noten), 7 Aktionen inkl. ↶ ↷ der Leiste: kein Long Task > 50 ms, synchroner Teil < 50 ms', r.clips === 64 && all.every(x => x <= 50) && r.out.every(x => x.sync < 50), r.out);
+    ok('P2 1×: 5 Aktionen = 5 ↶-Schritte nach ↶ ↷, Versionen 64, ↶/↷ stimmig', r.undo === 5 && r.own === 64 && r.chk, {undo: r.undo, own: r.own});
+  } else console.log('INFO   P2 4× gedrosselt (Grenzfall, Kopflos auf geteilter VM): Grundlast ohne Aktion ' + JSON.stringify(r.base) + ' · Aktionen ' + JSON.stringify(r.out));
+  ok('P2 ' + rate + '×: keine Fehler', errs.length === 0, errs.slice(0, 3));
+  await ctx.close();
+}
+// P3 (mittel) Pentatonik · P4 (mittel) höchstens eine Auto-Version · P7 ÷2 bei 3 Takten · P9 Clip spielt nur als v2
+{
+  const {ctx, p, errs} = await open(428, 926);
+  const r = await p.evaluate(async () => {
+    const o = {};
+    const c = S.tracks[0].clips[0]; c.len = 1; c.key = {root: 0, scale: 'ionian', src: 'user'};
+    c.notes = [60, 62, 64, 65, 67, 69, 71, 72].map((n, j) => ({t: j * .5, d: .25, n, v: .8})); clipChanged(0, 0);
+    SYNQUENZER.mtx4.start(0, 0); await SYNQUENZER.mtx4.fit('pent');
+    o.pent = S.tracks[0].clips[0].notes.map(n => n.n); undo();
+    const c0 = S.tracks[0].clips[0];                                  // ↶ legt ein neues Clip-Objekt an
+    // Zufall: 3 Grundtöne × 480 Noten – kein Ton springt mehr als 1 Halbton, Töne der Pentatonik bleiben
+    let moved3 = 0, keptBad = 0, out = 0, tot = 0;
+    for (const root of [0, 2, 9]) for (const sc of ['ionian', 'aeolian']) {
+      const P = G10G_SCALES[Harmony.SCALES[sc][2] === 4 ? 'pentMaj' : 'pentMin'].map(x => (root + x) % 12);
+      c0.key = {root, scale: sc, src: 'user'}; c0.notes = []; for (let k = 0; k < 240; k++) c0.notes.push({t: k * .25, d: .2, n: 48 + ((k * 7 + root * 3 + (k >> 3)) % 30), v: .7});
+      const f = SYNQUENZER.mtx4.fitNotes(0, 0, 'pent');
+      c0.notes.forEach((n, j) => { tot++; if (Math.abs(f[j] - n.n) > 1) moved3++; if (P.includes(n.n % 12) && f[j] !== n.n) keptBad++; if (!P.includes(f[j] % 12)) out++; });
+    }
+    o.rand = {tot, moved3, keptBad, out};
+    SYNQUENZER.mtx4.end();
+    // P4: 9 Sitzungen „Quantisieren + 1“ auf einem Clip im Song
+    S.tracks[0].clips[0].notes = [0, 1, 2, 3].map(t => ({t, d: .5, n: 60, v: .8})); S.tracks[0].clips[0].key = {root: 0, scale: 'ionian', src: 'user'};
+    songEdit('Test', sg => { sg.bars = 4; sg.lanes[0] = [{bar: 0, slot: 0}]; });
+    const seq = [];
+    for (let k = 0; k < 9; k++) { SYNQUENZER.mtx4.start(0, 0); await SYNQUENZER.mtx4.quant('1/16'); await SYNQUENZER.mtx4.semi(1); SYNQUENZER.mtx4.end(); seq.push(sx9List(S.song, 0, 0).map(x => x.v).join('')); }
+    o.seq = seq; o.manual = sx9Add(0, 0); o.after = sx9List(S.song, 0, 0).map(x => x.v).join('');
+    // P9: Clip 1:0 spielt im Song nur als v2 → eine Änderung an v1 legt keine Version an
+    const id9 = 'o99'; S.song.own = S.song.own || {}; S.song.own[id9] = Object.assign(deep(cleanClip(S.tracks[1].clips[0])), {from: {t: 1, s: 0, bar: 0}, ver: 2});
+    songEdit('Test v2', sg => { sg.lanes[1] = [{bar: 0, slot: 0, own: id9}]; });
+    o.v2only = {at: sx9At(S.song, 1, 0), before: sx9List(S.song, 1, 0).map(x => x.v).join('')};
+    SYNQUENZER.mtx4.start(1, 0); await SYNQUENZER.mtx4.semi(1); SYNQUENZER.mtx4.end();
+    o.v2only.after = sx9List(S.song, 1, 0).map(x => x.v).join(''); o.v2only.vers = SYNQUENZER.mtx4.info().last.vers;
+    // P7: ÷2 auf einem 3-Takt-Clip sagt es im Hinweis
+    const c3 = S.tracks[2].clips[0]; c3.len = 3; c3.notes = [0, 4, 8].map((t, j) => ({t, d: 1, n: 60 + 4 * j, v: .8})); clipChanged(2, 0);
+    SYNQUENZER.mtx4.start(2, 0); await SYNQUENZER.mtx4.len(.5); o.odd = {msg: UI.lastToast, len: S.tracks[2].clips[0].len, last: SYNQUENZER.mtx4.info().last.odd}; SYNQUENZER.mtx4.end();
+    return o;
+  });
+  ok('P3 Pentatonik: C-Dur-Leiter → Töne der Pentatonik bleiben stehen, F→E, H→C′ (Umfang bleibt 12)', r.pent.join() === '60,62,64,64,67,69,72,72', r.pent);
+  ok('P3 Pentatonik Zufall (6 Tonarten × 240 Noten): 0 Töne der Pentatonik verschoben, 0 Sprünge > 1 Halbton, 0 außerhalb', r.rand.keptBad === 0 && r.rand.moved3 === 0 && r.rand.out === 0, r.rand);
+  ok('P4 9 Sitzungen auf einem Clip im Song: höchstens eine Auto-Version (v2), das eigene ＋ geht danach', r.seq.every(x => x === '2') && !!r.manual && r.after === '23', {seq: r.seq, manual: r.manual, after: r.after});
+  ok('P9 Clip spielt im Song nur als v2: Änderung an v1 legt keine Version an', r.v2only.at && r.v2only.at.v === 2 && r.v2only.before === '2' && r.v2only.after === '2' && r.v2only.vers.length === 0, r.v2only);
+  ok('P7 ÷2 bei 3 Takten: Hinweis sagt „ungerade Länge abgerundet (3 → 1 Takt)“', /ungerade Länge abgerundet \(3 → 1 Takt\)/.test(r.odd.msg) && r.odd.len === 1 && r.odd.last === 1, r.odd);
+  ok('P3/P4/P7/P9: keine Fehler', errs.length === 0, errs.slice(0, 3));
+  await ctx.close();
+}
+// P6 (leicht): ↶ und ↷ eines MTX4-Schritts mitten im Takt greifen am nächsten Taktstrich
+{
+  const {ctx, p, errs} = await open(428, 926);
+  const r = await p.evaluate(async () => {
+    const W = ms => new Promise(r => setTimeout(r, ms));
+    ensureAudio(); await W(300);
+    for (let i = 1; i < NT(); i++) S.tracks[i].clips = S.tracks[i].clips.map(() => null);
+    const c = S.tracks[0].clips[0]; c.len = 1; c.notes = [0, .5, 1, 1.5, 2, 2.5, 3, 3.5].map(t => ({t, d: .25, n: 60, v: .8})); clipChanged(0, 0);
+    launch(0, 0); play(); await W(900);
+    const waitMid = async () => { for (let k = 0; k < 120; k++) { const nb = nextBarFromAudible(), ph = 4 - (nb - audBeat()); if (ph > .4 && ph < 1.8) return; await W(25); } };
+    SYNQUENZER.mtx4.start(0, 0);
+    for (let k = 0; k < 80; k++) { if (nextBarFromAudible() - audBeat() > 1.6) break; await W(40); }
+    await SYNQUENZER.mtx4.semi(1);
+    const barA = SYNQUENZER.mtx4.info().hold[0] ? SYNQUENZER.mtx4.info().hold[0].bar : null;
+    await W((barA - audBeat()) * spb() * 1000 + 200); await waitMid();
+    const uAt = audBeat(), barU = nextBarFromAudible(); SYNQUENZER.mtx4.undo();
+    await W((barU - audBeat()) * spb() * 1000 + 200); await waitMid();
+    const rAt = audBeat(), barR = nextBarFromAudible(); SYNQUENZER.mtx4.undo(true);
+    await W((barR - audBeat()) * spb() * 1000 + 2800);
+    const E = []; for (let k = 0; k < Math.min(LOG.n, 4096); k++) { const e = LOG.buf[k]; if (e && !e.removed && e.track === 0 && e.beat != null) E.push({b: e.beat, n: e.clipNote != null ? e.clipNote : e.out}); }
+    const seg = (a, b) => E.filter(e => e.b >= a - 1e-3 && e.b < b - 1e-3).map(e => e.n);
+    const grid = []; for (let x = Math.ceil(barA * 2) / 2 - 4; x < barR + 2; x += .5) grid.push(x);
+    const miss = grid.filter(x => E.filter(e => Math.abs(e.b - x) < .02).length !== 1);
+    const o = {barA, uAt: +uAt.toFixed(2), barU, rAt: +rAt.toFixed(2), barR, afterUndoToBar: seg(uAt, barU), fromBarU: seg(barU, barU + 4), afterRedoToBar: seg(rAt, barR), fromBarR: seg(barR, barR + 4), miss: miss.length, playing: R.playing};
+    stop(); return o;
+  });
+  ok('P6 ↶ mitten im Takt: bis zum Taktstrich weiter +1 (61), ab dem Taktstrich wieder 60', r.barA != null && r.afterUndoToBar.length >= 2 && r.afterUndoToBar.every(n => n === 61) && r.fromBarU.length === 8 && r.fromBarU.every(n => n === 60), r);
+  ok('P6 ↷ mitten im Takt: bis zum Taktstrich 60, ab dem Taktstrich 61', r.afterRedoToBar.length >= 2 && r.afterRedoToBar.every(n => n === 60) && r.fromBarR.length === 8 && r.fromBarR.every(n => n === 61), {vor: r.afterRedoToBar, ab: r.fromBarR});
+  ok('P6 nichts stockt: jede Achtel genau einmal, Wiedergabe läuft, keine Fehler', r.miss === 0 && r.playing && errs.length === 0, {miss: r.miss, errs: errs.slice(0, 3)});
   await ctx.close();
 }
 const bad = res.filter(x => !x.ok);
