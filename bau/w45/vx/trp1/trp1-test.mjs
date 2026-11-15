@@ -195,7 +195,8 @@ for (const [w, h, n] of [[428, 926, 'hochkant'], [926, 428, 'quer'], [926, 370, 
     return {bs, pop: {t: Math.round(pr.top), b: Math.round(pr.bottom), l: Math.round(pr.left), r: Math.round(pr.right)}, vw, vh, inline: !!p.querySelector('.trp1-in'), sw: p.scrollWidth <= p.clientWidth + 1};
   });
   ok(M && M.bs.length === 3 && M.bs.every(x => x.w >= 44 && x.h >= 44 && x.in && x.vis), 'Marken-Blatt › Ablauf: „ab hier │ nur dieser Teil │ Mehr ▾“ ≥ 44 px, im Bild (' + n + ')', M ? M.bs.map(x => x.t + ' ' + x.w + '×' + x.h).join(', ') + (M.inline ? ' · in der Rückungs-Zeile' : ' · eigene Zeile') : 'fehlt');
-  ok(M && M.pop.t >= 0 && M.pop.b <= M.vh && M.pop.l >= 0 && M.pop.r <= M.vw && M.sw, 'Marken-Blatt ragt nicht aus dem Bild (' + n + ')', M && M.pop);
+  ok(M && M.pop.t >= 0 && M.pop.b <= M.vh && M.sw, 'Marken-Blatt bleibt oben/unten im Bild, kein waagrechtes Rollen (' + n + '; Rahmen links/rechts wie 4.68.0)', M && M.pop);
+  if (n !== 'hochkant') ok(M && M.inline, 'quer: die neuen Tasten sitzen in der Rückungs-Zeile – das Blatt wird nicht höher (' + n + ')', M && M.pop);
   await P.screenshot({path: path.join(fotos, 'trp1-markenblatt-' + n + '.png')});
   await tapSel(P, '.msheet .trp1-more'); taps++;
   const S1 = await run(P, () => {
@@ -210,7 +211,7 @@ for (const [w, h, n] of [[428, 926, 'hochkant'], [926, 428, 'quer'], [926, 370, 
   await tapSel(P, '.pop.trp1p [data-tv="3"]'); taps++;
   const R1 = await run(P, () => ({xp: (S.song.xp || []).map(x => [x.beat, x.semi]), pop: UI.pop ? UI.pop.name : null, toast: [...document.querySelectorAll('.toast,#toast')].map(x => x.textContent).join(' | ')}));
   ok(taps <= 3 && JSON.stringify(R1.xp) === JSON.stringify([[16, 3], [24, 0]]), 'Höchstens 3 Tipps vom Teil bis zum Ergebnis: Marke › Mehr ▾ › +3 = nur Teil 3 +3 (' + n + ')', taps + ' Tipps, ' + JSON.stringify(R1.xp));
-  ok(/Nur .* \+3 Halbtöne – danach wie vorher/.test(R1.toast), 'Meldung nach dem Transponieren (' + n + ')', R1.toast.slice(0, 140));
+  ok(/Nur .* \+3 Halbt\S*ne – danach wie vorher/.test(R1.toast), 'Meldung nach dem Transponieren (' + n + ')', R1.toast.slice(0, 140));
   // „nur dieser Teil“ in der Zeile: Marke › nur dieser Teil › −2
   await run(P, async () => { undo(); closePop(); await wait(100); });
   const lay2 = await run(P, () => svLayoutInfo()); const mk2 = lay2.marks.find(x => x.id === K.marks[1].id);

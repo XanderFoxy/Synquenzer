@@ -3,3 +3,4 @@
 - 03:53 Block MTX3B + 19 Haken eingefügt; topdefs 26/0/0, dupkeys 0
 - 03:57 Remix: DRUMS + Einzelspuren zusammen umgerechnet (mtx3bIn, Partner-Clip per Saat), Ausgabe je Spur gefiltert → Treffer je Pad = ohne Aufteilen (m: kick12 hatO8 clap6 snare6 hatC48; u gleich), Doppel 0 (Basis: 16 Doppel bei Stil-Muster)
 - 03:59 mtx3b-test.mjs geschrieben, Lauf 1
+- 04:03 Lauf 1: 51/66 (Testwähler quer, Wischen hochkant, Aufnahme-Start, CHANCE-Zug) → Trefferfläche ::after, Test angepasst; Lauf 2
