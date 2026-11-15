@@ -95320,7 +95320,8 @@ const MTX3B = {view: 'steps', lane: 'vel', ed: null, mode: 'all', n: 0, last: nu
       '.mtx3bs .mtx3b-md small{display:block;font:600 10px/1.15 var(--font-ui);color:var(--text-dim);text-transform:none}' +
       '.mtx3bd .se-tabs{gap:3px}.mtx3bd .se-tabs button{flex:1 1 auto;padding:0 4px;font-size:10.5px;letter-spacing:.03em}.mtx3bd .se-tabs .ts{display:none}' +
       '@media (orientation:portrait) and (max-width:399px),(orientation:landscape) and (max-width:759px){.mtx3bd .se-tabs .tl{display:none}.mtx3bd .se-tabs .ts{display:inline}}' +
-      '.dtools .mtx3bdb{position:relative}.dtools .mtx3bdb::after{content:"";position:absolute;left:0;right:0;top:-8px;bottom:-8px}' +   // Trefferfläche ≥ 44 px (Zeile bleibt wie sie ist)
+      '.pgside .mtx3bdb{position:relative;flex:none}.pgside .mtx3bdb::after{content:"";position:absolute;left:0;right:0;top:-8px;bottom:-8px}' +   // Trefferfläche ≥ 44 px (Zeile bleibt wie sie ist)
+      '.pgside .mtx3bir{display:flex;align-items:center;gap:6px;min-width:0}.pgside .mtx3bir .pginfo{flex:1 1 auto;min-width:0}.pgside .mtx3bir .mtx3bdb{height:34px;padding:0 10px;font-size:12px;white-space:nowrap}' +   // wie .dtools .mbtn
       '.mtx3bd .lacts .m3bpad{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:600 11px/1.2 var(--font-ui);color:var(--text-dim);padding:0 6px}';
     document.head.appendChild(s);
   } catch (e) {}
@@ -95586,12 +95587,20 @@ function mtx3bOutSheet(anchor) {
   popFit(UI.pop && UI.pop.el); haptic('pop');
   return !!(UI.pop && UI.pop.name === 'mtx3bout');
 }
-// pageDrumSteps-Haken: [Auslagern ▾] in der Werkzeug-Zeile (gleicher Knopf wie [Euklid…] / [Muster ▾])
+// pageDrumSteps-Haken: [Auslagern ▾] in der Werkzeug-Zeile (gleicher Knopf wie [Euklid…] / [Muster ▾]); hochkant, wo die Zeile voll ist, darunter
 function mtx3bDrumTools(tools, clip) {
   if (!tools || tools.querySelector('.mtx3bdb')) return;
   const b = el('button', 'rb mbtn mtx3bdb', 'Auslagern ▾'); b.title = 'Gewählte Töne oder Schritte auf eine eigene, mischbare Spur'; b.setAttribute('aria-label', b.title);
   onTap(b, () => { try { mtx3bOutSheet(b); } catch (e) { logErr(e); } });
   tools.appendChild(b);
+  // passt die Werkzeug-Zeile nicht (hochkant: Euklid · Muster · Länge füllen sie), steht der Knopf in der Zeile darunter neben „Szene n“
+  queueMicrotask(() => {
+    try {
+      if (!b.isConnected || tools.scrollWidth <= tools.clientWidth + 1) return;
+      const side = tools.parentElement, info = side && side.querySelector(':scope > .pginfo'); if (!info) return;
+      const row = el('div', 'mtx3bir'); side.insertBefore(row, info); row.append(info, b);
+    } catch (e) { logErr(e); }
+  });
 }
 
 /* ---------- 6 · Drum-Schritt-Editor einer Einzelspur (im Noten-Editor-Blatt) ---------- */
