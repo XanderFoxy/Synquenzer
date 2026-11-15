@@ -107536,7 +107536,9 @@ function fokus1KMake(Z2, X) {
       for (let j = j0; j < kk.length; j++) wt[j] /= sw;
       wr[r] = Math.min((fb - fa) * sr / Nb, dN);   // Energie-Anteil: Zeile zählt nach ihrer Breite in Hz, höchstens ein Anzeige-Bin (tiefe Töne nicht vielfach)
     }
-    off[R] = kk.length; const o = {off, kk: Int32Array.from(kk), wt: Float64Array.from(wt), wr}; RM.set(key, o); return o;
+    const ba = new Int32Array(R), bb = new Int32Array(R), rOf = f => (12 * Math.log2(f / 440) + 69 - I.m0) * I.rps, BW = 2.5 * dN;
+    for (let r = 0; r < R; r++) { const f = fr(r), lo = f - BW; ba[r] = Math.min(r, lo <= fr(0) ? 0 : Math.max(0, Math.ceil(rOf(lo)))); bb[r] = Math.max(r, Math.min(R - 1, Math.floor(rOf(f + BW)))); }
+    off[R] = kk.length; const o = {off, kk: Int32Array.from(kk), wt: Float64Array.from(wt), wr, ba, bb}; RM.set(key, o); return o;
   }
   // Leistung je Basis-Rahmen (Breitband, aus d.mid) – Gewicht, wenn das Anzeige-Fenster mehrere Basis-Rahmen überdeckt (N > Basis-N)
   function frE(d, hb) {
@@ -107553,8 +107555,8 @@ function fokus1KMake(Z2, X) {
   // ein Stück: Quelle (Original-Bytes) → Fokus-Bytes; Energie (Leistung je Byte) vorher/nachher
   function piece(d, I, ci, src, o, gf, NT) {
     const R = I.rows, W = Math.min(1024, I.cols - ci * 1024), out = new Uint8Array(R * W), sr = d.meta.sr, Nb = d.meta.base.N, hb = d.meta.base.hop, NB = Nb / 2 + 1;
-    const {off, kk, wt, wr} = rowsOf(I, Nb, sr), g = new Float32Array(NB), gl = new Float32Array(R), wv = new Float32Array(R), hw = I.N / (2 * sr), lob = 2 * sr / I.N, att = Math.pow(10, -o.att / 20), rest = o.mode === 'rest';
-    const FM = new Map(), wide = I.N > Nb, EB = wide ? frE(d, hb) : null, acc = wide ? new Float64Array(R) : null;
+    const {off, kk, wt, wr, ba, bb} = rowsOf(I, Nb, sr), g = new Float32Array(NB), gl = new Float32Array(R), wv = new Float32Array(R), hw = I.N / (2 * sr), lob = 2 * sr / I.N, att = Math.pow(10, -o.att / 20), rest = o.mode === 'rest';
+    const FM = new Map(), wide = I.N > Nb, EB = wide ? frE(d, hb) : null, acc = wide ? new Float64Array(R) : null, LN = new Float32Array(R * W);
     const rowG = mm => {   // Rahmen mm → mittlerer Rest-Anteil² je Zeile (gewichtet), zwischengespeichert; one = überall 1
       let e = FM.get(mm); if (e) return e;
       gf(mm, g); const q = new Float32Array(R); let one = true;
@@ -107594,12 +107596,30 @@ function fokus1KMake(Z2, X) {
           }
         }
       }
-      for (let r = 0; r < R; r++) {
-        let lin = gl[r]; if (anyW) { const w = wv[r]; if (w > 0) { if (rest) lin *= 1 - w * (1 - att); else if (w > lin) lin = w; } }
-        const i = r * W + c, s = src[i]; let v;
-        if (lin >= 0.99999) v = s; else if (lin < 1e-5 || !s) v = 0; else { v = s + 20 * Math.log10(lin) * k255; v = v <= 0 ? 0 : v >= 255 ? 255 : Math.round(v); }
-        out[i] = v; eO += PW[s] * wr[r]; eR += PW[v] * wr[r];
+      for (let r = 0; r < R; r++) { let lin = gl[r]; if (anyW) { const w = wv[r]; if (w > 0) { if (rest) lin *= 1 - w * (1 - att); else if (w > lin) lin = w; } } LN[r * W + c] = lin; }
+    }
+    if (rest) {   // „Nur Rest“: Flanken und Ränder einer ausgeblendeten Stelle gehören zu ihr – Anteil² mit der Leistung des Originalbilds gewichtet mitteln, nie heller als vorher
+      const L2 = new Float32Array(R * W), PP = new Float64Array(R + 1), PQ = new Float64Array(R + 1), K = 0, HK = new Float64Array(K + 1);
+      for (let j = 0; j <= K; j++) { const h = 0.5 + 0.5 * Math.cos(Math.PI * j / (K + 1)); HK[j] = h * h; }
+      for (let r = 0; r < R; r++) {   // Zeit (nur N > Basis-N: das Anzeige-Fenster reicht über mehrere Basis-Rahmen): Nachbar-Spalten ±N/2, Hann² × Leistung
+        const o = r * W;
+        for (let c = 0; c < W; c++) {
+          const l0 = LN[o + c]; if (!K) { L2[o + c] = l0 * l0; continue; }
+          let sp = 0, sq = 0, one = l0 >= 0.99999;
+          for (let j = -K; j <= K; j++) { const cc = c + j; if (cc < 0 || cc >= W) continue; const l = LN[o + cc]; if (l < 0.99999) one = false; const w = HK[j < 0 ? -j : j] * PW[src[o + cc]]; sp += w; sq += w * l * l; }
+          L2[o + c] = one ? 1 : sp > 0 ? sq / sp : l0 * l0;
+        }
       }
+      for (let c = 0; c < W; c++) {   // Frequenz: Nachbar-Zeilen ±2,5 Anzeige-Bins (Summen je Spalte)
+        let any = false; for (let r = 0; r < R; r++) { const i = r * W + c, p = PW[src[i]]; PP[r + 1] = PP[r] + p; PQ[r + 1] = PQ[r] + p * L2[i]; if (!any && L2[i] < 0.99998) any = true; }
+        if (!any) continue;
+        for (let r = 0; r < R; r++) { const i = r * W + c, a = ba[r], b = bb[r] + 1, sp = PP[b] - PP[a]; if (!(sp > 0)) continue; const f = (PQ[b] - PQ[a]) / sp; q = Math.min(L2[i], f), l = LN[i]; if (q < l * l) LN[i] = Math.sqrt(Math.max(0, q)); }
+      }
+    }
+    for (let r = 0; r < R; r++) for (let c = 0; c < W; c++) {
+      const i = r * W + c, s = src[i], lin = LN[i]; let v;
+      if (lin >= 0.99999) v = s; else if (lin < 1e-5 || !s) v = 0; else { v = s + 20 * Math.log10(lin) * k255; v = v <= 0 ? 0 : v >= 255 ? 255 : Math.round(v); }
+      out[i] = v; eO += PW[s] * wr[r]; eR += PW[v] * wr[r];
     }
     return {data: out, W, eO, eR};
   }

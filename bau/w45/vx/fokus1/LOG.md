@@ -22,3 +22,4 @@
 13:07 Fixes eingesetzt: Kern (Kennung je Dokument, Zeilen-Gewichtung, Zeit-Mittel N>4096, Energie nach Zeilenbreite), Anzeige (Status am Satz, Texte, 1 Textur/Bild, Liedwechsel → Alles)
 13:13 Platte voll (Seite stürzt auch mit basis.html ab) → alte Sicherungen gepackt (*.html.gz)
 13:13 Platte voll (auch basis.html stürzt ab): index.vor-kern.html (= basis.html) und Prüfer-Kopie pruef-iphone/exp/index.html und index.vor-ueberlappung.html gelöscht; Tests mit TMPDIR=/dev/shm/fk1tmp (Browser-Profil im RAM)
+13:16 Glätten (Frequenz, Leistung des Originalbilds ±2,5 Bins) + Rahmen-Mittel N>4096; m2 a/b nachgemessen
