@@ -18,3 +18,4 @@
 - 05:01 spk12-test3.mjs geschrieben
 - 05:04 spk12-test3 hochkant 19 OK / 0 FEHLER (Pegel = mittlerer Pegel, Anwesenheit Rahmen für Rahmen, FFT-Text per MutationObserver); Kette test3 (3 Größen) → test2 → test → smoke → reg.sh gestartet
 - 05:07 spk12-test3 alle 3 Größen 47 OK / 0 FEHLER; spk12-test2 72/0; Nachtrag: Regionen beim Öffnen des Stücks vorab holen, offenes Auswahl ▾ baut sich neu auf (Test öffnet nur einmal)
+- 05:12 reg.sh: spk6 OK, spk5 24 OK, spk1 1 = Basis (verfeinern-verbessert-ziel), spk8-seite 14/0, spk11 38/3 (drums-auf-kit bekannt); Endlauf test3 → test → test2 → smoke gestartet

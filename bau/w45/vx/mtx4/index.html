@@ -33277,6 +33277,7 @@ function tick(h) {
 function tickAhead(h) { if (AU.ctx && R.playing) tick(h || .3); }
 function scheduleTrack(i, from, to, late) {
   if (to <= from) return;
+  if (typeof mtx4Sched === 'function' && mtx4Sched(i, from, to, late)) return;   /* MTX4: läuft ein geänderter Clip, gilt der neue Inhalt erst ab dem nächsten Taktstrich */
   if (R.beg1) { const w = beg1Sched(i, from, to, late); if (!w) return; from = w[0]; to = w[1]; if (to <= from) return; }   // BEG1: Ziel-Spuren spielen die Band, ihre Clips nur außerhalb
   OS.tick++;                                                     // V2c′: clip content may have changed since the last look
   const s = R.slot[i]; if (s < 0) { if (BMC.act[i]) bmcSched(i, null, from, to, late); return; }
@@ -37031,6 +37032,7 @@ function renderGrid(bAud) {
     if (b && b.textContent !== txt) { b.textContent = txt; b.classList.toggle('pkl', txt !== '■'); }
     for (const s2 of MX.scenes) { const C = UI.cells[i][s2]; setCls(C.el, C.st, 'pkon', !!(pk && sl && sl !== -1 && sl.s === s2)); }
   }
+  if (typeof mtx4Grid === 'function') mtx4Grid();   /* MTX4: Markierung der gewählten Clips */
   // the bank switches: label + a dot when a clip of the hidden part plays (or is queued)
   if (MX.bankS) {
     const other = sceneBankOf() ? [0, 1, 2, 3] : [4, 5, 6, 7], hot = R.playing && VS.some(v => other.includes(v.playing) || (v.queued != null && other.includes(v.queued)));
@@ -51706,6 +51708,7 @@ function openClipSheet(t, s, opts) {
     g.append(vr1ClipBtn(t, s, clip, reopen));                         // VR1: Im Video · Auto | Gerät | Klavier | Mäusekino | Noten | aus
     bb1ClipSheet(g, t, s, clip, reopen);                                                     // BB1: [Werkzeugkasten ▾]
     wegeClipSheet(g, t, s, clip);                                                           // WEGE (D9): Versionen im Song
+    if (typeof mtx4ClipSheet === 'function') mtx4ClipSheet(g, B, t, s, clip);   /* MTX4: [Mehrere wählen] */
     body.append(g);
     const lr = el('div', 'lenrow');
     lr.append(el('span', 'lbl', 'Länge'));
@@ -95268,6 +95271,367 @@ const MTX3_API = {
 };
 Object.assign(SYNQUENZER, {mtx3: MTX3_API});                /* MTX3: Test-API */
 /* MTX3-END */
+/* MTX4-BEGIN ===================== Matrix: mehrere Clips zugleich (Paket MTX4 Teil 1, Xander 15.11.: „Abschnitt / mehrere Clips transponieren“)
+   • Einstieg: Clip-Blatt › [Mehrere wählen] – dieser Clip ist gewählt, danach weitere Clips antippen (Tipp = dazu / weg). Ein Tipp auf
+     einen Szenen-Kopf nimmt alle Noten-Clips der Szene dazu (noch einmal = weg); Drum-Clips nur per eigenem Tipp. Solange der Modus
+     an ist, startet ein Tipp auf Clip oder Szenen-Kopf nichts (wie die Matrix-Auswahl der Teile). [SZ] / [▲▼] blättern wie immer.
+   • Markierung wie die Matrix-Auswahl der Teile (übrige Clips blass, gewählte mit Rahmen), Farbe Bernstein wie die Spuren-Gruppe.
+   • Leiste im Stil der Spuren-Gruppe (gleicher Rahmen, an derselben Stelle über der TEILE-Leiste; hochkant zwei Zeilen nach unten,
+     quer vier Zeilen nach oben in der rechten Spalte – die Matrix bleibt frei): −12 −1 +1 +12 · ▲ Stufe ▼ Stufe · Tonart ▾ (Dur, Moll,
+     Dorisch, Mixolydisch, Phrygisch, Pentatonik) · Quant. ▾ · [Drums fest │ Drums ±] (nur mit Drum-Clips) · ✕.
+   • Drum-Clips (DRUMS, Perkussion, Einzelspuren): ± nur mit [Drums ±], Stufe und Tonart nie; Quantisieren immer.
+     Gesang- und Audio-Clips (STIMME, Original) sind nicht wählbar (dort gibt es nur Halbtöne im Take-Blatt).
+   • Jede Aktion = ein ↶ (Gruppe der Clip-Schritte). Läuft ein gewählter Clip, greift die Änderung am nächsten Taktstrich: bis dahin
+     plant die Wiedergabe den alten Inhalt weiter (Haken in scheduleTrack), danach den neuen – nichts stockt, kein Neustart.
+   • In Tonart einpassen: Grundton = Tonart des Clips. Leitereigene Töne gehen Stufe für Stufe in den Modus (C-Dur → C-Dorisch:
+     E→E♭, H→B), fremde Töne zum nächsten Ton des Modus; Pentatonik (Dur-Pentatonik bei großer Terz, sonst Moll-Pentatonik) über die
+     vorhandene Ein-Skala-Abbildung (Kontur bleibt, Doppel werden vermieden). Rhythmus und Anschlag bleiben; der Clip bekommt die
+     Tonart fest (bei Pentatonik bleibt sie). Tabellen: Harmony.SCALES und G10G_SCALES.
+   Kein Projektfeld (die Auswahl lebt nur zur Laufzeit), kein Formatwechsel. */
+const M4 = {on: false, sel: [], drums: false, bar: null, rows: null, btn: {}, hold: [], inSched: false, press: null, iv: 0, proj: null, n: 0, last: null, lay: '', range: 0};
+const MTX4_FIT = [['ionian', 'Dur'], ['aeolian', 'Moll'], ['dorian', 'Dorisch'], ['mixolydian', 'Mixolydisch'], ['phrygian', 'Phrygisch'], ['pent', 'Pentatonik']];
+const MTX4_Q = [['auto', 'Auto'], ['1/4', '1/4'], ['1/8', '1/8'], ['1/8T', '1/8T'], ['1/16', '1/16'], ['1/16T', '1/16T'], ['1/32', '1/32']];
+function mtx4Css() {
+  if (document.getElementById('mtx4-css')) return;
+  try {
+    const s = document.createElement('style'); s.id = 'mtx4-css';
+    s.textContent =
+      '#clipGrid.mtx4on .slot.filled{opacity:.5}' +
+      '#clipGrid.mtx4on .slot.mtx4sel{opacity:1;outline:3px solid var(--amber);outline-offset:-3px}' +
+      '.ui1gb.mtx4b{flex-direction:column;align-items:stretch;justify-content:center;gap:4px;padding:4px 6px;z-index:71}' +
+      '.mtx4b .r{display:flex;align-items:center;gap:4px;min-width:0}.mtx4b .r:empty{display:none}' +
+      '.mtx4b .r button{flex:1 1 0;min-width:44px;padding:0 4px;white-space:nowrap}' +
+      '.mtx4b .r .n{flex:1 1 auto;min-width:0}.mtx4b .r button.x{flex:0 0 44px}' +
+      '.mtx4b .r button.w{flex:1 1 auto}.mtx4b .r button.on{color:var(--amber);border-color:var(--amber)}.mtx4b .r button.dim{opacity:.45}' +
+      '.pop.mtx4p{width:min(340px,calc(100vw - 16px))}' +
+      '.mtx4g{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}.mtx4g.q{grid-template-columns:repeat(4,1fr)}' +
+      '.mtx4g .mbtn{height:auto;min-height:44px;min-width:0;padding:4px;width:100%}';
+    document.head.appendChild(s);
+  } catch (e) {}
+}
+// Drum-artige Clips: DRUMS, Perkussions-Spur, MTX3-Einzelspur (Noten = Pad-Töne)
+const mtx4Drum = tr => !!(tr && (tr.kind === 'drum' || percIs(tr) || tr.dvx));
+const mtx4Audio = (tr, c) => !!(tr && (tr.stimme || tr.orig || (c && c.audio)));
+function mtx4Ok(t, s) { const tr = S.tracks[t], c = tr && tr.clips[s]; return !!(c && !mtx4Audio(tr, c) && Array.isArray(c.notes)); }
+// die gültige Auswahl als [{t, s}] (Spuren über ihr Objekt gemerkt: Umsortieren ändert nichts)
+function mtx4List() {
+  const out = [];
+  M4.sel = M4.sel.filter(x => { const t = S.tracks.indexOf(x.tr); if (t < 0 || !mtx4Ok(t, x.s)) return false; out.push({t, s: x.s}); return true; });
+  return out.sort((a, b) => a.s - b.s || a.t - b.t);
+}
+const mtx4Has = (t, s) => { const tr = S.tracks[t]; return M4.sel.some(x => x.tr === tr && x.s === s); };
+function mtx4Set(t, s, on) {
+  const tr = S.tracks[t]; if (!tr) return false;
+  const k = M4.sel.findIndex(x => x.tr === tr && x.s === s);
+  if (on == null) on = k < 0;
+  if (on && k < 0 && mtx4Ok(t, s)) M4.sel.push({tr, s}); else if (!on && k >= 0) M4.sel.splice(k, 1);
+  return on;
+}
+function mtx4Start(t, s) {
+  mtx4Css();
+  if (typeof ui1SelClear === 'function') ui1SelClear();               // die Spuren-Gruppe hat dieselbe Stelle
+  if (UI.pick) pickCancel();
+  M4.on = true; M4.sel = []; M4.drums = false; M4.proj = S; M4.hold = [];
+  if (t != null && s != null) mtx4Set(t, s, true);
+  if (UI.songView) setSongView(false);
+  haptic('pop'); mtx4Say();
+  UI.dirty.grid = true; mtx4Sync();
+  return mtx4List().length;
+}
+function mtx4End() {
+  if (!M4.on) return false;
+  M4.on = false; M4.sel = []; M4.press = null;
+  if (UI.pop && /^mtx4/.test(UI.pop.name || '')) closePop();
+  UI.dirty.grid = true; mtx4Sync();
+  return true;
+}
+function mtx4Count() {
+  const L = mtx4List(), sc = new Set(L.map(x => x.s)), dr = L.filter(x => mtx4Drum(S.tracks[x.t])).length;
+  return {n: L.length, sc: sc.size, dr};
+}
+function mtx4Say() { const c = mtx4Count(); sx4Say(c.n ? c.n + (c.n === 1 ? ' Clip' : ' Clips') + ' gewählt – weitere antippen' : 'Clips antippen – Tipp = dazu / weg'); }
+function mtx4Tap(t, s) {
+  const tr = S.tracks[t], c = tr && tr.clips[s];
+  if (!c) return null;
+  if (mtx4Audio(tr, c)) { toast('Gesang-Clips: einzeln im Takes-Blatt'); return null; }
+  const on = mtx4Set(t, s); haptic('tick'); mtx4Say(); UI.dirty.grid = true; mtx4Sync();
+  return on;
+}
+// Szenen-Kopf: alle Noten-Clips der Szene dazu (sind alle schon gewählt: weg). Drum-Clips nur per eigenem Tipp
+function mtx4Scene(s) {
+  const L = []; for (let t = 0; t < NT(); t++) if (mtx4Ok(t, s) && !mtx4Drum(S.tracks[t])) L.push(t);
+  if (!L.length) { toast('Szene ' + (s + 1) + ': keine Noten-Clips'); return 0; }
+  const all = L.every(t => mtx4Has(t, s));
+  for (const t of L) mtx4Set(t, s, !all);
+  haptic('tick'); mtx4Say(); UI.dirty.grid = true; mtx4Sync();
+  return all ? -L.length : L.length;
+}
+/* ---------- Gesten: im Modus wählt ein Tipp auf Clip / Szenen-Kopf (vor UX2 und dem Matrix-Tipp; nichts startet) ---------- */
+function mtx4Down(e) {
+  if (!M4.on || !EL.grid || UI.songView || UI.pick || (e.button || 0) > 0) return;
+  const tg = e.target; if (!tg || !tg.closest || !EL.grid.contains(tg)) return;
+  const sl = tg.closest('.slot'), sc = sl ? null : tg.closest('.scn');
+  if (!sl && !sc) return;
+  e.preventDefault(); e.stopImmediatePropagation();
+  M4.press = {id: e.pointerId, x: e.clientX, y: e.clientY, t: sl ? +sl.dataset.t : -1, s: +(sl || sc).dataset.s, scn: !sl};
+}
+function mtx4Up(e) {
+  const p = M4.press; if (!p || p.id !== e.pointerId) return;
+  M4.press = null;
+  if (e.type !== 'pointerup' || !M4.on || Math.abs(e.clientX - p.x) > 12 || Math.abs(e.clientY - p.y) > 12) return;
+  UI.ghost = {t: performance.now(), x: e.clientX, y: e.clientY, hard: true};      // kein Klick-Nachzügler auf dem Szenen-Knopf
+  try { if (p.scn) mtx4Scene(p.s); else mtx4Tap(p.t, p.s); } catch (err) { logErr(err); }
+}
+try {
+  addEventListener('pointerdown', mtx4Down, true); addEventListener('pointerup', mtx4Up, true); addEventListener('pointercancel', mtx4Up, true);
+  addEventListener('keydown', e => { if (M4.on && e.key === 'Escape' && !UI.pop && !R.editor) mtx4End(); });
+} catch (e) {}
+/* ---------- Markierung (Haken am Ende von renderGrid; nur Klassen-Wechsel, gecacht wie setCls) ---------- */
+function mtx4Grid() {
+  if (!EL.grid || !UI.cells) return;
+  const on = M4.on && !UI.pick;
+  if (EL.grid.classList.contains('mtx4on') !== on) EL.grid.classList.toggle('mtx4on', on);
+  if (!on && !M4.painted) return;
+  M4.painted = on;
+  const K = new Set(); if (on) for (const x of M4.sel) { const t = S.tracks.indexOf(x.tr); if (t >= 0) K.add(t * 16 + x.s); }
+  for (let i = 0; i < UI.cells.length; i++) { const row = UI.cells[i]; if (!row) continue; for (let s = 0; s < row.length; s++) { const C = row[s]; if (C) setCls(C.el, C.st, 'mtx4sel', K.has(i * 16 + s)); } }
+}
+/* ---------- Leiste (Muster: Spuren-Gruppe .ui1gb) ---------- */
+function mtx4BarMake() {
+  mtx4Css(); if (typeof ui1Css === 'function') ui1Css();
+  const b = el('div', 'ui1gb mtx4b'); b.hidden = true; b.setAttribute('role', 'toolbar'); b.setAttribute('aria-label', 'Mehrere Clips');
+  const mk = (k, txt, lab, cls) => { const x = el('button', 'rb' + (cls ? ' ' + cls : ''), txt); x.dataset.m4 = k; x.setAttribute('aria-label', lab); x.title = lab; return x; };
+  M4.btn = {
+    n: el('span', 'n'),
+    dr: mk('dr', 'Drums fest', 'Drum-Clips: fest │ mit ± transponieren', 'w'),
+    fit: mk('fit', 'Tonart ▾', 'In Tonart einpassen', 'w'), q: mk('q', 'Quant. ▾', 'Quantisieren', 'w'),
+    x: mk('x', '✕', 'Auswahl beenden', 'x'),
+    m12: mk('m12', '−12', 'Oktave tiefer'), m1: mk('m1', '−1', 'Halbton tiefer'), p1: mk('p1', '+1', 'Halbton höher'), p12: mk('p12', '+12', 'Oktave höher'),
+    su: mk('su', '▲ Stufe', 'In der Tonart eine Stufe hoch'), sd: mk('sd', '▼ Stufe', 'In der Tonart eine Stufe tiefer'),
+  };
+  M4.rows = [0, 1, 2, 3].map(() => el('div', 'r'));
+  b.append(...M4.rows);
+  guardTouch(b);
+  onTap(b, x => { try { mtx4Act(x.dataset.m4, x); } catch (e) { logErr(e); } }, 'button[data-m4]');
+  document.body.appendChild(b); M4.lay = '';
+  return b;
+}
+function mtx4Act(k, x) {
+  if (k === 'x') { mtx4End(); sx4Say('Auswahl beendet'); return; }
+  if (k === 'dr') { M4.drums = !M4.drums; haptic('tick'); sx4Say(M4.drums ? 'Drum-Clips werden mit transponiert' : 'Drum-Clips bleiben fest'); mtx4Sync(); return; }
+  if (k === 'fit') { mtx4FitPop(x); return; }
+  if (k === 'q') { mtx4QPop(x); return; }
+  const d = {m12: -12, m1: -1, p1: 1, p12: 12}[k];
+  if (d) { mtx4Semi(d); return; }
+  if (k === 'su' || k === 'sd') mtx4Deg(k === 'su' ? 1 : -1);
+}
+// Lage: hochkant zwei Zeilen ab der TEILE-Leiste nach unten (über AKKORD/TRÄGER), quer vier Zeilen in der rechten Spalte bis zur
+// Unterkante der TEILE-Leiste (die Matrix bleibt ganz frei)
+function mtx4Layout(b, land) {
+  const B = M4.btn, R4 = M4.rows, lay = (land ? 'L' : 'P') + (M4.hasDr ? 'd' : '');
+  if (M4.lay === lay) return;
+  M4.lay = lay;
+  R4.forEach(r => { r.textContent = ''; });
+  const dr = M4.hasDr ? [B.dr] : [];
+  if (land) { R4[0].append(B.n, ...dr, B.x); R4[1].append(B.m12, B.m1, B.p1, B.p12); R4[2].append(B.su, B.sd); R4[3].append(B.fit, B.q); }
+  else { R4[0].append(B.n, ...dr, B.fit, B.q, B.x); R4[1].append(B.m12, B.m1, B.p1, B.p12, B.su, B.sd); }
+}
+function mtx4Sync() {
+  if (M4.on && M4.proj !== S) { M4.on = false; M4.sel = []; }           // anderes Projekt geladen
+  if (!M4.on) { if (M4.bar) M4.bar.hidden = true; if (M4.iv) { clearInterval(M4.iv); M4.iv = 0; } UI.dirty.grid = true; return; }
+  if (!M4.iv) M4.iv = setInterval(mtx4Sync, 400);
+  const b = M4.bar || (M4.bar = mtx4BarMake());
+  const ownPop = UI.pop && /^mtx4/.test(UI.pop.name || '');
+  const hide = !!((R.editor && R.editor !== 'menu') || (UI.pop && !ownPop) || EL.menu.classList.contains('open') || (typeof VV !== 'undefined' && VV.open) || UI.songView || UI.pick ||
+    (typeof UI1 !== 'undefined' && UI1.sel && UI1.sel.size));
+  if (b.hidden !== hide) b.hidden = hide;
+  if (hide) return;
+  const c = mtx4Count(), land = isLand();
+  M4.hasDr = c.dr > 0;
+  mtx4Layout(b, land);
+  const txt = c.n ? c.n + (c.n === 1 ? ' Clip' : ' Clips') + (c.sc > 1 ? ' · ' + c.sc + ' Szenen' : '') : 'Clips antippen';
+  const sub = c.n ? 'Tipp = dazu/weg · Szene ▶ = alle' : 'Tipp = dazu/weg · ✕ = fertig';
+  const n = M4.btn.n; if (n._t !== txt + sub) { n._t = txt + sub; n.innerHTML = esc(txt) + '<small>' + esc(sub) + '</small>'; }
+  const dt = M4.drums ? 'Drums ±' : 'Drums fest'; if (M4.btn.dr.textContent !== dt) M4.btn.dr.textContent = dt;
+  M4.btn.dr.classList.toggle('on', M4.drums); M4.btn.dr.setAttribute('aria-pressed', String(M4.drums));
+  for (const k of ['m12', 'm1', 'p1', 'p12', 'su', 'sd', 'fit', 'q']) { const off = !c.n; if (M4.btn[k].classList.contains('dim') !== off) M4.btn[k].classList.toggle('dim', off); }
+  const st = document.getElementById('strip'), r = st && st.offsetParent ? st.getBoundingClientRect() : null;
+  const vw = window.innerWidth, vh = window.innerHeight;
+  let L, T, W, H;
+  if (r && r.width > 200 && r.height >= 40) {
+    L = r.left; W = r.width;
+    if (land) { H = 4 * 44 + 3 * 4 + 8; T = Math.max(44, r.bottom - H); if (T + H > vh - 4) T = vh - 4 - H; }
+    else { H = 2 * 44 + 4 + 8; T = r.top; if (T + H > vh - 4) T = vh - 4 - H; }
+  } else { const a = (EL.gridArea || document.body).getBoundingClientRect(); W = Math.min(460, a.width - 16); L = a.left + (a.width - W) / 2; H = land ? 4 * 44 + 20 : 100; T = Math.max(4, a.bottom - H - 6); }
+  W = Math.min(W, vw - L);
+  const css = Math.round(L) + ',' + Math.round(T) + ',' + Math.round(W) + ',' + Math.round(H);
+  if (b._pos !== css) { b._pos = css; b.style.left = Math.round(L) + 'px'; b.style.top = Math.round(T) + 'px'; b.style.width = Math.round(W) + 'px'; b.style.height = Math.round(H) + 'px'; }
+}
+/* ---------- Blätter: In Tonart einpassen ▾ · Quantisieren ▾ (Kopf wie die MTX-Blätter, Knöpfe ≥ 44 px) ---------- */
+function mtx4FitPop(anchor) {
+  if (!mtx4Count().n) { toast('Erst Clips antippen'); return false; }
+  openPop(anchor, p => {
+    p.classList.add('mtx4p');
+    p.innerHTML = '<div class="mtx-hd"><h4>In Tonart einpassen</h4><button class="rb mtx-x" data-m4f="no" aria-label="Schließen">✕</button></div>' +
+      '<div class="small">Grundton je Clip (C-Dur-Clip → C-Dorisch). Rhythmus und Anschlag bleiben; Drum-Clips bleiben.</div>' +
+      '<div class="mtx4g">' + MTX4_FIT.map(([k, l]) => `<button class="mbtn rb" data-m4f="${k}">${esc(l)}</button>`).join('') + '</div>';
+    guardTouch(p);
+    onTap(p, btn => { const k = btn.dataset.m4f; closePop(); if (k !== 'no') mtx4Fit(k); mtx4Sync(); }, 'button[data-m4f]');
+  }, {name: 'mtx4fit', above: !isLand()});
+  return true;
+}
+function mtx4QPop(anchor) {
+  if (!mtx4Count().n) { toast('Erst Clips antippen'); return false; }
+  openPop(anchor, p => {
+    p.classList.add('mtx4p');
+    p.innerHTML = '<div class="mtx-hd"><h4>Quantisieren</h4><button class="rb mtx-x" data-m4q="no" aria-label="Schließen">✕</button></div>' +
+      '<div class="small">Alle gewählten Clips aufs Raster (Stärke 100 %). Auto = Raster je Clip erkennen.</div>' +
+      '<div class="mtx4g q">' + MTX4_Q.map(([k, l]) => `<button class="mbtn rb" data-m4q="${k}">${esc(l)}</button>`).join('') + '</div>';
+    guardTouch(p);
+    onTap(p, btn => { const k = btn.dataset.m4q; closePop(); if (k !== 'no') mtx4Quant(k); mtx4Sync(); }, 'button[data-m4q]');
+  }, {name: 'mtx4q', above: !isLand()});
+  return true;
+}
+/* ---------- Kern: eine Aktion über alle gewählten Clips = ein ↶ ---------- */
+// läuft der Clip gerade: alter Inhalt bis zum nächsten Taktstrich (mtx4Sched), danach der neue
+function mtx4HoldSet(t, s, old) {
+  if (!R.playing || !AU.ctx || R.slot[t] !== s || (typeof ownPlaying === 'function' && ownPlaying(t))) return;
+  const c = S.tracks[t].clips[s], h = M4.hold[t];
+  if (h && h.s === s && h.clip === c && h.bar > R.schedBeat) return;              // schon gehalten: der älteste Inhalt bleibt bis zum Takt
+  let bar; try { bar = nextBarFromAudible(); } catch (e) { return; }
+  if (!isFinite(bar)) return;
+  M4.hold[t] = {s, old, clip: c, bar};
+}
+// Haken am Anfang von scheduleTrack: true = schon geplant (Fenster am Taktstrich geteilt)
+function mtx4Sched(i, from, to, late) {
+  const h = M4.hold[i]; if (!h || M4.inSched) return false;
+  const tr = S.tracks[i];
+  if (!R.playing || !tr || R.slot[i] !== h.s || tr.clips[h.s] !== h.clip || from >= h.bar - 1e-9) { M4.hold[i] = null; return false; }
+  const cur = tr.clips[h.s];
+  M4.inSched = true;
+  try { tr.clips[h.s] = h.old; scheduleTrack(i, from, Math.min(to, h.bar), late); } finally { tr.clips[h.s] = cur; M4.inSched = false; }
+  if (to > h.bar) { M4.hold[i] = null; scheduleTrack(i, h.bar, to, late); }
+  return true;
+}
+function mtx4Run(label, kind, fn) {
+  const L = mtx4List(); if (!L.length) { toast('Erst Clips antippen'); return null; }
+  if (rec.state !== 'off') { toast('Erst Aufnahme beenden'); return null; }
+  const items = []; let skipD = 0, skipR = 0;
+  for (const {t, s} of L) {
+    const tr = S.tracks[t], c = tr.clips[s], dr = mtx4Drum(tr);
+    if (dr && (kind === 'deg' || kind === 'fit' || (kind === 'semi' && !M4.drums))) { skipD++; continue; }
+    const before = cleanClip(c), old = deep(c), b0 = JSON.stringify(before);
+    mtx4HoldSet(t, s, old);
+    let ok = false; try { ok = fn(t, s, c, dr); } catch (e) { logErr(e); ok = false; }
+    if (ok === 'range') { skipR++; ok = false; }
+    if (!ok || JSON.stringify(cleanClip(c)) === b0) { if (M4.hold[t] && M4.hold[t].old === old) M4.hold[t] = null; continue; }
+    items.push({kind: 'clip', track: t, scene: s, before, label, mergeKey: null});
+    afterClipEdit(t, s);
+    if (ED.roll && ED.rollAt && ED.rollAt.t === t && ED.rollAt.s === s) { try { ED.roll.refresh(); } catch (e) {} }
+  }
+  const n = items.length;
+  if (n) undoPush(n > 1 ? {kind: 'group', label: label + ' · ' + n + ' Clips', items} : items[0]);
+  M4.n++; M4.last = {label, n, skipD, skipR};
+  const extra = (skipD ? ' · Drums fest' + (kind === 'semi' ? ' (Drums ± = mit)' : '') : '') + (skipR ? ' · ' + skipR + ' am Rand (zu hoch/tief)' : '');
+  if (n) toast(label + ' · ' + n + (n === 1 ? ' Clip' : ' Clips') + extra, {label: 'Rückgängig', fn: () => undo()});
+  else toast(label + ': nichts geändert' + extra);
+  haptic(n ? 'tick' : 'pop'); UI.dirty.grid = true; mtx4Sync();
+  return n;
+}
+// Halbtöne / Oktaven. Eine feste Tonart (Fest / Aufnahme) rückt mit, eine automatische erkennt die App neu
+function mtx4Semi(d) {
+  const lab = (d > 0 ? '+' : '−') + Math.abs(d) + (Math.abs(d) === 12 ? ' (Oktave)' : '');
+  return mtx4Run('Transponieren ' + lab, 'semi', (t, s, c, dr) => {
+    if (c.notes.some(n => n.n + d < 0 || n.n + d > 127)) return 'range';
+    for (const n of c.notes) n.n += d;
+    if (!dr && c.key && (c.key.src || 'auto') !== 'auto' && d % 12) {
+      const nk = Object.assign({}, c.key, {root: PCx(c.key.root + d)});
+      if (nk.ref != null) { nk.ref += d; if (nk.ref < 0 || nk.ref > 127) delete nk.ref; }
+      c.key = nk;                                                      // neues Objekt: schon geplante Töne behalten ihren Bezug
+    }
+    return true;
+  });
+}
+// eine Stufe in der Tonart des Clips (fremde Töne zum nächsten Ton der Leiter) – wie ▲ Stufe im Noten-Editor
+function mtx4Deg(dir) {
+  return mtx4Run('Stufe ' + (dir > 0 ? '▲' : '▼'), 'deg', (t, s, c) => {
+    const k = c.key || S.key, SC = Harmony.SCALES[k.scale] || Harmony.SCALES.ionian, inS = m => SC.includes(PCx(m - k.root));
+    const step = n => { let m = n + dir; while (!inS(m) && m > 0 && m < 127) m += dir; return m; };
+    const out = c.notes.map(n => step(n.n));
+    if (out.some(m => m < 0 || m > 127)) return 'range';
+    c.notes.forEach((n, j) => { n.n = out[j]; });
+    return true;
+  });
+}
+// die Tonhöhen eines Clips im Modus (Grundton = Tonart des Clips); null = geht nicht
+function mtx4FitNotes(c, mode) {
+  const k = c.key || S.key, root = k.root, SRC = Harmony.SCALES[k.scale] || Harmony.SCALES.ionian;
+  const ord = c.notes.map((n, j) => j).sort((a, b) => c.notes[a].t - c.notes[b].t || c.notes[a].n - c.notes[b].n);
+  const dirOf = new Map(); let prev = null;
+  for (const j of ord) { const p = c.notes[j].n; if (!dirOf.has(j)) dirOf.set(j, prev == null || p >= prev ? 1 : -1); prev = p; }
+  if (mode === 'pent') {
+    const P = G10G_SCALES[SRC[2] === 4 ? 'pentMaj' : 'pentMin'], Z = P.map(x => PCx(root + x));
+    const ps = [...new Set(c.notes.map(n => n.n))].sort((a, b) => a - b);
+    const items = ps.map(p => { let dur = 0, dir = 0; c.notes.forEach((n, j) => { if (n.n === p) { dur = Math.max(dur, n.d); dir += dirOf.get(j); } }); return {p, q: p, dir: dir >= 0 ? 1 : -1, dur, pass: false}; });
+    const out = Harmony.oneScaleMap(items, Z, {amt: 1}), m = new Map(ps.map((p, j) => [p, out[j]]));
+    return c.notes.map(n => m.get(n.n));
+  }
+  const T = Harmony.SCALES[mode]; if (!T) return null;
+  const Z = T.map(x => PCx(root + x));
+  return c.notes.map((n, j) => { const rel = PCx(n.n - root), i = SRC.indexOf(rel); return i >= 0 ? n.n - rel + T[i] : Harmony.snapToScale(n.n, Z, dirOf.get(j)); });
+}
+function mtx4Fit(mode) {
+  const lab = (MTX4_FIT.find(x => x[0] === mode) || [, mode])[1];
+  return mtx4Run('In Tonart: ' + lab, 'fit', (t, s, c) => {
+    const out = mtx4FitNotes(c, mode); if (!out) return false;
+    if (out.some(m => m == null || m < 0 || m > 127)) return 'range';
+    c.notes.forEach((n, j) => { n.n = out[j]; });
+    // Doppel (gleicher Ton zur gleichen Zeit) werden einer: längste Dauer, lautester Anschlag
+    const seen = new Map(), keep = [];
+    for (const n of c.notes) { const key = Math.round(n.t * 960) + ':' + n.n, o = seen.get(key); if (o) { o.d = Math.max(o.d, n.d); o.v = Math.max(o.v, n.v); } else { seen.set(key, n); keep.push(n); } }
+    if (keep.length !== c.notes.length) c.notes = keep;
+    if (mode !== 'pent') { const k = c.key || S.key; const nk = {root: k.root, scale: mode, src: 'user'}; if (k.ref != null) nk.ref = k.ref; c.key = nk; }
+    return true;
+  });
+}
+function mtx4Quant(grid) {
+  if (grid !== 'auto' && !GRID_STEP[grid]) return null;
+  return mtx4Run('Quantisieren ' + (grid === 'auto' ? 'Auto' : grid), 'quant', (t, s, c) => {
+    if (!c.notes.length) return false;
+    const g = quantizeClip(t, s, {grid, strength: 1, swing: .5}, null, {base: null});   // Vorschau-Weg: ohne eigenen ↶-Schritt
+    if (!g) return false;
+    const cc = S.tracks[t].clips[s];
+    if (g === 'off') delete cc.q; else cc.q = {grid: g, swing: .5, strength: 1};
+    return true;
+  });
+}
+/* ---------- Clip-Blatt: [Mehrere wählen] (Haken in openClipSheet) ---------- */
+function mtx4ClipSheet(g, B, t, s, clip) {
+  if (!clip || !mtx4Ok(t, s)) return;
+  const b = B('Mehrere wählen', () => { closeClipSheet(); mtx4Start(t, s); }, 'mtx4cs', 'Mehrere Clips wählen und zugleich transponieren, einpassen, quantisieren');
+  g.append(b);
+}
+/* ---------- „Wo finde ich …?“ (UI1) ---------- */
+(function mtx4Guide() {
+  try {
+    const L = ui1Entries(), E = (id, n, w, d, s, go, q) => ({id, n, w, d, s, go, q}); if (L.some(x => x.id === 'mtx4multi')) return;
+    L.push(E('mtx4multi', 'Mehrere Clips zugleich (transponieren, Tonart, Quantisieren)', 'Clip lange drücken › Mehrere wählen › weitere Clips antippen',
+      'Leiste: −12 −1 +1 +12, Stufe ▲▼, Tonart ▾ (Dur, Moll, Dorisch, Mixolydisch, Phrygisch, Pentatonik), Quant. ▾ – je ein ↶; Drum-Clips nur mit „Drums ±“.',
+      'mehrere clips gleichzeitig transponieren auswahl mehrfach tonart einpassen dorisch moll dur mixolydisch phrygisch pentatonik quantisieren stufe oktave halbton szene',
+      ui1G.clip(false), () => EL.clipSheet.querySelector('.mtx4cs')));
+  } catch (e) {}
+})();
+/* ---------- Test-Schnittstelle ---------- */
+const MTX4_API = {
+  start: (t, s) => mtx4Start(t, s), end: () => mtx4End(), on: () => M4.on, sel: () => mtx4List(), tap: (t, s) => mtx4Tap(t, s), scene: s => mtx4Scene(s),
+  set: L => { M4.sel = []; for (const [t, s] of L || []) mtx4Set(t, s, true); UI.dirty.grid = true; mtx4Sync(); return mtx4List(); },
+  semi: d => mtx4Semi(d), deg: d => mtx4Deg(d), fit: m => mtx4Fit(m), quant: g => mtx4Quant(g), drums: v => { M4.drums = !!v; mtx4Sync(); return M4.drums; },
+  fitNotes: (t, s, m) => { const c = S.tracks[t] && S.tracks[t].clips[s]; return c ? mtx4FitNotes(c, m) : null; },
+  info: () => ({on: M4.on, n: M4.n, last: M4.last, drums: M4.drums, hold: M4.hold.map(h => (h ? {s: h.s, bar: h.bar} : null)), lay: M4.lay}),
+  bar: () => M4.bar, sync: () => mtx4Sync(),
+};
+Object.assign(SYNQUENZER, {mtx4: MTX4_API});                /* MTX4: Test-API */
+/* MTX4-END */
 /* ===== KI1-BEGIN (Profi-Trennung auf der Spektral-Seite; Xander 14.11.: „Jedes Instrument muss voneinander gut trennbar sein“) =====
    Optional, nur auf Knopfdruck: MIT-lizenziertes 4-Spur-Modell (Drums, Bass, Gesang, Rest; je Spur ein LSTM-Netz als ONNX, ≈ 17 MB),
    feste Revision der Modell-Ablage, Laufzeit-Bibliothek in derselben festen Version wie G9A. Nichts davon beim App-Start.
