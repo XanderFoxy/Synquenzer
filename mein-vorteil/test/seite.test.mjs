@@ -452,9 +452,9 @@ test('Sprungmarken: alte #angebote/#vorteile/#konzerte zeigen auf Bereiche, Leis
     await page.waitForFunction(b => document.querySelector(`.sprung a[data-ziel="${b}"]`).getAttribute('aria-current') === 'true', bereich);
   }
   // Leiste: Start + alle Bereiche in Xanders Reihenfolge (Filme ist ein eigener Reiter); wischbar ohne seitliches Scrollen der Seite
-  assert.deepEqual(await page.locator('.sprung a .t').allInnerTexts(), ['Start', 'Deals', 'Preisfehler', 'Filme', 'Auftritte', 'Remix', 'Unterricht', 'Konzerte', 'Gewinnspiele', 'Krypto', 'Spartricks', 'Mehr']);
+  assert.deepEqual(await page.locator('.sprung a .t').allInnerTexts(), ['Start', 'Deals', 'Essen', 'Preisfehler', 'Filme', 'Auftritte', 'Remix', 'Unterricht', 'Konzerte', 'Gewinnspiele', 'Krypto', 'Spartricks', 'Mehr']);
   assert.equal(await page.locator('.sprung a[data-reiter="filme"]').count(), 1);
-  assert.equal(await page.locator('.sprung a svg.ic').count(), 12, 'jeder Bereich mit gezeichnetem Symbol');
+  assert.equal(await page.locator('.sprung a svg.ic').count(), 13, 'jeder Bereich mit gezeichnetem Symbol');
   // Push-Hilfe
   await page.locator('#push').click();
   assert.match(await page.locator('#push-hilfe').innerText(), /xander-schnaeppchen-b5cbf4442aaa9734f3/);
@@ -521,7 +521,7 @@ test('alte Adressen leiten sofort auf die neue Seite (mit passendem Abschnitt)',
       assert.equal(await page.locator('#umzug').isVisible(), true);
       assert.match(await page.locator('#umzug').innerText(), /Teilen → Zum Home-Bildschirm/);
       await page.locator('#umzug-zu').click();
-      assert.equal(await page.locator('#umzug').isVisible(), false);
+      await page.locator('#umzug').waitFor({ state: 'hidden', timeout: 5000 }); // unter Last (alle Testdateien parallel) nicht sofort weg
     } else assert.equal(await page.locator('#umzug').isVisible(), false, `${von}: Hinweis nur einmal`);
   }
   await page.goto(basis + '/mein-vorteil/');
@@ -748,7 +748,7 @@ test('Weiterleitungsseite an falscher Stelle (als /Synquenzer/ aus einem fremden
 test('als Home-Bildschirm-App: startet ohne Netz aus dem eigenen Service Worker', { skip: ohnePw }, async () => {
   const { ctx, page, fehler, zustand } = await oeffne({ satz: 'v2', sw: 'allow' });
   await page.waitForFunction(async () => (await navigator.serviceWorker.ready).active?.state === 'activated');
-  await page.waitForFunction(async () => !!(await caches.open('mein-vorteil-2').then(c => c.match('./'))));
+  await page.waitForFunction(async () => !!(await caches.open('mein-vorteil-3').then(c => c.match('./'))));
   await ctx.setOffline(true);
   zustand.offline = true;
   await page.reload();
@@ -1201,7 +1201,7 @@ test('Start „Heute für dich“ (v5): je Bereich eine Kachel mit den besten Tr
   assert.equal(await page.locator('#ort-name').innerText(), 'Heute für dich');
   assert.equal(await page.locator('.sprung a[data-ziel="start"]').getAttribute('aria-current'), 'true');
   const kacheln = page.locator('#kacheln a.kachel');
-  assert.deepEqual(await kacheln.evaluateAll(as => as.map(a => a.dataset.sprung)), ['deals', 'preisfehler', 'filme', 'auftritte', 'remix', 'unterricht', 'konzerte', 'gewinnspiele', 'krypto', 'spartricks', 'mehr']);
+  assert.deepEqual(await kacheln.evaluateAll(as => as.map(a => a.dataset.sprung)), ['deals', 'essen', 'preisfehler', 'filme', 'auftritte', 'remix', 'unterricht', 'konzerte', 'gewinnspiele', 'krypto', 'spartricks', 'mehr']);
   // nie leer: jede Kachel hat mindestens eine Zeile
   for (const k of await kacheln.all()) assert.ok(await k.locator('li').count() >= 1, await k.innerText());
   const t = b => page.locator(`#kacheln a[data-sprung="${b}"]`).innerText().then(nbsp);

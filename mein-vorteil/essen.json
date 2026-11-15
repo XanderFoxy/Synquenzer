@@ -1,0 +1,1597 @@
+{
+ "version": 1,
+ "stand": "2026-11-15",
+ "hinweis": "Ketten bundesweit und Lokale bis ca. 60 km um Döbeln (Luftlinie). Jede Angabe mit Quelle und Prüfdatum; Zeiten und Preise so, wie die Quelle sie nennt. „Bitte vor Ort prüfen“ heißt: nur aus Portalen, Stadtmagazinen oder Bewertungen, nicht von der eigenen Seite des Lokals. Franchise-Ketten: nur teilnehmende Filialen.",
+ "doebeln": {
+  "text": "In Döbeln selbst haben wir kein All-you-can-eat, kein XXL-Lokal, keine Ess-Challenge und keine feste Tages-Aktion gefunden (auch keine Abhol-Pizza-Aktion). Am nächsten: Chemnitz (33–37 km), Dresden (41–45 km), Leipzig (55–59 km).",
+  "quellen": [
+   {
+    "name": "speisekarte.de",
+    "url": "https://www.speisekarte.de/d%C3%B6beln/restaurant/freddy_fresh_pizza_doebeln"
+   }
+  ],
+  "geprueft": "2026-11-15"
+ },
+ "hinweise": {
+  "xxl": "Ess-Challenge: gerade keine laufende gefunden. Die einzige bekannte (MaxiMahl XXL, Dresden, 1,5 kg Schnitzel in 45 Min.) hat laut mehreren Hinweisen Ende 2025 geschlossen.",
+  "pizza": "Abhol-Pizza zum halben Preis: gerade keine laufende Aktion (Stand 15.11.2026). Domino’s macht sie immer wieder – unten unter „Kommt immer wieder“.",
+  "gratis": "Ohne Kauf gratis ist beim Essen selten. Was es am Geburtstag gratis gibt und Gratis-Proben stehen in Spartricks."
+ },
+ "eintraege": [
+  {
+   "id": "mcd-flashback-mcsundae",
+   "rubrik": "ketten",
+   "art": "aktionstag",
+   "kette": "McDonald's",
+   "titel": "McSundae für 1 € (Flashback Deal, nur App)",
+   "region": [
+    "bundesweit"
+   ],
+   "wann": "Mo 16.11. – Do 19.11.2026",
+   "ab": "2026-11-16",
+   "bis": "2026-11-19",
+   "bedingung": "Nur registrierte App-Nutzer, teilnehmende Restaurants, 1× täglich einlösbar, solange Vorrat; Frühstücksrestaurants ab 10:30 Uhr. Teil der Aktion 'Endlich wieder bei Mecces' (26.10.–24.11.2026).",
+   "gratis": false,
+   "quellen": [
+    {
+     "name": "McDonald's Newsroom",
+     "url": "https://www.mcdonalds.com/de/de-de/GermanyNewsroom/article/endlich-wieder-bei-mecces-2026.html"
+    },
+    {
+     "name": "DealDoktor",
+     "url": "https://www.dealdoktor.de/mcdonalds-flashback-deals/"
+    }
+   ],
+   "geprueft": "2026-11-15",
+   "sicher": "ja"
+  },
+  {
+   "id": "mcd-flashback-cheeseburger",
+   "rubrik": "ketten",
+   "art": "aktionstag",
+   "kette": "McDonald's",
+   "titel": "Cheeseburger für 1 € (Flashback Deal, nur App)",
+   "region": [
+    "bundesweit"
+   ],
+   "wann": "Mo 23.11. – Di 24.11.2026 (letzter Flashback Deal)",
+   "ab": "2026-11-23",
+   "bis": "2026-11-24",
+   "bedingung": "Nur registrierte App-Nutzer, teilnehmende Restaurants, 1× täglich, solange Vorrat; Frühstücksrestaurants ab 10:30 Uhr. Vergleichspreis laut Deal-Seite 2,50 €.",
+   "gratis": false,
+   "quellen": [
+    {
+     "name": "McDonald's Newsroom",
+     "url": "https://www.mcdonalds.com/de/de-de/GermanyNewsroom/article/endlich-wieder-bei-mecces-2026.html"
+    },
+    {
+     "name": "MonsterDealz",
+     "url": "https://www.monsterdealz.de/haushalt-garten/lebensmittel/mcdonalds-flashback-deals/1614042"
+    }
+   ],
+   "geprueft": "2026-11-15",
+   "sicher": "ja"
+  },
+  {
+   "id": "mcd-app-coupons",
+   "rubrik": "ketten",
+   "art": "app",
+   "kette": "McDonald's",
+   "titel": "App-Coupons (wechseln, teils persönlich)",
+   "region": [
+    "bundesweit"
+   ],
+   "wann": "dauerhaft; Coupons wechseln laufend",
+   "bedingung": "McDonald's-App mit Konto; teilnehmende Restaurants; nicht jeder sieht dieselben Coupons.",
+   "gratis": false,
+   "spartricks": {
+    "chip": "gratis",
+    "id": "fastfood-apps"
+   },
+   "quellen": [
+    {
+     "name": "App Store",
+     "url": "https://apps.apple.com/DE/app/id524943492"
+    }
+   ],
+   "geprueft": "2026-11-15",
+   "sicher": "ja"
+  },
+  {
+   "id": "mcd-rewards",
+   "rubrik": "ketten",
+   "art": "app",
+   "kette": "McDonald's",
+   "titel": "MyMcDonald's Rewards: 10 Punkte je bezahltem Euro",
+   "region": [
+    "bundesweit"
+   ],
+   "wann": "dauerhaft",
+   "bedingung": "Nur mit App-Konto. Punkte gegen Produkte tauschen; wie viele Punkte eine Prämie kostet, ändert sich (in der App nachsehen).",
+   "gratis": false,
+   "spartricks": {
+    "chip": "gratis",
+    "id": "fastfood-apps"
+   },
+   "quellen": [
+    {
+     "name": "GIGA",
+     "url": "https://www.giga.de/artikel/mcdonalds-app-punkte-sammeln-bei-mymcdonalds-rewards-so-gehts/"
+    },
+    {
+     "name": "Tageskarte",
+     "url": "https://www.tageskarte.io/marketing/detail/mcdonalds-startet-deutschlandweites-digitales-app-bonusprogramm.html"
+    }
+   ],
+   "geprueft": "2026-11-15",
+   "sicher": "ja"
+  },
+  {
+   "id": "mcd-feedback",
+   "rubrik": "ketten",
+   "art": "dauerhaft",
+   "kette": "McDonald's",
+   "titel": "'Dein Feedback': Umfrage mit Bon-Code gibt Gutschein",
+   "region": [
+    "bundesweit"
+   ],
+   "wann": "dauerhaft (laut Ratgeber)",
+   "bedingung": "Code vom Kassenbon auf mcdonalds.de/deinfeedback eingeben; Gutschein zuletzt: kleines Produkt (z. B. kleine Pommes, Kaffee, 0,25-l-Getränk) für 0,50 €. 2026 melden Nutzer, dass teils keine Gutscheine mehr kommen – bitte selbst prüfen.",
+   "gratis": false,
+   "spartricks": {
+    "chip": "gratis",
+    "id": "fastfood-apps"
+   },
+   "quellen": [
+    {
+     "name": "MonsterDealz",
+     "url": "https://www.monsterdealz.de/magazin/mcdonalds-feedback"
+    },
+    {
+     "name": "mydealz",
+     "url": "https://www.mydealz.de/diskussion/mcdonalds-50-cent-gutscheine-fur-umfrage-kommen-nicht-mehr-2824222"
+    }
+   ],
+   "geprueft": "2026-11-15",
+   "sicher": "pruefen"
+  },
+  {
+   "id": "bk-coupons",
+   "rubrik": "ketten",
+   "art": "dauerhaft",
+   "kette": "Burger King",
+   "titel": "Coupon-Heft / PDF-Coupons",
+   "region": [
+    "bundesweit"
+   ],
+   "wann": "aktuelles Heft: Sa 07.11.2026 – Fr 01.01.2027",
+   "ab": "2026-11-07",
+   "bis": "2027-01-01",
+   "bedingung": "Teilnehmende Restaurants; nicht im Lieferservice, nicht mit anderen Rabatten. Welche Produkte zu welchem Preis: im Heft bzw. in der BK-App unter 'Coupons' (Inhalt nicht geprüft).",
+   "gratis": false,
+   "quellen": [
+    {
+     "name": "mydealz",
+     "url": "https://www.mydealz.de/deals/burger-king-coupons-gultig-von-sa-07112026-bis-fr-01012027-2864887"
+    }
+   ],
+   "geprueft": "2026-11-15",
+   "sicher": "pruefen"
+  },
+  {
+   "id": "bk-kronen",
+   "rubrik": "ketten",
+   "art": "app",
+   "kette": "Burger King",
+   "titel": "MyBurgerKing: 10 Kronen je Euro, Prämien ab 200 Kronen",
+   "region": [
+    "bundesweit"
+   ],
+   "wann": "dauerhaft (seit April 2024)",
+   "bedingung": "BK-App mit MyBurgerKing-Konto; ab 200 Kronen z. B. Pommes oder Softdrink; aktuelle Prämienliste in der App. Einige Franchise-Filialen nehmen App-Coupons nicht an.",
+   "gratis": false,
+   "spartricks": {
+    "chip": "gratis",
+    "id": "fastfood-apps"
+   },
+   "quellen": [
+    {
+     "name": "mydealz",
+     "url": "https://www.mydealz.de/magazin/burger-king-app-myburgerking-richtig-im-alltag-nutzen-und-sparen-29120"
+    },
+    {
+     "name": "HOGAPAGE",
+     "url": "https://www.hogapage.de/nachrichten/wirtschaft/gastronomie/burger-king-startet-mit-eigenem-treueprogramm"
+    }
+   ],
+   "geprueft": "2026-11-15",
+   "sicher": "ja"
+  },
+  {
+   "id": "bk-feedback",
+   "rubrik": "ketten",
+   "art": "dauerhaft",
+   "kette": "Burger King",
+   "titel": "Bon-Umfrage: kleine King Pommes oder kleiner Kaffee",
+   "region": [
+    "bundesweit"
+   ],
+   "wann": "laufend (Hinweis steht hinten auf dem Kassenbon)",
+   "bedingung": "Braucht einen Kassenbon von einem Kauf; ca. 1 Minute Umfrage, dann Code. Einlösen nur an der besetzten Kasse, nicht in der App. Nicht alle Filialen machen mit.",
+   "gratis": false,
+   "spartricks": {
+    "chip": "gratis",
+    "id": "fastfood-apps"
+   },
+   "quellen": [
+    {
+     "name": "mydealz",
+     "url": "https://www.mydealz.de/deals/burger-king-pommes-small-oder-kaffee-gratis-2802971"
+    }
+   ],
+   "geprueft": "2026-11-15",
+   "sicher": "pruefen"
+  },
+  {
+   "id": "dominos-app",
+   "rubrik": "pizza",
+   "art": "app",
+   "kette": "Domino's",
+   "titel": "App-Bestellung: 10 % automatisch",
+   "region": [
+    "bundesweit"
+   ],
+   "wann": "dauerhaft (laut Deal-Seite)",
+   "bedingung": "Bestellung über die Domino's-App, ohne Code. Ob auch bei Abholung: nicht eindeutig belegt.",
+   "gratis": false,
+   "quellen": [
+    {
+     "name": "mydealz",
+     "url": "https://www.mydealz.de/gutscheine/dominos-de"
+    }
+   ],
+   "geprueft": "2026-11-15",
+   "sicher": "pruefen"
+  },
+  {
+   "id": "dominos-abhol-muster",
+   "rubrik": "pizza",
+   "art": "abholung",
+   "kette": "Domino's",
+   "titel": "Abhol-Pizza zum halben Preis – kommt immer wieder",
+   "region": [
+    "bundesweit"
+   ],
+   "wann": "wechselnd; zuletzt Mega Pizza Woche 21.–27.09.2026 (Classic-Pizzen 4,99 € statt 9,99 €, nur Abholung) und dienstags 50 % bis 26.05.2026. Am 15.11.2026 keine laufende Abhol-Aktion gefunden.",
+   "bedingung": "Teilnehmende Filialen; Dienstags-Code ging nur dienstags. In der Domino's-App nachsehen.",
+   "gratis": false,
+   "nurHinweis": true,
+   "quellen": [
+    {
+     "name": "mydealz",
+     "url": "https://www.mydealz.de/deals/dominos-mega-pizza-woche-classic-traditional-pizzen-fur-499-euro-bei-abholung-2839719"
+    },
+    {
+     "name": "mydealz",
+     "url": "https://www.mydealz.de/magazin/50-rabatt-bei-dominos-euer-ultimativer-pizza-hack-fuer-jeden-dienstag-bis-ende-mai-61191"
+    }
+   ],
+   "geprueft": "2026-11-15",
+   "sicher": "pruefen"
+  },
+  {
+   "id": "pizzahut-unlimited",
+   "rubrik": "ayce",
+   "art": "wochentag",
+   "kette": "Pizza Hut",
+   "titel": "Unlimited Pizza + Softdrinks für 14,99 € (All you can eat)",
+   "region": [
+    "bundesweit"
+   ],
+   "wann": "Mo–Fr bis 17 Uhr; gemeldetes Ende 13.11.2026",
+   "wochentage": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "zeit": {
+    "bis": "17:00",
+    "text": "bis 17 Uhr"
+   },
+   "bis": "2026-11-13",
+   "bedingung": "Nur im Restaurant, teilnehmende Filialen (laut Deal u. a. Leipzig, Bremen, Wilhelmshaven); 6 Pizzasorten, 5 Softdrinks. Ob verlängert: Filiale fragen.",
+   "gratis": false,
+   "quellen": [
+    {
+     "name": "mydealz",
+     "url": "https://www.mydealz.de/deals/pizza-hut-mo-fr-bis-17-uhr-unlimited-pizza-getranke-6-sorten-pizza-5-softdrinks-zur-auswahl-2855277"
+    }
+   ],
+   "geprueft": "2026-11-15",
+   "sicher": "pruefen"
+  },
+  {
+   "id": "kfc-deals",
+   "rubrik": "ketten",
+   "art": "app",
+   "kette": "KFC",
+   "titel": "Deals in der App / auf kfc.de (Rubrik 'Deals')",
+   "region": [
+    "bundesweit"
+   ],
+   "wann": "dauerhaft; Deals wechseln",
+   "bedingung": "Preise erst nach Wahl des Restaurants (Franchise, je Filiale anders). Kein Coupon-Heft. Dienstags-Deals gibt es nur lokal an gelisteten Standorten.",
+   "gratis": false,
+   "quellen": [
+    {
+     "name": "MonsterDealz",
+     "url": "https://www.monsterdealz.de/magazin/kfc-gutscheine"
+    },
+    {
+     "name": "mydealz",
+     "url": "https://www.mydealz.de/deals/kfc-dienstag-deals-lokal-2757236"
+    }
+   ],
+   "geprueft": "2026-11-15",
+   "sicher": "pruefen"
+  },
+  {
+   "id": "subway-sub-des-tages",
+   "rubrik": "ketten",
+   "art": "wochentag",
+   "kette": "Subway",
+   "titel": "Sub des Tages: 15 cm 3,99 €, Footlong 7,98 €",
+   "region": [
+    "bundesweit"
+   ],
+   "wann": "täglich, jeden Tag ein anderer Sub (Plan Stand Mai 2026)",
+   "wochentage": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+   ],
+   "plan": {
+    "1": "Italian B.M.T.",
+    "2": "Nacho Chicken",
+    "3": "Plant-based Chicken Teriyaki",
+    "4": "Chicken Fajita",
+    "5": "Tuna",
+    "6": "Chicken Tandoori",
+    "7": "BBQ Rib"
+   },
+   "bedingung": "Menü mit Getränk + Cookie 5,99 € (15 cm) bzw. 9,98 € (Footlong). Regional verschieden, einzelne Filialen machen nicht mit; App-Gutscheine gelten meist nicht für den Sub des Tages.",
+   "gratis": false,
+   "quellen": [
+    {
+     "name": "mydealz",
+     "url": "https://www.mydealz.de/magazin/subway-gutscheine-aktuelle-coupons-und-angebote-im-ueberblick-9778"
+    },
+    {
+     "name": "HOGAPAGE",
+     "url": "https://www.hogapage.de/nachrichten/wirtschaft/gastronomie/subway-bringt-das-sub-des-tages-zur%C3%BCrck/"
+    }
+   ],
+   "geprueft": "2026-11-15",
+   "sicher": "pruefen"
+  },
+  {
+   "id": "subway-rewards",
+   "rubrik": "ketten",
+   "art": "app",
+   "kette": "Subway",
+   "titel": "Subway Rewards: 10 % zurück als Subway Cash",
+   "region": [
+    "bundesweit"
+   ],
+   "wann": "seit 20.08.2026",
+   "bedingung": "App-Konto; 10 € Umsatz = 1 € Guthaben, gilt laut Bericht auch beim Sub des Tages; alte Stufen entfallen.",
+   "gratis": false,
+   "quellen": [
+    {
+     "name": "mydealz",
+     "url": "https://www.mydealz.de/magazin/subway-gutscheine-aktuelle-coupons-und-angebote-im-ueberblick-9778"
+    }
+   ],
+   "geprueft": "2026-11-15",
+   "sicher": "pruefen"
+  },
+  {
+   "id": "subway-app-gutscheine",
+   "rubrik": "ketten",
+   "art": "app",
+   "kette": "Subway",
+   "titel": "App-Gutscheine (2 für 1, 30 %, 3 € auf Footlong) – wechseln",
+   "region": [
+    "bundesweit"
+   ],
+   "wann": "wechselnd; zuletzt bis 10.11.2026. Am 15.11.2026 keinen neuen gefunden.",
+   "bedingung": "Je Konto 1×, nicht mit anderen Angeboten, nicht für den Sub des Tages; teilnehmende Filialen.",
+   "gratis": false,
+   "nurHinweis": true,
+   "quellen": [
+    {
+     "name": "mydealz",
+     "url": "https://www.mydealz.de/deals/subway-app-gutschein-3-eur-rabatt-auf-ein-footlong-sub-und-zwei-15-cm-subs-zum-preis-von-einem-2-fur-1-bis-101126-2864429"
+    }
+   ],
+   "geprueft": "2026-11-15",
+   "sicher": "pruefen"
+  },
+  {
+   "id": "ikea-heissgetraenk",
+   "rubrik": "ketten",
+   "art": "dauerhaft",
+   "kette": "IKEA Restaurant",
+   "titel": "Gratis Heißgetränk bei jedem Besuch (IKEA Family)",
+   "region": [
+    "bundesweit"
+   ],
+   "wann": "dauerhaft, jeder Besuch",
+   "bedingung": "Kostenlose IKEA-Family-Karte (App) an der Kasse zeigen; Kaffee, Tee oder Kakao. Laut Nutzern kein Latte/Cappuccino. Kein Einkauf nötig (laut Quellen nicht Voraussetzung).",
+   "gratis": true,
+   "spartricks": {
+    "chip": "gratis",
+    "id": "ikea-heissgetraenk"
+   },
+   "quellen": [
+    {
+     "name": "IKEA",
+     "url": "https://www.ikea.com/de/de/ikea-family/"
+    },
+    {
+     "name": "mydealz",
+     "url": "https://www.mydealz.de/deals/ikea-gratis-heissgetrank-fur-family-card-mitglieder-dauerhaft-2752053"
+    }
+   ],
+   "geprueft": "2026-11-15",
+   "sicher": "ja"
+  },
+  {
+   "id": "ikea-julbord",
+   "rubrik": "ayce",
+   "art": "aktionstag",
+   "kette": "IKEA Restaurant",
+   "titel": "Julbord: schwedisches Weihnachts-All-you-can-eat",
+   "region": [
+    "bundesweit"
+   ],
+   "wann": "meist Do 10.12.2026, meist ab 17 Uhr; Dresden hat zusätzliche Termine (Tage auf der Seite des Hauses prüfen)",
+   "zeit": {
+    "von": "17:00",
+    "text": "meist ab 17 Uhr"
+   },
+   "ab": "2026-12-10",
+   "bis": "2026-12-10",
+   "bedingung": "Nur in 23 von 55 Häusern; Ticket vorab nötig (teils nur für Family, teils ausverkauft). Meist 19 € mit Family (bis 19,99 €), ohne Family z. B. 24,95 € (Berlin-Lichtenberg); Kinder bis 12 meist gratis. Ob Leipzig/Chemnitz mitmachen: nicht belegt.",
+   "gratis": false,
+   "quellen": [
+    {
+     "name": "mydealz",
+     "url": "https://www.mydealz.de/deals/allyoucaneat-weihnachtsbuffet-bei-ikea-fur-19eur-family-mitglieder-ohne-2495eur-julbord-2026-verschiedene-einrichtungshauser-bei-ikea-2863906"
+    },
+    {
+     "name": "MonsterDealz",
+     "url": "https://www.monsterdealz.de/magazin/ikea-weihnachtsbuffet"
+    }
+   ],
+   "geprueft": "2026-11-15",
+   "sicher": "pruefen"
+  },
+  {
+   "id": "ikea-family-november",
+   "rubrik": "ketten",
+   "art": "aktionstag",
+   "kette": "IKEA Restaurant",
+   "titel": "Family-Preise im November: XL-Chokladbulle 1,50 €, 2 Entenkeulen 19,95 €",
+   "region": [
+    "bundesweit"
+   ],
+   "wann": "bis 30.11.2026 (6 Glögg für 19,95 € bis Ende Dezember)",
+   "bis": "2026-11-30",
+   "bedingung": "IKEA-Family-Karte; Schwedenbistro/Restaurant vor Ort, bundesweit laut Community-Beitrag (Chokladbulle statt 2,50 €, Entenkeulen statt 25,90 €).",
+   "gratis": false,
+   "quellen": [
+    {
+     "name": "mydealz",
+     "url": "https://www.mydealz.de/deals/ikea-family-bundesweit-xl-chokladbulle-150-eur-2-entenkeule-1995-eur-2-fisch-hotdog-4-eur-6-glogg-1995-eur-2862759"
+    }
+   ],
+   "geprueft": "2026-11-15",
+   "sicher": "pruefen"
+  },
+  {
+   "id": "ikea-kindermenue-november",
+   "rubrik": "ketten",
+   "art": "aktionstag",
+   "kette": "IKEA Restaurant",
+   "titel": "Kindermenü mit gratis Stoff-Panda + Götterspeise",
+   "region": [
+    "bundesweit"
+   ],
+   "wann": "November 2026, bis 30.11.2026",
+   "bis": "2026-11-30",
+   "bedingung": "IKEA Family; beim Kauf eines Kindermenüs (Köttbullar oder Plantbullar); bundesweit nicht sicher bestätigt.",
+   "gratis": false,
+   "quellen": [
+    {
+     "name": "mydealz",
+     "url": "https://www.mydealz.de/deals/ikea-family-gratis-stoffpanda-gotterspeise-zum-kindermenu-kottbullar-oder-plantbullar-im-november-2862546"
+    }
+   ],
+   "geprueft": "2026-11-15",
+   "sicher": "pruefen"
+  },
+  {
+   "id": "ikea-fisk-freitag",
+   "rubrik": "ketten",
+   "art": "wochentag",
+   "kette": "IKEA Restaurant",
+   "titel": "FISK Freitag: Fisch-Wochenangebot",
+   "region": [
+    "bundesweit"
+   ],
+   "wann": "freitags",
+   "wochentage": [
+    5
+   ],
+   "bedingung": "Wöchentliches Fischangebot; der Sommer-Rabatt (ca. 3,95 €) endete 31.08.2026 – aktuellen Preis vor Ort prüfen.",
+   "gratis": false,
+   "quellen": [
+    {
+     "name": "mydealz",
+     "url": "https://www.mydealz.de/deals/ikea-restaurant-sommerangebote-fisk-friday-plantbullar-asia-style-sommar-meny-2805596"
+    }
+   ],
+   "geprueft": "2026-11-15",
+   "sicher": "pruefen"
+  },
+  {
+   "id": "nordsee-app",
+   "rubrik": "ketten",
+   "art": "app",
+   "kette": "Nordsee",
+   "titel": "App-Coupons + myNordsee (10 Fischpunkte je Euro)",
+   "region": [
+    "bundesweit"
+   ],
+   "wann": "dauerhaft; Coupons wechseln",
+   "bedingung": "Nordsee-App; manche Coupons gibt es nur in der App. Nicht an Autobahn-Raststätten; meist nur ein Coupon je Bestellung.",
+   "gratis": false,
+   "quellen": [
+    {
+     "name": "mydealz",
+     "url": "https://www.mydealz.de/magazin/nordsee-coupons-gutscheine-im-ueberblick-so-spart-ihr-jetzt-30332"
+    }
+   ],
+   "geprueft": "2026-11-15",
+   "sicher": "pruefen"
+  },
+  {
+   "id": "starbucks-rewards",
+   "rubrik": "ketten",
+   "art": "app",
+   "kette": "Starbucks",
+   "titel": "Starbucks Rewards: 3 Sterne je Euro, 150 Sterne = Getränk",
+   "region": [
+    "bundesweit"
+   ],
+   "wann": "dauerhaft",
+   "bedingung": "App oder Karte an der Kasse; teilnehmende Filialen in Deutschland. Gold ab 450 Sternen (Extras, Geburtstagsgetränk – siehe Spartricks). Sterne verfallen laut Ratgeber nach 2 Jahren.",
+   "gratis": false,
+   "quellen": [
+    {
+     "name": "App Store",
+     "url": "https://apps.apple.com/DE/app/id948562829"
+    },
+    {
+     "name": "Starbucks",
+     "url": "https://www.starbucks.de/en/rewards"
+    }
+   ],
+   "geprueft": "2026-11-15",
+   "sicher": "ja"
+  },
+  {
+   "id": "tgtg",
+   "rubrik": "pizza",
+   "art": "abholung",
+   "kette": "Too Good To Go (Bäcker, Restaurants, Ketten)",
+   "titel": "Überraschungstüten 25–50 % unter Warenwert",
+   "region": [
+    "bundesweit"
+   ],
+   "wann": "täglich, im Abholfenster des Ladens",
+   "bedingung": "In der App reservieren und bezahlen, im angegebenen Zeitfenster abholen; Inhalt ist eine Überraschung; der Laden kann bis 1 h vorher absagen.",
+   "gratis": false,
+   "spartricks": {
+    "chip": "gratis",
+    "id": "too-good-to-go"
+   },
+   "quellen": [
+    {
+     "name": "Too Good To Go",
+     "url": "https://www.toogoodtogo.com/de/b2b/surplus-food-marketplace-too-good-to-go"
+    }
+   ],
+   "geprueft": "2026-11-15",
+   "sicher": "ja"
+  },
+  {
+   "id": "peterpane-abholung",
+   "rubrik": "pizza",
+   "art": "abholung",
+   "kette": "Peter Pane",
+   "titel": "20 % bei Abholung (Online-Bestellung)",
+   "region": [
+    "bundesweit"
+   ],
+   "wann": "dauerhaft (Stand Sept. 2026)",
+   "bedingung": "Online bestellen und selbst abholen, ab 14,90 € Bestellwert.",
+   "gratis": false,
+   "quellen": [
+    {
+     "name": "DealDoktor",
+     "url": "https://www.dealdoktor.de/peter-pane-gutschein/"
+    },
+    {
+     "name": "MonsterDealz",
+     "url": "https://www.monsterdealz.de/magazin/peter-pane-gutschein"
+    }
+   ],
+   "geprueft": "2026-11-15",
+   "sicher": "pruefen"
+  },
+  {
+   "id": "peterpane-meatless-monday",
+   "rubrik": "ketten",
+   "art": "wochentag",
+   "kette": "Peter Pane",
+   "titel": "Meatless Monday: alle vegetarischen/veganen Burger 9,90 €",
+   "region": [
+    "bundesweit"
+   ],
+   "wann": "montags (Stand Sept. 2026)",
+   "wochentage": [
+    1
+   ],
+   "bedingung": "Im Restaurant; Stand der Übersicht September 2026.",
+   "gratis": false,
+   "quellen": [
+    {
+     "name": "MonsterDealz",
+     "url": "https://www.monsterdealz.de/magazin/peter-pane-gutschein"
+    }
+   ],
+   "geprueft": "2026-11-15",
+   "sicher": "pruefen"
+  },
+  {
+   "id": "peterpane-mittag",
+   "rubrik": "ketten",
+   "art": "wochentag",
+   "kette": "Peter Pane",
+   "titel": "Peter's Pause: Mittagsdeal 10,00 €",
+   "region": [
+    "bundesweit"
+   ],
+   "wann": "Mo–Fr mittags (Stand Sept. 2026)",
+   "wochentage": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "bedingung": "Im Restaurant; Uhrzeit vor Ort prüfen.",
+   "gratis": false,
+   "quellen": [
+    {
+     "name": "MonsterDealz",
+     "url": "https://www.monsterdealz.de/magazin/peter-pane-gutschein"
+    }
+   ],
+   "geprueft": "2026-11-15",
+   "sicher": "pruefen"
+  },
+  {
+   "id": "peterpane-family-sunday",
+   "rubrik": "ketten",
+   "art": "wochentag",
+   "kette": "Peter Pane",
+   "titel": "Family Sunday: Kindermenü 5,90 € statt 10,90 €",
+   "region": [
+    "bundesweit"
+   ],
+   "wann": "sonntags (Stand Sept. 2026)",
+   "wochentage": [
+    7
+   ],
+   "bedingung": "Im Restaurant; Kindermenü.",
+   "gratis": false,
+   "quellen": [
+    {
+     "name": "MonsterDealz",
+     "url": "https://www.monsterdealz.de/magazin/peter-pane-gutschein"
+    }
+   ],
+   "geprueft": "2026-11-15",
+   "sicher": "pruefen"
+  },
+  {
+   "id": "burgerme-lunch",
+   "rubrik": "pizza",
+   "art": "dauerhaft",
+   "kette": "burgerme",
+   "titel": "Burger-Lunch-Deals täglich 11–16 Uhr",
+   "region": [
+    "bundesweit"
+   ],
+   "wann": "täglich 11–16 Uhr",
+   "wochentage": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+   ],
+   "zeit": {
+    "von": "11:00",
+    "bis": "16:00",
+    "text": "11–16 Uhr"
+   },
+   "bedingung": "Lieferung oder Abholung (Abholung meist günstiger, Bezahlung vor Ort möglich). Codes oft mit widersprüchlichen Daten – im Shop prüfen.",
+   "gratis": false,
+   "quellen": [
+    {
+     "name": "Sparwelt",
+     "url": "https://www.sparwelt.de/gutscheine/burgerme"
+    }
+   ],
+   "geprueft": "2026-11-15",
+   "sicher": "pruefen"
+  },
+  {
+   "id": "losteria-amici",
+   "rubrik": "ketten",
+   "art": "app",
+   "kette": "L'Osteria",
+   "titel": "Amici Club App: Herzen sammeln, ADAC-Mitglieder 12,5 %",
+   "region": [
+    "bundesweit"
+   ],
+   "wann": "dauerhaft (ADAC-Angebot Stand Juni 2026)",
+   "bedingung": "App 'L'Osteria Amici Club'. 12,5 % nur mit ADAC-Mitgliedschaft (kostet), Nummer in der App hinterlegen – Karte zeigen reicht nicht; im Restaurant und To Go.",
+   "gratis": false,
+   "quellen": [
+    {
+     "name": "mydealz",
+     "url": "https://www.mydealz.de/deals/losteria-125-rabatt-fur-adac-mitglieder-2792519"
+    },
+    {
+     "name": "App Store",
+     "url": "https://apps.apple.com/DE/app/id6446886920"
+    }
+   ],
+   "geprueft": "2026-11-15",
+   "sicher": "pruefen"
+  },
+  {
+   "id": "fiveguys-pass",
+   "rubrik": "ketten",
+   "art": "app",
+   "kette": "Five Guys",
+   "titel": "Rewards Pass in der Handy-Wallet (ohne App)",
+   "region": [
+    "bundesweit"
+   ],
+   "wann": "dauerhaft",
+   "bedingung": "Pass in Apple/Google Wallet; Prämien sammeln und einlösen in jedem Five Guys in Deutschland. Welche Prämien: im Pass.",
+   "gratis": false,
+   "quellen": [
+    {
+     "name": "Five Guys",
+     "url": "https://www.fiveguys.de/en/support-hub/faqs/"
+    }
+   ],
+   "geprueft": "2026-11-15",
+   "sicher": "ja"
+  },
+  {
+   "id": "telekom-magenta-mittwoch",
+   "rubrik": "ketten",
+   "art": "wochentag",
+   "kette": "Telekom Magenta Moments",
+   "titel": "Magenta Mittwoch: jeden Mittwoch neue Gutscheine (manchmal Essen)",
+   "region": [
+    "bundesweit"
+   ],
+   "wann": "mittwochs, seit November 2026",
+   "wochentage": [
+    3
+   ],
+   "bedingung": "Nur Telekom-Privatkunden (nicht congstar/fraenk), MeinMagenta-App. Früher z. B. Subway 15 cm gratis oder Nordsee-Gutschein – ob Essen dabei ist, wechselt.",
+   "gratis": false,
+   "quellen": [
+    {
+     "name": "Telekom",
+     "url": "https://www.telekom.com/de/newsroom/aktuelles/medieninformationen/2026/11/was-sich-bei-magenta-moments-am-mittwoch-aendert"
+    }
+   ],
+   "geprueft": "2026-11-15",
+   "sicher": "pruefen"
+  },
+  {
+   "id": "lidlplus-partner",
+   "rubrik": "ketten",
+   "art": "app",
+   "kette": "Lidl Plus (Partner-Gutscheine)",
+   "titel": "Partner-Gutscheine für Ketten in der Lidl-Plus-App",
+   "region": [
+    "bundesweit"
+   ],
+   "wann": "wechselnd; 2026 z. B. Subway 2 für 1 (bis 29.06.) und Hans im Glück 5 € (bis 02.08.). Am 15.11.2026 keinen laufenden gefunden.",
+   "bedingung": "Lidl-Plus-App, Bereich Partnervorteile.",
+   "gratis": false,
+   "nurHinweis": true,
+   "quellen": [
+    {
+     "name": "mydealz",
+     "url": "https://www.mydealz.de/deals/lidl-plus-5eur-rabatt-bei-hans-im-gluck-bei-bestellung-einer-hauptspeise-code-im-lidl-plus-konto-partnervorteile-gultig-bis-2-august-2803823"
+    }
+   ],
+   "geprueft": "2026-11-15",
+   "sicher": "pruefen"
+  },
+  {
+   "id": "dd-el-rodizio",
+   "rubrik": "ayce",
+   "art": "ayce",
+   "ort": "Dresden",
+   "titel": "El Rodizio (Steakhouse am Postplatz)",
+   "was": "Rodizio: Fleischspieße am Tisch, so viel man mag (auch vegetarisches Rodizio)",
+   "adresse": "Wilsdruffer Str. 22, 01067 Dresden",
+   "region": [
+    "Dresden"
+   ],
+   "km": 44,
+   "wann": "Öffnungstage/Uhrzeit nicht belegt",
+   "preis": "39,00 € p. P.; 44,00 € mit Caipirinha; Kinder 5–12 J. 13,00 €",
+   "bedingung": "Getränke extra",
+   "gratis": false,
+   "quellen": [
+    {
+     "name": "speisekarte.de",
+     "url": "https://www.speisekarte.de/dresden/restaurant/el_rodizio1/speisekarte"
+    },
+    {
+     "name": "PRINZ",
+     "url": "https://prinz.de/dresden/toplist/319-all-you-can-eat/"
+    }
+   ],
+   "quelleStand": "2026-05-19",
+   "geprueft": "2026-11-15",
+   "sicher": "pruefen"
+  },
+  {
+   "id": "dd-mythos-palace",
+   "rubrik": "ayce",
+   "art": "ayce",
+   "ort": "Dresden",
+   "titel": "Mythos Palace (griechisch)",
+   "was": "Griechisches Buffet, laut Inhaber über 45 Gerichte",
+   "adresse": "Provianthofstraße 5, 01099 Dresden",
+   "region": [
+    "Dresden"
+   ],
+   "km": 45,
+   "wann": "täglich ab 18 Uhr",
+   "wochentage": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+   ],
+   "zeit": {
+    "von": "18:00",
+    "text": "ab 18 Uhr"
+   },
+   "preis": "nicht belegt (Portal-Schätzung 20–30 € p. P.)",
+   "bedingung": "",
+   "gratis": false,
+   "quellen": [
+    {
+     "name": "PRINZ",
+     "url": "https://prinz.de/dresden/toplist/319-all-you-can-eat/"
+    },
+    {
+     "name": "speisekarte.de",
+     "url": "https://www.speisekarte.de/dresden/restaurant/mythos_palace_griechisches_restaurant/bewertung"
+    }
+   ],
+   "quelleStand": "2022–2025 (PRINZ, nicht genau datiert)",
+   "geprueft": "2026-11-15",
+   "sicher": "pruefen"
+  },
+  {
+   "id": "dd-play-off",
+   "rubrik": "ayce",
+   "art": "ayce",
+   "ort": "Dresden",
+   "titel": "Play Off (Diner, Altmarkt-Galerie)",
+   "was": "Montags Spare-Rib-Buffet, mittwochs Burger-Buffet; Frühstücksbuffet werktags und samstags",
+   "adresse": "Webergasse 1a, 01067 Dresden",
+   "region": [
+    "Dresden"
+   ],
+   "km": 44,
+   "wann": "Mo Spare Ribs, Mi Burger (Uhrzeit nicht belegt)",
+   "wochentage": [
+    1,
+    3
+   ],
+   "preis": "nicht belegt (Karte: Spare Ribs ca. 500 g einzeln 22,50 €, Stand 14.05.2026)",
+   "bedingung": "Buffet-Tage nur bei PRINZ genannt, auf der Dresdner Karte nicht bestätigt",
+   "gratis": false,
+   "quellen": [
+    {
+     "name": "PRINZ",
+     "url": "https://prinz.de/dresden/toplist/319-all-you-can-eat/"
+    },
+    {
+     "name": "speisekarte.de",
+     "url": "https://www.speisekarte.de/dresden/restaurant/play_off/speisekarte"
+    }
+   ],
+   "quelleStand": "2022–2025 (PRINZ); Karte 2026-05-14",
+   "geprueft": "2026-11-15",
+   "sicher": "pruefen"
+  },
+  {
+   "id": "dd-mongolianbar",
+   "rubrik": "ayce",
+   "art": "ayce",
+   "ort": "Dresden",
+   "titel": "MongolianBar (Mongolischer Grill & Sushi)",
+   "was": "Grill-Buffet zum Selbstzusammenstellen (Mongolian BBQ, Sushi inklusive); sonntags All-you-can-eat-Brunch",
+   "adresse": "Schützenplatz 14, 01067 Dresden",
+   "region": [
+    "Dresden"
+   ],
+   "km": 44,
+   "wann": "täglich 17:30–22 Uhr; So Brunch (Uhrzeit nicht belegt)",
+   "wochentage": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+   ],
+   "zeit": {
+    "von": "17:30",
+    "bis": "22:00",
+    "text": "17:30–22 Uhr"
+   },
+   "preis": "nicht belegt",
+   "bedingung": "",
+   "gratis": false,
+   "quellen": [
+    {
+     "name": "PRINZ",
+     "url": "https://prinz.de/dresden/toplist/319-all-you-can-eat/"
+    },
+    {
+     "name": "vymaps",
+     "url": "https://vymaps.com/DE/MONGOLIANBAR-Restaurant-36855/"
+    }
+   ],
+   "quelleStand": "2022–2025 (PRINZ)",
+   "geprueft": "2026-11-15",
+   "sicher": "pruefen"
+  },
+  {
+   "id": "dd-kalimera",
+   "rubrik": "ayce",
+   "art": "ayce",
+   "ort": "Dresden",
+   "titel": "Kalimera (griechisch, Neustadt)",
+   "was": "Buffet mit Fleisch, Fisch und vegetarischen Gerichten, dazu à la carte",
+   "adresse": "Hauptstraße 16–18, 01097 Dresden",
+   "region": [
+    "Dresden"
+   ],
+   "km": 45,
+   "wann": "jeden Abend (Uhrzeit nicht belegt)",
+   "wochentage": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+   ],
+   "preis": "nicht belegt (OpenTable: Preisklasse bis 30 €)",
+   "bedingung": "",
+   "gratis": false,
+   "quellen": [
+    {
+     "name": "OpenTable",
+     "url": "https://www.opentable.com/r/kalimera-dresden"
+    }
+   ],
+   "quelleStand": "undatiert",
+   "geprueft": "2026-11-15",
+   "sicher": "pruefen"
+  },
+  {
+   "id": "dd-dschingis-khan",
+   "rubrik": "ayce",
+   "art": "ayce",
+   "ort": "Dresden",
+   "titel": "Dschingis Khan (mongolisch)",
+   "was": "All-you-can-eat und à la carte",
+   "adresse": "Wiener Platz 9, 01069 Dresden",
+   "region": [
+    "Dresden"
+   ],
+   "km": 44,
+   "wann": "nicht belegt (eine Bewertung: 'unter der Woche')",
+   "preis": "nicht belegt; Getränke laut Gästen nicht inklusive",
+   "bedingung": "Getränke extra",
+   "gratis": false,
+   "quellen": [
+    {
+     "name": "Wanderlog",
+     "url": "https://wanderlog.com/place/details/1503133/dschingis-khan"
+    },
+    {
+     "name": "PRINZ",
+     "url": "https://prinz.de/dresden/toplist/319-all-you-can-eat/"
+    }
+   ],
+   "quelleStand": "undatiert",
+   "geprueft": "2026-11-15",
+   "sicher": "pruefen"
+  },
+  {
+   "id": "dd-lindenschaenke",
+   "rubrik": "lokal",
+   "art": "wochentag",
+   "ort": "Dresden",
+   "titel": "Lindenschänke (Mickten)",
+   "was": "'Linden-Woche': dienstags Spare Ribs vom sächsischen Landschwein mit Steakhouse-Pommes, BBQ-Soße, kleinem Salat (kein All-you-can-eat)",
+   "adresse": "Altmickten 1, 01139 Dresden",
+   "region": [
+    "Dresden"
+   ],
+   "km": 41,
+   "wann": "dienstags",
+   "wochentage": [
+    2
+   ],
+   "preis": "nicht belegt",
+   "bedingung": "Einzelgericht, kein 'satt'",
+   "gratis": false,
+   "quellen": [
+    {
+     "name": "speisekarte.de",
+     "url": "https://www.speisekarte.de/dresden/restaurant/lindensch%C3%A4nke_dresden/speisekarte"
+    }
+   ],
+   "quelleStand": "2026-02-10",
+   "geprueft": "2026-11-15",
+   "sicher": "pruefen"
+  },
+  {
+   "id": "l-gopalast",
+   "rubrik": "ayce",
+   "art": "ayce",
+   "ort": "Leipzig",
+   "titel": "Gopalast (Asia-Buffet, Plagwitz)",
+   "was": "Buffet mit Sushi, Meeresfrüchten, warmen Gerichten, Dessert",
+   "adresse": "Zschochersche Straße 82A, 04229 Leipzig",
+   "region": [
+    "Leipzig"
+   ],
+   "km": 59,
+   "wann": "nicht belegt",
+   "preis": "ca. 18 € laut einer undatierten Bewertung (ein anderes Portal schätzt 30–40 €)",
+   "bedingung": "",
+   "gratis": false,
+   "quellen": [
+    {
+     "name": "Wanderlog",
+     "url": "https://app.wanderlog.com/place/details/1192150"
+    },
+    {
+     "name": "intravel",
+     "url": "https://intravel.net/leipzig/restaurants-cafes/gopalast"
+    }
+   ],
+   "quelleStand": "undatiert",
+   "geprueft": "2026-11-15",
+   "sicher": "pruefen"
+  },
+  {
+   "id": "l-sushi-nem",
+   "rubrik": "ayce",
+   "art": "ayce",
+   "ort": "Leipzig",
+   "titel": "Sushi & Nem (Höfe am Brühl)",
+   "was": "Sushi All-you-can-eat",
+   "adresse": "Brühl 1, 04109 Leipzig (Höfe am Brühl)",
+   "region": [
+    "Leipzig"
+   ],
+   "km": 57,
+   "wann": "nicht belegt",
+   "preis": "18,90 € laut Gästen (Wasser 0,2 l 3,50 € extra)",
+   "bedingung": "Getränke extra. Westfield-Seite der Höfe am Brühl zeigt 'Geschlossen' – vermutlich veraltet, unbedingt prüfen",
+   "gratis": false,
+   "quellen": [
+    {
+     "name": "speisekarte.menu",
+     "url": "https://speisekarte.menu/restaurants/leipzig/sushi-nem"
+    },
+    {
+     "name": "intravel",
+     "url": "https://intravel.net/leipzig/restaurants-cafes/sushi-and-nem"
+    }
+   ],
+   "quelleStand": "Bewertungen 2025/2026",
+   "geprueft": "2026-11-15",
+   "sicher": "pruefen"
+  },
+  {
+   "id": "l-shiki",
+   "rubrik": "ayce",
+   "art": "ayce",
+   "ort": "Leipzig",
+   "titel": "Shiki (Sushibar)",
+   "was": "All-you-can-eat am Sonntag (laut Gästen oft vorab ausgebucht)",
+   "adresse": "Klostergasse 18, 04109 Leipzig",
+   "region": [
+    "Leipzig"
+   ],
+   "km": 57,
+   "wann": "sonntags (Uhrzeit nicht belegt)",
+   "wochentage": [
+    7
+   ],
+   "preis": "nicht belegt",
+   "bedingung": "reservieren",
+   "gratis": false,
+   "quellen": [
+    {
+     "name": "speisekarte.menu",
+     "url": "https://speisekarte.menu/restaurants/leipzig/shiki-1"
+    },
+    {
+     "name": "Falstaff",
+     "url": "https://www.falstaff.com/at/restaurants/shiki-klostergasse-18-leipzig"
+    }
+   ],
+   "quelleStand": "undatiert",
+   "geprueft": "2026-11-15",
+   "sicher": "pruefen"
+  },
+  {
+   "id": "l-gluecksboot",
+   "rubrik": "ayce",
+   "art": "ayce",
+   "ort": "Leipzig",
+   "titel": "Glücksboot (Asia-Grill-Buffet, Seehausen)",
+   "was": "Asiatisches Grill-Buffet, Grillgut nach Wahl",
+   "adresse": "Handelsstraße 4–8, 04356 Leipzig",
+   "region": [
+    "Leipzig"
+   ],
+   "km": 58,
+   "wann": "Abendbuffet (Uhrzeit nicht belegt)",
+   "preis": "Abendbuffet 13,50 € (Bewertung Juli 2025); 14,90 € inkl. Dessert (Bewertung 2023/24)",
+   "bedingung": "",
+   "gratis": false,
+   "quellen": [
+    {
+     "name": "speisekarte.menu",
+     "url": "https://speisekarte.menu/restaurants/leipzig/gluecksboot"
+    },
+    {
+     "name": "Das Telefonbuch",
+     "url": "https://adresse.dastelefonbuch.de/Leipzig/1-Restaurants-sonstige-Gl%C3%BCcksboot-Leipzig-Handelsstr.html"
+    }
+   ],
+   "quelleStand": "2025-07",
+   "geprueft": "2026-11-15",
+   "sicher": "pruefen"
+  },
+  {
+   "id": "l-mykonos",
+   "rubrik": "ayce",
+   "art": "ayce",
+   "ort": "Leipzig",
+   "titel": "Restaurant Mykonos (griechisch, Gohlis)",
+   "was": "All-you-can-eat mit 35 Gerichten zur Auswahl",
+   "adresse": "Geibelstraße 9, 04129 Leipzig",
+   "region": [
+    "Leipzig"
+   ],
+   "km": 58,
+   "wann": "täglich ab 18 Uhr",
+   "wochentage": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+   ],
+   "zeit": {
+    "von": "18:00",
+    "text": "ab 18 Uhr"
+   },
+   "preis": "10,90 € (PRINZ, Seite ca. 1–3 Jahre alt – Preis wahrscheinlich gestiegen)",
+   "bedingung": "",
+   "gratis": false,
+   "quellen": [
+    {
+     "name": "PRINZ",
+     "url": "https://prinz.de/leipzig/locations/122934-restaurant-mykonos/"
+    },
+    {
+     "name": "intravel",
+     "url": "https://intravel.net/leipzig/restaurants-cafes/restaurant-mykonos"
+    }
+   ],
+   "quelleStand": "ca. 2023–2025",
+   "geprueft": "2026-11-15",
+   "sicher": "pruefen"
+  },
+  {
+   "id": "l-monchi-vegan",
+   "rubrik": "ayce",
+   "art": "ayce",
+   "ort": "Leipzig",
+   "titel": "Monchi Vegan (vegan, Südvorstadt)",
+   "was": "Veganes Buffet (Salate, veganes Sushi, Reis- und Nudelgerichte, Dessert, Obst)",
+   "adresse": "Beethovenstraße 10, 04107 Leipzig",
+   "region": [
+    "Leipzig"
+   ],
+   "km": 57,
+   "wann": "mittwochs und an Feiertagen; Mi geöffnet 12–15:30 und 16:30–21 Uhr",
+   "wochentage": [
+    3
+   ],
+   "zeit": {
+    "von": "12:00",
+    "bis": "21:00",
+    "text": "12–15:30 und 16:30–21 Uhr"
+   },
+   "preis": "nicht belegt",
+   "bedingung": "",
+   "gratis": false,
+   "quellen": [
+    {
+     "name": "HappyCow",
+     "url": "https://www.happycow.net/reviews/monchi-leipzig-342100"
+    },
+    {
+     "name": "spinach.guide",
+     "url": "https://spinach.guide/venues/monchi-vegan-22741/"
+    }
+   ],
+   "quelleStand": "undatiert",
+   "geprueft": "2026-11-15",
+   "sicher": "pruefen"
+  },
+  {
+   "id": "l-naumanns-brunch",
+   "rubrik": "ayce",
+   "art": "ayce",
+   "ort": "Leipzig",
+   "titel": "Naumanns Gaststube – Sonntagsbrunch",
+   "was": "Brunch-Buffet süß und herzhaft, Kaffee, Säfte, ein Glas Prosecco zur Begrüßung",
+   "adresse": "Karl-Heine-Straße 32, 04229 Leipzig",
+   "region": [
+    "Leipzig"
+   ],
+   "km": 58,
+   "wann": "sonntags 10–14 Uhr",
+   "wochentage": [
+    7
+   ],
+   "zeit": {
+    "von": "10:00",
+    "bis": "14:00",
+    "text": "10–14 Uhr"
+   },
+   "preis": "33,00 € p. P. inkl. Speisen und Getränke; Kinder 0–10 J. frei, 11–16 J. halber Preis",
+   "bedingung": "Reservierung; Kinder-frei nur mit zahlender Begleitung. Ob der Brunch nach September 2026 weiterläuft, ist nicht belegt",
+   "gratis": false,
+   "quellen": [
+    {
+     "name": "rausgegangen",
+     "url": "https://rausgegangen.de/events/naumanns-sonntagsbrunch-3/"
+    },
+    {
+     "name": "regioactive",
+     "url": "https://www.regioactive.de/gastronomie/sonntagsbrunch-in-naumanns-gaststube-termine-tickets-be8121e7814e"
+    }
+   ],
+   "quelleStand": "Termine bis 13.09.2026 gelistet; rausgegangen-Eintrag als vorbei markiert",
+   "geprueft": "2026-11-15",
+   "sicher": "pruefen"
+  },
+  {
+   "id": "l-cafe-bubu-brunch",
+   "rubrik": "ayce",
+   "art": "ayce",
+   "ort": "Leipzig",
+   "titel": "Café Bubu – Sonntags-Frühstücksbuffet",
+   "was": "Frühstücksbuffet kombiniert mit Hausmannskost und Hauptgerichten",
+   "adresse": "Täubchenweg, Leipzig-Ost (Hausnummer nicht belegt)",
+   "region": [
+    "Leipzig"
+   ],
+   "km": 55,
+   "wann": "sonntags 10–14 Uhr",
+   "wochentage": [
+    7
+   ],
+   "zeit": {
+    "von": "10:00",
+    "bis": "14:00",
+    "text": "10–14 Uhr"
+   },
+   "preis": "45 € p. P.",
+   "bedingung": "",
+   "gratis": false,
+   "quellen": [
+    {
+     "name": "Leipzig Tourismus",
+     "url": "https://www.leipzig.travel/en/blog/leipzigs-hotspots-for-brunch-lovers"
+    }
+   ],
+   "quelleStand": "undatiert",
+   "geprueft": "2026-11-15",
+   "sicher": "pruefen"
+  },
+  {
+   "id": "l-schnitzel-culture",
+   "rubrik": "xxl",
+   "art": "xxl",
+   "ort": "Leipzig",
+   "titel": "Schnitzel Culture",
+   "was": "'Leipziger Latsch XXL': 300-g-Schnitzel mit Blumenkohl und Kartoffelgratin; über 200 Schnitzel-Sorten; Lieferdienst",
+   "adresse": "Leipzig (genaue Adresse nicht belegt)",
+   "region": [
+    "Leipzig"
+   ],
+   "km": 57,
+   "wann": "nicht belegt",
+   "preis": "nicht belegt",
+   "bedingung": "km = Leipzig Mitte, weil Adresse fehlt",
+   "gratis": false,
+   "quellen": [
+    {
+     "name": "Leipzig Tourismus",
+     "url": "https://www.leipzig.travel/en/poi/schnitzel-culture"
+    }
+   ],
+   "quelleStand": "undatiert",
+   "geprueft": "2026-11-15",
+   "sicher": "pruefen"
+  },
+  {
+   "id": "c-aiko",
+   "rubrik": "ayce",
+   "art": "ayce",
+   "ort": "Chemnitz",
+   "titel": "Aiko Sushi & Grill",
+   "was": "Bestellung per Tablet: alle 10 Minuten 5 Gerichte von der Karte",
+   "adresse": "Zschopauer Str. 178, Chemnitz",
+   "region": [
+    "Chemnitz"
+   ],
+   "km": 35,
+   "wann": "Mittag und Abend (Uhrzeiten nicht belegt)",
+   "preis": "25 € laut neuerer Bewertung, 22 € laut älterer (beide undatiert); Getränke extra",
+   "bedingung": "Getränke extra",
+   "gratis": false,
+   "quellen": [
+    {
+     "name": "Wanderlog",
+     "url": "https://wanderlog.com/place/details/2974539/aiko-sushi--grill"
+    },
+    {
+     "name": "Tripaligner",
+     "url": "https://tripaligner.com/countries/germany-22/destinations/chemnitz-152/places/aiko-sushi-grill-15042421"
+    }
+   ],
+   "quelleStand": "undatiert",
+   "geprueft": "2026-11-15",
+   "sicher": "pruefen"
+  },
+  {
+   "id": "c-asiaworld",
+   "rubrik": "ayce",
+   "art": "ayce",
+   "ort": "Chemnitz",
+   "titel": "Asiaworld Chemnitz (Markersdorf)",
+   "was": "Abendliches All-you-can-eat-Buffet mit Mongolischem Barbecue und Sushi",
+   "adresse": "Robert-Siewert-Straße 34, 09122 Chemnitz",
+   "region": [
+    "Chemnitz"
+   ],
+   "km": 37,
+   "wann": "abends (Uhrzeit nicht belegt)",
+   "preis": "knapp 15 € laut älterer Bewertung (undatiert)",
+   "bedingung": "",
+   "gratis": false,
+   "quellen": [
+    {
+     "name": "Wanderlog",
+     "url": "https://wanderlog.com/place/details/2974553/chinarestaurant-asiaworld-chemnitz"
+    },
+    {
+     "name": "Das Telefonbuch",
+     "url": "https://adresse.dastelefonbuch.de/Chemnitz/1-China-Restaurant-Asia-World-Chemnitz-Robert-Siewert-Str.html"
+    }
+   ],
+   "quelleStand": "undatiert",
+   "geprueft": "2026-11-15",
+   "sicher": "pruefen"
+  },
+  {
+   "id": "c-asia-palast",
+   "rubrik": "ayce",
+   "art": "ayce",
+   "ort": "Chemnitz",
+   "titel": "Asia Palast (Altchemnitz)",
+   "was": "Chinesisches Buffet mit Mongolischem Grill",
+   "adresse": "Annaberger Str. 145, 09120 Chemnitz",
+   "region": [
+    "Chemnitz"
+   ],
+   "km": 36,
+   "wann": "nicht belegt",
+   "preis": "nicht belegt (Karte Stand 11.11.2025 nennt nur Mittagsmenüs à 6,50 €)",
+   "bedingung": "",
+   "gratis": false,
+   "quellen": [
+    {
+     "name": "Wer kennt den Besten",
+     "url": "https://www.werkenntdenbesten.de/china-restaurant/chemnitz"
+    },
+    {
+     "name": "Wanderlog",
+     "url": "https://wanderlog.com/place/details/1119523/asia-palast"
+    }
+   ],
+   "quelleStand": "2025-11-11 (Karte)",
+   "geprueft": "2026-11-15",
+   "sicher": "pruefen"
+  },
+  {
+   "id": "c-espitas",
+   "rubrik": "ayce",
+   "art": "ayce",
+   "ort": "Chemnitz",
+   "titel": "ESPITAS Chemnitz & Beachloft (mexikanisches Buffet)",
+   "was": "Festpreis-Buffet: Grillfleisch und Gemüse frisch gegrillt, ca. 10 warme Gerichte, Suppen, Salate, Desserts; auch Brunch",
+   "adresse": "Leipziger Str. 106–108, 09114 Chemnitz",
+   "region": [
+    "Chemnitz"
+   ],
+   "km": 33,
+   "wann": "nicht belegt (Verzeichnis: So 10–22 Uhr)",
+   "preis": "nicht belegt (Portale: 20–30 € bzw. 'bis 30 €')",
+   "bedingung": "",
+   "gratis": false,
+   "quellen": [
+    {
+     "name": "OpenTable",
+     "url": "https://www.opentable.com/r/espitas-chemnitz-beachloft-buffetrestaurant"
+    },
+    {
+     "name": "swipein",
+     "url": "https://www.swipein.restaurant/en/restaurant/espitas-gmbh-co-kg-chemnitz-chemnitz-sachsen"
+    }
+   ],
+   "quelleStand": "undatiert",
+   "geprueft": "2026-11-15",
+   "sicher": "pruefen"
+  },
+  {
+   "id": "c-miramar-schnitzeltag",
+   "rubrik": "lokal",
+   "art": "wochentag",
+   "ort": "Chemnitz",
+   "titel": "Miramar – Schnitzeltag",
+   "was": "Schnitzeltag mit Pitcher-Special (Schweineschnitzel klassisch, z. B. mit Blumenkohl und Rahmgemüse); kein All-you-can-eat",
+   "adresse": "Schloßberg 16, 09113 Chemnitz",
+   "region": [
+    "Chemnitz"
+   ],
+   "km": 33,
+   "wann": "mittwochs ab 11 Uhr (gelistet z. B. 09.09.2026, 03.02.2027, 17.03.2027, 07.04.2027 – alles Mittwoche)",
+   "wochentage": [
+    3
+   ],
+   "zeit": {
+    "von": "11:00",
+    "text": "ab 11 Uhr"
+   },
+   "preis": "nicht belegt",
+   "bedingung": "Einzelgericht. Daneben 'Haxentag' (vergünstigt) und 'Gulasch Spezial' gelistet; Wochentage dafür widersprüchlich -> weggelassen",
+   "gratis": false,
+   "quellen": [
+    {
+     "name": "regioactive",
+     "url": "https://www.regioactive.de/events/15292/chemnitz/veranstaltungen-party-konzerte/2026-09-09"
+    },
+    {
+     "name": "speisekarte.de",
+     "url": "https://www.speisekarte.de/chemnitz-sachsen/restaurant/miramar/bewertung"
+    }
+   ],
+   "quelleStand": "Termine bis 2027-04-07 gelistet",
+   "geprueft": "2026-11-15",
+   "sicher": "pruefen"
+  },
+  {
+   "id": "mb-omas-kartoffelhaus",
+   "rubrik": "xxl",
+   "art": "xxl",
+   "ort": "Marienberg",
+   "titel": "Oma's Kartoffelhaus (Philipps Kartoffelhaus)",
+   "was": "XXL-Schnitzel 400 g mit Pommes (auch als Putenschnitzel gleich schwer); XXL-Schnitzelburger mit 400-g-Schnitzel",
+   "adresse": "Zschopauer Str. 19, 09496 Marienberg",
+   "region": [
+    "Sachsen"
+   ],
+   "km": 52,
+   "wann": "Di–Do 11–14:30 und 17–22 Uhr, Fr 17–22 Uhr, Sa/So unterschiedlich (ältere Angabe)",
+   "ortZusatz": "Marienberg (Erzgebirge)",
+   "wochentage": [
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+   ],
+   "preis": "XXL-Schnitzel 20,90 €; XXL-Schnitzelburger 22,80 € (Karte Stand 09.03.2023)",
+   "bedingung": "",
+   "gratis": false,
+   "quellen": [
+    {
+     "name": "speisekarte.de",
+     "url": "https://www.speisekarte.de/marienberg/restaurant/philipps_kartoffelhaus/speisekarte"
+    },
+    {
+     "name": "Visit Saxony",
+     "url": "https://visitsaxony.com/gastro/omas-kartoffelhaus"
+    }
+   ],
+   "quelleStand": "2023-03-09",
+   "geprueft": "2026-11-15",
+   "sicher": "pruefen"
+  }
+ ]
+}

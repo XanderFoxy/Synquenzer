@@ -149,7 +149,7 @@
   }
 
   // --- Zustand -----------------------------------------------------------------------------------------------------------
-  const S = { el: null, n: null, roh: null, chip: null, q: '', laedt: false, fehler: null, url: DATEI, gemerkt: [], geb: null, ablage: null };
+  const S = { el: null, n: null, roh: null, chip: null, q: '', laedt: false, fehler: null, url: DATEI, gemerkt: [], geb: null, ablage: null, ziel: null };
   function chipsDa() {
     const da = BEREICHE.map(([k]) => k);
     return S.gemerkt.some(id => S.n.tipps.some(t => t.id === id)) ? [...da, 'gemerkt'] : da;
@@ -239,6 +239,7 @@
     const leiste = el.querySelector('.sp-chips');
     if (links != null) leiste.scrollLeft = links; else zeigeChip(leiste, S.chip);
     if (fokusSuche) { const i = el.querySelector('#sp-suche'); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }
+    zielZeigen();
   }
   function zeigeChip(leiste, k) {
     const c = leiste.querySelector(`[data-sp-chip="${k}"]`);
@@ -282,6 +283,21 @@
     leiste.scrollLeft = links;
   }
   const CSS_ESC = s => String(s).replace(/["\\]/g, '\\$&');
+  /** von außen (Reiter Essen: „Geburtstag gratis ›“, „Ausführlich in Spartricks ›“): Chip wählen, zur Karte springen */
+  function zielZeigen() {
+    if (!S.ziel || !S.el) return;
+    const k = S.el.querySelector(`[data-sp-id="${CSS_ESC(S.ziel)}"]`);
+    if (k) { S.ziel = null; k.scrollIntoView({ behavior: 'instant', block: 'start' }); }
+  }
+  function zeige(chip, id) {
+    if (typeof chip !== 'string' || !BEREICHE.some(([k]) => k === chip)) return;
+    S.ziel = typeof id === 'string' && /^[a-z0-9-]{2,60}$/.test(id) ? id : null;
+    S.q = '';
+    if (!S.n) { S.chip = chip; merk(CHIP_SPEICHER, chip); return; } // erscheint beim ersten Zeichnen
+    const i = S.el.querySelector('#sp-suche'); if (i) i.value = '';
+    if (chip !== S.chip) waehle(chip); else neuListe();
+    if (S.ziel) zielZeigen(); else window.scrollTo({ top: 0, behavior: 'instant' });
+  }
 
   // --- Laden (gemerkter Stand sofort, dann frisch) --------------------------------------------------------------------------
   async function hol(url) {
@@ -503,7 +519,7 @@
 `;
 
   window.MeinVorteilSpartricks = {
-    start, lade,
+    start, lade, zeige,
     get gestartet() { return !!S.el; },
     // für Tests (ohne Browser): reine Funktionen
     _intern: { normalisiere, liste, passt, naechsterGeburtstag, anmeldeZeile, heute, kurzName, quellNamen, kachelAuszug, sicherUrl, BEREICHE, REGIONEN, CSS: () => CSS },

@@ -534,7 +534,7 @@ test('Frist vorbei (01.12.): Kfz nicht mehr in Top 10 und Kachel, im Bereich am 
   await ctx.close();
 });
 
-test('Kachel: „Tipp des Tages“ wechselt nach Datum, nie leer, Start-Seite ohne seitliches Scrollen (11 Kacheln)', { skip: ohnePw }, async () => {
+test('Kachel: „Tipp des Tages“ wechselt nach Datum, nie leer, Start-Seite ohne seitliches Scrollen (12 Kacheln mit Essen)', { skip: ohnePw }, async () => {
   const speicher = { 'mein-vorteil-daten-spartricks': JSON.stringify({ d: DATEN, holZeit: Date.parse(JETZT) }) };
   const tipp = async jetzt => {
     const { ctx, page, fehler } = await oeffne({ pfad: '/mein-vorteil/', jetzt, speicher });
@@ -543,8 +543,8 @@ test('Kachel: „Tipp des Tages“ wechselt nach Datum, nie leer, Start-Seite oh
     const vw = page.viewportSize().width;
     const r = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, n: document.querySelectorAll('#kacheln a.kachel').length, letzte: document.querySelector('#kacheln a.kachel:last-child').getBoundingClientRect().width, erste: document.querySelector('#kacheln a.kachel').getBoundingClientRect().width }));
     assert.ok(r.sw <= vw, 'kein seitliches Scrollen');
-    assert.equal(r.n, 11);
-    assert.ok(r.letzte > r.erste * 1.8, '„Mehr“ füllt die letzte Reihe');
+    assert.equal(r.n, 12);
+    assert.ok(Math.abs(r.letzte - r.erste) < 1, '12 Kacheln: volle Reihen, „Mehr“ so breit wie die anderen');
     assert.deepEqual(fehler, []);
     await ctx.close();
     return z;

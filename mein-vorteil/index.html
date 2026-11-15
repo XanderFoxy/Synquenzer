@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <title>Mein Vorteil</title>
-<meta name="description" content="Dein Assistent: Deals, Preisfehler, Filme, Auftritte, Remix-Contests, Deutschunterricht, Konzerte, Gewinnspiele, Krypto und Spartricks – kompakt auf einer Seite">
+<meta name="description" content="Dein Assistent: Deals, Preisfehler, Filme, Auftritte, Remix-Contests, Deutschunterricht, Konzerte, Gewinnspiele, Krypto, Spartricks und Essen – kompakt auf einer Seite">
 <meta name="theme-color" content="#14100d">
 <meta name="color-scheme" content="dark">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -41,6 +41,7 @@
   .f-gewinnspiele { --f: #ade34f; --f-hell: #3a3d20; --f-hell2: #495326; }
   .f-krypto { --f: #ff9f45; --f-hell: #48311e; --f-hell2: #604023; }
   .f-spartricks { --f: #5fd8e8; --f-hell: #233a3e; --f-hell2: #2b4d53; }
+  .f-essen { --f: #ff9b7a; --f-hell: #48302a; --f-hell2: #603c33; }
   .f-mehr { --f: #c2b2a1; --f-hell: #3d352e; --f-hell2: #4f453d; }
   [class*="f-"] { --akzent: var(--f); --akzent-hell: var(--f-hell); }
   * { box-sizing: border-box; }
@@ -182,7 +183,7 @@
   .kachel li span { font-size: 12px; color: var(--leise); }
   .kachel li span.gut { color: var(--f); font-weight: 650; }
   @media (max-width: 699px) { .kachel li:nth-child(3) { display: none; } }
-  @media (max-width: 699px) { .kacheln a.kachel:last-child:nth-child(odd) { grid-column: 1 / -1; } } /* 11 Kacheln: die letzte füllt die Reihe */
+  @media (max-width: 699px) { .kacheln a.kachel:last-child:nth-child(odd) { grid-column: 1 / -1; } } /* ungerade Zahl Kacheln: die letzte füllt die Reihe (seit Essen 12, dann greift es nicht) */
   .kachel .kw { margin-top: auto; padding-top: 6px; font-size: 12px; color: var(--f); font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
   /* Karten */
@@ -609,6 +610,7 @@ const NTFY_IMPORT = (() => {
   <symbol id="ic-gewinnspiele" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v8a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-8"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/></symbol>
   <symbol id="ic-krypto" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 7.5h3.8a2 2 0 0 1 0 4H9.5zM9.5 11.5h4.3a2 2 0 0 1 0 4H9.5zM9.5 7.5v8M11 6v1.5M11 15.5V17"/></symbol>
   <symbol id="ic-spartricks" viewBox="0 0 24 24"><path d="M18.5 9.2c1 .5 1.8 1.4 2.1 2.4H22v3h-1.5c-.4.9-1.1 1.7-2 2.3V20h-3v-1.5a9.6 9.6 0 0 1-4 0V20h-3v-2.3C6.6 16.6 5 14.6 5 12.2 5 8.6 8.4 5.7 12.6 5.7c1 0 2 .2 2.9.5L18.5 5z"/><circle cx="15.6" cy="10.6" r=".8"/><path d="M9.6 8.8h3.2M2.5 10.5c0 1.4.9 2.2 2.5 2.2"/></symbol>
+  <symbol id="ic-essen" viewBox="0 0 24 24"><path d="M7 3v8M4.5 3v5.2a2.5 2.5 0 0 0 5 0V3M7 11v10"/><path d="M17 21V3c-2.3 1.3-3.6 3.8-3.6 7.2V14H17"/></symbol>
   <symbol id="ic-mehr" viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/></symbol>
   <symbol id="ic-weg" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
   <symbol id="ic-neu" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></symbol>
@@ -631,6 +633,7 @@ const NTFY_IMPORT = (() => {
   <div class="breite sprung-zeile" id="leiste">
     <a href="#start" data-ziel="start" class="f-start"><svg class="ic" aria-hidden="true"><use href="#ic-start"/></svg><span class="t">Start</span><span class="n"></span></a>
     <a href="#deals" data-ziel="deals" class="f-deals"><svg class="ic" aria-hidden="true"><use href="#ic-deals"/></svg><span class="t">Deals</span><span class="n"></span></a>
+    <a href="#essen" data-reiter="essen" class="f-essen"><svg class="ic" aria-hidden="true"><use href="#ic-essen"/></svg><span class="t">Essen</span><span class="n"></span></a>
     <a href="#preisfehler" data-ziel="preisfehler" class="f-preisfehler"><svg class="ic" aria-hidden="true"><use href="#ic-preisfehler"/></svg><span class="t">Preisfehler</span><span class="n"></span></a>
     <a href="#filme" data-reiter="filme" class="f-filme"><svg class="ic" aria-hidden="true"><use href="#ic-filme"/></svg><span class="t">Filme</span><span class="n"></span></a>
     <a href="#auftritte" data-ziel="auftritte" class="f-auftritte"><svg class="ic" aria-hidden="true"><use href="#ic-auftritte"/></svg><span class="t">Auftritte</span><span class="n"></span></a>
@@ -751,6 +754,12 @@ const NTFY_IMPORT = (() => {
   <p class="warum" id="w-spartricks">Geld zurück, clever einkaufen, gratis testen, Geburtstag, Freizeit – jeder Tipp mit Quelle und Stand.</p>
   <div id="i-spartricks"><p class="leer">Lade Spartricks …</p></div>
 </section>
+<!-- Essen: Inhalt kommt aus essen.js, Daten aus essen.json (beides erst beim ersten Öffnen) -->
+<section id="p-essen" class="reiter-seite breite f-essen" aria-labelledby="h-essen" hidden>
+  <div class="bereich-kopf"><span class="gross" aria-hidden="true"><svg class="ic"><use href="#ic-essen"/></svg></span><h2 id="h-essen">Essen</h2></div>
+  <p class="warum" id="w-essen">Aktionstage, Gratis, Abhol-Pizza, All-you-can-eat und XXL – Ketten bundesweit, Lokale um Döbeln. Jede Angabe mit Quelle und Prüfdatum.</p>
+  <div id="i-essen"><p class="leer">Lade Essen …</p></div>
+</section>
 
 <dialog id="krypto-alarm" class="f-krypto" aria-labelledby="alarm-titel">
   <div class="alarm-kopf"><h2 id="alarm-titel">Krypto</h2><button id="alarm-zu" class="x" type="button" aria-label="Schließen">✕</button></div>
@@ -807,7 +816,7 @@ const BEREICH = {
 // auch nicht aus älteren Daten
 const NIE_ZEIGEN = new Set(['praemien']);
 // Bereiche mit eigener Seite (Reiter in der Leiste): nicht noch einmal unter „Mehr“
-const EIGENE_SEITE = new Set(['filme']);
+const EIGENE_SEITE = new Set(['filme', 'essen']); // essen: Reiter „Essen“ (Radar-Einträge der Kategorie essen dort unter „Aktuell“)
 // Geräte sind keine Filme (Lauf 08.11.2026: „Apple TV 4K (2026)“ aus der mydealz-Gruppe apple-tv stand unter Filmen) –
 // gleiche Regel wie vorteile/scan/module/filme.mjs GERAET_TITEL, damit auch ältere Daten sauber sind
 const FILM_GERAET = /^\W*apple\s?tv(?:\s?4k|\s?hd)?\s*(?:\(\s*(?:\d\.\s*gen|20\d\d)|20\d\d\b|\d+\s?gb\b|$|wi-?fi|ethernet)|\bsiri remote\b|\bapple tv\s?4k\b.*\b(?:chip|gebraucht|refurbished|generation)\b/i;
@@ -1630,7 +1639,7 @@ const EINTRAEGE = new Map(); // id -> { e, bereich } (für das Bewerben-Blatt)
 
 function einteilen() {
   const d = S.vorteile?.d;
-  const r = { da: !!d, produkt: [], gewinnspiele: [], cashback: [], snacks: [], synths: [], filme: [], mehr: {}, ausDaten: {} };
+  const r = { da: !!d, produkt: [], gewinnspiele: [], cashback: [], snacks: [], synths: [], filme: [], essen: [], mehr: {}, ausDaten: {} };
   for (const b of ASSISTENT) { r[b] = []; r[b + 'Fund'] = []; r.ausDaten[b] = Array.isArray(d?.kategorien?.[b]); }
   r.gesuche = []; r.gesucheFund = []; // Bereich Unterricht: „Gesuche im Netz“ (Radar ab 14.11.2026, extra.typ 'gesuch')
   EINTRAEGE.clear();
@@ -1640,6 +1649,7 @@ function einteilen() {
       if (!roh || weg.has(roh.id)) continue;
       const e = roh.kategorie ? roh : { ...roh, kategorie: k };
       if (NIE_ZEIGEN.has(e.kategorie)) continue;
+      if (e.kategorie === 'essen') { if (!vorbei(e)) r.essen.push(e); continue; } // Reiter Essen → „Aktuell“
       if (EIGENE_SEITE.has(e.kategorie)) { if (!vorbei(e) && !FILM_GERAET.test(String(e.titel || ''))) r.filme.push(e); continue; } // Filme: eigener Reiter, hier nur für Start + Zähler
       if (e.quelle === 'Schnäppchen-Wecker' || e.extra?.produkt) continue; // steht schon als Produkt-Karte da
       const pf = istPreisfehler(e);
@@ -2122,9 +2132,45 @@ function sparKachel() { // -> { z, w } wie kachelInhalt; höchstens 2 Zeilen
 }
 addEventListener('mein-vorteil-spartricks', () => zeichne()); // der Reiter hat frische Spartricks gemerkt -> Kachel neu
 
+// --- Essen-Kachel: bester Treffer des Tages (Aktionstag heute, Wochentags-Aktion, nächster Aktionstag ≤ 14 Tage, dauerhaft
+// gratis) aus dem Auszug, den der Reiter beim Öffnen merkt (mein-vorteil-essen-kachel, nur sicher belegte Einträge, wenige KB).
+// Die Startseite holt essen.json nie selbst (lazy): vor dem ersten Öffnen steht ein fester Text. Gleiche Regeln wie essen.js.
+const ESSEN_KACHEL = 'mein-vorteil-essen-kachel';
+const WT_KURZ = ['', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+function essenKachel() { // -> { z, w } wie kachelInhalt; höchstens 2 Zeilen
+  const d = lies(ESSEN_KACHEL, null)?.d;
+  const h = isoHeute();
+  const wt = iso => new Date(iso + 'T12:00:00Z').getUTCDay() || 7;
+  const plus = (iso, n) => new Date(Date.parse(iso + 'T00:00:00Z') + n * 864e5).toISOString().slice(0, 10);
+  const iso = v => (typeof v === 'string' && /^\d{4}-\d\d-\d\d$/.test(v) ? v : null);
+  const l = (Array.isArray(d?.e) ? d.e : []).filter(e => e && typeof e.id === 'string' && typeof e.titel === 'string' && e.titel && !e.nurHinweis
+    && !(iso(e.bis) && e.bis < h) && !(iso(e.geprueft) && isoTage(e.geprueft, h) > 45));
+  const tage = e => (Array.isArray(e.wochentage) && e.wochentage.length ? e.wochentage : null);
+  const gilt = (e, t) => !(e.art === 'aktionstag' && !iso(e.bis)) && !(iso(e.ab) && t < e.ab) && !(iso(e.bis) && t > e.bis) && !(tage(e) && !tage(e).includes(wt(t)));
+  const besonders = e => e.art === 'aktionstag' || (tage(e) && tage(e).length < 7);
+  const wtm = t => `${WT_KURZ[wt(t)]} ${t.slice(8, 10)}.${t.slice(5, 7)}.`;
+  const mk = e => (typeof e.marke === 'string' && e.marke ? ` · ${e.marke}` : '');
+  const z = [], schon = new Set();
+  const dazu = (e, zeile, gut) => { if (z.length < 2 && !schon.has(e.id)) { schon.add(e.id); z.push([kurzTitel(e.titel, 60), zeile, gut]); } };
+  for (const e of l) if (e.art === 'aktionstag' && gilt(e, h)) dazu(e, `heute${e.bis !== h ? ` · bis ${wtm(e.bis)}` : ''}${mk(e)}`, true);
+  for (const e of l) if (e.gratis && besonders(e) && gilt(e, h)) dazu(e, `heute gratis${mk(e)}`, true);
+  for (const e of l) if (besonders(e) && e.art !== 'aktionstag' && gilt(e, h)) dazu(e, `heute${mk(e)}`, true);
+  const bald = [];
+  for (const e of l) if (e.art === 'aktionstag' && !gilt(e, h)) for (let i = 1; i <= 14; i++) { const t = plus(h, i); if (gilt(e, t)) { bald.push([e, t]); break; } }
+  bald.sort((a, c) => (a[1] < c[1] ? -1 : 1));
+  // Abwechslung: höchstens ein „ab …“ vor dem, was heute ohne Kauf gratis ist; weitere Aktionstage nur, wenn noch Platz ist
+  const baldZeile = ([e, t]) => dazu(e, `ab ${wtm(t)}${mk(e)}`, false);
+  bald.slice(0, 1).forEach(baldZeile);
+  for (const e of l) if (e.gratis && !besonders(e) && gilt(e, h)) dazu(e, typeof e.marke === 'string' && e.marke ? e.marke : 'gratis', false);
+  bald.slice(1).forEach(baldZeile);
+  if (!z.length) return { z: [['Gratis-Tage, Aktionen, Buffets', 'mit Quelle – tippen zum Öffnen']], w: '' };
+  return { z, w: '' };
+}
+addEventListener('mein-vorteil-essen', () => zeichne()); // der Reiter hat frische Essen-Daten gemerkt -> Kachel neu
+
 // --- Start: „Heute für dich“ – je Bereich 1–3 beste Treffer als Kachel, Tippen führt in den Bereich ------------------------
-const KACHEL_REIHE = ['deals', 'preisfehler', 'filme', 'auftritte', 'remix', 'unterricht', 'konzerte', 'gewinnspiele', 'krypto', 'spartricks', 'mehr'];
-const KACHEL_NAME = { deals: 'Deals', preisfehler: 'Preisfehler', filme: 'Filme', auftritte: 'Auftritte', remix: 'Remix', unterricht: 'Unterricht', konzerte: 'Konzerte', gewinnspiele: 'Gewinnspiele', krypto: 'Krypto', spartricks: 'Spartricks', mehr: 'Mehr' };
+const KACHEL_REIHE = ['deals', 'essen', 'preisfehler', 'filme', 'auftritte', 'remix', 'unterricht', 'konzerte', 'gewinnspiele', 'krypto', 'spartricks', 'mehr'];
+const KACHEL_NAME = { deals: 'Deals', essen: 'Essen', preisfehler: 'Preisfehler', filme: 'Filme', auftritte: 'Auftritte', remix: 'Remix', unterricht: 'Unterricht', konzerte: 'Konzerte', gewinnspiele: 'Gewinnspiele', krypto: 'Krypto', spartricks: 'Spartricks', mehr: 'Mehr' };
 const ohnePrefix = s => String(s || '').replace(/^[\[(]?\s*(möglicher\s+)?preisfehler\s*[\])]?\s*[:!–-]?\s*/i, '');
 function fristKurz(e) { const b = bisZeit(zeit(e.bis)); return b == null ? '' : `bis ${tag(b)}`; }
 function kachelInhalt(b, t) { // -> { z: [[Titel, Zeile, gut?]], w: Satz }
@@ -2194,6 +2240,7 @@ function kachelInhalt(b, t) { // -> { z: [[Titel, Zeile, gut?]], w: Satz }
     return z.length ? { z, w: '' } : { z: [['Gerade keins ohne Kauf', 'neue kommen abends']], w: t.da ? 'feste Adressen im Bereich' : '' };
   }
   if (b === 'spartricks') return sparKachel();
+  if (b === 'essen') return essenKachel();
   if (b === 'krypto') {
     const z = [];
     for (const { c, e } of kryptoStand()) {
@@ -2743,8 +2790,9 @@ function zeichne() {
     start: '', deals: `${(S.angebote?.d?.produkte || []).filter(p => !ausgeblendet(p.id)).length || ''} Produkte im Blick`.replace(/^ Produkte im Blick$/, ''),
     preisfehler: 'nur krasse', auftritte: `${t.auftritte.length} frisch · ${t.auftritteFund.length} feste Adressen`, remix: `${t.remix.length} laufend · ${t.remixFund.length} Fundorte`,
     unterricht: t.gesuche.length ? `${t.gesuche.length} ${t.gesuche.length === 1 ? 'Gesuch' : 'Gesuche'}${t.unterricht.length ? ` · ${t.unterricht.length} ${t.unterricht.length === 1 ? 'Stelle' : 'Stellen'}` : ` · ${t.unterrichtFund.length} feste Adressen`}` : `${t.unterricht.length} neu · ${t.unterrichtFund.length} feste Adressen`, konzerte: nurNah ? `bis ${konzertTeile().radius} km` : 'alle Termine',
-    gewinnspiele: 'ohne Kauf', krypto: 'nur auf diesem iPhone', mehr: '', filme: 'Apple TV', spartricks: 'jeder Tipp mit Quelle',
+    gewinnspiele: 'ohne Kauf', krypto: 'nur auf diesem iPhone', mehr: '', filme: 'Apple TV', spartricks: 'jeder Tipp mit Quelle', essen: 'mit Quelle · Döbeln & Umgebung',
   });
+  if (window.MeinVorteilEssen?.gestartet) try { MeinVorteilEssen.auffrischen(); } catch (e) { console.warn(e); } // „Aktuell“ (Radar) neu
   for (const [ab, n] of Object.entries(zahlen)) if (ab !== 'krypto') setzeZahl(ab, n);
   zeichneKacheln(t, zahlen);
   for (const [ab, n] of Object.entries(zahlen)) setzeZahl(ab, n); // auch auf den gerade gebauten Kacheln
@@ -2758,9 +2806,9 @@ function zeichne() {
 const zeichneAlles = () => zeichne();
 
 // --- Bereiche: immer nur einer zu sehen; Leiste markiert ihn, „Du bist in: …“ sagt es ----------------------------------------
-const BEREICHE = ['start', 'deals', 'preisfehler', 'filme', 'auftritte', 'remix', 'unterricht', 'konzerte', 'gewinnspiele', 'krypto', 'spartricks', 'mehr'];
-const IN_MAIN = BEREICHE.filter(b => b !== 'filme' && b !== 'spartricks');
-const BEREICH_NAME = { start: 'Heute für dich', deals: 'Deals', preisfehler: 'Preisfehler', filme: 'Filme & Serien', auftritte: 'Auftritte', remix: 'Remix-Contests', unterricht: 'Deutschunterricht', konzerte: 'Konzerte', gewinnspiele: 'Gewinnspiele', krypto: 'Krypto', spartricks: 'Spartricks', mehr: 'Mehr' };
+const BEREICHE = ['start', 'deals', 'essen', 'preisfehler', 'filme', 'auftritte', 'remix', 'unterricht', 'konzerte', 'gewinnspiele', 'krypto', 'spartricks', 'mehr'];
+const IN_MAIN = BEREICHE.filter(b => b !== 'filme' && b !== 'spartricks' && b !== 'essen');
+const BEREICH_NAME = { start: 'Heute für dich', deals: 'Deals', essen: 'Essen', preisfehler: 'Preisfehler', filme: 'Filme & Serien', auftritte: 'Auftritte', remix: 'Remix-Contests', unterricht: 'Deutschunterricht', konzerte: 'Konzerte', gewinnspiele: 'Gewinnspiele', krypto: 'Krypto', spartricks: 'Spartricks', mehr: 'Mehr' };
 // Ziele innerhalb eines Bereichs (Deals) und alte Sprungmarken (Push-Links, alte Seiten)
 const UNTERZIEL = { produkte: 'deals', cashback: 'deals', snacks: 'deals', technik: 'deals' };
 const ALTE_MARKEN = { angebote: 'produkte', schnaeppchen: 'produkte', vorteile: 'start' };
@@ -2837,7 +2885,7 @@ function starteSpartricks() {
   if (sparSkript) return;
   sparSkript = document.createElement('script');
   sparSkript.src = 'spartricks.js';
-  sparSkript.onload = () => window.MeinVorteilSpartricks?.start($('i-spartricks'));
+  sparSkript.onload = () => { window.MeinVorteilSpartricks?.start($('i-spartricks')); if (sparZiel) { try { MeinVorteilSpartricks.zeige?.(sparZiel.chip, sparZiel.id); } catch {} sparZiel = null; } };
   sparSkript.onerror = () => {
     sparSkript.remove(); sparSkript = null; // ↻ versucht es noch einmal
     $('i-spartricks').innerHTML = '<p class="leer">Spartricks gerade nicht erreichbar. Später noch einmal auf ↻ tippen.</p>';
@@ -2846,6 +2894,29 @@ function starteSpartricks() {
 }
 REITER_START.spartricks = starteSpartricks;
 REITER_NEU.spartricks = () => { if (window.MeinVorteilSpartricks?.gestartet) MeinVorteilSpartricks.lade(); else if (reiterOffen === 'spartricks') starteSpartricks(); };
+// Verweis aus dem Reiter Essen („Geburtstag gratis ›“, „Ausführlich in Spartricks ›“): Spartricks öffnen, Chip wählen, zur Karte
+let sparZiel = null;
+function zuSpartricks(chip, id) {
+  if (window.MeinVorteilSpartricks?.gestartet) { geheZu('spartricks'); try { MeinVorteilSpartricks.zeige?.(chip, id); } catch {} return; }
+  sparZiel = { chip, id };
+  geheZu('spartricks');
+}
+
+// --- Essen: alles in essen.js (Logik + CSS), Daten in essen.json – beides erst beim ersten Öffnen ---------------------------
+let essSkript = null;
+function starteEssen() {
+  if (essSkript) return;
+  essSkript = document.createElement('script');
+  essSkript.src = 'essen.js';
+  essSkript.onload = () => window.MeinVorteilEssen?.start($('i-essen'), { live: () => letzteEinteilung?.essen || [], zuSpartricks });
+  essSkript.onerror = () => {
+    essSkript.remove(); essSkript = null; // ↻ versucht es noch einmal
+    $('i-essen').innerHTML = '<p class="leer">Essen gerade nicht erreichbar. Später noch einmal auf ↻ tippen.</p>';
+  };
+  document.head.appendChild(essSkript);
+}
+REITER_START.essen = starteEssen;
+REITER_NEU.essen = () => { if (window.MeinVorteilEssen?.gestartet) MeinVorteilEssen.lade(); else if (reiterOffen === 'essen') starteEssen(); };
 const reiterAusHash = () => { const h = location.hash.replace('#', '').toLowerCase(); return /^[a-z0-9-]+$/.test(h) && document.querySelector(`.sprung a[data-reiter="${h}"]`) && $('p-' + h) ? h : null; };
 function zeigeReiter(name) {
   if (!name) { zeigeBereich(aktiv); return; }

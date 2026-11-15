@@ -1,6 +1,6 @@
 # Mein Vorteil
 
-**Dein Assistent auf einer Seite:** Deals, Preisfehler, Filme, Auftritte (mit Bewerbung), Remix-Contests, Deutschunterricht, Konzerte, Gewinnspiele, Krypto, Spartricks.
+**Dein Assistent auf einer Seite:** Deals, Preisfehler, Filme, Auftritte (mit Bewerbung), Remix-Contests, Deutschunterricht, Konzerte, Gewinnspiele, Krypto, Spartricks, Essen.
 <https://xanderfoxy.github.io/Synquenzer/mein-vorteil/> (Safari → Teilen → „Zum Home-Bildschirm“, dann wie eine App)
 
 Die alten Seiten `schnaeppchen/`, `vorteile/` und `konzerte/` leiten sofort hierher weiter (`#angebote`,
@@ -29,7 +29,7 @@ Dunkles, warmes Design – immer, auch wenn das iPhone hell eingestellt ist (`co
 Farbe (`.f-<bereich>` setzt `--f`/`--f-hell`; `--akzent` folgt, so passen alle Karten von selbst).
 
 Oben bleibt eine Leiste mit gezeichneten Symbolen (SVG, keine Emojis) und Zähler stehen:
-**Start · Deals · Preisfehler · Filme · Auftritte · Remix · Unterricht · Konzerte · Gewinnspiele · Krypto · Spartricks · Mehr**
+**Start · Deals · Essen · Preisfehler · Filme · Auftritte · Remix · Unterricht · Konzerte · Gewinnspiele · Krypto · Spartricks · Mehr**
 („Start“ bleibt links stehen, der Rest ist seitlich wischbar). Darunter „Du bist in: …“ mit einer kurzen Zeile.
 Es ist immer nur **ein** Bereich zu sehen (kein ewiges Scrollen); je Bereich eine Top-Liste + „weitere zeigen“.
 Sprungmarken: `#start`, `#deals` (`#produkte`, `#cashback`, `#snacks` = Ziel im Bereich Deals), `#preisfehler`, `#filme`,
@@ -48,6 +48,7 @@ Sprungmarken: `#start`, `#deals` (`#produkte`, `#cashback`, `#snacks` = Ziel im 
 | **Konzerte** | in der Nähe (bis `pushRadiusKm`), darunter **je Band der nächste Termin, auch weit weg, mit km**; Tourdaten-Links je Band (`../konzerte/artists.json`, erst beim Öffnen) | nächster Termin bzw. Tourdaten-Links |
 | **Gewinnspiele** | nur laufende ohne Kauf/Abo | sonst mydealz-Gruppen Gewinnspiele/Gratis |
 | **Krypto** | wie bisher (nur `localStorage`); Push-Kasten mit Feld „ntfy-Thema“ (nur auf dem Gerät) | Kurs immer |
+| **Essen** | eigener Reiter (`essen.js`, Daten `essen.json`): Heute · Fastfood & Ketten · Pizza & Abholen · All-you-can-eat · XXL & Challenges · Gratis-Tage (+ „Aktuell“, sobald der Radar Einträge der Kategorie `essen` liefert) | Start-Kachel: bester belegter Treffer des Tages (Aktionstag heute, Wochentags-Aktion, nächster Aktionstag ≤ 14 Tage, dauerhaft gratis), sobald der Reiter einmal offen war; vorher „Gratis-Tage, Aktionen, Buffets“ |
 | **Spartricks** | eigener Reiter (`spartricks.js`, Daten `spartricks.json`): Top 10 · Geld zurück · Clever einkaufen · Gratis & Proben · Geburtstag gratis · Freizeit & Reisen · Gewinnspiele, Suche, Stern | Start-Kachel: „Tipp des Tages“ (wechselt täglich) + nächste Frist, sobald der Reiter einmal offen war; vorher „Geld zurück, Gratis, Geburtstag“ |
 | **Mehr** | Erleben, Reisen, Nebenverdienst, Spar-Tipps, Vorlage Übersetzung, Quellen | – |
 
@@ -101,6 +102,23 @@ Die Infozeile bleibt einzeilig (bei schmalen Handys kürzt sich das Genre), ein 
 Apple-Karte dasteht, fällt weg.
 Film-Einträge aus `aktuell.json` (Kategorie `filme`, für die Pushes) stehen nur dort, nicht noch einmal unter „Mehr“.
 Der Service Worker hält `filme.js` wie die Seite (erst Netz, nach 3 s die letzte gute Kopie). Tests: `test/filme.test.mjs`.
+
+**Reiter „Essen“ (seit 15.11.2026, `essen.js` + `essen.json`):** Xanders Wunsch vom 15.11. („kostenlos essen, besondere Tage,
+Gutscheine, Aktionen bei McDonald's oder Subway, Abholpizza zum halben Preis, XXL-Restaurants, wann All-you-can-eat ist“). Daten aus zwei
+Recherchen (Ketten bundesweit, Lokale bis ca. 60 km um Döbeln; 54 Einträge). Jeder Eintrag: `quellen` (nur https), `geprueft`, `sicher`
+(`ja` = offiziell oder mehrere datierte Quellen; `pruefen` = Portal/Stadtmagazin/Bewertung → Marke „bitte vor Ort prüfen“; alle Lokale),
+Zeiten und Preise wörtlich wie in der Quelle (`wann`, `preis`, `zeit.text`), bei Lokalen `km` (Luftlinie ab Döbeln Obermarkt), Adresse und
+Stand der Quelle. `gratis: true` nur ohne Kauf/Abo (derzeit nur das IKEA-Family-Heißgetränk); sonst Marken „nur mit App“/„Abholung“.
+Regeln der Seite (Berliner Zeit): `bis` vorbei → weg; Aktionstag ohne `bis` nie aktuell; `ab` in der Zukunft → „Als Nächstes“;
+`wochentage` (1 = Mo … 7 = So) zählen nur an dem Tag, mit `zeit` „läuft“ / „heute ab …“ / „heute vorbei · nächster: …“ (neu gezeichnet zum
+nächsten Wechsel und um Mitternacht); `nurHinweis` (z. B. Domino's Abhol-Pizza zum halben Preis) nur unter „Kommt immer wieder“;
+`geprueft` älter als 45 Tage → „Stand … – bitte prüfen“ und nicht auf der Kachel. „Heute“: Aktionen des Tages, „Als Nächstes“ (Aktionstage
+≤ 35 Tage, „Morgen“), „Die Woche“ (feste Tage), „Täglich“ (aufklappbar), Döbeln-Hinweis. Geburtstag und Gratis-Proben stehen nicht doppelt
+hier: „Geburtstag gratis ›“/„Gratis & Proben ›“ und „Ausführlich in Spartricks ›“ öffnen Spartricks im passenden Chip
+(`MeinVorteilSpartricks.zeige(chip, id)`). Start-Kachel nur aus dem kleinen Auszug `mein-vorteil-essen-kachel` (nur `sicher: 'ja'`; höchstens ein „ab …“-Aktionstag, dann was ohne Kauf gratis ist);
+letzter Stand im Cache Storage `mv-essen`. Der Service Worker (Cache `mein-vorteil-3`) hält `essen.js` wie die Seite, `essen.json` nicht.
+Radar: noch kein eigenes Modul (die mydealz-Gruppen `restaurant`/`lieferservice` sind von hier aus nicht als RSS belegt) – die Seite
+zeigt Einträge der Kategorie `essen` aber schon unter „Aktuell“. Tests: `test/essen.test.mjs`.
 
 **Reiter „Spartricks“ (seit 15.11.2026, `spartricks.js` + `spartricks.json`):** komprimiertes Wissen aus drei Recherchen
 (Geld zurück, Einkaufen & Gratis, Geburtstag & Freizeit; 133 Einträge → 94 Tipps: Doppelte vereint, Prämien-Themen Strom/Bank/Konto
