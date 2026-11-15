@@ -72,6 +72,7 @@ export const FIXTURE_KARTE = [
   ['genre=4403/json', 'itunes-rss-klassiker.json'],
   ['genre=4410/json', '!fehler'],
   ['/rss/topmovies/', 'itunes-rss-leer.json'], // weitere Genres (z. B. Such-Charts Drama, Independent): leer
+  ['/rss/toptvseasons/', 'itunes-rss-leer.json'], // Serien-Charts (15.11.2026): im Standard-Test leer
   ['rss/gruppe/apple-tv', 'mydealz-itunes.xml'],
   // Apple-TV-Angebotsräume (tv.apple.com): Filmseite des Stores mit Raum-Links, Raum „Filme für 3,99 €“
   ['tv.apple.com/de/room/movies/', 'appletv-filme.html'],

@@ -58,15 +58,29 @@ export const STANDARD = {
   qualiBekanntNeu: 12, // neue Filme (≤ neuMonate) haben noch weniger Artikel
   qualiBlockbuster: 55, // so bekannt, dass er trotz schwacher Kritik bleibt (Popcorn-Kino)
   qualiOhneDatenPlatz: 15, // ohne Wikidata-Daten nur, wer so weit oben in den Apple-Charts steht
+  // Boxen und alle Serien (Xander 15.11.2026: „alle Filmboxen und alle Serien, die gerade Preisknüller sind“)
+  boxMax: 150, // Box-Nummern je Lookup-Abruf (Boxen kennt der Radar aus den Film-Lookups: collectionId)
+  boxAbrufe: 2, // Box-Lookups pro Lauf (am längsten nicht geprüfte zuerst)
+  serienPoolMax: 300, // Staffeln aus den Serien-Charts, deren Preis jeder Lauf weiter verfolgt (2 Lookups)
+  maxBoxen: 40, // Boxen auf der Seite
+  maxSerienAngebot: 60, // Staffeln anderer Serien im Angebot
+  // Marke „Knüller“ – nur mit echtem Grund aus der eigenen Historie (FILME-NOTES.md)
+  knuellerPct: 30, // mindestens so viel % unter dem üblichen Preis …
+  knuellerTage: 7, // … und mindestens so viele Tage beobachtet (vorher gibt es keinen „üblichen“ Preis)
+  knuellerTiefstTage: 14, // „so günstig wie nie“ zählt erst nach so vielen Tagen Beobachtung
+  boxJeFilmKnueller: 2.5, // Box gesenkt und höchstens so viel je Film
 };
 
 export const sucheUrl = (term, staffel = false, limit = STANDARD.sucheLimit, land = 'de') =>
   `${APPLE}/search?term=${encodeURIComponent(term)}&country=${land}&media=${staffel ? 'tvShow' : 'movie'}&entity=${staffel ? 'tvSeason' : 'movie'}&limit=${staffel ? 50 : limit}`;
 export const lookupUrl = (ids, land = 'de') => `${APPLE}/lookup?id=${ids.map(i => String(i).replace(/^itunes:/, '')).join(',')}&country=${land}`;
 export const chartUrl = genre => `${APPLE}/de/rss/topmovies/limit=100/genre=${genre}/json`;
+// Serien-Charts (Legacy-RSS „toptvseasons“, gleiches Format wie topmovies; ohne Genre = alle Serien) – Format im Roh-Lauf prüfen
+export const serienChartUrl = genre => `${APPLE}/de/rss/toptvseasons/limit=100${genre ? `/genre=${genre}` : ''}/json`;
 // Reihenfolge der Gruppen in filme.json (die Seite zeigt: Wunschliste · Für 3,99 € · Action & Thriller · Comedy · 80er & Klassiker
 // · Disney · Serien; „angebot“ und „neu“ bleiben für ältere Fassungen der Seite)
-export const GRUPPEN_REIHE = ['wunsch', 'fuer399', 'action', 'comedy', 'achtziger', 'disney', 'serien', 'angebot', 'neu'];
+// „boxen“ (15.11.2026) steht hinten: ältere Seiten kennen die Gruppe nicht und lassen sie weg
+export const GRUPPEN_REIHE = ['wunsch', 'fuer399', 'action', 'comedy', 'achtziger', 'disney', 'serien', 'angebot', 'neu', 'boxen'];
 export const MYDEALZ_GRUPPEN = [{ gruppe: 'apple-tv', name: 'Apple TV' }, { gruppe: 'filme-serien', name: 'Filme & Serien' }];
 
 // ---------------------------------------------------------------- Wikidata (Weg „wikidata“)
@@ -466,6 +480,17 @@ export function staffelInfo(name) {
   return { serie: m[1].replace(/\s*\([^)]*\)\s*$/, '').trim(), nr: Number(m[2]), zusatz: m[3].replace(/^[\s,:–—-]+/, '').trim() };
 }
 
+// Komplett-Boxen einer Serie („Die komplette Serie“, „The Complete Series“) – Apple führt sie als „TV Season“ ohne Nummer
+const KOMPLETT = /\b(?:die\s+)?komplette\s+(?:serie|staffeln|box)\b|\bcomplete\s+(?:series|collection|seasons?\s*\d+\s*[-–]\s*\d+)\b|\bkomplettbox\b|\bgesamtbox\b|\bstaffeln?\s+\d+\s*[-–]\s*\d+\b|\bseasons\s+\d+\s*[-–]\s*\d+\b/i;
+/** "Rick and Morty – Die komplette Serie" -> { serie, nr: null, zusatz: 'komplett' } | null */
+export function komplettInfo(name) {
+  const s = String(name ?? '');
+  const m = KOMPLETT.exec(s);
+  if (!m) return null;
+  const serie = s.slice(0, m.index).replace(/[\s,:–—(\[-]+$/, '').replace(/\b(?:the|die|das)\s*$/i, '').replace(/[\s,:–—(\[-]+$/, '').trim();
+  return { serie, nr: null, zusatz: 'komplett' };
+}
+
 /** Staffeln einer Serie aus Suchergebnissen (nur genau diese Serie, nicht Ableger). */
 export function staffelnAus(ergebnisse, item) {
   const ziel = new Set(namen(item).filter(x => x.faktor === 1).map(x => normTitel(x.n)));
@@ -473,7 +498,7 @@ export function staffelnAus(ergebnisse, item) {
   for (const r of ergebnisse) {
     const d = ausItunes(r);
     if (!d || d.typ !== 'staffel') continue;
-    const info = staffelInfo(d.titel);
+    const info = (d.komplett && komplettInfo(d.titel)) || staffelInfo(d.titel) || komplettInfo(d.titel);
     if (!info) continue;
     const serie = info.serie ? normTitel(info.serie) : normTitel(r.artistName);
     if (!ziel.has(serie)) continue;
@@ -496,11 +521,25 @@ function appleLink(u) {
 }
 const jahrAus = d => { const m = String(d ?? '').match(/^(\d{4})/); return m ? Number(m[1]) : null; };
 
-/** Ein Ergebnis der Search-/Lookup-API (Film oder Staffel) -> einheitliche Daten, sonst null. */
+/**
+ * Box eines Films: Liegt ein Film in einer Box, nennt sein Lookup collectionId/collectionName/trackCount (echter Lauf
+ * 43653935144: 140 von 274 Filmen, 105 Boxen). collectionPrice dort ist NICHT der Box-Preis (102 von 140 = Filmpreis,
+ * „Indiana Jones 4-Movie Collection“ 9,99 € statt 14,99 €) – den holt erst der Box-Lookup über die collectionId.
+ */
+export function boxVon(r) {
+  if (!r || r.wrapperType !== 'track' || !r.collectionId || !r.collectionName || String(r.collectionId) === String(r.trackId)) return null;
+  const filme = Number(r.trackCount);
+  if (!Number.isInteger(filme) || filme < 2) return null;
+  return { id: `itunes:${r.collectionId}`, name: String(r.collectionName).trim(), filme };
+}
+
+/** Ein Ergebnis der Search-/Lookup-API (Film, Staffel oder Film-Box) -> einheitliche Daten, sonst null. */
 export function ausItunes(r) {
   if (!r || typeof r !== 'object') return null;
   const film = r.wrapperType === 'track' && (r.kind === 'feature-movie' || (!r.kind && r.trackName));
   const staffel = r.wrapperType === 'collection' && /season/i.test(String(r.collectionType || ''));
+  // Film-Box (Box-Lookup über die collectionId): „collection“, aber keine Staffel und keine Musik/Bücher. Format im Roh-Lauf prüfen.
+  const box = r.wrapperType === 'collection' && !staffel && !/album|compilation|podcast|book|software|audiobook/i.test(String(r.collectionType || ''));
   if (film && r.trackId && r.trackName) {
     const preisSd = preisWert(r.trackPrice ?? r.collectionPrice);
     const preisHd = preisWert(r.trackHdPrice ?? r.collectionHdPrice);
@@ -510,6 +549,7 @@ export function ausItunes(r) {
       bild: bildUrl(r.artworkUrl100 || r.artworkUrl60), link: appleLink(r.trackViewUrl),
       // Beschreibung nur, wenn da (sonst bliebe beim Zusammenführen die Chart-Beschreibung nicht erhalten)
       ...(typeof r.longDescription === 'string' && r.longDescription.trim() ? { text: r.longDescription.slice(0, 600) } : {}),
+      ...(boxVon(r) ? { box: boxVon(r) } : {}),
     };
   }
   if (staffel && r.collectionId && r.collectionName) {
@@ -517,6 +557,15 @@ export function ausItunes(r) {
       id: `itunes:${r.collectionId}`, typ: 'staffel', titel: String(r.collectionName).trim(), jahr: jahrAus(r.releaseDate), release: r.releaseDate || null,
       genre: r.primaryGenreName || null, preisSd: preisWert(r.collectionPrice), preisHd: preisWert(r.collectionHdPrice), leihe: null,
       bild: bildUrl(r.artworkUrl100 || r.artworkUrl60), link: appleLink(r.collectionViewUrl), folgen: Number(r.trackCount) || null,
+      kuenstler: typeof r.artistName === 'string' && r.artistName.trim() ? r.artistName.trim() : null, // = die Serie
+      ...(KOMPLETT.test(String(r.collectionName)) ? { komplett: true } : {}),
+    };
+  }
+  if (box && r.collectionId && r.collectionName) {
+    return {
+      id: `itunes:${r.collectionId}`, typ: 'box', titel: String(r.collectionName).trim(), jahr: jahrAus(r.releaseDate), release: r.releaseDate || null,
+      genre: r.primaryGenreName || null, preisSd: preisWert(r.collectionPrice), preisHd: preisWert(r.collectionHdPrice), leihe: null,
+      bild: bildUrl(r.artworkUrl100 || r.artworkUrl60), link: appleLink(r.collectionViewUrl), filme: Number(r.trackCount) >= 2 ? Number(r.trackCount) : null,
     };
   }
   return null;
@@ -599,9 +648,53 @@ export function preisLage(v, preis, tag, { typ = 'film', staffelZiel = 9.99, ang
   const hoechst = h.reduce((m, x) => Math.max(m, x[1]), 0);
   const gesenkt = preis != null && vorher != null && preis < vorher;
   const angebot = preis != null && (
-    (typ === 'film' && preis <= angebotPreis) || (typ === 'staffel' && preis <= staffelZiel)
+    (typ === 'film' && preis <= angebotPreis) || (typ === 'staffel' && preis <= staffelZiel) || (typ === 'box' && gesenkt)
     || (gesenkt && preis <= vorher * 0.7) || (istTiefst && hoechst > preis));
   return { vorher, tage, tiefst, istTiefst, hoechst, gesenkt, angebot };
+}
+
+/**
+ * Üblicher Preis = der Preis, der in der eigenen Historie am längsten galt (Tage; der laufende Preis bis heute).
+ * Erst ab tageMin Tagen Beobachtung – vorher gibt es keinen „üblichen“ Preis (null).
+ */
+export function ueblichPreis(v, tag, tageMin = STANDARD.knuellerTage) {
+  const h = v?.h || [];
+  if (!h.length || !v.seit || tageZwischen(v.seit, tag) + 1 < tageMin) return null;
+  const dauer = new Map();
+  for (let i = 0; i < h.length; i++) {
+    const d = i + 1 < h.length ? tageZwischen(h[i][0], h[i + 1][0]) : tageZwischen(h[i][0], tag) + 1;
+    dauer.set(h[i][1], (dauer.get(h[i][1]) || 0) + Math.max(0, d));
+  }
+  let best = null;
+  for (const [p, d] of dauer) if (!best || d > best.d || (d === best.d && p > best.p)) best = { p, d };
+  return best ? best.p : null;
+}
+
+/**
+ * Preisknüller-Bewertung aus der EIGENEN Historie (kein Allzeit-Tiefst: der Radar kennt nur, was er seit „seit“ gesehen hat).
+ * -> { ueblich, ersparnis {eur, pct, basis}, ueberTiefst, nieSoGuenstig, jeFilm, knueller {grund} | null, rang }
+ * Knüller nur mit echtem Grund: ≥ knuellerPct % unter dem üblichen Preis (≥ knuellerTage beobachtet) · so günstig wie nie
+ * (≥ knuellerTiefstTage beobachtet, vorher teurer gesehen) · Box gesenkt und ≤ boxJeFilmKnueller je Film · Staffel gesenkt und ≤ staffelZiel.
+ */
+export function bewerte(v, preis, tag, lage, { typ = 'film', filme = null, staffelZiel = 9.99, m = STANDARD } = {}) {
+  const leer = { ueblich: null, ersparnis: null, ueberTiefst: null, nieSoGuenstig: false, jeFilm: null, knueller: null, rang: 0 };
+  if (preis == null) return leer;
+  const ueblich = ueblichPreis(v, tag, m.knuellerTage);
+  const basis = ueblich != null && ueblich > preis + 0.004 ? { p: ueblich, basis: 'üblich' } : lage.gesenkt && lage.vorher > preis ? { p: lage.vorher, basis: 'zuletzt' } : null;
+  const ersparnis = basis ? { eur: round(basis.p - preis, 2), pct: Math.round((1 - preis / basis.p) * 100), basis: basis.basis } : null;
+  const ueberTiefst = lage.tiefst ? round(Math.max(0, preis - lage.tiefst.p), 2) : null;
+  const nieSoGuenstig = !!lage.tiefst && preis <= lage.tiefst.p + 0.004 && (lage.hoechst ?? 0) > preis && lage.tage >= m.knuellerTage;
+  const jeFilm = typ === 'box' && Number.isInteger(filme) && filme >= 2 ? round(preis / filme, 2) : null;
+  const gesenkt = !!lage.gesenkt || !!ersparnis;
+  let grund = null;
+  if (ersparnis && ersparnis.basis === 'üblich' && ersparnis.pct >= m.knuellerPct && lage.tage >= m.knuellerTage) grund = `${ersparnis.pct} % unter dem üblichen Preis`;
+  // „so günstig wie nie“ als Knüller nur, solange der Tiefstpreis frisch ist (gilt er schon länger, ist er der neue Normalpreis)
+  else if (nieSoGuenstig && lage.tage >= m.knuellerTiefstTage && tageZwischen(lage.tiefst.tag, tag) < m.knuellerTage) grund = 'so günstig wie nie';
+  else if (jeFilm != null && jeFilm <= m.boxJeFilmKnueller && gesenkt) grund = `gesenkt, ${euro(jeFilm)} je Film`;
+  else if (typ === 'staffel' && preis <= staffelZiel && gesenkt) grund = `Staffel gesenkt auf ${euro(preis)}`;
+  const rang = (grund ? 1000 : 0) + (ersparnis?.pct ?? 0) + (nieSoGuenstig ? 25 : ueberTiefst === 0 && lage.tage >= m.knuellerTage ? 5 : 0)
+    + (jeFilm != null ? Math.max(0, 10 - jeFilm) * 3 : 0);
+  return { ueblich: ueblich != null && ueblich !== preis ? ueblich : null, ersparnis, ueberTiefst, nieSoGuenstig, jeFilm, knueller: grund ? { grund } : null, rang };
 }
 
 // ---------------------------------------------------------------- Listen
@@ -698,6 +791,7 @@ export function preisJeFilm(titel, preis) {
 const SO_FILM = 'Link öffnen – die TV-App zeigt den Film. Preis prüfen, „Kaufen“ tippen und mit Face ID bestätigen. Gekaufte Filme bleiben in deiner Mediathek.';
 const SO_STAFFEL = 'Link öffnen – die TV-App zeigt die Staffel. Preis prüfen, „Kaufen“ tippen und mit Face ID bestätigen. Alle Folgen bleiben in deiner Mediathek.';
 const SO_DEAL = 'Deal öffnen: dort steht, welche Filme dabei sind. Dann in der TV-App suchen, Preis prüfen und kaufen.';
+const SO_BOX = 'Link öffnen – die TV-App zeigt die Box. Preis prüfen, „Kaufen“ tippen und mit Face ID bestätigen. Alle Filme der Box bleiben in deiner Mediathek.';
 
 const NULL_TITEL = { genre: null, preis: null, preisSd: null, preisHd: null, leihe: null, vorher: null, tiefst: null, seit: null, tage: 0, istTiefst: false, angebot: false, bild: null, link: null, chart: null };
 
@@ -709,10 +803,23 @@ function titelObjekt(d, lage, extra = {}) {
     vorher: lage.vorher ?? null, tiefst: lage.tiefst ? { p: lage.tiefst.p, tag: lage.tiefst.tag } : null, seit: lage.seit ?? null,
     tage: lage.tage ?? 0, istTiefst: !!lage.istTiefst, angebot: !!lage.angebot,
     bild: d.bild ?? null, link: d.link ?? null, chart: d.chart ?? null, quelle: 'Apple',
+    // Preisknüller (15.11.2026): nur ergänzt; Tiefstpreis = eigene Beobachtung (tiefstQuelle 'eigen'), extern = Allzeit-Tiefst
+    // einer erlaubten öffentlichen Preis-Historie mit Quelle – heute keine (FILME-NOTES.md), darum immer null
+    ueblich: lage.ueblich ?? null, ersparnis: lage.ersparnis ?? null, ueberTiefst: lage.ueberTiefst ?? null,
+    nieSoGuenstig: !!lage.nieSoGuenstig, knueller: lage.knueller ?? null, tiefstQuelle: 'eigen', extern: lage.extern ?? null,
     ...extra,
   };
-  if (d.typ === 'staffel') { o.serie = d.serie ?? null; o.nr = d.nr ?? null; }
+  if (d.typ === 'staffel') { o.serie = d.serie ?? null; o.nr = d.nr ?? null; if (d.komplett) o.komplett = true; }
+  if (d.typ === 'box') { o.filme = d.filme ?? null; o.jeFilm = lage.jeFilm ?? null; }
   return o;
+}
+
+/** Allzeit-Tiefst aus einer externen Quelle (zustand.filme.extern[id] = { p, tag, quelle, url }) – nur vollständig, sonst null. */
+export function externTiefst(x) {
+  if (!x || typeof x !== 'object') return null;
+  const p = preisWert(x.p), q = typeof x.quelle === 'string' ? x.quelle.trim() : '';
+  const url = typeof x.url === 'string' && /^https:\/\//.test(x.url) ? x.url : null;
+  return p != null && q && url && /^\d{4}-\d\d-\d\d$/.test(String(x.tag || '')) ? { p, tag: x.tag, quelle: q.slice(0, 40), url } : null;
 }
 
 function istHorror(d, horrorIds) {
@@ -1098,8 +1205,69 @@ export default async function filme(ctx) {
   for (const p of posten.filter(x => x.serie)) {
     for (const id of liste(zf.ids[p.key]?.ids)) {
       const d = daten.get(id);
-      if (d && !d.serie) { const info = staffelInfo(d.titel); if (info) daten.set(id, { ...d, serie: p.item.titel, nr: info.nr, zusatz: info.zusatz }); }
+      if (d && !d.serie) { const info = (d.komplett && komplettInfo(d.titel)) || staffelInfo(d.titel) || komplettInfo(d.titel); if (info) daten.set(id, { ...d, serie: p.item.titel, nr: info.nr, zusatz: info.zusatz }); }
     }
+  }
+
+  // 3b) Film-Boxen: entdeckt aus den Film-Lookups dieses Laufs (collectionId, kein Abruf extra), Preis per Box-Lookup
+  //     (höchstens boxAbrufe × boxMax Nummern, am längsten nicht geprüfte zuerst). Der collectionPrice im Film-Datensatz
+  //     ist oft nur der Filmpreis (Spiegelwert) und wird nie als Box-Preis genommen.
+  zf.boxen ||= {};
+  for (const d of daten.values()) {
+    if (!d?.box) continue;
+    const b = (zf.boxen[d.box.id] ||= { n: d.box.name, filme: d.box.filme, seit: tag, filmIds: [] });
+    b.tag = tag; b.filme = d.box.filme || b.filme;
+    if (!liste(b.filmIds).includes(d.id)) b.filmIds = [...liste(b.filmIds), d.id].slice(-30);
+  }
+  const bs = { ok: true, anzahl: 0, fehler: [], bekannt: Object.keys(zf.boxen).length, abgefragt: 0, ohnePreis: 0, formatFremd: 0 };
+  status['apple-boxen'] = bs;
+  const boxIds = Object.keys(zf.boxen).sort((a, b) => String(zf.boxen[a].geprueft || '').localeCompare(String(zf.boxen[b].geprueft || '')) || a.localeCompare(b))
+    .slice(0, m.boxMax * m.boxAbrufe);
+  for (let i = 0; i < boxIds.length; i += m.boxMax) {
+    if (appleGestoert() || appleAbrufe >= m.maxAppleAbrufe) break;
+    const teil = boxIds.slice(i, i + m.boxMax);
+    const set = new Set(teil);
+    try {
+      const res = leseErgebnisse(await apple(lookupUrl(teil)));
+      bs.abgefragt += teil.length;
+      for (const r of res) {
+        const d = ausItunes(r);
+        if (d?.typ === 'box' && set.has(d.id)) {
+          const z = zf.boxen[d.id];
+          daten.set(d.id, { ...d, filme: d.filme ?? z.filme ?? null });
+          z.n = d.titel; bs.anzahl++;
+          if (d.preisHd == null && d.preisSd == null) bs.ohnePreis++;
+        } else if (r && set.has(`itunes:${r.collectionId}`)) bs.formatFremd++; // Antwort nicht im erwarteten Format -> nichts übernehmen
+      }
+      for (const id of teil) zf.boxen[id].geprueft = tag;
+    } catch (e) {
+      melde('apple-boxen', `Apple-Boxen: ${e.message}`);
+      for (const id of teil) if (alt.has(id)) altDaten.set(id, alt.get(id));
+    }
+  }
+
+  // 3c) Alle Serien: Serien-Charts (Apple, deutscher Store) entdecken Staffeln; deren Preise verfolgt jeder Lauf weiter
+  //     (zf.staffelPool: id -> zuletzt in den Charts), damit „gesenkt“ und der Tiefstpreis auch nach den Charts stimmen.
+  const serienCharts = chartCfg.serien === false ? [] : liste(chartCfg.serien ?? [{ id: null, name: 'Alle Serien' }]);
+  const ss = { ok: true, anzahl: 0, fehler: [], staffeln: 0 };
+  status['apple-serien'] = ss;
+  zf.staffelPool ||= {};
+  for (const g of serienCharts) {
+    if (appleGestoert() || appleAbrufe >= m.maxAppleAbrufe - 2) break;
+    try {
+      const e = leseCharts(await apple(serienChartUrl(g?.id ?? null)));
+      for (const x of e) if (!istHorror(x, horrorIds)) zf.staffelPool[x.id] = tag;
+      ss.anzahl += e.length;
+    } catch (e) { melde('apple-serien', `Serien-Charts ${g?.name || g?.id || 'alle'}: ${e.message}`); }
+  }
+  const poolIds = Object.entries(zf.staffelPool).filter(([id]) => !daten.has(id)).sort((a, b) => String(b[1]).localeCompare(String(a[1])))
+    .map(([id]) => id).slice(0, m.serienPoolMax);
+  if (poolIds.length && !appleGestoert()) await lookup(poolIds.slice(0, Math.max(0, (m.maxAppleAbrufe - appleAbrufe)) * m.lookupMax), 'apple-serien');
+  for (const id of Object.keys(zf.staffelPool)) {
+    const d = daten.get(id);
+    if (d?.typ !== 'staffel' || d.serie) continue;
+    const info = (d.komplett && komplettInfo(d.titel)) || staffelInfo(d.titel) || komplettInfo(d.titel);
+    daten.set(id, { ...d, serie: info?.serie || d.kuenstler || d.titel, nr: info?.nr ?? null, zusatz: info?.zusatz || '' });
   }
 
   // 4) mydealz: Apple-Film-Aktionen
@@ -1216,10 +1384,12 @@ export default async function filme(ctx) {
     if (d) {
       const preis = d.preisHd ?? d.preisSd ?? d.preis ?? null;
       const { v, tiefstVorher, ersteBeobachtung } = merkeFilmPreis(zf, id, preis, tag, m.historieTage);
-      const lage = { ...preisLage(v, preis, tag, { typ: d.typ, ...opts }), seit: v.seit };
+      const lage0 = { ...preisLage(v, preis, tag, { typ: d.typ, ...opts }), seit: v.seit };
+      const bw = bewerte(v, preis, tag, lage0, { typ: d.typ, filme: d.filme ?? null, staffelZiel, m });
+      const lage = { ...lage0, ...bw, extern: externTiefst(zf.extern?.[id]) };
       if (preis != null && tiefstVorher && !ersteBeobachtung && preis < tiefstVorher.p) neueTiefst.add(id);
       t = titelObjekt({ ...d, chart: chartTreffer.get(id)?.pos ?? null }, lage);
-      t._hoechst = lage.hoechst; t._gesenkt = lage.gesenkt; t._horror = istHorror(d, horrorIds);
+      t._hoechst = lage.hoechst; t._gesenkt = lage.gesenkt; t._horror = istHorror(d, horrorIds); t._rang = bw.rang;
       const ct = chartTreffer.get(id)?.d; // Lookup ohne Beschreibung -> die aus den Charts
       t._horrorText = Math.max(horrorText(d.text, d.genre), horrorText(ct?.text, ct?.genre ?? d.genre)); // nur Chart-Titel zählen: 0–3
     } else {
@@ -1230,7 +1400,7 @@ export default async function filme(ctx) {
     return t;
   }
 
-  const gruppen = { wunsch: [], angebot: [], neu: [], achtziger: [], serien: [], disney: [] };
+  const gruppen = { wunsch: [], angebot: [], neu: [], achtziger: [], serien: [], disney: [], boxen: [] };
   const wunschIds = new Set(), kuratiert = new Map(); // id -> 'achtziger' | 'disney'
   const nachPreis = (a, b) => (b.angebot - a.angebot) || ((a.preis ?? Infinity) - (b.preis ?? Infinity));
 
@@ -1281,6 +1451,22 @@ export default async function filme(ctx) {
   }
   gruppen.serien = [...staffeln.values()].slice(0, 400)
     .sort((a, b) => (b.angebot - a.angebot) || ((serienReihe.get(a.serie) ?? 99) - (serienReihe.get(b.serie) ?? 99)) || ((a.nr ?? 0) - (b.nr ?? 0)));
+  for (const t of gruppen.serien) t.wunsch = true; // deine Serien (Liste „serien“) bleiben oben
+  // alle anderen Serien: nur Staffeln im Angebot – gesenkt, deutlich unter dem höchsten gesehenen Preis, so günstig wie nie
+  // oder Knüller (≤ 9,99 € allein reicht hier nicht: viele alte Staffeln kosten das immer). Knüller zuerst, dann nach Ersparnis.
+  const wunschStaffeln = new Set(gruppen.serien.map(t => t.id));
+  const nachRang = (a, b) => (!!b.knueller - !!a.knueller) || ((b._rang ?? 0) - (a._rang ?? 0)) || ((a.preis ?? Infinity) - (b.preis ?? Infinity));
+  const imAngebot = t => t.preis != null && (t._gesenkt || t.nieSoGuenstig || !!t.knueller || ((t._hoechst ?? 0) > 0 && t.preis <= t._hoechst * m.deutlichFaktor));
+  const andere = Object.keys(zf.staffelPool).filter(id => !wunschStaffeln.has(id)).map(id => baue(id))
+    .filter(t => t && !t._alt && !t._horror && t.typ === 'staffel' && imAngebot(t));
+  for (const t of andere) { t.wunsch = false; t.angebot = true; }
+  ss.staffeln = andere.length;
+  gruppen.serien.push(...andere.sort(nachRang).slice(0, m.maxSerienAngebot));
+  // Film-Boxen: im Angebot (gesenkt), Knüller oder höchstens 3,99 € je Film – Knüller zuerst, dann nach Ersparnis/Preis je Film
+  gruppen.boxen = Object.keys(zf.boxen).map(id => baue(id))
+    .filter(t => t && !t._alt && !t._horror && t.typ === 'box' && t.preis != null && (t.angebot || !!t.knueller || (t.jeFilm != null && t.jeFilm <= m.angebotPreis)))
+    .sort((a, b) => nachRang(a, b) || ((a.jeFilm ?? 99) - (b.jeFilm ?? 99)))
+    .slice(0, m.maxBoxen);
   // Neu aus den Charts – ohne Kinderfilme (Kinder-Chart, Wikidata-Genre, Apple-Genre); in den anderen Bereichen bleiben sie
   // (leere Reihe – Titel ohne lateinische Buchstaben – zählt nicht: sonst gälten alle solchen Titel als Kinderfilm)
   const kindGrund = t => { const r = kinderReihe(t.titel); return kinderGrund({ kinderChart: kinderIds.has(t.id) ? 'kinder-chart' : !!r && kinderReihen.has(r) && 'reihe', genres: [t.genre, chartTreffer.get(t.id)?.d?.genre], q: qualiVon(t.id) }); };
@@ -1335,6 +1521,13 @@ export default async function filme(ctx) {
     });
   }
 
+  // mydealz-Tipps: Staffeln zu „Serien“, Sets/Collections zu „Boxen“ (dieselben Einträge wie unter „angebot“)
+  const BOX_WORT = /collection|kollektion|trilogie|bundle|sammlung|\b\d{1,2}[\s-]*(?:filme|movies)\b|\bset\b|\bbox\b/i;
+  for (const t of gruppen.angebot.filter(x => x.quelle === 'mydealz')) {
+    if (t.typ === 'staffel') gruppen.serien.push({ ...t, wunsch: false });
+    else if (BOX_WORT.test(t.titel)) gruppen.boxen.push(t);
+  }
+
   // 5c) Übersicht nach Xanders Wunsch (14.11.2026): Für 3,99 € · Action & Thriller · Comedy · 80er & Klassiker
   //     Angebot = Kauf ≤ angebotMax (7,99 €) oder ≤ 70 % des zuletzt/höchsten gesehenen Preises; Wunschliste zuerst, dann
   //     Kuratiertes, dann nach Preis und Qualität. mydealz-Aktionen: ≤ 3,99 € je Film -> „Für 3,99 €“, sonst nach Titel.
@@ -1362,7 +1555,7 @@ export default async function filme(ctx) {
   // Zahl auf der Kachel: echte Angebote – Für 3,99 €, Gesenktes, deine Wunschfilme unter Ziel; nicht der Normalpreis bis 7,99 €
   // aus Action/Comedy (Dune 7,99 €, Iron Man 4,99 €; Prüfer-Befund MV8 8 / MV7 11)
   const echt = t => t.angebot || (t.preis != null && t.preis <= m.angebotPreis);
-  const angebotsZahl = new Set([...gruppen.fuer399, ...[...gruppen.action, ...gruppen.comedy, ...gruppen.achtziger, ...gruppen.disney, ...gruppen.serien].filter(t => t.angebot || (t.typ === 'film' && echt(t))), ...gruppen.wunsch.filter(t => t.angebot || t.unterZiel)].map(t => t.id)).size;
+  const angebotsZahl = new Set([...gruppen.fuer399, ...[...gruppen.action, ...gruppen.comedy, ...gruppen.achtziger, ...gruppen.disney, ...gruppen.serien].filter(t => t.angebot || (t.typ === 'film' && echt(t))), ...gruppen.boxen.filter(t => t.angebot || t.knueller), ...gruppen.wunsch.filter(t => t.angebot || t.unterZiel)].map(t => t.id)).size;
   const kurz = {
     angebote: angebotsZahl,
     top: [...gruppen.wunsch.filter(t => t.preis != null && (t.angebot || t.unterZiel)), ...gruppen.fuer399, ...gruppen.action, ...gruppen.comedy]
@@ -1382,7 +1575,7 @@ export default async function filme(ctx) {
       id: `film-${schluessel(t.id, String(t.preis))}`, kategorie: 'filme',
       titel: filmPushTitel(t),
       link: t.link, quelle: 'Apple TV', datum: jetzt, jetzt, art: 'deal', preise: p, zeile,
-      soGehts: t.typ === 'staffel' ? SO_STAFFEL : SO_FILM, wert, sofort, grund,
+      soGehts: t.typ === 'staffel' ? SO_STAFFEL : t.typ === 'box' ? SO_BOX : SO_FILM, wert, sofort, grund,
       extra: { filmId: t.id, typ: t.typ, bild: t.bild, jahr: t.jahr, tiefst: t.tiefst?.p ?? null, gruppe },
     }));
   };
@@ -1394,7 +1587,7 @@ export default async function filme(ctx) {
     else if (neueTiefst.has(t.id)) neuerEintrag(t, { grund: 'Wunschfilm: neuer Tiefstpreis', wert: 88, sofort: true, gruppe: 'wunsch', zusatz: ['neuer Tiefstpreis', 'auf deiner Wunschliste'] });
   }
   for (const t of gruppen.serien) {
-    if (!mitPreis(t) || gemeldet.has(t.id) || !t._gesenkt) continue;
+    if (t.wunsch !== true || !mitPreis(t) || gemeldet.has(t.id) || !t._gesenkt) continue; // Regel wie bisher: nur deine Serien
     gemeldet.add(t.id);
     if (t.preis <= staffelZiel) neuerEintrag(t, { grund: 'Staffel im Angebot', wert: 80, sofort: true, gruppe: 'serien' });
     else if (t.preis <= t.vorher * 0.7) neuerEintrag(t, { grund: 'Staffel billiger', wert: 60, sofort: false, gruppe: 'serien' });
@@ -1411,6 +1604,12 @@ export default async function filme(ctx) {
     if (t.quelle !== 'Apple' || !mitPreis(t) || gemeldet.has(t.id) || !t._gesenkt) continue;
     gemeldet.add(t.id);
     neuerEintrag(t, { grund: 'Film im Angebot', wert: 50, sofort: false, gruppe: 'angebot', zusatz: t.chart ? [`Platz ${t.chart} der Charts`] : [] });
+  }
+  // neu (15.11.2026): Knüller unter den Boxen und den anderen Serien – nur in die Tageszusammenfassung (nie sofort)
+  for (const t of [...gruppen.boxen, ...gruppen.serien.filter(x => x.wunsch === false)]) {
+    if (t.quelle !== 'Apple' || !mitPreis(t) || gemeldet.has(t.id) || !t.knueller || !t._gesenkt) continue;
+    gemeldet.add(t.id);
+    neuerEintrag(t, { grund: t.typ === 'box' ? 'Film-Box: Preisknüller' : 'Staffel: Preisknüller', wert: 58, sofort: false, gruppe: t.typ === 'box' ? 'boxen' : 'serien', zusatz: [t.knueller.grund] });
   }
   // Apple-TV-Angebotsraum: Film von deiner Liste steht drin (Wunsch = sofort; 80er/Disney sofort bei ≤ 3,99 €)
   const schonTitel = new Set(eintraege.map(e => normTitel(String(e.extra?.filmTitel || e.titel).replace(/\s+für\s+[\d.,]+\s*€.*$/, '').replace(/\s*\(\d{4}\)$/, ''))));
@@ -1449,6 +1648,8 @@ export default async function filme(ctx) {
   const keys = new Set(posten.map(p => p.key));
   for (const k of Object.keys(zf.ids)) if (!keys.has(k)) delete zf.ids[k];
   for (const k of Object.keys(zf.charts)) if (!zf.charts[k]?.tag || zf.charts[k].tag < tagMinus(tag, 7)) delete zf.charts[k];
+  for (const [k, b] of Object.entries(zf.boxen)) if (!b?.tag || b.tag < grenze) delete zf.boxen[k];
+  for (const [k, t] of Object.entries(zf.staffelPool)) if (typeof t !== 'string' || t < grenze) delete zf.staffelPool[k];
 
   const offen = posten.filter(p => { const s = zf.ids[p.key]; return !s || s.weiter != null; }).length;
   status['apple-suche'].offen = offen;
@@ -1462,7 +1663,7 @@ export default async function filme(ctx) {
     gruppen: Object.fromEntries(GRUPPEN_REIHE.filter(k => gruppen[k]).map(k => [k, gruppen[k].map(sauber)])),
     kurz,
     status,
-    hinweis: "Tiefstpreis = niedrigster Preis seit Beobachtungsbeginn (Datum in 'seit').",
+    hinweis: "Tiefstpreis = niedrigster Preis seit Beobachtungsbeginn (Datum in 'seit'), kein Allzeit-Tiefst (tiefstQuelle 'eigen'; extern nur mit Quelle).",
   };
   return { eintraege: eintraege.slice(0, m.maxEintraege), fehler, datei, kurz };
 }

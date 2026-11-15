@@ -1,0 +1,48 @@
+{
+ "_quelle": "FORMAT ANGENOMMEN (kein Roh-Lauf): Legacy-RSS toptvseasons wie topmovies; Testwerte",
+ "feed": {
+  "entry": [
+   {
+    "im:name": {
+     "label": "Testserie, Staffel 1"
+    },
+    "im:price": {
+     "label": "19,99 €",
+     "attributes": {
+      "amount": "19.99000",
+      "currency": "EUR"
+     }
+    },
+    "im:contentType": {
+     "attributes": {
+      "term": "TV Season",
+      "label": "TV-Staffel"
+     }
+    },
+    "id": {
+     "label": "https://itunes.apple.com/de/tv-season/testserie-staffel-1/id1700000001?uo=2",
+     "attributes": {
+      "im:id": "1700000001"
+     }
+    },
+    "link": {
+     "attributes": {
+      "rel": "alternate",
+      "type": "text/html",
+      "href": "https://itunes.apple.com/de/tv-season/testserie-staffel-1/id1700000001?uo=2"
+     }
+    },
+    "category": {
+     "attributes": {
+      "im:id": "4008",
+      "term": "Drama",
+      "label": "Drama"
+     }
+    },
+    "im:releaseDate": {
+     "label": "2020-01-01T00:00:00-07:00"
+    }
+   }
+  ]
+ }
+}

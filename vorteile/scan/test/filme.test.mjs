@@ -16,6 +16,7 @@ import filme, {
   chartIndex, chartFilm, serienBegriffe, wikidataAbfrage, wikidataTeile, leseWikidata, wikidataKandidaten, englisch,
   suchName, jahrImTitel, qualiAbfrage, leseQuali, qualiWahl, qualiOk, genreGruppe, STANDARD as FILM_STANDARD, horrorText,
   horrorVerdacht, doppelTipp, filmPushTitel, kinderfilm, kinderGrund, kinderReihe, KINDER_GENRES, wikidataUrl,
+  boxVon, komplettInfo, ueblichPreis, bewerte, externTiefst, serienChartUrl, lookupUrl,
 } from '../module/filme.mjs';
 
 const HIER = dirname(fileURLToPath(import.meta.url));
@@ -26,6 +27,7 @@ const fix = async n => readFile(join(FIX, n), 'utf8');
 const ergebnisse = async n => leseErgebnisse(await fix(n));
 const JETZT = new Date('2026-11-07T12:00:00Z');
 const tagPlus = n => new Date(JETZT.getTime() + n * 864e5);
+const tagMinusTest = (tag, n) => new Date(Date.parse(`${tag}T12:00:00Z`) - n * 864e5).toISOString().slice(0, 10);
 
 /** Fixture-Abruf mit Zähler; vorne = Zusatz-Karte (gewinnt vor FIXTURE_KARTE). */
 function abruf(vorne = []) {
@@ -110,13 +112,14 @@ test('filme.json entspricht dem Vertrag (Gruppen, Felder, Typen, Sortierung)', a
   const d = r.datei;
   assert.equal(d.version, 1);
   assert.ok(Number.isFinite(Date.parse(d.aktualisiert)));
-  assert.deepEqual(Object.keys(d.gruppen), ['wunsch', 'fuer399', 'action', 'comedy', 'achtziger', 'disney', 'serien', 'angebot', 'neu']);
+  // „boxen“ seit 15.11.2026 hinten (ältere Seiten lassen sie weg)
+  assert.deepEqual(Object.keys(d.gruppen), ['wunsch', 'fuer399', 'action', 'comedy', 'achtziger', 'disney', 'serien', 'angebot', 'neu', 'boxen']);
   assert.match(d.hinweis, /Tiefstpreis/);
   for (const [q, s] of Object.entries(d.status)) assert.ok(typeof s.ok === 'boolean' && Number.isInteger(s.anzahl) && Array.isArray(s.fehler), q);
   const zahlOderNull = v => v === null || (typeof v === 'number' && v > 0);
   for (const t of alleTitel(d)) {
     assert.match(t.id, /^(itunes:\d+|wunsch:[a-z0-9-]+|mydealz:.+|appletv:umc\.cmc\.[a-z0-9]+)$/, t.titel);
-    assert.ok(['film', 'staffel'].includes(t.typ));
+    assert.ok(['film', 'staffel', 'box'].includes(t.typ));
     assert.ok(typeof t.titel === 'string' && t.titel);
     for (const k of ['preis', 'preisSd', 'preisHd', 'leihe', 'vorher']) assert.ok(zahlOderNull(t[k]), `${t.titel} ${k}=${t[k]}`);
     assert.ok(t.tiefst === null || (zahlOderNull(t.tiefst.p) && /^\d{4}-\d\d-\d\d$/.test(t.tiefst.tag)));
@@ -961,4 +964,156 @@ test('Prüfer MV10 3/6: leere Reihe zählt nicht; kinderNichtNeu zählt nur, was
   const r7 = await teileLauf(true, { filmCfg: { maxNeu: 7 } });
   assert.equal(r7.datei.status['apple-charts'].kinderNichtNeu, 1);
   assert.deepEqual(r7.datei.status['apple-charts'].kinderNichtNeuTitel, ['Woodwalkers 2 (reihe)']);
+});
+
+// ---------------------------------------------------------------- Boxen, alle Serien, Knüller (Xander 15.11.2026)
+
+test('Boxen: Film-Lookup nennt die Box (echte Antwort), der Box-Preis darin ist nur der Filmpreis und wird nie genommen', async () => {
+  const [film] = await ergebnisse('itunes-lookup-box-film.json');
+  assert.deepEqual(boxVon(film), { id: 'itunes:1652491062', name: 'Indiana Jones 4-Movie Collection', filme: 4 });
+  const d = ausItunes(film);
+  assert.equal(d.typ, 'film');
+  assert.equal(d.id, 'itunes:733230994');
+  assert.deepEqual(d.box, { id: 'itunes:1652491062', name: 'Indiana Jones 4-Movie Collection', filme: 4 });
+  assert.equal(d.preisHd, 9.99, 'Filmpreis');
+  // Einzelfilm ohne Box, „Box“ mit 1 Film, collectionId = trackId -> keine Box
+  assert.equal(boxVon({ ...film, collectionId: undefined }), null);
+  assert.equal(boxVon({ ...film, trackCount: 1 }), null);
+  assert.equal(boxVon({ ...film, collectionId: film.trackId }), null);
+  // Box-Lookup (Format angenommen, bis ein Roh-Lauf es zeigt): collection, keine Staffel
+  const [box] = await ergebnisse('itunes-lookup-box.json');
+  const b = ausItunes(box);
+  assert.deepEqual([b.typ, b.id, b.filme, b.preisHd], ['box', 'itunes:1652491062', 4, 29.99]);
+  assert.equal(ausItunes({ ...box, collectionType: 'Album' }), null, 'Musik-Album ist keine Film-Box');
+  assert.equal(lookupUrl(['itunes:1652491062']), 'https://itunes.apple.com/lookup?id=1652491062&country=de');
+  assert.equal(serienChartUrl(null), 'https://itunes.apple.com/de/rss/toptvseasons/limit=100/json');
+});
+
+test('Komplett-Boxen von Serien: „Die komplette Serie“, „The Complete Series“, „Staffeln 1-7“ – Staffel ohne Nummer', () => {
+  assert.deepEqual(komplettInfo('Rick and Morty – Die komplette Serie'), { serie: 'Rick and Morty', nr: null, zusatz: 'komplett' });
+  assert.deepEqual(komplettInfo('Star Trek: The Next Generation: The Complete Series'), { serie: 'Star Trek: The Next Generation', nr: null, zusatz: 'komplett' });
+  assert.equal(komplettInfo('Breaking Bad, Staffeln 1-5').serie, 'Breaking Bad');
+  assert.equal(komplettInfo('Rick and Morty, Staffel 2'), null);
+  const d = ausItunes({ wrapperType: 'collection', collectionType: 'TV Season', collectionId: 5, collectionName: 'Futurama, Die komplette Serie', collectionPrice: 49.99, artistName: 'Futurama' });
+  assert.deepEqual([d.typ, d.komplett, d.kuenstler], ['staffel', true, 'Futurama']);
+});
+
+test('Knüller-Regel: nur mit echtem Grund aus der eigenen Historie (≥ 30 % unter üblich nach ≥ 7 Tagen, frischer Tiefstpreis nach ≥ 14 Tagen, Box ≤ 2,50 € je Film, Staffel ≤ 9,99 € gesenkt)', () => {
+  const tage = (start, liste) => { const zf = {}; let r; liste.forEach((p, i) => { r = merkeFilmPreis(zf, 'x', p, tagMinusTest(start, -i)); }); return r.v; };
+  const lage = (v, p, t, typ = 'film') => ({ ...preisLage(v, p, t, { typ }), seit: v.seit });
+  // 1) 8 Tage 19,99 €, dann 12,99 € (35 % weniger) -> Knüller
+  let v = tage('2026-11-07', [...Array(8).fill(19.99), 12.99]);
+  let b = bewerte(v, 12.99, '2026-11-15', lage(v, 12.99, '2026-11-15'));
+  assert.equal(ueblichPreis(v, '2026-11-15'), 19.99);
+  assert.deepEqual(b.ersparnis, { eur: 7, pct: 35, basis: 'üblich' });
+  assert.equal(b.ueblich, 19.99);
+  assert.equal(b.ueberTiefst, 0);
+  assert.ok(b.nieSoGuenstig);
+  assert.match(b.knueller.grund, /35 % unter dem üblichen Preis/);
+  // 2) nur 20 % weniger -> kein Knüller (aber Ersparnis sichtbar)
+  v = tage('2026-11-07', [...Array(8).fill(9.99), 7.99]);
+  b = bewerte(v, 7.99, '2026-11-15', lage(v, 7.99, '2026-11-15'));
+  assert.deepEqual([b.ersparnis.pct, b.knueller], [20, null]);
+  // 3) zu kurz beobachtet (3 Tage): kein üblicher Preis, kein „so günstig wie nie“, kein Knüller trotz 50 %
+  v = tage('2026-11-13', [19.99, 19.99, 9.99]);
+  b = bewerte(v, 9.99, '2026-11-15', lage(v, 9.99, '2026-11-15'));
+  assert.deepEqual([b.ueblich, b.ersparnis.basis, b.nieSoGuenstig, b.knueller], [null, 'zuletzt', false, null]);
+  // 4) Staffel gesenkt auf 9,99 € -> Knüller auch nach kurzer Zeit (Regel wie der bisherige Serien-Push)
+  b = bewerte(v, 9.99, '2026-11-15', lage(v, 9.99, '2026-11-15', 'staffel'), { typ: 'staffel' });
+  assert.match(b.knueller.grund, /Staffel gesenkt auf 9,99/);
+  // 5) Box: 4 Filme, gesenkt 14,99 -> 9,99 € = 2,50 € je Film -> Knüller; ungesenkt 9,99 € -> keiner
+  v = tage('2026-11-13', [14.99, 14.99, 9.99]);
+  b = bewerte(v, 9.99, '2026-11-15', lage(v, 9.99, '2026-11-15', 'box'), { typ: 'box', filme: 4 });
+  assert.deepEqual([b.jeFilm, !!b.knueller], [2.5, true]);
+  v = tage('2026-11-13', [9.99, 9.99, 9.99]);
+  b = bewerte(v, 9.99, '2026-11-15', lage(v, 9.99, '2026-11-15', 'box'), { typ: 'box', filme: 4 });
+  assert.deepEqual([b.jeFilm, b.knueller, b.ersparnis], [2.5, null, null]);
+  // 6) Tiefstpreis schon lange (seit 20 Tagen dauerhaft) -> „so günstig wie nie“ bleibt wahr, ist aber kein Knüller mehr
+  v = tage('2026-10-17', [19.99, 19.99, 19.99, 19.99, 19.99, 19.99, 19.99, 19.99, 19.99, 19.99, ...Array(20).fill(14.99)]);
+  b = bewerte(v, 14.99, '2026-11-15', lage(v, 14.99, '2026-11-15'));
+  assert.deepEqual([b.nieSoGuenstig, b.knueller, b.ueblich], [true, null, null], 'der Preis gilt jetzt als üblich');
+  // 7) über dem Tiefst: x € über Tiefst
+  v = tage('2026-11-01', [9.99, 9.99, 4.99, ...Array(12).fill(7.99)]);
+  b = bewerte(v, 7.99, '2026-11-15', lage(v, 7.99, '2026-11-15'));
+  assert.deepEqual([b.ueberTiefst, b.nieSoGuenstig], [3, false]);
+  assert.deepEqual(bewerte(v, null, '2026-11-15', lage(v, null, '2026-11-15')).knueller, null);
+});
+
+test('Allzeit-Tiefst von außen nur vollständig mit Quelle und https-Link (heute keine erlaubte Quelle -> null)', () => {
+  assert.equal(externTiefst(null), null);
+  assert.equal(externTiefst({ p: 4.99, tag: '2024-12-24' }), null, 'ohne Quelle');
+  assert.equal(externTiefst({ p: 4.99, tag: '2024-12-24', quelle: 'X', url: 'http://x.de' }), null, 'ohne https');
+  assert.deepEqual(externTiefst({ p: '4,99', tag: '2024-12-24', quelle: 'Beispielquelle', url: 'https://example.org/p/1' }), { p: 4.99, tag: '2024-12-24', quelle: 'Beispielquelle', url: 'https://example.org/p/1' });
+});
+
+// Mehr-Lauf-Abruf: Mallrats liegt (Testwert) in einer Box, Box- und Staffel-Preis je Lauf frei wählbar
+const BOX = 1700000100, STAFFEL = 1700000001;
+function boxAbruf({ box = 29.99, staffel = 19.99, boxFehler = false } = {}) {
+  const z = abruf([['/rss/toptvseasons/', 'itunes-rss-tvseasons.json']]);
+  const roh = z.holeText;
+  z.holeText = async url => {
+    if (url.includes('lookup?') && url.includes(String(BOX))) {
+      z.urls.push(url);
+      if (boxFehler) throw new Error('HTTP 503 bei itunes.apple.com');
+      const j = JSON.parse(await fix('itunes-lookup-box.json'));
+      Object.assign(j.results[0], { collectionId: BOX, collectionName: 'Testbox 4 Filme', collectionPrice: box, collectionHdPrice: box });
+      return JSON.stringify(j);
+    }
+    if (url.includes('lookup?') && url.includes(String(STAFFEL))) {
+      z.urls.push(url);
+      const j = JSON.parse(await fix('itunes-lookup-staffel-pool.json'));
+      Object.assign(j.results[0], { collectionPrice: staffel, collectionHdPrice: staffel });
+      return JSON.stringify(j);
+    }
+    const text = await roh(url);
+    if (!/itunes\.apple\.com\/(search|lookup)\?/.test(url) || !text.includes('286617745')) return text;
+    const j = JSON.parse(text);
+    for (const r of j.results || []) if (r.trackId === 286617745) Object.assign(r, { collectionId: BOX, collectionName: 'Testbox 4 Filme', trackCount: 4, collectionPrice: r.trackPrice, collectionHdPrice: r.trackHdPrice });
+    return JSON.stringify(j);
+  };
+  return z;
+}
+
+test('Boxen und alle Serien über mehrere Läufe: Entdeckung ohne Extra-Abruf, Preis nur aus dem Box-Lookup, Knüller zuerst, Push nur Tageszusammenfassung', async () => {
+  const zustand = {};
+  let r, z;
+  // Lauf 1: Box-Lookup gestört -> Box bekannt, aber ohne Preis (der Spiegelpreis aus dem Film-Datensatz zählt nicht)
+  z = boxAbruf({ boxFehler: true });
+  r = await filme(ctx(z.holeText, zustand, tagPlus(0)));
+  assert.equal(zustand.filme.boxen[`itunes:${BOX}`].n, 'Testbox 4 Filme');
+  assert.deepEqual(zustand.filme.boxen[`itunes:${BOX}`].filmIds, ['itunes:286617745']);
+  assert.equal(zustand.filme.preise[`itunes:${BOX}`], undefined, 'kein Box-Preis aus dem Film-Datensatz');
+  assert.deepEqual(r.datei.gruppen.boxen.filter(t => t.quelle === 'Apple'), []);
+  assert.equal(r.datei.status['apple-boxen'].ok, false);
+  // Läufe 2–8: Normalpreis 29,99 € (7,50 € je Film) -> nicht unter „Boxen“; Staffel der fremden Serie 19,99 € -> nicht unter „Serien“
+  for (let i = 1; i < 8; i++) { z = boxAbruf(); r = await filme(ctx(z.holeText, zustand, tagPlus(i))); }
+  assert.deepEqual(r.datei.gruppen.boxen.filter(t => t.quelle === 'Apple'), []);
+  assert.ok(!r.datei.gruppen.serien.some(t => /Testserie/.test(t.titel)));
+  assert.ok(z.urls.filter(u => u.includes(String(BOX))).length <= FILM_STANDARD.boxAbrufe);
+  assert.ok(z.apple() <= FILM_STANDARD.maxAppleAbrufe, `Apple-Abrufe ${z.apple()}`);
+  assert.ok(r.datei.gruppen.serien.length && r.datei.gruppen.serien.every(t => t.wunsch === true), 'nur deine Serien');
+  // Lauf 9: Box 14,99 €, Staffel 9,99 €
+  z = boxAbruf({ box: 14.99, staffel: 9.99 });
+  r = await filme(ctx(z.holeText, zustand, tagPlus(8)));
+  const box = r.datei.gruppen.boxen.find(t => t.id === `itunes:${BOX}`);
+  assert.deepEqual([box.typ, box.preis, box.vorher, box.ueblich, box.filme, box.jeFilm, box.tiefstQuelle, box.extern, box.seit],
+    ['box', 14.99, 29.99, 29.99, 4, 3.75, 'eigen', null, '2026-11-08']);
+  assert.deepEqual(box.ersparnis, { eur: 15, pct: 50, basis: 'üblich' });
+  assert.match(box.knueller.grund, /50 % unter dem üblichen Preis/);
+  assert.equal(r.datei.gruppen.boxen[0].id, box.id, 'Knüller zuerst');
+  const se = r.datei.gruppen.serien;
+  const fremd = se.find(t => /Testserie, Staffel 1/.test(t.titel));
+  assert.deepEqual([fremd.wunsch, fremd.preis, fremd.vorher, fremd.serie, fremd.nr, !!fremd.knueller], [false, 9.99, 19.99, 'Testserie', 1, true]);
+  assert.ok(se.findIndex(t => t.wunsch === false) > se.findLastIndex(t => t.wunsch === true), 'deine Serien oben');
+  const eBox = r.eintraege.find(e => e.extra?.filmId === box.id);
+  assert.deepEqual([eBox?.sofort, eBox?.extra.gruppe], [false, 'boxen'], 'Box-Knüller nur in die Tageszusammenfassung');
+  const eSt = r.eintraege.find(e => e.extra?.filmId === fremd.id);
+  assert.deepEqual([eSt?.sofort, eSt?.extra.gruppe], [false, 'serien']);
+  assert.ok(r.datei.kurz.angebote >= 2);
+  assert.match(r.datei.hinweis, /kein Allzeit-Tiefst/);
+  // alter Zustand ohne boxen/staffelPool und alte Titel ohne neue Felder: Lauf geht, nichts bricht
+  const altZ = JSON.parse(JSON.stringify(zustand));
+  delete altZ.filme.boxen; delete altZ.filme.staffelPool;
+  r = await filme(ctx(boxAbruf().holeText, altZ, tagPlus(9)));
+  assert.ok(Array.isArray(r.datei.gruppen.boxen));
 });

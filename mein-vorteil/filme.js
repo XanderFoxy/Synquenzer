@@ -1,5 +1,7 @@
-/* Mein Vorteil – Reiter „Filme“: Apple-TV-Filme und -Staffeln (Wunschliste, Für 3,99 €, Action & Thriller, Comedy, 80er & Kult,
-   Neu, Serien, Disney; „Angebote“ nur, wenn dort etwas steht, das in keinem anderen Bereich vorkommt).
+/* Mein Vorteil – Reiter „Filme“: Apple-TV-Filme, -Staffeln und -Boxen (Wunschliste, Für 3,99 €, Action & Thriller, Comedy,
+   80er & Kult, Neu, Serien, Boxen, Disney; „Angebote“ nur, wenn dort etwas steht, das in keinem anderen Bereich vorkommt).
+   Tiefstpreis ehrlich (Xander 15.11.2026): der Radar kennt nur, was er selbst seit Beobachtungsbeginn gesehen hat
+   (tiefstQuelle 'eigen') – die Seite sagt „Tiefst seit Nov. 2026“, nie „Allzeit“. Ein Allzeit-Tiefst nur mit Quelle (extern).
    Eine Datei für alles (Logik + CSS mit Präfix .fi-). Nutzt nur die CSS-Variablen der Seite:
    --karte --flaeche --text --leise --linie --akzent --akzent-hell --akzent-text --warm --warm-hell --rot.
    Einbau (in mein-vorteil/index.html, Reiter „Filme“):
@@ -24,7 +26,9 @@
     ['comedy', 'Comedy', 'Komödien zum Kaufen bis 7,99 € oder stark gesenkt – die besten zuerst.'],
     ['achtziger', '80er & Kult', 'Klassiker und Kultfilme für die Sammlung – Angebote zuerst.'],
     ['neu', 'Neu', 'Neue Filme aus Komödie, Action und Thriller – nach Platz in den Apple-Charts.'],
-    ['serien', 'Serien', 'Rick and Morty und Star Trek – Angebote zuerst.'],
+    ['serien', 'Serien', 'Rick and Morty und Star Trek oben, darunter alle anderen Staffeln im Angebot – Preisknüller zuerst.'],
+    // Film-Boxen (Vorteils-Radar ab 15.11.2026); Chip nur, wenn die Daten „boxen“ kennen
+    ['boxen', 'Boxen', 'Film-Boxen und Sammlungen im Angebot – Preisknüller zuerst.'],
     ['disney', 'Disney', 'Disney und Pixar – Angebote zuerst.'],
     ['weitere', 'Angebote', 'Weitere Angebote, die in keinem anderen Bereich stehen.'], // Chip nur, wenn hier etwas steht
   ];
@@ -39,9 +43,10 @@
     weitere: 'Gerade keine weiteren Angebote.',
     achtziger: 'Gerade keine 80er-Klassiker gefunden – beim nächsten Lauf noch einmal.',
     serien: 'Gerade keine Staffeln von Rick and Morty oder Star Trek gefunden.',
+    boxen: 'Gerade keine Film-Boxen im Angebot – der Radar prüft alle paar Stunden neu.',
     disney: 'Gerade keine Disney-Filme gefunden.',
   };
-  const QUELLE = { 'apple-suche': 'Apple-Store', apple: 'Apple-Store', itunes: 'Apple-Store', 'apple-charts': 'Apple-Charts', charts: 'Apple-Charts', mydealz: 'mydealz', 'apple-preise': 'Apple-Preise', 'apple-tv-raeume': 'Apple-TV-Angebote (Räume der TV-App)', qualitaet: 'Wikidata (Bekanntheit, Kritik, Horror)' };
+  const QUELLE = { 'apple-suche': 'Apple-Store', apple: 'Apple-Store', itunes: 'Apple-Store', 'apple-charts': 'Apple-Charts', charts: 'Apple-Charts', mydealz: 'mydealz', 'apple-preise': 'Apple-Preise', 'apple-tv-raeume': 'Apple-TV-Angebote (Räume der TV-App)', qualitaet: 'Wikidata (Bekanntheit, Kritik, Horror)', 'apple-boxen': 'Apple-Boxen', 'apple-serien': 'Apple-Serien-Charts' };
 
   // --- kleine Helfer ---------------------------------------------------------------------------------------------------
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -57,6 +62,9 @@
   const merk = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
   const datum = v => { const m = /^(\d{4}-\d\d-\d\d)/.exec(typeof v === 'string' ? v : ''); return m ? m[1] : null; };
   const tm = d => { const m = /^\d{4}-(\d\d)-(\d\d)/.exec(d || ''); return m ? `${m[2]}.${m[1]}.` : ''; }; // „07.11.“
+  const MONATE = ['Jan.', 'Feb.', 'März', 'Apr.', 'Mai', 'Juni', 'Juli', 'Aug.', 'Sep.', 'Okt.', 'Nov.', 'Dez.'];
+  const monatJahr = d => { const m = /^(\d{4})-(\d\d)/.exec(d || ''); return m ? `${MONATE[Number(m[2]) - 1]}\u00a0${m[1]}` : ''; }; // „Nov. 2026“ (geschützt: bricht nicht um)
+  const tagMonat = d => { const m = /^\d{4}-(\d\d)-(\d\d)/.exec(d || ''); return m ? `${Number(m[2])}.\u00a0${MONATE[Number(m[1]) - 1]}` : ''; }; // „7. Nov.“
 
   // Berliner Zeit
   let FMT = null;
@@ -97,8 +105,14 @@
     const preisSd = preisVon(t.preisSd), preisHd = preisVon(t.preisHd);
     const j = /\b(1[89]\d\d|20\d\d)\b/.exec(String(t.jahr ?? ''));
     const tp = t.tiefst && typeof t.tiefst === 'object' ? preisVon(t.tiefst.p) : null;
+    // Preisknüller-Felder (Vorteils-Radar ab 15.11.2026) – fehlen sie, bleibt alles wie vorher
+    const ers = t.ersparnis && typeof t.ersparnis === 'object' ? t.ersparnis : null;
+    const pct = ers ? zahl(ers.pct) : null;
+    const ex = t.extern && typeof t.extern === 'object' ? t.extern : null;
+    const exP = ex ? preisVon(ex.p) : null, exQ = ex && typeof ex.quelle === 'string' ? ex.quelle.trim().slice(0, 40) : '';
+    const grund = t.knueller && typeof t.knueller === 'object' && typeof t.knueller.grund === 'string' ? t.knueller.grund.trim().slice(0, 60) : '';
     return {
-      id: String(t.id ?? titel), typ: t.typ === 'staffel' ? 'staffel' : 'film', titel, jahr: j ? Number(j[1]) : null,
+      id: String(t.id ?? titel), typ: t.typ === 'staffel' || t.typ === 'box' ? t.typ : 'film', titel, jahr: j ? Number(j[1]) : null,
       genre: typeof t.genre === 'string' ? t.genre.trim() : '',
       preis: preisVon(t.preis) ?? preisHd ?? preisSd, leihe: preisVon(t.leihe), vorher: preisVon(t.vorher),
       tiefst: tp != null ? { p: tp, tag: datum(t.tiefst.tag) } : null, seit: datum(t.seit),
@@ -111,6 +125,13 @@
       // Rotten Tomatoes in % (Vorteils-Radar ab 14.11.2026), „neu“ = neuer Film aus den Charts
       rt: zahl(t.rt) != null && zahl(t.rt) >= 0 && zahl(t.rt) <= 100 ? Math.round(zahl(t.rt)) : null, neu: t.neu === true,
       bekannt: zahl(t.bekannt) != null && zahl(t.bekannt) >= 0 ? Math.round(zahl(t.bekannt)) : null, // in so vielen Wikipedia-Sprachen (Bekanntheit)
+      ueblich: preisVon(t.ueblich), ersparnis: pct != null && pct > 0 && pct < 100 ? { eur: preisVon(ers.eur), pct: Math.round(pct) } : null,
+      ueberTiefst: zahl(t.ueberTiefst) != null && zahl(t.ueberTiefst) >= 0 ? zahl(t.ueberTiefst) : null, nieSoGuenstig: t.nieSoGuenstig === true,
+      knueller: grund ? { grund } : null,
+      // Allzeit-Tiefst nur vollständig: Preis, Quelle, https-Link (heute liefert der Radar keinen – keine erlaubte Quelle)
+      extern: exP != null && exQ && sicher(ex.url) ? { p: exP, tag: datum(ex.tag), quelle: exQ, url: sicher(ex.url) } : null,
+      wunsch: t.wunsch !== false, // Staffeln: false = andere Serie im Angebot (alte Daten: alles „deine Serien“)
+      filme: zahl(t.filme) >= 2 ? Math.round(zahl(t.filme)) : null, jeFilm: preisVon(t.jeFilm),
     };
   }
   // „6 Filme in 4K …“ von mydealz: Preis je Film (wie preisJeFilm im Scanner) – erklärt, warum ein Set unter „Für 3,99 €“ steht
@@ -162,11 +183,12 @@
     }
     gruppen.neu = gruppen.neu.map((t, i) => [t, i]).sort((a, b) => (a[0].chart ?? 1e6) - (b[0].chart ?? 1e6) || a[1] - b[1]).map(x => x[0]);
     for (const k of ['achtziger', 'disney']) gruppen[k] = zuerst(gruppen[k], t => t.angebot);
+    gruppen.boxen = zuerst(gruppen.boxen, t => t.knueller); // Reihenfolge sonst vom Radar (Ersparnis, Nähe zum Tiefst, je Film)
     // „Angebote“ nur mit dem, was sonst fehlt
     const sonst = new Set(GRUPPEN.filter(k => k !== 'angebot').flatMap(k => gruppen[k].map(t => t.id)));
     gruppen.weitere = gruppen.angebot.filter(t => !sonst.has(t.id) && !doppelt.has(t.id));
     const status = d && typeof d.status === 'object' && d.status ? d.status : {};
-    return { aktualisiert: typeof d?.aktualisiert === 'string' ? d.aktualisiert : null, gruppen, status };
+    return { aktualisiert: typeof d?.aktualisiert === 'string' ? d.aktualisiert : null, gruppen, status, mitBoxen: 'boxen' in g };
   }
   // Stand eines Scanners vor dem 14.11.2026, 23:39 (Prüfer-Befund MV8 9): ohne „Für 3,99 €“/Action/Comedy, „Angebote“ noch ohne
   // Horror- und Qualitätsfilter (Midsommar, Longlegs …). Der wird nicht aus dem Gerätespeicher gezeigt – lieber kurz „Lade Filme …“.
@@ -175,7 +197,7 @@
     if (!('fuer399' in g)) return true;
     return !liste(g.fuer399).length && !liste(g.action).length && !liste(g.comedy).length && liste(g.angebot).length > 0;
   }
-  const sichtbar = n => CHIPS.filter(([k]) => k !== 'weitere' || n.gruppen.weitere.length);
+  const sichtbar = n => CHIPS.filter(([k]) => (k !== 'weitere' || n.gruppen.weitere.length) && (k !== 'boxen' || n.mitBoxen || n.gruppen.boxen.length));
   // Start: Wunschliste, wenn dort ein (neues) Angebot ist – sonst der zuletzt gewählte Bereich, sonst „Für 3,99 €“
   function startChip(n) {
     const sig = n.gruppen.wunsch.filter(t => t.angebot || t.unterZiel).map(t => `${t.id}@${t.preis}`).sort().join('|');
@@ -187,13 +209,41 @@
 
   // --- Karten ------------------------------------------------------------------------------------------------------------
   const zeigeTiefst = t => t.istTiefst && !t.fehlt && t.preis != null && (t.vorher != null || t.angebot || t.unterZiel || t.preis <= 3.99);
+  // „Knüller“-Marke: kleines gezeichnetes Preisschild (SVG, kein Emoji), Grund steht in der Zeile darunter
+  const KNUELLER_SVG = '<svg class="fi-ks" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M1 6.2V1.6c0-.3.3-.6.6-.6h4.6l4.6 4.6c.3.3.3.7 0 1l-4 4c-.3.3-.7.3-1 0z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><circle cx="3.6" cy="3.6" r="1" fill="currentColor"/></svg>';
+  /**
+   * Tiefstpreis-Zeile – ehrlich: eigene Beobachtung heißt „Tiefst seit <Monat Jahr>“ bzw. „so günstig wie nie (seit 7. Nov.)“,
+   * ein Allzeit-Tiefst nur mit Quelle (extern). Nie „Allzeit“ ohne Quelle.
+   */
+  function tiefstTeile(t) {
+    const teile = [];
+    if (t.fehlt) return teile;
+    if (t.tiefst) {
+      const hoeher = t.preis == null || t.preis > t.tiefst.p + 0.004; // ohne Preis: zuletzt gesehener Tiefstpreis mit Tag
+      const heute = t.seit === tagKey(Date.now());
+      const nie = t.nieSoGuenstig || (!hoeher && t.vorher != null && t.vorher > t.preis + 0.004);
+      if (!hoeher && t.vorher == null && !zeigeTiefst(t) && !nie) { // Preis hat sich nie bewegt
+        if (t.seit && !heute) teile.push(esc(`Preis unverändert seit ${tm(t.seit)}`));
+      } else if (!hoeher && nie) {
+        teile.push(esc(`so günstig wie nie${t.seit ? (heute ? ' (seit heute beobachtet)' : ` (seit ${tagMonat(t.seit)})`) : ''}`));
+      } else {
+        const seit = t.seit ? (heute ? ' seit heute' : ` seit ${monatJahr(t.seit)}`) : '';
+        const ueber = hoeher && t.preis != null ? ` · ${euro(Math.round((t.preis - t.tiefst.p) * 100) / 100)} über Tiefst` : '';
+        teile.push(esc(`Tiefst${seit}: ${euro(t.tiefst.p)}${hoeher && t.tiefst.tag ? ` am ${tm(t.tiefst.tag)}` : ''}${ueber}`));
+      }
+    }
+    if (t.extern) teile.push(esc(`Allzeit-Tiefst ${euro(t.extern.p)} laut ${t.extern.quelle}`));
+    return teile;
+  }
   function initialen(s) { return s.split(/[\s:–-]+/).filter(w => /^[\p{L}\d]/u.test(w)).slice(0, 2).map(w => w[0].toUpperCase()).join(''); }
   function karte(t, staffel, chip) {
-    const name = staffel && staffelNr(t) != null ? `Staffel ${staffelNr(t)}` : t.titel;
+    // andere Serien stehen ohne Serien-Überschrift: dort der volle Name („Breaking Bad, Staffel 2“)
+    const name = staffel && chip !== 'andere' && staffelNr(t) != null ? `Staffel ${staffelNr(t)}` : t.titel;
     // „Charade (1963)“ nicht noch einmal „(1963)“, „Scarface (1983)“ nicht „(1983) (1984)“ (Apple-Datum = deutscher Start)
     const jahrDoppelt = t.jahr != null && /\((?:1[89]|20)\d\d\)/.test(name);
     const marken = [];
     if (t.fehlt) marken.push('<span class="fi-marke fi-grau">nicht im Apple-Store</span>');
+    if (t.knueller && !t.fehlt && t.preis != null) marken.push(`<span class="fi-marke fi-knueller">${KNUELLER_SVG}Knüller</span>`);
     // „Tiefstpreis“ nur, wenn es etwas heißt: gesenkt, Angebot oder ≤ 3,99 € – nicht bei einem Preis, der sich nie bewegt hat
     if (zeigeTiefst(t)) marken.push('<span class="fi-marke fi-stark">Tiefstpreis</span>');
     if (t.angebot && !t.fehlt) marken.push('<span class="fi-marke">Angebot</span>');
@@ -204,18 +254,13 @@
       : `<span class="fi-preis fi-ohnepreis">${t.leihe != null ? `nur leihen: ${esc(euro(t.leihe))}` : 'gerade nicht zu kaufen'}</span>`;
     const klein = [];
     if (t.fehlt) klein.push('Wird weiter gesucht – sobald er im Store ist, steht er hier.');
-    if (!t.fehlt && t.preis != null && t.vorher != null && t.vorher > t.preis + 0.004) klein.push(`statt <s>${esc(euro(t.vorher))}</s>`);
-    if (!t.fehlt && t.tiefst) {
-      const hoeher = t.preis == null || t.preis > t.tiefst.p + 0.004; // ohne Preis: zuletzt gesehener Tiefstpreis mit Tag
-      const heute = t.seit === tagKey(Date.now());
-      if (!hoeher && t.vorher == null && !zeigeTiefst(t)) { // Preis hat sich nie bewegt
-        if (t.seit && !heute) klein.push(esc(`Preis unverändert seit ${tm(t.seit)}`));
-      } else {
-        const am = hoeher && t.tiefst.tag ? ` am ${tm(t.tiefst.tag)}` : '';
-        const seit = t.seit ? (heute ? ' (seit heute)' : ` (seit ${tm(t.seit)})`) : '';
-        klein.push(esc(`Tiefstpreis ${euro(t.tiefst.p)}${am}${seit}`));
-      }
-    }
+    // „statt“: der übliche Preis (am längsten gesehen), sonst der zuletzt andere; Ersparnis in %
+    const statt = !t.fehlt && t.preis != null ? [t.ueblich, t.vorher].find(v => v != null && v > t.preis + 0.004) : null;
+    if (statt != null) klein.push(`statt <s>${esc(euro(statt))}</s>${t.ersparnis && t.ueblich === statt ? esc(` (−${t.ersparnis.pct} %)`) : ''}`);
+    // Grund nur, wenn er mehr sagt als „statt … (−x %)“
+    if (t.knueller && !t.fehlt && t.preis != null && !(t.ersparnis && /^\d+ % unter dem üblichen Preis$/.test(t.knueller.grund))) klein.push(esc(t.knueller.grund));
+    klein.push(...tiefstTeile(t));
+    if (t.typ === 'box' && !t.fehlt && t.filme && t.preis != null) klein.push(esc(`${t.filme} Filme, je ${euro(t.jeFilm ?? t.preis / t.filme)}`));
     if (t.ziel != null && !t.fehlt && !t.unterZiel) klein.push(esc(`dein Ziel: ${euro(t.ziel)}`));
     const set = Number(SET.exec(t.titel)?.[1]);
     // kurz, damit die Zeile auch bei 375 px einzeilig bleibt (Prüfer-Befund MV8 2): „4 Filme, je 3,75 € · mydealz-Tipp“
@@ -233,7 +278,7 @@
     const bild = t.bild
       ? `<img class="fi-bild" src="${esc(t.bild)}" alt="" width="${gross}" height="84" loading="lazy" decoding="async">`
       : `<span class="fi-bild fi-ohnebild" aria-hidden="true">${esc(initialen(t.titel))}</span>`;
-    const klasse = `fi-karte${t.angebot || t.unterZiel ? ' fi-deal' : ''}${staffel ? ' fi-quadrat' : ''}`;
+    const klasse = `fi-karte${t.angebot || t.unterZiel || t.knueller ? ' fi-deal' : ''}${staffel ? ' fi-quadrat' : ''}`;
     const innen = `${bild}<span class="fi-text"><span class="fi-titel">${esc(name)}${t.jahr && !jahrDoppelt ? ` <span class="fi-jahr">(${t.jahr})</span>` : ''}</span>`
       + `${info ? `<span class="fi-info${info.startsWith('<span') ? ' fi-eng' : ''}">${info}</span>` : ''}`
       + `<span class="fi-preiszeile">${preis}${marken.join('')}</span>`
@@ -242,7 +287,14 @@
       ? `<li><a class="${klasse}" href="${esc(t.link)}" target="_blank" rel="noopener" data-fi-id="${esc(t.id)}">${innen}</a></li>`
       : `<li><div class="${klasse}" data-fi-id="${esc(t.id)}">${innen}</div></li>`;
   }
-  function serienHtml(arr) {
+  function serienHtml(alle0) {
+    // deine Serien (Liste „serien“) wie bisher nach Serie gruppiert; alle anderen Staffeln im Angebot darunter in Radar-Reihenfolge
+    // (Preisknüller zuerst). Alte Daten ohne „wunsch“-Feld: alles gilt als deine Serien.
+    const arr = alle0.filter(t => t.wunsch), andere = zuerst(alle0.filter(t => !t.wunsch), t => t.knueller);
+    const unten = andere.length
+      ? `<h3 class="fi-gruppe fi-andere">Weitere Serien im Angebot <small>${andere.length} ${andere.length === 1 ? 'Staffel' : 'Staffeln'}</small></h3>`
+        + `<ul class="fi-karten">${andere.map(t => karte(t, t.typ === 'staffel', 'andere')).join('')}</ul>`
+      : '';
     const gruppen = new Map();
     for (const t of arr) {
       const name = t.typ === 'staffel' ? serieVon(t) : 'Filme';
@@ -252,12 +304,12 @@
     }
     const alle = zuerst([...gruppen.values()], g => g.titel.some(t => t.angebot));
     return alle.map(g => {
-      const titel = g.titel.map((t, i) => [t, i]).sort((a, b) => (b[0].angebot - a[0].angebot) || ((staffelNr(a[0]) ?? 1e6) - (staffelNr(b[0]) ?? 1e6)) || a[1] - b[1]).map(x => x[0]);
+      const titel = g.titel.map((t, i) => [t, i]).sort((a, b) => (!!b[0].knueller - !!a[0].knueller) || (b[0].angebot - a[0].angebot) || ((staffelNr(a[0]) ?? 1e6) - (staffelNr(b[0]) ?? 1e6)) || a[1] - b[1]).map(x => x[0]);
       const deals = titel.filter(t => t.angebot).length;
       const anzahl = `${titel.length} ${g.name === 'Filme' ? (titel.length === 1 ? 'Film' : 'Filme') : titel.length === 1 ? 'Staffel' : 'Staffeln'}`;
       return `<h3 class="fi-gruppe">${esc(g.name)} <small>${deals ? `${deals} im Angebot · ` : ''}${anzahl}</small></h3>`
         + `<ul class="fi-karten">${titel.map(t => karte(t, t.typ === 'staffel')).join('')}</ul>`;
-    }).join('');
+    }).join('') + unten;
   }
   function listeHtml(k) {
     const arr = S.n.gruppen[k] || [];
@@ -292,7 +344,11 @@
     // Angebots-Räume der TV-App, mit denen die Listen abgeglichen wurden (Link öffnet den Raum in der TV-App)
     const raeume = Array.isArray(S.n.status['apple-tv-raeume']?.raeume) ? S.n.status['apple-tv-raeume'].raeume.filter(r => r && sicher(r.url)) : [];
     const raumHtml = raeume.length ? `<p class="fi-fuss">Abgeglichen mit den Apple-TV-Angeboten: ${raeume.slice(0, 4).map(r => `<a href="${esc(sicher(r.url))}" target="_blank" rel="noopener" class="fi-raum">${esc(String(r.name || 'Angebote').slice(0, 40))}${zahl(r.filme) ? ` (${zahl(r.filme)} Filme)` : ''}</a>`).join(', ')}</p>` : '';
-    return raumHtml + `<p class="fi-fuss">Tiefstpreis = niedrigster Preis seit Beobachtung${seit ? ` (seit ${esc(tm(seit))})` : ''}. Tippen öffnet die TV-App${md ? ', Tipps von mydealz öffnen mydealz.de' : ''}.</p>`
+    // ehrlich: „Tiefst“ = was der Radar selbst gesehen hat; Allzeit-Tiefst nur mit genannter Quelle (Link)
+    const ext = [...new Map(alle.filter(t => t.extern).map(t => [t.extern.quelle, t.extern.url])).entries()].slice(0, 3);
+    const extHtml = ext.length ? ` Allzeit-Tiefst laut ${ext.map(([q, u]) => `<a href="${esc(u)}" target="_blank" rel="noopener" class="fi-raum">${esc(q)}</a>`).join(', ')}.` : '';
+    const kn = alle.some(t => t.knueller) ? ' Knüller = deutlich unter dem üblichen Preis, so günstig wie nie oder Box/Staffel stark gesenkt.' : '';
+    return raumHtml + `<p class="fi-fuss">Tiefst = niedrigster Preis, den der Radar selbst gesehen hat${seit ? ` (seit ${esc(tagMonat(seit))} ${esc(seit.slice(0, 4))})` : ''} – frühere Preise kennt er nicht.${extHtml}${kn} Tippen öffnet die TV-App${md ? ', Tipps von mydealz öffnen mydealz.de' : ''}.</p>`
       + (quellen.length ? `<details class="fi-quellen"><summary>Quellen</summary><ul>${quellen.join('')}</ul></details>` : '');
   }
   function chipHtml([k, name]) {
@@ -472,6 +528,9 @@ a.fi-karte:active { background: var(--flaeche); }
 .fi-marke.fi-stark { background: var(--akzent); color: var(--akzent-text); }
 .fi-marke.fi-warm { background: var(--warm-hell); color: var(--warm); }
 .fi-marke.fi-grau { background: var(--flaeche); color: var(--leise); }
+.fi-marke.fi-knueller { background: var(--warm); color: var(--karte); display: inline-flex; align-items: center; gap: 4px; }
+.fi-ks { flex: none; display: block; }
+.fi-andere { margin-top: 22px; border-top: 1px solid var(--linie); padding-top: 14px; }
 .fi-klein { font-size: 13px; line-height: 1.4; color: var(--leise); }
 .fi-klein s { white-space: nowrap; }
 .fi-gruppe {
@@ -493,6 +552,6 @@ a.fi-karte:active { background: var(--flaeche); }
     start, lade,
     get gestartet() { return !!S.el; },
     // für Tests (ohne Browser): reine Funktionen
-    _intern: { normalisiere, altFormat, ohneDoppelTipp, titelNorm, serieVon, staffelNr, bildUrl, startChip, standText, karte, zeigeTiefst, sichtbar, CHIPS, CSS: () => CSS },
+    _intern: { normalisiere, altFormat, ohneDoppelTipp, titelNorm, serieVon, staffelNr, bildUrl, startChip, standText, karte, zeigeTiefst, tiefstTeile, sichtbar, CHIPS, CSS: () => CSS },
   };
 })();
