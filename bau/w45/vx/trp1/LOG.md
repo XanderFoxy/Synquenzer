@@ -10,3 +10,5 @@
 2026-11-15 04:44:45 eigener Test 81/81 (Teil 7 Prüfung 17 neue Punkte)
 2026-11-15 04:51:39 Regression JAM3 (w4530): basis 4.68.0 64/67, index 63/67 – dieselben 3 Basis-Fehler, dazu nur die Einhänge-Prüfung (TRP1-Zeilen tragen nicht JAM3 = erwartet)
 2026-11-15 04:57:07 Regression JAM2 (w4510): basis 104/105, index 103/105 – zusätzlich nur „Zeile hat genau 5 Tasten“ quer (TRP1 legt seit dem Bau ab hier/nur/Mehr in dieselbe Zeile; alle 8 Tasten ≥ 44 px) – kein Rückschritt der Prüf-Fixes
+2026-11-15 04:59:21 Pflicht: topdefs 0/0, dupkeys 0, smoke errors [], MS 2000 1×, live 1×, VERSION 4.68.0; Prüfer-Sonde pruef-daten nachher: Lücke 4/4+27/27 gleich, ohne Marken 4/4 und 59/59 +3, s2Sum/konDo 0 Änderungen, Dur→Moll 0 leiterfremd; ↶ während ▶ 1,4–8,3 ms, 0 Long Tasks
+2026-11-15 04:59:38 NOTES.md Abschnitt „Prüfung“ geschrieben, Ende

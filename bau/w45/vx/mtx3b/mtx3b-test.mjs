@@ -275,7 +275,10 @@ const DT = 4;
       const A = await __R(); SYNQUENZER.mtx3.merge(); o.b2b = __pads().sum; o.b2orph = orphan(); const B = await __R(); o.b2db = __db(A, B);
       undo(); o.b2u = __pads().sum; o.b2nt = NT();
       // DRUMS spielt in Szene 1 wieder das Original (ohne HH), HH ZU seine Version → Zusammenführen legt eine Version von DRUMS an
-      sx9Set(S.song, DRUM_T, 0, 2, null); const a3 = __pads().sum; const C = await __R(); SYNQUENZER.mtx3.merge(); o.b2c = {vor: a3, nach: __pads().sum}; const D = await __R(); o.b2cdb = __db(C, D); undo(); undo(); undo(); }
+      sx9Set(S.song, DRUM_T, 0, 2, null); const a3 = __pads().sum; const C = await __R(); SYNQUENZER.mtx3.merge(); o.b2c = {vor: a3, nach: __pads().sum}; const D = await __R(); o.b2cdb = __db(C, D); undo();
+      // gemischt: DRUMS und SNARE spielen das Original, HH ZU seine Version → die neue Version von DRUMS bekommt HH (Version) und SNARE (Szenen-Clip)
+      const jS = mtx3Parts(-1).find(x => S.tracks[x].dvx.v === 'snare'); sx9Set(S.song, jS, 0, 2, null); const a4 = __pads().sum; const E = await __R();
+      SYNQUENZER.mtx3.merge(); o.b2d = {vor: a4, nach: __pads().sum}; const F = await __R(); o.b2ddb = __db(E, F); undo(); undo(); undo(); }
     // B4: „dazu“ in einen kürzeren Clip (DRUMS 2 Takte, HH ZU 1 Takt) und auf eine schon belegte Stelle
     { fresh(); const D0 = S.tracks[DRUM_T], c = D0.clips[0], j = SYNQUENZER.mtx3.split(['hatC'])[0];
       const L0 = clipB(c), ns = c.notes.map(n => Object.assign({}, n, {t: n.t + L0})); c.notes = c.notes.concat(ns); c.len *= 2;
@@ -314,6 +317,7 @@ const DT = 4;
   ok('Prüfung 2: Zusammenführen nach Remix: Treffer je Pad bleiben, Song klingt gleich, keine Waisen-Versionen', eq(r.b2b, r.b2a) && r.b2db <= -60 && r.b2orph === 0, {vor: r.b2a, nach: r.b2b, dB: r.b2db, waisen: r.b2orph});
   ok('Prüfung 2: ↶ nach Zusammenführen holt Einzelspuren und Versionen zurück', eq(r.b2u, r.b2a) && r.b2nt === 8, {u: r.b2u, nt: r.b2nt});
   ok('Prüfung 2: DRUMS spielt Original, Einzelspur eine Version → Zusammenführen: gleiche Treffer, Summe gleich', eq(r.b2c.nach, r.b2c.vor) && r.b2cdb <= -60, {b2c: r.b2c, dB: r.b2cdb});
+  ok('Prüfung 2: gemischt (DRUMS + SNARE Original, HH ZU Version) → Zusammenführen: gleiche Treffer, Summe gleich', eq(r.b2d.nach, r.b2d.vor) && r.b2ddb <= -60, {b2d: r.b2d, dB: r.b2ddb});
   ok('Prüfung 3: Speichern/Laden: Versionen der Einzelspur behalten Saat/Chance/Wirbel, Summe gleich, Rundreise byte-gleich', r.b3a === r.b3b && /^true\/[1-9]/.test(r.b3b) && r.b3db <= -60 && r.b3rt, {vor: r.b3a, nach: r.b3b, dB: r.b3db, rt: r.b3rt});
   ok('Prüfung 4: „dazu“ in kürzeren Clip: Clip wiederholt (2 Takte), nichts hinter dem Ende, Summe gleich', r.b4.len === 2 && r.b4.beyond === 0 && r.b4.db <= -60 && r.b4.last.kept === 0, r.b4);
   ok('Prüfung 4: „dazu“ auf belegte Stelle: ein Schlag (der lautere), gemeldet', r.b4b.n === 1 && r.b4b.v >= .95 - 1e-6 && r.b4b.dup >= 1, r.b4b);

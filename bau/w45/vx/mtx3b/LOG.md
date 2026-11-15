@@ -12,3 +12,5 @@
 - 04:36 Prüfer-Befunde (PRUEFUNG.md, 11) übernommen; Lesen Block/ins.cjs/Sonden
 - 04:49 Behebungen 1–11 gebaut (Block + 8 neue Haken = 33), Sonden des Prüfers laufen nacheinander
 - 04:56 Prüfsonden des Prüfers a–j auf neuer Fassung grün (bis auf C7-Zeitfenster), Abschnitt „Prüfung MTX3b“ im Bauer-Test 19/19
+- 04:58 mtx3b-test 86/86 (67 + 19 Prüfung), md5 d7be6175; Regression nacheinander startet (reg/run2.sh)
+- 04:59 Pflicht: topdefs 26/0/0 · dupkeys 0 · smoke errors [] · MS 2000 1× · live 1× · VERSION 4.68.0 · diff nur Zusätze (0 <, 690 >)

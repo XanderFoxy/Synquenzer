@@ -14,3 +14,4 @@
 - 04:49 spk12-test2 alle 3 Größen 72 OK / 0 FEHLER · smoke errors [] · reg.sh wie Teil 1 (spk6/spk5/spk8 OK, spk1 1 = Basis, spk11 3 = drums-auf-kit bekannt)
 - 04:50 Pflicht Endstand: topdefs 26/7642/0/0 · dupkeys 0 · MS 2000 1× · live 1× · VERSION 4.68.0 · diff nur Zusätze (767) · Marken 0 · NOTES.md Teil 2 fertig; Fremd-Ergebnisse nach reg/
 - 04:50 Start Teil 3/3 (Plan-Schritte 7–9)
+- 04:59 Teil-3-Code (Kern: Ebene abtasten, Merkmale, Regionen · Haupt: Merkmale ▾ ‹ › Alle, Merken, Abtasten, FFT-Text) + 2 neue Haken (spk1Call, spk1ViewDd) gebaut

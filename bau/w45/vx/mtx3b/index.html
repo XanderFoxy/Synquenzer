@@ -95621,9 +95621,9 @@ function mtx3bMergeVer(L) {
       q.add = [];
       q.hj.forEach((h, k) => {
         if (!h) return; const j = L[k], c = h.id ? song.own[h.id] : S.tracks[j].clips[h.s]; if (!c || !S.tracks[j].dvx) return;
-        if (!h.id && q.hd && !q.hd.id && q.hd.s === h.s) return;            // Szenen-Clip ↔ Szenen-Clip derselben Szene: mtx3Merge
-        q.add.push({c, ver: !!h.id, v: S.tracks[j].dvx.v});
+        q.add.push({c, ver: !!h.id, v: S.tracks[j].dvx.v, same: !h.id && !!q.hd && !q.hd.id && q.hd.s === h.s});
       });
+      if (q.add.every(a => a.same)) q.add = [];                             // nur Szenen-Clip ↔ Szenen-Clip derselben Szene: mtx3Merge (sonst kommen sie mit in die neue Version)
     }
     const pads = c => new Set((c.notes || []).map(mtx3bPad));
     const into = (tg, add) => {

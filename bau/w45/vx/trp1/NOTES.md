@@ -84,7 +84,16 @@ Pflicht: topdefs 0 doppelt / 0 Syntaxfehler, dupkeys 0, smoke errors [], „MS 2
 | 12 | Code im Hauptskript | offen (Hinweis) | Wie JAM2/JAM3/MTX3/SPK11; Auslagern in einen nachgeladenen Teil = eigener Schritt für alle diese Blöcke. |
 
 Tests: trp1-test.mjs 81/81 (Teil 7 „Prüfung“ mit 17 neuen Punkten, Befunde 1–9, 11 gemessen, 3 Größen für Befund 7/9).
-Regression: siehe LOG.md (JAM3-Test basis vs. index).
+Regression (nacheinander, je basis 4.68.0 gegen index, Ordner reg/):
+- JAM3-Test (w4530): basis 64/67, index 63/67 – dieselben 3 Fehler wie die Basis (alter 4.52-Testsong, 926×370-Zeilenhöhe); neu nur
+  „alle Einhänge-Zeilen tragen JAM3“ (prüft gegen eine 4.68-Basis; die TRP1-Zeilen tragen TRP1) → erwartet.
+- JAM2-Test (w4510): basis 104/105, index 103/105 – neu nur „Rückungs-Zeile hat genau 5 Tasten“ quer: TRP1 legt seit dem Bau ab hier │ nur
+  dieser Teil │ Mehr ▾ in dieselbe Zeile (Blatt quer nicht höher); alle 8 Tasten ≥ 44 px → Test-Annahme, kein Rückschritt.
+- Prüfer-Sonde pruef/pruef-daten.mjs nachher (reg/pruef-daten-nachher.json): Lücke MELODIE 4/4 + Rest 27/27 gleich; ohne Marken MELODIE 4/4
+  und Rest 59/59 +3; s2Sum/konDo Stufen 0/103 bzw. 0/111 anders, trs bleibt; Dur→Moll 0 leiterfremd, trs aeolian; ZIP/Laden bitgleich;
+  Matrix 0/78; trp1P 0,38 µs; trp1Set 64 Takte 0,7 / 1,3 ms; MIDI 0,76 ms.
+- smoke: errors []. ↶ während ▶: 1,4–8,3 ms je ↶, trp1Live < 0,1 ms, 0 Long Tasks (eigene Messung, 3 Läufe).
+Fotos: fotos/trp1p-blatt-{hochkant,quer,quer-370}.png (Blatt nach dem Umschalten), fotos/trp1p-nach-nur-hochkant.png, fotos/smoke-trp1p.png.
 
 Offen (weiter): Funk-Ankündigung (Zeile „Wirkt …“ hochkant +48 px, ⋯-Eintrag, neu: Kleinschrift „nach „nur““ an der Marke nach einem „nur“-Teil);
 Song-Aufnahme über einem Stufen-Teil und gehaltene Noten an der Teil-Grenze weiter ungemessen; Takte kopieren/einsetzen nimmt `song.trf` nicht mit

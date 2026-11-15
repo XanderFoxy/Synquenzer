@@ -99321,7 +99321,7 @@ function spk1DspMake(V) {
   if (typeof spk5DspMake === 'function') spk5DspMake({Z2, KI1K, BT, zerlegen, selFn, magsAt, stripe, tileArr, tidy, uTouch, uBegin, uEnd, uAbort, verUp, newLayer, Fn, NBn, TRn, tick, get, soon});   // SPK5: Zerlegen/Profi nur in der Auswahl, Anteile je Ebene
   if (Z2 && typeof spk9DspMake === 'function') spk9DspMake(Z2);   /* SPK9: Legato-Noten (Tonhöhen-Stufen) */
   if (Z2 && typeof spk6DspMake === 'function') Z2.s6 = spk6DspMake({Z2, V, BT, BLK, win, lay, masksOf, stripe, stCopy, newLayer, verUp, uBegin, uTouch, uEnd, render, block, get, put, del, keys, selFn});   // SPK6: Ebenen-Werkstatt (Ops über Z2.ops)
-  if (Z2 && typeof spk12DspMake === 'function') spk12DspMake(Z2, {selFn, specInfo, specChunk, get, put});   /* SPK12: Zauberstab, Masken-Probe, Anzeige */
+  if (Z2 && typeof spk12DspMake === 'function') spk12DspMake(Z2, {selFn, specInfo, specChunk, get, put, soon, mixOf, block, BLK, tick, harmTrack, similar});   /* SPK12: Zauberstab, Masken-Probe, Anzeige, Ebene abtasten, Merkmale, Regionen */
   return {on, stft, istft, specInfo, docs, lowSplit, Z2};   // SPK2: Z2 für Messungen
 }
 /* ---------- Hauptfaden: Worker (Blob aus Text), Rückfall = derselbe Kern hier ---------- */
@@ -99345,6 +99345,7 @@ function spk1Reply(m) {
 }
 // ein Auftrag an den Kern: {op, doc?, …}; cb = {prog(p), chunk(c)}
 function spk1Call(op, a, tr, cb) {
+  if (typeof spk12CallSrc === 'function') { const r12 = spk12CallSrc(op, a); if (r12) { op = r12[0]; a = r12[1]; } }   /* SPK12: Merkmale, Alle Ebenen abtasten */
   const w = spk1Worker(), id = ++SPK1.wid, m = Object.assign({}, a, {op, qid: id});   // qid = Auftrag, id = Analyse
   return new Promise((ok, no) => {
     SPK1.wq.set(id, Object.assign({ok, no}, cb || {}));
@@ -100030,6 +100031,7 @@ function spk1ViewDd(U, b) {
     sl('Boden', -120, -30, 'lo'); sl('Decke', -60, 0, 'hi');
     dd.appendChild(el('h5', '', 'Auflösung (FFT)'));
     dd.appendChild(makeSeg([1024, 2048, 4096, 8192, 16384].map(n => [n, String(n)]), () => U.N, n => { U.N = n; spk1SpecLoad(U); }, 'spk1-n'));
+    if (typeof spk12FftTxt === 'function') spk12FftTxt(U, dd);   /* SPK12: ms / Hz am FFT-Regler */
     const g = el('div', 'spk1-g'), bt = el('button', 'mbtn rb spk1-ck', (U.tintOn ? '✓ ' : '') + 'Ebenen-Farben'), bf = el('button', 'mbtn rb spk1-ck', 'Alles zeigen'), bq = el('button', 'mbtn rb spk1-ck', 'Andere Quelle …');
     on(bt, 'click', () => { U.tintOn = !U.tintOn; bt.textContent = (U.tintOn ? '✓ ' : '') + 'Ebenen-Farben'; spk1Dirty(U, 'g'); });
     on(bf, 'click', () => { spk1Dd(U, null); spk1FitAll(U); });
@@ -104869,7 +104871,7 @@ const SPK11_API = {open: () => spk11Open(SPK1.ui, SPK1.ui && SPK1.ui.sh.querySel
   go: () => spk11Go(SPK1.ui), last: () => SPK11.last, teile: () => SPK1.ui && SPK1.ui.s11 && SPK1.ui.s11.T, kl: lid => !!SPK11.kl.get(SPK1.doc + '|' + lid), hits: (x, sr, st, n) => spk11Hits(x, sr, st, n), klang: lid => spk11Klang(SPK1.ui, lid)};
 try { window.__spk11 = SPK11_API; } catch (e) {}
 /* SPK11-END */
-/* SPK12-BEGIN ===== Spektral-Seite Teil 12 · Werkzeugkasten Auswahl (Teil 1/3: Kombinieren, Umkehren, Rand-Griffe, Zauberstab · Teil 2/3: Transient, Ellipse, Lasso, Obertöne-Häkchen/Auto, folgt dem Ton)
+/* SPK12-BEGIN ===== Spektral-Seite Teil 12 · Werkzeugkasten Auswahl (Teil 1/3: Kombinieren, Umkehren, Rand-Griffe, Zauberstab · Teil 2/3: Transient, Ellipse, Lasso, Obertöne-Häkchen/Auto, folgt dem Ton · Teil 3/3: Ähnliches mit Merkmalen + ‹ › Alle, Alle Ebenen abtasten, Auswahl merken, FFT ms / Hz)
    Xander 15.11.: „Spektral-Werkzeuge wie im alten Spektral-Ebenen-Programm als Hybrid“.
    - Kombinier-Modus Neu │ + │ − │ ∩ (Leiste unter der Werkzeugzeile): jede neue Form (Rechteck, Zeit, Frequenz, Pinsel, Harmonische,
      Zauberstab) ersetzt, kommt dazu, wird abgezogen oder geschnitten. Formen tragen `op` ('sub' | 'and'; ohne = dazu); der Kern rechnet
@@ -104887,7 +104889,7 @@ try { window.__spk11 = SPK11_API; } catch (e) {}
      Ebenen-Aktion kam (Vergleich mit dem Undo-Stand des Kerns).
    - Anzeige: Enthält die Auswahl − / ∩ / Umkehren / Zauberstab, zeigt die Fläche das Ergebnis des Kerns (Raster 2 px, im Worker).
    Haken „SPK12“: selFn (1. Zeile), spk1DspMake (vor return), spk8WUrl (Text in den Worker), spk1Build, spk1OvDraw (2), spk1Gest,
-   spk1ToolDown/Move/Up (4), spk1SelDone, spk1ToolSet, spk1UndoBtns, spk1UndoRedo, spk1Tap. */
+   spk1ToolDown/Move/Up (4), spk1SelDone, spk1ToolSet, spk1UndoBtns, spk1UndoRedo, spk1Tap · Teil 3: spk1Call (Merkmale, Abtasten), spk1ViewDd (FFT-Text). */
 const SPK12_TOOLS = ['rect', 'zeit', 'freq', 'pinsel', 'harm', 'wand', 'ell', 'lasso', 'trans'], SPK12_HT = ['rect', 'zeit', 'freq', 'harm', 'wand', 'ell', 'lasso'];
 const SPK12_SLOTS = {rect: ['rect', 'ell', 'lasso', 'wand'], zeit: ['zeit', 'trans']};   // Halten auf Rechteck bzw. Zeit → Liste
 const SPK12_ICON = '<path d="M3.5 16.5l9.5-9.5" stroke-width="2.2" stroke-linecap="round"/><path d="M13 7l1.8-1.8"/><path d="M15.5 1.8v2.4M18.2 4.5h-2.4M17.4 2.6l-1.2 1.2M12.2 2.4l.9.9M17.6 8.8l-.9-.9"/>';
@@ -105058,11 +105060,11 @@ function spk12K2(d, s, base) {   // Zwischenspeicher: Schlüssel + Prüfsumme de
 function spk12DspMake(Z2, X) {
   const ops = Z2.ops || (Z2.ops = {}), CH = new Map();
   async function chunk(d, N, ci) {
-    const key = 'spk:' + d.meta.id + ':v' + N + ':' + ci; if (CH.has(key)) return CH.get(key);
+    const key = 'spk:' + d.meta.id + (d.s12k || '') + ':v' + N + ':' + ci; if (CH.has(key)) return CH.get(key);
     const I = X.specInfo(d, N), W = Math.min(1024, I.cols - ci * 1024); let data = null;
-    const have = await X.get('audio', key);
+    const have = d.s12k ? null : await X.get('audio', key);
     if (have && have.byteLength === I.rows * W) data = new Uint8Array(have);
-    else { data = X.specChunk(d, N, ci).data; try { await X.put('audio', key, data.slice().buffer); } catch (e) {} }
+    else { data = X.specChunk(d, N, ci).data; if (!d.s12k) try { await X.put('audio', key, data.slice().buffer); } catch (e) {} }
     const o = {data, W, x0: ci * 1024}; CH.set(key, o); if (CH.size > 6) CH.delete(CH.keys().next().value);
     return o;
   }
@@ -105181,18 +105183,85 @@ function spk12DspMake(Z2, X) {
     const bt = box.m1 < 0 ? null : {t0: (box.m0 - 1) * hop / sr, t1: (box.m1 - 1) * hop / sr, f0: box.k0 * sr / N, f1: box.k1 * sr / N};
     return {W, H, data, t0, t1, mTop: mT, mBot: mB, box: bt};
   };
+  /* Teil 3: „Alle Ebenen abtasten“ aus → Analyse-Signal = nur die aktive Ebene (blockweise gerechnet, Zwischenspeicher je Ebenen-Stand) */
+  const SRC = new Map(); let srcN = 0;
+  async function src(d, m) {
+    const lid = m && m.s12src; if (!lid || lid === 'orig' || !X.block || !X.mixOf) return d;
+    if (lid !== 'rest' && !d.meta.layers.some(l => l.id === lid)) return d;
+    const key = d.meta.id + '|' + lid + '|' + d.meta.layers.map(l => l.id + ':' + l.ver).join(','); let d2 = SRC.get(key); if (d2) return d2;
+    const T0 = performance.now(), n = d.meta.n, mid = new Float32Array(n), mx = X.mixOf(d, lid), nb = Math.ceil(n / X.BLK); let tY = performance.now();
+    for (let k = 0; k < nb; k++) {
+      const bl = X.block(d, k, mx), o = k * X.BLK, e = Math.min(n, o + X.BLK), kk = 1 / bl.length;
+      for (const y of bl) for (let i = o; i < e; i++) mid[i] += y[i - o] * kk;
+      if (performance.now() - tY > 25) { await X.tick(); tY = performance.now(); }
+    }
+    d2 = Object.create(d); d2.mid = mid; d2.co = null; d2.s12k = ':s12L' + (++srcN); d2.s12ms = +(performance.now() - T0).toFixed(1); d2.s12lid = lid;
+    SRC.set(key, d2); if (SRC.size > 2) SRC.delete(SRC.keys().next().value); return d2;
+  }
+  for (const k of ['spk12zauber', 'spk12trans', 'spk12hauto', 'spk12follow']) { const f0 = ops[k]; ops[k] = async (d, m, ...r) => { const d2 = await src(d, m), o = await f0(d2, m, ...r); if (o && typeof o === 'object' && d2 !== d) o.s12src = {lid: d2.s12lid, ms: d2.s12ms}; return o; }; }
+  if (X.harmTrack) ops.spk12harm = async (d, m) => X.harmTrack(await src(d, m), +m.t || 0, +m.f || 220, m.max || 6);
+  if (X.similar) ops.spk12aehnB = async (d, m) => X.similar(await src(d, m), m.ex || {});
+  /* Ähnliches mit Merkmalen: je Rahmen (N 4096, Hop 2048 wie „Ähnliche“) im Band des Beispiels Pegel (dB), Tonalität (Anteil der Energie in
+     deutlichen Spitzen ≥ 13 dB über den Nachbarn), Rauschen (spektrale Flachheit), Transient (Spektral-Fluss, log. verdichtet) */
+  const FT = new Map();
+  async function feats(d, fa, fb) {
+    const key = d.meta.id + (d.s12k || '') + '|' + fa + '|' + fb; if (FT.has(key)) return FT.get(key);
+    const sr = d.meta.sr, x = d.mid, N = 4096, hop = 2048, NB = N / 2 + 1, F = Math.floor(x.length / hop) + 1, re = new Float64Array(N), im = new Float64Array(N);
+    const ka = Math.max(7, Math.floor(fa * N / sr)), kb = Math.min(NB - 8, Math.max(ka + 2, Math.ceil(fb * N / sr))), nb = kb - ka + 1;
+    let e2 = 0, ne = 0; for (let i = 0; i < x.length; i += 8) { e2 += x[i] * x[i]; ne++; } const gam = 100 / Math.max(1e-4, Math.sqrt(e2 / Math.max(1, ne)));
+    const E = new Float32Array(F), T = new Float32Array(F), SF = new Float32Array(F), D = new Float32Array(F); let prev = null, tY = performance.now();
+    for (let f = 0; f < F; f++) {
+      const g = spk12Mag(x, f * hop, N, re, im), y = new Float32Array(nb); let sp = 0, sl = 0, ton = 0, fl = 0;
+      for (let k = ka; k <= kb; k++) {
+        const P = g[k] * g[k]; sp += P; sl += Math.log(P + 1e-14); y[k - ka] = 20 * Math.log10(1 + gam * g[k]);
+        if (g[k] >= g[k - 1] && g[k] > g[k + 1]) { let nm = 0; for (let j = 3; j <= 6; j++) nm += g[k - j] * g[k - j] + g[k + j] * g[k + j]; if (P >= 20 * nm / 8) ton += P + g[k - 1] * g[k - 1] + g[k + 1] * g[k + 1]; }
+      }
+      if (prev) for (let i = 0; i < nb; i++) { const r = Math.max(prev[i], prev[Math.max(0, i - 1)], prev[Math.min(nb - 1, i + 1)]), v = y[i] - r; if (v > 0) fl += v; }
+      E[f] = 10 * Math.log10(sp + 1e-14); T[f] = sp > 0 ? Math.min(1, ton / sp) : 0; SF[f] = Math.min(1, Math.exp(sl / nb) / (sp / nb + 1e-14)); D[f] = prev ? fl / nb : 0; prev = y;
+      if ((f & 31) === 31 && performance.now() - tY > 25) { await X.tick(); tY = performance.now(); }
+    }
+    const o = {E, T, SF, D, F, hop, sr}; FT.set(key, o); if (FT.size > 4) FT.delete(FT.keys().next().value); return o;
+  }
+  ops.spk12aehn = async (d, m) => {
+    const T0 = performance.now(), d2 = await src(d, m), ex = m.ex || {}, mk = m.mk || {}, sr = d.meta.sr, ny = sr / 2;
+    const fa = ex.f0 > 0 ? Math.max(20, +ex.f0) : 20, fb = ex.f1 > 0 ? Math.min(ny, +ex.f1) : Math.min(ny, 16000), C = await feats(d2, Math.round(fa), Math.round(fb));
+    const e0 = Math.max(0, Math.floor((+ex.t0 || 0) * sr / C.hop)), e1 = Math.min(C.F - 1, Math.max(e0 + 1, Math.ceil((+ex.t1 || 0) * sr / C.hop))), L = e1 - e0 + 1;
+    if (L < 2) return {hits: [], L};
+    const nS = Math.max(0, C.F - L + 1), R = new Float32Array(nS), cl = v => v < 0 ? 0 : v > 1 ? 1 : v, Ec = v => Math.max(-100, v); let Ee = 0, Te = 0, Fe = 0, De = 0;
+    for (let u = 0; u < L; u++) { Ee += Ec(C.E[e0 + u]); Te += C.T[e0 + u]; Fe += C.SF[e0 + u]; De = Math.max(De, C.D[e0 + u]); } Ee /= L;
+    for (let s = 0; s < nS; s++) {
+      let Ex = 0, dT = 0, dF = 0, dP = 0, mn = 0, mxx = 0;
+      for (let u = 0; u < L; u++) { const a = e0 + u, b = s + u, xe = Ec(C.E[b]); Ex += xe; dT += Math.abs(C.T[b] - C.T[a]); dF += Math.abs(C.SF[b] - C.SF[a]); dP += Math.min(30, Math.abs(xe - Ec(C.E[a]))); mn += Math.min(C.D[a], C.D[b]); mxx += Math.max(C.D[a], C.D[b]); }
+      let w = cl(1 - (Ee - Ex / L - 15) / 10);   // vorhanden: höchstens ~15 dB leiser als das Beispiel (Stille zählt nie)
+      if (mk.ton) w *= cl(1 - dT / L / 0.35); if (mk.rs) w *= cl(1 - dF / L / 0.25); if (mk.pg) w *= cl(1 - dP / L / 10); if (mk.tr) w *= mxx > 0 ? mn / mxx : 1;
+      R[s] = w;
+    }
+    const hits = [], gap = Math.max(1, Math.round(L * 0.75));
+    for (let s = 0; s < nS; s++) {
+      if (R[s] < 0.3 || Math.abs(s - e0) < gap) continue;
+      let ok = true; for (let q = Math.max(0, s - gap); q <= Math.min(nS - 1, s + gap); q++) if (R[q] > R[s] || (R[q] === R[s] && q < s)) { ok = false; break; }
+      if (ok) hits.push({t0: +(s * C.hop / sr).toFixed(4), t1: +((s + L) * C.hop / sr).toFixed(4), wert: +R[s].toFixed(3)});
+    }
+    hits.sort((a, b) => b.wert - a.wert); hits.length = Math.min(hits.length, 300); hits.sort((a, b) => a.t0 - b.t0);
+    return {hits, L, mk, bsp: {pegel: +Ee.toFixed(1), tonal: +(Te / L).toFixed(3), rauschen: +(Fe / L).toFixed(3), transient: +De.toFixed(2)}, src: d2 !== d ? {lid: d2.s12lid, ms: d2.s12ms} : null, ms: +(performance.now() - T0).toFixed(1)};
+  };
+  /* Auswahl merken: benannte Regionen im Dokument (d.meta.s12reg → Speichern/Laden/Export wie die übrigen Meta-Daten) */
+  ops.spk12reg = (d, m) => {
+    if (Array.isArray(m.set)) { d.meta.s12reg = JSON.parse(JSON.stringify(m.set)).slice(0, 64); d.metaDirty = true; if (X.soon) X.soon(d); }
+    return {reg: JSON.parse(JSON.stringify(d.meta.s12reg || []))};
+  };
 }
 /* ---------- Hauptfaden: Zustand, Stapel, Kombinieren ---------- */
 function spk12S(U) {
   let S = U.s12;
-  if (!S || S.doc !== SPK1.doc) { const o = S || {}; S = U.s12 = {doc: SPK1.doc, mode: o.mode || 'neu', slot: o.slot && typeof o.slot === 'object' ? o.slot : {rect: 'rect', zeit: 'zeit'}, hm: o.hm || null, hAuto: !!o.hAuto, prev: [], last: null, u: [], r: [], vw: null, vKey: '', inSelf: false, ovSel: null}; }
+  if (!S || S.doc !== SPK1.doc) { const o = S || {}; S = U.s12 = {doc: SPK1.doc, mode: o.mode || 'neu', slot: o.slot && typeof o.slot === 'object' ? o.slot : {rect: 'rect', zeit: 'zeit'}, hm: o.hm || null, hAuto: !!o.hAuto, prev: [], last: null, u: [], r: [], vw: null, vKey: '', inSelf: false, ovSel: null, allL: o.allL !== false, mk: Object.assign({ton: false, tr: false, rs: false, pg: false}, o.mk || {}), reg: null, ai: -1}; }
   return S;
 }
 const spk12Has = U => U.sel.some(s => s.op === 'sub' || s.op === 'and' || s.art === 'wand' || s.art === 'inv' || s.art === 'ell' || s.art === 'lasso' || s.art === 'trans' || s.art === 'fol' || (s.art === 'harm' && s.hm));
 const spk12Ku = () => { const r = SPK1.last; return r ? r.nu + '|' + r.nr + '|' + (r.undo || '') : '0'; };
 const spk12Clone = a => JSON.parse(JSON.stringify(a || []));
 let spk12KeyN = 0; const spk12Key = () => 'w' + Date.now().toString(36) + (++spk12KeyN);
-function spk12Push(U, lab, before) { const S = spk12S(U); S.u.push({sel: before, ku: spk12Ku(), lab}); if (S.u.length > 40) S.u.shift(); S.r.length = 0; spk12UndoBtn(U); }
+function spk12Push(U, lab, before, xtra) { const S = spk12S(U); S.u.push(Object.assign({sel: before, ku: spk12Ku(), lab}, xtra || {})); if (S.u.length > 40) S.u.shift(); S.r.length = 0; spk12UndoBtn(U); }
 function spk12Set(U, sel, txt) {
   const S = spk12S(U); U.sel = sel; U.hits = U.ex = null; if (U.hitLab) U.hitLab.textContent = '';
   S.inSelf = true; try { spk1SelDone(U, txt); } finally { S.inSelf = false; }
@@ -105216,8 +105285,10 @@ function spk12UndoBtn(U) {
 function spk12UndoRedo(U, which) {
   const S = spk12S(U), A = which === 'undo' ? S.u : S.r, B = which === 'undo' ? S.r : S.u, top = A[A.length - 1];
   if (!top || top.ku !== spk12Ku()) return false;
-  A.pop(); B.push({sel: spk12Clone(U.sel), ku: top.ku, lab: top.lab});
+  A.pop(); const cur = {sel: spk12Clone(U.sel), ku: top.ku, lab: top.lab}; if (top.reg) cur.reg = spk12Clone(S.reg || []); if (top.ah) cur.ah = {ex: U.ex, hits: U.hits, i: S.ai}; B.push(cur);
+  if (top.reg) { S.reg = spk12Clone(top.reg); spk12RegPut(U).catch(logErr); }
   spk12Set(U, spk12Clone(top.sel), (which === 'undo' ? 'Rückgängig: ' : 'Wiederholt: ') + top.lab);
+  if (top.ah) { U.ex = top.ah.ex; U.hits = top.ah.hits; S.ai = top.ah.i; const L = spk12AList(U); if (U.hitLab && L) U.hitLab.textContent = (L.length - 1) + ' Treffer'; spk1Dirty(U, 'ov'); }
   spk12UndoBtn(U); return true;
 }
 /* ---------- Formen umrechnen: verschieben (dt s, dm Halbtöne), wachsen (gt s, gc Cent), weicher (ws) ---------- */
@@ -105404,6 +105475,8 @@ function spk12Pane(U, pane, sl) {
   U.opt.s12ts = 5; U.opt.s12hg = 3; U.opt.s12tl = 120;
   for (const p of U.op.querySelectorAll('.spk1-o')) if (p.dataset.for === 'rect zeit freq') p.dataset.for += ' ell lasso';   // Kante auch für Ellipse/Lasso
   const pT = pane('trans'); sl(pT, 'Empfindl.', 's12ts', 1, 10, 1, v => String(v), () => spk12ReTr(U)); sl(pT, 'Höhen', 's12hg', 0, SPK12_HG.length - 1, 1, v => 'ab ' + SPK12_HG[v] + ' Hz', () => spk12ReTr(U)); sl(pT, 'Länge', 's12tl', 40, 300, 20, v => v + ' ms', () => spk12ReTr(U));
+  const pA = pane('aehn'), bM = el('button', 'n1b spk12-hd', 'Merkmale ▾'); bM.dataset.a = 's12mk'; bM.setAttribute('aria-label', 'Ähnlich in: tonal, Transient, Rauschen, Pegel'); pA.appendChild(bM); U.b12m = bM;
+  for (const [a, t, lab] of [['s12ap', '‹', 'Voriger Treffer'], ['s12an', '›', 'Nächster Treffer'], ['s12aa', 'Alle', 'Alle Treffer wählen']]) { const x = el('button', 'n1b spk12-m', t); x.dataset.a = a; x.setAttribute('aria-label', lab); pA.appendChild(x); }
   const pH = pane('harm'), bH = el('button', 'n1b spk12-hd', 'Obertöne ▾'); bH.dataset.a = 's12hd'; bH.setAttribute('aria-label', 'Obertöne einzeln anhaken, Auto, nur ungerade'); pH.appendChild(bH); U.b12h = bH;
   for (const g of Object.keys(SPK12_SLOTS)) {
     const b = U.tl.querySelector('button[data-tool="' + g + '"]'); if (!b) continue; b.dataset.s12slot = g;
@@ -105440,6 +105513,8 @@ function spk12Tap(U, b) {
   if (a === 's12m') { S.mode = b.dataset.m; spk12ModeBtns(U); spk1Stat(U, {neu: 'Neu: die nächste Form ersetzt die Auswahl', add: '+: die nächste Form kommt dazu', sub: '−: die nächste Form wird abgezogen', and: '∩: nur die Überschneidung bleibt'}[S.mode]); }
   else if (a === 's12dd') spk12Dd(U, b);
   else if (a === 's12hd') spk12HDd(U, b);
+  else if (a === 's12mk') spk12MkDd(U, b);
+  else if (a === 's12ap' || a === 's12an' || a === 's12aa') spk12AStep(U, a === 's12ap' ? -1 : a === 's12an' ? 1 : 0);
   return true;
 }
 function spk12Dd(U, b) {
@@ -105450,6 +105525,8 @@ function spk12Dd(U, b) {
     g('Auswahl', [['inv', 'Umkehren'], ['invf', 'Nur Frequenzen umkehren', !has || !spk12Box(U)], ['rest', 'Wiederherstellen', !S.last], ['fol', fol ? 'Folgt nicht mehr' : 'Folgt dem Ton', !has || (!fol && !spk12Box(U))]]);
     g('Form', [['grow', 'Erweitern', !has], ['shrink', 'Verkleinern', !has], ['soft', 'Weicher', !has], ['hard', 'Härter', !has]]);
     g('Werkzeug', ['rect', 'ell', 'lasso', 'wand', 'trans'].filter(k => k !== U.tool).map(k => [k, SPK12_ALT[k]]));
+    spk12RegRows(U, dd);
+    g('Abtasten', [['allL', (S.allL ? '✓ ' : '') + 'Alle Ebenen abtasten']]);
     dd.appendChild(el('p', '', 'Am Rand ziehen = Größe · zwei Finger am Rand = Weichheit · Mitte ziehen = verschieben.'));
   });
 }
@@ -105457,6 +105534,8 @@ function spk12Act(U, a) {
   const S = spk12S(U), before = spk12Clone(U.sel), ny = (U.meta && U.meta.sr || 44100) / 2; let sel = null, lab = '';
   if (['rect', 'ell', 'lasso', 'wand', 'zeit', 'trans'].includes(a)) { spk12Slot(U, a); spk1ToolSet(U, a); return true; }
   if (a === 'fol') { spk12Follow(U); return true; }
+  if (a === 'mer') return !!spk12Merk(U);
+  if (a === 'allL') { spk12AllL(U); return true; }
   if (a === 'inv') { sel = U.sel.concat([{art: 'inv', t0: 0, t1: U.dur, f0: 0, f1: ny, kt: 0, kf: 0}]); lab = 'Auswahl umgekehrt'; }
   else if (a === 'invf') { const B = spk12Box(U); if (!B) return false; sel = U.sel.concat([{art: 'inv', nurF: 1, t0: +B.t0.toFixed(4), t1: +B.t1.toFixed(4), f0: 0, f1: ny, kt: 0, kf: 0}]); lab = 'Nur Frequenzen umgekehrt'; }
   else if (a === 'rest') { if (!S.last) return false; sel = S.last; S.last = U.sel.length ? U.sel.slice() : S.last; lab = 'Auswahl wiederhergestellt'; }
@@ -105594,13 +105673,93 @@ function spk12HitDraw(U, x) {
   for (const s of L) for (const t of s.hits) { const px = Math.round(spk1X(U, t)) + 0.5; if (px < -2 || px > U.W + 2) continue; x.beginPath(); x.moveTo(px, 0); x.lineTo(px, 9); x.stroke(); }
   x.restore();
 }
+/* ---------- Teil 3 · Hauptfaden: Ähnliches mit Merkmalen + ‹ › Alle, Alle Ebenen abtasten, Auswahl merken, FFT-Text ---------- */
+const SPK12_MK = [['ton', 'Tonal'], ['tr', 'Transient'], ['rs', 'Rauschen'], ['pg', 'Pegel']];
+const SPK12_SRCOPS = ['spk12zauber', 'spk12trans', 'spk12hauto', 'spk12follow', 'spk12aehn', 'harm', 'aehnlich'];
+const spk12MkOn = S => !!(S && S.mk && SPK12_MK.some(([k]) => S.mk[k]));
+function spk12CallSrc(op, a) {   // Haken am Anfang von spk1Call: Merkmale → eigener Kern, „Alle Ebenen abtasten“ aus → aktive Ebene
+  const U = SPK1.ui, S = U && U.s12; if (!S || !a || typeof a !== 'object' || a.s12src !== undefined || a.doc !== S.doc) return null;
+  let o2 = op, a2 = a;
+  if (op === 'aehnlich' && spk12MkOn(S)) { o2 = 'spk12aehn'; a2 = Object.assign({}, a, {mk: Object.assign({}, S.mk)}); }
+  const L = S.allL === false && U.act && U.act !== 'orig' ? U.act : null;
+  if (L && SPK12_SRCOPS.includes(o2)) { if (o2 === 'harm') o2 = 'spk12harm'; else if (o2 === 'aehnlich') o2 = 'spk12aehnB'; a2 = Object.assign({}, a2, {s12src: L}); }
+  return o2 === op && a2 === a ? null : [o2, a2];
+}
+const spk12LName = U => U.act === 'orig' ? 'Original' : U.act === 'rest' ? 'Rest' : ((U.meta && U.meta.layers.find(l => l.id === U.act)) || {}).name || 'Ebene';
+function spk12AList(U) {   // Beispiel + Treffer über der Empfindlichkeit, nach Zeit
+  if (!U.ex || !U.hits) return null; const thr = 0.92 - 0.6 * U.opt.empf;
+  return [U.ex].concat(U.hits.filter(h => h.wert >= thr).map(h => Object.assign({}, U.ex, {t0: h.t0, t1: h.t1, hit: h.wert}))).sort((a, b) => a.t0 - b.t0);
+}
+function spk12AStep(U, dir) {   // ‹ (−1) › (+1) einzeln durch die Treffer, 0 = Alle; je Schritt ein ↶
+  const S = spk12S(U), L = spk12AList(U); if (!L || L.length < 2) { spk1Stat(U, 'Ähnliche: erst ein Beispiel ziehen oder antippen'); return false; }
+  const ah = {ex: U.ex, hits: U.hits, i: S.ai}, before = spk12Clone(U.sel), fz = v => v.toFixed(2).replace('.', ',');
+  if (dir === 0) { spk12Push(U, 'Alle Treffer', before, {ah}); S.ai = -1; spk1HitsApply(U); S.prev = U.sel.slice(); spk12ViewReq(U); return true; }
+  let i = S.ai >= 0 && S.ai < L.length ? S.ai : L.indexOf(U.ex); i = (i + dir + L.length) % L.length;
+  spk12Push(U, dir > 0 ? 'Nächster Treffer' : 'Voriger Treffer', before, {ah}); S.ai = i; const sh = L[i];
+  U.sel = [sh]; S.inSelf = true; try { spk1SelDone(U, 'Treffer ' + (i + 1) + ' / ' + L.length + ' · ' + fz(sh.t0) + '–' + fz(sh.t1) + ' s' + (sh === U.ex ? ' · Beispiel' : ' · ' + Math.round(100 * sh.hit) + ' %') + ' · Alle = alle wählen'); } finally { S.inSelf = false; }
+  S.prev = U.sel.slice(); spk12ViewReq(U); spk1Dirty(U, 'ov'); return true;
+}
+function spk12MkDd(U, b) {
+  const S = spk12S(U);
+  spk1Dd(U, b, dd => {
+    dd.appendChild(el('h5', '', 'Ähnlich in …')); const g = el('div', 'spk1-g');
+    for (const [k, t] of SPK12_MK) {
+      const x = el('button', 'mbtn rb spk1-ck' + (S.mk[k] ? ' on' : ''), (S.mk[k] ? '✓ ' : '') + t); x.dataset.s12mk = k; x.setAttribute('aria-pressed', String(!!S.mk[k]));
+      on(x, 'click', () => { S.mk[k] = !S.mk[k]; x.classList.toggle('on', S.mk[k]); x.setAttribute('aria-pressed', String(S.mk[k])); x.textContent = (S.mk[k] ? '✓ ' : '') + t; S.ai = -1; if (U.ex) spk1Aehn(U, U.ex); });
+      g.appendChild(x);
+    }
+    dd.appendChild(g); dd.appendChild(el('p', '', 'Ohne Häkchen: ähnliches Frequenzbild wie bisher. Mit Häkchen zählt nur, was angehakt ist: Tonal (klare Töne), Transient (Anschläge), Rauschen, Pegel (gleich laut).'));
+  });
+}
+/* Auswahl merken: Regionen im Dokument; Merken, Laden, Löschen je ein ↶ */
+function spk12RegGet(U) { const S = spk12S(U), doc = S.doc; if (!doc || S.regQ) return; S.regQ = 1; spk1Call('spk12reg', {doc}).then(r => { if (spk12S(U).doc === doc) S.reg = r.reg; }, logErr).finally(() => { S.regQ = 0; }); }
+function spk12RegPut(U) { const S = spk12S(U); return spk1Call('spk12reg', {doc: S.doc, set: S.reg || []}).then(r => { S.reg = r.reg; return r.reg; }); }
+const SPK12_ART = {rect: 'Rechteck', zeit: 'Zeit', freq: 'Frequenz', pinsel: 'Pinsel', harm: 'Harmonische', aehn: 'Ähnliche', wand: 'Zauberstab', ell: 'Ellipse', lasso: 'Lasso', trans: 'Transient', fol: 'Folgt dem Ton', inv: 'Umgekehrt'};
+function spk12Merk(U) {
+  const S = spk12S(U); if (!U.sel.length) { spk1Stat(U, 'Merken: erst etwas auswählen'); return null; }
+  const L = S.reg || [], first = U.sel.find(s => !s.op && s.art !== 'inv') || U.sel[0], base = SPK12_ART[first.art] || 'Auswahl';
+  let n = 0; for (const r of L) { const q = /(\d+)$/.exec(r.name); if (q) n = Math.max(n, +q[1]); }
+  const B = spk12Box(U), r = {id: 'r' + Date.now().toString(36) + (++spk12KeyN), name: base + ' ' + (n + 1), sel: spk12Clone(U.sel), b: B ? [+B.t0.toFixed(3), +B.t1.toFixed(3), +(B.f0 || 0).toFixed(1), +(B.f1 || 0).toFixed(1)] : null, mt: Date.now()};
+  spk12Push(U, 'Gemerkt: ' + r.name, spk12Clone(U.sel), {reg: spk12Clone(L)}); S.reg = L.concat([r]); spk12RegPut(U).catch(logErr);
+  spk1Stat(U, 'Gemerkt als „' + r.name + '“ · Auswahl ▾ → laden · ↶ macht es rückgängig'); return r;
+}
+function spk12RegLoad(U, id) {
+  const S = spk12S(U), r = (S.reg || []).find(x => x.id === id); if (!r) return false;
+  if (U.sel.length) S.last = U.sel.slice(); spk12Push(U, 'Region ' + r.name, spk12Clone(U.sel)); spk12Set(U, spk12Clone(r.sel), '„' + r.name + '“ geladen · ↶ macht es rückgängig'); return true;
+}
+function spk12RegDel(U, id) {
+  const S = spk12S(U), L = S.reg || [], r = L.find(x => x.id === id); if (!r) return false;
+  spk12Push(U, 'Region gelöscht', spk12Clone(U.sel), {reg: spk12Clone(L)}); S.reg = L.filter(x => x !== r); spk12RegPut(U).catch(logErr);
+  spk1Stat(U, '„' + r.name + '“ gelöscht · ↶ holt es zurück'); return true;
+}
+function spk12RegRows(U, dd) {
+  const S = spk12S(U), L = S.reg; dd.appendChild(el('h5', '', 'Gemerkt'));
+  const g = el('div', 'spk1-g'), bm = el('button', 'mbtn rb spk1-ck', 'Merken'); bm.dataset.s12a = 'mer'; bm.disabled = !U.sel.length; on(bm, 'click', () => { spk1Dd(U, null); spk12Merk(U); }); g.appendChild(bm); dd.appendChild(g);
+  if (L == null) { spk12RegGet(U); return; }
+  const fz = v => (+v).toFixed(1).replace('.', ',');
+  for (const r of L) {
+    const row = el('div', 'spk1-g spk12-rg'), x = el('button', 'mbtn rb spk1-ck', esc(r.name) + (r.b ? ' · ' + fz(r.b[0]) + '–' + fz(r.b[1]) + ' s' : '')), del = el('button', 'mbtn rb spk1-ck spk12-hn', '✕');
+    x.dataset.s12r = r.id; del.dataset.s12rx = r.id; del.setAttribute('aria-label', r.name + ' löschen');
+    on(x, 'click', () => { spk1Dd(U, null); spk12RegLoad(U, r.id); }); on(del, 'click', () => { spk1Dd(U, null); spk12RegDel(U, r.id); });
+    row.append(x, del); dd.appendChild(row);
+  }
+}
+function spk12AllL(U) {
+  const S = spk12S(U); S.allL = S.allL === false;
+  spk1Stat(U, S.allL ? 'Abtasten: alle Ebenen (Original) – Werkzeuge suchen im ganzen Klang' : 'Abtasten: nur ' + spk12LName(U) + ' – Zauberstab, Harmonische, Transient, Ähnliche suchen nur in der aktiven Ebene');
+}
+function spk12FftTxt(U, dd) {   // Haken im Ansicht-Klappfenster: Zeit- und Frequenz-Auflösung am FFT-Regler
+  const sr = (U.meta && U.meta.sr) || 44100, p = el('p', 'spk12-fft', '');
+  const up = () => { const N = U.N; p.textContent = N + ' Punkte: ' + Math.round(1000 * N / sr) + ' ms / ' + (sr / N).toFixed(1).replace('.', ',') + ' Hz'; };
+  up(); dd.appendChild(p); const seg = dd.querySelector('.spk1-n'); if (seg) seg.addEventListener('click', () => setTimeout(up, 0));
+}
 /* ---------- „Wo finde ich …?“ ---------- */
 (function spk12Guide() {
   try {
     if (typeof ui1Entries !== 'function') return; const L = ui1Entries(); if (L.some(x => x.id === 'spk12')) return;
-    L.push({id: 'spk12', n: 'Auswahl kombinieren, Zauberstab, Lasso, Transient, Obertöne', w: 'Spektral › Leiste unter den Werkzeugen: Neu │ + │ − │ ∩ · Auswahl ▾ · Rechteck halten → Ellipse/Lasso/Zauberstab · Zeit halten → Transient · Harmonische → Obertöne ▾',
-      d: 'Neu ersetzt, + fügt hinzu, − zieht ab, ∩ lässt nur die Überschneidung. Auswahl ▾: Umkehren, nur Frequenzen umkehren, Wiederherstellen, Erweitern, Verkleinern, Weicher. Am Rand ziehen = Größe, zwei Finger am Rand = Weichheit, Mitte ziehen = verschieben. Zauberstab: antippen wählt die zusammenhängende Fläche (Toleranz, ± 5 s). Ellipse ziehen, Lasso umfahren. Transient: Schlag antippen oder über Schläge ziehen (Empfindlichkeit, ab … Hz). Obertöne ▾: jeden Oberton anhaken, nur ungerade, Auto. Auswahl ▾ → Folgt dem Ton: die Auswahl wandert mit der Tonhöhe.',
-      s: 'auswahl kombinieren hinzufuegen abziehen schnittmenge umkehren invertieren wiederherstellen erweitern verkleinern weich kante rand verschieben zauberstab toleranz spektrum ellipse lasso polygon transient schlag snare anschlag obertoene ungerade gerade auto folgt ton verfolgung',
+    L.push({id: 'spk12', n: 'Auswahl kombinieren, Zauberstab, Lasso, Transient, Obertöne, Ähnliches, Merken', w: 'Spektral › Leiste unter den Werkzeugen: Neu │ + │ − │ ∩ · Auswahl ▾ (Merken, Alle Ebenen abtasten) · Rechteck halten → Ellipse/Lasso/Zauberstab · Zeit halten → Transient · Harmonische → Obertöne ▾ · Ähnliche → Merkmale ▾ ‹ › Alle · Ansicht ▾ → FFT ms / Hz',
+      d: 'Neu ersetzt, + fügt hinzu, − zieht ab, ∩ lässt nur die Überschneidung. Auswahl ▾: Umkehren, nur Frequenzen umkehren, Wiederherstellen, Erweitern, Verkleinern, Weicher. Am Rand ziehen = Größe, zwei Finger am Rand = Weichheit, Mitte ziehen = verschieben. Zauberstab: antippen wählt die zusammenhängende Fläche (Toleranz, ± 5 s). Ellipse ziehen, Lasso umfahren. Transient: Schlag antippen oder über Schläge ziehen (Empfindlichkeit, ab … Hz). Obertöne ▾: jeden Oberton anhaken, nur ungerade, Auto. Auswahl ▾ → Folgt dem Ton: die Auswahl wandert mit der Tonhöhe. Ähnliche → Merkmale ▾: nur tonal, Transient, Rauschen oder Pegel vergleichen; ‹ › geht einzeln durch die Treffer, Alle wählt alle. Auswahl ▾ → Merken legt die Auswahl als benannte Region im Stück ab (wird mitgespeichert), antippen lädt sie wieder. Alle Ebenen abtasten aus: die Werkzeuge suchen nur in der aktiven Ebene. Ansicht ▾ zeigt beim FFT-Regler die Auflösung in ms und Hz.',
+      s: 'auswahl kombinieren hinzufuegen abziehen schnittmenge umkehren invertieren wiederherstellen erweitern verkleinern weich kante rand verschieben zauberstab toleranz spektrum ellipse lasso polygon transient schlag snare anschlag obertoene ungerade gerade auto folgt ton verfolgung aehnlich merkmale tonal rauschen pegel naechster voriger treffer alle merken region speichern laden gemerkt abtasten ebenen fft aufloesung ms hz',
       go: () => { spk1Open({back: {menu: true}}); }, q: () => (SPK1.open && SPK1.ui ? SPK1.ui.s12pane || SPK1.ui.tl : null)});
   } catch (e) {}
 })();
@@ -105616,7 +105775,8 @@ const SPK12_API = {
   geo: () => { const g = SPK1.ui && spk12Geo(SPK1.ui); return g && {xL: g.xL, xR: g.xR, yT: g.yT, yB: g.yB, cx: g.cx, cy: g.cy, side: g.side, B: g.B}; },
   box: () => SPK1.ui && spk12Box(SPK1.ui), sel: () => SPK1.ui && spk12Clone(SPK1.ui.sel),
   trans: o => spk1Call('spk12trans', Object.assign({doc: SPK1.doc}, o)), hauto: o => spk1Call('spk12hauto', Object.assign({doc: SPK1.doc}, o)), follow: o => spk1Call('spk12follow', Object.assign({doc: SPK1.doc}, o)),
-  doFollow: () => spk12Follow(SPK1.ui), doAuto: () => spk12HAuto(SPK1.ui), hm: (hm, K) => spk12HmSet(SPK1.ui, hm, 'Test', K)
+  doFollow: () => spk12Follow(SPK1.ui), doAuto: () => spk12HAuto(SPK1.ui), hm: (hm, K) => spk12HmSet(SPK1.ui, hm, 'Test', K),
+  aehn: o => spk1Call('spk12aehn', Object.assign({doc: SPK1.doc}, o)), reg: set => spk1Call('spk12reg', set ? {doc: SPK1.doc, set} : {doc: SPK1.doc}), step: d => spk12AStep(SPK1.ui, d), merk: () => spk12Merk(SPK1.ui), regLoad: id => spk12RegLoad(SPK1.ui, id), allL: () => spk12AllL(SPK1.ui)
 };
 try { window.__spk12 = SPK12_API; } catch (e) {}
 /* SPK12-END */
