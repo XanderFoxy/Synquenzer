@@ -74,10 +74,26 @@ c: das zweite buildGrid fällt weg (−8…−20 ms je Ablegen, unter Last mehr)
 Rohdaten: `lt1-test-926x428.out`, `lt1-test-428x926.out`, `lt1-test-a2.out`, `lt1-test-c-final.out` (+ .json), Spuren mit `lt1-trace.mjs`.
 
 ## Regression (reg.sh → reg.log, Ausgaben in reg/)
-REGRESSION
+Alle mit der Endfassung (Spektral-Code = Basis, nur imp1Place geändert), außer spk12-3 Lauf 1 (Zwischenstand mit Kachel-Versuch).
+| Test | index | Basis-Gegenlauf | Bemerkung |
+|---|---|---|---|
+| spk12-test (Teil 1) | 98 OK / 0 | – | |
+| spk12-test2 | 72 OK / 0 | – | |
+| spk12-test3 (inkl. hauptfaden-ohne-long-task) | 47 / 0 (Zwischenstand) · **47 / 0 (Endfassung)** | – | in 926×370 diesmal keine 52 ms |
+| fokus1-kern-test | 25 / 1 (Last 7,6) · **26 / 0** (Wiederholung, Last 6,8) | 26 / 0 | Fehler war „3min keine long tasks“ max 51 ms |
+| fokus1-test | 44 / 7 (Last 8,3) · 44 / 7 (Last 6,0) | **47 / 4** (Last 3,6) | alle Fehler = `longtasks<=50` beim Fokus-Umschalten bzw. Grundlast; gleiche Art auf der Basis → vorbestehend, lastabhängig (Grafik-Warten wie a/b; Code-Weg identisch zur Basis) |
+| spk6-test | ALLES OK 26 | – | |
+| spk5-test | ALLES OK 24 | – | 1. Lauf brach ab: Testdaten `mess/` fehlten im Paketordner → Verweis auf `vx/r4730/mess`, dann OK |
+| imp1-test | ALLE OK 48 | – | Import inkl. Ablegen |
+| imp2-node (realvox/imp2rs) | ALLE OK 8 | – | |
+| spkfix-test | ALLES OK 11 | – | |
+
 
 ## Pflichtprüfungen
-PFLICHT
+Endfassung `index.html` md5 88a53dabe895d842acfdff7ff26f1844 (Basis rel-4730 69f50c189dbab745ebdf81a415838208):
+topdefs (NODE_PATH=/opt/node-tools/node_modules) „Skripte 26, Namen 7921, doppelt 0, Syntaxfehler 0“ · dupkeys „0 doppelte Schlüssel“ ·
+smoke errors [] (smoke.png) · „MS 2000“ 1× · „^  live: true,“ 1× · VERSION '4.73.0' unverändert · diff Basis → Paket: 17 neue Zeilen,
+1 geänderte (Haken 2) – 13 Zeilen Block + 1 neue Haken-Zeile + 1 ergänzte Zeile. Keine sichtbare Änderung (Raster-DOM A = B).
 
 ## Offen
 - **a/b nicht erreicht (Long Tasks > 50 ms bleiben, in A und B gleich):** Ursache ist kein Skript, sondern das Warten des Hauptfadens
