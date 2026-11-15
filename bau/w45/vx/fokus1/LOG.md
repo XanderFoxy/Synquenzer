@@ -13,3 +13,4 @@
 12:31 Endstand: fokus1-test 51/0, Kern 26/0, Hauptfaden 24/0, Pflicht grün (topdefs 0/0, dupkeys 0, smoke [], MS 2000 1, live 1, Diff nur Einfügungen). fokus1-block.js aktualisiert.
 12:34 Prüfung iPhone gestartet (pruef-iphone/pruef.mjs, dpr 3)
 12:37 UI-Stufe: Status-Fehler Rest→Alles→Rest nachgestellt (ergebnis-ui.json)
+12:37 krist: 2 Runden ok (B, dann C; nichts doppelt, 1 Phantom verworfen)
