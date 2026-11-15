@@ -105698,7 +105698,6 @@ function vx1rAnalyse(id, rn) {   // SPK5-R: rn = Wiederholung, weil die Quelle w
     const t0 = performance.now(), g2 = typeof g2Analyse === 'function' ? g2Analyse(id).catch(() => null) : null;   // Tonhöhe: VS2/G2 (eigener Worker, gleichzeitig)
     const p = Promise.all([wpCall({op: 'vxa', x: b.getChannelData(0), sr: b.sampleRate, marks: ts}), g2]).then(([r]) => {
       const A = Object.assign({key, id, sr: b.sampleRate, len: b.length / b.sampleRate, t: ts}, r);
-      if (typeof vxr2An === 'function') vxr2An(id, A);   /* VXR2: Anker/Anlauf aus der lagefesten Rechnung */
       VX1R.ana.set(id, A); while (VX1R.ana.size > 6) VX1R.ana.delete(VX1R.ana.keys().next().value);
       VX1R.lastAn = {id, n: ts.length, ms: Math.round(performance.now() - t0), how: WP.how};
       if ((rn | 0) < 2 && vx1rSrc(id) !== b) return vx1rAnalyse(id, (rn | 0) + 1);   // SPK5-R: Quelle wechselte während der Rechnung (G4/G2/Säubern fertig) → neu messen
@@ -109732,15 +109731,16 @@ function imp2bYield(dst, mk, an, k, d, q, LK) {
 /* ===== IMP2B-END ===== */
 /* ===== VXR2-BEGIN (Paket VXR2 – Gesang-Editor robust gegen die Lage des Takes; Präfix vxr2/VXR2)
    Befund (rv1 #10, Take 5 ms anders gelegt, weil der Import t1 0,388 statt 0,383 meldet): der Inhalt des Takes ist bitgleich, nur der
-   Vorlauf aus digitaler Stille ist 240 Proben kürzer. Alle Analysen des Gesang-Editors rechnen in Rahmen ab Probe 0 (Erkennung, Op 'vxa'
-   1/10 ms, Tonhöhe G2 10 ms) – der Inhalt liegt dadurch um eine halbe Rahmenbreite anders im Raster, Noten-Grenzen und Marken kippen:
-   31 Stücke, aber nur 11 von 31 Grenzen gleich; mit 4.66 sogar 32 → 31 Stücke.
-   Jetzt: hat der Take mehr als 0,25 s digitale Stille vorn (Import legt den Takt-Anfang so), rechnen Erkennung (wpDetect) und die
+   Vorlauf aus digitaler Stille ist 240 Proben kürzer. Erkennung und Stück-Wahl rechnen in Rahmen ab Probe 0 (Erkennung, Op 'vxa'
+   1/10 ms, Tonhöhe G2 10 ms) – der Inhalt liegt dadurch um eine halbe Rahmenbreite anders im Raster, Noten-Grenzen und Marken kippen
+   (4.74: 31 Stücke, aber nur 11 von 31 Grenzen gleich; 4.66: 32 → 31 Stücke).
+   Jetzt: hat der Take mehr als 0,25 s digitale Stille vorn (der Import legt den Takt-Anfang so), rechnen Erkennung (wpDetect) und die
    Stück-Wahl (VX2: Erkennung, 'vxa', Tonhöhen-Noten) an derselben Ausschnitt-Lage – immer genau 0,25 s Stille vor dem ersten Ton –
-   und die Zeiten werden zurückgeschoben. Damit sind Stücke, Anker und Anlauf bitgleich, egal wie lang der Vorlauf ist. Die Analyse-
-   Felder für später (Teilen, Anzeige) bleiben am ganzen Take (wie bisher, Op 'vxa' in vx1rAnalyse); nur Anker/Anlauf kommen aus der
-   lagefesten Rechnung. Ohne Vorlauf (aufgenommene Takes) oder ohne Worker: alles wie bisher.
-   Einhänge-Zeilen (Kommentar „VXR2“): wpDetect, vx2Marks, vx1rAnalyse. Test-API: window.__vxr2. */
+   und die Zeiten werden zurückgeschoben. Damit ist die Stück-Wahl gleich, egal wie lang der Vorlauf ist. Gemessen wird sie an der
+   Quelle vor G4 (wie Erkennung und Tonhöhe schon bisher) – die G4-Fassung rechnet selbst in Rahmen ab Probe 0 und ist nicht lagefest.
+   Analyse-Felder, Anker und Anlauf bleiben wie bisher am ganzen Take und an der gehörten Fassung (Op 'vxa' in vx1rAnalyse).
+   Ohne Vorlauf (aufgenommene Takes) oder ohne Worker: alles wie bisher.
+   Einhänge-Zeilen (Kommentar „VXR2“): wpDetect, vx2Marks. Test-API: __vxr2 am window. */
 const VXR2 = {on: true, Z0: .25, last: null};
 // Vorlauf: führende Nullproben über 0,25 s hinaus (0 = kein Ausschnitt)
 function vxr2Off(x, sr) {
@@ -109748,35 +109748,31 @@ function vxr2Off(x, sr) {
   const n = x.length; let z = 0; while (z < n && x[z] === 0) z++;
   return z >= n ? 0 : Math.max(0, z - Math.round(VXR2.Z0 * sr));
 }
-// Erkennung (Op 'det') an der lagefesten Ausschnitt-Lage; Zeiten zurück auf den Take
+// Erkennung (Op 'det') an der lagefesten Ausschnitt-Lage; Zeiten zurück auf den Take (probengenau)
 async function vxr2Det(b) {
   const x = b.getChannelData(0), sr = b.sampleRate, off = vxr2Off(x, sr);
   const r = await wpCall({op: 'det', x: off ? x.subarray(off) : x, sr});
   if (off && Array.isArray(r)) for (const k of r) if (k && isNum(k.t)) k.t = (Math.round(k.t * sr) + off) / sr;
   return r;
 }
-// Stück-Wahl (VX2) an der lagefesten Ausschnitt-Lage. undefined = nicht zuständig (kein Vorlauf, kein Worker) → VX2 rechnet wie bisher
+// Stück-Wahl (VX2) an der lagefesten Ausschnitt-Lage. undefined = nicht zuständig (kein Vorlauf, kein Worker) → VX2 rechnet wie bisher.
+// An = null: vx1rAnalyse misst Anker/Anlauf wie bisher an der gehörten Fassung (gleiche Rechnung wie vx2AnLead, Op 'vxa').
 async function vxr2Marks(id, b, raw, rn) {
-  const x = b.getChannelData(0), sr = b.sampleRate, off = vxr2Off(x, sr);
+  const sr = b.sampleRate, pb = wpBase(id, null, true);
+  if (!pb || pb.length !== b.length || pb.sampleRate !== sr) return undefined;
+  const px = pb.getChannelData(0), off = vxr2Off(px, sr);
   if (!off || !wpWorker() || typeof g2Worker !== 'function' || !g2Worker() || typeof g2Call !== 'function') return undefined;
-  const t0 = performance.now(), len = b.length / sr, o = off / sr, xo = x.subarray(off), bid = wpBid(b);
-  const g = typeof g2Src === 'function' ? g2Src(id) : null, gx = g && g.length === b.length && g.sampleRate === sr ? g.getChannelData(0) : x;
+  const t0 = performance.now(), len = b.length / sr, o = off / sr, xo = px.subarray(off), bid = wpBid(b);
   const ro = raw.map(k => ({t: Math.round(k.t * sr - off) / sr, conf: k.conf, src: k.src, word: !!k.word})).filter(k => k.t >= 0);
-  const [A, G] = await Promise.all([wpCall({op: 'vxa', x: xo, sr, marks: ro.map(k => k.t)}), g2Call({op: 'an', key: 'vxr2:' + id + '@' + bid + ':' + off, x: gx.subarray(off), sr}).catch(() => null)]);
+  const [A, G] = await Promise.all([wpCall({op: 'vxa', x: xo, sr, marks: ro.map(k => k.t)}), g2Call({op: 'an', key: 'vxr2:' + id + '@' + wpBid(pb) + ':' + off, x: xo, sr}).catch(() => null)]);
   if (!vx2Ok(id) || WP.det.get(id) !== raw) return null;   // inzwischen bearbeitet / neu erkannt / Text eingegeben
-  const b2 = vx1rSrc(id); if ((rn | 0) < 2 && b2 && b2 !== b) return vx2Marks(id, b2, (rn | 0) + 1);   // SPK5-R: Quelle wechselte → an der neuen messen
+  const b2 = vx1rSrc(id); if ((rn | 0) < 2 && b2 && b2 !== b) return vx2Marks(id, b2, (rn | 0) + 1);   // SPK5-R: Quelle wechselte → neu
   const pick = A ? vx2Pick(ro, A, G, len - o) : null, mk = pick ? wpNormMarks(pick.map(k => Object.assign({}, k, {t: (Math.round(k.t * sr) + off) / sr})), len) || [] : null;
   if (!mk || mk.length < 2) { VX2.res.set(id, {raw, bid, mk: null}); VX2.last = {id, roh: raw.length, n: null, why: G ? 'zu wenig Noten' : 'keine Tonhöhe', vxr2: off}; return null; }
-  const ts = mk.map(k => k.t), al = vx2AnLead(xo, sr, A, ts.map(t => Math.round(t * sr - off) / sr));
-  VX2.res.set(id, {raw, bid, mk, An: null, inv: {ts: ts.join(','), an: al.an, lead: al.lead}}); while (VX2.res.size > 8) VX2.res.delete(VX2.res.keys().next().value);
+  VX2.res.set(id, {raw, bid, mk, An: null}); while (VX2.res.size > 8) VX2.res.delete(VX2.res.keys().next().value);
   VX2.last = {id, roh: raw.length, n: mk.length, noten: G && G.notes ? G.notes.length : 0, ms: Math.round(performance.now() - t0), quelle: rn | 0, vxr2: off, src: pick.reduce((q, k) => (q[k.vc ? 'stimmhaft' : k.src || 'on'] = (q[k.vc ? 'stimmhaft' : k.src || 'on'] | 0) + 1, q), {})};
   VXR2.last = {id, off, ms: VX2.last.ms, n: mk.length};
   return {mk, b};
-}
-// Analyse des ganzen Takes (vx1rAnalyse): Anker/Anlauf aus der lagefesten Rechnung, wenn sie zu denselben Marken gehört
-function vxr2An(id, A) {
-  const z = VX2.res.get(id), v = z && z.inv; if (!v || !A || !A.t || v.ts !== A.t.join(',') || !v.an || v.an.length !== A.t.length) return;
-  A.an = Float32Array.from(v.an); A.lead = Float32Array.from(v.lead); A.vxr2 = true;
 }
 window.__vxr2 = {on: v => { if (v != null) VXR2.on = !!v; return VXR2.on; }, last: () => VXR2.last, off: (x, sr) => vxr2Off(x, sr)};
 /* ===== VXR2-END ===== */
