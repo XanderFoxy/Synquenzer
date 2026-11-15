@@ -96450,6 +96450,18 @@ function mtx3cBegSched(i, from, to, tg) {
   if (run.tEnd != null && to > run.tEnd + 1e-9) return [Math.max(from, run.tEnd), to];
   return null;
 }
+// beg1Pat-Haken: die Pads „deines Kits“ (used) sind die von DRUMS UND ihren Einzelspuren (derselbe Clip-Platz wie vor dem Aufteilen) –
+// sonst fehlten HH/SNARE in der Liste und die Band nähme Ersatz-Pads (z. B. CLAP statt SNARE)
+function mtx3cBegUsed(used, tg) {
+  if (!tg || tg.dr !== DRUM_T || !Array.isArray(used)) return;
+  const s = S.tracks[DRUM_T].clips.findIndex(Boolean); let add = 0;
+  for (const j of mtx3Parts(-1)) {
+    if (!mtx3Is(j)) continue;
+    const c = s >= 0 ? S.tracks[j].clips[s] : S.tracks[j].clips.find(Boolean); if (!c) continue;
+    for (const n of c.notes) if (!used.includes(n.n)) { used.push(n.n); add++; }
+  }
+  if (add) used.sort((a, b) => a - b);
+}
 // beg1Alone-Haken: „nur die Band“ behält die Einzelspuren von DRUMS (sie gehören zu DRUMS; nach SCHLUSS spielt DRUMS wieder ganz)
 function mtx3cBegKeep(keep, tg) { if (!tg || tg.dr !== DRUM_T || !keep.has(DRUM_T)) return; for (const j of mtx3Parts(-1)) if (mtx3Is(j)) keep.add(j); }
 // beg1TgSync-Haken („nur die Band“, Ziel-Spur gewechselt): ist DRUMS nicht mehr die Drum-Spur, werden ihre Einzelspuren still wie DRUMS
@@ -99607,6 +99619,7 @@ function beg1Pat() {
   const st = beg1Style(); if (!st) return null;
   const tg = BEG1.tgc || (BEG1.tgc = beg1Tg()), fig = beg1Fig(tg.cp), LB = tsBeats(st.ts || null), N = gr2N(st);
   const dc = tg.dr != null ? S.tracks[tg.dr].clips.find(Boolean) : null, used = dc ? [...new Set(dc.notes.map(n => n.n))].sort((a, b) => a - b) : [];
+  if (typeof mtx3cBegUsed === 'function') mtx3cBegUsed(used, tg);   /* MTX3C: Pads der Einzelspuren gehören zum Kit */
   const sig = [BEG1_PV, st.id, fig, S.key.root, S.key.scale, LB, used.join('.')].join('|');
   if (BEG1.pat && BEG1.pat.sig === sig) return BEG1.pat;
   const key = {root: S.key.root, scale: S.key.scale, src: 'user'}, P = 2, L = P * LB, plain = N === 16 && LB === 4;
