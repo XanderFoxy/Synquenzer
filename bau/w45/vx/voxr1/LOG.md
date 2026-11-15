@@ -41,3 +41,13 @@
 - Pflicht: topdefs 26 Skripte / 7600 Namen / 0 doppelt / 0 Syntaxfehler; dupkeys 0 (NODE_PATH=/opt/node-tools/node_modules); smoke
   errors []; „MS 2000“ 1×; „  live: true,“ 1×; VERSION 4.68.0. Außerhalb Block + 5 Haken-Zeilen = basis.html (geprüft).
 - Test: `node voxr1-test.mjs <abs index.html>` → 57/67 (Rest aus Teil 1/2).
+
+# VOX-R1 Prüfung – Log (15.11.2026)
+
+- Befunde 1–17 aus PRUEFUNG.md nachgearbeitet (Tabelle in NOTES.md „Prüfung“). Prüfer-Skript `voxr1-pruef/p-node.mjs` als Gegenprobe mitlaufen lassen.
+- Zischen erst mit Gesangspegel je ±4,5 s: „s“ an leisen Stellen nur −2,6 dB (lauter Gesang daneben) → Gesangspegel des ganzen Takes; „s“ bis 22 kHz:
+  Band bis 16 kHz zählte nur ⅔ der S-Energie → bis 20 kHz. Atem (1–6 kHz) galt als Zischlaut → Spektralform-Bedingung (über 5 kHz ≥ 6 dB über 2–5 kHz).
+- Plopps im Band < 70 Hz: zuerst 33 Funde im sauberen Take A (tiefes Rauschen in Pausen) → Pegel ≥ Spitze − 20 dB → 11, alle mit Band < 70 Hz nur
+  2–5 dB unter dem Gesamtpegel (echte Tiefstöße). Reparatur-Grenze erst fest 160 Hz (Abzug zu klein) → unter dem Grundton der Umgebung, ≥ 120 Hz.
+- topdefs fand `vr1Key` doppelt (Notenrolle) → `vr1VerKey`. App lud vorher nicht (SYNQUENZER fehlte) – erst nach topdefs gesehen.
+- Test: `node voxr1-test.mjs <abs index.html>` → 71/81.

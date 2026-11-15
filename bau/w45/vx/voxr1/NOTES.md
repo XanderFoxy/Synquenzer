@@ -178,3 +178,41 @@ Fotos: voxr1-blatt.png (428×926, Zeile + Mehr ▾ offen), voxr1-quer.png (926×
 6. Zischen kostet 1,2 s je 3 min (Node); Reserve App 17,9 von 20 s. Schneller: reelle FFT halber Länge, Analyse-Durchgang ohne
    stille Rahmen.
 7. Long Tasks: in 2 von 7 Läufen (Rechner unter Last, Lastmittel ≈ 6) 54 / 72 ms – sonst 0. Nicht reproduzierbar ohne Last.
+
+
+---------------------------------------------------------------------------------------------------------------------------
+# VOX-R1 – Prüfung (17 Befunde aus PRUEFUNG.md nachgearbeitet, 15.11.2026)
+
+Alles weiter nur im Block VOXR1-BEGIN … END; Haken jetzt **7 Ein-Zeiler** mit typeof-Schutz (neu: je einer am Anfang von `g4Proc`
+und `g2Proc`: `if (typeof vr1Skip === 'function' && vr1Skip(id)) return null;   /* VOXR1 */`). Außerhalb Block + Haken = basis.html.
+Namenskonflikt beim Bauen gefunden (topdefs): `vr1Key` gab es schon (Notenrolle) → `vr1VerKey`.
+
+| # | Befund | Stand | Was geändert wurde / Messung |
+|---|---|---|---|
+| 1 | Abbrechen bricht nicht ab | **behoben** | `vr1Cancel`: stoppt den Auftrag, setzt die vorige Fassung zurück (bzw. keine), nimmt den ↶-Eintrag dieses Anwendens wieder heraus; Fehler setzen denselben Schlüssel (`fail`) → keine Schleife; nach Abbruch kein `tkPlayBuf`-Neustart. Touch-Test: Rechnung stoppt, renders bleibt gleich (4 s beobachtet), Knopf „Anwenden“, kein ↶-Eintrag. |
+| 2 | „nur Entferntes“ = vor allem Stimme | **behoben** | Hochpass nullphasig (vorwärts/rückwärts); „nur Entferntes“ = Summe Eingang − Ausgang je Schritt (Raumton zählt nicht, SÄUBERN nicht). Nur Hochpass: 80–160 Hz −19,1 dB, 160–320 Hz −28,8 dB (Prüfer-Skript); saubere Takes „mittel“: 300 Hz–4 kHz −44,6 … −57 dB unter dem Original. |
+| 3 | P4-Abnahme | **teilweise** | Plopps: Suche jetzt im Band < 70 Hz (unter jedem gesungenen Grundton) mit „Stoß trägt ≥ −10 dB der Energie“ und ≥ Spitze − 20 dB → 6/10 statt 3/10, Fehlalarme auf gesungenen Tönen des alten Bandes weg. Weiter offen: 6/10 (Ziel 9), Abzug 9–13 dB, Obertöne bis 6 dB. Klicks A 16/20, Überstand 7,5/3,2 dB und Raumton 2/5 unverändert offen (Fenster bis ±2 s erweitert, ändert die 5 Test-Lücken nicht). |
+| 4 | Zischen auf jedem Take, ohne Bezug | **behoben** | Bezug = Gesangspegel (Mittel der lauteren Hälfte der Rahmen unter 5 kHz im Take, auf Vokalen der Rahmen selbst), Schwelle −6 dB, Senkung 3 × Überstand bis Stärke; Zischlaut nur, wenn über 5 kHz ≥ 6 dB mehr als 2–5 kHz. Prüfen zählt mit derselben Analyse (`sibHot`), Befund-Zeile „8× Zischen“, der Assistent schaltet Zischen nur dann ein. „s“ in Pausen/Vokalen: 0 dB → −5,5 dB; −6 dB → ≈ −0,5; −12/−18/−24 dB → 0,0 (Prüfer-Skript). Saubere Takes „mittel“: B, C ohne Zischen; A (8 scharfe S gefunden) 86 von 3050 Rahmen > 3 dB, alle an den gefundenen S. |
+| 5 | doppelt entzischt | **behoben** | Entzischen die Gesangs-Effekte (Entzischer > 0), lässt die Kette Zischen weg (Zeile sagt „Zischen (über die Gesangs-Effekte)“); Schlüssel der Fassung enthält diesen Zustand → nur ein Entzischer. |
+| 6 | „nur Entferntes“ ohne Reinigung spielt „Sauber“ | **behoben** | Knopf nur frei mit Vorhören oder fertiger angewandter Fassung (Touch-Test). |
+| 7 | Plopp-Fehlalarme beschädigen gesungene Töne | **behoben (s. Hinweis)** | Suche < 70 Hz statt < 150 Hz; Reparatur-Grenze unter dem gesungenen Grundton der Umgebung (stärkste Spitze 90–400 Hz × 0,8, mindestens 120 Hz). Hinweis: Die 11 verbliebenen Funde im sauberen Take A sind echte Tiefstöße: dort liegt das Band < 70 Hz nur 2–5 dB unter dem Gesamtpegel, obwohl der Ton bei 110–200 Hz liegt (ein Ton bei 202 Hz ergibt < 70 Hz etwa −37 dB). Der Builder-Test „Take A sauber ≤ 1 Plopp“ bleibt deshalb rot. |
+| 8 | Reihenfolge mit SÄUBERN | **behoben** | Quelle ist der Roh-Take; mit SÄUBERN: Klicks → Plopps → Brummen → SÄUBERN (Echo-Abzug, Entrauschen, sein Hochpass) → Atmer → Raumton → Zischen; der Schritt Hochpass entfällt dann (nur ein Hochpass). Touch-Test: `info.order` mit `saeubern` hinter click/plop/hum, kein `hp`. |
+| 9 | Gesangs-Effekte doppelt so lang | **behoben** | Entzischer: Sprung N/2 (√Hann 50 %) und zwei Rahmen je komplexer FFT (Analyse und Synthese). 3-min-Take „Gesang Synthpop“: alt 1,99/1,53 s, neu 1,81/1,51 s; Entzischer allein 0,38 s je 3 min (vorher 1,2 s unbelastet / 4,0 s belastet). |
+| 10 | Speicher ohne Grenze | **behoben** | Fassung als AudioBuffer, „nur Entferntes“ als Int16 (halber Speicher), als AudioBuffer nur bei offenem Blatt dieses Takes (stückweise ≤ 6 ms gebaut); Fassungen nicht aktiver Takes und ohne `vr1` fliegen raus, Obergrenze 160 MB (älteste zuerst). 3 min ≈ 47,6 MB statt 61 MB. |
+| 11 | A/B bei angewandter Fassung nicht sofort | **behoben** | „nur Entferntes“ läuft an Gesangs-Effekten und Tonhöhe vorbei (Haken in g4Proc/g2Proc), Auto-Pegel wie die saubere Fassung. Touch-Test: sofort, `G4.renders` unverändert, zurück auf „Sauber“. |
+| 12 | Atem als Stilmittel gesenkt | **behoben** | Zischlaut braucht das S-Spektrum (über 5 kHz ≥ 6 dB mehr als 2–5 kHz); Atmer aus dem Schritt Atmer (auch „lassen“) sind für den Entzischer gesperrt. Test: eingesetzte Atmer bei „stark“ < 1 dB über 5 kHz. |
+| 13 | Rückfall Scheibe 212 ms | **behoben** | Entzischer gibt alle 32 Rahmen ab: größte Scheibe 10,8 ms (60-s-Take, Prüfer-Skript). Der Rückfall der vorhandenen Gesangs-Effekte (`local()`) ist nicht Teil des Blocks – unverändert. |
+| 14 | Plan-Lücken | **offen** | Regler 0–100 % als Gesamtstärke und Regler je Schritt unter Mehr ▾ ändern sichtbare Bedienung → erst Funk-Vorschlag. `vr1HumLive` bleibt Kern für das Mithören (live), eingehängt ist es nicht. |
+| 15 | Zustandszeile außer Sicht | **behoben** | Beim Öffnen von Mehr ▾, beim Anwenden und beim Neubau mit offenem Mehr ▾ rollt das Blatt die Zustandszeile ins Bild (kein neues Aussehen). Test prüft jetzt den unteren Rand. |
+| 16 | „stark“ Klick-Empfindlichkeit 7 | **behoben** | 2 / 4 / 6. |
+| 17 | Test-Lücken | **behoben** | Neu: Abbrechen per Touch, „nur Entferntes“ gesperrt/sofort/Inhalt, SÄUBERN-Reihenfolge, Speicher-Zähler, Speichern/Laden, Zustandszeile im Bild, Atmer „weg“ per Touch (auch Treffer = nächste Marke, nicht die erste), saubere Takes, Zischen gegen Pegel, Atem-Stilmittel, Scheibengröße, 2/4/6. |
+
+Nebenbei gefunden: Antippen einer Atmer-Marke traf bei eng liegenden Marken die erste in der Liste statt der nächsten → behoben.
+
+Tests `voxr1-test.mjs` – **71/81** (vorher 57/67; alle Bedienungs-Tests grün). Rot bleiben nur die DSP-Abnahmen aus Teil 1/2:
+Plopps (5: 6/10 gefunden, Abzug, Obertöne, Prüfen zählt, Take A „sauber“), Klicks (3: Take A 16/20, Überstand A/B), Raumton (2).
+
+## Offen
+1. Plopps 6/10 (Ziel ≥ 9) – nächster Schritt: Langzeit-Vorhersage im tiefen Band (Pitch-Prädiktor) statt Pegel-Sprung; Abzug ≥ 12 dB.
+2. Klicks in lauten tiefen Vokalen (Take A) und Raumton-Pegel an 2 Lücken (Teil 2).
+3. Funk-Vorschlag für die sichtbar neue Zeile „Gesang reinigen“ + drittes A/B-Feld, dazu Regler 0–100 % als Gesamtstärke und Regler je Schritt (Befund 14).
