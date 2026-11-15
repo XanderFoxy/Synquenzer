@@ -1,10 +1,10 @@
-# MTX4 Teil 1/2 – Mehrere Clips zugleich (Notizen, 15.11.2026)
+# MTX4 Teil 1+2 – Mehrere Clips zugleich (Notizen, 15.11.2026)
 
 index.html = basis.html (4.68.0, rel-4680) + Block `/* MTX4-BEGIN … MTX4-END */` direkt hinter `/* MTX3-END */` + 3 Haken-Zeilen.
 `block.js` im Ordner = der Block allein (identisch mit dem Block in index.html). Keine vorhandene Zeile geändert (diff: nur `a`-Zeilen).
 VERSION unverändert 4.68.0.
 
-## Haken (je eine Zeile, Kommentar `/* MTX4 … */`, `typeof`-Schutz)
+## Haken (je eine Zeile, Kommentar `/* MTX4 … */`, `typeof`-Schutz) – unverändert seit Teil 1
 | Stelle | Haken |
 |---|---|
 | scheduleTrack (nach `if (to <= from) return;`) | `mtx4Sched(i, from, to, late)` – läuft ein geänderter Clip, plant er bis zum nächsten Taktstrich den alten Inhalt, danach den neuen |
@@ -60,15 +60,59 @@ Guide-Eintrag (`ui1Entries().push`), Test-API `SYNQUENZER.mtx4`.
 - Pflicht: topdefs 0 doppelt / 0 Syntaxfehler, dupkeys 0, smoke errors [], „MS 2000“ 1×, „^  live: true,“ 1×, VERSION 4.68.0.
 - Fotos: fotos/mtx4-clipblatt-hochkant, -auswahl-hochkant/-926x428/-926x370, -drums-hochkant, -tonart-hochkant/-926x428/-926x370.
 
-## Offen (Teil 2/2 und danach)
-- Plan-Schritt 4: Länge ×2/÷2 in der Leiste (Platz: hochkant Zeile 2, quer Zeile 3 neben ▲▼ Stufe), „Alle Änderungen erzeugen neue
-  Clip-Versionen“ (WEGE-Versionen) – noch nicht gebaut.
-- Plan-Schritt 5: Sonden, SPIELSYSTEM.md, Werkstatt, Funk-Antwort.
-- **Funk-Vorschlag (sichtbar neu, Plan: „Funk: Vorschlag“):** Knopf [Mehrere wählen] im Clip-Blatt; Leiste deckt hochkant solange
-  AKKORD/TRÄGER, quer die rechte Spalte; Szenen-Kopf-Tipp im Modus = Szene wählen statt starten. Alternative falls gewünscht: Einstieg
-  zusätzlich per Halten + zweitem Finger auf einen Clip (wie die Spuren-Gruppe).
-- Gesang-Takes in Halbtönen mit transponieren (vorhandener G7-Weg) – bewusst ausgelassen.
+## Teil 2/2 (Plan-Schritte 4–5) – gebaut
+Alles im selben Block `/* MTX4-BEGIN … MTX4-END */` (block.js = Block, identisch geprüft). **Keine neuen Haken**, keine vorhandene Zeile
+geändert (diff zu basis.html: nur `a`-Zeilen an 4 Stellen = 3 Haken + Block).
+1. **Länge ÷2 / ×2** in der Leiste (hochkant Zeile 2 rechts neben ▲▼ Stufe, quer Zeile 3 neben ▲▼ Stufe). Damit 8 Knöpfe in eine Zeile
+   passen (je 46,5 px breit, ≥ 44), tragen ▲ ▼ ÷2 ×2 ihr Wort klein darunter („Stufe“, „Länge“) – gleiche Höhe 44 px, gleicher Rahmen.
+   Weg = das vorhandene `clipLength` (wie ½ / ×2 im Clip-Blatt: ×2 verdoppelt den Inhalt inkl. Kurven/KL1, ÷2 behält die erste Hälfte;
+   1…64 Takte). Dessen eigener ↶-Schritt wird während des Aufrufs ausgesetzt (`pushUndo` kurz durch eine leere Funktion ersetzt,
+   `finally` stellt ihn wieder her); `mtx4Run` legt den gemeinsamen Schritt an. Gilt für alle gewählten Clips, auch Drums. Clips, die
+   nicht können (÷2 bei 1 Takt, ×2 über 64), bleiben – Hinweis „n am Rand (1–64 Takte)“.
+2. **Neue Clip-Versionen** (Plan: „Alle Änderungen erzeugen neue Clip-Versionen“) über die vorhandenen Versionen (SX9, `song.own` mit
+   `ver`/`from`): Spielt ein geänderter Clip irgendwo im Song (`sx9At` findet ihn), wird sein Inhalt **von vorher** eine neue Version
+   (nächste freie Nummer, wie ＋ bei den Versionen; höchstens v8 / `OWN_MAX`). Einmal je Clip und Auswahl-Sitzung (5× +1 = eine Version,
+   die Fassung vor der Sitzung); eine neue Sitzung legt die nächste an. Der Song-Ablauf bleibt unverändert (spielt v1 = den geänderten
+   Clip, wie bei jeder Clip-Bearbeitung); Clip-Blatt › VERSIONEN IM SONG zeigt dann [v1][v2] – [v2] holt die alte Fassung überall
+   zurück (vorhandener Weg). Clips, die im Song nicht spielen, bekommen keine Version. Toast: „… · vorher = v2“.
+3. **Ein ↶ für alles:** Clip-Schritte + der Song-Schritt der Versionen werden mit dem vorhandenen `undoMergeSince` eine Gruppe
+   (`clip,clip,clip,song`). Nach ↶ kann eine Nummer neu vergeben werden – die Sitzung prüft darum Herkunft (`from.t/from.s`) mit.
+4. **Am nächsten Takt** gilt auch für die Länge (derselbe `mtx4Sched`-Weg): ÷2 im Lauf → bis zum Taktstrich der alte Takt, ab dem
+   Taktstrich der 1-Takt-Clip; danach ×2 → lückenlos weiter.
+5. Guide-Eintrag erweitert (Name „… Länge“, Text mit ÷2 ×2 und Versionen, Suchwörter länge/doppelt/halb/version/vorher).
+   Test-API: `SYNQUENZER.mtx4.len(f)`, `.vers()`.
+
+## Messung Teil 2 (mtx4-test.mjs 81/81, test-ergebnis.txt; Touch über CDP, 428×926 / 926×428 / 926×370)
+- ×2 per Touch auf 3 Clips in 2 Szenen: Länge doppelt, Inhalt verdoppelt, 45 andere Clips bit-gleich, ein ↶ (Gruppe aus 3);
+  danach ÷2 = wieder bit-gleich; ÷2 mit 1-Takt-Clips: diese bleiben (Hinweis), längere halb so lang; undoRedoCheck = true.
+- Versionen (Test-Song: 0:0 und 1:1 spielen im Song, 2:1 nicht): +1 → je eine v2 mit exakt dem alten Inhalt, keine für 2:1, Song-Einträge
+  gleich, ein ↶-Schritt `clip,clip,clip,song`; zweite Aktion = keine weitere Version; Speichern/Laden bit-gleich (own und ganze Datei);
+  zwei ↶ = ganzer Speicherstand bit-gleich; Clip-Blatt zeigt „v1 v2“ (Foto); neue Sitzung + ×2 → v3.
+- Wiedergabe: ÷2 auf 2-Takt-Clip (Takt 2 = andere Tonhöhe) im 1. Takt getippt → bis zum Taktstrich 60, ab dem Taktstrich 8× 60 (nicht 62),
+  danach ×2; jede Achtel genau einmal, Aktion ≈ 3–4 ms.
+- 8×8, alle 64 gewählt, Wiedergabe läuft: renderGrid ohne Zwischenspeicher Median 2,0 / max 10,5 ms; nach ×2 (doppelte Noten) Median 3,2 /
+  max 11 ms (≤ 16). ±1 / Dorisch / Quant / ×2 / ÷2 je 6–13 ms, 0 Long Tasks.
+  (Lauf 4 zeigte einmal 60 ms: der Test rief damals alle 6 Sammel-Aktionen ohne Pause in EINER Aufgabe auf. Nachmessung t/lt.mjs 3×:
+  0 Long Tasks; der Test ruft jetzt jede Aktion als eigene Aufgabe auf wie ein echter Tipp.)
+- Pflicht: topdefs 0 doppelt / 0 Syntaxfehler (mit NODE_PATH=/opt/node-tools/node_modules), dupkeys 0 (ebenso), smoke errors [],
+  „MS 2000“ 1×, „^  live: true,“ 1×, VERSION 4.68.0.
+- Fotos neu: alle 8 aus Teil 1 (Leiste mit ÷2 ×2) + `mtx4-versionen-hochkant.png` (Clip-Blatt mit VERSIONEN IM SONG v1 v2).
+
+## Offen
+- **Lieferung (Plan-Schritt 5, außerhalb dieses Ordners):** Sonden, SPIELSYSTEM.md, Werkstatt, Funk-Antwort – Sache der Hauptsitzung.
+- **Funk-Vorschlag (sichtbar neu, Plan: „Funk: Vorschlag“), Entwurf:**
+  „Mehrere Clips zugleich: Clip halten › [Mehrere wählen], dann weitere Clips antippen (Szenen-Kopf = ganze Szene). Unten erscheint eine
+  Leiste: −12 −1 +1 +12, Stufe ▲▼, Länge ÷2 ×2, Tonart ▾ (Dur, Moll, Dorisch, Mixolydisch, Phrygisch, Pentatonik), Quant. ▾. Jeder Knopf
+  = ein ↶. Läuft die Musik, hörst du die Änderung ab dem nächsten Takt. Hochkant deckt die Leiste solange AKKORD/TRÄGER, quer die rechte
+  Spalte. Spielt ein Clip im Song, bleibt die alte Fassung als v2 (Clip-Blatt › Versionen). Passt das so – oder lieber anders einsteigen
+  (z. B. Halten + zweiter Finger wie bei den Spuren)?“
+- **Entscheidung zur Prüfung:** Versionen = „alte Fassung wird vN, Song spielt die neue (v1)“. Alternative: der Song behält automatisch die
+  alte Fassung (vN überall im Song) und nur die Matrix ändert sich – wäre ein Satz im Funk-Vorschlag, Umbau klein (`sx9SetAll`).
+- Hochkant trägt die Leiste jetzt 8 Knöpfe in Zeile 2 (je ≈ 46 px); ▲ ▼ ÷2 ×2 mit kleinem Wort darunter. Auf dem iPhone ansehen.
+- Gesang-Takes in Halbtönen mit transponieren (vorhandener G7-Weg) – bewusst ausgelassen (nicht wählbar).
 - Pentatonik nutzt die Ein-Skala-Abbildung; bei sehr dichten 7-Ton-Melodien kann sie einzelne Töne um eine Oktave weiter setzen
   (Kontur bleibt) – an echten Clips anhören.
 - Ein Clip mit falsch erkannter Tonart (z. B. a-Moll statt C-Dur) wird auf den erkannten Grundton eingepasst; Grundton-Wahl im Blatt wäre
   eine Erweiterung.
+- Versionen während ▶ SONG: der Song-Schritt läuft über `songEdit` (mit `songResync` wie jede Song-Bearbeitung) – nicht eigens getestet,
+  da sich die Spuren-Einträge nicht ändern.

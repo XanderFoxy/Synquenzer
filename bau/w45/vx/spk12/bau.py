@@ -5,7 +5,7 @@ src = open(os.path.join(D, 'basis.html'), encoding='utf-8').read().split('\n')
 blk = open(os.path.join(D, 'spk12-block.js'), encoding='utf-8').read().rstrip('\n').split('\n')
 H = [  # (Anker-Zeile exakt, 'nach'|'vor', neue Zeile)
  ("  function selFn(d, sel) {", 'nach', "    { const r12 = typeof spk12SelFn === 'function' ? spk12SelFn(d, sel, selFn) : null; if (r12) return r12; }   /* SPK12: − / ∩ / Umkehren / Zauberstab */"),
- ("  return {on, stft, istft, specInfo, docs, lowSplit, Z2};   // SPK2: Z2 für Messungen", 'vor', "  if (Z2 && typeof spk12DspMake === 'function') spk12DspMake(Z2, {selFn, specInfo, specChunk, get, put, soon, mixOf, block, BLK, tick, harmTrack, similar});   /* SPK12: Zauberstab, Masken-Probe, Anzeige, Ebene abtasten, Merkmale, Regionen */"),
+ ("  return {on, stft, istft, specInfo, docs, lowSplit, Z2};   // SPK2: Z2 für Messungen", 'vor', "  if (Z2 && typeof spk12DspMake === 'function') spk12DspMake(Z2, {selFn, specInfo, specChunk, get, put, soon, mixOf, gainFn, block, BLK, tick, harmTrack, similar});   /* SPK12: Zauberstab, Masken-Probe, Anzeige, Ebene abtasten, Merkmale, Regionen */"),
  ("function spk8WUrl(src, u) {", 'nach', "  if (typeof spk12DspMake === 'function') src = src + ';' + [spk12SelFn, spk12Ras, spk12Fft, spk12Win, spk12Mag, spk12K2, spk12DspMake].map(f => f.toString()).join(';') + ';';   /* SPK12: Auswahl-Kern in den Spektral-Worker */"),
  ("  if (typeof spk2Pane === 'function') spk2Pane(U, pane, sl);   // SPK2: Noten-Werkzeug", 'nach', "  if (typeof spk12Pane === 'function') spk12Pane(U, pane, sl);   /* SPK12: Neu │ + │ − │ ∩ · Auswahl ▾ · Zauberstab */"),
  ("  const cv = U.ov, x = cv.getContext('2d'), d = U.dpr, W = U.W, H = U.H, v = U.v; x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, cv.width, cv.height); x.setTransform(d, 0, 0, d, 0, 0);", 'nach', "  const s12 = typeof spk12OvPre === 'function' ? spk12OvPre(U) : null;   /* SPK12 */"),
@@ -20,7 +20,7 @@ H = [  # (Anker-Zeile exakt, 'nach'|'vor', neue Zeile)
  ("  if (!r) return; U.bU.disabled = !r.nu; U.bR.disabled = !r.nr;", 'nach', "  if (typeof spk12UndoBtn === 'function') spk12UndoBtn(U);   /* SPK12: ↶ auch für Auswahl-Schritte */"),
  ("  if (U.busy) return; U.vf = null;", 'nach', "  if (typeof spk12UndoRedo === 'function' && spk12UndoRedo(U, which)) return;   /* SPK12 */"),
  ("function spk1Tap(U, b) {", 'nach', "  if (typeof spk12Tap === 'function' && spk12Tap(U, b)) return;   /* SPK12 */"),
- ("function spk1Call(op, a, tr, cb) {", 'nach', "  if (typeof spk12CallSrc === 'function') { const r12 = spk12CallSrc(op, a); if (r12) { op = r12[0]; a = r12[1]; } }   /* SPK12: Merkmale, Alle Ebenen abtasten */"),
+ ("function spk1Call(op, a, tr, cb) {", 'nach', "  if (typeof spk12CallSrc === 'function') { const r12 = spk12CallSrc(op, a, cb); if (r12) { op = r12[0]; a = r12[1]; if (r12[2]) cb = r12[2]; } }   /* SPK12: Merkmale, Alle Ebenen abtasten */"),
  ("    dd.appendChild(makeSeg([1024, 2048, 4096, 8192, 16384].map(n => [n, String(n)]), () => U.N, n => { U.N = n; spk1SpecLoad(U); }, 'spk1-n'));", 'nach', "    if (typeof spk12FftTxt === 'function') spk12FftTxt(U, dd);   /* SPK12: ms / Hz am FFT-Regler */"),
 ]
 out = list(src)

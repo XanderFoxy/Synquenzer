@@ -247,7 +247,7 @@ for (const [w, h] of [[926, 428], [926, 370]]) {
   });
   const L = v1.L, a = L.find(x => x.from.t === 0 && x.from.s === 0), b = L.find(x => x.from.t === 1 && x.from.s === 1);
   ok('+1 auf Clips im Song: die Fassung von vorher wird je Clip eine neue Version (v2)', L.length === 2 && a && b && a.ver === 2 && b.ver === 2 && !L.some(x => x.from.t === 2), v1.L.map(x => x.from.t + ':' + x.from.s + ' v' + x.ver));
-  ok('die Version hält genau den alten Inhalt (Clip 1:1 vorher = v2)', v1.own00 !== null && JSON.parse(v1.own00).notes.map(n => n.n).join() === JSON.parse(r.c00).notes.map(n => n.n).join(), {v2: a && a.notes, vorher: JSON.parse(r.c00).notes.map(n => n.n)});
+  ok('die Version hält genau den alten Inhalt (Clip 0:0: vorher = v2)', v1.own00 !== null && JSON.parse(v1.own00).notes.map(n => n.n).join() === JSON.parse(r.c00).notes.map(n => n.n).join(), {v2: a && a.notes, vorher: JSON.parse(r.c00).notes.map(n => n.n)});
   ok('Clip im Song nicht dabei (2:1): keine Version; der Song spielt weiter v1 (Spuren-Einträge gleich)', v1.lanes === r.lanes0);
   ok('Änderung + Versionen = ein ↶-Schritt (3 Clip-Schritte + Song)', v1.n === 1 && v1.kinds.join() === 'clip,clip,clip,song', v1.kinds);
   await tapBtn(T, p, 'p1'); await sleep(150);
