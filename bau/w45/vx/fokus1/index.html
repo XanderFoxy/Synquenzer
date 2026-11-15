@@ -107795,7 +107795,7 @@ function fokus1Pre(U) {   // Haken in spk1Frame vor dem Zeichnen
         else {
           const xa = ((f.x0 - 0.5) * hs - v.t0) * v.pps, xb = ((f.x0 + f.w - 0.5) * hs - v.t0) * v.pps;
           if (xb < 0 || xa > U.W) use = f;   // unsichtbar: wird nicht hochgeladen
-          else if (!up) { f.tex = U.gl.tex(f.w, f.R, 'r', f.data, true); up++; use = f; }   // wie spk1GlDraw (R8 + Mipmaps), 1 je Bild (Mipmaps kosten die Grafik Zeit)
+          else if (up < 2) { f.tex = U.gl.tex(f.w, f.R, 'r', f.data, true); up++; use = f; }   // wie spk1GlDraw (R8 + Mipmaps), höchstens 2 je Bild
           else { more = true; use = f.old && f.old.tex ? f.old : o; }
         }
       }

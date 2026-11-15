@@ -179,7 +179,7 @@ for (const [W, H] of VIEWS) {
   // ---- 3 Minuten (nur hochkant): Umschalten flüssig ----
   if (hoch && process.env.LONG !== '0') {
     for (let run = 0; run < 2; run++) {
-      await loadSig(p, 168, 12); await ready(p); await wait(500);
+      const tL = await now(); await loadSig(p, 168, 12); await ready(p); await wait(500); const BL = await ltSince(tL);   // Grundlast: Original-Spektrum laden (wie basis.html)
       await p.evaluate(async () => { __fkT.got(await __spk.mask({von: 'orig', nach: 'neu', art: 'bass', modus: 'verschieben', sel: [{art: 'freq', f0: 180, f1: 260, kt: 0, kf: 0}]})); __fkT.got(await __spk.spk2.noten('orig', [{art: 'zeit', t0: 7, t1: 41}])); });
       await wait(800);
       const B0 = await p.evaluate(async () => { const t0 = performance.now(), u = __spk.page.ui(); for (let i = 0; i < 6; i++) { spk1Dirty(u, 'g'); await new Promise(o => setTimeout(o, 150)); } return __lt.filter(e => e.t >= t0).map(e => Math.round(e.d)); });   // Grundlast: 6× neu zeichnen in „Alles“ (ohne Fokus)
@@ -188,7 +188,7 @@ for (const [W, H] of VIEWS) {
       const L2 = await pick(0, 'alles'); await closeDd();
       const L3 = await pick(2, 'gef'); await closeDd(); await pick(0, 'alles'); await closeDd();
       const good = L1.max <= 50 && L2.max <= 50 && L3.max <= 50 && L1i.info.n >= 16;
-      const v3 = {grundlast_6_bilder_alles: B0, rest: L1, alles: L2, gef: L3, n: L1i.info.n, tex: L1i.info.tex, stat: L1i.info.txt};
+      const v3 = {grundlast_original_laden: BL, grundlast_6_bilder_alles: B0, rest: L1, alles: L2, gef: L3, n: L1i.info.n, tex: L1i.info.tex, stat: L1i.info.txt};
       if (!good && run === 0) { console.log('  (3 min: Long Task > 50 ms – bei Last einmal wiederholen)', JSON.stringify(v3).slice(0, 400)); res[tag + ' 3min-lauf1'] = {v: v3, ok: false, info: 'wiederholt'}; continue; }
       ok(tag + ' 3min-umschalten longtasks<=50' + (run ? ' (wiederholt)' : ''), v3, good); break;
     }
