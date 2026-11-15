@@ -58,3 +58,4 @@
 - 11:10 `pr/kreuz.mjs` 4.70 ↔ Kandidat (gleiche Herkunft, Container hin und zurück): ALLES OK 9/9.
 - 11:11–… Regression nachgeholt (`pr/reg.sh`): spk12b, spk12c, spk6p, spk4, spk12d. Pixel-Vergleich `pr/bild*.mjs`: 0 Pixel.
 - PRUEFUNG.md geschrieben.
+- 11:21 Regression fertig: spk12b 72/0, spk12c 47/0, spk12d 28/0, spk6p ALLES OK, spk4 3/23 FEHLER (dieselben wie r4700, dort 5). spk7 lief schon in Teil E (ALLES OK 13).

@@ -96,4 +96,16 @@ aus.html `9c39eb973243f6f0`, e/aus-e.html `a1b77b7cd37b141c`.
 Größe gzip -6: basis 3 042 282, index 3 043 149, aus 2 298 440, aus-e 2 350 810 B.
 
 ### Regression (in Teil E nicht gelaufen, hier nachgeholt auf index.html, `pr/reg/reg.log`)
-REG_ERGEBNIS
+| Sonde | index.html (hier) | r4700 (vx/r4700) |
+|---|---|---|
+| spk7 | lief schon in Teil E: ALLES OK (13) (`e/reg/reg.log`) | – |
+| spk12b | **ALLES OK 72 / 0** | 69 / 3 (nur Long-Task-Zeitgrenzen unter Volllast) |
+| spk12c | **47 / 0** | 45 / 2 (nur Long-Task-Zeitgrenzen) |
+| spk12d | **28 / 0** | 28 / 0 |
+| spk6p | ALLES OK | ALLES OK |
+| spk4 | 3 FEHLER von 23: pflicht (Test erwartet VERSION 4.60.0), a2-verfeinern-plus-1db (gleiche Werte), reg-ki1-test (dieselben bekannten Fehler) | 5 FEHLER: dieselben 3 + a3-nachbau-zeit und reg-spk3-test (Zeit unter Last) |
+Damit sind alle Sonden aus `e/reg.sh` auf index.html gelaufen. Ergebnisse gleich wie r4700 oder besser, kein neuer Fehler.
+
+## Werkzeuge (pr/)
+pflicht.sh/.log · vgl.cjs · zugriff.cjs/.txt · fn.cjs · namen.cjs/.json · laufzeit.mjs/.json · astvgl.cjs · vsclean.cjs · strikt.cjs ·
+mess.mjs, mess4.json, mess4b.json · kreuz.mjs/.json · bild.mjs, bild2.mjs, bild-*.png · reg.sh, reg/*.log · smoke-*.png
