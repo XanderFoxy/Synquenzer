@@ -34903,6 +34903,7 @@ function undoApply(e, val) {
   if (e.kind === 'clip' && ED.rollAt && e.track === ED.rollAt.t && e.scene === ED.rollAt.s && S.tracks[e.track]) {
     if (S.tracks[e.track].clips[e.scene] && ED.roll) { ED.roll.refresh(); rollHeadUpdate(); }
     else if (S.tracks[e.track].clips[e.scene] && ED.lauf) { laufPaint(); rollHeadUpdate(); }
+    else if (S.tracks[e.track].clips[e.scene] && typeof mtx3bOpen === 'function' && mtx3bOpen()) { mtx3bPaint(true); rollHeadUpdate(); }   /* MTX3B: Drum-Schritt-Editor der Einzelspur bleibt offen */
     else closeRoll();
   }
   if (e.kind === 'clip' && S.tracks[e.track].kind === 'synth') scheduleAutoKey(e.scene);

@@ -98621,6 +98621,7 @@ function spk1DspMake(V) {
     return {pos, neg, box};
   }
   function selFn(d, sel) {
+    { const r12 = typeof spk12SelFn === 'function' ? spk12SelFn(d, sel, selFn) : null; if (r12) return r12; }   /* SPK12: − / ∩ / Umkehren / Zauberstab */
     const sr = d.meta.sr, N = d.meta.base.N, hop = d.meta.base.hop, dur = d.meta.n / sr, ny = sr / 2;
     const all = (Array.isArray(sel) ? sel : [sel]).filter(Boolean), ras = all.filter(s => s.art === 'pinsel' || s.art === 'harm');
     const RA = ras.length ? selRaster(d, ras) : null;
@@ -99320,6 +99321,7 @@ function spk1DspMake(V) {
   if (typeof spk5DspMake === 'function') spk5DspMake({Z2, KI1K, BT, zerlegen, selFn, magsAt, stripe, tileArr, tidy, uTouch, uBegin, uEnd, uAbort, verUp, newLayer, Fn, NBn, TRn, tick, get, soon});   // SPK5: Zerlegen/Profi nur in der Auswahl, Anteile je Ebene
   if (Z2 && typeof spk9DspMake === 'function') spk9DspMake(Z2);   /* SPK9: Legato-Noten (Tonhöhen-Stufen) */
   if (Z2 && typeof spk6DspMake === 'function') Z2.s6 = spk6DspMake({Z2, V, BT, BLK, win, lay, masksOf, stripe, stCopy, newLayer, verUp, uBegin, uTouch, uEnd, render, block, get, put, del, keys, selFn});   // SPK6: Ebenen-Werkstatt (Ops über Z2.ops)
+  if (Z2 && typeof spk12DspMake === 'function') spk12DspMake(Z2, {selFn, specInfo, specChunk, get, put});   /* SPK12: Zauberstab, Masken-Probe, Anzeige */
   return {on, stft, istft, specInfo, docs, lowSplit, Z2};   // SPK2: Z2 für Messungen
 }
 /* ---------- Hauptfaden: Worker (Blob aus Text), Rückfall = derselbe Kern hier ---------- */
@@ -99578,6 +99580,7 @@ function spk1Build() {
   const pH = pane('harm'); sl(pH, 'Obertöne', 'K', 1, 32, 1, v => String(v), () => spk1HarmOpt(U)); sl(pH, 'Breite', 'bw', 10, 100, 5, v => v + ' ct', () => spk1HarmOpt(U));
   const pA = pane('aehn'); sl(pA, 'Empfindlich', 'empf', 0, 1, 0.05, v => Math.round(v * 100) + ' %', () => spk1HitsApply(U)); U.hitLab = el('label', '', ''); pA.appendChild(U.hitLab);
   if (typeof spk2Pane === 'function') spk2Pane(U, pane, sl);   // SPK2: Noten-Werkzeug
+  if (typeof spk12Pane === 'function') spk12Pane(U, pane, sl);   /* SPK12: Neu │ + │ − │ ∩ · Auswahl ▾ · Zauberstab */
   const st = U.st = el('div', 'spk1-st', ''), ac = U.ac = el('div', 'spk1-ac'), ly = U.ly = el('div', 'spk1-ly pan-y'), sp = U.sp = el('div', 'spk1-sp pan-y');
   const A = (a, t, lab) => { const b = el('button', 'mbtn rb', t); b.dataset.a = a; if (lab) b.setAttribute('aria-label', lab); ac.appendChild(b); U['b_' + a] = b; return b; };
   A('play', '▶ Abspielen', 'Abspielen ab der Position'); A('psel', '▶ Auswahl', 'Nur die Auswahl hören'); A('into', 'In Ebene ▾', 'Auswahl in eine Ebene verschieben oder kopieren');
@@ -99771,6 +99774,7 @@ function spk1SelSpan(U) {   // Zeitbereich der Auswahl (für ▶ Auswahl und das
 }
 function spk1OvDraw(U) {
   const cv = U.ov, x = cv.getContext('2d'), d = U.dpr, W = U.W, H = U.H, v = U.v; x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, cv.width, cv.height); x.setTransform(d, 0, 0, d, 0, 0);
+  const s12 = typeof spk12OvPre === 'function' ? spk12OvPre(U) : null;   /* SPK12 */
   if (v.rowH * 12 >= 18) { x.fillStyle = 'rgba(255,255,255,.07)'; for (let m = Math.ceil((v.mTop - H / v.rowH) / 12) * 12; m <= v.mTop; m += 12) x.fillRect(0, Math.round((v.mTop - m + 0.5) * v.rowH), W, 1); }
   const sel = U.tmp ? U.sel.filter(s => s.art === 'pinsel' || s.art === 'harm').concat([U.tmp]) : U.sel;
   // Pinsel-Striche (Ellipse = Radius in Zeit × Cent), Radierer schneidet heraus
@@ -99803,6 +99807,7 @@ function spk1OvDraw(U) {
     x.strokeStyle = hit ? '#ffb22e' : '#f4f1ea'; x.strokeRect(Math.round(xa) + 0.5, Math.round(ya) + 0.5, Math.round(xb - xa), Math.round(yb - ya));
   }
   x.setLineDash([]);
+  if (s12) spk12OvPost(U, x, s12);   /* SPK12: Ergebnis-Fläche + Rand-Griffe */
   if (typeof spk5Fd === 'function' && spk5Fd(U) > SPK5_FD_SKIP) { if (typeof spk2LpOv === 'function') spk2LpOv(U, x); } else if (typeof spk2OvDraw === 'function') spk2OvDraw(U, x);   // SPK2: Noten-Kästchen · SPK5: in der Noten-Ansicht zeichnet die Notenrolle die Kästchen
   if (typeof spk5OvDraw === 'function') spk5OvDraw(U, x);   // SPK5: Fortschritt über dem Bereich, Notenrolle
   const p = U.pos != null ? U.pos : U.cur, px = Math.round(spk1X(U, p)) + 0.5;
@@ -99817,6 +99822,7 @@ function spk1Gest(U) {
   mn.addEventListener('pointerdown', e => {
     if (!U.meta || e.button > 0) return; try { mn.setPointerCapture(e.pointerId); } catch (er) {}
     P.set(e.pointerId, pt(e)); spk1Dd(U, null);
+    if (P.size === 2 && G && G.s12cand && typeof spk12Two === 'function' && spk12Two(U, G, P)) return;   /* SPK12: zwei Finger am Rand = Weichheit */
     if (P.size === 1) G = spk1ToolDown(U, pt(e));
     else if (P.size === 2) { if (G) spk1ToolCancel(U, G); G = null; Z = zStart(); U.hold = true; }
   });
@@ -99863,6 +99869,7 @@ const spk1Soft = U => U.sel.length && U.sel.every(s => s.art === 'pinsel' || s.a
 function spk1ToolDown(U, p) {
   if (U.tool === 's6ed' && typeof spk6EdDown === 'function') return spk6EdDown(U, p);   /* SPK6: Noten bearbeiten */
   const G = {tool: U.tool, x0: p.x, y0: p.y, t0: spk1T(U, p.x), f0: spk1F(U, p.y), moved: false, shape: null};
+  if (typeof spk12Down === 'function') spk12Down(U, G, p);   /* SPK12: Rand-Griffe */
   if (G.tool === 'pinsel') {
     const o = U.opt; if (!spk1Soft(U)) { U.sel = []; U.hits = U.ex = null; }
     G.shape = {art: 'pinsel', pts: [[+G.t0.toFixed(4), +G.f0.toFixed(2)]], rt: +(o.size / U.v.pps).toFixed(4), rc: Math.round(o.size / U.v.rowH * 100), weich: o.weich, minus: !!o.minus};
@@ -99872,6 +99879,7 @@ function spk1ToolDown(U, p) {
 }
 function spk1ToolMove(U, G, p) {
   if (G.tool === 's6ed' && G.s6 && typeof spk6EdDrag === 'function') return spk6EdDrag(U, G, p);   /* SPK6: Note ziehen */
+  if ((G.s12cand || G.tool === 'wand') && typeof spk12Move === 'function' && spk12Move(U, G, p)) return;   /* SPK12 */
   if (!G.moved && Math.hypot(p.x - G.x0, p.y - G.y0) < 8) return; G.moved = true;
   const t = spk1T(U, p.x), f = spk1F(U, p.y);
   if (G.tool === 'pinsel') { if (Math.hypot(p.x - G.lx, p.y - G.ly) >= Math.max(3, U.opt.size / 3)) { G.shape.pts.push([+t.toFixed(4), +f.toFixed(2)]); G.lx = p.x; G.ly = p.y; spk1Dirty(U, 'ov'); } return; }
@@ -99883,9 +99891,11 @@ function spk1ToolMove(U, G, p) {
 function spk1ToolCancel(U, G) { U.tmp = null; if (G && G.tool === 'pinsel') { const i = U.sel.indexOf(G.shape); if (i >= 0) U.sel.splice(i, 1); } spk1Dirty(U, 'ov'); }
 function spk1ToolUp(U, G) {
   if (G.tool === 's6ed' && typeof spk6EdUp === 'function') return spk6EdUp(U, G);   /* SPK6: Noten bearbeiten */
+  if (G.s12 && typeof spk12Up === 'function') return spk12Up(U, G);   /* SPK12 */
   U.tmp = null;
   if (typeof spk5Tap === 'function' && spk5Tap(U, G)) return;   // SPK5: Noten-Ansicht – Note antippen = Gehört zu …
   if (G.tool === 'noten' && typeof spk2NoteUp === 'function') return spk2NoteUp(U, G);   // SPK2: Noten wählen
+  if (G.tool === 'wand' && typeof spk12Wand === 'function') { spk12Wand(U, G); return; }   /* SPK12: Zauberstab */
   if (!G.moved) {
     if (G.tool === 'harm') return spk1Harm(U, G.t0, G.f0);
     if (G.tool === 'aehn') return spk1Aehn(U, null, G.t0, G.f0);
@@ -99899,6 +99909,7 @@ function spk1ToolUp(U, G) {
   U.sel = [G.shape]; U.hits = U.ex = null; spk1SelDone(U);
 }
 function spk1SelDone(U, txt) {
+  if (typeof spk12SelDone === 'function') spk12SelDone(U);   /* SPK12: Kombinier-Modus */
   U.selVer++; spk1BtnState(U); spk1Dirty(U, 'ov'); spk1Dirty(U, 'r');
   if (txt != null) { spk1Stat(U, txt); return; }
   const sb = spk1SelSpan(U), f = n => n.toFixed(1).replace('.', ',');
@@ -99937,6 +99948,7 @@ function spk1ToolSet(U, k) {
   for (const p of U.op.querySelectorAll('.spk1-o')) p.classList.toggle('on', p.dataset.for.split(' ').includes(k));
   const tip = {rect: 'Ziehen = Rechteck', zeit: 'Ziehen = Zeitbereich', freq: 'Ziehen = Tonbereich', pinsel: 'Malen = Auswahl', harm: 'Grundton antippen', aehn: 'Beispiel ziehen oder antippen', noten: 'Note antippen oder Kästchen ziehen'}[k];   // SPK2: Noten
   if (U.meta && !U.sel.length) spk1Stat(U, tip + ' · zwei Finger = Zoom');
+  if (typeof spk12ToolSet === 'function') spk12ToolSet(U, k);   /* SPK12 */
 }
 /* ---- Status, Knöpfe ---- */
 function spk1Stat(U, t) { if (U.st.textContent !== t) U.st.textContent = t; }
@@ -99952,6 +99964,7 @@ function spk1BtnState(U) {
 }
 function spk1UndoBtns(U, r) {
   if (!r) return; U.bU.disabled = !r.nu; U.bR.disabled = !r.nr;
+  if (typeof spk12UndoBtn === 'function') spk12UndoBtn(U);   /* SPK12: ↶ auch für Auswahl-Schritte */
   U.bU.setAttribute('aria-label', r.undo ? 'Rückgängig: ' + r.undo : 'Rückgängig'); U.bR.setAttribute('aria-label', r.redo ? 'Wiederholen: ' + r.redo : 'Wiederholen');
 }
 function spk1Got(U, r) { if (!r || !r.meta) return; SPK1.last = r; U.meta = r.meta; spk1UndoBtns(U, r); spk1Layers(U); if (typeof spk2OvDraw === 'function') spk1Dirty(U, 'ov'); }   // SPK2: Noten neu zeichnen
@@ -99996,6 +100009,7 @@ async function spk1Into(U, nach, art) {
 }
 async function spk1UndoRedo(U, which) {
   if (U.busy) return; U.vf = null;
+  if (typeof spk12UndoRedo === 'function' && spk12UndoRedo(U, which)) return;   /* SPK12 */
   try { const r = await spk1Call(which, {doc: SPK1.doc}); spk1Got(U, r); spk1TintLoad(U); spk1Stat(U, r.label ? (which === 'undo' ? 'Rückgängig: ' : 'Wiederholt: ') + r.label : ''); } catch (e) { logErr(e); }
 }
 /* ---- Klappfenster (Ansicht, In Ebene, Ebene ⋯) ---- */
@@ -100059,6 +100073,7 @@ function spk1MoreDd(U, b, lid) {
 }
 /* ---- Tipps ---- */
 function spk1Tap(U, b) {
+  if (typeof spk12Tap === 'function' && spk12Tap(U, b)) return;   /* SPK12 */
   if (b.dataset.tool) { spk1ToolSet(U, b.dataset.tool); return; }
   const a = b.dataset.a, row = b.closest('.spk1-lr'), lid = row ? row.dataset.l : null;
   switch (a) {
@@ -102185,6 +102200,7 @@ function spk8DspMake(Z2) {
 }
 // Worker-Text: spk8DspMake wird an den Kern-Text angehängt (Funktions-Deklaration → im Worker schon beim Aufbau des Kerns da)
 function spk8WUrl(src, u) {
+  if (typeof spk12DspMake === 'function') src = src + ';' + spk12SelFn.toString() + ';' + spk12Ras.toString() + ';' + spk12DspMake.toString() + ';';   /* SPK12: Auswahl-Kern in den Spektral-Worker */
   try { const v = URL.createObjectURL(new Blob([src, ';' + spk8DspMake.toString() + ';' + (typeof spk10Okt === 'function' ? spk10Okt.toString() + ';' : '') /* SPK10 */], {type: 'application/javascript'})); try { URL.revokeObjectURL(u); } catch (e) {} setTimeout(() => { try { URL.revokeObjectURL(v); } catch (e) {} }, 30000); return v; } catch (e) { return u; }
 }
 /* SPK8-END */
@@ -104853,6 +104869,449 @@ const SPK11_API = {open: () => spk11Open(SPK1.ui, SPK1.ui && SPK1.ui.sh.querySel
   go: () => spk11Go(SPK1.ui), last: () => SPK11.last, teile: () => SPK1.ui && SPK1.ui.s11 && SPK1.ui.s11.T, kl: lid => !!SPK11.kl.get(SPK1.doc + '|' + lid), hits: (x, sr, st, n) => spk11Hits(x, sr, st, n), klang: lid => spk11Klang(SPK1.ui, lid)};
 try { window.__spk11 = SPK11_API; } catch (e) {}
 /* SPK11-END */
+/* SPK12-BEGIN ===== Spektral-Seite Teil 12 · Werkzeugkasten Auswahl (Teil 1/3: Kombinieren, Umkehren, Rand-Griffe, Zauberstab)
+   Xander 15.11.: „Spektral-Werkzeuge wie im alten Spektral-Ebenen-Programm als Hybrid“.
+   - Kombinier-Modus Neu │ + │ − │ ∩ (Leiste unter der Werkzeugzeile): jede neue Form (Rechteck, Zeit, Frequenz, Pinsel, Harmonische,
+     Zauberstab) ersetzt, kommt dazu, wird abgezogen oder geschnitten. Formen tragen `op` ('sub' | 'and'; ohne = dazu); der Kern rechnet
+     der Reihe nach in Uint8: dazu = max(a, b), ab = min(a, 255 − b), Schnitt = min(a, b) → bit-genau die Mengen-Rechnung.
+     Folgen alter Formen ohne op bleiben EIN Aufruf des alten selFn (gleiche Gewichte wie bisher; Radierer-Pinsel wirkt wie gehabt).
+   - Auswahl ▾: Umkehren (Form {art:'inv'}: w → 255 − w), Nur Frequenzen umkehren ({art:'inv', nurF}: im Zeitbereich der Auswahl
+     255 − w, außerhalb 0), Wiederherstellen (letzte verworfene/ersetzte Auswahl), Erweitern/Verkleinern (±0,05 s, ±50 Cent),
+     Weicher/Härter (Kante ±0,5), Zauberstab ↔ Rechteck.
+   - Rand-Griffe (Rechteck/Zeit/Frequenz/Harmonische/Zauberstab): Rand ziehen = Größe (einzelnes Rechteck: nur dieser Rand),
+     zwei Finger am Rand = Weichheit (auseinander = weicher), Mitte ziehen = Auswahlform verschieben (nur die Form, nicht der Klang).
+   - Zauberstab (Rechteck-Knopf halten → Zauberstab, oder Auswahl ▾): Tipp → Flood-Fill im dB-Raster der Anzeige (≈ 984 Zeilen) im
+     Worker, Toleranz (dB unter dem Startpunkt), Zeitgrenze ± s um den Tipp (Standard ± 5 s). Ergebnis = Läufe je Spalte (Form 'wand'),
+     im Kern als Raster mit Wachsen/Schrumpfen (Zeilen/Spalten getrennt) und Weichheit (Kastenfilter).
+   - Ein ↶ je Aktion: Auswahl-Schritte liegen auf einem eigenen Stapel; ↶/↷ nimmt zuerst den Auswahl-Schritt, solange danach keine
+     Ebenen-Aktion kam (Vergleich mit dem Undo-Stand des Kerns).
+   - Anzeige: Enthält die Auswahl − / ∩ / Umkehren / Zauberstab, zeigt die Fläche das Ergebnis des Kerns (Raster 2 px, im Worker).
+   Haken „SPK12“: selFn (1. Zeile), spk1DspMake (vor return), spk8WUrl (Text in den Worker), spk1Build, spk1OvDraw (2), spk1Gest,
+   spk1ToolDown/Move/Up (4), spk1SelDone, spk1ToolSet, spk1UndoBtns, spk1UndoRedo, spk1Tap. */
+const SPK12_TOOLS = ['rect', 'zeit', 'freq', 'pinsel', 'harm', 'wand'], SPK12_HT = ['rect', 'zeit', 'freq', 'harm', 'wand'];
+const SPK12_ICON = '<path d="M3.5 16.5l9.5-9.5" stroke-width="2.2" stroke-linecap="round"/><path d="M13 7l1.8-1.8"/><path d="M15.5 1.8v2.4M18.2 4.5h-2.4M17.4 2.6l-1.2 1.2M12.2 2.4l.9.9M17.6 8.8l-.9-.9"/>';
+const SPK12_MODES = [['neu', 'Neu', 'Neue Auswahl ersetzt die alte'], ['add', '+', 'Zur Auswahl hinzufügen'], ['sub', '−', 'Von der Auswahl abziehen'], ['and', '∩', 'Schnittmenge mit der Auswahl']];
+/* ---------- Kern (läuft im Spektral-Worker und im Rückfall im Hauptfaden; nur eigene Namen) ---------- */
+function spk12SelFn(d, sel, base) {
+  const all = (Array.isArray(sel) ? sel : [sel]).filter(Boolean);
+  if (!all.some(s => s.op === 'sub' || s.op === 'and' || s.art === 'wand' || s.art === 'inv')) return null;
+  const sr = d.meta.sr, N = d.meta.base.N, hop = d.meta.base.hop, NB = N / 2 + 1, F = Math.floor((d.meta.n - 1) / hop) + N / hop;
+  const items = []; let grp = null;
+  const flush = () => { if (grp) { const r = base(d, grp); items.push({op: 'add', fnc: r.fnc, box: r.box}); grp = null; } };
+  for (const s of all) {
+    let op = s.op === 'sub' || s.op === 'and' ? s.op : 'add';
+    if (s.art === 'inv') { flush(); const m0 = s.nurF ? Math.ceil((+s.t0 || 0) * sr / hop + 1) : 0, m1 = s.nurF ? Math.floor((+s.t1 || 0) * sr / hop + 1) : F - 1; items.push({op: 'inv', nurF: !!s.nurF, m0, m1}); continue; }
+    if (s.art === 'wand') { flush(); const R = spk12Ras(d, s); items.push({op, val: R.val, box: R.box}); continue; }
+    let x = s; if (s.art === 'pinsel' && s.minus && op === 'add') { op = 'sub'; x = Object.assign({}, s, {minus: false}); }
+    if (op === 'add') { (grp = grp || []).push(x); continue; }
+    flush(); const r = base(d, [Object.assign({}, x, {op: undefined})]); items.push({op, fnc: r.fnc, box: r.box});
+  }
+  flush();
+  const box = {m0: 1e9, m1: -1, k0: 1e9, k1: -1}, uni = b => { if (!b || b.m1 < 0) return; box.m0 = Math.min(box.m0, b.m0); box.m1 = Math.max(box.m1, b.m1); box.k0 = Math.min(box.k0, b.k0); box.k1 = Math.max(box.k1, b.k1); };
+  for (const it of items) { if (it.op === 'add') uni(it.box); else if (it.op === 'inv') uni(it.nurF ? {m0: Math.max(0, it.m0), m1: Math.min(F - 1, it.m1), k0: 0, k1: NB - 1} : {m0: 0, m1: F - 1, k0: 0, k1: NB - 1}); }
+  const inB = (b, m, k) => b && m >= b.m0 && m <= b.m1 && k >= b.k0 && k <= b.k1;
+  const fnc = (m, k) => {
+    let w = 0;
+    for (const it of items) {
+      if (it.op === 'inv') { w = !it.nurF || (m >= it.m0 && m <= it.m1) ? 255 - w : 0; continue; }
+      const v = !inB(it.box, m, k) ? 0 : it.val ? it.val(m, k) : Math.round(it.fnc(m, k) * 255);
+      w = it.op === 'add' ? (v > w ? v : w) : it.op === 'sub' ? Math.min(w, 255 - v) : Math.min(w, v);
+    }
+    return w / 255;
+  };
+  return {fnc, box};
+}
+/* Zauberstab-Form → Raster (Spalten der Anzeige × 984 Zeilen) mit Wachsen/Schrumpfen und Weichheit; Abfrage je Base-Frame/Bin */
+function spk12Ras(d, s) {
+  const C = spk12Ras.C || (spk12Ras.C = new Map()), key = s.key ? d.meta.id + '|' + s.key : '';
+  if (key && C.has(key)) return C.get(key);
+  const R = s.R || 984, sr = d.meta.sr, N = d.meta.base.N, hop = d.meta.base.hop, NB = N / 2 + 1, F = Math.floor((d.meta.n - 1) / hop) + N / hop;
+  const hD = s.hop || 512, M0 = s.m0 == null ? 12 : +s.m0, RPS = s.rps || 8, ot = +s.ot || 0, om = +s.om || 0, ws = Math.max(0, +s.ws || 0);
+  const gC = Math.round((+s.gt || 0) * sr / hD), gR = Math.round((+s.gc || 0) / (100 / RPS)), fC = Math.round(ws * 0.06 * sr / hD), fR = Math.round(ws * 60 / (100 / RPS));
+  const pad = Math.max(0, gC) + fC + 1, cols = s.cols || [], nc = cols.length + 2 * pad, c0 = (s.c0 | 0) - pad;
+  let A = new Uint8Array(nc * R);
+  cols.forEach((runs, i) => { const o = (i + pad) * R; for (let j = 0; j + 1 < runs.length; j += 2) { const a = Math.max(0, runs[j]), b = Math.min(R - 1, runs[j + 1]); if (b >= a) A.fill(255, o + a, o + b + 1); } });
+  const morph = (X, n, len, str, g) => {   // je Linie (n Linien der Länge len, Schritt str): g > 0 wachsen, g < 0 schrumpfen (binär)
+    const Y = new Uint8Array(X.length), w = Math.abs(g), lineStep = str === 1 ? len : 1;
+    for (let l = 0; l < n; l++) {
+      const o = l * lineStep; let cnt = 0; const at = i => (i >= 0 && i < len && X[o + i * str] ? 1 : 0);
+      for (let i = -w; i <= w; i++) cnt += at(i);
+      for (let i = 0; i < len; i++) { Y[o + i * str] = g > 0 ? (cnt > 0 ? 255 : 0) : (cnt === 2 * w + 1 ? 255 : 0); cnt += at(i + w + 1) - at(i - w); }
+    }
+    return Y;
+  };
+  if (gR) A = morph(A, nc, R, 1, gR);
+  if (gC) A = morph(A, R, nc, R, gC);
+  if (fC || fR) {   // Kastenfilter (gleitende Summe), getrennt
+    const box = (X, n, len, str, w) => { if (!w) return X; const Y = new Uint8Array(X.length), lineStep = str === 1 ? len : 1, q = 2 * w + 1;
+      for (let l = 0; l < n; l++) { const o = l * lineStep; let sm = 0; const at = i => (i >= 0 && i < len ? X[o + i * str] : 0); for (let i = -w; i <= w; i++) sm += at(i); for (let i = 0; i < len; i++) { Y[o + i * str] = Math.round(sm / q); sm += at(i + w + 1) - at(i - w); } }
+      return Y; };
+    A = box(box(A, nc, R, 1, fR), R, nc, R, fC);
+  }
+  const rowK = new Int16Array(NB); for (let k = 0; k < NB; k++) rowK[k] = k < 1 ? -1 : Math.round((69 + 12 * Math.log2(k * sr / N / 440) - om - M0) * RPS);
+  let cmin = nc, cmax = -1, rmin = R, rmax = -1;
+  for (let c = 0; c < nc; c++) for (let r = 0, o = c * R; r < R; r++) if (A[o + r]) { if (c < cmin) cmin = c; if (c > cmax) cmax = c; if (r < rmin) rmin = r; if (r > rmax) rmax = r; }
+  const fr = r => 440 * Math.pow(2, (M0 + om + r / RPS - 69) / 12);
+  const box = cmax < 0 ? {m0: 1e9, m1: -1, k0: 1e9, k1: -1} : {
+    m0: Math.max(0, Math.floor(((c0 + cmin - 0.5) * hD / sr + ot) * sr / hop + 1) - 1), m1: Math.min(F - 1, Math.ceil(((c0 + cmax + 0.5) * hD / sr + ot) * sr / hop + 1) + 1),
+    k0: Math.max(0, Math.floor(fr(rmin - 0.6) * N / sr) - 1), k1: Math.min(NB - 1, Math.ceil(fr(rmax + 0.6) * N / sr) + 1)};
+  const val = (m, k) => { const c = Math.round(((m - 1) * hop / sr - ot) * sr / hD) - c0; if (c < 0 || c >= nc) return 0; const r = rowK[k]; return r < 0 || r >= R ? 0 : A[c * R + r]; };
+  const out = {val, box, A, nc, c0, R};
+  if (key) { C.set(key, out); if (C.size > 6) C.delete(C.keys().next().value); }
+  return out;
+}
+/* Ops im Kern: Zauberstab, Masken-Probe (Test), Anzeige-Raster der Auswahl */
+function spk12DspMake(Z2, X) {
+  const ops = Z2.ops || (Z2.ops = {}), CH = new Map();
+  async function chunk(d, N, ci) {
+    const key = 'spk:' + d.meta.id + ':v' + N + ':' + ci; if (CH.has(key)) return CH.get(key);
+    const I = X.specInfo(d, N), W = Math.min(1024, I.cols - ci * 1024); let data = null;
+    const have = await X.get('audio', key);
+    if (have && have.byteLength === I.rows * W) data = new Uint8Array(have);
+    else { data = X.specChunk(d, N, ci).data; try { await X.put('audio', key, data.slice().buffer); } catch (e) {} }
+    const o = {data, W, x0: ci * 1024}; CH.set(key, o); if (CH.size > 6) CH.delete(CH.keys().next().value);
+    return o;
+  }
+  ops.spk12zauber = async (d, m) => {
+    const T0 = performance.now(), N = [1024, 2048, 4096, 8192, 16384].includes(m.N) ? m.N : 4096, I = X.specInfo(d, N), sr = d.meta.sr, hD = I.hop, R = I.rows;
+    const lim = Math.max(0.5, Math.min(60, +m.lim || 5)), tol = Math.max(1, Math.min(60, +m.tol || 15));
+    const ct = Math.max(0, Math.min(I.cols - 1, Math.round((+m.t || 0) * sr / hD))), cw = Math.round(lim * sr / hD), ca = Math.max(0, ct - cw), cb = Math.min(I.cols - 1, ct + cw), nc = cb - ca + 1;
+    const A = new Uint8Array(nc * R);
+    for (let ci = ca >> 10; ci <= cb >> 10; ci++) {
+      const o = await chunk(d, N, ci), a = Math.max(ca, o.x0), b = Math.min(cb, o.x0 + o.W - 1);
+      for (let c = a; c <= b; c++) { const cc = c - o.x0, off = (c - ca) * R; for (let r = 0; r < R; r++) A[off + r] = o.data[r * o.W + cc]; }
+    }
+    const T1 = performance.now(), mid = 69 + 12 * Math.log2(Math.max(1, +m.f || 440) / 440), r0 = Math.max(0, Math.min(R - 1, Math.round((mid - I.m0) * I.rps))), so = (ct - ca) * R;
+    let rs = r0, v0 = -1; for (let r = Math.max(0, r0 - 6); r <= Math.min(R - 1, r0 + 6); r++) if (A[so + r] > v0) { v0 = A[so + r]; rs = r; }   // auf den hellsten Punkt in der Nähe rasten
+    const thr = Math.max(1, v0 - tol * 255 / I.dbf), vis = new Uint8Array(nc * R), st = new Int32Array(nc * R); let sp = 0, cells = 0;
+    if (A[so + rs] >= thr) { vis[so + rs] = 1; st[sp++] = so + rs; }
+    while (sp) {
+      const i = st[--sp], c = (i / R) | 0, r = i - c * R; cells++;
+      if (r > 0 && !vis[i - 1] && A[i - 1] >= thr) { vis[i - 1] = 1; st[sp++] = i - 1; }
+      if (r < R - 1 && !vis[i + 1] && A[i + 1] >= thr) { vis[i + 1] = 1; st[sp++] = i + 1; }
+      if (c > 0 && !vis[i - R] && A[i - R] >= thr) { vis[i - R] = 1; st[sp++] = i - R; }
+      if (c < nc - 1 && !vis[i + R] && A[i + R] >= thr) { vis[i + R] = 1; st[sp++] = i + R; }
+    }
+    let cmin = nc, cmax = -1, rmin = R, rmax = -1; const cols = [];
+    for (let c = 0; c < nc; c++) {
+      const off = c * R, runs = []; let r = 0;
+      while (r < R) { if (vis[off + r]) { const a = r; while (r < R && vis[off + r]) r++; runs.push(a, r - 1); if (a < rmin) rmin = a; if (r - 1 > rmax) rmax = r - 1; } else r++; }
+      cols.push(runs); if (runs.length) { if (c < cmin) cmin = c; cmax = c; }
+    }
+    const fr = r => 440 * Math.pow(2, (I.m0 + r / I.rps - 69) / 12), base = {N, hop: hD, R, m0: I.m0, rps: I.rps, tol, lim, v0, thr, seed: [ct, rs], win: [ca, cb], cells, msLoad: T1 - T0};
+    if (cmax < 0) return Object.assign(base, {cells: 0, ms: performance.now() - T0});
+    return Object.assign(base, {c0: ca + cmin, nc: cmax - cmin + 1, cols: cols.slice(cmin, cmax + 1), t0: (ca + cmin - 0.5) * hD / sr, t1: (ca + cmax + 0.5) * hD / sr, f0: fr(rmin - 0.5), f1: fr(rmax + 0.5), ms: performance.now() - T0});
+  };
+  ops.spk12mask = (d, m) => {   // Gewichte round(255·w) auf dem Base-Raster (Test: Mengen-Rechnung, Energie)
+    const {fnc, box} = X.selFn(d, m.sel || []), sm = Math.max(1, m.sm | 0), sk = Math.max(1, m.sk | 0), m0 = m.m0 | 0, m1 = m.m1 | 0, k0 = m.k0 | 0, k1 = m.k1 | 0;
+    const W = Math.floor((m1 - m0) / sm) + 1, H = Math.floor((k1 - k0) / sk) + 1, data = new Uint8Array(W * H);
+    for (let i = 0; i < W; i++) for (let j = 0; j < H; j++) data[i * H + j] = Math.round(fnc(m0 + i * sm, k0 + j * sk) * 255);
+    return {W, H, data, box};
+  };
+  ops.spk12view = (d, m) => {   // Anzeige: W × H Zellen über dem sichtbaren Ausschnitt (Zeile 0 = oben)
+    const sr = d.meta.sr, N = d.meta.base.N, hop = d.meta.base.hop, {fnc, box} = X.selFn(d, m.sel || []), W = Math.max(1, Math.min(1200, m.W | 0)), H = Math.max(1, Math.min(1200, m.H | 0));
+    const data = new Uint8Array(W * H), t0 = +m.t0, t1 = +m.t1, mT = +m.mTop, mB = +m.mBot, kk = new Int32Array(H);
+    for (let j = 0; j < H; j++) kk[j] = Math.round(440 * Math.pow(2, (mT - (j + 0.5) * (mT - mB) / H - 69) / 12) * N / sr);
+    if (box.m1 >= 0) for (let i = 0; i < W; i++) {
+      const mm = Math.round((t0 + (i + 0.5) * (t1 - t0) / W) * sr / hop + 1); if (mm < box.m0 || mm > box.m1) continue;
+      for (let j = 0; j < H; j++) { const k = kk[j]; if (k >= box.k0 && k <= box.k1) data[j * W + i] = Math.round(fnc(mm, k) * 255); }
+    }
+    const bt = box.m1 < 0 ? null : {t0: (box.m0 - 1) * hop / sr, t1: (box.m1 - 1) * hop / sr, f0: box.k0 * sr / N, f1: box.k1 * sr / N};
+    return {W, H, data, t0, t1, mTop: mT, mBot: mB, box: bt};
+  };
+}
+/* ---------- Hauptfaden: Zustand, Stapel, Kombinieren ---------- */
+function spk12S(U) {
+  let S = U.s12;
+  if (!S || S.doc !== SPK1.doc) { const o = S || {}; S = U.s12 = {doc: SPK1.doc, mode: o.mode || 'neu', slot: o.slot || 'rect', prev: [], last: null, u: [], r: [], vw: null, vKey: '', inSelf: false, ovSel: null}; }
+  return S;
+}
+const spk12Has = U => U.sel.some(s => s.op === 'sub' || s.op === 'and' || s.art === 'wand' || s.art === 'inv');
+const spk12Ku = () => { const r = SPK1.last; return r ? r.nu + '|' + r.nr + '|' + (r.undo || '') : '0'; };
+const spk12Clone = a => JSON.parse(JSON.stringify(a || []));
+let spk12KeyN = 0; const spk12Key = () => 'w' + Date.now().toString(36) + (++spk12KeyN);
+function spk12Push(U, lab, before) { const S = spk12S(U); S.u.push({sel: before, ku: spk12Ku(), lab}); if (S.u.length > 40) S.u.shift(); S.r.length = 0; spk12UndoBtn(U); }
+function spk12Set(U, sel, txt) {
+  const S = spk12S(U); U.sel = sel; U.hits = U.ex = null; if (U.hitLab) U.hitLab.textContent = '';
+  S.inSelf = true; try { spk1SelDone(U, txt); } finally { S.inSelf = false; }
+  S.prev = U.sel.slice(); spk12ViewReq(U);
+}
+function spk12SelDone(U) {   // Haken am Anfang von spk1SelDone: neue Form nach Kombinier-Modus einordnen
+  const S = spk12S(U); if (S.inSelf) return;
+  const prev = S.prev || [], cur = U.sel, fresh = cur.filter(s => !prev.includes(s));
+  if (S.mode !== 'neu' && fresh.length && prev.length && !U.ex && SPK12_TOOLS.includes(U.tool)) {
+    for (const s of fresh) if (S.mode === 'sub' || S.mode === 'and') { s.op = S.mode; if (s.art === 'pinsel') s.minus = false; }
+    U.sel = prev.concat(fresh);
+    spk12Push(U, {add: 'Auswahl +', sub: 'Auswahl −', and: 'Schnittmenge'}[S.mode], spk12Clone(prev));
+  } else if (prev.length && !prev.every(s => cur.includes(s))) S.last = prev.slice();
+  S.prev = U.sel.slice(); spk12ViewReq(U);
+}
+function spk12UndoBtn(U) {
+  if (!U || !U.bU || U.busy) return; const S = spk12S(U), k = spk12Ku(), a = S.u[S.u.length - 1], b = S.r[S.r.length - 1];
+  if (a && a.ku === k) { U.bU.disabled = false; U.bU.setAttribute('aria-label', 'Rückgängig: ' + a.lab); }
+  if (b && b.ku === k) { U.bR.disabled = false; U.bR.setAttribute('aria-label', 'Wiederholen: ' + b.lab); }
+}
+function spk12UndoRedo(U, which) {
+  const S = spk12S(U), A = which === 'undo' ? S.u : S.r, B = which === 'undo' ? S.r : S.u, top = A[A.length - 1];
+  if (!top || top.ku !== spk12Ku()) return false;
+  A.pop(); B.push({sel: spk12Clone(U.sel), ku: top.ku, lab: top.lab});
+  spk12Set(U, spk12Clone(top.sel), (which === 'undo' ? 'Rückgängig: ' : 'Wiederholt: ') + top.lab);
+  spk12UndoBtn(U); return true;
+}
+/* ---------- Formen umrechnen: verschieben (dt s, dm Halbtöne), wachsen (gt s, gc Cent), weicher (ws) ---------- */
+const spk12Cl = (v, a, b) => Math.max(a, Math.min(b, v));
+function spk12Xf1(U, s, f, sg) {
+  const o = JSON.parse(JSON.stringify(s)), dt = f.dt || 0, dm = f.dm || 0, gt = (f.gt || 0) * sg, gc = (f.gc || 0) * sg, ws = f.ws || 0, q = Math.pow(2, dm / 12), g = Math.pow(2, gc / 1200);
+  if (o.art === 'pinsel') { o.pts = o.pts.map(p => [+(p[0] + dt).toFixed(4), +(p[1] * q).toFixed(2)]); o.rt = +Math.max(0.004, o.rt + gt).toFixed(4); o.rc = Math.max(5, Math.round(o.rc + gc)); o.weich = +spk12Cl((+o.weich || 0) + ws * 0.4, 0, 0.95).toFixed(2); }
+  else if (o.art === 'harm') { o.spur = o.spur.map(p => { const x = p.slice(); x[0] = +(x[0] + dt).toFixed(4); x[1] = +(x[1] * q).toFixed(2); return x; }); o.bw = Math.max(5, Math.round((+o.bw || 45) + gc)); }
+  else if (o.art === 'wand') {
+    o.ot = +((+o.ot || 0) + dt).toFixed(4); o.om = +((+o.om || 0) + dm).toFixed(3); o.gt = +((+o.gt || 0) + gt).toFixed(4); o.gc = Math.round((+o.gc || 0) + gc); o.ws = +spk12Cl((+o.ws || 0) + ws, 0, 3).toFixed(2); o.key = spk12Key();
+    const b = o.b || [o.t0, o.t1, o.f0, o.f1], ex = o.ws * 0.06, fx = Math.pow(2, (o.gc + o.ws * 60) / 1200), fq = Math.pow(2, o.om / 12);
+    o.t0 = +(b[0] + o.ot - o.gt - ex).toFixed(4); o.t1 = +(b[1] + o.ot + o.gt + ex).toFixed(4); o.f0 = +(b[2] * fq / fx).toFixed(2); o.f1 = +(b[3] * fq * fx).toFixed(2);
+  } else if (o.art === 'inv') { if (o.nurF) { o.t0 = +(o.t0 + dt - gt).toFixed(4); o.t1 = +(o.t1 + dt + gt).toFixed(4); } }
+  else {
+    if (o.art !== 'freq') { o.t0 = +(o.t0 + dt - gt).toFixed(4); o.t1 = +(o.t1 + dt + gt).toFixed(4); if (o.t1 - o.t0 < 0.01) { const c = (o.t0 + o.t1) / 2; o.t0 = +(c - 0.005).toFixed(4); o.t1 = +(c + 0.005).toFixed(4); } }
+    if (o.art !== 'zeit') { o.f0 = +(Math.max(1, o.f0) * q / g).toFixed(2); o.f1 = +(o.f1 * q * g).toFixed(2); if (o.f1 / o.f0 < 1.01) { const c = Math.sqrt(o.f0 * o.f1); o.f0 = +(c / 1.005).toFixed(2); o.f1 = +(c * 1.005).toFixed(2); } }
+    if (ws) { const k = spk12Cl((+o.kt || 0) / 0.12 + ws, 0, 3); o.kt = +(k * 0.12).toFixed(3); o.kf = Math.round(k * 120); }
+  }
+  return o;
+}
+function spk12Xf(U, list, f) {   // wachsen: abgezogene Formen und Formen vor einem Umkehren schrumpfen (Dualität)
+  let inv = list.filter(s => s.art === 'inv' && !s.nurF).length;
+  return list.map(s => { if (s.art === 'inv' && !s.nurF) { inv--; return Object.assign({}, s); } return spk12Xf1(U, s, f, (s.op === 'sub' ? -1 : 1) * (inv % 2 ? -1 : 1)); });
+}
+function spk12Edge(s, side, dtS, dC) {   // einzelnes Rechteck/Zeit/Frequenz: nur dieser Rand
+  const o = Object.assign({}, s), g = Math.pow(2, dC / 1200);
+  if (side === 'l') o.t0 = +Math.min(o.t0 + dtS, o.t1 - 0.01).toFixed(4); else if (side === 'r') o.t1 = +Math.max(o.t1 + dtS, o.t0 + 0.01).toFixed(4);
+  else if (side === 't') o.f1 = +Math.max(o.f1 * g, o.f0 * 1.01).toFixed(2); else o.f0 = +Math.min(Math.max(1, o.f0) * g, o.f1 / 1.01).toFixed(2);
+  return o;
+}
+function spk12Box(U) {   // Umriss der Auswahl (nur hinzufügende Formen) für Griffe und Zeitbereich
+  let t0 = 1e9, t1 = -1e9, f0 = 1e9, f1 = -1e9, tAll = false, fAll = false, n = 0; const ny = (U.meta && U.meta.sr || 44100) / 2;
+  for (const s of U.sel) {
+    if (s.art === 'inv') { if (!s.nurF) return null; continue; } if (s.op === 'sub' || s.op === 'and') continue; n++;
+    if (s.art === 'pinsel') { if (s.minus) continue; for (const p of s.pts) { t0 = Math.min(t0, p[0] - s.rt); t1 = Math.max(t1, p[0] + s.rt); f0 = Math.min(f0, p[1] * Math.pow(2, -s.rc / 1200)); f1 = Math.max(f1, p[1] * Math.pow(2, s.rc / 1200)); } }
+    else if (s.art === 'harm') { for (const p of s.spur) { t0 = Math.min(t0, p[0]); t1 = Math.max(t1, p[0] + 0.03); f0 = Math.min(f0, p[1] * Math.pow(2, -(s.bw || 45) / 1200)); f1 = Math.max(f1, p[1] * (s.K || 16)); } }
+    else { if (s.art === 'freq') fAll = true; else { t0 = Math.min(t0, s.t0); t1 = Math.max(t1, s.t1); } if (s.art === 'zeit') tAll = true; else { f0 = Math.min(f0, Math.max(1, s.f0)); f1 = Math.max(f1, Math.min(ny, s.f1)); } }
+  }
+  if (!n) return null;
+  if (fAll) { t0 = 0; t1 = U.dur; } if (tAll && f1 < f0) { f0 = 20; f1 = ny; }
+  return t1 > t0 && f1 > f0 ? {t0, t1, f0, f1, tAll: tAll && !fAll && U.sel.every(s => s.art !== 'rect'), fAll: fAll && U.sel.every(s => s.art === 'freq' || s.op)} : null;
+}
+/* ---------- Rand-Griffe ---------- */
+const spk12HOn = U => U.sel.length > 0 && SPK12_HT.includes(U.tool) && !U.busy && !U.ex && !U.sel.some(s => s.art === 'inv' && !s.nurF);
+function spk12Geo(U) {
+  if (!spk12HOn(U)) return null; const B = spk12Box(U); if (!B) return null;
+  const W = U.W, H = U.H, xL = spk1X(U, B.t0), xR = spk1X(U, B.t1), yT = spk1Y(U, B.f1), yB = spk1Y(U, B.f0);
+  const ya = Math.max(0, yT), yb = Math.min(H, yB), xa = Math.max(0, xL), xb = Math.min(W, xR);
+  if (xb - xa < 2 || yb - ya < 2) return null;
+  return {B, xL, xR, yT, yB, cx: (xa + xb) / 2, cy: (ya + yb) / 2, ya, yb, xa, xb, side: {l: !B.fAll && xL >= -2 && xL <= W + 2, r: !B.fAll && xR >= -2 && xR <= W + 2, t: !B.tAll && yT >= -2 && yT <= H + 2, b: !B.tAll && yB >= -2 && yB <= H + 2}};
+}
+function spk12Down(U, G, p) {
+  const g = spk12Geo(U); if (!g) return;
+  const c = []; if (Math.hypot(p.x - g.cx, p.y - g.cy) <= 22) c.push(['move', Math.hypot(p.x - g.cx, p.y - g.cy) + 4]);
+  const inY = p.y >= g.ya - 10 && p.y <= g.yb + 10, inX = p.x >= g.xa - 10 && p.x <= g.xb + 10;
+  if (g.side.l && inY && Math.abs(p.x - g.xL) <= 16) c.push(['l', Math.abs(p.x - g.xL)]);
+  if (g.side.r && inY && Math.abs(p.x - g.xR) <= 16) c.push(['r', Math.abs(p.x - g.xR)]);
+  if (g.side.t && inX && Math.abs(p.y - g.yT) <= 16) c.push(['t', Math.abs(p.y - g.yT)]);
+  if (g.side.b && inX && Math.abs(p.y - g.yB) <= 16) c.push(['b', Math.abs(p.y - g.yB)]);
+  if (!c.length) return; c.sort((a, b) => a[1] - b[1]); G.s12cand = c[0][0];
+  G.single = U.sel.length === 1 && ['rect', 'zeit', 'freq'].includes(U.sel[0].art);
+}
+function spk12Live(U) {
+  U.selVer++; spk1Dirty(U, 'ov'); const S = spk12S(U), now = performance.now();
+  if (now - (S.vLive || 0) > 90) { S.vLive = now; spk12ViewReq(U); }
+}
+function spk12Move(U, G, p) {
+  if (!G.s12cand) return G.tool === 'wand';   // Zauberstab: Ziehen zeichnet nichts
+  const v = U.v;
+  if (G.s12 === 'soft') {
+    const pv = [...G.P.values()]; if (pv.length < 2) return true;
+    const ws = Math.round((Math.hypot(pv[0].x - pv[1].x, pv[0].y - pv[1].y) - G.d0) / 120 * 4) / 4; if (ws === G.ws) return true;
+    G.ws = ws; U.sel = spk12Xf(U, G.base, {ws}); spk12Live(U); spk1Stat(U, 'Weichheit ' + (ws > 0 ? '+' : '') + String(ws).replace('.', ',')); return true;
+  }
+  if (!G.s12) { if (Math.hypot(p.x - G.x0, p.y - G.y0) < 8) return true; G.s12 = G.s12cand; G.base = G.base0 = U.sel; G.moved = true; }
+  const dx = p.x - G.x0, dy = p.y - G.y0;
+  if (G.s12 === 'move') U.sel = spk12Xf(U, G.base, {dt: dx / v.pps, dm: -dy / v.rowH});
+  else if (G.single && !(G.base[0].art === 'zeit' && (G.s12 === 't' || G.s12 === 'b')) && !(G.base[0].art === 'freq' && (G.s12 === 'l' || G.s12 === 'r'))) U.sel = [spk12Edge(G.base[0], G.s12, dx / v.pps, -dy / v.rowH * 100)];
+  else U.sel = spk12Xf(U, G.base, G.s12 === 'l' ? {gt: -dx / v.pps} : G.s12 === 'r' ? {gt: dx / v.pps} : G.s12 === 't' ? {gc: -dy / v.rowH * 100} : {gc: dy / v.rowH * 100});
+  spk12Live(U); return true;
+}
+function spk12Two(U, G, P) {   // zweiter Finger, während der erste am Rand liegt → Weichheit
+  if (!G.s12cand || G.s12cand === 'move') return false;
+  const pv = [...P.values()]; if (pv.length < 2) return false;
+  if (!G.base0) G.base0 = U.sel; G.base = U.sel; G.s12 = 'soft'; G.P = P; G.d0 = Math.hypot(pv[0].x - pv[1].x, pv[0].y - pv[1].y); G.ws = 0; G.moved = true;
+  spk1Stat(U, 'Zwei Finger: auseinander = weicher, zusammen = härter'); return true;
+}
+function spk12Up(U, G) {
+  const lab = G.s12 === 'move' ? 'Auswahl verschoben' : G.s12 === 'soft' ? 'Auswahl ' + (G.ws >= 0 ? 'weicher' : 'härter') : 'Auswahl-Größe';
+  spk12Push(U, lab, spk12Clone(G.base0 || [])); spk12Set(U, U.sel, lab + ' · ↶ macht es rückgängig');
+}
+/* ---------- Zeichnen: Ergebnis-Fläche (Kern) + Griffe ---------- */
+function spk12OvPre(U) {
+  const S = spk12S(U); if (S.ovSel) { U.sel = S.ovSel; S.ovSel = null; }
+  if (!U.sel.length || !spk12Has(U)) return {sel: null};
+  const sel = U.sel; S.ovSel = sel; U.sel = []; return {sel};   // alte Zeichnung überspringt die Formen; die Fläche zeigt das Ergebnis
+}
+function spk12OvPost(U, x, s12) {
+  const S = spk12S(U);
+  if (s12.sel) { U.sel = s12.sel; S.ovSel = null; spk12VwDraw(U, x); }
+  spk12HdDraw(U, x);
+}
+function spk12ViewReq(U) {
+  const S = spk12S(U); if (!U.meta || !SPK1.doc || !U.sel.length || !spk12Has(U)) { S.vw = null; S.vKey = ''; return; }
+  const v = U.v, W = U.W, H = U.H, key = U.selVer + '|' + v.t0.toFixed(3) + '|' + v.pps.toFixed(2) + '|' + v.mTop.toFixed(2) + '|' + v.rowH.toFixed(3) + '|' + W + 'x' + H;
+  if (S.vKey === key) return; if (S.vBusy) { S.vPend = true; return; }
+  S.vBusy = true; S.vKey = key;
+  const W2 = Math.ceil(W / 2), H2 = Math.ceil(H / 2), a = {doc: SPK1.doc, sel: U.sel, t0: v.t0, t1: v.t0 + W / v.pps, mTop: v.mTop, mBot: v.mTop - H / v.rowH, W: W2, H: H2};
+  spk1Call('spk12view', a).then(r => {
+    const cv = (S.vw && S.vw.cv && S.vw.cv.width === r.W && S.vw.cv.height === r.H) ? S.vw.cv : Object.assign(document.createElement('canvas'), {width: r.W, height: r.H});
+    const g = cv.getContext('2d'), im = g.createImageData(r.W, r.H), D = r.data, o = im.data, Wd = r.W, Hd = r.H;
+    for (let j = 0; j < Hd; j++) for (let i = 0; i < Wd; i++) {
+      const q = j * Wd + i, w = D[q]; if (!w) continue; const inn = w >= 128;
+      const edge = inn && (i === 0 || D[q - 1] < 128 || i === Wd - 1 || D[q + 1] < 128 || j === 0 || D[q - Wd] < 128 || j === Hd - 1 || D[q + Wd] < 128);
+      o[q * 4] = 244; o[q * 4 + 1] = 241; o[q * 4 + 2] = 234; o[q * 4 + 3] = edge ? 215 : Math.round(w * 0.17);
+    }
+    g.putImageData(im, 0, 0); S.vw = {cv, t0: r.t0, t1: r.t1, mTop: r.mTop, mBot: r.mBot, box: r.box}; spk1Dirty(U, 'ov');
+  }, e => { logErr(e); }).finally(() => { S.vBusy = false; if (S.vPend) { S.vPend = false; spk12ViewReq(U); } });
+}
+function spk12VwDraw(U, x) {
+  const S = spk12S(U), w = S.vw, v = U.v; spk12ViewReq(U); if (!w) return;
+  const xa = spk1X(U, w.t0), xb = spk1X(U, w.t1), ya = (v.mTop - w.mTop) * v.rowH, yb = (v.mTop - w.mBot) * v.rowH;
+  x.save(); x.imageSmoothingEnabled = true; x.drawImage(w.cv, xa, ya, xb - xa, yb - ya); x.restore();
+}
+function spk12HdDraw(U, x) {
+  const g = spk12Geo(U); if (!g) return;
+  x.save(); x.fillStyle = '#f4f1ea'; x.strokeStyle = 'rgba(0,0,0,.65)'; x.lineWidth = 1;
+  const bar = (cx, cy, w, h) => { x.beginPath(); if (x.roundRect) x.roundRect(cx - w / 2, cy - h / 2, w, h, 3); else x.rect(cx - w / 2, cy - h / 2, w, h); x.fill(); x.stroke(); };
+  if (g.side.l) bar(g.xL, g.cy, 6, 26); if (g.side.r) bar(g.xR, g.cy, 6, 26); if (g.side.t) bar(g.cx, g.yT, 26, 6); if (g.side.b) bar(g.cx, g.yB, 26, 6);
+  x.beginPath(); x.arc(g.cx, g.cy, 10, 0, Math.PI * 2); x.fillStyle = 'rgba(20,22,26,.72)'; x.fill(); x.strokeStyle = '#f4f1ea'; x.lineWidth = 1.4; x.stroke();
+  x.beginPath(); for (const [a, b] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { x.moveTo(g.cx + a * 2, g.cy + b * 2); x.lineTo(g.cx + a * 7, g.cy + b * 7); } x.stroke();
+  x.restore();
+}
+/* ---------- Zauberstab ---------- */
+function spk12WShape(r, op) {
+  const s = {art: 'wand', N: r.N, hop: r.hop, R: r.R, m0: r.m0, rps: r.rps, c0: r.c0, nc: r.nc, cols: r.cols, b: [+r.t0.toFixed(4), +r.t1.toFixed(4), +r.f0.toFixed(2), +r.f1.toFixed(2)],
+    t0: +r.t0.toFixed(4), t1: +r.t1.toFixed(4), f0: +r.f0.toFixed(2), f1: +r.f1.toFixed(2), kt: 0, kf: 0, tol: r.tol, lim: r.lim, key: spk12Key()};
+  if (op === 'sub' || op === 'and') s.op = op; return s;
+}
+async function spk12Wand(U, G, keep) {
+  const S = spk12S(U); if (!U.meta || !SPK1.doc) return null; if (S.wBusy) { S.wNext = [G, keep]; return null; }
+  S.wBusy = true; const T0 = performance.now(); if (!keep) spk1Stat(U, 'Zauberstab …');
+  try {
+    const r = await spk1Call('spk12zauber', {doc: SPK1.doc, N: U.N, t: G.t0, f: G.f0, tol: U.opt.s12tol, lim: U.opt.s12lim});
+    const ms = performance.now() - T0; S.wMs = {all: +ms.toFixed(1), kern: +r.ms.toFixed(1), load: +r.msLoad.toFixed(1), cells: r.cells};
+    if (!r.cells) { spk1Stat(U, 'Zauberstab: nichts gefunden – auf eine helle Stelle tippen'); return r; }
+    const before = spk12Clone(U.sel); let sel;
+    if (keep) { const i = U.sel.indexOf(keep); if (i < 0) return r; sel = U.sel.slice(); sel[i] = spk12WShape(r, keep.op); S.wLast = {t: G.t0, f: G.f0, shape: sel[i]}; }
+    else {
+      const sh = spk12WShape(r, U.sel.length ? S.mode : 'neu');
+      sel = S.mode === 'neu' || !U.sel.length ? [sh] : U.sel.concat([sh]); S.wLast = {t: G.t0, f: G.f0, shape: sh};
+      if (S.mode === 'neu' && U.sel.length) S.last = U.sel.slice();
+      spk12Push(U, 'Zauberstab', before);
+    }
+    const m = Math.round(spk1Midi(G.f0)), hz = n => Math.round(n), fz = n => n.toFixed(1).replace('.', ',');
+    spk12Set(U, sel, 'Zauberstab · ' + SPK1_NOTE[((m % 12) + 12) % 12] + (Math.floor(m / 12) - 1) + ' · ' + fz(r.t0) + '–' + fz(r.t1) + ' s · ' + hz(r.f0) + '–' + hz(r.f1) + ' Hz · ' + Math.round(ms) + ' ms' + (keep ? '' : ' · ↶ macht es rückgängig'));
+    return r;
+  } catch (e) { logErr(e); spk1Stat(U, 'Zauberstab: ' + (e.message || e)); return null; }
+  finally { S.wBusy = false; if (S.wNext) { const [g, k] = S.wNext; S.wNext = null; spk12Wand(U, g, k && U.sel.includes(k) ? k : null); } }
+}
+function spk12Retol(U) {   // Toleranz / Grenze geändert → letzten Zauberstab neu rechnen (kein neuer ↶-Schritt)
+  const S = spk12S(U); clearTimeout(S.rtT);
+  S.rtT = setTimeout(() => { const w = S.wLast; if (w && U.sel.includes(w.shape)) spk12Wand(U, {t0: w.t, f0: w.f}, w.shape); }, 160);
+}
+/* ---------- Bedienung: Leiste (Neu │ + │ − │ ∩ · Auswahl ▾), Toleranz/Grenze, Halten auf Rechteck ---------- */
+const spk12Svg = () => '<svg class="n1i" width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true">' + SPK12_ICON + '</svg>';
+function spk12Pane(U, pane, sl) {
+  if (!document.getElementById('spk12Css')) { const st = document.createElement('style'); st.id = 'spk12Css'; st.textContent = '.spk1-o.spk12-c{gap:4px}.spk1-op .spk12-m{min-width:44px;justify-content:center;font-weight:700}.spk1-op .spk12-dd{margin-left:6px}'; document.head.appendChild(st); }
+  const pC = U.s12pane = pane('rect zeit freq pinsel harm wand'); pC.classList.add('spk12-c'); U.op.insertBefore(pC, U.op.firstChild);
+  for (const [m, t, lab] of SPK12_MODES) { const b = el('button', 'n1b spk12-m', esc(t)); b.dataset.a = 's12m'; b.dataset.m = m; b.setAttribute('aria-label', lab); b.setAttribute('aria-pressed', String(m === 'neu')); if (m === 'neu') b.classList.add('on'); pC.appendChild(b); }
+  const bA = el('button', 'n1b spk12-dd', 'Auswahl ▾'); bA.dataset.a = 's12dd'; bA.setAttribute('aria-label', 'Auswahl umkehren, wiederherstellen, erweitern, weicher'); pC.appendChild(bA); U.b12 = bA;
+  U.opt.s12tol = 15; U.opt.s12lim = 5;
+  const pW = pane('wand'); sl(pW, 'Toleranz', 's12tol', 3, 40, 1, v => v + ' dB', () => spk12Retol(U)); sl(pW, 'Grenze', 's12lim', 1, 20, 1, v => '± ' + v + ' s', () => spk12Retol(U));
+  const b = U.tl.querySelector('button[data-tool="rect"]'); if (!b) return; b.dataset.s12slot = '1';
+  let lp = null, x0 = 0, y0 = 0; const stop = () => { if (lp) { clearTimeout(lp); lp = null; } };
+  b.addEventListener('pointerdown', e => { stop(); x0 = e.clientX; y0 = e.clientY; lp = setTimeout(() => { lp = null; spk12S(U).hold = performance.now(); spk12SlotDd(U, b); }, 480); });
+  b.addEventListener('pointermove', e => { if (lp && Math.hypot(e.clientX - x0, e.clientY - y0) > 10) stop(); });
+  b.addEventListener('pointerup', stop); b.addEventListener('pointercancel', stop);
+  b.addEventListener('contextmenu', e => e.preventDefault());
+}
+function spk12Slot(U, k) {
+  const b = U.tl.querySelector('button[data-s12slot]'); if (!b) return; const w = k === 'wand';
+  b.dataset.tool = w ? 'wand' : 'rect'; b.innerHTML = (w ? spk12Svg() : spk1Svg('rect')) + '<span>' + (w ? 'Zauberstab' : 'Rechteck') + '</span>'; b.setAttribute('aria-label', 'Werkzeug ' + (w ? 'Zauberstab' : 'Rechteck') + ' (halten = Liste)');
+  spk12S(U).slot = w ? 'wand' : 'rect';
+}
+function spk12SlotDd(U, b) {
+  spk1Dd(U, b, dd => {
+    dd.appendChild(el('h5', '', 'Werkzeug'));
+    const g = el('div', 'spk1-g');
+    for (const [k, n, ic] of [['rect', 'Rechteck', spk1Svg('rect')], ['wand', 'Zauberstab', spk12Svg()]]) {
+      const x = el('button', 'mbtn rb spk1-ck' + (U.tool === k ? ' on' : ''), ic + '&nbsp;' + n); x.dataset.s12t = k;
+      on(x, 'click', () => { spk1Dd(U, null); spk12Slot(U, k); spk1ToolSet(U, k); }); g.appendChild(x);
+    }
+    dd.appendChild(g); dd.appendChild(el('p', '', 'Zauberstab: antippen wählt die zusammenhängende helle Fläche (Toleranz, Grenze ± s).'));
+  });
+}
+function spk12ModeBtns(U) { for (const b of U.op.querySelectorAll('.spk12-m')) { const o = b.dataset.m === spk12S(U).mode; b.classList.toggle('on', o); b.setAttribute('aria-pressed', String(o)); } }
+function spk12Tap(U, b) {
+  const S = spk12S(U);
+  if (b.dataset.s12slot != null && S.hold && performance.now() - S.hold < 1500) { S.hold = 0; return true; }
+  const a = b.dataset.a; if (!a || a.slice(0, 3) !== 's12') return false;
+  if (a === 's12m') { S.mode = b.dataset.m; spk12ModeBtns(U); spk1Stat(U, {neu: 'Neu: die nächste Form ersetzt die Auswahl', add: '+: die nächste Form kommt dazu', sub: '−: die nächste Form wird abgezogen', and: '∩: nur die Überschneidung bleibt'}[S.mode]); }
+  else if (a === 's12dd') spk12Dd(U, b);
+  return true;
+}
+function spk12Dd(U, b) {
+  const S = spk12S(U), has = U.sel.length > 0;
+  spk1Dd(U, b, dd => {
+    const g = (h, list) => { dd.appendChild(el('h5', '', h)); const r = el('div', 'spk1-g'); for (const [a, t, dis] of list) { const x = el('button', 'mbtn rb spk1-ck', esc(t)); x.dataset.s12a = a; x.disabled = !!dis; on(x, 'click', () => { spk1Dd(U, null); spk12Act(U, a); }); r.appendChild(x); } dd.appendChild(r); };
+    g('Auswahl', [['inv', 'Umkehren'], ['invf', 'Nur Frequenzen umkehren', !has || !spk12Box(U)], ['rest', 'Wiederherstellen', !S.last]]);
+    g('Form', [['grow', 'Erweitern', !has], ['shrink', 'Verkleinern', !has], ['soft', 'Weicher', !has], ['hard', 'Härter', !has]]);
+    g('Werkzeug', [[U.tool === 'wand' ? 'rect' : 'wand', U.tool === 'wand' ? 'Rechteck' : 'Zauberstab']]);
+    dd.appendChild(el('p', '', 'Am Rand ziehen = Größe · zwei Finger am Rand = Weichheit · Mitte ziehen = verschieben.'));
+  });
+}
+function spk12Act(U, a) {
+  const S = spk12S(U), before = spk12Clone(U.sel), ny = (U.meta && U.meta.sr || 44100) / 2; let sel = null, lab = '';
+  if (a === 'wand' || a === 'rect') { spk12Slot(U, a); spk1ToolSet(U, a); return true; }
+  if (a === 'inv') { sel = U.sel.concat([{art: 'inv', t0: 0, t1: U.dur, f0: 0, f1: ny, kt: 0, kf: 0}]); lab = 'Auswahl umgekehrt'; }
+  else if (a === 'invf') { const B = spk12Box(U); if (!B) return false; sel = U.sel.concat([{art: 'inv', nurF: 1, t0: +B.t0.toFixed(4), t1: +B.t1.toFixed(4), f0: 0, f1: ny, kt: 0, kf: 0}]); lab = 'Nur Frequenzen umgekehrt'; }
+  else if (a === 'rest') { if (!S.last) return false; sel = S.last; S.last = U.sel.length ? U.sel.slice() : S.last; lab = 'Auswahl wiederhergestellt'; }
+  else if (a === 'grow' || a === 'shrink') { if (!U.sel.length) return false; const s = a === 'grow' ? 1 : -1; sel = spk12Xf(U, U.sel, {gt: 0.05 * s, gc: 50 * s}); lab = a === 'grow' ? 'Auswahl erweitert' : 'Auswahl verkleinert'; }
+  else if (a === 'soft' || a === 'hard') { if (!U.sel.length) return false; sel = spk12Xf(U, U.sel, {ws: a === 'soft' ? 0.5 : -0.5}); lab = a === 'soft' ? 'Auswahl weicher' : 'Auswahl härter'; }
+  else return false;
+  spk12Push(U, lab, before); spk12Set(U, sel, lab + ' · ↶ macht es rückgängig'); return true;
+}
+function spk12ToolSet(U, k) {
+  const S = spk12S(U);
+  if ((k === 'rect' || k === 'wand') && S.slot !== k) { spk12Slot(U, k); const b = U.tl.querySelector('button[data-s12slot]'); if (b) { b.classList.add('on'); b.setAttribute('aria-pressed', 'true'); } }
+  if (k === 'wand' && U.meta && !U.sel.length) spk1Stat(U, 'Antippen = Zauberstab (zusammenhängende helle Fläche) · zwei Finger = Zoom');
+  spk12ModeBtns(U);
+}
+/* ---------- „Wo finde ich …?“ ---------- */
+(function spk12Guide() {
+  try {
+    if (typeof ui1Entries !== 'function') return; const L = ui1Entries(); if (L.some(x => x.id === 'spk12')) return;
+    L.push({id: 'spk12', n: 'Auswahl kombinieren, umkehren, Zauberstab', w: 'Spektral › Leiste unter den Werkzeugen: Neu │ + │ − │ ∩ · Auswahl ▾ · Rechteck halten → Zauberstab',
+      d: 'Neu ersetzt, + fügt hinzu, − zieht ab, ∩ lässt nur die Überschneidung. Auswahl ▾: Umkehren, nur Frequenzen umkehren, Wiederherstellen, Erweitern, Verkleinern, Weicher. Am Rand ziehen = Größe, zwei Finger am Rand = Weichheit, Mitte ziehen = verschieben. Zauberstab: antippen wählt die zusammenhängende Fläche (Toleranz, ± 5 s).',
+      s: 'auswahl kombinieren hinzufuegen abziehen schnittmenge umkehren invertieren wiederherstellen erweitern verkleinern weich kante rand verschieben zauberstab toleranz spektrum',
+      go: () => { spk1Open({back: {menu: true}}); }, q: () => (SPK1.open && SPK1.ui ? SPK1.ui.s12pane || SPK1.ui.tl : null)});
+  } catch (e) {}
+})();
+/* ---------- Test-Schnittstelle ---------- */
+const SPK12_API = {
+  S: () => SPK1.ui && spk12S(SPK1.ui),
+  mode: m => { const U = SPK1.ui; spk12S(U).mode = m; spk12ModeBtns(U); },
+  act: a => spk12Act(SPK1.ui, a),
+  wand: (t, f) => spk12Wand(SPK1.ui, {t0: t, f0: f}),
+  zauber: o => spk1Call('spk12zauber', Object.assign({doc: SPK1.doc, N: 4096}, o)),
+  mask: (sel, b) => spk1Call('spk12mask', Object.assign({doc: SPK1.doc, sel}, b)),
+  view: () => { const S = SPK1.ui && spk12S(SPK1.ui); return S && S.vw ? {box: S.vw.box, W: S.vw.cv.width, H: S.vw.cv.height} : null; },
+  geo: () => { const g = SPK1.ui && spk12Geo(SPK1.ui); return g && {xL: g.xL, xR: g.xR, yT: g.yT, yB: g.yB, cx: g.cx, cy: g.cy, side: g.side, B: g.B}; },
+  box: () => SPK1.ui && spk12Box(SPK1.ui), sel: () => SPK1.ui && spk12Clone(SPK1.ui.sel)
+};
+try { window.__spk12 = SPK12_API; } catch (e) {}
+/* SPK12-END */
 /* ===== VX2-BEGIN (Paket VX2 – Gesang-Editor an echtem Gesang: Stücke = Noten/Silben; Präfix vx2/VX2)
    Befund (Echttest mit echtem Gesang): die Einsatz-Erkennung (wpDetect) setzt Marken auch mitten in gehaltenen Vokalen (Vibrato-/
    Pegelwellen) – 33-s-Aufnahme: 150 Stücke für 59 Noten, nur 37 % beginnen an einer Note; Quantisieren schob Teile mitten in Noten.

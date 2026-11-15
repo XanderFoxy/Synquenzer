@@ -113,12 +113,17 @@ async function tapPop(T, p, sel, label) { const r = await popBtn(p, sel); if (!r
   const r = await p.evaluate(async () => {
     const o = {}; __only(); const m = SYNQUENZER.mtx3.split(); const j = m[0];
     S.settings.countIn = 0; S.settings.inQuant = '1/16';
-    selectTrack(j); selectSlot(j, 3); launchScene(0); ensureAudio(); play(); await __W(400);
-    recPress(); for (let k = 0; k < 60 && rec.state !== 'recording'; k++) await __W(100); o.state = rec.state;
-    for (const n of [60, 64, 67, 72]) { inputDown(n, 'mk' + n, .8); await __W(90); inputUp('mk' + n); await __W(260); }
-    recPress(); await __W(300); stop(); await __W(400);
-    const c = S.tracks[j].clips.find((x, s) => x && s >= 2);
-    o.rec = c ? {state: o.state, n: c.notes.length, gm: [...new Set(c.notes.map(x => x.n))], d: [...new Set(c.notes.map(x => x.d))], seed: 'seed' in c} : null;
+    const take = async () => { recPress(); for (let k = 0; k < 60 && rec.state !== 'recording' && rec.state !== 'overdub'; k++) await __W(100); const st = rec.state;
+      for (const n of [60, 64, 67, 72]) { inputDown(n, 'mk' + n, .8); await __W(90); inputUp('mk' + n); await __W(260); }
+      recPress(); await __W(300); return st; };
+    // a) Overdub in den laufenden HH-Clip (Szene 1)
+    selectTrack(j); launchScene(0); ensureAudio(); play(); await __W(400);
+    const n0 = S.tracks[j].clips[0].notes.length; o.st1 = await take(); stop(); await __W(300);
+    const c1 = S.tracks[j].clips[0]; o.od = {state: o.st1, add: c1.notes.length - n0, gm: [...new Set(c1.notes.map(x => x.n))], d: [...new Set(c1.notes.map(x => x.d))]};
+    // b) neue Aufnahme in einen leeren Slot (Szene 4)
+    selectTrack(j); selectSlot(j, 3); play(); await __W(300); o.st2 = await take(); stop(); await __W(400);
+    const c = S.tracks[j].clips[3];
+    o.rec = c ? {state: o.st2, n: c.notes.length, gm: [...new Set(c.notes.map(x => x.n))], d: [...new Set(c.notes.map(x => x.d))], seed: 'seed' in c} : null;
     // 3 · Synth-Modus: anderer Klang auf der Einzelspur, Drum-Felder an den Noten; Speichern/Laden verlustfrei
     const h = m[0], c0 = S.tracks[h].clips[0]; c0.notes[0].a = 1; c0.notes[1].p = .5; c0.notes[2].r = 3; c0.notes[3].m = .1; c0.lanes = {42: {len: 12}};
     S.tracks[h].sound.name = 'Mein Synth';
@@ -136,7 +141,8 @@ async function tapPop(T, p, sel, label) { const r = await popBtn(p, sel); if (!r
     o.old = {same: A1 === A2, nt: NT(), at: A1 === A2 ? null : A1.slice(Math.max(0, k - 60), k + 40) + ' ║ ' + A2.slice(Math.max(0, k - 60), k + 40)};
     return o;
   });
-  ok('Tastatur-Aufnahme auf HH ZU: jede Taste = Schlag des Pads (GM 42, Schrittlänge 0,1, Saat)', r.rec && r.rec.n >= 3 && r.rec.gm.length === 1 && r.rec.gm[0] === 42 && r.rec.d.every(x => x <= .1 + 1e-9) && r.rec.seed, r.rec);
+  ok('Tastatur-Overdub auf HH ZU: jede Taste = Schlag des Pads (GM 42, Schrittlänge 0,1)', r.od && r.od.add >= 3 && r.od.gm.length === 1 && r.od.gm[0] === 42 && r.od.d.every(x => x <= .1 + 1e-9), r.od);
+  ok('Tastatur-Aufnahme in leeren Slot: Drum-Clip des Pads (GM 42, 0,1, Saat)', r.rec && r.rec.n >= 3 && r.rec.gm.length === 1 && r.rec.gm[0] === 42 && r.rec.d.every(x => x <= .1 + 1e-9) && r.rec.seed, r.rec);
   ok('Laden im Synth-Modus: Drum-Felder (Akzent, Chance, Wirbel, Timing, D1-Spur) bleiben – Rundreise gleich', r.put && r.l5.same && !r.l5.is && r.l5.a === 1 && r.l5.p === .5 && r.l5.r === 3, r.l5);
   ok('zurück zum Drum-Ton nach Laden: Einzelspur aktiv, Felder gleich', r.l5b.is && r.l5b.same, r.l5b);
   ok('altes Projekt ohne dvx: Rundreise gleich', r.old.same, r.old);
