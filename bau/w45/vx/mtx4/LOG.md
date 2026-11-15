@@ -18,3 +18,4 @@
 - 05:45 Endlauf 81/81 (test-ergebnis.txt), Fotos 9, NOTES.md (Teil 2, Funk-Entwurf, Offen) geschrieben. Teil 2 fertig.
 - 05:58 Prüfer-Befunde (PRUEFUNG.md) gelesen, Nachbesserung Start.
 - 06:12 Plan: (1) ↶ ↷ in die Leiste + Hinweise ohne Aktionsknopf + Toast über der Leiste; (2) blockweise Abarbeitung + Vorschaubilder gestaffelt (Haken renderGrid) + afterClipEdit einmal; (3) Pentatonik = leitereigene bleiben; (4) höchstens eine Auto-Version; (6) ↶/↷ am nächsten Takt (Haken undo/redo); (7)(9)(10) klein.
+- 06:07 Block geändert (↶ ↷ in der Leiste über dem App-↶, blockweise, Pentatonik, Versionen, Haken renderGrid/undo/redo); Sonde 2 des Prüfers: Tipp auf ↶-Mitte = ↶ in allen 3 Größen (UNDO 1→0).

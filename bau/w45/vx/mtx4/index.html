@@ -95459,8 +95459,9 @@ function mtx4Layout(b, land) {
   M4.lay = lay;
   R4.forEach(r => { r.textContent = ''; });
   const dr = M4.hasDr ? [B.dr] : [];
-  if (land) { R4[0].append(B.n, ...dr, B.x); R4[1].append(B.m12, B.m1, B.p1, B.p12); R4[2].append(B.su, B.sd, B.h2, B.x2); R4[3].append(B.fit, B.q, B.un, B.re); }
-  else { R4[0].append(B.n, ...dr, B.fit, B.q, B.un, B.re, B.x); R4[1].append(B.m12, B.m1, B.p1, B.p12, B.su, B.sd, B.h2, B.x2); }
+  // Prüfung 1: ↶ liegt genau über dem ↶ der Spur-Leiste (rechts außen in der Zeile darüber) – der gewohnte Griff trifft ↶, ↷ links daneben
+  if (land) { R4[0].append(B.n, ...dr, B.x); R4[1].append(B.m12, B.m1, B.p1, B.p12); R4[2].append(B.su, B.sd, B.h2, B.x2); R4[3].append(B.fit, B.q, B.re, B.un); }
+  else { R4[0].append(B.n, ...dr, B.fit, B.q, B.x, B.re, B.un); R4[1].append(B.m12, B.m1, B.p1, B.p12, B.su, B.sd, B.h2, B.x2); }
 }
 function mtx4Sync() {
   if (M4.on && M4.proj !== S) { M4.on = false; M4.sel = []; }           // anderes Projekt geladen
@@ -95478,7 +95479,7 @@ function mtx4Sync() {
   mtx4Layout(b, land);
   // hochkant (Zeile 1 trägt jetzt auch ↶ ↷): kurz – „3 Clips“ und darunter „2 Szenen“
   const txt = c.n ? c.n + (c.n === 1 ? ' Clip' : ' Clips') + (c.sc > 1 && land ? ' · ' + c.sc + ' Szenen' : '') : (land ? 'Clips antippen' : 'antippen');
-  const sub = c.n ? (land ? 'Tipp = dazu/weg · Szene ▶ = alle' : (c.sc > 1 ? c.sc + ' Szenen · ' : '') + 'Tipp = dazu/weg') : 'Tipp = dazu/weg · ✕ = fertig';
+  const sub = c.n ? (land ? 'Tipp = dazu/weg · Szene ▶ = alle' : c.sc > 1 ? c.sc + ' Szenen' : 'Tipp = dazu/weg') : 'Tipp = dazu/weg · ✕ = fertig';
   const n = M4.btn.n; if (n._t !== txt + sub) { n._t = txt + sub; n.innerHTML = esc(txt) + '<small>' + esc(sub) + '</small>'; }
   const dt = M4.drums ? '±' : 'fest'; if (M4.btn.dr._t !== dt) { M4.btn.dr._t = dt; M4.btn.dr.innerHTML = 'Drums<small>' + esc(dt) + '</small>'; }   // zweizeilig wie ▲ Stufe
   M4.btn.dr.classList.toggle('on', M4.drums); M4.btn.dr.setAttribute('aria-pressed', String(M4.drums));
