@@ -27571,7 +27571,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '4.69.0';
+const VERSION = '4.70.0';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -28733,6 +28733,7 @@ function t1Shift(song, n, d) {
   if (song.vox) tkVoxShift(song, n, d);                           // VS3
   if (song.video) vvDirShift(song, n, d);                         // VV2
   if (song.gb) ggbShift(song, n, d);                              // G-GB
+  if (song.trf && typeof trp1TrfShift === 'function') trp1TrfShift(song, n, d);   /* TRP1 */
   t1Unpin(song, pins, d);
   { const D = barBeat(n + d) - cvX; if (D) for (const k in song.mel) if (song.mel[k].cv) cvSet(song.mel[k], cvShiftAbs(song.mel[k].cv, cvX, D)); }   // B2: BM8 mit der Taktkarte
 }
@@ -29037,6 +29038,7 @@ function normSong(o, pk, nt) {
   konSongNorm(o, v4, bars, pk, nt);                                                                     // KON: Blöcke, Ursprung (konsolidiert)
   sx1Norm(o, v4);                                                                                       // SX126: song.fade (Ausblenden am Ende)
   const ue = ueNorm(o.ue, v4.marks, bars, nt); if (ue) v4.ue = ue;                                         // UE: Übergänge auf den Kanten
+  if (o.trf && typeof trp1TrfNorm === 'function') trp1TrfNorm(o.trf, v4, bars);   /* TRP1 */
   return Object.assign({bars, loop: normLoop(o.loop, bars), melodyTrack: mt, lanes, carrier, mel}, v4);
 }
 function ownNorm(c, pk, nt) {
@@ -29089,6 +29091,7 @@ function marksNorm(list, bars) {
     { const ts = tsNorm(m.ts); if (ts) o.ts = ts; }                     /* T1: Taktart des Teils */
     if (m.vr) { const vr = sx11Norm(m.vr, L); if (vr) o.vr = vr; }        /* SX11: Fassung leicht/voll */
     if (m.rk || m.rkx) jam3MarkNorm(m, o, L);                            // JAM3: Kennung Rückung
+    if ((m.trs || m.trn) && typeof trp1MarkNorm === 'function') trp1MarkNorm(m, o, L);   /* TRP1 */
     out.push(o); end = A + L;
   }
   return out;
@@ -33137,6 +33140,7 @@ function drumTune(t) {
 }
 function outPitch(i, clipKey, note, time, entry) {
   const tr = S.tracks[i];
+  if (typeof trp1Pre === 'function' && R.songPlay && S.song && S.song.marks && S.song.marks.length) note = trp1Pre(i, note, time);   /* TRP1 */
   const o = mapOut(i, clipKey, note, time, entry);
   if ((XP.tl.length > 1 || XP.tl[0].semi) && tr.kind === 'synth' && tr.follow !== false) { const x = xpAt(time + 1e-6); if (x) return clamp(o + x, 0, 127); }
   if (tr.follow === false) { const f = jam3FtNow(i, time); if (f) return clamp(o + f, 0, 127); }   // JAM3: die Rückung nimmt ⇅ feste Spuren mit
@@ -33281,6 +33285,7 @@ function tick(h) {
 function tickAhead(h) { if (AU.ctx && R.playing) tick(h || .3); }
 function scheduleTrack(i, from, to, late) {
   if (to <= from) return;
+  if (typeof mtx4Sched === 'function' && mtx4Sched(i, from, to, late)) return;   /* MTX4: läuft ein geänderter Clip, gilt der neue Inhalt erst ab dem nächsten Taktstrich */
   if (R.beg1) { const w = beg1Sched(i, from, to, late); if (!w) return; from = w[0]; to = w[1]; if (to <= from) return; }   // BEG1: Ziel-Spuren spielen die Band, ihre Clips nur außerhalb
   OS.tick++;                                                     // V2c′: clip content may have changed since the last look
   const s = R.slot[i]; if (s < 0) { if (BMC.act[i]) bmcSched(i, null, from, to, late); return; }
@@ -33558,6 +33563,7 @@ function restoreSong(o) {
   if (S.song && cur) { const sg = S.song.gb; if (!gb) delete S.song.gb; else if (!(sg && sg.id && sg.id === gb.id)) S.song.gb = gb; }   // derselbe Export: ↶ ↷ nehmen sein Verschieben mit
   if (!S.song && (R.songPlay || R.songRec)) { R.songPlay = null; R.songRec = null; R.melRec = null; R.songEndBeat = null; }
   songChanged();
+  if (typeof trp1Live === 'function') trp1Live();   /* TRP1: ↶ ↷ während ▶ SONG – Rückung/feste Spuren ab dem nächsten Takt */
   if (R.editor === 'roll' && ED.rollAt && ED.rollAt.mel) { if (S.song && ED.roll) { ED.roll.refresh(); rollHeadUpdate(); } else closeRoll(); }
   if (R.editor === 'roll' && ED.rollAt && ED.rollAt.own) { const c = S.song && S.song.own && S.song.own[ED.rollAt.own]; if (c && ED.roll) { ED.roll.refresh(); rollHeadUpdate(); } else closeRoll(); }   // V2e′
 }
@@ -34918,6 +34924,7 @@ function undoApply(e, val) {
 }
 function undo() {
   sx11HoldFor(UNDO[UNDO.length - 1]);   // SX11
+  if (typeof mtx4HoldFor === 'function') mtx4HoldFor(UNDO[UNDO.length - 1]);   /* MTX4: ↶ eines MTX4-Schritts im Lauf am nächsten Taktstrich */
   if (rec.state === 'recording' || rec.state === 'overdub' || (R.songRec && R.songRec.over) || (songTakeOpen() && UNDO.length && UNDO[UNDO.length - 1].kind === 'song')) { toast('Erst Aufnahme beenden'); return false; }
   if (HIST && HIST.q.length) histDrain();  // VC2a-fix: mehrere ↶ in einer Aufgabe = je ein Ereignis
   v6aUndoGate(false);                      // V6A: ◆ editor – its own steps inside, anything else ends it first
@@ -34934,6 +34941,7 @@ function undo() {
 }
 function redo() {
   sx11HoldFor(REDO[REDO.length - 1]);   // SX11
+  if (typeof mtx4HoldFor === 'function') mtx4HoldFor(REDO[REDO.length - 1]);   /* MTX4: ↷ eines MTX4-Schritts im Lauf am nächsten Taktstrich */
   if (rec.state === 'recording' || rec.state === 'overdub' || (R.songRec && R.songRec.over) || (songTakeOpen() && REDO.length && REDO[REDO.length - 1].kind === 'song')) { toast('Erst Aufnahme beenden'); return false; }
   if (HIST && HIST.q.length) histDrain();  // VC2a-fix
   v6aUndoGate(true);                       // V6A
@@ -37014,6 +37022,7 @@ function renderGrid(bAud) {
         continue;
       }
       const g1p = clip && !clip.audio && tr.kind !== 'drum' ? gl1PassNow(i, clip, playing, bAud) : 0; if (g1p) sig += '|p' + g1p;   // GL1-P: hin und her / Zufall / Chance – der Durchlauf, der gerade klingt
+      if (sig !== C.sig && typeof mtx4Thumb === 'function' && mtx4Thumb()) continue;   /* MTX4: Vorschaubilder nach einer Sammel-Aktion gestaffelt (höchstens ≈ 5 ms je Bild) */
       if (sig !== C.sig) { C.sig = sig; C.mini.innerHTML = clip ? (clip.audio ? tkMiniSvg(clip.audio) : miniSvg(clip, tr.kind === 'drum', g1p)) : ''; }
     }
   }
@@ -37042,6 +37051,7 @@ function renderGrid(bAud) {
     if (b && b.textContent !== txt) { b.textContent = txt; b.classList.toggle('pkl', txt !== '■'); }
     for (const s2 of MX.scenes) { const C = UI.cells[i][s2]; setCls(C.el, C.st, 'pkon', !!(pk && sl && sl !== -1 && sl.s === s2)); }
   }
+  if (typeof mtx4Grid === 'function') mtx4Grid();   /* MTX4: Markierung der gewählten Clips */
   // the bank switches: label + a dot when a clip of the hidden part plays (or is queued)
   if (MX.bankS) {
     const other = sceneBankOf() ? [0, 1, 2, 3] : [4, 5, 6, 7], hot = R.playing && VS.some(v => other.includes(v.playing) || (v.queued != null && other.includes(v.queued)));
@@ -38005,6 +38015,7 @@ function songShift(song, n, d) {
   if (song.gb) ggbShift(song, n, d);                              // G-GB: der Export-Start wandert mit
   if (song.ue) ueShift(song, n, d);                               // UE: Einwürfe rücken mit (Kanten hängen an ihrer Marke)
   if (song.pf) jam3Shift(song, n, d);                             // JAM3: Perform-Spur
+  if (song.trf && typeof trp1TrfShift === 'function') trp1TrfShift(song, n, d);   /* TRP1 */
 }
 // remove the content of [a, b); marks: inside → gone, overlapping → trimmed, enclosing → split (o.split) or shortened
 function songClear(song, a, b, o) {
@@ -38012,6 +38023,7 @@ function songClear(song, a, b, o) {
   for (const l of song.lanes) for (let k = l.length - 1; k >= 0; k--) if (l[k].bar >= a && l[k].bar < b) l.splice(k, 1);
   song.carrier = song.carrier.filter(c => !(c.beat >= barBeat(a) - 1e-6 && c.beat < barBeat(b) - 1e-6));
   song.xp = (song.xp || []).filter(v => !(v.beat >= barBeat(a) - 1e-6 && v.beat < barBeat(b) - 1e-6));
+  if (song.trf && typeof trp1TrfCut === 'function') trp1TrfCut(song, a, b);   /* TRP1 */
   if (!o.keepMel) for (const k in song.mel) song.mel[k].notes = song.mel[k].notes.filter(n => !(n.t >= barBeat(a) - .25 - 1e-9 && n.t < barBeat(b) - .25 - 1e-9));
   if (!o.keepMel) for (const k in song.mel) if (song.mel[k].cv) cvSet(song.mel[k], cvClearAbs(song.mel[k].cv, barBeat(a), barBeat(b)));   // BM8 (T1: Taktkarte)
   if (!o.keepMarks) marksCut(song, a, b, o.split);
@@ -40938,6 +40950,7 @@ function openMarkSheet(id) {
       gr1MarkSheetPaint(p, m);    // GR1: Rhythmus [Small] [Full] [Vorschlag] [Remix …]
       ch1MarkSheetPaint(p, m);    // CH1: [Refrain groß] [Refrain 2× singen] (nur Refrain-Teile mit Gesang)
       jam2MarkSheetPaint(p, m);   // JAM2: Rückung −2 … +2 (Reiter Ablauf)
+      if (typeof trp1MarkSheetPaint === 'function') trp1MarkSheetPaint(p, m);   /* TRP1 */
       wegeMarkSheetPaint(p, m);   // WEGE: Small │ Full (D2), Reiter Ablauf │ Teil │ Klang & Groove │ Video (Abschnitt 4)
       for (const b of p.querySelectorAll('.ms-b')) if (b.scrollWidth > b.clientWidth + 1) b.classList.add('tight');
     };
@@ -41645,8 +41658,10 @@ function openRangeMore(anchor) {
       (narrow ? '<button class="rb" data-a="part">❖ Zusammenfassen …</button>' : '') +
       '<button class="rb" data-a="clear">○ Leeren</button><button class="rb" data-a="ins">＋ Teil einsetzen ▾</button>' +
       '<button class="rb" data-a="quant">Akkorde quantisieren …</button><button class="rb" data-a="loop">⟲ Als Schleife</button>' + konuxRangeItem() + '</div>' + wegeVideoRow(A, Bb + 1, 'range');   /* S2 */   // VV2: Zeile „Video“ (WEGE D1/D6: ein Zusammenfassen, „Im Video ▸“)
+    if (typeof trp1RangeItem === 'function') trp1RangeItem(p);   /* TRP1 */
     onTap(p, b => {
       const a = b.dataset.a; if (a && a.startsWith('vv-')) { vvDirTap(a, b, A, Bb + 1, () => { if (UI.pop && UI.pop.el === p) closePop(); }); return; }   // VV2
+      if (a === 'trp1' && typeof trp1Open === 'function') { closePop(); trp1Open({a: A, b: Bb + 1}); return; }   /* TRP1 */
       closePop();
       if (a === 'part') s2OpenSum(anchor, A, Bb + 1, {kon: true});   // WEGE (D1)
       else if (a === 'wgvideo') wegeVideoOpen(A, Bb + 1);   // WEGE (D6)
@@ -51721,6 +51736,7 @@ function openClipSheet(t, s, opts) {
     g.append(vr1ClipBtn(t, s, clip, reopen));                         // VR1: Im Video · Auto | Gerät | Klavier | Mäusekino | Noten | aus
     bb1ClipSheet(g, t, s, clip, reopen);                                                     // BB1: [Werkzeugkasten ▾]
     wegeClipSheet(g, t, s, clip);                                                           // WEGE (D9): Versionen im Song
+    if (typeof mtx4ClipSheet === 'function') mtx4ClipSheet(g, B, t, s, clip);   /* MTX4: [Mehrere wählen] */
     body.append(g);
     const lr = el('div', 'lenrow');
     lr.append(el('span', 'lbl', 'Länge'));
@@ -54915,6 +54931,7 @@ function int54MidiClips(song, i, tr, L, entAt, withC, add) {          // INT54
     for (let o = bk.cs + Math.floor((b0 - bk.cs) / cL + 1e-9) * cL; o < b1 - 1e-9; o += cL) for (const nt of jam1SongPass(c, o, bk.cs) || c.notes) {   // INT54
       if (nt.t >= cL - 1e-9) continue; const st = o + nt.t; if (st >= b1 - 1e-9 || st < b0 - 1e-9 || (fxm && ueMutedAt(fxm, st, nt.n))) continue;   // INT54
       let p = nt.n; if (withC && !(typeof mtx3Dr === 'function' && mtx3Dr(i))) { const e2 = entAt(st); if (e2 && e2.target) p = mapOut(i, c.key || S.key, nt.n, 0, e2); }   // INT54 · MTX3: Drum-Noten
+      if (typeof trp1P === 'function') p = trp1P(song, i, st, nt.n, p, c.key || S.key, withC ? entAt : null);   /* TRP1 */
       if (typeof mtx3Dr === 'function' && mtx3Dr(i)) { /* MTX3: Drum-Noten ohne Rückung */ } else if (tr.follow && song.xp && song.xp.length) { let v = 0; for (const x of song.xp) { if (x.beat > st + 1e-6) break; v = x.semi; } p += v; } else if (!tr.follow) p += jam3Fest(song, st);   // INT54: ⇅ folgt: song.xp · ⇅ fest: JAM3-Rückung
       add(st, Math.min(b1, st + Math.max(nt.d, 1 / 32)), clamp(Math.round(p), 0, 127), nt.v);   // INT54
     }                                                                 // INT54
@@ -54956,6 +54973,7 @@ function buildMidiSong(withC) {
         const en = Math.min(b1, st + Math.max(nt.d, 1 / 32));
         let p = nt.n;
         if (tr.kind === 'synth' && withC) { const en2 = entAt(st); if (en2 && en2.target) p = mapOut(i, c.key || S.key, nt.n, 0, en2); }
+        if (typeof trp1P === 'function') p = trp1P(song, i, st, nt.n, p, c.key || S.key, withC ? entAt : null);   /* TRP1 */
         if (tr.kind === 'synth' && tr.follow && song.xp && song.xp.length) { let v = 0; for (const x of song.xp) { if (x.beat > st + 1e-6) break; v = x.semi; } p += v; }   // V2d: song.xp
         else if (tr.kind === 'synth' && !tr.follow && !percIs(tr)) p += jam3Fest(song, st);   // JAM3: Rückung auch für ⇅ fest
         dedAdd(i, ch, ded, st, en, percIs(tr) ? percGm(nt.n) : clamp(Math.round(p), 0, 127), nt.v);   // PERC
@@ -75710,6 +75728,7 @@ function va1MidiSong(idxs, withC) {
         const en = Math.min(b1, st + Math.max(nt.d, 1 / 32));
         let p = nt.n;
         if (tr.kind === 'synth' && withC && !(typeof mtx3Dr === 'function' && mtx3Dr(i))) { const e2 = entAt(st); if (e2 && e2.target) p = mapOut(i, c.key || S.key, nt.n, 0, e2); }   /* MTX3: Drum-Noten */
+        if (typeof trp1P === 'function') p = trp1P(song, i, st, nt.n, p, c.key || S.key, withC ? entAt : null);   /* TRP1 */
         if (tr.kind === 'synth' && !(typeof mtx3Dr === 'function' && mtx3Dr(i)) && tr.follow && song.xp && song.xp.length) { let v = 0; for (const x of song.xp) { if (x.beat > st + 1e-6) break; v = x.semi; } p += v; }
         else if (tr.kind === 'synth' && !tr.follow && !percIs(tr) && !(typeof mtx3Dr === 'function' && mtx3Dr(i))) p += jam3Fest(song, st);   // JAM3: Rückung auch für ⇅ fest · MTX3
         add(st, en, percIs(tr) ? percGm(nt.n) : clamp(Math.round(p), 0, 127), nt.v);
@@ -78392,6 +78411,7 @@ function vvkScore(a, b) {
         let p = nt.n;
         if (syn) {
           try { const en = entAt(s); if (en && en.target) p = mapOut(i, c.key || S.key, nt.n, 0, en); } catch (e) { p = nt.n; }
+          if (typeof trp1P === 'function') p = trp1P(song, i, s, nt.n, p, c.key || S.key, entAt);   /* TRP1 */
           if (tr.follow && song.xp && song.xp.length) { let v = 0; for (const x of song.xp) { if (x.beat > s + 1e-6) break; v = x.semi; } p += v; }
           else if (!tr.follow) p += jam3Fest(song, s);               // JAM3: Rückung auch für ⇅ fest
         } else p = tr.kind === 'drum' ? nt.n : percGm(nt.n);
@@ -82287,8 +82307,10 @@ function s2Sum(a, e, name) {
   S.parts[k].len = partLen(S.parts[k]);
   const ueOld = song.ue ? deep(song.marks) : null;                       // UE (wie KON)
   const rk0 = jam3RkOld(song, a, e);                                     // JAM3: Rückung im Bereich
+  if (typeof trp1Old === 'function') trp1Old(song, a, e);   /* TRP1 */
   marksCut(song, a, e, true);                                            // the content stays as it is; only the marks change
   const id = newMarkId(song); song.marks.push(jam3RkKeep({id, a, len: e - a, part: S.parts[k].id}, rk0, a)); if (ueOld) ueReanchor(song, ueOld); songTidy(song);   // JAM3: Stand der festen Spuren bleibt
+  if (typeof trp1Keep === 'function') trp1Keep(song, a, e);   /* TRP1 */
   undoPush({kind: 'group', label: 'Zusammengefasst: ' + nm, items: [{kind: 'part', before: bp}, {kind: 'song', before: bs}]});
   partsChanged(); songChanged();
   return {part: k, name: nm, mark: (song.marks.find(m => m.a === a && m.part === S.parts[k].id) || {}).id || id};
@@ -82441,6 +82463,7 @@ function konDo(a, e, name) {
   if (e - a > 16) { toast('Ein Teil hat höchstens 16 Takte'); return false; }
   partsEnsure(); const k = S.parts.findIndex(x => !x); if (k < 0) { toast('Teil-Leiste voll – erst einen Teil löschen'); return false; }
   const bp = partSnap(), bs = songSnapshot();
+  if (typeof trp1Old === 'function') trp1Old(song, a, e);   /* TRP1 */
   const mk = deep(song.marks.filter(m => m.a < e && m.a + m.len > a)), ids0 = new Set(song.marks.map(m => m.id)), ch = konCut(song, a, e);
   const ks = deep((song.kons || []).filter(k => mk.some(m => m.id === k.mark)));   // a konsolidierter Teil inside: its Ursprung goes along
   const tp = s2Template(song, a, e), kl = kl1Kon(song, a, e, tp);    // KL1: alte Clips werden erweitert, der Teil spielt sie „ganz“
@@ -82453,6 +82476,7 @@ function konDo(a, e, name) {
   marksCut(song, a, e, true);                                            // the content stays as it is (the song sounds the same); only the marks change
   const cut = song.marks.filter(m => !ids0.has(m.id)).map(m => m.id);
   song.marks.push(jam3RkKeep({id: newMarkId(song), a, len: e - a, part: S.parts[k].id}, mk, a)); if (ueOld) ueReanchor(song, ueOld); songTidy(song);   // JAM3: Rückung bleibt
+  if (typeof trp1Keep === 'function') trp1Keep(song, a, e);   /* TRP1 */
   const m = song.marks.find(x => x.a === a && x.part === S.parts[k].id);
   if (m) { const kn = {mark: m.id, part: m.part, at: a, len: e - a, sig: konSig(song, a, e), mk, cut, ch}; if (ks.length) kn.ks = ks; if (kl.kl.length) kn.kl = kl.kl; (song.kons || (song.kons = [])).push(kn); }
   undoPush({kind: 'group', label: 'Konsolidiert: ' + nm, items: [{kind: 'part', before: bp}, {kind: 'song', before: bs}].concat(kl.items)});   // KL1: + die erweiterten Clips
@@ -89268,6 +89292,7 @@ function jam3MarkNorm(m, o, L) {
 }
 // JAM3-P: der Stand der festen Spuren in Takt `bar` – die Marke dort (rk, dann rkx), zwischen zwei Teilen der des Teils davor, vor dem ersten 0
 function jam3LvAt(song, bar) {
+  if (song && song.trf && typeof trp1LvAt === 'function') return trp1LvAt(song, bar);   /* TRP1 */
   let v = 0;
   for (const m of (song && song.marks) || []) {
     if (m.a > bar) continue;
@@ -89717,6 +89742,7 @@ function jam3RecCommit(sr, song, endBar, auto) {
 // der Stand der festen Spuren als Treppe [{beat, semi}] (je Song-Fassung einmal gerechnet). JAM3-P: der Stand steht an jeder Marke (nicht
 // mehr als Stufe, die sich über die Marken aufsummiert) – ein verschobener oder kopierter Teil nimmt ihn mit, der Teil danach behält seinen
 function jam3FestL(song) {
+  if (song && song.trf && typeof trp1FestL === 'function') return trp1FestL(song);   /* TRP1 */
   if (!song || !song.marks || !song.marks.length) return null;
   const v = UI.songVer | 0, c = JAM3.fc;
   if (c && c.song === song && c.v === v && c.n === song.marks.length) return c.l;
@@ -90004,6 +90030,409 @@ SYNQUENZER.jam3 = {
   norm: a => jam3Norm(a), lv: bar => (S.song ? jam3LvAt(S.song, bar) : 0),
 };
 /* ===== JAM3-END ===== */
+/* ===== TRP1-BEGIN (Paket TRP1 „Abschnitt transponieren“ – Xander 15.11.: „einen Abschnitt / mehrere Clips transponieren“) =====
+   1 NUR DIESER TEIL / BEREICH ±1 … ±12: zwei Knoten in der vorhandenen Teil-Transposition song.xp (am Anfang +r, am Ende wieder der alte
+     Wert) – dieselbe Rückungs-Logik wie jam2RkSet: alles außer Drums rückt mit, auch Spuren mit ⇅ fest (der Stand mark.rk/rkx wird nur in
+     den Takten des Bereichs versetzt), die Song-Melodie (song.mel) in den Daten (Auftakt ¼ Schlag vor dem Taktstrich gehört dazu, vor dem
+     Ende-Taktstrich gehört er zum Teil danach). Spätere Rückungen bleiben, wie sie sind. Grenze des Kerns: jeder Knoten ≤ ±12. Ein ↶ 'song'.
+   2 IN DER TONART (nur Noten): r Stufen der Tonart des Teils (songKeyAtBar beim Setzen, gemerkt an der Marke: mark.trs = [Stufen, Grundton,
+     Skala]). Eine Rechnung trp1DegN für Wiedergabe/Video-Ton (outPitch, vor der Träger-Abbildung – wie eine andere Clip-Note), MIDI-Export
+     (Song, Spur, Stems-MIDI) und Video-Tastatur; die Song-Melodie wird in den Daten versetzt. Gesangs-Takes und Audio verschiebt die App nur
+     gleichmäßig in Halbtönen (G7) – sie bleiben bei „Stufe“, die Meldung sagt das. Nur ganze Teile (die Stufe gehört zum Teil wie seine
+     Taktart und wandert mit ihm).
+   3 OKTAVBEREICH HALTEN: |Versatz| > 6 Halbtöne (> 3 Stufen) → die Gegenrichtung (+7 → −5), dieselbe Tonklasse.
+   Bedienung: Marken-Blatt › Reiter Ablauf: unter der Rückung „Wirkt ab hier │ nur dieser Teil“ + Mehr ▾ (Blatt: nur dieser Teil │ ab hier,
+   Halbtöne │ in der Tonart, Oktavbereich halten, −12 … +12). Bereich-Leiste › ⋯ › „Transponieren …“ öffnet dasselbe Blatt für A–B.
+   Einhänge-Zeilen (alle mit „TRP1“ markiert): marksNorm, outPitch, int54MidiClips, buildMidiSong, va1MidiSong, vvkScore, openMarkSheet,
+   openRangeMore (2×); Prüfung: normSong, songShift, t1Shift, songClear (song.trf), jam3LvAt, jam3FestL (feste Spuren ohne Marke),
+   s2Sum, konDo (je 2×: Stufen/Stand bleiben), restoreSong (↶ ↷ während ▶), tktModeDo (Dur ↔ Moll). ===== */
+const TRP1 = {next: null, deg: false, oct: false, fc: null, ffc: null, keep: null, last: null};
+const trp1Sgn = v => (v > 0 ? 1 : v < 0 ? -1 : 0);
+// Oktavbereich halten: +7 → −5 (Halbtöne), +4 → −3 (Stufen)
+function trp1Oct(r, deg) { const N = deg ? 7 : 12, h = deg ? 3 : 6; return Math.abs(r) > h ? r - N * trp1Sgn(r) : r; }
+function trp1Scale(k) { const H = Harmony.SCALES; return (k && H[k.scale]) || H.ionian; }
+// eine Note n um s Stufen der Tonart k ({root, scale}); leiterfremde Töne behalten ihren Abstand zur Stufe darunter (C♯ +1 in C-Dur → D♯)
+function trp1DegN(n, s, k) {
+  if (!s || !k) return n;
+  const sc = trp1Scale(k), N = sc.length, pc = (((n - (k.root | 0)) % 12) + 12) % 12;
+  let d = 0; for (let j = 0; j < N; j++) if (sc[j] <= pc) d = j;
+  const ch = pc - sc[d], j = d + s, o = Math.floor(j / N), jj = j - o * N;
+  return clamp(n - pc + 12 * o + sc[jj] + ch, 0, 127);
+}
+// marksNorm (Einhänge-Zeile): die Stufen eines Teils – mark.trs = [Stufen, Grundton, Skala] (+ [[Takt im Teil, Stufen, Grundton, Skala]]
+// nach Zusammenfassen/Konsolidieren gemischter Teile, wie rkx) · mark.trn = 1: der Teil direkt nach einem „nur“-Bereich
+const trp1Pc = v => ((Math.round(v) % 12) + 12) % 12;
+function trp1MarkNorm(m, o, L) {
+  const t = m.trs, H = Harmony.SCALES;
+  if (Array.isArray(t) && isNum(t[0]) && isNum(t[1]) && typeof t[2] === 'string' && H[t[2]]) {
+    const s = clamp(Math.round(t[0]), -7, 7), x = [], seen = new Set(), len = L || o.len || 1;
+    if (Array.isArray(t[3])) for (const v of t[3].slice(0, 16)) {
+      if (!Array.isArray(v) || !isNum(v[0]) || !isNum(v[1]) || !isNum(v[2]) || typeof v[3] !== 'string' || !H[v[3]]) continue;
+      const b = Math.round(v[0]); if (b > 0 && b < len && !seen.has(b)) { seen.add(b); x.push([b, clamp(Math.round(v[1]), -7, 7), trp1Pc(v[2]), v[3]]); }
+    }
+    x.sort((p, q) => p[0] - q[0]);
+    if (s || x.some(v => v[1])) { o.trs = [s, trp1Pc(t[1]), t[2]]; if (x.length) o.trs.push(x); }
+  }
+  if (isNum(m.trn) && Math.round(m.trn)) o.trn = clamp(Math.round(m.trn), -24, 24);
+}
+// die Stufen eines Teils je Takt im Teil: [{s, k} | null]
+function trp1PerBar(m) {
+  const t = m && m.trs, out = []; if (!m) return out;
+  const g = t ? [{o: 0, s: t[0] | 0, k: {root: t[1], scale: t[2]}}].concat((t[3] || []).map(x => ({o: x[0], s: x[1] | 0, k: {root: x[2], scale: x[3]}}))) : [];
+  for (let o = 0; o < m.len; o++) { let c = null; for (const x of g) if (x.o <= o) c = x; out.push(c && c.s ? {s: c.s, k: c.k} : null); }
+  return out;
+}
+// … und zurück an die Marke (Reihenfolge wie marksNorm: rk, rkx, trs, trn – Speichern/Laden bitgleich)
+function trp1PerPut(m, per) {
+  const tn = m.trn; delete m.trs; delete m.trn;
+  const f = per.find(x => x && x.s);
+  if (f) {
+    const same = (p, q) => (!p || !p.s ? !q || !q.s : !!q && q.s === p.s && q.k.root === p.k.root && q.k.scale === p.k.scale);
+    const h = per[0] && per[0].s ? per[0] : null, t = [h ? h.s : 0, trp1Pc(f.k.root), f.k.scale], x = [];
+    for (let o = 1; o < per.length; o++) if (!same(per[o - 1], per[o])) { const q = per[o]; x.push(q && q.s ? [o, q.s, trp1Pc(q.k.root), q.k.scale] : [o, 0, trp1Pc(f.k.root), f.k.scale]); }
+    if (x.length) t.push(x.slice(0, 16));
+    m.trs = t;
+  }
+  if (tn) m.trn = tn;
+}
+// die Teile mit Stufen als Liste (je Song-Fassung einmal gerechnet, wie jam3FestL)
+function trp1L(song) {
+  if (!song || !song.marks || !song.marks.length) return null;
+  const v = UI.songVer | 0, c = TRP1.fc;
+  if (c && c.song === song && c.v === v && c.n === song.marks.length) return c.l;
+  const L = [];
+  for (const m of song.marks) if (m.trs) {
+    const per = trp1PerBar(m);
+    for (let o = 0; o < per.length; o++) { const x = per[o]; if (!x) continue; const z = L[L.length - 1]; if (z && z.m === m && z.e === o && z.s === x.s && z.k === x.k) { z.e = o + 1; z.b1 = barBeat(m.a + o + 1); continue; } L.push({m, e: o + 1, b0: barBeat(m.a + o), b1: barBeat(m.a + o + 1), s: x.s, k: x.k}); }
+  }
+  TRP1.fc = {song, v, n: song.marks.length, l: L.length ? L : null};
+  return TRP1.fc.l;
+}
+const trp1TrOk = i => { const tr = S.tracks[i]; return !!(tr && tr.kind === 'synth' && !percIs(tr) && !tr.stimme && !(typeof mtx3Dr === 'function' && mtx3Dr(i))); };
+function trp1At(L, sb) { for (const x of L) if (sb >= x.b0 - 1e-6 && sb < x.b1 - 1e-6) return x; return null; }
+// outPitch (Einhänge-Zeile): ▶ SONG – die Clip-Note in einem Teil mit Stufen (vor der Träger-Abbildung, wie eine andere Note des Clips)
+function trp1Pre(i, note, time) {
+  try {
+    const L = trp1L(S.song); if (!L || !trp1TrOk(i)) return note;
+    const sb = songBeatOf(t2b(time + 1e-6)); if (sb == null) return note;
+    const x = trp1At(L, sb); return x ? trp1DegN(note, x.s, x.k) : note;
+  } catch (e) { return note; }
+}
+// MIDI-Export / Video-Tastatur (Einhänge-Zeilen): dieselbe Rechnung; fe = die Träger-Abfrage der Stelle (oder null ohne Träger)
+function trp1P(song, i, sb, n, p, ck, fe) {
+  try {
+    const L = trp1L(song); if (!L || !trp1TrOk(i)) return p;
+    const x = trp1At(L, sb); if (!x) return p;
+    const n2 = trp1DegN(n, x.s, x.k); let e = null; try { e = fe ? fe(sb) : null; } catch (er) { e = null; }
+    return e && e.target ? mapOut(i, ck, n2, 0, e) : n2;
+  } catch (e) { return p; }
+}
+// --- der Stand der festen Spuren auch in Takten ohne Teil (Prüfung Befund 1: Song ohne Marken, Lücke nach einem Teil) ---
+// song.trf = [[Takt, Versatz]]: nur in Takten ohne Marke, gegen den Stand, den JAM3 dort sieht (der Teil davor, vor dem ersten 0) –
+// relativ, damit eine spätere Rückung „ab hier“ die Lücke mitnimmt. jam3LvAt/jam3FestL (Einhänge-Zeilen) fragen hier, wenn es trf gibt.
+function trp1In(song, bar) { for (const m of (song && song.marks) || []) if (bar >= m.a && bar < m.a + m.len) return m; return null; }
+function trp1Base(song, bar) {                                       // = jam3LvAt ohne trf
+  let v = 0;
+  for (const m of (song && song.marks) || []) {
+    if (m.a > bar) continue;
+    if (bar < m.a + m.len) { v = m.rk || 0; for (const x of m.rkx || []) if (m.a + x[0] <= bar) v = x[1]; return v; }
+  }
+  let best = null; for (const m of (song && song.marks) || []) if (m.a + m.len <= bar && (!best || m.a > best.a)) best = m;
+  if (!best) return 0;
+  v = best.rk || 0; for (const x of best.rkx || []) v = x[1];
+  return v;
+}
+function trp1LvAt(song, bar) {
+  const v = trp1Base(song, bar); if (!song.trf || trp1In(song, bar)) return v;
+  for (const x of song.trf) if (x[0] === bar) return v + x[1];
+  return v;
+}
+function trp1FestL(song) {
+  const v = UI.songVer | 0, c = TRP1.ffc, n = (song.marks || []).length, nt = song.trf.length;
+  if (c && c.song === song && c.v === v && c.n === n && c.nt === nt) return c.l;
+  const L = []; let cur = 0;
+  for (let b = 0; b < (song.bars | 0); b++) { const lv = trp1LvAt(song, b); if (lv !== cur) { L.push({beat: barBeat(b), semi: lv}); cur = lv; } }
+  TRP1.ffc = {song, v, n, nt, l: L.length ? L : null};
+  return TRP1.ffc.l;
+}
+function trp1TrfNorm(t, v4, bars) {
+  if (!Array.isArray(t)) return; const out = [], seen = new Set();
+  for (const x of t.slice(0, 1024)) { if (!Array.isArray(x) || !isNum(x[0]) || !isNum(x[1])) continue; const b = Math.round(x[0]), d = clamp(Math.round(x[1]), -24, 24); if (b >= 0 && b < bars && d && !seen.has(b)) { seen.add(b); out.push([b, d]); } }
+  if (out.length) v4.trf = out.sort((p, q) => p[0] - q[0]);
+}
+function trp1TrfShift(song, n, d) {                                   // songShift / t1Shift: Takte einfügen/löschen
+  const t = song.trf.filter(x => !(d < 0 && x[0] >= n + d && x[0] < n)).map(x => [x[0] >= n ? x[0] + d : x[0], x[1]]).filter(x => x[0] >= 0);
+  if (t.length) song.trf = t; else delete song.trf;
+}
+function trp1TrfCut(song, a, b) { const t = song.trf.filter(x => x[0] < a || x[0] >= b); if (t.length) song.trf = t; else delete song.trf; }
+// der Stand der festen Spuren nur in den Takten [a, b) um d: an den Marken (rk/rkx, je Marke neu gepackt) und in Takten ohne Marke
+// (trf); false = Grenze ±12. Rechnet den ganzen Song je Takt (64 Takte · 32 Teile < 1 ms)
+function trp1Lv(sg, a, b, d) {
+  const N = Math.max(sg.bars | 0, b), lv0 = []; for (let k = 0; k < N; k++) lv0.push(trp1LvAt(sg, k));
+  const lv1 = lv0.map((v, k) => (k >= a && k < b ? v + d : v));
+  if (lv1.some(q => Math.abs(q) > 12)) return false;
+  for (const mm of sg.marks) {
+    if (mm.a + mm.len <= a || mm.a >= b) continue;
+    const lv = lv1.slice(mm.a, mm.a + mm.len), rkx = []; for (let k = 1; k < lv.length; k++) if (lv[k] !== lv[k - 1]) rkx.push([k, lv[k]]);
+    if (rkx.length > 16) return false;
+    const t = mm.trs, tn = mm.trn; delete mm.rk; delete mm.rkx; delete mm.trs; delete mm.trn;
+    if (lv[0]) mm.rk = lv[0]; if (rkx.length) mm.rkx = rkx; if (t) mm.trs = t; if (tn) mm.trn = tn;   // Reihenfolge wie marksNorm (Speichern/Laden bitgleich)
+  }
+  const tf = []; for (let k = 0; k < (sg.bars | 0); k++) { if (trp1In(sg, k)) continue; const x = lv1[k] - trp1Base(sg, k); if (x) tf.push([k, x]); }
+  delete sg.trf; if (tf.length) sg.trf = tf;
+  return true;
+}
+// s2Sum / konDo (Einhänge-Zeilen): vor dem Schnitt die Stufen und den Stand je Takt merken, danach an die neue Marke (Befund 2)
+function trp1Old(song, a, e) {
+  try {
+    const per = [], lv = []; let any = false;
+    for (let b = a; b < e; b++) { const m = trp1In(song, b), x = m && m.trs ? trp1PerBar(m)[b - m.a] : null; if (x) any = true; per.push(x); lv.push(trp1LvAt(song, b)); }
+    TRP1.keep = any || song.trf ? {song, a, e, per, lv, any, trf: !!song.trf} : null;
+  } catch (er) { logErr(er); TRP1.keep = null; }
+}
+function trp1Keep(song, a, e) {
+  const K = TRP1.keep; TRP1.keep = null;
+  try {
+    if (!K || K.song !== song || K.a !== a || K.e !== e) return;
+    const m = song.marks.find(x => x.a === a && x.len === e - a); if (!m) return;
+    if (K.trf) {                                                       // der Stand mit trf (jam3RkKeep sieht bei konDo nur die alten Marken)
+      const lv = K.lv, x = []; for (let o = 1; o < lv.length; o++) if (lv[o] !== lv[o - 1]) x.push([o, lv[o]]);
+      const t = m.trs, tn = m.trn; delete m.rk; delete m.rkx; delete m.trs; delete m.trn;
+      if (lv[0]) m.rk = lv[0]; if (x.length) m.rkx = x.slice(0, 16); if (t) m.trs = t; if (tn) m.trn = tn;
+      trp1TrfCut(song, a, e);
+    }
+    if (K.any) trp1PerPut(m, K.per);
+  } catch (er) { logErr(er); }
+}
+// tktModeDo (Einhänge-Zeile): Dur ↔ Moll – die Stufen rechnen danach in der neuen Tonart (Befund 4)
+function trp1KeyTo(song, key) {
+  try { for (const m of song.marks || []) if (m.trs) trp1PerPut(m, trp1PerBar(m).map(x => (x ? {s: x.s, k: {root: key.root, scale: key.scale}} : null))); } catch (e) { logErr(e); }
+}
+// restoreSong (Einhänge-Zeile): ↶ ↷ während ▶ SONG – Transposition und feste Spuren ab dem nächsten Takt (Befund 3; wie beim Setzen)
+function trp1Live() { try { if (R.playing && R.songPlay && S.song && AU.ctx) { jam3FtLive(); gr1XpLive(); } } catch (e) { logErr(e); } }
+// ein Teil mit Takt-Angabe (Testsongs haben mehrere Teile gleichen Namens)
+const trp1Name = m => markLabel(m) + ' (Takt ' + (m.a + 1) + (m.len > 1 ? '–' + (m.a + m.len) : '') + ')';
+const trp1Ht = r => (Math.abs(r) === 1 ? ' Halbton' : ' Halbtöne');
+// Befund 6: der Teil direkt nach einem „nur“-Teil – die Rückungs-Zeile rechnet dort gegen vor dem „nur“-Teil (nicht gegen den „nur“-Teil).
+// mark.trn = der Sprung des „nur“-Bereichs davor (gemerkt beim Setzen); passt er nicht mehr (Rückung dort geändert, Teil verschoben), gilt
+// die Zeile wieder wie gewohnt.
+function trp1IslAt(song, bar) {
+  const B0 = barBeat(bar), vM = vvAppXpAt(song, B0), vP = vvAppXpAt(song, B0 - 1e-3);
+  let bK = null; for (const x of song.xp || []) if (x.beat < B0 - 1e-6) bK = x.beat;
+  if (bK == null) return null;
+  const vB = bK > 1e-6 ? vvAppXpAt(song, bK - 1e-3) : 0;
+  return {vB, vP, vM, d: vP - vB};
+}
+function trp1Isl(song, m) {
+  if (!song || !m || !isNum(m.trn) || !m.a) return null;
+  const I = trp1IslAt(song, m.a); return I && I.d && I.d === m.trn ? I : null;
+}
+// Gesang/Audio im Bereich (die STIMME-Spur spielt dort einen Take)
+function trp1Vox(song, a, b) {
+  try { const st = stimmeT(); if (st < 0 || !song.lanes[st]) return false; for (let k = a; k < b; k++) { const o = laneOriginAt(song.lanes[st], k); if (o && laneClipOk(song, st, o)) return true; } } catch (e) {}
+  return false;
+}
+// der Kern: o = {a, b (Takte, b exklusiv), r, deg, oct, label} → true │ null (nichts zu tun) │ false (abgelehnt, Meldung kam)
+function trp1Set(o) {
+  const song = S.song; if (!song || !song.bars || R.songRec) return false;
+  const a = clamp(o.a | 0, 0, song.bars), b = clamp(o.b | 0, a, song.bars); if (b <= a) return false;
+  let r = clamp(Math.round(+o.r || 0), o.deg ? -7 : -12, o.deg ? 7 : 12); const r0 = r;
+  if (o.oct) r = trp1Oct(r, !!o.deg);
+  TRP1.last = {r0, r, deg: !!o.deg, vox: trp1Vox(song, a, b), key: null, n: 0, after: b < song.bars, part: false, names: null};
+  if (!r) return null;
+  const lab = (o.label || ('Takt ' + (a + 1) + (b - a > 1 ? '–' + b : ''))) + ' ' + gr1Semi(r) + (o.deg ? ' Stufe' + (Math.abs(r) > 1 ? 'n' : '') : '');
+  if (o.deg) {
+    const ms = song.marks.filter(m => m.a >= a && m.a + m.len <= b); if (!ms.length) { toast('In der Tonart geht nur für ganze Teile – nichts geändert (hier gehen nur Halbtöne)'); return false; }
+    const plan = new Map(); let cov = 0;
+    for (const m of ms) {                                              // je Takt im Teil: die Stufen bisher und ihre Tonart (neu: die Tonart dort)
+      const per = trp1PerBar(m).map((x, k) => (x ? {s: x.s, k: x.k} : {s: 0, k: songKeyAtBar(m.a + k)}));
+      if (per.some(x => Math.abs(x.s + r) > 7)) { toast('Höchstens ±7 Stufen'); return false; }
+      plan.set(m.id, per); cov += m.len;
+    }
+    Object.assign(TRP1.last, {key: plan.get(ms[0].id)[0].k, n: ms.length, part: cov < b - a, names: ms.map(trp1Name)});
+    return !!songEdit('Transponieren ' + lab, sg => {
+      for (const m of sg.marks) {
+        const per = plan.get(m.id); if (!per) continue;
+        for (let j = 0; j < per.length; j++) {
+          const k = per[j].k, B0 = barBeat(m.a + j), B1 = barBeat(m.a + j + 1);
+          for (const t in sg.mel) { if (!jam2RkMel(+t)) continue; for (const n of sg.mel[t].notes) if (n.t >= B0 - .25 - 1e-9 && n.t < B1 - .25 - 1e-9) n.n = trp1DegN(n.n, r, k); }
+        }
+        trp1PerPut(m, per.map(x => ({s: x.s + r, k: x.k})));
+      }
+    });
+  }
+  const B0 = barBeat(a), B1 = barBeat(b), atEnd = b >= song.bars, v0 = vvAppXpAt(song, B0), v1 = vvAppXpAt(song, B1);
+  const xs = (song.xp || []).map(x => ({beat: x.beat, semi: x.semi})), inR = t => t >= B0 - 1e-6 && t < B1 - 1e-6;
+  if (!xs.some(x => Math.abs(x.beat - B0) < 1e-6)) xs.push({beat: B0, semi: v0});
+  if (!atEnd && !xs.some(x => Math.abs(x.beat - B1) < 1e-6)) xs.push({beat: B1, semi: v1});   // der zweite Knoten: danach wieder der alte Wert
+  if (xs.some(x => inR(x.beat) && Math.abs(x.semi + r) > 12)) { toast('Höchstens ±12 Halbtöne'); return false; }
+  if (!trp1Lv(JSON.parse(JSON.stringify({bars: song.bars, marks: song.marks, trf: song.trf})), a, b, r)) { toast('Höchstens ±12 Halbtöne'); return false; }
+  const ok = songEdit('Transponieren ' + lab, sg => {
+    sg.xp = xs.map(x => (inR(x.beat) ? {beat: x.beat, semi: x.semi + r} : x)).sort((p, q) => p.beat - q.beat);
+    for (const k in sg.mel) { if (!jam2RkMel(+k)) continue; for (const n of sg.mel[k].notes) if (n.t >= B0 - .25 - 1e-9 && n.t < B1 - .25 - 1e-9) n.n = clamp(n.n + r, 0, 127); }
+    trp1Lv(sg, a, b, r);
+    if (!atEnd) { const nx = sg.marks.find(mm => mm.a === b), I = nx ? trp1IslAt(sg, b) : null; if (nx) { if (I && I.d) nx.trn = I.d; else delete nx.trn; } }   // Befund 6: der Teil danach weiß, dass davor „nur“ war
+  });
+  if (ok) { try { jam3FtLive(); gr1XpLive(); } catch (e) { logErr(e); } }   // läuft ▶ SONG: ab dem nächsten Takt (wie die Rückung)
+  return !!ok;
+}
+// die Meldung nach dem Transponieren (ehrlich: Oktavbereich, Gesang bei „Stufe“)
+function trp1Msg(what) {
+  const L = TRP1.last || {}, r = L.r | 0, u = L.deg ? ' Stufe' + (Math.abs(r) > 1 ? 'n' : '') : trp1Ht(r);
+  if (L.deg && L.part && L.names) what = 'Nur ' + L.names.join(', ');   // Befund 8: in der Tonart nur die ganzen Teile im Bereich
+  let s = what + ' ' + gr1Semi(r) + u + (L.deg && L.key ? ' in ' + keyName(L.key) : '') + (L.after !== false ? ' – danach wie vorher' : '');
+  if (L.deg && L.part) s += ' · in der Tonart nur ganze Teile';
+  if (L.r0 !== L.r) s += ' · Oktavbereich: ' + gr1Semi(L.r0) + ' → ' + gr1Semi(r);
+  if (L.deg && L.vox) s += ' · Gesang bleibt (geht nur in Halbtönen)';
+  else if (!L.deg) s += ' · alles außer Drums';
+  return s + (R.playing && R.songPlay ? ' · ab dem nächsten Takt' : '');
+}
+function trp1Css() {
+  if (document.getElementById('trp1Css')) return;
+  const st = document.createElement('style'); st.id = 'trp1Css';
+  st.textContent = `
+.msheet .j2rk .trp1-in{display:flex;gap:4px;margin-left:8px;flex:0 0 auto}
+.msheet .j2rk .trp1-in .ms-b,.msheet .trp1r .ms-b{flex:1 1 0;min-width:44px;font-size:12px}
+.msheet .j2rk .trp1-in .ms-b{flex:0 0 auto;padding:0 8px}
+.msheet .trp1r .ms-b.on,.msheet .j2rk .trp1-m.on{background:linear-gradient(#ffc04d,#e89a12);color:#141416;border-color:#7a4d00}
+.pop.trp1p{width:min(400px,calc(100vw - 24px));box-sizing:border-box}
+.pop.trp1p h4{margin:0 34px 6px 0}
+.pop.trp1p .trp1-top{display:flex;flex-direction:column;gap:4px}
+.pop.trp1p .trp1-r{display:flex;gap:4px}
+.pop.trp1p .trp1-r .rb{flex:1 1 0;min-width:44px;min-height:44px;font-size:12px;padding:0 4px}
+.pop.trp1p .rb.on{background:linear-gradient(#ffc04d,#e89a12);color:#141416;border-color:#7a4d00}
+.pop.trp1p .trp1-v{display:grid;grid-template-columns:repeat(6,minmax(44px,1fr));gap:4px;margin-top:6px}
+.pop.trp1p .trp1-v .rb{min-height:44px;min-width:44px;font-size:13px;padding:0}
+.pop.trp1p .trp1-v .rb:disabled{opacity:.3}
+.pop.trp1p small{display:block;margin-top:5px;font:600 10.5px/1.25 var(--font-ui);color:var(--text-faint)}
+@media (orientation:landscape){.pop.trp1p{width:min(820px,calc(100vw - 24px))}.pop.trp1p .trp1-top{flex-direction:row}.pop.trp1p .trp1-r{flex:1 1 0}.pop.trp1p .trp1-v{grid-template-columns:repeat(12,minmax(44px,1fr))}}
+`;
+  document.head.appendChild(st);
+}
+// Marken-Blatt (Einhänge-Zeile, nach JAM2): unter der Rückung „Wirkt ab hier │ nur dieser Teil“ + Mehr ▾ (quer in derselben Zeile, wenn Platz ist)
+function trp1MarkSheetPaint(p, m) {
+  try {
+    trp1Css();
+    const j = p.querySelector('.j2rk'); if (!j) return;
+    if (TRP1.next === m.id) { p._trp1o = m.id; TRP1.next = null; }     // Guide: „nur dieser Teil“ für dieses eine Blatt
+    const only = p._trp1o === m.id, nm = markLabel(m);                // Befund 5: „nur“ gilt nur im offenen Blatt dieser Marke
+    if (only) {
+      for (const b of j.querySelectorAll('button[data-jrk]')) {
+        const v = +b.dataset.jrk; b.dataset.trv = String(v); b.removeAttribute('data-jrk'); b.classList.remove('on'); b.setAttribute('aria-pressed', 'false');
+        if (!v) b.disabled = true; b.setAttribute('aria-label', v ? 'Nur ' + nm + ' ' + gr1Semi(v) + trp1Ht(v) + (m.a + m.len < S.song.bars ? ', danach wie vorher' : '') : 'Nichts');
+      }
+      const sm = j.querySelector('.j2rk-l small'); if (sm) sm.textContent = 'nur Teil';
+    } else {
+      const I = trp1Isl(S.song, m);                                    // Befund 6: nach einem „nur“-Teil rechnet die Zeile gegen vor ihm
+      if (I) {
+        for (const b of j.querySelectorAll('button[data-jrk]')) {
+          const v = +b.dataset.jrk, on = v === I.vM - I.vB; b.dataset.trk = String(v); b.removeAttribute('data-jrk'); b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on));
+          b.setAttribute('aria-label', v ? 'Ab ' + nm + ' ' + gr1Semi(v) + trp1Ht(v) + ' gegen vor dem „nur“-Teil' : 'Wie vor dem „nur“-Teil');
+        }
+        const sm = j.querySelector('.j2rk-l small'); if (sm) sm.textContent = 'nach „nur“';
+      }
+    }
+    const html = `<button class="rb ms-b trp1-m${only ? '' : ' on'}" data-trm="ab" aria-pressed="${!only}" aria-label="Rückung wirkt ab diesem Teil">ab hier</button>` +
+      `<button class="rb ms-b trp1-m${only ? ' on' : ''}" data-trm="nur" aria-pressed="${only}" aria-label="Nur dieser Teil, danach wieder wie vorher">nur dieser Teil</button>` +
+      `<button class="rb ms-b trp1-more" data-trm="more" aria-label="Mehr: bis ±12, in der Tonart, Oktavbereich halten">Mehr ▾</button>`;
+    let row = null;
+    if (isLand()) { const w = el('span', 'trp1-in'); w.innerHTML = html; j.appendChild(w); if (j.scrollWidth > j.clientWidth + 1) w.remove(); else row = w; }
+    if (!row) {
+      row = el('div', 'ms-r j2rk trp1r'); row.dataset.wgr = 'a'; row.setAttribute('role', 'group'); row.setAttribute('aria-label', 'Wie die Rückung wirkt');
+      row.innerHTML = '<span class="j2rk-l">Wirkt<small>Rückung</small></span>' + html;
+      (j.classList.contains('j2rk-in') && j.parentNode ? j.parentNode : j).after(row);
+    }
+    if (!p._trp1) { p._trp1 = true; onTap(p, b => trp1MsTap(p, b), 'button[data-trm],button[data-trv],button[data-trk]'); }
+  } catch (e) { logErr(e); }
+}
+function trp1MsTap(p, b) {
+  const m = S.song && S.song.marks.find(x => x.id === SV.mark); if (!m) return;
+  const repaint = () => { if (UI.pop && UI.pop.el === p && p._paint) { p._paint(); popDock(p); } };
+  const a = b.dataset.trm;
+  if (a === 'ab' || a === 'nur') { p._trp1o = a === 'nur' ? m.id : null; haptic('tick'); repaint(); return; }
+  if (a === 'more') { trp1Open({a: m.a, b: m.a + m.len, mark: m.id}); return; }
+  if (b.dataset.trv != null) {
+    if (svRecBusy()) return;
+    const v = +b.dataset.trv, ok = trp1Set({a: m.a, b: m.a + m.len, r: v, label: markLabel(m)});
+    if (ok) { haptic('tick'); toast(trp1Msg('Nur ' + trp1Name(m)), songUndoAct()); svButtons(); UI.dirty.song = true; }
+    repaint();
+    return;
+  }
+  if (b.dataset.trk != null) {                                         // Befund 6: Rückung gegen vor dem „nur“-Teil
+    if (svRecBusy()) return;
+    const I = trp1Isl(S.song, m); if (!I) { repaint(); return; }
+    const v = +b.dataset.trk, ok = jam2RkSet(m.id, I.vB + v - I.vP);
+    if (ok) { haptic('tick'); toast('Ab ' + trp1Name(m) + ' ' + (v ? gr1Semi(v) + trp1Ht(v) + ' gegen vor dem „nur“-Teil' : 'wieder wie vor dem „nur“-Teil') + ' – alles außer Drums', songUndoAct()); svButtons(); UI.dirty.song = true; }
+    else if (ok === null) toast('Schon so: ' + (v ? gr1Semi(v) + trp1Ht(v) + ' gegen vor dem „nur“-Teil' : 'wie vor dem „nur“-Teil'));
+    repaint();
+  }
+}
+// das Blatt „Transponieren“ (aus Mehr ▾ der Marke oder aus der Bereich-Leiste): rg = {a, b, mark?}
+function trp1Open(rg) {
+  const song = S.song; if (!song || !rg || svRecBusy()) return;
+  trp1Css();
+  const whole = song.marks.some(m => m.a >= rg.a && m.a + m.len <= rg.b);   // Befund 9: „in der Tonart“ nur vorwählen, wo es geht
+  const st = {only: true, deg: TRP1.deg && whole};
+  openPop(null, p => {
+    p.classList.add('trp1p'); guardTouch(p);
+    const paint = () => {
+      const m = rg.mark ? S.song.marks.find(x => x.id === rg.mark) : null, deg = st.deg, oct = TRP1.oct;
+      const what = m ? trp1Name(m) : 'Takt ' + (rg.a + 1) + (rg.b - rg.a > 1 ? '–' + rg.b : '');
+      const S2 = (k, v, t, on, aria) => `<button class="rb${on ? ' on' : ''}" data-tp="${k}" data-v="${v}" aria-pressed="${!!on}"${aria ? ' aria-label="' + esc(aria) + '"' : ''}>${t}</button>`;
+      let vals = ''; for (let v = -12; v <= 12; v++) if (v) vals += `<button class="rb" data-tv="${v}"${deg && Math.abs(v) > 7 ? ' disabled' : ''} aria-label="${esc(what + ' ' + gr1Semi(v) + (deg ? ' Stufen' : ' Halbtöne'))}">${gr1Semi(v)}</button>`;
+      p.innerHTML = `<h4>Transponieren · ${esc(what)}</h4><div class="trp1-top">` +
+        `<div class="trp1-r" role="group" aria-label="Wirkt">${S2('w', 'nur', m ? 'nur dieser Teil' : 'nur diese Takte', st.only)}${S2('w', 'ab', 'ab hier', !st.only)}</div>` +
+        `<div class="trp1-r" role="group" aria-label="Schritt">${S2('d', '0', 'Halbtöne', !deg)}${S2('d', '1', 'in der Tonart', deg, 'In der Tonart: Stufen (nur Noten)')}</div>` +
+        `<div class="trp1-r">${S2('o', '1', 'Oktavbereich halten', oct, 'Oktavbereich halten: über 6 Halbtöne in die Gegenrichtung')}</div></div>` +
+        `<div class="trp1-v">${vals}</div><small>${deg ? 'Stufen der Tonart – nur Noten; Gesang und Audio gehen nur in Halbtönen.' : 'Alles außer Drums, auch Spuren mit ⇅ fest.'}${oct ? ' Oktavbereich: ' + (deg ? '+4 → −3' : '+7 → −5') + '.' : ''}</small>`;
+    };
+    paint(); p._paint = paint;
+    onTap(p, b => {
+      if (b.dataset.tp === 'w') { st.only = b.dataset.v === 'nur'; haptic('tick'); paint(); popFit(p); return; }   // Befund 7: das Blatt bleibt, wo es ist
+      if (b.dataset.tp === 'd') { st.deg = TRP1.deg = b.dataset.v === '1'; haptic('tick'); paint(); popFit(p); return; }
+      if (b.dataset.tp === 'o') { TRP1.oct = !TRP1.oct; haptic('tick'); paint(); popFit(p); return; }
+      if (b.dataset.tv == null) return;
+      const v = +b.dataset.tv, m = rg.mark ? S.song && S.song.marks.find(x => x.id === rg.mark) : null, end = S.song ? S.song.bars : rg.b;
+      let ok, what;
+      if (!st.only && m && !st.deg) {                                // ab hier = die Rückung des Teils (gegen davor)
+        const r = TRP1.oct ? trp1Oct(v, false) : v; TRP1.last = {r0: v, r, deg: false};
+        ok = jam2RkSet(m.id, r); what = 'Ab ' + trp1Name(m);
+        if (ok) { haptic('tick'); closePop(); toast(what + ' ' + gr1Semi(r) + trp1Ht(r) + ' gegen davor – alles außer Drums' + (v !== r ? ' · Oktavbereich: ' + gr1Semi(v) + ' → ' + gr1Semi(r) : ''), songUndoAct()); svButtons(); UI.dirty.song = true; }
+        return;
+      }
+      const a = rg.a, bb = st.only ? rg.b : end;
+      ok = trp1Set({a, b: bb, r: v, deg: st.deg, oct: TRP1.oct, label: m ? markLabel(m) : null});
+      what = (st.only ? 'Nur ' : 'Ab ') + (m ? trp1Name(m) : 'Takt ' + (a + 1) + (st.only && bb - a > 1 ? '–' + bb : ''));
+      if (ok) { haptic('tick'); closePop(); let t = trp1Msg(what); if (!st.only) t = t.replace(' – danach wie vorher', ''); toast(t, songUndoAct()); svButtons(); UI.dirty.song = true; }
+    }, 'button[data-tp],button[data-tv]');
+  }, {name: 'trp1'});
+}
+// Bereich-Leiste › ⋯ (Einhänge-Zeilen): der Eintrag „Transponieren …“
+function trp1RangeItem(p) { try { const l = p.querySelector('.plist'); if (l && !l.querySelector('[data-a="trp1"]')) l.insertAdjacentHTML('beforeend', '<button class="rb" data-a="trp1">⇅ Transponieren …</button>'); } catch (e) { logErr(e); } }
+function trp1Go() {
+  ui1Home(); setSongView(true);
+  const ms = S.song && S.song.marks ? S.song.marks.slice().sort((a, b) => a.a - b.a) : [];
+  if (!ms.length) { toast('Erst einen Teil in den Song setzen – dann die gelbe Teil-Marke antippen'); return true; }
+  TRP1.next = ms[0].id; openMarkSheet(ms[0].id); TRP1.next = null;   // „nur dieser Teil“ nur für dieses Blatt (Befund 5)
+  if (UI.pop && UI.pop.el && typeof wegeMsTab === 'function') wegeMsTab(UI.pop.el, 'a');
+  return true;
+}
+/* ---------- „Wo finde ich …?“ (UI1) ---------- */
+(function trp1Guide() {
+  try {
+    const L = ui1Entries(); if (L.some(x => x.id === 'trp1')) return;
+    L.push({id: 'trp1', n: 'Abschnitt transponieren (nur dieser Teil)', w: 'Song › Teil-Marke antippen › Ablauf › „nur dieser Teil“ oder Mehr ▾ · gelbe Auswahl › ⋯ › Transponieren …',
+      d: 'Nur dieser Teil oder nur die gewählten Takte −12 … +12 Halbtöne, danach wieder wie vorher. In der Tonart: Stufen (C-Dur +1: C→D, E→F) – nur für Noten, Gesang und Audio gehen nur in Halbtönen. Oktavbereich halten: +7 wird −5. Alles außer Drums, ein ↶.',
+      s: 'transponieren abschnitt teil bereich takte nur dieser teil halbton stufe stufen tonart leitereigen oktav oktavbereich refrain hoeher tiefer', go: trp1Go, q: '.trp1-more'});
+  } catch (e) { logErr(e); }
+})();
+SYNQUENZER.trp1 = {
+  set: o => trp1Set(o), deg: (n, s, root, scale) => trp1DegN(n, s, {root, scale: scale || 'ionian'}), oct: (r, d) => trp1Oct(r, !!d), open: rg => trp1Open(rg),
+  state: () => ({only: !!(UI.pop && UI.pop.el && UI.pop.el._trp1o && UI.pop.el._trp1o === SV.mark), deg: TRP1.deg, oct: TRP1.oct, last: TRP1.last ? Object.assign({}, TRP1.last) : null}),
+  opts: o => { const p = UI.pop && UI.pop.el; if (o && 'only' in o && p) p._trp1o = o.only ? SV.mark : null; if (o && 'deg' in o) TRP1.deg = !!o.deg; if (o && 'oct' in o) TRP1.oct = !!o.oct; return {only: !!(p && p._trp1o), deg: TRP1.deg, oct: TRP1.oct}; },
+  lv: bar => (S.song ? trp1LvAt(S.song, bar) : 0), isl: id => { const m = S.song && S.song.marks.find(x => x.id === id); return m ? trp1Isl(S.song, m) : null; },
+};
+/* ===== TRP1-END ===== */
 Object.assign(SYNQUENZER, {pl1: PL1_API});                  /* PL1: Test-API (Objekt, wird nicht umhüllt) */
 /* ===== JAM1-BEGIN (Paket JAM1, Xanders Ur-Roadmap „Jam“ – „Können wir davon noch was machen?“ → ja, JAM zuerst) =====
    Trig-Bedingungen, FILL, Durchlauf-Zähler und „Zufall festhalten“: Schritte und Noten spielen nur unter Bedingungen – Loops werden
@@ -90933,6 +91362,7 @@ function tktModeDo(kind) {
   for (const sc of S.scenes || []) if (sc && sc.chords) { tktMapRow(P, sc.chords); res.chords += sc.chords.ch.length; }
   for (const pt of S.parts || []) { if (!pt) continue; if (pt.chords) { tktMapRow(P, pt.chords); res.chords += pt.chords.ch.length; } if (pt.xp && pt.xp.tg) pt.xp.tg = tktMapTarget(P, pt.xp.tg); }
   setProjectKey({root: key.root, scale: key.scale});
+  if (typeof trp1KeyTo === 'function') trp1KeyTo(song, key);   /* TRP1 */
   songTidy(song);
   const after = tktModeSnap();
   if (after === before) return res;
@@ -95958,6 +96388,520 @@ const MTX3B_API = {
 };
 Object.assign(SYNQUENZER, {mtx3b: MTX3B_API});              /* MTX3B: Test-API */
 /* MTX3B-END */
+/* MTX4-BEGIN ===================== Matrix: mehrere Clips zugleich (Paket MTX4 Teil 1+2, Xander 15.11.: „Abschnitt / mehrere Clips transponieren“)
+   • Einstieg: Clip-Blatt › [Mehrere wählen] – dieser Clip ist gewählt, danach weitere Clips antippen (Tipp = dazu / weg). Ein Tipp auf
+     einen Szenen-Kopf nimmt alle Noten-Clips der Szene dazu (noch einmal = weg); Drum-Clips nur per eigenem Tipp. Solange der Modus
+     an ist, startet ein Tipp auf Clip oder Szenen-Kopf nichts (wie die Matrix-Auswahl der Teile). [SZ] / [▲▼] blättern wie immer.
+   • Markierung wie die Matrix-Auswahl der Teile (übrige Clips blass, gewählte mit Rahmen), Farbe Bernstein wie die Spuren-Gruppe.
+   • Leiste im Stil der Spuren-Gruppe (gleicher Rahmen, an derselben Stelle über der TEILE-Leiste; hochkant zwei Zeilen nach unten,
+     quer vier Zeilen nach oben in der rechten Spalte – die Matrix bleibt frei): −12 −1 +1 +12 · ▲ Stufe ▼ Stufe · Tonart ▾ (Dur, Moll,
+     Dorisch, Mixolydisch, Phrygisch, Pentatonik) · Quant. ▾ · [Drums fest │ Drums ±] (nur mit Drum-Clips) · ✕.
+   • Drum-Clips (DRUMS, Perkussion, Einzelspuren): ± nur mit [Drums ±], Stufe und Tonart nie; Quantisieren immer.
+     Gesang- und Audio-Clips (STIMME, Original) sind nicht wählbar (dort gibt es nur Halbtöne im Take-Blatt).
+   • Jede Aktion = ein ↶ (Gruppe der Clip-Schritte). Läuft ein gewählter Clip, greift die Änderung am nächsten Taktstrich: bis dahin
+     plant die Wiedergabe den alten Inhalt weiter (Haken in scheduleTrack), danach den neuen – nichts stockt, kein Neustart.
+   • In Tonart einpassen: Grundton = Tonart des Clips. Leitereigene Töne gehen Stufe für Stufe in den Modus (C-Dur → C-Dorisch:
+     E→E♭, H→B), fremde Töne zum nächsten Ton des Modus; Pentatonik (Dur-Pentatonik bei großer Terz, sonst Moll-Pentatonik) über die
+     vorhandene Ein-Skala-Abbildung (Kontur bleibt, Doppel werden vermieden). Rhythmus und Anschlag bleiben; der Clip bekommt die
+     Tonart fest (bei Pentatonik bleibt sie). Tabellen: Harmony.SCALES und G10G_SCALES.
+   • Teil 2: Länge ÷2 / ×2 in der Leiste – derselbe Weg wie ½ / ×2 im Clip-Blatt (clipLength: ×2 verdoppelt den Inhalt, ÷2 behält
+     die erste Hälfte; 1…64 Takte), für alle gewählten Clips (auch Drums), ein ↶.
+   • Neue Clip-Versionen: Spielt ein geänderter Clip im Song, wird sein Inhalt von vorher als neue Version (vN, wie ＋ bei den
+     Versionen) gemerkt – einmal je Clip und Auswahl-Sitzung, höchstens bis v8. Der Clip selbst (v1) trägt die Änderung, der Song
+     spielt wie bei jeder Clip-Bearbeitung v1; im Clip-Blatt › VERSIONEN IM SONG holt [vN] die alte Fassung überall zurück.
+     Die neue Version gehört zum selben ↶-Schritt wie die Änderung.
+   • Prüfung (15.11.): ↶ ↷ in der Leiste (die Leiste deckt das ↶ der Spur-Leiste); Hinweise nach einer Aktion ohne Aktionsknopf und
+     über der Leiste. Große Auswahl blockweise (≈ 8 ms je Aufgabe, ein Bild dazwischen), Vorschaubilder gestaffelt (Haken renderGrid),
+     afterClipEdit einmal je Clip. ↶ ↷ eines MTX4-Schritts im Lauf ebenfalls am nächsten Taktstrich (Haken undo/redo).
+     Pentatonik: leitereigene Töne bleiben, fremde zum Nachbarn. Höchstens EINE automatische Version je Clip (nur wenn er noch keine
+     hat und als v1 im Song spielt). ÷2 bei ungerader Länge sagt es im Hinweis.
+   Kein Projektfeld (die Auswahl lebt nur zur Laufzeit), kein Formatwechsel. */
+const M4 = {on: false, sel: [], drums: false, bar: null, rows: null, btn: {}, hold: [], inSched: false, press: null, iv: 0, proj: null, n: 0, last: null, lay: '', range: 0, ver: [],
+  job: null, q: [], stag: 0, thN: 0, th0: 0, thDef: false, thMax: 0};
+const MTX4_FIT = [['ionian', 'Dur'], ['aeolian', 'Moll'], ['dorian', 'Dorisch'], ['mixolydian', 'Mixolydisch'], ['phrygian', 'Phrygisch'], ['pent', 'Pentatonik']];
+const MTX4_Q = [['auto', 'Auto'], ['1/4', '1/4'], ['1/8', '1/8'], ['1/8T', '1/8T'], ['1/16', '1/16'], ['1/16T', '1/16T'], ['1/32', '1/32']];
+function mtx4Css() {
+  if (document.getElementById('mtx4-css')) return;
+  try {
+    const s = document.createElement('style'); s.id = 'mtx4-css';
+    s.textContent =
+      '#clipGrid.mtx4on .slot.filled{opacity:.5}' +
+      '#clipGrid.mtx4on .slot.mtx4sel{opacity:1;outline:3px solid var(--amber);outline-offset:-3px}' +
+      '.ui1gb.mtx4b{flex-direction:column;align-items:stretch;justify-content:center;gap:4px;padding:4px 6px;z-index:71}' +
+      '.mtx4b .r{display:flex;align-items:center;gap:4px;min-width:0}.mtx4b .r:empty{display:none}' +
+      '.mtx4b .r button{flex:1 1 0;min-width:44px;padding:0 4px;white-space:nowrap}' +
+      '.mtx4b .r .n{flex:1 1 auto;min-width:0}.mtx4b .r button.x{flex:0 0 44px}' +
+      '.mtx4b .r button.w{flex:1 0 auto}.mtx4b .r button.on{color:var(--amber);border-color:var(--amber)}.mtx4b .r button.dim{opacity:.45}' +
+      '.mtx4b .r button.t2{display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.05;gap:1px}' +
+      '.mtx4b .r button.t2 small{display:block;font:600 10px/1.1 var(--font-ui);opacity:.75;letter-spacing:0}' +
+      '.pop.mtx4p{width:min(340px,calc(100vw - 16px))}' +
+      '.mtx4g{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}.mtx4g.q{grid-template-columns:repeat(4,1fr)}' +
+      '.mtx4g .mbtn{height:auto;min-height:44px;min-width:0;padding:4px;width:100%}' +
+      'body.mtx4m #toast{z-index:72}' +                                   // Prüfung 1: was man sieht, tippt man – nie ein Leisten-Knopf unter einem Hinweis
+      '@media (orientation:landscape){#clipSheet .cs3 .cgrid .hb.mtx4cs{height:44px;align-self:center}}';   // wie [Werkzeugkasten ▾]
+    document.head.appendChild(s);
+  } catch (e) {}
+}
+// Drum-artige Clips: DRUMS, Perkussions-Spur, MTX3-Einzelspur (Noten = Pad-Töne)
+const mtx4Drum = tr => !!(tr && (tr.kind === 'drum' || percIs(tr) || tr.dvx));
+const mtx4Audio = (tr, c) => !!(tr && (tr.stimme || tr.orig || (c && c.audio)));
+function mtx4Ok(t, s) { const tr = S.tracks[t], c = tr && tr.clips[s]; return !!(c && !mtx4Audio(tr, c) && Array.isArray(c.notes)); }
+// die gültige Auswahl als [{t, s}] (Spuren über ihr Objekt gemerkt: Umsortieren ändert nichts)
+function mtx4List() {
+  const out = [];
+  M4.sel = M4.sel.filter(x => { const t = S.tracks.indexOf(x.tr); if (t < 0 || !mtx4Ok(t, x.s)) return false; out.push({t, s: x.s}); return true; });
+  return out.sort((a, b) => a.s - b.s || a.t - b.t);
+}
+const mtx4Has = (t, s) => { const tr = S.tracks[t]; return M4.sel.some(x => x.tr === tr && x.s === s); };
+function mtx4Set(t, s, on) {
+  const tr = S.tracks[t]; if (!tr) return false;
+  const k = M4.sel.findIndex(x => x.tr === tr && x.s === s);
+  if (on == null) on = k < 0;
+  if (on && k < 0 && mtx4Ok(t, s)) M4.sel.push({tr, s}); else if (!on && k >= 0) M4.sel.splice(k, 1);
+  return on;
+}
+function mtx4Start(t, s) {
+  mtx4Css();
+  if (typeof ui1SelClear === 'function') ui1SelClear();               // die Spuren-Gruppe hat dieselbe Stelle
+  if (UI.pick) pickCancel();
+  M4.on = true; M4.sel = []; M4.drums = false; M4.proj = S; M4.hold = []; M4.ver = [];
+  if (t != null && s != null) mtx4Set(t, s, true);
+  if (UI.songView) setSongView(false);
+  haptic('pop'); mtx4Say();
+  UI.dirty.grid = true; mtx4Sync();
+  return mtx4List().length;
+}
+function mtx4End() {
+  if (!M4.on) return false;
+  M4.on = false; M4.sel = []; M4.press = null;
+  if (UI.pop && /^mtx4/.test(UI.pop.name || '')) closePop();
+  UI.dirty.grid = true; mtx4Sync();
+  return true;
+}
+function mtx4Count() {
+  const L = mtx4List(), sc = new Set(L.map(x => x.s)), dr = L.filter(x => mtx4Drum(S.tracks[x.t])).length;
+  return {n: L.length, sc: sc.size, dr};
+}
+function mtx4Say() { const c = mtx4Count(); sx4Say(c.n ? c.n + (c.n === 1 ? ' Clip' : ' Clips') + ' gewählt – weitere antippen' : 'Clips antippen – Tipp = dazu / weg'); }
+function mtx4Tap(t, s) {
+  const tr = S.tracks[t], c = tr && tr.clips[s];
+  if (!c) return null;
+  if (mtx4Audio(tr, c)) { toast('Gesang-Clips: einzeln im Takes-Blatt'); return null; }
+  const on = mtx4Set(t, s); haptic('tick'); UI.dirty.grid = true; mtx4Sync();      // Prüfung 10: der Zähler der Leiste sagt es (kein Hinweis über den Szenen-Köpfen)
+  return on;
+}
+// Szenen-Kopf: alle Noten-Clips der Szene dazu (sind alle schon gewählt: weg). Drum-Clips nur per eigenem Tipp
+function mtx4Scene(s) {
+  const L = []; for (let t = 0; t < NT(); t++) if (mtx4Ok(t, s) && !mtx4Drum(S.tracks[t])) L.push(t);
+  if (!L.length) { toast('Szene ' + (s + 1) + ': keine Noten-Clips'); return 0; }
+  const all = L.every(t => mtx4Has(t, s));
+  for (const t of L) mtx4Set(t, s, !all);
+  haptic('tick'); UI.dirty.grid = true; mtx4Sync();
+  return all ? -L.length : L.length;
+}
+/* ---------- Gesten: im Modus wählt ein Tipp auf Clip / Szenen-Kopf (vor UX2 und dem Matrix-Tipp; nichts startet) ---------- */
+function mtx4Down(e) {
+  if (!M4.on || !EL.grid || UI.songView || UI.pick || (e.button || 0) > 0) return;
+  const tg = e.target; if (!tg || !tg.closest || !EL.grid.contains(tg)) return;
+  const sl = tg.closest('.slot'), sc = sl ? null : tg.closest('.scn');
+  if (!sl && !sc) return;
+  e.preventDefault(); e.stopImmediatePropagation();
+  M4.press = {id: e.pointerId, x: e.clientX, y: e.clientY, t: sl ? +sl.dataset.t : -1, s: +(sl || sc).dataset.s, scn: !sl};
+}
+function mtx4Up(e) {
+  const p = M4.press; if (!p || p.id !== e.pointerId) return;
+  M4.press = null;
+  if (e.type !== 'pointerup' || !M4.on || Math.abs(e.clientX - p.x) > 12 || Math.abs(e.clientY - p.y) > 12) return;
+  UI.ghost = {t: performance.now(), x: e.clientX, y: e.clientY, hard: true};      // kein Klick-Nachzügler auf dem Szenen-Knopf
+  try { if (p.scn) mtx4Scene(p.s); else mtx4Tap(p.t, p.s); } catch (err) { logErr(err); }
+}
+try {
+  addEventListener('pointerdown', mtx4Down, true); addEventListener('pointerup', mtx4Up, true); addEventListener('pointercancel', mtx4Up, true);
+  addEventListener('keydown', e => { if (M4.on && e.key === 'Escape' && !UI.pop && !R.editor) mtx4End(); });
+} catch (e) {}
+/* ---------- Markierung (Haken am Ende von renderGrid; nur Klassen-Wechsel, gecacht wie setCls) ---------- */
+function mtx4Grid() {
+  if (M4.thDef) UI.dirty.grid = true;                                // Prüfung 2: zurückgestellte Vorschaubilder im nächsten Bild
+  M4.thN = 0; M4.thDef = false;
+  if (!EL.grid || !UI.cells) return;
+  const on = M4.on && !UI.pick;
+  if (EL.grid.classList.contains('mtx4on') !== on) EL.grid.classList.toggle('mtx4on', on);
+  if (!on && !M4.painted) return;
+  M4.painted = on;
+  const K = new Set(); if (on) for (const x of M4.sel) { const t = S.tracks.indexOf(x.tr); if (t >= 0) K.add(t * 16 + x.s); }
+  for (let i = 0; i < UI.cells.length; i++) { const row = UI.cells[i]; if (!row) continue; for (let s = 0; s < row.length; s++) { const C = row[s]; if (C) setCls(C.el, C.st, 'mtx4sel', K.has(i * 16 + s)); } }
+}
+/* ---------- Leiste (Muster: Spuren-Gruppe .ui1gb) ---------- */
+function mtx4BarMake() {
+  mtx4Css(); if (typeof ui1Css === 'function') ui1Css();
+  const b = el('div', 'ui1gb mtx4b'); b.hidden = true; b.setAttribute('role', 'toolbar'); b.setAttribute('aria-label', 'Mehrere Clips');
+  const mk = (k, txt, lab, cls) => { const x = el('button', 'rb' + (cls ? ' ' + cls : ''), txt); x.dataset.m4 = k; x.setAttribute('aria-label', lab); x.title = lab; return x; };
+  M4.btn = {
+    n: el('span', 'n'),
+    dr: mk('dr', 'Drums fest', 'Drum-Clips: fest │ mit ± transponieren', 't2'),
+    fit: mk('fit', 'Tonart ▾', 'In Tonart einpassen', 'w'), q: mk('q', 'Quant. ▾', 'Quantisieren', 'w'),
+    x: mk('x', '✕', 'Auswahl beenden', 'x'),
+    un: mk('un', '↶', 'Rückgängig', 'x'), re: mk('re', '↷', 'Wiederholen', 'x'),          // Prüfung 1: die Leiste deckt das ↶ der Spur-Leiste
+    m12: mk('m12', '−12', 'Oktave tiefer'), m1: mk('m1', '−1', 'Halbton tiefer'), p1: mk('p1', '+1', 'Halbton höher'), p12: mk('p12', '+12', 'Oktave höher'),
+    su: mk('su', '▲ Stufe', 'In der Tonart eine Stufe hoch', 't2'), sd: mk('sd', '▼ Stufe', 'In der Tonart eine Stufe tiefer', 't2'),
+    h2: mk('h2', '÷2 Länge', 'Halbe Länge', 't2'), x2: mk('x2', '×2 Länge', 'Doppelte Länge (Inhalt verdoppelt)', 't2'),
+  };
+  for (const [k, a, w] of [['su', '▲', 'Stufe'], ['sd', '▼', 'Stufe'], ['h2', '÷2', 'Länge'], ['x2', '×2', 'Länge']]) M4.btn[k].innerHTML = esc(a) + '<small>' + esc(w) + '</small>';
+  M4.rows = [0, 1, 2, 3].map(() => el('div', 'r'));
+  b.append(...M4.rows);
+  guardTouch(b);
+  onTap(b, x => { try { mtx4Act(x.dataset.m4, x); } catch (e) { logErr(e); } }, 'button[data-m4]');
+  document.body.appendChild(b); M4.lay = '';
+  return b;
+}
+function mtx4Act(k, x) {
+  if (k === 'x') { mtx4End(); sx4Say('Auswahl beendet'); return; }
+  if (k === 'un' || k === 're') { mtx4Undo(k === 're'); return; }
+  if (k === 'dr') { M4.drums = !M4.drums; haptic('tick'); sx4Say(M4.drums ? 'Drum-Clips werden mit transponiert' : 'Drum-Clips bleiben fest'); mtx4Sync(); return; }
+  if (k === 'fit') { mtx4FitPop(x); return; }
+  if (k === 'q') { mtx4QPop(x); return; }
+  const d = {m12: -12, m1: -1, p1: 1, p12: 12}[k];
+  if (d) { mtx4Semi(d); return; }
+  if (k === 'su' || k === 'sd') { mtx4Deg(k === 'su' ? 1 : -1); return; }
+  if (k === 'h2' || k === 'x2') mtx4Len(k === 'x2' ? 2 : .5);
+}
+// Lage: hochkant zwei Zeilen ab der TEILE-Leiste nach unten (über AKKORD/TRÄGER), quer vier Zeilen in der rechten Spalte bis zur
+// Unterkante der TEILE-Leiste (die Matrix bleibt ganz frei)
+function mtx4Layout(b, land) {
+  const B = M4.btn, R4 = M4.rows, lay = (land ? 'L' : 'P') + (M4.hasDr ? 'd' : '');
+  if (M4.lay === lay) return;
+  M4.lay = lay;
+  R4.forEach(r => { r.textContent = ''; });
+  const dr = M4.hasDr ? [B.dr] : [];
+  // Prüfung 1: ↶ liegt genau über dem ↶ der Spur-Leiste (rechts außen in der Zeile darüber) – der gewohnte Griff trifft ↶, ↷ links daneben
+  if (land) { R4[0].append(B.n, ...dr, B.x); R4[1].append(B.m12, B.m1, B.p1, B.p12); R4[2].append(B.su, B.sd, B.h2, B.x2); R4[3].append(B.fit, B.q, B.re, B.un); }
+  else { R4[0].append(B.n, ...dr, B.fit, B.q, B.x, B.re, B.un); R4[1].append(B.m12, B.m1, B.p1, B.p12, B.su, B.sd, B.h2, B.x2); }
+}
+function mtx4Sync() {
+  if (M4.on && M4.proj !== S) { M4.on = false; M4.sel = []; }           // anderes Projekt geladen
+  if (!M4.on) { if (M4.bar) M4.bar.hidden = true; if (M4.iv) { clearInterval(M4.iv); M4.iv = 0; } document.body.classList.remove('mtx4m'); UI.dirty.grid = true; return; }
+  if (!M4.iv) M4.iv = setInterval(mtx4Sync, 400);
+  const b = M4.bar || (M4.bar = mtx4BarMake());
+  const ownPop = UI.pop && /^mtx4/.test(UI.pop.name || '');
+  const hide = !!((R.editor && R.editor !== 'menu') || (UI.pop && !ownPop) || EL.menu.classList.contains('open') || (typeof VV !== 'undefined' && VV.open) || UI.songView || UI.pick ||
+    (typeof UI1 !== 'undefined' && UI1.sel && UI1.sel.size));
+  if (b.hidden !== hide) b.hidden = hide;
+  if (document.body.classList.contains('mtx4m') === hide) document.body.classList.toggle('mtx4m', !hide);
+  if (hide) return;
+  const c = mtx4Count(), land = isLand();
+  M4.hasDr = c.dr > 0;
+  mtx4Layout(b, land);
+  // hochkant (Zeile 1 trägt jetzt auch ↶ ↷): kurz – „3 Clips“ und darunter „2 Szenen“
+  const txt = c.n ? c.n + (c.n === 1 ? ' Clip' : ' Clips') + (c.sc > 1 && land ? ' · ' + c.sc + ' Szenen' : '') : (land ? 'Clips antippen' : 'antippen');
+  const sub = c.n ? (land ? 'Tipp = dazu/weg · Szene ▶ = alle' : c.sc > 1 ? c.sc + ' Szenen' : 'Tipp = dazu/weg') : 'Tipp = dazu/weg · ✕ = fertig';
+  const n = M4.btn.n; if (n._t !== txt + sub) { n._t = txt + sub; n.innerHTML = esc(txt) + '<small>' + esc(sub) + '</small>'; }
+  const dt = M4.drums ? '±' : 'fest'; if (M4.btn.dr._t !== dt) { M4.btn.dr._t = dt; M4.btn.dr.innerHTML = 'Drums<small>' + esc(dt) + '</small>'; }   // zweizeilig wie ▲ Stufe
+  M4.btn.dr.classList.toggle('on', M4.drums); M4.btn.dr.setAttribute('aria-pressed', String(M4.drums));
+  for (const k of ['m12', 'm1', 'p1', 'p12', 'su', 'sd', 'h2', 'x2', 'fit', 'q']) { const off = !c.n; if (M4.btn[k].classList.contains('dim') !== off) M4.btn[k].classList.toggle('dim', off); }
+  for (const [k, A] of [['un', UNDO], ['re', REDO]]) { const off = !A.length; if (M4.btn[k].classList.contains('dim') !== off) M4.btn[k].classList.toggle('dim', off); }
+  const st = document.getElementById('strip'), r = st && st.offsetParent ? st.getBoundingClientRect() : null;
+  const vw = window.innerWidth, vh = window.innerHeight;
+  let L, T, W, H;
+  if (r && r.width > 200 && r.height >= 40) {
+    L = r.left; W = r.width;
+    if (land) { H = 4 * 44 + 3 * 4 + 8; T = Math.max(44, r.bottom - H); if (T + H > vh - 4) T = vh - 4 - H; }
+    else { H = 2 * 44 + 4 + 8; T = r.top; if (T + H > vh - 4) T = vh - 4 - H; }
+  } else { const a = (EL.gridArea || document.body).getBoundingClientRect(); W = Math.min(460, a.width - 16); L = a.left + (a.width - W) / 2; H = land ? 4 * 44 + 20 : 100; T = Math.max(4, a.bottom - H - 6); }
+  W = Math.min(W, vw - L);
+  const css = Math.round(L) + ',' + Math.round(T) + ',' + Math.round(W) + ',' + Math.round(H);
+  if (b._pos !== css) { b._pos = css; b.style.left = Math.round(L) + 'px'; b.style.top = Math.round(T) + 'px'; b.style.width = Math.round(W) + 'px'; b.style.height = Math.round(H) + 'px'; }
+}
+/* ---------- Blätter: In Tonart einpassen ▾ · Quantisieren ▾ (Kopf wie die MTX-Blätter, Knöpfe ≥ 44 px) ---------- */
+// das Blatt liegt neben der Leiste, nie darauf (quer: links daneben, hochkant: darüber – openPop mit above)
+function mtx4PopPlace(p) {
+  const B = M4.bar; if (!p || !B || B.hidden) return;
+  const q = B.getBoundingClientRect(), r = p.getBoundingClientRect(), vh = window.innerHeight;
+  if (r.right <= q.left || r.left >= q.right || r.bottom <= q.top || r.top >= q.bottom) return;
+  if (isLand()) { p.style.left = Math.round(Math.max(8, q.left - r.width - 8)) + 'px'; p.style.top = Math.round(clamp(q.top, 8, Math.max(8, vh - r.height - 8))) + 'px'; }
+  else p.style.top = Math.round(Math.max(8, q.top - r.height - 8)) + 'px';
+}
+function mtx4FitPop(anchor) {
+  if (!mtx4Count().n) { toast('Erst Clips antippen'); return false; }
+  openPop(anchor, p => {
+    p.classList.add('mtx4p');
+    p.innerHTML = '<div class="mtx-hd"><h4>In Tonart einpassen</h4><button class="rb mtx-x" data-m4f="no" aria-label="Schließen">✕</button></div>' +
+      '<div class="small">Grundton je Clip (C-Dur-Clip → C-Dorisch). Rhythmus und Anschlag bleiben; Drum-Clips bleiben.</div>' +
+      '<div class="mtx4g">' + MTX4_FIT.map(([k, l]) => `<button class="mbtn rb" data-m4f="${k}">${esc(l)}</button>`).join('') + '</div>';
+    guardTouch(p);
+    onTap(p, btn => { const k = btn.dataset.m4f; closePop(); if (k !== 'no') mtx4Fit(k); mtx4Sync(); }, 'button[data-m4f]');
+  }, {name: 'mtx4fit', above: !isLand()});
+  mtx4PopPlace(UI.pop && UI.pop.el);
+  return true;
+}
+function mtx4QPop(anchor) {
+  if (!mtx4Count().n) { toast('Erst Clips antippen'); return false; }
+  openPop(anchor, p => {
+    p.classList.add('mtx4p');
+    p.innerHTML = '<div class="mtx-hd"><h4>Quantisieren</h4><button class="rb mtx-x" data-m4q="no" aria-label="Schließen">✕</button></div>' +
+      '<div class="small">Alle gewählten Clips aufs Raster (Stärke 100 %). Auto = Raster je Clip erkennen.</div>' +
+      '<div class="mtx4g q">' + MTX4_Q.map(([k, l]) => `<button class="mbtn rb" data-m4q="${k}">${esc(l)}</button>`).join('') + '</div>';
+    guardTouch(p);
+    onTap(p, btn => { const k = btn.dataset.m4q; closePop(); if (k !== 'no') mtx4Quant(k); mtx4Sync(); }, 'button[data-m4q]');
+  }, {name: 'mtx4q', above: !isLand()});
+  mtx4PopPlace(UI.pop && UI.pop.el);
+  return true;
+}
+/* ---------- Kern: eine Aktion über alle gewählten Clips = ein ↶ ---------- */
+// läuft der Clip gerade: alter Inhalt bis zum nächsten Taktstrich (mtx4Sched), danach der neue
+function mtx4HoldSet(t, s, old, bar0) {
+  if (!R.playing || !AU.ctx || R.slot[t] !== s || (typeof ownPlaying === 'function' && ownPlaying(t))) return;
+  const c = S.tracks[t].clips[s], h = M4.hold[t];
+  if (h && h.s === s && h.clip === c && h.bar > R.schedBeat) return;              // schon gehalten: der älteste Inhalt bleibt bis zum Takt
+  let bar = bar0; if (bar == null) { try { bar = nextBarFromAudible(); } catch (e) { return; } }
+  if (!isFinite(bar)) return;
+  M4.hold[t] = {s, old, clip: c, bar};
+}
+// Prüfung 6: ↶ ↷ eines MTX4-Schritts (Haken in undo/redo, vor dem Anwenden) – der laufende Inhalt bleibt bis zum nächsten Taktstrich.
+// Das neue Clip-Objekt entsteht erst in undoApply: die Haltung bindet sich beim ersten Planen danach (clip null, cur0 = das alte Objekt)
+function mtx4HoldFor(u) {
+  if (!u || !u.mtx4) return;
+  M4.stag = performance.now() + 3000;                                // Vorschaubilder gestaffelt
+  if (!R.playing || !AU.ctx) return;
+  let bar; try { bar = nextBarFromAudible(); } catch (e) { return; }
+  if (!isFinite(bar)) return;
+  for (const it of (u.kind === 'group' ? u.items : [u])) {
+    if (!it || it.kind !== 'clip') continue;
+    const t = it.track, s = it.scene, tr = S.tracks[t], c = tr && tr.clips[s];
+    if (!c || R.slot[t] !== s || (typeof ownPlaying === 'function' && ownPlaying(t))) continue;
+    const h = M4.hold[t];
+    M4.hold[t] = {s, old: h && h.s === s && h.clip === c && h.bar > R.schedBeat ? h.old : deep(c), clip: null, cur0: c, bar: h && h.s === s && h.clip === c && h.bar > R.schedBeat ? h.bar : bar};
+  }
+}
+// Haken am Anfang von scheduleTrack: true = schon geplant (Fenster am Taktstrich geteilt)
+function mtx4Sched(i, from, to, late) {
+  const h = M4.hold[i]; if (!h || M4.inSched) return false;
+  const tr = S.tracks[i];
+  if (h.clip === null && tr && R.playing && R.slot[i] === h.s && from < h.bar - 1e-9) { if (tr.clips[h.s] === h.cur0) return false; h.clip = tr.clips[h.s]; }   // Prüfung 6
+  if (!R.playing || !tr || R.slot[i] !== h.s || tr.clips[h.s] !== h.clip || from >= h.bar - 1e-9) { M4.hold[i] = null; return false; }
+  const cur = tr.clips[h.s];
+  M4.inSched = true;
+  try { tr.clips[h.s] = h.old; scheduleTrack(i, from, Math.min(to, h.bar), late); } finally { tr.clips[h.s] = cur; M4.inSched = false; }
+  if (to > h.bar) { M4.hold[i] = null; scheduleTrack(i, h.bar, to, late); }
+  return true;
+}
+// Prüfung 2: eine Aktion läuft blockweise (≈ 8 ms je Aufgabe, dazwischen ein Bild – die Vorschaubilder folgen gestaffelt); eine zweite
+// Aktion oder ↶ ↷ der Leiste wartet, bis die erste fertig ist. Kleine Auswahl = sofort fertig (Rückgabe n), große = Promise auf n.
+const MTX4_SLICE = 8;
+function mtx4Later(f) { if (document.hidden || typeof requestAnimationFrame !== 'function') setTimeout(f, 16); else requestAnimationFrame(() => setTimeout(f, 0)); }
+function mtx4Next() { M4.job = null; const f = M4.q.shift(); if (f) { try { f(); } catch (e) { logErr(e); } } }
+function mtx4Run(label, kind, fn) {
+  if (M4.job) return new Promise(res => M4.q.push(() => { const r = mtx4Run(label, kind, fn); if (r && typeof r.then === 'function') r.then(res); else { res(r); } }));
+  const L = mtx4List(); if (!L.length) { toast('Erst Clips antippen'); mtx4Next(); return null; }
+  if (rec.state !== 'off') { toast('Erst Aufnahme beenden'); mtx4Next(); return null; }
+  let bar = null;
+  if (R.playing && AU.ctx) {                                         // ein Taktstrich für alle Clips der Aktion
+    try { bar = nextBarFromAudible(); if (L.length > 8 && b2t(bar) - AU.ctx.currentTime < .3) bar = nextBarFromAudible(b2t(bar) + AU.outLat + .05); } catch (e) { bar = null; }
+    if (bar != null && !isFinite(bar)) bar = null;
+  }
+  const J = {label, kind, fn, L, k: 0, items: [], olds: [], skipD: 0, skipR: 0, odd: null, oddN: 0, bar, proj: S, res: null, done: false, n: 0};
+  M4.job = J; M4.stag = performance.now() + 3000;
+  mtx4Work(J);
+  return J.done ? J.n : new Promise(res => { J.res = res; });
+}
+function mtx4Work(J) {
+  if (J.proj !== S) { J.done = true; M4.q.length = 0; mtx4Next(); if (J.res) J.res(0); return; }   // anderes Projekt geladen
+  const t0 = performance.now();
+  while (J.k < J.L.length) {
+    const {t, s} = J.L[J.k++];
+    mtx4One(J, t, s);
+    if (J.k < J.L.length && performance.now() - t0 > MTX4_SLICE) { mtx4Later(() => { try { mtx4Work(J); } catch (e) { logErr(e); J.done = true; mtx4Next(); if (J.res) J.res(0); } }); return; }
+  }
+  mtx4Finish(J);
+}
+function mtx4One(J, t, s) {
+  const tr = S.tracks[t], c = tr && tr.clips[s]; if (!c) return;
+  const dr = mtx4Drum(tr), kind = J.kind;
+  if (dr && (kind === 'deg' || kind === 'fit' || (kind === 'semi' && !M4.drums))) { J.skipD++; return; }
+  const before = cleanClip(c), b0 = JSON.stringify(before), play = !!(R.playing && R.slot[t] === s);
+  const old = play ? deep(c) : null;                                 // nur ein laufender Clip braucht den alten Inhalt zum Planen
+  if (play) mtx4HoldSet(t, s, old, J.bar);
+  if (kind === 'len' && J.fn.f === .5 && c.len > 1 && c.len % 2) { J.oddN++; if (!J.odd) J.odd = {a: c.len, b: c.len >> 1}; }
+  let ok = false; try { ok = J.fn(t, s, c, dr); } catch (e) { logErr(e); ok = false; }
+  if (ok === 'range') { J.skipR++; ok = false; }
+  const cc = tr.clips[s];
+  if (!ok || JSON.stringify(cleanClip(cc)) === b0) { if (M4.hold[t] && M4.hold[t].old === old) M4.hold[t] = null; if (J.odd && J.odd.a === c.len && !ok) { J.oddN--; if (!J.oddN) J.odd = null; } return; }
+  J.items.push({kind: 'clip', track: t, scene: s, before, label: J.label, mergeKey: null}); J.olds.push({t, s, old: before});
+  if (ok !== 'edited') afterClipEdit(t, s);                          // Länge: clipLength hat afterClipEdit schon gerufen
+  if (ED.roll && ED.rollAt && ED.rollAt.t === t && ED.rollAt.s === s) { try { ED.roll.refresh(); } catch (e) {} }
+}
+function mtx4Finish(J) {
+  const {label, kind, items, olds, skipD, skipR} = J, n = items.length, gl = label + ' · ' + n + ' Clips';
+  // Teil 2: die Fassung von vorher wird eine neue Clip-Version (im selben ↶-Schritt). Prüfung 2: je Version ein kleiner 'own'-Schritt
+  // statt eines Song-Schritts (der Verlauf-Rekorder vergleicht dann nur die neue Version, nicht den ganzen Song)
+  let vs = null; try { vs = n ? mtx4Vers(olds) : null; } catch (e) { logErr(e); }
+  const all = vs && vs.items.length ? items.concat(vs.items) : items;
+  if (n) undoPush(Object.assign(all.length > 1 ? {kind: 'group', label: gl, items: all} : all[0], {mtx4: 1}));
+  mtx4KeysLater();
+  M4.n++; M4.last = {label, n, skipD, skipR, vers: vs ? vs.made.map(x => x.v) : [], odd: J.oddN};
+  const extra = (skipD ? ' · Drums fest' + (kind === 'semi' ? ' (Drums ± = mit)' : '') : '') + (skipR ? ' · ' + skipR + (kind === 'len' ? ' am Rand (1–64 Takte)' : ' am Rand (zu hoch/tief)') : '') +
+    (J.oddN ? ' · ' + (J.oddN > 1 ? J.oddN + '× ' : '') + 'ungerade Länge abgerundet (' + J.odd.a + ' → ' + J.odd.b + (J.odd.b === 1 ? ' Takt)' : ' Takte)') : '') +
+    (vs && vs.made.length ? (vs.made.length === 1 ? ' · vorher = v' + vs.made[0].v : ' · vorher als Versionen gemerkt') : '') + (vs && vs.full ? ' · Versionen voll (v' + sx9Max() + ')' : '');
+  if (n) toast(label + ' · ' + n + (n === 1 ? ' Clip' : ' Clips') + extra);          // Prüfung 1: ohne Aktionsknopf – ↶ ↷ stehen in der Leiste
+  else toast(label + ': nichts geändert' + extra);
+  haptic(n ? 'tick' : 'pop'); UI.dirty.grid = true; mtx4Sync();
+  J.done = true; J.n = n;
+  mtx4Next();
+  if (J.res) J.res(n);
+}
+// ↶ ↷ der Leiste: wartet auf eine laufende Aktion; der Hinweis danach ohne Aktionsknopf (der läge sonst unter der Leiste)
+function mtx4Undo(fwd) {
+  if (M4.job) return new Promise(res => M4.q.push(() => res(mtx4Undo(fwd))));
+  const ok = fwd ? redo() : undo();
+  if (ok && UI.toastActs && UI.lastToast) toast(UI.lastToast);
+  mtx4Sync();
+  return ok;
+}
+// Vorschaubilder gestaffelt (Haken in renderGrid vor dem Neuzeichnen eines Vorschaubilds): im Modus und 3 s nach einer Sammel-Aktion
+// oder ihrem ↶ ↷ zeichnet ein Bild höchstens ≈ 5 ms Vorschaubilder (mindestens 2); der Rest folgt im nächsten Bild
+function mtx4Thumb() {
+  const now = performance.now();
+  if (!M4.on && now > M4.stag) return false;
+  if (!M4.thN++) { M4.th0 = now; return false; }
+  if (M4.thN <= 2 || now - M4.th0 < 5) return false;
+  M4.thDef = true; return true;
+}
+// Prüfung 2: die Szenen-Tonarten (auto) nach einer Sammel-Aktion je Szene in einer eigenen Aufgabe statt alle 8 in einer
+function mtx4KeysLater() {
+  if (typeof KEYC === 'undefined' || !KEYC.pending || !KEYC.pending.size) return;
+  clearTimeout(KEYC.timer);
+  const L = [...KEYC.pending]; KEYC.pending.clear();
+  let k = 0; const step = () => { if (k >= L.length) return; try { applySceneKeys(L[k++]); } catch (e) { logErr(e); } setTimeout(step, 0); };
+  setTimeout(step, 400);                                            // eigener Zeitgeber: eine neue Bearbeitung hebt ihn nicht auf
+}
+function mtx4Idle() { return new Promise(res => { const f = () => (M4.job || M4.q.length ? setTimeout(f, 10) : res(true)); f(); }); }
+// Halbtöne / Oktaven. Eine feste Tonart (Fest / Aufnahme) rückt mit, eine automatische erkennt die App neu
+function mtx4Semi(d) {
+  const lab = (d > 0 ? '+' : '−') + Math.abs(d) + (Math.abs(d) === 12 ? ' (Oktave)' : '');
+  return mtx4Run('Transponieren ' + lab, 'semi', (t, s, c, dr) => {
+    if (c.notes.some(n => n.n + d < 0 || n.n + d > 127)) return 'range';
+    for (const n of c.notes) n.n += d;
+    if (!dr && c.key && (c.key.src || 'auto') !== 'auto' && d % 12) {
+      const nk = Object.assign({}, c.key, {root: PCx(c.key.root + d)});
+      if (nk.ref != null) { nk.ref += d; if (nk.ref < 0 || nk.ref > 127) delete nk.ref; }
+      c.key = nk;                                                      // neues Objekt: schon geplante Töne behalten ihren Bezug
+    }
+    return true;
+  });
+}
+// eine Stufe in der Tonart des Clips (fremde Töne zum nächsten Ton der Leiter) – wie ▲ Stufe im Noten-Editor
+function mtx4Deg(dir) {
+  return mtx4Run('Stufe ' + (dir > 0 ? '▲' : '▼'), 'deg', (t, s, c) => {
+    const k = c.key || S.key, SC = Harmony.SCALES[k.scale] || Harmony.SCALES.ionian, inS = m => SC.includes(PCx(m - k.root));
+    const step = n => { let m = n + dir; while (!inS(m) && m > 0 && m < 127) m += dir; return m; };
+    const out = c.notes.map(n => step(n.n));
+    if (out.some(m => m < 0 || m > 127)) return 'range';
+    c.notes.forEach((n, j) => { n.n = out[j]; });
+    return true;
+  });
+}
+// die Tonhöhen eines Clips im Modus (Grundton = Tonart des Clips); null = geht nicht
+function mtx4FitNotes(c, mode) {
+  const k = c.key || S.key, root = k.root, SRC = Harmony.SCALES[k.scale] || Harmony.SCALES.ionian;
+  const ord = c.notes.map((n, j) => j).sort((a, b) => c.notes[a].t - c.notes[b].t || c.notes[a].n - c.notes[b].n);
+  const dirOf = new Map(); let prev = null;
+  for (const j of ord) { const p = c.notes[j].n; if (!dirOf.has(j)) dirOf.set(j, prev == null || p >= prev ? 1 : -1); prev = p; }
+  if (mode === 'pent') {                                            // Prüfung 3: Töne der Pentatonik bleiben stehen, fremde gehen zum Nachbarn
+    const P = G10G_SCALES[SRC[2] === 4 ? 'pentMaj' : 'pentMin'], Z = P.map(x => PCx(root + x));
+    return c.notes.map((n, j) => Harmony.snapToScale(n.n, Z, dirOf.get(j)));   // gleicher Ton zur gleichen Zeit: mtx4Fit legt zusammen
+  }
+  const T = Harmony.SCALES[mode]; if (!T) return null;
+  const Z = T.map(x => PCx(root + x));
+  return c.notes.map((n, j) => { const rel = PCx(n.n - root), i = SRC.indexOf(rel); return i >= 0 ? n.n - rel + T[i] : Harmony.snapToScale(n.n, Z, dirOf.get(j)); });
+}
+function mtx4Fit(mode) {
+  const lab = (MTX4_FIT.find(x => x[0] === mode) || [, mode])[1];
+  return mtx4Run('In Tonart: ' + lab, 'fit', (t, s, c) => {
+    const out = mtx4FitNotes(c, mode); if (!out) return false;
+    if (out.some(m => m == null || m < 0 || m > 127)) return 'range';
+    c.notes.forEach((n, j) => { n.n = out[j]; });
+    // Doppel (gleicher Ton zur gleichen Zeit) werden einer: längste Dauer, lautester Anschlag
+    const seen = new Map(), keep = [];
+    for (const n of c.notes) { const key = Math.round(n.t * 960) + ':' + n.n, o = seen.get(key); if (o) { o.d = Math.max(o.d, n.d); o.v = Math.max(o.v, n.v); } else { seen.set(key, n); keep.push(n); } }
+    if (keep.length !== c.notes.length) c.notes = keep;
+    if (mode !== 'pent') { const k = c.key || S.key; const nk = {root: k.root, scale: mode, src: 'user'}; if (k.ref != null) nk.ref = k.ref; c.key = nk; }
+    return true;
+  });
+}
+function mtx4Quant(grid) {
+  if (grid !== 'auto' && !GRID_STEP[grid]) return null;
+  return mtx4Run('Quantisieren ' + (grid === 'auto' ? 'Auto' : grid), 'quant', (t, s, c) => {
+    if (!c.notes.length) return false;
+    const g = quantizeClip(t, s, {grid, strength: 1, swing: .5}, null, {base: null});   // Vorschau-Weg: ohne eigenen ↶-Schritt
+    if (!g) return false;
+    const cc = S.tracks[t].clips[s];
+    if (g === 'off') delete cc.q; else cc.q = {grid: g, swing: .5, strength: 1};
+    return true;
+  });
+}
+function mtx4RunF(label, kind, fn, f) { fn.f = f; return mtx4Run(label, kind, fn); }
+/* ---------- Teil 2: Länge ÷2 / ×2 – derselbe Weg wie ½ / ×2 im Clip-Blatt (clipLength), ohne dessen eigenen ↶-Schritt ---------- */
+function mtx4Len(f) {
+  if (f !== 2 && f !== .5) return null;
+  return mtx4RunF('Länge ' + (f === 2 ? '×2' : '÷2'), 'len', (t, s, c) => {
+    if (f === 2 ? c.len * 2 > 64 : c.len < 2) return 'range';
+    const pu = pushUndo; pushUndo = () => {};                         // mtx4Run legt den gemeinsamen Schritt an
+    try { clipLength(t, s, f); } finally { pushUndo = pu; }
+    return 'edited';                                                  // Prüfung 2: clipLength hat afterClipEdit schon gerufen
+  }, f);
+}
+/* ---------- Teil 2: neue Clip-Versionen (SX9) – die Fassung von vorher, einmal je Clip und Auswahl-Sitzung ---------- */
+function mtx4InSong(song, t, s) { for (let x = 0; x < song.bars; x++) { const h = sx9At(song, t, x); if (h && h.s === s && h.v === 1) return true; } return false; }   // Prüfung 9: nur v1 = der Clip selbst
+function mtx4Vers(list) {
+  const song = S.song, out = {made: [], full: 0, items: []}; if (!song || !song.bars || !list.length) return out;
+  const mine = (x, m) => { const c = m && sx9Ver(song, m.id); return !!(c && c.from.t === x.t && c.from.s === x.s); };   // nach ↶ kann die Nummer neu vergeben sein
+  // Prüfung 4: höchstens EINE automatische Version je Clip – nur ein Clip ohne Versionen bekommt v2 (bewusst angelegte Plätze bleiben frei)
+  const todo = list.filter(x => { const tr = S.tracks[x.t], m = M4.ver.find(v => v.tr === tr && v.s === x.s); return !mine(x, m) && !sx9List(song, x.t, x.s).length && mtx4InSong(song, x.t, x.s); });
+  if (!todo.length) return out;
+  const sg = song;
+  for (const x of todo) {
+    const v = sx9List(sg, x.t, x.s).reduce((m, q) => Math.max(m, q.v), 1) + 1;
+    if (v > sx9Max() || ownCount(sg) >= OWN_MAX) { out.full++; continue; }
+    const c = deep(x.old), id = ownNewId(sg);                         // wie sx9New: Kopie, Herkunft und Nummer am Ende
+    delete c.from; delete c.ver; for (const n of c.notes || []) { delete n.born; delete n.bornRun; }
+    c.from = {t: x.t, s: x.s, bar: 0}; c.ver = v;
+    sg.own = sg.own || {}; sg.own[id] = c;
+    out.made.push({tr: S.tracks[x.t], s: x.s, id, v});
+    out.items.push({kind: 'own', id, before: null, label: 'Vorher als Version', mergeKey: null});   // ↶ = ownRestore(id, null): die Version geht wieder
+  }
+  if (out.made.length) songChanged();
+  for (const m of out.made) { M4.ver = M4.ver.filter(v => !(v.tr === m.tr && v.s === m.s)); M4.ver.push(m); }
+  return out;
+}
+/* ---------- Clip-Blatt: [Mehrere wählen] (Haken in openClipSheet) ---------- */
+function mtx4ClipSheet(g, B, t, s, clip) {
+  if (!clip || !mtx4Ok(t, s)) return;
+  mtx4Css();
+  const b = B('Mehrere wählen', () => { closeClipSheet(); mtx4Start(t, s); }, 'mtx4cs', 'Mehrere Clips wählen und zugleich transponieren, einpassen, quantisieren');
+  g.append(b);
+}
+/* ---------- „Wo finde ich …?“ (UI1) ---------- */
+(function mtx4Guide() {
+  try {
+    const L = ui1Entries(), E = (id, n, w, d, s, go, q) => ({id, n, w, d, s, go, q}); if (L.some(x => x.id === 'mtx4multi')) return;
+    L.push(E('mtx4multi', 'Mehrere Clips zugleich (transponieren, Tonart, Quantisieren, Länge)', 'Clip lange drücken › Mehrere wählen › weitere Clips antippen',
+      'Leiste: −12 −1 +1 +12, Stufe ▲▼, Länge ÷2 ×2, Tonart ▾ (Dur, Moll, Dorisch, Mixolydisch, Phrygisch, Pentatonik), Quant. ▾ – je ein ↶; Drum-Clips nur mit „Drums ±“. ↶ ↷ stehen in der Leiste. Spielt ein Clip im Song und hat noch keine Versionen, bleibt die Fassung von vorher als v2 (Clip-Blatt › Versionen).',
+      'mehrere clips gleichzeitig transponieren auswahl mehrfach tonart einpassen dorisch moll dur mixolydisch phrygisch pentatonik quantisieren stufe oktave halbton szene länge doppelt halb verdoppeln halbieren version vorher',
+      ui1G.clip(false), () => EL.clipSheet.querySelector('.mtx4cs')));
+  } catch (e) {}
+})();
+/* ---------- Test-Schnittstelle ---------- */
+const MTX4_API = {
+  start: (t, s) => mtx4Start(t, s), end: () => mtx4End(), on: () => M4.on, sel: () => mtx4List(), tap: (t, s) => mtx4Tap(t, s), scene: s => mtx4Scene(s),
+  set: L => { M4.sel = []; for (const [t, s] of L || []) mtx4Set(t, s, true); UI.dirty.grid = true; mtx4Sync(); return mtx4List(); },
+  semi: d => mtx4Semi(d), deg: d => mtx4Deg(d), fit: m => mtx4Fit(m), quant: g => mtx4Quant(g), len: f => mtx4Len(f), drums: v => { M4.drums = !!v; mtx4Sync(); return M4.drums; },
+  vers: () => M4.ver.map(v => ({t: S.tracks.indexOf(v.tr), s: v.s, id: v.id, v: v.v})),
+  fitNotes: (t, s, m) => { const c = S.tracks[t] && S.tracks[t].clips[s]; return c ? mtx4FitNotes(c, m) : null; },
+  info: () => ({on: M4.on, n: M4.n, last: M4.last, drums: M4.drums, hold: M4.hold.map(h => (h ? {s: h.s, bar: h.bar} : null)), lay: M4.lay}),
+  bar: () => M4.bar, sync: () => mtx4Sync(), idle: () => mtx4Idle(), undo: fwd => mtx4Undo(!!fwd), busy: () => !!M4.job || M4.q.length > 0,
+  thumbs: () => ({def: M4.thDef, stag: M4.stag > performance.now()}),
+};
+Object.assign(SYNQUENZER, {mtx4: MTX4_API});                /* MTX4: Test-API */
+/* MTX4-END */
 /* ===== KI1-BEGIN (Profi-Trennung auf der Spektral-Seite; Xander 14.11.: „Jedes Instrument muss voneinander gut trennbar sein“) =====
    Optional, nur auf Knopfdruck: MIT-lizenziertes 4-Spur-Modell (Drums, Bass, Gesang, Rest; je Spur ein LSTM-Netz als ONNX, ≈ 17 MB),
    feste Revision der Modell-Ablage, Laufzeit-Bibliothek in derselben festen Version wie G9A. Nichts davon beim App-Start.
@@ -99311,6 +100255,7 @@ function spk1DspMake(V) {
     return {pos, neg, box};
   }
   function selFn(d, sel) {
+    { const r12 = typeof spk12SelFn === 'function' ? spk12SelFn(d, sel, selFn) : null; if (r12) return r12; }   /* SPK12: − / ∩ / Umkehren / Zauberstab */
     const sr = d.meta.sr, N = d.meta.base.N, hop = d.meta.base.hop, dur = d.meta.n / sr, ny = sr / 2;
     const all = (Array.isArray(sel) ? sel : [sel]).filter(Boolean), ras = all.filter(s => s.art === 'pinsel' || s.art === 'harm');
     const RA = ras.length ? selRaster(d, ras) : null;
@@ -100010,6 +100955,7 @@ function spk1DspMake(V) {
   if (typeof spk5DspMake === 'function') spk5DspMake({Z2, KI1K, BT, zerlegen, selFn, magsAt, stripe, tileArr, tidy, uTouch, uBegin, uEnd, uAbort, verUp, newLayer, Fn, NBn, TRn, tick, get, soon});   // SPK5: Zerlegen/Profi nur in der Auswahl, Anteile je Ebene
   if (Z2 && typeof spk9DspMake === 'function') spk9DspMake(Z2);   /* SPK9: Legato-Noten (Tonhöhen-Stufen) */
   if (Z2 && typeof spk6DspMake === 'function') Z2.s6 = spk6DspMake({Z2, V, BT, BLK, win, lay, masksOf, stripe, stCopy, newLayer, verUp, uBegin, uTouch, uEnd, render, block, get, put, del, keys, selFn});   // SPK6: Ebenen-Werkstatt (Ops über Z2.ops)
+  if (Z2 && typeof spk12DspMake === 'function') spk12DspMake(Z2, {selFn, specInfo, specChunk, get, put, soon, mixOf, gainFn, block, BLK, tick, harmTrack, similar});   /* SPK12: Zauberstab, Masken-Probe, Anzeige, Ebene abtasten, Merkmale, Regionen */
   return {on, stft, istft, specInfo, docs, lowSplit, Z2};   // SPK2: Z2 für Messungen
 }
 /* ---------- Hauptfaden: Worker (Blob aus Text), Rückfall = derselbe Kern hier ---------- */
@@ -100033,6 +100979,7 @@ function spk1Reply(m) {
 }
 // ein Auftrag an den Kern: {op, doc?, …}; cb = {prog(p), chunk(c)}
 function spk1Call(op, a, tr, cb) {
+  if (typeof spk12CallSrc === 'function') { const r12 = spk12CallSrc(op, a, cb); if (r12) { op = r12[0]; a = r12[1]; if (r12[2]) cb = r12[2]; } }   /* SPK12: Merkmale, Alle Ebenen abtasten */
   const w = spk1Worker(), id = ++SPK1.wid, m = Object.assign({}, a, {op, qid: id});   // qid = Auftrag, id = Analyse
   return new Promise((ok, no) => {
     SPK1.wq.set(id, Object.assign({ok, no}, cb || {}));
@@ -100268,6 +101215,7 @@ function spk1Build() {
   const pH = pane('harm'); sl(pH, 'Obertöne', 'K', 1, 32, 1, v => String(v), () => spk1HarmOpt(U)); sl(pH, 'Breite', 'bw', 10, 100, 5, v => v + ' ct', () => spk1HarmOpt(U));
   const pA = pane('aehn'); sl(pA, 'Empfindlich', 'empf', 0, 1, 0.05, v => Math.round(v * 100) + ' %', () => spk1HitsApply(U)); U.hitLab = el('label', '', ''); pA.appendChild(U.hitLab);
   if (typeof spk2Pane === 'function') spk2Pane(U, pane, sl);   // SPK2: Noten-Werkzeug
+  if (typeof spk12Pane === 'function') spk12Pane(U, pane, sl);   /* SPK12: Neu │ + │ − │ ∩ · Auswahl ▾ · Zauberstab */
   const st = U.st = el('div', 'spk1-st', ''), ac = U.ac = el('div', 'spk1-ac'), ly = U.ly = el('div', 'spk1-ly pan-y'), sp = U.sp = el('div', 'spk1-sp pan-y');
   const A = (a, t, lab) => { const b = el('button', 'mbtn rb', t); b.dataset.a = a; if (lab) b.setAttribute('aria-label', lab); ac.appendChild(b); U['b_' + a] = b; return b; };
   A('play', '▶ Abspielen', 'Abspielen ab der Position'); A('psel', '▶ Auswahl', 'Nur die Auswahl hören'); A('into', 'In Ebene ▾', 'Auswahl in eine Ebene verschieben oder kopieren');
@@ -100461,6 +101409,7 @@ function spk1SelSpan(U) {   // Zeitbereich der Auswahl (für ▶ Auswahl und das
 }
 function spk1OvDraw(U) {
   const cv = U.ov, x = cv.getContext('2d'), d = U.dpr, W = U.W, H = U.H, v = U.v; x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, cv.width, cv.height); x.setTransform(d, 0, 0, d, 0, 0);
+  const s12 = typeof spk12OvPre === 'function' ? spk12OvPre(U) : null;   /* SPK12 */
   if (v.rowH * 12 >= 18) { x.fillStyle = 'rgba(255,255,255,.07)'; for (let m = Math.ceil((v.mTop - H / v.rowH) / 12) * 12; m <= v.mTop; m += 12) x.fillRect(0, Math.round((v.mTop - m + 0.5) * v.rowH), W, 1); }
   const sel = U.tmp ? U.sel.filter(s => s.art === 'pinsel' || s.art === 'harm').concat([U.tmp]) : U.sel;
   // Pinsel-Striche (Ellipse = Radius in Zeit × Cent), Radierer schneidet heraus
@@ -100493,6 +101442,7 @@ function spk1OvDraw(U) {
     x.strokeStyle = hit ? '#ffb22e' : '#f4f1ea'; x.strokeRect(Math.round(xa) + 0.5, Math.round(ya) + 0.5, Math.round(xb - xa), Math.round(yb - ya));
   }
   x.setLineDash([]);
+  if (s12) spk12OvPost(U, x, s12);   /* SPK12: Ergebnis-Fläche + Rand-Griffe */
   if (typeof spk5Fd === 'function' && spk5Fd(U) > SPK5_FD_SKIP) { if (typeof spk2LpOv === 'function') spk2LpOv(U, x); } else if (typeof spk2OvDraw === 'function') spk2OvDraw(U, x);   // SPK2: Noten-Kästchen · SPK5: in der Noten-Ansicht zeichnet die Notenrolle die Kästchen
   if (typeof spk5OvDraw === 'function') spk5OvDraw(U, x);   // SPK5: Fortschritt über dem Bereich, Notenrolle
   const p = U.pos != null ? U.pos : U.cur, px = Math.round(spk1X(U, p)) + 0.5;
@@ -100507,6 +101457,7 @@ function spk1Gest(U) {
   mn.addEventListener('pointerdown', e => {
     if (!U.meta || e.button > 0) return; try { mn.setPointerCapture(e.pointerId); } catch (er) {}
     P.set(e.pointerId, pt(e)); spk1Dd(U, null);
+    if (P.size === 2 && G && G.s12cand && typeof spk12Two === 'function' && spk12Two(U, G, P)) return;   /* SPK12: zwei Finger am Rand = Weichheit */
     if (P.size === 1) G = spk1ToolDown(U, pt(e));
     else if (P.size === 2) { if (G) spk1ToolCancel(U, G); G = null; Z = zStart(); U.hold = true; }
   });
@@ -100553,6 +101504,7 @@ const spk1Soft = U => U.sel.length && U.sel.every(s => s.art === 'pinsel' || s.a
 function spk1ToolDown(U, p) {
   if (U.tool === 's6ed' && typeof spk6EdDown === 'function') return spk6EdDown(U, p);   /* SPK6: Noten bearbeiten */
   const G = {tool: U.tool, x0: p.x, y0: p.y, t0: spk1T(U, p.x), f0: spk1F(U, p.y), moved: false, shape: null};
+  if (typeof spk12Down === 'function') spk12Down(U, G, p);   /* SPK12: Rand-Griffe */
   if (G.tool === 'pinsel') {
     const o = U.opt; if (!spk1Soft(U)) { U.sel = []; U.hits = U.ex = null; }
     G.shape = {art: 'pinsel', pts: [[+G.t0.toFixed(4), +G.f0.toFixed(2)]], rt: +(o.size / U.v.pps).toFixed(4), rc: Math.round(o.size / U.v.rowH * 100), weich: o.weich, minus: !!o.minus};
@@ -100562,6 +101514,7 @@ function spk1ToolDown(U, p) {
 }
 function spk1ToolMove(U, G, p) {
   if (G.tool === 's6ed' && G.s6 && typeof spk6EdDrag === 'function') return spk6EdDrag(U, G, p);   /* SPK6: Note ziehen */
+  if (typeof spk12Move === 'function' && spk12Move(U, G, p)) return;   /* SPK12: Griffe, Zauberstab, Ellipse, Lasso, Transient */
   if (!G.moved && Math.hypot(p.x - G.x0, p.y - G.y0) < 8) return; G.moved = true;
   const t = spk1T(U, p.x), f = spk1F(U, p.y);
   if (G.tool === 'pinsel') { if (Math.hypot(p.x - G.lx, p.y - G.ly) >= Math.max(3, U.opt.size / 3)) { G.shape.pts.push([+t.toFixed(4), +f.toFixed(2)]); G.lx = p.x; G.ly = p.y; spk1Dirty(U, 'ov'); } return; }
@@ -100573,9 +101526,11 @@ function spk1ToolMove(U, G, p) {
 function spk1ToolCancel(U, G) { U.tmp = null; if (G && G.tool === 'pinsel') { const i = U.sel.indexOf(G.shape); if (i >= 0) U.sel.splice(i, 1); } spk1Dirty(U, 'ov'); }
 function spk1ToolUp(U, G) {
   if (G.tool === 's6ed' && typeof spk6EdUp === 'function') return spk6EdUp(U, G);   /* SPK6: Noten bearbeiten */
+  if (G.s12 && typeof spk12Up === 'function') return spk12Up(U, G);   /* SPK12 */
   U.tmp = null;
   if (typeof spk5Tap === 'function' && spk5Tap(U, G)) return;   // SPK5: Noten-Ansicht – Note antippen = Gehört zu …
   if (G.tool === 'noten' && typeof spk2NoteUp === 'function') return spk2NoteUp(U, G);   // SPK2: Noten wählen
+  if (typeof spk12Up2 === 'function' && spk12Up2(U, G)) return;   /* SPK12: Zauberstab, Transient, Lasso */
   if (!G.moved) {
     if (G.tool === 'harm') return spk1Harm(U, G.t0, G.f0);
     if (G.tool === 'aehn') return spk1Aehn(U, null, G.t0, G.f0);
@@ -100589,6 +101544,7 @@ function spk1ToolUp(U, G) {
   U.sel = [G.shape]; U.hits = U.ex = null; spk1SelDone(U);
 }
 function spk1SelDone(U, txt) {
+  if (typeof spk12SelDone === 'function') spk12SelDone(U);   /* SPK12: Kombinier-Modus */
   U.selVer++; spk1BtnState(U); spk1Dirty(U, 'ov'); spk1Dirty(U, 'r');
   if (txt != null) { spk1Stat(U, txt); return; }
   const sb = spk1SelSpan(U), f = n => n.toFixed(1).replace('.', ',');
@@ -100627,6 +101583,7 @@ function spk1ToolSet(U, k) {
   for (const p of U.op.querySelectorAll('.spk1-o')) p.classList.toggle('on', p.dataset.for.split(' ').includes(k));
   const tip = {rect: 'Ziehen = Rechteck', zeit: 'Ziehen = Zeitbereich', freq: 'Ziehen = Tonbereich', pinsel: 'Malen = Auswahl', harm: 'Grundton antippen', aehn: 'Beispiel ziehen oder antippen', noten: 'Note antippen oder Kästchen ziehen'}[k];   // SPK2: Noten
   if (U.meta && !U.sel.length) spk1Stat(U, tip + ' · zwei Finger = Zoom');
+  if (typeof spk12ToolSet === 'function') spk12ToolSet(U, k);   /* SPK12 */
 }
 /* ---- Status, Knöpfe ---- */
 function spk1Stat(U, t) { if (U.st.textContent !== t) U.st.textContent = t; }
@@ -100642,6 +101599,7 @@ function spk1BtnState(U) {
 }
 function spk1UndoBtns(U, r) {
   if (!r) return; U.bU.disabled = !r.nu; U.bR.disabled = !r.nr;
+  if (typeof spk12UndoBtn === 'function') spk12UndoBtn(U);   /* SPK12: ↶ auch für Auswahl-Schritte */
   U.bU.setAttribute('aria-label', r.undo ? 'Rückgängig: ' + r.undo : 'Rückgängig'); U.bR.setAttribute('aria-label', r.redo ? 'Wiederholen: ' + r.redo : 'Wiederholen');
 }
 function spk1Got(U, r) { if (!r || !r.meta) return; SPK1.last = r; U.meta = r.meta; spk1UndoBtns(U, r); spk1Layers(U); if (typeof spk2OvDraw === 'function') spk1Dirty(U, 'ov'); }   // SPK2: Noten neu zeichnen
@@ -100686,6 +101644,7 @@ async function spk1Into(U, nach, art) {
 }
 async function spk1UndoRedo(U, which) {
   if (U.busy) return; U.vf = null;
+  if (typeof spk12UndoRedo === 'function' && spk12UndoRedo(U, which)) return;   /* SPK12 */
   try { const r = await spk1Call(which, {doc: SPK1.doc}); spk1Got(U, r); spk1TintLoad(U); spk1Stat(U, r.label ? (which === 'undo' ? 'Rückgängig: ' : 'Wiederholt: ') + r.label : ''); } catch (e) { logErr(e); }
 }
 /* ---- Klappfenster (Ansicht, In Ebene, Ebene ⋯) ---- */
@@ -100706,6 +101665,7 @@ function spk1ViewDd(U, b) {
     sl('Boden', -120, -30, 'lo'); sl('Decke', -60, 0, 'hi');
     dd.appendChild(el('h5', '', 'Auflösung (FFT)'));
     dd.appendChild(makeSeg([1024, 2048, 4096, 8192, 16384].map(n => [n, String(n)]), () => U.N, n => { U.N = n; spk1SpecLoad(U); }, 'spk1-n'));
+    if (typeof spk12FftTxt === 'function') spk12FftTxt(U, dd);   /* SPK12: ms / Hz am FFT-Regler */
     const g = el('div', 'spk1-g'), bt = el('button', 'mbtn rb spk1-ck', (U.tintOn ? '✓ ' : '') + 'Ebenen-Farben'), bf = el('button', 'mbtn rb spk1-ck', 'Alles zeigen'), bq = el('button', 'mbtn rb spk1-ck', 'Andere Quelle …');
     on(bt, 'click', () => { U.tintOn = !U.tintOn; bt.textContent = (U.tintOn ? '✓ ' : '') + 'Ebenen-Farben'; spk1Dirty(U, 'g'); });
     on(bf, 'click', () => { spk1Dd(U, null); spk1FitAll(U); });
@@ -100749,6 +101709,7 @@ function spk1MoreDd(U, b, lid) {
 }
 /* ---- Tipps ---- */
 function spk1Tap(U, b) {
+  if (typeof spk12Tap === 'function' && spk12Tap(U, b)) return;   /* SPK12 */
   if (b.dataset.tool) { spk1ToolSet(U, b.dataset.tool); return; }
   const a = b.dataset.a, row = b.closest('.spk1-lr'), lid = row ? row.dataset.l : null;
   switch (a) {
@@ -102875,6 +103836,7 @@ function spk8DspMake(Z2) {
 }
 // Worker-Text: spk8DspMake wird an den Kern-Text angehängt (Funktions-Deklaration → im Worker schon beim Aufbau des Kerns da)
 function spk8WUrl(src, u) {
+  if (typeof spk12DspMake === 'function') src = src + ';' + [spk12SelFn, spk12Ras, spk12Fft, spk12Win, spk12Mag, spk12K2, spk12DspMake].map(f => f.toString()).join(';') + ';';   /* SPK12: Auswahl-Kern in den Spektral-Worker */
   try { const v = URL.createObjectURL(new Blob([src, ';' + spk8DspMake.toString() + ';' + (typeof spk10Okt === 'function' ? spk10Okt.toString() + ';' : '') /* SPK10 */], {type: 'application/javascript'})); try { URL.revokeObjectURL(u); } catch (e) {} setTimeout(() => { try { URL.revokeObjectURL(v); } catch (e) {} }, 30000); return v; } catch (e) { return u; }
 }
 /* SPK8-END */
@@ -105543,6 +106505,973 @@ const SPK11_API = {open: () => spk11Open(SPK1.ui, SPK1.ui && SPK1.ui.sh.querySel
   go: () => spk11Go(SPK1.ui), last: () => SPK11.last, teile: () => SPK1.ui && SPK1.ui.s11 && SPK1.ui.s11.T, kl: lid => !!SPK11.kl.get(SPK1.doc + '|' + lid), hits: (x, sr, st, n) => spk11Hits(x, sr, st, n), klang: lid => spk11Klang(SPK1.ui, lid)};
 try { window.__spk11 = SPK11_API; } catch (e) {}
 /* SPK11-END */
+/* SPK12-BEGIN ===== Spektral-Seite Teil 12 · Werkzeugkasten Auswahl (Teil 1/3: Kombinieren, Umkehren, Rand-Griffe, Zauberstab · Teil 2/3: Transient, Ellipse, Lasso, Obertöne-Häkchen/Auto, folgt dem Ton · Teil 3/3: Ähnliches mit Merkmalen + ‹ › Alle, Alle Ebenen abtasten, Auswahl merken, FFT ms / Hz)
+   Xander 15.11.: „Spektral-Werkzeuge wie im alten Spektral-Ebenen-Programm als Hybrid“.
+   - Kombinier-Modus Neu │ + │ − │ ∩ (Leiste unter der Werkzeugzeile): jede neue Form (Rechteck, Zeit, Frequenz, Pinsel, Harmonische,
+     Zauberstab) ersetzt, kommt dazu, wird abgezogen oder geschnitten. Formen tragen `op` ('sub' | 'and'; ohne = dazu); der Kern rechnet
+     der Reihe nach in Uint8: dazu = max(a, b), ab = min(a, 255 − b), Schnitt = min(a, b) → bit-genau die Mengen-Rechnung.
+     Folgen alter Formen ohne op bleiben EIN Aufruf des alten selFn (gleiche Gewichte wie bisher; Radierer-Pinsel wirkt wie gehabt).
+   - Auswahl ▾: Umkehren (Form {art:'inv'}: w → 255 − w), Nur Frequenzen umkehren ({art:'inv', nurF}: im Zeitbereich der Auswahl
+     255 − w, außerhalb 0), Wiederherstellen (letzte verworfene/ersetzte Auswahl), Erweitern/Verkleinern (±0,05 s, ±50 Cent),
+     Weicher/Härter (Kante ±0,5), Zauberstab ↔ Rechteck.
+   - Rand-Griffe (Rechteck/Zeit/Frequenz/Harmonische/Zauberstab): Rand ziehen = Größe (einzelnes Rechteck: nur dieser Rand),
+     zwei Finger am Rand = Weichheit (auseinander = weicher), Mitte ziehen = Auswahlform verschieben (nur die Form, nicht der Klang).
+   - Zauberstab (Rechteck-Knopf halten → Zauberstab, oder Auswahl ▾): Tipp → Flood-Fill im dB-Raster der Anzeige (≈ 984 Zeilen) im
+     Worker, Toleranz (dB unter dem Startpunkt), Zeitgrenze ± s um den Tipp (Standard ± 5 s). Ergebnis = Läufe je Spalte (Form 'wand'),
+     im Kern als Raster mit Wachsen/Schrumpfen (Zeilen/Spalten getrennt) und Weichheit (Kastenfilter).
+   - Ein ↶ je Aktion: Auswahl-Schritte liegen auf einem eigenen Stapel; ↶/↷ nimmt zuerst den Auswahl-Schritt, solange danach keine
+     Ebenen-Aktion kam (Vergleich mit dem Undo-Stand des Kerns).
+   - Anzeige: Enthält die Auswahl − / ∩ / Umkehren / Zauberstab, zeigt die Fläche das Ergebnis des Kerns (Raster 2 px, im Worker).
+   Haken „SPK12“: selFn (1. Zeile), spk1DspMake (vor return), spk8WUrl (Text in den Worker), spk1Build, spk1OvDraw (2), spk1Gest,
+   spk1ToolDown/Move/Up (4), spk1SelDone, spk1ToolSet, spk1UndoBtns, spk1UndoRedo, spk1Tap · Teil 3: spk1Call (Merkmale, Abtasten), spk1ViewDd (FFT-Text). */
+const SPK12_TOOLS = ['rect', 'zeit', 'freq', 'pinsel', 'harm', 'wand', 'ell', 'lasso', 'trans'], SPK12_HT = ['rect', 'zeit', 'freq', 'harm', 'wand', 'ell', 'lasso'];
+const SPK12_SLOTS = {rect: ['rect', 'ell', 'lasso', 'wand'], zeit: ['zeit', 'trans']};   // Halten auf Rechteck bzw. Zeit → Liste
+const SPK12_ICON = '<path d="M3.5 16.5l9.5-9.5" stroke-width="2.2" stroke-linecap="round"/><path d="M13 7l1.8-1.8"/><path d="M15.5 1.8v2.4M18.2 4.5h-2.4M17.4 2.6l-1.2 1.2M12.2 2.4l.9.9M17.6 8.8l-.9-.9"/>';
+const SPK12_MODES = [['neu', 'Neu', 'Neue Auswahl ersetzt die alte'], ['add', '+', 'Zur Auswahl hinzufügen'], ['sub', '−', 'Von der Auswahl abziehen'], ['and', '∩', 'Schnittmenge mit der Auswahl']];
+/* ---------- Kern (läuft im Spektral-Worker und im Rückfall im Hauptfaden; nur eigene Namen) ---------- */
+function spk12SelFn(d, sel, base) {
+  const all = (Array.isArray(sel) ? sel : [sel]).filter(Boolean);
+  if (!all.some(s => s.op === 'sub' || s.op === 'and' || s.art === 'wand' || s.art === 'inv' || s.art === 'ell' || s.art === 'lasso' || s.art === 'trans' || s.art === 'fol' || (s.art === 'harm' && s.hm))) return null;
+  const sr = d.meta.sr, N = d.meta.base.N, hop = d.meta.base.hop, NB = N / 2 + 1, F = Math.floor((d.meta.n - 1) / hop) + N / hop;
+  const items = []; let grp = null;
+  const flush = () => { if (grp) { const r = base(d, grp); items.push({op: 'add', fnc: r.fnc, box: r.box}); grp = null; } };
+  for (const s of all) {
+    let op = s.op === 'sub' || s.op === 'and' ? s.op : 'add';
+    if (s.art === 'inv') { flush(); const m0 = s.nurF ? Math.ceil((+s.t0 || 0) * sr / hop + 1) : 0, m1 = s.nurF ? Math.floor((+s.t1 || 0) * sr / hop + 1) : F - 1; items.push({op: 'inv', nurF: !!s.nurF, m0, m1}); continue; }
+    if (s.art === 'wand') { flush(); const R = spk12Ras(d, s); items.push({op, val: R.val, box: R.box}); continue; }
+    if (s.art === 'ell' || s.art === 'lasso' || s.art === 'trans' || s.art === 'fol' || (s.art === 'harm' && s.hm)) { flush(); const R = spk12K2(d, s, base); items.push({op, val: R.val, box: R.box}); continue; }   // Teil 2
+    let x = s; if (s.art === 'pinsel' && s.minus && op === 'add') { op = 'sub'; x = Object.assign({}, s, {minus: false}); }
+    if (op === 'add') { (grp = grp || []).push(x); continue; }
+    flush(); const r = base(d, [Object.assign({}, x, {op: undefined})]); items.push({op, fnc: r.fnc, box: r.box});
+  }
+  flush();
+  const box = {m0: 1e9, m1: -1, k0: 1e9, k1: -1}, uni = b => { if (!b || b.m1 < 0) return; box.m0 = Math.min(box.m0, b.m0); box.m1 = Math.max(box.m1, b.m1); box.k0 = Math.min(box.k0, b.k0); box.k1 = Math.max(box.k1, b.k1); };
+  for (const it of items) { if (it.op === 'add') uni(it.box); else if (it.op === 'inv') uni(it.nurF ? {m0: Math.max(0, it.m0), m1: Math.min(F - 1, it.m1), k0: 0, k1: NB - 1} : {m0: 0, m1: F - 1, k0: 0, k1: NB - 1}); }
+  const inB = (b, m, k) => b && m >= b.m0 && m <= b.m1 && k >= b.k0 && k <= b.k1;
+  const fnc = (m, k) => {
+    let w = 0;
+    for (const it of items) {
+      if (it.op === 'inv') { w = !it.nurF || (m >= it.m0 && m <= it.m1) ? 255 - w : 0; continue; }
+      const v = !inB(it.box, m, k) ? 0 : it.val ? it.val(m, k) : Math.round(it.fnc(m, k) * 255);
+      w = it.op === 'add' ? (v > w ? v : w) : it.op === 'sub' ? Math.min(w, 255 - v) : Math.min(w, v);
+    }
+    return w / 255;
+  };
+  return {fnc, box};
+}
+/* Zauberstab-Form → Raster (Spalten der Anzeige × 984 Zeilen) mit Wachsen/Schrumpfen und Weichheit; Abfrage je Base-Frame/Bin */
+function spk12Ras(d, s) {
+  const C = spk12Ras.C || (spk12Ras.C = new Map()), key = s.key ? d.meta.id + '|' + s.key : '';
+  if (key && C.has(key)) return C.get(key);
+  const R = s.R || 984, sr = d.meta.sr, N = d.meta.base.N, hop = d.meta.base.hop, NB = N / 2 + 1, F = Math.floor((d.meta.n - 1) / hop) + N / hop;
+  const hD = s.hop || 512, M0 = s.m0 == null ? 12 : +s.m0, RPS = s.rps || 8, ot = +s.ot || 0, om = +s.om || 0, ws = Math.max(0, +s.ws || 0);
+  const gC = Math.round((+s.gt || 0) * sr / hD), gR = Math.round((+s.gc || 0) / (100 / RPS)), fC = Math.round(ws * 0.06 * sr / hD), fR = Math.round(ws * 60 / (100 / RPS));
+  const pad = Math.max(0, gC) + fC + 1, cols = s.cols || [], nc = cols.length + 2 * pad, c0 = (s.c0 | 0) - pad;
+  let A = new Uint8Array(nc * R);
+  cols.forEach((runs, i) => { const o = (i + pad) * R; for (let j = 0; j + 1 < runs.length; j += 2) { const a = Math.max(0, runs[j]), b = Math.min(R - 1, runs[j + 1]); if (b >= a) A.fill(255, o + a, o + b + 1); } });
+  const morph = (X, n, len, str, g) => {   // je Linie (n Linien der Länge len, Schritt str): g > 0 wachsen, g < 0 schrumpfen (binär)
+    const Y = new Uint8Array(X.length), w = Math.abs(g), lineStep = str === 1 ? len : 1;
+    for (let l = 0; l < n; l++) {
+      const o = l * lineStep; let cnt = 0; const at = i => (i >= 0 && i < len && X[o + i * str] ? 1 : 0);
+      for (let i = -w; i <= w; i++) cnt += at(i);
+      for (let i = 0; i < len; i++) { Y[o + i * str] = g > 0 ? (cnt > 0 ? 255 : 0) : (cnt === 2 * w + 1 ? 255 : 0); cnt += at(i + w + 1) - at(i - w); }
+    }
+    return Y;
+  };
+  if (gR) A = morph(A, nc, R, 1, gR);
+  if (gC) A = morph(A, R, nc, R, gC);
+  if (fC || fR) {   // Kastenfilter (gleitende Summe), getrennt
+    const box = (X, n, len, str, w) => { if (!w) return X; const Y = new Uint8Array(X.length), lineStep = str === 1 ? len : 1, q = 2 * w + 1;
+      for (let l = 0; l < n; l++) { const o = l * lineStep; let sm = 0; const at = i => (i >= 0 && i < len ? X[o + i * str] : 0); for (let i = -w; i <= w; i++) sm += at(i); for (let i = 0; i < len; i++) { Y[o + i * str] = Math.round(sm / q); sm += at(i + w + 1) - at(i - w); } }
+      return Y; };
+    A = box(box(A, nc, R, 1, fR), R, nc, R, fC);
+  }
+  const rowK = new Int16Array(NB); for (let k = 0; k < NB; k++) rowK[k] = k < 1 ? -1 : Math.round((69 + 12 * Math.log2(k * sr / N / 440) - om - M0) * RPS);
+  let cmin = nc, cmax = -1, rmin = R, rmax = -1;
+  for (let c = 0; c < nc; c++) for (let r = 0, o = c * R; r < R; r++) if (A[o + r]) { if (c < cmin) cmin = c; if (c > cmax) cmax = c; if (r < rmin) rmin = r; if (r > rmax) rmax = r; }
+  const fr = r => 440 * Math.pow(2, (M0 + om + r / RPS - 69) / 12);
+  const box = cmax < 0 ? {m0: 1e9, m1: -1, k0: 1e9, k1: -1} : {
+    m0: Math.max(0, Math.floor(((c0 + cmin - 0.5) * hD / sr + ot) * sr / hop + 1) - 1), m1: Math.min(F - 1, Math.ceil(((c0 + cmax + 0.5) * hD / sr + ot) * sr / hop + 1) + 1),
+    k0: Math.max(0, Math.floor(fr(rmin - 0.6) * N / sr) - 1), k1: Math.min(NB - 1, Math.ceil(fr(rmax + 0.6) * N / sr) + 1)};
+  const val = (m, k) => { const c = Math.round(((m - 1) * hop / sr - ot) * sr / hD) - c0; if (c < 0 || c >= nc) return 0; const r = rowK[k]; return r < 0 || r >= R ? 0 : A[c * R + r]; };
+  const out = {val, box, A, nc, c0, R};
+  if (key) { C.set(key, out); if (C.size > 6) C.delete(C.keys().next().value); }
+  return out;
+}
+/* ---------- Teil 2 · Kern: FFT, Ellipse, Lasso, Transient, Obertöne mit Häkchen, folgt dem Ton (Worker + Rückfall) ---------- */
+function spk12Fft(re, im) {   // radix-2, an Ort und Stelle
+  const n = re.length, T = spk12Fft.T || (spk12Fft.T = new Map()); let tw = T.get(n);
+  if (!tw) {
+    tw = {c: new Float64Array(n / 2), s: new Float64Array(n / 2), rev: new Uint32Array(n)}; const bits = Math.round(Math.log2(n));
+    for (let i = 0; i < n / 2; i++) { tw.c[i] = Math.cos(2 * Math.PI * i / n); tw.s[i] = -Math.sin(2 * Math.PI * i / n); }
+    for (let i = 0; i < n; i++) { let r = 0, x = i; for (let j = 0; j < bits; j++) { r = (r << 1) | (x & 1); x >>= 1; } tw.rev[i] = r; }
+    T.set(n, tw);
+  }
+  for (let i = 0; i < n; i++) { const j = tw.rev[i]; if (j > i) { let t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; } }
+  for (let sz = 2; sz <= n; sz <<= 1) {
+    const h = sz >> 1, st = n / sz;
+    for (let i = 0; i < n; i += sz) for (let j = 0, k = 0; j < h; j++, k += st) { const a = i + j, b = a + h, wr = tw.c[k], wi = tw.s[k], xr = re[b] * wr - im[b] * wi, xi = re[b] * wi + im[b] * wr; re[b] = re[a] - xr; im[b] = im[a] - xi; re[a] += xr; im[a] += xi; }
+  }
+}
+function spk12Win(n) { const T = spk12Win.T || (spk12Win.T = new Map()); let w = T.get(n); if (!w) { w = new Float64Array(n); for (let i = 0; i < n; i++) w[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / n); T.set(n, w); } return w; }
+function spk12Mag(x, c, N, re, im) {   // Betrag eines Hann-Rahmens um Sample c (Normierung: Sinus der Amplitude A → A)
+  const w = spk12Win(N), NB = N / 2 + 1, a = c - N / 2, g = new Float32Array(NB), sc = 4 / N;
+  for (let j = 0; j < N; j++) { const i = a + j; re[j] = i >= 0 && i < x.length ? x[i] * w[j] : 0; im[j] = 0; }
+  spk12Fft(re, im); for (let k = 0; k < NB; k++) g[k] = Math.hypot(re[k], im[k]) * sc;
+  return g;
+}
+/* Neue Formen → {val(m, k) 0…255, box} auf dem Base-Raster */
+function spk12K2(d, s, base) {   // Zwischenspeicher: Schlüssel + Prüfsumme des Inhalts (Regler/Griffe ändern Formen an Ort und Stelle)
+  const C = spk12K2.C || (spk12K2.C = new Map()), js = s.key ? JSON.stringify(s) : ''; let hs = 2166136261; for (let i = 0; i < js.length; i++) hs = Math.imul(hs ^ js.charCodeAt(i), 16777619);
+  if (!d.s12uid) d.s12uid = spk12K2.U = (spk12K2.U || 0) + 1;   // Prüfung: je Dokument-Objekt (nach Schließen/Öffnen beginnen die Ebenen-Versionen neu)
+  const key = s.key ? d.meta.id + '#' + d.s12uid + '|' + s.key + '|' + js.length + '|' + (hs >>> 0) + (s.src ? '|' + d.meta.layers.map(l => l.id + ':' + l.ver).join(',') : '') : '';   // Prüfung: Transient aus einer Ebene hängt an deren Stand
+  if (key && C.has(key)) return C.get(key);
+  const sr = d.meta.sr, N = d.meta.base.N, hop = d.meta.base.hop, NB = N / 2 + 1, F = Math.floor((d.meta.n - 1) / hop) + N / hop;
+  const cn = f => f > 0 ? 1200 * Math.log2(f / 440) : -1e9, kOf = c => 440 * Math.pow(2, c / 1200) * N / sr, tOf = m => (m - 1) * hop / sr, mOf = t => t * sr / hop + 1;
+  const ramp = (x, e) => e > 0 ? Math.max(0, Math.min(1, x / e + 0.5)) : (x >= 0 ? 1 : 0);
+  const ck = spk12K2.ck && spk12K2.ck.length === NB && spk12K2.cs === sr ? spk12K2.ck : (spk12K2.cs = sr, spk12K2.ck = Float64Array.from({length: NB}, (_, k) => cn(k * sr / N)));
+  const bx = (ta, tb, ca, cb) => ({m0: Math.max(0, Math.floor(mOf(ta)) - 1), m1: Math.min(F - 1, Math.ceil(mOf(tb)) + 1), k0: Math.max(0, Math.floor(kOf(ca)) - 1), k1: Math.min(NB - 1, Math.ceil(kOf(cb)) + 1)});
+  let out = {val: () => 0, box: {m0: 1e9, m1: -1, k0: 1e9, k1: -1}};
+  if (s.art === 'ell') {   // Ellipse im Raum Zeit × Cent, weiche Kante über den Radius
+    const kt = +s.kt || 0, kf = +s.kf || 0, tc = (+s.t0 + +s.t1) / 2, rt = Math.max(1e-3, (s.t1 - s.t0) / 2), c0 = cn(Math.max(1, +s.f0)), c1 = cn(Math.max(1, +s.f1)), cc = (c0 + c1) / 2, rc = Math.max(1, (c1 - c0) / 2), e = Math.max(kt / (2 * rt), kf / (2 * rc));
+    out = {box: bx(s.t0 - kt / 2, s.t1 + kt / 2, c0 - kf / 2, c1 + kf / 2), val: (m, k) => { const u = (tOf(m) - tc) / rt, v = (ck[k] - cc) / rc, r = Math.sqrt(u * u + v * v); return e > 0 ? Math.round(255 * Math.max(0, Math.min(1, (1 + e / 2 - r) / e))) : (r <= 1 ? 255 : 0); }};
+  } else if (s.art === 'lasso') {   // Vieleck (Zeit × Cent), Spalten-/Zeilen-Schnitte zwischengespeichert
+    const P = (s.pts || []).map(p => [+p[0], cn(Math.max(1, +p[1]))]), n = P.length, kt = +s.kt || 0, kf = +s.kf || 0; let ta = 1e9, tb = -1e9, ca = 1e9, cb = -1e9;
+    for (const p of P) { ta = Math.min(ta, p[0]); tb = Math.max(tb, p[0]); ca = Math.min(ca, p[1]); cb = Math.max(cb, p[1]); }
+    const cut = (ax, x) => { const o = []; for (let i = 0, j = n - 1; i < n; j = i++) { const a = P[j], b = P[i], pa = a[ax], pb = b[ax]; if ((pa <= x) !== (pb <= x)) o.push(a[1 - ax] + (x - pa) / (pb - pa) * (b[1 - ax] - a[1 - ax])); } return o.sort((p, q) => p - q); };
+    const dIn = (L, y) => { if (!L.length) return -1e9; let ins = false, dd = Infinity; for (let i = 0; i < L.length; i++) { dd = Math.min(dd, Math.abs(y - L[i])); if (!(i & 1) && i + 1 < L.length && y >= L[i] && y <= L[i + 1]) ins = true; } return ins ? dd : -dd; };
+    const CT = new Map(), CR = new Map();
+    out = {box: n < 3 ? out.box : bx(ta - kt / 2, tb + kt / 2, ca - kf / 2, cb + kf / 2), val: (m, k) => {
+      if (n < 3) return 0; const t = tOf(m), c = ck[k]; let L = CT.get(m); if (!L) { L = cut(0, t); CT.set(m, L); } const dF = dIn(L, c);
+      if (!kt && !kf) return dF >= 0 ? 255 : 0;
+      let Hh = CR.get(k); if (!Hh) { Hh = cut(1, c); CR.set(k, Hh); }
+      return Math.round(255 * Math.min(ramp(dF, kf), ramp(dIn(Hh, t), kt)));
+    }};
+  } else if (s.art === 'trans') {   // je Schlag: Anteil über dem Grund vor dem Schlag (dB), ab Höhengrenze
+    const x = d.mid, hits = s.hits || [], len = Math.max(0.03, +s.len || 0.12), hg = Math.max(0, +s.hg || 0), kmin = Math.max(1, Math.floor(hg / Math.pow(2, 1 / 12) * N / sr)), Lf = Math.ceil(len * sr / hop);
+    const re = new Float64Array(N), im = new Float64Array(N), MC = new Map(), R = new Map(), box = {m0: 1e9, m1: -1, k0: kmin, k1: NB - 1}, GA = s.src && spk12K2.gain ? spk12K2.gain(d, s.src) : null;   // Prüfung: „Alle Ebenen abtasten“ aus → Grund und Schlag im Anteil der Ebene
+    const mg = m => { let g = MC.get(m); if (!g) { const a = spk12Mag(x, (m - 1) * hop, N, re, im); g = new Float32Array(NB); for (let k = 0; k < NB; k++) g[k] = (a[Math.max(0, k - 1)] + a[k] + a[Math.min(NB - 1, k + 1)]) / 3; if (GA) { const ga = GA(m); for (let k = 0; k < NB; k++) g[k] *= ga[k]; } MC.set(m, g); if (MC.size > 24) MC.delete(MC.keys().next().value); } return g; };
+    for (const t of hits) {
+      const mo = Math.round(mOf(+t)), B = new Float32Array(NB).fill(1e9);
+      for (let m = Math.max(0, mo - 5); m <= Math.max(0, mo - 2); m++) { const g = mg(m); for (let k = 0; k < NB; k++) if (g[k] < B[k]) B[k] = g[k]; }
+      for (let m = Math.max(0, mo - 1); m <= Math.min(F - 1, mo + Lf); m++) {
+        const g = mg(m); let r = R.get(m); if (!r) R.set(m, r = new Uint8Array(NB)); let any = false;
+        for (let k = kmin; k < NB; k++) {
+          const db = 20 * Math.log10((g[k] + 1e-9) / (B[k] + 1e-9)), fk = k * sr / N, wH = hg > 0 && fk < hg ? Math.max(0, 1 - 12 * Math.log2(hg / fk)) : 1, v = Math.round(255 * Math.max(0, Math.min(1, (db - 3) / 9)) * wH);
+          if (v > r[k]) { r[k] = v; any = true; }
+        }
+        if (any) { box.m0 = Math.min(box.m0, m); box.m1 = Math.max(box.m1, m); }
+      }
+    }
+    out = {box, val: (m, k) => { const r = R.get(m); return r ? r[k] : 0; }};
+  } else if (s.art === 'harm') {   // wie selRaster (Harmonische), aber nur angehakte Obertöne
+    const K = Math.max(1, Math.min(48, s.K | 0 || 16)), bw = Math.max(5, +s.bw || 40), q = Math.pow(2, bw / 1200) - 1, inc = new Set((s.hm || []).map(Number)), pos = new Map(), box = {m0: 1e9, m1: -1, k0: 1e9, k1: -1}, fm = t => t * sr / hop + 1;
+    const put = (m, k, w) => { if (m < 0 || m >= F || k < 0 || k >= NB || !(w > 0)) return; let r = pos.get(m); if (!r) pos.set(m, r = new Uint8Array(NB)); const v = Math.min(255, Math.round(w * 255)); if (v > r[k]) r[k] = v; if (m < box.m0) box.m0 = m; if (m > box.m1) box.m1 = m; if (k < box.k0) box.k0 = k; if (k > box.k1) box.k1 = k; };
+    for (const p of s.spur || []) {
+      const f0 = +p[1]; if (!(f0 > 0)) continue; const m = Math.round(fm(+p[0]));
+      for (let h = 1; h <= K; h++) {
+        const fh = h * f0; if (fh >= sr / 2) break; if (!inc.has(h)) continue;
+        const kc = fh * N / sr, hw = Math.max(1.5, fh * q * N / sr);
+        for (let k = Math.max(1, Math.floor(kc - hw)); k <= Math.min(NB - 1, Math.ceil(kc + hw)); k++) { const w = Math.min(1, 1.6 * (1 - Math.abs(k - kc) / (hw + 0.5))) * (s.g != null ? Math.max(0, Math.min(1, +s.g || 0)) : 1); put(m, k, w); put(m + 1, k, w * 0.999); }
+      }
+    }
+    out = {box, val: (m, k) => { const r = pos.get(m); return r ? r[k] : 0; }};
+  } else if (s.art === 'fol') {   // folgt dem Ton: Quell-Auswahl, je Rahmen um das Verhältnis r(t) verschoben
+    const src = s.src || [], S0 = spk12SelFn(d, src, base) || base(d, src), cur = s.cur || [], b = S0.box, rm = new Map(); let rmin = 1, rmax = 1;
+    for (const p of cur) { rmin = Math.min(rmin, p[1]); rmax = Math.max(rmax, p[1]); }
+    const rAt = m => {
+      let v = rm.get(m); if (v != null) return v; const t = tOf(m); v = 1;
+      if (cur.length) { if (t <= cur[0][0]) v = cur[0][1]; else if (t >= cur[cur.length - 1][0]) v = cur[cur.length - 1][1]; else { let lo = 0, hi = cur.length - 1; while (hi - lo > 1) { const md = (lo + hi) >> 1; if (cur[md][0] <= t) lo = md; else hi = md; } const u = (t - cur[lo][0]) / Math.max(1e-9, cur[hi][0] - cur[lo][0]); v = cur[lo][1] * Math.pow(cur[hi][1] / cur[lo][1], u); } }
+      rm.set(m, v); return v;
+    };
+    out = {box: b.m1 < 0 ? b : {m0: b.m0, m1: b.m1, k0: Math.max(0, Math.floor(b.k0 * rmin) - 1), k1: Math.min(NB - 1, Math.ceil(b.k1 * rmax) + 1)}, val: (m, k) => {
+      if (m < b.m0 || m > b.m1) return 0; const kk = Math.round(k / rAt(m)); if (kk < b.k0 || kk > b.k1) return 0; return Math.round(S0.fnc(m, kk) * 255);
+    }};
+  }
+  if (key) { C.set(key, out); if (C.size > 8) C.delete(C.keys().next().value); }
+  return out;
+}
+/* Ops im Kern: Zauberstab, Masken-Probe (Test), Anzeige-Raster der Auswahl · Teil 2: Transient, Obertöne-Auto, folgt dem Ton */
+function spk12DspMake(Z2, X) {
+  const ops = Z2.ops || (Z2.ops = {}), CH = new Map();
+  async function chunk(d, N, ci) {
+    const key = 'spk:' + d.meta.id + (d.s12k || '') + ':v' + N + ':' + ci; if (CH.has(key)) return CH.get(key);
+    const I = X.specInfo(d, N), W = Math.min(1024, I.cols - ci * 1024); let data = null;
+    const have = d.s12k ? null : await X.get('audio', key);
+    if (have && have.byteLength === I.rows * W) data = new Uint8Array(have);
+    else { data = X.specChunk(d, N, ci).data; if (!d.s12k) try { await X.put('audio', key, data.slice().buffer); } catch (e) {} }
+    const o = {data, W, x0: ci * 1024}; CH.set(key, o); if (CH.size > 6) CH.delete(CH.keys().next().value);
+    return o;
+  }
+  ops.spk12zauber = async (d, m) => {
+    const T0 = performance.now(), N = [1024, 2048, 4096, 8192, 16384].includes(m.N) ? m.N : 4096, I = X.specInfo(d, N), sr = d.meta.sr, hD = I.hop, R = I.rows;
+    const lim = Math.max(0.5, Math.min(60, +m.lim || 5)), tol = Math.max(1, Math.min(60, +m.tol || 15));
+    const ct = Math.max(0, Math.min(I.cols - 1, Math.round((+m.t || 0) * sr / hD))), cw = Math.round(lim * sr / hD), ca = Math.max(0, ct - cw), cb = Math.min(I.cols - 1, ct + cw), nc = cb - ca + 1;
+    const A = new Uint8Array(nc * R);
+    for (let ci = ca >> 10; ci <= cb >> 10; ci++) {
+      const o = await chunk(d, N, ci), a = Math.max(ca, o.x0), b = Math.min(cb, o.x0 + o.W - 1);
+      for (let c = a; c <= b; c++) { const cc = c - o.x0, off = (c - ca) * R; for (let r = 0; r < R; r++) A[off + r] = o.data[r * o.W + cc]; }
+    }
+    const TG = performance.now(); if (m.s12g) gainA(d, m.s12g, A, ca, nc, R, I);   // Prüfung: „Alle Ebenen abtasten“ aus → Anteil der Ebene
+    const T1 = performance.now(), mid = 69 + 12 * Math.log2(Math.max(1, +m.f || 440) / 440), r0 = Math.max(0, Math.min(R - 1, Math.round((mid - I.m0) * I.rps))), so = (ct - ca) * R;
+    let rs = r0, v0 = -1; for (let r = Math.max(0, r0 - 6); r <= Math.min(R - 1, r0 + 6); r++) if (A[so + r] > v0) { v0 = A[so + r]; rs = r; }   // auf den hellsten Punkt in der Nähe rasten
+    const thr = Math.max(1, v0 - tol * 255 / I.dbf), vis = new Uint8Array(nc * R), st = new Int32Array(nc * R); let sp = 0, cells = 0;
+    if (A[so + rs] >= thr) { vis[so + rs] = 1; st[sp++] = so + rs; }
+    while (sp) {
+      const i = st[--sp], c = (i / R) | 0, r = i - c * R; cells++;
+      if (r > 0 && !vis[i - 1] && A[i - 1] >= thr) { vis[i - 1] = 1; st[sp++] = i - 1; }
+      if (r < R - 1 && !vis[i + 1] && A[i + 1] >= thr) { vis[i + 1] = 1; st[sp++] = i + 1; }
+      if (c > 0 && !vis[i - R] && A[i - R] >= thr) { vis[i - R] = 1; st[sp++] = i - R; }
+      if (c < nc - 1 && !vis[i + R] && A[i + R] >= thr) { vis[i + R] = 1; st[sp++] = i + R; }
+    }
+    let cmin = nc, cmax = -1, rmin = R, rmax = -1; const cols = [];
+    for (let c = 0; c < nc; c++) {
+      const off = c * R, runs = []; let r = 0;
+      while (r < R) { if (vis[off + r]) { const a = r; while (r < R && vis[off + r]) r++; runs.push(a, r - 1); if (a < rmin) rmin = a; if (r - 1 > rmax) rmax = r - 1; } else r++; }
+      cols.push(runs); if (runs.length) { if (c < cmin) cmin = c; cmax = c; }
+    }
+    const fr = r => 440 * Math.pow(2, (I.m0 + r / I.rps - 69) / 12), base = {N, hop: hD, R, m0: I.m0, rps: I.rps, tol, lim, v0, thr, seed: [ct, rs], win: [ca, cb], cells, msLoad: TG - T0, msGain: m.s12g ? T1 - TG : 0};
+    if (cmax < 0) return Object.assign(base, {cells: 0, ms: performance.now() - T0});
+    return Object.assign(base, {c0: ca + cmin, nc: cmax - cmin + 1, cols: cols.slice(cmin, cmax + 1), t0: (ca + cmin - 0.5) * hD / sr, t1: (ca + cmax + 0.5) * hD / sr, f0: fr(rmin - 0.5), f1: fr(rmax + 0.5), ms: performance.now() - T0});
+  };
+  ops.spk12trans = (d, m) => {   // Transienten: Spektral-Fluss (log. verdichtet, Vergleich mit 2 Rahmen vorher, Max-Filter ±1 Bin) ab Höhengrenze, Spitzen über dem örtlichen Mittel
+    const T0 = performance.now(), sr = d.meta.sr, x = d.mid, N = 1024, H = 256, NB = N / 2 + 1, dur = x.length / sr;
+    const t0 = Math.max(0, Math.min(+m.t0, +m.t1)), t1 = Math.min(dur, Math.max(+m.t0, +m.t1)), hg = Math.max(0, +m.hg || 0), kmin = Math.max(1, Math.ceil(hg * N / sr)), del = Math.max(0.2, +m.del || 3);
+    const a0 = Math.max(0, Math.floor((t0 - 0.15) * sr)), nF = Math.max(3, Math.ceil(((Math.min(dur, t1 + 0.12)) * sr - a0) / H)), D = new Float32Array(nF);
+    const re = new Float64Array(N), im = new Float64Array(N), Y = [null, null, null], nb = NB - kmin; let e2 = 0, ne = 0;
+    for (let i = a0; i < Math.min(x.length, a0 + nF * H + N); i += 4) { e2 += x[i] * x[i]; ne++; } const gam = 100 / Math.max(1e-3, Math.sqrt(e2 / Math.max(1, ne)));   // Pegel-bezogene Log-Kompression
+    for (let n = 0; n < nF; n++) {
+      const g = spk12Mag(x, a0 + n * H, N, re, im), y = new Float32Array(NB); for (let k = 0; k < NB; k++) y[k] = 20 * Math.log10(1 + gam * g[k]);
+      const p = Y[0]; let s = 0;
+      if (p) for (let k = kmin; k < NB; k++) { const r = Math.max(p[k], p[Math.max(0, k - 1)], p[Math.min(NB - 1, k + 1)]), v = y[k] - r; if (v > 0) s += v; }
+      D[n] = p ? s / nb : 0; Y[0] = Y[1]; Y[1] = y;
+    }
+    const hits = [], A = 17, Bw = 12, Pw = 5, gap = 8; let last = -1e9;
+    for (let n = 2; n < nF; n++) {
+      let mx = true; for (let j = Math.max(0, n - Pw); j <= Math.min(nF - 1, n + Pw); j++) if (D[j] > D[n] || (D[j] === D[n] && j < n)) { mx = false; break; } if (!mx) continue;
+      let sm = 0, c = 0; for (let j = Math.max(0, n - A); j <= Math.min(nF - 1, n + Bw); j++) { sm += D[j]; c++; }
+      if (D[n] < sm / c + del || n - last < gap) continue;
+      const t = (a0 + n * H) / sr - H / sr; if (t < t0 - 0.02 || t > t1 + 0.02) continue;
+      hits.push({t: +t.toFixed(4), v: +D[n].toFixed(2)}); last = n;
+    }
+    let out = hits;
+    if (m.tap != null) { const tp = +m.tap; out = hits.length ? [hits.reduce((a, b) => Math.abs(b.t - tp) < Math.abs(a.t - tp) ? b : a)] : []; }
+    return {hits: out.map(h => h.t), v: out.map(h => h.v), nF, ms: +(performance.now() - T0).toFixed(1)};
+  };
+  ops.spk12hauto = (d, m) => {   // Obertöne automatisch: Spitze je Rang gegen den Grund zwischen den Rängen (dB)
+    const sr = d.meta.sr, x = d.mid, sp = (m.spur || []).filter(p => p[1] > 0), Kx = Math.max(1, Math.min(48, m.K | 0 || 32)); if (!sp.length) return {hm: [], K: 0, snr: []};
+    const f0m = sp.reduce((a, p) => a + p[1], 0) / sp.length, N = f0m < 160 ? 16384 : 8192, NB = N / 2 + 1, re = new Float64Array(N), im = new Float64Array(N), use = [];
+    for (let i = 0; i < 16; i++) use.push(sp[Math.min(sp.length - 1, Math.round((i + 0.5) * sp.length / 16))]);
+    const snr = new Float64Array(Kx + 1), pk = new Float64Array(Kx + 1).fill(-400);
+    for (const p of use) {
+      const g = spk12Mag(x, Math.round(p[0] * sr), N, re, im), f0 = +p[1], db = v => 20 * Math.log10(v + 1e-7);
+      for (let h = 1; h <= Kx; h++) {
+        const fh = h * f0; if (fh >= sr / 2 - f0) break; const kc = fh * N / sr, kw = Math.max(2, fh * 0.03 * N / sr); let mx = 0;
+        for (let k = Math.max(1, Math.floor(kc - kw)); k <= Math.min(NB - 1, Math.ceil(kc + kw)); k++) mx = Math.max(mx, g[k]);
+        const fl = []; for (let k = Math.max(1, Math.floor((fh - 0.5 * f0) * N / sr)); k <= Math.min(NB - 1, Math.ceil((fh + 0.5 * f0) * N / sr)); k++) if (Math.abs(k - kc) > Math.max(kw, 0.2 * f0 * N / sr)) fl.push(g[k]);
+        fl.sort((a, b) => a - b); const fv = fl.length ? fl[fl.length >> 1] : 1e-9; snr[h] += (db(mx) - db(fv)) / use.length; pk[h] = Math.max(pk[h], db(mx));
+      }
+    }
+    const top = Math.max(...pk.slice(1)), hm = []; for (let h = 1; h <= Kx; h++) if (snr[h] >= 12 && pk[h] >= top - 50) hm.push(h);   // hörbar über dem Grund und höchstens 50 dB unter dem stärksten Rang
+    return {hm, K: hm.length ? hm[hm.length - 1] : 0, snr: Array.from(snr.slice(1), v => +v.toFixed(1)), pk: Array.from(pk.slice(1), v => +(v - top).toFixed(1))};
+  };
+  ops.spk12follow = (d, m) => {   // folgt dem Ton: stärkste Spitze im Band → verfolgen (±ct Cent je Rahmen); unsicher → letzte gute Stelle halten (Rücksprung)
+    const T0 = performance.now(), sr = d.meta.sr, x = d.mid, t0 = Math.max(0, +m.t0), t1 = Math.min(x.length / sr, +m.t1), fa = Math.max(20, +m.f0), fb = Math.max(fa * 1.01, +m.f1);
+    const N = fa < 160 ? 8192 : 4096, H = 512, NB = N / 2 + 1, re = new Float64Array(N), im = new Float64Array(N), ct = Math.max(20, +m.ct || 80), db = v => 20 * Math.log10(v + 1e-12);
+    const nF = Math.max(1, Math.round((t1 - t0) * sr / H) + 1), tAt = i => t0 + i * H / sr, G = new Map();
+    const spec = i => { let g = G.get(i); if (!g) { g = spk12Mag(x, Math.round(tAt(i) * sr), N, re, im); G.set(i, g); if (G.size > 48) G.delete(G.keys().next().value); } return g; };
+    const peak = (g, f1, f2) => {
+      const ka = Math.max(2, Math.floor(f1 * N / sr)), kb = Math.min(NB - 3, Math.ceil(f2 * N / sr)); let bk = -1, bv = 0;
+      for (let k = ka; k <= kb; k++) if (g[k] > bv && g[k] >= g[k - 1] && g[k] >= g[k + 1]) { bv = g[k]; bk = k; }
+      if (bk < 0) return null;
+      const l = Math.log(g[bk - 1] + 1e-12), c = Math.log(bv + 1e-12), r = Math.log(g[bk + 1] + 1e-12), den = l - 2 * c + r, dk = den < 0 ? 0.5 * (l - r) / den : 0;
+      const nb = []; const w = Math.max(6, Math.round(bk * 0.06)); for (let k = Math.max(1, bk - w); k <= Math.min(NB - 1, bk + w); k++) if (Math.abs(k - bk) > 2) nb.push(g[k]); nb.sort((a, b) => a - b);
+      return {f: (bk + Math.max(-0.5, Math.min(0.5, dk))) * sr / N, v: bv, pr: db(bv) - db(nb.length ? nb[nb.length >> 1] : 1e-12)};
+    };
+    let ri = 0, ref = null; const step = Math.max(1, Math.floor(nF / 200));
+    for (let i = 0; i < nF; i += step) { const p = peak(spec(i), fa, fb); if (p && p.pr >= 10 && (!ref || p.v > ref.v)) { ref = p; ri = i; } }
+    if (!ref) return {cur: [], fr: 0, held: 0, ms: performance.now() - T0};
+    const F = new Float64Array(nF), ok = new Uint8Array(nF), lim = ref.v * Math.pow(10, -30 / 20); F[ri] = ref.f; ok[ri] = 1; let held = 0;
+    for (const dir of [1, -1]) {
+      let fg = ref.f;
+      for (let i = ri + dir; i >= 0 && i < nF; i += dir) {
+        const q = Math.pow(2, ct / 1200), p = peak(spec(i), fg / q, fg * q);
+        if (p && p.v >= lim && p.pr >= 12) { fg = p.f; F[i] = p.f; ok[i] = 1; } else { F[i] = fg; held++; }   // Rücksprung: unsichere Rahmen bleiben auf der letzten guten Stelle
+      }
+    }
+    const cur = []; for (let i = 0; i < nF; i++) cur.push([+tAt(i).toFixed(4), +(F[i] / ref.f).toFixed(5), ok[i]]);
+    return {cur, fr: +ref.f.toFixed(2), tr: +tAt(ri).toFixed(4), held, ms: +(performance.now() - T0).toFixed(1)};
+  };
+  ops.spk12mask = (d, m) => {   // Gewichte round(255·w) auf dem Base-Raster (Test: Mengen-Rechnung, Energie)
+    const {fnc, box} = X.selFn(d, m.sel || []), sm = Math.max(1, m.sm | 0), sk = Math.max(1, m.sk | 0), m0 = m.m0 | 0, m1 = m.m1 | 0, k0 = m.k0 | 0, k1 = m.k1 | 0;
+    const W = Math.floor((m1 - m0) / sm) + 1, H = Math.floor((k1 - k0) / sk) + 1, data = new Uint8Array(W * H);
+    for (let i = 0; i < W; i++) for (let j = 0; j < H; j++) data[i * H + j] = Math.round(fnc(m0 + i * sm, k0 + j * sk) * 255);
+    return {W, H, data, box};
+  };
+  ops.spk12view = (d, m) => {   // Anzeige: W × H Zellen über dem sichtbaren Ausschnitt (Zeile 0 = oben)
+    const sr = d.meta.sr, N = d.meta.base.N, hop = d.meta.base.hop, {fnc, box} = X.selFn(d, m.sel || []), W = Math.max(1, Math.min(1200, m.W | 0)), H = Math.max(1, Math.min(1200, m.H | 0));
+    const data = new Uint8Array(W * H), t0 = +m.t0, t1 = +m.t1, mT = +m.mTop, mB = +m.mBot, kk = new Int32Array(H);
+    for (let j = 0; j < H; j++) kk[j] = Math.round(440 * Math.pow(2, (mT - (j + 0.5) * (mT - mB) / H - 69) / 12) * N / sr);
+    if (box.m1 >= 0) for (let i = 0; i < W; i++) {
+      const mm = Math.round((t0 + (i + 0.5) * (t1 - t0) / W) * sr / hop + 1); if (mm < box.m0 || mm > box.m1) continue;
+      for (let j = 0; j < H; j++) { const k = kk[j]; if (k >= box.k0 && k <= box.k1) data[j * W + i] = Math.round(fnc(mm, k) * 255); }
+    }
+    const bt = box.m1 < 0 ? null : {t0: (box.m0 - 1) * hop / sr, t1: (box.m1 - 1) * hop / sr, f0: box.k0 * sr / N, f1: box.k1 * sr / N};
+    return {W, H, data, t0, t1, mTop: mT, mBot: mB, box: bt};
+  };
+  /* Teil 3: „Alle Ebenen abtasten“ aus → Analyse-Signal = nur die aktive Ebene (blockweise gerechnet, Zwischenspeicher je Ebenen-Stand) */
+  /* Prüfung: Schlüssel = Dokument-Objekt (d.s12uid; nach Schließen/Öffnen/Import neu) + Ebene + Versionen; der Eintrag hält nur das Signal
+     (kein altes Dokument), Blöcke werden nur im gebrauchten Bereich gerechnet (done je Block), Fortschritt über emit */
+  const SRC = new Map(); let srcN = 0;
+  const srcLid = (d, m) => { const lid = m && m.s12src; if (!lid || lid === 'orig' || !X.block || !X.mixOf) return null; return lid === 'rest' || d.meta.layers.some(l => l.id === lid) ? lid : null; };
+  async function src(d, m, a, b, emit) {
+    const lid = srcLid(d, m); if (!lid) return d;
+    if (!d.s12uid) d.s12uid = spk12K2.U = (spk12K2.U || 0) + 1;
+    for (const [k, e] of SRC) if (e.id === d.meta.id && e.uid !== d.s12uid) SRC.delete(k);   // Stand eines geschlossenen/neu geladenen Dokuments
+    const key = d.meta.id + '#' + d.s12uid + '|' + lid + '|' + d.meta.layers.map(l => l.id + ':' + l.ver).join(','), n = d.meta.n, BL = X.BLK, nb = Math.ceil(n / BL);
+    let e = SRC.get(key); if (e) SRC.delete(key); else e = {id: d.meta.id, uid: d.s12uid, mid: new Float32Array(n), done: new Uint8Array(nb), s12k: ':s12L' + (++srcN), ms: 0};
+    SRC.set(key, e); while (SRC.size > 2) SRC.delete(SRC.keys().next().value);
+    const k0 = a == null ? 0 : Math.max(0, Math.floor(a / BL)), k1 = b == null ? nb - 1 : Math.min(nb - 1, Math.floor(Math.max(0, b - 1) / BL)), T0 = performance.now();
+    let todo = 0; for (let k = k0; k <= k1; k++) if (!e.done[k]) todo++;
+    if (todo) {
+      const mx = X.mixOf(d, lid), mid = e.mid; let tY = T0, tP = T0, nd = 0;
+      for (let k = k0; k <= k1; k++) {
+        if (e.done[k]) continue;
+        const bl = X.block(d, k, mx), o = k * BL, en = Math.min(n, o + BL), kk = 1 / bl.length;
+        for (const y of bl) for (let i = o; i < en; i++) mid[i] += y[i - o] * kk;
+        e.done[k] = 1; nd++;
+        const t = performance.now();
+        if (t - tY > 25) { if (emit && todo > 24 && t - tP > 120) { emit({qid: m.qid, prog: nd / todo, stufe: 'Ebene abtasten'}); tP = t; } await X.tick(); tY = performance.now(); }
+      }
+    }
+    const ms = +(performance.now() - T0).toFixed(1); e.ms += ms;
+    const d2 = Object.create(d); d2.mid = e.mid; d2.co = null; d2.s12k = e.s12k; d2.s12ms = ms; d2.s12lid = lid; d2.s12blk = todo; return d2;
+  }
+  const SR_ = (d, t) => Math.round(t * d.meta.sr);
+  const rng = {   // Bereich je Op (Samples), den das Ebenen-Signal braucht; null = ganzes Stück
+    spk12trans: (d, m) => [SR_(d, Math.min(+m.t0, +m.t1) - 0.4), SR_(d, Math.max(+m.t0, +m.t1) + 0.4)],
+    spk12follow: (d, m) => [SR_(d, +m.t0 - 0.6), SR_(d, +m.t1 + 0.6)],
+    spk12hauto: (d, m) => { const T = (m.spur || []).map(p => +p[0]).filter(isFinite); return T.length ? [SR_(d, Math.min(...T) - 0.6), SR_(d, Math.max(...T) + 0.6)] : [0, 1]; },
+    spk12harm: (d, m) => { const t = +m.t || 0, w = Math.min(12, m.max || 6) + 0.8; return [SR_(d, t - w), SR_(d, t + w)]; }
+  };
+  const gainOk = (d, lid) => { if (!X.gainFn) return false; if (lid === 'rest') return true; const l = d.meta.layers.find(x => x.id === lid); return !!l && !l.a6 && !(l.fx && Object.keys(l.fx).some(k => +l.fx[k])); };
+  /* Zauberstab „Alle Ebenen abtasten“ aus: Anzeige-Raster des Originals (Stücke aus IDB) × Anteil der Ebene je Base-Rahmen und Zeile
+     (Masken der Ebenen, wie beim Abspielen) – kein Rendern der Ebene; Ebenen mit eigenem Audio/Effekten → Ebenen-Signal im Fenster */
+  function gainA(d, lid, A, ca, nc, R, I) {
+    const gf = X.gainFn(d, X.mixOf(d, lid)), Nb = d.meta.base.N, hb = d.meta.base.hop, sr = d.meta.sr, NB = Nb / 2 + 1, g = new Float32Array(NB), lo = new Int32Array(R), hi = new Int32Array(R), k255 = 255 / I.dbf, gr = new Float32Array(R);
+    const fr = r => 440 * Math.pow(2, (I.m0 + r / I.rps - 69) / 12);
+    for (let r = 0; r < R; r++) { const a = Math.max(0, Math.min(NB - 1, Math.floor(fr(r - 0.5) * Nb / sr))), b = Math.max(a, Math.min(NB - 1, Math.ceil(fr(r + 0.5) * Nb / sr))); lo[r] = a; hi[r] = b; }
+    let mP = -1;
+    for (let c = 0; c < nc; c++) {
+      const mm = Math.round((ca + c) * I.hop / hb + 1);
+      if (mm !== mP) { mP = mm; gf(mm, g); for (let r = 0; r < R; r++) { let v = 0; for (let k = lo[r]; k <= hi[r]; k++) if (g[k] > v) v = g[k]; gr[r] = v > 1e-5 ? 20 * Math.log10(v) * k255 : -1e9; } }
+      const off = c * R; for (let r = 0; r < R; r++) { const q = gr[r]; if (q === 0) continue; const v = A[off + r] + q; A[off + r] = v <= 0 ? 0 : v >= 255 ? 255 : Math.round(v); }
+    }
+  }
+  spk12K2.gain = (d, lid) => { if (!lid || lid === 'orig' || !X.mixOf || !gainOk(d, lid) || (lid !== 'rest' && !d.meta.layers.some(l => l.id === lid))) return null; const gf = X.gainFn(d, X.mixOf(d, lid)), g = new Float32Array(d.meta.base.N / 2 + 1); return m => { gf(m, g); return g; }; };
+  { const z0 = ops.spk12zauber; ops.spk12zauber = async (d, m, emit, ...r) => {
+    const lid = srcLid(d, m); if (!lid) return z0(d, m, emit, ...r);
+    const T0 = performance.now();
+    if (gainOk(d, lid)) { const o = await z0(d, Object.assign({}, m, {s12g: lid}), emit, ...r); if (o && typeof o === 'object') o.s12src = {lid, ms: 0, weg: 'maske', ges: +(performance.now() - T0).toFixed(1)}; return o; }
+    const N = [1024, 2048, 4096, 8192, 16384].includes(m.N) ? m.N : 4096, I = X.specInfo(d, N), hD = I.hop, ct = Math.round((+m.t || 0) * d.meta.sr / hD), cw = Math.round(Math.max(0.5, Math.min(60, +m.lim || 5)) * d.meta.sr / hD);
+    const c0 = Math.max(0, ct - cw) >> 10, c1 = Math.min(I.cols - 1, ct + cw) >> 10;   // ganze Anzeige-Stücke (1024 Spalten) dieses Fensters
+    const d2 = await src(d, m, c0 * 1024 * hD - N, (c1 + 1) * 1024 * hD + N, emit), o = await z0(d2, m, emit, ...r);
+    if (o && typeof o === 'object') o.s12src = {lid, ms: d2.s12ms, blk: d2.s12blk, weg: 'signal', ges: +(performance.now() - T0).toFixed(1)}; return o;
+  }; }
+  for (const k of ['spk12trans', 'spk12hauto', 'spk12follow']) { const f0 = ops[k]; ops[k] = async (d, m, emit, ...r) => { const R = srcLid(d, m) ? rng[k](d, m) : [0, 0], d2 = await src(d, m, R[0], R[1], emit), o = await f0(d2, m, emit, ...r); if (o && typeof o === 'object' && d2 !== d) o.s12src = {lid: d2.s12lid, ms: d2.s12ms, blk: d2.s12blk}; return o; }; }
+  if (X.harmTrack) ops.spk12harm = async (d, m, emit) => { const R = rng.spk12harm(d, m); return X.harmTrack(await src(d, m, R[0], R[1], emit), +m.t || 0, +m.f || 220, m.max || 6); };
+  if (X.similar) ops.spk12aehnB = async (d, m, emit) => X.similar(await src(d, m, null, null, emit), m.ex || {});
+  /* Ähnliches mit Merkmalen: je Rahmen (N 4096, Hop 2048 wie „Ähnliche“) im Band des Beispiels Pegel (dB), Tonalität (Anteil der Energie in
+     deutlichen Spitzen ≥ 13 dB über den Nachbarn), Rauschen (spektrale Flachheit), Transient (Spektral-Fluss, log. verdichtet) */
+  const FT = new Map();
+  async function feats(d, fa, fb) {
+    const key = d.meta.id + (d.s12k || '') + '|' + fa + '|' + fb; if (FT.has(key)) return FT.get(key);
+    const sr = d.meta.sr, x = d.mid, N = 4096, hop = 2048, NB = N / 2 + 1, F = Math.floor(x.length / hop) + 1, re = new Float64Array(N), im = new Float64Array(N);
+    const ka = Math.max(7, Math.floor(fa * N / sr)), kb = Math.min(NB - 8, Math.max(ka + 2, Math.ceil(fb * N / sr))), nb = kb - ka + 1;
+    let e2 = 0, ne = 0; for (let i = 0; i < x.length; i += 8) { e2 += x[i] * x[i]; ne++; } const gam = 100 / Math.max(1e-4, Math.sqrt(e2 / Math.max(1, ne)));
+    const E = new Float32Array(F), T = new Float32Array(F), SF = new Float32Array(F), D = new Float32Array(F); let prev = null, tY = performance.now();
+    for (let f = 0; f < F; f++) {
+      const g = spk12Mag(x, f * hop, N, re, im), y = new Float32Array(nb); let sp = 0, sl = 0, ton = 0, fl = 0;
+      for (let k = ka; k <= kb; k++) {
+        const P = g[k] * g[k]; sp += P; sl += Math.log(P + 1e-14); y[k - ka] = 20 * Math.log10(1 + gam * g[k]);
+        if (g[k] >= g[k - 1] && g[k] > g[k + 1]) { let nm = 0; for (let j = 3; j <= 6; j++) nm += g[k - j] * g[k - j] + g[k + j] * g[k + j]; if (P >= 20 * nm / 8) ton += P + g[k - 1] * g[k - 1] + g[k + 1] * g[k + 1]; }
+      }
+      if (prev) for (let i = 0; i < nb; i++) { const r = Math.max(prev[i], prev[Math.max(0, i - 1)], prev[Math.min(nb - 1, i + 1)]), v = y[i] - r; if (v > 0) fl += v; }
+      E[f] = 10 * Math.log10(sp + 1e-14); T[f] = sp > 0 ? Math.min(1, ton / sp) : 0; SF[f] = Math.min(1, Math.exp(sl / nb) / (sp / nb + 1e-14)); D[f] = prev ? fl / nb : 0; prev = y;
+      if ((f & 31) === 31 && performance.now() - tY > 25) { await X.tick(); tY = performance.now(); }
+    }
+    const o = {E, T, SF, D, F, hop, sr}; FT.set(key, o); if (FT.size > 4) FT.delete(FT.keys().next().value); return o;
+  }
+  ops.spk12aehn = async (d, m, emit) => {
+    const T0 = performance.now(), d2 = await src(d, m, null, null, emit), ex = m.ex || {}, mk = m.mk || {}, sr = d.meta.sr, ny = sr / 2;
+    const fa = ex.f0 > 0 ? Math.max(20, +ex.f0) : 20, fb = ex.f1 > 0 ? Math.min(ny, +ex.f1) : Math.min(ny, 16000), C = await feats(d2, Math.round(fa), Math.round(fb));
+    const e0 = Math.max(0, Math.floor((+ex.t0 || 0) * sr / C.hop)), e1 = Math.min(C.F - 1, Math.max(e0 + 1, Math.ceil((+ex.t1 || 0) * sr / C.hop))), L = e1 - e0 + 1;
+    if (L < 2) return {hits: [], L};
+    const nS = Math.max(0, C.F - L + 1), R = new Float32Array(nS), cl = v => v < 0 ? 0 : v > 1 ? 1 : v, Ec = v => Math.max(-100, v); let Ee = 0, Te = 0, Fe = 0, De = 0;
+    let Pe = 0; for (let u = 0; u < L; u++) { Ee += Ec(C.E[e0 + u]); Pe += Math.pow(10, C.E[e0 + u] / 10); Te += C.T[e0 + u]; Fe += C.SF[e0 + u]; De = Math.max(De, C.D[e0 + u]); } Ee /= L; const LPe = 10 * Math.log10(Pe / L + 1e-14);
+    for (let s = 0; s < nS; s++) {
+      let Ex = 0, dT = 0, dF = 0, Px = 0, mn = 0, mxx = 0;
+      for (let u = 0; u < L; u++) { const a = e0 + u, b = s + u; Ex += cl(1 - (Ec(C.E[a]) - Ec(C.E[b]) - 15) / 10); Px += Math.pow(10, C.E[b] / 10); dT += Math.abs(C.T[b] - C.T[a]); dF += Math.abs(C.SF[b] - C.SF[a]); mn += Math.min(C.D[a], C.D[b]); mxx += Math.max(C.D[a], C.D[b]); }
+      let w = Ex / L;   // vorhanden, Rahmen für Rahmen: höchstens ~15 dB leiser als das Beispiel (Stille zählt nie, Lage im Takt der Hüllkurve)
+      if (mk.ton) w *= cl(1 - dT / L / 0.35); if (mk.rs) w *= cl(1 - dF / L / 0.25); if (mk.pg) w *= cl(1 - Math.abs(10 * Math.log10(Px / L + 1e-14) - LPe) / 10); if (mk.tr) w *= mxx > 0 ? mn / mxx : 1;
+      R[s] = w;
+    }
+    const hits = [], gap = Math.max(1, Math.round(L * 0.75));
+    for (let s = 0; s < nS; s++) {
+      if (R[s] < 0.3 || Math.abs(s - e0) < gap) continue;
+      let ok = true; for (let q = Math.max(0, s - gap); q <= Math.min(nS - 1, s + gap); q++) if (R[q] > R[s] || (R[q] === R[s] && q < s)) { ok = false; break; }
+      if (ok) hits.push({t0: +(s * C.hop / sr).toFixed(4), t1: +((s + L) * C.hop / sr).toFixed(4), wert: +R[s].toFixed(3)});
+    }
+    hits.sort((a, b) => b.wert - a.wert); hits.length = Math.min(hits.length, 300); hits.sort((a, b) => a.t0 - b.t0);
+    return {hits, L, mk, bsp: {pegel: +LPe.toFixed(1), tonal: +(Te / L).toFixed(3), rauschen: +(Fe / L).toFixed(3), transient: +De.toFixed(2)}, src: d2 !== d ? {lid: d2.s12lid, ms: d2.s12ms} : null, ms: +(performance.now() - T0).toFixed(1)};
+  };
+  /* Auswahl merken: benannte Regionen im Dokument (d.meta.s12reg → Speichern/Laden/Export wie die übrigen Meta-Daten) */
+  ops.spk12reg = (d, m) => {
+    if (Array.isArray(m.set)) { d.meta.s12reg = JSON.parse(JSON.stringify(m.set)).slice(0, 64); d.metaDirty = true; if (X.soon) X.soon(d); }
+    return {reg: JSON.parse(JSON.stringify(d.meta.s12reg || []))};
+  };
+}
+/* ---------- Hauptfaden: Zustand, Stapel, Kombinieren ---------- */
+function spk12S(U) {
+  let S = U.s12;
+  if (!S || S.doc !== SPK1.doc) { const o = S || {}; S = U.s12 = {doc: SPK1.doc, mode: o.mode || 'neu', slot: o.slot && typeof o.slot === 'object' ? o.slot : {rect: 'rect', zeit: 'zeit'}, hm: o.hm || null, hAuto: !!o.hAuto, prev: [], last: null, u: [], r: [], vw: null, vKey: '', inSelf: false, ovSel: null, allL: o.allL !== false, mk: Object.assign({ton: false, tr: false, rs: false, pg: false}, o.mk || {}), reg: null, ai: -1};  if (SPK1.doc && U.meta) setTimeout(() => spk12RegGet(U), 0); }
+  return S;
+}
+const spk12Has = U => U.sel.some(s => s.op === 'sub' || s.op === 'and' || s.art === 'wand' || s.art === 'inv' || s.art === 'ell' || s.art === 'lasso' || s.art === 'trans' || s.art === 'fol' || (s.art === 'harm' && s.hm));
+const spk12Ku = () => { const r = SPK1.last; return r ? r.nu + '|' + (r.undo || '') : '0'; };   // Prüfung: nur Undo-Tiefe + Name (nr ändert sich bei jedem Kern-↶)
+const spk12Clone = a => JSON.parse(JSON.stringify(a || []));
+let spk12KeyN = 0; const spk12Key = () => 'w' + Date.now().toString(36) + (++spk12KeyN);
+function spk12Push(U, lab, before, xtra) { const S = spk12S(U); S.u.push(Object.assign({sel: before, ku: spk12Ku(), lab}, xtra || {})); if (S.u.length > 40) S.u.shift(); S.r.length = 0; spk12UndoBtn(U); }
+function spk12Set(U, sel, txt) {
+  const S = spk12S(U); U.sel = sel; U.hits = U.ex = null; if (U.hitLab) U.hitLab.textContent = '';
+  S.inSelf = true; try { spk1SelDone(U, txt); } finally { S.inSelf = false; }
+  S.prev = U.sel.slice(); spk12ViewReq(U);
+}
+function spk12SelDone(U) {   // Haken am Anfang von spk1SelDone: neue Form nach Kombinier-Modus einordnen
+  const S = spk12S(U); if (S.inSelf) return; spk12HmNew(U);
+  const prev = S.prev || [], cur = U.sel, fresh = cur.filter(s => !prev.includes(s));
+  if (S.mode !== 'neu' && fresh.length && prev.length && !U.ex && SPK12_TOOLS.includes(U.tool)) {
+    for (const s of fresh) if (S.mode === 'sub' || S.mode === 'and') { s.op = S.mode; if (s.art === 'pinsel') s.minus = false; }
+    U.sel = prev.concat(fresh);
+    spk12Push(U, {add: 'Auswahl +', sub: 'Auswahl −', and: 'Schnittmenge'}[S.mode], spk12Clone(prev));
+  } else if (prev.length && !prev.every(s => cur.includes(s))) S.last = prev.slice();
+  S.prev = U.sel.slice(); spk12ViewReq(U);
+}
+function spk12UndoBtn(U) {
+  if (!U || !U.bU || U.busy) return; const S = spk12S(U), k = spk12Ku(), a = S.u[S.u.length - 1], b = S.r[S.r.length - 1];
+  if (a && a.ku === k) { U.bU.disabled = false; U.bU.setAttribute('aria-label', 'Rückgängig: ' + a.lab); }
+  if (b && b.ku === k) { U.bR.disabled = false; U.bR.setAttribute('aria-label', 'Wiederholen: ' + b.lab); }
+}
+function spk12UndoRedo(U, which) {
+  const S = spk12S(U), A = which === 'undo' ? S.u : S.r, B = which === 'undo' ? S.r : S.u, top = A[A.length - 1];
+  if (!top || top.ku !== spk12Ku()) return false;
+  A.pop(); const cur = {sel: spk12Clone(U.sel), ku: top.ku, lab: top.lab}; if (top.reg) cur.reg = spk12Clone(S.reg || []); if (top.ah) cur.ah = {ex: U.ex, hits: U.hits, i: S.ai}; B.push(cur);
+  if (top.reg) { S.reg = spk12Clone(top.reg); spk12RegPut(U).catch(logErr); }
+  spk12Set(U, spk12Clone(top.sel), (which === 'undo' ? 'Rückgängig: ' : 'Wiederholt: ') + top.lab);
+  if (top.ah) { U.ex = top.ah.ex; U.hits = top.ah.hits; S.ai = top.ah.i; S.aiH = U.hits; const L = spk12AList(U); if (U.hitLab && L) U.hitLab.textContent = (L.length - 1) + ' Treffer'; spk1Dirty(U, 'ov'); }
+  spk12UndoBtn(U); return true;
+}
+/* ---------- Formen umrechnen: verschieben (dt s, dm Halbtöne), wachsen (gt s, gc Cent), weicher (ws) ---------- */
+const spk12Cl = (v, a, b) => Math.max(a, Math.min(b, v));
+function spk12Xf1(U, s, f, sg) {
+  const o = JSON.parse(JSON.stringify(s)), dt = f.dt || 0, dm = f.dm || 0, gt = (f.gt || 0) * sg, gc = (f.gc || 0) * sg, ws = f.ws || 0, q = Math.pow(2, dm / 12), g = Math.pow(2, gc / 1200);
+  if (o.art === 'pinsel') { o.pts = o.pts.map(p => [+(p[0] + dt).toFixed(4), +(p[1] * q).toFixed(2)]); o.rt = +Math.max(0.004, o.rt + gt).toFixed(4); o.rc = Math.max(5, Math.round(o.rc + gc)); o.weich = +spk12Cl((+o.weich || 0) + ws * 0.4, 0, 0.95).toFixed(2); }
+  else if (o.art === 'harm') { o.spur = o.spur.map(p => { const x = p.slice(); x[0] = +(x[0] + dt).toFixed(4); x[1] = +(x[1] * q).toFixed(2); return x; }); o.bw = Math.max(5, Math.round((+o.bw || 45) + gc)); }
+  else if (o.art === 'wand') {
+    o.ot = +((+o.ot || 0) + dt).toFixed(4); o.om = +((+o.om || 0) + dm).toFixed(3); o.gt = +((+o.gt || 0) + gt).toFixed(4); o.gc = Math.round((+o.gc || 0) + gc); o.ws = +spk12Cl((+o.ws || 0) + ws, 0, 3).toFixed(2); o.key = spk12Key();
+    const b = o.b || [o.t0, o.t1, o.f0, o.f1], ex = o.ws * 0.06, fx = Math.pow(2, (o.gc + o.ws * 60) / 1200), fq = Math.pow(2, o.om / 12);
+    o.t0 = +(b[0] + o.ot - o.gt - ex).toFixed(4); o.t1 = +(b[1] + o.ot + o.gt + ex).toFixed(4); o.f0 = +(b[2] * fq / fx).toFixed(2); o.f1 = +(b[3] * fq * fx).toFixed(2);
+  } else if (o.art === 'inv') { if (o.nurF) { o.t0 = +(o.t0 + dt - gt).toFixed(4); o.t1 = +(o.t1 + dt + gt).toFixed(4); } }
+  else if (o.art === 'trans' || o.art === 'fol') return o;
+  else if (o.art === 'lasso') {   // Punkte verschieben; wachsen = vom Schwerpunkt weg (Zeit ± gt, Tonhöhe ± gc)
+    let tc = 0, cc = 0; for (const p of o.pts) { tc += p[0]; cc += Math.log2(Math.max(1, p[1])); } tc /= o.pts.length; cc /= o.pts.length;
+    o.pts = o.pts.map(p => { const c = Math.log2(Math.max(1, p[1])); return [+(p[0] + dt + Math.sign(p[0] - tc) * gt).toFixed(4), +(Math.pow(2, c + Math.sign(c - cc) * gc / 1200) * q).toFixed(2)]; });
+    const L = spk12LassoSh(o.pts, 0); o.t0 = L.t0; o.t1 = L.t1; o.f0 = L.f0; o.f1 = L.f1;
+    if (ws) { const k = spk12Cl((+o.kt || 0) / 0.12 + ws, 0, 3); o.kt = +(k * 0.12).toFixed(3); o.kf = Math.round(k * 120); }
+  }
+  else {
+    if (o.art !== 'freq') { o.t0 = +(o.t0 + dt - gt).toFixed(4); o.t1 = +(o.t1 + dt + gt).toFixed(4); if (o.t1 - o.t0 < 0.01) { const c = (o.t0 + o.t1) / 2; o.t0 = +(c - 0.005).toFixed(4); o.t1 = +(c + 0.005).toFixed(4); } }
+    if (o.art !== 'zeit') { o.f0 = +(Math.max(1, o.f0) * q / g).toFixed(2); o.f1 = +(o.f1 * q * g).toFixed(2); if (o.f1 / o.f0 < 1.01) { const c = Math.sqrt(o.f0 * o.f1); o.f0 = +(c / 1.005).toFixed(2); o.f1 = +(c * 1.005).toFixed(2); } }
+    if (ws) { const k = spk12Cl((+o.kt || 0) / 0.12 + ws, 0, 3); o.kt = +(k * 0.12).toFixed(3); o.kf = Math.round(k * 120); }
+  }
+  return o;
+}
+function spk12Xf(U, list, f) {   // wachsen: abgezogene Formen und Formen vor einem Umkehren schrumpfen (Dualität)
+  let inv = list.filter(s => s.art === 'inv' && !s.nurF).length;
+  return list.map(s => { if (s.art === 'inv' && !s.nurF) { inv--; return Object.assign({}, s); } return spk12Xf1(U, s, f, (s.op === 'sub' ? -1 : 1) * (inv % 2 ? -1 : 1)); });
+}
+function spk12Edge(s, side, dtS, dC) {   // einzelnes Rechteck/Zeit/Frequenz: nur dieser Rand
+  const o = Object.assign({}, s), g = Math.pow(2, dC / 1200);
+  if (side === 'l') o.t0 = +Math.min(o.t0 + dtS, o.t1 - 0.01).toFixed(4); else if (side === 'r') o.t1 = +Math.max(o.t1 + dtS, o.t0 + 0.01).toFixed(4);
+  else if (side === 't') o.f1 = +Math.max(o.f1 * g, o.f0 * 1.01).toFixed(2); else o.f0 = +Math.min(Math.max(1, o.f0) * g, o.f1 / 1.01).toFixed(2);
+  return o;
+}
+function spk12Box(U) {   // Umriss der Auswahl (nur hinzufügende Formen) für Griffe und Zeitbereich
+  let t0 = 1e9, t1 = -1e9, f0 = 1e9, f1 = -1e9, tAll = false, fAll = false, n = 0; const ny = (U.meta && U.meta.sr || 44100) / 2;
+  for (const s of U.sel) {
+    if (s.art === 'inv') { if (!s.nurF) return null; continue; } if (s.op === 'sub' || s.op === 'and') continue; n++;
+    if (s.art === 'pinsel') { if (s.minus) continue; for (const p of s.pts) { t0 = Math.min(t0, p[0] - s.rt); t1 = Math.max(t1, p[0] + s.rt); f0 = Math.min(f0, p[1] * Math.pow(2, -s.rc / 1200)); f1 = Math.max(f1, p[1] * Math.pow(2, s.rc / 1200)); } }
+    else if (s.art === 'harm') { for (const p of s.spur) { t0 = Math.min(t0, p[0]); t1 = Math.max(t1, p[0] + 0.03); f0 = Math.min(f0, p[1] * Math.pow(2, -(s.bw || 45) / 1200)); f1 = Math.max(f1, p[1] * (s.K || 16)); } }
+    else { if (s.art === 'freq') fAll = true; else { t0 = Math.min(t0, s.t0); t1 = Math.max(t1, s.t1); } if (s.art === 'zeit') tAll = true; else { f0 = Math.min(f0, Math.max(1, s.f0)); f1 = Math.max(f1, Math.min(ny, s.f1)); } }
+  }
+  if (!n) return null;
+  if (fAll) { t0 = 0; t1 = U.dur; } if (tAll && f1 < f0) { f0 = 20; f1 = ny; }
+  return t1 > t0 && f1 > f0 ? {t0, t1, f0, f1, tAll: tAll && !fAll && U.sel.every(s => s.art !== 'rect'), fAll: fAll && U.sel.every(s => s.art === 'freq' || s.op)} : null;
+}
+/* ---------- Rand-Griffe ---------- */
+const spk12HOn = U => U.sel.length > 0 && SPK12_HT.includes(U.tool) && !U.busy && !U.ex && !U.sel.some(s => (s.art === 'inv' && !s.nurF) || s.art === 'trans' || s.art === 'fol');
+function spk12Geo(U) {
+  if (!spk12HOn(U)) return null; const B = spk12Box(U); if (!B) return null;
+  const W = U.W, H = U.H, xL = spk1X(U, B.t0), xR = spk1X(U, B.t1), yT = spk1Y(U, B.f1), yB = spk1Y(U, B.f0);
+  const ya = Math.max(0, yT), yb = Math.min(H, yB), xa = Math.max(0, xL), xb = Math.min(W, xR);
+  if (xb - xa < 2 || yb - ya < 2) return null;
+  return {B, xL, xR, yT, yB, cx: (xa + xb) / 2, cy: (ya + yb) / 2, ya, yb, xa, xb, side: {l: !B.fAll && xL >= -2 && xL <= W + 2, r: !B.fAll && xR >= -2 && xR <= W + 2, t: !B.tAll && yT >= -2 && yT <= H + 2, b: !B.tAll && yB >= -2 && yB <= H + 2}};
+}
+function spk12Down(U, G, p) {
+  const g = spk12Geo(U); if (!g) return;
+  const c = []; if (Math.hypot(p.x - g.cx, p.y - g.cy) <= 22) c.push(['move', Math.hypot(p.x - g.cx, p.y - g.cy) + 4]);
+  const inY = Math.abs(p.y - g.cy) <= 36, inX = Math.abs(p.x - g.cx) <= 36;   // Griff-Zonen um die Balken (Rand-Mitte), sonst beginnt dort eine neue Form
+  if (g.side.l && inY && Math.abs(p.x - g.xL) <= 16) c.push(['l', Math.abs(p.x - g.xL)]);
+  if (g.side.r && inY && Math.abs(p.x - g.xR) <= 16) c.push(['r', Math.abs(p.x - g.xR)]);
+  if (g.side.t && inX && Math.abs(p.y - g.yT) <= 16) c.push(['t', Math.abs(p.y - g.yT)]);
+  if (g.side.b && inX && Math.abs(p.y - g.yB) <= 16) c.push(['b', Math.abs(p.y - g.yB)]);
+  if (!c.length) return; c.sort((a, b) => a[1] - b[1]); G.s12cand = c[0][0];
+  G.single = U.sel.length === 1 && ['rect', 'zeit', 'freq', 'ell'].includes(U.sel[0].art);
+}
+function spk12Live(U) {
+  U.selVer++; spk1Dirty(U, 'ov'); const S = spk12S(U), now = performance.now();
+  if (now - (S.vLive || 0) > 90) { S.vLive = now; spk12ViewReq(U); }
+}
+function spk12Move(U, G, p) {
+  if (!G.s12cand) return spk12Move2(U, G, p);   // Zauberstab / Ellipse / Lasso / Transient
+  const v = U.v;
+  if (G.s12 === 'soft') {
+    const pv = [...G.P.values()]; if (pv.length < 2) return true;
+    const ws = Math.round((Math.hypot(pv[0].x - pv[1].x, pv[0].y - pv[1].y) - G.d0) / 120 * 4) / 4; if (ws === G.ws) return true;
+    G.ws = ws; U.sel = spk12Xf(U, G.base, {ws}); spk12Live(U); spk1Stat(U, 'Weichheit ' + (ws > 0 ? '+' : '') + String(ws).replace('.', ',')); return true;
+  }
+  if (!G.s12) { if (Math.hypot(p.x - G.x0, p.y - G.y0) < 8) return true; G.s12 = G.s12cand; G.base = G.base0 = U.sel; G.moved = true; spk12S(U).drag = G; }
+  const dx = p.x - G.x0, dy = p.y - G.y0;
+  if (G.s12 === 'move') U.sel = spk12Xf(U, G.base, {dt: dx / v.pps, dm: -dy / v.rowH});
+  else if (G.single && !(G.base[0].art === 'zeit' && (G.s12 === 't' || G.s12 === 'b')) && !(G.base[0].art === 'freq' && (G.s12 === 'l' || G.s12 === 'r'))) U.sel = [spk12Edge(G.base[0], G.s12, dx / v.pps, -dy / v.rowH * 100)];
+  else U.sel = spk12Xf(U, G.base, G.s12 === 'l' ? {gt: -dx / v.pps} : G.s12 === 'r' ? {gt: dx / v.pps} : G.s12 === 't' ? {gc: -dy / v.rowH * 100} : {gc: dy / v.rowH * 100});
+  spk12Live(U); return true;
+}
+function spk12Two(U, G, P) {   // zweiter Finger, während der erste am Rand liegt → Weichheit
+  if (!G.s12cand || G.s12cand === 'move') return false;
+  const pv = [...P.values()]; if (pv.length < 2) return false;
+  if (!G.base0) G.base0 = U.sel; G.base = U.sel; G.s12 = 'soft'; G.P = P; spk12S(U).drag = G; G.d0 = Math.hypot(pv[0].x - pv[1].x, pv[0].y - pv[1].y); G.ws = 0; G.moved = true;
+  spk1Stat(U, 'Zwei Finger: auseinander = weicher, zusammen = härter'); return true;
+}
+function spk12Up(U, G) {
+  spk12S(U).drag = null;
+  const lab = G.s12 === 'move' ? 'Auswahl verschoben' : G.s12 === 'soft' ? 'Auswahl ' + (G.ws >= 0 ? 'weicher' : 'härter') : 'Auswahl-Größe';
+  spk12Push(U, lab, spk12Clone(G.base0 || [])); spk12Set(U, U.sel, lab + ' · ↶ macht es rückgängig');
+}
+/* ---------- Zeichnen: Ergebnis-Fläche (Kern) + Griffe ---------- */
+function spk12OvPre(U) {
+  const S = spk12S(U); if (S.ovSel) { U.sel = S.ovSel; S.ovSel = null; }
+  const tmp = spk12TmpPre(U);   // Ellipse/Lasso beim Ziehen zeichnet Teil 2 selbst
+  if (!U.sel.length || !spk12Has(U)) return {sel: null, tmp};
+  const sel = U.sel; S.ovSel = sel; U.sel = []; return {sel, tmp};   // alte Zeichnung überspringt die Formen; die Fläche zeigt das Ergebnis
+}
+function spk12OvPost(U, x, s12) {
+  const S = spk12S(U);
+  if (s12.sel) { U.sel = s12.sel; S.ovSel = null; spk12VwDraw(U, x); }
+  if (s12.tmp) spk12TmpDraw(U, x, s12.tmp);
+  spk12HitDraw(U, x); spk12HdDraw(U, x);
+}
+function spk12ViewReq(U) {
+  const S = spk12S(U); if (!U.meta || !SPK1.doc || !U.sel.length || !spk12Has(U)) { S.vw = null; S.vKey = ''; return; }
+  const v = U.v, W = U.W, H = U.H, key = U.selVer + '|' + v.t0.toFixed(3) + '|' + v.pps.toFixed(2) + '|' + v.mTop.toFixed(2) + '|' + v.rowH.toFixed(3) + '|' + W + 'x' + H;
+  if (S.vKey === key) return; if (S.vBusy) { S.vPend = true; return; }
+  S.vBusy = true; S.vKey = key;
+  const W2 = Math.ceil(W / 2), H2 = Math.ceil(H / 2), a = {doc: SPK1.doc, sel: U.sel, t0: v.t0, t1: v.t0 + W / v.pps, mTop: v.mTop, mBot: v.mTop - H / v.rowH, W: W2, H: H2};
+  spk1Call('spk12view', a).then(r => {
+    const cv = (S.vw && S.vw.cv && S.vw.cv.width === r.W && S.vw.cv.height === r.H) ? S.vw.cv : Object.assign(document.createElement('canvas'), {width: r.W, height: r.H});
+    const g = cv.getContext('2d'), im = g.createImageData(r.W, r.H), D = r.data, o = im.data, Wd = r.W, Hd = r.H;
+    for (let j = 0; j < Hd; j++) for (let i = 0; i < Wd; i++) {
+      const q = j * Wd + i, w = D[q]; if (!w) continue; const inn = w >= 128;
+      const edge = inn && (i === 0 || D[q - 1] < 128 || i === Wd - 1 || D[q + 1] < 128 || j === 0 || D[q - Wd] < 128 || j === Hd - 1 || D[q + Wd] < 128);
+      o[q * 4] = 244; o[q * 4 + 1] = 241; o[q * 4 + 2] = 234; o[q * 4 + 3] = edge ? 215 : Math.round(w * 0.17);
+    }
+    g.putImageData(im, 0, 0); S.vw = {cv, t0: r.t0, t1: r.t1, mTop: r.mTop, mBot: r.mBot, box: r.box}; spk1Dirty(U, 'ov');
+  }, e => { logErr(e); }).finally(() => { S.vBusy = false; if (S.vPend) { S.vPend = false; spk12ViewReq(U); } });
+}
+function spk12VwDraw(U, x) {
+  const S = spk12S(U), w = S.vw, v = U.v; spk12ViewReq(U); if (!w) return;
+  const xa = spk1X(U, w.t0), xb = spk1X(U, w.t1), ya = (v.mTop - w.mTop) * v.rowH, yb = (v.mTop - w.mBot) * v.rowH;
+  x.save(); x.imageSmoothingEnabled = true; x.drawImage(w.cv, xa, ya, xb - xa, yb - ya); x.restore();
+}
+function spk12HdDraw(U, x) {
+  const g = spk12Geo(U); if (!g) return;
+  x.save(); x.fillStyle = '#f4f1ea'; x.strokeStyle = 'rgba(0,0,0,.65)'; x.lineWidth = 1;
+  const bar = (cx, cy, w, h) => { x.beginPath(); if (x.roundRect) x.roundRect(cx - w / 2, cy - h / 2, w, h, 3); else x.rect(cx - w / 2, cy - h / 2, w, h); x.fill(); x.stroke(); };
+  if (g.side.l) bar(g.xL, g.cy, 6, 26); if (g.side.r) bar(g.xR, g.cy, 6, 26); if (g.side.t) bar(g.cx, g.yT, 26, 6); if (g.side.b) bar(g.cx, g.yB, 26, 6);
+  x.beginPath(); x.arc(g.cx, g.cy, 10, 0, Math.PI * 2); x.fillStyle = 'rgba(20,22,26,.72)'; x.fill(); x.strokeStyle = '#f4f1ea'; x.lineWidth = 1.4; x.stroke();
+  x.beginPath(); for (const [a, b] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { x.moveTo(g.cx + a * 2, g.cy + b * 2); x.lineTo(g.cx + a * 7, g.cy + b * 7); } x.stroke();
+  x.restore();
+}
+/* ---------- Zauberstab ---------- */
+function spk12WShape(r, op) {
+  const s = {art: 'wand', N: r.N, hop: r.hop, R: r.R, m0: r.m0, rps: r.rps, c0: r.c0, nc: r.nc, cols: r.cols, b: [+r.t0.toFixed(4), +r.t1.toFixed(4), +r.f0.toFixed(2), +r.f1.toFixed(2)],
+    t0: +r.t0.toFixed(4), t1: +r.t1.toFixed(4), f0: +r.f0.toFixed(2), f1: +r.f1.toFixed(2), kt: 0, kf: 0, tol: r.tol, lim: r.lim, key: spk12Key()};
+  if (op === 'sub' || op === 'and') s.op = op; return s;
+}
+async function spk12Wand(U, G, keep) {
+  const S = spk12S(U); if (!U.meta || !SPK1.doc) return null; if (S.wBusy) { S.wNext = [G, keep]; return null; }
+  S.wBusy = true; const T0 = performance.now(); if (!keep) spk1Stat(U, 'Zauberstab …');
+  try {
+    const r = await spk1Call('spk12zauber', {doc: SPK1.doc, N: U.N, t: G.t0, f: G.f0, tol: U.opt.s12tol, lim: U.opt.s12lim});
+    const ms = performance.now() - T0; S.wMs = {all: +ms.toFixed(1), kern: +r.ms.toFixed(1), load: +r.msLoad.toFixed(1), cells: r.cells};
+    if (!r.cells) { spk1Stat(U, 'Zauberstab: nichts gefunden – auf eine helle Stelle tippen'); return r; }
+    const before = spk12Clone(U.sel); let sel;
+    if (keep) { const i = U.sel.indexOf(keep); if (i < 0) return r; sel = U.sel.slice(); sel[i] = spk12WShape(r, keep.op); S.wLast = {t: G.t0, f: G.f0, shape: sel[i]}; }
+    else {
+      const sh = spk12WShape(r, U.sel.length ? S.mode : 'neu');
+      sel = S.mode === 'neu' || !U.sel.length ? [sh] : U.sel.concat([sh]); S.wLast = {t: G.t0, f: G.f0, shape: sh};
+      if (S.mode === 'neu' && U.sel.length) S.last = U.sel.slice();
+      spk12Push(U, 'Zauberstab', before);
+    }
+    const m = Math.round(spk1Midi(G.f0)), hz = n => Math.round(n), fz = n => n.toFixed(1).replace('.', ',');
+    spk12Set(U, sel, 'Zauberstab · ' + SPK1_NOTE[((m % 12) + 12) % 12] + (Math.floor(m / 12) - 1) + ' · ' + fz(r.t0) + '–' + fz(r.t1) + ' s · ' + hz(r.f0) + '–' + hz(r.f1) + ' Hz · ' + Math.round(ms) + ' ms' + (keep ? '' : ' · ↶ macht es rückgängig'));
+    return r;
+  } catch (e) { logErr(e); spk1Stat(U, 'Zauberstab: ' + (e.message || e)); return null; }
+  finally { S.wBusy = false; if (S.wNext) { const [g, k] = S.wNext; S.wNext = null; spk12Wand(U, g, k && U.sel.includes(k) ? k : null); } }
+}
+function spk12Retol(U) {   // Toleranz / Grenze geändert → letzten Zauberstab neu rechnen (kein neuer ↶-Schritt)
+  const S = spk12S(U); clearTimeout(S.rtT);
+  S.rtT = setTimeout(() => { const w = S.wLast; if (w && U.sel.includes(w.shape)) spk12Wand(U, {t0: w.t, f0: w.f}, w.shape); }, 160);
+}
+/* ---------- Bedienung: Leiste (Neu │ + │ − │ ∩ · Auswahl ▾), Toleranz/Grenze, Halten auf Rechteck ---------- */
+const spk12Svg = () => '<svg class="n1i" width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true">' + SPK12_ICON + '</svg>';
+function spk12Pane(U, pane, sl) {
+  if (!document.getElementById('spk12Css')) { const st = document.createElement('style'); st.id = 'spk12Css'; st.textContent = '.spk1-o.spk12-c{gap:4px}.spk1-op .spk12-m,.spk1-op .spk12-an{min-width:44px;justify-content:center;font-weight:700}.spk1-op .spk12-dd,.spk1-op .spk12-hd{margin-left:6px}.spk1-dd .mbtn.spk12-hn{min-width:44px;padding:6px 4px;justify-content:center;text-align:center}'; document.head.appendChild(st); }
+  const pC = U.s12pane = pane('rect zeit freq pinsel harm wand ell lasso trans'); pC.classList.add('spk12-c');   // Prüfung: hinter den vorhandenen Reglern (waagrecht wischen), nicht mehr vorn
+  for (const [m, t, lab] of SPK12_MODES) { const b = el('button', 'n1b spk12-m', esc(t)); b.dataset.a = 's12m'; b.dataset.m = m; b.setAttribute('aria-label', lab); b.setAttribute('aria-pressed', String(m === 'neu')); if (m === 'neu') b.classList.add('on'); pC.appendChild(b); }
+  const bA = el('button', 'n1b spk12-dd', 'Auswahl ▾'); bA.dataset.a = 's12dd'; bA.setAttribute('aria-label', 'Auswahl umkehren, wiederherstellen, erweitern, weicher'); pC.appendChild(bA); U.b12 = bA;
+  U.opt.s12tol = 15; U.opt.s12lim = 5;
+  const pW = pane('wand'); sl(pW, 'Toleranz', 's12tol', 3, 40, 1, v => v + ' dB', () => spk12Retol(U)); sl(pW, 'Grenze', 's12lim', 1, 20, 1, v => '± ' + v + ' s', () => spk12Retol(U));
+  U.opt.s12ts = 5; U.opt.s12hg = 3; U.opt.s12tl = 120;
+  for (const p of U.op.querySelectorAll('.spk1-o')) if (p.dataset.for === 'rect zeit freq') p.dataset.for += ' ell lasso';   // Kante auch für Ellipse/Lasso
+  const pT = pane('trans'); sl(pT, 'Empfindl.', 's12ts', 1, 10, 1, v => String(v), () => spk12ReTr(U)); sl(pT, 'Höhen', 's12hg', 0, SPK12_HG.length - 1, 1, v => 'ab ' + SPK12_HG[v] + ' Hz', () => spk12ReTr(U)); sl(pT, 'Länge', 's12tl', 40, 300, 20, v => v + ' ms', () => spk12ReTr(U));
+  const pA = pane('aehn'), bM = el('button', 'n1b spk12-hd', 'Merkmale ▾'); bM.dataset.a = 's12mk'; bM.setAttribute('aria-label', 'Ähnlich in: tonal, Transient, Rauschen, Pegel'); pA.appendChild(bM); U.b12m = bM;
+  for (const [a, t, lab] of [['s12ap', '‹', 'Voriger Treffer'], ['s12an', '›', 'Nächster Treffer'], ['s12aa', 'Alle', 'Alle Treffer wählen']]) { const x = el('button', 'n1b spk12-an', t); x.dataset.a = a; x.setAttribute('aria-label', lab); pA.appendChild(x); }
+  U.b12a = pA;   /* Prüfung: Auswahl ▾ wandert bei Ähnliche hinter ‹ › Alle (spk12ToolSet) – ein Knopf, gleiche Bedienung */
+  const pH = pane('harm'), bH = el('button', 'n1b spk12-hd', 'Obertöne ▾'); bH.dataset.a = 's12hd'; bH.setAttribute('aria-label', 'Obertöne einzeln anhaken, Auto, nur ungerade'); pH.appendChild(bH); U.b12h = bH;
+  for (const g of Object.keys(SPK12_SLOTS)) {
+    const b = U.tl.querySelector('button[data-tool="' + g + '"]'); if (!b) continue; b.dataset.s12slot = g;
+    let lp = null, x0 = 0, y0 = 0; const stop = () => { if (lp) { clearTimeout(lp); lp = null; } };
+    b.addEventListener('pointerdown', e => { stop(); x0 = e.clientX; y0 = e.clientY; lp = setTimeout(() => { lp = null; spk12S(U).hold = performance.now(); spk12SlotDd(U, b); }, 480); });
+    b.addEventListener('pointermove', e => { if (lp && Math.hypot(e.clientX - x0, e.clientY - y0) > 10) stop(); });
+    b.addEventListener('pointerup', stop); b.addEventListener('pointercancel', stop);
+    b.addEventListener('contextmenu', e => e.preventDefault());
+  }
+  U.mn.addEventListener('pointercancel', () => { const S = spk12S(U), g = S.drag; if (!g) return; S.drag = null; U.sel = g.base0 || U.sel; U.selVer++; spk12ViewReq(U); spk1Dirty(U, 'ov'); });   // Abbruch: Form wie vorher
+}
+function spk12Slot(U, k) {
+  const g = spk12Grp(k), b = g && U.tl.querySelector('button[data-s12slot="' + g + '"]'); if (!b) return;
+  b.dataset.tool = k; b.innerHTML = spk12Ic(k) + '<span>' + SPK12_ALT[k] + '</span>'; b.setAttribute('aria-label', 'Werkzeug ' + SPK12_ALT[k] + ' (halten = Liste)');
+  spk12S(U).slot[g] = k;
+}
+function spk12SlotDd(U, b) {
+  const g = b.dataset.s12slot;
+  spk1Dd(U, b, dd => {
+    dd.appendChild(el('h5', '', 'Werkzeug'));
+    const r = el('div', 'spk1-g');
+    for (const k of SPK12_SLOTS[g] || []) {
+      const x = el('button', 'mbtn rb spk1-ck' + (U.tool === k ? ' on' : ''), spk12Ic(k) + '&nbsp;' + SPK12_ALT[k]); x.dataset.s12t = k;
+      on(x, 'click', () => { spk1Dd(U, null); spk12Slot(U, k); spk1ToolSet(U, k); }); r.appendChild(x);
+    }
+    dd.appendChild(r); dd.appendChild(el('p', '', g === 'zeit' ? 'Transient: Schlag antippen oder über mehrere Schläge ziehen (Empfindlichkeit, ab … Hz).' : 'Ellipse und Lasso: ziehen bzw. umfahren. Zauberstab: antippen wählt die zusammenhängende helle Fläche.'));
+  });
+}
+function spk12ModeBtns(U) { for (const b of U.op.querySelectorAll('.spk12-m')) { const o = b.dataset.m === spk12S(U).mode; b.classList.toggle('on', o); b.setAttribute('aria-pressed', String(o)); } }
+function spk12Tap(U, b) {
+  const S = spk12S(U);
+  if (b.dataset.s12slot != null && S.hold && performance.now() - S.hold < 1500) { S.hold = 0; return true; }
+  const a = b.dataset.a; if (!a || a.slice(0, 3) !== 's12') return false;
+  if (a === 's12m') { S.mode = b.dataset.m; spk12ModeBtns(U); spk1Stat(U, {neu: 'Neu: die nächste Form ersetzt die Auswahl', add: '+: die nächste Form kommt dazu', sub: '−: die nächste Form wird abgezogen', and: '∩: nur die Überschneidung bleibt'}[S.mode]); }
+  else if (a === 's12dd') spk12Dd(U, b);
+  else if (a === 's12hd') spk12HDd(U, b);
+  else if (a === 's12mk') spk12MkDd(U, b);
+  else if (a === 's12ap' || a === 's12an' || a === 's12aa') spk12AStep(U, a === 's12ap' ? -1 : a === 's12an' ? 1 : 0);
+  return true;
+}
+function spk12Dd(U, b) {
+  const S = spk12S(U), has = U.sel.length > 0;
+  spk1Dd(U, b, dd => {
+    const g = (h, list) => { dd.appendChild(el('h5', '', h)); const r = el('div', 'spk1-g'); for (const [a, t, dis] of list) { const x = el('button', 'mbtn rb spk1-ck', esc(t)); x.dataset.s12a = a; x.disabled = !!dis; on(x, 'click', () => { spk1Dd(U, null); spk12Act(U, a); }); r.appendChild(x); } dd.appendChild(r); };
+    const fol = U.sel.length === 1 && U.sel[0].art === 'fol';
+    g('Auswahl', [['inv', 'Umkehren'], ['invf', 'Nur Frequenzen umkehren', !has || !spk12Box(U)], ['rest', 'Wiederherstellen', !S.last], ['fol', fol ? 'Folgt nicht mehr' : 'Folgt dem Ton', !has || (!fol && !spk12Box(U))]]);
+    g('Form', [['grow', 'Erweitern', !has], ['shrink', 'Verkleinern', !has], ['soft', 'Weicher', !has], ['hard', 'Härter', !has]]);
+    g('Werkzeug', ['rect', 'ell', 'lasso', 'wand', 'trans'].filter(k => k !== U.tool).map(k => [k, SPK12_ALT[k]]));
+    spk12RegRows(U, dd);
+    g('Abtasten', [['allL', (S.allL ? '✓ ' : '') + 'Alle Ebenen abtasten']]);
+    dd.appendChild(el('p', '', 'Am Rand ziehen = Größe · zwei Finger am Rand = Weichheit · Mitte ziehen = verschieben.'));
+  });
+}
+function spk12Act(U, a) {
+  const S = spk12S(U), before = spk12Clone(U.sel), ny = (U.meta && U.meta.sr || 44100) / 2; let sel = null, lab = '';
+  if (['rect', 'ell', 'lasso', 'wand', 'zeit', 'trans'].includes(a)) { spk12Slot(U, a); spk1ToolSet(U, a); return true; }
+  if (a === 'fol') { spk12Follow(U); return true; }
+  if (a === 'mer') return !!spk12Merk(U);
+  if (a === 'allL') { spk12AllL(U); return true; }
+  if (a === 'inv') { sel = U.sel.concat([{art: 'inv', t0: 0, t1: U.dur, f0: 0, f1: ny, kt: 0, kf: 0}]); lab = 'Auswahl umgekehrt'; }
+  else if (a === 'invf') { const B = spk12Box(U); if (!B) return false; sel = U.sel.concat([{art: 'inv', nurF: 1, t0: +B.t0.toFixed(4), t1: +B.t1.toFixed(4), f0: 0, f1: ny, kt: 0, kf: 0}]); lab = 'Nur Frequenzen umgekehrt'; }
+  else if (a === 'rest') { if (!S.last) return false; sel = S.last; S.last = U.sel.length ? U.sel.slice() : S.last; lab = 'Auswahl wiederhergestellt'; }
+  else if (a === 'grow' || a === 'shrink') { if (!U.sel.length) return false; const s = a === 'grow' ? 1 : -1; sel = spk12Xf(U, U.sel, {gt: 0.05 * s, gc: 50 * s}); lab = a === 'grow' ? 'Auswahl erweitert' : 'Auswahl verkleinert'; }
+  else if (a === 'soft' || a === 'hard') { if (!U.sel.length) return false; sel = spk12Xf(U, U.sel, {ws: a === 'soft' ? 0.5 : -0.5}); lab = a === 'soft' ? 'Auswahl weicher' : 'Auswahl härter'; }
+  else return false;
+  spk12Push(U, lab, before); spk12Set(U, sel, lab + ' · ↶ macht es rückgängig'); return true;
+}
+function spk12ToolSet(U, k) {
+  const S = spk12S(U);
+  if (U.b12 && U.b12a && U.s12pane) { const tg = k === 'aehn' ? U.b12a : U.s12pane; if (U.b12.parentNode !== tg) tg.appendChild(U.b12); }   // Prüfung: Auswahl ▾ auch bei Ähnliche
+  const g = spk12Grp(k); if (g && S.slot[g] !== k) { spk12Slot(U, k); const b = U.tl.querySelector('button[data-s12slot="' + g + '"]'); if (b) { b.classList.add('on'); b.setAttribute('aria-pressed', 'true'); } }
+  const tip = {wand: 'Antippen = Zauberstab (zusammenhängende helle Fläche)', ell: 'Ziehen = Ellipse', lasso: 'Umfahren = Lasso', trans: 'Schlag antippen oder über Schläge ziehen = Transient'}[k];
+  if (tip && U.meta && !U.sel.length) spk1Stat(U, tip + ' · zwei Finger = Zoom');
+  spk12ModeBtns(U);
+}
+/* ---------- Teil 2 · Hauptfaden: Ellipse, Lasso, Transient, Obertöne-Häkchen, folgt dem Ton ---------- */
+const SPK12_HG = [20, 50, 80, 120, 160, 200, 300, 500, 800, 1200, 2000, 3000, 5000];
+const SPK12_ALT = {ell: 'Ellipse', lasso: 'Lasso', trans: 'Transient', rect: 'Rechteck', zeit: 'Zeit', wand: 'Zauberstab'};
+const SPK12_IC = {ell: '<ellipse cx="10" cy="10" rx="7.5" ry="5"/>', lasso: '<path d="M5.5 12.5C3.2 11.4 2.5 9.6 3.3 7.8 4.6 5 9.4 3.7 13.4 4.6c3.2.7 4.6 2.6 3.6 4.7-1.1 2.3-5.4 3.6-9 2.9"/><path d="M5.5 12.5c-.8 1.4-.3 3 1.3 3.5"/>', trans: '<path d="M2 15h3.5L7 4l2 13 1.6-8 1.4 6H18"/>'};
+const spk12Ic = k => SPK12_IC[k] ? '<svg class="n1i" width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">' + SPK12_IC[k] + '</svg>' : k === 'wand' ? spk12Svg() : spk1Svg(k);
+const spk12Grp = k => Object.keys(SPK12_SLOTS).find(g => SPK12_SLOTS[g].includes(k));
+const spk12Del = U => +(0.6 * (11 - (U.opt.s12ts || 5))).toFixed(2);   // Empfindlichkeit 1…10 → Schwelle 6 … 0,6 dB je Bin
+function spk12LassoSh(pts, kk) {
+  let t0 = 1e9, t1 = -1e9, f0 = 1e9, f1 = -1e9; for (const p of pts) { t0 = Math.min(t0, p[0]); t1 = Math.max(t1, p[0]); f0 = Math.min(f0, p[1]); f1 = Math.max(f1, p[1]); }
+  return {art: 'lasso', pts: pts.slice(), t0: +t0.toFixed(4), t1: +t1.toFixed(4), f0: +f0.toFixed(2), f1: +f1.toFixed(2), kt: +(kk * 0.12).toFixed(3), kf: Math.round(kk * 120)};
+}
+function spk12Move2(U, G, p) {   // Ziehen mit Ellipse / Lasso / Transient (Zauberstab: Ziehen zeichnet nichts)
+  const k = G.tool; if (k === 'wand') return true; if (k !== 'ell' && k !== 'lasso' && k !== 'trans') return false;
+  if (!G.moved && Math.hypot(p.x - G.x0, p.y - G.y0) < 8) return true; G.moved = true;
+  const t = spk12Cl(spk1T(U, p.x), 0, U.dur), f = Math.max(1, spk1F(U, p.y)), kk = +U.opt.kante || 0;
+  if (k === 'trans') { G.t1 = t; U.tmp = {art: 'zeit', t0: +Math.min(G.t0, t).toFixed(4), t1: +Math.max(G.t0, t).toFixed(4), f0: 0, f1: 0}; }
+  else if (k === 'ell') G.shape = U.tmp = {art: 'ell', t0: +Math.max(0, Math.min(G.t0, t)).toFixed(4), t1: +Math.min(U.dur, Math.max(G.t0, t)).toFixed(4), f0: +Math.min(G.f0, f).toFixed(2), f1: +Math.max(G.f0, f).toFixed(2), kt: +(kk * 0.12).toFixed(3), kf: Math.round(kk * 120)};
+  else {
+    if (!G.pts) G.pts = [[+spk12Cl(G.t0, 0, U.dur).toFixed(4), +Math.max(1, G.f0).toFixed(2)]];
+    const l = G.pts[G.pts.length - 1]; if (Math.hypot(spk1X(U, l[0]) - p.x, spk1Y(U, l[1]) - p.y) >= 4) G.pts.push([+t.toFixed(4), +f.toFixed(2)]);
+    G.shape = U.tmp = spk12LassoSh(G.pts, kk);
+  }
+  spk1Dirty(U, 'ov'); return true;
+}
+function spk12Up2(U, G) {   // Loslassen: Zauberstab-Tipp, Transient (Tipp = ein Schlag, Ziehen = alle im Bereich), Lasso zu klein
+  if (G.tool === 'wand') { spk12Wand(U, G); return true; }
+  if (G.tool === 'trans') { const a = G.moved ? Math.min(G.t0, G.t1) : G.t0, b = G.moved ? Math.max(G.t0, G.t1) : G.t0; spk12Trans(U, {a, b, tap: !G.moved}); spk1Dirty(U, 'ov'); return true; }
+  if (G.tool === 'lasso' && G.moved && (!G.shape || G.shape.pts.length < 3)) { spk1Dirty(U, 'ov'); return true; }
+  return false;
+}
+function spk12Apply(U, sh, lab, txt, keep) {   // neue Form nach Kombinier-Modus (ein ↶), oder an Ort und Stelle ersetzen (Regler)
+  const S = spk12S(U), before = spk12Clone(U.sel); let sel;
+  if (keep) { const i = U.sel.indexOf(keep); if (i < 0) return false; sel = U.sel.slice(); if (keep.op) sh.op = keep.op; sel[i] = sh; }
+  else {
+    if (S.mode !== 'neu' && U.sel.length) { if (S.mode === 'sub' || S.mode === 'and') sh.op = S.mode; sel = U.sel.concat([sh]); }
+    else { if (U.sel.length) S.last = U.sel.slice(); sel = [sh]; }
+    spk12Push(U, lab, before);
+  }
+  spk12Set(U, sel, txt + (keep ? '' : ' · ↶ macht es rückgängig')); return true;
+}
+async function spk12Trans(U, q, keep) {
+  const S = spk12S(U); if (!U.meta || !SPK1.doc) return null; if (S.tBusy) { S.tNext = [q, keep]; return null; }
+  S.tBusy = true; const T0 = performance.now(); if (!keep) spk1Stat(U, 'Suche Schläge …');
+  try {
+    const hg = SPK12_HG[U.opt.s12hg] || 0, len = (U.opt.s12tl || 120) / 1000, ny = U.meta.sr / 2;
+    const r = await spk1Call('spk12trans', {doc: SPK1.doc, t0: q.tap ? q.a - 0.2 : q.a, t1: q.tap ? q.a + 0.2 : q.b, hg, del: spk12Del(U), tap: q.tap ? q.a : null});
+    const ms = performance.now() - T0; S.tMs = {all: +ms.toFixed(1), kern: r.ms, n: r.hits.length};
+    if (!r.hits.length) { spk1Stat(U, 'Transient: kein Schlag gefunden – Empfindlichkeit höher oder auf den Anschlag tippen'); return r; }
+    const sh = {art: 'trans', hits: r.hits, hg, len, q, ...(r.s12src && r.s12src.lid ? {src: r.s12src.lid} : {}), t0: +Math.max(0, r.hits[0] - 0.03).toFixed(4), t1: +Math.min(U.dur, r.hits[r.hits.length - 1] + len).toFixed(4), f0: Math.max(20, hg), f1: ny, kt: 0, kf: 0, key: spk12Key()};
+    if (spk12Apply(U, sh, 'Transient', 'Transient · ' + r.hits.length + (r.hits.length === 1 ? ' Schlag' : ' Schläge') + ' · ab ' + hg + ' Hz · ' + Math.round(ms) + ' ms', keep && U.sel.includes(keep) ? keep : null)) S.tLast = sh;
+    return r;
+  } catch (e) { logErr(e); spk1Stat(U, 'Transient: ' + (e.message || e)); return null; }
+  finally { S.tBusy = false; if (S.tNext) { const [a, k] = S.tNext; S.tNext = null; spk12Trans(U, a, k); } }
+}
+function spk12ReTr(U) { const S = spk12S(U); clearTimeout(S.trT); S.trT = setTimeout(() => { const w = S.tLast; if (w && U.sel.includes(w)) spk12Trans(U, w.q, w); }, 160); }
+/* Obertöne: Häkchen je Rang, Alle / Ungerade / Gerade, Auto (nur vorhandene Ränge) */
+const spk12Harms = U => U.sel.filter(s => s.art === 'harm');
+function spk12HmCur(U) { const h = spk12Harms(U)[0], K = h ? h.K : U.opt.K, src = h ? h.hm : spk12S(U).hm; return new Set(src && src.length ? src : Array.from({length: K}, (_, i) => i + 1)); }
+function spk12HmSet(U, hm, lab, K) {
+  const S = spk12S(U), hs = spk12Harms(U), all = !hm; S.hm = all ? null : hm.slice();
+  if (!hs.length) { spk1Stat(U, lab + ' · gilt für die nächste Harmonische'); return false; }
+  const before = spk12Clone(U.sel), sel = U.sel.map(s => { if (s.art !== 'harm') return s; const o = Object.assign({}, s); if (K) o.K = K; if (all) delete o.hm; else o.hm = hm.filter(h => h <= o.K); o.key = spk12Key(); return o; });
+  if (K) { U.opt.K = K; const r = U.op.querySelector('input[aria-label="Obertöne"]'); if (r) { r.value = K; if (r.nextSibling) r.nextSibling.textContent = String(K); } }
+  spk12Push(U, lab, before); spk12Set(U, sel, lab + ' · ↶ macht es rückgängig'); return true;
+}
+async function spk12HAuto(U) {
+  const S = spk12S(U), h = spk12Harms(U)[0]; if (!h) { S.hAuto = !S.hAuto; spk1Stat(U, 'Auto ' + (S.hAuto ? 'an: jede neue Harmonische bekommt nur die vorhandenen Obertöne' : 'aus')); return null; }
+  const r = await spk1Call('spk12hauto', {doc: SPK1.doc, spur: h.spur, K: 32}); S.hAutoR = r;
+  if (!r.hm.length) { spk1Stat(U, 'Auto: keine Obertöne erkannt'); return r; }
+  S.hAuto = true; spk12HmSet(U, r.hm, 'Auto: ' + r.hm.length + ' Obertöne bis Rang ' + r.K, r.K); return r;
+}
+function spk12HmNew(U) {   // neue Harmonische: gemerkte Häkchen bzw. Auto übernehmen
+  const S = spk12S(U), fresh = U.sel.filter(s => s.art === 'harm' && !(S.prev || []).includes(s)); if (!fresh.length) return;
+  if (S.hm) for (const s of fresh) s.hm = S.hm.filter(h => h <= s.K);
+  if (S.hAuto) { const s = fresh[fresh.length - 1]; spk1Call('spk12hauto', {doc: SPK1.doc, spur: s.spur, K: 32}).then(r => { if (!r.hm.length || !U.sel.includes(s)) return; const i = U.sel.indexOf(s), sel = U.sel.slice(); sel[i] = Object.assign({}, s, {K: r.K, hm: r.hm, key: spk12Key()}); spk12Set(U, sel, 'Auto: ' + r.hm.length + ' Obertöne bis Rang ' + r.K); }, logErr); }
+}
+function spk12HDd(U, b) {
+  const S = spk12S(U), K = spk12Harms(U)[0] ? spk12Harms(U)[0].K : U.opt.K;
+  spk1Dd(U, b, dd => {
+    dd.appendChild(el('h5', '', 'Obertöne · Rang 1–' + K));
+    const g = el('div', 'spk1-g'), cur = spk12HmCur(U);
+    for (let h = 1; h <= K; h++) {
+      const x = el('button', 'mbtn rb spk1-ck spk12-hn' + (cur.has(h) ? ' on' : ''), (cur.has(h) ? '✓' : '') + h); x.dataset.s12h = h; x.setAttribute('aria-pressed', String(cur.has(h))); x.setAttribute('aria-label', 'Oberton ' + h);
+      on(x, 'click', () => { const c = spk12HmCur(U), o = !c.has(h); if (o) c.add(h); else c.delete(h); if (!c.size) return; spk12HmSet(U, [...c].sort((p, q) => p - q), 'Oberton ' + h + (o ? ' an' : ' aus')); x.classList.toggle('on', o); x.setAttribute('aria-pressed', String(o)); x.textContent = (o ? '✓' : '') + h; });
+      g.appendChild(x);
+    }
+    dd.appendChild(g); const r = el('div', 'spk1-g');
+    for (const [a, t] of [['alle', 'Alle'], ['ung', 'Ungerade'], ['ger', 'Gerade'], ['auto', 'Auto' + (S.hAuto ? ' ✓' : '')]]) {
+      const x = el('button', 'mbtn rb spk1-ck', t); x.dataset.s12hh = a;
+      on(x, 'click', () => { spk1Dd(U, null); const KK = spk12Harms(U)[0] ? spk12Harms(U)[0].K : U.opt.K, L = Array.from({length: KK}, (_, i) => i + 1);
+        if (a === 'auto') spk12HAuto(U); else { S.hAuto = false; spk12HmSet(U, a === 'alle' ? null : L.filter(h => (h & 1) === (a === 'ung' ? 1 : 0)), a === 'alle' ? 'Alle Obertöne' : a === 'ung' ? 'Nur ungerade Obertöne' : 'Nur gerade Obertöne'); } });
+      r.appendChild(x);
+    }
+    dd.appendChild(r); dd.appendChild(el('p', '', 'Master-Rang = Regler „Obertöne“. Auto wählt nur die Ränge, die im Ton hörbar sind (≥ 12 dB über dem Grund).'));
+  });
+}
+/* folgt dem Ton: Auswahl wandert mit der Tonhöhe (Rücksprung zur letzten guten Stelle) */
+async function spk12Follow(U) {
+  const S = spk12S(U), one = U.sel.length === 1 && U.sel[0].art === 'fol' ? U.sel[0] : null;
+  if (one) { spk12Push(U, 'Folgt nicht mehr', spk12Clone(U.sel)); spk12Set(U, spk12Clone(one.src), 'Auswahl folgt dem Ton nicht mehr · ↶ macht es rückgängig'); return null; }
+  const B = spk12Box(U); if (!B || B.fAll) { spk1Stat(U, 'Folgt dem Ton: erst einen Bereich um den Ton wählen'); return null; }
+  const T0 = performance.now(); spk1Stat(U, 'Verfolge den Ton …');
+  const r = await spk1Call('spk12follow', {doc: SPK1.doc, t0: B.t0, t1: B.t1, f0: B.f0, f1: B.f1}); S.fR = r;
+  if (!r.cur.length) { spk1Stat(U, 'Folgt dem Ton: kein Ton im Bereich'); return r; }
+  let rmin = 1, rmax = 1; for (const p of r.cur) { rmin = Math.min(rmin, p[1]); rmax = Math.max(rmax, p[1]); }
+  const sh = {art: 'fol', src: spk12Clone(U.sel), cur: r.cur.map(p => [p[0], p[1]]), fr: r.fr, t0: +B.t0.toFixed(4), t1: +B.t1.toFixed(4), f0: +(B.f0 * rmin).toFixed(2), f1: +(B.f1 * rmax).toFixed(2), kt: 0, kf: 0, key: spk12Key()};
+  const before = spk12Clone(U.sel); if (U.sel.length) S.last = U.sel.slice(); spk12Push(U, 'Folgt dem Ton', before);
+  spk12Set(U, [sh], 'Auswahl folgt dem Ton · ' + Math.round(r.fr) + ' Hz · ' + r.held + ' Rahmen gehalten · ' + Math.round(performance.now() - T0) + ' ms · ↶ macht es rückgängig'); return r;
+}
+/* Zeichnen: Ellipse/Lasso beim Ziehen, Schlag-Marken */
+function spk12TmpPre(U) { const t = U.tmp; if (t && (t.art === 'ell' || t.art === 'lasso')) { U.tmp = {art: 'pinsel', pts: []}; return t; } return null; }
+function spk12TmpDraw(U, x, t) {
+  U.tmp = t; x.save(); x.setLineDash([5, 4]); x.lineWidth = 1.2; x.strokeStyle = '#f4f1ea'; x.fillStyle = 'rgba(244,241,234,.10)'; x.beginPath();
+  if (t.art === 'ell') { const xa = spk1X(U, t.t0), xb = spk1X(U, t.t1), ya = spk1Y(U, t.f1), yb = spk1Y(U, Math.max(1, t.f0)); x.ellipse((xa + xb) / 2, (ya + yb) / 2, Math.max(1, (xb - xa) / 2), Math.max(1, (yb - ya) / 2), 0, 0, Math.PI * 2); }
+  else t.pts.forEach((p, i) => { const px = spk1X(U, p[0]), py = spk1Y(U, p[1]); if (i) x.lineTo(px, py); else x.moveTo(px, py); });
+  x.closePath(); x.fill(); x.stroke(); x.restore();
+}
+function spk12HitDraw(U, x) {
+  const L = U.sel.filter(s => s.art === 'trans'); if (!L.length) return; x.save(); x.strokeStyle = '#f4f1ea'; x.lineWidth = 1.5;
+  for (const s of L) for (const t of s.hits) { const px = Math.round(spk1X(U, t)) + 0.5; if (px < -2 || px > U.W + 2) continue; x.beginPath(); x.moveTo(px, 0); x.lineTo(px, 9); x.stroke(); }
+  x.restore();
+}
+/* ---------- Teil 3 · Hauptfaden: Ähnliches mit Merkmalen + ‹ › Alle, Alle Ebenen abtasten, Auswahl merken, FFT-Text ---------- */
+const SPK12_MK = [['ton', 'Tonal'], ['tr', 'Transient'], ['rs', 'Rauschen'], ['pg', 'Pegel']];
+const SPK12_SRCOPS = ['spk12zauber', 'spk12trans', 'spk12hauto', 'spk12follow', 'spk12aehn', 'harm', 'aehnlich'];
+const spk12MkOn = S => !!(S && S.mk && SPK12_MK.some(([k]) => S.mk[k]));
+function spk12CallSrc(op, a, cb) {   // Haken am Anfang von spk1Call: Merkmale → eigener Kern, „Alle Ebenen abtasten“ aus → aktive Ebene
+  const U = SPK1.ui, S = U && U.s12; if (!S || !a || typeof a !== 'object' || a.s12src !== undefined || a.doc !== S.doc) return null;
+  let o2 = op, a2 = a;
+  if (op === 'aehnlich' && spk12MkOn(S)) { o2 = 'spk12aehn'; a2 = Object.assign({}, a, {mk: Object.assign({}, S.mk)}); }
+  const L = S.allL === false && U.act && U.act !== 'orig' ? U.act : null;
+  let cb2 = null;
+  if (L && SPK12_SRCOPS.includes(o2)) {
+    if (o2 === 'harm') o2 = 'spk12harm'; else if (o2 === 'aehnlich') o2 = 'spk12aehnB'; a2 = Object.assign({}, a2, {s12src: L});
+    const p0 = cb && cb.prog, nm = spk12LName(U); cb2 = Object.assign({}, cb || {}, {prog: (p, st) => { if (p0) p0(p, st); if (st === 'Ebene abtasten') spk1Stat(U, 'Ebene „' + nm + '“ abtasten … ' + Math.round(100 * p) + ' %'); }});   /* Prüfung: Fortschritt */
+  }
+  return o2 === op && a2 === a ? null : [o2, a2, cb2];
+}
+const spk12LName = U => U.act === 'orig' ? 'Original' : U.act === 'rest' ? 'Rest' : ((U.meta && U.meta.layers.find(l => l.id === U.act)) || {}).name || 'Ebene';
+function spk12AList(U) {   // Beispiel + Treffer über der Empfindlichkeit, nach Zeit
+  if (!U.ex || !U.hits) return null; const thr = 0.92 - 0.6 * U.opt.empf;
+  return [U.ex].concat(U.hits.filter(h => h.wert >= thr).map(h => Object.assign({}, U.ex, {t0: h.t0, t1: h.t1, hit: h.wert}))).sort((a, b) => a.t0 - b.t0);
+}
+function spk12AStep(U, dir) {   // ‹ (−1) › (+1) einzeln durch die Treffer, 0 = Alle; je Schritt ein ↶
+  const S = spk12S(U), L = spk12AList(U); if (!L || L.length < 2) { spk1Stat(U, 'Ähnliche: erst ein Beispiel ziehen oder antippen'); return false; }
+  const ah = {ex: U.ex, hits: U.hits, i: S.ai}, before = spk12Clone(U.sel), fz = v => v.toFixed(2).replace('.', ',');
+  if (dir === 0) { spk12Push(U, 'Alle Treffer', before, {ah}); S.ai = -1; spk1HitsApply(U); S.prev = U.sel.slice(); spk12ViewReq(U); return true; }
+  const one = U.sel.length === 1 && S.aiH === U.hits && S.ai >= 0 && S.ai < L.length;   // neue Suche / „Alle“ / Empfindlichkeit → wieder vom Beispiel aus
+  let i = one ? S.ai : L.indexOf(U.ex); i = (i + dir + L.length) % L.length;
+  spk12Push(U, dir > 0 ? 'Nächster Treffer' : 'Voriger Treffer', before, {ah}); S.ai = i; S.aiH = U.hits; const sh = L[i];
+  U.sel = [sh]; S.inSelf = true; try { spk1SelDone(U, 'Treffer ' + (i + 1) + ' / ' + L.length + ' · ' + fz(sh.t0) + '–' + fz(sh.t1) + ' s' + (sh === U.ex ? ' · Beispiel' : ' · ' + Math.round(100 * sh.hit) + ' %') + ' · Alle = alle wählen'); } finally { S.inSelf = false; }
+  S.prev = U.sel.slice(); spk12ViewReq(U); spk1Dirty(U, 'ov'); return true;
+}
+function spk12MkDd(U, b) {
+  const S = spk12S(U);
+  spk1Dd(U, b, dd => {
+    dd.appendChild(el('h5', '', 'Ähnlich in …')); const g = el('div', 'spk1-g');
+    for (const [k, t] of SPK12_MK) {
+      const x = el('button', 'mbtn rb spk1-ck' + (S.mk[k] ? ' on' : ''), (S.mk[k] ? '✓ ' : '') + t); x.dataset.s12mk = k; x.setAttribute('aria-pressed', String(!!S.mk[k]));
+      on(x, 'click', () => { if (U.ex) spk12Push(U, 'Merkmal ' + t, spk12Clone(U.sel), {ah: {ex: U.ex, hits: U.hits, i: S.ai}});   /* Prüfung: ein ↶ */
+        S.mk[k] = !S.mk[k]; x.classList.toggle('on', S.mk[k]); x.setAttribute('aria-pressed', String(S.mk[k])); x.textContent = (S.mk[k] ? '✓ ' : '') + t; S.ai = -1; if (U.ex) spk1Aehn(U, U.ex); });
+      g.appendChild(x);
+    }
+    dd.appendChild(g); dd.appendChild(el('p', '', 'Ohne Häkchen: ähnliches Frequenzbild wie bisher. Mit Häkchen zählt nur, was angehakt ist: Tonal (klare Töne), Transient (Anschläge), Rauschen, Pegel (gleich laut).'));
+  });
+}
+/* Auswahl merken: Regionen im Dokument; Merken, Laden, Löschen je ein ↶ */
+function spk12RegGet(U) {   // Regionen des Stücks holen; ist „Auswahl ▾“ gerade offen, neu aufbauen
+  const S = spk12S(U), doc = S.doc; if (!doc || S.regQ) return; S.regQ = 1;
+  spk1Call('spk12reg', {doc}).then(r => { if (spk12S(U).doc !== doc) return; const was = S.reg; S.reg = r.reg; if (was == null && U.dd && U.ddA && U.ddA.dataset.a === 's12dd') spk12Dd(U, U.ddA); }, logErr).finally(() => { S.regQ = 0; });
+}
+function spk12RegPut(U) { const S = spk12S(U); return spk1Call('spk12reg', {doc: S.doc, set: S.reg || []}).then(r => { S.reg = r.reg; return r.reg; }); }
+const SPK12_ART = {rect: 'Rechteck', zeit: 'Zeit', freq: 'Frequenz', pinsel: 'Pinsel', harm: 'Harmonische', aehn: 'Ähnliche', wand: 'Zauberstab', ell: 'Ellipse', lasso: 'Lasso', trans: 'Transient', fol: 'Folgt dem Ton', inv: 'Umgekehrt'};
+function spk12Merk(U) {
+  const S = spk12S(U); if (!U.sel.length) { spk1Stat(U, 'Merken: erst etwas auswählen'); return null; }
+  const L = S.reg || [], first = U.sel.find(s => !s.op && s.art !== 'inv') || U.sel[0], base = SPK12_ART[first.art] || 'Auswahl';
+  let n = 0; for (const r of L) { const q = /(\d+)$/.exec(r.name); if (q) n = Math.max(n, +q[1]); }
+  const B = spk12Box(U), r = {id: 'r' + Date.now().toString(36) + (++spk12KeyN), name: base + ' ' + (n + 1), sel: spk12Clone(U.sel), b: B ? [+B.t0.toFixed(3), +B.t1.toFixed(3), +(B.f0 || 0).toFixed(1), +(B.f1 || 0).toFixed(1)] : null, mt: Date.now()};
+  spk12Push(U, 'Gemerkt: ' + r.name, spk12Clone(U.sel), {reg: spk12Clone(L)}); S.reg = L.concat([r]); spk12RegPut(U).catch(logErr);
+  spk1Stat(U, 'Gemerkt als „' + r.name + '“ · Auswahl ▾ → laden · ↶ macht es rückgängig'); return r;
+}
+function spk12RegLoad(U, id) {
+  const S = spk12S(U), r = (S.reg || []).find(x => x.id === id); if (!r) return false;
+  if (U.sel.length) S.last = U.sel.slice(); spk12Push(U, 'Region ' + r.name, spk12Clone(U.sel)); spk12Set(U, spk12Clone(r.sel), '„' + r.name + '“ geladen · ↶ macht es rückgängig'); return true;
+}
+function spk12RegDel(U, id) {
+  const S = spk12S(U), L = S.reg || [], r = L.find(x => x.id === id); if (!r) return false;
+  spk12Push(U, 'Region gelöscht', spk12Clone(U.sel), {reg: spk12Clone(L)}); S.reg = L.filter(x => x !== r); spk12RegPut(U).catch(logErr);
+  spk1Stat(U, '„' + r.name + '“ gelöscht · ↶ holt es zurück'); return true;
+}
+function spk12RegRows(U, dd) {
+  const S = spk12S(U), L = S.reg; dd.appendChild(el('h5', '', 'Gemerkt'));
+  const g = el('div', 'spk1-g'), bm = el('button', 'mbtn rb spk1-ck', 'Merken'); bm.dataset.s12a = 'mer'; bm.disabled = !U.sel.length; on(bm, 'click', () => { spk1Dd(U, null); spk12Merk(U); }); g.appendChild(bm); dd.appendChild(g);
+  if (L == null) { spk12RegGet(U); return; }
+  const fz = v => (+v).toFixed(1).replace('.', ',');
+  for (const r of L) {
+    const row = el('div', 'spk1-g spk12-rg'), x = el('button', 'mbtn rb spk1-ck', esc(r.name) + (r.b ? ' · ' + fz(r.b[0]) + '–' + fz(r.b[1]) + ' s' : '')), del = el('button', 'mbtn rb spk1-ck spk12-hn', '✕');
+    x.dataset.s12r = r.id; del.dataset.s12rx = r.id; del.setAttribute('aria-label', r.name + ' löschen');
+    on(x, 'click', () => { spk1Dd(U, null); spk12RegLoad(U, r.id); }); on(del, 'click', () => { spk1Dd(U, null); spk12RegDel(U, r.id); });
+    row.append(x, del); dd.appendChild(row);
+  }
+}
+function spk12AllL(U) {
+  const S = spk12S(U); S.allL = S.allL === false;
+  spk1Stat(U, S.allL ? 'Abtasten: alle Ebenen (Original) – Werkzeuge suchen im ganzen Klang' : 'Abtasten: nur ' + spk12LName(U) + ' – Zauberstab, Harmonische, Transient, Ähnliche suchen nur in der aktiven Ebene');
+}
+function spk12FftTxt(U, dd) {   // Haken im Ansicht-Klappfenster: Zeit- und Frequenz-Auflösung am FFT-Regler
+  const sr = (U.meta && U.meta.sr) || 44100, seg0 = dd.querySelector('.spk1-n'), h = seg0 && seg0.previousElementSibling && seg0.previousElementSibling.tagName === 'H5' ? seg0.previousElementSibling : null;   // Prüfung: Text in die vorhandene Überschrift (Klappfenster bleibt gleich hoch)
+  const p = h ? el('span', 'spk12-fft', '') : el('p', 'spk12-fft', ''); if (h) p.style.whiteSpace = 'nowrap';
+  const up = () => { const N = U.N, t = Math.round(1000 * N / sr) + ' ms / ' + (sr / N).toFixed(1).replace('.', ',') + ' Hz'; p.textContent = h ? ' · ' + t : N + ' Punkte: ' + t; p.setAttribute('aria-label', N + ' Punkte: ' + t); };
+  up(); (h || dd).appendChild(p); const seg = dd.querySelector('.spk1-n'); if (seg && typeof MutationObserver === 'function') new MutationObserver(up).observe(seg, {subtree: true, attributes: true, attributeFilter: ['class']});
+}
+/* ---------- „Wo finde ich …?“ ---------- */
+(function spk12Guide() {
+  try {
+    if (typeof ui1Entries !== 'function') return; const L = ui1Entries(); if (L.some(x => x.id === 'spk12')) return;
+    L.push({id: 'spk12', n: 'Auswahl kombinieren, Zauberstab, Lasso, Transient, Obertöne, Ähnliches, Merken', w: 'Spektral › Leiste unter den Werkzeugen, hinter den Reglern (hochkant waagrecht wischen): Neu │ + │ − │ ∩ · Auswahl ▾ (Merken, Alle Ebenen abtasten; bei Ähnliche hinter ‹ › Alle) · Rechteck halten → Ellipse/Lasso/Zauberstab · Zeit halten → Transient · Harmonische → Obertöne ▾ · Ähnliche → Merkmale ▾ ‹ › Alle · Ansicht ▾ → FFT ms / Hz',
+      d: 'Neu ersetzt, + fügt hinzu, − zieht ab, ∩ lässt nur die Überschneidung. Auswahl ▾: Umkehren, nur Frequenzen umkehren, Wiederherstellen, Erweitern, Verkleinern, Weicher. Am Rand ziehen = Größe, zwei Finger am Rand = Weichheit, Mitte ziehen = verschieben. Zauberstab: antippen wählt die zusammenhängende Fläche (Toleranz, ± 5 s). Ellipse ziehen, Lasso umfahren. Transient: Schlag antippen oder über Schläge ziehen (Empfindlichkeit, ab … Hz). Obertöne ▾: jeden Oberton anhaken, nur ungerade, Auto. Auswahl ▾ → Folgt dem Ton: die Auswahl wandert mit der Tonhöhe. Ähnliche → Merkmale ▾: nur tonal, Transient, Rauschen oder Pegel vergleichen; ‹ › geht einzeln durch die Treffer, Alle wählt alle. Auswahl ▾ → Merken legt die Auswahl als benannte Region im Stück ab (wird mitgespeichert), antippen lädt sie wieder. Alle Ebenen abtasten aus: die Werkzeuge suchen nur in der aktiven Ebene. Ansicht ▾ zeigt beim FFT-Regler die Auflösung in ms und Hz.',
+      s: 'auswahl kombinieren hinzufuegen abziehen schnittmenge umkehren invertieren wiederherstellen erweitern verkleinern weich kante rand verschieben zauberstab toleranz spektrum ellipse lasso polygon transient schlag snare anschlag obertoene ungerade gerade auto folgt ton verfolgung aehnlich merkmale tonal rauschen pegel naechster voriger treffer alle merken region speichern laden gemerkt abtasten ebenen fft aufloesung ms hz',
+      go: () => { spk1Open({back: {menu: true}}); }, q: () => (SPK1.open && SPK1.ui ? SPK1.ui.s12pane || SPK1.ui.tl : null)});
+  } catch (e) {}
+})();
+/* ---------- Test-Schnittstelle ---------- */
+const SPK12_API = {
+  S: () => SPK1.ui && spk12S(SPK1.ui),
+  mode: m => { const U = SPK1.ui; spk12S(U).mode = m; spk12ModeBtns(U); },
+  act: a => spk12Act(SPK1.ui, a),
+  wand: (t, f) => spk12Wand(SPK1.ui, {t0: t, f0: f}),
+  zauber: o => spk1Call('spk12zauber', Object.assign({doc: SPK1.doc, N: 4096}, o)),
+  mask: (sel, b) => spk1Call('spk12mask', Object.assign({doc: SPK1.doc, sel}, b)),
+  view: () => { const S = SPK1.ui && spk12S(SPK1.ui); return S && S.vw ? {box: S.vw.box, W: S.vw.cv.width, H: S.vw.cv.height} : null; },
+  geo: () => { const g = SPK1.ui && spk12Geo(SPK1.ui); return g && {xL: g.xL, xR: g.xR, yT: g.yT, yB: g.yB, cx: g.cx, cy: g.cy, side: g.side, B: g.B}; },
+  box: () => SPK1.ui && spk12Box(SPK1.ui), sel: () => SPK1.ui && spk12Clone(SPK1.ui.sel),
+  trans: o => spk1Call('spk12trans', Object.assign({doc: SPK1.doc}, o)), hauto: o => spk1Call('spk12hauto', Object.assign({doc: SPK1.doc}, o)), follow: o => spk1Call('spk12follow', Object.assign({doc: SPK1.doc}, o)),
+  doFollow: () => spk12Follow(SPK1.ui), doAuto: () => spk12HAuto(SPK1.ui), hm: (hm, K) => spk12HmSet(SPK1.ui, hm, 'Test', K),
+  aehn: o => spk1Call('spk12aehn', Object.assign({doc: SPK1.doc}, o)), reg: set => spk1Call('spk12reg', set ? {doc: SPK1.doc, set} : {doc: SPK1.doc}), step: d => spk12AStep(SPK1.ui, d), merk: () => spk12Merk(SPK1.ui), regLoad: id => spk12RegLoad(SPK1.ui, id), allL: () => spk12AllL(SPK1.ui)
+};
+try { window.__spk12 = SPK12_API; } catch (e) {}
+/* SPK12-END */
 /* ===== VX2-BEGIN (Paket VX2 – Gesang-Editor an echtem Gesang: Stücke = Noten/Silben; Präfix vx2/VX2)
    Befund (Echttest mit echtem Gesang): die Einsatz-Erkennung (wpDetect) setzt Marken auch mitten in gehaltenen Vokalen (Vibrato-/
    Pegelwellen) – 33-s-Aufnahme: 150 Stücke für 59 Noten, nur 37 % beginnen an einer Note; Quantisieren schob Teile mitten in Noten.

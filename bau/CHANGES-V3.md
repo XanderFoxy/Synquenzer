@@ -1,3 +1,21 @@
+## 4.70.0 — Abschnitt und mehrere Clips transponieren; Spektral-Auswahl wie im Profi-Werkzeug
+
+- **Songteil / Bereich transponieren:**
+  - Im Marken-Blatt (Reiter Ablauf) gibt es eine neue Zeile „Wirkt: ab hier │ nur dieser Teil │ Mehr ▾“. In der Bereich-Leiste unter ⋯ steht „⇅ Transponieren …“.
+  - „Nur dieser Teil“ verschiebt um ±1 bis ±12, danach geht es wieder auf den alten Wert. Wahlweise in Halbtönen oder „in der Tonart“ (Stufen, nur Noten; Gesang geht nur in Halbtönen, mit Hinweis). „Oktavbereich halten“ macht aus +7 ein −5.
+  - Das gilt für alle Spuren außer Drums, auch für Songs ohne Marken. Wiedergabe, MIDI und Video ergeben dasselbe, ein ↶ genügt.
+- **Mehrere Clips zugleich:**
+  - Im Clip-Blatt gibt es „Mehrere wählen“, danach weitere Clips antippen. Ein Tipp auf einen Szenen-Kopf nimmt alle Noten-Clips der Szene dazu.
+  - In der Leiste: −12 −1 +1 +12 · Stufe ▲/▼ · In Tonart einpassen ▾ (Dur, Moll, Dorisch, Mixolydisch, Phrygisch, Pentatonik) · Quantisieren · Länge ×2/÷2. ↶/↷ sitzen an der gewohnten Stelle.
+  - Töne, die schon passen, bleiben stehen. Drum-Clips nur auf ausdrückliche Wahl.
+  - Während der Wiedergabe greift die Änderung am nächsten Takt.
+- **Spektral-Auswahl:**
+  - Werkzeuge: Zauberstab (Toleranz, Zeitgrenze), Schläge (Transienten), Lasso, Ellipse, Obertöne mit Häkchen je Oberton, „folgt dem Ton“, „Ähnliches finden“ mit ‹ › Alle.
+  - Kombinieren: Neu │ + │ − │ ∩. Unter Auswahl ▾ gibt es Umkehren, Nur Frequenzen umkehren, Wiederherstellen, Rand weicher/größer, Auswahl merken (bleibt im Projekt) und „alle Ebenen abtasten“.
+  - Die Auflösung steht als „ms / Hz“ am Regler.
+  - Die neuen Knöpfe stehen hinter den vorhandenen Reglern, die alten bleiben an ihrem Platz.
+Tests: Transponieren 81/81, mehrere Clips 114/118 (Rest: Zeitmessungen unter Volllast), Spektral-Auswahl 97/98 + 69/72 + 45/47 + 28/28 (Rest: Zeitmessungen unter Volllast), Einzelspuren 51/51 + 21/21, Gesang 61/61 · 14/14 · 15/15, Import, Chor 82/82, Echttest 52/53, Spektral wie 4.69.
+
 ## 4.69.0 — Drums: Hi-Hats im Drum-Editor auslagern, Schritt-Editor je Einzelspur, keine Doppel-Schläge
 
 - **Hi-Hats auswählen → eigene Spur:** Im Drum-Editor gibt es jetzt [Auslagern ▾] (quer in der Werkzeug-Zeile, hochkant rechts in der Zeile „Szene n“). Du wählst Pads und entweder „Ganze Töne · alle Szenen“ oder „Nur diese Schritte“. Ziel ist eine neue Einzelspur oder eine vorhandene („→ HH ZU dazu“). Ein ↶ genügt, der Editor bleibt offen.
