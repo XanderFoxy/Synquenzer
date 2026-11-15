@@ -130,7 +130,7 @@ for (let k = 0; k < SRC.length; k++) {
   R.breathTakes = {}; for (let k = 1; k < SRC.length; k++) { const W = wav(RV + SRC[k]); R.breathTakes['Take ' + 'ABC'[k]] = K.done(K.check(W.x, W.sr)).breaths; }
   // ---------- 7) Raumton in Lücken: 5 Schnitte (Stille) in ruhigen Stellen von Take A ----------
   const Lo = frames(v, H), Lov = Lo.filter(q => q > -110).sort((a, b) => a - b), flo = Lov[Math.floor(0.1 * Lov.length)], holes = [], xh = Float32Array.from(v);
-  { let s = -1; for (let j = 0; j <= Lo.length; j++) { const q = j < Lo.length && Lo[j] > -110 && Lo[j] < flo + 6; if (q && s < 0) s = j; if (!q && s >= 0) { if (j - s >= 25 && holes.length < 5) { const c = (s + j) / 2 * H, d = Math.min(0.3, (j - s) * H / sr - 0.1); holes.push([Math.round(c - d * sr / 2), Math.round(c + d * sr / 2)]); } s = -1; } } }
+  { let s = -1; for (let j = 0; j <= Lo.length; j++) { const q = j < Lo.length && Lo[j] > -110 && Lo[j] < flo + 6; if (q && s < 0) s = j; if (!q && s >= 0) { if (j - s >= 25 && holes.length < 5) { const c = (s + j) / 2 * H, d = Math.min(0.3, 0.5 * (j - s) * H / sr); /* Schnitt mitten in der Pause, Raumton bleibt links und rechts */ holes.push([Math.round(c - d * sr / 2), Math.round(c + d * sr / 2)]); } s = -1; } } }
   for (const [a, b] of holes) xh.fill(0, a, b);
   const t0 = Date.now(), rr = K.done(K.run(xh, sr, {steps: {room: {}}})), msR = Date.now() - t0, RI = rr.info.room;
   const lev = (y, a, b) => { let s = 0; for (let i = a; i < b; i++) s += y[i] * y[i]; return db(s / Math.max(1, b - a)); };
@@ -173,15 +173,15 @@ async function browser() {
     const r = await SYNQUENZER.tkInject({pcm, sr: o.sr, scene: 0, at: 0, len: 2}); await wait(300); return r.id; }, {b: b64, sr});
   // Node-Ergebnis für denselben Int16-Take
   const xf = new Float32Array(n); for (let i = 0; i < n; i++) xf[i] = x16[i] / 32767;
-  const nb = K.done(K.check(xf, sr)), nr = K.done(K.run(xf, sr, {steps: {plop: {}, hum: 'auto', hp: {}}}));
+  const nb = K.done(K.check(xf, sr)), nr = K.done(K.run(xf, sr, {steps: {click: {}, plop: {}, hum: 'auto', hp: {}, breath: {}, room: {}}}));
   const h = y => { const u = new Uint8Array(y.buffer, y.byteOffset, y.byteLength); let s = 0x811c9dc5; for (let i = 0; i < u.length; i++) { s ^= u[i]; s = Math.imul(s, 0x01000193) >>> 0; } return s.toString(16); };
-  const W = await run(async o => { const pr = []; const c = await SYNQUENZER.vr1Check(o.id); const j = await window.__vr1.take('run', o.id, {steps: {plop: {}, hum: 'auto', hp: {}}}, q => pr.push(q));
+  const W = await run(async o => { const pr = []; const c = await SYNQUENZER.vr1Check(o.id); const j = await window.__vr1.take('run', o.id, {steps: {click: {}, plop: {}, hum: 'auto', hp: {}, breath: {}, room: {}}}, q => pr.push(q));
     const u = new Uint8Array(j.y.buffer); let s = 0x811c9dc5; for (let i = 0; i < u.length; i++) { s ^= u[i]; s = Math.imul(s, 0x01000193) >>> 0; }
     return {line: c.line, plops: c.plops.length, hum: c.hum.f0, hash: s.toString(16), prog: pr.length, info: SYNQUENZER.vr1Info(), order: j.info.order}; }, {id});
   ok(W.info.worker === 'worker' && W.line === nb.line && W.hash === h(nr.y), 'App: Prüfen + Kette im Worker = Node-Kern (bitgleich)', {zeile: W.line, worker: W.info.worker, hash: [W.hash, h(nr.y)]});
   ok(W.prog >= 2, 'App: Fortschritt kommt während der Rechnung', {meldungen: W.prog});
   // Rückfall Hauptfaden (Scheiben ≤ 8 ms) = gleiches Ergebnis
-  const M = await run(async o => { window.__vr1.noWorker(true); try { const j = await window.__vr1.take('run', o.id, {steps: {plop: {}, hum: 'auto', hp: {}}}); const u = new Uint8Array(j.y.buffer); let s = 0x811c9dc5; for (let i = 0; i < u.length; i++) { s ^= u[i]; s = Math.imul(s, 0x01000193) >>> 0; } return {hash: s.toString(16), info: SYNQUENZER.vr1Info()}; } finally { window.__vr1.noWorker(false); } }, {id});
+  const M = await run(async o => { window.__vr1.noWorker(true); try { const j = await window.__vr1.take('run', o.id, {steps: {click: {}, plop: {}, hum: 'auto', hp: {}, breath: {}, room: {}}}); const u = new Uint8Array(j.y.buffer); let s = 0x811c9dc5; for (let i = 0; i < u.length; i++) { s ^= u[i]; s = Math.imul(s, 0x01000193) >>> 0; } return {hash: s.toString(16), info: SYNQUENZER.vr1Info()}; } finally { window.__vr1.noWorker(false); } }, {id});
   ok(M.hash === W.hash && M.info.slices > 3, 'Rückfall Hauptfaden in Scheiben: gleiches Ergebnis', {scheiben: M.info.slices});
   // 3-min-Take im Worker: Zeit, Abbruch, keine Long Tasks > 50 ms auf dem Hauptfaden
   const Z = await run(async o => {
@@ -191,7 +191,7 @@ async function browser() {
     const j1 = window.__vr1.job('run', x, o.sr, {steps: {plop: {}, hum: 'auto', hp: {}}}); await wait(300); const ta = performance.now(); j1.abort(); let ab = ''; try { await j1.p; } catch (e) { ab = e.message; } const abMs = performance.now() - ta;
     // ganzer Lauf (Prüfen + Kette), dabei Chat-artige Arbeit auf dem Hauptfaden messen (Takt 16 ms)
     let tick = 0, maxGap = 0, lastT = performance.now(); const iv = setInterval(() => { const t = performance.now(); maxGap = Math.max(maxGap, t - lastT); lastT = t; tick++; }, 16);
-    const t0 = performance.now(), pr = []; await window.__vr1.job('check', x, o.sr, null, q => pr.push(q)).p; const t1 = performance.now(); const r = await window.__vr1.job('run', x, o.sr, {steps: {plop: {}, hum: 'auto', hp: {}}}, q => pr.push(q)).p; const t2 = performance.now();
+    const t0 = performance.now(), pr = []; await window.__vr1.job('check', x, o.sr, null, q => pr.push(q)).p; const t1 = performance.now(); const r = await window.__vr1.job('run', x, o.sr, {steps: {click: {}, plop: {}, hum: 'auto', hp: {}, breath: {}, room: {}}}, q => pr.push(q)).p; const t2 = performance.now();
     clearInterval(iv); await wait(100); if (ob) ob.disconnect();
     return {abbruch: ab, abbruchMs: Math.round(abMs), pruefenMs: Math.round(t1 - t0), ketteMs: Math.round(t2 - t1), longTasks: lt, maxLueckeMs: Math.round(maxGap), fortschritt: pr.length, plopps: r.info.plop.length, aborts: SYNQUENZER.vr1Info().aborts};
   }, {id, sr});
@@ -215,6 +215,25 @@ async function browser() {
   R.ui = U; await p.screenshot({path: path.join(path.dirname(file), 'voxr1-blatt.png')});
   ok(!U.vr1, 'Teil 1 ändert nichts Sichtbares (Zeile „Gesang reinigen“ erst nach Funk-Vorschlag, Teil 3)', U);
   const U0 = await ui(); ok(U0.over === 0, 'nichts ragt aus dem Bild (hochkant 428×926)', U0);
+  // Teil 2: Atmer-Marken im Marken-Editor (vorhandener Stil), Touch über CDP
+  { const xa = globalThis.__atmerX, x16b = new Int16Array(xa.length); for (let i = 0; i < xa.length; i++) x16b[i] = Math.max(-32768, Math.min(32767, Math.round(xa[i] * 32767)));
+    const tk = await run(async o => { const s = atob(o.b), u = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i); const pcm = Array.from(new Int16Array(u.buffer));
+      const r = await SYNQUENZER.tkInject({pcm, sr: o.sr, scene: 1, at: 0, len: 2}); await wait(300); return Object.assign({}, r, {h0: await SYNQUENZER.tkPcmHash(r.id)}); }, {b: Buffer.from(x16b.buffer).toString('base64'), sr});
+    const M2 = await run(async o => { const c = await SYNQUENZER.vr1Check(o.id); const m1 = SYNQUENZER.vr1Breaths(o.id); const r = await SYNQUENZER.vr1Run(o.id, {steps: {breath: {}}}); const m2 = SYNQUENZER.vr1Breaths(o.id);
+      wpOpen({t: o.track, s: o.scene}); await wait(500); const E = WP.ed, cv = E && E.cv, b = cv ? cv.getBoundingClientRect() : null;
+      return {pruefen: c.breaths, marken: m1.length, nachLauf: m2.filter(q => q.done && q.dbNeu != null && Math.abs(q.dbNeu + 40) <= 3).length, offen: !!E, hits: E && E.vr1b ? E.vr1b.length : 0, cv: b && {x: b.x, y: b.y, w: b.width, h: b.height}, hit0: E && E.vr1b && E.vr1b[0], info: E && E.info ? E.info.textContent : null}; }, tk);
+    R.uiAtmer = M2; await p.screenshot({path: path.join(path.dirname(file), 'voxr1-atmer.png')});
+    ok(M2.pruefen >= 9 && M2.marken === M2.pruefen && M2.nachLauf >= 9, 'App: Prüfen legt Atmer-Marken an, der Lauf bringt sie auf −40 dBFS (Roh-Take bleibt)', {pruefen: M2.pruefen, marken: M2.marken, imZiel: M2.nachLauf});
+    ok(M2.offen && M2.hits >= 1, 'Marken-Editor zeichnet die Atmer-Marken (Band über der Welle, Farbe der Welle)', {hits: M2.hits, info: M2.info});
+    let tapOk = false;
+    if (M2.cv && M2.hit0) { const xx = M2.cv.x + Math.max(4, Math.min(M2.cv.w - 4, (M2.hit0.x0 + M2.hit0.x1) / 2)), yy = M2.cv.y + M2.cv.h * 0.5; await tap(xx, yy);
+      const T2 = await run(async o => { const okA = SYNQUENZER.vr1BreathAct(o.id, 0, 'weg'); await wait(100); const E = WP.ed; const r = {offen: !!E, hits: E && E.vr1b ? E.vr1b.length : 0, act: SYNQUENZER.vr1Breaths(o.id)[0].act, okA}; return r; }, tk);
+      tapOk = T2.offen && T2.hits >= 1 && T2.act === 'weg'; R.uiAtmerTap = T2; }
+    ok(tapOk, 'Touch (CDP) auf eine Marke: Editor bleibt offen, Marke „weg“ setzbar (Bedienung der Marken folgt mit der Zeile)', R.uiAtmerTap);
+    const U2 = await ui(); ok(U2.over === 0, 'Marken-Editor: nichts ragt aus dem Bild (hochkant 428×926)', U2);
+    await run(async () => { wpClose(); await wait(150); }, null);
+    const raw = await run(async o => { const a = await SYNQUENZER.tkPcmHash(o.id); return a; }, tk); R.rohHash = raw;
+    ok(typeof raw === 'string' && raw === tk.h0, 'Roh-Take nach Prüfen + Lauf bitgleich (Ergebnis nur als neue Fassung)', {vorher: tk.h0, nachher: raw}); }
   ok(!errs.length, 'keine Konsolenfehler', errs.slice(0, 3));
   await b.close();
 }

@@ -285,3 +285,18 @@ Block 967 Zeilen, diff Basis → Paket: 0 entfernte, 985 neue Zeilen. Quellen vo
 - **C 3 min, Abtasten aus, Ebene X:** Zauberstab Original 34 ms; Ebene 55 / 58 / 47 ms (Anteil 14–39 ms), leere Stelle 36 ms → 0 Zellen;
   Harmonische 238 ms (Fenster ±6,8 s gerendert, früher 2,6 s ganzes Stück), Folgt dem Ton danach 34 ms; **keine Long Task**.
   Ähnliche in der Ebene (ganzes Stück): Status „Ebene „X“ abtasten … 7 % … 99 %“, 3,8 s, keine Long Task.
+
+### Offen nach der Prüfung
+- **6** › / Alle / Auswahl ▾ bei Ähnliche hochkant nur per Wischen (wie alle neuen Knöpfe hinter den vorhandenen Reglern). Eine zweite
+  Zeile o. Ä. wäre sichtbar anders → Funk-Vorschlag.
+- **8** SPK12-Code im Hauptskript (+1,0 %) wie SPK11; Nachlade-Weg gehört zu PERF1 (Ladezeit).
+- „Abtasten aus“ bei einer Ebene **mit eigenem Audio oder Effekten** (Kopie, Chorstimme, Hall/EQ …): Zauberstab rechnet das Ebenen-Signal im
+  Fenster der Anzeige-Stücke → erster Tipp ~0,5–0,6 s (Desktop), danach schnell; Fortschritt nur bei langen Läufen. Masken-Ebenen (Normalfall
+  nach Zerlegen/In Ebene) und „Rest“ laufen über den Masken-Anteil (< 60 ms bei 3 min).
+- Ähnliche (mit/ohne Merkmale) in einer Ebene braucht das ganze Ebenen-Signal (3 min ≈ 3–4 s im Worker, mit Fortschritt, Hauptfaden frei).
+- iPhone-Messung (A14) fehlt weiter; Desktop-Zauberstab in der Ebene 47–58 ms. Falls das iPhone über 150 ms liegt: Anteil nur für die Spalten
+  rechnen, die der Flood-Fill berührt (statt ±5 s ganz), und log10 über eine Tabelle (256 Stufen).
+- ↶-Knopf-Beschriftung (aria-label) nach einer Merkmal-Suche zeigt „Rückgängig“ statt „Rückgängig: Merkmal …“ (alter Knopf-Code setzt die
+  Beschriftung nach dem SPK12-Haken neu); ↶ selbst wirkt richtig.
+- Die Prüfer-Sonden `pruef/p1.mjs` (prüft Auswahl ▾ über `querySelector` – jetzt ein Knopf, der bei Ähnliche mitwandert) wurden nicht neu
+  gefahren; ihre Punkte sind in `spk12-test4.mjs` enthalten.
