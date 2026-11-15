@@ -1,1 +1,2 @@
 - 03:40 Begonnen: basis.html = index.html = rel-4680 (4.68.0), Lesen MTX3-NOTES/Block/Tests
+- 03:50 Lesen fertig (GR2/GEN4/GEN3/GR1/SND1, recNoteOn/recClose, normTrack, mxApply/Seiten, buildRoll/LAUF, pageDrumSteps/StepEditor)
