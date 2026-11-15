@@ -134,7 +134,7 @@ export function wikidataKandidaten(zeilen, item) {
 // ---------------------------------------------------------------- Qualität (Wikidata) – „richtig geile Filme, nicht irgendein Quatsch“
 // Für Chart-Titel (nicht für deine Listen): Bekanntheit = Zahl der Wikipedia-Sprachen (wikibase:sitelinks), Kritik = Rotten
 // Tomatoes (P444 „review score“ mit P447 = Q105584), Horror = Genre (P136) ist Horrorfilm Q200092 oder eine Unterart davon,
-// Kinderfilm = Genre ist Kinderfilm Q2143665, Familienfilm Q1361932 oder Animationsfilm Q202866 (oder eine Unterart davon).
+// Kinderfilm = Genre ist Kinderfilm Q2143665 oder Familienfilm Q1361932 (oder eine Unterart davon) – Animation allein nicht.
 // Gefunden wird der Film über die Apple-Nummer (P6398, oft die US-Nummer) ODER die Namenssuche (wbsearchentities über
 // Bezeichnung/Alias deutsch oder englisch, nur Filme); bei der Namenssuche müssen Name und Jahr passen (Jahr ±1, sonst ein älterer Film = Wiederveröffentlichung).
 export const HORROR_TEXT = /horror(?!\s*!)|grusel|schocker|slasher|zombie|exorzis|okkult|satanis|paranormal|poltergeist|d(?:ä|ae)mon(?:en|isch\w*)?\b/i;
@@ -159,8 +159,12 @@ const FILM_TYPEN = 'wd:Q11424 wd:Q29168811 wd:Q24869 wd:Q506240 wd:Q202866 wd:Q2
 // Vaiana – Apple führt sie als „Action“; Disney hat einen eigenen Bereich). Drei Zeichen, keins kostet einen Abruf extra:
 // Apple-Chart „Kinder & Familie“ (charts.kinder, Standard 4410: gleiche Nummer oder gleiche Reihe), Wikidata-Genre
 // (KINDER_GENRES, Flag k im Zustand), Apple-Genre.
-export const KINDER_GENRES = ['wd:Q2143665', 'wd:Q1361932', 'wd:Q202866']; // Kinderfilm, Familienfilm, Animationsfilm
-export const KINDER_TEXT = /kinder|familie|animation/i;
+// Animation allein heißt nicht Kinderfilm (Prüfer MV10 1): Animationsfilm Q202866 mit allen Unterarten (P279*) umfasst auch
+// Anime und Animation für Erwachsene – „Felidae“ (FSK 16), „Animatrix“, „Final Fantasy – Die Mächte in dir“, „Kingsglaive“ aus
+// den echten Charts vom 07.11.2026 wären bei einer Wiederveröffentlichung aus „Neu“ gefallen. Animierte Kinderfilme erkennt
+// das Kinder-Chart (Titel/Reihe) oder Wikidatas Kinder-/Familienfilm-Genre.
+export const KINDER_GENRES = ['wd:Q2143665', 'wd:Q1361932']; // Kinderfilm, Familienfilm
+export const KINDER_TEXT = /kinder|familie/i;
 /** Reihe eines Titels (ohne Folgenummer) für den Abgleich mit dem Kinder-Chart: „Woodwalkers 2“ -> „woodwalkers“, „Die Schule
  *  der magischen Tiere 4“ wie Teil 3 im Chart, „Vaiana“ (2026) wie „Vaiana 2“. Echtes Kinder-Chart 07.11.2026: dort stehen die
  *  früheren Teile als „Kinder und Familie“, die neuen führt Apple als „Action“. Untertitel bleiben („Spider-Man: Brand New Day“
@@ -171,10 +175,15 @@ export function kinderReihe(titel) {
   while (w.length > 1 && /^(?:\||teil|part|kapitel)$/.test(w.at(-1))) w.pop();
   return w.join(' ');
 }
-/** Kinderfilm? kinderChart = steht im Kinder-Chart, genres = Apple-Genre-Texte, q = Wikidata (Zustand, null = keine Daten). */
-export function kinderfilm({ kinderChart = false, genres = [], q = null } = {}) {
-  return !!kinderChart || genres.some(g => KINDER_TEXT.test(String(g ?? ''))) || q?.kinder === true;
+/** Warum Kinderfilm? -> 'kinder-chart' | 'reihe' | 'apple-genre' | 'wikidata' | null. kinderChart = steht im Kinder-Chart
+ *  (true / 'kinder-chart' = gleiche Nummer, 'reihe' = gleiche Reihe), genres = Apple-Genre-Texte, q = Wikidata (Zustand,
+ *  null = keine Daten; kinder null = unbekannt). */
+export function kinderGrund({ kinderChart = false, genres = [], q = null } = {}) {
+  if (kinderChart) return typeof kinderChart === 'string' ? kinderChart : 'kinder-chart';
+  if (genres.some(g => KINDER_TEXT.test(String(g ?? '')))) return 'apple-genre';
+  return q?.kinder === true ? 'wikidata' : null;
 }
+export const kinderfilm = o => kinderGrund(o) != null;
 
 /** Apple-Titel für die Namenssuche: „Charade (1963)“ -> „Charade“, „Jungs Von Spinal Tap, Die“ -> „Die Jungs Von Spinal Tap“,
  *  „THX 1138 (Director's Cut)“ -> „THX 1138“, „The Outfit -- Verbrechen nach Maß“ -> „The Outfit“. */
@@ -205,9 +214,9 @@ export function qualiAbfrage(titel) {
     + `{ VALUES (?key ?suche) { ${namen} } ?item rdfs:label|skos:altLabel ?suche . `
     + `?item wdt:P31 ?typ . VALUES ?typ { ${FILM_TYPEN} } BIND("name" AS ?weg) } `
     + '?item wikibase:sitelinks ?l . '
-    // Kinderfilm wie Horror (OPTIONAL): von den paar Genres des Films aufwärts, nicht alle Unterarten von Animationsfilm abwärts;
-    // vor den Erscheinungsdaten, damit es je Film einmal läuft und nicht je Datum (Filme haben oft 10+ Länder-Daten)
-    + `OPTIONAL { ?item wdt:P136 ?kg . ?kg wdt:P279* ?kz . FILTER(?kz IN (${KINDER_GENRES.join(', ')})) BIND(1 AS ?k0) } `
+    // Kinderfilm: von den paar Genres des Films aufwärts (nicht alle Unterarten abwärts); als EXISTS genau eine Zeile je Film
+    // (Prüfer MV10 4: ein OPTIONAL vervielfacht bei 3–5 passenden Genres alle späteren Blöcke); vor den Erscheinungsdaten
+    + `BIND(IF(EXISTS { ?item wdt:P136 ?kg . ?kg wdt:P279* ?kz . FILTER(?kz IN (${KINDER_GENRES.join(', ')})) }, 1, 0) AS ?k0) `
     + 'OPTIONAL { ?item wdt:P577 ?d . BIND(YEAR(?d) AS ?j) } '
     + 'OPTIONAL { ?item wdt:P136 ?gen . ?gen wdt:P279* wd:Q200092 . BIND(1 AS ?h0) } '
     + 'OPTIONAL { ?item p:P444 ?st . ?st pq:P447 wd:Q105584 ; ps:P444 ?rt0 . } '
@@ -806,15 +815,18 @@ export default async function filme(ctx) {
       eintraege = leseCharts(await apple(chartUrl(g.id)));
       status['apple-charts'].anzahl += eintraege.length;
       alleCharts.push(...eintraege);
-      if (kinderCharts.has(Number(g.id))) for (const e of eintraege) { kinderIds.add(e.id); kinderReihen.add(kinderReihe(e.titel)); }
+      if (kinderCharts.has(Number(g.id))) for (const e of eintraege) { kinderIds.add(e.id); const r = kinderReihe(e.titel); if (r) kinderReihen.add(r); }
     } catch (e) {
       melde('apple-charts', `Charts ${g.name || g.id}: ${e.message}`);
       // alter Stand dieses Genres (höchstens 3 Tage)
       const z = zf.charts[g.id];
       if (z && tageZwischen(z.tag, tag) <= 3) {
+        // Kinder-Chart: gemerkte Reihen aller Titel (Prüfer MV10 2: in ids stehen nur die billigen – ohne Woodwalkers,
+        // Schule der magischen Tiere 1–3, Vaiana 2 kämen die neuen Teile bei einer Apple-Störung zurück unter „Neu“)
+        if (kinderCharts.has(Number(g.id))) for (const r of liste(z.reihen)) if (typeof r === 'string' && r) kinderReihen.add(r);
         for (const [id, pos, neu] of liste(z.ids)) {
           const t = alt.get(id);
-          if (kinderCharts.has(Number(g.id))) { kinderIds.add(id); if (t) kinderReihen.add(kinderReihe(t.titel)); } // nur die gemerkten (Angebote)
+          if (kinderCharts.has(Number(g.id))) { kinderIds.add(id); const r = t ? kinderReihe(t.titel) : ''; if (r) kinderReihen.add(r); }
           if (!t) continue;
           const vor = chartTreffer.get(id);
           if (!vor || pos < vor.pos) chartTreffer.set(id, { pos, genreId: g.id, neu: !!neu, altTitel: t });
@@ -836,6 +848,8 @@ export default async function filme(ctx) {
       merk.push([e.id, e.pos, neu ? 1 : 0]);
     }
     zf.charts[g.id] = { tag, ids: merk };
+    // Kinder-Chart: Reihen aller Titel merken (auch teure), damit der Chart-Ersatz oben 3 Tage lang auch Kinderfilme kennt
+    if (kinderCharts.has(Number(g.id))) zf.charts[g.id].reihen = [...new Set(eintraege.map(e => kinderReihe(e.titel)).filter(Boolean))];
   }
   // Such-Charts (z. B. Drama, Independent): nur für den Titel-Abgleich, höchstens einmal am Tag, nur solange Filme offen sind
   const offeneFilme = [...new Map(posten.filter(p => !p.serie && !zf.ids[p.key]?.id).map(p => [p.key, p])).values()];
@@ -1268,12 +1282,12 @@ export default async function filme(ctx) {
   gruppen.serien = [...staffeln.values()].slice(0, 400)
     .sort((a, b) => (b.angebot - a.angebot) || ((serienReihe.get(a.serie) ?? 99) - (serienReihe.get(b.serie) ?? 99)) || ((a.nr ?? 0) - (b.nr ?? 0)));
   // Neu aus den Charts – ohne Kinderfilme (Kinder-Chart, Wikidata-Genre, Apple-Genre); in den anderen Bereichen bleiben sie
-  const istKind = t => kinderfilm({ kinderChart: kinderIds.has(t.id) || kinderReihen.has(kinderReihe(t.titel)), genres: [t.genre, chartTreffer.get(t.id)?.d?.genre], q: qualiVon(t.id) });
+  // (leere Reihe – Titel ohne lateinische Buchstaben – zählt nicht: sonst gälten alle solchen Titel als Kinderfilm)
+  const kindGrund = t => { const r = kinderReihe(t.titel); return kinderGrund({ kinderChart: kinderIds.has(t.id) ? 'kinder-chart' : !!r && kinderReihen.has(r) && 'reihe', genres: [t.genre, chartTreffer.get(t.id)?.d?.genre], q: qualiVon(t.id) }); };
   const neuRoh = [...chartTreffer.entries()].filter(([, c]) => c.neu).sort((a, b) => a[1].pos - b[1].pos)
     .map(([id]) => baue(id)).filter(t => t && !t._horror && t.typ === 'film');
-  const ohneKinder = neuRoh.filter(t => !istKind(t));
-  gruppen.neu = ohneKinder.slice(0, m.maxNeu);
-  status['apple-charts'].kinderNichtNeu = neuRoh.length - ohneKinder.length; // so viele Kinderfilme nicht unter „Neu“
+  const kindIn = new Map(neuRoh.map(t => [t.id, kindGrund(t)]));
+  gruppen.neu = neuRoh.filter(t => !kindIn.get(t.id)).slice(0, m.maxNeu);
   // Angebote: Filme ≤ 3,99 € (≤ 4,99 € bei Tiefstpreis oder laufender Apple-Aktion) – nur Kuratiertes oder Chart-Titel
   const kandidaten = new Map();
   for (const t of [...gruppen.wunsch, ...gruppen.achtziger, ...gruppen.disney]) if (t.id?.startsWith('itunes:')) kandidaten.set(t.id, t);
@@ -1297,6 +1311,11 @@ export default async function filme(ctx) {
   }
   qs.raus = qualiRaus;
   gruppen.neu = gruppen.neu.filter(gut);
+  // so viele Kinderfilme wären ohne die Regel unter „Neu“ zu sehen gewesen (Prüfer MV10 6: nach maxNeu und Qualität gezählt);
+  // Titel mit Grund zum Nachsehen nach echten Läufen (Prüfer MV10 1)
+  const kinderWeg = neuRoh.slice(0, m.maxNeu).filter(t => kindIn.get(t.id) && gut(t));
+  status['apple-charts'].kinderNichtNeu = kinderWeg.length;
+  status['apple-charts'].kinderNichtNeuTitel = kinderWeg.slice(0, 10).map(t => `${t.titel} (${kindIn.get(t.id)})`);
   gruppen.angebot = [...kandidaten.values()]
     .filter(t => t.typ === 'film' && !t._horror && t.preis != null && (t.preis <= m.angebotPreis
       || (t.preis <= m.angebotPreisAktion && ((t.istTiefst && t.tage >= 7 && (t._hoechst ?? 0) > t.preis) || (aktion && t._gesenkt)))))

@@ -15,7 +15,7 @@ import filme, {
   merkeFilmPreis, preisLage, preisWert, istAppleFilmDeal, postenListe, sucheUrl,
   chartIndex, chartFilm, serienBegriffe, wikidataAbfrage, wikidataTeile, leseWikidata, wikidataKandidaten, englisch,
   suchName, jahrImTitel, qualiAbfrage, leseQuali, qualiWahl, qualiOk, genreGruppe, STANDARD as FILM_STANDARD, horrorText,
-  horrorVerdacht, doppelTipp, filmPushTitel, kinderfilm, kinderReihe, KINDER_GENRES, wikidataUrl,
+  horrorVerdacht, doppelTipp, filmPushTitel, kinderfilm, kinderGrund, kinderReihe, KINDER_GENRES, wikidataUrl,
 } from '../module/filme.mjs';
 
 const HIER = dirname(fileURLToPath(import.meta.url));
@@ -808,25 +808,36 @@ test('Prüfer MV8 11: Kinderfilm aus dem Chart „Kinder & Familie“ oder mit W
   assert.ok(!('k' in zustand.filme.quali['1800000011']), 'nicht gefunden (l = -1): kein Flag');
 });
 
-test('Prüfer MV8 11: Kinder-Erkennung – Chart, Apple-Genre, Wikidata; Abfrage mit den drei Genres; Antwort mit k lesen', () => {
+test('Prüfer MV8 11: Kinder-Erkennung – Chart, Apple-Genre, Wikidata; Abfrage mit Kinder-/Familienfilm; Antwort mit k lesen', () => {
   assert.equal(kinderfilm({ kinderChart: true, genres: ['Action'] }), true, 'Kinder-Chart reicht');
   assert.equal(kinderfilm({ genres: ['Kinder und Familie'] }), true);
-  assert.equal(kinderfilm({ genres: [null, 'Animation'] }), true);
+  // Prüfer MV10 1: Animation allein ist kein Kinderfilm (Anime, „Felidae“ FSK 16, „Animatrix“, „Kingsglaive“)
+  assert.equal(kinderfilm({ genres: [null, 'Animation'] }), false);
+  assert.equal(kinderfilm({ genres: ['Anime'] }), false);
+  assert.equal(kinderGrund({ kinderChart: 'reihe', genres: ['Action'] }), 'reihe');
+  assert.equal(kinderGrund({ kinderChart: true }), 'kinder-chart');
+  assert.equal(kinderGrund({ genres: ['Action', 'Kinder und Familie'] }), 'apple-genre');
+  assert.equal(kinderGrund({ genres: ['Action'], q: { l: 3, kinder: true } }), 'wikidata');
+  assert.equal(kinderGrund({ genres: ['Action'], q: { l: 3, kinder: false } }), null);
   assert.equal(kinderfilm({ genres: ['Action', 'Thriller', null], q: { l: 40, kinder: false } }), false, 'Erwachsenen-Action');
   assert.equal(kinderfilm({ genres: ['Action'], q: { l: 33, kinder: true } }), true, 'Vaiana: Apple sagt Action, Wikidata Familienfilm');
   assert.equal(kinderfilm({ genres: ['Action'], q: { l: 20, kinder: null } }), false, 'alter Zustand ohne k = unbekannt');
   assert.equal(kinderfilm(), false);
-  // SPARQL: Genre (P136) oder eine Unterart (P279*) von Kinderfilm, Familienfilm, Animationsfilm – OPTIONAL wie Horror
-  assert.deepEqual(KINDER_GENRES, ['wd:Q2143665', 'wd:Q1361932', 'wd:Q202866']);
+  // SPARQL: Genre (P136) oder eine Unterart (P279*) von Kinderfilm oder Familienfilm – nicht Animationsfilm (Prüfer MV10 1);
+  // als BIND(IF(EXISTS …)) genau eine Zeile je Film, kein OPTIONAL, das spätere Blöcke vervielfacht (Prüfer MV10 4)
+  assert.deepEqual(KINDER_GENRES, ['wd:Q2143665', 'wd:Q1361932']);
   const q = qualiAbfrage([{ nr: '123', name: 'Vaiana' }]);
-  for (const qid of ['Q2143665', 'Q1361932', 'Q202866']) assert.match(q, new RegExp(`OPTIONAL \\{ \\?item wdt:P136 \\?kg \\. \\?kg wdt:P279\\* \\?kz \\. FILTER\\(\\?kz IN \\([^)]*wd:${qid}`));
+  for (const qid of ['Q2143665', 'Q1361932']) assert.match(q, new RegExp(`BIND\\(IF\\(EXISTS \\{ \\?item wdt:P136 \\?kg \\. \\?kg wdt:P279\\* \\?kz \\. FILTER\\(\\?kz IN \\([^)]*wd:${qid}[^)]*\\)\\) \\}, 1, 0\\) AS \\?k0\\)`));
+  assert.ok(!/OPTIONAL \{ \?item wdt:P136 \?kg/.test(q), 'kein OPTIONAL für Kinder');
+  assert.ok(!/\?kz IN \([^)]*Q202866/.test(q), 'Animationsfilm zählt nicht');
   assert.match(q, /\(MAX\(\?k0\) AS \?k\)/);
   assert.match(q, /Q200092/, 'Horror bleibt');
   assert.ok(q.indexOf('?kg') < q.indexOf('wdt:P577'), 'je Film einmal, vor den (vielen) Erscheinungsdaten');
   // Adresse bleibt kurz genug für GET: 15 lange Namen (wie qualiJeAbfrage) mit Umlauten, Kinder-Teil kostet gut 200 Zeichen
   const lang = Array.from({ length: FILM_STANDARD.qualiJeAbfrage }, (_, i) => ({ nr: String(1800000000 + i), name: `Die fabelhafte Überraschung im Märchenwald – Teil ${i} (Extended)`.slice(0, 60) }));
   const url = wikidataUrl(qualiAbfrage(lang));
-  const ohne = wikidataUrl(qualiAbfrage(lang).replace(/ \(MAX\(\?k0\) AS \?k\)/, '').replace(/OPTIONAL \{ \?item wdt:P136 \?kg[^}]*\} /, ''));
+  const ohne = wikidataUrl(qualiAbfrage(lang).replace(/ \(MAX\(\?k0\) AS \?k\)/, '').replace(/BIND\(IF\(EXISTS \{ \?item wdt:P136 \?kg[^}]*\}, 1, 0\) AS \?k0\) /, ''));
+  assert.ok(ohne.length < url.length - 100, 'Kinder-Teil wirklich entfernt');
   assert.ok(url.length - ohne.length < 300, String(url.length - ohne.length));
   assert.ok(url.length < 7000, String(url.length));
   // Antwort: k = 1 -> Kinderfilm; fehlt -> kein Kinderfilm; qualiWahl gibt es weiter
@@ -857,6 +868,31 @@ test('Prüfer MV8 11: alter Zustand ohne k läuft – kein Extra-Abruf, k kommt 
   assert.ok(!r2.datei.gruppen.neu.some(t => t.id === KANU));
 });
 
+// echtes Kinder-Chart vom 07.11.2026 (Woodwalkers, Schule der magischen Tiere 1–3, Vaiana, Vaiana 2 als „Kinder und Familie“);
+// die neuen Teile (echte Apple-Nummern vom 15.11.2026, Datum ungefähr) stehen im Action-Chart, dazu Spider-Man als Gegenprobe.
+// kinder = Kinder-Chart antwortet; extraKinder/extraNeu = zusätzliche Einträge [nr, name] im Kinder- bzw. Action-Chart.
+const NEUE_TEILE = [['1862821715', 'Woodwalkers 2'], ['1834959566', 'Die Schule der magischen Tiere 4'], ['6804104434', 'Vaiana'], ['6793590242', 'Spider-Man: Brand New Day']];
+const KINDER_TEILE = ['Woodwalkers 2', 'Die Schule der magischen Tiere 4', 'Vaiana'];
+async function teileLauf(kinder, { zustand = {}, jetzt = JETZT, extraKinder = [], extraNeu = [], filmCfg = {} } = {}) {
+  const z = abruf(QUALI);
+  const dazu = (j, liste) => {
+    const muster = [].concat(j.feed.entry)[0];
+    j.feed.entry = [...[].concat(j.feed.entry), ...liste.map(([nr, name]) => ({ ...muster, 'im:name': { label: name },
+      id: { label: `https://itunes.apple.com/de/movie/x/id${nr}?uo=2`, attributes: { 'im:id': nr } }, link: [{ attributes: { rel: 'alternate', href: `https://itunes.apple.com/de/movie/x/id${nr}?uo=2` } }],
+      summary: { label: `${name}: Beschreibung aus dem Store.` }, 'im:releaseDate': { label: '2026-01-26T00:00:00-08:00' } }))];
+    return JSON.stringify(j);
+  };
+  return filme(ctx(async (url, o) => {
+    if (url.includes('genre=4410/json')) {
+      if (!kinder) throw new Error('HTTP 503 bei itunes.apple.com');
+      return extraKinder.length ? dazu(JSON.parse(await fix(`${ECHT}/itunes-rss-kinder.json`)), extraKinder) : fix(`${ECHT}/itunes-rss-kinder.json`);
+    }
+    const t = await z.holeText(url, o);
+    if (!url.includes('genre=4401/json')) return t;
+    return dazu(JSON.parse(t), [...NEUE_TEILE, ...extraNeu]);
+  }, zustand, jetzt, { cfg: { ...cfg, module: { ...cfg.module, filme: { ...cfg.module?.filme, ...filmCfg } } } }));
+}
+
 test('Prüfer MV8 11: echte Fälle – Woodwalkers 2, Schule der magischen Tiere 4, Vaiana (Apple: „Action“) raus, weil frühere Teile im echten Kinder-Chart stehen', async () => {
   // Reihe = Titel ohne Folgenummer; Untertitel und Jahreszahlen zählen mit
   assert.equal(kinderReihe('Woodwalkers 2'), kinderReihe('Woodwalkers'));
@@ -866,27 +902,63 @@ test('Prüfer MV8 11: echte Fälle – Woodwalkers 2, Schule der magischen Tiere
   assert.notEqual(kinderReihe('Spider-Man: Brand New Day'), kinderReihe('Spider-Man: A New Universe'));
   assert.notEqual(kinderReihe('Blade Runner 2049'), kinderReihe('Blade Runner'));
   assert.notEqual(kinderReihe('Mortal Kombat II'), kinderReihe('Mortal Kombat Legends: Battle of the Realms'));
-  // echtes Kinder-Chart vom 07.11.2026 (Woodwalkers, Schule der magischen Tiere 1–3, Vaiana, Vaiana 2 als „Kinder und Familie“);
-  // die neuen Teile (echte Apple-Nummern vom 15.11.2026, Datum ungefähr) stehen im Action-Chart, dazu Spider-Man als Gegenprobe
-  const neueTeile = [['1862821715', 'Woodwalkers 2'], ['1834959566', 'Die Schule der magischen Tiere 4'], ['6804104434', 'Vaiana'], ['6793590242', 'Spider-Man: Brand New Day']];
-  const lauf = async kinder => {
-    const z = abruf(QUALI);
-    return filme(ctx(async (url, o) => {
-      if (url.includes('genre=4410/json')) { if (!kinder) throw new Error('HTTP 503 bei itunes.apple.com'); return fix(`${ECHT}/itunes-rss-kinder.json`); }
-      const t = await z.holeText(url, o);
-      if (!url.includes('genre=4401/json')) return t;
-      const j = JSON.parse(t), muster = [].concat(j.feed.entry)[0];
-      j.feed.entry = [...[].concat(j.feed.entry), ...neueTeile.map(([nr, name]) => ({ ...muster, 'im:name': { label: name },
-        id: { label: `https://itunes.apple.com/de/movie/x/id${nr}?uo=2`, attributes: { 'im:id': nr } }, link: [{ attributes: { rel: 'alternate', href: `https://itunes.apple.com/de/movie/x/id${nr}?uo=2` } }],
-        summary: { label: `${name}: Beschreibung aus dem Store.` }, 'im:releaseDate': { label: '2026-01-26T00:00:00-08:00' } }))];
-      return JSON.stringify(j);
-    }, {}));
-  };
-  const ohne = (await lauf(false)).datei.gruppen.neu.map(t => t.titel);
-  for (const [, name] of neueTeile) assert.ok(ohne.includes(name), `ohne Kinder-Chart unter „Neu“: ${name}`);
-  const r = await lauf(true);
+  const ohne = (await teileLauf(false)).datei.gruppen.neu.map(t => t.titel);
+  for (const [, name] of NEUE_TEILE) assert.ok(ohne.includes(name), `ohne Kinder-Chart (und ohne gemerkte Reihen) unter „Neu“: ${name}`);
+  const r = await teileLauf(true);
   const neu = r.datei.gruppen.neu.map(t => t.titel);
-  assert.deepEqual(neu, ohne.filter(n => !['Woodwalkers 2', 'Die Schule der magischen Tiere 4', 'Vaiana'].includes(n)));
+  assert.deepEqual(neu, ohne.filter(n => !KINDER_TEILE.includes(n)));
   assert.ok(neu.includes('Spider-Man: Brand New Day') && neu.includes('Mission: Impossible – The Final Reckoning'), 'Erwachsenen-Action bleibt');
   assert.equal(r.datei.status['apple-charts'].kinderNichtNeu, 3);
+  assert.deepEqual(r.datei.status['apple-charts'].kinderNichtNeuTitel, KINDER_TEILE.map(n => `${n} (reihe)`).sort((a, b) => ohne.indexOf(a.replace(/ \(reihe\)$/, '')) - ohne.indexOf(b.replace(/ \(reihe\)$/, ''))));
+});
+
+test('Prüfer MV10 2: Kinder-Chart gestört – gemerkte Reihen halten die Kinderfilme 3 Tage aus „Neu“ (wie der Chart-Ersatz)', async () => {
+  const zustand = {};
+  const r0 = await teileLauf(true, { zustand });
+  assert.equal(r0.datei.status['apple-charts'].kinderNichtNeu, 3);
+  // im Zustand: Reihen aller Kinder-Chart-Titel (auch teure), nicht nur die gemerkten billigen Nummern
+  const z = zustand.filme.charts['4410'];
+  for (const r of ['woodwalkers', kinderReihe('Die Schule der magischen Tiere 3'), 'vaiana']) assert.ok(z.reihen.includes(r), r);
+  assert.ok(z.reihen.length > z.ids.length, `${z.reihen.length} Reihen, ${z.ids.length} Nummern`);
+  assert.ok(z.reihen.every(r => typeof r === 'string' && r), 'keine leere Reihe');
+  assert.ok(JSON.stringify(z.reihen).length < 4000, 'klein genug für den Zustand');
+  // Tag 1 und 3: Kinder-Chart antwortet nicht -> Ersatz aus dem Zustand, die drei bleiben draußen, Spider-Man bleibt drin
+  for (const tage of [1, 3]) {
+    const r = await teileLauf(false, { zustand, jetzt: tagPlus(tage) });
+    const neu = r.datei.gruppen.neu.map(t => t.titel);
+    for (const n of KINDER_TEILE) assert.ok(!neu.includes(n), `Tag ${tage}: ${n}`);
+    assert.ok(neu.includes('Spider-Man: Brand New Day'));
+    assert.equal(r.datei.status['apple-charts'].kinderNichtNeu, 3, `Tag ${tage}`);
+    assert.ok(r.datei.status['apple-charts'].fehler.some(f => /4410|Kinder/.test(f)), 'Störung wird gemeldet');
+  }
+  // nach mehr als 3 Tagen gilt der alte Stand nicht mehr (wie bei allen Charts)
+  const r4 = await teileLauf(false, { zustand, jetzt: tagPlus(4) });
+  for (const n of KINDER_TEILE) assert.ok(r4.datei.gruppen.neu.some(t => t.titel === n), `Tag 4: ${n} wieder da`);
+  // alter Zustand ohne Reihen (vor dieser Fassung): läuft wie bisher, kein Fehler
+  const altZ = {};
+  await teileLauf(true, { zustand: altZ });
+  delete altZ.filme.charts['4410'].reihen;
+  const ra = await teileLauf(false, { zustand: altZ, jetzt: tagPlus(1) });
+  assert.ok(ra.datei.gruppen.neu.some(t => t.titel === 'Woodwalkers 2'));
+});
+
+test('Prüfer MV10 3/6: leere Reihe zählt nicht; kinderNichtNeu zählt nur, was sonst zu sehen gewesen wäre', async () => {
+  // Titel ohne lateinische Buchstaben ergeben eine leere Reihe – darf nicht alle solchen Neu-Titel zum Kinderfilm machen
+  assert.equal(kinderReihe('名探偵コナン'), '');
+  const r = await teileLauf(true, { extraKinder: [['1900000001', '名探偵コナン']], extraNeu: [['1900000002', 'ドライブ・マイ・カー']] });
+  const neu = r.datei.gruppen.neu.map(t => t.titel);
+  assert.ok(neu.includes('ドライブ・マイ・カー'), neu.join(' · '));
+  for (const n of KINDER_TEILE) assert.ok(!neu.includes(n), n);
+  // gezählt wird nach maxNeu und Qualitätsfilter: maxNeu 4 zeigt ohne Regel 3 Erwachsenenfilme (einer fällt durch die
+  // Qualität) -> 0, nicht 3; maxNeu 7 zeigte Woodwalkers 2 als einzigen Kinderfilm -> 1
+  const ohne4 = (await teileLauf(false, { filmCfg: { maxNeu: 4 } })).datei.gruppen.neu.map(t => t.titel);
+  assert.ok(ohne4.length >= 2 && !ohne4.some(n => KINDER_TEILE.includes(n)), ohne4.join(' · '));
+  const r4 = await teileLauf(true, { filmCfg: { maxNeu: 4 } });
+  assert.equal(r4.datei.status['apple-charts'].kinderNichtNeu, 0);
+  assert.deepEqual(r4.datei.status['apple-charts'].kinderNichtNeuTitel, []);
+  const ohne7 = (await teileLauf(false, { filmCfg: { maxNeu: 7 } })).datei.gruppen.neu.map(t => t.titel);
+  assert.deepEqual(ohne7.filter(n => KINDER_TEILE.includes(n)), ['Woodwalkers 2']);
+  const r7 = await teileLauf(true, { filmCfg: { maxNeu: 7 } });
+  assert.equal(r7.datei.status['apple-charts'].kinderNichtNeu, 1);
+  assert.deepEqual(r7.datei.status['apple-charts'].kinderNichtNeuTitel, ['Woodwalkers 2 (reihe)']);
 });
