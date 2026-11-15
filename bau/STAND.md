@@ -134,3 +134,4 @@ Weiter mit: 4.54 = rel-4540/k fertig prüfen + INT53D nachziehen + Versionszeile
 - Commit 2921690b, Pages-Lauf 43699612548 grün, In-App v26.
 - Overdub-Fehler mtx3b = Test-Wackler (tritt auf 4.69 auch auf). 'Nord'-Treffer = 'einordnen' (kein Markenname).
 
+- 09:53 r4710 fertig: Pflicht grün, spk11b 17/17, spk11 41/41 (Drum-Kit-Fehler weg), trp1 81/81, mtx3b 87/87, spk12 98/72/47/28, Gesang/Chor/Import grün. Abweichend: mtx4 117/118 (P2 Long Task 54/69 ms bei +1), spk4 neu a3-andere-klaenge (va2 3.89→5.17, Referenz lead 29.72). → A/B 4.70 vs 4.71 (vx/r4710/ab, Job b7gegzmwk).

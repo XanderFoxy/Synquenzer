@@ -87,8 +87,9 @@ async function begRun(f) {
   const {ctx, p, errs} = await open(428, 926, f);
   const r = await p.evaluate(async () => {
     const o = {}; ensureAudio(); await __W(400); SYNQUENZER.setBpm(150);
+    const B = SYNQUENZER.beg1; B.open(); await __W(300); const pd = () => JSON.stringify(B.pattern().m.dr); o.pat0 = pd(); B.close(); await __W(200);
     o.split = SYNQUENZER.mtx3.split(); o.hh = o.split.find(j => S.tracks[j].dvx.v === 'hatC');
-    const B = SYNQUENZER.beg1; B.open(); await __W(300); o.tg = B.state().tg; clearLog();
+    B.open(); await __W(300); o.tg = B.state().tg; o.pat1 = pd(); clearLog();
     await __chord([60, 64, 67]); await __W(250);
     await __until(8.05);
     const L = noteLog(4096).filter(e => e.beat != null && e.beat < 8);
@@ -117,6 +118,8 @@ async function begRun(f) {
   if (B0) console.log('  Basis 4.70.0: Band-HH auf Spur ' + JSON.stringify({drums: cnt(B0.r.hhBeg, 4), hh: cnt(B0.r.hhBeg, B0.r.hh)}));
   ok('Begleiter live: Band-HH über den Kanal von HH ZU (DRUMS 0)', r.hhBeg.length >= 8 && cnt(r.hhBeg, r.hh) === r.hhBeg.length, {hh: cnt(r.hhBeg, r.hh), drums: cnt(r.hhBeg, 4), tg: r.tg});
   ok('Begleiter live: gleich viele Band-HH wie in der Basis (nur der Kanal anders)', !B0 || B0.r.hhBeg.length === r.hhBeg.length, {neu: r.hhBeg.length, basis: B0 && B0.r.hhBeg.length});
+  if (B0) console.log('  Basis 4.70.0: Band-Muster der Drums nach dem Aufteilen ' + (B0.r.pat0 === B0.r.pat1 ? 'gleich' : 'anders (Ersatz-Pads)'));
+  ok('Begleiter: Band-Muster der Drums nach dem Aufteilen = vorher (Pads des Kits inkl. Einzelspuren)', r.pat0 === r.pat1, r.pat0 === r.pat1 ? 'gleich' : {vor: r.pat0.slice(0, 120), nach: r.pat1.slice(0, 120)});
   ok('Begleiter live: der eigene Clip von HH ZU schweigt in der Band (kein Doppel)', r.hhClip === 0, r.hhClip);
   ok('Begleiter: nach ■ keine geplanten Band-Schläge übrig', r.left === 0, r.left);
   ok('Begleiter ● Aufnahme: HH in einem Clip von HH ZU (neue Szene), DRUMS dort ohne HH; ↶ leert beide', r.rec.pads && new RegExp(r.hh + ':hatC').test(r.rec.pads) && !/^4:[^ ]*hatC/.test(r.rec.pads) && /^4:- /.test(r.rec.back || '') && new RegExp(r.hh + ':-').test(r.rec.back || ''), r.rec);
