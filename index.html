@@ -27571,7 +27571,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '4.65.0';
+const VERSION = '4.66.0';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -98750,6 +98750,7 @@ function spk1DspMake(V) {
   if (Z2 && typeof spk4DspMake === 'function') spk4DspMake(Z2);   // SPK4: mehrstimmige Noten (Pads, Rest, Original)
   if (Z2 && typeof spk8DspMake === 'function') spk8DspMake(Z2);   /* SPK8: Noten auf der Bass-Ebene (Verfolgung wie im Zerlegen) */
   if (typeof spk5DspMake === 'function') spk5DspMake({Z2, KI1K, BT, zerlegen, selFn, magsAt, stripe, tileArr, tidy, uTouch, uBegin, uEnd, uAbort, verUp, newLayer, Fn, NBn, TRn, tick, get, soon});   // SPK5: Zerlegen/Profi nur in der Auswahl, Anteile je Ebene
+  if (Z2 && typeof spk9DspMake === 'function') spk9DspMake(Z2);   /* SPK9: Legato-Noten (Tonhöhen-Stufen) */
   if (Z2 && typeof spk6DspMake === 'function') Z2.s6 = spk6DspMake({Z2, V, BT, BLK, win, lay, masksOf, stripe, stCopy, newLayer, verUp, uBegin, uTouch, uEnd, render, block, get, put, del, keys, selFn});   // SPK6: Ebenen-Werkstatt (Ops über Z2.ops)
   return {on, stft, istft, specInfo, docs, lowSplit, Z2};   // SPK2: Z2 für Messungen
 }
@@ -98757,7 +98758,7 @@ function spk1DspMake(V) {
 function spk1Worker() {
   if (SPK1.w !== null) return SPK1.w;
   try {
-    const src = vsDspMake.toString() + ';' + (typeof spk6DspMake === 'function' ? spk6DspMake.toString() + ';' : '') /* SPK6 */ + spk1DspMake.toString() + ';' + (typeof spk2DspMake === 'function' ? spk2DspMake.toString() : '') + ';' + (typeof spk3DspMake === 'function' ? spk3DspMake.toString() + ';' : '') /* SPK3 */ + (typeof spk4DspMake === 'function' ? spk4DspMake.toString() + ';' : '') /* SPK4 */ + (typeof ki1KernMake === 'function' ? ki1KernMake.toString() + ';' : '') /* KI1 */ + (typeof spk5DspMake === 'function' ? spk5DspMake.toString() + ';' : '') /* SPK5 */ + 'const K = spk1DspMake(vsDspMake());onmessage = e => K.on(e.data, (m, tr) => postMessage(m, tr || []));';   // SPK2: Kern-Ergänzung mitschicken · KI1
+    const src = vsDspMake.toString() + ';' + (typeof spk6DspMake === 'function' ? spk6DspMake.toString() + ';' : '') /* SPK6 */ + spk1DspMake.toString() + ';' + (typeof spk2DspMake === 'function' ? spk2DspMake.toString() : '') + ';' + (typeof spk3DspMake === 'function' ? spk3DspMake.toString() + ';' : '') /* SPK3 */ + (typeof spk4DspMake === 'function' ? spk4DspMake.toString() + ';' : '') /* SPK4 */ + (typeof ki1KernMake === 'function' ? ki1KernMake.toString() + ';' : '') /* KI1 */ + (typeof spk5DspMake === 'function' ? spk5DspMake.toString() + ';' : '') /* SPK5 */ + (typeof spk9DspMake === 'function' ? spk9DspMake.toString() + ';' : '') /* SPK9 */ + 'const K = spk1DspMake(vsDspMake());onmessage = e => K.on(e.data, (m, tr) => postMessage(m, tr || []));';   // SPK2: Kern-Ergänzung mitschicken · KI1
     const u = URL.createObjectURL(new Blob([src], {type: 'application/javascript'}));
     const w = new Worker(typeof spk8WUrl === 'function' ? spk8WUrl(src, u) : u) /* SPK8: Kern-Ergänzung mitschicken */; setTimeout(() => { try { URL.revokeObjectURL(u); } catch (e) {} }, 30000);
     w.onmessage = e => spk1Reply(e.data);
@@ -99987,7 +99988,7 @@ function spk2DspMake(I) {
     let emx = -200; { const es = Array.from(Tr.e).sort((p, q) => p - q); emx = es[Math.floor(es.length * 0.98)] || -200; }
     const ok = new Uint8Array(F), sc = new Float32Array(F);
     for (let i = 0; i < F; i++) { sc[i] = Math.min(1, Math.max(0, (Tr.q[i] - 0.12) / 0.4)); ok[i] = Tr.q[i] >= 0.18 && Tr.e[i] >= emx - 40 ? 1 : 0; }
-    const found = segNotes({f0: Tr.f0, sc, ok, i0, F, hopS: hop / sr, O, G: gridOf(d), Y, K, df, fb: R.fb}).filter(q => q.a >= R.ta - 0.05 && q.a < R.tb);
+    const found = (typeof opt.seg9 === 'function' ? opt.seg9 : segNotes)({f0: Tr.f0, sc, ok, i0, F, hopS: hop / sr, O, G: gridOf(d), Y, K, df, fb: R.fb, art: artOf(d, lid)}).filter(q => q.a >= R.ta - 0.05 && q.a < R.tb);   /* SPK9: Legato-Noten */
     emit({qid: m.qid, prog: 0.9});
     I.uBegin(d, 'Noten finden'); const t2 = t2Of(d), old = t2.notes[lid] || [];
     const keep = old.filter(q => q.st === 'zu' || q.a < R.ta - 0.05 || q.a >= R.tb), out = keep.slice();
@@ -100058,7 +100059,7 @@ function spk2DspMake(I) {
     const st = viterbi(E, F, S, 1.2); for (let i = 0; i < F; i++) f0[i] = C[st[i]];
     const thr = 0.35, ok = new Uint8Array(F), sc = new Float32Array(F); for (let i = 0; i < F; i++) { sc[i] = Math.min(1, best[i]); ok[i] = best[i] >= thr ? 1 : 0; }
     const O = onsetsOf(x, sr, 0, d.meta.n / sr, fa, fb);
-    const found = segNotes({f0, sc, ok, i0: 0, F, hopS: hop / sr, O, G: gridOf(d), Y: null, K, df, fb});
+    const found = (typeof opt.seg9 === 'function' ? opt.seg9 : segNotes)({f0, sc, ok, i0: 0, F, hopS: hop / sr, O, G: gridOf(d), Y: null, K, df, fb, art});   /* SPK9: Legato-Noten auch in „Überall finden“ */
     I.uBegin(d, 'Überall finden');
     const all = Object.entries(t2.notes), hit = (q, p) => Math.min(p.b, q.b) - Math.max(p.a, q.a) > 0.5 * Math.min(q.b - q.a, p.b - p.a);
     const prev = (t2.notes[lid] || []).filter(q => q.st !== 'neu'), neu = [];
@@ -105662,6 +105663,161 @@ function spk7Tgts(U) {
   if (SPK7.tgt === 'neu' && !canAddTrack()) D.bT.disabled = true;
 }
 /* SPK7-END */
+/* SPK9-BEGIN ===== Spektral-Seite Teil 9 · gebundener Gesang (Legato) ergibt mehrere Noten (SPK6-Prüfung Nr. 17).
+   Kern-Ergänzung im selben Worker wie spk1DspMake (Text wird mitgeschickt; Haken „SPK9“ in spk1DspMake, spk1Worker und in „Noten finden“
+   einstimmig, SPK2 noten). Ursache: SPK2 segNotes verwirft eine Tonwechsel-Grenze, sobald ein Fluss-Anschlag ≤ 70 ms daneben liegt –
+   der Anschlag selbst wird aber nur mit Pegel-Anstieg ≥ 3 dB zur Grenze. Beim Legato steigt der Pegel nicht → keine Grenze, eine Note
+   (Median-Ton). Neu (Hysterese wie im Gesang-Weg VS2b, 70 ms / 60 ct): ein neuer Ton zählt erst, wenn die Tonhöhe (3-Rahmen-Median)
+   ≥ 70 ms am Stück ≥ 60 ct neben der Mitte der laufenden Note liegt UND danach ≥ 70 ms ruhig steht (Spanne ≤ 50 ct) auf einer Höhe,
+   deren 150-ms-Median ≥ 60 ct neben der Mitte liegt. Vibrato (Halbwelle < 160 ms, schwingt zurück), Gleiten (steht nie ruhig, die Grenze
+   kommt erst am Ziel – auf halbem Weg), Ausklingen (neuer Teil ≥ 12 dB leiser) zerhacken nicht. Grenze = wo die Tonhöhe die Mitte zwischen
+   alter und neuer Höhe kreuzt. Alles andere (Anschläge, Einsatz nach Pause, Ende −24 dB, Tonhöhe = Median, Oktav-Prüfung) wie SPK2.
+   Nur oberhalb des Bass-Bands (Ebene Bass bzw. Original mit Auswahl oben ≤ 400 Hz bleiben bei SPK2). Schalter Z2.o9.an (aus = genau SPK2).
+   Prüfung (9 Befunde): langes Gleiten sucht weiter (statt ans Laufende zu springen), Viertelton-Treppe eines Gleitens ist kein ruhiger Ton,
+   Vibrato nur bis ±85 ct Hub, Durchgangston mit flacher Mitte bleibt, Ausklang nur wenn der leise Teil weiter fällt/endet, Tonhöhe = Median
+   der dichtesten Halbton-Breite, Oktav-Prüfung strenger (ungerade Obertöne < 12 % statt 30 %), Pegel-Schwankung im gehaltenen Ton (gleiche
+   Tonhöhe, stimmhaft) ist erst ab 6 dB ein Anschlag, „Überall finden“ (SPK3) nutzt dieselben Stufen, Mehrstimmig (SPK4) erkennt EINE Stimme
+   und trennt sie wie einstimmig (Akkorde bleiben mehrstimmig; Haken „SPK9“ in SPK2 noten/finden). ===== */
+function spk9DspMake(Z2) {
+  if (!Z2 || !Z2.h || !Z2.opt || !Z2.h.segNotes || !Z2.h.midiOf) return Z2;
+  const H2 = Z2.h, seg0 = H2.segNotes, opt = Z2.opt;
+  const o9 = {an: 1, hys: 0.6, hold: 0.07, stab: 0.06, span: 0.25, bandv: 0.6, vmin: 0.3, tr: 0.5, trN: 3, look: 0.5, nl: 0.15, vib: 0.16, gegen: 0.3, lvl: 12, minS: 0.08, near: 0.07, win: 0.6, fbMin: 400,
+    adv: 0.25, cst: 1, nlP: 1, vibMax: 0.875, stair: 0.3, stairN: 0.035, trFlat: 1, fall: 4, fallT: 0.45, dicht: 1, dichtA: 0.3, dichtW: 4, okt: 0.12, oktG: 0.3, rise2: 6, mono: 1, qMono: 0.85, pMono: 0.7, monoF: 1500, dbg: null};   // Prüfung: adv … pMono (0 = aus)
+  const med = v => { if (!v.length) return NaN; v.sort((p, q) => p - q); return v[v.length >> 1]; };
+  // Tonhöhen-Stufen (Zeit der Grenze in s) aus der Grundton-Spur f0 (Rahmen i ↔ (i0 + i)·hopS), nur stimmhafte Rahmen (ok)
+  function steps(o) {
+    const {f0, ok, F, hopS, i0, O} = o, T = i => (i0 + i) * hopS, fr = s => Math.max(1, Math.round(s / hopS)), p = new Float32Array(F).fill(NaN), s3 = new Float32Array(F).fill(NaN);
+    for (let i = 0; i < F; i++) if (ok[i] && f0[i] > 0) p[i] = H2.midiOf(f0[i]);
+    for (let i = 0; i < F; i++) { if (isNaN(p[i])) continue; const v = []; for (let r = i - 1; r <= i + 1; r++) if (r >= 0 && r < F && !isNaN(p[r])) v.push(p[r]); s3[i] = med(v); }
+    const out = [], warm = fr(0.06), W = fr(o9.stab) + 1, VB = fr(0.2), look = fr(o9.look), NL = fr(o9.nl), back = fr(0.06), wc = fr(o9.win);
+    const mOf = (a, b) => { const v = []; for (let r = Math.max(0, a); r < Math.min(F, b); r++) if (!isNaN(s3[r])) v.push(s3[r]); return med(v); };
+    const lvl = (ta, tb) => { const v = []; for (let t = ta; t < tb; t += hopS) v.push(O.envAt(t)); return med(v); };
+    const lvlMx = (ta, tb) => { let m = -200; for (let t = ta; t + 0.1 <= tb; t += 0.05) m = Math.max(m, lvl(t, t + 0.1)); return m; };
+    let i = 0;
+    while (i < F) {
+      while (i < F && isNaN(s3[i])) i++; if (i >= F) break;
+      let j = i, gap = 0; while (j + 1 < F && gap <= 2) { j++; if (isNaN(s3[j])) gap++; else gap = 0; } j = j - gap + 1;   // Lauf [i, j), Lücken ≤ 2 Rahmen
+      let s0 = i, k = i + warm, cst = i; const rb = [];   // cst: Mitte der laufenden Note erst ab der ruhigen Stelle (nicht aus dem Gleiten davor)
+      while (k < j) {
+        const sk = Math.min(fr(0.04), (k - s0) >> 2), cv = []; for (let r = Math.max(s0 + sk, k - wc, o9.cst ? cst : 0); r < k; r++) if (!isNaN(s3[r])) cv.push(s3[r]);
+        const c = med(cv), v = s3[k];
+        if (isNaN(c) || isNaN(v) || Math.abs(v - c) < o9.hys) { k++; continue; }
+        const sg = Math.sign(v - c); let q = k; while (q < j && !isNaN(s3[q]) && (s3[q] - c) * sg >= o9.hys) q++;
+        if ((q - k) * hopS < o9.hold - 1e-6) { k = q + 1; continue; }   // kurzer Ausschlag (Vibrato, Wackler)
+        let ex = 0; for (let r = k; r < q; r++) ex = Math.max(ex, (s3[r] - c) * sg);
+        if ((q - k) * hopS < o9.vib && (!o9.vibMax || ex <= o9.vibMax)) { let od = 0; for (let r = q; r < Math.min(j, q + fr(0.13)); r++) if (!isNaN(s3[r])) od = Math.max(od, -(s3[r] - c) * sg); if (od >= o9.gegen) { k = q + 1; continue; } }   // Halbwelle (Hub ≤ vibMax), die zur Gegenseite schwingt = Vibrato; ein Nachbarton (Wechselnote, ≥ 1 HT) nicht
+        let js = -1;   // ruhige Stelle auf der neuen Höhe (Gleiten steht nie ruhig)
+        const ruhig = (a, w, sp) => { let lo = 1e9, hi = -1e9, s = 0, n = 0; for (let r = a; r < a + w; r++) { const x = s3[r]; if (isNaN(x)) return NaN; lo = Math.min(lo, x); hi = Math.max(hi, x); s += x; n++; } return hi - lo <= sp ? s / n : NaN; };
+        // Treppe eines Gleitens (Viertelton-Raster der Spur): kurzes Plateau, danach steht die Spur länger auf der nächsten Stufe in derselben Richtung
+        const stair = (a, mu) => { if (!o9.stair) return false; let pe = a; while (pe < j && !isNaN(s3[pe]) && Math.abs(s3[pe] - mu) <= 0.3) pe++;
+          if (pe >= j || isNaN(s3[pe]) || (pe - a) * hopS >= o9.stair) return false; const nx = s3[pe], dd = (nx - mu) * sg; if (!(dd > 0 && dd < 0.55)) return false;
+          let r = pe; while (r < j && s3[r] === nx) r++; return (r - pe) * hopS >= o9.stairN - 1e-6; };
+        let jmu = NaN; for (let a = k; a + W <= j && a - k <= look; a++) { const mu = ruhig(a, W, o9.span); if (!isNaN(mu) && Math.abs(mu - c) >= o9.hys && !stair(a, mu)) { js = a; jmu = mu; break; } }
+        // Vibrato auf dem neuen Ton (steht nie 60 ms flach): 200 ms im Band ±bandv um eine Höhe ≥ 60 ct neben der Mitte, mit Auf und Ab
+        if (js < 0 && o9.bandv) for (let a = k; a + VB <= j && a - k <= look; a++) { const mu = ruhig(a, VB, 2 * o9.bandv); if (isNaN(mu) || Math.abs(mu - c) < o9.hys) continue; let up = 0, dn = 0; for (let r = a + 1; r < a + VB; r++) { const dd = s3[r] - s3[r - 1]; if (dd > 0) up += dd; else dn -= dd; } if (Math.min(up, dn) >= o9.vmin) { js = a; break; } }
+        if (js < 0) { k = o9.adv ? Math.min(q, k + fr(o9.adv)) + 1 : q + 1; continue; }   // nichts Ruhiges in look: weiter suchen (langes Gleiten), nicht ans Ende der Abweichung springen
+        const nv = []; for (let r = js; r < Math.min(j, js + NL); r++) if (!isNaN(s3[r])) nv.push(s3[r]); let nl = med(nv);
+        if (o9.nlP && !isNaN(jmu) && !(Math.abs(nl - c) >= o9.hys)) { let pe = js; while (pe < Math.min(j, js + NL) && !isNaN(s3[pe]) && Math.abs(s3[pe] - jmu) <= 0.3) pe++; const pv = []; for (let r = js; r < Math.max(Math.min(j, js + W), pe); r++) if (!isNaN(s3[r])) pv.push(s3[r]); nl = med(pv); }   // kurzer Ton (Wechselnote): nur sein Plateau, nicht schon der Ton danach
+        if (isNaN(nl) || Math.abs(nl - c) < o9.hys) { k = q + 1; continue; }
+        const md = (c + nl) / 2, s2 = Math.sign(nl - c); let bd = Math.max(s0 + 1, k - back); while (bd < js && !((s3[bd] - md) * s2 > 0)) bd++;
+        if ((bd - s0) * hopS < o9.minS || (j - bd) * hopS < o9.minS) { k = q + 1; continue; }
+        const tb = T(bd) - hopS / 2;
+        if (O && O.envAt) { const l1 = lvl(tb, Math.min(T(j), tb + 0.1));   // Ausklang: neuer Teil viel leiser UND fällt weiter bzw. endet bald (ein leiserer neuer Ton bleibt stehen)
+          const l0 = o9.fall ? Math.max(lvl(Math.max(T(s0), tb - 0.25), tb), lvlMx(T(s0), tb)) : lvl(Math.max(T(s0), tb - 0.25), tb);   // Bezug: lautester Teil der laufenden Note (im Abklingen ist schon der Teil davor leiser)
+          if (l1 < l0 - o9.lvl && (!o9.fall || T(j) - tb < o9.fallT || lvl(tb + 0.1, Math.min(T(j), tb + 0.35)) < l1 - o9.fall)) { k = q + 1; continue; } }
+        rb.push(bd); s0 = bd; cst = js; k = Math.max(js, bd + warm);
+      }
+      // Übergang statt Ton: ein kurzes Stück (< tr s) zwischen zwei Stufen, das tonhöhenmäßig zwischen seinen Nachbarn liegt und sich
+      // dabei ≥ 0,4 HT auf den nächsten Ton zu bewegt (Anfahrt eines Gleitens), gehört zu den Nachbarn: Grenze auf halbem Weg
+      for (let again = 1; again && o9.tr;) {
+        again = 0; const bs = [i].concat(rb, [j]);
+        for (let z = 1; z + 1 < bs.length - 1 + 1 && z < bs.length - 2; z++) {
+          const a = bs[z], b = bs[z + 1]; if ((b - a) * hopS >= o9.tr) continue;
+          const mP = mOf(bs[z - 1], a), mS = mOf(a, b), mN = mOf(b, bs[z + 2]), L = Math.max(1, Math.round((b - a) * 0.4)), d1 = mOf(a, a + L), d2 = mOf(b - L, b);
+          if (isNaN(mP) || isNaN(mS) || isNaN(mN) || !((mS - mP) * (mN - mS) > 0) || Math.abs(mN - mS) > o9.trN || !((d2 - d1) * Math.sign(mN - mP) >= 0.4)) continue;
+          if (o9.trFlat) { const qa = a + ((b - a) >> 2), qb = b - ((b - a) >> 2), h = (qa + qb) >> 1, m1 = mOf(qa, h), m2 = mOf(h, qb); let lo = 1e9, hi = -1e9; for (let r = qa; r < qb; r++) if (!isNaN(s3[r])) { lo = Math.min(lo, s3[r]); hi = Math.max(hi, s3[r]); }
+            if ((qb - qa) * hopS >= 0.05 - 1e-6 && hi - lo <= 0.25 + 1e-6 && Math.abs(m2 - m1) < 0.1 && Math.abs(mN - (m1 + m2) / 2) >= 0.75) continue;   // flache Mitte ≥ ¾ HT vor dem Ziel = echter (Durchgangs-)Ton; näher dran = Anschleifen
+            if ((b - a) * hopS >= 0.25) { const sg2 = Math.sign(mN - mP); let al = 0, op = 0; for (let r = a + 1; r < b; r++) { if (isNaN(s3[r]) || isNaN(s3[r - 1])) continue; const dd = (s3[r] - s3[r - 1]) * sg2; if (dd > 0) al += dd; else op -= dd; }
+              if (op > Math.max(0.25, 0.2 * al)) continue; } }   // langes Stück nur, wenn es gleichmäßig auf das Ziel zu läuft (Vibrato schwingt zurück = Ton)
+          const md = (mP + mN) / 2, sg = Math.sign(mN - mP); let bd = Math.max(bs[z - 1] + 1, a - back); while (bd < b && !((s3[bd] - md) * sg > 0)) bd++;
+          rb.splice(z - 1, 2, bd); again = 1; break;
+        }
+      }
+      for (const b of rb) out.push(T(b) - hopS / 2);
+      i = j;
+    }
+    if (o9.dbg) o9.dbg({s3, out});
+    return out;
+  }
+  // wie SPK2 segNotes, nur die Tonwechsel-Grenzen aus steps() (und nicht mehr von bloßen Fluss-Anschlägen ohne Pegel-Anstieg verdeckt)
+  function segNotes9(o) {
+    const {f0, sc, ok, i0, F, hopS, O, G, Y, K, df, fb} = o, T = i => (i0 + i) * hopS, bnd = [], acc = [], midiOf = H2.midiOf;
+    const near = t => O.ons.some(u => Math.abs(u - t) < 0.07);
+    const rise = t => O.envAt(t + 0.035) - Math.min(O.envAt(t - 0.03), O.envAt(t - 0.06));
+    // Pegel-Schwankung im gehaltenen Ton (Tremolo): stimmhaft ohne Lücke und gleiche Tonhöhe davor/danach → erst ab rise2 dB ein Anschlag
+    const fi = t => Math.round(t / hopS) - i0, mAt = (ta, tb) => { const v = []; for (let i = Math.max(0, fi(ta)); i < Math.min(F, fi(tb)); i++) if (ok[i]) v.push(midiOf(f0[i])); return v.length ? med(v) : NaN; };
+    const held = t => { for (let i = Math.max(0, fi(t - 0.1)); i <= Math.min(F - 1, fi(t + 0.1)); i++) if (!ok[i]) return false; const p = mAt(t - 0.12, t - 0.02), q = mAt(t + 0.03, t + 0.13); return Math.abs(p - q) < 0.5; };
+    for (const t of O.ons) { const r = rise(t); if (r >= (+opt.rise || 3) && !(o9.rise2 && r < o9.rise2 && held(t))) { bnd.push(t); acc.push(t); } }
+    let run = 0;
+    for (let i = 0; i < F; i++) { if (ok[i] && run === 0 && !near(T(i) - hopS)) bnd.push(T(i) - hopS); run = ok[i] ? run + 1 : 0; }   // Einsatz ohne Anschlag (weich)
+    for (const t of steps(o)) if (!acc.some(u => Math.abs(u - t) < o9.near)) bnd.push(t);
+    bnd.sort((p, q) => p - q); const out = [];
+    for (let k = 0; k < bnd.length; k++) {
+      const a = bnd[k], nx = k + 1 < bnd.length ? bnd[k + 1] : T(F - 1) + hopS;
+      if (nx - a < 0.05) continue;
+      let pk = -200; for (let t = a; t < Math.min(nx, a + 0.12); t += 0.01) pk = Math.max(pk, O.envAt(t));
+      let b = nx; for (let t = a + 0.04; t < nx; t += 0.01) if (O.envAt(t) < pk - 24) { b = t; break; }
+      const fs = [], ss = []; let all = 0;
+      for (let i = Math.max(0, Math.ceil((a + 0.035) / hopS) - i0); i < F && T(i) < b - 0.01; i++) { all++; if (ok[i]) { fs.push(f0[i]); ss.push(sc[i]); } }
+      if (fs.length < 2 || fs.length < 0.5 * all || b - a < 0.06) continue;
+      const srt = fs.slice().sort((p, q) => p - q); let f = srt[srt.length >> 1];
+      if (o9.dicht) { const ms = srt.map(midiOf); let bi = 0, bn = 0, bj = 0; for (let i = 0, e = 0; i < ms.length; i++) { while (e < ms.length && ms[e] - ms[i] <= 1) e++; if (e - i > bn) { bn = e - i; bi = i; bj = e; } }
+        if (bn >= 2 && bn < ms.length && bn >= o9.dichtA * ms.length && Math.abs(ms[(bi + bj) >> 1] - ms[ms.length >> 1]) <= o9.dichtW) f = srt[(bi + bj) >> 1]; }   // Tonhöhe = Median der dichtesten Halbton-Breite (ein Gleiten am Rand zieht sie nicht weg); nur nahe am Median (kein Begleit-Ton daneben)
+      if (Y && 2 * f <= fb) { let od = 0, ev = 0, g1 = 0; const ia = Math.max(0, Math.ceil((a + 0.035) / hopS) - i0); for (let i = ia; i < F && T(i) < b; i++) { const ox = i * K, pkk = h => { const kc = Math.round(h * f / df); return kc + 1 < K ? Math.max(Y[ox + kc - 1], Y[ox + kc], Y[ox + kc + 1]) : 0; }; od += pkk(3) + pkk(5) + pkk(7); ev += pkk(2) + pkk(4) + pkk(6); g1 += pkk(1); }
+        if (ev > 0 && (o9.okt ? od / ev < o9.okt || (od / ev < 0.3 && g1 < o9.oktG * ev / 3) : od / ev < 0.3)) f *= 2; }   // SPK2: ungerade < 30 % der geraden → Oktave höher; jetzt nur, wenn sie fast ganz fehlen (< okt) oder auch der Grundton selbst schwach ist (Gesang: ungerade Obertöne oft nur formant-schwach, der Grundton aber da)
+      const m = Math.round(midiOf(f)), conf = ss.reduce((p, q) => p + q, 0) / ss.length * Math.min(1, fs.length / Math.max(1, all) + 0.2);
+      const fz = []; for (let i = Math.max(0, Math.floor(a / hopS) - i0); i < F && T(i) <= b + 0.05; i++) { const g = ok[i] && Math.abs(midiOf(f0[i]) - midiOf(f)) < 1 ? f0[i] : f; fz.push(+g.toFixed(1)); }
+      const t0 = H2.snapT(G, a), t1 = Math.max(t0 + G.step, H2.snapT(G, b));
+      out.push({t0: +t0.toFixed(4), t1: +t1.toFixed(4), a: +a.toFixed(4), b: +b.toFixed(4), m, f: +f.toFixed(2), v: +Math.min(1, Math.max(0.05, (pk + 60) / 60)).toFixed(2), conf: +Math.min(1, Math.max(0, conf)).toFixed(2), fi: Math.max(0, Math.floor(a / hopS)), fz});
+    }
+    return out;
+  }
+  // Bass-Band bleibt bei SPK2: Ebene Bass, Original mit Auswahl oben ≤ 400 Hz (dort misst die Stufen-Regel schlechter: spk2-test Bass-Noten
+  // 14 → 12 Treffer). Gesang/Lead/… behalten die Stufen auch mit tiefer Auswahl (Prüfung Nr. 8). Ohne art (alter Haken): wie bisher nach fb.
+  const bassBand = o => o.art ? o.art === 'bass' || (o.art === 'orig' && o.fb <= o9.fbMin) : o.fb <= o9.fbMin;
+  opt.seg9 = o => o9.an && !bassBand(o) ? segNotes9(o) : seg0(o);
+  // Mehrstimmig (SPK4, automatisch oder per Schalter): klingt in der Auswahl nur EINE Stimme (Obertonkamm eines Grundtons trägt in ≥ pMono der lauten Rahmen
+  // ≥ qMono der Energie), trennt der einstimmige Weg (SPK2 + Stufen) – die mehrstimmige Rechnung fand dort Geister-Oktaven und frühe Einsätze.
+  const noten4 = Z2.ops && Z2.ops.noten, I9 = Z2.I;
+  function eineStimme(d, m) {
+    const lid = m.lid || 'orig', R = H2.rangeOf(d, lid, m.sel); if (!R || !I9) return false;
+    const sr = d.meta.sr, hop = d.meta.base.hop, n = d.meta.n, a0 = Math.max(0, Math.floor((R.ta - 0.1) * sr)), b0 = Math.min(n, Math.ceil((R.tb + 0.1) * sr));
+    let x; if (lid === 'orig') x = d.mid; else { const ch = I9.render(d, I9.mixOf(d, lid), a0, b0); x = new Float32Array(n); const g = 1 / ch.length; for (const c of ch) for (let i = 0; i < c.length; i++) x[a0 + i] += c[i] * g; }
+    const N = R.fa < 70 ? 8192 : 4096, df = sr / N, K = Math.min(N / 2 + 1, Math.ceil(Math.min(sr / 2 - 1, R.fb * 12) / df)), st = hop * Math.max(3, Math.ceil((R.tb - R.ta) * sr / hop / o9.monoF));   // jeder 3. Rahmen, höchstens monoF Rahmen (langes Stück: Stichprobe)
+    const i0 = Math.floor(R.ta * sr / st), i1 = Math.ceil(R.tb * sr / st) + 1, F = i1 - i0; if (F < 8) return false;
+    const Y = H2.magsX(x, N, st, K, i0, i1), Tr = H2.trackF(Y, F, K, df, R.fa, R.fb, 10), es = Array.from(Tr.e).sort((p, q) => p - q), emx = es[Math.floor(es.length * 0.98)];
+    // je lauter Rahmen: Spektral-Spitzen bis 2,5 kHz (≥ −20 dB unter der stärksten); fremd = nicht auf einem Oberton des Grundtons (Akkord-Töne,
+    // zweite Stimme). Eine Stimme: fremde Spitzen tragen ≤ qMono der Spitzen-Energie, und der Grundton selbst ist da (kein Unter-Grundton eines Akkords)
+    const kT = Math.min(K - 2, Math.ceil(2500 / df)), kA = Math.max(2, Math.floor(R.fa * 0.8 / df));
+    let nl = 0, nq = 0; for (let i = 0; i < F; i++) { if (!(Tr.e[i] >= emx - 20)) continue; nl++; const o = i * K, f = Tr.f0[i]; let mx = 0; for (let k = kA; k <= kT; k++) mx = Math.max(mx, Y[o + k]);
+      let all = 0, fr2 = 0, fund = 0; for (let k = kA; k <= kT; k++) { const v = Y[o + k]; if (v < 0.01 * mx || v < Y[o + k - 1] || v < Y[o + k + 1]) continue; const fp = k * df, h = Math.round(fp / f); all += v; if (h < 1 || Math.abs(fp - h * f) > Math.max(2 * df, 0.035 * fp)) fr2 += v; else if (h === 1) fund = Math.max(fund, v); }
+      if (all > 0 && fr2 <= (1 - o9.qMono) * all && fund >= 0.01 * mx) nq++; }
+    if (o9.dbg) o9.dbg({eineStimme: nq / Math.max(1, nl), nl});
+    return nl >= 8 && nq >= o9.pMono * nl;
+  }
+  // nur wo SPK4 wirklich mehrstimmig rechnen würde (gleiche Regel wie dort polyOf): Schalter an, oder ohne Schalter Pads/Rest/Original (nicht Bass-Band)
+  const wirdPoly = (d, m) => { const art = H2.artOf(d, m.lid || 'orig'); if (art === 'drums' || art === 'bass') return false; if (m.poly != null) return !!m.poly;
+    if (art === 'orig') { let hi = 0; for (const x of m.sel || []) if (x && x.art !== 'zeit' && x.f1 != null) hi = Math.max(hi, +x.f1); if (hi > 0 && hi <= 400) return false; }
+    return art === 'pads' || art === 'rest' || art === 'orig'; };
+  if (noten4) Z2.ops.noten = async (d, m, emit, info) => {
+    if (o9.an && o9.mono && wirdPoly(d, m) && eineStimme(d, m)) {
+      const r = await noten4(d, Object.assign({}, m, {poly: false}), emit, info); return Object.assign(r, {mehrstimmig: true, stimmen9: 1}); }   // Modus bleibt „mehrstimmig“: es klang nur eine Stimme
+    return noten4(d, m, emit, info);
+  };
+  Z2.o9 = o9; H2.steps9 = steps;
+  return Z2;
+}
+/* SPK9-END */
 /* XD1-BEGIN ===== Paket XD1 (Xander 08.11.: „Du sollst eigenmächtig entscheiden, was logischer ist … logisch entscheiden, was praktikabel
    ist, den Workflow nicht sperrt, alles intuitiv und leicht. Optik nichts hinzuerfinden, Sachen richtig darstellen.“) – acht Punkte:
    (1) Gesang: „Beim Singen hören“ [Begleitung │ + Melodie │ nur Klick] steht jetzt im Mikrofon-Blatt (Schritt 1 Aufnehmen) – dort, wo man
