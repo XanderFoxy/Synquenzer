@@ -51,3 +51,22 @@ Offline auf den Ebenen (work/eval.mjs, alle 4 Lieder): Kick 95,9 % +19,9 % → 9
 - IMP1-Teile: im dichten 4/4-Kick-Groove liegt die „1“ einen Schlag daneben (off 1,02 statt 0,50) und die Namen sind schief
   („Refrain 1 | Bridge | Refrain 2“ für S8 R8 S8, ebenso Intro/Outro im Lied „intro“) – Erkennung/Namensregel des Imports, eigener Auftrag.
 - Bass-Noten in den Teilen selbst (Oktavfehler 3–4 je Strophe im Prüferlied) unverändert – Notenerkennung der Ebene.
+
+## Nachbesserung nach PRUEFUNG.md (B1–B8, Nummern wie dort)
+Gleicher Block `/* SPK11B-BEGIN … END */` (175 Zeilen) + derselbe eine Haken; Diff gegen basis.html nur Zusätze (176 +, 0 −). Aussehen,
+Bedienung, Texte unverändert. Prüfstand vor der Nachbesserung: work/index.v1.html.
+
+| Befund | Änderung | Wirkung (gemessen) |
+|---|---|---|
+| B1 leises echtes Bass-Intro gelöscht | Trennrest nur noch, wenn zusätzlich `band − ges ≤ −15 dB` (Grundton-Bereich fehlt auch gegenüber dem eigenen Pegel) | p80-Intro: Abstand −7,9 dB → bleibt bei +0/+3/+6/+10 dB (work/introsweep2.out); alle Trennreste (−25 … −98 dB Abstand) weiter still; per Touch p80 Intro `rest: false`, Notensuche läuft (1/8 Noten = Notenerkennung, wie basis) |
+| B2 Zusatz-Kicks 1/16 nach dem Kick (Sub-Bass) | „Ausklang“: Schritt direkt nach einem Kick ohne eigenen Mitten-Anschlag (< 0,9× tief) und < 0,8× so stark ist kein Kick – auch nicht über die Kick-Häufung (`strong`) | offline wahres Raster: p174 +16 → +1, p128 +3 → +0; Paket-Lieder unverändert (Kick 98,3 % +0 %) |
+| B3 leise 16tel-Hats im Ausklang | zweites Höhen-Maß: Pegel minus fortgeschriebenes Abklingen davor (`Q` in spk11bEnv), gleiche Schwelle 0,12 | p128 HH 170 → 186/384 (offline, ohne Intro-Anteil), p174 285 → 287, dicht 374 → 375, nirgends Zusatz. Tiefer als 0,12 kommen Ghost-Snares/Ausklang als Hi-Hat (0,08: p174 +18) → **bleibt teilweise offen** |
+| B4 ganzes Intro −22 dB ohne Drum-Treffer | leiser Abschnitt (≥ 2 Takte, −12 … −26 dB) mit gleich viel leiseren Bändern (Einsätze je Band innerhalb 6 dB) wird mit den Vorlagen des ganzen Lieds, um den Pegel verschoben, neu gesucht; Kick dort nur aus der Kick-Häufung; gilt nur mit Muster (≥ 2/Takt, ≥ 70 % wiederkehrend, ≥ 1 Höhen-Schlag/Takt) | p128 Kick 80 → 96/96 +0, Snare 40 → 48/48, HH → 219/384; Phantome 0 (Paket-Lied intro: Kandidat −15/−18/−45 dB abgelehnt, work/leise.out). Zwei verworfene Fassungen: ohne Band-Gleichheit +10/+8/+10 Phantome im Paket-Lied intro; mit eigener Normierung und eigenen Schwellen im Abschnitt +8/+9 Kicks (Intro-Bass liegt dort in der Drum-Ebene) |
+| B5 Ghost-Notes | nichts (Info: keine Falschnoten) | – |
+| B6 Aufwand Gegenreferenz | Bass-Ebene als Gegenreferenz aus dem Ablauf genommen (auf 7 Liedern ohne jede Wirkung): kein Zusatz-Rendern, kein Zwischenspeicher, keine ~42 MB je 4 min | spk11bHits offline (Endstand, mit B3/B4) p80 27,1 → 18,7 ms, p128 18,6 → 14,4 ms, p174 30,4 → 14,2 ms (basis 13,0/11,2/13,5 ms; Median 5, unter Last) |
+| B7 Haupt-Faden | `spk11bSpecA`: Spektrum in Stücken (~10 ms, Freigabe über MessageChannel wie vvYield) | Werte gleich (Abweichung 0, work/specA.out); längstes Stück 15–32 ms statt 53–98 ms am Stück |
+| B8 kosmetisch | Kommentar über spk11bFft richtig; `tK2 = 0.3` fest und benannt; Band-Angabe in `SPK11B.last.band[Zeile]` (JSON-fähig), diag je Teil mit `abst` | – |
+
+Nicht SPK11B (unverändert, wie Prüfer): Tempo 174 → 87, Teilnamen, Bass-Oktavfehler, Intro-Bass, den das Zerlegen nicht in die Bass-Ebene legt.
+Grenzen: B4 greift nicht, wenn das Intro anders klingt (z. B. gefiltert: Bänder nicht gleich leiser); eine echte Doppel-Kick 1/16 nach dem
+Kick ohne eigenen Anschlag in den Mitten fiele unter B2 (in keinem der 7 Lieder).

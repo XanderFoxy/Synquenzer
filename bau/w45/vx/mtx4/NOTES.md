@@ -139,8 +139,8 @@ Alles im selben Block (block.js = Block, identisch geprüft) + 3 neue Ein-Zeilen
 | 9 | leicht: Version auch, wenn der Clip nur als v2 im Song spielt | **behoben** | `mtx4InSong` zählt nur v1 (`sx9At(...).v === 1`). Messung: Clip spielt nur als v2 → keine neue Version. |
 | 10 | leicht: Hinweis über Szenen-Köpfen nach jedem Tipp | **behoben** | Kein Hinweis mehr nach Tipp/Szenen-Kopf (der Zähler der Leiste zählt); nur noch beim Einstieg und als Ergebnis einer Aktion (1,6 s, lässt Tipps durch). |
 
-**Tests:** mtx4-test.mjs Endlauf 117/118 (einziger Fehlschlag: forcierter renderGrid-Dauerlauf nach ×2 einmal max 21,1 ms unter Last; zwei Nachläufe
-des Leistungsteils je 7/7 mit max 5,9 / 9,1 ms) – siehe test-ergebnis.txt; danach Schlusslauf (unten im LOG). Neuer Abschnitt „Prüfung“: P1 je Größe 8 Punkte,
+**Tests:** mtx4-test.mjs **Schlusslauf 118/118** (test-ergebnis.txt). Lauf davor 117/118: forcierter renderGrid-Dauerlauf nach ×2 einmal max 21,1 ms
+unter Last; zwei Nachläufe des Leistungsteils je 7/7 (max 5,9 / 9,1 ms), Schlusslauf grün. Neuer Abschnitt „Prüfung“: P1 je Größe 8 Punkte,
 P2 1×/4×, P3/P4/P7/P9, P6. Regression: mtx3p-test 21/21. Fotos neu: `fotos/mtx4-pruef-undo-428x926.png`, `-926x428.png`, `-926x370.png`
 (dazu alle bisherigen neu, Leiste mit ↶ ↷).
 **Pflicht:** topdefs 26 Skripte, 0 doppelt, 0 Syntaxfehler · dupkeys 0 · smoke errors [] · „MS 2000“ 1× · „^  live: true,“ 1× · VERSION 4.68.0 ·
@@ -148,7 +148,7 @@ keine Marken-/Produktnamen, keine Emoji-Grafik im Block.
 
 **Offen nach Prüfung:**
 - Befund 5 (Funk-Zustimmung) – Hauptsitzung.
-- Befund 2 bei 4× gedrosselter CPU (Kopflos, geteilte VM): Aktionen noch Long Tasks 50–129 ms (Grundlast ohne Aktion im selben Lauf: keine).
+- Befund 2 bei 4× gedrosselter CPU (Kopflos, geteilte VM): Aktionen noch Long Tasks 50–197 ms (Grundlast ohne Aktion im selben Lauf: keine; synchroner MTX4-Teil 8–47 ms).
   Der eigene Anteil ist blockweise ≤ 8 ms; der Rest steckt in vorhandenen Wegen je Bild (Teile-Leiste `renderPartBar`, Verlauf-Rekorder `hist*`,
   Planung der laufenden Clips) und tritt bei 64 dichten Clips gleichzeitig auf. Weiter senken ginge nur in diesen vorhandenen Wegen (nicht MTX4).
 - ↶ ↷ der **App** (nicht der Leiste) eines großen MTX4-Schritts: die Vorschaubilder sind gestaffelt, das Zurücksetzen selbst läuft wie jedes

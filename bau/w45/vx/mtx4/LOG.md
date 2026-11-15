@@ -22,3 +22,4 @@
 - 06:11 Versionen als 'own'-Schritte (statt Song-Schritt), Szenen-Tonarten je Szene eigene Aufgabe. Sonde F des Prüfers 1×: 0 Long Tasks bei allen 7 Aktionen (vorher 52–183 ms); 4×: noch 50–116 ms.
 - 06:14 Test um Abschnitt „Prüfung“ (P1–P10) ergänzt; Teil-Läufe 34/37 → Test-Artefakte (altes Clip-Objekt nach ↶, Wartezeit) behoben → 9/9. Endlauf mtx4-test.
 - 06:19 mtx4-test 117/118 (renderGrid-Dauerlauf nach ×2 einmal 21,1 ms unter Last; Leistungsteil 2× nachgelaufen: 7/7, max 5,9/9,1 ms). Regression mtx3p-test 21/21. Pflicht: topdefs 0/0, dupkeys 0, smoke errors [], MS 2000 1×, live: true 1×, VERSION 4.68.0, block.js = Block. NOTES.md Abschnitt „Prüfung“ + Funk-Entwurf korrigiert. Schlusslauf mtx4-test.
+- 06:21 Schlusslauf mtx4-test 118/118 (test-ergebnis.txt), Fotos neu (fotos/mtx4-pruef-undo-*.png + alle bisherigen). Nachbesserung fertig; offen: Funk-Zustimmung (Befund 5), 4×-CPU-Rest, iPhone-Blick Zeile 2.
