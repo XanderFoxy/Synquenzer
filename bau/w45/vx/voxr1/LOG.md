@@ -50,4 +50,6 @@
 - Plopps im Band < 70 Hz: zuerst 33 Funde im sauberen Take A (tiefes Rauschen in Pausen) → Pegel ≥ Spitze − 20 dB → 11, alle mit Band < 70 Hz nur
   2–5 dB unter dem Gesamtpegel (echte Tiefstöße). Reparatur-Grenze erst fest 160 Hz (Abzug zu klein) → unter dem Grundton der Umgebung, ≥ 120 Hz.
 - topdefs fand `vr1Key` doppelt (Notenrolle) → `vr1VerKey`. App lud vorher nicht (SYNQUENZER fehlte) – erst nach topdefs gesehen.
-- Test: `node voxr1-test.mjs <abs index.html>` → 71/81.
+- Plopp-Grenze unter dem Grundton (Goertzel 90–400 Hz) kostete in der 3-min-Kette 1,5 s → 2048er-Fenster, 8-Hz-Schritte: Kette 4,6 → 3,1 s.
+- Formgrenze Zischen 6 dB ließ jedes Prüf-„s“ des Prüfers ungesenkt → 0 dB (Befund 12 dadurch nur teilweise).
+- Test: `node voxr1-test.mjs <abs index.html>` → 70/81 (10 DSP-Abnahmen aus Teil 1/2 + 1 Long Task unter Last). Regression vx1/vx2/vx3/chr2 alle OK.
