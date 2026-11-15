@@ -153,3 +153,8 @@ Weiter mit: 4.54 = rel-4540/k fertig prüfen + INT53D nachziehen + Versionszeile
 - 14:36 Filme ONLINE (main a5950cd1): Roh-Lauf 43724414821 ok (apple-boxen 30, formatFremd 0, apple-serien 199/32 Staffeln). Boxen-Knüller erst mit Preis-Historie (ab ~7 Tagen).
 - 14:54 4.72 Nachlauf: spk6 4.72/m2 beide OK (Wackler), spk12b 72/0, spk4 4.72 = m2 (5 FEHL, je 1 wechselnder Wackler a3-andere-klaenge/reg-spk3), fokus1 47/4 nur Long Tasks (Last 5). beg1 mit Basis 4.71: 55/59 (Prüfung 5 + Diff-Prüfung bekannt; neu: 'Begleiter aus klingt wie Basis', 'Drums im Stil euro') → A/B 4.71/m2/4.72 (vx/r4720/nach/beg, Job b1qf9f87h).
 - 15:00 VOXR1D fertig (vx/voxr1d md5 ff4157ff, Basis rel-4700): Plopps gefunden 80/80 0 Fehlalarm, Abzug fast alle ≥12 dB, Obertöne >1 dB noch 13–14/80, Vor-Echo weg, Klicks ok, Raumton Pegel 15/24 Klangfarbe 8/24 offen, Long Tasks Anwenden 1–3 (Lücke 89 ms), Prüfen-Lücke durch ensureAudio außerhalb. Abnahme P4 formal nicht bestanden. Plan: 4.73 = R-4720 + VOXR1D, Raumton-Füllung nur wo sicher (sonst aus) – nach 4.72.
+
+## 2026-11-15 15:11 UTC – 4.72.0 veröffentlicht
+- main f1c0d4c8 (Auslieferung ohne Kommentare, gzip 2,32 MB), In-App v28, Quelle synq-snapshots/R-4720.html (Basis für Merges).
+- beg1 4.72 = m2 = 57/59 (Prüfung 5 + Diff bekannt); 4.71 selbst 55/59 unter Last. spk4/spk6/spk12b Wackler.
+- Nächstes: 4.73 = R-4720 + VOXR1D (vx/voxr1d, Basis rel-4700, Raumton nur wo sicher) + Funk-Vorschlag „Ansicht · Rest ▾“ (wartet auf OK).
