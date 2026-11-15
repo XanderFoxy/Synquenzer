@@ -63,3 +63,61 @@ Umlenkung statt nur Verwerfen – die Wege gibt es schon (SPK12 s12src):
 - 3 min (16 Stücke): 400–506 ms gesamt, 25–32 ms je Stück, erstes Stück nach 27–64 ms, 0 Long Tasks im Hauptfaden.
 - Rückfall Hauptfaden: alle Kern-Prüfungen grün; 2 Stücke 77 ms (≈ 38 ms je Stück, also < 50 ms je Aufgabe in Chromium;
   am iPhone ohne Worker evtl. darüber – nur Rückfall).
+
+# FOKUS1 – Anzeige + Bedienung (Teil 2)
+
+## Was
+- „Ansicht ▾“ ganz oben: h5 „Fokus“ + Segment (makeSeg, Klasse `spk1-f1`) „Alles │ Nur Rest │ Nur Gefundenes“.
+  Zeile „Ausblenden [Sichere │ Alle]“ (vorhandenes `label`-Aussehen der Pegel-Regler, Segment `spk1-f1b`) nur, wenn Fokus ≠ Alles
+  und Noten mit Sicherheit (conf) da sind. Wechselt die Zeile, wird das Klappfenster neu gelegt.
+- Hochkant würde das Fenster mit der Zeile „Ausblenden“ (829 px Inhalt ab y 92) nach oben kippen und ↶ ↷ ✕ verdecken. Darum legt
+  fokus1ViewDd es nach spk1Dd (Mikroaufgabe) wieder unter den Knopf und begrenzt die Höhe → es scrollt ein paar Pixel. Nur dann, nur
+  wenn darunter ≥ 320 px Platz ist (quer greift es nicht; dort scrollt das Fenster wie bisher, Fokus steht oben und ist sichtbar).
+- Zustand `U.f1 = {mode, aus, set, sig, st, …}` nur in SPK1.ui (Sitzung). Schließen/Öffnen der Seite behält den Modus, nichts in d.meta.
+  Der zweite Satz Stücke ist `U.f1.set = {doc, N, mode, hop, info, chunks[ci] = {x0, w, R, data, tex, old}, key}` (Auftrag nannte ihn U.fokus).
+- Zeichnen: fokus1Pre setzt nur für die Dauer eines Bildes `U.spec = {N, hop, info, chunks: arr}` ein; arr[k] = Fokus-Stück, sonst das
+  Original-Stück (geliehen, nie freigegeben). fokus1Post stellt U.spec und U.tintOn zurück. „Nur Rest“ zeichnet ohne Tönung.
+  „Alles“ tauscht nichts → Bild byte-gleich, Original-Texturen bleiben (kein Neu-Rechnen, kein Neu-Hochladen).
+- Hochladen der Fokus-Texturen in fokus1Pre (gleiche G.tex wie spk1GlDraw, R8 + Mipmaps): nur sichtbare Stücke, höchstens 2 je Bild;
+  bremst ein Hochladen das nächste Bild (> 45 ms Abstand), hält es danach Abstand (adaptiv, für langsame Grafik). Bis dahin: altes
+  Fokus-Stück (bei Neuladen nach Änderung) oder Original. Kontext verloren (U.gl wechselt) → eigene tex = null.
+- Laden: fokus1Load → 'fokus' im Worker, sichtbare Stücke zuerst, dann der Rest; nur wenn !U.specQ (sonst `pend`, Start im nächsten Bild).
+  Neuzeichnen beim Streamen gedrosselt (90 ms). stop 'geaendert' → entprellt neu; 'abgeloest' → ignorieren. Fehler „op fokus“ (Worker
+  ohne Fokus-Kern) → zurück auf „Alles“, Status „Fokus hier nicht verfügbar“.
+- Neu holen: fokus1Got (Anfang spk1Layers – läuft bei jedem Kern-Ergebnis: In Ebene, Undo/Redo, Noten finden, Zuordnen, Zerlegen,
+  SPK6 …) vergleicht sig = Dokument + N + Modus + Ausblenden + „Sicher ab“ + Ebenen id:ver + Noten (lid,id,st,conf,a,b,f,fz) und lädt
+  entprellt (120 ms) nur bei Fokus ≠ Alles. Solo/Stumm/Lautstärke ändern sig nicht. Dokumentwechsel → Satz weg.
+- Freigeben: fokus1Free (spk1SpecFree: FFT-Wechsel, Dokument, Seite verlassen) löscht nur eigene Texturen, stoppt den Auftrag
+  (fokusStop) und lädt nach dem Original neu. Auf „Alles“ werden die Fokus-Texturen nach 20 s freigegeben (GPU-Speicher).
+- Status in spk1Stat: hochkant „Fokus: Rest · 2 Noten ausgeblendet · übrig ≈ 39 %“, quer (< 330 px) „Rest · 39 % übrig · 2 aus“;
+  voller Text (… der Energie) im title. Fortschritt „Fokus · 40 %“. Nie mit „Spektrum“ am Anfang (sonst überschreibt spk1SpecLoad).
+  „Nur Gefundenes“: „Fokus: Gefundenes · 2 Noten · ≈ 61 % der Energie“.
+- Kern-Ergänzung (im FOKUS1-Block, Worker): Zauberstab bei „Nur Rest“ prüft die angetippte Stelle im Fokus-Stück: ist sie dort
+  ≥ 20 dB leiser als im Original (Ebene oder gefundene Note), wählt er nichts (cells 0 → SPK12 meldet „nichts gefunden – auf eine
+  helle Stelle tippen“). Damit greift er keine schon gefundene Note doppelt (vorher: gleiche Fläche aus den Rest-Spuren).
+  Routing gibt dafür aus/thr mit (gleicher Zwischenstand-Schlüssel wie die Anzeige).
+- Anleitung: Eintrag „Fokus: Gefundenes ausblenden (Nur Rest)“ in der Suche (ui1Entries, wie SPK12), Weg „Spektral › Ansicht ▾ › Fokus“.
+  Suche „erkannte noten ausblenden“ findet ihn als ersten Treffer. Vorher gab es so etwas nicht (kein „Fokus“/„ausblenden“ im Spektral-Teil).
+
+## Haken (jede Zeile neu, typeof-geschützt, /* FOKUS1 … */) – zusammen mit den 3 Kern-Haken
+4. spk1Frame vor `try {`: `if (typeof fokus1Pre === 'function') fokus1Pre(U);`
+5. spk1Frame nach `} catch (e) { logErr(e); }`: `if (typeof fokus1Post === 'function') fokus1Post(U);` (außerhalb von try → läuft immer)
+6. spk1Layers erste Zeile: `if (typeof fokus1Got === 'function') fokus1Got(U);`
+7. spk1ViewDd erste Zeile in der Füll-Funktion: `if (typeof fokus1ViewDd === 'function') fokus1ViewDd(U, dd);`
+8. spk1SpecFree nach dem deleteTexture: `if (typeof fokus1Free === 'function') fokus1Free(U);`
+Diff gegen basis.html: 8 Einfüge-Stellen + Block, 0 geänderte/gelöschte Zeilen.
+
+## Test-Zugang (FOKUS1_API erweitert)
+`S()`, `mode(m)`, `aus(a)`, `info()` → {mode, aus, run, pend, aktuell, st, txt, title, n, tex, key, err}, `chunks()` (Fokus-Satz), `idle()`.
+
+## Grenzen / Hinweise
+- Long Tasks: Im Test-Chromium (Software-Grafik, viele Agenten parallel) entstehen beim Hochladen von Texturen (Mipmaps) Long Tasks
+  von 50–90 ms AUSSERHALB von JavaScript (kein Bild > 8 ms, kein fokus1Pre > 6 ms gemessen) – auch beim Laden des Original-Spektrums
+  in basis.html (gemessen 55–185 ms). Mit Abstand + Drossel: „Nur Rest“ meist 0, „Nur Gefundenes“ 50–57 ms. Am iPhone (echte Grafik)
+  ist ein Hochladen von 1 MB R8 + Mipmaps ~1–2 ms. Profi-Weg für später: Mipmaps erst nach dem Umschalten nachziehen oder ein
+  Textur-Atlas (weniger Uploads) – jetzt nicht, weil das Aussehen beim Herauszoomen gleich bleiben soll.
+- Tipp auf die Statuszeile ändert schon in basis.html das Bild (gemessen: Hash anders, Ursache nicht Fokus) – der Test schließt das
+  Klappfenster deshalb ohne Tipp auf die Statuszeile.
+- Noten-Kästchen (SPK2-Überlagerung) bleiben bei „Nur Rest“ sichtbar – sie zeigen, was gefunden ist; das Spektrum zeigt, was übrig ist.
+- „In Ebene“ bei „Nur Rest“ nimmt nur den freien Rest (Kern-Umlenkung transfer orig → rest) – bitte von der Hauptsitzung abnicken.
+- Harmonische / Ähnliches auf dem Rest sehen die Masken, nicht die zusätzlich ausgeblendeten (nur gefundenen) Noten.

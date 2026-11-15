@@ -8,3 +8,4 @@
 11:58 Kern-Test voll erneut: 26 OK / 0 FEHLER (kern-test-voll.log, fokus1-kern-ergebnis.json). NOTES.md geschrieben. Kern-Teil fertig.
 12:04 Anzeige-Teil begonnen (Sicherung index.vor-ui.html)
 12:15 Anzeige eingebaut (Haken: spk1Frame Pre/Post, spk1Layers, spk1ViewDd, spk1SpecFree); Zauberstab-Sperre im Kern; Test fokus1-test.mjs
+12:26 Hochladen: höchstens 2 Texturen je Bild, bei langsamer Grafik Abstand (adaptiv), Neuzeichnen beim Streamen gedrosselt (90 ms); Sicherungen index.vor-ui2/-drossel/-abstand.html

@@ -107786,7 +107786,9 @@ function fokus1Pre(U) {   // Haken in spk1Frame vor dem Zeichnen
     if (F.pend && !F.tm && !U.specQ && U.spec && U.spec.hop && U.spec.info) F.tm = setTimeout(() => { F.tm = 0; fokus1Load(U); }, 0);
     const S = F.set, O = U.spec; if (!U.dg || !S || !O || !O.hop || S.doc !== SPK1.doc || S.N !== O.N || S.mode !== F.mode) return;
     if (F.glRef !== U.gl) { for (const c of S.chunks) if (c) { c.tex = null; c.old = null; } F.glRef = U.gl; }   // Kontext verloren → Texturen sind weg
-    const v = U.v, hs = O.hop / U.meta.sr, n = O.chunks.length, arr = F.arr && F.arr.length === n ? F.arr : (F.arr = new Array(n)); let up = 0, more = false;
+    const v = U.v, hs = O.hop / U.meta.sr, n = O.chunks.length, arr = F.arr && F.arr.length === n ? F.arr : (F.arr = new Array(n)), tN = performance.now(); let up = 0, more = false;
+    if (F.upMore && F.tUp) { const dt = tN - F.tUp; F.gap = dt > 45 ? Math.min(250, dt) : 0; }   // hat das letzte Hochladen das nächste Bild gebremst (langsame Grafik)? → Abstand halten
+    const upMax = F.gap ? (tN - F.tUp >= F.gap ? 1 : 0) : 2;
     for (let k = 0; k < n; k++) {
       const o = O.chunks[k], f = S.chunks[k]; let use = o;
       if (f && (!o || o.w === f.w)) {
@@ -107795,12 +107797,13 @@ function fokus1Pre(U) {   // Haken in spk1Frame vor dem Zeichnen
         else {
           const xa = ((f.x0 - 0.5) * hs - v.t0) * v.pps, xb = ((f.x0 + f.w - 0.5) * hs - v.t0) * v.pps;
           if (xb < 0 || xa > U.W) use = f;   // unsichtbar: wird nicht hochgeladen
-          else if (up < 2) { f.tex = U.gl.tex(f.w, f.R, 'r', f.data, true); up++; use = f; }   // wie spk1GlDraw (R8 + Mipmaps), höchstens 2 je Bild
+          else if (up < upMax) { f.tex = U.gl.tex(f.w, f.R, 'r', f.data, true); up++; use = f; }   // wie spk1GlDraw (R8 + Mipmaps), höchstens 2 je Bild
           else { more = true; use = f.old && f.old.tex ? f.old : o; }
         }
       }
       arr[k] = use;
     }
+    if (up) F.tUp = tN; F.upMore = more && !!up;
     F.sw = {spec: O, tint: U.tintOn, more};
     U.spec = {N: O.N, hop: O.hop, info: O.info, chunks: arr};
     if (F.mode === 'rest') U.tintOn = false;   // Tönung würde die jetzt dunklen Flächen färben
@@ -107810,7 +107813,7 @@ function fokus1Post(U) {   // Haken in spk1Frame nach dem Zeichnen (außerhalb v
   const F = U.f1; if (!F || !F.sw) return; const w = F.sw; F.sw = null;
   U.spec = w.spec; U.tintOn = w.tint;
   try { const S = F.set; if (S && U.gl) for (const c of S.chunks) if (c && c.tex && c.old) { fokus1Tex(U, c.old); c.old = null; } } catch (e) { logErr(e); }
-  if (w.more) Promise.resolve().then(() => spk1Dirty(U, 'g'));   // nächste 2 Texturen im nächsten Bild
+  if (w.more) { if (F.gap) setTimeout(() => spk1Dirty(U, 'g'), Math.max(16, F.gap - (performance.now() - F.tUp))); else Promise.resolve().then(() => spk1Dirty(U, 'g')); }   // nächste Texturen im nächsten Bild
 }
 (function fokus1Guide() {   // Bedienungsanleitung (Suche): Fokus
   try {
