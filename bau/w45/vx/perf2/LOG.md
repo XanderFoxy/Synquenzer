@@ -59,3 +59,26 @@
 - 11:11–… Regression nachgeholt (`pr/reg.sh`): spk12b, spk12c, spk6p, spk4, spk12d. Pixel-Vergleich `pr/bild*.mjs`: 0 Pixel.
 - PRUEFUNG.md geschrieben.
 - 11:21 Regression fertig: spk12b 72/0, spk12c 47/0, spk12d 28/0, spk6p ALLES OK, spk4 3/23 FEHLER (dieselben wie r4700, dort 5). spk7 lief schon in Teil E (ALLES OK 13).
+
+# PERF2 – LOG Teil F (Prüf-Befunde beheben, endgültiger Auslieferungs-Weg)
+- 11:24 Auftrag. LOG/NOTES/PRUEFUNG gelesen; Ablauf bisher (STAND/helfer): Quelle R-XXXX → synquenzer/index.html + version.json → push;
+  dieselbe Datei → inapp/synquenzer.html → Artifact (In-App vN). Sicherungen der alten Stände in `f/` (*.vor-f.*).
+- 11:26 Befund 2: `e/spkl.js` – `spkLHint` + Hinweis in beiden Zip-Hüllen, nur wenn `spkLoad()` scheitert (Sichern sofort, Öffnen nach 3,8 s,
+  weil „Takes übernommen“/„Container geöffnet“ bei 1,8/2,0 s kommen und je 1,6 s stehen). `node e/bau.cjs basis.html index.html`:
+  Unterschied zum alten index.html nur diese 5 Zeilen im Block SPKL (diff). basis.html = rel-4700/index.html (cmp gleich).
+- 11:27 Befund 6/Offen 1: `ausliefern.mjs` – `TEXT_PLAIN_ALS_SKRIPT = ['sq-spk-src']` (gleiches Token-Verfahren + AST-Prüfung) und
+  Wächter: in der Ausgabe nur 2 Erwähnungen (id + blockLoad), sonst Abbruch. basis → Ausgabe bytegleich zu aus.html (9c39eb97…);
+  index → aus-f.html 6 780 885 B (b2253baa…), sq-spk-src 612 730 → 432 826 Zeichen, 733 Kommentare. Gegenprobe Wächter
+  (Zusatz-Funktion liest textContent): ABBRUCH „3 Erwähnungen statt 2“.
+- 11:28 Größen gzip -6: basis 3 042 282, index 3 043 356, aus 2 298 440, aus-e (alt) 2 350 810, **aus-f 2 299 184**.
+- 11:29–11:31 Befund 7 + 2 als Probe: `e/probe.mjs` + `zip-fehlerfall-hinweis` (Block künstlich zerstört, gewollte Fehler nicht gezählt)
+  + `spk6-ebenen-container` (mL1/mL2/aA1.bin über frische Seiten ohne Block, FNV über Render Mix + L2). index: ALLES OK;
+  Gegenprobe auf dem alten index (f/index.vor-f.html): FEHLER zip-fehlerfall-hinweis (kein Hinweis) → Prüfung trennscharf.
+- 11:33 Befund 5: `freigabe.sh <quelle> <ordner>` (Pflicht Quelle, ausliefern 2× bytegleich, Pflicht Auslieferung, VERSION gleich,
+  Rauchtest, probe.mjs auf der Auslieferung). Lauf auf index.html: GRÜN in 1 min 50 s → `f/frei/`, Kopie `aus-f.html`.
+- 11:34 Befunde 1/3/4 in NOTES berichtigt; PRUEFUNG.md um „Stand nach PERF2 F“ ergänzt.
+- 11:36 `f/lauf.sh` nacheinander: Rauchtest index, golden index↔aus-f, spk6k/spk6/spk5/spk7/spk12d auf aus-f, Messung 5 Runden.
+- 11:40 4.72-Weg vorbereitet: auf R-4710 steht SPK11B nach SPK12-END und umhüllt spk11Go/spk11Render/spk11Hits beim Laden →
+  `e/bau.cjs` nimmt SPK11B mit in den Block (+ Getter `__spk11b`), nur wenn vorhanden (4.70-Bau bytegleich). R-4710 gebaut →
+  `f/r4710/index.html`: topdefs 0/0, sq-spk-src 418 Namen 0 doppelt; `e/analyse.cjs` R-4710: 0 neue Zugriffe von außen gegenüber 4.70,
+  neue Seiteneffekte nur SPK11B (Hüllen um Block-Funktionen + __spk11b). `f/lauf2.sh`: golden erneut, Rauchtest/Probe/spk11b/spk11 auf dem 4.71-Bau.

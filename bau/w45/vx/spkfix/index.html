@@ -100959,7 +100959,7 @@ function spk1DspMake(V) {
   if (Z2 && typeof spk9DspMake === 'function') spk9DspMake(Z2);   /* SPK9: Legato-Noten (Tonhöhen-Stufen) */
   if (Z2 && typeof spk6DspMake === 'function') Z2.s6 = spk6DspMake({Z2, V, BT, BLK, win, lay, masksOf, stripe, stCopy, newLayer, verUp, uBegin, uTouch, uEnd, render, block, get, put, del, keys, selFn});   // SPK6: Ebenen-Werkstatt (Ops über Z2.ops)
   if (Z2 && typeof spk12DspMake === 'function') spk12DspMake(Z2, {selFn, specInfo, specChunk, get, put, soon, mixOf, gainFn, block, BLK, tick, harmTrack, similar});   /* SPK12: Zauberstab, Masken-Probe, Anzeige, Ebene abtasten, Merkmale, Regionen */
-  if (typeof spkfixDspMake === 'function') op = spkfixDspMake({op, Z2, open, info, soon}) || op;   /* SPKFIX: Audio-Ebene neu rechnen, Notenname, Nachbau im Dokument */
+  if (typeof spkfixDspMake === 'function') op = spkfixDspMake({op, Z2, open, info, soon, flush}) || op;   /* SPKFIX: Audio-Ebene neu rechnen, Notenname, Nachbau im Dokument */
   return {on, stft, istft, specInfo, docs, lowSplit, Z2};   // SPK2: Z2 für Messungen
 }
 /* ---------- Hauptfaden: Worker (Blob aus Text), Rückfall = derselbe Kern hier ---------- */
@@ -109638,7 +109638,7 @@ async function spkfixPatch(S6, d, l, a, Ns, A, B) {
   const QW = Math.round(0.01 * sr), SR = Math.round(0.5 * sr), buf = new Float32Array(QW);
   const quiet = (from, dir) => { let best = from, bv = Infinity; for (let s = from, k = 0; k * (QW >> 1) <= SR && s >= 0 && s + QW <= n; s += dir * (QW >> 1), k++) { S6.axRd(X, s, buf, 1); let e = 0; for (let i = 0; i < QW; i++) e += buf[i] * buf[i]; if (e < bv) { bv = e; best = s; } } return best; };
   const sa = a0 <= QW ? 0 : quiet(a0 - QW, -1), sb = b0 >= n - QW ? n : quiet(b0, 1) + QW;
-  const N = l.art === 'bass' ? (sr > 32000 ? 4096 : 2048) : (sr > 32000 ? 2048 : 1024), Mg = Math.round(0.25 * sr) + N, ca = Math.max(0, sa - Mg), cb = Math.min(n, sb + Mg);
+  const N = l.art === 'bass' ? (sr > 32000 ? 4096 : 2048) : (sr > 32000 ? 2048 : 1024), Mg = Math.round(0.25 * sr) + N, H = N / 8, ca = Math.max(0, sa - Mg) - Math.max(0, sa - Mg) % H, cb = Math.min(n, sb + Mg);   // Vorlauf auf dem Rahmen-Raster der ganzen Rechnung (gleiche Rahmen → gleicher Klang)
   const xw = await S6.baseWin(d, a.b, o0 + ca, o0 + cb, null), s = await S6.synth(sr, l.art, a, Ns, xw, o0 + ca, nop);
   const L = sb - sa, z = new Float32Array(L), go = (aOld.sc || 1) / 32767; S6.axRd(X, sa, z, go);
   for (let i = 0; i < L; i++) { const wa = sa > 0 && i < QW ? 0.5 - 0.5 * Math.cos(Math.PI * i / QW) : 1, wb = sb < n && i >= L - QW ? 0.5 - 0.5 * Math.cos(Math.PI * (L - i) / QW) : 1, w = Math.min(wa, wb); z[i] = z[i] * (1 - w) + s.y[sa - ca + i] * w; }
@@ -109649,14 +109649,15 @@ async function spkfixPatch(S6, d, l, a, Ns, A, B) {
 }
 // (3) jede neue Ebene bekommt eine Kennung, die ↶/↷ überdauert (eine neue Ebene mit derselben Nummer ist eine andere Ebene)
 function spkfixUid(d, l) { if (d && d.meta && l && !l.u11) { d.meta.u11c = (d.meta.u11c | 0) + 1; l.u11 = 'e' + d.meta.u11c; } }
-function spkfixDspMake(X) {   // X = {op, Z2, open, info, soon}; Rückgabe: op mit Neu-Rechnen (1), Notenname (2) und Nachbau-Ablage (3)
+function spkfixDspMake(X) {   // X = {op, Z2, open, info, soon, flush}; Rückgabe: op mit Neu-Rechnen (1), Notenname (2) und Nachbau-Ablage (3)
   const {Z2, open, info, soon} = X, op0 = X.op; if (typeof op0 !== 'function') return op0;
   if (Z2 && Z2.opt && Z2.h && !Z2.opt.fixName) { const s0 = typeof Z2.opt.seg9 === 'function' ? Z2.opt.seg9 : Z2.h.segNotes; if (typeof s0 === 'function') { Z2.opt.seg9 = o => spkfixName(s0(o), o, Z2.h.midiOf); Z2.opt.fixName = 1; } }
   if (Z2) { Z2.ops = Z2.ops || {}; Z2.ops.spkfixKl = async (d, m) => {   // (3) Nachbau-Ergebnis der Ebene im Dokument (kein ↶-Schritt: kein Eingriff in Klang/Masken)
     const K = d.meta.spkKl || (d.meta.spkKl = {}); if (!m.lid) return {n: Object.keys(K).length};
     const l = d.meta.layers.find(x => x.id === m.lid);
     if (m.kl && typeof m.kl === 'object' && l) { if (!l.u11) { if (m.uid) l.u11 = String(m.uid).slice(0, 40); else spkfixUid(d, l); } K[m.lid] = Object.assign({}, m.kl, {tk: l.u11}); } else delete K[m.lid];
-    d.metaDirty = true; soon(d); return {n: Object.keys(K).length, spkKl: JSON.parse(JSON.stringify(K)), u11: l ? l.u11 || null : null}; }; }
+    d.metaDirty = true; if (typeof X.flush === 'function') { try { await X.flush(d); } catch (e) { soon(d); } } else soon(d);   // gleich sichern: ein Neuladen kurz danach verliert den Nachbau nicht
+    return {n: Object.keys(K).length, spkKl: JSON.parse(JSON.stringify(K)), u11: l ? l.u11 || null : null}; }; }
   const MASK = new Set(['transfer', 'zerlegen', 'verfeinern', 'profi', 'zuordnen', 'restAuf', 'spk5Zerl', 'spk5Profi']);
   function pre6(d) {   // (1) vor der Masken-Op: passt jede Audio-Ebene noch zu ihrer Grundlage? (nur dann reicht danach der geänderte Bereich)
     const S6 = Z2 && Z2.fx6; if (!S6 || !d || !d.meta || !Array.isArray(d.meta.layers)) return null;

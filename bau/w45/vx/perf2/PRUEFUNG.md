@@ -109,3 +109,14 @@ Damit sind alle Sonden aus `e/reg.sh` auf index.html gelaufen. Ergebnisse gleich
 ## Werkzeuge (pr/)
 pflicht.sh/.log · vgl.cjs · zugriff.cjs/.txt · fn.cjs · namen.cjs/.json · laufzeit.mjs/.json · astvgl.cjs · vsclean.cjs · strikt.cjs ·
 mess.mjs, mess4.json, mess4b.json · kreuz.mjs/.json · bild.mjs, bild2.mjs, bild-*.png · reg.sh, reg/*.log · smoke-*.png
+
+## Stand nach PERF2 F (Befunde behoben, 15.11. ab 11:24)
+| Befund | Stand |
+|---|---|
+| 1 Zahl zu hoch | NOTES Teil-E-Tabelle berichtigt („≈ −3 %“), Funk-Satz neu (NOTES, Abschnitt PERF2 F); neue Messung `f/mess-f.json` |
+| 2 stiller Verlust im Fehlerfall | behoben im Block SPKL (`e/spkl.js` → `e/bau.cjs`): `spkLHint` – Hinweis beim Sichern sofort, beim Öffnen nach 3,8 s; Probe `zip-fehlerfall-hinweis` (grün auf index/aus-f, rot auf dem alten Stand = Gegenprobe) |
+| 3 spk7 „nicht gelaufen“ | NOTES berichtigt (ALLES OK 13); auf der Auslieferung aus-f erneut ALLES OK (13) |
+| 4 gzip-Zahlen | NOTES Teil D auf `gzip -6` vereinheitlicht |
+| 5 Getter-Risiko | `e/probe.mjs` ist Pflicht-Schritt in `freigabe.sh` (auf der Auslieferung) |
+| 6 Offen 1 (+52 KB) | `ausliefern.mjs` behandelt `sq-spk-src` wie ein Skript (AST-Prüfung + Wächter „nur id + blockLoad“); aus-f gzip 2 299 184 B |
+| 7 Lücke SPK6-Ebenen | Probe `spk6-ebenen-container`: mL1/mL2/aA1.bin über frische Seiten ohne Block, Render-Hash Mix + Ebene gleich |

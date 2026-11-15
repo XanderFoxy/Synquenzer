@@ -213,3 +213,48 @@ Größe: roh +2 996 B, gzip +0,9 KB (Kommentar-Zeilen und Block-Rahmen).
   längste Aufgabe −30 %, Sperrzeit −5…−10 %, JS-Heap −1 MB. D+E zusammen (aus-e): bereit −257 ms (−9 %).
 - Offen nach Prüfung: Toast in den Zip-Hüllen, wenn sq-spk-src nicht lädt (sonst Container still ohne Spektral-Daten);
   e/probe.mjs „start-ohne-block“ fest in die Release-Regression; Offen 1 (sq-spk-src in ausliefern.mjs) ist unbedenklich.
+
+---
+
+# PERF2 Teil F – Prüf-Befunde behoben, endgültiger Auslieferungs-Weg
+
+`index.html` (Kandidat, Quelle MIT Kommentaren) = `basis.html` + Teil E + Hinweis im Fehlerfall (Block SPKL, 5 Zeilen). VERSION '4.70.0'.
+`aus-f.html` = `ausliefern.mjs index.html` = **die Datei, die online und in der App liegt**. Aussehen/Bedienung unverändert (der neue
+Hinweis erscheint nur, wenn der Spektral-Block nicht laden kann – heute nicht auslösbar).
+
+## Was behoben ist (Befunde aus PRUEFUNG.md)
+1. **Zahl berichtigt:** Teil E bringt bis „bereit“ nur **≈ −3 %**; robust sind längste Start-Aufgabe ≈ −30 % (Start ruckelt weniger),
+   Sperrzeit und −1 MB JS-Speicher. Der große Schritt bis „bereit“ kommt aus Teil D. Neue Messung unten.
+2. **Kein stiller Verlust mehr:** lädt `sq-spk-src` nicht, schreibt der Container weiter alles andere, sagt aber
+   „Spektral-Analysen nicht im Container: Spektral-Seite konnte nicht laden“; beim Öffnen eines Containers mit Analysen kommt das Projekt
+   wie bisher und danach (3,8 s, hinter „Takes übernommen“/„Container geöffnet“) „Spektral-Analysen nicht übernommen: …“.
+   Nur im Block SPKL (`spkLHint` + die zwei Hüllen), Quelle `e/spkl.js`, Bau `node e/bau.cjs basis.html index.html`.
+3. spk7 lief (ALLES OK 13) – Tabelle berichtigt. 4. gzip-Zahlen auf `gzip -6` vereinheitlicht.
+5. **Getter-Risiko abgesichert:** `e/probe.mjs` (u. a. `start-ohne-block`) läuft in `freigabe.sh` bei jeder Auslieferung auf der
+   ausgelieferten Datei; rot = keine Auslieferung.
+6. **Offen 1 erledigt:** `ausliefern.mjs` behandelt `sq-spk-src` wie ein Skript (gleiches Token-Verfahren, AST-Prüfung, Zeilen gleich).
+   Wächter: kommt der Name in der Ausgabe öfter vor als id + `blockLoad('sq-spk-src'` (= neuer Text-Zugriff), bricht das Werkzeug ab
+   (Gegenprobe: ABBRUCH „3 Erwähnungen statt 2“). Alle anderen text/plain-Blöcke bleiben bytegleich.
+7. **Lücke SPK6-Ebenen geschlossen:** Probe `spk6-ebenen-container` (Ebene kopiert, +12, Echo → `mL1.bin`, `mL2.bin`, `aA1.bin`):
+   frische Seite ohne Block schreibt den Container, frische Seite liest ihn, Render-Hash Mix und Ebene L2 gleich.
+
+## Werkstatt-Anleitung: so wird ab jetzt ausgeliefert
+1. **Arbeiten, mergen, prüfen nur auf der Quelle** (mit Kommentaren): Pakete auf `synq-snapshots/R-XXXX.html` bzw. `rel-XXXX/index.html`;
+   Regression `vx/rXXXX/run.sh` wie bisher auf der Quelle (viele Sonden schneiden Code per Text-Anker – das geht nur dort).
+2. **Spektral erst beim Öffnen (Teil E) ist ein Bau-Schritt, kein Merge:** auf der fertig gemergten Quelle als letzter Schritt
+   `node vx/perf2/e/bau.cjs <gemergt.html> rel-XXXX/index.html` (sucht die Blöcke per Marke, nimmt SPK11B mit, wenn vorhanden), danach
+   `NODE_PATH=… node vx/perf2/e/analyse.cjs <gemergt.html> <inv.json>`: neue Zugriffe von außen auf SPK-Namen müssen „bleibt“, typeof-
+   geschützt oder „nur bei offener Seite“ sein; neue Test-Zugänge `window.__spkN` in die Getter-Liste von SPKL. Dann Regression.
+   (Wer lieber auf dem Kandidaten weiterbaut: neue SPK-Blöcke gehören in `sq-spk-src`, nicht ins Haupt-Skript.)
+3. **Freigabe:** `vx/perf2/freigabe.sh rel-XXXX/index.html rel-XXXX/aus` → muss „GRÜN“ enden (Pflicht Quelle + Auslieferung, zwei Läufe
+   bytegleich, VERSION gleich, Rauchtest, `e/probe.mjs` auf der Auslieferung). ≈ 2 min.
+4. **Veröffentlichen (von Hand, wie bisher, nur mit der anderen Datei):**
+   - `cp rel-XXXX/index.html synq-snapshots/R-XXXX.html` – **die Quelle** ist Snapshot und Basis aller künftigen Merges;
+     `rel-XXXX/aus/bericht.json` daneben als `R-XXXX.bericht.json` (sha256 Quelle ↔ Auslieferung).
+   - `cp rel-XXXX/aus/index.html <synquenzer>/index.html`, `version.json` = neue Fassung, commit + push (Pages).
+   - `cp rel-XXXX/aus/index.html inapp/synquenzer.html` → Artifact-Veröffentlichung mit demselben Pfad (In-App vN+1).
+5. **Nie** die Online-/In-App-Datei als Basis nehmen oder dort von Hand ändern (keine Kommentare, Text-Anker fehlen).
+6. Fehlermeldungen vom Telefon: Zeilennummern im Haupt-Skript = Quelle; Fehler aus `sq-spk-src` zählen ab Blockanfang
+   (Quell-Zeile = Zeile des `<script type="text/plain" id="sq-spk-src">` + n). Spalten weichen ab.
+7. Neuer Code, der Funktions-Text hasht (`fn.toString()` als Schlüssel) → Name in `SCHUTZ_FUNKTIONEN`; neuer text/plain-Block,
+   der nur per `blockLoad` läuft → darf in `TEXT_PLAIN_ALS_SKRIPT`, sonst bleibt er unberührt.
