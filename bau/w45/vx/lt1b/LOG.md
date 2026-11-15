@@ -9,3 +9,4 @@
 - 23:31 Last 3.08, 3.86, 2.97 · lt1-test ONLY=c REPS=3 (Kopie t/)
 - 23:32 Last 5.53, 4.31, 3.20 · lt1-test c: Ergebnis gleich true (beide Größen); jetzt lt1-imp-ab s10 (926x428 REPS=2 STOP=1) ∥ Prüfer-mem.mjs
 - 23:34 Last 3.27, 4.07, 3.22 · mem.mjs fertig; s10 Lauf 1 (parallel zu mem) index 47/32 basis 31/30 → Wiederholung allein REPS=3 beide Größen
+- 23:36 Last 1.61, 3.03, 2.95 · s10 allein: gleich, index Median 28,5 ms (n 6) / basis 29 ms – Normalweg unverändert

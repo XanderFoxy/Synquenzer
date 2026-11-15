@@ -54,16 +54,18 @@ Ziel „≤ 3 dB Abstand zum wahren Rest“: erreicht, in allen Fällen ≤ 0,1 
 +19/+20 dB HELLER als das Original (Masken-Artefakt: Rahmen vor dem Spur-Beginn behalten die Einschwing-Fetzen) – die Anzeige zeigt
 bewusst nie Helleres als das Original (wie FOKUS1), also 0 dB; das Testkriterium vergleicht deshalb mit min(wahr, 0).
 
-Zeit (Worker-ms für den ganzen Fokus-Satz; Median aus 3 Läufen, abwechselnd; Ebene 200–1200 Hz über fast die ganze Länge = schlimmster
-Fall, jede Spalte betroffen; N 4096 zuerst, N 16384 danach mit vorhandenem Rest-Audio):
+Zeit (Worker-ms für den ganzen Fokus-Satz; Median aus 3 Läufen, abwechselnd neu/basis; Ebene 200–1200 Hz über fast die ganze Länge =
+schlimmster Fall, jede Spalte betroffen; N 4096 zuerst, N 16384 danach mit vorhandenem Rest-Audio; Endfassung, Last 2,7–3,9):
 
-| | basis | FOK2 v2 | Bemerkung |
+| | basis | FOK2 | Bemerkung |
 |---|---|---|---|
-| 20 s, N 4096 (2 Stücke) | 178 ms (erstes Stück 115) | 918 ms (erstes 668) | Rest-Audio + FFT |
-| 20 s, N 16384 (1 Stück) | 378 ms | 809 ms | |
-| 3 min, N 4096 (16 Stücke) | 1096 ms (erstes 127), 69 ms/Stück | 6542 ms (erstes 512), 409 ms/Stück | davon ≈ 70 % Rest-Audio (render) |
-| 3 min, N 16384 (4 Stücke) | 3358 ms (erstes 852) | 5673 ms (erstes 1533) | Rest-Audio schon im Speicher |
+| 20 s, N 4096 (2 Stücke) | 132 ms (erstes Stück 95) | 606 ms (erstes 386) | Rest-Audio + FFT |
+| 20 s, N 16384 (1 Stück) | 293 ms | 548 ms | |
+| 3 min, N 4096 (16 Stücke) | 794 ms (erstes 86), 50 ms/Stück | 5166 ms (erstes 410), 323 ms/Stück | davon ≈ 2/3 Rest-Audio (render) |
+| 3 min, N 16384 (4 Stücke) | 2727 ms (erstes 730) | 4663 ms (erstes 1256) | Rest-Audio schon im Speicher |
+| Kamm-Fall 8 s (Ebene nur 4 s, schmal), N 16384 / 4096 / 1024 | 51 / 91 / 144 ms | 148 / 143 / 178 ms | nur betroffene Spalten |
 | Long Tasks Hauptfaden (alle Läufe) | 0 | 0 | Rechnen im Worker, Scheiben ≈ 20 ms |
+| Abbruch (fokusStop mitten im Satz, 3 min) | 37 ms | 13 ms bis zur Antwort 'abgeloest' | Scheiben + ok() |
 
 v1 (Verhältnis |Rest|/|Original|, eine FFT je Spalte, ohne restMid) war gleich genau, aber 3 min N 4096 7,7 s, N 16384 10,4 s (erstes
 Stück 3,0 s) → verworfen zugunsten v2. Kosten-Aufteilung je Stück N 4096: FFT 512 × 0,13 ms ≈ 70 ms (spk12Fft, gemessen in Node),
@@ -73,8 +75,9 @@ Speicher wie „Noten finden“ auf dem Rest, wird geteilt). Je Stück vorüberg
 Abbruch: fokusStop während eines Satzes → Antwort 'abgeloest' (gemessen in fok2-test, Zeile „abbruch“).
 
 Bewertung „tragbar“: ja für Xanders Ablauf (Rechnen im Worker, sichtbare Stücke zuerst, Hauptfaden ohne Long Task, abbrechbar,
-Zwischenspeicher je Dokument-Stand). Preis: das erste sichtbare Stück kommt bei einer Ebene über dem ganzen Lied ≈ 0,4 s später
-(N 4096) bzw. ≈ 0,7–2 s später (N 16384, großes Stück 47 s), der ganze Satz 3 min dauert ≈ 6 s statt ≈ 1 s. Bis dahin zeigt die
+Zwischenspeicher je Dokument-Stand). Preis: das erste sichtbare Stück kommt bei einer Ebene über dem ganzen Lied ≈ 0,3 s später
+(N 4096: 0,41 statt 0,09 s) bzw. ≈ 0,5 s später (N 16384: 1,26 statt 0,73 s, großes Stück 47 s); der ganze Satz 3 min dauert
+≈ 5 s statt ≈ 0,8 s (N 4096). Bis dahin zeigt die
 Anzeige wie bisher das Original bzw. den alten Fokus-Satz. Nur Spalten mit Ebenen-Wirkung kosten (kleine Ebenen = kaum Mehrkosten,
 Kamm-Fall 8 s: 207 statt 69 ms).
 

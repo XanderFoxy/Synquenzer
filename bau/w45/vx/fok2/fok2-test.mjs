@@ -39,10 +39,10 @@ const loadDoc = (p, spec) => p.evaluate(async ([spec, sr]) => {
   const n = Math.round(spec.sec * sr), x = new Float32Array(n); let s1 = 7; const rnd = () => ((s1 = (s1 * 1103515245 + 12345) >>> 0) / 4294967296) * 2 - 1;
   for (const t of spec.tones) { const i0 = Math.round(t.a * sr), i1 = Math.round(t.b * sr), fd = Math.round(0.01 * sr); for (let i = i0; i < i1 && i < n; i++) { const e = Math.min(1, (i - i0) / fd, (i1 - i) / fd); let v = 0; for (let h = 1; h <= (t.H || 1); h++) v += t.amp / h * Math.sin(2 * Math.PI * t.f * h * i / sr); x[i] += e * v; } }
   for (let i = 0; i < n; i++) x[i] += (spec.noise || 0) * rnd();
-  const r = await __spk.load({name: spec.name, sr, ch: [x]}); await __spk.open(r.meta.id); return r.meta.id;
+  const r = await __spk.load({name: spec.name, sr, ch: spec.stereo ? [x, x.map((v, i) => 0.8 * v + 0.001 * Math.sin(i * 0.37))] : [x]}); await __spk.open(r.meta.id); return r.meta.id;
 }, [spec, SR]);
 const OUT = {};
-for (const [tag, file] of [['neu', files[0]], ['basis', files[1]]]) {
+for (const [tag, file] of (process.env.NURZEIT ? [] : [['neu', files[0]], ['basis', files[1]]])) {
   const {p, ctx, errs} = await page(file); const R = OUT[tag] = {};
   // Fall 1: Kamm-Maske (Ebene, ohne Noten) – wie Prüfer m2 a
   await loadDoc(p, {name: 'K1', sec: 8, noise: 0.0005, tones: [{f: 220, a: 2, b: 6, amp: 0.3, H: 8}, {f: 65.41, a: 2, b: 6, amp: 0.3, H: 3}]});
@@ -86,10 +86,10 @@ for (const [tag, file] of [['neu', files[0]], ['basis', files[1]]]) {
 }
 // Zeit + Long Tasks: 20 s und 3 min, Ebene über (fast) die ganze Länge, abwechselnd neu/basis, RUNS Läufe, Median
 const RUNS = +(process.env.RUNS || 3), T = {neu: {}, basis: {}};
-if (process.env.LANG !== '0') for (const sec of [20, 180]) for (let run = 0; run < RUNS; run++) for (const [tag, file] of (run % 2 ? [['basis', files[1]], ['neu', files[0]]] : [['neu', files[0]], ['basis', files[1]]])) {
+if (process.env.LANG !== '0') for (const sec of (process.env.SEKS || '20,180').split(',').map(Number)) for (let run = 0; run < RUNS; run++) for (const [tag, file] of (run % 2 ? [['basis', files[1]], ['neu', files[0]]] : [['neu', files[0]], ['basis', files[1]]])) {
   const {p, ctx} = await page(file);
   const tones = []; for (let t = 1; t + 3 < sec; t += 4) tones.push({f: [220, 261.63, 329.63, 392][(t / 4 | 0) % 4], a: t, b: t + 3, amp: 0.25, H: 6});
-  await loadDoc(p, {name: 'Z' + sec, sec, noise: 0.002, tones});
+  await loadDoc(p, {name: 'Z' + sec, sec, noise: 0.002, tones, stereo: !!process.env.STEREO});
   const r = await p.evaluate(async sec => {
     await __spk.mask({von: 'orig', nach: 'neu', modus: 'verschieben', sel: [{art: 'rect', t0: 0.5, t1: sec - 0.5, f0: 200, f1: 1200, kt: 0, kf: 0}]});
     for (const N of [4096]) { const cs = []; await spk1Call('spec', {doc: SPK1.doc, N}, null, {chunk: c => cs.push(c)}); }
@@ -113,6 +113,7 @@ const med = a => { const s = a.slice().sort((x, y) => x - y); return s.length ? 
 const zt = {}; for (const tag of ['neu', 'basis']) for (const k in T[tag]) for (const N of ['N4096', 'N16384']) (zt[tag] = zt[tag] || {})[k + N] = {ms: med(T[tag][k].map(r => r[N].ms)), first: med(T[tag][k].map(r => r[N].first)), je: med(T[tag][k].map(r => r[N].je)), lt: T[tag][k].map(r => r.lt.length ? Math.max(...r.lt) : 0)};
 console.log('ZEIT', JSON.stringify(zt));
 // Bewertung
+if (process.env.NURZEIT) { console.log('NURZEIT fertig'); fs.writeFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), 'fok2-zeit-' + (process.env.STEREO ? 'stereo' : 'mono') + '.json'), JSON.stringify({T, zt}, null, 1)); await b.close(); srv.close(); process.exit(0); }
 const N1 = OUT.neu, B1 = OUT.basis, d3 = x => Math.abs(x.fokus - Math.min(0, x.wahr)) <= 3;   // wahrer Rest heller als das Original (Masken-Artefakt vor dem Einsatz) → Anzeige nie heller: Ziel min(wahr, 0)
 for (const N of ['N16384', 'N4096']) {
   ok('kamm ' + N + ' 220 halt ≤3 dB zum wahren Rest', N1.kamm[N].t220_halt, d3(N1.kamm[N].t220_halt));
