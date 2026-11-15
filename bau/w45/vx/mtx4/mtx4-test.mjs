@@ -30,9 +30,11 @@ async function popCheck(p, label) {
     const P = UI.pop && UI.pop.el; if (!P) return null;
     const q = P.getBoundingClientRect(), vw = innerWidth, vh = innerHeight;
     const small = [...P.querySelectorAll('button')].filter(b => b.getClientRects().length && !b.classList.contains('ux1-px')).map(b => b.getBoundingClientRect()).filter(r => r.height < 43.5 || r.width < 43.5).length;
-    return {in: q.left >= 7.5 && q.top >= 7.5 && q.right <= vw - 7.5 && q.bottom <= vh - 7.5, box: [q.left, q.top, q.right, q.bottom].map(Math.round), small};
+    const B = SYNQUENZER.mtx4.bar(), z = B && !B.hidden ? B.getBoundingClientRect() : null;
+    const over = z ? !(q.right <= z.left || q.left >= z.right || q.bottom <= z.top || q.top >= z.bottom) : false;
+    return {in: q.left >= 7.5 && q.top >= 7.5 && q.right <= vw - 7.5 && q.bottom <= vh - 7.5, box: [q.left, q.top, q.right, q.bottom].map(Math.round), small, over};
   });
-  ok(label + ': Blatt ganz im Bild, Knöpfe ≥ 44 px', r && r.in && r.small === 0, r);
+  ok(label + ': Blatt ganz im Bild, Knöpfe ≥ 44 px, nicht unter/über der Leiste', r && r.in && r.small === 0 && !r.over, r);
 }
 async function barCheck(p, label) {
   const r = await p.evaluate(() => {
@@ -57,7 +59,7 @@ async function tapPop(T, p, sel) { const r = await R_(p, a => (UI.pop && UI.pop.
 // ======================= hochkant 428 × 926: Bedienung per Touch =======================
 {
   const {ctx, p, errs, T} = await open(428, 926);
-  const before = await sig(p);
+  const before = await sig(p), ser0 = await p.evaluate(() => serialize());
   // Clip (0,0) lange drücken → Clip-Blatt → [Mehrere wählen]
   let c = await cell(p, 0, 0); await T.hold(c.cx, c.cy, 700);
   const cs = await p.evaluate(() => { const b = EL.clipSheet.querySelector('.mtx4cs'); if (!b) return null; b.scrollIntoView({block: 'nearest'}); const r = b.getBoundingClientRect(), sh = EL.clipSheet.getBoundingClientRect(); return {w: r.width, h: r.height, in: r.top >= sh.top - .5 && r.bottom <= sh.bottom + .5 && r.bottom <= innerHeight, sheet: [sh.top, sh.bottom].map(Math.round)}; });
@@ -73,6 +75,7 @@ async function tapPop(T, p, sel) { const r = await R_(p, a => (UI.pop && UI.pop.
     out: getComputedStyle(UI.cells[1][1].el).outlineStyle, op: [getComputedStyle(UI.cells[1][1].el).opacity, getComputedStyle(UI.cells[1][0].el).opacity]}));
   ok('Tipp nimmt Clips dazu: 3 Clips in 2 Szenen, Markierung (Rahmen, übrige blass)', st.sel === '0:0,1:1,2:1' && st.cls === '0:0,1:1,2:1' && st.out === 'solid' && +st.op[0] === 1 && +st.op[1] < 1, st);
   ok('im Modus startet ein Tipp keinen Clip', !st.playing, st.slots);
+  ok('die Auswahl ist kein Projektfeld (Speicherstand bit-gleich)', (await p.evaluate(() => serialize())) === ser0);
   const bar = await barCheck(p, 'hochkant');
   ok('Leiste: −12 −1 +1 +12 · Stufe ▲▼ · Tonart ▾ · Quant. ▾ · ✕', ['−12', '−1', '+1', '+12', '▲ Stufe', '▼ Stufe', 'Tonart ▾', 'Quant. ▾', '✕'].every(x => (bar.names || []).includes(x)), bar.names);
   await p.screenshot({path: dir + '/mtx4-auswahl-hochkant.png'});

@@ -95469,6 +95469,14 @@ function mtx4Sync() {
   if (b._pos !== css) { b._pos = css; b.style.left = Math.round(L) + 'px'; b.style.top = Math.round(T) + 'px'; b.style.width = Math.round(W) + 'px'; b.style.height = Math.round(H) + 'px'; }
 }
 /* ---------- Blätter: In Tonart einpassen ▾ · Quantisieren ▾ (Kopf wie die MTX-Blätter, Knöpfe ≥ 44 px) ---------- */
+// das Blatt liegt neben der Leiste, nie darauf (quer: links daneben, hochkant: darüber – openPop mit above)
+function mtx4PopPlace(p) {
+  const B = M4.bar; if (!p || !B || B.hidden) return;
+  const q = B.getBoundingClientRect(), r = p.getBoundingClientRect(), vh = window.innerHeight;
+  if (r.right <= q.left || r.left >= q.right || r.bottom <= q.top || r.top >= q.bottom) return;
+  if (isLand()) { p.style.left = Math.round(Math.max(8, q.left - r.width - 8)) + 'px'; p.style.top = Math.round(clamp(q.top, 8, Math.max(8, vh - r.height - 8))) + 'px'; }
+  else p.style.top = Math.round(Math.max(8, q.top - r.height - 8)) + 'px';
+}
 function mtx4FitPop(anchor) {
   if (!mtx4Count().n) { toast('Erst Clips antippen'); return false; }
   openPop(anchor, p => {
@@ -95479,6 +95487,7 @@ function mtx4FitPop(anchor) {
     guardTouch(p);
     onTap(p, btn => { const k = btn.dataset.m4f; closePop(); if (k !== 'no') mtx4Fit(k); mtx4Sync(); }, 'button[data-m4f]');
   }, {name: 'mtx4fit', above: !isLand()});
+  mtx4PopPlace(UI.pop && UI.pop.el);
   return true;
 }
 function mtx4QPop(anchor) {
@@ -95491,6 +95500,7 @@ function mtx4QPop(anchor) {
     guardTouch(p);
     onTap(p, btn => { const k = btn.dataset.m4q; closePop(); if (k !== 'no') mtx4Quant(k); mtx4Sync(); }, 'button[data-m4q]');
   }, {name: 'mtx4q', above: !isLand()});
+  mtx4PopPlace(UI.pop && UI.pop.el);
   return true;
 }
 /* ---------- Kern: eine Aktion über alle gewählten Clips = ein ↶ ---------- */

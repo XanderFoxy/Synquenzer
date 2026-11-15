@@ -29,7 +29,7 @@ for (const [W, H] of VIEWS) {
   const scr = (t, f) => p.evaluate(([t, f]) => { const U = __spk.page.ui(), r = U.mn.getBoundingClientRect(); return [r.left + spk1X(U, t), r.top + spk1Y(U, f)]; }, [t, f]);
   const view = (t0, t1, mTop, mBot) => p.evaluate(([t0, t1, a, z]) => { (window.__vj = window.__vj || []).push(performance.now()); const U = __spk.page.ui(), v = U.v; v.pps = U.W / (t1 - t0); v.t0 = t0; v.rowH = U.H / (a - z); v.mTop = a; spk1Clamp(U); spk1Dirty(U, 'all'); }, [t0, t1, mTop, mBot]);
   const tool = async (grp, k) => { await hold(await sel(`#spk1Sheet .spk1-tl button[data-s12slot="${grp}"]`), 700); const q = await sel(`#spk1Sheet .spk1-dd [data-s12t="${k}"]`); await tap(q); return p.evaluate(() => __spk.page.info().tool); };
-  await p.goto(url); await p.waitForFunction(() => window.SYNQUENZER && window.__spk && window.__spk12, null, {timeout: 60000}); await wait(600);
+  await p.goto(url); await p.waitForFunction(() => window.SYNQUENZER && window.__spk, null, {timeout: 60000}); await wait(600);
   await p.evaluate(() => { window.__lt = []; try { new PerformanceObserver(l => { for (const e of l.getEntries()) window.__lt.push({t: e.startTime, d: e.duration}); }).observe({entryTypes: ['longtask']}); } catch (e) {} });
   await p.evaluate(async () => { await __spk.page.open({}); const sr = 44100, n = 24 * sr, x = new Float32Array(n); for (let i = 0; i < n; i++) x[i] = 0.2 * Math.sin(2 * Math.PI * 440 * i / sr) * (1 + Math.sin(i / sr)); const r = await __spk.load({name: 'FFT-Probe', sr, ch: [x]}); await __spk.page.open({id: r.meta.id}); });
   await p.waitForFunction(() => { const i = __spk.page.info(); return i && !i.nodoc && i.chunks > 0 && !/Spektrum \d/.test(i.stat); }, null, {timeout: 300000}); await wait(800);

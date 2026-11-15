@@ -137,7 +137,7 @@ spk12-test (Teil 1) mit Teil-2-Bau: 98 OK / 0 FEHLER. Regression (reg.sh → reg
 spk1 1 FEHLER verfeinern-verbessert-ziel (= Basis) · spk8-seite 14/0 · spk11 38/3 (nur drums-auf-kit = bekannt offen in 4.68) – gleich wie Teil 1.
 
 ## Teil 3/3 (Plan-Schritte 7–9) – Ähnliches mit Merkmalen + ‹ › Alle, Alle Ebenen abtasten, Auswahl merken, FFT ms / Hz
-Bau jetzt **18 Haken** (16 + 2 neue), Block 912 Zeilen, diff Basis → Paket: 0 entfernte, 930 neue Zeilen (912 Block + 18 Haken). Quellen Teil 2 gesichert:
+Bau jetzt **18 Haken** (16 + 2 neue), Block 913 Zeilen, diff Basis → Paket: 0 entfernte, 931 neue Zeilen (913 Block + 18 Haken). Quellen Teil 2 gesichert:
 `spk12-block.teil2.js`, `bau.teil2.py`.
 ### Haken (Teil 3)
 | # | Stelle | Zweck |
@@ -202,7 +202,18 @@ Testsignal 24 s: Töne 440 Hz (5 Obertöne, Anstieg 150 ms) bei 1/3/5/7 s und �
 - Fotos: `fotos/t3-merkmale-*`, `t3-aehnlich-*`, `t3-merken-*`, `t3-abtasten-*`, `t3-fft-*` (je 3 Größen).
 
 ## Pflicht Teil 3 (Endstand)
-PFLICHT_T3
+topdefs 26 / 7659 / doppelt 0 / Syntaxfehler 0 (mit NODE_PATH=/opt/node-tools/node_modules) · dupkeys 0 · smoke errors [] (smoke.png) ·
+„MS 2000“ 1× · „^  live: true,“ 1× · VERSION 4.68.0 unverändert (alle VERSION-Zeilen = Basis) · basis.html = rel-4680 · diff nur Zusätze
+(931 = 913 Block + 18 Haken) · keine Marken-/Produktnamen (einziger Treffer „rx“ = SVG-Attribut der Ellipse) · keine Emojis
+(✓/✕ als Text-Zeichen wie 80×/228× in der Basis).
+Endlauf mit dem fertigen Bau: spk12-test3 **47 OK / 0 FEHLER** · spk12-test (Teil 1, prüft auch den Guide-Eintrag) **98 / 0** ·
+spk12-test2 **71 / 1**: einmal Long Task 72 ms in 926×370 (bei Last 5,6 auf 4 Kernen, andere Tests liefen parallel); Wiederholung
+926×370 allein **24 / 0** (`spk12-test2-926x370-wdh.out`; `spk12-test2.json` enthält jetzt nur diese Wiederholung, der volle Lauf steht
+in `spk12-test2.out`). Davor mit dem Teil-3-Bau 72 / 0.
+FFT-Wechsel-Probe (`fft-probe.mjs`, 926×370, 4096 → 8192 → 4096): Basis 64 ms, Paket 83 ms Long Task beim ersten Wechsel, beim
+zweiten keine – alter Weg (Kacheln neu), kein SPK12-Anteil.
+Regression (reg.sh → reg.log, Ausgaben in reg/): spk6 ALLES OK · spk5 ALLES OK 24 · spk1 1 FEHLER verfeinern-verbessert-ziel (= Basis) ·
+spk8-seite 14/0 · spk11 38/3 (nur drums-auf-kit = bekannt offen in 4.68) – gleich wie Teil 1 und 2.
 
 ## Offen (Teil 3/3 und Rest)
 - Teil 3: Regionen haben einen automatischen Namen („Rechteck 1“); Umbenennen per Eingabe fehlt (die Spektral-Seite hat noch kein
