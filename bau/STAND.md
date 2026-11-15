@@ -90,3 +90,9 @@ Weiter mit: 4.54 = rel-4540/k fertig prüfen + INT53D nachziehen + Versionszeile
 - Nur SPK9 (Legato-Noten). IMP2 herausgenommen: mit IMP2 chr2 3 FEHL (Versatz Kopie 5/6, Formant NaN) + rv1 4/53 – deterministisch; ohne IMP2 alles wie 4.65.
 - IMP2-B (wfoe2qfg1) in vx/imp2b (Basis basis10 = R-4660) → 4.67.
 - MV8 Filme-Seite (wfvq0qehs) läuft. Frage an Xander offen: Zeitplan-Änderung (mv7/aktuell-fix 87b9520) hochladen?
+
+## ~01:50 — Xander: Zeitplan JA, Spartricks, Szenen aus Spektral, Auslagern/Drum-Einzelspuren, Handbuch
+- Zeitplan-Änderung gepusht (main c3b1c9a, nach Freigabe), Radar-Lauf angestoßen. MV8 Filme-Seite live (e066811).
+- Gestartet: w032b11iw (MV9 Spartricks: Recherche 3× + Bau + Prüfung), wr68ce7cx (SPK11 Spektral→Szenen + Nachbau im Ebenen-Menü; MTX3 Noten auslagern + Drum-Einzelspuren; Basis basis10 = R-4660), wfoe2qfg1 (IMP2B).
+- Handbuch: Hosts download.steinberg.net + steinberg.help im Default-Umfeld freigegeben (update_environment), aber Abruf vom Auto-Modus abgelehnt („Unauthorized Access“) → nicht umgehen; Xander soll PDF schicken (Link: download.steinberg.net/downloads_software/SpectraLayers_9/SpectraLayers_Pro_9_Operation_Manual_en.pdf). Auswertung nur privat in S/vx-privat.
+- Entschieden: MV8 Befund 5 (Top-Regel) ok; Befund 11 Kinderfilme aus „Neu“ raus (Disney hat eigenen Chip) → nächstes kleines Vorteil-Paket.

@@ -7,3 +7,5 @@
 - 02:03 mtx3-test Lauf 2: 51/51
 - 02:04 Regression vx1-test 61/61
 - 02:06 Regression imp1-test ALLE OK (48, 125 s)
+- 02:09 Regression mtx-test 91/92 – die eine FEHLER-Zeile ist der Basis-Vergleich (setzt Basis 4.49.1 voraus), basis.html 4.66.0 gibt dieselbe Zeile
+- 02:11 Regression ux2-test 22 OK/5 FAIL + Abbruch und ux2-test-nie 26 OK/1 FAIL: Zeile für Zeile GLEICH wie basis.html (alte Tests vor MTX-Ablege-Wahl)
