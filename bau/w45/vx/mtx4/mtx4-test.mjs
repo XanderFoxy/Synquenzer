@@ -354,11 +354,12 @@ for (const [w, h] of [[926, 428], [926, 370]]) {
     const fr = []; let last = performance.now(), run = true; const loop = () => { const n = performance.now(); fr.push(n - last); last = n; if (run) requestAnimationFrame(loop); }; requestAnimationFrame(loop);
     for (let k = 0; k < 60; k++) { UI.dirty.grid = true; for (const C of UI.cells.flat()) if (C) { C.st = {}; C.sig = null; } const t0 = performance.now(); orig(audBeat()); rg.push(performance.now() - t0); await W(16); }
     const lt0 = lt.length; await W(300);
-    const t1 = performance.now(); SYNQUENZER.mtx4.semi(1); const dSemi = performance.now() - t1;
-    const t2 = performance.now(); SYNQUENZER.mtx4.fit('dorian'); const dFit = performance.now() - t2;
-    const t3 = performance.now(); SYNQUENZER.mtx4.quant('1/16'); const dQ = performance.now() - t3;
-    const t4 = performance.now(); SYNQUENZER.mtx4.len(2); const dX2 = performance.now() - t4;
-    const t5 = performance.now(); SYNQUENZER.mtx4.len(.5); const dH2 = performance.now() - t5;
+    // je Aktion ein eigener Tipp (eigene Aufgabe) – wie in der App; früher liefen alle Aktionen in einer Aufgabe hintereinander
+    const t1 = performance.now(); SYNQUENZER.mtx4.semi(1); const dSemi = performance.now() - t1; await W(120);
+    const t2 = performance.now(); SYNQUENZER.mtx4.fit('dorian'); const dFit = performance.now() - t2; await W(120);
+    const t3 = performance.now(); SYNQUENZER.mtx4.quant('1/16'); const dQ = performance.now() - t3; await W(120);
+    const t4 = performance.now(); SYNQUENZER.mtx4.len(2); const dX2 = performance.now() - t4; await W(120);
+    const t5 = performance.now(); SYNQUENZER.mtx4.len(.5); const dH2 = performance.now() - t5; await W(120);
     SYNQUENZER.mtx4.len(2); await W(200);
     const rg2 = []; for (let k = 0; k < 40; k++) { UI.dirty.grid = true; for (const C of UI.cells.flat()) if (C) { C.st = {}; C.sig = null; } const t0 = performance.now(); orig(audBeat()); rg2.push(performance.now() - t0); await W(16); }
     await W(1500); run = false; const ltAct = lt.slice(lt0); stop(); if (po) po.disconnect();
