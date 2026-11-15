@@ -53,3 +53,45 @@ Nichts Sichtbares, keine Knöpfe, VERSION bleibt 4.74.0.
 verschiebt. Der Mechanismus (Vorgänger im Quantisier-Stand in eine Lücke **gedehnt**, nach dem Verschieben ungestaucht + abgeschnitten,
 IMP2B `fix/move-sim.mjs`) ist unverändert – s. Messung „gleiche Silbe“ unten und Offen 2.
 
+Gleiche Silbe wie in der Basis (`RV1_T=11.125`, Datei-Zeit von Basis-Stück 35, `out/d14-index.txt`): VXR2 Stück 30 → **FEHLER**,
+Abweichung 0,109 ab 350 ms (36 ms vor dem Schnitt), Vorgänger −111 ms quantisiert – zahlengleich mit der Basis. **(d) ist nicht behoben.**
+
+## Zeit (A/B, nacheinander, abwechselnd, je 3×, #10 t1 0,388, Last 3,7–4,3; `out/zeit/zeit.txt`)
+| | Lauf 1 | 2 | 3 | Median |
+|---|---|---|---|---|
+| Gesang-Editor erste Analyse (`__vx1.analyse`), basis | 1 686 ms | 1 713 | 1 753 | **1 713 ms** |
+| dto. index (VXR2) | 2 317 ms | 2 571 | 2 750 | **2 571 ms (+858 ms, +50 %)** |
+Ursache: eine zusätzliche Tonhöhen-Analyse (G2) des ausgeschnittenen Takes im G2-Worker (die normale G2-Analyse des ganzen Takes läuft
+weiter, sie trägt Tonhöhen-Anzeige und G4). Nur bei Takes mit > 0,25 s digitaler Stille vorn (Import), nur beim ersten Öffnen je Take,
+im Worker (Hauptfaden: Nullproben zählen + Kopie, < 2 ms). Aufgenommene Takes: unverändert. Abschaltbar: `__vxr2.on(false)`.
+
+## Regression (index.html = VXR2, `reg/`; zwei Ketten parallel, Last 6–10)
+- vx1-test 61/61 · vx2-test 14/14 · vx3-test 15/15
+- rv1-test ORIGINAL: index **ALLE OK 53** · basis FEHLER 1/53 (#14 Stück 35 links, wie bekannt)
+- rv1-test-imp2b (Kopie): index ALLE OK 53
+- chr2-test-imp2b: ALLE OK (82)
+- voxr1-test: index allein (Last 3,2) 80/83 · unter Last 78/83 · basis unter Last 79/83 – dieselben 3 bekannten Inhalts-FEHLER (Klicks A
+  17/20, Überstand B 3,2 dB, Raumton-Farbe; VOXR1F-NOTES „80/83“), unter Last zusätzlich Zeit/Long Task (beide Fassungen). VXR2 berührt VOXR1 nicht.
+- vxr2-test.mjs: (a) index OK (`out/vxr2a-test.txt`), (b)(c)(d) #10 OK, #14 (b)(c) OK, (d) OK nur wegen anderem Stück (s. oben) (`out/vxr2-test.txt`;
+  dort (a) noch mit dem strengeren Maß „Anfang mit Anlauf“ = FEHLER 17/29 – darum (a) jetzt an den Marken, Anlauf als INFO).
+
+## Pflichtprüfungen (index.html)
+topdefs: Skripte 26, Namen 7930 (basis 7926: +VXR2, vxr2Off, vxr2Det, vxr2Marks), doppelt 0, Syntaxfehler 0 · dupkeys 0 doppelte Schlüssel ·
+smoke title SYNQUENZER errors [] (`out/smoke.png`) · „MS 2000“ 1× · „^  live: true,“ 1× · VERSION '4.74.0'.
+md5 index.html **93c9860ee0bff060eb90452f6fe5e2b1** (basis b66de3cbd5c2d66019c5c0c3d199e06c). Diff: 49 Zeilen neu, 1 ersetzt (wpDetect-Haken).
+
+## Offen
+1. **Anlauf (Stück-Anfang) noch rasterabhängig**: Marken sind lagefest, der Anlauf (Konsonant vor dem Vokal) kommt weiter aus Op 'vxa' an
+   der gehörten G4-Fassung im 10-ms-Raster → bei ±5 ms Vorlauf 12/29 Anfänge um 5 ms, einzelne bis 37 ms anders. Lagefest machen geht nur,
+   wenn vx2-Prüfung 7/3 („Anker/Anlauf = Op 'vxa' bitgleich an der gehörten Fassung“) geändert wird (v3 im LOG: dann probengleich).
+   Besser (Profi-Weg, auch für die +0,86 s): **Vorlauf beim Import auf ein festes Raster legen** (Vorlauf so auffüllen, dass der erste Ton
+   immer gleich im Analyse-Raster liegt, Clip-Einstieg `in` um dasselbe verschieben → hörbar gleich, alle Analysen inkl. G4 ohne Zusatz-
+   rechnung lagefest). Berührt Import/LT1/imp.t1 – eigener Auftrag.
+2. **(d) nicht behoben** (gleiche Silbe weiter FEHLER, 36 ms vor dem Schnitt): Vorgänger war im Quantisier-Stand in eine Lücke gedehnt;
+   nach dem Verschieben des Nachfolgers nach links spielt er ungestaucht und wird abgeschnitten (IMP2B `fix/move-sim.mjs`). „Bitgleich
+   bis zum Schnitt“ verlangt eine Entscheidung (hörbar): Dehnung des Vorgängers beim Verschieben behalten (z. B. Dehnfaktor am Vorgänger
+   festhalten, bis er selbst bearbeitet wird) → im Funk vorschlagen, nicht still gebaut. Gegen die ungedehnte Quelle ist er bitgleich (rv1-imp2b OK).
+3. **Zeit +0,86 s** bei der ersten Analyse importierter Takes (s. oben) – mit Punkt 1 (Import-Raster) entfiele die Zusatz-Analyse.
+4. Stückzahl #10 jetzt 29 statt 31 (#14 32 statt 37, #1 70 statt 68): Stück-Wahl an der Quelle vor G4 und mit 0,25 s Vorlauf; rv1-Prüfungen
+   gegen die Noten-Annotation (Einsatz ±40 ms, Tonhöhe) alle OK – aber andere Stücke als 4.74, für Xander sichtbar (andere Teilung im Editor).
+5. Mit „Gesang reinigen“ (vr1Proc) oder SÄUBERN ist die Quelle vor G4 selbst eine gerechnete Fassung – ob die lagefest ist, nicht geprüft.
