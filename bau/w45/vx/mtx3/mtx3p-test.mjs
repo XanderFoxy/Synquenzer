@@ -38,7 +38,7 @@ async function run(label, fn, arg) {
     const A = await __R(); const ids = SYNQUENZER.mtx3.split(); const B = await __R(); return {fill: L ? L.name : null, ue, ids, d: __db(A, B)};
   });
   ok('S2 Fill „ersetzt“: Summe vorher ↔ aufgeteilt ≤ −60 dB', r.d <= -60, r); }
-// S3 – North-Kit: Aufteilen gesperrt (mit Grund), DrumSynth-Kit gleich
+// S3 – Kit mit Modell-Pads (MD_NAME): Aufteilen gesperrt (mit Grund), DrumSynth-Kit gleich
 { const r = await run('S3', async () => {
     const o = {};
     for (let i = 0; i < NT(); i++) if (i !== DRUM_T) S.tracks[i].clips = S.tracks[i].clips.map(() => null);
@@ -47,7 +47,7 @@ async function run(label, fn, arg) {
     SYNQUENZER.loadKit('909'); await __W(250); const A = await __R(); o.split909 = SYNQUENZER.mtx3.split(); const B = await __R(); o.d909 = __db(A, B);
     return o;
   });
-  ok('S3 North-Kit: Aufteilen gesperrt mit Grund', r.split == null && /bleiben auf DRUMS/.test(r.why || ''), r);
+  ok('S3 Kit mit Modell-Pads: Aufteilen gesperrt mit Grund', r.split == null && /bleiben auf DRUMS/.test(r.why || ''), r);
   ok('S3 DrumSynth-Kit (909): Summe gleich ≤ −100 dB', r.d909 <= -100, r.d909); }
 // S4 – In vorhandene Spur ohne Clip: Ziel startet (Matrix) und bekommt die Song-Zeile; ↶ ohne Stopp
 { const r = await run('S4', async () => {

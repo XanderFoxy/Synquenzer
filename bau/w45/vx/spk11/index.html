@@ -103839,7 +103839,7 @@ try { window.__spk6 = SPK6_API; } catch (e) {}
    schon die Songteile erkennen … die MIDI-Noten entsprechend übernimmt, sodass ich das abgrenzen kann von der Auswahl automatisch“).
    Ansicht ▾ › „Szenen anlegen …“: Songteile des Dokuments mit der IMP1-Erkennung (imp1Analyse im Import-Worker, Tempo des Dokuments als
    Vorgabe, Ergebnis je Dokument gemerkt) → Teile auf dem Raster des Dokuments (Lineal). Auswahl aktiv → nur die Teile/Takte darin, Audio nur
-   aus den Frequenzen der Auswahl (op block mit sel), Noten nur in der Auswahl, vorgewählt nur die Ebenen mit Noten darin.
+   aus den Frequenzen der Auswahl (op block mit sel), Noten nur in der Auswahl; was im Bereich still ist, wird nicht angelegt.
    Je Teil eine freie Szene (Name = Teil), je Ebene: Audio-Clip (eigene Audio-Spur wie „Original“, ein Take je Ebene, Clips = Ausschnitte)
    und MIDI-Clip (Noten der Ebene im Teil, 1/16-Raster, Länge = Teil) auf der Spur mit passender Rolle; Drums → Drum-Spur mit Kick/Snare/
    Hi-Hat aus den Einsätzen der Drum-Ebene. Leere oder neue Spur: Name der Ebene, Klang = „Klang nachbauen“-Ergebnis der Ebene, sonst der
