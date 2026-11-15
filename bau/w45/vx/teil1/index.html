@@ -103974,7 +103974,7 @@ function spk2LpOv(U, x) {
 // Lineal: Kante ±18 px = Klammer ziehen; sonst nach 380 ms Halten neuer Loop ab dem Takt unter dem Finger
 function spk2LpDown(U, s, px) {
   const L = spk2Lp(U), g = spk1Grid0(U);
-  if (L) {
+  if (L && !(typeof teil1InStrip === 'function' && teil1InStrip(U, s))) {   /* TEIL1: im Teil-Streifen keine Klammer greifen (Tipp = Teil) */
     const da = Math.abs(px - spk1X(U, g.off + L[0] * g.bar)), db = Math.abs(px - spk1X(U, g.off + L[1] * g.bar));
     if (Math.min(da, db) <= 18) { s.lp = {an: da <= db ? L[1] : L[0]}; s.mv = true; return; }
   }
@@ -107545,7 +107545,7 @@ async function spk11Teile(U, prog) {
 // einzelne Blöcke (eine 8-Takt-Phrase) – zwei ganze Abschnitte (Strophe 8 + Refrain 8) bleiben zwei Szenen. Namen wie IMP1 (oft + laut = Refrain).
 function spk11Seg(r, x, sr) {
   const lab = r.diag && r.diag.bloecke, nBar = (r.takte || []).length, BL = 4; if (!lab || !lab.length || !nBar || !(r.takt > 0)) return null;
-  const bE = lab.map((_, i) => { const a = Math.max(0, Math.round((r.t1 + i * BL * r.takt) * sr)), b = Math.min(x.length, Math.round((r.t1 + Math.min(nBar, (i + 1) * BL) * r.takt) * sr)); let s = 0, c = 0; for (let j = a; j < b; j += 16) { s += x[j] * x[j]; c++; } return 10 * Math.log10(s / Math.max(1, c) + 1e-12); });   /* TEIL1: jede 16. Probe (Pegel je 4-Takt-Block, beim Laden < 5 ms) */
+  const bE = lab.map((_, i) => { const a = Math.max(0, Math.round((r.t1 + i * BL * r.takt) * sr)), b = Math.min(x.length, Math.round((r.t1 + Math.min(nBar, (i + 1) * BL) * r.takt) * sr)); let s = 0, c = 0; for (let j = a; j < b; j += 32) { s += x[j] * x[j]; c++; } return 10 * Math.log10(s / Math.max(1, c) + 1e-12); });   /* TEIL1: jede 32. Probe (Pegel je 4-Takt-Block, beim Laden < 5 ms) */
   const mu = bE.reduce((a, v) => a + v, 0) / bE.length, sd = Math.sqrt(bE.reduce((a, v) => a + (v - mu) * (v - mu), 0) / bE.length) || 1, z = bE.map(v => (v - mu) / sd);
   let runs = []; lab.forEach((l, i) => { const q = runs[runs.length - 1]; if (q && q.l === l) q.n++; else runs.push({l, n: 1, s: i}); });
   for (let it = 0; it < 8; it++) {
@@ -108051,6 +108051,7 @@ function teil1Tap(U, p) {
   spk1Layers(U); spk1Dirty(U, 'all'); try { haptic('tick'); } catch (er) {}
   spk1Stat(U, p.name + ' · ' + teil1Txt(p) + ' · im Loop'); return 'teil';
 }
+const teil1InStrip = (U, s) => !!(U.tl1 && U.tl1.length && s && s.r && s.y - s.r.top < 22);
 // Loop-Zeile: deckt sich der Loop mit einem Teil → „Strophe 1 · Takt 5–12“
 function teil1LpTxt(U, L) { const p = teil1OfLoop(U, L); return p ? p.name + ' · ' + teil1Txt(p) : null; }
 // In die Matrix ▾: erster Eintrag „Als Szene · alle Ebenen …“ → Szenen anlegen (SPK11) nur für den Loop

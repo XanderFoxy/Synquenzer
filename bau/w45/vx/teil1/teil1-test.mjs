@@ -88,7 +88,7 @@ for (const [W, H] of VIEWS) {
     ok(tag + ' T2 szenen-blatt', {ms, parts: P.parts, an: P.an}, ms < 150 && P.parts.length === 6 && !/rkenne Songteile/.test(P.txt) && P.an === 1);
     await p.evaluate(() => spk1Dd(SPK1.ui, null)); await p.waitForTimeout(200); }
   // T5 Fokus-Tipp auf Refrain 1
-  const v0 = await view(); await p.evaluate(() => { window.__lt0 = performance.now(); __teil1.clearMs(); });
+  const v0 = await view(); const mT5 = await p.evaluate(() => performance.now());
   await tap(await ruAt(32, 13)); await p.waitForTimeout(400);
   { const v = await view(), lt = await lpTxt(), s = await stat(); const span = 16, m = 0.03 * span;
     ok(tag + ' T5 fokus', {v, lt, s}, v.loop && v.loop[0] === 12 && v.loop[1] === 20 && Math.abs(v.t0 - (24 - m)) < 0.03 * span && Math.abs(v.t1 - (40 + m)) < 0.03 * span && v.mTop === v0.mTop && v.rowH === v0.rowH && /^Refrain 1 · Takt 13–20/.test(lt || '') && /Refrain 1 · Takt 13–20 · im Loop/.test(s)); }
@@ -101,6 +101,8 @@ for (const [W, H] of VIEWS) {
   { const a = await ruAt(50, 13); await p.evaluate(() => { window.__pe = []; for (const t of ['pointerdown', 'pointerup', 'pointercancel', 'contextmenu', 'touchstart']) document.addEventListener(t, e => window.__pe.push(t + ':' + e.pointerId + ':' + (e.target.className || e.target.tagName) + ':' + SPK1.ui.ru.contains(e.target)), true); }); await hold(a, 450); const v = await view();
     if (process.env.DBG) { console.log(JSON.stringify(await p.evaluate(a => ({pe: window.__pe, at: (document.elementFromPoint(a[0], a[1]) || {}).tagName + ':' + SPK1.ui.ru.contains(document.elementFromPoint(a[0], a[1])), a, st: SPK1.ui.st.textContent, dd: !!SPK1.ui.dd}), a))); await shot('dbg-hold'); }
     ok(tag + ' T5 halten-1-takt-loop', v.loop, v.loop && v.loop[1] - v.loop[0] === 1); }
+  const mT5e = await p.evaluate(() => performance.now());
+  { const lt = await p.evaluate(w => window.__lt.filter(x => x[1] > 50 && w.some(([a, b]) => x[0] + x[1] > a && x[0] < b)), [[mT5, mT5e]]); ok(tag + ' T10 longtasks-teil1-fokus', lt, lt.length === 0); }
   // T6 Fokus Nur Rest + Tipp Strophe 2
   await p.evaluate(() => fokus1Mode(SPK1.ui, 'rest')); await p.waitForTimeout(1500);
   { const a = await ruAt(48, 13); await tap(a); await p.waitForTimeout(800); const r = await p.evaluate(() => ({f1: SPK1.ui.f1 && SPK1.ui.f1.mode, err: SPK1.ui.f1 && SPK1.ui.f1.err, loop: SPK1.ui.loop, tl1: SPK1.ui.tl1.length, cls: SPK1.ui.sh.classList.contains('spk13-tl'), st: SPK1.ui.st.textContent}));
@@ -158,10 +160,13 @@ for (const [W, H] of VIEWS) {
     ok(tag + ' T8 neu-laden', {r, loopVor}, r.cls && r.n === 6 && r.an === 0 && r.tl1 === 6 && JSON.stringify(r.loop) === JSON.stringify(loopVor)); }
   // altes Dokument ohne Teile
   await p.waitForFunction(() => !SPK1.ui.specQ, null, {timeout: 60000});
+  const mBg = await p.evaluate(() => performance.now());
   { await p.evaluate(() => __teil1.drop()); const tD = Date.now(); const busy = [];
     const r0 = await p.evaluate(() => ({cls: SPK1.ui.sh.classList.contains('spk13-tl'), h: Math.round(SPK1.ui.ru.getBoundingClientRect().height)}));
     let r = null; for (let i = 0; i < 40; i++) { await p.waitForTimeout(100); const q = await p.evaluate(() => ({cls: SPK1.ui.sh.classList.contains('spk13-tl'), busy: SPK1.ui.busy, zerl: SPK1.ui.b_zerl && SPK1.ui.b_zerl.disabled, st: SPK1.ui.st.textContent, n: ((SPK1.ui.meta.grid || {}).teile || []).length})); busy.push(q.busy || (q.zerl ? 'zerl-aus' : '')); if (q.cls && q.n) { r = q; break; } }
     const ms = Date.now() - tD; ok(tag + ' T8 altes-dokument', {ohneTeile: r0, ms, r, busy: [...new Set(busy)]}, !r0.cls && r0.h === 26 && r && ms <= 3000 && busy.every(x => !x)); }
+  const mBge = await p.evaluate(() => performance.now());
+  { const lt = await p.evaluate(w => window.__lt.filter(x => x[1] > 50 && w.some(([a, b]) => x[0] + x[1] > a && x[0] < b)), [[mBg, mBge]]); ok(tag + ' T10 longtasks-teil1-hintergrund', lt, lt.length === 0); }
   await shot('07-nach-neu-laden');
   // T3 Import (nur einmal)
   if (tag === VIEWS[0].join('x')) {
