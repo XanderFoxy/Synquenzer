@@ -101920,16 +101920,16 @@ function spk1DspMake(V) {
   }
   // gleitender Median (Länge L ungerade, außen 0): n Werte src[o + i·st] → dst[o + i·st]; buf = sortiertes Fenster
   function medLine(src, o, st, n, L, dst, buf) {
-    /* ZRL1: je Schritt den alten Wert durch den neuen ersetzen und nur bis zur richtigen Stelle schieben (gleiches sortiertes Fenster → bitgleicher Median) */
-    const h = L >> 1;
+    /* ZRL1: je Schritt den alten Wert durch den neuen ersetzen und nur bis zur richtigen Stelle schieben (gleiches sortiertes Fenster → bitgleicher Median); Fenster W = 2·h + 1 (= L bei ungeradem L, auch bei geradem L wie die Basis) */
+    const h = L >> 1, W = 2 * h + 1;
     for (let i = -h, c = 0; i <= h; i++, c++) { const v = Math.fround(i >= 0 && i < n ? src[o + i * st] : 0); let j = c; while (j > 0 && buf[j - 1] > v) { buf[j] = buf[j - 1]; j--; } buf[j] = v; }
     for (let i = 0; i < n; i++) {
       dst[o + i * st] = buf[h];
       const ia = i - h, ib = i + h + 1, vo = Math.fround(ia >= 0 && ia < n ? src[o + ia * st] : 0), vn = Math.fround(ib >= 0 && ib < n ? src[o + ib * st] : 0);
       if (vo === vn) continue;
-      let lo = 0, hi = L - 1; while (lo < hi) { const m = (lo + hi) >> 1; if (buf[m] < vo) lo = m + 1; else hi = m; }
+      let lo = 0, hi = W - 1; while (lo < hi) { const m = (lo + hi) >> 1; if (buf[m] < vo) lo = m + 1; else hi = m; }
       let j = lo;
-      if (vn > vo) { while (j + 1 < L && buf[j + 1] < vn) { buf[j] = buf[j + 1]; j++; } } else { while (j > 0 && buf[j - 1] > vn) { buf[j] = buf[j - 1]; j--; } }
+      if (vn > vo) { while (j + 1 < W && buf[j + 1] < vn) { buf[j] = buf[j + 1]; j++; } } else { while (j > 0 && buf[j - 1] > vn) { buf[j] = buf[j - 1]; j--; } }
       buf[j] = vn;
     }
   }
