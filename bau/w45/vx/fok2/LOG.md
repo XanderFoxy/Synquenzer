@@ -3,3 +3,5 @@
 - 23:22 fok2-test Qualität: 15/16 (einziger Fehler: wahr > 0 dB = Masken-Artefakt, Anzeige bewusst nie heller → Kriterium min(wahr,0)), Last: load average: 1.25, 0.58, 1.45
 - 23:25 v1 (Verhältnis, 1 FFT je Spalte): Qualität 20/20, 3 min N4096 7,7 s (basis 0,8 s), N16384 10,4 s (2,8 s), erstes Stück 0,57/3,0 s, Long Tasks 0; v2 gebaut (Rest-Byte direkt wie Anzeige, 2 Spalten je FFT, restMid-Zwischenspeicher), Last: load average: 6.46, 2.86, 2.15
 - 23:28 v3 (restMid in Scheiben/abbrechbar, Zauberstab ohne Neurechnen) → Regression A/B-Ketten gestartet, md5 6c5a05646d88866ecf71bb5f6176728c, Last: load average: 3.07, 3.88, 2.78
+- 23:33 Regression A: kern 26/0, spk12 98/0, spk12-2 72/0, spk12-3 47 OK / 0 FEHLER, spk6 OK; B: spk5 24 OK, spkfix 11 OK, fokus1-test 50/1 (basis gleiche Last 44/7, nur Long Tasks), Last: load average: 6.10, 4.61, 3.33
+- 23:33 zrl1: Zerlegen 20 s A 1362 / B 1253 ms (Einzelwerte A 1207/1362/1757, B 1252/1253/1409), 3 min A 10060 / B 9610 (1 Lauf, Last 3,8/5,6), SDR+Energie gleich, 'schneller'-Prüfungen sind ZRL1-Ziel gegen 4.74 (hier gleicher Zerlegen-Code) → Fok2 startet Endmessung, Last: load average: 4.73, 4.39, 3.29
