@@ -10,12 +10,16 @@ await p.evaluate(async () => { await __spk.page.open({}); const sr = 44100, n = 
 await p.waitForFunction(() => { const i = __spk.page.info(); return i && !i.nodoc && i.chunks > 0 && !/Spektrum \d/.test(i.stat) && !__spk.page.ui().specQ; }, null, {timeout: 300000}); await p.waitForTimeout(1500);
 const cdp = await ctx.newCDPSession(p); const ev = []; cdp.on('Tracing.dataCollected', d => ev.push(...d.value));
 await cdp.send('Tracing.start', {categories: 'toplevel,devtools.timeline,v8,v8.execute,disabled-by-default-devtools.timeline,blink,gpu,cc', transferMode: 'ReportEvents'});
-if (SC === 'b') { await p.evaluate(() => { const U = __spk.page.ui(); U.N = 8192; spk1SpecLoad(U); }); await p.waitForFunction(() => !__spk.page.ui().specQ, null, {timeout: 120000}); await p.waitForTimeout(1500); }
+if (SC === 'b2') { for (const n of [8192, 4096]) { await p.evaluate(() => document.querySelector('#spk1Sheet [data-a="view"]').click()); await p.waitForTimeout(200);
+  await p.evaluate(n => [...document.querySelectorAll('#spk1Sheet .spk1-dd .spk1-n button')].find(x => x.textContent.trim() === String(n)).click(), n);
+  await p.waitForFunction(() => !__spk.page.ui().specQ, null, {timeout: 120000}); await p.waitForTimeout(800); await p.evaluate(() => spk1Dd(__spk.page.ui(), null)); await p.waitForTimeout(300); } }
+else if (SC === 'b') { await p.evaluate(() => { const U = __spk.page.ui(); U.N = 8192; spk1SpecLoad(U); }); await p.waitForFunction(() => !__spk.page.ui().specQ, null, {timeout: 120000}); await p.waitForTimeout(1500); }
 else { for (const j of [[0, 4, 100, 40], [80, 86, 110, 50], [-0.05, 90, 110, 26]]) { await p.evaluate(([t0, t1, a, z]) => { const U = __spk.page.ui(), v = U.v; v.pps = U.W / (t1 - t0); v.t0 = t0; v.rowH = U.H / (a - z); v.mTop = a; spk1Clamp(U); spk1Dirty(U, 'all'); }, j); await p.waitForTimeout(700); } }
 const done = new Promise(r => cdp.once('Tracing.tracingComplete', r)); await cdp.send('Tracing.end'); await done;
 const main = ev.find(e => e.name === 'thread_name' && e.args && e.args.name === 'CrRendererMain'); const pid = main.pid, tid = main.tid;
 const M = ev.filter(e => e.pid === pid && e.tid === tid && e.ph === 'X').sort((a, c) => a.ts - c.ts);
-const tops = M.filter(e => (e.name === 'ThreadControllerImpl::RunTask' || e.name === 'RunTask') && e.dur > 45000);
+const tops = M.filter(e => (e.name === 'ThreadControllerImpl::RunTask') && e.dur > 40000);
+console.log('Aufgaben >40ms:', tops.length, 'alle RunTask >16ms:', M.filter(e => e.name === 'ThreadControllerImpl::RunTask' && e.dur > 16000).map(e => Math.round(e.dur / 1000)).join(','));
 for (const t of tops) {
   const kids = M.filter(e => e !== t && e.ts >= t.ts && e.ts + (e.dur || 0) <= t.ts + t.dur && e.dur > 3000);
   const agg = new Map(); for (const k of kids) { const n = k.name + (k.args && k.args.data && (k.args.data.functionName || k.args.data.url) ? ':' + (k.args.data.functionName || '') : ''); agg.set(n, Math.max(agg.get(n) || 0, k.dur)); }
