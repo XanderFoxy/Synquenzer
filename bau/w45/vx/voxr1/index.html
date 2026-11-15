@@ -61258,9 +61258,9 @@ function* feats(x, sr) {
   const n = x.length, H = Math.max(32, Math.round(0.005 * sr)), nh = Math.ceil(n / H);
   // Teil 2: je Band eine enge Schleife über den Block statt vier Filterketten je Sample – gleiche Formel, deutlich schneller
   const C = {lf: BW4.map(q => bqC('lp', sr, 150, q)), mid: [bqC('hp', sr, 300, Math.SQRT1_2), bqC('lp', sr, 3000, Math.SQRT1_2)],
-    br: [bqC('hp', sr, 1000, Math.SQRT1_2), bqC('lp', sr, 6000, Math.SQRT1_2)], hf: BW4.map(q => bqC('hp', sr, 5000, q))};
-  const S = {lf: [[0, 0], [0, 0]], mid: [[0, 0], [0, 0]], br: [[0, 0], [0, 0]], hf: [[0, 0], [0, 0]]};
-  const F = {tot: new Float64Array(nh), lf: new Float64Array(nh), mid: new Float64Array(nh), br: new Float64Array(nh), hf: new Float64Array(nh)};
+    br: [bqC('hp', sr, 1000, Math.SQRT1_2), bqC('lp', sr, 6000, Math.SQRT1_2)], hf: BW4.map(q => bqC('hp', sr, 5000, q)), sub: BW4.map(q => bqC('lp', sr, 70, q))};
+  const S = {lf: [[0, 0], [0, 0]], mid: [[0, 0], [0, 0]], br: [[0, 0], [0, 0]], hf: [[0, 0], [0, 0]], sub: [[0, 0], [0, 0]]};
+  const F = {tot: new Float64Array(nh), lf: new Float64Array(nh), mid: new Float64Array(nh), br: new Float64Array(nh), hf: new Float64Array(nh), sub: new Float64Array(nh)};
   const ta = new Float64Array(BLK), tb = new Float64Array(BLK);
   const run2 = (co, st, src, dst, L) => { const b0 = co[0], b1 = co[1], b2 = co[2], a1 = co[3], a2 = co[4]; let z1 = st[0], z2 = st[1];
     for (let i = 0; i < L; i++) { const v = src[i], o = b0 * v + z1; z1 = b1 * v - a1 * o + z2; z2 = b2 * v - a2 * o; dst[i] = o; }
@@ -61269,7 +61269,7 @@ function* feats(x, sr) {
   for (let i0 = 0; i0 < n; i0 += BLK) {
     const i1 = Math.min(n, i0 + BLK), L = i1 - i0;
     for (let i = i0; i < i1; i++) { const v = x[i], h = (i / H) | 0, av = v < 0 ? -v : v; if (av > pk) pk = av; if (av >= 0.998) { run++; if (run === 2) clip++; } else run = 0; F.tot[h] += v * v; ta[i - i0] = v; }
-    for (const k of ['lf', 'mid', 'br', 'hf']) {
+    for (const k of ['lf', 'mid', 'br', 'hf', 'sub']) {
       run2(C[k][0], S[k][0], ta, tb, L); run2(C[k][1], S[k][1], tb, tb, L);
       const A = F[k]; let h = (i0 / H) | 0, e = (h + 1) * H - i0, acc = 0;
       for (let i = 0; i < L; i++) { if (i === e) { A[h] += acc; acc = 0; h++; e += H; } const v = tb[i]; acc += v * v; } A[h] += acc;
@@ -61278,7 +61278,7 @@ function* feats(x, sr) {
   }
   // Rahmen j = Schritte j, j+1 (10 ms), Pegel in dB je Sample
   const nf = Math.max(1, nh - 1), R = {}, w = 1 / (2 * H);
-  for (const k of ['tot', 'lf', 'mid', 'br', 'hf']) { const a = F[k], o = new Float64Array(nf); for (let j = 0; j < nf; j++) o[j] = db((a[j] + (a[j + 1] || 0)) * w); R[k] = o; }
+  for (const k of ['tot', 'lf', 'mid', 'br', 'hf', 'sub']) { const a = F[k], o = new Float64Array(nf); for (let j = 0; j < nf; j++) o[j] = db((a[j] + (a[j + 1] || 0)) * w); R[k] = o; }
   return {H, nh, nf, F, R, clip, pk, sr, n};
 }
 
@@ -61326,20 +61326,29 @@ function* hum(x, y, sr, h) {
   for (let i0 = 0; i0 < n; i0 += BLK) { const i1 = Math.min(n, i0 + BLK); for (let k = 0; k < K.length; k++) bqRun(K[k].c, S[k], k ? y : x, y, i0, i1); if (!K.length) y.set(x.subarray(i0, i1), i0); yield i1 / n; }
   return K.map(k => ({f: +k.f.toFixed(3), db: +k.db.toFixed(1), q: k.q}));
 }
-function* hp(x, y, sr, fc) { const c = bqC('hp', sr, fc || 80, Math.SQRT1_2), s = [0, 0], n = x.length; for (let i0 = 0; i0 < n; i0 += BLK) { const i1 = Math.min(n, i0 + BLK); bqRun(c, s, x, y, i0, i1); yield i1 / n; } }
+// Prüfung: nullphasig (vorwärts, dann rückwärts) – sonst klingt in „nur Entferntes“ (x − hp(x)) über den Phasengang der Grundton mit
+function* hp(x, y, sr, fc) {
+  const c = bqC('hp', sr, fc || 80, Math.SQRT1_2), n = x.length, b0 = c[0], b1 = c[1], b2 = c[2], a1 = c[3], a2 = c[4]; let s = [0, 0];
+  for (let i0 = 0; i0 < n; i0 += BLK) { const i1 = Math.min(n, i0 + BLK); bqRun(c, s, x, y, i0, i1); yield 0.5 * i1 / n; }
+  let z1 = 0, z2 = 0;
+  for (let i1 = n; i1 > 0; i1 -= BLK) { const i0 = Math.max(0, i1 - BLK); for (let i = i1 - 1; i >= i0; i--) { const v = y[i], o = b0 * v + z1; z1 = b1 * v - a1 * o + z2; z2 = b2 * v - a2 * o; y[i] = o; } yield 0.5 + 0.5 * (n - i0) / n; }
+}
 
 /* ---------- Plopps finden: Sprung von (< 150 Hz) − (300–3000 Hz) gegen die Umgebung, 10–80 ms ---------- */
 function plopFind(Fe, o) {
   o = o || {}; const sens = o.sens != null ? o.sens : 8, thr = 6 + (10 - sens) * 1.5, R = Fe.R, nf = Fe.nf, fps = Fe.sr / Fe.H;
-  const r = new Float64Array(nf); for (let j = 0; j < nf; j++) r[j] = R.lf[j] - R.mid[j];
-  const flo = pct(R.lf, 0.1), top = pct(R.tot, 0.99), B0 = Math.round(0.25 * fps), B1 = Math.round(0.03 * fps), A0 = Math.round(0.1 * fps), A1 = Math.round(0.3 * fps);
+  // Prüfung: das Band < 150 Hz enthält bei tiefen Stimmen den Grundton (Stoß zu wenig sichtbar, Fehlalarme auf gesungenen Tönen) →
+  // gesucht wird im Band < 70 Hz (unter jedem gesungenen Grundton); der Stoß muss dort einen großen Teil der Energie tragen
+  const LF = R.sub || R.lf, own = o.own != null ? o.own : -10;
+  const r = new Float64Array(nf); for (let j = 0; j < nf; j++) r[j] = LF[j] - R.mid[j];
+  const flo = pct(LF, 0.1), top = pct(R.tot, 0.99), B0 = Math.round(0.25 * fps), B1 = Math.round(0.03 * fps), A0 = Math.round(0.1 * fps), A1 = Math.round(0.3 * fps);
   const ex = new Float64Array(nf), cand = new Uint8Array(nf);
   for (let j = 0; j < nf; j++) {
-    if (R.lf[j] < flo + 15 || R.lf[j] < top - 45) continue;
-    const rb = med(r, j - B0, j - B1), ra = med(r, j + A0, j + A1), lb = med(R.lf, j - B0, j - B1), la = med(R.lf, j + A0, j + A1);
+    if (LF[j] < flo + 15 || LF[j] < top - 45 || LF[j] < R.tot[j] + own) continue;
+    const rb = med(r, j - B0, j - B1), ra = med(r, j + A0, j + A1), lb = med(LF, j - B0, j - B1), la = med(LF, j + A0, j + A1);
     const base = rb == null ? ra : ra == null ? rb : Math.max(rb, ra), lbase = lb == null ? la : la == null ? lb : Math.max(lb, la);   // kurz: über beiden Seiten (Tonwechsel nach tief ist kein Stoß)
     if (base == null) continue;
-    ex[j] = r[j] - base; if (ex[j] >= thr && R.lf[j] - lbase >= thr - 3) cand[j] = 1;
+    ex[j] = r[j] - base; if (ex[j] >= thr && LF[j] - lbase >= thr - 3) cand[j] = 1;
   }
   const ev = [];
   for (let j = 0; j < nf; j++) {
@@ -61581,8 +61590,11 @@ function* room(y, sr, o, Lr) {
   for (let k = 1; k < N / 2; k++) mag[k] = Math.sqrt(Lr.P[k]);
   for (let q = 0; q < holes.length; q++) {
     // Pegel: der Raumton gleich daneben (je 300 ms, nur rauschartige Rahmen ≤ gelernt + 15 dB), sonst der gelernte
-    const [a, b] = holes[q], L = b - a, ph = lev(a, b), nb = [], nbu = []; let ns = 0;
-    for (const [u0, u1] of [[a - 30 * H, a], [b, b + 30 * H]]) for (let u = Math.max(0, u0); u + H <= Math.min(n, u1); u += H) { const l = lev(u, u + H); if (l > -110 && l <= Lr.db + 15) { nb.push(l); nbu.push(u); } else if (l <= -110) ns++; }
+    const [a, b] = holes[q], L = b - a, ph = lev(a, b); let nb = [], nbu = [], ns = 0;
+    // Prüfung: frisst die Lücke fast die ganze Pause, liegen daneben kaum Raumton-Rahmen → Fenster bis ±2 s erweitern (statt gelernt)
+    for (const W of [30, 100, 200]) { nb = []; nbu = []; ns = 0;
+      for (const [u0, u1] of [[a - W * H, a], [b, b + W * H]]) for (let u = Math.max(0, u0); u + H <= Math.min(n, u1); u += H) { const l = lev(u, u + H); if (l > -110 && l <= Lr.db + 15) { nb.push(l); nbu.push(u); } else if (l <= -110) ns++; }
+      if (nb.length >= 12 || (nb.length < 5 && ns >= 5)) break; }
     if (nb.length < 5 && ns >= 5) continue;   // daneben ist es auch digital still (Take mit Tor): nichts erfinden
     nb.sort((p1, p2) => p1 - p2); const pt = nb.length >= 5 ? Math.pow(10, (nb[nb.length >> 1] + 0.5) / 10) : Lr.p, need = pt - Math.pow(10, ph / 10); if (need <= 0 || L < 2 * R) continue;   // Mittelwert (dB) der Nachbarn, robust gegen einzelne laute Rahmen
     // Klangfarbe ebenfalls von daneben (zusammenhängende rauschartige Rahmen, je 1024er-Fenster), sonst die gelernte
@@ -61610,18 +61622,20 @@ function* check(x, sr, o) {
   const floor = pct(R.tot, 0.1), act = pct(R.tot, 0.6), top = pct(R.tot, 0.99);
   // Klicks: Durchgang 1 der Klick-Suche (AR-Rest, allein stehende Impulse); Atmer: dieselbe Suche wie der Schritt Atmer
   const clickList = yield* part(clickScan(x, sr, o.click), 0.62, 0.2), clicks = clickList.length;
-  const breaths = yield* part(breathFind(x, sr, Fe, o.breath), 0.82, 0.15);
+  const breaths = yield* part(breathFind(x, sr, Fe, o.breath), 0.82, 0.1);
+  // Prüfung: Zischen zählt nur, was der Entzischer auch senken würde (über dem Gesangspegel −6 dB, ≥ 20 ms) – dieselbe Analyse
+  const SH = yield* part(vr1EssCore(x, sr, 6, {gen: true, scan: true, keep: breaths.map(e => [e.s0, e.s1])}), 0.92, 0.05);
   // Zischen: Anteil > 5 kHz an der Energie der aktiven Rahmen
   let eh = 0, et = 0, sib = 0; const sibSec = new Array(Math.ceil(x.length / sr)).fill(0); for (let j = 0; j < nf; j++) if (R.tot[j] > act - 20) { const t = Math.pow(10, R.tot[j] / 10), h = Math.pow(10, R.hf[j] / 10); et += t; eh += h; if (h > 0.4 * t) { sib++; sibSec[Math.min(sibSec.length - 1, Math.floor(j / fps))]++; } }
   const B = {sr, sec: +(x.length / sr).toFixed(2), clip: Fe.clip, peakDb: +(20 * Math.log10(Fe.pk + EPS)).toFixed(1), floorDb: +floor.toFixed(1), snrDb: +(act - floor).toFixed(1),
-    hum: Hm, plops, clicks, clickList: clickList.map(e => ({t0: e.t0, t1: e.t1, sc: e.sc})), breaths: breaths.length, breathList: breaths.map(e => ({t0: e.t0, t1: e.t1, db: e.db})), sibPct: +(100 * eh / (et + EPS)).toFixed(1), sibFrames: sib, sibSec, actDb: +act.toFixed(1), ms: Date.now() - t0};
+    hum: Hm, plops, clicks, clickList: clickList.map(e => ({t0: e.t0, t1: e.t1, sc: e.sc})), breaths: breaths.length, breathList: breaths.map(e => ({t0: e.t0, t1: e.t1, db: e.db})), sibPct: +(100 * eh / (et + EPS)).toFixed(1), sibFrames: sib, sibSec, sibHot: SH.hot || 0, sibHotMs: SH.hotMs || 0, actDb: +act.toFixed(1), ms: Date.now() - t0};
   const L = [];
   if (B.clip) L.push(B.clip + ' Übersteuerung' + (B.clip > 1 ? 'en' : ''));
   if (B.clicks) L.push(B.clicks + ' Klick' + (B.clicks > 1 ? 's' : ''));
   if (plops.length) L.push(plops.length + ' Plopp' + (plops.length > 1 ? 's' : ''));
   if (Hm.on) L.push('Brumm ' + Hm.base + ' Hz');
   if (B.breaths) L.push(B.breaths + ' Atmer');
-  if (B.sibPct >= 8) L.push('Zischen ' + Math.round(B.sibPct) + ' %');
+  if (B.sibHot) L.push(B.sibHot + '× Zischen');
   if (B.snrDb < 35) L.push('Raumton ' + Math.round(B.floorDb) + ' dB');
   B.line = L.length ? L.join(' · ') : 'sauber';
   yield 1;
@@ -61632,12 +61646,17 @@ function* check(x, sr, o) {
 const ORDER = ['click', 'plop', 'hum', 'hp', 'breath', 'room', 'ess'];
 function* run(x, sr, o) {
   o = o || {}; const st = o.steps || {}, t0 = Date.now(), y = Float32Array.from(x), info = {order: []}, on = ORDER.filter(k => st[k]), sp = 1 / Math.max(1, on.length);
-  let at = 0, Fe = null;
+  // Prüfung: „nur Entferntes“ = Summe dessen, was jeder Schritt herausnimmt (Eingang − Ausgang je Schritt; Raumton füllt nur auf und
+  // zählt nicht mit). So enthält es weder SÄUBERN noch die Stimme selbst.
+  const wg = o.weg ? new Float32Array(x.length) : null, acc = sg => { for (let i = 0; i < y.length; i++) wg[i] += sg * y[i]; };
+  let at = 0, Fe = null, keep = st.ess && st.ess.keep ? st.ess.keep.slice() : [];
   for (const k of on) {
+    if (wg && k !== 'room') acc(1);
     if (k === 'click') info.click = yield* part(clicks2(y, sr, st.click), at, sp);
     else if (k === 'breath') {
       const B = st.breath, fe = Fe || (yield* part(feats(y, sr), at, sp * 0.5)), ev = B.list ? B.list.map(e => Object.assign({}, e, {s0: e.s0 != null ? e.s0 : Math.round(e.t0 * sr), s1: e.s1 != null ? e.s1 : Math.round(e.t1 * sr)})) : yield* part(breathFind(y, sr, fe, B), at + sp * 0.5, sp * 0.3);
       info.breath = yield* part(breath(y, sr, ev, B), at + sp * 0.8, sp * 0.2);
+      for (const e of ev) keep.push([e.s0, e.s1]);   // Prüfung: Atmer gehören dem Schritt Atmer (auch „lassen“) – der Entzischer lässt sie
     } else if (k === 'room') { const Lr = yield* part(roomLearn(x, sr), at, sp * 0.4); info.room = yield* part(room(y, sr, st.room, Lr), at + sp * 0.4, sp * 0.6); }
     else if (k === 'plop') {
       Fe = yield* part(feats(y, sr), at, sp * 0.5);
@@ -61649,28 +61668,29 @@ function* run(x, sr, o) {
       info.hum = {f0: h.f0, n: h.n, depth: h.depth != null ? h.depth : -30, q: h.q || 30, found: h.found || null};
       if (h.n) info.hum.k = yield* part(hum(y, y, sr, h), at + sp * 0.3, sp * 0.7);
     } else if (k === 'hp') { yield* part(hp(y, y, sr, st.hp.fc), at, sp); info.hp = {fc: st.hp.fc || 80}; }
-    else if (k === 'ess') { const E = st.ess === true ? {} : st.ess; info.ess = yield* part(vr1EssCore(y, sr, E.amt != null ? E.amt : 6, Object.assign({}, E, {gen: true})), at, sp); }
+    else if (k === 'ess') { const E = st.ess === true ? {} : st.ess; info.ess = yield* part(vr1EssCore(y, sr, E.amt != null ? E.amt : 6, Object.assign({}, E, {gen: true, keep})), at, sp); }
+    if (wg && k !== 'room') acc(-1);
     info.order.push(k); at += sp;
   }
   info.ms = Date.now() - t0;
-  return {y, info};
+  return wg ? {y, wg, info} : {y, info};
 }
 /* ---------- Teil 3 · Assistent: aus dem Befund (Prüfen) die Schritte mit Startwerten × 0,5 / 1 / 1,5 (leicht / mittel / stark); es laufen
    nur die Schritte, bei denen Prüfen etwas fand (Hochpass und Raumton immer: sie ändern nur, was da ist) ---------- */
 const LV = {leicht: 0.5, mittel: 1, stark: 1.5};
 function assist(B, lv) {
   const f = LV[lv] || 1, st = {}, why = [];
-  if (B.clicks) { st.click = {sens: Math.round(4 * f + (f > 1 ? 1 : 0))}; why.push('click'); }
+  if (B.clicks) { st.click = {sens: Math.round(4 * f)}; why.push('click'); }   // Prüfung: × 0,5 / 1 / 1,5 → 2 / 4 / 6
   if (B.plops && B.plops.length) { st.plop = {str: Math.round(50 * f)}; why.push('plop'); }
   if (B.hum && B.hum.on) { st.hum = {f0: B.hum.f0, n: Math.max(B.hum.n || 0, 7), depth: -30 * f}; why.push('hum'); }
   st.hp = {fc: 80};
   if (B.breaths) { st.breath = {target: -40 - 12 * (f - 1)}; why.push('breath'); }
   st.room = {};
-  if (B.sibPct >= 8 || B.sibFrames > 20) { st.ess = {amt: 6 * f}; why.push('ess'); }
+  if (B.sibHot ? B.sibHotMs >= 40 : B.sibHotMs == null && B.sibPct >= 20) { st.ess = {amt: 6 * f}; why.push('ess'); }   // Prüfung: nur wenn Prüfen scharfe S fand
   return {lv: LV[lv] ? lv : 'mittel', f, steps: st, found: why};
 }
 // Vorschlag: so stark, wie der Befund es braucht
-function suggest(B) { const s = (B.clicks > 20 ? 2 : B.clicks ? 1 : 0) + (B.plops && B.plops.length > 3 ? 2 : B.plops && B.plops.length ? 1 : 0) + (B.hum && B.hum.on ? 1 : 0) + (B.breaths > 8 ? 1 : 0) + (B.sibPct >= 20 ? 2 : B.sibPct >= 8 ? 1 : 0); return s >= 5 ? 'stark' : s >= 2 ? 'mittel' : 'leicht'; }
+function suggest(B) { const s = (B.clicks > 20 ? 2 : B.clicks ? 1 : 0) + (B.plops && B.plops.length > 3 ? 2 : B.plops && B.plops.length ? 1 : 0) + (B.hum && B.hum.on ? 1 : 0) + (B.breaths > 8 ? 1 : 0) + (B.sibHot > 10 ? 2 : B.sibHot ? 1 : 0); return s >= 5 ? 'stark' : s >= 2 ? 'mittel' : 'leicht'; }
 // schlimmste Stelle: das Fenster (len s) mit den meisten Funden (Klick 1, Plopp 3, Atmer 1, Zisch-Rahmen 0,05)
 function worst(B, len) {
   len = len || 10; const T = B.sec || 0; if (T <= len) return {t0: 0, t1: T};
@@ -61693,10 +61713,16 @@ return {check, run, assist, suggest, worst, ess: vr1EssCore, feats, humFind, hum
 function vr1EssCore(y, sr, amt, o) {
   'use strict';
   o = o || {};
+  /* Prüfung (VOX-R1 Teil 3 nachgebessert): Bezug ist der Gesangspegel (Plan §3 Nr. 12), nicht nur der Rahmen selbst: ein „s“ in einer
+     Pause oder am Wortrand wird nur gesenkt, wenn es über (Gesangspegel − 6 dB) liegt; Gesangspegel = Mittel der lauteren Hälfte der
+     Rahmen (Energie unter der Grenze) in ±4,5 s, höchstens 10 dB unter dem des ganzen Takes; auf einem Vokal zählt der Rahmen selbst,
+     wenn er lauter ist. Gesenkt wird gleichmäßig über der Grenze (3 × Überstand, höchstens Stärke dB). Atmer (o.keep) bleiben.
+     Tempo: Sprung N/2 (√Hann, 50 %) und je zwei Rahmen in einer komplexen FFT (Analyse und Synthese) → etwa ¼ der Rechnung.
+     o.scan: nur zählen (Prüfen), nichts ändern. */
   function* g() {
-    const n = y.length, N = sr > 50000 ? 2048 : 1024, H = N >> 2, half = N >> 1, fc = o.fc || 5000, thr = o.thr != null ? o.thr : -6, A = Math.max(0, Math.min(24, +amt || 0));
-    const res = {maxDb: 0, sibMs: 0, how: 'spektral', N, latMs: +(N / sr * 1000).toFixed(1), bands: 0};
-    if (n < N || A <= 0.05) return res;
+    const n = y.length, N = sr > 50000 ? 2048 : 1024, H = N >> 1, half = N >> 1, fc = o.fc || 5000, thr = o.thr != null ? o.thr : -6, A = Math.max(0, Math.min(24, +amt || 0));
+    const res = {maxDb: 0, sibMs: 0, how: 'spektral', N, latMs: +(N / sr * 1000).toFixed(1), bands: 1, hot: 0, hotMs: 0};
+    if (n < N || (A <= 0.05 && !o.scan)) return res;
     const rev = new Uint32Array(N); let bits = 0; while ((1 << bits) < N) bits++;
     for (let i = 0; i < N; i++) { let r = 0; for (let b = 0; b < bits; b++) r |= ((i >> b) & 1) << (bits - 1 - b); rev[i] = r; }
     const cs = new Float64Array(half), sn = new Float64Array(half); for (let i = 0; i < half; i++) { cs[i] = Math.cos(2 * Math.PI * i / N); sn[i] = Math.sin(2 * Math.PI * i / N); }
@@ -61704,37 +61730,46 @@ function vr1EssCore(y, sr, amt, o) {
     const fft = inv => { for (let i = 0; i < N; i++) { const j = rev[i]; if (j > i) { let t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; } }
       for (let s = 2; s <= N; s <<= 1) { const h = s >> 1, st = N / s; for (let i = 0; i < N; i += s) for (let j = 0; j < h; j++) { const c = cs[j * st], si = inv ? sn[j * st] : -sn[j * st], l = i + j + h, tr = re[l] * c - im[l] * si, ti = re[l] * si + im[l] * c; re[l] = re[i + j] - tr; im[l] = im[i + j] - ti; re[i + j] += tr; im[i + j] += ti; } } };
     const w = new Float64Array(N); for (let i = 0; i < N; i++) w[i] = Math.sqrt(0.5 - 0.5 * Math.cos(2 * Math.PI * i / N));
-    const bin = f => Math.round(f * N / sr), k0 = bin(fc), kT = Math.min(half - 1, bin(Math.min(16000, sr * 0.47))), v0 = bin(300), v1 = bin(4000);
+    const bin = f => Math.round(f * N / sr), k0 = bin(fc), kT = Math.min(half - 1, bin(Math.min(16000, sr * 0.47)));
     if (kT <= k0 + 2) return res;
-    const ed = [k0]; while (ed[ed.length - 1] <= kT) ed.push(Math.min(kT + 1, Math.max(ed[ed.length - 1] + 2, Math.round(ed[ed.length - 1] * Math.pow(2, 1 / 3))))); if (ed[ed.length - 1] === ed[ed.length - 2]) ed.pop();
-    const nb = ed.length - 1, J = Math.ceil(n / H) + 4, nrm = 4 / (N * N), lg = p => 10 * Math.log10(p * nrm + 1e-20);
-    const Lb = new Float32Array(J * nb), red = new Float32Array(J * nb), sib = new Uint8Array(J), Lv = new Float32Array(J);
-    const frame = j => { const s = (j - 3) * H; for (let i = 0; i < N; i++) { const q = s + i; re[i] = q >= 0 && q < n ? y[q] * w[i] : 0; im[i] = 0; } fft(false); };
-    res.bands = nb;
-    for (let j = 0; j < J; j++) {
-      frame(j); let pv = 0, ps = 0; for (let k = v0; k <= v1; k++) pv += re[k] * re[k] + im[k] * im[k];
-      for (let b = 0; b < nb; b++) { let p = 0; for (let k = ed[b]; k < ed[b + 1]; k++) p += re[k] * re[k] + im[k] * im[k]; Lb[j * nb + b] = lg(p); ps += p; }
-      Lv[j] = lg(pv); const Ls = lg(ps); sib[j] = Ls > Lv[j] + thr - 4 && Ls > -70 ? 1 : 0;   // Erkennung 4 dB empfindlicher als die Senkung (Zischlaut auf einem Vokal-Ende)
-      if ((j & 511) === 511) yield 0.5 * j / J;
+    const J = Math.ceil(n / H) + 2, nrm = 4 / (N * N), lg = p => 10 * Math.log10(p * nrm + 1e-20);
+    const Ls = new Float32Array(J), Lo = new Float32Array(J), red = new Float32Array(J), sib = new Uint8Array(J);
+    // zwei reelle Rahmen j (Realteil) und j+1 (Imaginärteil) in einer FFT
+    const pair = j => { const s0 = (j - 1) * H, s1 = j * H; for (let i = 0; i < N; i++) { const q0 = s0 + i, q1 = s1 + i; re[i] = q0 >= 0 && q0 < n ? y[q0] * w[i] : 0; im[i] = q1 >= 0 && q1 < n ? y[q1] * w[i] : 0; } fft(false); };
+    for (let j = 0; j < J; j += 2) {
+      pair(j); let pa = 0, pb = 0, qa = 0, qb = 0;
+      for (let k = 1; k <= kT; k++) { const a = re[k], b = im[k], c = re[N - k], d = im[N - k], P0 = (a + c) * (a + c) + (b - d) * (b - d), P1 = (b + d) * (b + d) + (a - c) * (a - c); if (k < k0) { pa += P0; pb += P1; } else { qa += P0; qb += P1; } }
+      Lo[j] = lg(pa / 4); Ls[j] = lg(qa / 4); if (j + 1 < J) { Lo[j + 1] = lg(pb / 4); Ls[j + 1] = lg(qb / 4); }
+      if ((j & 31) === 30) yield 0.4 * j / J;
     }
+    // Gesangspegel: lautere Hälfte der Rahmen (über −80 dB) je ±4,5 s (Blöcke à 3 s), nicht tiefer als 10 dB unter dem des Takes
+    const top = a => { const t = a.filter(v => v > -80).sort((p, q) => q - p); if (!t.length) return -200; let s = 0; const m = Math.max(1, t.length >> 1); for (let i = 0; i < m; i++) s += Math.pow(10, t[i] / 10); return 10 * Math.log10(s / m); };
+    const BF = Math.max(8, Math.round(3 * sr / H)), nb = Math.ceil(J / BF), Lall = top(Array.from(Lo)), Lblk = new Float32Array(nb);
+    for (let b = 0; b < nb; b++) Lblk[b] = Math.max(top(Array.from(Lo.subarray(Math.max(0, (b - 1) * BF), Math.min(J, (b + 2) * BF)))), Lall - 10);
+    const keep = new Uint8Array(J); if (o.keep) for (const [a, b] of o.keep) for (let j = Math.max(0, Math.floor(a / H)); j <= Math.min(J - 1, Math.ceil(b / H) + 1); j++) keep[j] = 1;
+    const ref = new Float32Array(J);
+    for (let j = 0; j < J; j++) { ref[j] = Math.max(Lo[j], Lblk[Math.min(nb - 1, Math.floor(j / BF))]) + thr; sib[j] = !keep[j] && Ls[j] > ref[j] && Ls[j] > -70 ? 1 : 0; }
     // nur Zischlaute ≥ 20 ms (kurze Anschläge t/k/p bleiben)
     const minR = Math.max(2, Math.ceil(0.02 * sr / H));
-    for (let j = 0; j < J;) { if (!sib[j]) { j++; continue; } let e = j; while (e < J && sib[e]) e++; if (e - j < minR) for (let q = j; q < e; q++) sib[q] = 0; j = e; }
-    const share = 10 * Math.log10(nb), rel = A * H / (0.04 * sr), att = A * H / (0.005 * sr);
-    for (let j = 0; j < J; j++) if (sib[j]) for (let b = 0; b < nb; b++) { const ov = Lb[j * nb + b] + share - (Lv[j] + thr); red[j * nb + b] = ov > 0 ? Math.min(A, ov * 2) : 0; }
-    for (let b = 0; b < nb; b++) { for (let j = 1; j < J; j++) red[j * nb + b] = Math.max(red[j * nb + b], red[(j - 1) * nb + b] - rel); for (let j = J - 2; j >= 0; j--) red[j * nb + b] = Math.max(red[j * nb + b], red[(j + 1) * nb + b] - att); }
-    const d = new Float32Array(n), cen = []; for (let b = 0; b < nb; b++) cen.push((ed[b] + ed[b + 1] - 1) / 2);
-    const gk = new Float64Array(half + 1); let act = 0, mx = 0;
-    for (let j = 0; j < J; j++) {
-      let any = 0; for (let b = 0; b < nb; b++) { const r = red[j * nb + b]; if (r > 0.01) any = 1; if (r > mx) mx = r; }
-      if (!any) continue; if (sib[j]) act++;
-      frame(j);
-      for (let k = 0; k <= half; k++) gk[k] = 0;
-      for (let k = k0; k <= kT; k++) { let b = 0; while (b < nb - 1 && k > cen[b + 1]) b++; let r; if (k <= cen[0]) r = red[j * nb]; else if (b >= nb - 1) r = red[j * nb + nb - 1]; else { const u = (k - cen[b]) / (cen[b + 1] - cen[b]); r = red[j * nb + b] * (1 - u) + red[j * nb + b + 1] * u; } gk[k] = Math.pow(10, -r / 20) - 1; }
-      for (let k = kT + 1; k <= half; k++) gk[k] = gk[kT];
-      for (let k = 0; k <= half; k++) { re[k] *= gk[k]; im[k] *= gk[k]; } for (let k = 1; k < half; k++) { re[N - k] = re[k]; im[N - k] = -im[k]; }
-      fft(true); const s = (j - 3) * H; for (let i = 0; i < N; i++) { const q = s + i; if (q >= 0 && q < n) d[q] += re[i] / N * w[i] * 0.5; }
-      if ((j & 511) === 511) yield 0.5 + 0.5 * j / J;
+    for (let j = 0; j < J;) { if (!sib[j]) { j++; continue; } let e = j; while (e < J && sib[e]) e++; if (e - j < minR) for (let q = j; q < e; q++) sib[q] = 0; else { res.hot++; res.hotMs += Math.round((e - j) * H / sr * 1000); } j = e; }
+    if (o.scan) { yield 1; return res; }
+    const rel = A * H / (0.04 * sr), att = A * H / (0.005 * sr);
+    for (let j = 0; j < J; j++) if (sib[j]) red[j] = Math.min(A, 3 * (Ls[j] - ref[j]));
+    for (let j = 1; j < J; j++) red[j] = Math.max(red[j], red[j - 1] - rel); for (let j = J - 2; j >= 0; j--) red[j] = Math.max(red[j], red[j + 1] - att);
+    for (let j = 0; j < J; j++) if (keep[j]) red[j] = 0;
+    const d = new Float32Array(n); let act = 0, mx = 0;
+    for (let j = 0; j < J; j += 2) {
+      const r0 = red[j], r1 = j + 1 < J ? red[j + 1] : 0; if (r0 > mx) mx = r0; if (r1 > mx) mx = r1; if (sib[j]) act++; if (j + 1 < J && sib[j + 1]) act++;
+      if (r0 <= 0.01 && r1 <= 0.01) continue;
+      pair(j); const g0 = r0 > 0.01 ? Math.pow(10, -r0 / 20) - 1 : 0, g1 = r1 > 0.01 ? Math.pow(10, -r1 / 20) - 1 : 0;
+      // nur die Differenz (G − 1)·X über der Grenze: Y0 = g0·X0, Y1 = g1·X1, zusammen Y0 + i·Y1 (beide reell im Zeitbereich)
+      for (let k = 0; k < k0; k++) { re[k] = 0; im[k] = 0; if (k) { re[N - k] = 0; im[N - k] = 0; } }
+      for (let k = k0; k <= half; k++) { const a = re[k], b = im[k], c = re[N - k], dd = im[N - k];
+        const x0r = (a + c) / 2, x0i = (b - dd) / 2, x1r = (b + dd) / 2, x1i = (c - a) / 2, pr = g0 * x0r, pi = g0 * x0i, qr = g1 * x1r, qi = g1 * x1i;
+        re[k] = pr - qi; im[k] = pi + qr; if (k !== half) { re[N - k] = pr + qi; im[N - k] = qr - pi; } }
+      fft(true); const s0 = (j - 1) * H, s1 = j * H;
+      for (let i = 0; i < N; i++) { const q0 = s0 + i, q1 = s1 + i; if (q0 >= 0 && q0 < n) d[q0] += re[i] / N * w[i]; if (q1 >= 0 && q1 < n) d[q1] += im[i] / N * w[i]; }
+      if ((j & 31) === 30) yield 0.4 + 0.6 * j / J;
     }
     for (let i = 0; i < n; i++) if (d[i] !== 0) y[i] += d[i];
     res.maxDb = +(-mx).toFixed(2); res.sibMs = Math.round(act * H / sr * 1000);
