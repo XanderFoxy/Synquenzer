@@ -61425,14 +61425,17 @@ function arCoef(z, segs, p) { const r = new Float64Array(p + 1); for (const [a, 
   r[0] *= 1 + 1e-6; const A = new Float64Array(p + 1), T = new Float64Array(p + 1); A[0] = 1; let E = r[0] + EPS;
   for (let m = 1; m <= p; m++) { let acc = r[m]; for (let k = 1; k < m; k++) acc += A[k] * r[m - k]; const kk = -acc / E; T.set(A); for (let k = 1; k < m; k++) A[k] = T[k] + kk * T[m - k]; A[m] = kk; E *= 1 - kk * kk; if (E <= 0) break; }
   return A; }   // e[t] = Σ A[k]·z[t−k]
-function lsar(z, g0, g1, A) { const p = A.length - 1, m = g1 - g0, M = new Float64Array(m * m), v = new Float64Array(m);
+/* VOXR1F-P: LSAR mit Band-Cholesky. Die Normalmatrix ist ein Band (Halbbreite p = AR-Ordnung); die Rechnung lässt nur die Nullen aus –
+   gleiche Summen in gleicher Reihenfolge, Ergebnis bitgleich (3-min-Kette FNV gleich), Aufwand m·p² statt m³ (längere Spannen kaum teurer).
+   Speicher: L(i, j) für 0 ≤ i − j ≤ p an M[i·(p+1) + i − j]. */
+function lsar(z, g0, g1, A) { const p = A.length - 1, m = g1 - g0, W = p + 1, M = new Float64Array(m * W), v = new Float64Array(m);
   for (let t = g0; t < g1 + p; t++) { const cu = [], cv = []; let b = 0; for (let k = 0; k <= p; k++) { const i = t - k; if (i < 0 || i >= z.length) continue; if (i >= g0 && i < g1) { cu.push(i - g0); cv.push(A[k]); } else b += A[k] * z[i]; }
-    for (let u = 0; u < cu.length; u++) { v[cu[u]] -= cv[u] * b; for (let w = 0; w < cu.length; w++) M[cu[u] * m + cu[w]] += cv[u] * cv[w]; } }
-  for (let i = 0; i < m; i++) M[i * m + i] += 1e-9;
-  for (let j = 0; j < m; j++) { let d = M[j * m + j]; for (let k = 0; k < j; k++) d -= M[j * m + k] * M[j * m + k]; d = Math.sqrt(Math.max(d, 1e-18)); M[j * m + j] = d;   // Cholesky
-    for (let i = j + 1; i < m; i++) { let s = M[i * m + j]; for (let k = 0; k < j; k++) s -= M[i * m + k] * M[j * m + k]; M[i * m + j] = s / d; } }
-  for (let i = 0; i < m; i++) { let s = v[i]; for (let k = 0; k < i; k++) s -= M[i * m + k] * v[k]; v[i] = s / M[i * m + i]; }
-  for (let i = m - 1; i >= 0; i--) { let s = v[i]; for (let k = i + 1; k < m; k++) s -= M[k * m + i] * v[k]; v[i] = s / M[i * m + i]; }
+    for (let u = 0; u < cu.length; u++) { v[cu[u]] -= cv[u] * b; for (let w = 0; w < cu.length; w++) if (cu[w] <= cu[u]) M[cu[u] * W + cu[u] - cu[w]] += cv[u] * cv[w]; } }
+  for (let i = 0; i < m; i++) M[i * W] += 1e-9;
+  for (let j = 0; j < m; j++) { let d = M[j * W]; for (let k = Math.max(0, j - p); k < j; k++) d -= M[j * W + j - k] * M[j * W + j - k]; d = Math.sqrt(Math.max(d, 1e-18)); M[j * W] = d;   // Cholesky (Band)
+    for (let i = j + 1; i < Math.min(m, j + W); i++) { let s = M[i * W + i - j]; for (let k = Math.max(0, i - p); k < j; k++) s -= M[i * W + i - k] * M[j * W + j - k]; M[i * W + i - j] = s / d; } }
+  for (let i = 0; i < m; i++) { let s = v[i]; for (let k = Math.max(0, i - p); k < i; k++) s -= M[i * W + i - k] * v[k]; v[i] = s / M[i * W]; }
+  for (let i = m - 1; i >= 0; i--) { let s = v[i]; for (let k = i + 1; k < Math.min(m, i + W); k++) s -= M[k * W + k - i] * v[k]; v[i] = s / M[i * W]; }
   return v; }
 function plopCut(y, sr, E, cut) {
   const M = Math.min(2048, Math.round(0.045 * sr)), seg = [[E.s0 - Math.round(0.02 * sr) - M, E.s0 - Math.round(0.02 * sr)], [E.s1 + Math.round(0.02 * sr), E.s1 + Math.round(0.02 * sr) + M]].filter(([p, q]) => p >= 0 && q <= y.length);
