@@ -87,6 +87,8 @@ Lesart: a/b in A und B von der Last bestimmt (Grafik-Warten, kein Skript; a ohne
 c: das zweite buildGrid fällt weg (−8…−20 ms je Ablegen, unter Last mehr); in Ruhe keine Long Task mehr, unter Last 7–9 auf
 4 Kernen in 926×428 noch 53–70 ms (Basis 66–142).
 Rohdaten: `lt1-test-926x428.out`, `lt1-test-428x926.out`, `lt1-test-a2.out`, `lt1-test-c-final.out` (+ .json), Spuren mit `lt1-trace.mjs`.
+**Die c-Zeilen oben sind die Fassung vor der Prüfung (nur Teil 1, kurze 8-Takt-Datei).** Endfassung mit Teil 2 und langen Liedern:
+Abschnitt „Prüfung“ (c: keine Long Task beim Ablegen in 6 von 6 Paket-Läufen; 3-min-Lied imp1Place ~27–34 ms statt ~135 ms).
 
 ## Regression (reg.sh → reg.log, Ausgaben in reg/)
 **Berichtigt (Prüfer-Befund 3):** imp1 (16:33:48), imp2 (16:33:59) und spk12-3 Lauf 1 (16:31) liefen auf dem Zwischenstand mit
