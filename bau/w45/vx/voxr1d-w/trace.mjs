@@ -39,7 +39,7 @@ ok(h0.sheet && h0.row, 'Takes-Blatt mit Zeile „Gesang reinigen“ offen (3-min
 // VOXR1E-Trace: Chrome-Trace über Prüfen + Anwenden, lange Aufgaben (RunTask > 40 ms) des Hauptfadens mit Inhalt
 const chunks = []; cdp.on('Tracing.dataCollected', e => { for (const v of e.value) chunks.push(v); });
 const done = new Promise(r => cdp.once('Tracing.tracingComplete', r));
-await cdp.send('Tracing.start', {categories: 'devtools.timeline,toplevel,v8,disabled-by-default-devtools.timeline,disabled-by-default-v8.gc', transferMode: 'ReportEvents'});
+await cdp.send('Tracing.start', {transferMode: 'ReportEvents', traceConfig: {recordMode: 'recordAsMuchAsPossible', includedCategories: ['devtools.timeline', 'toplevel', 'disabled-by-default-devtools.timeline', 'v8.execute']}});
 const T0 = await run(async () => performance.timeOrigin + performance.now(), null);
 let m0 = await mark('pruefen'); await tapSel('[data-vr1="mittel"]');
 const P1 = await until(async () => { const s = document.querySelector('.vr1st'); return {ok: /Befund/.test(s && s.textContent || ''), st: s && s.textContent}; }, null, 60000);
