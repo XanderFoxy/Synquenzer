@@ -94794,6 +94794,8 @@ function mtx3BusDrop(X, later) {
   const off = typeof OfflineAudioContext !== 'undefined' && X.ctx instanceof OfflineAudioContext;
   if (later && !off) setTimeout(go, 1500); else go();                  // live: der Nachklang der letzten Schläge darf ausklingen
 }
+// Busse entfernter / ersetzter Einzelspuren abbauen (nach ↶ / ↷)
+function mtx3BusGc() { const L = AU.ctx ? MTX3.bx.get(AU.ctx) : null; if (L) L.forEach((X, i) => { if (X && (!S.tracks[i] || S.tracks[i].dvx !== X.d)) { mtx3BusDrop(X, true); L[i] = null; } }); }
 function mtx3Bus(i) {
   const c = AU.ctx, A = AU.tracks[i], tr = S.tracks[i]; if (!c || !A || !A.trackIn || !drumBufs() || !AU.kit) return null;
   let L = MTX3.bx.get(c); if (!L) { L = []; MTX3.bx.set(c, L); }
@@ -95012,7 +95014,7 @@ function mtx3Resync(list, srcT) {
 // undo / redo-Haken: nach einem ↶ / ↷ einer MTX3-Gruppe spielen wiederhergestellte Spuren im Lauf gleich mit (wie beim Aufteilen)
 function mtx3AfterUndo(u) {
   if (!u || !u.mtx3) return;
-  mtx3UeDirty();
+  mtx3UeDirty(); mtx3BusGc();
   if (!R.playing) return;
   const L = (u.mtx3.tr || mtx3Parts(-1)).filter(j => S.tracks[j] && j !== u.mtx3.src);
   if (L.length) mtx3Resync(L, u.mtx3.src);
