@@ -27,6 +27,14 @@ async function run(file) {
       const s = await vvRenderAudio({range: {a: 0, b: S.song.bars, sel: false}});
       out.song = {bars: S.song.bars, n: s.ch[0].length, sr: s.sr, h: [fnv(s.ch[0]), fnv(s.ch[1])], rms: [rms(s.ch[0]), rms(s.ch[1])]};
     } catch (e) { out.song = {err: String(e)}; } finally { Math.random = MR; }
+    // (1b) wie mtx3-test: nur die Trommel-Spur, Math.random fest – der Song-Render mit allen Spuren ist schon Quelle gegen Quelle
+    // nicht bitgleich (Worklet-Nachrichten kommen je nach Zeit in verschiedenen Render-Blöcken an), dort zählt nur der Pegel
+    try {
+      for (let i = 0; i < NT(); i++) if (i !== DRUM_T) S.tracks[i].clips = S.tracks[i].clips.map(() => null);
+      SYNQUENZER.songFromChain([{scene: 0, bars: 2}, {scene: 1, bars: 2}]); ensureAudio(); drumBufs(); Math.random = () => .3125; VV.cancel = false;
+      const s = await vvRenderAudio({range: {a: 0, b: S.song.bars, sel: false}});
+      out.drums = {bars: S.song.bars, n: s.ch[0].length, h: [fnv(s.ch[0]), fnv(s.ch[1])], rms: [rms(s.ch[0]), rms(s.ch[1])]};
+    } catch (e) { out.drums = {err: String(e)}; } finally { Math.random = MR; }
     const ev = [[0, 'on', 48, .9], [0, 'on', 55, .8], [0, 'on', 64, .7], [1.0, 'off', 48], [1.0, 'off', 55], [1.0, 'off', 64], [1.1, 'on', 67, .8], [1.6, 'off', 67]];
     out.mk = [];
     const ids = []; for (const [id, f] of FACTORY_BY_ID) if (f && f.engine && f.engine !== 'drum') ids.push(id);
@@ -42,13 +50,15 @@ async function run(file) {
 }
 const q1 = await run(Q), a1 = await run(A), q2 = await run(Q);
 await b.close();
-const key = r => JSON.stringify({song: r.song, mk: r.mk});
+const key = r => JSON.stringify({drums: r.drums, mk: r.mk});
+const pegel = (x, y) => x.song && y.song && x.song.rms && y.song.rms && x.song.n === y.song.n && x.song.rms.every((v, k) => Math.abs(v - y.song.rms[k]) <= 0.01 * v);
 const kontrolle = key(q1) === key(q2), gleich = key(q1) === key(a1), cl = q1.cl === a1.cl && q1.cl != null;
-const laut = q1.song && q1.song.rms && q1.song.rms[0] > 1e-3 && q1.mk.length && q1.mk.every(m => m.rms > 1e-4);
+const laut = q1.song && q1.song.rms && q1.song.rms[0] > 1e-3 && q1.drums && q1.drums.rms && q1.drums.rms[0] > 1e-3 && q1.mk.length && q1.mk.every(m => m.rms > 1e-4);
 console.log(JSON.stringify({quelle: q1, auslieferung: a1, quelle2: q2}, null, 1));
 console.log((kontrolle ? 'OK ' : 'FEHLER ') + 'Kontrolle Quelle == Quelle (zwei Seiten)');
 console.log((laut ? 'OK ' : 'FEHLER ') + 'Render nicht still (Song rms ' + (q1.song.rms || []).join('/') + ', ' + q1.mk.length + ' Klänge)');
-console.log((gleich ? 'OK ' : 'FEHLER ') + 'Quelle == Auslieferung bitgleich (Song ' + (q1.song.n || 0) + ' Proben × 2 Kanäle, ' + q1.mk.length + ' Werksklänge)');
+console.log((gleich ? 'OK ' : 'FEHLER ') + 'Quelle == Auslieferung bitgleich (Trommel-Song ' + ((q1.drums && q1.drums.n) || 0) + ' Proben × 2 Kanäle, ' + q1.mk.length + ' Werksklänge über das Worklet)');
+const pg = pegel(q1, a1) && pegel(q1, q2); console.log((pg ? 'OK ' : 'FEHLER ') + 'ganzer Song (alle Spuren, nicht bitgleich wiederholbar): Länge gleich, Pegel je Kanal ±1 % (' + [q1, a1, q2].map(r => (r.song.rms || []).join('/')).join(' | ') + ')');
 console.log((cl ? 'OK ' : 'FEHLER ') + 'clCoreVer gleich (' + q1.cl + ' / ' + a1.cl + ')');
 const fe = [...q1.errs, ...a1.errs, ...q2.errs]; console.log((fe.length ? 'FEHLER ' : 'OK ') + 'Konsole ohne Fehler ' + JSON.stringify(fe.slice(0, 5)));
-console.log(kontrolle && laut && gleich && cl && !fe.length ? 'ERGEBNIS bitgleich' : 'ERGEBNIS NICHT bitgleich');
+console.log(kontrolle && laut && gleich && cl && pg && !fe.length ? 'ERGEBNIS bitgleich' : 'ERGEBNIS NICHT bitgleich');
