@@ -5,3 +5,5 @@
 - 01:58 Erster Lauf 428x926: 13 OK / 5 FEHLER – Zerlegen gibt nur Drums+Bass (Test legt jetzt Pads-Ebene an), IMP1 fasst S+R zu einem Teil (Läufe-Regel), Kick auch auf Snare-Schlägen.
 - 02:00 Lauf 2 428x926: 17 OK / 1 FEHLER (Drums: Kick 89 statt 64 – zusätzliche Treffer aus Bass-Resten in der Drum-Ebene; Test prüft jetzt Trefferquote an den echten Stellen + meldet Zusatztreffer).
 - 02:02 Drum-Einteilung neu (Snare = Mitten ≥ 1,9× Tiefen, Kick = tief + kurzes Abklingen < 0,6 nach 100 ms); offline work/hits.mjs: Kick 31/32, Snare 32/32 (Bass-Rest 0,3).
+- 02:05 Snare zusätzlich = lautester Höhen-Einsatz; 428x926: 17/1 (Drums: Kick echt 63/64, Snare echt 42/64, 26 Zusatz-Kicks aus Bass-Resten) – Feinarbeit Drums offen.
+- 02:06 Regression spk6-test: quer-menue FEHLER (Klang nachbauen nach „Noten bearbeiten“ schob „Effekte …“ aus dem Bild) → Knopf jetzt hinter „Effekte …“; spk6-test wird am Ende erneut gefahren.

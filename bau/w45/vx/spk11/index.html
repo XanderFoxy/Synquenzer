@@ -104210,7 +104210,7 @@ async function spk11Go(U) {
 function spk11MoreDd(U, dd, lid) {
   const l = U.meta.layers.find(x => x.id === lid); if (!l || l.art === 'drums') return;
   const x = el('button', 'mbtn rb spk1-ck', 'Klang nachbauen'); x.dataset.s11 = 'klang'; on(x, 'click', () => spk11Klang(U, lid));
-  const ed = dd.querySelector('[data-s6="ed"]');
+  const ed = dd.querySelector('[data-s6="fx"]') || dd.querySelector('[data-s6="ed"]');   // ans Ende der Werkstatt-Zeile: Kopieren … Effekte bleiben, wo sie waren
   if (ed && ed.parentNode) ed.after(x); else { const g = el('div', 'spk1-g'); g.appendChild(x); dd.appendChild(g); }
 }
 async function spk11Klang(U, lid) {
