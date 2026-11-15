@@ -202,3 +202,13 @@ Größe: roh +2 996 B, gzip +0,9 KB (Kommentar-Zeilen und Block-Rahmen).
    „nur bei offener Seite“ sein. Neue Test-Zugänge (`window.__spkN`) in die Getter-Liste von SPKL eintragen.
 4. Zeilennummern im Haupt-Skript haben sich verschoben (Fehler-Stapel aus sq-spk-src zeigen Zeilen relativ zum Block).
 5. Gleiches Muster für Video/Import/Gesang (PERF1E Rest) erst nach grüner SPK-Regression.
+
+---
+
+# PERF2 – unabhängige Prüfung (Kurzfassung; ausführlich in PRUEFUNG.md)
+- Semantik gleich für Teil D und Teil E (eigene AST-, Zugriffs- und Laufzeit-Prüfung; Speichern/Laden 4.70 ↔ Kandidat ohne Verlust;
+  Aussehen pixelgleich). Pflicht für index/aus/aus-e grün.
+- Gewinn Teil E kleiner als oben angegeben: bereit ≈ −3 % (Median −35 / −83 ms, gepaart Mittel −85 ms aus 12 Paaren), robust sind
+  längste Aufgabe −30 %, Sperrzeit −5…−10 %, JS-Heap −1 MB. D+E zusammen (aus-e): bereit −257 ms (−9 %).
+- Offen nach Prüfung: Toast in den Zip-Hüllen, wenn sq-spk-src nicht lädt (sonst Container still ohne Spektral-Daten);
+  e/probe.mjs „start-ohne-block“ fest in die Release-Regression; Offen 1 (sq-spk-src in ausliefern.mjs) ist unbedenklich.

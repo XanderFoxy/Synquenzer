@@ -45,3 +45,16 @@
 - 10:33 `e/probe.mjs` ALLES OK (13): Container schreiben/lesen in frischer Seite ohne Spektral-Code ohne Verlust; Block-Ladezeit 33 / 96 ms.
 - 10:36 ausliefern.mjs auf index.html: OK, aber +52 KB gzip (text/plain unberührt) → Offen Nr. 1.
 - 10:41 Regression bis ki1 fertig (alles wie r4700, spk12 besser); spk5p/spk7/spk12b-d/spk6p/spk4 aus Zeitgründen nicht mehr gelaufen.
+
+# PERF2 – LOG Prüfung (unabhängig, Werkzeuge in pr/)
+- 10:59 Auftrag „Prüfe unabhängig PERF2“. basis.html = rel-4700/index.html (md5 gleich).
+- 11:00 Pflicht nacheinander für index/aus/aus-e (`pr/pflicht.sh`): alle grün (0 doppelt, 0 Syntax, dupkeys 0, Marken 1×, VERSION '4.70.0', errors []).
+- 11:01 `pr/vgl.cjs`: index = basis mit verschobenen Zeilen (6 682 + 103 986 = 110 668, 0 Abweichung) + SPKL + 5 Notizen.
+- 11:02 `pr/zugriff.cjs` (eigene acorn/eslint-scope-Analyse): 410 Namen, 77 Zugriffe von außen, 0 beim Start, 0 doppelt; `pr/fn.cjs` ordnet zu.
+- 11:03 `pr/laufzeit.mjs`: Fingerabdruck aller 7 664 Namen basis ↔ index, nach spkLoad() gleich (bis auf gewollte SPKL-Teile); Guide/Menü gleich.
+- 11:04 `pr/astvgl.cjs` basis ↔ aus.html: 24/24 AST gleich, Startzeilen gleich, text/plain 9/9 bytegleich; vsCleanMake-Text in allen Dateien gleich.
+- 11:05 sw.js gelesen (inhaltsunabhängig, version.json); keine Laufzeit-Textsuche im Haupt-Skript; Strikt-Modus in beiden gleich (locker).
+- 11:06–11:09 Messung `pr/mess.mjs` 4× (S1: 5 Runden × 4 Dateien, S2: 7 Runden basis/index): E nur ≈ −3 % bis bereit, längste Aufgabe −30 %.
+- 11:10 `pr/kreuz.mjs` 4.70 ↔ Kandidat (gleiche Herkunft, Container hin und zurück): ALLES OK 9/9.
+- 11:11–… Regression nachgeholt (`pr/reg.sh`): spk12b, spk12c, spk6p, spk4, spk12d. Pixel-Vergleich `pr/bild*.mjs`: 0 Pixel.
+- PRUEFUNG.md geschrieben.

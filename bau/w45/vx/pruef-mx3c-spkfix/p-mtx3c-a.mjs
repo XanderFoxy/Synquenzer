@@ -1,0 +1,13 @@
+import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
+import fs from 'node:fs';
+const file = process.argv[2], b = await chromium.launch({args: ['--autoplay-policy=no-user-gesture-required']});
+const ctx = await b.newContext({viewport: {width: 926, height: 370}, hasTouch: true, isMobile: true, deviceScaleFactor: 2}); const p = await ctx.newPage();
+await p.goto('file://' + file); await p.waitForTimeout(1600);
+const r = await p.evaluate(async () => { let s = 7; Math.random = () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
+  for (let i = 0; i < NT(); i++) if (i !== DRUM_T) S.tracks[i].clips = S.tracks[i].clips.map(() => null); const c = S.tracks[DRUM_T].clips[1]; if (c) c.notes = c.notes.filter(n => n.n !== 42); SYNQUENZER.songFromChain([{scene: 0, bars: 2}, {scene: 1, bars: 2}]);
+  const j0 = serializeProject();
+  SYNQUENZER.gr2.remix('italo', {k: 100, art: 'm'}); const j1 = serializeProject(); SYNQUENZER.gen3.mxRemix('italo', {src: 1, k: 100, art: 'm'}); const j2 = serializeProject();
+  ensureAudio(); await new Promise(z => setTimeout(z, 1500)); const sp = SYNQUENZER.mtx3.split(); const hh = sp.find(j => S.tracks[j].dvx.v === 'hatC');
+  const e = {ecoHH: trackEco(hh), ecoDrums: trackEco(DRUM_T), ctx: !!AU.ctx, wk: typeof wkReady === 'function' ? wkReady() : null};
+  return {j0, j1, j2, e}; });
+fs.writeFileSync(process.argv[3], JSON.stringify(r)); console.log(JSON.stringify(r.e)); await b.close();
