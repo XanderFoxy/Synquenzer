@@ -44,5 +44,7 @@
   nachher behoben; ok unverändert.
 - 06:28 PERF1B-Kontrollpaar (p1b, 1 Paar; volle 3er-Reihe abgebrochen wegen CPU-Zeit – Code unverändert).
 - 06:29–06:30 fix/serie-c.sh ohne Service-Worker: Abbruch wirkt (3,9 MB statt 8,6 MB), mit Service-Worker nicht (sw.js liest seine Kopie zu Ende).
-- 06:30– Regression nacheinander (fix/serie-b.sh): smoke, vx1, mtx3, spk6-kern, spk6, imp1 → fix/serie-b.log. Rauchtest und mtx3 mit
+- 06:30–06:38 Regression nacheinander (fix/serie-b.sh): smoke, vx1, mtx3, spk6-kern, spk6, imp1 → fix/serie-b.log. Rauchtest und mtx3 mit
   absolutem Pfad wiederholt (relativer Pfad → ERR_INVALID_URL im Skript, kein App-Fehler).
+- 06:38 Regression grün: smoke errors [], vx1 61/61, mtx3 51/51, spk6-kern ALLES OK, spk6 ALLES OK, imp1 ALLE OK. pflicht.log und
+  regression.log ergänzt. NOTES.md „PERF1 Prüfung“ geschrieben. Profil-Ordner der Proben gelöscht.

@@ -83,3 +83,10 @@ Paket-Lieder per Touch unverändert (dicht 117/119 +0 · 48/48 +2 · 374/380; in
 - `spk11b-test.mjs` erweitert (+ p80, p128, p174 aus lieder-pruef.mjs): **17 OK / 0 FEHLER** (spk11b-test.out). Alter Stand work/spk11b-test.v1.*.
 - `spk11-test.mjs` alle drei Größen **41 OK / 0 FEHLER** · spk6-test **ALLES OK** · spk8-seite **14 OK / 0 FEHLER** (braucht mess/, Kopie von spk11/mess) · smoke errors [].
 - Pflicht: topdefs 26 Skripte / 7615 Namen / 0 doppelt / 0 Syntax · dupkeys 0 · „MS 2000“ 1× · „  live: true,“ 1× · VERSION = basis (4.69.0) · basis.html = rel-4690 · keine Emojis/Marken im Block.
+
+### Laufzeit „Szenen anlegen“ (Touch, basis/index abwechselnd, je 2 Läufe, Last 14–20 auf 4 Kernen)
+| Lied | basis | index |
+|---|---|---|
+| p80 | 12818 / 14770 ms | 14412 / 14164 ms (gleich auf – Intro wird wieder gesucht, der frühere Gewinn kam aus B1) |
+| p128 | 12475 / 12174 ms | 11601 / 11402 ms (−7 %, Outro-Bass ohne Notensuche) |
+Rechenanteil SPK11B: spk11bHits 14–19 ms je Lied (basis 11–14 ms), Spektrum in Stücken ≤ ~15–30 ms je Stück.
