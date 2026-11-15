@@ -177,7 +177,7 @@ for (let k = 0; k < SRC.length; k++) {
   globalThis.__essX = x; }
 // ---------- 4) 3-min-Take: Rechenzeit Kern (Desktop × 3 ≤ 20 s) ----------
 { const L = Math.round(180 * sr), x = new Float32Array(L); for (let i = 0; i < L; i++) x[i] = v[i % n] + P[i % n] + 0.003 * Math.sin(TAU * 50 * i / sr);
-  const t0 = Date.now(); K.done(K.check(x, sr)); const t1 = Date.now(); K.done(K.run(x, sr, {steps: {click: {}, plop: {}, hum: 'auto', hp: {}, breath: {}, room: {}}})); const t2 = Date.now();
+  const t0 = Date.now(); K.done(K.check(x, sr)); const t1 = Date.now(); K.done(K.run(x, sr, {steps: {click: {}, plop: {}, hum: 'auto', hp: {}, breath: {}, room: {}, ess: {}}})); const t2 = Date.now();
   R.zeit3min = {pruefenMs: t1 - t0, ketteMs: t2 - t1};
   ok(3 * (t2 - t0) <= 20000, '3-min-Take: Prüfen + Kette × 3 ≤ 20 s', R.zeit3min); }
 if (!process.argv.includes('--nur-kern')) await browser();
@@ -198,15 +198,15 @@ async function browser() {
     const r = await SYNQUENZER.tkInject({pcm, sr: o.sr, scene: 0, at: 0, len: 2}); await wait(300); window.__tk0 = r; return r.id; }, {b: b64, sr});
   // Node-Ergebnis für denselben Int16-Take
   const xf = new Float32Array(n); for (let i = 0; i < n; i++) xf[i] = x16[i] / 32767;
-  const nb = K.done(K.check(xf, sr)), nr = K.done(K.run(xf, sr, {steps: {click: {}, plop: {}, hum: 'auto', hp: {}, breath: {}, room: {}}}));
+  const nb = K.done(K.check(xf, sr)), nr = K.done(K.run(xf, sr, {steps: {click: {}, plop: {}, hum: 'auto', hp: {}, breath: {}, room: {}, ess: {}}}));
   const h = y => { const u = new Uint8Array(y.buffer, y.byteOffset, y.byteLength); let s = 0x811c9dc5; for (let i = 0; i < u.length; i++) { s ^= u[i]; s = Math.imul(s, 0x01000193) >>> 0; } return s.toString(16); };
-  const W = await run(async o => { const pr = []; const c = await SYNQUENZER.vr1Check(o.id); const j = await window.__vr1.take('run', o.id, {steps: {click: {}, plop: {}, hum: 'auto', hp: {}, breath: {}, room: {}}}, q => pr.push(q));
+  const W = await run(async o => { const pr = []; const c = await SYNQUENZER.vr1Check(o.id); const j = await window.__vr1.take('run', o.id, {steps: {click: {}, plop: {}, hum: 'auto', hp: {}, breath: {}, room: {}, ess: {}}}, q => pr.push(q));
     const u = new Uint8Array(j.y.buffer); let s = 0x811c9dc5; for (let i = 0; i < u.length; i++) { s ^= u[i]; s = Math.imul(s, 0x01000193) >>> 0; }
     return {line: c.line, plops: c.plops.length, hum: c.hum.f0, hash: s.toString(16), prog: pr.length, info: SYNQUENZER.vr1Info(), order: j.info.order}; }, {id});
   ok(W.info.worker === 'worker' && W.line === nb.line && W.hash === h(nr.y), 'App: Prüfen + Kette im Worker = Node-Kern (bitgleich)', {zeile: W.line, worker: W.info.worker, hash: [W.hash, h(nr.y)]});
   ok(W.prog >= 2, 'App: Fortschritt kommt während der Rechnung', {meldungen: W.prog});
   // Rückfall Hauptfaden (Scheiben ≤ 8 ms) = gleiches Ergebnis
-  const M = await run(async o => { window.__vr1.noWorker(true); try { const j = await window.__vr1.take('run', o.id, {steps: {click: {}, plop: {}, hum: 'auto', hp: {}, breath: {}, room: {}}}); const u = new Uint8Array(j.y.buffer); let s = 0x811c9dc5; for (let i = 0; i < u.length; i++) { s ^= u[i]; s = Math.imul(s, 0x01000193) >>> 0; } return {hash: s.toString(16), info: SYNQUENZER.vr1Info()}; } finally { window.__vr1.noWorker(false); } }, {id});
+  const M = await run(async o => { window.__vr1.noWorker(true); try { const j = await window.__vr1.take('run', o.id, {steps: {click: {}, plop: {}, hum: 'auto', hp: {}, breath: {}, room: {}, ess: {}}}); const u = new Uint8Array(j.y.buffer); let s = 0x811c9dc5; for (let i = 0; i < u.length; i++) { s ^= u[i]; s = Math.imul(s, 0x01000193) >>> 0; } return {hash: s.toString(16), info: SYNQUENZER.vr1Info()}; } finally { window.__vr1.noWorker(false); } }, {id});
   ok(M.hash === W.hash && M.info.slices > 3, 'Rückfall Hauptfaden in Scheiben: gleiches Ergebnis', {scheiben: M.info.slices});
   // 3-min-Take im Worker: Zeit, Abbruch, keine Long Tasks > 50 ms auf dem Hauptfaden
   const Z = await run(async o => {
@@ -216,7 +216,7 @@ async function browser() {
     const j1 = window.__vr1.job('run', x, o.sr, {steps: {plop: {}, hum: 'auto', hp: {}}}); await wait(300); const ta = performance.now(); j1.abort(); let ab = ''; try { await j1.p; } catch (e) { ab = e.message; } const abMs = performance.now() - ta;
     // ganzer Lauf (Prüfen + Kette), dabei Chat-artige Arbeit auf dem Hauptfaden messen (Takt 16 ms)
     let tick = 0, maxGap = 0, lastT = performance.now(); const iv = setInterval(() => { const t = performance.now(); maxGap = Math.max(maxGap, t - lastT); lastT = t; tick++; }, 16);
-    const t0 = performance.now(), pr = []; await window.__vr1.job('check', x, o.sr, null, q => pr.push(q)).p; const t1 = performance.now(); const r = await window.__vr1.job('run', x, o.sr, {steps: {click: {}, plop: {}, hum: 'auto', hp: {}, breath: {}, room: {}}}, q => pr.push(q)).p; const t2 = performance.now();
+    const t0 = performance.now(), pr = []; await window.__vr1.job('check', x, o.sr, null, q => pr.push(q)).p; const t1 = performance.now(); const r = await window.__vr1.job('run', x, o.sr, {steps: {click: {}, plop: {}, hum: 'auto', hp: {}, breath: {}, room: {}, ess: {}}}, q => pr.push(q)).p; const t2 = performance.now();
     clearInterval(iv); await wait(100); if (ob) ob.disconnect();
     return {abbruch: ab, abbruchMs: Math.round(abMs), pruefenMs: Math.round(t1 - t0), ketteMs: Math.round(t2 - t1), longTasks: lt, maxLueckeMs: Math.round(maxGap), fortschritt: pr.length, plopps: r.info.plop.length, aborts: SYNQUENZER.vr1Info().aborts};
   }, {id, sr});
@@ -271,7 +271,7 @@ async function browser() {
   const Un = await run(async o => ({v: SYNQUENZER.vr1Ver(o.id).applied, ph: SYNQUENZER.clPlayHash(o.id)}), {id});
   ok(!Un.v && Un.ph === ph0, 'Ein ↶ nimmt „Gesang reinigen“ zurück (es spielt wieder die vorige Fassung)', {applied: Un.v, gleich: Un.ph === ph0});
   // Fotos quer (926×428 und 926×370)
-  for (const [w, hh, nm] of [[926, 428, 'voxr1-quer.png'], [926, 370, 'voxr1-quer370.png']]) { await p.setViewportSize({width: w, height: hh}); await p.waitForTimeout(400); await run(async () => { const p = UI.pop && UI.pop.el; if (p) { popFit(p); const d = p.querySelector('.vr1'); if (d) d.scrollIntoView({block: 'center'}); } await wait(200); }, null);
+  for (const [w, hh, nm] of [[926, 428, 'voxr1-quer.png'], [926, 370, 'voxr1-quer370.png']]) { await p.setViewportSize({width: w, height: hh}); await p.waitForTimeout(400); await run(async () => { if (!(UI.pop && UI.pop.name === 'takes')) { const r = window.__tk0; tkSheet({t: r.track, s: r.scene}); await wait(400); } const p = UI.pop && UI.pop.el; if (p) { popFit(p); const d = p.querySelector('.vr1'); if (d) d.scrollIntoView({block: 'center'}); } await wait(250); }, null);
     const Uq = await ui(); await p.screenshot({path: path.join(path.dirname(file), nm)}); ok(Uq.over === 0, 'nichts ragt aus dem Bild (quer ' + w + '×' + hh + ')', Uq); }
   await p.setViewportSize({width: 428, height: 926}); await p.waitForTimeout(300);
   // vorhandener Entzischer der Gesangs-Effekte ist spektral (Hauptfaden und Worker)
