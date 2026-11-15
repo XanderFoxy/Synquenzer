@@ -175,6 +175,38 @@ for (let k = 0; k < SRC.length; k++) {
   ok(Bm.steps.ess && Bm.steps.ess.amt === 6 && K.assist(B, 'leicht').steps.ess.amt === 3 && K.assist(B, 'stark').steps.ess.amt === 9, 'Assistent: Zischen gefunden → Entzischer mit 3 / 6 / 9 dB (× 0,5 / 1 / 1,5)', R.assist.mitS);
   const W = K.worst(B, 10); ok(W.t1 - W.t0 === 10 && pos.filter(p0 => p0 / sr >= W.t0 && p0 / sr < W.t1).length >= 2, 'Assistent: 10 s Vorhören an der Stelle mit den meisten Funden', W);
   globalThis.__essX = x; }
+// ---------- Prüfung (Befunde 2, 4, 7, 12, 16, 17): saubere Takes, „nur Entferntes“, Zischen gegen den Gesangspegel ----------
+{ const TK = [wav(RV + SRC[0]), wav(RV + SRC[1]), wav(RV + SRC[2])], NM = ['A', 'B', 'C'], out = {};
+  const bS = (z, f1, f2, a, b) => { const N = 1024, re = new Float64Array(N), im = new Float64Array(N), F = fftN(N); let e = 0; for (let p0 = Math.max(0, a); p0 + N <= Math.min(z.length, b); p0 += 256) { for (let i = 0; i < N; i++) { re[i] = z[p0 + i] * (0.5 - 0.5 * Math.cos(TAU * i / N)); im[i] = 0; } F(re, im); for (let k = Math.ceil(f1 * N / sr); k <= Math.floor(f2 * N / sr); k++) e += re[k] * re[k] + im[k] * im[k]; } return e; };
+  let hf3 = 0, fr = 0, maxRel = -99, essOn = 0;
+  for (let t = 0; t < 3; t++) { const {x: z} = TK[t], B = K.done(K.check(z, sr)), A = K.assist(B, 'mittel'), r = K.done(K.run(z, sr, {steps: A.steps, weg: true})), y = r.y, H = 441;
+    let c3 = 0, c = 0; for (let p0 = 0; p0 + H <= z.length; p0 += H) { let e = 0; for (let i = p0; i < p0 + H; i++) e += z[i] * z[i]; if (e / H < 1e-7) continue; c++; const d0 = db(bS(y, 5000, 16000, p0 - 512, p0 + H + 512)) - db(bS(z, 5000, 16000, p0 - 512, p0 + H + 512)); if (d0 < -3) c3++; }
+    const rel = db(band(r.wg, sr, 300, 4000)) - db(band(z, sr, 300, 4000)); maxRel = Math.max(maxRel, rel); hf3 += c3; fr += c; if (!!A.steps.ess !== /Zischen/.test(B.line)) essOn++;
+    out[NM[t]] = {zeile: B.line, schritte: Object.keys(A.steps), hfUeber3dB: c3 + '/' + c, entferntGesangsbandDb: +rel.toFixed(1)}; }
+  R.sauberMittel = out;
+  ok(hf3 <= 0.01 * fr && essOn === 0, 'Saubere Takes A/B/C „mittel“: Zischen läuft nur, wenn der Befund es nennt; ≤ 1 % der 10-ms-Rahmen verlieren > 3 dB über 5 kHz', out);
+  ok(maxRel <= -25, 'Saubere Takes „mittel“: „nur Entferntes“ enthält kaum Stimme (300 Hz–4 kHz ≥ 25 dB unter dem Original)', {maxRel: +maxRel.toFixed(1)});
+  // nur Hochpass: das Entfernte ist das Tiefe, nicht der Grundton (nullphasig)
+  { const z = TK[0].x, r = K.done(K.run(z, sr, {steps: {hp: {fc: 80}}, weg: true})), b1 = db(band(r.wg, sr, 80, 160)) - db(band(z, sr, 80, 160)), b2 = db(band(r.wg, sr, 160, 320)) - db(band(z, sr, 160, 320));
+    let same = 0; for (let i = 0; i < z.length; i += 97) if (Math.abs(z[i] - r.y[i] - r.wg[i]) < 1e-5) same++;
+    ok(b1 <= -12 && b2 <= -20 && same >= 0.99 * Math.floor(z.length / 97), '„nur Entferntes“ beim Hochpass: 80–160 Hz ≥ 12 dB, 160–320 Hz ≥ 20 dB unter dem Original (kein Grundton), Roh = Sauber + Entferntes', {b80_160: +b1.toFixed(1), b160_320: +b2.toFixed(1)}); }
+  // Zischen relativ zum Gesangspegel: „s“ in Pausen 0 / −12 / −24 dB unter dem Gesang
+  { const z = TK[0].x, n0 = z.length, L = Math.round(0.15 * sr), res = {};
+    const pz = []; for (let t = 1; t < n0 / sr - 1 && pz.length < 6; t += 0.05) { let q = true; for (let dd = -0.1; dd <= 0.25; dd += 0.01) if (f0at(t + dd) > 0) { q = false; break; } if (q && (!pz.length || t - pz[pz.length - 1] > 1.2)) pz.push(t); }
+    for (const rl of [0, -12, -24]) { const xs = Float32Array.from(z); seed = 4242; for (const t of pz) { const i0 = Math.round(t * sr); let a = 0, b = 0; const c1 = Math.exp(-TAU * 12000 / sr), c2 = Math.exp(-TAU * 5000 / sr); for (let i = 0; i < L; i++) { const u = rnd() * 2 - 1; a = u * (1 - c1) + a * c1; b = u * (1 - c2) + b * c2; xs[i0 + i] += 3 * vr * Math.pow(10, rl / 20) * (a - b) * Math.sin(Math.PI * i / L); } }
+      const ys = Float32Array.from(xs); K.ess(ys, sr, 6); res[rl] = pz.map(t => { const i0 = Math.round(t * sr); return +(db(bS(ys, 5000, 16000, i0, i0 + L)) - db(bS(xs, 5000, 16000, i0, i0 + L))).toFixed(1); }); }
+    R.essPegel = res; ok(res[-12].every(d => d > -1) && res[-24].every(d => d > -0.5), 'Zischen: leise „s“ (−12 / −24 dB unter dem Gesang) bleiben (Schwelle relativ zum Gesangspegel)', res); }
+  // Atem als Stilmittel bleibt (Atmer-Schritt aus, nur Zischen)
+  { const z = TK[0].x, xs = Float32Array.from(z), pos = [], M = Math.round(0.3 * sr); seed = 99;
+    for (let t = 1.5; t < z.length / sr - 1 && pos.length < 6; t += 0.05) { let q = true; for (let dd = -0.05; dd <= 0.35; dd += 0.01) if (f0at(t + dd) > 0) { q = false; break; } if (q && (!pos.length || t * sr - pos[pos.length - 1] > 2 * sr)) pos.push(Math.round(t * sr)); }
+    const g = Math.pow(10, -28 / 20) * Math.sqrt(2); for (const i0 of pos) { let a = 0, b = 0; const c1 = Math.exp(-TAU * 6000 / sr), c2 = Math.exp(-TAU * 1000 / sr); for (let i = 0; i < M; i++) { const u = rnd() * 2 - 1; a = u * (1 - c1) + a * c1; b = u * (1 - c2) + b * c2; xs[i0 + i] += g * 3 * (a - b) * Math.sin(Math.PI * i / M); } }
+    const ys = Float32Array.from(xs); K.ess(ys, sr, 9); const d = pos.map(i0 => +(db(bS(ys, 5000, 16000, i0, i0 + M)) - db(bS(xs, 5000, 16000, i0, i0 + M))).toFixed(1));
+    ok(d.every(v => v > -1), 'Zischen „stark“: eingesetzte Atmer (Stilmittel) verlieren über 5 kHz < 1 dB', d); }
+  ok(K.assist({clicks: 3, plops: [], hum: {on: false}, breaths: 0, sibHot: 0}, 'stark').steps.click.sens === 6 && K.assist({clicks: 3, plops: [], hum: {on: false}, breaths: 0, sibHot: 0}, 'leicht').steps.click.sens === 2, 'Assistent: Klick-Empfindlichkeit 2 / 4 / 6 (× 0,5 / 1 / 1,5)', null);
+  // Rückfall Hauptfaden: eine Scheibe des Entzischers bleibt klein
+  { const L = Math.round(60 * sr), xl = new Float32Array(L); for (let i = 0; i < L; i++) xl[i] = v[i % n]; const it = K.ess(xl, sr, 6, {gen: true}); let mx = 0, t = performance.now(), q; while (!(q = it.next()).done) { const nw = performance.now(); mx = Math.max(mx, nw - t); t = nw; }
+    ok(mx <= 25, 'Entzischer: Rechen-Scheiben im Rückfall klein (60-s-Take, größte Scheibe ≤ 25 ms unter Last)', {maxMs: +mx.toFixed(1)}); }
+}
 // ---------- 4) 3-min-Take: Rechenzeit Kern (Desktop × 3 ≤ 20 s) ----------
 { const L = Math.round(180 * sr), x = new Float32Array(L); for (let i = 0; i < L; i++) x[i] = v[i % n] + P[i % n] + 0.003 * Math.sin(TAU * 50 * i / sr);
   const t0 = Date.now(); K.done(K.check(x, sr)); const t1 = Date.now(); K.done(K.run(x, sr, {steps: {click: {}, plop: {}, hum: 'auto', hp: {}, breath: {}, room: {}, ess: {}}})); const t2 = Date.now();
@@ -270,6 +302,36 @@ async function browser() {
   await until(async o => { SYNQUENZER.clPlayHash(o.id); await wait(150); return {ok: !(typeof G4 !== 'undefined' && (G4.job.has(o.id) || G4.dq.has(o.id)))}; }, {id}, 30000);
   const Un = await run(async o => ({v: SYNQUENZER.vr1Ver(o.id).applied, ph: SYNQUENZER.clPlayHash(o.id)}), {id});
   ok(!Un.v && Un.ph === ph0, 'Ein ↶ nimmt „Gesang reinigen“ zurück (es spielt wieder die vorige Fassung)', {applied: Un.v, gleich: Un.ph === ph0});
+  // Prüfung (Befunde 1, 6, 8, 10, 11, 15, 17): Abbrechen per Knopf, „nur Entferntes“ nur mit Fassung, sofort umschalten, SÄUBERN in der Mitte, Speichern/Laden
+  { const W0 = await geo(); ok(W0 && W0.weg && await run(async () => { const b = document.querySelector('[data-vr1ab]'); return !!b && b.disabled; }, null), '„nur Entferntes“ ohne angewandte Fassung gesperrt (spielt nicht heimlich „Sauber“)', null);
+    const u0 = await run(async () => UNDO.length, null), r0 = await run(async o => SYNQUENZER.vr1Ver(o.id).renders, {id});
+    await tapEl('ap'); await until(async o => ({ok: SYNQUENZER.vr1Ver(o.id).busy}), {id}, 5000); await tapEl('ap');
+    await p.waitForTimeout(1500);
+    const Ca = await run(async o => { const v = SYNQUENZER.vr1Ver(o.id), s = document.querySelector('.vr1st'), b = document.querySelector('[data-vr1a="ap"]'); return {applied: v.applied, busy: v.busy, renders: v.renders, st: s && s.textContent, knopf: b && b.textContent, undo: UNDO.length}; }, {id});
+    await p.waitForTimeout(2500); const Cb = await run(async o => ({renders: SYNQUENZER.vr1Ver(o.id).renders, busy: SYNQUENZER.vr1Ver(o.id).busy, ready: SYNQUENZER.vr1Ver(o.id).ready}), {id});
+    R.ui3.abbrechen = {a: Ca, b: Cb, r0, u0};
+    ok(!Ca.applied && !Ca.busy && !/rechnet/.test(Ca.st || '') && Ca.knopf === 'Anwenden' && Cb.renders === Ca.renders && !Cb.busy && Ca.undo === u0, 'Touch „Abbrechen“ beim Anwenden: Rechnung stoppt, startet nicht neu, keine Fassung, kein ↶-Eintrag', R.ui3.abbrechen);
+    // SÄUBERN 60 % + Gesang reinigen: Kette Klicks/Plopps/Brummen → SÄUBERN → Atmer/Raumton/Zischen, kein zweiter Hochpass
+    await run(async o => { clSet(o.id, 60); await wait(300); }, {id});
+    await tapEl('ap'); const Ap2 = await until(async o => { const v = SYNQUENZER.vr1Ver(o.id); return {ok: v.ready && !v.busy && v.weg, order: v.order, weg: v.weg, bytes: v.bytes}; }, {id}, 60000);
+    R.ui3.saeubern = Ap2; const od = Ap2 && Ap2.order || [];
+    ok(Ap2 && Ap2.ok && od.includes('saeubern') && !od.includes('hp') && od.indexOf('saeubern') > Math.max(od.indexOf('click'), od.indexOf('plop'), od.indexOf('hum')), 'Mit SÄUBERN: Klicks/Plopps/Brummen vor SÄUBERN, danach Atmer/Raumton/Zischen, kein zweiter Hochpass (Plan §3)', Ap2);
+    await until(async o => { SYNQUENZER.clPlayHash(o.id); await wait(150); return {ok: !(typeof G4 !== 'undefined' && (G4.job.has(o.id) || G4.dq.has(o.id)))}; }, {id}, 30000);
+    const g4r0 = await run(async () => typeof G4 !== 'undefined' ? G4.renders : 0, null);
+    await tapEl('weg'); await p.waitForTimeout(300);
+    const Wg = await run(async o => { const c = window.__vr1.st.ver.get(o.id), b = tkPlayBuf(o.id, null); return {ab: SYNQUENZER.vr1Ver(o.id).ab, spieltWeg: !!c && b === c.weg, g4: typeof G4 !== 'undefined' ? G4.renders : 0, g4job: typeof G4 !== 'undefined' && G4.job.has(o.id)}; }, {id});
+    await tapEl('sauber'); const Wb = await run(async o => SYNQUENZER.vr1Ver(o.id).ab, {id});
+    R.ui3.weg = {Wg, g4r0, Wb};
+    ok(Wg.ab === 'weg' && Wg.spieltWeg && Wg.g4 === g4r0 && !Wg.g4job && Wb === 'sauber', 'Touch „nur Entferntes“ bei angewandter Fassung: sofort (ohne neues Rendern der Gesangs-Effekte), zurück auf „Sauber“', R.ui3.weg);
+    ok(Ap2 && Ap2.bytes > 0 && Ap2.bytes <= 160e6, 'Speicher der Fassungen begrenzt (Zähler ≤ 160 MB, „nur Entferntes“ als Int16)', {bytes: Ap2 && Ap2.bytes});
+    // Speichern/Laden (gleiche Sitzung): take.vr1 im Projekt, nach dem Laden wieder angewandt
+    const Sv = await run(async o => { const j = serializeProject(), has = /"vr1":\{"lv":"/.test(j); const q = normalizeProject(typeof projFromFile === 'function' ? projFromFile(JSON.parse(j)) : JSON.parse(j)); applyProject(q, {ui: true}); await wait(800);
+      const t0 = Date.now(); let v; while (Date.now() - t0 < 60000) { try { tkPlayBuf(o.id, null); } catch (e) {} v = SYNQUENZER.vr1Ver(o.id); if (v.ready && !v.busy) break; await wait(300); } return {has, applied: v && v.applied && v.applied.lv, ready: v && v.ready}; }, {id});
+    R.ui3.speichern = Sv; ok(Sv.has && !!Sv.applied && Sv.ready, 'Speichern/Laden: „Gesang reinigen“ steht im Projekt und ist nach dem Laden wieder angewandt', Sv);
+    await run(async o => { clSet(o.id, 0); await wait(200); if (!(UI.pop && UI.pop.name === 'takes')) { const r = window.__tk0; tkSheet({t: r.track, s: r.scene}); await wait(400); } }, {id});
+    // Zustandszeile mit Mehr ▾ offen ist im Bild (hochkant 428×926)
+    const Mv = await run(async () => { const p = UI.pop && UI.pop.el; if (!p) return null; if (!window.__vr1.st.more) { const b = p.querySelector('[data-vr1a="more"]'); if (b) b.click(); await wait(250); } const e = p.querySelector('.vr1st'), r = e && e.getBoundingClientRect(); return r ? {top: Math.round(r.top), bottom: Math.round(r.bottom), h: innerHeight} : null; }, null);
+    ok(Mv && Mv.bottom <= Mv.h && Mv.top >= 0, 'Mehr ▾ offen: Zustandszeile (Befund, Fortschritt, Abbrechen) im Bild, unterer Rand ≤ 926 px', Mv); }
   // Fotos quer (926×428 und 926×370)
   for (const [w, hh, nm] of [[926, 428, 'voxr1-quer.png'], [926, 370, 'voxr1-quer370.png']]) { await p.setViewportSize({width: w, height: hh}); await p.waitForTimeout(400); await run(async () => { if (!(UI.pop && UI.pop.name === 'takes')) { const r = window.__tk0; tkSheet({t: r.track, s: r.scene}); await wait(400); } const p = UI.pop && UI.pop.el; if (p) { popFit(p); const d = p.querySelector('.vr1'); if (d) d.scrollIntoView({block: 'center'}); } await wait(250); }, null);
     const Uq = await ui(); await p.screenshot({path: path.join(path.dirname(file), nm)}); ok(Uq.over === 0, 'nichts ragt aus dem Bild (quer ' + w + '×' + hh + ')', Uq); }
@@ -294,9 +356,10 @@ async function browser() {
     ok(M2.offen && M2.hits >= 1, 'Marken-Editor zeichnet die Atmer-Marken (Band über der Welle, Farbe der Welle)', {hits: M2.hits, info: M2.info});
     let tapOk = false;
     if (M2.cv && M2.hit0) { const xx = M2.cv.x + Math.max(4, Math.min(M2.cv.w - 4, (M2.hit0.x0 + M2.hit0.x1) / 2)), yy = M2.cv.y + M2.cv.h * 0.5; await tap(xx, yy);
-      const T2 = await run(async o => { const okA = SYNQUENZER.vr1BreathAct(o.id, 0, 'weg'); await wait(100); const E = WP.ed; const r = {offen: !!E, hits: E && E.vr1b ? E.vr1b.length : 0, act: SYNQUENZER.vr1Breaths(o.id)[0].act, okA}; return r; }, tk);
+      await tap(M2.cv.x + (M2.hit0.x0 + M2.hit0.x1) / 2, M2.cv.y + 22);   // Prüfung: per Touch im Streifen (leiser → weg), nicht per API
+      const T2 = await run(async o => { await wait(100); const E = WP.ed; const r = {offen: !!E, hits: E && E.vr1b ? E.vr1b.length : 0, act: SYNQUENZER.vr1Breaths(o.id)[0].act}; return r; }, tk);
       tapOk = T2.offen && T2.hits >= 1 && T2.act === 'weg'; R.uiAtmerTap = T2; }
-    ok(tapOk, 'Touch (CDP) auf eine Marke: Editor bleibt offen, Marke „weg“ setzbar (Bedienung der Marken folgt mit der Zeile)', R.uiAtmerTap);
+    ok(tapOk, 'Touch (CDP) auf eine Marke: Editor bleibt offen, Tipp in den Streifen setzt „weg“', R.uiAtmerTap);
     // Teil 3: Antippen im oberen Streifen der Marke wechselt lassen → leiser → weg (Touch über CDP)
     if (M2.cv && M2.hit0) { const a0 = await run(async o => SYNQUENZER.vr1Breaths(o.id)[1] ? SYNQUENZER.vr1Breaths(o.id)[1].act : null, tk), tp0 = await run(async o => SYNQUENZER.vr1Ver(o.id).taps, tk);
       const h1 = await run(async () => { const E = WP.ed; return E && E.vr1b && E.vr1b[1] ? E.vr1b[1] : null; }, null);
