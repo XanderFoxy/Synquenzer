@@ -79,6 +79,9 @@
       ids.add(id);
       const wt = [...new Set((Array.isArray(e.wochentage) ? e.wochentage : []).filter(x => Number.isInteger(x) && x >= 1 && x <= 7))].sort((a, b) => a - b);
       const z = e.zeit && typeof e.zeit === 'object' ? { von: uhr(e.zeit.von), bis: uhr(e.zeit.bis), text: text(e.zeit.text, 60) } : null;
+      // Pause im Fenster (z. B. 12–15:30 und 16:30–21 Uhr): in der Pause nicht „läuft“
+      const pz = z && e.zeit.pause && typeof e.zeit.pause === 'object' ? { von: uhr(e.zeit.pause.von), bis: uhr(e.zeit.pause.bis) } : null;
+      if (z && pz && pz.von && pz.bis && pz.von < pz.bis) z.pause = pz;
       const region = (Array.isArray(e.region) ? e.region : []).filter(r => REGIONEN.includes(r));
       const plan = {};
       if (e.plan && typeof e.plan === 'object') for (let i = 1; i <= 7; i++) { const p = text(e.plan[i], 60); if (p) plan[i] = p; }
@@ -119,19 +122,23 @@
     for (let i = 1; i <= 70; i++) { const t = plusTage(iso, i); if (e.bis && t > e.bis) return null; if (giltAm(e, t)) return t; }
     return null;
   }
-  /** heute: 'jetzt' | 'spaeter' (Uhrzeit noch nicht erreicht) | 'vorbei' (Uhrzeit heute vorbei) | 'heute' (ohne Uhrzeit) | null */
+  /** heute: 'jetzt' (im Fenster von–bis) | 'offen' (nur „ab“ oder nur „bis“ bekannt: kein „läuft“) | 'spaeter' (Uhrzeit noch
+      nicht erreicht oder Pause) | 'vorbei' (Uhrzeit heute vorbei) | 'heute' (ohne Uhrzeit) | null */
   function heuteStatus(e, j) {
     if (!giltAm(e, j.iso)) return null;
     if (!e.zeit) return 'heute';
     const von = minuten(e.zeit.von), bis = minuten(e.zeit.bis);
     if (bis != null && j.min >= bis) return 'vorbei';
     if (von != null && j.min < von) return 'spaeter';
+    if (von == null || bis == null) return 'offen'; // Ende/Beginn unbekannt: „läuft“ wäre geraten
+    const p = e.zeit.pause;
+    if (p && j.min >= minuten(p.von) && j.min < minuten(p.bis)) return 'spaeter';
     return 'jetzt';
   }
   /** „besonders“ = an diesem Tag etwas Eigenes (Aktionstag oder fester Wochentag, nicht täglich und nicht dauerhaft) */
   const besonders = e => e.art === 'aktionstag' || (!!e.wochentage && !taeglich(e));
   const regionRang = e => (e.region.includes('Döbeln') ? 0 : e.region.includes('bundesweit') ? 2 : 1);
-  const STATUS_RANG = { jetzt: 0, heute: 1, spaeter: 2, vorbei: 3 };
+  const STATUS_RANG = { jetzt: 0, offen: 1, heute: 1, spaeter: 2, vorbei: 3 };
   /** Heute-Reiter: { heute: [{e, s}], bald: [{e, tag}], morgen: [e], taeglich: [e], woche: {1..7: [e]} } */
   function heuteTeile(n, j) {
     const da = n.eintraege.filter(e => !vorbei(e, j.iso) && !e.nurHinweis);
@@ -154,8 +161,8 @@
     const rang = e => (e.art === 'aktionstag' && !e.nurHinweis ? (giltAm(e, iso) ? 0 : 1) : 2);
     const tagVon = e => (giltAm(e, iso) ? iso : naechsterTag(e, iso) || '9999');
     const sortiert = l.filter(e => !e.nurHinweis).map((e, i) => ({ e, i })).sort((a, b) =>
-      rang(a.e) - rang(b.e) || (rang(a.e) < 2 ? (tagVon(a.e) < tagVon(b.e) ? -1 : tagVon(a.e) > tagVon(b.e) ? 1 : 0) : 0)
-      || (chip === 'gratis' ? (b.e.gratis - a.e.gratis) : 0)
+      (chip === 'gratis' ? (b.e.gratis - a.e.gratis) : 0) // Gratis-Tage: was ohne Kauf gratis ist, steht oben
+      || rang(a.e) - rang(b.e) || (rang(a.e) < 2 ? (tagVon(a.e) < tagVon(b.e) ? -1 : tagVon(a.e) > tagVon(b.e) ? 1 : 0) : 0)
       || (a.e.rubrik === 'lokal') - (b.e.rubrik === 'lokal')
       || (a.e.km ?? -1) - (b.e.km ?? -1) || (a.e.sicher === 'ja' ? 0 : 1) - (b.e.sicher === 'ja' ? 0 : 1) || a.i - b.i).map(x => x.e);
     return { l: sortiert, hinweise: l.filter(e => e.nurHinweis) };
@@ -171,7 +178,7 @@
     const z = [], schon = new Set();
     const dazu = (e, zeile, gut) => { if (z.length < 2 && !schon.has(e.id)) { schon.add(e.id); z.push([e.titel, zeile, gut]); } };
     const marke = e => (e.marke ? ` · ${e.marke}` : '');
-    for (const e of l) if (e.art === 'aktionstag' && giltAm(e, j.iso)) dazu(e, `heute${e.bis && e.bis !== j.iso ? ` · bis ${wtm(e.bis)}` : ''}${marke(e)}`, true);
+    for (const e of l) if (e.art === 'aktionstag' && giltAm(e, j.iso)) dazu(e, `heute${e.bis && e.bis !== j.iso ? ` bis ${wtm(e.bis)}` : ''}${marke(e)}`, true);
     for (const e of l) if (e.gratis && besonders(e) && giltAm(e, j.iso)) dazu(e, `heute gratis${marke(e)}`, true);
     for (const e of l) if (besonders(e) && e.art !== 'aktionstag' && giltAm(e, j.iso)) dazu(e, `heute${marke(e)}`, true);
     const bald = l.filter(e => e.art === 'aktionstag' && !giltAm(e, j.iso)).map(e => [e, naechsterTag(e, j.iso)]).filter(([, tg]) => tg && tageZwischen(j.iso, tg) <= 14)
@@ -184,16 +191,19 @@
     return z;
   }
   const markeVon = e => (e.gratis ? 'gratis ohne Kauf' : e.art === 'app' || /\bnur (registrierte )?App|App-Nutzer|nur App\b/i.test(`${e.titel} ${e.bedingung}`) ? 'nur mit App' : e.art === 'abholung' ? 'Abholung' : '');
-  /** kleiner Auszug für die Start-Kachel: nur sicher belegte Einträge, nur Felder für die Tageslogik */
+  /** kleiner Auszug für die Start-Kachel: nur sicher belegte Einträge, nur Felder für die Tageslogik. Die Kachel ist schmal
+      (hochkant ca. 190 px): „nur mit App“ heißt dort „nur App“, und eine Klammer am Titelende, die nur „App“ wiederholt, fällt weg. */
   function kachelAuszug(d) {
     const n = normalisiere(d);
     const e = n.eintraege.filter(x => x.sicher === 'ja' && !x.nurHinweis).map(x => {
-      const k = { id: x.id, titel: (x.kette && !x.titel.toLowerCase().includes(x.kette.toLowerCase().split(' ')[0]) ? `${x.kette}: ` : '') + x.titel, art: x.art, geprueft: x.geprueft };
+      const m = markeVon(x);
+      const t = m === 'nur mit App' ? x.titel.replace(/\s*\([^()]*\bApp\b[^()]*\)$/, '') : x.titel;
+      const k = { id: x.id, titel: (x.kette && !t.toLowerCase().includes(x.kette.toLowerCase().split(' ')[0]) ? `${x.kette}: ` : '') + t, art: x.art, geprueft: x.geprueft };
       if (x.wochentage) k.wochentage = x.wochentage;
       if (x.ab) k.ab = x.ab;
       if (x.bis) k.bis = x.bis;
       if (x.gratis) k.gratis = true;
-      const m = markeVon(x); if (m) k.marke = m;
+      if (m) k.marke = m === 'nur mit App' ? 'nur App' : m;
       return k;
     });
     return { stand: n.stand, e };
@@ -221,6 +231,7 @@
     const st = s !== undefined ? s : heuteStatus(e, j);
     const zt = e.zeit?.text ? ` ${e.zeit.text}` : '';
     if (st === 'jetzt') return `<span class="ess-jetzt">heute${zt} · läuft</span>`;
+    if (st === 'offen') return `<span class="ess-jetzt">heute${zt}</span>`;
     if (st === 'spaeter') return `<span class="ess-jetzt">heute${zt}</span>`;
     if (st === 'heute') return '<span class="ess-jetzt">heute</span>';
     const n = naechsterTag(e, j.iso);
@@ -245,7 +256,7 @@
       + `<h3 class="ess-titel">${esc(e.titel)}</h3><p class="ess-marken">${m.join('')}</p>`
       + (e.was ? `<p class="ess-was">${esc(e.was)}</p>` : '')
       + zeile('Wann:', e.wann) + heutePlan
-      + zeile(e.quelleStand ? `Preis (laut Quelle, Stand ${esc(e.quelleStand)}):` : 'Preis:', e.preis)
+      + zeile(/^(undatiert|ohne Datum)$/i.test(e.quelleStand) ? 'Preis laut Quelle (ohne Datum):' : e.quelleStand ? `Preis (laut Quelle, Stand ${esc(e.quelleStand)}):` : 'Preis:', e.preis)
       + zeile('Bedingung:', e.bedingung)
       + (e.adresse ? `<p class="ess-ort">${esc(e.adresse)}</p>` : '')
       + (e.spartricks ? `<p class="ess-mehr"><button type="button" class="ess-link" data-ess-spar="${esc(e.spartricks.chip)}" data-ess-spar-id="${esc(e.spartricks.id || '')}">Ausführlich in Spartricks ›</button></p>` : '')
@@ -286,9 +297,11 @@
     if (k === 'gratis') vorne.push(`<p class="ess-spar"><span>${esc(S.n.hinweise.gratis || 'Geburtstag und Proben: in Spartricks.')}</span><button type="button" class="ess-link" data-ess-spar="geburtstag">Geburtstag gratis ›</button><button type="button" class="ess-link" data-ess-spar="gratis">Gratis &amp; Proben ›</button></p>`);
     else if (S.n.hinweise[k]) vorne.push(`<p class="ess-hinweis-box">${esc(S.n.hinweise[k])}</p>`);
     if (k === 'ayce') vorne.push(doebelnHtml());
-    let lokalKopf = false;
+    let lokalKopf = false, gratisKopf = 0;
     const karten = l.map(e => {
-      const kopf = k === 'xxl' && e.rubrik === 'lokal' && !lokalKopf ? (lokalKopf = true, '<h3 class="ess-ab-titel">Feste Tagesessen in der Region</h3>') : '';
+      let kopf = k === 'xxl' && e.rubrik === 'lokal' && !lokalKopf ? (lokalKopf = true, '<h3 class="ess-ab-titel">Feste Tagesessen in der Region</h3>') : '';
+      const stufe = e.gratis ? 1 : 2; // Gratis-Tage: zwei Zwischenüberschriften (Liste steht schon gratis-zuerst)
+      if (k === 'gratis' && gratisKopf < stufe) { gratisKopf = stufe; kopf = `<h3 class="ess-ab-titel">${e.gratis ? 'Ohne Kauf gratis' : 'Tage mit Sonderpreis (beim Kauf)'}</h3>`; }
       return kopf + karte(e, j);
     }).join('');
     const muster = hinweise.length ? `<details class="ess-auf"><summary>Kommt immer wieder (${hinweise.length})</summary><p class="ess-unter">Gerade keine laufende Aktion – so lief es zuletzt. Nicht aktuell.</p>${hinweise.map(e => karte(e, j)).join('')}</details>` : '';
@@ -330,7 +343,7 @@
   function plane(j) {
     clearTimeout(S.uhr);
     const grenzen = [24 * 60];
-    for (const e of S.n.eintraege) if (e.zeit && giltAm(e, j.iso)) for (const g of [minuten(e.zeit.von), minuten(e.zeit.bis)]) if (g != null && g > j.min) grenzen.push(g);
+    for (const e of S.n.eintraege) if (e.zeit && giltAm(e, j.iso)) for (const g of [e.zeit.von, e.zeit.bis, e.zeit.pause?.von, e.zeit.pause?.bis].map(minuten)) if (g != null && g > j.min) grenzen.push(g);
     const ms = (Math.min(...grenzen) - j.min) * 60000 + 1500;
     S.uhr = setTimeout(() => { if (S.el && S.el.isConnected) zeichne(); }, Math.min(Math.max(ms, 30000), 6 * 3600e3));
   }

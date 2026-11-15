@@ -69,6 +69,8 @@ test('Schema essen.json: Fassung, Stand, Pflichtfelder, https-Quellen, Prüfdatu
     }
     if (e.sicher === 'ja') assert.ok(e.quellen.some(q => !PORTAL.test(new URL(q.url).hostname)), `${wo}: „belegt“ nur mit Deal-Portalen`);
     if (e.gratis) assert.doesNotMatch(`${e.titel} ${e.bedingung}`, /beim Kauf|ab \d+ ?€|MBW|Mindestbestell|\bAbo\b|Kassenbon/i, `${wo}: gratis nur ohne Kauf/Abo`);
+    else assert.doesNotMatch(e.titel, /\bgratis\b/i, `${wo}: „gratis“ im Titel nur, wenn ohne Kauf gratis`);
+    if (e.nurHinweis) assert.ok(!e.wochentage && !e.zeit, `${wo}: Muster ohne festen Wochentag/Uhrzeit (nie „heute“)`);
     if (e.art === 'aktionstag' && !e.nurHinweis) assert.match(e.bis || '', /^\d{4}-\d\d-\d\d$/, `${wo}: Aktionstag ohne Ende`);
     for (const f of ['ab', 'bis']) if (f in e) assert.match(e[f], /^\d{4}-\d\d-\d\d$/, `${wo}: ${f}`);
     if (e.ab && e.bis) assert.ok(e.ab <= e.bis, `${wo}: ab nach bis`);
@@ -119,8 +121,11 @@ test('Heute So 15.11. 11:00: Brunch läuft, McSundae kommt morgen, Subway-Sub BB
   const j = J(JETZT);
   assert.deepEqual(plain(j), { iso: '2026-11-15', wt: 7, min: 660 });
   const t = I.heuteTeile(N, j);
-  for (const id of ['l-naumanns-brunch', 'l-cafe-bubu-brunch', 'l-shiki', 'peterpane-family-sunday']) assert.ok(ids(t.heute).includes(id), `${id} fehlt heute`);
-  assert.equal(t.heute.find(x => x.e.id === 'l-naumanns-brunch').s, 'jetzt');
+  for (const id of ['l-cafe-bubu-brunch', 'l-shiki', 'peterpane-family-sunday']) assert.ok(ids(t.heute).includes(id), `${id} fehlt heute`);
+  assert.equal(t.heute.find(x => x.e.id === 'l-cafe-bubu-brunch').s, 'jetzt');
+  // Naumanns: nur einzelne Sonntage belegt (zuletzt 13.09.) -> nie „heute“, nur „Kommt immer wieder“
+  assert.ok(!ids(t.heute).includes('l-naumanns-brunch'), 'Naumanns nicht als „läuft“');
+  assert.ok(ids(I.liste(N, 'ayce', j.iso).hinweise).includes('l-naumanns-brunch'));
   assert.ok(!ids(t.heute).includes('mcd-flashback-mcsundae'));
   assert.deepEqual(plain(t.bald.slice(0, 2).map(x => [x.e.id, x.tag])), [['mcd-flashback-mcsundae', '2026-11-16'], ['mcd-flashback-cheeseburger', '2026-11-23']]);
   assert.ok(t.bald.some(x => x.e.id === 'ikea-julbord' && x.tag === '2026-12-10'), 'Julbord am 10.12.');
@@ -136,16 +141,24 @@ test('Heute So 15.11. 11:00: Brunch läuft, McSundae kommt morgen, Subway-Sub BB
   assert.ok(ids(t.woche[3]).includes('c-miramar-schnitzeltag'));
 });
 
-test('Heute So 15.11. 15:00: Brunch heute vorbei, nächster So 22.11.; abends „ab 18 Uhr“', () => {
+test('Heute So 15.11. 15:00: Brunch heute vorbei, nächster So 22.11.; abends „ab 18 Uhr“ ohne „läuft“; Pause ist nicht „läuft“', () => {
   const j = J('2026-11-15T14:00:00Z');
   const t = I.heuteTeile(N, j);
-  const br = t.heute.find(x => x.e.id === 'l-naumanns-brunch');
+  const br = t.heute.find(x => x.e.id === 'l-cafe-bubu-brunch');
   assert.equal(br.s, 'vorbei');
   assert.equal(I.naechsterTag(br.e, j.iso), '2026-11-22');
   assert.equal(t.heute[t.heute.length - 1].s, 'vorbei', 'vorbei steht unten');
   const my = N.eintraege.find(e => e.id === 'l-mykonos');
   assert.equal(I.heuteStatus(my, j), 'spaeter');
-  assert.equal(I.heuteStatus(my, J('2026-11-15T18:30:00Z')), 'jetzt');
+  assert.equal(I.heuteStatus(my, J('2026-11-15T18:30:00Z')), 'offen', 'nur „ab 18 Uhr“ bekannt: kein „läuft“');
+  assert.equal(I.heuteStatus(my, J('2026-11-15T22:59:00Z')), 'offen', 'auch nicht um 23:59');
+  const mo = N.eintraege.find(e => e.id === 'l-monchi-vegan'); // Mi 12–15:30 und 16:30–21 Uhr
+  assert.equal(I.heuteStatus(mo, J('2026-11-18T12:00:00Z')), 'jetzt');
+  assert.equal(I.heuteStatus(mo, J('2026-11-18T15:00:00Z')), 'spaeter', 'Pause 15:30–16:30');
+  assert.equal(I.heuteStatus(mo, J('2026-11-18T15:45:00Z')), 'jetzt');
+  const pp = N.eintraege.find(e => e.id === 'peterpane-mittag'); // Mo–Fr bis 17 Uhr
+  assert.equal(I.heuteStatus(pp, J('2026-11-16T10:00:00Z')), 'offen');
+  assert.equal(I.heuteStatus(pp, J('2026-11-16T16:30:00Z')), 'vorbei');
 });
 
 test('Aktionstage: Mo 16.11. McSundae heute, Fr 20.11. vorbei (Cheeseburger ab Mo 23.11.), 25.11. beide weg', () => {
@@ -156,7 +169,8 @@ test('Aktionstage: Mo 16.11. McSundae heute, Fr 20.11. vorbei (Cheeseburger ab M
   assert.ok(!ids(fr.heute).includes('mcd-flashback-mcsundae'));
   assert.ok(!ids(fr.bald).includes('mcd-flashback-mcsundae'));
   assert.equal(fr.bald[0].e.id, 'mcd-flashback-cheeseburger');
-  assert.ok(ids(fr.heute).includes('ikea-fisk-freitag'));
+  assert.ok(!ids(fr.heute).includes('ikea-fisk-freitag'), 'FISK Friday nur bis 31.08. belegt: nicht unter Heute');
+  assert.ok(ids(I.liste(N, 'ketten', '2026-11-20').hinweise).includes('ikea-fisk-freitag'), 'FISK Friday unter „Kommt immer wieder“');
   const sp = I.liste(N, 'ketten', '2026-11-25');
   assert.ok(!ids(sp.l).some(id => id.startsWith('mcd-flashback')), 'abgelaufene Flashback-Deals nicht mehr in der Liste');
   // Aktionstag ohne Ende: nie aktuell
@@ -171,18 +185,18 @@ test('Start-Kachel: nur belegte, höchstens 2 Zeilen; So „ab Mo 16.11.“ + gr
   assert.ok(a.e.length >= 5 && a.e.every(e => DATEN.eintraege.find(x => x.id === e.id).sicher === 'ja'), 'nur sicher belegte');
   const so = I.kachelZeilen(a, Date.parse(JETZT));
   assert.equal(so.length, 2);
-  assert.deepEqual(plain(so[0]), ["McDonald's: McSundae für 1 € (Flashback Deal, nur App)", 'ab Mo 16.11. · nur mit App', false]);
+  assert.deepEqual(plain(so[0]), ["McDonald's: McSundae für 1 €", 'ab Mo 16.11. · nur App', false], 'Klammer „(… nur App)“ fällt auf der schmalen Kachel weg');
   // Abwechslung: höchstens ein „ab …“, dann was heute ohne Kauf gratis ist
   assert.deepEqual(plain(so[1]), ['Gratis Heißgetränk bei jedem Besuch (IKEA Family)', 'gratis ohne Kauf', false]);
   const dez = I.kachelZeilen(a, Date.parse('2026-12-01T10:00:00Z'));
   assert.match(dez[0][0], /Heißgetränk/, 'ohne Aktionstag: dauerhaft gratis');
   assert.equal(dez[0][1], 'gratis ohne Kauf');
   const mo = I.kachelZeilen(a, Date.parse('2026-11-16T10:00:00Z'));
-  assert.deepEqual(plain(mo[0]).slice(1), ['heute · bis Do 19.11. · nur mit App', true]);
-  assert.deepEqual(plain(mo[1]), ["McDonald's: Cheeseburger für 1 € (Flashback Deal, nur App)", 'ab Mo 23.11. · nur mit App', false], 'Mo: Aktionstag heute, dann der nächste');
+  assert.deepEqual(plain(mo[0]).slice(1), ['heute bis Do 19.11. · nur App', true]);
+  assert.deepEqual(plain(mo[1]), ["McDonald's: Cheeseburger für 1 €", 'ab Mo 23.11. · nur App', false], 'Mo: Aktionstag heute, dann der nächste');
   const fr = I.kachelZeilen(a, Date.parse('2026-11-20T10:00:00Z'));
   assert.match(fr[0][0], /Cheeseburger/);
-  assert.equal(fr[0][1], 'ab Mo 23.11. · nur mit App');
+  assert.equal(fr[0][1], 'ab Mo 23.11. · nur App');
   assert.match(fr[1][0], /Heißgetränk/);
   // Prüfdatum älter als 45 Tage: nicht auf die Kachel
   const alt = { ...a, e: a.e.map(e => ({ ...e, geprueft: '2026-09-01' })) };
@@ -197,12 +211,13 @@ test('Unterreiter: jeder laufende Eintrag ist erreichbar; Pizza-Muster nur unter
   for (const e of N.eintraege) if (!e.bis || e.bis >= h) assert.ok(gezeigt.has(e.id), `${e.id} in keinem Unterreiter`);
   assert.ok(!gezeigt.has('pizzahut-unlimited'));
   const pz = I.liste(N, 'pizza', h);
-  assert.deepEqual(ids(pz.hinweise), ['dominos-abhol-muster']);
+  assert.deepEqual(ids(pz.hinweise), ['dominos-abhol-muster', 'freddyfresh-abhol-muster']);
+  assert.ok(N.eintraege.find(e => e.id === 'freddyfresh-abhol-muster').region.includes('Döbeln'), 'Freddy Fresh: Filiale in Döbeln');
+  assert.match(DATEN.doebeln.text, /Freddy Fresh/);
   const ay = plain(I.liste(N, 'ayce', h).l.filter(e => e.km != null).map(e => e.km));
   assert.deepEqual(ay, [...ay].sort((a, b) => a - b), 'All-you-can-eat nach km');
   const gr = I.liste(N, 'gratis', h).l;
-  assert.deepEqual(ids(gr).slice(0, 4), ['ikea-family-november', 'ikea-kindermenue-november', 'mcd-flashback-mcsundae', 'mcd-flashback-cheeseburger'], 'Gratis-Tage: laufende Aktionstage, dann die nächsten nach Datum');
-  assert.ok(ids(gr).includes('ikea-heissgetraenk'));
+  assert.deepEqual(ids(gr).slice(0, 5), ['ikea-heissgetraenk', 'ikea-family-november', 'ikea-kindermenue-november', 'mcd-flashback-mcsundae', 'mcd-flashback-cheeseburger'], 'Gratis-Tage: erst was ohne Kauf gratis ist, dann laufende Aktionstage, dann die nächsten nach Datum');
   for (const c of CHIPS.slice(1)) assert.ok(zahl[c] >= 2, `${c}: ${zahl[c]}`);
 });
 
@@ -271,7 +286,7 @@ const DATEI = {
   'konzerte-daten/konzerte/data/releases.json': 'konzerte-releases.json',
   'konzerte-daten/konzerte/data/status.json': 'konzerte-status.json',
 };
-async function oeffne({ breite = 428, hoehe = 926, pfad = '/mein-vorteil/#essen', jetzt = JETZT, foto = false, radar = null } = {}) {
+async function oeffne({ breite = 428, hoehe = 926, pfad = '/mein-vorteil/#essen', jetzt = JETZT, foto = false, radar = null, uhrLaeuft = false } = {}) {
   const ctx = await browser.newContext({
     viewport: { width: breite, height: hoehe }, deviceScaleFactor: foto ? 2 : 1, isMobile: true, hasTouch: true,
     locale: 'de-DE', timezoneId: 'Europe/Berlin', colorScheme: 'dark', serviceWorkers: 'block',
@@ -296,7 +311,7 @@ async function oeffne({ breite = 428, hoehe = 926, pfad = '/mein-vorteil/#essen'
   const fehler = [];
   page.on('console', m => { if (m.type() === 'error') fehler.push(m.text()); });
   page.on('pageerror', e => fehler.push(String(e)));
-  await page.clock.setFixedTime(new Date(jetzt));
+  if (uhrLaeuft) await page.clock.install({ time: new Date(jetzt) }); else await page.clock.setFixedTime(new Date(jetzt));
   await page.goto(basis + pfad);
   await page.waitForFunction(() => !/lädt|Lade/.test(document.getElementById('stand').textContent), null, { timeout: 10000 });
   if (pfad.endsWith('#essen')) await essDa(page);
@@ -360,7 +375,10 @@ test('Lazy: Startseite holt weder essen.js noch essen.json; erst der Reiter (#es
   await page.locator('.sprung a[data-ziel="start"]').click();
   await page.waitForFunction(() => /McSundae/.test(document.querySelector('#kacheln a[data-sprung="essen"]').textContent));
   assert.equal(await kachel.locator('li').count(), 2);
-  assert.match(nbsp(await kachel.innerText()), /McSundae für 1 €[^\n]*\s*ab Mo 16\.11\. · nur mit App[\s\S]*Heißgetränk[^\n]*\s*gratis ohne Kauf/);
+  assert.match(nbsp(await kachel.innerText()), /McSundae für 1 €\s*ab Mo 16\.11\. · nur App[\s\S]*Heißgetränk[^\n]*\s*gratis ohne Kauf/);
+  // hochkant: die Zeile unter dem Titel (wann · Bedingung) passt ganz in die Kachel; Titel kürzt wie überall mit „…“
+  const abgeschnitten = await kachel.locator('li span').evaluateAll(es => es.filter(e => e.scrollWidth > e.clientWidth + 1).map(e => e.textContent));
+  assert.deepEqual(abgeschnitten, [], 'Kachel-Zeile abgeschnitten');
   await kachel.screenshot({ path: join(FOTOS, 'kachel-essen.png') });
   await page.screenshot({ path: join(FOTOS, 'start-mit-essen-hoch.png') });
   await page.reload();
@@ -378,7 +396,10 @@ for (const [breite, hoehe, lage] of [[428, 926, 'hoch'], [926, 428, 'quer']]) {
     assert.deepEqual((await page.locator('.ess-chips [data-ess-chip]').allInnerTexts()).map(t => t.replace(/\d+$/, '').trim()), ['Heute', 'Fastfood & Ketten', 'Pizza & Abholen', 'All-you-can-eat', 'XXL & Challenges', 'Gratis-Tage']);
     const heute = nbsp(await page.locator('#ess-liste').innerText());
     assert.match(heute, /Heute, So 15\.11\./);
-    assert.match(heute, /Naumanns Gaststube – Sonntagsbrunch[\s\S]*heute 10–14 Uhr · läuft/);
+    assert.match(heute, /Café Bubu – Sonntags-Frühstücksbuffet[\s\S]*heute 10–14 Uhr · läuft/);
+    assert.doesNotMatch(heute, /Naumanns/, 'nur einzelne Sonntage belegt: nicht unter Heute');
+    assert.doesNotMatch(heute, /ab 18 Uhr · läuft/, 'ohne Ende kein „läuft“');
+    assert.doesNotMatch(heute, /Stand undatiert/);
     assert.match(heute, /Als Nächstes[\s\S]*McSundae für 1 €[\s\S]*Mo 16\.11\. – Do 19\.11\. · in 1 Tag/);
     assert.match(heute, /Morgen, Mo 16\.11\.:[^\n]*Play Off/);
     assert.match(heute, /Die Woche/);
@@ -400,17 +421,20 @@ for (const [breite, hoehe, lage] of [[428, 926, 'hoch'], [926, 428, 'quer']]) {
       const t = nbsp(await page.locator('#ess-liste').innerText());
       assert.ok(await page.locator('#ess-liste .ess-karte').count() >= 2, `${c} fast leer`);
       if (c === 'ketten') assert.match(t, /McSundae für 1 €[\s\S]*nur mit App[\s\S]*belegt/);
-      if (c === 'pizza') { assert.match(t, /Abhol-Pizza zum halben Preis: gerade keine laufende Aktion/); assert.match(t, /Kommt immer wieder \(1\)/); }
+      if (c === 'pizza') { assert.match(t, /Abhol-Pizza zum halben Preis: gerade keine laufende Aktion/); assert.match(t, /Kommt immer wieder \(2\)/); }
       if (c === 'ayce') {
-        const km = await page.locator('#ess-liste .ess-region').allInnerTexts();
+        const km = await page.locator('#ess-liste > .ess-karte .ess-region').allInnerTexts(); // ohne „Kommt immer wieder“
         const z = km.map(s => Number((s.match(/(\d+) km/) || [])[1])).filter(Number.isFinite);
         assert.deepEqual(z, [...z].sort((a, b) => a - b), 'nach km');
         assert.match(t, /Julbord[\s\S]*IKEA Restaurant[\s\S]*Do 10\.12\./);
       }
       if (c === 'xxl') { assert.match(t, /Ess-Challenge: gerade keine laufende/); assert.match(t, /Feste Tagesessen in der Region/); }
-      if (c === 'gratis') assert.match(t, /gratis ohne Kauf/);
+      if (c === 'gratis') {
+        assert.match(t, /Ohne Kauf gratis\s*Gratis Heißgetränk[\s\S]*gratis ohne Kauf[\s\S]*Tage mit Sonderpreis \(beim Kauf\)\s*Family-Preise/, 'das echte Gratis zuerst');
+        assert.match(t, /Kindermenü: Stoff-Panda \+ Götterspeise dazu \(beim Kauf, IKEA Family\)/);
+      }
       await pruefeLayout(page, `${lage} ${c}`);
-      if (c === 'ayce' || c === 'ketten') await page.screenshot({ path: join(FOTOS, `essen-${c}-${lage}.png`) });
+      if (c !== 'xxl') await page.screenshot({ path: join(FOTOS, `essen-${c}-${lage}.png`) });
     }
     assert.deepEqual(fremd, []);
     assert.deepEqual(fehler, []);
@@ -449,6 +473,7 @@ test('Neue Fassung oder kaputte Datei: „Seite neu laden“ statt „nicht erre
   const { ctx, page, fehler } = await oeffne({ jetzt: '2026-11-16T10:00:00Z' });
   const t = nbsp(await page.locator('#ess-liste').innerText());
   assert.match(t, /Heute, Mo 16\.11\.[\s\S]*McSundae für 1 €[\s\S]*heute · bis Do 19\.11\./);
+  assert.match(t, /Peter's Pause[\s\S]*?heute bis 17 Uhr(?! · läuft)/, 'nur Ende bekannt: kein „läuft“');
   assert.deepEqual(fehler, []);
   await ctx.close();
 });
@@ -474,5 +499,21 @@ test('Radar „Aktuell“: Einträge der Kategorie essen nur im Reiter (Chip Akt
   assert.doesNotMatch(await page.locator('main').textContent(), /Whopper für 7 €/, 'nicht noch einmal unter „Mehr“ (auch nicht eingeklappt)');
   assert.deepEqual(fremd, []);
   assert.deepEqual(fehler, []);
+  await ctx.close();
+});
+
+test('Mitternacht bei offener Seite: Start-Kachel springt von „ab Mo 16.11.“ auf „heute bis Do 19.11.“', { skip: ohnePw }, async () => {
+  const { ctx, page, fehler } = await oeffne({ jetzt: '2026-11-15T22:58:00Z', uhrLaeuft: true }); // So 23:58 Berlin
+  const nicht404 = [];
+  page.on('response', r => { if (r.status() === 404) { const u = r.url(); if (/essen\.(js|json)/.test(u)) nicht404.push(u); } });
+  await page.locator('.sprung a[data-ziel="start"]').click();
+  const text = () => page.evaluate(() => document.querySelector('#kacheln a[data-sprung="essen"]').textContent.replace(/[\u00a0\u202f]/g, ' '));
+  await page.waitForFunction(() => /ab Mo 16\.11\./.test(document.querySelector('#kacheln a[data-sprung="essen"]').textContent));
+  await page.clock.runFor(3 * 60000); // Mo 00:01 – das 30-s-Intervall merkt den neuen Tag
+  await page.waitForFunction(() => /heute bis Do 19\.11\./.test(document.querySelector('#kacheln a[data-sprung="essen"]').textContent), null, { timeout: 5000 })
+    .catch(async () => assert.fail(`Kachel nach Mitternacht alt: ${await text()}`));
+  assert.match(await text(), /McSundae für 1 €\s*heute bis Do 19\.11\. · nur App/);
+  assert.deepEqual(fehler.filter(f => !/status of 404/.test(f)), [], 'nur die 404 der absichtlich fehlenden Radar-Dateien');
+  assert.deepEqual(nicht404, [], 'essen.js/essen.json nie 404');
   await ctx.close();
 });

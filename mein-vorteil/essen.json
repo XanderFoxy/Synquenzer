@@ -3,7 +3,7 @@
  "stand": "2026-11-15",
  "hinweis": "Ketten bundesweit und Lokale bis ca. 60 km um Döbeln (Luftlinie). Jede Angabe mit Quelle und Prüfdatum; Zeiten und Preise so, wie die Quelle sie nennt. „Bitte vor Ort prüfen“ heißt: nur aus Portalen, Stadtmagazinen oder Bewertungen, nicht von der eigenen Seite des Lokals. Franchise-Ketten: nur teilnehmende Filialen.",
  "doebeln": {
-  "text": "In Döbeln selbst haben wir kein All-you-can-eat, kein XXL-Lokal, keine Ess-Challenge und keine feste Tages-Aktion gefunden (auch keine Abhol-Pizza-Aktion). Am nächsten: Chemnitz (33–37 km), Dresden (41–45 km), Leipzig (55–59 km).",
+  "text": "In Döbeln selbst haben wir kein All-you-can-eat, kein XXL-Lokal, keine Ess-Challenge und keine feste Tages-Aktion gefunden, und heute läuft keine Abhol-Pizza-Aktion. Freddy Fresh (Hauptbahnhof 1) macht aber immer wieder Abhol-Pizza small für 3,99 € (zuletzt 02.–06.11.2026, siehe Pizza & Abholen). Am nächsten: Chemnitz (33–37 km), Dresden (41–45 km), Leipzig (55–59 km).",
   "quellen": [
    {
     "name": "speisekarte.de",
@@ -13,8 +13,8 @@
   "geprueft": "2026-11-15"
  },
  "hinweise": {
-  "xxl": "Ess-Challenge: gerade keine laufende gefunden. Die einzige bekannte (MaxiMahl XXL, Dresden, 1,5 kg Schnitzel in 45 Min.) hat laut mehreren Hinweisen Ende 2025 geschlossen.",
-  "pizza": "Abhol-Pizza zum halben Preis: gerade keine laufende Aktion (Stand 15.11.2026). Domino’s macht sie immer wieder – unten unter „Kommt immer wieder“.",
+  "xxl": "Ess-Challenge: gerade keine laufende gefunden. Die einzige bekannte (MaxiMahl XXL, Dresden, 1,5 kg Schnitzel in 45 Min.) ist laut einem Verzeichnis Ende 2025 geschlossen (nicht bestätigt).",
+  "pizza": "Abhol-Pizza zum halben Preis: gerade keine laufende Aktion (Stand 15.11.2026). Domino’s und Freddy Fresh (auch in Döbeln) machen sie immer wieder – unten unter „Kommt immer wieder“.",
   "gratis": "Ohne Kauf gratis ist beim Essen selten. Was es am Geburtstag gratis gibt und Gratis-Proben stehen in Spartricks."
  },
  "eintraege": [
@@ -280,6 +280,37 @@
    "sicher": "pruefen"
   },
   {
+   "id": "freddyfresh-abhol-muster",
+   "rubrik": "pizza",
+   "art": "abholung",
+   "kette": "Freddy Fresh",
+   "titel": "Abhol-Pizza small (ca. 25 cm) 3,99 € statt 9,99 € – kommt immer wieder",
+   "region": [
+    "Döbeln",
+    "bundesweit"
+   ],
+   "wann": "wechselnd; zuletzt „Powerweek“ 02.–06.11.2026 und am 19.05.2026, jeweils nur Selbstabholung bis 17 Uhr. Am 15.11.2026 keine laufende Aktion gefunden.",
+   "bedingung": "Nur Selbstabholer, bis 17 Uhr, teilnehmende Filialen. Freddy Fresh gibt es auch in Döbeln (Hauptbahnhof 1) – ob die Filiale mitmacht: dort fragen.",
+   "gratis": false,
+   "nurHinweis": true,
+   "quellen": [
+    {
+     "name": "mydealz (Powerweek)",
+     "url": "https://www.mydealz.de/deals/freddy-fresh-powerweek-jede-pizza-small-fur-399-2861775"
+    },
+    {
+     "name": "Tiendeo",
+     "url": "https://www.tiendeo.de/angebote-gutschein/freddy-fresh-pizza"
+    },
+    {
+     "name": "mydealz (19.05.)",
+     "url": "https://www.mydealz.de/deals/freddy-fresh-399-euro-pizza-small-ca-25-cm-nur-selbstabholer-nur-am-190526-bis-17-uhr-2775482"
+    }
+   ],
+   "geprueft": "2026-11-15",
+   "sicher": "pruefen"
+  },
+  {
    "id": "pizzahut-unlimited",
    "rubrik": "ayce",
    "art": "wochentag",
@@ -301,7 +332,7 @@
     "text": "bis 17 Uhr"
    },
    "bis": "2026-11-13",
-   "bedingung": "Nur im Restaurant, teilnehmende Filialen (laut Deal u. a. Leipzig, Bremen, Wilhelmshaven); 6 Pizzasorten, 5 Softdrinks. Ob verlängert: Filiale fragen.",
+   "bedingung": "Nur im Restaurant, teilnehmende Filialen: in der Pizza-Hut-App prüfen; 6 Pizzasorten, 5 Softdrinks. Ob verlängert: Filiale fragen.",
    "gratis": false,
    "quellen": [
     {
@@ -346,7 +377,7 @@
    "region": [
     "bundesweit"
    ],
-   "wann": "täglich, jeden Tag ein anderer Sub (Plan Stand Mai 2026)",
+   "wann": "täglich, jeden Tag ein anderer Sub (Plan laut Subway-Kampagnenseite und mydealz, Stand Mai 2026)",
    "wochentage": [
     1,
     2,
@@ -361,13 +392,17 @@
     "2": "Nacho Chicken",
     "3": "Plant-based Chicken Teriyaki",
     "4": "Chicken Fajita",
-    "5": "Tuna",
+    "5": "Tuna Mayo",
     "6": "Chicken Tandoori",
     "7": "BBQ Rib"
    },
    "bedingung": "Menü mit Getränk + Cookie 5,99 € (15 cm) bzw. 9,98 € (Footlong). Regional verschieden, einzelne Filialen machen nicht mit; App-Gutscheine gelten meist nicht für den Sub des Tages.",
    "gratis": false,
    "quellen": [
+    {
+     "name": "Subway",
+     "url": "https://www.subway.com/en-DE/campaigns/suboftheday"
+    },
     {
      "name": "mydealz",
      "url": "https://www.mydealz.de/magazin/subway-gutscheine-aktuelle-coupons-und-angebote-im-ueberblick-9778"
@@ -390,9 +425,13 @@
     "bundesweit"
    ],
    "wann": "seit 20.08.2026",
-   "bedingung": "App-Konto; 10 € Umsatz = 1 € Guthaben, gilt laut Bericht auch beim Sub des Tages; alte Stufen entfallen.",
+   "bedingung": "App-Konto; 10 € Umsatz = 1 € Guthaben, gilt laut Bericht auch beim Sub des Tages; alte Stufen entfallen. Subway Cash verfällt 6 Monate nach dem Kauf.",
    "gratis": false,
    "quellen": [
+    {
+     "name": "Subway (Bedingungen)",
+     "url": "https://www.subway.com/de-de/legal/subway-rewards"
+    },
     {
      "name": "mydealz",
      "url": "https://www.mydealz.de/magazin/subway-gutscheine-aktuelle-coupons-und-angebote-im-ueberblick-9778"
@@ -433,7 +472,7 @@
     "bundesweit"
    ],
    "wann": "dauerhaft, jeder Besuch",
-   "bedingung": "Kostenlose IKEA-Family-Karte (App) an der Kasse zeigen; Kaffee, Tee oder Kakao. Laut Nutzern kein Latte/Cappuccino. Kein Einkauf nötig (laut Quellen nicht Voraussetzung).",
+   "bedingung": "Kostenlose IKEA-Family-Karte (App) an der Kasse im Restaurant des Hauses zeigen; Kaffee, Tee oder Kakao. Laut Nutzern kein Latte/Cappuccino. Kein Einkauf nötig (laut Quellen nicht Voraussetzung). Angebot kann je Haus abweichen.",
    "gratis": true,
    "spartricks": {
     "chip": "gratis",
@@ -447,6 +486,10 @@
     {
      "name": "mydealz",
      "url": "https://www.mydealz.de/deals/ikea-gratis-heissgetrank-fur-family-card-mitglieder-dauerhaft-2752053"
+    },
+    {
+     "name": "Finanztip",
+     "url": "https://www.finanztip.de/daily/ikea-die-besten-spartipps-gibts-nicht-nur-mit-family/"
     }
    ],
    "geprueft": "2026-11-15",
@@ -468,7 +511,7 @@
    },
    "ab": "2026-12-10",
    "bis": "2026-12-10",
-   "bedingung": "Nur in 23 von 55 Häusern; Ticket vorab nötig (teils nur für Family, teils ausverkauft). Meist 19 € mit Family (bis 19,99 €), ohne Family z. B. 24,95 € (Berlin-Lichtenberg); Kinder bis 12 meist gratis. Ob Leipzig/Chemnitz mitmachen: nicht belegt.",
+   "bedingung": "Nur in 23 von 55 Häusern; Ticket vorab nur im Einrichtungshaus kaufen (teils nur für Family), einige Häuser schon ausverkauft. Meist 19 € mit Family (bis 19,99 €), ohne Family z. B. 24,95 € (Berlin-Lichtenberg); Kinder bis 12 meist gratis. Ob Leipzig/Chemnitz mitmachen: nicht belegt.",
    "gratis": false,
    "quellen": [
     {
@@ -494,7 +537,7 @@
    ],
    "wann": "bis 30.11.2026 (6 Glögg für 19,95 € bis Ende Dezember)",
    "bis": "2026-11-30",
-   "bedingung": "IKEA-Family-Karte; Schwedenbistro/Restaurant vor Ort, bundesweit laut Community-Beitrag (Chokladbulle statt 2,50 €, Entenkeulen statt 25,90 €).",
+   "bedingung": "IKEA-Family-Karte; Schwedenbistro/Restaurant vor Ort, bundesweit laut Community-Beitrag (Chokladbulle statt 2,50 €, Entenkeulen statt 25,90 €; im selben Beitrag auch 2 Fisch-Hotdogs für 4 €).",
    "gratis": false,
    "quellen": [
     {
@@ -510,7 +553,7 @@
    "rubrik": "ketten",
    "art": "aktionstag",
    "kette": "IKEA Restaurant",
-   "titel": "Kindermenü mit gratis Stoff-Panda + Götterspeise",
+   "titel": "Kindermenü: Stoff-Panda + Götterspeise dazu (beim Kauf, IKEA Family)",
    "region": [
     "bundesweit"
    ],
@@ -532,24 +575,26 @@
    "rubrik": "ketten",
    "art": "wochentag",
    "kette": "IKEA Restaurant",
-   "titel": "FISK Freitag: Fisch-Wochenangebot",
+   "titel": "FISK Friday: Fisch-Gericht 3,95 € – kommt immer wieder",
    "region": [
     "bundesweit"
    ],
-   "wann": "freitags",
-   "wochentage": [
-    5
-   ],
-   "bedingung": "Wöchentliches Fischangebot; der Sommer-Rabatt (ca. 3,95 €) endete 31.08.2026 – aktuellen Preis vor Ort prüfen.",
+   "wann": "zuletzt im Sommer 2026: jeden Freitag 17–19 Uhr, bis 31.08.2026. Für Herbst 2026 keine Quelle gefunden.",
+   "bedingung": "Nur mit IKEA Family, nur in ausgewählten Einrichtungshäusern. Ob es wiederkommt: im Haus nachfragen.",
    "gratis": false,
    "quellen": [
     {
      "name": "mydealz",
      "url": "https://www.mydealz.de/deals/ikea-restaurant-sommerangebote-fisk-friday-plantbullar-asia-style-sommar-meny-2805596"
+    },
+    {
+     "name": "mydealz Magazin",
+     "url": "https://www.mydealz.de/magazin/freitags-essen-bei-ikea-fischhaeppchen-fuer-nur-3-95-euro-jetzt-43-sparen-43522"
     }
    ],
    "geprueft": "2026-11-15",
-   "sicher": "pruefen"
+   "sicher": "pruefen",
+   "nurHinweis": true
   },
   {
    "id": "nordsee-app",
@@ -632,16 +677,16 @@
     "bundesweit"
    ],
    "wann": "dauerhaft (Stand Sept. 2026)",
-   "bedingung": "Online bestellen und selbst abholen, ab 14,90 € Bestellwert.",
+   "bedingung": "Online bestellen und selbst abholen. Mindestbestellwert 14,90 € nur laut einer undatierten Quelle (MonsterDealz Sept. 2026 nennt keinen).",
    "gratis": false,
    "quellen": [
     {
-     "name": "DealDoktor",
-     "url": "https://www.dealdoktor.de/peter-pane-gutschein/"
-    },
-    {
      "name": "MonsterDealz",
      "url": "https://www.monsterdealz.de/magazin/peter-pane-gutschein"
+    },
+    {
+     "name": "DealDoktor",
+     "url": "https://www.dealdoktor.de/peter-pane-gutschein/"
     }
    ],
    "geprueft": "2026-11-15",
@@ -652,7 +697,7 @@
    "rubrik": "ketten",
    "art": "wochentag",
    "kette": "Peter Pane",
-   "titel": "Meatless Monday: alle vegetarischen/veganen Burger 9,90 €",
+   "titel": "Meatless Monday: vegetarische/vegane Burger günstiger (laut Nutzer-Tipp 9,90 €)",
    "region": [
     "bundesweit"
    ],
@@ -660,7 +705,7 @@
    "wochentage": [
     1
    ],
-   "bedingung": "Im Restaurant; Stand der Übersicht September 2026.",
+   "bedingung": "Im Restaurant; Aktion laut Übersicht September 2026, den Preis 9,90 € nennt nur ein Nutzer-Tipp – vor Ort prüfen.",
    "gratis": false,
    "quellen": [
     {
@@ -680,7 +725,7 @@
    "region": [
     "bundesweit"
    ],
-   "wann": "Mo–Fr mittags (Stand Sept. 2026)",
+   "wann": "Mo–Fr bis 17 Uhr (Karte Hamburg; Stand Sept. 2026)",
    "wochentage": [
     1,
     2,
@@ -688,16 +733,24 @@
     4,
     5
    ],
-   "bedingung": "Im Restaurant; Uhrzeit vor Ort prüfen.",
+   "bedingung": "Im Restaurant; Uhrzeit laut Karte Hamburg, andere Filialen vor Ort prüfen.",
    "gratis": false,
    "quellen": [
     {
      "name": "MonsterDealz",
      "url": "https://www.monsterdealz.de/magazin/peter-pane-gutschein"
+    },
+    {
+     "name": "speisekarte.de (Hamburg)",
+     "url": "https://www.speisekarte.de/hamburg/restaurant/peter_pane_bleichenbruecke/speisekarte"
     }
    ],
    "geprueft": "2026-11-15",
-   "sicher": "pruefen"
+   "sicher": "pruefen",
+   "zeit": {
+    "bis": "17:00",
+    "text": "bis 17 Uhr"
+   }
   },
   {
    "id": "peterpane-family-sunday",
@@ -793,7 +846,7 @@
     "bundesweit"
    ],
    "wann": "dauerhaft",
-   "bedingung": "Pass in Apple/Google Wallet; Prämien sammeln und einlösen in jedem Five Guys in Deutschland. Welche Prämien: im Pass.",
+   "bedingung": "Pass in Apple/Google Wallet; Prämien sammeln und einlösen in jedem Five Guys in Deutschland. iPhone: Der Pass geht in die Apple Wallet, die Prämien siehst du dort aber nicht – nur im Rewards-Konto (Website/App) oder beim Scannen an der Kasse. Ab 16 Jahren; jede Prämie hat ein Ablaufdatum.",
    "gratis": false,
    "quellen": [
     {
@@ -864,7 +917,7 @@
    "km": 44,
    "wann": "Öffnungstage/Uhrzeit nicht belegt",
    "preis": "39,00 € p. P.; 44,00 € mit Caipirinha; Kinder 5–12 J. 13,00 €",
-   "bedingung": "Getränke extra",
+   "bedingung": "Getränke extra. Öffnungstage widersprüchlich (ein Portal nennt sonntags geschlossen) – vorher anrufen.",
    "gratis": false,
    "quellen": [
     {
@@ -1139,7 +1192,7 @@
    "km": 57,
    "wann": "nicht belegt",
    "preis": "18,90 € laut Gästen (Wasser 0,2 l 3,50 € extra)",
-   "bedingung": "Getränke extra. Westfield-Seite der Höfe am Brühl zeigt 'Geschlossen' – vermutlich veraltet, unbedingt prüfen",
+   "bedingung": "Getränke extra. Öffnung vor dem Besuch prüfen (die Center-Seite führt das Lokal, „Öffnungszeiten können abweichen“).",
    "gratis": false,
    "quellen": [
     {
@@ -1149,6 +1202,10 @@
     {
      "name": "intravel",
      "url": "https://intravel.net/leipzig/restaurants-cafes/sushi-and-nem"
+    },
+    {
+     "name": "Westfield Höfe am Brühl",
+     "url": "https://www.westfield.com/de/germany/hoefeambruehl/restaurants/sushi-and-nem/67970"
     }
    ],
    "quelleStand": "Bewertungen 2025/2026",
@@ -1280,6 +1337,10 @@
    "zeit": {
     "von": "12:00",
     "bis": "21:00",
+    "pause": {
+     "von": "15:30",
+     "bis": "16:30"
+    },
     "text": "12–15:30 und 16:30–21 Uhr"
    },
    "preis": "nicht belegt",
@@ -1304,38 +1365,35 @@
    "rubrik": "ayce",
    "art": "ayce",
    "ort": "Leipzig",
-   "titel": "Naumanns Gaststube – Sonntagsbrunch",
+   "titel": "Naumanns Gaststube – Brunch an einzelnen Sonntagen",
    "was": "Brunch-Buffet süß und herzhaft, Kaffee, Säfte, ein Glas Prosecco zur Begrüßung",
    "adresse": "Karl-Heine-Straße 32, 04229 Leipzig",
    "region": [
     "Leipzig"
    ],
    "km": 58,
-   "wann": "sonntags 10–14 Uhr",
-   "wochentage": [
-    7
-   ],
-   "zeit": {
-    "von": "10:00",
-    "bis": "14:00",
-    "text": "10–14 Uhr"
-   },
+   "wann": "einzelne Sonntage 10–14 Uhr, zuletzt gelistet 09.08. und 13.09.2026; ab November kein Termin gefunden – Termine auf naumanns-gaststube.de/reservierung",
    "preis": "33,00 € p. P. inkl. Speisen und Getränke; Kinder 0–10 J. frei, 11–16 J. halber Preis",
-   "bedingung": "Reservierung; Kinder-frei nur mit zahlender Begleitung. Ob der Brunch nach September 2026 weiterläuft, ist nicht belegt",
+   "bedingung": "Reservierung; Kinder-frei nur mit zahlender Begleitung. Kein fester Wochen-Brunch – nur an gelisteten Terminen.",
    "gratis": false,
    "quellen": [
     {
-     "name": "rausgegangen",
-     "url": "https://rausgegangen.de/events/naumanns-sonntagsbrunch-3/"
-    },
-    {
      "name": "regioactive",
      "url": "https://www.regioactive.de/gastronomie/sonntagsbrunch-in-naumanns-gaststube-termine-tickets-be8121e7814e"
+    },
+    {
+     "name": "regioactive (09.08.)",
+     "url": "https://www.regioactive.de/gastronomie/sonntagsbrunch-in-naumanns-gaststube-leipzig-2026-08-09-1ZsJfrfCr4"
+    },
+    {
+     "name": "rausgegangen",
+     "url": "https://rausgegangen.de/events/naumanns-sonntagsbrunch-3/"
     }
    ],
-   "quelleStand": "Termine bis 13.09.2026 gelistet; rausgegangen-Eintrag als vorbei markiert",
+   "quelleStand": "2 Termine 09.08.–13.09.2026 (regioactive); rausgegangen-Eintrag vorbei",
    "geprueft": "2026-11-15",
-   "sicher": "pruefen"
+   "sicher": "pruefen",
+   "nurHinweis": true
   },
   {
    "id": "l-cafe-bubu-brunch",
@@ -1344,12 +1402,12 @@
    "ort": "Leipzig",
    "titel": "Café Bubu – Sonntags-Frühstücksbuffet",
    "was": "Frühstücksbuffet kombiniert mit Hausmannskost und Hauptgerichten",
-   "adresse": "Täubchenweg, Leipzig-Ost (Hausnummer nicht belegt)",
+   "adresse": "Täubchenweg 88, Leipzig-Ost (Hausnummer nur laut einem Portal)",
    "region": [
     "Leipzig"
    ],
    "km": 55,
-   "wann": "sonntags 10–14 Uhr",
+   "wann": "sonntags 10–14 Uhr (Leipzig Tourismus; HappyCow nennt Sa und So 10–14 Uhr)",
    "wochentage": [
     7
    ],
@@ -1359,15 +1417,19 @@
     "text": "10–14 Uhr"
    },
    "preis": "45 € p. P.",
-   "bedingung": "",
+   "bedingung": "Sonntags-Öffnung widersprüchlich (ein Portal nennt Mo–Sa) – vorher anrufen.",
    "gratis": false,
    "quellen": [
     {
      "name": "Leipzig Tourismus",
      "url": "https://www.leipzig.travel/en/blog/leipzigs-hotspots-for-brunch-lovers"
+    },
+    {
+     "name": "HappyCow",
+     "url": "https://happycow.net/reviews/cafe-bubu-leipzig-150432"
     }
    ],
-   "quelleStand": "undatiert",
+   "quelleStand": "18.12.2025",
    "geprueft": "2026-11-15",
    "sicher": "pruefen"
   },

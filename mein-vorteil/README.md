@@ -105,13 +105,15 @@ Der Service Worker hält `filme.js` wie die Seite (erst Netz, nach 3 s die letzt
 
 **Reiter „Essen“ (seit 15.11.2026, `essen.js` + `essen.json`):** Xanders Wunsch vom 15.11. („kostenlos essen, besondere Tage,
 Gutscheine, Aktionen bei McDonald's oder Subway, Abholpizza zum halben Preis, XXL-Restaurants, wann All-you-can-eat ist“). Daten aus zwei
-Recherchen (Ketten bundesweit, Lokale bis ca. 60 km um Döbeln; 54 Einträge). Jeder Eintrag: `quellen` (nur https), `geprueft`, `sicher`
+Recherchen (Ketten bundesweit, Lokale bis ca. 60 km um Döbeln; 55 Einträge, nach der Fakten-Prüfung vom 15.11. korrigiert). Jeder Eintrag: `quellen` (nur https), `geprueft`, `sicher`
 (`ja` = offiziell oder mehrere datierte Quellen; `pruefen` = Portal/Stadtmagazin/Bewertung → Marke „bitte vor Ort prüfen“; alle Lokale),
 Zeiten und Preise wörtlich wie in der Quelle (`wann`, `preis`, `zeit.text`), bei Lokalen `km` (Luftlinie ab Döbeln Obermarkt), Adresse und
 Stand der Quelle. `gratis: true` nur ohne Kauf/Abo (derzeit nur das IKEA-Family-Heißgetränk); sonst Marken „nur mit App“/„Abholung“.
 Regeln der Seite (Berliner Zeit): `bis` vorbei → weg; Aktionstag ohne `bis` nie aktuell; `ab` in der Zukunft → „Als Nächstes“;
-`wochentage` (1 = Mo … 7 = So) zählen nur an dem Tag, mit `zeit` „läuft“ / „heute ab …“ / „heute vorbei · nächster: …“ (neu gezeichnet zum
-nächsten Wechsel und um Mitternacht); `nurHinweis` (z. B. Domino's Abhol-Pizza zum halben Preis) nur unter „Kommt immer wieder“;
+`wochentage` (1 = Mo … 7 = So) zählen nur an dem Tag, mit `zeit` „läuft“ (nur mit `von` und `bis`, nicht in `zeit.pause`) / „heute ab …“ /
+„heute bis …“ / „heute vorbei · nächster: …“ (neu gezeichnet zum nächsten Wechsel und um Mitternacht, die Start-Kachel ebenso);
+`nurHinweis` (z. B. Domino's und Freddy Fresh Abhol-Pizza, einzelne Brunch-Termine, Sommer-Aktionen) nur unter „Kommt immer wieder“, nie
+mit `wochentage`/`zeit`; „Gratis-Tage“: erst „Ohne Kauf gratis“, dann „Tage mit Sonderpreis (beim Kauf)“; „gratis“ im Titel nur bei `gratis: true`;
 `geprueft` älter als 45 Tage → „Stand … – bitte prüfen“ und nicht auf der Kachel. „Heute“: Aktionen des Tages, „Als Nächstes“ (Aktionstage
 ≤ 35 Tage, „Morgen“), „Die Woche“ (feste Tage), „Täglich“ (aufklappbar), Döbeln-Hinweis. Geburtstag und Gratis-Proben stehen nicht doppelt
 hier: „Geburtstag gratis ›“/„Gratis & Proben ›“ und „Ausführlich in Spartricks ›“ öffnen Spartricks im passenden Chip

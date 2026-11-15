@@ -2152,7 +2152,7 @@ function essenKachel() { // -> { z, w } wie kachelInhalt; höchstens 2 Zeilen
   const mk = e => (typeof e.marke === 'string' && e.marke ? ` · ${e.marke}` : '');
   const z = [], schon = new Set();
   const dazu = (e, zeile, gut) => { if (z.length < 2 && !schon.has(e.id)) { schon.add(e.id); z.push([kurzTitel(e.titel, 60), zeile, gut]); } };
-  for (const e of l) if (e.art === 'aktionstag' && gilt(e, h)) dazu(e, `heute${e.bis !== h ? ` · bis ${wtm(e.bis)}` : ''}${mk(e)}`, true);
+  for (const e of l) if (e.art === 'aktionstag' && gilt(e, h)) dazu(e, `heute${e.bis !== h ? ` bis ${wtm(e.bis)}` : ''}${mk(e)}`, true);
   for (const e of l) if (e.gratis && besonders(e) && gilt(e, h)) dazu(e, `heute gratis${mk(e)}`, true);
   for (const e of l) if (besonders(e) && e.art !== 'aktionstag' && gilt(e, h)) dazu(e, `heute${mk(e)}`, true);
   const bald = [];
@@ -2761,8 +2761,10 @@ function kastenSchluessel(d) {
 const ZEICHNER = { produkte: zeichneProdukte, technik: zeichneTechnik, cashback: zeichneCashback, snacks: zeichneSnacks, preisfehler: zeichnePreisfehler, auftritte: zeichneAuftritte, remix: zeichneRemix, unterricht: zeichneUnterricht, konzerte: zeichneKonzerte, gewinnspiele: zeichneGewinnspiele, mehr: zeichneMehr };
 const ZUSATZ = {}; // kurze Zeile rechts in „Du bist in“
 let erstesZeichnen = true;
+let gezeichnetAm = ''; // Kalendertag (Berlin) des letzten Zeichnens: nach Mitternacht neu (Essen-Kachel „heute“/„ab …“)
 function zeichne() {
   naechstesEnde = Infinity;
+  gezeichnetAm = isoHeute();
   const main = $('haupt');
   // „Gerade ohne Angebot“ öffnet die Seite selbst, wenn nichts läuft – das nicht als „vom Nutzer offen“ merken
   const offenVorher = erstesZeichnen ? new Set() : new Set([...main.querySelectorAll('[id^="i-"] details[open]')].map(kastenSchluessel));
@@ -3068,7 +3070,7 @@ ladeKurs();
 // Abgelaufenes verschwindet auch, wenn die Seite offen bleibt; Stand-Zeile und Kurs laufen mit
 setInterval(() => {
   if (document.hidden) return;
-  if (Date.now() >= naechstesEnde) zeichneAlles(); else zeigeStand();
+  if (Date.now() >= naechstesEnde || isoHeute() !== gezeichnetAm) zeichneAlles(); else zeigeStand();
   zeichneKrypto();
 }, 30000);
 // Kurs alle 60 s, solange die Seite offen ist (mit Zonen-Prüfung und Pop-up)
