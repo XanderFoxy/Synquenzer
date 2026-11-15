@@ -8,3 +8,4 @@
 2026-11-15 04:35:44 12 neue/geänderte Haken eingefügt (trf, trs-Keep, restoreSong, tktModeDo)
 2026-11-15 04:40:52 Block-Änderungen (trf, trs-Keep, nur je Blatt, nach-nur-Zeile, Blatt fest, Texte) + Testteil 7 geschrieben
 2026-11-15 04:44:45 eigener Test 81/81 (Teil 7 Prüfung 17 neue Punkte)
+2026-11-15 04:51:39 Regression JAM3 (w4530): basis 4.68.0 64/67, index 63/67 – dieselben 3 Basis-Fehler, dazu nur die Einhänge-Prüfung (TRP1-Zeilen tragen nicht JAM3 = erwartet)
