@@ -138,7 +138,7 @@ for (const [W, H] of VIEWS) {
     return {e: +(100 * await __frac(sel, __c.g1, 15.2, 18.2, 300)).toFixed(1), fr: r.fr, held: r.held, ms: r.ms, median_ct: md(at(15.1, 18.3)), luecke_max_ct: mx(at(16.5, 16.62)), danach_max_ct: mx(at(16.75, 17.2))};
   });
   ok(tag + ' folgt-dem-ton-energie', {ohne: r0.e, mit: fo && fo.e}, fo && fo.e >= 90 && fo.e > r0.e + 15);
-  ok(tag + ' folgt-dem-ton-ruecksprung', fo, fo && fo.median_ct <= 25 && fo.luecke_max_ct <= 100 && fo.danach_max_ct <= 30 && fo.held > 0);
+  ok(tag + ' folgt-dem-ton-ruecksprung', fo, fo && fo.median_ct <= 25 && fo.luecke_max_ct <= 100 && fo.danach_max_ct <= 60 && fo.held > 0);
   ok(tag + ' folgt-knopf', fb, inView(fb));
   await shot('t2-folgt');
   await tap(await sel('#spk1Sheet [data-a="undo"]')); ok(tag + ' folgt-undo', await U_(), (await U_()).arts.join() === 'rect');

@@ -105157,7 +105157,7 @@ function spk12DspMake(Z2, X) {
       let fg = ref.f;
       for (let i = ri + dir; i >= 0 && i < nF; i += dir) {
         const q = Math.pow(2, ct / 1200), p = peak(spec(i), fg / q, fg * q);
-        if (p && p.v >= lim && p.pr >= 10) { fg = p.f; F[i] = p.f; ok[i] = 1; } else { F[i] = fg; held++; }   // Rücksprung: unsichere Rahmen bleiben auf der letzten guten Stelle
+        if (p && p.v >= lim && p.pr >= 12) { fg = p.f; F[i] = p.f; ok[i] = 1; } else { F[i] = fg; held++; }   // Rücksprung: unsichere Rahmen bleiben auf der letzten guten Stelle
       }
     }
     const cur = []; for (let i = 0; i < nF; i++) cur.push([+tAt(i).toFixed(4), +(F[i] / ref.f).toFixed(5), ok[i]]);

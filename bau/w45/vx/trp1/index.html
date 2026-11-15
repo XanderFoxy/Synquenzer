@@ -28733,6 +28733,7 @@ function t1Shift(song, n, d) {
   if (song.vox) tkVoxShift(song, n, d);                           // VS3
   if (song.video) vvDirShift(song, n, d);                         // VV2
   if (song.gb) ggbShift(song, n, d);                              // G-GB
+  if (song.trf && typeof trp1TrfShift === 'function') trp1TrfShift(song, n, d);   /* TRP1 */
   t1Unpin(song, pins, d);
   { const D = barBeat(n + d) - cvX; if (D) for (const k in song.mel) if (song.mel[k].cv) cvSet(song.mel[k], cvShiftAbs(song.mel[k].cv, cvX, D)); }   // B2: BM8 mit der Taktkarte
 }
@@ -29034,6 +29035,7 @@ function normSong(o, pk, nt) {
   konSongNorm(o, v4, bars, pk, nt);                                                                     // KON: Blöcke, Ursprung (konsolidiert)
   sx1Norm(o, v4);                                                                                       // SX126: song.fade (Ausblenden am Ende)
   const ue = ueNorm(o.ue, v4.marks, bars, nt); if (ue) v4.ue = ue;                                         // UE: Übergänge auf den Kanten
+  if (o.trf && typeof trp1TrfNorm === 'function') trp1TrfNorm(o.trf, v4, bars);   /* TRP1 */
   return Object.assign({bars, loop: normLoop(o.loop, bars), melodyTrack: mt, lanes, carrier, mel}, v4);
 }
 function ownNorm(c, pk, nt) {
@@ -29085,7 +29087,7 @@ function marksNorm(list, bars) {
     { const ts = tsNorm(m.ts); if (ts) o.ts = ts; }                     /* T1: Taktart des Teils */
     if (m.vr) { const vr = sx11Norm(m.vr, L); if (vr) o.vr = vr; }        /* SX11: Fassung leicht/voll */
     if (m.rk || m.rkx) jam3MarkNorm(m, o, L);                            // JAM3: Kennung Rückung
-    if (m.trs && typeof trp1MarkNorm === 'function') trp1MarkNorm(m, o);   /* TRP1 */
+    if ((m.trs || m.trn) && typeof trp1MarkNorm === 'function') trp1MarkNorm(m, o, L);   /* TRP1 */
     out.push(o); end = A + L;
   }
   return out;
@@ -33556,6 +33558,7 @@ function restoreSong(o) {
   if (S.song && cur) { const sg = S.song.gb; if (!gb) delete S.song.gb; else if (!(sg && sg.id && sg.id === gb.id)) S.song.gb = gb; }   // derselbe Export: ↶ ↷ nehmen sein Verschieben mit
   if (!S.song && (R.songPlay || R.songRec)) { R.songPlay = null; R.songRec = null; R.melRec = null; R.songEndBeat = null; }
   songChanged();
+  if (typeof trp1Live === 'function') trp1Live();   /* TRP1: ↶ ↷ während ▶ SONG – Rückung/feste Spuren ab dem nächsten Takt */
   if (R.editor === 'roll' && ED.rollAt && ED.rollAt.mel) { if (S.song && ED.roll) { ED.roll.refresh(); rollHeadUpdate(); } else closeRoll(); }
   if (R.editor === 'roll' && ED.rollAt && ED.rollAt.own) { const c = S.song && S.song.own && S.song.own[ED.rollAt.own]; if (c && ED.roll) { ED.roll.refresh(); rollHeadUpdate(); } else closeRoll(); }   // V2e′
 }
@@ -37996,6 +37999,7 @@ function songShift(song, n, d) {
   if (song.gb) ggbShift(song, n, d);                              // G-GB: der Export-Start wandert mit
   if (song.ue) ueShift(song, n, d);                               // UE: Einwürfe rücken mit (Kanten hängen an ihrer Marke)
   if (song.pf) jam3Shift(song, n, d);                             // JAM3: Perform-Spur
+  if (song.trf && typeof trp1TrfShift === 'function') trp1TrfShift(song, n, d);   /* TRP1 */
 }
 // remove the content of [a, b); marks: inside → gone, overlapping → trimmed, enclosing → split (o.split) or shortened
 function songClear(song, a, b, o) {
@@ -38003,6 +38007,7 @@ function songClear(song, a, b, o) {
   for (const l of song.lanes) for (let k = l.length - 1; k >= 0; k--) if (l[k].bar >= a && l[k].bar < b) l.splice(k, 1);
   song.carrier = song.carrier.filter(c => !(c.beat >= barBeat(a) - 1e-6 && c.beat < barBeat(b) - 1e-6));
   song.xp = (song.xp || []).filter(v => !(v.beat >= barBeat(a) - 1e-6 && v.beat < barBeat(b) - 1e-6));
+  if (song.trf && typeof trp1TrfCut === 'function') trp1TrfCut(song, a, b);   /* TRP1 */
   if (!o.keepMel) for (const k in song.mel) song.mel[k].notes = song.mel[k].notes.filter(n => !(n.t >= barBeat(a) - .25 - 1e-9 && n.t < barBeat(b) - .25 - 1e-9));
   if (!o.keepMel) for (const k in song.mel) if (song.mel[k].cv) cvSet(song.mel[k], cvClearAbs(song.mel[k].cv, barBeat(a), barBeat(b)));   // BM8 (T1: Taktkarte)
   if (!o.keepMarks) marksCut(song, a, b, o.split);
@@ -82281,8 +82286,10 @@ function s2Sum(a, e, name) {
   S.parts[k].len = partLen(S.parts[k]);
   const ueOld = song.ue ? deep(song.marks) : null;                       // UE (wie KON)
   const rk0 = jam3RkOld(song, a, e);                                     // JAM3: Rückung im Bereich
+  if (typeof trp1Old === 'function') trp1Old(song, a, e);   /* TRP1 */
   marksCut(song, a, e, true);                                            // the content stays as it is; only the marks change
   const id = newMarkId(song); song.marks.push(jam3RkKeep({id, a, len: e - a, part: S.parts[k].id}, rk0, a)); if (ueOld) ueReanchor(song, ueOld); songTidy(song);   // JAM3: Stand der festen Spuren bleibt
+  if (typeof trp1Keep === 'function') trp1Keep(song, a, e);   /* TRP1 */
   undoPush({kind: 'group', label: 'Zusammengefasst: ' + nm, items: [{kind: 'part', before: bp}, {kind: 'song', before: bs}]});
   partsChanged(); songChanged();
   return {part: k, name: nm, mark: (song.marks.find(m => m.a === a && m.part === S.parts[k].id) || {}).id || id};
@@ -82435,6 +82442,7 @@ function konDo(a, e, name) {
   if (e - a > 16) { toast('Ein Teil hat höchstens 16 Takte'); return false; }
   partsEnsure(); const k = S.parts.findIndex(x => !x); if (k < 0) { toast('Teil-Leiste voll – erst einen Teil löschen'); return false; }
   const bp = partSnap(), bs = songSnapshot();
+  if (typeof trp1Old === 'function') trp1Old(song, a, e);   /* TRP1 */
   const mk = deep(song.marks.filter(m => m.a < e && m.a + m.len > a)), ids0 = new Set(song.marks.map(m => m.id)), ch = konCut(song, a, e);
   const ks = deep((song.kons || []).filter(k => mk.some(m => m.id === k.mark)));   // a konsolidierter Teil inside: its Ursprung goes along
   const tp = s2Template(song, a, e), kl = kl1Kon(song, a, e, tp);    // KL1: alte Clips werden erweitert, der Teil spielt sie „ganz“
@@ -82447,6 +82455,7 @@ function konDo(a, e, name) {
   marksCut(song, a, e, true);                                            // the content stays as it is (the song sounds the same); only the marks change
   const cut = song.marks.filter(m => !ids0.has(m.id)).map(m => m.id);
   song.marks.push(jam3RkKeep({id: newMarkId(song), a, len: e - a, part: S.parts[k].id}, mk, a)); if (ueOld) ueReanchor(song, ueOld); songTidy(song);   // JAM3: Rückung bleibt
+  if (typeof trp1Keep === 'function') trp1Keep(song, a, e);   /* TRP1 */
   const m = song.marks.find(x => x.a === a && x.part === S.parts[k].id);
   if (m) { const kn = {mark: m.id, part: m.part, at: a, len: e - a, sig: konSig(song, a, e), mk, cut, ch}; if (ks.length) kn.ks = ks; if (kl.kl.length) kn.kl = kl.kl; (song.kons || (song.kons = [])).push(kn); }
   undoPush({kind: 'group', label: 'Konsolidiert: ' + nm, items: [{kind: 'part', before: bp}, {kind: 'song', before: bs}].concat(kl.items)});   // KL1: + die erweiterten Clips
@@ -89251,6 +89260,7 @@ function jam3MarkNorm(m, o, L) {
 }
 // JAM3-P: der Stand der festen Spuren in Takt `bar` – die Marke dort (rk, dann rkx), zwischen zwei Teilen der des Teils davor, vor dem ersten 0
 function jam3LvAt(song, bar) {
+  if (song && song.trf && typeof trp1LvAt === 'function') return trp1LvAt(song, bar);   /* TRP1 */
   let v = 0;
   for (const m of (song && song.marks) || []) {
     if (m.a > bar) continue;
@@ -89700,6 +89710,7 @@ function jam3RecCommit(sr, song, endBar, auto) {
 // der Stand der festen Spuren als Treppe [{beat, semi}] (je Song-Fassung einmal gerechnet). JAM3-P: der Stand steht an jeder Marke (nicht
 // mehr als Stufe, die sich über die Marken aufsummiert) – ein verschobener oder kopierter Teil nimmt ihn mit, der Teil danach behält seinen
 function jam3FestL(song) {
+  if (song && song.trf && typeof trp1FestL === 'function') return trp1FestL(song);   /* TRP1 */
   if (!song || !song.marks || !song.marks.length) return null;
   const v = UI.songVer | 0, c = JAM3.fc;
   if (c && c.song === song && c.v === v && c.n === song.marks.length) return c.l;
@@ -90002,7 +90013,7 @@ SYNQUENZER.jam3 = {
    Halbtöne │ in der Tonart, Oktavbereich halten, −12 … +12). Bereich-Leiste › ⋯ › „Transponieren …“ öffnet dasselbe Blatt für A–B.
    Einhänge-Zeilen (alle mit „TRP1“ markiert): marksNorm, outPitch, int54MidiClips, buildMidiSong, va1MidiSong, vvkScore, openMarkSheet,
    openRangeMore (2×). ===== */
-const TRP1 = {only: false, deg: false, oct: false, fc: null, last: null};
+const TRP1 = {next: null, deg: false, oct: false, fc: null, ffc: null, keep: null, last: null};
 const trp1Sgn = v => (v > 0 ? 1 : v < 0 ? -1 : 0);
 // Oktavbereich halten: +7 → −5 (Halbtöne), +4 → −3 (Stufen)
 function trp1Oct(r, deg) { const N = deg ? 7 : 12, h = deg ? 3 : 6; return Math.abs(r) > h ? r - N * trp1Sgn(r) : r; }
@@ -90015,11 +90026,41 @@ function trp1DegN(n, s, k) {
   const ch = pc - sc[d], j = d + s, o = Math.floor(j / N), jj = j - o * N;
   return clamp(n - pc + 12 * o + sc[jj] + ch, 0, 127);
 }
-// marksNorm (Einhänge-Zeile): die Stufen eines Teils
-function trp1MarkNorm(m, o) {
-  const t = m.trs; if (!Array.isArray(t) || !isNum(t[0]) || !isNum(t[1]) || typeof t[2] !== 'string') return;
-  const s = clamp(Math.round(t[0]), -7, 7), H = Harmony.SCALES; if (!s || !H[t[2]]) return;
-  o.trs = [s, ((Math.round(t[1]) % 12) + 12) % 12, t[2]];
+// marksNorm (Einhänge-Zeile): die Stufen eines Teils – mark.trs = [Stufen, Grundton, Skala] (+ [[Takt im Teil, Stufen, Grundton, Skala]]
+// nach Zusammenfassen/Konsolidieren gemischter Teile, wie rkx) · mark.trn = 1: der Teil direkt nach einem „nur“-Bereich
+const trp1Pc = v => ((Math.round(v) % 12) + 12) % 12;
+function trp1MarkNorm(m, o, L) {
+  const t = m.trs, H = Harmony.SCALES;
+  if (Array.isArray(t) && isNum(t[0]) && isNum(t[1]) && typeof t[2] === 'string' && H[t[2]]) {
+    const s = clamp(Math.round(t[0]), -7, 7), x = [], seen = new Set(), len = L || o.len || 1;
+    if (Array.isArray(t[3])) for (const v of t[3].slice(0, 16)) {
+      if (!Array.isArray(v) || !isNum(v[0]) || !isNum(v[1]) || !isNum(v[2]) || typeof v[3] !== 'string' || !H[v[3]]) continue;
+      const b = Math.round(v[0]); if (b > 0 && b < len && !seen.has(b)) { seen.add(b); x.push([b, clamp(Math.round(v[1]), -7, 7), trp1Pc(v[2]), v[3]]); }
+    }
+    x.sort((p, q) => p[0] - q[0]);
+    if (s || x.some(v => v[1])) { o.trs = [s, trp1Pc(t[1]), t[2]]; if (x.length) o.trs.push(x); }
+  }
+  if (m.trn === 1) o.trn = 1;
+}
+// die Stufen eines Teils je Takt im Teil: [{s, k} | null]
+function trp1PerBar(m) {
+  const t = m && m.trs, out = []; if (!m) return out;
+  const g = t ? [{o: 0, s: t[0] | 0, k: {root: t[1], scale: t[2]}}].concat((t[3] || []).map(x => ({o: x[0], s: x[1] | 0, k: {root: x[2], scale: x[3]}}))) : [];
+  for (let o = 0; o < m.len; o++) { let c = null; for (const x of g) if (x.o <= o) c = x; out.push(c && c.s ? {s: c.s, k: c.k} : null); }
+  return out;
+}
+// … und zurück an die Marke (Reihenfolge wie marksNorm: rk, rkx, trs, trn – Speichern/Laden bitgleich)
+function trp1PerPut(m, per) {
+  const tn = m.trn; delete m.trs; delete m.trn;
+  const f = per.find(x => x && x.s);
+  if (f) {
+    const same = (p, q) => (!p || !p.s ? !q || !q.s : !!q && q.s === p.s && q.k.root === p.k.root && q.k.scale === p.k.scale);
+    const h = per[0] && per[0].s ? per[0] : null, t = [h ? h.s : 0, trp1Pc(f.k.root), f.k.scale], x = [];
+    for (let o = 1; o < per.length; o++) if (!same(per[o - 1], per[o])) { const q = per[o]; x.push(q && q.s ? [o, q.s, trp1Pc(q.k.root), q.k.scale] : [o, 0, trp1Pc(f.k.root), f.k.scale]); }
+    if (x.length) t.push(x.slice(0, 16));
+    m.trs = t;
+  }
+  if (tn) m.trn = tn;
 }
 // die Teile mit Stufen als Liste (je Song-Fassung einmal gerechnet, wie jam3FestL)
 function trp1L(song) {
@@ -90027,7 +90068,10 @@ function trp1L(song) {
   const v = UI.songVer | 0, c = TRP1.fc;
   if (c && c.song === song && c.v === v && c.n === song.marks.length) return c.l;
   const L = [];
-  for (const m of song.marks) if (m.trs) L.push({b0: barBeat(m.a), b1: barBeat(m.a + m.len), s: m.trs[0], k: {root: m.trs[1], scale: m.trs[2]}});
+  for (const m of song.marks) if (m.trs) {
+    const per = trp1PerBar(m);
+    for (let o = 0; o < per.length; o++) { const x = per[o]; if (!x) continue; const z = L[L.length - 1]; if (z && z.m === m && z.e === o && z.s === x.s && z.k === x.k) { z.e = o + 1; z.b1 = barBeat(m.a + o + 1); continue; } L.push({m, e: o + 1, b0: barBeat(m.a + o), b1: barBeat(m.a + o + 1), s: x.s, k: x.k}); }
+  }
   TRP1.fc = {song, v, n: song.marks.length, l: L.length ? L : null};
   return TRP1.fc.l;
 }
@@ -91168,6 +91212,7 @@ function tktModeDo(kind) {
   for (const sc of S.scenes || []) if (sc && sc.chords) { tktMapRow(P, sc.chords); res.chords += sc.chords.ch.length; }
   for (const pt of S.parts || []) { if (!pt) continue; if (pt.chords) { tktMapRow(P, pt.chords); res.chords += pt.chords.ch.length; } if (pt.xp && pt.xp.tg) pt.xp.tg = tktMapTarget(P, pt.xp.tg); }
   setProjectKey({root: key.root, scale: key.scale});
+  if (typeof trp1KeyTo === 'function') trp1KeyTo(song, key);   /* TRP1 */
   songTidy(song);
   const after = tktModeSnap();
   if (after === before) return res;
