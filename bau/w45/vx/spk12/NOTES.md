@@ -1,4 +1,4 @@
-# SPK12 – Werkzeugkasten Auswahl (Spektral) · Teil 1/3 (Plan-Schritte 1–3) + Teil 2/3 (Plan-Schritte 4–6)
+# SPK12 – Werkzeugkasten Auswahl (Spektral) · Teil 1/3 (Plan-Schritte 1–3) + Teil 2/3 (4–6) + Teil 3/3 (7–9)
 
 Bau: `python3 bau.py` = `basis.html` (Kandidat 4.68.0, unverändert) + `spk12-block.js` direkt nach `/* SPK11-END */`
 + 16 Haken-Zeilen „SPK12“ (je eine **neue** Zeile mit typeof-Schutz; keine vorhandene Zeile umgeschrieben).
@@ -136,9 +136,81 @@ Produktnamen (einziger Treffer „rx“ = SVG-Attribut der Ellipse) · keine Emo
 spk12-test (Teil 1) mit Teil-2-Bau: 98 OK / 0 FEHLER. Regression (reg.sh → reg.log, Ausgaben in reg/): spk6 ALLES OK · spk5 ALLES OK 24 ·
 spk1 1 FEHLER verfeinern-verbessert-ziel (= Basis) · spk8-seite 14/0 · spk11 38/3 (nur drums-auf-kit = bekannt offen in 4.68) – gleich wie Teil 1.
 
+## Teil 3/3 (Plan-Schritte 7–9) – Ähnliches mit Merkmalen + ‹ › Alle, Alle Ebenen abtasten, Auswahl merken, FFT ms / Hz
+Bau jetzt **18 Haken** (16 + 2 neue), Block 909 Zeilen, diff Basis → Paket: 0 entfernte, 927 neue Zeilen. Quellen Teil 2 gesichert:
+`spk12-block.teil2.js`, `bau.teil2.py`.
+### Haken (Teil 3)
+| # | Stelle | Zweck |
+|---|---|---|
+| 2 | Kern vor `return {on, stft, …}` (eigene Zeile geändert) | übergibt zusätzlich `soon, mixOf, block, BLK, tick, harmTrack, similar` an `spk12DspMake` |
+| 17 | `spk1Call` 1. Zeile (neu) | `spk12CallSrc(op, a)`: „Ähnliche“ mit Merkmal → Op `spk12aehn`; „Alle Ebenen abtasten“ aus → `s12src` = aktive Ebene (harm → `spk12harm`, aehnlich → `spk12aehnB`); sonst `null` → alter Weg unverändert |
+| 18 | `spk1ViewDd` nach dem FFT-Regler (neu) | `spk12FftTxt`: Text „4096 Punkte: 93 ms / 10,8 Hz“, folgt dem Regler (MutationObserver auf die Knopf-Klasse) |
+
+### Entscheidungen
+- **Ähnliches mit Merkmalen** (Werkzeug Ähnliche → neue Knöpfe in dessen Optionsleiste: „Merkmale ▾“ │ ‹ │ › │ Alle; die Aktionszeile
+  der Auswahl ist voll, siehe Teil 1). Ohne Häkchen läuft „Ähnliche“ **unverändert** über den alten Kern (Haken gibt `null`).
+  Mit Häkchen rechnet der Worker je Rahmen (N 4096, Hop 2048 – gleiches Raster wie „Ähnliche“) im Band des Beispiels:
+  Pegel (dB), Tonalität (Anteil der Energie in Spitzen ≥ 13 dB über den Nachbarn ±3…6 Bins), Rauschen (spektrale Flachheit),
+  Transient (Spektral-Fluss, pegelbezogen log. verdichtet). Wert je Lage = Anwesenheit (Rahmen für Rahmen höchstens ~15 dB leiser als
+  das Beispiel, sonst → 0; legt die Lage auf die Hüllkurve) × je angehaktem Merkmal: tonal 1 − |ΔT|/0,35, Rauschen 1 − |ΔSF|/0,25,
+  Pegel 1 − |Δ mittlerer Pegel|/10 dB, Transient = gewichtete Jaccard-Ähnlichkeit der Fluss-Folgen. Spitzen/Abstand wie der alte Kern;
+  der Regler „Empfindlich“ filtert wie bisher (0,92 − 0,6 · Empf.). Merkmale ändern = Suche mit dem gleichen Beispiel neu (kein ↶,
+  Einstellung). Merkmal-Raster je Band zwischengespeichert (4), blockweise mit Pausen (≤ 25 ms am Stück im Worker).
+- **‹ › Alle:** Liste = Beispiel + Treffer über der Empfindlichkeit nach Zeit; › vom Gesamtbild aus springt zum nächsten nach dem
+  Beispiel, ‹ zum vorigen, rundum. Auswahl = nur dieser Treffer, Beispiel und Treffer bleiben gemerkt; „Alle“ wählt wieder alle.
+  **Je Schritt ein ↶** (der Eintrag merkt Beispiel/Treffer/Zeiger, ↶ stellt sie mit her).
+- **Alle Ebenen abtasten** (Auswahl ▾ → Abtasten, Häkchen, Standard an = bisheriges Verhalten): aus → Zauberstab, Transient,
+  Obertöne-Auto, Folgt dem Ton, Harmonische, Ähnliche (mit und ohne Merkmal) suchen nur im Klang der **aktiven Ebene**
+  (Ebene „Original“ = alles). Der Worker rendert das Ebenen-Signal blockweise (`block` mit Mischung nur dieser Ebene, mono wie
+  `d.mid`, Pause alle 25 ms) und hält 2 Stände (Schlüssel = Ebene + Versionen aller Ebenen); Anzeige-Raster für den Zauberstab
+  dann nur im Speicher (eigener Schlüssel, nicht in IDB). „In Ebene“ schneidet weiter aus der aktiven Ebene (wie bisher) –
+  zusammen ergibt das „im Original suchen, in der Ebene schneiden“ (an) bzw. „in der Ebene suchen und schneiden“ (aus).
+  Einstellung bleibt über Stücke hinweg (Sitzung), kein ↶ (wie Neu/+/−/∩).
+- **Auswahl merken:** Auswahl ▾ → Gemerkt: „Merken“ legt die ganze Auswahl (alle Formen samt +/−/∩, Weichheit, Zauberstab-Läufe …)
+  als Region `{id, name, sel, b, mt}` in `d.meta.s12reg` ab (max. 64) → wird mit den übrigen Meta-Daten gespeichert, exportiert und
+  importiert (Stück-Datei/Container). Name automatisch nach der ersten hinzufügenden Form + Nummer („Rechteck 1“, „Zauberstab 2“);
+  Zeile = Name · Zeitbereich │ ✕. Antippen lädt (ein ↶), ✕ löscht (ein ↶), Merken ist ein ↶ (↶ nimmt die Region wieder heraus,
+  auch im Dokument).
+- **FFT-Text** nur als Textzeile unter dem vorhandenen Regler (Plan: „nur Text am vorhandenen Regler“): ms = Fensterlänge N/sr,
+  Hz = sr/N.
+
+### Messungen Teil 3 (`spk12-test3.mjs`, Touch über CDP, alle 3 Größen; `spk12-test3.out` / `spk12-test3.json`; Fotos `fotos/t3-*`)
+Testsignal 24 s: Töne 440 Hz (5 Obertöne, Anstieg 150 ms) bei 1/3/5/7 s und −12 dB bei 9/11 s, Rausch-Stöße 300–3000 Hz
+(Anstieg 250 ms) bei 13…20,5 s, 8 Snare-Schläge bei 2/4/6/8/10/12/22/23 s, Grundrauschen −70 dB. Beispiel-Band 250–3500 Hz.
+(Für „Ähnliches“ nennt §5 keine Zahl – Abnahme hier selbst gesetzt: Beispiel + Merkmal → alle der gleichen Art, keine andere.)
+**47 OK / 0 FEHLER** (Kern-Prüfungen einmal, Bedienung je Größe):
+- **Tonal** (Beispiel Ton 1,0–1,5 s): Treffer 3/5/7/9/11 s (alle 5), 0 Rauschen, 0 Snare, 0 sonst. Kern 130–200 ms für 24 s (inkl. Merkmal-Raster).
+- **Tonal + Pegel**: nur 3/5/7 s; die −12-dB-Töne (9/11 s) fallen heraus, 0 andere.
+- **Rauschen** (Beispiel Rausch-Stoß 13 s): alle 5 übrigen Stöße (Lage −0,07…−0,06 s), 0 Ton, 0 Snare.
+- **Transient** (Beispiel Snare 2,0–2,15 s): alle 7 übrigen Schläge (±0,02 s), 0 Ton, 0 Rauschen (Stöße mit weichem Anstieg).
+- **Ohne Häkchen** geht der Aufruf unverändert an den alten Kern (Haken liefert `null`).
+- **Touch:** Ähnliche → Merkmale ▾ → Tonal, Beispiel ziehen → 5 Treffer + Beispiel, nur Töne; › → 2,97 s, › → 4,97 s, ‹ → 2,97 s,
+  Alle → 6, ↶ → wieder Treffer 2,97 s mit gemerkten Treffern, › danach → 4,97 s.
+- Knöpfe Merkmale ▾ 83 × 50, ‹ › Alle 44 × 50 (Trefferfläche), Häkchen im Klappfenster 57–82 × 44 – im Bild in allen 3 Größen.
+- **Merken** (Touch: Rechteck − Rechteck, Auswahl ▾ → Merken): Region „Rechteck 1“, Auswahl gleich; Speichern + Schließen + Öffnen
+  **identisch** (JSON), Export + Import **identisch**; Laden per Touch nach dem Wiederöffnen: Auswahl gleich, Maske **bit-genau**
+  (0 Abweichungen bei 78 195 Zellen, weiche Kante 0,3). ↶ nach Laden → vorige Auswahl; Merken → 2 Regionen, ↶ → 1 (auch im Dokument),
+  ↷ → 2. Zeile „Rechteck 1 · 2,5–6,5 s“ 148 × 44, ✕ 44 × 44.
+- **Alle Ebenen abtasten** (Ton bei 1 s in Ebene „X“ verschoben): an + aktive Ebene Rest → Zauberstab findet den Ton (414 Zellen);
+  aus + Rest → 0 Zellen bei 1 s, 416 bei 3 s; aus + X → 414 bei 1 s, 0 bei 3 s; Ähnliche in X → 0 Treffer; Harmonische bei 3 s:
+  in X 0 Punkte, im Rest 22; wieder an → X findet den Ton bei 3 s. Ebenen-Signal 24 s im Worker 0,32–0,57 s (einmal je Ebenen-Stand).
+- **FFT-Text:** „4096 Punkte: 93 ms / 10,8 Hz“, nach Tipp auf 8192 → „8192 Punkte: 186 ms / 5,4 Hz“, im Bild.
+- Hauptfaden: keine Long Task > 50 ms bei den SPK12-Aktionen; ausgenommen und gezählt: 1–2 nach dem Ansicht-Sprung des Tests bzw. beim
+  Neuaufbau der Spektrum-Kacheln nach FFT-Wechsel (alter Weg, 51–68 ms). Konsole ohne Fehler.
+- Fotos: `fotos/t3-merkmale-*`, `t3-aehnlich-*`, `t3-merken-*`, `t3-abtasten-*`, `t3-fft-*` (je 3 Größen).
+
+## Pflicht Teil 3 (Endstand)
+PFLICHT_T3
+
 ## Offen (Teil 3/3 und Rest)
-- Plan-Schritte 7–9: Ähnliches mit Merkmalen tonal/Transient/Rauschen/Pegel + ‹ › Alle, „Alle Ebenen abtasten“, Auswahl merken
-  (benannte Region im Dokument, Speichern/Laden identisch), FFT-Text „ms / Hz“ am Regler, Sonden/Fotos/Guide-Abschluss.
+- Teil 3: Regionen haben einen automatischen Namen („Rechteck 1“); Umbenennen per Eingabe fehlt (die Spektral-Seite hat noch kein
+  Namensfeld – eigenes kleines Feld wäre sichtbar neu → erst Funk).
+- Teil 3: „Alle Ebenen abtasten“ aus rendert die aktive Ebene einmal (Test 24 s: 0,3–0,6 s im Worker); bei 3 min ≈ 3–5 s ohne
+  Fortschrittsanzeige (Hauptfaden frei). Noten-Werkzeuge (SPK2 „Überall finden“) und Zerlegen/Verfeinern bleiben beim Original.
+- Teil 3: Merkmale wirken nur im Band des Beispiels (Zeit-Beispiel = 20 Hz…16 kHz); „Tonal“ findet auch Töne anderer Höhe im Band
+  (gewollt: „ähnliche Art“) – wer gleiche Tonhöhe will, lässt die Häkchen aus (alter Weg = Frequenzbild).
+- Teil 3: Ein Long Task beim Umschalten der FFT-Größe (51 ms, Neuaufbau der Spektrum-Kacheln, alter Weg) – im Test ausgenommen und
+  gezählt, gehört zur Ladezeit-Liste wie der Ansicht-Sprung.
 - Transient über sehr lange Bereiche (3 min ziehen) rechnet im Worker linear (~ 15 ms je Sekunde Audio, also ~ 3 s); Hauptfaden frei,
   aber ohne Fortschrittsanzeige – bei Bedarf blockweise mit Zwischenstand.
 - Transient-Maske nutzt das Base-Raster (4096/1024): sehr dichte Schläge (< 4 Rahmen ≈ 93 ms Abstand) teilen sich den Grund-Rahmen.
@@ -156,6 +228,7 @@ spk1 1 FEHLER verfeinern-verbessert-ziel (= Basis) · spk8-seite 14/0 · spk11 3
 - Zauberstab-Rand auf einem hellen Ton kaum sichtbar (weiße Fläche auf weißem Grat) – evtl. dunkle Kontur (sichtbar → erst Funk).
 - Halten auf Rechteck zeigt keine Markierung am Knopf (Aussehen bewusst unverändert) – Guide und „Auswahl ▾ → Zauberstab“ als Weg.
 - iPhone-Messung (Safari, A14) fehlt; Desktop-Werte oben × ~3 lägen weiter unter 150 ms.
-- Funk: Paket ist „kurz ankündigen“ – sichtbar neu sind die 4er-Zeile + „Auswahl ▾“ in der Werkzeug-Optionsleiste und die Griffe;
+- Funk: Paket ist „kurz ankündigen“ – Teil 3 sichtbar neu: „Merkmale ▾ │ ‹ │ › │ Alle“ beim Werkzeug Ähnliche, in Auswahl ▾ die
+  Gruppen „Gemerkt“ (Merken, Regionen) und „Abtasten“, Textzeile „… ms / … Hz“ unter dem FFT-Regler. Davor: – sichtbar neu sind die 4er-Zeile + „Auswahl ▾“ in der Werkzeug-Optionsleiste und die Griffe;
   Teil 2: Halten auf Rechteck/Zeit zeigt Ellipse, Lasso, Transient; „Obertöne ▾“ bei Harmonische; „Folgt dem Ton“ in Auswahl ▾;
   kleine Schlag-Marken oben am Rand bei einer Transient-Auswahl.

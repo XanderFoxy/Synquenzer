@@ -16,3 +16,4 @@
 - 04:50 Start Teil 3/3 (Plan-Schritte 7–9)
 - 04:59 Teil-3-Code (Kern: Ebene abtasten, Merkmale, Regionen · Haupt: Merkmale ▾ ‹ › Alle, Merken, Abtasten, FFT-Text) + 2 neue Haken (spk1Call, spk1ViewDd) gebaut
 - 05:01 spk12-test3.mjs geschrieben
+- 05:04 spk12-test3 hochkant 19 OK / 0 FEHLER (Pegel = mittlerer Pegel, Anwesenheit Rahmen für Rahmen, FFT-Text per MutationObserver); Kette test3 (3 Größen) → test2 → test → smoke → reg.sh gestartet
