@@ -33,26 +33,45 @@ a) Kachel-Zeichnen nach großen Ansicht-Sprüngen, b) FFT-Größe 4096 ↔ 8192,
   Take aus PCM 11 ms, normSong 7 ms, Verlauf 4 ms), dann **ein zweites buildGrid** 8–17 ms (mxApply → gl1MxFlat erzwingt Layout),
   Toast 6 ms, imp1Paint 3–8 ms. buildGrid lief also zweimal in derselben Aufgabe (restoreTrack und imp1Place-Ende).
 
-## Änderung (Block `LT1-BEGIN … LT1-END` hinter FOKUS1-END, 26 Zeilen) + 3 Haken
+## Änderung (Endstand): Block `LT1-BEGIN … LT1-END` hinter FOKUS1-END (13 Zeilen) + 2 Haken – nur c
 | # | Stelle | Haken |
 |---|---|---|
-| 1 | `spk1GlDraw` vor der Kachel-Schleife (neue Zeile) | `if (typeof lt1GlChunks === 'function' && lt1GlChunks(U, G, hs, yT, yB)) return;   /* LT1 */` |
-| 2 | `imp1Place` vor `imp1Step` (neue Zeile) | `if (typeof lt1GridMark === 'function') lt1GridMark();   /* LT1 */` |
-| 3 | `imp1Place` Zeile `buildGrid(); svLayout()` (Zeile ergänzt) | `… && !(typeof lt1GridOk === 'function' && lt1GridOk())) buildGrid(); …   /* LT1 */` |
+| 1 | `imp1Place` vor `imp1Step` (neue Zeile) | `if (typeof lt1GridMark === 'function') lt1GridMark();   /* LT1 */` |
+| 2 | `imp1Place` Zeile `buildGrid(); svLayout()` (Zeile ergänzt) | `if (UI.heads && EL.grid && !(typeof lt1GridOk === 'function' && lt1GridOk())) buildGrid(); …   /* LT1 */` |
 
-- `lt1GlChunks`: gleiche Schleife wie spk1GlDraw (gleiche Rechtecke, gleiche Reihenfolge, gleiche Texturen R8 + Mipmaps), aber
-  höchstens `LT1.up = 1` neue Textur je Bild; fehlt danach noch eine sichtbare Kachel, zeichnet das nächste Bild weiter
-  (`U.dg`, rAF). Gleiches Verfahren wie FOKUS1 für seine Fokus-Stücke („eine Textur je Bild – weniger lange Aufgaben“).
-  Folge: nach FFT-Wechsel/Sprung füllt sich die Fläche über 1–3 Bilder statt in einem langen Bild (beim FFT-Wechsel war sie bisher
-  ohnehin leer, bis die Kacheln vom Worker kommen). Endbild pixelgleich (Canvas-md5 A = B in allen Läufen).
 - `lt1GridMark/lt1GridOk`: merkt `UI.cnw` vor dem Ablegen (buildGrid legt es jedes Mal neu an). Wurde das Raster im Ablegen schon
-  passend gebaut (neue Spur „Original“: Kopf-Zahl = NT, alle Köpfe da), entfällt das zweite buildGrid; `UI.dirty.grid` ist gesetzt,
-  renderGrid füllt Clips/Namen im nächsten Bild wie bei jeder Änderung (renderGrid baut selbst neu, wenn die Spurzahl nicht passt).
-  Liegt die Spur „Original“ schon vor, bleibt alles wie bisher (UI.cnw unverändert → buildGrid läuft).
-  Ergebnis gleich: Daten und Raster-DOM-Signatur A = B (`grid=515d7e97/859`, 7 Köpfe).
+  passend gebaut (neue Spur „Original“ → restoreTrack → buildGrid; Kopf-Zahl = NT, alle Köpfe da), entfällt das zweite buildGrid;
+  `UI.dirty.grid` ist gesetzt, renderGrid füllt Clips/Namen im nächsten Bild wie bei jeder Änderung (renderGrid baut selbst neu,
+  wenn die Spurzahl nicht passt). Liegt die Spur „Original“ schon vor, läuft buildGrid wie bisher (UI.cnw unverändert).
+  Ergebnis gleich in allen Läufen: Daten (bpm 96, 7 Spuren, 8 Szenen, 1 Take, Spur-Arten, lastPlace-Felder) und Raster-DOM-Signatur
+  (Text + Klassen aller 859 Elemente, `grid=515d7e97/859`) A = B.
+- **Verworfen (gebaut, gemessen, wieder entfernt, Sicherung `index.vor-lt1b.html`):** `lt1GlChunks` – höchstens eine neue
+  Kachel-Textur je Bild in spk1GlDraw (wie FOKUS1). Spur in Ruhe: GPU-Wartezeit je Bild 35/35 ms statt 54–93 ms. Im A/B unter
+  Last 5–8 aber kein sicherer Gewinn (b 926×428 schlechter, 428×926 besser) und **mehr** Bilder > 50 ms (18 statt 12, 15 statt 13),
+  weil jedes zusätzliche Bild die ganze Fläche neu zeichnet. Ohne Beleg nicht ausgeliefert.
 
 ## Messungen (lt1-test.mjs; Last 4–6 auf 4 Kernen, andere Agenten + Regression liefen mit)
-MESSTABELLE
+Long Task = längste Long Task je Lauf (0 = keine > 50 ms); „Ablegen“ = Dauer von imp1Place selbst (performance.now).
+Runde 1 (16:2x–16:33, Last 4,5–7,6; index mit c-Änderung **und** dem verworfenen Kachel-Versuch), Runde 2 (c, Endfassung, Last 7,4–8,9).
+
+| Fall | Größe | basis Median / Max (Läufe > 50) | index Median / Max (Läufe > 50) | Bild/Ergebnis gleich |
+|---|---|---|---|---|
+| a Sprünge (alle Kacheln schon da) | 926×428 | 60 / 62 (3 von 3) | 72 / 79 (2 von 3) | ja (Canvas-md5) |
+| a | 428×926 | 0 / 98 (1 von 3) | 71 / 88 (2 von 3) | ja |
+| a2 Sprünge nach FFT-Wechsel im Zoom | 926×428 | 81 / 183 | 107 / 258 | ja |
+| a2 | 428×926 | 126 / 126 | 68 / 114 (rep1/2 schon Endfassung) | ja |
+| b FFT 4096→8192→4096 | 926×428 | 166 / 258 (12 Aufgaben > 50) | 262 / 517 (18) | ja |
+| b | 428×926 | 167 / 176 (13) | 93 / 137 (15) | ja |
+| **c Ablegen** (Runde 1+2, je 6 Läufe) | 926×428 | **83 / 142** (5 von 6) | **57 / 70** (4 von 6) | ja (Daten + Raster-DOM) |
+| **c** | 428×926 | 0 / 66 (2 von 6) | 0 / 67 (1 von 6) | ja |
+| **c imp1Place-Dauer** | 926×428 | Median **70 ms** (40–139) | Median **49 ms** (34–68) | |
+| **c imp1Place-Dauer** | 428×926 | Median **41 ms** (36–55) | Median **34,5 ms** (30–63) | |
+| c Einzellauf in Ruhe (Last 2,1) | 926×428 | 58 (imp1Place 55 ms) | **0** (imp1Place 42 ms) | ja |
+
+Lesart: a/b in A und B von der Last bestimmt (Grafik-Warten, kein Skript; a ohne Upload ist für A und B derselbe Code-Weg).
+c: das zweite buildGrid fällt weg (−8…−20 ms je Ablegen, unter Last mehr); in Ruhe keine Long Task mehr, unter Last 7–9 auf
+4 Kernen in 926×428 noch 53–70 ms (Basis 66–142).
+Rohdaten: `lt1-test-926x428.out`, `lt1-test-428x926.out`, `lt1-test-a2.out`, `lt1-test-c-final.out` (+ .json), Spuren mit `lt1-trace.mjs`.
 
 ## Regression (reg.sh → reg.log, Ausgaben in reg/)
 REGRESSION
@@ -61,15 +80,18 @@ REGRESSION
 PFLICHT
 
 ## Offen
-- a ohne neue Kacheln: das Zeichnen der Vollfläche selbst (SwiftShader, Software-Compositing zurücklesen) hält den Hauptfaden
-  im Test 50–90 ms, je nach Last, in A und B gleich. Echter Weg: Spektrum-Zeichnen in einen Worker (OffscreenCanvas,
-  `transferControlToOffscreen`) – dann wartet nie der Hauptfaden auf die Grafik. Großer Umbau (alle GL-Aufrufe, Tönung, FOKUS1,
-  Kontextverlust) → offen gelassen, eigener Punkt.
-- b: auch eine einzelne Kachel (1 MB + Mipmaps) kann unter Last > 50 ms Grafikzeit brauchen. Nächster Schritt ohne sichtbare
-  Änderung: Kachel streifenweise hochladen (texStorage2D + texSubImage2D je 256 Zeilen pro Bild, Mipmaps am Ende) – nicht mehr
-  im Zeitrahmen gebaut.
-- c: Rest von imp1Place ~35–45 ms (Spur anlegen inkl. erstem buildGrid, Take aus PCM, normSong, Toast). Weiter teilen hieße das
-  synchrone `place()` (Rückgabe, ein ↶) aufzubrechen oder buildGrid/Toast ins nächste Bild zu legen → Haken in restoreTrack,
-  alle Aufrufer betroffen; offen.
+- **a/b nicht erreicht (Long Tasks > 50 ms bleiben, in A und B gleich):** Ursache ist kein Skript, sondern das Warten des Hauptfadens
+  auf die Grafik beim Zurücklesen der WebGL-Leinwand (Software-Compositing im Test, SwiftShader auf der CPU): Zeichnen der
+  Vollfläche (1852 × 856 px, Mipmap-Textur + Farbtabelle) und Hochladen neuer Kacheln (1 MB + Mipmaps). Kleiner wird das nur
+  - mit dem Spektrum-Zeichnen in einem Worker (OffscreenCanvas, `transferControlToOffscreen`): dann wartet nie der Hauptfaden.
+    Großer Umbau (alle GL-Aufrufe, Tönung, FOKUS1-Stücke, Kontextverlust, CPU-Rückfall) → offen, eigener Punkt (Profi-Weg).
+  - oder mit sichtbaren Änderungen (z. B. halbe Auflösung während der Bewegung) → erst Funk.
+  Der Versuch „eine Textur je Bild“ ist gemessen und verworfen (siehe oben). Auf echten Geräten mit GPU-Compositing liest der
+  Browser die Leinwand nicht zurück; dort ist die Wartezeit nicht im Hauptfaden – Messung auf dem iPhone wäre der nächste Beleg.
+- c unter hoher Last: imp1Place hat noch ~30–50 ms am Stück (neue Spur „Original“ inkl. erstem buildGrid ~13 ms, Take aus PCM
+  ~11 ms, normSong ~7 ms, Verlauf ~4 ms, Toast ~6 ms, imp1Paint 3–8 ms). Weiter teilen hieße das synchrone `place()` (Rückgabe,
+  ein ↶) aufzubrechen oder buildGrid in restoreTrack zu verschieben (alle Aufrufer betroffen) → offen.
 - Nebenbefund: der erste Tipp einer Sitzung startet den Ton (`ensureAudio` → Drum-Puffer, Wellen, Hall) 55 ms am Stück – eigener
   Punkt für die Ladezeit-Liste (nicht a–c).
+- Nebenbefund: LoAF (`long-animation-frame`) meldet die Grafik-Warte-Aufgaben ohne Skript-Anteil; für a/b ist die CDP-Spur
+  (`lt1-trace.mjs`) der Beleg, nicht LoAF.
