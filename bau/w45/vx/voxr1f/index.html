@@ -61598,6 +61598,9 @@ function* clickScan(x, sr, o, wins) {
   const mean = (arr, j0, j1, x0, x1) => { let s = 0, c = 0; for (let j = Math.max(0, j0); j < Math.min(nj, j1); j++) { if (j >= x0 && j <= x1) continue; s += arr[j]; c++; } return c ? s / c : 0; };
   // zwei Hinweise: (a) Spitze im AR-Rest (harter Einsatz), (b) Spitze der Band-Hüllkurve (weich einsetzende, ausklingende Klicks –
   // die sagt das AR-Modell gut voraus). Beide müssen allein stehen: Stimmlippen-Pulse kommen alle 1–16 ms wieder.
+  /* VOXR1F-P: BIG nur in rauschartiger Umgebung (Pause): Mittel der Rahmen-Spitzen in ±12 ms ≤ BQ × Median (Gesang: Pulse → Mittel ≫ Median).
+     Prüfung B@48 2,745 s: BIG fand dort einen Klick mitten im lauten Gesang, die Reparatur kostete Höhen. {bq: 0} = ohne Prüfung. */
+  const BQ = o.bq != null ? o.bq : 1.5, bigQuiet = (arr, xl, xr) => !(BQ > 0) || mean(arr, xl - W, xr + W + 1, xl, xr) <= BQ * medx(arr, xl - W, xr + W + 1, xl, xr);
   const test = (arr, j, k1, k2) => { const v = arr[j]; if (v < 2e-4 || v < arr[j - 1] || v < arr[j + 1] || v < arr[j - 2] || v < arr[j + 2]) return null;
     let jl = j, jr = j; while (jl > j - MX && arr[jl - 1] > 0.25 * v) jl--; while (jr < j + MX && jr + 1 < nj && arr[jr + 1] > 0.25 * v) jr++;
     const xl = Math.min(jl - 2, j - X3), xr = Math.max(jr + 2, j + X3);
@@ -61607,7 +61610,7 @@ function* clickScan(x, sr, o, wins) {
     /* VOXR1F: Ein Klick in einer Pause kurz vor einem Einsatz (lautere Spitzen 20–25 ms daneben) fiel durch den Nachbar-Test. Liegt die Spitze
        > BIG (≈ 30 dB) über dem Median der Umgebung, reicht der Nachbar-Test im engen Fenster (±12 ms; Stimmlippen-Pulse ab 85 Hz kommen dort
        mindestens zweimal). {big: 0} = wie vorher. */
-    if (!(v > k2 * n2) && !(BIG > 0 && v > k2 * s2 && v > BIG * (MED ? medx : mean)(arr, xl - W, xr + W + 1, xl, xr))) return null;
+    if (!(v > k2 * n2) && !(BIG > 0 && v > k2 * s2 && v > BIG * (MED ? medx : mean)(arr, xl - W, xr + W + 1, xl, xr) && bigQuiet(arr, xl, xr))) return null;
     const m = (MED ? medx : mean)(arr, xl - W, xr + W + 1, xl, xr); if (!(v > k1 * m)) return null; return {jl, jr, sc: 20 * Math.log10(v / (m + EPS))}; };
   for (let j = 2; j < nj - 2; j++) {
     if (!sel[j]) continue;
@@ -61642,6 +61645,9 @@ function clickSpan(z, g0, g1, sr, p, o) {
   for (let i = g1 + Math.round(0.003 * sr); i + q <= Math.min(L - p, g1 + Math.round(0.012 * sr)); i += q) E.push(fr(i));
   if (E.length < 8) return [g0, g1];
   E.sort((u, v) => u - v); const nb = E[E.length >> 1], T = (o && o.spanK != null ? o.spanK : 3) * nb;
+  /* VOXR1F-P: nur in rauschartiger Umgebung (Pause): Mittel der Rahmen ≤ NZ × Median. Über Gesang (Stimmlippen-Pulse im Band → Mittel ≫ Median)
+     wie vorher – sonst ersetzt die längere Spanne gesungene Obertöne und der Deckel (Median-bezogen) löscht die Höhen. {nz: 0} = ohne Prüfung. */
+  const NZ = o && o.nz != null ? o.nz : 2; if (NZ > 0) { let mu = 0; for (const e of E) mu += e; mu /= E.length; if (mu > NZ * nb) return [g0, g1]; }
   let e1 = g1, e0 = g0; const mx1 = Math.min(g1 + Math.round((o && o.spanR != null ? o.spanR : 0.002) * sr), g0 + Math.round(0.008 * sr), L - 2 * p), mn0 = Math.max(2 * p, g0 - Math.round((o && o.spanL != null ? o.spanL : 0.0005) * sr));
   while (e1 + q <= mx1 && fr(e1) > T) e1 += q;
   while (e0 - q >= mn0 && fr(e0 - q) > T) e0 -= q;
