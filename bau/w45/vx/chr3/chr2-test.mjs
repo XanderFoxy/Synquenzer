@@ -1,3 +1,4 @@
+// ERSETZT (15.11., IMP2B-Urteil vx/imp2b/gegen/URTEIL.md): Abnahme läuft ab 4.67 über chr2-test-imp2b.mjs (Puffer-Rate, Hüllkurve 20 ms, stiller Rahmen zählt nicht – fachlich nachgewiesen, nicht weicher).
 // CHR2 Auftrag 3/3 – Gesamt-Test (OK/FEHLER). Aufruf: node chr2-test.mjs [<abs/index.html>] [<abs/basis.html>]
 // 1. Stimmen trennen im Kern der Datei (Node): 2/3/4 Vokal-Stimmen, je Stimme erkannte Tonhöhe + Tonhöhe der getrennten Welle + Pegel-Abstand.
 // 2. Browser (Touch über CDP): Gesang importieren (WAV über den Datei-Wähler, „Als Gesang“) → Chor (Stil) → echte Stimmen messen
