@@ -39,16 +39,16 @@ console.log('ABBRECHEN', JSON.stringify(OUT.abbrechen));
 OUT.speichern = await run(async o => {
   const j = serialize(), has = /"vr1":\{"lv":"mittel"/.test(j);
   const v0 = SYNQUENZER.vr1Ver(o.id);
-  applyProject(normalizeProject(JSON.parse(j)), {ui: true}); await wait(800);
+  const q = normalizeProject(typeof projFromFile === 'function' ? projFromFile(JSON.parse(j)) : JSON.parse(j)); const qk = Object.keys(q.takes || {}); applyProject(q, {ui: true}); await wait(1200); window.__qk = qk;
   const m = S.takes && S.takes[o.id];
   let b = null; try { b = tkPlayBuf(o.id, null); } catch (e) {}
   const sofort = {vr1: m ? !!m.vr1 : null, lv: m && m.vr1 ? m.vr1.lv : null, rechnet: VXR1.vjob.has(o.id), spieltRoh: b ? b === tkBuffer(o.id) : null};
   let t0 = Date.now(); while (Date.now() - t0 < 30000 && VXR1.vjob.has(o.id)) await wait(200);
-  return {imProjekt: has, sofort, fertigNachMs: Date.now() - t0, ready: SYNQUENZER.vr1Ver(o.id).ready, marken: SYNQUENZER.vr1Breaths(o.id).length};
+  return {imProjekt: has, keysNachLaden: Object.keys(S.takes || {}), keysInQ: window.__qk, sofort, fertigNachMs: Date.now() - t0, ready: SYNQUENZER.vr1Ver(o.id).ready, marken: SYNQUENZER.vr1Breaths(o.id).length};
 }, {id});
 console.log('SPEICHERN', JSON.stringify(OUT.speichern));
 // 4) Speicher: was hält VXR1.ver je Take (Fassung + nur Entferntes)
-OUT.speicher = await run(async o => { let by = 0, n = 0; for (const [k, c] of VXR1.ver) { if (c.buf) by += c.buf.length * 4 * c.buf.numberOfChannels; if (c.weg) by += c.weg.length * 4; n++; } const m = S.takes[o.id]; return {takes: n, mb: +(by / 1048576).toFixed(1), takeSek: +(m.len / m.sr).toFixed(1), mbJeMinute: +((by / 1048576) / (m.len / m.sr / 60)).toFixed(1)}; }, {id});
+OUT.speicher = await run(async o => { if (!S.takes[o.id]) return {fehlt: true}; let by = 0, n = 0; for (const [k, c] of VXR1.ver) { if (c.buf) by += c.buf.length * 4 * c.buf.numberOfChannels; if (c.weg) by += c.weg.length * 4; n++; } const m = S.takes[o.id]; return {takes: n, mb: +(by / 1048576).toFixed(1), takeSek: +(m.len / m.sr).toFixed(1), mbJeMinute: +((by / 1048576) / (m.len / m.sr / 60)).toFixed(1)}; }, {id});
 console.log('SPEICHER', JSON.stringify(OUT.speicher));
 // 5) Gesangs-Effekte an: entzischt die Kette und danach noch einmal G4? (Info der G4-Fassung)
 OUT.g4 = await run(async o => { const st = stimmeT(); const g = st >= 0 ? S.tracks[st].gfx : null; let t0 = Date.now(); while (Date.now() - t0 < 30000) { tkPlayBuf(o.id, null); await wait(300); if (!(G4.job.has(o.id) || G4.dq.has(o.id))) break; } const c = G4.cache.get(o.id); return {g4an: !!(g && g.on), ds: g ? g.ds : null, g4Entzischer: c && c.info ? c.info.ds : null, vr1Zischen: (SYNQUENZER.vr1Ver(o.id).info || {}).ess || null}; }, {id});
