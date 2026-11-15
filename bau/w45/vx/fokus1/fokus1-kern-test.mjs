@@ -115,8 +115,9 @@ ok('R umlenkung', R, R.aus === null && R.rest.z[0] === 'spk12zauber' && R.rest.z
 const Z = await p.evaluate(async () => { const U = __spk.page.ui(); U.f1 = {mode: 'rest', aus: 'sicher'}; let zr = null, zo = null;
   try { zr = await spk1Call('spk12zauber', {doc: SPK1.doc, t: 4, f: 440, tol: 15, lim: 5, N: 4096}); } catch (e) { zr = {err: String(e)}; }
   U.f1 = null; try { zo = await spk1Call('spk12zauber', {doc: SPK1.doc, t: 4, f: 440, tol: 15, lim: 5, N: 4096}); } catch (e) { zo = {err: String(e)}; }
-  const kurz = z => z && {err: z.err, t0: z.t0, t1: z.t1, f0: z.f0, f1: z.f1, n: z.n != null ? z.n : z.cells, src: z.s12src}; return {rest: kurz(zr), orig: kurz(zo)}; });
-ok('Z zauberstab auf dem rest (info)', Z, !(Z.rest && Z.rest.err) && Z.rest && Z.rest.src && Z.rest.src.lid === 'rest');
+  const kurz = z => z && {err: z.err, t0: z.t0, t1: z.t1, f0: z.f0, f1: z.f1, n: z.n != null ? z.n : z.cells, src: z.s12src, fokus: z.fokus}; return {rest: kurz(zr), orig: kurz(zo)}; });
+// Anzeige-Teil: Stelle im Rest ≥ 20 dB leiser (A liegt in der Ebene) → Zauberstab wählt nichts (fokus.gefunden); sonst SPK12-Weg auf dem Rest
+ok('Z zauberstab auf dem rest (info)', Z, !(Z.rest && Z.rest.err) && Z.rest && ((Z.rest.src && Z.rest.src.lid === 'rest') || (Z.rest.fokus && Z.rest.fokus.gefunden && !Z.rest.n)) && Z.orig && Z.orig.n > 0);
 // Noten finden auf dem Rest (Original): B wird gefunden, A nicht noch einmal (liegt in der Ebene / ist gefunden)
 const NR = await p.evaluate(async () => { const U = __spk.page.ui(); U.f1 = {mode: 'rest', aus: 'alle'}; const vor = (SPK1.last.meta.teil2.notes.orig || []).length;
   const r = await __spk.spk2.noten('orig', []); U.f1 = null; const N = r.meta.teil2.notes.orig || [];
