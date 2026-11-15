@@ -107507,6 +107507,7 @@ function fokus1KMake(Z2, X) {
   const ops = Z2.ops || (Z2.ops = {}), C = new Map(), RM = new Map(), DBF = X.DBF || 120, k255 = 255 / DBF, PW = new Float64Array(256);
   for (let b = 1; b < 256; b++) PW[b] = Math.pow(10, (b / k255 - DBF) / 10);
   const NS = [1024, 2048, 4096, 8192, 16384], cl = (v, a, b, z) => { v = +v; return v === v && isFinite(v) ? Math.max(a, Math.min(b, v)) : z; };
+  const inst = d => d.fkI || (d.fkI = (Date.now() % 1e8).toString(36) + Math.random().toString(36).slice(2, 8));   // neues Dokument-Objekt → neuer Schlüssel (Ebenen werden beim Öffnen neu nummeriert)
   const fnv = s => { let h = 0x811c9dc5; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); };
   const optOf = m => ({mode: m.mode === 'gef' || m.mode === 'gefunden' ? 'gef' : 'rest', aus: m.aus === 'alle' ? 'alle' : 'sicher', thr: cl(m.thr, 0, 1, 0.5), sth: cl(m.sth, 0, 1, 0.7),
     K: Math.round(cl(m.K, 1, 40, 16)), bw: cl(m.bw, 10, 200, 45), att: cl(m.att, 6, 90, 42)});
@@ -107522,13 +107523,27 @@ function fokus1KMake(Z2, X) {
     }
     return out;
   }
-  const sigOf = (d, o, N, NT) => fnv([o.mode, o.aus, o.thr, o.sth, o.K, o.bw, o.att, N, d.meta.id, d.meta.n, d.meta.layers.map(l => l.id + ':' + l.ver).join(','),
+  const sigOf = (d, o, N, NT) => fnv([o.mode, o.aus, o.thr, o.sth, o.K, o.bw, o.att, N, d.meta.id, inst(d), d.meta.n, d.meta.layers.map(l => l.id + ':' + l.ver).join(','),
     NT.map(q => q.id + ':' + q.st + ':' + (+q.a).toFixed(3) + ':' + (+q.b).toFixed(3) + ':' + (+q.f).toFixed(1) + ':' + (q.fz ? q.fz.length + '@' + q.fi : '')).join(',')].join('|'));
-  function rowsOf(I, Nb, sr) {   // Zeile → Bins der Basis-STFT (wie SPK12 gainA)
-    const key = I.rows + ':' + I.m0 + ':' + I.rps + ':' + Nb + ':' + sr; if (RM.has(key)) return RM.get(key);
-    const NB = Nb / 2 + 1, lo = new Int32Array(I.rows), hi = new Int32Array(I.rows), fr = r => 440 * Math.pow(2, (I.m0 + r / I.rps - 69) / 12);
-    for (let r = 0; r < I.rows; r++) { const a = Math.max(0, Math.min(NB - 1, Math.floor(fr(r - 0.5) * Nb / sr))); lo[r] = a; hi[r] = Math.max(a, Math.min(NB - 1, Math.ceil(fr(r + 0.5) * Nb / sr))); }
-    const o = {lo, hi}; RM.set(key, o); return o;
+  function rowsOf(I, Nb, sr) {   // Zeile → Bins der Basis-STFT: Gewicht = Hann-Hauptkeule (Leistung, ±2 Bins) um die Zeile (Mitte ± halbe Breite)
+    const key = I.rows + ':' + I.m0 + ':' + I.rps + ':' + Nb + ':' + sr + ':' + I.N; if (RM.has(key)) return RM.get(key);
+    const R = I.rows, NB = Nb / 2 + 1, fr = r => 440 * Math.pow(2, (I.m0 + r / I.rps - 69) / 12), off = new Int32Array(R + 1), kk = [], wt = [], wr = new Float64Array(R), dN = sr / I.N;
+    for (let r = 0; r < R; r++) {
+      const fa = fr(r - 0.5) * Nb / sr, fb = fr(r + 0.5) * Nb / sr, fc = 0.5 * (fa + fb), hs = 0.5 * (fb - fa), k0 = Math.max(0, Math.ceil(fc - hs - 2)), k1 = Math.min(NB - 1, Math.floor(fc + hs + 2));
+      off[r] = kk.length; let sw = 0; const j0 = kk.length;
+      for (let k = k0; k <= k1; k++) { const dl = Math.max(0, Math.abs(k - fc) - hs); if (dl >= 2) continue; const a = 0.5 + 0.5 * Math.cos(Math.PI * dl / 2), w = a * a; kk.push(k); wt.push(w); sw += w; }
+      if (!sw) { kk.push(Math.max(0, Math.min(NB - 1, Math.round(fc)))); wt.push(1); sw = 1; }
+      for (let j = j0; j < kk.length; j++) wt[j] /= sw;
+      wr[r] = Math.min((fb - fa) * sr / Nb, dN);   // Energie-Anteil: Zeile zählt nach ihrer Breite in Hz, höchstens ein Anzeige-Bin (tiefe Töne nicht vielfach)
+    }
+    off[R] = kk.length; const o = {off, kk: Int32Array.from(kk), wt: Float64Array.from(wt), wr}; RM.set(key, o); return o;
+  }
+  // Leistung je Basis-Rahmen (Breitband, aus d.mid) – Gewicht, wenn das Anzeige-Fenster mehrere Basis-Rahmen überdeckt (N > Basis-N)
+  function frE(d, hb) {
+    const x = d.mid; if (d.fkE && d.fkE.x === x && d.fkE.hb === hb) return d.fkE.B;
+    const nb = Math.ceil(x.length / hb) + 1, B = new Float64Array(nb);
+    for (let i = 0; i < x.length; i++) { const v = x[i]; B[(i / hb) | 0] += v * v; }
+    d.fkE = {x, hb, B}; return B;
   }
   // Hüllkurve einer Note in der Zeit (Anzeige-Fenster ±N/2 verschmiert: Einschwingen davor, Ausklang danach), weiche Kanten
   function env(q, t, hw) {
@@ -107538,12 +107553,31 @@ function fokus1KMake(Z2, X) {
   // ein Stück: Quelle (Original-Bytes) → Fokus-Bytes; Energie (Leistung je Byte) vorher/nachher
   function piece(d, I, ci, src, o, gf, NT) {
     const R = I.rows, W = Math.min(1024, I.cols - ci * 1024), out = new Uint8Array(R * W), sr = d.meta.sr, Nb = d.meta.base.N, hb = d.meta.base.hop, NB = Nb / 2 + 1;
-    const {lo, hi} = rowsOf(I, Nb, sr), g = new Float32Array(NB), gl = new Float32Array(R), wv = new Float32Array(R), hw = I.N / (2 * sr), lob = 2 * sr / I.N, att = Math.pow(10, -o.att / 20), rest = o.mode === 'rest';
+    const {off, kk, wt, wr} = rowsOf(I, Nb, sr), g = new Float32Array(NB), gl = new Float32Array(R), wv = new Float32Array(R), hw = I.N / (2 * sr), lob = 2 * sr / I.N, att = Math.pow(10, -o.att / 20), rest = o.mode === 'rest';
+    const FM = new Map(), wide = I.N > Nb, EB = wide ? frE(d, hb) : null, acc = wide ? new Float64Array(R) : null;
+    const rowG = mm => {   // Rahmen mm → mittlerer Rest-Anteil² je Zeile (gewichtet), zwischengespeichert; one = überall 1
+      let e = FM.get(mm); if (e) return e;
+      gf(mm, g); const q = new Float32Array(R); let one = true;
+      for (let r = 0; r < R; r++) { let s = 0; for (let j = off[r]; j < off[r + 1]; j++) { const x = g[kk[j]]; s += wt[j] * x * x; } q[r] = s; if (one && Math.abs(s - 1) > 2e-5) one = false; }
+      e = {q, one}; FM.set(mm, e); if (FM.size > 48) FM.delete(FM.keys().next().value); return e;
+    };
+    const setGl = q => { for (let r = 0; r < R; r++) { const v = Math.sqrt(q[r]); gl[r] = rest ? v : Math.min(1, v); } };
     const tA = ci * 1024 * I.hop / sr, tB = (ci * 1024 + W) * I.hop / sr, act = NT.filter(q => +q.a - hw - 0.04 < tB && +q.b + 0.12 + hw > tA);
     let mP = -1, eO = 0, eR = 0;
     for (let c = 0; c < W; c++) {
       const gc = ci * 1024 + c, t = gc * I.hop / sr, mm = Math.round(gc * I.hop / hb + 1);
-      if (mm !== mP) { mP = mm; gf(mm, g); for (let r = 0; r < R; r++) { let v = 0; for (let k = lo[r]; k <= hi[r]; k++) if (g[k] > v) v = g[k]; gl[r] = rest ? v : Math.min(1, v); } }
+      if (!wide) { if (mm !== mP) { mP = mm; const e = rowG(mm); if (e.one) gl.fill(1); else setGl(e.q); } }
+      else {   // Anzeige-Fenster ±N/2 überdeckt mehrere Basis-Rahmen: Rest-Anteil² mitteln, Gewicht = Hann² × Leistung des Rahmens
+        const cs = gc * I.hop, ma = Math.ceil((cs - I.N / 2) / hb + 1), mb = Math.floor((cs + I.N / 2) / hb + 1), L = [];
+        let allOne = true, sw = 0, sw0 = 0;
+        for (let m2 = ma; m2 <= mb; m2++) {
+          const h = 0.5 + 0.5 * Math.cos(2 * Math.PI * ((m2 - 1) * hb - cs) / I.N), h2 = h * h; if (!(h2 > 1e-6)) continue;
+          let en = 0; for (let b = Math.max(0, m2 - 3); b <= m2 && b < EB.length; b++) en += EB[b];
+          const e = rowG(m2); L.push([e, h2, h2 * en]); sw += h2 * en; sw0 += h2; if (!e.one) allOne = false;
+        }
+        if (allOne || !L.length) gl.fill(1);
+        else { const ue = sw > 1e-12; acc.fill(0); for (const [e, h2, he] of L) { const w = (ue ? he / sw : h2 / sw0); if (e.one) for (let r = 0; r < R; r++) acc[r] += w; else for (let r = 0; r < R; r++) acc[r] += w * e.q[r]; } setGl(acc); }
+      }
       let anyW = false;
       if (act.length) {
         wv.fill(0);
@@ -107564,7 +107598,7 @@ function fokus1KMake(Z2, X) {
         let lin = gl[r]; if (anyW) { const w = wv[r]; if (w > 0) { if (rest) lin *= 1 - w * (1 - att); else if (w > lin) lin = w; } }
         const i = r * W + c, s = src[i]; let v;
         if (lin >= 0.99999) v = s; else if (lin < 1e-5 || !s) v = 0; else { v = s + 20 * Math.log10(lin) * k255; v = v <= 0 ? 0 : v >= 255 ? 255 : Math.round(v); }
-        out[i] = v; eO += PW[s]; eR += PW[v];
+        out[i] = v; eO += PW[s] * wr[r]; eR += PW[v] * wr[r];
       }
     }
     return {data: out, W, eO, eR};
@@ -107597,7 +107631,7 @@ function fokus1KMake(Z2, X) {
   /* „Noten finden“ auf dem Rest: Rest-Signal (Mono) blockweise, ein Eintrag je Ebenen-Stand, nach 90 s ohne Gebrauch frei */
   const RS = {key: '', mid: null, done: null, t: 0};
   async function restMid(d, m, a0, b0, emit) {
-    const n = d.meta.n, BL = X.BLK || 16384, key = d.meta.id + '#' + n + '|' + d.meta.layers.map(l => l.id + ':' + l.ver).join(',');
+    const n = d.meta.n, BL = X.BLK || 16384, key = d.meta.id + '#' + inst(d) + '#' + n + '|' + d.meta.layers.map(l => l.id + ':' + l.ver).join(',');
     if (RS.key !== key || !RS.mid) { RS.key = key; RS.mid = new Float32Array(n); RS.done = new Uint8Array(Math.ceil(n / BL)); }
     clearTimeout(RS.t); RS.t = setTimeout(() => { RS.key = ''; RS.mid = RS.done = null; }, 90000);
     const mid = RS.mid, done = RS.done, mx = X.mixOf(d, 'rest'), k0 = Math.max(0, Math.floor(a0 / BL)), k1 = Math.min(done.length - 1, Math.floor(Math.max(0, b0 - 1) / BL));
@@ -107671,7 +107705,7 @@ try { window.__fokus1 = FOKUS1_API; } catch (e) {}
 /* ---------- Anzeige: „Ansicht ▾ → Fokus“ (Alles │ Nur Rest │ Nur Gefundenes), zweiter Satz Stücke nur fürs Zeichnen, Status ----------
    U.f1 = {mode, aus, set, sig, …} lebt nur in der Sitzung (SPK1.ui), nie im Projekt. U.spec (Original) wird nie verändert: fokus1Pre setzt
    für die Dauer eines Bildes einen geliehenen Satz ein (fehlende/noch nicht hochgeladene Stücke = Original-Stück), fokus1Post stellt zurück.
-   „Alles“ = kein Tausch → Bild wie vorher. Höchstens 2 neue Texturen je Bild (kein Stau beim Umschalten). */
+   „Alles“ = kein Tausch → Bild wie vorher. Höchstens 1 neue Textur je Bild (kein Stau beim Umschalten). */
 const FOKUS1_MODES = [['alles', 'Alles', 'Fokus: alles zeigen'], ['rest', 'Nur Rest', 'Fokus: nur, was noch nicht gefunden ist'], ['gef', 'Nur Gefundenes', 'Fokus: nur das Gefundene (Kontrolle)']];
 function fokus1S(U) { return U.f1 || (U.f1 = {mode: 'alles', aus: 'sicher', set: null, sig: '', seq: 0, tm: 0, ft: 0, pend: false, run: false, sw: null, arr: null, glRef: null, st: null, txt: '', doc: null, err: ''}); }
 function fokus1Conf(U) { const T = U.meta && U.meta.teil2 && U.meta.teil2.notes; if (!T) return false; for (const lid in T) for (const q of T[lid] || []) if (q && q.conf != null) return true; return false; }
@@ -107692,7 +107726,7 @@ function fokus1Free(U) {   // Haken in spk1SpecFree (FFT-Wechsel, Dokumentwechse
 }
 function fokus1Got(U) {   // Haken am Anfang von spk1Layers (jedes Kern-Ergebnis: In Ebene, Undo/Redo, Noten finden, Zuordnen, Zerlegen …)
   const F = fokus1S(U);
-  if (F.doc !== SPK1.doc) { F.doc = SPK1.doc; F.seq++; fokus1Drop(U); F.sig = ''; F.st = null; }
+  if (F.doc !== SPK1.doc) { const was = F.doc; F.doc = SPK1.doc; F.seq++; fokus1Drop(U); F.sig = ''; F.st = null; if (was && F.mode !== 'alles') { F.mode = 'alles'; F.pend = false; clearTimeout(F.tm); F.tm = 0; } }   // anderes Lied: Fokus aus
   if (F.txt && U.st && U.st.textContent !== F.txt) { F.txt = ''; U.st.removeAttribute('title'); }
   if (F.mode === 'alles' || !U.meta) return;
   if (fokus1Sig(U) === F.sig && F.set) return;
@@ -107704,10 +107738,11 @@ function fokus1Done(U) {
   const a = r.eO > 0 ? r.eR / r.eO : 1, pc = a > 0 && a < 0.005 ? '< 1' : String(Math.round(100 * a)), n = r.nAus, nn = n + (n === 1 ? ' Note' : ' Noten'), narrow = U.st.clientWidth < 330;
   if (F.mode === 'rest') {
     const full = n || (U.meta.layers || []).length ? 'Fokus: Rest · ' + nn + ' ausgeblendet · übrig ≈ ' + pc + ' %' : 'Fokus: Rest · noch nichts gefunden';
-    fokus1Stat(U, narrow ? (n || (U.meta.layers || []).length ? 'Rest · ' + pc + ' % übrig · ' + n + ' aus' : 'Rest · nichts gefunden') : full, full + ' der Energie');
+    const any = n || (U.meta.layers || []).length;
+    fokus1Stat(U, narrow ? (any ? 'Rest ' + pc + ' % · ' + nn + ' weg' : 'Rest · nichts gefunden') : full, any ? full + ' der Energie' : full);
   } else {
     const full = 'Fokus: Gefundenes · ' + nn + ' · ≈ ' + pc + ' % der Energie';
-    fokus1Stat(U, narrow ? 'Gefunden · ' + pc + ' % · ' + n + ' Noten' : full, full);
+    fokus1Stat(U, narrow ? 'Gefunden · ' + pc + ' % · ' + nn : full, full);
   }
 }
 async function fokus1Load(U) {
@@ -107717,7 +107752,7 @@ async function fokus1Load(U) {
   F.pend = false;
   const doc = SPK1.doc, N = U.N, mode = F.mode, sig = fokus1Sig(U), I = U.spec.info, nC = I.chunks || U.spec.chunks.length;
   let S = F.set;
-  if (S && S.doc === doc && S.N === N && S.mode === mode && F.sig === sig && S.chunks.filter(Boolean).length >= nC) { fokus1Done(U); spk1Dirty(U, 'g'); return; }   // noch aktuell
+  if (S && S.doc === doc && S.N === N && S.mode === mode && F.sig === sig && S.chunks.filter(Boolean).length >= nC) { if (!F.st && S.st) F.st = S.st; fokus1Done(U); spk1Dirty(U, 'g'); return; }   // noch aktuell (Ergebnis liegt am Satz)
   const seq = ++F.seq; F.sig = sig;
   if (!S || S.doc !== doc || S.N !== N || S.mode !== mode) { fokus1Drop(U); S = F.set = {doc, N, mode, hop: U.spec.hop, info: I, chunks: [], key: ''}; }   // gleicher Modus: altes Bild bleibt, bis das neue Stück da ist
   const v = U.v, hs = U.spec.hop / U.meta.sr, cl = x => Math.max(0, Math.min(nC - 1, x));
@@ -107750,7 +107785,7 @@ async function fokus1Load(U) {
   F.run = false; if (seq !== F.seq) return;
   if (stop === 'geaendert') { F.sig = ''; clearTimeout(F.tm); F.tm = setTimeout(() => { F.tm = 0; fokus1Load(U); }, 150); return; }   // Ebene/Note während der Rechnung geändert
   if (stop) return;   // abgelöst: ein neuerer Auftrag läuft
-  F.st = {eO, eR, nAus, key, ms: 0}; fokus1Done(U); spk1Dirty(U, 'g');
+  F.st = S.st = {eO, eR, nAus, key, ms: 0}; fokus1Done(U); spk1Dirty(U, 'g');
 }
 function fokus1Mode(U, v) {
   const F = fokus1S(U), was = F.mode; if (v === was) return;
@@ -107788,7 +107823,7 @@ function fokus1Pre(U) {   // Haken in spk1Frame vor dem Zeichnen
     if (F.glRef !== U.gl) { for (const c of S.chunks) if (c) { c.tex = null; c.old = null; } F.glRef = U.gl; }   // Kontext verloren → Texturen sind weg
     const v = U.v, hs = O.hop / U.meta.sr, n = O.chunks.length, arr = F.arr && F.arr.length === n ? F.arr : (F.arr = new Array(n)), tN = performance.now(); let up = 0, more = false;
     if (F.upMore && F.tUp) { const dt = tN - F.tUp; F.gap = dt > 45 ? Math.min(250, dt) : 0; }   // hat das letzte Hochladen das nächste Bild gebremst (langsame Grafik)? → Abstand halten
-    const upMax = F.gap ? (tN - F.tUp >= F.gap ? 1 : 0) : 2;
+    const upMax = F.gap ? (tN - F.tUp >= F.gap ? 1 : 0) : 1;   // eine Textur je Bild (gemessen: weniger lange Aufgaben, Umschalten gleich schnell)
     for (let k = 0; k < n; k++) {
       const o = O.chunks[k], f = S.chunks[k]; let use = o;
       if (f && (!o || o.w === f.w)) {
@@ -107797,7 +107832,7 @@ function fokus1Pre(U) {   // Haken in spk1Frame vor dem Zeichnen
         else {
           const xa = ((f.x0 - 0.5) * hs - v.t0) * v.pps, xb = ((f.x0 + f.w - 0.5) * hs - v.t0) * v.pps;
           if (xb < 0 || xa > U.W) use = f;   // unsichtbar: wird nicht hochgeladen
-          else if (up < upMax) { f.tex = U.gl.tex(f.w, f.R, 'r', f.data, true); up++; use = f; }   // wie spk1GlDraw (R8 + Mipmaps), höchstens 2 je Bild
+          else if (up < upMax) { f.tex = U.gl.tex(f.w, f.R, 'r', f.data, true); up++; use = f; }   // wie spk1GlDraw (R8 + Mipmaps), höchstens 1 je Bild
           else { more = true; use = f.old && f.old.tex ? f.old : o; }
         }
       }

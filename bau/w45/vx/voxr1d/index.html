@@ -61469,12 +61469,15 @@ function plopFit(z, g0, g1, sd, cut, hb, D, sr) {
     for (let i = a; i < b; i++) { const c = Math.cos(w * (i - a)), s = Math.sin(w * (i - a)), v = z[i]; cc += c * c; ss += s * s; cs += c * s; zc += v * c; zs += v * s; zz += v * v; }
     const d = cc * ss - cs * cs || 1e-12, A = (zc * ss - zs * cs) / d, B = (zs * cc - zc * cs) / d; return {e: A * zc + B * zs, zz}; };
   const f0of = (a, b) => { let bf = 0, be = -1, zz = 0; for (let f = 90; f <= Math.min(420, cut * 1.1); f += 1) { const r = fit1(a, b, f); zz = r.zz; if (r.e > be) { be = r.e; bf = f; } }
-    for (let f = bf - 0.9; f <= bf + 0.9; f += 0.1) { const r = fit1(a, b, f); if (r.e > be) { be = r.e; bf = f; } } return {f: bf, on: be > 0.3 * zz, zz}; };
+    for (let f = bf - 0.9; f <= bf + 0.9; f += 0.1) { const r = fit1(a, b, f); if (r.e > be) { be = r.e; bf = f; } }
+    // VOXR1D: Oktav-Probe – die stärkste Spitze ist bei tiefer Stimme oft der 2. Teilton (126-Hz-Ton als 247 Hz gemessen, Grundton fiel −18 dB)
+    for (const dv of [3, 2]) { const f2 = bf / dv; if (f2 < 70) continue; let b2 = -1, ff = f2; for (let f = f2 - 1.5; f <= f2 + 1.5; f += 0.1) { const r = fit1(a, b, f); if (r.e > b2) { b2 = r.e; ff = f; } } if (b2 >= (plopFit.OCT || 0.12) * be) return {f: ff, on: be > 0.3 * zz, zz}; }
+    return {f: bf, on: be > 0.3 * zz, zz}; };
   const L = f0of(g0 - W, g0), R = f0of(g1, g1 + W); if (!L.on && !R.on) return null;
   let fL = L.on ? L.f : R.f, fR = R.on ? R.f : L.f; if (fR / fL > 1.3 || fL / fR > 1.3) { if (L.zz >= R.zz) fR = fL; else fL = fR; }
-  const fm = (fL + fR) / 2, m = Math.max(2, Math.ceil(300 / fm)), K = Math.floor(Math.min(cut * 1.3, 0.45 * sd) / fm); if (K < 1) return null;
+  const fm = (fL + fR) / 2, m = Math.max(2, Math.ceil((plopFit.MF || 300) / fm)), K = Math.floor(Math.min(cut * 1.3, 0.45 * sd) / fm); if (K < 1) return null;
   // Phase des m-ten Obertons im Band über der Grenze (hb, volle Rate): Demodulation mit linearem Frequenzverlauf, Hann-Fenster ≈ 3 Perioden
-  const jA = g0 - W, jB = g1 + W, cA = (g0 - W / 2) * D, cB = (g1 + W / 2) * D, Tw = Math.round(Math.min(0.035, Math.max(0.012, 3 / fm)) * sr), h2 = Tw >> 1;
+  const jA = g0 - W, jB = g1 + W, cA = (g0 - W / 2) * D, cB = (g1 + W / 2) * D, Tw = Math.round(Math.min(0.035, Math.max(0.012, (plopFit.TW || 3) / fm)) * sr), h2 = Tw >> 1;
   const s0 = jA * D - h2, s1 = jB * D + h2; if (s0 < 0 || s1 >= hb.length) return null;
   const th = new Float64Array(s1 - s0 + 1); { let ph = 0; for (let s = s0; s <= s1; s++) { const q = Math.min(1, Math.max(0, (s - cA) / (cB - cA))); ph += TAU * m * (fL + (fR - fL) * q) / sr; th[s - s0] = ph; } }
   const wn = new Float64Array(2 * h2 + 1); for (let i = -h2; i <= h2; i++) wn[i + h2] = 0.5 + 0.5 * Math.cos(Math.PI * i / (h2 + 1));
@@ -61484,9 +61487,12 @@ function plopFit(z, g0, g1, sd, cut, hb, D, sr) {
   if (!(amx > 0)) return null;
   // VOXR1D: Phase nur verfolgen, wo der Oberton klingt (≥ 1/8 der Spitze); sonst Abweichung halten. Hüllkurve A(t) = Stärke des Obertons
   { let prev = 0, acc = 0, have = false; for (let j = 0; j < NJ; j++) { const c = (jA + j) * D; if (Am[j] >= amx / 8) { if (have) { let dd = Dr[j] - prev; dd -= TAU * Math.round(dd / TAU); acc += dd; } else { acc = Dr[j]; have = true; } prev = Dr[j]; } Ph[j] = (th[c - s0] + acc) / m; Am[j] /= amx; } }
+  // VOXR1D: Hüllkurve = Stärke des Obertons, aber nie unter dem kleineren Rand-Mittel (ein Einbruch des Obertons in der Lücke zieht den Grundton sonst mit)
+  let aL = 0, aR = 0; for (let j = 0; j < W; j++) { aL += Am[j] / W; aR += Am[NJ - 1 - j] / W; } const fl = plopFit.EV === 0 ? 0 : Math.min(aL, aR) * (plopFit.EF || 1);
+  const Ae = Am.map(v => Math.max(v, fl));
   // Basis: je Teilton k cos/sin(kΦ)·τ^p (p = 0…2), dazu Kosinus-Satz < 80 Hz über der Lücke
   const Q = Math.max(1, Math.floor(2 * 80 * Lg / sd)), np = 6 * K, nc = np + Q + 1;
-  const col = (j, c) => { const t = jA + j; if (c < np) { const k = 1 + Math.floor(c / 6), r = c % 6, p = r >> 1, tau = (t - (g0 - 1)) / (Lg + 1), a = k * Ph[j]; return (r & 1 ? -Math.sin(a) : Math.cos(a)) * (p ? Math.pow(tau, p) : 1) * (plopFit.NOA ? 1 : Am[j]); }
+  const col = (j, c) => { const t = jA + j; if (c < np) { const k = 1 + Math.floor(c / 6), r = c % 6, p = r >> 1, tau = (t - (g0 - 1)) / (Lg + 1), a = k * Ph[j]; return (r & 1 ? -Math.sin(a) : Math.cos(a)) * (p ? Math.pow(tau, p) : 1) * (plopFit.NOA ? 1 : Ae[j]); }
     const q = c - np; return Math.cos(Math.PI * q * (t - g0 + 0.5) / Lg); };
   // Ränder: je Seite komplexe Stärke je Teilton (konstant) per kleinsten Fehlerquadraten
   const solve = (M, v, n) => { for (let i = 0; i < n; i++) { let p = i; for (let r = i + 1; r < n; r++) if (Math.abs(M[r * n + i]) > Math.abs(M[p * n + i])) p = r;
@@ -61494,7 +61500,7 @@ function plopFit(z, g0, g1, sd, cut, hb, D, sr) {
       const d = M[i * n + i] || 1e-18; for (let r = i + 1; r < n; r++) { const f = M[r * n + i] / d; if (!f) continue; for (let c = i; c < n; c++) M[r * n + c] -= f * M[i * n + c]; v[r] -= f * v[i]; } }
     for (let i = n - 1; i >= 0; i--) { let s = v[i]; for (let c = i + 1; c < n; c++) s -= M[i * n + c] * v[c]; v[i] = s / (M[i * n + i] || 1e-18); } return v; };
   const edge = (j0, j1, on) => { const c = new Float64Array(2 * K); if (!on) return c; const n = 2 * K, M = new Float64Array(n * n), v = new Float64Array(n);
-    for (let j = j0; j < j1; j++) { const b = []; const am = plopFit.NOA ? 1 : Am[j]; for (let k = 1; k <= K; k++) { b.push(am * Math.cos(k * Ph[j]), -am * Math.sin(k * Ph[j])); } const zz = z[jA + j];
+    for (let j = j0; j < j1; j++) { const b = []; const am = plopFit.NOA ? 1 : Ae[j]; for (let k = 1; k <= K; k++) { b.push(am * Math.cos(k * Ph[j]), -am * Math.sin(k * Ph[j])); } const zz = z[jA + j];
       for (let u = 0; u < n; u++) { v[u] += b[u] * zz; for (let w = 0; w < n; w++) M[u * n + w] += b[u] * b[w]; } }
     for (let u = 0; u < n; u++) M[u * n + u] += 1e-9 * (M[u * n + u] + 1e-12); return solve(M, v, n); };
   const cl = edge(0, W, L.on), cr = edge(NJ - W, NJ, R.on);
@@ -61511,6 +61517,10 @@ function plopFit(z, g0, g1, sd, cut, hb, D, sr) {
     const t2 = Math.pow((plopFit.PA || 0.3) * Math.max(A, B), 2) + dd * dd + 1e-12; for (let c = 6 * k; c < 6 * k + 6; c++) lam[c] = sig / t2 * (c - 6 * k >= 4 ? (plopFit.P2 || 1) : 1); }
   const th1 = reg(lam), out = new Float64Array(Lg);
   for (let j = J0; j < J1; j++) { let s = 0; for (let c = 0; c < np; c++) s += th1[c] * col(j, c); out[j - J0] = s; }
+  // VOXR1D: nie lauter als vorher – gleitende Energie (≈ 10 ms) der Neubildung höchstens die des Tiefbands an der Stelle (Stoß inklusive)
+  if (plopFit.LIM !== 0) { const hw = Math.max(2, Math.round((plopFit.LW || 0.003) * sd)), gn = new Float64Array(Lg);
+    for (let j = 0; j < Lg; j++) { let eo = 0, ez = 0; for (let d = -hw; d <= hw; d++) { const w = 0.5 + 0.5 * Math.cos(Math.PI * d / (hw + 1)), q = j + d; const o = q >= 0 && q < Lg ? out[q] : 0, v = z[g0 + q] || 0; eo += w * o * o; ez += w * v * v; } gn[j] = eo > ez ? Math.sqrt(ez / eo) : 1; }
+    for (let j = 0; j < Lg; j++) out[j] *= gn[j]; }
   return out;
 }
 function* plop(y, sr, ev, o) {

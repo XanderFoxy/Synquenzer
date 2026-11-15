@@ -19,3 +19,4 @@
 13:00 Prüfung Regression+Regeln (pruef-regress/, Logs pruef/): Diff nur 8 Haken + Block, Pflicht grün, spk1/6k/6/6u/12/12b/12c/11/11b wie r4710 (spk6/6u erster Lauf 'Target crashed' = Umgebung, Wiederholung grün); Nebenprodukte der Tests aus fotos/ nach pruef/nebenprodukte/ verschoben
 13:00 Fix-Runde gestartet (Befunde der drei Prüfer)
 13:04 Sicherung index.vor-fix.html
+13:07 Fixes eingesetzt: Kern (Kennung je Dokument, Zeilen-Gewichtung, Zeit-Mittel N>4096, Energie nach Zeilenbreite), Anzeige (Status am Satz, Texte, 1 Textur/Bild, Liedwechsel → Alles)
