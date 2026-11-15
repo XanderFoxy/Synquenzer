@@ -23,7 +23,7 @@
  * @typedef {{setze(params:object):void,zerstoere():void}} UIHandle
  */
 
-export const VERSION = '0.2.0';
+export const VERSION = '0.3.0';
 export const ARBEITS_KANTE = 2048;   // lange Seite Arbeitsbild (Vorschau, Masken)
 export const ANALYSE_KANTE = 1024;   // lange Seite Analysebild
 export const KACHEL = 1024;          // Export-Kachel ohne Rand

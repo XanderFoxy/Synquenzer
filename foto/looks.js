@@ -164,8 +164,8 @@ void main(){ vec4 p = E(); vec3 c = max(p.rgb, 0.0); float l = F(Lt), a1 = F(g1)
   if (zeige == 1){ aus = vec4(lin(vec3(0.15)*w.x + vec3(0.2, 0.4, 1.0)*w.y + vec3(0.2, 1.0, 0.3)*w.z + vec3(1.0, 0.35, 0.2)*w.w), 1.0); return; }
   float c0 = sign(d0)*max(abs(d0) - tau.x, 0.0), c1 = sign(d1)*max(abs(d1) - tau.y, 0.0), c2 = sign(d2)*max(abs(d2) - tau.z, 0.0);
   float k0 = gF.x*0.8*w.w, k1 = gF.x*0.3*w.w + gF.y*0.5*w.z, k2 = gF.y*0.3*w.z + gF.z*0.2*w.y;
-  vec2 lh = F4(mm).rg; float sp = max(lh.y - lh.x, 0.0), brems = 1.0 - 0.5*smoothstep(0.3, 0.7, sp);
-  float del = 0.01*sp + 0.001;
+  vec2 lh = F4(mm).rg; float sp = max(lh.y - lh.x, 0.0), brems = 1.0 - 0.9*smoothstep(0.3, 0.55, sp);   // harte Kanten sind schon scharf
+  float del = 0.001 + 0.01*sp*(1.0 - smoothstep(0.15, 0.4, sp));   // harte Einzelkante: kaum Überschwingen erlaubt
   float e2 = clamp(l + (k0*c0 + k1*c1 + k2*c2)*brems, lh.x - del, lh.y + del);
   aus = vec4(mitLuma(c, grenzeAuf(l, e2 - l)), p.a); }`,
   // ---- Monochrom: Kanalmischer (Summe 1, ≥ 0), Haut nicht dunkler als vorher, Tönung in OKLab
@@ -245,7 +245,9 @@ const hautTex = (ctx) => { const t = ctx.basis ? ctx.basis('haut') : null; retur
 // Radien der Bänder (Anteil kurze Seite): fein 0,25 %, mittel 0,8 %, Klarheit 1,5 %, Form 3 % (geführt; Rand = 2 Unschärfen × 3σ)
 const RB = [0.0025, 0.008, 0.015, 0.03];
 function baender(ctx, ein, g) {
-  const Lt = luma(ctx, ein), eps = [0.0025, 0.003, 0.006, 0.012];
+  // eps klein (0,1 %): Kanten ab ~0,1 Luma-Sprung bleiben in der Basis erhalten → Form/Klarheit-Bänder (d2–d4) springen nicht über harte
+  // Kanten (Halo 4,5 % → 0,8 % ohne Schärfe); weiche Form-Verläufe (Wange, Licht) haben viel kleinere örtliche Varianz und bleiben im Band.
+  const Lt = luma(ctx, ein), eps = [0.0025, 0.002, 0.001, 0.001];
   const k = (g.ohneForm ? RB.slice(0, 3) : RB).map((r, i) => gfKoeff(ctx, Lt, r, eps[i]));
   if (g.ohneForm) k.push(k[2]);
   const ht = hautTex(ctx);
@@ -324,12 +326,15 @@ function rendereTiefe(ctx, ein, t) {
 
 // ---- Monochrom
 function monoKern(ctx, ein, s, st) {
-  const filter = s.params?.fein?.filter ?? s.params?.filter ?? 20, w = monoGewichte(filter), tn = klemme((s.params?.fein?.toenung ?? 0) / 100, -1, 1);
+  // Verrauschtes Foto: Mischer bis zur Hälfte Richtung gleiche Anteile (unabhängiges Kanal-Rauschen mittelt sich: √(Σw²) 0,75 → 0,58)
+  const kr = kornRauschen(ctx.analyse), w0 = monoGewichte(s.params?.fein?.filter ?? s.params?.filter ?? 20), w = w0.map((v) => v + 0.5 * (1 - kr) * (1 / 3 - v)),
+    tn = klemme((s.params?.fein?.toenung ?? 0) / 100, -1, 1);
   const ton = tn >= 0 ? [0.035 * tn * 0.55, 0.035 * tn] : [0.035 * tn * 0.6, 0.035 * tn * 1.0];   // warm: Richtung Orange, kühl: Richtung Blau
   const ht = hautTex(ctx);
   const m = ctx.pass(prog(ctx, 'mono'), { w, ton: tn >= 0 ? ton : [-ton[0] * 0.2, ton[1]], umw: klemme(st / 0.5, 0, 1), mitHaut: ht ? 1 : 0 }, { ein, haut: ht || ein });
-  const kf = fein(s, 'kontrast'); const r = LOOK.monochrom.basis.regler;
-  const o = regle(ctx, m, { kontrast: r.kontrast * st * kf, struktur: r.struktur * st * kf, klarheit: r.klarheit * st * kf }, ['ton', 'praesenz'], ein);
+  // Verrauschtes Foto (σ Luma > 0,6 %): Struktur und Klarheit (heben Rauschen direkt) gleiten bis 0 (ab 1,8 %) – Kontrast bleibt
+  const kf = fein(s, 'kontrast'); const r = LOOK.monochrom.basis.regler, rf = 1 - klemme(((ctx.analyse?.rauschen?.sigmaL ?? 0) - 0.006) / 0.012);
+  const o = regle(ctx, m, { kontrast: r.kontrast * st * kf, struktur: r.struktur * st * kf * rf, klarheit: r.klarheit * st * kf * rf }, ['ton', 'praesenz'], ein);
   if (o !== m) ctx.frei(m); return o;
 }
 
@@ -375,6 +380,8 @@ const RAENDER = {
   weich: (s, px) => REGLER_RAND(px) + RAND_BAENDER(px, true) + Math.ceil(0.045 * px),
 };
 const lookSchaerfe = (s) => { const b = LOOK[s.params?.id]?.basis; if (!b?.schaerfe) return 0; return b.schaerfe * stOf(s) * fein(s, 'schaerfe'); };
+/** Körnung bei schon verrauschten Fotos zurücknehmen (σ Luma 0,6 % → 1, ab 1,8 % → 0): Rauschen IST dort schon Korn. */
+export const kornRauschen = (analyse) => 1 - klemme(((analyse?.rauschen?.sigmaL ?? 0) - 0.006) / 0.012);
 const lookEffekte = (s) => { const b = LOOK[s.params?.id]?.basis; const st = stOf(s), id = s.params?.id;
   const korn = id === 'gemalt' || id === 'monochrom' ? (b.korn || 0) * st * fein(s, 'korn') : id === 'kombination' ? 8 * st * 0.6 * fein(s, 'korn') : 0;
   const vignette = id === 'gemalt' ? (b.vignette || 0) * st : id === 'kombination' ? -20 * st * 0.6 : 0;
@@ -389,7 +396,7 @@ export const STUFEN = Object.freeze([
     (ctx, ein, s, m) => maskiere(ctx, ein, KERNE[l.id](ctx, ein, s, stOf(s)), m),
     (s, px) => RAENDER[l.id](s, px), ['haut'])),
   modul('look-schaerfe', STUFE.DETAILS, [ART.LOOK], (s) => lookSchaerfe(s) > 0.01,
-    (ctx, ein, s, m) => maskiere(ctx, ein, rendereSchaerfe(ctx, ein, { staerke: lookSchaerfe(s), fein: 1, mittel: 1, grob: 1, rauschSchwelle: 1.5 }), m), (s, px) => randSchaerfe(px), ['detailkarte', 'haut']),
+    (ctx, ein, s, m) => maskiere(ctx, ein, rendereSchaerfe(ctx, ein, { staerke: lookSchaerfe(s) * (0.3 + 0.7 * kornRauschen(ctx.analyse)), fein: 1, mittel: 1, grob: 1, rauschSchwelle: (ctx.analyse?.rauschen?.sigmaL ?? 0) > 0.015 ? 2.5 : 1.5 }), m), (s, px) => randSchaerfe(px), ['detailkarte', 'haut']),
   modul('schaerfe', STUFE.DETAILS, [ART.SCHAERFE], (s) => (s.params?.staerke ?? 0.6) > 0.001,
     (ctx, ein, s, m) => maskiere(ctx, ein, rendereSchaerfe(ctx, ein, s.params || {}), m), (s, px) => randSchaerfe(px), ['detailkarte', 'haut']),
   modul('look-tiefe', STUFE.EFFEKTE - 1, [ART.LOOK], (s) => { const t = tiefenParams(s); return !!t && t.staerke > 0.01; },
@@ -397,7 +404,7 @@ export const STUFEN = Object.freeze([
   modul('tiefenschaerfe', STUFE.EFFEKTE - 1, [ART.EFFEKTE], (s) => { const t = tiefenParams(s); return !!t && t.staerke > 0.01; },
     (ctx, ein, s, m) => maskiere(ctx, ein, rendereTiefe(ctx, ein, tiefenParams(s)), m), (s, px) => { const t = tiefenParams(s); return t ? Math.ceil(maxCoc(t, px)) + 20 : 0; }, ['tiefe', 'gesichter']),
   modul('look-effekte', STUFE.EFFEKTE, [ART.LOOK], (s) => { const e = lookEffekte(s); return Math.abs(e.vignette) > 0.05 || e.korn > 0.05; },
-    (ctx, ein, s, m) => { const e = lookEffekte(s); return maskiere(ctx, ein, RS.effekte.rendere(ctx, ein, { art: ART.EFFEKTE, params: { vignette: e.vignette, korn: e.korn } }, null), m); }, () => 0),
+    (ctx, ein, s, m) => { const e = lookEffekte(s), kr = kornRauschen(ctx.analyse); return maskiere(ctx, ein, RS.effekte.rendere(ctx, ein, { art: ART.EFFEKTE, params: { vignette: e.vignette, korn: e.korn * kr } }, null), m); }, () => 0),
 ]);
 
 // ================================================================ Schritte

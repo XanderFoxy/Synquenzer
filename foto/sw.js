@@ -1,7 +1,7 @@
 // Bildwerk – Service Worker. App-Schale offline. Modelle NICHT hier (modelle.js / Cache 'bildwerk-modelle-v1').
 // Strategie: Netz zuerst (mit 2,5 s Zeitlimit), sonst Schale aus dem Cache – so kommt eine neue Fassung sofort an
 // und die App startet trotzdem offline. Versionswechsel: SCHALE hochzählen.
-const SCHALE = 'bildwerk-schale-v3';
+const SCHALE = 'bildwerk-schale-v4';
 // KI-Laufzeit (WASM vom CDN, Version in der Adresse = unveränderlich): Cache zuerst – so läuft sie auch offline (modelle.sichereLaufzeit legt sie ab).
 const LAUFZEIT = 'bildwerk-laufzeit-v1';
 const istLaufzeit = (u) => /\/(@mediapipe\/tasks-vision|onnxruntime-web)@\d/.test(u.pathname);
