@@ -6,3 +6,7 @@
   Hinweis: kroom.mjs (Teilauszug) zieht andere Zufallslücken als der ganze Prüfer-Kern – maßgeblich ist kern-pruefer.txt.
 - Prüfer-Kern (vx/voxr1b-p/kern.mjs) ganz: 45/60 → **49/60** (kern-pruefer.txt). Kette 3 min: Median 5,54 s, × 3 = 16,6 s ≤ 20 s.
 - Pflicht: topdefs 26 / 7836 / 0 doppelt / 0 Syntax; dupkeys 0; „MS 2000“ 1×; „^  live: true,“ 1×; VERSION 4.70.0; smoke errors [].
+- Entwickler-Test (voxr1-test.mjs, Kopie im Paket) → 76/83, dieselben 7 Fehler wie voxr1b (Plopps ×2, Klicks A ×2, Klicks B, Raumton ×2);
+  Long Task während Worker-Rechnung [], Lücke 19 ms. voxr1b/voxr1-test.json wiederhergestellt (der Test schreibt neben sich).
+- Prüfer-App (vx/voxr1b-p/app.mjs) → 12/14 wie vorher: Anwenden größter Long Task 209 → 98 ms (vr1Q16 nicht mehr in der Liste),
+  übrige 52–75 ms; Prüfen 54/64 → 60 ms. Rest liegt in tkPlayBuf/g4Call/Welle außerhalb des Blocks.
