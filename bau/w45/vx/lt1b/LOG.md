@@ -5,3 +5,6 @@
 - 23:23 Last 2.07, 0.90, 1.52 · b2–b7 alle gleich=true (t/ab-b2b7.out); jetzt b1 (Grenze) + imp2-node
 - 23:24 Last 2.90, 1.38, 1.65 · b1 gleich=true; imp2-node ALLE OK; Start: ab.mjs a1–a14 (Gleichheit) ∥ imp1-test (Kopie t/imp)
 - 23:25 Last 5.98, 2.43, 1.99 · Pflicht: topdefs doppelt 0/Syntax 0, dupkeys 0, smoke errors [], MS 2000 1×, live:true 1×, VERSION 4.75.0
+- 23:31 Last 3.52, 3.98, 2.99 · ab a1–a14: 28/28 gleich; imp1-test ALLE OK (145 s)
+- 23:31 Last 3.08, 3.86, 2.97 · lt1-test ONLY=c REPS=3 (Kopie t/)
+- 23:32 Last 5.53, 4.31, 3.20 · lt1-test c: Ergebnis gleich true (beide Größen); jetzt lt1-imp-ab s10 (926x428 REPS=2 STOP=1) ∥ Prüfer-mem.mjs
