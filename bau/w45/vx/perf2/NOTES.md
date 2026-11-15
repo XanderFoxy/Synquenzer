@@ -38,13 +38,13 @@ auch für die Auslieferung** (keine angepasste Prüfung nötig). Größen-Nachte
 ## Messung (Quelle → Auslieferung)
 | Teil | roh | gzip -6 | brotli 5 | brotli 11 |
 |---|---:|---:|---:|---:|
-| ganze Datei | 9 178 098 → **6 779 318** (−26,1 %) | 3 054 966 → **2 315 508** (−739 KB, −24,2 %) | 2 632 523 → 2 024 511 (−23,1 %) | 2 230 763 → 1 740 761 (−22,0 %) |
+| ganze Datei | 9 178 098 → **6 779 318** (−26,1 %) | 3 042 282 → **2 298 440** (−744 KB, −24,4 %; berichtigt auf `gzip -6`, vorher anderer Kompressor 3 054 966 → 2 315 508) | 2 632 523 → 2 024 511 (−23,1 %) | 2 230 763 → 1 740 761 (−22,0 %) |
 | Haupt-Skript | 6 869 891 → 4 742 347 | 2 313 251 → 1 667 966 (−27,9 %) | 1 970 999 → 1 437 801 | 1 674 999 → 1 237 217 |
 | kleine Skripte (23) | 614 357 → 389 257 | 209 329 → 140 137 | 196 256 → 132 721 | 174 950 → 120 620 |
 | CSS | 436 156 → 390 020 | 97 852 → 72 430 | 92 157 → 69 405 | 78 779 → 58 725 |
 | Worklet-Texte (9, unberührt) | 1 246 223 | 430 619 | 390 606 | 346 978 |
 
-Bei der angenommenen gzip-Auslieferung der Online-Seite: **−0,74 MB je Fassung** (bei 5 Mbit/s ≈ −1,2 s, bei 20 Mbit/s ≈ −0,3 s);
+Bei der angenommenen gzip-Auslieferung der Online-Seite: **−0,74 MB je Fassung** (alle gzip-Zahlen ab hier `gzip -6`) (bei 5 Mbit/s ≈ −1,2 s, bei 20 Mbit/s ≈ −0,3 s);
 zusammen mit PERF1A (Fassung nur einmal laden) ≈ 2,3 statt 2 × 3,05 MB je Update.
 
 Start, Chromium 428×926 ×3, **CPU 4×**, Median aus 3 (je Lauf abwechselnd Quelle/Auslieferung, Rechner geteilt), `mess/r/`:
@@ -164,7 +164,7 @@ Kein Zugriff über `window['spk…']`, HTML-Attribute oder Text; topdefs (Haupt)
 ## Messung (Chromium 428×926, 4×, Median aus 3, je Lauf abwechselnd, `e/r/`)
 | ms ab Navigation | basis | index | Δ |
 |---|---:|---:|---:|
-| **bereit** | 2 912 [2 705–3 033] | **2 657** [2 569–2 741] | **−255 (−9 %)** |
+| **bereit** | 2 912 [2 705–3 033] | **2 657** [2 569–2 741] | −255 (−9 %) aus nur 3 Paaren – **nicht reproduzierbar, berichtigt: ≈ −3 %** (Prüfung: 12 Paare, Median −127 / Mittel −85 ms; siehe PERF2 F) |
 | HTML gelesen (domInteractive) | 2 382 | 2 214 | −168 |
 | DOMContentLoaded | 2 630 | 2 422 | −208 |
 | **längste Aufgabe bis bereit** | 1 286 | **968** | **−318** |
@@ -190,7 +190,8 @@ Größe: roh +2 996 B, gzip +0,9 KB (Kommentar-Zeilen und Block-Rahmen).
 | ki1 (spk5-Fassung) | 16 OK, dieselben 3 FEHL (besser-als-klassisch-demo, gesang-…, guide-eintrag) mit denselben Werten | gleich |
 | vx1 / imp1 | 61/61 / ALLE OK | gleich |
 | spk5p | 6 OK, 0 FEHL | gleich |
-| **nicht mehr gelaufen** (Zeitgrenze) | spk7, spk12b, spk12c, spk12d, spk6p, spk4 – `e/reg.sh` enthält sie, Aufruf `e/reg.sh` | – |
+| spk7 | ALLES OK (13) – lief doch (`e/reg/reg.log` 10:41:41; Bericht nannte ihn fälschlich „nicht gelaufen“) | – |
+| nicht mehr gelaufen (Zeitgrenze), in der Prüfung nachgeholt | spk12b 72/0, spk12c 47/0, spk12d 28/0, spk6p ALLES OK, spk4 3/23 (dieselben wie r4700) – `pr/reg/reg.log` | – |
 
 ## Offen / Folgen
 1. **Auslieferung (Teil D):** `ausliefern.mjs` lässt text/plain unberührt → die SPK-Kommentare bleiben in der Auslieferung:

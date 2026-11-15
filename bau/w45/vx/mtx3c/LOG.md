@@ -5,3 +5,10 @@
 - 10:02 Lauf 2 (74e6ad79): mtx3c 26/26 · beg1 57/59, beg1 auf basis 58/59 (Prüfung 5 auch in der Basis rot = 5/4-Stil seit GEN4; neu rot: Diff-Prüfung des BEG1-Pakets zählt die MTX3C-Zeilen). Befund: Band nahm nach dem Aufteilen Ersatz-Pads (used ohne HH/SNARE) → Haken mtx3cBegUsed (15 Haken). Lauf 2 abgebrochen, Lauf 3 auf der Endfassung
 - 10:13 Lauf 3 Endfassung 97c7758e: mtx3c 27/27 · mtx3b 87/87 · mtx3 51/51 · mtx3p 21/21 · smoke [] · beg1 55/59 (Last 8–9, 2 Zeitprüfungen) → beg1 Wiederholung läuft; NOTES
 - 10:18 beg1 Wiederholung Endfassung 97c7758e: 57/59 (nur Prüfung 5 = auch Basis rot, Herkunftsprüfung BEG1-Paket). FERTIG md5 97c7758e
+- 11:20 Nachbesserung nach PRUEFUNG.md (Befunde 1 + 2; 3 = bekannt, kein Fehler). Vorfassung gesichert: index.v1.html (97c7758e), block.v1.js.
+- 11:24 Block geändert (nur im MTX3C-Block, Haken unverändert 15): `mtx3cMelC` ruft beim Zusammenlegen in der Melodie-Spur `markDirty()`
+  (Take-Noten einer Song-Aufnahme wie melCommit nur UI.dirty.song); `mtx3cBegSched` schneidet am Band-Ende wie DRUMS (`run.tEnd`, `run.cutE`).
+  Neu gebaut (ins.cjs) → 2bb7fe29. Pflicht: topdefs 26/0/0 · dupkeys 0 · MS 2000 1× · live 1× · VERSION 4.70.0 · diff 0 `<`, 203 `>`.
+- 11:25 mtx3c-fix.mjs (neu, 5 Prüfungen): Endfassung 5/5, Vorfassung 97c7758e 3/5 (genau die zwei Befunde rot).
+- 11:26–11:35 Regression nacheinander (reg/run4.sh): mtx3c-fix 5/5 · mtx3c 27/27 · beg1 57/59 (dieselben zwei wie immer) · mtx3b 87/87 · smoke errors [].
+  FERTIG md5 2bb7fe29

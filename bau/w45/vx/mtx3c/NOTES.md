@@ -85,3 +85,19 @@ speichert Schläge. ECO-Schild bei Einzelspuren weg.
 - Drum-Ziel der Band mitten im Lauf von „aus“ auf DRUMS: im schon geplanten Fenster (Vorlauf) kann der Clip von HH ZU noch einmal klingen.
 - Aus MTX3b weiter offen: Schritt-Editor der Einzelspur ohne FOLGEN/PL1-Locks/D1-Länge-Werkzeuge (Funk-Vorschlag), MIDI-Export wie MTX3,
   mehr als 2 Einzelspuren nur mit mehr Spur-Plätzen (MAX_T 8).
+
+## Nachbesserung nach der Prüfung (15.11.2026, Endfassung 2bb7fe29)
+Befunde aus PRUEFUNG.md, alles nur im MTX3C-Block (Haken-Zeilen unverändert, 15; diff zur Basis 0 `<`, 203 `>`):
+1. **`mtx3cMelC` ohne `markDirty()`** – behoben: legt ein Doppelgriff in der Melodie-Spur (`curMel`) zwei Tasten zu einem Schlag zusammen
+   (der lautere bleibt), wird das Projekt wie in `melCommit` mit `markDirty()` als geändert markiert (Sichern-Hinweis/Autosave).
+   Take-Noten einer Song-Aufnahme (`o.sr`) bleiben wie in `melCommit` bei `UI.dirty.song` (die Aufnahme markiert beim Ende).
+2. **`mtx3cBegSched` ohne Schnitt am Band-Ende** – behoben: dieselbe Zeile wie DRUMS (`run.tEnd`, `run.cutE`, `cutTrackAt` einmal je Spur),
+   die Fenster (vor t0 / nach tEnd) bleiben wie vorher.
+3. beg1-Herkunftsprüfung zählt die MTX3C-Zeilen – bekannt, kein Fehler (unverändert).
+
+Messung `mtx3c-fix.mjs` (Seite, 428×926): Doppelgriff Melodie-Spur → 1 Schlag, v 0,9, markDirty 1× · Doppelgriff Take-Noten → v 0,7,
+markDirty 0× · einzelne Taste → Haken false (melCommit legt ab) · Band-Ende → genau ein Schnitt bei tEnd (Spur 6, 4,2857 s), Fenster
+[2,4] / null / [8,9] / [9,10] · Konsole leer. **Endfassung 5/5, Vorfassung 97c7758e 3/5** (die zwei Befunde).
+Regression nacheinander (reg/run4.sh, Last ≤ 2,2): mtx3c-fix 5/5 · mtx3c 27/27 · beg1 57/59 (Prüfung 5 = auch Basis rot; Herkunftsprüfung
+BEG1-Paket) · mtx3b 87/87 · smoke errors []. Pflicht: topdefs 26 / 0 doppelt / 0 Syntax · dupkeys 0 · „MS 2000“ 1× · „^  live: true,“ 1× ·
+VERSION 4.70.0. Sichtbar ändert sich nichts.

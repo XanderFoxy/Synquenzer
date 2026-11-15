@@ -141,3 +141,4 @@ Weiter mit: 4.54 = rel-4540/k fertig prüfen + INT53D nachziehen + Versionszeile
 - Commit 6f5e074b, In-App v27. Nächstes: wqzj6jm57 (VOXR1B, PERF2, MTX3C+SPKFIX, Bildwerk 0.3) auf R-4710 mergen → 4.72.
 
 - 11:01 Check-in: Bildwerk 0.3.0 online (main 2e95dadc). VOXR1B fertig (76/83), MTX3C fertig (27/27, md5 97c7758e), SPKFIX Regression Spur B läuft, PERF2 Offen Nr. 1 (+52 KB gzip). Krypto ok, wip-loop läuft. Trigger 11:43.
+- 11:34 Xander-Wunsch: erkannte Ebenen/Noten im Spektrum ausblenden (Fokus auf Rest). Anleitung: nur Stumm/Solo-Ebenen unsichtbar + 'nur aktive Ebene färben', keine Noten-Ausblendung. Workflow w7r3fd5vw (FOKUS1, vx/fokus1, Basis rel-4710) gestartet → in 4.72.
