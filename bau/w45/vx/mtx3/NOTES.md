@@ -50,3 +50,39 @@ HH-Pegel 0 → −35 dB (eigener Kanal wirkt).
 - Pads mit Quelle North (ND4) spielen auf der Einzelspur ihre Drum-Stimme; eigene Clips des Songs (song.own) werden nicht aufgeteilt.
 - Akzent-Stärke der Einzelspur folgt dem DRUMS-Kit (drumHit liest drumKit().accent).
 - Mehr als 2 Einzelspuren geht erst mit mehr Spur-Plätzen (MAX_T 8).
+
+## Prüfung MTX3-P (Behebung der Prüfer-Befunde, 15.11.)
+Block neu (gleicher Marker, `block.js` = Block), außerhalb des Blocks jetzt 26 Haken-/Änderungszeilen (vorher 7), alle mit `typeof`-Schutz:
+neue Einzeiler in ueBuild, undo, redo, spawnVoice, syncEngine, openEditor, jam2Groups, gr2Role, snd1Roles; Inline-Zusätze in gen4Roles,
+svShort, midiCh, Programmwechsel (assembleMidi), int54MidiClips (2), va1MidiSong (3), va1MidiClip.
+
+| Befund | Entscheidung |
+|---|---|
+| S1 | Neue Spur bekommt die ganze Song-Zeile der Quelle: Einträge mit Szene s (mit re/ph) bleiben, jeder Wechsel (andere Szene, eigener Clip) wird Stopp. Teile: `{s}` → `{s}`, andere Szene → aus, „bleibt“ bleibt (der alte Vergleich `slots[t] === s` traf nie). |
+| S2 | ueBuild-Haken: alle Fenster von DRUMS („ersetzt“, FX1-Pad-Fenster, Stopp-Listen) gelten auch für jede Einzelspur; nach Aufteilen/Zusammenführen/↶ wird neu gebaut. Gilt damit auch für MIDI (fllMidiMutes). |
+| S3 | Pads mit Quelle MD_NAME werden nicht aufgeteilt (Knopf im Blatt grau mit „MD_NAME · bleibt“, Hinweiszeile; Kit nur aus solchen Pads → Grund statt Aufteilen). Wird ein Pad erst später umgestellt, spielt sein Schlag über DRUMS (richtiger Klang). |
+| S4 | Ziel ohne Clip: Matrix startet das Ziel mit der Quelle (wenn es schweigt), Song-Zeile bekommt Start/Stopp genau dort, wo die Quelle die Szene spielt und das Ziel schweigt (sonst Hinweis „spielt dort schon einen anderen Clip“), Teile ebenso. Alles im selben ↶. |
+| M1 | Aufteilen/Zusammenführen sind jetzt ↶-Gruppen (Spuren + Reihenfolge + Song + Teile + DRUMS-Clips) statt ganzer Stand → kein applyProject, die Wiedergabe läuft weiter; nach ↶/↷ spielen wiederhergestellte Spuren sofort mit (undo/redo-Haken). Bedienung unverändert. |
+| M2 | [Auslagern ▾] rückt mit gewählten Noten direkt hinter die Auswahl-Anzeige („3 Noten · Auslagern ▾ · ▲ Stufe …“), ohne Auswahl steht er wie bisher hinten; ist die Leiste gewischt, bleibt sie stehen. „Wo finde ich …?“ öffnet den Noten-Editor und zeigt den Knopf. Sichtbar anders nur mit Auswahl – im Funk zur Bestätigung vorschlagen (Alternative: fest vorn). |
+| M3 (Teil) | Pad-Werte folgen DRUMS live (Kit-Wechsel, Pad-Editor von DRUMS, Song-Regler) → der Drum-Ton ist über DRUMS änderbar; Tastatur auf der Einzelspur spielt den Drum-Ton; Klang-Editor der Einzelspur sagt einmal, woher der Ton kommt, mit [Pad öffnen]. Drum-Schritt-Editor für Einzelspuren = Funk-Vorschlag (sichtbar anders). |
+| M4 | Knopf im Spur-Blatt bleibt tippbar (blass) und sagt den Grund; Blatt nennt die Grenze (höchstens 8 Spuren, übrige Töne bleiben auf DRUMS). |
+| M5 | Busse je Kontext gemerkt (kein Neubau nach Offline-Render), alte Busse werden abgebaut (1,5 s Nachklang); aktive Einzelspur ohne Synth-Engine; Bus zieht DRUMS-Kit (Raum-IR, Gate, Pegel, Pad-Streifen) beim nächsten Schlag nach. Planer-Kosten je Einzelspur bleiben (eigener Kanal). |
+| M6 | mxRole 'drums' beim Aufteilen; Perform-Gruppen zählen Einzelspuren zu DRUMS; GEN4 bietet nur „aus“, GR2/SND1 lassen Einzelspuren in Ruhe. |
+| M7 | MIDI: Kanal 10, kein Programmwechsel, keine Träger-/Rückungs-Verschiebung der Drum-Noten. |
+| L1 / L2 | Hinweiszeilen: Drive/Kompressor von DRUMS wirken danach je Spur; Mono-Klang verliert beim Auslagern das gemeinsame Legato. |
+| L3 | über den undo/redo-Haken behoben. |
+| L4 | Zusammenführen legt je Pad und Stelle nur einen Schlag (Locks ohne Doppel). |
+| L6 | Song-Ansicht: Spurname (HH ZU) statt SYN n. Umblättern quer nicht geändert (offen). |
+
+### Funk-Vorschläge (sichtbar anders, nicht gebaut)
+1. Einzelspur im Noten-Editor als Drum-Editor (Schritte, Chance, Wirbel, Akzent, Locks, Pad-Namen) statt Klavierrolle; „▲ Stufe/+12“ dort aus.
+2. [Auslagern ▾] dauerhaft vorn in der Aktionsleiste statt nur mit Auswahl.
+3. Im Drum-Editor „gewählte Schritte → eigene Spur“ (L7).
+
+### Offen
+- L5: im Synth-Modus gehen beim Laden die Drum-Felder (Wirbel …) verloren (normClip 'synth').
+- L6 quer: neue Einzelspuren liegen auf Spur-Seite 2, es wird nicht umgeblättert.
+- L7 (s. Vorschlag 3).
+- Remix (GR2/GEN4) erzeugt auf DRUMS wieder alle Pads → mit Einzelspuren doppelte HH; Vorschlag: vor dem Remix zusammenführen oder Remix verteilt.
+- Aufnahme über die Tastatur auf einer Einzelspur speichert die Tonhöhe der Taste (nicht die Pad-Note).
+- Klang-Editor einer aktiven Einzelspur zeigt „ECO“ (keine Engine) – nur Anzeige.
