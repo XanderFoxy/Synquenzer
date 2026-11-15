@@ -3,3 +3,4 @@
 - 23:45 Block + 7 Haken eingebaut, Last: 0.24 1.26 2.09
 - 23:47 Testlauf 428, Last: 2.07 1.39 2.00
 - 23:51 Kurven-Ausschnitt (cvSlice) + Lauf-Versatz o wie Zuschneiden; Toast quer auf TAKT-Anzeige; Last: 5.38 4.62 3.26
+- 23:57 Raster quer höchstens 8 je Zeile (Drum-Blatt ist breit); Lauf-Kette neu, Last: 3.61 3.92 3.35

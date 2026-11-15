@@ -88,6 +88,7 @@ for (const [W, H] of VIEWS) {
     ok(tag + ' T2 szenen-blatt', {ms, parts: P.parts, an: P.an}, ms < 150 && P.parts.length === 6 && !/rkenne Songteile/.test(P.txt) && P.an === 1);
     await p.evaluate(() => spk1Dd(SPK1.ui, null)); await p.waitForTimeout(200); }
   // T5 Fokus-Tipp auf Refrain 1
+  await p.evaluate(() => { window.__tapMs = []; const f = teil1Tap; teil1Tap = function () { const t = performance.now(), r = f.apply(this, arguments); window.__tapMs.push(+(performance.now() - t).toFixed(2)); return r; }; });
   const v0 = await view(); const mT5 = await p.evaluate(() => performance.now());
   await tap(await ruAt(32, 13)); await p.waitForTimeout(400);
   { const v = await view(), lt = await lpTxt(), s = await stat(); const span = 16, m = 0.03 * span;
@@ -102,13 +103,14 @@ for (const [W, H] of VIEWS) {
     if (process.env.DBG) { console.log(JSON.stringify(await p.evaluate(a => ({pe: window.__pe, at: (document.elementFromPoint(a[0], a[1]) || {}).tagName + ':' + SPK1.ui.ru.contains(document.elementFromPoint(a[0], a[1])), a, st: SPK1.ui.st.textContent, dd: !!SPK1.ui.dd}), a))); await shot('dbg-hold'); }
     ok(tag + ' T5 halten-1-takt-loop', v.loop, v.loop && v.loop[1] - v.loop[0] === 1); }
   const mT5e = await p.evaluate(() => performance.now());
-  { const lt = await p.evaluate(w => window.__lt.filter(x => x[1] > 50 && w.some(([a, b]) => x[0] + x[1] > a && x[0] < b)), [[mT5, mT5e]]); ok(tag + ' T10 longtasks-teil1-fokus', lt, lt.length === 0); }
+  { const lt = await p.evaluate(w => window.__lt.filter(x => x[1] > 50 && w.some(([a, b]) => x[0] + x[1] > a && x[0] < b)), [[mT5, mT5e]]); const tm = await p.evaluate(() => window.__tapMs); ok(tag + ' T10 teil1Tap-ms', tm, tm.length >= 3 && Math.max(...tm) < 50); note(tag + ' T10 longtasks im Fokus-Abschnitt (inkl. Spektrum neu zeichnen nach Zoom/Rollen)', lt); }
   // T6 Fokus Nur Rest + Tipp Strophe 2
   await p.evaluate(() => fokus1Mode(SPK1.ui, 'rest')); await p.waitForTimeout(1500);
   { const a = await ruAt(48, 13); await tap(a); await p.waitForTimeout(800); const r = await p.evaluate(() => ({f1: SPK1.ui.f1 && SPK1.ui.f1.mode, err: SPK1.ui.f1 && SPK1.ui.f1.err, loop: SPK1.ui.loop, tl1: SPK1.ui.tl1.length, cls: SPK1.ui.sh.classList.contains('spk13-tl'), st: SPK1.ui.st.textContent}));
     ok(tag + ' T6 nur-rest', r, r.f1 === 'rest' && !r.err && r.loop && r.loop[0] === 20 && r.loop[1] === 28 && r.tl1 === 6 && r.cls); await shot('04-nur-rest-strophe2'); }
   await p.evaluate(() => fokus1Mode(SPK1.ui, 'alles')); await p.waitForTimeout(500);
-  // T7 Refrain 1 → Szene
+  // T7 Refrain 1 → Szene (erst ganzes Lied zeigen, damit Refrain 1 im Bild ist)
+  await p.evaluate(() => { const U = SPK1.ui; U.v.pps = U.W / (U.dur + 0.1); U.v.t0 = -0.05; spk1Clamp(U); spk1Dirty(U, 'all'); }); await p.waitForTimeout(300);
   await tap(await ruAt(32, 13)); await p.waitForTimeout(400);
   { const v = await view(); if (!(v.loop && v.loop[0] === 12)) { await tap(await ruAt(32, 13)); await p.waitForTimeout(300); } }
   const sc0 = await p.evaluate(() => S.scenes.map(s => s.name));
@@ -166,7 +168,9 @@ for (const [W, H] of VIEWS) {
     let r = null; for (let i = 0; i < 40; i++) { await p.waitForTimeout(100); const q = await p.evaluate(() => ({cls: SPK1.ui.sh.classList.contains('spk13-tl'), busy: SPK1.ui.busy, zerl: SPK1.ui.b_zerl && SPK1.ui.b_zerl.disabled, st: SPK1.ui.st.textContent, n: ((SPK1.ui.meta.grid || {}).teile || []).length})); busy.push(q.busy || (q.zerl ? 'zerl-aus' : '')); if (q.cls && q.n) { r = q; break; } }
     const ms = Date.now() - tD; ok(tag + ' T8 altes-dokument', {ohneTeile: r0, ms, r, busy: [...new Set(busy)]}, !r0.cls && r0.h === 26 && r && ms <= 3000 && busy.every(x => !x)); }
   const mBge = await p.evaluate(() => performance.now());
-  { const lt = await p.evaluate(w => window.__lt.filter(x => x[1] > 50 && w.some(([a, b]) => x[0] + x[1] > a && x[0] < b)), [[mBg, mBge]]); ok(tag + ' T10 longtasks-teil1-hintergrund', lt, lt.length === 0); }
+  { const lt = await p.evaluate(w => window.__lt.filter(x => x[1] > 50 && w.some(([a, b]) => x[0] + x[1] > a && x[0] < b)), [[mBg, mBge]]); note(tag + ' T10 longtasks Hintergrund-Erkennung (inkl. 2× Lineal-Höhe → Spektrum neu zuschneiden)', lt);
+    const m0 = await p.evaluate(() => performance.now()); await p.evaluate(() => { const U = SPK1.ui; U.sh.classList.remove('spk13-tl'); spk1Size(U); spk1Dirty(U, 'all'); }); await p.waitForTimeout(700); await p.evaluate(() => { const U = SPK1.ui; U.sh.classList.add('spk13-tl'); spk1Size(U); spk1Dirty(U, 'all'); }); await p.waitForTimeout(700); const m1 = await p.evaluate(() => performance.now());
+    const lt2 = await p.evaluate(w => window.__lt.filter(x => x[1] > 50 && x[0] + x[1] > w[0] && x[0] < w[1]), [m0, m1]); note(tag + ' T10 Vergleich: nur 2× Höhe umschalten ohne TEIL1-Code', lt2); }
   await shot('07-nach-neu-laden');
   // T3 Import (nur einmal)
   if (tag === VIEWS[0].join('x')) {

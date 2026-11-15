@@ -116,8 +116,8 @@ for (const [W, H] of VIEWS) {
   await tap(await at(() => EL.drumSheet.querySelector('.mtx3bdb')));
   await tap(await at(() => [...UI.pop.el.querySelectorAll('button')].find(x => /Nur diese Schritte/.test(x.textContent))));
   for (const lab of ['1', '4', '5', '8']) await tap(await at(l => [...UI.pop.el.querySelectorAll('.mtx3b-st .mbtn')].find(x => x.textContent.trim() === l), lab));
-  const D8a = await p.evaluate(() => { const P = UI.pop.el, bs = [...P.querySelectorAll('[data-m3b="clip"]')]; return {sub: [...P.querySelectorAll('.clip1-sec .mtx3-sub')].map(x => x.textContent), n: bs.length, minW: Math.min(...bs.map(x => x.getBoundingClientRect().width)), minH: Math.min(...bs.map(x => x.getBoundingClientRect().height)), on: [...P.querySelectorAll('.mtx3b-st .mbtn.on')].map(x => x.textContent.trim())}; });
-  ok(T('C8 Drum-Blatt: Abschnitt „Als neuer Clip · DRUMS“, Knöpfe = freie Szenen, ≥ 44 px'), D8a.sub.some(x => x.toUpperCase() === 'ALS NEUER CLIP · DRUMS') && D8a.n === d0.free.length && D8a.minW >= 44 && D8a.minH >= 44 && D8a.on.join() === '2,3,6,7', D8a);
+  const D8a = await p.evaluate(() => { const P = UI.pop.el, bs = [...P.querySelectorAll('[data-m3b="clip"]')]; return {sub: [...P.querySelectorAll('.clip1-sec .mtx3-sub')].map(x => x.textContent), n: bs.length, minW: Math.min(...bs.map(x => x.getBoundingClientRect().width)), minH: Math.min(...bs.map(x => x.getBoundingClientRect().height)), jeZeile: bs.length ? bs.filter(x => Math.round(x.getBoundingClientRect().top) === Math.round(bs[0].getBoundingClientRect().top)).length : 0, on: [...P.querySelectorAll('.mtx3b-st .mbtn.on')].map(x => x.textContent.trim())}; });
+  ok(T('C8 Drum-Blatt: Abschnitt „Als neuer Clip · DRUMS“, Knöpfe = freie Szenen, ≥ 44 px'), D8a.sub.some(x => x.toUpperCase() === 'ALS NEUER CLIP · DRUMS') && D8a.n === d0.free.length && D8a.minW >= 44 && D8a.minH >= 44 && D8a.jeZeile <= (W < H ? 4 : 8) && D8a.on.join() === '2,3,6,7', D8a);
   await at(() => UI.pop.el.querySelector('[data-m3b="clip"]'));
   await shot('c6-drum-blatt-als-neuer-clip');
   const x8 = d0.free[0];

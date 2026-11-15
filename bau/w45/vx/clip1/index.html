@@ -42922,7 +42922,7 @@ function hintSideSync() {
   if (off !== h.classList.contains('hoff')) h.classList.toggle('hoff', off);
 }
 function toastHome() {
-  if (typeof clip1ToastHome === 'function') { const h = clip1ToastHome(); if (h) return h; }   /* CLIP1: im Noten-Editor auf dem Titel */
+  if (typeof clip1ToastHome === 'function') { const h = clip1ToastHome(); if (h) return h; }   /* CLIP1: im Noten-Editor auf dem Titel (quer: TAKT-Anzeige) */
   // G-S7-merge-fix: the marks editor (VS5) lies over the carrier row – an action toast docks on its title in the head,
   // 10 px clear of [Text] [A/B] [✕], so no tap meant for an editor tool ever lands on [Rückgängig] / [↷ Wiederholen]
   if (EL.wpSheet && EL.wpSheet.classList.contains('open')) { const q = EL.wpSheet.querySelector('.qh'); if (vis(q)) return {kind: 'lcd', ref: q, wp: true}; }
@@ -96860,7 +96860,7 @@ const CLIP1 = {n: 0, last: null};
     const s = document.createElement('style'); s.id = 'clip1-css';
     s.textContent =
       '.mtx3s .mtx3-l.clip1-l{grid-template-columns:repeat(4,minmax(44px,1fr))}' +                              // hochkant 4 je Zeile
-      '@media (orientation:landscape){.mtx3s .mtx3-l.clip1-l{grid-template-columns:repeat(auto-fill,minmax(44px,1fr))}}' +   // quer so viele, wie passen (Blatt 392 px: 7)
+      '@media (orientation:landscape){.mtx3s .mtx3-l.clip1-l{grid-template-columns:repeat(auto-fill,minmax(max(44px,calc((100% - 42px) / 8)),1fr))}}' +   // quer höchstens 8 je Zeile, je ≥ 44 px (Blatt 392 px: 7)
       '.mtx3s .mtx3-l.clip1-l .mbtn{min-width:44px;min-height:48px;padding:4px 2px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;overflow:hidden}' +
       '.mtx3s .mtx3-l.clip1-l small{white-space:nowrap}';
     document.head.appendChild(s);
