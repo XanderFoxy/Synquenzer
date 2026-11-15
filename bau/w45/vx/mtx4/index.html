@@ -95305,7 +95305,8 @@ function mtx4Css() {
       '.mtx4b .r button.w{flex:1 1 auto}.mtx4b .r button.on{color:var(--amber);border-color:var(--amber)}.mtx4b .r button.dim{opacity:.45}' +
       '.pop.mtx4p{width:min(340px,calc(100vw - 16px))}' +
       '.mtx4g{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}.mtx4g.q{grid-template-columns:repeat(4,1fr)}' +
-      '.mtx4g .mbtn{height:auto;min-height:44px;min-width:0;padding:4px;width:100%}';
+      '.mtx4g .mbtn{height:auto;min-height:44px;min-width:0;padding:4px;width:100%}' +
+      '@media (orientation:landscape){#clipSheet .cs3 .cgrid .hb.mtx4cs{height:44px;align-self:center}}';   // wie [Werkzeugkasten ▾]
     document.head.appendChild(s);
   } catch (e) {}
 }
@@ -95608,6 +95609,7 @@ function mtx4Quant(grid) {
 /* ---------- Clip-Blatt: [Mehrere wählen] (Haken in openClipSheet) ---------- */
 function mtx4ClipSheet(g, B, t, s, clip) {
   if (!clip || !mtx4Ok(t, s)) return;
+  mtx4Css();
   const b = B('Mehrere wählen', () => { closeClipSheet(); mtx4Start(t, s); }, 'mtx4cs', 'Mehrere Clips wählen und zugleich transponieren, einpassen, quantisieren');
   g.append(b);
 }

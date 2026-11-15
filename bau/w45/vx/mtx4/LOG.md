@@ -2,3 +2,5 @@
 
 - 05:00 Start; basis.html/index.html aus rel-4680 kopiert (d51aae93).
 - 05:11 Block block.js + 3 Haken (scheduleTrack, renderGrid, openClipSheet) eingesetzt.
+- 05:14 mtx4-test.mjs geschrieben, erster Lauf.
+- 05:15 Lauf 1: 55/57 – quer war [Mehrere wählen] 36/34 px hoch (Blatt-Stil quer); wie [Werkzeugkasten ▾] auf 44 px gesetzt.
