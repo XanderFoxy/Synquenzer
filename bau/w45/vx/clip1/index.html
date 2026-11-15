@@ -42880,7 +42880,7 @@ function toast(msg, actions) {
   if (UI.vvOff) return;                                      // VV1: no messages from the offline song pass
   const t = EL.toast; if (!t) return;
   let acts = (Array.isArray(actions) ? actions : actions ? [actions] : []).filter(Boolean).slice(0, 2);
-  if (R.editor === 'roll') acts = [];                    // the clip editor has ↶ ↷ itself: never dock a toast over its tools
+  if (R.editor === 'roll') acts = typeof clip1RollActs === 'function' ? clip1RollActs(acts) : [];   // the clip editor has ↶ ↷ itself: never dock a toast over its tools /* CLIP1: [Öffnen] des neuen Clips bleibt */
   t.textContent = '';
   // the message in unbreakable pieces („2 Takte ·“ „14 Noten ·“ „a-Moll ·“ „1/8“): a band breaks it only between them
   const sep = String(msg).includes(' · ') ? ' · ' : ' ', parts = String(msg).split(sep);
@@ -42922,6 +42922,7 @@ function hintSideSync() {
   if (off !== h.classList.contains('hoff')) h.classList.toggle('hoff', off);
 }
 function toastHome() {
+  if (typeof clip1ToastHome === 'function') { const h = clip1ToastHome(); if (h) return h; }   /* CLIP1: im Noten-Editor auf dem Titel */
   // G-S7-merge-fix: the marks editor (VS5) lies over the carrier row – an action toast docks on its title in the head,
   // 10 px clear of [Text] [A/B] [✕], so no tap meant for an editor tool ever lands on [Rückgängig] / [↷ Wiederholen]
   if (EL.wpSheet && EL.wpSheet.classList.contains('open')) { const q = EL.wpSheet.querySelector('.qh'); if (vis(q)) return {kind: 'lcd', ref: q, wp: true}; }
@@ -96841,6 +96842,135 @@ function mtx3Out(t, s, notes, to, copy, quiet) {
   if (!quiet) { toast(ns.length + (ns.length === 1 ? ' Note' : ' Noten') + (copy ? ' kopiert → ' : ' ausgelagert → ') + String(S.tracks[j].name).toUpperCase() + ' · Szene ' + (s + 1) + (hint.length ? ' (' + hint.join(', ') + ')' : ''), {label: 'Rückgängig', fn: () => undo()}); haptic('pop'); }
   return j;
 }
+/* CLIP1-BEGIN ===================== Auswahl im Clip → neuer Clip in freier Szene (Paket CLIP1, Xander 15.11.: „innerhalb von Clips neue Auswahlen
+   treffen und daraus neue Clips erzeugen“)
+   • Noten-Editor (Synth-Spur) › Noten wählen › [Auslagern ▾] › Abschnitt „Als neuer Clip · <Spur>“ unter „In vorhandene Spur“: je freier Szene
+     derselben Spur ein Knopf „Szene n“ (klein: Länge). Die Auswahl wird dort ein eigener Clip: ab dem Takt der ersten Note, Länge = bis zum Ende der
+     letzten Note auf ganze Takte aufgerundet (1–64, Schläge je Takt der Quelle, auch 3/4), Tonart / Taktart / Raster wie die Quelle. Der Schalter
+     NOTEN Verschieben │ Kopieren gilt auch hier. Ein ↶ (Gruppe: neuer Clip + Quelle). Song und Teile bleiben (neue Szene), es startet nichts.
+     Toast mit [Öffnen]; im Noten-Editor (dort sonst ohne Knöpfe) dockt er auf dem Titel – nie über den Werkzeugen.
+   • Drum-Schritt-Editor › [Auslagern ▾] › Abschnitt „Als neuer Clip · DRUMS“: was oben unter TÖNE / WAS gewählt ist („Ganze Töne“ = alle Schläge
+     dieser Töne in dieser Szene, „Nur diese Schritte“ = die gewählten) wird ein neuer DRUMS-Clip in der freien Szene: Kopie des Clips (Länge,
+     Taktart, Spur-Längen und Locks der Töne) nur mit diesen Schlägen. Immer Kopieren, die Quelle bleibt. Ein ↶.
+   Speichern/Laden: gewöhnlicher Clip, keine neuen Felder. */
+const CLIP1 = {n: 0, last: null};
+(function clip1Css() {
+  try {
+    if (document.getElementById('clip1-css')) return;
+    const s = document.createElement('style'); s.id = 'clip1-css';
+    s.textContent =
+      '.mtx3s .mtx3-l.clip1-l{grid-template-columns:repeat(4,minmax(44px,1fr))}' +                              // hochkant 4 je Zeile
+      '@media (orientation:landscape){.mtx3s .mtx3-l.clip1-l{grid-template-columns:repeat(auto-fill,minmax(44px,1fr))}}' +   // quer so viele, wie passen (Blatt 392 px: 7)
+      '.mtx3s .mtx3-l.clip1-l .mbtn{min-width:44px;min-height:48px;padding:4px 2px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;overflow:hidden}' +
+      '.mtx3s .mtx3-l.clip1-l small{white-space:nowrap}';
+    document.head.appendChild(s);
+  } catch (e) {}
+})();
+const clip1Free = t => { const tr = S.tracks[t], L = []; if (!tr) return L; for (let x = 0; x < NS(); x++) if (!tr.clips[x]) L.push(x); return L; };
+const clip1LenTxt = n => n + (n === 1 ? ' Takt' : ' Takte');
+// Ausschnitt einer Auswahl: ab dem Takt der ersten Note bis zum Ende der letzten, auf ganze Takte aufgerundet
+function clip1Span(c, ns) {
+  const bb = clipBarB(c); let a = Infinity, e = 0;
+  for (const n of ns) { a = Math.min(a, n.t); e = Math.max(e, n.t + n.d); }
+  if (!isFinite(a)) return {bb, b0: 0, len: 1};
+  const b0 = Math.floor(a / bb + 1e-9) * bb;
+  return {bb, b0, len: clamp(Math.ceil((e - b0) / bb - 1e-6), 1, 64)};
+}
+// der Abschnitt im Blatt: je freier Szene der Spur ein Knopf, sonst eine kleine Zeile
+function clip1SecHtml(t, len, attr, alt) {
+  const nm = esc(String(S.tracks[t].name)), fr = clip1Free(t), lt = clip1LenTxt(len);
+  return '<div class="mtx3-sub">Als neuer Clip · ' + nm + '</div>' + (fr.length
+    ? '<div class="mtx3-l clip1-l">' + fr.map(x => `<button class="mbtn rb" ${attr}="clip" data-x="${x}" aria-label="Als neuer Clip in Szene ${x + 1} (${lt})">Szene ${x + 1}<small>${lt}</small></button>`).join('') + '</div>'
+    : '<div class="small mtx3-hint clip1-none">Keine freie Szene auf ' + nm + ' – Szene leeren' + (alt ? ' oder „' + alt + '“' : '') + '</div>');
+}
+// [Öffnen] des neuen Clips: Editor schließen, dann der gewohnte Weg (openRoll)
+const clip1Open = (t, x) => ({label: 'Öffnen', clip1: true, fn: () => { try { if (R.editor === 'roll') closeRoll(); } catch (e) { logErr(e); } openRoll(t, x); }});
+// toast-Haken: im Noten-Editor bleibt nur [Öffnen] des neuen Clips (die übrigen Knöpfe hat der Editor selbst: ↶ ↷)
+const clip1RollActs = acts => acts.filter(a => a && a.clip1);
+// toastHome-Haken: dort dockt der Toast auf dem Titel des Editors („Synth 1 · Szene 1“), nie über den Werkzeugen
+function clip1ToastHome() {
+  if (R.editor !== 'roll' || !UI.toastActs || !EL.rollSheet || !EL.rollSheet.classList.contains('open')) return null;
+  const q = ED.rollHT; return q && q.isConnected && q.offsetWidth > 0 && q.offsetHeight > 0 ? {kind: 'lcd', ref: q, wp: true} : null;
+}
+
+/* ---------- Noten-Editor: Auswahl → neuer Clip derselben Spur ---------- */
+// notes: Noten-Objekte des Clips (Auswahl). x: freie Szene derselben Spur. copy: die Quelle bleibt. Gibt x zurück (sonst -1)
+function mtx3NewClip(t, s, notes, x, copy, quiet) {
+  const no = m => { if (!quiet) { toast(m); haptic('err'); } return -1; };
+  const tr = S.tracks[t], c = tr && tr.clips[s]; if (!c || !mtx3OutSrcOk(t)) return no('Hier geht Auslagern nicht');
+  const ns = (notes || []).filter(n => c.notes.includes(n)); if (!ns.length) return no('Erst Noten auswählen');
+  if (mtx3Busy()) return no('Erst Aufnahme beenden');
+  x = +x; if (!(x >= 0 && x < NS()) || x !== (x | 0) || x === s || tr.clips[x]) return no('Szene ' + ((x | 0) + 1) + ' ist nicht frei');
+  const sp = clip1Span(c, ns), cBefore = cleanClip(c);
+  const nc = mtx3Jc(cleanClip(c)); delete nc.take; delete nc.pre; nc.len = sp.len;
+  nc.notes = ns.map(cleanNote).map(mtx3Jc).map(n => Object.assign(n, {t: Math.max(0, n.t - sp.b0)}));
+  const clip = normClip(nc, 'synth', S.key); if (!clip || clip.notes.length !== ns.length) return no('Neuer Clip ging nicht');
+  tr.clips[x] = clip;
+  const items = [{kind: 'clip', track: t, scene: x, before: null}];
+  if (!copy) { const gone = new Set(ns); c.notes = c.notes.filter(n => !gone.has(n)); items.push({kind: 'clip', track: t, scene: s, before: cBefore}); }
+  undoPush({kind: 'group', label: 'Noten → neuer Clip · Szene ' + (x + 1), items});
+  clipRestored(t, x); clipRestored(t, s);
+  if (ED.roll && ED.rollAt && ED.rollAt.t === t && ED.rollAt.s === s) { try { ED.roll.select([]); ED.roll.refresh(); } catch (e) { logErr(e); } }
+  markDirty(); UI.dirty.grid = true;
+  CLIP1.n++; MTX3.last = CLIP1.last = {op: 'clip', from: t, s, x, n: ns.length, len: sp.len, b0: sp.b0, copy: !!copy};
+  if (!quiet) { toast(ns.length + (ns.length === 1 ? ' Note' : ' Noten') + ' → neuer Clip · ' + String(tr.name).toUpperCase() + ' · Szene ' + (x + 1) + ' · ' + clip1LenTxt(sp.len), clip1Open(t, x)); haptic('pop'); }
+  return x;
+}
+// mtx3OutSheet-Haken: der Abschnitt unter „In vorhandene Spur“ (ohne andere Spuren: unter „In neue Spur darunter“)
+function clip1OutSec(p, t, s, ns) {
+  const c = S.tracks[t] && S.tracks[t].clips[s], sel = (ns || []).filter(n => c && c.notes.includes(n)); if (!p || !sel.length) return;
+  const box = el('div', 'clip1-sec', clip1SecHtml(t, clip1Span(c, sel).len, 'data-m3', 'In neue Spur darunter'));
+  const at = p.querySelector('.mtx3-l') || p.querySelector('.mtx3-main'); if (at) at.after(box); else p.appendChild(box);
+}
+// mtx3OutSheet-Haken im Tipp: „Szene n“ → mtx3NewClip (die Auswahl, wie sie jetzt im Editor steht)
+function clip1OutTap(b, t, s, ns) {
+  if (!b || b.dataset.m3 !== 'clip') return false;
+  const sel = ED.roll ? ED.roll.selection : ns; closePop();
+  mtx3NewClip(t, s, sel && sel.length ? sel : ns, +b.dataset.x, mtx3CopyOn());
+  return true;
+}
+
+/* ---------- Drum-Schritt-Editor: Töne / Schritte → neuer DRUMS-Clip ---------- */
+function clip1DrumNew(s, notes, x, quiet) {
+  const no = m => { if (!quiet) { toast(m); haptic('err'); } return -1; };
+  const D = S.tracks[DRUM_T], c = D && D.clips[s]; if (!c) return no('Szene ' + (s + 1) + ' hat auf DRUMS keinen Clip');
+  const ns = (notes || []).filter(n => c.notes.includes(n)); if (!ns.length) return no('Erst Töne oder Schritte wählen');
+  if (mtx3Busy()) return no('Erst Aufnahme beenden');
+  x = +x; if (!(x >= 0 && x < NS()) || x !== (x | 0) || D.clips[x]) return no('Szene ' + ((x | 0) + 1) + ' ist nicht frei');
+  const ids = [...new Set(ns.map(mtx3bPad).filter(Boolean))], gms = new Set(ids.map(id => DRUM_BY_ID[id].gm));
+  const nc = mtx3Jc(cleanClip(c)); delete nc.take; delete nc.pre; nc.notes = ns.map(cleanNote).map(mtx3Jc);
+  if (nc.lanes) { for (const k of Object.keys(nc.lanes)) if (!gms.has(+k)) delete nc.lanes[k]; if (!Object.keys(nc.lanes).length) delete nc.lanes; }   // D1-Spurlängen nur der Töne
+  if (Array.isArray(nc.ln)) { nc.ln = nc.ln.filter(l => !(l && typeof l.p === 'string' && l.p.startsWith('drum.')) || ids.some(id => l.p.startsWith('drum.' + id + '.'))); if (!nc.ln.length) delete nc.ln; }   // Locks nur der Töne
+  const clip = normClip(nc, 'drum', S.key); if (!clip) return no('Neuer Clip ging nicht');
+  D.clips[x] = clip;
+  pushUndo(DRUM_T, x, null, 'Schläge → neuer Clip · Szene ' + (x + 1));
+  clipRestored(DRUM_T, x); markDirty(); UI.dirty.grid = true;
+  CLIP1.n++; MTX3.last = CLIP1.last = {op: 'clip', from: DRUM_T, s, x, n: ns.length, len: clip.len, b0: 0, copy: true, ids};
+  if (!quiet) { toast(ns.length + (ns.length === 1 ? ' Schlag' : ' Schläge') + ' → neuer Clip · DRUMS · Szene ' + (x + 1) + ' · ' + clip1LenTxt(clip.len), clip1Open(DRUM_T, x)); haptic('pop'); }
+  return x;
+}
+// mtx3bOutSheet-Haken: der Abschnitt unter [Auf eigene Spur] (nur mit einem Clip in dieser Szene)
+function clip1DrumSec(p, s, c) {
+  if (!p || !c) return;
+  const box = el('div', 'clip1-sec', clip1SecHtml(DRUM_T, c.len, 'data-m3b', ''));
+  const at = p.querySelector('[data-m3b="go"]'); if (at) at.after(box); else p.appendChild(box);
+}
+// mtx3bOutSheet-Haken im Tipp: was unter TÖNE / WAS gewählt ist
+function clip1DrumTap(b, s, c, sel, mode, pick) {
+  if (!b || b.dataset.m3b !== 'clip') return false;
+  if (!c) return true;
+  const ns = mode === 'steps' ? c.notes.filter(n => pick && pick.has(n)) : c.notes.filter(n => sel && sel.has(mtx3bPad(n)));
+  if (!ns.length) { toast(mode === 'steps' ? 'Erst Schritte wählen' : 'Erst Töne wählen'); haptic('err'); return true; }
+  closePop(); clip1DrumNew(s, ns, +b.dataset.x);
+  return true;
+}
+Object.assign(SYNQUENZER, {clip1: {                /* CLIP1: Test-API */
+  info: () => ({n: CLIP1.n, last: CLIP1.last ? mtx3Jc(CLIP1.last) : null}), free: t => clip1Free(t),
+  span: (t, s, ix) => { const c = S.tracks[t] && S.tracks[t].clips[s]; return c ? clip1Span(c, (ix || []).map(k => c.notes[k]).filter(Boolean)) : null; },
+  newClip: (t, s, ix, x, copy) => { const c = S.tracks[t] && S.tracks[t].clips[s]; return c ? mtx3NewClip(t, s, (ix || []).map(k => c.notes[k]).filter(Boolean), x, !!copy, true) : -1; },
+  drumNew: (s, ix, x) => { const c = S.tracks[DRUM_T].clips[s]; return c ? clip1DrumNew(s, (ix || []).map(k => c.notes[k]).filter(Boolean), x, true) : -1; },
+}});
+/* CLIP1-END */
 function mtx3OutSheet(t, s, anchor) {
   const R0 = ED.roll, ns = R0 ? R0.selection : [];
   if (!ns.length) { toast('Erst Noten auswählen (antippen oder Rahmen ziehen)'); haptic('err'); return false; }
@@ -96852,11 +96982,13 @@ function mtx3OutSheet(t, s, anchor) {
       `<button class="mbtn rb mtx3-main" data-m3="new"${canAddTrack() ? '' : ' disabled'}><b>In neue Spur darunter</b><small>${canAddTrack() ? esc((tr.name + ' · Teil').slice(0, 24)) + ' · gleicher Klang, spielt mit' : 'Höchstens ' + MAX_T + ' Spuren'}</small></button>` +
       (tg.length ? '<div class="mtx3-sub">In vorhandene Spur</div><div class="mtx3-l">' + tg.map(j => `<button class="mbtn rb" data-m3="to" data-j="${j}">${esc(S.tracks[j].name)}<small>${S.tracks[j].clips[s] ? 'Clip dazu' : 'neuer Clip · spielt mit'}</small></button>`).join('') + '</div>' : '') +
       (mtx3Mono(t) ? '<div class="small mtx3-hint">Mono-Klang: auf zwei Spuren spielen die Noten ohne gemeinsames Legato.</div>' : '');
+    if (typeof clip1OutSec === 'function') clip1OutSec(p, t, s, ns);   /* CLIP1: Abschnitt „Als neuer Clip“ */
     const r = el('div', 'mtx-ask'); r.append(el('span', 'lbl', 'Noten'), makeSeg([[false, 'Verschieben'], [true, 'Kopieren']], () => mtx3CopyOn(), v => mtx3CopySet(v)));
     p.appendChild(r); guardTouch(p);
     onTap(p, b => {
       const a = b.dataset.m3; if (a === 'no') { closePop(); return; }
       if (b.disabled) return;
+      if (typeof clip1OutTap === 'function' && clip1OutTap(b, t, s, ns)) return;   /* CLIP1: „Szene n“ → neuer Clip */
       const sel = ED.roll ? ED.roll.selection : ns; closePop();
       mtx3Out(t, s, sel.length ? sel : ns, a === 'new' ? 'new' : +b.dataset.j, mtx3CopyOn());
     }, 'button[data-m3]');
@@ -97383,6 +97515,7 @@ function mtx3bOutSheet(anchor) {
       '<button class="mbtn rb" data-m3b="steps"' + (c ? '' : ' disabled') + '>Nur diese Schritte<small>Szene ' + (s + 1) + (c ? '' : ' · leer') + '</small></button></div>' +
       '<div class="mtx3b-stw"></div><div class="small mtx3-rest"></div>' +
       '<button class="mbtn rb mtx3-main" data-m3b="go"><b>Auf eigene Spur</b><small></small></button>';
+    if (typeof clip1DrumSec === 'function') clip1DrumSec(p, s, c);   /* CLIP1: Abschnitt „Als neuer Clip · DRUMS“ */
     const box = p.querySelector('.mtx3-v'), stw = p.querySelector('.mtx3b-stw'), rest = p.querySelector('.mtx3-rest'), go = p.querySelector('[data-m3b="go"]');
     for (const u of P.used) {
       const j = mtx3bPartOf(u.id), b = el('button', 'mbtn rb', esc(u.sl) + '<small>' + (u.md ? esc(mtx3MdName()) + ' · bleibt' : j >= 0 ? '→ ' + esc(S.tracks[j].name) + ' dazu' : u.n + (u.n === 1 ? ' Schlag' : ' Schläge')) + '</small>');
@@ -97411,6 +97544,7 @@ function mtx3bOutSheet(anchor) {
     };
     paintSteps(); paint(); guardTouch(p);
     onTap(p, b => {
+      if (typeof clip1DrumTap === 'function' && clip1DrumTap(b, s, c, sel, mode, pick)) return;   /* CLIP1: „Szene n“ → neuer DRUMS-Clip */
       if (b.dataset.v) { if (b.disabled) return; const id = b.dataset.v; if (sel.has(id)) sel.delete(id); else sel.add(id); pickAll(); paintSteps(); paint(); popFit(p); return; }
       if (b.dataset.k != null && c) { const n = c.notes[+b.dataset.k]; if (n) { if (pick.has(n)) pick.delete(n); else pick.add(n); } paint(); return; }
       const a = b.dataset.m3b; if (a === 'no') { closePop(); return; }
