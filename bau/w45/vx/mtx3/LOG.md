@@ -9,3 +9,5 @@
 - 02:06 Regression imp1-test ALLE OK (48, 125 s)
 - 02:09 Regression mtx-test 91/92 – die eine FEHLER-Zeile ist der Basis-Vergleich (setzt Basis 4.49.1 voraus), basis.html 4.66.0 gibt dieselbe Zeile
 - 02:11 Regression ux2-test 22 OK/5 FAIL + Abbruch und ux2-test-nie 26 OK/1 FAIL: Zeile für Zeile GLEICH wie basis.html (alte Tests vor MTX-Ablege-Wahl)
+- 02:11 NOTES.md geschrieben; block.js = Block in index.html; außerhalb des Blocks nur die 7 Haken-Zeilen (diff ohne MTX3-Zeilen = Block-Inhalt)
+- 02:11 FERTIG. Pflicht an index.html: topdefs Skripte 26 / doppelt 0 / Syntaxfehler 0 · dupkeys 0 · smoke errors [] (smoke.png) · „MS 2000“ 1× · „^  live: true,“ 1× · VERSION 4.66.0 · Markenwörter je Wort = Basis (neu nur deutsche Wörter: Einzelspur, Auslagern …), keine Marken in Block/Test/NOTES/LOG. Tests: mtx3-test 51/51 (fotos/mtx3-*.png), vx1-test 61/61, imp1-test ALLE OK 48, mtx-test 91/92 (= Basis), ux2-test / ux2-test-nie zeilengleich mit Basis
