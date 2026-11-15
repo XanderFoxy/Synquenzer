@@ -55,6 +55,7 @@ for (const [W, H] of VIEWS) for (const cn of ONLY) for (let rep = 0; rep < REPS;
         const I = C.imp[k], last = k === C.imp.length - 1;
         await p.evaluate(`(async () => { const wait = ms => new Promise(r => setTimeout(r, ms)); const SONG = ${SONG}; const {buf} = SONG({sr: ${I.sr}, bpm: ${I.bpm}, bars: ${I.bars}, t0: 0}); IMP1.known = ${I.bpm};
           await window.__imp1.ui.file(buf, 'lied${k}.wav'); for (let i = 0; i < 900 && !(IMP1.cur && IMP1.cur.st === 'fertig'); i++) await wait(50); })()`);
+        const tf = await p.evaluate(() => performance.now());   // ab „fertig“: Vorbereitung im Leerlauf
         if (I.loop) await p.evaluate(l => window.__imp1.ui.loop(l[0], l[1]), I.loop);
         await p.waitForTimeout(1200);
         const t0 = await p.evaluate(() => performance.now());
@@ -63,6 +64,7 @@ for (const [W, H] of VIEWS) for (const cn of ONLY) for (let rep = 0; rep < REPS;
         await p.waitForTimeout(2000);
         if (last) {
           row.place = r0; row.lt = await p.evaluate(t0 => window.__lt.filter(e => e.t >= t0 && e.d > 50).map(e => Math.round(e.d)), t0);
+          row.ltPre = await p.evaluate(([a, b]) => window.__lt.filter(e => e.t >= a && e.t < b && e.d > 50).map(e => Math.round(e.d)), [tf, t0]);
           row.aud = await p.evaluate(async () => { const w = ms => new Promise(r => setTimeout(r, ms)); for (let i = 0; i < 100 && TK.writes > 0; i++) await w(50);
             const h = a => { let x = 2166136261; for (let i = 0; i < a.length; i++) { x ^= a[i]; x = Math.imul(x, 16777619); } return (x >>> 0).toString(16); };
             const ids = Object.keys(S.takes || {}), out = [];
@@ -79,7 +81,7 @@ for (const [W, H] of VIEWS) for (const cn of ONLY) for (let rep = 0; rep < REPS;
     } catch (e) { row.err = String(e).slice(0, 300); }
     row.errs = errs.slice(0, 4);
     out.push(row);
-    console.log(`${row.view} ${cn} rep${rep} ${row.file.padEnd(5)} aud=${JSON.stringify(row.aud)} place=${JSON.stringify(row.place)} lt=${JSON.stringify(row.lt)} after=${JSON.stringify(row.after)} undo=${JSON.stringify(row.afterUndo)} redo=${JSON.stringify(row.afterRedo)} pre=${row.pre} last=${row.load}` + (row.err ? ' ERR ' + row.err : '') + (errs.length ? ' KONSOLE ' + JSON.stringify(errs) : ''));
+    console.log(`${row.view} ${cn} rep${rep} ${row.file.padEnd(5)} aud=${JSON.stringify(row.aud)} place=${JSON.stringify(row.place)} lt=${JSON.stringify(row.lt)} ltPre=${JSON.stringify(row.ltPre)} after=${JSON.stringify(row.after)} undo=${JSON.stringify(row.afterUndo)} redo=${JSON.stringify(row.afterRedo)} pre=${row.pre} last=${row.load}` + (row.err ? ' ERR ' + row.err : '') + (errs.length ? ' KONSOLE ' + JSON.stringify(errs) : ''));
     await ctx.close();
   }
 }
@@ -89,6 +91,6 @@ for (const [W, H] of VIEWS) for (const cn of ONLY) {
   const v = W + 'x' + H, ri = out.filter(o => o.view === v && o.cn === cn && o.file === 'index'), rb = out.filter(o => o.view === v && o.cn === cn && o.file === 'basis');
   const k = o => JSON.stringify([o.aud && o.aud.t, o.after && o.after.data, o.after && o.after.grid, o.afterUndo && o.afterUndo.data, o.afterUndo && o.afterUndo.grid, o.afterRedo && o.afterRedo.data, o.afterRedo && o.afterRedo.grid]);
   const same = ri.length && rb.length && ri.every(o => k(o) === k(rb[0])) && rb.every(o => k(o) === k(rb[0]));
-  console.log(`${v} ${cn} (${CASES[cn].d}): gleich=${same} hit(index)=${JSON.stringify(ri.map(o => o.aud && o.aud.hit))} skip(index)=${ri.map(o => o.place && o.place.skip)} ms index=${ri.map(o => o.place && o.place.ms)} basis=${rb.map(o => o.place && o.place.ms)} lt index=${JSON.stringify(ri.map(o => o.lt))} basis=${JSON.stringify(rb.map(o => o.lt))} errs=${ri.concat(rb).reduce((s, o) => s + o.errs.length, 0)}`);
+  console.log(`${v} ${cn} (${CASES[cn].d}): gleich=${same} hit(index)=${JSON.stringify(ri.map(o => o.aud && o.aud.hit))} skip(index)=${ri.map(o => o.place && o.place.skip)} ms index=${ri.map(o => o.place && o.place.ms)} basis=${rb.map(o => o.place && o.place.ms)} lt index=${JSON.stringify(ri.map(o => o.lt))} basis=${JSON.stringify(rb.map(o => o.lt))} ltPre index=${JSON.stringify(ri.map(o => o.ltPre))} basis=${JSON.stringify(rb.map(o => o.ltPre))} errs=${ri.concat(rb).reduce((s, o) => s + o.errs.length, 0)}`);
 }
 fs.writeFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), process.env.OUT || 'p-imp.json'), JSON.stringify(out, null, 1));
