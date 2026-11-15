@@ -27571,7 +27571,7 @@ const LOGO_SVG='<svg role="img" aria-label="One Day in Rome" shape-rendering="ge
 
 
 
-const VERSION = '4.74.0';
+const VERSION = '4.75.0';
 const clamp=(v,a,b)=>(v<a?a:v>b?b:v);
 const isNum=v=>typeof v==='number'&&Number.isFinite(v);
 const deep=o=>(o==null?o:JSON.parse(JSON.stringify(o)));
@@ -101495,9 +101495,9 @@ return(RMAP[key]={a,b,fr});
 }
 
 function magPair(re,im,N,m1,m2){
-for(let k=0;k<=N/2;k++){
-const kk=(N-k)%N,zr=re[k],zi=im[k],wr=re[kk],wi=im[kk];
-m1[k]=0.5*Math.hypot(zr+wr,zi-wi);m2[k]=0.5*Math.hypot(zi+wi,wr-zr);
+for(let k=0,H=N/2;k<=H;k++){
+const kk=k?N-k:0,zr=re[k],zi=im[k],wr=re[kk],wi=im[kk],a=zr+wr,b=zi-wi,c=zi+wi,e=wr-zr;
+m1[k]=0.5*Math.sqrt(a*a+b*b);m2[k]=0.5*Math.sqrt(c*c+e*e);
 }
 }
 
@@ -101920,12 +101920,18 @@ return out;
 }
 
 function medLine(src,o,st,n,L,dst,buf){
-const h=L>>1;let c=0;
-const at=i=>i>=0&&i<n?src[o+i*st]:0;
-const ins=v=>{let lo=0,hi=c;while(lo<hi){const m=(lo+hi)>>1;if(buf[m]<v)lo=m+1;else hi=m;}for(let j=c;j>lo;j--)buf[j]=buf[j-1];buf[lo]=v;c++;};
-const rem=v=>{let lo=0,hi=c-1;while(lo<hi){const m=(lo+hi)>>1;if(buf[m]<v)lo=m+1;else hi=m;}for(let j=lo;j<c-1;j++)buf[j]=buf[j+1];c--;};
-for(let i=-h;i<=h;i++)ins(Math.fround(at(i)));
-for(let i=0;i<n;i++){dst[o+i*st]=buf[h];rem(Math.fround(at(i-h)));ins(Math.fround(at(i+h+1)));}
+
+const h=L>>1,W=2*h+1;
+for(let i=-h,c=0;i<=h;i++,c++){const v=Math.fround(i>=0&&i<n?src[o+i*st]:0);let j=c;while(j>0&&buf[j-1]>v){buf[j]=buf[j-1];j--;}buf[j]=v;}
+for(let i=0;i<n;i++){
+dst[o+i*st]=buf[h];
+const ia=i-h,ib=i+h+1,vo=Math.fround(ia>=0&&ia<n?src[o+ia*st]:0),vn=Math.fround(ib>=0&&ib<n?src[o+ib*st]:0);
+if(vo===vn)continue;
+let lo=0,hi=W-1;while(lo<hi){const m=(lo+hi)>>1;if(buf[m]<vo)lo=m+1;else hi=m;}
+let j=lo;
+if(vn>vo){while(j+1<W&&buf[j+1]<vn){buf[j]=buf[j+1];j++;}}else{while(j>0&&buf[j-1]>vn){buf[j]=buf[j-1];j--;}}
+buf[j]=vn;
+}
 }
 
 function hpss(X,n,K,Lt,Lf){
@@ -101983,12 +101989,14 @@ for(let g=0;g<G;g++){
 for(let b=0;b<B;b++){let s=0,c=0;for(let m=g*4;m<Math.min(F,g*4+4);m++)for(let k=bk[b];k<Math.max(bk[b]+1,bk[b+1]);k++){s+=Q[m*KV+k];c++;}fe[g*B+b]=c?s/c:0;}
 let mu=0;for(let b=0;b<B;b++)mu+=fe[g*B+b];mu/=B;let nn=0;for(let b=0;b<B;b++){fe[g*B+b]-=mu;nn+=fe[g*B+b]**2;}nn=Math.sqrt(nn)||1;for(let b=0;b<B;b++)fe[g*B+b]/=nn;
 }
-const nb=new Int32Array(G*KN).fill(-1),minD=Math.max(2,Math.round(sr/(4*hop))),bv=new Float32Array(KN);
+const nb=new Int32Array(G*KN).fill(-1),minD=Math.max(2,Math.round(sr/(4*hop))),bv=new Float32Array(G*KN).fill(-2);
+
+const put2=(o,h,s)=>{if(s<=bv[o+KN-1])return;let j=KN-1;while(j>0&&bv[o+j-1]<s){bv[o+j]=bv[o+j-1];nb[o+j]=nb[o+j-1];j--;}bv[o+j]=s;nb[o+j]=h;};
 for(let g=0;g<G;g++){
-bv.fill(-2);const o=g*KN;
-for(let h=0;h<G;h++){
-if(Math.abs(h-g)<minD)continue;let s=0;for(let b=0;b<B;b++)s+=fe[g*B+b]*fe[h*B+b];
-if(s<=bv[KN-1])continue;let j=KN-1;while(j>0&&bv[j-1]<s){bv[j]=bv[j-1];nb[o+j]=nb[o+j-1];j--;}bv[j]=s;nb[o+j]=h;
+const o=g*KN,gB=g*B;
+for(let h=g+minD;h<G;h++){
+let s=0;const hB=h*B;for(let b=0;b<B;b++)s+=fe[gB+b]*fe[hB+b];
+put2(o,h,s);put2(h*KN,g,s);
 }
 if((g&63)===63){emit({qid,prog:0.25+0.05*g/G,stufe:'Ähnlichkeit'});await tick();if(d.zStop)throw new Error('abgebrochen');}
 }
@@ -102038,6 +102046,7 @@ if(job&&!job.fertig&&job.lids&&job.lids.join()===zl.join()&&o.weiter!==false)s0=
 const sE=o.sB!=null?Math.min(NS,(o.sB|0)+1):NS;if(o.sA>s0)s0=Math.min(sE,o.sA|0);
 d.meta.jobs.zerlegen={k:s0,n:NS,lids:zl,fertig:false};
 const Lt=17,Lf=17,MG=(Lt>>1)+1,low=new Float32Array(NB),voc=new Float32Array(NB),cb=new Float32Array(NB),med=new Float32Array(KN+1);
+const zRow=new Int32Array(KN),zq=new Int32Array(KN+1),AQ=A.Q,zS=[new Float64Array(BT*NB),new Float64Array(BT*NB),new Float64Array(BT*NB)];
 for(let k=0;k<NB;k++){const f=k*df;low[k]=1-ramp(f,110,260);voc[k]=ramp(f,100,180)*(1-ramp(f,7000,10000));}
 for(let s=s0;s<sE;s++){
 if(d.zStop)throw new Error('abgebrochen');
@@ -102050,12 +102059,17 @@ for(let i=MG-1;i<=n-MG;i++){
 const m=a0+i,o=i*NB;if(m<0||m>=F)continue;
 const gt=0;
 const g=m>>2,nbo=g*KN,ph=m&3;
+let cR=0;for(let j=0;j<KN;j++){const gg=A.nb[nbo+j];if(gg<0)continue;zRow[cR++]=Math.min(F-1,gg*4+ph)*KV;}
 for(let k=0;k<NB;k++){
 const h=mh[o+k],lb=0;
 let fg=0;
 if(k<KV&&voc[k]>0){
-let c=0;for(let j=0;j<KN;j++){const gg=A.nb[nbo+j];if(gg<0)continue;const mm=Math.min(F-1,gg*4+ph),v=LUT[A.Q[mm*KV+k]];let p=c++;while(p>0&&med[p-1]>v){med[p]=med[p-1];p--;}med[p]=v;}
-if(c){const x=X[o+k],R=Math.min(x,c&1?med[c>>1]:0.5*(med[(c>>1)-1]+med[c>>1])),v=x-R;fg=v*v+R*R>0?v*v/(v*v+R*R):0;}
+const c=cR;let R=0;
+if(c===10){let q0=AQ[zRow[0]+k],q1=AQ[zRow[1]+k],q2=AQ[zRow[2]+k],q3=AQ[zRow[3]+k],q4=AQ[zRow[4]+k],q5=AQ[zRow[5]+k],q6=AQ[zRow[6]+k],q7=AQ[zRow[7]+k],q8=AQ[zRow[8]+k],q9=AQ[zRow[9]+k],t=0;
+t=Math.min(q0,q8);q8=Math.max(q0,q8);q0=t;t=Math.min(q1,q9);q9=Math.max(q1,q9);q1=t;t=Math.min(q2,q7);q7=Math.max(q2,q7);q2=t;t=Math.min(q3,q5);q5=Math.max(q3,q5);q3=t;t=Math.min(q4,q6);q6=Math.max(q4,q6);q4=t;t=Math.min(q0,q2);q2=Math.max(q0,q2);q0=t;t=Math.min(q1,q4);q4=Math.max(q1,q4);q1=t;t=Math.min(q5,q8);q8=Math.max(q5,q8);q5=t;t=Math.min(q7,q9);q9=Math.max(q7,q9);q7=t;t=Math.min(q0,q3);q3=Math.max(q0,q3);q0=t;t=Math.min(q2,q4);q4=Math.max(q2,q4);q2=t;t=Math.min(q5,q7);q7=Math.max(q5,q7);q5=t;t=Math.min(q6,q9);q9=Math.max(q6,q9);q6=t;t=Math.min(q0,q1);q1=Math.max(q0,q1);q0=t;t=Math.min(q3,q6);q6=Math.max(q3,q6);q3=t;t=Math.min(q8,q9);q9=Math.max(q8,q9);q8=t;t=Math.min(q1,q5);q5=Math.max(q1,q5);q1=t;t=Math.min(q2,q3);q3=Math.max(q2,q3);q2=t;t=Math.min(q4,q8);q8=Math.max(q4,q8);q4=t;t=Math.min(q6,q7);q7=Math.max(q6,q7);q6=t;t=Math.min(q1,q2);q2=Math.max(q1,q2);q1=t;t=Math.min(q3,q5);q5=Math.max(q3,q5);q3=t;t=Math.min(q4,q6);q6=Math.max(q4,q6);q4=t;t=Math.min(q7,q8);q8=Math.max(q7,q8);q7=t;t=Math.min(q2,q3);q3=Math.max(q2,q3);q2=t;t=Math.min(q4,q5);q5=Math.max(q4,q5);q4=t;t=Math.min(q6,q7);q7=Math.max(q6,q7);q6=t;t=Math.min(q3,q4);q4=Math.max(q3,q4);q3=t;t=Math.min(q5,q6);q6=Math.max(q5,q6);q5=t;
+R=0.5*(LUT[q4]+LUT[q5]);}
+else if(c){for(let j=0;j<c;j++){const v=AQ[zRow[j]+k];let p=j;while(p>0&&zq[p-1]>v){zq[p]=zq[p-1];p--;}zq[p]=v;}R=c&1?LUT[zq[c>>1]]:0.5*(LUT[zq[(c>>1)-1]]+LUT[zq[c>>1]]);}
+if(c){const x=X[o+k];R=Math.min(x,R);const v=x-R;fg=v*v+R*R>0?v*v/(v*v+R*R):0;}
 }
 ED[o+k]=(1-lb)*(1-h);EB[o+k]=lb;EV[o+k]=(1-lb)*h*fg*voc[k];
 if(k<KL){
@@ -102066,6 +102080,12 @@ if(eb>=0){ED[o+k]=x*ed+(1-x)*ED[o+k];EB[o+k]=x*eb+(1-x)*EB[o+k];EV[o+k]*=1-x;}
 }
 
 const sm=(E,i,k)=>{let a=0,c=0;for(let di=-1;di<=1;di++)for(let dk=-1;dk<=1;dk++){const kk=k+dk;if(kk<0||kk>=NB)continue;a+=E[(i+di)*NB+kk];c++;}return a/c;};
+
+const smRow=(E,S,i,r)=>{const q0=(i-1)*NB,q1=i*NB,q2=(i+1)*NB,d0=r*NB;
+S[d0]=sm(E,i,0);S[d0+NB-1]=sm(E,i,NB-1);
+for(let k=1;k<NB-1;k++){let a=0;a+=E[q0+k-1];a+=E[q0+k];a+=E[q0+k+1];a+=E[q1+k-1];a+=E[q1+k];a+=E[q1+k+1];a+=E[q2+k-1];a+=E[q2+k];a+=E[q2+k+1];S[d0+k]=a/9;}};
+const nosm=!!(Z2&&Z2.o6&&Z2.o6.nosm);
+for(let m=mA;m<=mB;m++){const i=m-a0,r=m-mA;smRow(ED,zS[0],i,r);smRow(EB,zS[1],i,r);smRow(EV,zS[2],i,r);}
 for(const id of zl)uTouch(d,id,s);
 for(let tr=0;tr<TR;tr++){
 const T=zl.map(id=>tileArr(stripe(d,id,s,true),tr)),OW=own.map(id=>{const st=stripe(d,id,s,false);return st&&st.h[tr]?(st.h[tr]===255?255:st.t[tr]):0;});
@@ -102076,8 +102096,8 @@ for(let b=0;b<BT;b++){
 const k=tr*BT+b;if(k>=NB)break;
 let used=0;for(const t of OW)used+=t===255?255:t?t[c+b]:0;
 const free=Math.max(0,255-used);if(!free)continue;
-const lo4=k<KL&&Z2&&Z2.o6&&Z2.o6.nosm;
-const vd=Math.round(free*(lo4?ED[i*NB+k]:sm(ED,i,k))),vb=Math.min(free-vd,Math.round(free*(lo4?EB[i*NB+k]:sm(EB,i,k)))),vv=Math.min(free-vd-vb,Math.round(free*sm(EV,i,k)));
+const lo4=k<KL&&nosm,zr=(m-mA)*NB+k;
+const vd=Math.round(free*(lo4?ED[i*NB+k]:zS[0][zr])),vb=Math.min(free-vd,Math.round(free*(lo4?EB[i*NB+k]:zS[1][zr]))),vv=Math.min(free-vd-vb,Math.round(free*zS[2][zr]));
 T[0][c+b]=vd;T[1][c+b]=vb<0?0:vb;T[2][c+b]=vv<0?0:vv;
 }
 }
@@ -104773,16 +104793,22 @@ const o6={bw:1.5,pf:3,phi:0.8,P:1.2,pri:1,nosm:1,robT:0,robqT:-1,bwT:0};
 function bassTrack4(Y,n,K,df,hopS,trust){
 const C=[];for(let c=12*Math.log2(27/440);;c+=0.25){const f=440*Math.pow(2,c/12);if(f>290)break;C.push(f);}
 const S=C.length,NH=8,E=new Float32Array(n*S),q=new Float32Array(n),Z=new Float32Array(K);
+
+const zIx=new Int32Array(S*NH),zN=new Int32Array(S),zG=new Float64Array(NH),zP=new Int32Array(S*3);let zMx=K;
+{let g=1;for(let h=1;h<=NH;h++,g*=0.86)zG[h-1]=g;}
+for(let j=0;j<S;j++){const f=C[j];let c=0;for(let h=1;h<=NH;h++){const kf=h*f/df;if(kf>=K-2)break;zIx[j*NH+c++]=Math.round(kf);}zN[j]=c;
+zP[3*j]=Math.round(f/df);zP[3*j+1]=Math.round(2*f/df);zP[3*j+2]=Math.round(3*f/df);zMx=Math.max(zMx,zP[3*j+2]+2);}
+const PK=new Float32Array(zMx);
 for(let i=0;i<n;i++){
 const o=i*K;for(let k=0;k<K;k++)Z[k]=Math.sqrt(Y[o+k]);
-const pk=kf=>{const k=Math.round(kf);if(k<1||k>=K-1)return 0;return Math.max(Z[k-1],Z[k],Z[k+1]);};
+for(let k=1;k<K-1;k++)PK[k]=Math.max(Z[k-1],Z[k],Z[k+1]);
 const ka=Math.floor(30/df);
 let best=0;
 for(let j=0;j<S;j++){
-const f=C[j];let s=0,g=1;
-for(let h=1;h<=NH;h++,g*=0.86){const kf=h*f/df;if(kf>=K-2)break;s+=g*pk(kf);}
+let s=0;const jb=j*NH,nh=zN[j];
+for(let h=0;h<nh;h++)s+=zG[h]*PK[zIx[jb+h]];
 
-if(o6.pf){const v1=pk(f/df),u=Math.max(pk(2*f/df),pk(3*f/df));if(v1<o6.phi*u)s*=Math.pow(v1/(o6.phi*u)+1e-6,o6.pf);}
+if(o6.pf){const v1=PK[zP[3*j]],u=Math.max(PK[zP[3*j+1]],PK[zP[3*j+2]]);if(v1<o6.phi*u)s*=Math.pow(v1/(o6.phi*u)+1e-6,o6.pf);}
 E[i*S+j]=s;if(s>best)best=s;
 }
 let jb=0;for(let j=1;j<S;j++)if(E[i*S+j]>E[i*S+jb])jb=j;
