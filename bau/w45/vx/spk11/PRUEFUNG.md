@@ -50,7 +50,7 @@ Geprüft wurde `index.html` gegen `basis.html`. Repariert habe ich nichts.
   - In `index.html` ist keine Zählung gegenüber der Basis gestiegen.
   - In Block, `spk11-test.mjs`, NOTES, LOG und `work/` gibt es 0 Treffer.
 - **Grafiken und Namen:**
-  - Der Block enthält keine Emojis. Er nutzt nur ● (U+25CF) als Farbpunkt; 🔒 und 🎤 stammen aus der Basis.
+  - Der Block enthält keine Emojis. Er nutzt nur ● (U+25CF) als Farbpunkt; Schloss- und Mikrofon-Zeichen stammen aus der Basis.
   - Keine Namen echter Personen oder Bands als Beschriftung.
 
 ## Regression (einzeln, nacheinander, `pruef-spk11/reg.log`)
@@ -61,7 +61,7 @@ Geprüft wurde `index.html` gegen `basis.html`. Repariert habe ich nichts.
 | `spk1-test.mjs` (mess/ daneben) | **17 OK / 1 FEHLER** `verfeinern-verbessert-ziel` 4,37 → 4,36 | gegen `basis.html` gefahren: dasselbe 17/1, also vorbestehend |
 | `imp1-test.mjs` | **ALLE OK** (121 s) | = Bericht |
 | `spk8-seite.mjs` | **14 OK / 0 FEHLER** (24 s) | = Bericht |
-| `spk11-test.mjs` des Bauers (Kopie, eigener Ordner) | siehe Nachtrag unten | – |
+| `spk11-test.mjs` des Bauers (Kopie, eigener Ordner) | **37 OK / 3 FEHLER** (nur drums-auf-kit) | = Bericht, siehe Nachtrag |
 
 ## Eigene Prüfung als Xander (Touch, 428×926 · 926×428 · 926×370)
 
@@ -134,7 +134,7 @@ Geprüft wurde `index.html` gegen `basis.html`. Repariert habe ich nichts.
   - Nach dem Stopp 0 Stimmen, Ausklang −180 dB: keine hängenden Noten. Konsole leer.
 - **Hauptfaden während der Wiedergabe:** 6 Stockungen > 60 ms (max. 99 ms) und 3 Long Tasks (max. 87 ms). Sie liegen beim Bankwechsel 5–8 → 1–4 und gehören zur Basis-App.
 - **Bass-Spur:** 1014 HF-Spitzen und 311 Sprünge in der 2. Differenz.
-  - Gegenprobe ohne SPK11 (dieselben Achtel von Hand, Klang Moog-Bass): 102 bzw. 51 in 25 s.
+  - Gegenprobe ohne SPK11 (dieselben Achtel von Hand, Grund-Bassklang von Synth 1): 102 bzw. 51 in 25 s.
   - Je Sekunde gleiche Größenordnung (ca. 7 gegen 4 bzw. 2,2 gegen 2). Das ist der Klang selbst, kein SPK11-Knackser.
 - **Erster Lauf bei Last 9,7** (andere Läufe aktiv): 8 verspätete Noten (bis −49 ms) und 32 Stockungen (max. 175 ms). Wegen Fremdlast nicht gewertet.
 
@@ -249,7 +249,7 @@ Geprüft wurde `index.html` gegen `basis.html`. Repariert habe ich nichts.
 
 ### 15. [leicht, Risiko] Speicher
 - **Aufwand:** Je Ebene ein Take über die ganze Liedlänge, hier 3 × 100,8 s, also je Ebene 17,8 MB Float32 im Speicher plus 8,9 MB in IndexedDB.
-- **Hochgerechnet:** 4-min-Lied mit 4 Audio-Ebenen ≈ 170 MB Audio-Puffer und 85 MB gespeichert. Auf dem iPhone nicht gemessen.
+- **Hochgerechnet:** 4-min-Lied mit 4 Audio-Ebenen ≈ 170 MB Audio-Puffer und 85 MB gespeichert. Auf dem Telefon nicht gemessen.
 - **Vergleich:** Der Import „In Szenen“ hält einen einzigen Take.
 
 ## Bestätigt (Zahlen)
