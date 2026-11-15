@@ -61379,7 +61379,7 @@ function lsar(z, g0, g1, A) { const p = A.length - 1, m = g1 - g0, M = new Float
   for (let i = m - 1; i >= 0; i--) { let s = v[i]; for (let k = i + 1; k < m; k++) s -= M[k * m + i] * v[k]; v[i] = s / M[i * m + i]; }
   return v; }
 function* plop(y, sr, ev, o) {
-  o = o || {}; const cut = o.cut || 160, g = Math.pow(10, -0.48 * (o.str != null ? o.str : 50) / 20), D = Math.max(1, Math.floor(sr / 1100)), n = y.length, out = [];
+  o = o || {}; const cut = o.cut || 250, g = Math.pow(10, -0.48 * (o.str != null ? o.str : 50) / 20), D = Math.max(1, Math.floor(sr / 1100)), n = y.length, out = [];
   const C = Math.round(0.3 * sr), mg = Math.round(0.005 * sr), p = 40;
   for (let e = 0; e < ev.length; e++) {
     const E = ev[e], a = Math.max(0, E.s0 - mg - C), b = Math.min(n, E.s1 + mg + C), low = lpZero(y, a, b, sr, cut), L = Math.floor((b - a) / D), z = new Float64Array(L);
@@ -61730,7 +61730,7 @@ function vr1EssCore(y, sr, amt, o) {
     const fft = inv => { for (let i = 0; i < N; i++) { const j = rev[i]; if (j > i) { let t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; } }
       for (let s = 2; s <= N; s <<= 1) { const h = s >> 1, st = N / s; for (let i = 0; i < N; i += s) for (let j = 0; j < h; j++) { const c = cs[j * st], si = inv ? sn[j * st] : -sn[j * st], l = i + j + h, tr = re[l] * c - im[l] * si, ti = re[l] * si + im[l] * c; re[l] = re[i + j] - tr; im[l] = im[i + j] - ti; re[i + j] += tr; im[i + j] += ti; } } };
     const w = new Float64Array(N); for (let i = 0; i < N; i++) w[i] = Math.sqrt(0.5 - 0.5 * Math.cos(2 * Math.PI * i / N));
-    const bin = f => Math.round(f * N / sr), k0 = bin(fc), kT = Math.min(half - 1, bin(Math.min(16000, sr * 0.47)));
+    const bin = f => Math.round(f * N / sr), k0 = bin(fc), kT = Math.min(half - 1, bin(Math.min(20000, sr * 0.47)));   // bis 20 kHz: ein „s“ reicht weit nach oben
     if (kT <= k0 + 2) return res;
     const J = Math.ceil(n / H) + 2, nrm = 4 / (N * N), lg = p => 10 * Math.log10(p * nrm + 1e-20);
     const Ls = new Float32Array(J), Lo = new Float32Array(J), red = new Float32Array(J), sib = new Uint8Array(J);
