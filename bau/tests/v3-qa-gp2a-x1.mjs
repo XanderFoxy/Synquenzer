@@ -1,0 +1,11 @@
+import {open, OUT, sleep, check, done} from './v3-qa-gp2a-lib.mjs';
+const T = await open({mic: false}); const {p, E, errs} = T;
+await E(() => { SYNQUENZER.setBpm(160); SYNQUENZER.setMetronome(false); });
+console.log('song', JSON.stringify(await E(() => SYNQUENZER.song())).slice(0, 400));
+console.log('parts', JSON.stringify(await E(() => SYNQUENZER.parts())).slice(0, 400));
+await T.tapSel('.corner.sw'); await sleep(300);
+console.log('songOn', await T.songOn());
+console.log('info', JSON.stringify(await T.info()).slice(0, 1500));
+await T.shot('x1-songview');
+console.log('errs', errs);
+await T.br.close();
