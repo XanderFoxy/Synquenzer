@@ -300,3 +300,23 @@ Block 967 Zeilen, diff Basis → Paket: 0 entfernte, 985 neue Zeilen. Quellen vo
   Beschriftung nach dem SPK12-Haken neu); ↶ selbst wirkt richtig.
 - Die Prüfer-Sonden `pruef/p1.mjs` (prüft Auswahl ▾ über `querySelector` – jetzt ein Knopf, der bei Ähnliche mitwandert) wurden nicht neu
   gefahren; ihre Punkte sind in `spk12-test4.mjs` enthalten.
+
+### Endlauf Prüfung (nacheinander, `kette4.sh` → `kette4.log`)
+- `spk12-test4.mjs` (Prüfung, alle 3 Größen): **28 OK / 0 FEHLER**.
+- `spk12-test3.mjs` (Teil 3, 3 Größen): **47 / 0** (FFT-Erwartung auf „ · 93 ms / 10,8 Hz“ angepasst).
+- `spk12-test.mjs` (Teil 1, 3 Größen): 97 / 1 – einziger Fehler `428x926 leiste-im-bild` prüfte die Leiste ohne Wischen (überholt durch
+  Befund 5). Prüfung im Test angepasst (je Knopf erst wischen, `scrollIntoView`), Wiederholung 428×926 **44 / 0**
+  (`spk12-test-428x926-wdh.out`; der volle Lauf steht in `spk12-test-endlauf-3groessen.out`, `spk12-test.json` = Wiederholung).
+- `spk12-test2.mjs` (Teil 2, 3 Größen): **72 / 0**.
+- smoke: errors [] (smoke.png).
+- Regression (`reg.sh`, Ausgaben jetzt in `reg/`): spk6 ALLES OK · spk5 ALLES OK 24 · spk1 1 FEHLER verfeinern-verbessert-ziel (= Basis) ·
+  spk8-seite 14/0 · spk11 38/3 (nur drums-auf-kit = bekannt offen in 4.68) – gleich wie vor der Prüfung.
+- Prüfer-Sonde p1 (Kopie in `pruef-nach/`, 428×926): ↶-Reihenfolge, Auswahl ▾ bei Ähnliche, Wieder-Öffnen jetzt **OK**; verbleibende
+  2 „BEFUND“: Zauberstab/Lasso-Rundreise (Sonden-Schwelle, laut Prüfer Fehlalarm; 0 Abweichungen) und 48-kHz-FFT-Text (Sonde erwartet das
+  alte Format; Text jetzt „ · 85 ms / 11,7 Hz“, Wert richtig).
+- Aufgeräumt: `fotos/` nur SPK12 (55 Fotos: 10-/20-/30-/40-/50-, t2-, t3-, t4-), fremde Fotos/Ergebnisse in `reg/`.
+
+## Pflicht Prüfung (Endstand)
+topdefs 26 / 7659 / doppelt 0 / Syntaxfehler 0 (NODE_PATH=/opt/node-tools/node_modules) · dupkeys 0 · smoke errors [] · „MS 2000“ 1× ·
+„^  live: true,“ 1× · VERSION 4.68.0 unverändert (alle VERSION-Zeilen = Basis) · basis.html = rel-4680 · diff nur Zusätze (985 = 967 Block +
+18 Haken) · keine Marken-/Produktnamen, keine Emojis im neuen Code.

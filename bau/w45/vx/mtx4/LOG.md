@@ -16,3 +16,4 @@
 - 05:41 Lauf 4: 1 Long Task 60 ms im Leistungs-Teil (Lauf 2/3: 0). Ursache: Test rief 6 Sammel-Aktionen ohne Pause in EINER Aufgabe auf (≈ 30 ms ruhig, unter CPU-Last 60). Messung mit 3 Läufen t/lt.mjs: 0 Long Tasks, je Aktion 3–8 ms. Test jetzt je Aktion eigene Aufgabe (wie echte Tipps).
 - 05:44 Versions-Prüfung gegen neu vergebene Nummern nach ↶ (from.t/from.s) ergänzt; Pflicht: topdefs 0/0 (NODE_PATH), dupkeys 0, smoke errors [], MS 2000 1×, live: true 1×, VERSION 4.68.0. Endlauf.
 - 05:45 Endlauf 81/81 (test-ergebnis.txt), Fotos 9, NOTES.md (Teil 2, Funk-Entwurf, Offen) geschrieben. Teil 2 fertig.
+- 05:58 Prüfer-Befunde (PRUEFUNG.md) gelesen, Nachbesserung Start.
