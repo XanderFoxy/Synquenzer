@@ -86734,6 +86734,7 @@ function gr2RemixDo(song, st, a, b, k, art) {
       const notes = pat ? (role === 'dr' ? gr1DrumNotes(src.c, st) : gr1BassNotes(src.c, st)) : gr2Translate(src.c, st, k / 100, role);
       if (typeof mtx3bPads === 'function') mtx3bPads(t, notes, src.c);   /* MTX3B: ausgelagerte Pads nicht doppelt */
       const id = gr2VerPut(song, t, sp.s, src.c, pat ? {s: st.id, v: src.v} : {s: st.id, v: src.v, u: k}, notes, tTs);
+      if (id && pat && typeof mtx3Dr === 'function' && mtx3Dr(t) && song.own && song.own[id]) delete song.own[id].lanes;   /* MTX3B: Stil-Muster ohne D1-Spuren wie auf DRUMS */
       if (!id) { res.full++; continue; }
       gen3VerSt(song.own[id], src.c, st, k, t);                          // GEN3: Klangzustand der Version (Tempo-Version: Hall, Release)
       if (id !== sp.id) sx9Set(song, t, sp.a, sp.b, id);
@@ -95316,7 +95317,7 @@ const MTX3B = {view: 'steps', lane: 'vel', ed: null, mode: 'all', n: 0, last: nu
       '.mtx3bs .mtx3b-st{display:grid;grid-template-columns:repeat(8,minmax(44px,1fr));gap:3px;margin-top:6px}' +
       '.mtx3bs .mtx3b-st .mbtn{min-width:44px;min-height:44px;height:auto;padding:0 2px;font:700 11px/1.1 var(--font-num)}' +
       '.mtx3bs .mtx3b-st .mbtn.on,.mtx3bs .mtx3b-md .mbtn.on{color:#ffcf7a;border-color:#6b4c16;box-shadow:inset 0 0 0 1px #6b4c16}' +
-      '.mtx3bs .mtx3b-md{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}.mtx3bs .mtx3b-md .mbtn{min-height:48px;height:auto;line-height:1.15;white-space:normal}' +
+      '.mtx3bs .mtx3b-md{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}.mtx3bs .mtx3b-md .mbtn{min-height:48px;height:auto;line-height:1.15;white-space:normal;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}' +
       '.mtx3bs .mtx3b-md small{display:block;font:600 10px/1.15 var(--font-ui);color:var(--text-dim);text-transform:none}' +
       '.mtx3bd .se-tabs{gap:3px}.mtx3bd .se-tabs button{flex:1 1 auto;padding:0 4px;font-size:10.5px;letter-spacing:.03em}.mtx3bd .se-tabs .ts{display:none}' +
       '@media (orientation:portrait) and (max-width:399px),(orientation:landscape) and (max-width:759px){.mtx3bd .se-tabs .tl{display:none}.mtx3bd .se-tabs .ts{display:inline}}' +
