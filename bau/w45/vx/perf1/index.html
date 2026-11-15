@@ -52762,6 +52762,7 @@ function vwGo() {
   vwReload();
 }
 async function vwReload() {
+  if (typeof perf1aBusy === 'function' && perf1aBusy()) return;   /* PERF1A */
   const v = VW.want || ''; const o = vwTries(v); o.n++; o.t = Date.now();
   try { sessionStorage.setItem('synq.vw', JSON.stringify(o)); } catch (e) {}
   try { await Promise.race([saveNow(), new Promise(r => setTimeout(r, 1500))]); } catch (e) {}
@@ -108776,21 +108777,53 @@ try { addEventListener('load', () => { try { idle(perf1bStart); } catch (e) {} }
    Zwischenspeicher vorbei (cache: 'reload' – das füllt Browser-Zwischenspeicher und Service-Worker-Kopie mit der neuen Fassung),
    prüft, dass genau diese Fassung kam, und lädt dann die normale Adresse. Nur beim ersten Versuch je Fassung; scheitert der Vorlauf,
    kommt die alte Antwort oder dauert es zu lange, bleibt der bisherige Weg (?v=) – der zweite Versuch nimmt ihn immer.
-   Vor dem Neuladen wie bisher: nie während Wiedergabe/Aufnahme/Tippen in ein Feld, vorher speichern. */
+   Prüfung (Befunde 9–12): beide Wege (normale Adresse und Rückfall ?v=) laden erst neu, wenn vwIdle() unmittelbar davor wahr ist
+   (vor und nach dem Speichern geprüft) – nie während Wiedergabe, Aufnahme oder Tippen in ein Feld, auch wenn der Vorlauf erst spät
+   scheitert. Solange ein Vorlauf läuft oder auf Leerlauf wartet, tut eine zweite VW-Prüfung nichts (Haken am Anfang von vwReload).
+   Die Antwort wird als Strom gelesen: die Fassungszeile der App steht nach ≈ 26 % der Datei; eine alte Fassung bricht den Abruf dort
+   ab (statt sie ganz zu laden), die neue wird zu Ende gelesen (sonst bliebe der Zwischenspeicher unvollständig), aber nie als ganze
+   Zeichenkette gehalten. */
+const PERF1A = {busy: false, ok: null};
+function perf1aBusy() { try { return !!PERF1A.busy; } catch (e) { return false; } }
+try { addEventListener('pageshow', e => { if (e.persisted) PERF1A.busy = false; }); } catch (e) {}   // aus dem Zurück-Cache: neu prüfen dürfen
+// liest den Abruf bis zur Fassungszeile der App (erste Zeile „const VERSION“ mit Ziffern-Fassung); true nur, wenn es genau v ist
+async function perf1aRead(r, v, ac) {
+  if (!r || !r.ok) return false;
+  const K = "const VERSION = '", ver = (s, i) => { const m = /^(\d+\.\d+\.\d+)';/.exec(s.slice(i + K.length, i + K.length + 24)); return m ? m[1] : null; };
+  if (!r.body || typeof r.body.getReader !== 'function' || typeof TextDecoder !== 'function') {
+    const t = await r.text(); for (let i = t.indexOf(K); i >= 0; i = t.indexOf(K, i + 1)) { const f = ver(t, i); if (f) return f === v; } return false;
+  }
+  const rd = r.body.getReader(), dec = new TextDecoder(); let tail = '', seen = null;
+  for (;;) {
+    const {done, value} = await rd.read();
+    if (done) return seen === true;
+    if (seen) continue;                                                       // neue Fassung erkannt: nur noch zu Ende lesen
+    const s = tail + dec.decode(value, {stream: true});
+    for (let i = s.indexOf(K); i >= 0; i = s.indexOf(K, i + 1)) { const f = ver(s, i); if (f) { seen = f === v; break; } }
+    if (seen === false) { try { rd.cancel(); } catch (e) {} try { if (ac) ac.abort(); } catch (e) {} return false; }   // alte Fassung: hier abbrechen
+    tail = seen ? '' : s.slice(-48);
+  }
+}
 function perf1aPre(v, o) {
-  if (!v || !o || o.n !== 1 || typeof fetch !== 'function' || !/^https?:$/.test(location.protocol)) return Promise.resolve(false);
-  const url = location.pathname, wait = (ms, x) => new Promise(r => setTimeout(() => r(x), ms));
-  const get = fetch(url, {cache: 'reload', credentials: 'same-origin'}).then(r => (r && r.ok ? r.text() : '')).catch(() => '');
-  return Promise.race([get, wait(60000, '')]).then(txt => {
-    if (!txt || txt.indexOf("const VERSION = '" + v + "';") < 0) return false;
+  if (!v || !o || o.n !== 1 || PERF1A.busy || typeof fetch !== 'function' || !/^https?:$/.test(location.protocol)) return Promise.resolve(false);
+  PERF1A.busy = true;
+  const wait = (ms, x) => new Promise(r => setTimeout(() => r(x), ms));
+  const ac = typeof AbortController === 'function' ? new AbortController() : null;
+  const get = fetch(location.pathname, Object.assign({cache: 'reload', credentials: 'same-origin'}, ac ? {signal: ac.signal} : null))
+    .then(r => perf1aRead(r, v, ac)).catch(() => false);
+  return Promise.race([get, wait(60000, false)]).then(ok => {
+    if (!ok) { try { if (ac) ac.abort(); } catch (e) {} }                    // Zeitgrenze: den Abruf nicht weiterlaufen lassen
+    PERF1A.ok = !!ok;
     const go = async () => {
-      if (!vwIdle()) { setTimeout(go, 3000); return; }                       // inzwischen Wiedergabe/Aufnahme/Feld: kurz danach
+      if (!vwIdle()) { setTimeout(go, 3000); return; }                       // Wiedergabe/Aufnahme/Feld: kurz danach
       try { await Promise.race([saveNow(), wait(1500)]); } catch (e) {}
       try { if (typeof cloudFlushNow === 'function') cloudFlushNow(); } catch (e) {}
-      if (!location.search) location.reload(); else location.replace(location.pathname + location.hash);
+      if (!vwIdle()) { setTimeout(go, 3000); return; }                       // während des Speicherns ▶ oder Aufnahme: später
+      if (!ok) location.replace(location.pathname + '?v=' + encodeURIComponent(v) + location.hash);   // Rückfall: der bisherige Weg
+      else if (!location.search) location.reload(); else location.replace(location.pathname + location.hash);
     };
     go(); return true;
-  }, () => false);
+  }, () => { PERF1A.busy = false; return false; });
 }
 /* PERF1A-END */
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();

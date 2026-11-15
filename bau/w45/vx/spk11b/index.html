@@ -105587,14 +105587,14 @@ function spk11bHits(x, sr, stepS, nStep, fr, ref) {
     { let q = 0; for (let f = f0; f <= f1; f++) q = Math.max(q, A.Q[f]); pq.push(q); }
     let m = 0; if (Bo) for (let f = f0; f <= Math.min(Bo.F - 1, f1); f++) m = Math.max(m, Bo.O[0][f]); bk.push(m);
   }
-  const ref97 = pk.map(a => { const s = a.slice().sort((p, q) => p - q); return Math.max(1e-4, s[Math.floor(0.97 * (s.length - 1))] || 0); });
+  const IN = ref && ref.inner, ref97 = IN ? IN.r97 : pk.map(a => { const s = a.slice().sort((p, q) => p - q); return Math.max(1e-4, s[Math.floor(0.97 * (s.length - 1))] || 0); });   // IN: leiser Abschnitt – Vorlagen des ganzen Lieds
   const nl = pk[0].map(v => v / ref97[0]), nm = pk[1].map(v => v / ref97[1]), nh = pk[2].map(v => v / ref97[2]), nq = pq.map(v => v / ref97[2]);
   const lo = !fr || fr[0] < 200, mi = !fr || (fr[1] > 200 && fr[0] < 5000), hi = !fr || fr[1] > 4000;
   // Snare-Vorlage aus dem Lied: Höhen-Einsätze in zwei Häufungen (Hi-Hat leiser, Snare lauter); Körper (Tiefen oder Mitten) muss da sein
   // (zwei Stufen: leise/laute Hi-Hats, darüber die Snare – trennt sich die obere Häufung noch einmal klar, gilt die obere Grenze)
-  let sS = hi ? spk11bSplit(nh, 0.1, 1.5) : null; if (sS) { const s2 = spk11bSplit(nh, sS.t, 1.5); if (s2 && s2.nHi >= 8) sS = s2; }
+  let sS = IN ? IN.sS : hi ? spk11bSplit(nh, 0.1, 1.5) : null; if (sS && !IN) { const s2 = spk11bSplit(nh, sS.t, 1.5); if (s2 && s2.nHi >= 8) sS = s2; }
   const tS = sS ? Math.max(0.45, Math.min(0.75, sS.t)) : 0.7;
-  const sK = lo ? spk11bSplit(nl, 0.08, 1.8) : null, tK = sK ? Math.max(0.3, Math.min(0.6, sK.t)) : 0.35, tK2 = 0.3;   // tK2: untere Kick-Schwelle (= kleinster Wert von tK)
+  const sK = IN ? IN.sK : lo ? spk11bSplit(nl, 0.08, 1.8) : null, tK = sK ? Math.max(0.3, Math.min(0.6, sK.t)) : 0.35, tK2 = 0.3;   // tK2: untere Kick-Schwelle (= kleinster Wert von tK)
   const isSn = k => mi && ((nm[k] > 0.35 && nl[k] < tK && pk[1][k] >= 1.9 * pk[0][k]) || (hi && nh[k] >= tS && (nm[k] >= 0.12 || nl[k] >= 0.12)));
   // Kick-Vorlage: Tiefen-Einsätze in zwei Häufungen (Kick vs. Reste von Snare/Bass)
   const out = [], hat = new Uint8Array(nStep), snS = [], kk = new Uint8Array(nStep), weak = [], spb = ref && ref.spb > 0 ? ref.spb : 16;
@@ -105603,7 +105603,7 @@ function spk11bHits(x, sr, stepS, nStep, fr, ref) {
     const mc = pk[1][k] >= 0.9 * pk[0][k], tail = k > 0 && kk[k - 1] && !mc && nl[k] < 0.8 * nl[k - 1];   // 1/16 nach einem Kick ohne eigenen Anschlag: Ausklang/Schwebung Kick+Sub-Bass
     const strong = sK && nl[k] >= 0.65 * sK.hi && !tail;   // in der Kick-Häufung
     const click = strong || mc;   // Anschlag reicht in die Mitten (Schwebung Kick+Bass bleibt tief)
-    const kick = lo && click && !tail && (dk[k] < 0.6 || strong) && pk[0][k] >= (strong ? 0.25 : 0.4) * pk[1][k] && ((nl[k] >= tK && dom && (!sn || strong || !sK)) || (nl[k] >= tK2 && !sn && pk[0][k] >= 1.5 * bk[k]));
+    const kick = lo && click && !tail && (!IN || strong) && (dk[k] < 0.6 || strong) && pk[0][k] >= (strong ? 0.25 : 0.4) * pk[1][k] && ((nl[k] >= tK && dom && (!sn || strong || !sK)) || (nl[k] >= tK2 && !sn && pk[0][k] >= 1.5 * bk[k]));
     if (kick) { out.push({k, w: 'k', v: Math.min(1, 0.45 + 0.55 * nl[k])}); kk[k] = 1; }
     else if (lo && click && !sn && dk[k] < 0.7 && nl[k] >= 0.6 * tK2 && pk[0][k] >= 0.4 * pk[1][k] && (!Bo || pk[0][k] >= 0.7 * bk[k])) weak.push(k);
     if (sn) { out.push({k, w: 's', v: Math.min(1, 0.45 + 0.55 * Math.min(1, Math.max(nm[k], nh[k]) / 0.8))}); snS.push([k, nh[k]]); }
@@ -105627,7 +105627,7 @@ function spk11bHits(x, sr, stepS, nStep, fr, ref) {
       for (let c = 0; c < 3; c++) if (c === 0 ? lo : c === 1 ? mi : hi) { const z = pk[c].slice(k0, k0 + n).sort((p, q) => p - q); rb.push((z[Math.floor(0.97 * (z.length - 1))] || 0) / ref97[c]); }
       const L = {takte: [b, e], dB: rb.map(v => Math.round(20 * Math.log10(v + 1e-9))), ok: false}; if (e - b >= 2) leise.push(L);
       if (e - b >= 2 && rb.length && Math.min(...rb) > 0 && Math.max(...rb) <= 2 * Math.min(...rb)) {
-        const i0 = Math.round(k0 * stepS * sr), hs = spk11bHits(x.subarray(i0, Math.min(x.length, i0 + Math.round((n * stepS + 0.05) * sr))), sr, stepS, n, fr, {spb, inner: true});
+        const i0 = Math.round(k0 * stepS * sr), gm = Math.sqrt(Math.min(...rb) * Math.max(...rb)), hs = spk11bHits(x.subarray(i0, Math.min(x.length, i0 + Math.round((n * stepS + 0.05) * sr))), sr, stepS, n, fr, {spb, inner: {r97: ref97.map(v => v * gm), sK, sS}});
         const pos = new Map(); for (const h of hs) { const p = h.k % spb; if (!pos.has(p)) pos.set(p, new Set()); pos.get(p).add(Math.floor(h.k / spb)); }
         const rec = new Set([...pos].filter(([p, z]) => z.size >= Math.max(2, 0.5 * (e - b))).map(([p]) => p)), onRec = hs.filter(h => rec.has(h.k % spb)).length;
         if (hs.length >= 2 * (e - b) && onRec >= 0.7 * hs.length && hs.filter(h => h.w !== 'k').length >= e - b) {

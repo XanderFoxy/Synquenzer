@@ -10,6 +10,9 @@ VERSION unverändert 4.68.0.
 | scheduleTrack (nach `if (to <= from) return;`) | `mtx4Sched(i, from, to, late)` – läuft ein geänderter Clip, plant er bis zum nächsten Taktstrich den alten Inhalt, danach den neuen |
 | renderGrid (vor „the bank switches“) | `mtx4Grid()` – Markierung der gewählten Clips (Klassen-Wechsel, gecacht) |
 | openClipSheet (nach `wegeClipSheet`) | `mtx4ClipSheet(g, B, t, s, clip)` – Knopf [Mehrere wählen] |
+| renderGrid (vor dem Neuzeichnen eines Vorschaubilds) – **neu Prüfung** | `if (sig !== C.sig && mtx4Thumb()) continue;` – im Modus und 3 s nach einer Sammel-Aktion / ihrem ↶ ↷ höchstens ≈ 5 ms Vorschaubilder je Bild (mind. 2), Rest im nächsten Bild |
+| undo (nach `sx11HoldFor`) – **neu Prüfung** | `mtx4HoldFor(UNDO[…])` – ↶ eines MTX4-Schritts im Lauf: laufender Inhalt bis zum nächsten Taktstrich |
+| redo (nach `sx11HoldFor`) – **neu Prüfung** | `mtx4HoldFor(REDO[…])` – ebenso für ↷ |
 
 Dazu im Block selbst: Zeiger-Erfassung auf `window` (Capture, nur solange der Modus an ist und nur für Clip-Zellen / Szenen-Köpfe),
 Guide-Eintrag (`ui1Entries().push`), Test-API `SYNQUENZER.mtx4`.
@@ -100,12 +103,14 @@ geändert (diff zu basis.html: nur `a`-Zeilen an 4 Stellen = 3 Haken + Block).
 
 ## Offen
 - **Lieferung (Plan-Schritt 5, außerhalb dieses Ordners):** Sonden, SPIELSYSTEM.md, Werkstatt, Funk-Antwort – Sache der Hauptsitzung.
-- **Funk-Vorschlag (sichtbar neu, Plan: „Funk: Vorschlag“), Entwurf:**
+- **NICHT ausliefern, bevor Xander dem Funk-Vorschlag zugestimmt hat** (Prüfung Befund 5, Regel 3). Entwurf (korrigiert nach Befund 1/4):
   „Mehrere Clips zugleich: Clip halten › [Mehrere wählen], dann weitere Clips antippen (Szenen-Kopf = ganze Szene). Unten erscheint eine
-  Leiste: −12 −1 +1 +12, Stufe ▲▼, Länge ÷2 ×2, Tonart ▾ (Dur, Moll, Dorisch, Mixolydisch, Phrygisch, Pentatonik), Quant. ▾. Jeder Knopf
-  = ein ↶. Läuft die Musik, hörst du die Änderung ab dem nächsten Takt. Hochkant deckt die Leiste solange AKKORD/TRÄGER, quer die rechte
-  Spalte. Spielt ein Clip im Song, bleibt die alte Fassung als v2 (Clip-Blatt › Versionen). Passt das so – oder lieber anders einsteigen
-  (z. B. Halten + zweiter Finger wie bei den Spuren)?“
+  Leiste: −12 −1 +1 +12, Stufe ▲▼, Länge ÷2 ×2, Tonart ▾ (Dur, Moll, Dorisch, Mixolydisch, Phrygisch, Pentatonik), Quant. ▾ und ↶ ↷ – das ↶
+  liegt genau da, wo sonst dein ↶ ist. Jeder Knopf = ein ↶. Läuft die Musik, hörst du die Änderung (und auch ↶/↷) ab dem nächsten Takt.
+  Solange die Leiste steht, deckt sie hochkant die Spur-Leiste (KLANG, ✎, ⇅, M, ↶) und die Träger-Zeile (AKKORD, TRÄGER, LATCH, ORIGINAL),
+  quer die rechte Spalte samt ＋; mit ✕ ist alles wieder da. Spielt ein Clip im Song und hat noch keine Versionen, bleibt die Fassung von
+  vorher als v2 (Clip-Blatt › Versionen) – höchstens eine solche Auto-Version je Clip, deine eigenen Versionsplätze bleiben frei. Clips, die
+  nicht im Song spielen, bekommen keine Version. Passt das so – oder lieber anders einsteigen (z. B. Halten + zweiter Finger wie bei den Spuren)?“
 - **Entscheidung zur Prüfung:** Versionen = „alte Fassung wird vN, Song spielt die neue (v1)“. Alternative: der Song behält automatisch die
   alte Fassung (vN überall im Song) und nur die Matrix ändert sich – wäre ein Satz im Funk-Vorschlag, Umbau klein (`sx9SetAll`).
 - Hochkant trägt die Leiste jetzt 8 Knöpfe in Zeile 2 (je ≈ 46 px); ▲ ▼ ÷2 ×2 mit kleinem Wort darunter. Auf dem iPhone ansehen.
@@ -116,3 +121,36 @@ geändert (diff zu basis.html: nur `a`-Zeilen an 4 Stellen = 3 Haken + Block).
   eine Erweiterung.
 - Versionen während ▶ SONG: der Song-Schritt läuft über `songEdit` (mit `songResync` wie jede Song-Bearbeitung) – nicht eigens getestet,
   da sich die Spuren-Einträge nicht ändern.
+
+## Prüfung (PRUEFUNG.md, 15.11.2026) – nachgebessert 06:00–06:25
+Alles im selben Block (block.js = Block, identisch geprüft) + 3 neue Ein-Zeilen-Haken (renderGrid, undo, redo; Liste oben). diff zu basis.html:
+0 entfernte Zeilen (nur `a`: 6 Haken + Block).
+
+| # | Befund | Stand | Was / Messung |
+|---|---|---|---|
+| 1 | schwer: ↶ im Modus per Touch nicht erreichbar, Tipp traf ✕ / Quant. ▾; Toast-„Rückgängig“ unter der Leiste | **behoben** | ↶ ↷ in der Leiste, ↶ **genau über** dem ↶ der Spur-Leiste (hochkant Zeile 1 rechts außen, quer Zeile 4 rechts außen) – der gewohnte Griff trifft ↶. Hinweise nach Aktion/↶/↷ **ohne Aktionsknopf**; solange die Leiste steht liegt jeder Hinweis über ihr (z 72 > 71: was man sieht, tippt man). Hochkant Zeile 1: Zähler kurz („3 Clips“ / „2 Szenen“), [Drums fest] zweizeilig wie ▲ Stufe; Knöpfe geben nicht nach (Zähler schrumpft). Messung je Größe per Touch: Tipp auf die Mitte von `#bUndo` → ↶ der Leiste, UNDO 1→0, alles bit-gleich, Modus bleibt; ↷ = 1 Schritt; `undoRedoCheck` true; Sonde 2 des Prüfers: in allen 3 Größen `undoTop: un`, `tapUndo 1→0`. |
+| 2 | mittel: Long Tasks bei dichten Clips | **behoben (1×)**, 4× Rest siehe Offen | Aktion blockweise (`MTX4_SLICE` 8 ms je Aufgabe, dazwischen ein Bild; eine 2. Aktion/↶ ↷ der Leiste wartet in einer Schlange), ein Taktstrich für alle Clips der Aktion; Vorschaubilder gestaffelt (Haken renderGrid); `afterClipEdit` bei Länge nur noch einmal; alter Inhalt nur für laufende Clips kopiert; Versionen als kleine `own`-Schritte statt eines Song-Schritts (der Verlauf-Rekorder verglich sonst den ganzen Song, 133 ms); Szenen-Tonarten je Szene eine Aufgabe. Sonde F des Prüfers (64 × 64 Noten, Song, Wiedergabe) 1×: **0 Long Tasks** bei +1, Dorisch, Quant, ×2, ÷2, ↶, ↷ (vorher 52–183 ms); eigener Test P2 1×: 0 Long Tasks, synchron 5–13 ms. renderGrid ohne Zwischenspeicher jetzt max 5–9 ms (vorher 10–12). |
+| 3 | mittel: Pentatonik verschiebt leitereigene Töne | **behoben** | Töne der Pentatonik bleiben, fremde zum Nachbarn (`Harmony.snapToScale`, Spielrichtung bei Gleichstand), Doppel zur selben Zeit legt `mtx4Fit` zusammen. C-Dur-Leiter → `[60,62,64,64,67,69,72,72]`; Zufall 6 Tonarten × 240 Noten: 0 verschoben, 0 Sprünge > 1 Halbton, 0 außerhalb. |
+| 4 | mittel: Auto-Versionen füllen v8 | **behoben** | Höchstens **eine** Auto-Version je Clip: nur ein Clip ohne Versionen bekommt v2. 9 Sitzungen „Quant + 1“: immer `2`, eigenes ＋ danach → v3. |
+| 5 | mittel (Ablauf): Funk-Vorschlag fehlt | **offen (Hauptsitzung)** | Entwurf oben korrigiert (↶ ↷, alle verdeckten Elemente, Auto-Version). Nicht ausliefern vor Zustimmung. |
+| 6 | leicht: ↶/↷ nach dem Taktstrich sofort | **behoben** | Haken in undo/redo: läuft ein Clip eines MTX4-Schritts, bleibt der laufende Inhalt bis zum nächsten Taktstrich (Haltung bindet sich an das neue Clip-Objekt beim ersten Planen). Messung: ↶ bei Schlag 4,42 → bis 8 nur 61, ab 8 acht× 60; ↷ bei 8,43 → bis 12 nur 60, ab 12 acht× 61; jede Achtel genau einmal. |
+| 7 | leicht: ÷2 bei ungerader Länge | **behoben (Hinweis)** | Verhalten = vorhandenes `clipLength` (bleibt); der Hinweis sagt es: „Länge ÷2 · 1 Clip · ungerade Länge abgerundet (3 → 1 Takt)“. |
+| 8 | leicht: Hochkant-Zeile 2 eng | **offen (iPhone ansehen)** | Zeile 2 unverändert 8 × 48 px (Leiste 428 breit); Zeile 1 jetzt 7 Elemente, alle ≥ 44 px. Kleine Schrift 10 px wie bisher. |
+| 9 | leicht: Version auch, wenn der Clip nur als v2 im Song spielt | **behoben** | `mtx4InSong` zählt nur v1 (`sx9At(...).v === 1`). Messung: Clip spielt nur als v2 → keine neue Version. |
+| 10 | leicht: Hinweis über Szenen-Köpfen nach jedem Tipp | **behoben** | Kein Hinweis mehr nach Tipp/Szenen-Kopf (der Zähler der Leiste zählt); nur noch beim Einstieg und als Ergebnis einer Aktion (1,6 s, lässt Tipps durch). |
+
+**Tests:** mtx4-test.mjs Endlauf 117/118 (einziger Fehlschlag: forcierter renderGrid-Dauerlauf nach ×2 einmal max 21,1 ms unter Last; zwei Nachläufe
+des Leistungsteils je 7/7 mit max 5,9 / 9,1 ms) – siehe test-ergebnis.txt; danach Schlusslauf (unten im LOG). Neuer Abschnitt „Prüfung“: P1 je Größe 8 Punkte,
+P2 1×/4×, P3/P4/P7/P9, P6. Regression: mtx3p-test 21/21. Fotos neu: `fotos/mtx4-pruef-undo-428x926.png`, `-926x428.png`, `-926x370.png`
+(dazu alle bisherigen neu, Leiste mit ↶ ↷).
+**Pflicht:** topdefs 26 Skripte, 0 doppelt, 0 Syntaxfehler · dupkeys 0 · smoke errors [] · „MS 2000“ 1× · „^  live: true,“ 1× · VERSION 4.68.0 ·
+keine Marken-/Produktnamen, keine Emoji-Grafik im Block.
+
+**Offen nach Prüfung:**
+- Befund 5 (Funk-Zustimmung) – Hauptsitzung.
+- Befund 2 bei 4× gedrosselter CPU (Kopflos, geteilte VM): Aktionen noch Long Tasks 50–129 ms (Grundlast ohne Aktion im selben Lauf: keine).
+  Der eigene Anteil ist blockweise ≤ 8 ms; der Rest steckt in vorhandenen Wegen je Bild (Teile-Leiste `renderPartBar`, Verlauf-Rekorder `hist*`,
+  Planung der laufenden Clips) und tritt bei 64 dichten Clips gleichzeitig auf. Weiter senken ginge nur in diesen vorhandenen Wegen (nicht MTX4).
+- ↶ ↷ der **App** (nicht der Leiste) eines großen MTX4-Schritts: die Vorschaubilder sind gestaffelt, das Zurücksetzen selbst läuft wie jedes
+  ↶ in einer Aufgabe (1×: 0 Long Tasks gemessen).
+- Befund 8: am iPhone ansehen.
