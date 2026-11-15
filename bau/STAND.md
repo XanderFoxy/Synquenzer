@@ -96,3 +96,8 @@ Weiter mit: 4.54 = rel-4540/k fertig prüfen + INT53D nachziehen + Versionszeile
 - Gestartet: w032b11iw (MV9 Spartricks: Recherche 3× + Bau + Prüfung), wr68ce7cx (SPK11 Spektral→Szenen + Nachbau im Ebenen-Menü; MTX3 Noten auslagern + Drum-Einzelspuren; Basis basis10 = R-4660), wfoe2qfg1 (IMP2B).
 - Handbuch: Hosts download.steinberg.net + steinberg.help im Default-Umfeld freigegeben (update_environment), aber Abruf vom Auto-Modus abgelehnt („Unauthorized Access“) → nicht umgehen; Xander soll PDF schicken (Link: download.steinberg.net/downloads_software/SpectraLayers_9/SpectraLayers_Pro_9_Operation_Manual_en.pdf). Auswertung nur privat in S/vx-privat.
 - Entschieden: MV8 Befund 5 (Top-Regel) ok; Befund 11 Kinderfilme aus „Neu“ raus (Disney hat eigenen Chip) → nächstes kleines Vorteil-Paket.
+- 02:20 Check-in: Trigger → 03:02; wip-loop läuft; Krypto „CoinGecko: 0 Nachricht(en), 0 gesendet“; Radar-Daten frisch (01:43), Dirty Harry 1971, Horror 0.
+- 02:20 Gestartet wedoacfux (MV10 Kinderfilme aus „Neu“: Chart 4410 + Wikidata Kinder/Familie/Animation + Genre-Text; Worktree mv10/bau → main).
+- 02:20 rel-4670/m1.html = R-4660 + MTX3 (sauber gemergt, basis10 = R-4660). SPK11 folgt, dann Regression r4670.
+- IMP2B: Prüfung sagt rv1 4/53, kein Code eingebaut → IMP2 bleibt geparkt, wenn Workflow nichts Besseres liefert.
+- 02:2x Xander schickte 2 PDFs (Safari-Druck der Online-Hilfe SL12, je 1 Seite = nur Titelblatt, kein Inhalt) → privat in vx-privat/handbuch; um echte PDF gebeten bzw. Erlaubnis „hol es selbst“.

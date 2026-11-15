@@ -5,7 +5,7 @@ imp1Core in `index.html` ist zeichengleich mit `vx/imp2/index.html` (sha256 des 
 Arbeitsdateien: `work/` (Sonden, Nachrechnungen, Läufe). Neue Test-Kopie: `vx/chr3/chr2-test-imp2b.mjs` (Original `chr2-test.mjs` unverändert).
 
 ## Kurz
-- imp1Core wird NUR vom Import benutzt (Worker + Hauptfaden). Chor, Takes, Gesang-Editor rechnen nichts mit IMP2-Code. Beide
+- ~~imp1Core wird NUR vom Import benutzt~~ **Korrektur (Prüfung M2):** auch die Spektral-Seite nimmt ihr Takt-Raster daraus (`spk1Grid` → `imp1Analyse`), s. „Prüfung“ unten. Import: Worker + Hauptfaden. Chor, Takes, Gesang-Editor rechnen nichts mit IMP2-Code. Beide
   Rückschritte kommen ausschließlich über das **Ergebnis** des Imports (Tempo → Projekt-Tempo → Dehnen/Lage des Takes). „IMP2 begrenzen“
   ist also schon so: es gibt keinen anderen Weg, der IMP2 benutzt.
 - (1) Chor: der Chor rechnet in Basis und IMP2 **genau den Plan** (Versatz je Kopie auf die Probe). Die 3 FEHLER sind Mess-Fehler von
@@ -34,15 +34,15 @@ Schätzung: der Gesang-Weg findet bei dieser konsonantenlosen Vokal-Melodie 17 E
 Warum chr2-test dann rot wird (Nachrechnung des Mess-Teils an den echten Puffern: `work/ana2.mjs` = Zeilen 126–159 des Tests unverändert →
 gibt exakt dieselben Zahlen wie der Browser-Lauf, inkl. NaN; `work/ana2fix.mjs` = korrigiert; `work/lag2.mjs` = Schätzer-Varianten + Mutation):
 1. **Falsche Abtastrate**: die Kopien-Puffer haben 48 kHz (Take-Rate), der Test rechnet mit SR = 44 100 → jeder Versatz × 1,088
-   (Basis-Werte 6,5/6 · 13,5/12 · 18,5/17 sind genau Plan × 48/44,1).
+   (Basis-Werte 6,5/6 · 13,5/12 · 18,5/17 liegen nahe Plan × 48/44,1 = 6,5 · 13,06 · 18,5 – **Korrektur L4:** „genau“ stimmt bei 13,5 gegen 13,06 nicht).
 2. **Mehrdeutiger Schätzer**: Hüllkurve nur 5 ms geglättet; bei der tiefen Stimme (oct-1, 131–196 Hz, Periode 5–7,6 ms) bleibt die
    Perioden-Welligkeit, die Kreuzkorrelation hat Gipfel im Abstand einer Periode, Unterschied r < 0,002 (IMP2 Kopie 5: 10,8 ms r 0,9789 ·
    17,9 ms r 0,9774). Mutation (echte Kopie künstlich +8 ms): alter Schätzer liest +4,0 / +12,2 ms (IMP2) bzw. +9,2…10,2 (Basis, ×1,088).
 3. **NaN** = 0/0: ein Formant-Rahmen (s = 94 501, im Vorlauf vor dem ersten Ton) liegt ganz in digitaler Stille (alle vier Fenster 0),
    die YIN-Prüfung schaut 40 ms nach vorn und sieht schon den Ton → `centroid` 0, `(0−0)/0` = NaN vergiftet den Mittelwert. In der Basis fällt
-   wegen 17 ms anderem Vorlauf kein Rahmen genau dorthin.
+   wegen anderem Vorlauf (erste Probe ≠ 0 bei 96 769 gegen 95 545, **25,5 ms** – Korrektur L4, vorher „17 ms“) kein Rahmen genau dorthin.
 
-Korrektur (nur Mess-Teil, Kopie `vx/chr3/chr2-test-imp2b.mjs`, Begründung im Kopf): SR = sampleRate des Puffers; Hüllkurve 20 ms; stiller
+Korrektur (nur Mess-Teil, Kopie `vx/chr3/chr2-test-imp2b.mjs`, Begründung im Kopf): SR = sampleRate des Puffers **für Versatz und Ausrichtung** (Korrektur L3: YIN und Formant-Band rechnen weiter mit 44 100, Band real 326–3 809 statt 300–3 500 Hz – für das Verhältnis harmlos); Hüllkurve 20 ms; stiller
 Rahmen zählt nicht. Alle Grenzen und übrigen Prüfungen zeichengleich. Mutation +8 ms jetzt 7,4…8,4 ms (Basis und IMP2).
 
 | chr2-Messung | Basis alt | IMP2 alt | Basis korrigiert | IMP2 korrigiert |
@@ -62,7 +62,7 @@ Läufe (einzeln nacheinander): `work/rv1-basis.txt` 1/53 (nur #10 Raster) · `wo
 | #14 Stücke · Raster · Verschiebe-Stück links | 35 · 34/35 OK · Stück 25 OK | 37 · **31/37 (frei daneben 1)** · Stück 35: Ausklang ab 346 ms (36 ms vor dem Schnitt, Grenze 31) ungleich |
 
 Gegenprobe mit gleicher Take-Lage (`work/rv1s-test.mjs` = Kopie von vx/imp2/fix/rv1t-test.mjs + `RV1_T1`: erkannter Taktanfang vorweg):
-- Basis #10 mit t1 0,388 (`work/rv1s-basis-10-t388.txt`): **31 Stücke, Knacken 4,05 an Schnitt 13, Raster 24/31** – zahlengleich mit IMP2.
+- Basis #10 mit t1 0,388 (`work/rv1s-basis-10-t388.txt`): **31 Stücke, Knacken an Schnitt 13, Raster 24/31** – gleiche Fehlerart wie IMP2. **Korrektur L1:** nicht zahlengleich wiederholbar (Prüfer 2×: Verhältnis 3,93 / d2 0,1435 statt 4,05 / 0,1102).
 - Basis #14 mit Tempo 120,6 + t1 0,686 (`work/rv1s-basis-14-b1206.txt`): NX1 q 0,99669 / 583 559 Proben wie IMP2, **37 Stücke, Raster 31/37,
   Stück 35 links Abweichung 0,1086 bei 346 ms** – zahlengleich mit IMP2.
 - IMP2 #10 mit t1 0,383 (`work/rv1s-index-10-t383.txt`): **32 Stücke, kein Knacken, Raster 24/32** – zahlengleich mit der Basis.
@@ -70,7 +70,7 @@ Gegenprobe mit gleicher Take-Lage (`work/rv1s-test.mjs` = Kopie von vx/imp2/fix/
 
 Damit: die Fehlerliste ist eine feste Funktion von (Tempo, t1) des Imports; der Gesang-Editor macht daraus Knacken/Raster/Ausklang.
 Die rv1-Prüfungen messen richtig (Knacken = 2. Ableitung 4× größer als irgendwo in ±20 ms Quelle; Raster/Ausklang = tatsächliche Lage) –
-keine Test-Kopie. Die Auswahl „Stück nach Index“ ist hier nicht die Ursache (#14: dieselbe Silbe, s. vx/imp2/NOTES Befund 2).
+keine Test-Kopie. ~~Die Auswahl „Stück nach Index“ ist hier nicht die Ursache (#14: dieselbe Silbe, s. vx/imp2/NOTES Befund 2).~~ **Korrektur L4:** der Beleg „dieselbe Silbe“ stammt aus Läufen auf 4.63; in 4.66 verschiebt die Basis Stück 25, IMP2 Stück 35 – den Schluss deckt die Gegenprobe RV1_BPM=120,6. **Korrektur nach Prüfung:** „Test misst richtig“ gilt für Knacken und Raster; beim Verschieben links misst der Test gegen eine gedehnte Fassung (s. „Prüfung“ unten).
 
 ## Zahlen vorher → nachher (dieses Paket)
 - chr2-test (Original): Basis 82/82, IMP2 3 FEHLER (unverändert, Ursache Test). Kopie mit korrigierter Messung: Basis 82/82, IMP2 **82/82**.
