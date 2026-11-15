@@ -5,3 +5,4 @@
 21:19 | load average: 1.54, 1.12, 0.84 | opt2 (Sortiernetz REPET, bassTrack4-Tabellen): Node 20 s 1,37 s (Basis 2,06), 3 min 9,2 s; bitgleich; Sicherung index.vor-opt2.html. Start Browser-A/B
 21:21 | load average: 6.90, 3.27, 1.68 | zrl1-test Lauf 1 ALLE OK: 20 s Median 1306 vs 1938 ms (x1,48), 3 min 12250 vs 15150 ms (Last bis 6,4), SDR/Energie gleich, RSS max 395 MB. Start Regression (reg/run.sh, 2 Ströme)
 21:29 | load average: 3.86, 6.11, 4.09 | Regression: spk5 24/24, spk6 26/26, fokus1 26/0, spk11b 17/0 (Kopie mit absolutem lib-Pfad), spk4 6 FEHLER → Basis-Lauf spk4 gestartet (basis-lauf/); Rauchtest errors [], topdefs 0/0, dupkeys 0
+21:32 | load average: 3.08, 4.93, 3.96 | spk1 17/18 (Basis gleich: verfeinern-verbessert-ziel), spk11 41/0, spkfix 11/11; warte auf spk4-Basis
