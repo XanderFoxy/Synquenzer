@@ -58,7 +58,7 @@ daneben (Luft/Atem mitten in der Pause) – aus der Nachbarschaft nicht ableitba
 | Abnahme kern3 (Raumton v2) gesamt / Pegel / Farbe | 29/50; 14/24; 8/24 | 29/50; 14/24 (C näher an 0); 8/24 |
 | Abnahme kern2 Raumton v1 Pegel / Farbe im Ziel | 9/28; 9/28 | **14/28**; 9/28 |
 
-Pflicht (Endfassung md5 4449057f6ec65ea4b7c1f4ecc70d4ea2): topdefs „Skripte 26, Namen 7918, doppelt 0, Syntaxfehler 0“, dupkeys „0 doppelte Schlüssel“,
+Pflicht (Endfassung md5 ec3ca89fdc4baf2f9fbf9b0e3479f6a5): topdefs „Skripte 26, Namen 7918, doppelt 0, Syntaxfehler 0“, dupkeys „0 doppelte Schlüssel“,
 smoke errors [], „MS 2000“ 1×, „^  live: true,“ 1×, VERSION '4.73.0', außerhalb des VOXR1-Blocks bitgleich zu basis.html.
 Regression: vx1 61/61, vx2 14/14, vx3 15/15, chr2 82/82 (ALLE OK).
 Tempo: die erste Endfassung rechnete bei starken Klicks die LSAR doppelt (+5…+14 %); behoben (Entscheidung vor der LSAR), Ausgabe bitgleich
@@ -84,3 +84,8 @@ Keine neuen Haken. Alle Änderungen in `vr1Make` (VOXR1-Block): `clickScan` (BIG
   heller“ nicht erreichbar (wäre auf den Test zugeschnitten). Die Fenster-Wahl ({ton: 30}) half dort und im Prüfer-Kern, schadete aber kern2
   (B/A48) – bleibt als Schalter für einen späteren Versuch (z. B. nur wählen, wenn der Nahbereich rauschartig UND leiser als die Lücke ist).
 - Klick-Füllung zu leise in den Höhen (Rauschen in Nachbar-Farbe ergänzen) nicht gebaut: senkt den Überstand nicht und erhöht den Fehler gegen sauber.
+
+## Endlauf (Kette 3, Endfassung md5 ec3ca89fdc4baf2f9fbf9b0e3479f6a5, Last 6,5 → 11,8)
+kern 55/60 – die Inhalts-Prüfungen gleich wie Basis (56/60), zusätzlich FEHLER nur die 3-min-Zeit (Median 13,0 s bei Last ≈ 10–12; derselbe Rechenweg
+bestand in Kette 2 mit 19,7 s ×3 und im A/B gegen Basis +3…+5 %). dev 78/83 (Zeit-Prüfungen unter Last; einzeln bei Last 5–7: 80/83 gegen Basis 76/83).
+smoke errors [], vx1 61/61, vx2 14/14, vx3 15/15, chr2 82/82. Die 3-min-Ausgabe ist mit Kette 2 bitgleich (FNV 679d4930).
