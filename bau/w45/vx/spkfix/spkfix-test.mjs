@@ -2,7 +2,7 @@
 // Aufruf: node spkfix-test.mjs <abs. index.html>   → spkfix-test.json neben diesem Skript; Ausgang 1 bei Fehler
 import {execFileSync} from 'node:child_process'; import fs from 'node:fs'; import path from 'node:path'; import {fileURLToPath} from 'node:url';
 const D = path.dirname(fileURLToPath(import.meta.url)), file = path.resolve(process.argv[2] || path.join(D, 'index.html')), res = []; let fails = 0;
-const EXTRA = 'spk8DspMake,spk10Okt,spk9DspMake,spk12SelFn,spk12Ras,spk12Fft,spk12Win,spk12Mag,spk12K2,spk12DspMake,spkfixS6,spkfixImpClean,spkfixName,spkfixDspMake';
+const EXTRA = 'spk8DspMake,spk10Okt,spk9DspMake,spk12SelFn,spk12Ras,spk12Fft,spk12Win,spk12Mag,spk12K2,spk12DspMake,spkfixS6,spkfixImpClean,spkfixName,spkfixMaskRange,spkfixPatch,spkfixUid,spkfixDspMake';
 const run = s => execFileSync('node', [path.join(D, 'sonde', s), file], {env: Object.assign({}, process.env, {EXTRA, NODE_PATH: '/opt/node-tools/node_modules'}), encoding: 'utf8', timeout: 900000, maxBuffer: 1 << 26});
 const ok = (k, v, c) => { res.push({k, v, ok: !!c}); if (!c) fails++; console.log((c ? 'OK     ' : 'FEHLER ') + k + ' ' + JSON.stringify(v)); };
 const t0 = Date.now();

@@ -100292,6 +100292,7 @@ function spk1DspMake(V) {
     const art = ['bass', 'gesang', 'drums', 'lead', 'pads', 'eigene'].includes(o.art) ? o.art : 'eigene';
     const COL = {bass: '--t1', gesang: '--t6', drums: '--t5', lead: '--t4', pads: '--t3', eigene: '--t8'};
     const l = {id: 'L' + n, name: String(o.name || ({bass: 'Bass', gesang: 'Gesang', drums: 'Drums', lead: 'Lead', pads: 'Pads'}[art] || 'Ebene ' + n)).slice(0, 40), art, col: o.col || COL[art], vol: 0, solo: false, mute: false, ver: ++d.vc};
+    if (typeof spkfixUid === 'function') spkfixUid(d, l);   /* SPKFIX: Kennung der Ebene (Nachbau gehört zu genau dieser Ebene) */
     d.meta.layers.push(l); return l;
   }
   function transfer(d, o) {
@@ -103839,7 +103840,7 @@ function spk8DspMake(Z2) {
 }
 // Worker-Text: spk8DspMake wird an den Kern-Text angehängt (Funktions-Deklaration → im Worker schon beim Aufbau des Kerns da)
 function spk8WUrl(src, u) {
-  if (typeof spkfixDspMake === 'function') src = src + ';' + [spkfixS6, spkfixImpClean, spkfixName, spkfixDspMake].map(f => f.toString()).join(';') + ';';   /* SPKFIX: Kern-Ergänzung in den Spektral-Worker */
+  if (typeof spkfixDspMake === 'function') src = src + ';' + [spkfixS6, spkfixImpClean, spkfixName, spkfixMaskRange, spkfixPatch, spkfixUid, spkfixDspMake].map(f => f.toString()).join(';') + ';';   /* SPKFIX: Kern-Ergänzung in den Spektral-Worker */
   if (typeof spk12DspMake === 'function') src = src + ';' + [spk12SelFn, spk12Ras, spk12Fft, spk12Win, spk12Mag, spk12K2, spk12DspMake].map(f => f.toString()).join(';') + ';';   /* SPK12: Auswahl-Kern in den Spektral-Worker */
   try { const v = URL.createObjectURL(new Blob([src, ';' + spk8DspMake.toString() + ';' + (typeof spk10Okt === 'function' ? spk10Okt.toString() + ';' : '') /* SPK10 */], {type: 'application/javascript'})); try { URL.revokeObjectURL(u); } catch (e) {} setTimeout(() => { try { URL.revokeObjectURL(v); } catch (e) {} }, 30000); return v; } catch (e) { return u; }
 }
@@ -105760,7 +105761,7 @@ function spk6DspMake(I) {
     s6audio: async (d, m) => { const l = lidOk(d, m.lid); if (!l.a6) return {x: null}; const X = A6(d).get(l.a6.id); return {x: X ? axFlat(X) : null, o: l.a6.o, sc: l.a6.sc, sr: d.meta.sr}; },
     s6key: async (d, m) => keyOf(t2(d).notes[m.lid] || []),
     s6mem: async d => Object.assign(memOf(d), {undo6: d.undo.length, busy: d.busy || null})};
-  if (typeof spkfixS6 === 'function') spkfixS6(I, {make, msig, put6, toAudio, budget, cl, t2});   /* SPKFIX: Neu rechnen nach Masken-Änderung */
+  if (typeof spkfixS6 === 'function') spkfixS6(I, {make, msig, put6, toAudio, budget, cl, t2, A6, axRd, axPut, axOf, pack, peak, baseWin, synth, HR});   /* SPKFIX: Neu rechnen nach Masken-Änderung */
   if (I.Z2) { I.Z2.ops = I.Z2.ops || {}; Object.assign(I.Z2.ops, ops); }
   return {open, flush, exp, imp, k6, acc, block, fxNorm, fxOn, keyOf, ivOf, tAll, gone, memOf};
 }
@@ -109571,44 +109572,113 @@ async function spkfixImpClean(id, keys, del) {   // (6) alte Masken-Streifen der
   for (const k of await keys('audio', 'spk:' + id + ':m')) { await del('audio', k); n++; }
   return n;
 }
-function spkfixName(out, o, midiOf) {   // (2) Grundton-Spitze (Parabel im Log-Betrag) statt Raster, nur wenn der Grundton den Klang trägt
+function spkfixName(out, o, midiOf) {   // (2) Tonhöhe aus der Grundton-Spitze (Parabel im Log-Betrag) statt aus dem Raster, wenn der Grundton den Klang trägt
   if (!Array.isArray(out) || !o || !o.Y || !o.K || !o.df || !o.hopS) return out;
   const {Y, K, df, i0, F, hopS} = o, md = typeof midiOf === 'function' ? midiOf : f => 69 + 12 * Math.log2(f / 440), A = new Float64Array(K);
+  const band = (fc, w) => [Math.max(1, Math.floor(fc * Math.pow(2, -w / 12) / df) - 1), Math.min(K - 2, Math.ceil(fc * Math.pow(2, w / 12) / df) + 1)];
+  const isPk = k => A[k] > 0 && A[k] >= A[k - 1] && A[k] >= A[k + 1];
+  const par = kb => { const la = Math.log(A[kb - 1] + 1e-12), lb = Math.log(A[kb] + 1e-12), lc = Math.log(A[kb + 1] + 1e-12), den = la - 2 * lb + lc; return (kb + (den < 0 ? Math.max(-0.5, Math.min(0.5, 0.5 * (la - lc) / den)) : 0)) * df; };
   for (const q of out) {
     if (!q || !(q.f > 0) || !(q.b > q.a)) continue;
     const ia = Math.max(0, Math.ceil((q.a + 0.035) / hopS) - (i0 | 0)), ib = Math.min(F, Math.floor((q.b - 0.01) / hopS) - (i0 | 0) + 1); if (ib - ia < 2) continue;
-    const band = (fc, w) => [Math.max(1, Math.floor(fc * Math.pow(2, -w / 12) / df) - 1), Math.min(K - 2, Math.ceil(fc * Math.pow(2, w / 12) / df) + 1)];
-    const [k0, k1] = band(q.f, 1.5); if (k1 - k0 < 2) continue;
-    const kTop = Math.min(K - 2, Math.ceil(3.6 * q.f / df)); A.fill(0, 0, kTop + 2);
+    const kTop = Math.min(K - 2, Math.ceil(7.5 * q.f / df)); if (kTop < 4) continue; A.fill(0, 0, kTop + 2);
     for (let i = ia; i < ib; i++) { const o2 = i * K; for (let k = 1; k <= kTop + 1; k++) A[k] += Y[o2 + k]; }
-    let kb = -1; for (let k = k0 + 1; k < k1; k++) if (A[k] > 0 && A[k] >= A[k - 1] && A[k] >= A[k + 1] && (kb < 0 || A[k] > A[kb])) kb = k;
-    if (kb < 0) continue;
     const pkIn = (fc, w) => { const [a, b] = band(fc, w); let m = 0; for (let k = a; k <= Math.min(b, kTop + 1); k++) if (A[k] > m) m = A[k]; return m; };
-    if (pkIn(2 * q.f, 1) * 2 > A[kb] || pkIn(3 * q.f, 1) * 2 > A[kb]) continue;   // Obertöne tragen mit → das Raster der Kamm-Suche stimmt schon
-    const la = Math.log(A[kb - 1] + 1e-12), lb = Math.log(A[kb] + 1e-12), lc = Math.log(A[kb + 1] + 1e-12), den = la - 2 * lb + lc, sh = den < 0 ? Math.max(-0.5, Math.min(0.5, 0.5 * (la - lc) / den)) : 0;
-    const fr = (kb + sh) * df, dm = md(fr) - md(q.f);
-    if (!(fr > 0) || Math.abs(dm) < 0.3 || Math.abs(dm) > 1.6 || Math.round(md(fr)) === q.m) continue;
+    let fr = 0;
+    { // (a) fast reiner Ton: EINE Spitze trägt den Klang (jede andere Spitze bis 7,5·f < ¼, unter ihr bei f/2 und f/3 < 1/10) → ihre Tonhöhe, auch weit weg vom Raster
+      const kL = Math.max(2, Math.floor(0.45 * q.f / df)), kH = Math.min(kTop, Math.ceil(2.2 * q.f / df)); let kb = -1;
+      for (let k = kL; k <= kH; k++) if (isPk(k) && (kb < 0 || A[k] > A[kb])) kb = k;
+      if (kb > 0) {
+        let dom = true; for (let k = 2; k <= kTop; k++) if (Math.abs(k - kb) > 2 && isPk(k) && A[k] * 4 > A[kb]) { dom = false; break; }
+        const f1 = dom ? par(kb) : 0;
+        if (f1 > 0 && 3 * f1 / df <= kTop + 1 && pkIn(f1 / 2, 1) * 10 <= A[kb] && (f1 / 3 / df < 2 || pkIn(f1 / 3, 1) * 10 <= A[kb])) fr = f1;
+      }
+    }
+    if (!fr) { // (b) wie bisher: Spitze nahe dem Raster-Ton, 2./3. Oberton < ½ der Spitze, Abstand 0,3–1,6 Halbtöne
+      const [k0, k1] = band(q.f, 1.5); if (k1 - k0 < 2) continue;
+      let kb = -1; for (let k = k0 + 1; k < k1; k++) if (isPk(k) && (kb < 0 || A[k] > A[kb])) kb = k;
+      if (kb < 0) continue;
+      if (pkIn(2 * q.f, 1) * 2 > A[kb] || pkIn(3 * q.f, 1) * 2 > A[kb]) continue;   // Obertöne tragen mit → das Raster der Kamm-Suche stimmt schon
+      const f1 = par(kb), d1 = md(f1) - md(q.f); if (!(f1 > 0) || Math.abs(d1) > 1.6) continue; fr = f1;
+    }
+    const dm = md(fr) - md(q.f);
+    if (!(fr > 0) || Math.abs(dm) < 0.3 || Math.abs(dm) > 13 || Math.round(md(fr)) === q.m) continue;
     const rf = fr / q.f; q.f = +fr.toFixed(2); q.m = Math.round(md(fr)); if (Array.isArray(q.fz)) q.fz = q.fz.map(v => +(v * rf).toFixed(1));
   }
   return out;
 }
+// (1) Zeitbereich [Sekunden der Grundlage] der Masken-Streifen der Ebene b, die die eben gelaufene Op geändert hat (aus ihren ↶-Schritten ab u0);
+// null = unklar (dann ganz rechnen)
+function spkfixMaskRange(d, b, u0, S6) {
+  const I = S6.I, U = d.undo || [], k0 = u0 ? U.lastIndexOf(u0) + 1 : 0, steps = U.slice(k0); if (!steps.length) return null;
+  const same = (p, q) => { const ph = p ? p.h : null, qh = q ? q.h : null, n = Math.max(ph ? ph.length : 0, qh ? qh.length : 0);
+    for (let i = 0; i < n; i++) { const a = ph ? ph[i] | 0 : 0, c = qh ? qh[i] | 0 : 0; if (a !== c) return false; if (a === 1) { const x = p.t[i], y = q.t[i]; if (!x || !y || x.length !== y.length) return false; for (let j = 0; j < x.length; j++) if (x[j] !== y[j]) return false; } }
+    return true; };
+  let lo = Infinity, hi = -Infinity;
+  for (const u of steps) for (const [k, prev] of u.st || []) { const i = k.lastIndexOf('|'); if (k.slice(0, i) !== b) continue; const s = +k.slice(i + 1); if (steps.length === 1 && same(prev, I.stripe(d, b, s, false))) continue; if (s < lo) lo = s; if (s > hi) hi = s; }
+  if (!(hi >= lo)) return null;
+  const hop = d.meta.base.hop, N = d.meta.base.N, ov = N / hop, BT = I.BT, sr = d.meta.sr;   // Rahmen m beginnt bei (m − ov + 1)·hop und ist N lang
+  return [Math.max(0, (lo * BT - ov + 1) * hop) / sr, (((hi + 1) * BT - ov) * hop + N) / sr];
+}
+// (1) nur [A, B] (Sekunden der Grundlage) einer Audio-Ebene neu rechnen – Verfahren wie patchA (SPK6): verschobene Noten, die hineinragen, ganz dazu,
+// Ränder an die leiseste Stelle (± 0,5 s), 10 ms Blende, 0,25 s Vorlauf; der Rest bleibt bitgleich (geteilte Stücke). null = ganz rechnen
+async function spkfixPatch(S6, d, l, a, Ns, A, B) {
+  const aOld = l.a6, X = aOld && aOld.id ? S6.A6(d).get(aOld.id) : null; if (!X || !aOld.hs || !(B > A)) return null;
+  const sr = d.meta.sr, n = X.n, dts = (+a.dt || 0) / 1000, o0 = aOld.o - Math.round(dts * sr), nop = () => {};
+  A -= 0.2; B += 0.2;
+  const mvd = []; for (const q of Ns) if (q.o6 && Math.abs(q.a - dts - q.o6.a) * sr >= 1) mvd.push([Math.min(q.o6.a, q.a - dts) - 0.05, Math.max(q.o6.b, q.b - dts) + 0.05]);
+  for (let grow = true; grow;) { grow = false; for (const [lo, hi] of mvd) if (hi > A && lo < B && (lo < A || hi > B)) { A = Math.min(A, lo); B = Math.max(B, hi); grow = true; } }
+  const th = (aOld.sc || 1) / S6.HR * 1e-4;   // klingt die neue Grundlage außerhalb des bisherigen Audios, wird die Ebene länger → ganz rechnen
+  for (const [p0, p1] of [[Math.max(0, Math.floor(A * sr)), o0], [o0 + n, Math.min(d.meta.n, Math.ceil(B * sr))]]) {
+    if (p1 - p0 < 1) continue; const x = await S6.baseWin(d, a.b, p0, p1, null); for (let i = 0; i < x.length; i++) if (Math.abs(x[i]) > th) return null;
+  }
+  const a0 = Math.floor(A * sr) - o0, b0 = Math.ceil(B * sr) - o0;
+  if (b0 <= 0 || a0 >= n) return {X, o: aOld.o, n, sc: aOld.sc || 1, regs: 0, moved: 0, part: null};   // Änderung nur außerhalb (dort still): Audio bleibt
+  if (Math.min(n, b0) - Math.max(0, a0) > 0.6 * n) return null;   // fast alles geändert: ganz rechnen
+  const QW = Math.round(0.01 * sr), SR = Math.round(0.5 * sr), buf = new Float32Array(QW);
+  const quiet = (from, dir) => { let best = from, bv = Infinity; for (let s = from, k = 0; k * (QW >> 1) <= SR && s >= 0 && s + QW <= n; s += dir * (QW >> 1), k++) { S6.axRd(X, s, buf, 1); let e = 0; for (let i = 0; i < QW; i++) e += buf[i] * buf[i]; if (e < bv) { bv = e; best = s; } } return best; };
+  const sa = a0 <= QW ? 0 : quiet(a0 - QW, -1), sb = b0 >= n - QW ? n : quiet(b0, 1) + QW;
+  const N = l.art === 'bass' ? (sr > 32000 ? 4096 : 2048) : (sr > 32000 ? 2048 : 1024), Mg = Math.round(0.25 * sr) + N, ca = Math.max(0, sa - Mg), cb = Math.min(n, sb + Mg);
+  const xw = await S6.baseWin(d, a.b, o0 + ca, o0 + cb, null), s = await S6.synth(sr, l.art, a, Ns, xw, o0 + ca, nop);
+  const L = sb - sa, z = new Float32Array(L), go = (aOld.sc || 1) / 32767; S6.axRd(X, sa, z, go);
+  for (let i = 0; i < L; i++) { const wa = sa > 0 && i < QW ? 0.5 - 0.5 * Math.cos(Math.PI * i / QW) : 1, wb = sb < n && i >= L - QW ? 0.5 - 0.5 * Math.cos(Math.PI * (L - i) / QW) : 1, w = Math.min(wa, wb); z[i] = z[i] * (1 - w) + s.y[sa - ca + i] * w; }
+  let sc = aOld.sc || 1, Xn; const pk = S6.peak(z);
+  if (pk <= sc) Xn = S6.axPut(X, sa, S6.pack(z, sc));
+  else { sc = pk * S6.HR; const Fx = S6.axRd(X, 0, new Float32Array(n), go); Fx.set(z, sa); Xn = S6.axOf(S6.pack(Fx, sc)); }   // lauter als bisher: einmal neu skalieren
+  return {X: Xn, o: aOld.o, n, sc, regs: s.regs, moved: s.moved, part: [+((aOld.o + sa) / sr).toFixed(3), +((aOld.o + sb) / sr).toFixed(3)]};
+}
+// (3) jede neue Ebene bekommt eine Kennung, die ↶/↷ überdauert (eine neue Ebene mit derselben Nummer ist eine andere Ebene)
+function spkfixUid(d, l) { if (d && d.meta && l && !l.u11) { d.meta.u11c = (d.meta.u11c | 0) + 1; l.u11 = 'e' + d.meta.u11c; } }
 function spkfixDspMake(X) {   // X = {op, Z2, open, info, soon}; Rückgabe: op mit Neu-Rechnen (1), Notenname (2) und Nachbau-Ablage (3)
   const {Z2, open, info, soon} = X, op0 = X.op; if (typeof op0 !== 'function') return op0;
   if (Z2 && Z2.opt && Z2.h && !Z2.opt.fixName) { const s0 = typeof Z2.opt.seg9 === 'function' ? Z2.opt.seg9 : Z2.h.segNotes; if (typeof s0 === 'function') { Z2.opt.seg9 = o => spkfixName(s0(o), o, Z2.h.midiOf); Z2.opt.fixName = 1; } }
   if (Z2) { Z2.ops = Z2.ops || {}; Z2.ops.spkfixKl = async (d, m) => {   // (3) Nachbau-Ergebnis der Ebene im Dokument (kein ↶-Schritt: kein Eingriff in Klang/Masken)
     const K = d.meta.spkKl || (d.meta.spkKl = {}); if (!m.lid) return {n: Object.keys(K).length};
-    if (m.kl && typeof m.kl === 'object') K[m.lid] = m.kl; else delete K[m.lid];
-    d.metaDirty = true; soon(d); return {n: Object.keys(K).length, spkKl: JSON.parse(JSON.stringify(K))}; }; }
+    const l = d.meta.layers.find(x => x.id === m.lid);
+    if (m.kl && typeof m.kl === 'object' && l) { if (!l.u11) { if (m.uid) l.u11 = String(m.uid).slice(0, 40); else spkfixUid(d, l); } K[m.lid] = Object.assign({}, m.kl, {tk: l.u11}); } else delete K[m.lid];
+    d.metaDirty = true; soon(d); return {n: Object.keys(K).length, spkKl: JSON.parse(JSON.stringify(K)), u11: l ? l.u11 || null : null}; }; }
   const MASK = new Set(['transfer', 'zerlegen', 'verfeinern', 'profi', 'zuordnen', 'restAuf', 'spk5Zerl', 'spk5Profi']);
-  async function redo6(d) {   // (1) Audio-Ebenen, deren Grundlage sich geändert hat, ganz neu rechnen – ohne eigenen ↶-Schritt (der Schritt davor hält beides)
+  function pre6(d) {   // (1) vor der Masken-Op: passt jede Audio-Ebene noch zu ihrer Grundlage? (nur dann reicht danach der geänderte Bereich)
+    const S6 = Z2 && Z2.fx6; if (!S6 || !d || !d.meta || !Array.isArray(d.meta.layers)) return null;
+    const Ls = d.meta.layers.filter(l => l.a6 && l.a6.id && l.a6.hs); if (!Ls.length) return null;
+    const sig = new Map(), ok = new Map(), nj = new Map();
+    for (const l of Ls) { const b = l.a6.b; if (!sig.has(b)) sig.set(b, S6.msig(d, b)); ok.set(l.id, sig.get(b) === l.a6.hs); nj.set(l.id, JSON.stringify(S6.t2(d).notes[l.id] || [])); }
+    return {u0: (d.undo || [])[(d.undo || []).length - 1] || null, ok, nj};
+  }
+  async function redo6(d, pre) {   // (1) Audio-Ebenen, deren Grundlage sich geändert hat, neu rechnen – nur den geänderten Bereich (sonst ganz) – ohne eigenen ↶-Schritt
     const S6 = Z2 && Z2.fx6; if (!S6 || !d || !d.meta || d.busy) return 0;
     const Ls = d.meta.layers.filter(l => l.a6 && l.a6.id && l.a6.hs && S6.I.lay(d, l.a6.b)); if (!Ls.length) return 0;
-    const sig = new Map(); let n = 0; d.busy = 's6';
+    const sig = new Map(), rgs = new Map(); let n = 0; d.busy = 's6'; SPKFIX_K.part = 0; SPKFIX_K.full = 0;
     try {
       for (const l of Ls) {
         const b = l.a6.b; if (!sig.has(b)) sig.set(b, S6.msig(d, b)); if (sig.get(b) === l.a6.hs) continue;
         const L = S6.cl(l), Ns = S6.cl(S6.t2(d).notes[l.id] || []); S6.toAudio(L, Ns);
-        const r = await S6.make(d, l, L.a6, Ns, Ns, null, true);
+        let r = null;
+        if (pre && pre.ok.get(l.id) && pre.nj.get(l.id) === JSON.stringify(S6.t2(d).notes[l.id] || []) && S6.baseWin && S6.synth) {   // vorher stimmig, Noten gleich: nur der Bereich der geänderten Streifen
+          if (!rgs.has(b)) { let rg = null; try { rg = spkfixMaskRange(d, b, pre.u0, S6); } catch (e) {} rgs.set(b, rg); }
+          const rg = rgs.get(b); if (rg) { try { r = await spkfixPatch(S6, d, l, L.a6, Ns, rg[0], rg[1]); } catch (e) { r = null; } }
+        }
+        if (r) SPKFIX_K.part++; else { SPKFIX_K.full++; r = await S6.make(d, l, L.a6, Ns, Ns, null, true); }
         if (S6.I.lay(d, l.id) !== l) continue;
         S6.put6(d, l, L.a6, Ns, r); n++;
       }
@@ -109616,7 +109686,10 @@ function spkfixDspMake(X) {   // X = {op, Z2, open, info, soon}; Rückgabe: op m
     if (n) { d.metaDirty = true; try { S6.budget(d); } catch (e) {} soon(d); }
     return n;
   }
+  const SPKFIX_K = {part: 0, full: 0};   // zuletzt: Ebenen nur im Bereich / ganz neu gerechnet (für Messungen)
   return async function (m, emit) {
+    let pre = null;
+    if (m && m.doc && !m.dry && MASK.has(m.op)) { try { pre = pre6(await open(m.doc)); } catch (e) { pre = null; } }
     const r = await op0(m, emit);
     if (!m || !m.doc || m.dry) return r;
     const lw = m.op === 'layer' && m.was === 'weg';
@@ -109624,37 +109697,52 @@ function spkfixDspMake(X) {   // X = {op, Z2, open, info, soon}; Rückgabe: op m
     try {
       const d = await open(m.doc);
       if (lw && d.meta.spkKl && d.meta.spkKl[m.lid]) { delete d.meta.spkKl[m.lid]; d.metaDirty = true; soon(d); }
-      const n = await redo6(d);
-      if ((n || lw) && r && typeof r === 'object' && r.meta) Object.assign(r, info(d), n ? {neu6: n} : {});
+      const n = await redo6(d, pre);
+      if ((n || lw) && r && typeof r === 'object' && r.meta) Object.assign(r, info(d), n ? {neu6: n, neu6t: SPKFIX_K.part ? 'bereich' : 'ganz'} : {});
     } catch (e) {}
     return r;
   };
 }
 // ---- Seite ----
-const SPKFIX = {lbl: null, warm: 0};
+const SPKFIX = {lbl: null, warm: 0, tok: new Map(), tn: 0, tnm: null};
 function spkfixStep(label) { SPKFIX.lbl = label || null; }   // imp1Step: welcher Schritt läuft gerade (synchron)
 function spkfixOrigT() {   // (4) Loop → Matrix (Audio): Spur der eigenen Ebene (Name wie beim Szenen-Anlegen), sonst eine neue, sonst eine leere Zusatzspur
   if (SPKFIX.lbl !== 'Loop in die Matrix (Audio)') return null; SPKFIX.lbl = null;
   const U = typeof SPK1 !== 'undefined' && SPK1.ui; if (!U || !U.meta) return null;
   const lid = U.act || 'orig', l = U.meta.layers.find(x => x.id === lid), nm = lid === 'orig' || !l ? 'Original' : String(l.name || 'Ebene');
-  const names = new Set([nm.slice(0, 20), (nm.slice(0, 14) + ' Audio').slice(0, 20)]), free = i => typeof spk2Free === 'function' ? spk2Free(i) >= 0 : true;
-  const own = []; for (let i = 0; i < S.tracks.length; i++) { const t = S.tracks[i]; if (t && t.orig && !t.stimme && names.has(t.name)) own.push(i); }
+  const nmOf = x => [String(x).slice(0, 20), (String(x).slice(0, 14) + ' Audio').slice(0, 20)], free = i => typeof spk2Free === 'function' ? spk2Free(i) >= 0 : true;
+  const names = new Set(nmOf(nm)), lay = new Set(); for (const x of U.meta.layers) if (x && x.id !== 'orig' && x.name) for (const y of nmOf(x.name)) lay.add(y);
+  const own = []; for (let i = 0; i < S.tracks.length; i++) { const t = S.tracks[i]; if (t && t.orig && !t.stimme && (lid === 'orig' ? !lay.has(t.name) : names.has(t.name))) own.push(i); }   // Original: jede Audio-Spur, die keiner Ebene gehört (auch umbenannt)
   const hit = own.find(free); if (hit != null) return hit;
   if (canAddTrack()) { const i = NT(), t = newSynthTrack(i); t.name = nm.slice(0, 20); t.orig = true; restoreTrack(i, JSON.stringify(t)); if (S.tracks[i]) { S.tracks[i].orig = true; return i; } }
   for (let i = NT() - 1; i >= BASE_T; i--) { const t = S.tracks[i]; if (t && !t.stimme && !t.orig && tkTrackEmpty(i)) { t.orig = true; t.name = nm.slice(0, 20); return i; } }
-  return null;   // kein Platz: wie bisher (erste Audio-Spur)
+  if (own.length) { SPKFIX.tnm = S.tracks[own[0]].name; queueMicrotask(() => { SPKFIX.tnm = null; }); return own[0]; }   // kein Platz: die eigene Spur, Hinweis „Keine freie Szene“ mit ihrem Namen
+  return null;   // gar keine eigene Spur und kein Platz: wie bisher (erste Audio-Spur)
 }
+{ const t0 = toast; toast = function (msg, actions) {   // (4) Hinweis bei vollem Platz nennt die Spur der Ebene statt „Original“ (nur während Loop → Matrix)
+  if (SPKFIX.tnm && typeof msg === 'string' && msg.includes('„Original“') && SPKFIX.tnm !== 'Original') msg = msg.split('„Original“').join('„' + SPKFIX.tnm + '“');
+  return t0.apply(this, arguments.length > 1 ? [msg, actions] : [msg]);
+}; }
 function spkfixKlOf(best) {   // (3) Nachbau-Werte ohne Audio (pcm) – klein, JSON
   try { return JSON.parse(JSON.stringify(best, (k, v) => k === 'pcm' || (v && typeof v === 'object' && ArrayBuffer.isView(v)) ? undefined : v)); } catch (e) { return null; }
 }
 { const f0 = spk2KlRun; spk2KlRun = async function (U, more) {   // (3) nach jedem Nachbau: Ergebnis ins Dokument
   const r = await f0(U, more);
-  try { const K = U && U.kl; if (r && r.best && K && K.lid && SPK1.doc) { const kl = spkfixKlOf(r.best); if (kl) { const doc = SPK1.doc; if (U.meta) { U.meta.spkKl = Object.assign({}, U.meta.spkKl || {}, {[K.lid]: kl}); } spk1Call('spkfixKl', {doc, lid: K.lid, kl}).catch(e => logErr(e)); } } } catch (e) { logErr(e); }
+  try { const K = U && U.kl; if (r && r.best && K && K.lid && SPK1.doc) { const kl = spkfixKlOf(r.best); if (kl) {
+    const doc = SPK1.doc, ly = U.meta && (U.meta.layers || []).find(x => x.id === K.lid), uid = (ly && ly.u11) || ('s' + Date.now().toString(36) + (++SPKFIX.tn));   // Kennung der Ebene: der Nachbau gehört zu genau ihr
+    if (ly && !ly.u11) ly.u11 = uid; SPKFIX.tok.set(doc + '|' + K.lid, uid);
+    if (U.meta) U.meta.spkKl = Object.assign({}, U.meta.spkKl || {}, {[K.lid]: Object.assign({}, kl, {tk: uid})});
+    spk1Call('spkfixKl', {doc, lid: K.lid, kl, uid}).catch(e => logErr(e)); } } } catch (e) { logErr(e); }
   return r;
 }; }
-{ const M = SPK11.kl, g0 = M.get.bind(M); M.get = function (k) {   // (3) nach dem Laden: Nachbau aus dem Dokument (Sitzungs-Ergebnis geht vor)
-  const v = g0(k); if (v) return v;
-  try { const U = SPK1.ui, i = String(k).indexOf('|'); if (!U || !U.meta || !U.meta.spkKl || i < 0 || String(k).slice(0, i) !== SPK1.doc) return v; return U.meta.spkKl[String(k).slice(i + 1)] || v; } catch (e) { return v; }
+{ const M = SPK11.kl, g0 = M.get.bind(M); M.get = function (k) {   // (3) Nachbau der Ebene: Sitzung, sonst Dokument – nur, wenn er zu genau dieser Ebene gehört (Kennung u11)
+  const v = g0(k);
+  try {
+    const U = SPK1.ui, i = String(k).indexOf('|'); if (!U || !U.meta || i < 0 || String(k).slice(0, i) !== SPK1.doc) return v;
+    const lid = String(k).slice(i + 1), ly = (U.meta.layers || []).find(x => x.id === lid); if (!ly) return undefined;   // die Ebene gibt es nicht (mehr), z. B. nach ↶
+    const tk = SPKFIX.tok.get(k); if (v && (!tk || ly.u11 === tk)) return v;
+    const e = U.meta.spkKl && U.meta.spkKl[lid]; return e && e.tk && ly.u11 === e.tk ? e : undefined;   // andere Ebene mit derselben Nummer: kein Nachbau
+  } catch (e) { return v; }
 }; }
 function spkfixWarm() {   // (5) Klangkorn-Quellen (Take → Spektren) gleich nach dem Laden holen, damit der erste Ton nicht still ist
   const g = ++SPKFIX.warm;
