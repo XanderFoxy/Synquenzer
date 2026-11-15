@@ -61645,8 +61645,10 @@ function* roomLearn(x, sr) {
   // 3 dB darüber (ohne Überlappung, zusammen ≤ 2 s). Der Rauschteppich liegt in Pausen, nicht in leisem Gesang.
   const WN = 20, cands = [];
   const tw = new Float64Array(WN);
-  // VOXR1C: Rahmen unter −90 dBFS (stiller Anlauf, Ausblende, nur Bit-Rauschen) sind kein Raumton – Take B lernte sonst −94 dB bei −37 dB Rauschboden
-  for (let j = 0; j + WN <= nf; j += 5) { let c = 0; for (let q = j; q < j + WN; q++) if (Lf[q] > -90) tw[c++] = Lf[q]; if (c < WN) continue; tw.sort(); cands.push({j, m: tw[WN >> 1]}); }   // Mittelwert (dB) je Fenster
+  // VOXR1C: Läge das Leiseste mehr als 40 dB unter dem 10-%-Wert des Takes (stiller Anlauf, nur Bit-Rauschen), zählen Rahmen darunter wie
+  // digitale Stille – Take B lernte sonst −94 dB bei −37 dB Rauschboden. Sonst bleibt alles wie bisher (−110 dB).
+  const dig = pct(Lf.filter(v => v > -110), 0.1) - 40, scan = th => { cands.length = 0; for (let j = 0; j + WN <= nf; j += 5) { let c = 0; for (let q = j; q < j + WN; q++) if (Lf[q] > th) tw[c++] = Lf[q]; if (c < WN) continue; tw.sort(); cands.push({j, m: tw[WN >> 1]}); } };   // Mittelwert (dB) je Fenster
+  scan(-110); if (cands.length && cands.reduce((m, c) => Math.min(m, c.m), 0) < dig) scan(dig);
   if (!cands.length) return null; cands.sort((p, q) => p.m - q.m);
   const use = [], best = cands[0].m; for (const c of cands) { if (c.m > best + 3 || use.length >= 10) break; if (use.every(u => Math.abs(u.j - c.j) >= WN)) use.push(c); }
   const N = 1024, F = FFT(N), re = new Float64Array(N), im = new Float64Array(N), P = new Float64Array(N / 2 + 1); let cnt = 0, pw = 0, fr = 0;
