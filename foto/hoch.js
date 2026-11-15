@@ -476,7 +476,17 @@ export const wkKi = {
   /** daten: { kachel, faktor, modus, laden?, staerke?, ox?, oy?, aufgabe?: 'hoch'|'klassisch'|'auffrischen' } */
   async hoch(d, h, { modelle }) {
     const aufgabe = d.aufgabe || 'hoch';
-    if (aufgabe === 'auffrischen') return auffrischenRechnen(d);
+    if (aufgabe === 'auffrischen') {
+      // 0.4: Ausschnitt in voller Auflösung kommt als ImageBitmap (übertragen) und wird erst hier gelesen – kein getImageData im Haupt-Faden
+      if (d.vollBmp) { const vb = d.vollBmp; d.voll = bitmapAusschnitt(vb, { x: 0, y: 0, b: vb.width, h: vb.height }, vb.width, vb.height); try { vb.close(); } catch {} d.vollBmp = null; }
+      const res = auffrischenRechnen(d);
+      if (d.mitMisch) {   // Flicken über das Original gelegt (für die Nachprüfung) – auch hier, nicht im Haupt-Faden
+        const vd = d.voll.daten, fd = res.flicken.daten, md = new Uint8ClampedArray(vd.length);
+        for (let i = 0; i < md.length; i += 4) { const a = fd[i + 3] / 255; md[i] = vd[i] * (1 - a) + fd[i] * a; md[i + 1] = vd[i + 1] * (1 - a) + fd[i + 1] * a; md[i + 2] = vd[i + 2] * (1 - a) + fd[i + 2] * a; md[i + 3] = vd[i + 3]; }
+        res.misch = { b: d.voll.b, h: d.voll.h, daten: md };
+      }
+      return res;
+    }
     if (aufgabe === 'klassisch') return hochskaliereKlassisch(d.kachel, d.faktor, { modus: d.modus, staerke: d.staerke, ox: d.ox, oy: d.oy });
     const id = d.modus === 'kreativ' && modelle.MODELLE['hoch-kreativ']?.quellen?.length && (await modelle.istImCache('hoch-kreativ')) ? 'hoch-kreativ' : 'hoch';
     if (!d.laden && !(await modelle.istImCache(id))) throw fehler(FEHLER.KEIN_MODELL, 'Hochskalier-Modell ist nicht geladen');
@@ -573,12 +583,14 @@ export function gesichtsRechteck(g, B, H, faktor = 1.9) {
 }
 
 /** Referenzfoto hinzufügen: Gesicht finden, Ausschnitt (≤ 1024) speichern, Merkmal rechnen. Nichts verlässt das Gerät. */
-export async function referenzHinzufuegen(app, datei) {
+export async function referenzHinzufuegen(app, datei, opts = {}) {
   const bmp = await createImageBitmap(datei, { imageOrientation: 'from-image' }).catch(() => createImageBitmap(datei));
   try {
     const k = await createImageBitmap(bmp);
     const gs = await app.ki.rufe('gesichter', { bild: k }, { transfer: [k] });
     if (!gs?.length) throw fehler(FEHLER.UNBEKANNT, 'Im Referenzfoto wurde kein Gesicht gefunden');
+    // PERSONEN: Referenz einer Person nur aus Fotos mit EINEM deutlichen Gesicht (sonst könnte das falsche Gesicht gelernt werden)
+    if (opts.einzeln && gs.length > 1 && gs[1].box.b * gs[1].box.h >= 0.4 * gs[0].box.b * gs[0].box.h) throw fehler(FEHLER.FREMDE_PERSON, 'Mehrere Gesichter im Foto – bitte ein Foto, auf dem nur diese Person zu sehen ist');
     const g = gs[0], r = gesichtsRechteck(g, bmp.width, bmp.height), s = Math.min(1, 1024 / Math.max(r.b, r.h)), cb = Math.round(r.b * s), ch = Math.round(r.h * s);
     const aus = bitmapAusschnitt(bmp, r, cb, ch);
     const L = new Float32Array(g.landmarken.length);
@@ -591,7 +603,7 @@ export async function referenzHinzufuegen(app, datei) {
     const blob = c.convertToBlob ? await c.convertToBlob({ type: 'image/jpeg', quality: 0.95 }) : await new Promise((ok) => c.toBlob(ok, 'image/jpeg', 0.95));
     const rasterId = await app.raster.lege(blob, 'referenz');
     const ref = { id: neueId('ref'), rasterId, merkmal, gesicht: gc, qualitaet: { schaerfe: schaerfeMass(aus), augenPx: gc.augenAbstandPx, gesichter: gs.length }, erstellt: Date.now(), b: cb, h: ch };
-    await speichereReferenz(ref);
+    if (opts.speichern !== false) await speichereReferenz(ref);
     return ref;
   } finally { try { bmp.close(); } catch {} }
 }
@@ -601,12 +613,12 @@ function gesichtInQuelle(g, q) {
   return { ...g, punkte5: p5, augenAbstandPx: Math.hypot((p5[2] - p5[0]) * q.b, (p5[3] - p5[1]) * q.h) };
 }
 /** Prüfung: jede Referenz gegen das Gesicht im Foto (Kosinus). Fremde Referenzen werden nie benutzt. */
-export async function pruefeReferenzen(app, gesicht, refs) {
-  const doc = app.zustand().doc; if (!doc) throw fehler(FEHLER.UNBEKANNT, 'Kein Bild');
-  const g = gesichtInQuelle(gesicht, doc.quelle);
+export async function pruefeReferenzen(app, gesicht, refs, quelle = null) {
+  const doc = app.zustand().doc; if (!doc && !quelle) throw fehler(FEHLER.UNBEKANNT, 'Kein Bild');
+  const g = gesichtInQuelle(gesicht, quelle || doc.quelle);   // PERSONEN: quelle = { bmp, b, h } für den Batch (ohne offenes Dokument)
   if (!refs?.length) return { passend: [], abgelehnt: [], urteil: { erlaubt: false, median: 0, grund: 'Keine Referenz' } };
   if (g.augenAbstandPx < IDENTITAET.mindestAugenPx) return { passend: [], abgelehnt: refs.map((ref) => ({ ref, kosinus: null, grund: 'Gesicht im Foto zu klein zum Prüfen' })), urteil: { erlaubt: false, median: 0, grund: 'Gesicht zu klein zum Prüfen – zuerst „Treu“ hochskalieren' }, kosinus: [] };
-  const m = await gesichtsMerkmal(app.ki, app.quelleBitmap(), g);
+  const m = quelle?.merkmal || await gesichtsMerkmal(app.ki, quelle?.bmp || app.quelleBitmap(), g);
   const kos = refs.map((r) => vergleiche(m, r.merkmal)), u = urteilListe(kos);
   return {
     passend: u.urteil.erlaubt ? u.passend.map((i) => refs[i]) : [],
@@ -620,15 +632,18 @@ export async function pruefeReferenzen(app, gesicht, refs) {
  * Nach der Rechnung wird das Ergebnis erneut geprüft; weicht die Identität ab, wird die Stärke halbiert (max. 2×), sonst Abbruch.
  */
 export async function frischeAuf(app, gesicht, refs, p = {}) {
-  const doc = app.zustand().doc; if (!doc) throw fehler(FEHLER.UNBEKANNT, 'Kein Bild');
-  const q = doc.quelle, bmp = app.quelleBitmap(), melde = p.onFortschritt || (() => {}), t0 = performance.now();
-  app.pipeline?.registriereStufen?.(STUFEN); setzeFlickenLader((id) => app.raster.hole(id), () => app.neuZeichnen?.());
+  const doc = app.zustand().doc; if (!doc && !p.quelle) throw fehler(FEHLER.UNBEKANNT, 'Kein Bild');
+  // PERSONEN: p.quelle = { bmp, b, h, merkmal? } rechnet ohne offenes Dokument (Batch), p.pipeline bekommt die Stufe
+  const q = p.quelle ? { b: p.quelle.b, h: p.quelle.h } : doc.quelle, bmp = p.quelle?.bmp || app.quelleBitmap(), melde = p.onFortschritt || (() => {}), t0 = performance.now();
+  app.pipeline?.registriereStufen?.(STUFEN); p.pipeline?.registriereStufen?.(STUFEN); setzeFlickenLader((id) => app.raster.hole(id), () => app.neuZeichnen?.());
   melde(0.05, 'Prüfe Identität');
-  const pr = await pruefeReferenzen(app, gesicht, refs);
+  const pr = await pruefeReferenzen(app, gesicht, refs, p.quelle || null);
   if (!pr.urteil.erlaubt) throw fehler(FEHLER.FREMDE_PERSON, `Auffrischen verweigert: ${pr.urteil.grund}`);
   const g = gesichtInQuelle(gesicht, q), r = gesichtsRechteck(g, q.b, q.h, 1.9);
   const sP = Math.min(1, 768 / Math.max(r.b, r.h)), pb = Math.round(r.b * sP), ph = Math.round(r.h * sP);
-  const ziel = bitmapAusschnitt(bmp, r, pb, ph), voll = bitmapAusschnitt(bmp, r, r.b, r.h);
+  // 0.4: mit KI-Worker wird der volle Ausschnitt nicht im Haupt-Faden gelesen (ImageBitmap → Worker), Puffer werden übertragen statt kopiert
+  const imWorker = !!app.ki && typeof createImageBitmap === 'function';
+  const ziel = bitmapAusschnitt(bmp, r, pb, ph), voll = imWorker ? null : bitmapAusschnitt(bmp, r, r.b, r.h);
   const zielPts = new Float32Array(956); for (let i = 0; i < 478; i++) { zielPts[2 * i] = (g.landmarken[i * 3] * q.b - r.x) * sP; zielPts[2 * i + 1] = (g.landmarken[i * 3 + 1] * q.h - r.y) * sP; }
   melde(0.15, 'Lade Referenzen');
   const rs = [];
@@ -644,10 +659,23 @@ export async function frischeAuf(app, gesicht, refs, p = {}) {
   let staerke = p.staerke ?? 0.6, ergebnis = null, pruefung = null;
   for (let versuch = 0; versuch < 3; versuch++) {
     melde(0.3 + versuch * 0.2, versuch ? 'Sanfter nachrechnen' : 'Details übertragen');
-    const daten = { aufgabe: 'auffrischen', ziel: kopie(ziel), zielPts, refs: rs.map((x) => ({ bild: kopie(x.bild), pts: x.pts })), voll: kopie(voll), p: { staerke, augen: p.augen ?? 1, haut: p.haut ?? 0.5, haare: p.haare ?? 0.8 } };   // nur klonbare Werte (kein Signal)
-    const res = app.ki ? await app.ki.rufe('hoch', daten, { signal: p.signal }) : auffrischenRechnen(daten);
-    // erneute Prüfung auf dem Ergebnis (Flicken über Original gelegt)
-    const misch = kopie(voll); for (let i = 0; i < misch.daten.length; i += 4) { const a = res.flicken.daten[i + 3] / 255; for (let k = 0; k < 3; k++) misch.daten[i + k] = voll.daten[i + k] * (1 - a) + res.flicken.daten[i + k] * a; }
+    const daten = { aufgabe: 'auffrischen', ziel: kopie(ziel), zielPts: zielPts.slice(), refs: rs.map((x) => ({ bild: kopie(x.bild), pts: x.pts.slice() })), p: { staerke, augen: p.augen ?? 1, haut: p.haut ?? 0.5, haare: p.haare ?? 0.8 } };   // nur klonbare Werte (kein Signal)
+    let res, misch;
+    if (imWorker) {
+      daten.vollBmp = await createImageBitmap(bmp, r.x, r.y, r.b, r.h); daten.mitMisch = true;
+      res = await app.ki.rufe('hoch', daten, { signal: p.signal, transfer: [daten.vollBmp, daten.ziel.daten.buffer, ...daten.refs.map((x) => x.bild.daten.buffer)] });
+      misch = res.misch; delete res.misch;
+    } else {
+      daten.voll = kopie(voll);
+      res = auffrischenRechnen(daten);
+      // erneute Prüfung auf dem Ergebnis (Flicken über Original gelegt), in Scheiben – keine lange Aufgabe bei großen Gesichtern
+      misch = kopie(voll); const md = misch.daten, vd = voll.daten, fd = res.flicken.daten, SCHEIBE = 1 << 20;
+      for (let s0 = 0; s0 < md.length; s0 += SCHEIBE) {
+        const e = Math.min(md.length, s0 + SCHEIBE);
+        for (let i = s0; i < e; i += 4) { const a = fd[i + 3] / 255; for (let k = 0; k < 3; k++) md[i + k] = vd[i + k] * (1 - a) + fd[i + k] * a; }
+        if (e < md.length) await new Promise((ok) => setTimeout(ok, 0));
+      }
+    }
     const gLokal = { punkte5: Float32Array.from(g.punkte5, (v, i) => (i % 2 ? (v * q.h - r.y) / r.h : (v * q.b - r.x) / r.b)) };
     const nachher = await gesichtsMerkmal(app.ki, misch, gLokal);
     const nachRef = median(refM.map((m) => vergleiche(nachher, m))), selbst = vergleiche(nachher, vorher);
@@ -741,7 +769,12 @@ export function retuscheUI(container, opts) {
   }
 
   // ---------------------------------------------------------------- Gesicht auffrischen
-  if (modus === 'auffrischen') {
+  // PERSONEN: mehrere gespeicherte Personen (personen.js). Die alte Ein-Personen-Bedienung bleibt nur mit opts.einzelReferenzen.
+  if (modus === 'auffrischen' && !opts.einzelReferenzen) {
+    import('./personen.js').then((P) => { if (weg) return; const hnd = P.personenUI(teil, { app, status, balken, modellFrage, imCache }); aufraeumen.push(() => hnd.zerstoere()); })
+      .catch((e) => status(e.text || e.message || String(e), 'nein-t'));
+  }
+  if (modus === 'auffrischen' && opts.einzelReferenzen) {
     const z = { gesichter: [], wahl: 0, refs: [], pruefung: null, p: { staerke: 60, augen: 100, haut: 50, haare: 80 }, bereit: false };
     teil.innerHTML = `<p class="leise">Frischt das Gesicht mit eigenen Fotos derselben Person auf. Die Fotos bleiben nur auf diesem Gerät. Fremde Gesichter werden abgelehnt.</p>
 <div class="zeile" data-t="gesichter"></div>

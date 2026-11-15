@@ -177,7 +177,22 @@ export function ladeOrt(opts = {}) {
   })().catch((e) => { ortPromise = null; throw new BildwerkFehler(FEHLER.KEIN_MODELL, `Rechen-Laufzeit nicht verfügbar (${e.message || e})`); });
   return ortPromise;
 }
+// MediaPipe Tasks schickt sonst alle 60 s ein Nutzungsprotokoll an Google (odml.pa.googleapis.com/v1/log, XMLHttpRequest POST).
+// Bildwerk sendet nichts außer Modell-Downloads → Anfragen an diesen Host still verwerfen (vor dem ersten Import der Laufzeit).
+const GESPERRT = /^https?:\/\/[^/]*\.pa\.googleapis\.com\//i;
+function sperreProtokoll() {
+  const g = globalThis; if (g.__bwSperre) return; g.__bwSperre = true;
+  const X = g.XMLHttpRequest?.prototype;
+  if (X) {
+    const open = X.open, send = X.send;
+    X.open = function (m, u, ...r) { this.__bwAus = GESPERRT.test(String(u)); return open.call(this, m, this.__bwAus ? 'data:,' : u, ...r); };
+    X.send = function (b) { if (this.__bwAus) { try { Object.defineProperty(this, 'status', { value: 204 }); } catch {} return; } return send.call(this, b); };
+  }
+  if (typeof g.fetch === 'function') { const f = g.fetch; g.fetch = function (e, o) { const u = typeof e === 'string' ? e : e?.url || String(e); return GESPERRT.test(u) ? Promise.resolve(new Response(null, { status: 204 })) : f.call(this, e, o); }; }
+  if (g.navigator?.sendBeacon) { const sb = g.navigator.sendBeacon.bind(g.navigator); g.navigator.sendBeacon = (u, d) => (GESPERRT.test(String(u)) ? true : sb(u, d)); }
+}
 export function ladeMediapipe() {
+  sperreProtokoll();
   if (!mpPromise) mpPromise = import(/* @vite-ignore */ laufzeitPfade().mediapipeJs).catch((e) => { mpPromise = null; throw new BildwerkFehler(FEHLER.KEIN_MODELL, `Bild-Laufzeit nicht verfügbar (${e.message || e})`); });
   return mpPromise;
 }

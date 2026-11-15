@@ -1,13 +1,13 @@
 // Bildwerk – Service Worker. App-Schale offline. Modelle NICHT hier (modelle.js / Cache 'bildwerk-modelle-v1').
 // Strategie: Netz zuerst (mit 2,5 s Zeitlimit), sonst Schale aus dem Cache – so kommt eine neue Fassung sofort an
 // und die App startet trotzdem offline. Versionswechsel: SCHALE hochzählen.
-const SCHALE = 'bildwerk-schale-v4';
+const SCHALE = 'bildwerk-schale-v7';   // v7: 0.4.0 – personen.js neu, looks.js (Intensiv), Protokoll-Sperre
 // KI-Laufzeit (WASM vom CDN, Version in der Adresse = unveränderlich): Cache zuerst – so läuft sie auch offline (modelle.sichereLaufzeit legt sie ab).
 const LAUFZEIT = 'bildwerk-laufzeit-v1';
 const istLaufzeit = (u) => /\/(@mediapipe\/tasks-vision|onnxruntime-web)@\d/.test(u.pathname);
 const DATEIEN = ['./', './index.html', './app.js', './typen.js', './rpc.js', './gl.js', './regler.js', './looks.js',
   './analyse.js', './auswahl.js', './entfernen.js', './hoch.js', './batch.js', './zuschnitt.js', './modelle.js',
-  './wk-rechnen.js', './wk-ki.js'];
+  './wk-rechnen.js', './wk-ki.js', './personen.js'];
 // Stufe 2 (optional, erst nach Messung): COOP/COEP für WASM-Threads setzen.
 const ISOLIEREN = false;
 
@@ -20,6 +20,8 @@ self.addEventListener('activate', (e) => {
 function mitZeit(p, ms) { return Promise.race([p, new Promise((_, f) => setTimeout(() => f(new Error('zeit')), ms))]); }
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
+  // Nutzungsprotokolle der Bild-Laufzeit (MediaPipe → odml.pa.googleapis.com) nie ins Netz: leere Antwort
+  if (/\.pa\.googleapis\.com$/i.test(url.hostname)) { e.respondWith(new Response(null, { status: 204 })); return; }
   if (e.request.method !== 'GET') return;
   if (istLaufzeit(url)) {
     e.respondWith((async () => {

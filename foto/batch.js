@@ -82,6 +82,14 @@ export async function batch(app, dateien, opts = {}) {
         if (e.analyse && analyseModul) { try { auto = analyseModul.autoSchritte(e.analyse) || []; } catch { auto = []; } }
         if (!auto.length) auto = rueckfallSchritte(await pipe.leseArbeitsbild({ kante: 256 }));
         e.schritte = schritteFuer(e.analyse, opts.vorlage, { auto });
+        // PERSONEN: jedes Gesicht erkennen, der passenden gespeicherten Person zuordnen und automatisch auffrischen (unbekannte bleiben unberührt)
+        if (opts.personen?.length) {
+          try {
+            const P = await import('./personen.js');
+            const r = await P.batchPersonen(app, bitmap, { personen: opts.personen, aktiv: opts.personenAktiv, pipeline: pipe, signal: opts.signal, p: opts.personenParams });
+            e.schritte.push(...r.schritte); e.personen = r.marken; if (r.hinweis) e.personenHinweis = r.hinweis; if (r.fehler?.length) e.personenFehler = r.fehler;
+          } catch (err) { if (err?.code === FEHLER.ABBRUCH) throw err; e.personenHinweis = err?.text || err?.message || String(err); }
+        }
         const doc = neuesDokument({ b: bitmap.width, h: bitmap.height, rasterId: 'batch', mime: datei.type, name: e.name });
         const geo = ra.status === 'fulfilled' ? vorschlagAusRaendern(ra.value, bitmap.width, bitmap.height) : null;
         if (geo) doc.geometrie.zuschnitt = geo;
@@ -132,6 +140,7 @@ export function batchUI(container, opts) {
   const hatDoc = !!app.zustand().doc;
   container.innerHTML = `<p class="leise zahl"></p>
     <label class="schalter"><input type="checkbox" data-vorlage ${hatDoc ? '' : 'disabled'}><span>Look des offenen Bildes für alle (nur Look und kreative Regler)</span></label>
+    <div data-t="personen" hidden><label class="schalter"><input type="checkbox" data-personen checked><span>Gesichter auffrischen: gespeicherte Personen automatisch erkennen</span></label><div class="zeile" data-t="pchips" role="group" aria-label="Personen"></div></div>
     <div class="fortschritt" hidden><div></div></div>
     <div class="batch-raster"></div>
     <div class="zeile"><button data-b="start" class="haupt">Start</button><button data-b="wahl">Fotos wählen</button></div>
@@ -140,9 +149,17 @@ export function batchUI(container, opts) {
   const raster = container.querySelector('.batch-raster'), bar = container.querySelector('.fortschritt');
   const wahl = document.createElement('input'); wahl.type = 'file'; wahl.accept = 'image/*,.heic,.heif'; wahl.multiple = true; wahl.hidden = true; container.appendChild(wahl);
   wahl.addEventListener('change', () => { dateien = [...wahl.files]; wahl.value = ''; ergebnisse = []; zeichne(); });
+  // PERSONEN: Auswahl, welche gespeicherten Personen im Batch verwendet werden (Standard: alle; gleiche Wahl wie im Editor)
+  let personen = [], PM = null;
+  const zeichnePersonen = () => {
+    const box = container.querySelector('[data-t="personen"]'); box.hidden = !personen.length; if (!personen.length || !PM) return;
+    const ak = new Set(PM.aktiveIds(personen));
+    box.querySelector('[data-t="pchips"]').innerHTML = personen.map((p) => `<button class="kachel chip" data-pa="${p.id}" aria-pressed="${ak.has(p.id)}">${esc(p.name)}</button>`).join('');
+  };
+  import('./personen.js').then(async (P) => { PM = P; personen = (await P.ladePersonen()).filter((p) => p.refs?.length); zeichnePersonen(); }).catch(() => {});
   function zeichne() {
     container.querySelector('.zahl').textContent = `${dateien.length} Foto${dateien.length === 1 ? '' : 's'}`;
-    raster.innerHTML = dateien.map((f, i) => { const e = ergebnisse[i]; return `<button class="batch-bild" data-i="${i}" data-st="${e ? (e.fehler ? 'fehler' : 'fertig') : 'offen'}"><canvas></canvas><span>${e?.fehler ? 'Fehler' : esc(f.name || 'Foto')}</span></button>`; }).join('');
+    raster.innerHTML = dateien.map((f, i) => { const e = ergebnisse[i]; return `<button class="batch-bild" data-i="${i}" data-st="${e ? (e.fehler ? 'fehler' : 'fertig') : 'offen'}"><canvas></canvas><span>${e?.fehler ? 'Fehler' : esc(f.name || 'Foto')}</span>${e?.personen?.length && PM ? `<small data-t="marken" data-ok="${e.personen.some((m) => m.status === 'erkannt' && m.aufgefrischt !== false)}">${esc(PM.markenText(e.personen))}</small>` : e?.personenHinweis || e?.personenFehler ? `<small data-t="marken" data-ok="false">${esc(e.personenHinweis || 'Auffrischen nicht möglich')}</small>` : ''}</button>`; }).join('');
     ergebnisse.forEach((e, i) => { if (!e?.mini) return; const c = raster.querySelector(`[data-i="${i}"] canvas`); c.width = e.mini.width; c.height = e.mini.height; c.getContext('2d').drawImage(e.mini, 0, 0); });
     const fertig = ergebnisse.filter((e) => e?.blob).length;
     container.querySelector('[data-b="teilen"]').disabled = !fertig; container.querySelector('[data-b="zip"]').disabled = !fertig;
@@ -157,6 +174,8 @@ export function batchUI(container, opts) {
       app.aendere((d) => { d.schritte = e.schritte.map((s) => structuredClone(s)); d.geometrie = structuredClone(e.geometrie); return d; }, { name: 'Batch-Korrektur' });
       return;
     }
+    const pc = ev.target.closest('[data-pa]');
+    if (pc && PM) { const aus = PM.inaktive(); aus.has(pc.dataset.pa) ? aus.delete(pc.dataset.pa) : aus.add(pc.dataset.pa); PM.setzeInaktive(aus); zeichnePersonen(); return; }
     if (!b) return;
     if (b.dataset.b === 'wahl') wahl.click();
     if (b.dataset.b === 'start') {
@@ -165,8 +184,11 @@ export function batchUI(container, opts) {
       ac = new AbortController(); b.textContent = 'Abbrechen'; bar.hidden = false; ergebnisse = []; zeichne();
       const vorlage = container.querySelector('[data-vorlage]').checked && app.zustand().doc ? vorlageAus(app.zustand().doc) : undefined;
       try {
-        await batch(app, dateien, { vorlage, signal: ac.signal, onBild: (i, e) => { ergebnisse[i] = e; bar.firstElementChild.style.width = ((i + 1) / dateien.length * 100) + '%'; zeichne(); } });
-        app.meldung(`${ergebnisse.filter((e) => e.blob).length} von ${dateien.length} Fotos fertig`);
+        let pHinweis = '', mitPersonen = personen.length && PM && container.querySelector('[data-personen]')?.checked;
+        // Gesichts-Modelle fehlen (z. B. iOS hat den Speicher geräumt): vorher sagen, statt still nichts zu tun
+        if (mitPersonen && !(await PM.modelleDa(app))) { mitPersonen = false; pHinweis = ' – Gesichter nicht aufgefrischt: die Gesichts-Modelle fehlen (einmal im Editor unter Retusche › Gesicht auffrischen laden)'; app.meldung('Gesichter auffrischen nicht möglich: die Gesichts-Modelle fehlen (einmal im Editor unter Retusche › Gesicht auffrischen laden)', 'warnung'); }
+        await batch(app, dateien, { vorlage, personen: mitPersonen ? personen : undefined, personenAktiv: mitPersonen ? PM.aktiveIds(personen) : undefined, signal: ac.signal, onBild: (i, e) => { ergebnisse[i] = e; bar.firstElementChild.style.width = ((i + 1) / dateien.length * 100) + '%'; zeichne(); } });
+        app.meldung(`${ergebnisse.filter((e) => e.blob).length} von ${dateien.length} Fotos fertig${pHinweis}`, pHinweis ? 'warnung' : 'info');
       } catch (err) { if (err?.code !== FEHLER.ABBRUCH) app.meldung(err.text || err.message, 'fehler'); }
       finally { ac = null; b.textContent = 'Start'; bar.hidden = true; }
     }

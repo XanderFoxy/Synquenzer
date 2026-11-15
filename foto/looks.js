@@ -19,6 +19,10 @@ export const LOOKS = Object.freeze([
   L('gemalt', 'Gemalt', 'Plastisches Licht, tiefe Mitteltöne, gedämpfte Farben',
     [FR('licht', 'Licht formen', 'licht'), FR('malerisch', 'Malerisch', 'praesenz'), FR('farbe', 'Farbe zurück', 'farbe', 0), FR('haut', 'Haut glätten', 'details'), FR('korn', 'Körnung', 'effekte')],
     { regler: { belichtung: -0.15, lichter: -35, tiefen: 30, weiss: -10, schwarz: -15 }, schaerfe: 0.6, vignette: -20, korn: 8 }),
+  // Intensiv: feste Abwedeln-/Nachbelichten-Routine (mehrere Durchgänge mit Mischmodi), keine Einzelschritte zur Auswahl
+  L('intensiv', 'Intensiv', 'Abwedeln und Nachbelichten: Licht, Tiefe und Farbe kräftig',
+    [FR('licht', 'Licht und Schatten', 'licht'), FR('struktur', 'Struktur', 'details'), FR('farbe', 'Farbe', 'farbe'), FR('rand', 'Rand dunkler', 'effekte')],
+    { schaerfe: 0.3, vignette: -24 }),
   L('brillant', 'Brillant', 'Klar, frisch, lebendig', [FR('klarheit', 'Klarheit', 'praesenz'), FR('farbe', 'Farbe', 'farbe'), FR('schaerfe', 'Schärfe', 'details')],
     { regler: { klarheit: 25, struktur: 15, dunst: 10, dynamik: 20, lichter: -20, tiefen: 15 }, schaerfe: 0.5 }),
   L('monochrom', 'Monochrom', 'Schwarzweiß mit automatischem Kanalmischer',
@@ -142,6 +146,104 @@ void main(){ vec4 p = E(); vec3 c = max(p.rgb, 0.0); float l = F(Lt);
     o.yz += (1.0 - wl)*split.x*0.1*vec2(cos(radians(210.0)), sin(radians(210.0)))*(1.0 - smoothstep(0.0, 0.08, 1.0 - o.x)) + wl*split.y*0.1*vec2(cos(radians(40.0)), sin(radians(40.0)));
     o3 = schutz(ausOk(o), c); }
   aus = vec4(o3, p.a); }`,
+  // ---- Intensiv: Detail-Menge (Wichtigkeit) = örtliche Energie des Mittel-Bands
+  intE: KOPF + `uniform sampler2D k2; uniform float s2; void main(){ float l = E().r; vec2 ab = K(k2, s2).rg; float d = l - (ab.x*l + ab.y); aus = vec4(d*d, 0.0, 0.0, 1.0); }`,
+  // ---- Intensiv: Abwedeln & Nachbelichten als feste Ablaufroutine. Alle Ton-Durchgänge laufen auf der feinen, kantenerhaltenden Basis
+  // (Frequenztrennung) → Rauschen im Rest wird nicht mitverstärkt; Bänder aus geführten Filtern + Halo-Bremse → keine Säume an harten Kanten.
+  intensiv: KOPF + `uniform sampler2D Lt; uniform sampler2D k1; uniform sampler2D k2; uniform sampler2D k3; uniform sampler2D en;
+uniform sampler2D haut; uniform int mitHaut; uniform vec3 tau; uniform vec4 s; uniform float st; uniform float lf; uniform float sf; uniform float ff; uniform float ks; uniform float pv;
+uniform vec4 reg; uniform vec4 subj[4]; uniform int nSubj; uniform float seiten; uniform sampler2D kh; uniform sampler2D kf; uniform float sKf;
+float kern(float d, float t){ return sign(d)*max(abs(d) - t, 0.0); }
+// weiche Begrenzung der Detail-Bänder: Textur (kleine Ausschläge) fast linear, große Sprünge an Kanten gedämpft → kein heller Umriss
+float sanft(float d, float g){ return d/(1.0 + abs(d)/g); }
+float B(sampler2D k, float f, float l){ vec2 ab = K(k, f).rg; return ab.x*l + ab.y; }
+float A(sampler2D k, float f){ return 1.0 - smoothstep(0.45, 0.9, K(k, f).r); }
+float D(float b){ return b <= 0.25 ? ((16.0*b - 12.0)*b + 4.0)*b : sqrt(b); }
+// Weiches Licht mit einer neutral-grauen Ebene (0,5 + x): Formel der Mischmodi, x begrenzt
+float weichesLicht(float b, float x){ x = clamp(x, -0.5, 0.5); return x <= 0.0 ? b + 2.0*x*b*(1.0 - b) : b + 2.0*x*(D(b) - b); }
+// Ineinanderkopieren mit grauer Ebene (0,5 + x)
+float ineinander(float b, float x){ x = clamp(x, -0.5, 0.5); return b + 2.0*x*(b < 0.5 ? b : 1.0 - b); }
+void main(){ vec4 p = E(); vec3 c = max(p.rgb, 0.0); float l = F(Lt);
+  // Basen: b2/b3 mit b1 statt l geführt → der Pixel-Rest (Rauschen) steckt nur in l − b1 und wird von den Ton-Durchgängen nicht verstärkt;
+  // an harten Kanten ist b1 ≈ l (ā ≈ 1), die Kante bleibt in allen Basen erhalten
+  float b1 = B(k1, s.x, l), b2 = B(k2, s.y, b1), b3 = B(k3, s.z, b1);
+  float a2 = A(k2, s.y), a3 = A(k3, s.z);
+  // Halo-Bremse auch für dünne Linien und kontrastarme (Farb-)Kanten: größtes ā der feinen Kanten-Karte in der Nachbarschaft (Radius ≈ Form-Ebene)
+  float hb = 1.0 - smoothstep(0.45, 0.8, K(kh, s.w).g);
+  // Struktur-Tor: Struktur und Fein-Rest nur, wo am Pixel selbst Struktur ist (glatte Flächen neben Kanten: kein Saum; Korn: ā klein)
+  float gs = smoothstep(0.38, 0.7, K(kf, sKf).r);
+  float hs = mitHaut == 1 ? clamp(F(haut), 0.0, 1.0) : hautTon(c);
+  // 1) Wichtigkeit: Gesicht/Motiv, Detail-Menge (Kanten, Textur), leicht zur Mitte; glatte Flächen (Himmel, Wand) bleiben ruhig
+  vec2 g = reg.xy + uv*reg.zw; float wF = 0.0;
+  for (int i = 0; i < 4; i++){ if (i >= nSubj) break; float q = length((g - subj[i].xy)/subj[i].zw); wF = max(wF, 1.0 - smoothstep(0.7, 1.5, q)); }
+  // Detail-Menge: Schwelle über dem Filmkorn echter Fotos (σ ≈ 3–4/255 im Mittel-Band) – Korn zählt nicht als Struktur
+  float wD = smoothstep(0.008, 0.045, sqrt(max(F(en), 0.0)));
+  vec2 m = (g - 0.5)*vec2(seiten, 1.0)/max(seiten, 1.0); float wC = 1.0 - smoothstep(0.25, 0.75, length(m)*1.4);
+  // W (Detail-Durchgänge): Gesicht, Detail-Menge, Mitte. Wt (Ton-Durchgänge): nur Gesicht (bis zum Rand der Ellipse) und weiche Bildmitte –
+  // die Detail-Menge fällt neben Linien/Kanten in glatte Flächen hinein ab und würde dort als heller Saum/„Kissen“ sichtbar
+  float W = clamp(max(wF, 0.7*wD + 0.3*wC*wD + 0.15*wC), 0.0, 1.0), Wt = 0.4*wC;   // Gesicht wirkt nur über W (Struktur) – eine Gesichts-Ellipse in den Ton-Durchgängen zeichnete Kanten in glatten Hintergrund
+  // Bänder: Form (grob → Licht/Schatten der Formen), Struktur (mittel), Fein-Rest (über der Rausch-Schwelle)
+  float dForm = kern(b2 - b3, tau.z)*a3*a2*hb, dStr = sanft(kern(b1 - b2, tau.y), 0.035)*a2, dFein = l - b1;
+  float wL = smoothstep(0.42, 0.9, b3), wS = 1.0 - smoothstep(0.1, 0.48, b3);          // Luminanz-Masken Lichter / Tiefen (weich)
+  // Ton-Durchgänge auf der mittleren Basis (fast rauschfrei); Struktur und Fein-Rest kommen danach dazu (Frequenztrennung)
+  float e = b2;
+  // Durchgang 1: Licht formen – weiches Licht, grob, auf grauer Ebene aus der Form-Ebene gemalt
+  e = weichesLicht(e, 9.0*st*lf*(0.55 + 0.45*Wt)*dForm);
+  // Durchgang 2: Abwedeln – Negativ multiplizieren auf den Lichtern der Formen (heller als ihre Umgebung) + Glanz auf dem Motiv
+  float hell = smoothstep(0.0, 0.05, b2 - b3)*a3*hb;
+  //   + Mitten leicht aufhellen (Negativ multiplizieren, geringe Deckkraft, Mitten-Maske) – hält die Gesamthelligkeit gegen das Nachbelichten
+  float wM = 4.0*b3*(1.0 - b3);
+  //   Haut: Glanz gering und gedämpft (Gesicht nur leicht herausarbeiten, Schattierung der Wangen bleibt)
+  float hd = 1.0 - 0.8*hs;
+  e = 1.0 - (1.0 - e)*(1.0 - 0.6*st*lf*wL*hell*(0.55 + 0.45*Wt)*hd)*(1.0 - 0.05*st*lf*Wt*smoothstep(0.45, 0.9, b2)*hd)*(1.0 - 0.08*st*lf*wM*(0.6 + 0.4*Wt)*hd);
+  // Durchgang 3: Nachbelichten – Multiplizieren in den Tiefen der Formen und im Unwichtigen (Motiv tritt hervor)
+  float dunkel = smoothstep(0.0, 0.05, b3 - b2)*a3*hb;
+  //   sehr dunkle Stellen werden nicht weiter abgedunkelt (kein Absaufen)
+  e *= 1.0 - (0.42*st*lf*wS*dunkel*(1.0 - 0.5*hs) + 0.09*st*lf*(1.0 - Wt)*(1.0 - wL))*smoothstep(0.03, 0.16, e);
+  // Durchgang 4: Klarheit in den Mitten (Form-Ebene, Mitteltöne gewichtet)
+  float ec = clamp(e, 0.0, 1.0); e += 3.0*st*lf*4.0*ec*(1.0 - ec)*dForm*(1.0 - 0.4*hs);
+  // Gesamtkontrast: S-Kurve um die Bildmitte pv (0,25…0,42 kodiert, aus der Analyse) – tiefere Schatten, hellere Lichter, Mitte bleibt;
+  // dunkle Bilder werden so nicht noch dunkler, tiefste Tiefen geschont
+  ec = clamp(e, 0.0, 1.0); float sk = 2.0*ec*(1.0 - ec)*(ec - pv); if (sk < 0.0) sk *= smoothstep(0.02, 0.16, ec);
+  e = ec + ks*st*sk*(1.0 - 0.75*hs) + (e - ec);
+  float off = e - b2;   // örtliche Ton-Verschiebung (für die Hülle der Detail-Bänder)
+  // Durchgang 5: Struktur – Band zurück + Ineinanderkopieren, mittlerer Radius (der „gemalte“ Detail-Kontrast), Haut ruhiger
+  e = ineinander(e + (b1 - b2), 14.0*st*sf*(0.1 + 0.9*W)*(1.0 - 0.55*hs)*gs*dStr);
+  // Durchgang 6: Hochpass (fein) in weichem Licht – nur über der Rausch-Schwelle, nur wo Struktur ist, Haut ausgespart
+  float hp = sanft(kern(dFein, tau.x), 0.03)*9.0*st*sf*W*(1.0 - 0.75*hs)*gs;
+  ec = clamp(e, 0.0, 1.0); e += dFein + hp*(hp < 0.0 ? 4.0*ec*(1.0 - ec) : (sqrt(ec) - ec)/0.2071);
+  // Hülle: Struktur und Fein-Rest dürfen die örtliche Spanne des Originals (5×5, um die Ton-Verschiebung versetzt) kaum überschreiten –
+  // an harten Kanten fast gar nicht (sonst heller Umriss), in Texturen bleibt die Verstärkung innerhalb der Spanne
+  { ivec2 P = PX(), G = textureSize(Lt, 0) - 1; float mn = 1e4, mx = -1e4;
+    for (int dy = -2; dy <= 2; dy++) for (int dx = -2; dx <= 2; dx++){ float v = texelFetch(Lt, clamp(P + ivec2(dx, dy), ivec2(0), G), 0).r; mn = min(mn, v); mx = max(mx, v); }
+    float sp = mx - mn, del = 0.002 + 0.012*(1.0 - smoothstep(0.04, 0.12, sp));
+    e = clamp(e, mn + off - del, mx + off + del); }
+  float e2 = grenzeAuf(l, e - l);
+  // Kräftige helle Farben nur so weit aufhellen, wie der Farbraum reicht (sonst würden sie beim Begrenzen pastellig = ausgefressen)
+  float Yc = dot(c, LW), mc = max(c.r, max(c.g, c.b));
+  if (Yc > 1e-5 && mc > 1e-5){ float Ym = Yc*max(mc, 0.95)/mc, Y2 = lin1(e2);
+    if (Y2 > Yc){ float h = max(Ym - Yc, 0.0); e2 = kod1(Yc + h*th((Y2 - Yc)/max(h, 1e-5))); } }
+  vec3 o3 = mitLuma(c, e2);
+  // Kanäle unter max(alter Höchstwert, 0,95 linear) halten – zur Luminanz hin entsättigen (kräftige helle Farben fressen nicht aus)
+  float Yo = dot(o3, LW), mo = max(o3.r, max(o3.g, o3.b)), gk = max(max(c.r, max(c.g, c.b)), 0.95);
+  if (mo > gk && mo > Yo) o3 = vec3(Yo) + (o3 - vec3(Yo))*clamp((gk - Yo)/(mo - Yo), 0.0, 1.0);
+  // Farbe: Lebendigkeit in OKLCh (wenig Bunte stärker), Mitten/Tiefen satter, Haut (Farbton 25–75°) kaum, Lichter nicht ausfressen
+  vec3 o = zuOk(o3); float C = length(o.yz), h = degrees(atan(o.z, o.y));
+  float hautW = max(hs, smoothstep(0.02, 0.05, C)*smoothstep(18.0, 30.0, h)*(1.0 - smoothstep(70.0, 82.0, h))*0.6);
+  float leb = (0.75*(1.0 - smoothstep(0.03, 0.17, C)) + 0.25)*smoothstep(0.022, 0.06, C);
+  float lw = 1.0 - 0.6*smoothstep(0.55, 0.97, o.x);
+  float f = 1.0 + st*ff*leb*lw*(1.0 - 0.9*hautW);
+  o.yz *= f; vec3 r = ausOk(o);
+  // Farbumfang: kein Kanal unter seinen alten Wert hinaus Richtung 0 (sonst „zulaufen“ je Kanal) – Rücknahme der Buntheit linear in RGB
+  //   … und keiner über max(alter Höchstwert, 0,95 linear) hinaus (kein Ausfressen einzelner Kanäle in kräftigen Farben)
+  float lo = min(min(o3.r, min(o3.g, o3.b)), 0.0006), hi = max(max(o3.r, max(o3.g, o3.b)), 0.95), t = 1.0;
+  for (int k = 0; k < 3; k++){ float v = r[k], a = o3[k]; if (v < lo && a > v) t = min(t, (a - lo)/(a - v)); if (v > hi && v > a) t = min(t, (hi - a)/(v - a)); }
+  r = mix(o3, r, clamp(t, 0.0, 1.0));
+  aus = vec4(schutz(max(r, 0.0), c), p.a); }`,
+  // Kanten-Hülle: größtes ā (Kanalwert .r) je 2×2 → verkleinert ohne dünne Linien zu verlieren
+  maxHalb: KOPF + `void main(){ ivec2 p = PX()*2, g = textureSize(ein, 0) - 1;
+  float a = max(max(texelFetch(ein, min(p, g), 0).r, texelFetch(ein, min(p + ivec2(1, 0), g), 0).r), max(texelFetch(ein, min(p + ivec2(0, 1), g), 0).r, texelFetch(ein, min(p + ivec2(1, 1), g), 0).r));
+  aus = vec4(a, 0.0, 0.0, 1.0); }`,
   glanzQ: KOPF + `void main(){ vec3 e = kod(max(E().rgb, 0.0)); aus = vec4(max(e - 0.72, 0.0)/0.28, 1.0); }`,
   glanz: KOPF + `uniform sampler2D g; uniform float k; void main(){ vec4 p = E(); vec3 c = max(p.rgb, 0.0), e = kod(c);
   vec3 r = 1.0 - (1.0 - e)*(1.0 - k*clamp(F4(g).rgb, 0.0, 1.0)); aus = vec4(schutz(lin(min(r, vec3(max(max(e.r, max(e.g, e.b)), 0.996)))), c), p.a); }`,
@@ -220,7 +322,7 @@ function maskiere(ctx, ein, aus, maske) {
   if (!maske || aus === ein) return aus;
   const m = ctx.pass(prog(ctx, 'misch'), {}, { ein, neu: aus, maske }); ctx.frei(aus); return m;
 }
-/** Schneller geführter Filter (He & Sun): Koeffizienten (ā, b̄) in verkleinerter Auflösung, Anwendung mit voller Führung im Shader. */
+/** Schneller geführter Filter: Koeffizienten (ā, b̄) in verkleinerter Auflösung, Anwendung mit voller Führung im Shader. */
 function gfKoeff(ctx, Lt, rAnteil, eps) {
   const rPx = rAnteil * ctx.kurzeSeite; let s = 1; while (s < 8 && rPx / (s * 2) >= 3) s *= 2;
   let t = Lt, b = ctx.b, h = ctx.h;
@@ -273,6 +375,45 @@ function gemaltKern(ctx, ein, s, st) {
   if (t !== ein) ctx.frei(t); return o;
 }
 
+// ---- Intensiv: Abwedeln & Nachbelichten wie eine Aktion in mehreren Durchgängen (Ablauf im Shader „intensiv“):
+//  Luminanz-Masken + Wichtigkeit (Gesicht, Detail-Menge, Mitte) → Weiches Licht (grob) → Negativ multiplizieren (Lichter) →
+//  Multiplizieren (Tiefen, Unwichtiges) → Ineinanderkopieren (Struktur, mittel) → Klarheit Mitten → S-Kurve → Hochpass fein (weiches Licht)
+//  → Lebendigkeit (Haut geschont) → Rand nachbelichten (look-effekte) → leichte adaptive Schärfe (look-schaerfe).
+const RI = [0.0035, 0.012, 0.03];   // fein / mittel (Struktur) / grob (Form, Licht) – Anteil der kurzen Seite
+const RI_E = 0.012;                 // Unschärfe der Detail-Energie (Wichtigkeit)
+function intensivKern(ctx, ein, s, st) {
+  const lf = fein(s, 'licht'), sf = fein(s, 'struktur'), ff = fein(s, 'farbe');
+  // eps klein: Kanten ab ~0,04 Luma bleiben in den Basen → die Form-Ebene enthält nur weiche Verläufe (kein „Kissen“ in Flächen, kein Halo)
+  const Lt = luma(ctx, ein), eps = [0.002, 0.001, 0.0003];
+  const k = RI.map((r, i) => gfKoeff(ctx, Lt, r, eps[i]));
+  const e0 = ctx.pass(prog(ctx, 'intE'), { s2: k[1].s }, { ein: Lt, k2: k[1].tex }, 'r16f'), en = ctx.unschaerfe(e0, RI_E); ctx.frei(e0);
+  const subj = new Float32Array(16); let n = 0;
+  for (const g of (ctx.gesichter || []).slice(0, 4)) { const b = g.box; subj.set([b.x + b.b / 2, b.y + b.h * 0.5, b.b * 1.05, b.h * 1.25], n * 4); n++; }
+  const reg = ctx.region ? [ctx.region.x, ctx.region.y, ctx.region.b, ctx.region.h] : [0, 0, 1, 1];
+  const gesB = ctx.region ? ctx.b / ctx.region.b : ctx.b, gesH = ctx.region ? ctx.h / ctx.region.h : ctx.h;
+  const ht = hautTex(ctx), sig = rauschJetzt(ctx.analyse, ctx.pxProQuelle || 1);
+  const kh = kantenHuelle(ctx, Lt);
+  const o = ctx.pass(prog(ctx, 'intensiv'), {
+    s: [...k.map((x) => x.s), kh.s], sKf: kh.sf, mitHaut: ht ? 1 : 0, tau: [2.0, 1.1, 1.0].map((f) => Math.max(0.002, f * sig)), st, lf, sf, ff, ks: 1.8 * (0.4 + 0.6 * kornRauschen(ctx.analyse)), pv: klemme(ctx.analyse?.belichtung?.p50 ?? 0.42, 0.25, 0.42), reg, subj, nSubj: n, seiten: gesB / gesH,
+  }, { ein, Lt, k1: k[0].tex, k2: k[1].tex, k3: k[2].tex, en, haut: ht || Lt, kh: kh.tex, kf: kh.fein });
+  ctx.frei(Lt); ctx.frei(en); ctx.frei(kh.tex); ctx.frei(kh.fein); for (const x of k) ctx.frei(x.tex);
+  return o;
+}
+// Kanten-Hülle für die Halo-Bremse: feine Kanten-Stärke ā (kleines eps → auch dünne Linien und kontrastarme Farbkanten zählen),
+// verkleinert per Maximum und dann um RH (≈ Reichweite der Form-Ebene) geweitet. Ergebnis .g, Abtastung mit K(t, s).
+const RH = 0.05, EPS_H = 0.0004;
+function kantenHuelle(ctx, Lt) {
+  const sig = rauschJetzt(ctx.analyse, ctx.pxProQuelle || 1), g = gfKoeff(ctx, Lt, RI[0], Math.max(EPS_H, 10 * sig * sig)); let t = g.tex, s = g.s, b = Math.ceil(ctx.b / s), h = Math.ceil(ctx.h / s);
+  const R = RH * ctx.kurzeSeite;
+  while (R / s > 6 && s < 64) { b = Math.ceil(b / 2); h = Math.ceil(h / 2); const o = ctx.pass(prog(ctx, 'maxHalb'), {}, { ein: t }, 'r16f', ctx.temp('r16f', b, h)); if (t !== g.tex) ctx.frei(t); t = o; s *= 2; }
+  const r = Math.max(1, Math.min(8, Math.ceil(R / s)));
+  const m1 = ctx.pass(prog(ctx, 'mmH'), { r }, { ein: t }, 'rgba16f', ctx.temp('rgba16f', b, h)); if (t !== g.tex) ctx.frei(t);
+  const m2 = ctx.pass(prog(ctx, 'mmV'), { r }, { ein: m1 }, 'rgba16f', ctx.temp('rgba16f', b, h)); ctx.frei(m1);
+  return { tex: m2, s, fein: g.tex, sf: g.s };   // fein: ungeweitete Kanten-Stärke am Pixel (Struktur nur, wo selbst Struktur ist)
+}
+// Kanten-Hülle und Form-Ebene hängen beide nur an Lt (parallel) → das Maximum der beiden Reichweiten zählt, nicht die Summe
+const RAND_INTENSIV = (px) => Math.ceil(Math.max(6 * RI[2], RH + 6 * RI[0]) * px) + Math.ceil(3 * RI_E * px) + 8;
+
 // ---- Adaptive Schärfe (Stufe DETAILS): Bänder fein/mittel/grob, Gewichte aus der Detailkarte (oder eigene GPU-Karte)
 function rendereSchaerfe(ctx, ein, p) {
   const st = klemme(p.staerke ?? 0.6, 0, 2); if (st <= 0) return ein;
@@ -303,7 +444,7 @@ function rendereTiefe(ctx, ein, t) {
   const tiefe = ctx.basis ? ctx.basis('tiefe') : null, mitTiefe = !ist1x1(tiefe);
   // Motiv ohne Tiefenmodell: Gesichter (Kopf + Oberkörper), sonst Antipp-Punkt, sonst Bildmitte
   const subj = [];
-  for (const g of (ctx.gesichter || []).slice(0, 4)) { const b = g.box; subj.push([b.x + b.b / 2, b.y + b.h * 0.75, b.b * 1.25, b.h * 1.6]); }
+  for (const g of (ctx.gesichter || []).slice(0, 4)) { const b = g.box; subj.push([b.x + b.b / 2, b.y + b.h * 0.7, b.b * 0.8, b.h * 1.1]); }   // Kopf + Schultern (vorher ×1,25/×1,6: bei großen Gesichtern blieb das ganze Bild scharf)
   if (!subj.length && t.fokus) subj.push([t.fokus.x, t.fokus.y, 0.16, 0.2]);
   if (!subj.length) subj.push([0.5, 0.5, 0.28, 0.36]);
   const groesste = (ctx.gesichter || []).slice().sort((a, b) => b.box.b * b.box.h - a.box.b * a.box.h)[0];
@@ -372,19 +513,19 @@ function brillantKern(ctx, ein, s, st) {
 const KERNE = {
   gemalt: (ctx, ein, s, st) => gemaltKern(ctx, ein, s, st),
   kombination: (ctx, ein, s, st) => gemaltKern(ctx, ein, { ...s, params: { ...s.params, fein: { ...(s.params?.fein || {}), malerisch: s.params?.fein?.malerisch ?? 50 } } }, st * LOOK.kombination.basis.gemalt),
-  brillant: brillantKern, monochrom: monoKern, comic: comicKern, weich: weichKern,
+  brillant: brillantKern, monochrom: monoKern, comic: comicKern, weich: weichKern, intensiv: intensivKern,
 };
 const RAENDER = {
   gemalt: (s, px) => Math.max(REGLER_RAND(px), RAND_BAENDER(px)) + REGLER_RAND(px), kombination: (s, px) => Math.max(REGLER_RAND(px), RAND_BAENDER(px)) + REGLER_RAND(px),
   brillant: (s, px) => REGLER_RAND(px) * 2, monochrom: (s, px) => REGLER_RAND(px) * 2, comic: (s, px) => randComic(px),
-  weich: (s, px) => REGLER_RAND(px) + RAND_BAENDER(px, true) + Math.ceil(0.045 * px),
+  weich: (s, px) => REGLER_RAND(px) + RAND_BAENDER(px, true) + Math.ceil(0.045 * px), intensiv: (s, px) => RAND_INTENSIV(px),
 };
 const lookSchaerfe = (s) => { const b = LOOK[s.params?.id]?.basis; if (!b?.schaerfe) return 0; return b.schaerfe * stOf(s) * fein(s, 'schaerfe'); };
 /** Körnung bei schon verrauschten Fotos zurücknehmen (σ Luma 0,6 % → 1, ab 1,8 % → 0): Rauschen IST dort schon Korn. */
 export const kornRauschen = (analyse) => 1 - klemme(((analyse?.rauschen?.sigmaL ?? 0) - 0.006) / 0.012);
 const lookEffekte = (s) => { const b = LOOK[s.params?.id]?.basis; const st = stOf(s), id = s.params?.id;
   const korn = id === 'gemalt' || id === 'monochrom' ? (b.korn || 0) * st * fein(s, 'korn') : id === 'kombination' ? 8 * st * 0.6 * fein(s, 'korn') : 0;
-  const vignette = id === 'gemalt' ? (b.vignette || 0) * st : id === 'kombination' ? -20 * st * 0.6 : 0;
+  const vignette = id === 'gemalt' ? (b.vignette || 0) * st : id === 'kombination' ? -20 * st * 0.6 : id === 'intensiv' ? (b.vignette || 0) * st * fein(s, 'rand') : 0;
   return { vignette, korn }; };
 
 // ================================================================ Stufen-Module
@@ -396,7 +537,7 @@ export const STUFEN = Object.freeze([
     (ctx, ein, s, m) => maskiere(ctx, ein, KERNE[l.id](ctx, ein, s, stOf(s)), m),
     (s, px) => RAENDER[l.id](s, px), ['haut'])),
   modul('look-schaerfe', STUFE.DETAILS, [ART.LOOK], (s) => lookSchaerfe(s) > 0.01,
-    (ctx, ein, s, m) => maskiere(ctx, ein, rendereSchaerfe(ctx, ein, { staerke: lookSchaerfe(s) * (0.3 + 0.7 * kornRauschen(ctx.analyse)), fein: 1, mittel: 1, grob: 1, rauschSchwelle: (ctx.analyse?.rauschen?.sigmaL ?? 0) > 0.015 ? 2.5 : 1.5 }), m), (s, px) => randSchaerfe(px), ['detailkarte', 'haut']),
+    (ctx, ein, s, m) => maskiere(ctx, ein, rendereSchaerfe(ctx, ein, { staerke: lookSchaerfe(s) * (0.3 + 0.7 * kornRauschen(ctx.analyse)), fein: s.params?.id === 'intensiv' ? 0.5 : 1, mittel: 1, grob: 1, rauschSchwelle: (ctx.analyse?.rauschen?.sigmaL ?? 0) > 0.015 ? 2.5 : 1.5 }), m), (s, px) => randSchaerfe(px), ['detailkarte', 'haut']),
   modul('schaerfe', STUFE.DETAILS, [ART.SCHAERFE], (s) => (s.params?.staerke ?? 0.6) > 0.001,
     (ctx, ein, s, m) => maskiere(ctx, ein, rendereSchaerfe(ctx, ein, s.params || {}), m), (s, px) => randSchaerfe(px), ['detailkarte', 'haut']),
   modul('look-tiefe', STUFE.EFFEKTE - 1, [ART.LOOK], (s) => { const t = tiefenParams(s); return !!t && t.staerke > 0.01; },

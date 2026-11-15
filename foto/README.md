@@ -7,10 +7,11 @@ Web-App für das iPhone (Safari): <https://xanderfoxy.github.io/Synquenzer/foto/
 - Schwere Rechnungen (Analyse, Masken, Füllen, Hochskalieren) laufen in Workern.
 - Die KI-Modelle werden erst bei Bedarf vom CDN geladen. Die App zeigt dabei den Fortschritt und die Größe samt Laufzeit. Danach liegen die Modelle im Cache Storage und gehen auch offline.
 - Jede KI-Funktion hat einen einfacheren Weg ohne Modell („Ohne Modell“).
+- Gespeicherte Personen für „Gesicht auffrischen“ (Name, Referenzfotos, Merkmals-Vektoren) liegen nur auf dem Gerät (IndexedDB) und lassen sich mit „Alle löschen“ entfernen. Die Nutzungsprotokolle der Bild-Laufzeit (MediaPipe) werden gesperrt; außer den Modell-Downloads geht nichts ins Netz.
 
 ## Dateien
 
-`index.html`, die ES-Module (`app.js`, `gl.js`, `regler.js`, `looks.js`, `analyse.js`, `auswahl.js`, `entfernen.js`, `hoch.js`, `batch.js`, `zuschnitt.js`, `modelle.js`, `typen.js`, `rpc.js`), die Worker `wk-rechnen.js` und `wk-ki.js` sowie `sw.js` (Service Worker für den Offline-Betrieb). Es gibt keinen Build-Schritt.
+`index.html`, die ES-Module (`app.js`, `gl.js`, `regler.js`, `looks.js`, `analyse.js`, `auswahl.js`, `entfernen.js`, `hoch.js`, `batch.js`, `zuschnitt.js`, `modelle.js`, `personen.js`, `typen.js`, `rpc.js`), die Worker `wk-rechnen.js` und `wk-ki.js` sowie `sw.js` (Service Worker für den Offline-Betrieb). Es gibt keinen Build-Schritt.
 
 ## Modelle und Lizenzen
 

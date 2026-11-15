@@ -574,7 +574,7 @@ export function erstellePipeline(canvas, opts = {}) {
       brauchtQuelle();
       const gm = geometrieMatrix(zustand.doc.geometrie, q.b, q.h);
       const f = kante / Math.max(gm.ausgabeB, gm.ausgabeH); const b = Math.max(1, Math.round(gm.ausgabeB * f)), h = Math.max(1, Math.round(gm.ausgabeH * f));
-      const r = rendereRegion(zustand.doc, { x: 0, y: 0, b: q.b, h: q.h }, Math.min(1, f), { qualitaet: 'voll', mitSchritten: zustand.vergleich !== 'vorher', analyse: zustand.doc.analyse });
+      const r = rendereRegion(zustand.doc, { x: 0, y: 0, b: q.b, h: q.h }, Math.min(1, f), { qualitaet: 'voll', mitSchritten: zustand.vergleich !== 'vorher', analyse: zustand.doc.analyse, gesichter: zustand.doc.gesichter });
       const ziel = temp('rgba8', b, h);
       ausgabe(ziel, { zielZuAusgabe: new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1]), ausgabeZuQuelle: gm.matrix, nach: r, flipY: false, kodiere: 1, zielH: h });
       const px = await leseAsync(ziel, 0, 0, b, h, 'u8'); alleFrei();

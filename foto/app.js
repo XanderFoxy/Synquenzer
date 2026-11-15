@@ -326,7 +326,7 @@ export async function starte(wurzel, opts = {}) {
       app.test?.laufzeiten.push({ was: 'analyse', ms: performance.now() - t0, ok: !z.analyseFehlt });
       emit('analyse', z.doc.analyse || null); plane(); if (z.reiter === 'auto') reiterNeu();
     } finally { z.analyseLaeuft = false; }
-    if (z.doc && z.doc.id === docId && !opts.ohneGesichter) gesichterImHintergrund(docId).catch(() => {});
+    if (z.doc && z.doc.id === docId && !opts.ohneGesichter) gesichterImHintergrund(docId).catch(() => {}).then(() => personenAutomatisch(docId)).catch(() => {});
     if (!vorgewaermt) { vorgewaermt = true; setTimeout(() => vorwaermen().catch(() => {}), 50); }
   }
   /** INTEGRATION (Leistung): alle Regler-/Lokal-Shader einmal in Ruhe übersetzen (Mini 32 px), damit das erste Ziehen
@@ -351,6 +351,15 @@ export async function starte(wurzel, opts = {}) {
     const g = await ki.rufe('gesichter', { bild: kopie }, { transfer: [kopie] });
     if (!z.doc || z.doc.id !== docId || !g?.length) return;
     setzeGesichter(g); await analysiere({ ohneGesichter: true });
+  }
+  /** PERSONEN: gespeicherte Personen automatisch erkennen und auffrischen (ohne Antippen). Lädt personen.js nur, wenn es
+   *  Personen mit Fotos gibt (Merker in localStorage) – Modelle werden hier nie geladen, nur benutzt, wenn sie im Cache liegen. */
+  async function personenAutomatisch(docId) {
+    try { if (localStorage.getItem('bildwerk-personen-da') !== '1' || localStorage.getItem('bildwerk-personen-auto') === '0') return; } catch { return; }
+    if (!z.doc || z.doc.id !== docId) return;
+    const P = await import('./personen.js');
+    const r = await P.autoAuffrischen(app, { docId });
+    if (r?.schritte?.length && z.doc?.id === docId) meldung(`${r.schritte.map((s) => s.params.person.name).join(', ')} automatisch aufgefrischt`);
   }
   function setzeGesichter(liste) {
     if (!z.doc || !Array.isArray(liste)) return;
