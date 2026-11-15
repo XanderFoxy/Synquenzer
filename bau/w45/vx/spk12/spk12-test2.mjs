@@ -22,7 +22,7 @@ for (const [W, H] of VIEWS) {
   const tap = async q => { if (!q) throw new Error('Knopf fehlt'); await touch('touchStart', [q]); await wait(50); await touch('touchEnd', []); await wait(250); };
   const hold = async (q, ms) => { if (!q) throw new Error('Knopf fehlt'); await touch('touchStart', [q]); await wait(ms); await touch('touchEnd', []); await wait(250); };
   const sel = s => p.evaluate(s => { const e = document.querySelector(s); if (!e || !e.offsetParent) return null; e.scrollIntoView({block: 'nearest', inline: 'nearest'}); const r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }, s);
-  const box = s => p.evaluate(s => [...document.querySelectorAll(s)].filter(e => e.offsetParent).map(e => { e.scrollIntoView({block: 'nearest', inline: 'nearest'}); const r = e.getBoundingClientRect(); return {t: e.textContent.trim(), w: Math.round(r.width), h: Math.round(r.height), l: Math.round(r.left), r: Math.round(r.right), top: Math.round(r.top), bot: Math.round(r.bottom)}; }), s);
+  const box = s => p.evaluate(s => [...document.querySelectorAll(s)].filter(e => e.offsetParent).map(e => { e.scrollIntoView({block: 'nearest', inline: 'nearest'}); const r = e.getBoundingClientRect(), af = getComputedStyle(e, '::after'), ex = af.content && af.content !== 'none' ? Math.max(0, -parseFloat(af.top) || 0) + Math.max(0, -parseFloat(af.bottom) || 0) : 0; return {t: e.textContent.trim(), w: Math.round(r.width), h: Math.round(r.height + ex), l: Math.round(r.left), r: Math.round(r.right), top: Math.round(r.top), bot: Math.round(r.bottom)}; }), s);
   const inView = L => L.length > 0 && L.every(x => x.w >= 44 && x.h >= 44 && x.l >= 0 && x.r <= W + 0.5 && x.top >= 0 && x.bot <= H + 0.5);
   const shot = n => p.screenshot({path: path.join(fotos, n + '-' + tag + '.png')});
   const U_ = () => p.evaluate(() => { const U = __spk.page.ui(); return {tool: U.tool, n: U.sel.length, arts: U.sel.map(s => s.art + (s.op ? ':' + s.op : '')), stat: __spk.page.info().stat}; });
@@ -42,7 +42,7 @@ for (const [W, H] of VIEWS) {
     for (let j = 0; j < 16; j++) { const i0 = Math.round((2 + j * 0.25) * sr); for (let i = 0; i < 0.2 * sr; i++) { const t = i / sr, a = LV[j]; C.sn[i0 + i] += a * (0.35 * rnd() * Math.exp(-t / 0.045) + 0.3 * Math.sin(TP * 190 * t) * Math.exp(-t / 0.06)); } }
     for (let i = Math.floor(9 * sr); i < 11.5 * sr; i++) { const t = i / sr, e = Math.min(1, (t - 9) / 0.02, (11.5 - t) / 0.02); for (let h = 1; h <= 12; h++) { const v = e * 0.2 / Math.pow(h, 0.6) * Math.sin(TP * 220 * h * t); if (h & 1) C.odd[i] += v; else C.even[i] += v; } }
     for (let i = Math.floor(12.5 * sr); i < 14.5 * sr; i++) { const t = i / sr, e = Math.min(1, (t - 12.5) / 0.02, (14.5 - t) / 0.02); for (let h = 1; h <= 6; h++) C.auto[i] += e * 0.2 / Math.sqrt(h) * Math.sin(TP * 196 * h * t); }
-    let ph = 0; const fT = t => 330 * Math.pow(2, (4 / 12) * (t - 15) / 3.5 + (40 / 1200) * Math.sin(TP * 5 * (t - 15))); C.fT = fT.toString();
+    let ph = 0; const fT = t => 330 * Math.pow(2, (4 / 12) * (t - 15) / 3.5 + (40 / 1200) * Math.sin(2 * Math.PI * 5 * (t - 15))); C.fT = fT.toString();
     for (let i = Math.floor(15 * sr); i < 18.5 * sr; i++) { const t = i / sr; ph += TP * fT(t) / sr; const gp = Math.min(1, Math.max(0, Math.abs(t - 16.56) - 0.06) / 0.02), e = Math.min(1, (t - 15) / 0.02, (18.5 - t) / 0.02) * gp;
       C.g1[i] = e * 0.25 * Math.sin(ph); C.glide[i] = C.g1[i] + e * (0.12 * Math.sin(2 * ph) + 0.06 * Math.sin(3 * ph)) + (t > 16.5 && t < 16.62 ? 0.25 * rnd() : 0); }
     for (let i = 0; i < n; i++) x[i] = C.pad[i] + C.sn[i] + C.odd[i] + C.even[i] + C.auto[i] + C.glide[i];
@@ -74,7 +74,7 @@ for (const [W, H] of VIEWS) {
   await tap(await sel('#spk1Sheet [data-a="undo"]')); const t2 = await p.evaluate(() => __spk.page.ui().sel.map(s => s.hits.length));
   ok(tag + ' transient-tipp-und-undo', {tipp: t1, nachUndo: t2}, t1.length === 1 && t1[0].length === 1 && Math.abs(t1[0][0] - 3) <= 0.03 && t2[0] >= 15);
   // ---- Ellipse (Rechteck halten → Ellipse) ----
-  await view(8.6, 11.9, 96, 50);
+  await view(8.6, 14.8, 96, 50);
   ok(tag + ' werkzeug-ellipse', await tool('rect', 'ell'), (await p.evaluate(() => __spk.page.info().tool)) === 'ell');
   const ddL = await p.evaluate(() => 1);
   await drag(await scr(9.3, 1800), await scr(11.0, 300), 14);
@@ -88,10 +88,11 @@ for (const [W, H] of VIEWS) {
   ok(tag + ' ellipse-bit-genau', el1, el1 && el1.bad === 0 && el1.nz > 50);
   await shot('t2-ellipse');
   // ---- Lasso (umfahren, Dreieck) ----
+  await p.evaluate(() => { __spk.page.ui().opt.kante = 0; });   // harte Kante → bit-genau prüfbar
   ok(tag + ' werkzeug-lasso', await tool('rect', 'lasso'), (await p.evaluate(() => __spk.page.info().tool)) === 'lasso');
   { const A = await scr(9.2, 400), B = await scr(11.2, 600), Cc = await scr(10.0, 2600), pts = []; for (const [a, z] of [[A, B], [B, Cc], [Cc, A]]) for (let i = 0; i < 10; i++) pts.push([a[0] + (z[0] - a[0]) * i / 10, a[1] + (z[1] - a[1]) * i / 10]); pts.push(A);
     await p.evaluate(() => { window.__ov = []; const o = spk1OvDraw; window.spk1OvDraw = function (U) { const t = performance.now(); o(U); window.__ov.push(performance.now() - t); }; });
-    await path3(pts, 22); }
+    await path3(pts, 22); await p.evaluate(() => { __spk.page.ui().opt.kante = 0.3; }); }
   const la = await p.evaluate(async () => {
     const U = __spk.page.ui(), s = U.sel[0]; if (!s || s.art !== 'lasso') return null; const sr = U.meta.sr, hop = 1024, N = 4096, m0 = Math.round(s.t0 * sr / hop + 1) - 2, m1 = Math.round(s.t1 * sr / hop + 1) + 2, k1 = Math.ceil(s.f1 * 1.2 * N / sr);
     const M = await __spk12.mask([s], {m0, m1, k0: 0, k1}), Hh = k1 + 1, cn = f => f > 0 ? 1200 * Math.log2(f / 440) : -1e9, P = s.pts.map(q => [q[0], cn(q[1])]);
@@ -114,7 +115,7 @@ for (const [W, H] of VIEWS) {
   await tap(await sel('#spk1Sheet .spk1-dd [data-s12hh="ung"]'));
   const od = await p.evaluate(async () => { const sel = __spk.page.ui().sel, h = sel.find(s => s.art === 'harm'); return {hm: h && h.hm, gerade: +(100 * await __frac(sel, __c.even, 9.3, 11.2, 1500)).toFixed(3), ungerade: +(100 * await __frac(sel, __c.odd, 9.3, 11.2, 1500)).toFixed(1)}; });
   ok(tag + ' obertoene-nur-ungerade', od, od.hm && od.hm.every(h => h & 1) && od.gerade <= 1 && od.ungerade >= 80);
-  await tap(await sel('#spk1Sheet [data-a="s12hd"]')); await wait(150); await tap(await sel('#spk1Sheet .spk1-dd [data-s12h="3"]'));
+  await tap(await sel('#spk1Sheet [data-a="s12hd"]')); await wait(250); const dbg3 = await p.evaluate(() => ({open: !!document.querySelector('#spk1Sheet .spk1-dd [data-s12h]'), b3: (document.querySelector('#spk1Sheet .spk1-dd [data-s12h="3"]') || {}).textContent})); const q3 = await sel('#spk1Sheet .spk1-dd [data-s12h="3"]'); console.log('dbg3', JSON.stringify(dbg3), JSON.stringify(await p.evaluate(([x, y]) => { const e = document.elementFromPoint(x, y); return e && (e.outerHTML.slice(0, 80)); }, q3))); await tap(await sel('#spk1Sheet .spk1-dd [data-s12h="3"]'));
   const h3 = await p.evaluate(() => __spk.page.ui().sel.find(s => s.art === 'harm').hm); await p.evaluate(() => spk1Dd(__spk.page.ui(), null));
   await tap(await sel('#spk1Sheet [data-a="undo"]')); const h3u = await p.evaluate(() => __spk.page.ui().sel.find(s => s.art === 'harm').hm);
   ok(tag + ' oberton-haekchen-und-undo', {ohne3: h3, nachUndo: h3u}, h3 && !h3.includes(3) && h3.includes(5) && h3u && h3u.includes(3));

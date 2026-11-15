@@ -90094,19 +90094,100 @@ function trp1P(song, i, sb, n, p, ck, fe) {
     return e && e.target ? mapOut(i, ck, n2, 0, e) : n2;
   } catch (e) { return p; }
 }
-// der Stand der festen Spuren nur in den Takten [a, b) um d (je Marke entpackt → versetzt → wieder rk/rkx); false = Grenze ±12
+// --- der Stand der festen Spuren auch in Takten ohne Teil (Prüfung Befund 1: Song ohne Marken, Lücke nach einem Teil) ---
+// song.trf = [[Takt, Versatz]]: nur in Takten ohne Marke, gegen den Stand, den JAM3 dort sieht (der Teil davor, vor dem ersten 0) –
+// relativ, damit eine spätere Rückung „ab hier“ die Lücke mitnimmt. jam3LvAt/jam3FestL (Einhänge-Zeilen) fragen hier, wenn es trf gibt.
+function trp1In(song, bar) { for (const m of (song && song.marks) || []) if (bar >= m.a && bar < m.a + m.len) return m; return null; }
+function trp1Base(song, bar) {                                       // = jam3LvAt ohne trf
+  let v = 0;
+  for (const m of (song && song.marks) || []) {
+    if (m.a > bar) continue;
+    if (bar < m.a + m.len) { v = m.rk || 0; for (const x of m.rkx || []) if (m.a + x[0] <= bar) v = x[1]; return v; }
+  }
+  let best = null; for (const m of (song && song.marks) || []) if (m.a + m.len <= bar && (!best || m.a > best.a)) best = m;
+  if (!best) return 0;
+  v = best.rk || 0; for (const x of best.rkx || []) v = x[1];
+  return v;
+}
+function trp1LvAt(song, bar) {
+  const v = trp1Base(song, bar); if (!song.trf || trp1In(song, bar)) return v;
+  for (const x of song.trf) if (x[0] === bar) return v + x[1];
+  return v;
+}
+function trp1FestL(song) {
+  const v = UI.songVer | 0, c = TRP1.ffc, n = (song.marks || []).length, nt = song.trf.length;
+  if (c && c.song === song && c.v === v && c.n === n && c.nt === nt) return c.l;
+  const L = []; let cur = 0;
+  for (let b = 0; b < (song.bars | 0); b++) { const lv = trp1LvAt(song, b); if (lv !== cur) { L.push({beat: barBeat(b), semi: lv}); cur = lv; } }
+  TRP1.ffc = {song, v, n, nt, l: L.length ? L : null};
+  return TRP1.ffc.l;
+}
+function trp1TrfNorm(t, v4, bars) {
+  if (!Array.isArray(t)) return; const out = [], seen = new Set();
+  for (const x of t.slice(0, 1024)) { if (!Array.isArray(x) || !isNum(x[0]) || !isNum(x[1])) continue; const b = Math.round(x[0]), d = clamp(Math.round(x[1]), -24, 24); if (b >= 0 && b < bars && d && !seen.has(b)) { seen.add(b); out.push([b, d]); } }
+  if (out.length) v4.trf = out.sort((p, q) => p[0] - q[0]);
+}
+function trp1TrfShift(song, n, d) {                                   // songShift / t1Shift: Takte einfügen/löschen
+  const t = song.trf.filter(x => !(d < 0 && x[0] >= n + d && x[0] < n)).map(x => [x[0] >= n ? x[0] + d : x[0], x[1]]).filter(x => x[0] >= 0);
+  if (t.length) song.trf = t; else delete song.trf;
+}
+function trp1TrfCut(song, a, b) { const t = song.trf.filter(x => x[0] < a || x[0] >= b); if (t.length) song.trf = t; else delete song.trf; }
+// der Stand der festen Spuren nur in den Takten [a, b) um d: an den Marken (rk/rkx, je Marke neu gepackt) und in Takten ohne Marke
+// (trf); false = Grenze ±12. Rechnet den ganzen Song je Takt (64 Takte · 32 Teile < 1 ms)
 function trp1Lv(sg, a, b, d) {
+  const N = Math.max(sg.bars | 0, b), lv0 = []; for (let k = 0; k < N; k++) lv0.push(trp1LvAt(sg, k));
+  const lv1 = lv0.map((v, k) => (k >= a && k < b ? v + d : v));
+  if (lv1.some(q => Math.abs(q) > 12)) return false;
   for (const mm of sg.marks) {
     if (mm.a + mm.len <= a || mm.a >= b) continue;
-    const x = new Map((mm.rkx || []).map(q => [q[0], q[1]])), lv = []; let v = mm.rk || 0;
-    for (let k = 0; k < mm.len; k++) { if (x.has(k)) v = x.get(k); lv.push(mm.a + k >= a && mm.a + k < b ? v + d : v); }
-    if (lv.some(q => Math.abs(q) > 12)) return false;
-    const rkx = []; for (let k = 1; k < lv.length; k++) if (lv[k] !== lv[k - 1]) rkx.push([k, lv[k]]);
+    const lv = lv1.slice(mm.a, mm.a + mm.len), rkx = []; for (let k = 1; k < lv.length; k++) if (lv[k] !== lv[k - 1]) rkx.push([k, lv[k]]);
     if (rkx.length > 16) return false;
-    const t = mm.trs; delete mm.rk; delete mm.rkx; delete mm.trs;
-    if (lv[0]) mm.rk = lv[0]; if (rkx.length) mm.rkx = rkx; if (t) mm.trs = t;   // Reihenfolge wie marksNorm (Speichern/Laden bitgleich)
+    const t = mm.trs, tn = mm.trn; delete mm.rk; delete mm.rkx; delete mm.trs; delete mm.trn;
+    if (lv[0]) mm.rk = lv[0]; if (rkx.length) mm.rkx = rkx; if (t) mm.trs = t; if (tn) mm.trn = tn;   // Reihenfolge wie marksNorm (Speichern/Laden bitgleich)
   }
+  const tf = []; for (let k = 0; k < (sg.bars | 0); k++) { if (trp1In(sg, k)) continue; const x = lv1[k] - trp1Base(sg, k); if (x) tf.push([k, x]); }
+  delete sg.trf; if (tf.length) sg.trf = tf;
   return true;
+}
+// s2Sum / konDo (Einhänge-Zeilen): vor dem Schnitt die Stufen und den Stand je Takt merken, danach an die neue Marke (Befund 2)
+function trp1Old(song, a, e) {
+  try {
+    const per = [], lv = []; let any = false;
+    for (let b = a; b < e; b++) { const m = trp1In(song, b), x = m && m.trs ? trp1PerBar(m)[b - m.a] : null; if (x) any = true; per.push(x); lv.push(trp1LvAt(song, b)); }
+    TRP1.keep = any || song.trf ? {song, a, e, per, lv, any, trf: !!song.trf} : null;
+  } catch (er) { logErr(er); TRP1.keep = null; }
+}
+function trp1Keep(song, a, e) {
+  const K = TRP1.keep; TRP1.keep = null;
+  try {
+    if (!K || K.song !== song || K.a !== a || K.e !== e) return;
+    const m = song.marks.find(x => x.a === a && x.len === e - a); if (!m) return;
+    if (K.trf) {                                                       // der Stand mit trf (jam3RkKeep sieht bei konDo nur die alten Marken)
+      const lv = K.lv, x = []; for (let o = 1; o < lv.length; o++) if (lv[o] !== lv[o - 1]) x.push([o, lv[o]]);
+      const t = m.trs, tn = m.trn; delete m.rk; delete m.rkx; delete m.trs; delete m.trn;
+      if (lv[0]) m.rk = lv[0]; if (x.length) m.rkx = x.slice(0, 16); if (t) m.trs = t; if (tn) m.trn = tn;
+      trp1TrfCut(song, a, e);
+    }
+    if (K.any) trp1PerPut(m, K.per);
+  } catch (er) { logErr(er); }
+}
+// tktModeDo (Einhänge-Zeile): Dur ↔ Moll – die Stufen rechnen danach in der neuen Tonart (Befund 4)
+function trp1KeyTo(song, key) {
+  try { for (const m of song.marks || []) if (m.trs) trp1PerPut(m, trp1PerBar(m).map(x => (x ? {s: x.s, k: {root: key.root, scale: key.scale}} : null))); } catch (e) { logErr(e); }
+}
+// restoreSong (Einhänge-Zeile): ↶ ↷ während ▶ SONG – Transposition und feste Spuren ab dem nächsten Takt (Befund 3; wie beim Setzen)
+function trp1Live() { try { if (R.playing && R.songPlay && S.song && AU.ctx) { jam3FtLive(); gr1XpLive(); } } catch (e) { logErr(e); } }
+// ein Teil mit Takt-Angabe (Testsongs haben mehrere Teile gleichen Namens)
+const trp1Name = m => markLabel(m) + ' (Takt ' + (m.a + 1) + (m.len > 1 ? '–' + (m.a + m.len) : '') + ')';
+const trp1Ht = r => (Math.abs(r) === 1 ? ' Halbton' : ' Halbtöne');
+// Befund 6: der Teil direkt nach einem „nur“-Teil – die Rückungs-Zeile rechnet dort gegen vor dem „nur“-Teil (nicht gegen den „nur“-Teil)
+function trp1Isl(song, m) {
+  if (!song || !m || m.trn !== 1 || !m.a) return null;
+  const B0 = barBeat(m.a), vM = vvAppXpAt(song, B0), vP = vvAppXpAt(song, B0 - 1e-3); if (vM === vP) return null;
+  let bK = null; for (const x of song.xp || []) if (x.beat < B0 - 1e-6) bK = x.beat;
+  if (bK == null) return null;
+  const vB = bK > 1e-6 ? vvAppXpAt(song, bK - 1e-3) : 0;
+  return vB === vM ? {vB, vP, vM} : null;
 }
 // Gesang/Audio im Bereich (die STIMME-Spur spielt dort einen Take)
 function trp1Vox(song, a, b) {
@@ -90119,19 +90200,26 @@ function trp1Set(o) {
   const a = clamp(o.a | 0, 0, song.bars), b = clamp(o.b | 0, a, song.bars); if (b <= a) return false;
   let r = clamp(Math.round(+o.r || 0), o.deg ? -7 : -12, o.deg ? 7 : 12); const r0 = r;
   if (o.oct) r = trp1Oct(r, !!o.deg);
-  TRP1.last = {r0, r, deg: !!o.deg, vox: trp1Vox(song, a, b), key: null, n: 0};
+  TRP1.last = {r0, r, deg: !!o.deg, vox: trp1Vox(song, a, b), key: null, n: 0, after: b < song.bars, part: false, names: null};
   if (!r) return null;
   const lab = (o.label || ('Takt ' + (a + 1) + (b - a > 1 ? '–' + b : ''))) + ' ' + gr1Semi(r) + (o.deg ? ' Stufe' + (Math.abs(r) > 1 ? 'n' : '') : '');
   if (o.deg) {
-    const ms = song.marks.filter(m => m.a >= a && m.a + m.len <= b); if (!ms.length) { toast('In der Tonart geht für ganze Teile – hier in Halbtönen'); return false; }
-    const keys = new Map(); for (const m of ms) { const k = m.trs ? {root: m.trs[1], scale: m.trs[2]} : songKeyAtBar(m.a); if (Math.abs((m.trs ? m.trs[0] : 0) + r) > 7) { toast('Höchstens ±7 Stufen'); return false; } keys.set(m.id, k); }
-    TRP1.last.key = keys.get(ms[0].id); TRP1.last.n = ms.length;
+    const ms = song.marks.filter(m => m.a >= a && m.a + m.len <= b); if (!ms.length) { toast('In der Tonart geht nur für ganze Teile – nichts geändert (hier gehen nur Halbtöne)'); return false; }
+    const plan = new Map(); let cov = 0;
+    for (const m of ms) {                                              // je Takt im Teil: die Stufen bisher und ihre Tonart (neu: die Tonart dort)
+      const per = trp1PerBar(m).map((x, k) => (x ? {s: x.s, k: x.k} : {s: 0, k: songKeyAtBar(m.a + k)}));
+      if (per.some(x => Math.abs(x.s + r) > 7)) { toast('Höchstens ±7 Stufen'); return false; }
+      plan.set(m.id, per); cov += m.len;
+    }
+    Object.assign(TRP1.last, {key: plan.get(ms[0].id)[0].k, n: ms.length, part: cov < b - a, names: ms.map(trp1Name)});
     return !!songEdit('Transponieren ' + lab, sg => {
       for (const m of sg.marks) {
-        const k = keys.get(m.id); if (!k) continue;
-        const s = (m.trs ? m.trs[0] : 0) + r; if (s) m.trs = [s, k.root, k.scale]; else delete m.trs;
-        const B0 = barBeat(m.a), B1 = barBeat(m.a + m.len);
-        for (const t in sg.mel) { if (!jam2RkMel(+t)) continue; for (const n of sg.mel[t].notes) if (n.t >= B0 - .25 - 1e-9 && n.t < B1 - .25 - 1e-9) n.n = trp1DegN(n.n, r, k); }
+        const per = plan.get(m.id); if (!per) continue;
+        for (let j = 0; j < per.length; j++) {
+          const k = per[j].k, B0 = barBeat(m.a + j), B1 = barBeat(m.a + j + 1);
+          for (const t in sg.mel) { if (!jam2RkMel(+t)) continue; for (const n of sg.mel[t].notes) if (n.t >= B0 - .25 - 1e-9 && n.t < B1 - .25 - 1e-9) n.n = trp1DegN(n.n, r, k); }
+        }
+        trp1PerPut(m, per.map(x => ({s: x.s + r, k: x.k})));
       }
     });
   }
@@ -90140,19 +90228,22 @@ function trp1Set(o) {
   if (!xs.some(x => Math.abs(x.beat - B0) < 1e-6)) xs.push({beat: B0, semi: v0});
   if (!atEnd && !xs.some(x => Math.abs(x.beat - B1) < 1e-6)) xs.push({beat: B1, semi: v1});   // der zweite Knoten: danach wieder der alte Wert
   if (xs.some(x => inR(x.beat) && Math.abs(x.semi + r) > 12)) { toast('Höchstens ±12 Halbtöne'); return false; }
-  if (!trp1Lv({marks: JSON.parse(JSON.stringify(song.marks))}, a, b, r)) { toast('Höchstens ±12 Halbtöne'); return false; }
+  if (!trp1Lv(JSON.parse(JSON.stringify({bars: song.bars, marks: song.marks, trf: song.trf})), a, b, r)) { toast('Höchstens ±12 Halbtöne'); return false; }
   const ok = songEdit('Transponieren ' + lab, sg => {
     sg.xp = xs.map(x => (inR(x.beat) ? {beat: x.beat, semi: x.semi + r} : x)).sort((p, q) => p.beat - q.beat);
     for (const k in sg.mel) { if (!jam2RkMel(+k)) continue; for (const n of sg.mel[k].notes) if (n.t >= B0 - .25 - 1e-9 && n.t < B1 - .25 - 1e-9) n.n = clamp(n.n + r, 0, 127); }
     trp1Lv(sg, a, b, r);
+    if (!atEnd) { const nx = sg.marks.find(mm => mm.a === b); if (nx) nx.trn = 1; }   // Befund 6: der Teil danach weiß, dass davor „nur“ war
   });
   if (ok) { try { jam3FtLive(); gr1XpLive(); } catch (e) { logErr(e); } }   // läuft ▶ SONG: ab dem nächsten Takt (wie die Rückung)
   return !!ok;
 }
 // die Meldung nach dem Transponieren (ehrlich: Oktavbereich, Gesang bei „Stufe“)
 function trp1Msg(what) {
-  const L = TRP1.last || {}, r = L.r | 0, u = L.deg ? ' Stufe' + (Math.abs(r) > 1 ? 'n' : '') : ' Halbton' + (Math.abs(r) > 1 ? 'e' : '');
-  let s = what + ' ' + gr1Semi(r) + u + (L.deg && L.key ? ' in ' + keyName(L.key) : '') + ' – danach wie vorher';
+  const L = TRP1.last || {}, r = L.r | 0, u = L.deg ? ' Stufe' + (Math.abs(r) > 1 ? 'n' : '') : trp1Ht(r);
+  if (L.deg && L.part && L.names) what = 'Nur ' + L.names.join(', ');   // Befund 8: in der Tonart nur die ganzen Teile im Bereich
+  let s = what + ' ' + gr1Semi(r) + u + (L.deg && L.key ? ' in ' + keyName(L.key) : '') + (L.after !== false ? ' – danach wie vorher' : '');
+  if (L.deg && L.part) s += ' · in der Tonart nur ganze Teile';
   if (L.r0 !== L.r) s += ' · Oktavbereich: ' + gr1Semi(L.r0) + ' → ' + gr1Semi(r);
   if (L.deg && L.vox) s += ' · Gesang bleibt (geht nur in Halbtönen)';
   else if (!L.deg) s += ' · alles außer Drums';
@@ -90185,13 +90276,23 @@ function trp1MarkSheetPaint(p, m) {
   try {
     trp1Css();
     const j = p.querySelector('.j2rk'); if (!j) return;
-    const only = TRP1.only, nm = markLabel(m);
+    if (TRP1.next === m.id) { p._trp1o = m.id; TRP1.next = null; }     // Guide: „nur dieser Teil“ für dieses eine Blatt
+    const only = p._trp1o === m.id, nm = markLabel(m);                // Befund 5: „nur“ gilt nur im offenen Blatt dieser Marke
     if (only) {
       for (const b of j.querySelectorAll('button[data-jrk]')) {
         const v = +b.dataset.jrk; b.dataset.trv = String(v); b.removeAttribute('data-jrk'); b.classList.remove('on'); b.setAttribute('aria-pressed', 'false');
-        if (!v) b.disabled = true; b.setAttribute('aria-label', v ? 'Nur ' + nm + ' ' + gr1Semi(v) + ' Halbton' + (Math.abs(v) > 1 ? 'e' : '') + ', danach wie vorher' : 'Nichts');
+        if (!v) b.disabled = true; b.setAttribute('aria-label', v ? 'Nur ' + nm + ' ' + gr1Semi(v) + trp1Ht(v) + (m.a + m.len < S.song.bars ? ', danach wie vorher' : '') : 'Nichts');
       }
       const sm = j.querySelector('.j2rk-l small'); if (sm) sm.textContent = 'nur Teil';
+    } else {
+      const I = trp1Isl(S.song, m);                                    // Befund 6: nach einem „nur“-Teil rechnet die Zeile gegen vor ihm
+      if (I) {
+        for (const b of j.querySelectorAll('button[data-jrk]')) {
+          const v = +b.dataset.jrk, on = v === I.vM - I.vB; b.dataset.trk = String(v); b.removeAttribute('data-jrk'); b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on));
+          b.setAttribute('aria-label', v ? 'Ab ' + nm + ' ' + gr1Semi(v) + trp1Ht(v) + ' gegen vor dem „nur“-Teil' : 'Wie vor dem „nur“-Teil');
+        }
+        const sm = j.querySelector('.j2rk-l small'); if (sm) sm.textContent = 'nach „nur“';
+      }
     }
     const html = `<button class="rb ms-b trp1-m${only ? '' : ' on'}" data-trm="ab" aria-pressed="${!only}" aria-label="Rückung wirkt ab diesem Teil">ab hier</button>` +
       `<button class="rb ms-b trp1-m${only ? ' on' : ''}" data-trm="nur" aria-pressed="${only}" aria-label="Nur dieser Teil, danach wieder wie vorher">nur dieser Teil</button>` +
@@ -90203,19 +90304,28 @@ function trp1MarkSheetPaint(p, m) {
       row.innerHTML = '<span class="j2rk-l">Wirkt<small>Rückung</small></span>' + html;
       (j.classList.contains('j2rk-in') && j.parentNode ? j.parentNode : j).after(row);
     }
-    if (!p._trp1) { p._trp1 = true; onTap(p, b => trp1MsTap(p, b), 'button[data-trm],button[data-trv]'); }
+    if (!p._trp1) { p._trp1 = true; onTap(p, b => trp1MsTap(p, b), 'button[data-trm],button[data-trv],button[data-trk]'); }
   } catch (e) { logErr(e); }
 }
 function trp1MsTap(p, b) {
   const m = S.song && S.song.marks.find(x => x.id === SV.mark); if (!m) return;
   const repaint = () => { if (UI.pop && UI.pop.el === p && p._paint) { p._paint(); popDock(p); } };
   const a = b.dataset.trm;
-  if (a === 'ab' || a === 'nur') { TRP1.only = a === 'nur'; haptic('tick'); repaint(); return; }
+  if (a === 'ab' || a === 'nur') { p._trp1o = a === 'nur' ? m.id : null; haptic('tick'); repaint(); return; }
   if (a === 'more') { trp1Open({a: m.a, b: m.a + m.len, mark: m.id}); return; }
   if (b.dataset.trv != null) {
     if (svRecBusy()) return;
     const v = +b.dataset.trv, ok = trp1Set({a: m.a, b: m.a + m.len, r: v, label: markLabel(m)});
-    if (ok) { haptic('tick'); toast(trp1Msg('Nur ' + markLabel(m)), songUndoAct()); svButtons(); UI.dirty.song = true; }
+    if (ok) { haptic('tick'); toast(trp1Msg('Nur ' + trp1Name(m)), songUndoAct()); svButtons(); UI.dirty.song = true; }
+    repaint();
+    return;
+  }
+  if (b.dataset.trk != null) {                                         // Befund 6: Rückung gegen vor dem „nur“-Teil
+    if (svRecBusy()) return;
+    const I = trp1Isl(S.song, m); if (!I) { repaint(); return; }
+    const v = +b.dataset.trk, ok = jam2RkSet(m.id, I.vB + v - I.vP);
+    if (ok) { haptic('tick'); toast('Ab ' + trp1Name(m) + ' ' + (v ? gr1Semi(v) + trp1Ht(v) + ' gegen vor dem „nur“-Teil' : 'wieder wie vor dem „nur“-Teil') + ' – alles außer Drums', songUndoAct()); svButtons(); UI.dirty.song = true; }
+    else if (ok === null) toast('Schon so: ' + (v ? gr1Semi(v) + trp1Ht(v) + ' gegen vor dem „nur“-Teil' : 'wie vor dem „nur“-Teil'));
     repaint();
   }
 }
@@ -90223,12 +90333,13 @@ function trp1MsTap(p, b) {
 function trp1Open(rg) {
   const song = S.song; if (!song || !rg || svRecBusy()) return;
   trp1Css();
-  const st = {only: true};
+  const whole = song.marks.some(m => m.a >= rg.a && m.a + m.len <= rg.b);   // Befund 9: „in der Tonart“ nur vorwählen, wo es geht
+  const st = {only: true, deg: TRP1.deg && whole};
   openPop(null, p => {
     p.classList.add('trp1p'); guardTouch(p);
     const paint = () => {
-      const m = rg.mark ? S.song.marks.find(x => x.id === rg.mark) : null, deg = TRP1.deg, oct = TRP1.oct;
-      const what = m ? markLabel(m) : 'Takt ' + (rg.a + 1) + (rg.b - rg.a > 1 ? '–' + rg.b : '');
+      const m = rg.mark ? S.song.marks.find(x => x.id === rg.mark) : null, deg = st.deg, oct = TRP1.oct;
+      const what = m ? trp1Name(m) : 'Takt ' + (rg.a + 1) + (rg.b - rg.a > 1 ? '–' + rg.b : '');
       const S2 = (k, v, t, on, aria) => `<button class="rb${on ? ' on' : ''}" data-tp="${k}" data-v="${v}" aria-pressed="${!!on}"${aria ? ' aria-label="' + esc(aria) + '"' : ''}>${t}</button>`;
       let vals = ''; for (let v = -12; v <= 12; v++) if (v) vals += `<button class="rb" data-tv="${v}"${deg && Math.abs(v) > 7 ? ' disabled' : ''} aria-label="${esc(what + ' ' + gr1Semi(v) + (deg ? ' Stufen' : ' Halbtöne'))}">${gr1Semi(v)}</button>`;
       p.innerHTML = `<h4>Transponieren · ${esc(what)}</h4><div class="trp1-top">` +
@@ -90239,21 +90350,21 @@ function trp1Open(rg) {
     };
     paint(); p._paint = paint;
     onTap(p, b => {
-      if (b.dataset.tp === 'w') { st.only = b.dataset.v === 'nur'; haptic('tick'); paint(); popDock(p); return; }
-      if (b.dataset.tp === 'd') { TRP1.deg = b.dataset.v === '1'; haptic('tick'); paint(); popDock(p); return; }
-      if (b.dataset.tp === 'o') { TRP1.oct = !TRP1.oct; haptic('tick'); paint(); popDock(p); return; }
+      if (b.dataset.tp === 'w') { st.only = b.dataset.v === 'nur'; haptic('tick'); paint(); popFit(p); return; }   // Befund 7: das Blatt bleibt, wo es ist
+      if (b.dataset.tp === 'd') { st.deg = TRP1.deg = b.dataset.v === '1'; haptic('tick'); paint(); popFit(p); return; }
+      if (b.dataset.tp === 'o') { TRP1.oct = !TRP1.oct; haptic('tick'); paint(); popFit(p); return; }
       if (b.dataset.tv == null) return;
       const v = +b.dataset.tv, m = rg.mark ? S.song && S.song.marks.find(x => x.id === rg.mark) : null, end = S.song ? S.song.bars : rg.b;
       let ok, what;
-      if (!st.only && m && !TRP1.deg) {                                // ab hier = die Rückung des Teils (gegen davor)
+      if (!st.only && m && !st.deg) {                                // ab hier = die Rückung des Teils (gegen davor)
         const r = TRP1.oct ? trp1Oct(v, false) : v; TRP1.last = {r0: v, r, deg: false};
-        ok = jam2RkSet(m.id, r); what = 'Ab ' + markLabel(m);
-        if (ok) { haptic('tick'); closePop(); toast(what + ' ' + gr1Semi(r) + ' Halbton' + (Math.abs(r) > 1 ? 'e' : '') + ' gegen davor – alles außer Drums' + (v !== r ? ' · Oktavbereich: ' + gr1Semi(v) + ' → ' + gr1Semi(r) : ''), songUndoAct()); svButtons(); UI.dirty.song = true; }
+        ok = jam2RkSet(m.id, r); what = 'Ab ' + trp1Name(m);
+        if (ok) { haptic('tick'); closePop(); toast(what + ' ' + gr1Semi(r) + trp1Ht(r) + ' gegen davor – alles außer Drums' + (v !== r ? ' · Oktavbereich: ' + gr1Semi(v) + ' → ' + gr1Semi(r) : ''), songUndoAct()); svButtons(); UI.dirty.song = true; }
         return;
       }
       const a = rg.a, bb = st.only ? rg.b : end;
-      ok = trp1Set({a, b: bb, r: v, deg: TRP1.deg, oct: TRP1.oct, label: m ? markLabel(m) : null});
-      what = (st.only ? 'Nur ' : 'Ab ') + (m ? markLabel(m) : 'Takt ' + (a + 1) + (st.only && bb - a > 1 ? '–' + bb : ''));
+      ok = trp1Set({a, b: bb, r: v, deg: st.deg, oct: TRP1.oct, label: m ? markLabel(m) : null});
+      what = (st.only ? 'Nur ' : 'Ab ') + (m ? trp1Name(m) : 'Takt ' + (a + 1) + (st.only && bb - a > 1 ? '–' + bb : ''));
       if (ok) { haptic('tick'); closePop(); let t = trp1Msg(what); if (!st.only) t = t.replace(' – danach wie vorher', ''); toast(t, songUndoAct()); svButtons(); UI.dirty.song = true; }
     }, 'button[data-tp],button[data-tv]');
   }, {name: 'trp1'});
@@ -90264,7 +90375,7 @@ function trp1Go() {
   ui1Home(); setSongView(true);
   const ms = S.song && S.song.marks ? S.song.marks.slice().sort((a, b) => a.a - b.a) : [];
   if (!ms.length) { toast('Erst einen Teil in den Song setzen – dann die gelbe Teil-Marke antippen'); return true; }
-  TRP1.only = true; openMarkSheet(ms[0].id);
+  TRP1.next = ms[0].id; openMarkSheet(ms[0].id); TRP1.next = null;   // „nur dieser Teil“ nur für dieses Blatt (Befund 5)
   if (UI.pop && UI.pop.el && typeof wegeMsTab === 'function') wegeMsTab(UI.pop.el, 'a');
   return true;
 }
@@ -90279,8 +90390,9 @@ function trp1Go() {
 })();
 SYNQUENZER.trp1 = {
   set: o => trp1Set(o), deg: (n, s, root, scale) => trp1DegN(n, s, {root, scale: scale || 'ionian'}), oct: (r, d) => trp1Oct(r, !!d), open: rg => trp1Open(rg),
-  state: () => ({only: TRP1.only, deg: TRP1.deg, oct: TRP1.oct, last: TRP1.last ? Object.assign({}, TRP1.last) : null}),
-  opts: o => { if (o && 'only' in o) TRP1.only = !!o.only; if (o && 'deg' in o) TRP1.deg = !!o.deg; if (o && 'oct' in o) TRP1.oct = !!o.oct; return {only: TRP1.only, deg: TRP1.deg, oct: TRP1.oct}; },
+  state: () => ({only: !!(UI.pop && UI.pop.el && UI.pop.el._trp1o && UI.pop.el._trp1o === SV.mark), deg: TRP1.deg, oct: TRP1.oct, last: TRP1.last ? Object.assign({}, TRP1.last) : null}),
+  opts: o => { const p = UI.pop && UI.pop.el; if (o && 'only' in o && p) p._trp1o = o.only ? SV.mark : null; if (o && 'deg' in o) TRP1.deg = !!o.deg; if (o && 'oct' in o) TRP1.oct = !!o.oct; return {only: !!(p && p._trp1o), deg: TRP1.deg, oct: TRP1.oct}; },
+  lv: bar => (S.song ? trp1LvAt(S.song, bar) : 0), isl: id => { const m = S.song && S.song.marks.find(x => x.id === id); return m ? trp1Isl(S.song, m) : null; },
 };
 /* ===== TRP1-END ===== */
 Object.assign(SYNQUENZER, {pl1: PL1_API});                  /* PL1: Test-API (Objekt, wird nicht umhüllt) */

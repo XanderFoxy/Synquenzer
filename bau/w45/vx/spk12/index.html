@@ -105125,7 +105125,7 @@ function spk12DspMake(Z2, X) {
     for (let i = 0; i < 16; i++) use.push(sp[Math.min(sp.length - 1, Math.round((i + 0.5) * sp.length / 16))]);
     const snr = new Float64Array(Kx + 1), pk = new Float64Array(Kx + 1);
     for (const p of use) {
-      const g = spk12Mag(x, Math.round(p[0] * sr), N, re, im), f0 = +p[1], db = v => 20 * Math.log10(v + 1e-12);
+      const g = spk12Mag(x, Math.round(p[0] * sr), N, re, im), f0 = +p[1], db = v => 20 * Math.log10(v + 1e-7);
       for (let h = 1; h <= Kx; h++) {
         const fh = h * f0; if (fh >= sr / 2 - f0) break; const kc = fh * N / sr, kw = Math.max(2, fh * 0.03 * N / sr); let mx = 0;
         for (let k = Math.max(1, Math.floor(kc - kw)); k <= Math.min(NB - 1, Math.ceil(kc + kw)); k++) mx = Math.max(mx, g[k]);
@@ -105133,7 +105133,7 @@ function spk12DspMake(Z2, X) {
         fl.sort((a, b) => a - b); const fv = fl.length ? fl[fl.length >> 1] : 1e-9; snr[h] += (db(mx) - db(fv)) / use.length; pk[h] = Math.max(pk[h], db(mx));
       }
     }
-    const top = Math.max(...pk.slice(1)), hm = []; for (let h = 1; h <= Kx; h++) if (snr[h] >= 12 && pk[h] >= top - 60) hm.push(h);
+    const top = Math.max(...pk.slice(1)), hm = []; for (let h = 1; h <= Kx; h++) if (snr[h] >= 12 && pk[h] >= top - 50) hm.push(h);   // hörbar über dem Grund und höchstens 50 dB unter dem stärksten Rang
     return {hm, K: hm.length ? hm[hm.length - 1] : 0, snr: Array.from(snr.slice(1), v => +v.toFixed(1))};
   };
   ops.spk12follow = (d, m) => {   // folgt dem Ton: stärkste Spitze im Band → verfolgen (±ct Cent je Rahmen); unsicher → letzte gute Stelle halten (Rücksprung)
