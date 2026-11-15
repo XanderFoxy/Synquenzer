@@ -29085,6 +29085,7 @@ function marksNorm(list, bars) {
     { const ts = tsNorm(m.ts); if (ts) o.ts = ts; }                     /* T1: Taktart des Teils */
     if (m.vr) { const vr = sx11Norm(m.vr, L); if (vr) o.vr = vr; }        /* SX11: Fassung leicht/voll */
     if (m.rk || m.rkx) jam3MarkNorm(m, o, L);                            // JAM3: Kennung Rückung
+    if (m.trs && typeof trp1MarkNorm === 'function') trp1MarkNorm(m, o);   /* TRP1 */
     out.push(o); end = A + L;
   }
   return out;
@@ -33133,6 +33134,7 @@ function drumTune(t) {
 }
 function outPitch(i, clipKey, note, time, entry) {
   const tr = S.tracks[i];
+  if (typeof trp1Pre === 'function' && R.songPlay && S.song && S.song.marks && S.song.marks.length) note = trp1Pre(i, note, time);   /* TRP1 */
   const o = mapOut(i, clipKey, note, time, entry);
   if ((XP.tl.length > 1 || XP.tl[0].semi) && tr.kind === 'synth' && tr.follow !== false) { const x = xpAt(time + 1e-6); if (x) return clamp(o + x, 0, 127); }
   if (tr.follow === false) { const f = jam3FtNow(i, time); if (f) return clamp(o + f, 0, 127); }   // JAM3: die Rückung nimmt ⇅ feste Spuren mit
@@ -40927,6 +40929,7 @@ function openMarkSheet(id) {
       gr1MarkSheetPaint(p, m);    // GR1: Rhythmus [Small] [Full] [Vorschlag] [Remix …]
       ch1MarkSheetPaint(p, m);    // CH1: [Refrain groß] [Refrain 2× singen] (nur Refrain-Teile mit Gesang)
       jam2MarkSheetPaint(p, m);   // JAM2: Rückung −2 … +2 (Reiter Ablauf)
+      if (typeof trp1MarkSheetPaint === 'function') trp1MarkSheetPaint(p, m);   /* TRP1 */
       wegeMarkSheetPaint(p, m);   // WEGE: Small │ Full (D2), Reiter Ablauf │ Teil │ Klang & Groove │ Video (Abschnitt 4)
       for (const b of p.querySelectorAll('.ms-b')) if (b.scrollWidth > b.clientWidth + 1) b.classList.add('tight');
     };
@@ -41634,8 +41637,10 @@ function openRangeMore(anchor) {
       (narrow ? '<button class="rb" data-a="part">❖ Zusammenfassen …</button>' : '') +
       '<button class="rb" data-a="clear">○ Leeren</button><button class="rb" data-a="ins">＋ Teil einsetzen ▾</button>' +
       '<button class="rb" data-a="quant">Akkorde quantisieren …</button><button class="rb" data-a="loop">⟲ Als Schleife</button>' + konuxRangeItem() + '</div>' + wegeVideoRow(A, Bb + 1, 'range');   /* S2 */   // VV2: Zeile „Video“ (WEGE D1/D6: ein Zusammenfassen, „Im Video ▸“)
+    if (typeof trp1RangeItem === 'function') trp1RangeItem(p);   /* TRP1 */
     onTap(p, b => {
       const a = b.dataset.a; if (a && a.startsWith('vv-')) { vvDirTap(a, b, A, Bb + 1, () => { if (UI.pop && UI.pop.el === p) closePop(); }); return; }   // VV2
+      if (a === 'trp1' && typeof trp1Open === 'function') { closePop(); trp1Open({a: A, b: Bb + 1}); return; }   /* TRP1 */
       closePop();
       if (a === 'part') s2OpenSum(anchor, A, Bb + 1, {kon: true});   // WEGE (D1)
       else if (a === 'wgvideo') wegeVideoOpen(A, Bb + 1);   // WEGE (D6)
@@ -54900,6 +54905,7 @@ function int54MidiClips(song, i, tr, L, entAt, withC, add) {          // INT54
     for (let o = bk.cs + Math.floor((b0 - bk.cs) / cL + 1e-9) * cL; o < b1 - 1e-9; o += cL) for (const nt of jam1SongPass(c, o, bk.cs) || c.notes) {   // INT54
       if (nt.t >= cL - 1e-9) continue; const st = o + nt.t; if (st >= b1 - 1e-9 || st < b0 - 1e-9 || (fxm && ueMutedAt(fxm, st, nt.n))) continue;   // INT54
       let p = nt.n; if (withC && !(typeof mtx3Dr === 'function' && mtx3Dr(i))) { const e2 = entAt(st); if (e2 && e2.target) p = mapOut(i, c.key || S.key, nt.n, 0, e2); }   // INT54 · MTX3: Drum-Noten
+      if (typeof trp1P === 'function') p = trp1P(song, i, st, nt.n, p, c.key || S.key, withC ? entAt : null);   /* TRP1 */
       if (typeof mtx3Dr === 'function' && mtx3Dr(i)) { /* MTX3: Drum-Noten ohne Rückung */ } else if (tr.follow && song.xp && song.xp.length) { let v = 0; for (const x of song.xp) { if (x.beat > st + 1e-6) break; v = x.semi; } p += v; } else if (!tr.follow) p += jam3Fest(song, st);   // INT54: ⇅ folgt: song.xp · ⇅ fest: JAM3-Rückung
       add(st, Math.min(b1, st + Math.max(nt.d, 1 / 32)), clamp(Math.round(p), 0, 127), nt.v);   // INT54
     }                                                                 // INT54
@@ -54941,6 +54947,7 @@ function buildMidiSong(withC) {
         const en = Math.min(b1, st + Math.max(nt.d, 1 / 32));
         let p = nt.n;
         if (tr.kind === 'synth' && withC) { const en2 = entAt(st); if (en2 && en2.target) p = mapOut(i, c.key || S.key, nt.n, 0, en2); }
+        if (typeof trp1P === 'function') p = trp1P(song, i, st, nt.n, p, c.key || S.key, withC ? entAt : null);   /* TRP1 */
         if (tr.kind === 'synth' && tr.follow && song.xp && song.xp.length) { let v = 0; for (const x of song.xp) { if (x.beat > st + 1e-6) break; v = x.semi; } p += v; }   // V2d: song.xp
         else if (tr.kind === 'synth' && !tr.follow && !percIs(tr)) p += jam3Fest(song, st);   // JAM3: Rückung auch für ⇅ fest
         dedAdd(i, ch, ded, st, en, percIs(tr) ? percGm(nt.n) : clamp(Math.round(p), 0, 127), nt.v);   // PERC
@@ -75695,6 +75702,7 @@ function va1MidiSong(idxs, withC) {
         const en = Math.min(b1, st + Math.max(nt.d, 1 / 32));
         let p = nt.n;
         if (tr.kind === 'synth' && withC && !(typeof mtx3Dr === 'function' && mtx3Dr(i))) { const e2 = entAt(st); if (e2 && e2.target) p = mapOut(i, c.key || S.key, nt.n, 0, e2); }   /* MTX3: Drum-Noten */
+        if (typeof trp1P === 'function') p = trp1P(song, i, st, nt.n, p, c.key || S.key, withC ? entAt : null);   /* TRP1 */
         if (tr.kind === 'synth' && !(typeof mtx3Dr === 'function' && mtx3Dr(i)) && tr.follow && song.xp && song.xp.length) { let v = 0; for (const x of song.xp) { if (x.beat > st + 1e-6) break; v = x.semi; } p += v; }
         else if (tr.kind === 'synth' && !tr.follow && !percIs(tr) && !(typeof mtx3Dr === 'function' && mtx3Dr(i))) p += jam3Fest(song, st);   // JAM3: Rückung auch für ⇅ fest · MTX3
         add(st, en, percIs(tr) ? percGm(nt.n) : clamp(Math.round(p), 0, 127), nt.v);
@@ -78377,6 +78385,7 @@ function vvkScore(a, b) {
         let p = nt.n;
         if (syn) {
           try { const en = entAt(s); if (en && en.target) p = mapOut(i, c.key || S.key, nt.n, 0, en); } catch (e) { p = nt.n; }
+          if (typeof trp1P === 'function') p = trp1P(song, i, s, nt.n, p, c.key || S.key, entAt);   /* TRP1 */
           if (tr.follow && song.xp && song.xp.length) { let v = 0; for (const x of song.xp) { if (x.beat > s + 1e-6) break; v = x.semi; } p += v; }
           else if (!tr.follow) p += jam3Fest(song, s);               // JAM3: Rückung auch für ⇅ fest
         } else p = tr.kind === 'drum' ? nt.n : percGm(nt.n);
@@ -89978,6 +89987,258 @@ SYNQUENZER.jam3 = {
   norm: a => jam3Norm(a), lv: bar => (S.song ? jam3LvAt(S.song, bar) : 0),
 };
 /* ===== JAM3-END ===== */
+/* ===== TRP1-BEGIN (Paket TRP1 „Abschnitt transponieren“ – Xander 15.11.: „einen Abschnitt / mehrere Clips transponieren“) =====
+   1 NUR DIESER TEIL / BEREICH ±1 … ±12: zwei Knoten in der vorhandenen Teil-Transposition song.xp (am Anfang +r, am Ende wieder der alte
+     Wert) – dieselbe Rückungs-Logik wie jam2RkSet: alles außer Drums rückt mit, auch Spuren mit ⇅ fest (der Stand mark.rk/rkx wird nur in
+     den Takten des Bereichs versetzt), die Song-Melodie (song.mel) in den Daten (Auftakt ¼ Schlag vor dem Taktstrich gehört dazu, vor dem
+     Ende-Taktstrich gehört er zum Teil danach). Spätere Rückungen bleiben, wie sie sind. Grenze des Kerns: jeder Knoten ≤ ±12. Ein ↶ 'song'.
+   2 IN DER TONART (nur Noten): r Stufen der Tonart des Teils (songKeyAtBar beim Setzen, gemerkt an der Marke: mark.trs = [Stufen, Grundton,
+     Skala]). Eine Rechnung trp1DegN für Wiedergabe/Video-Ton (outPitch, vor der Träger-Abbildung – wie eine andere Clip-Note), MIDI-Export
+     (Song, Spur, Stems-MIDI) und Video-Tastatur; die Song-Melodie wird in den Daten versetzt. Gesangs-Takes und Audio verschiebt die App nur
+     gleichmäßig in Halbtönen (G7) – sie bleiben bei „Stufe“, die Meldung sagt das. Nur ganze Teile (die Stufe gehört zum Teil wie seine
+     Taktart und wandert mit ihm).
+   3 OKTAVBEREICH HALTEN: |Versatz| > 6 Halbtöne (> 3 Stufen) → die Gegenrichtung (+7 → −5), dieselbe Tonklasse.
+   Bedienung: Marken-Blatt › Reiter Ablauf: unter der Rückung „Wirkt ab hier │ nur dieser Teil“ + Mehr ▾ (Blatt: nur dieser Teil │ ab hier,
+   Halbtöne │ in der Tonart, Oktavbereich halten, −12 … +12). Bereich-Leiste › ⋯ › „Transponieren …“ öffnet dasselbe Blatt für A–B.
+   Einhänge-Zeilen (alle mit „TRP1“ markiert): marksNorm, outPitch, int54MidiClips, buildMidiSong, va1MidiSong, vvkScore, openMarkSheet,
+   openRangeMore (2×). ===== */
+const TRP1 = {only: false, deg: false, oct: false, fc: null, last: null};
+const trp1Sgn = v => (v > 0 ? 1 : v < 0 ? -1 : 0);
+// Oktavbereich halten: +7 → −5 (Halbtöne), +4 → −3 (Stufen)
+function trp1Oct(r, deg) { const N = deg ? 7 : 12, h = deg ? 3 : 6; return Math.abs(r) > h ? r - N * trp1Sgn(r) : r; }
+function trp1Scale(k) { const H = (typeof Harmony !== 'undefined' && Harmony.SCALES) || SCALES; return (k && H[k.scale]) || SCALES[k && k.scale] || SCALES.ionian; }
+// eine Note n um s Stufen der Tonart k ({root, scale}); leiterfremde Töne behalten ihren Abstand zur Stufe darunter (C♯ +1 in C-Dur → D♯)
+function trp1DegN(n, s, k) {
+  if (!s || !k) return n;
+  const sc = trp1Scale(k), N = sc.length, pc = (((n - (k.root | 0)) % 12) + 12) % 12;
+  let d = 0; for (let j = 0; j < N; j++) if (sc[j] <= pc) d = j;
+  const ch = pc - sc[d], j = d + s, o = Math.floor(j / N), jj = j - o * N;
+  return clamp(n - pc + 12 * o + sc[jj] + ch, 0, 127);
+}
+// marksNorm (Einhänge-Zeile): die Stufen eines Teils
+function trp1MarkNorm(m, o) {
+  const t = m.trs; if (!Array.isArray(t) || !isNum(t[0]) || !isNum(t[1]) || typeof t[2] !== 'string') return;
+  const s = clamp(Math.round(t[0]), -7, 7), H = (typeof Harmony !== 'undefined' && Harmony.SCALES) || SCALES; if (!s || !H[t[2]]) return;
+  o.trs = [s, ((Math.round(t[1]) % 12) + 12) % 12, t[2]];
+}
+// die Teile mit Stufen als Liste (je Song-Fassung einmal gerechnet, wie jam3FestL)
+function trp1L(song) {
+  if (!song || !song.marks || !song.marks.length) return null;
+  const v = UI.songVer | 0, c = TRP1.fc;
+  if (c && c.song === song && c.v === v && c.n === song.marks.length) return c.l;
+  const L = [];
+  for (const m of song.marks) if (m.trs) L.push({b0: barBeat(m.a), b1: barBeat(m.a + m.len), s: m.trs[0], k: {root: m.trs[1], scale: m.trs[2]}});
+  TRP1.fc = {song, v, n: song.marks.length, l: L.length ? L : null};
+  return TRP1.fc.l;
+}
+const trp1TrOk = i => { const tr = S.tracks[i]; return !!(tr && tr.kind === 'synth' && !percIs(tr) && !tr.stimme && !(typeof mtx3Dr === 'function' && mtx3Dr(i))); };
+function trp1At(L, sb) { for (const x of L) if (sb >= x.b0 - 1e-6 && sb < x.b1 - 1e-6) return x; return null; }
+// outPitch (Einhänge-Zeile): ▶ SONG – die Clip-Note in einem Teil mit Stufen (vor der Träger-Abbildung, wie eine andere Note des Clips)
+function trp1Pre(i, note, time) {
+  try {
+    const L = trp1L(S.song); if (!L || !trp1TrOk(i)) return note;
+    const sb = songBeatOf(t2b(time + 1e-6)); if (sb == null) return note;
+    const x = trp1At(L, sb); return x ? trp1DegN(note, x.s, x.k) : note;
+  } catch (e) { return note; }
+}
+// MIDI-Export / Video-Tastatur (Einhänge-Zeilen): dieselbe Rechnung; fe = die Träger-Abfrage der Stelle (oder null ohne Träger)
+function trp1P(song, i, sb, n, p, ck, fe) {
+  try {
+    const L = trp1L(song); if (!L || !trp1TrOk(i)) return p;
+    const x = trp1At(L, sb); if (!x) return p;
+    const n2 = trp1DegN(n, x.s, x.k); let e = null; try { e = fe ? fe(sb) : null; } catch (er) { e = null; }
+    return e && e.target ? mapOut(i, ck, n2, 0, e) : n2;
+  } catch (e) { return p; }
+}
+// der Stand der festen Spuren nur in den Takten [a, b) um d (je Marke entpackt → versetzt → wieder rk/rkx); false = Grenze ±12
+function trp1Lv(sg, a, b, d) {
+  for (const mm of sg.marks) {
+    if (mm.a + mm.len <= a || mm.a >= b) continue;
+    const x = new Map((mm.rkx || []).map(q => [q[0], q[1]])), lv = []; let v = mm.rk || 0;
+    for (let k = 0; k < mm.len; k++) { if (x.has(k)) v = x.get(k); lv.push(mm.a + k >= a && mm.a + k < b ? v + d : v); }
+    if (lv.some(q => Math.abs(q) > 12)) return false;
+    const rkx = []; for (let k = 1; k < lv.length; k++) if (lv[k] !== lv[k - 1]) rkx.push([k, lv[k]]);
+    if (rkx.length > 16) return false;
+    const t = mm.trs; delete mm.rk; delete mm.rkx; delete mm.trs;
+    if (lv[0]) mm.rk = lv[0]; if (rkx.length) mm.rkx = rkx; if (t) mm.trs = t;   // Reihenfolge wie marksNorm (Speichern/Laden bitgleich)
+  }
+  return true;
+}
+// Gesang/Audio im Bereich (die STIMME-Spur spielt dort einen Take)
+function trp1Vox(song, a, b) {
+  try { const st = stimmeT(); if (st < 0 || !song.lanes[st]) return false; for (let k = a; k < b; k++) { const o = laneOriginAt(song.lanes[st], k); if (o && laneClipOk(song, st, o)) return true; } } catch (e) {}
+  return false;
+}
+// der Kern: o = {a, b (Takte, b exklusiv), r, deg, oct, label} → true │ null (nichts zu tun) │ false (abgelehnt, Meldung kam)
+function trp1Set(o) {
+  const song = S.song; if (!song || !song.bars || R.songRec) return false;
+  const a = clamp(o.a | 0, 0, song.bars), b = clamp(o.b | 0, a, song.bars); if (b <= a) return false;
+  let r = clamp(Math.round(+o.r || 0), o.deg ? -7 : -12, o.deg ? 7 : 12); const r0 = r;
+  if (o.oct) r = trp1Oct(r, !!o.deg);
+  TRP1.last = {r0, r, deg: !!o.deg, vox: trp1Vox(song, a, b), key: null, n: 0};
+  if (!r) return null;
+  const lab = (o.label || ('Takt ' + (a + 1) + (b - a > 1 ? '–' + b : ''))) + ' ' + gr1Semi(r) + (o.deg ? ' Stufe' + (Math.abs(r) > 1 ? 'n' : '') : '');
+  if (o.deg) {
+    const ms = song.marks.filter(m => m.a >= a && m.a + m.len <= b); if (!ms.length) { toast('In der Tonart geht für ganze Teile – hier in Halbtönen'); return false; }
+    const keys = new Map(); for (const m of ms) { const k = m.trs ? {root: m.trs[1], scale: m.trs[2]} : songKeyAtBar(m.a); if (Math.abs((m.trs ? m.trs[0] : 0) + r) > 7) { toast('Höchstens ±7 Stufen'); return false; } keys.set(m.id, k); }
+    TRP1.last.key = keys.get(ms[0].id); TRP1.last.n = ms.length;
+    return !!songEdit('Transponieren ' + lab, sg => {
+      for (const m of sg.marks) {
+        const k = keys.get(m.id); if (!k) continue;
+        const s = (m.trs ? m.trs[0] : 0) + r; if (s) m.trs = [s, k.root, k.scale]; else delete m.trs;
+        const B0 = barBeat(m.a), B1 = barBeat(m.a + m.len);
+        for (const t in sg.mel) { if (!jam2RkMel(+t)) continue; for (const n of sg.mel[t].notes) if (n.t >= B0 - .25 - 1e-9 && n.t < B1 - .25 - 1e-9) n.n = trp1DegN(n.n, r, k); }
+      }
+    });
+  }
+  const B0 = barBeat(a), B1 = barBeat(b), atEnd = b >= song.bars, v0 = vvAppXpAt(song, B0), v1 = vvAppXpAt(song, B1);
+  const xs = (song.xp || []).map(x => ({beat: x.beat, semi: x.semi})), inR = t => t >= B0 - 1e-6 && t < B1 - 1e-6;
+  if (!xs.some(x => Math.abs(x.beat - B0) < 1e-6)) xs.push({beat: B0, semi: v0});
+  if (!atEnd && !xs.some(x => Math.abs(x.beat - B1) < 1e-6)) xs.push({beat: B1, semi: v1});   // der zweite Knoten: danach wieder der alte Wert
+  if (xs.some(x => inR(x.beat) && Math.abs(x.semi + r) > 12)) { toast('Höchstens ±12 Halbtöne'); return false; }
+  if (!trp1Lv({marks: JSON.parse(JSON.stringify(song.marks))}, a, b, r)) { toast('Höchstens ±12 Halbtöne'); return false; }
+  const ok = songEdit('Transponieren ' + lab, sg => {
+    sg.xp = xs.map(x => (inR(x.beat) ? {beat: x.beat, semi: x.semi + r} : x)).sort((p, q) => p.beat - q.beat);
+    for (const k in sg.mel) { if (!jam2RkMel(+k)) continue; for (const n of sg.mel[k].notes) if (n.t >= B0 - .25 - 1e-9 && n.t < B1 - .25 - 1e-9) n.n = clamp(n.n + r, 0, 127); }
+    trp1Lv(sg, a, b, r);
+  });
+  if (ok) { try { jam3FtLive(); gr1XpLive(); } catch (e) { logErr(e); } }   // läuft ▶ SONG: ab dem nächsten Takt (wie die Rückung)
+  return !!ok;
+}
+// die Meldung nach dem Transponieren (ehrlich: Oktavbereich, Gesang bei „Stufe“)
+function trp1Msg(what) {
+  const L = TRP1.last || {}, r = L.r | 0, u = L.deg ? ' Stufe' + (Math.abs(r) > 1 ? 'n' : '') : ' Halbton' + (Math.abs(r) > 1 ? 'e' : '');
+  let s = what + ' ' + gr1Semi(r) + u + (L.deg && L.key ? ' in ' + keyName(L.key) : '') + ' – danach wie vorher';
+  if (L.r0 !== L.r) s += ' · Oktavbereich: ' + gr1Semi(L.r0) + ' → ' + gr1Semi(r);
+  if (L.deg && L.vox) s += ' · Gesang bleibt (geht nur in Halbtönen)';
+  else if (!L.deg) s += ' · alles außer Drums';
+  return s + (R.playing && R.songPlay ? ' · ab dem nächsten Takt' : '');
+}
+function trp1Css() {
+  if (document.getElementById('trp1Css')) return;
+  const st = document.createElement('style'); st.id = 'trp1Css';
+  st.textContent = `
+.msheet .j2rk .trp1-in{display:flex;gap:4px;margin-left:8px;flex:0 0 auto}
+.msheet .j2rk .trp1-in .ms-b,.msheet .trp1r .ms-b{flex:1 1 0;min-width:44px;font-size:12px}
+.msheet .j2rk .trp1-in .ms-b{flex:0 0 auto;padding:0 8px}
+.msheet .trp1r .ms-b.on,.msheet .j2rk .trp1-m.on{background:linear-gradient(#ffc04d,#e89a12);color:#141416;border-color:#7a4d00}
+.pop.trp1p{width:min(400px,calc(100vw - 24px));box-sizing:border-box}
+.pop.trp1p h4{margin:0 34px 6px 0}
+.pop.trp1p .trp1-top{display:flex;flex-direction:column;gap:4px}
+.pop.trp1p .trp1-r{display:flex;gap:4px}
+.pop.trp1p .trp1-r .rb{flex:1 1 0;min-width:44px;min-height:44px;font-size:12px;padding:0 4px}
+.pop.trp1p .rb.on{background:linear-gradient(#ffc04d,#e89a12);color:#141416;border-color:#7a4d00}
+.pop.trp1p .trp1-v{display:grid;grid-template-columns:repeat(6,minmax(44px,1fr));gap:4px;margin-top:6px}
+.pop.trp1p .trp1-v .rb{min-height:44px;min-width:44px;font-size:13px;padding:0}
+.pop.trp1p .trp1-v .rb:disabled{opacity:.3}
+.pop.trp1p small{display:block;margin-top:5px;font:600 10.5px/1.25 var(--font-ui);color:var(--text-faint)}
+@media (orientation:landscape){.pop.trp1p{width:min(820px,calc(100vw - 24px))}.pop.trp1p .trp1-top{flex-direction:row}.pop.trp1p .trp1-r{flex:1 1 0}.pop.trp1p .trp1-v{grid-template-columns:repeat(12,minmax(44px,1fr))}}
+`;
+  document.head.appendChild(st);
+}
+// Marken-Blatt (Einhänge-Zeile, nach JAM2): unter der Rückung „Wirkt ab hier │ nur dieser Teil“ + Mehr ▾ (quer in derselben Zeile, wenn Platz ist)
+function trp1MarkSheetPaint(p, m) {
+  try {
+    trp1Css();
+    const j = p.querySelector('.j2rk'); if (!j) return;
+    const only = TRP1.only, nm = markLabel(m);
+    if (only) {
+      for (const b of j.querySelectorAll('button[data-jrk]')) {
+        const v = +b.dataset.jrk; b.dataset.trv = String(v); b.removeAttribute('data-jrk'); b.classList.remove('on'); b.setAttribute('aria-pressed', 'false');
+        if (!v) b.disabled = true; b.setAttribute('aria-label', v ? 'Nur ' + nm + ' ' + gr1Semi(v) + ' Halbton' + (Math.abs(v) > 1 ? 'e' : '') + ', danach wie vorher' : 'Nichts');
+      }
+      const sm = j.querySelector('.j2rk-l small'); if (sm) sm.textContent = 'nur Teil';
+    }
+    const html = `<button class="rb ms-b trp1-m${only ? '' : ' on'}" data-trm="ab" aria-pressed="${!only}" aria-label="Rückung wirkt ab diesem Teil">ab hier</button>` +
+      `<button class="rb ms-b trp1-m${only ? ' on' : ''}" data-trm="nur" aria-pressed="${only}" aria-label="Nur dieser Teil, danach wieder wie vorher">nur dieser Teil</button>` +
+      `<button class="rb ms-b trp1-more" data-trm="more" aria-label="Mehr: bis ±12, in der Tonart, Oktavbereich halten">Mehr ▾</button>`;
+    let row = null;
+    if (isLand()) { const w = el('span', 'trp1-in'); w.innerHTML = html; j.appendChild(w); if (j.scrollWidth > j.clientWidth + 1) w.remove(); else row = w; }
+    if (!row) {
+      row = el('div', 'ms-r j2rk trp1r'); row.dataset.wgr = 'a'; row.setAttribute('role', 'group'); row.setAttribute('aria-label', 'Wie die Rückung wirkt');
+      row.innerHTML = '<span class="j2rk-l">Wirkt<small>Rückung</small></span>' + html;
+      (j.classList.contains('j2rk-in') && j.parentNode ? j.parentNode : j).after(row);
+    }
+    if (!p._trp1) { p._trp1 = true; onTap(p, b => trp1MsTap(p, b), 'button[data-trm],button[data-trv]'); }
+  } catch (e) { logErr(e); }
+}
+function trp1MsTap(p, b) {
+  const m = S.song && S.song.marks.find(x => x.id === SV.mark); if (!m) return;
+  const repaint = () => { if (UI.pop && UI.pop.el === p && p._paint) { p._paint(); popDock(p); } };
+  const a = b.dataset.trm;
+  if (a === 'ab' || a === 'nur') { TRP1.only = a === 'nur'; haptic('tick'); repaint(); return; }
+  if (a === 'more') { trp1Open({a: m.a, b: m.a + m.len, mark: m.id}); return; }
+  if (b.dataset.trv != null) {
+    if (svRecBusy()) return;
+    const v = +b.dataset.trv, ok = trp1Set({a: m.a, b: m.a + m.len, r: v, label: markLabel(m)});
+    if (ok) { haptic('tick'); toast(trp1Msg('Nur ' + markLabel(m)), songUndoAct()); svButtons(); UI.dirty.song = true; }
+    repaint();
+  }
+}
+// das Blatt „Transponieren“ (aus Mehr ▾ der Marke oder aus der Bereich-Leiste): rg = {a, b, mark?}
+function trp1Open(rg) {
+  const song = S.song; if (!song || !rg || svRecBusy()) return;
+  trp1Css();
+  const st = {only: true};
+  openPop(null, p => {
+    p.classList.add('trp1p'); guardTouch(p);
+    const paint = () => {
+      const m = rg.mark ? S.song.marks.find(x => x.id === rg.mark) : null, deg = TRP1.deg, oct = TRP1.oct;
+      const what = m ? markLabel(m) : 'Takt ' + (rg.a + 1) + (rg.b - rg.a > 1 ? '–' + rg.b : '');
+      const S2 = (k, v, t, on, aria) => `<button class="rb${on ? ' on' : ''}" data-tp="${k}" data-v="${v}" aria-pressed="${!!on}"${aria ? ' aria-label="' + esc(aria) + '"' : ''}>${t}</button>`;
+      let vals = ''; for (let v = -12; v <= 12; v++) if (v) vals += `<button class="rb" data-tv="${v}"${deg && Math.abs(v) > 7 ? ' disabled' : ''} aria-label="${esc(what + ' ' + gr1Semi(v) + (deg ? ' Stufen' : ' Halbtöne'))}">${gr1Semi(v)}</button>`;
+      p.innerHTML = `<h4>Transponieren · ${esc(what)}</h4><div class="trp1-top">` +
+        `<div class="trp1-r" role="group" aria-label="Wirkt">${S2('w', 'nur', m ? 'nur dieser Teil' : 'nur diese Takte', st.only)}${S2('w', 'ab', 'ab hier', !st.only)}</div>` +
+        `<div class="trp1-r" role="group" aria-label="Schritt">${S2('d', '0', 'Halbtöne', !deg)}${S2('d', '1', 'in der Tonart', deg, 'In der Tonart: Stufen (nur Noten)')}</div>` +
+        `<div class="trp1-r">${S2('o', '1', 'Oktavbereich halten', oct, 'Oktavbereich halten: über 6 Halbtöne in die Gegenrichtung')}</div></div>` +
+        `<div class="trp1-v">${vals}</div><small>${deg ? 'Stufen der Tonart – nur Noten; Gesang und Audio gehen nur in Halbtönen.' : 'Alles außer Drums, auch Spuren mit ⇅ fest.'}${oct ? ' Oktavbereich: ' + (deg ? '+4 → −3' : '+7 → −5') + '.' : ''}</small>`;
+    };
+    paint(); p._paint = paint;
+    onTap(p, b => {
+      if (b.dataset.tp === 'w') { st.only = b.dataset.v === 'nur'; haptic('tick'); paint(); popDock(p); return; }
+      if (b.dataset.tp === 'd') { TRP1.deg = b.dataset.v === '1'; haptic('tick'); paint(); popDock(p); return; }
+      if (b.dataset.tp === 'o') { TRP1.oct = !TRP1.oct; haptic('tick'); paint(); popDock(p); return; }
+      if (b.dataset.tv == null) return;
+      const v = +b.dataset.tv, m = rg.mark ? S.song && S.song.marks.find(x => x.id === rg.mark) : null, end = S.song ? S.song.bars : rg.b;
+      let ok, what;
+      if (!st.only && m && !TRP1.deg) {                                // ab hier = die Rückung des Teils (gegen davor)
+        const r = TRP1.oct ? trp1Oct(v, false) : v; TRP1.last = {r0: v, r, deg: false};
+        ok = jam2RkSet(m.id, r); what = 'Ab ' + markLabel(m);
+        if (ok) { haptic('tick'); closePop(); toast(what + ' ' + gr1Semi(r) + ' Halbton' + (Math.abs(r) > 1 ? 'e' : '') + ' gegen davor – alles außer Drums' + (v !== r ? ' · Oktavbereich: ' + gr1Semi(v) + ' → ' + gr1Semi(r) : ''), songUndoAct()); svButtons(); UI.dirty.song = true; }
+        return;
+      }
+      const a = rg.a, bb = st.only ? rg.b : end;
+      ok = trp1Set({a, b: bb, r: v, deg: TRP1.deg, oct: TRP1.oct, label: m ? markLabel(m) : null});
+      what = (st.only ? 'Nur ' : 'Ab ') + (m ? markLabel(m) : 'Takt ' + (a + 1) + (st.only && bb - a > 1 ? '–' + bb : ''));
+      if (ok) { haptic('tick'); closePop(); let t = trp1Msg(what); if (!st.only) t = t.replace(' – danach wie vorher', ''); toast(t, songUndoAct()); svButtons(); UI.dirty.song = true; }
+    }, 'button[data-tp],button[data-tv]');
+  }, {name: 'trp1'});
+}
+// Bereich-Leiste › ⋯ (Einhänge-Zeilen): der Eintrag „Transponieren …“
+function trp1RangeItem(p) { try { const l = p.querySelector('.plist'); if (l && !l.querySelector('[data-a="trp1"]')) l.insertAdjacentHTML('beforeend', '<button class="rb" data-a="trp1">⇅ Transponieren …</button>'); } catch (e) { logErr(e); } }
+function trp1Go() {
+  ui1Home(); setSongView(true);
+  const ms = S.song && S.song.marks ? S.song.marks.slice().sort((a, b) => a.a - b.a) : [];
+  if (!ms.length) { toast('Erst einen Teil in den Song setzen – dann die gelbe Teil-Marke antippen'); return true; }
+  TRP1.only = true; openMarkSheet(ms[0].id);
+  if (UI.pop && UI.pop.el && typeof wegeMsTab === 'function') wegeMsTab(UI.pop.el, 'a');
+  return true;
+}
+/* ---------- „Wo finde ich …?“ (UI1) ---------- */
+(function trp1Guide() {
+  try {
+    const L = ui1Entries(); if (L.some(x => x.id === 'trp1')) return;
+    L.push({id: 'trp1', n: 'Abschnitt transponieren (nur dieser Teil)', w: 'Song › Teil-Marke antippen › Ablauf › „nur dieser Teil“ oder Mehr ▾ · gelbe Auswahl › ⋯ › Transponieren …',
+      d: 'Nur dieser Teil oder nur die gewählten Takte −12 … +12 Halbtöne, danach wieder wie vorher. In der Tonart: Stufen (C-Dur +1: C→D, E→F) – nur für Noten, Gesang und Audio gehen nur in Halbtönen. Oktavbereich halten: +7 wird −5. Alles außer Drums, ein ↶.',
+      s: 'transponieren abschnitt teil bereich takte nur dieser teil halbton stufe stufen tonart leitereigen oktav oktavbereich refrain hoeher tiefer', go: trp1Go, q: '.trp1-more'});
+  } catch (e) { logErr(e); }
+})();
+SYNQUENZER.trp1 = {
+  set: o => trp1Set(o), deg: (n, s, root, scale) => trp1DegN(n, s, {root, scale: scale || 'ionian'}), oct: (r, d) => trp1Oct(r, !!d), open: rg => trp1Open(rg),
+  state: () => ({only: TRP1.only, deg: TRP1.deg, oct: TRP1.oct, last: TRP1.last ? Object.assign({}, TRP1.last) : null}),
+  opts: o => { if (o && 'only' in o) TRP1.only = !!o.only; if (o && 'deg' in o) TRP1.deg = !!o.deg; if (o && 'oct' in o) TRP1.oct = !!o.oct; return {only: TRP1.only, deg: TRP1.deg, oct: TRP1.oct}; },
+};
+/* ===== TRP1-END ===== */
 Object.assign(SYNQUENZER, {pl1: PL1_API});                  /* PL1: Test-API (Objekt, wird nicht umhüllt) */
 /* ===== JAM1-BEGIN (Paket JAM1, Xanders Ur-Roadmap „Jam“ – „Können wir davon noch was machen?“ → ja, JAM zuerst) =====
    Trig-Bedingungen, FILL, Durchlauf-Zähler und „Zufall festhalten“: Schritte und Noten spielen nur unter Bedingungen – Loops werden

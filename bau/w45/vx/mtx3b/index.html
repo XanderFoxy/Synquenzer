@@ -95339,29 +95339,31 @@ function mtx3bRole(t, c) {
 // Eingabe-Haken (gr2Translate, gr1DrumNotes): DRUMS und ihre Einzelspuren werden ZUSAMMEN umgerechnet – dieselben Noten wie vor dem
 // Aufteilen (Pad-Zuordnung, Kern-Schläge, Ausdünnen); danach behält jede Spur nur ihre Pads (mtx3bPads) = das Ergebnis ohne Aufteilen.
 // Partner-Clip je Spur: gleiche Saat, Länge und Taktart (beim Aufteilen kopiert), bei mehreren der in derselben Szene
+function mtx3bPartner(j, src, t) {
+  if (!src || !isNum(src.seed) || !S.tracks[j]) return null;
+  const cl = S.tracks[j].clips, sAt = S.tracks[t] ? S.tracks[t].clips.indexOf(src) : -1, cs = cl.filter(c => c && c.seed === src.seed && c.len === src.len && (c.ts || null) === (src.ts || null));
+  return cs.length === 1 ? cs[0] : cs.length > 1 && sAt >= 0 && cs.includes(cl[sAt]) ? cl[sAt] : null;
+}
 function mtx3bIn(src) {
   const X = MTX3B.ctx; if (!X || X.c !== src || !src || !Array.isArray(src.notes) || !isNum(src.seed)) return src;
   const grp = [DRUM_T].concat(mtx3Parts(-1).filter(j => mtx3Is(j))); if (grp.length < 2 || !grp.includes(X.t)) return src;
-  const sAt = S.tracks[X.t] ? S.tracks[X.t].clips.indexOf(src) : -1, add = [];
-  for (const j of grp) {
-    if (j === X.t) continue;
-    const cl = S.tracks[j].clips, cs = cl.filter(c => c && c.seed === src.seed && c.len === src.len && (c.ts || null) === (src.ts || null));
-    const c = cs.length === 1 ? cs[0] : cs.length > 1 && sAt >= 0 && cs.includes(cl[sAt]) ? cl[sAt] : null;
-    if (c) for (const n of c.notes) add.push(cleanNote(n));
-  }
+  const add = [];
+  for (const j of grp) { if (j === X.t) continue; const c = mtx3bPartner(j, src, X.t); if (c) for (const n of c.notes) add.push(cleanNote(n)); }
   if (!add.length) return src;
   const o = Object.assign({}, src); o.notes = src.notes.concat(add).sort((a, b) => a.t - b.t || a.n - b.n); MTX3B.mix++;
   return o;
 }
-// Ausgabe-Haken (Remix, Stil, Grundmuster): die Noten einer Spur in place gefiltert. DRUMS: ohne die Pads, die eine Einzelspur haben und im
-// Quell-Clip src nicht auf DRUMS liegen. Einzelspur: nur ihr Pad. Gibt die Anzahl entfernter Noten zurück
+// Ausgabe-Haken (Remix, Stil, Grundmuster): die Noten einer Spur in place gefiltert. DRUMS: ohne die Pads, deren Einzelspur hier einen
+// Partner-Clip hat und die im Quell-Clip src nicht mehr auf DRUMS liegen. Einzelspur: nur ihr Pad. Gibt die Anzahl entfernter Noten zurück
 function mtx3bPads(t, arr, src) {
   if (!Array.isArray(arr) || !arr.length) return 0;
   let keep = null;
   if (t === DRUM_T) {
-    const out = mtx3bOutIds(); if (!out.size) return 0;
-    const here = new Set(((src && src.notes) || []).map(mtx3bPad));
-    keep = n => { const id = mtx3bPad(n); return !out.has(id) || here.has(id); };
+    // ein Pad geht nur dorthin, wo seine Einzelspur den Partner-Clip hat (sonst bliebe es stumm) und DRUMS es im Quell-Clip nicht mehr spielt
+    const here = new Set(((src && src.notes) || []).map(mtx3bPad)), out = new Set();
+    for (const j of mtx3Parts(-1)) if (mtx3Is(j) && !here.has(S.tracks[j].dvx.v) && mtx3bPartner(j, src, DRUM_T)) out.add(S.tracks[j].dvx.v);
+    if (!out.size) return 0;
+    keep = n => !out.has(mtx3bPad(n));
   } else if (mtx3Dr(t)) { const v = S.tracks[t].dvx.v; keep = n => mtx3bPad(n) === v; }
   else return 0;
   let k0 = 0; for (let k = arr.length - 1; k >= 0; k--) if (!keep(arr[k])) { arr.splice(k, 1); k0++; }

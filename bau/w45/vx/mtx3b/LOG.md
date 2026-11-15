@@ -1,3 +1,4 @@
 - 03:40 Begonnen: basis.html = index.html = rel-4680 (4.68.0), Lesen MTX3-NOTES/Block/Tests
 - 03:50 Lesen fertig (GR2/GEN4/GEN3/GR1/SND1, recNoteOn/recClose, normTrack, mxApply/Seiten, buildRoll/LAUF, pageDrumSteps/StepEditor)
 - 03:53 Block MTX3B + 19 Haken eingefügt; topdefs 26/0/0, dupkeys 0
+- 03:57 Remix: DRUMS + Einzelspuren zusammen umgerechnet (mtx3bIn, Partner-Clip per Saat), Ausgabe je Spur gefiltert → Treffer je Pad = ohne Aufteilen (m: kick12 hatO8 clap6 snare6 hatC48; u gleich), Doppel 0 (Basis: 16 Doppel bei Stil-Muster)
