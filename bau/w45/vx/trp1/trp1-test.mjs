@@ -303,8 +303,7 @@ for (const [w, h, n] of [[428, 926, 'hochkant'], [926, 428, 'quer'], [926, 370, 
   const E = await run(P, async () => {
     const K = __song(), ms = K.marks; SYNQUENZER.jam2.rkSet(ms[4].id, 2); ui1Home(); setSongView(true); await wait(150);
     openMarkSheet(ms[1].id); if (UI.pop && typeof wegeMsTab === 'function') wegeMsTab(UI.pop.el, 'a'); await wait(150);
-    const nur = document.querySelector('.msheet [data-trm="nur"]'); nur && nur.dispatchEvent(new PointerEvent('pointerdown', {bubbles: true})); 
-    return {n: !!nur};
+    return {n: !!document.querySelector('.msheet [data-trm="nur"]')};
   });
   await tapSel(P, '.msheet [data-trm="nur"]');
   const E2 = await run(P, async () => {
@@ -316,7 +315,7 @@ for (const [w, h, n] of [[428, 926, 'hochkant'], [926, 428, 'quer'], [926, 370, 
     openMarkSheet(ms[2].id); if (UI.pop && typeof wegeMsTab === 'function') wegeMsTab(UI.pop.el, 'a'); await wait(150); o.after = SYNQUENZER.trp1.state().only; o.jrk3 = document.querySelectorAll('.msheet [data-jrk]').length; closePop();
     undo(); return o;
   });
-  ok(E2.nurAn && E2.trv === 4 && E2.jrk === 5 && !E2.trv5 && E2.on === '+2' && !E2.only5 && E2.guide && !E2.after && E2.jrk3 === 5,
+  ok(E2.nurAn && E2.trv === 5 && E2.jrk === 5 && !E2.trv5 && E2.on === '+2' && !E2.only5 && E2.guide && !E2.after && E2.jrk3 === 5,
     'Befund 5: „nur dieser Teil“ nur im offenen Blatt – Teil 5 danach normal (Rückung +2 markiert), Guide nur für sein Blatt', E2);
   // Befund 6: nach „nur Teil 3 +3“ rechnet die Zeile an Teil 4 gegen vor Teil 3 (0 markiert; +1 → Teil 4 absolut +1; 0 → nichts)
   const F = await run(P, async () => {
@@ -327,8 +326,8 @@ for (const [w, h, n] of [[428, 926, 'hochkant'], [926, 428, 'quer'], [926, 370, 
   await tapSel(P, '.msheet [data-trk="0"]');
   const F1 = await run(P, () => JSON.stringify(S.song.xp));
   await tapSel(P, '.msheet [data-trk="1"]');
-  const F2 = await run(P, async () => { const o = {xp: S.song.xp.map(x => [x.beat, x.semi]), toast: __toasts.slice(-1)[0], lv4: SYNQUENZER.trp1.lv(6), lv3: SYNQUENZER.trp1.lv(4)}; closePop(); undo(); undo(); return o; });
-  ok(F.trk === 5 && F.on === '0' && F.lab === 'nach „nur“' && F.trn === 1 && F1 === F.xp0 && JSON.stringify(F2.xp) === '[[16,3],[24,1]]' && F2.lv4 === 1 && F2.lv3 === 3,
+  const F2 = await run(P, async () => { const o = {on: (document.querySelector('.msheet [data-trk].on') || {}).textContent || null, xp: S.song.xp.map(x => [x.beat, x.semi]), toast: __toasts.slice(-1)[0], lv4: SYNQUENZER.trp1.lv(6), lv3: SYNQUENZER.trp1.lv(4)}; closePop(); undo(); undo(); return o; });
+  ok(F.trk === 5 && F.on === "0" && F.lab === "nach „nur“" && F.trn === 3 && F1 === F.xp0 && JSON.stringify(F2.xp) === '[[16,3],[24,1]]' && F2.lv4 === 1 && F2.lv3 === 3 && F2.on === '+1',
     'Befund 6: Teil 4 nach „nur Teil 3 +3“ – Zeile „nach „nur““, 0 markiert und ohne Wirkung, +1 = Teil 4 absolut +1 (auch ⇅ fest)', {F, F2});
   // Befund 8, 9, 11: Meldungen
   const G = await run(P, () => {

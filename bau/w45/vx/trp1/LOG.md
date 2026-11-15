@@ -6,3 +6,4 @@
 2026-11-15 04:06:07 Pflicht grün (topdefs 0/0, dupkeys 0, smoke [], MS 2000 1×, live 1×, VERSION 4.68.0), NOTES.md geschrieben, Ende
 2026-11-15 04:27:49 Start Prüfer-Befunde beheben (PRUEFUNG.md gelesen)
 2026-11-15 04:35:44 12 neue/geänderte Haken eingefügt (trf, trs-Keep, restoreSong, tktModeDo)
+2026-11-15 04:40:52 Block-Änderungen (trf, trs-Keep, nur je Blatt, nach-nur-Zeile, Blatt fest, Texte) + Testteil 7 geschrieben

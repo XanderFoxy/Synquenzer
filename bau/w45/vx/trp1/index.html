@@ -90040,7 +90040,7 @@ function trp1MarkNorm(m, o, L) {
     x.sort((p, q) => p[0] - q[0]);
     if (s || x.some(v => v[1])) { o.trs = [s, trp1Pc(t[1]), t[2]]; if (x.length) o.trs.push(x); }
   }
-  if (m.trn === 1) o.trn = 1;
+  if (isNum(m.trn) && Math.round(m.trn)) o.trn = clamp(Math.round(m.trn), -24, 24);
 }
 // die Stufen eines Teils je Takt im Teil: [{s, k} | null]
 function trp1PerBar(m) {
@@ -90180,14 +90180,19 @@ function trp1Live() { try { if (R.playing && R.songPlay && S.song && AU.ctx) { j
 // ein Teil mit Takt-Angabe (Testsongs haben mehrere Teile gleichen Namens)
 const trp1Name = m => markLabel(m) + ' (Takt ' + (m.a + 1) + (m.len > 1 ? '–' + (m.a + m.len) : '') + ')';
 const trp1Ht = r => (Math.abs(r) === 1 ? ' Halbton' : ' Halbtöne');
-// Befund 6: der Teil direkt nach einem „nur“-Teil – die Rückungs-Zeile rechnet dort gegen vor dem „nur“-Teil (nicht gegen den „nur“-Teil)
-function trp1Isl(song, m) {
-  if (!song || !m || m.trn !== 1 || !m.a) return null;
-  const B0 = barBeat(m.a), vM = vvAppXpAt(song, B0), vP = vvAppXpAt(song, B0 - 1e-3); if (vM === vP) return null;
+// Befund 6: der Teil direkt nach einem „nur“-Teil – die Rückungs-Zeile rechnet dort gegen vor dem „nur“-Teil (nicht gegen den „nur“-Teil).
+// mark.trn = der Sprung des „nur“-Bereichs davor (gemerkt beim Setzen); passt er nicht mehr (Rückung dort geändert, Teil verschoben), gilt
+// die Zeile wieder wie gewohnt.
+function trp1IslAt(song, bar) {
+  const B0 = barBeat(bar), vM = vvAppXpAt(song, B0), vP = vvAppXpAt(song, B0 - 1e-3);
   let bK = null; for (const x of song.xp || []) if (x.beat < B0 - 1e-6) bK = x.beat;
   if (bK == null) return null;
   const vB = bK > 1e-6 ? vvAppXpAt(song, bK - 1e-3) : 0;
-  return vB === vM ? {vB, vP, vM} : null;
+  return {vB, vP, vM, d: vP - vB};
+}
+function trp1Isl(song, m) {
+  if (!song || !m || !isNum(m.trn) || !m.a) return null;
+  const I = trp1IslAt(song, m.a); return I && I.d && I.d === m.trn ? I : null;
 }
 // Gesang/Audio im Bereich (die STIMME-Spur spielt dort einen Take)
 function trp1Vox(song, a, b) {
@@ -90233,7 +90238,7 @@ function trp1Set(o) {
     sg.xp = xs.map(x => (inR(x.beat) ? {beat: x.beat, semi: x.semi + r} : x)).sort((p, q) => p.beat - q.beat);
     for (const k in sg.mel) { if (!jam2RkMel(+k)) continue; for (const n of sg.mel[k].notes) if (n.t >= B0 - .25 - 1e-9 && n.t < B1 - .25 - 1e-9) n.n = clamp(n.n + r, 0, 127); }
     trp1Lv(sg, a, b, r);
-    if (!atEnd) { const nx = sg.marks.find(mm => mm.a === b); if (nx) nx.trn = 1; }   // Befund 6: der Teil danach weiß, dass davor „nur“ war
+    if (!atEnd) { const nx = sg.marks.find(mm => mm.a === b), I = nx ? trp1IslAt(sg, b) : null; if (nx) { if (I && I.d) nx.trn = I.d; else delete nx.trn; } }   // Befund 6: der Teil danach weiß, dass davor „nur“ war
   });
   if (ok) { try { jam3FtLive(); gr1XpLive(); } catch (e) { logErr(e); } }   // läuft ▶ SONG: ab dem nächsten Takt (wie die Rückung)
   return !!ok;
