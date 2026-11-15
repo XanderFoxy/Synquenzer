@@ -1,4 +1,4 @@
-// MTX4 Teil 1 – mehrere Clips zugleich: Auswahl (Clip-Blatt › Mehrere wählen, Tipp = dazu/weg, Szenen-Kopf), Leiste −12 −1 +1 +12,
+// MTX4 Teil 1+2 – mehrere Clips zugleich (Teil 2: Länge ÷2/×2, neue Clip-Versionen, Länge im Lauf): Auswahl (Clip-Blatt › Mehrere wählen, Tipp = dazu/weg, Szenen-Kopf), Leiste −12 −1 +1 +12,
 // Stufe ▲▼, In Tonart einpassen ▾, Quantisieren ▾, Drum-Clips nur mit „Drums ±“, ein ↶ je Aktion, Änderung ab dem nächsten Takt, Leistung.
 // Aufruf: node mtx4-test.mjs <index.html> <fotoordner>   (absolute Pfade). Echte Touch-Ereignisse über CDP (428×926, 926×428, 926×370).
 import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
@@ -78,7 +78,7 @@ async function tapPop(T, p, sel) { const r = await R_(p, a => (UI.pop && UI.pop.
   ok('im Modus startet ein Tipp keinen Clip', !st.playing, st.slots);
   ok('Auswahl und Modus sind kein Projektfeld (Speicherstand nach 2 weiteren Tipps bit-gleich)', (await p.evaluate(() => serialize())) === ser0);
   const bar = await barCheck(p, 'hochkant');
-  ok('Leiste: −12 −1 +1 +12 · Stufe ▲▼ · Tonart ▾ · Quant. ▾ · ✕', ['−12', '−1', '+1', '+12', '▲ Stufe', '▼ Stufe', 'Tonart ▾', 'Quant. ▾', '✕'].every(x => (bar.names || []).includes(x)), bar.names);
+  ok('Leiste: −12 −1 +1 +12 · Stufe ▲▼ · Länge ÷2 ×2 · Tonart ▾ · Quant. ▾ · ✕', ['−12', '−1', '+1', '+12', '▲Stufe', '▼Stufe', '÷2Länge', '×2Länge', 'Tonart ▾', 'Quant. ▾', '✕'].every(x => (bar.names || []).includes(x)), bar.names);
   await p.screenshot({path: dir + '/mtx4-auswahl-hochkant.png'});
   // +1 → alle Noten der 3 Clips +1, alle anderen Clips bit-gleich, ein ↶-Schritt
   const u0 = await p.evaluate(() => UNDO.length);
@@ -166,6 +166,30 @@ async function tapPop(T, p, sel) { const r = await R_(p, a => (UI.pop && UI.pop.
   const q = await p.evaluate(() => ({on: S.tracks[0].clips[0].notes.every(n => Math.abs(n.t * 4 - Math.round(n.t * 4)) < 1e-6), q: S.tracks[0].clips[0].q, u: UNDO.length, last: UNDO[UNDO.length - 1].label}));
   ok('Quantisieren 1/16: alle Noten auf 1/16, ein ↶-Schritt', q.on && q.q && q.q.grid === '1/16' && q.u === uq + 1, q);
   ok('↶/↷ der ganzen Sitzung bleibt stimmig (alles zurück, alles wieder)', await p.evaluate(() => undoRedoCheck()));
+  // Teil 2: Länge ×2 / ÷2 per Touch (3 Clips in 2 Szenen: 1, 1 und 2 Takte)
+  await p.evaluate(() => { while (UNDO.length) undo(); SYNQUENZER.mtx4.set([[0, 0], [1, 1], [2, 1]]); }); await sleep(150);
+  const L0 = await sig(p), lu0 = await p.evaluate(() => UNDO.length);
+  await tapBtn(T, p, 'x2'); await sleep(150);
+  const L1 = await sig(p), lu1 = await p.evaluate(() => ({n: UNDO.length, items: (UNDO[UNDO.length - 1].items || []).length, label: UNDO[UNDO.length - 1].label}));
+  const pick = new Set(['0:0', '1:1', '2:1']); let lenOk = true, lenOther = [];
+  for (let t = 0; t < L0.length; t++) for (let s = 0; s < L0[t].length; s++) {
+    const k = t + ':' + s;
+    if (!pick.has(k)) { if (L0[t][s] !== L1[t][s]) lenOther.push(k); continue; }
+    const X = JSON.parse(L0[t][s]), Y = JSON.parse(L1[t][s]), B = X.len * 4;
+    const want = X.notes.concat(X.notes.map(n => Object.assign({}, n, {t: n.t + B}))).map(n => n.t + ':' + n.n).sort().join();
+    if (Y.len !== X.len * 2 || Y.notes.map(n => n.t + ':' + n.n).sort().join() !== want) lenOk = false;
+  }
+  ok('Länge ×2: die 3 Clips doppelt so lang, Inhalt verdoppelt', lenOk, lu1);
+  ok('Länge ×2: alle anderen Clips bit-gleich, ein ↶-Schritt (Gruppe aus 3)', lenOther.length === 0 && lu1.n === lu0 + 1 && lu1.items === 3, {anders: lenOther, u: lu1});
+  await tapBtn(T, p, 'h2'); await sleep(150);
+  ok('danach Länge ÷2: wieder genau wie vorher (bit-gleich)', JSON.stringify(await sig(p)) === JSON.stringify(L0));
+  await p.evaluate(() => { undo(); undo(); }); await sleep(100);
+  ok('zwei ↶: bit-gleich wie vor ×2', JSON.stringify(await sig(p)) === JSON.stringify(L0));
+  await tapBtn(T, p, 'h2'); await sleep(150);
+  const h = await p.evaluate(() => ({lens: [[0, 0], [1, 1], [2, 1]].map(([t, s]) => S.tracks[t].clips[s].len), last: SYNQUENZER.mtx4.info().last}));
+  ok('Länge ÷2 bei 1-Takt-Clips: diese bleiben (am Rand), der 2-Takt-Clip wird 1 Takt', h.lens.join() === '1,1,1' && h.last.n === 1 && h.last.skipR === 2, h);
+  await p.evaluate(() => undo()); await sleep(100);
+  ok('↶/↷ mit Länge bleibt stimmig', await p.evaluate(() => undoRedoCheck()));
   // ✕ beendet: Leiste weg, keine Markierung, Tipp startet wieder
   await tapBtn(T, p, 'x');
   st = await p.evaluate(() => ({on: SYNQUENZER.mtx4.on(), bar: SYNQUENZER.mtx4.bar().hidden, cls: document.querySelectorAll('#clipGrid .mtx4sel').length, mode: EL.grid.classList.contains('mtx4on')}));
@@ -199,6 +223,82 @@ for (const [w, h] of [[926, 428], [926, 370]]) {
   await tapBtn(T, p, 'q'); await sleep(200); await popCheck(p, w + '×' + h + ' Quant. ▾');
   await p.evaluate(() => closePop());
   ok(w + '×' + h + ': keine Fehler', errs.length === 0, errs.slice(0, 3));
+  await ctx.close();
+}
+// ======================= Teil 2: neue Clip-Versionen (Clip spielt im Song) =======================
+{
+  const {ctx, p, errs, T} = await open(428, 926);
+  const r = await p.evaluate(() => {
+    // Song: Spur 0 Szene 1, Spur 1 Szene 1 → 2, Spur 2 nur Szene 1 (Clip 2:1 spielt also nicht im Song)
+    songEdit('Test-Song', sg => { sg.bars = 4; sg.lanes[0] = [{bar: 0, slot: 0}]; sg.lanes[1] = [{bar: 0, slot: 0}, {bar: 2, slot: 1}]; sg.lanes[2] = [{bar: 0, slot: 0}]; });
+    while (UNDO.length) UNDO.pop(); REDO.length = 0;
+    const ser0 = serialize(), lanes0 = JSON.stringify(S.song.lanes), c00 = JSON.stringify(cleanClip(S.tracks[0].clips[0])), c11 = JSON.stringify(cleanClip(S.tracks[1].clips[1]));
+    SYNQUENZER.mtx4.start(); SYNQUENZER.mtx4.set([[0, 0], [1, 1], [2, 1]]);
+    return {ser0, lanes0, c00, c11, bars: S.song.bars};
+  });
+  await tapBtn(T, p, 'p1'); await sleep(150);
+  const v1 = await p.evaluate(() => {
+    const own = S.song.own || {}, L = Object.keys(own).map(id => ({id, from: own[id].from, ver: own[id].ver, notes: own[id].notes.map(n => n.n)}));
+    const u = UNDO[UNDO.length - 1];
+    return {L, n: UNDO.length, kinds: (u.items || [u]).map(x => x.kind), lanes: JSON.stringify(S.song.lanes), last: SYNQUENZER.mtx4.info().last, vers: SYNQUENZER.mtx4.vers(),
+      own00: (() => { const k = Object.keys(own).find(id => own[id].from.t === 0 && own[id].from.s === 0); return k ? JSON.stringify(cleanClip(own[k])) : null; })()};
+  });
+  const L = v1.L, a = L.find(x => x.from.t === 0 && x.from.s === 0), b = L.find(x => x.from.t === 1 && x.from.s === 1);
+  ok('+1 auf Clips im Song: die Fassung von vorher wird je Clip eine neue Version (v2)', L.length === 2 && a && b && a.ver === 2 && b.ver === 2 && !L.some(x => x.from.t === 2), v1.L.map(x => x.from.t + ':' + x.from.s + ' v' + x.ver));
+  ok('die Version hält genau den alten Inhalt (Clip 1:1 vorher = v2)', v1.own00 !== null && JSON.parse(v1.own00).notes.map(n => n.n).join() === JSON.parse(r.c00).notes.map(n => n.n).join(), {v2: a && a.notes, vorher: JSON.parse(r.c00).notes.map(n => n.n)});
+  ok('Clip im Song nicht dabei (2:1): keine Version; der Song spielt weiter v1 (Spuren-Einträge gleich)', v1.lanes === r.lanes0);
+  ok('Änderung + Versionen = ein ↶-Schritt (3 Clip-Schritte + Song)', v1.n === 1 && v1.kinds.join() === 'clip,clip,clip,song', v1.kinds);
+  await tapBtn(T, p, 'p1'); await sleep(150);
+  const v2 = await p.evaluate(() => ({n: Object.keys(S.song.own || {}).length, u: UNDO.length, kinds: (UNDO[UNDO.length - 1].items || []).map(x => x.kind)}));
+  ok('zweite Aktion in derselben Auswahl: keine weitere Version (die Fassung vor der Auswahl bleibt v2)', v2.n === 2 && v2.u === 2 && !v2.kinds.includes('song'), v2);
+  const rt = await p.evaluate(() => { const a = serialize(), q = normalizeProject(projFromFile(JSON.parse(a))); return {own: JSON.stringify(q.song.own) === JSON.stringify(S.song.own), all: JSON.stringify(projectFileObj(q, true, true)) === a}; });
+  ok('Speichern/Laden: die Versionen kommen bit-gleich zurück', rt.own, rt);
+  await p.evaluate(() => { undo(); undo(); }); await sleep(150);
+  ok('zwei ↶: Clips, Song und Versionen bit-gleich wie vorher', (await p.evaluate(() => serialize())) === r.ser0);
+  ok('↶/↷ stimmig', await p.evaluate(() => { redo(); redo(); return undoRedoCheck(); }));
+  // Clip-Blatt zeigt die Versionen (vorhandene Zeile VERSIONEN IM SONG): v1 v2
+  await tapBtn(T, p, 'x'); await sleep(150);
+  const c = await cell(p, 0, 0); await T.hold(c.cx, c.cy, 700);
+  const cv = await p.evaluate(() => { const r = EL.clipSheet.querySelector('.wg-cv'); if (!r) return null; r.scrollIntoView({block: 'nearest'}); return [...r.querySelectorAll('button')].map(b => b.textContent.trim()); });
+  ok('Clip-Blatt › VERSIONEN IM SONG zeigt v1 v2', cv && cv.join() === 'v1,v2', cv);
+  await p.screenshot({path: dir + '/mtx4-versionen-hochkant.png'});
+  await p.evaluate(() => closeClipSheet()); await sleep(100);
+  // neue Auswahl-Sitzung: die nächste Änderung legt v3 an
+  const v3 = await p.evaluate(() => { SYNQUENZER.mtx4.start(0, 0); SYNQUENZER.mtx4.len(2); const own = S.song.own; return Object.keys(own).filter(id => own[id].from.t === 0 && own[id].from.s === 0).map(id => own[id].ver).sort().join(); });
+  ok('neue Auswahl-Sitzung (Länge ×2): die Fassung davor wird v3', v3 === '2,3', v3);
+  ok('Versionen: keine Fehler', errs.length === 0, errs.slice(0, 3));
+  await ctx.close();
+}
+// ======================= Teil 2: Länge ÷2 / ×2 während der Wiedergabe – ab dem nächsten Takt, nichts stockt =======================
+{
+  const {ctx, p, errs} = await open(428, 926);
+  const r = await p.evaluate(async () => {
+    const W = ms => new Promise(r => setTimeout(r, ms));
+    ensureAudio(); await W(300);
+    for (let i = 1; i < NT(); i++) S.tracks[i].clips = S.tracks[i].clips.map(() => null);
+    const c = S.tracks[0].clips[0]; c.len = 2; c.notes = [0, .5, 1, 1.5, 2, 2.5, 3, 3.5].flatMap(t => [{t, d: .25, n: 60, v: .8}, {t: t + 4, d: .25, n: 62, v: .8}]).sort((a, b) => a.t - b.t); clipChanged(0, 0);
+    launch(0, 0); play(); await W(900);
+    // im 1. Takt des Clips tippen (der 2. Takt hätte 62), mit > 1,6 Schlägen Abstand zum Taktstrich
+    for (let k = 0; k < 200; k++) { const nb = nextBarFromAudible(), ph = ((audBeat() - R.cstart[0]) % 8 + 8) % 8; if (nb - audBeat() > 1.6 && ph < 2.4) break; await W(30); }
+    SYNQUENZER.mtx4.start(0, 0);
+    const bar = nextBarFromAudible(), sb = R.schedBeat, t0 = performance.now();
+    SYNQUENZER.mtx4.len(.5);
+    const dt = performance.now() - t0;
+    await W(Math.max(1500, (bar - audBeat()) * spb() * 1000 + 2600));
+    // danach ×2 (Inhalt doppelt = gleiche Achtel): wieder ab dem nächsten Takt, lückenlos
+    const bar2 = nextBarFromAudible(); SYNQUENZER.mtx4.len(2);
+    await W(Math.max(1500, (bar2 - audBeat()) * spb() * 1000 + 1500));
+    const E = []; for (let k = 0; k < Math.min(LOG.n, 4096); k++) { const e = LOG.buf[k]; if (e && !e.removed && e.track === 0 && e.beat != null) E.push({b: e.beat, n: e.clipNote != null ? e.clipNote : e.out}); }
+    const pre = E.filter(e => e.b < bar - 1e-3 && e.b >= sb - 1e-3), post = E.filter(e => e.b >= bar - 1e-3 && e.b < bar + 4 - 1e-3);
+    const grid = []; for (let x = Math.ceil(sb * 2) / 2; x < bar2 + 2; x += .5) grid.push(x);
+    const miss = grid.filter(x => E.filter(e => Math.abs(e.b - x) < .02).length !== 1);
+    const o = {bar, bar2, sb, dt: Math.round(dt * 10) / 10, pre: pre.map(e => e.n), post: post.map(e => e.n), miss: miss.length, len: S.tracks[0].clips[0].len, playing: R.playing};
+    stop(); return o;
+  });
+  ok('Länge ÷2 im Lauf: bis zum Taktstrich der alte Inhalt (1. Takt, 60)', r.pre.length >= 1 && r.pre.every(n => n === 60), r);
+  ok('ab dem Taktstrich der neue Inhalt: 1-Takt-Clip (nur 60, nicht der alte 2. Takt mit 62)', r.post.length === 8 && r.post.every(n => n === 60), r.post);
+  ok('÷2 und danach ×2: jede Achtel genau einmal, Wiedergabe läuft, Aktion < 50 ms', r.miss === 0 && r.playing && r.dt < 50 && r.len === 2, {miss: r.miss, dt: r.dt, len: r.len});
+  ok('Wiedergabe Länge: keine Fehler', errs.length === 0, errs.slice(0, 3));
   await ctx.close();
 }
 // ======================= Wiedergabe: Änderung greift am nächsten Taktstrich, nichts stockt =======================
@@ -253,13 +353,20 @@ for (const [w, h] of [[926, 428], [926, 370]]) {
     const t1 = performance.now(); SYNQUENZER.mtx4.semi(1); const dSemi = performance.now() - t1;
     const t2 = performance.now(); SYNQUENZER.mtx4.fit('dorian'); const dFit = performance.now() - t2;
     const t3 = performance.now(); SYNQUENZER.mtx4.quant('1/16'); const dQ = performance.now() - t3;
+    const t4 = performance.now(); SYNQUENZER.mtx4.len(2); const dX2 = performance.now() - t4;
+    const t5 = performance.now(); SYNQUENZER.mtx4.len(.5); const dH2 = performance.now() - t5;
+    SYNQUENZER.mtx4.len(2); await W(200);
+    const rg2 = []; for (let k = 0; k < 40; k++) { UI.dirty.grid = true; for (const C of UI.cells.flat()) if (C) { C.st = {}; C.sig = null; } const t0 = performance.now(); orig(audBeat()); rg2.push(performance.now() - t0); await W(16); }
     await W(1500); run = false; const ltAct = lt.slice(lt0); stop(); if (po) po.disconnect();
     const s = rg.slice().sort((a, b) => a - b), f = fr.slice(5).sort((a, b) => a - b);
-    return {n: L.length, nt: NT(), rgMed: +s[s.length >> 1].toFixed(2), rgMax: +s[s.length - 1].toFixed(2), frP95: +f[Math.floor(f.length * .95)].toFixed(1), dSemi: Math.round(dSemi), dFit: Math.round(dFit), dQ: Math.round(dQ), lt, ltAct, undo: UNDO.slice(-3).map(u => (u.items || []).length)};
+    const s2 = rg2.slice().sort((a, b) => a - b);
+    return {n: L.length, nt: NT(), rgMed: +s[s.length >> 1].toFixed(2), rgMax: +s[s.length - 1].toFixed(2), rg2Med: +s2[s2.length >> 1].toFixed(2), rg2Max: +s2[s2.length - 1].toFixed(2), frP95: +f[Math.floor(f.length * .95)].toFixed(1), dSemi: Math.round(dSemi), dFit: Math.round(dFit), dQ: Math.round(dQ), dX2: Math.round(dX2), dH2: Math.round(dH2), lt, ltAct, undo: UNDO.slice(-6).map(u => (u.items || []).length)};
   });
   ok('8 Spuren × 8 Szenen gewählt', r.nt === 8 && r.n >= 56, {n: r.n, nt: r.nt});
   ok('Bild der Matrix mit Auswahl (renderGrid ohne Zwischenspeicher, alle Zellen) ≤ 16 ms', r.rgMax <= 16, {median: r.rgMed, max: r.rgMax, frameP95: r.frP95});
   ok('±1 / Dorisch / Quantisieren über alle 64 Clips je < 50 ms, kein Long Task > 50 ms ab den Aktionen', r.dSemi < 50 && r.dFit < 50 && r.dQ < 50 && r.ltAct.every(x => x <= 50), {semi: r.dSemi, fit: r.dFit, quant: r.dQ, longtasksAktion: r.ltAct, longtasksBild: r.lt});
+  ok('Länge ×2 / ÷2 über alle 64 Clips je < 50 ms (kein Long Task, siehe oben)', r.dX2 < 50 && r.dH2 < 50, {x2: r.dX2, h2: r.dH2});
+  ok('Bild der Matrix mit Auswahl nach ×2 (doppelt so viele Noten) ≤ 16 ms', r.rg2Max <= 16, {median: r.rg2Med, max: r.rg2Max});
   ok('je Aktion ein ↶-Schritt über alle Clips', r.undo.every(x => x >= 40), r.undo);
   ok('Leistung: keine Fehler', errs.length === 0, errs.slice(0, 3));
   await ctx.close();

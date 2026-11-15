@@ -10,3 +10,4 @@
 - 05:21 Endlauf mtx4-test 58/58 (test-ergebnis.txt); topdefs 0/0, dupkeys 0, smoke errors [], MS 2000 1×, live: true 1×, VERSION 4.68.0. NOTES.md geschrieben. Teil 1 fertig.
 - 05:22 Teil 2 Start.
 - 05:31 Plan gelesen (Schritt 4: Länge ×2/÷2, Versionen, ↶). Entscheidung: Länge = vorhandenes clipLength (wie ½/×2 im Clip-Blatt); Versionen = SX9 (v1 = Szenen-Clip neu, vorher → vN).
+- 05:29 Block Teil 2 (mtx4Len, mtx4Vers, Leiste ÷2/×2, Guide) + Test-Abschnitte geschrieben; Lauf 1.
