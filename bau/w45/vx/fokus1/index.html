@@ -107493,7 +107493,7 @@ try { window.__spk12 = SPK12_API; } catch (e) {}
      Ändert sich H während eines Auftrags (Ebene/Note geändert) oder kommt ein neuer Auftrag (d.fkTok) → Abbruch (stop), nichts Halbes.
    - op 'fokusKey' {doc, N, mode, aus, …} → {key, nAus} (billig: ist der Fokus-Satz noch aktuell?); op 'fokusStop' löst laufende ab.
    - 'noten' mit fokus 'rest' und lid 'orig' (Haken in spk1Call): Suche auf dem Rest-Signal (Original minus Ebenen, blockweise gerechnet);
-     neue Treffer auf Teiltönen gefundener Noten (Überlappung > 50 %, Verhältnis ½, 1, 2, 3, 4 ± 50 Cent) werden verworfen, ausgeblendete
+     neue Treffer auf Teiltönen gefundener Noten (Überlappung > 50 % der kürzeren oder ≥ 0,1 s bei Sicherheit < 0,6; Verhältnis ½, 1, 2, 3, 4 ± 50 Cent) werden verworfen, ausgeblendete
      Original-Noten bleiben stehen. Alles im selben Undo-Schritt wie „Noten finden“.
    Hauptfaden: fokus1CallSrc (Haken in spk1Call nach SPK12): Ist U.f1.mode === 'rest', laufen Zauberstab, Transient, Folgt dem Ton,
    Obertöne-Auto, Harmonische, Ähnliches auf dem Rest (s12src 'rest' – nur wenn SPK12 nicht schon eine Ebene gewählt hat), „Noten finden“
@@ -107617,7 +107617,7 @@ function fokus1KMake(Z2, X) {
     const d2 = Object.create(d); d2.mid = mid; d2.co = null; d2.fk1 = true;
     const r = await noten0(d2, Object.assign({}, m, {fokus: undefined}), emit, info);
     const t2 = d.meta.teil2 || {notes: {}}, cur = t2.notes.orig || [], oldIds = new Set(old.map(q => q.id)), curIds = new Set(cur.map(q => q.id));
-    const hit = q => NT.some(h => h !== q && Math.min(+h.b, +q.b) - Math.max(+h.a, +q.a) > 0.5 * (+q.b - +q.a) && harm(+q.f, +h.f));
+    const hit = q => NT.some(h => { if (h === q || !harm(+q.f, +h.f)) return false; const ov = Math.min(+h.b, +q.b) - Math.max(+h.a, +q.a); return ov > 0.5 * Math.min(+q.b - +q.a, +h.b - +h.a) || (ov >= 0.1 && (q.conf == null ? 1 : +q.conf) < 0.6); });   // auch schwache Treffer, die am Rest einer gefundenen Note hängen
     const weg = cur.filter(q => !oldIds.has(q.id) && hit(q)), back = old.filter(q => !curIds.has(q.id) && NT.includes(q));
     if (weg.length || back.length) t2.notes.orig = cur.filter(q => !weg.includes(q)).concat(back).sort((p, q) => p.a - q.a);
     d.metaDirty = true; X.soon(d);

@@ -1,6 +1,6 @@
 // FOKUS1 Kern-Test: Worker-Fall 'fokus' (Nur Rest / Nur Gefundenes), Noten finden auf dem Rest, Umlenkung der Werkzeuge.
 // Signal im Seiten-Kontext: Ton A (220 Hz, 8 Teiltöne, 2–6 s) + Ton B (311,13 Hz, 8 Teiltöne, 8–12 s) + leises Rauschen.
-// Aufruf: node fokus1-kern-test.mjs <abs. index.html>   (LONG=0 → ohne 3-Minuten-Messung)
+// Aufruf: node fokus1-kern-test.mjs <abs. index.html>   (LONG=0 → ohne 3-Minuten-Messung, HAUPT=1 → Kern im Hauptfaden)
 import { createRequire } from 'node:module';
 const { chromium } = createRequire(import.meta.url)('/opt/node-tools/node_modules/playwright/index.js');
 import http from 'node:http'; import fs from 'node:fs'; import path from 'node:path';
@@ -13,6 +13,7 @@ const b = await chromium.launch();
 const ctx = await b.newContext({viewport: {width: 428, height: 926}, hasTouch: true, isMobile: true, deviceScaleFactor: 2}), p = await ctx.newPage(), errs = [];
 p.on('pageerror', e => errs.push(String(e))); p.on('console', m => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errs.push(m.text()); });
 await p.goto(url); await p.waitForFunction(() => window.SYNQUENZER && window.__spk && window.__fokus1, null, {timeout: 90000}); await p.waitForTimeout(500);
+if (process.env.HAUPT === '1') await p.evaluate(() => { SPK1.w = false; SPK1.how = 'hauptfaden'; });   // Rückfall ohne Worker prüfen
 await p.evaluate(() => {
   window.__lt = []; try { new PerformanceObserver(l => { for (const e of l.getEntries()) window.__lt.push({t: e.startTime, d: e.duration}); }).observe({entryTypes: ['longtask']}); } catch (e) {}
   const PW = new Float64Array(256); for (let b = 1; b < 256; b++) PW[b] = Math.pow(10, (b * 120 / 255 - 120) / 10);
@@ -120,7 +121,7 @@ ok('Z zauberstab auf dem rest (info)', Z, !(Z.rest && Z.rest.err) && Z.rest && Z
 const NR = await p.evaluate(async () => { const U = __spk.page.ui(); U.f1 = {mode: 'rest', aus: 'alle'}; const vor = (SPK1.last.meta.teil2.notes.orig || []).length;
   const r = await __spk.spk2.noten('orig', []); U.f1 = null; const N = r.meta.teil2.notes.orig || [];
   const u = await __spk.undo(); const nachUndo = (u.meta.teil2.notes.orig || []).length; await __spk.redo();
-  return {fokus: r.fokus, vor, nachUndo, notes: N.map(q => +q.f.toFixed(1)), nA: N.filter(q => Math.abs(1200 * Math.log2(q.f / 220)) < 60).length, nB: N.filter(q => Math.abs(1200 * Math.log2(q.f / 311.13)) < 60 || Math.abs(1200 * Math.log2(q.f / 622.26)) < 60).length}; });
+  return {fokus: r.fokus, vor, nachUndo, notes: N.map(q => [+q.f.toFixed(1), +q.a.toFixed(2), +q.b.toFixed(2), q.st, q.conf != null ? +q.conf.toFixed(2) : null, q.v != null ? +(+q.v).toFixed(2) : null]), nA: N.filter(q => Math.abs(1200 * Math.log2(q.f / 220)) < 60).length, nB: N.filter(q => Math.abs(1200 * Math.log2(q.f / 311.13)) < 60 || Math.abs(1200 * Math.log2(q.f / 622.26)) < 60).length}; });
 ok('N noten auf dem rest: B gefunden, A nicht', NR, NR.fokus && NR.fokus.rest && NR.nA === 0 && NR.nB >= 1 && NR.nachUndo === NR.vor);
 // ---------- 3 Minuten: Zeit je Stück, Long Tasks im Hauptfaden ----------
 if (process.env.LONG !== '0') {
