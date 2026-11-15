@@ -159,3 +159,4 @@ Weiter mit: 4.54 = rel-4540/k fertig prüfen + INT53D nachziehen + Versionszeile
 - beg1 4.72 = m2 = 57/59 (Prüfung 5 + Diff bekannt); 4.71 selbst 55/59 unter Last. spk4/spk6/spk12b Wackler.
 - Nächstes: 4.73 = R-4720 + VOXR1D (vx/voxr1d, Basis rel-4700, Raumton nur wo sicher) + Funk-Vorschlag „Ansicht · Rest ▾“ (wartet auf OK).
 - 15:16 4.72 online (Pages 43728453604 success). 4.73 = R-4720 + VOXR1D in rel-4730, Regression vx/r4730 läuft (voxr1 in Extra-Spur, beg1 eigener Ordner b1/ mit basis = rel-4720). CHANGES-4730.md entworfen. Bildwerk 0.4 (wf_0280cb9a) + Atem v2 (wf_12b2ff3f) laufen.
+- 16:17 4.73.0 released: Commit a90d23a4, Pages 43734524755, In-App v29. Quelle synq-snapshots/R-4730.html. Regression r4730 + nach/: beg1 57/59 (= 4.72 bis auf Blockzählung), voxr1 77/83 (= Paket), Rest wie 4.72 bzw. Zeit unter Last.
