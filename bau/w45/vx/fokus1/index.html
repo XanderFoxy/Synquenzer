@@ -107628,6 +107628,22 @@ function fokus1KMake(Z2, X) {
     d.metaDirty = true; X.soon(d);
     return Object.assign(r, info(d), {fokus: {rest: true, weg: weg.length, behalten: back.length, nAus: NT.length}});
   };
+  /* Zauberstab bei „Nur Rest“: ist die angetippte Stelle im Rest um ≥ 20 dB leiser als im Original (Ebene oder gefundene Note),
+     wird nichts gewählt (cells 0 → „nichts gefunden“) – so greift er keine schon gefundene Note doppelt */
+  const zau0 = ops.spk12zauber;
+  if (zau0) ops.spk12zauber = async (d, m, emit, ...rr) => {
+    if (!d || m.fokus !== 'rest') return zau0(d, m, emit, ...rr);
+    const T0 = performance.now(), o = optOf(Object.assign({}, m, {mode: 'rest'})), N = NS.includes(m.N) ? m.N : 4096, I = X.specInfo(d, N), R = I.rows;
+    const ct = Math.max(0, Math.min(I.cols - 1, Math.round((+m.t || 0) * d.meta.sr / I.hop))), ci = ct >> 10, W = Math.min(1024, I.cols - ci * 1024), cc = ct - ci * 1024;
+    const NT = found(d, o), H = sigOf(d, o, N, NT), ck = 'spk:' + d.meta.id + ':fk:' + H + ':v' + N + ':' + ci, have = await X.get('audio', 'spk:' + d.meta.id + ':v' + N + ':' + ci);
+    const src = have && have.byteLength === R * W ? new Uint8Array(have) : X.specChunk(d, N, ci).data;
+    let e = C.get(ck); if (!e) { e = piece(d, I, ci, src, o, gainOf(d, o), NT); C.set(ck, e); while (C.size > 6) C.delete(C.keys().next().value); }
+    const r0 = Math.max(0, Math.min(R - 1, Math.round((69 + 12 * Math.log2(Math.max(1, +m.f || 440) / 440) - I.m0) * I.rps)));
+    let rs = r0, v0 = -1; for (let r = Math.max(0, r0 - 6); r <= Math.min(R - 1, r0 + 6); r++) if (src[r * W + cc] > v0) { v0 = src[r * W + cc]; rs = r; }
+    const dB = v0 > 0 ? (v0 - e.data[rs * W + cc]) * DBF / 255 : 0;
+    if (dB >= 20) return {N, hop: I.hop, R, m0: I.m0, rps: I.rps, tol: m.tol, lim: m.lim, v0, seed: [ct, rs], cells: 0, msLoad: 0, msGain: 0, ms: performance.now() - T0, fokus: {gefunden: true, dB: +dB.toFixed(1)}};
+    const z = await zau0(d, m, emit, ...rr); if (z && typeof z === 'object') z.fokus = {gefunden: false, dB: +dB.toFixed(1)}; return z;
+  };
   Z2.fk1 = {found, optOf, sigOf};
   return Z2;
 }
@@ -107638,7 +107654,7 @@ function fokus1CallSrc(op, a, cb) {
   const U = SPK1.ui; if (!fokus1Rest(U) || !a || typeof a !== 'object' || a.fokus !== undefined || (a.doc && a.doc !== SPK1.doc)) return null;
   if (FOKUS1_SRC.includes(op) && a.s12src === undefined) {   // SPK12 hat keine Ebene gewählt → Rest
     const p0 = cb && cb.prog, cb2 = Object.assign({}, cb || {}, {prog: (p, st) => { if (p0) p0(p, st); if (st === 'Ebene abtasten') spk1Stat(U, 'Rest abtasten … ' + Math.round(100 * p) + ' %'); }});
-    return [op === 'harm' ? 'spk12harm' : op === 'aehnlich' ? 'spk12aehnB' : op, Object.assign({}, a, {s12src: 'rest', fokus: 'rest'}), cb2];
+    return [op === 'harm' ? 'spk12harm' : op === 'aehnlich' ? 'spk12aehnB' : op, Object.assign({}, a, {s12src: 'rest', fokus: 'rest', aus: U.f1.aus === 'alle' ? 'alle' : 'sicher', thr: U.opt && U.opt.n2thr != null ? U.opt.n2thr : 0.5}), cb2];
   }
   if (op === 'noten' && (a.lid || 'orig') === 'orig') return [op, Object.assign({}, a, {fokus: 'rest', aus: U.f1.aus === 'alle' ? 'alle' : 'sicher', thr: U.opt && U.opt.n2thr != null ? U.opt.n2thr : 0.5}), null];
   if (op === 'transfer' && (a.von || 'orig') === 'orig' && a.modus !== 'kopieren') return [op, Object.assign({}, a, {von: 'rest', fokus: 'rest'}), null];   // nur den freien Rest nehmen, Ebenen bleiben
@@ -107750,6 +107766,10 @@ function fokus1Mode(U, v) {
 }
 function fokus1ViewDd(U, dd) {   // Haken ganz oben in spk1ViewDd (quer scrollt das Fenster – oben bleibt sichtbar)
   const F = fokus1S(U);
+  Promise.resolve().then(() => { try {   // nach spk1Dd: gekippt (über ↶ ↷ ✕)? → unter dem Knopf, Rest scrollt
+    if (U.dd !== dd || !U.ddA) return; const R = U.sh.getBoundingClientRect(), a = U.ddA.getBoundingClientRect(), top = Math.round(a.bottom - R.top + 4), room = Math.floor(R.height - top - 8);
+    if (dd.offsetTop < top - 1 && room >= 320) { dd.style.top = top + 'px'; dd.style.maxHeight = room + 'px'; }
+  } catch (e) {} });
   dd.appendChild(el('h5', '', 'Fokus'));
   dd.appendChild(makeSeg(FOKUS1_MODES, () => F.mode, v => fokus1Mode(U, v), 'spk1-f1'));
   if (F.mode !== 'alles' && fokus1Conf(U)) {
@@ -107765,7 +107785,7 @@ function fokus1Pre(U) {   // Haken in spk1Frame vor dem Zeichnen
     if (F.pend && !F.tm && !U.specQ && U.spec && U.spec.hop && U.spec.info) F.tm = setTimeout(() => { F.tm = 0; fokus1Load(U); }, 0);
     const S = F.set, O = U.spec; if (!U.dg || !S || !O || !O.hop || S.doc !== SPK1.doc || S.N !== O.N || S.mode !== F.mode) return;
     if (F.glRef !== U.gl) { for (const c of S.chunks) if (c) { c.tex = null; c.old = null; } F.glRef = U.gl; }   // Kontext verloren → Texturen sind weg
-    const v = U.v, hs = O.hop / U.meta.sr, n = O.chunks.length, arr = F.arr && F.arr.length === n ? F.arr : (F.arr = new Array(n)); let bud = 2, more = false;
+    const v = U.v, hs = O.hop / U.meta.sr, n = O.chunks.length, arr = F.arr && F.arr.length === n ? F.arr : (F.arr = new Array(n)), tU = performance.now(); let up = 0, more = false;
     for (let k = 0; k < n; k++) {
       const o = O.chunks[k], f = S.chunks[k]; let use = o;
       if (f && (!o || o.w === f.w)) {
@@ -107774,7 +107794,7 @@ function fokus1Pre(U) {   // Haken in spk1Frame vor dem Zeichnen
         else {
           const xa = ((f.x0 - 0.5) * hs - v.t0) * v.pps, xb = ((f.x0 + f.w - 0.5) * hs - v.t0) * v.pps;
           if (xb < 0 || xa > U.W) use = f;   // unsichtbar: wird nicht hochgeladen
-          else if (bud > 0) { bud--; use = f; }
+          else if (!up || performance.now() - tU < 6) { f.tex = U.gl.tex(f.w, f.R, 'r', f.data, true); up++; use = f; }   // wie spk1GlDraw (R8 + Mipmaps)
           else { more = true; use = f.old && f.old.tex ? f.old : o; }
         }
       }

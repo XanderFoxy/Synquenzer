@@ -18,6 +18,9 @@ const helpers = () => {
   const PW = new Float64Array(256); for (let b = 1; b < 256; b++) PW[b] = Math.pow(10, (b * 120 / 255 - 120) / 10);
   const fnv = (h, u8) => { for (let i = 0; i < u8.length; i++) { h ^= u8[i]; h = Math.imul(h, 16777619); } return h >>> 0; };
   const U = () => __spk.page.ui();
+  { const f0 = window.spk1Frame, p0 = window.fokus1Pre; window.__fr = [];   // Messung: lange Bilder (Zeichnen) und Fokus-Vorbereitung
+    window.spk1Frame = function (u) { const t = performance.now(), r = f0.apply(this, arguments), d = performance.now() - t; if (d > 12) __fr.push({t: Math.round(t), d: Math.round(d), m: u.f1 && u.f1.mode, w: 'bild'}); return r; };
+    window.fokus1Pre = function (u) { const t = performance.now(), r = p0.apply(this, arguments), d = performance.now() - t; if (d > 6) __fr.push({t: Math.round(t), d: Math.round(d), w: 'pre'}); return r; }; }
   window.__fkT = {
     hash: arrs => { let h = 0x811c9dc5; for (const a of arrs) h = fnv(h, a); return h.toString(16); },
     specHash: () => __fkT.hash(U().spec.chunks.filter(Boolean).map(c => c.data)),
@@ -72,10 +75,10 @@ for (const [W, H] of VIEWS) {
   const segB = (cls, i) => p.evaluate(([cls, i]) => { const e = document.querySelectorAll(`#spk1Sheet .spk1-dd .${cls} button`)[i]; if (!e) return null; e.scrollIntoView({block: 'nearest'}); const r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }, [cls, i]);
   const openView = async () => { if (!(await p.evaluate(() => !!__spk.page.ui().dd))) { const q = await pos('#spk1Sheet [data-a="view"]'); await tap(q); } await wait(150); if (!(await p.evaluate(() => !!__spk.page.ui().dd))) console.log('  Ansicht nicht offen', JSON.stringify(await p.evaluate(() => { const e = document.querySelector('#spk1Sheet [data-a="view"]'), r = e.getBoundingClientRect(), q = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return {r: [r.left, r.top, r.width, r.height], hit: q && (q.className + ' ' + q.textContent).slice(0, 60)}; }))); };
   const closeDd = async () => { await tap(await pos('#spk1Sheet .spk1-st') || [W / 2, 20]); await p.evaluate(() => spk1Dd(__spk.page.ui(), null)); };
-  const ltSince = t0 => p.evaluate(t0 => __lt.filter(e => e.t >= t0).map(e => Math.round(e.d)), t0);
+  const ltSince = t0 => p.evaluate(t0 => __lt.filter(e => e.t >= t0).map(e => Math.round(e.d)), t0), frSince = t0 => p.evaluate(t0 => __fr.filter(e => e.t >= t0), t0);
   const now = () => p.evaluate(() => performance.now());
   // Umschalten per Touch: Ansicht ▾ → Segment i; misst Long Tasks bis alles fertig (Rechnen + Texturen)
-  const pick = async (i, name) => { await openView(); const t0 = await now(), q = await segB('spk1-f1', i); const T = Date.now(); await tap(q); await fkIdle(p); await wait(250); const ms = Date.now() - T, lt = await ltSince(t0); return {ms, lt, max: lt.length ? Math.max(...lt) : 0, name}; };
+  const pick = async (i, name) => { await openView(); const t0 = await now(), q = await segB('spk1-f1', i); const T = Date.now(); await tap(q); await fkIdle(p); await wait(250); const ms = Date.now() - T, lt = await ltSince(t0), fr = await frSince(t0); return {ms, lt, max: lt.length ? Math.max(...lt) : 0, name, fr: fr.slice(0, 6)}; };
   await p.goto(url); await p.waitForFunction(() => window.SYNQUENZER && window.__spk && window.__fokus1 && window.__spk12, null, {timeout: 90000}); await wait(500);
   await p.evaluate(helpers);
   await loadSig(p, 14, 1); await ready(p); await wait(400);
@@ -87,9 +90,12 @@ for (const [W, H] of VIEWS) {
     return {noten: N.length, conf: N.map(q => q.conf != null ? +q.conf.toFixed(2) : null), layers: z.meta.layers.map(l => l.id + ':' + l.ver)};
   });
   ok(tag + ' A-gefunden+ebene', zA, zA.noten >= 1 && zA.layers.length === 1);
-  await wait(700);
+  await p.waitForFunction(() => { const U = __spk.page.ui(); return U.tint && U.tint.ids && U.tint.ids.length === U.meta.layers.length; }, null, {timeout: 30000});
+  for (let i = 0, h0 = ''; i < 10; i++) { await wait(300); const h = await p.evaluate(() => __fkT.img()); if (h === h0) break; h0 = h; }   // Bild ruhig
   const z0 = await p.evaluate(async () => { const z = await __spk12.zauber({t: 4, f: 220, tol: 15, lim: 5}); return {keys: Object.keys(z).slice(0, 20), t: [z.t0, z.t1].map(v => +(+v).toFixed(2)), f: [z.f0, z.f1].map(v => +(+v).toFixed(0)), nc: z.nc, n: z.n, area: z.area}; });
+  const dbg = () => p.evaluate(() => { const u = __spk.page.ui(); return {cw: u.cw, ch: u.ch, v: JSON.stringify(u.v), tint: u.tintOn, tid: u.tint && u.tint.ids.join(), lo: u.lo, hi: u.hi, st: u.st.textContent}; });
   const vor = await p.evaluate(() => ({spec: __fkT.specHash(), tex: __fkT.specTex(), img: __fkT.img(), lA: __fkT.lum(2.8, 5.2, 220), lA2: __fkT.lum(2.8, 5.2, 440), lB: __fkT.lum(8.8, 11.2, 311.13), stat: __spk.page.info().stat}));
+  const vorDbg = await dbg();
   await shot('1-vorher-alles');
   // ---- Klappfenster: Fokus oben, 44 px, im Bild ----
   await openView(); await wait(200);
@@ -118,7 +124,7 @@ for (const [W, H] of VIEWS) {
   // ---- Alles → Bild byte-gleich wie vorher ----
   const sw2 = await pick(0, 'alles'); await closeDd();
   const a1 = await p.evaluate(() => ({img: __fkT.img(), spec: __fkT.specHash(), tex: __fkT.specTex()}));
-  ok(tag + ' alles-byte-gleich (Bild + Stücke + Texturen)', {vor: [vor.img, vor.spec, vor.tex], nach: [a1.img, a1.spec, a1.tex]}, a1.img === vor.img && a1.spec === vor.spec && a1.tex === vor.tex);
+  ok(tag + ' alles-byte-gleich (Bild + Stücke + Texturen)', {vor: [vor.img, vor.spec, vor.tex], nach: [a1.img, a1.spec, a1.tex], dbg: a1.img === vor.img ? '' : [vorDbg, await dbg()]}, a1.img === vor.img && a1.spec === vor.spec && a1.tex === vor.tex);
   ok(tag + ' umschalten-alles longtasks<=50', sw2, sw2.max <= 50);
   // ---- Herauskristallisieren: Rest → Noten finden / Zauberstab im Rest ----
   await pick(1, 'rest'); await closeDd();
@@ -129,9 +135,11 @@ for (const [W, H] of VIEWS) {
     return {fokus: r.fokus, dopA: dopA.length, B: B.map(q => ({id: q.id, conf: q.conf != null ? +q.conf.toFixed(2) : null, st: q.st})), alle: N.length};
   });
   ok(tag + ' noten-finden-im-rest: B neu, A nicht doppelt', nf, nf.fokus && nf.fokus.rest && nf.dopA === 0 && nf.B.length >= 1);
-  const z1 = await p.evaluate(async () => { const z = await __spk12.zauber({t: 4, f: 220, tol: 15, lim: 5}); return {t: [z.t0, z.t1].map(v => +(+v).toFixed(2)), f: [z.f0, z.f1].map(v => +(+v).toFixed(0)), nc: z.nc, n: z.n, area: z.area}; });
+  const z1 = await p.evaluate(async () => { const z = await __spk12.zauber({t: 4, f: 220, tol: 15, lim: 5}); return {cells: z.cells, fokus: z.fokus, nc: z.nc}; });
   const ar = z => z && z.t && z.f ? Math.max(0, z.t[1] - z.t[0]) * Math.max(0, z.f[1] - z.f[0]) : 0;
-  ok(tag + ' zauberstab-im-rest greift A nicht mehr (Fläche)', {alles: Object.assign({}, z0, {keys: undefined}), rest: z1, fl: [+ar(z0).toFixed(1), +ar(z1).toFixed(1)]}, ar(z1) < 0.5 * ar(z0) || (z1.nc != null && z0.nc != null && z1.nc < 0.5 * z0.nc));
+  ok(tag + ' zauberstab-im-rest greift A nicht mehr', {alles: Object.assign({}, z0, {keys: undefined}), rest: z1}, (z0.cells > 0 || z0.nc > 0) && z1.cells === 0 && z1.fokus && z1.fokus.gefunden);
+  const z2 = await p.evaluate(async () => { const z = await __spk12.zauber({t: 13, f: 2000, tol: 15, lim: 5}); return {cells: z.cells, fokus: z.fokus, f: [z.f0, z.f1].map(v => +(+v).toFixed(0))}; });
+  ok(tag + ' zauberstab-im-rest greift Unerkanntes (Rauschen 13 s)', z2, z2.cells > 0 && z2.fokus && !z2.fokus.gefunden);
   // ---- B in neue Ebene → nächstes Bild ohne B ----
   await fkIdle(p);
   const zb = await p.evaluate(async () => { const N = (SPK1.last.meta.teil2.notes.orig || []).filter(q => Math.abs(1200 * Math.log2(q.f / 311.13)) < 60 && q.st !== 'zu'); const z = __fkT.got(await __spk.spk2.zuordnen(N.map(q => ({lid: 'orig', id: q.id})), 'neu', 'pad')); return {n: N.length, layers: z.meta.layers.length}; });
