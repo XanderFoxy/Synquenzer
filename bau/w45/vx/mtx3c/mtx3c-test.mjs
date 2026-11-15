@@ -53,6 +53,8 @@ async function remixRun(f) {
     o.hhVer = Object.values(S.song.own || {}).filter(c => c && c.from && c.from.t === o.hh).map(c => ({s: c.from.s, v: c.ver, n: c.notes.length, pads: [...new Set(c.notes.map(n => n.n))].join('/'), seed: c.seed, gr: c.gr && c.gr.s}));
     gr2AB('a', 0, S.song.bars, 'italo'); o.a = __pads();
     gr2AB('b', 0, S.song.bars, 'italo'); o.b = __pads();
+    // Zusammenführen nach dem Remix: die Version von HH ZU in Szene 2 kommt zurück nach DRUMS (Treffer je Pad gleich, Summe gleich)
+    const C = await __R(); SYNQUENZER.mtx3.merge(); o.mg = __pads(); o.mgLeft = S.tracks.filter(t => t && t.dvx).length; const D = await __R(); o.mgDb = __db(C, D); undo(); o.mgBack = __pads();
     undo(); undo(); undo(); o.back = __pads();
     // Matrix-Remix der Szene 2 (dort kein HH-ZU-Clip) → neue Szene
     const mx = SYNQUENZER.gen3.mxRemix('italo', {src: 1, k: 100, art: 'm'}); o.mx = mx && mx.dst; o.mxc = mx && mx.dst != null ? __clipPads(mx.dst) : null;
@@ -74,6 +76,7 @@ async function remixRun(f) {
   ok('A/B: A = Original (HH wie aufgeteilt), B = Remix wieder ganz', JSON.stringify(r.a.sum) === JSON.stringify(r.p1.sum) && JSON.stringify(r.b.per) === JSON.stringify(r.m.per), {a: r.a.sum, p1: r.p1.sum, b: hhOn(r.b)});
   ok('↶ holt den Stand vor dem Remix zurück', JSON.stringify(r.back.per) === JSON.stringify(r.p1.per), {back: r.back.sum});
   ok('Matrix-Remix aus Szene 2: HH in einem Clip von HH ZU (Saat wie DRUMS), DRUMS ohne HH; ↶ leert ihn', r.mxc && !/^4:[^ ]*hatC/.test(r.mxc) && new RegExp(r.hh + ':hatC').test(r.mxc) && r.mxSeed === true && new RegExp(r.hh + ':-').test(r.mxBack), {c: r.mxc, back: r.mxBack});
+  ok('Zusammenführen nach dem Remix: HH zurück auf DRUMS, Treffer je Pad gleich, Summe gleich (≤ −60 dB), ↶ wieder aufgeteilt', r.mgLeft === 0 && (r.mg.per.hatC || {})[4] === r.ref.sum.hatC && Object.keys(r.ref.sum).every(k => r.mg.sum[k] === r.ref.sum[k]) && r.mgDb <= -60 && JSON.stringify(r.mgBack.per) === JSON.stringify(r.m.per), {hatC: r.mg.per.hatC, db: r.mgDb});
   console.log('  Zeit Remix (Song, 4 Takte): ' + r.ms + ' ms');
   ok('Remix: keine Konsolenfehler', N.errs.length === 0, N.errs.slice(0, 3));
   if (B0) ok('Basis-Bezug: in 4.70.0 blieb das HH dort auf DRUMS (Befund nachgestellt)', (hhOn(B0.r.m)[4] || 0) > 0, hhOn(B0.r.m));
@@ -94,6 +97,16 @@ async function begRun(f) {
     o.hhClip = L.filter(e => e.src !== 'beg' && e.track === o.hh).length;
     SYNQUENZER.stop(); await __W(500);
     o.left = HITS.filter(h => !h.dead && h.b3c).length;
+    // ● Aufnahme der Band → neue Szene: HH in einem Clip von HH ZU, DRUMS ohne HH; ein ↶
+    B.rec(); await __chord([60, 64, 67]); await __W(200); await __until(5.0); B.rec(); await __until(8.4); SYNQUENZER.stop(); await __W(500);
+    const sc = B.state().last ? B.state().last.scene : -1; o.rec = {sc, pads: sc >= 0 ? __clipPads(sc) : null};
+    if (sc >= 0) { undo(); o.rec.back = __clipPads(sc); }
+    // „nur die Band“, dann Drum-Ziel „aus“: HH ZU wird still wie DRUMS
+    launchScene(0); await __until(2); B.close(); await __W(300); SYNQUENZER.stop(); await __W(300);
+    B.open(); await __W(200); await __chord([60, 64, 67]); await __W(250); await __until(2.2);
+    o.keep = {drums: R.slot[DRUM_T], hh: R.slot[o.hh]};
+    BEG1.tgo.dr = -1; beg1TgSync(true); await __W(100); o.off = {drums: R.slot[DRUM_T], hh: R.slot[o.hh]};
+    SYNQUENZER.stop(); await __W(300); BEG1.tgo.dr = undefined; delete BEG1.tgo.dr; B.close();
     return o;
   });
   await ctx.close(); return {r, errs};
@@ -106,6 +119,8 @@ async function begRun(f) {
   ok('Begleiter live: gleich viele Band-HH wie in der Basis (nur der Kanal anders)', !B0 || B0.r.hhBeg.length === r.hhBeg.length, {neu: r.hhBeg.length, basis: B0 && B0.r.hhBeg.length});
   ok('Begleiter live: der eigene Clip von HH ZU schweigt in der Band (kein Doppel)', r.hhClip === 0, r.hhClip);
   ok('Begleiter: nach ■ keine geplanten Band-Schläge übrig', r.left === 0, r.left);
+  ok('Begleiter ● Aufnahme: HH in einem Clip von HH ZU (neue Szene), DRUMS dort ohne HH; ↶ leert beide', r.rec.pads && new RegExp(r.hh + ':hatC').test(r.rec.pads) && !/^4:[^ ]*hatC/.test(r.rec.pads) && /^4:- /.test(r.rec.back || '') && new RegExp(r.hh + ':-').test(r.rec.back || ''), r.rec);
+  ok('„Nur die Band“ behält HH ZU mit DRUMS; Drum-Ziel aus → HH ZU still wie DRUMS', r.keep.hh === r.keep.drums && r.off.drums === -1 && r.off.hh === -1, {keep: r.keep, aus: r.off});
   ok('Begleiter: keine Konsolenfehler', N.errs.length === 0, N.errs.slice(0, 3));
 }
 

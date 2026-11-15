@@ -1,2 +1,3 @@
 - 09:28 Begonnen: basis.html = index.html = rel-4700 (4.70.0), Lesen MTX3/MTX3B/BEG1
 - 09:37 Block MTX3C + 13 Haken (ins.cjs), Pflicht topdefs 26/0/0 · dupkeys 0 · MS 2000 1× · live 1× · VERSION 4.70.0; mtx3c-test Lauf 1
+- 09:39 mtx3c-test 23/23 (neu ↔ basis); Regression nacheinander (reg/run.sh)
