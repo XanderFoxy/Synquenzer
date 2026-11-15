@@ -140,3 +140,4 @@ Weiter mit: 4.54 = rel-4540/k fertig prüfen + INT53D nachziehen + Versionszeile
 - A/B: mtx4 P2 auch auf 4.70 rot (116/118 ×2) = Zeitmessung unter Last; spk4 a3-andere-klaenge auf 4.71 wiederholt grün (va2 3.89, lead 0.95) = Einzel-Ausreißer. Rest-A/B abgebrochen (NICHT endlos prüfen).
 - Commit 6f5e074b, In-App v27. Nächstes: wqzj6jm57 (VOXR1B, PERF2, MTX3C+SPKFIX, Bildwerk 0.3) auf R-4710 mergen → 4.72.
 
+- 11:01 Check-in: Bildwerk 0.3.0 online (main 2e95dadc). VOXR1B fertig (76/83), MTX3C fertig (27/27, md5 97c7758e), SPKFIX Regression Spur B läuft, PERF2 Offen Nr. 1 (+52 KB gzip). Krypto ok, wip-loop läuft. Trigger 11:43.
