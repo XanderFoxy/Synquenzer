@@ -61809,10 +61809,11 @@ function* room(y, sr, o, Lr) {
     let mg = mag; { const P2 = new Float64Array(N / 2 + 1); let c2 = 0; const okU = new Set(nbu);
       const PW = [], PU = [];   // VOXR1D-RT (PU: Fenster-Anfang, VOXR1F): je Fenster ein Spektrum (für die Ausreißer-Wahl je Terzband)
       for (const u of nbu) { if (!okU.has(u + H) || !okU.has(u + 2 * H) || u + N > n) continue; for (let i = 0; i < N; i++) { re[i] = y[u + i] * (0.5 - 0.5 * Math.cos(TAU * (i + 0.5) / N)); im[i] = 0; } F(re, im, false); const Pw = new Float64Array(N / 2 + 1); for (let k = 0; k <= N / 2; k++) { const e = re[k] * re[k] + im[k] * im[k]; P2[k] += e; Pw[k] = e; } PW.push(Pw); PU.push(u); c2++; }
-      /* VOXR1F: Fenster mit Gesangsrest (Teiltöne: stärkster Bin 100–1500 Hz > TON (30) × Median dieser Bins) zählen für die Klangfarbe nicht,
-         rauschartige (auch Atem/Luft mit Höhen) zählen, und zwar die nahe der Lücke (≤ 100 ms); darüber der Median je Terzband wie VOXR1D-RT.
-         Bleiben < 3: alle rauschartigen; sonst wie bisher. Leistungsmittel statt Median ({pm: 1}) brach den Prüfer-Kern (Take C 5,8/6,5 dB). {ton: 0} = aus. */
-      const TON = o.ton != null ? o.ton : 30; let PN = null;
+      /* VOXR1F (Versuch, Vorgabe AUS – {ton: 30} schaltet ein): Fenster mit Gesangsrest (stärkster Bin 100–1500 Hz > TON × Median dieser Bins)
+         zählen für die Klangfarbe nicht, von den rauschartigen die nahe der Lücke (≤ 100 ms); darüber der Median je Terzband wie VOXR1D-RT.
+         Gemessen: Entwickler Take A 4 von 5 Lücken besser (Ziel ±4 dB trotzdem nicht erreicht), Prüfer-Kern C besser, kern3 Farbe 8 → 9/24,
+         aber Abnahme kern2 Farbe 9 → 6/28 – in Summe schlechter, daher aus. Mit Vorgabe 0 rechnet dieser Teil genau wie VOXR1D-RT. */
+      const TON = o.ton != null ? o.ton : 0; let PN = null;
       if (c2 >= 3 && TON > 0) { const kA = Math.max(1, Math.round(100 * N / sr)), kB = Math.min(N / 2, Math.round(1500 * N / sr)), tb = new Float64Array(kB - kA), keep = [];
         PW.forEach((Pw, w) => { let mx = 0; for (let k = kA; k < kB; k++) { tb[k - kA] = Pw[k]; if (Pw[k] > mx) mx = Pw[k]; } tb.sort(); if (!(mx > TON * tb[tb.length >> 1])) keep.push(w); });
         // nur die Fenster nahe der Lücke (≤ NW × 10 ms daneben, sonst alle rauschartigen): weiter weg liegt oft schon Ausklang/Anlauf mit anderer Farbe
