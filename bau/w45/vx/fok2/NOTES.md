@@ -27,6 +27,11 @@ Jetzt (nur „Nur Rest“, nur wo Ebenen wirken):
    „übrig ≈ %“: eO aus dem Original-Byte, eR aus dem Ergebnis (wie bisher, jetzt mit dem genauen Rest).
 3. Zwischenspeicher: Fokus-Stücke wie bisher (6 Stücke, Schlüssel H mit Ebenen id:ver + Noten). Rest-Audio in `restMid`
    (gemeinsam mit „Noten finden“, ein Ebenen-Stand) → Wechsel der FFT-Größe rechnet das Rest-Audio nicht neu.
+3b. Stereo (v4): `restMid` rendert bei mehreren Kanälen nur die Mitte. Der Mix 'rest' ist linear und je Kanal gleich (gleiche Gewinne je
+   Bin, keine SPK6-Effekte – s6.block gibt für 'rest' null) → Rest der Mitte = Mitte der Rest-Kanäle. d.mid wird als ein „Kanal“
+   gerendert (smp teilt durch 32768, Ergebnis × 32768 – Zweierpotenz, exakt), mit eigenem Block-Speicher (kein Schlüssel-Konflikt mit dem
+   Abspielen). Halbe Arbeit für Anzeige UND „Noten finden“ auf dem Rest; Mono unverändert. Geprüft: fok2-stereo-noten.mjs – gleiche Noten
+   wie basis (2 Noten, gleiche Zeiten/Sicherheit), 549 statt 757 ms.
 4. Zauberstab bei „Nur Rest“ (Prüfung „Stelle ≥ 20 dB leiser → nichts wählen“, wie 4.72): nimmt das Fokus-Stück der Anzeige, wenn es
    im Zwischenspeicher liegt (dann genauer Rest); sonst die schnelle Näherung wie 4.72 – ohne sie zu speichern (gleicher Schlüssel,
    sonst bekäme die Anzeige ein ungenaues Stück). So wird der Zauberstab nicht langsamer.
@@ -66,8 +71,9 @@ schlimmster Fall, jede Spalte betroffen; N 4096 zuerst, N 16384 danach mit vorha
 | Kamm-Fall 8 s (Ebene nur 4 s, schmal), N 16384 / 4096 / 1024 | 51 / 91 / 144 ms | 148 / 143 / 178 ms | nur betroffene Spalten |
 | Long Tasks Hauptfaden (alle Läufe) | 0 | 0 | Rechnen im Worker, Scheiben ≈ 20 ms |
 | Abbruch (fokusStop mitten im Satz, 3 min) | 37 ms | 13 ms bis zur Antwort 'abgeloest' | Scheiben + ok() |
-| 3 min STEREO, N 4096 (2 Läufe, Median) | 807 ms (erstes 85) | 7842 ms (erstes 621) | Rest-Audio je Kanal → ≈ doppelt |
-| 3 min STEREO, N 16384 | 2807 ms (erstes 753) | 4778 ms (erstes 1475) | |
+| 3 min STEREO, N 4096 (2 Läufe) – v3 (je Kanal) | 807 ms (erstes 85) | 7842 ms (erstes 621) | Rest-Audio je Kanal → ≈ doppelt |
+| 3 min STEREO, N 4096 (2 Läufe) – v4 (Mitte) | 845 ms (erstes 107) | 5870 ms (erstes 455) | Endfassung |
+| 3 min STEREO, N 16384 – v4 | 2690 ms (erstes 762) | 5049 ms (erstes 1288) | Endfassung |
 
 v1 (Verhältnis |Rest|/|Original|, eine FFT je Spalte, ohne restMid) war gleich genau, aber 3 min N 4096 7,7 s, N 16384 10,4 s (erstes
 Stück 3,0 s) → verworfen zugunsten v2. Kosten-Aufteilung je Stück N 4096: FFT 512 × 0,13 ms ≈ 70 ms (spk12Fft, gemessen in Node),
@@ -89,9 +95,12 @@ Keine neuen Haken. Alle Änderungen im FOKUS1-Block (Kommentar FOK2):
 - `piece(…, TR)`: Parameter TR, `SB` (Bild-Quelle Rest-Byte), Spalten-Weiche `tc`, Noten-Glättung auf dem Rest-Bild, `sb` in der Byte-Formel
 - `ops.fokus`: `trueRest` vor `piece` (nur Modus 'rest'), Abbruch → stop wie bisher
 - `ops.spk12zauber` (Fokus-Prüfung): Stück aus dem Zwischenspeicher oder Näherung ohne Speichern
+- `restMid` (v4): Stereo → Mitte als ein Kanal rendern (`mono`, eigener Block-Speicher), Faktor 32768
 Die drei Kern-Haken aus FOKUS1 (spk1DspMake, spk1Call, spk8WUrl) und die fünf Anzeige-Haken sind unverändert.
 
-## Regression (Endfassung md5 6c5a05646d88866ecf71bb5f6176728c, Logs in reg2/)
+## Regression (Logs in reg2/; volle Kette auf v3 md5 6c5a05646d88866ecf71bb5f6176728c, Endfassung v4 md5 313593d6172c5401280bc9152c4c41bd
+## – v4 ändert nur den Stereo-Zweig von restMid; auf v4 erneut: kern 26/0, fokus1-test 48/3 (nur Long Tasks, auch im unveränderten „Gefunden“),
+## fok2-test mono 16/0 + stereo 19/0, fok2-stereo-noten gleich, smoke errors [], Pflicht wieder grün)
 | Test | Ergebnis | Bemerkung |
 |---|---|---|
 | fokus1-kern-test | 26 OK / 0 | |
@@ -105,10 +114,6 @@ Die drei Kern-Haken aus FOKUS1 (spk1DspMake, spk1Call, spk8WUrl) und die fünf A
 | Pflicht | topdefs doppelt 0 / Syntaxfehler 0; dupkeys 0; smoke errors []; MS 2000 = 1; live = 1; VERSION 4.75.0 | |
 
 ## Offenes
-- Stereo kostet beim Rest-Audio das Doppelte (render je Kanal). Für 'rest' ist der Weg linear und ohne SPK6-Effekte (s6.block gibt
-  null) → Rest der Mitte = Mitte der Rest-Kanäle; restMid könnte die Mitte (d.mid, Faktor 32768 exakt) einmal rendern: ≈ −2,5 s bei
-  3 min N 4096, erstes Stück ≈ 0,4 statt 0,6 s, gilt auch für „Noten finden“ auf dem Rest. Nicht gebaut (Zeit; ändert restMid, das
-  „Noten finden“ nutzt – braucht eigenen Stereo-Test).
 - Erstes Stück bei N 16384 und Ebenen über das ganze Lied 0,7–2 s statt 0,4–0,9 s. Profi-Weg für später: erst das sichtbare
   Spaltenfenster (statt ganzes 1024er-Stück) rechnen, oder Rest-Audio nach jeder Ebenen-Änderung im Leerlauf vorab rechnen.
 - Rest-Audio-Speicher wächst mit der Lied-Länge (Float32 voll); bei sehr langen Liedern (> 10 min) wäre ein Block-LRU sparsamer.

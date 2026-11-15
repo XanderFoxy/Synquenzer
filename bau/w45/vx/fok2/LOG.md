@@ -8,3 +8,4 @@
 - 23:35 fok2-test Endfassung 21/0; 3 min N4096 5166 ms (basis 794), erstes 410 (86); N16384 4663 (2727), erstes 1256 (730); Abbruch 13 ms; LT 0, Last: load average: 1.89, 3.43, 3.07
 - 23:38 Stereo 3 min: N4096 7842 ms (basis 807), erstes 621 (85); zrl1 20 s ×5: 1243/1252 ms OK; smoke errors []; NOTES fertig; Endfassung md5 6c5a05646d88866ecf71bb5f6176728c, Last: load average: 0.50, 2.15, 2.63
 - 23:40 v4: restMid rendert bei Stereo nur die Mitte (linear) → Noten auf Rest stereo gleich basis (2 Noten), 549 statt 757 ms; Endtests laufen, Last: load average: 0.46, 1.68, 2.42
+- 23:43 Endfassung v4 md5 313593d6172c5401280bc9152c4c41bd: kern 26/0, fokus1-test 48/3 (nur LT), fok2 mono 16/0 + stereo 19/0, stereo-noten gleich, smoke [], topdefs 0/0, dupkeys 0, MS2000 1, live 1, 4.75.0, Last: load average: 1.23, 1.77, 2.34
