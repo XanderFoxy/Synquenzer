@@ -41,9 +41,9 @@ for (const [W, H] of VIEWS) {
   }, [SEC]);
   await p.waitForFunction(() => { const i = __spk.page.info(); return i && !i.nodoc && i.chunks > 0 && !/Spektrum \d/.test(i.stat); }, null, {timeout: 300000}); await wait(500);
   ok(tag + ' laden', {sec: SEC, ms: Date.now() - T0load}, true);
-  // ---- Layout: Leiste Neu │ + │ − │ ∩ · Auswahl ▾ ----
+  // ---- Layout: Leiste Neu │ + │ − │ ∩ · Auswahl ▾ (Prüfung: hinter den vorhandenen Reglern – je Knopf nach Wischen im Bild) ----
   const lay = await p.evaluate(() => { const U = __spk.page.ui(), bs = [...U.op.querySelectorAll('.spk12-m, .spk12-dd')], bar = U.op.getBoundingClientRect();
-    return {bar: [bar.left, bar.right, bar.top, bar.bottom], vw: innerWidth, vh: innerHeight, b: bs.map(e => { const r = e.getBoundingClientRect(), af = getComputedStyle(e, '::after'); return {t: e.textContent, w: r.width, h: r.height, hit: r.height + Math.max(0, -parseFloat(af.top) || 0) + Math.max(0, -parseFloat(af.bottom) || 0), l: r.left, r: r.right, top: r.top, bot: r.bottom}; })}; });
+    return {bar: [bar.left, bar.right, bar.top, bar.bottom], vw: innerWidth, vh: innerHeight, b: bs.map(e => { e.scrollIntoView({block: 'nearest', inline: 'nearest'}); const r = e.getBoundingClientRect(), af = getComputedStyle(e, '::after'); return {t: e.textContent, w: r.width, h: r.height, hit: r.height + Math.max(0, -parseFloat(af.top) || 0) + Math.max(0, -parseFloat(af.bottom) || 0), l: r.left, r: r.right, top: r.top, bot: r.bottom}; })}; });
   ok(tag + ' leiste-knoepfe-44', lay.b.map(x => [x.t, Math.round(x.w), Math.round(x.hit)]), lay.b.length === 5 && lay.b.every(x => x.w >= 44 && x.hit >= 44));
   ok(tag + ' leiste-im-bild', {bar: lay.bar.map(Math.round), vw: lay.vw, vh: lay.vh, knoepfe: lay.b.map(x => [Math.round(x.l), Math.round(x.r), Math.round(x.top), Math.round(x.bot)])}, lay.bar[0] >= 0 && lay.bar[1] <= lay.vw + 0.5 && lay.bar[3] <= lay.vh + 0.5 && lay.b.every(x => x.l >= 0 && x.r <= lay.vw + 0.5 && x.bot <= lay.vh + 0.5));
   // ---- Bit-genau: Mengen-Rechnung (Kern-Masken) ----
