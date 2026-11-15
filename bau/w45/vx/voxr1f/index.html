@@ -61603,7 +61603,7 @@ function* clickScan(x, sr, o, wins) {
   // die sagt das AR-Modell gut voraus). Beide müssen allein stehen: Stimmlippen-Pulse kommen alle 1–16 ms wieder.
   /* VOXR1F-P: BIG nur in rauschartiger Umgebung (Pause): Mittel der Rahmen-Spitzen in ±12 ms ≤ BQ × Median (Gesang: Pulse → Mittel ≫ Median).
      Prüfung B@48 2,745 s: BIG fand dort einen Klick mitten im lauten Gesang, die Reparatur kostete Höhen. {bq: 0} = ohne Prüfung. */
-  const BQ = o.bq != null ? o.bq : 1.2, bigQuiet = (arr, xl, xr) => !(BQ > 0) || mean(arr, xl - W, xr + W + 1, xl, xr) <= BQ * medx(arr, xl - W, xr + W + 1, xl, xr);
+  const BQ = o.bq != null ? o.bq : 1.2, bigQuiet = (arr, xl, xr, m) => !(BQ > 0) || (MED ? mean(arr, xl - W, xr + W + 1, xl, xr) : m) <= BQ * (MED ? m : medx(arr, xl - W, xr + W + 1, xl, xr));
   const test = (arr, j, k1, k2) => { const v = arr[j]; if (v < 2e-4 || v < arr[j - 1] || v < arr[j + 1] || v < arr[j - 2] || v < arr[j + 2]) return null;
     let jl = j, jr = j; while (jl > j - MX && arr[jl - 1] > 0.25 * v) jl--; while (jr < j + MX && jr + 1 < nj && arr[jr + 1] > 0.25 * v) jr++;
     const xl = Math.min(jl - 2, j - X3), xr = Math.max(jr + 2, j + X3);
@@ -61613,8 +61613,9 @@ function* clickScan(x, sr, o, wins) {
     /* VOXR1F: Ein Klick in einer Pause kurz vor einem Einsatz (lautere Spitzen 20–25 ms daneben) fiel durch den Nachbar-Test. Liegt die Spitze
        > BIG (≈ 30 dB) über dem Median der Umgebung, reicht der Nachbar-Test im engen Fenster (±12 ms; Stimmlippen-Pulse ab 85 Hz kommen dort
        mindestens zweimal). {big: 0} = wie vorher. */
-    if (!(v > k2 * n2) && !(BIG > 0 && v > k2 * s2 && v > BIG * (MED ? medx : mean)(arr, xl - W, xr + W + 1, xl, xr) && bigQuiet(arr, xl, xr))) return null;
-    const m = (MED ? medx : mean)(arr, xl - W, xr + W + 1, xl, xr); if (!(v > k1 * m)) return null; return {jl, jr, sc: 20 * Math.log10(v / (m + EPS))}; };
+    let m = -1;   // VOXR1F-P: Median der Umgebung nur einmal rechnen (BIG-Weg und k1-Test teilen ihn)
+    if (!(v > k2 * n2)) { if (!(BIG > 0 && v > k2 * s2)) return null; m = (MED ? medx : mean)(arr, xl - W, xr + W + 1, xl, xr); if (!(v > BIG * m) || !bigQuiet(arr, xl, xr, m)) return null; }
+    if (m < 0) m = (MED ? medx : mean)(arr, xl - W, xr + W + 1, xl, xr); if (!(v > k1 * m)) return null; return {jl, jr, sc: 20 * Math.log10(v / (m + EPS))}; };
   for (let j = 2; j < nj - 2; j++) {
     if (!sel[j]) continue;
     const T1 = test(fe, j, K1, K2), T2 = T1 ? null : test(fh, j, K1 + 1, K2 + 0.4), Tq = T1 || T2; if (!Tq) continue;
