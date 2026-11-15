@@ -362,8 +362,8 @@ async function browser() {
     ok(tapOk, 'Touch (CDP) auf eine Marke: Editor bleibt offen, Tipp in den Streifen setzt „weg“', R.uiAtmerTap);
     // Teil 3: Antippen im oberen Streifen der Marke wechselt lassen → leiser → weg (Touch über CDP)
     if (M2.cv && M2.hit0) { const a0 = await run(async o => SYNQUENZER.vr1Breaths(o.id)[1] ? SYNQUENZER.vr1Breaths(o.id)[1].act : null, tk), tp0 = await run(async o => SYNQUENZER.vr1Ver(o.id).taps, tk);
-      const h1 = await run(async () => { const E = WP.ed; return E && E.vr1b && E.vr1b[1] ? E.vr1b[1] : null; }, null);
-      if (h1) { await tap(M2.cv.x + (h1.x0 + h1.x1) / 2, M2.cv.y + 22); }
+      await p.waitForTimeout(600); const h1 = await run(async () => { const E = WP.ed, b = E && E.cv ? E.cv.getBoundingClientRect() : null; return E && E.vr1b && E.vr1b[1] && b ? Object.assign({}, E.vr1b[1], {cx: b.x, cy: b.y}) : null; }, null);   // Prüfung: Lage des Editors frisch lesen
+      if (h1) { await tap(h1.cx + (h1.x0 + h1.x1) / 2, h1.cy + 22); }
       const a1 = await run(async o => ({act: SYNQUENZER.vr1Breaths(o.id)[1] ? SYNQUENZER.vr1Breaths(o.id)[1].act : null, taps: SYNQUENZER.vr1Ver(o.id).taps, offen: !!WP.ed}), tk);
       R.uiAtmerTap3 = {vorher: a0, nachher: a1};
       ok(!!h1 && a0 === 'leiser' && a1.act === 'weg' && a1.taps === tp0 + 1 && a1.offen, 'Touch (CDP) im Streifen über einer Atmer-Marke: leiser → weg, Editor bleibt offen', R.uiAtmerTap3); }
