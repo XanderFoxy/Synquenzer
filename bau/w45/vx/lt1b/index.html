@@ -42626,6 +42626,7 @@ function pshUndock() {
   if (P.sheet.repaint) { try { P.sheet.repaint(p); } catch (e) { logErr(e); } }   // inzwischen Geändertes zeigen (Zustand des Blatts bleibt)
   pshKeep(p); popFit(p);
   const sc = pshScrolls(p); (P.scr || []).forEach((v, k) => { if (sc[k]) sc[k].scrollTop = v; });
+  if (typeof lt1PreCheck === 'function') lt1PreCheck();   /* LT1B: Import-Blatt aus der Leiste zurück → Vorbereitung neu */
   haptic('tick');
   return true;
 }
@@ -110425,6 +110426,7 @@ function imp1Paint() {
   IMP1.cv = bd.querySelector('canvas.imp1cv'); if (IMP1.cv) imp1Draw();
   if (fi && /imp1in/.test(fi)) { const x = bd.querySelector('input.' + fi.split(' ').pop()); if (x) try { x.focus({preventScroll: true}); } catch (e) {} }
   popFit(p);
+  if (typeof lt1PreCheck === 'function') lt1PreCheck();   /* LT1B: „1“/Tempo/Ziel geändert → Import-Vorbereitung prüfen, ggf. frei + Neustart */
 }
 function imp1Prog() { const p = imp1Pop(), i = p && p.querySelector('.imp1bar i'); if (i && IMP1.cur) i.style.transform = 'scaleX(' + (IMP1.cur.p || 0).toFixed(3) + ')'; }
 function imp1Sheet() {
@@ -110437,6 +110439,7 @@ function imp1Sheet() {
     q.addEventListener('pointerdown', e => { if (e.target && e.target.classList && e.target.classList.contains('imp1cv')) imp1Down(e); });
   }, {name: 'imp1', sheet: {title: () => 'Audio/MIDI importieren'}, onClose: () => { IMP1.cv = null; }});
   IMP1.cv = p.querySelector('canvas.imp1cv'); if (IMP1.cv) imp1Draw();
+  if (typeof lt1PreCheck === 'function') lt1PreCheck();   /* LT1B: Blatt wieder offen → Import-Vorbereitung neu */
   return p;
 }
 function imp1Tap(b) {

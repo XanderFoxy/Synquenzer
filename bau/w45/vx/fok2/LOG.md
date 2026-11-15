@@ -1,1 +1,2 @@
 - 23:17 Start, Last: load average: 0.12, 0.54, 1.85
+- 23:20 FOK2 Kern eingebaut (trueRest im FOKUS1-Block), Last: load average: 0.13, 0.31, 1.48
