@@ -100959,6 +100959,7 @@ function spk1DspMake(V) {
   if (Z2 && typeof spk9DspMake === 'function') spk9DspMake(Z2);   /* SPK9: Legato-Noten (Tonhöhen-Stufen) */
   if (Z2 && typeof spk6DspMake === 'function') Z2.s6 = spk6DspMake({Z2, V, BT, BLK, win, lay, masksOf, stripe, stCopy, newLayer, verUp, uBegin, uTouch, uEnd, render, block, get, put, del, keys, selFn});   // SPK6: Ebenen-Werkstatt (Ops über Z2.ops)
   if (Z2 && typeof spk12DspMake === 'function') spk12DspMake(Z2, {selFn, specInfo, specChunk, get, put, soon, mixOf, gainFn, block, BLK, tick, harmTrack, similar});   /* SPK12: Zauberstab, Masken-Probe, Anzeige, Ebene abtasten, Merkmale, Regionen */
+  if (Z2 && typeof fokus1KMake === 'function') fokus1KMake(Z2, {specInfo, specChunk, get, gainFn, mixOf, render, tick, soon, BLK, DBF});   /* FOKUS1: Fokus-Ansicht (Rest/Gefundenes), Noten finden auf dem Rest */
   return {on, stft, istft, specInfo, docs, lowSplit, Z2};   // SPK2: Z2 für Messungen
 }
 /* ---------- Hauptfaden: Worker (Blob aus Text), Rückfall = derselbe Kern hier ---------- */
@@ -100983,6 +100984,7 @@ function spk1Reply(m) {
 // ein Auftrag an den Kern: {op, doc?, …}; cb = {prog(p), chunk(c)}
 function spk1Call(op, a, tr, cb) {
   if (typeof spk12CallSrc === 'function') { const r12 = spk12CallSrc(op, a, cb); if (r12) { op = r12[0]; a = r12[1]; if (r12[2]) cb = r12[2]; } }   /* SPK12: Merkmale, Alle Ebenen abtasten */
+  if (typeof fokus1CallSrc === 'function') { const rF = fokus1CallSrc(op, a, cb); if (rF) { op = rF[0]; a = rF[1]; if (rF[2]) cb = rF[2]; } }   /* FOKUS1: „Nur Rest“ → Werkzeuge auf dem Rest */
   const w = spk1Worker(), id = ++SPK1.wid, m = Object.assign({}, a, {op, qid: id});   // qid = Auftrag, id = Analyse
   return new Promise((ok, no) => {
     SPK1.wq.set(id, Object.assign({ok, no}, cb || {}));
@@ -103840,6 +103842,7 @@ function spk8DspMake(Z2) {
 // Worker-Text: spk8DspMake wird an den Kern-Text angehängt (Funktions-Deklaration → im Worker schon beim Aufbau des Kerns da)
 function spk8WUrl(src, u) {
   if (typeof spk12DspMake === 'function') src = src + ';' + [spk12SelFn, spk12Ras, spk12Fft, spk12Win, spk12Mag, spk12K2, spk12DspMake].map(f => f.toString()).join(';') + ';';   /* SPK12: Auswahl-Kern in den Spektral-Worker */
+  if (typeof fokus1KMake === 'function') src = src + ';' + fokus1KMake.toString() + ';';   /* FOKUS1: Fokus-Kern in den Spektral-Worker */
   try { const v = URL.createObjectURL(new Blob([src, ';' + spk8DspMake.toString() + ';' + (typeof spk10Okt === 'function' ? spk10Okt.toString() + ';' : '') /* SPK10 */], {type: 'application/javascript'})); try { URL.revokeObjectURL(u); } catch (e) {} setTimeout(() => { try { URL.revokeObjectURL(v); } catch (e) {} }, 30000); return v; } catch (e) { return u; }
 }
 /* SPK8-END */
@@ -107476,6 +107479,175 @@ const SPK12_API = {
 };
 try { window.__spk12 = SPK12_API; } catch (e) {}
 /* SPK12-END */
+/* FOKUS1-BEGIN ===== Spektral-Seite · Fokus (Xander 15.11.: „die bereits erkannten … Frequenzen, die schon in Ebenen liegen, im gesamten
+   Frequenzspektrum ausblenden … damit man den Fokus auf die verbleibenden Noten hat und es sich immer mehr herauskristallisiert“)
+   Kern (läuft im Spektral-Worker; der Text kommt über spk8WUrl mit, gestartet am Ende von spk1DspMake nach SPK12; Rückfall: Hauptfaden):
+   - op 'fokus' {doc, N, mode: 'rest' | 'gef', aus: 'sicher' | 'alle', thr, sth, K, bw, att, from, to, stream}: Anzeige-Stücke im Format von
+     'spec' (gleiches N und Hop, 984 Zeilen, Byte = dB −120…0, data[r·w + c]), gestreamt (chunk, dann prog), je Stück ein tick.
+     'rest' = Original × Rest-Anteil der Masken je Basis-Rahmen (255 − Σ Ebenen, mit SPK6-Kopien; wie beim Abspielen, ohne Rendern) und
+     zusätzlich weiche Ausblendung der Teiltöne (Grundton-Spur fz × 1…K) aller gefundenen Noten, mit Ein-/Ausschwingen;
+     'gef' = Ebenen-Anteil ∪ Teiltöne der gefundenen Noten (Gegenstück zur Kontrolle).
+     Rückgabe {key, nAus, eO, eR, anteil (Rest-Energie / Original), n, neu, stop, ms, N, hop, cols, rows, chunks, from, to, mode, aus}.
+   - Nur lesen: Original-Stücke 'spk:<id>:v<N>:<ci>' (fehlt eins → im Speicher gerechnet, nichts geschrieben). Eigener Zwischenstand nur im
+     Speicher (6 Stücke) unter 'spk:<id>:fk:<H>:v<N>:<ci>', H = Prüfsumme aus Modus, Optionen, Ebenen id:ver und den gefundenen Noten.
+     Ändert sich H während eines Auftrags (Ebene/Note geändert) oder kommt ein neuer Auftrag (d.fkTok) → Abbruch (stop), nichts Halbes.
+   - op 'fokusKey' {doc, N, mode, aus, …} → {key, nAus} (billig: ist der Fokus-Satz noch aktuell?); op 'fokusStop' löst laufende ab.
+   - 'noten' mit fokus 'rest' und lid 'orig' (Haken in spk1Call): Suche auf dem Rest-Signal (Original minus Ebenen, blockweise gerechnet);
+     neue Treffer auf Teiltönen gefundener Noten (Überlappung > 50 %, Verhältnis ½, 1, 2, 3, 4 ± 50 Cent) werden verworfen, ausgeblendete
+     Original-Noten bleiben stehen. Alles im selben Undo-Schritt wie „Noten finden“.
+   Hauptfaden: fokus1CallSrc (Haken in spk1Call nach SPK12): Ist U.f1.mode === 'rest', laufen Zauberstab, Transient, Folgt dem Ton,
+   Obertöne-Auto, Harmonische, Ähnliches auf dem Rest (s12src 'rest' – nur wenn SPK12 nicht schon eine Ebene gewählt hat), „Noten finden“
+   im Original auf dem Rest, und „In Ebene“ (transfer verschieben) nimmt aus dem Original nur den freien Rest (schützt die Ebenen). */
+function fokus1KMake(Z2, X) {
+  const ops = Z2.ops || (Z2.ops = {}), C = new Map(), RM = new Map(), DBF = X.DBF || 120, k255 = 255 / DBF, PW = new Float64Array(256);
+  for (let b = 1; b < 256; b++) PW[b] = Math.pow(10, (b / k255 - DBF) / 10);
+  const NS = [1024, 2048, 4096, 8192, 16384], cl = (v, a, b, z) => { v = +v; return v === v && isFinite(v) ? Math.max(a, Math.min(b, v)) : z; };
+  const fnv = s => { let h = 0x811c9dc5; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); };
+  const optOf = m => ({mode: m.mode === 'gef' || m.mode === 'gefunden' ? 'gef' : 'rest', aus: m.aus === 'alle' ? 'alle' : 'sicher', thr: cl(m.thr, 0, 1, 0.5), sth: cl(m.sth, 0, 1, 0.7),
+    K: Math.round(cl(m.K, 1, 40, 16)), bw: cl(m.bw, 10, 200, 45), att: cl(m.att, 6, 90, 42)});
+  // gefundene Noten (wie die Anzeige: Original + vorhandene Ebenen); „Sichere“ = zugeordnet, in einer Ebene oder Sicherheit ≥ sth; „Alle“ = alles Sichtbare
+  function found(d, o) {
+    const T = (d.meta.teil2 && d.meta.teil2.notes) || {}, out = [];
+    for (const lid in T) {
+      const inL = lid !== 'orig' && d.meta.layers.some(l => l.id === lid); if (lid !== 'orig' && !inL) continue;
+      for (const q of T[lid] || []) {
+        if (!q || !(+q.b > +q.a) || !(+q.f > 0)) continue; const c = q.conf == null ? 1 : +q.conf;
+        if (o.aus === 'alle' ? (q.st !== 'neu' || c >= o.thr) : (q.st === 'zu' || (q.st !== 'neu' && (inL || c >= o.sth)))) out.push(q);
+      }
+    }
+    return out;
+  }
+  const sigOf = (d, o, N, NT) => fnv([o.mode, o.aus, o.thr, o.sth, o.K, o.bw, o.att, N, d.meta.id, d.meta.n, d.meta.layers.map(l => l.id + ':' + l.ver).join(','),
+    NT.map(q => q.id + ':' + q.st + ':' + (+q.a).toFixed(3) + ':' + (+q.b).toFixed(3) + ':' + (+q.f).toFixed(1) + ':' + (q.fz ? q.fz.length + '@' + q.fi : '')).join(',')].join('|'));
+  function rowsOf(I, Nb, sr) {   // Zeile → Bins der Basis-STFT (wie SPK12 gainA)
+    const key = I.rows + ':' + I.m0 + ':' + I.rps + ':' + Nb + ':' + sr; if (RM.has(key)) return RM.get(key);
+    const NB = Nb / 2 + 1, lo = new Int32Array(I.rows), hi = new Int32Array(I.rows), fr = r => 440 * Math.pow(2, (I.m0 + r / I.rps - 69) / 12);
+    for (let r = 0; r < I.rows; r++) { const a = Math.max(0, Math.min(NB - 1, Math.floor(fr(r - 0.5) * Nb / sr))); lo[r] = a; hi[r] = Math.max(a, Math.min(NB - 1, Math.ceil(fr(r + 0.5) * Nb / sr))); }
+    const o = {lo, hi}; RM.set(key, o); return o;
+  }
+  // Hüllkurve einer Note in der Zeit (Anzeige-Fenster ±N/2 verschmiert: Einschwingen davor, Ausklang danach), weiche Kanten
+  function env(q, t, hw) {
+    const a = +q.a, b = +q.b, on0 = a - hw - 0.03, on1 = a - 0.5 * hw, of1 = b + 0.06 + 0.5 * hw, of0 = of1 + 0.5 * hw + 0.05;
+    if (t <= on0 || t >= of0) return 0; if (t < on1) return 0.5 - 0.5 * Math.cos(Math.PI * (t - on0) / (on1 - on0)); if (t > of1) return 0.5 + 0.5 * Math.cos(Math.PI * (t - of1) / (of0 - of1)); return 1;
+  }
+  // ein Stück: Quelle (Original-Bytes) → Fokus-Bytes; Energie (Leistung je Byte) vorher/nachher
+  function piece(d, I, ci, src, o, gf, NT) {
+    const R = I.rows, W = Math.min(1024, I.cols - ci * 1024), out = new Uint8Array(R * W), sr = d.meta.sr, Nb = d.meta.base.N, hb = d.meta.base.hop, NB = Nb / 2 + 1;
+    const {lo, hi} = rowsOf(I, Nb, sr), g = new Float32Array(NB), gl = new Float32Array(R), wv = new Float32Array(R), hw = I.N / (2 * sr), lob = 2 * sr / I.N, att = Math.pow(10, -o.att / 20), rest = o.mode === 'rest';
+    const tA = ci * 1024 * I.hop / sr, tB = (ci * 1024 + W) * I.hop / sr, act = NT.filter(q => +q.a - hw - 0.04 < tB && +q.b + 0.12 + hw > tA);
+    let mP = -1, eO = 0, eR = 0;
+    for (let c = 0; c < W; c++) {
+      const gc = ci * 1024 + c, t = gc * I.hop / sr, mm = Math.round(gc * I.hop / hb + 1);
+      if (mm !== mP) { mP = mm; gf(mm, g); for (let r = 0; r < R; r++) { let v = 0; for (let k = lo[r]; k <= hi[r]; k++) if (g[k] > v) v = g[k]; gl[r] = rest ? v : Math.min(1, v); } }
+      let anyW = false;
+      if (act.length) {
+        wv.fill(0);
+        for (const q of act) {
+          const e = env(q, t, hw); if (!(e > 0)) continue;
+          let f0 = +q.f; if (q.fz && q.fz.length) { let j = Math.round(t * sr / hb - (+q.fi || 0)); j = j < 0 ? 0 : j >= q.fz.length ? q.fz.length - 1 : j; if (q.fz[j] > 0) f0 = q.fz[j]; }
+          for (let h = 1; h <= o.K; h++) {
+            const fh = h * f0; if (fh >= sr / 2) break;
+            const rc = (12 * Math.log2(fh / 440) + 69 - I.m0) * I.rps; if (rc > R + 40) break;
+            const cw = Math.max(o.bw, 1200 * Math.log2(1 + lob / fh)), hwR = cw / 100 * I.rps, ed = Math.max(2, 0.5 * hwR);   // Breite: bw oder Hauptkeule (±2 Bins) – je nachdem, was breiter ist
+            const ra = Math.max(0, Math.ceil(rc - hwR - ed)), rb = Math.min(R - 1, Math.floor(rc + hwR + ed)); if (rb < ra) continue;
+            for (let r = ra; r <= rb; r++) { const dr = Math.abs(r - rc), w = (dr <= hwR ? 1 : 0.5 + 0.5 * Math.cos(Math.PI * (dr - hwR) / ed)) * e; if (w > wv[r]) wv[r] = w; }
+            anyW = true;
+          }
+        }
+      }
+      for (let r = 0; r < R; r++) {
+        let lin = gl[r]; if (anyW) { const w = wv[r]; if (w > 0) { if (rest) lin *= 1 - w * (1 - att); else if (w > lin) lin = w; } }
+        const i = r * W + c, s = src[i]; let v;
+        if (lin >= 0.99999) v = s; else if (lin < 1e-5 || !s) v = 0; else { v = s + 20 * Math.log10(lin) * k255; v = v <= 0 ? 0 : v >= 255 ? 255 : Math.round(v); }
+        out[i] = v; eO += PW[s]; eR += PW[v];
+      }
+    }
+    return {data: out, W, eO, eR};
+  }
+  const gainOf = (d, o) => { const ids = {}; for (const l of d.meta.layers) ids[l.id] = 1; return X.gainFn(d, o.mode === 'rest' ? X.mixOf(d, 'rest') : X.mixOf(d, {g: ids, rest: 0, orig: 0})); };
+  ops.fokus = async (d, m, emit) => {
+    if (!d) throw new Error('Analyse fehlt');
+    const T0 = performance.now(), o = optOf(m), N = NS.includes(m.N) ? m.N : 4096, I = X.specInfo(d, N), from = Math.max(0, m.from | 0), to = Math.min(I.chunks, m.to == null ? I.chunks : m.to | 0);
+    const NT = found(d, o), H = sigOf(d, o, N, NT), tok = d.fkTok = (d.fkTok || 0) + 1, gf = gainOf(d, o), same = () => d.fkTok === tok && sigOf(d, o, N, found(d, o)) === H;
+    let eO = 0, eR = 0, n = 0, neu = 0, stop = '';
+    for (let ci = from; ci < to; ci++) {
+      if (!same()) { stop = d.fkTok !== tok ? 'abgeloest' : 'geaendert'; break; }
+      const ck = 'spk:' + d.meta.id + ':fk:' + H + ':v' + N + ':' + ci; let e = C.get(ck); const hit = !!e;
+      if (e) { C.delete(ck); C.set(ck, e); }
+      else {
+        const W = Math.min(1024, I.cols - ci * 1024), have = await X.get('audio', 'spk:' + d.meta.id + ':v' + N + ':' + ci);   // Original nur lesen
+        if (!same()) { stop = d.fkTok !== tok ? 'abgeloest' : 'geaendert'; break; }
+        const src = have && have.byteLength === I.rows * W ? new Uint8Array(have) : X.specChunk(d, N, ci).data;
+        e = piece(d, I, ci, src, o, gf, NT); neu++; C.set(ck, e); while (C.size > 6) C.delete(C.keys().next().value);
+      }
+      eO += e.eO; eR += e.eR; n++;
+      if (m.stream !== false) { const data = e.data.slice(); emit({qid: m.qid, chunk: {N, k: ci, x0: ci * 1024, w: e.W, R: I.rows, hop: I.hop, data, eO: e.eO, eR: e.eR, key: H, mode: o.mode, cached: hit}}, [data.buffer]); }
+      emit({qid: m.qid, prog: (ci + 1 - from) / Math.max(1, to - from), stufe: 'Fokus'});
+      await X.tick();
+    }
+    return {N, hop: I.hop, cols: I.cols, rows: I.rows, chunks: I.chunks, from, to, n, neu, key: H, mode: o.mode, aus: o.aus, nAus: NT.length, eO, eR, anteil: eO > 0 ? +(eR / eO).toFixed(4) : 1, stop, ms: +(performance.now() - T0).toFixed(1)};
+  };
+  ops.fokusKey = (d, m) => { if (!d) throw new Error('Analyse fehlt'); const o = optOf(m), N = NS.includes(m.N) ? m.N : 4096, NT = found(d, o); return {key: sigOf(d, o, N, NT), nAus: NT.length, mode: o.mode, aus: o.aus}; };
+  ops.fokusStop = d => { if (d) d.fkTok = (d.fkTok || 0) + 1; return true; };
+  /* „Noten finden“ auf dem Rest: Rest-Signal (Mono) blockweise, ein Eintrag je Ebenen-Stand, nach 90 s ohne Gebrauch frei */
+  const RS = {key: '', mid: null, done: null, t: 0};
+  async function restMid(d, m, a0, b0, emit) {
+    const n = d.meta.n, BL = X.BLK || 16384, key = d.meta.id + '#' + n + '|' + d.meta.layers.map(l => l.id + ':' + l.ver).join(',');
+    if (RS.key !== key || !RS.mid) { RS.key = key; RS.mid = new Float32Array(n); RS.done = new Uint8Array(Math.ceil(n / BL)); }
+    clearTimeout(RS.t); RS.t = setTimeout(() => { RS.key = ''; RS.mid = RS.done = null; }, 90000);
+    const mid = RS.mid, done = RS.done, mx = X.mixOf(d, 'rest'), k0 = Math.max(0, Math.floor(a0 / BL)), k1 = Math.min(done.length - 1, Math.floor(Math.max(0, b0 - 1) / BL));
+    let todo = 0, nd = 0, tY = performance.now(), tP = tY; for (let k = k0; k <= k1; k++) if (!done[k]) todo++;
+    for (let k = k0; k <= k1; k++) {
+      if (done[k]) continue;
+      const o = k * BL, ch = X.render(d, mx, o, Math.min(n, o + BL)), g = 1 / ch.length;
+      for (const y of ch) for (let i = 0; i < y.length; i++) mid[o + i] += y[i] * g;
+      done[k] = 1; nd++;
+      const t = performance.now(); if (t - tY > 25) { if (emit && t - tP > 120) { emit({qid: m.qid, prog: 0.4 * nd / Math.max(1, todo), stufe: 'Rest abtasten'}); tP = t; } await X.tick(); tY = performance.now(); }
+    }
+    return mid;
+  }
+  const harm = (fq, fh) => { if (!(fq > 0 && fh > 0)) return false; const r = fq / fh; for (const h of [0.5, 1, 2, 3, 4]) if (Math.abs(1200 * Math.log2(r / h)) <= 50) return true; return false; };
+  const noten0 = ops.noten;
+  if (noten0) ops.noten = async (d, m, emit, info) => {
+    if (!d || m.fokus !== 'rest' || (m.lid || 'orig') !== 'orig') return noten0(d, m, emit, info);
+    const o = optOf(m), NT = found(d, o), T0 = (d.meta.teil2 && d.meta.teil2.notes) || {}, old = (T0.orig || []).slice(), sr = d.meta.sr, n = d.meta.n;
+    let ta = 0, tb = n / sr, a = 1e9, b = -1; for (const s of m.sel || []) if (s && s.t0 != null && s.art !== 'freq') { a = Math.min(a, +s.t0); b = Math.max(b, +s.t1); }
+    if (b > a) { ta = Math.max(0, a); tb = Math.min(tb, b); }
+    const mid = await restMid(d, m, Math.floor((ta - 0.8) * sr), Math.ceil((tb + 0.8) * sr), emit);
+    const d2 = Object.create(d); d2.mid = mid; d2.co = null; d2.fk1 = true;
+    const r = await noten0(d2, Object.assign({}, m, {fokus: undefined}), emit, info);
+    const t2 = d.meta.teil2 || {notes: {}}, cur = t2.notes.orig || [], oldIds = new Set(old.map(q => q.id)), curIds = new Set(cur.map(q => q.id));
+    const hit = q => NT.some(h => h !== q && Math.min(+h.b, +q.b) - Math.max(+h.a, +q.a) > 0.5 * (+q.b - +q.a) && harm(+q.f, +h.f));
+    const weg = cur.filter(q => !oldIds.has(q.id) && hit(q)), back = old.filter(q => !curIds.has(q.id) && NT.includes(q));
+    if (weg.length || back.length) t2.notes.orig = cur.filter(q => !weg.includes(q)).concat(back).sort((p, q) => p.a - q.a);
+    d.metaDirty = true; X.soon(d);
+    return Object.assign(r, info(d), {fokus: {rest: true, weg: weg.length, behalten: back.length, nAus: NT.length}});
+  };
+  Z2.fk1 = {found, optOf, sigOf};
+  return Z2;
+}
+/* ---------- Hauptfaden: Werkzeuge bei „Nur Rest“ auf den Rest lenken (Haken am Anfang von spk1Call, nach SPK12) ---------- */
+const FOKUS1_SRC = ['spk12zauber', 'spk12trans', 'spk12hauto', 'spk12follow', 'spk12aehn', 'harm', 'aehnlich'];
+const fokus1Rest = U => !!(U && U.f1 && U.f1.mode === 'rest');
+function fokus1CallSrc(op, a, cb) {
+  const U = SPK1.ui; if (!fokus1Rest(U) || !a || typeof a !== 'object' || a.fokus !== undefined || (a.doc && a.doc !== SPK1.doc)) return null;
+  if (FOKUS1_SRC.includes(op) && a.s12src === undefined) {   // SPK12 hat keine Ebene gewählt → Rest
+    const p0 = cb && cb.prog, cb2 = Object.assign({}, cb || {}, {prog: (p, st) => { if (p0) p0(p, st); if (st === 'Ebene abtasten') spk1Stat(U, 'Rest abtasten … ' + Math.round(100 * p) + ' %'); }});
+    return [op === 'harm' ? 'spk12harm' : op === 'aehnlich' ? 'spk12aehnB' : op, Object.assign({}, a, {s12src: 'rest', fokus: 'rest'}), cb2];
+  }
+  if (op === 'noten' && (a.lid || 'orig') === 'orig') return [op, Object.assign({}, a, {fokus: 'rest', aus: U.f1.aus === 'alle' ? 'alle' : 'sicher', thr: U.opt && U.opt.n2thr != null ? U.opt.n2thr : 0.5}), null];
+  if (op === 'transfer' && (a.von || 'orig') === 'orig' && a.modus !== 'kopieren') return [op, Object.assign({}, a, {von: 'rest', fokus: 'rest'}), null];   // nur den freien Rest nehmen, Ebenen bleiben
+  return null;
+}
+/* Test-Zugang (Kern): __fokus1.get({mode, aus, N, from, to}) → {…, got: [Stücke]} · key(o) · stop() */
+const FOKUS1_API = {
+  get: (o, cb) => { const cs = []; return spk1Call('fokus', Object.assign({doc: SPK1.doc, N: 4096}, o || {}), null, Object.assign({chunk: c => cs.push(c)}, cb || {})).then(r => Object.assign(r, {got: cs})); },
+  key: o => spk1Call('fokusKey', Object.assign({doc: SPK1.doc, N: 4096}, o || {})),
+  stop: () => spk1Call('fokusStop', {doc: SPK1.doc}),
+  route: (op, a) => fokus1CallSrc(op, Object.assign({doc: SPK1.doc}, a || {}), null)
+};
+try { window.__fokus1 = FOKUS1_API; } catch (e) {}
+/* FOKUS1-END */
 /* SPK11B-BEGIN ===== Spektral-Seite Teil 11B · Szenen: Drum-Kit und Bass-Phantome nachgebessert (Puls: offene Fehler aus SPK11).
    (1) Drums → Kit: Kick/Snare-Schwellen aus dem Lied selbst (zwei Häufungen der Band-Einsätze, Otsu auf log-Werten), Anschlag muss in die
    Mitten reichen (Schwebung Kick+Bass bleibt tief), 1/16 nach einem Kick ohne eigenen Anschlag kein Kick (Ausklang gegen Sub-Bass), an

@@ -28,3 +28,14 @@
   - spk1: verfeinern-verbessert-ziel FEHL (4,37 → 4,36) wie Basis.
   - ki1: besser-als-klassisch-demo, gesang-besser-als-klassisch, guide-eintrag FEHL – dieselben drei wie Basis.
   - Keine neue rote Prüfung durch SPKFIX.
+- 11:20 Nachbesserung nach PRUEFUNG.md (4 Befunde). Vorfassung gesichert: index.v1.html (22328bc0), block.v1.js, ins.v1.cjs.
+- 11:33 Block: (1) pre6 + spkfixMaskRange + spkfixPatch (nur geänderter Bereich), (2) spkfixName mit Spitzen-Fall, (3) Kennung u11
+  (spkfixUid, neuer Haken in newLayer) + tk am Nachbau + SPK11.kl.get prüft sie, (4) spkfixOrigT für Original/umbenannt + Hinweis-Name.
+  24a60ec5. Pflicht grün.
+- 11:35 runc: spkfix-test 10/11 (nachbau-im-dokument: Neuladen vor dem 2-s-Sichern, Wettlauf; Fehlersuche pkl-dbg/pseite-dbg: mit Wartezeit
+  grün) · k-spkfix Namen alle richtig · kgleich 90 s Median 307 ms (Vorfassung 3135, Basis 17) · f32diff −33,1 dB (Rahmen-Raster).
+- 11:44 Nachbau sofort sichern (flush) → 2db6a495; Vorlauf auf das Rahmen-Raster (H = N/8) → 92ce19ff: f32diff bitgleich (−341,6 dB).
+- 11:36–11:50 runc-Regression (24a60ec5): spk6k/6/6p/6u, spk8s 14/0, spk10s 16/0, spk9u/9p/9poly/9f (Ausgaben = Vorfassung), spk5 24/24,
+  spk1 (vorbestehend 1 rot), spk4 3 rot von 22 (vorbestehend; a3-nachbau-zeit jetzt grün), smoke [].
+- 11:50–11:52 rund (Endfassung 92ce19ff): spkfix-test 11/11 ×2 · kgleich Median 399 ms bitgleich · k-spkfix · p-spkfix · ploop2 · smoke [].
+  FERTIG md5 92ce19ff

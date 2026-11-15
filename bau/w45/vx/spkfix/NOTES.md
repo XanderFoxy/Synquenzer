@@ -65,3 +65,18 @@ Vorfassung gesichert: `index.v1.html` (22328bc0), `block.v1.js`, `ins.v1.cjs`. A
 spk6k · spk6 · spk6p · spk6u grün · spk8s 14/0 · spk10s 16/0 · spk9u · spk9p · spk9poly · spk9f grün, Ausgaben **gleich wie die Vorfassung**
 (Noten unverändert) · spk5 24/24 · spk1 nur die vorbestehende Prüfung „verfeinern-verbessert-ziel“ (wie Basis; sonst bis auf ms gleich) ·
 smoke errors []. spk4 siehe LOG.
+spk4: 3 rot von 22 (pflicht = Erwartung 4.60.0, a2-verfeinern-plus-1db, reg-ki1-test – alle vorbestehend wie Basis/Vorfassung; a3-nachbau-zeit
+jetzt grün, Vorfassung 4 rot).
+
+## Endfassung 92ce19ff (reg/rund.sh, nacheinander)
+spkfix-test **11/11 zweimal** (EXTRA um spkfixMaskRange, spkfixPatch, spkfixUid ergänzt) · kgleich 90 s: 509/238/399 ms, **Median 399 ms**,
+alle drei „bereich“, Klang bitgleich zur ganzen Rechnung (−341,6 dB) · k-spkfix (Prüfer): Namen wie oben, B1 A1 → A2 RMS 0 Rest bitgleich,
+↶/↷ bitgleich · p-spkfix (Prüfer): `klNeueEbene` false, `klL1` false · ploop2 wie oben · smoke errors [].
+Pflicht: topdefs 26 / 0 doppelt / 0 Syntax · dupkeys 0 · „MS 2000“ 1× · „^  live: true,“ 1× · VERSION 4.70.0 · diff 0 `<`, 202 `>`.
+
+## Offen (nach der Nachbesserung)
+- (1) Ganz gerechnet wird weiter, wenn die Ebene schon vorher nicht zur Grundlage passte (z. B. aus 4.70.0 ohne Neu-Rechnen), ihre Noten
+  sich in derselben Op geändert haben, > 60 % betroffen sind oder die Grundlage über das bisherige Audio hinaus klingt.
+- (2) Zwei gleich laute reine Töne in einer Note (Akkord aus Sinustönen) → kein „Spitzen“-Fall, es bleibt das Raster (wie bisher).
+- (3) Nachbau einer Ebene aus einem Projekt vor dieser Fassung bekommt die Kennung beim ersten neuen Nachbau; ↶ hinter diesen Punkt
+  zeigt ihn dann nicht mehr (die Ebene hatte dort noch keine Kennung).
