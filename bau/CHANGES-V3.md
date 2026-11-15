@@ -1,3 +1,16 @@
+## 4.73.0 — Gesang reinigen: Plopps, Klicks, Brummen, Atmer, Raumton
+
+- **Neu: Gesang reinigen** (STIMME › Takes-Blatt › Säubern › Gesang reinigen: leicht │ mittel │ stark)
+  - Antippen einer Stufe prüft den Take einmal und zeigt den Befund und was die Stufe dort macht.
+  - ▶ 10 s spielt die schlimmste Stelle gereinigt vor. A/B wird dreiteilig: Roh │ Sauber │ nur Entferntes.
+  - „Anwenden“ legt eine neue Fassung an, der Roh-Take bleibt. Ein ↶ nimmt sie zurück. „Mehr ▾“ schaltet einzelne Schritte an oder aus.
+  - Gerechnet wird im Hintergrund, abbrechbar, Fortschritt in der Zustandszeile. Abspielen, Speichern und Laden nehmen die Fassung mit.
+- **Plopps:** Der tiefe Stoß wird entfernt, der gesungene Grundton läuft durch die Stelle weiter (Phase aus dem Oberton). Darüber bleibt der Klang bitgleich, nie lauter als vorher.
+- **Raumton:** Pausen mit digitaler Stille bekommen den Raumklang von nebenan. Farbe ohne Ausreißer, Pegel nie über dem der direkten Nachbarn.
+- **Klicks, Brummen, Atmer, Zischen** in fester Reihenfolge. Atmer-Marken im Marken-Editor antippen: lassen → leiser → weg. Eintrag in „Wo finde ich …?“.
+- **Flüssiger:** Große Takes werden in kleinen Scheiben kopiert. Die App stockt beim Anwenden nicht mehr (Lücken meist unter 100 ms statt bis 274 ms).
+Tests: Gesang reinigen 77/83 (offen: Klicks Take A gefunden 16/20 und 2× Rest > 3 dB, Raumton Take A Pegel/Farbe, 3-min-Kette × 3 Zeitgrenze), Prüfer-Kern 55/60, Gesang 61/61 · 14/14 · 15/15, Chor 82/82, Begleiter 57/59 (wie 4.72), Fokus 26/26 + 44/51 (Zeit unter Last), Einzelspuren 51/51 · 87/87 · 21/21, mehrere Clips 114/118 (Zeit unter Last), Transponieren 81/81, Spektral-Auswahl 98/98 · 72/72, Spektral-Kleinfehler 11/11, Szenen-Drums 17/17 + 41/41, Import, Echttest 52/53 · 53/53, Spektral wie 4.72.
+
 ## 4.72.0 — Spektral: Gefundenes ausblenden, Fokus auf den Rest; Einzelspuren mit dem Begleiter; kleinere Online-Fassung
 
 - **Spektral → Ansicht ▾ → Fokus: Alles │ Nur Rest │ Nur Gefundenes**
