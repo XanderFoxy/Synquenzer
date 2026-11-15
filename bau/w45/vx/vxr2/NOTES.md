@@ -33,7 +33,7 @@ Sonde `work/rv1s-test.mjs` mit `RV1_PROBE` (Prüfsummen von Take und Quelle, Erk
   (Prüfung 7 und 3 verlangen Anker/Anlauf bitgleich zu Op 'vxa' an der gehörten Fassung; Abweichung 3,6 ms / 10 ms) → zurückgenommen.
 
 ### Haken-Liste (außerhalb des Blocks, je eine Zeile, typeof-geschützt, Kommentar „VXR2“)
-1. `wpDetect`: `r = typeof vxr2Det === 'function' ? await vxr2Det(b) : await wpCall({op: 'det', …})`
+1. `wpDetect`: `r = typeof vxr2Det === 'function' ? await vxr2Det(b, id) : await wpCall({op: 'det', …})` (Nachbesserung: `id` dazu, s. „Prüfung“)
 2. `vx2Marks` (VX2-Block), erste Zeile im async-Teil: `if (typeof vxr2Marks === 'function') { const v = await vxr2Marks(id, b, raw, rn); if (v !== undefined) return v; }`
 Block: `/* ===== VXR2-BEGIN … VXR2-END ===== */` direkt nach `IMP2B-END`. Neue Namen: VXR2, vxr2Off, vxr2Det, vxr2Marks (+ `window.__vxr2`).
 Nichts Sichtbares, keine Knöpfe, VERSION bleibt 4.74.0.

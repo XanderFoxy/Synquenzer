@@ -52,7 +52,7 @@ Speicher: Zerlegen selbst braucht je Streifen nur wenige MB (Streifen 128 Rahmen
 die Spitze ist das Dokument (PCM Int16 + Mitte Float32 ≈ 95 MB für 3 min Stereo) plus die Seite. `Runtime.getHeapUsage` des Workers (CDP)
 zeigt nur 3 MB, weil die großen Typed Arrays außerhalb des JS-Heaps liegen – darum RSS als Maß.
 
-## Pflicht / Regression (Endfassung md5 `d6b3289dcc42e242bc8465d69ee7bb5c`, Basis `b66de3cbd5c2d66019c5c0c3d199e06c`)
+## Pflicht / Regression (erste Abgabe md5 `d6b3289dcc42e242bc8465d69ee7bb5c`, Basis `b66de3cbd5c2d66019c5c0c3d199e06c`; Endstand nach Prüfung s. unten)
 topdefs „Skripte 26, Namen 7926, doppelt 0, Syntaxfehler 0“ · dupkeys „0 doppelte Schlüssel“ · Rauchtest `errors []` (`smoke-zrl1.png`) ·
 „MS 2000“ 1× · „  live: true,“ 1× · VERSION '4.74.0'.
 
@@ -85,3 +85,26 @@ Fremde Paketordner unberührt: Tests, die neben sich schreiben, liefen als Kopie
 2. Auf dem iPhone selbst ungemessen (Faktor dort ähnlich erwartet, alles reine JS-Rechnung); ein 3-min-Song braucht im Test-Chromium jetzt
    ~10–12 s, auf dem iPhone grob das 1,5–2-fache.
 3. Fortschritt bei „Alle Ebenen abtasten“ / langem Transient (A3, zweiter Teil) nicht Teil dieses Pakets.
+
+## Prüfung (unabhängiger Prüfer, 3 kleine Befunde, Freigabe empfohlen) – Nachbesserung
+Endfassung nach Prüfung: md5 **`1ba29bce71479b940331c0f02fb15b7e`** (Sicherung davor: `index.vor-pruef.html` = `d6b3289d…`, `NOTES.vor-pruef.md`).
+Diff zur Basis weiter 13 Stellen, alle im SPK1-/SPK4-Block, 9× `ZRL1`; keine Haken außerhalb.
+
+| # | Befund (Schwere) | Entscheidung | Beleg |
+|---|---|---|---|
+| 1 | `medLine` bei geradem L falsch (klein, heute ohne Aufrufer) | **behoben**: `W = 2·h + 1` als Grenze für Binärsuche und Schieben (bei ungeradem L ist W = L → für alle heutigen Aufrufer 17/9/31 dieselbe Rechnung, 2 Zeilen im SPK1-Block) | Prüfer-Skript `pruef-zrl1/medline.cjs`: L 9/16/17/31 jetzt je **0** abweichend (vorher L 16: 345/27990). Eigenes `mess/medline-alle.cjs` (L = 1…40, Gleichstände, Float-Werte): **0 / 578 665** (Vorfassung: 12 990 bei L = 2…14 gerade). Node-Kern 20 s und 3 min: Energie je Ebene und SDR bitgleich zur Basis |
+| 2 | „bitgleich“ bei `magPair` nur nach Float32 (klein) | **nur NOTES** (kein Code) | Prüfer `hypot.cjs` nachgerechnet: Float64 1,88 Mio./5 Mio. abweichend (≤ 4,4e-16 rel. = 1 ULP), Float32 0. Zusätzlich die beiden Aufrufer, die vor dem Speichern dB rechnen (Spektrogramm-Bytes `round(dB·255/120)`, Noten-Übersicht `co.v` Float32): `mess/hypot-db.cjs` je **0 / 5 Mio.** Formulierung oben auf „gemessen, nicht bewiesen“ geändert |
+| 3 | Bericht: spk4-Basisvergleich ungleich vollständig, 3-min-Faktor zu niedrig (klein) | **NOTES ergänzt + spk4 neu gemessen** | Im ersten Basis-Lauf (`basis-lauf/`) fehlte der Browser-Teil von spk3 (11 statt 17 Prüfungen) und `reg-spk2-test` → „6 vs 3 FEHLER“ war kein Vergleich gleicher Mengen. Belege für die 3 Zusatz-Fehler: Klang-Probe des Prüfers (`spk3-klang-probe.mjs kB kA`, Last ~1,6: va2/fm/pad/lead 3.89/2.06/0.96/0.95 **auf beiden Seiten**, Texte gleich); spk2 direkt (`s2a`/`s2b`): Index und Basis je 27/30 mit **denselben 3** FEHLERN, gleiche Werte (noten-erkannt 12/51, Oktave 5). **Neuer spk4-Lauf auf der Endfassung: 4 FEHLER/23** – a3-andere-klaenge (va2 3.89 → 3.89) und a3-nachbau-zeit jetzt **OK**; übrig nur pflicht (erwartet 4.60), verfeinern +1 dB, reg-ki1 quer (alle drei auch Basis) und reg-spk2 27/30 (= Basis direkt). 3-min-Faktor bei geringer Last in der Messtabelle nachgetragen: **×1,59** (Prüfer) / **×1,55** (Endstand) statt ×1,24–1,34 |
+
+### Endstand (nach Nachbesserung)
+- **Paket-Test** `zrl1-test.mjs index.html basis.html` (`RUNDEN3=2`, Ausgabe `zrl1-test.pruef.out`, `zrl1-test.json`): **ALLE OK**.
+  20 s Median **1146 ms** (1267/1086/1146) gegen Basis **1841 ms** (1841/1846/1654) = ×1,61, Ziel ≤ 2,5 s erfüllt (Last 0,8–0,9);
+  3 min **8683/9154 ms** gegen **13947/13778 ms** = ×1,55 (Last 1,2–1,3); SDR 20 s 8,545/4,373/9,945 und 3 min 5,642/0,611/9,933 je ±0,000,
+  Energie-Abweichung je Ebene 0; RSS-Spitze 3 min 405 MB (Basis 393), Ziel ≤ 500 MB; Konsole [].
+- **Node-Kern** (`mess/zr-node.mjs`, `DUMP=1`, Ausgaben `mess/pruef-{20,180}-*.json`): 20 s 1438 vs 2087 ms, 3 min 9430 vs 13867 ms; SDR und Energie je Ebene identisch.
+- **Regression** (`reg/run.sh`, Last 2–11,6 durch andere Agenten; alte Logs in `reg/vor-pruef/`):
+  spk5 24/24 · spk6 26/26 · spk11 41/0 · spk11b 17/0 · fokus1 26/0 · spkfix 11/11 · spk1 17/18 (verfeinern-verbessert-ziel 4,37 → 4,36, vorbestehend, Basis gleich) ·
+  spk4 4 FEHLER/23 (alle vorbestehend bzw. = Basis, s. Befund 3).
+- **Pflicht**: topdefs „Skripte 26, Namen 7926, doppelt 0, Syntaxfehler 0“ · dupkeys „0 doppelte Schlüssel“ · Rauchtest `errors []`
+  (`smoke-pruef.png` byte-gleich mit `smoke-a4.png` der Basis) · „MS 2000“ 1× · „  live: true,“ 1× · VERSION '4.74.0'.
+- Haken außerhalb der Blöcke: keine. Sichtbarer Unterschied: keiner.
