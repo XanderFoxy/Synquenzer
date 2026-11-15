@@ -4,3 +4,4 @@
 - 01:54 Block SPK11 (nach SPK6-END) + 2 Haken (spk1ViewDd, spk1MoreDd) eingebaut.
 - 01:58 Erster Lauf 428x926: 13 OK / 5 FEHLER – Zerlegen gibt nur Drums+Bass (Test legt jetzt Pads-Ebene an), IMP1 fasst S+R zu einem Teil (Läufe-Regel), Kick auch auf Snare-Schlägen.
 - 02:00 Lauf 2 428x926: 17 OK / 1 FEHLER (Drums: Kick 89 statt 64 – zusätzliche Treffer aus Bass-Resten in der Drum-Ebene; Test prüft jetzt Trefferquote an den echten Stellen + meldet Zusatztreffer).
+- 02:02 Drum-Einteilung neu (Snare = Mitten ≥ 1,9× Tiefen, Kick = tief + kurzes Abklingen < 0,6 nach 100 ms); offline work/hits.mjs: Kick 31/32, Snare 32/32 (Bass-Rest 0,3).

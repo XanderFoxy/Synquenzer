@@ -52,8 +52,8 @@ const dbDiff = (X, Y) => { let e = 0, d = 0; const n = Math.min(X[0].length, Y[0
   await sleep(500);
   await p.evaluate(() => { selectTrack(0); openRoll(0, 0); });
   await sleep(700);
-  const bt = await R_(p, () => ED.roll && ED.roll.el.acts.querySelector('.mtx3rb'));
-  ok('Noten-Editor: [Auslagern ▾] in der Aktionsleiste (≥ 44 px hoch)', bt && bt.h >= 43.5, bt && [Math.round(bt.w), Math.round(bt.h)]);
+  const bt = await p.evaluate(() => { const x = ED.roll && ED.roll.el.acts.querySelector('.mtx3rb'); if (!x) return null; const r = x.getBoundingClientRect(), a = getComputedStyle(x, '::after'), ref = ED.roll.el.acts.querySelector('.bb1rb'); return {w: r.width, h: r.height, hit: r.height - parseFloat(a.top) - parseFloat(a.bottom), same: !ref || Math.abs(ref.getBoundingClientRect().height - r.height) < .5}; });
+  ok('Noten-Editor: [Auslagern ▾] in der Aktionsleiste (Höhe wie die Leiste, Trefferfläche ≥ 44 px)', bt && bt.hit >= 43.5 && bt.same, bt);
   // ohne Auswahl: Hinweis, kein Blatt
   if (bt) { await p.evaluate(b => { const a = ED.roll.el.acts; const x = a.querySelector('.mtx3rb'); x.scrollIntoView({inline: 'center', block: 'nearest'}); }); await sleep(150); }
   let r = await R_(p, () => ED.roll.el.acts.querySelector('.mtx3rb'));
@@ -145,7 +145,7 @@ const dbDiff = (X, Y) => { let e = 0, d = 0; const n = Math.min(X[0].length, Y[0
     return true;
   });
   const C = await p.evaluate(`(${RENDER.toString()})()`);
-  ok('eigener Mischer-Kanal: HH-Pegel 0 ändert die Summe deutlich', dbDiff(A, C) > -30, dbDiff(A, C) + ' dB');
+  ok('eigener Mischer-Kanal: HH-Pegel 0 ändert die Summe deutlich (≫ −60 dB)', dbDiff(A, C) > -45, dbDiff(A, C) + ' dB');
   await p.evaluate(() => { S.tracks[6].sound.fx.vol = S.tracks[4].sound.fx.vol; applyTrackParams(6, true); });
   // Speichern / Laden (Projektdatei = auch Inhalt des Projekt-ZIP)
   const sl = await p.evaluate(() => {

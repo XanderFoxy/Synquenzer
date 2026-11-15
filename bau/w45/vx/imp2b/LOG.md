@@ -27,3 +27,16 @@
   (NOTES/LOG, work/*.mjs/*.sh, chr3/chr2-test-imp2b.mjs; Audiodateien werden per Muster gefunden).
   chr2-test Original an index.html bleibt 3 FEHLER (iso-befund), Kopie chr2-test-imp2b 82/82 (index und basis). rv1-test 4/53 (index) vs 1/53 (basis).
   Kein Code eingebaut (kein IMP2B-Block): rv1 ist ohne Eingriff in den Gesang-Editor nicht ≥ 52/53 zu bekommen.
+
+## Prüfung (unabhängig, nichts repariert) – Befunde: PRUEFUNG.md, Läufe: pruef/out/
+- 01:22 Start Prüfung. index.html sha256 a4d6e9ef… / basis.html 51da4b6b… unverändert; imp1Core index = vx/imp2 (89e25b1d…), Diff nur in imp1Core.
+- 01:26–01:41 pruef/lauf.sh nacheinander: Pflicht · chr2 Original index 3 FEHLER (zahlengleich) / basis 82 · chr2-test-imp2b index 82 / basis 82 ·
+  rv1 index 4/53 / basis 1/53 (zeilengleich mit IMP2B) · imp1 ALLE OK (48) 131 s · vx1 61/61 · vx2 14/14 · vx3 15/15 · imp2-node index ALLE OK
+  (basis: #14 Spanne 11,87, #1 1,10 BPM) · fft ALLE OK (6) · krumm ALLE OK (37) · sweep −51,7 dB.
+- 01:42–01:52 pruef/lauf2.sh: tempo-raten (14 synth. Fälle × 4 Raten: Projekt-Tempo richtig bei 48 kHz Basis 14/14, IMP2 12/14) · synth. rv1
+  (Import → Editor → Quantisieren → Chor): IMP2 61/61, Basis 2/61 (Chor-Messung) · Gegenprobe Basis #10 t1 0,388: Knacken 3,93 (IMP2B: 4,05), 2× wiederholt.
+- 01:53–01:58 Sonden: imp2Down 48k gegen 44,1k −70 dB, Tempo kippt trotzdem (Schätzer unstetig); Mutation Versatz-Schätzer der Kopie ±0,7 ms; NaN-Rahmen s 94 501.
+- Pflicht (index.html, 02:01): topdefs Skripte 26, Namen 7474, doppelt 0, Syntaxfehler 0 · dupkeys 0 doppelte Schlüssel · smoke title SYNQUENZER errors []
+  (pruef/out/smoke.png) · „MS 2000“ 1× · „^  live: true,“ 1× · VERSION 4.66.0 (= Basis) · neue Wörter nur IMP2-Fachwörter/Bezeichner, keine Marke ·
+  keine Datensatz-/Produktnamen in neuen Dateien (IMP2B + pruef/).
+- 02:01 PRUEFUNG.md geschrieben: S1 (rv1 4/53, Ziel verfehlt), M1 (48-kHz-Projekt-Tempo Vokal 12/14 statt 14/14), M2 (spk1Grid nutzt imp1Core), M3 (rv1-Chor-Messung), L1–L4.

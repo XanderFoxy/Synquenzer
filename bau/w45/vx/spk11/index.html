@@ -104100,14 +104100,18 @@ function spk11Hits(x, sr, stepS, nStep) {
     E[0][f] = Math.sqrt(sl / H); E[1][f] = Math.sqrt(sm / H); E[2][f] = Math.sqrt(sh / H);
   }
   const O = E.map(e => { const o = new Float32Array(F); for (let f = 2; f < F; f++) { let m = 0, c = 0; for (let j = Math.max(0, f - 8); j < f - 1; j++) { m += e[j]; c++; } o[f] = Math.max(0, e[f] - (c ? m / c : 0)); } return o; });
-  const pk = [[], [], []];
-  for (let k = 0; k < nStep; k++) { const c = k * stepS, f0 = Math.max(0, Math.floor((c - 0.03) * sr / H)), f1 = Math.min(F - 1, Math.ceil((c + 0.035) * sr / H)); for (let b = 0; b < 3; b++) { let m = 0; for (let f = f0; f <= f1; f++) m = Math.max(m, O[b][f]); pk[b].push(m); } }
+  const pk = [[], [], []], dk = [];   // dk: Abklingen der Tiefen 100 ms nach dem Einsatz (Kick kurz, ein Bass-Rest klingt)
+  for (let k = 0; k < nStep; k++) {
+    const c = k * stepS, f0 = Math.max(0, Math.floor((c - 0.03) * sr / H)), f1 = Math.min(F - 1, Math.ceil((c + 0.035) * sr / H));
+    for (let b = 0; b < 3; b++) { let m = 0, mf = f0; for (let f = f0; f <= f1; f++) if (O[b][f] > m) { m = O[b][f]; mf = f; } pk[b].push(m); if (!b) { let e0 = 0; for (let f = mf; f <= Math.min(F - 1, mf + 4); f++) e0 = Math.max(e0, E[0][f]); const f2 = Math.min(F - 1, mf + Math.round(0.1 * sr / H)); dk.push(e0 > 0 ? E[0][f2] / e0 : 1); } }
+  }
   const ref = pk.map(a => { const s = a.slice().sort((p, q) => p - q); return Math.max(1e-4, s[Math.floor(0.97 * (s.length - 1))] || 0); });
   const out = [];
   for (let k = 0; k < nStep; k++) {
-    const nl = pk[0][k] / ref[0], nm = pk[1][k] / ref[1], nh = pk[2][k] / ref[2];
-    if (nl > 0.35 && nl > 0.5 * nm) out.push({k, w: 'k', v: Math.min(1, 0.45 + 0.55 * nl)});   // tief und nicht nur der Rest eines Snare-Schlags
-    if (nm > 0.45 && nm > 0.7 * nl) out.push({k, w: 's', v: Math.min(1, 0.45 + 0.55 * nm)});
+    const l = pk[0][k], m = pk[1][k], hh = pk[2][k], nl = l / ref[0], nm = m / ref[1], nh = hh / ref[2];
+    const sn = nm > 0.2 && m >= 1.9 * l;                                                    // Snare: Mitten-Rauschen, Tiefen klein
+    if (nl > 0.35 && l >= 0.5 * m && dk[k] < 0.6) out.push({k, w: 'k', v: Math.min(1, 0.45 + 0.55 * nl)});   // Kick: tief, kurz
+    if (sn) out.push({k, w: 's', v: Math.min(1, 0.45 + 0.55 * Math.min(1, nm / 0.6))});
     else if (nh > 0.35) out.push({k, w: 'h', v: Math.min(1, 0.35 + 0.5 * nh)});
   }
   return out;
