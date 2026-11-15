@@ -5,3 +5,4 @@
 16:33 | load average: 7.06, 5.63, 4.47 | Schritt 2 (Sicherung index.vor-lt1b.html): lt1GlChunks + Haken in spk1GlDraw wieder entfernt (A/B unter Last ohne sicheren Gewinn, mehr Bilder > 50 ms); bleibt: c (2 Haken)
 16:36 | load average: 10.84, 7.31, 5.23 | fokus1 7 FEHLER / fokus1k 1 FEHLER = nur Long-Task-Grenzen unter Last 7-8 (Endfassung, Spektral-Code = Basis); Gegenlauf auf basis.html eingereiht
 16:45 | load average: 5.99, 5.66, 5.33 | Regression fertig (reg.log), Pflicht ok, NOTES.md fertig; Endfassung md5 88a53dabe895d842acfdff7ff26f1844
+16:56 | load average: 5.51, 7.58, 6.70 | Nachbesserung gestartet (Prüfer-Befunde 1–4); Profil imp1Place 90 Takte
