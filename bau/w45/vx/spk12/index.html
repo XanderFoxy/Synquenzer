@@ -105095,13 +105095,14 @@ function spk12DspMake(Z2, X) {
     if (cmax < 0) return Object.assign(base, {cells: 0, ms: performance.now() - T0});
     return Object.assign(base, {c0: ca + cmin, nc: cmax - cmin + 1, cols: cols.slice(cmin, cmax + 1), t0: (ca + cmin - 0.5) * hD / sr, t1: (ca + cmax + 0.5) * hD / sr, f0: fr(rmin - 0.5), f1: fr(rmax + 0.5), ms: performance.now() - T0});
   };
-  ops.spk12trans = (d, m) => {   // Transienten: Spektral-Fluss (dB, Vergleich mit 2 Rahmen vorher, Max-Filter ±1 Bin) ab Höhengrenze, Spitzen über dem örtlichen Mittel
+  ops.spk12trans = (d, m) => {   // Transienten: Spektral-Fluss (log. verdichtet, Vergleich mit 2 Rahmen vorher, Max-Filter ±1 Bin) ab Höhengrenze, Spitzen über dem örtlichen Mittel
     const T0 = performance.now(), sr = d.meta.sr, x = d.mid, N = 1024, H = 256, NB = N / 2 + 1, dur = x.length / sr;
     const t0 = Math.max(0, Math.min(+m.t0, +m.t1)), t1 = Math.min(dur, Math.max(+m.t0, +m.t1)), hg = Math.max(0, +m.hg || 0), kmin = Math.max(1, Math.ceil(hg * N / sr)), del = Math.max(0.2, +m.del || 3);
     const a0 = Math.max(0, Math.floor((t0 - 0.15) * sr)), nF = Math.max(3, Math.ceil(((Math.min(dur, t1 + 0.12)) * sr - a0) / H)), D = new Float32Array(nF);
-    const re = new Float64Array(N), im = new Float64Array(N), Y = [null, null, null], nb = NB - kmin;
+    const re = new Float64Array(N), im = new Float64Array(N), Y = [null, null, null], nb = NB - kmin; let e2 = 0, ne = 0;
+    for (let i = a0; i < Math.min(x.length, a0 + nF * H + N); i += 4) { e2 += x[i] * x[i]; ne++; } const gam = 100 / Math.max(1e-3, Math.sqrt(e2 / Math.max(1, ne)));   // Pegel-bezogene Log-Kompression
     for (let n = 0; n < nF; n++) {
-      const g = spk12Mag(x, a0 + n * H, N, re, im), y = new Float32Array(NB); for (let k = 0; k < NB; k++) y[k] = Math.max(-90, 20 * Math.log10(g[k] + 1e-12));
+      const g = spk12Mag(x, a0 + n * H, N, re, im), y = new Float32Array(NB); for (let k = 0; k < NB; k++) y[k] = 20 * Math.log10(1 + gam * g[k]);
       const p = Y[0]; let s = 0;
       if (p) for (let k = kmin; k < NB; k++) { const r = Math.max(p[k], p[Math.max(0, k - 1)], p[Math.min(NB - 1, k + 1)]), v = y[k] - r; if (v > 0) s += v; }
       D[n] = p ? s / nb : 0; Y[0] = Y[1]; Y[1] = y;
