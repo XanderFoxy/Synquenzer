@@ -1,7 +1,7 @@
 # MTX3b – Einzelspuren von DRUMS: die offenen Punkte (Notizen, 15.11.2026)
 
 index.html = basis.html (Kandidat 4.68.0, rel-4680) + Block `/* MTX3B-BEGIN … MTX3B-END */` direkt hinter `/* MTX3-END */`
-+ 24 Haken-Zeilen (je ein Einzeiler mit `/* MTX3B … */` und `typeof`-Schutz; keine vorhandene Zeile geändert, `diff` = nur `>`-Zeilen).
++ 25 Haken-Zeilen (je ein Einzeiler mit `/* MTX3B … */` und `typeof`-Schutz; keine vorhandene Zeile geändert, `diff` = nur `>`-Zeilen).
 `block.js` = der Block allein, `ins.cjs` = baut index.html aus basis.html (Anker je Haken eindeutig geprüft).
 
 | Stelle | Haken |
@@ -21,6 +21,7 @@ index.html = basis.html (Kandidat 4.68.0, rel-4680) + Block `/* MTX3B-BEGIN … 
 | Bild-Schleife (nach laufFrame) | `mtx3bFrame(bAud)` – Lauflicht, Nachziehen |
 | undoApply (Clip-Zweig) | Drum-Schritt-Editor der Einzelspur bleibt nach ↶/↷ offen (vorher closeRoll) |
 | pageDrumSteps (nach d1Tools) | `mtx3bDrumTools` – [Auslagern ▾] |
+| gr2RemixDo (nach gr2VerPut) | Stil-Muster-Version einer Einzelspur ohne D1-Spuren (wie DRUMS) |
 
 ## Entscheidungen
 1. **Remix doppelt (GR2/GEN4/GEN3/GR1):** DRUMS und ihre Einzelspuren werden *zusammen* umgerechnet (Partner-Clip je Spur = gleiche
@@ -52,16 +53,23 @@ index.html = basis.html (Kandidat 4.68.0, rel-4680) + Block `/* MTX3B-BEGIN … 
 - Treffer je Pad im Song (int54MidiClips), Bezug ohne Aufteilen: Stil-Muster kick 12 · hatC 48 · hatO 8 · snare 6 · clap 6, Stil 70 %
   kick 12 · hatC 16 · snare 6 · clap 2 · hatO 2 · perc 1 → **mit Einzelspuren gleich, Doppel 0**. Basis 4.68.0: Stil-Muster
   hatC 48 (DRUMS) + 16 (HH ZU) = **16 Doppel-Schläge**, Rolle der Einzelspur null (ihr HH wird nicht umgebaut), Matrix-Remix: HH landet auf DRUMS, SNARE fehlt in der neuen Szene.
-- Summen-Audio Stil-Muster aufgeteilt ↔ ohne Aufteilen: ≤ −60 dB (gemessen −12x dB, Math.random fest).
+- Summen-Audio Stil-Muster aufgeteilt ↔ ohne Aufteilen: −119,9 dB (Song-Render, Math.random fest; Grenze −60 dB).
 - GEN4 Szene: Schläge gesamt 14 = 14, jede Spur nur ihr Pad, Saat bleibt, 1 ↶. Matrix-Remix: Einzelspuren bekommen Drum-Clips.
   Grundmuster: DRUMS ohne ausgelagerte Pads. Stil-Klang: Drive/Hall/Echo gleich DRUMS, Noten gleich, 1 ↶.
 - Tastatur: Overdub +4 Schläge GM 42 / 0,1; neuer Slot 4 Schläge GM 42 / 0,1 + Saat. L5: Rundreise gleich (a/p/r/m/D1).
-- Auslagern ganze Töne: Summen-Audio −124,9 dB; Schritte: 4 von 6 gewählt → neue Spur 4, DRUMS 2 + Szene 2 unverändert; Rest „dazu“.
+- Auslagern ganze Töne: Summen-Audio −130,4 dB; Schritte: 4 von 6 gewählt → neue Spur 4, DRUMS 2 + Szene 2 unverändert; Rest „dazu“.
 - Quer: nach Aufteilen Seite 2 (Spuren 6, 7 im Bild). Schritt-Editor der Einzelspur: 16 Zellen = HH-Schritte, Tipp = GM 42 / 0,1,
   ↶ in der Leiste, CHANCE-Spur ziehen setzt p, ROLLE ↔ SCHRITTE, Lauflicht, keine Konsolenfehler.
 
 ## Regression (nacheinander, reg/)
-siehe LOG.md (mtx3-test, mtx3p-test – Kopie: M6 erwartet jetzt Drum-Rolle 'dr' statt null für Einzelspuren –, ux2-test gegen Basis, imp1-test).
+mtx3-test 51/51 · mtx3p-test 21/21 (Kopie reg/mtx3p-test.mjs: M6 erwartet jetzt Drum-Rolle 'dr' statt null für Einzelspuren – keine
+Synth-Rolle, Absicht) · ux2-test 22 OK / 5 FAIL = basis.html zeilengleich (alte Erwartungen vor MTX) · imp1-test ALLE OK (116 s).
+Nach den letzten zwei Kleinigkeiten (Blatt-CSS, D1-Haken) erneut: mtx3b 67/67, mtx3 51/51, mtx3p 21/21, smoke errors [].
+
+## Funk (sichtbar anders – kurz sagen)
+- Drum-Editor › SCHRITTE: neuer Knopf [Auslagern ▾] (quer in der Werkzeug-Zeile, hochkant rechts in der Zeile „Szene n“).
+- Clip einer Einzelspur öffnet jetzt den Drum-Schritt-Editor (statt Klavierrolle); [ROLLE] bleibt einen Tipp entfernt.
+- Stil-Blatt (GEN4) listet Einzelspuren nicht mehr einzeln – sie folgen der Wahl für DRUMS.
 
 ## Offen
 - Begleiter (BEG1) spielt live alle Pads auf DRUMS (kein Doppel im Clip, aber HH dann über den DRUMS-Kanal).

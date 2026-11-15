@@ -5,3 +5,4 @@
 - 04:18 Pflicht: topdefs 26/7615/0/0 · dupkeys 0 · smoke errors [] (smoke.png) · MS 2000 1× · live 1× · VERSION 4.68.0 (alle VERSION-Zeilen = Basis) · basis.html = rel-4680 · diff Basis→Paket nur Zusätze (461 Zeilen = 445 Block + 16 Haken) · Markennamen 0 · keine Emojis
 - 04:18 Regression (reg.sh → reg.log, mess/ = Verweis auf ../spk11/mess): spk6 ALLES OK · spk5 ALLES OK 24 · spk1 1 FEHLER verfeinern-verbessert-ziel (= Basis, schon in SPK11/4.68) · spk8-seite 14/0 · spk11-test läuft
 - 04:18 NOTES.md geschrieben (Haken, Entscheidungen, Messungen, Offen)
+- 04:19 Regression fertig: spk11-test 38 OK / 3 FEHLER (nur drums-auf-kit je Größe = bekannt offen in 4.68 „Szenen 38/41“). Fremd-Fotos/Ergebnisse der Regression nach reg/ verschoben; fotos/ = nur SPK12 (15 Fotos).

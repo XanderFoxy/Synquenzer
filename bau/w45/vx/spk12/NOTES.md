@@ -66,7 +66,7 @@ VERSION unverändert 4.68.0. Ein Block `/* SPK12-BEGIN */ … /* SPK12-END */` (
 ## Pflicht
 topdefs 26 / 7615 / doppelt 0 / Syntaxfehler 0 · dupkeys 0 · smoke errors [] (smoke.png) · „MS 2000“ 1× · „^  live: true,“ 1× ·
 VERSION 4.68.0 unverändert · keine Marken-/Produktnamen (0 im Paket) · keine Emojis.
-Regression (reg.sh → reg.log): siehe LOG.md.
+Regression (reg.sh → reg.log, Ausgaben in reg/): spk6 ALLES OK · spk5 ALLES OK 24 · spk1 1 FEHLER verfeinern-verbessert-ziel (= Basis) · spk8-seite 14/0 · spk11-test 38/3 (nur drums-auf-kit = bekannt offen in 4.68).
 
 ## Offen (Teil 2/3 und Rest)
 - Plan-Schritte 4–9: Transient-Auswahl, Lasso/Ellipse (Platz: Liste am Rechteck-Knopf ist vorbereitet), Obertöne Rang/Häkchen,
