@@ -78,3 +78,25 @@ Ursachen (CPU-Profil + LoAF, je Lauf mehrfach):
   nicht bei Last 2–3 (frühere Läufe). Kein JS auf dem Hauptfaden → nicht durch Scheiben lösbar. Verdacht: Chromium wartet für einen GC auf
   einen Sicherpunkt des Workers (geteilter Heap). Offen; auf dem iPhone (JavaScriptCore) nicht zu erwarten. Mit Chrome-Trace (devtools.timeline)
   trat er in jedem Lauf auf → Trace-Messungen hier unbrauchbar, Messung per LoAF.
+
+## 2 Raumton-Klangfarbe (VOXR1D-RT, nur `room()` im Kern + Hilfsfunktion `roomBands`)
+Befund: Die Farbe der Füllung kam aus dem Leistungsmittel der Nachbar-Fenster (±300 ms, rauschartige Rahmen). Ein Fenster mit Gesangsrest
+oder Atmer bestimmte dann die Farbe (Take C, Lücke 9,46 s: 250 Hz +9,7 dB, 4–8 kHz −3 dB gegenüber dem Original an der Stelle).
+Neu: je Nachbar-Fenster ein eigenes Spektrum; je Terzband (200 Hz–12 kHz) zählt das **35-%-Quantil der Fenster** (Pausen-Boden, Ausreißer
+weg) statt des Mittels, innerhalb des Bands bleibt die gemittelte Form. Pegel unverändert (need = Leistung daneben). `{med: 0}` = wie vorher.
+Verworfen: Form nur aus mehreren Pausen des ganzen Takes (Take C hat nur 3 ruhige 200-ms-Fenster, alle im Anlauf bei −72 dB; die Pause bei
+9,46 s liegt bei −60 dB und klingt anders); Mischung Nachbarn/Take-Form 30/50 % (Lücke 2 wieder 4,1–4,3 dB); Median statt Quantil (4,9).
+Prüfer-Kern, Klangfarbe je Lücke (max. Abweichung vom Mittel der Oktaven, Ziel ≤ 4 dB):
+| Take | vorher | Quantil 0,25 | **0,35 (gewählt)** |
+|---|---|---|---|
+| C@48 | [2,5, **9,7**] | [3,5, 1,5] | **[3,0, 2,0]** |
+| C@44 | [2,8, **6,6**] | [4,0, 1,4] | **[3,8, 1,2]** |
+Pegel je Lücke unverändert [+0,3, −1,9] dB. „5 Lücken gefüllt“ bleibt FEHLER im Prüfer-Kern: Der Prüfer findet selbst nur 2 (C) bzw. 0 (B@48)
+Pausen für seine Schnitte (holes.length ≠ 5) – nicht in der App lösbar; alle gefundenen Lücken liegen im Pegel innerhalb ±3 dB.
+
+## 3 Klicks (nur geprüft, nicht geändert)
+Prüfer-Kern INFO (Abzug > 2 kHz, Fehler gegen sauber): B@44 Klick 6 **−4,1 dB** (die Reparatur fehlt dort mehr Höhen als der Klick hatte –
+Interpolation über einen Bereich mit gesungenen Obertönen), B@44 Klick 18 1,5 dB, C@48 Klick 20 2,1 dB; B@44 Klick 19 nicht gefunden (0).
+Nicht angefasst: eine Änderung an der Klick-Reparatur braucht den vollen Kern- und Entwickler-Lauf mit allen 4 Takes; in diesem Schritt
+keine Zeit mehr ohne Risiko. Ansatz für den nächsten Schritt: Reparatur-Spanne auf die Klick-Dauer begrenzen bzw. Ersatz nur annehmen, wenn
+seine Energie > 2 kHz nicht unter die der Nachbarschaft fällt (sonst Mischung mit dem Original).
