@@ -109241,6 +109241,7 @@ function lt1PreStart(c) {   // Haken in imp1Run nach „fertig“
           if (!b) { lt1PreDrop(); return; } pre.buf = b; pre.d = b.getChannelData(0);
         } else { const d = pre.d, pc = pre.pcm; while (pre.f < n && performance.now() - t0 < 6) { const e = Math.min(n, pre.f + 131072); for (let i = pre.f; i < e; i++) d[i] = pc[i] * K; pre.f = e; } if (pre.f >= n) { pre.ok = true; pre.d = null; LT1.preOk = (LT1.preOk || 0) + 1; } }
       } catch (e) { lt1PreDrop(); return; }
+      const dt = performance.now() - t0; if (dt > (LT1.preMs || 0)) LT1.preMs = Math.round(dt * 10) / 10;   // längste Scheibe (Messung)
       pre.tm = setTimeout(step, pre.ok ? 1000 : 0);   // fertig: liegt bereit, solange das Blatt offen ist (jede Sekunde nachsehen)
     };
     pre.tm = setTimeout(step, 0);

@@ -8,3 +8,4 @@
 16:56 | load average: 5.51, 7.58, 6.70 | Nachbesserung gestartet (Prüfer-Befunde 1–4); Profil imp1Place 90 Takte
 17:01 | load average: 2.67, 5.17, 5.93 | Schritt 3 (Sicherung index.vor-lt1c.html): Take im Leerlauf vorbereiten (lt1PreStart/lt1Take/lt1PreBuf/lt1StoreJobs) + 4 Haken (imp1Run, imp1Take, tkToBuffer, tkStore)
 17:02 | load average: 3.98, 5.04, 5.82 | Probelauf s10 926x428: imp1Place 28 ms (basis 122), keine Long Task (basis 124), Audio-Puffer + Speicher-Stücke gleich; Vollauf A/B gestartet
+17:07 | load average: 4.58, 6.03, 6.12 | A/B s1–s11 beide Größen: alle gleich (außer s8 Wiedergabe-Stand), Audio gleich; Nachlauf s3/s10 REPS=3 mit Scheiben-Messung (LT1.preMs) gestartet

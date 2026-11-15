@@ -70,7 +70,7 @@ for (const [W, H] of VIEWS) for (const cn of ONLY) for (let rep = 0; rep < REPS;
             const ids = Object.keys(S.takes || {}), out = [];
             for (const id of ids) { const m = S.takes[id], b = TK.buf.get(id); const pc = await tkPcm(id);
               out.push([m.len, m.sr, m.route, m.name, JSON.stringify(m.imp || null), m.chunks.length, b ? b.length + ':' + b.sampleRate + ':' + h(new Uint32Array(b.getChannelData(0).buffer, b.getChannelData(0).byteOffset, b.length)) : '-', pc ? h(new Uint16Array(pc.buffer, pc.byteOffset, pc.length)) : '-']); }
-            out.sort((a, b) => a[0] - b[0]); return {t: out, hit: typeof LT1 !== 'undefined' ? [LT1.preOk || 0, LT1.preHit || 0] : '-'}; });
+            out.sort((a, b) => a[0] - b[0]); return {t: out, hit: typeof LT1 !== "undefined" ? [LT1.preOk || 0, LT1.preHit || 0, LT1.preMs || 0] : "-"}; });
           if (process.env.STOP) { await p.evaluate(() => { if (R.playing) togglePlay(); }); await p.waitForTimeout(1500); }
           row.after = await sig(p);
           row.undo = await p.evaluate(() => { undo(); return 1; }); await p.waitForTimeout(1200); row.afterUndo = await sig(p);
