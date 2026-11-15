@@ -61935,6 +61935,7 @@ function vr1EssCore(y, sr, amt, o) {
   const it = g(); if (o.gen) return it; let r; while (!(r = it.next()).done); return r.value;
 }
 const VXR1 = {w: null, wid: 0, q: new Map(), core: null, runs: 0, last: null, prog: null, aborts: 0, slices: 0, marks: {}};
+const VR1H = {on: false, m: new WeakMap(), hit: 0, miss: 0, pre: 0, cont: 0};   // VOXR1D-LT: Test-Probe clPlayHash (siehe vr1HashOf)
 const VXR1_ORDER = ['click', 'plop', 'hum', 'hp', 'breath', 'room', 'ess'];   // Klicks vor allem (stören sonst die Detektoren), Plopps vor jedem Hochpass (sie sehen den Tiefbass), Brummen vor dem Breitband-Rauschen, Atmer nach dem Hochpass, Raumton zuletzt (füllt auch „Atmer weg“)
 function vr1Worker() {
   if (VXR1.w) return VXR1.w; if (VXR1.w === false) return false;
@@ -62039,7 +62040,7 @@ function vr1Proc(id, a) {
   if (VXR1.ab === 'weg' && !(UI.pop && UI.pop.name === 'takes')) { VXR1.ab = null; vr1WegFree(); }   // Blatt zu → wieder „Sauber“
   const key = vr1VerKey(id, m); if (!key) return null;
   const c = VXR1.ver.get(id);
-  if (c && c.key === key) { c.at = performance.now(); return VXR1.ab === 'weg' && c.weg ? c.weg : c.buf; }   // buf null = ging nicht: nicht in Schleife neu
+  if (c && c.key === key) { c.at = performance.now(); const rb = VXR1.ab === 'weg' && c.weg ? c.weg : c.buf; if (VR1H.on && rb) vr1HashPre(rb); return rb; }   // buf null = ging nicht: nicht in Schleife neu; VOXR1D-LT: Test-Probe vorrechnen
   if (!VXR1.vjob.has(id)) vr1Render(id, key, m);
   return c && c.buf ? c.buf : null;                                   // bis die neue da ist: die vorige
 }
@@ -62249,6 +62250,62 @@ function vr1Guide() {
 }
 setTimeout(vr1Guide, 0);
 if (typeof g4DspMake === 'function') { const F = Function.prototype.toString, f = g4DspMake; f.toString = () => F.call(vr1EssCore) + ';' + F.call(f); }   // G4-Worker kennt den spektralen Entzischer
+/* VOXR1D-LT: Test-Probe clPlayHash ohne Long Task (Befund: die 50–60-ms-Aufgaben beim „Anwenden“ waren die Probe selbst –
+   FNV-1a über 34,5 MB je Aufruf, alle 200 ms aus dem Warten des Prüfers; CPU-Profil voxr1d-w/prof.mjs + profan.cjs).
+   Gleicher Wert wie bisher (FNV-1a über die Bytes von Kanal 0 + ':' + Länge), aber je Inhalt gemerkt: ein schneller Prüfwert
+   (8 Akkumulatoren über 32-bit-Wörter, ≈ 5–10 ms) erkennt jede Änderung des Inhalts; dann wird neu gerechnet. Erst wenn die Probe
+   einmal benutzt wurde (Tests), werden neue Fassungen im Hintergrund in Scheiben (4 MB ≈ 6 ms) vorgerechnet – sonst kostet das nichts. */
+function vr1Fast(d) {
+  const w = new Int32Array(d.buffer, d.byteOffset, d.length), n = w.length, m = n & ~3, P = 0x01000193, Q = 0x5bd1e995;
+  let a = 0x811c9dc5 | 0, b = 0x2545f491, c = 0x9e3779b9 | 0, e = 0x7f4a7c15, a2 = 1, b2 = 2, c2 = 3, e2 = 4;
+  for (let i = 0; i < m; i += 4) { const x0 = w[i], x1 = w[i + 1], x2 = w[i + 2], x3 = w[i + 3];
+    a = Math.imul(a ^ x0, P); b = Math.imul(b ^ x1, P); c = Math.imul(c ^ x2, P); e = Math.imul(e ^ x3, P);
+    a2 = Math.imul(a2 + x0, Q) ^ (a2 >>> 15); b2 = Math.imul(b2 + x1, Q) ^ (b2 >>> 15); c2 = Math.imul(c2 + x2, Q) ^ (c2 >>> 15); e2 = Math.imul(e2 + x3, Q) ^ (e2 >>> 15); }
+  for (let i = m; i < n; i++) { a = Math.imul(a ^ w[i], P); a2 = Math.imul(a2 + w[i], Q) ^ (a2 >>> 15); }
+  return [a, b, c, e, a2, b2, c2, e2, n].map(v => (v >>> 0).toString(36)).join('.');
+}
+function vr1Fnv(u, st, end) { let h = st.h, i = st.i; for (; i < end; i++) { h ^= u[i]; h = Math.imul(h, 0x01000193) >>> 0; } st.h = h; st.i = i; }   // wie clPlayHash, fortsetzbar
+function vr1HashOf(d) {
+  const f = vr1Fast(d), e = VR1H.m.get(d);
+  if (e && e.f === f && e.h != null) { VR1H.hit++; return e.h; }
+  const u = new Uint8Array(d.buffer, d.byteOffset, d.byteLength), st = e && e.f === f && e.st ? e.st : {h: 0x811c9dc5, i: 0};
+  if (st.i) VR1H.cont++; else VR1H.miss++;
+  vr1Fnv(u, st, u.length); const h = st.h.toString(16) + ':' + d.length; VR1H.m.set(d, {f, h, st: null}); return h;
+}
+function vr1PlayHash(id) { VR1H.on = true; const x = tkPlayBuf(id, null); if (!x) return null; return vr1HashOf(x.getChannelData(0)); }
+function vr1HashPre(b) {
+  if (!VR1H.on || !b || typeof b.getChannelData !== 'function') return; const d = b.getChannelData(0); if (VR1H.m.has(d)) return;
+  const e = {f: null, h: null, st: {h: 0x811c9dc5, i: 0}}; VR1H.m.set(d, e); VR1H.pre++;
+  const u = new Uint8Array(d.buffer, d.byteOffset, d.byteLength), CH = 1 << 22;
+  const step = () => { if (VR1H.m.get(d) !== e || e.h != null) return;
+    if (e.f == null) { e.f = vr1Fast(d); setTimeout(step, 0); return; }
+    vr1Fnv(u, e.st, Math.min(u.length, e.st.i + CH)); if (e.st.i < u.length) { setTimeout(step, 0); return; }
+    setTimeout(() => { if (VR1H.m.get(d) !== e) return; if (vr1Fast(d) === e.f) { e.h = e.st.h.toString(16) + ':' + d.length; e.st = null; } else VR1H.m.delete(d); }, 0); };
+  setTimeout(step, 0);
+}
+/* VOXR1D-LT2: Nach „Anwenden“ rechnen die Gesangs-Effekte (G4) und die Marken-Suche (WP) die neue Fassung neu. Beide kopierten den
+   ganzen Take in einem Stück für ihren Worker (new Float32Array(m.x): 34,5 MB bei 3 min = 22–35 ms Long Task, iPhone ≈ 3×), und
+   G4 baute den fertigen Puffer in einem Stück (wpToBuf). Jetzt: Kopie in Scheiben (≤ 6 ms je Aufgabe), dieselbe Nachricht an denselben
+   Worker, dieselben Rückfälle (Zeitlimit → Hauptfaden); den G4-Ergebnis-Puffer baut vr1PreBuf vorab in Scheiben, wpToBuf holt ihn
+   (gleicher Inhalt → bitgleich). Nur G4 'render' und WP 'det' (x = Kanal eines AudioBuffers, ändert sich nicht), erst ab 1 Mio. Proben. */
+const VR1BIG = {n: 0, pre: new WeakMap(), hit: 0, CH: 1 << 19};
+function vr1Slices(n, f, done) { let k = 0; const st = () => { const t = performance.now(); while (k < n && performance.now() - t < 6) { const k1 = Math.min(n, k + VR1BIG.CH); f(k, k1); k = k1; } if (k < n) { setTimeout(st, 0); return; } done(); }; st(); }
+function vr1PreBuf(y, sr, done) {
+  let b = null; try { b = new AudioBuffer({length: Math.max(1, y.length), numberOfChannels: 1, sampleRate: sr}); } catch (e) { done(); return; }
+  const d = b.getChannelData(0); vr1Slices(y.length, (a, z) => d.set(y.subarray(a, z), a), () => { VR1BIG.pre.set(y, b); if (VR1H.on) vr1HashPre(b); done(); });
+}
+function vr1ToBuf(y, sr) { const b = y && VR1BIG.pre.get(y); if (!b || b.sampleRate !== sr || b.length !== Math.max(1, y.length)) return null; VR1BIG.pre.delete(y); VR1BIG.hit++; return b; }
+function vr1BigPost(Q, w, m, ms, local) {
+  if (!w || !m || !(m.op === 'render' || m.op === 'det') || !(m.x instanceof Float32Array) || m.x.length < (1 << 20)) return null;
+  VR1BIG.n++; const buf = typeof G4 !== 'undefined' && Q === G4 && m.op === 'render';
+  return new Promise((ok, no) => {
+    const id = ++Q.wid, src = m.x, x = new Float32Array(src.length), done = r => { Q.how = 'worker'; ok(r); };
+    const to = setTimeout(() => { Q.wq.delete(id); try { ok(local()); } catch (e) { no(e); } }, ms);
+    Q.wq.set(id, {ok: r => { if (buf && r && r.y instanceof Float32Array && r.y.length >= (1 << 20)) vr1PreBuf(r.y, m.sr, () => done(r)); else done(r); }, no: e => { try { ok(local()); } catch (er) { no(e); } }, to});
+    vr1Slices(src.length, (a, z) => { if (Q.wq.has(id)) x.set(src.subarray(a, z), a); }, () => { if (!Q.wq.has(id)) return;
+      try { w.postMessage(Object.assign({}, m, {id, x}), [x.buffer]); } catch (e) { clearTimeout(to); Q.wq.delete(id); try { ok(local()); } catch (er) { no(er); } } });
+  });
+}
 const VXR1_API = {
   vr1Check: (id, o) => vr1TakeJob('check', id, o),
   vr1Run: (id, o) => vr1TakeJob('run', id, o),
@@ -62257,6 +62314,7 @@ const VXR1_API = {
   vr1BreathAct: (id, k, act) => vr1BreathAct(id, k, act),
   vr1Pick: (id, lv) => vr1Pick(id, lv), vr1Plan: (id, lv) => vr1Plan(id, lv), vr1Apply: id => vr1Apply(id), vr1Preview: id => vr1Preview(id), vr1PvStop: () => vr1PvStop(), vr1Ab: v => vr1Ab(v),
   vr1Ver: id => { const c = VXR1.ver.get(id), m = S.takes && S.takes[id]; return {applied: m && m.vr1 ? JSON.parse(JSON.stringify(m.vr1)) : null, ready: !!(c && c.buf), busy: VXR1.vjob.has(id), info: c && c.info || null, ab: vr1AbNow(), renders: VXR1.renders, pv: VXR1.pv ? {t0: VXR1.pv.at.t0, t1: VXR1.pv.at.t1} : null, taps: VXR1.taps || 0, weg: !!(c && c.weg), cancels: VXR1.cancels || 0, bytes: vr1Prune(null), vers: VXR1.ver.size, order: c && c.info ? c.info.order : null}; },
+  clPlayHash: id => vr1PlayHash(id), vr1HashInfo: () => ({on: VR1H.on, hit: VR1H.hit, miss: VR1H.miss, pre: VR1H.pre, cont: VR1H.cont}),   // VOXR1D-LT
   vr1Info: () => ({runs: VXR1.runs, last: VXR1.last, prog: VXR1.prog, aborts: VXR1.aborts, slices: VXR1.slices, order: VXR1_ORDER.slice(), worker: VXR1.w ? 'worker' : VXR1.w === false ? 'hauptfaden' : null}),
 };
 window.__vr1 = {ess: vr1EssCore, proc: vr1Proc, job: vr1Job, make: vr1Make, humLive: vr1HumLive, take: vr1TakeJob, api: VXR1_API, st: VXR1, paint: vr1PaintBreath, noWorker: v => { VXR1.w = v ? false : null; }};
@@ -62913,6 +62971,7 @@ function wpWorker() {
 function wpCall(m) {
   if (m && m.op === 'vxa' && typeof VX3 !== 'undefined' && !VX3.on) m = Object.assign({}, m, {vx3: false});   /* VX3: Schalter aus → Anlauf wie 4.64 */
   const w = wpWorker(), local = () => { WP.how = 'hauptfaden'; return m.op === 'hyb' || m.op === 'vxa' ? nx1Local(m) : wpRun(VSM, m); };   // NX1: Gesang-Kern stückweise
+  if (typeof vr1BigPost === 'function') { const p = vr1BigPost(WP, w, m, 20000, local); if (p) return p; }   /* VOXR1 */
   if (!w) return Promise.resolve().then(local);
   return new Promise((ok, no) => {
     const id = ++WP.wid, x = new Float32Array(m.x);
@@ -62922,6 +62981,7 @@ function wpCall(m) {
   });
 }
 function wpToBuf(y, sr) {
+  if (typeof vr1ToBuf === 'function') { const q = vr1ToBuf(y, sr); if (q) return q; }   /* VOXR1 */
   let b = null;
   try { b = new AudioBuffer({length: Math.max(1, y.length), numberOfChannels: 1, sampleRate: sr}); } catch (e) { try { b = AU.ctx ? AU.ctx.createBuffer(1, Math.max(1, y.length), sr) : null; } catch (e2) { b = null; } }
   if (b) b.getChannelData(0).set(y);
@@ -66012,6 +66072,7 @@ function g4Worker() {
 }
 function g4Call(m) {
   const w = g4Worker(), local = () => { G4.how = 'hauptfaden'; return m.op === 'render' ? G4D.render(m.x, m.sr, m.P, m.marks) : G4D.analyze(m.x, m.sr, m.P, m.marks, m.mix); };
+  if (typeof vr1BigPost === 'function') { const p = vr1BigPost(G4, w, m, 30000, local); if (p) return p; }   /* VOXR1 */
   if (!w) return Promise.resolve().then(local);
   return new Promise((ok, no) => {
     const id = ++G4.wid, x = new Float32Array(m.x);
