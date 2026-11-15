@@ -61633,7 +61633,8 @@ function* clickScan(x, sr, o, wins) {
 /* VOXR1F: Spanne der Klick-Reparatur an den Klick anpassen. Die Erkennung endet, wo das Band unter 20 % der Spitze fällt – der Ausklang
    (bei lauten Klicks in der Pause noch +15…+25 dB über der Umgebung) blieb stehen und war zugleich Randwert der Interpolation (Füllung zu laut).
    Hier: Band > 1,5 kHz in 0,25-ms-Rahmen gegen den Median der Umgebung (links 1–12 ms, rechts 3–12 ms); verlängert, solange ein Rahmen
-   > 6 dB darüber liegt – rechts höchstens 2 ms (Ausklang), links höchstens 0,5 ms, gesamt ≤ 8 ms. {span: 0} = wie vorher. */
+   > 4,8 dB (3×) darüber liegt – rechts höchstens 2 ms (Ausklang), links höchstens 0,5 ms, gesamt ≤ 8 ms; nur für Funde ≤ 3 ms (längere
+   Geräusche des Takes wie bisher – sonst fand der 2. Durchgang daneben neue Stellen). Gibt den Umgebungs-Median mit zurück. {span: 0} = wie vorher. */
 function clickSpan(z, g0, g1, sr, p, o) {
   if ((o && o.span === 0) || g1 - g0 > Math.round((o && o.spanMax != null ? o.spanMax : 0.003) * sr)) return [g0, g1];   // längere Funde (Geräusche des Takes) wie bisher
   const q = Math.max(4, Math.round(0.00025 * sr)), L = z.length, fr = i => { let s = 0; for (let k = i; k < i + q; k++) s += z[k] * z[k]; return s / q; }, E = [];
@@ -61799,15 +61800,18 @@ function* room(y, sr, o, Lr) {
     // in kurzen Pausen zwischen Silben zählten sonst Ausklang/Atem bis gelernt + 15 dB mit (Prüfer: Füllung +4…+10 dB über dem Original). {nr: 0} = wie vorher.
     nb.sort((p1, p2) => p1 - p2); let pt = nb.length >= 5 ? Math.pow(10, (nb[nb.length >> 1] + 0.5) / 10) : Lr.p;
     { const NR = o.nr != null ? o.nr : (room.NR != null ? room.NR : 3), nl = []; if (NR > 0) for (let u = Math.max(0, a - NR * H); u + H <= a; u += H) { const l = lev(u, u + H); if (l > -110 && l <= Lr.db + 15) nl.push(l); } if (NR > 0) for (let u = b; u + H <= Math.min(n, b + NR * H); u += H) { const l = lev(u, u + H); if (l > -110 && l <= Lr.db + 15) nl.push(l); }
-      if (nl.length >= 3) { nl.sort((p1, p2) => p1 - p2); pt = Math.min(pt, Math.pow(10, (nl[nl.length >> 1] + 0.5) / 10)); } }
+      if (nl.length >= 3) { nl.sort((p1, p2) => p1 - p2); const pn = Math.pow(10, (nl[nl.length >> 1] + 0.5) / 10), UP = o.up != null ? o.up : 2;
+        // VOXR1F: liegt der Raumton direkt an der Lücke über dem Median von weiter weg (Luft/Atem in der Pause), zählt er – höchstens UP (2) dB darüber
+        // (Entwickler-Test Take A: Lücke 12,4 s −4,2 dB zu leise). Darunter wie bisher (VOXR1D-RP). {up: 0} = wie vorher.
+        pt = pn > pt && UP > 0 && nb.length >= 5 ? Math.min(pn, pt * Math.pow(10, UP / 10)) : Math.min(pt, pn); } }
     const need = pt - Math.pow(10, ph / 10); if (need <= 0 || L < 2 * R) continue;   // Mittelwert (dB) der Nachbarn, robust gegen einzelne laute Rahmen
     // Klangfarbe ebenfalls von daneben (zusammenhängende rauschartige Rahmen, je 1024er-Fenster), sonst die gelernte
     let mg = mag; { const P2 = new Float64Array(N / 2 + 1); let c2 = 0; const okU = new Set(nbu);
       const PW = [], PU = [];   // VOXR1D-RT (PU: Fenster-Anfang, VOXR1F): je Fenster ein Spektrum (für die Ausreißer-Wahl je Terzband)
       for (const u of nbu) { if (!okU.has(u + H) || !okU.has(u + 2 * H) || u + N > n) continue; for (let i = 0; i < N; i++) { re[i] = y[u + i] * (0.5 - 0.5 * Math.cos(TAU * (i + 0.5) / N)); im[i] = 0; } F(re, im, false); const Pw = new Float64Array(N / 2 + 1); for (let k = 0; k <= N / 2; k++) { const e = re[k] * re[k] + im[k] * im[k]; P2[k] += e; Pw[k] = e; } PW.push(Pw); PU.push(u); c2++; }
-      /* VOXR1F: Fenster mit Gesangsrest (Teiltöne: stärkster Bin 100–1500 Hz > TON × Median dieser Bins) zählen für die Klangfarbe nicht,
-         rauschartige Fenster (auch Atem/Luft mit Höhen) alle – mit ihrem Leistungsmittel statt des Medians je Band (der Median verwarf die Höhen
-         des Atems, Füllung in Take A bis −14 dB bei 4 kHz). Bleiben < 3 rauschartige oder sind alle rauschartig: wie bisher (VOXR1D-RT). {ton: 0} = aus. */
+      /* VOXR1F: Fenster mit Gesangsrest (Teiltöne: stärkster Bin 100–1500 Hz > TON (30) × Median dieser Bins) zählen für die Klangfarbe nicht,
+         rauschartige (auch Atem/Luft mit Höhen) zählen, und zwar die nahe der Lücke (≤ 100 ms); darüber der Median je Terzband wie VOXR1D-RT.
+         Bleiben < 3: alle rauschartigen; sonst wie bisher. Leistungsmittel statt Median ({pm: 1}) brach den Prüfer-Kern (Take C 5,8/6,5 dB). {ton: 0} = aus. */
       const TON = o.ton != null ? o.ton : 30; let PN = null;
       if (c2 >= 3 && TON > 0) { const kA = Math.max(1, Math.round(100 * N / sr)), kB = Math.min(N / 2, Math.round(1500 * N / sr)), tb = new Float64Array(kB - kA), keep = [];
         PW.forEach((Pw, w) => { let mx = 0; for (let k = kA; k < kB; k++) { tb[k - kA] = Pw[k]; if (Pw[k] > mx) mx = Pw[k]; } tb.sort(); if (!(mx > TON * tb[tb.length >> 1])) keep.push(w); });
