@@ -263,7 +263,7 @@ Hinweis erscheint nur, wenn der Spektral-Block nicht laden kann – heute nicht 
 Größe (`gzip -6` / brotli 11), was das Telefon je Fassung lädt:
 | Datei | roh | gzip -6 | brotli 11 |
 |---|---:|---:|---:|
-| basis = 4.70.0 heute online | 9 178 098 | 3 042 282 | 2 230 763 |
+| basis = Release 4.70.0 (so wie bisher ausgeliefert) | 9 178 098 | 3 042 282 | 2 230 763 |
 | index (Quelle Kandidat, Teil E + F) | 9 181 691 | 3 043 356 | 2 236 307 |
 | aus (nur Teil D, auf basis) | 6 779 318 | 2 298 440 | 1 740 761 |
 | aus-e (alt: D + E, Block unberührt) | 6 962 769 | 2 350 810 | 1 780 243 |
