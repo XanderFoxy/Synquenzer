@@ -82,3 +82,10 @@
   `e/bau.cjs` nimmt SPK11B mit in den Block (+ Getter `__spk11b`), nur wenn vorhanden (4.70-Bau bytegleich). R-4710 gebaut →
   `f/r4710/index.html`: topdefs 0/0, sq-spk-src 418 Namen 0 doppelt; `e/analyse.cjs` R-4710: 0 neue Zugriffe von außen gegenüber 4.70,
   neue Seiteneffekte nur SPK11B (Hüllen um Block-Funktionen + __spk11b). `f/lauf2.sh`: golden erneut, Rauchtest/Probe/spk11b/spk11 auf dem 4.71-Bau.
+- 11:36–11:41 `f/reg/reg.log`: Rauchtest index errors []; golden index↔aus-f 1. Lauf „NICHT bitgleich“ nur wegen Song-Pegel ±1 %
+  schon Quelle gegen Quelle (Kontrolle 0,1108 vs 0,1100 unter Last), Werksklänge bitgleich, clCoreVer gleich; spk6k ALLES OK,
+  spk6 ALLES OK, spk5 ALLES OK (24), spk7 ALLES OK (13), spk12d 28/0 – alles auf der Auslieferung aus-f.
+- 11:41 Messung 5 Runden × 4 Dateien (`f/mess-f.json`, `f/paar.cjs`): bereit basis 3 042 → aus-f 2 582 ms, gepaart −556 (5/5),
+  längste Aufgabe 1 190 → 883, Heap 17,1 → 14,3 MB; index allein +155 (2/5) = Rauschen. Rechner unter Last.
+- 11:42 golden2 index↔aus-f: ERGEBNIS bitgleich. Rauchtest 4.71-Bau errors [].
+- 11:43 text/plain-Blöcke gezählt (`f/textplain.cjs`): außer Worklet (per Text durchsucht) zusammen ≈ 73 K Kommentar-Zeichen → Offen.

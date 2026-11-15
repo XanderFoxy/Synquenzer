@@ -258,3 +258,32 @@ Hinweis erscheint nur, wenn der Spektral-Block nicht laden kann – heute nicht 
    (Quell-Zeile = Zeile des `<script type="text/plain" id="sq-spk-src">` + n). Spalten weichen ab.
 7. Neuer Code, der Funktions-Text hasht (`fn.toString()` als Schlüssel) → Name in `SCHUTZ_FUNKTIONEN`; neuer text/plain-Block,
    der nur per `blockLoad` läuft → darf in `TEXT_PLAIN_ALS_SKRIPT`, sonst bleibt er unberührt.
+
+## Zahlen (Teil F)
+Größe (`gzip -6` / brotli 11), was das Telefon je Fassung lädt:
+| Datei | roh | gzip -6 | brotli 11 |
+|---|---:|---:|---:|
+| basis = 4.70.0 heute online | 9 178 098 | 3 042 282 | 2 230 763 |
+| index (Quelle Kandidat, Teil E + F) | 9 181 691 | 3 043 356 | 2 236 307 |
+| aus (nur Teil D, auf basis) | 6 779 318 | 2 298 440 | 1 740 761 |
+| aus-e (alt: D + E, Block unberührt) | 6 962 769 | 2 350 810 | 1 780 243 |
+| **aus-f (D + E + F = Auslieferung)** | **6 780 885** | **2 299 184 (−743 KB, −24,4 %)** | **1 742 816** |
+`sq-spk-src` in der Auslieferung 612 730 → 432 826 Zeichen (733 Kommentare raus). Offen 1 (+52 KB) ist damit weg.
+
+Start (`pr/mess.mjs`, Chromium 428×926, CPU 4×, 5 Runden, Reihenfolge je Runde verschoben; Rechner unter Last durch andere Läufe,
+deshalb höhere Absolutwerte als in der Prüfung; `f/mess-f.json`, gepaart je Runde mit `f/paar.cjs`):
+| ms ab Navigation (Median) | basis | index (E) | aus (D) | **aus-f (D+E+F)** | Δ aus-f gepaart |
+|---|---:|---:|---:|---:|---:|
+| bereit | 3 042 | 3 279 | 2 766 | **2 582** | **−556 (5/5 schneller)** |
+| HTML gelesen (domInteractive) | 2 533 | 2 634 | 2 086 | 2 007 | −442 (5/5) |
+| DOMContentLoaded | 2 747 | 2 872 | 2 309 | 2 234 | −469 (5/5) |
+| längste Aufgabe bis bereit | 1 190 | 1 193 | 1 226 | **883** | −379 (5/5) |
+| Sperrzeit bis bereit | 1 981 | 2 071 | 1 702 | 1 460 | −548 (5/5) |
+| JS-Heap (MB) | 17,1 | 16,1 | 15,2 | 14,3 | −2,8 (5/5) |
+Lesart: Teil E allein bleibt im Rauschen (hier Δ +155 ms, 2/5 schneller; Prüfung ≈ −3 %), er wirkt aber zusammen mit D: die
+Auslieferung aus-f ist in jeder Runde und jeder Kennzahl schneller als basis. Belastbar: **bereit −9 % (Prüfer-Serie D+E, ruhiger) bis
+−15 % (diese Serie)**, längste Start-Aufgabe ≈ −30 %, −2,8 MB JS-Speicher, −0,74 MB Übertragung je Fassung. Safari/iPhone nicht gemessen.
+
+Funk-Satz (Vorschlag): „Die App ist beim Start etwa 9 bis 15 Prozent schneller bereit und ruckelt beim Start deutlich weniger: die Online-Fassung kommt
+jetzt ohne Programm-Kommentare (rund 0,7 MB weniger je Update), und der Code der Spektral-Seite wird erst geladen, wenn du sie öffnest.
+Aussehen und Bedienung bleiben gleich.“
