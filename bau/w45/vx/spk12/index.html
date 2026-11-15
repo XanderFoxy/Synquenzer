@@ -105288,7 +105288,7 @@ function spk12UndoRedo(U, which) {
   A.pop(); const cur = {sel: spk12Clone(U.sel), ku: top.ku, lab: top.lab}; if (top.reg) cur.reg = spk12Clone(S.reg || []); if (top.ah) cur.ah = {ex: U.ex, hits: U.hits, i: S.ai}; B.push(cur);
   if (top.reg) { S.reg = spk12Clone(top.reg); spk12RegPut(U).catch(logErr); }
   spk12Set(U, spk12Clone(top.sel), (which === 'undo' ? 'Rückgängig: ' : 'Wiederholt: ') + top.lab);
-  if (top.ah) { U.ex = top.ah.ex; U.hits = top.ah.hits; S.ai = top.ah.i; const L = spk12AList(U); if (U.hitLab && L) U.hitLab.textContent = (L.length - 1) + ' Treffer'; spk1Dirty(U, 'ov'); }
+  if (top.ah) { U.ex = top.ah.ex; U.hits = top.ah.hits; S.ai = top.ah.i; S.aiH = U.hits; const L = spk12AList(U); if (U.hitLab && L) U.hitLab.textContent = (L.length - 1) + ' Treffer'; spk1Dirty(U, 'ov'); }
   spk12UndoBtn(U); return true;
 }
 /* ---------- Formen umrechnen: verschieben (dt s, dm Halbtöne), wachsen (gt s, gc Cent), weicher (ws) ---------- */
@@ -105694,8 +105694,9 @@ function spk12AStep(U, dir) {   // ‹ (−1) › (+1) einzeln durch die Treffer
   const S = spk12S(U), L = spk12AList(U); if (!L || L.length < 2) { spk1Stat(U, 'Ähnliche: erst ein Beispiel ziehen oder antippen'); return false; }
   const ah = {ex: U.ex, hits: U.hits, i: S.ai}, before = spk12Clone(U.sel), fz = v => v.toFixed(2).replace('.', ',');
   if (dir === 0) { spk12Push(U, 'Alle Treffer', before, {ah}); S.ai = -1; spk1HitsApply(U); S.prev = U.sel.slice(); spk12ViewReq(U); return true; }
-  let i = S.ai >= 0 && S.ai < L.length ? S.ai : L.indexOf(U.ex); i = (i + dir + L.length) % L.length;
-  spk12Push(U, dir > 0 ? 'Nächster Treffer' : 'Voriger Treffer', before, {ah}); S.ai = i; const sh = L[i];
+  const one = U.sel.length === 1 && S.aiH === U.hits && S.ai >= 0 && S.ai < L.length;   // neue Suche / „Alle“ / Empfindlichkeit → wieder vom Beispiel aus
+  let i = one ? S.ai : L.indexOf(U.ex); i = (i + dir + L.length) % L.length;
+  spk12Push(U, dir > 0 ? 'Nächster Treffer' : 'Voriger Treffer', before, {ah}); S.ai = i; S.aiH = U.hits; const sh = L[i];
   U.sel = [sh]; S.inSelf = true; try { spk1SelDone(U, 'Treffer ' + (i + 1) + ' / ' + L.length + ' · ' + fz(sh.t0) + '–' + fz(sh.t1) + ' s' + (sh === U.ex ? ' · Beispiel' : ' · ' + Math.round(100 * sh.hit) + ' %') + ' · Alle = alle wählen'); } finally { S.inSelf = false; }
   S.prev = U.sel.slice(); spk12ViewReq(U); spk1Dirty(U, 'ov'); return true;
 }
