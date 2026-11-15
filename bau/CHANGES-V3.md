@@ -1,3 +1,9 @@
+## 4.75.0 — Spektral: Zerlegen schneller
+
+- **Zerlegen schneller:** Ein 20-s-Stück braucht 1,1 statt 1,8 s, ein 3-Minuten-Lied 8,7 statt 13,9 s (gemessen im Test-Browser). Die Ebenen klingen genau gleich wie vorher. Der Speicherbedarf bleibt unter 500 MB.
+- Unter der Haube: laufender Median statt Sortieren je Rahmen, Vorlagen und Puffer werden wiederverwendet.
+Tests: Zerlegen-Test ALLE OK (20 s ×1,6, 3 min ×1,55, Energie je Ebene ±0), Spektral 5/6/7/8/9/10/11/12 wie 4.74 (spk12b 72/72 bei Wiederholung), Fokus 26/26, Einzelspuren 51/51 · 87/87 · 21/21 · 5/5, mehrere Clips 116/118 (Zeit), Transponieren 81/81, Gesang 61/61 · 14/14 · 15/15, Gesang reinigen 77/83 (wie 4.74), Chor 82/82, Import ALLE OK, Begleiter 57/59 (wie 4.74), Echttest 52/53 · 53/53.
+
 ## 4.74.0 — Gesang reinigen: Klicks sauberer, Raumton passender; Import-Ablegen ohne Ruckler
 
 - **Gesang reinigen – Klicks:** Reparierte Klicks ragen kaum noch heraus (schlimmste Stelle 7,5 → 2,6 dB über der Umgebung). Über Gesang bleibt die Reparatur so kurz wie bisher, damit gesungene Obertöne erhalten bleiben. Ein Klick mehr wird gefunden.
