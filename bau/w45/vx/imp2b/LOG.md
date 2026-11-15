@@ -40,3 +40,23 @@
   (pruef/out/smoke.png) · „MS 2000“ 1× · „^  live: true,“ 1× · VERSION 4.66.0 (= Basis) · neue Wörter nur IMP2-Fachwörter/Bezeichner, keine Marke ·
   keine Datensatz-/Produktnamen in neuen Dateien (IMP2B + pruef/).
 - 02:01 PRUEFUNG.md geschrieben: S1 (rv1 4/53, Ziel verfehlt), M1 (48-kHz-Projekt-Tempo Vokal 12/14 statt 14/14), M2 (spk1Grid nutzt imp1Core), M3 (rv1-Chor-Messung), L1–L4.
+
+## IMP2B-FIX (Prüfer-Befunde beheben) – Bau `fix/block.js` + `fix/apply.mjs` → `fix/index.html`, Läufe `fix/out/`, Dumps `fix/dbg/`
+- 02:02 Start. PRUEFUNG.md/NOTES/LOG gelesen, rv1-Fehlerzeilen (#10 Knacken Schnitt 13, #10/#14 Raster „frei daneben“, #14 Stück 35 links) eingegrenzt.
+- 02:04 Dump-Lauf `fix/rv1d-test.mjs` (= work/rv1s-test.mjs, RV1_DUMP) #10/#14 an index.html (IMP2): Zahlen = Prüfer (Knacken 4,05 an Schnitt 13).
+- 02:06 `fix/hyb-sim.mjs` (nx1RunG + vsStretchMake aus der Datei, Node) rechnet den App-Render bitgleich nach (max. Abweichung 0). Ursache #10:
+  Stück 12 (79 ms) liegt 0,75 ms vor einem nahtlosen Nachfolger → „Lücke“ → WSOLA dehnt 37 ms Vokal um 1,13× → Knacken. Fix imp2bGap (Lücke ≤ 2 ms
+  nicht dehnen, Quelle läuft durch, Überblendung im Vorlauf): Verhältnis 4,06 → 0,87, #14 unverändert (bitgleich).
+- 02:07 `fix/move-sim.mjs` #14 Stück 35 links: Vorgänger 34 ist im Quantisier-Stand GEDEHNT (Lücke 32 ms), nach dem Verschieben keine Lücke → Quelle
+  ungestaucht, abgeschnitten (richtig). rv1 vergleicht mit der gedehnten Fassung nach ↶ → kann nie bitgleich sein (erste Abweichung 206 ms vor dem Schnitt).
+- 02:08 `fix/raster-sim.mjs`: „frei daneben“ #14 Stück 15 / #10 Stück 3 = gleiches Muster: Nachfolger bekommt die gemeinsame Linie, das zurückgesetzte
+  Stück sperrt ihn mit seinem Einsatz 10 bzw. 3,7 ms von der Linie. Fix imp2bYield (nicht eingerastetes k−1 gibt ≤ 15 ms nach).
+- 02:09 Test-Kopie `fix/rv1-test-imp2b.mjs` (Bau `fix/mk-rv1copy.mjs`): Chor-Messung (envOf 20 ms, stiller Formant-Rahmen zählt nicht) + Verschieben
+  links auch gegen die ungedehnte Quelle. Lauf #10/#14 an fix/index.html: Knacken 0,89, Raster beide „frei daneben 0“, #14 links OK.
+- 02:10–02:14 Versuch M1 (Gesangs-Spitzen zwischen Rahmen interpolieren, `fix/tempo-raten-x.mjs`): 112A 112,27 → 112,28 – bringt nichts, abgebrochen, nicht eingebaut.
+- 02:14 Kette `fix/lauf.sh` gestartet (nacheinander). Pflicht an fix/index.html: topdefs Skripte 26, Namen 7476, doppelt 0, Syntaxfehler 0 · dupkeys 0 ·
+  smoke title SYNQUENZER errors [] · „MS 2000“ 1× · „^  live: true,“ 1× · VERSION 4.66.0 · neue Wörter gegenüber index.html nur Fachwörter/Bezeichner
+  (imp2bGap, imp2bYield, Ableitung, Kleinst, eingerastetes …), keine Marke · keine Datensatz-/Produktnamen in neuen Dateien.
+- 02:16 rv1-test ORIGINAL an fix/index.html: **FEHLER 1/53** (vorher 4/53; einzig #14 Stück 35 links = Bezug gedehnte Fassung).
+- 02:18 rv1-Kopie: Glättung im Fenster-Median lagMed verschlechterte #1 (18/6 …) → `fix/lagmed-sim.mjs` an #10-Puffern: Original-lagMed trifft 5/6,
+  jede Glättung 6–8 ms daneben → zurückgenommen (nur envOf/Rückfall 20 ms + NaN-Fix bleiben). Kopie-Läufe danach neu.
