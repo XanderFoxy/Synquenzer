@@ -61731,6 +61731,8 @@ function* roomLearn(x, sr) {
   for (let k = 0; k <= N / 2; k++) P[k] /= cnt;
   return {db: +db(pw / fr).toFixed(1), p: pw / fr, P, N, frames: fr, wins: cnt, floor: +fl.toFixed(1)};
 }
+// VOXR1D-RT: Terzbänder 200 Hz … 12 kHz als Bin-Bereiche [k0, k1) eines N-Spektrums
+function roomBands(sr, N) { const B = []; for (let f = 200 * Math.pow(2, -1 / 6); f < Math.min(12000, sr / 2); f *= Math.pow(2, 1 / 3)) { const k0 = Math.max(1, Math.round(f * N / sr)), k1 = Math.min(N / 2, Math.round(f * Math.pow(2, 1 / 3) * N / sr)); if (k1 > k0) B.push([k0, k1]); } return B; }
 function* room(y, sr, o, Lr) {
   o = o || {}; if (!Lr || Lr.none) return {learned: null, holes: [], why: Lr ? 'kein Raumton (nur ' + (Lr.act - Lr.db).toFixed(0) + ' dB unter dem Gesang)' : 'kein Raumton'};
   const n = y.length, H = Math.max(64, Math.round(0.01 * sr)), h1 = Math.max(16, Math.round(0.001 * sr)), nf = Math.floor(n / H), th = Lr.db - (o.below != null ? o.below : 10);
@@ -61754,8 +61756,14 @@ function* room(y, sr, o, Lr) {
     nb.sort((p1, p2) => p1 - p2); const pt = nb.length >= 5 ? Math.pow(10, (nb[nb.length >> 1] + 0.5) / 10) : Lr.p, need = pt - Math.pow(10, ph / 10); if (need <= 0 || L < 2 * R) continue;   // Mittelwert (dB) der Nachbarn, robust gegen einzelne laute Rahmen
     // Klangfarbe ebenfalls von daneben (zusammenhängende rauschartige Rahmen, je 1024er-Fenster), sonst die gelernte
     let mg = mag; { const P2 = new Float64Array(N / 2 + 1); let c2 = 0; const okU = new Set(nbu);
-      for (const u of nbu) { if (!okU.has(u + H) || !okU.has(u + 2 * H) || u + N > n) continue; for (let i = 0; i < N; i++) { re[i] = y[u + i] * (0.5 - 0.5 * Math.cos(TAU * (i + 0.5) / N)); im[i] = 0; } F(re, im, false); for (let k = 0; k <= N / 2; k++) P2[k] += re[k] * re[k] + im[k] * im[k]; c2++; }
-      if (c2 >= 3) { mg = new Float64Array(N / 2 + 1); for (let k = 1; k < N / 2; k++) mg[k] = Math.sqrt(P2[k] / c2); } }
+      const PW = [];   // VOXR1D-RT: je Fenster ein Spektrum (für die Ausreißer-Wahl je Terzband)
+      for (const u of nbu) { if (!okU.has(u + H) || !okU.has(u + 2 * H) || u + N > n) continue; for (let i = 0; i < N; i++) { re[i] = y[u + i] * (0.5 - 0.5 * Math.cos(TAU * (i + 0.5) / N)); im[i] = 0; } F(re, im, false); const Pw = new Float64Array(N / 2 + 1); for (let k = 0; k <= N / 2; k++) { const e = re[k] * re[k] + im[k] * im[k]; P2[k] += e; Pw[k] = e; } PW.push(Pw); c2++; }
+      if (c2 >= 3) { mg = new Float64Array(N / 2 + 1); for (let k = 1; k < N / 2; k++) mg[k] = Math.sqrt(P2[k] / c2);
+        // VOXR1D-RT: Klangfarbe aus mehreren Pausen-Fenstern, Ausreißer weg: je Terzband zählt das untere Viertel der Fenster (Pausen-Boden)
+        // statt des Leistungsmittels – ein Fenster mit Gesangsrest oder Atmer bestimmte sonst die Farbe (Take C, Lücke 9,46 s: 250 Hz +9,7 dB);
+        // innerhalb des Bands bleibt die gemittelte Form, der Pegel kommt wie bisher aus need (Leistung daneben). o.med = 0: wie vorher.
+        if (o.med !== 0) for (const [k0, k1] of roomBands(sr, N)) { const v = PW.map(P => { let e = 0; for (let k = k0; k < k1; k++) e += P[k]; return e; }).sort((p, q) => p - q), md = v[Math.floor(v.length * 0.25)];
+          let e2 = 0; for (let k = k0; k < k1; k++) e2 += P2[k] / c2; const g = e2 > 0 ? Math.sqrt(md / e2) : 1; for (let k = k0; k < k1; k++) mg[k] *= g; } } }
     let sd = (a * 2654435761 + 12345) >>> 0; const rnd = () => { sd = (Math.imul(sd, 1103515245) + 12345) >>> 0; return sd / 4294967296; };
     const z = new Float64Array(L + 2 * N);
     for (let f = 0; f * (N >> 1) < L + N; f++) { re.fill(0); im.fill(0);
