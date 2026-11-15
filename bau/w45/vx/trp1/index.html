@@ -90006,7 +90006,7 @@ const TRP1 = {only: false, deg: false, oct: false, fc: null, last: null};
 const trp1Sgn = v => (v > 0 ? 1 : v < 0 ? -1 : 0);
 // Oktavbereich halten: +7 → −5 (Halbtöne), +4 → −3 (Stufen)
 function trp1Oct(r, deg) { const N = deg ? 7 : 12, h = deg ? 3 : 6; return Math.abs(r) > h ? r - N * trp1Sgn(r) : r; }
-function trp1Scale(k) { const H = (typeof Harmony !== 'undefined' && Harmony.SCALES) || SCALES; return (k && H[k.scale]) || SCALES[k && k.scale] || SCALES.ionian; }
+function trp1Scale(k) { const H = Harmony.SCALES; return (k && H[k.scale]) || H.ionian; }
 // eine Note n um s Stufen der Tonart k ({root, scale}); leiterfremde Töne behalten ihren Abstand zur Stufe darunter (C♯ +1 in C-Dur → D♯)
 function trp1DegN(n, s, k) {
   if (!s || !k) return n;
@@ -90018,7 +90018,7 @@ function trp1DegN(n, s, k) {
 // marksNorm (Einhänge-Zeile): die Stufen eines Teils
 function trp1MarkNorm(m, o) {
   const t = m.trs; if (!Array.isArray(t) || !isNum(t[0]) || !isNum(t[1]) || typeof t[2] !== 'string') return;
-  const s = clamp(Math.round(t[0]), -7, 7), H = (typeof Harmony !== 'undefined' && Harmony.SCALES) || SCALES; if (!s || !H[t[2]]) return;
+  const s = clamp(Math.round(t[0]), -7, 7), H = Harmony.SCALES; if (!s || !H[t[2]]) return;
   o.trs = [s, ((Math.round(t[1]) % 12) + 12) % 12, t[2]];
 }
 // die Teile mit Stufen als Liste (je Song-Fassung einmal gerechnet, wie jam3FestL)

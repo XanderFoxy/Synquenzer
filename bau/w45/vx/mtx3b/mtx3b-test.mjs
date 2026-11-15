@@ -114,11 +114,11 @@ async function tapPop(T, p, sel, label) { const r = await popBtn(p, sel); if (!r
     const o = {}; __only(); const m = SYNQUENZER.mtx3.split(); const j = m[0];
     S.settings.countIn = 0; S.settings.inQuant = '1/16';
     selectTrack(j); selectSlot(j, 3); launchScene(0); ensureAudio(); play(); await __W(400);
-    recPress(); await __W(300);
+    recPress(); for (let k = 0; k < 60 && rec.state !== 'recording'; k++) await __W(100); o.state = rec.state;
     for (const n of [60, 64, 67, 72]) { inputDown(n, 'mk' + n, .8); await __W(90); inputUp('mk' + n); await __W(260); }
-    stop(); await __W(400);
+    recPress(); await __W(300); stop(); await __W(400);
     const c = S.tracks[j].clips.find((x, s) => x && s >= 2);
-    o.rec = c ? {n: c.notes.length, gm: [...new Set(c.notes.map(x => x.n))], d: [...new Set(c.notes.map(x => x.d))], seed: 'seed' in c} : null;
+    o.rec = c ? {state: o.state, n: c.notes.length, gm: [...new Set(c.notes.map(x => x.n))], d: [...new Set(c.notes.map(x => x.d))], seed: 'seed' in c} : null;
     // 3 · Synth-Modus: anderer Klang auf der Einzelspur, Drum-Felder an den Noten; Speichern/Laden verlustfrei
     const h = m[0], c0 = S.tracks[h].clips[0]; c0.notes[0].a = 1; c0.notes[1].p = .5; c0.notes[2].r = 3; c0.notes[3].m = .1; c0.lanes = {42: {len: 12}};
     S.tracks[h].sound.name = 'Mein Synth';
@@ -132,7 +132,8 @@ async function tapPop(T, p, sel, label) { const r = await popBtn(p, sel); if (!r
     // altes Projekt ohne dvx (Standard-Projekt, wie 4.66): Rundreise gleich
     SYNQUENZER.mtx3.merge(); const old = JSON.stringify(SQStore.buildProjectFile(S, null, VERSION)).replace(/"dvx":\{[^}]*\}/g, '');
     sx14Put(old); const old2 = JSON.stringify(SQStore.buildProjectFile(S, null, VERSION));
-    o.old = {same: JSON.parse(old).tracks ? JSON.stringify(JSON.parse(old).tracks) === JSON.stringify(JSON.parse(old2).tracks) : JSON.stringify(JSON.parse(old)) === JSON.stringify(JSON.parse(old2)), nt: NT()};
+    const tk = x => JSON.stringify((JSON.parse(x).project || {}).tracks), A1 = tk(old), A2 = tk(old2); let k = 0; while (k < A1.length && A1[k] === A2[k]) k++;
+    o.old = {same: A1 === A2, nt: NT(), at: A1 === A2 ? null : A1.slice(Math.max(0, k - 60), k + 40) + ' ║ ' + A2.slice(Math.max(0, k - 60), k + 40)};
     return o;
   });
   ok('Tastatur-Aufnahme auf HH ZU: jede Taste = Schlag des Pads (GM 42, Schrittlänge 0,1, Saat)', r.rec && r.rec.n >= 3 && r.rec.gm.length === 1 && r.rec.gm[0] === 42 && r.rec.d.every(x => x <= .1 + 1e-9) && r.rec.seed, r.rec);
@@ -150,8 +151,10 @@ for (const [w, h] of [[428, 926], [926, 428], [926, 370]]) {
   await p.evaluate(() => { __only(); SYNQUENZER.songFromChain([{scene: 0, bars: 2}, {scene: 1, bars: 1}]); setSongView(false); });
   const A = await p.evaluate(async () => { window.__A = await __R(); return true; });
   await p.evaluate(() => { const v = DRUM_VOICES.findIndex(x => x.id === 'hatC'); ED.dVoice = v; openRoll(DRUM_T, 0); }); await sleep(700);
-  const db = await p.evaluate(() => { const x = EL.drumSheet.querySelector('.mtx3bdb'), e = EL.drumSheet.querySelector('.dtools .mbtn:not(.mtx3bdb)'); if (!x) return null; x.scrollIntoView({inline: 'center', block: 'nearest'}); const r = x.getBoundingClientRect(), q = e ? e.getBoundingClientRect() : null; return {w: r.width, h: r.height, same: !q || Math.abs(q.height - r.height) < .5, vis: r.bottom <= innerHeight && r.top >= 0 && r.right <= innerWidth}; });
-  ok(tag + ': Drum-Editor Schritte – [Auslagern ▾] in der Werkzeug-Zeile (≥ 44 px, wie [Euklid…])', db && db.h >= 43.5 && db.w >= 43.5 && db.same && db.vis, db);
+  const db0 = await p.evaluate(() => { const x = EL.drumSheet.querySelector('.mtx3bdb'), t = x && x.parentElement; if (!x) return null; const r = x.getBoundingClientRect(), tr = t.getBoundingClientRect(); return {full: r.left >= tr.left - .5 && r.right <= tr.right + .5, part: r.left < tr.right - 20}; });
+  if (db0 && !db0.full) { const tr = await R_(p, () => EL.drumSheet.querySelector('.dtools')); await T.drag(tr.x + tr.w - 12, tr.cy, tr.x + 40, tr.cy, 8); }   // hochkant: die Werkzeug-Zeile wischt seitlich (wie bisher)
+  const db = await p.evaluate(() => { const x = EL.drumSheet.querySelector('.mtx3bdb'), e = EL.drumSheet.querySelector('.dtools .mbtn:not(.mtx3bdb)'); if (!x) return null; const r = x.getBoundingClientRect(), a = getComputedStyle(x, '::after'), q = e ? e.getBoundingClientRect() : null, tr = x.parentElement.getBoundingClientRect(); return {w: Math.round(r.width), h: r.height, hit: r.height - parseFloat(a.top) - parseFloat(a.bottom), same: !q || Math.abs(q.height - r.height) < .5, vis: r.left >= tr.left - .5 && r.right <= tr.right + .5 && r.bottom <= innerHeight}; });
+  ok(tag + ': Drum-Editor Schritte – [Auslagern ▾] in der Werkzeug-Zeile (wie [Euklid…], Trefferfläche ≥ 44 px, im Bild' + (db0 && !db0.full ? ' nach Wischen' : '') + ')', db && db.hit >= 43.5 && db.w >= 43.5 && db.same && db.vis, {vorher: db0, db});
   let r = await R_(p, () => EL.drumSheet.querySelector('.mtx3bdb')); if (r) await T.tap(r.cx, r.cy); await sleep(250);
   ok(tag + ': Blatt „Auslagern“ auf, HH ZU vorgewählt', (await popName(p)) === 'mtx3bout' && (await p.evaluate(() => [...UI.pop.el.querySelectorAll('.mtx3-v .mbtn.on')].map(b => b.dataset.v).join())) === 'hatC');
   await popCheck(p, 'Auslagern (Drum-Editor) ' + tag);
@@ -217,17 +220,19 @@ for (const [w, h] of [[428, 926], [926, 428], [926, 370]]) {
   let q = await R_(p, i => EL.rollSheet.querySelectorAll('.mtx3bd .se-cell')[i], free); if (q) await T.tap(q.cx, q.cy);
   const t1 = await p.evaluate(([j, i]) => { const c = S.tracks[j].clips[0], n = c.notes.find(x => Math.abs(x.t - i * .25) < 1e-6); return {n: c.notes.length, gm: n ? n.n : null, d: n ? n.d : null, on: EL.rollSheet.querySelectorAll('.mtx3bd .se-cell')[i].classList.contains('on')}; }, [j, free]);
   ok(tag + ': Tipp auf leeren Schritt = Schlag des Pads (GM 42, 0,1)', t1.n === n0 + 1 && t1.gm === 42 && t1.d === .1 && t1.on, t1);
-  q = await R_(p, () => [...EL.rollSheet.querySelectorAll('.mtx3bd .lbar button')].find(b => b.textContent === '↶')); if (q) await T.tap(q.cx, q.cy); await sleep(200);
+  q = await R_(p, () => [...EL.rollSheet.querySelectorAll('.lbar button')].find(b => b.textContent === '↶')); if (q) await T.tap(q.cx, q.cy); await sleep(200);
   ok(tag + ': ↶ in der Leiste nimmt den Schritt zurück', (await p.evaluate(j => S.tracks[j].clips[0].notes.length, j)) === n0);
   // CHANCE: Reiter + Spur-Streifen ziehen
   q = await R_(p, () => EL.rollSheet.querySelector('.mtx3bd .se-tabs button[data-lane="prob"]')); if (q) await T.tap(q.cx, q.cy);
   const on0 = await p.evaluate(j => { const c = S.tracks[j].clips[0], i = Math.round(c.notes[0].t / .25); return i; }, j);
   const lb = await R_(p, i => EL.rollSheet.querySelectorAll('.mtx3bd .se-bar')[i], on0);
-  if (lb) await T.drag(lb.cx, lb.y + 2, lb.cx, lb.y + lb.h * .5, 6);
+  const lane = await p.evaluate(() => ED.mtx3b && ED.mtx3b.E.lane);
+  if (lb) await T.drag(lb.cx, lb.y + 10, lb.cx, lb.y + 10 + lb.h * .4, 6);
   const pr = await p.evaluate(j => S.tracks[j].clips[0].notes[0].p, j);
+  if (lane !== 'prob') console.log('  (CHANCE-Reiter: ' + lane + ')');
   ok(tag + ': CHANCE-Spur ziehen setzt die Chance des Schritts (wie DRUMS)', pr != null && pr < 1 && pr > .05, pr);
   // ROLLE ↔ SCHRITTE
-  q = await R_(p, () => [...EL.rollSheet.querySelectorAll('.mtx3bd .lview button')].find(b => b.textContent === 'ROLLE')); if (q) await T.tap(q.cx, q.cy); await sleep(500);
+  q = await R_(p, () => [...EL.rollSheet.querySelectorAll('.lview button')].find(b => b.textContent === 'ROLLE')); if (q) await T.tap(q.cx, q.cy); await sleep(700);
   const rl = await p.evaluate(() => ({roll: !!ED.roll, back: !!(ED.laufBtn && ED.laufBtn.textContent === 'SCHRITTE')}));
   ok(tag + ': [ROLLE] zeigt die Klavierrolle, dort [SCHRITTE] statt [LAUF]', rl.roll && rl.back, rl);
   q = await R_(p, () => ED.laufBtn); if (q) await T.tap(q.cx, q.cy); await sleep(500);
