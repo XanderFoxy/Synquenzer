@@ -299,7 +299,8 @@ Aussehen und Bedienung bleiben gleich.“
 | spk6-kern / spk6 / spk5 / spk7 / spk12d | aus-f | ALLES OK / ALLES OK / ALLES OK (24) / ALLES OK (13) / 28/0 |
 | Wächter `ausliefern.mjs` (künstlicher Text-Zugriff auf sq-spk-src) | Gegenprobe | ABBRUCH, keine Ausgabe |
 | basis → ausliefern | aus.html | bytegleich zur Teil-D-Ausgabe (9c39eb97…) – das Werkzeug ändert ohne Block nichts |
-| 4.71 + Teil E (`e/bau.cjs` auf R-4710, SPK11B mit im Block) | f/r4710/index.html | topdefs 26/7 392/0/0, sq-spk-src 418 Namen 0 doppelt, Rauchtest errors [], probe ALLES OK; analyse.cjs: 0 neue Zugriffe von außen |
+| 4.71 + Teil E (`e/bau.cjs` auf R-4710, SPK11B mit im Block) | f/r4710/index.html | topdefs 26/7 392/0/0, sq-spk-src 418 Namen 0 doppelt, Rauchtest errors [], probe ALLES OK, spk11 41/0, spk11b 17/0 (r4710: 41/41, 17/0); analyse.cjs: 0 neue Zugriffe von außen |
+| `freigabe.sh` auf dem 4.71-Bau | f/r4710/frei/ | GRÜN in 88 s (Auslieferung d8a6028d…, probe auf der Auslieferung ALLES OK) |
 | 4.71-Auslieferung | f/r4710/aus/index.html | gzip −747 KB (3 051 428 → 2 304 647), Zeile `const VERSION = '4.71.0';` erhalten (PERF1A-Vorlauf erkennt die Fassung daran) |
 
 ## Offen

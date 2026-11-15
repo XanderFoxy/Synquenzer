@@ -92,3 +92,6 @@
 - 11:42–11:44 4.71-Bau (`f/reg/reg2.log`): Rauchtest errors [], probe ALLES OK (Block 19 / 76 ms), spk11 41/0 (r4710: 41/41).
   spk11b-Kopie startete nicht (Modul ./work fehlte) → Verweis auf vx/spk11b/work, neu in `f/lauf3.sh` (+ freigabe.sh auf dem 4.71-Bau).
   4.71-Auslieferung (`f/r4710/aus`): gzip 3 051 428 → 2 304 647 B, `const VERSION = '4.71.0';` erhalten (PERF1A-Vorlauf liest diese Zeile).
+- 11:47 spk11b (Kopie, `f/t11b`) auf dem 4.71-Bau: 17/0 (wie r4710). 11:48 `freigabe.sh f/r4710/index.html f/r4710/frei`: GRÜN (88 s).
+- 11:49 NOTES (Teil F: Befunde, Werkstatt-Anleitung, Zahlen, Tests, Offen) und PRUEFUNG.md (Stand nach F) fertig. index.html ≠ basis.html
+  nur durch Teil E + 5 Zeilen SPKL; VERSION '4.70.0'; basis.html = rel-4700/index.html.
