@@ -1,6 +1,6 @@
 # Mein Vorteil
 
-**Dein Assistent auf einer Seite:** Deals, Preisfehler, Filme, Auftritte (mit Bewerbung), Remix-Contests, Deutschunterricht, Konzerte, Gewinnspiele, Krypto.
+**Dein Assistent auf einer Seite:** Deals, Preisfehler, Filme, Auftritte (mit Bewerbung), Remix-Contests, Deutschunterricht, Konzerte, Gewinnspiele, Krypto, Spartricks.
 <https://xanderfoxy.github.io/Synquenzer/mein-vorteil/> (Safari → Teilen → „Zum Home-Bildschirm“, dann wie eine App)
 
 Die alten Seiten `schnaeppchen/`, `vorteile/` und `konzerte/` leiten sofort hierher weiter (`#angebote`,
@@ -29,11 +29,11 @@ Dunkles, warmes Design – immer, auch wenn das iPhone hell eingestellt ist (`co
 Farbe (`.f-<bereich>` setzt `--f`/`--f-hell`; `--akzent` folgt, so passen alle Karten von selbst).
 
 Oben bleibt eine Leiste mit gezeichneten Symbolen (SVG, keine Emojis) und Zähler stehen:
-**Start · Deals · Preisfehler · Filme · Auftritte · Remix · Unterricht · Konzerte · Gewinnspiele · Krypto · Mehr**
+**Start · Deals · Preisfehler · Filme · Auftritte · Remix · Unterricht · Konzerte · Gewinnspiele · Krypto · Spartricks · Mehr**
 („Start“ bleibt links stehen, der Rest ist seitlich wischbar). Darunter „Du bist in: …“ mit einer kurzen Zeile.
 Es ist immer nur **ein** Bereich zu sehen (kein ewiges Scrollen); je Bereich eine Top-Liste + „weitere zeigen“.
 Sprungmarken: `#start`, `#deals` (`#produkte`, `#cashback`, `#snacks` = Ziel im Bereich Deals), `#preisfehler`, `#filme`,
-`#auftritte`, `#remix`, `#unterricht`, `#konzerte`, `#gewinnspiele`, `#krypto`, `#mehr`. Alte Marken: `#angebote` →
+`#auftritte`, `#remix`, `#unterricht`, `#konzerte`, `#gewinnspiele`, `#krypto`, `#spartricks`, `#mehr`. Alte Marken: `#angebote` →
 `#produkte`, `#vorteile` → `#start`, `#konzerte` bleibt.
 
 | Bereich | Inhalt | Nie leer, weil … |
@@ -48,6 +48,7 @@ Sprungmarken: `#start`, `#deals` (`#produkte`, `#cashback`, `#snacks` = Ziel im 
 | **Konzerte** | in der Nähe (bis `pushRadiusKm`), darunter **je Band der nächste Termin, auch weit weg, mit km**; Tourdaten-Links je Band (`../konzerte/artists.json`, erst beim Öffnen) | nächster Termin bzw. Tourdaten-Links |
 | **Gewinnspiele** | nur laufende ohne Kauf/Abo | sonst mydealz-Gruppen Gewinnspiele/Gratis |
 | **Krypto** | wie bisher (nur `localStorage`); Push-Kasten mit Feld „ntfy-Thema“ (nur auf dem Gerät) | Kurs immer |
+| **Spartricks** | eigener Reiter (`spartricks.js`, Daten `spartricks.json`): Top 10 · Geld zurück · Clever einkaufen · Gratis & Proben · Geburtstag gratis · Freizeit & Reisen · Gewinnspiele, Suche, Stern | Start-Kachel: „Tipp des Tages“ (wechselt täglich) + nächste Frist; ohne gemerkten Stand „Geld zurück, Gratis, Geburtstag“ |
 | **Mehr** | Erleben, Reisen, Nebenverdienst, Spar-Tipps, Vorlage Übersetzung, Quellen | – |
 
 **Echter Lauf 08.11.2026** (`test/fixtures/echt-0811/`): die Ausgaben der drei Wecker unverändert (`satz: 'echt0811'`)
@@ -100,6 +101,21 @@ Die Infozeile bleibt einzeilig (bei schmalen Handys kürzt sich das Genre), ein 
 Apple-Karte dasteht, fällt weg.
 Film-Einträge aus `aktuell.json` (Kategorie `filme`, für die Pushes) stehen nur dort, nicht noch einmal unter „Mehr“.
 Der Service Worker hält `filme.js` wie die Seite (erst Netz, nach 3 s die letzte gute Kopie). Tests: `test/filme.test.mjs`.
+
+**Reiter „Spartricks“ (seit 15.11.2026, `spartricks.js` + `spartricks.json`):** komprimiertes Wissen aus drei Recherchen
+(Geld zurück, Einkaufen & Gratis, Geburtstag & Freizeit; 133 Einträge → 96 Tipps: Doppelte vereint, Prämien-Themen Strom/Bank/Konto
+nach Xanders Regel vom 07.11. raus, Unsicheres ohne Mehrwert raus). Chips **Top 10 · Geld zurück · Clever einkaufen · Gratis & Proben ·
+Geburtstag gratis · Freizeit & Reisen · Gewinnspiele** (dazu „Gemerkt“, sobald ein Stern gesetzt ist). Jede Karte: Titel, „Bringt“,
+„So geht’s“, Quellen als Links (`rel="noopener noreferrer"`), Stand, „Erfahrung aus der Community“ wo nicht amtlich belegt, Region
+(Döbeln/Leipzig/Dresden/Chemnitz/Sachsen; bundesweit nur unter „Geburtstag gratis“ ausgeschrieben), Frist mit „noch N Tage“ – nach
+der Frist rückt der nächste Top-Tipp nach, der Tipp steht dann am Ende seines Bereichs. „Geburtstag gratis“: Feld „Dein nächster
+Geburtstag“ (nur `localStorage`, ohne Jahr gemerkt) → an jeder Karte „Vorher anmelden bis TT.MM.“ bzw. „Ohne Anmeldung“.
+Suchfeld oben: alle Wörter müssen passen, Umlaute egal (Döbeln = Doebeln = Dobeln), Zahl je Chip zeigt die Treffer.
+Laden: Skript und CSS (`.sp-…`) erst beim Öffnen; die Daten holt der Reiter (`cache: no-cache`) bzw. einmal leise im Leerlauf
+2,5 s nach dem Zeichnen für die Start-Kachel, wenn kein Stand gemerkt oder er älter als 3 Tage ist. Gemerkter Stand, Chip,
+Sterne, Geburtstag: `mein-vorteil-daten-spartricks`, `-spartricks-chip`, `-spartricks-gemerkt`, `-spartricks-geburtstag`.
+Kein Tracking, keine fremden Skripte. Neue Fassung der Daten: `version` gleich lassen (Seite liest bis Fassung 1), `stand` setzen.
+Tests: `test/spartricks.test.mjs` (Schema, tolerantes Lesen, Chips, Suche, Stern, Geburtstag, Frist, Kachel, 428 × 926 und 926 × 428).
 
 ## Was eine Angebotskarte zeigt
 

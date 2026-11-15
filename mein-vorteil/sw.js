@@ -1,16 +1,18 @@
 /* „Mein Vorteil“: eigener Service Worker nur für /mein-vorteil/ (hat hier Vorrang vor dem SYNQUENZER-Worker im Wurzelordner).
-   Seite und filme.js (Reiter „Filme“): erst Netz; antwortet es nicht binnen 3 s oder gar nicht, die letzte gute Kopie
-   (Start ohne Netz). So passen Seite und filme.js nach einer neuen Fassung immer zusammen.
+   Seite, filme.js (Reiter „Filme“) und spartricks.js (Reiter „Spartricks“): erst Netz; antwortet es nicht binnen 3 s oder
+   gar nicht, die letzte gute Kopie (Start ohne Netz). So passen Seite und Reiter-Skripte nach einer neuen Fassung immer
+   zusammen. spartricks.json geht nicht durch den Worker (die Seite merkt sich den letzten Stand selbst).
    Symbole/Manifest: aus dem Zwischenspeicher. Daten (raw.githubusercontent.com) gehen nie durch diesen Worker –
    die Seite merkt sich den letzten Stand selbst. */
 const CACHE = 'mein-vorteil-2'; // Fassung 5 (08.11.2026): neues Design – alte Kopie wird beim Aktivieren gelöscht
 const SEITE = new URL('./', self.registration.scope).href;
 const FILME = new URL('filme.js', self.registration.scope).href;
+const SPAR = new URL('spartricks.js', self.registration.scope).href;
 const LANGSAM = 3000;
 const STATISCH = /\/(icon-\d+\.png|icon\.svg|manifest\.webmanifest)$/;
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll([SEITE, 'filme.js', 'icon-192.png', 'icon.svg', 'manifest.webmanifest'])).catch(() => {}));
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll([SEITE, 'filme.js', 'spartricks.js', 'icon-192.png', 'icon.svg', 'manifest.webmanifest'])).catch(() => {}));
   self.skipWaiting();
 });
 self.addEventListener('activate', e => {
@@ -25,8 +27,8 @@ self.addEventListener('fetch', e => {
   if (u.origin !== scope.origin || !u.pathname.startsWith(scope.pathname)) return;
   const rest = u.pathname.slice(scope.pathname.length);
   const seite = rq.mode === 'navigate' || rest === '' || rest === 'index.html';
-  if (seite || rest === 'filme.js') {
-    const schluessel = seite ? SEITE : FILME;
+  if (seite || rest === 'filme.js' || rest === 'spartricks.js') {
+    const schluessel = seite ? SEITE : rest === 'filme.js' ? FILME : SPAR;
     let ablegen = Promise.resolve();
     const netz = fetch(rq).then(r => {
       if (r && r.ok && r.type === 'basic') { const k = r.clone(); ablegen = caches.open(CACHE).then(c => c.put(schluessel, k)).catch(() => {}); }
