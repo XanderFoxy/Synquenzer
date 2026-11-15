@@ -287,3 +287,27 @@ Auslieferung aus-f ist in jeder Runde und jeder Kennzahl schneller als basis. Be
 Funk-Satz (Vorschlag): „Die App ist beim Start etwa 9 bis 15 Prozent schneller bereit und ruckelt beim Start deutlich weniger: die Online-Fassung kommt
 jetzt ohne Programm-Kommentare (rund 0,7 MB weniger je Update), und der Code der Spektral-Seite wird erst geladen, wenn du sie öffnest.
 Aussehen und Bedienung bleiben gleich.“
+
+## Tests (Teil F, alles nacheinander; `f/reg/*.log`, `f/frei/freigabe.log`)
+| Prüfung | Datei | Ergebnis |
+|---|---|---|
+| Pflicht (topdefs / dupkeys / sq-spk-src / MS 2000 / live / VERSION) | index.html | 26 Skripte, 7 383 Namen, 0 doppelt, 0 Syntax; 0; 410 Namen 0 doppelt; 1×; 1×; '4.70.0' |
+| Pflicht | aus-f.html | dieselben Zahlen; zweiter Lauf bytegleich (b2253baa…) |
+| Rauchtest | index.html / aus-f.html | errors [] / errors [] |
+| `e/probe.mjs` (15 Prüfungen inkl. neu zip-fehlerfall-hinweis, spk6-ebenen-container) | index / aus-f | ALLES OK / ALLES OK; Gegenprobe alter Stand: 1 FEHLER (Hinweis fehlt) |
+| golden (12 Werksklänge über App-Worklet, Song-Pegel, clCoreVer) | index ↔ aus-f | bitgleich (1. Lauf: Song-Pegel schon Quelle↔Quelle > 1 % unter Last, 2. Lauf grün) |
+| spk6-kern / spk6 / spk5 / spk7 / spk12d | aus-f | ALLES OK / ALLES OK / ALLES OK (24) / ALLES OK (13) / 28/0 |
+| Wächter `ausliefern.mjs` (künstlicher Text-Zugriff auf sq-spk-src) | Gegenprobe | ABBRUCH, keine Ausgabe |
+| basis → ausliefern | aus.html | bytegleich zur Teil-D-Ausgabe (9c39eb97…) – das Werkzeug ändert ohne Block nichts |
+| 4.71 + Teil E (`e/bau.cjs` auf R-4710, SPK11B mit im Block) | f/r4710/index.html | topdefs 26/7 392/0/0, sq-spk-src 418 Namen 0 doppelt, Rauchtest errors [], probe ALLES OK; analyse.cjs: 0 neue Zugriffe von außen |
+| 4.71-Auslieferung | f/r4710/aus/index.html | gzip −747 KB (3 051 428 → 2 304 647), Zeile `const VERSION = '4.71.0';` erhalten (PERF1A-Vorlauf erkennt die Fassung daran) |
+
+## Offen
+1. Safari/iPhone nicht gemessen (nur Chromium 4×). Nach der ersten Auslieferung am Telefon: Kaltstart + Update-Weg (PERF1A) einmal ansehen.
+2. Weitere text/plain-Blöcke (sq-mk-src, sq-g9-src, sq-arp-src, sq-bm-src, sq-ndp-src, sq-form-src, sq-sr-src, sq-md-src) haben zusammen
+   ≈ 73 K Kommentar-Zeichen (≈ 20 KB gzip). Jeder bräuchte vorher die Prüfung „nur blockLoad liest ihn“ (MK/BM/MD laufen als Worklet-Text,
+   sq-worklet-src wird per Text durchsucht → bleibt sicher unberührt). Kleiner Gewinn, niedrige Priorität.
+3. PERF1E-Rest (Video/Import/Gesang erst beim Öffnen) erst nach grüner SPK-Regression auf 4.72.
+4. Bekannte, unveränderte Abweichungen aus r4700 bleiben (spk4 3/23, spk1 verfeinern, ki1 3 FEHL, mtx4 Zeitgrenze unter Last).
+5. Golden-Song-Render ist schon Quelle↔Quelle nicht bitgleich; unter Volllast kann der ±1-%-Pegel-Vergleich rot werden → dann wiederholen.
+6. Veröffentlichen bleibt Handarbeit (kopieren, commit/push, Artifact) – `freigabe.sh` kopiert absichtlich nichts.

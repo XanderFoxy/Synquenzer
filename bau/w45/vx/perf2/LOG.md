@@ -89,3 +89,6 @@
   längste Aufgabe 1 190 → 883, Heap 17,1 → 14,3 MB; index allein +155 (2/5) = Rauschen. Rechner unter Last.
 - 11:42 golden2 index↔aus-f: ERGEBNIS bitgleich. Rauchtest 4.71-Bau errors [].
 - 11:43 text/plain-Blöcke gezählt (`f/textplain.cjs`): außer Worklet (per Text durchsucht) zusammen ≈ 73 K Kommentar-Zeichen → Offen.
+- 11:42–11:44 4.71-Bau (`f/reg/reg2.log`): Rauchtest errors [], probe ALLES OK (Block 19 / 76 ms), spk11 41/0 (r4710: 41/41).
+  spk11b-Kopie startete nicht (Modul ./work fehlte) → Verweis auf vx/spk11b/work, neu in `f/lauf3.sh` (+ freigabe.sh auf dem 4.71-Bau).
+  4.71-Auslieferung (`f/r4710/aus`): gzip 3 051 428 → 2 304 647 B, `const VERSION = '4.71.0';` erhalten (PERF1A-Vorlauf liest diese Zeile).
