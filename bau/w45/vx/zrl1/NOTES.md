@@ -15,10 +15,13 @@ Sicherungen: `index.vor-opt1.html` (= Basis), `index.vor-opt2.html` (Stand nach 
   (Ähnlichkeit aller Paare, quadratisch), `bassTrack4` 0,67 s, `loSig` 0,38 s. Kick-Vorlage (`kickTpl`) nur 0,25 s, Sortieren je Oberton
   (`opt.rob`) nicht messbar → die in SPK3 vermuteten Ursachen (Vorlage 16384, Sortieren) sind **nicht** mehr die Kosten; dort nichts geändert.
 
-## Was geändert ist (alle Ergebnisse bitgleich: Energie je Ebene und SDR identisch, 20 s und 3 min)
-1. `magPair` (SPK1): `Math.sqrt(a*a+b*b)` statt `Math.hypot`, kein Modulo. (hypot ist in V8 ein Vielfaches langsamer.)
+## Was geändert ist (alle gemessenen Ergebnisse bitgleich: Energie je Ebene und SDR identisch, 20 s und 3 min – gemessen, nicht bewiesen; zu magPair s. Prüfung)
+1. `magPair` (SPK1): `Math.sqrt(a*a+b*b)` statt `Math.hypot`, kein Modulo. (hypot ist in V8 ein Vielfaches langsamer.) Abweichung in Float64
+   ≤ 1 ULP (5 Mio. Zufallspaare: 1,88 Mio. abweichend, max. 4,4e-16 relativ), nach Float32 **0 / 5 Mio.** – alle Aufrufer speichern Float32
+   bzw. rechnen erst dB (Spektrogramm-Bytes, Noten-Übersicht): auch dort 0 / 5 Mio. (`mess/hypot-db.cjs`).
 2. `medLine` (SPK1, gleitender Median für HPSS): je Schritt alten Wert im sortierten Fenster durch den neuen **ersetzen** und nur bis zur
-   richtigen Stelle schieben (statt Entfernen + Einfügen mit zwei Verschiebungen); gleiches Fenster → gleicher Median.
+   richtigen Stelle schieben (statt Entfernen + Einfügen mit zwei Verschiebungen); gleiches Fenster (W = 2·h + 1 Einträge) → gleicher Median,
+   auch bei geradem L (Nachbesserung Prüfung, `mess/medline-alle.cjs`: L = 1…40, 0 / 578 665 abweichend).
 3. `zPrep` (SPK1, Ähnlichkeit): jedes Paar (g, h) einmal rechnen und in beide Bestenlisten eintragen (halbe Arbeit); je Liste kommen die
    Kandidaten weiterhin aufsteigend an, Produkt-Summe in gleicher Reihenfolge → gleiche Listen.
 4. `zerlegen` (SPK1): Nachbar-Zeilen je Rahmen einmal statt je Bin; REPET-Median auf den **Bytes** (LUT steigt → gleiche Reihenfolge, LUT erst
@@ -35,12 +38,16 @@ Verworfen (gemessen): FFT-Schleifen getauscht (Twiddle außen) – in V8 kein st
 | **Chromium 20 s** (zrl1-test, je 3 Läufe abwechselnd, Median) | **1938 ms** (1691/2012/1938) | **1306 ms** (1104/1610/1306) | **×1,48** |
 | **Chromium 3 min** (je 2 Läufe abwechselnd, Last 3,7–6,4) | **15150 ms** (16151/14150) | **12250 ms** (10456/14043) | ×1,24 |
 | Chromium 3 min Einzel bei Last 0,6 (vorher) / 3,7 (nachher) | 14027 ms | 10456 ms | ×1,34 |
+| **Chromium 3 min bei geringer Last** (Prüfer `ab.mjs`, Last 1,2–1,9, abwechselnd) | **14300 / 14263 ms** | **8886 / 9017 ms** | **×1,59** |
+| Chromium 3 min, Endstand nach Prüfung (zrl1-test `RUNDEN3=2`, Last 1,2–1,3) | 13947 / 13778 ms | 8683 / 9154 ms | ×1,55 |
+| Chromium 20 s, Endstand nach Prüfung (3 Läufe abwechselnd, Last 0,8–0,9) | 1841 ms (1841/1846/1654) | 1146 ms (1267/1086/1146) | ×1,61 |
 | SDR Drums/Bass/Tonal 20 s | 8,545 / 4,373 / 9,945 | 8,545 / 4,373 / 9,945 | ±0,000 |
 | SDR 3 min (gekachelt, Raster passt nicht → Bass niedrig) | 5,642 / 0,611 / 9,933 | 5,642 / 0,611 / 9,933 | ±0,000 |
 | Energie je Ebene (Bit-Vergleich) | – | Abweichung 0 (20 s und 3 min) | |
 | Speicher-Spitze 3 min: RSS aller Renderer-Prozesse (Seite + Worker) | 393 MB (vor Zerlegen 385) | 395 MB (vor Zerlegen 385) | Ziel ≤ 500 OK |
-Ziel „≤ 2,5 s je 20 s im Test-Chromium“: erfüllt (vorher schon knapp, jetzt mit Abstand). Last stand während der 3-min-Läufe bei 3,7–6,4
-(andere Agenten) → die 3-min-Faktoren streuen; der Node-Kern ohne Seiten-Last zeigt ×1,65.
+Ziel „≤ 2,5 s je 20 s im Test-Chromium“: erfüllt (vorher schon knapp, jetzt mit Abstand). Last stand während der ersten 3-min-Läufe bei 3,7–6,4
+(andere Agenten) → die dort berichteten ×1,24–1,34 waren zu vorsichtig; bei geringer Last (1,2–1,9) misst der 3-min-Fall **×1,55–1,59**
+(Prüfer und Endstand), der Node-Kern ohne Seiten-Last ×1,65.
 Speicher: Zerlegen selbst braucht je Streifen nur wenige MB (Streifen 128 Rahmen, Ähnlichkeits-Bytes 7 MB für 3 min, loSig 10 MB);
 die Spitze ist das Dokument (PCM Int16 + Mitte Float32 ≈ 95 MB für 3 min Stereo) plus die Seite. `Runtime.getHeapUsage` des Workers (CDP)
 zeigt nur 3 MB, weil die großen Typed Arrays außerhalb des JS-Heaps liegen – darum RSS als Maß.

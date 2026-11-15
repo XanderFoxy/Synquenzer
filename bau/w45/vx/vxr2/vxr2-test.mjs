@@ -19,9 +19,10 @@ function run(file, env, tag) {
   });
 }
 async function pool(jobs, n) { const res = new Array(jobs.length); let i = 0; await Promise.all(Array.from({length: n}, async () => { while (i < jobs.length) { const k = i++; res[k] = await jobs[k](); } })); return res; }
-const F = {index: idx, basis: bas}, TS = ['0.378', '0.383', '0.388', '0.393'];
+const F = {index: idx, basis: bas}, TS = ['0.378', '0.383', '0.388', '0.393'], TS2 = ['1.95', '1.955', '2.1', '2.105'];   // TS2 (Nachbesserung): Vorlauf 0,19 s / 0,04 s (< 0,25 s)
 const jobs = [], key = [];
-for (const t of TS) for (const f of ['index', 'basis']) { key.push(['p', f, t]); jobs.push(() => run(F[f], {RV1_PROBE: '1', RV1_T1: t, RV1_ONLY: '10'}, `p10-${f}-${t}`)); }
+for (const t of TS.concat(TS2)) for (const f of ['index', 'basis']) { key.push(['p', f, t]); jobs.push(() => run(F[f], {RV1_PROBE: '1', RV1_T1: t, RV1_ONLY: '10'}, `p10-${f}-${t}`)); }
+if (process.env.VXR2_NURA !== '1') for (const f of ['index', 'basis']) { key.push(['q14t', f, '']); jobs.push(() => run(F[f], {RV1_BPM: '120.6', RV1_T1: '0.686', RV1_ONLY: '14', RV1_T: '11.125'}, `q14t-${f}`)); }   // (d) gleiche Silbe (Datei-Zeit)
 if (process.env.VXR2_NURA !== '1') for (const f of ['index', 'basis']) {
   key.push(['q10', f, '0.388']); jobs.push(() => run(F[f], {RV1_T1: '0.388', RV1_ONLY: '10'}, `q10-${f}-0.388`));
   key.push(['q10', f, '0.383']); jobs.push(() => run(F[f], {RV1_T1: '0.383', RV1_ONLY: '10'}, `q10-${f}-0.383`));
@@ -39,6 +40,9 @@ for (const f of ['index', 'basis']) {
   const cm = cmp('M'), cl = cmp('L');
   S[f] = {stuecke: n, markenMaxDiffProben: cm.max, markenGleich: cm.gleich, anfangMitAnlaufMaxDiffProben: cl.max, anfangMitAnlaufGleich: cl.gleich, analyseMs: P.map(p => p.ms)};
   rep(f, same && cm.max === 0, `(a) ${f}: #10 Stücke bei Vorlauf ±5 ms (t1 ${TS.join('/')}): gleiche Zahl, Stück-Marken probengleich (Datei-Zeit)`, S[f]);
+  { const pm = t => { const r = get('p', f, t); const sh = x => Math.round((x + (+t - K0)) * SR); return r && r.js ? {t, n: r.js.L.length, M: (r.js.mk || []).map(sh), off: r.js.last && r.js.last.vxr2} : {t, n: null}; };
+    const P2 = TS2.map(pm), m0 = P[0].M || [], d2 = P2.map(p => p.M && p.M.length === m0.length ? Math.max(...p.M.map((v, k) => Math.abs(v - m0[k]))) : null);
+    rep(f, P2.every(p => p.n === P[0].n) && d2.every(v => v === 0), `(a2) ${f}: #10 kurzer Vorlauf (t1 ${TS2.join('/')} = 0,19/0,04 s): gleiche Stücke wie bei langem Vorlauf (t1 ${TS[0]}), Marken probengleich`, {stuecke: P2.map(p => p.n), ref: P[0].n, markenMaxDiffProben: d2, off: P2.map(p => p.off)}); }
   info(`(a) ${f}: Stück-Anfang mit Anlauf (Anlauf weiter aus der gehörten Fassung, 10-ms-Raster)`, {maxDiffMs: cl.max == null ? null : +(cl.max / 48).toFixed(1), gleich: cl.gleich});
   if (process.env.VXR2_NURA === '1') continue;
   // (b) (c) (d)
@@ -60,6 +64,7 @@ for (const f of ['index', 'basis']) {
   else info('(c) basis: #14 Raster', ra.replace(/^.*– /, ''));
   if (f === 'index') { all++; if (!/^OK/.test(mv)) { bad++; console.log('FEHLER (d) index: #14 Verschieben links – ' + mv.slice(0, 400)); } else console.log('OK (d) index: #14 Verschieben links – ' + mv.slice(0, 200)); }
   else info('(d) basis: #14 Verschieben links', mv.slice(0, 400));
+  { const r = get('q14t', f, ''), l = r ? line(r.txt, /^(OK|FEHLER) #14 Stück \d+ 60 ms nach links/) : ''; console.log(`OFFEN (d) ${f}: #14 gleiche Silbe wie Basis-Stück 35 (RV1_T 11,125, nicht gezählt – Entscheidung im Funk) – ` + l.slice(0, 300)); }
 }
 fs.writeFileSync(path.join(out, 'vxr2-sum.json'), JSON.stringify(S));
 console.log(bad ? `FEHLER ${bad}/${all}` : `ALLE OK (${all})`);
