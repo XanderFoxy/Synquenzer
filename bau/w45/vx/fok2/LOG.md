@@ -7,3 +7,4 @@
 - 23:33 zrl1: Zerlegen 20 s A 1362 / B 1253 ms (Einzelwerte A 1207/1362/1757, B 1252/1253/1409), 3 min A 10060 / B 9610 (1 Lauf, Last 3,8/5,6), SDR+Energie gleich, 'schneller'-Prüfungen sind ZRL1-Ziel gegen 4.74 (hier gleicher Zerlegen-Code) → Fok2 startet Endmessung, Last: load average: 4.73, 4.39, 3.29
 - 23:35 fok2-test Endfassung 21/0; 3 min N4096 5166 ms (basis 794), erstes 410 (86); N16384 4663 (2727), erstes 1256 (730); Abbruch 13 ms; LT 0, Last: load average: 1.89, 3.43, 3.07
 - 23:38 Stereo 3 min: N4096 7842 ms (basis 807), erstes 621 (85); zrl1 20 s ×5: 1243/1252 ms OK; smoke errors []; NOTES fertig; Endfassung md5 6c5a05646d88866ecf71bb5f6176728c, Last: load average: 0.50, 2.15, 2.63
+- 23:40 v4: restMid rendert bei Stereo nur die Mitte (linear) → Noten auf Rest stereo gleich basis (2 Noten), 549 statt 757 ms; Endtests laufen, Last: load average: 0.46, 1.68, 2.42
