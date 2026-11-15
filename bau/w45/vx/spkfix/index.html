@@ -109558,7 +109558,7 @@ function spk9DspMake(Z2) {
 }
 /* SPK9-END */
 /* SPKFIX-BEGIN ===== Spektral-Kleinfehler (OFFEN A8, unsichtbar): (1) Audio-Ebene rechnet nach einer Masken-Änderung ihrer Grundlage
-   (In Ebene, Zerlegen, Verfeinern, Profi, Zuordnen, Rest aufteilen, Auswahl übertragen) selbst neu – im selben ↶-Schritt wie die Änderung;
+   (In Ebene, Zerlegen, Verfeinern, Profi, Zuordnen, Rest aufteilen) selbst neu – im selben ↶-Schritt wie die Änderung;
    (2) Notenname am Balken: ein fast reiner Ton (Grundton trägt den Klang) bekommt seine Tonhöhe aus der Spitze des Grundtons statt aus dem
    groben Viertelton-Raster (220 Hz → A3 = 57 statt 56); (3) „Klang nachbauen“-Ergebnis liegt im Dokument (meta.spkKl, Container nimmt es mit);
    (4) Loop → Matrix (Audio) legt den Clip auf die Audio-Spur der eigenen Ebene (Name der Ebene wie beim Szenen-Anlegen), nicht auf die erste;
@@ -109599,7 +109599,7 @@ function spkfixDspMake(X) {   // X = {op, Z2, open, info, soon}; Rückgabe: op m
     const K = d.meta.spkKl || (d.meta.spkKl = {}); if (!m.lid) return {n: Object.keys(K).length};
     if (m.kl && typeof m.kl === 'object') K[m.lid] = m.kl; else delete K[m.lid];
     d.metaDirty = true; soon(d); return {n: Object.keys(K).length, spkKl: JSON.parse(JSON.stringify(K))}; }; }
-  const MASK = new Set(['transfer', 'zerlegen', 'verfeinern', 'profi', 'zuordnen', 'restAuf', 'spk5Zerl', 'spk5Profi', 'spk12trans']);
+  const MASK = new Set(['transfer', 'zerlegen', 'verfeinern', 'profi', 'zuordnen', 'restAuf', 'spk5Zerl', 'spk5Profi']);
   async function redo6(d) {   // (1) Audio-Ebenen, deren Grundlage sich geändert hat, ganz neu rechnen – ohne eigenen ↶-Schritt (der Schritt davor hält beides)
     const S6 = Z2 && Z2.fx6; if (!S6 || !d || !d.meta || d.busy) return 0;
     const Ls = d.meta.layers.filter(l => l.a6 && l.a6.id && l.a6.hs && S6.I.lay(d, l.a6.b)); if (!Ls.length) return 0;

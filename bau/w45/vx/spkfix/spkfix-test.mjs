@@ -22,6 +22,7 @@ const t0 = Date.now();
   ok('loop-matrix-audio-eigene-spur', j.loop, j.loop && j.loop.orig.spur === 'Original' && j.loop.bass.spur === 'Bass' && j.loop.bass.szene === 0);
   ok('nachbau-im-dokument', {kl1: j.kl1, kl2: j.kl2}, j.kl1 && j.kl1.imDokument && j.kl2 && j.kl2.nachNeuladen === true);
   ok('klangkorn-erster-ton-quelle-da', j.korn, j.korn && j.korn.quelleNach700ms && j.korn.sofortGefuettert === 1);
+  ok('worker-neu-gerechnet', j.wk, j.wk && j.wk.how === 'worker' && j.wk.neu6 === 1 && j.wk.id1 !== j.wk.id2);
   ok('konsole-ohne-fehler', j.errs, !j.fehler && j.errs.length === 0); }
 fs.writeFileSync(path.join(D, 'spkfix-test.json'), JSON.stringify({file, fails, s: Math.round((Date.now() - t0) / 1000), res}, null, 1));
 console.log(fails ? 'FEHLER ' + fails : 'ALLES OK', res.length, 'Prüfungen', Math.round((Date.now() - t0) / 1000), 's'); process.exit(fails ? 1 : 0);

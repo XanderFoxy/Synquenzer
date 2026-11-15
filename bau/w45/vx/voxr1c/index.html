@@ -61354,8 +61354,10 @@ function* humFind(x, sr, Fe) {
   return {on, base, f0: +B.f0.toFixed(4), n: on ? Math.max(2, n) : 0, rk: B.rk.map(v => +v.toFixed(1)), db: on ? +db(hp).toFixed(1) : null, sec: +T.toFixed(1)};
 }
 // Kerben je Oberton: Tiefe d (dB, −30) bis zum 7., darüber flacher (bis d/2 beim 16.), Güte q (30) × √k (im Gesangsband schmaler)
+// VOXR1C: Güte 60 statt 30 (halbe Kerbenbreite) – f0 sitzt auf ±0,01 Hz; bei 30 kostete Take C (Töne auf 200/250/300 Hz) 0,69 dB Gesang
+const HQ = 60;
 function humCoefs(sr, h) {
-  const out = [], f0 = h.f0 || 50, n = Math.max(1, Math.min(16, h.n || 7)), d = h.depth != null ? h.depth : -30, q = h.q || 30;
+  const out = [], f0 = h.f0 || 50, n = Math.max(1, Math.min(16, h.n || 7)), d = h.depth != null ? h.depth : -30, q = h.q || HQ;
   for (let k = 1; k <= n; k++) { const f = k * f0; if (f >= sr * 0.45) break; const dk = k <= 7 ? d : d * (1 - 0.5 * (k - 7) / 9); const qk = q * Math.sqrt(k); out.push({f, q: qk, db: dk, c: bqC('kerbe', sr, f, qk, Math.pow(10, dk / 20))}); }
   return out;
 }
@@ -61643,7 +61645,8 @@ function* roomLearn(x, sr) {
   // 3 dB darüber (ohne Überlappung, zusammen ≤ 2 s). Der Rauschteppich liegt in Pausen, nicht in leisem Gesang.
   const WN = 20, cands = [];
   const tw = new Float64Array(WN);
-  for (let j = 0; j + WN <= nf; j += 5) { let c = 0; for (let q = j; q < j + WN; q++) if (Lf[q] > -110) tw[c++] = Lf[q]; if (c < WN) continue; tw.sort(); cands.push({j, m: tw[WN >> 1]}); }   // Mittelwert (dB) je Fenster
+  // VOXR1C: Rahmen unter −90 dBFS (stiller Anlauf, Ausblende, nur Bit-Rauschen) sind kein Raumton – Take B lernte sonst −94 dB bei −37 dB Rauschboden
+  for (let j = 0; j + WN <= nf; j += 5) { let c = 0; for (let q = j; q < j + WN; q++) if (Lf[q] > -90) tw[c++] = Lf[q]; if (c < WN) continue; tw.sort(); cands.push({j, m: tw[WN >> 1]}); }   // Mittelwert (dB) je Fenster
   if (!cands.length) return null; cands.sort((p, q) => p.m - q.m);
   const use = [], best = cands[0].m; for (const c of cands) { if (c.m > best + 3 || use.length >= 10) break; if (use.every(u => Math.abs(u.j - c.j) >= WN)) use.push(c); }
   const N = 1024, F = FFT(N), re = new Float64Array(N), im = new Float64Array(N), P = new Float64Array(N / 2 + 1); let cnt = 0, pw = 0, fr = 0;
@@ -61661,7 +61664,8 @@ function* room(y, sr, o, Lr) {
   const n = y.length, H = Math.max(64, Math.round(0.01 * sr)), h1 = Math.max(16, Math.round(0.001 * sr)), nf = Math.floor(n / H), th = Lr.db - (o.below != null ? o.below : 10);
   const lev = (a, b) => { let s = 0; for (let i = a; i < b; i++) s += y[i] * y[i]; return db(s / Math.max(1, b - a)); };
   const holes = []; let s = -1;
-  for (let j = 0; j <= nf; j++) { const q = j < nf && lev(j * H, (j + 1) * H) < th; if (q && s < 0) s = j; if (!q && s >= 0) { if (j - s >= 3) holes.push([s * H, j * H]); s = -1; } }
+  // VOXR1C: nur Lücken zwischen Klang – stiller Anfang/Ende des Takes bleibt, wie er ist (Take B: Anlauf −94 dB wurde sonst „gefüllt“)
+  for (let j = 0; j <= nf; j++) { const q = j < nf && lev(j * H, (j + 1) * H) < th; if (q && s < 0) s = j; if (!q && s >= 0) { if (j - s >= 3 && s > 0 && j < nf) holes.push([s * H, j * H]); s = -1; } }
   for (const hz of holes) { while (hz[0] - h1 >= 0 && lev(hz[0] - h1, hz[0]) < th) hz[0] -= h1; while (hz[1] + h1 <= n && lev(hz[1], hz[1] + h1) < th) hz[1] += h1; }
   yield 0.3;
   const N = Lr.N, F = FFT(N), re = new Float64Array(N), im = new Float64Array(N), win = new Float64Array(N), mag = new Float64Array(N / 2 + 1), R = Math.round(0.01 * sr), out = [];
@@ -61744,7 +61748,7 @@ function* run(x, sr, o) {
     } else if (k === 'hum') {
       let h = st.hum === true || st.hum === 'auto' ? null : st.hum;
       if (!h || !h.f0) { const f = yield* part(humFind(y, sr, Fe), at, sp * 0.3); h = Object.assign({}, h || {}, {f0: f.f0, n: f.on ? Math.max(f.n, 7) : 0, found: f}); }
-      info.hum = {f0: h.f0, n: h.n, depth: h.depth != null ? h.depth : -30, q: h.q || 30, found: h.found || null};
+      info.hum = {f0: h.f0, n: h.n, depth: h.depth != null ? h.depth : -30, q: h.q || HQ, found: h.found || null};   // VOXR1C: HQ
       if (h.n) info.hum.k = yield* part(hum(y, y, sr, h), at + sp * 0.3, sp * 0.7);
     } else if (k === 'hp') { yield* part(hp(y, y, sr, st.hp.fc), at, sp); info.hp = {fc: st.hp.fc || 80}; }
     else if (k === 'ess') { const E = st.ess === true ? {} : st.ess; info.ess = yield* part(vr1EssCore(y, sr, E.amt != null ? E.amt : 6, Object.assign({}, E, {gen: true, keep})), at, sp); }
@@ -61752,6 +61756,8 @@ function* run(x, sr, o) {
     info.order.push(k); at += sp;
   }
   info.ms = Date.now() - t0;
+  // VOXR1C: „nur Entferntes“ auf Wunsch (o.q16) gleich hier als Int16 + Maßstab, gleiche Formel wie vr1Q16 – sonst 141 ms auf dem Hauptfaden
+  if (wg && o.q16) { let mx = 1e-9; for (let i = 0; i < wg.length; i++) { const a = wg[i] < 0 ? -wg[i] : wg[i]; if (a > mx) mx = a; } const s = 32767 / mx, q = new Int16Array(wg.length); for (let i = 0; i < wg.length; i++) q[i] = Math.round(wg[i] * s); return {y, wg: q, ws: s, info}; }
   return wg ? {y, wg, info} : {y, info};
 }
 /* ---------- Teil 3 · Assistent: aus dem Befund (Prüfen) die Schritte mit Startwerten × 0,5 / 1 / 1,5 (leicht / mittel / stark); es laufen
@@ -61882,7 +61888,11 @@ function vr1Job(op, x, sr, o, on) {
       const lim = 30000 + 2000 * x.length / sr, to = setTimeout(() => { VXR1.q.delete(id); no(new Error('Zeit')); }, lim);
       VXR1.q.set(id, {ok: r => ok(fin(r)), no, to, on});
       abort = () => { if (!VXR1.q.has(id)) return; VXR1.aborts++; try { w.terminate(); } catch (e) {} if (VXR1.w === w) VXR1.w = null; for (const [k, q] of VXR1.q) { clearTimeout(q.to); q.no(new Error('abgebrochen')); VXR1.q.delete(k); } VXR1.prog = null; };
-      const c = x.slice(); try { w.postMessage({id, op, x: c, sr, o: o || {}}, [c.buffer]); } catch (e) { clearTimeout(to); VXR1.q.delete(id); no(e); }
+      // VOXR1C: Kopie des Takes in Scheiben (≤ 1 Mio. Proben je Aufgabe) statt x.slice() in einem Stück (24 ms Long Task bei 3 min, iPhone ≈ 3×)
+      const c = new x.constructor(x.length), CH = 1 << 20; let k0 = 0;
+      const cp = () => { if (!VXR1.q.has(id)) return; const k1 = Math.min(x.length, k0 + CH); c.set(x.subarray(k0, k1), k0); k0 = k1; if (k0 < x.length) { setTimeout(cp, 0); return; }
+        try { w.postMessage({id, op, x: c, sr, o: o || {}}, [c.buffer]); } catch (e) { clearTimeout(to); VXR1.q.delete(id); no(e); } };
+      cp();
       return;
     }
     const K = VXR1.core || (VXR1.core = vr1Make()); let xf = x; if (!(x instanceof Float32Array)) { xf = new Float32Array(x.length); for (let i = 0; i < x.length; i++) xf[i] = x[i] / 32767; }
@@ -61968,7 +61978,8 @@ function vr1StepsOf(v, sr) { const st = JSON.parse(JSON.stringify(v.steps || {})
 // Kette für x (Float32) mit SÄUBERN cl % in der Mitte; Ergebnis {y, wg (nur Entferntes), info}; ctl.stop/ctl.j = abbrechbar
 async function vr1Pipe(x, sr, st, cl, refGet, on, ctl) {
   const stop = () => { if (ctl.stop) throw new Error('abgebrochen'); };
-  const job = (y, steps, a, b) => { const j = vr1Job('run', y, sr, {steps, weg: true}, q => { if (on) on(a + b * q); }); ctl.j = j; return j.p; };
+  const job = (y, steps, a, b) => { const j = vr1Job('run', y, sr, {steps, weg: true, q16: !cl && !!ctl.q16}, q => {   // VOXR1C: q16 (Int16 im Worker) nur für die angewandte Fassung ohne SÄUBERN
+ if (on) on(a + b * q); }); ctl.j = j; return j.p; };
   if (!cl) return job(x, st, 0, 1);
   const pre = {}, post = {}; for (const k of VR1_PRE) if (st[k]) pre[k] = st[k]; for (const k of VR1_POST) if (st[k]) post[k] = st[k];
   const nil = y => ({y, wg: new Float32Array(x.length), info: {order: []}});
@@ -62003,17 +62014,18 @@ function vr1Render(id, key, m) {
   const v = m.vr1, sr = src.sampleRate, x = src.getChannelData(0), cl = m.cl | 0, st = vr1StepsOf(v, sr);
   if (cl) delete st.hp;                 // SÄUBERN hat seinen Hochpass
   if (vr1G4Ess()) delete st.ess;        // die Gesangs-Effekte entzischen
-  const ctl = {stop: false, j: null, abort() { this.stop = true; if (this.j) this.j.abort(); }};
+  const ctl = {stop: false, j: null, q16: true, abort() { this.stop = true; if (this.j) this.j.abort(); }};   // VOXR1C: q16
   VXR1.vjob.set(id, {key, j: ctl}); VXR1.renders++; vr1Status();
-  vr1Pipe(x, sr, st, cl, cl && m.rf ? () => clRead(clKeys(id, m, 'r'), m.len) : null, q => { VXR1.vprog = q; vr1Status(); }, ctl).then(r => {
+  vr1Pipe(x, sr, st, cl, cl && m.rf ? () => clRead(clKeys(id, m, 'r'), m.len) : null, q => { VXR1.vprog = q; vr1Status(); }, ctl).then(async r => {
     if (ctl.stop) throw new Error('abgebrochen');
-    const n = r.y.length, b = new AudioBuffer({length: n, numberOfChannels: 1, sampleRate: sr}); b.getChannelData(0).set(r.y);
-    VXR1.ver.set(id, {id, key, buf: b, wg: vr1Q16(r.wg), weg: null, wmk: 0, info: r.info, at: performance.now(), n}); vr1Marks(id, 'run', r); vr1Prune(id);
+    const n = r.y.length, b = new AudioBuffer({length: n, numberOfChannels: 1, sampleRate: sr});
+    { const d = b.getChannelData(0), CH = 1 << 20; for (let k = 0; k < n; k += CH) { if (k) { await new Promise(res => setTimeout(res, 0)); if (ctl.stop) throw new Error('abgebrochen'); } d.set(k + CH < n ? r.y.subarray(k, k + CH) : r.y.subarray(k), k); } }   // VOXR1C: in Scheiben
+    VXR1.ver.set(id, {id, key, buf: b, wg: r.ws != null ? {q: r.wg, s: r.ws} : vr1Q16(r.wg), weg: null, wmk: 0, info: r.info, at: performance.now(), n}); vr1Marks(id, 'run', r); vr1Prune(id);
     if (VXR1.prev) delete VXR1.prev[id];
     const p = UI.pop && UI.pop.name === 'takes' ? UI.pop.el : null; if (p && p._clId === id) vr1WegMake(id);
   }).catch(e => { const ab = /abgebrochen/.test(String(e && e.message)); if (!ab) { logErr(e); toast('Gesang reinigen ging nicht – es spielt die vorige Fassung'); }
     if (!ab) VXR1.ver.set(id, {id, key, buf: null, wg: null, weg: null, fail: true, at: 0, n: 0}); })   // Befund 1: gleicher Schlüssel → keine Schleife
-    .finally(() => { const q = VXR1.vjob.get(id); if (q && q.j === ctl) VXR1.vjob.delete(id); VXR1.vprog = null; if (!ctl.stop) { try { tkPlayBuf(id, null); clResync(); } catch (e) {} } UI.dirty.grid = UI.dirty.song = true; if (typeof wpClChanged === 'function') wpClChanged(); vr1Status(); });
+    .finally(() => { const q = VXR1.vjob.get(id); if (q && q.j === ctl) VXR1.vjob.delete(id); VXR1.vprog = null; if (!ctl.stop) { try { tkPlayBuf(id, null); } catch (e) {} setTimeout(() => { try { clResync(); } catch (e) {} }, 0); }   /* VOXR1C: Abgleich in eigener Aufgabe */ UI.dirty.grid = UI.dirty.song = true; if (typeof wpClChanged === 'function') wpClChanged(); vr1Status(); });
 }
 // Befund 1: „Abbrechen“ stoppt die Rechnung wirklich. Kam sie von „Anwenden“, gilt wieder die vorige Fassung (und dessen ↶ fällt weg);
 // sonst (z. B. Atmer-Wahl) spielt die vorige Fassung weiter, bis wieder etwas geändert wird.
