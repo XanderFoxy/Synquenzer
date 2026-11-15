@@ -11,6 +11,10 @@
 //    zeigen dieselbe Zeile wie in der Quelle); ohne Zeilenumbruch wird er zu "" oder, wo Tokens sonst verschmelzen, zu " ".
 //  - type="text/plain" (Worklet-/Block-Quellen) und alle anderen Typen bleiben unberührt: der Code sucht darin per Text
 //    (vv3Fmx: '// V0d (A.4b 3)', lkWkCheck: "const PVA = '…'", blockLoad, Worklet-Texte).
+//    Ausnahme (PERF2 F): Blöcke in TEXT_PLAIN_ALS_SKRIPT (heute nur sq-spk-src = Spektral-Code aus PERF2 E) werden wie ein
+//    Skript behandelt (gleiches Verfahren, gleiche AST-Prüfung). Erlaubt nur, weil blockLoad den Text unverändert als
+//    klassisches Skript ausführt und sonst kein Code darin per Text sucht; das prüft das Werkzeug selbst: in der Ausgabe darf
+//    der Name nur noch zweimal vorkommen (id-Attribut + der eine blockLoad-Aufruf), sonst Abbruch.
 //  - <style>: nur Kommentare raus (postcss-Tokenizer); ein Kommentar mit Zeilenumbrüchen wird zu ebenso vielen "\n".
 //  - Schutz-Zeilen (Pflicht-Marken und Werkzeuge, die die Datei per Text lesen) behalten Einrückung und Abstände:
 //    "^  live: true," und "const VERSION = '<Fassung>';". Nur ihr Kommentar am Zeilenende fällt weg.
@@ -18,7 +22,7 @@
 //    den Schlüssel des Reinigungs-Zwischenspeichers im Audio-Store; geänderter Text = alle gereinigten Takes neu rechnen).
 // Prüfungen (sonst Abbruch mit Code 1, keine Ausgabe): je Skript AST der Ausgabe == AST der Quelle (ohne Positionen, mit
 // raw-Texten) und jede Knoten-Startzeile gleich; 0 Kommentare in der Ausgabe; CSS-Baum (postcss) ohne Kommentare gleich;
-// Ausgabe erneut mit parse5 gelesen: gleiche Skript-/Stil-Elemente, text/plain-Inhalte bytegleich; gleiche Zeilenzahl;
+// Ausgabe erneut mit parse5 gelesen: gleiche Skript-/Stil-Elemente, übrige text/plain-Inhalte bytegleich; gleiche Zeilenzahl;
 // "MS 2000" gleich oft (Quelle 1×), "^  live: true," 1×, VERSION-Zeile 1×.
 import fs from 'node:fs'; import path from 'node:path'; import crypto from 'node:crypto'; import { createRequire } from 'node:module';
 const req = createRequire(new URL('./werkzeug/package.json', import.meta.url));
@@ -31,6 +35,7 @@ const fail = m => { console.error('ABBRUCH: ' + m); process.exit(1); };
 
 const SCHUTZ_ZEILEN = [/^  live: true,/, /^const VERSION = '\d+\.\d+\.\d+';/];
 const SCHUTZ_FUNKTIONEN = ['vsCleanMake'];
+const TEXT_PLAIN_ALS_SKRIPT = ['sq-spk-src'];   // PERF2 F: nur Blöcke, die allein blockLoad liest (siehe Kopf)
 const JS_TYPES = new Set(['', 'text/javascript', 'application/javascript', 'application/x-javascript', 'text/ecmascript']);
 const HTML_NS = 'http://www.w3.org/1999/xhtml';
 const sha = b => crypto.createHash('sha256').update(b).digest('hex');
@@ -161,13 +166,14 @@ function cssOhneKommentare(css) {
 const t0 = Date.now();
 const quelleBuf = fs.readFileSync(QUELLE), html = quelleBuf.toString('utf8');
 if (Buffer.from(html, 'utf8').compare(quelleBuf) !== 0) fail('Quelle ist kein sauberes UTF-8');
-const B = blocks(html), bericht = {werkzeug: 'ausliefern.mjs (PERF2 D)', versionen: VERS, quelle: path.resolve(QUELLE), quelleSha256: sha(quelleBuf), bloecke: []};
+const B = blocks(html), bericht = {werkzeug: 'ausliefern.mjs (PERF2 D + F)', versionen: VERS, quelle: path.resolve(QUELLE), quelleSha256: sha(quelleBuf), bloecke: []};
 let o = '', pos = 0; const soll = [];
 for (const b of B) {
   const inhalt = html.slice(b.a, b.b); let neu = inhalt, art;
-  if (b.tag === 'script' && JS_TYPES.has(b.type) && !('src' in b.attrs)) {
-    const r = jsOhneKommentare(inhalt, 'Skript bei Zeile ' + (nlCount(html.slice(0, b.a)) + 1)); neu = r.out; art = 'js';
-    bericht.bloecke.push({art, zeile: nlCount(html.slice(0, b.a)) + 1, vorher: inhalt.length, nachher: neu.length, kommentare: r.kommentare, tokens: r.tokens, schutz: r.schutz, schutzZeilen: r.schutzZeilen, kommentareGeschuetzt: r.kommentareGeschuetzt});
+  const alsSkript = b.tag === 'script' && b.type === 'text/plain' && TEXT_PLAIN_ALS_SKRIPT.includes(b.id) && !('src' in b.attrs);
+  if ((b.tag === 'script' && JS_TYPES.has(b.type) && !('src' in b.attrs)) || alsSkript) {
+    const r = jsOhneKommentare(inhalt, (alsSkript ? 'Block ' + b.id : 'Skript') + ' bei Zeile ' + (nlCount(html.slice(0, b.a)) + 1)); neu = r.out; art = alsSkript ? 'js-block' : 'js';
+    bericht.bloecke.push({art, id: b.id || undefined, zeile: nlCount(html.slice(0, b.a)) + 1, vorher: inhalt.length, nachher: neu.length, kommentare: r.kommentare, tokens: r.tokens, schutz: r.schutz, schutzZeilen: r.schutzZeilen, kommentareGeschuetzt: r.kommentareGeschuetzt});
   } else if (b.tag === 'style' && (!b.attrs.type || b.type === 'text/css')) {
     const r = cssOhneKommentare(inhalt); neu = r.out; art = 'css';
     bericht.bloecke.push({art, zeile: nlCount(html.slice(0, b.a)) + 1, vorher: inhalt.length, nachher: neu.length, kommentare: r.kommentare});
@@ -180,7 +186,14 @@ const B2 = blocks(o);
 if (B2.length !== soll.length) fail('Anzahl Skript/Stil-Elemente: ' + B2.length + ' statt ' + soll.length);
 B2.forEach((b, i) => { const s = soll[i]; if (b.tag !== s.tag || b.type !== s.type || b.id !== s.id || o.slice(b.a, b.b) !== s.text) fail('Element ' + i + ' nach dem Neu-Lesen verschieden'); });
 if (nlCount(html) !== nlCount(o)) fail('Zeilenzahl der Datei verschieden');
+// PERF2 F: als Skript behandelte text/plain-Blöcke – kein anderer Code darf sie per Text lesen (nur id + blockLoad-Aufruf)
+for (const id of TEXT_PLAIN_ALS_SKRIPT) {
+  if (!B.some(b => b.id === id && b.type === 'text/plain')) continue;
+  const n = zaehlId(o, id);
+  if (n !== 2 || !o.includes("blockLoad('" + id + "'")) fail(id + ': ' + n + ' Erwähnungen statt 2 (id + blockLoad) – neuer Text-Zugriff? Block dann aus TEXT_PLAIN_ALS_SKRIPT nehmen oder Zugriff prüfen');
+}
 const zaehl = (s, re) => (s.match(re) || []).length;
+function zaehlId(s, id) { let n = 0, i = -1; while ((i = s.indexOf(id, i + 1)) >= 0) n++; return n; }
 const marken = {
   ms2000: [zaehl(html, /MS 2000/g), zaehl(o, /MS 2000/g)],
   live: [zaehl(html, /^  live: true,/gm), zaehl(o, /^  live: true,/gm)],
@@ -195,5 +208,5 @@ fs.writeFileSync(ZIEL, outBuf);
 Object.assign(bericht, {ziel: path.resolve(ZIEL), zielSha256: sha(outBuf), bytesVorher: quelleBuf.length, bytesNachher: outBuf.length, zeilen: nlCount(html) + 1, marken, sekunden: +((Date.now() - t0) / 1000).toFixed(1)});
 if (BERICHT) fs.writeFileSync(BERICHT, JSON.stringify(bericht, null, 1));
 console.log('OK ' + quelleBuf.length + ' -> ' + outBuf.length + ' Bytes (' + (100 * (1 - outBuf.length / quelleBuf.length)).toFixed(1) + ' % weniger), ' +
-  bericht.bloecke.filter(x => x.art === 'js').length + ' Skripte, ' + bericht.bloecke.filter(x => x.art === 'css').length + ' Stil, ' +
+  bericht.bloecke.filter(x => x.art === 'js').length + ' Skripte, ' + bericht.bloecke.filter(x => x.art === 'js-block').length + ' Block als Skript, ' + bericht.bloecke.filter(x => x.art === 'css').length + ' Stil, ' +
   bericht.bloecke.filter(x => x.art === 'unberuehrt').length + ' unberührt; MS 2000 ' + marken.ms2000[1] + '×, live ' + marken.live[1] + '×, VERSION ' + marken.versionText + '; sha256 ' + bericht.zielSha256.slice(0, 16) + ' (' + bericht.sekunden + ' s)');
