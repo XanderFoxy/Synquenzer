@@ -22,3 +22,12 @@
   Kern-Sonden lesen Code per Text-Anker aus der HTML (chr2-test: `function chr2Core() {`, `const CHR2 = {`) → Kopie
   reg/chr2-test-imp2b-aus.mjs mit leerraum-toleranten Ankern (sonst zeichengleich). spk11-test als Kopie (schreibt sonst Fotos/JSON
   in den spk11-Ordner).
+- 09:23–09:26 Zeitreihe fertig (0 Seitenfehler): bereit 2 786 → 2 565 ms, HTML gelesen 2 323 → 2 113 ms (Median 3, 4×). Spuren ausgewertet,
+  Trace-Dateien gelöscht (je 38 MB).
+- 09:26–09:36 Regression reg/serie-reg.sh nacheinander: vx1 61/61, mtx3 51/51, spk6-kern + spk6 OK, imp1 OK, spk11 38/3 (gleich wie
+  Quelle r4700), trp1 81/81, mtx4 117/118 (Zeitgrenze). golden: Demo hat keinen Song → Fehler im Test; chr2: Import-Pfad der Kopie falsch.
+- 09:37 golden mit Song aus allen Szenen: Song-Render schon Quelle gegen Quelle nicht bitgleich → Song-Render nur Pegel/Länge,
+  bitgleich über mkRender; 09:41 golden(4): 12 Werksklänge bitgleich, Kontrolle bitgleich, clCoreVer gleich → ERGEBNIS bitgleich.
+- 09:39 chr2 (Kopie, Import absolut): 76/77, der eine Fehler = Hilfsskript tune-meas.mjs findet seinen Text-Anker
+  `function vsDspMake() {` nicht (Prüf-Werkzeug; auf der Quelle ALLE OK 82).
+- 09:42 pflicht.log, regression.log, NOTES.md. index.html = basis.html (unverändert, cmp gleich).

@@ -66,8 +66,25 @@ Text dekodieren (`TextResourceDecoder::Decode`) 371/258 → 156/204 ms; **Übers
 Speicher: Quelltext-Speicher (CDP backingStorage) 7,2 → 4,9 MB; JS-Heap nach GC gleich (7,0 MB). Das Haupt-Skript enthält weiter
 4 342 Zeichen außerhalb Latin-1 (vorher 13 597, Rest in Zeichenketten) → die Engine hält es weiter als 2-Byte-Text.
 
-## Regression auf aus.html (reg/reg.log)
-Siehe Abschnitt am Ende (wird nach den Läufen ergänzt).
+## Regression auf aus.html (reg/reg.log, `regression.log`, alles nacheinander)
+| Sonde | Ergebnis auf aus.html | Vergleich Quelle 4.70.0 |
+|---|---|---|
+| Pflicht (topdefs, dupkeys, Marken) | 26 Skripte, 7 789 Namen, 0 doppelt, 0 Syntax; dupkeys 0; MS 2000 1×, „^  live: true,“ 1×, `const VERSION = '4.70.0';` 1× | gleich (`pflicht.log`) |
+| Rauchtest | errors [] (`smoke-aus.png`) | gleich |
+| vx1 | 61/61 | 61/61 |
+| imp1 | ALLE OK (121 s) | ALLE OK |
+| mtx3 | 51/51 | 51/51 |
+| spk6-kern / spk6 | ALLES OK / ALLES OK | gleich |
+| spk11 (Kopie reg/spk11-test.mjs) | 38 OK / 3 FEHLER | **gleich**: dieselben 3 Fehler `drums-auf-kit` mit denselben Zahlen (kick 89, kickEcht 63, …) in r4700/spk11.log und spk11/spk11-test.out – bekannter Befund, behoben in SPK11B |
+| trp1 | 81/81 | 81/81 |
+| mtx4 | 117/118 – offen: Zeitgrenze „P2 1×: 64 dichte Clips … kein Long Task > 50 ms“ | r4700: 114/118 mit denselben Zeitmessungen unter Volllast |
+| chr2-test-imp2b (Kopie, Anker leerraum-tolerant) | 76/77: Abschnitte 1–2e alle OK; 1 FEHLER „Tuning-Messung lief“ | Ursache: Hilfsskript chr3/src/tune-meas.mjs schneidet Kern-Code per Text-Anker aus der Datei (`Error: fehlt: function vsDspMake() {`) – Prüf-Werkzeug, nicht die App; auf der Quelle r4700/chrk.log ALLE OK (82) |
+| **Worklet-Klang (golden.mjs)** | **bitgleich**: 12 Werksklänge (analog/fm6/wt/mk/bm) über das App-Worklet, 2 Kanäle; Kontrolle Quelle == Quelle bitgleich; clCoreVer gleich (`2stdc`); 0 Konsolenfehler | – |
+
+Zum Golden-Render: der Song-Render über `vvRenderAudio` (alle Spuren, auch nur Trommeln wie in mtx3) ist **schon Quelle gegen Quelle
+nicht bitgleich wiederholbar** (Länge und Hashes schwanken von Seite zu Seite; Worklet-Nachrichten landen je nach Zeit in anderen
+Render-Blöcken). Er wird deshalb nur auf Länge ±2 % und Pegel je Kanal ±1 % verglichen (OK); bitgleich verglichen wird der
+deterministische Weg mkRender (Hauptfaden-Parameter → App-Worklet → Puffer). Ein früherer Lauf mit 6 Klängen war ebenfalls bitgleich.
 
 ## Risiken / Grenzen
 1. **Werkstatt-Sonden, die Code per Text-Anker aus der HTML schneiden** (`function imp1Core() {`, `const IMP1 = {`, `/* IMP2-BEGIN`,

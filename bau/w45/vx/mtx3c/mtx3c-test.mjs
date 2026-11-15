@@ -120,7 +120,7 @@ async function begRun(f) {
   ok('Begleiter live: der eigene Clip von HH ZU schweigt in der Band (kein Doppel)', r.hhClip === 0, r.hhClip);
   ok('Begleiter: nach ■ keine geplanten Band-Schläge übrig', r.left === 0, r.left);
   ok('Begleiter ● Aufnahme: HH in einem Clip von HH ZU (neue Szene), DRUMS dort ohne HH; ↶ leert beide', r.rec.pads && new RegExp(r.hh + ':hatC').test(r.rec.pads) && !/^4:[^ ]*hatC/.test(r.rec.pads) && /^4:- /.test(r.rec.back || '') && new RegExp(r.hh + ':-').test(r.rec.back || ''), r.rec);
-  ok('„Nur die Band“ behält HH ZU mit DRUMS; Drum-Ziel aus → HH ZU still wie DRUMS', r.keep.hh === r.keep.drums && r.off.drums === -1 && r.off.hh === -1, {keep: r.keep, aus: r.off});
+  ok('„Nur die Band“ behält HH ZU mit DRUMS; Drum-Ziel aus → HH ZU still wie DRUMS', r.keep.drums >= 0 && r.keep.hh === r.keep.drums && r.off.drums === -1 && r.off.hh === -1, {keep: r.keep, aus: r.off});
   ok('Begleiter: keine Konsolenfehler', N.errs.length === 0, N.errs.slice(0, 3));
 }
 
