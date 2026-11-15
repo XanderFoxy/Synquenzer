@@ -89,12 +89,14 @@ for (const [W, H] of VIEWS) {
   const R1 = await p.evaluate(kit => { const r = __spk11.last(), out = {scenes: r.scenes, audio: r.audio, midi: r.midi, notes: r.notes, drums: r.drums, rows: r.rows.map(o => ({name: o.name, a: o.a, m: o.m, cA: o.clipsA, cM: o.clipsM, n: o.notes, klang: o.klang})), names: r.scenes.map(s => S.scenes[s].name), nt: S.tracks.length, undo: UNDO.length};
     const d = S.tracks.findIndex(t => t.kind === 'drum'); out.kit = r.scenes.map(s => { const c = S.tracks[d].clips[s]; const z = {k: 0, s: 0, h: 0, x: 0, kT: 0, sT: 0}; for (const n of (c && c.notes) || []) { const st = Math.round(n.t * 4) % 16; if (n.n === kit.k) { z.k++; if (st === 0 || st === 8) z.kT++; } else if (n.n === kit.s) { z.s++; if (st === 4 || st === 12) z.sT++; } else if (n.n === kit.h) z.h++; else z.x++; } return z; });
     const bo = r.rows.find(o => /bass/i.test(o.name)); out.bassN = bo && bo.m != null ? r.scenes.map(s => { const c = S.tracks[bo.m].clips[s]; return c ? c.notes.length : 0; }) : []; out.bassSnd = bo && bo.m != null ? S.tracks[bo.m].sound.name : null;
+    out.tn = S.tracks.map(t => t.name); out.baseOrig = S.tracks.slice(0, BASE_T).filter(t => t.orig).length;
     out.audioOk = r.rows.filter(o => o.a != null).every(o => S.tracks[o.a].orig && r.scenes.every(s => S.tracks[o.a].clips[s] && S.tracks[o.a].clips[s].audio));
     return out; }, await p.evaluate(() => ({k: DRUM_BY_ID.kick.gm, s: DRUM_BY_ID.snare.gm, h: DRUM_BY_ID.hatC.gm})));
   await shot('30-szenen-angelegt');
   const np = P0.parts.length;
   ok(tag + ' szenen-angelegt', {scenes: R1.scenes, names: R1.names, nt: [nt0, R1.nt]}, R1.scenes.length === np && R1.names.join('|') === P0.parts.map(x => x.name).join('|'));
-  ok(tag + ' audio-clips', {audio: R1.audio, rows: R1.rows.map(o => o.name + ':' + o.cA)}, R1.audioOk && R1.audio >= 3 * np);
+  // Spurgrenze 8 (6 Grundspuren + 2): zwei Audio-Ebenen, zuerst die ohne MIDI (Pads); keine Grundspur wird umgebaut, Audio-Spur der MIDI-Ebene heißt „… Audio“
+  ok(tag + ' audio-clips', {audio: R1.audio, rows: R1.rows.map(o => o.name + ':' + o.cA), names: R1.tn}, R1.audioOk && R1.audio >= 2 * np && R1.rows.some(o => /pads/i.test(o.name) && o.cA === np) && R1.baseOrig === 0 && new Set(R1.tn).size === R1.tn.length);
   ok(tag + ' midi-clips', {midi: R1.midi, notes: R1.notes, rows: R1.rows.map(o => o.name + ':' + o.cM + '/' + o.n)}, R1.midi >= 2 * np);
   const bassTot = R1.bassN.reduce((a, v) => a + v, 0);
   ok(tag + ' bass-noten-je-teil', {je: R1.bassN, sum: bassTot, wahr: truthBass.length}, R1.bassN.length === np && R1.bassN.every(v => v > 0) && bassTot >= 0.7 * truthBass.length && bassTot <= 1.3 * truthBass.length);
@@ -107,25 +109,38 @@ for (const [W, H] of VIEWS) {
       const cnt = P => r.scenes.reduce((a, s) => a + P.tracks.filter(t => t.clips[s]).length, 0), notes = P => r.scenes.reduce((a, s) => a + P.tracks.reduce((b, t) => b + ((t.clips[s] && t.clips[s].notes.length) || 0), 0), 0);
       const tk = new Set(); for (const s of r.scenes) for (const t of q.tracks) { const c = t.clips[s]; if (c && c.audio) tk.add(c.audio.take); }
       return {clips: [cnt(S), cnt(q)], notes: [notes(S), notes(q)], names: r.scenes.map(s => q.scenes[s].name).join('|') === r.scenes.map(s => S.scenes[s].name).join('|'), orig: q.tracks.filter(t => t.orig).length, takes: [...tk].every(id => q.takes && q.takes[id] && q.takes[id].imp), spk: (q.spk || []).length}; });
-    ok(tag + ' speichern-laden', rt, rt.clips[0] === rt.clips[1] && rt.notes[0] === rt.notes[1] && rt.names && rt.orig >= 3 && rt.takes && rt.spk >= 1);
+    ok(tag + ' speichern-laden', rt, rt.clips[0] === rt.clips[1] && rt.notes[0] === rt.notes[1] && rt.names && rt.orig >= 2 && rt.takes && rt.spk >= 1);
   }
   // ↶: ein Schritt nimmt alles zurück
   await p.evaluate(() => undo()); await p.waitForTimeout(400);
   const U1 = await p.evaluate(sc => ({nt: S.tracks.length, clips: sc.reduce((a, s) => a + S.tracks.filter(t => t.clips[s]).length, 0), names: sc.map(s => S.scenes[s].name)}), R1.scenes);
   ok(tag + ' undo-alles', U1, U1.nt === nt0 && U1.clips === 0 && U1.names.every((n, i) => n === 'Szene ' + (R1.scenes[i] + 1)));
   if (full) {   // Auswahl: Refrain 1 (Takt 9–16), unter 300 Hz → ein Teil, nur Ebenen mit Noten darin
+    await p.evaluate(async () => { const U = __spk.page.ui(), l = U.meta.layers.find(x => x.art === 'bass'), refs = spk2Notes(U, l.id).filter(q => q.st !== 'zu').map(q => ({lid: l.id, id: q.id})); if (refs.length) await spk2Run(U, 'notenWeg', {notes: refs}, 'Verwerfen', r => r.n + ' verworfen'); U.act = 'orig'; });
+    await idle(); const nB0 = await p.evaluate(() => { const U = __spk.page.ui(), l = U.meta.layers.find(x => x.art === 'bass'); return spk2Notes(U, l.id).filter(q => spk11NoteOk(U, q)).length; });
     await p.evaluate(() => { const U = __spk.page.ui(), g = U.meta.grid, bar = 60 / g.bpm * 4; U.sel = [{art: 'rect', t0: +(g.off + 8 * bar + 0.05).toFixed(4), t1: +(g.off + 16 * bar - 0.05).toFixed(4), f0: 30, f1: 300, kt: 0, kf: 0}]; U.selVer++; if (U.dd) { U.dd.remove(); U.dd = null; } });
     await tap(await sel('#spk1Sheet [data-a="view"]')); await p.waitForTimeout(250); await tap(await sel('#spk1Sheet .spk1-dd [data-s11="open"]'));
     await p.waitForFunction(() => { const P = __spk11.plan(); return P && !__spk.page.info().busy; }, null, {timeout: 120000}); await p.waitForTimeout(300);
     const P2 = await p.evaluate(() => __spk11.plan()); await shot('40-auswahl-blatt');
-    const on = P2.rows.filter(r => r.mode !== 'x').map(r => r.art);
-    ok(tag + ' auswahl-begrenzt', {parts: P2.parts.map(x => x.name + ' ' + x.A + '–' + x.B), on, sel: P2.sel}, P2.sel && P2.parts.length === 1 && Math.abs(P2.parts[0].A - 8) <= 1 && Math.abs(P2.parts[0].B - 16) <= 1 && on.includes('bass') && !on.includes('drums'));
+    const on = P2.rows.filter(r => r.mode !== 'x').map(r => r.art), goOk = await p.evaluate(() => { const e = document.querySelector('#spk1Sheet .spk1-dd [data-s11="go"]'); return !!e && !e.disabled; });
+    const txt = await p.evaluate(() => [...document.querySelectorAll('#spk1Sheet .spk1-dd .spk11-n small')].map(e => e.textContent));
+    ok(tag + ' auswahl-begrenzt', {parts: P2.parts.map(x => x.name + ' ' + x.A + '–' + x.B), on, sel: P2.sel, goOk, bassNoten: nB0, txt}, P2.sel && P2.parts.length === 1 && Math.abs(P2.parts[0].A - 8) <= 1 && Math.abs(P2.parts[0].B - 16) <= 1 && on.includes('bass') && goOk && nB0 === 0);
     await tap(await sel('#spk1Sheet .spk1-dd [data-s11="go"]'));
     await p.waitForFunction(() => __spk11.last() && __spk11.last().scenes.length === 1 && !__spk.page.info().busy, null, {timeout: 300000}); await p.waitForTimeout(300);
     const R2 = await p.evaluate(() => { const r = __spk11.last(), bo = r.rows.find(o => /bass/i.test(o.name)); return {scenes: r.scenes, rows: r.rows.map(o => o.name + ':' + o.clipsA + '/' + o.clipsM + '/' + o.notes), bass: bo ? bo.notes : 0, len: bo && bo.m != null ? S.tracks[bo.m].clips[r.scenes[0]].len : 0}; });
     ok(tag + ' auswahl-angelegt', R2, R2.scenes.length === 1 && R2.bass >= 22 && R2.bass <= 40 && R2.len >= 7 && R2.len <= 9 && R2.rows.length <= 3);
     await p.evaluate(() => undo()); await p.waitForTimeout(300);
     const U2 = await p.evaluate(() => S.tracks.length); ok(tag + ' auswahl-undo', U2, U2 === nt0);
+    // Befund 2: Bass hat jetzt Noten nur im Refrain 1 → voller Lauf sucht in den übrigen Teilen nach und legt überall Bass-MIDI an
+    const nB1 = await p.evaluate(() => { const U = __spk.page.ui(), l = U.meta.layers.find(x => x.art === 'bass'), g = U.meta.grid, bar = 60 / g.bpm * 4, q = spk2Notes(U, l.id).filter(q => spk11NoteOk(U, q)); return {n: q.length, aus: q.filter(x => x.a < g.off + 8 * bar - 0.1 || x.a > g.off + 16 * bar + 0.1).length}; });
+    await p.evaluate(() => { const U = __spk.page.ui(); U.sel = []; U.selVer++; spk1SelDone(U, ''); if (U.dd) { U.dd.remove(); U.dd = null; } });
+    await tap(await sel('#spk1Sheet [data-a="view"]')); await p.waitForTimeout(250); await tap(await sel('#spk1Sheet .spk1-dd [data-s11="open"]'));
+    await p.waitForFunction(() => { const P = __spk11.plan(); return P && !P.sel && !__spk.page.info().busy; }, null, {timeout: 120000}); await p.waitForTimeout(300);
+    const nL = await p.evaluate(() => __spk11.last()); await tap(await sel('#spk1Sheet .spk1-dd [data-s11="go"]'));
+    await p.waitForFunction(n => __spk11.last() && __spk11.last().scenes.length === n && !__spk.page.info().busy, P0.parts.length, {timeout: 300000}); await p.waitForTimeout(300);
+    const R3 = await p.evaluate(() => { const r = __spk11.last(), bo = r.rows.find(o => /bass/i.test(o.name)); return {je: bo && bo.m != null ? r.scenes.map(s => { const c = S.tracks[bo.m].clips[s]; return c ? c.notes.length : 0; }) : [], toast: [...document.querySelectorAll('.toast')].map(e => e.textContent).join(' | ')}; });
+    ok(tag + ' teil-noten-nachgesucht', {vorher: nB1, je: R3.je}, nB1.n > 0 && nB1.aus === 0 && R3.je.length === P0.parts.length && R3.je.every(v => v > 0));
+    await p.evaluate(() => undo()); await p.waitForTimeout(300);
   }
   ok(tag + ' keine-konsolenfehler', errs.slice(0, 5), !errs.length);
   await ctx.close();

@@ -95229,8 +95229,8 @@ function mtx3RollHook(t, s) {
     if (!b.isConnected || ED.roll !== Rl || !head) return;
     const on = !!(Rl.selection && Rl.selection.length), front = b.previousSibling === head; if (on === front) return;
     const sc = acts.scrollWidth > acts.clientWidth + 1 ? acts : acts.parentElement, sl = sc ? sc.scrollLeft : 0, w = b.offsetWidth + 6;
-    if (on) head.after(b); else if (mark.isConnected) mark.after(b); else return;
-    if (sc && sl > 4) sc.scrollLeft = Math.max(0, sl + (on ? w : -w));   // gewischte Leiste: was im Bild ist, bleibt stehen
+    if (on) { if (sl > 4) return; head.after(b); }                     // nur bei Leiste am Anfang: eine gewischte Leiste bleibt, wie sie ist
+    else if (mark.isConnected) { mark.after(b); if (sc && sl > 4) sc.scrollLeft = Math.max(0, sl - w); } else return;
   };
   b._mtx3Place = place;
   try { if (head && typeof MutationObserver === 'function') { const mo = new MutationObserver(place); mo.observe(head, {childList: true, characterData: true, subtree: true}); b._mtx3Mo = mo; } } catch (e) { logErr(e); }
