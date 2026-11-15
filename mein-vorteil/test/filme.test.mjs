@@ -391,7 +391,7 @@ test('Wunschliste: Start-Chip, Preis, Abzeichen, statt/Tiefstpreis, Film ohne Fu
   // Mallrats war schon billiger: Tiefstpreis mit Tag, kein Abzeichen
   const mall = nbsp(await karte(page, 'Mallrats').innerText());
   assert.match(mall, /9,99 €/);
-  assert.match(mall, /Tiefst seit Nov\. 2026: 7,99 € am 03\.11\. · [\d,]+ € über Tiefst · dein Ziel: 4,99 €/);
+  assert.match(mall, /Tiefst seit Nov\. 2026: 7,99 € am 3\. Nov\. · [\d,]+ € über Tiefst · dein Ziel: 4,99 €/);
   assert.equal(await karte(page, 'Mallrats').locator('.fi-marke').count(), 0);
   // Shadow: gesenkt auf 7,99 € (Tiefstpreis), aber kein Angebot
   assert.deepEqual(await karte(page, 'Shadow').locator('.fi-marke').allInnerTexts(), ['Tiefstpreis']);
@@ -431,7 +431,7 @@ test('Serien nach Serie gruppiert (Angebote zuerst), Neu nach Chartplatz, Disney
   assert.match(nbsp(await st.nth(7).innerText()), /7,99 €[\s\S]*statt 29,99 €/);
   // Preis hat sich nie bewegt: kein „Tiefstpreis“-Abzeichen, sondern „unverändert“
   assert.equal(await st.nth(2).locator('.fi-marke').count(), 0);
-  assert.match(nbsp(await st.nth(2).innerText()), /19,99 €\s*Preis unverändert seit 01\.11\./);
+  assert.match(nbsp(await st.nth(2).innerText()), /19,99 €\s*Preis unverändert seit 1\. Nov\./);
   // Staffel-Bilder quadratisch (84 × 84)
   assert.deepEqual(await st.nth(0).locator('.fi-bild').evaluate(e => [e.getAttribute('width'), e.getAttribute('height'), Math.round(e.getBoundingClientRect().width), Math.round(e.getBoundingClientRect().height)]), ['84', '84', 84, 84]);
   await waehle(page, 'neu');
@@ -441,7 +441,7 @@ test('Serien nach Serie gruppiert (Angebote zuerst), Neu nach Chartplatz, Disney
   await waehle(page, 'disney');
   assert.equal(await karten(page).count(), 8);
   assert.match(nbsp(await karte(page, 'Die Unglaublichen').innerText()), /nur leihen: 3,99 €/);
-  assert.match(nbsp(await karte(page, 'Aladdin').innerText()), /Tiefst seit Nov\. 2026: 7,99 € am 02\.11\. · 2,00 € über Tiefst/);
+  assert.match(nbsp(await karte(page, 'Aladdin').innerText()), /Tiefst seit Nov\. 2026: 7,99 € am 2\. Nov\. · 2,00 € über Tiefst/);
   // Tastatur: Pfeile wandern durch die Chips
   await chip(page, 'disney').focus();
   await page.keyboard.press('ArrowRight');
@@ -723,8 +723,10 @@ const BOXEN = [
   { id: 'mydealz:2866932', typ: 'film', titel: 'Star Trek (2009) / Into Darkness / Beyond - 3 Filme als Set - 4K HDR digital @ AMazon Video / Apple TV', jahr: null, genre: null, preis: 7.99, preisSd: null, preisHd: null, leihe: null, vorher: null, tiefst: null, seit: '2026-11-07', tage: 1, istTiefst: false, angebot: true, bild: null, link: 'https://www.mydealz.de/deals/star-trek-into-darkness-beyond-3-filme-als-set-4k-hdr-digital-at-amazon-video-2866932', chart: null, quelle: 'mydealz' },
 ];
 const ANDERE = [
-  { ...neu({ id: 'itunes:1063220001', typ: 'staffel', titel: 'Star Trek: Deep Space Nine, Staffel 1', preis: 9.99, vorher: 24.99, ueblich: 24.99, ersparnis: { eur: 15, pct: 60, basis: 'üblich' }, tiefst: { p: 9.99, tag: '2026-11-07' }, seit: '2026-10-24', tage: 15, istTiefst: true, angebot: true, nieSoGuenstig: true, knueller: { grund: '60 % unter dem üblichen Preis' }, link: apple('tv-season', 'star-trek-deep-space-nine-staffel-1', 1063220001) }), serie: 'Star Trek: Deep Space Nine', nr: 1, wunsch: false },
+  { ...neu({ id: 'itunes:1063220001', typ: 'staffel', titel: 'Breaking Bad, Staffel 2', preis: 9.99, vorher: 24.99, ueblich: 24.99, ersparnis: { eur: 15, pct: 60, basis: 'üblich' }, tiefst: { p: 9.99, tag: '2026-11-07' }, seit: '2026-10-24', tage: 15, istTiefst: true, angebot: true, nieSoGuenstig: true, knueller: { grund: '60 % unter dem üblichen Preis' }, link: apple('tv-season', 'breaking-bad-staffel-2', 1063220001) }), serie: 'Breaking Bad', nr: 2, wunsch: false },
   { ...neu({ id: 'itunes:1048590900', typ: 'staffel', titel: 'Rick and Morty: The Anime, Staffel 1', preis: 14.99, vorher: 19.99, tiefst: { p: 14.99, tag: '2026-11-07' }, seit: '2026-11-03', tage: 5, angebot: true, ersparnis: { eur: 5, pct: 25, basis: 'zuletzt' }, link: apple('tv-season', 'rick-and-morty-the-anime-staffel-1', 1048590900) }), serie: 'Rick and Morty: The Anime', nr: 1, wunsch: false },
+  // neu in den Serien-Charts, erst seit heute beobachtet: ehrlich „noch kein Preisvergleich“ (Name echt aus den Suchantworten, Preis TESTWERT)
+  { ...neu({ id: 'itunes:1700000001', typ: 'staffel', titel: 'Dr. House, Staffel 3', preis: 9.99, vorher: null, tiefst: { p: 9.99, tag: '2026-11-15' }, seit: '2026-11-15', tage: 1, angebot: false, link: apple('tv-season', 'dr-house-staffel-3', 1700000001) }), serie: 'Dr. House', nr: 3, wunsch: false, neuEntdeckt: true },
 ];
 const mitBoxen = d => { d.gruppen.boxen = BOXEN; for (const t of d.gruppen.serien) t.wunsch = true; d.gruppen.serien.push(...ANDERE); return d; };
 
@@ -748,13 +750,13 @@ test('Tiefst-Zeile ehrlich: „Tiefst seit <Monat Jahr>“, „so günstig wie n
   const T = t => F._intern.titelNorm({ typ: 'film', link: null, ...t });
   const zeile = t => nbsp(F._intern.tiefstTeile(T(t)).join(' | '));
   assert.equal(zeile({ titel: 'A', preis: 9.99, vorher: 19.99, tiefst: { p: 9.99, tag: '2026-11-07' }, seit: '2026-10-24', nieSoGuenstig: true }), 'so günstig wie nie (seit 24. Okt.)');
-  assert.equal(zeile({ titel: 'B', preis: 14.99, tiefst: { p: 12.99, tag: '2026-10-28' }, seit: '2026-10-24' }), 'Tiefst seit Okt. 2026: 12,99 € am 28.10. · 2,00 € über Tiefst');
+  assert.equal(zeile({ titel: 'B', preis: 14.99, tiefst: { p: 12.99, tag: '2026-10-28' }, seit: '2026-10-24' }), 'Tiefst seit Okt. 2026: 12,99 € am 28. Okt. · 2,00 € über Tiefst');
   // alte Daten ohne nieSoGuenstig: gesenkt auf den Tiefst -> „so günstig wie nie“
   assert.equal(zeile({ titel: 'C', preis: 3.99, vorher: 7.99, tiefst: { p: 3.99, tag: '2026-11-07' }, seit: '2026-11-01', istTiefst: true }), 'so günstig wie nie (seit 1. Nov.)');
-  assert.equal(zeile({ titel: 'D', preis: 7.99, tiefst: { p: 7.99, tag: '2026-11-01' }, seit: '2026-11-01' }), 'Preis unverändert seit 01.11.');
+  assert.equal(zeile({ titel: 'D', preis: 7.99, tiefst: { p: 7.99, tag: '2026-11-01' }, seit: '2026-11-01' }), 'Preis unverändert seit 1. Nov.');
   // extern nur vollständig (Preis, Quelle, https) – BEISPIELWERTE, keine echte Quelle
   assert.equal(zeile({ titel: 'E', preis: 9.99, tiefst: { p: 9.99, tag: '2026-11-07' }, seit: '2026-11-01', extern: { p: 4.99, tag: '2024-12-24', quelle: 'Beispielquelle', url: 'https://example.org/x' } }),
-    'Preis unverändert seit 01.11. | Allzeit-Tiefst 4,99 € laut Beispielquelle');
+    'Preis unverändert seit 1. Nov. | Allzeit-Tiefst 4,99 € laut Beispielquelle');
   assert.doesNotMatch(zeile({ titel: 'F', preis: 9.99, tiefst: { p: 9.99, tag: '2026-11-07' }, seit: '2026-11-01', extern: { p: 4.99, quelle: 'X', url: 'http://x' } }), /Allzeit/);
   // nirgends „historisch“, „Allzeit“ nur mit extern
   const n = F._intern.normalisiere(mitBoxen(plain(FILME)));
@@ -779,15 +781,15 @@ for (const [breite, hoehe, lage] of [[428, 926, 'hoch'], [926, 428, 'quer']]) {
     const boxen = await page.locator('#fi-liste .fi-karte').evaluateAll(k => k.map(x => x.innerText));
     assert.equal(boxen.length, 4);
     assert.match(nbsp(boxen[0]), /Toy Story[\s\S]*19,99 €[\s\S]*Knüller[\s\S]*statt 39,99 € \(−50 %\)[\s\S]*so günstig wie nie \(seit 24\. Okt\.\)[\s\S]*5 Filme, je 4,00 €/);
-    assert.match(nbsp(boxen[1]), /Tiefst seit Okt\. 2026: 12,99 € am 28\.10\. · 2,00 € über Tiefst/);
+    assert.match(nbsp(boxen[1]), /Tiefst seit Okt\. 2026: 12,99 € am 28\. Okt\. · 2,00 € über Tiefst/);
     assert.doesNotMatch(boxen.join(' '), /historisch|Allzeit/i);
     assert.match(nbsp(await page.locator('.fi-fuss').last().innerText()), /Tiefst = niedrigster Preis, den der Radar selbst gesehen hat \(seit 24\. Okt\. 2026\) – frühere Preise kennt er nicht\./);
     await pruefeLayout(page, `${lage} boxen`);
     await page.screenshot({ path: join(FOTOS_BOXEN, `${lage}-boxen.png`), fullPage: true });
     await waehle(page, 'serien');
     const text = nbsp(await page.locator('#fi-liste').innerText());
-    assert.ok(text.indexOf('Rick and Morty') < text.indexOf('Weitere Serien im Angebot'), 'deine Serien oben');
-    assert.match(text, /Weitere Serien im Angebot\s+2 Staffeln[\s\S]*Star Trek: Deep Space Nine, Staffel 1[\s\S]*Knüller[\s\S]*Rick and Morty: The Anime, Staffel 1/);
+    assert.ok(text.indexOf('Rick and Morty') < text.indexOf('Weitere Serien'), 'deine Serien oben');
+    assert.match(text, /Weitere Serien\s+2 im Angebot · 1 neu entdeckt[\s\S]*Breaking Bad, Staffel 2[\s\S]*Knüller[\s\S]*Rick and Morty: The Anime, Staffel 1[\s\S]*Dr\. House, Staffel 3[\s\S]*neu in den Charts – noch kein Preisvergleich/);
     await pruefeLayout(page, `${lage} serien`);
     await page.screenshot({ path: join(FOTOS_BOXEN, `${lage}-serien.png`), fullPage: true });
     await page.locator('.fi-andere').scrollIntoViewIfNeeded();
@@ -796,3 +798,38 @@ for (const [breite, hoehe, lage] of [[428, 926, 'hoch'], [926, 428, 'quer']]) {
     await ctx.close();
   });
 }
+
+test('Prüfer 15.11.: kein „statt <Kurz-Hoch>“, Grund nicht doppelt, „neu entdeckt“ ehrlich, mydealz-Staffel mit vollem Titel', () => {
+  const { F } = modul();
+  const T = t => F._intern.titelNorm({ typ: 'film', link: null, quelle: 'Apple', ...t });
+  const text = t => nbsp(F._intern.karte(T(t), t.typ === 'staffel', t.chip).replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ');
+  // Normalpreis 9,99 nach Kurz-Hoch 12,99: ueblich = Preis -> kein „statt“, nicht „so günstig wie nie“ (Radar: nieSoGuenstig false)
+  let x = text({ titel: 'A', typ: 'staffel', preis: 9.99, vorher: 12.99, ueblich: 9.99, tiefst: { p: 9.99, tag: '2026-10-25' }, seit: '2026-10-25', nieSoGuenstig: false, istTiefst: true });
+  assert.doesNotMatch(x, /statt|so günstig wie nie|Knüller/);
+  assert.match(x, /Tiefst seit Okt\. 2026: 9,99 €/);
+  // ohne üblichen Preis (alte Daten): wie bisher „statt <vorher>“
+  assert.match(text({ titel: 'B', preis: 3.99, vorher: 7.99, tiefst: { p: 3.99, tag: '2026-11-07' }, seit: '2026-11-01' }), /statt 7,99 €/);
+  // „so günstig wie nie“ als Grund nur einmal
+  x = text({ titel: 'Columbia 100', typ: 'box', preis: 199.99, ueblich: 249.99, ersparnis: { eur: 50, pct: 20, basis: 'üblich' }, nieSoGuenstig: true, knueller: { grund: 'so günstig wie nie' }, tiefst: { p: 199.99, tag: '2026-11-14' }, seit: '2026-10-25', filme: 100, jeFilm: 2 });
+  assert.equal(x.match(/so günstig wie nie/g).length, 1, x);
+  assert.match(x, /statt 249,99 € \(−20 %\)/);
+  // „gesenkt, x € je Film“ und „Staffel gesenkt auf …“ stehen schon in Box-Zeile bzw. Preis + statt
+  x = text({ titel: 'Ace Ventura (2-Pack)', typ: 'box', preis: 3.98, vorher: 7.98, ersparnis: { eur: 4, pct: 50, basis: 'zuletzt' }, knueller: { grund: 'gesenkt, 1,99 € je Film' }, tiefst: { p: 3.98, tag: '2026-11-12' }, seit: '2026-11-12', filme: 2, jeFilm: 1.99 });
+  assert.doesNotMatch(x, /gesenkt, 1,99/);
+  assert.match(x, /statt 7,98 € \(−50 %\)[\s\S]*2 Filme, je 1,99 €/);
+  x = text({ titel: 'Dr. House, Staffel 3', typ: 'staffel', preis: 7.99, vorher: 12.99, ersparnis: { eur: 5, pct: 38, basis: 'zuletzt' }, knueller: { grund: 'Staffel gesenkt auf 7,99 €' }, tiefst: { p: 7.99, tag: '2026-11-14' }, seit: '2026-11-12', chip: 'andere' });
+  assert.doesNotMatch(x, /Staffel gesenkt auf/);
+  // neu entdeckt: ehrlich ohne Vergleich, keine Marke
+  x = text({ titel: 'Testserie, Staffel 1', typ: 'staffel', preis: 9.99, neuEntdeckt: true, nieSoGuenstig: false, tiefst: { p: 9.99, tag: '2026-11-15' }, seit: '2026-11-15', chip: 'andere' });
+  assert.match(x, /neu in den Charts – noch kein Preisvergleich/);
+  assert.doesNotMatch(x, /Knüller|Angebot|statt/);
+  // mydealz-Staffel deiner Serie: voller Titel, nicht „Staffel 1“
+  x = text({ titel: 'Star Trek: Das nächste Jahrhundert – Staffel 1 bis 7 je 9,99 €', typ: 'staffel', preis: 9.99, quelle: 'mydealz', serie: 'Star Trek: Das nächste Jahrhundert' });
+  assert.match(x, /Staffel 1 bis 7 je 9,99/);
+  // „Weitere Serien“: mit neu entdeckten nicht „im Angebot“ für alle
+  const d = plain(FILME);
+  for (const t of d.gruppen.serien) t.wunsch = true;
+  d.gruppen.serien.push({ id: 'itunes:1700000001', typ: 'staffel', titel: 'Testserie, Staffel 1', preis: 9.99, tiefst: { p: 9.99, tag: '2026-11-15' }, seit: '2026-11-15', tage: 1, nieSoGuenstig: false, neuEntdeckt: true, angebot: false, wunsch: false, quelle: 'Apple', link: null });
+  const n = F._intern.normalisiere(d);
+  assert.ok(n.gruppen.serien.some(t => t.neuEntdeckt && !t.wunsch));
+});

@@ -127,6 +127,8 @@
       bekannt: zahl(t.bekannt) != null && zahl(t.bekannt) >= 0 ? Math.round(zahl(t.bekannt)) : null, // in so vielen Wikipedia-Sprachen (Bekanntheit)
       ueblich: preisVon(t.ueblich), ersparnis: pct != null && pct > 0 && pct < 100 ? { eur: preisVon(ers.eur), pct: Math.round(pct) } : null,
       ueberTiefst: zahl(t.ueberTiefst) != null && zahl(t.ueberTiefst) >= 0 ? zahl(t.ueberTiefst) : null, nieSoGuenstig: t.nieSoGuenstig === true,
+      // neuer Radar bewertet selbst (nieSoGuenstig vorhanden): dann gilt nur sein Urteil – nicht „so günstig wie nie“ nach einem Kurz-Hoch
+      bewertet: typeof t.nieSoGuenstig === 'boolean', neuEntdeckt: t.neuEntdeckt === true, komplett: t.komplett === true,
       knueller: grund ? { grund } : null,
       // Allzeit-Tiefst nur vollständig: Preis, Quelle, https-Link (heute liefert der Radar keinen – keine erlaubte Quelle)
       extern: exP != null && exQ && sicher(ex.url) ? { p: exP, tag: datum(ex.tag), quelle: exQ, url: sicher(ex.url) } : null,
@@ -221,15 +223,15 @@
     if (t.tiefst) {
       const hoeher = t.preis == null || t.preis > t.tiefst.p + 0.004; // ohne Preis: zuletzt gesehener Tiefstpreis mit Tag
       const heute = t.seit === tagKey(Date.now());
-      const nie = t.nieSoGuenstig || (!hoeher && t.vorher != null && t.vorher > t.preis + 0.004);
+      const nie = t.bewertet ? t.nieSoGuenstig : (!hoeher && t.vorher != null && t.vorher > t.preis + 0.004);
       if (!hoeher && t.vorher == null && !zeigeTiefst(t) && !nie) { // Preis hat sich nie bewegt
-        if (t.seit && !heute) teile.push(esc(`Preis unverändert seit ${tm(t.seit)}`));
+        if (t.seit && !heute) teile.push(esc(`Preis unverändert seit ${tagMonat(t.seit)}`));
       } else if (!hoeher && nie) {
         teile.push(esc(`so günstig wie nie${t.seit ? (heute ? ' (seit heute beobachtet)' : ` (seit ${tagMonat(t.seit)})`) : ''}`));
       } else {
         const seit = t.seit ? (heute ? ' seit heute' : ` seit ${monatJahr(t.seit)}`) : '';
         const ueber = hoeher && t.preis != null ? ` · ${euro(Math.round((t.preis - t.tiefst.p) * 100) / 100)} über Tiefst` : '';
-        teile.push(esc(`Tiefst${seit}: ${euro(t.tiefst.p)}${hoeher && t.tiefst.tag ? ` am ${tm(t.tiefst.tag)}` : ''}${ueber}`));
+        teile.push(esc(`Tiefst${seit}: ${euro(t.tiefst.p)}${hoeher && t.tiefst.tag ? ` am ${tagMonat(t.tiefst.tag)}` : ''}${ueber}`));
       }
     }
     if (t.extern) teile.push(esc(`Allzeit-Tiefst ${euro(t.extern.p)} laut ${t.extern.quelle}`));
@@ -237,8 +239,9 @@
   }
   function initialen(s) { return s.split(/[\s:–-]+/).filter(w => /^[\p{L}\d]/u.test(w)).slice(0, 2).map(w => w[0].toUpperCase()).join(''); }
   function karte(t, staffel, chip) {
-    // andere Serien stehen ohne Serien-Überschrift: dort der volle Name („Breaking Bad, Staffel 2“)
-    const name = staffel && chip !== 'andere' && staffelNr(t) != null ? `Staffel ${staffelNr(t)}` : t.titel;
+    // andere Serien stehen ohne Serien-Überschrift: dort der volle Name („Breaking Bad, Staffel 2“); mydealz-Tipps und
+    // Komplett-Boxen ebenso („Staffel 1 bis 7 je 9,99 €“ ist nicht „Staffel 1“)
+    const name = staffel && chip !== 'andere' && !/mydealz/i.test(t.quelle) && !t.komplett && staffelNr(t) != null ? `Staffel ${staffelNr(t)}` : t.titel;
     // „Charade (1963)“ nicht noch einmal „(1963)“, „Scarface (1983)“ nicht „(1983) (1984)“ (Apple-Datum = deutscher Start)
     const jahrDoppelt = t.jahr != null && /\((?:1[89]|20)\d\d\)/.test(name);
     const marken = [];
@@ -254,12 +257,21 @@
       : `<span class="fi-preis fi-ohnepreis">${t.leihe != null ? `nur leihen: ${esc(euro(t.leihe))}` : 'gerade nicht zu kaufen'}</span>`;
     const klein = [];
     if (t.fehlt) klein.push('Wird weiter gesucht – sobald er im Store ist, steht er hier.');
-    // „statt“: der übliche Preis (am längsten gesehen), sonst der zuletzt andere; Ersparnis in %
-    const statt = !t.fehlt && t.preis != null ? [t.ueblich, t.vorher].find(v => v != null && v > t.preis + 0.004) : null;
-    if (statt != null) klein.push(`statt <s>${esc(euro(statt))}</s>${t.ersparnis && t.ueblich === statt ? esc(` (−${t.ersparnis.pct} %)`) : ''}`);
-    // Grund nur, wenn er mehr sagt als „statt … (−x %)“
-    if (t.knueller && !t.fehlt && t.preis != null && !(t.ersparnis && /^\d+ % unter dem üblichen Preis$/.test(t.knueller.grund))) klein.push(esc(t.knueller.grund));
-    klein.push(...tiefstTeile(t));
+    // „statt“: der übliche Preis (am längsten gesehen), sobald der Radar einen kennt – auch wenn er dem heutigen gleicht (dann kein
+    // „statt“: nach einem Kurz-Hoch ist der Normalpreis kein Angebot). Ohne üblichen Preis wie bisher der zuletzt andere.
+    const statt = t.fehlt || t.preis == null ? null : t.ueblich != null ? (t.ueblich > t.preis + 0.004 ? t.ueblich : null)
+      : t.vorher != null && t.vorher > t.preis + 0.004 ? t.vorher : null;
+    const pctStatt = statt != null && t.ersparnis && Math.round((1 - t.preis / statt) * 100) === t.ersparnis.pct ? t.ersparnis.pct : null;
+    if (statt != null) klein.push(`statt <s>${esc(euro(statt))}</s>${pctStatt != null ? esc(` (−${pctStatt} %)`) : ''}`);
+    const tt = tiefstTeile(t);
+    // Grund nur, wenn er mehr sagt als die Zeile ohnehin: „x % unter dem üblichen Preis“ (= statt … (−x %)), „so günstig wie nie“
+    // (steht in der Tiefst-Zeile), „gesenkt, x € je Film“ (Box-Zeile) und „Staffel gesenkt auf …“ (Preis + statt) – Prüfer 15.11.
+    const g = t.knueller && !t.fehlt && t.preis != null ? t.knueller.grund : '';
+    const gesagt = (/^\d+ % unter dem üblichen Preis$/.test(g) && pctStatt != null) || (/^so günstig wie nie$/.test(g) && tt.some(x => x.startsWith('so günstig wie nie')))
+      || (/je Film$/.test(g) && t.typ === 'box' && t.filme) || (/^Staffel gesenkt auf/.test(g) && statt != null);
+    if (g && !gesagt) klein.push(esc(g));
+    if (t.neuEntdeckt && !t.fehlt && t.preis != null) klein.push('neu in den Charts – noch kein Preisvergleich');
+    klein.push(...tt);
     if (t.typ === 'box' && !t.fehlt && t.filme && t.preis != null) klein.push(esc(`${t.filme} Filme, je ${euro(t.jeFilm ?? t.preis / t.filme)}`));
     if (t.ziel != null && !t.fehlt && !t.unterZiel) klein.push(esc(`dein Ziel: ${euro(t.ziel)}`));
     const set = Number(SET.exec(t.titel)?.[1]);
@@ -291,8 +303,9 @@
     // deine Serien (Liste „serien“) wie bisher nach Serie gruppiert; alle anderen Staffeln im Angebot darunter in Radar-Reihenfolge
     // (Preisknüller zuerst). Alte Daten ohne „wunsch“-Feld: alles gilt als deine Serien.
     const arr = alle0.filter(t => t.wunsch), andere = zuerst(alle0.filter(t => !t.wunsch), t => t.knueller);
+    const neuN = andere.filter(t => t.neuEntdeckt).length; // erst gesehen, noch ohne Preisvergleich (nicht „im Angebot“)
     const unten = andere.length
-      ? `<h3 class="fi-gruppe fi-andere">Weitere Serien im Angebot <small>${andere.length} ${andere.length === 1 ? 'Staffel' : 'Staffeln'}</small></h3>`
+      ? `<h3 class="fi-gruppe fi-andere">${neuN ? 'Weitere Serien' : 'Weitere Serien im Angebot'} <small>${neuN ? `${andere.length - neuN} im Angebot · ${neuN} neu entdeckt` : `${andere.length} ${andere.length === 1 ? 'Staffel' : 'Staffeln'}`}</small></h3>`
         + `<ul class="fi-karten">${andere.map(t => karte(t, t.typ === 'staffel', 'andere')).join('')}</ul>`
       : '';
     const gruppen = new Map();
@@ -347,7 +360,7 @@
     // ehrlich: „Tiefst“ = was der Radar selbst gesehen hat; Allzeit-Tiefst nur mit genannter Quelle (Link)
     const ext = [...new Map(alle.filter(t => t.extern).map(t => [t.extern.quelle, t.extern.url])).entries()].slice(0, 3);
     const extHtml = ext.length ? ` Allzeit-Tiefst laut ${ext.map(([q, u]) => `<a href="${esc(u)}" target="_blank" rel="noopener" class="fi-raum">${esc(q)}</a>`).join(', ')}.` : '';
-    const kn = alle.some(t => t.knueller) ? ' Knüller = deutlich unter dem üblichen Preis, so günstig wie nie oder Box/Staffel stark gesenkt.' : '';
+    const kn = alle.some(t => t.knueller) ? ' Knüller = mindestens 30 % unter dem üblichen Preis, gerade so günstig wie nie oder Box/Staffel frisch um mindestens 20 % gesenkt.' : '';
     return raumHtml + `<p class="fi-fuss">Tiefst = niedrigster Preis, den der Radar selbst gesehen hat${seit ? ` (seit ${esc(tagMonat(seit))} ${esc(seit.slice(0, 4))})` : ''} – frühere Preise kennt er nicht.${extHtml}${kn} Tippen öffnet die TV-App${md ? ', Tipps von mydealz öffnen mydealz.de' : ''}.</p>`
       + (quellen.length ? `<details class="fi-quellen"><summary>Quellen</summary><ul>${quellen.join('')}</ul></details>` : '');
   }
