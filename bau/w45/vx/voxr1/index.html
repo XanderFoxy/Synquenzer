@@ -61714,7 +61714,7 @@ function vr1EssCore(y, sr, amt, o) {
     for (let j = 0; j < J; j++) {
       frame(j); let pv = 0, ps = 0; for (let k = v0; k <= v1; k++) pv += re[k] * re[k] + im[k] * im[k];
       for (let b = 0; b < nb; b++) { let p = 0; for (let k = ed[b]; k < ed[b + 1]; k++) p += re[k] * re[k] + im[k] * im[k]; Lb[j * nb + b] = lg(p); ps += p; }
-      Lv[j] = lg(pv); const Ls = lg(ps); sib[j] = Ls > Lv[j] + thr && Ls > -70 ? 1 : 0;
+      Lv[j] = lg(pv); const Ls = lg(ps); sib[j] = Ls > Lv[j] + thr - 4 && Ls > -70 ? 1 : 0;   // Erkennung 4 dB empfindlicher als die Senkung (Zischlaut auf einem Vokal-Ende)
       if ((j & 511) === 511) yield 0.5 * j / J;
     }
     // nur Zischlaute ≥ 20 ms (kurze Anschläge t/k/p bleiben)

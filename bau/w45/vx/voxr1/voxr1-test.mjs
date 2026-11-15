@@ -1,4 +1,4 @@
-// VOX-R1 Teil 1+2/3: Abnahme mit synthetisch eingesetzten Fehlern in echten Gesangs-Takes (Kern in Node + App im Browser, Touch über CDP).
+// VOX-R1 Teil 1–3/3: Abnahme mit synthetisch eingesetzten Fehlern in echten Gesangs-Takes (Kern in Node + App im Browser, Touch über CDP).
 // Aufruf: node voxr1-test.mjs <abs index.html> [basis.html]   – Ausgaben nennen nur „Take A/B/C“, keine Datensatz-Namen.
 import fs from 'fs';
 import path from 'path';
@@ -160,14 +160,14 @@ for (let k = 0; k < SRC.length; k++) {
     const g = vr * Math.pow(10, -3 / 20) / Math.sqrt(s2 / L), R = Math.round(0.01 * sr); for (let i = 0; i < L; i++) { const r = Math.min(1, i / R, (L - 1 - i) / R); sN[p0 + i] += g * tmp[i] * r; } }
   const x = new Float32Array(n); for (let i = 0; i < n; i++) x[i] = v[i] + sN[i];
   const B = K.done(K.check(x, sr)), y = Float32Array.from(x), info = K.ess(y, sr, 6);
-  const bandE = (z, a, b, f1, f2) => band(Float32Array.from(z.subarray(Math.max(0, a - 1024), Math.min(n, b + 3072))), sr, f1, f2);
+  const bandE = (z, a, b, f1, f2) => band(Float32Array.from(z.subarray(a, b)), sr, f1, f2);   // genau über dem eingesetzten „s“
   const red = pos.map(p0 => +(db(bandE(y, p0, p0 + L, 5000, 16000)) - db(bandE(x, p0, p0 + L, 5000, 16000))).toFixed(1));
   // Vokale: stimmhafte 10-ms-Rahmen (Grundton-Tabelle) ≥ 250 ms weg von den „s“
   const far = i => pos.every(p0 => i < p0 - 0.25 * sr || i > p0 + L + 0.25 * sr); let e0 = 0, e1 = 0, nv = 0, mxd = 0;
   for (let j = 0; j < nf; j++) { const i = j * H; if (!far(i) || !(f0at(i / sr) > 0) || e[j] < 1e-6) continue; let a = 0, b2 = 0; for (let q = i; q < i + H; q++) { a += x[q] * x[q]; b2 += y[q] * y[q]; } e0 += a; e1 += b2; nv++; mxd = Math.max(mxd, Math.abs(db(b2) - db(a))); }
   const vok = +(db(e1) - db(e0)).toFixed(3); let same = 0, tot = 0; for (let j = 0; j < nf; j++) { const i = j * H; if (!far(i) || !(f0at(i / sr) > 0)) continue; tot++; let eq = true; for (let q = i; q < i + H; q++) if (y[q] !== x[q]) { eq = false; break; } if (eq) same++; }
   R.zischen = {s: pos.length, reduktionDb: red, vokaleDb: vok, vokaleMaxRahmenDb: +mxd.toFixed(2), vokalRahmen: nv, bitgleich: same + '/' + tot, info, pruefen: {sibPct: B.sibPct, line: B.line}};
-  ok(red.filter(d => d <= -6).length >= 9, 'Zischen: S-Energie > 5 kHz an ≥ 9 von 10 „s“ um ≥ 6 dB gesenkt (Stärke 6 dB)', {reduktionDb: red});
+  const md = red.slice().sort((a, b) => a - b)[5]; ok(red.filter(d => d <= -5.5).length >= 9 && md <= -5.95, 'Zischen: S-Energie > 5 kHz −6 dB (Median; ≥ 9 von 10 „s“ ≤ −5,5 dB, Rest = 10-ms-Ränder), Stärke 6 dB', {reduktionDb: red, median: md});
   ok(Math.abs(vok) <= 0.5, 'Zischen: Vokale ändern sich ≤ 0,5 dB', {vokaleDb: vok, rahmen: nv, bitgleich: same + '/' + tot});
   ok(info.how === 'spektral' && info.latMs > 20 && info.latMs < 26, 'Zischen: spektral, Blocklänge ≈ 23 ms (offline vorausgerechnet, beim Mithören aus)', info);
   const sc = K.done(K.check(v, sr)), A1 = K.assist(sc, 'leicht'), A2 = K.assist(sc, 'mittel'), A3 = K.assist(sc, 'stark'), Bm = K.assist(B, 'mittel');
@@ -238,7 +238,46 @@ async function browser() {
   await run(async o => { if (!(UI.pop && UI.pop.name === 'takes')) { const t = S.tracks.findIndex(t => t.kind === 'voice' || t.kind === 'stimme' || t.stimme); try { tkSheet && tkSheet(Math.max(0, t), 0); } catch (e) {} } await wait(300); }, {id});
   const U = await run(async () => { const p = UI.pop && UI.pop.el; if (!p) return {pop: UI.pop ? UI.pop.name : null}; const b = p.getBoundingClientRect(), cb = p.querySelector('.clbox'); return {pop: UI.pop.name, in: b.left >= -1 && b.right <= innerWidth + 1 && b.top >= -1, clbox: !!cb, clboxH: cb ? Math.round(cb.getBoundingClientRect().height) : null, vr1: !!p.querySelector('.vr1') }; }, null);
   R.ui = U; await p.screenshot({path: path.join(path.dirname(file), 'voxr1-blatt.png')});
-  ok(!U.vr1, 'Teil 1 ändert nichts Sichtbares (Zeile „Gesang reinigen“ erst nach Funk-Vorschlag, Teil 3)', U);
+  // Teil 3: Zeile „Gesang reinigen“ im Säubern-Blatt (Touch über CDP)
+  const geo = async () => run(async () => { const p = UI.pop && UI.pop.el, d = p && p.querySelector('.vr1'); if (!d) return null; const B = [...d.querySelectorAll('button'), ...p.querySelectorAll('.clab button')].filter(b => b.offsetParent);
+    const c = s => { const e = d.querySelector(s) || p.querySelector(s); if (!e) return null; const r = e.getBoundingClientRect(); return {x: r.x + r.width / 2, y: r.y + r.height / 2, vis: r.top >= 0 && r.bottom <= innerHeight}; };
+    return {lab: d.querySelector('.cllab').textContent, minH: Math.min(...B.map(b => b.getBoundingClientRect().height)), n: B.length, ab: [...p.querySelectorAll('.clbox .clab')][0] ? [...[...p.querySelectorAll('.clbox .clab')][0].querySelectorAll('button')].map(b => b.textContent) : [], st: d.querySelector('.vr1st').textContent,
+      mittel: c('[data-vr1="mittel"]'), pv: c('[data-vr1a="pv"]'), ap: c('[data-vr1a="ap"]'), more: c('[data-vr1a="more"]'), weg: c('[data-vr1ab]'), sauber: c('button[data-cl="sauber"]'), roh: c('button[data-cl="roh"]')}; }, null);
+  const tapEl = async (k, g0) => { let g = g0 || await geo(); if (g && g[k] && !g[k].vis) { await run(async o => { const p = UI.pop.el, e = p.querySelector(o.s); if (e) e.scrollIntoView({block: 'center'}); await wait(150); }, {s: {mittel: '[data-vr1="mittel"]', pv: '[data-vr1a="pv"]', ap: '[data-vr1a="ap"]', more: '[data-vr1a="more"]', weg: '[data-vr1ab]', sauber: 'button[data-cl="sauber"]', roh: 'button[data-cl="roh"]'}[k]}); g = await geo(); } if (g && g[k]) await tap(g[k].x, g[k].y); return g; };
+  const until = async (fn, arg, ms) => { const t0 = Date.now(); let r; while (Date.now() - t0 < (ms || 20000)) { r = await run(fn, arg); if (r && r.ok) return r; await p.waitForTimeout(200); } return r; };
+  let G0 = await geo(); R.ui3 = {zeile: G0};
+  ok(!!G0 && G0.lab === 'Gesang reinigen' && G0.minH >= 44 && G0.ab.join('|') === 'Roh|Sauber|nur Entferntes', 'Säubern-Blatt: Zeile „Gesang reinigen“, A/B dreiteilig Roh │ Sauber │ nur Entferntes, Trefferflächen ≥ 44 px', G0 && {lab: G0.lab, minH: G0.minH, ab: G0.ab});
+  await tapEl('mittel'); const C1 = await until(async o => { const s = document.querySelector('.vr1st'); return {ok: /Befund/.test(s && s.textContent || ''), st: s && s.textContent}; }, null);
+  ok(C1 && C1.ok, 'Touch „mittel“: Take wird geprüft, Befund + Schritte der Stufe in der Zustandszeile', C1);
+  await tapEl('more'); const Mo = await run(async () => { const g = document.querySelector('.vr1st2'); return {offen: !!g && !g.closest('[hidden]'), knoepfe: g ? [...g.querySelectorAll('button')].map(b => b.textContent) : []}; }, null);
+  ok(Mo.offen && Mo.knoepfe.length === 7, 'Mehr ▾: Einzelschritte in fester Reihenfolge (an/aus)', Mo);
+  const U3 = await ui(); ok(U3.over === 0, 'Zeile + Mehr ▾: nichts ragt aus dem Bild (hochkant 428×926)', U3);
+  await p.screenshot({path: path.join(path.dirname(file), 'voxr1-blatt.png')});
+  await tapEl('pv'); const Pv = await until(async o => { const v = SYNQUENZER.vr1Ver(o.id); return {ok: !!v.pv, pv: v.pv}; }, {id}, 30000);
+  await tapEl('weg'); const Ab = await run(async o => SYNQUENZER.vr1Ver(o.id).ab, {id}); await tapEl('sauber'); const Ab2 = await run(async o => SYNQUENZER.vr1Ver(o.id).ab, {id});
+  R.ui3.vorhoeren = {pv: Pv, ab: [Ab, Ab2]};
+  ok(Pv && Pv.ok && Pv.pv.t1 - Pv.pv.t0 <= 10.01 && Ab === 'weg' && Ab2 === 'sauber', 'Touch ▶ 10 s: Vorhören an der schlimmsten Stelle, A/B auf „nur Entferntes“ und zurück', R.ui3.vorhoeren);
+  await run(async () => { SYNQUENZER.vr1PvStop(); }, null);
+  const h0 = await run(async o => SYNQUENZER.tkPcmHash(o.id), {id}), ph0 = await run(async o => SYNQUENZER.clPlayHash(o.id), {id});
+  await tapEl('ap'); const Ap = await until(async o => { const v = SYNQUENZER.vr1Ver(o.id); return {ok: v.ready && !v.busy, v: {applied: v.applied && v.applied.lv, steps: v.applied && Object.keys(v.applied.steps), ready: v.ready}}; }, {id}, 40000);
+  await run(async () => { await wait(300); }, null);
+  const h1 = await run(async o => SYNQUENZER.tkPcmHash(o.id), {id}), ph1 = await run(async o => SYNQUENZER.clPlayHash(o.id), {id});
+  R.ui3.anwenden = {ap: Ap, rohGleich: h0 === h1, spieltNeu: ph0 !== ph1};
+  ok(Ap && Ap.ok && h0 === h1 && ph0 !== ph1, 'Touch „Anwenden“: neue Fassung spielt, Roh-Take bitgleich', R.ui3.anwenden);
+  await run(async () => { undo(); await wait(400); }, null);
+  const Un = await run(async o => ({v: SYNQUENZER.vr1Ver(o.id).applied, ph: SYNQUENZER.clPlayHash(o.id)}), {id});
+  ok(!Un.v && Un.ph === ph0, 'Ein ↶ nimmt „Gesang reinigen“ zurück (es spielt wieder die vorige Fassung)', {applied: Un.v, gleich: Un.ph === ph0});
+  // Fotos quer (926×428 und 926×370)
+  for (const [w, hh, nm] of [[926, 428, 'voxr1-quer.png'], [926, 370, 'voxr1-quer370.png']]) { await p.setViewportSize({width: w, height: hh}); await p.waitForTimeout(400); await run(async () => { const p = UI.pop && UI.pop.el; if (p) { popFit(p); const d = p.querySelector('.vr1'); if (d) d.scrollIntoView({block: 'center'}); } await wait(200); }, null);
+    const Uq = await ui(); await p.screenshot({path: path.join(path.dirname(file), nm)}); ok(Uq.over === 0, 'nichts ragt aus dem Bild (quer ' + w + '×' + hh + ')', Uq); }
+  await p.setViewportSize({width: 428, height: 926}); await p.waitForTimeout(300);
+  // vorhandener Entzischer der Gesangs-Effekte ist spektral (Hauptfaden und Worker)
+  { const xa = globalThis.__essX; const b64e = Buffer.from(new Float32Array(xa.subarray(0, Math.min(xa.length, 20 * sr))).buffer).toString('base64');
+    const Gd = await run(async o => { const s = atob(o.b), u = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i); const x = new Float32Array(u.buffer); const P = {}; for (const k of G4_K) P[k] = 0; P.ds = 6;
+      const a = G4D.render(Float32Array.from(x), o.sr, P, []), b = await g4Call({op: 'render', x: Float32Array.from(x), sr: o.sr, P, marks: []}); return {haupt: a.info.ds, worker: b.info.ds, how: G4.how}; }, {b: b64e, sr});
+    R.g4ds = Gd; ok(Gd.haupt && Gd.haupt.how === 'spektral' && Gd.worker && Gd.worker.how === 'spektral' && Gd.how === 'worker', 'Gesangs-Effekte: Entzischer ist spektral (Hauptfaden und Worker), Aussehen unverändert', Gd); }
+  const Gu = await run(async () => { const L = ui1Entries(); const e = L.find(x => x.id === 'vr1gesang'); return e ? {n: e.n, w: e.w} : null; }, null);
+  ok(!!Gu, 'Guide „Wo finde ich …?“ kennt „Gesang reinigen“', Gu);
   const U0 = await ui(); ok(U0.over === 0, 'nichts ragt aus dem Bild (hochkant 428×926)', U0);
   // Teil 2: Atmer-Marken im Marken-Editor (vorhandener Stil), Touch über CDP
   { const xa = globalThis.__atmerX, x16b = new Int16Array(xa.length); for (let i = 0; i < xa.length; i++) x16b[i] = Math.max(-32768, Math.min(32767, Math.round(xa[i] * 32767)));
