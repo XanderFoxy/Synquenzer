@@ -61805,7 +61805,15 @@ function* room(y, sr, o, Lr) {
     let mg = mag; { const P2 = new Float64Array(N / 2 + 1); let c2 = 0; const okU = new Set(nbu);
       const PW = [];   // VOXR1D-RT: je Fenster ein Spektrum (für die Ausreißer-Wahl je Terzband)
       for (const u of nbu) { if (!okU.has(u + H) || !okU.has(u + 2 * H) || u + N > n) continue; for (let i = 0; i < N; i++) { re[i] = y[u + i] * (0.5 - 0.5 * Math.cos(TAU * (i + 0.5) / N)); im[i] = 0; } F(re, im, false); const Pw = new Float64Array(N / 2 + 1); for (let k = 0; k <= N / 2; k++) { const e = re[k] * re[k] + im[k] * im[k]; P2[k] += e; Pw[k] = e; } PW.push(Pw); c2++; }
-      if (c2 >= 3) { mg = new Float64Array(N / 2 + 1); for (let k = 1; k < N / 2; k++) mg[k] = Math.sqrt(P2[k] / c2);
+      /* VOXR1F: Fenster mit Gesangsrest (Teiltöne: stärkster Bin 100–1500 Hz > TON × Median dieser Bins) zählen für die Klangfarbe nicht,
+         rauschartige Fenster (auch Atem/Luft mit Höhen) alle – mit ihrem Leistungsmittel statt des Medians je Band (der Median verwarf die Höhen
+         des Atems, Füllung in Take A bis −14 dB bei 4 kHz). Bleiben < 3 rauschartige oder sind alle rauschartig: wie bisher (VOXR1D-RT). {ton: 0} = aus. */
+      const TON = o.ton != null ? o.ton : 30; let PN = null;
+      if (c2 >= 3 && TON > 0) { const kA = Math.max(1, Math.round(100 * N / sr)), kB = Math.min(N / 2, Math.round(1500 * N / sr)), tb = new Float64Array(kB - kA), keep = [];
+        for (const Pw of PW) { let mx = 0; for (let k = kA; k < kB; k++) { tb[k - kA] = Pw[k]; if (Pw[k] > mx) mx = Pw[k]; } tb.sort(); if (!(mx > TON * tb[tb.length >> 1])) keep.push(Pw); }
+        if (keep.length >= 3 && keep.length < PW.length) PN = keep; }
+      if (PN) { mg = new Float64Array(N / 2 + 1); for (let k = 1; k < N / 2; k++) { let e = 0; for (const Pw of PN) e += Pw[k]; mg[k] = Math.sqrt(e / PN.length); } }
+      else if (c2 >= 3) { mg = new Float64Array(N / 2 + 1); for (let k = 1; k < N / 2; k++) mg[k] = Math.sqrt(P2[k] / c2);
         // VOXR1D-RT: Klangfarbe aus mehreren Pausen-Fenstern, Ausreißer weg: jedes Fenster auf seine Leistung normiert, je Terzband zählt der
         // Median der Anteile statt des Leistungsmittels – ein lautes Fenster mit Gesangsrest bestimmte sonst die Farbe (Take C, Lücke 9,46 s:
         // 250 Hz +9,7 dB); innerhalb des Bands bleibt die gemittelte Form, der Pegel kommt wie bisher aus need (Leistung daneben). o.med = 0: wie vorher.

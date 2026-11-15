@@ -35,6 +35,13 @@ async function scA(p) {   // Ansicht-Sprünge: Ganz → Zoom Anfang → Sprung a
   for (const j of J) { await view(p, ...j); await p.waitForTimeout(700); }
   const r = await since(p, t0); r.hash = await canvasHash(p); r.lt1 = await p.evaluate(() => typeof LT1 !== 'undefined' ? {n: LT1.n, gUp: LT1.gUp} : null); return r;
 }
+async function scA2(p) {   // a2: wie a, aber im Zoom (0–4 s) FFT 4096 → 8192 gewechselt → die übrigen Kacheln sind noch nicht auf der Grafik; dann Sprünge
+  await view(p, 0, 4, 100, 40); await p.waitForTimeout(600);
+  await p.evaluate(() => { const U = __spk.page.ui(); U.N = 8192; spk1SpecLoad(U); }); await p.waitForFunction(() => !__spk.page.ui().specQ, null, {timeout: 120000}); await p.waitForTimeout(1500);
+  const t0 = await now(p); const J = [[80, 86, 110, 50], [-0.05, 90, 110, 26], [40, 43, 96, 60], [10, 70, 120, 30]];
+  for (const j of J) { await view(p, ...j); await p.waitForTimeout(700); }
+  const r = await since(p, t0); r.hash = await canvasHash(p); r.lt1 = await p.evaluate(() => typeof LT1 !== 'undefined' ? {n: LT1.n, gUp: LT1.gUp} : null); return r;
+}
 async function scB(p) {   // FFT 4096 → 8192 → 4096 per Tipp im Ansicht-Klappfenster
   const t0 = await now(p), res = {};
   for (const n of [8192, 4096]) {
@@ -59,7 +66,7 @@ async function scC(p) {   // Import: Lied 96 BPM erkennen, dann Ablegen (imp1Pla
 }
 for (const [W, H] of VIEWS) {
   const tag = W + 'x' + H;
-  for (const sc of ['a', 'b', 'c']) {
+  for (const sc of ['a', 'a2', 'b', 'c']) {
     if (!ONLY.has(sc)) continue;
     for (let rep = 0; rep < REPS; rep++) {
       const order = rep % 2 ? ['b', 'a'] : ['a', 'b'];
@@ -72,7 +79,7 @@ for (const [W, H] of VIEWS) {
         let r;
         try {
           if (sc !== 'c') await openSpk(p, W, H);
-          r = sc === 'a' ? await scA(p) : sc === 'b' ? await scB(p) : await scC(p);
+          r = sc === 'a' ? await scA(p) : sc === 'a2' ? await scA2(p) : sc === 'b' ? await scB(p) : await scC(p);
         } catch (e) { r = {err: String(e).slice(0, 300), lt: [], loaf: []}; }
         r.errs = errs.slice(0, 3); r.load = load();
         const row = {file: f === 'a' ? 'index' : 'basis', view: tag, rep, sc, ...r}; out.push(row);
@@ -89,7 +96,7 @@ await b.close(); srv.close();
 const med = a => { if (!a.length) return 0; const s = a.slice().sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
 console.log('\nERGEBNIS (je Lauf: längste Long Task; 0 = keine > 50 ms)');
 const summary = {};
-for (const sc of ['a', 'b', 'c']) for (const [W, H] of VIEWS) {
+for (const sc of ['a', 'a2', 'b', 'c']) for (const [W, H] of VIEWS) {
   const tag = W + 'x' + H, row = {};
   for (const f of ['basis', 'index']) { const R = out.filter(o => o.sc === sc && o.view === tag && o.file === f); if (!R.length) continue; const m = R.map(o => Math.max(0, ...o.lt)); row[f] = {runs: m, median: med(m), max: Math.max(...m), nOver50: R.reduce((s, o) => s + o.lt.length, 0), hashes: [...new Set(R.map(o => o.hash))]}; }
   if (!row.index) continue;
@@ -97,4 +104,4 @@ for (const sc of ['a', 'b', 'c']) for (const [W, H] of VIEWS) {
   summary[sc + ' ' + tag] = {...row, bildGleich: same};
   console.log(`${sc} ${tag}  basis: median ${row.basis?.median} max ${row.basis?.max} (${JSON.stringify(row.basis?.runs)}, ${row.basis?.nOver50}× >50)  |  index: median ${row.index.median} max ${row.index.max} (${JSON.stringify(row.index.runs)}, ${row.index.nOver50}× >50)  |  Ergebnis gleich: ${same}`);
 }
-fs.writeFileSync(path.join(here, 'lt1-test.json'), JSON.stringify({summary, out}, null, 1));
+fs.writeFileSync(path.join(here, process.env.OUT || 'lt1-test.json'), JSON.stringify({summary, out}, null, 1));
