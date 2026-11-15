@@ -71,12 +71,12 @@ const dbDiff = (X, Y) => { let e = 0, d = 0; const n = Math.min(X[0].length, Y[0
     return {nt: NT(), j, name: tr.name, eng: tr.sound.engine, same: JSON.stringify(tr.sound) === JSON.stringify(S.tracks[0].sound), below: ord[ord.indexOf(0) + 1] === j,
       nn: tr.clips[0] ? tr.clips[0].notes.length : 0, len: tr.clips[0] ? tr.clips[0].len === S.tracks[0].clips[0].len : false, left: S.tracks[0].clips[0].notes.length,
       others: tr.clips.filter((c, s) => c && s !== 0).length, slot: [R.slot[0], R.slot[j]], cs: R.cstart[0] === R.cstart[j], playing: R.playing,
-      lane: S.song.lanes[j].map(e => e.bar + ':' + e.slot).join(','), lane0: S.song.lanes[0].filter(e => e.slot === 0).map(e => e.bar + ':' + e.slot).join(',')};
+      lane: S.song.lanes[j].map(e => e.bar + ':' + e.slot).join(','), lane0: (() => { const o = []; let on = false; for (const e of S.song.lanes[0]) { if (e.slot === 0 && !e.own) { o.push(e.bar + ':0'); on = true; } else if (on) { o.push(e.bar + ':-1'); on = false; } } return o.join(','); })()};   // MTX3-P S1: Wechsel der Quelle = Stopp der neuen Spur
   });
   ok('neue Spur „Synth 1 · Teil“ direkt unter der Quelle, gleicher Klang', a.name === 'Synth 1 · Teil' && a.below && a.same, a);
   ok('Noten gewandert (nur Szene 1, Clip-Länge wie Quelle)', a.nn === picked && a.left === 8 - picked && a.others === 0 && a.len, {nn: a.nn, left: a.left});
   ok('spielt synchron: gleicher Slot und Start wie die Quelle', a.playing && a.slot[0] === 0 && a.slot[1] === 0 && a.cs, a.slot);
-  ok('Song: neue Spur spielt, wo die Quelle Szene 1 spielt', a.lane === a.lane0 && a.lane.length > 0, [a.lane, a.lane0]);
+  ok('Song: neue Spur spielt, wo die Quelle Szene 1 spielt (und stoppt beim Wechsel)', a.lane === a.lane0 && a.lane.length > 0 && /:-1/.test(a.lane), [a.lane, a.lane0]);
   // die neue Spur klingt wirklich (Note-Log der Spur)
   await sleep(1200);
   const heard = await p.evaluate(j => LOG.buf.filter(e => e && e.track === j && e.src === 'clip').length, a.j).catch(() => -1);
