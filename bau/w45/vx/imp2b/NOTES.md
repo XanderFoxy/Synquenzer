@@ -87,3 +87,21 @@ keine Test-Kopie. ~~Die Auswahl „Stück nach Index“ ist hier nicht die Ursac
 2. chr2-test: Kopie `chr2-test-imp2b.mjs` statt Original als Abnahme übernehmen (oder die drei Korrekturen im Original nachziehen – Entscheidung CHR).
 3. Gesang-Tempo bei Vokal-Melodien ohne Konsonanten 0,4–0,5 BPM zu hoch (Basis wie IMP2); bei x,5 kippt das Projekt-Tempo (`Math.round`).
    Vorschlag für später: Einsatz-Spitzen im Gesang-Weg zwischen Rahmen interpolieren und Ausklang-Spitzen (Pegel fällt) verwerfen.
+
+## Prüfung (PRUEFUNG.md) – IMP2B-FIX, 15.11. 02:02–02:40
+Datei: `fix/index.html` = `index.html` (basis + IMP2, sha a4d6e9ef…) + IMP2B. Bau: `fix/block.js` + `fix/apply.mjs`. Diff zu index.html:
+- Block `/* ===== IMP2B-BEGIN … IMP2B-END ===== */` nach VX3-END: `imp2bGap` (Render 'hyb'), `imp2bYield` (Quantisieren).
+- 2 Haken-Zeilen mit typeof-Schutz: nx1RunG ('hyb', vor dem Dehnen) und vx1rQuant (vor der Vorgänger-Sperre).
+- 1 Einschub in wpWorker (Quelltext `imp2bGap.toString()` in den Zeitkarten-Worker, typeof-geschützt wie VX3 dort).
+- imp1Core/IMP2 unverändert. Nichts Sichtbares, keine Knöpfe, VERSION 4.66.0.
+
+| Befund | Stand | vorher → nachher |
+|---|---|---|
+| S1 rv1 4/53, Gesang-Editor | **behoben** (2 Editor-Fehler, 1 Mess-Bezug) | rv1-test ORIGINAL an IMP2: **4/53 → 1/53** (Ziel ≥ 52/53 erreicht). (a) #10 Knacken an Schnitt 13: Ursache Lücke 0,75 ms → WSOLA 1,13× auf 37 ms Vokal; `imp2bGap`: Lücke ≤ 2 ms nicht dehnen → Verhältnis 4,05 → 0,89 (Node-Nachrechnung `fix/hyb-sim.mjs` bitgleich zum App-Render: 4,06 → 0,87). (b) Raster „frei daneben“ #14 (und #10, das schon in der Basis): `imp2bYield` → #14 31/37 → 32/37 „frei daneben 0“, #10 24/31 → 25/31 „frei daneben 0“. (c) #14 Stück 35 links: kein Editor-Fehler – der Vorgänger war im Bezug (Fassung nach ↶) um 32 ms Lücke GEDEHNT, nach dem Verschieben spielt er die Quelle ungestaucht und wird abgeschnitten (`fix/move-sim.mjs`: erste Abweichung 206 ms vor dem Schnitt = Ende des festen Teils). Test-Kopie `fix/rv1-test-imp2b.mjs` vergleicht zusätzlich mit der ungedehnten Quelle → OK |
+| M1 Projekt-Tempo Vokal bei 48 kHz 12/14 | **nicht behoben**, Ursache belegt | IMP2 macht 48 kHz = 44,1 kHz (dort hat die Basis dieselben 13/14). Schätzer +0,4…0,5 BPM bei konsonantlosen Vokal-Melodien (Basis wie IMP2). Versuch Spitzen-Interpolation (`fix/tempo-raten-x.mjs`): 112A 112,27 → 112,28, wirkungslos, nicht eingebaut. Folge entschärft: die 121 statt 120 lösen in rv1/chr2-Kopie/syn keine FEHLER mehr aus. Vorschlag (sichtbar → Funk): bei Gesang mit Rest nahe ,5 (±0,15) beide ganzen Tempi als Knöpfe anbieten |
+| M2 spk1Grid nutzt imp1Core | **geprüft, nicht begrenzt** – Entscheidung | Raster der Spektral-Seite = Import-Wert (bpm, t1). Basis: #14 120,7 bei 44,1 kHz, 132,6 bei 48 kHz (Raster hängt am Gerät); IMP2: 120,6 bei allen Raten = gleicher Wert wie im Import. Begrenzen (SPK auf altem down()) hieße: dieselbe Datei zeigt im Import 121, auf der Spektral-Seite 133. Vorschlag: neues Raster übernehmen; weil es auf 48-kHz-Geräten bei Gesangsquellen sichtbar anders rastert, im Funk ankündigen |
+| M3 rv1-Chor-Messung | **teilweise** – Kopie `fix/rv1-test-imp2b.mjs` | NaN (stiller Formant-Rahmen) behoben, envOf (Rückfall/INFO) 20 ms. Der eigentliche Schätzer ist der Fenster-Median `lagMed` (1-ms-Summen): an den #10-Puffern (`fix/lagmed-sim.mjs`, Wahrheit = Wellenform-Kreuzkorrelation 5,8/12,3/9,0/16,1/14,9/16,0 ms ≈ Plan) trifft er 5/6 (st+2/2: 26 statt 16), jede Glättung 10/20/40 ms liegt 6–8 ms daneben → lagMed bleibt wie im Original. #1 (Standard-Lauf) unverändert OK. Offen: #10-Chor (nur bei RV1_ONLY=10) – Vorschlag Wellenform-Kreuzkorrelation als Gegenprobe |
+| L1 Gegenprobe „zahlengleich“ | **behoben** (NOTES oben korrigiert) | „gleiche Fehlerart, nicht zahlengleich (3,93 statt 4,05)“ |
+| L2 Rate-Unabhängigkeit bis zur Kante | **zur Kenntnis**, kein Code | Spanne ≤ 0,33 BPM (±0,5 erfüllt); gerundetes Tempo kann je Rate kippen (126/127) = M1 |
+| L3 Kopie korrigiert Rate nur für Versatz | **behoben** (NOTES oben präzisiert) | YIN/Formant-Band weiter 44 100 (Band 326–3 809 Hz), für das Verhältnis harmlos |
+| L4 Ungenauigkeiten | **behoben** (NOTES oben) | 13,5 gegen 13,06 · Vorlauf 25,5 ms statt 17 ms · „#14 dieselbe Silbe“ stammt aus 4.63 |
