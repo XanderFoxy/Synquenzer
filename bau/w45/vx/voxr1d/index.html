@@ -61532,9 +61532,9 @@ function* plop(y, sr, ev, o) {
   const C = Math.round((o.ctx || 0.3) * sr), mg = Math.round((o.mg != null ? o.mg : 0.01) * sr), p = o.p || 40;   // VOXR1B: Umgebung/Ordnung einstellbar; Grenze fest 250 Hz (Teiltöne darunter werden neu gebaut), Rand 10 ms
   for (let e = 0; e < ev.length; e++) {
     // Prüfung (Befund 7): Grenze unter dem gesungenen Grundton der Umgebung (stärkste Spitze 90–400 Hz davor/danach), höchstens o.cut
-    const E0 = ev[e], E = o.grow === 0 && E0.c0 != null ? {t0: E0.t0, t1: E0.t1, exDb: E0.exDb, s0: E0.c0, s1: E0.c1} : E0, a = Math.max(0, E.s0 - mg - C), b = Math.min(n, E.s1 + mg + C), ce = o.cut || o.fix === 1 ? cut : plopCut(y, sr, E, cut), low = lpZero(y, a, b, sr, ce), L = Math.floor((b - a) / D), z = new Float64Array(L);
-    // VOXR1D-OT: Grenze wieder unter dem gesungenen Grundton (plopCut, 0,8·f0, 120…250 Hz) – mit plopFit bleibt der Abzug ≥ 12 dB, und ein Grundton nahe 250 Hz
-    // (Take C, f0 200–265 Hz) wird nicht mehr halb neu gebaut. Feste 250 Hz mit {fix: 1}.
+    const E0 = ev[e], E = o.grow === 0 && E0.c0 != null ? {t0: E0.t0, t1: E0.t1, exDb: E0.exDb, s0: E0.c0, s1: E0.c1} : E0, a = Math.max(0, E.s0 - mg - C), b = Math.min(n, E.s1 + mg + C), ce = o.cut || o.fix === 1 ? cut : o.fix === 0 ? plopCut(y, sr, E, cut) : (pc => pc >= 160 ? pc : cut)(plopCut(y, sr, E, cut)), low = lpZero(y, a, b, sr, ce), L = Math.floor((b - a) / D), z = new Float64Array(L);
+    // VOXR1D-OT: singt die Stimme daneben ≥ 200 Hz (plopCut ≥ 160 Hz), liegt die Grenze unter dem Grundton (0,8·f0) – ein Grundton nahe 250 Hz (Take C,
+    // f0 200–265 Hz) wurde sonst halb neu gebaut (Prüfer: Obertöne bis −4,7 dB). Tiefere Stimmen: fest 250 Hz wie bisher. {fix: 1} = immer 250 Hz, {fix: 0} = immer plopCut.
     for (let j = 0; j < L; j++) z[j] = low[j * D];
     const g0 = Math.max(1, Math.floor((E.s0 - mg - a) / D)), g1 = Math.min(L - 1, Math.ceil((E.s1 + mg - a) / D) + 1);
     if (g1 - g0 < 2 || g0 < p || L - g1 < p) { out.push({t0: +E.t0.toFixed(4), t1: +E.t1.toFixed(4), exDb: E.exDb, redDb: 0}); continue; }
