@@ -80,19 +80,27 @@ Ursachen (CPU-Profil + LoAF, je Lauf mehrfach):
   trat er in jedem Lauf auf → Trace-Messungen hier unbrauchbar, Messung per LoAF.
 
 ## 2 Raumton-Klangfarbe (VOXR1D-RT, nur `room()` im Kern + Hilfsfunktion `roomBands`)
-Befund: Die Farbe der Füllung kam aus dem Leistungsmittel der Nachbar-Fenster (±300 ms, rauschartige Rahmen). Ein Fenster mit Gesangsrest
-oder Atmer bestimmte dann die Farbe (Take C, Lücke 9,46 s: 250 Hz +9,7 dB, 4–8 kHz −3 dB gegenüber dem Original an der Stelle).
-Neu: je Nachbar-Fenster ein eigenes Spektrum; je Terzband (200 Hz–12 kHz) zählt das **35-%-Quantil der Fenster** (Pausen-Boden, Ausreißer
-weg) statt des Mittels, innerhalb des Bands bleibt die gemittelte Form. Pegel unverändert (need = Leistung daneben). `{med: 0}` = wie vorher.
-Verworfen: Form nur aus mehreren Pausen des ganzen Takes (Take C hat nur 3 ruhige 200-ms-Fenster, alle im Anlauf bei −72 dB; die Pause bei
-9,46 s liegt bei −60 dB und klingt anders); Mischung Nachbarn/Take-Form 30/50 % (Lücke 2 wieder 4,1–4,3 dB); Median statt Quantil (4,9).
-Prüfer-Kern, Klangfarbe je Lücke (max. Abweichung vom Mittel der Oktaven, Ziel ≤ 4 dB):
-| Take | vorher | Quantil 0,25 | **0,35 (gewählt)** |
+Befund: Die Farbe der Füllung kam aus dem Leistungsmittel der Nachbar-Fenster (±300 ms, rauschartige Rahmen). Ein lautes Fenster mit
+Gesangsrest bestimmte dann die Farbe (Take C, Lücke 9,46 s: 250 Hz +9,7 dB, 4–8 kHz −3 dB gegenüber dem Original an der Stelle).
+Neu: je Nachbar-Fenster ein eigenes Spektrum, **auf seine Leistung normiert**; je Terzband (200 Hz–12 kHz) zählt der **Median der Anteile**
+(Ausreißer weg) statt des Leistungsmittels, innerhalb des Bands bleibt die gemittelte Form. Pegel unverändert (need = Leistung daneben).
+`{med: 0}` = wie vorher (Sicherung index.vor-rt.html).
+Geprüfte Varianten (Prüfer-Kern C@48 / C@44 je Lücke · Entwickler-Test Take A, 5 Lücken; Ziel ≤ 4 dB):
+| Variante | Prüfer-Kern C@48 | C@44 | Entwickler Take A |
 |---|---|---|---|
-| C@48 | [2,5, **9,7**] | [3,5, 1,5] | **[3,0, 2,0]** |
-| C@44 | [2,8, **6,6**] | [4,0, 1,4] | **[3,8, 1,2]** |
-Pegel je Lücke unverändert [+0,3, −1,9] dB. „5 Lücken gefüllt“ bleibt FEHLER im Prüfer-Kern: Der Prüfer findet selbst nur 2 (C) bzw. 0 (B@48)
-Pausen für seine Schnitte (holes.length ≠ 5) – nicht in der App lösbar; alle gefundenen Lücken liegen im Pegel innerhalb ±3 dB.
+| vorher (Leistungsmittel) | [2,5, **9,7**] | [2,8, **6,6**] | [1,9, **4,6**, **5,9**, 2,5, **4,4**] |
+| Quantil 0,25 je Band | [3,5, 1,5] | [4,0, 1,4] | – |
+| Quantil 0,35 je Band | [3,0, 2,0] | [3,8, 1,2] | [4,0, **8,0**, **6,6**, 2,7, **9,1**] (Füllung zu dunkel) |
+| **Median normierter Fenster (gewählt)** | **[3,3, 3,5]** | **[3,8, 1,8]** | [2,1, **4,8**, **6,3**, 2,3, **6,7**] |
+| Quantil nur < 1 / 1,5 kHz | (Nachbau) 4,2/4,0 | 3,5/4,4 | [3,3, 7,0, …] (Stufe im Spektrum) |
+| stimmhafte Fenster weg (200–700 Hz > +6 dB) | (Nachbau) 9,7 | 3,6 | unverändert |
+| Form nur aus mehreren Pausen des Takes | – | – | Take C hat nur 3 ruhige Fenster, alle im Anlauf (−72 dB) → kein Ergebnis |
+Ergebnis: Prüfer-Kern Klangfarbe C@48 und C@44 jetzt OK (2 Punkte), Pegel je Lücke unverändert [+0,3, −1,9]. **Zielkonflikt**: Im Entwickler-Test
+(Take A) fehlen der Füllung schon vorher 5–12 dB Höhen (4–8 kHz) in 3 von 5 Lücken (FEHLER vorher und nachher); mit der neuen Wahl wird
+Lücke 5 von 4,4 auf 6,7 dB schlechter. Dort sind die Höhen in den Nachbarn (Atmer/Luft) typisch für die Pause – das kann ein Median nicht
+von Gesangsresten trennen. Nächster Ansatz: Ausreißer nur bei tonalen Fenstern (Teiltöne über f0) verwerfen, Rauschen mit Höhen behalten.
+„5 Lücken gefüllt“ bleibt FEHLER im Prüfer-Kern: Der Prüfer findet selbst nur 2 (C) bzw. 0 (B@48) Pausen für seine Schnitte
+(holes.length ≠ 5) – nicht in der App lösbar; alle gefundenen Lücken liegen im Pegel innerhalb ±3 dB.
 
 ## 3 Klicks (nur geprüft, nicht geändert)
 Prüfer-Kern INFO (Abzug > 2 kHz, Fehler gegen sauber): B@44 Klick 6 **−4,1 dB** (die Reparatur fehlt dort mehr Höhen als der Klick hatte –
