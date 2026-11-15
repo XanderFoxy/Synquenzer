@@ -120,6 +120,8 @@ for (const [W, H] of VIEWS) {
   await tap(await sel('#spk1Sheet .spk1-dd [data-s12hh="ung"]'));
   const od = await p.evaluate(async () => { const sel = __spk.page.ui().sel, h = sel.find(s => s.art === 'harm'); return {hm: h && h.hm, gerade: +(100 * await __frac(sel, __c.even, 9.3, 11.2, 1500)).toFixed(3), ungerade: +(100 * await __frac(sel, __c.odd, 9.3, 11.2, 1500)).toFixed(1)}; });
   ok(tag + ' obertoene-nur-ungerade', od, od.hm && od.hm.every(h => h & 1) && od.gerade <= 1 && od.ungerade >= 80);
+  const kq = await p.evaluate(async () => { const U = __spk.page.ui(); U.opt.K = 8; spk1HarmOpt(U); const sel = U.sel, sr = 44100, hop = 1024, m = Math.round(10 * sr / hop + 1), M = await __spk12.mask(sel, {m0: m, m1: m, k0: 0, k1: 1023}), hi = Math.round(9 * 220 * 4096 / sr), lo = Math.round(7 * 220 * 4096 / sr); const r = {r9: M.data[hi], r7: M.data[lo]}; U.opt.K = 16; spk1HarmOpt(U); const M2 = await __spk12.mask(U.sel, {m0: m, m1: m, k0: 0, k1: 1023}); r.r9wieder = M2.data[hi]; return r; });
+  ok(tag + ' obertoene-regler-ohne-alten-speicher', kq, kq.r9 === 0 && kq.r7 > 200 && kq.r9wieder > 200);
   await tap(await sel('#spk1Sheet [data-a="s12hd"]')); await wait(250); await tap(await sel('#spk1Sheet .spk1-dd [data-s12h="3"]'));
   const h3 = await p.evaluate(() => __spk.page.ui().sel.find(s => s.art === 'harm').hm); await p.evaluate(() => spk1Dd(__spk.page.ui(), null));
   await tap(await sel('#spk1Sheet [data-a="undo"]')); const h3u = await p.evaluate(() => __spk.page.ui().sel.find(s => s.art === 'harm').hm);

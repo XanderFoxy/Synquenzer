@@ -104985,8 +104985,9 @@ function spk12Mag(x, c, N, re, im) {   // Betrag eines Hann-Rahmens um Sample c 
   return g;
 }
 /* Neue Formen → {val(m, k) 0…255, box} auf dem Base-Raster */
-function spk12K2(d, s, base) {
-  const C = spk12K2.C || (spk12K2.C = new Map()), key = s.key ? d.meta.id + '|' + s.key : '';
+function spk12K2(d, s, base) {   // Zwischenspeicher: Schlüssel + Prüfsumme des Inhalts (Regler/Griffe ändern Formen an Ort und Stelle)
+  const C = spk12K2.C || (spk12K2.C = new Map()), js = s.key ? JSON.stringify(s) : ''; let hs = 2166136261; for (let i = 0; i < js.length; i++) hs = Math.imul(hs ^ js.charCodeAt(i), 16777619);
+  const key = s.key ? d.meta.id + '|' + s.key + '|' + js.length + '|' + (hs >>> 0) : '';
   if (key && C.has(key)) return C.get(key);
   const sr = d.meta.sr, N = d.meta.base.N, hop = d.meta.base.hop, NB = N / 2 + 1, F = Math.floor((d.meta.n - 1) / hop) + N / hop;
   const cn = f => f > 0 ? 1200 * Math.log2(f / 440) : -1e9, kOf = c => 440 * Math.pow(2, c / 1200) * N / sr, tOf = m => (m - 1) * hop / sr, mOf = t => t * sr / hop + 1;

@@ -7,3 +7,4 @@
 2026-11-15 04:27:49 Start Prüfer-Befunde beheben (PRUEFUNG.md gelesen)
 2026-11-15 04:35:44 12 neue/geänderte Haken eingefügt (trf, trs-Keep, restoreSong, tktModeDo)
 2026-11-15 04:40:52 Block-Änderungen (trf, trs-Keep, nur je Blatt, nach-nur-Zeile, Blatt fest, Texte) + Testteil 7 geschrieben
+2026-11-15 04:44:45 eigener Test 81/81 (Teil 7 Prüfung 17 neue Punkte)

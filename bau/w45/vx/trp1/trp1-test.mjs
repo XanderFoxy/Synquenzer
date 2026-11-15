@@ -255,8 +255,9 @@ for (const [w, h, n] of [[428, 926, 'hochkant'], [926, 428, 'quer'], [926, 370, 
     o.ok = SYNQUENZER.trp1.set({a: 4, b: 6, r: 3}); const N1 = __midi();
     o.fest = __cmp(N0, N1, 16, 24, x => x.ch === ch); o.rest = __cmp(N0, N1, 16, 24, x => x.ch !== ch && x.ch !== 9); o.dr = __cmp(N0, N1, 16, 24, x => x.ch === 9);
     o.out = __cmp(N0, N1, 0, 16); o.out2 = __cmp(N0, N1, 24, 40); o.trf = JSON.stringify(S.song.trf); o.lv = [3, 4, 5, 6].map(b => SYNQUENZER.trp1.lv(b));
+    undo(); o.undo = JSON.stringify(__midi()) === JSON.stringify(N0); o.undoTrf = S.song.trf === undefined; redo();
     const j1 = serializeProject(); applyProject(normalizeProject(JSON.parse(j1)), {ui: true}); await wait(300); o.load = serializeProject() === j1 && JSON.stringify(__midi()) === JSON.stringify(N1);
-    undo(); o.undo = serializeProject() === j0 || JSON.stringify(__midi()) === JSON.stringify(N0); o.undoTrf = S.song.trf === undefined;
+    __song(); S.song.marks = []; songChanged();
     // Takt einfügen vor dem Bereich: der Versatz wandert mit
     SYNQUENZER.trp1.set({a: 4, b: 6, r: 3}); songShift(S.song, 2, 1); o.shift = JSON.stringify(S.song.trf); undo();
     return o;
@@ -370,7 +371,8 @@ for (const [w, h, n] of [[428, 926, 'hochkant'], [926, 428, 'quer'], [926, 370, 
     const play = async (bars, at, fn) => { SYNQUENZER.clearLog(); songPlayFrom(0); await wait(40); const off = R.songPlay ? R.songPlay.off : 0, t0 = performance.now(); let done = false;
       while (performance.now() - t0 < bars * 1000 + 500) { const sb = R.songPlay ? songBeatOf(t2b(AU.ctx.currentTime)) : null; if (!done && sb != null && sb >= at * 4) { done = true; o.at = +sb.toFixed(2); fn(); } await wait(20); }
       SYNQUENZER.stop(); await wait(150); return SYNQUENZER.noteLog(8192).filter(e => e.src !== 'click' && e.src !== 'audition' && e.beat != null).map(e => ({t: e.track, b: +(e.beat - off).toFixed(3), n: e.out, src: e.src, dr: S.tracks[e.track].kind === 'drum'})); };
-    const diff = (L, lo, hi, rlo) => { const ref = new Map(); for (const e of L) if (e.b >= rlo && e.b < rlo + (hi - lo) && !e.dr) ref.set(e.t + '@' + (e.b - rlo).toFixed(3) + e.src, e.n); let n = 0, bad = 0; for (const e of L) if (e.b >= lo && e.b < hi && !e.dr) { const r = ref.get(e.t + '@' + (e.b - lo).toFixed(3) + e.src); if (r == null) continue; n++; if (r !== e.n) bad++; } return {n, bad}; };
+    const grp = (L, lo, len) => { const g = new Map(); for (const e of L) if (e.b >= lo && e.b < lo + len && !e.dr) { const k = e.t + '@' + (e.b - lo).toFixed(3) + e.src; (g.get(k) || g.set(k, []).get(k)).push(e.n); } for (const v of g.values()) v.sort((x, y) => x - y); return g; };
+    const diff = (L, lo, hi, rlo) => { const ref = grp(L, rlo, hi - lo), got = grp(L, lo, hi - lo); let n = 0, bad = 0; for (const [k, v] of got) { const r = ref.get(k); if (!r) continue; for (let i = 0; i < v.length; i++) { n++; if (r[i] !== v[i]) bad++; } } return {n, bad}; };
     __song(); SYNQUENZER.trp1.set({a: 4, b: 6, r: 3}); __lt.length = 0;
     const L = await play(9, 4.3, () => undo()); o.p4 = diff(L, 24, 32, 8); o.xp = JSON.stringify(S.song.xp); o.lt = __lt.filter(x => x > 50).length;
     return o;
