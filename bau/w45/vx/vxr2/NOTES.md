@@ -95,3 +95,75 @@ md5 index.html **93c9860ee0bff060eb90452f6fe5e2b1** (basis b66de3cbd5c2d66019c5c
 4. Stückzahl #10 jetzt 29 statt 31 (#14 32 statt 37, #1 70 statt 68): Stück-Wahl an der Quelle vor G4 und mit 0,25 s Vorlauf; rv1-Prüfungen
    gegen die Noten-Annotation (Einsatz ±40 ms, Tonhöhe) alle OK – aber andere Stücke als 4.74, für Xander sichtbar (andere Teilung im Editor).
 5. Mit „Gesang reinigen“ (vr1Proc) oder SÄUBERN ist die Quelle vor G4 selbst eine gerechnete Fassung – ob die lagefest ist, nicht geprüft.
+
+## Prüfung (Nachbesserung nach unabhängigem Prüfer, 22:08–22:35, Log: LOG.md ab 22:08)
+Endfassung `index.html` md5 **4b725d905d2a52d2e39a9b5df3fc296c** (vorher 93c9860e…; Sicherung `index.vor-nb.html`, `bau/*.vor-nb.*`,
+`vxr2-test.vor-nb.mjs`, `NOTES.vor-nb.md`). Bau unverändert: `node bau/apply.mjs index.vor-vxr2.html index.html bau/block.js`.
+Block VXR2 jetzt 107 Zeilen (+10 Namen gegenüber basis: VXR2, vxr2Lyr, vxr2Take, vxr2Off, vxr2View, vxr2Det, vxr2W, vxr2Idle, vxr2G2, vxr2Marks).
+Haken unverändert zwei Zeilen (wpDetect: jetzt `vxr2Det(b, id)`; vx2Marks: wie vorher), dazu im Block `tkExt().take.push(...)` (Kennung speichern).
+
+### Befund 1 (hoch) Zeit – teilweise behoben
+Ursache gemessen (`work/rv1t-test.mjs`, Zeitachse aller Worker-Aufrufe, #10 t1 0,388, Last 0,7): **nicht** das doppelte 'vxa' (je 70–100 ms
+nach dem Aufwärmen), sondern die **zweite G2-Analyse nacheinander im selben Worker**: VXR2 alt = G2(Ausschnitt) 1229 ms, danach in
+vx1rAnalyse G2(ganz) 833 ms → ENDE 2449 ms; basis ENDE 1399 ms.
+Umbau: (1) Tonhöhen-Noten des Ausschnitts in einem eigenen, kurzlebigen Worker (gleicher Kern g2Run, ohne Cache, beendet sich nach 20 s)
+**gleichzeitig** mit der normalen G2-Analyse des ganzen Takes; (2) Anker/Anlauf wie VX2 aus 'vxa' an der gehörten Fassung + vx2AnLead
+**im selben Schritt** → vx1rAnalyse findet sie im Cache, kein zweiter Durchgang mehr; (3) Stück-Wahl je Quelle gemerkt (Quellwechsel
+durch G4 → nur noch 'vxa' der neuen Fassung, vorher alles noch einmal). G2.an liegt wie in basis vor, wenn die Analyse fertig ist.
+| erste Analyse (`__vx1.analyse`), Median | basis | VXR2 alt | VXR2 neu |
+|---|---|---|---|
+| #10 t1 0,388, 5× abwechselnd, Last 1,9–3,9 (`out/zeit2`) | 1 598 ms | 2 343 ms (+47 %) | **1 849 ms (+16 %)** |
+| #1 (70 Stücke), 3× abwechselnd, Last 3,6–5,0 (`out/zeit2`) | 3 816 ms | 5 876 ms (+54 %) | **4 884 ms (+28 %)** |
+| #10, 4× abwechselnd, Last 1,6–2,1 (`out/zeit3`) | 1 363 ms | – | **1 498 ms (+10 %)** |
+| #1, 3× abwechselnd, Last 1,6–2,6 (`out/zeit3`) | 3 326 ms | – | **4 121 ms (+24 %)** |
+Rest-Zuschlag = zwei G2-Analysen gleichzeitig auf zwei Kernen (Zeitachse #1, Last 3,4: G2 ganz 2 899 statt 2 353 ms; ENDE 3 962 gegen
+3 527 ms). Rechenarbeit insgesamt bleibt + eine G2-Analyse (im Worker, Hauptfaden frei). **Ganz weg** nur ohne zweite Analyse: Vorlauf
+beim Import auf ein festes Raster legen (Offen 1) oder G2.an des Takes aus der lagefesten Analyse ableiten (ändert Tonhöhen-Analyse und
+Render-Cache importierter Takes) – beides eigener Auftrag. 'vxa' läuft zweimal an verschiedenen Eingängen (Ausschnitt vor G4 für die
+Stück-Wahl, gehörte Fassung für Anker/Anlauf – vx2-Prüfung 7 verlangt das bitgleich), je 70–230 ms.
+
+### Befund 2 (mittel) kurzer Vorlauf – behoben
+Import-Takes (m.imp) mit 0 < Vorlauf < 0,25 s werden für Erkennung und Stück-Wahl mit Nullen auf genau 0,25 s aufgefüllt (Kopie, off < 0).
+vxr2-test (a2) #10 t1 1,95/1,955/2,1/2,105 (Vorlauf 0,19/0,04 s): index **29/29/29/29, Marken probengleich zu t1 0,378** (off −2743/−2983/
+−9943/−10183); basis 34/32/34/32. Aufgenommene Takes (ohne m.imp) mit < 0,25 s Nullen: unverändert (vxr2-lyr-test (4)).
+Nicht abgedeckt: Import, bei dem der Song erst nach Datei-Beginn anfängt (imp1Take off ≥ 0 → keine digitale Stille vorn) – dort bleibt
+die Stück-Wahl rasterabhängig wie in 4.74 (Offen 6).
+
+### Befund 3 (mittel) (d) – nicht behoben, Entscheidung nötig
+Unverändert (Mechanismus s. Offen 2). vxr2-test zeigt jetzt die gleiche Silbe (RV1_T 11,125) als eigene Zeile „OFFEN (d)“ (nicht gezählt):
+index Stück 30 und basis Stück 35 je FEHLER, 36 ms vor dem Schnitt, Vorgänger −111 ms. Der fremde rv1-Test (vx/real) wurde nicht geändert
+(fremder Paketordner); Vorschlag fürs nächste rv1-Paket: Verschiebe-Stück über RV1_T festlegen. Funk-Vorschlag: Dehnung des Vorgängers
+beim Verschieben behalten.
+
+### Befund 4 (mittel) Songtext – behoben
+Kennung `m.vxr2 = 1` am Take (gespeichert über tkExt().take, alte Fassungen ignorieren sie). Gesetzt bei der ersten Erkennung eines Takes
+**ohne** Songtext; Takes, die schon Songtext haben (alte Projekte), behalten die bisherige Erkennung → Text hängt weiter an denselben Marken.
+Später eingegebener Text auf einem Take mit Kennung: Kennung bleibt, nach Speichern/Laden gleiche Marken. vxr2-lyr-test (synthetischer
+Gesang, `vxr2-lyr-test.mjs`): ALLE OK 5 – (1) Take mit Text: keine Kennung, Marken = Op 'det' am ganzen Take; (2) Kennung gesetzt, bleibt
+beim Normalisieren und nach späterem Text; (3) Vorlauf 0,10/0,105/0,6 s gleich (synthetisch – unterscheidet nicht, basis auch gleich;
+Echt-Beleg ist (a2)); (4) aufgenommener Take unverändert. Rest: Undo auf einen Stand vor dem Setzen der Kennung + danach Text → nach
+Neuladen wieder alte Erkennung (Randfall, nicht geprüft).
+
+### Befund 5 (mittel) sichtbar andere Teilung – nicht geändert, für den Funk
+Die lagefeste Stück-Wahl gibt andere Stücke als 4.74 (Regel 3: vorher vorschlagen). Zahlen (rv1 ORIGINAL, `reg2/rv1-index.json` gegen
+`pruef-vxr2/reg/rv1-basis.json`): #1 Stücke 68 → 70, Einsatz-T 42 → 40 von 59, Einsatz-Vb 51 → 49, Präzision 52/68 (76,5 %) → 51/70
+(72,9 %), tonOk 59 → 60; #10 31 → 29; #14 37 → 32. Dafür gleich bei jedem Vorlauf (4.74 #10: 31/31/31/31 mit nur 6/31 gleichen Marken,
+kurzer Vorlauf 34/32). Anderes Z0 nicht gemessen (Zeit). **Empfehlung: im Funk mit diesen Zahlen vorschlagen, nicht still ausliefern.**
+
+### Befund 6 (klein) Anlauf ±37 ms – nicht geändert
+Unverändert (Anker/Anlauf an der gehörten Fassung, vx2-Prüfung 7/3); Lösung = Offen 1 (Import-Raster).
+
+### Ablauf-Hinweis des Prüfers
+voxr1 läuft jetzt an Kopien in /dev/shm (`reg2/reg.sh`); im Paketordner liegen keine neuen Bilder (die voxr1-*.png von 21:47 stammen aus
+dem Prüfer-Lauf). work/fotos stammen aus der Testkopie (rv1-Fotos).
+
+### Endstand (reg2/, drei Ketten parallel, Last 4–12,7; voxr1 allein danach, Last 2,2)
+vx1 61/61 · vx2 14/14 · vx3 15/15 · rv1 ORIGINAL ALLE OK 53 · rv1-imp2b ALLE OK 53 · chr2-imp2b ALLE OK 82 · voxr1 80/83 (die bekannten
+3 Inhalts-FEHLER Klicks A/B, Raumton) · vxr2-test ALLE OK 11 (+ 2 OFFEN-Zeilen (d)) · vxr2-lyr-test ALLE OK 5.
+Pflicht (`out/pflicht-nb.txt`): topdefs Skripte 26, Namen 7936 (basis 7926), doppelt 0, Syntaxfehler 0 · dupkeys 0 doppelte Schlüssel ·
+smoke title SYNQUENZER errors [] (`out/smoke-nb.png`) · „MS 2000“ 1× · „^  live: true,“ 1× · VERSION '4.74.0'.
+
+### Offen (neu/geändert)
+6. Import ohne digitale Stille vorn (Song beginnt nach Datei-Anfang): Stück-Wahl weiter rasterabhängig (wie 4.74).
+7. Zeit: +10–28 % erste Analyse importierter Takes (s. Tabelle); ganz weg nur mit Offen 1.
+8. Kennung `vxr2` ist ein neues gespeichertes Feld am Take (unsichtbar, ältere Fassungen verwerfen es beim Laden).
