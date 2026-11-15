@@ -47,7 +47,7 @@ for (const tk of ['B44', 'C48', 'B48', 'C44']) {
     for (let i = 0; i < nz.length; i++) nz[i] = rnd() * 2 - 1; filt(nz, lpN); filt(nz, lpN);
     const p = new Float64Array(M); let ep = 0, ev = 0; for (let i = 0; i < M; i++) { const tt = i / sr, w = Math.min(1, i / (0.002 * sr)) * Math.min(1, (M - i) / (0.004 * sr)); p[i] = w * (Math.sin(TAU * f * tt + phs) * Math.exp(-tt / tau) + 0.15 * nz[3000 + i] * 30); ep += p[i] * p[i]; ev += v[i0 + i] * v[i0 + i]; }
     let g = Math.sqrt(ev / ep) * Math.pow(10, G / 20), pk = 0; for (let i = 0; i < M; i++) pk = Math.max(pk, Math.abs(v[i0 + i] + g * p[i])); if (pk > 0.85) g *= 0.85 / pk; for (let i = 0; i < M; i++) P[i0 + i] += g * p[i]; }
-  if (!ONLY.includes(tk)) continue;
+  if (!ONLY.includes(tk)) continue; globalThis.__PL = [];
   const x = new Float32Array(n); for (let i = 0; i < n; i++) x[i] = v[i] + P[i];
   const t0 = Date.now(), r = K.done(K.run(x, sr, {steps: {plop: {}}})), ms = Date.now() - t0, ev = r.info.plop;
   const hit = PT.map(t => ev.find(e => NEAR(e, t, 0.04))), fp = ev.filter(e => !PT.some(t => NEAR(e, t, 0.04)));
@@ -59,6 +59,7 @@ for (const tk of ['B44', 'C48', 'B48', 'C44']) {
     for (let k = 1; k * f0 < 4000; k++) { const py = gz(r.y, b2, b2 + W, k * f0, sr), pv = gz(v, b2, b2 + W, k * f0, sr); sy += py; sv += pv; if (k * f0 < 250) { ly += py; lv += pv; } }
     for (let k = 1; k * f0 < 4000; k++) { const py = gz(r.y, b2, b2 + W, k * f0, sr), pv = gz(v, b2, b2 + W, k * f0, sr); if (pv > 0.05 * sv / k / 2 && pv > 1e-3 * pv1) mx = Math.max(mx, Math.abs(db(py) - db(pv))); }
     hAll.push(+(db(sy) - db(sv)).toFixed(2)); hLow.push(+(db(ly) - db(lv)).toFixed(2)); hMax.push(+mx.toFixed(2)); }
+  if (process.env.DIAG) PT.forEach((t, k) => console.log(tk, k + 1, t, "abz", red[k], "ob", hAll[k], "low", hLow[k], "f0", Math.round(f0At(T, t + 0.02)), JSON.stringify((globalThis.__PL || []).filter(q => q.t >= t - 0.06 && q.t <= t + 0.06))));
   let same = true; for (let i = 0; i < n && same; i++) { const tt = i / sr; if (!ev.some(e => tt > e.t0 - 0.06 && tt < e.t1 + 0.06) && r.y[i] !== x[i]) same = false; }
   const f0s = PT.map(t => Math.round(f0At(T, t + 0.02)));
   const nr = red.filter(d => d >= 12).length, nh = hAll.filter(d => Math.abs(d) <= 1).length; SUM[tk] = {gef: hit.filter(Boolean).length, fp: fp.length, abz: nr, ob: nh, same};
