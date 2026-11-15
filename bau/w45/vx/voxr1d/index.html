@@ -61519,7 +61519,16 @@ function plopFit(z, g0, g1, sd, cut, hb, D, sr) {
   for (let k = 0; k < K; k++) { const A = Math.hypot(cl[2 * k], cl[2 * k + 1]), B = Math.hypot(cr[2 * k], cr[2 * k + 1]), dd = Math.hypot(cr[2 * k] - cl[2 * k], cr[2 * k + 1] - cl[2 * k + 1]);
     const t2 = Math.pow((plopFit.PA || 0.3) * Math.max(A, B), 2) + dd * dd + 1e-12; for (let c = 6 * k; c < 6 * k + 6; c++) lam[c] = sig / t2 * (c - 6 * k >= 4 ? (plopFit.P2 || 1) : 1); }
   const th1 = reg(lam), out = new Float64Array(Lg);
-  for (let j = J0; j < J1; j++) { let s = 0; for (let c = 0; c < np; c++) s += th1[c] * col(j, c); out[j - J0] = s; }
+  // VOXR1D-OT: Stärke je Teilton in der Lücke höchstens ±CL dB neben der Rand-Stärke (linear über die Lücke); Phase bleibt aus dem Fit.
+  // Prüfer-Befund: Obertöne −7,7 dB bei gleichbleibendem Ton (schwacher langer Stoß zog den Grundton mit). {CL: 0} = wie vorher.
+  const CLd = plopFit.CL != null ? plopFit.CL : 1, cu = Math.pow(10, CLd / 20), rk = new Float64Array(2 * K);
+  for (let k = 0; k < K; k++) { const A = Math.hypot(cl[2 * k], cl[2 * k + 1]), B = Math.hypot(cr[2 * k], cr[2 * k + 1]); rk[2 * k] = L.on ? A : B; rk[2 * k + 1] = R.on ? B : rk[2 * k]; }
+  for (let j = J0; j < J1; j++) { let s = 0;
+    if (CLd > 0) { const tau = (jA + j - (g0 - 1)) / (Lg + 1), am = plopFit.NOA ? 1 : Ae[j];
+      for (let k = 0; k < K; k++) { const b = 6 * k, re = th1[b] + (th1[b + 2] + th1[b + 4] * tau) * tau, im = th1[b + 1] + (th1[b + 3] + th1[b + 5] * tau) * tau, mg = Math.hypot(re, im), rf = rk[2 * k] * (1 - tau) + rk[2 * k + 1] * tau;
+        const sc = mg > 0 ? Math.min(cu * rf, Math.max(rf / cu, mg)) / mg : 0, a = (k + 1) * Ph[j]; s += sc * (re * Math.cos(a) - im * Math.sin(a)) * am; } }
+    else for (let c = 0; c < np; c++) s += th1[c] * col(j, c);
+    out[j - J0] = s; }
   // VOXR1D: nie lauter als vorher – gleitende Energie (≈ 10 ms) der Neubildung höchstens die des Tiefbands an der Stelle (Stoß inklusive)
   if (plopFit.LIM !== 0) { const hw = Math.max(2, Math.round((plopFit.LW || 0.003) * sd)), gn = new Float64Array(Lg);
     for (let j = 0; j < Lg; j++) { let eo = 0, ez = 0; for (let d = -hw; d <= hw; d++) { const w = 0.5 + 0.5 * Math.cos(Math.PI * d / (hw + 1)), q = j + d; const o = q >= 0 && q < Lg ? out[q] : 0, v = z[g0 + q] || 0; eo += w * o * o; ez += w * v * v; } gn[j] = eo > ez ? Math.sqrt(ez / eo) : 1; }
