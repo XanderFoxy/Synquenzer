@@ -101361,12 +101361,14 @@ function spk1Frame(U) {
     U.pos = pos; U.dov = U.dr = true;
     const vis = U.W / U.v.pps; if (!U.hold && (pos > U.v.t0 + vis * 0.94 || pos < U.v.t0)) { U.v.t0 = pos - vis * 0.08; spk1Clamp(U); U.dg = true; }
   } else if (U.pos != null) { U.pos = null; U.dov = U.dr = true; spk1BtnState(U); }
+  if (typeof fokus1Pre === 'function') fokus1Pre(U);   /* FOKUS1: Fokus-Stücke nur fürs Zeichnen einsetzen */
   try {
     if (U.dg) { U.dg = false; if (U.gl) spk1GlDraw(U); else spk1CpuDraw(U); }
     if (U.dk) { U.dk = false; spk1KeysDraw(U); }
     if (U.dr) { U.dr = false; spk1RulerDraw(U); }
     if (U.dov) { U.dov = false; spk1OvDraw(U); }
   } catch (e) { logErr(e); }
+  if (typeof fokus1Post === 'function') fokus1Post(U);   /* FOKUS1: Original-Stücke zurück */
   if (pos != null) U.raf = requestAnimationFrame(() => spk1Frame(U));
 }
 /* ---- Tastatur links, Takt-Lineal, Auswahl-Ebene ---- */
@@ -101610,6 +101612,7 @@ function spk1UndoBtns(U, r) {
 function spk1Got(U, r) { if (!r || !r.meta) return; SPK1.last = r; U.meta = r.meta; spk1UndoBtns(U, r); spk1Layers(U); if (typeof spk2OvDraw === 'function') spk1Dirty(U, 'ov'); }   // SPK2: Noten neu zeichnen
 /* ---- Ebenen-Liste ---- */
 function spk1Layers(U) {
+  if (typeof fokus1Got === 'function') fokus1Got(U);   /* FOKUS1: Fokus-Satz nach Ebenen-/Noten-Änderung neu holen (entprellt) */
   if (typeof spk3LpFromMeta === 'function') spk3LpFromMeta(U);   // SPK3: Loop aus dem Dokument
   if (typeof spk4Lab === 'function') spk4Lab(U);   // SPK4: Hinweis einstimmig/mehrstimmig der gewählten Ebene
   const L = U.meta.layers, R = U.meta.rest || {}, row = (id, name, col, o) => {
@@ -101664,6 +101667,7 @@ function spk1Dd(U, anchor, fill) {
 }
 function spk1ViewDd(U, b) {
   spk1Dd(U, b, dd => {
+    if (typeof fokus1ViewDd === 'function') fokus1ViewDd(U, dd);   /* FOKUS1: Fokus Alles │ Nur Rest │ Nur Gefundenes */
     dd.appendChild(el('h5', '', 'Pegel'));
     const sl = (lab, min, max, key) => { const l = el('label', '', esc(lab)), r = el('input'), v = el('span', 'spk1-v', U[key] + ' dB'); r.type = 'range'; r.min = min; r.max = max; r.step = 1; r.value = U[key]; r.setAttribute('aria-label', lab);
       on(r, 'input', () => { U[key] = +r.value; if (U.hi - U.lo < 12) { if (key === 'lo') U.hi = U.lo + 12; else U.lo = U.hi - 12; } v.textContent = U[key] + ' dB'; spk1Dirty(U, 'g'); }); l.append(r, v); dd.appendChild(l); };
@@ -101815,6 +101819,7 @@ function spk1PlaySel(U) {
 /* ---- Spektrum-Stücke und Tönung laden ---- */
 function spk1SpecFree(U) {
   if (U.spec && U.gl) for (const c of U.spec.chunks) if (c && c.tex) U.gl.gl.deleteTexture(c.tex);
+  if (typeof fokus1Free === 'function') fokus1Free(U);   /* FOKUS1: eigene Fokus-Texturen frei (nie die geliehenen) */
   U.spec = null;
 }
 function spk1SpecLoad(U) {
@@ -107647,6 +107652,163 @@ const FOKUS1_API = {
   route: (op, a) => fokus1CallSrc(op, Object.assign({doc: SPK1.doc}, a || {}), null)
 };
 try { window.__fokus1 = FOKUS1_API; } catch (e) {}
+/* ---------- Anzeige: „Ansicht ▾ → Fokus“ (Alles │ Nur Rest │ Nur Gefundenes), zweiter Satz Stücke nur fürs Zeichnen, Status ----------
+   U.f1 = {mode, aus, set, sig, …} lebt nur in der Sitzung (SPK1.ui), nie im Projekt. U.spec (Original) wird nie verändert: fokus1Pre setzt
+   für die Dauer eines Bildes einen geliehenen Satz ein (fehlende/noch nicht hochgeladene Stücke = Original-Stück), fokus1Post stellt zurück.
+   „Alles“ = kein Tausch → Bild wie vorher. Höchstens 2 neue Texturen je Bild (kein Stau beim Umschalten). */
+const FOKUS1_MODES = [['alles', 'Alles', 'Fokus: alles zeigen'], ['rest', 'Nur Rest', 'Fokus: nur, was noch nicht gefunden ist'], ['gef', 'Nur Gefundenes', 'Fokus: nur das Gefundene (Kontrolle)']];
+function fokus1S(U) { return U.f1 || (U.f1 = {mode: 'alles', aus: 'sicher', set: null, sig: '', seq: 0, tm: 0, ft: 0, pend: false, run: false, sw: null, arr: null, glRef: null, st: null, txt: '', doc: null, err: ''}); }
+function fokus1Conf(U) { const T = U.meta && U.meta.teil2 && U.meta.teil2.notes; if (!T) return false; for (const lid in T) for (const q of T[lid] || []) if (q && q.conf != null) return true; return false; }
+function fokus1Sig(U) {   // alles, was den Fokus-Satz ändert (Solo, Stumm, Lautstärke nicht)
+  const F = U.f1, M = U.meta; if (!M) return ''; const T = (M.teil2 && M.teil2.notes) || {}, ns = [];
+  for (const lid in T) for (const q of T[lid] || []) if (q) ns.push(lid + ':' + q.id + ':' + q.st + ':' + q.conf + ':' + q.a + ':' + q.b + ':' + q.f + ':' + (q.fz ? q.fz.length : 0));
+  return [SPK1.doc, U.N, F.mode, F.aus, U.opt && U.opt.n2thr, M.n, (M.layers || []).map(l => l.id + ':' + l.ver).join(','), ns.join(',')].join('|');
+}
+function fokus1Tex(U, c) { if (c && c.tex && U.gl && U.f1.glRef === U.gl) try { U.gl.gl.deleteTexture(c.tex); } catch (e) {} if (c) c.tex = null; }
+function fokus1Drop(U) {   // nur eigene Stücke/Texturen – nie die geliehenen Original-Stücke
+  const F = fokus1S(U), S = F.set; F.set = null; F.arr = null; if (!S) return;
+  for (const c of S.chunks) if (c) { fokus1Tex(U, c); if (c.old) { fokus1Tex(U, c.old); c.old = null; } }
+}
+function fokus1Free(U) {   // Haken in spk1SpecFree (FFT-Wechsel, Dokumentwechsel, Seite verlassen)
+  const F = U.f1; if (!F) return; F.seq++; clearTimeout(F.tm); F.tm = 0;
+  if (F.run) { F.run = false; spk1Call('fokusStop', {doc: SPK1.doc}).catch(() => {}); }
+  fokus1Drop(U); F.sig = ''; F.pend = F.mode !== 'alles';
+}
+function fokus1Got(U) {   // Haken am Anfang von spk1Layers (jedes Kern-Ergebnis: In Ebene, Undo/Redo, Noten finden, Zuordnen, Zerlegen …)
+  const F = fokus1S(U);
+  if (F.doc !== SPK1.doc) { F.doc = SPK1.doc; F.seq++; fokus1Drop(U); F.sig = ''; F.st = null; }
+  if (F.txt && U.st && U.st.textContent !== F.txt) { F.txt = ''; U.st.removeAttribute('title'); }
+  if (F.mode === 'alles' || !U.meta) return;
+  if (fokus1Sig(U) === F.sig && F.set) return;
+  clearTimeout(F.tm); F.tm = setTimeout(() => { F.tm = 0; fokus1Load(U); }, 120);   // entprellt
+}
+function fokus1Stat(U, t, full) { const F = U.f1; spk1Stat(U, t); F.txt = t; try { if (full && full !== t) U.st.title = full; else U.st.removeAttribute('title'); } catch (e) {} }
+function fokus1Done(U) {
+  const F = U.f1, r = F.st; if (!r || F.mode === 'alles') return;
+  const a = r.eO > 0 ? r.eR / r.eO : 1, pc = a > 0 && a < 0.005 ? '< 1' : String(Math.round(100 * a)), n = r.nAus, nn = n + (n === 1 ? ' Note' : ' Noten'), narrow = U.st.clientWidth < 330;
+  if (F.mode === 'rest') {
+    const full = n || (U.meta.layers || []).length ? 'Fokus: Rest · ' + nn + ' ausgeblendet · übrig ≈ ' + pc + ' %' : 'Fokus: Rest · noch nichts gefunden';
+    fokus1Stat(U, narrow ? (n || (U.meta.layers || []).length ? 'Rest · ' + pc + ' % übrig · ' + n + ' aus' : 'Rest · nichts gefunden') : full, full + ' der Energie');
+  } else {
+    const full = 'Fokus: Gefundenes · ' + nn + ' · ≈ ' + pc + ' % der Energie';
+    fokus1Stat(U, narrow ? 'Gefunden · ' + pc + ' % · ' + n + ' Noten' : full, full);
+  }
+}
+async function fokus1Load(U) {
+  const F = fokus1S(U); clearTimeout(F.tm); F.tm = 0;
+  if (F.mode === 'alles' || !SPK1.open || !SPK1.doc || !U.meta) return;
+  if (U.specQ || !U.spec || !U.spec.hop || !U.spec.info) { F.pend = true; return; }   // erst, wenn das Original fertig ist
+  F.pend = false;
+  const doc = SPK1.doc, N = U.N, mode = F.mode, sig = fokus1Sig(U), I = U.spec.info, nC = I.chunks || U.spec.chunks.length;
+  let S = F.set;
+  if (S && S.doc === doc && S.N === N && S.mode === mode && F.sig === sig && S.chunks.filter(Boolean).length >= nC) { fokus1Done(U); spk1Dirty(U, 'g'); return; }   // noch aktuell
+  const seq = ++F.seq; F.sig = sig;
+  if (!S || S.doc !== doc || S.N !== N || S.mode !== mode) { fokus1Drop(U); S = F.set = {doc, N, mode, hop: U.spec.hop, info: I, chunks: [], key: ''}; }   // gleicher Modus: altes Bild bleibt, bis das neue Stück da ist
+  const v = U.v, hs = U.spec.hop / U.meta.sr, cl = x => Math.max(0, Math.min(nC - 1, x));
+  const c0 = cl(Math.floor(Math.max(0, v.t0) / hs / 1024)), c1 = Math.max(c0, cl(Math.floor(Math.max(0, v.t0 + U.W / v.pps) / hs / 1024)));
+  const parts = [[c0, c1 + 1]]; if (c1 + 1 < nC) parts.push([c1 + 1, nC]); if (c0 > 0) parts.push([0, c0]);   // sichtbare Stücke zuerst
+  const o = {doc, N, mode, aus: F.aus, thr: U.opt && U.opt.n2thr != null ? U.opt.n2thr : 0.5};
+  let got = 0, eO = 0, eR = 0, nAus = 0, stop = '', key = '', tP = 0;
+  F.run = true; if (!F.st) fokus1Stat(U, 'Fokus · 0 %');
+  try {
+    for (const [from, to] of parts) {
+      const r = await spk1Call('fokus', Object.assign({from, to}, o), null, {
+        chunk: c => {
+          if (seq !== F.seq || F.set !== S) return;
+          const old = S.chunks[c.k], nc = {x0: c.x0, w: c.w, R: c.R, data: c.data, tex: null, old: null};
+          if (old) { if (old.tex) nc.old = old; else if (old.old) nc.old = old.old; if (old.tex && old.old) fokus1Tex(U, old.old); }
+          S.chunks[c.k] = nc; S.hop = c.hop; S.key = c.key; got++; spk1Dirty(U, 'g');
+          const t = performance.now(); if (got < nC && t - tP > 150) { tP = t; fokus1Stat(U, 'Fokus · ' + Math.round(100 * got / nC) + ' %'); }
+        }
+      });
+      if (seq !== F.seq) return;
+      eO += r.eO || 0; eR += r.eR || 0; nAus = r.nAus; key = r.key; stop = r.stop || '';
+      if (stop) break;
+    }
+  } catch (e) {
+    if (seq !== F.seq) return; F.run = false;
+    if (/op fokus/.test(String(e && e.message || e))) { F.mode = 'alles'; F.err = 'fehlt'; fokus1Drop(U); fokus1Stat(U, 'Fokus hier nicht verfügbar'); spk1Dirty(U, 'g'); return; }
+    logErr(e); fokus1Stat(U, 'Fokus: Fehler'); return;
+  }
+  F.run = false; if (seq !== F.seq) return;
+  if (stop === 'geaendert') { F.sig = ''; clearTimeout(F.tm); F.tm = setTimeout(() => { F.tm = 0; fokus1Load(U); }, 150); return; }   // Ebene/Note während der Rechnung geändert
+  if (stop) return;   // abgelöst: ein neuerer Auftrag läuft
+  F.st = {eO, eR, nAus, key, ms: 0}; fokus1Done(U); spk1Dirty(U, 'g');
+}
+function fokus1Mode(U, v) {
+  const F = fokus1S(U), was = F.mode; if (v === was) return;
+  const row0 = was !== 'alles' && fokus1Conf(U), row1 = v !== 'alles' && fokus1Conf(U);
+  F.mode = v; clearTimeout(F.ft); F.ft = 0; F.err = '';
+  if (v === 'alles') {
+    F.seq++; clearTimeout(F.tm); F.tm = 0; F.pend = false;
+    if (F.run) { F.run = false; spk1Call('fokusStop', {doc: SPK1.doc}).catch(() => {}); }
+    F.ft = setTimeout(() => { F.ft = 0; if (F.mode === 'alles') { fokus1Drop(U); F.sig = ''; } }, 20000);   // GPU-Speicher nach einer Weile frei
+    fokus1Stat(U, 'Fokus aus · alles sichtbar');
+  } else { if (F.set && F.set.mode !== v) { fokus1Drop(U); F.sig = ''; } F.st = null; fokus1Load(U); }
+  spk1Dirty(U, 'g');
+  if (row0 !== row1 && U.dd && U.ddA && U.dd.querySelector('.spk1-f1')) { const a = U.ddA; setTimeout(() => { if (U.dd && U.ddA === a) spk1ViewDd(U, a); }, 0); }   // Zeile „Ausblenden“ ein/aus → Fenster neu legen
+}
+function fokus1ViewDd(U, dd) {   // Haken ganz oben in spk1ViewDd (quer scrollt das Fenster – oben bleibt sichtbar)
+  const F = fokus1S(U);
+  dd.appendChild(el('h5', '', 'Fokus'));
+  dd.appendChild(makeSeg(FOKUS1_MODES, () => F.mode, v => fokus1Mode(U, v), 'spk1-f1'));
+  if (F.mode !== 'alles' && fokus1Conf(U)) {
+    const l = el('label', '', 'Ausblenden');
+    l.appendChild(makeSeg([['sicher', 'Sichere', 'Ausblenden: nur sichere Noten'], ['alle', 'Alle', 'Ausblenden: alle gefundenen Noten']], () => F.aus, a => { F.aus = a; F.st = null; fokus1Load(U); }, 'spk1-f1b'));
+    dd.appendChild(l);
+  }
+}
+function fokus1Pre(U) {   // Haken in spk1Frame vor dem Zeichnen
+  const F = U.f1; if (!F) return; F.sw = null;
+  try {
+    if (F.mode === 'alles') return;
+    if (F.pend && !F.tm && !U.specQ && U.spec && U.spec.hop && U.spec.info) F.tm = setTimeout(() => { F.tm = 0; fokus1Load(U); }, 0);
+    const S = F.set, O = U.spec; if (!U.dg || !S || !O || !O.hop || S.doc !== SPK1.doc || S.N !== O.N || S.mode !== F.mode) return;
+    if (F.glRef !== U.gl) { for (const c of S.chunks) if (c) { c.tex = null; c.old = null; } F.glRef = U.gl; }   // Kontext verloren → Texturen sind weg
+    const v = U.v, hs = O.hop / U.meta.sr, n = O.chunks.length, arr = F.arr && F.arr.length === n ? F.arr : (F.arr = new Array(n)); let bud = 2, more = false;
+    for (let k = 0; k < n; k++) {
+      const o = O.chunks[k], f = S.chunks[k]; let use = o;
+      if (f && (!o || o.w === f.w)) {
+        if (!U.gl) { use = f; f.old = null; }
+        else if (f.tex) use = f;
+        else {
+          const xa = ((f.x0 - 0.5) * hs - v.t0) * v.pps, xb = ((f.x0 + f.w - 0.5) * hs - v.t0) * v.pps;
+          if (xb < 0 || xa > U.W) use = f;   // unsichtbar: wird nicht hochgeladen
+          else if (bud > 0) { bud--; use = f; }
+          else { more = true; use = f.old && f.old.tex ? f.old : o; }
+        }
+      }
+      arr[k] = use;
+    }
+    F.sw = {spec: O, tint: U.tintOn, more};
+    U.spec = {N: O.N, hop: O.hop, info: O.info, chunks: arr};
+    if (F.mode === 'rest') U.tintOn = false;   // Tönung würde die jetzt dunklen Flächen färben
+  } catch (e) { if (F.sw) { U.spec = F.sw.spec; U.tintOn = F.sw.tint; } F.sw = null; logErr(e); }
+}
+function fokus1Post(U) {   // Haken in spk1Frame nach dem Zeichnen (außerhalb von try → läuft immer)
+  const F = U.f1; if (!F || !F.sw) return; const w = F.sw; F.sw = null;
+  U.spec = w.spec; U.tintOn = w.tint;
+  try { const S = F.set; if (S && U.gl) for (const c of S.chunks) if (c && c.tex && c.old) { fokus1Tex(U, c.old); c.old = null; } } catch (e) { logErr(e); }
+  if (w.more) Promise.resolve().then(() => spk1Dirty(U, 'g'));   // nächste 2 Texturen im nächsten Bild
+}
+(function fokus1Guide() {   // Bedienungsanleitung (Suche): Fokus
+  try {
+    if (typeof ui1Entries !== 'function') return; const L = ui1Entries(); if (L.some(x => x.id === 'fokus1')) return;
+    L.push({id: 'fokus1', n: 'Fokus: Gefundenes ausblenden (Nur Rest)', w: 'Spektral › Ansicht ▾ › Fokus: Alles │ Nur Rest │ Nur Gefundenes (· Ausblenden: Sichere │ Alle)',
+      d: 'Nur Rest blendet im ganzen Spektrum aus, was schon in Ebenen liegt, und dazu Grundton und Obertöne aller gefundenen Noten – übrig bleibt, was noch zu finden ist. Zauberstab, Harmonische, Ähnliches und Noten finden arbeiten dann auf dem Rest und finden Gefundenes nicht doppelt; In Ebene nimmt nur den freien Rest. Neue Treffer in eine Ebene legen – beim nächsten Bild sind sie weg. So kristallisiert sich Runde für Runde der Rest heraus. Nur Gefundenes zeigt zur Kontrolle das Gegenteil. Ausblenden: Sichere = nur sichere Noten, Alle = auch unsichere Vorschläge. Reine Ansicht: Klang, Ebenen und Noten bleiben, wie sie sind; Alles zeigt wieder das ganze Bild. Die Statuszeile zeigt, wie viel noch übrig ist.',
+      s: 'fokus rest nur rest ausblenden gefunden gefundenes erkannt erkannte noten frequenzen ebenen verbleibend uebrig herauskristallisieren ablenken konzentrieren spektrum ansicht sicher sichere alle',
+      go: () => { spk1Open({back: {menu: true}}); }, q: () => (SPK1.open && SPK1.ui ? SPK1.ui.sh.querySelector('[data-a="view"]') || SPK1.ui.tl : null)});
+  } catch (e) {}
+})();
+/* Test-Zugang (Anzeige), ergänzt FOKUS1_API: S(), mode(m), aus(a), info(), chunks(), idle() */
+Object.assign(FOKUS1_API, {
+  S: () => SPK1.ui && fokus1S(SPK1.ui),
+  mode: m => { const U = SPK1.ui; fokus1Mode(U, m); return U.f1.mode; },
+  aus: a => { const U = SPK1.ui, F = fokus1S(U); F.aus = a; F.st = null; return fokus1Load(U); },
+  info: () => { const U = SPK1.ui, F = U && U.f1; if (!F) return null; const S = F.set; return {mode: F.mode, aus: F.aus, run: F.run, pend: F.pend, tm: !!F.tm, aktuell: !!U.meta && F.sig === fokus1Sig(U), st: F.st, txt: F.txt, title: U.st.title || '', n: S ? S.chunks.filter(Boolean).length : 0, tex: S ? S.chunks.filter(c => c && c.tex).length : 0, key: S ? S.key : '', err: F.err}; },
+  chunks: () => { const S = SPK1.ui && SPK1.ui.f1 && SPK1.ui.f1.set; return S ? S.chunks.map((c, k) => c && {k, x0: c.x0, w: c.w, R: c.R, hop: S.hop, data: c.data}).filter(Boolean) : []; },
+  idle: () => { const U = SPK1.ui, F = U && U.f1; return !!F && !F.run && !F.tm && !F.pend && (F.mode === 'alles' || (!!F.set && F.sig === fokus1Sig(U))); }
+});
 /* FOKUS1-END */
 /* SPK11B-BEGIN ===== Spektral-Seite Teil 11B · Szenen: Drum-Kit und Bass-Phantome nachgebessert (Puls: offene Fehler aus SPK11).
    (1) Drums → Kit: Kick/Snare-Schwellen aus dem Lied selbst (zwei Häufungen der Band-Einsätze, Otsu auf log-Werten), Anschlag muss in die
