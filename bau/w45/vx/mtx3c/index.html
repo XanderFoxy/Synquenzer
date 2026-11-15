@@ -96452,6 +96452,13 @@ function mtx3cBegSched(i, from, to, tg) {
 }
 // beg1Alone-Haken: „nur die Band“ behält die Einzelspuren von DRUMS (sie gehören zu DRUMS; nach SCHLUSS spielt DRUMS wieder ganz)
 function mtx3cBegKeep(keep, tg) { if (!tg || tg.dr !== DRUM_T || !keep.has(DRUM_T)) return; for (const j of mtx3Parts(-1)) if (mtx3Is(j)) keep.add(j); }
+// beg1TgSync-Haken („nur die Band“, Ziel-Spur gewechselt): ist DRUMS nicht mehr die Drum-Spur, werden ihre Einzelspuren still wie DRUMS
+function mtx3cBegHush(old, tg) {
+  if (!old || old.dr !== DRUM_T || (tg && tg.dr === DRUM_T)) return 0;
+  let n = 0; for (const j of mtx3Parts(-1)) if (mtx3Is(j) && (R.slot[j] >= 0 || R.pend[j])) { beg1Hush(j); n++; }
+  if (n) { beg1SoloMark(); UI.dirty.grid = true; }
+  return n;
+}
 // cancelTrackFrom / stopTrackNow-Haken (DRUMS): die Band-Schläge, die über eine Einzelspur gehen, gehören zu DRUMS
 function mtx3cCancel(i, t, stop) {
   if (i !== DRUM_T || !HITS.length) return;
@@ -99528,6 +99535,7 @@ function beg1TgSync(force) {
     const ch = new Set(); for (const [r] of BEG1_ROLES) if (old[r] !== BEG1.tgc[r]) { if (old[r] != null) ch.add(old[r]); if (BEG1.tgc[r] != null) ch.add(BEG1.tgc[r]); }
     // Start „nur die Band“: eine Spur, die keine Ziel-Spur mehr ist, wird still – wie beim Start (sonst spielte sie ihren eigenen Clip, z. B. eine 2. Basslinie)
     if (BEG1.soloRun === R.runId) { const now3 = [BEG1.tgc.dr, BEG1.tgc.bs, BEG1.tgc.cp]; let h = 0; for (const t of ch) if (!now3.includes(t)) { beg1Hush(t); h++; } if (h) { beg1SoloMark(); UI.dirty.grid = true; } }
+    if (BEG1.soloRun === R.runId && typeof mtx3cBegHush === 'function') mtx3cBegHush(old, BEG1.tgc);   /* MTX3C: Einzelspuren still wie DRUMS */
     const at = AU.ctx.currentTime + .006;
     for (const t of ch) { try { cancelTrackFrom(t, at); cutTrackAt(t, at); scheduleTrack(t, Math.max(0, t2b(at)), R.schedBeat, true); } catch (e) { logErr(e); } }
   }
