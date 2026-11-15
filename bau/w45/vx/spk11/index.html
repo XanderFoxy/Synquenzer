@@ -103932,7 +103932,9 @@ function spk11Seg(r, x, sr) {
 }
 // Teile in Takten des Dokument-Rasters [A, B) (A < 0 = Vorlauf vor der „1“); mit Auswahl nur der Bereich darin
 function spk11Parts(U, T) {
-  const g = spk1Grid0(U), nb = Math.max(1, Math.ceil((U.dur - g.off) / g.bar - 0.02)), k0 = g.off > 0.03 ? -Math.ceil((g.off - 0.03) / g.bar) : 0;
+  // Vorlauf vor der „1“ erst ab einem halben Takt als eigener Takt (sonst wäre die Intro-Szene eine Schleife mit fast stillem Takt);
+  // Ausklang nach dem letzten ganzen Takt erst ab 0,6 Takt (Hall/Ausklingen allein macht keinen Takt mehr)
+  const g = spk1Grid0(U), nb = Math.max(1, Math.floor((U.dur - g.off) / g.bar + 0.4)), k0 = g.off >= 0.5 * g.bar ? -Math.ceil((g.off - 0.03) / g.bar) : 0;
   let P = [];
   const src = T && T.ok && T.teile.length ? T.teile : [{name: 'Teil 1', t0: 0, grp: 0}];
   src.forEach((p, i) => { const A = i ? Math.max(k0, Math.min(nb, Math.round((p.t0 - g.off) / g.bar))) : k0; if (P.length && A <= P[P.length - 1].A) return; P.push({name: p.name, grp: p.grp | 0, A}); });
@@ -103959,14 +103961,18 @@ function spk11Rows(U, X) {
   const src = L.length ? L.map(l => ({lid: l.id, name: l.name, art: l.art, col: l.col})).concat([{lid: 'rest', name: 'Rest', art: 'rest', col: '--text-dim'}]) : [{lid: 'orig', name: 'Original', art: 'orig', col: '--text'}];
   const M = U.s11m || (U.s11m = {});
   const rows = src.map(r => Object.assign(r, {n: r.art === 'drums' ? 0 : spk11Notes(U, r.lid, ta, tb).length, all: r.art === 'drums' ? 0 : spk2Notes(U, r.lid).filter(q => spk11NoteOk(U, q)).length}));
-  const pick = sel ? new Set(rows.filter(r => r.n > 0).map(r => r.lid).concat(U.act && U.act !== 'orig' ? [U.act] : [])) : null;
+  // Vorwahl: mit Auswahl und gewählter Ebene nur diese Ebene; sonst alle Ebenen (was in der Auswahl still ist, legt das Anlegen von selbst
+  // nicht an). Noten standardmäßig nur für Drums und Bass (dort verlässlich) – Flächen, Lead, Gesang als Audio; MIDI bleibt wählbar.
+  const one = sel && U.act && U.act !== 'orig' && rows.some(r => r.lid === U.act) ? U.act : null;
   for (const r of rows) {
     const k = SPK1.doc + '|' + r.lid + '|' + (sel ? 's' : 'a');
-    if (M[k] == null) M[k] = r.lid === 'rest' ? 'x' : pick && pick.size && !pick.has(r.lid) ? 'x' : 'ab';
+    if (M[k] == null) M[k] = r.lid === 'rest' || (one && r.lid !== one) ? 'x' : spk11Def(r);
     r.mode = M[k]; r.mkey = k;
   }
   return rows;
 }
+const spk11Def = r => (r.art === 'drums' || r.art === 'bass' ? 'ab' : 'a');
+const spk11Midi = r => r.mode === 'ab' || r.mode === 'm', spk11Aud = r => r.mode === 'ab' || r.mode === 'a';
 function spk11FreeScenes() { const o = []; for (let s = 0; s < NS(); s++) if (!S.tracks.some(t => t && t.clips[s])) o.push(s); return o; }
 const spk11Fresh = i => { const t = S.tracks[i]; return !!t && (t.kind === 'drum' ? !t.clips.some(Boolean) : tkTrackEmpty(i)); };
 const spk11RoleOf = i => { try { return sx11Role(i, S.tracks[i].clips.find(Boolean) || null); } catch (e) { return 'phr'; } };
@@ -103974,8 +103980,9 @@ function spk11Want(U, r) { if (r.art === 'drums') return 'dr'; const w = SPK2_RO
 // Ziele planen (ohne etwas zu ändern): MIDI zuerst auf vorhandene Spuren mit passender Rolle, dann Audio-Spuren (neu oder leere Zusatzspur),
 // dann neue MIDI-Spuren; real = true legt die Spuren an (nur in imp1Step)
 function spk11Targets(U, rows, real) {
-  const used = new Set(), T = {}; let add = MAX_T - NT();
-  const midi = r => r.mode === 'ab' || r.mode === 'm', audio = r => r.mode === 'ab' || r.mode === 'a';
+  const used = new Set(), T = {}, aok = tkAudioOk(); let add = MAX_T - NT();
+  // Audio nur mit Audio-Erlaubnis und (beim echten Anlegen) nur für Ebenen, die im Bereich hörbar sind – sonst entstünden leere Audio-Spuren
+  const midi = spk11Midi, audio = r => aok && spk11Aud(r) && (!real || !!r.pcm);
   for (const r of rows) {
     T[r.lid] = {a: -1, m: -1, want: spk11Want(U, r)};
     if (!midi(r) || r.art === 'rest' && !r.all) continue;
@@ -103988,15 +103995,14 @@ function spk11Targets(U, rows, real) {
   const order = rows.filter(audio).sort((p, q) => (T[p.lid].m === -1 ? 0 : 1) - (T[q.lid].m === -1 ? 0 : 1));
   for (const r of order) {
     if (add > 0) { add--; T[r.lid].a = 'neu'; continue; }
-    for (let i = NT() - 1; i >= BASE_T; i--) if (!used.has(i) && S.tracks[i] && !S.tracks[i].stimme && !S.tracks[i].orig && tkTrackEmpty(i)) { T[r.lid].a = i; used.add(i); break; }
-    if (T[r.lid].a === -1) for (let i = NT() - 1; i >= 0; i--) if (!used.has(i) && S.tracks[i] && !S.tracks[i].stimme && !S.tracks[i].orig && tkTrackEmpty(i)) { T[r.lid].a = i; used.add(i); break; }   // zuletzt: eine ganz leere Grundspur wird Audio-Spur (vorher im Blatt zu sehen)
+    for (let i = NT() - 1; i >= BASE_T; i--) if (!used.has(i) && S.tracks[i] && !S.tracks[i].stimme && !S.tracks[i].orig && tkTrackEmpty(i)) { T[r.lid].a = i; used.add(i); break; }   // nur leere Zusatzspuren – die Grundspuren 1–6 bleiben, was sie sind
   }
   for (const r of rows) if (midi(r) && T[r.lid].m === -1 && T[r.lid].want !== 'dr' && (r.all || r.art !== 'rest') && add > 0) { add--; T[r.lid].m = 'neu'; }
   if (!real) return T;
-  for (const r of rows) {   // anlegen (Audio-Spuren vor neuen MIDI-Spuren, wie geplant)
-    const t = T[r.lid];
-    if (t.a === 'neu') { if (!canAddTrack()) { t.a = -1; continue; } const i = NT(), nt = newSynthTrack(i); nt.name = r.name.slice(0, 20); nt.orig = true; restoreTrack(i, JSON.stringify(nt)); if (!S.tracks[i]) { t.a = -1; continue; } S.tracks[i].orig = true; t.a = i; t.newA = true; }
-    else if (t.a >= 0) { S.tracks[t.a].orig = true; S.tracks[t.a].name = r.name.slice(0, 20); t.newA = true; }
+  for (const r of rows) {   // anlegen (Audio-Spuren vor neuen MIDI-Spuren, wie geplant); hat die Ebene auch eine MIDI-Spur: Name „… Audio“
+    const t = T[r.lid], an = (t.m !== -1 && midi(r) ? r.name.slice(0, 14) + ' Audio' : r.name).slice(0, 20);
+    if (t.a === 'neu') { if (!canAddTrack()) { t.a = -1; continue; } const i = NT(), nt = newSynthTrack(i); nt.name = an; nt.orig = true; restoreTrack(i, JSON.stringify(nt)); if (!S.tracks[i]) { t.a = -1; continue; } S.tracks[i].orig = true; t.a = i; t.newA = true; }
+    else if (t.a >= 0) { S.tracks[t.a].orig = true; S.tracks[t.a].name = an; t.newA = true; }
   }
   for (const r of rows) {
     const t = T[r.lid]; if (t.m !== 'neu') { if (t.m >= 0) t.fresh = spk11Fresh(t.m); continue; }
@@ -104006,7 +104012,22 @@ function spk11Targets(U, rows, real) {
   }
   return T;
 }
-const spk11TName = (t, tag, au) => t === 'neu' ? 'neue Spur' : t >= 0 && S.tracks[t] ? S.tracks[t].name + (au && !S.tracks[t].orig ? ' (wird Audio-Spur)' : '') : tag;
+const spk11TName = (t, tag) => t === 'neu' ? 'neue Spur' : t >= 0 && S.tracks[t] ? S.tracks[t].name : tag;
+// Tempo: das Projekt-Tempo nach dem Anlegen (wie der Import: leeres Projekt / ohne Audio → gerundetes Tempo des Dokuments, sonst bleibt es)
+function spk11Tempo(U) {
+  const G = spk2MxGrid(U), P = typeof nx1ImpTarget === 'function' ? nx1ImpTarget({bpm: G.bpm}) : Math.round(G.bpm), q = G.bpm / P;
+  return {doc: G.bpm, P, q, dehn: Math.abs(q - 1) >= 1e-4 && q >= 0.5 && q <= 2 && typeof nx1ImpStretch === 'function' && !!wpWorker(), wechsel: P !== S.bpm};
+}
+const spk11Bpm = v => String(Math.round(v * 100) / 100).replace('.', ',');
+function spk11SelF(U) {   // Frequenzbereich der Auswahl (Zeit-Auswahl = alles)
+  let a = Infinity, b = 0;
+  for (const s of U.sel || []) {
+    if (s.art === 'freq' || s.art === 'rect') { a = Math.min(a, s.f0); b = Math.max(b, s.f1); }
+    else if (s.art === 'pinsel' || s.art === 'harm') { for (const p of s.pts || s.spur || []) { a = Math.min(a, p[1]); b = Math.max(b, p[1] * (s.art === 'harm' ? s.K || 16 : 1.5)); } }
+    else return [0, Infinity];
+  }
+  return b > 0 ? [a, b] : [0, Infinity];
+}
 /* ---- Blatt ---- */
 function spk11ViewRow(U, dd) {
   dd.appendChild(el('h5', '', 'Szenen'));
@@ -104041,23 +104062,28 @@ function spk11Dd(U) {
     dd.appendChild(el('h5', '', 'Szenen anlegen'));
     if (Z.st !== 'fertig') { dd.appendChild(Z.pe = el('p', 'spk11-tx', '')); spk11Prog(U, Z); dd.appendChild(el('p', 'spk11-tx', 'Die Songteile werden wie beim Import erkannt (Tempo, Takt, Strophe/Refrain …).')); return; }
     const P = Z.plan = spk11Plan(U), g = P.X.g, f1 = v => v.toFixed(1).replace('.', ','), bpm = +(U.meta.grid || {}).bpm || 120;
-    const head = (Z.T && Z.T.ok ? P.X.parts.length + ' Teile' : 'Keine Teile erkannt – ein Teil') + ' · ' + Math.round(bpm * 10) / 10 + ' BPM · ' + ((U.meta.grid || {}).ts || '4/4') + (P.X.sel ? ' · nur die Auswahl ' + f1(P.X.span[0]) + '–' + f1(P.X.span[1]) + ' s' : '');
+    const nP = P.X.parts.length, head = (Z.T && Z.T.ok ? nP + (nP === 1 ? ' Teil' : ' Teile') : 'Keine Teile erkannt – ein Teil') + ' · ' + Math.round(bpm * 10) / 10 + ' BPM · ' + ((U.meta.grid || {}).ts || '4/4') + (P.X.sel ? ' · nur die Auswahl ' + f1(P.X.span[0]) + '–' + f1(P.X.span[1]) + ' s' : '');
     dd.appendChild(el('p', 'spk11-tx', esc(head)));
+    const TP = spk11Tempo(U), tl = [];
+    if (TP.wechsel) tl.push('Projekt-Tempo ' + spk11Bpm(S.bpm) + ' → ' + TP.P + ' BPM');
+    if (Math.abs(TP.q - 1) >= 1e-4) tl.push(TP.dehn ? 'Audio wird von ' + spk11Bpm(TP.doc) + ' auf ' + TP.P + ' BPM angepasst' : 'Audio läuft im eigenen Tempo (' + spk11Bpm(TP.doc) + ' BPM)');
+    if (!tkAudioOk()) tl.push('Audio-Clips nur auf der eigenen Seite – hier nur Noten');
+    if (tl.length) dd.appendChild(el('p', 'spk11-tx', esc(tl.join(' · '))));
     if (P.parts.length) {
       const st = el('div', 'spk11-st'); st.setAttribute('aria-label', 'Songteile');
       for (const p of P.parts) { const c = el('i', '', esc(p.name)); c.style.flex = (p.B - p.A) + ' 1 0'; c.style.background = 'var(--' + IMP1_PC[(p.grp | 0) % IMP1_PC.length] + ')'; c.title = p.name; st.appendChild(c); }
       dd.appendChild(st);
-      dd.appendChild(el('p', 'spk11-tl', P.parts.map((p, j) => esc(p.name) + ' · Takt ' + (p.A + 1) + '–' + p.B + ' → Szene ' + (P.scenes[j] + 1)).join('<br>')));
+      dd.appendChild(el('p', 'spk11-tl', P.parts.map((p, j) => esc(p.name) + ' · ' + (p.A < 0 ? 'Auftakt + Takt 1–' : 'Takt ' + (p.A + 1) + '–') + p.B + ' → Szene ' + (P.scenes[j] + 1)).join('<br>')));
     }
     if (P.lost > 0) dd.appendChild(el('p', 'spk11-tx', P.lost + (P.lost > 1 ? ' Teile passen' : ' Teil passt') + ' nicht mehr – nur ' + P.scenes.length + ' Szenen frei (Szene leeren oder ↶).'));
     dd.appendChild(el('h5', '', 'Ebenen → Spuren'));
     for (const r of P.rows) {
       const box = el('div', 'spk11-r'); box.dataset.l = r.lid;
-      const nn = r.art === 'drums' ? 'Kick · Snare · Hi-Hat' : r.n ? r.n + (r.n > 1 ? ' Noten' : ' Note') : r.all ? 'keine Noten im Bereich' : 'Noten werden gesucht';
+      const nn = r.art === 'drums' ? 'Kick · Snare · Hi-Hat' : r.n ? r.n + (r.n > 1 ? ' Noten' : ' Note') : spk11Midi(r) && r.art !== 'rest' ? 'Noten werden beim Anlegen gesucht' : r.all ? 'keine Noten im Bereich' : 'noch keine Noten';
       box.appendChild(el('div', 'spk11-n', `<span style="color:var(${r.col})">●</span>&nbsp;${esc(r.name)} <small>${esc(nn)}</small>`));
       box.appendChild(makeSeg(SPK11_MODES, () => r.mode, v => { (U.s11m || (U.s11m = {}))[r.mkey] = v; spk11Dd(U); }, 'spk11-md'));
       const t = P.T[r.lid], kl = SPK11.kl.get(SPK1.doc + '|' + r.lid), z = [];
-      if (r.mode === 'ab' || r.mode === 'a') z.push('Audio → ' + (t.a === -1 ? 'keine Spur frei' : spk11TName(t.a, '', true)));
+      if (spk11Aud(r) && tkAudioOk()) z.push('Audio → ' + (t.a === -1 ? 'keine Spur frei (höchstens ' + MAX_T + ' Spuren)' : spk11TName(t.a, '')));
       if (r.mode === 'ab' || r.mode === 'm') z.push('MIDI → ' + (t.m === -1 ? (t.want === 'dr' ? 'keine Drum-Spur' : 'keine Spur frei') : spk11TName(t.m)) + (kl && t.m !== -1 && r.art !== 'drums' ? ' · Nachbau-Klang' : ''));
       if (z.length) box.appendChild(el('p', 'spk11-tx', esc(z.join(' · '))));
       dd.appendChild(box);
@@ -104065,7 +104091,7 @@ function spk11Dd(U) {
     const n = P.parts.length, go = el('button', 'mbtn rb spk1-ck spk11-go', n ? n + (n > 1 ? ' Szenen anlegen' : ' Szene anlegen') : 'Keine Szene frei'); go.dataset.s11 = 'go';
     go.disabled = !n || !!U.busy || !P.rows.some(r => r.mode !== 'x'); on(go, 'click', () => spk11Go(U));
     dd.appendChild(go);
-    dd.appendChild(el('p', 'spk11-tx', 'Je Teil eine Szene, je Ebene eine Spur (Audio und Noten). Ein ↶ nimmt alles zurück.'));
+    dd.appendChild(el('p', 'spk11-tx', 'Je Teil eine Szene, je Ebene eine Spur (Audio und Noten). Was im Bereich still ist, wird nicht angelegt. Ein ↶ (Matrix oder Hinweis) nimmt alles zurück.'));
   });
   if (U.dd && old) U.dd.scrollTop = old;
 }
@@ -104091,7 +104117,7 @@ async function spk11Render(U, lid, a, b, sel, prog) {   // Proben [a, b) als Flo
 }
 function spk11Pcm(x) { const p = new Int16Array(x.length); for (let i = 0; i < x.length; i++) { const v = x[i] * 32767; p[i] = v > 32767 ? 32767 : v < -32767 ? -32767 : Math.round(v); } return p; }
 // Drum-Einsätze: Hüllkurven in drei Bändern (tief < 150 Hz, Mitte, hoch > 5 kHz), Anstieg je 1/16 → Kick / Snare / Hi-Hat (soweit erkennbar)
-function spk11Hits(x, sr, stepS, nStep) {
+function spk11Hits(x, sr, stepS, nStep, fr) {   // fr: Frequenzbereich der Auswahl – Bänder außerhalb liefern keine Schläge
   const H = Math.max(1, Math.round(sr * 0.005)), F = Math.floor(x.length / H), aL = 1 - Math.exp(-2 * Math.PI * 150 / sr), aH = 1 - Math.exp(-2 * Math.PI * 5000 / sr);
   const E = [new Float32Array(F), new Float32Array(F), new Float32Array(F)]; let l1 = 0, l2 = 0, h1 = 0;
   for (let f = 0; f < F; f++) {
@@ -104106,14 +104132,17 @@ function spk11Hits(x, sr, stepS, nStep) {
     for (let b = 0; b < 3; b++) { let m = 0, mf = f0; for (let f = f0; f <= f1; f++) if (O[b][f] > m) { m = O[b][f]; mf = f; } pk[b].push(m); if (!b) { let e0 = 0; for (let f = mf; f <= Math.min(F - 1, mf + 4); f++) e0 = Math.max(e0, E[0][f]); const f2 = Math.min(F - 1, mf + Math.round(0.1 * sr / H)); dk.push(e0 > 0 ? E[0][f2] / e0 : 1); } }
   }
   const ref = pk.map(a => { const s = a.slice().sort((p, q) => p - q); return Math.max(1e-4, s[Math.floor(0.97 * (s.length - 1))] || 0); });
-  const out = [];
+  const out = [], lo = !fr || fr[0] < 200, mi = !fr || (fr[1] > 200 && fr[0] < 5000), hi = !fr || fr[1] > 4000, hat = new Uint8Array(nStep), snS = [];
   for (let k = 0; k < nStep; k++) {
     const l = pk[0][k], m = pk[1][k], hh = pk[2][k], nl = l / ref[0], nm = m / ref[1], nh = hh / ref[2];
-    const sn = (nm > 0.2 && m >= 1.9 * l) || nh > 0.7;                                     // Snare: Mitten-Rauschen, Tiefen klein – oder der lauteste Höhen-Einsatz (getrennte Drum-Ebene: Mitten oft weg)
-    if (nl > 0.35 && l >= 0.5 * m && dk[k] < 0.6) out.push({k, w: 'k', v: Math.min(1, 0.45 + 0.55 * nl)});   // Kick: tief, kurz
-    if (sn) out.push({k, w: 's', v: Math.min(1, 0.45 + 0.55 * Math.min(1, nm / 0.6))});
-    else if (nh > 0.2) out.push({k, w: 'h', v: Math.min(1, 0.35 + 0.6 * nh)});
+    const sn = mi && ((nm > 0.2 && m >= 1.9 * l) || (hi && nh > 0.7));                     // Snare: Mitten-Rauschen, Tiefen klein – oder der lauteste Höhen-Einsatz (getrennte Drum-Ebene: Mitten oft weg)
+    if (lo && nl > 0.35 && l >= 0.5 * m && dk[k] < 0.6) out.push({k, w: 'k', v: Math.min(1, 0.45 + 0.55 * nl)});   // Kick: tief, kurz
+    if (sn) { out.push({k, w: 's', v: Math.min(1, 0.45 + 0.55 * Math.min(1, nm / 0.6))}); snS.push([k, nh]); }
+    else if (hi && nh > 0.2) { out.push({k, w: 'h', v: Math.min(1, 0.35 + 0.6 * nh)}); hat[k] = 1; }
   }
+  // Hi-Hat unter der Snare (2 und 4): die Snare überdeckt sie – geht das Hi-Hat-Muster links und rechts gleichmäßig weiter, gehört sie dazu
+  for (const [k, nh] of snS) if (nh > 0.2 && ((k >= 2 && hat[k - 2] && hat[k + 2]) || (k >= 1 && hat[k - 1] && hat[k + 1]))) out.push({k, w: 'h', v: Math.min(1, 0.35 + 0.3 * nh)});
+  out.sort((p, q) => p.k - q.k);
   return out;
 }
 function spk11MidiNotes(U, qs, ta, nb, G) {   // wie Loop → Matrix: 1/16-Raster, Länge = Teil
@@ -104127,52 +104156,73 @@ function spk11MidiNotes(U, qs, ta, nb, G) {   // wie Loop → Matrix: 1/16-Raste
 /* ---- Anlegen ---- */
 async function spk11Go(U) {
   const Z = U.s11; if (!Z || Z.st !== 'fertig' || U.busy || !SPK1.doc) return null;
-  if (!tkAudioOk()) { spk1Stat(U, 'Audio nur auf der eigenen Seite'); }
-  let P = spk11Plan(U); if (!P.parts.length) return null;
-  const sel = P.X.sel, rows0 = P.rows.filter(r => r.mode !== 'x');
-  // 1) Noten finden, wo MIDI gewünscht ist und die Ebene noch keine hat (eigener ↶ der Spektral-Seite, wie Loop → Matrix)
-  for (const r of rows0) {
-    if (!(r.mode === 'ab' || r.mode === 'm') || r.art === 'drums' || r.art === 'rest' || r.all) continue;
-    const ta = spk11Sec(P.X.g, P.parts[0].A), tb = spk11Sec(P.X.g, P.parts[P.parts.length - 1].B);
-    await spk2Run(U, 'noten', {lid: r.lid, sel: [{art: 'zeit', t0: Math.max(0, ta), t1: Math.min(U.dur, tb), kt: 0}], poly: typeof spk4Arg === 'function' ? spk4Arg(U, r.lid) : undefined}, 'Szenen · Noten finden · ' + r.name, x => x.neu + ' Noten in ' + r.name);
-    if (U.s11 !== Z) return null;
-  }
-  P = spk11Plan(U); const parts = P.parts, scenes = P.scenes, g = P.X.g, sr = U.meta.sr, G = spk2MxGrid(U), A0 = parts[0].A, A1 = parts[parts.length - 1].B;
-  const a = Math.round(spk11Sec(g, A0) * sr), b = Math.round(spk11Sec(g, A1) * sr), rows = P.rows.filter(r => r.mode !== 'x'), T0 = P.T, aud = tkAudioOk();
-  // 2) Audio je Ebene (ein Take vom ersten bis zum letzten Teil), Drum-Einsätze
+  const P = spk11Plan(U); if (!P.parts.length) return null;
+  const sel = P.X.sel, parts = P.parts, scenes = P.scenes, g = P.X.g, sr = U.meta.sr, G = spk2MxGrid(U), A0 = parts[0].A, A1 = parts[parts.length - 1].B;
+  const a = Math.round(spk11Sec(g, A0) * sr), b = Math.round(spk11Sec(g, A1) * sr), rows = P.rows.filter(r => r.mode !== 'x'), aud = tkAudioOk();
+  if (!rows.length) return null;
+  const kit = SPK11_KIT(), stepS = g.beat / 4, stepQ = stepS / (60 / G.bpm), fr = sel ? spk11SelF(U) : null;
+  // 1) Audio je Ebene im Bereich (mit Auswahl nur deren Frequenzen): Pegel je Teil (was still ist, wird nicht angelegt), Drum-Einsätze
   U.busy = 'szenen'; spk1BtnState(U); if (Z.dd === U.dd) spk11Dd(U);
-  const kit = SPK11_KIT(), stepS = g.beat / 4, stepQ = stepS / (60 / G.bpm);
   try {
     for (const r of rows) {
-      const t = T0[r.lid], wantA = aud && (r.mode === 'ab' || r.mode === 'a') && t.a !== -1, wantD = r.art === 'drums' && (r.mode === 'ab' || r.mode === 'm') && t.m !== -1;
-      r.pcm = null; r.dr = null; if (!wantA && !wantD) continue;
+      r.pcm = r.dr = r.x = r.y = null;
       Z.msg = 'Rechne ' + r.name; Z.p = 0; spk1Stat(U, 'Szenen · ' + r.name + ' …');
       const x = await spk11Render(U, r.lid, a, b, sel, p => { Z.p = p; spk11Prog(U, Z); spk1Stat(U, 'Szenen · ' + r.name + ' · ' + Math.round(p * 100) + ' %'); });
       if (U.s11 !== Z) return null;
-      if (wantD) r.dr = spk11Hits(x, sr, stepS, Math.round((A1 - A0) * g.bar / stepS));
-      if (wantA) { let e = 0; for (let i = 0; i < x.length; i += 7) e = Math.max(e, Math.abs(x[i])); r.pcm = e > 1e-4 ? spk11Pcm(x) : null; r.leer = !r.pcm; }
+      r.rms = parts.map(p => { const i0 = Math.max(0, Math.round((p.A - A0) * g.bar * sr)), i1 = Math.min(x.length, Math.round((p.B - A0) * g.bar * sr)); let s2 = 0, c = 0; for (let i = i0; i < i1; i += 3) { s2 += x[i] * x[i]; c++; } return c ? Math.sqrt(s2 / c) : 0; });
+      if (r.art === 'drums' && spk11Midi(r)) r.dr = spk11Hits(x, sr, stepS, Math.round((A1 - A0) * g.bar / stepS), fr);
+      if (aud && spk11Aud(r)) r.x = x;
     }
   } catch (e) { logErr(e); spk1Stat(U, 'Szenen: ' + (e.message || e)); return null; }
   finally { U.busy = null; spk1BtnState(U); }
-  // 3) ein ↶ für alles
+  // still = leise gegenüber dem lautesten Teil der Ebene (−26 dB) oder der lautesten Ebene im Teil (−30 dB) oder ganz leise (−54 dBFS)
+  const pmax = parts.map((p, j) => rows.reduce((m, r) => Math.max(m, r.rms[j]), 0));
+  for (const r of rows) { const lm = Math.max(...r.rms); r.still = r.rms.map((v, j) => v < 0.002 || v < 0.05 * lm || v < 0.03 * pmax[j]); }
+  // 2) Noten finden je Strecke von Teilen ohne Noten – auch wenn die Ebene anderswo schon Noten hat (eigener ↶ der Spektral-Seite)
+  for (const r of rows) {
+    if (!spk11Midi(r) || r.art === 'drums' || r.art === 'rest') continue;
+    const gaps = [];
+    parts.forEach((p, j) => { if (r.still[j]) return; const ta = spk11Sec(g, p.A), tb = spk11Sec(g, p.B); if (spk11Notes(U, r.lid, ta, tb).length) return; const q = gaps[gaps.length - 1]; if (q && Math.abs(q.t1 - ta) < 1e-6) q.t1 = tb; else gaps.push({t0: ta, t1: tb}); });
+    for (const q of gaps) {
+      await spk2Run(U, 'noten', {lid: r.lid, sel: [{art: 'zeit', t0: +Math.max(0, q.t0).toFixed(4), t1: +Math.min(U.dur, q.t1).toFixed(4), kt: 0}], poly: typeof spk4Arg === 'function' ? spk4Arg(U, r.lid) : undefined}, 'Szenen · Noten finden · ' + r.name, x => x.neu + ' Noten in ' + r.name);
+      if (U.s11 !== Z) return null;
+    }
+  }
+  // 3) Tempo: Projekt-Tempo ≠ Tempo des Dokuments → Audio wie beim Import ans Projekt-Tempo dehnen (Anschläge bleiben auf dem Raster)
+  const TP = spk11Tempo(U), bpm0 = S.bpm; let q = 1, dehnFail = false;
+  if (TP.dehn && rows.some(r => r.x && !r.still.every(Boolean))) {
+    U.busy = 'szenen'; spk1BtnState(U);
+    try {
+      for (const r of rows) {
+        if (!r.x || r.still.every(Boolean)) continue;
+        spk1Stat(U, 'Szenen · ' + r.name + ' · Tempo ' + spk11Bpm(TP.doc) + ' → ' + TP.P + ' BPM …');
+        const y = await nx1ImpStretch({x: r.x, sr, bpm: TP.doc, t1: 0}, TP.q); if (U.s11 !== Z) return null;
+        if (y) r.y = y; else { dehnFail = true; break; }
+      }
+    } finally { U.busy = null; spk1BtnState(U); }
+    if (!dehnFail) q = TP.q;
+  }
+  for (const r of rows) { if (r.x && !r.still.every(Boolean)) r.pcm = q !== 1 ? r.y : spk11Pcm(r.x); r.x = r.y = null; }
+  // 4) ein ↶ für alles
   if (R.songPlay) songPlayEnd(true);
-  const per = (A, B) => [spk11Sec(g, A), spk11Sec(g, B)], nm = (U.meta.name || 'Analyse').slice(0, 30);
+  const nm = (U.meta.name || 'Analyse').slice(0, 30), barP = g.bar * q;
   const res = imp1Step('Szenen aus der Spektral-Seite', () => {
     imp1Prep({bpm: G.bpm, ts: G.ts});
-    const T = spk11Targets(U, rows, true), out = {scenes: scenes.slice(), parts: parts.map(p => ({name: p.name, A: p.A, B: p.B})), audio: 0, midi: 0, notes: 0, drums: 0, tracks: {}, rows: []};
+    const T = spk11Targets(U, rows, true), out = {scenes: scenes.slice(), parts: parts.map(p => ({name: p.name, A: p.A, B: p.B})), audio: 0, midi: 0, notes: 0, drums: 0, tracks: {}, rows: [], q};
     parts.forEach((p, j) => { const sc = S.scenes[scenes[j]]; if (sc) sc.name = p.name.slice(0, 24); });
     for (const r of rows) {
-      const t = T[r.lid], o = {lid: r.lid, name: r.name, a: null, m: null, clipsA: 0, clipsM: 0, notes: 0, klang: null};
+      const t = T[r.lid], o = {lid: r.lid, name: r.name, a: null, m: null, clipsA: 0, clipsM: 0, notes: 0, klang: null, still: r.still.filter(Boolean).length};
       if (r.pcm && t.a >= 0) {
-        const tk = tkAddPcmTake(r.pcm, sr, 'import'), m = S.takes[tk.id]; m.route = 'datei'; m.name = (r.name + ' · ' + nm).slice(0, 60); m.imp = {bpm: G.bpm, ts: G.ts, t1: 0};
-        parts.forEach((p, j) => { const s = scenes[j]; S.tracks[t.a].clips[s] = imp1Clip(tk.id, p.A - A0, p.B - A0, {takt: g.bar}, G.ts, s); clipChanged(t.a, s); o.clipsA++; });
+        const tk = tkAddPcmTake(r.pcm, sr, 'import'), m = S.takes[tk.id]; m.route = 'datei'; m.name = (r.name + ' · ' + nm).slice(0, 60); m.imp = {bpm: q !== 1 ? TP.P : G.bpm, ts: G.ts, t1: 0};
+        parts.forEach((p, j) => { if (r.still[j]) return; const s = scenes[j]; S.tracks[t.a].clips[s] = imp1Clip(tk.id, p.A - A0, p.B - A0, {takt: barP}, G.ts, s); clipChanged(t.a, s); o.clipsA++; });
         o.a = t.a; out.audio += o.clipsA;
       }
-      if (t.m >= 0 && (r.mode === 'ab' || r.mode === 'm')) {
+      if (t.m >= 0 && spk11Midi(r)) {
         const drum = r.art === 'drums';
         if (drum && !isDrum(t.m)) { out.rows.push(o); continue; }
         parts.forEach((p, j) => {
-          const s = scenes[j], nb = p.B - p.A, [ta, tb] = per(p.A, p.B); let notes;
+          if (r.still[j]) return;
+          const s = scenes[j], nb = p.B - p.A, ta = spk11Sec(g, p.A), tb = spk11Sec(g, p.B); let notes;
           if (drum) { const k0 = Math.round((p.A - A0) * g.bar / stepS), k1 = Math.round((p.B - A0) * g.bar / stepS); notes = (r.dr || []).filter(h => h.k >= k0 && h.k < k1).map(h => ({t: +((h.k - k0) * stepQ).toFixed(6), d: +stepQ.toFixed(6), n: kit[h.w], v: +h.v.toFixed(3)})); }
           else notes = spk11MidiNotes(U, spk11Notes(U, r.lid, ta, tb), ta, nb, G);
           if (!notes.length) return;
@@ -104192,16 +104242,23 @@ async function spk11Go(U) {
       }
       out.rows.push(o);
     }
-    if (!out.audio && !out.midi) { toast('Nichts zum Anlegen – Ebenen leer oder keine Spur frei'); return null; }
+    if (!out.audio && !out.midi) { toast('Nichts zum Anlegen – im Bereich still oder keine Spur frei'); return null; }
     spk1Link(SPK1.doc, U.meta.name);   // Ergebnis liegt im Projekt → Analyse mit verweisen (Container nimmt sie mit)
     return out;
   });
+  for (const r of rows) r.pcm = r.dr = null;
   if (!res) { spk1Stat(U, 'Szenen: nicht möglich'); if (Z.dd === U.dd) spk11Dd(U); return null; }
   for (const o of res.rows) if (o.a != null) { try { tkTrackResync(o.a); } catch (e) { logErr(e); } }
   try { if (UI.heads && EL.grid) buildGrid(); if (UI.songView) svLayout(); } catch (e) { logErr(e); }
   try { haptic('pop'); } catch (e) {}
-  const msg = res.scenes.length + (res.scenes.length > 1 ? ' Szenen' : ' Szene') + ' · ' + res.audio + ' Audio-Clips · ' + res.midi + ' MIDI-Clips (' + res.notes + ' Noten)';
-  spk1Stat(U, 'Szenen ' + res.scenes.map(s => s + 1).join(', ') + ' angelegt · ↶ macht es rückgängig');
+  const leer = res.rows.filter(o => !o.clipsA && !o.clipsM).map(o => o.name), ex = [];
+  if (S.bpm !== bpm0) ex.push('Tempo ' + spk11Bpm(bpm0) + ' → ' + spk11Bpm(S.bpm) + ' BPM');
+  if (q !== 1) ex.push('Audio ' + spk11Bpm(TP.doc) + ' → ' + TP.P + ' BPM angepasst'); else if (dehnFail) ex.push('Audio im eigenen Tempo');
+  if (!aud && rows.some(spk11Aud)) ex.push('Audio nur auf der eigenen Seite');
+  if (leer.length) ex.push('nichts in ' + leer.join(', '));
+  res.ex = ex; res.bpm0 = bpm0;
+  const msg = res.scenes.length + (res.scenes.length > 1 ? ' Szenen' : ' Szene') + ' · ' + res.audio + ' Audio-Clips · ' + res.midi + ' MIDI-Clips (' + res.notes + ' Noten)' + (ex.length ? ' · ' + ex.join(' · ') : '');
+  spk1Stat(U, 'Angelegt: ' + res.scenes.map((s, j) => (s + 1) + ' ' + parts[j].name).join(' · ') + ' – zurück mit ↶ in der Matrix oder im Hinweis');
   toast(msg, {label: '↶ Rückgängig', fn: () => undo()});
   SPK11.last = res; if (U.dd && U.dd === Z.dd) spk1Dd(U, null);
   return res;
