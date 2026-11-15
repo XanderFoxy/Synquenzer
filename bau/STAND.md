@@ -158,3 +158,4 @@ Weiter mit: 4.54 = rel-4540/k fertig prüfen + INT53D nachziehen + Versionszeile
 - main f1c0d4c8 (Auslieferung ohne Kommentare, gzip 2,32 MB), In-App v28, Quelle synq-snapshots/R-4720.html (Basis für Merges).
 - beg1 4.72 = m2 = 57/59 (Prüfung 5 + Diff bekannt); 4.71 selbst 55/59 unter Last. spk4/spk6/spk12b Wackler.
 - Nächstes: 4.73 = R-4720 + VOXR1D (vx/voxr1d, Basis rel-4700, Raumton nur wo sicher) + Funk-Vorschlag „Ansicht · Rest ▾“ (wartet auf OK).
+- 15:16 4.72 online (Pages 43728453604 success). 4.73 = R-4720 + VOXR1D in rel-4730, Regression vx/r4730 läuft (voxr1 in Extra-Spur, beg1 eigener Ordner b1/ mit basis = rel-4720). CHANGES-4730.md entworfen. Bildwerk 0.4 (wf_0280cb9a) + Atem v2 (wf_12b2ff3f) laufen.
