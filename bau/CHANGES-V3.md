@@ -1,3 +1,11 @@
+## 4.74.0 — Gesang reinigen: Klicks sauberer, Raumton passender; Import-Ablegen ohne Ruckler
+
+- **Gesang reinigen – Klicks:** Reparierte Klicks ragen kaum noch heraus (schlimmste Stelle 7,5 → 2,6 dB über der Umgebung). Über Gesang bleibt die Reparatur so kurz wie bisher, damit gesungene Obertöne erhalten bleiben. Ein Klick mehr wird gefunden.
+- **Gesang reinigen – Raumton:** Der Pegel der Füllung in Pausen passt jetzt zum Raumton daneben.
+- **Schneller:** Die Klick-Rechnung braucht weniger Aufwand, bei gleichem Ergebnis.
+- **Import ohne Ruckler:** Während das Import-Blatt offen ist, wird der Take im Hintergrund vorbereitet. Ablegen eines 3-Minuten-Lieds dauert jetzt etwa 30 ms statt etwa 135 ms. Das Ergebnis ist gleich wie vorher, Aussehen und Bedienung auch.
+Tests: Import-Ablegen ohne Long Task (lt1 c: 0 statt 58–65 ms), Zweitprüfung 20 Randfälle gleich wie 4.73, Gesang reinigen 76/83 unter Last (80/83 ruhig; offen: Klicks Take A 17/20, Take B 3,2 dB, Raumton-Farbe Take A), Prüfer-Kern 56/60, Gesang 61/61 · 14/14 · 15/15, Chor 82/82, Import ALLE OK, Begleiter 57/59 (wie 4.73), Fokus 26/26 + 44/51 (Zeit unter Last), Einzelspuren 51/51 · 87/87 · 21/21, mehrere Clips 117/118, Transponieren 81/81, Spektral-Auswahl 98/98 · 72/72 · 47/47 · 28/28, Spektral-Kleinfehler 11/11, Szenen-Drums 17/17 + 41/41, Echttest 52/53 · 53/53, Spektral wie 4.73.
+
 ## 4.73.0 — Gesang reinigen: Plopps, Klicks, Brummen, Atmer, Raumton
 
 - **Neu: Gesang reinigen** (STIMME › Takes-Blatt › Säubern › Gesang reinigen: leicht │ mittel │ stark)

@@ -27571,7 +27571,7 @@ const LOGO_SVG='<svg role="img" aria-label="One Day in Rome" shape-rendering="ge
 
 
 
-const VERSION = '4.73.0';
+const VERSION = '4.74.0';
 const clamp=(v,a,b)=>(v<a?a:v>b?b:v);
 const isNum=v=>typeof v==='number'&&Number.isFinite(v);
 const deep=o=>(o==null?o:JSON.parse(JSON.stringify(o)));
@@ -58986,6 +58986,7 @@ function tkAudioOk(){return micAvail();}
 
 
 function tkToBuffer(pcm,sr){
+if(typeof lt1PreBuf==='function'){const q=lt1PreBuf(pcm,sr);if(q)return q;}
 let b=null;
 try{b=new AudioBuffer({length:Math.max(1,pcm.length),numberOfChannels:1,sampleRate:sr});}catch(e){try{b=AU.ctx?AU.ctx.createBuffer(1,Math.max(1,pcm.length),sr):null;}catch(e2){b=null;}}
 if(!b)return null;
@@ -59070,7 +59071,7 @@ TK.peaks.set(key,out);return out;
 
 function tkStore(id,pcm,chunks){
 TK.writes++;
-const jobs=chunks.map((k,i)=>{const a=pcm.subarray(i*TK_CHUNK,Math.min(pcm.length,(i+1)*TK_CHUNK));const ab=a.slice().buffer;return()=>kv.aput(k,ab);});
+const jobs=(typeof lt1StoreJobs==='function'&&lt1StoreJobs(pcm,chunks))||chunks.map((k,i)=>{const a=pcm.subarray(i*TK_CHUNK,Math.min(pcm.length,(i+1)*TK_CHUNK));const ab=a.slice().buffer;return()=>kv.aput(k,ab);});
 let p=Promise.resolve();
 for(const j of jobs)p=p.then(j);
 return p.then(()=>{TK.writes--;TK.last=Object.assign({},TK.last,{stored:id,where:kv.audioMode});return true;},
@@ -61425,14 +61426,17 @@ function arCoef(z,segs,p){const r=new Float64Array(p+1);for(const[a,b]of segs)fo
 r[0]*=1+1e-6;const A=new Float64Array(p+1),T=new Float64Array(p+1);A[0]=1;let E=r[0]+EPS;
 for(let m=1;m<=p;m++){let acc=r[m];for(let k=1;k<m;k++)acc+=A[k]*r[m-k];const kk=-acc/E;T.set(A);for(let k=1;k<m;k++)A[k]=T[k]+kk*T[m-k];A[m]=kk;E*=1-kk*kk;if(E<=0)break;}
 return A;}
-function lsar(z,g0,g1,A){const p=A.length-1,m=g1-g0,M=new Float64Array(m*m),v=new Float64Array(m);
+
+
+
+function lsar(z,g0,g1,A){const p=A.length-1,m=g1-g0,W=p+1,M=new Float64Array(m*W),v=new Float64Array(m);
 for(let t=g0;t<g1+p;t++){const cu=[],cv=[];let b=0;for(let k=0;k<=p;k++){const i=t-k;if(i<0||i>=z.length)continue;if(i>=g0&&i<g1){cu.push(i-g0);cv.push(A[k]);}else b+=A[k]*z[i];}
-for(let u=0;u<cu.length;u++){v[cu[u]]-=cv[u]*b;for(let w=0;w<cu.length;w++)M[cu[u]*m+cu[w]]+=cv[u]*cv[w];}}
-for(let i=0;i<m;i++)M[i*m+i]+=1e-9;
-for(let j=0;j<m;j++){let d=M[j*m+j];for(let k=0;k<j;k++)d-=M[j*m+k]*M[j*m+k];d=Math.sqrt(Math.max(d,1e-18));M[j*m+j]=d;
-for(let i=j+1;i<m;i++){let s=M[i*m+j];for(let k=0;k<j;k++)s-=M[i*m+k]*M[j*m+k];M[i*m+j]=s/d;}}
-for(let i=0;i<m;i++){let s=v[i];for(let k=0;k<i;k++)s-=M[i*m+k]*v[k];v[i]=s/M[i*m+i];}
-for(let i=m-1;i>=0;i--){let s=v[i];for(let k=i+1;k<m;k++)s-=M[k*m+i]*v[k];v[i]=s/M[i*m+i];}
+for(let u=0;u<cu.length;u++){v[cu[u]]-=cv[u]*b;for(let w=0;w<cu.length;w++)if(cu[w]<=cu[u])M[cu[u]*W+cu[u]-cu[w]]+=cv[u]*cv[w];}}
+for(let i=0;i<m;i++)M[i*W]+=1e-9;
+for(let j=0;j<m;j++){let d=M[j*W];for(let k=Math.max(0,j-p);k<j;k++)d-=M[j*W+j-k]*M[j*W+j-k];d=Math.sqrt(Math.max(d,1e-18));M[j*W]=d;
+for(let i=j+1;i<Math.min(m,j+W);i++){let s=M[i*W+i-j];for(let k=Math.max(0,i-p);k<j;k++)s-=M[i*W+i-k]*M[j*W+j-k];M[i*W+i-j]=s/d;}}
+for(let i=0;i<m;i++){let s=v[i];for(let k=Math.max(0,i-p);k<i;k++)s-=M[i*W+i-k]*v[k];v[i]=s/M[i*W];}
+for(let i=m-1;i>=0;i--){let s=v[i];for(let k=i+1;k<Math.min(m,i+W);k++)s-=M[k*W+k-i]*v[k];v[i]=s/M[i*W];}
 return v;}
 function plopCut(y,sr,E,cut){
 const M=Math.min(2048,Math.round(0.045*sr)),seg=[[E.s0-Math.round(0.02*sr)-M,E.s0-Math.round(0.02*sr)],[E.s1+Math.round(0.02*sr),E.s1+Math.round(0.02*sr)+M]].filter(([p,q])=>p>=0&&q<=y.length);
@@ -61592,20 +61596,27 @@ fe[j]=me;fh[j]=mh;
 if((bi&63)===63)yield 0.9*(bi+1)/blocks.length;
 }
 
-const MED=o.med!==false,K1=(o.k1b!=null?o.k1b:8)-0.6*sens,K2=3.0-0.18*sens,W=Math.round(0.012*sr/J),I=Math.round(0.025*sr/J),MX=Math.round(0.005*sr/J),X3=Math.round(0.003*sr/J),ev=[];
+const MED=o.med!==false,K1=(o.k1b!=null?o.k1b:8)-0.6*sens,K2=3.0-0.18*sens,W=Math.round(0.012*sr/J),I=Math.round(0.025*sr/J),BIG=o.big!=null?o.big:30,MX=Math.round(0.005*sr/J),X3=Math.round(0.003*sr/J),ev=[];
 const sel=new Uint8Array(nj);if(!wins)sel.fill(1);else for(const[a,e]of wins)for(let j=Math.max(0,Math.floor(a/J));j<Math.min(nj,Math.ceil(e/J));j++)sel[j]=1;
 const tmp=new Float64Array(256),medx=(arr,j0,j1,x0,x1)=>{let c=0;for(let j=Math.max(0,j0);j<Math.min(nj,j1)&&c<256;j++){if(j>=x0&&j<=x1)continue;tmp[c++]=arr[j];}if(!c)return 0;const t=tmp.subarray(0,c).sort();return t[c>>1];};
 const mean=(arr,j0,j1,x0,x1)=>{let s=0,c=0;for(let j=Math.max(0,j0);j<Math.min(nj,j1);j++){if(j>=x0&&j<=x1)continue;s+=arr[j];c++;}return c?s/c:0;};
 
 
+
+
+const BQ=o.bq!=null?o.bq:1.2,bigQuiet=(arr,xl,xr,m)=>!(BQ>0)||(MED?mean(arr,xl-W,xr+W+1,xl,xr):m)<=BQ*(MED?m:medx(arr,xl-W,xr+W+1,xl,xr));
 const test=(arr,j,k1,k2)=>{const v=arr[j];if(v<2e-4||v<arr[j-1]||v<arr[j+1]||v<arr[j-2]||v<arr[j+2])return null;
 let jl=j,jr=j;while(jl>j-MX&&arr[jl-1]>0.25*v)jl--;while(jr<j+MX&&jr+1<nj&&arr[jr+1]>0.25*v)jr++;
 const xl=Math.min(jl-2,j-X3),xr=Math.max(jr+2,j+X3);
 
 
-let n1=0,n2=0;for(let q=Math.max(1,xl-I);q<Math.min(nj-1,xr+I+1);q++){if(q>=xl&&q<=xr)continue;const u=arr[q];if(u<arr[q-1]||u<arr[q+1])continue;if(u>n1){n2=n1;n1=u;}else if(u>n2)n2=u;}
-if(!(v>k2*n2))return null;
-const m=(MED?medx:mean)(arr,xl-W,xr+W+1,xl,xr);if(!(v>k1*m))return null;return{jl,jr,sc:20*Math.log10(v/(m+EPS))};};
+let n1=0,n2=0,s1=0,s2=0;for(let q=Math.max(1,xl-I);q<Math.min(nj-1,xr+I+1);q++){if(q>=xl&&q<=xr)continue;const u=arr[q];if(u<arr[q-1]||u<arr[q+1])continue;if(u>n1){n2=n1;n1=u;}else if(u>n2)n2=u;if(q>=xl-W&&q<=xr+W){if(u>s1){s2=s1;s1=u;}else if(u>s2)s2=u;}}
+
+
+
+let m=-1;
+if(!(v>k2*n2)){if(!(BIG>0&&v>k2*s2))return null;m=(MED?medx:mean)(arr,xl-W,xr+W+1,xl,xr);if(!(v>BIG*m)||!bigQuiet(arr,xl,xr,m))return null;}
+if(m<0)m=(MED?medx:mean)(arr,xl-W,xr+W+1,xl,xr);if(!(v>k1*m))return null;return{jl,jr,sc:20*Math.log10(v/(m+EPS))};};
 for(let j=2;j<nj-2;j++){
 if(!sel[j])continue;
 const T1=test(fe,j,K1,K2),T2=T1?null:test(fh,j,K1+1,K2+0.4),Tq=T1||T2;if(!Tq)continue;
@@ -61627,6 +61638,30 @@ j=jr+2;
 yield 1;
 return ev;
 }
+
+
+
+
+
+function clickSpan(z,g0,g1,sr,p,o){
+if((o&&o.span===0)||g1-g0>Math.round((o&&o.spanMax!=null?o.spanMax:0.003)*sr))return[g0,g1];
+const q=Math.max(4,Math.round(0.00025*sr)),L=z.length,fr=i=>{let s=0;for(let k=i;k<i+q;k++)s+=z[k]*z[k];return s/q;},E=[];
+for(let i=Math.max(p,g0-Math.round(0.012*sr));i+q<=g0-Math.round(0.001*sr);i+=q)E.push(fr(i));
+for(let i=g1+Math.round(0.003*sr);i+q<=Math.min(L-p,g1+Math.round(0.012*sr));i+=q)E.push(fr(i));
+if(E.length<8)return[g0,g1];
+E.sort((u,v)=>u-v);let mu=0;for(const e of E)mu+=e;mu/=E.length;
+
+
+
+
+
+const NZ=o&&o.nz!=null?o.nz:2,md=E[E.length>>1];if(NZ>0&&mu>NZ*md)return[g0,g1];
+const nb=o&&o.ref===0?md:mu,T=(o&&o.spanK!=null?o.spanK:4)*nb;
+let e1=g1,e0=g0;const mx1=Math.min(g1+Math.round((o&&o.spanR!=null?o.spanR:0.002)*sr),g0+Math.round(0.008*sr),L-2*p),mn0=Math.max(2*p,g0-Math.round((o&&o.spanL!=null?o.spanL:0.0005)*sr));
+while(e1+q<=mx1&&fr(e1)>T)e1+=q;
+while(e0-q>=mn0&&fr(e0-q)>T)e0-=q;
+return[e0,e1,nb];
+}
 function*click(y,sr,ev,o){
 const p=40,C=Math.round(0.02*sr),n=y.length,out=[];
 for(let e=0;e<ev.length;e++){
@@ -61635,9 +61670,18 @@ for(let i=0;i<L;i++)z[i]=y[a+i];
 if(g0<2*p||L-g1<2*p||g1-g0>Math.round(0.008*sr)){out.push({t0:E.t0,t1:E.t1,sc:E.sc,redDb:0});continue;}
 
 const lo=o&&o.art==='tief'?null:lpZero(y,a,b,sr,1500);if(lo)for(let i=0;i<L;i++)z[i]-=lo[i];
-const A=arCoef(z,[[p,g0],[g1+p,L]].filter(s=>s[1]-s[0]>p),p),zu=lsar(z,g0,g1,A);
-let e0=0,e1=0;for(let j=g0;j<g1;j++){const u=zu[j-g0];e0+=z[j]*z[j];e1+=u*u;y[a+j]=lo?lo[j]+u:u;}
-out.push({t0:E.t0,t1:E.t1,sc:E.sc,redDb:+(db(e0)-db(e1)).toFixed(1)});
+const[h0,h1,nb]=clickSpan(z,g0,g1,sr,p,o);
+let lw=lo;
+
+
+
+if(lo&&nb>0&&!(o&&o.lowF===0)){let pz=0;for(let j=h0;j<h1;j++)pz+=z[j]*z[j];pz/=Math.max(1,h1-h0);
+if(pz>(o&&o.lowH!=null?o.lowH:100)*nb){lw=lpZero(y,a,b,sr,o&&o.lowF?o.lowF:700);for(let i=0;i<L;i++)z[i]=y[a+i]-lw[i];}}
+const A=arCoef(z,[[p,h0],[h1+p,L]].filter(s=>s[1]-s[0]>p),p),zu=lsar(z,h0,h1,A);
+if(nb>0&&!(o&&o.cap===0)){let pu=0;for(let j=0;j<zu.length;j++)pu+=zu[j]*zu[j];pu/=Math.max(1,zu.length);const cap=(o&&o.capK!=null?o.capK:2)*nb;
+if(pu>cap){const g=Math.sqrt(cap/pu);for(let j=0;j<zu.length;j++)zu[j]*=g;}}
+let e0=0,e1=0;for(let j=h0;j<h1;j++){const u=zu[j-h0];e0+=z[j]*z[j];e1+=u*u;y[a+j]=lw?lw[j]+u:u;}
+out.push({t0:Math.floor((a+h0)/sr*1e4)/1e4,t1:Math.ceil((a+h1)/sr*1e4)/1e4,sc:E.sc,redDb:+(db(e0)-db(e1)).toFixed(1)});
 if((e&15)===15)yield(e+1)/ev.length;
 }
 return out;
@@ -61771,19 +61815,34 @@ if(nb.length<5&&ns>=5)continue;
 
 nb.sort((p1,p2)=>p1-p2);let pt=nb.length>=5?Math.pow(10,(nb[nb.length>>1]+0.5)/10):Lr.p;
 {const NR=o.nr!=null?o.nr:(room.NR!=null?room.NR:3),nl=[];if(NR>0)for(let u=Math.max(0,a-NR*H);u+H<=a;u+=H){const l=lev(u,u+H);if(l>-110&&l<=Lr.db+15)nl.push(l);}if(NR>0)for(let u=b;u+H<=Math.min(n,b+NR*H);u+=H){const l=lev(u,u+H);if(l>-110&&l<=Lr.db+15)nl.push(l);}
-if(nl.length>=3){nl.sort((p1,p2)=>p1-p2);pt=Math.min(pt,Math.pow(10,(nl[nl.length>>1]+0.5)/10));}}
+if(nl.length>=3){nl.sort((p1,p2)=>p1-p2);const pn=Math.pow(10,(nl[nl.length>>1]+0.5)/10),UP=o.up!=null?o.up:2;
+
+
+pt=pn>pt&&UP>0&&nb.length>=5?Math.min(pn,pt*Math.pow(10,UP/10)):Math.min(pt,pn);}}
 const need=pt-Math.pow(10,ph/10);if(need<=0||L<2*R)continue;
 
 let mg=mag;{const P2=new Float64Array(N/2+1);let c2=0;const okU=new Set(nbu);
-const PW=[];
-for(const u of nbu){if(!okU.has(u+H)||!okU.has(u+2*H)||u+N>n)continue;for(let i=0;i<N;i++){re[i]=y[u+i]*(0.5-0.5*Math.cos(TAU*(i+0.5)/N));im[i]=0;}F(re,im,false);const Pw=new Float64Array(N/2+1);for(let k=0;k<=N/2;k++){const e=re[k]*re[k]+im[k]*im[k];P2[k]+=e;Pw[k]=e;}PW.push(Pw);c2++;}
-if(c2>=3){mg=new Float64Array(N/2+1);for(let k=1;k<N/2;k++)mg[k]=Math.sqrt(P2[k]/c2);
+const PW=[],PU=[];
+for(const u of nbu){if(!okU.has(u+H)||!okU.has(u+2*H)||u+N>n)continue;for(let i=0;i<N;i++){re[i]=y[u+i]*(0.5-0.5*Math.cos(TAU*(i+0.5)/N));im[i]=0;}F(re,im,false);const Pw=new Float64Array(N/2+1);for(let k=0;k<=N/2;k++){const e=re[k]*re[k]+im[k]*im[k];P2[k]+=e;Pw[k]=e;}PW.push(Pw);PU.push(u);c2++;}
 
 
 
-const TW=PW.map(P=>{let e=0;for(let k=1;k<N/2;k++)e+=P[k];return e||1e-30;});let Tm=0;for(const t of TW)Tm+=t/TW.length;
-if(o.med!==0)for(const[k0,k1]of roomBands(sr,N)){const v=PW.map((P,w)=>{let e=0;for(let k=k0;k<k1;k++)e+=P[k];return e/TW[w];}).sort((p,q)=>p-q),md=v[v.length>>1]*Tm;
-let e2=0;for(let k=k0;k<k1;k++)e2+=P2[k]/c2;const g=e2>0?Math.sqrt(md/e2):1;for(let k=k0;k<k1;k++)mg[k]*=g;}}}
+
+const TON=o.ton!=null?o.ton:0;let PN=null;
+if(c2>=3&&TON>0){const kA=Math.max(1,Math.round(100*N/sr)),kB=Math.min(N/2,Math.round(1500*N/sr)),tb=new Float64Array(kB-kA),keep=[];
+PW.forEach((Pw,w)=>{let mx=0;for(let k=kA;k<kB;k++){tb[k-kA]=Pw[k];if(Pw[k]>mx)mx=Pw[k];}tb.sort();if(!(mx>TON*tb[tb.length>>1]))keep.push(w);});
+
+const NW=o.nw!=null?o.nw:10,near=NW>0?keep.filter(w=>PU[w]+N>=a-NW*H&&PU[w]<=b+NW*H):keep,use=near.length>=3?near:keep;
+if(use.length>=3&&(use.length<PW.length||near.length>=3))PN=use.map(w=>PW[w]);}
+const PS=PN||PW,cs=PS.length,P3=PN?new Float64Array(N/2+1):P2;if(PN)for(const Pw of PN)for(let k=0;k<=N/2;k++)P3[k]+=Pw[k];
+if(cs>=3){mg=new Float64Array(N/2+1);for(let k=1;k<N/2;k++)mg[k]=Math.sqrt(P3[k]/cs);
+
+
+
+
+const TW=PS.map(P=>{let e=0;for(let k=1;k<N/2;k++)e+=P[k];return e||1e-30;});let Tm=0;for(const t of TW)Tm+=t/TW.length;
+if(o.med!==0&&!(PN&&o.pm===1))for(const[k0,k1]of roomBands(sr,N)){const v=PS.map((P,w)=>{let e=0;for(let k=k0;k<k1;k++)e+=P[k];return e/TW[w];}).sort((p,q)=>p-q),md=v[v.length>>1]*Tm;
+let e2=0;for(let k=k0;k<k1;k++)e2+=P3[k]/cs;const g=e2>0?Math.sqrt(md/e2):1;for(let k=k0;k<k1;k++)mg[k]*=g;}}}
 let sd=(a*2654435761+12345)>>>0;const rnd=()=>{sd=(Math.imul(sd,1103515245)+12345)>>>0;return sd/4294967296;};
 const z=new Float64Array(L+2*N);
 for(let f=0;f*(N>>1)<L+N;f++){re.fill(0);im.fill(0);
@@ -109206,6 +109265,69 @@ idle:()=>{const U=SPK1.ui,F=U&&U.f1;return!!F&&!F.run&&!F.tm&&!F.pend&&(F.mode==
 
 
 
+const LT1={skip:0};
+function lt1GridMark(){LT1.cnw0=UI.cnw;}
+function lt1GridOk(){
+try{
+if(!UI.heads||!EL.grid||!UI.cnw||UI.cnw===LT1.cnw0||UI.heads.length!==NT()||UI.heads.some((h,i)=>!h!==!S.tracks[i]))return false;
+UI.dirty.grid=true;LT1.skip++;return true;
+}catch(e){return false;}
+}
+
+
+
+
+
+function lt1PreDrop(){const p=LT1.pre;LT1.pre=null;if(p&&p.tm)clearTimeout(p.tm);}
+function lt1PreStart(c){
+lt1PreDrop();
+try{
+if(!c||!c.pcm||!(c.sr>0)||!tkAudioOk()||!imp1Pop())return;
+const q=c.bpm/nx1ImpTarget(c);if(!(Math.abs(q-1)<1e-4||q<.5||q>2||!c.x))return;
+const src=c.pcm,sr=c.sr,off=Math.round(imp1Geo(c).org*sr),s0=Math.min(Math.max(0,off),src.length),d0=Math.max(0,-off),m=src.length-s0,n=d0+m;
+const pre=LT1.pre={c,src,sr,off,n,pcm:null,buf:null,d:null,i:0,f:0,ok:false,tm:0},K=1/32767;
+const step=()=>{
+pre.tm=0;if(LT1.pre!==pre)return;
+if(IMP1.cur!==c||c.st!=='fertig'||c.pcm!==src||!imp1Pop()){lt1PreDrop();return;}
+const t0=performance.now();
+try{
+if(pre.ok){}
+else if(!pre.pcm)pre.pcm=new Int16Array(n);
+else if(pre.i<m){while(pre.i<m&&performance.now()-t0<6){const e=Math.min(m,pre.i+262144);pre.pcm.set(src.subarray(s0+pre.i,s0+e),d0+pre.i);pre.i=e;}}
+else if(!pre.buf){
+let b=null;try{b=new AudioBuffer({length:Math.max(1,n),numberOfChannels:1,sampleRate:sr});}catch(e){try{b=AU.ctx?AU.ctx.createBuffer(1,Math.max(1,n),sr):null;}catch(e2){b=null;}}
+if(!b){lt1PreDrop();return;}pre.buf=b;pre.d=b.getChannelData(0);
+}else{const d=pre.d,pc=pre.pcm;while(pre.f<n&&performance.now()-t0<6){const e=Math.min(n,pre.f+131072);for(let i=pre.f;i<e;i++)d[i]=pc[i]*K;pre.f=e;}if(pre.f>=n){pre.ok=true;pre.d=null;LT1.preOk=(LT1.preOk||0)+1;}}
+}catch(e){lt1PreDrop();return;}
+const dt=performance.now()-t0;if(dt>(LT1.preMs||0)){LT1.preMs=Math.round(dt*10)/10;LT1.preK=!pre.ok&&pre.f?'f':pre.buf&&!pre.f?'buf':pre.i?'i':'pcm';}
+pre.tm=setTimeout(step,pre.ok?1000:0);
+};
+pre.tm=setTimeout(step,0);
+}catch(e){lt1PreDrop();}
+}
+function lt1Take(c){
+const pre=LT1.pre;lt1PreDrop();
+if(!pre||!pre.ok||!pre.buf||pre.c!==c||pre.src!==c.pcm||pre.sr!==c.sr)return null;
+const G=imp1Geo(c);if(Math.round(G.org*c.sr)!==pre.off)return null;
+LT1.use=pre;
+let r;try{r=tkAddPcmTake(pre.pcm,c.sr,'import');}finally{LT1.use=null;}
+const m=S.takes[r.id];
+m.route='datei';m.name=c.name;m.imp={bpm:c.bpm,ts:c.ts,t1:c.t1-G.org};
+LT1.preHit=(LT1.preHit||0)+1;
+return r.id;
+}
+function lt1PreBuf(pcm,sr){const u=LT1.use;if(!u||u.pcm!==pcm||u.sr!==sr||!u.buf)return null;const b=u.buf;u.buf=null;return b;}
+function lt1StoreJobs(pcm,chunks){
+const u=LT1.use;if(!u||u.pcm!==pcm)return null;
+return chunks.map((k,i)=>()=>kv.aput(k,pcm.slice(i*TK_CHUNK,Math.min(pcm.length,(i+1)*TK_CHUNK)).buffer));
+}
+
+
+
+
+
+
+
 
 
 
@@ -110155,6 +110277,7 @@ c.r=r;c.bpm=r.bpm;c.ts=IMP1_TS.includes(r.ts)?r.ts:'4/4';c.t1=r.t1;
 c.parts=r.teile.map(p=>({name:p.name,ta:r.t1+p.a*r.takt,grp:p.grp}));
 if(!c.parts.length)c.parts=[{name:'Teil 1',ta:0,grp:0}];
 c.st='fertig';c.sel=0;imp1Paint();
+if(typeof lt1PreStart==='function')lt1PreStart(c);
 return r;
 }
 function imp1Peaks(x,n){
@@ -110389,6 +110512,7 @@ return-1;
 }
 
 function imp1Take(c){
+if(typeof lt1Take==='function'){const id=lt1Take(c);if(id)return id;}
 const G=imp1Geo(c),off=Math.round(G.org*c.sr),src=c.pcm;
 let pcm;
 if(off>=0)pcm=src.subarray(Math.min(off,src.length));
@@ -110417,6 +110541,7 @@ if(!tkAudioOk()){toast('Audio nur auf der eigenen Seite');return null;}
 const c=nx1ImpView(c0,kind);if(!c)return null;
 const P=imp1Parts(c),labels={scenes:'In Szenen zerschnitten',track:'Als Spur importiert',vox:'Als Gesang importiert',loop:'Loop in die Matrix'};
 if(R.songPlay)songPlayEnd(true);
+if(typeof lt1GridMark==='function')lt1GridMark();
 const res=imp1Step(labels[kind],()=>{
 const G=imp1Geo(c),song=imp1Prep(c);
 if(kind==='vox'){
@@ -110458,7 +110583,7 @@ imp1Marks(song,P);
 return{kind,track:st,take,scenes:made,parts:P.length};
 });
 if(!res)return null;
-try{if(UI.heads&&EL.grid)buildGrid();if(UI.songView)svLayout();}catch(e){logErr(e);}
+try{if(UI.heads&&EL.grid&&!(typeof lt1GridOk==='function'&&lt1GridOk()))buildGrid();if(UI.songView)svLayout();}catch(e){logErr(e);}
 if(res.track>=0)tkTrackResync(res.track);
 const msg=kind==='loop'?'Loop Takt '+(res.a+1)+'–'+res.b+' → Szene '+(res.scene+1)+' · '+S.tracks[res.track].name
 :kind==='vox'?'Als Gesang · '+c.name:(kind==='scenes'?P.length+' Teile → Szenen '+(res.scenes.length?res.scenes.map(s=>s+1).join(', '):''):'Ganzes Audio im Song')+' · '+S.bpm+' BPM · '+(S.ts||'4/4');
