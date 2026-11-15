@@ -107806,7 +107806,7 @@ function fokus1Pre(U) {   // Haken in spk1Frame vor dem Zeichnen
     if (up) F.tUp = tN; F.upMore = more && !!up;
     F.sw = {spec: O, tint: U.tintOn, more};
     U.spec = {N: O.N, hop: O.hop, info: O.info, chunks: arr};
-    if (F.mode === 'rest') U.tintOn = false;   // Tönung würde die jetzt dunklen Flächen färben
+    if (F.mode === 'rest' || F.run || more || up) U.tintOn = false;   // Tönung würde die jetzt dunklen Flächen färben; „Gefundenes“: Farben erst, wenn alle Stücke da sind (spart Grafik beim Umschalten)
   } catch (e) { if (F.sw) { U.spec = F.sw.spec; U.tintOn = F.sw.tint; } F.sw = null; logErr(e); }
 }
 function fokus1Post(U) {   // Haken in spk1Frame nach dem Zeichnen (außerhalb von try → läuft immer)
