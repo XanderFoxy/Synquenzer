@@ -105,3 +105,76 @@ FEHLER: Plopps (5, aus Teil 1, unverändert), Klicks A ≥ 18 (16), Klicks A/B �
 3. Plopp-Erkennung (aus Teil 1).
 4. „Anwenden“ als neue Take-Fassung mit einem ↶, Zeile „Gesang reinigen“ (Funk-Vorschlag vorher), Antippen der Atmer-Marken
    (lassen/leiser/weg), spektraler Entzischer, Assistent leicht/mittel/stark, A/B „nur Entferntes“.
+
+
+---------------------------------------------------------------------------------------------------------------------------
+# VOX-R1 Teil 3/3 (Plan-Schritte 7–9): spektraler Entzischer, Assistent, Bedienung im Säubern-Blatt, Guide
+
+## Gebaut (alles im Block VOXR1; Haken jetzt 5 Ein-Zeiler mit typeof-Schutz)
+- Neue Haken: `clSheet` → `vr1Sheet(p, box, id, ok)`, `clPaint` → `vr1ClPaint(p, box)`, Entzischer der Gesangs-Effekte
+  (`deess` in `g4DspMake`) → `return vr1EssCore(y, sr, amt)`. Dazu wie bisher `vr1PaintBreath` und `Object.assign(SYNQUENZER, VXR1_API)`.
+  Außerhalb von Block + Haken ist index.html gleich basis.html (geprüft).
+- **12 Zischen – spektraler Entzischer** `vr1EssCore(y, sr, amt, o)` (eigenständige Funktion, dient der Kette UND dem vorhandenen
+  Entzischer der Gesangs-Effekte, auch in deren Worker: `g4DspMake.toString` stellt den Kern voran):
+  STFT 1024/256 mit √Hann (≈ 23 ms bei 44,1 kHz, 2048 ab 50 kHz); je Rahmen Energie über der Grenze (5 kHz) gegen das Gesangsband
+  300 Hz–4 kHz; Zischlaut = darüber + Schwelle (−6 dB, Erkennung 4 dB empfindlicher) und ≥ 20 ms (t/k/p bleiben knackig); je
+  Drittel-Oktav-Band über der Grenze wird nur gesenkt, was gegen seinen Anteil vorsteht (höchstens Stärke dB, Angriff 5 ms,
+  Rückkehr 40 ms, zwischen den Bandmitten interpoliert). Gerechnet wird nur die Differenz (G − 1)·X → wo nichts gesenkt wird, bleibt
+  das Signal bitgleich. Offline vorausgerechnet (Kette und Gesangs-Effekte) → bei der Wiedergabe 0 ms Verzögerung; im Mithören
+  („Mich selbst hören“) läuft er nicht (live wären es ≈ 23 ms). Aussehen der Gesangs-Effekte unverändert (Regler, Rückgabe {maxDb, sibMs}).
+- **Kette** jetzt Klicks → Plopps → Brummen → Hochpass → Atmer → Raumton → Zischen (`VXR1_ORDER`, Plan §3 Nr. 12 zuletzt).
+- **Assistent** `assist(B, lv)`: Startwerte × 0,5 / 1 / 1,5 (Klick-Empfindlichkeit 2/4/7, Plopp-Stärke 25/50/75 %, Brumm-Tiefe
+  −15/−30/−45 dB, Atmer-Ziel −34/−40/−46 dBFS, Zischen 3/6/9 dB); es laufen nur Schritte, bei denen Prüfen etwas fand (Hochpass und
+  Raumton immer – sie ändern nur, was da ist). `suggest(B)` schlägt eine Stufe vor; `worst(B, 10)` = 10-s-Fenster mit den meisten Funden
+  (Klick 1, Plopp 3, Atmer 1, Zisch-Rahmen 0,05). Prüfen liefert dafür `sibSec` (Zisch-Rahmen je Sekunde).
+- **Bedienung im vorhandenen Säubern-Blatt** (Stil der vorhandenen Zeilen `.clrow/.cllab/.clab`, Trefferflächen 44 px, kein neues CSS):
+  Zeile „Gesang reinigen“ [leicht │ mittel │ stark], darunter [▶ 10 s │ Anwenden │ Mehr ▾]; Mehr ▾ = 7 Einzelschritte an/aus mit Fund
+  (z. B. „✓ Klicks 8“, „✓ Brummen 50 Hz“), feste Reihenfolge. Zustandszeile: Befund + was die Stufe macht, Fortschritt in %,
+  „Abbrechen“ während der Rechnung. Antippen einer Stufe prüft den Take (einmal je Take, im Worker).
+- **A/B dreiteilig**: das vorhandene A/B bekommt „nur Entferntes“ (Roh │ Sauber │ nur Entferntes). Beim Vorhören laufen alle drei
+  zeitgleich, A/B blendet in 20 ms um (kein Neustart); bei der angewandten Fassung liefert der Verarbeiter Fassung bzw. Differenz.
+  Blatt zu → wieder „Sauber“.
+- **10 s Vorhören** an der schlimmsten Stelle: nur dieses Stück wird gerechnet (≈ 0,3 s), stoppt nach 10 s oder wenn das Blatt zugeht.
+- **Anwenden = neue Fassung**: `take.vr1 = {lv, steps, br}` (Stufe, Schritte, Atmer-Wahl), ein ↶ (undoPush „Gesang reinigen mittel“);
+  der Roh-Take bleibt bitgleich. Abspielen: `vr1Proc` in `tkExt().proc` vor SÄUBERN (Quelle = SÄUBERN bzw. roh), Zeitkarte/G2/G4
+  liegen davor – die Gesangs-Effekte rechnen danach auf der gereinigten Fassung. Rechnung im Worker, abbrechbar, danach Tausch während
+  der Wiedergabe (clResync). Der Take-Normalisierer übernimmt `vr1` (geprüft und begrenzt) beim Laden.
+- **Atmer-Marken antippen** (Marken-Editor): Tipp in den oberen Streifen (≤ 56 px) über einer Marke wechselt leiser → weg → lassen
+  (Trefferbreite mindestens 44 px); ist „Gesang reinigen“ angewandt, wird mit ↶ neu gerechnet.
+- **Guide „Wo finde ich …?“**: Eintrag „Gesang reinigen“ (STIMME › Takes-Blatt › Säubern › Gesang reinigen, Mehr ▾ = Einzelschritte).
+- API: `vr1Pick`, `vr1Plan`, `vr1Apply`, `vr1Preview`, `vr1PvStop`, `vr1Ab`, `vr1Ver`; `window.__vr1.ess`/`.proc`.
+
+## Messwerte (echter Gesangs-Take A, Fehler synthetisch eingesetzt)
+| Messung | Ergebnis | Ziel |
+|---|---|---|
+| Zischen: 10 „s“ (Rauschen > 5 kHz, 150 ms, −3 dB unter dem Gesang), S-Energie > 5 kHz | −6,0 dB Median; −5,9…−6,0 an 9 von 10; 1 × −3,2 (auf lautem Vokal-Ende) | −6 dB |
+| Zischen: Vokale (1862 stimmhafte Rahmen) | 0,000 dB gesamt, größter Rahmen 0,2 dB; 1826 von 1873 Rahmen bitgleich | ≤ 0,5 dB |
+| Entzischer Blocklänge | 1024 → 23,2 ms (offline: 0 ms bei der Wiedergabe, beim Mithören aus) | – |
+| Gesangs-Effekte: Entzischer spektral | Hauptfaden und Worker gleich (−6 dB, 2485 ms Zischlaute) | – |
+| 3-min-Take Node: Prüfen + ganze Kette inkl. Zischen | 1,45 + 2,87 s (× 3 = 13,0 s) | ≤ 20 s |
+| 3-min-Take App/Worker: Prüfen + ganze Kette inkl. Zischen | 2,33 + 3,65 s (× 3 = 17,9 s) | ≤ 20 s |
+| Hauptfaden während der Rechnung | 0 Long Tasks, größte Lücke 26 ms (unter Last einmal 54 / 72 ms, s. u.) | keine > 50 ms |
+| Abbruch | 12 ms | – |
+| 10 s Vorhören | Fenster 11–21 s (meiste Funde), A/B weg ↔ sauber ohne Neustart | – |
+
+## Tests `voxr1-test.mjs` – 57/67
+Neu OK (16): Zischen −6 dB (Median), Vokale ≤ 0,5 dB, spektral/23 ms, Assistent 3/6/9 dB, Vorhören an der schlimmsten Stelle,
+Zeile + A/B dreiteilig + 44 px, Touch „mittel“ prüft, Mehr ▾ (7 Schritte), nichts ragt raus (hochkant, quer 926×428, quer 926×370),
+Touch ▶ 10 s + A/B „nur Entferntes“, Touch „Anwenden“ (neue Fassung spielt auch durch die Gesangs-Effekte, Roh-Take bitgleich), ein ↶,
+Gesangs-Effekte spektral (Hauptfaden + Worker), Guide, Touch auf Atmer-Marke (leiser → weg). Kette inkl. Zischen: Worker = Node bitgleich.
+FEHLER (unverändert aus Teil 1/2): Plopps (5), Klicks Take A ≥ 18 (16), Klicks A/B Überstand ≤ 3 dB (7,5 / 3,2), Raumton Pegel
+(2 von 5 Lücken) und Klangfarbe (2 von 5).
+Fotos: voxr1-blatt.png (428×926, Zeile + Mehr ▾ offen), voxr1-quer.png (926×428), voxr1-quer370.png (926×370), voxr1-atmer.png.
+
+## Offen
+1. **Funk-Vorschlag**: Die Zeile „Gesang reinigen“ und das dritte A/B-Feld sind sichtbar neu → vor der Auslieferung im Funk vorschlagen
+   (Regel 3; Plan P4 „Funk: Vorschlag“).
+2. Plopp-Erkennung (Teil 1), Klicks in lauten tiefen Vokalen (Take A), Raumton-Fallback bei fast ganz weggeschnittenen Pausen (Teil 2).
+3. Zischen auf einem lauten Vokal-Ende (1 von 10) nur −3,2 dB: Vergleich gegen den Gesangspegel desselben Rahmens; Abhilfe wäre ein
+   geglätteter Gesangspegel (±150 ms) als Bezug.
+4. Der vorhandene Regler 0–100 % ist noch nicht „Gesamtstärke“ der Kette (Plan §3) – das würde eine vorhandene Bedienung umdeuten,
+   daher erst nach Rückfrage. Je Schritt gibt es unter Mehr ▾ nur an/aus, noch keine 1–2 Regler.
+5. Die gereinigte Fassung wird nach dem Laden neu gerechnet (nur Parameter im Projekt, wie SÄUBERN); ein Speicher im Takes-Store fehlt.
+6. Zischen kostet 1,2 s je 3 min (Node); Reserve App 17,9 von 20 s. Schneller: reelle FFT halber Länge, Analyse-Durchgang ohne
+   stille Rahmen.
+7. Long Tasks: in 2 von 7 Läufen (Rechner unter Last, Lastmittel ≈ 6) 54 / 72 ms – sonst 0. Nicht reproduzierbar ohne Last.

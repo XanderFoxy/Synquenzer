@@ -28,3 +28,16 @@
 - Pflicht: topdefs 26 Skripte / 7578 Namen / 0 doppelt / 0 Syntaxfehler; dupkeys 0 (mit NODE_PATH); smoke errors []; „MS 2000“ 1×;
   „  live: true,“ 1×; VERSION 4.68.0. Außerhalb Block + 2 Haken-Zeilen = basis.html (geprüft).
 - Test: `node voxr1-test.mjs <abs index.html>` → 41/51.
+
+# VOX-R1 Teil 3/3 – Log (15.11.2026)
+
+- Entzischer zuerst nur mit Schwelle −6 dB in der Erkennung: 1 von 10 „s“ (auf einem Vokal-Ende) nur −2,9 dB → Erkennung 4 dB
+  empfindlicher als die Senkung (−3,2 dB, Rest offen). Messfenster im Test auf genau das eingesetzte „s“ gesetzt (vorher mit Umgebung).
+- Gesangs-Effekte: der Worker baut seinen Quelltext aus `g4DspMake.toString()` → im Block `g4DspMake.toString` so gesetzt, dass der
+  spektrale Kern davor steht (kein Umschreiben vorhandener Zeilen); Hauptfaden und Worker liefern dasselbe.
+- Takes-Blatt ließ sich im Test nicht öffnen (Teil 1) → `tkSheet({t, s})` mit Spur/Szene aus tkInject.
+- „Anwenden“: die Fassung war da, gespielt wurde aber noch die alte G4-Fassung (G4 rechnet erst, wenn jemand tkPlayBuf fragt, und sucht
+  vorher Marken) → nach dem Rechnen `tkPlayBuf(id)` anstoßen; Test wartet auf G4-Auftrag und Marken-Suche.
+- Pflicht: topdefs 26 Skripte / 7600 Namen / 0 doppelt / 0 Syntaxfehler; dupkeys 0 (NODE_PATH=/opt/node-tools/node_modules); smoke
+  errors []; „MS 2000“ 1×; „  live: true,“ 1×; VERSION 4.68.0. Außerhalb Block + 5 Haken-Zeilen = basis.html (geprüft).
+- Test: `node voxr1-test.mjs <abs index.html>` → 57/67 (Rest aus Teil 1/2).

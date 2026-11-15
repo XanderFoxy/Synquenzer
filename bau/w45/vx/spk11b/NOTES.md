@@ -12,8 +12,8 @@ Aussehen/Bedienung/Texte unverändert. Test-Zugang `window.__spk11b` (last, hits
 - **Vorlagen aus dem Lied** (spk11bSplit: zwei Häufungen, Otsu auf log-Werten, nur bei klarer Trennung): Kick-Schwelle aus den Tiefen-Einsätzen
   (Kick ~0,9 gegen Snare-/Bass-Reste ~0,3), Snare-Schwelle aus den Höhen-Einsätzen, zweistufig (leise/laute Hi-Hats, darüber die Snare).
   Snare braucht Körper (Tiefen oder Mitten ≥ 0,12). Ohne klare Trennung die alten festen Werte.
-- **Bass-Ebene als Gegenreferenz**: Kick nur, wo der Tiefen-Einsatz der Drum-Ebene ≥ 0,7× dem der Bass-Ebene ist (gleicher Bereich,
-  mit Auswahl gleich gefiltert).
+- ~~Bass-Ebene als Gegenreferenz~~ (Nachbesserung B6: im Ablauf abgeschaltet – auf 7 Liedern ohne Wirkung; der Parameter `ref.bass` von
+  spk11bHits bleibt für Messungen).
 - **Anschlag**: Kick braucht Einsatz auch in den Mitten (≥ 0,9× tief) – die Schwebung Kick+Bass 1/16 danach ist nur tief. An Snare-Stellen
   nur ein Kick aus der Kick-Häufung (≥ 0,65× deren Mittel). Abklingform: < 0,6 nach 100 ms (Kick-Häufung ausgenommen).
 - **Wiederholung je Takt**: ein schwacher Tiefen-Einsatz (≥ 0,6× untere Schwelle, Anschlag, nicht Snare) zählt, wenn in den ±4 Takten an
@@ -29,7 +29,9 @@ Energie-Spektrum (2–50 %) des lautesten nicht stillen Teils. Ein Teil ist Tren
 Gemessen (dB Grundton-Bereich / Anteil Rahmen): Prüferlied Intro −77/0, Outro −77/0 → still; leises echtes Intro (−11 dB gesamt) −16/0,59 → bleibt;
 Trennrest-Outro −74/0 → still. Warum nicht einfacher: Pegel allein trennt nicht (Rest −34 dBFS, echtes Intro −32 dBFS); Dominanz gegen
 „Original minus Ebene“ trennt nicht (Trennrest liegt allein in seinen Frequenzen, 0,99).
-Grenze (bewusst): ein echtes leises Intro, das ≥ 8 dB leiser UND eine Oktave über dem Register des lautesten Teils spielt, gilt als Rest.
+Nachbesserung B1: zusätzlich **Abstand band − ges ≤ −15 dB** (der Grundton-Bereich fehlt auch gegenüber dem eigenen Pegel des Teils).
+Grenze (bewusst): ein echtes leises Intro, das ≥ 8 dB leiser ist UND fast nur oberhalb des Grundton-Bereichs des lautesten Teils spielt
+(z. B. eine Oktave höher), gilt weiter als Rest. Im selben Register bleibt jedes echte Intro bis zur Basis-Still-Regel (−26 dB).
 
 ## Treffer vorher → nachher (Szenen anlegen per Touch, 428×926; Wahrheit ±50 ms)
 | Lied | Kick | Snare | Hi-Hat | Bass ohne Bass in der Wahrheit |
