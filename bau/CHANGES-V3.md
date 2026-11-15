@@ -1,3 +1,11 @@
+## 4.67.0 — Matrix: Noten auslagern + Drum-Spur in Einzelspuren; Import-Tempo auf jedem Gerät gleich
+
+- **Noten auslagern** (Noten-Editor, Aktionsleiste „Auslagern ▾“): ausgewählte Noten – z. B. die Obertöne eines Basslaufs – kommen in eine neue Spur direkt unter der Quelle. Die neue Spur hat denselben Klang, dieselben Effekte und denselben Mix und spielt synchron wie ein Layer mit. Wahlweise „In vorhandene Spur“, Verschieben oder Kopieren. Ein ↶ macht alles rückgängig.
+- **Drum-Spur „In Einzelspuren aufteilen“** (Spur-Blatt von DRUMS): HH zu, Snare, Clap, HH offen usw. bekommen je eine eigene, einzeln mischbare Spur. Kick bleibt auf DRUMS. Schritte, Chance, Wirbel, Akzent und Bedingungen spielen gleich, ROOM/GATE wie vorher. „Zusammenführen“ holt alles zurück, ein ↶ genügt.
+- **Import-Tempo unabhängig vom Gerät:** Tempo und Taktanfang einer importierten Aufnahme sind jetzt auf 44,1- und 48-kHz-Geräten gleich (vorher z. B. 120,7 gegen 132,6 BPM für dieselbe Datei). Die Spektral-Seite übernimmt dieses Raster, bei Gesangsaufnahmen sitzt es auf dem iPhone deshalb sichtbar anders (richtig).
+- **Gesang-Editor:** Kein Knacken mehr, wenn ein Stück fast lückenlos an den nächsten stößt (keine Dehnung unter 2 ms Lücke). Beim Quantisieren gibt ein nicht eingerastetes Stück bis 15 ms nach, damit der Nachfolger genau auf der Rasterlinie landet.
+Tests: Auslagern/Einzelspuren 51/51, Gesang-Editor 61/61, Gesang-Stücke 14/14, Konsonanten 15/15, Import ALLE OK, Import-Tempo ALLE OK, Chor 82/82 (Messung korrigiert: Abtastrate, Hüllkurve – gegengeprüft, Chor klingt unverändert), Echttest 52/53 (wie 4.66), Spektral-Seiten wie 4.66. Offen: Tempo genau auf x,5 BPM (Vorschlag folgt), Szenen aus dem Spektrum + Klang nachbauen im Menü (nächste Version).
+
 ## 4.66.0 — Spektral: gebundener Gesang (Legato) ergibt einzelne Noten
 
 - **Noten finden** trennt Legato-Phrasen (ohne Pause gesungene Tonwechsel) jetzt in einzelne Noten. Vorher wurde A3 → D4 → H3 zu einer einzigen Note, jetzt sind es drei, und in der Ebenen-Werkstatt („Noten bearbeiten“) lässt sich jeder Ton einzeln umsetzen.
