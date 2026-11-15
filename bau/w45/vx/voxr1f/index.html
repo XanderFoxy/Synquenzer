@@ -61592,7 +61592,7 @@ function* clickScan(x, sr, o, wins) {
     if ((bi & 63) === 63) yield 0.9 * (bi + 1) / blocks.length;
   }
   // Rahmen (0,5 ms): Spitze gegen örtliches Mittel (±12 ms ohne das Ereignis) und gegen die nächsten Spitzen (allein stehend)
-  const MED = o.med !== false, K1 = (o.k1b != null ? o.k1b : 8) - 0.6 * sens, K2 = 3.0 - 0.18 * sens, W = Math.round(0.012 * sr / J), I = Math.round(0.025 * sr / J), MX = Math.round(0.005 * sr / J), X3 = Math.round(0.003 * sr / J), ev = [];
+  const MED = o.med !== false, K1 = (o.k1b != null ? o.k1b : 8) - 0.6 * sens, K2 = 3.0 - 0.18 * sens, W = Math.round(0.012 * sr / J), I = Math.round((o.nb != null ? o.nb : 0.025) * sr / J), MX = Math.round(0.005 * sr / J), X3 = Math.round(0.003 * sr / J), ev = [];
   const sel = new Uint8Array(nj); if (!wins) sel.fill(1); else for (const [a, e] of wins) for (let j = Math.max(0, Math.floor(a / J)); j < Math.min(nj, Math.ceil(e / J)); j++) sel[j] = 1;
   const tmp = new Float64Array(256), medx = (arr, j0, j1, x0, x1) => { let c = 0; for (let j = Math.max(0, j0); j < Math.min(nj, j1) && c < 256; j++) { if (j >= x0 && j <= x1) continue; tmp[c++] = arr[j]; } if (!c) return 0; const t = tmp.subarray(0, c).sort(); return t[c >> 1]; };
   const mean = (arr, j0, j1, x0, x1) => { let s = 0, c = 0; for (let j = Math.max(0, j0); j < Math.min(nj, j1); j++) { if (j >= x0 && j <= x1) continue; s += arr[j]; c++; } return c ? s / c : 0; };
@@ -61637,23 +61637,25 @@ function clickSpan(z, g0, g1, sr, p, o) {
   for (let i = Math.max(p, g0 - Math.round(0.012 * sr)); i + q <= g0 - Math.round(0.001 * sr); i += q) E.push(fr(i));
   for (let i = g1 + Math.round(0.003 * sr); i + q <= Math.min(L - p, g1 + Math.round(0.012 * sr)); i += q) E.push(fr(i));
   if (E.length < 8) return [g0, g1];
-  E.sort((u, v) => u - v); const T = (o && o.spanK != null ? o.spanK : 3) * E[E.length >> 1];
+  E.sort((u, v) => u - v); const nb = E[E.length >> 1], T = (o && o.spanK != null ? o.spanK : 3) * nb;
   let e1 = g1, e0 = g0; const mx1 = Math.min(g1 + Math.round((o && o.spanR != null ? o.spanR : 0.002) * sr), g0 + Math.round(0.008 * sr), L - 2 * p), mn0 = Math.max(2 * p, g0 - Math.round((o && o.spanL != null ? o.spanL : 0.0005) * sr));
   while (e1 + q <= mx1 && fr(e1) > T) e1 += q;
   while (e0 - q >= mn0 && fr(e0 - q) > T) e0 -= q;
-  return [e0, e1];
+  return [e0, e1, nb];
 }
-/* VOXR1F: Klick in einer Pause – dort trägt der Klick auch unter 1,5 kHz deutlich mehr als die Umgebung (das Tiefband blieb sonst als
-   dumpfer Rest stehen und ragte über die Filterflanke noch in das Band > 2 kHz). Dann das ganze Signal ersetzen wie bei Art „tief“.
-   Kriterium: Tiefband-Leistung im Fund > 8× (9 dB) der mittleren Umgebung (±12 ms, Median der 0,5-ms-Rahmen). {low: 0} = wie vorher. */
+/* VOXR1F: Klick in einer Pause trägt auch unter 1,5 kHz deutlich mehr als die Umgebung; dieser Teil blieb stehen und ragte über die
+   Filterflanke noch ins Band > 2 kHz (+8 dB über dem Rauschboden bei einem Klick 38 dB über der Pause). Dann auch das Tiefband in der
+   Lücke vorhersagen (eigenes LSAR auf dem Tiefband). Kriterium: Tiefband-Leistung im Fund > 8× (9 dB) des Medians der 0,5-ms-Rahmen
+   der Umgebung (±12 ms) – auf gesungenen Vokalen trägt der Klick unten wenig, dort bleibt das Tiefband unberührt. {low: 0} = aus. */
 function clickLow(lo, g0, g1, sr, p, o) {
-  if (o && o.low === 0) return false;
+  if (o && o.low === 0) return null;
   const q = Math.max(4, Math.round(0.0005 * sr)), L = lo.length, fr = i => { let s = 0; for (let k = i; k < i + q; k++) s += lo[k] * lo[k]; return s / q; }, E = [];
   for (let i = Math.max(p, g0 - Math.round(0.012 * sr)); i + q <= g0 - q; i += q) E.push(fr(i));
   for (let i = g1 + q; i + q <= Math.min(L - p, g1 + Math.round(0.012 * sr)); i += q) E.push(fr(i));
-  if (E.length < 8) return false;
+  if (E.length < 8) return null;
   E.sort((u, v) => u - v); let s = 0; for (let i = g0; i < g1; i++) s += lo[i] * lo[i];
-  return s / Math.max(1, g1 - g0) > (o && o.lowK != null ? o.lowK : 8) * E[E.length >> 1];
+  if (!(s / Math.max(1, g1 - g0) > (o && o.lowK != null ? o.lowK : 8) * E[E.length >> 1])) return null;
+  return lsar(lo, g0, g1, arCoef(lo, [[p, g0], [g1 + p, L]].filter(t => t[1] - t[0] > p), p));
 }
 function* click(y, sr, ev, o) {
   const p = 40, C = Math.round(0.02 * sr), n = y.length, out = [];
@@ -61662,12 +61664,15 @@ function* click(y, sr, ev, o) {
     for (let i = 0; i < L; i++) z[i] = y[a + i];
     if (g0 < 2 * p || L - g1 < 2 * p || g1 - g0 > Math.round(0.008 * sr)) { out.push({t0: E.t0, t1: E.t1, sc: E.sc, redDb: 0}); continue; }
     // Art „Mund“: nur das Band über 1,5 kHz neu berechnen (Grundton und tiefe Obertöne bleiben, wie sie sind); „tief“: das ganze Signal
-    let lo = o && o.art === 'tief' ? null : lpZero(y, a, b, sr, 1500); if (lo && clickLow(lo, g0, g1, sr, p, o)) lo = null;   /* VOXR1F */
-    if (lo) for (let i = 0; i < L; i++) z[i] -= lo[i];
-    const [h0, h1] = clickSpan(z, g0, g1, sr, p, o);   /* VOXR1F */
+    const lo = o && o.art === 'tief' ? null : lpZero(y, a, b, sr, 1500); if (lo) for (let i = 0; i < L; i++) z[i] -= lo[i];
+    const [h0, h1, nb] = clickSpan(z, g0, g1, sr, p, o);   /* VOXR1F */
     const A = arCoef(z, [[p, h0], [h1 + p, L]].filter(s => s[1] - s[0] > p), p), zu = lsar(z, h0, h1, A);
-    let e0 = 0, e1 = 0; for (let j = h0; j < h1; j++) { const u = zu[j - h0]; e0 += z[j] * z[j]; e1 += u * u; y[a + j] = lo ? lo[j] + u : u; }
-    out.push({t0: h0 === g0 ? E.t0 : Math.floor((a + h0) / sr * 1e4) / 1e4, t1: h1 === g1 ? E.t1 : Math.ceil((a + h1) / sr * 1e4) / 1e4, sc: E.sc, redDb: +(db(e0) - db(e1)).toFixed(1)});   /* VOXR1F: gemeldete Spanne = ersetzte Spanne */
+    if (nb > 0 && !(o && o.cap === 0)) { let pu = 0; for (let j = 0; j < zu.length; j++) pu += zu[j] * zu[j]; pu /= Math.max(1, zu.length); const cap = (o && o.capK != null ? o.capK : 2) * nb;   /* VOXR1F: Füllung nie lauter als 3 dB über der Umgebung (Band > 1,5 kHz) */
+      if (pu > cap) { const g = Math.sqrt(cap / pu); for (let j = 0; j < zu.length; j++) zu[j] *= g; } }
+    let pz = 0; for (let j = h0; j < h1; j++) pz += z[j] * z[j]; pz /= Math.max(1, h1 - h0);
+    const lu = lo && nb > 0 && pz > (o && o.lowH != null ? o.lowH : 100) * nb ? clickLow(lo, h0, h1, sr, p, o) : null;   /* VOXR1F: nur bei starken Klicks (Band > 1,5 kHz > 20 dB über der Umgebung) */
+    let e0 = 0, e1 = 0; for (let j = h0; j < h1; j++) { const u = zu[j - h0]; e0 += z[j] * z[j]; e1 += u * u; y[a + j] = lo ? (lu ? lu[j - h0] : lo[j]) + u : u; }
+    out.push({t0: Math.floor((a + h0) / sr * 1e4) / 1e4, t1: Math.ceil((a + h1) / sr * 1e4) / 1e4, sc: E.sc, redDb: +(db(e0) - db(e1)).toFixed(1)});   /* VOXR1F: gemeldete Spanne = ersetzte Spanne */
     if ((e & 15) === 15) yield (e + 1) / ev.length;
   }
   return out;

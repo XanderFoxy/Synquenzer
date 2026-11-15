@@ -102619,6 +102619,7 @@ function spk1GlDraw(U) {
   }
   const hs = U.spec.hop / U.meta.sr, yT = (v.mTop - (12 + 983 / 8 + 1 / 16)) * v.rowH * d, yB = (v.mTop - (12 - 1 / 16)) * v.rowH * d;
   gl.activeTexture(gl.TEXTURE0);
+  if (typeof lt1GlChunks === 'function' && lt1GlChunks(U, G, hs, yT, yB)) return;   /* LT1: höchstens eine neue Kachel-Textur je Bild */
   for (const c of U.spec.chunks) {
     if (!c) continue;
     const xa = ((c.x0 - 0.5) * hs - v.t0) * v.pps * d, xb = ((c.x0 + c.w - 0.5) * hs - v.t0) * v.pps * d; if (xb < 0 || xa > W) continue;
@@ -109200,6 +109201,32 @@ Object.assign(FOKUS1_API, {
   idle: () => { const U = SPK1.ui, F = U && U.f1; return !!F && !F.run && !F.tm && !F.pend && (F.mode === 'alles' || (!!F.set && F.sig === fokus1Sig(U))); }
 });
 /* FOKUS1-END */
+/* LT1-BEGIN ===== Long Tasks im Hauptfaden (Paket LT1, Puls 15.11., CLAUDE.md Vorrang 1 „flüssige Bedienung“)
+   Gemessen (lt1-test.mjs, CDP-Spur): der Hauptfaden wartet beim Zeichnen nach FFT-Wechsel bzw. Ansicht-Sprung auf die Grafik
+   (Commit → ReadPixels → WaitForCmd 47–53 ms), weil im selben Bild mehrere Spektrum-Kacheln (je 1024 × 984 R8 + Mipmaps)
+   neu hochgeladen werden. Hier: höchstens LT1.up neue Kachel-Texturen je Bild, der Rest folgt in den nächsten Bildern
+   (gleiche Texturen, gleiche Reihenfolge → Bild nach dem Beruhigen gleich). Import-Ablegen: kein zweiter Raster-Neuaufbau,
+   wenn das Raster in derselben Aufgabe schon passend gebaut wurde (renderGrid füllt den Inhalt im nächsten Bild wie bei jeder Änderung). */
+const LT1 = {up: 1, n: 0, gUp: 0};
+function lt1GlChunks(U, G, hs, yT, yB) {   // Haken in spk1GlDraw vor der Kachel-Schleife; true = Kacheln gezeichnet
+  const gl = G.gl, W = U.cw, d = U.dpr, v = U.v; let up = 0, more = false;
+  for (const c of U.spec.chunks) {
+    if (!c) continue;
+    const xa = ((c.x0 - 0.5) * hs - v.t0) * v.pps * d, xb = ((c.x0 + c.w - 0.5) * hs - v.t0) * v.pps * d; if (xb < 0 || xa > W) continue;
+    if (!c.tex) { if (up >= LT1.up) { more = true; continue; } c.tex = G.tex(c.w, c.R, 'r', c.data, true); up++; LT1.gUp++; }
+    gl.bindTexture(gl.TEXTURE_2D, c.tex); gl.uniform4f(G.u.r, xa, yT, xb, yB); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  }
+  if (more) { LT1.n++; U.dg = true; if (!U.raf && SPK1.open) U.raf = requestAnimationFrame(() => spk1Frame(U)); }   // Rest im nächsten Bild
+  return true;
+}
+function lt1GridMark() { LT1.cnw0 = UI.cnw; }   // Haken in imp1Place vor dem Schritt: Raster-Stand merken (buildGrid legt jedes Mal ein neues UI.cnw an)
+function lt1GridOk() {   // Haken in imp1Place: true = Raster wurde in diesem Ablegen schon passend gebaut (neue Spur „Original“) → kein zweites buildGrid
+  try {
+    if (!UI.heads || !EL.grid || !UI.cnw || UI.cnw === LT1.cnw0 || UI.heads.length !== NT() || UI.heads.some((h, i) => !h !== !S.tracks[i])) return false;
+    UI.dirty.grid = true; LT1.skip = (LT1.skip || 0) + 1; return true;   // Inhalt (Clips, Namen) wie bei jeder Änderung im nächsten Bild über renderGrid
+  } catch (e) { return false; }
+}
+/* LT1-END */
 /* SPK11B-BEGIN ===== Spektral-Seite Teil 11B · Szenen: Drum-Kit und Bass-Phantome nachgebessert (Puls: offene Fehler aus SPK11).
    (1) Drums → Kit: Kick/Snare-Schwellen aus dem Lied selbst (zwei Häufungen der Band-Einsätze, Otsu auf log-Werten), Anschlag muss in die
    Mitten reichen (Schwebung Kick+Bass bleibt tief), 1/16 nach einem Kick ohne eigenen Anschlag kein Kick (Ausklang gegen Sub-Bass), an
@@ -110417,6 +110444,7 @@ function imp1Place(kind) {
   const c = nx1ImpView(c0, kind); if (!c) return null;                // NX1: Audio ans Projekt-Tempo gedehnt (Worker); null = rechnet, legt danach selbst ab
   const P = imp1Parts(c), labels = {scenes: 'In Szenen zerschnitten', track: 'Als Spur importiert', vox: 'Als Gesang importiert', loop: 'Loop in die Matrix'};
   if (R.songPlay) songPlayEnd(true);
+  if (typeof lt1GridMark === 'function') lt1GridMark();   /* LT1: Raster-Stand vor dem Ablegen */
   const res = imp1Step(labels[kind], () => {
     const G = imp1Geo(c), song = imp1Prep(c);
     if (kind === 'vox') {
@@ -110458,7 +110486,7 @@ function imp1Place(kind) {
     return {kind, track: st, take, scenes: made, parts: P.length};
   });
   if (!res) return null;
-  try { if (UI.heads && EL.grid) buildGrid(); if (UI.songView) svLayout(); } catch (e) { logErr(e); }
+  try { if (UI.heads && EL.grid && !(typeof lt1GridOk === 'function' && lt1GridOk())) buildGrid(); if (UI.songView) svLayout(); } catch (e) { logErr(e); }   /* LT1: kein zweites buildGrid */
   if (res.track >= 0) tkTrackResync(res.track);
   const msg = kind === 'loop' ? 'Loop Takt ' + (res.a + 1) + '–' + res.b + ' → Szene ' + (res.scene + 1) + ' · ' + S.tracks[res.track].name
     : kind === 'vox' ? 'Als Gesang · ' + c.name : (kind === 'scenes' ? P.length + ' Teile → Szenen ' + (res.scenes.length ? res.scenes.map(s => s + 1).join(', ') : '') : 'Ganzes Audio im Song') + ' · ' + S.bpm + ' BPM · ' + (S.ts || '4/4');
