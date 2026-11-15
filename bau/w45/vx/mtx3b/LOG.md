@@ -14,3 +14,4 @@
 - 04:56 Prüfsonden des Prüfers a–j auf neuer Fassung grün (bis auf C7-Zeitfenster), Abschnitt „Prüfung MTX3b“ im Bauer-Test 19/19
 - 04:58 mtx3b-test 86/86 (67 + 19 Prüfung), md5 d7be6175; Regression nacheinander startet (reg/run2.sh)
 - 04:59 Pflicht: topdefs 26/0/0 · dupkeys 0 · smoke errors [] · MS 2000 1× · live 1× · VERSION 4.68.0 · diff nur Zusätze (0 <, 690 >)
+- 05:00 Zusammenführen: gemischter Fall (DRUMS + SNARE Original, HH ZU Version) nachgezogen; Prüfung-Abschnitt 20/20; Regression neu (reg/run3.sh, md5 19ae2cc4)

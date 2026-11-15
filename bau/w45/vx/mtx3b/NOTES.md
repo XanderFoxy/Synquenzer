@@ -1,7 +1,7 @@
 # MTX3b – Einzelspuren von DRUMS: die offenen Punkte (Notizen, 15.11.2026)
 
 index.html = basis.html (Kandidat 4.68.0, rel-4680) + Block `/* MTX3B-BEGIN … MTX3B-END */` direkt hinter `/* MTX3-END */`
-+ 25 Haken-Zeilen (je ein Einzeiler mit `/* MTX3B … */` und `typeof`-Schutz; keine vorhandene Zeile geändert, `diff` = nur `>`-Zeilen).
++ 35 Haken-Zeilen (nach der Prüfung; je ein Einzeiler mit `/* MTX3B … */` und `typeof`-Schutz; keine vorhandene Zeile geändert, `diff` = nur `>`-Zeilen).
 `block.js` = der Block allein, `ins.cjs` = baut index.html aus basis.html (Anker je Haken eindeutig geprüft).
 
 | Stelle | Haken |
@@ -22,6 +22,12 @@ index.html = basis.html (Kandidat 4.68.0, rel-4680) + Block `/* MTX3B-BEGIN … 
 | undoApply (Clip-Zweig) | Drum-Schritt-Editor der Einzelspur bleibt nach ↶/↷ offen (vorher closeRoll) |
 | pageDrumSteps (nach d1Tools) | `mtx3bDrumTools` – [Auslagern ▾] |
 | gr2RemixDo (nach gr2VerPut) | Stil-Muster-Version einer Einzelspur ohne D1-Spuren (wie DRUMS) |
+| ownNorm (nach normClip) | `mtx3bOwnNorm` – Version (song.own) einer Einzelspur = Drum-Clip (Prüfung 3) |
+| normalizeProject (vor normSong / nach normPart) | `mtx3bOwnNorm.tr` = die geladenen Spuren / zurück auf null (Prüfung 3) |
+| mtx3Merge (nach den Schnappschüssen) | `mtx3bMergeVer(L)` – Song-Versionen der Einzelspuren zurück nach DRUMS (Prüfung 2) |
+| mtx3Split (nach den Song-Zeilen) | `mtx3bVerMove` – Song-Versionen (Remix) geben das Pad mit (Prüfung 6) |
+| gen4DoScene / gen4DoAll | `mtx3bZ(Z, …)` – Einzelspur rechnet mit dem Original von DRUMS (Prüfung 1, GEN4) |
+| commitRecNote (3 × nach dem Ablegen) | `mtx3bRecDup` – ein Schlag je Stelle auf der Einzelspur (Prüfung 8) |
 
 ## Entscheidungen
 1. **Remix doppelt (GR2/GEN4/GEN3/GR1):** DRUMS und ihre Einzelspuren werden *zusammen* umgerechnet (Partner-Clip je Spur = gleiche
@@ -77,3 +83,25 @@ Nach den letzten zwei Kleinigkeiten (Blatt-CSS, D1-Haken) erneut: mtx3b 67/67, m
 - Stil-Muster in einer Szene, in der die Einzelspur keinen Clip hat: das Pad bleibt dort auf DRUMS (eigener Kanal erst nach Auslagern).
 - Schritt-Editor der Einzelspur: ohne FOLGEN-Chip, ohne PL1-Locks (lange drücken) und ohne D1-Länge/Euklid/Muster – Vorschlag Funk.
 - MIDI-Export / Klang-Editor „ECO“ wie MTX3 (unverändert).
+
+## Prüfung MTX3b (PRUEFUNG.md, 11 Befunde) – behoben 15.11.
+Gebaut wie zuvor: `block.js` + `ins.cjs` (35 Haken, 10 neu, Anker eindeutig in basis.html) → index.html. Messungen: Prüfer-Sonden
+`pruef/a … j` auf der neuen Fassung grün; im Bauer-Test neuer Abschnitt „Prüfung MTX3b“ (20 Prüfungen, mtx3b-test jetzt 87).
+
+| # | Befund | Stand | Was jetzt gilt |
+|---|---|---|---|
+| 1 | [schwer] „Nur diese Schritte“, dann Remix/GEN4: HH doppelt | behoben | `mtx3bPads`: hat die Einzelspur den Partner-Clip, geht das Pad ganz auf sie – auch wenn DRUMS noch Schläge davon hat (die Umrechnung kennt beide Teile über `mtx3bIn`). GEN4 ersetzt Spur für Spur: die Einzelspur rechnet über `mtx3bZ`/`mtx3bOrig` mit dem Original von DRUMS (Z.src), nicht mit dem schon umgerechneten Clip. Gemessen: Stil-Muster hatC 48 = ohne Aufteilen, 0 Doppel; GEN4 Szene DRUMS 0 / HH ZU 6 = 6 |
+| 2 | [schwer] Zusammenführen nach Remix löscht HH | behoben | `mtx3bMergeVer` (vor dem Zusammenführen der Szenen-Clips): je Song-Abschnitt kommt, was die Einzelspuren dort spielen (Version oder Szenen-Clip), in das, was DRUMS spielt – Version von DRUMS in place (spielt sie anderswo anders: Kopie als neue Version), Szenen-Clip von DRUMS → neue Version an der Stelle (`sx9Set`). Danach keine Versionen mit `from.t` einer entfernten Spur. Gemessen: Treffer je Pad gleich, Summe −119,7 dB; DRUMS-Original + HH-ZU-Version −120,3 dB; gemischt (SNARE Original) gleich; ↶ holt alles zurück |
+| 3 | [schwer] Laden: Versionen der Einzelspur verlieren Saat/Chance/Wirbel | behoben | ownNorm-Haken `mtx3bOwnNorm`: Version einer aktiven Einzelspur = `normClip(…, 'drum')`; mit anderem Klang wie die Szenen-Clips (Synth + Drum-Felder, `mtx3bAug`). Beim Laden kennt normalizeProject die neuen Spuren (`mtx3bOwnNorm.tr`). Gemessen: HH ZU 8 Chance / 6 Wirbel + Saat vor = nach, Summe −119,9 dB (Prüfer −123,3 dB), Rundreise byte-gleich. Container: gleiches Projekt-JSON über normalizeProject (nicht einzeln gemessen) |
+| 4 | [mittel] „→ HH ZU dazu“ in kürzeren Clip / belegte Stelle | behoben | `mtx3bInto`: kürzerer Ziel-Clip wird bis zur Länge des DRUMS-Clips wiederholt (klingt gleich, nicht bei D1-Spur des Pads oder anderer Taktart); längerer: die Schläge wiederholen sich darin wie auf DRUMS. Was nicht passt, bleibt auf DRUMS (Toast „n bleiben auf DRUMS“). Belegte Stelle: ein Schlag, der lautere bleibt, Toast „n doppelte zusammengefasst“ (zwei gleiche Schläge an einer Stelle = der Doppel-Schlag, den MTX3b vermeidet). Gemessen: 3/3 im Clip, Summe −124…−126 dB |
+| 5 | [mittel] Duplizierte Szene + Grundmuster: HH doppelt | behoben | `mtx3bPartner`: Szene aus dem Kontext (`MTX3B.ctx.c`), bei Versionen `from.s`, bei GEN4 der Z-Schlüssel. Gemessen: DRUMS 0 HH, HH ZU 6 |
+| 6 | [mittel] Erst Remix, dann HH auslagern: HH bleiben auf DRUMS | behoben | `mtx3bVerMove` (Auslagern „Ganze Töne“ und Aufteilen): die Song-Versionen von DRUMS geben die Schläge des Pads an eine Version der Einzelspur (gleiche Szene/Nummer/Stil, also findet ein späterer Remix sie), die Zeile der Einzelspur spielt sie dort, wo DRUMS die Version spielt (vorher Stopp). Spielt die Einzelspur dort schon etwas, bleibt die Version auf DRUMS (Toast). Eigene Clips des Songs (keine Versionen) bleiben wie in MTX3 ganz auf DRUMS. Gemessen: HH im Song 16× auf HH ZU, 0× auf DRUMS; ↶ zurück; Aufteilen ebenso. **Sichtbar anders gegenüber MTX3:** Aufteilen nimmt Remix-Versionen jetzt mit – im Funk erwähnen |
+| 7 | [mittel] Schritt-Editor ignoriert D1-Länge | behoben | Zellen hinter dem Spur-Ende gedimmt (`d1o`), Klammer am letzten Schritt (`d1e`) – dieselben Klassen wie DRUMS (d1Decorate); Signatur enthält die D1-Spuren (Neuzeichnen nach ↶). Gemessen: Länge 12 → Zellen 13–16 gedimmt, Klammer an 12 |
+| 8 | [mittel] Tastatur-Akkord = gestapelte Schläge | behoben | commitRecNote-Haken `mtx3bRecDup`: auf einer Einzelspur ein Schlag je Stelle (mit Raster gleiche Stelle, ohne Raster ±0,09 Schläge), der lautere bleibt. Gemessen: 0 gestapelte Schritte |
+| 9 | [leicht] Blatt wählt KICK vor | behoben | Vorwahl = Pad im Drum-Editor, außer dem Ton, der beim Aufteilen auf DRUMS bleibt (KICK); dann Hi-Hat zuerst (Reihenfolge wie MTX3) |
+| 10 | [leicht] 926×370: [Auf eigene Spur] unter dem Rand | behoben | quer mit wenig Höhe: Blatt breiter (min(800 px, 100vw − 16)), Schritte in einer Reihe (16 × 44 px), Erklärzeile aus, [Auf eigene Spur] klebt unten (sticky). Gemessen: Oberkante 297, Unterkante 349 bei 370 px, ohne Wischen. Das Blatt deckt den Drum-Editor weiter ab (wie alle Blätter quer) – offen, nur Hinweis |
+| 11 | [leicht] [Pad-Klang] 90×36 | behoben | Klasse `mtx3rb` (vorhandene ::after-Trefferfläche, −8/+8 px) → 52 px, Leiste bleibt 36 px |
+
+CPU-Frage (Prüfer): kein Befund; die neuen Wege laufen nur bei Remix/Auslagern/Zusammenführen/Laden, nicht im Planer.
+Offen/Hinweis: Teile (S.parts) mit eigenen Clips einer Einzelspur werden beim Zusammenführen wie in MTX3 behandelt (Zeile gekürzt);
+spielt DRUMS an einer Stelle gar nicht, die Einzelspur aber schon, geht diese Stelle beim Zusammenführen weiter verloren (wie MTX3).

@@ -15,3 +15,4 @@
 - 04:50 Pflicht Endstand: topdefs 26/7642/0/0 · dupkeys 0 · MS 2000 1× · live 1× · VERSION 4.68.0 · diff nur Zusätze (767) · Marken 0 · NOTES.md Teil 2 fertig; Fremd-Ergebnisse nach reg/
 - 04:50 Start Teil 3/3 (Plan-Schritte 7–9)
 - 04:59 Teil-3-Code (Kern: Ebene abtasten, Merkmale, Regionen · Haupt: Merkmale ▾ ‹ › Alle, Merken, Abtasten, FFT-Text) + 2 neue Haken (spk1Call, spk1ViewDd) gebaut
+- 05:01 spk12-test3.mjs geschrieben
