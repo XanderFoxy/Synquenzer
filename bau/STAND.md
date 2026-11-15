@@ -135,3 +135,8 @@ Weiter mit: 4.54 = rel-4540/k fertig prüfen + INT53D nachziehen + Versionszeile
 - Overdub-Fehler mtx3b = Test-Wackler (tritt auf 4.69 auch auf). 'Nord'-Treffer = 'einordnen' (kein Markenname).
 
 - 09:53 r4710 fertig: Pflicht grün, spk11b 17/17, spk11 41/41 (Drum-Kit-Fehler weg), trp1 81/81, mtx3b 87/87, spk12 98/72/47/28, Gesang/Chor/Import grün. Abweichend: mtx4 117/118 (P2 Long Task 54/69 ms bei +1), spk4 neu a3-andere-klaenge (va2 3.89→5.17, Referenz lead 29.72). → A/B 4.70 vs 4.71 (vx/r4710/ab, Job b7gegzmwk).
+
+## 2026-11-15 10:05 UTC – 4.71.0 veröffentlicht
+- A/B: mtx4 P2 auch auf 4.70 rot (116/118 ×2) = Zeitmessung unter Last; spk4 a3-andere-klaenge auf 4.71 wiederholt grün (va2 3.89, lead 0.95) = Einzel-Ausreißer. Rest-A/B abgebrochen (NICHT endlos prüfen).
+- Commit 6f5e074b, In-App v27. Nächstes: wqzj6jm57 (VOXR1B, PERF2, MTX3C+SPKFIX, Bildwerk 0.3) auf R-4710 mergen → 4.72.
+
