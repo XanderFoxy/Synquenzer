@@ -9,3 +9,4 @@
 21:40 | load average: 0.68, 1.89, 2.87 | spk4 Basis 3 FEHLER (pflicht, verfeinern+1, ki1 quer) – Index zusätzlich a3-Nachbau (Last 9–10) + reg-spk2 (noten-erkannt): spk2-test direkt Index = Basis (je 27/30, gleiche 3 FEHLER, Noten 12/51 gleich); Klang-Probe bei Last 0,5 Text gleich, Zeiten 2329/1680/2495/2062 → 2066/1563/2259/2057 ms
 21:40 | load average: 0.53, 1.79, 2.83 | NOTES.md fertig, Endfassung md5 d6b3289dcc42e242bc8465d69ee7bb5c, Abgabe
 22:11 | load average: 0.43, 0.93, 1.84 | Nachbesserung Prüfung: Sicherung index.vor-pruef.html + NOTES.vor-pruef.md; Befund 1 medLine W=2h+1
+22:13 | load average: 0.84, 0.94, 1.74 | medLine-Fix: medline-alle L=1..40 0/578665 abweichend (vorher 12990 bei geradem L); zr-node 20 s + 3 min Energie/SDR bitgleich zur Basis; Start zrl1-test RUNDEN3=2
