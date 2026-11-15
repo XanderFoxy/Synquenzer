@@ -150,6 +150,31 @@ for (let k = 0; k < SRC.length; k++) {
   ok(JSON.stringify(rk.info.order) === '["click","plop","hum","hp","breath","room"]', 'Kette: Klicks → Plopps → Brummen → Hochpass → Atmer → Raumton (fest)', rk.info.order);
   globalThis.__atmerX = x; globalThis.__atmerB = BR;
 }
+// ---------- 5) Zischen (Teil 3): 10 eingesetzte „s“ (Rauschen 5–10 kHz, 150 ms, −3 dB unter dem Gesang) an leisen Stellen ----------
+{ const H = 441, nf = Math.floor(n / H), e = new Float64Array(nf); for (let j = 0; j < nf; j++) { let s = 0; for (let i = j * H; i < j * H + H; i++) s += v[i] * v[i]; e[j] = s / H; }
+  const L = Math.round(0.15 * sr), pos = [], used = new Uint8Array(nf), idx = [...e.keys()].filter(j => e[j] > 1e-9 && j > 50 && j < nf - 50).sort((a, b) => e[a] - e[b]);
+  for (const j of idx) { if (pos.length >= 10) break; if (used[j]) continue; pos.push(j * H); for (let q = Math.max(0, j - 150); q < Math.min(nf, j + 150); q++) used[q] = 1; }
+  const sN = new Float32Array(n); seed = 777; let bs = [0, 0, 0, 0];
+  const c1 = (() => { const w = TAU * 5000 / sr, al = Math.sin(w) / (2 * 0.7071), a0 = 1 + al; return [(1 + Math.cos(w)) / 2 / a0, -(1 + Math.cos(w)) / a0, (1 + Math.cos(w)) / 2 / a0, -2 * Math.cos(w) / a0, (1 - al) / a0]; })();
+  for (const p0 of pos) { let z1 = 0, z2 = 0, s2 = 0; const tmp = new Float32Array(L); for (let i = 0; i < L; i++) { const u = rnd() * 2 - 1, o = c1[0] * u + z1; z1 = c1[1] * u - c1[3] * o + z2; z2 = c1[2] * u - c1[4] * o; tmp[i] = o; s2 += o * o; }
+    const g = vr * Math.pow(10, -3 / 20) / Math.sqrt(s2 / L), R = Math.round(0.01 * sr); for (let i = 0; i < L; i++) { const r = Math.min(1, i / R, (L - 1 - i) / R); sN[p0 + i] += g * tmp[i] * r; } }
+  const x = new Float32Array(n); for (let i = 0; i < n; i++) x[i] = v[i] + sN[i];
+  const B = K.done(K.check(x, sr)), y = Float32Array.from(x), info = K.ess(y, sr, 6);
+  const bandE = (z, a, b, f1, f2) => band(Float32Array.from(z.subarray(Math.max(0, a - 1024), Math.min(n, b + 3072))), sr, f1, f2);
+  const red = pos.map(p0 => +(db(bandE(y, p0, p0 + L, 5000, 16000)) - db(bandE(x, p0, p0 + L, 5000, 16000))).toFixed(1));
+  // Vokale: stimmhafte 10-ms-Rahmen (Grundton-Tabelle) ≥ 250 ms weg von den „s“
+  const far = i => pos.every(p0 => i < p0 - 0.25 * sr || i > p0 + L + 0.25 * sr); let e0 = 0, e1 = 0, nv = 0, mxd = 0;
+  for (let j = 0; j < nf; j++) { const i = j * H; if (!far(i) || !(f0at(i / sr) > 0) || e[j] < 1e-6) continue; let a = 0, b2 = 0; for (let q = i; q < i + H; q++) { a += x[q] * x[q]; b2 += y[q] * y[q]; } e0 += a; e1 += b2; nv++; mxd = Math.max(mxd, Math.abs(db(b2) - db(a))); }
+  const vok = +(db(e1) - db(e0)).toFixed(3); let same = 0, tot = 0; for (let j = 0; j < nf; j++) { const i = j * H; if (!far(i) || !(f0at(i / sr) > 0)) continue; tot++; let eq = true; for (let q = i; q < i + H; q++) if (y[q] !== x[q]) { eq = false; break; } if (eq) same++; }
+  R.zischen = {s: pos.length, reduktionDb: red, vokaleDb: vok, vokaleMaxRahmenDb: +mxd.toFixed(2), vokalRahmen: nv, bitgleich: same + '/' + tot, info, pruefen: {sibPct: B.sibPct, line: B.line}};
+  ok(red.filter(d => d <= -6).length >= 9, 'Zischen: S-Energie > 5 kHz an ≥ 9 von 10 „s“ um ≥ 6 dB gesenkt (Stärke 6 dB)', {reduktionDb: red});
+  ok(Math.abs(vok) <= 0.5, 'Zischen: Vokale ändern sich ≤ 0,5 dB', {vokaleDb: vok, rahmen: nv, bitgleich: same + '/' + tot});
+  ok(info.how === 'spektral' && info.latMs > 20 && info.latMs < 26, 'Zischen: spektral, Blocklänge ≈ 23 ms (offline vorausgerechnet, beim Mithören aus)', info);
+  const sc = K.done(K.check(v, sr)), A1 = K.assist(sc, 'leicht'), A2 = K.assist(sc, 'mittel'), A3 = K.assist(sc, 'stark'), Bm = K.assist(B, 'mittel');
+  R.assist = {sauber: {zeile: sc.line, mittel: Object.keys(A2.steps)}, mitS: {zeile: B.line, mittel: Object.keys(Bm.steps), ess: Bm.steps.ess}, vorschlag: K.suggest(B), worst: K.worst(B, 10)};
+  ok(Bm.steps.ess && Bm.steps.ess.amt === 6 && K.assist(B, 'leicht').steps.ess.amt === 3 && K.assist(B, 'stark').steps.ess.amt === 9, 'Assistent: Zischen gefunden → Entzischer mit 3 / 6 / 9 dB (× 0,5 / 1 / 1,5)', R.assist.mitS);
+  const W = K.worst(B, 10); ok(W.t1 - W.t0 === 10 && pos.filter(p0 => p0 / sr >= W.t0 && p0 / sr < W.t1).length >= 2, 'Assistent: 10 s Vorhören an der Stelle mit den meisten Funden', W);
+  globalThis.__essX = x; }
 // ---------- 4) 3-min-Take: Rechenzeit Kern (Desktop × 3 ≤ 20 s) ----------
 { const L = Math.round(180 * sr), x = new Float32Array(L); for (let i = 0; i < L; i++) x[i] = v[i % n] + P[i % n] + 0.003 * Math.sin(TAU * 50 * i / sr);
   const t0 = Date.now(); K.done(K.check(x, sr)); const t1 = Date.now(); K.done(K.run(x, sr, {steps: {click: {}, plop: {}, hum: 'auto', hp: {}, breath: {}, room: {}}})); const t2 = Date.now();

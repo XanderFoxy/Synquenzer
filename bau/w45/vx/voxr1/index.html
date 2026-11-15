@@ -61101,6 +61101,7 @@ function clSheet(p, x) {
   r.addEventListener('input', () => { v.textContent = r.value + ' %'; });
   r.addEventListener('change', () => { clSet(id, +r.value); });
   onTap(box, b => { clAB(b.dataset.cl); }, 'button[data-cl]');
+  if (typeof vr1Sheet === 'function') vr1Sheet(p, box, id, ok);   /* VOXR1 */
   p._clId = id;
   if (p.isConnected) popFit(p);                         // das Blatt bleibt ganz im Bild (auch quer)
 }
@@ -61113,6 +61114,7 @@ function clPaint() {
   if (st.warn && !w) { w = el('div', 'small warn clwarn'); box.appendChild(w); }
   if (w) { if (st.warn) w.textContent = st.warn; else w.remove(); }
   for (const b of box.querySelectorAll('button[data-cl]')) { b.setAttribute('aria-pressed', String((b.dataset.cl === 'roh') === (CL.ab === 'roh'))); b.disabled = !st.a || !tkAudioOk(); }
+  if (typeof vr1ClPaint === 'function') vr1ClPaint(p, box);   /* VOXR1 */
   popFit(p);
 }
 // Blatt zu → wieder „Sauber“ (A/B ist nur zum Vergleichen)
@@ -61212,6 +61214,8 @@ const CL_API = {
    Durchgänge), 10 Atmer (stimmlos per Periodizität des LPC-Rests, auf −40 dBFS RMS, Marken im Marken-Editor), 11 Raumton in Lücken
    (Pegel und Klangfarbe von daneben, sonst gelernt; Zufallsphase, 10-ms-Blenden). Kette: Klicks → Plopps → Brummen → Hochpass →
    Atmer → Raumton. Prüfen zählt Klicks und Atmer mit denselben Suchen.
+   Teil 3/3: 12 Zischen (spektraler Entzischer, auch für den vorhandenen Entzischer der Gesangs-Effekte), Assistent leicht/mittel/stark,
+   10 s Vorhören, A/B Roh │ Sauber │ nur Entferntes, Zeile „Gesang reinigen“ im Säubern-Blatt, Anwenden als neue Fassung mit ↶.
    ===================================================================================================================== */
 function vr1Make() {
 'use strict';
@@ -61608,9 +61612,9 @@ function* check(x, sr, o) {
   const clickList = yield* part(clickScan(x, sr, o.click), 0.62, 0.2), clicks = clickList.length;
   const breaths = yield* part(breathFind(x, sr, Fe, o.breath), 0.82, 0.15);
   // Zischen: Anteil > 5 kHz an der Energie der aktiven Rahmen
-  let eh = 0, et = 0, sib = 0; for (let j = 0; j < nf; j++) if (R.tot[j] > act - 20) { const t = Math.pow(10, R.tot[j] / 10), h = Math.pow(10, R.hf[j] / 10); et += t; eh += h; if (h > 0.4 * t) sib++; }
+  let eh = 0, et = 0, sib = 0; const sibSec = new Array(Math.ceil(x.length / sr)).fill(0); for (let j = 0; j < nf; j++) if (R.tot[j] > act - 20) { const t = Math.pow(10, R.tot[j] / 10), h = Math.pow(10, R.hf[j] / 10); et += t; eh += h; if (h > 0.4 * t) { sib++; sibSec[Math.min(sibSec.length - 1, Math.floor(j / fps))]++; } }
   const B = {sr, sec: +(x.length / sr).toFixed(2), clip: Fe.clip, peakDb: +(20 * Math.log10(Fe.pk + EPS)).toFixed(1), floorDb: +floor.toFixed(1), snrDb: +(act - floor).toFixed(1),
-    hum: Hm, plops, clicks, clickList: clickList.map(e => ({t0: e.t0, t1: e.t1, sc: e.sc})), breaths: breaths.length, breathList: breaths.map(e => ({t0: e.t0, t1: e.t1, db: e.db})), sibPct: +(100 * eh / (et + EPS)).toFixed(1), sibFrames: sib, ms: Date.now() - t0};
+    hum: Hm, plops, clicks, clickList: clickList.map(e => ({t0: e.t0, t1: e.t1, sc: e.sc})), breaths: breaths.length, breathList: breaths.map(e => ({t0: e.t0, t1: e.t1, db: e.db})), sibPct: +(100 * eh / (et + EPS)).toFixed(1), sibFrames: sib, sibSec, actDb: +act.toFixed(1), ms: Date.now() - t0};
   const L = [];
   if (B.clip) L.push(B.clip + ' Übersteuerung' + (B.clip > 1 ? 'en' : ''));
   if (B.clicks) L.push(B.clicks + ' Klick' + (B.clicks > 1 ? 's' : ''));
@@ -61624,8 +61628,8 @@ function* check(x, sr, o) {
   return B;
 }
 
-/* ---------- Kette (feste Reihenfolge): Klicks → Plopps → Brummen → Hochpass → Atmer → Raumton in Lücken ---------- */
-const ORDER = ['click', 'plop', 'hum', 'hp', 'breath', 'room'];
+/* ---------- Kette (feste Reihenfolge): Klicks → Plopps → Brummen → Hochpass → Atmer → Raumton in Lücken → Zischen (Teil 3) ---------- */
+const ORDER = ['click', 'plop', 'hum', 'hp', 'breath', 'room', 'ess'];
 function* run(x, sr, o) {
   o = o || {}; const st = o.steps || {}, t0 = Date.now(), y = Float32Array.from(x), info = {order: []}, on = ORDER.filter(k => st[k]), sp = 1 / Math.max(1, on.length);
   let at = 0, Fe = null;
@@ -61645,21 +61649,105 @@ function* run(x, sr, o) {
       info.hum = {f0: h.f0, n: h.n, depth: h.depth != null ? h.depth : -30, q: h.q || 30, found: h.found || null};
       if (h.n) info.hum.k = yield* part(hum(y, y, sr, h), at + sp * 0.3, sp * 0.7);
     } else if (k === 'hp') { yield* part(hp(y, y, sr, st.hp.fc), at, sp); info.hp = {fc: st.hp.fc || 80}; }
+    else if (k === 'ess') { const E = st.ess === true ? {} : st.ess; info.ess = yield* part(vr1EssCore(y, sr, E.amt != null ? E.amt : 6, Object.assign({}, E, {gen: true})), at, sp); }
     info.order.push(k); at += sp;
   }
   info.ms = Date.now() - t0;
   return {y, info};
 }
+/* ---------- Teil 3 · Assistent: aus dem Befund (Prüfen) die Schritte mit Startwerten × 0,5 / 1 / 1,5 (leicht / mittel / stark); es laufen
+   nur die Schritte, bei denen Prüfen etwas fand (Hochpass und Raumton immer: sie ändern nur, was da ist) ---------- */
+const LV = {leicht: 0.5, mittel: 1, stark: 1.5};
+function assist(B, lv) {
+  const f = LV[lv] || 1, st = {}, why = [];
+  if (B.clicks) { st.click = {sens: Math.round(4 * f + (f > 1 ? 1 : 0))}; why.push('click'); }
+  if (B.plops && B.plops.length) { st.plop = {str: Math.round(50 * f)}; why.push('plop'); }
+  if (B.hum && B.hum.on) { st.hum = {f0: B.hum.f0, n: Math.max(B.hum.n || 0, 7), depth: -30 * f}; why.push('hum'); }
+  st.hp = {fc: 80};
+  if (B.breaths) { st.breath = {target: -40 - 12 * (f - 1)}; why.push('breath'); }
+  st.room = {};
+  if (B.sibPct >= 8 || B.sibFrames > 20) { st.ess = {amt: 6 * f}; why.push('ess'); }
+  return {lv: LV[lv] ? lv : 'mittel', f, steps: st, found: why};
+}
+// Vorschlag: so stark, wie der Befund es braucht
+function suggest(B) { const s = (B.clicks > 20 ? 2 : B.clicks ? 1 : 0) + (B.plops && B.plops.length > 3 ? 2 : B.plops && B.plops.length ? 1 : 0) + (B.hum && B.hum.on ? 1 : 0) + (B.breaths > 8 ? 1 : 0) + (B.sibPct >= 20 ? 2 : B.sibPct >= 8 ? 1 : 0); return s >= 5 ? 'stark' : s >= 2 ? 'mittel' : 'leicht'; }
+// schlimmste Stelle: das Fenster (len s) mit den meisten Funden (Klick 1, Plopp 3, Atmer 1, Zisch-Rahmen 0,05)
+function worst(B, len) {
+  len = len || 10; const T = B.sec || 0; if (T <= len) return {t0: 0, t1: T};
+  const sc = new Float64Array(Math.ceil(T) + 1), add = (t, v) => { const k = Math.max(0, Math.min(sc.length - 1, Math.floor(t))); sc[k] += v; };
+  for (const e of B.clickList || []) add(e.t0, 1); for (const e of B.plops || []) add(e.t0 != null ? e.t0 : (e.s0 || 0) / B.sr, 3); for (const e of B.breathList || []) add(e.t0, 1);
+  (B.sibSec || []).forEach((c, k) => add(k, 0.05 * c));
+  let best = 0, bt = 0; for (let a = 0; a + len <= Math.ceil(T); a++) { let s = 0; for (let k = a; k < a + len; k++) s += sc[k]; if (s > best) { best = s; bt = a; } }
+  bt = Math.min(bt, T - len); return {t0: bt, t1: bt + len, score: +best.toFixed(2)};
+}
 // fertig rechnen ohne Scheiben (Worker, Node)
 function done(g) { let r; while (!(r = g.next()).done); return r.value; }
-return {check, run, feats, humFind, humCoefs, hum, hp, plopFind, plop, clickScan, click, clicks2, voicing, breathFind, breath, roomLearn, room, bqC, done, ORDER, VERSION: 'vr1-kern-2'};
+return {check, run, assist, suggest, worst, ess: vr1EssCore, feats, humFind, humCoefs, hum, hp, plopFind, plop, clickScan, click, clicks2, voicing, breathFind, breath, roomLearn, room, bqC, done, ORDER, VERSION: 'vr1-kern-3'};
+}
+/* ---------- Teil 3 · 12 Zischen: spektraler Entzischer (eigenständig: dient der Kette UND dem vorhandenen Entzischer der Gesangs-Effekte,
+   auch in deren Worker). STFT 1024/256 (≈ 23 ms bei 44,1 kHz) mit √Hann; je Rahmen: Energie über der Grenze (5 kHz) gegen das Gesangsband
+   300 Hz–4 kHz; Zischlaut = darüber + Schwelle (−6 dB) und ≥ 20 ms (t/k bleiben knackig); je Drittel-Oktav-Band über der Grenze wird nur
+   gesenkt, was gegen seinen Anteil der Schwelle vorsteht (höchstens Stärke dB, Angriff 5 ms, Rückkehr 40 ms). Gerechnet wird nur die
+   Differenz (G − 1)·X: wo nichts gesenkt wird, bleibt das Signal bitgleich (Vokale). Offline vorausgerechnet → bei der Wiedergabe ohne
+   Verzögerung; live (Mithören) wären es ≈ 23 ms – dort läuft er nicht. ---------- */
+function vr1EssCore(y, sr, amt, o) {
+  'use strict';
+  o = o || {};
+  function* g() {
+    const n = y.length, N = sr > 50000 ? 2048 : 1024, H = N >> 2, half = N >> 1, fc = o.fc || 5000, thr = o.thr != null ? o.thr : -6, A = Math.max(0, Math.min(24, +amt || 0));
+    const res = {maxDb: 0, sibMs: 0, how: 'spektral', N, latMs: +(N / sr * 1000).toFixed(1), bands: 0};
+    if (n < N || A <= 0.05) return res;
+    const rev = new Uint32Array(N); let bits = 0; while ((1 << bits) < N) bits++;
+    for (let i = 0; i < N; i++) { let r = 0; for (let b = 0; b < bits; b++) r |= ((i >> b) & 1) << (bits - 1 - b); rev[i] = r; }
+    const cs = new Float64Array(half), sn = new Float64Array(half); for (let i = 0; i < half; i++) { cs[i] = Math.cos(2 * Math.PI * i / N); sn[i] = Math.sin(2 * Math.PI * i / N); }
+    const re = new Float64Array(N), im = new Float64Array(N);
+    const fft = inv => { for (let i = 0; i < N; i++) { const j = rev[i]; if (j > i) { let t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; } }
+      for (let s = 2; s <= N; s <<= 1) { const h = s >> 1, st = N / s; for (let i = 0; i < N; i += s) for (let j = 0; j < h; j++) { const c = cs[j * st], si = inv ? sn[j * st] : -sn[j * st], l = i + j + h, tr = re[l] * c - im[l] * si, ti = re[l] * si + im[l] * c; re[l] = re[i + j] - tr; im[l] = im[i + j] - ti; re[i + j] += tr; im[i + j] += ti; } } };
+    const w = new Float64Array(N); for (let i = 0; i < N; i++) w[i] = Math.sqrt(0.5 - 0.5 * Math.cos(2 * Math.PI * i / N));
+    const bin = f => Math.round(f * N / sr), k0 = bin(fc), kT = Math.min(half - 1, bin(Math.min(16000, sr * 0.47))), v0 = bin(300), v1 = bin(4000);
+    if (kT <= k0 + 2) return res;
+    const ed = [k0]; while (ed[ed.length - 1] <= kT) ed.push(Math.min(kT + 1, Math.max(ed[ed.length - 1] + 2, Math.round(ed[ed.length - 1] * Math.pow(2, 1 / 3))))); if (ed[ed.length - 1] === ed[ed.length - 2]) ed.pop();
+    const nb = ed.length - 1, J = Math.ceil(n / H) + 4, nrm = 4 / (N * N), lg = p => 10 * Math.log10(p * nrm + 1e-20);
+    const Lb = new Float32Array(J * nb), red = new Float32Array(J * nb), sib = new Uint8Array(J), Lv = new Float32Array(J);
+    const frame = j => { const s = (j - 3) * H; for (let i = 0; i < N; i++) { const q = s + i; re[i] = q >= 0 && q < n ? y[q] * w[i] : 0; im[i] = 0; } fft(false); };
+    res.bands = nb;
+    for (let j = 0; j < J; j++) {
+      frame(j); let pv = 0, ps = 0; for (let k = v0; k <= v1; k++) pv += re[k] * re[k] + im[k] * im[k];
+      for (let b = 0; b < nb; b++) { let p = 0; for (let k = ed[b]; k < ed[b + 1]; k++) p += re[k] * re[k] + im[k] * im[k]; Lb[j * nb + b] = lg(p); ps += p; }
+      Lv[j] = lg(pv); const Ls = lg(ps); sib[j] = Ls > Lv[j] + thr && Ls > -70 ? 1 : 0;
+      if ((j & 511) === 511) yield 0.5 * j / J;
+    }
+    // nur Zischlaute ≥ 20 ms (kurze Anschläge t/k/p bleiben)
+    const minR = Math.max(2, Math.ceil(0.02 * sr / H));
+    for (let j = 0; j < J;) { if (!sib[j]) { j++; continue; } let e = j; while (e < J && sib[e]) e++; if (e - j < minR) for (let q = j; q < e; q++) sib[q] = 0; j = e; }
+    const share = 10 * Math.log10(nb), rel = A * H / (0.04 * sr), att = A * H / (0.005 * sr);
+    for (let j = 0; j < J; j++) if (sib[j]) for (let b = 0; b < nb; b++) { const ov = Lb[j * nb + b] + share - (Lv[j] + thr); red[j * nb + b] = ov > 0 ? Math.min(A, ov * 2) : 0; }
+    for (let b = 0; b < nb; b++) { for (let j = 1; j < J; j++) red[j * nb + b] = Math.max(red[j * nb + b], red[(j - 1) * nb + b] - rel); for (let j = J - 2; j >= 0; j--) red[j * nb + b] = Math.max(red[j * nb + b], red[(j + 1) * nb + b] - att); }
+    const d = new Float32Array(n), cen = []; for (let b = 0; b < nb; b++) cen.push((ed[b] + ed[b + 1] - 1) / 2);
+    const gk = new Float64Array(half + 1); let act = 0, mx = 0;
+    for (let j = 0; j < J; j++) {
+      let any = 0; for (let b = 0; b < nb; b++) { const r = red[j * nb + b]; if (r > 0.01) any = 1; if (r > mx) mx = r; }
+      if (!any) continue; if (sib[j]) act++;
+      frame(j);
+      for (let k = 0; k <= half; k++) gk[k] = 0;
+      for (let k = k0; k <= kT; k++) { let b = 0; while (b < nb - 1 && k > cen[b + 1]) b++; let r; if (k <= cen[0]) r = red[j * nb]; else if (b >= nb - 1) r = red[j * nb + nb - 1]; else { const u = (k - cen[b]) / (cen[b + 1] - cen[b]); r = red[j * nb + b] * (1 - u) + red[j * nb + b + 1] * u; } gk[k] = Math.pow(10, -r / 20) - 1; }
+      for (let k = kT + 1; k <= half; k++) gk[k] = gk[kT];
+      for (let k = 0; k <= half; k++) { re[k] *= gk[k]; im[k] *= gk[k]; } for (let k = 1; k < half; k++) { re[N - k] = re[k]; im[N - k] = -im[k]; }
+      fft(true); const s = (j - 3) * H; for (let i = 0; i < N; i++) { const q = s + i; if (q >= 0 && q < n) d[q] += re[i] / N * w[i] * 0.5; }
+      if ((j & 511) === 511) yield 0.5 + 0.5 * j / J;
+    }
+    for (let i = 0; i < n; i++) if (d[i] !== 0) y[i] += d[i];
+    res.maxDb = +(-mx).toFixed(2); res.sibMs = Math.round(act * H / sr * 1000);
+    return res;
+  }
+  const it = g(); if (o.gen) return it; let r; while (!(r = it.next()).done); return r.value;
 }
 const VXR1 = {w: null, wid: 0, q: new Map(), core: null, runs: 0, last: null, prog: null, aborts: 0, slices: 0, marks: {}};
-const VXR1_ORDER = ['click', 'plop', 'hum', 'hp', 'breath', 'room'];   // Klicks vor allem (stören sonst die Detektoren), Plopps vor jedem Hochpass (sie sehen den Tiefbass), Brummen vor dem Breitband-Rauschen, Atmer nach dem Hochpass, Raumton zuletzt (füllt auch „Atmer weg“)
+const VXR1_ORDER = ['click', 'plop', 'hum', 'hp', 'breath', 'room', 'ess'];   // Klicks vor allem (stören sonst die Detektoren), Plopps vor jedem Hochpass (sie sehen den Tiefbass), Brummen vor dem Breitband-Rauschen, Atmer nach dem Hochpass, Raumton zuletzt (füllt auch „Atmer weg“)
 function vr1Worker() {
   if (VXR1.w) return VXR1.w; if (VXR1.w === false) return false;
   try {
-    const src = vr1Make.toString() + ';const K = vr1Make();const f = a => { if (a instanceof Float32Array) return a; const y = new Float32Array(a.length); for (let i = 0; i < a.length; i++) y[i] = a[i] / 32767; return y; };' +
+    const src = vr1EssCore.toString() + ';' + vr1Make.toString() + ';const K = vr1Make();const f = a => { if (a instanceof Float32Array) return a; const y = new Float32Array(a.length); for (let i = 0; i < a.length; i++) y[i] = a[i] / 32767; return y; };' +
       'onmessage = e => { const m = e.data; try { const x = f(m.x), g = K[m.op](x, m.sr, m.o || {}); let r, t = 0; while (!(r = g.next()).done) { const n = Date.now(); if (n - t > 60) { t = n; postMessage({id: m.id, prog: r.value}); } } const v = r.value, tr = v && v.y ? [v.y.buffer] : []; postMessage({id: m.id, res: v}, tr); } catch (err) { postMessage({id: m.id, err: String(err && err.message || err)}); } };';
     const u = URL.createObjectURL(new Blob([src], {type: 'application/javascript'})), w = new Worker(u);
     setTimeout(() => { try { URL.revokeObjectURL(u); } catch (e) {} }, 30000);
@@ -61704,7 +61792,7 @@ function vr1Marks(id, op, r) {
 }
 function vr1BreathAct(id, k, act) { const L = VXR1.marks[id]; if (!L || !L[k] || !/^(lassen|leiser|weg)$/.test(act)) return false; L[k].act = act; try { if (typeof WP !== 'undefined' && WP.ed && WP.ed.id === id) wpPaint(); } catch (e) {} return true; }
 function vr1PaintBreath(E, g, X, Wp, Hp) {
-  const L = E && VXR1.marks[E.id]; E.vr1b = null; if (!L || !L.length) return;
+  const L = E && VXR1.marks[E.id]; E.vr1b = null; vr1BreathTap(E); if (!L || !L.length) return;
   g.save(); g.font = WP.font || '600 10px sans-serif'; const hit = [];
   L.forEach((b, k) => {
     const xa = X(b.t0), xb = X(b.t1); if (xb < -2 || xa > Wp + 2) return; const w = Math.max(2, xb - xa);
@@ -61724,15 +61812,185 @@ function vr1HumLive(ctx, h) {
   if (!nodes.length) { const g = ctx.createGain(); nodes.push(g); }
   return {input: nodes[0], output: nodes[nodes.length - 1], nodes, n: K.length};
 }
+/* =====================================================================================================================
+   Teil 3 · Bedienung im vorhandenen Säubern-Blatt (Takes-Blatt): Zeile „Gesang reinigen“ [leicht │ mittel │ stark], darunter
+   [▶ 10 s │ Anwenden │ Mehr ▾] (Einzelschritte an/aus, feste Reihenfolge). Antippen einer Stufe prüft den Take (einmal je Take) und
+   zeigt, was die Stufe macht. ▶ 10 s rechnet die schlimmste Stelle und spielt sie; das vorhandene A/B wird dreiteilig
+   Roh │ Sauber │ nur Entferntes (wirkt auf das Vorhören und auf die angewandte Fassung). „Anwenden“ legt die neue Fassung an
+   (take.vr1 = Stufe + Schritte + Atmer-Wahl; der Roh-Take bleibt), ein ↶ nimmt sie zurück. Gerechnet wird im Worker, abbrechbar,
+   Fortschritt in der Zustandszeile. Abspielen: tkExt().proc liefert die Fassung (vor SÄUBERN in der Liste, Quelle = SÄUBERN bzw. roh).
+   ===================================================================================================================== */
+const VR1_NM = {click: 'Klicks', plop: 'Plopps', hum: 'Brummen', hp: 'Hochpass', breath: 'Atmer', room: 'Raumton', ess: 'Zischen'};
+Object.assign(VXR1, {ver: new Map(), vjob: new Map(), bids: new WeakMap(), bid: 0, ab: null, pv: null, sel: {}, more: false, renders: 0});
+tkExt().take.push((raw, o) => {
+  const v = raw && raw.vr1; if (!v || typeof v !== 'object' || !/^(leicht|mittel|stark)$/.test(v.lv) || !v.steps || typeof v.steps !== 'object') return;
+  const st = {}; for (const k of VXR1_ORDER) if (v.steps[k] && typeof v.steps[k] === 'object') st[k] = JSON.parse(JSON.stringify(v.steps[k]));
+  o.vr1 = {lv: v.lv, steps: st, br: Array.isArray(v.br) ? v.br.filter(b => Array.isArray(b) && isFinite(b[0]) && isFinite(b[1]) && /^(lassen|leiser|weg)$/.test(b[2])).slice(0, 2000).map(b => [+b[0], +b[1], b[2]]) : []};
+});
+function vr1Bid(b) { let k = VXR1.bids.get(b); if (!k) { k = ++VXR1.bid; VXR1.bids.set(b, k); } return k; }
+function vr1Base(id, a) { const P = tkExt().proc, k = P.indexOf(vr1Proc); for (let j = k + 1; j < P.length; j++) { try { const b = P[j](id, a); if (b) return b; } catch (e) { logErr(e); } } return tkBuffer(id); }
+const vr1Sig = v => JSON.stringify([v.lv, v.steps, v.br]);
+function vr1Proc(id, a) {
+  const m = S.takes && S.takes[id]; if (!m || !m.vr1) return null;
+  if (CL.ab === 'roh') return null;                                   // A/B „Roh“
+  if (VXR1.ab === 'weg' && !(UI.pop && UI.pop.name === 'takes')) VXR1.ab = null;   // Blatt zu → wieder „Sauber“
+  const src = vr1Base(id, a); if (!src) return null;
+  const key = vr1Sig(m.vr1) + '@' + vr1Bid(src), c = VXR1.ver.get(id);
+  if (c && c.key === key) return VXR1.ab === 'weg' ? c.weg : c.buf;
+  if (!VXR1.vjob.has(id)) vr1Render(id, key, src, m.vr1);
+  return c && c.id === id && VXR1.vjob.has(id) ? (VXR1.ab === 'weg' ? c.weg : c.buf) : null;   // bis die neue da ist: die vorige
+}
+{ const P = tkExt().proc; P.unshift(vr1Proc); }   // vor SÄUBERN (VS4); Zeitkarte/G2/G4 setzen sich später davor
+function vr1StepsOf(v, sr) { const st = JSON.parse(JSON.stringify(v.steps || {})); if (st.breath && v.br && v.br.length) st.breath.list = v.br.map(b => ({t0: b[0], t1: b[1], s0: Math.round(b[0] * sr), s1: Math.round(b[1] * sr), act: b[2]})); return st; }
+function vr1Render(id, key, src, v) {
+  const sr = src.sampleRate, x = src.getChannelData(0), j = vr1Job('run', x, sr, {steps: vr1StepsOf(v, sr)}, q => { VXR1.vprog = q; vr1Status(); });
+  VXR1.vjob.set(id, {key, j}); VXR1.renders++; vr1Status();
+  j.p.then(r => {
+    const y = r.y, n = y.length, mk = d => { const b = new AudioBuffer({length: n, numberOfChannels: 1, sampleRate: sr}); b.getChannelData(0).set(d); return b; };
+    const wg = new Float32Array(n); for (let i = 0; i < n; i++) wg[i] = x[i] - y[i];
+    VXR1.ver.set(id, {id, key, buf: mk(y), weg: mk(wg), info: r.info}); vr1Marks(id, 'run', r);
+  }, e => { if (!/abgebrochen/.test(String(e && e.message))) { logErr(e); toast('Gesang reinigen ging nicht – es spielt die vorige Fassung'); } VXR1.ver.set(id, {id, key: '-', buf: null, weg: null}); })
+    .finally(() => { const q = VXR1.vjob.get(id); if (q && q.key === key) VXR1.vjob.delete(id); VXR1.vprog = null; try { clResync(); } catch (e) {} UI.dirty.grid = UI.dirty.song = true; if (typeof wpClChanged === 'function') wpClChanged(); vr1Status(); });
+}
+// Zustand je Take im Blatt: Befund (Prüfen), gewählte Stufe, Schritte an/aus
+function vr1Sel(id) { return VXR1.sel[id] || (VXR1.sel[id] = {B: null, lv: null, on: {}, busy: null, prog: null}); }
+async function vr1Probe(id) {
+  const s = vr1Sel(id); if (s.B || s.busy) return s.B; const m = S.takes && S.takes[id]; if (!m) return null;
+  s.busy = 'prüft'; vr1Status();
+  try { const b = vr1Base(id, null); const x = b ? b.getChannelData(0) : await tkPcm(id); if (!x) return null; const sr = b ? b.sampleRate : m.sr;
+    const j = vr1Job('check', x, sr, null, q => { s.prog = q; vr1Status(); }); VXR1.cur = j; const B = await j.p; vr1Marks(id, 'check', B); s.B = B; s.sr = sr; return B; }
+  catch (e) { if (!/abgebrochen/.test(String(e && e.message))) logErr(e); return null; } finally { s.busy = null; s.prog = null; VXR1.cur = null; vr1Status(); }
+}
+function vr1Plan(id, lv) {
+  const s = vr1Sel(id); if (!s.B) return null; const K = VXR1.core || (VXR1.core = vr1Make()), A = K.assist(s.B, lv), st = {};
+  for (const k of VXR1_ORDER) { const on = s.on[k] != null ? s.on[k] : !!A.steps[k] && (A.found.includes(k) || k === 'hp' || k === 'room'); if (on) st[k] = A.steps[k] || K.assist(Object.assign({}, s.B, {clicks: 1, plops: [{}], hum: Object.assign({}, s.B.hum, {on: true}), breaths: 1, sibPct: 99}), lv).steps[k]; }
+  return {lv: A.lv, steps: st, found: A.found};
+}
+async function vr1Pick(id, lv) {
+  const s = vr1Sel(id); s.lv = lv; vr1Status(); haptic('tick');
+  if (!s.B) await vr1Probe(id);
+  vr1Status();
+}
+function vr1Apply(id) {
+  const s = vr1Sel(id), m = S.takes && S.takes[id]; if (!m || !s.B || !s.lv) return false;
+  const P = vr1Plan(id, s.lv); if (!P) return false;
+  const before = JSON.stringify(S.takes);
+  m.vr1 = {lv: P.lv, steps: P.steps, br: (VXR1.marks[id] || []).map(b => [b.t0, b.t1, b.act])};
+  undoPush({kind: 'takes', before, label: 'Gesang reinigen ' + P.lv});
+  clSync(); markDirty(); UI.dirty.all = true; haptic('tick'); vr1Status();
+  return true;
+}
+// 10 s Vorhören an der schlimmsten Stelle: Roh, Sauber, nur Entferntes laufen zeitgleich, A/B blendet um (kein Neustart)
+async function vr1Preview(id) {
+  if (VXR1.pv) { vr1PvStop(); return null; }
+  const s = vr1Sel(id); if (!s.lv) s.lv = 'mittel'; const B = s.B || await vr1Probe(id); if (!B) return null;
+  const K = VXR1.core || (VXR1.core = vr1Make()), W = K.worst(B, 10), b = vr1Base(id, null); if (!b) return null;
+  const sr = b.sampleRate, x = b.getChannelData(0), a0 = Math.max(0, Math.round(W.t0 * sr)), a1 = Math.min(x.length, Math.round(W.t1 * sr)), x0 = x.slice(a0, a1);
+  const P = vr1Plan(id, s.lv), st = JSON.parse(JSON.stringify(P.steps));
+  if (st.breath) st.breath.list = (VXR1.marks[id] || []).filter(q => q.t0 >= W.t0 && q.t1 <= W.t1).map(q => ({t0: q.t0 - W.t0, t1: q.t1 - W.t0, s0: Math.round((q.t0 - W.t0) * sr), s1: Math.round((q.t1 - W.t0) * sr), act: q.act}));
+  s.busy = 'rechnet die Stelle'; vr1Status();
+  let r; try { const j = vr1Job('run', x0, sr, {steps: st}, q => { s.prog = q; vr1Status(); }); VXR1.cur = j; r = await j.p; } catch (e) { if (!/abgebrochen/.test(String(e && e.message))) logErr(e); return null; } finally { s.busy = null; s.prog = null; VXR1.cur = null; vr1Status(); }
+  const ctx = ensureAudio(); if (!ctx) return null; const n = x0.length, wg = new Float32Array(n); for (let i = 0; i < n; i++) wg[i] = x0[i] - r.y[i];
+  const t = ctx.currentTime + 0.05, L = {}, mode = vr1AbNow();
+  for (const [k, d] of [['roh', x0], ['sauber', r.y], ['weg', wg]]) { const bf = ctx.createBuffer(1, n, sr); bf.getChannelData(0).set(d); const sN = ctx.createBufferSource(), g = ctx.createGain(); sN.buffer = bf; g.gain.value = k === mode ? 1 : 0; sN.connect(g); g.connect(ctx.destination); sN.start(t); L[k] = {s: sN, g}; }
+  VXR1.pv = {id, L, t0: t, sec: n / sr, at: W, info: r.info, iv: setInterval(() => { if (!(UI.pop && UI.pop.name === 'takes') || ctx.currentTime > t + n / sr) vr1PvStop(); }, 200)};
+  vr1Status(); return {t0: W.t0, t1: W.t1, steps: Object.keys(st), info: r.info};
+}
+function vr1PvStop() { const v = VXR1.pv; if (!v) return; VXR1.pv = null; clearInterval(v.iv); for (const k in v.L) { try { v.L[k].s.stop(); v.L[k].s.disconnect(); v.L[k].g.disconnect(); } catch (e) {} } vr1Status(); }
+const vr1AbNow = () => VXR1.ab === 'weg' ? 'weg' : CL.ab === 'roh' ? 'roh' : 'sauber';
+function vr1Ab(v) {
+  VXR1.ab = v === 'weg' ? 'weg' : null; if (v === 'weg' && CL.ab === 'roh') CL.ab = 'sauber';
+  const pv = VXR1.pv; if (pv) { const ctx = AU.ctx, t = ctx ? ctx.currentTime : 0, md = vr1AbNow(); for (const k in pv.L) { const g = pv.L[k].g.gain; try { g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(k === md ? 1 : 0, t + 0.02); } catch (e) { g.value = k === md ? 1 : 0; } } }
+  try { clResync(); } catch (e) {} clPaint(); return vr1AbNow();
+}
+// Zeile ins Säubern-Blatt (Haken in clSheet) – im Stil der vorhandenen Zeilen (.clrow/.cllab/.clab, Trefferflächen 44 px)
+function vr1Sheet(p, box, id, ok) {
+  const s = vr1Sel(id), m = S.takes[id], lv = (m && m.vr1 && !s.lv) ? m.vr1.lv : s.lv;
+  const ab = box.querySelector('.clab'); if (ab && !ab.querySelector('[data-vr1ab]')) { ab.style.gridTemplateColumns = 'repeat(3,1fr)'; const w = el('button', 'mbtn rb'); w.dataset.vr1ab = 'weg'; w.textContent = 'nur Entferntes'; w.setAttribute('aria-pressed', String(VXR1.ab === 'weg')); ab.appendChild(w); ab.setAttribute('aria-label', 'A/B: Roh, gesäubert oder nur das Entfernte hören'); }
+  const d = el('div', 'vr1');
+  d.innerHTML = `<div class="clrow"><span class="cllab">Gesang reinigen</span><div class="clab vr1lv" style="grid-template-columns:repeat(3,1fr)" role="group" aria-label="Gesang reinigen: Stufe">` +
+    ['leicht', 'mittel', 'stark'].map(k => `<button class="mbtn rb" data-vr1="${k}" aria-pressed="${lv === k}"${ok ? '' : ' disabled'}>${k}</button>`).join('') + `</div></div>` +
+    `<div class="clrow"><span class="cllab"></span><div class="clab vr1do" style="grid-template-columns:repeat(3,1fr)"><button class="mbtn rb" data-vr1a="pv"${ok ? '' : ' disabled'}>▶ 10 s</button><button class="mbtn rb" data-vr1a="ap"${ok ? '' : ' disabled'}>Anwenden</button><button class="mbtn rb" data-vr1a="more" aria-expanded="${VXR1.more}">Mehr ▾</button></div></div>` +
+    `<div class="vr1more"${VXR1.more ? '' : ' hidden'}><div class="clab vr1st2" style="grid-template-columns:repeat(2,1fr)"></div></div>` +
+    `<div class="small vr1st"></div>`;
+  const st = box.querySelector('.clst'); box.insertBefore(d, st || null);
+  onTap(d, b => {
+    if (b.dataset.vr1) return vr1Pick(id, b.dataset.vr1);
+    const a = b.dataset.vr1a, sk = b.dataset.vr1s;
+    if (a === 'more') { VXR1.more = !VXR1.more; vr1Status(); popFit(p); return; }
+    if (a === 'pv') return vr1Preview(id);
+    if (a === 'ap') { if (VXR1.cur || VXR1.vjob.has(id)) { const q = VXR1.vjob.get(id); if (q) q.j.abort(); if (VXR1.cur) VXR1.cur.abort(); return; } if (!s.lv) { s.lv = (s.B ? (VXR1.core || (VXR1.core = vr1Make())).suggest(s.B) : 'mittel'); } return (s.B ? Promise.resolve(s.B) : vr1Probe(id)).then(B => B && vr1Apply(id)); }
+    if (sk) { const P = vr1Plan(id, s.lv || 'mittel'); s.on[sk] = !(P && P.steps[sk]); vr1Status(); }
+  }, 'button');
+  onTap(box, b => { if (b.dataset.vr1ab) vr1Ab('weg'); else vr1Ab(b.dataset.cl); }, 'button[data-cl],button[data-vr1ab]');
+  vr1Status(p);
+  vr1Guide();
+}
+function vr1ClPaint(p, box) {
+  const id = p._clId, m = id && S.takes && S.takes[id], on = !!(m && m.vr1) || !!VXR1.pv;
+  for (const b of box.querySelectorAll('.clab button[data-cl],.clab button[data-vr1ab]')) {
+    if (on && tkAudioOk()) b.disabled = false; else if (b.dataset.vr1ab) b.disabled = !(m && m.cl) || !tkAudioOk();
+    const md = vr1AbNow(); b.setAttribute('aria-pressed', String((b.dataset.vr1ab ? 'weg' : b.dataset.cl) === md));
+  }
+  vr1Status(p);
+}
+// Zustandszeile + Knöpfe nachziehen (ohne neu zu bauen)
+function vr1Status(p0) {
+  const p = p0 || (UI.pop && UI.pop.name === 'takes' ? UI.pop.el : null); if (!p || !p._clId && !p0) return; const d = p.querySelector('.vr1'); if (!d) return;
+  const id = p._clId || (TK.sheet && tkRef(TK.sheet) && tkRef(TK.sheet).a.take), s = vr1Sel(id), m = S.takes && S.takes[id], vj = VXR1.vjob.get(id);
+  const lvs = s.lv || (m && m.vr1 && m.vr1.lv) || null;
+  for (const b of d.querySelectorAll('[data-vr1]')) b.setAttribute('aria-pressed', String(b.dataset.vr1 === lvs));
+  const pb = d.querySelector('[data-vr1a="pv"]'), apb = d.querySelector('[data-vr1a="ap"]'), mb = d.querySelector('[data-vr1a="more"]'), mo = d.querySelector('.vr1more');
+  const run = !!(s.busy || vj); if (pb) pb.textContent = VXR1.pv ? '■ 10 s' : '▶ 10 s'; if (apb) apb.textContent = run ? 'Abbrechen' : m && m.vr1 && (!s.lv || s.lv === m.vr1.lv) ? '✓ angewandt' : 'Anwenden';
+  if (mb) { mb.setAttribute('aria-expanded', String(VXR1.more)); mb.textContent = VXR1.more ? 'Mehr ▴' : 'Mehr ▾'; } if (mo) mo.hidden = !VXR1.more;
+  const P = s.B ? vr1Plan(id, lvs || 'mittel') : null, g2 = d.querySelector('.vr1st2');
+  if (g2 && VXR1.more) { const cnt = {click: s.B ? s.B.clicks : null, plop: s.B ? s.B.plops.length : null, breath: s.B ? s.B.breaths : null, hum: s.B && s.B.hum.on ? s.B.hum.base + ' Hz' : null, ess: s.B ? Math.round(s.B.sibPct) + ' %' : null};
+    const h = VXR1_ORDER.map(k => `<button class="mbtn rb" data-vr1s="${k}" aria-pressed="${!!(P && P.steps[k])}"${s.B ? '' : ' disabled'}>${P && P.steps[k] ? '✓ ' : ''}${VR1_NM[k]}${cnt[k] ? ' ' + cnt[k] : ''}</button>`).join('');
+    if (g2._h !== h) { g2.innerHTML = h; g2._h = h; } }
+  let t;
+  if (!tkAudioOk()) t = 'Audio nur auf der eigenen Seite';
+  else if (s.busy) t = s.busy + ' …' + (s.prog != null ? ' ' + Math.round(100 * s.prog) + ' %' : '');
+  else if (vj) t = 'rechnet die neue Fassung … ' + Math.round(100 * (VXR1.vprog || 0)) + ' % (Abbrechen geht)';
+  else if (!s.B) t = m && m.vr1 ? 'angewandt: ' + m.vr1.lv + ' (Roh-Take bleibt, ↶ nimmt es zurück)' : 'leicht │ mittel │ stark antippen: erst wird geprüft';
+  else { const sg = (VXR1.core || (VXR1.core = vr1Make())).suggest(s.B); t = 'Befund: ' + s.B.line + (lvs ? ' · ' + lvs + ': ' + (P ? Object.keys(P.steps).filter(k => k !== 'hp' && k !== 'room').map(k => VR1_NM[k]).join(', ') || 'nur Hochpass' : '') : ' · Vorschlag: ' + sg) + (VXR1.pv ? ' · hört ' + fmtDec(VXR1.pv.at.t0, 0) + '–' + fmtDec(VXR1.pv.at.t1, 0) + ' s' : '') + (m && m.vr1 ? ' · angewandt: ' + m.vr1.lv : ''); }
+  const e = d.querySelector('.vr1st'); if (e && e.textContent !== t) e.textContent = t;
+}
+// Atmer-Marken antippen (Marken-Editor): oberer Streifen (44 px) über der Marke wechselt lassen → leiser → weg
+function vr1BreathTap(E) {
+  const cv = E && E.cv; if (!cv || cv._vr1) return; cv._vr1 = 1; let d0 = null;
+  cv.addEventListener('pointerdown', e => { d0 = {x: e.clientX, y: e.clientY, t: performance.now()}; }, true);
+  cv.addEventListener('pointerup', e => {
+    const q = d0; d0 = null; const E2 = WP.ed; if (!q || !E2 || E2.cv !== cv || !E2.vr1b || !E2.vr1b.length) return;
+    if (Math.hypot(e.clientX - q.x, e.clientY - q.y) > 10 || performance.now() - q.t > 450) return;
+    const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top; if (y > 56) return;
+    const h = E2.vr1b.find(b => x >= Math.min(b.x0, (b.x0 + b.x1) / 2 - 22) && x <= Math.max(b.x1, (b.x0 + b.x1) / 2 + 22)); if (!h) return;
+    const L = VXR1.marks[E2.id], b = L && L[h.k]; if (!b) return; const nx = {leiser: 'weg', weg: 'lassen', lassen: 'leiser'}[b.act] || 'leiser';
+    vr1BreathAct(E2.id, h.k, nx); VXR1.taps = (VXR1.taps || 0) + 1;
+    const m = S.takes && S.takes[E2.id]; if (m && m.vr1) { const before = JSON.stringify(S.takes); m.vr1.br = L.map(z => [z.t0, z.t1, z.act]); undoPush({kind: 'takes', before, label: 'Atmer ' + nx}); clSync(); markDirty(); }
+    haptic('tick'); toast('Atmer: ' + nx);
+  }, true);
+}
+// „Wo finde ich …?“
+function vr1Guide() {
+  try {
+    if (typeof ui1Entries !== 'function') return; const L = ui1Entries(); if (L.some(x => x.id === 'vr1gesang')) return;
+    L.push({id: 'vr1gesang', n: 'Gesang reinigen', w: 'STIMME › Takes-Blatt › Säubern › Gesang reinigen (Mehr ▾ = Einzelschritte)', d: 'Prüft den Take und entfernt Klicks, Plopps, Brummen, Atmer und Zischen in fester Reihenfolge – leicht, mittel oder stark, 10 s Vorhören, A/B mit „nur Entferntes“, Anwenden als neue Fassung mit ↶.',
+      s: 'gesang reinigen saeubern klick klicks plopp plopps brumm brummen atmer atem zischen entzischer raumton stimme vocal sauber', go: () => { ui1Home(); let t = -1; try { t = S.tracks.findIndex((tr, i) => isStimmeT(i)); } catch (e) {} if (t < 0) { toast('Erst einen Gesangs-Take aufnehmen (STIMME-Spur)'); return false; } try { return tkSheet({t, s: 0}); } catch (e) { return false; } }, q: '.vr1'});
+  } catch (e) {}
+}
+setTimeout(vr1Guide, 0);
+if (typeof g4DspMake === 'function') { const F = Function.prototype.toString, f = g4DspMake; f.toString = () => F.call(vr1EssCore) + ';' + F.call(f); }   // G4-Worker kennt den spektralen Entzischer
 const VXR1_API = {
   vr1Check: (id, o) => vr1TakeJob('check', id, o),
   vr1Run: (id, o) => vr1TakeJob('run', id, o),
   vr1Abort: () => { if (VXR1.cur) VXR1.cur.abort(); },
   vr1Breaths: id => (VXR1.marks[id] || []).map(b => Object.assign({}, b)),
   vr1BreathAct: (id, k, act) => vr1BreathAct(id, k, act),
+  vr1Pick: (id, lv) => vr1Pick(id, lv), vr1Plan: (id, lv) => vr1Plan(id, lv), vr1Apply: id => vr1Apply(id), vr1Preview: id => vr1Preview(id), vr1PvStop: () => vr1PvStop(), vr1Ab: v => vr1Ab(v),
+  vr1Ver: id => { const c = VXR1.ver.get(id), m = S.takes && S.takes[id]; return {applied: m && m.vr1 ? JSON.parse(JSON.stringify(m.vr1)) : null, ready: !!(c && c.buf), busy: VXR1.vjob.has(id), info: c && c.info || null, ab: vr1AbNow(), renders: VXR1.renders, pv: VXR1.pv ? {t0: VXR1.pv.at.t0, t1: VXR1.pv.at.t1} : null, taps: VXR1.taps || 0}; },
   vr1Info: () => ({runs: VXR1.runs, last: VXR1.last, prog: VXR1.prog, aborts: VXR1.aborts, slices: VXR1.slices, order: VXR1_ORDER.slice(), worker: VXR1.w ? 'worker' : VXR1.w === false ? 'hauptfaden' : null}),
 };
-window.__vr1 = {job: vr1Job, make: vr1Make, humLive: vr1HumLive, take: vr1TakeJob, api: VXR1_API, st: VXR1, paint: vr1PaintBreath, noWorker: v => { VXR1.w = v ? false : null; }};
+window.__vr1 = {ess: vr1EssCore, proc: vr1Proc, job: vr1Job, make: vr1Make, humLive: vr1HumLive, take: vr1TakeJob, api: VXR1_API, st: VXR1, paint: vr1PaintBreath, noWorker: v => { VXR1.w = v ? false : null; }};
 /* VOXR1-END */
 /* =====================================================================================================================
    VS5a (Nachtrag 2 C.5, C.4 N2-VS5a-01; r7/stimme.md §9, §10; N7V-26, N7V-27, N7S-51): Marken & Scheiben, Audio quantisieren.
@@ -65284,6 +65542,7 @@ function g4DspMake() {
   const DS_SPLIT = 3500, DS_K = 0.88;     // Trennung (2. Ordnung, komplementär: Summe = Original) und Eichung → Spitzen 5–9 kHz ≈ −Stärke dB
   // Entzischer: Band 5–9 kHz gegen das ganze Signal; Zischlaute (Band nahe am Gesamtpegel) senken das Obere ab 3,5 kHz um bis zu amt dB
   function deess(y, sr, amt) {
+    if (typeof vr1EssCore === 'function') return vr1EssCore(y, sr, amt);   /* VOXR1 */
     const n = y.length, H = 16, m = Math.ceil(n / H);
     const sib = run(run(y, bq('hp', 5000, sr, Math.SQRT1_2)), bq('lp', 9000, sr, Math.SQRT1_2));
     const c = Math.exp(-1 / (0.003 * sr)), gr = new Float32Array(m);

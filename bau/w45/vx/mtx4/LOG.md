@@ -17,3 +17,4 @@
 - 05:44 Versions-Prüfung gegen neu vergebene Nummern nach ↶ (from.t/from.s) ergänzt; Pflicht: topdefs 0/0 (NODE_PATH), dupkeys 0, smoke errors [], MS 2000 1×, live: true 1×, VERSION 4.68.0. Endlauf.
 - 05:45 Endlauf 81/81 (test-ergebnis.txt), Fotos 9, NOTES.md (Teil 2, Funk-Entwurf, Offen) geschrieben. Teil 2 fertig.
 - 05:58 Prüfer-Befunde (PRUEFUNG.md) gelesen, Nachbesserung Start.
+- 06:12 Plan: (1) ↶ ↷ in die Leiste + Hinweise ohne Aktionsknopf + Toast über der Leiste; (2) blockweise Abarbeitung + Vorschaubilder gestaffelt (Haken renderGrid) + afterClipEdit einmal; (3) Pentatonik = leitereigene bleiben; (4) höchstens eine Auto-Version; (6) ↶/↷ am nächsten Takt (Haken undo/redo); (7)(9)(10) klein.
