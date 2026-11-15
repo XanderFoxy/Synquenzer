@@ -104211,7 +104211,7 @@ async function spk11Go(U) {
     const T = spk11Targets(U, rows, true), out = {scenes: scenes.slice(), parts: parts.map(p => ({name: p.name, A: p.A, B: p.B})), audio: 0, midi: 0, notes: 0, drums: 0, tracks: {}, rows: [], q};
     parts.forEach((p, j) => { const sc = S.scenes[scenes[j]]; if (sc) sc.name = p.name.slice(0, 24); });
     for (const r of rows) {
-      const t = T[r.lid], o = {lid: r.lid, name: r.name, a: null, m: null, clipsA: 0, clipsM: 0, notes: 0, klang: null, still: r.still.filter(Boolean).length};
+      const t = T[r.lid], o = {lid: r.lid, name: r.name, a: null, m: null, clipsA: 0, clipsM: 0, notes: 0, klang: null, still: r.still.filter(Boolean).length, dB: r.rms.map(v => Math.round(20 * Math.log10(v + 1e-9)))};
       if (r.pcm && t.a >= 0) {
         const tk = tkAddPcmTake(r.pcm, sr, 'import'), m = S.takes[tk.id]; m.route = 'datei'; m.name = (r.name + ' · ' + nm).slice(0, 60); m.imp = {bpm: q !== 1 ? TP.P : G.bpm, ts: G.ts, t1: 0};
         parts.forEach((p, j) => { if (r.still[j]) return; const s = scenes[j]; S.tracks[t.a].clips[s] = imp1Clip(tk.id, p.A - A0, p.B - A0, {takt: barP}, G.ts, s); clipChanged(t.a, s); o.clipsA++; });
