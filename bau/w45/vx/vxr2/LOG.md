@@ -1,2 +1,3 @@
 # VXR2 – LOG
 - 21:07 Start. index.html = basis.html = rel-4740 (md5 b66de3cb…, VERSION 4.74.0, enthält IMP2 + IMP2B). Gelesen imp2b NOTES/LOG. Testkopie work/rv1s-test.mjs (Original unverändert). Last: load average: 0.40, 0.81, 0.66
+- 21:14 Messung vorher (4.74.0 = basis): #10 t1 0,388 → 31 Stücke, Knacken 0,89, Raster 25/31 frei daneben 0; #14 120,6/0,686 → 37 Stücke, Raster 32/37 frei daneben 0, Stück 35 links FEHLER (Abw. 0,108 bei 346 ms, 36 ms vor Schnitt). (b)(c) schon durch IMP2B behoben. Sonde (RV1_PROBE): t1 0,383 und 0,388 je 31 Stücke, aber nur 11/31 Grenzen gleich (G2-Noten, Erkennungs-Marken und vxa-Rahmen hängen an der Lage des 10-ms-Rasters zum Inhalt; Vorlauf 84 473 gegen 84 233 Nullproben). Last: load average: 0.38, 0.60, 0.63
