@@ -195,7 +195,7 @@ async function browser() {
   const x16 = new Int16Array(n); for (let i = 0; i < n; i++) x16[i] = Math.max(-32768, Math.min(32767, Math.round((v[i] + P[i] + vr * 0.1 * Math.sqrt(2 / 7) * [1, 2, 3, 4, 5, 6, 7].reduce((s, k) => s + Math.sin(TAU * 50 * k * i / sr), 0)) * 32767)));
   const b64 = Buffer.from(x16.buffer).toString('base64');
   const id = await run(async o => { const s = atob(o.b), u = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i); const pcm = Array.from(new Int16Array(u.buffer));
-    const r = await SYNQUENZER.tkInject({pcm, sr: o.sr, scene: 0, at: 0, len: 2}); await wait(300); return r.id; }, {b: b64, sr});
+    const r = await SYNQUENZER.tkInject({pcm, sr: o.sr, scene: 0, at: 0, len: 2}); await wait(300); window.__tk0 = r; return r.id; }, {b: b64, sr});
   // Node-Ergebnis für denselben Int16-Take
   const xf = new Float32Array(n); for (let i = 0; i < n; i++) xf[i] = x16[i] / 32767;
   const nb = K.done(K.check(xf, sr)), nr = K.done(K.run(xf, sr, {steps: {click: {}, plop: {}, hum: 'auto', hp: {}, breath: {}, room: {}}}));
@@ -235,7 +235,7 @@ async function browser() {
   const tap = async (x, y) => { await cdp.send('Input.dispatchTouchEvent', {type: 'touchStart', touchPoints: [{x, y}]}); await cdp.send('Input.dispatchTouchEvent', {type: 'touchEnd', touchPoints: []}); await p.waitForTimeout(250); };
   const vb = await run(async () => { const e = [...document.querySelectorAll('button,[role=button]')].find(b => b.offsetParent && /SÄUBERN|Takes|TAKES/.test(b.textContent || '')); if (!e) return null; const r = e.getBoundingClientRect(); return {x: r.x + r.width / 2, y: r.y + r.height / 2}; }, null);
   if (vb) await tap(vb.x, vb.y);
-  await run(async o => { if (!(UI.pop && UI.pop.name === 'takes')) { const t = S.tracks.findIndex(t => t.kind === 'voice' || t.kind === 'stimme' || t.stimme); try { tkSheet && tkSheet(Math.max(0, t), 0); } catch (e) {} } await wait(300); }, {id});
+  await run(async o => { if (!(UI.pop && UI.pop.name === 'takes')) { const r = window.__tk0; try { tkSheet({t: r.track, s: r.scene}); } catch (e) { console.log('tkSheet ' + e); } } await wait(400); }, {id});
   const U = await run(async () => { const p = UI.pop && UI.pop.el; if (!p) return {pop: UI.pop ? UI.pop.name : null}; const b = p.getBoundingClientRect(), cb = p.querySelector('.clbox'); return {pop: UI.pop.name, in: b.left >= -1 && b.right <= innerWidth + 1 && b.top >= -1, clbox: !!cb, clboxH: cb ? Math.round(cb.getBoundingClientRect().height) : null, vr1: !!p.querySelector('.vr1') }; }, null);
   R.ui = U; await p.screenshot({path: path.join(path.dirname(file), 'voxr1-blatt.png')});
   // Teil 3: Zeile „Gesang reinigen“ im Säubern-Blatt (Touch über CDP)
@@ -260,11 +260,14 @@ async function browser() {
   await run(async () => { SYNQUENZER.vr1PvStop(); }, null);
   const h0 = await run(async o => SYNQUENZER.tkPcmHash(o.id), {id}), ph0 = await run(async o => SYNQUENZER.clPlayHash(o.id), {id});
   await tapEl('ap'); const Ap = await until(async o => { const v = SYNQUENZER.vr1Ver(o.id); return {ok: v.ready && !v.busy, v: {applied: v.applied && v.applied.lv, steps: v.applied && Object.keys(v.applied.steps), ready: v.ready}}; }, {id}, 40000);
-  await run(async () => { await wait(300); }, null);
+  // die Gesangs-Effekte (G4, an der STIMME-Spur an) rechnen danach auf der neuen Fassung neu – darauf warten
+  await until(async o => { await wait(100); return {ok: !(typeof G4 !== 'undefined' && G4.job.has(o.id))}; }, {id}, 20000);
   const h1 = await run(async o => SYNQUENZER.tkPcmHash(o.id), {id}), ph1 = await run(async o => SYNQUENZER.clPlayHash(o.id), {id});
-  R.ui3.anwenden = {ap: Ap, rohGleich: h0 === h1, spieltNeu: ph0 !== ph1};
-  ok(Ap && Ap.ok && h0 === h1 && ph0 !== ph1, 'Touch „Anwenden“: neue Fassung spielt, Roh-Take bitgleich', R.ui3.anwenden);
+  const fv = await run(async o => { const b = window.__vr1.proc(o.id, null), r = tkBuffer(o.id); if (!b || !r) return null; const x = b.getChannelData(0), y = r.getChannelData(0); let d = 0; for (let i = 0; i < x.length; i++) d = Math.max(d, Math.abs(x[i] - y[i])); return {laenge: x.length === y.length, maxDiff: +d.toFixed(4)}; }, {id});
+  R.ui3.anwenden = {ap: Ap, rohGleich: h0 === h1, spieltNeu: ph0 !== ph1, fassung: fv};
+  ok(Ap && Ap.ok && h0 === h1 && ph0 !== ph1 && fv && fv.laenge && fv.maxDiff > 0, 'Touch „Anwenden“: neue Fassung spielt (auch durch die Gesangs-Effekte), Roh-Take bitgleich', R.ui3.anwenden);
   await run(async () => { undo(); await wait(400); }, null);
+  await until(async o => { await wait(100); return {ok: !(typeof G4 !== 'undefined' && G4.job.has(o.id))}; }, {id}, 20000);
   const Un = await run(async o => ({v: SYNQUENZER.vr1Ver(o.id).applied, ph: SYNQUENZER.clPlayHash(o.id)}), {id});
   ok(!Un.v && Un.ph === ph0, 'Ein ↶ nimmt „Gesang reinigen“ zurück (es spielt wieder die vorige Fassung)', {applied: Un.v, gleich: Un.ph === ph0});
   // Fotos quer (926×428 und 926×370)

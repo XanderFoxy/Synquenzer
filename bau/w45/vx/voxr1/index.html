@@ -61894,9 +61894,9 @@ async function vr1Preview(id) {
   const t = ctx.currentTime + 0.05, L = {}, mode = vr1AbNow();
   for (const [k, d] of [['roh', x0], ['sauber', r.y], ['weg', wg]]) { const bf = ctx.createBuffer(1, n, sr); bf.getChannelData(0).set(d); const sN = ctx.createBufferSource(), g = ctx.createGain(); sN.buffer = bf; g.gain.value = k === mode ? 1 : 0; sN.connect(g); g.connect(ctx.destination); sN.start(t); L[k] = {s: sN, g}; }
   VXR1.pv = {id, L, t0: t, sec: n / sr, at: W, info: r.info, iv: setInterval(() => { if (!(UI.pop && UI.pop.name === 'takes') || ctx.currentTime > t + n / sr) vr1PvStop(); }, 200)};
-  vr1Status(); return {t0: W.t0, t1: W.t1, steps: Object.keys(st), info: r.info};
+  clPaint(); vr1Status(); return {t0: W.t0, t1: W.t1, steps: Object.keys(st), info: r.info};
 }
-function vr1PvStop() { const v = VXR1.pv; if (!v) return; VXR1.pv = null; clearInterval(v.iv); for (const k in v.L) { try { v.L[k].s.stop(); v.L[k].s.disconnect(); v.L[k].g.disconnect(); } catch (e) {} } vr1Status(); }
+function vr1PvStop() { const v = VXR1.pv; if (!v) return; VXR1.pv = null; clearInterval(v.iv); for (const k in v.L) { try { v.L[k].s.stop(); v.L[k].s.disconnect(); v.L[k].g.disconnect(); } catch (e) {} } clPaint(); vr1Status(); }
 const vr1AbNow = () => VXR1.ab === 'weg' ? 'weg' : CL.ab === 'roh' ? 'roh' : 'sauber';
 function vr1Ab(v) {
   VXR1.ab = v === 'weg' ? 'weg' : null; if (v === 'weg' && CL.ab === 'roh') CL.ab = 'sauber';
@@ -61910,7 +61910,7 @@ function vr1Sheet(p, box, id, ok) {
   const d = el('div', 'vr1');
   d.innerHTML = `<div class="clrow"><span class="cllab">Gesang reinigen</span><div class="clab vr1lv" style="grid-template-columns:repeat(3,1fr)" role="group" aria-label="Gesang reinigen: Stufe">` +
     ['leicht', 'mittel', 'stark'].map(k => `<button class="mbtn rb" data-vr1="${k}" aria-pressed="${lv === k}"${ok ? '' : ' disabled'}>${k}</button>`).join('') + `</div></div>` +
-    `<div class="clrow"><span class="cllab"></span><div class="clab vr1do" style="grid-template-columns:repeat(3,1fr)"><button class="mbtn rb" data-vr1a="pv"${ok ? '' : ' disabled'}>▶ 10 s</button><button class="mbtn rb" data-vr1a="ap"${ok ? '' : ' disabled'}>Anwenden</button><button class="mbtn rb" data-vr1a="more" aria-expanded="${VXR1.more}">Mehr ▾</button></div></div>` +
+    `<div class="clrow"><span class="cllab"></span><div class="clab vr1do" style="grid-template-columns:repeat(3,1fr);white-space:nowrap"><button class="mbtn rb" data-vr1a="pv"${ok ? '' : ' disabled'}>▶ 10 s</button><button class="mbtn rb" data-vr1a="ap"${ok ? '' : ' disabled'}>Anwenden</button><button class="mbtn rb" data-vr1a="more" aria-expanded="${VXR1.more}">Mehr ▾</button></div></div>` +
     `<div class="vr1more"${VXR1.more ? '' : ' hidden'}><div class="clab vr1st2" style="grid-template-columns:repeat(2,1fr)"></div></div>` +
     `<div class="small vr1st"></div>`;
   const st = box.querySelector('.clst'); box.insertBefore(d, st || null);
@@ -61923,11 +61923,11 @@ function vr1Sheet(p, box, id, ok) {
     if (sk) { const P = vr1Plan(id, s.lv || 'mittel'); s.on[sk] = !(P && P.steps[sk]); vr1Status(); }
   }, 'button');
   onTap(box, b => { if (b.dataset.vr1ab) vr1Ab('weg'); else vr1Ab(b.dataset.cl); }, 'button[data-cl],button[data-vr1ab]');
-  vr1Status(p);
+  vr1ClPaint(p, box, id);
   vr1Guide();
 }
-function vr1ClPaint(p, box) {
-  const id = p._clId, m = id && S.takes && S.takes[id], on = !!(m && m.vr1) || !!VXR1.pv;
+function vr1ClPaint(p, box, id0) {
+  const id = id0 || p._clId, m = id && S.takes && S.takes[id], on = !!(m && m.vr1) || !!VXR1.pv;
   for (const b of box.querySelectorAll('.clab button[data-cl],.clab button[data-vr1ab]')) {
     if (on && tkAudioOk()) b.disabled = false; else if (b.dataset.vr1ab) b.disabled = !(m && m.cl) || !tkAudioOk();
     const md = vr1AbNow(); b.setAttribute('aria-pressed', String((b.dataset.vr1ab ? 'weg' : b.dataset.cl) === md));

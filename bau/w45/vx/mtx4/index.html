@@ -95584,7 +95584,7 @@ function mtx4Run(label, kind, fn) {
     try { bar = nextBarFromAudible(); if (L.length > 8 && b2t(bar) - AU.ctx.currentTime < .3) bar = nextBarFromAudible(b2t(bar) + AU.outLat + .05); } catch (e) { bar = null; }
     if (bar != null && !isFinite(bar)) bar = null;
   }
-  const J = {label, kind, fn, L, k: 0, items: [], olds: [], skipD: 0, skipR: 0, odd: null, oddN: 0, uB: UNDO[UNDO.length - 1], bar, proj: S, res: null, done: false, n: 0};
+  const J = {label, kind, fn, L, k: 0, items: [], olds: [], skipD: 0, skipR: 0, odd: null, oddN: 0, bar, proj: S, res: null, done: false, n: 0};
   M4.job = J; M4.stag = performance.now() + 3000;
   mtx4Work(J);
   return J.done ? J.n : new Promise(res => { J.res = res; });
@@ -95616,11 +95616,13 @@ function mtx4One(J, t, s) {
   if (ED.roll && ED.rollAt && ED.rollAt.t === t && ED.rollAt.s === s) { try { ED.roll.refresh(); } catch (e) {} }
 }
 function mtx4Finish(J) {
-  const {label, kind, items, olds, skipD, skipR} = J, n = items.length, uB = J.uB, gl = label + ' · ' + n + ' Clips';
-  if (n) undoPush(Object.assign(n > 1 ? {kind: 'group', label: gl, items} : items[0], {mtx4: 1}));
-  // Teil 2: die Fassung von vorher wird eine neue Clip-Version (im selben ↶-Schritt)
+  const {label, kind, items, olds, skipD, skipR} = J, n = items.length, gl = label + ' · ' + n + ' Clips';
+  // Teil 2: die Fassung von vorher wird eine neue Clip-Version (im selben ↶-Schritt). Prüfung 2: je Version ein kleiner 'own'-Schritt
+  // statt eines Song-Schritts (der Verlauf-Rekorder vergleicht dann nur die neue Version, nicht den ganzen Song)
   let vs = null; try { vs = n ? mtx4Vers(olds) : null; } catch (e) { logErr(e); }
-  if (vs && vs.made.length) { undoMergeSince(uB, gl); const top = UNDO[UNDO.length - 1]; if (top) top.mtx4 = 1; }
+  const all = vs && vs.items.length ? items.concat(vs.items) : items;
+  if (n) undoPush(Object.assign(all.length > 1 ? {kind: 'group', label: gl, items: all} : all[0], {mtx4: 1}));
+  mtx4KeysLater();
   M4.n++; M4.last = {label, n, skipD, skipR, vers: vs ? vs.made.map(x => x.v) : [], odd: J.oddN};
   const extra = (skipD ? ' · Drums fest' + (kind === 'semi' ? ' (Drums ± = mit)' : '') : '') + (skipR ? ' · ' + skipR + (kind === 'len' ? ' am Rand (1–64 Takte)' : ' am Rand (zu hoch/tief)') : '') +
     (J.oddN ? ' · ' + (J.oddN > 1 ? J.oddN + '× ' : '') + 'ungerade Länge abgerundet (' + J.odd.a + ' → ' + J.odd.b + (J.odd.b === 1 ? ' Takt)' : ' Takte)') : '') +
@@ -95648,6 +95650,14 @@ function mtx4Thumb() {
   if (!M4.thN++) { M4.th0 = now; return false; }
   if (M4.thN <= 2 || now - M4.th0 < 5) return false;
   M4.thDef = true; return true;
+}
+// Prüfung 2: die Szenen-Tonarten (auto) nach einer Sammel-Aktion je Szene in einer eigenen Aufgabe statt alle 8 in einer
+function mtx4KeysLater() {
+  if (typeof KEYC === 'undefined' || !KEYC.pending || !KEYC.pending.size) return;
+  clearTimeout(KEYC.timer);
+  const L = [...KEYC.pending]; KEYC.pending.clear();
+  let k = 0; const step = () => { if (k >= L.length) return; try { applySceneKeys(L[k++]); } catch (e) { logErr(e); } setTimeout(step, 0); };
+  setTimeout(step, 400);                                            // eigener Zeitgeber: eine neue Bearbeitung hebt ihn nicht auf
 }
 function mtx4Idle() { return new Promise(res => { const f = () => (M4.job || M4.q.length ? setTimeout(f, 10) : res(true)); f(); }); }
 // Halbtöne / Oktaven. Eine feste Tonart (Fest / Aufnahme) rückt mit, eine automatische erkennt die App neu
@@ -95728,22 +95738,23 @@ function mtx4Len(f) {
 /* ---------- Teil 2: neue Clip-Versionen (SX9) – die Fassung von vorher, einmal je Clip und Auswahl-Sitzung ---------- */
 function mtx4InSong(song, t, s) { for (let x = 0; x < song.bars; x++) { const h = sx9At(song, t, x); if (h && h.s === s && h.v === 1) return true; } return false; }   // Prüfung 9: nur v1 = der Clip selbst
 function mtx4Vers(list) {
-  const song = S.song, out = {made: [], full: 0}; if (!song || !song.bars || !list.length) return out;
+  const song = S.song, out = {made: [], full: 0, items: []}; if (!song || !song.bars || !list.length) return out;
   const mine = (x, m) => { const c = m && sx9Ver(song, m.id); return !!(c && c.from.t === x.t && c.from.s === x.s); };   // nach ↶ kann die Nummer neu vergeben sein
   // Prüfung 4: höchstens EINE automatische Version je Clip – nur ein Clip ohne Versionen bekommt v2 (bewusst angelegte Plätze bleiben frei)
   const todo = list.filter(x => { const tr = S.tracks[x.t], m = M4.ver.find(v => v.tr === tr && v.s === x.s); return !mine(x, m) && !sx9List(song, x.t, x.s).length && mtx4InSong(song, x.t, x.s); });
   if (!todo.length) return out;
-  songEdit('Vorher als Version', sg => {
-    for (const x of todo) {
-      const v = sx9List(sg, x.t, x.s).reduce((m, q) => Math.max(m, q.v), 1) + 1;
-      if (v > sx9Max() || ownCount(sg) >= OWN_MAX) { out.full++; continue; }
-      const c = deep(x.old), id = ownNewId(sg);                       // wie sx9New: Kopie, Herkunft und Nummer am Ende
-      delete c.from; delete c.ver; for (const n of c.notes || []) { delete n.born; delete n.bornRun; }
-      c.from = {t: x.t, s: x.s, bar: 0}; c.ver = v;
-      sg.own = sg.own || {}; sg.own[id] = c;
-      out.made.push({tr: S.tracks[x.t], s: x.s, id, v});
-    }
-  });
+  const sg = song;
+  for (const x of todo) {
+    const v = sx9List(sg, x.t, x.s).reduce((m, q) => Math.max(m, q.v), 1) + 1;
+    if (v > sx9Max() || ownCount(sg) >= OWN_MAX) { out.full++; continue; }
+    const c = deep(x.old), id = ownNewId(sg);                         // wie sx9New: Kopie, Herkunft und Nummer am Ende
+    delete c.from; delete c.ver; for (const n of c.notes || []) { delete n.born; delete n.bornRun; }
+    c.from = {t: x.t, s: x.s, bar: 0}; c.ver = v;
+    sg.own = sg.own || {}; sg.own[id] = c;
+    out.made.push({tr: S.tracks[x.t], s: x.s, id, v});
+    out.items.push({kind: 'own', id, before: null, label: 'Vorher als Version', mergeKey: null});   // ↶ = ownRestore(id, null): die Version geht wieder
+  }
+  if (out.made.length) songChanged();
   for (const m of out.made) { M4.ver = M4.ver.filter(v => !(v.tr === m.tr && v.s === m.s)); M4.ver.push(m); }
   return out;
 }

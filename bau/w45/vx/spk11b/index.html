@@ -105545,12 +105545,13 @@ const SPK11_API = {open: () => spk11Open(SPK1.ui, SPK1.ui && SPK1.ui.sh.querySel
 try { window.__spk11 = SPK11_API; } catch (e) {}
 /* SPK11-END */
 /* SPK11B-BEGIN ===== Spektral-Seite Teil 11B · Szenen: Drum-Kit und Bass-Phantome nachgebessert (Puls: offene Fehler aus SPK11).
-   (1) Drums → Kit: Kick/Snare-Schwellen aus dem Lied selbst (zwei Häufungen der Band-Einsätze, Otsu auf log-Werten), Bass-Ebene als
-   Gegenreferenz (Kick nur, wo die Drum-Ebene tief nicht schwächer ist als die Bass-Ebene), Anschlag muss in die Mitten reichen (Schwebung
-   Kick+Bass bleibt tief), an Snare-Stellen nur ein Kick aus der Kick-Häufung, schwache Einsätze zählen, wenn die Takte ringsum an derselben
-   Stelle einen Kick haben. (2) Bass-Ebene: ein Teil, der deutlich leiser ist als der lauteste (≤ −8 dB) und im Grundton-Bereich des lautesten
-   Teils (unteres halbes Energie-Spektrum) fast nichts hat (≤ −30 dB, Mindestdauer: < 35 % der Rahmen darüber), ist Trennrest → still (keine
-   Noten, kein Clip). Ein leises echtes Intro im selben Register bleibt. Drums: ein leiser Teil mit regelmäßigem Schlag-Muster bleibt.
+   (1) Drums → Kit: Kick/Snare-Schwellen aus dem Lied selbst (zwei Häufungen der Band-Einsätze, Otsu auf log-Werten), Anschlag muss in die
+   Mitten reichen (Schwebung Kick+Bass bleibt tief), 1/16 nach einem Kick ohne eigenen Anschlag kein Kick (Ausklang gegen Sub-Bass), an
+   Snare-Stellen nur ein Kick aus der Kick-Häufung, schwache Einsätze zählen, wenn die Takte ringsum an derselben Stelle einen Kick haben.
+   (2) Bass-Ebene: ein Teil, der deutlich leiser ist als der lauteste (≤ −8 dB) und im Grundton-Bereich des lautesten Teils (unteres halbes
+   Energie-Spektrum) fast nichts hat (≤ −30 dB und ≥ 15 dB unter dem eigenen Pegel, Mindestdauer: < 35 % der Rahmen darüber), ist Trennrest
+   → still (keine Noten, kein Clip). Ein leises echtes Intro im selben Register bleibt bis zur Still-Regel (−26 dB). Drums: ein leiser Teil
+   mit regelmäßigem Schlag-Muster bleibt.
    Nur Hüllen um spk11Go/spk11Render/spk11Hits und ein Haken nach der Still-Regel; Aussehen und Bedienung unverändert. */
 const SPK11B = {go: null, last: null};
 // Drei Bänder wie spk11Hits (tief < 150 Hz, Mitte, hoch > 5 kHz), 5-ms-Raster: Pegel E und Einsatz O (Pegel minus Mittel davor)
@@ -105589,15 +105590,16 @@ function spk11bHits(x, sr, stepS, nStep, fr, ref) {
   // (zwei Stufen: leise/laute Hi-Hats, darüber die Snare – trennt sich die obere Häufung noch einmal klar, gilt die obere Grenze)
   let sS = hi ? spk11bSplit(nh, 0.1, 1.5) : null; if (sS) { const s2 = spk11bSplit(nh, sS.t, 1.5); if (s2 && s2.nHi >= 8) sS = s2; }
   const tS = sS ? Math.max(0.45, Math.min(0.75, sS.t)) : 0.7;
-  const sK = lo ? spk11bSplit(nl, 0.08, 1.8) : null, tK = sK ? Math.max(0.3, Math.min(0.6, sK.t)) : 0.35, tK2 = Math.min(tK, 0.3);
+  const sK = lo ? spk11bSplit(nl, 0.08, 1.8) : null, tK = sK ? Math.max(0.3, Math.min(0.6, sK.t)) : 0.35, tK2 = 0.3;   // tK2: untere Kick-Schwelle (= kleinster Wert von tK)
   const isSn = k => mi && ((nm[k] > 0.35 && nl[k] < tK && pk[1][k] >= 1.9 * pk[0][k]) || (hi && nh[k] >= tS && (nm[k] >= 0.12 || nl[k] >= 0.12)));
   // Kick-Vorlage: Tiefen-Einsätze in zwei Häufungen (Kick vs. Reste von Snare/Bass)
   const out = [], hat = new Uint8Array(nStep), snS = [], kk = new Uint8Array(nStep), weak = [], spb = ref && ref.spb > 0 ? ref.spb : 16;
   for (let k = 0; k < nStep; k++) {
     const sn = isSn(k), dom = !Bo || pk[0][k] >= 0.7 * bk[k];
-    const strong = sK && nl[k] >= 0.65 * sK.hi;   // in der Kick-Häufung
-    const click = strong || pk[1][k] >= 0.9 * pk[0][k];   // Anschlag reicht in die Mitten (Schwebung Kick+Bass bleibt tief)
-    const kick = lo && click && (dk[k] < 0.6 || strong) && pk[0][k] >= (strong ? 0.25 : 0.4) * pk[1][k] && ((nl[k] >= tK && dom && (!sn || strong || !sK)) || (nl[k] >= tK2 && !sn && pk[0][k] >= 1.5 * bk[k]));
+    const mc = pk[1][k] >= 0.9 * pk[0][k], tail = k > 0 && kk[k - 1] && !mc && nl[k] < 0.8 * nl[k - 1];   // 1/16 nach einem Kick ohne eigenen Anschlag: Ausklang/Schwebung Kick+Sub-Bass
+    const strong = sK && nl[k] >= 0.65 * sK.hi && !tail;   // in der Kick-Häufung
+    const click = strong || mc;   // Anschlag reicht in die Mitten (Schwebung Kick+Bass bleibt tief)
+    const kick = lo && click && !tail && (dk[k] < 0.6 || strong) && pk[0][k] >= (strong ? 0.25 : 0.4) * pk[1][k] && ((nl[k] >= tK && dom && (!sn || strong || !sK)) || (nl[k] >= tK2 && !sn && pk[0][k] >= 1.5 * bk[k]));
     if (kick) { out.push({k, w: 'k', v: Math.min(1, 0.45 + 0.55 * nl[k])}); kk[k] = 1; }
     else if (lo && click && !sn && dk[k] < 0.7 && nl[k] >= 0.6 * tK2 && pk[0][k] >= 0.4 * pk[1][k] && (!Bo || pk[0][k] >= 0.7 * bk[k])) weak.push(k);
     if (sn) { out.push({k, w: 's', v: Math.min(1, 0.45 + 0.55 * Math.min(1, Math.max(nm[k], nh[k]) / 0.8))}); snS.push([k, nh[k]]); }
@@ -105609,41 +105611,50 @@ function spk11bHits(x, sr, stepS, nStep, fr, ref) {
   out.sort((p, q) => p.k - q.k); out.info = {tK: +tK.toFixed(3), tS: +tS.toFixed(3), kick: !!sK, snare: !!sS, bass: !!Bo};
   return out;
 }
-// Anteil der Ebene, der im eigenen Zeit-Frequenz-Bereich lauter ist als alles andere (Original minus Ebene) – Trennreste liegen unter anderem
+// FFT (Radix 2, an Ort und Stelle) für spk11bSpec
 function spk11bFft(re, im) {
   const n = re.length; for (let i = 1, j = 0; i < n; i++) { let b = n >> 1; for (; j & b; b >>= 1) j ^= b; j ^= b; if (i < j) { let t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; } }
   for (let len = 2; len <= n; len <<= 1) { const a = -2 * Math.PI / len, wr = Math.cos(a), wi = Math.sin(a); for (let i = 0; i < n; i += len) { let cr = 1, ci = 0; for (let j = 0; j < len / 2; j++) { const p = i + j, q = p + len / 2, tr = re[q] * cr - im[q] * ci, ti = re[q] * ci + im[q] * cr; re[q] = re[p] - tr; im[q] = im[p] - ti; re[p] += tr; im[p] += ti; const t = cr * wr - ci * wi; ci = cr * wi + ci * wr; cr = t; } } }
 }
-// Leistungsspektrum < 600 Hz je Rahmen (≈ 11 kHz, 2048 Punkte, Sprung 1024 ≈ 93 ms) – für den Grundton-Bereich der Bass-Ebene
-function spk11bSpec(x, sr) {
-  const D = Math.max(1, Math.round(sr / 11025)), r = sr / D, N = 2048, hop = 1024, n = Math.floor(x.length / D), xs = new Float32Array(n);
-  for (let i = 0; i < n; i++) { let a = 0; for (let j = 0; j < D; j++) a += x[i * D + j]; xs[i] = a / D; }
-  const F = Math.max(0, Math.floor((n - N) / hop) + 1), K = Math.ceil(600 * N / r), S = [], re = new Float32Array(N), im = new Float32Array(N), w = new Float32Array(N);
-  for (let i = 0; i < N; i++) w[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / N);
-  for (let f = 0; f < F; f++) { for (let i = 0; i < N; i++) { re[i] = xs[f * hop + i] * w[i]; im[i] = 0; } spk11bFft(re, im); const s = new Float32Array(K); for (let k = 0; k < K; k++) s[k] = re[k] * re[k] + im[k] * im[k]; S.push(s); }
-  return {S, hop: hop * D, win: N * D, df: r / N, K};
+// Leistungsspektrum < 600 Hz je Rahmen (≈ 11 kHz, 2048 Punkte, Sprung 1024 ≈ 93 ms) – für den Grundton-Bereich der Bass-Ebene.
+// st (wahlweise): Zwischenstand für die Rechnung in Stücken (spk11bSpecA) – dann Rückgabe null, solange nicht fertig
+function spk11bSpec(x, sr, st) {
+  let Z = st && st.Z;
+  if (!Z) {
+    const D = Math.max(1, Math.round(sr / 11025)), r = sr / D, N = 2048, hop = 1024, n = Math.floor(x.length / D), xs = new Float32Array(n);
+    for (let i = 0; i < n; i++) { let a = 0; for (let j = 0; j < D; j++) a += x[i * D + j]; xs[i] = a / D; }
+    const w = new Float32Array(N); for (let i = 0; i < N; i++) w[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / N);
+    Z = {D, r, N, hop, xs, w, F: Math.max(0, Math.floor((n - N) / hop) + 1), K: Math.ceil(600 * N / r), S: [], f: 0, re: new Float32Array(N), im: new Float32Array(N)}; if (st) st.Z = Z;
+  }
+  const {N, hop, xs, w, re, im, K, S} = Z, t0 = st ? performance.now() : 0;
+  while (Z.f < Z.F) {
+    const f = Z.f++; for (let i = 0; i < N; i++) { re[i] = xs[f * hop + i] * w[i]; im[i] = 0; } spk11bFft(re, im); const s = new Float32Array(K); for (let k = 0; k < K; k++) s[k] = re[k] * re[k] + im[k] * im[k]; S.push(s);
+    if (st && (f & 15) === 15 && Z.f < Z.F && performance.now() - t0 > 10) return null;
+  }
+  return {S, hop: hop * Z.D, win: N * Z.D, df: Z.r / N, K};
 }
-// Hüllen: während „Szenen anlegen“ (SPK11B.go) Renderings merken; zur Drum-Ebene die Bass-Ebene gleich mitrechnen (wird später wiederverwendet)
-{ const f0 = spk11Go; spk11Go = async function (U) { SPK11B.go = {c: new Map(), bass: null, ref: null, spec: {}, hits: null}; try { return await f0(U); } finally { SPK11B.go = null; } }; }
+async function spk11bSpecA(x, sr) {   // wie spk11bSpec, gibt alle ~10 ms den Haupt-Faden frei (kein Ruckeln bei langen Liedern)
+  const st = {}, y = typeof vvYield === 'function' ? vvYield : () => new Promise(r => setTimeout(r, 0)); let o;
+  while (!(o = spk11bSpec(x, sr, st))) await y();
+  return o;
+}
+// Hüllen: während „Szenen anlegen“ (SPK11B.go) zur Bass-Ebene das Spektrum rechnen (in Stücken); Drum-Ebene → spk11bHits mit Takt-Länge.
+// Die Bass-Ebene als Gegenreferenz der Kicks ist abgeschaltet: auf 7 Liedern ohne jede Wirkung, kostete aber ein Rendern, ~42 MB je 4 min und die doppelte Zeit.
+{ const f0 = spk11Go; spk11Go = async function (U) { SPK11B.go = {spec: {}, hits: null}; try { return await f0(U); } finally { SPK11B.go = null; } }; }
 { const f0 = spk11Render; spk11Render = async function (U, lid, a, b, sel, prog) {
-  const G = SPK11B.go; if (!G || !U || !U.meta) return f0(U, lid, a, b, sel, prog);
-  const key = id => id + '|' + a + '|' + b + '|' + (sel ? U.selVer : ''), ly = U.meta.layers || [], L = ly.find(l => l.id === lid), k = key(lid);
-  let x = G.c.get(k); if (x) { G.c.delete(k); if (prog) prog(1); } else x = await f0(U, lid, a, b, sel, prog);
-  try {
-    if (L && L.art === 'bass') { G.bass = {k, x}; G.spec[lid] = spk11bSpec(x, U.meta.sr); }
-    if (L && L.art === 'drums') { const B = ly.find(l => l.art === 'bass'); if (B) { const kb = key(B.id); let bx = G.bass && G.bass.k === kb ? G.bass.x : G.c.get(kb); if (!bx) { bx = await f0(U, B.id, a, b, sel, null); G.c.set(kb, bx); } G.ref = {x, bass: bx}; } }
-  } catch (e) { logErr(e); }
+  const x = await f0(U, lid, a, b, sel, prog), G = SPK11B.go;
+  try { const L = G && U && U.meta && (U.meta.layers || []).find(l => l.id === lid); if (L && L.art === 'bass' && x && x.length) G.spec[lid] = await spk11bSpecA(x, U.meta.sr); } catch (e) { logErr(e); }
   return x;
 }; }
 { spk11Hits = function (x, sr, stepS, nStep, fr) {
-  const G = SPK11B.go, R = G && G.ref && G.ref.x === x ? G.ref : null; let spb = 16;
+  const G = SPK11B.go; let spb = 16;
   try { const g = SPK1.ui && spk1Grid0(SPK1.ui); if (g && g.bar > 0 && stepS > 0) spb = Math.max(1, Math.round(g.bar / stepS)); } catch (e) {}
-  const out = spk11bHits(x, sr, stepS, nStep, fr, {bass: R && R.bass, spb}); if (G) { G.hits = out.info; G.ref = null; } return out;
+  const out = spk11bHits(x, sr, stepS, nStep, fr, {spb}); if (G) G.hits = out.info; return out;
 }; }
 // Haken nach der Still-Regel in spk11Go: Bass-Trennreste je Teil still, leise echte Drum-Teile mit Muster nicht still
 function spk11bStill(U, rows, parts, g, A0) {
   const G = SPK11B.go; if (!G || !rows || !parts || !parts.length) return;
-  const ly = U.meta.layers || [], sr = U.meta.sr, stepS = g.beat / 4, spb = Math.max(1, Math.round(g.bar / stepS)), diag = {};
+  const ly = U.meta.layers || [], sr = U.meta.sr, stepS = g.beat / 4, spb = Math.max(1, Math.round(g.bar / stepS)), diag = {}, bnd = {};
   for (const r of rows) {
     const L = ly.find(l => l.id === r.lid), art = L && L.art; if (!r.still || !r.rms) continue;
     if (art === 'bass' && G.spec[r.lid] && G.spec[r.lid].S.length) {
@@ -105655,13 +105666,13 @@ function spk11bStill(U, rows, parts, g, A0) {
       let c = 0, k0 = kLo, k1 = kHi; for (let k = kLo; k <= kHi; k++) { c += acc[k]; if (c < 0.02 * tot) k0 = k + 1; if (c >= 0.5 * tot) { k1 = k; break; } }
       let eL = 0; for (let k = k0; k <= k1; k++) eL += acc[k]; if (!(eL > 0)) continue;
       diag[r.name] = parts.map((p, j) => {
-        const ges = 20 * Math.log10((r.rms[j] + 1e-9) / (r.rms[jL] + 1e-9)), [b0, b1] = fr(j); let m = 0, on = 0;
+        const ges = 20 * Math.log10((r.rms[j] + 1e-9) / (r.rms[jL] + 1e-9)), [b0, b1] = fr(j); let m = 0, on = 0;   // ges/band: dB gegen den lautesten Teil
         for (let f = b0; f < b1; f++) { let e = 0; for (let k = k0; k <= k1; k++) e += Sp.S[f][k]; m += e; if (e > 1e-3 * eL) on++; }
-        const n = Math.max(1, b1 - b0), band = 10 * Math.log10(m / n / eL + 1e-12), share = on / n, rest = j !== jL && !r.still[j] && ges <= -8 && band <= -30 && share < 0.35;
+        const n = Math.max(1, b1 - b0), band = 10 * Math.log10(m / n / eL + 1e-12), share = on / n, rest = j !== jL && !r.still[j] && ges <= -8 && band <= -30 && band - ges <= -15 && share < 0.35;   // band − ges: echtes leises Teil im selben Register −5…−8, Trennrest −25…−90
         if (rest) r.still[j] = true;
-        return {ges: Math.round(ges), band: Math.round(band), share: +share.toFixed(2), rest};
+        return {ges: Math.round(ges), band: Math.round(band), abst: Math.round(band - ges), share: +share.toFixed(2), rest};
       });
-      diag[r.name].band = Math.round(k0 * Sp.df) + '–' + Math.round(k1 * Sp.df) + ' Hz';
+      bnd[r.name] = Math.round(k0 * Sp.df) + '–' + Math.round(k1 * Sp.df) + ' Hz';
     }
     if (art === 'drums' && r.dr && r.dr.length) {
       diag[r.name] = parts.map((p, j) => {
@@ -105674,7 +105685,7 @@ function spk11bStill(U, rows, parts, g, A0) {
       });
     }
   }
-  SPK11B.last = {diag, hits: G.hits};
+  SPK11B.last = {diag, band: bnd, hits: G.hits};
 }
 try { window.__spk11b = {last: () => SPK11B.last, hits: (x, sr, st, n, fr, bass, spb) => spk11bHits(x, sr, st, n, fr, {bass, spb}), spec: (x, sr) => spk11bSpec(x, sr)}; } catch (e) {}
 /* SPK11B-END */
