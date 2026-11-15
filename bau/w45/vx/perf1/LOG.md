@@ -31,3 +31,18 @@
   imp1 ALLE OK.
 - 05:53–05:58 Endmessung mess/serie3.sh (je Lauf abwechselnd): basis vs index (ruhig, spaet), index vs B+C (last) → mess/s3/.
 - 05:59 pflicht.log neu, NOTES.md ergänzt. Zwischenstände index-b/-c/-bc/-abc gelöscht (mit bau/bau.cjs nachbaubar).
+
+# PERF1 – LOG (Prüfung: Befunde beheben)
+
+- 06:17 PRUEFUNG.md gelesen: PERF1B behalten; PERF1A Befund 9 (Rückfall lädt während Wiedergabe/Aufnahme neu) vor Freigabe beheben;
+  10 (veralteter Zwischenstand), 11 (Wettlauf), 12 (Speicherberg) mitbehandeln.
+- 06:19 Vorher-Stand gesichert (fix/index-vorfix.html, fix/block-a-vorfix.js, fix/bau-vorfix.cjs). bau/block-a.js neu (Rückfall über go()
+  mit vwIdle vor/nach dem Speichern, Sperre perf1aBusy, Strom-Lesen mit Abbruch), bau/bau.cjs: Haken am Anfang von vwReload.
+- 06:20 index.html neu gebaut; topdefs 26/7616/0/0, dupkeys 0, MS 2000 1×, live 1×, VERSION 4.69.0 1×.
+- 06:21 fix/p1a-fix.mjs (aus pruef/p1a.mjs: + gedrosseltes Senden mit Byte-Zählung, Szenarien netz/feld/wettlauf, NOSW=1).
+- 06:21–06:28 Reihe fix/serie-a.sh (vorher/nachher je Szenario, basis alt/altspiel) nacheinander. Befund 9 und 11 vorher nachgestellt,
+  nachher behoben; ok unverändert.
+- 06:28 PERF1B-Kontrollpaar (p1b, 1 Paar; volle 3er-Reihe abgebrochen wegen CPU-Zeit – Code unverändert).
+- 06:29–06:30 fix/serie-c.sh ohne Service-Worker: Abbruch wirkt (3,9 MB statt 8,6 MB), mit Service-Worker nicht (sw.js liest seine Kopie zu Ende).
+- 06:30– Regression nacheinander (fix/serie-b.sh): smoke, vx1, mtx3, spk6-kern, spk6, imp1 → fix/serie-b.log. Rauchtest und mtx3 mit
+  absolutem Pfad wiederholt (relativer Pfad → ERR_INVALID_URL im Skript, kein App-Fehler).

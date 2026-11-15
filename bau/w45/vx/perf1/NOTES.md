@@ -75,3 +75,49 @@ Neue Namen: PERF1B, perf1bRate, perf1bStart, perf1bIdle, perf1bTake, perf1aPre. 
 PERF1D (Auslieferung ohne Kommentare, −19 % gzip) und PERF1E (Spektral erst beim Öffnen) – eigene Schritte laut PLAN.
 Nebenbeobachtung für den nächsten Plan: die erste Aufgabe nach dem ersten Tipp (ensureAudio, ≈ 310–370 ms bei 4×) ist jetzt der
 größte Posten beim ersten ▶.
+
+# PERF1 Prüfung – Befunde behoben (index.html = 4.69.0 + PERF1A neu + PERF1B unverändert)
+
+VERSION bleibt '4.69.0'. Aussehen und Bedienung unverändert. Diff basis → index: 95 Zeilen neu, 0 entfernt oder geändert.
+Bau wie bisher: `node bau/bau.cjs basis.html index.html a,b` (PERF1A-Block in bau/block-a.js neu, bau.cjs hat einen Haken mehr).
+Vorher-Stand zum Vergleich: `fix/index-vorfix.html` (= Prüf-Stand), `fix/block-a-vorfix.js`, `fix/bau-vorfix.cjs`.
+
+## Was geändert ist (nur im PERF1A-Block + 1 neuer Haken)
+| Befund | Änderung |
+|---|---|
+| 9 Rückfall lädt während Wiedergabe/Aufnahme/Feld neu | Scheitert der Vorlauf (alte Fassung, Netzfehler, 60-s-Grenze), ruft perf1aPre den Rückfall `?v=` jetzt selbst über dasselbe `go()` auf wie den Erfolgsweg und gibt `true` zurück – die alte Zeile `location.replace(…?v=…)` in vwReload wird nach einem Vorlauf nicht mehr erreicht. `go()` prüft `vwIdle()` (Wiedergabe, Song-Aufnahme, `rec.state`, Feld) vor **und nach** dem Speichern; sonst alle 3 s neu. |
+| 11 zweite VW-Prüfung bricht den Vorlauf ab | Neuer Haken am Anfang von vwReload: `if (typeof perf1aBusy === 'function' && perf1aBusy()) return;   /* PERF1A */`. Solange ein Vorlauf läuft oder `go()` wartet, tut ein zweiter Aufruf nichts (kein `o.n++`, kein Cache-Löschen, kein `?v=`). `pageshow` aus dem Zurück-Cache setzt die Sperre zurück. |
+| 12 9-MB-Seite als Zeichenkette | Antwort wird als Strom gelesen (`getReader` + `TextDecoder`), gesucht wird nur die Fassungszeile (erste `const VERSION` mit Ziffern-Fassung, bei ≈ 26 % der Datei). Neue Fassung: Rest wird nur noch zu Ende gelesen (Zwischenspeicher vollständig), nie als ganze Zeichenkette gehalten. Ohne Strom-Unterstützung: wie bisher `r.text()`. |
+| 10 veralteter Zwischenstand | Alte Fassung erkannt → Abruf sofort abgebrochen (`AbortController`), dann Rückfall. Wirkung siehe Messung: **nur ohne Service-Worker** weniger Daten im Moment; mit Service-Worker liest dessen Kopie (`r.clone()` → `cache.put`) die alte Seite trotzdem zu Ende. Befund 10 bleibt damit ein (seltenes) Risiko, siehe unten. |
+| Zeitgrenze | Nach 60 s wird der Abruf abgebrochen statt im Hintergrund weiterzulaufen. |
+
+Neue Namen: PERF1A, perf1aBusy, perf1aRead (topdefs 7 613 → 7 616, 0 doppelt).
+
+## Messung (fix/p1a-fix.mjs: Online-sw.js von Hand registriert, Plattenspeicher-Profil, Server max-age=600 + ETag, Seite in 64-KB-Stücken je 4 ms gesendet, gezählt wird, was wirklich rausging; 1×, je Szenario 1 Lauf vorher/nachher nacheinander)
+| Szenario | vorher (Prüf-Stand) | nachher |
+|---|---|---|
+| altspiel: normale Adresse antwortet nach 9 s alt, ▶ bei +4 s, Stopp bei +14 s | Neuladen bei +9,75 s, **während Wiedergabe** (`pagehide` playing = true) | Neuladen bei +15,24 s = 1,07 s **nach dem Stopp**, playing = false |
+| feld: wie altspiel, statt ▶ Fokus in einem Eingabefeld +4…+14 s | Neuladen bei +10,18 s **mit Fokus im Feld** | Neuladen 1,86 s nach dem Verlassen des Felds |
+| netz: Verbindung nach 9 s weg (Chromium wiederholt 1×, 2 × 9 s) | Neuladen +18,2 s (nach Stopp, weil der Fehler erst nach 18 s kam) | Neuladen +18,3 s, nach Stopp; nicht trennscharf, aber kein Fehler |
+| wettlauf: zweite VW-Prüfung bei +2 s, normale Adresse braucht 6 s | `?v=` bei +2,3 s, Vorlauf läuft im Hintergrund weiter: **2 volle Downloads (17,2 MB)** | zweite Prüfung tut nichts; 1× 200 (Vorlauf) + 1× 304 (Neuladen), **8,6 MB**, Seite `/` 4.69.1, nächster Start 0 Abrufe |
+| ok (Normalfall) | 200 + 304, 8,6 MB, nächster Start 4.69.1 ohne Abruf | gleich: 200 + 304, 8,6 MB, nächster Start 4.69.1 ohne Abruf |
+| alt (veralteter Rand-Zwischenspeicher) mit Service-Worker | 2 × 8,6 = 17,2 MB, nächster Start alt | gleich 17,2 MB (Service-Worker liest seine Kopie zu Ende), nächster Start alt |
+| alt **ohne** Service-Worker | 17,2 MB, nächster Start alt aus dem Zwischenspeicher (0 Abrufe) | Vorlauf nach 3,9 MB abgebrochen + `?v=` 8,6 MB; der nächste Start holt die normale Adresse neu (+8,6 MB, hier noch alt, im Echtbetrieb ggf. schon neu) |
+| basis (alt / altspiel) | – | `?v=` nach 139 / 158 ms, 8,6 MB |
+Lange Aufgaben (≥ 50 ms) während des Vorlaufs: in ok/feld/wettlauf/alt 0; in altspiel/netz nur die schon im Prüf-Stand vorhandenen (▶-Start, 97–271 ms). 0 Seitenfehler in allen Läufen.
+Rohdaten: fix/a-*.json, Übersicht `node fix/zeig-a.cjs fix/a-*.json`, Reihe fix/serie-a.sh, fix/serie-c.sh (ohne Service-Worker).
+
+## PERF1B (unverändert)
+Ein Kontroll-Paar (fix/p1b.mjs = pruef/p1b.mjs, 4×, Rate bekannt, Rechner stark belegt): Trommel-CPU nach dem Tipp 68,5 → 0 ms,
+Vorbau 8/8 vor dem Tipp. Sperrzeiten aus einem Paar unter dieser Last nicht aussagekräftig (2 054 / 2 283 ms, beide Fassungen
+gleich gestört) – die Gewinnzahl der Prüfung (Median aus 5: −183 ms) gilt weiter, der PERF1B-Code ist bytegleich.
+
+## Befund 10 – Abwägung (offen, nicht gebaut)
+Mit Service-Worker (der Normalfall online) kostet ein veralteter Rand-Zwischenspeicher weiterhin 2 Downloads. Ein billiger Vorab-Test
+wäre ein HEAD-Vergleich (ETag der normalen Adresse gegen `?v=`; HEAD geht am Service-Worker vorbei) – nur vorschlagen, weil das
+ETag-Verhalten von Pages hier nicht messbar ist (Proxy 403). Da Pages Seite und version.json im selben Hochladen tauscht, ist der Fall
+selten; im ungünstigsten Fall ist es 1 Download mehr als basis, dafür im Normalfall 1 statt 2.
+
+## Am iPhone prüfen (unverändert + neu)
+- Update bei offener App → nach dem Neuladen normale Adresse mit der neuen Fassung, Start vom Home-Bildschirm sofort neu, Datenzähler ≈ 1×.
+- Neu: Update auslösen und sofort ▶ (oder Gesang aufnehmen) – Neuladen erst nach Stopp.

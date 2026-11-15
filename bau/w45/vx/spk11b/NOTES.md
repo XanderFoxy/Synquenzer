@@ -70,3 +70,16 @@ Bedienung, Texte unverändert. Prüfstand vor der Nachbesserung: work/index.v1.h
 Nicht SPK11B (unverändert, wie Prüfer): Tempo 174 → 87, Teilnamen, Bass-Oktavfehler, Intro-Bass, den das Zerlegen nicht in die Bass-Ebene legt.
 Grenzen: B4 greift nicht, wenn das Intro anders klingt (z. B. gefiltert: Bänder nicht gleich leiser); eine echte Doppel-Kick 1/16 nach dem
 Kick ohne eigenen Anschlag in den Mitten fiele unter B2 (in keinem der 7 Lieder).
+
+### Treffer per Touch nach der Nachbesserung (Prüfer-Lieder, 428×926, Wahrheit ±50 ms; basis → Prüfstand → jetzt)
+| Lied | Kick | Snare | Hi-Hat | Bass |
+|---|---|---|---|---|
+| p80 | 46/64 +0 → 64/64 +0 → **64/64 +0** | 32/32 +21 → 32/32 +0 → **32/32 +0** | 218 → 248 → **248/248** | Intro: 1/8 → still (B1) → **bleibt, 1/8** |
+| p128 | 47/96 +17 → 80/96 +3 → **96/96 +0** | 40/48 +12 → 40/48 +1 → **48/48 +1** | 153 → 167 → **217/384** | Outro ohne Bass: 12 → 0 → **0** |
+| p174 (87 BPM) | 67/71 +4 → 71/71 +0 → **71/71 +0** | 72/72 +6 → 71/72 +0 → **71/72 +0** | 240 → 283 → **286/286** | wie basis (Tempo 87, Teile gemischt) |
+Paket-Lieder per Touch unverändert (dicht 117/119 +0 · 48/48 +2 · 374/380; intro und pruef 100 %).
+
+## Tests (Nachbesserung)
+- `spk11b-test.mjs` erweitert (+ p80, p128, p174 aus lieder-pruef.mjs): **17 OK / 0 FEHLER** (spk11b-test.out). Alter Stand work/spk11b-test.v1.*.
+- `spk11-test.mjs` alle drei Größen **41 OK / 0 FEHLER** · spk6-test **ALLES OK** · spk8-seite **14 OK / 0 FEHLER** (braucht mess/, Kopie von spk11/mess) · smoke errors [].
+- Pflicht: topdefs 26 Skripte / 7615 Namen / 0 doppelt / 0 Syntax · dupkeys 0 · „MS 2000“ 1× · „  live: true,“ 1× · VERSION = basis (4.69.0) · basis.html = rel-4690 · keine Emojis/Marken im Block.
