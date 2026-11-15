@@ -10,7 +10,7 @@ const files = {'/a.html': A, '/b.html': B};
 const srv = http.createServer((q, r) => { const p = files[q.url.split('?')[0]]; if (!p) { r.writeHead(404); r.end(); return; } r.writeHead(200, {'content-type': 'text/html; charset=utf-8'}); fs.createReadStream(p).pipe(r); });
 await new Promise(ok => srv.listen(0, ok)); const base = 'http://127.0.0.1:' + srv.address().port;
 const VIEWS = (process.env.VIEWS || '926x428,428x926').split(',').map(s => s.split('x').map(Number));
-const REPS = +(process.env.REPS || 3), ONLY = new Set((process.env.ONLY || 'a,b,c').split(',')), DIAG = !!process.env.DIAG;
+const REPS = +(process.env.REPS || 3), ONLY = new Set((process.env.ONLY || 'a,a2,b,c').split(',')), DIAG = !!process.env.DIAG;
 // Hinweis: c misst nur imp1Place (Ablegen); der erste Tipp/Ton-Start liegt davor (file() lädt).
 const NX1 = '/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/vx/nach/nx1-test.mjs';
 const T = fs.readFileSync(NX1, 'utf8'), i0 = T.indexOf('const SONG = (o) => {'), SONG = T.slice(i0 + 'const SONG = '.length, T.indexOf('\n  };', i0) + 4);

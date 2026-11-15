@@ -61803,23 +61803,26 @@ function* room(y, sr, o, Lr) {
     const need = pt - Math.pow(10, ph / 10); if (need <= 0 || L < 2 * R) continue;   // Mittelwert (dB) der Nachbarn, robust gegen einzelne laute Rahmen
     // Klangfarbe ebenfalls von daneben (zusammenhängende rauschartige Rahmen, je 1024er-Fenster), sonst die gelernte
     let mg = mag; { const P2 = new Float64Array(N / 2 + 1); let c2 = 0; const okU = new Set(nbu);
-      const PW = [];   // VOXR1D-RT: je Fenster ein Spektrum (für die Ausreißer-Wahl je Terzband)
-      for (const u of nbu) { if (!okU.has(u + H) || !okU.has(u + 2 * H) || u + N > n) continue; for (let i = 0; i < N; i++) { re[i] = y[u + i] * (0.5 - 0.5 * Math.cos(TAU * (i + 0.5) / N)); im[i] = 0; } F(re, im, false); const Pw = new Float64Array(N / 2 + 1); for (let k = 0; k <= N / 2; k++) { const e = re[k] * re[k] + im[k] * im[k]; P2[k] += e; Pw[k] = e; } PW.push(Pw); c2++; }
+      const PW = [], PU = [];   // VOXR1D-RT (PU: Fenster-Anfang, VOXR1F): je Fenster ein Spektrum (für die Ausreißer-Wahl je Terzband)
+      for (const u of nbu) { if (!okU.has(u + H) || !okU.has(u + 2 * H) || u + N > n) continue; for (let i = 0; i < N; i++) { re[i] = y[u + i] * (0.5 - 0.5 * Math.cos(TAU * (i + 0.5) / N)); im[i] = 0; } F(re, im, false); const Pw = new Float64Array(N / 2 + 1); for (let k = 0; k <= N / 2; k++) { const e = re[k] * re[k] + im[k] * im[k]; P2[k] += e; Pw[k] = e; } PW.push(Pw); PU.push(u); c2++; }
       /* VOXR1F: Fenster mit Gesangsrest (Teiltöne: stärkster Bin 100–1500 Hz > TON × Median dieser Bins) zählen für die Klangfarbe nicht,
          rauschartige Fenster (auch Atem/Luft mit Höhen) alle – mit ihrem Leistungsmittel statt des Medians je Band (der Median verwarf die Höhen
          des Atems, Füllung in Take A bis −14 dB bei 4 kHz). Bleiben < 3 rauschartige oder sind alle rauschartig: wie bisher (VOXR1D-RT). {ton: 0} = aus. */
       const TON = o.ton != null ? o.ton : 30; let PN = null;
       if (c2 >= 3 && TON > 0) { const kA = Math.max(1, Math.round(100 * N / sr)), kB = Math.min(N / 2, Math.round(1500 * N / sr)), tb = new Float64Array(kB - kA), keep = [];
-        for (const Pw of PW) { let mx = 0; for (let k = kA; k < kB; k++) { tb[k - kA] = Pw[k]; if (Pw[k] > mx) mx = Pw[k]; } tb.sort(); if (!(mx > TON * tb[tb.length >> 1])) keep.push(Pw); }
-        if (keep.length >= 3 && keep.length < PW.length) PN = keep; }
-      if (PN) { mg = new Float64Array(N / 2 + 1); for (let k = 1; k < N / 2; k++) { let e = 0; for (const Pw of PN) e += Pw[k]; mg[k] = Math.sqrt(e / PN.length); } }
-      else if (c2 >= 3) { mg = new Float64Array(N / 2 + 1); for (let k = 1; k < N / 2; k++) mg[k] = Math.sqrt(P2[k] / c2);
+        PW.forEach((Pw, w) => { let mx = 0; for (let k = kA; k < kB; k++) { tb[k - kA] = Pw[k]; if (Pw[k] > mx) mx = Pw[k]; } tb.sort(); if (!(mx > TON * tb[tb.length >> 1])) keep.push(w); });
+        // nur die Fenster nahe der Lücke (≤ NW × 10 ms daneben, sonst alle rauschartigen): weiter weg liegt oft schon Ausklang/Anlauf mit anderer Farbe
+        const NW = o.nw != null ? o.nw : 10, near = NW > 0 ? keep.filter(w => PU[w] + N >= a - NW * H && PU[w] <= b + NW * H) : keep, use = near.length >= 3 ? near : keep;
+        if (use.length >= 3 && (use.length < PW.length || near.length >= 3)) PN = use.map(w => PW[w]); }
+      const PS = PN || PW, cs = PS.length, P3 = PN ? new Float64Array(N / 2 + 1) : P2; if (PN) for (const Pw of PN) for (let k = 0; k <= N / 2; k++) P3[k] += Pw[k];
+      if (cs >= 3) { mg = new Float64Array(N / 2 + 1); for (let k = 1; k < N / 2; k++) mg[k] = Math.sqrt(P3[k] / cs);
         // VOXR1D-RT: Klangfarbe aus mehreren Pausen-Fenstern, Ausreißer weg: jedes Fenster auf seine Leistung normiert, je Terzband zählt der
         // Median der Anteile statt des Leistungsmittels – ein lautes Fenster mit Gesangsrest bestimmte sonst die Farbe (Take C, Lücke 9,46 s:
         // 250 Hz +9,7 dB); innerhalb des Bands bleibt die gemittelte Form, der Pegel kommt wie bisher aus need (Leistung daneben). o.med = 0: wie vorher.
-        const TW = PW.map(P => { let e = 0; for (let k = 1; k < N / 2; k++) e += P[k]; return e || 1e-30; }); let Tm = 0; for (const t of TW) Tm += t / TW.length;
-        if (o.med !== 0) for (const [k0, k1] of roomBands(sr, N)) { const v = PW.map((P, w) => { let e = 0; for (let k = k0; k < k1; k++) e += P[k]; return e / TW[w]; }).sort((p, q) => p - q), md = v[v.length >> 1] * Tm;
-          let e2 = 0; for (let k = k0; k < k1; k++) e2 += P2[k] / c2; const g = e2 > 0 ? Math.sqrt(md / e2) : 1; for (let k = k0; k < k1; k++) mg[k] *= g; } } }
+        // VOXR1F: über die gewählten Fenster PS (rauschartig, nahe der Lücke); {pm: 1} = dort Leistungsmittel statt Median.
+        const TW = PS.map(P => { let e = 0; for (let k = 1; k < N / 2; k++) e += P[k]; return e || 1e-30; }); let Tm = 0; for (const t of TW) Tm += t / TW.length;
+        if (o.med !== 0 && !(PN && o.pm === 1)) for (const [k0, k1] of roomBands(sr, N)) { const v = PS.map((P, w) => { let e = 0; for (let k = k0; k < k1; k++) e += P[k]; return e / TW[w]; }).sort((p, q) => p - q), md = v[v.length >> 1] * Tm;
+          let e2 = 0; for (let k = k0; k < k1; k++) e2 += P3[k] / cs; const g = e2 > 0 ? Math.sqrt(md / e2) : 1; for (let k = k0; k < k1; k++) mg[k] *= g; } } }
     let sd = (a * 2654435761 + 12345) >>> 0; const rnd = () => { sd = (Math.imul(sd, 1103515245) + 12345) >>> 0; return sd / 4294967296; };
     const z = new Float64Array(L + 2 * N);
     for (let f = 0; f * (N >> 1) < L + N; f++) { re.fill(0); im.fill(0);
