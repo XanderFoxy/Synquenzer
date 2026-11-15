@@ -108,3 +108,23 @@ Interpolation über einen Bereich mit gesungenen Obertönen), B@44 Klick 18 1,5 
 Nicht angefasst: eine Änderung an der Klick-Reparatur braucht den vollen Kern- und Entwickler-Lauf mit allen 4 Takes; in diesem Schritt
 keine Zeit mehr ohne Risiko. Ansatz für den nächsten Schritt: Reparatur-Spanne auf die Klick-Dauer begrenzen bzw. Ersatz nur annehmen, wenn
 seine Energie > 2 kHz nicht unter die der Nachbarschaft fällt (sonst Mischung mit dem Original).
+
+## Ergebnis Schritt 2 (Endfassung md5 cd2f35c841e20350c5a9b00cd061b588)
+| Messung (Ziel) | vorher (voxr1d Plopps) | nachher |
+|---|---|---|
+| App Anwenden: Long Tasks > 50 ms | 20–22 (50–103 ms), Last 2–3 | **1–3** (52–86 ms), Last 5–15; Endlauf [62] bei Last 5–7 |
+| App Anwenden: größte Takt-Lücke (Ziel ≤ 100 ms) | 274 / 110 ms | **85–105 ms**; Endlauf 89 ms |
+| App Prüfen: Long Tasks / Lücke | [58] / 111 ms; [] / 88 ms | [78,51] / 158; [83,64] / 149 (Last 5–8; Audio-Start beim 1. Touch) |
+| tkPlayBuf / g4Call (Wrapper > 15 ms) | 22–103 / 22–61 ms | – / 15 ms (nicht mehr gemeldet) |
+| Prüfer-Kern gesamt | 53/60 | **55/60** (Klangfarbe C@48, C@44 jetzt OK) |
+| Prüfer-Kern Raumton-Klangfarbe C@48 / C@44 | [2,5, 9,7] / [2,8, 6,6] | **[3,3, 3,5] / [3,8, 1,8]** |
+| Entwickler-Test Raumton-Klangfarbe Take A | [1,9, 4,6, 5,9, 2,5, 4,4] | [2,1, 4,8, 6,3, 2,3, 6,7] (Zielkonflikt, siehe 2) |
+| Entwickler-Test gesamt | 77/83 | 76/83 (Last 7,6: Long Task 55 statt 50 ms während der Worker-Rechnung) |
+| Kette 3 min Node × 3 (≤ 20 s) | 18,4 s | 17,7 s |
+| Abspiel-Hash nach Anwenden / nach Laden | 3c8c2bcc | 3c8c2bcc (G4-Weg bitgleich) |
+| Regression vx1 / vx2 / vx3 / chr2 | 61/14/15/82 | **61/61, 14/14, 15/15, 82/82** |
+| smoke / topdefs / dupkeys / MS 2000 / live / VERSION | ok | errors [] / 26·7847·0·0 / 0 / 1× / 1× / 4.70.0 |
+Haken: 10 (7 alte + 3 neue: g4Call, wpCall, wpToBuf). Außerhalb Block + Haken = basis.html.
+Offen: Hauptfaden-Block ohne Skript bei Überlast (siehe 1), Audio-Start beim ersten Touch (58–83 ms, außerhalb), vr1WegMake legt den
+AudioBuffer in einem Stück an (25 ms im Wrapper, im Block – nächster kleiner Schritt), Klicks (3), Raumton Take A (2), Obertöne C 8,93 s,
+„0 Plopps in A“, Prüfer-„5 Lücken“ (Testdaten).
