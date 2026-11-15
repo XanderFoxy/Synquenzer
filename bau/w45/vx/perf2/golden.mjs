@@ -22,7 +22,8 @@ async function run(file) {
     const seed = () => { let s = 777; Math.random = () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; }; };
     const MR = Math.random, out = {version: SYNQUENZER.version, cl: typeof clCoreVer === 'function' ? clCoreVer() : null};
     try {
-      seed(); VV.cancel = false;
+      if (!S.song) SYNQUENZER.songFromChain(Array.from({length: Math.min(4, NS())}, (_, k) => ({scene: k, bars: 2})));   // Demo ohne Song: alle Szenen, je 2 Takte (wie mtx3-test)
+      ensureAudio(); drumBufs(); seed(); VV.cancel = false;
       const s = await vvRenderAudio({range: {a: 0, b: S.song.bars, sel: false}});
       out.song = {bars: S.song.bars, n: s.ch[0].length, sr: s.sr, h: [fnv(s.ch[0]), fnv(s.ch[1])], rms: [rms(s.ch[0]), rms(s.ch[1])]};
     } catch (e) { out.song = {err: String(e)}; } finally { Math.random = MR; }

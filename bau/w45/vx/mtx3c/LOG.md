@@ -1,0 +1,1 @@
+- 09:28 Begonnen: basis.html = index.html = rel-4700 (4.70.0), Lesen MTX3/MTX3B/BEG1
