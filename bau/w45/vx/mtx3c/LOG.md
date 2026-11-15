@@ -4,3 +4,4 @@
 - 09:49 Regression 1 (b81da832): mtx3b 87/87 · mtx3 51/51 · mtx3p 21/21 · beg1 57/59 (Prüfung 5 = 5/4-Stil seit GEN4, Diff-Prüfung zählt MTX3C-Zeilen) · smoke errors []. Haken mtx3cBegHush dazu (14 Haken), Test +3 Prüfungen; Lauf 2 (reg/run2.sh, mit beg1 auf basis)
 - 10:02 Lauf 2 (74e6ad79): mtx3c 26/26 · beg1 57/59, beg1 auf basis 58/59 (Prüfung 5 auch in der Basis rot = 5/4-Stil seit GEN4; neu rot: Diff-Prüfung des BEG1-Pakets zählt die MTX3C-Zeilen). Befund: Band nahm nach dem Aufteilen Ersatz-Pads (used ohne HH/SNARE) → Haken mtx3cBegUsed (15 Haken). Lauf 2 abgebrochen, Lauf 3 auf der Endfassung
 - 10:13 Lauf 3 Endfassung 97c7758e: mtx3c 27/27 · mtx3b 87/87 · mtx3 51/51 · mtx3p 21/21 · smoke [] · beg1 55/59 (Last 8–9, 2 Zeitprüfungen) → beg1 Wiederholung läuft; NOTES
+- 10:18 beg1 Wiederholung Endfassung 97c7758e: 57/59 (nur Prüfung 5 = auch Basis rot, Herkunftsprüfung BEG1-Paket). FERTIG md5 97c7758e

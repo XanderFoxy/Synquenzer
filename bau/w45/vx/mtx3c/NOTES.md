@@ -67,7 +67,7 @@ Lauf 1 (b81da832, 13 Haken): mtx3b 87/87 · mtx3 51/51 · mtx3p.ab469 21/21 · b
 Lauf 2 (74e6ad79, +Hush): mtx3c 26/26 · beg1 57/59 · **beg1 auf basis.html 58/59** (abgebrochen nach dem Befund „Ersatz-Pads“).
 Lauf 3 = Endfassung (97c7758e, 15 Haken): **mtx3c 27/27 · mtx3b 87/87 · mtx3 51/51 · mtx3p.ab469 21/21 · smoke errors []** · beg1 55/59
 (Last 8–9: zwei Zeitprüfungen – „Ein Finger“ Em erst auf Schlag 13 statt 12, „Aufnahme = Live“ 185 = 185 Töne, aber 1,77 ↔ 1,75 –
-in Lauf 1 und 2 grün; Wiederholung siehe LOG).
+in Lauf 1 und 2 grün). **Wiederholung auf der Endfassung (Last 4,6): beg1 57/59** – dieselben zwei wie unten, die Zeitprüfungen grün.
 beg1, immer rot und nicht von MTX3C: „Prüfung 5 – 5/4 ohne passenden Stil“ (rot auch auf basis.html: seit GEN4 gibt es 5/4-Stile, die
 Erwartung stammt von davor). Rot nur durch das Paket: „jede neue Zeile außerhalb des BEG1-Blocks trägt BEG1“ – die Prüfung vergleicht
 gegen basis.html und zählt die MTX3C-Zeilen mit (Herkunftsprüfung des BEG1-Pakets, kein Fehler).
