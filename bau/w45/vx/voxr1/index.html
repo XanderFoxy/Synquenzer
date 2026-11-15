@@ -61278,7 +61278,7 @@ function* feats(x, sr) {
 /* ---------- Brummen: 50/60 Hz finden (dezimierter, ruhigster zusammenhängender Ausschnitt ≤ 10 s, Goertzel mit Hann) ---------- */
 function* humFind(x, sr, Fe) {
   const D = Math.max(1, Math.floor(sr / 2600)), sd = sr / D, L = BW4.map(q => bqC('lp', sr, 1100, q)), s0 = [0, 0], s1 = [0, 0];
-  let a = 0, b = x.length; const want = Math.round(10 * sr);
+  let a = 0, b = Math.min(x.length, Math.round(10 * sr)); const want = Math.round(10 * sr);
   if (b > want && Fe) {   // ruhigste 10 s (Pegel je Rahmen), Schritt 1 s
     const fpS = sr / Fe.H, W = Math.round(10 * fpS), st = Math.max(1, Math.round(fpS)); let best = 1e9;
     for (let j = 0; j + W <= Fe.nf; j += st) { let s = 0; for (let q = j; q < j + W; q += 4) s += Fe.R.tot[q]; if (s < best) { best = s; a = Math.round(j * Fe.H); } }
@@ -61308,10 +61308,10 @@ function* humFind(x, sr, Fe) {
   let hp = 0; for (let h = 0; h < n; h++) if (B.rk[h] >= 10) hp += B.amp[h] * B.amp[h] / 2;
   return {on, base, f0: +B.f0.toFixed(4), n: on ? Math.max(2, n) : 0, rk: B.rk.map(v => +v.toFixed(1)), db: on ? +db(hp).toFixed(1) : null, sec: +T.toFixed(1)};
 }
-// Kerben je Oberton: Tiefe d (dB, −30) bis zum 7., darüber flacher (bis d/2 beim 16.), Güte q (30)
+// Kerben je Oberton: Tiefe d (dB, −30) bis zum 7., darüber flacher (bis d/2 beim 16.), Güte q (30) × √k (im Gesangsband schmaler)
 function humCoefs(sr, h) {
   const out = [], f0 = h.f0 || 50, n = Math.max(1, Math.min(16, h.n || 7)), d = h.depth != null ? h.depth : -30, q = h.q || 30;
-  for (let k = 1; k <= n; k++) { const f = k * f0; if (f >= sr * 0.45) break; const dk = k <= 7 ? d : d * (1 - 0.5 * (k - 7) / 9); out.push({f, q, db: dk, c: bqC('kerbe', sr, f, q, Math.pow(10, dk / 20))}); }
+  for (let k = 1; k <= n; k++) { const f = k * f0; if (f >= sr * 0.45) break; const dk = k <= 7 ? d : d * (1 - 0.5 * (k - 7) / 9); const qk = q * Math.sqrt(k); out.push({f, q: qk, db: dk, c: bqC('kerbe', sr, f, qk, Math.pow(10, dk / 20))}); }
   return out;
 }
 function* hum(x, y, sr, h) {
@@ -61330,7 +61330,7 @@ function plopFind(Fe, o) {
   for (let j = 0; j < nf; j++) {
     if (R.lf[j] < flo + 15 || R.lf[j] < top - 45) continue;
     const rb = med(r, j - B0, j - B1), ra = med(r, j + A0, j + A1), lb = med(R.lf, j - B0, j - B1), la = med(R.lf, j + A0, j + A1);
-    const base = rb == null ? ra : ra == null ? rb : Math.min(rb, ra), lbase = lb == null ? la : la == null ? lb : Math.min(lb, la);
+    const base = rb == null ? ra : ra == null ? rb : Math.max(rb, ra), lbase = lb == null ? la : la == null ? lb : Math.max(lb, la);   // kurz: über beiden Seiten (Tonwechsel nach tief ist kein Stoß)
     if (base == null) continue;
     ex[j] = r[j] - base; if (ex[j] >= thr && R.lf[j] - lbase >= thr - 3) cand[j] = 1;
   }
@@ -61338,38 +61338,43 @@ function plopFind(Fe, o) {
   for (let j = 0; j < nf; j++) {
     if (!cand[j]) continue; let e = j, mx = ex[j]; while (e + 1 < nf && (cand[e + 1] || (e + 2 < nf && cand[e + 2]))) { e++; if (ex[e] > mx) mx = ex[e]; }
     const dur = (e - j + 2) / fps;
-    if (dur >= 0.01 && dur <= 0.1) ev.push({t0: j * Fe.H / Fe.sr, t1: (e + 2) * Fe.H / Fe.sr, s0: j * Fe.H, s1: Math.min(Fe.n, (e + 2) * Fe.H), exDb: +mx.toFixed(1)});
+    if (dur >= 0.02 && dur <= 0.1) ev.push({t0: j * Fe.H / Fe.sr, t1: (e + 2) * Fe.H / Fe.sr, s0: j * Fe.H, s1: Math.min(Fe.n, (e + 2) * Fe.H), exDb: +mx.toFixed(1)});
     j = e;
   }
   return ev;
 }
-/* ---------- Plopps dämpfen: STFT nur um den Stoß, nur Bins unter der Grenze; |Y| ≤ Spektrum der Stimme davor/danach (+1 dB),
-   höchstens bis zur Stärken-Grenze (50 % = −24 dB); Korrektur = ISTFT((G − 1)·X) – außerhalb der Stöße bleibt alles bitgleich ---------- */
+/* ---------- Plopps dämpfen: nur das Band unter der Grenze (nullphasiger Tiefpass, Rest = x − tief bleibt bitgleich). Das tiefe Band
+   wird dezimiert (≈ 1,1 kHz) und über dem Stoß aus seiner Umgebung neu berechnet (AR-Interpolation, kleinste Fehlerquadrate):
+   die Obertöne k·f0 unter der Grenze laufen periodisch weiter, der Stoß fällt weg. Stärke 50 % = Rest des Stoßes −24 dB. ---------- */
+function lpZero(x, a, b, sr, fc) { const L = b - a, y = new Float64Array(L); for (let i = 0; i < L; i++) y[i] = x[a + i];
+  for (const q of BW4) { const c = bqC('lp', sr, fc, q); let s = [0, 0]; for (let i = 0; i < L; i++) y[i] = bqStep(c, s, y[i]); s = [0, 0]; for (let i = L - 1; i >= 0; i--) y[i] = bqStep(c, s, y[i]); }
+  return y; }
+function arCoef(z, segs, p) { const r = new Float64Array(p + 1); for (const [a, b] of segs) for (let k = 0; k <= p; k++) { let s = 0; for (let i = a + k; i < b; i++) s += z[i] * z[i - k]; r[k] += s; }
+  r[0] *= 1 + 1e-6; const A = new Float64Array(p + 1), T = new Float64Array(p + 1); A[0] = 1; let E = r[0] + EPS;
+  for (let m = 1; m <= p; m++) { let acc = r[m]; for (let k = 1; k < m; k++) acc += A[k] * r[m - k]; const kk = -acc / E; T.set(A); for (let k = 1; k < m; k++) A[k] = T[k] + kk * T[m - k]; A[m] = kk; E *= 1 - kk * kk; if (E <= 0) break; }
+  return A; }   // e[t] = Σ A[k]·z[t−k]
+function lsar(z, g0, g1, A) { const p = A.length - 1, m = g1 - g0, M = new Float64Array(m * m), v = new Float64Array(m);
+  for (let t = g0; t < g1 + p; t++) { const cu = [], cv = []; let b = 0; for (let k = 0; k <= p; k++) { const i = t - k; if (i < 0 || i >= z.length) continue; if (i >= g0 && i < g1) { cu.push(i - g0); cv.push(A[k]); } else b += A[k] * z[i]; }
+    for (let u = 0; u < cu.length; u++) { v[cu[u]] -= cv[u] * b; for (let w = 0; w < cu.length; w++) M[cu[u] * m + cu[w]] += cv[u] * cv[w]; } }
+  for (let i = 0; i < m; i++) M[i * m + i] += 1e-9;
+  for (let j = 0; j < m; j++) { let d = M[j * m + j]; for (let k = 0; k < j; k++) d -= M[j * m + k] * M[j * m + k]; d = Math.sqrt(Math.max(d, 1e-18)); M[j * m + j] = d;   // Cholesky
+    for (let i = j + 1; i < m; i++) { let s = M[i * m + j]; for (let k = 0; k < j; k++) s -= M[i * m + k] * M[j * m + k]; M[i * m + j] = s / d; } }
+  for (let i = 0; i < m; i++) { let s = v[i]; for (let k = 0; k < i; k++) s -= M[i * m + k] * v[k]; v[i] = s / M[i * m + i]; }
+  for (let i = m - 1; i >= 0; i--) { let s = v[i]; for (let k = i + 1; k < m; k++) s -= M[k * m + i] * v[k]; v[i] = s / M[i * m + i]; }
+  return v; }
 function* plop(y, sr, ev, o) {
-  o = o || {}; const N = sr >= 32000 ? 2048 : 1024, Hp = N >> 2, fft = FFT(N), cut = o.cut || 250, kc = Math.max(2, Math.round(cut * N / sr)), KT = kc + 3;
-  const gmin = Math.pow(10, -0.48 * (o.str != null ? o.str : 50) / 20), al = Math.pow(10, 1 / 20), n = y.length;
-  const win = new Float64Array(N); for (let i = 0; i < N; i++) win[i] = Math.sqrt(0.5 - 0.5 * Math.cos(TAU * i / N));
-  const re = new Float64Array(N), im = new Float64Array(N), out = [];
-  const spec = p => { for (let i = 0; i < N; i++) { const q = p + i; re[i] = q >= 0 && q < n ? y[q] * win[i] : 0; im[i] = 0; } fft(re, im, false); };
-  const mag = p => { spec(p); const m = new Float64Array(KT + 1); for (let k = 0; k <= KT; k++) m[k] = Math.hypot(re[k], im[k]); return m; };
+  o = o || {}; const cut = o.cut || 250, g = Math.pow(10, -0.48 * (o.str != null ? o.str : 50) / 20), D = Math.max(1, Math.floor(sr / 1100)), n = y.length, out = [];
+  const C = Math.round(0.3 * sr), mg = Math.round(0.005 * sr), p = 40;
   for (let e = 0; e < ev.length; e++) {
-    const E = ev[e], pB = Math.floor((E.s0 - N) / Hp) * Hp, pA = Math.ceil(E.s1 / Hp) * Hp, ref = new Float64Array(KT + 1);
-    const refs = [pB - Hp, pB, pA, pA + Hp].filter(p => p >= 0 && p + N <= n), side = [];
-    for (const p of refs) { const m = mag(p); side.push({p, m}); }
-    for (let k = 0; k <= KT; k++) { let b = 0, a = 0, nb = 0, na = 0; for (const s of side) { if (s.p < E.s0) { b += s.m[k]; nb++; } else { a += s.m[k]; na++; } } ref[k] = al * Math.max(nb ? b / nb : 0, na ? a / na : 0); }
-    const corr = new Float64Array(pA - pB + N); let e0 = 0, e1 = 0;
-    for (let p = pB + Hp; p < pA; p += Hp) {
-      spec(p);
-      for (let k = 0; k <= KT; k++) {
-        const m = Math.hypot(re[k], im[k]), wt = k <= kc ? 1 : (KT - k) / (KT - kc); let g = m > ref[k] ? Math.max(gmin, ref[k] / m) : 1; g = 1 - wt * (1 - g);
-        e0 += m * m; e1 += m * m * g * g;
-        const gm = g - 1; re[k] *= gm; im[k] *= gm; if (k > 0) { re[N - k] *= gm; im[N - k] *= gm; }
-      }
-      for (let k = KT + 1; k < N - KT; k++) { re[k] = 0; im[k] = 0; }
-      fft(re, im, true);
-      for (let i = 0; i < N; i++) corr[p - pB + i] += re[i] / N * win[i] * 0.5;
-    }
-    for (let i = 0; i < corr.length; i++) { const q = pB + i; if (q >= 0 && q < n) y[q] += corr[i]; }
+    const E = ev[e], a = Math.max(0, E.s0 - mg - C), b = Math.min(n, E.s1 + mg + C), low = lpZero(y, a, b, sr, cut), L = Math.floor((b - a) / D), z = new Float64Array(L);
+    for (let j = 0; j < L; j++) z[j] = low[j * D];
+    const g0 = Math.max(1, Math.floor((E.s0 - mg - a) / D)), g1 = Math.min(L - 1, Math.ceil((E.s1 + mg - a) / D) + 1);
+    if (g1 - g0 < 2 || g0 < p || L - g1 < p) { out.push({t0: +E.t0.toFixed(4), t1: +E.t1.toFixed(4), exDb: E.exDb, redDb: 0}); continue; }
+    const A = arCoef(z, [[p, g0], [g1 + p, L]].filter(s => s[1] - s[0] > p), p), zu = lsar(z, g0, g1, A);
+    const cd = new Float64Array(L); let e0 = 0, e1 = 0; for (let j = g0; j < g1; j++) { cd[j] = (zu[j - g0] - z[j]) * (1 - g); e0 += z[j] * z[j]; e1 += (z[j] + cd[j]) * (z[j] + cd[j]); }
+    const q0 = (g0 - 2) * D, q1 = Math.min(b - a, (g1 + 2) * D);
+    for (let i = q0; i < q1; i++) { const u = i / D, j = Math.floor(u), f = u - j, c0 = cd[j - 1] || 0, c1 = cd[j] || 0, c2 = cd[j + 1] || 0, c3 = cd[j + 2] || 0;   // Catmull-Rom
+      const v = c1 + 0.5 * f * (c2 - c0 + f * (2 * c0 - 5 * c1 + 4 * c2 - c3 + f * (3 * (c1 - c2) + c3 - c0))); if (v !== 0) y[a + i] += v; }
     out.push({t0: +E.t0.toFixed(4), t1: +E.t1.toFixed(4), exDb: E.exDb, redDb: +(db(e0) - db(e1)).toFixed(1)});
     yield (e + 1) / ev.length;
   }
@@ -61422,7 +61427,7 @@ function* run(x, sr, o) {
       info.plop = yield* part(plop(y, sr, ev, st.plop), at + sp * 0.5, sp * 0.5);
     } else if (k === 'hum') {
       let h = st.hum === true || st.hum === 'auto' ? null : st.hum;
-      if (!h || !h.f0) { const f = yield* part(humFind(y, sr, null), at, sp * 0.3); h = Object.assign({}, h || {}, {f0: f.f0, n: f.on ? Math.max(f.n, 7) : 0, found: f}); }
+      if (!h || !h.f0) { const f = yield* part(humFind(y, sr, Fe), at, sp * 0.3); h = Object.assign({}, h || {}, {f0: f.f0, n: f.on ? Math.max(f.n, 7) : 0, found: f}); }
       info.hum = {f0: h.f0, n: h.n, depth: h.depth != null ? h.depth : -30, q: h.q || 30, found: h.found || null};
       if (h.n) info.hum.k = yield* part(hum(y, y, sr, h), at + sp * 0.3, sp * 0.7);
     } else if (k === 'hp') { yield* part(hp(y, y, sr, st.hp.fc), at, sp); info.hp = {fc: st.hp.fc || 80}; }

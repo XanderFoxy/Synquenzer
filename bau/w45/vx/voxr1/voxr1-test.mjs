@@ -54,6 +54,7 @@ const P = new Float32Array(n);
     const g = 2 * Math.sqrt(e / es);   // Stoß +6 dB über dem Gesang an der Stelle (Tiefstoß + Rauschen < 120 Hz)
     for (let i = 0; i < M; i++) { const w = Math.sin(Math.PI * i / M); P[i0 + i] = g * (nz[1000 + i] * w + 0.6 * Math.sqrt(es / M) * Math.sin(Math.PI * i / M) * Math.sin(Math.PI * i / M)); } } }
 { const x = new Float32Array(n); for (let i = 0; i < n; i++) x[i] = v[i] + P[i];
+  if (process.env.VR1DBG) { const Fx = K.done(K.feats(x, sr)), Fv = K.done(K.feats(v, sr)); for (const sens of [6, 7, 8, 9, 10]) { const e = K.plopFind(Fx, {sens}), ev = K.plopFind(Fv, {sens}); console.log('DBG sens', sens, 'treffer', T.filter(t => e.some(q => q.t1 >= t - 0.01 && q.t0 <= t + 0.05)).length, 'fehl', e.filter(q => !T.some(t => q.t1 >= t - 0.01 && q.t0 <= t + 0.05)).length, 'sauber', ev.length, JSON.stringify(ev.map(q => [q.t0, +(q.t1 - q.t0).toFixed(3), q.exDb]).slice(0, 8))); } process.exit(0); }
   const t0 = Date.now(), r = K.done(K.run(x, sr, {steps: {plop: {}}})), ms = Date.now() - t0, ev = r.info.plop;
   const hit = T.map(t => ev.find(e => e.t1 >= t - 0.01 && e.t0 <= t + 0.05)), fp = ev.filter(e => !T.some(t => e.t1 >= t - 0.01 && e.t0 <= t + 0.05));
   const N = 4096, red = [], harm = [], harmMax = [];
@@ -62,7 +63,7 @@ const P = new Float32Array(n);
     const f0 = f0at(t + 0.02), b2 = c - 1024; let hy = 0, hv = 0, mx = 0; for (let k = 1; k * f0 < 4000; k++) { const py = gz(r.y, b2, b2 + 2048, k * f0, sr), pv = gz(v, b2, b2 + 2048, k * f0, sr); hy += py; hv += pv; if (pv > 1e-6 * gz(v, b2, b2 + 2048, f0, sr)) mx = Math.max(mx, Math.abs(db(py) - db(pv)) * (pv / (hv || 1) > 0.02 ? 1 : 0)); }
     harm.push(+(db(hy) - db(hv)).toFixed(2)); harmMax.push(+mx.toFixed(2)); }
   // außerhalb der Stöße bitgleich
-  let same = true; for (let i = 0; i < n && same; i++) { const near = T.some(t => Math.abs(i / sr - t) < 0.2); if (!near && r.y[i] !== x[i]) same = false; }
+  let same = true; for (let i = 0; i < n && same; i++) { const near = T.some(t => Math.abs(i / sr - t) < 0.2) || ev.some(e => i / sr > e.t0 - 0.05 && i / sr < e.t1 + 0.05); if (!near && r.y[i] !== x[i]) same = false; }
   R.plop = {gesetzt: T.length, gefunden: hit.filter(Boolean).length, fehl: fp.length, reduktionDb: red, oberToeneDb: harm, oberToeneMaxEinzelDb: harmMax, ms};
   ok(hit.filter(Boolean).length >= 9 && fp.length <= 1, 'Plopps: ≥ 9 von 10 gefunden, ≤ 1 Fehlalarm', {gefunden: hit.filter(Boolean).length, fehl: fp.length});
   ok(red.filter((d, k) => hit[k]).every(d => d >= 12), 'Plopps: je ≥ 12 dB weniger (Band < 250 Hz, Fehler gegen den sauberen Take)', red);

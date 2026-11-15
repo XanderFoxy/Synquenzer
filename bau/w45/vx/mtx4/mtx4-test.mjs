@@ -59,7 +59,7 @@ async function tapPop(T, p, sel) { const r = await R_(p, a => (UI.pop && UI.pop.
 // ======================= hochkant 428 × 926: Bedienung per Touch =======================
 {
   const {ctx, p, errs, T} = await open(428, 926);
-  const before = await sig(p), ser0 = await p.evaluate(() => serialize());
+  const before = await sig(p);
   // Clip (0,0) lange drücken → Clip-Blatt → [Mehrere wählen]
   let c = await cell(p, 0, 0); await T.hold(c.cx, c.cy, 700);
   const cs = await p.evaluate(() => { const b = EL.clipSheet.querySelector('.mtx4cs'); if (!b) return null; b.scrollIntoView({block: 'nearest'}); const r = b.getBoundingClientRect(), sh = EL.clipSheet.getBoundingClientRect(); return {w: r.width, h: r.height, in: r.top >= sh.top - .5 && r.bottom <= sh.bottom + .5 && r.bottom <= innerHeight, sheet: [sh.top, sh.bottom].map(Math.round)}; });
@@ -67,6 +67,7 @@ async function tapPop(T, p, sel) { const r = await R_(p, a => (UI.pop && UI.pop.
   await p.screenshot({path: dir + '/mtx4-clipblatt-hochkant.png'});
   let r = await R_(p, () => EL.clipSheet.querySelector('.mtx4cs')); if (r) await T.tap(r.cx, r.cy);
   let st = await p.evaluate(() => ({on: SYNQUENZER.mtx4.on(), sel: SYNQUENZER.mtx4.sel(), editor: R.editor}));
+  const ser0 = await p.evaluate(() => serialize());   // nach dem Halten (das wählt wie immer Spur/Szene = S.ui.selT) – ab hier darf sich nichts ändern
   ok('[Mehrere wählen]: Modus an, der Clip ist gewählt, Blatt zu', st.on && st.sel.length === 1 && st.sel[0].t === 0 && st.sel[0].s === 0 && !st.editor, st);
   // weitere Clips antippen: (1,1) und (2,1) → 3 Clips in 2 Szenen; nichts startet
   for (const [t, s] of [[1, 1], [2, 1]]) { c = await cell(p, t, s); await T.tap(c.cx, c.cy); }
@@ -75,7 +76,7 @@ async function tapPop(T, p, sel) { const r = await R_(p, a => (UI.pop && UI.pop.
     out: getComputedStyle(UI.cells[1][1].el).outlineStyle, op: [getComputedStyle(UI.cells[1][1].el).opacity, getComputedStyle(UI.cells[1][0].el).opacity]}));
   ok('Tipp nimmt Clips dazu: 3 Clips in 2 Szenen, Markierung (Rahmen, übrige blass)', st.sel === '0:0,1:1,2:1' && st.cls === '0:0,1:1,2:1' && st.out === 'solid' && +st.op[0] === 1 && +st.op[1] < 1, st);
   ok('im Modus startet ein Tipp keinen Clip', !st.playing, st.slots);
-  ok('die Auswahl ist kein Projektfeld (Speicherstand bit-gleich)', (await p.evaluate(() => serialize())) === ser0);
+  ok('Auswahl und Modus sind kein Projektfeld (Speicherstand nach 2 weiteren Tipps bit-gleich)', (await p.evaluate(() => serialize())) === ser0);
   const bar = await barCheck(p, 'hochkant');
   ok('Leiste: −12 −1 +1 +12 · Stufe ▲▼ · Tonart ▾ · Quant. ▾ · ✕', ['−12', '−1', '+1', '+12', '▲ Stufe', '▼ Stufe', 'Tonart ▾', 'Quant. ▾', '✕'].every(x => (bar.names || []).includes(x)), bar.names);
   await p.screenshot({path: dir + '/mtx4-auswahl-hochkant.png'});
