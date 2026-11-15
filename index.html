@@ -27571,7 +27571,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '4.70.0';
+const VERSION = '4.71.0';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -32156,6 +32156,7 @@ function liveUpdate(i, key, Pov) {                                   // N8: Pov 
 const DRB = {ctx: null, B: null, steps: null, k: 0, wait: false};
 function drumBufsStep(all) {
   const c = AU.ctx; if (!c) return null;
+  if (DRB.ctx !== c && typeof perf1bTake === 'function') perf1bTake(c);   /* PERF1B */
   if (DRB.ctx !== c) { const s = DrumSynth.buildSteps(c); Object.assign(DRB, {ctx: c, B: s.B, steps: s.steps, k: 0}); AU.drumBufs = null; }
   while (DRB.k < DRB.steps.length) { DRB.steps[DRB.k++](); if (!all) break; }
   if (DRB.k >= DRB.steps.length && !AU.drumBufs) { AU.drumBufs = DRB.B; drumBusBuild(); }
@@ -52777,12 +52778,14 @@ function vwGo() {
   vwReload();
 }
 async function vwReload() {
+  if (typeof perf1aBusy === 'function' && perf1aBusy()) return;   /* PERF1A */
   const v = VW.want || ''; const o = vwTries(v); o.n++; o.t = Date.now();
   try { sessionStorage.setItem('synq.vw', JSON.stringify(o)); } catch (e) {}
   try { await Promise.race([saveNow(), new Promise(r => setTimeout(r, 1500))]); } catch (e) {}
   try { if (typeof cloudFlushNow === 'function') cloudFlushNow(); } catch (e) {}
   try { if (window.caches) { const ks = await caches.keys(); await Promise.all(ks.filter(k => /^synq-app-/.test(k)).map(k => caches.delete(k))); } } catch (e) {}
   try { const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration(); if (reg) await Promise.race([reg.update(), new Promise(r => setTimeout(r, 1500))]); } catch (e) {}
+  if (typeof perf1aPre === 'function' && await perf1aPre(v, o)) return;   /* PERF1A */
   location.replace(location.pathname + '?v=' + encodeURIComponent(v || String(Date.now())) + location.hash);
 }
 function vwStart() {
@@ -106400,6 +106403,7 @@ async function spk11Go(U) {
   // still = leise gegenüber dem lautesten Teil der Ebene (−26 dB) oder der lautesten Ebene im Teil (−30 dB) oder ganz leise (−54 dBFS)
   const pmax = parts.map((p, j) => rows.reduce((m, r) => Math.max(m, r.rms[j]), 0));
   for (const r of rows) { const lm = Math.max(...r.rms); r.still = r.rms.map((v, j) => v < 0.002 || v < 0.05 * lm || v < 0.03 * pmax[j]); }
+  if (typeof spk11bStill === 'function') spk11bStill(U, rows, parts, g, A0);   /* SPK11B */
   // 2) Noten finden je Strecke von Teilen ohne Noten – auch wenn die Ebene anderswo schon Noten hat (eigener ↶ der Spektral-Seite)
   for (const r of rows) {
     if (!spk11Midi(r) || r.art === 'drums' || r.art === 'rest') continue;
@@ -107472,6 +107476,181 @@ const SPK12_API = {
 };
 try { window.__spk12 = SPK12_API; } catch (e) {}
 /* SPK12-END */
+/* SPK11B-BEGIN ===== Spektral-Seite Teil 11B · Szenen: Drum-Kit und Bass-Phantome nachgebessert (Puls: offene Fehler aus SPK11).
+   (1) Drums → Kit: Kick/Snare-Schwellen aus dem Lied selbst (zwei Häufungen der Band-Einsätze, Otsu auf log-Werten), Anschlag muss in die
+   Mitten reichen (Schwebung Kick+Bass bleibt tief), 1/16 nach einem Kick ohne eigenen Anschlag kein Kick (Ausklang gegen Sub-Bass), an
+   Snare-Stellen nur ein Kick aus der Kick-Häufung, schwache Einsätze zählen, wenn die Takte ringsum an derselben Stelle einen Kick haben.
+   (2) Bass-Ebene: ein Teil, der deutlich leiser ist als der lauteste (≤ −8 dB) und im Grundton-Bereich des lautesten Teils (unteres halbes
+   Energie-Spektrum) fast nichts hat (≤ −30 dB und ≥ 15 dB unter dem eigenen Pegel, Mindestdauer: < 35 % der Rahmen darüber), ist Trennrest
+   → still (keine Noten, kein Clip). Ein leises echtes Intro im selben Register bleibt bis zur Still-Regel (−26 dB). Drums: ein leiser Teil
+   mit regelmäßigem Schlag-Muster bleibt.
+   Nur Hüllen um spk11Go/spk11Render/spk11Hits und ein Haken nach der Still-Regel; Aussehen und Bedienung unverändert. */
+const SPK11B = {go: null, last: null};
+// Drei Bänder wie spk11Hits (tief < 150 Hz, Mitte, hoch > 5 kHz), 5-ms-Raster: Pegel E und Einsatz O (Pegel minus Mittel davor)
+function spk11bEnv(x, sr) {
+  const H = Math.max(1, Math.round(sr * 0.005)), F = Math.floor(x.length / H), aL = 1 - Math.exp(-2 * Math.PI * 150 / sr), aH = 1 - Math.exp(-2 * Math.PI * 5000 / sr);
+  const E = [new Float32Array(F), new Float32Array(F), new Float32Array(F)]; let l1 = 0, l2 = 0, h1 = 0;
+  for (let f = 0; f < F; f++) {
+    let sl = 0, sm = 0, sh = 0;
+    for (let i = f * H, e = i + H; i < e; i++) { const v = x[i]; l1 += aL * (v - l1); l2 += aL * (l1 - l2); h1 += aH * (v - h1); const hi = v - h1, mid = h1 - l2; sl += l2 * l2; sm += mid * mid; sh += hi * hi; }
+    E[0][f] = Math.sqrt(sl / H); E[1][f] = Math.sqrt(sm / H); E[2][f] = Math.sqrt(sh / H);
+  }
+  const O = E.map(e => { const o = new Float32Array(F); for (let f = 2; f < F; f++) { let m = 0, c = 0; for (let j = Math.max(0, f - 8); j < f - 1; j++) { m += e[j]; c++; } o[f] = Math.max(0, e[f] - (c ? m / c : 0)); } return o; });
+  // Höhen mit Ausklang-Vorhersage: Pegel minus fortgeschriebenes Abklingen davor (leise Hi-Hat im Ausklang einer offenen Hi-Hat/Snare)
+  const eh = E[2], Q = new Float32Array(F);
+  for (let f = 10; f < F; f++) { const a = (eh[f - 2] + eh[f - 3] + eh[f - 4]) / 3, b = (eh[f - 7] + eh[f - 8] + eh[f - 9]) / 3, r = b > 1e-9 ? Math.min(1, Math.pow(a / b, 0.2)) : 1; Q[f] = Math.max(0, eh[f] - a * r * r * r); }
+  return {E, O, H, F, Q};
+}
+// Schwelle aus dem Lied: zwei Häufungen (log, Otsu) unter den Werten > lo; null, wenn keine klare Trennung (Mittel-Verhältnis < sep)
+function spk11bSplit(v, lo, sep) {
+  const a = v.filter(x => x > lo).map(x => Math.log(x)).sort((p, q) => p - q), n = a.length; if (n < 8) return null;
+  const cs = [0]; for (const x of a) cs.push(cs[cs.length - 1] + x);
+  let best = -1, bi = -1;
+  for (let i = 2; i <= n - 2; i++) { const m0 = cs[i] / i, m1 = (cs[n] - cs[i]) / (n - i), w = i * (n - i) * (m1 - m0) * (m1 - m0); if (w > best) { best = w; bi = i; } }
+  if (bi < 0) return null; const m0 = cs[bi] / bi, m1 = (cs[n] - cs[bi]) / (n - bi);
+  return m1 - m0 >= Math.log(sep) ? {t: Math.exp((a[bi - 1] + a[bi]) / 2), lo: Math.exp(m0), hi: Math.exp(m1), nHi: n - bi} : null;
+}
+function spk11bHits(x, sr, stepS, nStep, fr, ref) {
+  const A = spk11bEnv(x, sr), {E, O, H, F} = A, Bo = ref && ref.bass && ref.bass.length === x.length ? spk11bEnv(ref.bass, sr) : null;
+  const pk = [[], [], []], dk = [], bk = [], pq = [];
+  for (let k = 0; k < nStep; k++) {
+    const c = k * stepS, f0 = Math.max(0, Math.floor((c - 0.03) * sr / H)), f1 = Math.min(F - 1, Math.ceil((c + 0.035) * sr / H));
+    for (let b = 0; b < 3; b++) { let m = 0, mf = f0; for (let f = f0; f <= f1; f++) if (O[b][f] > m) { m = O[b][f]; mf = f; } pk[b].push(m); if (!b) { let e0 = 0; for (let f = mf; f <= Math.min(F - 1, mf + 4); f++) e0 = Math.max(e0, E[0][f]); const f2 = Math.min(F - 1, mf + Math.round(0.1 * sr / H)); dk.push(e0 > 0 ? E[0][f2] / e0 : 1); } }
+    { let q = 0; for (let f = f0; f <= f1; f++) q = Math.max(q, A.Q[f]); pq.push(q); }
+    let m = 0; if (Bo) for (let f = f0; f <= Math.min(Bo.F - 1, f1); f++) m = Math.max(m, Bo.O[0][f]); bk.push(m);
+  }
+  const IN = ref && ref.inner, ref97 = IN ? IN.r97 : pk.map(a => { const s = a.slice().sort((p, q) => p - q); return Math.max(1e-4, s[Math.floor(0.97 * (s.length - 1))] || 0); });   // IN: leiser Abschnitt – Vorlagen des ganzen Lieds
+  const nl = pk[0].map(v => v / ref97[0]), nm = pk[1].map(v => v / ref97[1]), nh = pk[2].map(v => v / ref97[2]), nq = pq.map(v => v / ref97[2]);
+  const lo = !fr || fr[0] < 200, mi = !fr || (fr[1] > 200 && fr[0] < 5000), hi = !fr || fr[1] > 4000;
+  // Snare-Vorlage aus dem Lied: Höhen-Einsätze in zwei Häufungen (Hi-Hat leiser, Snare lauter); Körper (Tiefen oder Mitten) muss da sein
+  // (zwei Stufen: leise/laute Hi-Hats, darüber die Snare – trennt sich die obere Häufung noch einmal klar, gilt die obere Grenze)
+  let sS = IN ? IN.sS : hi ? spk11bSplit(nh, 0.1, 1.5) : null; if (sS && !IN) { const s2 = spk11bSplit(nh, sS.t, 1.5); if (s2 && s2.nHi >= 8) sS = s2; }
+  const tS = sS ? Math.max(0.45, Math.min(0.75, sS.t)) : 0.7;
+  const sK = IN ? IN.sK : lo ? spk11bSplit(nl, 0.08, 1.8) : null, tK = sK ? Math.max(0.3, Math.min(0.6, sK.t)) : 0.35, tK2 = 0.3;   // tK2: untere Kick-Schwelle (= kleinster Wert von tK)
+  const isSn = k => mi && ((nm[k] > 0.35 && nl[k] < tK && pk[1][k] >= 1.9 * pk[0][k]) || (hi && nh[k] >= tS && (nm[k] >= 0.12 || nl[k] >= 0.12)));
+  // Kick-Vorlage: Tiefen-Einsätze in zwei Häufungen (Kick vs. Reste von Snare/Bass)
+  const out = [], hat = new Uint8Array(nStep), snS = [], kk = new Uint8Array(nStep), weak = [], spb = ref && ref.spb > 0 ? ref.spb : 16;
+  for (let k = 0; k < nStep; k++) {
+    const sn = isSn(k), dom = !Bo || pk[0][k] >= 0.7 * bk[k];
+    const mc = pk[1][k] >= 0.9 * pk[0][k], tail = k > 0 && kk[k - 1] && !mc && nl[k] < 0.8 * nl[k - 1];   // 1/16 nach einem Kick ohne eigenen Anschlag: Ausklang/Schwebung Kick+Sub-Bass
+    const strong = sK && nl[k] >= 0.65 * sK.hi && !tail;   // in der Kick-Häufung
+    const click = strong || mc;   // Anschlag reicht in die Mitten (Schwebung Kick+Bass bleibt tief)
+    const kick = lo && click && !tail && (!IN || strong) && (dk[k] < 0.6 || strong) && pk[0][k] >= (strong ? 0.25 : 0.4) * pk[1][k] && ((nl[k] >= tK && dom && (!sn || strong || !sK)) || (nl[k] >= tK2 && !sn && pk[0][k] >= 1.5 * bk[k]));
+    if (kick) { out.push({k, w: 'k', v: Math.min(1, 0.45 + 0.55 * nl[k])}); kk[k] = 1; }
+    else if (lo && click && !sn && dk[k] < 0.7 && nl[k] >= 0.6 * tK2 && pk[0][k] >= 0.4 * pk[1][k] && (!Bo || pk[0][k] >= 0.7 * bk[k])) weak.push(k);
+    if (sn) { out.push({k, w: 's', v: Math.min(1, 0.45 + 0.55 * Math.min(1, Math.max(nm[k], nh[k]) / 0.8))}); snS.push([k, nh[k]]); }
+    else if (hi && (nh[k] > 0.12 || nq[k] > 0.12)) { out.push({k, w: 'h', v: Math.min(1, 0.35 + 0.6 * nh[k])}); hat[k] = 1; }   // nq: gleiche Schwelle; tiefer (0,08) kämen Ghost-Snares als Hi-Hat dazu
+  }
+  // Wiederholung je Takt: ein schwacher Tiefen-Einsatz zählt als Kick, wenn in den Takten ringsum (±4) an derselben Stelle meist einer ist
+  for (const k of weak) { const p = k % spb, b0 = Math.floor(k / spb); let n = 0, c = 0; for (let b = b0 - 4; b <= b0 + 4; b++) { const j = b * spb + p; if (b === b0 || j < 0 || j >= nStep) continue; c++; n += kk[j]; } if (c >= 3 && n >= 0.6 * c) out.push({k, w: 'k', v: Math.min(1, 0.45 + 0.55 * nl[k])}); }
+  for (const [k, v] of snS) if (v > 0.2 && ((k >= 2 && hat[k - 2] && hat[k + 2]) || (k >= 1 && hat[k - 1] && hat[k + 1]))) out.push({k, w: 'h', v: Math.min(1, 0.35 + 0.3 * v)});
+  // Leiser Abschnitt (≥ 2 Takte, −12 … −26 dB gegen die lauten Takte), in dem alle Bänder gleich viel leiser sind (Einsätze je Band innerhalb
+  // 6 dB, wie ein leise gemischtes Intro): dort eigene Normierung – gilt nur, wenn ein Schlag-Muster mit Höhen (Hi-Hat/Snare) entsteht
+  // (≥ 2 Schläge je Takt, ≥ 70 % auf wiederkehrenden Stellen, ≥ 1 Höhen-Schlag je Takt). Reste anderer Instrumente sind nicht gleichmäßig leiser.
+  const leise = [];
+  if (!(ref && ref.inner) && spb >= 4 && nStep >= 4 * spb) {
+    const nb = Math.floor(nStep / spb), Lb = [];
+    for (let b = 0; b < nb; b++) { const f0 = Math.floor(b * spb * stepS * sr / H), f1 = Math.min(F, Math.floor((b + 1) * spb * stepS * sr / H)); let s = 0; for (let f = f0; f < f1; f++) s += E[0][f] * E[0][f] + E[1][f] * E[1][f] + E[2][f] * E[2][f]; Lb.push(s / Math.max(1, f1 - f0)); }
+    const q = Lb.slice().sort((p, q) => p - q)[Math.floor(0.9 * (nb - 1))] || 0, ql = q * Math.pow(10, -2.6), qh = q * Math.pow(10, -1.2), isQ = b => Lb[b] >= ql && Lb[b] <= qh;
+    for (let b = 0; b < nb;) {
+      if (!isQ(b)) { b++; continue; }
+      let e = b; while (e < nb && isQ(e)) e++;
+      const k0 = b * spb, n = (e - b) * spb, rb = [];
+      for (let c = 0; c < 3; c++) if (c === 0 ? lo : c === 1 ? mi : hi) { const z = pk[c].slice(k0, k0 + n).sort((p, q) => p - q); rb.push((z[Math.floor(0.97 * (z.length - 1))] || 0) / ref97[c]); }
+      const L = {takte: [b, e], dB: rb.map(v => Math.round(20 * Math.log10(v + 1e-9))), ok: false}; if (e - b >= 2) leise.push(L);
+      if (e - b >= 2 && rb.length && Math.min(...rb) > 0 && Math.max(...rb) <= 2 * Math.min(...rb)) {
+        const i0 = Math.round(k0 * stepS * sr), gm = Math.sqrt(Math.min(...rb) * Math.max(...rb)), hs = spk11bHits(x.subarray(i0, Math.min(x.length, i0 + Math.round((n * stepS + 0.05) * sr))), sr, stepS, n, fr, {spb, inner: {r97: ref97.map(v => v * gm), sK, sS}});
+        const pos = new Map(); for (const h of hs) { const p = h.k % spb; if (!pos.has(p)) pos.set(p, new Set()); pos.get(p).add(Math.floor(h.k / spb)); }
+        const rec = new Set([...pos].filter(([p, z]) => z.size >= Math.max(2, 0.5 * (e - b))).map(([p]) => p)), onRec = hs.filter(h => rec.has(h.k % spb)).length;
+        if (hs.length >= 2 * (e - b) && onRec >= 0.7 * hs.length && hs.filter(h => h.w !== 'k').length >= e - b) {
+          for (let i = out.length - 1; i >= 0; i--) if (out[i].k >= k0 && out[i].k < k0 + n) out.splice(i, 1);
+          for (const h of hs) out.push({k: h.k + k0, w: h.w, v: h.v}); L.ok = true;
+        }
+      }
+      b = e;
+    }
+  }
+  out.sort((p, q) => p.k - q.k); out.info = {tK: +tK.toFixed(3), tS: +tS.toFixed(3), kick: !!sK, snare: !!sS, bass: !!Bo, leise};
+  return out;
+}
+// FFT (Radix 2, an Ort und Stelle) für spk11bSpec
+function spk11bFft(re, im) {
+  const n = re.length; for (let i = 1, j = 0; i < n; i++) { let b = n >> 1; for (; j & b; b >>= 1) j ^= b; j ^= b; if (i < j) { let t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; } }
+  for (let len = 2; len <= n; len <<= 1) { const a = -2 * Math.PI / len, wr = Math.cos(a), wi = Math.sin(a); for (let i = 0; i < n; i += len) { let cr = 1, ci = 0; for (let j = 0; j < len / 2; j++) { const p = i + j, q = p + len / 2, tr = re[q] * cr - im[q] * ci, ti = re[q] * ci + im[q] * cr; re[q] = re[p] - tr; im[q] = im[p] - ti; re[p] += tr; im[p] += ti; const t = cr * wr - ci * wi; ci = cr * wi + ci * wr; cr = t; } } }
+}
+// Leistungsspektrum < 600 Hz je Rahmen (≈ 11 kHz, 2048 Punkte, Sprung 1024 ≈ 93 ms) – für den Grundton-Bereich der Bass-Ebene.
+// st (wahlweise): Zwischenstand für die Rechnung in Stücken (spk11bSpecA) – dann Rückgabe null, solange nicht fertig
+function spk11bSpec(x, sr, st) {
+  let Z = st && st.Z;
+  if (!Z) {
+    const D = Math.max(1, Math.round(sr / 11025)), r = sr / D, N = 2048, hop = 1024, n = Math.floor(x.length / D), xs = new Float32Array(n);
+    for (let i = 0; i < n; i++) { let a = 0; for (let j = 0; j < D; j++) a += x[i * D + j]; xs[i] = a / D; }
+    const w = new Float32Array(N); for (let i = 0; i < N; i++) w[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / N);
+    Z = {D, r, N, hop, xs, w, F: Math.max(0, Math.floor((n - N) / hop) + 1), K: Math.ceil(600 * N / r), S: [], f: 0, re: new Float32Array(N), im: new Float32Array(N)}; if (st) st.Z = Z;
+  }
+  const {N, hop, xs, w, re, im, K, S} = Z, t0 = st ? performance.now() : 0;
+  while (Z.f < Z.F) {
+    const f = Z.f++; for (let i = 0; i < N; i++) { re[i] = xs[f * hop + i] * w[i]; im[i] = 0; } spk11bFft(re, im); const s = new Float32Array(K); for (let k = 0; k < K; k++) s[k] = re[k] * re[k] + im[k] * im[k]; S.push(s);
+    if (st && (f & 15) === 15 && Z.f < Z.F && performance.now() - t0 > 10) return null;
+  }
+  return {S, hop: hop * Z.D, win: N * Z.D, df: Z.r / N, K};
+}
+async function spk11bSpecA(x, sr) {   // wie spk11bSpec, gibt alle ~10 ms den Haupt-Faden frei (kein Ruckeln bei langen Liedern)
+  const st = {}, y = typeof vvYield === 'function' ? vvYield : () => new Promise(r => setTimeout(r, 0)); let o;
+  while (!(o = spk11bSpec(x, sr, st))) await y();
+  return o;
+}
+// Hüllen: während „Szenen anlegen“ (SPK11B.go) zur Bass-Ebene das Spektrum rechnen (in Stücken); Drum-Ebene → spk11bHits mit Takt-Länge.
+// Die Bass-Ebene als Gegenreferenz der Kicks ist abgeschaltet: auf 7 Liedern ohne jede Wirkung, kostete aber ein Rendern, ~42 MB je 4 min und die doppelte Zeit.
+{ const f0 = spk11Go; spk11Go = async function (U) { SPK11B.go = {spec: {}, hits: null}; try { return await f0(U); } finally { SPK11B.go = null; } }; }
+{ const f0 = spk11Render; spk11Render = async function (U, lid, a, b, sel, prog) {
+  const x = await f0(U, lid, a, b, sel, prog), G = SPK11B.go;
+  try { const L = G && U && U.meta && (U.meta.layers || []).find(l => l.id === lid); if (L && L.art === 'bass' && x && x.length) G.spec[lid] = await spk11bSpecA(x, U.meta.sr); } catch (e) { logErr(e); }
+  return x;
+}; }
+{ spk11Hits = function (x, sr, stepS, nStep, fr) {
+  const G = SPK11B.go; let spb = 16;
+  try { const g = SPK1.ui && spk1Grid0(SPK1.ui); if (g && g.bar > 0 && stepS > 0) spb = Math.max(1, Math.round(g.bar / stepS)); } catch (e) {}
+  const out = spk11bHits(x, sr, stepS, nStep, fr, {spb}); if (G) G.hits = out.info; return out;
+}; }
+// Haken nach der Still-Regel in spk11Go: Bass-Trennreste je Teil still, leise echte Drum-Teile mit Muster nicht still
+function spk11bStill(U, rows, parts, g, A0) {
+  const G = SPK11B.go; if (!G || !rows || !parts || !parts.length) return;
+  const ly = U.meta.layers || [], sr = U.meta.sr, stepS = g.beat / 4, spb = Math.max(1, Math.round(g.bar / stepS)), diag = {}, bnd = {};
+  for (const r of rows) {
+    const L = ly.find(l => l.id === r.lid), art = L && L.art; if (!r.still || !r.rms) continue;
+    if (art === 'bass' && G.spec[r.lid] && G.spec[r.lid].S.length) {
+      const Sp = G.spec[r.lid], fr = j => [Math.max(0, Math.ceil((parts[j].A - A0) * g.bar * sr / Sp.hop)), Math.min(Sp.S.length, Math.floor(((parts[j].B - A0) * g.bar * sr - Sp.win) / Sp.hop) + 1)];   // nur Rahmen ganz im Teil
+      let jL = -1; r.rms.forEach((v, j) => { if (!r.still[j] && (jL < 0 || v > r.rms[jL])) jL = j; }); if (jL < 0) continue;
+      const [a0, a1] = fr(jL); if (a1 - a0 < 2) continue;
+      const acc = new Float64Array(Sp.K); for (let f = a0; f < a1; f++) for (let k = 0; k < Sp.K; k++) acc[k] += Sp.S[f][k] / (a1 - a0);
+      const kLo = Math.max(1, Math.ceil(25 / Sp.df)), kHi = Math.min(Sp.K - 1, Math.floor(500 / Sp.df)); let tot = 0; for (let k = kLo; k <= kHi; k++) tot += acc[k];
+      let c = 0, k0 = kLo, k1 = kHi; for (let k = kLo; k <= kHi; k++) { c += acc[k]; if (c < 0.02 * tot) k0 = k + 1; if (c >= 0.5 * tot) { k1 = k; break; } }
+      let eL = 0; for (let k = k0; k <= k1; k++) eL += acc[k]; if (!(eL > 0)) continue;
+      diag[r.name] = parts.map((p, j) => {
+        const ges = 20 * Math.log10((r.rms[j] + 1e-9) / (r.rms[jL] + 1e-9)), [b0, b1] = fr(j); let m = 0, on = 0;   // ges/band: dB gegen den lautesten Teil
+        for (let f = b0; f < b1; f++) { let e = 0; for (let k = k0; k <= k1; k++) e += Sp.S[f][k]; m += e; if (e > 1e-3 * eL) on++; }
+        const n = Math.max(1, b1 - b0), band = 10 * Math.log10(m / n / eL + 1e-12), share = on / n, rest = j !== jL && !r.still[j] && ges <= -8 && band <= -30 && band - ges <= -15 && share < 0.35;   // band − ges: echtes leises Teil im selben Register −5…−8, Trennrest −25…−90
+        if (rest) r.still[j] = true;
+        return {ges: Math.round(ges), band: Math.round(band), abst: Math.round(band - ges), share: +share.toFixed(2), rest};
+      });
+      bnd[r.name] = Math.round(k0 * Sp.df) + '–' + Math.round(k1 * Sp.df) + ' Hz';
+    }
+    if (art === 'drums' && r.dr && r.dr.length) {
+      diag[r.name] = parts.map((p, j) => {
+        if (!r.still[j] || r.rms[j] < 0.002) return {still: r.still[j]};
+        const k0 = Math.round((p.A - A0) * g.bar / stepS), k1 = Math.round((p.B - A0) * g.bar / stepS), nb = Math.max(1, p.B - p.A), hs = r.dr.filter(h => h.k >= k0 && h.k < k1);
+        const bars = new Map(); for (const h of hs) { const q = (h.k - k0) % spb; if (!bars.has(q)) bars.set(q, new Set()); bars.get(q).add(Math.floor((h.k - k0) / spb)); }
+        const rec = new Set([...bars].filter(([q, s]) => s.size >= Math.max(2, 0.5 * nb)).map(([q]) => q)), onRec = hs.filter(h => rec.has((h.k - k0) % spb)).length;
+        const muster = hs.length >= 2 * nb && onRec >= 0.7 * hs.length; if (muster) r.still[j] = false;
+        return {still: r.still[j], hits: hs.length, muster};
+      });
+    }
+  }
+  SPK11B.last = {diag, band: bnd, hits: G.hits};
+}
+try { window.__spk11b = {last: () => SPK11B.last, hits: (x, sr, st, n, fr, bass, spb) => spk11bHits(x, sr, st, n, fr, {bass, spb}), spec: (x, sr) => spk11bSpec(x, sr)}; } catch (e) {}
+/* SPK11B-END */
 /* ===== VX2-BEGIN (Paket VX2 – Gesang-Editor an echtem Gesang: Stücke = Noten/Silben; Präfix vx2/VX2)
    Befund (Echttest mit echtem Gesang): die Einsatz-Erkennung (wpDetect) setzt Marken auch mitten in gehaltenen Vokalen (Vibrato-/
    Pegelwellen) – 33-s-Aufnahme: 150 Stücke für 59 Noten, nur 37 % beginnen an einer Note; Quantisieren schob Teile mitten in Noten.
@@ -110660,6 +110839,98 @@ function init() {
   } catch (e) {}
   requestAnimationFrame(frame);
 }
+/* PERF1B-BEGIN */
+/* PERF1B (PERF1, Plan Nr. 2): die Trommel-Klänge (DrumSynth.buildSteps, beim ersten ▶ ≈ 210 ms in einem Stück bei 4×) entstehen
+   schon vor dem ersten Tipp – in Leerlauf-Schritten nach dem Laden, mit einer Hilfs-Umgebung ohne Geste (buildSteps braucht nur
+   sampleRate + createBuffer; ein AudioBuffer gehört keiner Umgebung). Die Abtastrate ist die zuletzt gesehene (synq.perf1b.sr),
+   sonst 48 kHz. Beim ersten echten Start übernimmt drumBufsStep (Haken) die fertigen Schritte, wenn die Rate gleich ist; sonst
+   bleibt alles wie bisher (Neubau für die Umgebung). Die Schritte und Klänge sind dieselben – nur der Zeitpunkt ist früher. */
+const PERF1B = {sr: 0, s: null, k: 0, wait: false, off: false, took: false};
+function perf1bRate() { let r = 0; try { r = +localStorage.getItem('synq.perf1b.sr') || 0; } catch (e) {} return r >= 8000 && r <= 192000 ? r : 48000; }
+function perf1bStart() {
+  if (PERF1B.s || PERF1B.off || PERF1B.took || AU.ctx || typeof AudioBuffer !== 'function' || typeof DrumSynth === 'undefined' || !DrumSynth.buildSteps) return;
+  const sr = perf1bRate();
+  try { new AudioBuffer({numberOfChannels: 1, length: 1, sampleRate: sr}); } catch (e) { PERF1B.off = true; return; }
+  const h = {sampleRate: sr, createBuffer: (ch, len, r) => new AudioBuffer({numberOfChannels: ch, length: len, sampleRate: r})};
+  try { PERF1B.s = DrumSynth.buildSteps(h); } catch (e) { PERF1B.off = true; return; }
+  PERF1B.sr = sr; PERF1B.k = 0; perf1bIdle();
+}
+function perf1bIdle() {
+  if (PERF1B.wait || !PERF1B.s || AU.ctx || PERF1B.k >= PERF1B.s.steps.length) return;
+  PERF1B.wait = true;
+  idle(() => {
+    PERF1B.wait = false; if (AU.ctx || !PERF1B.s) return;                    // die echte Umgebung ist da: drumBufsStep übernimmt
+    try { PERF1B.s.steps[PERF1B.k](); PERF1B.k++; } catch (e) { PERF1B.s = null; PERF1B.off = true; return; }
+    perf1bIdle();
+  });
+}
+// Haken in drumBufsStep (vor dem Neubau für eine neue Umgebung c): gleiche Rate → die vorgebauten Schritte übernehmen (einmal)
+function perf1bTake(c) {
+  if (!c || DRB.ctx === c) return false;
+  try { const AC = window.AudioContext || window.webkitAudioContext; if (AC && c instanceof AC && c.sampleRate !== perf1bRate()) localStorage.setItem('synq.perf1b.sr', String(c.sampleRate)); } catch (e) {}
+  const s = PERF1B.s; if (!s || PERF1B.took || c.sampleRate !== PERF1B.sr) return false;
+  PERF1B.s = null; PERF1B.took = true;
+  Object.assign(DRB, {ctx: c, B: s.B, steps: s.steps, k: PERF1B.k}); AU.drumBufs = null;
+  return true;
+}
+try { addEventListener('load', () => { try { idle(perf1bStart); } catch (e) {} }); } catch (e) {}
+/* PERF1B-END */
+/* PERF1A-BEGIN */
+/* PERF1A (PERF1, Plan Nr. 1): eine neue Fassung nur einmal laden. Bisher lud vwReload die Seite unter ?v=<Fassung> – der
+   Browser-Zwischenspeicher der normalen Adresse blieb dabei alt, also kam die Datei (≈ 2,9 MB) beim nächsten Start vom
+   Home-Bildschirm ein zweites Mal (oder bis zu 10 min lang noch die alte). Jetzt holt der Vorlauf die normale Adresse einmal am
+   Zwischenspeicher vorbei (cache: 'reload' – das füllt Browser-Zwischenspeicher und Service-Worker-Kopie mit der neuen Fassung),
+   prüft, dass genau diese Fassung kam, und lädt dann die normale Adresse. Nur beim ersten Versuch je Fassung; scheitert der Vorlauf,
+   kommt die alte Antwort oder dauert es zu lange, bleibt der bisherige Weg (?v=) – der zweite Versuch nimmt ihn immer.
+   Prüfung (Befunde 9–12): beide Wege (normale Adresse und Rückfall ?v=) laden erst neu, wenn vwIdle() unmittelbar davor wahr ist
+   (vor und nach dem Speichern geprüft) – nie während Wiedergabe, Aufnahme oder Tippen in ein Feld, auch wenn der Vorlauf erst spät
+   scheitert. Solange ein Vorlauf läuft oder auf Leerlauf wartet, tut eine zweite VW-Prüfung nichts (Haken am Anfang von vwReload).
+   Die Antwort wird als Strom gelesen: die Fassungszeile der App steht nach ≈ 26 % der Datei; eine alte Fassung bricht den Abruf dort
+   ab (statt sie ganz zu laden), die neue wird zu Ende gelesen (sonst bliebe der Zwischenspeicher unvollständig), aber nie als ganze
+   Zeichenkette gehalten. */
+const PERF1A = {busy: false, ok: null};
+function perf1aBusy() { try { return !!PERF1A.busy; } catch (e) { return false; } }
+try { addEventListener('pageshow', e => { if (e.persisted) PERF1A.busy = false; }); } catch (e) {}   // aus dem Zurück-Cache: neu prüfen dürfen
+// liest den Abruf bis zur Fassungszeile der App (erste Zeile „const VERSION“ mit Ziffern-Fassung); true nur, wenn es genau v ist
+async function perf1aRead(r, v, ac) {
+  if (!r || !r.ok) return false;
+  const K = "const VERSION = '", ver = (s, i) => { const m = /^(\d+\.\d+\.\d+)';/.exec(s.slice(i + K.length, i + K.length + 24)); return m ? m[1] : null; };
+  if (!r.body || typeof r.body.getReader !== 'function' || typeof TextDecoder !== 'function') {
+    const t = await r.text(); for (let i = t.indexOf(K); i >= 0; i = t.indexOf(K, i + 1)) { const f = ver(t, i); if (f) return f === v; } return false;
+  }
+  const rd = r.body.getReader(), dec = new TextDecoder(); let tail = '', seen = null;
+  for (;;) {
+    const {done, value} = await rd.read();
+    if (done) return seen === true;
+    if (seen) continue;                                                       // neue Fassung erkannt: nur noch zu Ende lesen
+    const s = tail + dec.decode(value, {stream: true});
+    for (let i = s.indexOf(K); i >= 0; i = s.indexOf(K, i + 1)) { const f = ver(s, i); if (f) { seen = f === v; break; } }
+    if (seen === false) { try { rd.cancel(); } catch (e) {} try { if (ac) ac.abort(); } catch (e) {} return false; }   // alte Fassung: hier abbrechen
+    tail = seen ? '' : s.slice(-48);
+  }
+}
+function perf1aPre(v, o) {
+  if (!v || !o || o.n !== 1 || PERF1A.busy || typeof fetch !== 'function' || !/^https?:$/.test(location.protocol)) return Promise.resolve(false);
+  PERF1A.busy = true;
+  const wait = (ms, x) => new Promise(r => setTimeout(() => r(x), ms));
+  const ac = typeof AbortController === 'function' ? new AbortController() : null;
+  const get = fetch(location.pathname, Object.assign({cache: 'reload', credentials: 'same-origin'}, ac ? {signal: ac.signal} : null))
+    .then(r => perf1aRead(r, v, ac)).catch(() => false);
+  return Promise.race([get, wait(60000, false)]).then(ok => {
+    if (!ok) { try { if (ac) ac.abort(); } catch (e) {} }                    // Zeitgrenze: den Abruf nicht weiterlaufen lassen
+    PERF1A.ok = !!ok;
+    const go = async () => {
+      if (!vwIdle()) { setTimeout(go, 3000); return; }                       // Wiedergabe/Aufnahme/Feld: kurz danach
+      try { await Promise.race([saveNow(), wait(1500)]); } catch (e) {}
+      try { if (typeof cloudFlushNow === 'function') cloudFlushNow(); } catch (e) {}
+      if (!vwIdle()) { setTimeout(go, 3000); return; }                       // während des Speicherns ▶ oder Aufnahme: später
+      if (!ok) location.replace(location.pathname + '?v=' + encodeURIComponent(v) + location.hash);   // Rückfall: der bisherige Weg
+      else if (!location.search) location.reload(); else location.replace(location.pathname + location.hash);
+    };
+    go(); return true;
+  }, () => { PERF1A.busy = false; return false; });
+}
+/* PERF1A-END */
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 
 </script>

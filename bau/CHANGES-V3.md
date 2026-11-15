@@ -1,3 +1,13 @@
+## 4.71.0 — Szenen-Drums genauer, keine Bass-Phantomnoten, schnellerer Start
+
+- **Spektral → Szenen anlegen, Drums:**
+  - Kick, Snare und Hi-Hat werden jetzt aus dem Lied selbst eingemessen (laut/leise getrennt). Gemessen: Kick 80/80, Snare 64/64, Hi-Hat 288/288, keine falschen Schläge mehr (vorher bis zu +26 Kicks).
+  - Leise Intros/Outros mit Hi-Hat bleiben erhalten, wenn sie ein Muster bilden.
+- **Bass ohne Phantomnoten:** Teile, in denen die Bass-Ebene nur Trennreste enthält, bekommen keinen Bass-Clip mehr (Prüferlied: Intro/Outro 10 → 0 Noten). Echte leise Bass-Intros bleiben.
+- **Erster ▶ schneller:** Die Trommel-Klänge werden schon im Leerlauf vorbereitet (Sperrzeit nach dem ersten ▶ −183 ms).
+- **Update nur einmal laden:** Eine neue Fassung wird nicht mehr zweimal heruntergeladen. Läuft gerade Wiedergabe oder Aufnahme, wartet das Neuladen.
+Tests: Szenen-Drums 17/17 + Szenen 41/41 (vorher 38/41), mehrere Clips 118/118 (Zeitmessung unter Last wie 4.70), Transponieren 81/81, Einzelspuren 87/87 + 51/51 + 21/21, Spektral-Auswahl 98/98 · 72/72 · 47/47 · 28/28, Gesang 61/61 · 14/14 · 15/15, Import, Chor 82/82, Echttest 52/53, Spektral wie 4.70.
+
 ## 4.70.0 — Abschnitt und mehrere Clips transponieren; Spektral-Auswahl wie im Profi-Werkzeug
 
 - **Songteil / Bereich transponieren:**
