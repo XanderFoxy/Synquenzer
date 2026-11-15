@@ -20,6 +20,7 @@ const helpers = () => {
   const U = () => __spk.page.ui();
   { const f0 = window.spk1Frame, p0 = window.fokus1Pre; window.__fr = [];   // Messung: lange Bilder (Zeichnen) und Fokus-Vorbereitung
     window.spk1Frame = function (u) { const t = performance.now(), r = f0.apply(this, arguments), d = performance.now() - t; if (d > 12) __fr.push({t: Math.round(t), d: Math.round(d), m: u.f1 && u.f1.mode, w: 'bild'}); return r; };
+    for (const n of ['fokus1Mode', 'fokus1Drop', 'spk1Tap', 'fokus1Done', 'spk1ViewDd']) { const g = window[n]; window[n] = function () { const t = performance.now(), r = g.apply(this, arguments), d = performance.now() - t; if (d > 6) __fr.push({t: Math.round(t), d: Math.round(d), w: n}); return r; }; }
     window.fokus1Pre = function (u) { const t = performance.now(), r = p0.apply(this, arguments), d = performance.now() - t; if (d > 6) __fr.push({t: Math.round(t), d: Math.round(d), w: 'pre'}); return r; }; }
   window.__fkT = {
     hash: arrs => { let h = 0x811c9dc5; for (const a of arrs) h = fnv(h, a); return h.toString(16); },
@@ -96,6 +97,7 @@ for (const [W, H] of VIEWS) {
   const dbg = () => p.evaluate(() => { const u = __spk.page.ui(); return {cw: u.cw, ch: u.ch, v: JSON.stringify(u.v), tint: u.tintOn, tid: u.tint && u.tint.ids.join(), lo: u.lo, hi: u.hi, st: u.st.textContent}; });
   const vor = await p.evaluate(() => ({spec: __fkT.specHash(), tex: __fkT.specTex(), img: __fkT.img(), lA: __fkT.lum(2.8, 5.2, 220), lA2: __fkT.lum(2.8, 5.2, 440), lB: __fkT.lum(8.8, 11.2, 311.13), stat: __spk.page.info().stat}));
   const vorDbg = await dbg();
+  if (process.env.DDTEST === '1') { const h1 = await p.evaluate(() => __fkT.img()); await openView(); await wait(300); await closeDd(); await wait(300); const h2 = await p.evaluate(() => __fkT.img()); console.log('  DD auf/zu ohne Fokus:', h1, h2, h1 === h2 ? 'gleich' : 'ANDERS'); }
   await shot('1-vorher-alles');
   // ---- Klappfenster: Fokus oben, 44 px, im Bild ----
   await openView(); await wait(200);
