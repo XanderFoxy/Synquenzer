@@ -33,11 +33,23 @@ a) Kachel-Zeichnen nach großen Ansicht-Sprüngen, b) FFT-Größe 4096 ↔ 8192,
   Take aus PCM 11 ms, normSong 7 ms, Verlauf 4 ms), dann **ein zweites buildGrid** 8–17 ms (mxApply → gl1MxFlat erzwingt Layout),
   Toast 6 ms, imp1Paint 3–8 ms. buildGrid lief also zweimal in derselben Aufgabe (restoreTrack und imp1Place-Ende).
 
-## Änderung (Endstand): Block `LT1-BEGIN … LT1-END` hinter FOKUS1-END (13 Zeilen) + 2 Haken – nur c
+## Änderung (Endstand nach Prüfung): Block `LT1-BEGIN … LT1-END` hinter FOKUS1-END (62 Zeilen, 109204–109265) + 6 Haken – nur c
+(Teil 1 = zweites buildGrid weg, Haken 1–2; Teil 2 = Take im Leerlauf vorbereiten, Haken 3–6, nach Prüfer-Befund 1, siehe „Prüfung“)
 | # | Stelle | Haken |
 |---|---|---|
 | 1 | `imp1Place` vor `imp1Step` (neue Zeile) | `if (typeof lt1GridMark === 'function') lt1GridMark();   /* LT1 */` |
 | 2 | `imp1Place` Zeile `buildGrid(); svLayout()` (Zeile ergänzt) | `if (UI.heads && EL.grid && !(typeof lt1GridOk === 'function' && lt1GridOk())) buildGrid(); …   /* LT1 */` |
+| 3 | `imp1Run` nach `c.st = 'fertig'` (neue Zeile) | `if (typeof lt1PreStart === 'function') lt1PreStart(c);   /* LT1 */` |
+| 4 | `imp1Take` erste Zeile (neu) | `if (typeof lt1Take === 'function') { const id = lt1Take(c); if (id) return id; }   /* LT1 */` |
+| 5 | `tkToBuffer` erste Zeile (neu) | `if (typeof lt1PreBuf === 'function') { const q = lt1PreBuf(pcm, sr); if (q) return q; }   /* LT1 */` |
+| 6 | `tkStore` Zeile `const jobs = …` (Zeile ergänzt) | `const jobs = (typeof lt1StoreJobs === 'function' && lt1StoreJobs(pcm, chunks)) \|\| chunks.map(…)   /* LT1 */` |
+
+- Teil 2 (`lt1PreStart/lt1Take/lt1PreBuf/lt1StoreJobs`): ist die Analyse fertig (Blatt offen, Tempo passt → kein Dehnen), werden die
+  Take-Kopie ab Song-Takt 0 (wie imp1Take) und der AudioBuffer (wie tkToBuffer, `pcm[i] * (1 / 32767)`) per setTimeout-Kette in
+  Scheiben ≤ ~6 ms vorbereitet. imp1Take nimmt sie nur, wenn Audio, Versatz (`round(org·sr)`) und Rate passen, sonst der alte Weg.
+  tkToBuffer/tkStore erkennen nur genau diese Kopie (`LT1.use`, nur während tkAddPcmTake gesetzt); tkStore kopiert dann jedes
+  1-MB-Stück erst beim Schreiben (die Kopie hält und ändert sonst niemand). Blatt zu / neue Datei → Vorbereitung verworfen (≤ 1 s).
+  Speicher: dieselben Puffer wie beim Ablegen, nur früher; Spitze beim Ablegen kleiner (keine 17 MB Stück-Kopien auf einmal).
 
 - `lt1GridMark/lt1GridOk`: merkt `UI.cnw` vor dem Ablegen (buildGrid legt es jedes Mal neu an). Wurde das Raster im Ablegen schon
   passend gebaut (neue Spur „Original“ → restoreTrack → buildGrid; Kopf-Zahl = NT, alle Köpfe da), entfällt das zweite buildGrid;
@@ -52,16 +64,19 @@ a) Kachel-Zeichnen nach großen Ansicht-Sprüngen, b) FFT-Größe 4096 ↔ 8192,
 
 ## Messungen (lt1-test.mjs; Last 4–6 auf 4 Kernen, andere Agenten + Regression liefen mit)
 Long Task = längste Long Task je Lauf (0 = keine > 50 ms); „Ablegen“ = Dauer von imp1Place selbst (performance.now).
-Runde 1 (16:2x–16:33, Last 4,5–7,6; index mit c-Änderung **und** dem verworfenen Kachel-Versuch), Runde 2 (c, Endfassung, Last 7,4–8,9).
+Runde 1 (16:2x–16:33, Last 4,5–7,6; index mit c-Änderung **und** dem verworfenen Kachel-Versuch), Runde 2 (c, Fassung vor der Prüfung, Last 7,4–8,9).
+**Prüfer-Befund 2:** die index-Spalte von a, a2 und b stammt in **allen** Zeilen (beide Größen) aus Runde 1, also mit dem verworfenen
+`lt1GlChunks` (Rohdaten: `LT1.n/gUp` gibt es nur in index.vor-lt1b.html). Für die Endfassung gibt es keine eigene a/b-Messung: ihr
+Spektral-Code ist byte-gleich mit der Basis (diff) → a/b der Endfassung = basis-Spalte.
 
 | Fall | Größe | basis Median / Max (Läufe > 50) | index Median / Max (Läufe > 50) | Bild/Ergebnis gleich |
 |---|---|---|---|---|
-| a Sprünge (alle Kacheln schon da) | 926×428 | 60 / 62 (3 von 3) | 72 / 79 (2 von 3) | ja (Canvas-md5) |
-| a | 428×926 | 0 / 98 (1 von 3) | 71 / 88 (2 von 3) | ja |
-| a2 Sprünge nach FFT-Wechsel im Zoom | 926×428 | 81 / 183 | 107 / 258 | ja |
-| a2 | 428×926 | 126 / 126 | 68 / 114 (rep1/2 schon Endfassung) | ja |
-| b FFT 4096→8192→4096 | 926×428 | 166 / 258 (12 Aufgaben > 50) | 262 / 517 (18) | ja |
-| b | 428×926 | 167 / 176 (13) | 93 / 137 (15) | ja |
+| a Sprünge (alle Kacheln schon da) | 926×428 | 60 / 62 (3 von 3) | 72 / 79 (2 von 3) *verworfener Versuch* | ja (Canvas-md5) |
+| a | 428×926 | 0 / 98 (1 von 3) | 71 / 88 (2 von 3) *verworfener Versuch* | ja |
+| a2 Sprünge nach FFT-Wechsel im Zoom | 926×428 | 81 / 183 | 107 / 258 *verworfener Versuch* | ja |
+| a2 | 428×926 | 126 / 126 | 68 / 114 *verworfener Versuch* | ja |
+| b FFT 4096→8192→4096 | 926×428 | 166 / 258 (12 Aufgaben > 50) | 262 / 517 (18) *verworfener Versuch* | ja |
+| b | 428×926 | 167 / 176 (13) | 93 / 137 (15) *verworfener Versuch* | ja |
 | **c Ablegen** (Runde 1+2, je 6 Läufe) | 926×428 | **83 / 142** (5 von 6) | **57 / 70** (4 von 6) | ja (Daten + Raster-DOM) |
 | **c** | 428×926 | 0 / 66 (2 von 6) | 0 / 67 (1 von 6) | ja |
 | **c imp1Place-Dauer** | 926×428 | Median **70 ms** (40–139) | Median **49 ms** (34–68) | |
@@ -74,7 +89,10 @@ c: das zweite buildGrid fällt weg (−8…−20 ms je Ablegen, unter Last mehr)
 Rohdaten: `lt1-test-926x428.out`, `lt1-test-428x926.out`, `lt1-test-a2.out`, `lt1-test-c-final.out` (+ .json), Spuren mit `lt1-trace.mjs`.
 
 ## Regression (reg.sh → reg.log, Ausgaben in reg/)
-Alle mit der Endfassung (Spektral-Code = Basis, nur imp1Place geändert), außer spk12-3 Lauf 1 (Zwischenstand mit Kachel-Versuch).
+**Berichtigt (Prüfer-Befund 3):** imp1 (16:33:48), imp2 (16:33:59) und spk12-3 Lauf 1 (16:31) liefen auf dem Zwischenstand mit
+Kachel-Versuch (index.html endgültig erst 16:33:58). spk12-3 wurde als index2 auf der Fassung vor der Prüfung wiederholt (47/0),
+imp1/imp2 hat der Prüfer auf ihr nachgeholt: imp1 „ALLE OK (156 s)“, imp2 „ALLE OK“. Die übrigen Zeilen = Fassung vor der Prüfung.
+Nach Teil 2 (Endfassung) neu gelaufen: siehe „Prüfung“.
 | Test | index | Basis-Gegenlauf | Bemerkung |
 |---|---|---|---|
 | spk12-test (Teil 1) | 98 OK / 0 | – | |
