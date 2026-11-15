@@ -1,3 +1,13 @@
+## 4.66.0 — Spektral: gebundener Gesang (Legato) ergibt einzelne Noten
+
+- **Noten finden** trennt Legato-Phrasen (ohne Pause gesungene Tonwechsel) jetzt in einzelne Noten. Vorher wurde A3 → D4 → H3 zu einer einzigen Note, jetzt sind es drei, und in der Ebenen-Werkstatt („Noten bearbeiten“) lässt sich jeder Ton einzeln umsetzen.
+  - Vibrato, Gleiten bis etwa 1 s und Ausklingen werden nicht zerhackt.
+  - Kurze Durchgangstöne ab 0,1 s bleiben erhalten.
+  - Oktavfehler bei Gesang sind von 20–38 auf 0 gesunken.
+  - Gilt auch für „Überall finden“ und für „Mehrstimmig“, wenn nur eine Stimme klingt.
+  - Gleich schnell wie vorher.
+Tests: Legato-Seite (Touch hochkant + quer), Ebenen-Werkstatt, Zerlegen, Überblendung, Profi, Klangkorn, Bass-Noten (13/13 + 11/11 + 14/14 + 16/16), Gesang-Editor 61/61, Gesang-Stücke 14/14, Konsonanten 15/15, Import, Chor 82/82, Echttest 52/53 – alles wie 4.65 oder besser. Offen: sehr langsames Gleiten mit Vibrato, Tremolo; Import-Tempo-Paket kommt nach (verschob Chor-Messungen).
+
 ## 4.65.0 — Gesang-Editor: Konsonanten gehören wieder zum Stück · Spektral: Bass-Noten in der richtigen Oktave
 
 - **Gesang-Editor bei echtem Gesang:** Das Stück beginnt jetzt mit dem Konsonanten davor, nicht erst mitten im Vokal. In drei Echtaufnahmen sind es 24, 10 und 18 statt 12, 9 und 7 Konsonanten beim richtigen Stück. Beim Quantisieren rutscht der Konsonant mit an die Taktlinie.

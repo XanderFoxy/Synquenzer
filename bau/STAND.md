@@ -85,3 +85,8 @@ Weiter mit: 4.54 = rel-4540/k fertig prüfen + INT53D nachziehen + Versionszeile
 - wpii0ntvp fertig: SPK9 (Legato-Noten) + IMP2 (Tempo/Abtastrate) gemergt in rel-4660 (0 Konflikte), CHR5 ohne App-Änderung (nur Analyse/Vorschläge). Regression vx/r4660 läuft.
 - wa4xvs94h (MV7) fertig: Gesuche live (3 echte Gesuche, Arbeitsamt raus, Such-Links), Filme-Scanner live (Wikidata, 33 für 3,99 €, 26 Action, 13 Comedy, 103 80er, 33 Disney, 19 Serien). Aktualitäts-Paket mv7/aktuell-fix Commit 87b9520 NICHT gepusht (Rechte-System lehnte Workflow-Push ab) → Xander um OK gefragt.
 - wfvq0qehs (MV8): Filme-Seite mit Chips Für 3,99 € / Action & Thriller / Comedy ausliefern.
+
+## ~01:30 — 4.66.0 online (main 28b15e5 + 30555ec, In-App v22)
+- Nur SPK9 (Legato-Noten). IMP2 herausgenommen: mit IMP2 chr2 3 FEHL (Versatz Kopie 5/6, Formant NaN) + rv1 4/53 – deterministisch; ohne IMP2 alles wie 4.65.
+- IMP2-B (wfoe2qfg1) in vx/imp2b (Basis basis10 = R-4660) → 4.67.
+- MV8 Filme-Seite (wfvq0qehs) läuft. Frage an Xander offen: Zeitplan-Änderung (mv7/aktuell-fix 87b9520) hochladen?
