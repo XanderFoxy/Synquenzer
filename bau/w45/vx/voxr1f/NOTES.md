@@ -45,7 +45,7 @@ daneben (Luft/Atem mitten in der Pause) – aus der Nachbarschaft nicht ableitba
 | Entwickler: Klicks Take A gefunden (≥ 18/20) | 16 (d1 23 / d2 4) | **17** (d1 24 / d2 3) – Ziel knapp verfehlt |
 | Entwickler: Klicks A/B/C neue Fehlalarme | 0 / 0 / 0 | 0 / 0 / 0 |
 | Entwickler: Überstand > 2 kHz nach Reparatur A / B / C (≤ 3 dB) | 7,5 / 3,2 / 2,9 | **2,6 / 0,5 / 1,2** |
-| Entwickler: Klick-Fehlerenergie Median A / B / C (Info) | 10,9 / 4,3 / 6,9 dB | 13,2 / 3,7 / 6,9 dB |
+| Entwickler: Klick-Abzug Median A / B / C (Info, höher = besser) | 10,9 / 4,3 / 6,9 dB | 13,2 / 3,7 / 6,9 dB |
 | Entwickler: Raumton Pegel je Lücke ±3 dB | FEHLER (Lücke 3: −4,1) | **OK** (max −2,7) |
 | Entwickler: Raumton Farbe ±4 dB | [2,1, 4,8, 6,3, 2,3, 6,7] | [2,1, 4,8, 6,3, 2,3, 6,7] (unverändert, FEHLER; mit {ton: 30} [1,7, 4,2, 6,2, 2,3, 5,9]) |
 | Prüfer-Kern Klicks B@44 / C@48 | 19 / 20, fehl 0, bitgleich | 19 / 20, fehl 0, bitgleich |
@@ -68,8 +68,9 @@ Tempo: die erste Endfassung rechnete bei starken Klicks die LSAR doppelt (+5…+
 - Nachbar-Fenster der Erkennung 18–22 ms statt 25 ms: A 17 gefunden, aber neue Fehlalarme (A 1, B 1–3) → verworfen, stattdessen BIG.
 - Spanne auch für lange Funde verlängern: C bekam im 2. Durchgang eine neue Stelle (7,164 s) → nur Funde ≤ 3 ms.
 - Schwelle 6 dB statt 4,8 dB: B bleibt 3,2 dB; 3 dB (2×): B −0,1 dB, aber mehr Interpolation über Gesang. Gewählt 4,8 dB.
-  Preis: Fehlerenergie gegen den sauberen Take sinkt in B (Median 4,3 → 3,7 dB) und bei einigen Prüfer-Klicks (INFO „Klick-Abzug“, z. B. C48 #15
-  8,6 → 1,4 dB) – dort wird sauberer Höhen-Inhalt mitersetzt. Keine Zählprüfung betroffen.
+  Preis (Fassung ec3ca89f): der Klick-Abzug (Fehler gegen den sauberen Take, **höher = besser**) **sank** in B (Median 4,3 → 3,7 dB) und bei vielen
+  Prüfer-Klicks (z. B. C48 #15 8,6 → 1,4 dB) – also **klangtreuer schlechter**, dort wurde sauberer Höhen-Inhalt mitersetzt. Behoben in VOXR1F-P
+  (siehe „Prüfung“): Verlängerung nur noch in rauschartiger Umgebung, Bezug Mittel statt Median.
 - Ganzes Band per LSAR ersetzen (Klick in Pause): A 9,4 dB → verworfen; Tiefband-LSAR griff bei 6,844 s nicht (Tiefband nur 2× über der Umgebung) → 700-Hz-Grenze.
 - Raumton: Leistungsmittel der rauschartigen Fenster (Take A Farbe Lücke 5 4,3, aber Prüfer C 5,8/6,5 – bricht den Prüfer-Kern), gelernter Raumton
   (alle 5,5–10 dB), nur 30–50 ms daneben (Lücke 1 4,7), Pegel bis +3 dB (Prüfer C +3,3) → verworfen.
