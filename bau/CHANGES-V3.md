@@ -1,3 +1,20 @@
+## 4.68.0 — Spektral: Szenen aus den Songteilen + Klang nachbauen im Menü; Einzelspuren sauber
+
+- **Szenen anlegen** (Spektral-Seite → Ansicht ▾ → „Szenen anlegen …“): Die Songteile im Audio werden erkannt (Intro, Strophe, Refrain, Bridge, Outro, mit Takten). Jeder Teil wird eine Szene in der Clip-Matrix, benannt nach dem Teil. Je Ebene wählbar: Beides │ Audio │ MIDI │ Aus. Drums und Bass kommen als MIDI auf passende Spuren (Drums auf das Kit: Kick, Snare, Hi-Hat), Pads, Lead und Gesang als Audio-Ausschnitt.
+  - Eine aktive Auswahl begrenzt automatisch: nur ihre Zeit, nur ihre Frequenzen, nur die Noten darin.
+  - Fehlen einer Ebene Noten, werden sie beim Anlegen gesucht. Tempo und Raster passen sich an, Audio und MIDI laufen synchron.
+  - Ein ↶ in der Matrix nimmt alles zurück.
+- **Klang nachbauen** jetzt direkt im Ebenen-Menü ⋯ (sucht vorher selbst Noten, wenn die Ebene noch keine hat).
+- **Einzelspuren (Nachbesserung):**
+  - Fills, FX-Pads und Stopps von DRUMS gelten jetzt auch für die Einzelspuren. Vorher spielte z. B. ein Snare-Fill auf der Einzelspur doppelt.
+  - Ausgelagerte Spuren bekommen die ganze Song-Zeile der Quelle.
+  - Eine Spur ohne Clip startet mit der Quelle.
+  - Kits aus Modell-Klängen werden nicht mehr stumm aufgeteilt.
+  - ↶/↷ lässt die Wiedergabe weiterlaufen.
+  - MIDI-Export auf Kanal 10.
+  - Der Knopf „Auslagern ▾“ rückt bei einer Auswahl nach vorn.
+Tests: Szenen 38/41 (offen: Drum-Kit im dichten Testlied), Einzelspuren 51/51 + 21/21, Gesang 61/61 · 14/14 · 15/15, Import, Chor 82/82, Echttest 52/53, Spektral-Seiten wie 4.67.
+
 ## 4.67.0 — Matrix: Noten auslagern + Drum-Spur in Einzelspuren; Import-Tempo auf jedem Gerät gleich
 
 - **Noten auslagern** (Noten-Editor, Aktionsleiste „Auslagern ▾“): ausgewählte Noten – z. B. die Obertöne eines Basslaufs – kommen in eine neue Spur direkt unter der Quelle. Die neue Spur hat denselben Klang, dieselben Effekte und denselben Mix und spielt synchron wie ein Layer mit. Wahlweise „In vorhandene Spur“, Verschieben oder Kopieren. Ein ↶ macht alles rückgängig.
