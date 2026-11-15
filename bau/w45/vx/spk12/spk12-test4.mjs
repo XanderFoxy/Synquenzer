@@ -96,13 +96,13 @@ if (!ONLY || ONLY.includes('B')) {
   await T.tap(await T.sel('#spk1Sheet .spk1-tl button[data-tool="aehn"]'));
   await T.drag(await T.scr(1.0, 3500), await T.scr(1.5, 250), 10);
   await p.waitForFunction(() => { const U = __spk.page.ui(); return U.hits && U.sel.length > 1; }, null, {timeout: 30000}).catch(() => {});
-  const n0 = await p.evaluate(() => __spk.page.ui().sel.length);
+  const n0 = await p.evaluate(() => ({n: __spk.page.ui().sel.length, h: JSON.stringify((__spk.page.ui().hits || []).map(h => [h.t0, h.wert]))}));
   await T.tap(await T.sel('#spk1Sheet [data-a="s12mk"]')); await T.tap(await T.sel('#spk1Sheet .spk1-dd [data-s12mk="rs"]')); await wait(1500);
   await p.evaluate(() => spk1Dd(__spk.page.ui(), null)); await wait(200);
-  const n1 = await p.evaluate(() => ({n: __spk.page.ui().sel.length, und: __spk.page.ui().bU.disabled}));
+  const n1 = await p.evaluate(() => ({n: __spk.page.ui().sel.length, und: __spk.page.ui().bU.disabled, lab: __spk.page.ui().bU.getAttribute('aria-label'), h: JSON.stringify((__spk.page.ui().hits || []).map(h => [h.t0, h.wert]))}));
   await T.tap(await T.sel('#spk1Sheet [data-a="undo"]')); await wait(300);
-  const n2 = await p.evaluate(() => ({n: __spk.page.ui().sel.length, hits: !!__spk.page.ui().hits}));
-  ok('merkmal-haekchen-ein-undo', {vorher: n0, rauschen: n1, undo: n2}, n0 > 2 && n1.n !== n0 && !n1.und && n2.n === n0 && n2.hits);
+  const n2 = await p.evaluate(() => ({n: __spk.page.ui().sel.length, h: JSON.stringify((__spk.page.ui().hits || []).map(h => [h.t0, h.wert]))}));
+  ok('merkmal-haekchen-ein-undo', {vorher: n0, rauschen: n1, undo: n2}, n0.n > 2 && n1.h !== n0.h && !n1.und && /Merkmal/.test(n1.lab) && n2.n === n0.n && n2.h === n0.h);
   // ---- 3. Auswahl ▾ im Werkzeug Ähnliche: Treffer merken ohne Werkzeugwechsel ----
   await T.tap(await T.sel('#spk1Sheet [data-a="s12dd"]')); await T.tap(await T.sel('#spk1Sheet .spk1-dd [data-s12a="mer"]')); await wait(400);
   const m3 = await p.evaluate(async () => ({tool: __spk.page.ui().tool, reg: (__spk12.S().reg || []).length, doc: (await __spk12.reg()).reg.length, n: __spk.page.ui().sel.length}));
@@ -150,7 +150,7 @@ if (!ONLY || ONLY.includes('C')) {
   await T.ready(); await wait(3000);
   const z = await p.evaluate(async () => {
     const U = __spk.page.ui(), r = await __spk.mask({von: 'orig', nach: 'neu', name: 'X', sel: [{art: 'rect', t0: 44.8, t1: 45.7, f0: 250, f1: 3500, kt: 0, kf: 0}, {art: 'rect', t0: 94.8, t1: 95.7, f0: 250, f1: 3500, kt: 0, kf: 0}]}); spk1Got(U, r);
-    const q = async (t) => { const T0 = performance.now(), a = await __spk12.zauber({t, f: 440, tol: 15, lim: 5}); return {ms: Math.round(performance.now() - T0), cells: a.cells, src: a.s12src || null}; };
+    const q = async (t) => { const T0 = performance.now(), a = await __spk12.zauber({t, f: 440, tol: 15, lim: 5}); return {ms: Math.round(performance.now() - T0), cells: a.cells, load: a.msLoad != null ? Math.round(a.msLoad) : null, gain: a.msGain != null ? Math.round(a.msGain) : null, src: a.s12src || null}; };
     const o = {orig: await q(45.25)}; const S = __spk12.S(); if (S.allL !== false) __spk12.allL(); U.act = U.meta.layers.find(l => l.name === 'X').id; spk1Layers(U);
     window.__lt = []; o.ebene1 = await q(45.25); o.ebene2 = await q(95.25); o.ebeneLeer = await q(55.25); o.ebene3 = await q(45.25);
     const T3 = performance.now(), h = await spk1Call('harm', {doc: SPK1.doc, t: 45.25, f: 440}); o.harm = {ms: Math.round(performance.now() - T3), n: h.spur.length};

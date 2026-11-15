@@ -1,4 +1,4 @@
-// VOX-R1 Teil 1/3: Abnahme mit synthetisch eingesetzten Fehlern in echten Gesangs-Takes (Kern in Node + App im Browser, Touch über CDP).
+// VOX-R1 Teil 1+2/3: Abnahme mit synthetisch eingesetzten Fehlern in echten Gesangs-Takes (Kern in Node + App im Browser, Touch über CDP).
 // Aufruf: node voxr1-test.mjs <abs index.html> [basis.html]   – Ausgaben nennen nur „Take A/B/C“, keine Datensatz-Namen.
 import fs from 'fs';
 import path from 'path';
@@ -77,9 +77,78 @@ const P = new Float32Array(n);
 // ---------- 3) Fehlalarme auf sauberen Takes ----------
 for (let k = 0; k < SRC.length; k++) { const W = wav(RV + SRC[k]), B = K.done(K.check(W.x, W.sr)); R['take' + 'ABC'[k]] = B.line;
   ok(B.plops.length <= 1 && !B.hum.on, `Take ${'ABC'[k]} sauber: ≤ 1 Plopp, kein Brumm`, {plopps: B.plops.length, zeile: B.line, ms: B.ms}); }
+// ================= Teil 2 =================
+let sd2 = 4242; const rn2 = () => { sd2 = (Math.imul(sd2, 1103515245) + 12345) >>> 0; return sd2 / 4294967296; };
+const bqc = (type, f, q, sr, gDb) => { const w = TAU * f / sr, c = Math.cos(w), al = Math.sin(w) / (2 * q), a0 = 1 + al; if (type === 'hp') return [(1 + c) / 2 / a0, -(1 + c) / a0, (1 + c) / 2 / a0, -2 * c / a0, (1 - al) / a0]; if (type === 'lp') return [(1 - c) / 2 / a0, (1 - c) / a0, (1 - c) / 2 / a0, -2 * c / a0, (1 - al) / a0];
+  const A = Math.pow(10, gDb / 40), b0 = 1 + al / A; return [(1 + al * A) / b0, -2 * c / b0, (1 - al * A) / b0, -2 * c / b0, (1 - al / A) / b0]; };
+const filt = (y, c) => { let z1 = 0, z2 = 0; for (let i = 0; i < y.length; i++) { const x0 = y[i], o = c[0] * x0 + z1; z1 = c[1] * x0 - c[3] * o + z2; z2 = c[2] * x0 - c[4] * o; y[i] = o; } };
+const frames = (y, H) => { const L = []; for (let p = 0; p + H <= y.length; p += H) { let s = 0; for (let i = p; i < p + H; i++) s += y[i] * y[i]; L.push(db(s / H)); } return L; };
+// ---------- 5) Klicks: 20 Mundklicks (0,5–3 ms, harter Einsatz, ausklingend; Rauschstoß oder gedämpfter Ton 2,5–6 kHz) je Take ----------
+const clickSet = (v, sr, seedK) => { sd2 = seedK; const n = v.length, x = Float32Array.from(v), hpS = Float64Array.from(v); for (const q of [0.5411961, 1.3065630]) filt(hpS, bqc('hp', 2000, q, sr)); const CL = [];
+  for (let k = 0; k < 20; k++) { const t = 0.3 + k * (n / sr - 0.8) / 20 + rn2() * 0.15, i0 = Math.round(t * sr), d = 0.0005 + rn2() * 0.0025, M = Math.max(4, Math.round(d * sr)), f = 2500 + rn2() * 3500, typ = k % 2;
+    let e = 0; for (let i = i0 - 441; i < i0 + 441; i++) e += hpS[i] * hpS[i]; const amp = Math.max(0.01, Math.sqrt(e / 882) * Math.pow(10, (12 + rn2() * 8) / 20)), sg = rn2() < 0.5 ? -1 : 1;
+    for (let i = 0; i < M; i++) { const w = Math.min(1, i / 2) * Math.exp(-3 * i / M); x[i0 + i] += sg * amp * w * (typ ? Math.sin(TAU * f * i / sr + 1.2) : (rn2() * 2 - 1)); }
+    CL.push({t, d, s0: i0, s1: i0 + M}); }
+  return {x, CL}; };
+R.click = {};
+for (let k = 0; k < SRC.length; k++) {
+  const W = wav(RV + SRC[k]), srk = W.sr, v0 = W.x, {x, CL} = clickSet(v0, srk, 777 + k), t0 = Date.now(), r = K.done(K.run(x, srk, {steps: {click: {}}})), ms = Date.now() - t0, L = r.info.click.list;
+  const at = (e, c) => e.t1 * srk >= c.s0 - 44 && e.t0 * srk <= c.s1 + 44, hit = CL.filter(c => L.some(e => at(e, c))), fp = L.filter(e => !CL.some(c => at(e, c)));
+  const own = K.done(K.clickScan(v0, srk, {})), fpOwn = fp.filter(e => own.some(q => Math.abs(q.t0 - e.t0) < 0.003)), fpNew = fp.filter(e => !fpOwn.includes(e));
+  const ownSung = k === 0 && f0tab ? own.filter(q => f0at(q.t0) > 0).length : null;
+  const red = hit.map(c => { let e0 = 0, e1 = 0; for (let i = c.s0 - 44; i < c.s1 + 44; i++) { e0 += (x[i] - v0[i]) ** 2; e1 += (r.y[i] - v0[i]) ** 2; } return +(10 * Math.log10(e0 / (e1 + 1e-20))).toFixed(1); }).sort((a, b) => a - b);
+  let same = true; for (let i = 0; i < x.length && same; i++) if (r.y[i] !== x[i] && !L.some(e => i >= Math.round(e.t0 * srk) - 2 && i < Math.round(e.t1 * srk) + 2)) same = false;
+  const nm = 'Take ' + 'ABC'[k];
+  R.click[nm] = {gesetzt: 20, gefunden: hit.length, durchgang1: r.info.click.pass1, durchgang2: r.info.click.pass2, fehlNeu: fpNew.length, eigeneGeraeusche: fpOwn.length, eigeneImGesang: ownSung, reduktionMedianDb: red[red.length >> 1], reduktionMinDb: red[0], ms};
+  ok(hit.length >= 18, `Klicks ${nm}: ≥ 18 von 20 gefunden (2 Durchgänge)`, {gefunden: hit.length, d1: r.info.click.pass1, d2: r.info.click.pass2});
+  ok(fpNew.length <= 1, `Klicks ${nm}: ≤ 1 falscher Treffer (Stellen, an denen der Take vorher kein Geräusch hatte)`, {neu: fpNew.map(e => e.t0), eigeneGeraeuscheDesTakes: fpOwn.length});
+  ok(red.length && red[0] > 0 && red[red.length >> 1] >= 8, `Klicks ${nm}: repariert (Fehler-Energie an jedem Klick kleiner, Median ≥ 8 dB)`, {median: red[red.length >> 1], min: red[0]});
+  ok(same, `Klicks ${nm}: außerhalb der reparierten Stellen bitgleich`, null);
+}
+// ---------- 6) Atmer: 10 Atmer in den ruhigen Pausen von Take A (auf −20 dBFS Gesang gebracht) → −40 dBFS ± 3 dB, keine Silbe ----------
+{ const vN = Float32Array.from(v), gN = Math.pow(10, (-20 - 20 * Math.log10(vr)) / 20); for (let i = 0; i < n; i++) vN[i] *= gN;
+  const H = 441, Lf = frames(vN, H), Lv = Lf.filter(q => q > -110).sort((a, b) => a - b), fl = Lv[Math.floor(0.1 * Lv.length)], BR = [], x = Float32Array.from(vN);
+  { let s = -1; for (let j = 0; j <= Lf.length; j++) { const t = j * H / sr, q = j < Lf.length && !(f0at(t) > 0) && !(f0at(t + 0.01) > 0) && Lf[j] < fl + 10; if (q && s < 0) s = j; if (!q && s >= 0) { const d = (j - s) * H / sr; if (d >= 0.33 && BR.length < 10) { const bd = Math.min(0.5, d - 0.08), t0 = s * H / sr + (d - bd) / 2; BR.push({t0, t1: t0 + bd, s0: Math.round(t0 * sr), s1: Math.round((t0 + bd) * sr)}); } s = -1; } } }
+  for (const b of BR) { const M = b.s1 - b.s0, nz = new Float64Array(M + 4000); for (let i = 0; i < nz.length; i++) nz[i] = rn2() * 2 - 1;
+    filt(nz, bqc('hp', 450, 0.7, sr)); filt(nz, bqc('lp', 5000, 0.7, sr)); filt(nz, bqc('pk', 1600, 1.2, sr, 6)); filt(nz, bqc('lp', 7000, 0.7, sr));
+    const seg = nz.subarray(4000), env = i => { const u = i / M; return u < 0.35 ? 0.5 - 0.5 * Math.cos(Math.PI * u / 0.35) : 0.5 + 0.5 * Math.cos(Math.PI * (u - 0.35) / 0.65); };
+    let e = 0; for (let i = 0; i < M; i++) e += (seg[i] * env(i)) ** 2; b.L = -26 - rn2() * 8; const g = Math.pow(10, b.L / 20) / Math.sqrt(e / M); for (let i = 0; i < M; i++) x[b.s0 + i] += g * seg[i] * env(i); }
+  const B = K.done(K.check(x, sr)), r = K.done(K.run(x, sr, {steps: {breath: {}}})), ev = r.info.breath;
+  const lv = BR.map(b => { let p0 = 0, p1 = 0; for (let i = b.s0; i < b.s1; i++) { p0 += x[i] ** 2; p1 += r.y[i] ** 2; } return {vor: +db(p0 / (b.s1 - b.s0)).toFixed(1), nach: +db(p1 / (b.s1 - b.s0)).toFixed(1), gefunden: ev.some(q => q.t1 >= b.t0 && q.t0 <= b.t1)}; });
+  const okN = lv.filter(q => Math.abs(q.nach + 40) <= 3).length, fpB = ev.filter(q => !BR.some(b => q.t1 >= b.t0 && q.t0 <= b.t1));
+  let sung = 0, sungFr = 0; for (let k = 0; k < f0tab.length; k++) { if (!(f0tab[k][1] > 0)) continue; sungFr++; const c = Math.round(f0tab[k][0] * sr); let d = false; for (let i = Math.max(0, c - 441); i < Math.min(n, c + 441); i++) if (r.y[i] !== x[i]) { d = true; break; } if (d) sung++; }
+  const Bc = K.done(K.check(vN, sr)), rc = K.done(K.run(vN, sr, {steps: {breath: {}}}));
+  let sungC = 0; for (let k = 0; k < f0tab.length; k++) { if (!(f0tab[k][1] > 0)) continue; const c = Math.round(f0tab[k][0] * sr); for (let i = Math.max(0, c - 441); i < Math.min(n, c + 441); i++) if (rc.y[i] !== vN[i]) { sungC++; break; } }
+  R.breath = {gesetzt: BR.length, gefunden: lv.filter(q => q.gefunden).length, imZiel: okN, pegel: lv, fehl: fpB.length, pruefenZaehlt: B.breaths, zeile: B.line, gesungeneRahmenGeaendert: sung, gesungeneRahmen: sungFr, sauberTakeAtmer: Bc.breaths, sauberTakeGesungenGeaendert: sungC};
+  ok(BR.length === 10 && okN >= 9, 'Atmer: ≥ 9 von 10 auf −40 dBFS ± 3 dB', lv.map(q => q.nach));
+  ok(sung === 0 && sungC === 0, 'Atmer: keine gesungene Silbe abgesenkt (alle stimmhaften Rahmen ±10 ms bitgleich)', {mitAtmern: sung, sauberTake: sungC, rahmen: sungFr});
+  ok(fpB.length <= 1 && B.breaths >= 9 && B.breaths <= 11, 'Atmer: Prüfen zählt sie, ≤ 1 falscher', {pruefen: B.breaths, fehl: fpB.length, zeile: B.line});
+  R.breathTakes = {}; for (let k = 1; k < SRC.length; k++) { const W = wav(RV + SRC[k]); R.breathTakes['Take ' + 'ABC'[k]] = K.done(K.check(W.x, W.sr)).breaths; }
+  // ---------- 7) Raumton in Lücken: 5 Schnitte (Stille) in ruhigen Stellen von Take A ----------
+  const Lo = frames(v, H), Lov = Lo.filter(q => q > -110).sort((a, b) => a - b), flo = Lov[Math.floor(0.1 * Lov.length)], holes = [], xh = Float32Array.from(v);
+  { let s = -1; for (let j = 0; j <= Lo.length; j++) { const q = j < Lo.length && Lo[j] > -110 && Lo[j] < flo + 4; if (q && s < 0) s = j; if (!q && s >= 0) { if (j - s >= 30 && holes.length < 5) { const c = (s + j) / 2 * H, d = Math.min(0.3, (j - s) * H / sr - 0.1); holes.push([Math.round(c - d * sr / 2), Math.round(c + d * sr / 2)]); } s = -1; } } }
+  for (const [a, b] of holes) xh.fill(0, a, b);
+  const t0 = Date.now(), rr = K.done(K.run(xh, sr, {steps: {room: {}}})), msR = Date.now() - t0, RI = rr.info.room;
+  const lev = (y, a, b) => { let s = 0; for (let i = a; i < b; i++) s += y[i] * y[i]; return db(s / Math.max(1, b - a)); };
+  const oct = (y, a, b) => { const out = []; for (const f of [250, 500, 1000, 2000, 4000, 8000]) out.push(db(band(Float32Array.from(y.subarray(a, b)), sr, f / Math.SQRT2, f * Math.SQRT2))); return out; };
+  const HR = holes.map(([a, b]) => { const R0 = Math.round(0.012 * sr), nbA = Math.max(0, a - Math.round(0.15 * sr)), nbB = Math.min(n, b + Math.round(0.15 * sr)), nb = db((Math.pow(10, lev(v, nbA, a) / 10) + Math.pow(10, lev(v, b, nbB) / 10)) / 2);
+    const so = oct(v, a, b), sf = oct(rr.y, a, b), d0 = so.map((q, i) => sf[i] - q), mean = d0.reduce((s, q) => s + q, 0) / d0.length;
+    return {vorher: +lev(xh, a + R0, b - R0).toFixed(1), daneben: +nb.toFixed(1), gefuellt: +lev(rr.y, a + R0, b - R0).toFixed(1), formDb: +Math.max(...d0.map(q => Math.abs(q - mean))).toFixed(1), rand: +Math.max(Math.abs(rr.y[a]), Math.abs(rr.y[b - 1])).toExponential(1)}; });
+  let sameR = true; for (let i = 0; i < n && sameR; i++) if (rr.y[i] !== xh[i] && !RI.holes.some(h => i >= Math.round(h.t0 * sr) && i < Math.round(h.t1 * sr))) sameR = false;
+  const allIn = holes.every(([a, b]) => RI.holes.some(h => h.t0 * sr <= a + 441 && h.t1 * sr >= b - 441));
+  R.room = {gelernt: RI.learned, luecken: HR, gefuellt: RI.holes.length, ms: msR};
+  ok(holes.length === 5 && allIn && HR.every(h => Math.abs(h.gefuellt - h.daneben) <= 3), 'Raumton: jede Lücke gefüllt, Pegel wie daneben ± 3 dB (kein Loch mehr)', HR.map(h => [h.vorher, h.daneben, h.gefuellt]));
+  ok(HR.every(h => h.formDb <= 4), 'Raumton: Klangfarbe (Oktavbänder 250 Hz–8 kHz) wie der Raumton ± 4 dB', HR.map(h => h.formDb));
+  ok(sameR && HR.every(h => +h.rand < 1e-3), 'Raumton: 10-ms-Blenden innen, außerhalb der Lücken bitgleich', {bitgleich: sameR, rand: HR.map(h => h.rand)});
+  { const W = wav(RV + SRC[1]), r1 = K.done(K.run(W.x, W.sr, {steps: {room: {}}})); R.room.takeB = r1.info.room.why || (r1.info.room.holes.length + ' gefüllt'); }
+  // Kette mit allem: feste Reihenfolge
+  const rk = K.done(K.run(x, sr, {steps: {room: {}, breath: {}, hp: {}, hum: 'auto', plop: {}, click: {}}}));
+  ok(JSON.stringify(rk.info.order) === '["click","plop","hum","hp","breath","room"]', 'Kette: Klicks → Plopps → Brummen → Hochpass → Atmer → Raumton (fest)', rk.info.order);
+  globalThis.__atmerX = x; globalThis.__atmerB = BR;
+}
 // ---------- 4) 3-min-Take: Rechenzeit Kern (Desktop × 3 ≤ 20 s) ----------
 { const L = Math.round(180 * sr), x = new Float32Array(L); for (let i = 0; i < L; i++) x[i] = v[i % n] + P[i % n] + 0.003 * Math.sin(TAU * 50 * i / sr);
-  const t0 = Date.now(); K.done(K.check(x, sr)); const t1 = Date.now(); K.done(K.run(x, sr, {steps: {plop: {}, hum: 'auto', hp: {}}})); const t2 = Date.now();
+  const t0 = Date.now(); K.done(K.check(x, sr)); const t1 = Date.now(); K.done(K.run(x, sr, {steps: {click: {}, plop: {}, hum: 'auto', hp: {}, breath: {}, room: {}}})); const t2 = Date.now();
   R.zeit3min = {pruefenMs: t1 - t0, ketteMs: t2 - t1};
   ok(3 * (t2 - t0) <= 20000, '3-min-Take: Prüfen + Kette × 3 ≤ 20 s', R.zeit3min); }
 if (!process.argv.includes('--nur-kern')) await browser();

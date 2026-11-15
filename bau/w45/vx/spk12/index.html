@@ -105077,7 +105077,7 @@ function spk12DspMake(Z2, X) {
       const o = await chunk(d, N, ci), a = Math.max(ca, o.x0), b = Math.min(cb, o.x0 + o.W - 1);
       for (let c = a; c <= b; c++) { const cc = c - o.x0, off = (c - ca) * R; for (let r = 0; r < R; r++) A[off + r] = o.data[r * o.W + cc]; }
     }
-    if (m.s12g) gainA(d, m.s12g, A, ca, nc, R, I);   // Prüfung: „Alle Ebenen abtasten“ aus → Anteil der Ebene
+    const TG = performance.now(); if (m.s12g) gainA(d, m.s12g, A, ca, nc, R, I);   // Prüfung: „Alle Ebenen abtasten“ aus → Anteil der Ebene
     const T1 = performance.now(), mid = 69 + 12 * Math.log2(Math.max(1, +m.f || 440) / 440), r0 = Math.max(0, Math.min(R - 1, Math.round((mid - I.m0) * I.rps))), so = (ct - ca) * R;
     let rs = r0, v0 = -1; for (let r = Math.max(0, r0 - 6); r <= Math.min(R - 1, r0 + 6); r++) if (A[so + r] > v0) { v0 = A[so + r]; rs = r; }   // auf den hellsten Punkt in der Nähe rasten
     const thr = Math.max(1, v0 - tol * 255 / I.dbf), vis = new Uint8Array(nc * R), st = new Int32Array(nc * R); let sp = 0, cells = 0;
@@ -105095,7 +105095,7 @@ function spk12DspMake(Z2, X) {
       while (r < R) { if (vis[off + r]) { const a = r; while (r < R && vis[off + r]) r++; runs.push(a, r - 1); if (a < rmin) rmin = a; if (r - 1 > rmax) rmax = r - 1; } else r++; }
       cols.push(runs); if (runs.length) { if (c < cmin) cmin = c; cmax = c; }
     }
-    const fr = r => 440 * Math.pow(2, (I.m0 + r / I.rps - 69) / 12), base = {N, hop: hD, R, m0: I.m0, rps: I.rps, tol, lim, v0, thr, seed: [ct, rs], win: [ca, cb], cells, msLoad: T1 - T0};
+    const fr = r => 440 * Math.pow(2, (I.m0 + r / I.rps - 69) / 12), base = {N, hop: hD, R, m0: I.m0, rps: I.rps, tol, lim, v0, thr, seed: [ct, rs], win: [ca, cb], cells, msLoad: TG - T0, msGain: m.s12g ? T1 - TG : 0};
     if (cmax < 0) return Object.assign(base, {cells: 0, ms: performance.now() - T0});
     return Object.assign(base, {c0: ca + cmin, nc: cmax - cmin + 1, cols: cols.slice(cmin, cmax + 1), t0: (ca + cmin - 0.5) * hD / sr, t1: (ca + cmax + 0.5) * hD / sr, f0: fr(rmin - 0.5), f1: fr(rmax + 0.5), ms: performance.now() - T0});
   };
@@ -105805,9 +105805,10 @@ function spk12AllL(U) {
   spk1Stat(U, S.allL ? 'Abtasten: alle Ebenen (Original) – Werkzeuge suchen im ganzen Klang' : 'Abtasten: nur ' + spk12LName(U) + ' – Zauberstab, Harmonische, Transient, Ähnliche suchen nur in der aktiven Ebene');
 }
 function spk12FftTxt(U, dd) {   // Haken im Ansicht-Klappfenster: Zeit- und Frequenz-Auflösung am FFT-Regler
-  const sr = (U.meta && U.meta.sr) || 44100, p = el('p', 'spk12-fft', '');
-  const up = () => { const N = U.N; p.textContent = N + ' Punkte: ' + Math.round(1000 * N / sr) + ' ms / ' + (sr / N).toFixed(1).replace('.', ',') + ' Hz'; };
-  up(); dd.appendChild(p); const seg = dd.querySelector('.spk1-n'); if (seg && typeof MutationObserver === 'function') new MutationObserver(up).observe(seg, {subtree: true, attributes: true, attributeFilter: ['class']});
+  const sr = (U.meta && U.meta.sr) || 44100, seg0 = dd.querySelector('.spk1-n'), h = seg0 && seg0.previousElementSibling && seg0.previousElementSibling.tagName === 'H5' ? seg0.previousElementSibling : null;   // Prüfung: Text in die vorhandene Überschrift (Klappfenster bleibt gleich hoch)
+  const p = h ? el('span', 'spk12-fft', '') : el('p', 'spk12-fft', ''); if (h) p.style.whiteSpace = 'nowrap';
+  const up = () => { const N = U.N, t = Math.round(1000 * N / sr) + ' ms / ' + (sr / N).toFixed(1).replace('.', ',') + ' Hz'; p.textContent = h ? ' · ' + t : N + ' Punkte: ' + t; p.setAttribute('aria-label', N + ' Punkte: ' + t); };
+  up(); (h || dd).appendChild(p); const seg = dd.querySelector('.spk1-n'); if (seg && typeof MutationObserver === 'function') new MutationObserver(up).observe(seg, {subtree: true, attributes: true, attributeFilter: ['class']});
 }
 /* ---------- „Wo finde ich …?“ ---------- */
 (function spk12Guide() {

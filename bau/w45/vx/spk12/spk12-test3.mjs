@@ -145,7 +145,7 @@ for (const [W, H] of VIEWS) {
   const bq = await sel('#spk1Sheet .spk1-dd .spk1-n button:nth-child(4)'); await p.evaluate(() => { (window.__vj = window.__vj || []).push(performance.now()); }); await tap(bq); await wait(150);
   const f2 = await p.evaluate(() => { const e = document.querySelector('#spk1Sheet .spk1-dd .spk12-fft'); return e ? {t: e.textContent, N: __spk.page.ui().N, r: (r => [r.left, r.right, r.top, r.bottom])(e.getBoundingClientRect())} : null; });
   await shot('t3-fft');
-  ok(tag + ' fft-text', {vorher: f1, nachher: f2}, f1 === '4096 Punkte: 93 ms / 10,8 Hz' && f2 && f2.N === 8192 && f2.t === '8192 Punkte: 186 ms / 5,4 Hz' && f2.r[0] >= 0 && f2.r[1] <= W && f2.r[3] <= H);
+  ok(tag + ' fft-text', {vorher: f1, nachher: f2}, f1 === ' · 93 ms / 10,8 Hz' && f2 && f2.N === 8192 && f2.t === ' · 186 ms / 5,4 Hz' && f2.r[0] >= 0 && f2.r[1] <= W && f2.r[3] <= H);
   await p.evaluate(() => { const U = __spk.page.ui(); spk1Dd(U, null); U.N = 4096; spk1SpecLoad(U); });
   await wait(600); const lts = await p.evaluate(() => window.__lt.filter(e => e.t >= window.__lt0 && e.d > 50 && !(window.__vj || []).some(v => e.t >= v - 5 && e.t <= v + 400) && !(((window.__ph || []).filter(q => q[1] <= e.t).pop() || [''])[0] === 'FFT')).map(e => Math.round(e.d))), ltv = await p.evaluate(() => window.__lt.filter(e => e.t >= window.__lt0 && e.d > 50).length);
   const ltw = await p.evaluate(() => window.__lt.filter(e => e.t >= window.__lt0 && e.d > 50).map(e => [Math.round(e.d), ((window.__ph || []).filter(q => q[1] <= e.t).pop() || ['Kern'])[0], (window.__vj || []).some(v => e.t >= v - 5 && e.t <= v + 400) ? 'Ansicht' : '']));
