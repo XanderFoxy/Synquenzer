@@ -49,7 +49,7 @@ Guide-Eintrag (`ui1Entries().push`), Test-API `SYNQUENZER.mtx4`.
   darüber) – Fund aus der Foto-Prüfung, im Test jetzt gemessen. Die Spuren-Gruppe wird beim Einstieg aufgelöst; wird sie im Modus
   neu gebildet, weicht die MTX4-Leiste solange.
 
-## Messung (mtx4-test.mjs, 58/58; Ausgabe in test-ergebnis.txt)
+## Messung Teil 1 (damals 58/58; heute im Endlauf 81/81 enthalten)
 - 3 Clips in 2 Szenen +1: alle Noten +1 (Zeit/Dauer/Anschlag gleich), 45 andere Clips bit-gleich, ein ↶ (Gruppe aus 3) → alles bit-gleich.
 - Dorisch auf C-Dur-Clip (16 Noten): jede Note in C-Dorisch, Zeit/Dauer/Anschlag/Anzahl gleich. Dur/Moll/Mixolydisch/Phrygisch/Pentatonik: jede Note in der Leiter.
 - Wiedergabe: Tipp > 1,6 Schläge vor dem Takt → auch das nach dem Tipp Geplante bis zum Takt nur alter Ton (60), ab dem Takt nur neuer (61),

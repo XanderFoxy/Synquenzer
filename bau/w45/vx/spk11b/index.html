@@ -105621,7 +105621,7 @@ function spk11bSpec(x, sr) {
   const F = Math.max(0, Math.floor((n - N) / hop) + 1), K = Math.ceil(600 * N / r), S = [], re = new Float32Array(N), im = new Float32Array(N), w = new Float32Array(N);
   for (let i = 0; i < N; i++) w[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / N);
   for (let f = 0; f < F; f++) { for (let i = 0; i < N; i++) { re[i] = xs[f * hop + i] * w[i]; im[i] = 0; } spk11bFft(re, im); const s = new Float32Array(K); for (let k = 0; k < K; k++) s[k] = re[k] * re[k] + im[k] * im[k]; S.push(s); }
-  return {S, hop: hop * D, df: r / N, K};
+  return {S, hop: hop * D, win: N * D, df: r / N, K};
 }
 // Hüllen: während „Szenen anlegen“ (SPK11B.go) Renderings merken; zur Drum-Ebene die Bass-Ebene gleich mitrechnen (wird später wiederverwendet)
 { const f0 = spk11Go; spk11Go = async function (U) { SPK11B.go = {c: new Map(), bass: null, ref: null, spec: {}, hits: null}; try { return await f0(U); } finally { SPK11B.go = null; } }; }
@@ -105647,7 +105647,7 @@ function spk11bStill(U, rows, parts, g, A0) {
   for (const r of rows) {
     const L = ly.find(l => l.id === r.lid), art = L && L.art; if (!r.still || !r.rms) continue;
     if (art === 'bass' && G.spec[r.lid] && G.spec[r.lid].S.length) {
-      const Sp = G.spec[r.lid], fr = j => [Math.max(0, Math.floor((parts[j].A - A0) * g.bar * sr / Sp.hop)), Math.min(Sp.S.length, Math.floor((parts[j].B - A0) * g.bar * sr / Sp.hop))];
+      const Sp = G.spec[r.lid], fr = j => [Math.max(0, Math.ceil((parts[j].A - A0) * g.bar * sr / Sp.hop)), Math.min(Sp.S.length, Math.floor(((parts[j].B - A0) * g.bar * sr - Sp.win) / Sp.hop) + 1)];   // nur Rahmen ganz im Teil
       let jL = -1; r.rms.forEach((v, j) => { if (!r.still[j] && (jL < 0 || v > r.rms[jL])) jL = j; }); if (jL < 0) continue;
       const [a0, a1] = fr(jL); if (a1 - a0 < 2) continue;
       const acc = new Float64Array(Sp.K); for (let f = a0; f < a1; f++) for (let k = 0; k < Sp.K; k++) acc[k] += Sp.S[f][k] / (a1 - a0);

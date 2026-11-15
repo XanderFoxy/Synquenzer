@@ -61381,27 +61381,220 @@ function* plop(y, sr, ev, o) {
   return out;
 }
 
+/* ---------- Teil 2 · 2 Klicks & Schmatzer: kurze Impulse im AR-Rest (Art „Mund“: Band > 2 kHz), die allein stehen (keine Stimmlippen-
+   Pulse, die kommen periodisch) → Bereich 0,5–5 ms aus der Umgebung neu berechnen (LSAR, Ordnung 40). Zwei Durchgänge: der zweite sucht
+   noch einmal mit etwas höherer Empfindlichkeit dort, wo der erste repariert hat (dort hat sich das Signal geändert). ---------- */
+function* clickScan(x, sr, o, wins) {
+  o = o || {}; const sens = Math.max(1, Math.min(10, o.sens != null ? o.sens : 4)), mouth = o.art !== 'tief', n = x.length;
+  const J = Math.max(8, Math.round(0.0005 * sr)), nj = Math.ceil(n / J), N = 2048, p = 16, PR = 256 + p;
+  const fe = new Float32Array(nj), fh = new Float32Array(nj), done = new Uint8Array(Math.ceil(n / N));
+  const blocks = []; if (!wins) for (let b = 0; b * N < n; b++) blocks.push(b); else for (const [a, e] of wins) for (let b = Math.max(0, Math.floor(a / N)); b * N < Math.min(n, e); b++) if (!done[b]) { done[b] = 1; blocks.push(b); }
+  const C = mouth ? BW4.map(q => bqC('hp', sr, 2000, q)) : [bqC('hp', sr, 60, Math.SQRT1_2)], h = new Float64Array(N + PR), hw = new Float64Array(N), wn = new Float64Array(N), r = new Float64Array(p + 1), A = new Float64Array(p + 1), T = new Float64Array(p + 1);
+  for (let i = 0; i < N; i++) wn[i] = 0.5 - 0.5 * Math.cos(TAU * (i + 0.5) / N);
+  for (let bi = 0; bi < blocks.length; bi++) {
+    const s = blocks[bi] * N, e = Math.min(n, s + N), a = Math.max(0, s - PR), L = e - a, o0 = s - a;
+    for (let i = 0; i < L; i++) h[i] = x[a + i];
+    for (const c of C) { const st = [0, 0]; bqRun(c, st, h, h, 0, L); }
+    const M = L - o0; for (let i = 0; i < M; i++) hw[i] = h[o0 + i] * wn[i];
+    for (let k = 0; k <= p; k++) { let q = 0; for (let i = k; i < M; i++) q += hw[i] * hw[i - k]; r[k] = q; }
+    r[0] *= 1 + 1e-4; A.fill(0); A[0] = 1; let E = r[0] + EPS;
+    for (let m = 1; m <= p && E > EPS; m++) { let acc = r[m]; for (let k = 1; k < m; k++) acc += A[k] * r[m - k]; const kk = -acc / E; T.set(A); for (let k = 1; k < m; k++) A[k] = T[k] + kk * T[m - k]; A[m] = kk; E *= 1 - kk * kk; }
+    for (let i = o0; i < L; i++) { let q = 0; for (let k = 0; k <= p; k++) q += A[k] * h[i - k]; const t = a + i, j = (t / J) | 0, aq = q < 0 ? -q : q, ah = h[i] < 0 ? -h[i] : h[i]; if (aq > fe[j]) fe[j] = aq; if (ah > fh[j]) fh[j] = ah; }
+    if ((bi & 63) === 63) yield 0.9 * (bi + 1) / blocks.length;
+  }
+  // Rahmen (0,5 ms): Spitze gegen örtliches Mittel (±12 ms ohne das Ereignis) und gegen die nächsten Spitzen (allein stehend)
+  const MED = o.med !== false, K1 = (o.k1b != null ? o.k1b : 8) - 0.6 * sens, K2 = 3.0 - 0.18 * sens, W = Math.round(0.012 * sr / J), I = Math.round(0.025 * sr / J), MX = Math.round(0.005 * sr / J), X3 = Math.round(0.003 * sr / J), ev = [];
+  const sel = new Uint8Array(nj); if (!wins) sel.fill(1); else for (const [a, e] of wins) for (let j = Math.max(0, Math.floor(a / J)); j < Math.min(nj, Math.ceil(e / J)); j++) sel[j] = 1;
+  const tmp = new Float64Array(256), medx = (arr, j0, j1, x0, x1) => { let c = 0; for (let j = Math.max(0, j0); j < Math.min(nj, j1) && c < 256; j++) { if (j >= x0 && j <= x1) continue; tmp[c++] = arr[j]; } if (!c) return 0; const t = tmp.subarray(0, c).sort(); return t[c >> 1]; };
+  const mean = (arr, j0, j1, x0, x1) => { let s = 0, c = 0; for (let j = Math.max(0, j0); j < Math.min(nj, j1); j++) { if (j >= x0 && j <= x1) continue; s += arr[j]; c++; } return c ? s / c : 0; };
+  // zwei Hinweise: (a) Spitze im AR-Rest (harter Einsatz), (b) Spitze der Band-Hüllkurve (weich einsetzende, ausklingende Klicks –
+  // die sagt das AR-Modell gut voraus). Beide müssen allein stehen: Stimmlippen-Pulse kommen alle 1–16 ms wieder.
+  const test = (arr, j, k1, k2) => { const v = arr[j]; if (v < 2e-4 || v < arr[j - 1] || v < arr[j + 1] || v < arr[j - 2] || v < arr[j + 2]) return null;
+    let jl = j, jr = j; while (jl > j - MX && arr[jl - 1] > 0.25 * v) jl--; while (jr < j + MX && jr + 1 < nj && arr[jr + 1] > 0.25 * v) jr++;
+    const xl = Math.min(jl - 2, j - X3), xr = Math.max(jr + 2, j + X3), m = (MED ? medx : mean)(arr, xl - W, xr + W + 1, xl, xr); if (!(v > k1 * m)) return null;
+    // Nachbarn: zweitgrößte örtliche Spitze in ±25 ms (ein Nachbar-Klick darf sein – Klicks kommen oft zu zweit –, Stimmlippen-Pulse
+    // kommen mindestens viermal)
+    let n1 = 0, n2 = 0; for (let q = Math.max(1, xl - I); q < Math.min(nj - 1, xr + I + 1); q++) { if (q >= xl && q <= xr) continue; const u = arr[q]; if (u < arr[q - 1] || u < arr[q + 1]) continue; if (u > n1) { n2 = n1; n1 = u; } else if (u > n2) n2 = u; }
+    if (!(v > k2 * n2)) return null; return {jl, jr, sc: 20 * Math.log10(v / (m + EPS))}; };
+  for (let j = 2; j < nj - 2; j++) {
+    if (!sel[j]) continue;
+    const T1 = test(fe, j, K1, K2), T2 = T1 ? null : test(fh, j, K1 + 1, K2 + 0.4), Tq = T1 || T2; if (!Tq) continue;
+    let jl = Tq.jl, jr = Tq.jr; const v = fe[j], m = 0;
+    // Ausdehnung über die Hüllkurve des Bandes (ausklingende Klicks)
+    const hp = Math.max(fh[jl], fh[j]), hm = mean(fh, jl - W, jr + W + 1, jl - 2, jr + 2);
+    while (jl > j - MX && fh[jl - 1] > Math.max(0.2 * hp, 3 * hm)) jl--; while (jr < j + MX && jr + 1 < nj && fh[jr + 1] > Math.max(0.2 * hp, 3 * hm)) jr++;
+    if (jl <= j - MX || jr >= j + MX) continue;   // länger als 5 ms: Konsonant oder Geräusch, kein Klick
+    if (Math.max(fh[jl], fh[j]) < (o.min != null ? o.min : 1e-3)) continue;   // unter −60 dBFS im Band: unhörbar, nicht anfassen
+    // Einsatz-Schutz: steigt das Band danach (2–20 ms) stark gegen davor, beginnt hier ein Laut (t, k, p) – nicht anfassen
+    const A0 = Math.round(0.002 * sr / J), A1 = Math.round(0.02 * sr / J), eb = mean(fh, jl - A1, jl - A0, -1, -1), ea = mean(fh, jr + A0, jr + A1, -1, -1), onDb = 20 * Math.log10((ea + EPS) / (eb + EPS));
+    if (onDb > (o.onset != null ? o.onset : 15)) continue;
+    const wmin = Math.max(1, Math.round((o.width != null ? o.width : 1) * 0.001 * sr / J)), pad = Math.max(0, wmin - (jr - jl + 1)), mg = Math.round(0.00025 * sr);
+    let s0 = Math.max(0, (jl - (pad >> 1)) * J - mg), s1 = Math.min(n, (jr + 1 + pad - (pad >> 1)) * J + mg);
+    if (ev.length && s0 <= ev[ev.length - 1].s1 + J) { const q = ev[ev.length - 1]; q.s1 = Math.max(q.s1, s1); q.sc = Math.max(q.sc, +Tq.sc.toFixed(1)); }
+    else ev.push({s0, s1, t0: +(s0 / sr).toFixed(4), t1: +(s1 / sr).toFixed(4), sc: +Tq.sc.toFixed(1), how: T1 ? 'rest' : 'huelle', on: +onDb.toFixed(1)});
+    j = jr + 2;
+  }
+  yield 1;
+  return ev;
+}
+function* click(y, sr, ev, o) {
+  const p = 40, C = Math.round(0.02 * sr), n = y.length, out = [];
+  for (let e = 0; e < ev.length; e++) {
+    const E = ev[e], a = Math.max(0, E.s0 - C - p), b = Math.min(n, E.s1 + C + p), L = b - a, z = new Float64Array(L), g0 = E.s0 - a, g1 = E.s1 - a;
+    for (let i = 0; i < L; i++) z[i] = y[a + i];
+    if (g0 < 2 * p || L - g1 < 2 * p || g1 - g0 > Math.round(0.008 * sr)) { out.push({t0: E.t0, t1: E.t1, sc: E.sc, redDb: 0}); continue; }
+    // Art „Mund“: nur das Band über 1,5 kHz neu berechnen (Grundton und tiefe Obertöne bleiben, wie sie sind); „tief“: das ganze Signal
+    const lo = o && o.art === 'tief' ? null : lpZero(y, a, b, sr, 1500); if (lo) for (let i = 0; i < L; i++) z[i] -= lo[i];
+    const A = arCoef(z, [[p, g0], [g1 + p, L]].filter(s => s[1] - s[0] > p), p), zu = lsar(z, g0, g1, A);
+    let e0 = 0, e1 = 0; for (let j = g0; j < g1; j++) { const u = zu[j - g0]; e0 += z[j] * z[j]; e1 += u * u; y[a + j] = lo ? lo[j] + u : u; }
+    out.push({t0: E.t0, t1: E.t1, sc: E.sc, redDb: +(db(e0) - db(e1)).toFixed(1)});
+    if ((e & 15) === 15) yield (e + 1) / ev.length;
+  }
+  return out;
+}
+function* clicks2(y, sr, o) {
+  o = o || {}; const ev1 = yield* part(clickScan(y, sr, o), 0, 0.6), r1 = yield* part(click(y, sr, ev1, o), 0.6, 0.15), C = Math.round(0.03 * sr);
+  const ev2 = ev1.length ? yield* part(clickScan(y, sr, Object.assign({}, o, {sens: Math.min(10, (o.sens != null ? o.sens : 4) + 1)}), ev1.map(e => [e.s0 - C, e.s1 + C])), 0.75, 0.2) : [];
+  const r2 = yield* part(click(y, sr, ev2, o), 0.95, 0.05);
+  return {pass1: r1.length, pass2: r2.length, list: r1.concat(r2.map(e => Object.assign({pass: 2}, e))).sort((a, b) => a.t0 - b.t0)};
+}
+
+/* ---------- Teil 2 · 10 Atmer: stimmlos (Periodizität im dezimierten Signal), Energie 1–6 kHz, kaum < 150 Hz, kein Zischen (> 5 kHz),
+   120–900 ms, nicht zwischen zwei Silben eingeklemmt → auf Ziel-Pegel (−40 dBFS, RMS) bringen: laute stark, leise kaum, nie lauter.
+   Rampen 10 ms innen; die Verstärkung wird so gelöst, dass der RMS mit den Rampen genau das Ziel trifft. Marken: lassen/leiser/weg. ---------- */
+function* voicing(x, sr, Fe, mask) {
+  const D = Math.max(1, Math.floor(sr / 5500)), sd = sr / D, L = BW4.map(q => bqC('lp', sr, Math.min(1500, sd * 0.3), q)), s0 = [0, 0], s1 = [0, 0], n = x.length, M = Math.floor(n / D), xd = new Float32Array(M + 1);
+  for (let i0 = 0; i0 < n; i0 += BLK) { const i1 = Math.min(n, i0 + BLK); for (let i = i0; i < i1; i++) { const v = bqStep(L[1], s1, bqStep(L[0], s0, x[i])); if (i % D === 0) xd[i / D] = v; }
+    for (const z of [s0, s1]) { if (z[0] < 1e-30 && z[0] > -1e-30) z[0] = 0; if (z[1] < 1e-30 && z[1] > -1e-30) z[1] = 0; } yield 0.6 * i1 / n; }
+  // Periodizität des LPC-Rests (Ordnung 10): gefärbtes Rauschen (Atem) wird weiß und verliert jede Korrelation, Stimmhaftes bleibt
+  // ein Pulszug – so verwechselt das Maß einen schmalbandigen Atemzug nicht mit einem Ton
+  const W = Math.round(0.04 * sd), l0 = Math.max(2, Math.floor(sd / 1000)), l1 = Math.ceil(sd / 60), vc = new Float32Array(Fe.nf), P = 10, LL = W + l1 + P;
+  const sg = new Float64Array(LL), rs = new Float64Array(LL), hw = new Float64Array(LL), rr = new Float64Array(P + 1), Ac = new Float64Array(P + 1), Tc = new Float64Array(P + 1);
+  for (let i = 0; i < LL; i++) hw[i] = 0.5 - 0.5 * Math.cos(TAU * (i + 0.5) / LL);
+  for (let j = 0; j < Fe.nf; j++) {
+    if (!mask[j]) continue; const a = Math.round((j + 1) * Fe.H / D) - (W >> 1) - P; if (a < 0 || a + LL > M) continue;
+    for (let i = 0; i < LL; i++) sg[i] = xd[a + i];
+    for (let k = 0; k <= P; k++) { let q = 0; for (let i = k; i < LL; i++) q += sg[i] * hw[i] * sg[i - k] * hw[i - k]; rr[k] = q; }
+    rr[0] *= 1 + 1e-3; Ac.fill(0); Ac[0] = 1; let E = rr[0] + EPS;
+    for (let m = 1; m <= P && E > EPS; m++) { let acc = rr[m]; for (let k = 1; k < m; k++) acc += Ac[k] * rr[m - k]; const kk = -acc / E; Tc.set(Ac); for (let k = 1; k < m; k++) Ac[k] = Tc[k] + kk * Tc[m - k]; Ac[m] = kk; E *= 1 - kk * kk; }
+    for (let i = P; i < LL; i++) { let q = 0; for (let k = 0; k <= P; k++) q += Ac[k] * sg[i - k]; rs[i] = q; }
+    let e0 = 0, e1 = 0; for (let i = P; i < P + W; i++) e0 += rs[i] * rs[i]; for (let i = P + l0; i < P + W + l0; i++) e1 += rs[i] * rs[i];
+    let best = 0; for (let l = l0; l <= l1; l++) { let q = 0; for (let i = P; i < P + W; i++) q += rs[i] * rs[i + l]; const c = q / Math.sqrt(e0 * e1 + EPS); if (c > best) best = c; if (P + W + l < LL) e1 += rs[P + W + l] * rs[P + W + l] - rs[P + l] * rs[P + l]; }
+    vc[j] = best;
+  }
+  yield 1;
+  return vc;
+}
+function* breathFind(x, sr, Fe, o) {
+  o = o || {}; const sens = o.sens != null ? o.sens : 5, R = Fe.R, nf = Fe.nf, fps = sr / Fe.H, sh = (sens - 5) * 0.8;
+  const floor = pct(R.tot, 0.1), hi = pct(R.tot, 0.99), cand = new Uint8Array(nf), loud = new Uint8Array(nf), mask = new Uint8Array(nf);
+  for (let j = 0; j < nf; j++) { loud[j] = R.tot[j] > floor + 10 ? 1 : 0;
+    cand[j] = loud[j] && R.tot[j] < hi && R.br[j] - R.tot[j] > -6 - sh && R.lf[j] - R.tot[j] < -14 + sh && R.hf[j] - R.br[j] < -1 + sh ? 1 : 0; }
+  for (let j = 0; j < nf; j++) if (loud[j]) for (let q = Math.max(0, j - 36); q <= Math.min(nf - 1, j + 36); q++) if (cand[q]) { mask[j] = 1; break; }
+  const vc = yield* part(voicing(x, sr, Fe, mask), 0, 0.9), vth = 0.45, voiced = j => j >= 0 && j < nf && loud[j] && (!mask[j] || vc[j] > vth);
+  const ev = [], G = 4, keep = Math.round(0.02 * fps), near = Math.round(0.04 * fps);
+  for (let j = 0; j < nf; j++) {
+    if (!cand[j] || voiced(j)) continue; let e = j, gap = 0;
+    for (let q = j + 1; q < nf; q++) { if (cand[q] && !voiced(q)) { e = q; gap = 0; } else if (voiced(q) || ++gap > G) break; }
+    let s = j, t = e; while (s <= t && (() => { for (let q = s - keep; q < s; q++) if (voiced(q)) return true; return false; })()) s++;
+    while (t >= s && (() => { for (let q = t + 1; q <= t + keep + 1; q++) if (voiced(q)) return true; return false; })()) t--;
+    j = e; const dur = (t - s + 2) / fps; if (dur < 0.12 || dur > 0.9) continue;
+    // Ränder nachziehen: leise Ein-/Ausklänge des Atemzugs (bis 120 ms), solange nichts Stimmhaftes in der Nähe ist
+    const tail = q => q >= 0 && q < nf && !voiced(q) && R.tot[q] > floor + 4 && R.lf[q] - R.tot[q] < -8 && (() => { for (let u = q - keep; u <= q + keep; u++) if (voiced(u)) return false; return true; })();
+    for (let k = 0; k < 24 && tail(s - 1); k++) s--; for (let k = 0; k < 24 && tail(t + 1); k++) t++;
+    let vl = false, vr = false; for (let q = s - near - keep; q < s; q++) if (voiced(q)) vl = true; for (let q = t + 1; q <= t + near + keep + 1; q++) if (voiced(q)) vr = true;
+    if (vl && vr && dur < 0.3) continue;   // zwischen zwei Silben eingeklemmt: Konsonant, kein Atmer
+    const s0 = s * Fe.H, s1 = Math.min(Fe.n, (t + 2) * Fe.H); let pw = 0; for (let i = s0; i < s1; i++) pw += x[i] * x[i];
+    ev.push({s0, s1, t0: +(s0 / sr).toFixed(3), t1: +(s1 / sr).toFixed(3), db: +db(pw / Math.max(1, s1 - s0)).toFixed(1)});
+  }
+  yield 1;
+  return ev;
+}
+function* breath(y, sr, ev, o) {
+  o = o || {}; const T = o.target != null ? o.target : -40, R = Math.max(1, Math.round(0.01 * sr)), out = [];
+  for (let e = 0; e < ev.length; e++) {
+    const E = ev[e], act = E.act || o.act || 'leiser', s0 = E.s0, s1 = E.s1, L = s1 - s0; let A = 0, B = 0, Cc = 0, P = 0;
+    const w = i => { const r = Math.min(1, (i - s0 + 0.5) / R, (s1 - i - 0.5) / R); return 0.5 - 0.5 * Math.cos(Math.PI * Math.max(0, r)); };
+    for (let i = s0; i < s1; i++) { const v = y[i] * y[i], ww = w(i), u = 1 - ww; A += u * u * v; B += u * ww * v; Cc += ww * ww * v; P += v; }
+    const Ldb = db(P / Math.max(1, L)), Pt = Math.pow(10, T / 10) * L;
+    let g = 1;
+    if (act === 'weg') g = 0;
+    else if (act === 'leiser') { if (o.mode === 'absenken') g = Math.pow(10, -(o.down != null ? o.down : 12) / 20); else if (P > Pt) { const d = B * B - Cc * (A - Pt); g = A >= Pt ? 0 : Math.max(0, Math.min(1, (-B + Math.sqrt(Math.max(0, d))) / (Cc + EPS))); } }
+    if (g < 1) for (let i = s0; i < s1; i++) { const ww = w(i); y[i] *= 1 - ww + g * ww; }
+    let P2 = 0; for (let i = s0; i < s1; i++) P2 += y[i] * y[i];
+    out.push({t0: E.t0, t1: E.t1, act, db: +Ldb.toFixed(1), dbNeu: +db(P2 / Math.max(1, L)).toFixed(1), gDb: g > 0 ? +(20 * Math.log10(g)).toFixed(1) : null});
+    if ((e & 7) === 7) yield (e + 1) / ev.length;
+  }
+  return out;
+}
+
+/* ---------- Teil 2 · 11 Raumton in Lücken: Raumton aus den leisen Stellen lernen (Pegel + Spektrum), Lücken (≥ 30 ms, ≥ 10 dB unter dem
+   Raumton: Schnitt, „Atmer weg“) mit demselben Rauschen füllen (Zufallsphase, Überlappen-Addieren mit √Hann), 10-ms-Blenden innen.
+   Gefüllt wird nur, was fehlt (Leistung Raumton − Leistung Lücke); außerhalb der Lücken bleibt alles bitgleich. ---------- */
+function* roomLearn(x, sr) {
+  const n = x.length, H = Math.max(64, Math.round(0.01 * sr)), nf = Math.floor(n / H), Lf = new Float64Array(nf);
+  for (let j = 0; j < nf; j++) { let s = 0; for (let i = j * H; i < (j + 1) * H; i++) s += x[i] * x[i]; Lf[j] = db(s / H); }
+  yield 0.4;
+  // Raumton = die ruhigsten Stellen: 200-ms-Fenster ohne digitale Stille, gemessen am Mittelwert (dB); das leiseste und alle bis
+  // 3 dB darüber (ohne Überlappung, zusammen ≤ 2 s). Der Rauschteppich liegt in Pausen, nicht in leisem Gesang.
+  const WN = 20, cands = [];
+  const tw = new Float64Array(WN);
+  for (let j = 0; j + WN <= nf; j += 5) { let c = 0; for (let q = j; q < j + WN; q++) if (Lf[q] > -110) tw[c++] = Lf[q]; if (c < WN) continue; tw.sort(); cands.push({j, m: tw[WN >> 1]}); }   // Mittelwert (dB) je Fenster
+  if (!cands.length) return null; cands.sort((p, q) => p.m - q.m);
+  const use = [], best = cands[0].m; for (const c of cands) { if (c.m > best + 3 || use.length >= 10) break; if (use.every(u => Math.abs(u.j - c.j) >= WN)) use.push(c); }
+  const N = 1024, F = FFT(N), re = new Float64Array(N), im = new Float64Array(N), P = new Float64Array(N / 2 + 1); let cnt = 0, pw = 0, fr = 0;
+  for (const u of use) { pw += WN * Math.pow(10, (u.m + 0.5) / 10); fr += WN;
+    for (let a = u.j * H; a + N <= (u.j + WN) * H; a += N >> 1) { for (let i = 0; i < N; i++) { re[i] = x[a + i] * (0.5 - 0.5 * Math.cos(TAU * (i + 0.5) / N)); im[i] = 0; } F(re, im, false); for (let k = 0; k <= N / 2; k++) P[k] += re[k] * re[k] + im[k] * im[k]; cnt++; } }
+  yield 1;
+  if (!cnt) return null; const fl = best;
+  const loud = Array.from(Lf).filter(v => v > -110).sort((a, b) => a - b), act = loud[Math.floor(0.8 * loud.length)];
+  if (!(act - best >= 25)) return {none: true, db: +best.toFixed(1), act: +act.toFixed(1)};   // kein Rauschteppich (Take mit Tor/Gate oder ohne Pausen)
+  for (let k = 0; k <= N / 2; k++) P[k] /= cnt;
+  return {db: +db(pw / fr).toFixed(1), p: pw / fr, P, N, frames: fr, wins: cnt, floor: +fl.toFixed(1)};
+}
+function* room(y, sr, o, Lr) {
+  o = o || {}; if (!Lr || Lr.none) return {learned: null, holes: [], why: Lr ? 'kein Raumton (nur ' + (Lr.act - Lr.db).toFixed(0) + ' dB unter dem Gesang)' : 'kein Raumton'};
+  const n = y.length, H = Math.max(64, Math.round(0.01 * sr)), h1 = Math.max(16, Math.round(0.001 * sr)), nf = Math.floor(n / H), th = Lr.db - (o.below != null ? o.below : 10);
+  const lev = (a, b) => { let s = 0; for (let i = a; i < b; i++) s += y[i] * y[i]; return db(s / Math.max(1, b - a)); };
+  const holes = []; let s = -1;
+  for (let j = 0; j <= nf; j++) { const q = j < nf && lev(j * H, (j + 1) * H) < th; if (q && s < 0) s = j; if (!q && s >= 0) { if (j - s >= 3) holes.push([s * H, j * H]); s = -1; } }
+  for (const hz of holes) { while (hz[0] - h1 >= 0 && lev(hz[0] - h1, hz[0]) < th) hz[0] -= h1; while (hz[1] + h1 <= n && lev(hz[1], hz[1] + h1) < th) hz[1] += h1; }
+  yield 0.3;
+  const N = Lr.N, F = FFT(N), re = new Float64Array(N), im = new Float64Array(N), win = new Float64Array(N), mag = new Float64Array(N / 2 + 1), R = Math.round(0.01 * sr), out = [];
+  for (let i = 0; i < N; i++) win[i] = Math.sin(Math.PI * (i + 0.5) / N);
+  for (let k = 1; k < N / 2; k++) mag[k] = Math.sqrt(Lr.P[k]);
+  for (let q = 0; q < holes.length; q++) {
+    // Pegel: der Raumton gleich daneben (je 300 ms, nur rauschartige Rahmen ≤ gelernt + 12 dB), sonst der gelernte
+    const [a, b] = holes[q], L = b - a, ph = lev(a, b), nb = []; let ns = 0;
+    for (const [u0, u1] of [[a - 30 * H, a], [b, b + 30 * H]]) for (let u = Math.max(0, u0); u + H <= Math.min(n, u1); u += H) { const l = lev(u, u + H); if (l > -110 && l <= Lr.db + 12) nb.push(l); else if (l <= -110) ns++; }
+    if (nb.length < 5 && ns >= 5) continue;   // daneben ist es auch digital still (Take mit Tor): nichts erfinden
+    nb.sort((p1, p2) => p1 - p2); const pt = nb.length >= 5 ? Math.pow(10, (nb[nb.length >> 1] + 0.5) / 10) : Lr.p, need = pt - Math.pow(10, ph / 10); if (need <= 0 || L < 2 * R) continue;   // Mittelwert (dB) der Nachbarn, robust gegen einzelne laute Rahmen
+    let sd = (a * 2654435761 + 12345) >>> 0; const rnd = () => { sd = (Math.imul(sd, 1103515245) + 12345) >>> 0; return sd / 4294967296; };
+    const z = new Float64Array(L + 2 * N);
+    for (let f = 0; f * (N >> 1) < L + N; f++) { re.fill(0); im.fill(0);
+      for (let k = 1; k < N / 2; k++) { const t = TAU * rnd(); re[k] = mag[k] * Math.cos(t); im[k] = mag[k] * Math.sin(t); re[N - k] = re[k]; im[N - k] = -im[k]; }
+      F(re, im, true); const o0 = f * (N >> 1); for (let i = 0; i < N && o0 + i < z.length; i++) z[o0 + i] += re[i] * win[i]; }
+    let zp = 0; for (let i = N; i < N + L; i++) zp += z[i] * z[i]; const gn = Math.sqrt(need * L / (zp + EPS));
+    for (let i = 0; i < L; i++) { const r = Math.min(1, (i + 0.5) / R, (L - i - 0.5) / R), fw = 0.5 - 0.5 * Math.cos(Math.PI * r); y[a + i] += gn * fw * z[N + i]; }
+    out.push({t0: +(a / sr).toFixed(3), t1: +(b / sr).toFixed(3), dbZiel: +db(pt).toFixed(1), dbVor: isFinite(ph) && ph > -200 ? +ph.toFixed(1) : null, dbNach: +lev(a, b).toFixed(1)});
+    yield 0.3 + 0.7 * (q + 1) / holes.length;
+  }
+  return {learned: {db: Lr.db, frames: Lr.frames}, holes: out};
+}
+
 /* ---------- 0 Prüfen: was ist da ---------- */
 function* check(x, sr, o) {
-  o = o || {}; const t0 = Date.now(), Fe = yield* part(feats(x, sr), 0, 0.6), R = Fe.R, nf = Fe.nf, fps = sr / Fe.H;
-  const Hm = yield* part(humFind(x, sr, Fe), 0.6, 0.35);
+  o = o || {}; const t0 = Date.now(), Fe = yield* part(feats(x, sr), 0, 0.45), R = Fe.R, nf = Fe.nf, fps = sr / Fe.H;
+  const Hm = yield* part(humFind(x, sr, Fe), 0.45, 0.17);
   const plops = plopFind(Fe, o.plop);
   const floor = pct(R.tot, 0.1), act = pct(R.tot, 0.6), top = pct(R.tot, 0.99);
-  // Klicks (Kandidaten): Spitze > 2 kHz ≥ 16 dB über dem örtlichen Mittel, kurz, nicht im Zischen
-  let clicks = 0;
-  { const F = Fe.F, H = Fe.H, e2 = new Float64Array(Fe.nh); for (let h = 0; h < Fe.nh; h++) e2[h] = F.k2[h] / H;
-    for (let h = 2; h < Fe.nh - 2; h++) { const m = med(e2, h - 10, h + 11); if (F.pk2[h] > 40 * m && F.pk2[h] > 1e-7 && F.pk2[h] > 4 * F.pk2[h - 1] && F.pk2[h] > 4 * F.pk2[h + 1] && F.hf[h] < 0.6 * F.tot[h] + 1e-12) { clicks++; h += 2; } } }
-  // Atmer (Kandidaten): leise, kaum < 300 Hz, Energie 1–6 kHz, 120–900 ms
-  const breaths = [];
-  { let s = -1, gap = 0;
-    for (let j = 0; j <= nf; j++) {
-      const ok = j < nf && R.tot[j] > floor + 6 && R.tot[j] < act - 6 && R.br[j] - R.tot[j] > -3.5 && R.lf[j] - R.tot[j] < -8;
-      if (ok) { if (s < 0) s = j; gap = 0; } else if (s >= 0 && ++gap > 3) { const e = j - gap, d = (e - s + 2) / fps; if (d >= 0.12 && d <= 0.9) breaths.push({t0: +(s / fps).toFixed(3), t1: +((e + 2) / fps).toFixed(3)}); s = -1; gap = 0; }
-    } }
+  // Klicks: Durchgang 1 der Klick-Suche (AR-Rest, allein stehende Impulse); Atmer: dieselbe Suche wie der Schritt Atmer
+  const clickList = yield* part(clickScan(x, sr, o.click), 0.62, 0.2), clicks = clickList.length;
+  const breaths = yield* part(breathFind(x, sr, Fe, o.breath), 0.82, 0.15);
   // Zischen: Anteil > 5 kHz an der Energie der aktiven Rahmen
   let eh = 0, et = 0, sib = 0; for (let j = 0; j < nf; j++) if (R.tot[j] > act - 20) { const t = Math.pow(10, R.tot[j] / 10), h = Math.pow(10, R.hf[j] / 10); et += t; eh += h; if (h > 0.4 * t) sib++; }
   const B = {sr, sec: +(x.length / sr).toFixed(2), clip: Fe.clip, peakDb: +(20 * Math.log10(Fe.pk + EPS)).toFixed(1), floorDb: +floor.toFixed(1), snrDb: +(act - floor).toFixed(1),
-    hum: Hm, plops, clicks, breaths: breaths.length, breathList: breaths, sibPct: +(100 * eh / (et + EPS)).toFixed(1), sibFrames: sib, ms: Date.now() - t0};
+    hum: Hm, plops, clicks, clickList: clickList.map(e => ({t0: e.t0, t1: e.t1, sc: e.sc})), breaths: breaths.length, breathList: breaths.map(e => ({t0: e.t0, t1: e.t1, db: e.db})), sibPct: +(100 * eh / (et + EPS)).toFixed(1), sibFrames: sib, ms: Date.now() - t0};
   const L = [];
   if (B.clip) L.push(B.clip + ' Übersteuerung' + (B.clip > 1 ? 'en' : ''));
   if (B.clicks) L.push(B.clicks + ' Klick' + (B.clicks > 1 ? 's' : ''));
@@ -61415,13 +61608,18 @@ function* check(x, sr, o) {
   return B;
 }
 
-/* ---------- Kette (feste Reihenfolge): Plopps → Brummen → Hochpass ---------- */
-const ORDER = ['plop', 'hum', 'hp'];
+/* ---------- Kette (feste Reihenfolge): Klicks → Plopps → Brummen → Hochpass → Atmer → Raumton in Lücken ---------- */
+const ORDER = ['click', 'plop', 'hum', 'hp', 'breath', 'room'];
 function* run(x, sr, o) {
   o = o || {}; const st = o.steps || {}, t0 = Date.now(), y = Float32Array.from(x), info = {order: []}, on = ORDER.filter(k => st[k]), sp = 1 / Math.max(1, on.length);
   let at = 0, Fe = null;
   for (const k of on) {
-    if (k === 'plop') {
+    if (k === 'click') info.click = yield* part(clicks2(y, sr, st.click), at, sp);
+    else if (k === 'breath') {
+      const B = st.breath, fe = Fe || (yield* part(feats(y, sr), at, sp * 0.5)), ev = B.list ? B.list.map(e => Object.assign({}, e, {s0: e.s0 != null ? e.s0 : Math.round(e.t0 * sr), s1: e.s1 != null ? e.s1 : Math.round(e.t1 * sr)})) : yield* part(breathFind(y, sr, fe, B), at + sp * 0.5, sp * 0.3);
+      info.breath = yield* part(breath(y, sr, ev, B), at + sp * 0.8, sp * 0.2);
+    } else if (k === 'room') { const Lr = yield* part(roomLearn(x, sr), at, sp * 0.4); info.room = yield* part(room(y, sr, st.room, Lr), at + sp * 0.4, sp * 0.6); }
+    else if (k === 'plop') {
       Fe = yield* part(feats(y, sr), at, sp * 0.5);
       const ev = st.plop.list || plopFind(Fe, st.plop);
       info.plop = yield* part(plop(y, sr, ev, st.plop), at + sp * 0.5, sp * 0.5);
@@ -61438,10 +61636,10 @@ function* run(x, sr, o) {
 }
 // fertig rechnen ohne Scheiben (Worker, Node)
 function done(g) { let r; while (!(r = g.next()).done); return r.value; }
-return {check, run, feats, humFind, humCoefs, hum, hp, plopFind, plop, bqC, done, ORDER, VERSION: 'vr1-kern-1'};
+return {check, run, feats, humFind, humCoefs, hum, hp, plopFind, plop, clickScan, click, clicks2, voicing, breathFind, breath, roomLearn, room, bqC, done, ORDER, VERSION: 'vr1-kern-2'};
 }
-const VXR1 = {w: null, wid: 0, q: new Map(), core: null, runs: 0, last: null, prog: null, aborts: 0, slices: 0};
-const VXR1_ORDER = ['plop', 'hum', 'hp'];   // Plopps vor jedem Hochpass (sie sehen den Tiefbass), Brummen vor dem Breitband-Rauschen
+const VXR1 = {w: null, wid: 0, q: new Map(), core: null, runs: 0, last: null, prog: null, aborts: 0, slices: 0, marks: {}};
+const VXR1_ORDER = ['click', 'plop', 'hum', 'hp', 'breath', 'room'];   // Klicks vor allem (stören sonst die Detektoren), Plopps vor jedem Hochpass (sie sehen den Tiefbass), Brummen vor dem Breitband-Rauschen, Atmer nach dem Hochpass, Raumton zuletzt (füllt auch „Atmer weg“)
 function vr1Worker() {
   if (VXR1.w) return VXR1.w; if (VXR1.w === false) return false;
   try {
@@ -61479,7 +61677,30 @@ function vr1Job(op, x, sr, o, on) {
   return {p, abort: () => abort()};
 }
 // Take prüfen / Kette rechnen (Roh-Take bleibt; Ergebnis = neue Fassung als Float32)
-async function vr1TakeJob(op, id, o, on) { const m = S.takes && S.takes[id]; if (!m) return null; const pcm = await tkPcm(id); if (!pcm) return null; const j = vr1Job(op, pcm, m.sr, o, on); VXR1.cur = j; try { return await j.p; } finally { if (VXR1.cur === j) VXR1.cur = null; } }
+async function vr1TakeJob(op, id, o, on) { const m = S.takes && S.takes[id]; if (!m) return null; const pcm = await tkPcm(id); if (!pcm) return null; const j = vr1Job(op, pcm, m.sr, o, on); VXR1.cur = j; try { const r = await j.p; vr1Marks(id, op, r); return r; } finally { if (VXR1.cur === j) VXR1.cur = null; } }
+/* Atmer-Marken (Teil 2): nach Prüfen bzw. nach dem Schritt Atmer je Take gemerkt (nur Sitzung, der Take bleibt unberührt); der Marken-Editor
+   zeichnet sie im vorhandenen Stil (Band über der Welle wie die Auswahl, Farbe der Welle). act = lassen | leiser | weg gilt beim nächsten Lauf. */
+function vr1Marks(id, op, r) {
+  const L = op === 'run' ? r && r.info && r.info.breath : op === 'check' && r ? r.breathList : null; if (!L) return;
+  const old = VXR1.marks[id] || [];
+  VXR1.marks[id] = L.map(e => { const o = old.find(q => Math.abs(q.t0 - e.t0) < 0.05 && Math.abs(q.t1 - e.t1) < 0.05); return {t0: e.t0, t1: e.t1, db: e.db, dbNeu: e.dbNeu != null ? e.dbNeu : null, act: e.act || (o && o.act) || 'leiser', done: op === 'run'}; });
+  try { if (typeof WP !== 'undefined' && WP.ed && WP.ed.id === id) wpPaint(); } catch (e) {}
+}
+function vr1BreathAct(id, k, act) { const L = VXR1.marks[id]; if (!L || !L[k] || !/^(lassen|leiser|weg)$/.test(act)) return false; L[k].act = act; try { if (typeof WP !== 'undefined' && WP.ed && WP.ed.id === id) wpPaint(); } catch (e) {} return true; }
+function vr1PaintBreath(E, g, X, Wp, Hp) {
+  const L = E && VXR1.marks[E.id]; E.vr1b = null; if (!L || !L.length) return;
+  g.save(); g.font = WP.font || '600 10px sans-serif'; const hit = [];
+  L.forEach((b, k) => {
+    const xa = X(b.t0), xb = X(b.t1); if (xb < -2 || xa > Wp + 2) return; const w = Math.max(2, xb - xa);
+    if (b.act === 'lassen') { g.strokeStyle = 'rgba(127,176,222,.55)'; g.setLineDash([3, 3]); g.lineWidth = 1; g.strokeRect(Math.round(xa) + .5, 12.5, Math.round(w), Hp - 13); g.setLineDash([]); }
+    else { g.fillStyle = b.act === 'weg' ? 'rgba(127,176,222,.26)' : 'rgba(127,176,222,.15)'; g.fillRect(xa, 12, w, Hp - 12); }
+    g.fillStyle = '#7fb0de'; g.fillRect(xa, 12, w, 3);
+    const tx = 'Atmer' + (b.act === 'weg' ? ' weg' : b.act === 'lassen' ? '' : b.dbNeu != null && b.db != null ? ' ' + String(Math.round(b.dbNeu - b.db)).replace('-', '−') + ' dB' : ' leiser'), tw = g.measureText(tx).width + 6;
+    if (tw <= w + 24) { const x0 = Math.max(2, Math.min(Wp - tw - 2, (xa + xb) / 2 - tw / 2)); g.fillStyle = 'rgba(14,16,20,.85)'; g.fillRect(x0, 16, tw, 14); g.fillStyle = '#bcd6f0'; g.fillText(tx, x0 + 3, 27); }
+    hit.push({k, x0: xa, x1: xb});
+  });
+  E.vr1b = hit; g.restore();
+}
 /* Brummen live: dieselben Kerben als IIRFilterNode-Kette (Rückfall BiquadFilterNode „notch“) – für Wiedergabe/Mithören */
 function vr1HumLive(ctx, h) {
   const K = (VXR1.core || (VXR1.core = vr1Make())).humCoefs(ctx.sampleRate, h || {}), nodes = [];
@@ -61491,9 +61712,11 @@ const VXR1_API = {
   vr1Check: (id, o) => vr1TakeJob('check', id, o),
   vr1Run: (id, o) => vr1TakeJob('run', id, o),
   vr1Abort: () => { if (VXR1.cur) VXR1.cur.abort(); },
+  vr1Breaths: id => (VXR1.marks[id] || []).map(b => Object.assign({}, b)),
+  vr1BreathAct: (id, k, act) => vr1BreathAct(id, k, act),
   vr1Info: () => ({runs: VXR1.runs, last: VXR1.last, prog: VXR1.prog, aborts: VXR1.aborts, slices: VXR1.slices, order: VXR1_ORDER.slice(), worker: VXR1.w ? 'worker' : VXR1.w === false ? 'hauptfaden' : null}),
 };
-window.__vr1 = {job: vr1Job, make: vr1Make, humLive: vr1HumLive, take: vr1TakeJob, api: VXR1_API, st: VXR1, noWorker: v => { VXR1.w = v ? false : null; }};
+window.__vr1 = {job: vr1Job, make: vr1Make, humLive: vr1HumLive, take: vr1TakeJob, api: VXR1_API, st: VXR1, paint: vr1PaintBreath, noWorker: v => { VXR1.w = v ? false : null; }};
 /* VOXR1-END */
 /* =====================================================================================================================
    VS5a (Nachtrag 2 C.5, C.4 N2-VS5a-01; r7/stimme.md §9, §10; N7V-26, N7V-27, N7S-51): Marken & Scheiben, Audio quantisieren.
@@ -62684,6 +62907,7 @@ function wpPaint() {
     g.font = WP.font;
   }
   vx1Paint(E, g, X, Wp, Hp);   // VX1-W: Auswahl mit Griffen
+  if (typeof vr1PaintBreath === 'function') vr1PaintBreath(E, g, X, Wp, Hp);   /* VOXR1 */
   if (E.g10map) { g10eAfterPaint(E, a, mk, P); if (G10E.perf) G10E.frames.push(performance.now() - g10t); if (E.g10fast) return; }   // G10e
   // Bedienung
   const md = w ? w.mode : E.mode;

@@ -21,3 +21,4 @@
 - 05:12 reg.sh: spk6 OK, spk5 24 OK, spk1 1 = Basis (verfeinern-verbessert-ziel), spk8-seite 14/0, spk11 38/3 (drums-auf-kit bekannt); Endlauf test3 → test → test2 → smoke gestartet
 - 05:18 Endlauf: test3 47/0 · test 98/0 · test2 71/1 (Long Task 72 ms bei Last; Wiederholung 926x370 24/0) · smoke errors [] · FFT-Probe Basis 64 ms / Paket 83 ms (alter Weg) · NOTES.md Teil 3 + Pflicht fertig
 - 05:33 Start Prüfer-Befunde beheben (PRUEFUNG.md 1–9, a, b)
+- 05:43 Befunde 1–5, a, b im Block behoben (Worker-Signal je Dokument-Objekt + fensterweise, Zauberstab über Masken-Anteil, ↶-Schlüssel ohne nr, Leiste hinter den Reglern, Auswahl ▾ bei Ähnliche, Merkmal ↶, Fortschritt, Transient-Maske in der Ebene); Haken 2 und 17 (eigene Zeilen) erweitert; topdefs 26/7659/0/0 · dupkeys 0
