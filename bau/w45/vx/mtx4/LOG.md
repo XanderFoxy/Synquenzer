@@ -11,3 +11,4 @@
 - 05:22 Teil 2 Start.
 - 05:31 Plan gelesen (Schritt 4: Länge ×2/÷2, Versionen, ↶). Entscheidung: Länge = vorhandenes clipLength (wie ½/×2 im Clip-Blatt); Versionen = SX9 (v1 = Szenen-Clip neu, vorher → vN).
 - 05:29 Block Teil 2 (mtx4Len, mtx4Vers, Leiste ÷2/×2, Guide) + Test-Abschnitte geschrieben; Lauf 1.
+- 05:33 Lauf 1: 79/81 – (a) Test nahm feste Clip-Längen an (jetzt aus dem Stand davor), (b) Test-Song nicht normalisiert (loop.b 0→1 durch restoreSong; Test-Artefakt, jetzt einmal normalisiert).

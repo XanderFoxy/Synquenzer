@@ -185,9 +185,10 @@ async function tapPop(T, p, sel) { const r = await R_(p, a => (UI.pop && UI.pop.
   ok('danach Länge ÷2: wieder genau wie vorher (bit-gleich)', JSON.stringify(await sig(p)) === JSON.stringify(L0));
   await p.evaluate(() => { undo(); undo(); }); await sleep(100);
   ok('zwei ↶: bit-gleich wie vor ×2', JSON.stringify(await sig(p)) === JSON.stringify(L0));
+  const lens0 = [[0, 0], [1, 1], [2, 1]].map(([t, s]) => JSON.parse(L0[t][s]).len), one = lens0.filter(x => x === 1).length;
   await tapBtn(T, p, 'h2'); await sleep(150);
   const h = await p.evaluate(() => ({lens: [[0, 0], [1, 1], [2, 1]].map(([t, s]) => S.tracks[t].clips[s].len), last: SYNQUENZER.mtx4.info().last}));
-  ok('Länge ÷2 bei 1-Takt-Clips: diese bleiben (am Rand), der 2-Takt-Clip wird 1 Takt', h.lens.join() === '1,1,1' && h.last.n === 1 && h.last.skipR === 2, h);
+  ok('Länge ÷2: 1-Takt-Clips bleiben (am Rand, Hinweis), längere werden halb so lang', one >= 1 && one < 3 && h.lens.join() === lens0.map(x => Math.max(1, x >> 1)).join() && h.last.n === 3 - one && h.last.skipR === one, {vorher: lens0, h});
   await p.evaluate(() => undo()); await sleep(100);
   ok('↶/↷ mit Länge bleibt stimmig', await p.evaluate(() => undoRedoCheck()));
   // ✕ beendet: Leiste weg, keine Markierung, Tipp startet wieder
@@ -231,6 +232,7 @@ for (const [w, h] of [[926, 428], [926, 370]]) {
   const r = await p.evaluate(() => {
     // Song: Spur 0 Szene 1, Spur 1 Szene 1 → 2, Spur 2 nur Szene 1 (Clip 2:1 spielt also nicht im Song)
     songEdit('Test-Song', sg => { sg.bars = 4; sg.lanes[0] = [{bar: 0, slot: 0}]; sg.lanes[1] = [{bar: 0, slot: 0}, {bar: 2, slot: 1}]; sg.lanes[2] = [{bar: 0, slot: 0}]; });
+    restoreSong(JSON.parse(songSnapshot()));                         // den Test-Song einmal normalisieren (Schleife usw.)
     while (UNDO.length) UNDO.pop(); REDO.length = 0;
     const ser0 = serialize(), lanes0 = JSON.stringify(S.song.lanes), c00 = JSON.stringify(cleanClip(S.tracks[0].clips[0])), c11 = JSON.stringify(cleanClip(S.tracks[1].clips[1]));
     SYNQUENZER.mtx4.start(); SYNQUENZER.mtx4.set([[0, 0], [1, 1], [2, 1]]);
