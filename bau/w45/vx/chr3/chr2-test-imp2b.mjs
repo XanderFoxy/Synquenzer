@@ -135,7 +135,7 @@ if (CH && CH.ready) {
   ok(E.ready && N.ready && E.out.every(z => z.y) && N.out.every(z => z.y), 'Kopien mit und ohne „echt“ gerechnet', E.out.length + ' Kopien');
   // Hüllkurve (Betrag, 5 ms geglättet, 4 kHz) → Versatz per Kreuzkorrelation; Tonhöhe (YIN) → Schwankung; Hülle (Cepstrum) → Formant-Lage
   const SRb = (E.out[0] && E.out[0].sr) || SR;   // IMP2B: Rate der Kopien-Puffer (Take-Rate), nicht die der Test-WAV
-  const envOf = y => { const D = 11, n = Math.floor(y.length / D), e = new Float32Array(n); let acc = 0; const W = Math.round(.02 * SRb / D);   // IMP2B: 20 ms statt 5 ms (über der Perioden-Welligkeit tiefer Stimmen) const a = new Float32Array(n); for (let i = 0; i < n; i++) { let s = 0; for (let j = 0; j < D; j++) s += Math.abs(y[i * D + j]); a[i] = s / D; }
+  const envOf = y => { const D = 11, n = Math.floor(y.length / D), e = new Float32Array(n); let acc = 0; const W = Math.round(.02 * SRb / D) /* IMP2B: 20 ms statt 5 ms (über der Perioden-Welligkeit tiefer Stimmen) */; const a = new Float32Array(n); for (let i = 0; i < n; i++) { let s = 0; for (let j = 0; j < D; j++) s += Math.abs(y[i * D + j]); a[i] = s / D; }
     for (let i = 0; i < n; i++) { acc += a[i]; if (i >= W) acc -= a[i - W]; e[i] = acc / W; } return e; };
   const lagMs = (yE, yN) => { const a = envOf(yN), bq = envOf(yE), D = 11, maxL = Math.round(.06 * SRb / D); let best = 0, bv = -1;
     for (let L = 0; L <= maxL; L++) { let s = 0, sa = 0, sb = 0; for (let i = 0; i + L < bq.length && i < a.length; i += 2) { s += a[i] * bq[i + L]; sa += a[i] * a[i]; sb += bq[i + L] * bq[i + L]; } const v = s / Math.sqrt(sa * sb + 1e-20); if (v > bv) { bv = v; best = L; } }
