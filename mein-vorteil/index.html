@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <title>Mein Vorteil</title>
-<meta name="description" content="Dein Assistent: Deals, Preisfehler, Filme, Auftritte, Remix-Contests, Deutschunterricht, Konzerte, Gewinnspiele, Krypto, Spartricks und Essen – kompakt auf einer Seite">
+<meta name="description" content="Dein Assistent: Deals, Preisfehler, Filme, Auftritte, Remix-Contests, Deutschunterricht, Nebenverdienst, Konzerte, Gewinnspiele, Krypto, Spartricks und Essen – kompakt auf einer Seite">
 <meta name="theme-color" content="#14100d">
 <meta name="color-scheme" content="dark">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -37,6 +37,7 @@
   .f-auftritte { --f: #3edab2; --f-hell: #273b31; --f-hell2: #2a5042; }
   .f-remix { --f: #ff7bc9; --f-hell: #482b34; --f-hell2: #603648; }
   .f-unterricht { --f: #64baff; --f-hell: #2d363e; --f-hell2: #344857; }
+  .f-nebenverdienst { --f: #8ce99a; --f-hell: #2b3d30; --f-hell2: #345240; } /* Nebenverdienst (16.11.2026): Unterricht geben, KI & Apps, Bild & Video */
   .f-konzerte { --f: #cc98ff; --f-hell: #3f303e; --f-hell2: #523e57; }
   .f-gewinnspiele { --f: #ade34f; --f-hell: #3a3d20; --f-hell2: #495326; }
   .f-krypto { --f: #ff9f45; --f-hell: #48311e; --f-hell2: #604023; }
@@ -186,6 +187,7 @@
   @media (max-width: 699px) { .kachel li:nth-child(3) { display: none; } }
   @media (max-width: 699px) { .kacheln a.kachel:last-child:nth-child(odd) { grid-column: 1 / -1; } } /* ungerade Zahl Kacheln: die letzte füllt die Reihe (seit Essen 12, dann greift es nicht) */
   @media (min-width: 700px) { .kacheln a.kachel:last-child:nth-child(3n+1) { grid-column: 1 / -1; } } /* 3 Spalten: eine allein in der letzten Reihe füllt sie (13 Kacheln seit „Woche“) */
+  @media (min-width: 700px) { .kacheln a.kachel:last-child:nth-child(3n+2) { grid-column: span 2; } } /* 3 Spalten, zwei in der letzten Reihe: die letzte nimmt zwei Plätze (14 Kacheln seit „Nebenverdienst“) */
   .kachel .kw { margin-top: auto; padding-top: 6px; font-size: 12px; color: var(--f); font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
   /* Karten */
@@ -375,6 +377,17 @@
   .blatt .aktionen .breit { flex-basis: 100%; }
   .blatt .aktionen .zweit, .blatt .aktionen .zweit-link { font-size: 14px; padding: 0 8px; white-space: nowrap; }
   .wahl-titel { margin: 2px 0 0; font-size: 13px; color: var(--leise); font-weight: 650; }
+  /* Nebenverdienst: Filter (gleiche Knöpfe wie .wahl, ≥ 44 px) und Karten-Zusatz */
+  .nf { margin: 2px 0 10px; }
+  .nf .wahl { margin: 2px 0 8px; }
+  .nf .wahl button { flex: 1 1 auto; font-size: 14px; padding: 4px 8px; }
+  .nf .schalter { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 44px; border-radius: 12px; border: 1px solid var(--linie); background: var(--karte-hoch); color: var(--text); font-size: 14.5px; font-weight: 650; }
+  .nf .schalter[aria-pressed="true"] { border: 2px solid var(--f); background: var(--f-hell); color: var(--f); font-weight: 800; }
+  .nf .schalter .kasten-i { width: 18px; height: 18px; border-radius: 5px; border: 2px solid currentColor; display: inline-grid; place-items: center; }
+  .nf .schalter[aria-pressed="true"] .kasten-i::after { content: ""; width: 8px; height: 8px; border-radius: 2px; background: currentColor; }
+  .nf .anzahl { margin: 0 4px; font-size: 13px; color: var(--leise); }
+  .karte.neben .warum-passt { margin: 6px 0 0; font-size: 13px; color: var(--leise); }
+  .karte.neben .vorsicht { margin: 8px 0 0; padding: 8px 10px; border-radius: 10px; background: var(--rot-hell); color: var(--rot); font-size: 13.5px; font-weight: 650; }
   .angaben { margin: 0 0 8px; border-top: 1px solid var(--linie); }
   .angaben > summary { color: var(--text); font-weight: 650; }
   .angaben .feld-gitter { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 10px; }
@@ -617,6 +630,7 @@ const NTFY_IMPORT = (() => {
   <symbol id="ic-auftritte" viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4M8 22h8"/></symbol>
   <symbol id="ic-remix" viewBox="0 0 24 24"><path d="M2 12h3l2.5-6 3.5 13 3.5-15 3 11 1.5-3H22"/></symbol>
   <symbol id="ic-unterricht" viewBox="0 0 24 24"><path d="M2 4h7a3 3 0 0 1 3 3v14a2.5 2.5 0 0 0-2.5-2.5H2z"/><path d="M22 4h-7a3 3 0 0 0-3 3v14a2.5 2.5 0 0 1 2.5-2.5H22z"/></symbol>
+  <symbol id="ic-nebenverdienst" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7M3 12.5h18M12 11v3"/></symbol>
   <symbol id="ic-konzerte" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a3 3 0 0 0 0 6v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a3 3 0 0 0 0-6z"/><path d="M14 5v2M14 11v2M14 17v2"/></symbol>
   <symbol id="ic-gewinnspiele" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v8a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-8"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/></symbol>
   <symbol id="ic-krypto" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 7.5h3.8a2 2 0 0 1 0 4H9.5zM9.5 11.5h4.3a2 2 0 0 1 0 4H9.5zM9.5 7.5v8M11 6v1.5M11 15.5V17"/></symbol>
@@ -652,6 +666,7 @@ const NTFY_IMPORT = (() => {
     <a href="#auftritte" data-ziel="auftritte" class="f-auftritte"><svg class="ic" aria-hidden="true"><use href="#ic-auftritte"/></svg><span class="t">Auftritte</span><span class="n"></span></a>
     <a href="#remix" data-ziel="remix" class="f-remix"><svg class="ic" aria-hidden="true"><use href="#ic-remix"/></svg><span class="t">Remix</span><span class="n"></span></a>
     <a href="#unterricht" data-ziel="unterricht" class="f-unterricht"><svg class="ic" aria-hidden="true"><use href="#ic-unterricht"/></svg><span class="t">Unterricht</span><span class="n"></span></a>
+    <a href="#nebenverdienst" data-ziel="nebenverdienst" class="f-nebenverdienst"><svg class="ic" aria-hidden="true"><use href="#ic-nebenverdienst"/></svg><span class="t">Nebenverdienst</span><span class="n"></span></a>
     <a href="#konzerte" data-ziel="konzerte" class="f-konzerte"><svg class="ic" aria-hidden="true"><use href="#ic-konzerte"/></svg><span class="t">Konzerte</span><span class="n"></span></a>
     <a href="#gewinnspiele" data-ziel="gewinnspiele" class="f-gewinnspiele"><svg class="ic" aria-hidden="true"><use href="#ic-gewinnspiele"/></svg><span class="t">Gewinnspiele</span><span class="n"></span></a>
     <a href="#krypto" data-ziel="krypto" class="f-krypto"><svg class="ic" aria-hidden="true"><use href="#ic-krypto"/></svg><span class="t">Krypto</span><span class="n"></span></a>
@@ -716,6 +731,12 @@ const NTFY_IMPORT = (() => {
     <div class="bereich-kopf"><span class="gross" aria-hidden="true"><svg class="ic"><use href="#ic-unterricht"/></svg></span><h2 id="h-unterricht">Deutschunterricht <span class="zahl"></span></h2></div>
     <p class="warum" id="w-unterricht"></p>
     <div id="i-unterricht"><p class="leer">Lade …</p></div>
+  </section>
+
+  <section id="nebenverdienst" class="bereich f-nebenverdienst" aria-labelledby="h-nebenverdienst" hidden>
+    <div class="bereich-kopf"><span class="gross" aria-hidden="true"><svg class="ic"><use href="#ic-nebenverdienst"/></svg></span><h2 id="h-nebenverdienst">Nebenverdienst <span class="zahl"></span></h2></div>
+    <p class="warum" id="w-nebenverdienst"></p>
+    <div id="i-nebenverdienst"><p class="leer">Lade …</p></div>
   </section>
 
   <section id="konzerte" class="bereich f-konzerte" aria-labelledby="h-konzerte" hidden>
@@ -831,6 +852,7 @@ const BEREICH = {
   deals: ['Andere Deals', 'echt durchgerechnet'], erleben: ['Erleben', 'Therme, Kino, Feste'], reisen: ['Reisen', 'ab Leipzig, Dresden, Berlin'],
   musik: ['Musik-Technik', 'Wunsch-Geräte'], nebenverdienst: ['Nebenverdienst', 'von zu Hause'], tests: ['Tests & Gewinnspiele', 'ohne Fallen'],
   remix: ['Remix-Contests', 'mit Stems'], auftritte: ['Auftritte', 'Bands gesucht'], unterricht: ['Deutschunterricht', 'Stellen & Anfragen'],
+  auftraege: ['Nebenverdienst', 'Unterricht, KI, Bild & Video'],
 };
 // Nie zeigen (Xander 07.11.2026: „Prämien & Freunde werben“ – Strom, Bank, Konto, Freunde werben – komplett raus),
 // auch nicht aus älteren Daten
@@ -1625,6 +1647,28 @@ const FUNDORTE_GESUCHE = [
   { titel: 'Kleinanzeigen: Gesuche „Deutsch Nachhilfe“', link: 'https://www.kleinanzeigen.de/s-anzeige:gesuche/deutsch-nachhilfe/k0', ort: 'online', typ: 'gesuch', quelle: 'Kleinanzeigen', linkPruefen: true },
   { titel: 'Reddit r/German: neueste Fragen nach Tutor/Korrektur', link: 'https://www.reddit.com/r/German/search/?q=tutor%20OR%20proofread&restrict_sr=1&sort=new', ort: 'online', typ: 'gesuch', quelle: 'Reddit' },
 ];
+// Nebenverdienst (Xander 16.11.2026): fertige Suchen für Plattformen ohne offenen Zugang – stehen so in vorteile/config.json
+// (module.auftraege.suchLinks, test/regeln.test.mjs prüft das). Daten ohne Bereich „auftraege“ (Radar älter/nicht erreichbar): diese.
+const SUCHEN_NEBEN = [
+  {"feld": "unterricht", "titel": "Kleinanzeigen: Gesuche „Klavierunterricht“ um Döbeln", "link": "https://www.kleinanzeigen.de/s-suchanfrage.html?keywords=Klavierunterricht&categoryId=&locationStr=04720+D%C3%B6beln&locationId=&radius=50&sortingField=SORTING_DATE&adType=WANTED&posterType=&pageNum=1&action=find&maxPrice=&minPrice=", "ort": "Döbeln", "quelle": "Kleinanzeigen", "zeile": "nur Gesuche, 50 km um Döbeln, neueste zuerst"},
+  {"feld": "unterricht", "titel": "Kleinanzeigen: Gesuche „Gitarrenunterricht“ um Döbeln", "link": "https://www.kleinanzeigen.de/s-suchanfrage.html?keywords=Gitarrenunterricht&categoryId=&locationStr=04720+D%C3%B6beln&locationId=&radius=50&sortingField=SORTING_DATE&adType=WANTED&posterType=&pageNum=1&action=find&maxPrice=&minPrice=", "ort": "Döbeln", "quelle": "Kleinanzeigen", "zeile": "nur Gesuche, 50 km um Döbeln"},
+  {"feld": "unterricht", "titel": "Kleinanzeigen: Gesuche „Keyboard Unterricht“ um Döbeln", "link": "https://www.kleinanzeigen.de/s-suchanfrage.html?keywords=Keyboard+Unterricht&categoryId=&locationStr=04720+D%C3%B6beln&locationId=&radius=50&sortingField=SORTING_DATE&adType=WANTED&posterType=&pageNum=1&action=find&maxPrice=&minPrice=", "ort": "Döbeln", "quelle": "Kleinanzeigen", "zeile": "nur Gesuche, 50 km um Döbeln"},
+  {"feld": "unterricht", "titel": "Kleinanzeigen: Gesuche „Musikunterricht“ um Döbeln", "link": "https://www.kleinanzeigen.de/s-suchanfrage.html?keywords=Musikunterricht&categoryId=&locationStr=04720+D%C3%B6beln&locationId=&radius=50&sortingField=SORTING_DATE&adType=WANTED&posterType=&pageNum=1&action=find&maxPrice=&minPrice=", "ort": "Döbeln", "quelle": "Kleinanzeigen", "zeile": "alle Instrumente, 50 km um Döbeln"},
+  {"feld": "unterricht", "titel": "Upwork: Aufträge „music production lessons“", "link": "https://www.upwork.com/nx/search/jobs/?q=music%20production%20lessons&sort=recency", "ort": "online", "quelle": "Upwork", "zeile": "online, neueste zuerst (Upwork hat keinen Feed mehr)"},
+  {"feld": "unterricht", "titel": "Upwork: Aufträge „synthesizer / sound design“", "link": "https://www.upwork.com/nx/search/jobs/?q=synthesizer%20sound%20design&sort=recency", "ort": "online", "quelle": "Upwork", "zeile": "online: Synthese, Sounddesign, Presets"},
+  {"feld": "unterricht", "titel": "Reddit r/synthesizers: Fragen nach Lehrer/Unterricht", "link": "https://www.reddit.com/r/synthesizers/search/?q=lessons%20OR%20teacher&restrict_sr=1&sort=new", "ort": "online", "quelle": "Reddit", "zeile": "Reddit verbietet automatisches Lesen (robots.txt) – hier selbst schauen"},
+  {"feld": "ki", "titel": "Kleinanzeigen: Gesuche „App programmieren“", "link": "https://www.kleinanzeigen.de/s-suchanfrage.html?keywords=App+programmieren&categoryId=&locationStr=&locationId=&radius=0&sortingField=SORTING_DATE&adType=WANTED&posterType=&pageNum=1&action=find&maxPrice=&minPrice=", "ort": "online", "quelle": "Kleinanzeigen", "zeile": "nur Gesuche, deutschlandweit (geht auch online)"},
+  {"feld": "ki", "titel": "Kleinanzeigen: Gesuche „Webseite erstellen“ um Döbeln", "link": "https://www.kleinanzeigen.de/s-suchanfrage.html?keywords=Webseite+erstellen&categoryId=&locationStr=04720+D%C3%B6beln&locationId=&radius=100&sortingField=SORTING_DATE&adType=WANTED&posterType=&pageNum=1&action=find&maxPrice=&minPrice=", "ort": "Döbeln", "quelle": "Kleinanzeigen", "zeile": "nur Gesuche, 100 km um Döbeln"},
+  {"feld": "ki", "titel": "Kleinanzeigen: Gesuche „KI“ / „ChatGPT“", "link": "https://www.kleinanzeigen.de/s-suchanfrage.html?keywords=KI+ChatGPT&categoryId=&locationStr=&locationId=&radius=0&sortingField=SORTING_DATE&adType=WANTED&posterType=&pageNum=1&action=find&maxPrice=&minPrice=", "ort": "online", "quelle": "Kleinanzeigen", "zeile": "nur Gesuche, deutschlandweit"},
+  {"feld": "ki", "titel": "Upwork: Aufträge „AI automation“", "link": "https://www.upwork.com/nx/search/jobs/?q=AI%20automation&sort=recency", "ort": "online", "quelle": "Upwork", "zeile": "online, neueste zuerst"},
+  {"feld": "ki", "titel": "freelancermap: Projekte Leipzig/Dresden", "link": "https://www.freelancermap.de/projekte/berlin-dresden-leipzig", "ort": "Leipzig", "quelle": "freelancermap", "zeile": "IT-Projekte aus der Region (oft groß – „allein machbar“ selbst prüfen)"},
+  {"feld": "ki", "titel": "service.bund.de: öffentliche Ausschreibungen (App, Website, Video)", "link": "https://www.service.bund.de/Content/DE/Ausschreibungen/Suche/Formular.html", "ort": "deutschlandweit", "quelle": "service.bund.de", "zeile": "Suchwort + Ort Sachsen eingeben; kleine Aufträge von Gemeinden und Ämtern"},
+  {"feld": "bildvideo", "titel": "Kleinanzeigen: Gesuche „Videobearbeitung“", "link": "https://www.kleinanzeigen.de/s-suchanfrage.html?keywords=Videobearbeitung&categoryId=&locationStr=&locationId=&radius=0&sortingField=SORTING_DATE&adType=WANTED&posterType=&pageNum=1&action=find&maxPrice=&minPrice=", "ort": "online", "quelle": "Kleinanzeigen", "zeile": "nur Gesuche, deutschlandweit (geht online)"},
+  {"feld": "bildvideo", "titel": "Kleinanzeigen: Gesuche „Bildbearbeitung“", "link": "https://www.kleinanzeigen.de/s-suchanfrage.html?keywords=Bildbearbeitung&categoryId=&locationStr=&locationId=&radius=0&sortingField=SORTING_DATE&adType=WANTED&posterType=&pageNum=1&action=find&maxPrice=&minPrice=", "ort": "online", "quelle": "Kleinanzeigen", "zeile": "nur Gesuche, deutschlandweit (geht online)"},
+  {"feld": "bildvideo", "titel": "Upwork: Aufträge „video editing German“", "link": "https://www.upwork.com/nx/search/jobs/?q=video%20editing%20german&sort=recency", "ort": "online", "quelle": "Upwork", "zeile": "online, deutschsprachige Videos"},
+  {"feld": "bildvideo", "titel": "Upwork: Aufträge „background music for video“", "link": "https://www.upwork.com/nx/search/jobs/?q=background%20music%20for%20video&sort=recency", "ort": "online", "quelle": "Upwork", "zeile": "Musik für Videos, Spiele, Podcasts"},
+  {"feld": null, "titel": "Fiverr: eigenes Angebot anlegen (Käufer suchen selbst)", "link": "https://www.fiverr.com/start_selling", "ort": "online", "quelle": "Fiverr", "zeile": "Käufer-Anfragen sind nicht öffentlich – ein Angebot (z. B. „Synth-Sound für deinen Song“) wird gefunden"}
+];
 // Wo Preisfehler und Gewinnspiele zuerst auftauchen (die Wecker lesen dort; Gruppen-Seiten von mydealz)
 const FUNDORTE_LINKS = {
   preisfehler: [['mydealz: Gruppe Preisfehler', 'https://www.mydealz.de/gruppe/preisfehler', 'hier tauchen sie zuerst auf'], ['mydealz: heiße Deals', 'https://www.mydealz.de/hot', 'was gerade viele kaufen']],
@@ -1689,6 +1733,7 @@ function einteilen() {
   const d = S.vorteile?.d;
   const r = { da: !!d, produkt: [], gewinnspiele: [], cashback: [], snacks: [], synths: [], filme: [], essen: [], mehr: {}, ausDaten: {} };
   for (const b of ASSISTENT) { r[b] = []; r[b + 'Fund'] = []; r.ausDaten[b] = Array.isArray(d?.kategorien?.[b]); }
+  r.neben = []; r.nebenFund = []; // Bereich Nebenverdienst (Radar-Kategorie „auftraege“, ab 16.11.2026)
   r.gesuche = []; r.gesucheFund = []; // Bereich Unterricht: „Gesuche im Netz“ (Radar ab 14.11.2026, extra.typ 'gesuch')
   EINTRAEGE.clear();
   const links = new Set();
@@ -1706,6 +1751,7 @@ function einteilen() {
       const fund = e.extra?.fundort === true;
       if (!fund) { if (links.has(e.link)) continue; links.add(e.link); }
       const text = `${e.titel} ${e.zeile || ''}`;
+      if (e.kategorie === 'auftraege') { if (!OHNE_ARBEITSAMT(e)) (fund ? r.nebenFund : r.neben).push(e); continue; } // Nebenverdienst: Gesuche ohne Arbeitsamt
       if (e.kategorie === 'unterricht' && OHNE_ARBEITSAMT(e)) continue; // Xander 14.11.2026: keine Arbeitsamt-Stellen (auch aus älteren Daten)
       if (e.kategorie === 'unterricht' && e.extra?.typ === 'gesuch') { (fund ? r.gesucheFund : r.gesuche).push(e); continue; }
       if (ASSISTENT.includes(e.kategorie)) { (fund ? r[e.kategorie + 'Fund'] : r[e.kategorie]).push(e); continue; }
@@ -1729,6 +1775,8 @@ function einteilen() {
   // Daten ohne Gesuche-Fundorte (Radar vor dem 14.11.2026 oder nicht erreichbar): die Suchen der Seite
   if (!r.gesucheFund.length) r.gesucheFund = FUNDORTE_GESUCHE.map(f => fundortEintrag(f, 'unterricht')).filter(e => !weg.has(e.id));
   r.gesuche.sort((a, b) => (zeit(b.datum) || 0) - (zeit(a.datum) || 0)); // neueste zuerst
+  if (!r.nebenFund.length) r.nebenFund = SUCHEN_NEBEN.map(f => { const e = fundortEintrag({ ...f, typ: 'suche' }, 'nebenverdienst'); e.extra.feld = f.feld || null; return e; }).filter(e => !weg.has(e.id));
+  r.neben.sort(nachSortWert);
   r.gewinnspiele.sort(nachEnde); r.cashback.sort(nachEnde); r.remix.sort(nachEnde);
   r.auftritte.sort(nachSortWert); r.unterricht.sort(nachSortWert);
   for (const b of ASSISTENT) {
@@ -1736,6 +1784,7 @@ function einteilen() {
     for (const e of [...r[b], ...r[b + 'Fund']]) EINTRAEGE.set(e.id, { e, bereich: b });
   }
   for (const e of [...r.gesuche, ...r.gesucheFund]) EINTRAEGE.set(e.id, { e, bereich: 'unterricht' });
+  for (const e of [...r.neben, ...r.nebenFund]) EINTRAEGE.set(e.id, { e, bereich: 'nebenverdienst' });
   return r;
 }
 
@@ -1902,7 +1951,7 @@ function zeichneMehr(t) {
 }
 
 // --- Auftritte, Remix-Contests, Deutschunterricht (Assistent) --------------------------------------------------------------
-const KNOPF = { auftritte: 'Bewerben', remix: 'Mitmachen', unterricht: 'Melden' };
+const KNOPF = { auftritte: 'Bewerben', remix: 'Mitmachen', unterricht: 'Melden', nebenverdienst: 'Anbieten' };
 function fristMarke(e) {
   const b = zeit(e.bis);
   if (b == null) return '';
@@ -1992,6 +2041,74 @@ function gesucheGruppe(t) {
 const zeichneAuftritte = t => zeichneAssistent(t, 'auftritte');
 const zeichneRemix = t => zeichneAssistent(t, 'remix');
 const zeichneUnterricht = t => zeichneAssistent(t, 'unterricht');
+
+// --- Nebenverdienst (Xander 16.11.2026): Gesuche, bei denen du allein helfen kannst – Unterricht geben (Klavier, Keyboard,
+// Gitarre, Synthesizer, Sounddesign), KI & Apps, Bild & Video. Radar-Kategorie „auftraege“ (vorteile/scan/module/auftraege.mjs):
+// extra { feld, passt, aufwand, allein, ort, km, online, verguetung, alterTage, warnung, gruende, auszug }. Filter merkt sich
+// nur dieses Gerät (localStorage), Standard: alles.
+const FELD_NAME = { unterricht: 'Unterricht geben', ki: 'KI & Apps', bildvideo: 'Bild & Video' };
+const NF_STANDARD = { feld: 'alle', wo: 'alle', km: 80, allein: false };
+let nf = (() => { const g = lies('mein-vorteil-neben-filter', null); const o = g && typeof g === 'object' ? g : {};
+  return { feld: ['alle', 'unterricht', 'ki', 'bildvideo'].includes(o.feld) ? o.feld : 'alle', wo: ['alle', 'ort', 'online'].includes(o.wo) ? o.wo : 'alle', km: [25, 50, 80].includes(o.km) ? o.km : 80, allein: o.allein === true }; })();
+function setzeNebenFilter(w) { // „feld:ki“, „wo:online“, „km:50“, „allein“
+  const [k, v] = String(w).split(':');
+  if (k === 'feld' && ['alle', 'unterricht', 'ki', 'bildvideo'].includes(v)) nf.feld = v;
+  else if (k === 'wo' && ['alle', 'ort', 'online'].includes(v)) nf.wo = v;
+  else if (k === 'km' && [25, 50, 80].includes(Number(v))) nf.km = Number(v);
+  else if (k === 'allein') nf.allein = !nf.allein;
+  merk('mein-vorteil-neben-filter', nf);
+}
+const nebenPasst = e => { const x = e.extra || {};
+  if (nf.feld !== 'alle' && x.feld !== nf.feld) return false;
+  if (nf.wo === 'online' && !istOnlineOrt(x)) return false;
+  if (nf.wo === 'ort' && istOnlineOrt(x)) return false;
+  if (!istOnlineOrt(x) && zahl(x.km) != null && x.km > nf.km) return false;
+  if (nf.allein && x.allein !== true) return false;
+  return true; };
+function alterText(e) { const d = zeit(e.datum); if (d == null) return ''; const t = Math.floor((Date.now() - d) / 864e5); return t <= 0 ? 'heute' : t === 1 ? 'gestern' : `vor ${t} Tagen`; }
+function nebenKarte(e) {
+  const x = e.extra || {};
+  const oben = [`<span class="marke">${esc(FELD_NAME[x.feld] || 'Gesuch')}</span>`, `<span class="marke grau">${esc(ortText(x) || 'online')}</span>`];
+  if (x.verguetung) oben.push(`<span class="marke warm">${esc(x.verguetung)}</span>`);
+  oben.push(`<span class="marke grau">Aufwand ${esc(x.aufwand || '?')}</span>`, x.allein ? '<span class="marke">allein machbar</span>' : '<span class="marke grau">eher im Team</span>');
+  if (x.warnung) oben.push('<span class="marke rot">Vorsicht</span>');
+  oben.push(`<span>${esc([e.quelle, alterText(e)].filter(Boolean).join(' · '))}</span>`);
+  const warum = (x.gruende || []).length ? `Passt ${esc(zahl(x.passt) ?? '')} %: ${esc(x.gruende.join(', '))}` : zahl(x.passt) != null ? `Passt ${esc(x.passt)} %` : '';
+  return `<article class="karte assistent neben${e.sofort ? ' sofort' : ''}" data-id="${esc(e.id)}">
+    <div class="oben">${oben.join('')}</div>
+    <h3>${esc(e.titel)}</h3>
+    ${x.auszug ? `<p class="klein">„${esc(x.auszug)}“</p>` : ''}
+    ${warum ? `<p class="warum-passt">${warum}</p>` : ''}
+    ${x.warnung ? `<p class="vorsicht">${esc(x.warnung)}</p>` : ''}
+    <div class="aktionen"><button class="los" type="button" data-blatt="${esc(e.id)}">Anbieten</button><a class="zweit-link" href="${esc(sicher(e.link))}" target="_blank" rel="noopener">Anzeige öffnen</a><button class="zweit weg x-weg" type="button" data-id="${esc(e.id)}" aria-label="Ausblenden" title="Ausblenden"><svg class="ic" aria-hidden="true"><use href="#ic-weg"/></svg></button></div>
+  </article>`;
+}
+const nfKnopf = (wert, aktiv, text) => `<button type="button" role="radio" aria-checked="${aktiv}" data-nf="${wert}">${esc(text)}</button>`;
+function zeichneNeben(t) {
+  const alle = t.neben, liste = alle.filter(nebenPasst);
+  const fund = t.nebenFund.filter(e => nf.feld === 'alle' || !e.extra?.feld || e.extra.feld === nf.feld);
+  const zeigen = offen.has('neben') ? liste : liste.slice(0, SICHTBAR);
+  const fZeigen = offen.has('neben-fund') ? fund : fund.slice(0, 4);
+  const teile = [t.da ? stoerHinweis('vorteile') : ''];
+  teile.push('<p class="regel">Leute und Firmen, die genau das suchen, was du kannst – ohne Arbeitsamt. Am besten passende zuerst; „Anbieten“: fertiger Text zum Anpassen.</p>', bereichStand('auftraege'));
+  teile.push(`<div class="nf">
+    <p class="wahl-titel" id="nf-feld">Was</p><div class="wahl" role="radiogroup" aria-labelledby="nf-feld">${[['alle', 'Alles'], ['unterricht', 'Unterricht'], ['ki', 'KI & Apps'], ['bildvideo', 'Bild & Video']].map(([k, n]) => nfKnopf('feld:' + k, nf.feld === k, n)).join('')}</div>
+    <p class="wahl-titel" id="nf-wo">Wo</p><div class="wahl" role="radiogroup" aria-labelledby="nf-wo">${[['alle', 'Überall'], ['ort', 'Vor Ort'], ['online', 'Online']].map(([k, n]) => nfKnopf('wo:' + k, nf.wo === k, n)).join('')}</div>
+    ${nf.wo === 'online' ? '' : `<p class="wahl-titel" id="nf-km">Vor Ort höchstens</p><div class="wahl" role="radiogroup" aria-labelledby="nf-km">${[25, 50, 80].map(k => nfKnopf('km:' + k, nf.km === k, `${k} km`)).join('')}</div>`}
+    <button class="schalter" type="button" data-nf="allein" aria-pressed="${nf.allein}"><span class="kasten-i" aria-hidden="true"></span>Nur allein machbar</button>
+    <p class="anzahl">${liste.length} von ${alle.length} ${alle.length === 1 ? 'Gesuch' : 'Gesuchen'}</p>
+  </div>`);
+  teile.push(`<h3 class="unter">Gesuche <small>${liste.length || ''}</small></h3>`);
+  teile.push(liste.length ? zeigen.map(nebenKarte).join('') + (liste.length > zeigen.length ? `<button class="mehr" type="button" data-mehr="neben">${liste.length - zeigen.length} weitere zeigen</button>` : '')
+    : `<p class="leer">${alle.length ? 'Für diesen Filter gerade nichts – Filter lockern oder unten selbst suchen.' : `Gerade kein passendes Gesuch${t.da ? '' : ' (Radar gerade nicht erreichbar)'} – unten selbst suchen.`}</p>`);
+  if (fund.length) {
+    teile.push(`<h3 class="unter">Hier selbst suchen <small>${fund.length}</small></h3><ul class="liste fundorte">${fZeigen.map(e => fundZeile(e, 'nebenverdienst')).join('')}</ul>`);
+    if (fund.length > fZeigen.length) teile.push(`<button class="mehr" type="button" data-mehr="neben-fund">${fund.length - fZeigen.length} weitere Suchen</button>`);
+  }
+  const vorOrt = alle.filter(e => !istOnlineOrt(e.extra)).length, allein = alle.filter(e => e.extra?.allein).length;
+  const warum = alle.length ? `<b>${alle.length} ${alle.length === 1 ? 'Gesuch' : 'Gesuche'}</b> · ${vorOrt} vor Ort, ${alle.length - vorOrt} online · ${allein} allein machbar` : `Gerade kein Gesuch – <b>${t.nebenFund.length} fertige Suchen</b> unten.`;
+  return { html: teile.join(''), n: alle.filter(laeuftSchon).length, warum };
+}
 
 // --- Konzerte & Neuerscheinungen -------------------------------------------------------------------------------------
 const konzAlle = lies('konz-alle', 0);
@@ -2237,8 +2354,8 @@ function wocheKachel() { // -> { z, w } wie kachelInhalt; höchstens 2 Zeilen
 addEventListener('mein-vorteil-woche', () => zeichne()); // Stufe im Reiter geändert -> Kachel/Zahl neu
 
 // --- Start: „Heute für dich“ – je Bereich 1–3 beste Treffer als Kachel, Tippen führt in den Bereich ------------------------
-const KACHEL_REIHE = ['deals', 'woche', 'essen', 'preisfehler', 'filme', 'auftritte', 'remix', 'unterricht', 'konzerte', 'gewinnspiele', 'krypto', 'spartricks', 'mehr'];
-const KACHEL_NAME = { deals: 'Deals', woche: 'Woche', essen: 'Essen', preisfehler: 'Preisfehler', filme: 'Filme', auftritte: 'Auftritte', remix: 'Remix', unterricht: 'Unterricht', konzerte: 'Konzerte', gewinnspiele: 'Gewinnspiele', krypto: 'Krypto', spartricks: 'Spartricks', mehr: 'Mehr' };
+const KACHEL_REIHE = ['deals', 'woche', 'essen', 'preisfehler', 'filme', 'auftritte', 'remix', 'unterricht', 'nebenverdienst', 'konzerte', 'gewinnspiele', 'krypto', 'spartricks', 'mehr'];
+const KACHEL_NAME = { deals: 'Deals', woche: 'Woche', essen: 'Essen', preisfehler: 'Preisfehler', filme: 'Filme', auftritte: 'Auftritte', remix: 'Remix', unterricht: 'Unterricht', nebenverdienst: 'Nebenverdienst', konzerte: 'Konzerte', gewinnspiele: 'Gewinnspiele', krypto: 'Krypto', spartricks: 'Spartricks', mehr: 'Mehr' };
 const ohnePrefix = s => String(s || '').replace(/^[\[(]?\s*(möglicher\s+)?preisfehler\s*[\])]?\s*[:!–-]?\s*/i, '');
 function fristKurz(e) { const b = bisZeit(zeit(e.bis)); return b == null ? '' : `bis ${tag(b)}`; }
 function kachelInhalt(b, t) { // -> { z: [[Titel, Zeile, gut?]], w: Satz }
@@ -2285,6 +2402,11 @@ function kachelInhalt(b, t) { // -> { z: [[Titel, Zeile, gut?]], w: Satz }
       for (const x of Array.isArray(f) ? f : []) if (x?.titel) dazu(String(x.titel), zahl(x.preis) > 0 ? `${euro(x.preis)} · Apple TV` : 'Apple TV');
     }
     return z.length ? { z, w: '' } : { z: [['Wunschliste & Angebote', 'Apple TV, mit deinen Listen abgeglichen']], w: 'tippen zum Öffnen' };
+  }
+  if (b === 'nebenverdienst') {
+    const z = t.neben.slice(0, 3).map(e => [kurzTitel(e.titel, 48), [FELD_NAME[e.extra?.feld] || '', ortText(e.extra), e.extra?.verguetung || ''].filter(Boolean).join(' · '), (zahl(e.extra?.passt) ?? 0) >= 70]);
+    if (z.length < 3) z.push(...t.nebenFund.slice(0, 3 - z.length).map(e => [kurzTitel(e.titel, 48), e.zeile || ortText(e.extra)]));
+    return { z, w: t.neben.length ? '' : 'fertige Suchen – Unterricht, KI, Bild & Video' };
   }
   if (ASSISTENT.includes(b)) {
     const frisch = b === 'unterricht' ? [...t.gesuche, ...t[b]] : t[b], fund = t[b + 'Fund'];
@@ -2353,6 +2475,7 @@ const ALS = { band: KUENSTLER.band, solo: KUENSTLER.name, beide: `${KUENSTLER.ba
 function alsVorschlag(e, bereich) {
   if (bereich === 'remix') return 'solo';
   if (bereich === 'unterricht') return 'lehrer';
+  if (bereich === 'nebenverdienst') return 'xander';
   const n = e.extra?.bewerbenAls?.name;
   if (n === KUENSTLER.name) return 'solo';
   if (n === KUENSTLER.band) return 'band';
@@ -2376,12 +2499,30 @@ function vorlage(e, bereich, als) {
   if (bereich === 'unterricht') {
     return { betreff: `Deutschunterricht – ${a}`, text: `Guten Tag,\n\nich habe „${a}“ gesehen und melde mich gern. Ich bin Xander („${KUENSTLER.lehrer}“) und unterrichte Deutsch als Fremd- und Zweitsprache – online per Video oder vor Ort in Döbeln und Umgebung (Leipzig, Dresden, Chemnitz).\n\nErfahrung: [z. B. Einzel- und Gruppenunterricht, Niveau A1–B2, Prüfungsvorbereitung]\nZeit: [z. B. Mo und Mi nachmittags, Sa vormittags]\n\nEine kurze Kennenlernstunde (20 Minuten) ist kostenlos.\n\nViele Grüße\nXander\n${KUENSTLER.lehrer} · ${kontakt}` };
   }
+  if (bereich === 'nebenverdienst') return vorlageNeben(e, a, kontakt);
   if (als === 'solo') {
     return { betreff: `Anmeldung: ${KUENSTLER.name} (Synth-Pop) – ${a}`, text: `Hallo,\n\nich bin ${KUENSTLER.name} aus Döbeln (Sachsen) und mache Synth-Pop mit 80er-Sound – live mit Synths, Gesang und Laptop. Ich habe „${a}“ gesehen und würde gern bei euch spielen.\n\n${links}\n\nSet: 15–30 Minuten eigene Songs, auf Wunsch kürzer\nTechnik: 1–2 DI-Kanäle (Stereo), 1 Gesangsmikro, Strom – Aufbau in 10 Minuten\n\nKontakt: ${kontakt}\n\nViele Grüße\n${KUENSTLER.name}` };
   }
   const beide = als === 'beide';
   const name = beide ? ALS.beide : KUENSTLER.band;
   return { betreff: `Bewerbung: ${name} (Synth-Pop) – ${a}`, text: `Hallo,\n\n${beide ? `wir sind ${KUENSTLER.band} – das Synth-Pop-Projekt von ${KUENSTLER.name} aus Döbeln (Sachsen)` : `wir sind ${KUENSTLER.band} aus Döbeln (Sachsen)`}: Synth-Pop mit 80er-Seele – analoge Synths, große Melodien, deutsche und englische Texte. Wir haben „${a}“ gesehen und würden sehr gern bei euch spielen.\n\n${links}\n\nBesetzung: ${KUENSTLER.name} (Gesang, Synths)\nSet: 30–45 Minuten eigene Songs, auf Wunsch kürzer\nTechnik: Synths + Laptop, 2 DI-Kanäle (Stereo), 1 Gesangsmikro, 2 Monitore, Strom – Aufbau in 15 Minuten\n\nKontakt: ${KUENSTLER.name} · ${kontakt}\n\nViele Grüße\n${KUENSTLER.name}\n${beide ? ALS.beide : `für ${KUENSTLER.band}`}` };
+}
+
+// Nebenverdienst: Antwort auf ein Gesuch – Deutsch bei deutschem Gesuch, sonst Englisch (Freelancer, Hacker News)
+function vorlageNeben(e, a, kontakt) {
+  const x = e.extra || {};
+  const de = x.sprache === 'de' || /[äöüß]|\b(und|für|suche|suchen|wir|ich|bitte)\b/i.test(`${e.titel} ${x.auszug || ''}`);
+  const vorOrt = !istOnlineOrt(x);
+  const probe = platz('hoerprobe', de ? '[Link zu Beispielen]' : '[link to examples]');
+  if (x.feld === 'unterricht') return de
+    ? { betreff: `Unterricht – ${a}`, text: `Hallo,\n\nich habe Ihr Gesuch „${a}“ gesehen und melde mich gern. Ich bin Xander, Musiker und Produzent aus Döbeln (Synth-Pop, eigene Produktionen) und gebe Unterricht in Klavier und Keyboard, Gitarre, Synthesizer & Sounddesign und Musikproduktion – ${vorOrt ? 'vor Ort in Döbeln und Umgebung oder online per Video' : 'online per Video oder vor Ort in Döbeln und Umgebung'}.\n\nDie erste halbe Stunde ist ein kostenloses Kennenlernen.\nPreis: [z. B. 25 € pro 45 Minuten]\nZeit: [z. B. Mo und Mi nachmittags]\n\nHörprobe: ${probe}\n\nViele Grüße\nXander\n${kontakt}` }
+    : { betreff: `Lessons – ${a}`, text: `Hi,\n\nI saw your request “${a}” and would love to help. I'm Xander, a musician and producer from Germany (synth-pop, my own productions), and I teach piano and keyboard, guitar, synthesizers & sound design and music production – online via video call.\n\nThe first 30 minutes are a free intro session.\nRate: [e.g. 25 € per 45 minutes]\nAvailability: [e.g. Mon and Wed afternoons, CET]\n\nListen: ${probe}\n\nBest,\nXander` };
+  if (x.feld === 'bildvideo') return de
+    ? { betreff: `Angebot – ${a}`, text: `Hallo,\n\nich habe „${a}“ gesehen. Ich bin Xander aus Döbeln und mache Bildbearbeitung, Videoschnitt und – als Musiker und Produzent – auch Musik und Sounddesign für Videos, alles aus einer Hand.\n\nVorschlag: [1–2 Sätze, was genau du machst]\nLieferung: [z. B. in 3 Tagen]\nPreis: [z. B. 40 € pro Video bis 10 Minuten]\n\nBeispiele: ${probe}\n\nViele Grüße\nXander\n${kontakt}` }
+    : { betreff: `Offer – ${a}`, text: `Hi,\n\nI saw “${a}”. I'm Xander from Germany – I do photo editing and video editing, and as a musician and producer also music and sound design for videos, all from one hand.\n\nPlan: [1–2 sentences on what you'll deliver]\nDelivery: [e.g. within 3 days]\nPrice: [e.g. 40 € per video up to 10 minutes]\n\nSamples: ${probe}\n\nBest,\nXander` };
+  return de
+    ? { betreff: `Angebot – ${a}`, text: `Hallo,\n\nich habe „${a}“ gesehen und kann das umsetzen. Ich bin Xander aus Döbeln und baue Web-Apps (laufen auf jedem Handy, ohne App Store) und KI-Lösungen – Chatbots, Automatisierung, Auswertung von Texten und Bildern – schnell, persönlich und zum Festpreis.\n\nVorschlag: [1–2 Sätze, was genau du baust]\nDauer: [z. B. 1–2 Wochen]\nFestpreis: [z. B. 350 €]\n\nBeispiele: ${probe}\n\nViele Grüße\nXander\n${kontakt}` }
+    : { betreff: `Proposal – ${a}`, text: `Hi,\n\nI saw “${a}” and can build this. I'm Xander from Germany – I build web apps (they run on any phone, no app store needed) and AI solutions: chatbots, automation, text and image processing. Fast, direct communication, fixed price.\n\nPlan: [1–2 sentences on what you'll build]\nTimeline: [e.g. 1–2 weeks]\nFixed price: [e.g. 350 €]\n\nExamples: ${probe}\n\nBest,\nXander` };
 }
 
 const blatt = $('blatt');
@@ -2415,7 +2556,7 @@ function zeichneBlatt() {
   const x = e.extra || {};
   const { betreff, text, eigen } = blattText();
   const z = blattZiel();
-  $('blatt-titel').textContent = bereich === 'remix' ? 'Mitmachen' : bereich === 'unterricht' ? 'Melden' : 'Bewerben';
+  $('blatt-titel').textContent = bereich === 'remix' ? 'Mitmachen' : bereich === 'unterricht' ? 'Melden' : bereich === 'nebenverdienst' ? 'Anbieten' : 'Bewerben';
   const info = [ortText(x), zeit(e.bis) != null ? bisText(e.bis) : x.saison ? saisonInfo(x.saison).text : '', e.quelle].filter(Boolean).join(' · ');
   const teile = [`<p class="blatt-was"><b>${esc(ohneQuelle(e))}</b>${info ? `<br><span>${esc(info)}</span>` : ''}</p>`];
   if (bereich === 'remix') {
@@ -2432,6 +2573,9 @@ function zeichneBlatt() {
     teile.push(`<p class="wahl-titel" id="wahl-titel">Bewerben als</p><div class="wahl" role="radiogroup" aria-labelledby="wahl-titel">${[['band', KUENSTLER.band], ['solo', KUENSTLER.name], ['beide', 'beides']].map(([k, n]) =>
       `<button type="button" role="radio" aria-checked="${k === als}" data-als="${k}">${esc(n)}</button>`).join('')}</div>`);
     teile.push(`<p class="tipp"><b>Band-Auftritt → ${esc(KUENSTLER.band)}</b> · <b>solo, DJ- oder Live-Set → ${esc(KUENSTLER.name)}</b> · „beides“ = „${esc(ALS.beide)}“ – dann überall gleich schreiben. Hier: ${esc(w)}</p>`);
+  } else if (bereich === 'nebenverdienst') {
+    teile.push(`<p class="tipp">${esc(e.soGehts || 'Anzeige öffnen und über die Seite antworten.')} Nie vorab zahlen, nur über die Plattform schreiben.</p>`);
+    if (x.warnung) teile.push(`<p class="tipp"><b>${esc(x.warnung)}</b></p>`);
   } else {
     teile.push(`<p class="tipp">Als <b>${esc(KUENSTLER.lehrer)}</b>.${e.soGehts ? ' ' + esc(e.soGehts) : ''}</p>`);
   }
@@ -2803,6 +2947,8 @@ function wichtigZeilen() {
   const a = bald(letzteEinteilung?.auftritte || [], 7 * 24);
   if (a.length) z.push({ ziel: 'auftritte', warm: true, text: `Bewerbung bis ${tag(bisZeit(zeit(a[0].bis)))}: ${kurzTitel(a[0].titel, 40)}` });
   const rx = bald(letzteEinteilung?.remix || [], 7 * 24);
+  const nb = (letzteEinteilung?.neben || []).filter(e => e.sofort && laeuftSchon(e));
+  if (nb.length) z.push({ ziel: 'nebenverdienst', text: `Neues Gesuch: ${kurzTitel(nb[0].titel, 40)}` });
   if (rx.length) z.push({ ziel: 'remix', warm: true, text: `Remix-Contest bis ${tag(bisZeit(zeit(rx[0].bis)))}: ${kurzTitel(String(rx[0].titel || '').replace(/^\s*remix[- ]?(contest|wettbewerb)\s*[:–-]\s*/i, ''), 40)}` });
   return z.slice(0, 4);
 }
@@ -2827,7 +2973,7 @@ function kastenSchluessel(d) {
   const ab = d.closest('[id^="i-"]')?.id || '';
   return k ? `p:${k.dataset.produkt}:${d.className}` : `s:${ab}:${d.className}:${d.querySelector('summary')?.textContent.trim().replace(/\d+/g, '#')}`;
 }
-const ZEICHNER = { produkte: zeichneProdukte, technik: zeichneTechnik, cashback: zeichneCashback, snacks: zeichneSnacks, preisfehler: zeichnePreisfehler, auftritte: zeichneAuftritte, remix: zeichneRemix, unterricht: zeichneUnterricht, konzerte: zeichneKonzerte, gewinnspiele: zeichneGewinnspiele, mehr: zeichneMehr };
+const ZEICHNER = { produkte: zeichneProdukte, technik: zeichneTechnik, cashback: zeichneCashback, snacks: zeichneSnacks, preisfehler: zeichnePreisfehler, auftritte: zeichneAuftritte, remix: zeichneRemix, unterricht: zeichneUnterricht, nebenverdienst: zeichneNeben, konzerte: zeichneKonzerte, gewinnspiele: zeichneGewinnspiele, mehr: zeichneMehr };
 const ZUSATZ = {}; // kurze Zeile rechts in „Du bist in“
 let erstesZeichnen = true;
 let gezeichnetAm = ''; // Kalendertag (Berlin) des letzten Zeichnens: nach Mitternacht neu (Essen-Kachel „heute“/„ab …“)
@@ -2855,12 +3001,13 @@ function zeichne() {
   // Zahl: Angebote der Film-Übersicht (Radar status.filme.kurz), mindestens die Film-Einträge (Push-Ereignisse)
   const filmeKurz = Number(S.vorteile?.d?.status?.filme?.kurz?.angebote);
   const filme = Math.max(letzteEinteilung.filme.filter(laeuftSchon).length, Number.isInteger(filmeKurz) && filmeKurz > 0 ? filmeKurz : 0);
-  const zahlen = { deals: r.produkte.n, woche: wocheZahl(), preisfehler: r.preisfehler.n, filme, auftritte: r.auftritte.n, remix: r.remix.n, unterricht: r.unterricht.n, konzerte: r.konzerte.n, gewinnspiele: r.gewinnspiele.n, krypto: kryptoStand().filter(x => x.e && x.e.gv > 0.004).length, mehr: r.mehr.n };
+  const zahlen = { deals: r.produkte.n, woche: wocheZahl(), preisfehler: r.preisfehler.n, filme, auftritte: r.auftritte.n, remix: r.remix.n, unterricht: r.unterricht.n, nebenverdienst: r.nebenverdienst.n, konzerte: r.konzerte.n, gewinnspiele: r.gewinnspiele.n, krypto: kryptoStand().filter(x => x.e && x.e.gv > 0.004).length, mehr: r.mehr.n };
   const t = letzteEinteilung;
   Object.assign(ZUSATZ, {
     start: '', deals: `${(S.angebote?.d?.produkte || []).filter(p => !ausgeblendet(p.id)).length || ''} Produkte im Blick`.replace(/^ Produkte im Blick$/, ''),
     preisfehler: 'nur krasse', auftritte: `${t.auftritte.length} frisch · ${t.auftritteFund.length} feste Adressen`, remix: `${t.remix.length} laufend · ${t.remixFund.length} Fundorte`,
     unterricht: t.gesuche.length ? `${t.gesuche.length} ${t.gesuche.length === 1 ? 'Gesuch' : 'Gesuche'}${t.unterricht.length ? ` · ${t.unterricht.length} ${t.unterricht.length === 1 ? 'Stelle' : 'Stellen'}` : ` · ${t.unterrichtFund.length} feste Adressen`}` : `${t.unterricht.length} neu · ${t.unterrichtFund.length} feste Adressen`, konzerte: nurNah ? `bis ${konzertTeile().radius} km` : 'alle Termine',
+    nebenverdienst: `${t.neben.length} ${t.neben.length === 1 ? 'Gesuch' : 'Gesuche'} · ${t.nebenFund.length} Suchen`,
     gewinnspiele: 'ohne Kauf', krypto: 'nur auf diesem iPhone', mehr: '', filme: 'Apple TV', woche: `ab ${wocheStufe()} % · Prospekte`, spartricks: 'jeder Tipp mit Quelle', essen: 'mit Quelle · Döbeln & Umgebung',
   });
   if (window.MeinVorteilEssen?.gestartet) try { MeinVorteilEssen.auffrischen(); } catch (e) { console.warn(e); } // „Aktuell“ (Radar) neu
@@ -2877,9 +3024,9 @@ function zeichne() {
 const zeichneAlles = () => zeichne();
 
 // --- Bereiche: immer nur einer zu sehen; Leiste markiert ihn, „Du bist in: …“ sagt es ----------------------------------------
-const BEREICHE = ['start', 'deals', 'woche', 'essen', 'preisfehler', 'filme', 'auftritte', 'remix', 'unterricht', 'konzerte', 'gewinnspiele', 'krypto', 'spartricks', 'mehr'];
+const BEREICHE = ['start', 'deals', 'woche', 'essen', 'preisfehler', 'filme', 'auftritte', 'remix', 'unterricht', 'nebenverdienst', 'konzerte', 'gewinnspiele', 'krypto', 'spartricks', 'mehr'];
 const IN_MAIN = BEREICHE.filter(b => b !== 'filme' && b !== 'spartricks' && b !== 'essen' && b !== 'woche');
-const BEREICH_NAME = { start: 'Heute für dich', deals: 'Deals', woche: 'Wochen-Knaller', essen: 'Essen', preisfehler: 'Preisfehler', filme: 'Filme & Serien', auftritte: 'Auftritte', remix: 'Remix-Contests', unterricht: 'Deutschunterricht', konzerte: 'Konzerte', gewinnspiele: 'Gewinnspiele', krypto: 'Krypto', spartricks: 'Spartricks', mehr: 'Mehr' };
+const BEREICH_NAME = { start: 'Heute für dich', deals: 'Deals', woche: 'Wochen-Knaller', essen: 'Essen', preisfehler: 'Preisfehler', filme: 'Filme & Serien', auftritte: 'Auftritte', remix: 'Remix-Contests', unterricht: 'Deutschunterricht', nebenverdienst: 'Nebenverdienst', konzerte: 'Konzerte', gewinnspiele: 'Gewinnspiele', krypto: 'Krypto', spartricks: 'Spartricks', mehr: 'Mehr' };
 // Ziele innerhalb eines Bereichs (Deals) und alte Sprungmarken (Push-Links, alte Seiten)
 const UNTERZIEL = { produkte: 'deals', cashback: 'deals', snacks: 'deals', technik: 'deals' };
 const ALTE_MARKEN = { angebote: 'produkte', schnaeppchen: 'produkte', vorteile: 'start' };
@@ -3065,6 +3212,7 @@ document.addEventListener('click', ev => {
   if (b.classList.contains('weg')) { weg.add(b.dataset.id); merk('mein-vorteil-weg', [...weg].slice(-300)); zeichne(); }
   else if (b.dataset.blatt) oeffneBlatt(b.dataset.blatt);
   else if (b.dataset.mehr) { offen.add(b.dataset.mehr); zeichne(); }
+  else if (b.dataset.nf) { setzeNebenFilter(b.dataset.nf); zeichne(); }
   else if (b.id === 'zeigen') { weg = new Set(); merk('mein-vorteil-weg', []); merk('vorteile-weg', []); zeichne(); }
   else if (b.dataset.nah) { nurNah = b.dataset.nah === '1'; merk('konz-alle', nurNah ? 0 : 1); zeichne(); }
   else if (b.classList.contains('kopie')) kopiere($(b.dataset.ziel).textContent, b);

@@ -223,3 +223,36 @@ test('config: Nebenverdienst ohne Arbeitsagentur; Kleinanzeigen nur als Link (Ge
   for (const s of ka) { const u = new URL(s.link); assert.equal(u.searchParams.get('adType'), 'WANTED'); }
   assert.ok(ka.some(s => new URL(s.link).searchParams.get('locationStr') === '04720 Döbeln' && new URL(s.link).searchParams.get('radius') === '50'));
 });
+
+// Echter Lauf 16.11.2026 (43821307089): Video-Aufträge landeten über Fähigkeiten/„lesson“ im Text im Unterricht,
+// „Learn VirtualDJ Mixing Online -- 3 … -- 7“ fünfmal, indonesische Aufträge, 7-€-Aufträge ganz oben.
+test('Unterricht nur mit Unterrichtswort im Titel, Lerner-Satz oder Unterrichts-Fähigkeit – nicht über „lesson“ irgendwo im Text', () => {
+  const reels = 'Creative Instagram Reels Editor I need a skilled editor … each reel ends with a short lesson, clean audio mixing';
+  assert.equal(feldVon(reels, m, 'unterricht', 'Graphic Design · Sound Design · Video Editing', 'Creative Instagram Reels Editor'), 'bildvideo');
+  assert.equal(feldVon('Warm Female Voiceover for eLearning narration for a course, sound design', m, 'unterricht', 'Voice Over · eLearning · Sound Design', 'Warm Female Voiceover for eLearning'), 'bildvideo');
+  assert.equal(feldVon('Learn VirtualDJ Mixing Online guidance inside VirtualDJ, beat-matching', m, 'unterricht', 'Music · Music Lessons', 'Learn VirtualDJ Mixing Online -- 5'), 'unterricht');
+  assert.equal(feldVon('Suche jemanden für Klavier, möchte lernen nach Noten zu spielen', m, null, '', 'Klavier für Anfänger'), 'unterricht', 'Lerner-Satz im Text');
+  assert.equal(feldVon('Ableton project help', m, null, 'Music Production · Music Lessons', 'Ableton project help'), 'unterricht', 'Unterrichts-Fähigkeit der Plattform');
+});
+
+test('Doppelte mit Zähler/Zeitstempel im Titel raus, nur Deutsch/Englisch, kaum Geld nach unten', async () => {
+  const { titelKern } = await import('../module/auftraege.mjs');
+  assert.equal(titelKern('Learn VirtualDJ Mixing Online -- 5'), 'Learn VirtualDJ Mixing Online');
+  assert.equal(titelKern('Service Promo Video Editing - 15/11/2026 20:10 EST'), 'Service Promo Video Editing');
+  assert.equal(titelKern('Remote India Marketing Interns -- 6'), 'Remote India Marketing Interns');
+  assert.equal(titelKern('Top 10 Synth Presets'), 'Top 10 Synth Presets', 'Zahl mitten im Titel bleibt');
+  const pr = (id, title, extra = {}) => ({ id, seo_url: `video-editing/p-${id}`, title, description: 'Edit my YouTube video, sound design with a synth, premiere pro', jobs: [{ name: 'Video Editing' }], time_submitted: Date.parse('2026-11-16T08:00:00Z') / 1000, budget: { minimum: 100, maximum: 250 }, currency: { code: 'USD' }, language: 'en', ...extra });
+  const projekte = [pr(1, 'Learn VirtualDJ Mixing Online -- 3'), pr(2, 'Learn VirtualDJ Mixing Online -- 4'), pr(3, 'Learn VirtualDJ Mixing Online -- 5'),
+    pr(4, 'Jepretan Alam Gunung Langit Cerah', { language: 'id' }), pr(5, 'Tiny Reels Edit', { budget: { minimum: 600, maximum: 700 }, currency: { code: 'INR' } }), pr(6, 'Normal Reels Edit')];
+  const c = structuredClone(cfg); c.module.auftraege.robotsPruefen = false;
+  c.module.auftraege.quellen = [{ art: 'freelancer', name: 'Test', feld: 'bildvideo', jobs: [688] }];
+  const r = await auftraege({ holeText: async () => JSON.stringify({ status: 'success', result: { projects: projekte } }), cfg: c, jetzt: JETZT, zustand: {} });
+  const titel = r.eintraege.filter(e => !e.extra.fundort).map(e => e.titel);
+  assert.equal(titel.filter(t => /VirtualDJ/.test(t)).length, 1, 'Zähler-Duplikate zusammengefasst');
+  assert.ok(!titel.some(t => /Jepretan/.test(t)), 'nur Deutsch/Englisch');
+  const winzig = r.eintraege.find(e => e.titel === 'Tiny Reels Edit'), normal = r.eintraege.find(e => e.titel === 'Normal Reels Edit');
+  assert.ok(winzig && normal && winzig.extra.passt <= normal.extra.passt - 20, 'kaum Geld: −20');
+  assert.ok(winzig.extra.gruende.includes('kaum Geld'));
+  assert.equal(winzig.sofort, false);
+  assert.ok(r.kurz.doppelt >= 2 && r.kurz.passtNicht >= 1);
+});

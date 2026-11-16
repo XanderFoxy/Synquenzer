@@ -32,14 +32,25 @@ const HANDLE = /(^|\s)@[A-Za-z0-9_.]{2,}/g;
 /** Kontaktdaten raus (Xander-Regel: keine Kontaktdaten speichern – der Link zur Anzeige reicht) */
 export const ohneKontakt = s => String(s ?? '').replace(MAIL, '[Mail]').replace(URL_, '[Link]').replace(TEL, '[Telefon]').replace(HANDLE, '$1[Name]').replace(/\s+/g, ' ').trim();
 const klar = s => entities(entities(String(s ?? ''))).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+/** Titel ohne Zähler/Zeitstempel am Ende („Learn VirtualDJ Mixing Online -- 5“, „Promo Video - 15/11/2026 20:10 EST“) – für „doppelt“ */
+export const titelKern = s => String(s ?? '').replace(/\s*[-–—]+\s*\d{1,2}\/\d{1,2}\/\d{2,4}(\s+\d{1,2}:\d{2}(\s*[A-Z]{2,4})?)?\s*$/, '').replace(/\s*(--|[-–—#]|\()\s*\d{1,3}\)?\s*$/, '').trim();
 export const kurz = (s, n = 180) => { const t = ohneKontakt(klar(s)); return t.length > n ? `${t.slice(0, n - 1).replace(/\s+\S*$/, '')} …` : t; };
 
 // --- Bewertung -----------------------------------------------------------------------------------------------------------
-/** Welches Feld? Unterricht nur mit Unterrichts- UND Musikwort; sonst das Feld mit den meisten Treffern (Gleichstand: vorgabe) */
-export function feldVon(text, w, vorgabe = null) {
-  const lehr = enthaelt(text, w.unterrichtWoerter), musik = enthaelt(text, w.musikWoerter);
+/**
+ * Welches Feld? Unterricht nur mit Unterrichts- UND Musikwort im Text selbst; sonst das Feld mit den meisten Treffern
+ * (Gleichstand: vorgabe). tags = Fähigkeiten der Plattform (z. B. Freelancer „Sound Design“, „eLearning“): zählen für
+ * KI/Bild & Video, für Unterricht nur als ausdrückliche Unterrichts-Fähigkeit (unterrichtTags, z. B. „Music Lessons“) –
+ * echter Lauf 16.11.2026: „Reels Editor“/„Voiceover for eLearning“ landeten sonst über die Fähigkeiten im Unterricht.
+ */
+export function feldVon(text, w, vorgabe = null, tags = '', titel = null) {
+  // Unterricht: Unterrichtswort im Titel, ausdrücklicher Lerner-Satz im Text („teach me“, „Klavierlehrer gesucht“) oder
+  // Unterrichts-Fähigkeit – ein „lesson“/„learn“ irgendwo im Text eines Video-Auftrags reicht nicht (echter Lauf 16.11.2026)
+  const lehr = enthaelt(titel ?? text, w.unterrichtWoerter) || enthaelt(text, w.lernWoerter || []) || (!!tags && enthaelt(tags, w.unterrichtTags || []));
+  const musik = enthaelt(text, w.musikWoerter);
   if (lehr && musik) return 'unterricht';
-  const ki = zaehle(text, w.kiWoerter), bv = zaehle(text, w.bildvideoWoerter) + (musik ? 1 : 0);
+  const voll = tags ? `${text} ${tags}` : text;
+  const ki = zaehle(voll, w.kiWoerter), bv = zaehle(voll, w.bildvideoWoerter) + (musik || enthaelt(tags, w.musikWoerter) ? 1 : 0);
   if (!ki && !bv) return vorgabe && vorgabe !== 'unterricht' ? vorgabe : null;
   if (ki === bv) return vorgabe && vorgabe !== 'unterricht' ? vorgabe : 'ki';
   return ki > bv ? 'ki' : 'bildvideo';
@@ -118,6 +129,9 @@ export function bewerte(f, w, jetzt = new Date()) {
   const d = Date.parse(f.datum || '');
   const alterTage = Number.isFinite(d) ? Math.max(0, Math.floor((new Date(jetzt).getTime() - d) / 864e5)) : null;
   const stunde = f.budget ? !!f.budget.stunde : !!verguetungAusText(text)?.stunde;
+  // Kaum Geld (Xander: „nebenbei etwas verdienen“): genannte Vergütung unter wenigEuro (Festpreis) bzw. wenigEuroStunde -> weiter unten
+  const wenig = stunde ? (w.wenigEuroStunde ?? 10) : f.feld === 'unterricht' ? Math.round((w.wenigEuro ?? 30) / 2) : (w.wenigEuro ?? 30); // Unterricht: Preis je Stunde/Termin
+  if (verguetungEur != null && verguetungEur < wenig) { passt -= 20; gruende.push('kaum Geld'); }
   return { passt: Math.max(0, Math.min(100, Math.round(passt))), aufwand, allein, verguetung, verguetungEur, stunde, alterTage, gruende };
 }
 
@@ -151,7 +165,7 @@ function ausFreelancer(pr, q) {
   const city = pr.local && pr.location?.city ? pr.location.city : '';
   const b = pr.budget || {};
   return {
-    titel: klar(pr.title), text: `${text} ${jobs.join(' ')}`, auszugText: text, link: freelancerLink(pr.seo_url),
+    titel: klar(pr.title), text, tags: jobs.join(' · '), auszugText: text, link: freelancerLink(pr.seo_url),
     datum: new Date(Number(pr.time_submitted || pr.submitdate) * 1000).toISOString(), quelle: 'Freelancer', art: 'freelancer', vorgabe: q.feld || null,
     budget: b.minimum != null || b.maximum != null ? { min: b.minimum ?? null, max: b.maximum ?? null, code: pr.currency?.code || 'USD', stunde: pr.type === 'hourly' } : null,
     gebote: pr.bid_stats?.bid_count ?? null, stadt: city, sprache: pr.language || null, upfront: !!pr.requires_upfront_funding,
@@ -227,13 +241,15 @@ export default async function auftraege({ holeText, cfg, jetzt = new Date(), zus
   for (const f of funde.sort((a, b) => Date.parse(b.datum) - Date.parse(a.datum))) {
     const d = Date.parse(f.datum || '');
     if (!Number.isFinite(d) || jetztMs - d > maxTage * 864e5 || d - jetztMs > 864e5) { zahlen.alt++; continue; }
-    const key = String(f.link).replace(/[?#].*$/, '').replace(/\/+$/, '').toLowerCase(), k2 = norm(f.titel).slice(0, 90);
+    const key = String(f.link).replace(/[?#].*$/, '').replace(/\/+$/, '').toLowerCase(), k2 = norm(titelKern(f.titel)).slice(0, 90);
     if (gesehen.has(key) || gesehen.has(k2)) { zahlen.doppelt++; continue; }
+    // Sprache: nur Deutsch/Englisch (Plattform-Angabe; ohne Angabe: durchlassen)
+    if (f.sprache && !/^(de|en)\b/i.test(f.sprache)) { zahlen.passtNicht++; continue; }
     const text = `${f.titel} ${f.text}`;
     const b = betrugPruefen(text, m);
     if (b.raus || f.upfront) { zahlen.betrug++; continue; }
     if (enthaelt(text, m.nichtWoerter || [])) { zahlen.passtNicht++; continue; }
-    const feld = feldVon(text, m, f.vorgabe);
+    const feld = feldVon(text, m, f.vorgabe, f.tags || '', f.titel);
     if (!feld) { zahlen.passtNicht++; continue; }
     // Ort: Feld der Quelle (Freelancer „local“) > Text; vor Ort weiter als vorOrtKm (ohne „online/remote“) raus
     // Freelancer: nur Aufträge mit „local“ + Stadt sind vor Ort (eine Stadt im Text eines Online-Auftrags zählt nicht)
@@ -242,7 +258,7 @@ export default async function auftraege({ holeText, cfg, jetzt = new Date(), zus
     const vorOrt = !!o && (f.art === 'freelancer' || !istOnline(text));
     if (vorOrt && o.km > (m.vorOrtKm ?? 80)) { zahlen.ort++; continue; }
     if (f.ausschreibung && !vorOrt) { zahlen.ort++; continue; } // Ausschreibungen nur aus der Gegend (ohne Ort = nicht hier)
-    const bw = bewerte({ ...f, feld, ort: o?.ort, km: o?.km ?? null, online: !vorOrt, region: cfg.region }, m, jetzt);
+    const bw = bewerte({ ...f, text: `${f.text} ${f.tags || ''}`, feld, ort: o?.ort, km: o?.km ?? null, online: !vorOrt, region: cfg.region }, m, jetzt);
     if (bw.passt < (m.mindestPasst ?? 45)) { zahlen.passtNicht++; continue; }
     gesehen.add(key); gesehen.add(k2);
     behalten.push({ f, feld, o: vorOrt ? o : null, bw, warnung: b.warnung || null });

@@ -157,7 +157,7 @@ async function waitFor(fn, ms = 5000) { const t0 = Date.now(); while (!fn()) { i
 const alarmOffen = page => page.evaluate(() => document.getElementById('krypto-alarm').open);
 
 // Kein seitliches Scrollen, alles Tippbare mindestens 44 × 44 px (auch in aufgeklappten Kästen)
-const BEREICHE = ['start', 'deals', 'preisfehler', 'auftritte', 'remix', 'unterricht', 'konzerte', 'gewinnspiele', 'krypto', 'mehr'];
+const BEREICHE = ['start', 'deals', 'preisfehler', 'auftritte', 'remix', 'unterricht', 'nebenverdienst', 'konzerte', 'gewinnspiele', 'krypto', 'mehr'];
 async function pruefeLayout(page, wo) {
   await page.evaluate(() => document.querySelectorAll('details').forEach(d => (d.open = true)));
   const r = await page.evaluate(() => {
@@ -452,9 +452,9 @@ test('Sprungmarken: alte #angebote/#vorteile/#konzerte zeigen auf Bereiche, Leis
     await page.waitForFunction(b => document.querySelector(`.sprung a[data-ziel="${b}"]`).getAttribute('aria-current') === 'true', bereich);
   }
   // Leiste: Start + alle Bereiche in Xanders Reihenfolge (Filme ist ein eigener Reiter); wischbar ohne seitliches Scrollen der Seite
-  assert.deepEqual(await page.locator('.sprung a .t').allInnerTexts(), ['Start', 'Deals', 'Woche', 'Essen', 'Preisfehler', 'Filme', 'Auftritte', 'Remix', 'Unterricht', 'Konzerte', 'Gewinnspiele', 'Krypto', 'Spartricks', 'Mehr']);
+  assert.deepEqual(await page.locator('.sprung a .t').allInnerTexts(), ['Start', 'Deals', 'Woche', 'Essen', 'Preisfehler', 'Filme', 'Auftritte', 'Remix', 'Unterricht', 'Nebenverdienst', 'Konzerte', 'Gewinnspiele', 'Krypto', 'Spartricks', 'Mehr']);
   assert.equal(await page.locator('.sprung a[data-reiter="filme"]').count(), 1);
-  assert.equal(await page.locator('.sprung a svg.ic').count(), 14, 'jeder Bereich mit gezeichnetem Symbol');
+  assert.equal(await page.locator('.sprung a svg.ic').count(), 15, 'jeder Bereich mit gezeichnetem Symbol (15 seit „Nebenverdienst“)');
   // Push-Hilfe
   await page.locator('#push').click();
   assert.match(await page.locator('#push-hilfe').innerText(), /xander-schnaeppchen-b5cbf4442aaa9734f3/);
@@ -1201,7 +1201,7 @@ test('Start „Heute für dich“ (v5): je Bereich eine Kachel mit den besten Tr
   assert.equal(await page.locator('#ort-name').innerText(), 'Heute für dich');
   assert.equal(await page.locator('.sprung a[data-ziel="start"]').getAttribute('aria-current'), 'true');
   const kacheln = page.locator('#kacheln a.kachel');
-  assert.deepEqual(await kacheln.evaluateAll(as => as.map(a => a.dataset.sprung)), ['deals', 'woche', 'essen', 'preisfehler', 'filme', 'auftritte', 'remix', 'unterricht', 'konzerte', 'gewinnspiele', 'krypto', 'spartricks', 'mehr']);
+  assert.deepEqual(await kacheln.evaluateAll(as => as.map(a => a.dataset.sprung)), ['deals', 'woche', 'essen', 'preisfehler', 'filme', 'auftritte', 'remix', 'unterricht', 'nebenverdienst', 'konzerte', 'gewinnspiele', 'krypto', 'spartricks', 'mehr']);
   // nie leer: jede Kachel hat mindestens eine Zeile
   for (const k of await kacheln.all()) assert.ok(await k.locator('li').count() >= 1, await k.innerText());
   const t = b => page.locator(`#kacheln a[data-sprung="${b}"]`).innerText().then(nbsp);
@@ -1507,6 +1507,7 @@ for (const [breite, hoehe, lage] of [[428, 926, 'hoch'], [926, 428, 'quer']]) {
       auftritte: /Frische Ausschreibungen[\s\S]*Hier geht immer was\s*9/i,
       remix: /5 laufende Contests[\s\S]*Amnesia von ALICIAMUSIC[\s\S]*Hier gibt es laufend Contests\s*5/i,
       unterricht: /Hier kannst du dich immer melden\s*4[\s\S]*italki/i, // Jobbörse-Suche seit 14.11.2026 raus
+      nebenverdienst: /Gerade kein passendes Gesuch[\s\S]*Hier selbst suchen\s*\d+[\s\S]*Kleinanzeigen/i, // Daten vom 08.11. ohne „auftraege“: fertige Suchen der Seite
       konzerte: /Depeche Mode/,
       gewinnspiele: /mydealz: Gruppe Gewinnspiele/,
       krypto: /Bitcoin/,
@@ -1636,4 +1637,109 @@ test('Stand: „vor 22 Min.“ ohne doppelten Punkt; nach 3 Tagen rot ohne „l�
   assert.match(wichtig, /Remix-Contest bis Fr 20\.11\.: Synthpop duo/);
   assert.doesNotMatch(wichtig, /Remix-Contest: Remix-Contest/);
   await w.ctx.close();
+});
+
+// --- Nebenverdienst (Xander 16.11.2026): Radar-Kategorie „auftraege“ – Einträge aus dem echten Radar-Modul mit dessen
+// Test-Fixtures (vorteile/scan/test/fixtures/auftraege, NACHGEBAUT), Uhr 16.11.2026 10:00 UTC
+async function nebenDaten() {
+  const { default: auftraege } = await import('../../vorteile/scan/module/auftraege.mjs');
+  const cfg = JSON.parse(readFileSync(join(WURZEL, 'vorteile', 'config.json'), 'utf8'));
+  const F = join(WURZEL, 'vorteile', 'scan', 'test', 'fixtures', 'auftraege');
+  const karte = [['robots.txt', 'robots-erlaubt.txt'], ['jobs/?job_names', 'freelancer-jobs.json'], ['jobs%5B%5D=44&', 'freelancer-ki.json'], ['jobs%5B%5D=688&', 'freelancer-bildvideo.json'],
+    ['jobs%5B%5D=3501&', 'freelancer-unterricht.json'], ['hnrss.org/whoishiring', 'hnrss-freelance.xml'], ['RSSGenerator_Ausschreibungen', 'bund-ausschreibungen.xml']];
+  const holeText = async url => { const t = karte.find(([k]) => url.includes(k)); if (!t) throw new Error('HTTP 404'); return readFile(join(F, t[1]), 'utf8'); };
+  const r = await auftraege({ holeText, cfg, jetzt: new Date(JETZT_NEBEN), zustand: {} });
+  return r.eintraege;
+}
+const JETZT_NEBEN = '2026-11-16T10:00:00Z';
+
+test('Nebenverdienst: Reiter, Karten mit Bewertung, Filter (Was/Wo/km/allein), fertige Suchen, Anbieten-Text, Layout hoch + quer', { skip: ohnePw }, async () => {
+  const eintraege = await nebenDaten();
+  const treffer = eintraege.filter(e => !e.extra.fundort);
+  const patch = { 'vorteile-aktuell.json': d => { d.kategorien.auftraege = eintraege; d.status.auftraege = { ok: true, anzahl: eintraege.length, fehler: [], stand: '2026-11-16T09:40:00.000Z' }; } };
+  const { ctx, page, fehler } = await oeffne({ satz: 'v5', jetzt: JETZT_NEBEN, pfad: '/mein-vorteil/#nebenverdienst', patch });
+  assert.match(nbsp(await page.locator('.sprung [data-ziel="nebenverdienst"]').innerText()), /Nebenverdienst/);
+  await springe(page, 'nebenverdienst');
+  const n = page.locator('#nebenverdienst');
+  await page.evaluate(() => scrollTo(0, 0));
+  await page.screenshot({ path: join(SHOTS, 'neben-1-oben-hoch.png'), fullPage: false });
+  await n.locator('.nf').evaluate(el => scrollTo(0, el.getBoundingClientRect().bottom + scrollY - 200));
+  await page.screenshot({ path: join(SHOTS, 'neben-2-karten-hoch.png'), fullPage: false });
+  assert.match(nbsp(await text(page, '#w-nebenverdienst')), new RegExp(`^${treffer.length} Gesuche · \\d+ vor Ort, \\d+ online · \\d+ allein machbar`));
+  assert.equal(await n.locator('article').count(), 4, 'erst 4 Karten, Rest hinter „weitere zeigen“');
+  // beste zuerst: Gitarrenunterricht in Leipzig (nah, deutsch, Unterricht)
+  const erste = nbsp(await n.locator('article').first().innerText());
+  assert.match(erste, /^Unterricht geben\s*Leipzig · 57 km\s*20–30 € pro Std\.\s*Aufwand klein\s*allein machbar\s*Freelancer · gestern\s*Gitarrenunterricht in Leipzig/);
+  assert.match(erste, /Passt \d+ %: Musik\/Synthese/);
+  // Filter Online: keine Vor-Ort-Karten mehr, km-Wahl verschwindet
+  await n.getByRole('radio', { name: 'Online' }).click();
+  assert.equal(await n.locator('article', { hasText: 'Leipzig · 57 km' }).count(), 0);
+  assert.equal(await n.locator('[aria-labelledby="nf-km"]').count(), 0);
+  // Was: KI & Apps -> nur KI-Karten (alle zeigen)
+  await n.getByRole('radio', { name: 'KI & Apps' }).click();
+  if (await n.locator('button[data-mehr="neben"]').count()) await n.locator('button[data-mehr="neben"]').click();
+  const ki = await n.locator('article .oben .marke:first-child').allInnerTexts();
+  assert.ok(ki.length >= 3 && ki.every(t => t === 'KI & Apps'), ki.join('|'));
+  assert.match(nbsp(await n.locator('.nf .anzahl').innerText()), new RegExp(`^${ki.length} von ${treffer.length} Gesuchen$`));
+  // Warnung sichtbar (WhatsApp), nicht versteckt
+  assert.match(nbsp(await n.locator('article', { hasText: 'AI chatbot' }).innerText()), /Vorsicht[\s\S]*nur über die Plattform schreiben, nie vorab zahlen/);
+  // nur allein machbar: Ausschreibung (eher im Team) fällt weg; Filter bleibt nach Neuladen
+  await n.getByRole('radio', { name: 'Überall' }).click();
+  assert.equal(await n.locator('article', { hasText: 'eher im Team' }).count(), 1);
+  await n.locator('button.schalter').click();
+  assert.equal(await n.locator('button.schalter').getAttribute('aria-pressed'), 'true');
+  assert.equal(await n.locator('article', { hasText: 'eher im Team' }).count(), 0);
+  // fertige Suchen nach Feld: KI -> Kleinanzeigen „App programmieren“, keine Klavier-Suche
+  const suchen = nbsp(await n.locator('.fundorte').innerText());
+  await n.locator('.fundorte').evaluate(el => scrollTo(0, el.getBoundingClientRect().top + scrollY - 330));
+  await page.screenshot({ path: join(SHOTS, 'neben-3-filter-suchen-hoch.png'), fullPage: false });
+  assert.match(suchen, /Kleinanzeigen: Gesuche „App programmieren“/);
+  assert.doesNotMatch(suchen, /Klavierunterricht/);
+  await page.reload(); await geladen(page); await springe(page, 'nebenverdienst');
+  assert.equal(await n.getByRole('radio', { name: 'KI & Apps' }).getAttribute('aria-checked'), 'true', 'Filter gemerkt (nur dieses Gerät)');
+  // Anbieten: deutscher Text bei deutschem Gesuch
+  await n.locator('article', { hasText: 'Bäckerei' }).getByRole('button', { name: 'Anbieten' }).click();
+  assert.equal(await page.locator('#blatt-titel').innerText(), 'Anbieten');
+  assert.match(await page.locator('#b-text').inputValue(), /„Kleine Web-App für Bestellungen unserer Bäckerei“ gesehen[\s\S]*Web-Apps[\s\S]*Festpreis/);
+  await page.screenshot({ path: join(SHOTS, 'neben-4-anbieten-hoch.png'), fullPage: false });
+  await page.locator('#blatt-zu').click();
+  // zurück auf alles; Unterricht-Karte auf Englisch anbieten
+  await n.getByRole('radio', { name: 'Alles' }).click();
+  await n.locator('button.schalter').click();
+  if (await n.locator('button[data-mehr="neben"]').count()) await n.locator('button[data-mehr="neben"]').click();
+  await n.locator('article', { hasText: 'Synth sound design' }).getByRole('button', { name: 'Anbieten' }).click();
+  assert.match(await page.locator('#b-text').inputValue(), /^Hi,[\s\S]*synthesizers & sound design[\s\S]*free intro session/);
+  await page.locator('#blatt-zu').click();
+  await pruefeLayout(page, 'Nebenverdienst hochkant');
+  // Start-Kachel
+  await springe(page, 'start');
+  await page.locator('#kacheln a[data-sprung="nebenverdienst"]').evaluate(el => scrollTo(0, el.getBoundingClientRect().top + scrollY - 250));
+  await page.screenshot({ path: join(SHOTS, 'neben-5-kachel-hoch.png'), fullPage: false });
+  assert.match(nbsp(await page.locator('#kacheln a[data-sprung="nebenverdienst"]').innerText()), /Nebenverdienst[\s\S]*Gitarrenunterricht in Leipzig/);
+  assert.deepEqual(fehler, []);
+  await ctx.close();
+  // quer
+  const q = await oeffne({ satz: 'v5', jetzt: JETZT_NEBEN, breite: 926, hoehe: 428, pfad: '/mein-vorteil/#nebenverdienst', patch });
+  await springe(q.page, 'nebenverdienst');
+  await q.page.evaluate(() => scrollTo(0, 0));
+  await q.page.screenshot({ path: join(SHOTS, 'neben-6-oben-quer.png'), fullPage: false });
+  await q.page.locator('#nebenverdienst .nf').evaluate(el => scrollTo(0, el.getBoundingClientRect().bottom + scrollY - 120));
+  await q.page.screenshot({ path: join(SHOTS, 'neben-7-karten-quer.png'), fullPage: false });
+  await pruefeLayout(q.page, 'Nebenverdienst quer');
+  assert.deepEqual(q.fehler, []);
+  await q.ctx.close();
+});
+
+test('Nebenverdienst mit älteren Daten (ohne „auftraege“): fertige Suchen der Seite, nie leer, keine Arbeitsamt-Stellen', { skip: ohnePw }, async () => {
+  const patch = { 'vorteile-aktuell.json': d => { delete d.kategorien.auftraege; (d.kategorien.nebenverdienst ||= []).push({ id: 'ba-x', kategorie: 'nebenverdienst', titel: 'Videoschnitt Minijob', zeile: 'Jobbörse', link: 'https://www.arbeitsagentur.de/jobsuche/jobdetail/beispiel', quelle: 'Jobbörse der Arbeitsagentur', wert: 50, datum: '2026-11-06T08:00:00.000Z', sichtbarBis: '2026-11-30T08:00:00.000Z' }); } };
+  const { ctx, page, fehler } = await oeffne({ satz: 'v5', jetzt: JETZT_V5, pfad: '/mein-vorteil/#nebenverdienst', patch });
+  await springe(page, 'nebenverdienst');
+  const alles = nbsp(await page.locator('#nebenverdienst').innerText());
+  assert.match(alles, /Gerade kein passendes Gesuch[\s\S]*Hier selbst suchen\s*\d+[\s\S]*Kleinanzeigen: Gesuche „Klavierunterricht“ um Döbeln/i);
+  assert.doesNotMatch(alles, /Videoschnitt Minijob|Arbeitsagentur/);
+  const link = await page.locator('#nebenverdienst .fundorte a').first().getAttribute('href');
+  assert.match(link, /^https:\/\/www\.kleinanzeigen\.de\/s-suchanfrage\.html\?keywords=Klavierunterricht.*adType=WANTED/);
+  assert.equal(await zahlIn(page, 'nebenverdienst').isHidden(), true, 'fertige Suchen zählen nicht');
+  assert.deepEqual(fehler, []);
+  await ctx.close();
 });
