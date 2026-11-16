@@ -109729,7 +109729,7 @@ async function fokus1Load(U) {
   F.pend = false;
   const doc = SPK1.doc, N = U.N, mode = F.mode, sig = fokus1Sig(U), I = U.spec.info, nC = I.chunks || U.spec.chunks.length;
   let S = F.set;
-  if (S && S.doc === doc && S.N === N && S.mode === mode && F.sig === sig && S.chunks.filter(Boolean).length >= nC && !S.chunks.some(c => c && c.ap)) {   /* FOK3: Näherung → nicht fertig */ if (!F.st && S.st) F.st = S.st; fokus1Done(U); spk1Dirty(U, 'g'); return; }   // noch aktuell (Ergebnis liegt am Satz)
+  if (S && S.doc === doc && S.N === N && S.mode === mode && F.sig === sig && S.ok === sig && S.chunks.filter(Boolean).length >= nC && !S.chunks.some(c => c && c.ap)) {   /* FOK3: Näherung → nicht fertig; FOK3-P: nur ein abgeschlossener Satz (S.ok) gilt als aktuell */ if (!F.st && S.st) F.st = S.st; fokus1Done(U); spk1Dirty(U, 'g'); return; }   // noch aktuell (Ergebnis liegt am Satz)
   const seq = ++F.seq; F.sig = sig;
   if (!S || S.doc !== doc || S.N !== N || S.mode !== mode) { fokus1Drop(U); S = F.set = {doc, N, mode, hop: U.spec.hop, info: I, chunks: [], key: ''}; }   // gleicher Modus: altes Bild bleibt, bis das neue Stück da ist
   const v = U.v, hs = U.spec.hop / U.meta.sr, cl = x => Math.max(0, Math.min(nC - 1, x));
@@ -109767,10 +109767,10 @@ async function fokus1Load(U) {
   if (!stop && seq === F.seq && S.chunks.some(c => c && c.ap)) {
     const vis = () => { const v = U.v, hs = S.hop / U.meta.sr, cl = x => Math.max(0, Math.min(nC - 1, x)), a = cl(Math.floor(Math.max(0, v.t0) / hs / 1024)); return [a, Math.max(a, cl(Math.floor(Math.max(0, v.t0 + U.W / v.pps) / hs / 1024)))]; };
     const order = () => { const [a, b] = vis(), L = []; for (let k = 0; k < nC; k++) { const c = S.chunks[k]; if (c && c.ap) L.push([k < a ? a - k + 0.5 : k > b ? k - b : 0, k]); } return L.sort((p, q) => p[0] - q[0] || p[1] - q[1]).map(x => x[1]); };
-    F.gn = seq; fokus1Stat(U, 'Fokus · genauer · ' + Math.round(100 * F.ex() / nC) + ' %');
+    F.gn = seq; F.rpX = new Set(); F.noRp = false; fokus1Stat(U, 'Fokus · genauer · ' + Math.round(100 * F.ex() / nC) + ' %');   /* FOK3-P: rpX = schon einmal abgelöste Stücke */
     try {
-      for (let guard = 0; guard < 40; guard++) {
-        const L = order(); if (!L.length) break; F.gL = L; F.gk = L[0]; F.rp = false; F.tRp = performance.now();
+      for (let guard = 0; guard <= 2 * nC + 8; guard++) {   /* FOK3-P: jedes Stück wird höchstens einmal abgelöst → spätestens nach nC + 1 Durchgängen fertig; ab nC + 2 ohne Ablösen */
+        const L = order(); if (!L.length) break; F.gL = L; F.gk = L[0]; F.rp = false; F.tRp = performance.now(); F.noRp = guard >= nC + 2;
         const r = await spk1Call('fokus', Object.assign({from: 0, to: nC, list: L}, o, {vorab: 0}), null, {chunk: onChunk});   // ein Auftrag für alle (keine Wartezeit je Stück auf den Hauptfaden)
         if (seq !== F.seq) return;
         nAus = r.nAus; key = r.key; stop = r.stop || '';
@@ -109779,13 +109779,14 @@ async function fokus1Load(U) {
       }
     } catch (e) {
       if (seq !== F.seq) return; F.run = false; logErr(e); fokus1Stat(U, 'Fokus: Fehler'); return;
-    } finally { if (F.gn === seq) { F.gn = 0; F.gk = -1; F.gL = null; F.rp = false; } }
+    } finally { if (F.gn === seq) { F.gn = 0; F.gk = -1; F.gL = null; F.rp = false; F.noRp = false; } }
     if (!stop) { eO = 0; eR = 0; for (const c of S.chunks) if (c) { eO += c.eO || 0; eR += c.eR || 0; } }
   }
   F.run = false; if (seq !== F.seq) return;
+  if (!stop && S.chunks.some(c => c && c.ap) && (F.rl = (F.rl || 0) + 1) <= 2) { F.sig = ''; clearTimeout(F.tm); F.tm = setTimeout(() => { F.tm = 0; fokus1Load(U); }, 150); return; }   /* FOK3-P: Näherung steht noch → nicht fertig melden, neu laden (höchstens 2× hintereinander) */
   if (stop === 'geaendert') { F.sig = ''; clearTimeout(F.tm); F.tm = setTimeout(() => { F.tm = 0; fokus1Load(U); }, 150); return; }   // Ebene/Note während der Rechnung geändert
   if (stop) return;   // abgelöst: ein neuerer Auftrag läuft
-  F.st = S.st = {eO, eR, nAus, key, ms: 0}; fokus1Done(U); spk1Dirty(U, 'g');
+  F.st = S.st = {eO, eR, nAus, key, ms: 0}; S.ok = sig; F.rl = 0; fokus1Done(U); spk1Dirty(U, 'g');   /* FOK3-P: S.ok = abgeschlossener Stand */
 }
 function fokus1Mode(U, v) {
   const F = fokus1S(U), was = F.mode; if (v === was) return;
@@ -109821,10 +109822,10 @@ function fokus1Pre(U) {   // Haken in spk1Frame vor dem Zeichnen
     if (F.pend && !F.tm && !U.specQ && U.spec && U.spec.hop && U.spec.info) F.tm = setTimeout(() => { F.tm = 0; fokus1Load(U); }, 0);
     const S = F.set, O = U.spec; if (!U.dg || !S || !O || !O.hop || S.doc !== SPK1.doc || S.N !== O.N || S.mode !== F.mode) return;
     if (F.glRef !== U.gl) { for (const c of S.chunks) if (c) { c.tex = null; c.old = null; } F.glRef = U.gl; }   // Kontext verloren → Texturen sind weg
-    if (F.gn && F.gn === F.seq && F.gL && !F.rp && performance.now() - F.tRp > 250) {   /* FOK3: Rollen/Zoomen beim Nachreichen – ist das Stück in Arbeit (erstes genähertes der Liste) unsichtbar, sichtbare aber noch genähert → ablösen, neu planen (höchstens alle 250 ms) */
+    if (F.gn && F.gn === F.seq && F.gL && !F.rp && !F.noRp && performance.now() - F.tRp > 250) {   /* FOK3: Rollen/Zoomen beim Nachreichen – ist das Stück in Arbeit (erstes genähertes der Liste) unsichtbar, sichtbare aber noch genähert → ablösen, neu planen (höchstens alle 250 ms) */
       const hs0 = S.hop / U.meta.sr, nn = S.chunks.length, cl = x => Math.max(0, Math.min(nn - 1, x)), a = cl(Math.floor(Math.max(0, U.v.t0) / hs0 / 1024)), b = Math.max(a, cl(Math.floor(Math.max(0, U.v.t0 + U.W / U.v.pps) / hs0 / 1024)));
       let cur = -1; for (const k of F.gL) if (S.chunks[k] && S.chunks[k].ap) { cur = k; break; }
-      if (cur >= 0 && (cur < a || cur > b)) for (let k = a; k <= b; k++) if (S.chunks[k] && S.chunks[k].ap) { F.rp = true; spk1Call('fokusStop', {doc: SPK1.doc}).catch(() => {}); break; }
+      if (cur >= 0 && (cur < a || cur > b) && !(F.rpX && F.rpX.has(cur))) for (let k = a; k <= b; k++) if (S.chunks[k] && S.chunks[k].ap) { F.rp = true; F.rpX && F.rpX.add(cur); spk1Call('fokusStop', {doc: SPK1.doc}).catch(() => {}); break; }   /* FOK3-P: jedes Stück höchstens einmal ablösen (sonst bei schnellem Hin-und-Her kein Fortschritt) */
     }
     const v = U.v, hs = O.hop / U.meta.sr, n = O.chunks.length, arr = F.arr && F.arr.length === n ? F.arr : (F.arr = new Array(n)), tN = performance.now(); let up = 0, more = false;
     if (F.upMore && F.tUp) { const dt = tN - F.tUp; F.gap = dt > 45 ? Math.min(250, dt) : 0; }   // hat das letzte Hochladen das nächste Bild gebremst (langsame Grafik)? → Abstand halten
@@ -109869,7 +109870,7 @@ Object.assign(FOKUS1_API, {
   S: () => SPK1.ui && fokus1S(SPK1.ui),
   mode: m => { const U = SPK1.ui; fokus1Mode(U, m); return U.f1.mode; },
   aus: a => { const U = SPK1.ui, F = fokus1S(U); F.aus = a; F.st = null; return fokus1Load(U); },
-  info: () => { const U = SPK1.ui, F = U && U.f1; if (!F) return null; const S = F.set; return {mode: F.mode, aus: F.aus, run: F.run, pend: F.pend, tm: !!F.tm, aktuell: !!U.meta && F.sig === fokus1Sig(U), st: F.st, txt: F.txt, title: U.st.title || '', n: S ? S.chunks.filter(Boolean).length : 0, tex: S ? S.chunks.filter(c => c && c.tex).length : 0, key: S ? S.key : '', err: F.err, ap: S ? S.chunks.filter(c => c && c.ap).length : 0, gn: !!F.gn && F.gn === F.seq, gk: F.gk == null ? -1 : F.gk}; },   /* FOK3: ap, gn, gk */
+  info: () => { const U = SPK1.ui, F = U && U.f1; if (!F) return null; const S = F.set; return {mode: F.mode, aus: F.aus, run: F.run, pend: F.pend, tm: !!F.tm, aktuell: !!U.meta && F.sig === fokus1Sig(U), st: F.st, txt: F.txt, title: U.st.title || '', n: S ? S.chunks.filter(Boolean).length : 0, tex: S ? S.chunks.filter(c => c && c.tex).length : 0, key: S ? S.key : '', err: F.err, ap: S ? S.chunks.filter(c => c && c.ap).length : 0, gn: !!F.gn && F.gn === F.seq, gk: F.gk == null ? -1 : F.gk, rpn: F.rpX ? F.rpX.size : 0, ok: !!S && S.ok === F.sig}; },   /* FOK3: ap, gn, gk; FOK3-P: rpn, ok */
   chunks: () => { const S = SPK1.ui && SPK1.ui.f1 && SPK1.ui.f1.set; return S ? S.chunks.map((c, k) => c && {k, x0: c.x0, w: c.w, R: c.R, hop: S.hop, data: c.data, ap: !!c.ap}).filter(Boolean) : []; },   /* FOK3: ap */
   idle: () => { const U = SPK1.ui, F = U && U.f1; return !!F && !F.run && !F.tm && !F.pend && (F.mode === 'alles' || (!!F.set && F.sig === fokus1Sig(U))); }
 });
