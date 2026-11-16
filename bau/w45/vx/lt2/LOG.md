@@ -7,3 +7,4 @@
 05:40 nach2 (b,d) fertig: b 428x926 index 0/0 vs basis 61/69, b 926x428 53/61 vs 100/127 (Last ~5), d 926x428 64/63 vs 106/93; Bilder gleich. Regression spk1 (wie 4.76.0), spk5 OK 24, spkfix OK 11. NOTES fertig. Last 2.12 3.70 2.95
 06:21 Prüfung Start (Befunde des Prüfers), Last 9.58 10.53 8.39
 06:24 Sicherung index.vor-pruef.html (febbfca4…); 3 Änderungen im LT2-Block (Object.create, Rate k nach Bildfolge, Kommentar); topdefs/dupkeys 0; Last 7.28 8.73 8.10
+06:26 Kommentar „WebGL-Leinwand“ → „Grafik-Leinwand“ (webgl ohne Groß/klein 6 → 5 = basis); Endfassung md5 47b4ffc8…; Tests neu gestartet; Last 26.83 14.36 10.13

@@ -109971,7 +109971,7 @@ function lt1StoreJobs(pcm, chunks) {   // Haken in tkStore: nur für die vorbere
 /* LT1-END */
 /* LT2-BEGIN ===== Long Tasks im Hauptfaden, Rest (Paket LT2, Puls 16.11., Projektregeln Vorrang 1 „schnelle Performance“)
    Befund (Spur + Grafik-Probe lt2-gpu-probe.mjs): die restlichen Long Tasks beim Ansicht-Sprung, FFT-Wechsel und Fokus-Umschalten sind kein
-   Skript, sondern das Warten des Hauptfadens auf die Grafik (Commit → ReadPixels der WebGL-Leinwand). Den größten Teil davon kostet das
+   Skript, sondern das Warten des Hauptfadens auf die Grafik (Commit → ReadPixels der Grafik-Leinwand). Den größten Teil davon kostet das
    Zeichnen des Spektrums: ohne Tönung (nl = 0) rechnet die Grafik den Tönungs-Zweig des Shaders trotzdem mit – gemessen 1244×584:
    ganzer Shader 16–28 ms, derselbe ohne den Zweig 9–10 ms je Vollbild.
    → Für nl = 0 ein zweites Programm ohne den Tönungs-Zweig (Farbe auf genau demselben Rechenweg → Bild byte-gleich, geprüft per

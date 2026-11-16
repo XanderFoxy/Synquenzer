@@ -66,6 +66,8 @@ Einordnung: ≈ 15 % weniger Rechenzeit beim Zerlegen. Bei geringer Last (ZRL1-B
   20 s/3 min schneller, SDR gleich 20 s/3 min, Energie bitgleich 20 s/3 min, Speicher ≤ 500 MB, Transient gleich + Fortschritt, Konsole [].
 - Node: `mess/zr-node.mjs` 3 min Energie je Ebene identisch (`mess/z1-180-index.json` = `mess/vor-180-basis.json`), `mess/zr-ab.mjs` Hash gleich.
 - Mikro: `mess/medbench2.mjs` (0 Abweichungen), `mess/tilebench.mjs` (0 Abweichungen).
+- Regression (Kopien in `reg/`, Last 7–29): **spk5-test ALLES OK · 24 Prüfungen** (darunter „Zerlegen: Auswahl“ = Start mitten im Stück, erster Streifen ohne Übernahme) ·
+  **spk6-test ALLES OK** (27 OK, Kern-Messwerte 24/0).
 - Pflicht: topdefs „Skripte 26, Namen 7989, doppelt 0, Syntaxfehler 0“ (Basis 7988; +1 = `zrl2TrCb`) · dupkeys „0 doppelte Schlüssel“ ·
   Rauchtest `errors []`, `smoke-zrl2.png` byte-gleich mit `smoke-basis.png` · „MS 2000“ 1× · „  live: true,“ 1× · VERSION '4.76.1'.
 
@@ -80,4 +82,4 @@ Stellen von LT2/SPKK/IMPK nicht berührt (keine Long-Task-/Import-Stellen; spk12
 2. Mit kleiner Ergebnis-Änderung (wie ZRL1 Offen): Real-FFT / Radix-4, schnellerer Median (z. B. Sortiernetz-Paare) – nur nach Freigabe.
 3. „Alle Ebenen abtasten“ aus: Fortschritt war schon da; das Ebenen-Signal selbst kostet bei 3 min ≈ 6,9 s (Last 8) – eigenes Paket (Block-Render).
 4. Statuszeile „Suche Schläge … NN %“ nur über den Rückruf geprüft (30 Meldungen), nicht per Geste im Spektral-Blatt fotografiert.
-5. Ganze Spektral-Regression (spk1/4/5/6/11/fokus1/spkfix) in diesem Paket nicht gelaufen (Zeit, Last 10+); Ergebnis bitgleich spricht dagegen, dass sie sich ändert.
+5. Übrige Spektral-Regression (spk1/spk4/spk11/spk11b/fokus1/spkfix) in diesem Paket nicht gelaufen (Zeit, Last 10–29); spk5/spk6 grün, Ergebnis bitgleich.
