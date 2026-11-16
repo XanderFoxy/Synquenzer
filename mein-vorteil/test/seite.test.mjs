@@ -1715,7 +1715,8 @@ test('Nebenverdienst: Reiter, Karten mit Bewertung, Filter (Was/Wo/km/allein), f
   await springe(page, 'start');
   await page.locator('#kacheln a[data-sprung="nebenverdienst"]').evaluate(el => scrollTo(0, el.getBoundingClientRect().top + scrollY - 250));
   await page.screenshot({ path: join(SHOTS, 'neben-5-kachel-hoch.png'), fullPage: false });
-  assert.match(nbsp(await page.locator('#kacheln a[data-sprung="nebenverdienst"]').innerText()), /Nebenverdienst[\s\S]*Gitarrenunterricht in Leipzig/);
+  assert.match(nbsp(await page.locator('#kacheln a[data-sprung="nebenverdienst"]').innerText()), /Aufträge[\s\S]*Gitarrenunterricht in Leipzig/);
+  assert.equal(await page.locator('#kacheln a[data-sprung="nebenverdienst"] b').first().evaluate(el => el.scrollWidth <= el.clientWidth + 1), true, 'Kachel-Name passt neben die Zahl');
   assert.deepEqual(fehler, []);
   await ctx.close();
   // quer

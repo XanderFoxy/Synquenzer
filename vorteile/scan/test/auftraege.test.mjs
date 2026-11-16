@@ -264,3 +264,15 @@ test('Fertige Suchen um Döbeln: „Döbeln · hier“ statt „0 km“', async 
   assert.match(kl.zeile, /^Döbeln · hier · nur Gesuche/);
   assert.ok(r.eintraege.every(e => !/ · 0 km/.test(e.zeile)));
 });
+
+test('Passt nicht (echter Lauf 16.11.2026): Kamera-Auftritt, Vor-Ort-Fotos woanders, Social-Media-Betreuung, Hausaufgabe', () => {
+  for (const t of ['UGC Presenter: comfortable in front of the camera', 'Visit Ministry of Health physically and take geotagged photos',
+    'Instagram manager to grow my followers', 'Skilled photographer and videographer to document a two-day retreat', 'Task #2: You are required to generate a random grid'])
+    assert.equal(/./.test(t) && m.nichtWoerter.some(w => String(w).split('|').some(a => t.toLowerCase().includes(a.replace(/^=/, '').toLowerCase()))), true, t);
+  for (const t of ['Edit my YouTube video with sound design', 'Teach me Ableton Live', 'Build a PWA for my bakery'])
+    assert.equal(m.nichtWoerter.some(w => String(w).split('|').some(a => !a.startsWith('=') && t.toLowerCase().includes(a.toLowerCase()))), false, t);
+});
+
+test('Gesuche + fertige Suchen passen in die 40 Einträge je Bereich (scan/main.mjs) – keine Suche fällt weg', () => {
+  assert.ok((m.maxEintraege ?? 30) + (m.suchLinks || []).length <= 40, `${m.maxEintraege} + ${m.suchLinks.length} > 40`);
+});

@@ -2355,7 +2355,7 @@ addEventListener('mein-vorteil-woche', () => zeichne()); // Stufe im Reiter geä
 
 // --- Start: „Heute für dich“ – je Bereich 1–3 beste Treffer als Kachel, Tippen führt in den Bereich ------------------------
 const KACHEL_REIHE = ['deals', 'woche', 'essen', 'preisfehler', 'filme', 'auftritte', 'remix', 'unterricht', 'nebenverdienst', 'konzerte', 'gewinnspiele', 'krypto', 'spartricks', 'mehr'];
-const KACHEL_NAME = { deals: 'Deals', woche: 'Woche', essen: 'Essen', preisfehler: 'Preisfehler', filme: 'Filme', auftritte: 'Auftritte', remix: 'Remix', unterricht: 'Unterricht', nebenverdienst: 'Nebenverdienst', konzerte: 'Konzerte', gewinnspiele: 'Gewinnspiele', krypto: 'Krypto', spartricks: 'Spartricks', mehr: 'Mehr' };
+const KACHEL_NAME = { deals: 'Deals', woche: 'Woche', essen: 'Essen', preisfehler: 'Preisfehler', filme: 'Filme', auftritte: 'Auftritte', remix: 'Remix', unterricht: 'Unterricht', nebenverdienst: 'Aufträge', konzerte: 'Konzerte', gewinnspiele: 'Gewinnspiele', krypto: 'Krypto', spartricks: 'Spartricks', mehr: 'Mehr' }; // Kachel „Aufträge“: „Nebenverdienst“ passt neben der Zahl nicht in die Kachel (390–428 px), Leiste/Bereich heißen weiter „Nebenverdienst“
 const ohnePrefix = s => String(s || '').replace(/^[\[(]?\s*(möglicher\s+)?preisfehler\s*[\])]?\s*[:!–-]?\s*/i, '');
 function fristKurz(e) { const b = bisZeit(zeit(e.bis)); return b == null ? '' : `bis ${tag(b)}`; }
 function kachelInhalt(b, t) { // -> { z: [[Titel, Zeile, gut?]], w: Satz }
