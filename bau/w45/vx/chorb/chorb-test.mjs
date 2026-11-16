@@ -164,6 +164,8 @@ await p.screenshot({path: path.join(OUT, 'export-fertig.png')});
 await tapSel('.pop.va1 .chb-je button[data-va="chbhelp"]'); await p.waitForTimeout(500);
 const hl = await p.evaluate(() => { const q = document.querySelector('.pop.chbh'); return q ? {n: q.querySelectorAll('ol li').length, title: (document.querySelector('.pop.chbh') || {}).textContent.slice(0, 80), over: q.scrollWidth > q.clientWidth + 1} : null; });
 ok('Hilfe (Anleitung „Gesang aus Cubasis holen“): 6 Schritte, nichts quer abgeschnitten', hl && hl.n === 6 && !hl.over, hl);
+const hg = await p.evaluate(() => { const q = document.querySelector('.pop.chbh'), k = q ? [...q.querySelectorAll('button[data-chbh]')].map(e => e.getBoundingClientRect()) : []; return k.length === 2 ? {gap: Math.round((k[1].left - k[0].right) * 10) / 10, sameRow: Math.abs(k[0].top - k[1].top) < 2} : null; });
+ok('Hilfe: [Audio/MIDI importieren] und [OK] nicht aneinander (Abstand ≥ 4 px)', hg && (hg.gap >= 4 || !hg.sameRow), hg);   // Prüfung 4.78, Befund F2
 await p.screenshot({path: path.join(OUT, 'hilfe.png')});
 await p.evaluate(() => closePop());
 // Chor-Blatt: Knopf „Als Einzelstücke speichern“ öffnet das Export-Blatt mit der Zeile
@@ -172,6 +174,15 @@ await p.screenshot({path: path.join(OUT, 'chor-blatt.png')});
 if (cb.n) { await tapSel('button[data-chb="open"]'); await p.waitForTimeout(600); }
 const cb2 = await p.evaluate(() => ({va1: !!document.querySelector('.pop.va1 .chb-row'), g6: !!document.querySelector('button[data-chb="open"]')}));
 ok('Chor-Blatt: Knopf „Als Einzelstücke speichern“ (≥ 44 px) öffnet das Export-Blatt an der Zeile', cb.n === 1 && cb.h >= 44 && cb2.va1, {cb, cb2});
+// über das Chor-Blatt an die Zeile gerollt → Tipp auf die Zeile: Fortschritt und [Abbrechen] müssen im Bild sein (Prüfung 4.78, Befund F1)
+let sj = null;
+if (cb2.va1) {
+  await tapSel('.pop.va1 .chb-row button[data-va="chorblk"]'); await p.waitForTimeout(500);
+  sj = await p.evaluate(() => { const pop = document.querySelector('.pop.va1'), j = pop && pop.querySelector('.va1job'); if (!j) return null; const r = j.getBoundingClientRect(), pr = pop.getBoundingClientRect();
+    return {job: VA1.job && VA1.job.kind, top: Math.round(r.top), bottom: Math.round(r.bottom), popTop: Math.round(pr.top), vh: innerHeight, cancel: !!j.querySelector('button[data-va="cancel"]'), scrollTop: pop.scrollTop}; });
+  await p.evaluate(() => { VV.cancel = true; }); await p.waitForFunction(() => !VA1.job, null, {timeout: 60000}).catch(() => {}); await p.waitForTimeout(200);
+}
+ok('Über das Chor-Blatt: nach Tipp auf die Zeile sind Fortschritt und [Abbrechen] im Bild', sj && sj.job === 'chorblk' && sj.cancel && sj.top >= sj.popTop + 40 && sj.bottom <= sj.vh, sj);
 await p.evaluate(() => closePop());
 // Import-Blatt: Link zur Hilfe
 await p.evaluate(() => imp1Sheet()); await p.waitForTimeout(400);

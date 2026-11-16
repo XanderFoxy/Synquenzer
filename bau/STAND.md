@@ -222,3 +222,10 @@ Weiter mit: 4.54 = rel-4540/k fertig prüfen + INT53D nachziehen + Versionszeile
 - 12:3x Synquenzer 4.77.0 VERÖFFENTLICHT 33943a52 (Quelle synq-snapshots/R-4770.html 6fa9419e, Auslieferung 7a72a1aa), CHANGES-V3 ergänzt, linie + inapp aktualisiert. Mischpult 0.1 online (ed755f18), MV Runde 6 online (f285f75b: robots-Prüfung, EDEKA 9 Angebote, Google News/Overpass/iTunes-RSS/Wikidata/Remotive per robots gesperrt → Entscheidung Xander).
 - 13:5x XANDER: Ausnahme für Programm-Schnittstellen JA („mach das Beste“). → mv-runde-7 wf_06e00a77 (wdxej04a9): Ausnahmeliste genau für Overpass/News-RSS/iTunes/Wikidata/Remotive, gedrosselt, neutraler User-Agent, Quellen-Anzeige.
 - 14:2x C2-App online (97fbd371, /c2/, „Feinschliff“ 0.3.0): Grammatik 1058 Übungen/28 Themen, Wortschatz 1011 + 306 Übungen, Hören 10 Sets 28,8 Min, Lesen 12 Sets, 24 Themen. Privat-Check: kein Name/Land im Repo. Worktree entfernt. Fotos an Xander. Offen: mehr Lese-/Hörtexte, Niveau-Prüfung aller Übungen (~200 unter C1), Umformen-Varianten.
+
+## 16.11. 15:05 UTC
+- Atem 0.2.0 ONLINE (adff8725, Pages 206 success). Link + 6 Fotos + ntfy/Kurzbefehl-Anleitung an Xander.
+- Atem 0.2.1 läuft (wf_5ec5800a, Task w3kndswpe): grauer Arm-Balken in Übungsfigur, Lichtperlen über Gesicht/über Kopf (Meditation), it start_hinweis, Krisenlinie it, Fakten N4–N7, Kurzbefehl-Namen.
+- MV Runde 7 (wf_06e00a77): Testlauf mv7 success 14:43, Prüfung läuft.
+- 15:2x Synquenzer 4.78.0 gemergt: rel-4780/index.html (3f39b6e3) = 4.77.0 + CHORB, 0 Konflikte, topdefs 26/8052/0/0, dupkeys 0, smoke ok. Workflow release-4-78-chorb wf_5d4ed5a8 (wrko7oemx): chorb-test, Regression A/B r4780, KOMM, CHANGES. Push macht Hauptsitzung.
+- 15:3x MV Runde 7 ONLINE (03c15dd5; Radar-Lauf 43892154739 success: Apple-Charts 673, 3,99 € 62, Serien 322; Overpass 502 → Filialen alter Stand). Fotos an Xander. MV8 läuft (wf_01a19533, wcbwkhxkb): Neuversuch 3 h statt voller Takt bei Quellen-Fehler.

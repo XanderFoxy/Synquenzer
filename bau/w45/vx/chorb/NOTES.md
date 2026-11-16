@@ -68,3 +68,13 @@ alle Knöpfe/Guide sagen „deine DAW“ · keine Emojis/Bildzeichen in Block un
 - N10 Pflicht neu ohne grep-Fehler (`pflicht2.log`): Bildzeichen in neuen Zeilen nur „●“/„▾“ (wie in der Basis-Bedienung), keine Emojis.
 - Test `chorb-test.mjs` prüft jetzt auch: Begleittext ohne App-Namen, mit ZIP-Weg und Abtastraten-Satz. Lauf 5: 35/35 OK (`aus/lauf5.out`).
 - Prüfsummen siehe `pflicht2.log` (index.html f8a2de86…, chorb-block.js 727149ac…, chorb-test.mjs 490f2953…). Diff gegen basis +251/−0.
+
+## Nachbesserung 16.11. (Prüfung 4.78.0 auf der Gesamtdatei), nicht veröffentlicht
+Sicherung vorher: `sicherung-4780/` (index f8a2de86, chorb-block.js 727149ac, chorb-test.mjs 490f2953, NOTES, bau.py).
+- F1 (mittel): Weg Chor-Blatt › „Als Einzelstücke speichern“ (oder Guide) rollt das Export-Blatt an die Zeile; nach dem Tipp auf die
+  Zeile lagen Fortschritt und [Abbrechen] oberhalb des Sichtbereichs (hoch −134 px, quer −76 px) – man sah nur ausgegraute Knöpfe.
+  Fix in `chbRun`: beim Start des Auftrags `va1Pop().scrollTop = 0` (Fortschritt steht oben im Blatt).
+- F2 (gering): Hilfe-Blatt [Audio/MIDI importieren][OK] ohne Abstand (0 px) – `.va1tr` ist nur im Export-Blatt gestylt. Fix in
+  `chbCss`: `.chbh .va1tr{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:6px}`.
+- `chorb-test.mjs` +2 Prüfungen (F1 über das Chor-Blatt per Touch, F2 Abstand) → 37 Prüfungen. Alte Fassung: 35/37 (genau F1/F2 rot),
+  neue: 37/37. Neu: index.html ca577837, chorb-block.js a85c700e, chorb-test.mjs cbe5de64. Diff gegen basis +253/−0.

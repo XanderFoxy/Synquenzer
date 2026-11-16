@@ -77336,6 +77336,7 @@ async function chbRun(je) {
   if (!va1HasChor()) { toast('Kein Chor im Song'); return null; }
   const st = stimmeT(), voices = chbVoices(st, je), digits = chbDigits(S.song.bars);
   VA1.job = {kind: 'chorblk', k: 0, n: voices.length, p: 0, name: ''}; VA1.res = null; VA1.pk = -1; clearTimeout(VA1.ttl); va1Paint();
+  { const P = va1Pop(); if (P && P.scrollTop > 0) P.scrollTop = 0; }   // Fortschritt + Abbrechen oben in Sicht (chbOpen hat das Blatt an die Zeile gerollt)
   const keepLast = VV.last, keepMtr = VV.noMtr, T0 = performance.now(); VV.noMtr = true;
   try {
     const files = [], list = [], skipped = [], names = new Set(); let sr = 0, bpm = S.bpm;
@@ -77380,7 +77381,8 @@ function chbCss() {
     '.va1 .chb-je .mbtn[aria-pressed="true"]{box-shadow:inset 0 0 0 2px var(--amber,#f7c948)}',
     '.g6pe .chb-g6{display:block}.g6pe .chb-g6 .mbtn{width:100%;min-height:44px}',
     '.chbh{width:min(440px,calc(100vw - 16px));box-sizing:border-box}.chbh ol{margin:6px 0 10px;padding-left:22px;font:14px/1.45 var(--font-ui);color:var(--text)}',
-    '.chbh li{margin:0 0 8px}.chbh p{margin:4px 0 8px;font:13px/1.4 var(--font-ui);color:var(--text-dim)}.chbh .mbtn{min-height:44px;margin:0}'].join('\n');
+    '.chbh li{margin:0 0 8px}.chbh p{margin:4px 0 8px;font:13px/1.4 var(--font-ui);color:var(--text-dim)}.chbh .mbtn{min-height:44px;margin:0}',
+    '.chbh .va1tr{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:6px}'].join('\n');
   document.head.appendChild(s);
 }
 function chbVa1Html(song, hasC, busy) {
