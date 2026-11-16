@@ -10,7 +10,9 @@ das Import-Blatt offen ist – auch nach „Als Gesang“. → Obergrenze, keine
 Alles im vorhandenen Block `LT1-BEGIN … LT1-END` (Kennung „LT1B“ in den Kommentaren) + 3 neue einzeilige Haken.
 - `LT1_MAXB = 100 MiB` und **`lt1PreWant(c)`** (neu): eine Stelle für alle Bedingungen – Blatt offen, `IMP1.cur === c`, `st === 'fertig'`,
   Audio erlaubt, kein Dehnen (wie bisher) und neu:
-  - `n · 6 Byte ≤ 100 MiB` (n = Take-Länge in Proben) → ≈ 6,1 min bei 48 kHz, 6,6 min bei 44,1 kHz, 3 min bei 96 kHz; darüber alter Weg
+  - `n · 6 Byte ≤ 100 MiB` (n = Take-Länge in Proben) → **≈ 364 s (6,07 min) Take-Länge für jede Datei**: der Import rechnet immer auf
+    48 kHz um (`ggbDecode` = `OfflineAudioContext(1, 1, GGB_SR)`, `GGB_SR = 48000` → `c.sr` immer 48000; korrigiert nach Prüfer-Befund 1,
+    vorher stand hier fälschlich „6,6 min bei 44,1 kHz, 3 min bei 96 kHz“); darüber alter Weg
     (`LT1.big` = Länge des zuletzt abgewiesenen Takes, nur Messung).
   - nicht, wenn im Blatt „Als Gesang importiert“ steht (`c.made`, das ist das im Blatt sichtbare zuletzt gewählte Ziel). Vor dem Tipp ist
     das Ziel im Blatt **nicht** erkennbar (drei Knöpfe, der Tipp legt sofort ab) – darum: nach „Als Gesang“ wird die liegende Vorbereitung
@@ -52,7 +54,7 @@ und im Gesamtlauf t/ab-a.out), Werte unten: Lauf 1 / Lauf 2.
 | b1 Datei über der Grenze, 401 s 48 kHz, Blatt offen nach „fertig“ | 232 / 232 (Vorbereitung liegt: 19,3 Mio × 6 B) | **121 / 121** (keine Vorbereitung, `LT1.big` = 19 344 480) | −111 MB |
 | b2 100 s 48 kHz vorbereitet → „Als Gesang“, Blatt offen | 94 / 94 (Vorbereitung bleibt liegen) | **66 / 66** (sofort frei) | −28 MB |
 | b2 vor dem Tipp (beide vorbereitet) | 67 / 67 | 67 / 67 | 0 |
-| Prüfer mem.mjs (44,1 kHz 3 min): nach Gesang, Blatt offen | 170,2 | **120** | −50 MB |
+| Prüfer mem.mjs (3 min, WAV 44,1 kHz → intern 48 kHz): nach Gesang, Blatt offen | 170,2 | **120** | −50 MB |
 | mem.mjs: nach Gesang, Blatt zu | 120 | 120 | 0 |
 | mem.mjs: 5× öffnen/schließen (offen / zu) | 126,3 / 76 | 126,3 / 76 | gleich, WeakRefs alle frei |
 
@@ -61,9 +63,10 @@ und im Gesamtlauf t/ab-a.out), Werte unten: Lauf 1 / Lauf 2.
 |---|---|---|---|
 | b3 3 min 48 kHz: Blatt in die Leiste 1,5 s, zurück, Szenen | 100 / 109 | **30 / 25** | ja (`LT1.re` 1) |
 | b4 3 min: „1“ +0,137 s verschoben, Spur | 93 / 97 | **29 / 24** | ja (alte sofort frei: `drop` 1, `re` 1) |
-| b5 3 min 44,1k: Tempo +1 und 3/4 (Versatz −1,71 → −1,09 s), Szenen | 120 / 123 | **25 / 24** | ja |
+| b5 3 min (WAV 44,1k → intern 48k): Tempo +1 und 3/4 (Versatz −1,71 → −1,09 s), Szenen | 120 / 123 | **25 / 24** | ja |
 | b6 100 s: 6 Tempo-Tipps im Abstand 80 ms | – | – | 1 Neustart (`re` 1), frei ab dem 1. Tipp (`pre` 0 in allen 6 Messpunkten; basis hielt die alte) |
-| b7 nach dem 1. Ablegen Tempo +1 (Take liegt vor) | – | – | keine neue Vorbereitung (`re` 0), wie gewollt |
+| b7 nach dem 1. Ablegen Tempo +1 | – | – | keine neue Vorbereitung (`re` 0) – greift über die **Dehnen-Regel** (q≠1), belegt die Take-Regel nicht (Prüfer-Befund 3) |
+| b8 (neu, Nachbesserung) nach dem 1. Ablegen nur „1“ +0,137 s, q = 1 | – | – | keine neue Vorbereitung (`re` 0, `pre` 0); `lt1PreWant` false, mit `c.take = null` true → **nur die Take-Regel** weist ab |
 
 ### Gewollte Rückschritte (Speicher statt Tempo)
 | Fall | vorher (basis) | nachher (index) |
@@ -72,7 +75,7 @@ und im Gesamtlauf t/ab-a.out), Werte unten: Lauf 1 / Lauf 2.
 | b2/a10 nach „Als Gesang“ noch Szenen ablegen | 20 / 28 ms | 58 / 56 ms (alter Weg) |
 | a14 Ablegen 300 ms nach dem Zurückholen (Neustart wartet 400 ms) | alter Weg | alter Weg (gleich) |
 
-### Normalweg unverändert (lt1-imp-ab.mjs s10 = 44,1 kHz 3 min, STOP=1, abwechselnd; Last 1,5–3,3)
+### Normalweg unverändert (lt1-imp-ab.mjs s10 = 3 min, WAV 44,1 kHz → intern 48 kHz, STOP=1, abwechselnd; Last 1,5–3,3)
 926×428 index 27/34/30 · basis 44/32/52 (basis 1 Long Task 54); 428×926 index 27/26/32 · basis 23/23/26 → Median index 28,5 / basis 29 ms
 (n 6), gleich=true, Vorbereitung in allen index-Läufen genommen; längste Vorbereitungs-Scheibe 6,3–9,9 ms (basis 7–8).
 Erster Lauf parallel zu mem.mjs (Last ~6): index 47/32, basis 31/30, index 1× Long Task 55 – Lastspitze, Wiederholung allein s. o.
@@ -91,12 +94,15 @@ topdefs „Skripte 26, Namen 7929, doppelt 0, Syntaxfehler 0“ · dupkeys „0 
 „MS 2000“ 1× · „^  live: true,“ 1× · VERSION '4.75.0' unverändert · `git diff --no-index --stat` 35 insertions(+), 5 deletions(-).
 
 ## Offen
-- Datei über der Grenze (> 100 MiB Vorbereitung, ≈ > 6 min bei 48 kHz): Ablegen wieder ~200 ms am Stück (Long Task, wie vor LT1).
+- Datei über der Grenze (> 100 MiB Vorbereitung = Take-Länge > ≈ 364 s, für jede Datei, da intern immer 48 kHz): Ablegen wieder ~200 ms am Stück (Long Task, wie vor LT1).
   Besser ginge es nur ohne zusätzliche Kopie, z. B. Take-Stücke/AudioBuffer erst im Tipp, aber in Scheiben über mehrere Aufgaben
   (synchrones place() mit einem ↶ aufbrechen) – eigener Punkt.
 - Nach „Als Gesang“ ist ein weiteres Ablegen derselben Datei als Szenen/Spur wieder der alte Weg (~56 ms bei 100 s, ~130 ms bei 3 min).
   Das Ziel ist vor dem Tipp im Blatt nicht erkennbar (Tipp = Ablegen); eine Vorbereitung „nur bis zum ersten Gesang-Tipp“ ist der
   Kompromiss.
+  Das gilt auch **nach ↶ des Gesang-Ablegens**: `c.made` bleibt „Als Gesang importiert“, darum lehnt `lt1PreWant` weiter ab (Prüfer c3:
+  Szenen danach index 79 / basis 12 ms bei 100 s, Ergebnis gleich). `c.made` beim ↶ zurückzusetzen wäre sichtbar (es steht in der
+  Statuszeile des Blatts, imp1Paint „… · Als Gesang importiert“) → nicht ohne Xanders OK, eigener Punkt.
 - Neustart wartet 400 ms Ruhe + Vorbereitung (3 min ≈ 0,1–0,3 s): wer innerhalb ~0,5 s nach Zurückholen/Ändern tippt, bekommt den alten
   Weg (Ergebnis gleich). Für das Zurückholen aus der Leiste könnte die Ruhezeit 0 sein (kein Tipp-Gewitter) – nicht gemessen, nicht gebaut.
 - Grenze ist fest (100 MiB). Freien Speicher des Geräts kann die Seite auf dem iPhone nicht abfragen (`performance.memory` /

@@ -9,15 +9,24 @@ die Namen sehen, sich auf einen Teil konzentrieren und ihn mit seinen MIDI-Noten
    (`meta.grid.teile`, im Dokument gespeichert). Kein zweiter Lauf, kein Warten.
 2. Über den Taktzahlen erscheint ein 18 px hoher Streifen: je Teil ein farbiger Kasten (Farben wie die Teil-Chips im
    Szenen-Blatt), Name in 10 px, gekürzt mit „…“, unter 18 px Breite ohne Text. Der Teil an der Marke ist voll deckend und hat
-   unten eine helle Linie. Hochkant steht im Kopf „Testlied › Strophe 1“, quer zeigt es der Streifen.
+   unten eine helle Linie. Hochkant steht im Kopf „Testlied › Strophe 1“, quer zeigt es der Streifen. Bei langem
+   Dateinamen wird nur der Name mit „…“ gekürzt, „› Refrain 1“ bleibt immer sichtbar (Nachbesserung).
 3. Tipp auf einen Teil im Streifen = Fokus: Loop = Teil (ein ↶ „Loop“), waagrecht auf den Teil gezoomt (3 % Rand),
-   Senkrechte bleibt, Marke auf den Teilanfang. Statuszeile „Refrain 1 · Takt 13–20 · im Loop“.
-   Zweiter Tipp auf denselben Teil = ganzes Lied (nur waagrecht), der Loop bleibt.
+   Senkrechte bleibt, Marke auf den Teilanfang. Statuszeile „Refrain 1 · Takt 13–20 · im Loop · „In die Matrix ▾“ in der
+   Ebenen-Liste“ (Nachbesserung: nennt den Weg in die Matrix).
+   Zweiter Tipp auf denselben Teil = ganzes Lied (nur waagrecht), der Loop bleibt; dritter Tipp wieder auf den Teil usw.
+   (Nachbesserung: „im Fokus“ gilt nur, wenn die Sicht ungefähr der Teil ist – sichtbare Dauer ≤ 1,3 × Teil).
    Ziehen im Streifen rollt wie bisher, Halten setzt wie bisher einen 1-Takt-Loop. Tipp unten (Taktzahlen) = Position wie bisher.
 4. Loop-Zeile in der Ebenen-Liste nennt den Teil: „Refrain 1 · Takt 13–20“ (auch als aria-label).
 5. In die Matrix ▾ › erster Eintrag „Als Szene · alle Ebenen …“ (darunter klein „Teil „Refrain 1“ · Audio/MIDI je Ebene“)
    öffnet das vorhandene Szenen-Blatt (SPK11) nur für den Loop: Kopf „1 Teil · 120 BPM · 4/4 · nur Loop Takt 13–20“,
    „Refrain 1 · Takt 13–20 → Szene 1“. Anlegen = je Ebene Audio und/oder MIDI in einer Szene, ein ↶ in der Matrix.
+   Auftakt: Tipp auf das Intro mit Vorlauf-Takt → Loop-Zeile/Status „Intro · Takt 0–4“, Blatt-Kopf „nur Loop Takt 0–4“, Zeile
+   „Intro · Auftakt + Takt 1–4“; die Szene enthält den Vorlauf-Takt (Nachbesserung).
+   Stille Teile: kein Clip → keine Szene; die Teile mit Clips rücken ohne Lücke nach vorn (Szene 1, 2, …), Zähler und
+   „Angelegt:“ nennen nur Szenen mit Clips, dazu „Intro: still – keine Szene“ (Nachbesserung).
+   Mit Auswahl: MIDI-Noten je Ebene nur in der Auswahl – jetzt auch für Ellipse, Lasso, Zauberstab, Umkehren und − / ∩
+   (Nachbesserung F, siehe unten).
 6. Fokus „Nur Rest“ (FOKUS1) bleibt unverändert, der Streifen bleibt farbig sichtbar – man sieht, in welchem Teil man ist.
 
 ## Haken (alle mit typeof abgesichert, Marke /* TEIL1 */)
@@ -36,6 +45,13 @@ die Namen sehen, sich auf einen Teil konzentrieren und ihn mit seinen MIDI-Noten
 - spk11Seg: Gruppe nur ganz vorne/hinten mit Läufen kürzer als der Median zählt nicht als wiederholt (→ Intro/Outro);
   Pegel je 4-Takt-Block aus jeder 32. Probe (vorher jede 4.) – damit bleibt die Erkennung beim Laden unter 5 ms.
 - imp1Run: Import nimmt dieselben Teile (spk11Seg) wie die Spektral-Seite.
+- Nachbesserung: Kern-op `selHit` {doc, sel, sv, pts:[[t, f]…]} (spk3DspMake, nach teileSet): dieselbe Auswahlfunktion wie der
+  Audio-Teil (selFn → spk12SelFn, Zwischenspeicher d.selC wie op block), Treffer bei w ≥ 0,5. spk11Notes fragt über
+  teil1InSel; einfache Formen (Zeit/Frequenz/Rechteck/Pinsel/Harmonische) bleiben bei spk11InSel (gleiches Ergebnis wie
+  bisher), nur Auswahlen mit SPK12-Formen gehen über selHit. Geholt einmal je (Dokument, Auswahl-Version) beim Öffnen des
+  Blatts (Wrapper um spk11Open, Blatt zählt danach neu) und vor dem Anlegen (Haken vor „4) ein ↶“, für eben gefundene Noten).
+- Nachbesserung spk11Go: Haken teil1Pack nach spk11Targets (stille Teile raus, Szenen ohne Lücke); Namens-Zeile setzt
+  out.scenes/out.parts auf Szenen mit Clips; „Angelegt:“ nimmt res.parts.
 - Block TEIL1-BEGIN/END nach SPK11-END: Wrapper um spk11Teile (gespeicherte Teile sofort; sonst ein Lauf je Dokument,
   Ergebnis per teileSet speichern), Streifen, Tipp, Hintergrund-Erkennung, API `window.__teil1`.
 - Nicht angefasst: mtx3/mtx3b (clip1), fokus1-Interna (nur fokus1Mode im Test benutzt).

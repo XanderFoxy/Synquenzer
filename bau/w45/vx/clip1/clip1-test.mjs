@@ -117,7 +117,7 @@ for (const [W, H] of VIEWS) {
   await tap(await at(() => [...UI.pop.el.querySelectorAll('button')].find(x => /Nur diese Schritte/.test(x.textContent))));
   for (const lab of ['1', '4', '5', '8']) await tap(await at(l => [...UI.pop.el.querySelectorAll('.mtx3b-st .mbtn')].find(x => x.textContent.trim() === l), lab));
   const D8a = await p.evaluate(() => { const P = UI.pop.el, bs = [...P.querySelectorAll('[data-m3b="clip"]')]; return {sub: [...P.querySelectorAll('.clip1-sec .mtx3-sub')].map(x => x.textContent), n: bs.length, minW: Math.min(...bs.map(x => x.getBoundingClientRect().width)), minH: Math.min(...bs.map(x => x.getBoundingClientRect().height)), jeZeile: bs.length ? bs.filter(x => Math.round(x.getBoundingClientRect().top) === Math.round(bs[0].getBoundingClientRect().top)).length : 0, on: [...P.querySelectorAll('.mtx3b-st .mbtn.on')].map(x => x.textContent.trim())}; });
-  ok(T('C8 Drum-Blatt: Abschnitt „Als neuer Clip · DRUMS“, Knöpfe = freie Szenen, ≥ 44 px'), D8a.sub.some(x => x.toUpperCase() === 'ALS NEUER CLIP · DRUMS') && D8a.n === d0.free.length && D8a.minW >= 44 && D8a.minH >= 44 && D8a.jeZeile <= (W < H ? 4 : 8) && D8a.on.join() === '2,3,6,7', D8a);
+  ok(T('C8 Drum-Blatt: Abschnitt „Als neuer Clip · DRUMS“, Knöpfe = freie Szenen, ≥ 44 px'), D8a.sub.some(x => x === 'Als neuer Clip · DRUMS · aus Szene 1') && D8a.n === d0.free.length && D8a.minW >= 44 && D8a.minH >= 44 && D8a.jeZeile <= (W < H ? 4 : 8) && D8a.on.join() === '2,3,6,7', D8a);
   await at(() => UI.pop.el.querySelector('[data-m3b="clip"]'));
   await shot('c6-drum-blatt-als-neuer-clip');
   const x8 = d0.free[0];
@@ -134,6 +134,81 @@ for (const [W, H] of VIEWS) {
   const D8u = await p.evaluate(x => { undo(); return !S.tracks[DRUM_T].clips[x]; }, x8);
   ok(T('C8 ↶ nimmt den neuen DRUMS-Clip weg'), D8u);
   await p.evaluate(() => { try { closeEditor(); } catch (e) {} }); await sleep(300);
+  // ---------- Nachbesserung nach der Prüfung ----------
+  // P1 FILL-Schritt im Projekt: die TAKT-Anzeige heißt „FILL“ und ist eine Taste – der Toast liegt nie darauf (quer: Meldung ohne Knopf)
+  await p.evaluate(() => { try { hideToast(); } catch (e) {} setSongView(false); SYNQUENZER.mtx3.copySet(false); const D = S.tracks[DRUM_T].clips[0]; D.notes[0].cd = 'fill'; clipChanged(DRUM_T, 0);
+    for (let x = 1; x < NS(); x++) if (S.tracks[0].clips[x]) { S.tracks[0].clips[x] = null; clipChanged(0, x); }
+    const c = S.tracks[0].clips[0]; c.len = 4; c.notes = []; for (let k = 0; k < 16; k++) c.notes.push({t: k, d: .5, n: 60 + (k % 5), v: .8}); clipChanged(0, 0); selectTrack(0); });
+  await p.waitForFunction(() => jam1Armed(), null, {timeout: 5000}).catch(() => {});
+  await p.evaluate(() => { openRoll(0, 0); const c = S.tracks[0].clips[0]; ED.roll.selectIdx(c.notes.map((n, k) => k).filter(k => c.notes[k].t >= 8)); });
+  await sleep(400);
+  await tap(await at(() => ED.roll.el.acts.querySelector('.mtx3rb')));
+  await tap(await at(() => UI.pop.el.querySelector('[data-m3="clip"][data-x="2"]')));
+  await sleep(200);
+  const P1 = await p.evaluate(() => { const t = document.getElementById('toast'), r = t.getBoundingClientRect(), k = EL.takt.getBoundingClientRect();
+    const ov = (a, b) => Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left)) * Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+    const e = document.elementFromPoint(k.left + k.width / 2, k.top + k.height / 2), tools = [...EL.rollSheet.querySelectorAll('button')].filter(x => x.getClientRects().length && !t.contains(x)).filter(x => ov(x.getBoundingClientRect(), r) > 0);
+    return {armed: jam1Armed(), lbl: EL.taktLbl.textContent, dock: SYNQUENZER.clip1.dock(), show: t.classList.contains('show'), msg: t.querySelector('.tmsg') ? t.querySelector('.tmsg').textContent.replace(/\s+/g, ' ').trim() : null,
+      k: [...t.querySelectorAll('button')].map(x => x.textContent.trim()), aufFill: Math.round(ov(r, k)), mitteFill: e ? (t.contains(e) ? 'TOAST' : e.closest('#takt') ? 'takt' : e.id || e.className) : null,
+      durchtippbar: getComputedStyle(t).pointerEvents === 'none', ueberWerkzeugMitKnopf: t.querySelector('button') ? tools.length : 0, neu: S.tracks[0].clips[2] ? S.tracks[0].clips[2].notes.length : 0}; });
+  log(T('P1.fill'), P1);
+  ok(T('P1 FILL-Schritt: TAKT-Anzeige ist die FILL-Taste'), P1.armed && P1.lbl === 'FILL', P1.lbl);
+  ok(T('P1 neuer Clip trotzdem da (8 Noten), Meldung sichtbar'), P1.neu === 8 && P1.show && /8 Noten → neuer Clip · SYNTH 1 · Szene 3 · 2 Takte/.test(P1.msg || ''), P1.msg);
+  ok(T('P1 Toast deckt die FILL-Taste nicht (0 px², Mitte trifft FILL)'), P1.aufFill === 0 && P1.mitteFill === 'takt', {px: P1.aufFill, mitte: P1.mitteFill});
+  ok(T(W < H ? 'P1 hochkant: [Öffnen] auf dem Titel' : 'P1 quer: kein Platz frei → Meldung ohne Knopf, durchtippbar'), W < H ? P1.dock === 'titel' && P1.k.includes('Öffnen') && P1.ueberWerkzeugMitKnopf === 0 : P1.dock === null && P1.k.length === 0 && P1.durchtippbar, {dock: P1.dock, k: P1.k, durch: P1.durchtippbar});
+  await shot('c8-fill-toast');
+  await p.evaluate(() => { undo(); try { hideToast(); closeRoll(); } catch (e) {} const D = S.tracks[DRUM_T].clips[0]; delete D.notes[0].cd; clipChanged(DRUM_T, 0); });
+  await p.waitForFunction(() => !jam1Armed(), null, {timeout: 5000}).catch(() => {});
+  const P1b = await p.evaluate(() => ({armed: jam1Armed(), dock: (openRoll(0, 0), SYNQUENZER.clip1.dock()), zu: (closeRoll(), true)}));
+  ok(T('P1 ohne FILL: quer wieder TAKT-Anzeige, hochkant Titel'), !P1b.armed && P1b.dock === (W < H ? 'titel' : 'takt'), P1b);
+  // P2 Quelle mit erweitertem Inhalt (KL1 clip.lw): der neue Clip ist nur die Auswahl (Synth und Drums)
+  const P2 = await p.evaluate(() => { const notes = []; for (let k = 0; k < 16; k++) notes.push({t: k, d: .5, n: 60 + (k % 5), v: .8}); const lwN = []; for (let k = 16; k < 32; k++) lwN.push({t: k, d: .5, n: 72, v: .8});
+    const keep = S.tracks[0].clips[0]; S.tracks[0].clips[0] = normClip({len: 4, key: {root: 0, scale: 'ionian'}, notes, lw: {a: 0, len: 8, notes: lwN}}, 'synth', S.key); clipChanged(0, 0);
+    const c = S.tracks[0].clips[0], r = {quelleLw: !!c.lw, quelleGanz: c.lw ? kl1Full(c).length : 0}, fr = SYNQUENZER.clip1.free(0)[0];
+    const x = SYNQUENZER.clip1.newClip(0, 0, [8, 9, 10, 11, 12, 13, 14, 15], fr, true), nc = S.tracks[0].clips[x];
+    r.neu = {len: nc.len, n: nc.notes.length, lw: !!nc.lw, hoch72: nc.notes.filter(n => n.n === 72).length, beats: kl1Beats(0, x), ts: nc.notes.map(n => n.t).join()};
+    undo(); S.tracks[0].clips[0] = keep; clipChanged(0, 0);
+    const D = S.tracks[DRUM_T], gm = DRUM_BY_ID.hatC.gm, ds = SYNQUENZER.clip1.free(DRUM_T), s = ds[0], xd = ds[1];
+    D.clips[s] = normClip({len: 1, notes: [0, 1, 2, 3].map(k => ({t: k, d: .1, n: gm, v: .8})), lw: {a: 0, len: 2, notes: [4, 5, 6, 7].map(k => ({t: k, d: .1, n: gm, v: .8}))}}, 'drum', S.key); clipChanged(DRUM_T, s);
+    r.drumQuelleLw = !!D.clips[s].lw; const y = SYNQUENZER.clip1.drumNew(s, [0, 1], xd); r.drum = y >= 0 ? {n: D.clips[y].notes.length, lw: !!D.clips[y].lw} : null;
+    if (y >= 0) undo(); D.clips[s] = null; clipChanged(DRUM_T, s); return r; });
+  log(T('P2.lw'), P2);
+  ok(T('P2 Synth-Quelle mit lw (32 Noten ganz): neuer Clip ohne lw, nur die 8 gewählten Noten, 8 Schläge'), P2.quelleLw && P2.quelleGanz === 32 && !P2.neu.lw && P2.neu.n === 8 && P2.neu.hoch72 === 0 && P2.neu.len === 2 && P2.neu.beats === 8, P2.neu);
+  ok(T('P2 Drum-Quelle mit lw: neuer Clip ohne lw, nur die 2 gewählten Schläge'), P2.drum && !P2.drum.lw && P2.drum.n === 2, {quelleLw: P2.drumQuelleLw, neu: P2.drum});
+  // P5 Lock-Reihen (clip.ln) rücken um b0 mit (rotiert), die Quelle bleibt
+  const P5 = await p.evaluate(() => { const path = Object.keys(LKT).find(k => !k.startsWith('drum.') && lkWhy(k, false) === ''), fr = SYNQUENZER.clip1.free(0), s = fr[0], x = fr[1];
+    S.tracks[0].clips[s] = normClip({len: 4, key: {root: 0, scale: 'ionian'}, notes: [0, 8, 9, 10, 11].map(t => ({t, d: .5, n: 60, v: .8})), ln: [{p: path, len: 16, g: '1/4', st: [{i: 0, v: .1}, {i: 8, v: .5}, {i: 9, v: .6}]}]}, 'synth', S.key); clipChanged(0, s);
+    const c = S.tracks[0].clips[s], q0 = c.ln ? JSON.stringify(c.ln) : null, ix = c.notes.map((n, k) => k).filter(k => c.notes[k].t >= 8);
+    SYNQUENZER.clip1.newClip(0, s, ix, x, true); const nc = S.tracks[0].clips[x];
+    const r = {path, b0: SYNQUENZER.clip1.info().last.b0, neu: nc.ln ? nc.ln[0].st.map(q => q.i + ':' + q.v).join(' ') : null, len: nc.ln ? nc.ln[0].len : null, g: nc.ln ? nc.ln[0].g : null, quelleGleich: JSON.stringify(c.ln) === q0};
+    undo(); S.tracks[0].clips[s] = null; clipChanged(0, s); return r; });
+  log(T('P5.ln'), P5);
+  ok(T('P5 Lock-Reihe 1/4 ab Takt 3 (b0 8): Schritte 8→0, 9→1, 0→8, Länge/Raster gleich, Quelle gleich'), !!P5.path && P5.b0 === 8 && P5.neu === '0:0.5 1:0.6 8:0.1' && P5.len === 16 && P5.g === '1/4' && P5.quelleGleich, P5);
+  // P3 Drums „Ganze Töne“: CLAP spielt nur in Szene 2 → im Blatt von Szene 1 die richtige Meldung, Abschnitt nennt die Szene
+  await p.evaluate(() => { const D = S.tracks[DRUM_T], gm = DRUM_BY_ID.clap.gm; D.clips[0].notes = D.clips[0].notes.filter(n => mtx3bPad(n) !== 'clap'); clipChanged(DRUM_T, 0);
+    if (!D.clips[1]) D.clips[1] = normClip({len: 1, notes: [{t: 1, d: .1, n: gm, v: .8}]}, 'drum', S.key); else D.clips[1].notes.push({t: 1, d: .1, n: gm, v: .8}); clipChanged(DRUM_T, 1);
+    ED.dVoice = DRUM_VOICES.findIndex(x => x.id === 'clap'); R.selS = 0; openRoll(DRUM_T, 0); });
+  await sleep(700);
+  const p3n = await p.evaluate(() => ({n: S.tracks[DRUM_T].clips.filter(Boolean).length, u: UNDO.length}));
+  await tap(await at(() => EL.drumSheet.querySelector('.mtx3bdb')));
+  await tap(await at(() => UI.pop.el.querySelector('[data-m3b="all"]')));
+  const P3a = await p.evaluate(() => { const P = UI.pop.el; return {on: [...P.querySelectorAll('.mtx3-v .mbtn.on')].map(x => x.dataset.v), modus: (P.querySelector('.mtx3b-md .mbtn.on') || {}).dataset ? P.querySelector('.mtx3b-md .mbtn.on').dataset.m3b : null, sub: [...P.querySelectorAll('.clip1-sec .mtx3-sub')].map(x => x.textContent)}; });
+  await tap(await at(() => UI.pop.el.querySelector('[data-m3b="clip"]')));
+  const P3 = await p.evaluate(() => { const t = document.getElementById('toast'); return {toast: t && t.classList.contains('show') ? t.textContent.replace(/\s+/g, ' ').trim() : null, n: S.tracks[DRUM_T].clips.filter(Boolean).length, u: UNDO.length}; });
+  log(T('P3.drum'), {P3a, P3});
+  ok(T('P3 Abschnitt heißt „Als neuer Clip · DRUMS · aus Szene 1“'), P3a.sub.includes('Als neuer Clip · DRUMS · aus Szene 1'), P3a.sub);
+  ok(T('P3 CLAP gewählt, Ganze Töne → Meldung „CLAP spielt in Szene 1 nicht“, kein Clip, kein ↶'), P3a.on.includes('clap') && P3a.modus === 'all' && /CLAP spielt in Szene 1 nicht/i.test(P3.toast || '') && P3.n === p3n.n && P3.u === p3n.u, {on: P3a.on, toast: P3.toast});
+  if (W === 428) await shot('c9-drum-meldung');
+  await p.evaluate(() => { try { closePop(); hideToast(); closeEditor(); } catch (e) {} }); await sleep(300);
+  // P4 „Wo finde ich …?“: „neuer Clip“ / „Clip aus Auswahl“ führen zum Eintrag, „Zeig es mir“ zeigt [Auslagern ▾]
+  const P4 = await p.evaluate(() => { const c = S.tracks[0].clips[0]; c.len = 4; c.notes = []; for (let k = 0; k < 8; k++) c.notes.push({t: k, d: .5, n: 60, v: .8}); clipChanged(0, 0);
+    return {a: SYNQUENZER.ui1.search('neuer Clip').map(e => e.id).slice(0, 3), b: SYNQUENZER.ui1.search('Clip aus Auswahl').map(e => e.id).slice(0, 3), c: SYNQUENZER.ui1.search('auslagern').map(e => e.id).slice(0, 4), e: SYNQUENZER.ui1.entries().find(e => e.id === 'clip1new'), j: SYNQUENZER.ui1.jump('clip1new')}; });
+  await sleep(1200);
+  const P4j = await p.evaluate(() => ({j: SYNQUENZER.ui1.lastJump(), ed: R.editor}));
+  log(T('P4.guide'), {P4, P4j});
+  ok(T('P4 Suche „neuer Clip“ und „Clip aus Auswahl“: erster Treffer „Auswahl als neuer Clip“'), P4.a[0] === 'clip1new' && P4.b[0] === 'clip1new' && P4.c.includes('clip1new') && P4.c.includes('mtx3out'), {a: P4.a, b: P4.b, c: P4.c});
+  ok(T('P4 „Zeig es mir“ öffnet den Noten-Editor und zeigt [Auslagern ▾]'), P4j.j && P4j.j.ok && P4j.j.target && P4j.ed === 'roll' && /Auslagern/.test(P4j.j.txt || ''), P4j);
+  await p.evaluate(() => { try { closeRoll(); } catch (e) {} }); await sleep(200);
   ok(T('C9 Konsole 0 Fehler'), errs.length === 0, errs.slice(0, 5));
   await ctx.close();
 }

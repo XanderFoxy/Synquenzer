@@ -96996,8 +96996,19 @@ function clip1DrumTap(b, s, c, sel, mode, pick) {
   closePop(); clip1DrumNew(s, ns, +b.dataset.x);
   return true;
 }
+/* ---------- „Wo finde ich …?“ (UI1): ein Eintrag; „Zeig es mir“ geht denselben Weg wie „Noten auslagern“ (Noten-Editor, Knopf Auslagern ▾) ---------- */
+(function clip1Guide() {
+  try {
+    const L = ui1Entries(); if (L.some(x => x.id === 'clip1new')) return;
+    L.push({id: 'clip1new', n: 'Auswahl als neuer Clip', w: 'Noten-Editor › Noten wählen › Auslagern ▾ › Als neuer Clip › Szene n (Drums: SCHRITTE › Auslagern ▾)',
+      d: 'Gewählte Noten werden ein eigener Clip in einer freien Szene derselben Spur – ab dem Takt der ersten Note, auf ganze Takte, Verschieben oder Kopieren, ein ↶.',
+      s: 'neuer clip auswahl clip aus auswahl szene ausschnitt abschnitt teil loop herauslösen kopieren verschieben schritte freie szene',
+      go: () => mtx3GuideOut(), q: () => mtx3GuideBtn()});
+  } catch (e) {}
+})();
 Object.assign(SYNQUENZER, {clip1: {                /* CLIP1: Test-API */
   info: () => ({n: CLIP1.n, last: CLIP1.last ? mtx3Jc(CLIP1.last) : null}), free: t => clip1Free(t),
+  dock: () => { const d = clip1Dock(); return d ? (d === EL.takt ? 'takt' : 'titel') : null; },
   span: (t, s, ix) => { const c = S.tracks[t] && S.tracks[t].clips[s]; return c ? clip1Span(c, (ix || []).map(k => c.notes[k]).filter(Boolean)) : null; },
   newClip: (t, s, ix, x, copy) => { const c = S.tracks[t] && S.tracks[t].clips[s]; return c ? mtx3NewClip(t, s, (ix || []).map(k => c.notes[k]).filter(Boolean), x, !!copy, true) : -1; },
   drumNew: (s, ix, x) => { const c = S.tracks[DRUM_T].clips[s]; return c ? clip1DrumNew(s, (ix || []).map(k => c.notes[k]).filter(Boolean), x, true) : -1; },
