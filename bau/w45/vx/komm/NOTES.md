@@ -45,8 +45,8 @@ Kein generischer Zugriff (kein querySelectorAll('script'), document.scripts, out
 Anteil je Block (gzip, Block zurückgesetzt): worklet 52,7 K · mk 19,9 K · g9 9,5 K · bm 5,9 K · form 5,3 K · arp 5,0 K · ndp 4,0 K ·
 md 2,4 K · sr 1,5 K. Ohne sq-worklet-src (falls man den Block lieber unberührt lässt): ≈ −48 KB gzip.
 Start „bereit“ (test/lader.mjs, abwechselnd, Last 20–24): alt 825 / 2 080 ms, KOMM 859 / 890 ms – unter dieser Last nicht
-unterscheidbar; die Blöcke sind text/plain und werden beim Start nicht geparst, der Gewinn ist Übertragung (−100 KB gzip) und
-kürzere Auswertung beim ersten Öffnen.
+unterscheidbar; die Blöcke sind text/plain und werden beim Start nicht geparst, der Gewinn ist nur die Übertragung (−100 KB gzip);
+eine kürzere Auswertung beim ersten Öffnen ist NICHT gemessen (Prüfer: 8 Runden, Mittel 3158 / 3222 ms, kein Unterschied).
 
 ## Tests (Zahlen)
 - Zwei Läufe bytegleich (md5 dd5abfd217e662147431b227a011ee1e); `--ohne-komm` = alte Auslieferung bytegleich.
@@ -93,5 +93,50 @@ kürzere Auswertung beim ersten Öffnen.
 - Oder dauerhaft übernehmen: `cp vx/komm/ausliefern.mjs vx/perf2/ausliefern.mjs` – perf2/freigabe.sh ruft `$H/ausliefern.mjs` auf und
   braucht sonst nichts Neues (perf2/werkzeug liegt daneben). Vorher Sicherung `perf2/ausliefern.mjs.perf2` anlegen.
 - Zurück zum alten Verhalten ohne Dateitausch: `node ausliefern.mjs --ohne-komm <quelle> <ziel> [bericht]`.
-- Nach dem ersten Release mit KOMM einmal `node vx/komm/test/golden.mjs <quelle> <auslieferung>` (→ „ERGEBNIS bitgleich“) und
-  `node vx/komm/test/lader.mjs <auslieferung>` (alle Werte true/ready, Konsole []) in die Release-Prüfung aufnehmen.
+- Nach dem ersten Release mit KOMM einmal `node vx/komm/test/golden.mjs <quelle> <auslieferung>` (→ „ERGEBNIS bitgleich“).
+  `test/lader.mjs <auslieferung>` läuft seit der Prüfung IN freigabe.sh mit (Schritt „Probe Blöcke“, muss „ALLES OK“ melden).
+- Dauerhaft übernehmen heißt jetzt: ausliefern.mjs UND freigabe.sh UND test/lader.mjs nach perf2 kopieren (freigabe.sh ruft
+  `$H/test/lader.mjs`) – oder vx/komm/freigabe.sh direkt benutzen.
+- Schalter: `--ohne-komm` (alt, PERF2), `--worklets-unberuehrt` (KOMM ohne die beiden Worklet-Module, OFFEN A8 wörtlich).
+
+## Prüfung (16.11., Nachbesserung nach Prüfer-Befunden)
+Sicherung vorher: `sicherung-0830/` (ausliefern.mjs, freigabe.sh, NOTES.md, LOG.md, test/). Die Auslieferung selbst ändert sich NICHT
+(md5 dd5abfd217e662147431b227a011ee1e wie vorher) – nachgebessert sind Wächter, Probe und Tests. Außerhalb des KOMM-Blocks nur
+einzeilige Haken mit „// KOMM“ (geprüft: Datei ohne Block und Haken-Zeilen = Sicherung). Die Befund-Liste kam ab Nr. 4 abgeschnitten
+an; Nr. 1–3 nachgeprüft, Rest aus den Prüfer-Dateien (pruef/golden2-QA.out, golden3-AQ.out, p3.out) selbst nachgeprüft (→ 4).
+
+| # | Befund | nachgeprüft | behoben |
+|---|---|---|---|
+| 1 (mittel) | Wächter merkt neue Text-Suche an BESTEHENDER Zugriffs-Stelle nicht | **echt**: alte Fassung (Sicherung) auf Prüfer-Variante v1 → „OK“, Auslieferung kaputt (lader: mkwEval=null) | KOMM-P statisch im Werkzeug (Vorschlag b) + lader.mjs als Pflicht-Schritt in freigabe.sh (Vorschlag a) |
+| 2 (klein) | Aussage „alle Worker aus dem Hauptskript“ falsch; g9-Worker ungeprüft | **echt** (Aussage): g9ErkMake/g9AsrWorkerMain liegen in sq-g9-src; kein Fehler im Ergebnis | NOTES berichtigt; lader.mjs startet g9-Vorstufe (= Haupt-Faden), ASR- und KI1-Modul-Worker; KOMM-P bewacht die toString-Stellen (fnText 1/2) |
+| 3 (klein) | Abweichung von A8 betrifft auch sq-md-src | **echt** (Notiz) | Offen 2 nennt beide; Schalter `--worklets-unberuehrt` lässt beide bytegleich |
+| 4 (selbst) | golden.mjs wackelt unter Last (Prüfer: einmal Quelle≠Auslieferung, einmal Quelle≠Quelle) | **echt**: stille mkRender-Renders in jeder Fassung (p3) | stille Versuche bis 3× neu, Zahl als INFO; „kürzere Auswertung“ in NOTES als nicht gemessen berichtigt |
+
+**KOMM-P (ausliefern.mjs, im KOMM-Block):** Zugriffs-Funktionen = Funktionen mit Block-Namen als Zeichenkette + per Name/Text
+aufgerufene (blockLoad, SynthHost.load) + Aufrufer einer Text-zurückgebenden Funktion im selben Umfeld (MDX src → load/render).
+Auf 4.76.1: 32 Zugriffs-Funktionen, 6 Such-Vergleiche (mkwEval 2 Anker, vv3Fmx LEVEL_LUT/V0d, lkWkCheck PVA/PVM) alle gleich,
+toString g9ErkMake 1×, g9AsrWorkerMain 2× = erwartet. Kein Fehlalarm. Laufzeit des Werkzeugs +≈1 s (15–21 s bei Last 5–8).
+Bewusst breit: alle Methoden namens `load` zählen als Ziel von `SynthHost.load(…, src)` (mehr Vergleiche, kein Fehlalarm).
+
+**Tests (Zahlen)**
+- test/gp-p/lauf.sh (bau.mjs erzeugt 5 Varianten, je eine neue Suche/Zugriff): **8/8** – v1 mkwEval sucht Kommentar-Text
+  (Prüfer-Gegenprobe), v2 vv3Fmx über const, v3 MDX.load über `src()` + const im Umfeld (md-Kommentar), v4 neuer
+  `g9ErkMake.toString()`, v5 Regex in lkWkCheck → je ABBRUCH mit Fundstelle; Basis OK und bytegleich (dd5abfd2…);
+  `--ohne-komm` = PERF2 bytegleich (bd2ec747…); `--worklets-unberuehrt` OK, beide Worklet-Blöcke bytegleich zur Quelle.
+- test/gp-p/lader-neg.out: Prüfer-Variante v1 mit ALTEM Werkzeug → „OK“; lader.mjs darauf → „FEHLER … mkwEval=null“ (Code 1).
+- test/lader.out (alt/neu/alt/neu, Last 11): alle 4 Läufe gleiche Werte (Funktions-Ergebnisse, nicht nur „da“): 7 Blöcke true,
+  lkWkCheck true, vv3Fmx 32 ALGS (Hash gleich), mkwEval 55 Einträge (Hash gleich), g9-Worker = Haupt-Faden, ASR/KI1 antworten,
+  Klang-Worklet ready, md/BM/Stimme-Worklet true; bereit alt 837/953 ms, neu 851/756 ms (kein Unterschied).
+  Hinweis: der alte Stimme-Worklet-„FEHLER“ war die Probe (file://); lader läuft jetzt über http://localhost (page.route).
+  404 von Nebendateien (ohne Server) zählen nicht als Konsolenfehler, die Pfade stehen in der Ausgabe.
+- test/golden2.out: **ERGEBNIS bitgleich** (12 Werksklänge bitgleich, Kontrolle Quelle==Quelle OK, stille Versuche 0/0/0, Konsole []).
+- freigabe.sh (Kopie, jetzt mit Schritt „Probe Blöcke“) ganzer Lauf: **GRÜN** in 43 s (Last 4–7); frei2/index.html md5 dd5abfd2….
+- Pflicht auf frei2/index.html: topdefs „Skripte 26, Namen 7988, doppelt 0, Syntaxfehler 0“; dupkeys „0 doppelte Schlüssel“;
+  smoke „title SYNQUENZER errors []“; MS 2000 1×; '^  live: true,' 1×; VERSION '4.76.1'.
+
+**Zahlen zur Worklet-Entscheidung (gzip -6):** PERF2 2 364 074 · KOMM 2 263 221 (−100 853) · KOMM `--worklets-unberuehrt`
+2 317 677 (−46 397; roh 6 801 482, md5 b31d5a80…). Empfehlung: KOMM wie gebaut (mit Worklets) – Zugriffe jetzt statisch UND zur
+Laufzeit abgesichert; wer A8 wörtlich will, nimmt den Schalter.
+
+**Offen nach Prüfung:** siehe „Offen“ 2, 4 (nicht erfasste Zugriffs-Arten), 6 (stille mkRender, App), dazu: Übernahme nach perf2
+braucht drei Dateien (ausliefern.mjs, freigabe.sh, test/lader.mjs); Safari/iPhone weiter ungeprüft (Offen 3).

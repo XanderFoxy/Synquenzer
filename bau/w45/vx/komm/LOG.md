@@ -9,3 +9,4 @@
 - 08:31 PRÜFUNG Start (Last 3.72 5.07 6.85); Sicherung sicherung-0830/ (ausliefern.mjs, freigabe.sh, NOTES.md, LOG.md, test/).
 - 08:37 KOMM-P (Befund 1+3) in ausliefern.mjs; Gegenproben test/gp-p/ gestartet (Last 14.52 8.02 7.28).
 - 08:41 Gegenproben 8/8 (v1–v5 ABBRUCH, Basis bytegleich dd5abfd2, --ohne-komm = PERF2, --worklets-unberuehrt); lader.mjs A/B alt/neu gleich; freigabe.sh (mit lader-Schritt) gestartet → frei2/.
+- 08:43 golden bitgleich (0 stille Versuche); freigabe.sh-Kopie GRÜN 43 s inkl. lader „ALLES OK“; Pflicht auf frei2/index.html grün (dd5abfd2…). Große Zwischendateien gelöscht. NOTES „Prüfung“. Ende.
