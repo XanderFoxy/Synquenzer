@@ -129,9 +129,11 @@ berühren. teil1-test lief vollständig auf der Endfassung.
 - T1-Ziel < 5 ms: kalt im Leerlauf 3–3,5 ms, unter Last bis 10 ms (Test markiert 2 von 3 Größen rot). Ersetzt den zweiten
   Erkennungslauf von 977 ms.
 
-- F (MIDI-Noten mit Auswahlform: Ellipse/Lasso/Zauberstab/Umkehren/op sub-and, Kern-op selHit) nicht gebaut – keine Zeit.
-  spk11InSel kennt diese Formen weiter nicht (gemessen in TEIL0: Ellipse/Lasso/Zauberstab = falsch draußen, Rechteck−Rechteck
-  und Umkehren = falsch drin). Vorschlag bleibt wie im Auftrag (selHit mit selFn + spk12SelFn, w ≥ 0,5).
+- F ist in der Nachbesserung gebaut (siehe „Prüfung“). Der Zauberstab läuft über denselben Weg (spk12SelFn → spk12Ras), ist
+  im Nachtest aber nicht eigens geprüft (braucht ein echtes Zauberstab-Raster aus der Bedienung).
+- Quer zeigt die Loop-Zeile in der Ebenen-Spalte nur „Lo…“ (schon in der Basis so, betrifft jetzt auch „Refrain 1 · Takt 13–20“).
+  Nicht gebaut, weil sichtbar – Vorschlag für den Funk: quer in der Loop-Zeile nur den Teil-Namen zeigen (ohne „Takt …“), den
+  vollen Text weiter im aria-label; alternativ den ▶-Knopf quer schmaler. Hochkant ist der Text voll lesbar.
 - „Neue Auswahl innerhalb eines Clips → neuer Clip“ (Xanders letzter Satz) ist nicht Teil von TEIL1.
 - Chrome-Test: Ein Tipp ganz oben links im Streifen (y < 10 px) unter dem Spektrum/Noten-Regler (SPK5, rechts in der
   Werkzeugleiste) wird von Chromes Touch-Anpassung dem Regler zugeschlagen. Der Test tippt bei 13 px. Auf dem iPhone gibt es
@@ -144,4 +146,43 @@ berühren. teil1-test lief vollständig auf der Endfassung.
 
 ## Endfassung
 
-index.html md5 7fcf054365695865e754a2c3dbb65b06 (Basis rel-4750 b8009096f96446a5d06f1c0a393b6312), VERSION bleibt 4.75.0.
+index.html md5 7d47c214645e0734f09868c496f9e330 (erste Fassung 7fcf0543, liegt als index-v1.html daneben; Basis rel-4750
+b8009096f96446a5d06f1c0a393b6312), VERSION bleibt 4.75.0. Datei 9 413 777 → 9 434 140 (+20,4 KB) Byte.
+
+## Prüfung (Nachbesserung nach dem Prüfer, 16.11. 00:19–00:34)
+
+Befunde des Prüfers (7: 2 mittel, 5 klein) – Stand:
+
+| # | Befund | Stand | Beleg (nb/nach-test.mjs, Touch über CDP) |
+|---|---|---|---|
+| 1 | 3. Tipp auf denselben Teil zoomt nicht mehr | behoben: „im Fokus“ nur, wenn sichtbare Dauer ≤ 1,3 × Teil und Teil im Bild | 4 Tipps Refrain 1 = 23,52–40,48 / −0,05–81,05 / 23,52–40,48 / −0,05–81,05 s; gespeicherter Loop = Teil + ganze Sicht → 1. Tipp zoomt hinein (3 Größen) |
+| 2 | F: MIDI-Noten mit Auswahlform | gebaut: Kern-op selHit + teil1InSel (siehe Haken) | Note 30,5 s / 109,6 Hz (Bass, 162 Noten): Ellipse neu drin (alt draußen), 3 Noten in der Form; Lasso drin; Rechteck−Rechteck draußen, 0 Noten (alt drin); Rechteck + Umkehren draußen (alt drin); woanders + Umkehren drin; einfaches Rechteck gleich wie bisher; Szenen-Blatt mit Ellipse zählt Bass 3 von 162 (3 Größen) |
+| 3 | stiller Teil: Meldungen nennen eine nicht angelegte Szene | behoben: stille Teile vor der Szenen-Wahl heraus (teil1Pack), Zähler/„Angelegt:“ nur Szenen mit Clips | Loop Takt 1–12, Intro auf allen Ebenen still: Strophe 1 in Szene 1 (4 Clips, keine Lücke), Hinweis „1 Szene · 2 Audio-Clips · 2 MIDI-Clips (70 Noten) · Intro: still – keine Szene“, Status „Angelegt: 1 Strophe 1 – …“, ↶ = alles weg (3 Größen) |
+| 4 | Auftakt: Vorlauf-Takt fehlt in der Szene, Taktangaben uneinheitlich | behoben: Teil-Weg gibt die Teilgrenzen (A < 0) an spk11Parts; Kopf „nur Loop Takt 0–4“ wie Loop-Zeile/Status | OFF = 1,4 s: Intro A −1 B 4, Loop-Zeile/Status „Intro · Takt 0–4“, Blatt-Kopf „nur Loop Takt 0–4“, Plan „Intro −1–4“ (= wie „Ansicht ▾ › Szenen anlegen“), Zeile „Intro · Auftakt + Takt 1–4 → Szene 1“ (3 Größen) |
+| 5 | hochkant: Teil-Name im Kopf abgeschnitten | behoben: Dateiname und „› Teil“ als zwei Elemente, nur der Name bekommt „…“ | „Sommerhit Demo Version 3 final mix.wav“, 428×926: „› Refrain 1“ 51 px breit, rechte Kante = Span-Kante (280 = 280); quer bleibt der Span ausgeblendet (geprüft, siehe unten) |
+| 6 | quer: Loop-Zeile „Lo…“ | offen, sichtbar → Vorschlag für den Funk (siehe „Offen“) | – |
+| 7 | Bedienweg Teil → Matrix ohne Hinweis | behoben: Status nach dem Fokus-Tipp „… · im Loop · „In die Matrix ▾“ in der Ebenen-Liste“ (Text wie spk2LpEnd) | 3 Größen |
+
+Selbst gefunden und behoben: Die neue Kopf-Regel (display:flex) schlug quer das vorhandene display:none – der Dateiname
+erschien quer wieder im Kopf. Quer jetzt ausdrücklich ausgeblendet; Nachtest quer prüft es (926×428, 926×370 grün).
+
+Zahlen selHit (Worker, nicht im Haupt-Thread): erster Aufruf mit Ellipse 35 ms (baut die Ellipsen-Form), danach 1–19 ms für
+162 Noten; im Haupt-Thread nur das Sammeln der Noten (< 1 ms). Keine neue lange Aufgabe.
+
+Endstand (Endfassung 7d47c214, Last 7–11):
+
+| Lauf | Ergebnis |
+|---|---|
+| nb/nach-test.mjs 428×926 | 11 OK / 0 |
+| nb/nach-test.mjs 926×428 + 926×370 | 22 OK / 0 |
+| nb/nach-test.mjs Auftakt (OFF = 1,4) 3 Größen | 6 OK / 0 |
+| teil1-test.mjs (3 Größen) | 60 OK / 1 – T1-Zeitziel 6,6 ms > 5 ms unter Last 10 (bekannt, siehe Offen); Hauptfläche 446/464, 292/310, 234/252 px (−18); Lineal 0,027–0,032 ms; teil1Tap ≤ 2,1 ms; 0 Konsolenfehler |
+| reg/spk11 spk11-test | 41 OK / 0 |
+| reg/spk11b spk11b-test | 17 OK / 0 |
+| spk2-loop-test (Prüfer-Kopie, nb/ab) | ALLE OK (18) |
+| Rauchtest | errors [] |
+| topdefs / dupkeys | doppelt 0, Syntaxfehler 0 / 0 doppelte Schlüssel |
+| grep 'MS 2000' / '^  live: true,' / VERSION | 1 / 1 / '4.75.0' |
+
+Fotos neu: fotos/01–08 (teil1-test, Endfassung), 10-kopf-langer-name, 11-fokus-dritter-tipp, 12-auftakt-blatt, 13-still-intro
+(je Größe), rauchtest.png.

@@ -108986,7 +108986,7 @@ function fokus1KMake(Z2, X) {
     const mA = Math.max(0, Math.floor(((x0 + cL) * hop - half) / hb + 1) - 1), mB = Math.ceil(((x0 + cH) * hop + half) / hb + 1) + 1, P = new Int32Array(mB - mA + 2);
     let tY = performance.now(), tk = '', sig = '', S = null, fp0 = null;
     if (one == null) {   /* FOK2-P: Rest-Bild des Stücks hängt nur an den Masken-Streifen seiner Rahmen/Blöcke (+ Original-Stück) → gleicher Fingerabdruck = gleiches Ergebnis */
-      S = rsSync(d); fp0 = S.fp; const BL = X.BLK || 16384, ra = Math.max(0, x0 * hop - N / 2 - hb), rz = (x0 + W) * hop + N / 2 + hb;
+      S = await rsSync(d); fp0 = S.fp; if (!ok()) return false; const BL = X.BLK || 16384, ra = Math.max(0, x0 * hop - N / 2 - hb), rz = (x0 + W) * hop + N / 2 + hb;
       const s0 = Math.max(0, Math.min(mA >> 7, Math.floor((Math.floor(ra / BL) * BL / hb - 1) / 128))), s1 = Math.max(mB >> 7, Math.floor(((Math.floor(rz / BL) + 1) * BL / hb + Nb / hb) / 128));
       for (let s = s0; s <= s1; s++) sig += (fp0.get(s) || '-') + '|';
       tk = S.base + ':' + N + ':' + hop + ':' + ci + ':' + W; const h = S.tr.get(tk);
@@ -109126,49 +109126,61 @@ function fokus1KMake(Z2, X) {
   ops.fokusKey = (d, m) => { if (!d) throw new Error('Analyse fehlt'); const o = optOf(m), N = NS.includes(m.N) ? m.N : 4096, NT = found(d, o); return {key: sigOf(d, o, N, NT), nAus: NT.length, mode: o.mode, aus: o.aus}; };
   ops.fokusStop = d => { if (d) d.fkTok = (d.fkTok || 0) + 1; return true; };
   /* „Noten finden“ auf dem Rest: Rest-Signal (Mono) blockweise, ein Eintrag je Ebenen-Stand, nach 90 s ohne Gebrauch frei */
-  const RS = {key: '', base: '', mid: null, done: null, fp: null, tr: new Map(), hold: 0, t: 0};
+  const RS = {key: '', base: '', mid: null, done: null, fp: null, tr: new Map(), hold: 0, pend: null, t: 0};
   /* FOK2-P: Fingerabdruck je Masken-Streifen (128 Basis-Rahmen) über alle Ebenen (Inhalt, Reihenfolge, Kopie-Kennung). Der Mix 'rest' hängt
      nur an den Masken (gainFn) → ein Rest-Block, dessen Streifen gleich geblieben sind, ist byte-gleich und bleibt beim neuen Ebenen-Stand. */
-  function fpOf(d) {
-    const F = new Map(), MS = d.masks; if (!MS) return F;
+  async function fpOf(d) {   // in Scheiben (≈ 12 ms, dann tick) – volle Masken (3 min, 4 Ebenen) brauchen am Stück 55–210 ms
+    const F = new Map(), MS = d.masks; if (!MS) return F; let tY = performance.now();
     for (const l of d.meta.layers) {
       const M = MS.get(l.id); if (!M) continue; const ids = String(l.id) + (l.k6 === 1 ? '#k6' : ''); let li = 0x811c9dc5;
       for (let i = 0; i < ids.length; i++) li = Math.imul(li ^ ids.charCodeAt(i), 16777619);
-      for (const [s, st] of M) {
+      for (const [s, st] of [...M]) {
         if (!st || !st.h) continue; let a = li, b = 0, any = 0;
         for (let tr = 0; tr < st.h.length; tr++) {
           const h = st.h[tr]; if (!h) continue; any = 1; a = Math.imul(a ^ (tr * 1024 + h), 16777619); b = (b + Math.imul(tr + 1, h + 7)) | 0;
           const t = h === 255 ? null : st.t[tr]; if (!t) continue;
-          if (!(t.byteOffset & 3) && !(t.length & 3)) { const u = new Int32Array(t.buffer, t.byteOffset, t.length >> 2); for (let i = 0; i < u.length; i++) { const v = u[i]; a = Math.imul(a ^ v, 16777619); b = (Math.imul(b ^ v, 1540483477) + i) | 0; } }
-          else for (let i = 0; i < t.length; i++) { const v = t[i]; a = Math.imul(a ^ v, 16777619); b = (Math.imul(b ^ v, 1540483477) + i) | 0; }
+          if (!(t.byteOffset & 3) && !(t.length & 3)) { const u = new Int32Array(t.buffer, t.byteOffset, t.length >> 2); for (let i = 0; i < u.length; i++) { const v = u[i]; a = Math.imul(a ^ v, 16777619); b = (b + (v ^ i)) | 0; } }
+          else for (let i = 0; i < t.length; i++) { const v = t[i]; a = Math.imul(a ^ v, 16777619); b = (b + (v ^ i)) | 0; }
         }
         if (any) F.set(s, (F.get(s) || '') + (a >>> 0).toString(36) + '.' + (b >>> 0).toString(36) + ';');
+        if (performance.now() - tY > 12) { await X.tick(); tY = performance.now(); }
       }
     }
     return F;
   }
-  function rsSync(d) {   /* FOK2-P: Zwischenspeicher Rest-Audio auf den Ebenen-Stand bringen */
-    const n = d.meta.n, BL = X.BLK || 16384, base = d.meta.id + '#' + inst(d) + '#' + n, key = base + '|' + d.meta.layers.map(l => l.id + ':' + l.ver).join(',');
-    if (RS.key !== key || !RS.mid) {
-      const fp = fpOf(d);
-      if (RS.mid && RS.done && RS.fp && RS.base === base && RS.mid.length === n) {   // gleiches Dokument, neuer Ebenen-Stand: nur Blöcke mit geänderten Streifen verwerfen
-        const hb = d.meta.base.hop, ov = d.meta.base.N / hb; let cp = RS.hold > 0;   // „Noten finden“ rechnet gerade auf dem alten Feld → Kopie statt Überschreiben
-        for (let k = 0; k < RS.done.length; k++) {
-          if (!RS.done[k]) continue;
-          const s0 = Math.max(0, Math.floor((k * BL / hb - 1) / 128)), s1 = Math.floor(((k + 1) * BL / hb + ov) / 128);
-          for (let s = s0; s <= s1; s++) if ((fp.get(s) || '') !== (RS.fp.get(s) || '')) {
-            if (cp) { RS.mid = RS.mid.slice(); RS.done = RS.done.slice(); cp = false; }
-            RS.done[k] = 0; RS.mid.fill(0, k * BL, Math.min(n, (k + 1) * BL)); break;
+  const rsKey = d => d.meta.id + '#' + inst(d) + '#' + d.meta.n + '|' + d.meta.layers.map(l => l.id + ':' + l.ver).join(',');
+  async function rsSync(d) {   /* FOK2-P: Zwischenspeicher Rest-Audio auf den Ebenen-Stand bringen (Fingerabdruck in Scheiben, ein Lauf je Stand) */
+    const n = d.meta.n, BL = X.BLK || 16384, base = d.meta.id + '#' + inst(d) + '#' + n;
+    for (let tries = 0; ; tries++) {
+      const key = rsKey(d); if (RS.key === key && RS.mid) break;
+      if (RS.pend && RS.pend.key === key && tries < 50) { await RS.pend.p; continue; }
+      const pend = {key}; RS.pend = pend;
+      pend.p = (async () => {
+        const fp = await fpOf(d);
+        if (RS.pend !== pend) return; RS.pend = null;
+        if (rsKey(d) !== key) return;   // während des Rechnens geändert → nächste Runde
+        if (RS.mid && RS.done && RS.fp && RS.base === base && RS.mid.length === n) {   // gleiches Dokument, neuer Ebenen-Stand: nur Blöcke mit geänderten Streifen verwerfen
+          const hb = d.meta.base.hop, ov = d.meta.base.N / hb; let cp = RS.hold > 0;   // „Noten finden“ rechnet gerade auf dem alten Feld → Kopie statt Überschreiben
+          for (let k = 0; k < RS.done.length; k++) {
+            if (!RS.done[k]) continue;
+            const s0 = Math.max(0, Math.floor((k * BL / hb - 1) / 128)), s1 = Math.floor(((k + 1) * BL / hb + ov) / 128);
+            for (let s = s0; s <= s1; s++) if ((fp.get(s) || '') !== (RS.fp.get(s) || '')) {
+              if (cp) { RS.mid = RS.mid.slice(); RS.done = RS.done.slice(); cp = false; }
+              RS.done[k] = 0; RS.mid.fill(0, k * BL, Math.min(n, (k + 1) * BL)); break;
+            }
           }
-        }
-      } else { RS.mid = new Float32Array(n); RS.done = new Uint8Array(Math.ceil(n / BL)); RS.tr = new Map(); }
-      RS.key = key; RS.base = base; RS.fp = fp;
+        } else { RS.mid = new Float32Array(n); RS.done = new Uint8Array(Math.ceil(n / BL)); RS.tr = new Map(); }
+        RS.key = key; RS.base = base; RS.fp = fp;
+      })();
+      await pend.p;
+      if (tries > 60) break;
     }
+    if (!RS.mid || RS.base !== base) { RS.key = rsKey(d); RS.base = base; RS.mid = new Float32Array(n); RS.done = new Uint8Array(Math.ceil(n / BL)); RS.fp = new Map(); RS.tr = new Map(); }   // Notweg (ständig geändert): ganz neu
     clearTimeout(RS.t); RS.t = setTimeout(() => { RS.key = ''; RS.mid = RS.done = RS.fp = null; RS.tr = new Map(); }, 90000);
     return RS;
   }
   async function restMid(d, m, a0, b0, emit) {
-    const n = d.meta.n, BL = X.BLK || 16384; rsSync(d);   /* FOK2-P */
+    const n = d.meta.n, BL = X.BLK || 16384; await rsSync(d);   /* FOK2-P */
     const mid = RS.mid, done = RS.done, mx = X.mixOf(d, 'rest'), k0 = Math.max(0, Math.floor(a0 / BL)), k1 = Math.min(done.length - 1, Math.floor(Math.max(0, b0 - 1) / BL));
     let todo = 0, nd = 0, tY = performance.now(), tP = tY; for (let k = k0; k <= k1; k++) if (!done[k]) todo++;
     /* FOK2: Mix 'rest' ist linear und je Kanal gleich (gleiche Gewinne je Bin, keine SPK6-Effekte: s6.block gibt null) → Rest der Mitte =

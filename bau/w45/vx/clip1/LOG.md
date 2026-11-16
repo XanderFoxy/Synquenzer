@@ -7,3 +7,4 @@
 - 00:10 Endfassung 76557351…: clip1 73/73, mtx3 51/51, mtx3b 87/87 (unter Last 86/87 Zeitfrage), mtx4 115/118 (Basis 114/118, nur Zeitmessungen), clip0 Umweg ok, Rauchtest errors [], Pflicht ok. Ende. Last: 5.46 7.17 6.52. Repo und Projektordner nicht angefasst (eine versehentlich dort angelegte LOG.md um 23:51 sofort entfernt, git status leer).
 - 00:24 Nachbesserung Start (Prüfer-Befunde: 2 mittel, 3 klein), Last: 2.32 3.74 4.92
 - 00:30 5 Befunde eingebaut (FILL-Platz, lw weg, ln rotiert, Drum-Meldung + „aus Szene n“, Guide-Eintrag), Test um P1–P5 ergänzt, Last: 9.15 5.88 5.25
+- 00:33 Endfassung f192a053…: clip1-test 109/109, mtx3 51/51; mtx3b + Rauchtest laufen, Last: 9.33 7.94 6.22

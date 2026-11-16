@@ -41,7 +41,7 @@ Diff gegen basis: `git diff --no-index --stat` 35 insertions(+), 5 deletions(-) 
 ## Verfahren
 `t/ab.mjs` = Kopie von `vx/lt1/pruef2/ab.mjs` (Prüfer-Randfälle a1–a14, index vs basis je frischer Kontext, Vergleich Fall-Ergebnis,
 Take-Daten + AudioBuffer-Hash + PCM-Stücke aus IndexedDB (`tkPcm`), Daten-/Raster-Signatur, ↶/↷, a9 Speichern/Neu laden) + neue Fälle
-b1–b7 (Schlüssel `q*` = Messung, nicht verglichen; Speicher = CDP `Runtime.getHeapUsage().backingStorageSize` nach 3× gc()).
+b1–b8 (b8 aus der Prüfung; Schlüssel `q*` = Messung, nicht verglichen; Speicher = CDP `Runtime.getHeapUsage().backingStorageSize` nach 3× gc()).
 basis = 4.75.0 (LT1 Teil 2 ohne LT1B) = „vorher“.
 
 ## Messung (23:20–23:36 UTC, Last 0,4–7,8 auf 4 Kerne; Rohdaten t/*.out, t/*.json)
@@ -89,7 +89,7 @@ Erster Lauf parallel zu mem.mjs (Last ~6): index 47/32, basis 31/30, index 1× L
   basis 1×53 / 1×62; imp1Place index 25–28 ms, basis 23–59 ms.
 - Regression: imp1-test (Kopie t/imp, Fotos/Audio in t/imp) **ALLE OK (145 s)**; imp2-node realvox/imp2rs **ALLE OK**.
 
-## Pflichtprüfungen (Endfassung md5 b5dd6b364cf60f3f4077c8e8bd6714ac, basis b8009096f96446a5d06f1c0a393b6312)
+## Pflichtprüfungen (Fassung vor der Prüfung md5 b5dd6b364cf60f3f4077c8e8bd6714ac, basis b8009096f96446a5d06f1c0a393b6312; Endfassung s. „Prüfung“)
 topdefs „Skripte 26, Namen 7929, doppelt 0, Syntaxfehler 0“ · dupkeys „0 doppelte Schlüssel“ · smoke errors [] (smoke.png) ·
 „MS 2000“ 1× · „^  live: true,“ 1× · VERSION '4.75.0' unverändert · `git diff --no-index --stat` 35 insertions(+), 5 deletions(-).
 
@@ -109,3 +109,33 @@ topdefs „Skripte 26, Namen 7929, doppelt 0, Syntaxfehler 0“ · dupkeys „0 
   `navigator.deviceMemory` gibt es in Safari nicht) – Messung auf dem iPhone mit sehr langer Datei wäre der nächste Beleg.
 - `c.made === 'Als Gesang importiert'` hängt am Text in imp1Place (labels.vox); wird der Text geändert, greift die Gesang-Regel nicht mehr
   (dann wird nur wieder vorbereitet – Ergebnis bleibt gleich).
+
+## Prüfung (Nachbesserung nach unabhängigem Prüfer, 00:14–00:33 UTC, Last 1,1–11,1 – fremde Agenten)
+Prüfer: LT1B nicht widerlegt (34 Fälle gleich wie basis, Freigabe empfohlen), 3 kleine Befunde, kein hoher/mittlerer.
+Sicherungen: index.vor-lt1b2.html (= b5dd6b36…), t/ab.mjs.vor-lt1b2, NOTES.md.vor-lt1b2.
+
+| # | Befund (klein) | Behandlung |
+|---|---|---|
+| 1 | Grenze falsch beschrieben: Import rechnet immer auf 48 kHz (`ggbDecode` → `OfflineAudioContext(1, 1, GGB_SR)`, `GGB_SR = 48000`, `c.sr = buf.sampleRate`), Grenze also immer ≈ 364 s | **behoben** (nur Text): Blockkommentar LT1B in index.html (1 Zeile im Block, kein Code) und NOTES („Änderung“, Tabellen b5/mem.mjs/s10, „Offen“). imp1OpenTake setzt `c.sr = m.sr` des Takes, hat aber immer `c.take` → dort nie Vorbereitung; die Aussage „jede Datei“ gilt damit für alle Wege mit Vorbereitung. |
+| 2 | Nach „Als Gesang“, auch nach ↶ davon, nimmt Szenen/Spur derselben Datei den alten Weg (Prüfer c3: 79 / 12 ms) | **bewusst gelassen, dokumentiert** („Offen“). `c.made` ist die sichtbare Statuszeile des Blatts (imp1Paint: „… · Als Gesang importiert“); sie beim ↶ zurückzusetzen ändert, was Xander sieht → nur mit seinem OK, eigener Punkt. Ergebnis gleich (gleich=true). |
+| 3 | b7 belegt die Regel „Take liegt vor“ nicht (Dehnen-Regel greift vorher) | **behoben** im Test: b7-Text korrigiert (belegt die Dehnen-Regel), **neuer Fall b8** in t/ab.mjs (nach Szenen nur „1“ +0,137 s, q = 1): index `lt1PreWant` false, mit `c.take = null` **true**, `re` 0, `pre` 0, `take` true → nur die Take-Regel weist ab; Spur danach nimmt den Take wieder (pl2 ok, 19 / 13 ms); gleich=true. |
+
+Code-Änderung gegenüber der geprüften Fassung: nur die eine Kommentarzeile (git diff index.vor-lt1b2.html index.html: 1 Zeile). Diff gegen basis
+weiterhin 35 insertions(+), 5 deletions(-). Test-Werkzeug t/ab.mjs: b8, ENV WAITUR (Wartezeit nach ↶/↷, Standard 600 ms wie bisher) und
+ENV URMS (Messung: Zeit bis zur letzten Raster-Änderung nach ↷) – ohne ENV läuft alles wie vorher.
+
+### Endstand-Messung (Endfassung md5 **ec02d14a12374cdd755e01ce9061d00d**)
+- t/ab.mjs alle 29 Fälle (a1–a14, b1–b8), parallel zu imp1-test (Last bis ~5): **28/29 gleich=true**, keine Konsolenfehler (29× errs [] / []).
+  **b1 gleich=false nur in `redo.grid`** (DOM-Signatur des Rasters 600 ms nach ↷): index zeigte noch den ↶-Stand (dc958b4b/767), basis schon
+  a53567ed/859; Daten-Signatur, Take-Daten, AudioBuffer-/PCM-Hash, ↶ gleich. Nachgemessen (t/ab-b1-w*.json, t/ab-b1-ur*.json, t/ab-b1-ur-alt.out):
+  b1 allein 3× (WAITUR 600/600/2500) und 7× mit URMS → **10/10 gleich=true**, ↷-Raster in beiden immer a53567ed/859 (eingeschwungener Stand).
+  Zeit bis zur letzten Raster-Änderung nach ↷: abwechselnde Reihenfolge 4× index 42/57/59/47, basis 48/46/49/73 ms (Last 8,9–11,1);
+  davor (index immer zuerst) index 55/489/172, basis 94/106/39 ms (Last 2,6→10,4). Gesamt-Median index 57 / basis 49 ms.
+  undo()/redo() rufen kein imp1Paint (nur Render-Schleife) → LT1B-Code liegt nicht auf diesem Weg; Bewertung: Lastspitze beim Neuzeichnen
+  des 401-s-Imports (37 Stücke), kein Unterschied im Ergebnis.
+- Messwerte im Gesamtlauf (index / basis): b3 Leiste 31 / 134 ms (re 1), b4 „1“ 39 / 97 ms (re 1), b5 Tempo 29 / 102 ms (re 1),
+  b1 Speicher 121 / 232 MB (Ablegen 181 / 37 ms, gewollt), b2 nach Gesang 84 / 107 MB (Szenen danach 65 / 18 ms, gewollt), b8 re 0.
+- Einzellauf b7, b8, b1 (t/ab-b7b8.out): 3/3 gleich=true.
+- Regression: imp1-test **ALLE OK (127 s)** (t/imp1b.out); imp2-node realvox/imp2rs **ALLE OK** (t/imp2b.out).
+- Pflicht (pflicht2.out, smoke2.out): topdefs „Skripte 26, Namen 7929, doppelt 0, Syntaxfehler 0“ · dupkeys „0 doppelte Schlüssel“ ·
+  smoke errors [] (smoke2.png) · „MS 2000“ 1× · „^  live: true,“ 1× · VERSION '4.75.0'.

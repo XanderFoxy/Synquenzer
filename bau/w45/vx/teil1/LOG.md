@@ -18,3 +18,5 @@
 00:29 Nachtest 428 11/0, Auftakt 4/0; gestartet: Nachtest quer, teil1-test, spk11, spk11b. Last 2.32 2.82 4.28
 00:30 Befund aus dem Nachtest: Kopf-Span quer wieder sichtbar (display:flex schlug display:none) → quer ausgeblendet; Läufe neu gestartet (Nachtest quer, teil1-test, spk11). Last 9.51 5.89 5.26
 00:31 Nachtest quer 22/0 (Endfassung 7d47c214); spk11b gestartet. Last 10.31 6.96 5.68
+00:33 teil1-test 60/1 (T1 6,6 ms unter Last), spk11 41/0; Nachtest 428 + Auftakt 3 Größen und spk2-loop auf der Endfassung gestartet. Last 9.86 7.88 6.14
+00:34 Ende Nachbesserung: Nachtest 11/0 + 22/0 + Auftakt 6/0, teil1-test 60/1 (T1 Zeitziel unter Last), spk11 41/0, spk11b 17/0, spk2-loop 18/18, Rauchtest ok, Pflicht ok, md5 7d47c214. Last 6.49 7.63 6.26
