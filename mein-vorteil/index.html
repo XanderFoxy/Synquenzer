@@ -2286,7 +2286,7 @@ function kachelInhalt(b, t) { // -> { z: [[Titel, Zeile, gut?]], w: Satz }
       const f = f0?.fuer399; // nicht „angebot“ eines alten Stands: der war noch ohne Horror-Filter (Prüfer-Befund MV8 9)
       for (const x of Array.isArray(f) ? f : []) if (x?.titel && !(zahl(x.preis) > 3.994)) dazu(String(x.titel), zahl(x.preis) > 0 ? `${euro(x.preis)} · Apple TV` : 'Apple TV');
     }
-    return z.length ? { z, w: '' } : { z: [['Wunschliste & Angebote', 'Apple TV, mit deinen Listen abgeglichen']], w: 'tippen zum Öffnen' };
+    return z.length ? { z, w: '' } : { z: [['Filme für 3,99 €', 'Apple TV, mit deinen Listen abgeglichen']], w: 'tippen zum Öffnen' };
   }
   if (ASSISTENT.includes(b)) {
     const frisch = b === 'unterricht' ? [...t.gesuche, ...t[b]] : t[b], fund = t[b + 'Fund'];

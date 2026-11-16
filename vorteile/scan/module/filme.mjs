@@ -1538,6 +1538,11 @@ export default async function filme(ctx) {
   const qs = { ok: true, anzahl: 0, fehler: [], abfragen: 0, offen: 0, raus: 0, gefunden: 0 };
   status.qualitaet = qs;
   const listenIds = new Set(posten.filter(p => !p.serie).map(p => zf.ids[p.key]?.id).filter(Boolean));
+  // Apple-Filme, denen ein mydealz-Tipp zugeordnet wurde (zf.tippIds, 14 Tage): bekommen im nächsten Lauf Bekanntheit, Studio und
+  // Besetzung wie Chart-Titel (der Abgleich kommt erst nach diesen Schritten – echter Lauf 43826385997: „Dr. Seuss' Der Grinch“)
+  zf.tippIds ||= {};
+  for (const [k, v] of Object.entries(zf.tippIds)) if (!v?.tag || tageZwischen(v.tag, tag) > 14) delete zf.tippIds[k];
+  const tippIds = new Set(Object.keys(zf.tippIds));
   // gefundene Einträge ohne Wikidata-Jahr (vor dem 15.11.2026 gemerkt) einmal neu fragen: das Jahr ersetzt ein Apple-Datum,
   // das nur die Wiederveröffentlichung ist („Dirty Harry (2014)“, Prüfer-Befund MV8 10); Billiges zuerst, höchstens qualiMaxAbrufe
   // … ebenso gefundene ohne Wikidata-Nummer „q“ (vor dem 16.11.2026 gemerkt): die braucht der Schritt „Große Produktion/Besetzung“
@@ -1547,7 +1552,8 @@ export default async function filme(ctx) {
     // deine Listen-Titel bis angebotPreisAktion auch (nur Bekanntheit/Besetzung für die Filter der Seite – sie bleiben immer stehen)
     const listeBillig = [...listenIds].filter(id => { const d = daten.get(id); const p = d ? d.preisHd ?? d.preisSd ?? d.preis ?? null : null; return p != null && p <= m.angebotPreisAktion; })
       .filter(id => !chartTreffer.has(id)).map(id => [id, { pos: 999 }]);
-    const kandidat = [...chartTreffer.entries(), ...listeBillig]
+    const tippQ = [...tippIds].filter(id => !chartTreffer.has(id) && !listenIds.has(id)).map(id => [id, { pos: 999, altTitel: zf.tippIds[id] }]);
+    const kandidat = [...chartTreffer.entries(), ...listeBillig, ...tippQ]
       .filter(([id]) => (!listenIds.has(id) || listeBillig.some(x => x[0] === id)) && !qualiFrisch(zf.quali[nr(id)]))
       .map(([id, c]) => {
         const d = daten.get(id) || c.d || c.altTitel || {};
@@ -1723,10 +1729,10 @@ export default async function filme(ctx) {
   const ds = { ok: true, anzahl: 0, fehler: [], abfragen: 0, offen: 0 };
   status['wikidata-details'] = ds;
   if (m.details !== false && m.qualitaet !== false) {
-    const preisVonId = id => { const d = daten.get(id) || chartTreffer.get(id)?.d; return d ? d.preisHd ?? d.preisSd ?? d.preis ?? null : null; };
+    const preisVonId = id => { const d = daten.get(id) || chartTreffer.get(id)?.d || zf.tippIds[id]; return d ? d.preisHd ?? d.preisSd ?? d.preis ?? null : null; };
     const frisch = x => x && x.tag && x.v === DETAIL_V && tageZwischen(x.tag, tag) < m.detailTage;
     const offen = [], gesehenQ = new Set();
-    for (const id of new Set([...chartTreffer.keys(), ...breitIds, ...listenIds])) {
+    for (const id of new Set([...chartTreffer.keys(), ...breitIds, ...listenIds, ...tippIds])) {
       const q = zf.quali[nr(id)]?.q;
       if (!q || gesehenQ.has(q) || frisch(zf.detail[q])) continue;
       const p = preisVonId(id);
@@ -1901,6 +1907,18 @@ export default async function filme(ctx) {
     .map(([id]) => baue(id)).filter(t => t && !t._horror && t.typ === 'film');
   const kindIn = new Map(neuRoh.map(t => [t.id, kindGrund(t)]));
   gruppen.neu = neuRoh.filter(t => !kindIn.get(t.id)).slice(0, m.maxNeu);
+  // Zusatzfelder aus Wikidata: Rotten Tomatoes (%), Wikipedia-Sprachen (Bekanntheit), große Produktion/Kinohit (gross = Grund,
+  // null = eher klein/Indie; fehlt = noch keine Daten), Studio, Einspielergebnis, Oscars, Besetzung – für die Filter der Seite
+  const anreichern = t => {
+    const q = qualiVon(t.id);
+    if (q && q.l >= 0) { t.rt = q.rt; t.bekannt = q.l; }
+    const dt = detailVon(t.id);
+    if (dt) { if (dt.c?.length) t.cast = dt.c; if (dt.st) t.studio = dt.st; if (dt.b != null) t.einspiel = dt.b; if (dt.o) t.oscars = dt.o; }
+    if (q && q.l >= 0 && (dt || q.l >= 60)) t.gross = grossGrund(q.l, dt, q.jahr ?? t.jahr);
+    // Filmjahr von Wikidata, wenn Apple nur die Wiederveröffentlichung kennt (≥ 2 Jahre älter; Festival-Premieren ein Jahr vorher zählen nicht)
+    if (q && q.l >= 0 && q.jahr && t.typ === 'film' && t.jahr && q.jahr <= t.jahr - 2 && jahrImTitel(t.titel) == null) t.jahr = q.jahr;
+    return t;
+  };
   // Angebote: Filme ≤ 3,99 € (≤ 4,99 € bei Tiefstpreis oder laufender Apple-Aktion) – nur Kuratiertes oder Chart-Titel
   const kandidaten = new Map();
   for (const t of [...gruppen.wunsch, ...gruppen.achtziger, ...gruppen.disney]) if (t.id?.startsWith('itunes:')) kandidaten.set(t.id, t);
@@ -1919,14 +1937,7 @@ export default async function filme(ctx) {
   };
   let qualiRaus = 0;
   for (const t of [...kandidaten.values()]) {
-    const q = qualiVon(t.id);
-    if (q && q.l >= 0) { t.rt = q.rt; t.bekannt = q.l; } // Zusatzfelder: Rotten Tomatoes (%) und Wikipedia-Sprachen
-    // große Produktion/Kinohit (gross = Grund, null = eher klein/Indie; fehlt = noch keine Daten) und Besetzung für die Filter der Seite
-    const dt = detailVon(t.id);
-    if (dt) { if (dt.c?.length) t.cast = dt.c; if (dt.st) t.studio = dt.st; if (dt.b != null) t.einspiel = dt.b; if (dt.o) t.oscars = dt.o; }
-    if (q && q.l >= 0 && (dt || q.l >= 60)) t.gross = grossGrund(q.l, dt, q.j ?? t.jahr);
-    // Filmjahr von Wikidata, wenn Apple nur die Wiederveröffentlichung kennt (≥ 2 Jahre älter; Festival-Premieren ein Jahr vorher zählen nicht)
-    if (q && q.l >= 0 && q.jahr && t.typ === 'film' && t.jahr && q.jahr <= t.jahr - 2 && jahrImTitel(t.titel) == null) t.jahr = q.jahr;
+    anreichern(t);
     if (!gut(t)) { kandidaten.delete(t.id); qualiRaus++; }
   }
   qs.raus = qualiRaus;
@@ -2052,6 +2063,8 @@ export default async function filme(ctx) {
       return t;
     }
     abgleich.gefunden++;
+    anreichern(a); // Bekanntheit/Besetzung, sobald ein früherer Lauf sie geholt hat
+    zf.tippIds[a.id] = { tag, titel: a.titel, jahr: a.jahr ?? null, preis: a.preis }; // nächster Lauf: Wikidata wie ein Chart-Titel
     a.tipp = { quelle: 'mydealz', link: t.link }; // Vermerk: kam als Tipp von mydealz, der Link führt in die TV-App
     if (!a.angebot) a.angebot = true;
     return a;
