@@ -108610,13 +108610,14 @@ function spk12DspMake(Z2, X) {
     if (cmax < 0) return Object.assign(base, {cells: 0, ms: performance.now() - T0});
     return Object.assign(base, {c0: ca + cmin, nc: cmax - cmin + 1, cols: cols.slice(cmin, cmax + 1), t0: (ca + cmin - 0.5) * hD / sr, t1: (ca + cmax + 0.5) * hD / sr, f0: fr(rmin - 0.5), f1: fr(rmax + 0.5), ms: performance.now() - T0});
   };
-  ops.spk12trans = (d, m) => {   // Transienten: Spektral-Fluss (log. verdichtet, Vergleich mit 2 Rahmen vorher, Max-Filter ±1 Bin) ab Höhengrenze, Spitzen über dem örtlichen Mittel
+  ops.spk12trans = (d, m, emit) => {   /* ZRL2: emit für den Fortschritt */   // Transienten: Spektral-Fluss (log. verdichtet, Vergleich mit 2 Rahmen vorher, Max-Filter ±1 Bin) ab Höhengrenze, Spitzen über dem örtlichen Mittel
     const T0 = performance.now(), sr = d.meta.sr, x = d.mid, N = 1024, H = 256, NB = N / 2 + 1, dur = x.length / sr;
     const t0 = Math.max(0, Math.min(+m.t0, +m.t1)), t1 = Math.min(dur, Math.max(+m.t0, +m.t1)), hg = Math.max(0, +m.hg || 0), kmin = Math.max(1, Math.ceil(hg * N / sr)), del = Math.max(0.2, +m.del || 3);
     const a0 = Math.max(0, Math.floor((t0 - 0.15) * sr)), nF = Math.max(3, Math.ceil(((Math.min(dur, t1 + 0.12)) * sr - a0) / H)), D = new Float32Array(nF);
     const re = new Float64Array(N), im = new Float64Array(N), Y = [null, null, null], nb = NB - kmin; let e2 = 0, ne = 0;
     for (let i = a0; i < Math.min(x.length, a0 + nF * H + N); i += 4) { e2 += x[i] * x[i]; ne++; } const gam = 100 / Math.max(1e-3, Math.sqrt(e2 / Math.max(1, ne)));   // Pegel-bezogene Log-Kompression
     for (let n = 0; n < nF; n++) {
+      if (emit && nF > 4096 && (n & 1023) === 1023) emit({qid: m.qid, prog: n / nF, stufe: 'Schläge suchen'});   /* ZRL2: Fortschritt bei langem Transient (je 1024 Rahmen ≈ 6 s Audio) */
       const g = spk12Mag(x, a0 + n * H, N, re, im), y = new Float32Array(NB); for (let k = 0; k < NB; k++) y[k] = 20 * Math.log10(1 + gam * g[k]);
       const p = Y[0]; let s = 0;
       if (p) for (let k = kmin; k < NB; k++) { const r = Math.max(p[k], p[Math.max(0, k - 1)], p[Math.min(NB - 1, k + 1)]), v = y[k] - r; if (v > 0) s += v; }
@@ -109154,7 +109155,7 @@ async function spk12Trans(U, q, keep) {
   S.tBusy = true; const T0 = performance.now(); if (!keep) spk1Stat(U, 'Suche Schläge …');
   try {
     const hg = SPK12_HG[U.opt.s12hg] || 0, len = (U.opt.s12tl || 120) / 1000, ny = U.meta.sr / 2;
-    const r = await spk1Call('spk12trans', {doc: SPK1.doc, t0: q.tap ? q.a - 0.2 : q.a, t1: q.tap ? q.a + 0.2 : q.b, hg, del: spk12Del(U), tap: q.tap ? q.a : null});
+    const r = await spk1Call('spk12trans', {doc: SPK1.doc, t0: q.tap ? q.a - 0.2 : q.a, t1: q.tap ? q.a + 0.2 : q.b, hg, del: spk12Del(U), tap: q.tap ? q.a : null}, undefined, !keep && typeof zrl2TrCb === 'function' ? zrl2TrCb(U) : undefined);   /* ZRL2: Fortschritt */
     const ms = performance.now() - T0; S.tMs = {all: +ms.toFixed(1), kern: r.ms, n: r.hits.length};
     if (!r.hits.length) { spk1Stat(U, 'Transient: kein Schlag gefunden – Empfindlichkeit höher oder auf den Anschlag tippen'); return r; }
     const sh = {art: 'trans', hits: r.hits, hg, len, q, ...(r.s12src && r.s12src.lid ? {src: r.s12src.lid} : {}), t0: +Math.max(0, r.hits[0] - 0.03).toFixed(4), t1: +Math.min(U.dur, r.hits[r.hits.length - 1] + len).toFixed(4), f0: Math.max(20, hg), f1: ny, kt: 0, kf: 0, key: spk12Key()};
@@ -109348,6 +109349,11 @@ const SPK12_API = {
 };
 try { window.__spk12 = SPK12_API; } catch (e) {}
 /* SPK12-END */
+/* ZRL2-BEGIN ===== Fortschritt beim langen Transient (OFFEN-1611 A4): der Spektral-Kern meldet „Schläge suchen“ je 1024 Rahmen (erst ab 4096
+   Rahmen ≈ 24 s Auswahl), die vorhandene Statuszeile zeigt dann „Suche Schläge … NN %“ – wie „Ebene „…“ abtasten … NN %“ (SPK12). Kurze Auswahl
+   und Nachrechnen beim Regler (keep) bleiben wie bisher. Der Zerlegen-Teil von ZRL2 steht im Spektral-Kern (spk1DspMake, Block ZRL2). ===== */
+function zrl2TrCb(U) { return {prog: (p, st) => { if (st === 'Schläge suchen' && spk12S(U).tBusy) spk1Stat(U, 'Suche Schläge … ' + Math.round(100 * p) + ' %'); }}; }
+/* ZRL2-END */
 /* FOKUS1-BEGIN ===== Spektral-Seite · Fokus (Xander 15.11.: „die bereits erkannten … Frequenzen, die schon in Ebenen liegen, im gesamten
    Frequenzspektrum ausblenden … damit man den Fokus auf die verbleibenden Noten hat und es sich immer mehr herauskristallisiert“)
    Kern (läuft im Spektral-Worker; der Text kommt über spk8WUrl mit, gestartet am Ende von spk1DspMake nach SPK12; Rückfall: Hauptfaden):

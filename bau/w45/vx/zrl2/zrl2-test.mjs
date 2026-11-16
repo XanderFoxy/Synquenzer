@@ -1,5 +1,5 @@
-// ZRL1: Zerlegen-Tempo A/B im Test-Chromium (Spektral-Worker der Seite), 20 s + 3 min, Ergebnis-Vergleich (SDR je Ebene, Energie je Ebene), Speicher-Spitze
-// Aufruf: node zrl1-test.mjs <index.html> <basis.html>   Umgebung: RUNDEN=3 (20 s), RUNDEN3=1 (3 min), NUR=20|180, ZIEL_MS=2500
+// ZRL2 (Muster ZRL1): Zerlegen-Tempo A/B im Test-Chromium (Spektral-Worker der Seite), 20 s + 3 min, Ergebnis-Vergleich (SDR je Ebene, Energie je Ebene), Speicher-Spitze
+// Aufruf: node zrl2-test.mjs <index.html> <basis.html>   Umgebung: RUNDEN=3 (20 s), RUNDEN3=1 (3 min), NUR=20|180, ZIEL_MS=2500
 import { createRequire } from 'node:module';
 const { chromium } = createRequire(import.meta.url)('playwright');
 import http from 'node:http'; import fs from 'node:fs'; import path from 'node:path'; import { execSync } from 'node:child_process';
@@ -31,7 +31,7 @@ async function lauf(which, sek, sdr) {
     for (const k in st) { const x = st[k], m = x.length / 2; for (let i = 0; i < n; i++) { const j = i % n0; if (j >= m) continue; ch[0][i] += x[2 * j]; ch[1][i] += x[2 * j + 1]; } }
     let pk = 0; for (const c of ch) for (const v of c) pk = Math.max(pk, Math.abs(v)); const g = pk > 0.98 ? 0.98 / pk : 1; window.__zg = {g, n, n0};
     if (g < 1) for (const c of ch) for (let i = 0; i < n; i++) c[i] *= g;
-    const r = await spk1Call('create', {name: 'ZRL1', sr: 44100, ch, grid: {bpm: 112, off: 0, ts: '4/4', from: 'test'}}, [ch[0].buffer, ch[1].buffer]);
+    const r = await spk1Call('create', {name: 'ZRL2', sr: 44100, ch, grid: {bpm: 112, off: 0, ts: '4/4', from: 'test'}}, [ch[0].buffer, ch[1].buffer]);
     window.__zst = st; return r.meta ? r.meta.id : r.id;
   }, [sek === 20 ? 0 : sek]);
   await heap(); const rss0 = rendRss(); let rssMax = rss0, h0 = null; { const h = await heap(); if (h) h0 = h.usedSize; }
@@ -50,6 +50,10 @@ async function lauf(which, sek, sdr) {
     const lead = S('lead'), pad = S('pad');
     return {sdr: {drums: sdr(S('drums'), Y.drums), bass: sdr(S('bass'), Y.bass), tonal: sdr(add(lead, pad), add(Y.gesang, Y.rest))}, energie: en};
   }, doc));
+  if (sek === 180) res.trans = await p.evaluate(async id => {   // ZRL2: langer Transient über das ganze Stück – Treffer gleich, Fortschritt gemeldet
+    const pr = []; const t0 = performance.now(); const r = await spk1Call('spk12trans', {doc: id, t0: 0, t1: 180, hg: 0, del: 3}, undefined, {prog: (p, st) => pr.push([+p.toFixed(3), st, Math.round(performance.now() - t0)])});
+    return {ms: Math.round(performance.now() - t0), n: r.hits.length, hits: r.hits.join(','), nF: r.nF, prog: pr.length, erster: pr[0] || null, letzter: pr[pr.length - 1] || null};
+  }, doc);
   res.errs = errs; await ctx.close(); return res;
 }
 const out = {A, B, runden: []}, R20 = +(E.RUNDEN || 3), R180 = +(E.RUNDEN3 || 1);
@@ -69,9 +73,12 @@ if (sum.A180 && sum.B180) ok('zerlegen-3min-schneller', {A: sum.A180.ms_median, 
 for (const sek of [20, 180]) { const a = sum['A' + sek], bb = sum['B' + sek]; if (!a || !bb || !a.sdr || !bb.sdr) continue;
   const d = {}; let good = true; for (const k in a.sdr) { d[k] = +(a.sdr[k] - bb.sdr[k]).toFixed(3); if (d[k] < -0.1) good = false; } ok('sdr-gleich-' + sek + 's', {A: a.sdr, B: bb.sdr, diff: d}, good);
   const ea = out.runden.find(x => x.sek === sek && x.which === 'A' && x.energie).energie, eb = out.runden.find(x => x.sek === sek && x.which === 'B' && x.energie).energie; const rel = {};
-  for (const k in ea) rel[k] = +(Math.abs(ea[k][0] - eb[k][0]) / Math.max(1e-12, eb[k][0])).toExponential(2); out['energie' + sek] = rel; console.log('Energie-Abweichung je Ebene (' + sek + ' s): ' + JSON.stringify(rel)); }
+  for (const k in ea) rel[k] = +(Math.abs(ea[k][0] - eb[k][0]) / Math.max(1e-12, eb[k][0])).toExponential(2); out['energie' + sek] = rel; console.log('Energie-Abweichung je Ebene (' + sek + ' s): ' + JSON.stringify(rel));
+  ok('energie-bitgleich-' + sek + 's', rel, Object.keys(ea).every(k => ea[k][0] === eb[k][0] && ea[k][1] === eb[k][1])); }
 if (sum.A180) ok('speicher-3min-500mb', {rssMax: sum.A180.rssMax, rssDelta: sum.A180.rssDelta, heapMaxMB: sum.A180.heapMaxMB, basis: sum.B180 && {rssMax: sum.B180.rssMax, rssDelta: sum.B180.rssDelta, heapMaxMB: sum.B180.heapMaxMB}}, sum.A180.rssMax <= 500);
+{ const ta = out.runden.find(x => x.which === 'A' && x.trans), tb = out.runden.find(x => x.which === 'B' && x.trans);
+  if (ta && tb) ok('transient-3min-gleich+fortschritt', {A: {ms: ta.trans.ms, n: ta.trans.n, prog: ta.trans.prog, erster: ta.trans.erster, letzter: ta.trans.letzter}, B: {ms: tb.trans.ms, n: tb.trans.n, prog: tb.trans.prog}}, ta.trans.hits === tb.trans.hits && ta.trans.prog >= 10 && tb.trans.prog === 0); }
 const errs = out.runden.flatMap(x => x.errs); ok('keine-konsolenfehler', errs.slice(0, 5), !errs.length);
-out.chk = chk; fs.writeFileSync(path.join(path.dirname(A), 'zrl1-test.json'), JSON.stringify(out, null, 1));
+out.chk = chk; fs.writeFileSync(path.join(path.dirname(A), 'zrl2-test.json'), JSON.stringify(out, null, 1));
 console.log(Object.values(chk).every(c => c.ok) ? 'ALLE OK' : 'FEHLER: ' + Object.keys(chk).filter(k => !chk[k].ok).join(', '));
 await b.close(); srv.close();

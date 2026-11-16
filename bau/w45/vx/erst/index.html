@@ -32059,7 +32059,7 @@ function spawnVoice(i, out, vel, t0, o) {
   const N = o.chain || (!o.sound || o.sound === tr.sound ? A : null);
   if (N) { try { N.lfoPitch.connect(cv.offset); v.tapP = N.lfoPitch; } catch (e) {} }
   const solo = eng === 'fm6' && UI.fmSolo && UI.fmSolo.t === i && snd === tr.sound;          // §6.5 [Solo] (monitor only)
-  const src = NativeVoice.source(c, solo ? Object.assign({}, PL, {fm6: fmSoloPatch(P.fm6, UI.fmSolo.k)}) : PL, eng, out, vel, cv.out, {t0, noise: AU.noise, waves: AU.waves});
+  const src = NativeVoice.source(c, solo ? Object.assign({}, PL, {fm6: fmSoloPatch(P.fm6, UI.fmSolo.k)}) : PL, eng, out, vel, cv.out, {t0, noise: AU.noise, get waves() { return AU.waves; }});   /* ERST: die WT-Wellen erst, wenn eine WT-Stimme sie liest */
   nodes.push(...src.nodes); srcs.push(...src.srcs); starts.push(...src.starts);
   // §6.4: an FM voice's DX release (dx, rt); fmAmp 0 = the DX envelopes shape the volume, the VCA is a gate (fast attack)
   if (eng === 'fm6') { v.dx = src.dx || null; v.dxRT = src.rt || .05; v.dxEnd = Infinity; if (!(P.fmAmp >= 1)) v.aenv = {a: .0012, d: .05, s: 1, r: Math.max(.05, v.dxRT)}; }
@@ -113694,6 +113694,10 @@ try { addEventListener('load', () => { try { idle(perf1bStart); } catch (e) {} }
    (3) nach dem ersten Tipp: die 16 WT-Wellen einzeln in Leerlauf-Schritten. makeWaves selbst rechnet die Eingaben (mit einer
        Sammel-Umgebung), je Schritt entsteht eine Welle mit createPeriodicWave auf der echten Umgebung; braucht eine WT-Note sie
        früher (oder kommt der bisherige 1,5-s-Leerlauf zuerst), baut der Getter wie bisher alles auf einmal und ERST hört auf.
+   (4) Ursache des größten Postens im Tipp (Beleg: Aufrufkette AU.waves-Getter < spawnVoice < spawnClipVoice < scheduleTrack,
+       50–100 ms): spawnVoice wertete AU.waves für JEDE native Stimme aus, gelesen wird es in NativeVoice.source aber nur für
+       engine 'wt'. Der Haken übergibt die Wellen jetzt als Getter – gebaut wird erst, wenn eine WT-Stimme sie wirklich liest
+       (dieselben Wellen, dieselbe Math.random-Folge; makeWaves zieht keine Zufallszahlen).
    Klänge, Zeitpunkte und Reihenfolge der Töne bleiben gleich – nur der Zeitpunkt der Vorarbeit ist früher bzw. verteilt. */
 const ERST = {wk: {src: null, parts: null, pos: 0, url: null, took: false}, mt: {sr: 0, buf: null, ph: null, i: 0, took: false}, wv: {c: null, jobs: null, T: null, k: 0, done: false},
   wait: false, off: false, ms: {}};
