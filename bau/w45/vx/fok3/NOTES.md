@@ -24,14 +24,17 @@ Kern (Worker, Rückfall Hauptfaden gleich):
 
 Anzeige (fokus1Load, fokus1Pre, im Block):
 3. Erster Durchgang wie bisher (sichtbare Stücke zuerst, dann rechts, dann links), mit `vorab`. Kommen Stücke mit `ap`, folgt der zweite Durchgang:
-   je Aufruf EIN Stück genau (`vorab: 0`), das nächste wird jedes Mal neu gewählt: sichtbare zuerst, dann nach Abstand zum Bild.
+   EIN Kern-Auftrag mit `list` = alle genäherten Stücke in Reihenfolge (sichtbare zuerst, dann nach Abstand zum Bild), `vorab: 0`. Der Kern rechnet
+   sie nacheinander wie FOK2 (Scheiben, ok()-Abbruch). v2 hatte je Stück einen Auftrag – unter Last wartete jedes Stück auf den Hauptfaden
+   (↶-Fall 2,8 s statt 1,6 s), darum v3 ein Auftrag.
 4. Austausch: gleiche Stelle im Satz, die alte Textur (Näherung) bleibt, bis die genaue oben ist (vorhandener `old`-Weg) → kein Leerbild, gleiche
    Größe/Lage. Eine Näherung legt sich nie über ein genaues Stück desselben Stands (gleicher Schlüssel H).
 5. Status: In der Statuszeile steht während des Nachreichens „Fokus · genauer · xx %“ (vorher „Fokus · xx %“), danach wie bisher
    „Fokus: Rest · … übrig ≈ …“ (Energie aus den genauen Stücken). Sonst nichts Neues sichtbar.
 6. Abbruch/Ablösung: Fokus-Wechsel, FFT-Wechsel, Dokument, Ebenen-Änderung, ↶ → neuer Auftrag (seq) wie bisher; Antworten alter Aufträge werden
-   verworfen (seq-Prüfung je Stück), der Kern bricht über d.fkTok/Schlüssel ab. Rollen/Zoomen: fokus1Pre prüft je Bild – läuft ein unsichtbares
-   Stück, während sichtbare noch genähert sind → `fokusStop`, der zweite Durchgang wählt neu (Rest-Audio bleibt im Kern-Speicher).
+   verworfen (seq-Prüfung je Stück), der Kern bricht über d.fkTok/Schlüssel ab. Rollen/Zoomen: fokus1Pre prüft je Bild (höchstens alle 250 ms) – ist
+   das Stück in Arbeit (erstes noch genähertes der Liste) unsichtbar und sind sichtbare noch genähert → `fokusStop`, der zweite Durchgang plant neu
+   (Rest-Audio und Rest-Bilder bleiben im Kern-Speicher, verloren ist höchstens die FFT des laufenden Stücks).
    „noch aktuell“ gilt erst, wenn kein Stück mehr genähert ist; `idle()` erst nach dem zweiten Durchgang.
 7. Test-Zugang: `info()` + `ap` (genäherte Stücke), `gn` (Nachreichen läuft), `gk` (Stück in Arbeit); `chunks()` + `ap`.
 
@@ -55,3 +58,33 @@ Lauf 2 (v2, Last 2,5–5,5) – ms:
 | 3 min mono, ↶ | 172 | 293 | 1594 | 2827 (v2, je Stück ein Auftrag) | 3 |
 
 Hashes Endbild (alle 10 Fälle, auch Abbruch-Fälle) gleich v6 – Lauf 2 und Lauf 3.
+
+fok3-zeit Lauf 1 (s20 + 3 min mono, neu / v6 / 4.75, Last ≈ 5): erstes Bild s20 345 / 598 / 261 ms, m1 235 / 574 / 683 ms;
+genau s20 1036 / 664 / (4.75 Näherung fertig 312), m1 5683 / 5829 / (3016). Das erste Bild liegt damit auf dem Niveau des alten Näherungswegs
+(Streuung ±100 ms durch Textur-Hochladen und 90-ms-Neuzeichnen-Drossel), deutlich vor v6. „Genau fertig“ ≈ v6 + Näherungs-Durchgang
+(3 min: ≈ 0,5–1,4 s mehr unter Last; s20 ≈ +0,3 s), weil der Kern zuerst alle teuren Stücke nähert und dann genau rechnet (ein Worker).
+
+## Prüfung / Tests (Kopien im Paketordner, Logs: fok3-lauf2/3/4.log, reg/*.log, smoke.log)
+- fok3-test (A/B v6): alle 10 Endbild-Hashes gleich v6 (20 s, Kamm 16384, Kamm 4096 nach FFT-Wechsel, 3 min stereo, 3 min mono, örtliche Ebene,
+  ↶, Rollen + Fokus-Wechsel während des Nachreichens, ↶ während des Nachreichens, Zauberstab während der Näherung); ↶ = erster Satz; ↶ während
+  Nachreichen = Stand davor. Kleine Fälle (Kamm) ohne Zwischenbild; örtliche Änderung nähert nur die 3 betroffenen Stücke. Zauberstab während
+  der Näherung: Fokus-Prüfung auf dem genauen Weg (46,6 dB → nichts wählen, wie v6). Konsole 0 Fehler (neu und basis).
+- Hauptfaden: kein Bild/fokus1Pre in JS > 50 ms (gemessen ≤ 13 ms). Long Tasks > 50 ms gibt es in beiden Fassungen außerhalb von JS (Textur-
+  Hochladen mit Mipmaps in der Software-Grafik des Test-Chromiums, s. FOKUS1-Notizen; am iPhone 1–2 ms je Textur). FOK3 lädt sichtbare Stücke
+  zweimal hoch (Näherung, dann genau) → in dieser Umgebung mehr solcher Long Tasks als v6 (Lauf 2: s20 1/0, stereo 19/8, m1 5/11, m2 9/10).
+- Worker-Antwort (fokusKey alle 40 ms) während des Nachreichens: Median 8–20 ms, P95 120–155 ms – wie v6 (Median 15–19, P95 133–152).
+- Regression (Kopien in reg/): fokus1-kern 26/0 (v2 und v3), fok2-test LANG=0 16/0 (alle Tiefen wie v6), spk5 24/0, spk12 98/0, spk12-2 71/1, spk12-3 45/2 –
+  spk12-3 (Long Tasks der SPK12-Werkzeuge unter Last 6–8, kein Fokus), spk6 25/2 (UI alles OK; „kern-messwerte-teil1“ liest spk6-kern-test.json
+  neben index.html – Eingabedatei eines anderen Pakets, hier nicht vorhanden), spkfix ALLES OK 11 (sonde braucht spk7/lib.mjs, kopiert),
+  fokus1-test (LONG=0 CPU=0) 43/5 – alle 5 Long Tasks unter Last 8, auch in „Alles“/„Gefundenes“ (FOK3 wirkt dort nicht).
+- Pflicht: topdefs doppelt 0 / Syntaxfehler 0; dupkeys 0; smoke errors []; „MS 2000“ 1×; „  live: true,“ 1×; VERSION '4.76.0'.
+- Diff (fok3.diff): 101 Zeilen neu, 23 geändert, 21 Abschnitte, alle zwischen FOKUS1-BEGIN und FOKUS1-END.
+
+## Offen
+- Long Tasks in der Test-Grafik: zweimaliges Hochladen sichtbarer Stücke (Näherung + genau). Falls das am Gerät stört (nicht erwartet, 1–2 ms):
+  Näherungs-Textur ohne Mipmaps oder texSubImage2D in die vorhandene Textur – nicht gebaut (Aussehen beim Herauszoomen).
+- „Genau fertig“ ≈ v6 + Näherungs-Durchgang. Profi-Weg: zweiter Worker für die Näherung (parallel) oder Näherung nur für sichtbare Stücke und
+  unsichtbare erst beim Rollen – nicht gebaut.
+- Schätzung: Kosten je Block/Spalte werden gemessen; Masken-Änderungen ohne neues Kachel-Feld (in-place) würden als „unverändert“ geschätzt →
+  dann kommt das Stück direkt genau (wie v6), nie ein falsches Bild.
+- Statuszeile: während des Nachreichens „Fokus · genauer · xx %“ (neues Wort „genauer“ in der vorhandenen Fortschrittsanzeige) – bitte abnicken.

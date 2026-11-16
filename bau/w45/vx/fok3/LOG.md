@@ -8,3 +8,4 @@
 - 02:35:53 Kette B (smoke, fok2-test LANG=0, fokus1-test LONG=0 CPU=0, kern v3, spkfix) parallel gestartet
 - 02:37:39 Regression (Kopien in reg/): kern 26/0 (v2 und v3), fok2-test 16/0, spk5 24/0, spk12 98/0, spk12-2 71/1 (Long Task 110 ms SPK12-Werkzeug), spk12-3 (läuft/LT), spk6 25/2 (nur „kern-messwerte-teil1“: Eingabedatei spk6-kern-test.json fehlt im Paketordner), fokus1-test (LONG=0 CPU=0) 43/5 – alle 5 Long Tasks unter Last 8 (auch „Alles“/„Gefundenes“), smoke errors [] (absoluter Pfad nötig). Last 6.78
 - 02:38:03 Lauf 3 fertig; fok3-zeit (neu / v6 / 4.75, s20 + m1) gestartet
+- 02:39:10 v4: Neu-Planen beim Rollen nach dem Stück in Arbeit (erstes genähertes der Liste); Lauf 4 (Endfassung) allein gestartet. fok3-zeit Lauf 1: s20 erstes Bild neu 345 / v6 598 / 4.75 261 ms; m1 235 / 574 / 683 ms; genau m1 5683 / 5829 / (4.75 Näherung 3016)
